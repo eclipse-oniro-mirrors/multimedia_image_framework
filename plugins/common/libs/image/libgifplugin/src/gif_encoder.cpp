@@ -241,12 +241,12 @@ uint32_t GifEncoder::WriteFrameInfo(int index)
     gce.extensionIntroducer = EXTENSION_INTRODUCER;
     gce.graphicControlLabel = GRAPHIC_CONTROL_LABEL;
     gce.blockSize = 0x04;
-    gce.packedFields = 0x00;
+    gce.packedFields = 0x01;
     gce.packedFields |= (((index < static_cast<int>(encodeOpts_.disposalTypes.size()) ?
         encodeOpts_.disposalTypes[index] : DEFAULT_DISPOSAL_TYPE) & 0x07) << DISPOSAL_METHOD_SHIFT_BIT);
     gce.delayTime = index < static_cast<int>(encodeOpts_.delayTimes.size()) ?
         encodeOpts_.delayTimes[index] : DEFAULT_DELAY_TIME;
-    gce.transparentColorIndex = 0x00;
+    gce.transparentColorIndex = 0xFF;
     gce.blockTerminator = 0x00;
     if (!Write((const uint8_t*)&gce, sizeof(GraphicControlExtension))) {
         IMAGE_LOGE("Write to buffer error.");
@@ -316,42 +316,48 @@ uint32_t GifEncoder::colorQuantize(int index, uint16_t width, uint16_t height,
     uint8_t *redBuffer = NULL;
     uint8_t *greenBuffer = NULL;
     uint8_t *blueBuffer = NULL;
+    uint8_t *alphaBuffer = NULL;
     uint64_t frameSize = width * height;
     redBuffer = (uint8_t *)malloc(frameSize);
     greenBuffer = (uint8_t *)malloc(frameSize);
     blueBuffer = (uint8_t *)malloc(frameSize);
-    if (redBuffer == NULL || greenBuffer == NULL || blueBuffer == NULL) {
+    alphaBuffer = (uint8_t *)malloc(frameSize);
+    if (redBuffer == NULL || greenBuffer == NULL || blueBuffer == NULL || alphaBuffer == NULL) {
         free(redBuffer);
         free(greenBuffer);
         free(blueBuffer);
+        free(alphaBuffer);
         IMAGE_LOGE("Failed to allocate memory.");
         return ERR_IMAGE_ENCODE_FAILED;
     }
 
-    if (separateRGB(index, width, height, redBuffer, greenBuffer, blueBuffer)) {
+    if (separateRGBA(index, width, height, redBuffer, greenBuffer, blueBuffer, alphaBuffer)) {
         IMAGE_LOGE("Failed to separate RGB, aborted.");
         free(redBuffer);
         free(greenBuffer);
         free(blueBuffer);
+        free(alphaBuffer);
         return ERR_IMAGE_ENCODE_FAILED;
     }
 
-    if (doColorQuantize(width, height, redBuffer, greenBuffer, blueBuffer, outputBuffer, outputColorMap)) {
+    if (doColorQuantize(width, height, redBuffer, greenBuffer, blueBuffer, alphaBuffer, outputBuffer, outputColorMap)) {
         IMAGE_LOGE("Failed to quantize buffer, aborted.");
         free(redBuffer);
         free(greenBuffer);
         free(blueBuffer);
+        free(alphaBuffer);
         return ERR_IMAGE_ENCODE_FAILED;
     }
 
     free(redBuffer);
     free(greenBuffer);
     free(blueBuffer);
+    free(alphaBuffer);
     return SUCCESS;
 }
 
-uint32_t GifEncoder::separateRGB(int index, uint16_t width, uint16_t height,
-                                 uint8_t *redBuffer, uint8_t *greenBuffer, uint8_t *blueBuffer)
+uint32_t GifEncoder::separateRGBA(int index, uint16_t width, uint16_t height,
+                                  uint8_t *redBuffer, uint8_t *greenBuffer, uint8_t *blueBuffer, uint8_t *alphaBuffer)
 {
     for (int y = 0; y < height; y++) {
         for (int x = 0; x < width; x++) {
@@ -363,6 +369,7 @@ uint32_t GifEncoder::separateRGB(int index, uint16_t width, uint16_t height,
             redBuffer[y * width + x] = pixelMaps_[index]->GetARGB32ColorR(pixelColor);
             greenBuffer[y * width + x] = pixelMaps_[index]->GetARGB32ColorG(pixelColor);
             blueBuffer[y * width + x] = pixelMaps_[index]->GetARGB32ColorB(pixelColor);
+            alphaBuffer[y * width + x] = pixelMaps_[index]->GetARGB32ColorA(pixelColor);
         }
     }
 
@@ -420,34 +427,8 @@ void InitForQuantize(ColorCoordinate *colorCoordinate, ColorSubdivMap* colorSubd
     coordinate->next = NULL;
 }
 
-uint32_t GifEncoder::doColorQuantize(uint16_t width, uint16_t height,
-                                     const uint8_t *redInput, const uint8_t *greenInput, const uint8_t *blueInput,
-                                     uint8_t *outputBuffer, ColorType *outputColorMap)
+void buildOutputColorMap(ColorSubdivMap *colorSubdivMap, uint32_t colorSubdivMapSize, ColorType *outputColorMap)
 {
-    uint32_t colorSubdivMapSize = 1;
-    ColorSubdivMap colorSubdivMap[COLOR_OF_GIF];
-
-    ColorCoordinate *colorCoordinate = (ColorCoordinate *)malloc(sizeof(ColorCoordinate) * COLOR_ARRAY_SIZE);
-    if (colorCoordinate == NULL) {
-        return ERR_IMAGE_ENCODE_FAILED;
-    }
-
-    ColorInput colorInput;
-    colorInput.redInput = redInput;
-    colorInput.greenInput = greenInput;
-    colorInput.blueInput = blueInput;
-    InitColorCube(colorCoordinate, width, height, &colorInput);
-    InitColorSubdivMap(colorSubdivMap, COLOR_OF_GIF, width, height);
-    InitForQuantize(colorCoordinate, colorSubdivMap);
-
-    if (BuildColorSubdivMap(colorSubdivMap, &colorSubdivMapSize)) {
-        free(colorCoordinate);
-        return ERR_IMAGE_ENCODE_FAILED;
-    }
-    if (colorSubdivMapSize < COLOR_MAP_SIZE) {
-        memset_s(outputColorMap, sizeof(ColorType) * COLOR_MAP_SIZE, 0, sizeof(ColorType) * COLOR_MAP_SIZE);
-    }
-
     for (int i = 0; i < static_cast<int>(colorSubdivMapSize); i++) {
         if (colorSubdivMap[i].colorNum > 0) {
             ColorCoordinate *coordinate = colorSubdivMap[i].coordinate;
@@ -466,15 +447,45 @@ uint32_t GifEncoder::doColorQuantize(uint16_t width, uint16_t height,
             outputColorMap[i].blue = (blue << (BITS_IN_BYTE - BITS_PER_PRIM_COLOR)) / colorSubdivMap[i].colorNum;
         }
     }
+}
+
+uint32_t GifEncoder::doColorQuantize(uint16_t width, uint16_t height,
+                                     const uint8_t *redInput, const uint8_t *greenInput,
+                                     const uint8_t *blueInput, const uint8_t *alphaInput,
+                                     uint8_t *outputBuffer, ColorType *outputColorMap)
+{
+    uint32_t colorSubdivMapSize = 1;
+    ColorSubdivMap colorSubdivMap[COLOR_OF_GIF];
+    ColorCoordinate *colorCoordinate = (ColorCoordinate *)malloc(sizeof(ColorCoordinate) * COLOR_ARRAY_SIZE);
+    if (colorCoordinate == NULL) {
+        return ERR_IMAGE_ENCODE_FAILED;
+    }
+    ColorInput colorInput;
+    colorInput.redInput = redInput;
+    colorInput.greenInput = greenInput;
+    colorInput.blueInput = blueInput;
+    InitColorCube(colorCoordinate, width, height, &colorInput);
+    InitColorSubdivMap(colorSubdivMap, COLOR_OF_GIF, width, height);
+    InitForQuantize(colorCoordinate, colorSubdivMap);
+    if (BuildColorSubdivMap(colorSubdivMap, &colorSubdivMapSize)) {
+        free(colorCoordinate);
+        return ERR_IMAGE_ENCODE_FAILED;
+    }
+    if (colorSubdivMapSize < COLOR_MAP_SIZE) {
+        memset_s(outputColorMap, sizeof(ColorType) * COLOR_MAP_SIZE, 0, sizeof(ColorType) * COLOR_MAP_SIZE);
+    }
+    buildOutputColorMap(colorSubdivMap, colorSubdivMapSize, outputColorMap);
     for (int i = 0; i < ((long)width) * height; i++) {
         uint32_t index = ((redInput[i] >> (BITS_IN_BYTE - BITS_PER_PRIM_COLOR)) << RED_COORDINATE) +
             ((greenInput[i] >> (BITS_IN_BYTE - BITS_PER_PRIM_COLOR)) << GREEN_COORDINATE) +
             ((blueInput[i] >> (BITS_IN_BYTE - BITS_PER_PRIM_COLOR)) << BLUE_COORDINATE);
-        outputBuffer[i] = colorCoordinate[index].newColorIndex;
+        if (alphaInput[i] == 0) {
+            outputBuffer[i] = COLOR_OF_GIF - 1;
+        } else {
+            outputBuffer[i] = colorCoordinate[index].newColorIndex;
+        }
     }
-
     free(colorCoordinate);
-
     return SUCCESS;
 }
 
@@ -563,7 +574,7 @@ uint32_t GifEncoder::BuildColorSubdivMap(ColorSubdivMap *colorSubdivMap, uint32_
     int index = 0;
     ColorCoordinate **sortArray;
 
-    while (*colorSubdivMapSize < COLOR_MAP_SIZE) {
+    while (*colorSubdivMapSize < COLOR_MAP_SIZE - 1) {
         index = PrepareSort(colorSubdivMap, *colorSubdivMapSize);
         if (index < 0) {
             return SUCCESS;
