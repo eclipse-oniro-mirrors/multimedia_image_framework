@@ -398,7 +398,7 @@ std::tuple<uint32_t, uint32_t> WebpExifMetadataAccessor::GetWidthAndHeightFormCh
     static const uint32_t bitOperVp8 = 0x3fff;
     static const byte offset3 = 3;
     static const byte offset2 = 2;
-    if (strChunkId == WEBP_CHUNK_HEADER_VP8) {
+    if (strChunkId == WEBP_CHUNK_HEADER_VP8 && chunkData.Size() >= (WEBP_CHUNK_HEIGHT_OFFSET + WEBP_BUF_SIZE)) {
         byte sizeBuf[WEBP_BUF_SIZE];
 
         (void)memcpy_s(&sizeBuf, WEBP_BUF_SIZE, chunkData.CData(WEBP_CHUNK_WIDTH_OFFSET), WEBP_BUF_SIZE);
@@ -408,7 +408,7 @@ std::tuple<uint32_t, uint32_t> WebpExifMetadataAccessor::GetWidthAndHeightFormCh
         return std::make_tuple(width, height);
     }
     
-    if (strChunkId == WEBP_CHUNK_HEADER_VP8L) {
+    if (strChunkId == WEBP_CHUNK_HEADER_VP8L && chunkData.Size() >= (WEBP_BUF_SIZE + WEBP_BUF_SIZE + 1)) {
         byte bufWidth[WEBP_BUF_SIZE];
         byte bufHeight[WEBP_BUF_SIZE + 1];
 
@@ -424,7 +424,7 @@ std::tuple<uint32_t, uint32_t> WebpExifMetadataAccessor::GetWidthAndHeightFormCh
         return std::make_tuple(width, height);
     }
 
-    if (strChunkId == WEBP_CHUNK_HEADER_ANMF) {
+    if (strChunkId == WEBP_CHUNK_HEADER_ANMF && chunkData.Size() >= (WEBP_CHUNK_WIDTH_OFFSET + offset3 + offset3)) {
         byte sizeBuf[WEBP_CHUNK_SIZE];
         
         (void)memcpy_s(&sizeBuf, offset3, chunkData.CData(WEBP_CHUNK_WIDTH_OFFSET), offset3);
