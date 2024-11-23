@@ -25,6 +25,7 @@
 #include "mock_data_stream.h"
 #include "mock_skw_stream.h"
 #include "file_source_stream.h"
+#include "image_data_statistics.h"
 
 using namespace testing::ext;
 using namespace OHOS::Media;
@@ -1118,6 +1119,19 @@ HWTEST_F(ExtDecoderTest, EncodeSdrImageTest001, TestSize.Level3)
     ret = extEncoder.EncodeSdrImage(outputStream);
     ASSERT_EQ(ret, ERR_IMAGE_ENCODE_FAILED);
     GTEST_LOG_(INFO) << "ExtDecoderTest: EncodeSdrImageTest001 end";
+}
+
+/**
+ * @tc.name: DataStatisticsNullTest
+ * @tc.desc: test DataStatistics Null
+ * @tc.type: FUNC
+ */
+HWTEST_F(ExtDecoderTest, DataStatisticsNUllTest, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ExtDecoderTest: DataStatisticsNUllTest start";
+    ImageDataStatistics imageDataStatistics(nullptr);
+    ASSERT_EQ(imageDataStatistics.title_, "ImageDataTraceFmt Param invalid");
+    GTEST_LOG_(INFO) << "ExtDecoderTest: DataStatisticsNUllTest end";
 }
 }
 }

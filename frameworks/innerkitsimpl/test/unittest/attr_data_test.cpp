@@ -1444,5 +1444,36 @@ HWTEST_F(AttrDataTest, InRangeTest003, TestSize.Level3)
     ASSERT_EQ(ret, false);
     GTEST_LOG_(INFO) << "AttrDataTest: InRangeTest003 end";
 }
+
+/**
+ * @tc.name: InRangeTest004
+ * @tc.desc: test InRange
+ * @tc.type: FUNC
+ */
+HWTEST_F(AttrDataTest, InRangeTest004, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "AttrDataTest: InRangeTest004 start";
+    const std::set<std::string> stringSet;
+    AttrData attrData;
+    bool ret = attrData.InRange(stringSet);
+    ASSERT_EQ(ret, false);
+    GTEST_LOG_(INFO) << "AttrDataTest: InRangeTest004 end";
+}
+
+/**
+ * @tc.name: InRangeTest005
+ * @tc.desc: test InRange
+ * @tc.type: FUNC
+ */
+HWTEST_F(AttrDataTest, InRangeTest005, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "AttrDataTest: InRangeTest005 start";
+    const uint32_t array[2] = {0, 1};
+    AttrData attrData;
+    attrData.type_ = AttrDataType::ATTR_DATA_UINT32;
+    bool ret = attrData.InRange(array);
+    ASSERT_EQ(ret, false);
+    GTEST_LOG_(INFO) << "AttrDataTest: InRangeTest005 end";
+}
 }
 }

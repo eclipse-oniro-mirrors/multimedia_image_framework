@@ -121,6 +121,22 @@ HWTEST_F(ImageCreatorTest, SaveSenderBufferAsImage002, TestSize.Level3)
 }
 
 /**
+ * @tc.name: SaveSenderBufferAsImage003
+ * @tc.desc: test SaveSenderBufferAsImage
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageCreatorTest, SaveSenderBufferAsImage003, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImageCreatorTest: SaveSenderBufferAsImage003 start";
+    std::shared_ptr<ImageCreator> creator = ImageCreator::CreateImageCreator(1, 1, 1, 1);
+    OHOS::sptr<OHOS::SurfaceBuffer> buffer = SurfaceBuffer::Create();
+    InitializationOptions initializationOpts;
+    int32_t savesend = creator->SaveSenderBufferAsImage(buffer, initializationOpts);
+    ASSERT_EQ(savesend, ERR_MEDIA_INVALID_VALUE);
+    GTEST_LOG_(INFO) << "ImageCreatorTest: SaveSenderBufferAsImage003 end";
+}
+
+/**
  * @tc.name: getSurfaceById001
  * @tc.desc: test getSurfaceById
  * @tc.type: FUNC
