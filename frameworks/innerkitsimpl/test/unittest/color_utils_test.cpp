@@ -123,5 +123,37 @@ HWTEST_F(ColorUtilsTest, ColorSpaceGetCicpTest001, TestSize.Level3)
     ColorUtils::ColorSpaceGetCicp(ColorManager::ColorSpaceName::BT2020_PQ_LIMIT, primaries, transfer, matrix, range);
     GTEST_LOG_(INFO) << "ColorUtilsTest: ColorSpaceGetCicpTest001 end";
 }
+
+/**
+@tc.name: ConvertToCMColorTest001
+@tc.desc: test ConvertToCMColor
+@tc.type: FUNC
+*/
+HWTEST_F(ColorUtilsTest, ConvertToCMColorTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ColorUtilsTest: ConvertToCMColorTest001 start";
+    HDI::Display::Graphic::Common::V1_0::CM_ColorSpaceType ret;
+    ret = ColorUtils::ConvertToCMColor(ColorManager::ColorSpaceName::SRGB);
+    ASSERT_EQ(ret, HDI::Display::Graphic::Common::V1_0::CM_SRGB_FULL);
+    ret = ColorUtils::ConvertToCMColor(ColorManager::ColorSpaceName::SRGB_LIMIT);
+    ASSERT_EQ(ret, HDI::Display::Graphic::Common::V1_0::CM_SRGB_LIMIT);
+    ret = ColorUtils::ConvertToCMColor(ColorManager::ColorSpaceName::DISPLAY_P3);
+    ASSERT_EQ(ret, HDI::Display::Graphic::Common::V1_0::CM_P3_FULL);
+    ret = ColorUtils::ConvertToCMColor(ColorManager::ColorSpaceName::DISPLAY_P3_LIMIT);
+    ASSERT_EQ(ret, HDI::Display::Graphic::Common::V1_0::CM_P3_LIMIT);
+    ret = ColorUtils::ConvertToCMColor(ColorManager::ColorSpaceName::BT2020);
+    ASSERT_EQ(ret, HDI::Display::Graphic::Common::V1_0::CM_BT2020_HLG_FULL);
+    ret = ColorUtils::ConvertToCMColor(ColorManager::ColorSpaceName::BT2020_HLG);
+    ASSERT_EQ(ret, HDI::Display::Graphic::Common::V1_0::CM_BT2020_HLG_FULL);
+    ret = ColorUtils::ConvertToCMColor(ColorManager::ColorSpaceName::BT2020_HLG_LIMIT);
+    ASSERT_EQ(ret, HDI::Display::Graphic::Common::V1_0::CM_BT2020_HLG_LIMIT);
+    ret = ColorUtils::ConvertToCMColor(ColorManager::ColorSpaceName::BT2020_PQ);
+    ASSERT_EQ(ret, HDI::Display::Graphic::Common::V1_0::CM_BT2020_PQ_FULL);
+    ret = ColorUtils::ConvertToCMColor(ColorManager::ColorSpaceName::BT2020_PQ_LIMIT);
+    ASSERT_EQ(ret, HDI::Display::Graphic::Common::V1_0::CM_BT2020_PQ_LIMIT);
+    ret = ColorUtils::ConvertToCMColor(ColorManager::ColorSpaceName::P3_HLG);
+    ASSERT_EQ(ret, HDI::Display::Graphic::Common::V1_0::CM_COLORSPACE_NONE);
+    GTEST_LOG_(INFO) << "ColorUtilsTest: ConvertToCMColorTest001 end";
+}
 }
 }

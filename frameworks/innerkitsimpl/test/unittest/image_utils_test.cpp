@@ -240,6 +240,23 @@ HWTEST_F(ImageUtilsTest, PathToRealPath002, TestSize.Level3)
 }
 
 /**
+ * @tc.name: PathToRealPath003
+ * @tc.desc: PathToRealPath
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageUtilsTest, PathToRealPath003, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImageUtilsTest: PathToRealPath003 start";
+    std::string buffer = "head";
+    buffer.append(PATH_MAX, '1');
+    const string path = buffer;
+    string realPath;
+    bool res = ImageUtils::PathToRealPath(path, realPath);
+    ASSERT_EQ(res, false);
+    GTEST_LOG_(INFO) << "ImageUtilsTest: PathToRealPath003 end";
+}
+
+/**
  * @tc.name: IsValidImageInfo001
  * @tc.desc: IsValidImageInfo
  * @tc.type: FUNC
@@ -415,6 +432,22 @@ HWTEST_F(ImageUtilsTest, SaveDataToFile001, TestSize.Level3)
 }
 
 /**
+ * @tc.name: SaveDataToFile002
+ * @tc.desc: ImageUtils::SaveDataToFile
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageUtilsTest, SaveDataToFile002, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImageUtilsTest: SaveDataToFile002 start";
+    std::string fileName = IMAGE_INPUT_JPEG_PATH;
+    const char *data = "test data";
+    size_t totalSize = strlen(data);
+    uint32_t res = ImageUtils::SaveDataToFile(fileName, data, totalSize);
+    ASSERT_EQ(res, SUCCESS);
+    GTEST_LOG_(INFO) << "ImageUtilsTest: SaveDataToFile002 end";
+}
+
+/**
  * @tc.name: GetPixelMapName001
  * @tc.desc: ImageUtils::GetPixelMapName
  * @tc.type: FUNC
@@ -564,6 +597,41 @@ HWTEST_F(ImageUtilsTest, GetAstcBytesCount001, TestSize.Level3)
     // 0 is the bytescount for non-astc format with width and height of 16
     ASSERT_EQ(ret, 0);
     GTEST_LOG_(INFO) << "ImageUtilsTest: GetAstcBytesCount001 end";
+}
+
+/**
+ * @tc.name: GetInputStreamSizeTest001
+ * @tc.desc: GetInputStreamSize
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageUtilsTest, GetInputStreamSizeTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImageUtilsTest: GetInputStreamSizeTest001 start";
+    std::filebuf* buf = nullptr;
+    std::istream inputStream(buf);
+    size_t size = 0;
+    bool res = ImageUtils::GetInputStreamSize(inputStream, size);
+    ASSERT_EQ(res, false);
+    GTEST_LOG_(INFO) << "ImageUtilsTest: GetInputStreamSize001 end";
+}
+
+/**
+ * @tc.name: GetRowDataSizeByPixelFormatTest001
+ * @tc.desc: GetRowDataSizeByPixelFormat
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageUtilsTest, GetRowDataSizeByPixelFormatTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImageUtilsTest: GetRowDataSizeByPixelFormatTest001 start";
+    const int32_t width = 1;
+    int32_t ret = 0;
+    const PixelFormat format1 = PixelFormat::ASTC_6x6;
+    ret = ImageUtils::GetRowDataSizeByPixelFormat(width, format1);
+    ASSERT_EQ(ret, 6);
+    const PixelFormat format2 = PixelFormat::ASTC_8x8;
+    ret = ImageUtils::GetRowDataSizeByPixelFormat(width, format2);
+    ASSERT_EQ(ret, 8);
+    GTEST_LOG_(INFO) << "ImageUtilsTest: GetRowDataSizeByPixelFormatTest001 end";
 }
 }
 }
