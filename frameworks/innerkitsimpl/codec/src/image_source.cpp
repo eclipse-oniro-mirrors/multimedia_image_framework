@@ -19,6 +19,7 @@
 #endif
 
 #include <algorithm>
+#include <cerrno>
 #include <charconv>
 #include <chrono>
 #include <cstring>
@@ -2061,6 +2062,10 @@ uint32_t ImageSource::GetFormatExtended(string &format) __attribute__((no_saniti
         }
     }
     mainDecoder_ = std::move(decoderPtr);
+    if (mainDecoder_ == nullptr) {
+        IMAGE_LOGE("MainDecoder is null. errno:%{public}d", errno);
+        return ERR_MEDIA_NULL_POINTER;
+    }
     return errorCode;
 }
 
@@ -2462,6 +2467,7 @@ uint32_t ImageSource::AddIncrementalContext(PixelMap &pixelMap, IncrementalRecor
     if (mainDecoder_ != nullptr) {
         // borrowed decoder from the mainDecoder_.
         context.decoder = std::move(mainDecoder_);
+        IMAGE_LOGI("[ImageSource]mainDecoder move to context.");
     } else {
         context.decoder = std::unique_ptr<ImagePlugin::AbsImageDecoder>(CreateDecoder(ret));
     }
