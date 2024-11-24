@@ -223,18 +223,18 @@ static const std::map<std::pair<PixelFormat, PixelFormat>, YUVConvertFunction> g
 }();
 
 static const std::set<std::pair<PixelFormat, PixelFormat>> conversions = {
-    PixelFormat::NV12, PixelFormat::RGBA_1010102,
-    PixelFormat::NV21, PixelFormat::RGBA_1010102,
-    PixelFormat::RGB_565, PixelFormat::YCBCR_P010,
-    PixelFormat::RGBA_8888, PixelFormat::YCBCR_P010,
-    PixelFormat::BGRA_8888, PixelFormat::YCBCR_P010,
-    PixelFormat::RGB_888, PixelFormat::YCBCR_P010,
-    PixelFormat::RGBA_F16, PixelFormat::YCBCR_P010,
-    PixelFormat::RGB_565, PixelFormat::YCRCB_P010,
-    PixelFormat::RGBA_8888, PixelFormat::YCRCB_P010,
-    PixelFormat::BGRA_8888, PixelFormat::YCRCB_P010,
-    PixelFormat::RGB_888, PixelFormat::YCRCB_P010,
-    PixelFormat::RGBA_F16, PixelFormat::YCRCB_P010
+    {PixelFormat::NV12, PixelFormat::RGBA_1010102},
+    {PixelFormat::NV21, PixelFormat::RGBA_1010102},
+    {PixelFormat::RGB_565, PixelFormat::YCBCR_P010},
+    {PixelFormat::RGBA_8888, PixelFormat::YCBCR_P010},
+    {PixelFormat::BGRA_8888, PixelFormat::YCBCR_P010},
+    {PixelFormat::RGB_888, PixelFormat::YCBCR_P010},
+    {PixelFormat::RGBA_F16, PixelFormat::YCBCR_P010},
+    {PixelFormat::RGB_565, PixelFormat::YCRCB_P010,}
+    {PixelFormat::RGBA_8888, PixelFormat::YCRCB_P010},
+    {PixelFormat::BGRA_8888, PixelFormat::YCRCB_P010},
+    {PixelFormat::RGB_888, PixelFormat::YCRCB_P010},
+    {PixelFormat::RGBA_F16, PixelFormat::YCRCB_P010}
 };
 
 static void CalcRGBStride(PixelFormat format, uint32_t width, uint32_t &stride)
