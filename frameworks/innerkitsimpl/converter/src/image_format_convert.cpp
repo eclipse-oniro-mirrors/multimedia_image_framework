@@ -230,7 +230,7 @@ static const std::set<std::pair<PixelFormat, PixelFormat>> conversions = {
     {PixelFormat::BGRA_8888, PixelFormat::YCBCR_P010},
     {PixelFormat::RGB_888, PixelFormat::YCBCR_P010},
     {PixelFormat::RGBA_F16, PixelFormat::YCBCR_P010},
-    {PixelFormat::RGB_565, PixelFormat::YCRCB_P010,}
+    {PixelFormat::RGB_565, PixelFormat::YCRCB_P010},
     {PixelFormat::RGBA_8888, PixelFormat::YCRCB_P010},
     {PixelFormat::BGRA_8888, PixelFormat::YCRCB_P010},
     {PixelFormat::RGB_888, PixelFormat::YCRCB_P010},
