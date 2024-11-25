@@ -209,7 +209,7 @@ std::vector<uint8_t> HeifHvccBox::GetNaluData(const std::vector<HvccNalArray> &n
                                               int8_t naluId)
 {
     for (auto HvccNalunit : nalArrays) {
-        if (HvccNalunit.nalUnitType == naluId) {
+        if (HvccNalunit.nalUnitType == naluId && (!HvccNalunit.nalUnits.empty())) {
             return HvccNalunit.nalUnits[0];
         }
     }
