@@ -187,7 +187,7 @@ public:
     NATIVEEXPORT virtual void *GetFd() const;
     NATIVEEXPORT virtual void SetFreePixelMapProc(CustomFreePixelMap func);
     NATIVEEXPORT virtual void SetTransformered(bool isTransformered);
-    NATIVEEXPORT virtual uint32_t ConvertAlphaFormat(PixelMap &wPixelMap, const bool isPremul);
+    NATIVEEXPORT uint32_t ConvertAlphaFormat(PixelMap &wPixelMap, const bool isPremul);
     NATIVEEXPORT void SetPixelMapError(uint32_t code, const std::string &info)
     {
         errorCode = code;
@@ -296,41 +296,41 @@ public:
         return exifMetadata_;
     }
 
-    NATIVEEXPORT virtual void SetExifMetadata(std::shared_ptr<ExifMetadata> &ptr)
+    NATIVEEXPORT void SetExifMetadata(std::shared_ptr<ExifMetadata> &ptr)
     {
         exifMetadata_ = ptr;
     }
 
-    NATIVEEXPORT virtual uint32_t GetImagePropertyInt(const std::string &key, int32_t &value);
-    NATIVEEXPORT virtual uint32_t GetImagePropertyString(const std::string &key, std::string &value);
-    NATIVEEXPORT virtual uint32_t ModifyImageProperty(const std::string &key, const std::string &value);
-    NATIVEEXPORT virtual uint32_t SetMemoryName(const std::string &pixelMapName);
+    NATIVEEXPORT uint32_t GetImagePropertyInt(const std::string &key, int32_t &value);
+    NATIVEEXPORT uint32_t GetImagePropertyString(const std::string &key, std::string &value);
+    NATIVEEXPORT uint32_t ModifyImageProperty(const std::string &key, const std::string &value);
+    NATIVEEXPORT uint32_t SetMemoryName(const std::string &pixelMapName);
 
-    NATIVEEXPORT virtual bool IsHdr();
-    NATIVEEXPORT virtual uint32_t ToSdr();
+    NATIVEEXPORT bool IsHdr();
+    NATIVEEXPORT uint32_t ToSdr();
     // format support rgba8888, nv12, nv21. The default value is rgba8888
     // If toSRGB is false, pixelmap will be converted to display_p3
-    NATIVEEXPORT virtual uint32_t ToSdr(PixelFormat format, bool toSRGB);
+    NATIVEEXPORT uint32_t ToSdr(PixelFormat format, bool toSRGB);
     // use for hdr pixelmap, If isSRGB is false, the colorspace is p3 when converting to SDR.
-    NATIVEEXPORT virtual void SetToSdrColorSpaceIsSRGB(bool isSRGB);
-    NATIVEEXPORT virtual bool GetToSdrColorSpaceIsSRGB();
+    NATIVEEXPORT void SetToSdrColorSpaceIsSRGB(bool isSRGB);
+    NATIVEEXPORT bool GetToSdrColorSpaceIsSRGB();
 
-    NATIVEEXPORT virtual std::shared_ptr<HdrMetadata> GetHdrMetadata()
+    NATIVEEXPORT std::shared_ptr<HdrMetadata> GetHdrMetadata()
     {
         return hdrMetadata_;
     }
 
-    NATIVEEXPORT virtual void SetHdrMetadata(const std::shared_ptr<HdrMetadata> &metadata)
+    NATIVEEXPORT void SetHdrMetadata(const std::shared_ptr<HdrMetadata> &metadata)
     {
         hdrMetadata_ = metadata;
     }
 
-    NATIVEEXPORT virtual ImageHdrType GetHdrType()
+    NATIVEEXPORT ImageHdrType GetHdrType()
     {
         return hdrType_;
     }
 
-    NATIVEEXPORT virtual void SetHdrType(ImageHdrType hdrType)
+    NATIVEEXPORT void SetHdrType(ImageHdrType hdrType)
     {
         hdrType_ = hdrType;
     }

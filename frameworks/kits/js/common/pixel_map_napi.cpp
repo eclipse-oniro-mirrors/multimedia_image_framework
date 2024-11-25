@@ -725,12 +725,10 @@ extern "C" __attribute__((visibility("default"))) int32_t OHOS_MEDIA_AccessPixel
         IMAGE_LOGE("pixelMap is nullptr");
         return OHOS_IMAGE_RESULT_BAD_PARAMETER;
     }
-
     if (CheckAstc(pixelMap->GetPixelFormat())) {
         IMAGE_LOGE("ASTC is not supported");
         return OHOS_IMAGE_RESULT_BAD_PARAMETER;
     }
-
     const uint8_t *constPixels = pixelMap->GetPixels();
     if (constPixels == nullptr) {
         IMAGE_LOGE("const pixels is nullptr");

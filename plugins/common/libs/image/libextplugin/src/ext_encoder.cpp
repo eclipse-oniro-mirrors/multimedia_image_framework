@@ -329,9 +329,9 @@ static uint32_t pixelToSkInfo(ImageData &image, SkImageInfo &skInfo, Media::Pixe
     return SUCCESS;
 }
 
-bool IsAstcOrSut(const std::string &format)
+bool IsAstc(const std::string &format)
 {
-    return format.find("image/astc") == 0 || format.find("image/sut") == 0;
+    return format.find("image/astc") == 0;
 }
 
 static uint32_t CreateAndWriteBlob(MetadataWStream &tStream, PixelMap *pixelmap, SkWStream& outStream,
@@ -390,6 +390,12 @@ uint32_t ExtEncoder::PixelmapEncode(ExtWStream& wStream)
     return error;
 }
 
+bool IsSuperFastEncode(const std::string &format)
+{
+    return SUT_FORMAT_MAP.find(format) != SUT_FORMAT_MAP.end() ||
+        ASTC_FORMAT_MAP.find(format) != ASTC_FORMAT_MAP.end();
+}
+
 uint32_t ExtEncoder::FinalizeEncode()
 {
     if ((picture_ == nullptr && pixelmap_ == nullptr) || output_ == nullptr) {
@@ -398,7 +404,7 @@ uint32_t ExtEncoder::FinalizeEncode()
     ImageDataStatistics imageDataStatistics("[ExtEncoder]FinalizeEncode imageFormat = %s, quality = %d",
         opts_.format.c_str(), opts_.quality);
 #if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
-    if (IsAstcOrSut(opts_.format)) {
+    if (IsAstc(opts_.format) || IsSuperFastEncode(opts_.format)) {
         AstcCodec astcEncoder;
         astcEncoder.SetAstcEncode(output_, opts_, pixelmap_);
         return astcEncoder.ASTCEncode();

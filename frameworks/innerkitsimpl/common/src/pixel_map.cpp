@@ -1211,6 +1211,10 @@ const uint32_t *PixelMap::GetPixel32(int32_t x, int32_t y)
 
 const uint8_t *PixelMap::GetPixel(int32_t x, int32_t y)
 {
+    if (isAstc_) {
+        IMAGE_LOGE("GetPixel does not support astc");
+        return nullptr;
+    }
     if (!CheckValidParam(x, y)) {
         IMAGE_LOGE("input pixel position:(%{public}d, %{public}d) invalid.", x, y);
         return nullptr;
@@ -1468,6 +1472,10 @@ const uint8_t *PixelMap::GetPixels()
 
 bool PixelMap::IsHdr()
 {
+    if (isAstc_) {
+        IMAGE_LOGE("IsHdr does not support astc");
+        return false;
+    }
     if (imageInfo_.pixelFormat != PixelFormat::RGBA_1010102 && imageInfo_.pixelFormat != PixelFormat::YCRCB_P010 &&
         imageInfo_.pixelFormat != PixelFormat::YCBCR_P010) {
         return false;
@@ -1583,6 +1591,10 @@ static bool IsSupportConvertToARGB(PixelFormat pixelFormat)
 uint32_t PixelMap::ReadARGBPixels(const uint64_t &bufferSize, uint8_t *dst)
 {
     ImageTrace imageTrace("ReadARGBPixels by bufferSize");
+    if (isAstc_) {
+        IMAGE_LOGE("ReadARGBPixels does not support astc");
+        return ERR_IMAGE_INVALID_PARAMETER;
+    }
     if (dst == nullptr) {
         IMAGE_LOGE("Read ARGB pixels: input dst address is null.");
         return ERR_IMAGE_INVALID_PARAMETER;
@@ -3357,7 +3369,10 @@ uint32_t PixelMap::ConvertAlphaFormat(PixelMap &wPixelMap, const bool isPremul)
     if (res != SUCCESS) {
         return res;
     }
-
+    if (isAstc_) {
+        IMAGE_LOGE("ConvertAlphaFormat does not support astc");
+        return ERR_IMAGE_INVALID_PARAMETER;
+    }
     ImageInfo dstImageInfo;
     wPixelMap.GetImageInfo(dstImageInfo);
     void* dstData = wPixelMap.GetWritablePixels();
@@ -3670,6 +3685,10 @@ void PixelMap::scale(float xAxis, float yAxis)
 
 void PixelMap::scale(float xAxis, float yAxis, const AntiAliasingOption &option)
 {
+    if (isAstc_) {
+        IMAGE_LOGE("GetPixel does not support astc");
+        return;
+    }
     ImageTrace imageTrace("PixelMap scale with option");
     if (option == AntiAliasingOption::SLR) {
 #if !defined(_WIN32) && !defined(_APPLE) && !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
@@ -4034,6 +4053,10 @@ uint32_t PixelMap::ToSdr()
 
 uint32_t PixelMap::ToSdr(PixelFormat format, bool toSRGB)
 {
+    if (isAstc_) {
+        IMAGE_LOGE("ToSdr does not support astc");
+        return ERR_MEDIA_INVALID_OPERATION;
+    }
 #if defined(_WIN32) || defined(_APPLE) || defined(IOS_PLATFORM) || defined(ANDROID_PLATFORM)
     IMAGE_LOGI("tosdr is not supported");
     return ERR_MEDIA_INVALID_OPERATION;
@@ -4106,6 +4129,10 @@ static bool isSameColorSpace(const OHOS::ColorManager::ColorSpace &src,
 
 uint32_t PixelMap::ApplyColorSpace(const OHOS::ColorManager::ColorSpace &grColorSpace)
 {
+    if (isAstc_) {
+        IMAGE_LOGE("ApplyColorSpace does not support astc");
+        return ERR_IMAGE_COLOR_CONVERT;
+    }
     auto grName = grColorSpace.GetColorSpaceName();
     if (grColorSpace_ != nullptr && isSameColorSpace(*grColorSpace_, grColorSpace)) {
         if (grColorSpace_->GetColorSpaceName() != grName) {

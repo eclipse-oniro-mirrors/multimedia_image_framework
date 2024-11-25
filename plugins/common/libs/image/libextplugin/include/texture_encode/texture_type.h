@@ -52,7 +52,6 @@ struct TextureEncodeOptions {
     uint8_t expandNums;
     uint8_t *extInfoBuf;
     int32_t extInfoBytes;
-    std::string encodeFormat;
 };
 
 struct AstcEncoder {
@@ -79,6 +78,19 @@ struct AstcExtendInfo {
 
 enum class AstcExtendInfoType : uint8_t {
     COLOR_SPACE = 0
+};
+
+using SutQulityProfile = std::tuple<uint8_t, SutProfile, QualityProfile>;
+using AstcQulityProfile = std::tuple<uint8_t, QualityProfile>;
+
+static const std::map<std::string, SutQulityProfile> SUT_FORMAT_MAP = {
+    {"image/sdr_astc_4x4",
+        {92, SutProfile::HIGH_CR_LEVEL1, QualityProfile::CUSTOMIZED_PROFILE}},
+};
+
+static const std::map<std::string, AstcQulityProfile> ASTC_FORMAT_MAP = {
+    {"image/sdr_sut_superfast_4x4",
+        {92, QualityProfile::CUSTOMIZED_PROFILE}},
 };
 } // namespace ImagePlugin
 } // namespace OHOS
