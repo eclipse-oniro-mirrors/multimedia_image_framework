@@ -326,6 +326,16 @@ bool PixelMapWritePixelsTest(std::unique_ptr<Media::PixelMap> &pixelMap)
     return true;
 }
 
+static Rect GetRandomRect(int32_t width = 0, int32_t height = 0)
+{
+    Rect rect;
+    rect.left = width == 0 ? GetData<uint32_t>() : (1 + (GetData<uint32_t>() % (width >> 2))); // 2: adjusting size
+    rect.top = height == 0? GetData<uint32_t>() : (1 + (GetData<uint32_t>() % (height >> 2))); // 2: adjusting size
+    rect.width = width == 0 ? GetData<uint32_t>() : GetData<uint32_t>() % width;
+    rect.height = height == 0? GetData<uint32_t>() : GetData<uint32_t>() % height;
+    return rect;
+}
+
 /*
  * test pixelmap transform
  */
@@ -343,11 +353,9 @@ bool PixelMapTransformTest(std::unique_ptr<Media::PixelMap> &pixelMap)
     bool flipX = GetData<bool>();
     bool flipY = GetData<bool>();
     pixelMap->flip(flipX, flipY);
-    Media::Rect rect;
-    rect.left = GetData<int32_t>();
-    rect.top = GetData<int32_t>();
-    rect.width = GetData<int32_t>();
-    rect.height = GetData<int32_t>();
+    Media::ImageInfo imageInfo;
+    pixelmap->GetImageInfo(imageInfo);
+    Media::Rect rect = GetRandomRect(imageInfo.size.width, imageInfo.size.height);
     pixelMap->crop(rect);
     pixelMap->ToSdr();
     Media::PixelFormat pixelFormat = static_cast<Media::PixelFormat>(GetData<int32_t>());
