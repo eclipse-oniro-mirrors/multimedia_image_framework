@@ -222,6 +222,21 @@ static const std::map<std::pair<PixelFormat, PixelFormat>, YUVConvertFunction> g
     return yuvCvtFuncMap;
 }();
 
+static const std::set<std::pair<PixelFormat, PixelFormat>> conversions = {
+    {PixelFormat::NV12, PixelFormat::RGBA_1010102},
+    {PixelFormat::NV21, PixelFormat::RGBA_1010102},
+    {PixelFormat::RGB_565, PixelFormat::YCBCR_P010},
+    {PixelFormat::RGBA_8888, PixelFormat::YCBCR_P010},
+    {PixelFormat::BGRA_8888, PixelFormat::YCBCR_P010},
+    {PixelFormat::RGB_888, PixelFormat::YCBCR_P010},
+    {PixelFormat::RGBA_F16, PixelFormat::YCBCR_P010},
+    {PixelFormat::RGB_565, PixelFormat::YCRCB_P010},
+    {PixelFormat::RGBA_8888, PixelFormat::YCRCB_P010},
+    {PixelFormat::BGRA_8888, PixelFormat::YCRCB_P010},
+    {PixelFormat::RGB_888, PixelFormat::YCRCB_P010},
+    {PixelFormat::RGBA_F16, PixelFormat::YCRCB_P010}
+};
+
 static void CalcRGBStride(PixelFormat format, uint32_t width, uint32_t &stride)
 {
     switch (format) {
@@ -696,6 +711,25 @@ uint32_t ImageFormatConvert::YUVConvertImageFormatOption(std::shared_ptr<PixelMa
     return ret;
 }
 
+bool NeedProtectionConversion(const PixelFormat inputFormat, const PixelFormat outputFormat)
+{
+    if (conversions.find({inputFormat, outputFormat}) != conversions.end()) {
+        return true;
+    }
+    return false;
+}
+
+ImageInfo SetImageInfo(ImageInfo &srcImageinfo, DestConvertInfo &destInfo)
+{
+    ImageInfo info;
+    info.alphaType = srcImageinfo.alphaType;
+    info.baseDensity = srcImageinfo.baseDensity;
+    info.colorSpace = srcImageinfo.colorSpace;
+    info.pixelFormat = destInfo.format;
+    info.size = {destInfo.width, destInfo.height};
+    return info;
+}
+
 uint32_t ImageFormatConvert::MakeDestPixelMap(std::shared_ptr<PixelMap> &destPixelMap, ImageInfo &srcImageinfo,
                                               DestConvertInfo &destInfo, void *context)
 {
@@ -703,12 +737,7 @@ uint32_t ImageFormatConvert::MakeDestPixelMap(std::shared_ptr<PixelMap> &destPix
         || destInfo.height == 0 || destInfo.format == PixelFormat::UNKNOWN) {
         return ERR_IMAGE_INVALID_PARAMETER;
     }
-    ImageInfo info;
-    info.alphaType = srcImageinfo.alphaType;
-    info.baseDensity = srcImageinfo.baseDensity;
-    info.colorSpace = srcImageinfo.colorSpace;
-    info.pixelFormat = destInfo.format;
-    info.size = {destInfo.width, destInfo.height};
+    ImageInfo info = SetImageInfo(srcImageinfo, destInfo);
     auto allcatorType = destInfo.allocType;
     std::unique_ptr<PixelMap> pixelMap;
     if (info.pixelFormat == PixelFormat::NV21 || info.pixelFormat == PixelFormat::NV12 ||
@@ -741,7 +770,11 @@ uint32_t ImageFormatConvert::MakeDestPixelMap(std::shared_ptr<PixelMap> &destPix
         return ret;
     }
 #ifdef IMAGE_COLORSPACE_FLAG
-    pixelMap->InnerSetColorSpace(destPixelMap->InnerGetGrColorSpace());
+    if (NeedProtectionConversion(srcImageinfo.pixelFormat, info.pixelFormat)) {
+        pixelMap->InnerSetColorSpace(OHOS::ColorManager::ColorSpace(ColorManager::ColorSpaceName::BT2020_HLG));
+    } else {
+        pixelMap->InnerSetColorSpace(destPixelMap->InnerGetGrColorSpace());
+    }
 #endif
     destPixelMap = std::move(pixelMap);
     return SUCCESS;
@@ -754,12 +787,7 @@ uint32_t ImageFormatConvert::MakeDestPixelMapUnique(std::unique_ptr<PixelMap> &d
         destInfo.height == 0 || destInfo.format == PixelFormat::UNKNOWN) {
             return ERR_IMAGE_INVALID_PARAMETER;
     }
-    ImageInfo info;
-    info.alphaType = srcImageinfo.alphaType;
-    info.baseDensity = srcImageinfo.baseDensity;
-    info.colorSpace = srcImageinfo.colorSpace;
-    info.pixelFormat = destInfo.format;
-    info.size = {destInfo.width, destInfo.height};
+    ImageInfo info = SetImageInfo(srcImageinfo, destInfo);
     auto allcatorType = destInfo.allocType;
     std::unique_ptr<PixelMap> pixelMap;
     if (info.pixelFormat == PixelFormat::NV21 || info.pixelFormat == PixelFormat::NV12 ||
@@ -792,7 +820,11 @@ uint32_t ImageFormatConvert::MakeDestPixelMapUnique(std::unique_ptr<PixelMap> &d
         return ret;
     }
 #ifdef IMAGE_COLORSPACE_FLAG
-    pixelMap->InnerSetColorSpace(destPixelMap->InnerGetGrColorSpace());
+    if (NeedProtectionConversion(srcImageinfo.pixelFormat, info.pixelFormat)) {
+        pixelMap->InnerSetColorSpace(OHOS::ColorManager::ColorSpace(ColorManager::ColorSpaceName::BT2020_HLG));
+    } else {
+        pixelMap->InnerSetColorSpace(destPixelMap->InnerGetGrColorSpace());
+    }
 #endif
     destPixelMap = std::move(pixelMap);
     return SUCCESS;
