@@ -1472,10 +1472,6 @@ const uint8_t *PixelMap::GetPixels()
 
 bool PixelMap::IsHdr()
 {
-    if (isAstc_) {
-        IMAGE_LOGE("IsHdr does not support astc");
-        return false;
-    }
     if (imageInfo_.pixelFormat != PixelFormat::RGBA_1010102 && imageInfo_.pixelFormat != PixelFormat::YCRCB_P010 &&
         imageInfo_.pixelFormat != PixelFormat::YCBCR_P010) {
         return false;

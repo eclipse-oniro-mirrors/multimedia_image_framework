@@ -389,13 +389,13 @@ uint32_t ExtEncoder::PixelmapEncode(ExtWStream& wStream)
     RecycleResources();
     return error;
 }
-
+#if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
 bool IsSuperFastEncode(const std::string &format)
 {
     return SUT_FORMAT_MAP.find(format) != SUT_FORMAT_MAP.end() ||
         ASTC_FORMAT_MAP.find(format) != ASTC_FORMAT_MAP.end();
 }
-
+#endif
 uint32_t ExtEncoder::FinalizeEncode()
 {
     if ((picture_ == nullptr && pixelmap_ == nullptr) || output_ == nullptr) {

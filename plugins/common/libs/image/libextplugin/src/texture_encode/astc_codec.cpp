@@ -445,16 +445,8 @@ bool CheckPrivateProfile(QualityProfile privateProfile)
         ASTC_PRIFLE_QULITY.find(privateProfile) != ASTC_PRIFLE_QULITY.end();
 }
 
-bool AstcCodec::TryTextureSuperCompress(TextureEncodeOptions &param, uint8_t *astcBuffer)
+static bool SutEncode(TextureEncodeOptions &param, uint8_t *astcBuffer)
 {
-    bool skipSutEnc = (param.sutProfile == SutProfile::SKIP_SUT) ||
-        ((!param.hardwareFlag) && !CheckPrivateProfile(param.privateProfile_)) ||
-        (param.blockX_ != DEFAULT_DIM && param.blockY_ != DEFAULT_DIM);
-    if (skipSutEnc) {
-        IMAGE_LOGD("astc is not suit to be compressed to sut!");
-        param.sutProfile = SutProfile::SKIP_SUT;
-        return true;
-    }
     if (g_sutEncSoManager.sutEncSoEncFunc_ == nullptr) {
         IMAGE_LOGD("astcenc sut enc sutEncSoEncFunc_ is nullptr!");
         param.sutProfile = SutProfile::SKIP_SUT;
@@ -493,6 +485,33 @@ bool AstcCodec::TryTextureSuperCompress(TextureEncodeOptions &param, uint8_t *as
     param.astcBytes = sutInfo.sutBytes;
     param.sutBytes = param.astcBytes;
     return true;
+}
+
+bool AstcCodec::TryTextureSuperCompress(TextureEncodeOptions &param, uint8_t *astcBuffer)
+{
+    bool skipSutEnc = (param.sutProfile == SutProfile::SKIP_SUT) ||
+        ((!param.hardwareFlag) && !CheckPrivateProfile(param.privateProfile_)) ||
+        (param.blockX_ != DEFAULT_DIM && param.blockY_ != DEFAULT_DIM);
+    switch (param.textureEncodeType) {
+        case TextureEncodeType::SDR_ASTC_4X4:
+            param.sutProfile = SutProfile::SKIP_SUT;
+            IMAGE_LOGD("sdr_astc_4x4 is not suit to be compressed to sut!");
+            return true;
+        case TextureEncodeType::ASTC:
+            if (skipSutEnc) {
+                IMAGE_LOGD("astc is not suit to be compressed to sut!");
+                param.sutProfile = SutProfile::SKIP_SUT;
+                return true;
+            }
+            break;
+        case TextureEncodeType::SDR_SUT_SUPERFAST_4X4:
+            break;
+        default:
+            IMAGE_LOGE("TextureEncodeType is failed");
+            return false;
+    }
+
+    return SutEncode(param, astcBuffer);
 }
 #endif
 
@@ -533,20 +552,26 @@ static bool InitAstcEncPara(TextureEncodeOptions &param,
 {
     SutProfile sutProfile;
     QualityProfile qualityProfile;
-    if (SUT_FORMAT_MAP.find(astcOpts.format) != SUT_FORMAT_MAP.end()) {
+    if (astcOpts.format == "image/sdr_sut_superfast_4x4") { // sut sdr encode
         if (!GetSutSdrProfile(astcOpts, sutProfile, qualityProfile)) {
             IMAGE_LOGE("InitAstcEncPara GetSutSdrProfile failed");
             return false;
         }
-    } else if (ASTC_FORMAT_MAP.find(astcOpts.format) != ASTC_FORMAT_MAP.end()) {
+        param.textureEncodeType = TextureEncodeType::SDR_SUT_SUPERFAST_4X4;
+    } else if (astcOpts.format == "image/sdr_astc_4x4") { // astc sdr encode
         if (!GetAstcSdrProfile(astcOpts, qualityProfile)) {
             IMAGE_LOGE("InitAstcEncPara GetAstcSdrProfile failed");
             return false;
         }
         sutProfile = SutProfile::SKIP_SUT;
-    } else {
+        param.textureEncodeType = TextureEncodeType::SDR_ASTC_4X4;
+    } else if (astcOpts.format.find("image/astc") == 0) { // old astc encode
         qualityProfile = GetAstcQuality(astcOpts.quality);
         sutProfile = SutProfile::SKIP_SUT;
+        param.textureEncodeType = TextureEncodeType::ASTC;
+    } else {
+        IMAGE_LOGE("InitAstcEncPara format invalidation:%{public}s", astcOpts.format.c_str());
+        return false;
     }
     param.enableQualityCheck = false;
     param.hardwareFlag = false;

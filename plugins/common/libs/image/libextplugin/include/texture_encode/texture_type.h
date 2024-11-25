@@ -35,6 +35,12 @@ constexpr uint8_t ASTC_EXTEND_INFO_TYPE_LENGTH = 1; // 1 byte to discripte the c
 constexpr uint32_t ASTC_EXTEND_INFO_LENGTH_LENGTH = 4; // 4 bytes to discripte the content bytes for every TLV group
 constexpr uint8_t ASTC_EXTEND_INFO_COLOR_SPACE_VALUE_LENGTH = 1; // 1 bytes to discripte the content for color space
 
+enum class TextureEncodeType {
+    ASTC = 0,
+    SDR_SUT_SUPERFAST_4X4 = 1,
+    SDR_ASTC_4X4 = 2,
+};
+
 struct TextureEncodeOptions {
     int32_t width_;
     int32_t height_;
@@ -52,6 +58,7 @@ struct TextureEncodeOptions {
     uint8_t expandNums;
     uint8_t *extInfoBuf;
     int32_t extInfoBytes;
+    TextureEncodeType textureEncodeType;
 };
 
 struct AstcEncoder {
@@ -84,12 +91,12 @@ using SutQulityProfile = std::tuple<uint8_t, SutProfile, QualityProfile>;
 using AstcQulityProfile = std::tuple<uint8_t, QualityProfile>;
 
 static const std::map<std::string, SutQulityProfile> SUT_FORMAT_MAP = {
-    {"image/sdr_astc_4x4",
+    {"image/sdr_sut_superfast_4x4",
         {92, SutProfile::HIGH_CR_LEVEL1, QualityProfile::CUSTOMIZED_PROFILE}},
 };
 
 static const std::map<std::string, AstcQulityProfile> ASTC_FORMAT_MAP = {
-    {"image/sdr_sut_superfast_4x4",
+    {"image/sdr_astc_4x4",
         {92, QualityProfile::CUSTOMIZED_PROFILE}},
 };
 } // namespace ImagePlugin
