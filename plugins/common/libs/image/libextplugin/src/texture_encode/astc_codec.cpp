@@ -194,11 +194,9 @@ uint32_t InitAstcencConfig(AstcEncoder* work, TextureEncodeOptions* option)
     unsigned int blockZ = 1;
 
     float quality = ASTCENC_PRE_FAST;
-    if (option->encodeFormat.find("image/sut")) {
-        auto node = ASTC_PRIFLE_QULITY.find(option->privateProfile_);
-        if (node != ASTC_PRIFLE_QULITY.end()) {
-            quality = node->second;
-        }
+    auto node = ASTC_PRIFLE_QULITY.find(option->privateProfile_);
+    if (node != ASTC_PRIFLE_QULITY.end()) {
+        quality = node->second;
     }
     unsigned int flags = ASTCENC_FLG_SELF_DECOMPRESS_ONLY;
     astcenc_error status = astcenc_config_init(work->profile, blockX, blockY,
@@ -398,9 +396,14 @@ static bool GetAstcProfile(AstcQuality astcQuality, QualityProfile &privateProfi
         case AstcQuality::ASTC_HIGH_SPEED_PROFILE:
             privateProfile = HIGH_SPEED_PROFILE;
             break;
-        default:
+        case AstcQuality::ASTC_BALANCE_PROFILE:
+            privateProfile = CUSTOMIZED_PROFILE;
+            break;
+        case AstcQuality::ASTC_HIGH_QUALITY_PROFILE:
             privateProfile = HIGH_QUALITY_PROFILE;
             break;
+        default:
+            return false;
     }
     return true;
 }
@@ -571,7 +574,6 @@ static bool InitAstcEncPara(TextureEncodeOptions &param,
     param.stride_ = stride;
     param.privateProfile_ = qualityProfile;
     param.outIsSut = false;
-    param.encodeFormat = astcOpts.format;
     extractDimensions(astcOpts.format, param);
     if ((param.blockX_ < DEFAULT_DIM) || (param.blockY_ < DEFAULT_DIM)) { // DEFAULT_DIM = 4
         IMAGE_LOGE("InitAstcEncPara failed %{public}dx%{public}d is invalid!", param.blockX_, param.blockY_);
