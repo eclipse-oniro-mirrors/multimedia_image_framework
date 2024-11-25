@@ -362,6 +362,7 @@ private:
     void SetDmaContextYuvInfo(ImagePlugin::DecodeContext& context);
     uint8_t* ReadSourceBuffer(uint32_t bufferSize, uint32_t &errorCode);
     #if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
+    void SetHdrMetadataForPicture(std::unique_ptr<Picture> &picture);
     void DecodeHeifAuxiliaryPictures(const std::set<AuxiliaryPictureType> &auxTypes, std::unique_ptr<Picture> &picture,
                                      uint32_t &errorCode);
     void DecodeJpegAuxiliaryPicture(std::set<AuxiliaryPictureType> &auxTypes, std::unique_ptr<Picture> &picture,
