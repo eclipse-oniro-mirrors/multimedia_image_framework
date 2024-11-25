@@ -4465,30 +4465,48 @@ static std::vector<SingleJpegImage> ParsingJpegAuxiliaryPictures(uint8_t *stream
     return jpegMpfParser->images_;
 }
 
+bool ImageSource::CheckJpegSourceStream(uint8_t *&streamBuffer, uint32_t &streamSize)
+{
+    streamBuffer = sourceStreamPtr_->GetDataPtr();
+    streamSize = sourceStreamPtr_->GetStreamSize();
+    if (streamBuffer == nullptr || streamSize == 0) {
+        IMAGE_LOGE("%{public}s source stream from sourceStreamPtr_ is invalid!", __func__);
+        return false;
+    }
+    if (sourceHdrType_ > ImageHdrType::SDR) {
+        uint32_t gainmapOffset = mainDecoder_->GetGainMapOffset();
+        if (gainmapOffset >= streamSize) {
+            IMAGE_LOGW("%{public}s skip invalid gainmapOffset: %{public}u, streamSize: %{public}u",
+                __func__, gainmapOffset, streamSize);
+            return false;
+        }
+        streamBuffer += gainmapOffset;
+        streamSize -= gainmapOffset;
+    }
+    return true;
+}
+
 void ImageSource::DecodeJpegAuxiliaryPicture(
     std::set<AuxiliaryPictureType> &auxTypes, std::unique_ptr<Picture> &picture, uint32_t &errorCode)
 {
-    uint8_t *streamBuffer = sourceStreamPtr_->GetDataPtr();
-    uint32_t streamSize = sourceStreamPtr_->GetStreamSize();
-    if (streamBuffer == nullptr || streamSize == 0) {
+    uint8_t *streamBuffer = nullptr;
+    uint32_t streamSize = 0;
+    if (!CheckJpegSourceStream(streamBuffer, streamSize) || streamBuffer == nullptr || streamSize == 0) {
         IMAGE_LOGE("Jpeg source stream is invalid!");
         errorCode = ERR_IMAGE_DATA_ABNORMAL;
         return;
     }
-    uint32_t gainMapOffset = mainDecoder_->GetGainMapOffset();
-    if (gainMapOffset >= streamSize) {
-        IMAGE_LOGE("GainMapOffset is invalid!");
-        errorCode = ERR_IMAGE_DATA_ABNORMAL;
-        return;
-    }
-    streamBuffer += gainMapOffset;
-    streamSize -= gainMapOffset;
     auto auxInfos = ParsingJpegAuxiliaryPictures(streamBuffer, streamSize, auxTypes, sourceHdrType_);
     MainPictureInfo mainInfo;
     mainInfo.hdrType = sourceHdrType_;
     picture->GetMainPixel()->GetImageInfo(mainInfo.imageInfo);
     for (auto &auxInfo : auxInfos) {
         if (auxTypes.find(auxInfo.auxType) == auxTypes.end()) {
+            continue;
+        }
+        if (ImageUtils::HasOverflowed(auxInfo.offset, auxInfo.size) || auxInfo.offset + auxInfo.size > streamSize) {
+            IMAGE_LOGW("Invalid auxType: %{public}d, offset: %{public}u, size: %{public}u, streamSize: %{public}u",
+                auxInfo.auxType, auxInfo.offset, auxInfo.size, streamSize);
             continue;
         }
         IMAGE_LOGI("Jpeg auxiliary picture has found. Type: %{public}d", auxInfo.auxType);

@@ -867,5 +867,10 @@ bool ImageUtils::IsInRange(uint32_t value, uint32_t minValue, uint32_t maxValue)
 {
     return (value >= minValue) && (value <= maxValue);
 }
+
+bool ImageUtils::HasOverflowed(uint32_t num1, uint32_t num2)
+{
+    return num1 > std::numeric_limits<uint32_t>::max() - num2;
+}
 } // namespace Media
 } // namespace OHOS
