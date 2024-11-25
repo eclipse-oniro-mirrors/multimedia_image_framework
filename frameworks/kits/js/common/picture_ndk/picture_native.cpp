@@ -224,6 +224,7 @@ Image_ErrorCode OH_AuxiliaryPictureNative_Create(uint8_t *data, size_t dataLengt
     initializationOptions.size.width = size->width;
     initializationOptions.size.height = size->height;
     initializationOptions.editable = true;
+    initializationOptions.useDMA = true;
     auto dataTmp = reinterpret_cast<uint32_t*>(data);
     auto dataLengthTmp = static_cast<uint32_t>(dataLength);
 
