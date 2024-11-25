@@ -62,10 +62,11 @@ private:
     uint32_t processFrame(int index);
     uint32_t colorQuantize(int index, uint16_t width, uint16_t height,
                            uint8_t *outputBuffer, ColorType *outputColorMap);
-    uint32_t separateRGB(int index, uint16_t width, uint16_t height,
-                         uint8_t *redBuffer, uint8_t *greenBuffer, uint8_t *blueBuffer);
+    uint32_t separateRGBA(int index, uint16_t width, uint16_t height,
+                          uint8_t *redBuffer, uint8_t *greenBuffer, uint8_t *blueBuffer, uint8_t *alphaBuffer);
     uint32_t doColorQuantize(uint16_t width, uint16_t height,
-                             const uint8_t *redInput, const uint8_t *greenInput, const uint8_t *blueInput,
+                             const uint8_t *redInput, const uint8_t *greenInput,
+                             const uint8_t *blueInput, const uint8_t *alphaInput,
                              uint8_t *outputBuffer, ColorType *outputColorMap);
     uint32_t BuildColorSubdivMap(ColorSubdivMap *colorSubdivMap, uint32_t *colorSubdivMapSize);
     int SortCmpRtn(const void *Entry1, const void *Entry2);
