@@ -4175,5 +4175,45 @@ void PixelMap::SetVersionId(uint32_t versionId)
     versionId_ = versionId;
 }
 
+bool PixelMap::CloseFd()
+{
+    if (allocatorType_ != AllocatorType::SHARE_MEM_ALLOC && allocatorType_ != AllocatorType::DMA_ALLOC) {
+        IMAGE_LOGI("[Pixelmap] CloseFd allocatorType is not share_mem or dma");
+        return false;
+    }
+    if (allocatorType_ == AllocatorType::SHARE_MEM_ALLOC) {
+        int *fd = static_cast<int*>(context_);
+        if (fd == nullptr) {
+            IMAGE_LOGE("[Pixelmap] CloseFd fd is nullptr.");
+            return false;
+        }
+        if (*fd <= 0) {
+            IMAGE_LOGE("[Pixelmap] CloseFd invilid fd is [%{public}d]", *fd);
+            return false;
+        }
+        ::close(*fd);
+        delete fd;
+        context_ = nullptr;
+    } else {
+        if (isAstc_) {
+            IMAGE_LOGE("[Pixelmap] CloseFd fd is not support astc when allocatorType is dma");
+            return false;
+        }
+        SurfaceBuffer* sbBuffer = static_cast<SurfaceBuffer*>(context_);
+        if (sbBuffer == nullptr) {
+            IMAGE_LOGE("[Pixelmap] CloseFd sbBuffer is nullptr.");
+            return false;
+        }
+        BufferHandle* handle = sbBuffer->GetBufferHandle();
+        if (handle == nullptr) {
+            IMAGE_LOGE("[Pixelmap] CloseFd GetBufferHandle is nullptr.");
+            return false;
+        }
+        int32_t fd = handle->fd;
+        ::close(fd);
+        handle->fd = -1;
+    }
+    return true;
+}
 } // namespace Media
 } // namespace OHOS
