@@ -457,6 +457,10 @@ uint32_t JpegDecoder::DoSwDecode(DecodeContext &context) __attribute__((no_sanit
         IMAGE_LOGE("decode image buffer is null.");
         return ERR_IMAGE_INVALID_PARAMETER;
     }
+    if (decodeInfo_.src == nullptr) {
+        IMAGE_LOGE("decodeInfo_.src is null.");
+        return ERR_IMAGE_INVALID_PARAMETER;
+    }
 
     if (srcMgr_.inputStream->Seek(streamPosition_ - decodeInfo_.src->bytes_in_buffer)) {
         auto dataPtr = srcMgr_.inputStream->GetDataPtr();
