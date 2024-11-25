@@ -487,6 +487,9 @@ bool Picture::Marshalling(Parcel &data) const
     }
 
     size_t numAuxiliaryPictures = auxiliaryPictures_.size();
+    if (numAuxiliaryPictures > MAX_AUXILIARY_PICTURE_COUNT) {
+        return false;
+    }
     if (!data.WriteUint64(numAuxiliaryPictures)) {
         IMAGE_LOGE("Failed to write number of auxiliary pictures.");
         return false;

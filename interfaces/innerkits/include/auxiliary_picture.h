@@ -58,6 +58,7 @@ protected:
     std::shared_ptr<PixelMap> content_;
     AuxiliaryPictureInfo auxiliaryPictureInfo_;
     std::map<MetadataType, std::shared_ptr<ImageMetadata>> metadatas_;
+    bool WriteAuxPictureInfoToParcel(Parcel &data) const;
 };
 }
 }
