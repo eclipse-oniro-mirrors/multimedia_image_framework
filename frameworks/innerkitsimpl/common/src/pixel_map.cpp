@@ -4177,6 +4177,7 @@ void PixelMap::SetVersionId(uint32_t versionId)
 
 bool PixelMap::CloseFd()
 {
+#if !defined(_WIN32) && !defined(_APPLE) && !defined(IOS_PLATFORM) &&!defined(ANDROID_PLATFORM)
     if (allocatorType_ != AllocatorType::SHARE_MEM_ALLOC && allocatorType_ != AllocatorType::DMA_ALLOC) {
         IMAGE_LOGI("[Pixelmap] CloseFd allocatorType is not share_mem or dma");
         return false;
@@ -4194,26 +4195,12 @@ bool PixelMap::CloseFd()
         ::close(*fd);
         delete fd;
         context_ = nullptr;
-    } else {
-        if (isAstc_) {
-            IMAGE_LOGE("[Pixelmap] CloseFd fd is not support astc when allocatorType is dma");
-            return false;
-        }
-        SurfaceBuffer* sbBuffer = static_cast<SurfaceBuffer*>(context_);
-        if (sbBuffer == nullptr) {
-            IMAGE_LOGE("[Pixelmap] CloseFd sbBuffer is nullptr.");
-            return false;
-        }
-        BufferHandle* handle = sbBuffer->GetBufferHandle();
-        if (handle == nullptr) {
-            IMAGE_LOGE("[Pixelmap] CloseFd GetBufferHandle is nullptr.");
-            return false;
-        }
-        int32_t fd = handle->fd;
-        ::close(fd);
-        handle->fd = -1;
     }
     return true;
+#else
+    IMAGE_LOGE("[Pixelmap] CloseFd is not supported on crossplatform");
+    return false;
+#endif
 }
 } // namespace Media
 } // namespace OHOS
