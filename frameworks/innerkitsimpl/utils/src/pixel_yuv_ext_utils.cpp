@@ -380,8 +380,6 @@ static void ScaleP010(YuvPixels yuvPixels, OpenSourceLibyuv::ImageYuvConverter &
     uint16_t *dstBuffer = reinterpret_cast<uint16_t *>(yuvPixels.dstPixels);
     int32_t dst_width = yuvInfo.width * yuvPixels.xAxis + ROUND_FLOAT_NUMBER;
     int32_t dst_height = yuvInfo.height * yuvPixels.yAxis + ROUND_FLOAT_NUMBER;
-    dst_width = (dst_width + 1) / NUM_2 * NUM_2;
-    dst_height = (dst_height + 1) / NUM_2 * NUM_2;
     std::unique_ptr<uint16_t[]> dstPixels = std::make_unique<uint16_t[]>(GetImageSize(srcWidth, srcHeight));
     if (dstPixels == nullptr) {
         IMAGE_LOGE("ScaleP010 dstPixels make unique ptr failed");
