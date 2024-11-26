@@ -125,5 +125,72 @@ HWTEST_F(DataBufTest, DataBufTest_GetULong001, TestSize.Level3)
     result = GetULong(buf, bigEndian);
     ASSERT_EQ(result, 0x01020304);
 }
+
+/**
+ * @tc.name: ReadUInt8Test001
+ * @tc.desc: test the ReadUInt8 function of DataBuf
+ * @tc.type: FUNC
+ */
+HWTEST_F(DataBufTest, ReadUInt8Test001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "DataBufTest: ReadUInt8Test001 start";
+    size_t size = 2;
+    size_t offset = 4;
+    DataBuf dataBuf(size);
+    uint8_t ret = dataBuf.ReadUInt8(offset);
+    ASSERT_EQ(ret, 0);
+    GTEST_LOG_(INFO) << "DataBufTest: ReadUInt8Test001 end";
+}
+
+/**
+ * @tc.name: ReadUInt32Test001
+ * @tc.desc: test the ReadUInt32 function of DataBuf
+ * @tc.type: FUNC
+ */
+HWTEST_F(DataBufTest, ReadUInt32Test001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "DataBufTest: ReadUInt32Test001 start";
+    size_t size = 2;
+    size_t offset = 4;
+    ByteOrder byteOrder = littleEndian;
+    DataBuf dataBuf(size);
+    uint32_t ret = dataBuf.ReadUInt32(offset, byteOrder);
+    ASSERT_EQ(ret, 0);
+    GTEST_LOG_(INFO) << "DataBufTest: ReadUInt32Test001 end";
+}
+
+/**
+ * @tc.name: CmpBytesTest001
+ * @tc.desc: test the CmpBytes function of DataBuf
+ * @tc.type: FUNC
+ */
+HWTEST_F(DataBufTest, CmpBytesTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "DataBufTest: CmpBytesTest001 start";
+    size_t size = 2;
+    size_t offset = 4;
+    const void *buf = nullptr;
+    size_t bufsize = 8;
+    DataBuf dataBuf(size);
+    int ret = dataBuf.CmpBytes(offset, buf, bufsize);
+    ASSERT_EQ(ret, -1);
+    GTEST_LOG_(INFO) << "DataBufTest: CmpBytesTest001 end";
+}
+
+/**
+ * @tc.name: CDataTest001
+ * @tc.desc: test the CData function of DataBuf
+ * @tc.type: FUNC
+ */
+HWTEST_F(DataBufTest, CDataTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "DataBufTest: CDataTest001 start";
+    size_t size = 2;
+    size_t offset = 4;
+    DataBuf dataBuf(size);
+    const byte *ret = dataBuf.CData(offset);
+    ASSERT_EQ(ret, nullptr);
+    GTEST_LOG_(INFO) << "DataBufTest: CDataTest001 end";
+}
 } // namespace Media
 } // namespace OHOS
