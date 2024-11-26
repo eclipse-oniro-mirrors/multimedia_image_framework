@@ -20,9 +20,7 @@
 #include <chrono>
 #include "log_tags.h"
 #include "hilog/log.h"
-#ifdef BUILD_ENG_VERSION
 #include "hitrace_meter.h"
-#endif
 
 #undef LOG_DOMAIN
 #define LOG_DOMAIN LOG_TAG_DOMAIN_ID_IMAGE
@@ -104,27 +102,21 @@
         }                                       \
     } while (0)
 
-#ifdef BUILD_ENG_VERSION
 #ifdef H_SYSTRACE_TAG
 #undef H_SYSTRACE_TAG
 #endif
 #define H_SYSTRACE_TAG HITRACE_TAG_ZMEDIA
-#endif // BUILD_ENG_VERSION
 
 class HeifPerfTracker {
 public:
     explicit HeifPerfTracker(std::string desc) : desc_(desc)
     {
         startTimeInUs_ = GetCurrentTimeInUs();
-#ifdef BUILD_ENG_VERSION
         StartTrace(H_SYSTRACE_TAG, desc);
-#endif
     }
     ~HeifPerfTracker()
     {
-#ifdef BUILD_ENG_VERSION
         FinishTrace(H_SYSTRACE_TAG);
-#endif
         static constexpr float MILLISEC_TO_MICROSEC = 1000.0f;
         int64_t timeSpanInUs = GetCurrentTimeInUs() - startTimeInUs_;
         LOGD("%{public}s cost: %{public}.2f ms",
