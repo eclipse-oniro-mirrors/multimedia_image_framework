@@ -71,6 +71,32 @@ static const std::string IMAGE_INPUT_JPG_PATH1 = "/data/local/tmp/800-500.jpg";
 static const std::string IMAGE_INPUT_JPG_PATH2 = "/data/local/tmp/951-595.jpg";
 static const std::string IMAGE_INPUT_YUV_PATH3 = "/data/local/tmp/P010.yuv";
 
+/*
+ * test pixelmap IPC interface
+ */
+bool g_pixelMapIpcTest(std::unique_ptr<Media::PixelMap> &pixelMap)
+{
+    // test parcel pixelmap
+    Parcel parcel;
+    pixelMap->SetMemoryName("MarshallingPixelMap");
+    if (!pixelMap->Marshalling(parcel)) {
+        IMAGE_LOGI("g_pixelMapIpcTest Marshalling failed id: %{public}d, isUnmap: %{public}d",
+            pixelMap->GetUniqueId(), pixelMap->IsUnMap());
+        return false;
+    }
+    Media::PixelMap* unmarshallingPixelMap = Media::PixelMap::Unmarshalling(parcel);
+    if (!unmarshallingPixelMap) {
+        return false;
+    }
+    unmarshallingPixelMap->SetMemoryName("unmarshallingPixelMap");
+    IMAGE_LOGI("g_pixelMapIpcTest unmarshallingPixelMap failed id: %{public}d, isUnmap: %{public}d",
+        unmarshallingPixelMap->GetUniqueId(), unmarshallingPixelMap->IsUnMap());
+    unmarshallingPixelMap->FreePixelMap();
+    delete unmarshallingPixelMap;
+    unmarshallingPixelMap = nullptr;
+    return true;
+}
+
 std::unique_ptr<Media::PixelMap> GetYuvPixelMap(PixelFormat &srcFormat, Size &srcSize)
 {
     IMAGE_LOGI("GetYuvPixelMap: start");
@@ -463,6 +489,58 @@ void RgbToYuvFuzzTest001()
     BGRAToNV12FuzzTest001();
     BGRAToNV12FuzzTest002();
     IMAGE_LOGI("RgbToYuvFuzzTest001: end");
+}
+
+void NV21PixelMapIPCTest001()
+{
+    std::this_thread::sleep_for(std::chrono::milliseconds(SLEEP_TIME));
+    PixelFormat srcFormat = PixelFormat::NV21;
+    Size srcSize = { TREE_ORIGINAL_WIDTH, TREE_ORIGINAL_HEIGHT };
+    std::unique_ptr<Media::PixelMap> yuvPixelMap = GetYuvPixelMap(srcFormat, srcSize);
+    g_pixelMapIpcTest(yuvPixelMap);
+}
+
+void NV21PixelMapIPCTest002()
+{
+    std::this_thread::sleep_for(std::chrono::milliseconds(SLEEP_TIME));
+    PixelFormat srcFormat = PixelFormat::NV21;
+    Size srcSize = { ODDTREE_ORIGINAL_WIDTH, ODDTREE_ORIGINAL_HEIGHT };
+    std::unique_ptr<Media::PixelMap> yuvPixelMap = GetYuvPixelMap(srcFormat, srcSize);
+    g_pixelMapIpcTest(yuvPixelMap);
+}
+
+void NV12PixelMapIPCTest001()
+{
+    std::this_thread::sleep_for(std::chrono::milliseconds(SLEEP_TIME));
+    PixelFormat srcFormat = PixelFormat::NV12;
+    Size srcSize = { TREE_ORIGINAL_WIDTH, TREE_ORIGINAL_HEIGHT };
+    std::unique_ptr<Media::PixelMap> yuvPixelMap = GetYuvPixelMap(srcFormat, srcSize);
+    g_pixelMapIpcTest(yuvPixelMap);
+}
+
+void NV12PixelMapIPCTest002()
+{
+    std::this_thread::sleep_for(std::chrono::milliseconds(SLEEP_TIME));
+    PixelFormat srcFormat = PixelFormat::NV12;
+    Size srcSize = { ODDTREE_ORIGINAL_WIDTH, ODDTREE_ORIGINAL_HEIGHT };
+    std::unique_ptr<Media::PixelMap> yuvPixelMap = GetYuvPixelMap(srcFormat, srcSize);
+    g_pixelMapIpcTest(yuvPixelMap);
+}
+
+void NV12P010PixelMapIPCTest001()
+{
+    PixelFormat srcFormat = PixelFormat::YCBCR_P010;
+    Size srcSize = { P010_ORIGINAL_WIDTH, P010_ORIGINAL_HEIGHT };
+    std::unique_ptr<Media::PixelMap> yuvP010PixelMap = GetYuvP010PixelMap(srcFormat, srcSize);
+    g_pixelMapIpcTest(yuvP010PixelMap);
+}
+
+void NV21P010PixelMapIPCTest001()
+{
+    PixelFormat srcFormat = PixelFormat::YCRCB_P010;
+    Size srcSize = { P010_ORIGINAL_WIDTH, P010_ORIGINAL_HEIGHT };
+    std::unique_ptr<Media::PixelMap> yuvP010PixelMap = GetYuvP010PixelMap(srcFormat, srcSize);
+    g_pixelMapIpcTest(yuvP010PixelMap);
 }
 
 void NV21ToRGBFuzzTest001()
@@ -1423,6 +1501,20 @@ void PixelMapFormattotalFuzzTest001()
     IMAGE_LOGI("PixelMapFormatTest001: end");
 }
 
+void YuvPixelMapIPCFuzzTest001()
+{
+    NV21PixelMapIPCTest001();
+    NV21PixelMapIPCTest002();
+    NV12PixelMapIPCTest001();
+    NV12PixelMapIPCTest002();
+}
+
+void YuvP010PixelMapIPCFuzzTest001()
+{
+    NV12P010PixelMapIPCTest001();
+    NV21P010PixelMapIPCTest001();
+}
+
 void RgbToYuvP010ByPixelMapFuzzTest001()
 {
     IMAGE_LOGI("RgbToYuvP010ByPixelMapTest001: start");
@@ -1537,6 +1629,8 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
     OHOS::Media::YuvP010ToRgbFuzzTest001();
     OHOS::Media::RgbToYuvP010FuzzTest001();
     OHOS::Media::RgbToYuvP010ByPixelMapFuzzTest001();
+    OHOS::Media::YuvPixelMapIPCFuzzTest001();
+    OHOS::Media::YuvP010PixelMapIPCFuzzTest001();
     OHOS::Media::PixelMapFormattotalFuzzTest001();
     OHOS::Media::ImageFuzzTest001();
     return 0;

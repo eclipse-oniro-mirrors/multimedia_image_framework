@@ -135,7 +135,6 @@ bool PixelMapGetFunctionsTest(std::unique_ptr<Media::PixelMap> &pixelMap)
     pixelMap->GetBaseDensity();
     Media::ImageInfo imageInfo;
     pixelMap->GetImageInfo(imageInfo);
-    //add antialiasingoptions here
     pixelMap->GetPixelFormat();
     pixelMap->GetColorSpace();
     pixelMap->GetAlphaType();
