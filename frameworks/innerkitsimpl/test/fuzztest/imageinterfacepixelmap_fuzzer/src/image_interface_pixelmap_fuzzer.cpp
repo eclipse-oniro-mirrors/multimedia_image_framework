@@ -26,6 +26,7 @@
 #include "pixel_map.h"
 #include "securec.h"
 
+
 constexpr uint32_t STRING_LENGTH = 10;
 constexpr uint32_t MAX_LENGTH_MODULO = 1024;
 constexpr uint32_t PIXELFORMAT_MODULO = 8;
