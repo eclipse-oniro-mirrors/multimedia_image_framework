@@ -707,6 +707,10 @@ bool HeifDecoderImpl::HwDecodeGrids(HeifHardwareDecoder *hwDecoder, std::shared_
         return false;
     }
     size_t gridCount = tileImages.size();
+    if (gridCount != (gridInfo.cols * gridInfo.rows)) {
+        IMAGE_LOGE("grid count not equal actual decode quantity");
+        return false;
+    }
     std::vector<std::vector<uint8_t>> packedInput;
     PreparePackedInput(hwDecoder, tileImages, packedInput, gridCount);
 
