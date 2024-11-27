@@ -2343,6 +2343,10 @@ uint32_t ImageSource::SetDecodeOptions(std::unique_ptr<AbsImageDecoder> &decoder
          opts.desiredDynamicRange == DecodeDynamicRange::HDR) {
         plOptions.desiredPixelFormat = PixelFormat::RGBA_8888;
     }
+    if (decoder == nullptr) {
+        IMAGE_LOGE("decoder is nullptr");
+        return ERROR;
+    }
     uint32_t ret = decoder->SetDecodeOptions(index, plOptions, plInfo);
     if (ret != SUCCESS) {
         IMAGE_LOGE("[ImageSource]decoder plugin set decode options fail (image index:%{public}u),"
