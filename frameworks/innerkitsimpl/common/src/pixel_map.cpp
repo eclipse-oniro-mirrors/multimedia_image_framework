@@ -2412,6 +2412,10 @@ bool PixelMap::Marshalling(Parcel &parcel) const
         IMAGE_LOGE("write WriteYuvDataInfoToParcel to parcel failed.");
         return false;
     }
+    if (isMemoryDirty_) {
+        ImageUtils::FlushSurfaceBuffer(const_cast<PixelMap*>(this));
+        isMemoryDirty_ = false;
+    }
     return true;
 }
 
