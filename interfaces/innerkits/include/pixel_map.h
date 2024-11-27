@@ -503,7 +503,7 @@ protected:
     void CopySurfaceBufferInfo(void *data);
     void SetVersionId(uint32_t versionId);
     std::unique_ptr<AbsMemory> CreateSdrMemory(ImageInfo &imageInfo, PixelFormat format,
-                                               AllocatorType dstType, uint32_t errorCode, bool toSRGB);
+                                               AllocatorType dstType, uint32_t &errorCode, bool toSRGB);
     // used to close fd after mmap in RenderService when memory type is shared-mem or dma.
     bool CloseFd();
 
