@@ -92,9 +92,9 @@ public:
 
     const HvccSpsConfig& GetSpsConfig() const { return spsConfig_; }
 
-    int32_t GetWord(const std::vector<uint8_t>& nalu, int length);
+    uint32_t GetWord(const std::vector<uint8_t>& nalu, int length);
 
-    int32_t GetGolombCode(const std::vector<uint8_t> &nalu);
+    uint32_t GetGolombCode(const std::vector<uint8_t> &nalu);
 
     int32_t GetNaluTypeId(std::vector<uint8_t>& nalu);
 
