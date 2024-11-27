@@ -169,9 +169,9 @@ heif_error HeifHvccBox::Write(HeifStreamWriter& writer) const
     return heif_error_ok;
 }
 
-int32_t HeifHvccBox::GetWord(const std::vector<uint8_t>& nalu, int length)
+uint32_t HeifHvccBox::GetWord(const std::vector<uint8_t>& nalu, int length)
 {
-    int32_t res = 0;
+    uint32_t res = 0;
     for (int i = 0; i < length && pos_ < boxBitLength_; ++i, ++pos_) {
         int32_t bit = ((nalu[pos_ / BIT_DEPTH_DIFF] >>
                         (BIT_DEPTH_DIFF - BIT_SHIFT - (pos_ % BIT_DEPTH_DIFF)))
@@ -182,7 +182,7 @@ int32_t HeifHvccBox::GetWord(const std::vector<uint8_t>& nalu, int length)
     return res;
 }
 
-int32_t HeifHvccBox::GetGolombCode(const std::vector<uint8_t> &nalu)
+uint32_t HeifHvccBox::GetGolombCode(const std::vector<uint8_t> &nalu)
 {
     int zeros = 0;
     while (pos_ < boxBitLength_ && ((nalu[pos_ / ONE_BYTE_SHIFT] >>
@@ -218,7 +218,7 @@ std::vector<uint8_t> HeifHvccBox::GetNaluData(const std::vector<HvccNalArray> &n
 
 void HeifHvccBox::ProcessBoxData(std::vector<uint8_t> &nalu)
 {
-    int naluSize = nalu.size();
+    uint32_t naluSize = nalu.size();
     std::vector<int> indicesToDelete;
     for (int i = UINT16_BYTES_NUM; i < naluSize; ++i) {
         if (nalu[i - UINT8_BYTES_NUM] == 0x00 &&
@@ -331,7 +331,7 @@ bool HeifHvccBox::ParseSpsSyntax(std::vector<uint8_t> &nalUnits)
     spsConfig_.bitDepthChromaMinus8 = GetGolombCode(nalUnits);
     spsConfig_.log2MaxPicOrderCntLsbMinus4 = GetGolombCode(nalUnits);
     spsConfig_.spsSubLayerOrderingInfoPresentFlag = GetWord(nalUnits, READ_BIT_NUM_FLAG);
-    int i = spsConfig_.spsSubLayerOrderingInfoPresentFlag ? 0 : spsConfig_.spsMaxSubLayersMinus1;
+    int i = spsConfig_.spsSubLayerOrderingInfoPresentFlag ? 0 : static_cast<int>(spsConfig_.spsMaxSubLayersMinus1);
     for (; i <= spsConfig_.spsMaxSubLayersMinus1; i++) {
         GetGolombCode(nalUnits);
         GetGolombCode(nalUnits);
@@ -348,7 +348,8 @@ bool HeifHvccBox::ParseSpsSyntax(std::vector<uint8_t> &nalUnits)
 
 void HeifHvccBox::ReadGolombCodesForSizeId(std::vector<uint8_t> &nalUnits, int sizeId)
 {
-    int minCoefNum = READ_BIT_NUM_FLAG << (GENERAL_PROFILE_SIZE + (sizeId << READ_BIT_NUM_FLAG));
+    uint8_t minCoefNum = READ_BIT_NUM_FLAG << (GENERAL_PROFILE_SIZE + (static_cast<uint8_t>(sizeId)
+                         << READ_BIT_NUM_FLAG));
     int coefNum = MAX_COEF_NUM < minCoefNum ? MAX_COEF_NUM : minCoefNum;
     if (sizeId > READ_BIT_NUM_FLAG) {
         GetGolombCode(nalUnits);
