@@ -3940,7 +3940,7 @@ static void UpdateSdrYuvStrides(const ImageInfo &imageInfo, YUVStrideInfo &dstSt
 }
 
 std::unique_ptr<AbsMemory> PixelMap::CreateSdrMemory(ImageInfo &imageInfo, PixelFormat format,
-                                                     AllocatorType dstType, uint32_t errorCode, bool toSRGB)
+                                                     AllocatorType dstType, uint32_t &errorCode, bool toSRGB)
 {
 #if !defined(_WIN32) && !defined(_APPLE) && !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
     SkImageInfo skInfo = ToSkImageInfo(imageInfo, ToSkColorSpace(this));
