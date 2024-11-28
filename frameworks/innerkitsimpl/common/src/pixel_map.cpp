@@ -3936,5 +3936,33 @@ uint32_t PixelMap::ApplyColorSpace(const OHOS::ColorManager::ColorSpace &grColor
 }
 #endif
 // LCOV_EXCL_STOP
+
+bool PixelMap::CloseFd()
+{
+#if !defined(_WIN32) && !defined(_APPLE) && !defined(IOS_PLATFORM) &&!defined(ANDROID_PLATFORM)
+    if (allocatorType_ != AllocatorType::SHARE_MEM_ALLOC && allocatorType_ != AllocatorType::DMA_ALLOC) {
+        IMAGE_LOGI("[Pixelmap] CloseFd allocatorType is not share_mem or dma");
+        return false;
+    }
+    if (allocatorType_ == AllocatorType::SHARE_MEM_ALLOC) {
+        int *fd = static_cast<int*>(context_);
+        if (fd == nullptr) {
+            IMAGE_LOGE("[Pixelmap] CloseFd fd is nullptr.");
+            return false;
+        }
+        if (*fd <= 0) {
+            IMAGE_LOGE("[Pixelmap] CloseFd invilid fd is [%{public}d]", *fd);
+            return false;
+        }
+        ::close(*fd);
+        delete fd;
+        context_ = nullptr;
+    }
+    return true;
+#else
+    IMAGE_LOGE("[Pixelmap] CloseFd is not supported on crossplatform");
+    return false;
+#endif
+}
 } // namespace Media
 } // namespace OHOS

@@ -31,6 +31,10 @@
 #include "purgeable_mem_builder.h"
 #endif
 
+namespace OHOS::Rosen {
+class RSMarshallingHelper;
+};
+
 namespace OHOS {
 namespace Media {
 struct HdrMetadata;
@@ -395,6 +399,7 @@ protected:
     static constexpr size_t MAX_IMAGEDATA_SIZE = 128 * 1024 * 1024; // 128M
     static constexpr size_t MIN_IMAGEDATA_SIZE = 32 * 1024;         // 32k
     friend class ImageSource;
+    friend class OHOS::Rosen::RSMarshallingHelper;
     static bool ALPHA8ToARGB(const uint8_t *in, uint32_t inCount, uint32_t *out, uint32_t outCount);
     static bool RGB565ToARGB(const uint8_t *in, uint32_t inCount, uint32_t *out, uint32_t outCount);
     static bool ARGB8888ToARGB(const uint8_t *in, uint32_t inCount, uint32_t *out, uint32_t outCount);
@@ -481,6 +486,9 @@ protected:
     bool IsYuvFormat() const;
     static int32_t ConvertPixelAlpha(const void *srcPixels, const int32_t srcLength, const ImageInfo &srcInfo,
         void *dstPixels, const ImageInfo &dstInfo);
+    // used to close fd after mmap in RenderService when memory type is shared-mem or dma.
+    bool CloseFd();
+
     uint8_t *data_ = nullptr;
     // this info SHOULD be the final info for decoded pixelmap, not the original image info
     ImageInfo imageInfo_;
