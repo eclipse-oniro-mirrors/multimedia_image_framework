@@ -2705,6 +2705,22 @@ bool ImageSource::ImageConverChange(const Rect &cropRect, ImageInfo &dstImageInf
     }
     return true;
 }
+
+char *strnstr(const char *s1, const char *s2, size_t len)
+{
+    size_t l2;
+    l2 = strlen(s2);
+    if (!l2)
+        return (char *)s1;
+    while (len >= l2) {
+        len--;
+        if (!memcmp(s1, s2, l2))
+            return (char *)s1;
+        s1++;
+    }
+    return nullptr;
+}
+
 unique_ptr<SourceStream> ImageSource::DecodeBase64(const uint8_t *data, uint32_t size)
 {
     if (size < IMAGE_URL_PREFIX.size() ||
@@ -2717,7 +2733,7 @@ unique_ptr<SourceStream> ImageSource::DecodeBase64(const uint8_t *data, uint32_t
         return nullptr;
     }
     const char *data1 = reinterpret_cast<const char *>(data);
-    auto sub = ::strstr(data1, BASE64_URL_PREFIX.c_str());
+    auto sub = strnstr(data1, BASE64_URL_PREFIX.c_str(), static_cast<size_t>(size));
     if (sub == nullptr) {
         IMAGE_LOGI("[ImageSource]Base64 mismatch.");
         return nullptr;
