@@ -1717,10 +1717,10 @@ HWTEST_F(WebpExifMetadataAccessorTest, GetWidthAndHeightFormChunk001, TestSize.L
     std::string strChunkId = WEBP_CHUNK_HEADER_VP8L;
     DataBuf chunkData;
     auto ret = imageAccessor.GetWidthAndHeightFormChunk(strChunkId, chunkData);
-    ASSERT_NE(std::get<0>(ret), 0);
+    ASSERT_EQ(std::get<0>(ret), 0);
     strChunkId = WEBP_CHUNK_HEADER_ANMF;
     ret = imageAccessor.GetWidthAndHeightFormChunk(strChunkId, chunkData);
-    ASSERT_NE(std::get<0>(ret), 0);
+    ASSERT_EQ(std::get<0>(ret), 0);
 }
 
 /**
