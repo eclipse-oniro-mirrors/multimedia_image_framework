@@ -2212,7 +2212,13 @@ bool ExtDecoder::DecodeHeifAuxiliaryMap(DecodeContext& context, AuxiliaryPicture
     IMAGE_LOGD("DecodeHeifAuxiliaryMap size:%{public}d-%{public}d", width, height);
     SkImageInfo dstInfo = SkImageInfo::Make(static_cast<int>(width), static_cast<int>(height), dstInfo_.colorType(),
         dstInfo_.alphaType(), dstInfo_.refColorSpace());
-    uint64_t byteCount = static_cast<uint64_t>(dstInfo.computeMinByteSize());
+    size_t tempByteCount = dstInfo.computeMinByteSize();
+    if (SkImageInfo::ByteSizeOverflowed(tempByteCount)) {
+        IMAGE_LOGE("Image too large, dstInfo_height: %{public}d, dstInfo_width: %{public}d",
+            dstInfo.height(), dstInfo.width());
+        return ERR_IMAGE_TOO_LARGE;
+    }
+    uint64_t byteCount = tempByteCount;
     context.info.size.width = width;
     context.info.size.height = height;
     if (DmaMemAlloc(context, byteCount, dstInfo) != SUCCESS) {
