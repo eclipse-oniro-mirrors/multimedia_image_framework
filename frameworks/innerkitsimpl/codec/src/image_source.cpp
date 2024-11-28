@@ -2707,7 +2707,7 @@ bool ImageSource::ImageConverChange(const Rect &cropRect, ImageInfo &dstImageInf
 }
 
 char *strnstr(const char *data, const char *base64, size_t len)
-{ 
+{
     size_t base64Len = strlen(base64);
     if (!base64Len)
         return (char *)data;
