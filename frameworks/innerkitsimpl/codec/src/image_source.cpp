@@ -2706,17 +2706,16 @@ bool ImageSource::ImageConverChange(const Rect &cropRect, ImageInfo &dstImageInf
     return true;
 }
 
-char *strnstr(const char *s1, const char *s2, size_t len)
-{
-    size_t l2;
-    l2 = strlen(s2);
-    if (!l2)
-        return (char *)s1;
-    while (len >= l2) {
+char *strnstr(const char *data, const char *base64, size_t len)
+{ 
+    size_t base64Len = strlen(base64);
+    if (!base64Len)
+        return (char *)data;
+    while (len >= base64Len) {
         len--;
-        if (!memcmp(s1, s2, l2))
-            return (char *)s1;
-        s1++;
+        if (!memcmp(data, base64, base64Len))
+            return (char *)data;
+        data++;
     }
     return nullptr;
 }
