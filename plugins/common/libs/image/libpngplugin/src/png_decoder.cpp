@@ -507,44 +507,55 @@ uint32_t PngDecoder::GetDecodeFormat(PixelFormat format, PixelFormat &outputForm
         pngImageInfo_.bitDepth = 8;  // 8bit depth
         png_set_strip_16(pngStructPtr_);
     }
-    ChooseFormat(format, outputFormat, destType);
+    if (!ChooseFormat(format, outputFormat, destType)) {
+        return ERR_IMAGE_DATA_UNSUPPORT;
+    }
     return SUCCESS;
 }
 
-void PngDecoder::ChooseFormat(PixelFormat format, PixelFormat &outputFormat,
+bool PngDecoder::ChooseFormat(PixelFormat format, PixelFormat &outputFormat,
                               png_byte destType)
 {
     outputFormat = format;
+    uint32_t pixelBytes = 0;
     switch (format) {
         case PixelFormat::BGRA_8888: {
-            pngImageInfo_.rowDataSize = pngImageInfo_.width * 4;  // 4 is BGRA size
+            pixelBytes = 4;  // 4 is BGRA size
             png_set_bgr(pngStructPtr_);
             break;
         }
         case PixelFormat::ARGB_8888: {
             png_set_swap_alpha(pngStructPtr_);
-            pngImageInfo_.rowDataSize = pngImageInfo_.width * 4;  // 4 is ARGB size
+            pixelBytes = 4;  // 4 is ARGB size
             break;
         }
         case PixelFormat::RGB_888: {
             if (destType == PNG_COLOR_TYPE_RGBA) {
                 png_set_strip_alpha(pngStructPtr_);
             }
-            pngImageInfo_.rowDataSize = pngImageInfo_.width * 3;  // 3 is RGB size
+            pixelBytes = 3;  // 3 is RGB size
             break;
         }
         case PixelFormat::RGBA_F16: {
             png_set_scale_16(pngStructPtr_);
-            pngImageInfo_.rowDataSize = pngImageInfo_.width * 7;  // 7 is RRGGBBA size
+            pixelBytes = 7;  // 7 is RRGGBBA size
             break;
         }
         case PixelFormat::UNKNOWN:
         case PixelFormat::RGBA_8888:
         default: {
-            pngImageInfo_.rowDataSize = pngImageInfo_.width * 4;  // 4 is RGBA size
+            pixelBytes = 4;  // 4 is RGBA size
             outputFormat = PixelFormat::RGBA_8888;
             break;
         }
+    }
+    uint64_t tmpRowDataSize = static_cast<uint64_t>(pngImageInfo_.width) * pixelBytes;
+    if (tmpRowDataSize > UINT32_MAX) {
+        IMAGE_LOGE("image width is too large, width:%{public}u.", pngImageInfo_.width);
+        return false;
+    } else {
+        pngImageInfo_.rowDataSize = static_cast<uint32_t>(tmpRowDataSize);
+        return true;
     }
 }
 
