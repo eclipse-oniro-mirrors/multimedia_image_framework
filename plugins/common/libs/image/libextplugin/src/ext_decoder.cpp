@@ -221,13 +221,8 @@ static uint32_t ShareMemAlloc(DecodeContext &context, uint64_t count)
 #endif
 }
 
-uint32_t ExtDecoder::DmaMemAlloc(DecodeContext &context, uint64_t count, SkImageInfo &dstInfo)
+static BufferRequestConfig CreateDmaRequestConfig(const SkImageInfo &dstInfo, uint64_t &count, PixelFormat pixelFormat)
 {
-#if defined(_WIN32) || defined(_APPLE) || defined(ANDROID_PLATFORM) || defined(IOS_PLATFORM)
-    IMAGE_LOGE("Unsupport dma mem alloc");
-    return ERR_IMAGE_DATA_UNSUPPORT;
-#else
-    sptr<SurfaceBuffer> sb = SurfaceBuffer::Create();
     BufferRequestConfig requestConfig = {
         .width = dstInfo.width(),
         .height = dstInfo.height(),
@@ -238,20 +233,34 @@ uint32_t ExtDecoder::DmaMemAlloc(DecodeContext &context, uint64_t count, SkImage
         .colorGamut = GraphicColorGamut::GRAPHIC_COLOR_GAMUT_SRGB,
         .transform = GraphicTransformType::GRAPHIC_ROTATE_NONE,
     };
-    if (context.info.pixelFormat == PixelFormat::RGBA_1010102) {
+    if (pixelFormat == PixelFormat::RGBA_1010102) {
         requestConfig.format = GRAPHIC_PIXEL_FMT_RGBA_1010102;
-    } else if (context.info.pixelFormat == PixelFormat::YCRCB_P010) {
+    } else if (pixelFormat == PixelFormat::YCRCB_P010) {
         requestConfig.format = GRAPHIC_PIXEL_FMT_YCRCB_P010;
-    } else if (context.info.pixelFormat == PixelFormat::YCBCR_P010) {
+    } else if (pixelFormat == PixelFormat::YCBCR_P010) {
         requestConfig.format = GRAPHIC_PIXEL_FMT_YCBCR_P010;
-    } else if (outputColorFmt_ == PIXEL_FMT_YCRCB_420_SP) {
+    } else if (pixelFormat == PixelFormat::NV12) {
+        requestConfig.format = GRAPHIC_PIXEL_FMT_YCBCR_420_SP;
+    } else if (pixelFormat == PixelFormat::RGBA_F16) {
+        requestConfig.format = GRAPHIC_PIXEL_FMT_RGBA16_FLOAT;
+        count = dstInfo.width() * dstInfo.height() * ImageUtils::GetPixelBytes(PixelFormat::RGBA_F16);
+    }
+    return requestConfig;
+}
+
+uint32_t ExtDecoder::DmaMemAlloc(DecodeContext &context, uint64_t count, SkImageInfo &dstInfo)
+{
+#if defined(_WIN32) || defined(_APPLE) || defined(ANDROID_PLATFORM) || defined(IOS_PLATFORM)
+    IMAGE_LOGE("Unsupport dma mem alloc");
+    return ERR_IMAGE_DATA_UNSUPPORT;
+#else
+    sptr<SurfaceBuffer> sb = SurfaceBuffer::Create();
+    BufferRequestConfig requestConfig = CreateDmaRequestConfig(dstInfo, count, context.info.pixelFormat);
+    if (outputColorFmt_ == PIXEL_FMT_YCRCB_420_SP) {
         requestConfig.format = GRAPHIC_PIXEL_FMT_YCRCB_420_SP;
         requestConfig.usage |= BUFFER_USAGE_VENDOR_PRI16; // height is 64-bytes aligned
         IMAGE_LOGD("ExtDecoder::DmaMemAlloc desiredFormat is NV21");
         count = JpegDecoderYuv::GetYuvOutSize(dstInfo.width(), dstInfo.height());
-    } else if (context.info.pixelFormat == PixelFormat::RGBA_F16) {
-        requestConfig.format = GRAPHIC_PIXEL_FMT_RGBA16_FLOAT;
-        count = dstInfo.width() * dstInfo.height() * ImageUtils::GetPixelBytes(PixelFormat::RGBA_F16);
     }
     GSError ret = sb->Alloc(requestConfig);
     if (ret != GSERROR_OK) {

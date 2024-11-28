@@ -4423,10 +4423,13 @@ DecodeContext ImageSource::DecodeImageDataToContextExtended(uint32_t index, Imag
 std::unique_ptr<Picture> ImageSource::CreatePicture(const DecodingOptionsForPicture &opts, uint32_t &errorCode)
 {
     DecodeOptions dopts;
-    dopts.desiredPixelFormat = PixelFormat::RGBA_8888;
+    dopts.desiredPixelFormat = opts.desiredPixelFormat;
+    dopts.allocatorType = opts.allocatorType;
     dopts.desiredDynamicRange = (ParseHdrType() && IsSingleHdrImage(sourceHdrType_)) ?
         DecodeDynamicRange::HDR : DecodeDynamicRange::SDR;
     dopts.editable = true;
+    IMAGE_LOGI("Decode mainPixelMap: PixelFormat: %{public}d, allocatorType: %{public}d, DynamicRange: %{public}d",
+        opts.desiredPixelFormat, dopts.allocatorType, dopts.desiredDynamicRange);
     std::shared_ptr<PixelMap> mainPixelMap = CreatePixelMap(dopts, errorCode);
     std::unique_ptr<Picture> picture = Picture::Create(mainPixelMap);
     if (picture == nullptr) {
@@ -4499,13 +4502,21 @@ void ImageSource::DecodeHeifAuxiliaryPictures(
         errorCode = ERR_IMAGE_PLUGIN_CREATE_FAILED;
         return;
     }
+    if (picture == nullptr || picture->GetMainPixel() == nullptr) {
+        IMAGE_LOGE("%{public}s: picture or mainPixelMap is nullptr", __func__);
+        errorCode = ERR_IMAGE_DATA_ABNORMAL;
+        return;
+    }
+    MainPictureInfo mainInfo;
+    mainInfo.hdrType = sourceHdrType_;
+    picture->GetMainPixel()->GetImageInfo(mainInfo.imageInfo);
     for (auto& auxType : auxTypes) {
         if (!mainDecoder_->CheckAuxiliaryMap(auxType)) {
             IMAGE_LOGE("The auxiliary picture type does not exist! Type: %{public}d", auxType);
             continue;
         }
         auto auxiliaryPicture = AuxiliaryGenerator::GenerateHeifAuxiliaryPicture(
-            sourceHdrType_, auxType, mainDecoder_, errorCode);
+            mainInfo, auxType, mainDecoder_, errorCode);
         if (auxiliaryPicture == nullptr) {
             IMAGE_LOGE("Generate heif auxiliary picture failed! Type: %{public}d, errorCode: %{public}d",
                 auxType, errorCode);
