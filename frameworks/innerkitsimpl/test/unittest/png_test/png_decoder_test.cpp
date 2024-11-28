@@ -866,7 +866,7 @@ HWTEST_F(PngDecoderTest, GetDecodeFormat001, TestSize.Level3)
     PixelFormat outputFormat;
     AlphaType alphaType;
     uint32_t ret = pngDecoder->GetDecodeFormat(format, outputFormat, alphaType);
-    ASSERT_EQ(ret, SUCCESS);
+    ASSERT_EQ(ret, ERR_IMAGE_DATA_UNSUPPORT);
     GTEST_LOG_(INFO) << "PngDecoderTest: GetDecodeFormat001 end";
 }
 
@@ -885,7 +885,7 @@ HWTEST_F(PngDecoderTest, GetDecodeFormat002, TestSize.Level3)
     AlphaType alphaType;
     info.bitDepth = 16;
     uint32_t ret = pngDecoder->GetDecodeFormat(format, outputFormat, alphaType);
-    ASSERT_EQ(ret, SUCCESS);
+    ASSERT_EQ(ret, ERR_IMAGE_DATA_UNSUPPORT);
     GTEST_LOG_(INFO) << "PngDecoderTest: GetDecodeFormat002 end";
 }
 
@@ -1150,7 +1150,7 @@ HWTEST_F(PngDecoderTest, ConfigInfo001, TestSize.Level3)
     nine.patch_ = new PngNinePatchRes;
     pngDecoder->idatLength_ = 1;
     uint32_t ret = pngDecoder->ConfigInfo(opts);
-    ASSERT_EQ(ret, SUCCESS);
+    ASSERT_EQ(ret, ERR_IMAGE_DATA_ABNORMAL);
     delete nine.patch_;
     nine.patch_ = nullptr;
     GTEST_LOG_(INFO) << "PngDecoderTest: ConfigInfo001 end";
@@ -1434,7 +1434,7 @@ HWTEST_F(PngDecoderTest, SetDecodeOptionsTest013, TestSize.Level3)
     PlImageInfo info;
     pngDecoder->state_ = PngDecodingState::BASE_INFO_PARSED;
     auto result = pngDecoder->SetDecodeOptions(0, opts, info);
-    ASSERT_EQ(result, 0);
+    ASSERT_EQ(result, ERR_IMAGE_DATA_ABNORMAL);
     GTEST_LOG_(INFO) << "PngDecoderTest: SetDecodeOptionsTest013 end";
 }
 
@@ -1584,7 +1584,7 @@ HWTEST_F(PngDecoderTest, GetDecodeFormat003, TestSize.Level3)
     AlphaType alphaType;
     pngDecoder->pngImageInfo_.bitDepth = 16;
     uint32_t ret = pngDecoder->GetDecodeFormat(format, outputFormat, alphaType);
-    ASSERT_EQ(ret, SUCCESS);
+    ASSERT_EQ(ret, ERR_IMAGE_DATA_UNSUPPORT);
     GTEST_LOG_(INFO) << "PngDecoderTest: GetDecodeFormat003 end";
 }
 

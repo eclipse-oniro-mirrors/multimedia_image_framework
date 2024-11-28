@@ -67,7 +67,7 @@ public:
 
 private:
     uint32_t GetDecodeFormat(PixelFormat format, PixelFormat &outputFormat, AlphaType &alphaType);
-    void ChooseFormat(PixelFormat format, PixelFormat &outputFormat, png_byte destType);
+    bool ChooseFormat(PixelFormat format, PixelFormat &outputFormat, png_byte destType);
     static void PngErrorExit(png_structp pngPtr, png_const_charp message);
     static void PngWarning(png_structp pngPtr, png_const_charp message);
     static void PngWarningMessage(png_structp pngPtr, png_const_charp message);
