@@ -120,6 +120,7 @@ namespace {
     constexpr uint32_t DEPTH_MAP_BYTES = sizeof(float); // float16
     constexpr uint32_t LINEAR_MAP_BYTES = sizeof(short) * 3 / 2; // 16bit yuv420
     constexpr uint32_t PLACE_HOLDER_LENGTH = 1;
+    constexpr uint32_t LOW_QUALITY_BOUNDARY = 85;
 
     // exif/0/0
     constexpr uint8_t EXIF_PRE_TAG[EXIF_PRE_SIZE] = {
@@ -1522,6 +1523,10 @@ bool ExtEncoder::IsPictureSupportHardwareEncode()
         return false;
     }
 
+    if (opts_.quality < LOW_QUALITY_BOUNDARY) {
+        IMAGE_LOGE("%{public}s Low quality use jpeg software encode", __func__);
+        return false;
+    }
     auto mainPixelMap = picture_->GetMainPixel();
     if (mainPixelMap == nullptr ||
         !IsValidSizeForHardwareEncode(mainPixelMap->GetWidth(), mainPixelMap->GetHeight())) {
