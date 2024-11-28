@@ -33,6 +33,7 @@
 
 namespace OHOS::Rosen {
 class PixelMapStorage;
+class RSMarshallingHelper;
 class RSProfiler;
 };
 
@@ -406,6 +407,7 @@ protected:
     static constexpr size_t MIN_IMAGEDATA_SIZE = 32 * 1024;         // 32k
     friend class ImageSource;
     friend class OHOS::Rosen::PixelMapStorage;
+    friend class OHOS::Rosen::RSMarshallingHelper;
     friend class OHOS::Rosen::RSProfiler;
     static bool ALPHA8ToARGB(const uint8_t *in, uint32_t inCount, uint32_t *out, uint32_t outCount);
     static bool RGB565ToARGB(const uint8_t *in, uint32_t inCount, uint32_t *out, uint32_t outCount);
