@@ -333,6 +333,24 @@ uint32_t ImageFormatConvert::ConvertImageFormat(std::shared_ptr<PixelMap> &srcPi
     return SUCCESS;
 }
 
+bool ImageFormatConvert::SetConvertImageMetaData(PixelMap *srcPixelMap, PixelMap *dstPixelMap)
+{
+    if (srcPixelMap == nullptr || dstPixelMap == nullptr) {
+        return false;
+    }
+    auto HdrMetadata = srcPixelMap->GetHdrMetadata();
+    if (HdrMetadata != nullptr) {
+        dstPixelMap->SetHdrMetadata(HdrMetadata);
+    }
+    auto exifData = srcPixelMap->GetExifMetadata();
+
+    if (exifData != nullptr) {
+        dstPixelMap->SetExifMetadata(exifData);
+    }
+    return true;
+}
+
+
 bool ImageFormatConvert::IsValidSize(const Size &size)
 {
     return size.width > 0 && size.height > 0;
@@ -616,22 +634,6 @@ uint32_t ImageFormatConvert::RGBConvertImageFormatOptionUnique(
     return ret;
 }
 
-bool ImageFormatConvert::SetConvertImageMetaData(PixelMap *srcPixelMap, PixelMap *dstPixelMap)
-{
-    if (srcPixelMap == nullptr || dstPixelMap == nullptr) {
-        return false;
-    }
-    auto HdrMetadata = srcPixelMap->GetHdrMetadata();
-    if (HdrMetadata != nullptr) {
-        dstPixelMap->SetHdrMetadata(HdrMetadata);
-    }
-    auto exifData = srcPixelMap->GetExifMetadata();
-    if (exifData != nullptr) {
-        dstPixelMap->SetExifMetadata(exifData);
-    }
-    return true;
-}
-
 static AllocatorType GetAllocatorType(std::shared_ptr<PixelMap> &srcPiexlMap, PixelFormat destFormat)
 {
     auto allocType = srcPiexlMap->GetAllocatorType();
@@ -703,7 +705,7 @@ bool NeedProtectionConversion(const PixelFormat inputFormat, const PixelFormat o
 
 ImageInfo SetImageInfo(ImageInfo &srcImageinfo, DestConvertInfo &destInfo)
 {
-    ImageInfo info;
+    ImageInfo info;f
     info.alphaType = srcImageinfo.alphaType;
     info.baseDensity = srcImageinfo.baseDensity;
     info.colorSpace = srcImageinfo.colorSpace;
