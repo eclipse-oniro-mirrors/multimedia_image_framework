@@ -705,7 +705,7 @@ bool NeedProtectionConversion(const PixelFormat inputFormat, const PixelFormat o
 
 ImageInfo SetImageInfo(ImageInfo &srcImageinfo, DestConvertInfo &destInfo)
 {
-    ImageInfo info;f
+    ImageInfo info;
     info.alphaType = srcImageinfo.alphaType;
     info.baseDensity = srcImageinfo.baseDensity;
     info.colorSpace = srcImageinfo.colorSpace;
