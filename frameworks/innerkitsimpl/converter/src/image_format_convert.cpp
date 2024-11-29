@@ -343,7 +343,6 @@ bool ImageFormatConvert::SetConvertImageMetaData(PixelMap *srcPixelMap, PixelMap
         dstPixelMap->SetHdrMetadata(HdrMetadata);
     }
     auto exifData = srcPixelMap->GetExifMetadata();
-
     if (exifData != nullptr) {
         dstPixelMap->SetExifMetadata(exifData);
     }
