@@ -17,6 +17,7 @@
 #include <unistd.h>
 #include "image_log.h"
 #include "media_errors.h"
+#include "pixel_map_utils.h"
 #ifndef _WIN32
 #include "securec.h"
 #else
@@ -69,6 +70,10 @@ uint8_t *PixelMapParcel::ReadAshmemDataFromParcel(OHOS::MessageParcel& data, int
         IMAGE_LOGE("read fileDescriptor failed, fd < 0");
         return nullptr;
     }
+    if (!CheckAshmemeSize(fd, bufferSize)) {
+        IMAGE_LOGE("bufferSize does not match the fileDescriptor");
+        return nullptr;
+    }    
     void* ptr = ::mmap(nullptr, bufferSize, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
     if (ptr == MAP_FAILED) {
         ::close(fd);

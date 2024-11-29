@@ -2797,7 +2797,11 @@ PixelMap *PixelMap::Unmarshalling(Parcel &parcel, PIXEL_MAP_ERR &error)
     ImageInfo imgInfo;
     PixelMemInfo pixelMemInfo;
     PixelMap* pixelMap = StartUnmarshalling(parcel, imgInfo, pixelMemInfo, error);
-    if (pixelMap && !ReadMemInfoFromParcel(parcel, pixelMemInfo, error)) {
+    if (!pixelMap) {
+        IMAGE_LOGE("StartUnmarshalling: get pixelmap failed");
+        return nullptr;
+    }
+    if (!ReadMemInfoFromParcel(parcel, pixelMemInfo, error)) {
         IMAGE_LOGE("Unmarshalling: read memInfo failed");
         delete pixelMap;
         return nullptr;
