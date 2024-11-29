@@ -338,9 +338,9 @@ bool ImageFormatConvert::SetConvertImageMetaData(PixelMap *srcPixelMap, PixelMap
     if (srcPixelMap == nullptr || dstPixelMap == nullptr) {
         return false;
     }
-    auto HdrMetadata = srcPixelMap->GetHdrMetadata();
-    if (HdrMetadata != nullptr) {
-        dstPixelMap->SetHdrMetadata(HdrMetadata);
+    auto hdrMetadata = srcPixelMap->GetHdrMetadata();
+    if (hdrMetadata != nullptr) {
+        dstPixelMap->SetHdrMetadata(hdrMetadata);
     }
     auto exifData = srcPixelMap->GetExifMetadata();
     if (exifData != nullptr) {
