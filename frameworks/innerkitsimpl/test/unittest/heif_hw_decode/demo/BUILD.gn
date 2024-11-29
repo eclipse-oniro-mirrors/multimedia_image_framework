@@ -63,12 +63,10 @@ ohos_executable("heif_hw_decoder_demo") {
     "graphic_surface:surface",
     "hdf_core:libhdi",
     "hilog:libhilog",
+    "hitrace:hitrace_meter",
     "init:libbegetutil",
     "ipc:ipc_core",
     "openmax:libopenmax_static",
     "qos_manager:qos",
   ]
-  if (build_variant == "root") {
-    external_deps += [ "hitrace:hitrace_meter" ]
-  }
 }

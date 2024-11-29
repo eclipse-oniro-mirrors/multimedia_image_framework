@@ -471,15 +471,12 @@ ohos_shared_library("heifimpl") {
       "drivers_peripheral_codec:libcodec_hdi_omx_client",
       "ffmpeg:libohosffmpeg",
       "hdf_core:libhdi",
+      "hitrace:hitrace_meter",
       "init:libbegetutil",
       "ipc:ipc_core",
       "openmax:libopenmax_static",
       "qos_manager:qos",
     ]
-  }
-
-  if (enable_heif_hw_decode && build_variant == "root") {
-    external_deps += [ "hitrace:hitrace_meter" ]
   }
 
   subsystem_name = "multimedia"
