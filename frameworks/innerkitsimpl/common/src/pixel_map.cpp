@@ -286,15 +286,16 @@ int32_t PixelMap::GetRGBxRowDataSize(const ImageInfo& info)
 {
     if ((info.pixelFormat <= PixelFormat::UNKNOWN || info.pixelFormat >= PixelFormat::EXTERNAL_MAX) ||
         IsYUV(info.pixelFormat)) {
-        IMAGE_LOGE("[ImageUtil]unsupported pixel format");
+        IMAGE_LOGE("[GetRGBxRowDataSize] Unsupported pixel format: %{public}d", info.pixelFormat);
         return -1;
     }
-    int32_t pixelBytes = ImageUtils::GetPixelBytes(info.pixelFormat);
-    if (pixelBytes < 0 || (pixelBytes != 0 && info.size.width > INT32_MAX / pixelBytes)) {
-        IMAGE_LOGE("[ImageUtil]obtained an out of range value for rgbx pixel bytes");
+
+    int32_t rowDataSize = ImageUtils::GetRowDataSizeByPixelFormat(info.size.width, info.pixelFormat);
+    if (rowDataSize <= 0) {
+        IMAGE_LOGE("[GetRGBxRowDataSize] Get row data size failed");
         return -1;
     }
-    return pixelBytes * info.size.width;
+    return rowDataSize;
 }
 
 int32_t PixelMap::GetRGBxByteCount(const ImageInfo& info)
@@ -384,15 +385,13 @@ static void SetYUVDataInfoToPixelMap(unique_ptr<PixelMap> &dstPixelMap)
 static int AllocPixelMapMemory(std::unique_ptr<AbsMemory> &dstMemory, int32_t &dstRowStride,
     const ImageInfo &dstImageInfo, bool useDMA)
 {
-    if (ImageUtils::CheckMulOverflow(dstImageInfo.size.width, dstImageInfo.size.height,
-                                     ImageUtils::GetPixelBytes(dstImageInfo.pixelFormat))) {
-        IMAGE_LOGE("[PixelMap]Create: pixelmap size overflow: width = %{public}d, height = %{public}d",
-                   dstImageInfo.size.width, dstImageInfo.size.height);
+    int32_t rowDataSize = ImageUtils::GetRowDataSizeByPixelFormat(dstImageInfo.size.width, dstImageInfo.pixelFormat);
+    if (rowDataSize <= 0) {
+        IMAGE_LOGE("[AllocPixelMapMemory] Get row data size failed");
         return IMAGE_RESULT_BAD_PARAMETER;
     }
-    size_t bufferSize = static_cast<size_t>(dstImageInfo.size.width) * static_cast<size_t>(dstImageInfo.size.height) *
-        static_cast<size_t>(ImageUtils::GetPixelBytes(dstImageInfo.pixelFormat));
-    if (bufferSize > UINT_MAX) {
+    size_t bufferSize = static_cast<size_t>(rowDataSize) * static_cast<size_t>(dstImageInfo.size.height);
+    if (bufferSize > UINT32_MAX) {
         IMAGE_LOGE("[PixelMap]Create: pixelmap size too large: width = %{public}d, height = %{public}d",
             dstImageInfo.size.width, dstImageInfo.size.height);
         return IMAGE_RESULT_BAD_PARAMETER;
