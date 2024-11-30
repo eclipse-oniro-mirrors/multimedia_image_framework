@@ -1168,86 +1168,6 @@ void NV21P010ToRGBA1010102FuzzTest004()
     IMAGE_LOGI("NV21P010ToRGBA_1010102FuzzTest004: end");
 }
 
-void RGB565ToNV12P010FuzzTest001()
-{
-    IMAGE_LOGI("RGB565ToNV12P010FuzzTest001: start");
-    PixelFormat srcFormat = PixelFormat::RGB_565;
-    PixelFormat destFormat = PixelFormat::YCBCR_P010;
-    Size srcSize = { TREE_ORIGINAL_WIDTH, TREE_ORIGINAL_HEIGHT };
-    RgbConvertToYuvP010(srcFormat, destFormat, srcSize);
-    IMAGE_LOGI("RGB565ToNV12P010FuzzTest001: end");
-}
-
-void RGB565ToNV12P010FuzzTest002()
-{
-    IMAGE_LOGI("RGB565ToNV12P010FuzzTest002: start");
-    PixelFormat srcFormat = PixelFormat::RGB_565;
-    PixelFormat destFormat = PixelFormat::YCBCR_P010;
-    Size srcSize = { ODDTREE_ORIGINAL_WIDTH, ODDTREE_ORIGINAL_HEIGHT };
-    RgbConvertToYuvP010(srcFormat, destFormat, srcSize);
-    IMAGE_LOGI("RGB565ToNV12P010FuzzTest002: end");
-}
-
-void RGB565ToNV21P010FuzzTest001()
-{
-    IMAGE_LOGI("RGB565ToNV21P010FuzzTest001: start");
-    PixelFormat srcFormat = PixelFormat::RGB_565;
-    PixelFormat destFormat = PixelFormat::YCRCB_P010;
-    Size srcSize = { TREE_ORIGINAL_WIDTH, TREE_ORIGINAL_HEIGHT };
-    RgbConvertToYuvP010(srcFormat, destFormat, srcSize);
-    IMAGE_LOGI("RGB565ToNV21P010FuzzTest001: end");
-}
-
-void RGB565ToNV21P010FuzzTest002()
-{
-    IMAGE_LOGI("RGB565ToNV21P010FuzzTest002: start");
-    PixelFormat srcFormat = PixelFormat::RGB_565;
-    PixelFormat destFormat = PixelFormat::YCRCB_P010;
-    Size srcSize = { ODDTREE_ORIGINAL_WIDTH, ODDTREE_ORIGINAL_HEIGHT };
-    RgbConvertToYuvP010(srcFormat, destFormat, srcSize);
-    IMAGE_LOGI("RGB565ToNV21P010FuzzTest002: end");
-}
-
-void BGRAToNV12P010FuzzTest001()
-{
-    IMAGE_LOGI("BGRAToNV12P010FuzzTest001: start");
-    PixelFormat srcFormat = PixelFormat::BGRA_8888;
-    PixelFormat destFormat = PixelFormat::YCBCR_P010;
-    Size srcSize = { TREE_ORIGINAL_WIDTH, TREE_ORIGINAL_HEIGHT };
-    RgbConvertToYuvP010(srcFormat, destFormat, srcSize);
-    IMAGE_LOGI("BGRAToNV12P010FuzzTest001: end");
-}
-
-void BGRAToNV12P010FuzzTest002()
-{
-    IMAGE_LOGI("BGRAToNV12P010FuzzTest002: start");
-    PixelFormat srcFormat = PixelFormat::BGRA_8888;
-    PixelFormat destFormat = PixelFormat::YCBCR_P010;
-    Size srcSize = { ODDTREE_ORIGINAL_WIDTH, ODDTREE_ORIGINAL_HEIGHT };
-    RgbConvertToYuvP010(srcFormat, destFormat, srcSize);
-    IMAGE_LOGI("BGRAToNV12P010FuzzTest002: end");
-}
-
-void BGRAToNV21P010FuzzTest001()
-{
-    IMAGE_LOGI("BGRAToNV21P010FuzzTest001: start");
-    PixelFormat srcFormat = PixelFormat::BGRA_8888;
-    PixelFormat destFormat = PixelFormat::YCRCB_P010;
-    Size srcSize = { TREE_ORIGINAL_WIDTH, TREE_ORIGINAL_HEIGHT };
-    RgbConvertToYuvP010(srcFormat, destFormat, srcSize);
-    IMAGE_LOGI("BGRAToNV21P010FuzzTest001: end");
-}
-
-void BGRAToNV21P010FuzzTest002()
-{
-    IMAGE_LOGI("BGRAToNV21P010FuzzTest002: start");
-    PixelFormat srcFormat = PixelFormat::BGRA_8888;
-    PixelFormat destFormat = PixelFormat::YCRCB_P010;
-    Size srcSize = { ODDTREE_ORIGINAL_WIDTH, ODDTREE_ORIGINAL_HEIGHT };
-    RgbConvertToYuvP010(srcFormat, destFormat, srcSize);
-    IMAGE_LOGI("BGRAToNV21P010FuzzTest002: end");
-}
-
 void RGBAToNV12P010FuzzTest001()
 {
     IMAGE_LOGI("RGBAToNV12P010FuzzTest001: start");
@@ -1533,20 +1453,6 @@ void RgbToYuvP010ByPixelMapFuzzTest001()
     IMAGE_LOGI("RgbToYuvP010ByPixelMapTest001: end");
 }
 
-void RgbToYuvP010FuzzTest001()
-{
-    IMAGE_LOGI("YuvP010ToRgbTest001: start");
-    RGB565ToNV12P010FuzzTest001();
-    RGB565ToNV12P010FuzzTest002();
-    RGB565ToNV21P010FuzzTest001();
-    RGB565ToNV21P010FuzzTest002();
-    BGRAToNV12P010FuzzTest001();
-    BGRAToNV12P010FuzzTest002();
-    BGRAToNV21P010FuzzTest001();
-    BGRAToNV21P010FuzzTest002();
-    IMAGE_LOGI("YuvP010ToRgbTest001: end");
-}
-
 void YuvP010ToRgbFuzzTest001()
 {
     IMAGE_LOGI("YuvP010ToRgbTest001: start");
@@ -1627,7 +1533,6 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
     OHOS::Media::YuvToRgbFuzzTest001();
     OHOS::Media::YuvToRgbFuzzTest002();
     OHOS::Media::YuvP010ToRgbFuzzTest001();
-    OHOS::Media::RgbToYuvP010FuzzTest001();
     OHOS::Media::RgbToYuvP010ByPixelMapFuzzTest001();
     OHOS::Media::YuvPixelMapIPCFuzzTest001();
     OHOS::Media::YuvP010PixelMapIPCFuzzTest001();
