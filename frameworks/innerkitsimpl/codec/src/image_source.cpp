@@ -733,6 +733,7 @@ DecodeContext ImageSource::InitDecodeContext(const DecodeOptions &opts, const Im
     const MemoryUsagePreference &preference, bool hasDesiredSizeOptions, PlImageInfo& plInfo)
 {
     DecodeContext context;
+    context.photoDesiredPixelFormat = opts.photoDesiredPixelFormat;
     if (opts.allocatorType != AllocatorType::DEFAULT) {
         context.allocatorType = opts.allocatorType;
     } else {
@@ -1061,6 +1062,7 @@ void ImageSource::SetDecodeInfoOptions(uint32_t index, const DecodeOptions &opts
     options.desireRegionX = opts.CropRect.left;
     options.desireRegionY = opts.CropRect.top;
     options.desirePixelFormat = static_cast<int32_t>(opts.desiredPixelFormat);
+    options.photoDesiredPixelFormat = static_cast<int32_t>(opts.photoDesiredPixelFormat);
     options.index = index;
     options.fitDensity = opts.fitDensity;
     options.desireColorSpace = static_cast<int32_t>(opts.desiredColorSpace);
@@ -2347,6 +2349,13 @@ uint32_t ImageSource::SetDecodeOptions(std::unique_ptr<AbsImageDecoder> &decoder
         IMAGE_LOGE("decoder is nullptr");
         return ERROR;
     }
+    if (sourceHdrType_ <= ImageHdrType::SDR && opts.photoDesiredPixelFormat != PixelFormat::UNKNOWN) {
+        if (opts.photoDesiredPixelFormat == PixelFormat::RGBA_1010102 ||
+            opts.photoDesiredPixelFormat == PixelFormat::YCBCR_P010) {
+                return COMMON_ERR_INVALID_PARAMETER;
+        }
+        plOptions.desiredPixelFormat = opts.photoDesiredPixelFormat;
+    }
     uint32_t ret = decoder->SetDecodeOptions(index, plOptions, plInfo);
     if (ret != SUCCESS) {
         IMAGE_LOGE("[ImageSource]decoder plugin set decode options fail (image index:%{public}u),"
@@ -3585,6 +3594,10 @@ static void SetContext(DecodeContext& context, sptr<SurfaceBuffer>& sb, void* fd
         context.pixelFormat = PixelFormat::NV21;
         context.info.pixelFormat = PixelFormat::NV21;
         context.grColorSpaceName = ColorManager::DISPLAY_P3;
+    } else if (format == GRAPHIC_PIXEL_FMT_YCBCR_P010) {
+        context.pixelFormat = PixelFormat::YCBCR_P010;
+        context.info.pixelFormat = PixelFormat::YCBCR_P010;
+        context.grColorSpaceName = ColorManager::BT2020_HLG;
     }
 }
 
@@ -3952,11 +3965,15 @@ static uint32_t AllocHdrSurfaceBuffer(DecodeContext& context, ImageHdrType hdrTy
     return ERR_IMAGE_DATA_UNSUPPORT;
 #else
     sptr<SurfaceBuffer> sb = SurfaceBuffer::Create();
+    auto hdrPixelFormat = GRAPHIC_PIXEL_FMT_RGBA_1010102;
+    if (context.photoDesiredPixelFormat == PixelFormat::YCBCR_P010) {
+        hdrPixelFormat = GRAPHIC_PIXEL_FMT_YCBCR_P010;
+    }
     BufferRequestConfig requestConfig = {
         .width = context.info.size.width,
         .height = context.info.size.height,
         .strideAlignment = context.info.size.width,
-        .format = GRAPHIC_PIXEL_FMT_RGBA_1010102,
+        .format = hdrPixelFormat,
         .usage = BUFFER_USAGE_CPU_READ | BUFFER_USAGE_CPU_WRITE | BUFFER_USAGE_MEM_DMA | BUFFER_USAGE_MEM_MMZ_CACHE,
         .timeout = 0,
     };

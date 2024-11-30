@@ -313,6 +313,7 @@ struct DecodeOptions {
     static constexpr uint32_t DEFAULT_SAMPLE_SIZE = 1;
     uint32_t sampleSize = DEFAULT_SAMPLE_SIZE;
     PixelFormat desiredPixelFormat = PixelFormat::UNKNOWN;
+    PixelFormat photoDesiredPixelFormat = PixelFormat::UNKNOWN;
 #if defined(ANDROID_PLATFORM) || defined(IOS_PLATFORM)
     AllocatorType allocatorType = AllocatorType::HEAP_ALLOC;
 #else
