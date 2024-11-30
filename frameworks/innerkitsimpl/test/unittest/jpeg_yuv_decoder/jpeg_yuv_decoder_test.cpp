@@ -477,7 +477,7 @@ HWTEST_F(JpgYuvDecoderTest, InitPlaneOutInfoTo420001, TestSize.Level3)
     JpegDecoderYuv jpegDecoderYuv;
     uint32_t width = 0;
     uint32_t height = 0;
-    YUVDataInfo info;
+    YuvPlaneInfo info;
     info.imageWidth = 1;
     info.imageHeight = 1;
     jpegDecoderYuv.InitPlaneOutInfoTo420(width, height, info);
@@ -497,7 +497,7 @@ HWTEST_F(JpgYuvDecoderTest, InitPlaneOutInfoTo420NV001, TestSize.Level3)
     JpegDecoderYuv jpegDecoderYuv;
     uint32_t width = 0;
     uint32_t height = 0;
-    YUVDataInfo info;
+    YuvPlaneInfo info;
     info.imageWidth = 1;
     info.imageHeight = 1;
     jpegDecoderYuv.InitPlaneOutInfoTo420NV(width, height, info);
@@ -549,9 +549,9 @@ HWTEST_F(JpgYuvDecoderTest, ValidateParameter002, TestSize.Level3)
     JpegDecoderYuv jpegDecoderYuv;
     YuvPlaneInfo srcPlaneInfo;
     unsigned char num = 10;
-    srcPlaneInfo.planes[YCOM] == &num;
-    srcPlaneInfo.planes[UCOM] == &num;
-    srcPlaneInfo.planes[VCOM] == &num;
+    srcPlaneInfo.planes[YCOM] = &num;
+    srcPlaneInfo.planes[UCOM] = &num;
+    srcPlaneInfo.planes[VCOM] = &num;
     srcPlaneInfo.imageWidth = 0;
     srcPlaneInfo.imageHeight = 0;
     ConverterPair converter;
@@ -571,9 +571,9 @@ HWTEST_F(JpgYuvDecoderTest, ValidateParameter003, TestSize.Level3)
     JpegDecoderYuv jpegDecoderYuv;
     YuvPlaneInfo srcPlaneInfo;
     unsigned char num = 10;
-    srcPlaneInfo.planes[YCOM] == &num;
-    srcPlaneInfo.planes[UCOM] == &num;
-    srcPlaneInfo.planes[VCOM] == &num;
+    srcPlaneInfo.planes[YCOM] = &num;
+    srcPlaneInfo.planes[UCOM] = &num;
+    srcPlaneInfo.planes[VCOM] = &num;
     srcPlaneInfo.imageWidth = 1;
     srcPlaneInfo.imageHeight = 1;
     ConverterPair converter;
@@ -608,7 +608,7 @@ HWTEST_F(JpgYuvDecoderTest, ConvertFromGray002, TestSize.Level3)
     JpegDecoderYuv jpegDecoderYuv;
     YuvPlaneInfo srcPlaneInfo;
     unsigned char num = 10;
-    srcPlaneInfo.planes[YCOM] == &num;
+    srcPlaneInfo.planes[YCOM] = &num;
     srcPlaneInfo.imageWidth = 0;
     srcPlaneInfo.imageHeight = 0;
     int ret = jpegDecoderYuv.ConvertFromGray(srcPlaneInfo);
@@ -627,7 +627,7 @@ HWTEST_F(JpgYuvDecoderTest, ConvertFromGray003, TestSize.Level3)
     JpegDecoderYuv jpegDecoderYuv;
     YuvPlaneInfo srcPlaneInfo;
     unsigned char num = 10;
-    srcPlaneInfo.planes[YCOM] == &num;
+    srcPlaneInfo.planes[YCOM] = &num;
     srcPlaneInfo.imageWidth = 1;
     srcPlaneInfo.imageHeight = 1;
     srcPlaneInfo.planeWidth[YCOM] = 0;
