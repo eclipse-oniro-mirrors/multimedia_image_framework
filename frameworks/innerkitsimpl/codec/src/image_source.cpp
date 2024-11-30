@@ -3543,6 +3543,7 @@ static uint32_t GetByteCount(const DecodeContext& context, uint32_t surfaceBuffe
         case PixelFormat::NV12:
         case PixelFormat::NV21:
         case PixelFormat::RGBA_1010102:
+        case PixelFormat::YCBCR_P010:
             info.pixelFormat = context.info.pixelFormat;
             break;
         default:
@@ -3986,7 +3987,7 @@ static uint32_t AllocHdrSurfaceBuffer(DecodeContext& context, ImageHdrType hdrTy
     if (err != OHOS::GSERROR_OK) {
         return ERR_DMA_DATA_ABNORMAL;
     }
-    SetContext(context, sb, nativeBuffer, GRAPHIC_PIXEL_FMT_RGBA_1010102);
+    SetContext(context, sb, nativeBuffer, hdrPixelFormat);
     context.grColorSpaceName = ConvertColorSpaceName(color, false);
     CM_HDR_Metadata_Type type;
     if (hdrType == ImageHdrType::HDR_VIVID_DUAL || hdrType == ImageHdrType::HDR_CUVA) {

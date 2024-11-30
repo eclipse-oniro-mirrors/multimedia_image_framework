@@ -621,5 +621,37 @@ HWTEST_F(PictureTest, SetExifMetadataByExifMetadataTest001, TestSize.Level2)
     int32_t result = picture->SetExifMetadata(exifMetadata);
     EXPECT_EQ(result, ERR_IMAGE_INVALID_PARAMETER);
 }
+
+/**
+ * @tc.name: SetExifMetadataTest001
+ * @tc.desc: test the SetExifMetadata of Picture
+ * @tc.type: FUNC
+ */
+HWTEST_F(PictureTest, SetExifMetadataTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PictureTest: SetExifMetadataTest001 start";
+    std::unique_ptr<Picture> picture = CreatePicture();
+    sptr<SurfaceBuffer> surfaceBuffer = nullptr;
+    int32_t ret = picture->SetExifMetadata(surfaceBuffer);
+    ASSERT_EQ(ret, ERR_IMAGE_INVALID_PARAMETER);
+    GTEST_LOG_(INFO) << "PictureTest: SetExifMetadataTest001 end";
+}
+
+/**
+ * @tc.name: SetExifMetadataTest002
+ * @tc.desc: test the SetExifMetadata of Picture
+ * @tc.type: FUNC
+ */
+HWTEST_F(PictureTest, SetExifMetadataTest002, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PictureTest: SetExifMetadataTest002 start";
+    std::unique_ptr<Picture> picture = CreatePicture();
+    sptr<SurfaceBuffer> surfaceBuffer = SurfaceBuffer::Create();
+    sptr<BufferExtraData> bedata = nullptr;
+    surfaceBuffer->SetExtraData(bedata);
+    int32_t ret = picture->SetExifMetadata(surfaceBuffer);
+    ASSERT_EQ(ret, ERR_IMAGE_INVALID_PARAMETER);
+    GTEST_LOG_(INFO) << "PictureTest: SetExifMetadataTest002 end";
+}
 } // namespace Media
 } // namespace OHOS

@@ -371,15 +371,15 @@ int32_t ImageCodec::SetVideoPortInfo(OMX_DIRTYPE portIndex, const PortInfo& info
 void ImageCodec::PrintPortDefinition(const OMX_PARAM_PORTDEFINITIONTYPE& def)
 {
     const OMX_VIDEO_PORTDEFINITIONTYPE& video = def.format.video;
-    HLOGI("----- %{public}s port definition -----", (def.nPortIndex == OMX_DirInput) ? "INPUT" : "OUTPUT");
-    HLOGI("bEnabled %{public}d, bPopulated %{public}d", def.bEnabled, def.bPopulated);
-    HLOGI("nBufferCountActual %{public}u, nBufferSize %{public}u", def.nBufferCountActual, def.nBufferSize);
-    HLOGI("nFrameWidth x nFrameHeight (%{public}u x %{public}u), framerate %{public}u(%{public}.2f)",
+    HLOGD("----- %{public}s port definition -----", (def.nPortIndex == OMX_DirInput) ? "INPUT" : "OUTPUT");
+    HLOGD("bEnabled %{public}d, bPopulated %{public}d", def.bEnabled, def.bPopulated);
+    HLOGD("nBufferCountActual %{public}u, nBufferSize %{public}u", def.nBufferCountActual, def.nBufferSize);
+    HLOGD("nFrameWidth x nFrameHeight (%{public}u x %{public}u), framerate %{public}u(%{public}.2f)",
         video.nFrameWidth, video.nFrameHeight, video.xFramerate, video.xFramerate / FRAME_RATE_COEFFICIENT);
-    HLOGI("    nStride x nSliceHeight (%{public}u x %{public}u)", video.nStride, video.nSliceHeight);
-    HLOGI("eCompressionFormat %{public}d(%{public}#x), eColorFormat %{public}d(%{public}#x)",
+    HLOGD("    nStride x nSliceHeight (%{public}u x %{public}u)", video.nStride, video.nSliceHeight);
+    HLOGD("eCompressionFormat %{public}d(%{public}#x), eColorFormat %{public}d(%{public}#x)",
         video.eCompressionFormat, video.eCompressionFormat, video.eColorFormat, video.eColorFormat);
-    HLOGI("----------------------------------");
+    HLOGD("----------------------------------");
 }
 
 int32_t ImageCodec::GetPortDefinition(OMX_DIRTYPE portIndex, OMX_PARAM_PORTDEFINITIONTYPE& def)
