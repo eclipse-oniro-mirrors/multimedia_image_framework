@@ -37,6 +37,7 @@ struct DecodeInfoOptions {
     int32_t desireRegionX;
     int32_t desireRegionY;
     int32_t desirePixelFormat;
+    int32_t photoDesiredPixelFormat;
     uint32_t index;
     int32_t fitDensity;
     int32_t desireColorSpace;
