@@ -76,8 +76,6 @@ class MemoryManager {
 public:
     static std::unique_ptr<AbsMemory> CreateMemory(AllocatorType type, MemoryData &data);
     static std::unique_ptr<AbsMemory> CreateMemory(AllocatorType type, MemoryData &data, MemoryData &extend);
-    static std::unique_ptr<AbsMemory> TransMemoryType(const AbsMemory &source, AllocatorType target,
-        std::string tag);
 };
 } // namespace Media
 } // namespace OHOS

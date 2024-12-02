@@ -115,8 +115,6 @@ static constexpr uint8_t NUM_6 = 6;
 static constexpr uint8_t NUM_7 = 7;
 static constexpr uint8_t NUM_8 = 8;
 
-constexpr int32_t ANTIALIASING_SIZE = 350;
-
 std::atomic<uint32_t> PixelMap::currentId = 0;
 
 PixelMap::~PixelMap()
@@ -3583,12 +3581,6 @@ static bool GendstTransInfo(SkTransInfo &srcInfo, SkTransInfo &dstInfo, SkMatrix
 struct TransInfos {
     SkMatrix matrix;
 };
-
-bool IsSupportAntiAliasing(const ImageInfo& imageInfo, const AntiAliasingOption &option)
-{
-    return option != AntiAliasingOption::NONE && imageInfo.size.width <= ANTIALIASING_SIZE &&
-            imageInfo.size.height <= ANTIALIASING_SIZE;
-}
 
 SkSamplingOptions ToSkSamplingOption(const AntiAliasingOption &option)
 {
