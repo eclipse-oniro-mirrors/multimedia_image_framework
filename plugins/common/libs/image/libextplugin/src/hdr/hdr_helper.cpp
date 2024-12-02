@@ -731,7 +731,7 @@ static bool ParseISOMetadata(uint8_t* data, uint32_t length, HdrMetadata& metada
     }
     uint8_t flag = data[dataOffset++];
 
-    //The first bit indicates the gainmapChannelNum, the second bit indicates the useBaseColorFlag.
+    // The first bit indicates the gainmapChannelNum, the second bit indicates the useBaseColorFlag.
     metadata.extendMeta.metaISO.gainmapChannelNum = ((flag & 0x80) == 0x80) ? THREE_COMPONENTS : ONE_COMPONENT;
     metadata.extendMeta.metaISO.useBaseColorFlag = ((flag & 0x40) == 0x40) ? 0x01 : 0x00;
 
@@ -1251,7 +1251,6 @@ vector<uint8_t> HdrJpegPackerHelper::PackISOMetadataMarker(HdrMetadata& metadata
     PackISOExtendInfo(bytes, index, extendMeta.metaISO);
     return bytes;
 }
-// LCOV_EXCL_STOP
 
 static bool WriteJpegPreApp(sk_sp<SkData>& imageData, SkWStream& outputStream, uint32_t& index, uint32_t& jfifSize)
 {

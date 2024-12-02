@@ -25,7 +25,6 @@
 #include "sendable_pixel_map_napi.h"
 #include "media_errors.h"
 #include "image_napi_utils.h"
-#include "image_dfx.h"
 
 namespace OHOS {
 namespace Media {

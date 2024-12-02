@@ -379,34 +379,6 @@ Image_ErrorCode OH_ImagePackerNative_PackToDataFromPixelmap(OH_ImagePackerNative
 }
 
 MIDK_EXPORT
-Image_ErrorCode OH_ImagePacker_PackToDataMultiFrames(OH_ImagePackerNative *imagePacker, OH_PackingOptions *options,
-    OH_PixelmapNative **pixelmaps, int32_t mapSize, uint8_t* outData, size_t* outDataSize)
-{
-    if (imagePacker == nullptr || options == nullptr || pixelmaps == nullptr || outData == nullptr) {
-        return IMAGE_BAD_PARAMETER;
-    }
-    std::vector<OH_PixelmapNative*> pixelmap;
-    PackOption packOption;
-    std::string format(options->mimeType.data, options->mimeType.size);
-    packOption.format = format;
-    packOption.quality = options->quality;
-    packOption.desiredDynamicRange = ParseDynamicRange(options->desiredDynamicRange);
-    packOption.loop = options->loop;
-    
-    for (uint32_t i = 0; i < options->delayTimesSize; i++) {
-        packOption.delayTimes.push_back(options->delayTimes[i]);
-    }
-    for (uint32_t i = 0; i < options->disposalTypesSize; i++) {
-        packOption.disposalTypes.push_back(options->disposalTypes[i]);
-    }
-    for (int i = 0; i < mapSize; i++) {
-        pixelmap.push_back(pixelmaps[i]);
-    }
-    return ToNewErrorCode(imagePacker->PackToDataMultiFrames(&packOption, pixelmap, outData,
-        reinterpret_cast<int64_t*>(outDataSize)));
-}
-
-MIDK_EXPORT
 Image_ErrorCode OH_ImagePackerNative_PackToDataFromPicture(OH_ImagePackerNative *imagePacker,
     OH_PackingOptions *options, OH_PictureNative *picture, uint8_t *outData, size_t *size)
 {
@@ -453,33 +425,6 @@ Image_ErrorCode OH_ImagePackerNative_PackToFileFromPixelmap(OH_ImagePackerNative
         return errorCode;
     }
     return ToNewErrorCode(imagePacker->PackToFileFromPixelmap(&packOption, pixelmap, fd));
-}
-
-MIDK_EXPORT
-Image_ErrorCode OH_ImagePacker_PackToFileMultiFrames(OH_ImagePackerNative *imagePacker, OH_PackingOptions *options,
-    OH_PixelmapNative **pixelmaps, int32_t mapSize, int32_t fd)
-{
-    if (imagePacker == nullptr || options == nullptr || pixelmaps == nullptr) {
-        return IMAGE_BAD_PARAMETER;
-    }
-    std::vector<OH_PixelmapNative*> pixelmap;
-    PackOption packOption;
-    std::string format(options->mimeType.data, options->mimeType.size);
-    packOption.format = format;
-    packOption.quality = options->quality;
-    packOption.desiredDynamicRange = ParseDynamicRange(options->desiredDynamicRange);
-    packOption.loop = options->loop;
-
-    for (uint32_t i = 0; i < options->delayTimesSize; i++) {
-        packOption.delayTimes.push_back(options->delayTimes[i]);
-    }
-    for (uint32_t i = 0; i < options->disposalTypesSize; i++) {
-        packOption.disposalTypes.push_back(options->disposalTypes[i]);
-    }
-    for (int i = 0; i < mapSize; i++) {
-        pixelmap.push_back(pixelmaps[i]);
-    }
-    return ToNewErrorCode(imagePacker->PackToFileMultiFrames(&packOption, pixelmap, fd));
 }
 
 MIDK_EXPORT

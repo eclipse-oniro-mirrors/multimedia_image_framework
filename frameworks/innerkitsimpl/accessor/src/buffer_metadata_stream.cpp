@@ -68,7 +68,7 @@ ssize_t BufferMetadataStream::Write(uint8_t *data, ssize_t size)
 {
     // Check if the new data will fit into the current buffer
     if (data == nullptr || size <= 0) {
-        IMAGE_LOGE("BufferMetadataStream: Write failed, data is nullptr or size less than zero");
+        IMAGE_LOGE("BufferMetadataStream::Write failed, data is nullptr or size less than zero");
         return -1;
     }
     if (currentOffset_ + static_cast<long>(size) > capacity_) {

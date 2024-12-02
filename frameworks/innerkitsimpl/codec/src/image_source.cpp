@@ -19,6 +19,7 @@
 #endif
 
 #include <algorithm>
+#include <cerrno>
 #include <charconv>
 #include <chrono>
 #include <cstring>
@@ -160,6 +161,8 @@ static const uint32_t MAX_SOURCE_SIZE = 300 * 1024 * 1024;
 constexpr uint8_t ASTC_EXTEND_INFO_TLV_NUM = 1; // curren only one group TLV
 constexpr uint32_t ASTC_EXTEND_INFO_SIZE_DEFINITION_LENGTH = 4; // 4 bytes to discripte for extend info summary bytes
 constexpr uint32_t ASTC_EXTEND_INFO_LENGTH_LENGTH = 4; // 4 bytes to discripte the content bytes for every TLV group
+static constexpr uint32_t SINGLE_FRAME_SIZE = 1;
+static constexpr uint8_t ISO_USE_BASE_COLOR = 0x01;
 
 struct AstcExtendInfo {
     uint32_t extendBufferSumBytes = 0;
@@ -2060,6 +2063,10 @@ uint32_t ImageSource::GetFormatExtended(string &format) __attribute__((no_saniti
         }
     }
     mainDecoder_ = std::move(decoderPtr);
+    if (mainDecoder_ == nullptr) {
+        IMAGE_LOGE("MainDecoder is null. errno:%{public}d", errno);
+        return ERR_MEDIA_NULL_POINTER;
+    }
     return errorCode;
 }
 
@@ -2461,6 +2468,7 @@ uint32_t ImageSource::AddIncrementalContext(PixelMap &pixelMap, IncrementalRecor
     if (mainDecoder_ != nullptr) {
         // borrowed decoder from the mainDecoder_.
         context.decoder = std::move(mainDecoder_);
+        IMAGE_LOGI("[ImageSource]mainDecoder move to context.");
     } else {
         context.decoder = std::unique_ptr<ImagePlugin::AbsImageDecoder>(CreateDecoder(ret));
     }
@@ -2584,7 +2592,7 @@ uint32_t ImageSource::GetFilterArea(const std::vector<std::string> &exifKeys,
         auto metadataAccessor = MetadataAccessorFactory::Create(bufferPtr, bufferSize);
         if (metadataAccessor == nullptr) {
             IMAGE_LOGD("Create metadataAccessor failed.");
-            return ERR_IMAGE_SOURCE_DATA;
+            return E_NO_EXIF_TAG;
         }
         return metadataAccessor->GetFilterArea(exifKeys, ranges);
     }
@@ -2598,7 +2606,7 @@ uint32_t ImageSource::GetFilterArea(const std::vector<std::string> &exifKeys,
     if (metadataAccessor == nullptr) {
         IMAGE_LOGD("Create metadataAccessor failed.");
         delete[] tmpBuffer;
-        return ERR_IMAGE_SOURCE_DATA;
+        return E_NO_EXIF_TAG;
     }
     auto ret = metadataAccessor->GetFilterArea(exifKeys, ranges);
     delete[] tmpBuffer;
@@ -2857,7 +2865,11 @@ unique_ptr<PixelMap> ImageSource::CreatePixelMapForYUV(uint32_t &errorCode)
         IMAGE_LOGE("Error updating pixelmap info. Return code: %{public}u.", errorCode);
         return nullptr;
     }
-
+    if (ImageUtils::CheckMulOverflow(pixelMap->GetWidth(), pixelMap->GetHeight(), pixelMap->GetPixelBytes())) {
+        IMAGE_LOGE("Invalid pixelmap params width:%{public}d, height:%{public}d",
+                   pixelMap->GetWidth(), pixelMap->GetHeight());
+        return nullptr;
+    }
     size_t bufferSize = static_cast<size_t>(pixelMap->GetWidth() * pixelMap->GetHeight() * pixelMap->GetPixelBytes());
     auto buffer = malloc(bufferSize);
     if (buffer == nullptr) {
@@ -4329,6 +4341,7 @@ std::unique_ptr<Picture> ImageSource::CreatePicture(const DecodingOptionsForPict
     dopts.desiredPixelFormat = PixelFormat::RGBA_8888;
     dopts.desiredDynamicRange = (ParseHdrType() && IsSingleHdrImage(sourceHdrType_)) ?
         DecodeDynamicRange::HDR : DecodeDynamicRange::SDR;
+    dopts.editable = true;
     std::shared_ptr<PixelMap> mainPixelMap = CreatePixelMap(dopts, errorCode);
     std::unique_ptr<Picture> picture = Picture::Create(mainPixelMap);
     if (picture == nullptr) {
@@ -4351,10 +4364,46 @@ std::unique_ptr<Picture> ImageSource::CreatePicture(const DecodingOptionsForPict
     } else if (format == IMAGE_JPEG_FORMAT) {
         DecodeJpegAuxiliaryPicture(auxTypes, picture, errorCode);
     }
+    SetHdrMetadataForPicture(picture);
     if (errorCode != SUCCESS) {
         IMAGE_LOGE("Decode auxiliary pictures failed, error code: %{public}u", errorCode);
     }
     return picture;
+}
+
+void ImageSource::SetHdrMetadataForPicture(std::unique_ptr<Picture> &picture)
+{
+    if (picture == nullptr) {
+        IMAGE_LOGE("%{public}s picture is nullptr", __func__);
+        return;
+    }
+    std::shared_ptr<PixelMap> mainPixelMap = picture->GetMainPixel();
+    std::shared_ptr<PixelMap> gainmapPixelMap = picture->GetGainmapPixelMap();
+    if (mainPixelMap == nullptr || gainmapPixelMap == nullptr || gainmapPixelMap->GetHdrMetadata() == nullptr) {
+        IMAGE_LOGW("%{public}s mainPixelMap or gainmapPixelMap or hdrMetadata is nullptr", __func__);
+        return;
+    }
+    if (mainPixelMap->GetAllocatorType() != AllocatorType::DMA_ALLOC || mainPixelMap->GetFd() == nullptr ||
+        gainmapPixelMap->GetAllocatorType() != AllocatorType::DMA_ALLOC || gainmapPixelMap->GetFd() == nullptr) {
+        IMAGE_LOGW("%{public}s mainPixelMap or gainmapPixelMap is not DMA buffer", __func__);
+        return;
+    }
+    ImageHdrType hdrType = gainmapPixelMap->GetHdrType();
+    HdrMetadata metadata = *(gainmapPixelMap->GetHdrMetadata());
+
+    CM_ColorSpaceType baseCmColor =
+        ConvertColorSpaceType(mainPixelMap->InnerGetGrColorSpace().GetColorSpaceName(), true);
+    // Set hdrMetadata for main
+    sptr<SurfaceBuffer> baseSptr(reinterpret_cast<SurfaceBuffer*>(mainPixelMap->GetFd()));
+    VpeUtils::SetSurfaceBufferInfo(baseSptr, false, hdrType, baseCmColor, metadata);
+
+    // Set hdrMetadata for gainmap
+    sptr<SurfaceBuffer> gainmapSptr(reinterpret_cast<SurfaceBuffer*>(gainmapPixelMap->GetFd()));
+    CM_ColorSpaceType hdrCmColor = CM_BT2020_HLG_FULL;
+    CM_ColorSpaceType gainmapCmColor =
+        metadata.extendMeta.metaISO.useBaseColorFlag == ISO_USE_BASE_COLOR ? baseCmColor : hdrCmColor;
+    SetVividMetaColor(metadata, baseCmColor, gainmapCmColor, hdrCmColor);
+    VpeUtils::SetSurfaceBufferInfo(gainmapSptr, true, hdrType, gainmapCmColor, metadata);
 }
 
 void ImageSource::DecodeHeifAuxiliaryPictures(
@@ -4382,32 +4431,82 @@ void ImageSource::DecodeHeifAuxiliaryPictures(
     }
 }
 
-void ImageSource::DecodeJpegAuxiliaryPicture(
-    std::set<AuxiliaryPictureType> &auxTypes, std::unique_ptr<Picture> &picture, uint32_t &errorCode)
+static bool OnlyDecodeGainmap(std::set<AuxiliaryPictureType> &auxTypes)
 {
-    uint8_t *streamBuffer = sourceStreamPtr_->GetDataPtr();
-    uint32_t streamSize = sourceStreamPtr_->GetStreamSize();
-    auto jpegMpfParser = std::make_unique<JpegMpfParser>();
-    if (!jpegMpfParser->ParsingAuxiliaryPictures(streamBuffer, streamSize, false)) {
-        IMAGE_LOGE("Jpeg parse auxiliary pictures failed!");
-        errorCode = ERR_IMAGE_DATA_ABNORMAL;
-        return;
+    return auxTypes.size() == SINGLE_FRAME_SIZE && auxTypes.find(AuxiliaryPictureType::GAINMAP) != auxTypes.end();
+}
+
+static std::vector<SingleJpegImage> ParsingJpegAuxiliaryPictures(uint8_t *stream, uint32_t streamSize,
+    std::set<AuxiliaryPictureType> &auxTypes, ImageHdrType hdrType)
+{
+    ImageTrace imageTrace("%s", __func__);
+    if (stream == nullptr || streamSize == 0) {
+        IMAGE_LOGE("No source stream when parsing auxiliary pictures");
+        return {};
     }
-    if (sourceHdrType_ > ImageHdrType::SDR) {
+    auto jpegMpfParser = std::make_unique<JpegMpfParser>();
+    if (!OnlyDecodeGainmap(auxTypes) && !jpegMpfParser->ParsingAuxiliaryPictures(stream, streamSize, false)) {
+        IMAGE_LOGE("JpegMpfParser parse auxiliary pictures failed!");
+        jpegMpfParser->images_.clear();
+    }
+    if (hdrType > ImageHdrType::SDR) {
+        uint32_t gainmapStreamSize = streamSize;
+        for (auto &image : jpegMpfParser->images_) {
+            gainmapStreamSize = std::min(gainmapStreamSize, image.offset);
+        }
         SingleJpegImage gainmapImage = {
-            .offset = mainDecoder_->GetGainMapOffset(),
-            .size = streamSize - mainDecoder_->GetGainMapOffset(),
+            .offset = 0,
+            .size = gainmapStreamSize,
             .auxType = AuxiliaryPictureType::GAINMAP,
             .auxTagName = AUXILIARY_TAG_GAINMAP,
         };
         jpegMpfParser->images_.push_back(gainmapImage);
     }
+    return jpegMpfParser->images_;
+}
 
+bool ImageSource::CheckJpegSourceStream(uint8_t *&streamBuffer, uint32_t &streamSize)
+{
+    streamBuffer = sourceStreamPtr_->GetDataPtr();
+    streamSize = sourceStreamPtr_->GetStreamSize();
+    if (streamBuffer == nullptr || streamSize == 0) {
+        IMAGE_LOGE("%{public}s source stream from sourceStreamPtr_ is invalid!", __func__);
+        return false;
+    }
+    if (sourceHdrType_ > ImageHdrType::SDR) {
+        uint32_t gainmapOffset = mainDecoder_->GetGainMapOffset();
+        if (gainmapOffset >= streamSize) {
+            IMAGE_LOGW("%{public}s skip invalid gainmapOffset: %{public}u, streamSize: %{public}u",
+                __func__, gainmapOffset, streamSize);
+            return false;
+        }
+        streamBuffer += gainmapOffset;
+        streamSize -= gainmapOffset;
+    }
+    return true;
+}
+
+void ImageSource::DecodeJpegAuxiliaryPicture(
+    std::set<AuxiliaryPictureType> &auxTypes, std::unique_ptr<Picture> &picture, uint32_t &errorCode)
+{
+    uint8_t *streamBuffer = nullptr;
+    uint32_t streamSize = 0;
+    if (!CheckJpegSourceStream(streamBuffer, streamSize) || streamBuffer == nullptr || streamSize == 0) {
+        IMAGE_LOGE("Jpeg source stream is invalid!");
+        errorCode = ERR_IMAGE_DATA_ABNORMAL;
+        return;
+    }
+    auto auxInfos = ParsingJpegAuxiliaryPictures(streamBuffer, streamSize, auxTypes, sourceHdrType_);
     MainPictureInfo mainInfo;
     mainInfo.hdrType = sourceHdrType_;
     picture->GetMainPixel()->GetImageInfo(mainInfo.imageInfo);
-    for (auto &auxInfo : jpegMpfParser->images_) {
+    for (auto &auxInfo : auxInfos) {
         if (auxTypes.find(auxInfo.auxType) == auxTypes.end()) {
+            continue;
+        }
+        if (ImageUtils::HasOverflowed(auxInfo.offset, auxInfo.size) || auxInfo.offset + auxInfo.size > streamSize) {
+            IMAGE_LOGW("Invalid auxType: %{public}d, offset: %{public}u, size: %{public}u, streamSize: %{public}u",
+                auxInfo.auxType, auxInfo.offset, auxInfo.size, streamSize);
             continue;
         }
         IMAGE_LOGI("Jpeg auxiliary picture has found. Type: %{public}d", auxInfo.auxType);

@@ -17,6 +17,7 @@
 
 #include <sys/stat.h>
 #include <cerrno>
+#include <charconv>
 #include <climits>
 #include <cmath>
 #include <cstdint>
@@ -25,7 +26,6 @@
 #include <fstream>
 #include <sstream>
 #include <chrono>
-#include <charconv>
 
 #include "__config"
 #include "image_log.h"
@@ -207,9 +207,9 @@ int32_t ImageUtils::GetRowDataSizeByPixelFormat(const int32_t &width, const Pixe
         default:
             rowDataSize = pixelBytes * uWidth;
     }
-    if (rowDataSize > INT_MAX) {
+    if (rowDataSize > INT32_MAX) {
         IMAGE_LOGE("GetRowDataSizeByPixelFormat failed: rowDataSize overflowed");
-        return 0;
+        return -1;
     }
     return static_cast<int32_t>(rowDataSize);
 }
@@ -307,7 +307,12 @@ AlphaType ImageUtils::GetValidAlphaTypeByFormat(const AlphaType &dstType, const 
         case PixelFormat::NV21:
         case PixelFormat::NV12:
         case PixelFormat::YCBCR_P010:
-        case PixelFormat::YCRCB_P010:
+        case PixelFormat::YCRCB_P010: {
+            if (dstType != AlphaType::IMAGE_ALPHA_TYPE_OPAQUE) {
+                return AlphaType::IMAGE_ALPHA_TYPE_OPAQUE;
+            }
+            break;
+        }
         case PixelFormat::CMYK:
         default: {
             IMAGE_LOGE("GetValidAlphaTypeByFormat unsupport the format(%{public}d).", format);
@@ -320,10 +325,10 @@ AlphaType ImageUtils::GetValidAlphaTypeByFormat(const AlphaType &dstType, const 
 AllocatorType ImageUtils::GetPixelMapAllocatorType(const Size &size, const PixelFormat &format, bool useDMA)
 {
 #if !defined(_WIN32) && !defined(_APPLE) && !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
-    return useDMA && ((format == PixelFormat::RGBA_1010102 ||
-        format == PixelFormat::YCRCB_P010 || format == PixelFormat::YCBCR_P010)||
-        (format == PixelFormat::RGBA_8888))
-        && size.width * size.height >= DMA_SIZE ?
+    return useDMA && (format == PixelFormat::RGBA_8888 || (format == PixelFormat::RGBA_1010102 ||
+        format == PixelFormat::YCRCB_P010 ||
+        format == PixelFormat::YCBCR_P010)) &&
+        size.width * size.height >= DMA_SIZE ?
         AllocatorType::DMA_ALLOC : AllocatorType::SHARE_MEM_ALLOC;
 #else
     return AllocatorType::HEAP_ALLOC;
@@ -440,7 +445,9 @@ void ImageUtils::DumpPixelMap(PixelMap* pixelMap, std::string customFileName, ui
     std::string fileName = FILE_DIR_IN_THE_SANDBOX + GetLocalTime() + customFileName + std::to_string(imageId) +
         GetPixelMapName(pixelMap) + ".dat";
     int32_t totalSize = pixelMap->GetRowStride() * pixelMap->GetHeight();
-    if (pixelMap->GetPixelFormat() == PixelFormat::NV12 || pixelMap->GetPixelFormat() == PixelFormat::NV21) {
+    PixelFormat pixelFormat = pixelMap->GetPixelFormat();
+    if (pixelFormat == PixelFormat::NV12 || pixelFormat == PixelFormat::NV21 ||
+        pixelFormat == PixelFormat::YCBCR_P010 || pixelFormat == PixelFormat::YCRCB_P010) {
 #if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
         if (pixelMap->GetAllocatorType() == AllocatorType::DMA_ALLOC) {
             auto sbBuffer = reinterpret_cast<SurfaceBuffer*>(pixelMap->GetFd());
@@ -454,7 +461,7 @@ void ImageUtils::DumpPixelMap(PixelMap* pixelMap, std::string customFileName, ui
 #else
         totalSize = static_cast<int32_t>(pixelMap->GetCapacity());
 #endif
-        IMAGE_LOGI("ImageUtils::DumpPixelMapIfDumpEnabled YUV420 totalSize is %{public}d", totalSize);
+        IMAGE_LOGI("ImageUtils::DumpPixelMap YUV420 totalSize is %{public}d", totalSize);
     }
     if (SUCCESS != SaveDataToFile(fileName, reinterpret_cast<const char*>(pixelMap->GetPixels()), totalSize)) {
         IMAGE_LOGI("ImageUtils::DumpPixelMap failed");
@@ -568,7 +575,6 @@ std::string ImageUtils::GetPixelMapName(PixelMap* pixelMap)
     std::string pixelMapStr = "_pixelMap_w" + std::to_string(pixelMap->GetWidth()) +
         "_h" + std::to_string(pixelMap->GetHeight()) +
         "_rowStride" + std::to_string(pixelMap->GetRowStride()) +
-        "_pixelFormat" + std::to_string((int32_t)pixelMap->GetPixelFormat()) +
         "_total" + std::to_string(pixelMap->GetRowStride() * pixelMap->GetHeight()) +
         "_pid" + std::to_string(getpid()) +
         "_tid" + std::to_string(syscall(SYS_thread_selfid)) +
@@ -591,6 +597,7 @@ std::string ImageUtils::GetPixelMapName(PixelMap* pixelMap)
         "_h" + std::to_string(pixelMap->GetHeight()) +
         "_rowStride" + std::to_string(pixelMap->GetRowStride()) +
         "_pixelFormat" + std::to_string((int32_t)pixelMap->GetPixelFormat()) +
+        yuvInfoStr +
         "_total" + std::to_string(pixelMap->GetRowStride() * pixelMap->GetHeight()) +
         "_pid" + std::to_string(getpid()) +
         "_tid" + std::to_string(gettid()) +
@@ -722,53 +729,6 @@ void ImageUtils::ArrayToBytes(const uint8_t* data, uint32_t length, vector<uint8
     }
 }
 
-static void GetNextArray(const uint8_t* pattern, uint32_t patternLen, std::vector<uint32_t>& next)
-{
-    uint32_t prefixEnd = 0;
-    next[0] = prefixEnd;
-    for (uint32_t i = 1; i < patternLen; ++i) {
-        // if not match, move prefixEnd to next position
-        while (prefixEnd > 0 && pattern[prefixEnd] != pattern[i]) {
-            prefixEnd = next[prefixEnd - 1];
-        }
-        // if match, update prefixEnd
-        if (pattern[prefixEnd] == pattern[i]) {
-            prefixEnd++;
-        }
-        //update next array
-        next[i] = prefixEnd;
-    }
-}
-
-int32_t ImageUtils::KMPFind(const uint8_t* target, uint32_t targetLen,
-    const uint8_t* pattern, uint32_t patternLen)
-{
-    if (target == nullptr || pattern == nullptr || patternLen == 0) {
-        IMAGE_LOGE("ImageUtils FindFirstMatchingStringByKMP failed, patternLen is zero");
-        return ERR_MEDIA_INVALID_VALUE;
-    }
-
-    std::vector<uint32_t> next(patternLen, 0);
-    GetNextArray(pattern, patternLen, next);
-    uint32_t targetIndex = 0;
-    uint32_t patternIndex = 0;
-    for (; targetIndex < targetLen; ++targetIndex) {
-        // if not match, move patternIndex to next position
-        while (patternIndex > 0 && target[targetIndex] != pattern[patternIndex]) {
-            patternIndex = next[patternIndex - 1];
-        }
-        // if match, update patternIndex
-        if (target[targetIndex] == pattern[patternIndex]) {
-            ++patternIndex;
-        }
-        // find the first matching string success
-        if (patternIndex == patternLen) {
-            return static_cast<int32_t>(targetIndex) - static_cast<int32_t>(patternLen) + static_cast<int32_t>(NUM_1);
-        }
-    }
-    return ERR_MEDIA_INVALID_VALUE;
-}
-
 void ImageUtils::FlushSurfaceBuffer(PixelMap* pixelMap)
 {
 #if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
@@ -833,6 +793,37 @@ void ImageUtils::InvalidateContextSurfaceBuffer(ImagePlugin::DecodeContext& cont
 #endif
 }
 
+size_t ImageUtils::GetAstcBytesCount(const ImageInfo& imageInfo)
+{
+    size_t astcBytesCount = 0;
+    uint32_t blockWidth = 0;
+    uint32_t blockHeight = 0;
+
+    switch (imageInfo.pixelFormat) {
+        case PixelFormat::ASTC_4x4:
+            blockWidth = ASTC_4X4_BLOCK;
+            blockHeight = ASTC_4X4_BLOCK;
+            break;
+        case PixelFormat::ASTC_6x6:
+            blockWidth = ASTC_6X6_BLOCK;
+            blockHeight = ASTC_6X6_BLOCK;
+            break;
+        case PixelFormat::ASTC_8x8:
+            blockWidth = ASTC_8X8_BLOCK;
+            blockHeight = ASTC_8X8_BLOCK;
+            break;
+        default:
+            IMAGE_LOGE("ImageUtils GetAstcBytesCount failed, format is not supported %{public}d",
+                imageInfo.pixelFormat);
+            return 0;
+    }
+    if ((blockWidth >= ASTC_4X4_BLOCK) && (blockHeight >= ASTC_4X4_BLOCK)) {
+        astcBytesCount = ((imageInfo.size.width + blockWidth - 1) / blockWidth) *
+            ((imageInfo.size.height + blockHeight - 1) / blockHeight) * ASTC_BLOCK_SIZE + ASTC_HEADER_SIZE;
+    }
+    return astcBytesCount;
+}
+
 bool ImageUtils::IsAuxiliaryPictureTypeSupported(AuxiliaryPictureType type)
 {
     auto auxTypes = GetAllAuxiliaryPictureType();
@@ -865,37 +856,6 @@ const std::set<AuxiliaryPictureType> ImageUtils::GetAllAuxiliaryPictureType()
     return auxTypes;
 }
 
-size_t ImageUtils::GetAstcBytesCount(const ImageInfo& imageInfo)
-{
-    size_t astcBytesCount = 0;
-    uint32_t blockWidth = 0;
-    uint32_t blockHeight = 0;
-
-    switch (imageInfo.pixelFormat) {
-        case PixelFormat::ASTC_4x4:
-            blockWidth = ASTC_4X4_BLOCK;
-            blockHeight = ASTC_4X4_BLOCK;
-            break;
-        case PixelFormat::ASTC_6x6:
-            blockWidth = ASTC_6X6_BLOCK;
-            blockHeight = ASTC_6X6_BLOCK;
-            break;
-        case PixelFormat::ASTC_8x8:
-            blockWidth = ASTC_8X8_BLOCK;
-            blockHeight = ASTC_8X8_BLOCK;
-            break;
-        default:
-            IMAGE_LOGE("ImageUtils GetAstcBytesCount failed, format is not supported %{public}d",
-                imageInfo.pixelFormat);
-            return 0;
-    }
-    if ((blockWidth >= ASTC_4X4_BLOCK) && (blockHeight >= ASTC_4X4_BLOCK)) {
-        astcBytesCount = ((imageInfo.size.width + blockWidth - 1) / blockWidth) *
-            ((imageInfo.size.height + blockHeight - 1) / blockHeight) * ASTC_BLOCK_SIZE + ASTC_HEADER_SIZE;
-    }
-    return astcBytesCount;
-}
-
 bool ImageUtils::StrToUint32(const std::string& str, uint32_t& value)
 {
     auto [ptr, errCode] = std::from_chars(str.data(), str.data() + str.size(), value);
@@ -906,6 +866,11 @@ bool ImageUtils::StrToUint32(const std::string& str, uint32_t& value)
 bool ImageUtils::IsInRange(uint32_t value, uint32_t minValue, uint32_t maxValue)
 {
     return (value >= minValue) && (value <= maxValue);
+}
+
+bool ImageUtils::HasOverflowed(uint32_t num1, uint32_t num2)
+{
+    return num1 > std::numeric_limits<uint32_t>::max() - num2;
 }
 } // namespace Media
 } // namespace OHOS

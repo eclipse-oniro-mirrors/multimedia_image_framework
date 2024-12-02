@@ -44,8 +44,10 @@ namespace OHOS {
 namespace Media {
 using namespace std;
 
+static const uint8_t DOUBLE_NUM = 2;
 static const uint8_t NUM_4 = 4;
 static const int32_t DEGREES360 = 360;
+static const float ROUND_FLOAT_NUMBER = 0.5f;
 
 static SkImageInfo ToSkImageInfo(ImageInfo &info, sk_sp<SkColorSpace> colorSpace)
 {
@@ -87,7 +89,7 @@ bool  PixelYuvExt::resize(float xAxis, float yAxis)
     return true;
 }
 
-bool PixelYuvExt::resize(int32_t dstW, int32_t dstH)
+bool  PixelYuvExt::resize(int32_t dstW, int32_t dstH)
 {
     scale(dstW, dstH);
     return true;
@@ -107,6 +109,7 @@ void PixelYuvExt::scale(int32_t dstW, int32_t dstH)
     if (!IsYuvFormat()) {
         return;
     }
+
     ImageInfo imageInfo;
     GetImageInfo(imageInfo);
     AntiAliasingOption operation = AntiAliasingOption::NONE;
@@ -144,8 +147,13 @@ void PixelYuvExt::scale(float xAxis, float yAxis, const AntiAliasingOption &opti
     ImageTrace imageTrace("PixelMap scale");
     ImageInfo imageInfo;
     GetImageInfo(imageInfo);
-    int32_t dstW = imageInfo.size.width  * xAxis;
-    int32_t dstH = imageInfo.size.height * yAxis;
+    int32_t dstW = (imageInfo.size.width  * xAxis + ROUND_FLOAT_NUMBER);
+    int32_t dstH = (imageInfo.size.height * yAxis + ROUND_FLOAT_NUMBER);
+    if (imageInfo.pixelFormat == PixelFormat::YCBCR_P010 ||
+        imageInfo.pixelFormat == PixelFormat::YCRCB_P010) {
+        dstW = (dstW + 1) / DOUBLE_NUM * DOUBLE_NUM;
+        dstH = (dstH + 1) / DOUBLE_NUM * DOUBLE_NUM;
+    }
     YUVStrideInfo dstStrides;
     auto m = CreateMemory(imageInfo.pixelFormat, "Trans ImageData", dstW, dstH, dstStrides);
     if (m == nullptr) {
@@ -171,7 +179,6 @@ void PixelYuvExt::scale(float xAxis, float yAxis, const AntiAliasingOption &opti
 void PixelYuvExt::scale(int32_t dstW, int32_t dstH, const AntiAliasingOption &option)
 {
     ImageTrace imageTrace("PixelMap scale");
-    IMAGE_LOGI("%{public}s (%{public}d, %{public}d)", __func__, dstW, dstH);
     ImageInfo imageInfo;
     GetImageInfo(imageInfo);
 
@@ -181,12 +188,14 @@ void PixelYuvExt::scale(int32_t dstW, int32_t dstH, const AntiAliasingOption &op
         IMAGE_LOGE("scale CreateMemory failed");
         return;
     }
+
     uint8_t *dst = reinterpret_cast<uint8_t *>(m->data.data);
     YUVDataInfo yuvDataInfo;
     GetImageYUVInfo(yuvDataInfo);
     YuvImageInfo yuvInfo = {PixelYuvUtils::ConvertFormat(imageInfo.pixelFormat),
                             imageInfo.size.width, imageInfo.size.height,
                             imageInfo.pixelFormat, yuvDataInfo};
+
     PixelYuvExtUtils::ScaleYuv420(dstW, dstH, option, yuvInfo, data_, dst, dstStrides);
     SetPixelsAddr(reinterpret_cast<void *>(dst), m->extend.data, m->data.size, m->GetType(), nullptr);
     imageInfo.size.width = dstW;
@@ -234,7 +243,7 @@ void PixelYuvExt::rotate(float degrees)
     imageInfo_.size = dstSize;
     SetImageInfo(imageInfo_, true);
     SetPixelsAddr(dst, m->extend.data, m->data.size, m->GetType(), nullptr);
-    UpdateYUVDataInfo(imageInfo_.pixelFormat, dstWidth, dstHeight, dstStrides)
+    UpdateYUVDataInfo(imageInfo_.pixelFormat, dstWidth, dstHeight, dstStrides);
     return;
 }
 
@@ -255,9 +264,6 @@ void PixelYuvExt::flip(bool xAxis, bool yAxis)
     YUVDataInfo yuvDataInfo;
     GetImageYUVInfo(yuvDataInfo);
 
-    int32_t width = imageInfo.size.width;
-    int32_t height = imageInfo.size.height;
-
     uint8_t *dst = nullptr;
     int32_t width = imageInfo.size.width;
     int32_t height = imageInfo.size.height;
@@ -267,7 +273,7 @@ void PixelYuvExt::flip(bool xAxis, bool yAxis)
         IMAGE_LOGE("flip CreateMemory failed");
         return;
     }
-    uint8_t *dst = reinterpret_cast<uint8_t *>(m->data.data);
+    dst = reinterpret_cast<uint8_t *>(m->data.data);
     bool bRet = false;
     if (xAxis && yAxis) {
         bRet = PixelYuvExtUtils::Mirror(data_, dst, imageInfo.size, imageInfo.pixelFormat,

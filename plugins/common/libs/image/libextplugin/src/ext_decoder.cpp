@@ -868,7 +868,13 @@ uint32_t ExtDecoder::Decode(uint32_t index, DecodeContext &context)
     if (skEncodeFormat == SkEncodedImageFormat::kHEIF) {
         context.isHardDecode = true;
     }
-    uint64_t byteCount = static_cast<uint64_t>(dstInfo_.computeMinByteSize());
+    size_t tempByteCount = dstInfo_.computeMinByteSize();
+    if (SkImageInfo::ByteSizeOverflowed(tempByteCount)) {
+        IMAGE_LOGE("Image too large, dstInfo_height: %{public}d, dstInfo_width: %{public}d",
+            dstInfo_.height(), dstInfo_.width());
+        return ERR_IMAGE_TOO_LARGE;
+    }
+    uint64_t byteCount = tempByteCount;
     uint8_t *dstBuffer = nullptr;
     std::unique_ptr<uint8_t[]> tmpBuffer;
     if (dstInfo_.colorType() == SkColorType::kRGB_888x_SkColorType) {
@@ -1165,11 +1171,11 @@ uint32_t ExtDecoder::HardWareDecode(DecodeContext &context)
     }
 
     SurfaceBuffer* sbuffer = static_cast<SurfaceBuffer*>(context.pixelsBuffer.context);
-    if (sbuffer) {
+    if (sbuffer && sbuffer->GetFormat() != GRAPHIC_PIXEL_FMT_RGBA_8888) {
         OH_NativeBuffer_Planes *planes = nullptr;
         GSError retVal = sbuffer->GetPlanesInfo(reinterpret_cast<void**>(&planes));
         if (retVal != OHOS::GSERROR_OK || planes == nullptr) {
-            IMAGE_LOGE("jpeg hardware decode, Get planesInfo failed, retVal:%{public}d", retVal);
+            IMAGE_LOGI("jpeg hardware decode, Get planesInfo failed, retVal:%{public}d", retVal);
         } else if (planes->planeCount >= PLANE_COUNT_TWO) {
             context.yuvInfo.yStride = planes->planes[0].columnStride;
             context.yuvInfo.uvStride = planes->planes[1].columnStride;

@@ -54,7 +54,6 @@ static inline uint32_t Float2UInt32(float val)
     return static_cast<uint32_t>(val + FLOAT_HALF);
 }
 
-// LCOV_EXCL_START
 #if !defined(_WIN32) && !defined(_APPLE) && !defined(ANDROID_PLATFORM) && !defined(IOS_PLATFORM)
 bool AllocShareBufferInner(DecodeContext &context, uint64_t byteCount)
 {
@@ -122,6 +121,7 @@ bool AllocShareBuffer(DecodeContext &context, uint64_t byteCount)
 #endif
 }
 
+// LCOV_EXCL_START
 bool AllocDmaBuffer(DecodeContext &context, uint64_t byteCount, SkSize &svgSize)
 {
     IMAGE_LOGD("[AllocDmaBuffer] IN byteCount=%{public}llu",
@@ -204,6 +204,7 @@ bool AllocHeapBuffer(DecodeContext &context, uint64_t byteCount)
     IMAGE_LOGD("[AllocHeapBuffer] OUT");
     return true;
 }
+// LCOV_EXCL_STOP
 
 SkImageInfo MakeImageInfo(const PixelDecodeOptions &opts)
 {
@@ -213,7 +214,6 @@ SkImageInfo MakeImageInfo(const PixelDecodeOptions &opts)
     SkAlphaType alphaType = SkAlphaType::kPremul_SkAlphaType;
     return SkImageInfo::Make(width, height, colorType, alphaType);
 }
-// LCOV_EXCL_STOP
 } // namespace
 
 SvgDecoder::SvgDecoder()
@@ -232,7 +232,6 @@ SvgDecoder::~SvgDecoder()
     IMAGE_LOGD("[Release] OUT");
 }
 
-// LCOV_EXCL_START
 void SvgDecoder::SetSource(InputDataStream &sourceStream)
 {
     IMAGE_LOGD("[SetSource] IN");
@@ -313,7 +312,6 @@ uint32_t SvgDecoder::SetDecodeOptions(uint32_t index, const PixelDecodeOptions &
     IMAGE_LOGD("[SetDecodeOptions] OUT");
     return Media::SUCCESS;
 }
-// LCOV_EXCL_STOP
 
 uint32_t SvgDecoder::Decode(uint32_t index, DecodeContext &context)
 {
@@ -357,7 +355,6 @@ uint32_t SvgDecoder::GetTopLevelImageNum(uint32_t &num)
     return Media::SUCCESS;
 }
 
-// LCOV_EXCL_START
 // return background size but not specific frame size, cause of frame drawing on background.
 uint32_t SvgDecoder::GetImageSize(uint32_t index, Size &size)
 {
@@ -432,7 +429,6 @@ bool SvgDecoder::AllocBuffer(DecodeContext &context)
     IMAGE_LOGD("[AllocBuffer] OUT ret=%{public}d", ret);
     return ret;
 }
-// LCOV_EXCL_STOP
 
 bool SvgDecoder::BuildStream()
 {
@@ -529,7 +525,6 @@ uint32_t SvgDecoder::DoDecodeHeader()
     return Media::SUCCESS;
 }
 
-// LCOV_EXCL_START
 uint32_t SvgDecoder::DoSetDecodeOptions(uint32_t index, const PixelDecodeOptions &opts, PlImageInfo &info)
 {
     IMAGE_LOGD("[DoSetDecodeOptions] IN index=%{public}u", index);
@@ -574,7 +569,6 @@ uint32_t SvgDecoder::DoSetDecodeOptions(uint32_t index, const PixelDecodeOptions
         static_cast<int32_t>(info.colorSpace), info.size.width, info.size.height);
     return Media::SUCCESS;
 }
-// LCOV_EXCL_STOP
 
 uint32_t SvgDecoder::DoGetImageSize(uint32_t index, Size &size)
 {

@@ -244,12 +244,6 @@ static sptr<SurfaceBuffer> AllocSurfaceBuffer(Size &size, int32_t format, uint32
         errorCode = ERR_DMA_NOT_EXIST;
         return nullptr;
     }
-    void *nativeBuffer = sb.GetRefPtr();
-    if (ImageUtils::SurfaceBuffer_Reference(nativeBuffer) != OHOS::GSERROR_OK) {
-        IMAGE_LOGE("Native buffer reference failed");
-        errorCode = ERR_SURFACEBUFFER_REFERENCE_FAILED;
-        return nullptr;
-    }
     errorCode = SUCCESS;
     return sb;
 }
@@ -267,7 +261,6 @@ static uint32_t CopyToSurfaceBuffer(std::unique_ptr<InputDataStream> &stream, sp
     IMAGE_LOGD("SurfaceBuffer size: %{public}u, stream size: %{public}u", dstSize, srcSize);
     if (memcpy_s(dst, dstSize, src, srcSize) != EOK) {
         IMAGE_LOGE("%{public}s: memcpy failed", __func__);
-        ImageUtils::SurfaceBuffer_Unreference(surfaceBuffer.GetRefPtr());
         return ERR_MEMORY_COPY_FAILED;
     }
     return SUCCESS;

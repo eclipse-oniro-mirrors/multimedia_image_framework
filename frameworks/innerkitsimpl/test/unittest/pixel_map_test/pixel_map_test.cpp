@@ -128,22 +128,24 @@ std::unique_ptr<PixelMap> ConstructPixelMap(int32_t width, int32_t height, Pixel
     info.alphaType = alphaType;
     pixelMap->SetImageInfo(info);
 
-    int32_t bytesPerPixel = ImageUtils::GetPixelBytes(format);
-    int32_t rowDataSize = width * bytesPerPixel;
-    uint32_t bufferSize = rowDataSize * height;
-    if (bufferSize <= 0) {
+    int32_t rowDataSize = ImageUtils::GetRowDataSizeByPixelFormat(width, format);
+    if (rowDataSize <= 0) {
         return nullptr;
     }
-    void *buffer = malloc(bufferSize); // Buffer's lifecycle will be held by pixelMap
+    size_t bufferSize = rowDataSize * height;
+    void* buffer = malloc(bufferSize); // Buffer's lifecycle will be held by pixelMap
     if (buffer == nullptr) {
         return nullptr;
     }
-    char *ch = static_cast<char *>(buffer);
+    char* ch = static_cast<char*>(buffer);
     for (unsigned int i = 0; i < bufferSize; i++) {
         *(ch++) = (char)i;
     }
 
-    pixelMap->SetPixelsAddr(buffer, nullptr, bufferSize, type, nullptr);
+    pixelMap->SetPixelsAddr(buffer, nullptr, bufferSize, type, type != AllocatorType::CUSTOM_ALLOC ? nullptr :
+        [](void* addr, void* context, uint32_t size) {
+            free(addr);
+        });
 
     return pixelMap;
 }
@@ -2434,6 +2436,48 @@ HWTEST_F(PixelMapTest, ReadARGBPixelsTest003, TestSize.Level3)
     EXPECT_EQ(ret, ERR_IMAGE_INVALID_PARAMETER);
 
     GTEST_LOG_(INFO) << "PixelMapTest: ReadARGBPixelsTest003 end";
+}
+
+/**
+ * @tc.name: MarshallingUnmarshallingCustomAllocPixelMapTest
+ * @tc.desc: Test marshalling and unmarshalling PixelMap with CUSTOM_ALLOC allocator type
+ * @tc.type: FUNC
+ */
+HWTEST_F(PixelMapTest, MarshallingUnmarshallingCustomAllocPixelMapTest, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PixelMapTest: MarshallingUnmarshallingCustomAllocPixelMapTest start";
+
+    auto pixelMap = ConstructPixelMap(1, 1, PixelFormat::BGRA_8888, AlphaType::IMAGE_ALPHA_TYPE_UNKNOWN,
+        AllocatorType::CUSTOM_ALLOC);
+    EXPECT_TRUE(pixelMap != nullptr);
+    Parcel parcel;
+    auto ret = pixelMap->Marshalling(parcel);
+    EXPECT_TRUE(ret);
+    PixelMap* newPixelMap = PixelMap::Unmarshalling(parcel);
+    EXPECT_EQ(newPixelMap->GetAllocatorType(), AllocatorType::HEAP_ALLOC);
+
+    GTEST_LOG_(INFO) << "PixelMapTest: MarshallingUnmarshallingCustomAllocPixelMapTest end";
+}
+
+/**
+ * @tc.name: MarshallingUnmarshallingDefaultAllocPixelMapTest
+ * @tc.desc: Test marshalling and unmarshalling PixelMap with DEFAULT allocator type
+ * @tc.type: FUNC
+ */
+HWTEST_F(PixelMapTest, MarshallingUnmarshallingDefaultAllocPixelMapTest, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PixelMapTest: MarshallingUnmarshallingDefaultAllocPixelMapTest start";
+
+    auto pixelMap = ConstructPixelMap(1, 1, PixelFormat::BGRA_8888, AlphaType::IMAGE_ALPHA_TYPE_UNKNOWN,
+        AllocatorType::DEFAULT);
+    EXPECT_TRUE(pixelMap != nullptr);
+    Parcel parcel;
+    auto ret = pixelMap->Marshalling(parcel);
+    EXPECT_TRUE(ret);
+    PixelMap* newPixelMap = PixelMap::Unmarshalling(parcel);
+    EXPECT_EQ(newPixelMap->GetAllocatorType(), AllocatorType::HEAP_ALLOC);
+
+    GTEST_LOG_(INFO) << "PixelMapTest: MarshallingUnmarshallingDefaultAllocPixelMapTest end";
 }
 }
 }
