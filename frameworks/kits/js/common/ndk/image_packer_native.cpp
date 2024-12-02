@@ -570,12 +570,14 @@ static bool HandlePackingOptionsForSequence(OH_PackingOptionsForSequence *option
         if (options->delayTimeList[i] <= 0 || options->delayTimeList[i] > MASK_16) {
             return false;
         }
-        packOption->delayTimes.push_back(static_cast<uint16_t>(options->delayTimeList[i] & MASK_16));
+        packOption->delayTimes.push_back(
+            static_cast<uint16_t>(options->delayTimeList[i]) & static_cast<uint16_t>(MASK_16));
     }
     if (options->delayTimeListLength < static_cast<size_t>(options->frameCount)) {
         for (size_t i = options->delayTimeListLength; i < static_cast<size_t>(options->frameCount); i++) {
             packOption->delayTimes.push_back(
-                static_cast<uint16_t>(options->delayTimeList[options->delayTimeListLength - 1] & MASK_16));
+                static_cast<uint16_t>(options->delayTimeList[options->delayTimeListLength - 1]) &
+                static_cast<uint16_t>(MASK_16));
         }
     }
     for (uint32_t i = 0; i < options->disposalTypesLength; i++) {
@@ -610,7 +612,7 @@ Image_ErrorCode OH_ImagePackerNative_PackToDataFromPixelmapSequence(OH_ImagePack
         for (size_t i = 0; i < sequenceLength; i++) {
             pixelmaps.push_back(pixelmapSequence[i]);
         }
-        for (int i = sequenceLength; i < options->frameCount; i++) {
+        for (size_t i = sequenceLength; i < static_cast<size_t>(options->frameCount); i++) {
             pixelmaps.push_back(pixelmapSequence[sequenceLength - 1]);
         }
     }
@@ -640,7 +642,7 @@ Image_ErrorCode OH_ImagePackerNative_PackToFileFromPixelmapSequence(OH_ImagePack
         for (size_t i = 0; i < sequenceLength; i++) {
             pixelmaps.push_back(pixelmapSequence[i]);
         }
-        for (int i = sequenceLength; i < options->frameCount; i++) {
+        for (size_t i = sequenceLength; i < static_cast<size_t>(options->frameCount); i++) {
             pixelmaps.push_back(pixelmapSequence[sequenceLength - 1]);
         }
     }
