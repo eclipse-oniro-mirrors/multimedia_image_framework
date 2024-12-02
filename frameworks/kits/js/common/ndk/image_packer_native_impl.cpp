@@ -209,31 +209,6 @@ int32_t OH_ImagePackerNative::PackToFileFromPixelmap(OHOS::Media::PackOption *op
     return imagePacker->FinalizePacking(packedSize);
 }
 
-int32_t OH_ImagePackerNative::PackToFileMultiFrames(OHOS::Media::PackOption *option,
-    std::vector<OH_PixelmapNative*> &pixelmap, int32_t fd)
-{
-    if (option == nullptr || pixelmap.empty()) {
-        return IMAGE_BAD_PARAMETER;
-    }
-    OHOS::Media::ImagePacker *imagePacker = imagePacker_.get();
-    int64_t packedSize = 0;
-    uint32_t ret = IMAGE_SUCCESS;
-    ret = imagePacker->StartPacking(fd, *option);
-    if (ret != IMAGE_SUCCESS) {
-        return ret;
-    }
-    for (int i = 0; i < static_cast<int>(pixelmap.size()); i++) {
-        if (pixelmap[i] == nullptr) {
-            return IMAGE_BAD_PARAMETER;
-        }
-        ret = imagePacker->AddImage(*(pixelmap[i]->GetInnerPixelmap().get()));
-    }
-    if (ret != IMAGE_SUCCESS) {
-        return ret;
-    }
-    return imagePacker->FinalizePacking(packedSize);
-}
-
 int32_t OH_ImagePackerNative::PackToFileFromPicture(OHOS::Media::PackOption *option, struct OH_PictureNative *picture,
     const int32_t fd)
 {
