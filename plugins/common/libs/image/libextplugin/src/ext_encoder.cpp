@@ -117,8 +117,6 @@ namespace {
     constexpr uint8_t GAINMAP_CHANNEL_MULTI = 3;
     constexpr uint8_t GAINMAP_CHANNEL_SINGLE = 1;
     constexpr uint8_t EXIF_PRE_SIZE = 6;
-    constexpr uint8_t ALPHA_8_FILL_NUMBER = 3;
-    constexpr uint8_t ALPHA_8_ALIGN_NUMBER = 4;
     constexpr uint32_t JPEG_MARKER_TAG_SIZE = 2;
     constexpr uint32_t DEPTH_MAP_BYTES = sizeof(float); // float16
     constexpr uint32_t LINEAR_MAP_BYTES = sizeof(short) * 3 / 2; // 16bit yuv420
@@ -558,11 +556,6 @@ uint32_t ExtEncoder::EncodeImageByPixelMap(PixelMap* pixelMap, bool needExif, Sk
             return ERR_IMAGE_ENCODE_FAILED;
         }
         rowStride = skInfo.minRowBytes64();
-        if (imageData.info.pixelFormat == PixelFormat::ALPHA_8) {
-            rowStride = (rowStride + ALPHA_8_FILL_NUMBER) / ALPHA_8_ALIGN_NUMBER * ALPHA_8_ALIGN_NUMBER;
-            IMAGE_LOGD("Perform 4-byte alignment for ALPHA_8 format, rowStride becomes %{public}llu",
-                static_cast<unsigned long long>(rowStride));
-        }
 #if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
         if (pixelMap->GetAllocatorType() == AllocatorType::DMA_ALLOC) {
             SurfaceBuffer* sbBuffer = reinterpret_cast<SurfaceBuffer*> (pixelMap->GetFd());

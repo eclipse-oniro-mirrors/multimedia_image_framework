@@ -278,16 +278,15 @@ int32_t PixelMap::GetRGBxRowDataSize(const ImageInfo& info)
 {
     if ((info.pixelFormat <= PixelFormat::UNKNOWN || info.pixelFormat >= PixelFormat::EXTERNAL_MAX) ||
         IsYUV(info.pixelFormat)) {
-        IMAGE_LOGE("[GetRGBxRowDataSize] Unsupported pixel format: %{public}d", info.pixelFormat);
+        IMAGE_LOGE("[ImageUtil]unsupported pixel format");
         return -1;
     }
-
-    int32_t rowDataSize = ImageUtils::GetRowDataSizeByPixelFormat(info.size.width, info.pixelFormat);
-    if (rowDataSize <= 0) {
-        IMAGE_LOGE("[GetRGBxRowDataSize] Get row data size failed");
+    int32_t pixelBytes = ImageUtils::GetPixelBytes(info.pixelFormat);
+    if (pixelBytes < 0 || (pixelBytes != 0 && info.size.width > INT32_MAX / pixelBytes)) {
+        IMAGE_LOGE("[ImageUtil]obtained an out of range value for rgbx pixel bytes");
         return -1;
     }
-    return rowDataSize;
+    return pixelBytes * info.size.width;
 }
 
 int32_t PixelMap::GetRGBxByteCount(const ImageInfo& info)
