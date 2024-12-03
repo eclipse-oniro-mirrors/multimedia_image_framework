@@ -26,6 +26,9 @@ namespace OHOS {
 namespace Multimedia {
 static constexpr int32_t PIXEL_MAP_TEST_WIDTH = 3;
 static constexpr int32_t PIXEL_MAP_TEST_HEIGHT = 3;
+static constexpr int32_t PIXEL_MAP_RGB565_BYTE = 2;
+static constexpr int32_t PIXEL_MAP_RGB888_BYTE = 3;
+static constexpr int32_t PIXEL_MAP_ARGB8888_BYTE = 4;
 constexpr int32_t PIXEL_MAP_BIG_TEST_WIDTH = 4 * 1024;
 constexpr int32_t PIXEL_MAP_BIG_TEST_HEIGHT = 3 * 100;
 
@@ -111,6 +114,472 @@ public:
         *dataIn = data;
         return pixelMap;
     }
+
+/**
+ * @tc.name: ImagePixelMap001
+ * @tc.desc: create pixelmap with color,colorlength,offset,width and initialization options
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImagePixelMapTest, ImagePixelMap001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImagePixelMapTest: ImagePixelMap001 start";
+    /**
+     * @tc.steps: step1. set color,colorlength,offset,width and initialization options
+     * @tc.expected: step1. The new pixelmap is not null.
+     */
+    const uint32_t color[8] = { 0x80, 0x02, 0x04, 0x08, 0x40, 0x02, 0x04, 0x08 }; // 8 means the length of the color.
+    uint32_t colorlength = sizeof(color) / sizeof(color[0]);
+    const int32_t offset = 1; // 1 means the offset of the color.
+    InitializationOptions opts;
+    opts.size.width = 200; // 200 means the width of the pixelmap.
+    opts.size.height = 300; // 300 means the height of the pixelmap.
+    opts.pixelFormat = PixelFormat::ARGB_8888;
+    opts.alphaType = AlphaType::IMAGE_ALPHA_TYPE_OPAQUE;
+    int32_t width = opts.size.width;
+
+    std::unique_ptr<PixelMap> newPixelMap = PixelMap::Create(color, colorlength, offset, width, opts);
+    EXPECT_EQ(newPixelMap, nullptr);
+    GTEST_LOG_(INFO) << "ImagePixelMapTest: ImagePixelMap001 end";
+}
+
+
+/**
+ * @tc.name: ImagePixelMap002
+ * @tc.desc: Set pixel map size out of max value
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImagePixelMapTest, ImagePixelMap002, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImagePixelMapTest: ImagePixelMap002 start";
+    /**
+     * @tc.steps: step1. Set image size out of max value (500MB).
+     * @tc.expected: step1. The pixel map info is default value.
+     */
+    PixelMap pixelMap;
+    ImageInfo info;
+    info.size.width = 500 * 1024; // 500 * 1024 means the width of the pixelmap.
+    info.size.height = 500 * 1024; // 500 * 1024 means the height of the pixelmap.
+    info.pixelFormat = PixelFormat::ARGB_8888;
+    info.colorSpace = ColorSpace::SRGB;
+    EXPECT_EQ(pixelMap.SetImageInfo(info), ERR_IMAGE_TOO_LARGE);
+    EXPECT_EQ(pixelMap.GetHeight(), 0);
+    EXPECT_EQ(pixelMap.GetWidth(), 0);
+    EXPECT_EQ(pixelMap.GetByteCount(), 0);
+    uint8_t *data = const_cast<uint8_t *>(pixelMap.GetPixels());
+    EXPECT_EQ(data, nullptr);
+    GTEST_LOG_(INFO) << "ImagePixelMapTest: ImagePixelMap002 end";
+}
+
+/**
+ * @tc.name: ImagePixelMap003
+ * @tc.desc: create pixelmap with wrong source and correct initialization options
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImagePixelMapTest, ImagePixelMap003, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImagePixelMapTest: ImagePixelMap003 start";
+    /**
+     * @tc.steps: step1. set source pixelmap wrong and correct initialization options
+     * @tc.expected: step1. The new pixelmap is null.
+     */
+    PixelMap srcPixelMap;
+    ImageInfo imageInfo;
+    srcPixelMap.SetImageInfo(imageInfo);
+    InitializationOptions opts;
+    opts.size.width = 200; // 200 means the width of the pixelmap.
+    opts.size.height = 300; // 300 means the height of the pixelmap.
+    opts.pixelFormat = PixelFormat::ARGB_8888;
+    opts.alphaType = AlphaType::IMAGE_ALPHA_TYPE_OPAQUE;
+    std::unique_ptr<PixelMap> newPixelMap = PixelMap::Create(srcPixelMap, opts);
+    EXPECT_EQ(newPixelMap, nullptr);
+    GTEST_LOG_(INFO) << "ImagePixelMapTest: ImagePixelMap003 end";
+}
+
+/**
+ * @tc.name: ImagePixelMap004
+ * @tc.desc: Get pixel position out of image range
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImagePixelMapTest, ImagePixelMap004, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImagePixelMapTest: ImagePixelMap004 start";
+    /**
+     * @tc.steps: step1. Set image info and alloc pixel map memory.
+     * @tc.expected: step1. The pixel map info is correct.
+     */
+    PixelMap pixelMap;
+    int8_t bytesPerPixel = 4; // 4 means the bytes of per pixel, like RGBA, BGRA...
+    int8_t rowDataSize = PIXEL_MAP_TEST_WIDTH * bytesPerPixel;
+    ImageInfo info;
+    info.size.width = PIXEL_MAP_TEST_WIDTH;
+    info.size.height = PIXEL_MAP_TEST_HEIGHT;
+    info.pixelFormat = PixelFormat::ARGB_8888;
+    info.colorSpace = ColorSpace::SRGB;
+    pixelMap.SetImageInfo(info);
+    uint32_t bufferSize = rowDataSize * PIXEL_MAP_TEST_HEIGHT;
+    void *buffer = malloc(bufferSize);
+    EXPECT_NE(buffer, nullptr);
+    pixelMap.SetPixelsAddr(buffer, nullptr, bufferSize, AllocatorType::HEAP_ALLOC, nullptr);
+    uint8_t *data = const_cast<uint8_t *>(pixelMap.GetPixels());
+    EXPECT_NE(data, nullptr);
+    EXPECT_EQ(pixelMap.GetHeight(), PIXEL_MAP_TEST_HEIGHT);
+    EXPECT_EQ(pixelMap.GetWidth(), PIXEL_MAP_TEST_WIDTH);
+    EXPECT_EQ(pixelMap.GetPixelFormat(), PixelFormat::ARGB_8888);
+    EXPECT_EQ(pixelMap.GetColorSpace(), ColorSpace::SRGB);
+    EXPECT_EQ(pixelMap.GetByteCount(), PIXEL_MAP_TEST_HEIGHT * rowDataSize);
+    /**
+     * @tc.steps: step2. Set image color data and get image color value.
+     * @tc.expected: step2. Get image color value failed, because of position out of image range.
+     */
+    for (int32_t i = 0; i < PIXEL_MAP_TEST_WIDTH * PIXEL_MAP_ARGB8888_BYTE * PIXEL_MAP_TEST_HEIGHT; i++) {
+        data[i] = i;
+    }
+    EXPECT_EQ(pixelMap.GetPixel32(4, 4), nullptr); // 4 means x point, 4 means y point.
+    EXPECT_EQ(pixelMap.GetPixel(-1, -1), nullptr); // -1 means x point, -1 means y point.
+    uint32_t color = 0;
+    EXPECT_EQ(pixelMap.GetARGB32Color(4, 4, color), false); // 4 means x point, 4 means y point.
+    GTEST_LOG_(INFO) << "ImagePixelMapTest: ImagePixelMap004 end";
+}
+
+/**
+ * @tc.name: ImagePixelMap005
+ * @tc.desc: Set error image size
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImagePixelMapTest, ImagePixelMap005, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImagePixelMapTest: ImagePixelMap005 start";
+    /**
+     * @tc.steps: step1. Set image error info include image height and width.
+     * @tc.expected: step1. The pixel map info is default value.
+     */
+    PixelMap pixelMap;
+    ImageInfo info;
+    info.size.width = -10; // -10 means the width of the pixelmap.
+    info.size.height = 10; // 10 means the height of the pixelmap.
+    EXPECT_EQ(pixelMap.SetImageInfo(info), ERR_IMAGE_DATA_ABNORMAL);
+    EXPECT_EQ(pixelMap.GetHeight(), 0);
+    EXPECT_EQ(pixelMap.GetWidth(), 0);
+    EXPECT_EQ(pixelMap.GetPixelFormat(), PixelFormat::UNKNOWN);
+    EXPECT_EQ(pixelMap.GetColorSpace(), ColorSpace::SRGB);
+    EXPECT_EQ(pixelMap.GetByteCount(), 0);
+    uint8_t *data = const_cast<uint8_t *>(pixelMap.GetPixels());
+    EXPECT_EQ(data, nullptr);
+    GTEST_LOG_(INFO) << "ImagePixelMapTest: ImagePixelMap005 end";
+}
+
+/**
+ * @tc.name: ImagePixelMap006
+ * @tc.desc: Set unknown pixel format and color space
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImagePixelMapTest, ImagePixelMap006, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImagePixelMapTest: ImagePixelMap006 start";
+    /**
+     * @tc.steps: step1. Set image unknown pixel format and color space info.
+     * @tc.expected: step1. The pixel map info is default value.
+     */
+    PixelMap pixelMap;
+    ImageInfo info;
+    info.size.width = 10; // 10 means the width of the pixelmap.
+    info.size.height = 10; // 10 means the height of the pixelmap.
+    EXPECT_EQ(pixelMap.SetImageInfo(info), ERR_IMAGE_DATA_UNSUPPORT);
+    EXPECT_EQ(pixelMap.GetHeight(), 0);
+    EXPECT_EQ(pixelMap.GetWidth(), 0);
+    EXPECT_EQ(pixelMap.GetPixelFormat(), PixelFormat::UNKNOWN);
+    EXPECT_EQ(pixelMap.GetColorSpace(), ColorSpace::SRGB);
+    EXPECT_EQ(pixelMap.GetByteCount(), 0);
+    uint8_t *data = const_cast<uint8_t *>(pixelMap.GetPixels());
+    EXPECT_EQ(data, nullptr);
+    GTEST_LOG_(INFO) << "ImagePixelMapTest: ImagePixelMap006 end";
+}
+
+/**
+ * @tc.name: ImagePixelMap007
+ * @tc.desc: RGB_565 pixel format pixel map operation
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImagePixelMapTest, ImagePixelMap007, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImagePixelMapTest: ImagePixelMap007 start";
+    /**
+     * @tc.steps: step1. Set image info and alloc pixel map memory.
+     * @tc.expected: step1. The pixel map info is correct.
+     */
+    PixelMap pixelMap;
+    int8_t bytesPerPixel = 2; // 2 means the bytes of per pixel, like RGB565.
+    int8_t rowDataSize = PIXEL_MAP_TEST_WIDTH * bytesPerPixel;
+    ImageInfo info;
+    info.size.width = PIXEL_MAP_TEST_WIDTH;
+    info.size.height = PIXEL_MAP_TEST_HEIGHT;
+    info.pixelFormat = PixelFormat::RGB_565;
+    info.colorSpace = ColorSpace::SRGB;
+    pixelMap.SetImageInfo(info);
+    uint32_t bufferSize = rowDataSize * PIXEL_MAP_TEST_HEIGHT;
+    GTEST_LOG_(INFO) << "ImagePixelMapTest: ImagePixelMap007 start" << bufferSize;
+    void *buffer = malloc(bufferSize);
+    EXPECT_NE(buffer, nullptr);
+    pixelMap.SetPixelsAddr(buffer, nullptr, bufferSize, AllocatorType::HEAP_ALLOC, nullptr);
+    uint8_t *data = const_cast<uint8_t *>(pixelMap.GetPixels());
+    EXPECT_NE(data, nullptr);
+    EXPECT_EQ(pixelMap.GetHeight(), PIXEL_MAP_TEST_HEIGHT);
+    EXPECT_EQ(pixelMap.GetWidth(), PIXEL_MAP_TEST_WIDTH);
+    EXPECT_EQ(pixelMap.GetPixelFormat(), PixelFormat::RGB_565);
+    EXPECT_EQ(pixelMap.GetColorSpace(), ColorSpace::SRGB);
+    EXPECT_EQ(pixelMap.GetPixelBytes(), bytesPerPixel);
+    EXPECT_EQ(pixelMap.GetRowBytes(), rowDataSize);
+    EXPECT_EQ(pixelMap.GetByteCount(), PIXEL_MAP_TEST_HEIGHT * rowDataSize);
+    /**
+     * @tc.steps: step2. Set image color data and get image color value.
+     * @tc.expected: step2. The image color value is correct
+     */
+    for (int32_t i = 0; i < PIXEL_MAP_TEST_WIDTH * PIXEL_MAP_RGB565_BYTE * PIXEL_MAP_TEST_HEIGHT; i++) {
+        data[i] = i;
+    }
+    EXPECT_NE(pixelMap.GetPixel16(1, 1), nullptr);
+    EXPECT_EQ(*pixelMap.GetPixel16(1, 1), 0x0908); // 0x0908 means the base result, used to test getpixel().
+    uint32_t color = 0;
+    uint32_t expect = 0xFF422008; // 0xFF422008 means the base result, used to test getpixel().
+    EXPECT_EQ(pixelMap.GetARGB32Color(1, 1, color), true);
+    EXPECT_EQ(color, expect);
+    // RGB565: binary: 0000100100001000
+    // split to :         00001       001000          01000
+    //                      |           |                |
+    //                      B           G                R
+    // transfer to RGB888:
+    //                      1           8                8
+    // multi 256(8bit length)
+    //                 256*1/2^5    256*8/2^6       256*8/2^5
+    // another method:
+    //                 (x<<3 | x>>2)  (x<<2 | x>>4)
+    EXPECT_EQ(pixelMap.GetARGB32ColorA(color), 255); // 255 means the base result, used to test getpixel().
+    EXPECT_EQ(pixelMap.GetARGB32ColorR(color), 66);  // (8<<3 | 8 >> 2)
+    EXPECT_EQ(pixelMap.GetARGB32ColorG(color), 32);  // (8<<2 | 8 >> 4)
+    EXPECT_EQ(pixelMap.GetARGB32ColorB(color), 8);   // (1<<3 | 1 >> 2)
+    GTEST_LOG_(INFO) << "ImagePixelMapTest: ImagePixelMap007 end";
+}
+
+/**
+ * @tc.name: ImagePixelMap008
+ * @tc.desc: RGB_888 pixel format pixel map operation
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImagePixelMapTest, ImagePixelMap008, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImagePixelMapTest: ImagePixelMap008 start";
+    /**
+     * @tc.steps: step1. Set image info and alloc pixel map memory.
+     * @tc.expected: step1. The pixel map info is correct.
+     */
+    int8_t bytesPerPixel = 3; // 3 means the bytes of per pixel, like RGB888.
+    int8_t rowDataSize = PIXEL_MAP_TEST_WIDTH * bytesPerPixel;
+    ImageInfo info;
+    info.size.width = PIXEL_MAP_TEST_WIDTH;
+    info.size.height = PIXEL_MAP_TEST_HEIGHT;
+    info.pixelFormat = PixelFormat::RGB_888;
+    info.colorSpace = ColorSpace::SRGB;
+    PixelMap pixelMap;
+    pixelMap.SetImageInfo(info);
+    uint32_t bufferSize = rowDataSize * PIXEL_MAP_TEST_HEIGHT;
+    void *buffer = malloc(bufferSize);
+    EXPECT_NE(buffer, nullptr);
+    pixelMap.SetPixelsAddr(buffer, nullptr, bufferSize, AllocatorType::HEAP_ALLOC, nullptr);
+    uint8_t *data = const_cast<uint8_t *>(pixelMap.GetPixels());
+    EXPECT_NE(data, nullptr);
+    EXPECT_EQ(pixelMap.GetHeight(), PIXEL_MAP_TEST_HEIGHT);
+    EXPECT_EQ(pixelMap.GetWidth(), PIXEL_MAP_TEST_WIDTH);
+    EXPECT_EQ(pixelMap.GetPixelFormat(), PixelFormat::RGB_888);
+    EXPECT_EQ(pixelMap.GetColorSpace(), ColorSpace::SRGB);
+    EXPECT_EQ(pixelMap.GetPixelBytes(), bytesPerPixel);
+    EXPECT_EQ(pixelMap.GetRowBytes(), rowDataSize);
+    EXPECT_EQ(pixelMap.GetByteCount(), PIXEL_MAP_TEST_HEIGHT * rowDataSize);
+    /**
+     * @tc.steps: step2. Set image color data and get image color value.
+     * @tc.expected: step2. The image color value is correct
+     */
+    for (int32_t i = 0; i < PIXEL_MAP_TEST_WIDTH * PIXEL_MAP_RGB888_BYTE * PIXEL_MAP_TEST_HEIGHT; i++) {
+        data[i] = i;
+    }
+    EXPECT_NE(pixelMap.GetPixel(1, 1), nullptr);
+    uint32_t color = 0;
+    EXPECT_EQ(pixelMap.GetARGB32Color(1, 1, color), true);
+    EXPECT_EQ(pixelMap.GetARGB32ColorA(color), 255); // 255 means the base result, used to test getpixel().
+    EXPECT_EQ(pixelMap.GetARGB32ColorR(color), 12); // 12 means the base result, used to test getpixel().
+    EXPECT_EQ(pixelMap.GetARGB32ColorG(color), 13); // 13 means the base result, used to test getpixel().
+    EXPECT_EQ(pixelMap.GetARGB32ColorB(color), 14); // 14 means the base result, used to test getpixel().
+    GTEST_LOG_(INFO) << "ImagePixelMapTest: ImagePixelMap008 end";
+}
+
+/**
+ * @tc.name: ImagePixelMap009
+ * @tc.desc: ARGB_8888 pixel format pixel map operation
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImagePixelMapTest, ImagePixelMap009, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImagePixelMapTest: ImagePixelMap009 start";
+    /**
+     * @tc.steps: step1. Set image info and alloc pixel map memory.
+     * @tc.expected: step1. The pixel map info is correct.
+     */
+    int8_t bytesPerPixel = 4; // 4 means the bytes of per pixel, like RGBA8888.
+    int8_t rowDataSize = PIXEL_MAP_TEST_WIDTH * bytesPerPixel;
+    ImageInfo info;
+    info.size.width = PIXEL_MAP_TEST_WIDTH;
+    info.size.height = PIXEL_MAP_TEST_HEIGHT;
+    info.pixelFormat = PixelFormat::ARGB_8888;
+    info.colorSpace = ColorSpace::SRGB;
+    PixelMap pixelMap;
+    pixelMap.SetImageInfo(info);
+    uint32_t bufferSize = rowDataSize * PIXEL_MAP_TEST_HEIGHT;
+    void *buffer = malloc(bufferSize);
+    EXPECT_NE(buffer, nullptr);
+    pixelMap.SetPixelsAddr(buffer, nullptr, bufferSize, AllocatorType::HEAP_ALLOC, nullptr);
+    uint8_t *data = const_cast<uint8_t *>(pixelMap.GetPixels());
+    EXPECT_NE(data, nullptr);
+    EXPECT_EQ(pixelMap.GetHeight(), PIXEL_MAP_TEST_HEIGHT);
+    EXPECT_EQ(pixelMap.GetWidth(), PIXEL_MAP_TEST_WIDTH);
+    EXPECT_EQ(pixelMap.GetPixelFormat(), PixelFormat::ARGB_8888);
+    EXPECT_EQ(pixelMap.GetColorSpace(), ColorSpace::SRGB);
+    EXPECT_EQ(pixelMap.GetPixelBytes(), bytesPerPixel);
+    EXPECT_EQ(pixelMap.GetRowBytes(), rowDataSize);
+    EXPECT_EQ(pixelMap.GetByteCount(), PIXEL_MAP_TEST_HEIGHT * rowDataSize);
+    /**
+     * @tc.steps: step2. Set image color data and get image color value.
+     * @tc.expected: step2. The image color value is correct
+     */
+    for (int32_t i = 0; i < PIXEL_MAP_TEST_WIDTH * PIXEL_MAP_ARGB8888_BYTE * PIXEL_MAP_TEST_HEIGHT; i++) {
+        data[i] = i;
+    }
+    EXPECT_NE(pixelMap.GetPixel(1, 1), nullptr);
+    // 0x13121110 means the base result, used to test getpixel().
+    EXPECT_EQ(*pixelMap.GetPixel32(1, 1), static_cast<uint32_t>(0x13121110));
+    uint32_t color = 0;
+    EXPECT_EQ(pixelMap.GetARGB32Color(1, 1, color), true);
+    EXPECT_EQ(pixelMap.GetARGB32ColorA(color), 0x10); // 0x10 means the base result, used to test getpixel().
+    EXPECT_EQ(pixelMap.GetARGB32ColorR(color), 0x11); // 0x11 means the base result, used to test getpixel().
+    EXPECT_EQ(pixelMap.GetARGB32ColorG(color), 0x12); // 0x12 means the base result, used to test getpixel().
+    EXPECT_EQ(pixelMap.GetARGB32ColorB(color), 0x13); // 0x13 means the base result, used to test getpixel().
+    GTEST_LOG_(INFO) << "ImagePixelMapTest: ImagePixelMap009 end";
+}
+
+/**
+* @tc.name: ImagePixelMap010
+* @tc.desc: test WriteToParcel
+* @tc.type: FUNC
+* @tc.require: AR000FTAMO
+*/
+HWTEST_F(ImagePixelMapTest, ImagePixelMap010, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImagePixelMapTest: ImagePixelMap010 start";
+    Parcel data;
+    std::unique_ptr<PixelMap> pixelmap = ConstructPixmap();
+    bool ret = pixelmap.get()->Marshalling(data);
+    EXPECT_EQ(true, ret);
+
+    GTEST_LOG_(INFO) << "ImagePixelMapTest: ImagePixelMap010 end";
+}
+
+/**
+* @tc.name: ImagePixelMap011
+* @tc.desc: test CreateFromParcel
+* @tc.type: FUNC
+* @tc.require: AR000FTAMO
+*/
+HWTEST_F(ImagePixelMapTest, ImagePixelMap011, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImagePixelMapTest: ImagePixelMap011 start";
+
+    Parcel data;
+    std::unique_ptr<PixelMap> pixelmap1 = ConstructPixmap();
+    bool ret = pixelmap1.get()->Marshalling(data);
+    EXPECT_EQ(true, ret);
+
+    PixelMap *pixelmap2 = PixelMap::Unmarshalling(data);
+    EXPECT_EQ(pixelmap1->GetHeight(), pixelmap2->GetHeight());
+    EXPECT_EQ(pixelmap1->GetWidth(), pixelmap2->GetWidth());
+    EXPECT_EQ(pixelmap1->GetPixelFormat(), pixelmap2->GetPixelFormat());
+    EXPECT_EQ(pixelmap1->GetColorSpace(), pixelmap2->GetColorSpace());
+
+    Parcel data2;
+    pixelmap2->Marshalling(data2);
+    PIXEL_MAP_ERR err;
+    PixelMap *pixelmap3 = PixelMap::Unmarshalling(data2, err);
+    EXPECT_EQ(pixelmap2->GetHeight(), pixelmap3->GetHeight());
+    EXPECT_EQ(pixelmap2->GetWidth(), pixelmap3->GetWidth());
+    EXPECT_EQ(pixelmap2->GetPixelFormat(), pixelmap3->GetPixelFormat());
+    EXPECT_EQ(pixelmap2->GetColorSpace(), pixelmap3->GetColorSpace());
+
+    uint32_t code = 10; // test num.
+    pixelmap3->SetPixelMapError(code, "error");
+    EXPECT_EQ(code, pixelmap3->errorCode);
+    EXPECT_EQ("error", pixelmap3->errorInfo);
+
+    GTEST_LOG_(INFO) << "ImagePixelMapTest: ImagePixelMap011 end";
+}
+
+/**
+ * @tc.name: ImagePixelMap012
+ * @tc.desc: ALPHA_8 pixel format pixel map operation
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImagePixelMapTest, ImagePixelMap012, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImagePixelMapTest: ImagePixelMap012 start";
+    /**
+     * @tc.steps: step1. Set image info and alloc pixel map memory.
+     * @tc.expected: step1. The pixel map info is correct.
+     */
+    PixelMap pixelMap;
+    ImageInfo info;
+    info.size.width = PIXEL_MAP_TEST_WIDTH;
+    info.size.height = PIXEL_MAP_TEST_HEIGHT;
+    info.pixelFormat = PixelFormat::ALPHA_8;
+    info.colorSpace = ColorSpace::SRGB;
+    pixelMap.SetImageInfo(info);
+    int32_t rowDataSize = (PIXEL_MAP_TEST_WIDTH + 3) / 4 * 4; // 4 bytes rounded up when format is alpha8
+    uint32_t bufferSize = rowDataSize * PIXEL_MAP_TEST_HEIGHT;
+    void *buffer = malloc(bufferSize);
+    EXPECT_NE(buffer, nullptr);
+    pixelMap.SetPixelsAddr(buffer, nullptr, bufferSize, AllocatorType::HEAP_ALLOC, nullptr);
+    uint8_t *data = const_cast<uint8_t *>(pixelMap.GetPixels());
+    EXPECT_NE(data, nullptr);
+    EXPECT_EQ(pixelMap.GetHeight(), PIXEL_MAP_TEST_HEIGHT);
+    EXPECT_EQ(pixelMap.GetWidth(), PIXEL_MAP_TEST_WIDTH);
+    EXPECT_EQ(pixelMap.GetPixelFormat(), PixelFormat::ALPHA_8);
+    EXPECT_EQ(pixelMap.GetColorSpace(), ColorSpace::SRGB);
+    EXPECT_EQ(pixelMap.GetPixelBytes(), 1);
+    EXPECT_EQ(pixelMap.GetRowBytes(), rowDataSize);
+    EXPECT_EQ(pixelMap.GetByteCount(), PIXEL_MAP_TEST_HEIGHT * rowDataSize);
+    /**
+     * @tc.steps: step2. Get image info.
+     * @tc.expected: step2. The pixel map info is correct
+     */
+    ImageInfo outInfo;
+    pixelMap.GetImageInfo(outInfo);
+    EXPECT_EQ(outInfo.size.width, info.size.width);
+    EXPECT_EQ(outInfo.size.height, info.size.height);
+    EXPECT_EQ(outInfo.pixelFormat, info.pixelFormat);
+    EXPECT_EQ(outInfo.colorSpace, info.colorSpace);
+    /**
+     * @tc.steps: step3. Set image color data and get image color value.
+     * @tc.expected: step3. The image color value is correct
+     */
+    for (int32_t i = 0; i < rowDataSize * PIXEL_MAP_TEST_HEIGHT; i++) {
+        data[i] = i;
+    }
+    uint32_t color = 0;
+    EXPECT_NE(pixelMap.GetPixel8(1, 1), nullptr);
+    // 0x05 means the base result, used to test getpixel().
+    EXPECT_EQ(*pixelMap.GetPixel8(1, 1), 0x05);
+    EXPECT_EQ(pixelMap.GetARGB32Color(1, 1, color), true);
+    EXPECT_EQ(pixelMap.GetARGB32ColorA(color), 5); // 5 means the base result, used to test getpixel().
+    EXPECT_EQ(pixelMap.GetARGB32ColorR(color), 0); // 0 means the base result, used to test getpixel().
+    EXPECT_EQ(pixelMap.GetARGB32ColorG(color), 0); // 0 means the base result, used to test getpixel().
+    EXPECT_EQ(pixelMap.GetARGB32ColorB(color), 0); // 0 means the base result, used to test getpixel().
+    GTEST_LOG_(INFO) << "ImagePixelMapTest: ImagePixelMap012 end";
+}
 
 /**
 * @tc.name: ImagePixelMap013
