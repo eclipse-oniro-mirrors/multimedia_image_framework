@@ -290,7 +290,7 @@ bool JpegExifMetadataAccessor::WriteData(BufferMetadataStream &bufStream, uint8_
         IMAGE_LOGE("Failed to write data blob. dataBlob is nullptr");
         return false;
     }
-    if (memcmp(reinterpret_cast<char *>(dataBlob), EXIF_ID, EXIF_ID_SIZE) != 0) {
+    if (size >= EXIF_ID_SIZE && memcmp(reinterpret_cast<char *>(dataBlob), EXIF_ID, EXIF_ID_SIZE) != 0) {
         writeHeaderLength = APP1_HEADER_LENGTH;
         exifHeaderLength = APP1_EXIF_LENGTH;
         std::copy_n(EXIF_ID, EXIF_ID_SIZE, tmpBuf.data() + MARKER_LENGTH_SIZE);
