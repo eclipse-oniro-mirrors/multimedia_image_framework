@@ -38,6 +38,7 @@ private:
     static std::vector<uint8_t> PackBaseVividMarker(uint32_t gainmapOffset, uint32_t preOffset, uint32_t appSize);
     static std::vector<uint8_t> PackBaseMpfMarker(uint32_t baseSize, uint32_t gainmapSize, uint32_t appOffset);
     static std::vector<uint8_t> PackBaseISOMarker();
+    static std::vector<uint8_t> PackHdrMediaTypeMarker(Media::HdrMetadata& hdrMetadata);
     static uint32_t GetBaseVividMarkerSize();
     static uint32_t GetMpfMarkerSize();
 };
