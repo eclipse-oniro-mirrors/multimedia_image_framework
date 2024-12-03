@@ -196,8 +196,8 @@ DataBuf JpegExifMetadataAccessor::ReadNextSegment(byte marker)
 {
     const auto [sizeBuf, size] = ReadSegmentLength(marker);
     DataBuf buf(size);
-    if (size > SEGMENT_LENGTH_SIZE) {
-        imageStream_->Read(buf.Data(SEGMENT_LENGTH_SIZE), (size - SEGMENT_LENGTH_SIZE));
+    if (size > SEGMENT_LENGTH_SIZE &&
+        (imageStream_->Read(buf.Data(SEGMENT_LENGTH_SIZE), (size - SEGMENT_LENGTH_SIZE)) != -1)) {
         std::copy(sizeBuf.begin(), sizeBuf.end(), buf.Begin());
     }
 
@@ -255,7 +255,12 @@ std::tuple<size_t, size_t> JpegExifMetadataAccessor::GetInsertPosAndMarkerAPP1()
 
     imageStream_->Seek(0, SeekPos::BEGIN);
 
-    byte marker = static_cast<byte>(FindNextMarker());
+    int ret = FindNextMarker();
+    if (ret == EOF) {
+        IMAGE_LOGE("GetInsertPosAndMarkerAPP1 failed to find marker 0xff in image stream.");
+        return std::make_tuple(insertPos, skipExifSeqNum);
+    }
+    byte marker = static_cast<byte>(ret);
     while ((marker != JPEG_MARKER_SOS) && (marker != JPEG_MARKER_EOI)) {
         DataBuf buf = ReadNextSegment(marker);
         if (marker == JPEG_MARKER_APP0) {
@@ -265,7 +270,11 @@ std::tuple<size_t, size_t> JpegExifMetadataAccessor::GetInsertPosAndMarkerAPP1()
             skipExifSeqNum = markerCount;
         }
 
-        marker = static_cast<byte>(FindNextMarker());
+        int ret = FindNextMarker();
+        if (ret == EOF) {
+            break;
+        }
+        marker = static_cast<byte>(ret);
         ++markerCount;
     }
 
@@ -368,7 +377,12 @@ bool JpegExifMetadataAccessor::UpdateExifMetadata(BufferMetadataStream &bufStrea
 
     imageStream_->Seek(0, SeekPos::BEGIN);
 
-    byte marker = static_cast<byte>(FindNextMarker());
+    int ret = FindNextMarker();
+    if (ret == EOF) {
+        IMAGE_LOGE("UpdateExifMetadata failed to find marker 0xff in image stream.");
+        return false;
+    }
+    byte marker = static_cast<byte>(ret);
     while (marker != JPEG_MARKER_SOS) {
         DataBuf buf = ReadNextSegment(marker);
         if (markerCount == insertPos) {
@@ -385,7 +399,11 @@ bool JpegExifMetadataAccessor::UpdateExifMetadata(BufferMetadataStream &bufStrea
             IMAGE_LOGD("Skipping existing exifApp segment number.");
         }
 
-        marker = static_cast<byte>(FindNextMarker());
+        int ret = FindNextMarker();
+        if (ret == EOF) {
+            break;
+        }
+        marker = static_cast<byte>(ret);
         ++markerCount;
     }
 
