@@ -882,5 +882,14 @@ ExifMetadata *ExifMetadata::Unmarshalling(Parcel &parcel, PICTURE_ERR &error)
     }
     return nullptr;
 }
+
+bool ExifMetadata::RemoveExifThumbnail()
+{
+    if (exifData_ == nullptr) {
+        return false;
+    }
+    exifData_->remove_thumbnail = 1;
+    return true;
+}
 } // namespace Media
 } // namespace OHOS
