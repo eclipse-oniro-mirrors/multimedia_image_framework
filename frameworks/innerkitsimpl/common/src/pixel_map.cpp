@@ -374,7 +374,7 @@ static int AllocPixelMapMemory(std::unique_ptr<AbsMemory> &dstMemory, int32_t &d
 {
     int64_t rowDataSize = ImageUtils::GetRowDataSizeByPixelFormat(dstImageInfo.size.width, dstImageInfo.pixelFormat);
     if (rowDataSize <= 0) {
-        IMAGE_LOGE("[AllocPixelMapMemory] Get row data size failed");
+        IMAGE_LOGE("[PixelMap] AllocPixelMapMemory: Get row data size failed");
         return IMAGE_RESULT_BAD_PARAMETER;
     }
     int64_t bufferSize = rowDataSize * dstImageInfo.size.height;
@@ -384,8 +384,8 @@ static int AllocPixelMapMemory(std::unique_ptr<AbsMemory> &dstMemory, int32_t &d
         return IMAGE_RESULT_BAD_PARAMETER;
     }
 
-    MemoryData memoryData =
-        {nullptr, static_cast<size_t>(bufferSize), "Create PixelMap", dstImageInfo.size, dstImageInfo.pixelFormat};
+    MemoryData memoryData = {nullptr, static_cast<size_t>(bufferSize), "Create PixelMap", dstImageInfo.size,
+        dstImageInfo.pixelFormat};
     dstMemory = MemoryManager::CreateMemory(
         ImageUtils::GetPixelMapAllocatorType(dstImageInfo.size, dstImageInfo.pixelFormat, useDMA), memoryData);
     if (dstMemory == nullptr) {
