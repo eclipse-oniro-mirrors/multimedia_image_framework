@@ -1330,6 +1330,8 @@ uint32_t ExtEncoder::EncodeDualVivid(ExtWStream& outputStream)
     HdrMetadata metadata;
     sptr<SurfaceBuffer> hdrSurfaceBuffer(reinterpret_cast<SurfaceBuffer*> (pixelmap_->GetFd()));
     SetHdrColorSpaceType(hdrSurfaceBuffer);
+    CM_HDR_Metadata_Type hdrMetadataType;
+    VpeUtils::GetSbMetadataType(hdrSurfaceBuffer, hdrMetadataType);
     VpeUtils::SetSbMetadataType(hdrSurfaceBuffer, CM_IMAGE_HDR_VIVID_SINGLE);
     VpeSurfaceBuffers buffers = {
         .sdr = baseSptr,
@@ -1341,6 +1343,7 @@ uint32_t ExtEncoder::EncodeDualVivid(ExtWStream& outputStream)
         FreeBaseAndGainMapSurfaceBuffer(baseSptr, gainMapSptr);
         return IMAGE_RESULT_CREATE_SURFAC_FAILED;
     }
+    metadata.hdrMetadataType = static_cast<int32_t>(hdrMetadataType);
     uint32_t error;
     if (encodeFormat_ == SkEncodedImageFormat::kJPEG) {
         sk_sp<SkData> baseImageData = GetImageEncodeData(baseSptr, baseInfo, opts_.needsPackProperties);

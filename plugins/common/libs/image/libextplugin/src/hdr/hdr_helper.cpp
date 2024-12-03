@@ -52,6 +52,7 @@ constexpr uint8_t JPEG_MARKER_APP0 = 0xE0;
 constexpr uint8_t JPEG_MARKER_APP2 = 0xE2;
 constexpr uint8_t JPEG_MARKER_APP5 = 0xE5;
 constexpr uint8_t JPEG_MARKER_APP8 = 0xE8;
+constexpr uint8_t JPEG_MARKER_APP11 = 0xEB;
 constexpr uint8_t JPEG_SOI = 0xD8;
 constexpr uint32_t MOVE_ONE_BYTE = 8;
 constexpr uint32_t VIVID_BASE_IMAGE_MARKER_SIZE = 22;
@@ -92,6 +93,12 @@ constexpr uint8_t ISO_GAINMAP_TAG_SIZE = 28;
 constexpr uint8_t ISO_GAINMAP_TAG[ISO_GAINMAP_TAG_SIZE] = {
     'u', 'r', 'n', ':', 'i', 's', 'o', ':', 's', 't', 'd', ':', 'i', 's', 'o', ':', 't', 's', ':', '2', '1', '4', '9',
     '6', ':', '-', '1', '\0'
+};
+constexpr uint8_t HDR_MEDIA_TYPE_TAG_SIZE = 45;
+constexpr uint8_t HDR_MEDIA_TYPE_TAG[HDR_MEDIA_TYPE_TAG_SIZE] = {
+    'u', 'r', 'n', ':', 'h', 'a', 'r', 'm', 'o', 'n', 'y', 'o', 's', ':', 'm', 'u', 'l', 't', 'i', 'm', 'e',
+    'd', 'i', 'a', ':', 'i', 'm', 'a', 'g', 'e', ':', 'v', 'i', 'd', 'e', 'o', 'c', 'o', 'v', 'e', 'r', ':',
+    'v', '1', '\0'
 };
 
 #ifdef HEIF_HW_DECODE_ENABLE
@@ -772,6 +779,25 @@ static bool GetISOGainmapMetadata(jpeg_marker_struct* markerList, HdrMetadata& m
     return false;
 }
 
+static bool GetHdrMediaTypeInfo(jpeg_marker_struct* markerList, HdrMetadata& metadata)
+{
+    for (jpeg_marker_struct* marker = markerList; marker; marker = marker->next) {
+        if (JPEG_MARKER_APP11 != marker->marker) {
+            continue;
+        }
+        if (marker->data_length <= HDR_MEDIA_TYPE_TAG_SIZE ||
+            memcmp(marker->data, HDR_MEDIA_TYPE_TAG, HDR_MEDIA_TYPE_TAG_SIZE) != 0) {
+            continue;
+        }
+        uint8_t* data = marker->data + HDR_MEDIA_TYPE_TAG_SIZE;
+        uint32_t dataOffset = 0;
+        uint32_t hdrMediaType = ImageUtils::BytesToUint32(data, dataOffset);
+        metadata.hdrMetadataType = static_cast<int32_t>(hdrMediaType);
+        return true;
+    }
+    return false;
+}
+
 static bool GetJpegGainMapMetadata(SkJpegCodec* codec, ImageHdrType type, HdrMetadata& metadata)
 {
     if (codec == nullptr || codec->decoderMgr() == nullptr) {
@@ -782,6 +808,7 @@ static bool GetJpegGainMapMetadata(SkJpegCodec* codec, ImageHdrType type, HdrMet
     if (!markerList) {
         return false;
     }
+    GetHdrMediaTypeInfo(markerList, metadata);
     switch (type) {
         case ImageHdrType::HDR_VIVID_DUAL: {
             bool res = GetVividJpegMetadata(markerList, metadata);
@@ -980,6 +1007,22 @@ vector<uint8_t> HdrJpegPackerHelper::PackBaseISOMarker()
     ImageUtils::Uint16ToBytes(length, bytes, index); // set iso marker size
     ImageUtils::ArrayToBytes(ISO_GAINMAP_TAG, ISO_GAINMAP_TAG_SIZE, bytes, index);
     ImageUtils::Uint32ToBytes(EMPTY_SIZE, bytes, index); // set iso payload size
+    return bytes;
+}
+
+vector<uint8_t> HdrJpegPackerHelper::PackHdrMediaTypeMarker(HdrMetadata& hdrMetadata)
+{
+    // marker + hdrMediaTypeTag + TypeNumber
+    uint32_t hdrMediaTypeLength = UINT32_BYTE_COUNT + HDR_MEDIA_TYPE_TAG_SIZE + UINT32_BYTE_COUNT;
+    vector<uint8_t> bytes(hdrMediaTypeLength);
+    uint32_t index = 0;
+    bytes[index++] = JPEG_MARKER_PREFIX;
+    bytes[index++] = JPEG_MARKER_APP11;
+    // length dose not contain marker
+    uint32_t length = hdrMediaTypeLength - JPEG_MARKER_TAG_SIZE;
+    ImageUtils::Uint16ToBytes(length, bytes, index); // set iso marker size
+    ImageUtils::ArrayToBytes(HDR_MEDIA_TYPE_TAG, HDR_MEDIA_TYPE_TAG_SIZE, bytes, index);
+    ImageUtils::Uint32ToBytes(static_cast<uint32_t>(hdrMetadata.hdrMetadataType), bytes, index);
     return bytes;
 }
 
@@ -1286,7 +1329,9 @@ uint32_t HdrJpegPackerHelper::SpliceHdrStream(sk_sp<SkData>& baseImage, sk_sp<Sk
     }
     std::vector<uint8_t> gainmapMetadataPack = PackVividMetadataMarker(metadata);
     std::vector<uint8_t> gainmapISOMetadataPack = PackISOMetadataMarker(metadata);
-    uint32_t gainmapSize = gainmapImage->size() + gainmapMetadataPack.size() + gainmapISOMetadataPack.size();
+    std::vector<uint8_t> gainmapHdrMediaTypeInfo = PackHdrMediaTypeMarker(metadata);
+    uint32_t gainmapSize = gainmapImage->size() + gainmapMetadataPack.size() +
+            gainmapISOMetadataPack.size() + gainmapHdrMediaTypeInfo.size();
     std::vector<uint8_t> baseISOInfo = PackBaseISOMarker();
     uint32_t baseVividApp8Size = GetBaseVividMarkerSize();
     uint32_t baseMpfApp2Size = GetMpfMarkerSize();
@@ -1305,6 +1350,7 @@ uint32_t HdrJpegPackerHelper::SpliceHdrStream(sk_sp<SkData>& baseImage, sk_sp<Sk
     output.write(gainmapBytes, JPEG_MARKER_TAG_SIZE);
     output.write(gainmapISOMetadataPack.data(), gainmapISOMetadataPack.size());
     output.write(gainmapMetadataPack.data(), gainmapMetadataPack.size());
+    output.write(gainmapHdrMediaTypeInfo.data(), gainmapHdrMediaTypeInfo.size());
     output.write(gainmapBytes + JPEG_MARKER_TAG_SIZE, gainmapImage->size() - JPEG_MARKER_TAG_SIZE);
     return SUCCESS;
 }
