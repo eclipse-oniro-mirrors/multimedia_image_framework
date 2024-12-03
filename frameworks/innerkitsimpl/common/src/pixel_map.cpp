@@ -372,19 +372,20 @@ static void SetYUVDataInfoToPixelMap(unique_ptr<PixelMap> &dstPixelMap)
 static int AllocPixelMapMemory(std::unique_ptr<AbsMemory> &dstMemory, int32_t &dstRowStride,
     const ImageInfo &dstImageInfo, bool useDMA)
 {
-    int32_t rowDataSize = ImageUtils::GetRowDataSizeByPixelFormat(dstImageInfo.size.width, dstImageInfo.pixelFormat);
+    int64_t rowDataSize = ImageUtils::GetRowDataSizeByPixelFormat(dstImageInfo.size.width, dstImageInfo.pixelFormat);
     if (rowDataSize <= 0) {
         IMAGE_LOGE("[AllocPixelMapMemory] Get row data size failed");
         return IMAGE_RESULT_BAD_PARAMETER;
     }
-    size_t bufferSize = static_cast<size_t>(rowDataSize) * static_cast<size_t>(dstImageInfo.size.height);
+    int64_t bufferSize = rowDataSize * dstImageInfo.size.height;
     if (bufferSize > UINT32_MAX) {
         IMAGE_LOGE("[PixelMap]Create: pixelmap size too large: width = %{public}d, height = %{public}d",
             dstImageInfo.size.width, dstImageInfo.size.height);
         return IMAGE_RESULT_BAD_PARAMETER;
     }
 
-    MemoryData memoryData = {nullptr, bufferSize, "Create PixelMap", dstImageInfo.size, dstImageInfo.pixelFormat};
+    MemoryData memoryData =
+        {nullptr, static_cast<size_t>(bufferSize), "Create PixelMap", dstImageInfo.size, dstImageInfo.pixelFormat};
     dstMemory = MemoryManager::CreateMemory(
         ImageUtils::GetPixelMapAllocatorType(dstImageInfo.size, dstImageInfo.pixelFormat, useDMA), memoryData);
     if (dstMemory == nullptr) {
