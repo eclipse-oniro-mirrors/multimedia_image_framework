@@ -152,6 +152,16 @@ heif_error HeifBox::ParseContent(HeifStreamReader &reader)
     return reader.GetError();
 }
 
+heif_error HeifBox::ParseContentChildren(HeifStreamReader &reader, uint32_t &recursionCount)
+{
+    uint64_t contentSize = GetBoxSize() - GetHeaderSize();
+    if (reader.CheckSize(contentSize)) {
+        reader.GetStream()->Seek(reader.GetStream()->Tell() + GetBoxSize() - GetHeaderSize());
+    }
+
+    return reader.GetError();
+}
+
 heif_error HeifFullBox::ParseFullHeader(HeifStreamReader &reader)
 {
     uint32_t data = reader.Read32();
@@ -192,7 +202,14 @@ std::shared_ptr<HeifBox> HeifBox::MakeBox(uint32_t boxType)
     return box;
 }
 
-heif_error HeifBox::MakeFromReader(HeifStreamReader &reader, std::shared_ptr<HeifBox> *result)
+bool BoxContentChildren(std::shared_ptr<HeifBox> box)
+{
+    return box->GetBoxType() == BOX_TYPE_IPRP || box->GetBoxType() == BOX_TYPE_IPCO ||
+        box->GetBoxType() == BOX_TYPE_META || box->GetBoxType() == BOX_TYPE_IINF;
+}
+
+heif_error HeifBox::MakeFromReader(HeifStreamReader &reader,
+    std::shared_ptr<HeifBox> *result, uint32_t &recursionCount)
 {
     HeifBox headerBox;
     heif_error err = headerBox.ParseHeader(reader);
@@ -212,7 +229,11 @@ heif_error HeifBox::MakeFromReader(HeifStreamReader &reader, std::shared_ptr<Hei
         return heif_error_eof;
     }
     HeifStreamReader contentReader(reader.GetStream(), reader.GetStream()->Tell(), boxContentSize);
-    err = box->ParseContent(contentReader);
+    if (BoxContentChildren(box)) {
+        err = box->ParseContentChildren(contentReader, recursionCount);
+    } else {
+        err = box->ParseContent(contentReader);
+    }
     if (!err) {
         *result = std::move(box);
     }
@@ -235,17 +256,15 @@ heif_error HeifBox::Write(HeifStreamWriter &writer) const
     return err;
 }
 
-heif_error HeifBox::ReadChildren(HeifStreamReader &reader)
+heif_error HeifBox::ReadChildren(HeifStreamReader &reader, uint32_t &recursionCount)
 {
-    int count = 0;
     while (!reader.IsAtEnd() && !reader.HasError()) {
         std::shared_ptr<HeifBox> box;
-        heif_error error = HeifBox::MakeFromReader(reader, &box);
+        heif_error error = HeifBox::MakeFromReader(reader, &box, recursionCount);
         if (error != heif_error_ok) {
             return error;
         }
         children_.push_back(std::move(box));
-        count++;
     }
     return reader.GetError();
 }
