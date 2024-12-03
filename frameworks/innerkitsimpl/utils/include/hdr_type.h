@@ -89,6 +89,7 @@ struct HdrMetadata {
     std::vector<uint8_t> dynamicMetadata;
     bool extendMetaFlag = false;
     HDRVividExtendMetadata extendMeta;
+    int32_t hdrMetadataType;
 };
 } // namespace Media
 } // namespace OHOS
