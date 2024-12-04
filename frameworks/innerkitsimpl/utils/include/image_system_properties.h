@@ -29,10 +29,10 @@ public:
     static bool GetHardWareDecodeEnabled();
     static bool GetHardWareEncodeEnabled();
     static bool GetHeifHardwareDecodeEnabled();
-    static bool GetAstcHardWareEncodeEnabled();
+    static bool GetSLRParallelEnabled();
     static bool GetSutEncodeEnabled();
     static bool GetMediaLibraryAstcEnabled();
-    static bool GetSLRParallelEnabled();
+    static bool GetAstcHardWareEncodeEnabled();
 private:
     ImageSystemProperties() = default;
 };

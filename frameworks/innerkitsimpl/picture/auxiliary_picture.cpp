@@ -24,6 +24,7 @@ namespace OHOS {
 namespace Media {
 
 const static uint64_t MAX_PICTURE_META_TYPE_COUNT = 64;
+const static uint64_t MAX_JPEG_TAG_NAME_LENGTH = 100;
 AuxiliaryPicture::~AuxiliaryPicture() {}
 std::unique_ptr<AuxiliaryPicture> AuxiliaryPicture::Create(std::shared_ptr<PixelMap> &content,
                                                            AuxiliaryPictureType type, Size size)
@@ -102,26 +103,19 @@ std::shared_ptr<ImageMetadata> AuxiliaryPicture::GetMetadata(MetadataType type)
 
 void AuxiliaryPicture::SetMetadata(MetadataType type, std::shared_ptr<ImageMetadata> metadata)
 {
-    metadatas_[type] = metadata;
+    if (metadata != nullptr) {
+        metadatas_[type] = metadata;
+    }
 }
 
 bool AuxiliaryPicture::HasMetadata(MetadataType type)
 {
-    return metadatas_.find(type) != metadatas_.end();
+    auto item = metadatas_.find(type);
+    return item != metadatas_.end() && item->second != nullptr;
 }
 
-bool AuxiliaryPicture::Marshalling(Parcel &data) const
+bool AuxiliaryPicture::WriteAuxPictureInfoToParcel(Parcel &data) const
 {
-    if (content_ == nullptr) {
-        IMAGE_LOGE("Auxiliary picture is null.");
-        return false;
-    }
-
-    if (!content_->Marshalling(data)) {
-        IMAGE_LOGE("Failed to marshal auxiliary picture.");
-        return false;
-    }
-
     if (!data.WriteInt32(static_cast<int32_t>(auxiliaryPictureInfo_.auxiliaryPictureType))) {
         IMAGE_LOGE("Failed to write type of auxiliary pictures.");
         return false;
@@ -147,8 +141,38 @@ bool AuxiliaryPicture::Marshalling(Parcel &data) const
         return false;
     }
 
+    if (auxiliaryPictureInfo_.jpegTagName.length() > MAX_JPEG_TAG_NAME_LENGTH) {
+        IMAGE_LOGE("The length of jpeg tag name exceeds the maximum limit.");
+        return false;
+    }
+
     if (!data.WriteString(auxiliaryPictureInfo_.jpegTagName)) {
         IMAGE_LOGE("Failed to write jpegTagName of auxiliary pictures.");
+        return false;
+    }
+        
+    return true;
+}
+
+bool AuxiliaryPicture::Marshalling(Parcel &data) const
+{
+    if (content_ == nullptr) {
+        IMAGE_LOGE("Auxiliary picture is null.");
+        return false;
+    }
+
+    if (!content_->Marshalling(data)) {
+        IMAGE_LOGE("Failed to marshal auxiliary picture.");
+        return false;
+    }
+
+    if (!WriteAuxPictureInfoToParcel(data)) {
+        IMAGE_LOGE("write auxiliary picture info to parcel failed.");
+        return false;
+    }
+
+    if (metadatas_.size() > MAX_PICTURE_META_TYPE_COUNT) {
+        IMAGE_LOGE("The number of metadatas exceeds the maximum limit.");
         return false;
     }
 
@@ -156,8 +180,13 @@ bool AuxiliaryPicture::Marshalling(Parcel &data) const
         return false;
     }
     
-    for (const auto &metadata : metadatas_) {
-        if (!(data.WriteInt32(static_cast<int32_t>(metadata.first)) && metadata.second->Marshalling(data))) {
+    for (const auto &[type, metadata] : metadatas_) {
+        int32_t typeInt32 = static_cast<int32_t>(type);
+        if (metadata == nullptr) {
+            IMAGE_LOGE("Metadata %{public}d is nullptr.", typeInt32);
+            return false;
+        }
+        if (!(data.WriteInt32(typeInt32) && metadata->Marshalling(data))) {
             IMAGE_LOGE("Failed to marshal metadatas.");
             return false;
         }

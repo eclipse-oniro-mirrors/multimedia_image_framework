@@ -50,6 +50,7 @@ const auto TAG_VALUE_SIZE = 1024;
 const auto EXIF_HEAD_SIZE = 6;
 const static std::string DEFAULT_EXIF_VALUE = "default_exif_value";
 const static std::string HW_CAPTURE_MODE = "HwMnoteCaptureMode";
+const static uint64_t MAX_EXIFMETADATA_MAX_SIZE = 1024 * 1024;
 const std::set<std::string_view> HW_SPECIAL_KEYS = {
     "MovingPhotoId",
     "MovingPhotoVersion",
@@ -514,7 +515,7 @@ bool ExifMetadata::SetRational(ExifEntry *ptrEntry, const ExifByteOrder &order, 
             IMAGE_LOGE("Failed to read ExifRational from string. Current count: %{public}lu", icount);
             return false;
         }
-        int offset = static_cast<int>(icount * exif_format_get_size(ptrEntry->format));
+        unsigned long offset = icount * exif_format_get_size(ptrEntry->format);
         exif_set_rational(ptrEntry->data + offset, order, rat);
         icount++;
     }
@@ -532,7 +533,7 @@ bool ExifMetadata::SetSRational(ExifEntry *ptrEntry, const ExifByteOrder &order,
             IMAGE_LOGE("Failed to read ExifSRational from string. Current count: %{public}lu", icount);
             return false;
         }
-        int offset = static_cast<int>(icount * exif_format_get_size(ptrEntry->format));
+        unsigned long offset = icount * exif_format_get_size(ptrEntry->format);
         exif_set_srational(ptrEntry->data + offset, order, rat);
         icount++;
     }
@@ -778,6 +779,11 @@ bool ExifMetadata::Marshalling(Parcel &parcel) const
         return false;
     }
 
+    if (size > MAX_EXIFMETADATA_MAX_SIZE) {
+        IMAGE_LOGE("The size of exif metadata exceeds the maximum limit.");
+        return false;
+    }
+
     if (data != nullptr && size != 0) {
         std::unique_ptr<unsigned char[]> exifData(data);
         if (!parcel.WriteUint32(static_cast<uint32_t>(size))) {
@@ -808,6 +814,11 @@ ExifMetadata *ExifMetadata::Unmarshalling(Parcel &parcel, PICTURE_ERR &error)
     if (hasExifDataBuffer) {
         uint32_t size = 0;
         if (!parcel.ReadUint32(size)) {
+            return nullptr;
+        }
+
+        if (size > MAX_EXIFMETADATA_MAX_SIZE) {
+            IMAGE_LOGE("The size of exif metadata exceeds the maximum limit.");
             return nullptr;
         }
 

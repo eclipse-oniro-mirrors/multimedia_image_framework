@@ -423,10 +423,13 @@ napi_value PictureNapi::GetAuxiliaryPicture(napi_env env, napi_callback_info inf
     status = napi_unwrap(env, thisVar, reinterpret_cast<void**>(&pictureNapi));
     IMG_NAPI_CHECK_RET_D(IMG_IS_READY(status, pictureNapi), result, IMAGE_LOGE("fail to unwrap PictureNapi"));
     status = napi_get_value_uint32(env, argValue[NUM_0], &auxiType);
-    IMG_NAPI_CHECK_RET_D(IMG_IS_OK(status), result, IMAGE_LOGE("fail to get auxiliary picture Type"));
-
+    IMG_NAPI_CHECK_RET_D(IMG_IS_OK(status), ImageNapiUtils::ThrowExceptionError(env, IMAGE_BAD_PARAMETER,
+        "Fail to get auxiliary picture type!"), IMAGE_LOGE("Fail to get auxiliary picture type."));
     AuxiliaryPictureType type = ParseAuxiliaryPictureType(auxiType);
-
+    if (type == AuxiliaryPictureType::NONE) {
+        return ImageNapiUtils::ThrowExceptionError(env, IMAGE_BAD_PARAMETER,
+            "The type does not match the auxiliary picture type!");
+    }
     if (pictureNapi->nativePicture_ != nullptr) {
         auto auxiliaryPic = pictureNapi->nativePicture_->GetAuxiliaryPicture(type);
         if (auxiliaryPic != nullptr) {
@@ -471,15 +474,20 @@ napi_value PictureNapi::SetAuxiliaryPicture(napi_env env, napi_callback_info inf
     status = napi_unwrap(env, thisVar, reinterpret_cast<void**>(&pictureNapi));
     IMG_NAPI_CHECK_RET_D(IMG_IS_READY(status, pictureNapi), result, IMAGE_LOGE("fail to unwrap PictureNapi"));
 
-    IMG_NAPI_CHECK_RET_D(IMG_IS_OK(status), result, IMAGE_LOGE("fail to arg info"));
     status = napi_get_value_uint32(env, argValue[NUM_0], &auxiType);
-    IMG_NAPI_CHECK_RET_D(IMG_IS_OK(status), result, IMAGE_LOGE("fail to get auxiliary picture Type"));
+    IMG_NAPI_CHECK_RET_D(IMG_IS_OK(status), ImageNapiUtils::ThrowExceptionError(env, IMAGE_BAD_PARAMETER,
+        "Fail to get auxiliary picture type!"), IMAGE_LOGE("Fail to get auxiliary picture Type"));
     AuxiliaryPictureType type = ParseAuxiliaryPictureType(auxiType);
+    if (type == AuxiliaryPictureType::NONE) {
+        return ImageNapiUtils::ThrowExceptionError(env, IMAGE_BAD_PARAMETER,
+            "The type does not match the auxiliary picture type!");
+    }
 
     AuxiliaryPictureNapi* auxiliaryPictureNapi = nullptr;
     status = napi_unwrap(env, argValue[NUM_1], reinterpret_cast<void**>(&auxiliaryPictureNapi));
-    IMG_NAPI_CHECK_RET_D(IMG_IS_READY(status, pictureNapi), result,
-                         IMAGE_LOGE("fail to unwrap AuxiliaryPictureNapi"));
+    IMG_NAPI_CHECK_RET_D(IMG_IS_READY(status, pictureNapi),
+        ImageNapiUtils::ThrowExceptionError(env, IMAGE_BAD_PARAMETER, "Fail to unwrap AuxiliaryPictureNapi!"),
+        IMAGE_LOGE("Fail to unwrap AuxiliaryPictureNapi"));
 
     if (pictureNapi->nativePicture_ != nullptr) {
         auto auxiliaryPicturePtr = auxiliaryPictureNapi->GetNativeAuxiliaryPic();
@@ -515,14 +523,6 @@ STATIC_EXEC_FUNC(CreatePicture)
     }
 }
 
-static void BuildContextError(napi_env env, napi_ref &error, const std::string errMsg, const int32_t errCode)
-{
-    IMAGE_LOGE("%{public}s", errMsg.c_str());
-    napi_value tmpError;
-    ImageNapiUtils::CreateErrorObj(env, tmpError, errCode, errMsg);
-    napi_create_reference(env, tmpError, NUM_1, &(error));
-}
-
 napi_value PictureNapi::CreatePicture(napi_env env, napi_callback_info info)
 {
     IMAGE_INFO("CreatePicture IN");
@@ -540,17 +540,18 @@ napi_value PictureNapi::CreatePicture(napi_env env, napi_callback_info info)
     size_t argCount = NUM_1;
     IMAGE_LOGD("CreatePicture IN");
     IMG_JS_ARGS(env, info, status, argCount, argValue, thisVar);
-    IMG_NAPI_CHECK_RET_D(IMG_IS_OK(status), nullptr, IMAGE_LOGE("fail to napi_get_cb_info"));
-    IMG_NAPI_CHECK_RET_D(argCount == NUM_1, ImageNapiUtils::ThrowExceptionError(env, COMMON_ERR_INVALID_PARAMETER,
+    IMG_NAPI_CHECK_RET_D(IMG_IS_OK(status), ImageNapiUtils::ThrowExceptionError(env, IMAGE_BAD_PARAMETER,
+        "Invalid args"), IMAGE_LOGE("fail to napi_get_cb_info"));
+    IMG_NAPI_CHECK_RET_D(argCount == NUM_1, ImageNapiUtils::ThrowExceptionError(env, IMAGE_BAD_PARAMETER,
         "Invalid args count"), IMAGE_LOGE("Invalid args count %{public}zu", argCount));
     std::unique_ptr<PictureAsyncContext> asyncContext = std::make_unique<PictureAsyncContext>();
     if (ParserImageType(env, argValue[NUM_0]) == ImageType::TYPE_PIXEL_MAP) {
         asyncContext->rPixelMap = PixelMapNapi::GetPixelMap(env, argValue[NUM_0]);
         if (asyncContext->rPixelMap == nullptr) {
-            BuildContextError(env, asyncContext->error, "Input image type mismatch", IMAGE_BAD_PARAMETER);
+            return ImageNapiUtils::ThrowExceptionError(env, IMAGE_BAD_PARAMETER, "Get arg pixelmap failed");
         }
     } else {
-        BuildContextError(env, asyncContext->error, "Input image type mismatch", IMAGE_BAD_PARAMETER);
+        return ImageNapiUtils::ThrowExceptionError(env, IMAGE_BAD_PARAMETER, "Input image type mismatch");
     }
     CreatePictureExec(env, static_cast<void*>((asyncContext).get()));
     status = napi_get_reference_value(env, sConstructor_, &constructor);
@@ -594,16 +595,17 @@ napi_value PictureNapi::CreatePictureFromParcel(napi_env env, napi_callback_info
             CREATE_PICTURE_FROM_PARCEL, IMAGE_BAD_PARAMETER, "Fail to napi_get_cb_info");
     }
     napi_unwrap(env, argValue[NUM_0], (void **)&messageSequence);
+    if (messageSequence == nullptr) {
+        return ImageNapiUtils::ThrowExceptionError(env, IMAGE_BAD_PARAMETER, "Fail to unwrap messageSequence");
+    }
     auto messageParcel = messageSequence->GetMessageParcel();
     if (messageParcel == nullptr) {
-        return PictureNapi::ThrowExceptionError(env,
-            CREATE_PICTURE_FROM_PARCEL, ERR_IPC, "get parcel failed");
+        return ImageNapiUtils::ThrowExceptionError(env, ERR_IPC, "Get parcel failed");
     }
     PICTURE_ERR error;
     auto picture = Picture::Unmarshalling(*messageParcel, error);
     if (!IMG_NOT_NULL(picture)) {
-        return PictureNapi::ThrowExceptionError(env,
-            CREATE_PICTURE_FROM_PARCEL, error.errorCode, error.errorInfo);
+        return ImageNapiUtils::ThrowExceptionError(env, ERR_IPC, "Unmarshalling picture failed");
     }
     std::shared_ptr<OHOS::Media::Picture> picturePtr(picture);
     sPicture_ = std::move(picturePtr);
@@ -682,7 +684,7 @@ napi_value PictureNapi::Marshalling(napi_env env, napi_callback_info info)
     napi_unwrap(env, nVal.argv[0], reinterpret_cast<void**>(&napiSequence));
     if (napiSequence == nullptr) {
         return ImageNapiUtils::ThrowExceptionError(
-            env, ERR_IPC, "Marshalling picture napi_unwrap failed.");
+            env, IMAGE_BAD_PARAMETER, "Marshalling picture napi_unwrap failed.");
     }
     auto messageParcel = napiSequence->GetMessageParcel();
     if (messageParcel == nullptr) {

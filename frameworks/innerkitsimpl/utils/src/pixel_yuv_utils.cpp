@@ -39,10 +39,10 @@ static const uint8_t ODD = 1;
 static const uint8_t EVEN = 2;
 static const uint8_t NUM_2 = 2;
 
-static const int32_t degrees360 = 360;
-static const int32_t degrees90 = 90;
-static const int32_t degrees180 = 180;
-static const int32_t degrees270 = 270;
+static const int32_t DEGREES360 = 360;
+static const int32_t DEGREES90 = 90;
+static const int32_t DEGREES180 = 180;
+static const int32_t DEGREES270 = 270;
 constexpr uint8_t Y_SHIFT = 16;
 constexpr uint8_t U_SHIFT = 8;
 constexpr uint8_t V_SHIFT = 0;
@@ -209,6 +209,9 @@ static void FillSrcFrameInfo(AVFrame *frame, uint8_t *pixels, YuvImageInfo &info
         frame->data[1] = pixels + info.yuvDataInfo.uvOffset;
         frame->linesize[0] = static_cast<int32_t>(info.yuvDataInfo.yStride);
         frame->linesize[1] = static_cast<int32_t>(info.yuvDataInfo.uvStride);
+    } else if (info.format == AVPixelFormat::AV_PIX_FMT_P010LE) {
+        av_image_fill_arrays(frame->data, frame->linesize, pixels,
+            info.format, info.yuvDataInfo.yStride, info.height, 1);
     } else {
         av_image_fill_arrays(frame->data, frame->linesize, pixels,
             info.format, info.width, info.height, 1);
@@ -230,6 +233,9 @@ static void FillDstFrameInfo(AVFrame *frame, uint8_t *pixels, YuvImageInfo &info
         frame->data[1] = pixels + GetYSize(info.width, info.height);
         frame->linesize[0] = info.width;
         frame->linesize[1] = GetUVStride(info.width);
+    } else if (info.format == AVPixelFormat::AV_PIX_FMT_P010LE) {
+        av_image_fill_arrays(frame->data, frame->linesize, pixels,
+            info.format, info.yuvDataInfo.yStride, info.height, 1);
     } else {
         av_image_fill_arrays(frame->data, frame->linesize, pixels,
             info.format, info.width, info.height, 1);
@@ -465,7 +471,7 @@ int32_t PixelYuvUtils::YuvScale(uint8_t *srcPixels, YuvImageInfo &srcInfo,
         IMAGE_LOGE("FFMpeg: sws_scale failed!");
         return -1;
     }
-    return EXPR_SUCCESS;
+    return 0;
 }
 
 static bool CreateRotateFilter(AVFilterGraph **filterGraph, AVFilterContext **transposeCtx,
@@ -685,26 +691,26 @@ bool PixelYuvUtils::YuvRotate(uint8_t *srcData, YuvImageInfo &srcInfo,
     uint8_t *dstData, YuvImageInfo &dstInfo, int32_t degrees)
 {
     if (degrees < 0) {
-        int n = abs(degrees / degrees360);
-        degrees += degrees360 * (n + 1);
+        int n = abs(degrees / DEGREES360);
+        degrees += DEGREES360 * (n + 1);
     }
     switch (degrees) {
         case 0:
             return true;
-        case degrees90:
+        case DEGREES90:
             if (!Rotate(srcData, srcInfo, dstData, dstInfo, TRANSPOSE_CLOCK)) {
                 IMAGE_LOGE("YuvRotate 90 failed");
                 return false;
             }
             return true;
-        case degrees180: {
+        case DEGREES180: {
             if (!YuvReversal(srcData, srcInfo, dstData, dstInfo)) {
                 IMAGE_LOGE("YuvRotate 180 failed");
                 return false;
             }
             return true;
         }
-        case degrees270:
+        case DEGREES270:
             if (!Rotate(srcData, srcInfo, dstData, dstInfo, TRANSPOSE_CCLOCK)) {
                 IMAGE_LOGE("YuvRotate 270 failed");
                 return false;
@@ -997,20 +1003,22 @@ void PixelYuvUtils::Yuv420SPTranslate(const uint8_t *srcPixels, YUVDataInfo &yuv
     }
 }
 
-static void P010Translate(const uint16_t *srcPixels, YUVDataInfo &yuvInfo,
-    uint16_t *dstPixels, XYaxis &xyAxis, ImageInfo &info)
+static void P010Translate(YuvPixelsP010Translate yuvPixels, YUVDataInfo &yuvInfo,
+    XYaxis &xyAxis, ImageInfo &info, YUVStrideInfo &strides)
 {
-    const uint16_t *srcY = srcPixels + yuvInfo.yOffset;
-    const uint16_t *srcUV = srcPixels + yuvInfo.uvOffset;
-    uint16_t *dstY = dstPixels;
-    uint16_t *dstUV = dstPixels + GetYSize(info.size.width, info.size.height);
+    const uint16_t *srcY = yuvPixels.srcPixels + yuvInfo.yOffset;
+    const uint16_t *srcUV = yuvPixels.srcPixels + yuvInfo.uvOffset;
+    uint16_t *dstY = yuvPixels.dstPixels;
+    uint16_t *dstUV = yuvPixels.dstPixels + strides.uvOffset;
 
     for (int32_t y = 0; y < info.size.height; y++) {
         for (int32_t x = 0; x < info.size.width; x++) {
             int32_t newX = x + xyAxis.xAxis;
             int32_t newY = y + xyAxis.yAxis;
-            if (newX >= 0 && newY >= 0 && newX < info.size.width && newY < info.size.height) {
-                *(dstY + newY * info.size.width + newX) = *(srcY + y * static_cast<int32_t>(yuvInfo.yStride) + x);
+            if (newX >= 0 && newY >= 0 && newX < static_cast<int32_t>(info.size.width + xyAxis.xAxis) &&
+                newY < static_cast<int32_t>(info.size.height + xyAxis.yAxis)) {
+                *(dstY + newY * static_cast<int32_t>(strides.yStride) + newX) =
+                    *(srcY + y * static_cast<int32_t>(yuvInfo.yStride) + x);
             }
         }
     }
@@ -1019,10 +1027,12 @@ static void P010Translate(const uint16_t *srcPixels, YUVDataInfo &yuvInfo,
         for (int32_t x = 0; x < GetUVStride(yuvInfo.yWidth); x += NUM_2) {
             int32_t newX = x + GetUVStride(xyAxis.xAxis);
             int32_t newY = y + GetUVHeight(xyAxis.yAxis);
-            if (newX >= 0 && newX < GetUVStride(info.size.width) && newY >= 0 && newY < GetUVHeight(yuvInfo.yHeight)) {
-                *(dstUV + newY * info.size.width + newX) = *(srcUV + y * static_cast<int32_t>(yuvInfo.yWidth) + x);
-                *(dstUV + newY * info.size.width + newX + 1) =
-                *(srcUV + y * static_cast<int32_t>(yuvInfo.yWidth) + x + 1);
+            if (newX >= 0 && newX < GetUVStride(strides.yStride + xyAxis.xAxis) &&
+                newY >= 0 && newY < GetUVHeight(yuvInfo.yHeight + xyAxis.yAxis)) {
+                *(dstUV + newY * static_cast<int32_t>(strides.yStride) + newX) =
+                    *(srcUV + y * static_cast<int32_t>(yuvInfo.yStride) + x);
+                *(dstUV + newY * static_cast<int32_t>(strides.yStride) + newX + 1) =
+                    *(srcUV + y * static_cast<int32_t>(yuvInfo.yStride) + x + 1);
             }
         }
     }
@@ -1039,13 +1049,13 @@ bool PixelYuvUtils::YuvTranslate(const uint8_t *srcPixels, YUVDataInfo &yuvInfo,
         }
         case PixelFormat::YCBCR_P010:
         case PixelFormat::YCRCB_P010: {
-            P010Translate((uint16_t *)srcPixels, yuvInfo, (uint16_t *)dstPixels, xyAxis, info);
+            YuvPixelsP010Translate yuvPixels = {(uint16_t *)srcPixels, (uint16_t *)dstPixels};
+            P010Translate(yuvPixels, yuvInfo, xyAxis, info, dstStrides);
             return true;
         }
         default:
             return false;
     }
 }
-
 } // namespace Media
 } // namespace OHOS

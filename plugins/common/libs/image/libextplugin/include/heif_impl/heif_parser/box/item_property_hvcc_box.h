@@ -40,6 +40,36 @@ struct HvccConfig {
     uint8_t temporalIdNested;
 };
 
+struct HvccSpsConfig {
+    uint8_t forbiddenZeroBit;
+    uint8_t nalUnitType;
+    uint8_t nuhLayerId;
+    uint8_t nuhTemporalIdPlus1;
+    uint8_t spsVideoParameterSetId;
+    uint8_t spsMaxSubLayersMinus1;
+    uint8_t spsTemporalIdNestingFlag;
+    uint32_t spsSeqParameterSetId;
+    uint32_t chromaFormatIdc;
+    uint8_t separateColourPlaneFlag;
+    uint32_t picWidthInLumaSamples;
+    uint32_t picHeightInLumaSamples;
+    uint8_t conformanceWindowFlag;
+    uint32_t confWinLefOffset;
+    uint32_t confWinRightOffset;
+    uint32_t confWinTopOffset;
+    uint32_t confWinBottomOffset;
+    uint32_t bitDepthLumaMinus8;
+    uint32_t bitDepthChromaMinus8;
+    uint32_t log2MaxPicOrderCntLsbMinus4;
+    uint8_t spsSubLayerOrderingInfoPresentFlag;
+    uint8_t scalingListEnabeldFlag;
+    uint8_t pcmEnabledFlag;
+    uint32_t numShortTermRefPicSets;
+    uint8_t longTermRefPicsPresentFlag;
+    uint8_t vuiParameterPresentFlag;
+    uint8_t videoRangeFlag;
+};
+
 struct HvccNalArray {
     uint8_t arrayCompleteness;
     uint8_t nalUnitType;
@@ -60,14 +90,47 @@ public:
 
     heif_error Write(HeifStreamWriter& writer) const override;
 
+    const HvccSpsConfig& GetSpsConfig() const { return spsConfig_; }
+
+    uint32_t GetWord(const std::vector<uint8_t>& nalu, int length);
+
+    uint32_t GetGolombCode(const std::vector<uint8_t> &nalu);
+
+    int32_t GetNaluTypeId(std::vector<uint8_t>& nalu);
+
+    void ParserHvccColorRangeFlag(const std::vector<HvccNalArray> &nalArrays);
+
+    std::vector<HvccNalArray> GetNalArrays() const { return nalArrays_; };
+
+    std::vector<uint8_t> GetNaluData(const std::vector<HvccNalArray>& nalArrays, int8_t naluId);
+
+    void ProcessBoxData(std::vector<uint8_t>& nalu);
+
+    void ProfileTierLevel(std::vector<uint8_t>& SPSBox, int32_t profilePresentFlag, int32_t maxNumSubLayersMinus1);
+
+    bool ParseNalUnitAnalysisSps(std::vector<uint8_t>& nalUnits);
+
+    bool ParseSpsSyntax(std::vector<uint8_t> &nalUnits);
+
+    bool ParseSpsSyntaxScalingList(std::vector<uint8_t>& nalUnits);
+
+    void ParseSpsScallListData(std::vector<uint8_t> &nalUnits);
+
+    bool ParseSpsVuiParameter(std::vector<uint8_t> &nalUnits);
+
+    void ReadGolombCodesForSizeId(std::vector<uint8_t> &nalUnits, int sizeId);
+
 protected:
     heif_error ParseContent(HeifStreamReader& reader) override;
     heif_error ParseNalUnitArray(HeifStreamReader& reader, std::vector<std::vector<uint8_t>>& nalUnits);
 
 private:
     HvccConfig config_{};
+    HvccSpsConfig spsConfig_{};
     uint8_t nalUnitLengthSize_ = 4;
     std::vector<HvccNalArray> nalArrays_;
+    uint32_t boxBitLength_ = 0;
+    uint32_t pos_ = 0;
 };
 } // namespace ImagePlugin
 } // namespace OHOS

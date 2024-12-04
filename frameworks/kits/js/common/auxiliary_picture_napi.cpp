@@ -217,6 +217,7 @@ STATIC_EXEC_FUNC(CreateAuxiliaryPicture)
     InitializationOptions opts;
     opts.size = context->size;
     opts.editable = true;
+    opts.useDMA = true;
     auto colors = static_cast<uint32_t*>(context->arrayBuffer);
     if (colors == nullptr) {
         return;
@@ -238,6 +239,24 @@ static bool ParseSize(napi_env env, napi_value root, int32_t& width, int32_t& he
         return false;
     }
     if (width <= 0 || height <= 0) {
+        return false;
+    }
+    return true;
+}
+
+static bool ParseBuffer(napi_env env, napi_value argValue,
+    std::unique_ptr<AuxiliaryPictureNapiAsyncContext> &context)
+{
+    napi_status status;
+    if (context == nullptr) {
+        return false;
+    }
+    status = napi_get_arraybuffer_info(env, argValue, &(context->arrayBuffer),
+        &(context->arrayBufferSize));
+    if (!IMG_IS_OK(status)) {
+        return false;
+    }
+    if (context->arrayBuffer == nullptr || context->arrayBufferSize < NUM_0) {
         return false;
     }
     return true;
@@ -272,16 +291,14 @@ napi_value AuxiliaryPictureNapi::CreateAuxiliaryPicture(napi_env env, napi_callb
     std::unique_ptr<AuxiliaryPictureNapiAsyncContext> asyncContext =
         std::make_unique<AuxiliaryPictureNapiAsyncContext>();
     IMG_JS_ARGS(env, info, status, argCount, argValue, thisVar);
-    IMG_NAPI_CHECK_RET_D(IMG_IS_OK(status), nullptr, IMAGE_LOGE("Call napi_get_cb_info failed"));
+    IMG_NAPI_CHECK_RET_D(IMG_IS_OK(status), ImageNapiUtils::ThrowExceptionError(env, IMAGE_BAD_PARAMETER,
+        "Invalid args"), IMAGE_LOGE("Call napi_get_cb_info failed"));
     
     IMG_NAPI_CHECK_RET_D(argCount == NUM_3, ImageNapiUtils::ThrowExceptionError(env, IMAGE_BAD_PARAMETER,
         "Invalid args count"), IMAGE_LOGE("Invalid args count %{public}zu", argCount));
 
-    status = napi_get_arraybuffer_info(env, argValue[NUM_0], &(asyncContext->arrayBuffer),
-        &(asyncContext->arrayBufferSize));
-    IMG_NAPI_CHECK_RET_D(IMG_IS_OK(status), nullptr, IMAGE_LOGE("Fail to get auxiliary picture buffer"));
-    if (asyncContext->arrayBuffer == nullptr || asyncContext->arrayBufferSize < NUM_0) {
-        return ImageNapiUtils::ThrowExceptionError(env, IMAGE_BAD_PARAMETER, "Auxiliary picture buffer invalid.");
+    if (!ParseBuffer(env, argValue[NUM_0], asyncContext)) {
+        return ImageNapiUtils::ThrowExceptionError(env, IMAGE_BAD_PARAMETER, "Fail to get arrayBuffer.");
     }
     
     if (!ParseSize(env, argValue[NUM_1], asyncContext->size.width, asyncContext->size.height)) {
@@ -292,10 +309,13 @@ napi_value AuxiliaryPictureNapi::CreateAuxiliaryPicture(napi_env env, napi_callb
     IMG_NAPI_CHECK_RET_D(IMG_IS_OK(status), result, IMAGE_LOGE("Fail to get auxiliary picture Type"));
     if (auxiType < static_cast<uint32_t>(AuxiliaryPictureType::GAINMAP)
         || auxiType > static_cast<uint32_t>(AuxiliaryPictureType::FRAGMENT_MAP)) {
-        IMAGE_LOGE("Auxiliary picture type is invalid");
+        IMAGE_LOGE("AuxiliaryFigureType is invalid");
         return ImageNapiUtils::ThrowExceptionError(env, IMAGE_BAD_PARAMETER, "Invalid args.");
     }
     asyncContext->type = ParseAuxiliaryPictureType(auxiType);
+    if (asyncContext->type == AuxiliaryPictureType::NONE) {
+        return ImageNapiUtils::ThrowExceptionError(env, IMAGE_BAD_PARAMETER, "Invalid auxiliary picture Type.");
+    }
     CreateAuxiliaryPictureExec(env, static_cast<void*>((asyncContext).get()));
     status = napi_get_reference_value(env, sConstructor_, &constructor);
     if (IMG_IS_OK(status)) {
@@ -438,7 +458,7 @@ napi_value AuxiliaryPictureNapi::GetMetadata(napi_env env, napi_callback_info in
             env, IMAGE_BAD_PARAMETER, "Invalid args metadata type");
     }
 
-    if (!CheckMetadataType(asyncContext.get())) {
+    if (!CheckMetadataType(asyncContext.get()) || asyncContext->metadataType == MetadataType::EXIF) {
         return ImageNapiUtils::ThrowExceptionError(
             env, IMAGE_UNSUPPORTED_METADATA, "Unsupported metadata");
     }
@@ -624,6 +644,7 @@ static bool ParseAuxiliaryPictureInfo(napi_env env, napi_value result, napi_valu
     AuxiliaryPictureNapiAsyncContext* auxiliaryPictureNapiAsyncContext)
 {
     uint32_t tmpNumber = 0;
+    int32_t tmpInt32 = 0;
     napi_value tmpValue = nullptr;
     auto context = static_cast<AuxiliaryPictureNapiAsyncContext*>(auxiliaryPictureNapiAsyncContext);
 
@@ -641,15 +662,16 @@ static bool ParseAuxiliaryPictureInfo(napi_env env, napi_value result, napi_valu
         return false;
     }
 
-    tmpNumber = 0;
-    if (!GET_UINT32_BY_NAME(root, "rowStride", tmpNumber)) {
-        IMAGE_LOGI("No rowStride in auxiliaryPictureInfo");
+    if (!GET_INT32_BY_NAME(root, "rowStride", tmpInt32) || tmpInt32 < 0) {
+        IMAGE_LOGI("Invalid rowStride in auxiliaryPictureInfo");
+        return false;
     }
-    context->auxiliaryPictureInfo.rowStride = static_cast<int32_t>(tmpNumber);
+    context->auxiliaryPictureInfo.rowStride = static_cast<uint32_t>(tmpInt32);
 
     tmpNumber = 0;
     if (!GET_UINT32_BY_NAME(root, "pixelFormat", tmpNumber)) {
         IMAGE_LOGI("No pixelFormat in auxiliaryPictureInfo");
+        return false;
     }
     context->auxiliaryPictureInfo.pixelFormat = ParsePixelFormat(tmpNumber);
 
@@ -657,6 +679,7 @@ static bool ParseAuxiliaryPictureInfo(napi_env env, napi_value result, napi_valu
     napi_value auxColorSpace = nullptr;
     if (!GET_NODE_BY_NAME(root, "colorSpace", auxColorSpace)) {
         IMAGE_LOGI("No colorSpace in auxiliaryPictureInfo");
+        return false;
     }
     ParseColorSpace(env, auxColorSpace, context);
     return true;

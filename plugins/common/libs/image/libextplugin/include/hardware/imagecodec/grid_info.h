@@ -28,6 +28,7 @@ struct GridInfo {
     uint32_t rows = 0;
     uint32_t tileWidth = 0;
     uint32_t tileHeight = 0;
+    uint8_t colorRangeFlag = 1; // 0 -> limitRange:[16,235], 1 -> fullRange:[0, 255]
 
     bool IsValid() const;
 };

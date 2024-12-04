@@ -31,6 +31,10 @@
 #include "purgeable_mem_builder.h"
 #endif
 
+namespace OHOS::Rosen {
+class RSMarshallingHelper;
+};
+
 namespace OHOS {
 namespace Media {
 struct HdrMetadata;
@@ -334,6 +338,53 @@ public:
         allocatorType_ = allocatorType;
     }
 
+    // unmap方案, 减少RenderService内存占用
+    NATIVEEXPORT bool UnMap();
+    NATIVEEXPORT bool ReMap();
+    NATIVEEXPORT bool IsUnMap()
+    {
+        std::lock_guard<std::mutex> lock(*unmapMutex_);
+        return isUnMap_;
+    }
+    NATIVEEXPORT void IncreaseUseCount()
+    {
+        std::lock_guard<std::mutex> lock(*unmapMutex_);
+        useCount_ += 1;
+    }
+    NATIVEEXPORT void DecreaseUseCount()
+    {
+        std::lock_guard<std::mutex> lock(*unmapMutex_);
+        if (useCount_ > 0) {
+            useCount_ -= 1;
+        }
+    }
+    NATIVEEXPORT void ResetUseCount()
+    {
+        std::lock_guard<std::mutex> lock(*unmapMutex_);
+        useCount_ = 0;
+    }
+    NATIVEEXPORT uint64_t GetUseCount()
+    {
+        std::lock_guard<std::mutex> lock(*unmapMutex_);
+        return useCount_;
+    }
+    NATIVEEXPORT uint64_t GetUnMapCount()
+    {
+        std::lock_guard<std::mutex> lock(*unmapMutex_);
+        return unMapCount_;
+    }
+
+    // pixelmap with DMA memory should be marked dirty when memory was changed
+    NATIVEEXPORT void MarkDirty()
+    {
+        isMemoryDirty_ = true;
+    }
+
+    NATIVEEXPORT bool IsMemoryDirty()
+    {
+        return isMemoryDirty_;
+    }
+
     static int32_t GetRGBxRowDataSize(const ImageInfo& info);
     static int32_t GetRGBxByteCount(const ImageInfo& info);
     static int32_t GetYUVByteCount(const ImageInfo& info);
@@ -359,6 +410,7 @@ protected:
     static constexpr size_t MAX_IMAGEDATA_SIZE = 128 * 1024 * 1024; // 128M
     static constexpr size_t MIN_IMAGEDATA_SIZE = 32 * 1024;         // 32k
     friend class ImageSource;
+    friend class OHOS::Rosen::RSMarshallingHelper;
     static bool ALPHA8ToARGB(const uint8_t *in, uint32_t inCount, uint32_t *out, uint32_t outCount);
     static bool RGB565ToARGB(const uint8_t *in, uint32_t inCount, uint32_t *out, uint32_t outCount);
     static bool ARGB8888ToARGB(const uint8_t *in, uint32_t inCount, uint32_t *out, uint32_t outCount);
@@ -413,7 +465,8 @@ protected:
 
     bool CheckValidParam(int32_t x, int32_t y)
     {
-        return (data_ == nullptr) || (x >= imageInfo_.size.width) || (x < 0) || (y >= imageInfo_.size.height) ||
+        return isUnMap_ || (data_ == nullptr) ||
+                       (x >= imageInfo_.size.width) || (x < 0) || (y >= imageInfo_.size.height) ||
                        (y < 0) || (pixelsSize_ < static_cast<uint64_t>(rowDataSize_) * imageInfo_.size.height)
                    ? false
                    : true;
@@ -444,6 +497,9 @@ protected:
     bool IsYuvFormat() const;
     static int32_t ConvertPixelAlpha(const void *srcPixels, const int32_t srcLength, const ImageInfo &srcInfo,
         void *dstPixels, const ImageInfo &dstInfo);
+    // used to close fd after mmap in RenderService when memory type is shared-mem or dma.
+    bool CloseFd();
+
     uint8_t *data_ = nullptr;
     // this info SHOULD be the final info for decoded pixelmap, not the original image info
     ImageInfo imageInfo_;
@@ -485,6 +541,15 @@ protected:
     std::shared_ptr<std::mutex> metadataMutex_ = std::make_shared<std::mutex>();
     std::shared_ptr<std::mutex> translationMutex_ = std::make_shared<std::mutex>();
     bool toSdrColorIsSRGB_ = false;
+private:
+    // unmap方案, 减少RenderService内存占用
+    bool isUnMap_ = false;
+    uint64_t useCount_ = 0ULL;
+    uint64_t unMapCount_ = 0;
+    std::shared_ptr<std::mutex> unmapMutex_ = std::make_shared<std::mutex>();
+
+    // used to mark whether DMA memory should be refreshed
+    mutable bool isMemoryDirty_;
 };
 } // namespace Media
 } // namespace OHOS

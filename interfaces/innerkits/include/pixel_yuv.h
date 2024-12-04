@@ -72,6 +72,8 @@ public:
                                     CustomFreePixelMap func) override;
     bool YuvRotateConvert(Size &size, int32_t degrees, int32_t &dstWidth, int32_t &dstHeight,
         OpenSourceLibyuv::RotationMode &rotateNum);
+    bool YuvRotateConvert(Size &srcSize, int32_t degrees, Size &dstSize,
+                          OpenSourceLibyuv::RotationMode &rotateNum, YUVDataInfo yuvDataInfo);
 protected:
     bool CheckPixelsInput(const uint8_t *dst, const uint64_t &bufferSize, const uint32_t &offset, const Rect &region);
     void SetRowDataSizeForImageInfo(ImageInfo info);

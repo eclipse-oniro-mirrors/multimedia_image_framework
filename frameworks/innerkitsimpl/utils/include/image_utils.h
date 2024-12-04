@@ -68,17 +68,17 @@ public:
     static void FloatToBytes(float data, std::vector<uint8_t>& bytes, uint32_t& offset, bool isBigEndian = true);
     static void Int32ToBytes(int32_t data, std::vector<uint8_t>& bytes, uint32_t& offset, bool isBigEndian = true);
     static void ArrayToBytes(const uint8_t* data, uint32_t length, std::vector<uint8_t>& bytes, uint32_t& offset);
-    static int32_t KMPFind(const uint8_t* target, uint32_t targetLen, const uint8_t* pattern, uint32_t patternLen);
     static void FlushSurfaceBuffer(PixelMap* pixelMap);
     static void FlushContextSurfaceBuffer(ImagePlugin::DecodeContext& context);
     static void InvalidateContextSurfaceBuffer(ImagePlugin::DecodeContext& context);
+    static size_t GetAstcBytesCount(const ImageInfo& imageInfo);
     static bool IsAuxiliaryPictureTypeSupported(AuxiliaryPictureType auxiliaryPictureType);
     static bool IsAuxiliaryPictureEncoded(AuxiliaryPictureType type);
     static bool IsMetadataTypeSupported(MetadataType metadataType);
     static const std::set<AuxiliaryPictureType> GetAllAuxiliaryPictureType();
-    static size_t GetAstcBytesCount(const ImageInfo& imageInfo);
     static bool StrToUint32(const std::string& str, uint32_t& value);
     static bool IsInRange(uint32_t value, uint32_t minValue, uint32_t maxValue);
+    static bool HasOverflowed(uint32_t num1, uint32_t num2);
 private:
     static uint32_t RegisterPluginServer();
     static uint32_t SaveDataToFile(const std::string& fileName, const char* data, const size_t& totalSize);

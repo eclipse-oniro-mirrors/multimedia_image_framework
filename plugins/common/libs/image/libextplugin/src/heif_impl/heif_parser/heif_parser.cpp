@@ -40,12 +40,18 @@ HeifParser::~HeifParser() = default;
 
 heif_error HeifParser::MakeFromMemory(const void *data, size_t size, bool isNeedCopy, std::shared_ptr<HeifParser> *out)
 {
+    if (data == nullptr) {
+        return heif_error_no_data;
+    }
     auto input_stream = std::make_shared<HeifBufferInputStream>((const uint8_t *) data, size, isNeedCopy);
     return MakeFromStream(input_stream, out);
 }
 
 heif_error HeifParser::MakeFromStream(const std::shared_ptr<HeifInputStream> &stream, std::shared_ptr<HeifParser> *out)
 {
+    if (stream == nullptr) {
+        return heif_error_no_data;
+    }
     std::shared_ptr<HeifParser> file = std::make_shared<HeifParser>(stream);
 
     auto maxSize = static_cast<uint64_t>(std::numeric_limits<int64_t>::max());
@@ -92,7 +98,8 @@ heif_error HeifParser::AssembleBoxes(HeifStreamReader &reader)
 {
     while (true) {
         std::shared_ptr<HeifBox> box;
-        heif_error error = HeifBox::MakeFromReader(reader, &box);
+        uint32_t recursionCount = 0;
+        heif_error error = HeifBox::MakeFromReader(reader, &box, recursionCount);
         if (reader.IsAtEnd() || error == heif_error_eof) {
             break;
         }
@@ -494,6 +501,11 @@ void HeifParser::ExtractImageProperties(std::shared_ptr<HeifImage> &image)
         image->SetLumaBitNum(hvccConfig.bitDepthLuma);
         image->SetChromaBitNum(hvccConfig.bitDepthChroma);
         image->SetDefaultPixelFormat((HeifPixelFormat) hvccConfig.chromaFormat);
+
+        auto nalArrays = hvcc->GetNalArrays();
+        hvcc->ParserHvccColorRangeFlag(nalArrays);
+        auto spsConfig = hvcc->GetSpsConfig();
+        image->SetColorRangeFlag(static_cast<int>(spsConfig.videoRangeFlag));
     }
     ExtractDisplayData(image, itemId);
 }
