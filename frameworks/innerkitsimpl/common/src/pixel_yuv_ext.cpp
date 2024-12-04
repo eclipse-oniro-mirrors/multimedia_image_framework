@@ -360,6 +360,10 @@ uint32_t PixelYuvExt::ApplyColorSpace(const OHOS::ColorManager::ColorSpace &grCo
 
     int32_t width = imageInfo_.size.width;
     int32_t height = imageInfo_.size.height;
+    if (!PixelYuvUtils::CheckWidthAndHeightMult(width, height, NUM_4)) {
+        IMAGE_LOGE("ApplyColorSpace size overflow width(%{public}d), height(%{public}d)", width, height);
+        return ERR_IMAGE_COLOR_CONVERT;
+    }
     uint8_t *srcData = data_;
     std::unique_ptr<uint8_t[]> RGBAdata =
         std::make_unique<uint8_t[]>(width * height * NUM_4);

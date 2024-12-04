@@ -721,6 +721,10 @@ void PixelYuv::translate(float xAxis, float yAxis)
     }
     int32_t width = imageInfo_.size.width + xAxis;
     int32_t height = imageInfo_.size.height + yAxis;
+    if (width < 1 || height < 1 || width > MAX_DIMENSION || height > MAX_DIMENSION) {
+        IMAGE_LOGE("Checktranslate size overflow width(%{public}d), height(%{public}d)", width, height);
+        return;
+    }
     PixelFormat format = imageInfo_.pixelFormat;
 
     YUVStrideInfo dstStrides;
@@ -906,6 +910,10 @@ uint32_t PixelYuv::SetColorSpace(const OHOS::ColorManager::ColorSpace &grColorSp
 {
     int32_t width = static_cast<int32_t>(yuvDataInfo_.yStride);
     int32_t height = static_cast<int32_t>(yuvDataInfo_.yHeight);
+    if (!PixelYuvUtils::CheckWidthAndHeightMult(width, height, NUM_4)) {
+        IMAGE_LOGE("SetColorSpace size overflow width(%{public}d), height(%{public}d)", width, height);
+        return ERR_IMAGE_COLOR_CONVERT;
+    }
     // Build sk target infomation
     SkTransYuvInfo dst;
     dst.info = ToSkImageInfo(imageInfo_, grColorSpace.ToSkColorSpace());
@@ -1011,7 +1019,10 @@ uint32_t PixelYuv::ApplyColorSpace(const OHOS::ColorManager::ColorSpace &grColor
     GetImageYUVInfo(yuvDataInfo);
     int32_t width = static_cast<int32_t>(yuvDataInfo.yStride);
     int32_t height = static_cast<int32_t>(yuvDataInfo.yHeight);
-
+    if (!PixelYuvUtils::CheckWidthAndHeightMult(width, height, NUM_4)) {
+        IMAGE_LOGE("ApplyColorSpace size overflow width(%{public}d), height(%{public}d)", width, height);
+        return ERR_IMAGE_COLOR_CONVERT;
+    }
     YuvImageInfo srcInfo = {PixelYuvUtils::ConvertFormat(format),
         imageInfo_.size.width, imageInfo_.size.height, imageInfo_.pixelFormat, yuvDataInfo};
     YuvImageInfo dstInfo = {PixelYuvUtils::ConvertFormat(PixelFormat::BGRA_8888),
