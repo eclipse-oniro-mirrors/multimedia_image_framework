@@ -122,6 +122,10 @@ static uint32_t GetImageSize(int32_t width, int32_t height)
 static void WriteDataNV12Convert(uint8_t *srcPixels, const Size &size, uint8_t *dstPixels,
     Position dstPos, const YUVDataInfo &yuvDataInfo)
 {
+    if (!PixelYuvUtils::CheckWidthAndHeightMult(size.width, size.height, 1)) {
+        IMAGE_LOGE("WriteDataNV12Convert size overflow width(%{public}d), height(%{public}d)", size.width, size.height);
+        return;
+    }
     uint8_t *dstY = dstPixels + yuvDataInfo.yOffset;
     uint8_t *dstUV = dstPixels + yuvDataInfo.uvOffset;
     dstPos.y = GetUVStride(dstPos.y);
@@ -149,6 +153,11 @@ static void WriteDataNV12Convert(uint8_t *srcPixels, const Size &size, uint8_t *
 static void WriteDataNV12P010Convert(uint16_t *srcPixels, const Size &size, uint16_t *dstPixels,
     Position dstPos, const YUVDataInfo &yuvDataInfo)
 {
+    if (!PixelYuvUtils::CheckWidthAndHeightMult(size.width, size.height, 1)) {
+        IMAGE_LOGE("WriteDataNV12P010Convert size overflow width(%{public}d), height(%{public}d)",
+            size.width, size.height);
+        return;
+    }
     uint16_t *dstY = dstPixels + yuvDataInfo.yOffset;
     uint16_t *dstUV = dstPixels + yuvDataInfo.uvOffset;
     dstPos.y = GetUVStride(dstPos.y);
@@ -744,6 +753,10 @@ bool PixelYuvUtils::ReadYuvConvert(const void *srcPixels, const Position &srcPos
 void PixelYuvUtils::SetTranslateDataDefault(uint8_t *srcPixels, int32_t width, int32_t height, PixelFormat format,
     YUVStrideInfo &dstStrides)
 {
+    if (dstStrides.yStride > INT32_MAX || dstStrides.uvStride > INT32_MAX) {
+        IMAGE_LOGE("check yStride(%{public}d) or uvStride(%{public}d)", dstStrides.yStride, dstStrides.uvStride);
+        return;
+    }
     auto ySizeNormal = static_cast<int32_t>(dstStrides.yStride) * height;
     auto uvSizeNormal = static_cast<int32_t>(dstStrides.uvStride) * GetUVHeight(height);
     if (IsYUVP010Format(format)) {
@@ -1056,6 +1069,17 @@ bool PixelYuvUtils::YuvTranslate(const uint8_t *srcPixels, YUVDataInfo &yuvInfo,
         default:
             return false;
     }
+}
+
+bool PixelYuvUtils::CheckWidthAndHeightMult(const int32_t &width, const int32_t &height, const int32_t &multiples)
+{
+    if (width < 1 || height < 1 || multiples < 1) {
+        return false;
+    }
+    if (width > (INT32_MAX / height) / multiples) {
+        return false;
+    }
+    return true;
 }
 
 } // namespace Media

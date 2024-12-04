@@ -767,6 +767,11 @@ uint32_t ExtEncoder::EncodeImageBySurfaceBuffer(sptr<SurfaceBuffer>& surfaceBuff
     IMAGE_LOGD("HardwareEncode failed or not Supported");
 
     pixelmap_->GetImageInfo(imageInfo);
+    if (!PixelYuvUtils::CheckWidthAndHeightMult(imageInfo.size.width, imageInfo.size.height, NUM_4)) {
+        IMAGE_LOGE("EncodeImageBySurfaceBuffer size overflow width(%{public}d), height(%{public}d)",
+            imageInfo.size.width, imageInfo.size.height);
+        return ERR_IMAGE_INVALID_PARAMETER;
+    }
     std::unique_ptr<uint8_t[]> dstData;
     if (IsYuvImage(imageInfo.pixelFormat)) {
         IMAGE_LOGD("EncodeImageBySurfaceBuffer: YUV format, convert to RGB first");
