@@ -282,8 +282,8 @@ int32_t PixelMap::GetRGBxRowDataSize(const ImageInfo& info)
         return -1;
     }
     int32_t pixelBytes = ImageUtils::GetPixelBytes(info.pixelFormat);
-    if (pixelBytes < 0 || (pixelBytes != 0 && info.size.width > INT32_MAX / pixelBytes)) {
-        IMAGE_LOGE("[ImageUtil]obtained an out of range value for rgbx pixel bytes");
+    if (pixelBytes < 0) {
+        IMAGE_LOGE("[ImageUtil]get rgbx pixel bytes failed");
         return -1;
     }
     return pixelBytes * info.size.width;
