@@ -2218,10 +2218,10 @@ bool ExtDecoder::DecodeHeifAuxiliaryMap(DecodeContext& context, AuxiliaryPicture
     IMAGE_LOGD("DecodeHeifAuxiliaryMap size:%{public}d-%{public}d", width, height);
     SkImageInfo dstInfo = SkImageInfo::Make(static_cast<int>(width), static_cast<int>(height), dstInfo_.colorType(),
         dstInfo_.alphaType(), dstInfo_.refColorSpace());
-    size_t tempByteCount = dstInfo_.computeMinByteSize();
+    size_t tempByteCount = dstInfo.computeMinByteSize();
     if (SkImageInfo::ByteSizeOverflowed(tempByteCount)) {
         IMAGE_LOGE("Image too large, dstInfo_height: %{public}d, dstInfo_width: %{public}d",
-            dstInfo_.height(), dstInfo_.width());
+            dstInfo.height(), dstInfo.width());
         return ERR_IMAGE_TOO_LARGE;
     }
     uint64_t byteCount = tempByteCount;
