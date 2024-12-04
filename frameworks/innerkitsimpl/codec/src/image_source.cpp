@@ -2696,6 +2696,7 @@ bool ImageSource::ImageConverChange(const Rect &cropRect, ImageInfo &dstImageInf
     }
     return true;
 }
+// LCOV_EXCL_STOP
 
 char *strnstr(const char *data, const char *base64Url, size_t len)
 {
