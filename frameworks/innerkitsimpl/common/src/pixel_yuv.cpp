@@ -45,6 +45,7 @@ using namespace std;
 static const uint8_t NUM_2 = 2;
 static const uint8_t NUM_3 = 3;
 static const uint8_t NUM_4 = 4;
+static const uint8_t RGBA_BIT_DEPTH = 4;
 static const uint32_t TWO_SLICES = 2;
 static const uint8_t YUV420_MIN_PIXEL_UINTBYTES = 4;
 static const uint8_t YUV420P010_MIN_PIXEL_UINTBYTES = 8;
@@ -910,7 +911,7 @@ uint32_t PixelYuv::SetColorSpace(const OHOS::ColorManager::ColorSpace &grColorSp
 {
     int32_t width = static_cast<int32_t>(yuvDataInfo_.yStride);
     int32_t height = static_cast<int32_t>(yuvDataInfo_.yHeight);
-    if (!PixelYuvUtils::CheckWidthAndHeightMult(width, height, NUM_4)) {
+    if (!PixelYuvUtils::CheckWidthAndHeightMult(width, height, RGBA_BIT_DEPTH)) {
         IMAGE_LOGE("SetColorSpace size overflow width(%{public}d), height(%{public}d)", width, height);
         return ERR_IMAGE_COLOR_CONVERT;
     }
@@ -1019,7 +1020,7 @@ uint32_t PixelYuv::ApplyColorSpace(const OHOS::ColorManager::ColorSpace &grColor
     GetImageYUVInfo(yuvDataInfo);
     int32_t width = static_cast<int32_t>(yuvDataInfo.yStride);
     int32_t height = static_cast<int32_t>(yuvDataInfo.yHeight);
-    if (!PixelYuvUtils::CheckWidthAndHeightMult(width, height, NUM_4)) {
+    if (!PixelYuvUtils::CheckWidthAndHeightMult(width, height, RGBA_BIT_DEPTH)) {
         IMAGE_LOGE("ApplyColorSpace size overflow width(%{public}d), height(%{public}d)", width, height);
         return ERR_IMAGE_COLOR_CONVERT;
     }

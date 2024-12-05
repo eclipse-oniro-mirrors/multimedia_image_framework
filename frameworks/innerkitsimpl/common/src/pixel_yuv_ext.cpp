@@ -46,6 +46,7 @@ using namespace std;
 
 static const uint8_t NUM_2 = 2;
 static const uint8_t NUM_4 = 4;
+static const uint8_t RGBA_BIT_DEPTH = 4;
 static const int32_t DEGREES360 = 360;
 static const float ROUND_FLOAT_NUMBER = 0.5f;
 
@@ -360,7 +361,7 @@ uint32_t PixelYuvExt::ApplyColorSpace(const OHOS::ColorManager::ColorSpace &grCo
 
     int32_t width = imageInfo_.size.width;
     int32_t height = imageInfo_.size.height;
-    if (!PixelYuvUtils::CheckWidthAndHeightMult(width, height, NUM_4)) {
+    if (!PixelYuvUtils::CheckWidthAndHeightMult(width, height, RGBA_BIT_DEPTH)) {
         IMAGE_LOGE("ApplyColorSpace size overflow width(%{public}d), height(%{public}d)", width, height);
         return ERR_IMAGE_COLOR_CONVERT;
     }

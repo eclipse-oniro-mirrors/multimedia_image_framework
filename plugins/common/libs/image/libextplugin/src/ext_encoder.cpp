@@ -158,6 +158,7 @@ static const std::map<AuxiliaryPictureType, std::string> DEFAULT_AUXILIARY_TAG_M
 
 static const uint8_t NUM_3 = 3;
 static const uint8_t NUM_4 = 4;
+static const uint8_t RGBA_BIT_DEPTH = 4;
 
 static constexpr int32_t MAX_IMAGE_SIZE = 8196;
 static constexpr int32_t MIN_IMAGE_SIZE = 128;
@@ -767,7 +768,7 @@ uint32_t ExtEncoder::EncodeImageBySurfaceBuffer(sptr<SurfaceBuffer>& surfaceBuff
     IMAGE_LOGD("HardwareEncode failed or not Supported");
 
     pixelmap_->GetImageInfo(imageInfo);
-    if (!PixelYuvUtils::CheckWidthAndHeightMult(imageInfo.size.width, imageInfo.size.height, NUM_4)) {
+    if (!PixelYuvUtils::CheckWidthAndHeightMult(imageInfo.size.width, imageInfo.size.height, RGBA_BIT_DEPTH)) {
         IMAGE_LOGE("EncodeImageBySurfaceBuffer size overflow width(%{public}d), height(%{public}d)",
             imageInfo.size.width, imageInfo.size.height);
         return ERR_IMAGE_INVALID_PARAMETER;
