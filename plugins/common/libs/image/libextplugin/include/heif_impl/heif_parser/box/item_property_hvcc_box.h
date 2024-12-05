@@ -92,21 +92,21 @@ public:
 
     const HvccSpsConfig& GetSpsConfig() const { return spsConfig_; }
 
-    uint32_t GetWord(const std::vector<uint8_t>& nalu, int length);
+    uint32_t GetWord(const std::vector<uint8_t>& nalu, uint32_t length);
 
     uint32_t GetGolombCode(const std::vector<uint8_t> &nalu);
 
-    int32_t GetNaluTypeId(std::vector<uint8_t>& nalu);
+    uint32_t GetNaluTypeId(std::vector<uint8_t>& nalu);
 
     void ParserHvccColorRangeFlag(const std::vector<HvccNalArray> &nalArrays);
 
     std::vector<HvccNalArray> GetNalArrays() const { return nalArrays_; };
 
-    std::vector<uint8_t> GetNaluData(const std::vector<HvccNalArray>& nalArrays, int8_t naluId);
+    std::vector<uint8_t> GetNaluData(const std::vector<HvccNalArray>& nalArrays, uint8_t naluId);
 
     void ProcessBoxData(std::vector<uint8_t>& nalu);
 
-    void ProfileTierLevel(std::vector<uint8_t>& SPSBox, int32_t profilePresentFlag, int32_t maxNumSubLayersMinus1);
+    void ProfileTierLevel(std::vector<uint8_t>& SPSBox, uint32_t profilePresentFlag, uint32_t maxNumSubLayersMinus1);
 
     bool ParseNalUnitAnalysisSps(std::vector<uint8_t>& nalUnits);
 
@@ -118,7 +118,7 @@ public:
 
     bool ParseSpsVuiParameter(std::vector<uint8_t> &nalUnits);
 
-    void ReadGolombCodesForSizeId(std::vector<uint8_t> &nalUnits, int sizeId);
+    void ReadGolombCodesForSizeId(std::vector<uint8_t> &nalUnits, uint32_t sizeId);
 
 protected:
     heif_error ParseContent(HeifStreamReader& reader) override;
