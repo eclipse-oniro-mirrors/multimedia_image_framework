@@ -285,6 +285,7 @@ ohos_unittest("imagesourcetest") {
 
     # "$image_subsystem/frameworks/innerkitsimpl/test/unittest/image_source_test/image_source_webp_test.cpp",
     "$image_subsystem/plugins/common/libs/image/libextplugin/src/ext_stream.cpp",
+    "$image_subsystem/plugins/common/libs/image/libextplugin/src/hdr/hdr_helper.cpp",
     "$image_subsystem/plugins/common/libs/image/libextplugin/src/hdr/jpeg_mpf_parser.cpp",
   ]
 
@@ -308,11 +309,13 @@ ohos_unittest("imagesourcetest") {
 
   external_deps = [
     "c_utils:utils",
+    "drivers_interface_display:display_commontype_idl_headers",
     "drivers_peripheral_display:hdi_gralloc_client",
     "googletest:gmock_main",
     "googletest:gtest_main",
     "graphic_surface:surface",
     "hilog:libhilog",
+    "skia:libjpeg",
     "zlib:libz",
   ]
   if (enable_libexif) {

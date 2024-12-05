@@ -3959,6 +3959,20 @@ void ImageSource::SetVividMetaColor(HdrMetadata& metadata,
     metadata.extendMeta.gainmapColorMeta.alternateColorPrimary = hdr & 0xFF;
 }
 
+static CM_HDR_Metadata_Type GetHdrMediaType(HdrMetadata& metadata)
+{
+    CM_HDR_Metadata_Type hdrMetadataType = static_cast<CM_HDR_Metadata_Type>(metadata.hdrMetadataType);
+    switch (hdrMetadataType) {
+        case CM_VIDEO_HLG:
+        case CM_VIDEO_HDR10:
+        case CM_VIDEO_HDR_VIVID:
+            return CM_IMAGE_HDR_VIVID_SINGLE;
+        default:
+            break;
+    }
+    return hdrMetadataType;
+}
+
 static uint32_t AllocHdrSurfaceBuffer(DecodeContext& context, ImageHdrType hdrType, CM_ColorSpaceType color)
 {
 #if defined(_WIN32) || defined(_APPLE) || defined(ANDROID_PLATFORM) || defined(IOS_PLATFORM)
@@ -4025,6 +4039,8 @@ bool ImageSource::ComposeHdrImage(ImageHdrType hdrType, DecodeContext& baseCtx, 
         metadata.extendMeta.metaISO.useBaseColorFlag, metadata.extendMeta.metaISO.gainmapChannelNum);
     SetVividMetaColor(metadata, baseCmColor, gainmapCmColor, hdrCmColor);
     VpeUtils::SetSurfaceBufferInfo(gainmapSptr, true, hdrType, gainmapCmColor, metadata);
+    CM_HDR_Metadata_Type hdrMediaType = GetHdrMediaType(metadata);
+    VpeUtils::SetSbMetadataType(gainmapSptr, hdrMediaType);
     // hdr image
     uint32_t errorCode = AllocHdrSurfaceBuffer(hdrCtx, hdrType, hdrCmColor);
     if (errorCode != SUCCESS) {
@@ -4045,6 +4061,7 @@ bool ImageSource::ComposeHdrImage(ImageHdrType hdrType, DecodeContext& baseCtx, 
         FreeContextBuffer(hdrCtx.freeFunc, hdrCtx.allocatorType, hdrCtx.pixelsBuffer);
         return false;
     }
+    VpeUtils::SetSbMetadataType(hdrSptr, static_cast<CM_HDR_Metadata_Type>(metadata.hdrMetadataType));
     return true;
 #endif
 }
