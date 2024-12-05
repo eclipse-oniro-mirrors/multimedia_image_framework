@@ -158,6 +158,10 @@ struct ImageYuvConverter {
     int32_t (*NV12Scale)(const uint8_t* src_y, int src_stride_y, const uint8_t* src_uv, int src_stride_uv,
         int src_width, int src_height, uint8_t* dst_y, int dst_stride_y, uint8_t* dst_uv, int dst_stride_uv,
         int dst_width, int dst_height, enum FilterMode filtering);
+    int32_t (*ABGRToJ420)(const uint8_t *src_abgr, int src_stride_abgr, uint8_t *dst_yj, int dst_stride_yj,
+        uint8_t *dst_uj, int dst_stride_uj, uint8_t *dst_vj, int dst_stride_vj, int width, int height);
+    int32_t (*U010VUToAB30)(const uint16_t* src_y, int src_stride_y, const uint16_t* src_u, int src_stride_u,
+        const uint16_t* src_v, int src_stride_v, uint8_t* dst_ab30, int dst_stride_ab30, int width, int height);
 };
 struct ImageYuvConverter GetImageYuvConverter(void);
 
