@@ -100,6 +100,7 @@ public:
         uint8_t *dstPixels, YuvImageInfo &dstInfo, int32_t module);
     static void Yuv420SPTranslate(const uint8_t *srcPixels, YUVDataInfo &yuvInfo,
         uint8_t *dstPixels, XYaxis &xyAxis, ImageInfo &info, YUVStrideInfo &strides);
+    static bool CheckWidthAndHeightMult(const int32_t &width, const int32_t &height, const int32_t &multiples);
 };
 } // namespace Media
 } // namespace OHOS

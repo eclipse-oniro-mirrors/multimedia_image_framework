@@ -47,6 +47,7 @@ public:
     {
         return MetadataType::EXIF;
     }
+    bool RemoveExifThumbnail() override;
 
 private:
     ExifEntry* CreateEntry(const std::string &key, const ExifTag &tag, const size_t len);
