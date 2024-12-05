@@ -840,7 +840,7 @@ static void ParserPackingArguments(napi_env env,
             COMMON_ERR_INVALID_PARAMETER);
     } else if (context->packType == TYPE_PIXEL_MAP) {
         context->rPixelMap = PixelMapNapi::GetPixelMap(env, argv[PARAM0]);
-        BuildMsgOnError(context, context->rPixelMap != nullptr, "PixelMap mismatch",
+        BuildMsgOnError(context, context->rPixelMap != nullptr, "Pixelmap is released",
             COMMON_ERR_INVALID_PARAMETER);
 #if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
     } else if (context->packType == TYPE_PICTURE) {
@@ -1022,7 +1022,7 @@ static void ParserPackToFileArguments(napi_env env,
     } else if (context->packType == TYPE_PIXEL_MAP) {
         context->rPixelMap = PixelMapNapi::GetPixelMap(env, argv[PARAM0]);
         BuildMsgOnError(context, context->rPixelMap != nullptr,
-            "PixelMap mismatch", ERR_IMAGE_INVALID_PARAMETER);
+            "Pixelmap is released", ERR_IMAGE_INVALID_PARAMETER);
 #if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
     } else if (context->packType == TYPE_PICTURE) {
         context->rPicture = PictureNapi::GetPicture(env, argv[PARAM0]);
