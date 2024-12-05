@@ -173,7 +173,7 @@ uint32_t HeifHvccBox::GetWord(const std::vector<uint8_t>& nalu, int length)
 {
     uint32_t res = 0;
     for (int i = 0; i < length && pos_ < boxBitLength_; ++i, ++pos_) {
-        int32_t bit = ((nalu[pos_ / BIT_DEPTH_DIFF] >>
+        uint32_t bit = ((nalu[pos_ / BIT_DEPTH_DIFF] >>
                         (BIT_DEPTH_DIFF - BIT_SHIFT - (pos_ % BIT_DEPTH_DIFF)))
                         & 0x01);
         res <<= BIT_SHIFT;
@@ -220,7 +220,7 @@ void HeifHvccBox::ProcessBoxData(std::vector<uint8_t> &nalu)
 {
     uint32_t naluSize = nalu.size();
     std::vector<int> indicesToDelete;
-    for (int i = UINT16_BYTES_NUM; i < naluSize; ++i) {
+    for (uint32_t i = UINT16_BYTES_NUM; i < naluSize; ++i) {
         if (nalu[i - UINT8_BYTES_NUM] == 0x00 &&
             nalu[i - SKIP_DOUBLE_DATA_PROCESS_BYTE] == 0x00 && nalu[i] == 0x03) {
             indicesToDelete.push_back(i);
