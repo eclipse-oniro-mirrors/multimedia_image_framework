@@ -40,6 +40,7 @@ ohos_shared_library("pixelmap_ndk") {
   external_deps = [
     "graphic_2d:color_manager",
     "napi:ace_napi",
+    "c_utils:utils",
   ]
 
   innerapi_tags = [ "ndk" ]
