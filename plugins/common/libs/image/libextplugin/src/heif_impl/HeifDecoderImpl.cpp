@@ -1087,10 +1087,8 @@ bool HeifDecoderImpl::decodeSequence(int frameIndex, HeifFrameInfo *frameInfo)
 
 void HeifDecoderImpl::setDstBuffer(uint8_t *dstBuffer, size_t rowStride, void *context)
 {
-    if (dstMemory_ == nullptr) {
-        dstMemory_ = dstBuffer;
-        dstRowStride_ = rowStride;
-    }
+    dstMemory_ = dstBuffer;
+    dstRowStride_ = rowStride;
     dstHwBuffer_ = reinterpret_cast<SurfaceBuffer*>(context);
 }
 
