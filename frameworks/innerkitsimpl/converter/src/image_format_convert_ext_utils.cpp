@@ -90,7 +90,7 @@ static bool RGBToI420(SrcConvertParam &srcParam, I420Info &i420)
                 i420.uStride, i420.I420V, i420.vStride, srcParam.width, srcParam.height);
             break;
         case PixelFormat::RGBA_8888:
-            converter.ABGRToI420(srcParam.slice[0], srcParam.stride[0], i420.I420Y, i420.yStride, i420.I420U,
+            converter.ABGRToJ420(srcParam.slice[0], srcParam.stride[0], i420.I420Y, i420.yStride, i420.I420U,
                 i420.uStride, i420.I420V, i420.vStride, srcParam.width, srcParam.height);
             break;
         case PixelFormat::BGRA_8888:
@@ -577,7 +577,7 @@ static bool RGB10ToRGBToI420ToYuv(const uint8_t *srcBuffer, const RGBDataInfo &r
 static bool I010ToRGB10(I010Info &i010, DestConvertParam &destParam)
 {
     auto &converter = ConverterHandle::GetInstance().GetHandle();
-    bool ret = converter.I010ToAB30(i010.I010Y, i010.yStride, i010.I010U, i010.uStride, i010.I010V, i010.vStride,
+    bool ret = converter.U010VUToAB30(i010.I010Y, i010.yStride, i010.I010U, i010.uStride, i010.I010V, i010.vStride,
                                     destParam.slice[0], destParam.stride[0], destParam.width, destParam.height);
     if (ret != 0) {
         IMAGE_LOGE("I010ToAB30 failed, ret = %{public}d!", ret);
