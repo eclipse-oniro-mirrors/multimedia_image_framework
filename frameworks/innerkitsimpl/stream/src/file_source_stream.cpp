@@ -409,7 +409,7 @@ void FileSourceStream::ResetReadBuffer()
     }
     if (fileData_ != nullptr && !mmapFdPassedOn_ && useMmap_) {
 #ifdef SUPPORT_MMAP
-        ::munmap(fileData_, fileSize_);
+        ::munmap(fileData_, fileSize_ - fileOriginalOffset_);
         close(mmapFd_);
 #endif
     }
