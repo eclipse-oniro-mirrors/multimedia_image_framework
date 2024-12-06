@@ -280,26 +280,5 @@ std::unique_ptr<AbsMemory> MemoryManager::CreateMemory(AllocatorType type, Memor
     }
     return res;
 }
-
-std::unique_ptr<AbsMemory> MemoryManager::TransMemoryType(const AbsMemory &source, AllocatorType target,
-    std::string tag)
-{
-    MemoryData data = { nullptr, source.data.size, tag.c_str()};
-    data.format = source.data.format;
-    auto res = CreateMemory(target, data);
-    if (res == nullptr) {
-        return res;
-    }
-    if (source.data.size > res->data.size) {
-        IMAGE_LOGE("MemoryManager::TransMemoryType size of the destination buffer is not enough.");
-        return nullptr;
-    }
-    errno_t ret = memcpy_s(res->data.data, res->data.size, source.data.data, source.data.size);
-    if (ret != 0) {
-        IMAGE_LOGE("MemoryManager::TransMemoryType copy source memory size %{public}zu fail", source.data.size);
-        return nullptr;
-    }
-    return res;
-}
 } // namespace Media
 } // namespace OHOS
