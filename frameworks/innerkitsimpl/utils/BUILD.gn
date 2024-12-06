@@ -152,6 +152,13 @@ if (use_clang_ios) {
         "hitrace:hitrace_meter",
         "ipc:ipc_single",
       ]
+      public_external_deps = [
+        "access_token:libprivacy_sdk",
+        "bundle_framework:appexecfwk_base",
+        "bundle_framework:appexecfwk_core",
+        "os_account:os_account_innerkits",
+        "samgr:samgr_proxy",
+      ]
 
       if (is_standard_system) {
         external_deps += [ "init:libbegetutil" ]

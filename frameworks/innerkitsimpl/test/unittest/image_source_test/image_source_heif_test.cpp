@@ -907,7 +907,12 @@ HWTEST_F(ImageSourceHeifTest, GetEncodedFormat001, TestSize.Level3)
      */
     uint32_t errorCode = 0;
     SourceOptions opts;
-    std::string IMAGE_ENCODEDFORMAT = "image/heif";
+    std::string IMAGE_ENCODEDFORMAT = "";
+    if (ImageUtils::GetAPIVersion() > APIVERSION_13) {
+        IMAGE_ENCODEDFORMAT = "image/heic";
+    } else {
+        IMAGE_ENCODEDFORMAT = "image/heif";
+    }
     std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(IMAGE_INPUT_HEIF_PATH, opts, errorCode);
     ASSERT_EQ(errorCode, SUCCESS);
     ASSERT_NE(imageSource.get(), nullptr);
@@ -952,7 +957,12 @@ HWTEST_F(ImageSourceHeifTest, GetEncodedFormat002, TestSize.Level3)
      */
     uint32_t errorCode = 0;
     SourceOptions opts;
-    std::string IMAGE_ENCODEDFORMAT = "image/heif";
+    std::string IMAGE_ENCODEDFORMAT = "";
+    if (ImageUtils::GetAPIVersion() > APIVERSION_13) {
+        IMAGE_ENCODEDFORMAT = "image/heic";
+    } else {
+        IMAGE_ENCODEDFORMAT = "image/heif";
+    }
     opts.formatHint = "image/heif";
     std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(IMAGE_INPUT_HW_HEIF_PATH,
         opts, errorCode);
@@ -999,7 +1009,12 @@ HWTEST_F(ImageSourceHeifTest, GetEncodedFormat003, TestSize.Level3)
      */
     uint32_t errorCode = 0;
     SourceOptions opts;
-    std::string IMAGE_ENCODEDFORMAT = "image/heif";
+    std::string IMAGE_ENCODEDFORMAT = "";
+    if (ImageUtils::GetAPIVersion() > APIVERSION_13) {
+        IMAGE_ENCODEDFORMAT = "image/heic";
+    } else {
+        IMAGE_ENCODEDFORMAT = "image/heif";
+    }
     std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(IMAGE_INPUT_EXIF_HEIF_PATH,
         opts, errorCode);
     ASSERT_EQ(errorCode, SUCCESS);

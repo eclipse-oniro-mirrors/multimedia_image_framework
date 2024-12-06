@@ -24,6 +24,7 @@
 #include "ext_pixel_convert.h"
 #include "image_log.h"
 #include "image_format_convert.h"
+#include "image_mime_type.h"
 #if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
 #include "ffrt.h"
 #include "hisysevent.h"
@@ -1373,6 +1374,9 @@ static uint32_t GetFormatName(SkEncodedImageFormat format, std::string &name)
     auto formatNameIter = FORMAT_NAME.find(format);
     if (formatNameIter != FORMAT_NAME.end() && !formatNameIter->second.empty()) {
         name = formatNameIter->second;
+        if (name == IMAGE_HEIF_FORMAT && ImageUtils::GetAPIVersion() > APIVERSION_13) {
+            name = IMAGE_HEIC_FORMAT;
+        }
         IMAGE_LOGD("GetFormatName: get encoded format name (%{public}d)=>[%{public}s].",
             format, name.c_str());
         return SUCCESS;

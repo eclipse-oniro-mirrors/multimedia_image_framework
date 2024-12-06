@@ -397,7 +397,11 @@ uint32_t ImageSource::GetSupportedFormats(set<string> &formats)
 
     static bool isSupportHeif = IsSupportHeif();
     if (isSupportHeif) {
-        formats.insert(IMAGE_HEIF_FORMAT);
+        if (ImageUtils::GetAPIVersion() > APIVERSION_13) {
+            formats.insert(IMAGE_HEIC_FORMAT);
+        } else {
+            formats.insert(IMAGE_HEIF_FORMAT);
+        }
     }
     return SUCCESS;
 }
@@ -738,7 +742,8 @@ DecodeContext ImageSource::InitDecodeContext(const DecodeOptions &opts, const Im
         context.allocatorType = opts.allocatorType;
     } else {
         if ((preference == MemoryUsagePreference::DEFAULT && IsSupportDma(opts, info, hasDesiredSizeOptions)) ||
-            info.encodedFormat == IMAGE_HEIF_FORMAT || ImageSystemProperties::GetDecodeDmaEnabled()) {
+            info.encodedFormat == IMAGE_HEIF_FORMAT || info.encodedFormat == IMAGE_HEIF_FORMAT||
+            ImageSystemProperties::GetDecodeDmaEnabled()) {
             IMAGE_LOGD("[ImageSource] allocatorType is DMA_ALLOC");
             context.allocatorType = AllocatorType::DMA_ALLOC;
         } else {
@@ -3925,12 +3930,12 @@ bool ImageSource::DecodeJpegGainMap(ImageHdrType hdrType, float scale, DecodeCon
 bool ImageSource::ApplyGainMap(ImageHdrType hdrType, DecodeContext& baseCtx, DecodeContext& hdrCtx, float scale)
 {
     string format = GetExtendedCodecMimeType(mainDecoder_.get());
-    if (format != IMAGE_JPEG_FORMAT && format != IMAGE_HEIF_FORMAT) {
+    if (format != IMAGE_JPEG_FORMAT && format != IMAGE_HEIF_FORMAT && format != IMAGE_HEIC_FORMAT) {
         return false;
     }
     DecodeContext gainMapCtx;
     HdrMetadata metadata;
-    if (format == IMAGE_HEIF_FORMAT) {
+    if (format == IMAGE_HEIF_FORMAT || format == IMAGE_HEIC_FORMAT) {
         ImageTrace imageTrace("ImageSource decode heif gainmap hdrType:%d, scale:%d", hdrType, scale);
         if (!mainDecoder_->DecodeHeifGainMap(gainMapCtx)) {
             IMAGE_LOGI("[ImageSource] heif get gainmap failed");
@@ -4484,7 +4489,7 @@ std::unique_ptr<Picture> ImageSource::CreatePicture(const DecodingOptionsForPict
     }
 
     string format = GetExtendedCodecMimeType(mainDecoder_.get());
-    if (format != IMAGE_HEIF_FORMAT && format != IMAGE_JPEG_FORMAT) {
+    if (format != IMAGE_HEIF_FORMAT && format != IMAGE_JPEG_FORMAT && format != IMAGE_HEIC_FORMAT) {
         IMAGE_LOGE("CreatePicture failed, unsupport format: %{public}s", format.c_str());
         errorCode = ERR_IMAGE_MISMATCHED_FORMAT;
         return nullptr;
@@ -4492,7 +4497,7 @@ std::unique_ptr<Picture> ImageSource::CreatePicture(const DecodingOptionsForPict
 
     std::set<AuxiliaryPictureType> auxTypes = (opts.desireAuxiliaryPictures.size() > 0) ?
             opts.desireAuxiliaryPictures : ImageUtils::GetAllAuxiliaryPictureType();
-    if (format == IMAGE_HEIF_FORMAT) {
+    if (format == IMAGE_HEIF_FORMAT || format == IMAGE_HEIC_FORMAT) {
         DecodeHeifAuxiliaryPictures(auxTypes, picture, errorCode);
     } else if (format == IMAGE_JPEG_FORMAT) {
         DecodeJpegAuxiliaryPicture(auxTypes, picture, errorCode);
