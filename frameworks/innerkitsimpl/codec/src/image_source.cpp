@@ -725,6 +725,7 @@ DecodeContext ImageSource::InitDecodeContext(const DecodeOptions &opts, const Im
     const MemoryUsagePreference &preference, bool hasDesiredSizeOptions, PlImageInfo& plInfo)
 {
     DecodeContext context;
+    context.photoDesiredPixelFormat = opts.photoDesiredPixelFormat;
     if (opts.allocatorType != AllocatorType::DEFAULT) {
         context.allocatorType = opts.allocatorType;
     } else {
@@ -2342,6 +2343,23 @@ uint32_t ImageSource::SetDecodeOptions(std::unique_ptr<AbsImageDecoder> &decoder
          opts.desiredDynamicRange == DecodeDynamicRange::HDR) {
         plOptions.desiredPixelFormat = PixelFormat::RGBA_8888;
     }
+
+    bool isDecodeHdrImage = (opts.desiredDynamicRange == DecodeDynamicRange::AUTO &&
+                             (sourceHdrType_ > ImageHdrType::SDR)) ||
+                             opts.desiredDynamicRange == DecodeDynamicRange::HDR;
+
+    bool isVpeSupport10BitOutputFormat = (opts.photoDesiredPixelFormat == PixelFormat::YCBCR_P010 ||
+                                         opts.photoDesiredPixelFormat == PixelFormat::RGBA_1010102);
+    
+    if (opts.photoDesiredPixelFormat != PixelFormat::UNKNOWN) {
+        if ((isDecodeHdrImage && isVpeSupport10BitOutputFormat) ||
+        (!isDecodeHdrImage && !isVpeSupport10BitOutputFormat)) {
+            IMAGE_LOGE("Photos provided a error parameter");
+            return COMMON_ERR_INVALID_PARAMETER;
+        }
+        plOptions.desiredPixelFormat = opts.photoDesiredPixelFormat;
+    }
+
     uint32_t ret = decoder->SetDecodeOptions(index, plOptions, plInfo);
     if (ret != SUCCESS) {
         IMAGE_LOGE("[ImageSource]decoder plugin set decode options fail (image index:%{public}u),"
@@ -3448,6 +3466,7 @@ static uint32_t GetByteCount(const DecodeContext& context, uint32_t surfaceBuffe
         case PixelFormat::NV12:
         case PixelFormat::NV21:
         case PixelFormat::RGBA_1010102:
+        case PixelFormat::YCBCR_P010:
             info.pixelFormat = context.info.pixelFormat;
             break;
         default:
@@ -3499,6 +3518,10 @@ static void SetContext(DecodeContext& context, sptr<SurfaceBuffer>& sb, void* fd
     } else if (format == GRAPHIC_PIXEL_FMT_YCRCB_420_SP) {
         context.pixelFormat = PixelFormat::NV21;
         context.info.pixelFormat = PixelFormat::NV21;
+        context.grColorSpaceName = ColorManager::DISPLAY_P3;
+    } else if (format == GRAPHIC_PIXEL_FMT_YCBCR_P010) {
+        context.pixelFormat = PixelFormat::YCBCR_P010;
+        context.info.pixelFormat = PixelFormat::YCBCR_P010;
         context.grColorSpaceName = ColorManager::DISPLAY_P3;
     }
 }
@@ -3677,6 +3700,7 @@ DecodeContext ImageSource::HandleDualHdrImage(ImageHdrType decodedHdrType, Image
     hdrContext.hdrType = decodedHdrType;
     hdrContext.info.size = plInfo.size;
     hdrContext.allocatorType = AllocatorType::DMA_ALLOC;
+    hdrContext.photoDesiredPixelFormat = context.photoDesiredPixelFormat;
     float scale = GetScaleSize(info, opts_);
     if (decodedHdrType > ImageHdrType::SDR && ApplyGainMap(decodedHdrType, context, hdrContext, scale)) {
         FreeContextBuffer(context.freeFunc, context.allocatorType, context.pixelsBuffer);
@@ -3864,11 +3888,15 @@ static uint32_t AllocHdrSurfaceBuffer(DecodeContext& context, ImageHdrType hdrTy
     return ERR_IMAGE_DATA_UNSUPPORT;
 #else
     sptr<SurfaceBuffer> sb = SurfaceBuffer::Create();
+    auto hdrPixelFormat = GRAPHIC_PIXEL_FMT_RGBA_1010102;
+    if (context.photoDesiredPixelFormat == PixelFormat::YCBCR_P010) {
+        hdrPixelFormat = GRAPHIC_PIXEL_FMT_YCBCR_P010;
+    }
     BufferRequestConfig requestConfig = {
         .width = context.info.size.width,
         .height = context.info.size.height,
         .strideAlignment = context.info.size.width,
-        .format = GRAPHIC_PIXEL_FMT_RGBA_1010102,
+        .format = hdrPixelFormat,
         .usage = BUFFER_USAGE_CPU_READ | BUFFER_USAGE_CPU_WRITE | BUFFER_USAGE_MEM_DMA | BUFFER_USAGE_MEM_MMZ_CACHE,
         .timeout = 0,
     };
@@ -3881,7 +3909,7 @@ static uint32_t AllocHdrSurfaceBuffer(DecodeContext& context, ImageHdrType hdrTy
     if (err != OHOS::GSERROR_OK) {
         return ERR_DMA_DATA_ABNORMAL;
     }
-    SetContext(context, sb, nativeBuffer, GRAPHIC_PIXEL_FMT_RGBA_1010102);
+    SetContext(context, sb, nativeBuffer, hdrPixelFormat);
     context.grColorSpaceName = ConvertColorSpaceName(color, false);
     CM_HDR_Metadata_Type type;
     if (hdrType == ImageHdrType::HDR_VIVID_DUAL || hdrType == ImageHdrType::HDR_CUVA) {

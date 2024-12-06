@@ -61,6 +61,8 @@ struct DecodeContext {
     bool ifSourceCompleted = true;
     // Out: output the PixelFormat.
     OHOS::Media::PixelFormat pixelFormat = OHOS::Media::PixelFormat::RGBA_8888;
+    // Out: output the PixelFormat.
+    OHOS::Media::PixelFormat photoDesiredPixelFormat = OHOS::Media::PixelFormat::RGBA_1010102;
     // Out: output the ColorSpace.
     OHOS::Media::ColorSpace colorSpace = OHOS::Media::ColorSpace::UNKNOWN;
     // Out: output if a partial image output.
