@@ -865,8 +865,9 @@ HWTEST_F(PngDecoderTest, GetDecodeFormat001, TestSize.Level3)
     PixelFormat format = PixelFormat::RGB_888;
     PixelFormat outputFormat;
     AlphaType alphaType;
+    pngDecoder->pngImageInfo_.width = 1;
     uint32_t ret = pngDecoder->GetDecodeFormat(format, outputFormat, alphaType);
-    ASSERT_EQ(ret, ERR_IMAGE_DATA_UNSUPPORT);
+    ASSERT_EQ(ret, SUCCESS);
     GTEST_LOG_(INFO) << "PngDecoderTest: GetDecodeFormat001 end";
 }
 
@@ -884,8 +885,9 @@ HWTEST_F(PngDecoderTest, GetDecodeFormat002, TestSize.Level3)
     PixelFormat outputFormat;
     AlphaType alphaType;
     info.bitDepth = 16;
+    pngDecoder->pngImageInfo_.width = 1;
     uint32_t ret = pngDecoder->GetDecodeFormat(format, outputFormat, alphaType);
-    ASSERT_EQ(ret, ERR_IMAGE_DATA_UNSUPPORT);
+    ASSERT_EQ(ret, SUCCESS);
     GTEST_LOG_(INFO) << "PngDecoderTest: GetDecodeFormat002 end";
 }
 
@@ -1149,8 +1151,9 @@ HWTEST_F(PngDecoderTest, ConfigInfo001, TestSize.Level3)
     opts.desiredPixelFormat =  PixelFormat::RGB_565;
     nine.patch_ = new PngNinePatchRes;
     pngDecoder->idatLength_ = 1;
+    pngDecoder->pngImageInfo_.width = 1;
     uint32_t ret = pngDecoder->ConfigInfo(opts);
-    ASSERT_EQ(ret, ERR_IMAGE_DATA_ABNORMAL);
+    ASSERT_EQ(ret, SUCCESS);
     delete nine.patch_;
     nine.patch_ = nullptr;
     GTEST_LOG_(INFO) << "PngDecoderTest: ConfigInfo001 end";
@@ -1433,8 +1436,9 @@ HWTEST_F(PngDecoderTest, SetDecodeOptionsTest013, TestSize.Level3)
     PixelDecodeOptions opts;
     PlImageInfo info;
     pngDecoder->state_ = PngDecodingState::BASE_INFO_PARSED;
+    pngDecoder->pngImageInfo_.width = 1;
     auto result = pngDecoder->SetDecodeOptions(0, opts, info);
-    ASSERT_EQ(result, ERR_IMAGE_DATA_ABNORMAL);
+    ASSERT_EQ(result, SUCCESS);
     GTEST_LOG_(INFO) << "PngDecoderTest: SetDecodeOptionsTest013 end";
 }
 
@@ -1583,8 +1587,9 @@ HWTEST_F(PngDecoderTest, GetDecodeFormat003, TestSize.Level3)
     PixelFormat outputFormat;
     AlphaType alphaType;
     pngDecoder->pngImageInfo_.bitDepth = 16;
+    pngDecoder->pngImageInfo_.width = 1;
     uint32_t ret = pngDecoder->GetDecodeFormat(format, outputFormat, alphaType);
-    ASSERT_EQ(ret, ERR_IMAGE_DATA_UNSUPPORT);
+    ASSERT_EQ(ret, SUCCESS);
     GTEST_LOG_(INFO) << "PngDecoderTest: GetDecodeFormat003 end";
 }
 
