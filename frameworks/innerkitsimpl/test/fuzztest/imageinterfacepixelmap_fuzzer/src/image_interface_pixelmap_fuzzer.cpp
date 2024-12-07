@@ -80,8 +80,6 @@ std::string GetStringFromData()
     return str;
 }
 
-
-
 Media::InitializationOptions GetInitialRandomOpts()
 {
     int32_t width = GetData<int32_t>() % MAX_LENGTH_MODULO;
