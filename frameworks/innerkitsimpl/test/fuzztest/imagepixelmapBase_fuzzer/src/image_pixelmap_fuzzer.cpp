@@ -321,7 +321,6 @@ bool PixelMapWritePixelsTest(std::unique_ptr<Media::PixelMap> &pixelMap)
     rect.top = GetData<int32_t>();
     rect.width = GetData<int32_t>();
     rect.height = GetData<int32_t>();
-    pixelMap->WritePixels(src.get(), bufferSize, offset, stride, rect);
     pixelMap->WritePixels(src.get(), bufferSize);
     return true;
 }
