@@ -113,8 +113,8 @@ void FuzzTestPureRandomSetAlpha()
     if (opts.pixelFormat == PixelFormat::ALPHA_8) {
         return;
     }
-    opts.size.width = GetData<uint32_t>() % 50;
-    opts.size.height = GetData<uint32_t>() % 50;
+    opts.size.width = GetData<uint32_t>() % SETALPHAMINWIDTH;
+    opts.size.height = GetData<uint32_t>() % SETALPHAMINHEIGHT;
     std::unique_ptr<Media::PixelMap> pixelmap = GetPixelMapFromOpts(opts);
     if (!pixelmap) {
         return;

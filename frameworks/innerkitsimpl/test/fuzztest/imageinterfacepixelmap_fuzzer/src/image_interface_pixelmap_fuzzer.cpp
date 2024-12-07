@@ -386,7 +386,7 @@ void FuzzTestWritePixelsWith5Args(bool isEditable)
     }
     Rect region = GetRandomRect(opts.size.width, opts.size.height);
     int32_t srcSize = pixelmap->GetByteCount();
-    uint32_t offset = GetData<uint32_t>() % (srcSize >> 2);  
+    uint32_t offset = GetData<uint32_t>() % (srcSize >> 2);
     uint32_t regionStride = pixelmap->GetPixelBytes() * region.width;
     uint64_t dstSize = regionStride * region.height;
     std::unique_ptr<uint8_t[]> regionBuffer_with_write = std::make_unique<uint8_t[]>(dstSize);
