@@ -329,7 +329,7 @@ private:
                                     const std::set<std::string> &key);
     uint32_t ModifyImageProperty(const std::string &key, const std::string &value);
     uint32_t CreatExifMetadataByImageSource(bool addFlag = false);
-    uint32_t CreateExifMetadata(uint8_t *buffer, const uint32_t size, bool addFlag);
+    uint32_t CreateExifMetadata(uint8_t *buffer, const uint32_t size, bool addFlag, bool hasOriginalFd = false);
     void SetDecodeInfoOptions(uint32_t index, const DecodeOptions &opts, const ImageInfo &info, ImageEvent &imageEvent);
     void SetDecodeInfoOptions(uint32_t index, const DecodeOptions &opts, const ImagePlugin::PlImageInfo &plInfo,
         ImageEvent &imageEvent);

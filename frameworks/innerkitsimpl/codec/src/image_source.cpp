@@ -1588,7 +1588,7 @@ uint32_t ImageSource::CreatExifMetadataByImageSource(bool addFlag)
     uint32_t bufferSize = sourceStreamPtr_->GetStreamSize();
     auto bufferPtr = sourceStreamPtr_->GetDataPtr();
     if (bufferPtr != nullptr) {
-        uint32_t ret = CreateExifMetadata(bufferPtr, bufferSize, addFlag);
+        uint32_t ret = CreateExifMetadata(bufferPtr, bufferSize, addFlag, true);
         if (ret != ERR_MEDIA_MMAP_FILE_CHANGED) {
             return ret;
         }
@@ -1613,13 +1613,19 @@ uint32_t ImageSource::CreatExifMetadataByImageSource(bool addFlag)
     return result;
 }
 
-uint32_t ImageSource::CreateExifMetadata(uint8_t *buffer, const uint32_t size, bool addFlag)
+uint32_t ImageSource::CreateExifMetadata(uint8_t *buffer, const uint32_t size, bool addFlag, bool hasOriginalFd)
 {
     uint32_t error = SUCCESS;
     DataInfo dataInfo {buffer, size};
-    auto metadataAccessor = MetadataAccessorFactory::Create(dataInfo, error, BufferMetadataStream::Fix,
-                                                            sourceStreamPtr_->GetOriginalFd(),
-                                                            sourceStreamPtr_->GetOriginalPath());
+    std::shared_ptr<MetadataAccessor> metadataAccessor;
+    if (hasOriginalFd) {
+        metadataAccessor = MetadataAccessorFactory::Create(dataInfo, error, BufferMetadataStream::Fix,
+                                                           sourceStreamPtr_->GetOriginalFd(),
+                                                           sourceStreamPtr_->GetOriginalPath());
+    } else {
+        metadataAccessor = MetadataAccessorFactory::Create(dataInfo, error, BufferMetadataStream::Fix);
+    }
+
     if (metadataAccessor == nullptr) {
         IMAGE_LOGD("metadataAccessor nullptr return ERR");
         return error == ERR_MEDIA_MMAP_FILE_CHANGED ? error : ERR_IMAGE_SOURCE_DATA;
