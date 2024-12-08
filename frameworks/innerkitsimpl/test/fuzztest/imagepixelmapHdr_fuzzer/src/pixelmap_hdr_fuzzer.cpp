@@ -59,7 +59,7 @@ T GetData()
     return object;
 }
 
-std::unique_ptr<Media::PixelMap> GetDmaHdrPixelMapFromOpts(const std::string& pathName)
+std::unique_ptr<Media::PixelMap> CreateDmaHdrPixelMap(const std::string& pathName)
 {
     IMAGE_LOGI("%{public}s IN", __func__);
     SourceOptions srcOpts;
@@ -90,7 +90,7 @@ bool PixelMapHdrToSdrFuzzTest(const uint8_t* data, size_t size, const std::strin
     g_size = size;
     g_pos = 0;
 
-    auto hdrPixelMap = GetDmaHdrPixelMapFromOpts(pathName);
+    auto hdrPixelMap = CreateDmaHdrPixelMap(pathName);
     if (!hdrPixelMap) {
         return false;
     }
