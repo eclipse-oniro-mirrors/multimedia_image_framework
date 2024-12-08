@@ -75,6 +75,7 @@ std::unique_ptr<Media::PixelMap> CreateDmaHdrPixelMap(const std::string& pathNam
     decodeOpts.allocatorType = AllocatorType::DMA_ALLOC;
     decodeOpts.preferDma = true;
     decodeOpts.desiredPixelFormat = hdrFormats[GetData<int32_t>() % HDR_PIXELFORMAT_COUNT];
+    decodeOpts.desiredDynamicRange = DecodeDynamicRange::HDR;
     auto pixelMap = imageSource->CreatePixelMapEx(0, decodeOpts, errorCode);
     IMAGE_LOGI("%{public}s SUCCESS", __func__);
     return pixelMap;
