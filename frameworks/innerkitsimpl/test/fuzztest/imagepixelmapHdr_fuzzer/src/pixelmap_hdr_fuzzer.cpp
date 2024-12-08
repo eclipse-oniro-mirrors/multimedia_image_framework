@@ -76,6 +76,8 @@ std::unique_ptr<Media::PixelMap> CreateDmaHdrPixelMap(const std::string& pathNam
     decodeOpts.preferDma = true;
     decodeOpts.desiredPixelFormat = hdrFormats[GetData<int32_t>() % HDR_PIXELFORMAT_COUNT];
     decodeOpts.desiredDynamicRange = DecodeDynamicRange::HDR;
+    decodeOpts.desiredColorSpaceInfo =
+        std::make_shared<OHOS::ColorManager::ColorSpace>(OHOS::ColorManager::ColorSpaceName::BT2020);
     auto pixelMap = imageSource->CreatePixelMapEx(0, decodeOpts, errorCode);
     IMAGE_LOGI("%{public}s SUCCESS", __func__);
     return pixelMap;
@@ -95,8 +97,6 @@ bool PixelMapHdrToSdrFuzzTest(const uint8_t* data, size_t size, const std::strin
     if (!hdrPixelMap) {
         return false;
     }
-    OHOS::ColorManager::ColorSpace colorSpace(OHOS::ColorManager::ColorSpaceName::BT2020);
-    hdrPixelMap->InnerSetColorSpace(colorSpace, GetData<bool>());
     PixelFormat dstPixelFormat = static_cast<PixelFormat>(GetData<int32_t>() % PIXELFORMAT_MODULO);
     bool toSRGB = GetData<bool>();
     uint32_t ret = hdrPixelMap->ToSdr(dstPixelFormat, toSRGB);
