@@ -76,6 +76,7 @@ std::unique_ptr<Media::PixelMap> CreateDmaHdrPixelMap(const std::string& pathNam
     decodeOpts.preferDma = true;
     decodeOpts.desiredPixelFormat = hdrFormats[GetData<int32_t>() % HDR_PIXELFORMAT_COUNT];
     decodeOpts.desiredDynamicRange = DecodeDynamicRange::HDR;
+    decodeOpts.desiredColorSpace = ColorSpace::DISPLAY_P3;
     decodeOpts.desiredColorSpaceInfo =
         std::make_shared<OHOS::ColorManager::ColorSpace>(OHOS::ColorManager::ColorSpaceName::BT2020);
     auto pixelMap = imageSource->CreatePixelMapEx(0, decodeOpts, errorCode);
