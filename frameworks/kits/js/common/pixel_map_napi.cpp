@@ -1230,7 +1230,7 @@ napi_value PixelMapNapi::CreatePixelMapSync(napi_env env, napi_callback_info inf
 static bool GetSurfaceSize(size_t argc, Rect &region, std::string fd)
 {
     if (argc == NUM_2 && (region.width <= 0 || region.height <= 0)) {
-        IMAGE_LOGE("GetSurfaceSize invalid parameter argc = %{public}lu", argc);
+        IMAGE_LOGE("GetSurfaceSize invalid parameter argc = %{public}zu", argc);
         return false;
     }
     if (region.width <= 0 || region.height <= 0) {
