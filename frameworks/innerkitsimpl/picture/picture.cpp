@@ -621,12 +621,12 @@ int32_t Picture::SetExifMetadata(sptr<SurfaceBuffer> &surfaceBuffer)
         return ERR_IMAGE_SOURCE_DATA;
     }
 
-    if (size > surfaceBuffer->GetSize() || tiffHeaderPos > surfaceBuffer->GetSize()) {
+    if (static_cast<uint32_t>(size) > surfaceBuffer->GetSize() || tiffHeaderPos > surfaceBuffer->GetSize()) {
         IMAGE_LOGE("The size of exif metadata exceeds the buffer size.");
         return ERR_IMAGE_INVALID_PARAMETER;
     }
 
-    if (size - tiffHeaderPos > MAX_EXIFMETADATA_SIZE) {
+    if (static_cast<uint32_t>(size) - tiffHeaderPos > MAX_EXIFMETADATA_SIZE) {
         IMAGE_LOGE("Failed to set exif metadata, the size of exif metadata exceeds the maximum limit %{public}llu.",
             static_cast<unsigned long long>(MAX_EXIFMETADATA_SIZE));
         return ERR_IMAGE_INVALID_PARAMETER;
