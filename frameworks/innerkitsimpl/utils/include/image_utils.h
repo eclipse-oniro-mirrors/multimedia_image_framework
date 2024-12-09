@@ -28,6 +28,7 @@ namespace OHOS {
 namespace Media {
 const std::string IMAGE_ENCODE_FORMAT = "encodeFormat";
 constexpr uint32_t MALLOC_MAX_LENTH = 0x40000000;
+constexpr int32_t APIVERSION_13 = 13;
 class PixelMap;
 
 class ImageUtils {
@@ -86,6 +87,8 @@ public:
     static bool IsInRange(int32_t value, int32_t minValue, int32_t maxValue);
     static bool IsEven(int32_t value);
     static bool HasOverflowed(uint32_t num1, uint32_t num2);
+    static int32_t GetAPIVersion();
+    static std::string GetEncodedHeifFormat();
 private:
     static uint32_t RegisterPluginServer();
     static uint32_t SaveDataToFile(const std::string& fileName, const char* data, const size_t& totalSize);
