@@ -907,7 +907,7 @@ HWTEST_F(ImageSourceHeifTest, GetEncodedFormat001, TestSize.Level3)
      */
     uint32_t errorCode = 0;
     SourceOptions opts;
-    std::string IMAGE_ENCODEDFORMAT = "image/heif";
+    std::string imageEncodedFormat = ImageUtils::GetEncodedHeifFormat();
     std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(IMAGE_INPUT_HEIF_PATH, opts, errorCode);
     ASSERT_EQ(errorCode, SUCCESS);
     ASSERT_NE(imageSource.get(), nullptr);
@@ -926,7 +926,7 @@ HWTEST_F(ImageSourceHeifTest, GetEncodedFormat001, TestSize.Level3)
     ImageInfo imageinfo1;
     uint32_t ret1 = imageSource->GetImageInfo(imageinfo1);
     ASSERT_EQ(ret1, SUCCESS);
-    ASSERT_EQ(imageinfo1.encodedFormat, IMAGE_ENCODEDFORMAT);
+    ASSERT_EQ(imageinfo1.encodedFormat, imageEncodedFormat);
     GTEST_LOG_(INFO) << "ImageSourceHeifTest: GetEncodedFormat001 imageinfo1: " << imageinfo1.encodedFormat;
     /**
      * @tc.steps: step4. get imageInfo encodedformat from pixelMap.
@@ -935,7 +935,7 @@ HWTEST_F(ImageSourceHeifTest, GetEncodedFormat001, TestSize.Level3)
     ImageInfo imageinfo2;
     pixelMap->GetImageInfo(imageinfo2);
     EXPECT_EQ(imageinfo2.encodedFormat.empty(), false);
-    ASSERT_EQ(imageinfo2.encodedFormat, IMAGE_ENCODEDFORMAT);
+    ASSERT_EQ(imageinfo2.encodedFormat, imageEncodedFormat);
     GTEST_LOG_(INFO) << "ImageSourceHeifTest: GetEncodedFormat001 imageinfo2: " << imageinfo2.encodedFormat;
 }
 
@@ -952,7 +952,7 @@ HWTEST_F(ImageSourceHeifTest, GetEncodedFormat002, TestSize.Level3)
      */
     uint32_t errorCode = 0;
     SourceOptions opts;
-    std::string IMAGE_ENCODEDFORMAT = "image/heif";
+    std::string imageEncodedFormat = ImageUtils::GetEncodedHeifFormat();
     opts.formatHint = "image/heif";
     std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(IMAGE_INPUT_HW_HEIF_PATH,
         opts, errorCode);
@@ -973,7 +973,7 @@ HWTEST_F(ImageSourceHeifTest, GetEncodedFormat002, TestSize.Level3)
     ImageInfo imageinfo1;
     uint32_t ret1 = imageSource->GetImageInfo(imageinfo1);
     ASSERT_EQ(ret1, SUCCESS);
-    ASSERT_EQ(imageinfo1.encodedFormat, IMAGE_ENCODEDFORMAT);
+    ASSERT_EQ(imageinfo1.encodedFormat, imageEncodedFormat);
     GTEST_LOG_(INFO) << "ImageSourceHeifTest: GetEncodedFormat002 imageinfo1: " << imageinfo1.encodedFormat;
     /**
      * @tc.steps: step4. get imageInfo encodedformat from pixelMap.
@@ -982,7 +982,7 @@ HWTEST_F(ImageSourceHeifTest, GetEncodedFormat002, TestSize.Level3)
     ImageInfo imageinfo2;
     pixelMap->GetImageInfo(imageinfo2);
     EXPECT_EQ(imageinfo2.encodedFormat.empty(), false);
-    ASSERT_EQ(imageinfo2.encodedFormat, IMAGE_ENCODEDFORMAT);
+    ASSERT_EQ(imageinfo2.encodedFormat, imageEncodedFormat);
     GTEST_LOG_(INFO) << "ImageSourceHeifTest: GetEncodedFormat002 imageinfo2: " << imageinfo2.encodedFormat;
 }
 
@@ -999,7 +999,7 @@ HWTEST_F(ImageSourceHeifTest, GetEncodedFormat003, TestSize.Level3)
      */
     uint32_t errorCode = 0;
     SourceOptions opts;
-    std::string IMAGE_ENCODEDFORMAT = "image/heif";
+    std::string imageEncodedFormat = ImageUtils::GetEncodedHeifFormat();
     std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(IMAGE_INPUT_EXIF_HEIF_PATH,
         opts, errorCode);
     ASSERT_EQ(errorCode, SUCCESS);
@@ -1011,7 +1011,7 @@ HWTEST_F(ImageSourceHeifTest, GetEncodedFormat003, TestSize.Level3)
     ImageInfo imageinfo1;
     uint32_t ret1 = imageSource->GetImageInfo(imageinfo1);
     ASSERT_EQ(ret1, SUCCESS);
-    ASSERT_EQ(imageinfo1.encodedFormat, IMAGE_ENCODEDFORMAT);
+    ASSERT_EQ(imageinfo1.encodedFormat, imageEncodedFormat);
     GTEST_LOG_(INFO) << "ImageSourceHeifTest: GetEncodedFormat003 imageinfo1: " << imageinfo1.encodedFormat;
     /**
      * @tc.steps: step3. decode image source to pixel map by default decode options.
@@ -1028,7 +1028,7 @@ HWTEST_F(ImageSourceHeifTest, GetEncodedFormat003, TestSize.Level3)
     ImageInfo imageinfo2;
     pixelMap->GetImageInfo(imageinfo2);
     EXPECT_EQ(imageinfo2.encodedFormat.empty(), false);
-    ASSERT_EQ(imageinfo2.encodedFormat, IMAGE_ENCODEDFORMAT);
+    ASSERT_EQ(imageinfo2.encodedFormat, imageEncodedFormat);
     GTEST_LOG_(INFO) << "ImageSourceHeifTest: GetEncodedFormat003 imageinfo2: " << imageinfo2.encodedFormat;
 }
 } // namespace Multimedia
