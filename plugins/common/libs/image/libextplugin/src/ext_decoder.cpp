@@ -910,6 +910,7 @@ uint32_t ExtDecoder::Decode(uint32_t index, DecodeContext &context)
     if (ret != SkCodec::kSuccess) {
         IMAGE_LOGE("Decode failed, get pixels failed, ret=%{public}d", ret);
         SetHeifDecodeError(context);
+        ResetCodec(); // release old jpeg codec
         return ERR_IMAGE_DECODE_ABNORMAL;
     }
     if (dstInfo_.colorType() == SkColorType::kRGB_888x_SkColorType) {
