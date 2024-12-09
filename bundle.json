@@ -28,6 +28,7 @@
         "components": [
           "ability_runtime",
           "access_token",
+          "bundle_framework",
           "c_utils",
           "graphic_2d",
           "graphic_surface",
@@ -53,6 +54,7 @@
           "ffmpeg",
           "astc-encoder",
           "skia",
+          "samgr",
           "resource_management",
           "json",
           "ffrt",
