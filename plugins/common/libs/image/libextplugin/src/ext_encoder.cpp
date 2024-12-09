@@ -133,19 +133,16 @@ struct HeifEncodeItemInfo {
     std::string itemType = "";
 };
 
-static const std::map<SkEncodedImageFormat, std::string> FORMAT_NAME = {
-    {SkEncodedImageFormat::kBMP, IMAGE_BMP_FORMAT},
-    {SkEncodedImageFormat::kGIF, IMAGE_GIF_FORMAT},
-    {SkEncodedImageFormat::kICO, IMAGE_ICO_FORMAT},
-    {SkEncodedImageFormat::kJPEG, IMAGE_JPEG_FORMAT},
-    {SkEncodedImageFormat::kPNG, IMAGE_PNG_FORMAT},
-    {SkEncodedImageFormat::kWBMP, IMAGE_BMP_FORMAT},
-    {SkEncodedImageFormat::kWEBP, IMAGE_WEBP_FORMAT},
-    {SkEncodedImageFormat::kPKM, ""},
-    {SkEncodedImageFormat::kKTX, ""},
-    {SkEncodedImageFormat::kASTC, ""},
-    {SkEncodedImageFormat::kDNG, ""},
-    {SkEncodedImageFormat::kHEIF, IMAGE_HEIF_FORMAT},
+static const std::map<std::string, SkEncodedImageFormat> FORMAT_NAME = {
+    {IMAGE_BMP_FORMAT, SkEncodedImageFormat::kBMP},
+    {IMAGE_GIF_FORMAT, SkEncodedImageFormat::kGIF},
+    {IMAGE_ICO_FORMAT, SkEncodedImageFormat::kICO},
+    {IMAGE_JPEG_FORMAT, SkEncodedImageFormat::kJPEG},
+    {IMAGE_PNG_FORMAT, SkEncodedImageFormat::kPNG},
+    {IMAGE_WBMP_FORMAT, SkEncodedImageFormat::kWBMP},
+    {IMAGE_WEBP_FORMAT, SkEncodedImageFormat::kWEBP},
+    {IMAGE_HEIF_FORMAT, SkEncodedImageFormat::kHEIF},
+    {IMAGE_HEIC_FORMAT, SkEncodedImageFormat::kHEIF},
 };
 
 static const std::map<AuxiliaryPictureType, std::string> DEFAULT_AUXILIARY_TAG_MAP = {
@@ -401,10 +398,7 @@ uint32_t ExtEncoder::FinalizeEncode()
         return astcEncoder.ASTCEncode();
     }
 #endif
-    auto iter = std::find_if(FORMAT_NAME.begin(), FORMAT_NAME.end(),
-        [this](const std::map<SkEncodedImageFormat, std::string>::value_type item) {
-            return IsSameTextStr(item.second, opts_.format);
-    });
+    auto iter = FORMAT_NAME.find(LowerStr(opts_.format));
     if (iter == FORMAT_NAME.end()) {
         IMAGE_LOGE("ExtEncoder::FinalizeEncode unsupported format %{public}s", opts_.format.c_str());
         ReportEncodeFault(0, 0, opts_.format, "Unsupported format:" + opts_.format);
@@ -412,14 +406,14 @@ uint32_t ExtEncoder::FinalizeEncode()
     }
 #if !defined(_WIN32) && !defined(_APPLE) && !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
     if (picture_ != nullptr) {
-        encodeFormat_ = iter->first;
+        encodeFormat_ = iter->second;
         return EncodePicture();
     }
 #endif
     ImageInfo imageInfo;
     pixelmap_->GetImageInfo(imageInfo);
     imageDataStatistics.AddTitle(", width = %d, height =%d", imageInfo.size.width, imageInfo.size.height);
-    encodeFormat_ = iter->first;
+    encodeFormat_ = iter->second;
     ExtWStream wStream(output_);
     return PixelmapEncode(wStream);
 }
