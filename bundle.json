@@ -27,6 +27,7 @@
       "deps": {
         "components": [
           "ability_runtime",
+          "access_token",
           "c_utils",
           "graphic_2d",
           "graphic_surface",
@@ -56,6 +57,7 @@
           "json",
           "ffrt",
           "openmax",
+          "os_account",
           "qos_manager",
           "eventhandler",
           "ets_runtime"

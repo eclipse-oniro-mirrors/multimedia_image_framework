@@ -397,11 +397,7 @@ uint32_t ImageSource::GetSupportedFormats(set<string> &formats)
 
     static bool isSupportHeif = IsSupportHeif();
     if (isSupportHeif) {
-        if (ImageUtils::GetAPIVersion() > APIVERSION_13) {
-            formats.insert(IMAGE_HEIC_FORMAT);
-        } else {
-            formats.insert(IMAGE_HEIF_FORMAT);
-        }
+        formats.insert(ImageUtils::GetEncodedHeifFormat());
     }
     return SUCCESS;
 }
@@ -742,7 +738,7 @@ DecodeContext ImageSource::InitDecodeContext(const DecodeOptions &opts, const Im
         context.allocatorType = opts.allocatorType;
     } else {
         if ((preference == MemoryUsagePreference::DEFAULT && IsSupportDma(opts, info, hasDesiredSizeOptions)) ||
-            info.encodedFormat == IMAGE_HEIF_FORMAT || info.encodedFormat == IMAGE_HEIF_FORMAT||
+            info.encodedFormat == IMAGE_HEIF_FORMAT || info.encodedFormat == IMAGE_HEIF_FORMAT ||
             ImageSystemProperties::GetDecodeDmaEnabled()) {
             IMAGE_LOGD("[ImageSource] allocatorType is DMA_ALLOC");
             context.allocatorType = AllocatorType::DMA_ALLOC;

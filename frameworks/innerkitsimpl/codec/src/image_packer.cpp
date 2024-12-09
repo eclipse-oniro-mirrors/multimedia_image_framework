@@ -119,11 +119,7 @@ uint32_t ImagePacker::GetSupportedFormats(std::set<std::string> &formats)
     }
     static bool isSupportHeif = IsSupportHeifEncode();
     if (isSupportHeif) {
-        if (ImageUtils::GetAPIVersion() > APIVERSION_13) {
-            formats.insert(IMAGE_HEIC_FORMAT);
-        } else {
-            formats.insert(IMAGE_HEIF_FORMAT);
-        }
+        formats.insert(ImageUtils::GetEncodedHeifFormat());
     }
     return SUCCESS;
 }

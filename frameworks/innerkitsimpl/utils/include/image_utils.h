@@ -88,6 +88,7 @@ public:
     static bool IsEven(int32_t value);
     static bool HasOverflowed(uint32_t num1, uint32_t num2);
     static int32_t GetAPIVersion();
+    static std::string GetEncodedHeifFormat();
 private:
     static uint32_t RegisterPluginServer();
     static uint32_t SaveDataToFile(const std::string& fileName, const char* data, const size_t& totalSize);
