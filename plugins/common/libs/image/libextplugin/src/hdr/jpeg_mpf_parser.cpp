@@ -182,7 +182,7 @@ bool JpegMpfParser::ParsingMpEntry(uint8_t* data, uint32_t size, bool isBigEndia
         images_[i].offset = ImageUtils::BytesToUint32(data, dataOffset, isBigEndian);
         uint16_t image1EntryNum = ImageUtils::BytesToUint16(data, dataOffset, isBigEndian);
         uint16_t image2EntryNum = ImageUtils::BytesToUint16(data, dataOffset, isBigEndian);
-        IMAGE_LOGD("index=%{public}d, imageAttr=%{public}d, image1entrynum=%{public}d, image2entryNum=%{puublic}d",
+        IMAGE_LOGD("index=%{public}d, imageAttr=%{public}d, image1entrynum=%{public}d, image2entryNum=%{public}d",
             i, imageAttr, image1EntryNum, image2EntryNum);
     }
     return true;
