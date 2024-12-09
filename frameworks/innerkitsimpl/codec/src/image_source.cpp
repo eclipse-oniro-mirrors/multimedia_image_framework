@@ -738,7 +738,7 @@ DecodeContext ImageSource::InitDecodeContext(const DecodeOptions &opts, const Im
         context.allocatorType = opts.allocatorType;
     } else {
         if ((preference == MemoryUsagePreference::DEFAULT && IsSupportDma(opts, info, hasDesiredSizeOptions)) ||
-            info.encodedFormat == IMAGE_HEIF_FORMAT || info.encodedFormat == IMAGE_HEIF_FORMAT ||
+            info.encodedFormat == IMAGE_HEIF_FORMAT || info.encodedFormat == IMAGE_HEIC_FORMAT ||
             ImageSystemProperties::GetDecodeDmaEnabled()) {
             IMAGE_LOGD("[ImageSource] allocatorType is DMA_ALLOC");
             context.allocatorType = AllocatorType::DMA_ALLOC;
