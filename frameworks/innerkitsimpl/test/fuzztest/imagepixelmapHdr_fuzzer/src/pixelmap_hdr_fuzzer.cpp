@@ -26,7 +26,6 @@
 #include "pixel_map.h"
 
 constexpr uint32_t MAX_LENGTH_MODULO = 1024;
-constexpr uint32_t PIXELFORMAT_MODULO = 8;
 constexpr uint32_t HDR_PIXELFORMAT_COUNT = 3;
 constexpr uint32_t MIN_DMA_SIZE = 512;
 constexpr uint32_t SUCCESS = 0;
@@ -111,7 +110,7 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t* data, size_t size)
     /* Run your code on data */
     static const std::string pathName = "/data/local/tmp/image/hdr.jpg";
     int fd = open(pathName.c_str(), O_RDWR | O_CREAT, S_IRUSR | S_IWUSR);
-    if (write(fd, data, size) != (ssize_t)size) {
+    if (write(fd, data, size) != static_cast<ssize_t>(size)) {
         close(fd);
         return 0;
     }
