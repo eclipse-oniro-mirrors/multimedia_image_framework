@@ -15,19 +15,17 @@
 
 #include "image_pixelmap_fuzzer.h"
 
+#include <chrono>
 #include <cstddef>
 #include <cstdint>
+#include <fcntl.h>
 #include <securec.h>
-#include <chrono>
-#include <thread>
-#include "pixel_map.h"
 #include "image_log.h"
+#include "image_source.h"
 #include "image_utils.h"
+#include "pixel_map.h"
 
 constexpr uint32_t MAX_LENGTH_MODULO = 1024;
-constexpr uint32_t PIXELFORMAT_MODULO = 8;
-constexpr uint32_t ALPHATYPE_MODULO = 4;
-constexpr uint32_t SCALEMODE_MODULO = 2;
 constexpr uint32_t HDR_PIXELFORMAT_COUNT = 3;
 constexpr uint32_t MIN_DMA_SIZE = 512;
 constexpr uint32_t SUCCESS = 0;
@@ -60,23 +58,29 @@ T GetData()
     return object;
 }
 
-std::unique_ptr<Media::PixelMap> GetDmaHdrPixelMapFromOpts()
+std::unique_ptr<Media::PixelMap> CreateDmaHdrPixelMap(const std::string& pathName)
 {
-    InitializationOptions opts;
-    opts.size.width = GetData<int32_t>() % MAX_LENGTH_MODULO + MIN_DMA_SIZE;
-    opts.size.height = GetData<int32_t>() % MAX_LENGTH_MODULO + MIN_DMA_SIZE;
-    opts.srcPixelFormat = static_cast<PixelFormat>(GetData<int32_t>() % PIXELFORMAT_MODULO);
-    PixelFormat hdrFormats[] = {PixelFormat::RGBA_1010102, PixelFormat::YCBCR_P010, PixelFormat::YCRCB_P010};
-    opts.pixelFormat = hdrFormats[GetData<int32_t>() % HDR_PIXELFORMAT_COUNT];
-    opts.alphaType = static_cast<AlphaType>(GetData<int32_t>() % ALPHATYPE_MODULO);
-    opts.scaleMode = static_cast<ScaleMode>(GetData<int32_t>() % SCALEMODE_MODULO);
-    opts.editable = GetData<bool>();
-    opts.useSourceIfMatch = GetData<bool>();
-    opts.useDMA = true;
-    return PixelMap::Create(opts);
+    IMAGE_LOGI("%{public}s IN", __func__);
+    SourceOptions srcOpts;
+    uint32_t errorCode;
+    auto imageSource = ImageSource::CreateImageSource(pathName, srcOpts, errorCode);
+    if (imageSource == nullptr) {
+        return nullptr;
+    }
+    const PixelFormat hdrFormats[] = {PixelFormat::RGBA_1010102, PixelFormat::YCBCR_P010, PixelFormat::YCRCB_P010};
+    DecodeOptions decodeOpts;
+    decodeOpts.desiredSize.width = GetData<int32_t>() % MAX_LENGTH_MODULO + MIN_DMA_SIZE;
+    decodeOpts.desiredSize.height = GetData<int32_t>() % MAX_LENGTH_MODULO + MIN_DMA_SIZE;
+    decodeOpts.allocatorType = AllocatorType::DMA_ALLOC;
+    decodeOpts.preferDma = true;
+    decodeOpts.desiredPixelFormat = hdrFormats[GetData<int32_t>() % HDR_PIXELFORMAT_COUNT];
+    decodeOpts.desiredDynamicRange = DecodeDynamicRange::HDR;
+    auto pixelMap = imageSource->CreatePixelMapEx(0, decodeOpts, errorCode);
+    IMAGE_LOGI("%{public}s SUCCESS", __func__);
+    return pixelMap;
 }
 
-bool PixelMapHdrToSdrFuzzTest(const uint8_t* data, size_t size)
+bool PixelMapHdrToSdrFuzzTest(const uint8_t* data, size_t size, const std::string& pathName)
 {
     if (data == nullptr) {
         return false;
@@ -86,15 +90,11 @@ bool PixelMapHdrToSdrFuzzTest(const uint8_t* data, size_t size)
     g_size = size;
     g_pos = 0;
 
-    auto hdrPixelMap = GetDmaHdrPixelMapFromOpts();
+    auto hdrPixelMap = CreateDmaHdrPixelMap(pathName);
     if (!hdrPixelMap) {
         return false;
     }
-    OHOS::ColorManager::ColorSpace colorSpace(OHOS::ColorManager::ColorSpaceName::BT2020);
-    hdrPixelMap->InnerSetColorSpace(colorSpace, GetData<bool>());
-    PixelFormat dstPixelFormat = static_cast<PixelFormat>(GetData<int32_t>() % PIXELFORMAT_MODULO);
-    bool toSRGB = GetData<bool>();
-    uint32_t ret = hdrPixelMap->ToSdr(dstPixelFormat, toSRGB);
+    uint32_t ret = hdrPixelMap->ToSdr();
     if (ret != SUCCESS) {
         return false;
     }
@@ -108,6 +108,13 @@ bool PixelMapHdrToSdrFuzzTest(const uint8_t* data, size_t size)
 extern "C" int LLVMFuzzerTestOneInput(const uint8_t* data, size_t size)
 {
     /* Run your code on data */
-    OHOS::Media::PixelMapHdrToSdrFuzzTest(data, size);
+    static const std::string pathName = "/data/local/tmp/image/hdr.jpg";
+    int fd = open(pathName.c_str(), O_RDWR | O_CREAT, S_IRUSR | S_IWUSR);
+    if (write(fd, data, size) != static_cast<ssize_t>(size)) {
+        close(fd);
+        return 0;
+    }
+    close(fd);
+    OHOS::Media::PixelMapHdrToSdrFuzzTest(data, size, pathName);
     return 0;
 }
