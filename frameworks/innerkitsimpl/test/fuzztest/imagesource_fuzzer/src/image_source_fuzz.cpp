@@ -24,6 +24,14 @@
 
 #include "securec.h"
 #include "image_source.h"
+#include "convert_utils.h"
+#include "image_log.h"
+
+#undef LOG_DOMAIN
+#define LOG_DOMAIN LOG_TAG_DOMAIN_ID_IMAGE
+
+#undef LOG_TAG
+#define LOG_TAG "IMAGE_SOURCE_FUZZ"
 
 namespace OHOS {
 namespace Media {
@@ -96,10 +104,14 @@ void CreateImageSourceByFDEXFuzz(const uint8_t* data, size_t size)
     uint32_t errorCode;
     uint32_t offset = 0;
     uint32_t length = 1;
-    std::string pathName = "/data/local/tmp/test2.jpg";
+    std::string pathName = "/data/local/tmp/test_create_imagesource_fdex.jpg";
+    if (!WriteDataToFile(data, size, pathName)) {
+        IMAGE_LOGE("WriteDataToFile failed");
+        return;
+    }
     int fd = open(pathName.c_str(), O_RDWR | O_CREAT, S_IRUSR | S_IWUSR);
-    if (write(fd, data, size) != static_cast<ssize_t>(size)) {
-        close(fd);
+    if (fd < 0) {
+        IMAGE_LOGE("open file failed, %{public}s", pathName.c_str());
         return;
     }
     auto imagesource = Media::ImageSource::CreateImageSource(fd, offset, length, opts, errorCode);
@@ -110,10 +122,9 @@ void CreateImageSourceByFDEXFuzz(const uint8_t* data, size_t size)
 
 void CreateImageSourceByIstreamFuzz(const uint8_t* data, size_t size)
 {
-    std::string pathName = "/data/local/tmp/test1.jpg";
-    int fd = open(pathName.c_str(), O_RDWR | O_CREAT, S_IRUSR | S_IWUSR);
-    if (write(fd, data, size) != (ssize_t)size) {
-        close(fd);
+    std::string pathName = "/data/local/tmp/test_create_imagesource_istream.jpg";
+    if (!WriteDataToFile(data, size, pathName)) {
+        IMAGE_LOGE("WriteDataToFile failed");
         return;
     }
     std::unique_ptr<std::istream> is = std::make_unique<std::ifstream>(pathName.c_str());
@@ -124,15 +135,13 @@ void CreateImageSourceByIstreamFuzz(const uint8_t* data, size_t size)
     if (imagesource != nullptr) {
         imagesource->CreatePixelMap(dopts, errorCode);
     }
-    close(fd);
 }
 
 void CreateImageSourceByPathNameFuzz(const uint8_t* data, size_t size)
 {
-    std::string pathName = "/data/local/tmp/test4.jpg";
-    int fd = open(pathName.c_str(), O_RDWR | O_CREAT, S_IRUSR | S_IWUSR);
-    if (write(fd, data, size) != static_cast<ssize_t>(size)) {
-        close(fd);
+    std::string pathName = "/data/local/tmp/test_create_imagesource_pathname.jpg";
+    if (!WriteDataToFile(data, size, pathName)) {
+        IMAGE_LOGE("WriteDataToFile failed");
         return;
     }
     Media::SourceOptions opts;
@@ -142,15 +151,13 @@ void CreateImageSourceByPathNameFuzz(const uint8_t* data, size_t size)
     if (imagesource != nullptr) {
         imagesource->CreatePixelMap(dopts, errorCode);
     }
-    close(fd);
 }
 
 void CreateIncrementalPixelMapFuzz(const uint8_t* data, size_t size)
 {
-    std::string pathName = "/data/local/tmp/test5.jpg";
-    int fd = open(pathName.c_str(), O_RDWR | O_CREAT, S_IRUSR | S_IWUSR);
-    if (write(fd, data, size) != (ssize_t)size) {
-        close(fd);
+    std::string pathName = "/data/local/tmp/test_incremental_pixelmap.jpg";
+    if (!WriteDataToFile(data, size, pathName)) {
+        IMAGE_LOGE("WriteDataToFile failed");
         return;
     }
     Media::SourceOptions opts;
@@ -161,19 +168,13 @@ void CreateIncrementalPixelMapFuzz(const uint8_t* data, size_t size)
     if (imagesource != nullptr) {
         imagesource->CreateIncrementalPixelMap(index, dopts, errorCode);
     }
-    close(fd);
-}
-
-static inline std::string FuzzString(const uint8_t *data, size_t size)
-{
-    return {reinterpret_cast<const char*>(data), size};
 }
 
 void CreateImageSourceByPathname(const uint8_t* data, size_t size)
 {
     uint32_t errCode = 0;
     SourceOptions opts;
-    std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(FuzzString(data, size), opts, errCode);
+    std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(data, size, opts, errCode);
 }
 } // namespace Media
 } // namespace OHOS
