@@ -69,12 +69,12 @@ void DoPrivateFun(PngDecoder* pngDecoder)
     IMAGE_LOGI("%{public}s SUCCESS", __func__);
 }
 
-void PngDecoderFuncTest001(int fd)
+void PngDecoderFuncTest001(const std::string& filename)
 {
     IMAGE_LOGI("%{public}s IN", __func__);
     SourceOptions srcOpts;
     uint32_t errorCode;
-    auto imageSource = ImageSource::CreateImageSource(fd, srcOpts, errorCode);
+    auto imageSource = ImageSource::CreateImageSource(filename, srcOpts, errorCode);
 
     imageSource->sourceInfo_.encodedFormat = "image/png";
     auto pngDecoder = static_cast<PngDecoder*>(imageSource->CreateDecoder(errorCode));
@@ -110,12 +110,12 @@ void PngDecoderFuncTest001(int fd)
 
 void CreateImageSourceByFDFuzz001(const uint8_t* data, size_t size)
 {
-    int fd = ConvertDataToFd(data, size, "image/png");
-    if (fd < 0) {
+    std::string filename = "/data/local/tmp/test_decode_png.png";
+    if (!WriteDataToFile(data, size, filename)) {
+        IMAGE_LOGE("WriteDataToFile failed");
         return;
     }
-    PngDecoderFuncTest001(fd);
-    close(fd);
+    PngDecoderFuncTest001(filename);
 }
 
 void CreateImageSourceByNinePatchFuzz001(const uint8_t *data, size_t size)

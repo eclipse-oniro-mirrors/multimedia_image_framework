@@ -24,4 +24,6 @@ int ConvertDataToFd(const uint8_t* data, size_t size, std::string encodeFormat =
 
 std::string GetNowTimeStr();
 
+bool WriteDataToFile(const uint8_t* data, size_t size, const std::string& filename);
+
 #endif
