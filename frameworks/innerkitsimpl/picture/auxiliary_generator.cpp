@@ -39,6 +39,10 @@ static constexpr uint32_t FIRST_FRAME = 0;
 static constexpr int32_t DEFAULT_SCALE_DENOMINATOR = 1;
 static constexpr int32_t DEPTH_SCALE_DENOMINATOR = 4;
 static constexpr int32_t LINEAR_SCALE_DENOMINATOR = 4;
+static constexpr uint32_t ARRAY_INDEX_1 = 1;
+static constexpr uint32_t ARRAY_INDEX_2 = 2;
+static constexpr uint32_t SUPPLEMENT_NUM_1 = 1;
+static constexpr uint32_t HALF_DENOMINATOR = 2;
 
 static inline bool IsSizeVailed(const Size &size)
 {
@@ -61,8 +65,8 @@ static int32_t GetAuxiliaryPictureDenominator(AuxiliaryPictureType type)
     return denominator;
 }
 
-static uint32_t SetAuxiliaryDecodeOption(std::unique_ptr<AbsImageDecoder> &decoder, PlImageInfo &plInfo,
-                                         AuxiliaryPictureType type)
+static uint32_t SetAuxiliaryDecodeOption(std::unique_ptr<AbsImageDecoder> &decoder, PixelFormat mainPixelFormat,
+    PlImageInfo &plInfo, AuxiliaryPictureType type)
 {
     Size size;
     uint32_t errorCode = decoder->GetImageSize(FIRST_FRAME, size);
@@ -72,7 +76,8 @@ static uint32_t SetAuxiliaryDecodeOption(std::unique_ptr<AbsImageDecoder> &decod
     PixelDecodeOptions plOptions;
     plOptions.desiredSize = size;
     bool useF16Format = (type == AuxiliaryPictureType::LINEAR_MAP || type == AuxiliaryPictureType::DEPTH_MAP);
-    plOptions.desiredPixelFormat = useF16Format ? PixelFormat::RGBA_F16 : PixelFormat::RGBA_8888;
+    plOptions.desiredPixelFormat = useF16Format ? PixelFormat::RGBA_F16 : mainPixelFormat;
+    IMAGE_LOGI("%{public}s desiredPixelFormat is %{public}d", __func__, plOptions.desiredPixelFormat);
     errorCode = decoder->SetDecodeOptions(FIRST_FRAME, plOptions, plInfo);
     return errorCode;
 }
@@ -139,11 +144,72 @@ static AuxiliaryPictureInfo MakeAuxiliaryPictureInfo(AuxiliaryPictureType type,
     return info;
 }
 
+static void SetDmaYuvInfo(SurfaceBuffer *&surfaceBuffer, PixelFormat format, YUVDataInfo &yuvInfo)
+{
+    if (surfaceBuffer == nullptr) {
+        IMAGE_LOGE("%{public}s: surfacebuffer is nullptr", __func__);
+        return;
+    }
+    OH_NativeBuffer_Planes *planes = nullptr;
+    GSError retVal = surfaceBuffer->GetPlanesInfo(reinterpret_cast<void **>(&planes));
+    if (retVal != OHOS::GSERROR_OK || planes == nullptr) {
+        IMAGE_LOGE("%{public}s: GetPlanesInfo failed retVal: %{public}d", __func__, retVal);
+        return;
+    }
+    const OH_NativeBuffer_Plane &planeY = planes->planes[0];
+    bool isNV21 = (format == PixelFormat::NV21 || format == PixelFormat::YCRCB_P010);
+    const OH_NativeBuffer_Plane &planeUV = planes->planes[isNV21 ? ARRAY_INDEX_2 : ARRAY_INDEX_1];
+    if (format == PixelFormat::YCRCB_P010 || format == PixelFormat::YCBCR_P010) {
+        yuvInfo.yStride = planeY.columnStride / HALF_DENOMINATOR;
+        yuvInfo.uvStride = planeUV.columnStride / HALF_DENOMINATOR;
+        yuvInfo.yOffset = planeY.offset / HALF_DENOMINATOR;
+        yuvInfo.uvOffset = planeUV.offset / HALF_DENOMINATOR;
+    } else {
+        yuvInfo.yStride = planeY.columnStride;
+        yuvInfo.uvStride = planeUV.columnStride;
+        yuvInfo.yOffset = planeY.offset;
+        yuvInfo.uvOffset = planeUV.offset;
+    }
+}
+
+static void SetNonDmaYuvInfo(int32_t width, int32_t height, YUVDataInfo &yuvInfo)
+{
+    yuvInfo.yWidth = static_cast<uint32_t>(width);
+    yuvInfo.yHeight = static_cast<uint32_t>(height);
+    yuvInfo.uvWidth = static_cast<uint32_t>((width + SUPPLEMENT_NUM_1) / HALF_DENOMINATOR);
+    yuvInfo.uvHeight = static_cast<uint32_t>((height + SUPPLEMENT_NUM_1) / HALF_DENOMINATOR);
+    yuvInfo.yStride = static_cast<uint32_t>(width);
+    yuvInfo.uvStride = static_cast<uint32_t>(((width + SUPPLEMENT_NUM_1) / HALF_DENOMINATOR) * HALF_DENOMINATOR);
+    yuvInfo.uvOffset = static_cast<uint32_t>(width) * static_cast<uint32_t>(height);
+}
+
+static void TrySetYUVDataInfo(std::shared_ptr<PixelMap> &pixelMap)
+{
+    if (pixelMap == nullptr) {
+        IMAGE_LOGE("%{public}s pixelMap is nullptr", __func__);
+        return;
+    }
+    PixelFormat format = pixelMap->GetPixelFormat();
+    if (!ImageSource::IsYuvFormat(format)) {
+        IMAGE_LOGI("%{public}s pixelMap is not YUV format", __func__);
+        return;
+    }
+
+    YUVDataInfo info;
+    if (pixelMap->GetAllocatorType() == AllocatorType::DMA_ALLOC) {
+        SurfaceBuffer *surfaceBuffer = reinterpret_cast<SurfaceBuffer *>(pixelMap->GetFd());
+        SetDmaYuvInfo(surfaceBuffer, format, info);
+    } else {
+        SetNonDmaYuvInfo(pixelMap->GetWidth(), pixelMap->GetHeight(), info);
+    }
+    pixelMap->SetImageYUVInfo(info);
+}
+
 static std::shared_ptr<PixelMap> CreatePixelMapByContext(DecodeContext &context,
     std::unique_ptr<AbsImageDecoder> &decoder, const std::string &encodedFormat, uint32_t &errorCode)
 {
     std::shared_ptr<PixelMap> pixelMap;
-    if (ImageSource::IsYuvFormat(context.pixelFormat)) {
+    if (ImageSource::IsYuvFormat(context.info.pixelFormat)) {
 #ifdef EXT_PIXEL
         pixelMap = std::make_shared<PixelYuvExt>();
 #else
@@ -157,13 +223,14 @@ static std::shared_ptr<PixelMap> CreatePixelMapByContext(DecodeContext &context,
         return nullptr;
     }
 
-    ImageInfo imageinfo = MakeImageInfo(context.outInfo.size, context.pixelFormat,
+    ImageInfo imageinfo = MakeImageInfo(context.outInfo.size, context.info.pixelFormat,
                                         context.info.alphaType, context.colorSpace, encodedFormat);
     pixelMap->SetImageInfo(imageinfo, true);
 
     PixelMapAddrInfos addrInfos;
     ImageSource::ContextToAddrInfos(context, addrInfos);
     pixelMap->SetPixelsAddr(addrInfos.addr, addrInfos.context, addrInfos.size, addrInfos.type, addrInfos.func);
+    TrySetYUVDataInfo(pixelMap);
 
 #ifdef IMAGE_COLORSPACE_FLAG
     if (context.hdrType > ImageHdrType::SDR) {
@@ -280,13 +347,14 @@ static void SetUncodedAuxilaryPictureInfo(std::unique_ptr<AuxiliaryPicture> &aux
     auxPicture->SetAuxiliaryPictureInfo(auxInfo);
 }
 
-static std::unique_ptr<AuxiliaryPicture> GenerateAuxiliaryPicture(ImageHdrType hdrType, AuxiliaryPictureType type,
-    const std::string &format, std::unique_ptr<AbsImageDecoder> &extDecoder, uint32_t &errorCode)
+static std::unique_ptr<AuxiliaryPicture> GenerateAuxiliaryPicture(const MainPictureInfo &mainInfo,
+    AuxiliaryPictureType type, const std::string &format,
+    std::unique_ptr<AbsImageDecoder> &extDecoder, uint32_t &errorCode)
 {
     IMAGE_LOGI("Generate by decoder, type: %{public}d, format: %{public}s", static_cast<int>(type), format.c_str());
     DecodeContext context;
     context.allocatorType = AllocatorType::DMA_ALLOC;
-    errorCode = SetAuxiliaryDecodeOption(extDecoder, context.info, type);
+    errorCode = SetAuxiliaryDecodeOption(extDecoder, mainInfo.imageInfo.pixelFormat, context.info, type);
     if (errorCode != SUCCESS) {
         IMAGE_LOGE("Set auxiliary decode option failed! errorCode: %{public}u", errorCode);
         return nullptr;
@@ -305,7 +373,7 @@ static std::unique_ptr<AuxiliaryPicture> GenerateAuxiliaryPicture(ImageHdrType h
 #endif
     } else if (format == IMAGE_JPEG_FORMAT) {
         errorCode = extDecoder->Decode(FIRST_FRAME, context);
-        context.hdrType = hdrType;
+        context.hdrType = mainInfo.hdrType;
     } else {
         errorCode = ERR_MEDIA_DATA_UNSUPPORT;
     }
@@ -324,7 +392,7 @@ static std::unique_ptr<AuxiliaryPicture> GenerateAuxiliaryPicture(ImageHdrType h
     return auxPicture;
 }
 
-std::shared_ptr<AuxiliaryPicture> AuxiliaryGenerator::GenerateHeifAuxiliaryPicture(ImageHdrType hdrType,
+std::shared_ptr<AuxiliaryPicture> AuxiliaryGenerator::GenerateHeifAuxiliaryPicture(const MainPictureInfo &mainInfo,
     AuxiliaryPictureType type, std::unique_ptr<AbsImageDecoder> &extDecoder, uint32_t &errorCode)
 {
     IMAGE_LOGI("Generate heif auxiliary picture, type: %{public}d", static_cast<int>(type));
@@ -333,13 +401,13 @@ std::shared_ptr<AuxiliaryPicture> AuxiliaryGenerator::GenerateHeifAuxiliaryPictu
         return nullptr;
     }
 
-    auto auxPicture = GenerateAuxiliaryPicture(hdrType, type, IMAGE_HEIF_FORMAT, extDecoder, errorCode);
+    auto auxPicture = GenerateAuxiliaryPicture(mainInfo, type, IMAGE_HEIF_FORMAT, extDecoder, errorCode);
     if (errorCode != SUCCESS) {
         IMAGE_LOGE("Generate heif auxiliary picture failed! errorCode: %{public}u", errorCode);
         return nullptr;
     }
     if (type == AuxiliaryPictureType::GAINMAP) {
-        errorCode = DecodeHdrMetadata(hdrType, extDecoder, auxPicture);
+        errorCode = DecodeHdrMetadata(mainInfo.hdrType, extDecoder, auxPicture);
     } else if (type == AuxiliaryPictureType::FRAGMENT_MAP) {
         errorCode = DecodeHeifFragmentMetadata(extDecoder, auxPicture);
     }
@@ -361,7 +429,7 @@ std::shared_ptr<AuxiliaryPicture> AuxiliaryGenerator::GenerateJpegAuxiliaryPictu
     }
 
     if (ImageUtils::IsAuxiliaryPictureEncoded(type)) {
-        auto auxPicture = GenerateAuxiliaryPicture(mainInfo.hdrType, type, IMAGE_JPEG_FORMAT, extDecoder, errorCode);
+        auto auxPicture = GenerateAuxiliaryPicture(mainInfo, type, IMAGE_JPEG_FORMAT, extDecoder, errorCode);
         if (errorCode != SUCCESS) {
             IMAGE_LOGE("Generate jpeg auxiliary picture failed! errorCode: %{public}u", errorCode);
             return nullptr;
