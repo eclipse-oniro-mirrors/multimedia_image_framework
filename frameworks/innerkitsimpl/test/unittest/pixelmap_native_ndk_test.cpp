@@ -763,5 +763,31 @@ HWTEST_F(PixelMapNdk2Test, OH_PixelmapNative_SetGetColorSpace, TestSize.Level3)
     GTEST_LOG_(INFO) << "PixelMapNdk2Test: OH_PixelmapNative_SetGetColorSpace end";
 }
 
+/**
+ * @tc.name: OH_PixelmapNative_GetByteCount
+ * @tc.desc: Test OH_PixelmapNative_GetByteCount and OH_PixelmapNative_GetAllocationByteCount
+ * @tc.type: FUNC
+ */
+HWTEST_F(PixelMapNdk2Test, OH_PixelmapNative_GetByteCount, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PixelMapNdk2Test: OH_PixelmapNative_GetByteCount start";
+
+    OH_Pixelmap_InitializationOptions* options = nullptr;
+    OH_PixelmapInitializationOptions_Create(&options);
+    OH_PixelmapInitializationOptions_SetWidth(options, 1);
+    OH_PixelmapInitializationOptions_SetHeight(options, 2);
+    OH_PixelmapNative* pixelmap = nullptr;
+    Image_ErrorCode ret = OH_PixelmapNative_CreateEmptyPixelmap(options, &pixelmap);
+    ASSERT_EQ(ret, IMAGE_SUCCESS);
+    uint32_t byteCount = 0;
+    ret = OH_PixelmapNative_GetByteCount(pixelmap, &byteCount);
+    ASSERT_EQ(ret, IMAGE_SUCCESS);
+    uint32_t allocByteCount = 0;
+    ret = OH_PixelmapNative_GetAllocationByteCount(pixelmap, &allocByteCount);
+    ASSERT_EQ(ret, IMAGE_SUCCESS);
+    ASSERT_TRUE(byteCount > 0 && allocByteCount >= byteCount);
+
+    GTEST_LOG_(INFO) << "PixelMapNdk2Test: OH_PixelmapNative_GetByteCount end";
+}
 }
 }

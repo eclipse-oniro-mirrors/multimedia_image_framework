@@ -2591,5 +2591,24 @@ HWTEST_F(PixelMapTest, MarshallingUnmarshallingDefaultAllocPixelMapTest, TestSiz
 
     GTEST_LOG_(INFO) << "PixelMapTest: MarshallingUnmarshallingDefaultAllocPixelMapTest end";
 }
+
+/**
+ * @tc.name: GetByteCountTest
+ * @tc.desc: Test get byte count and get allocation byte count
+ * @tc.type: FUNC
+ */
+HWTEST_F(PixelMapTest, GetByteCountTest, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PixelMapTest: GetByteCountTest start";
+
+    auto pixelMap = ConstructPixelMap(1, 1, PixelFormat::BGRA_8888, AlphaType::IMAGE_ALPHA_TYPE_UNKNOWN,
+        AllocatorType::DEFAULT);
+    EXPECT_TRUE(pixelMap != nullptr);
+    int32_t byteCount = pixelMap->GetByteCount();
+    uint32_t allocByteCount = pixelMap->GetAllocationByteCount();
+    EXPECT_TRUE(byteCount > 0 && allocByteCount >= static_cast<uint32_t>(byteCount));
+
+    GTEST_LOG_(INFO) << "PixelMapTest: GetByteCountTest end";
+}
 }
 }
