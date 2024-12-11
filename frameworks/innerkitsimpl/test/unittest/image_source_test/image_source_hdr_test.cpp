@@ -13,13 +13,16 @@
  * limitations under the License.
  */
 
+#define private public
 #include <gtest/gtest.h>
 #include <fstream>
 #include <fcntl.h>
+#include "abs_image_decoder.h"
 #include "hilog/log.h"
 #include "image_source.h"
 #include "image_type.h"
 #include "image_utils.h"
+#include "hdr_helper.h"
 #include "log_tags.h"
 #include "media_errors.h"
 #include "pixel_map.h"
@@ -43,6 +46,13 @@ static const std::string IMAGE_INPUT_JPEG_SDR_PATH = "/data/local/tmp/image/test
 static const std::string IMAGE_INPUT_HEIF_SDR_PATH = "/data/local/tmp/image/test.heic";
 static const std::string IMAGE_INPUT_HEIF_10BIT_SDR_PATH = "/data/local/tmp/image/test-10bit-1.heic";
 static const std::string IMAGE_INPUT_JPEG_HDR_PATH = "/data/local/tmp/image/hdr.jpg";
+static const std::string IMAGE_INPUT_JPEG_HDR_MEDIA_TYPE_PATH = "/data/local/tmp/image/hdr_media_type_test.jpg";
+static const std::vector<uint8_t> HDR_METADATA_TYPE_BYTES = {
+    0xFF, 0xEB, 0x00, 0x33, 0x75, 0x72, 0x6E, 0x3A, 0x68, 0x61, 0x72, 0x6D, 0x6F, 0x6E, 0x79, 0x6F,
+    0x73, 0x3A, 0x6D, 0x75, 0x6C, 0x74, 0x69, 0x6D, 0x65, 0x64, 0x69, 0x61, 0x3A, 0x69, 0x6D, 0x61,
+    0x67, 0x65, 0x3A, 0x76, 0x69, 0x64, 0x65, 0x6F, 0x63, 0x6f, 0x76, 0x65, 0x72, 0x3A, 0x76, 0x31,
+    0x00, 0x00, 0x00, 0x00, 0x05
+};
 
 class ImageSourceHdrTest : public testing::Test {
 public:
@@ -367,6 +377,42 @@ HWTEST_F(ImageSourceHdrTest, ToSdr002, TestSize.Level3)
     ASSERT_EQ(ret, SUCCESS);
     uint32_t errCode = pixelMap->ToSdr();
     ASSERT_NE(errCode, SUCCESS);
+}
+
+/**
+ * @tc.name: GetHdrMetadataTest001
+ * @tc.desc: test GetHdrMetadata get hdrMetadataType
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageSourceHdrTest, GetHdrMetadataTest001, TestSize.Level3)
+{
+    uint32_t errorCode = 0;
+    SourceOptions opts;
+    std::unique_ptr<ImageSource> imageSource =
+            ImageSource::CreateImageSource(IMAGE_INPUT_JPEG_HDR_MEDIA_TYPE_PATH, opts, errorCode);
+    ASSERT_EQ(errorCode, SUCCESS);
+    ASSERT_NE(imageSource.get(), nullptr);
+    DecodeOptions opt;
+    opt.desiredDynamicRange = DecodeDynamicRange::HDR;
+    opt.desiredPixelFormat = PixelFormat::YCBCR_P010;
+    imageSource->CreatePixelMap(opt, errorCode);
+    ASSERT_EQ(errorCode, SUCCESS);
+    ASSERT_NE(imageSource->jpegGainmapDecoder_, nullptr);
+    auto metadata = imageSource->jpegGainmapDecoder_->GetHdrMetadata(ImageHdrType::HDR_CUVA);
+    ASSERT_EQ(metadata.hdrMetadataType, 0);
+}
+
+/**
+ * @tc.name: PackHdrMediaTypeMarkerTest001
+ * @tc.desc: test PackHdrMediaTypeMarker
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageSourceHdrTest, PackHdrMediaTypeMarkerTest001, TestSize.Level3)
+{
+    HdrMetadata hdrMetadata;
+    hdrMetadata.hdrMetadataType = 5;
+    auto bytes = ImagePlugin::HdrJpegPackerHelper::PackHdrMediaTypeMarker(hdrMetadata);
+    ASSERT_EQ(bytes, HDR_METADATA_TYPE_BYTES);
 }
 }
 }
