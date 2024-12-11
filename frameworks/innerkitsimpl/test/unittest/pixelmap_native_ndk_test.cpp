@@ -775,7 +775,7 @@ HWTEST_F(PixelMapNdk2Test, OH_PixelmapNative_GetByteCount, TestSize.Level3)
     OH_Pixelmap_InitializationOptions* options = nullptr;
     OH_PixelmapInitializationOptions_Create(&options);
     OH_PixelmapInitializationOptions_SetWidth(options, 1);
-    OH_PixelmapInitializationOptions_SetHeight(options, 2);
+    OH_PixelmapInitializationOptions_SetHeight(options, 1);
     OH_PixelmapNative* pixelmap = nullptr;
     Image_ErrorCode ret = OH_PixelmapNative_CreateEmptyPixelmap(options, &pixelmap);
     ASSERT_EQ(ret, IMAGE_SUCCESS);
@@ -785,7 +785,7 @@ HWTEST_F(PixelMapNdk2Test, OH_PixelmapNative_GetByteCount, TestSize.Level3)
     uint32_t allocByteCount = 0;
     ret = OH_PixelmapNative_GetAllocationByteCount(pixelmap, &allocByteCount);
     ASSERT_EQ(ret, IMAGE_SUCCESS);
-    ASSERT_TRUE(byteCount > 0 && allocByteCount >= byteCount);
+    ASSERT_TRUE(byteCount == ARGB_8888_BYTES && allocByteCount >= byteCount);
 
     GTEST_LOG_(INFO) << "PixelMapNdk2Test: OH_PixelmapNative_GetByteCount end";
 }
