@@ -171,6 +171,35 @@ struct AstcExtendInfo {
     uint8_t *extendInfoValue[ASTC_EXTEND_INFO_TLV_NUM];
 };
 
+struct StreamInfo {
+    uint8_t* buffer = nullptr;
+    uint32_t size = 0;
+    uint32_t gainmapOffset = 0;
+    bool needDelete = false;    // Require the buffer allocation type to be HEAP ALLOC
+
+    uint8_t* GetCurrentAddress()
+    {
+        return buffer + gainmapOffset;
+    }
+
+    uint32_t GetCurrentSize()
+    {
+        if (size >= gainmapOffset) {
+            return size - gainmapOffset;
+        } else {
+            return 0;
+        }
+    }
+
+    ~StreamInfo()
+    {
+        if (needDelete && buffer != nullptr) {
+            delete[] buffer;
+            buffer = nullptr;
+        }
+    }
+};
+
 #ifdef SUT_DECODE_ENABLE
 constexpr uint8_t ASTC_HEAD_BYTES = 16;
 constexpr uint8_t SUT_HEAD_BYTES = 16
@@ -4639,23 +4668,38 @@ static std::vector<SingleJpegImage> ParsingJpegAuxiliaryPictures(uint8_t *stream
     return jpegMpfParser->images_;
 }
 
-bool ImageSource::CheckJpegSourceStream(uint8_t *&streamBuffer, uint32_t &streamSize)
+bool ImageSource::CheckJpegSourceStream(StreamInfo &streamInfo)
 {
-    streamBuffer = sourceStreamPtr_->GetDataPtr();
-    streamSize = sourceStreamPtr_->GetStreamSize();
-    if (streamBuffer == nullptr || streamSize == 0) {
-        IMAGE_LOGE("%{public}s source stream from sourceStreamPtr_ is invalid!", __func__);
+    if (sourceStreamPtr_ == nullptr) {
+        IMAGE_LOGE("%{public}s sourceStreamPtr_ is nullptr!", __func__);
+        return false;
+    }
+    streamInfo.size = sourceStreamPtr_->GetStreamSize();
+    if (streamInfo.size == 0) {
+        IMAGE_LOGE("%{public}s source stream size from sourceStreamPtr_ is invalid!", __func__);
+        return false;
+    }
+    streamInfo.buffer = sourceStreamPtr_->GetDataPtr();
+    if (streamInfo.buffer == nullptr) {
+        streamInfo.buffer = new (std::nothrow) uint8_t[streamInfo.size];
+        streamInfo.needDelete = true;
+        if (!GetStreamData(sourceStreamPtr_, streamInfo.buffer, streamInfo.size)) {
+            IMAGE_LOGE("%{public}s GetStreamData failed!", __func__);
+            return false;
+        }
+    }
+    if (streamInfo.buffer == nullptr) {
+        IMAGE_LOGE("%{public}s source stream is still nullptr!", __func__);
         return false;
     }
     if (sourceHdrType_ > ImageHdrType::SDR) {
         uint32_t gainmapOffset = mainDecoder_->GetGainMapOffset();
-        if (gainmapOffset >= streamSize) {
+        if (gainmapOffset >= streamInfo.size) {
             IMAGE_LOGW("%{public}s skip invalid gainmapOffset: %{public}u, streamSize: %{public}u",
-                __func__, gainmapOffset, streamSize);
+                __func__, gainmapOffset, streamInfo.size);
             return true;
         }
-        streamBuffer += gainmapOffset;
-        streamSize -= gainmapOffset;
+        streamInfo.gainmapOffset = gainmapOffset;
     }
     return true;
 }
@@ -4663,14 +4707,14 @@ bool ImageSource::CheckJpegSourceStream(uint8_t *&streamBuffer, uint32_t &stream
 void ImageSource::DecodeJpegAuxiliaryPicture(
     std::set<AuxiliaryPictureType> &auxTypes, std::unique_ptr<Picture> &picture, uint32_t &errorCode)
 {
-    uint8_t *streamBuffer = nullptr;
-    uint32_t streamSize = 0;
-    if (!CheckJpegSourceStream(streamBuffer, streamSize) || streamBuffer == nullptr || streamSize == 0) {
+    StreamInfo streamInfo;
+    if (!CheckJpegSourceStream(streamInfo) || streamInfo.buffer == nullptr || streamInfo.GetCurrentSize() == 0) {
         IMAGE_LOGE("Jpeg source stream is invalid!");
         errorCode = ERR_IMAGE_DATA_ABNORMAL;
         return;
     }
-    auto auxInfos = ParsingJpegAuxiliaryPictures(streamBuffer, streamSize, auxTypes, sourceHdrType_);
+    auto auxInfos = ParsingJpegAuxiliaryPictures(streamInfo.GetCurrentAddress(), streamInfo.GetCurrentSize(),
+        auxTypes, sourceHdrType_);
     MainPictureInfo mainInfo;
     mainInfo.hdrType = sourceHdrType_;
     picture->GetMainPixel()->GetImageInfo(mainInfo.imageInfo);
@@ -4678,14 +4722,15 @@ void ImageSource::DecodeJpegAuxiliaryPicture(
         if (auxTypes.find(auxInfo.auxType) == auxTypes.end()) {
             continue;
         }
-        if (ImageUtils::HasOverflowed(auxInfo.offset, auxInfo.size) || auxInfo.offset + auxInfo.size > streamSize) {
+        if (ImageUtils::HasOverflowed(auxInfo.offset, auxInfo.size)
+            || auxInfo.offset + auxInfo.size > streamInfo.GetCurrentSize()) {
             IMAGE_LOGW("Invalid auxType: %{public}d, offset: %{public}u, size: %{public}u, streamSize: %{public}u",
-                auxInfo.auxType, auxInfo.offset, auxInfo.size, streamSize);
+                auxInfo.auxType, auxInfo.offset, auxInfo.size, streamInfo.GetCurrentSize());
             continue;
         }
         IMAGE_LOGI("Jpeg auxiliary picture has found. Type: %{public}d", auxInfo.auxType);
         std::unique_ptr<InputDataStream> auxStream =
-            BufferSourceStream::CreateSourceStream((streamBuffer + auxInfo.offset), auxInfo.size);
+            BufferSourceStream::CreateSourceStream((streamInfo.GetCurrentAddress() + auxInfo.offset), auxInfo.size);
         if (auxStream == nullptr) {
             IMAGE_LOGE("Create auxiliary stream fail, auxiliary offset is %{public}u", auxInfo.offset);
             continue;
