@@ -2606,7 +2606,8 @@ HWTEST_F(PixelMapTest, GetByteCountTest, TestSize.Level3)
     EXPECT_TRUE(pixelMap != nullptr);
     int32_t byteCount = pixelMap->GetByteCount();
     uint32_t allocByteCount = pixelMap->GetAllocationByteCount();
-    EXPECT_TRUE(byteCount > 0 && allocByteCount >= static_cast<uint32_t>(byteCount));
+    EXPECT_TRUE(byteCount == ImageUtils::GetPixelBytes(PixelFormat::BGRA_8888) &&
+        allocByteCount >= static_cast<uint32_t>(byteCount));
 
     GTEST_LOG_(INFO) << "PixelMapTest: GetByteCountTest end";
 }
