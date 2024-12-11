@@ -4652,7 +4652,7 @@ bool ImageSource::CheckJpegSourceStream(uint8_t *&streamBuffer, uint32_t &stream
         if (gainmapOffset >= streamSize) {
             IMAGE_LOGW("%{public}s skip invalid gainmapOffset: %{public}u, streamSize: %{public}u",
                 __func__, gainmapOffset, streamSize);
-            return false;
+            return true;
         }
         streamBuffer += gainmapOffset;
         streamSize -= gainmapOffset;
