@@ -872,13 +872,15 @@ uint32_t ExtDecoder::Decode(uint32_t index, DecodeContext &context)
     if (skEncodeFormat == SkEncodedImageFormat::kHEIF) {
         context.isHardDecode = true;
     }
-    size_t tempByteCount = dstInfo_.computeMinByteSize();
-    if (SkImageInfo::ByteSizeOverflowed(tempByteCount)) {
-        IMAGE_LOGE("Image too large, dstInfo_height: %{public}d, dstInfo_width: %{public}d",
-            dstInfo_.height(), dstInfo_.width());
+    size_t tempSrcByteCount = info_.computeMinByteSize();
+    size_t tempDstByteCount = dstInfo_.computeMinByteSize();
+    if (SkImageInfo::ByteSizeOverflowed(tempSrcByteCount) || SkImageInfo::ByteSizeOverflowed(tempDstByteCount)) {
+        IMAGE_LOGE("Image too large, srcInfo_height: %{public}d, srcInfo_width: %{public}d, "
+            "dstInfo_height: %{public}d, dstInfo_width: %{public}d",
+            info_.height(), info_.width(), dstInfo_.height(), dstInfo_.width());
         return ERR_IMAGE_TOO_LARGE;
     }
-    uint64_t byteCount = tempByteCount;
+    uint64_t byteCount = tempDstByteCount;
     uint8_t *dstBuffer = nullptr;
     std::unique_ptr<uint8_t[]> tmpBuffer;
     if (dstInfo_.colorType() == SkColorType::kRGB_888x_SkColorType) {
