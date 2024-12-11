@@ -157,6 +157,7 @@ enum class ImageHdrType;
 struct HdrMetadata;
 class MetadataAccessor;
 class ExifMetadata;
+struct StreamInfo;
 
 class ImageSource {
 public:
@@ -366,7 +367,7 @@ private:
                                      uint32_t &errorCode);
     void DecodeJpegAuxiliaryPicture(std::set<AuxiliaryPictureType> &auxTypes, std::unique_ptr<Picture> &picture,
                                     uint32_t &errorCode);
-    bool CheckJpegSourceStream(uint8_t *&streamBuffer, uint32_t &streamSize);
+    bool CheckJpegSourceStream(StreamInfo &streamInfo);
 #endif
 
     const std::string NINE_PATCH = "ninepatch";
