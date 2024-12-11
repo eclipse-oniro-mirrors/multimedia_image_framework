@@ -132,6 +132,7 @@ public:
     NATIVEEXPORT virtual int32_t GetPixelBytes();
     NATIVEEXPORT virtual int32_t GetRowBytes();
     NATIVEEXPORT virtual int32_t GetByteCount();
+    NATIVEEXPORT virtual uint32_t GetAllocationByteCount();
     NATIVEEXPORT virtual int32_t GetWidth();
     NATIVEEXPORT virtual int32_t GetHeight();
     NATIVEEXPORT void GetAstcRealSize(Size &size)

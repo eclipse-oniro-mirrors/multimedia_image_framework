@@ -1085,6 +1085,34 @@ Image_ErrorCode OH_PixelmapNative_SetMemoryName(OH_PixelmapNative *pixelmap, cha
     return IMAGE_SUCCESS;
 }
 
+MIDK_EXPORT
+Image_ErrorCode OH_PixelmapNative_GetByteCount(OH_PixelmapNative *pixelmap, uint32_t *byteCount)
+{
+    if (pixelmap == nullptr || pixelmap->GetInnerPixelmap() == nullptr || byteCount == nullptr) {
+        return IMAGE_BAD_PARAMETER;
+    }
+    int32_t rawByteCount = pixelmap->GetInnerPixelmap()->GetByteCount();
+    if (rawByteCount <= 0) {
+        return IMAGE_BAD_PARAMETER;
+    }
+    *byteCount = static_cast<uint32_t>(rawByteCount);
+    return IMAGE_SUCCESS;
+}
+
+MIDK_EXPORT
+Image_ErrorCode OH_PixelmapNative_GetAllocationByteCount(OH_PixelmapNative *pixelmap, uint32_t *allocationByteCount)
+{
+    if (pixelmap == nullptr || pixelmap->GetInnerPixelmap() == nullptr || allocationByteCount == nullptr) {
+        return IMAGE_BAD_PARAMETER;
+    }
+    int32_t rawByteCount = pixelmap->GetInnerPixelmap()->GetAllocationByteCount();
+    if (rawByteCount == 0) {
+        return IMAGE_BAD_PARAMETER;
+    }
+    *allocationByteCount = rawByteCount;
+    return IMAGE_SUCCESS;
+}
+
 #ifdef __cplusplus
 };
 #endif
