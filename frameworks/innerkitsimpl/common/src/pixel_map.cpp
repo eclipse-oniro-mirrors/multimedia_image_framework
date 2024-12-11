@@ -1416,6 +1416,22 @@ int32_t PixelMap::GetByteCount()
     }
 }
 
+uint32_t PixelMap::GetAllocationByteCount()
+{
+    uint32_t allocatedBytes = pixelsSize_;
+#if !defined(_WIN32) && !defined(_APPLE) && !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
+    if (allocatorType_ == AllocatorType::DMA_ALLOC) {
+        if (context_ == nullptr) {
+            IMAGE_LOGE("[PixelMap] GetAllocationByteCount failed, context_ is null");
+            return 0;
+        }
+        SurfaceBuffer* sb = static_cast<SurfaceBuffer*>(context_);
+        allocatedBytes = sb->GetSize();
+    }
+#endif
+    return allocatedBytes;
+}
+
 int32_t PixelMap::GetWidth()
 {
     return imageInfo_.size.width;
