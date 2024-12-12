@@ -203,7 +203,7 @@ struct StreamInfo {
 #ifdef SUT_DECODE_ENABLE
 constexpr uint8_t ASTC_HEAD_BYTES = 16;
 constexpr uint8_t SUT_HEAD_BYTES = 16
-constexpr uint32_t SUT_FILE_SIGNATURE = 0x53555401;
+constexpr uint32_t SUT_FILE_SIGNATURE = 0x5CA1AB13;
 static const std::string g_textureSuperDecSo = "/system/lib64/module/hms/graphic/libtextureSuperDecompress.z.so";
 
 constexpr uint8_t EXPAND_ASTC_INFO_MAX_DEC = 16; // reserve max 16 groups TLV info
