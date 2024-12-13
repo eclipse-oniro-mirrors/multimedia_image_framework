@@ -3060,7 +3060,6 @@ napi_value PixelMapNapi::CreateScaledPixelMapSync(napi_env env, napi_callback_in
 {
     napi_value result = nullptr;
     napi_get_undefined(env, &result);
-
     napi_status status;
     napi_value thisVar = nullptr;
     napi_value argValue[NUM_3] = {0};
@@ -3072,7 +3071,6 @@ napi_value PixelMapNapi::CreateScaledPixelMapSync(napi_env env, napi_callback_in
     IMAGE_LOGD("CreateScaledPixelMapSync IN");
     IMG_JS_ARGS(env, info, status, argCount, argValue, thisVar);
     IMG_NAPI_CHECK_RET_D(IMG_IS_OK(status), result, IMAGE_LOGE("fail to arg info"));
-
     IMG_NAPI_CHECK_RET_D(argCount == NUM_2 || argCount == NUM_3,
         ImageNapiUtils::ThrowExceptionError(env, COMMON_ERR_INVALID_PARAMETER,
         "Invalid args count"),
@@ -3089,7 +3087,6 @@ napi_value PixelMapNapi::CreateScaledPixelMapSync(napi_env env, napi_callback_in
     PixelMapNapi* pixelMapNapi = nullptr;
     status = napi_unwrap(env, thisVar, reinterpret_cast<void**>(&pixelMapNapi));
     IMG_NAPI_CHECK_RET_D(IMG_IS_READY(status, pixelMapNapi), result, IMAGE_LOGE("fail to unwrap context"));
-
     IMG_NAPI_CHECK_RET_D(pixelMapNapi->GetPixelNapiEditable(),
         ImageNapiUtils::ThrowExceptionError(env, ERR_RESOURCE_UNAVAILABLE,
         "Pixelmap has crossed threads . CreateScaledPixelMapSync failed"),
