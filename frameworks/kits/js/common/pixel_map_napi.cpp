@@ -2962,7 +2962,7 @@ static void CreateScaledPixelMapExec(napi_env env, PixelMapAsyncContext* context
     if (context->status == SUCCESS) {
         if (context->rPixelMap != nullptr) {
             InitializationOptions opts;
-            auto clonePixelMap = PixelMap::Create(*(context->rPixelMap), opts);
+            std::unique_ptr<PixelMap> clonePixelMap = PixelMap::Create(*(context->rPixelMap), opts);
             if (clonePixelMap == nullptr) {
                 IMAGE_LOGE("Null clonePixelMap");
                 return;
@@ -2977,7 +2977,7 @@ static void CreateScaledPixelMapExec(napi_env env, PixelMapAsyncContext* context
             context->status = SUCCESS;
         } else {
             IMAGE_LOGE("Null native ref");
-            context->status = ERR_IMAGE_INIT_ABNORMAL;
+            context->status = COMMON_ERR_INVALID_PARAMETER;
         }
     } else {
         IMAGE_LOGD("Scale has failed. do nothing");
@@ -2999,7 +2999,7 @@ static void CreateScaledPixelMapComplete(napi_env env, napi_status status, void 
         context->status = SUCCESS;
     } else {
         IMAGE_LOGE("Null alphaMap");
-        context->status = ERROR;
+        context->status = COMMON_ERR_INVALID_PARAMETER;
     }
     CommonCallbackRoutine(env, context, result);
 }
@@ -3095,7 +3095,7 @@ napi_value PixelMapNapi::CreateScaledPixelMapSync(napi_env env, napi_callback_in
 
     if (pixelMapNapi->nativePixelMap_ != nullptr) {
         InitializationOptions opts;
-        auto clonePixelMap = PixelMap::Create(*(pixelMapNapi->nativePixelMap_), opts);
+        std::unique_ptr<PixelMap> clonePixelMap = PixelMap::Create(*(pixelMapNapi->nativePixelMap_), opts);
         if (clonePixelMap == nullptr) {
             IMAGE_LOGE("Null clonePixelMap");
             return result;
