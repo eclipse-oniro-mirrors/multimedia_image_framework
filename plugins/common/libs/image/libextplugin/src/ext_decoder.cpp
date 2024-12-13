@@ -567,6 +567,14 @@ uint32_t ExtDecoder::CheckDecodeOptions(uint32_t index, const PixelDecodeOptions
             dstSubset_.left(), dstSubset_.top(), dstSubset_.width(), dstSubset_.height());
         return ERR_IMAGE_INVALID_PARAMETER;
     }
+    size_t tempSrcByteCount = info_.computeMinByteSize();
+    size_t tempDstByteCount = dstInfo_.computeMinByteSize();
+    if (SkImageInfo::ByteSizeOverflowed(tempSrcByteCount) || SkImageInfo::ByteSizeOverflowed(tempDstByteCount)) {
+        IMAGE_LOGE("Image too large, srcInfo_height: %{public}d, srcInfo_width: %{public}d, "
+                   "dstInfo_height: %{public}d, dstInfo_width: %{public}d",
+                   info_.height(), info_.width(), dstInfo_.height(), dstInfo_.width());
+        return ERR_IMAGE_TOO_LARGE;
+    }
 
     dstOptions_.fFrameIndex = static_cast<int>(index);
 #ifdef IMAGE_COLORSPACE_FLAG
@@ -874,19 +882,14 @@ uint32_t ExtDecoder::Decode(uint32_t index, DecodeContext &context)
     if (skEncodeFormat == SkEncodedImageFormat::kHEIF) {
         context.isHardDecode = true;
     }
-    size_t tempSrcByteCount = info_.computeMinByteSize();
-    size_t tempDstByteCount = dstInfo_.computeMinByteSize();
-    if (SkImageInfo::ByteSizeOverflowed(tempSrcByteCount) || SkImageInfo::ByteSizeOverflowed(tempDstByteCount)) {
-        IMAGE_LOGE("Image too large, srcInfo_height: %{public}d, srcInfo_width: %{public}d, "
-            "dstInfo_height: %{public}d, dstInfo_width: %{public}d",
-            info_.height(), info_.width(), dstInfo_.height(), dstInfo_.width());
-        return ERR_IMAGE_TOO_LARGE;
-    }
-    uint64_t byteCount = tempDstByteCount;
+    uint64_t byteCount = dstInfo_.computeMinByteSize();
     uint8_t *dstBuffer = nullptr;
     std::unique_ptr<uint8_t[]> tmpBuffer;
     if (dstInfo_.colorType() == SkColorType::kRGB_888x_SkColorType) {
         tmpBuffer = make_unique<uint8_t[]>(byteCount);
+        if (tmpBuffer == nullptr) {
+            IMAGE_LOGE("Make unique pointer failed, byteCount: %{public}llu", byteCount);
+        }
         dstBuffer = tmpBuffer.get();
         byteCount = byteCount / NUM_4 * NUM_3;
     }
