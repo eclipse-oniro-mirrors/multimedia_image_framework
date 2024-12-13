@@ -1550,7 +1550,9 @@ uint32_t ImageSource::ModifyImageProperty(uint32_t index, const std::string &key
     ImageDataStatistics imageDataStatistics("[ImageSource]ModifyImageProperty by path.");
 
 #if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
-    if (!std::filesystem::exists(path)) {
+    std::error_code ec;
+    if (!std::filesystem::exists(path, ec)) {
+        IMAGE_LOGE("File not exists, error: %{public}d, message: %{public}s", ec.value(), ec.message().c_str());
         return ERR_IMAGE_SOURCE_DATA;
     }
 #endif
