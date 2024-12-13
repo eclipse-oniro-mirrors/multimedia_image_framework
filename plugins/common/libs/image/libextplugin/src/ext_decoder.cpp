@@ -222,6 +222,7 @@ static uint32_t ShareMemAlloc(DecodeContext &context, uint64_t count)
 #endif
 }
 
+#if !defined(_WIN32) && !defined(_APPLE) && !defined(ANDROID_PLATFORM) && !defined(IOS_PLATFORM)
 static BufferRequestConfig CreateDmaRequestConfig(const SkImageInfo &dstInfo, uint64_t &count, PixelFormat pixelFormat)
 {
     BufferRequestConfig requestConfig = {
@@ -248,6 +249,7 @@ static BufferRequestConfig CreateDmaRequestConfig(const SkImageInfo &dstInfo, ui
     }
     return requestConfig;
 }
+#endif
 
 uint32_t ExtDecoder::DmaMemAlloc(DecodeContext &context, uint64_t count, SkImageInfo &dstInfo)
 {
