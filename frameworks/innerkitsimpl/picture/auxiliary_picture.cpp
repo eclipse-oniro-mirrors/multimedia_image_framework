@@ -38,7 +38,23 @@ std::unique_ptr<AuxiliaryPicture> AuxiliaryPicture::Create(std::shared_ptr<Pixel
     dstAuxPicture->content_ = content;
     dstAuxPicture->SetType(type);
     dstAuxPicture->SetSize(size);
+    dstAuxPicture->UpdateAuxiliaryPictureInfo();
     return dstAuxPicture;
+}
+
+void AuxiliaryPicture::UpdateAuxiliaryPictureInfo()
+{
+    if (content_ == nullptr) {
+        IMAGE_LOGE("%{public}s content_ is nullptr", __func__);
+        return;
+    }
+    ImageInfo imageInfo;
+    content_->GetImageInfo(imageInfo);
+
+    auxiliaryPictureInfo_.size = imageInfo.size;
+    auxiliaryPictureInfo_.rowStride = content_->GetRowStride();
+    auxiliaryPictureInfo_.colorSpace = imageInfo.colorSpace;
+    auxiliaryPictureInfo_.pixelFormat = imageInfo.pixelFormat;
 }
 
 std::unique_ptr<AuxiliaryPicture> AuxiliaryPicture::Create(sptr<SurfaceBuffer> &surfaceBuffer,
@@ -76,6 +92,7 @@ std::shared_ptr<PixelMap> AuxiliaryPicture::GetContentPixel()
 void AuxiliaryPicture::SetContentPixel(std::shared_ptr<PixelMap> content)
 {
     content_ = content;
+    UpdateAuxiliaryPictureInfo();
 }
 
 uint32_t AuxiliaryPicture::ReadPixels(const uint64_t &bufferSize, uint8_t *dst)
