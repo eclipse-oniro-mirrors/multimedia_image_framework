@@ -428,6 +428,7 @@ void CropCreate()
 {
     Media::InitializationOptions opts = GetInitialRandomOpts();
     std::unique_ptr<Media::PixelMap> pixelmap = GetPixelMapFromOpts(opts);
+    opts.useSourceIfMatch = false;
     if (opts.pixelFormat == PixelFormat::ALPHA_8 || !pixelmap) {
         return;
     }
@@ -436,10 +437,7 @@ void CropCreate()
     Rect rect = GetRandomRect(imageInfo.size.width, imageInfo.size.height);
     opts.size.width = rect.width;
     opts.size.height = rect.height;
-    std::unique_ptr<Media::PixelMap> pixelmap_crop = PixelMap::Create(*(pixelmap.get()), rect, opts);
-    if (!pixelmap_crop) {
-        return;
-    }
+    PixelMap::Create(*(pixelmap.get()), rect, opts);
 }
 
 void DmaAndYuvPixelMapCreate()
