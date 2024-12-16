@@ -229,6 +229,7 @@ image_native_ios_include_dirs = [
   "//foundation/multimedia/image_framework/interfaces/kits/js/common/include",
   "//foundation/multimedia/image_framework/plugins/common/libs/image/libjpegplugin",
   "//foundation/multimedia/image_framework/interfaces/kits/native/include",
+  "//foundation/multimedia/image_framework/interfaces/kits/native/include/image",
   "//utils/jni/jnikit/include",
   "//foundation/graphic/graphic_surface/interfaces/inner_api/surface",
   "//foundation/graphic/graphic_surface/interfaces/inner_api/utils",
