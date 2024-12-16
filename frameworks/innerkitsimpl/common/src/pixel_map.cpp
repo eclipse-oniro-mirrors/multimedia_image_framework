@@ -387,7 +387,7 @@ static int AllocPixelMapMemory(std::unique_ptr<AbsMemory> &dstMemory, int32_t &d
         IMAGE_LOGE("[PixelMap] AllocPixelMapMemory: Get row data size failed");
         return IMAGE_RESULT_BAD_PARAMETER;
     }
-    int64_t bufferSize = rowDataSize * dstImageInfo.size.height;
+    int64_t bufferSize = PixelMap::GetAllocatedByteCount(dstImageInfo.pixelFormat, dstImageInfo.size.width, dstImageInfo.size.height);
     if (bufferSize > UINT32_MAX) {
         IMAGE_LOGE("[PixelMap]Create: pixelmap size too large: width = %{public}d, height = %{public}d",
             dstImageInfo.size.width, dstImageInfo.size.height);
@@ -1402,19 +1402,29 @@ int32_t PixelMap::GetRowBytes()
     return rowDataSize_;
 }
 
-int32_t PixelMap::GetByteCount()
+int32_t PixelMap::GetByteCount(PixelFormat format, int32_t width, int32_t height)
 {
-    IMAGE_LOGD("GetByteCount");
-    if (IsYUV(imageInfo_.pixelFormat)) {
-        return GetYUVByteCount(imageInfo_);
+    ImageInfo imageInfo;
+    imageInfo.pixelFormat = format;
+    imageInfo.size.width = width;
+    imageInfo.size.height = height;
+    int32_t rowDataSize = ImageUtils::GetRowDataSizeByPixelFormat(width, format);
+    if (IsYUV(format)) {
+        return PixelMap::GetYUVByteCount(imageInfo);
     } else {
-        uint64_t byteCount = static_cast<uint64_t>(rowDataSize_) * static_cast<uint64_t>(imageInfo_.size.height);
+        uint64_t byteCount = static_cast<uint64_t>(rowDataSize) * static_cast<uint64_t>(height);
         if (byteCount > INT_MAX) {
             IMAGE_LOGE("GetByteCount failed: byteCount overflowed");
             return 0;
         }
         return byteCount;
     }
+}
+
+int32_t PixelMap::GetByteCount()
+{
+    IMAGE_LOGD("GetByteCount");
+    return PixelMap::GetByteCount(imageInfo_.pixelFormat, imageInfo_.size.width, imageInfo_.size.height);
 }
 
 int32_t PixelMap::GetWidth()
@@ -1522,7 +1532,7 @@ bool PixelMap::IsSameImage(const PixelMap &other)
         IMAGE_LOGI("IsSameImage imageInfo is invalid");
         return false;
     }
-    uint64_t size = static_cast<uint64_t>(rowDataSize_) * static_cast<uint64_t>(imageInfo_.size.height);
+    uint64_t size = GetByteCount();
     if (memcmp(data_, other.data_, size) != 0) {
         IMAGE_LOGI("IsSameImage memcmp is not same");
         return false;

@@ -387,6 +387,7 @@ public:
     static int32_t GetRGBxByteCount(const ImageInfo& info);
     static int32_t GetYUVByteCount(const ImageInfo& info);
     static int32_t GetAllocatedByteCount(const ImageInfo& info);
+    static int32_t GetByteCount(PixelFormat format, int32_t width, int32_t height);
 
     NATIVEEXPORT uint32_t GetVersionId();
     NATIVEEXPORT void AddVersionId();
