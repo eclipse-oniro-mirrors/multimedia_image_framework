@@ -597,7 +597,7 @@ void JpgYuvTest::WritesYuv420(std::string &srcjpg, PixelFormat outfmt, std::stri
 bool JpgYuvTest::ReadFile(void *chOrg, std::string path, int32_t totalsize, int32_t srcNum)
 {
     FILE* const fileOrg = fopen(path.c_str(), "rb");
-    if (fileOrg == NULL) {
+    if (fileOrg == nullptr) {
         GTEST_LOG_(INFO) << "Cannot open" << path.c_str();
         return false;
     }
@@ -627,7 +627,7 @@ void JpgYuvTest::YuvP010Crop(PixelFormat outfmt, std::string outname, ImageSize 
     bool result = ReadFile(chOrg, IMAGE_INPUT_YUV_PATH3, totalSize, 1);
     ASSERT_EQ(result, true);
     const uint32_t dataLength = totalSize * 2;
-    uint32_t *data = (uint32_t *)chOrg;
+    uint32_t *data = reinterpret_cast<uint32_t *>(chOrg);
     InitializationOptions opts;
     opts.srcPixelFormat =outfmt;
     opts.pixelFormat = outfmt;
@@ -669,7 +669,7 @@ void JpgYuvTest::YuvP010Rotate(PixelFormat outfmt, std::string outname, ImageSiz
     bool result = ReadFile(chOrg, IMAGE_INPUT_YUV_PATH3, totalSize, 1);
     ASSERT_EQ(result, true);
     const uint32_t dataLength = totalSize * 2;
-    uint32_t *data = (uint32_t *)chOrg;
+    uint32_t *data = reinterpret_cast<uint32_t *>(chOrg);
     InitializationOptions opts;
     opts.srcPixelFormat = outfmt;
     opts.pixelFormat = outfmt;
@@ -709,7 +709,7 @@ void JpgYuvTest::ScaleYuv420P010(PixelFormat outfmt, std::string &outname,
     bool result = ReadFile(chOrg, IMAGE_INPUT_YUV_PATH3, totalSize, 1);
     ASSERT_EQ(result, true);
     const uint32_t dataLength = totalSize * 2;
-    uint32_t *data = (uint32_t *)chOrg;
+    uint32_t *data = reinterpret_cast<uint32_t *>(chOrg);
     InitializationOptions opts;
     opts.srcPixelFormat = outfmt;
     opts.pixelFormat = outfmt;
@@ -748,7 +748,7 @@ void JpgYuvTest::ResizeYuv420P010(PixelFormat outfmt, std::string &outname, Imag
     bool result = ReadFile(chOrg, IMAGE_INPUT_YUV_PATH3, totalSize, 1);
     ASSERT_EQ(result, true);
     const uint32_t dataLength = totalSize * 2;
-    uint32_t *data = (uint32_t *)chOrg;
+    uint32_t *data = reinterpret_cast<uint32_t *>(chOrg);
     InitializationOptions opts;
     opts.srcPixelFormat = outfmt;
     opts.pixelFormat = outfmt;
@@ -786,7 +786,7 @@ void JpgYuvTest::FlipYuv420P010(PixelFormat outfmt, std::string &outname, ImageS
     bool result = ReadFile(chOrg, IMAGE_INPUT_YUV_PATH3, totalSize, 1);
     ASSERT_EQ(result, true);
     const uint32_t dataLength = totalSize * 2;
-    uint32_t *data = (uint32_t *)chOrg;
+    uint32_t *data = reinterpret_cast<uint32_t *>(chOrg);
     InitializationOptions opts;
     opts.srcPixelFormat = outfmt;
     opts.pixelFormat = outfmt;
@@ -829,7 +829,7 @@ void JpgYuvTest::TranslateYuv420P010(PixelFormat outfmt, std::string &outname,
     bool result = ReadFile(chOrg, IMAGE_INPUT_YUV_PATH3, totalSize, 1);
     ASSERT_EQ(result, true);
     const uint32_t dataLength = totalSize * 2;
-    uint32_t *data = (uint32_t *)chOrg;
+    uint32_t *data = reinterpret_cast<uint32_t *>(chOrg);
     InitializationOptions opts;
     opts.srcPixelFormat = outfmt;
     opts.pixelFormat = outfmt;
@@ -867,7 +867,7 @@ void JpgYuvTest::RGBA1010102Crop(PixelFormat outfmt, std::string outname, ImageS
     bool result = ReadFile(chOrg, IMAGE_INPUT_YUV_PATH4, totalSize, 0);
     ASSERT_EQ(result, true);
     const uint32_t dataLength = totalSize;
-    uint32_t *data = (uint32_t *)chOrg;
+    uint32_t *data = reinterpret_cast<uint32_t *>(chOrg);
     InitializationOptions opts;
     opts.srcPixelFormat =outfmt;
     opts.pixelFormat = outfmt;
@@ -907,7 +907,7 @@ void JpgYuvTest::RGBA1010102Rotate(PixelFormat outfmt, std::string outname, Imag
     bool result = ReadFile(chOrg, IMAGE_INPUT_YUV_PATH4, totalSize, 0);
     ASSERT_EQ(result, true);
     const uint32_t dataLength = totalSize;
-    uint32_t *data = (uint32_t *)chOrg;
+    uint32_t *data = reinterpret_cast<uint32_t *>(chOrg);
     InitializationOptions opts;
     opts.srcPixelFormat = outfmt;
     opts.pixelFormat = outfmt;
@@ -945,7 +945,7 @@ void JpgYuvTest::RGBA1010102Scale(PixelFormat outfmt, std::string &outname, Imag
     bool result = ReadFile(chOrg, IMAGE_INPUT_YUV_PATH4, totalSize, 0);
     ASSERT_EQ(result, true);
     const uint32_t dataLength = totalSize;
-    uint32_t *data = (uint32_t *)chOrg;
+    uint32_t *data = reinterpret_cast<uint32_t *>(chOrg);
     InitializationOptions opts;
     opts.srcPixelFormat = outfmt;
     opts.pixelFormat = outfmt;
@@ -983,7 +983,7 @@ void JpgYuvTest::RGBA1010102Resize(PixelFormat outfmt, std::string &outname, Ima
     bool result = ReadFile(chOrg, IMAGE_INPUT_YUV_PATH4, totalSize, 0);
     ASSERT_EQ(result, true);
     const uint32_t dataLength = totalSize;
-    uint32_t *data = (uint32_t *)chOrg;
+    uint32_t *data = reinterpret_cast<uint32_t *>(chOrg);
     InitializationOptions opts;
     opts.srcPixelFormat = outfmt;
     opts.pixelFormat = outfmt;
@@ -1020,7 +1020,7 @@ void JpgYuvTest::RGBA1010102Flip(PixelFormat outfmt, std::string &outname, Image
     bool result = ReadFile(chOrg, IMAGE_INPUT_YUV_PATH4, totalSize, 0);
     ASSERT_EQ(result, true);
     const uint32_t dataLength = totalSize;
-    uint32_t *data = (uint32_t *)chOrg;
+    uint32_t *data = reinterpret_cast<uint32_t *>(chOrg);
     InitializationOptions opts;
     opts.srcPixelFormat = outfmt;
     opts.pixelFormat = outfmt;
@@ -1062,7 +1062,7 @@ void JpgYuvTest::RGBA1010102Translate(PixelFormat outfmt, std::string &outname, 
     bool result = ReadFile(chOrg, IMAGE_INPUT_YUV_PATH4, totalSize, 0);
     ASSERT_EQ(result, true);
     const uint32_t dataLength = totalSize;
-    uint32_t *data = (uint32_t *)chOrg;
+    uint32_t *data = reinterpret_cast<uint32_t *>(chOrg);
     InitializationOptions opts;
     opts.srcPixelFormat = outfmt;
     opts.pixelFormat = outfmt;
