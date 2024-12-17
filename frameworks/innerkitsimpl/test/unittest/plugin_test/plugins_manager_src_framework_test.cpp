@@ -1153,5 +1153,367 @@ HWTEST_F(PluginsManagerSrcFrameWorkTest, GetUint16ValueFromDecimal001, TestSize.
     ASSERT_EQ(ret, ERR_INVALID_PARAMETER);
     GTEST_LOG_(INFO) << "PluginsManagerSrcFrameWorkTest: GetUint16ValueFromDecimal001 end";
 }
+
+/**
+ * @tc.name: ComparePriorityTest001
+ * @tc.desc: test the ComparePriority of ImplClassMgr
+             when lhs.type_ != rhs.type_ , return ERR_COMP_ERROR
+ * @tc.type: FUNC
+ */
+HWTEST_F(PluginsManagerSrcFrameWorkTest, ComparePriorityTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PluginsManagerSrcFrameWorkTest: ComparePriorityTest001 start";
+    ImplClassMgr &implClassMgr = DelayedRefSingleton<ImplClassMgr>::GetInstance();
+    AttrData lhs;
+    lhs.type_ = AttrDataType::ATTR_DATA_NULL;
+    AttrData rhs;
+    rhs.type_ = AttrDataType::ATTR_DATA_BOOL;
+    PriorityType type = PriorityType::PRIORITY_TYPE_NULL;
+    uint32_t ret = implClassMgr.ComparePriority(lhs, rhs, type);
+    ASSERT_EQ(ret, ERR_COMP_ERROR);
+    GTEST_LOG_(INFO) << "PluginsManagerSrcFrameWorkTest: ComparePriorityTest001 end";
+}
+
+/**
+ * @tc.name: ComparePriorityTest002
+ * @tc.desc: test the ComparePriority of ImplClassMgr
+             when lhs.type_ == rhs.type_  and lhs.type_ == AttrDataType::ATTR_DATA_NULL,
+             return ERR_COMP_EQUAL
+ * @tc.type: FUNC
+ */
+HWTEST_F(PluginsManagerSrcFrameWorkTest, ComparePriorityTest002, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PluginsManagerSrcFrameWorkTest: ComparePriorityTest002 start";
+    ImplClassMgr &implClassMgr = DelayedRefSingleton<ImplClassMgr>::GetInstance();
+    AttrData lhs;
+    lhs.type_ = AttrDataType::ATTR_DATA_NULL;
+    AttrData rhs;
+    rhs.type_ = AttrDataType::ATTR_DATA_NULL;
+    PriorityType type = PriorityType::PRIORITY_TYPE_NULL;
+    uint32_t ret = implClassMgr.ComparePriority(lhs, rhs, type);
+    ASSERT_EQ(ret, ERR_COMP_EQUAL);
+    GTEST_LOG_(INFO) << "PluginsManagerSrcFrameWorkTest: ComparePriorityTest002 end";
+}
+
+/**
+ * @tc.name: ComparePriorityTest003
+ * @tc.desc: test the ComparePriority of ImplClassMgr
+             when lhs.type_ == rhs.type_  and lhs.type_ == AttrDataType::ATTR_DATA_BOOL,
+             and type = PriorityType::PRIORITY_ORDER_BY_ATTR_ASCENDING,
+             and lhs.value_.boolValue == true, and rhs.value_.boolValue == false,
+             return ERR_COMP_LOWER
+ * @tc.type: FUNC
+ */
+HWTEST_F(PluginsManagerSrcFrameWorkTest, ComparePriorityTest003, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PluginsManagerSrcFrameWorkTest: ComparePriorityTest003 start";
+    ImplClassMgr &implClassMgr = DelayedRefSingleton<ImplClassMgr>::GetInstance();
+    AttrData lhs;
+    lhs.type_ = AttrDataType::ATTR_DATA_BOOL;
+    lhs.value_.boolValue = true;
+    AttrData rhs;
+    rhs.type_ = AttrDataType::ATTR_DATA_BOOL;
+    rhs.value_.boolValue = false;
+    PriorityType type = PriorityType::PRIORITY_ORDER_BY_ATTR_ASCENDING;
+    uint32_t ret = implClassMgr.ComparePriority(lhs, rhs, type);
+    ASSERT_EQ(ret, ERR_COMP_LOWER);
+    GTEST_LOG_(INFO) << "PluginsManagerSrcFrameWorkTest: ComparePriorityTest003 end";
+}
+
+/**
+ * @tc.name: ComparePriorityTest004
+ * @tc.desc: test the ComparePriority of ImplClassMgr
+             when lhs.type_ == rhs.type_  and lhs.type_ == AttrDataType::ATTR_DATA_BOOL,
+             and type = PriorityType::PRIORITY_ORDER_BY_ATTR_ASCENDING,
+             and lhs.value_.boolValue == true, and rhs.value_.boolValue == true,
+             return ERR_COMP_EQUAL
+ * @tc.type: FUNC
+ */
+HWTEST_F(PluginsManagerSrcFrameWorkTest, ComparePriorityTest004, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PluginsManagerSrcFrameWorkTest: ComparePriorityTest004 start";
+    ImplClassMgr &implClassMgr = DelayedRefSingleton<ImplClassMgr>::GetInstance();
+    AttrData lhs;
+    lhs.type_ = AttrDataType::ATTR_DATA_BOOL;
+    lhs.value_.boolValue = true;
+    AttrData rhs;
+    rhs.type_ = AttrDataType::ATTR_DATA_BOOL;
+    rhs.value_.boolValue = true;
+    PriorityType type = PriorityType::PRIORITY_ORDER_BY_ATTR_ASCENDING;
+    uint32_t ret = implClassMgr.ComparePriority(lhs, rhs, type);
+    ASSERT_EQ(ret, ERR_COMP_EQUAL);
+    GTEST_LOG_(INFO) << "PluginsManagerSrcFrameWorkTest: ComparePriorityTest004 end";
+}
+
+/**
+ * @tc.name: ComparePriorityTest005
+ * @tc.desc: test the ComparePriority of ImplClassMgr
+             when lhs.type_ == rhs.type_  and lhs.type_ == AttrDataType::ATTR_DATA_BOOL,
+             and type = PriorityType::PRIORITY_ORDER_BY_ATTR_ASCENDING,
+             and lhs.value_.boolValue == false, and rhs.value_.boolValue == true,
+             return ERR_COMP_HIGHER
+ * @tc.type: FUNC
+ */
+HWTEST_F(PluginsManagerSrcFrameWorkTest, ComparePriorityTest005, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PluginsManagerSrcFrameWorkTest: ComparePriorityTest005 start";
+    ImplClassMgr &implClassMgr = DelayedRefSingleton<ImplClassMgr>::GetInstance();
+    AttrData lhs;
+    lhs.type_ = AttrDataType::ATTR_DATA_BOOL;
+    lhs.value_.boolValue = false;
+    AttrData rhs;
+    rhs.type_ = AttrDataType::ATTR_DATA_BOOL;
+    rhs.value_.boolValue = true;
+    PriorityType type = PriorityType::PRIORITY_ORDER_BY_ATTR_ASCENDING;
+    uint32_t ret = implClassMgr.ComparePriority(lhs, rhs, type);
+    ASSERT_EQ(ret, ERR_COMP_HIGHER);
+    GTEST_LOG_(INFO) << "PluginsManagerSrcFrameWorkTest: ComparePriorityTest005 end";
+}
+
+/**
+ * @tc.name: ComparePriorityTest006
+ * @tc.desc: test the ComparePriority of ImplClassMgr
+             when lhs.type_ == rhs.type_  and lhs.type_ == AttrDataType::ATTR_DATA_BOOL,
+             and type != PriorityType::PRIORITY_ORDER_BY_ATTR_ASCENDING,
+             and lhs.value_.boolValue == true, and rhs.value_.boolValue == false,
+             return ERR_COMP_HIGHER
+ * @tc.type: FUNC
+ */
+HWTEST_F(PluginsManagerSrcFrameWorkTest, ComparePriorityTest006, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PluginsManagerSrcFrameWorkTest: ComparePriorityTest006 start";
+    ImplClassMgr &implClassMgr = DelayedRefSingleton<ImplClassMgr>::GetInstance();
+    AttrData lhs;
+    lhs.type_ = AttrDataType::ATTR_DATA_BOOL;
+    lhs.value_.boolValue = true;
+    AttrData rhs;
+    rhs.type_ = AttrDataType::ATTR_DATA_BOOL;
+    rhs.value_.boolValue = false;
+    PriorityType type = PriorityType::PRIORITY_ORDER_BY_ATTR_DESCENDING;
+    uint32_t ret = implClassMgr.ComparePriority(lhs, rhs, type);
+    ASSERT_EQ(ret, ERR_COMP_HIGHER);
+    GTEST_LOG_(INFO) << "PluginsManagerSrcFrameWorkTest: ComparePriorityTest006 end";
+}
+
+/**
+ * @tc.name: ComparePriorityTest007
+ * @tc.desc: test the ComparePriority of ImplClassMgr
+             when lhs.type_ == rhs.type_  and lhs.type_ == AttrDataType::ATTR_DATA_BOOL,
+             and type != PriorityType::PRIORITY_ORDER_BY_ATTR_ASCENDING,
+             and lhs.value_.boolValue == true, and rhs.value_.boolValue == true,
+             return ERR_COMP_EQUAL
+ * @tc.type: FUNC
+ */
+HWTEST_F(PluginsManagerSrcFrameWorkTest, ComparePriorityTest007, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PluginsManagerSrcFrameWorkTest: ComparePriorityTest007 start";
+    ImplClassMgr &implClassMgr = DelayedRefSingleton<ImplClassMgr>::GetInstance();
+    AttrData lhs;
+    lhs.type_ = AttrDataType::ATTR_DATA_BOOL;
+    lhs.value_.boolValue = true;
+    AttrData rhs;
+    rhs.type_ = AttrDataType::ATTR_DATA_BOOL;
+    rhs.value_.boolValue = true;
+    PriorityType type = PriorityType::PRIORITY_ORDER_BY_ATTR_DESCENDING;
+    uint32_t ret = implClassMgr.ComparePriority(lhs, rhs, type);
+    ASSERT_EQ(ret, ERR_COMP_EQUAL);
+    GTEST_LOG_(INFO) << "PluginsManagerSrcFrameWorkTest: ComparePriorityTest007 end";
+}
+
+/**
+ * @tc.name: ComparePriorityTest008
+ * @tc.desc: test the ComparePriority of ImplClassMgr
+             when lhs.type_ == rhs.type_  and lhs.type_ == AttrDataType::ATTR_DATA_BOOL,
+             and type != PriorityType::PRIORITY_ORDER_BY_ATTR_ASCENDING,
+             and lhs.value_.boolValue == false, and rhs.value_.boolValue == true,
+             return ERR_COMP_LOWER
+ * @tc.type: FUNC
+ */
+HWTEST_F(PluginsManagerSrcFrameWorkTest, ComparePriorityTest008, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PluginsManagerSrcFrameWorkTest: ComparePriorityTest008 start";
+    ImplClassMgr &implClassMgr = DelayedRefSingleton<ImplClassMgr>::GetInstance();
+    AttrData lhs;
+    lhs.type_ = AttrDataType::ATTR_DATA_BOOL;
+    lhs.value_.boolValue = false;
+    AttrData rhs;
+    rhs.type_ = AttrDataType::ATTR_DATA_BOOL;
+    rhs.value_.boolValue = true;
+    PriorityType type = PriorityType::PRIORITY_ORDER_BY_ATTR_DESCENDING;
+    uint32_t ret = implClassMgr.ComparePriority(lhs, rhs, type);
+    ASSERT_EQ(ret, ERR_COMP_LOWER);
+    GTEST_LOG_(INFO) << "PluginsManagerSrcFrameWorkTest: ComparePriorityTest008 end";
+}
+
+/**
+ * @tc.name: ComparePriorityTest009
+ * @tc.desc: test the ComparePriority of ImplClassMgr
+             when lhs.type_ == rhs.type_  and lhs.type_ == AttrDataType::ATTR_DATA_UINT32,
+             and type = PriorityType::PRIORITY_ORDER_BY_ATTR_ASCENDING,
+             and lhs.value_.uint32Value < rhs.value_.uint32Value,
+             return ERR_COMP_HIGHER
+ * @tc.type: FUNC
+ */
+HWTEST_F(PluginsManagerSrcFrameWorkTest, ComparePriorityTest009, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PluginsManagerSrcFrameWorkTest: ComparePriorityTest009 start";
+    ImplClassMgr &implClassMgr = DelayedRefSingleton<ImplClassMgr>::GetInstance();
+    AttrData lhs;
+    lhs.type_ = AttrDataType::ATTR_DATA_UINT32;
+    lhs.value_.uint32Value = 1;
+    AttrData rhs;
+    rhs.type_ = AttrDataType::ATTR_DATA_UINT32;
+    rhs.value_.uint32Value = 2;
+    PriorityType type = PriorityType::PRIORITY_ORDER_BY_ATTR_ASCENDING;
+    uint32_t ret = implClassMgr.ComparePriority(lhs, rhs, type);
+    ASSERT_EQ(ret, ERR_COMP_HIGHER);
+    GTEST_LOG_(INFO) << "PluginsManagerSrcFrameWorkTest: ComparePriorityTest009 end";
+}
+
+/**
+ * @tc.name: ComparePriorityTest010
+ * @tc.desc: test the ComparePriority of ImplClassMgr
+             when lhs.type_ == rhs.type_  and lhs.type_ == AttrDataType::ATTR_DATA_UINT32,
+             and type = PriorityType::PRIORITY_ORDER_BY_ATTR_ASCENDING,
+             and lhs.value_.uint32Value > rhs.value_.uint32Value,
+             return ERR_COMP_LOWER
+ * @tc.type: FUNC
+ */
+HWTEST_F(PluginsManagerSrcFrameWorkTest, ComparePriorityTest010, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PluginsManagerSrcFrameWorkTest: ComparePriorityTest010 start";
+    ImplClassMgr &implClassMgr = DelayedRefSingleton<ImplClassMgr>::GetInstance();
+    AttrData lhs;
+    lhs.type_ = AttrDataType::ATTR_DATA_UINT32;
+    lhs.value_.uint32Value = 2;
+    AttrData rhs;
+    rhs.type_ = AttrDataType::ATTR_DATA_UINT32;
+    rhs.value_.uint32Value = 1;
+    PriorityType type = PriorityType::PRIORITY_ORDER_BY_ATTR_ASCENDING;
+    uint32_t ret = implClassMgr.ComparePriority(lhs, rhs, type);
+    ASSERT_EQ(ret, ERR_COMP_LOWER);
+    GTEST_LOG_(INFO) << "PluginsManagerSrcFrameWorkTest: ComparePriorityTest010 end";
+}
+
+/**
+ * @tc.name: ComparePriorityTest011
+ * @tc.desc: test the ComparePriority of ImplClassMgr
+             when lhs.type_ == rhs.type_  and lhs.type_ == AttrDataType::ATTR_DATA_UINT32,
+             and type != PriorityType::PRIORITY_ORDER_BY_ATTR_ASCENDING,
+             and lhs.value_.uint32Value < rhs.value_.uint32Value,
+             return ERR_COMP_LOWER
+ * @tc.type: FUNC
+ */
+HWTEST_F(PluginsManagerSrcFrameWorkTest, ComparePriorityTest011, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PluginsManagerSrcFrameWorkTest: ComparePriorityTest011 start";
+    ImplClassMgr &implClassMgr = DelayedRefSingleton<ImplClassMgr>::GetInstance();
+    AttrData lhs;
+    lhs.type_ = AttrDataType::ATTR_DATA_UINT32;
+    lhs.value_.uint32Value = 1;
+    AttrData rhs;
+    rhs.type_ = AttrDataType::ATTR_DATA_UINT32;
+    rhs.value_.uint32Value = 2;
+    PriorityType type = PriorityType::PRIORITY_ORDER_BY_ATTR_DESCENDING;
+    uint32_t ret = implClassMgr.ComparePriority(lhs, rhs, type);
+    ASSERT_EQ(ret, ERR_COMP_LOWER);
+    GTEST_LOG_(INFO) << "PluginsManagerSrcFrameWorkTest: ComparePriorityTest011 end";
+}
+
+/**
+ * @tc.name: ComparePriorityTest012
+ * @tc.desc: test the ComparePriority of ImplClassMgr
+             when lhs.type_ == rhs.type_  and lhs.type_ == AttrDataType::ATTR_DATA_UINT32,
+             and type != PriorityType::PRIORITY_ORDER_BY_ATTR_ASCENDING,
+             and lhs.value_.uint32Value > rhs.value_.uint32Value,
+             return ERR_COMP_HIGHER
+ * @tc.type: FUNC
+ */
+HWTEST_F(PluginsManagerSrcFrameWorkTest, ComparePriorityTest012, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PluginsManagerSrcFrameWorkTest: ComparePriorityTest012 start";
+    ImplClassMgr &implClassMgr = DelayedRefSingleton<ImplClassMgr>::GetInstance();
+    AttrData lhs;
+    lhs.type_ = AttrDataType::ATTR_DATA_UINT32;
+    lhs.value_.uint32Value = 2;
+    AttrData rhs;
+    rhs.type_ = AttrDataType::ATTR_DATA_UINT32;
+    rhs.value_.uint32Value = 1;
+    PriorityType type = PriorityType::PRIORITY_ORDER_BY_ATTR_DESCENDING;
+    uint32_t ret = implClassMgr.ComparePriority(lhs, rhs, type);
+    ASSERT_EQ(ret, ERR_COMP_HIGHER);
+    GTEST_LOG_(INFO) << "PluginsManagerSrcFrameWorkTest: ComparePriorityTest012 end";
+}
+
+/**
+ * @tc.name: ComparePriorityTest013
+ * @tc.desc: test the ComparePriority of ImplClassMgr
+             when lhs.type_ == rhs.type_  and lhs.type_ == AttrDataType::ATTR_DATA_STRING,
+             and type == PriorityType::PRIORITY_ORDER_BY_ATTR_ASCENDING,
+             and lhs.value_.stringValue == nullptr, and rhs.value_.stringValue == nullptr,
+             return ERR_COMP_ERROR
+ * @tc.type: FUNC
+ */
+HWTEST_F(PluginsManagerSrcFrameWorkTest, ComparePriorityTest013, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PluginsManagerSrcFrameWorkTest: ComparePriorityTest013 start";
+    ImplClassMgr &implClassMgr = DelayedRefSingleton<ImplClassMgr>::GetInstance();
+    AttrData lhs;
+    lhs.type_ = AttrDataType::ATTR_DATA_STRING;
+    lhs.value_.stringValue = nullptr;
+    AttrData rhs;
+    rhs.type_ = AttrDataType::ATTR_DATA_STRING;
+    rhs.value_.stringValue = nullptr;
+    PriorityType type = PriorityType::PRIORITY_ORDER_BY_ATTR_ASCENDING;
+    uint32_t ret = implClassMgr.ComparePriority(lhs, rhs, type);
+    ASSERT_EQ(ret, ERR_COMP_ERROR);
+    GTEST_LOG_(INFO) << "PluginsManagerSrcFrameWorkTest: ComparePriorityTest013 end";
+}
+
+/**
+ * @tc.name: ComparePriorityTest014
+ * @tc.desc: test the ComparePriority of ImplClassMgr
+             when lhs.type_ == rhs.type_  and lhs.type_ == AttrDataType::ATTR_DATA_STRING,
+             and type != PriorityType::PRIORITY_ORDER_BY_ATTR_ASCENDING,
+             and lhs.value_.stringValue == nullptr, and rhs.value_.stringValue == nullptr,
+             return ERR_COMP_ERROR
+ * @tc.type: FUNC
+ */
+HWTEST_F(PluginsManagerSrcFrameWorkTest, ComparePriorityTest014, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PluginsManagerSrcFrameWorkTest: ComparePriorityTest014 start";
+    ImplClassMgr &implClassMgr = DelayedRefSingleton<ImplClassMgr>::GetInstance();
+    AttrData lhs;
+    lhs.type_ = AttrDataType::ATTR_DATA_STRING;
+    lhs.value_.stringValue = nullptr;
+    AttrData rhs;
+    rhs.type_ = AttrDataType::ATTR_DATA_STRING;
+    rhs.value_.stringValue = nullptr;
+    PriorityType type = PriorityType::PRIORITY_ORDER_BY_ATTR_DESCENDING;
+    uint32_t ret = implClassMgr.ComparePriority(lhs, rhs, type);
+    ASSERT_EQ(ret, ERR_COMP_ERROR);
+    GTEST_LOG_(INFO) << "PluginsManagerSrcFrameWorkTest: ComparePriorityTest014 end";
+}
+
+/**
+ * @tc.name: ComparePriorityTest015
+ * @tc.desc: test the ComparePriority of ImplClassMgr
+             when lhs.type_ == rhs.type_  and lhs.type_ == AttrDataType::ATTR_DATA_TYPE_INVALID,
+             return ERR_COMP_ERROR
+ * @tc.type: FUNC
+ */
+HWTEST_F(PluginsManagerSrcFrameWorkTest, ComparePriorityTest015, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PluginsManagerSrcFrameWorkTest: ComparePriorityTest015 start";
+    ImplClassMgr &implClassMgr = DelayedRefSingleton<ImplClassMgr>::GetInstance();
+    AttrData lhs;
+    lhs.type_ = AttrDataType::ATTR_DATA_TYPE_INVALID;
+    AttrData rhs;
+    rhs.type_ = AttrDataType::ATTR_DATA_TYPE_INVALID;
+    PriorityType type = PriorityType::PRIORITY_ORDER_BY_ATTR_DESCENDING;
+    uint32_t ret = implClassMgr.ComparePriority(lhs, rhs, type);
+    ASSERT_EQ(ret, ERR_COMP_ERROR);
+    GTEST_LOG_(INFO) << "PluginsManagerSrcFrameWorkTest: ComparePriorityTest015 end";
+}
 }
 }
