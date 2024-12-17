@@ -2960,7 +2960,7 @@ static void CreateScaledPixelMapExec(napi_env env, PixelMapAsyncContext* context
     if (context->status == SUCCESS) {
         if (context->rPixelMap != nullptr) {
             InitializationOptions opts;
-            unique_ptr<PixelMap> clonePixelMap = PixelMap::Create(*(context->rPixelMap), opts);
+            auto clonePixelMap = PixelMap::Create(*(context->rPixelMap), opts);
             if (clonePixelMap == nullptr) {
                 IMAGE_LOGE("Null clonePixelMap");
                 return;
@@ -2975,7 +2975,7 @@ static void CreateScaledPixelMapExec(napi_env env, PixelMapAsyncContext* context
             context->status = SUCCESS;
         } else {
             IMAGE_LOGE("Null native ref");
-            context->status = COMMON_ERR_INVALID_PARAMETER;
+            context->status = ERR_IMAGE_INIT_ABNORMAL;
         }
     } else {
         IMAGE_LOGD("Scale has failed. do nothing");
@@ -2997,7 +2997,7 @@ static void CreateScaledPixelMapComplete(napi_env env, napi_status status, void 
         context->status = SUCCESS;
     } else {
         IMAGE_LOGE("Null alphaMap");
-        context->status = COMMON_ERR_INVALID_PARAMETER;
+        context->status = ERROR;
     }
     CommonCallbackRoutine(env, context, result);
 }
@@ -3072,7 +3072,8 @@ napi_value PixelMapNapi::CreateScaledPixelMapSync(napi_env env, napi_callback_in
     IMG_JS_ARGS(env, info, status, argCount, argValue, thisVar);
     IMG_NAPI_CHECK_RET_D(IMG_IS_OK(status), result, IMAGE_LOGE("fail to arg info"));
     IMG_NAPI_CHECK_RET_D(argCount == NUM_2 || argCount == NUM_3,
-        ImageNapiUtils::ThrowExceptionError(env, COMMON_ERR_INVALID_PARAMETER, "Invalid args count"),
+        ImageNapiUtils::ThrowExceptionError(env, COMMON_ERR_INVALID_PARAMETER,
+        "Invalid args count"),
         IMAGE_LOGE("Invalid args count %{public}zu", argCount));
     IMG_NAPI_CHECK_RET_D(IMG_IS_OK(napi_get_value_double(env, argValue[NUM_0], &xArg)),
         result, IMAGE_LOGE("Arg 0 type mismatch"));
@@ -3088,12 +3089,12 @@ napi_value PixelMapNapi::CreateScaledPixelMapSync(napi_env env, napi_callback_in
     IMG_NAPI_CHECK_RET_D(IMG_IS_READY(status, pixelMapNapi), result, IMAGE_LOGE("fail to unwrap context"));
     IMG_NAPI_CHECK_RET_D(pixelMapNapi->GetPixelNapiEditable(),
         ImageNapiUtils::ThrowExceptionError(env, ERR_RESOURCE_UNAVAILABLE,
-        "Pixelmap has crossed threads. CreateScaledPixelMapSync failed"),
+        "Pixelmap has crossed threads . CreateScaledPixelMapSync failed"),
         IMAGE_LOGE("Pixelmap has crossed threads. CreateScaledPixelMapSync failed"));
 
     if (pixelMapNapi->nativePixelMap_ != nullptr) {
         InitializationOptions opts;
-        unique_ptr<PixelMap> clonePixelMap = PixelMap::Create(*(pixelMapNapi->nativePixelMap_), opts);
+        auto clonePixelMap = PixelMap::Create(*(pixelMapNapi->nativePixelMap_), opts);
         if (clonePixelMap == nullptr) {
             IMAGE_LOGE("Null clonePixelMap");
             return result;
