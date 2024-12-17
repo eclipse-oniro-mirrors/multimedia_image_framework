@@ -580,7 +580,7 @@ Image_ErrorCode OH_PixelmapNative_CreateScaledPixelMap(OH_PixelmapNative *srcPix
         return IMAGE_BAD_PARAMETER;
     }
     InitializationOptions opts;
-    auto clonePixelmap = PixelMap::Create(*(srcPixelmap->GetInnerPixelmap()), opts);
+    std::unique_ptr<PixelMap> clonePixelmap = PixelMap::Create(*(srcPixelmap->GetInnerPixelmap()), opts);
     if (clonePixelmap == nullptr) {
         return IMAGE_BAD_PARAMETER;
     }
@@ -597,7 +597,7 @@ Image_ErrorCode OH_PixelmapNative_CreateScaledPixelMapWithAntiAliasing(OH_Pixelm
         return IMAGE_BAD_PARAMETER;
     }
     InitializationOptions opts;
-    auto clonePixelmap = PixelMap::Create(*(srcPixelmap->GetInnerPixelmap()), opts);
+    std::unique_ptr<PixelMap> clonePixelmap = PixelMap::Create(*(srcPixelmap->GetInnerPixelmap()), opts);
     if (clonePixelmap == nullptr) {
         return IMAGE_BAD_PARAMETER;
     }
