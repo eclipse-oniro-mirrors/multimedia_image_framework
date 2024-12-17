@@ -70,6 +70,7 @@ FileSourceStream::~FileSourceStream()
     IMAGE_LOGD("[FileSourceStream]destructor enter.");
     if (filePtr_ != nullptr) {
         fclose(filePtr_);
+        filePtr_ = nullptr;
     }
     ResetReadBuffer();
 }

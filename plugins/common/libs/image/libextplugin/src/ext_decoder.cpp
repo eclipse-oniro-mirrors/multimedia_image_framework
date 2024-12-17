@@ -891,6 +891,10 @@ uint32_t ExtDecoder::Decode(uint32_t index, DecodeContext &context)
 #if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
     if (context.allocatorType == Media::AllocatorType::DMA_ALLOC) {
         SurfaceBuffer* sbBuffer = reinterpret_cast<SurfaceBuffer*> (context.pixelsBuffer.context);
+        if (sbBuffer == nullptr) {
+            IMAGE_LOGE("%{public}s: surface buffer is nullptr", __func__);
+            return ERR_DMA_DATA_ABNORMAL;
+        }
         rowStride = static_cast<uint64_t>(sbBuffer->GetStride());
     }
     ffrt::submit([skEncodeFormat] {
