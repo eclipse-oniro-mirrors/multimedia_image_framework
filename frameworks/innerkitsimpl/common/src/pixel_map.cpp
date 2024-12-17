@@ -2925,6 +2925,10 @@ bool PixelMap::EncodeTlv(std::vector<uint8_t> &buff) const
     WriteUint8(buff, TLV_IMAGE_BASEDENSITY);
     WriteVarint(buff, GetVarintLen(imageInfo_.baseDensity));
     WriteVarint(buff, imageInfo_.baseDensity);
+    WriteUint8(buff, TLV_IMAGE_ALLOCATORTYPE);
+    AllocatorType tmpAllocatorType = AllocatorType::HEAP_ALLOC;
+    WriteVarint(buff, GetVarintLen(static_cast<int32_t>(tmpAllocatorType)));
+    WriteVarint(buff, static_cast<int32_t>(tmpAllocatorType));
     WriteUint8(buff, TLV_IMAGE_DATA);
     const uint8_t *data = data_;
     uint64_t dataSize = static_cast<uint64_t>(rowDataSize_) * static_cast<uint64_t>(imageInfo_.size.height);
@@ -2948,7 +2952,7 @@ static bool CheckTlvImageInfo(const ImageInfo &info, uint8_t **data)
     return true;
 }
 
-bool PixelMap::ReadTlvAttr(std::vector<uint8_t> &buff, ImageInfo &info, int32_t &size, uint8_t **data)
+bool PixelMap::ReadTlvAttr(std::vector<uint8_t> &buff, ImageInfo &info, int32_t &type, int32_t &size, uint8_t **data)
 {
     int cursor = 0;
     for (uint8_t tag = ReadUint8(buff, cursor); tag != TLV_END; tag = ReadUint8(buff, cursor)) {
@@ -2976,6 +2980,10 @@ bool PixelMap::ReadTlvAttr(std::vector<uint8_t> &buff, ImageInfo &info, int32_t 
             case TLV_IMAGE_BASEDENSITY:
                 info.baseDensity = ReadVarint(buff, cursor);
                 break;
+            case TLV_IMAGE_ALLOCATORTYPE:
+                type = ReadVarint(buff, cursor);
+                IMAGE_LOGI("pixel alloctype: %{public}d", type);
+                break;
             case TLV_IMAGE_DATA:
                 size = len;
                 if (data != nullptr && *data == nullptr) {
@@ -3001,7 +3009,9 @@ PixelMap *PixelMap::DecodeTlv(std::vector<uint8_t> &buff)
     ImageInfo imageInfo;
     int32_t dataSize = 0;
     uint8_t *data = nullptr;
-    if (!ReadTlvAttr(buff, imageInfo, dataSize, &data)) {
+    int32_t allocType = static_cast<int32_t>(AllocatorType::DEFAULT);
+    if (!ReadTlvAttr(buff, imageInfo, allocType, dataSize, &data) ||
+        allocType != static_cast<int32_t>(AllocatorType::HEAP_ALLOC)) {
         if (data != nullptr) {
             free(data);
             data = nullptr;
@@ -3023,7 +3033,7 @@ PixelMap *PixelMap::DecodeTlv(std::vector<uint8_t> &buff)
         IMAGE_LOGE("pixel map tlv decode fail: dataSize not match");
         return nullptr;
     }
-    pixelMap->SetPixelsAddr(data, nullptr, dataSize, AllocatorType::HEAP_ALLOC, nullptr);
+    pixelMap->SetPixelsAddr(data, nullptr, dataSize, static_cast<AllocatorType>(allocType), nullptr);
     return pixelMap;
 }
 

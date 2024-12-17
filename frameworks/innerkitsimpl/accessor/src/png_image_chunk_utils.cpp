@@ -391,8 +391,10 @@ int PngImageChunkUtils::ConvertAsciiToInt(const char *sourcePtr, size_t exifInfo
     };
 
     size_t sourceLength = exifInfoLength * 2;
-    for (size_t i = 0; i < sourceLength; i++) {
-        while ((*sourcePtr < '0') || ((*sourcePtr > '9') && (*sourcePtr < 'a')) || (*sourcePtr > 'f')) {
+    size_t sourcePtrCount = 0;
+    for (size_t i = 0; i < sourceLength && sourcePtrCount < sourceLength; i++) {
+        while (sourcePtrCount < sourceLength &&
+            ((*sourcePtr < '0') || ((*sourcePtr > '9') && (*sourcePtr < 'a')) || (*sourcePtr > 'f'))) {
             if (*sourcePtr == '\0') {
                 IMAGE_LOGE("Unexpected null character encountered while converting Exif ASCII string. "
                     "Position: %{public}zu, Expected length: %{public}zu",
@@ -400,6 +402,7 @@ int PngImageChunkUtils::ConvertAsciiToInt(const char *sourcePtr, size_t exifInfo
                 return ERR_IMAGE_SOURCE_DATA_INCOMPLETE;
             }
             sourcePtr++;
+            sourcePtrCount++;
         }
 
         if ((i % HEX_STRING_UNIT_SIZE) == 0) {
@@ -407,6 +410,7 @@ int PngImageChunkUtils::ConvertAsciiToInt(const char *sourcePtr, size_t exifInfo
         } else {
             (*destPtr++) += hexAsciiToInt[static_cast<size_t>(*sourcePtr++)];
         }
+        sourcePtrCount++;
     }
     return SUCCESS;
 }

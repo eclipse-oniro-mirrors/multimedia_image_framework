@@ -307,7 +307,7 @@ static bool InitMem(AstcEncoder *work, TextureEncodeOptions param)
     work->image_.data = nullptr;
     work->profile = ASTCENC_PRF_LDR_SRGB;
 #if defined(QUALITY_CONTROL) && (QUALITY_CONTROL == 1)
-    work->mse[R_COM] = work->mse[G_COM] = work->mse[B_COM] = work->mse[RGBA_COM] = nullptr;
+    work->mse[R_COM] = work->mse[G_COM] = work->mse[B_COM] = work->mse[A_COM] = nullptr;
     work->calQualityEnable = param.enableQualityCheck;
     if (work->calQualityEnable) {
         for (int i = R_COM; i < RGBA_COM; i++) {

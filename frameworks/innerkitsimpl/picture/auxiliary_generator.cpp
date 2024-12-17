@@ -196,7 +196,7 @@ static void TrySetYUVDataInfo(std::shared_ptr<PixelMap> &pixelMap)
     }
 
     YUVDataInfo info;
-    if (pixelMap->GetAllocatorType() == AllocatorType::DMA_ALLOC) {
+    if (pixelMap->GetAllocatorType() == AllocatorType::DMA_ALLOC && pixelMap->GetFd() != nullptr) {
         SurfaceBuffer *surfaceBuffer = reinterpret_cast<SurfaceBuffer *>(pixelMap->GetFd());
         SetDmaYuvInfo(surfaceBuffer, format, info);
     } else {
