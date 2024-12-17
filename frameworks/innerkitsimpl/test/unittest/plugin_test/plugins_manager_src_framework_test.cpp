@@ -1177,7 +1177,7 @@ HWTEST_F(PluginsManagerSrcFrameWorkTest, ComparePriorityTest001, TestSize.Level3
 /**
  * @tc.name: ComparePriorityTest002
  * @tc.desc: test the ComparePriority of ImplClassMgr
-             when lhs.type_ == rhs.type_  and lhs.type_ == AttrDataType::ATTR_DATA_NULL, 
+             when lhs.type_ == rhs.type_  and lhs.type_ == AttrDataType::ATTR_DATA_NULL,
              return ERR_COMP_EQUAL
  * @tc.type: FUNC
  */
