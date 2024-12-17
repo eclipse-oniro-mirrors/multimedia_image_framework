@@ -86,13 +86,8 @@ constexpr int32_t ASTC_BLOCK_SIZE = 16;
 constexpr int32_t ASTC_HEADER_SIZE = 16;
 constexpr uint8_t FILL_NUMBER = 3;
 constexpr uint8_t ALIGN_NUMBER = 4;
-<<<<<<< HEAD
-=======
-constexpr int32_t DMA_SIZE = 512 * 512; // DMA minimum effective size
 constexpr int32_t FAULT_API_VERSION = -1;
 constexpr int32_t BUNDLE_MGR_SERVICE_SYS_ABILITY_ID = 401;
-constexpr int32_t BASE_EVEN_DIVISOR = 2;
->>>>>>> 4c6a7e8a (!3051 图片框架版本隔离和heif type变更)
 constexpr float EPSILON = 1e-6;
 constexpr int MAX_DIMENSION = INT32_MAX >> 2;
 constexpr int32_t DMA_SIZE = 512 * 512;
