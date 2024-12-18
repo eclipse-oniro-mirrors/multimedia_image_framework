@@ -1085,6 +1085,7 @@ std::string g_batchData006[][3] = {
     {"MovingPhotoId", "110", "110"},
     {"MovingPhotoVersion", "1", "1"},
     {"MicroVideoPresentationTimestampUS", "123232", "123232"},
+    {"HwMnoteAIEdit", "1", "1"},
 };
 
 HWTEST_F(ExifMetadataTest, SetValueBatch006, TestSize.Level3)
