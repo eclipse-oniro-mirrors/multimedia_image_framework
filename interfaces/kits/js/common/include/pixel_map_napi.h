@@ -147,6 +147,8 @@ private:
     static napi_value SetMetadata(napi_env env, napi_callback_info info);
     static napi_value SetMetadataSync(napi_env env, napi_callback_info info);
     static napi_value SetMemoryNameSync(napi_env env, napi_callback_info info);
+    static napi_value CloneSync(napi_env env, napi_callback_info info);
+    static napi_value Clone(napi_env env, napi_callback_info info);
     static std::vector<napi_property_descriptor> RegisterNapi();
 
     void release();
