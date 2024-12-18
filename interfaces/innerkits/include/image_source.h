@@ -190,6 +190,7 @@ public:
     {
         return CreatePixelMapEx(0, opts, errorCode);
     }
+    NATIVEEXPORT AllocatorType ConvertAutoAllocatorType(const DecodeOptions &opts);
     NATIVEEXPORT std::unique_ptr<PixelMap> CreatePixelMapEx(uint32_t index, const DecodeOptions &opts,
                                                             uint32_t &errorCode);
     NATIVEEXPORT std::unique_ptr<PixelMap> CreatePixelMap(uint32_t index, const DecodeOptions &opts,
@@ -253,6 +254,7 @@ public:
     NATIVEEXPORT void SetExifMetadata(std::shared_ptr<ExifMetadata> &ptr);
     NATIVEEXPORT static void ContextToAddrInfos(ImagePlugin::DecodeContext &context, PixelMapAddrInfos &addrInfos);
     NATIVEEXPORT static bool IsYuvFormat(PixelFormat format);
+    NATIVEEXPORT bool IsDecodeHdrImage(const DecodeOptions &opts);
 
 private:
     DISALLOW_COPY_AND_MOVE(ImageSource);

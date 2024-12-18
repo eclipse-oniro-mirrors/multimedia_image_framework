@@ -98,6 +98,26 @@ typedef enum {
 } IMAGE_DYNAMIC_RANGE;
 
 /**
+ * @brief Defines image allocator type for pixelmap
+ *
+ * @since 16
+ */
+typedef enum {
+    /*
+    * Select allocator Type based on performance.
+    */
+    IMAGE_ALLOCATOR_TYPE_AUTO = 0,
+    /*
+    * DMA type.
+    */
+    IMAGE_ALLOCATOR_TYPE_DMA = 1,
+    /*
+    * Share memory type.
+    */
+    IMAGE_ALLOCATOR_TYPE_SHARE_MEMORY = 2,
+} IMAGE_ALLOCATOR_TYPE;
+
+/**
  * @brief Create a pointer for OH_ImageSource_Info struct.
  *
  * @param info The OH_ImageSource_Info pointer will be operated.
@@ -355,6 +375,22 @@ Image_ErrorCode OH_ImageSourceNative_CreateFromRawFile(RawFileDescriptor *rawFil
  */
 Image_ErrorCode OH_ImageSourceNative_CreatePixelmap(OH_ImageSourceNative *source, OH_DecodingOptions *options,
     OH_PixelmapNative **pixelmap);
+
+/**
+ * @brief Decodes an void pointer
+ * based on the specified {@link OH_DecodingOptions} struct, with support for specifying an optional allocator type.
+ *
+ * @param source Indicates a void pointer(from ImageSource pointer convert).
+ * @param options Indicates a pointer to the options for decoding the image source.
+ * For details, see {@link OH_DecodingOptions}.
+ * @param allocator Specifies the allocator type to be used during pixelmap creation.
+ * For details, see {@link IMAGE_ALLOCATOR_TYPE}.
+ * @param pixelmap Indicates a void pointer to the <b>Pixelmap</b> object obtained at the C++ native layer.
+ * @return Returns {@link Image_ErrorCode}
+ * @since 16
+ */
+Image_ErrorCode OH_ImageSourceNative_CreatePixelmapUsingAllocator(OH_ImageSourceNative *source,
+    OH_DecodingOptions *options, IMAGE_ALLOCATOR_TYPE allocator, OH_PixelmapNative **pixelmap);
 
 /**
  * @brief Decodes an void pointer

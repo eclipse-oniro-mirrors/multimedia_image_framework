@@ -28,6 +28,7 @@ struct HevcSoftDecodeParam {
     uint32_t bufferSize = 0;
     uint32_t dstStride = 0;
     void *hwBuffer = nullptr;
+    bool isSharedMemory = false;
 };
 } // namespace ImagePlugin
 } // namespace OHOS
