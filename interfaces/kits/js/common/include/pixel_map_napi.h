@@ -149,6 +149,7 @@ private:
     static napi_value SetMemoryNameSync(napi_env env, napi_callback_info info);
     static napi_value CloneSync(napi_env env, napi_callback_info info);
     static napi_value Clone(napi_env env, napi_callback_info info);
+    static void ExtraAddNapiFunction(std::vector<napi_property_descriptor> &props);
     static std::vector<napi_property_descriptor> RegisterNapi();
 
     void release();

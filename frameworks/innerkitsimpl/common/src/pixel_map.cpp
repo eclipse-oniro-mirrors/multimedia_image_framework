@@ -1010,9 +1010,9 @@ bool PixelMap::CopyPixelMap(PixelMap &source, PixelMap &dstPixelMap, int32_t &er
 static bool CheckClone(bool isAstc, unique_ptr<PixelMap> &pixelMap, ImageInfo imageInfo, int32_t &errorCode)
 {
     if (isAstc) {
-        IMAGE_LOGE("[PixelMap] Does not support format");
-        errorCode = IMAGE_RESULT_MEDIA_INVALID_PARAM;
-        false;
+        IMAGE_LOGE("[PixelMap] Does not support ASTCformat");
+        errorCode = IMAGE_RESULT_DATA_UNSUPPORT;
+        return false;
     }
     InitializationOptions opt;
     opt.pixelFormat = imageInfo.pixelFormat;
@@ -1020,18 +1020,27 @@ static bool CheckClone(bool isAstc, unique_ptr<PixelMap> &pixelMap, ImageInfo im
         errorCode = IMAGE_RESULT_MALLOC_ABNORMAL;
         return false;
     }
-    if (pixelMap->SetImageInfo(imageInfo) != SUCCESS) {
-        errorCode = IMAGE_RESULT_MEDIA_INVALID_PARAM;
+    uint32_t tmpSetInfoCode = pixelMap->SetImageInfo(imageInfo);
+    if (tmpSetInfoCode != SUCCESS) {
+        if (tmpSetInfoCode == ERR_IMAGE_TOO_LARGE) {
+            errorCode = IMAGE_RESULT_TOO_LARGE;
+        } else {
+            errorCode = IMAGE_RESULT_INIT_ABNORMAL;
+        }
         IMAGE_LOGE("[PixelMapClone] set image info failed");
         return false;
     }
+    errorCode = SUCCESS;
     return true;
 }
 
 unique_ptr<PixelMap> PixelMap::Clone(int32_t &errorCode)
 {
-    Rect rect;
     unique_ptr<PixelMap> pixelMap = nullptr;
+    if (data_ == nullptr) {
+        errorCode = IMAGE_RESULT_INIT_ABNORMAL;
+        return nullptr;
+    }
     if (!CheckClone(isAstc_, pixelMap, imageInfo_, errorCode)) {
         return nullptr;
     }
@@ -1041,7 +1050,8 @@ unique_ptr<PixelMap> PixelMap::Clone(int32_t &errorCode)
     pixelMap->GetImageInfo(dstImageInfo);
     errorCode = AllocPixelMapMemory(dstMemory, dstRowStride, dstImageInfo, allocatorType_ == AllocatorType::DMA_ALLOC);
     if (errorCode != IMAGE_RESULT_SUCCESS) {
-        errorCode = errorCode == IMAGE_RESULT_MALLOC_ABNORMAL ? IMAGE_RESULT_MALLOC_ABNORMAL : IMAGE_RESULT_MEDIA_INVALID_PARAM;
+        errorCode = errorCode ==
+            IMAGE_RESULT_MALLOC_ABNORMAL ? IMAGE_RESULT_MALLOC_ABNORMAL : IMAGE_RESULT_INIT_ABNORMAL;
         return nullptr;
     }
     UpdatePixelsAlpha(dstImageInfo.alphaType, dstImageInfo.pixelFormat,
@@ -1054,7 +1064,7 @@ unique_ptr<PixelMap> PixelMap::Clone(int32_t &errorCode)
             YUVDataInfo yuvDatainfo;
             if (!InitYuvDataOutInfo(reinterpret_cast<SurfaceBuffer*>(dstMemory->extend.data),
                 dstImageInfo, yuvDatainfo)) {
-                errorCode = IMAGE_RESULT_MEDIA_INVALID_PARAM;
+                errorCode = IMAGE_RESULT_INIT_ABNORMAL;
                 return nullptr;
             }
             pixelMap->SetImageYUVInfo(yuvDatainfo);
@@ -1062,18 +1072,11 @@ unique_ptr<PixelMap> PixelMap::Clone(int32_t &errorCode)
             SetYUVDataInfoToPixelMap(pixelMap);
         }
     }
-
     if (!CopyPixelMap(*this, *(pixelMap.get()), errorCode)) {
-        IMAGE_LOGE("[PixelMapClone] yuv clone occur error,code is %{public}d ", errorCode);
-        errorCode = 401;
+        errorCode = errorCode == IMAGE_RESULT_DATA_ABNORMAL ? IMAGE_RESULT_INIT_ABNORMAL : IMAGE_RESULT_MALLOC_ABNORMAL;
         return nullptr;
     }
-
-    if (!pixelMap) {
-        IMAGE_LOGE("[PixelMapClone] create is empty");
-        errorCode = IMAGE_RESULT_MEDIA_INVALID_PARAM;
-        return nullptr;
-    }
+    errorCode = SUCCESS;
     pixelMap->SetTransformered(isTransformered_);
     TransformData transformData;
     GetTransformData(transformData);

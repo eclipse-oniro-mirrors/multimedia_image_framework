@@ -489,6 +489,15 @@ static napi_value DoInitAfter(napi_env env,
     return exports;
 }
 
+void PixelMapNapi::ExtraAddNapiFunction(std::vector<napi_property_descriptor> &props)
+{
+    props.insert(props.end(), {
+        DECLARE_NAPI_FUNCTION("setMemoryNameSync", SetMemoryNameSync),
+        DECLARE_NAPI_FUNCTION("cloneSync", CloneSync),
+        DECLARE_NAPI_FUNCTION("clone", Clone),
+        });
+}
+
 std::vector<napi_property_descriptor> PixelMapNapi::RegisterNapi()
 {
     std::vector<napi_property_descriptor> props = {
@@ -536,10 +545,8 @@ std::vector<napi_property_descriptor> PixelMapNapi::RegisterNapi()
         DECLARE_NAPI_FUNCTION("getMetadata", GetMetadata),
         DECLARE_NAPI_FUNCTION("setMetadata", SetMetadata),
         DECLARE_NAPI_FUNCTION("setMetadataSync", SetMetadataSync),
-        DECLARE_NAPI_FUNCTION("setMemoryNameSync", SetMemoryNameSync),
-        DECLARE_NAPI_FUNCTION("cloneSync", CloneSync),
-        DECLARE_NAPI_FUNCTION("clone", Clone),
     };
+    ExtraAddNapiFunction(props);
     return props;
 }
 
@@ -3015,7 +3022,7 @@ static void CloneExec(napi_env env, PixelMapAsyncContext* context)
     }
     if (context->status == SUCCESS) {
         if (context->rPixelMap != nullptr) {
-            int32_t errorCode;
+            int32_t errorCode = SUCCESS;
             auto clonePixelMap = context->rPixelMap->Clone(errorCode);
             if (clonePixelMap == nullptr) {
                 IMAGE_LOGE("Null clonePixelMap");
@@ -3058,7 +3065,7 @@ napi_value PixelMapNapi::Clone(napi_env env, napi_callback_info info)
     napi_status status;
     size_t argCount = NUM_0;
     napi_value thisVar = nullptr;
-    IMAGE_LOGD("CloneSync IN");
+    IMAGE_LOGD("Clone IN");
     IMG_JS_ARGS(env, info, status, argCount, nullptr, thisVar);
     IMG_NAPI_CHECK_RET_D(IMG_IS_OK(status), nullptr, IMAGE_LOGE("fail to arg info"));
     IMG_NAPI_CHECK_RET_D(argCount == NUM_0,
@@ -3098,6 +3105,10 @@ napi_value PixelMapNapi::CloneSync(napi_env env, napi_callback_info info)
     size_t argCount = NUM_0;
     napi_value thisVar = nullptr;
     IMG_JS_ARGS(env, info, status, argCount, nullptr, thisVar);
+    IMG_NAPI_CHECK_RET_D(argCount == NUM_0,
+        ImageNapiUtils::ThrowExceptionError(env, COMMON_ERR_INVALID_PARAMETER,
+        "Invalid args count"),
+        IMAGE_LOGE("Invalid args count %{public}zu", argCount));
     IMG_NAPI_CHECK_RET_D(IMG_IS_OK(status), nullptr, IMAGE_LOGE("fail to arg info"));
     
     PixelMapNapi* pixelMapNapi = nullptr;
