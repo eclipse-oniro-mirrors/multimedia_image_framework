@@ -17,7 +17,6 @@
  
 #include "ffi_remote_data.h"
 #include "pixel_map.h"
-#include "image_source_impl.h"
 #include <string>
  
 namespace OHOS {
@@ -26,6 +25,8 @@ class FFI_EXPORT PixelMapImpl : public OHOS::FFI::FFIData {
     DECL_TYPE(PixelMapImpl, OHOS::FFI::FFIData)
 public:
     explicit PixelMapImpl(std::shared_ptr<PixelMap> ptr_);
+    explicit PixelMapImpl(std::shared_ptr<PixelMap> ptr, bool isEditable, bool transferDetach):
+        real_(ptr), isPixelMapImplEditable(isEditable), transferDetach_(transferDetach) {};
     std::shared_ptr<PixelMap> GetRealPixelMap();
     uint32_t ReadPixelsToBuffer(uint64_t &bufferSize, uint8_t *dst);
     uint32_t WriteBufferToPixels(uint8_t *source, uint64_t &bufferSize);
@@ -52,6 +53,11 @@ public:
 
     bool GetIsEditable();
     bool GetIsStrideAlignment();
+
+    bool GetTransferDetach()
+    {
+        return transferDetach_;
+    }
 
     void SetTransferDetach(bool detach)
     {

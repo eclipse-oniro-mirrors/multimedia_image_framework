@@ -16,6 +16,8 @@
 #include "image_log.h"
 #include "image_source_impl.h"
 #include <cstdint>
+#include "js_native_api.h"
+#include "js_native_api_types.h"
 #include "media_errors.h"
 #include "pixel_map_impl.h"
 #include "image_receiver_impl.h"
@@ -23,7 +25,8 @@
 #include "image_packer_impl.h"
 #include "cj_color_manager.h"
 #include "image_type.h"
- 
+#include "pixel_map_napi.h"
+
 using namespace OHOS::FFI;
  
 namespace OHOS {
@@ -1579,6 +1582,69 @@ extern "C"
         std::function<void()> func = CJLambda::Create(cFunc);
         return instance->CjOn(name, func);
     }
+
+napi_value FfiConvertPixelMap2Napi(napi_env env, uint64_t id)
+{
+    napi_value undefined = nullptr;
+    napi_get_undefined(env, &undefined);
+    auto instance = FFIData::GetData<PixelMapImpl>(id);
+    if (instance == nullptr || instance->GetRealPixelMap() == nullptr) {
+        IMAGE_LOGE("[PixelMap]: instance not exist %{public}" PRId64, id);
+        return undefined;
+    }
+
+    napi_value result = PixelMapNapi::CreatePixelMap(env, instance->GetRealPixelMap());
+    napi_valuetype type = napi_undefined;
+    if (napi_typeof(env, result, &type) != napi_ok || type == napi_undefined) {
+        IMAGE_LOGE("[PixelMap]: create napiobj failed.");
+        return undefined;
+    }
+    PixelMapNapi *pixelMapNapi = nullptr;
+    napi_status status = napi_unwrap(env, result, reinterpret_cast<void **>(&pixelMapNapi));
+    if (status != napi_ok || pixelMapNapi == nullptr) {
+        IMAGE_LOGE("[PixelMap]: unwrap failed");
+        return undefined;
+    }
+    pixelMapNapi->setPixelNapiEditable(instance->GetPixelMapImplEditable());
+    pixelMapNapi->SetTransferDetach(instance->GetTransferDetach());
+    return result;
+}
+
+int64_t FfiCreatePixelMapFromNapi(napi_env env, napi_value pixelmap)
+{
+    if (env == nullptr || pixelmap == nullptr) {
+        IMAGE_LOGE("[PixelMap]: parameter nullptr!");
+        return ERR_IMAGE_INIT_ABNORMAL;
+    }
+
+    napi_valuetype type = napi_undefined;
+    if (napi_typeof(env, pixelmap, &type) != napi_ok || type != napi_object) {
+        IMAGE_LOGE("[PixelMap]: parameter napi value type is not object!");
+        return ERR_IMAGE_INIT_ABNORMAL;
+    }
+
+    PixelMapNapi *obj = nullptr;
+    napi_status status = napi_unwrap(env, pixelmap, reinterpret_cast<void **>(&obj));
+    if (status != napi_ok || obj == nullptr) {
+        IMAGE_LOGE("[PixelMap]: unwrap failed");
+        return ERR_IMAGE_INIT_ABNORMAL;
+    }
+
+    std::shared_ptr<PixelMap>* nativeObj = obj->GetPixelMap();
+    if (nativeObj == nullptr) {
+        IMAGE_LOGE("[PixelMap]: native pixelmap has released.");
+        return ERR_IMAGE_INIT_ABNORMAL;
+    }
+
+    auto native = FFIData::Create<PixelMapImpl>(*nativeObj, obj->GetPixelNapiEditable(),
+        obj->GetTransferDetach());
+    if (native == nullptr) {
+        IMAGE_LOGE("[PixelMap]: Create ffidata failed.");
+        return ERR_IMAGE_INIT_ABNORMAL;
+    }
+
+    return native->GetID();
+}
 }
 }
 }

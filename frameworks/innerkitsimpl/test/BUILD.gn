@@ -1860,6 +1860,7 @@ ohos_unittest("image_cj_test") {
   ]
 
   external_deps = [
+    "napi:ace_napi",
     "napi:cj_bind_ffi",
     "napi:cj_bind_native",
   ]

@@ -20,6 +20,7 @@
 #include "pixel_map.h"
 #include "image_type.h"
 #include "image_utils.h"
+#include "napi/native_api.h"
 
 extern "C" {
     struct CImageInfo {
@@ -75,6 +76,9 @@ extern "C" {
         char *value;
         int64_t size;
     };
+
+FFI_EXPORT napi_value FfiConvertPixelMap2Napi(napi_env env, uint64_t id);
+FFI_EXPORT int64_t FfiCreatePixelMapFromNapi(napi_env env, napi_value pixelmap);
 
     // ImageSource
     FFI_EXPORT int64_t FfiOHOSCreateImageSourceByPath(char* uri, uint32_t* errCode);
