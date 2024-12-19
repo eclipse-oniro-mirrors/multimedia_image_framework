@@ -204,7 +204,7 @@ const static std::set<std::string> READ_WRITE_KEYS = {
     "MovingPhotoId",
     "MovingPhotoVersion",
     "MicroVideoPresentationTimestampUS",
-    "HwMnoteAIEdit",
+    "HwMnoteAiEdit",
 };
 
 const static std::set<std::string> READ_ONLY_KEYS = {
@@ -1249,7 +1249,7 @@ std::multimap<std::string, ValueFormatDelegate> ExifMetadatFormatter::valueForma
     {"HwMnoteXmageRight", singleInt},
     {"HwMnoteXmageBottom", singleInt},
     {"HwMnoteCloudEnhancementMode", singleInt},
-    {"HwMnoteAIEdit", singleInt},
+    {"HwMnoteAiEdit", singleInt},
     {"DateTimeDigitized", dateTimeValidation},
     {"DateTimeDigitized", dateValidation},
     {"OffsetTime", dateTimeValidation},
