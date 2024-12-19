@@ -42,6 +42,7 @@ public:
     static AlphaType GetValidAlphaTypeByFormat(const AlphaType &dstType, const PixelFormat &format);
     static AllocatorType GetPixelMapAllocatorType(const Size &size, const PixelFormat &format, bool useDMA);
     static bool IsValidImageInfo(const ImageInfo &info);
+    static bool IsValidAuxiliaryInfo(const std::shared_ptr<PixelMap> &pixelMap, const AuxiliaryPictureInfo &info);
     static bool IsAstc(PixelFormat format);
     static MultimediaPlugin::PluginServer& GetPluginServer();
     static bool CheckMulOverflow(int32_t width, int32_t bytesPerPixel);

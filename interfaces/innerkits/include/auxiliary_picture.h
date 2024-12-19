@@ -46,7 +46,7 @@ public:
     NATIVEEXPORT uint32_t ReadPixels(const uint64_t &bufferSize, uint8_t *dst);
     NATIVEEXPORT uint32_t WritePixels(const uint8_t *source, const uint64_t &bufferSize);
     NATIVEEXPORT AuxiliaryPictureInfo GetAuxiliaryPictureInfo();
-    NATIVEEXPORT void SetAuxiliaryPictureInfo(const AuxiliaryPictureInfo &auxiliaryPictureInfo);
+    NATIVEEXPORT uint32_t SetAuxiliaryPictureInfo(const AuxiliaryPictureInfo &auxiliaryPictureInfo);
     NATIVEEXPORT std::shared_ptr<ImageMetadata> GetMetadata(MetadataType type);
     NATIVEEXPORT void SetMetadata(MetadataType type, std::shared_ptr<ImageMetadata> metadata);
     NATIVEEXPORT bool HasMetadata(MetadataType type);

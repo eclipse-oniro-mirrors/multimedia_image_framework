@@ -711,7 +711,10 @@ napi_value AuxiliaryPictureNapi::SetAuxiliaryPictureInfo(napi_env env, napi_call
         IMAGE_LOGE("AuxiliaryPictureInfo mismatch"));
     
     if (status == napi_ok) {
-        asyncContext->auxPicture->SetAuxiliaryPictureInfo(asyncContext->auxiliaryPictureInfo);
+        uint32_t res = asyncContext->auxPicture->SetAuxiliaryPictureInfo(asyncContext->auxiliaryPictureInfo);
+        if (res != SUCCESS) {
+            ImageNapiUtils::ThrowExceptionError(env, IMAGE_BAD_PARAMETER, "Parameter error.");
+        }
     } else {
         IMAGE_LOGE("Failed to call napi_unwrap for auxilianypictureinfo");
     }
