@@ -173,6 +173,70 @@ std::map<PixelFormat, std::string> gPixelFormat = {
     { PixelFormat::NV12,      "PixelFormat::NV12" }
 };
 
+std::map<PixelFormat, std::string> allPixelFormat = {
+    { PixelFormat::ARGB_8888, "PixelFormat::ARGB_8888" },
+    { PixelFormat::RGB_565,   "PixelFormat::RGB_565" },
+    { PixelFormat::RGBA_8888, "PixelFormat::RGBA_8888" },
+    { PixelFormat::BGRA_8888, "PixelFormat::BGRA_8888" },
+    { PixelFormat::RGB_888,   "PixelFormat::RGB_888" },
+    { PixelFormat::ALPHA_8,   "PixelFormat::ALPHA_8" },
+    { PixelFormat::RGBA_F16,  "PixelFormat::RGBA_F16" },
+    { PixelFormat::NV21,      "PixelFormat::NV21" },
+    { PixelFormat::NV12,      "PixelFormat::NV12" },
+    { PixelFormat::RGBA_1010102, "PixelFormat::RGBA_1010102"},
+    { PixelFormat::YCBCR_P010, "PixelFormat::YCBCR_P010"},
+    { PixelFormat::YCRCB_P010, "PixelFormat::YCRCB_P010"}
+};
+
+static bool CompareTwoPixelMap(PixelMap &pixelmap1, PixelMap &pixelmap2)
+{
+    ImageInfo imageInfo1, imageInfo2;
+    pixelmap1.GetImageInfo(imageInfo1);
+    pixelmap2.GetImageInfo(imageInfo2);
+    bool flag = true;
+    if (imageInfo1.size.width != imageInfo2.size.width || imageInfo1.size.height != imageInfo2.size.height) {
+        GTEST_LOG_(INFO) << "PixelMap size not compared";
+        flag = false;
+    }
+    if (imageInfo1.pixelFormat != imageInfo2.pixelFormat) {
+        GTEST_LOG_(INFO) << "PixelMap pixelFormat not compared";
+        flag = false;
+    }
+    if (imageInfo1.colorSpace != imageInfo2.colorSpace) {
+        GTEST_LOG_(INFO) << "PixelMap colorSpace not compared";
+        flag = false;
+    }
+    if (imageInfo1.alphaType != imageInfo2.alphaType) {
+        GTEST_LOG_(INFO) << "PixelMap alphaType not compared";
+        flag = false;
+    }
+    if (imageInfo1.baseDensity != imageInfo2.baseDensity) {
+        GTEST_LOG_(INFO) << "PixelMap baseDensity not compared";
+        flag = false;
+    }
+    if (imageInfo1.encodedFormat != imageInfo2.encodedFormat) {
+        GTEST_LOG_(INFO) << "PixelMap encodedFormat not compared";
+        flag = false;
+    }
+    if (pixelmap1.GetAllocatorType() != pixelmap2.GetAllocatorType()) {
+        GTEST_LOG_(INFO) << "PixelMap GetAllocatorType not compared";
+        flag = false;
+    }
+    if (pixelmap1.GetByteCount() != pixelmap2.GetByteCount()) {
+        GTEST_LOG_(INFO) << "PixelMap GetByteCount not compared";
+        flag = false;
+    }
+    if (pixelmap1.GetRowBytes() != pixelmap2.GetRowBytes()) {
+        GTEST_LOG_(INFO) << "PixelMap GetRowBytes not compared";
+        flag = false;
+    }
+    if (pixelmap1.GetRowStride() != pixelmap2.GetRowStride()) {
+        GTEST_LOG_(INFO) << "PixelMap GetRowStride not compared";
+        flag = false;
+    }
+    return flag;
+}
+
 void CreateBuffer(const uint32_t width, const uint32_t height, const uint32_t pixelByte,
     uint8_t buffer[])
 {
@@ -2590,6 +2654,54 @@ HWTEST_F(PixelMapTest, MarshallingUnmarshallingDefaultAllocPixelMapTest, TestSiz
     EXPECT_EQ(newPixelMap->GetAllocatorType(), AllocatorType::HEAP_ALLOC);
 
     GTEST_LOG_(INFO) << "PixelMapTest: MarshallingUnmarshallingDefaultAllocPixelMapTest end";
+}
+
+/**
+ * @tc.name: PixelMapCloneTest001
+ * @tc.desc: Clone PixelMap
+ * @tc.type: FUNC
+ */
+HWTEST_F(PixelMapTest, PixelMapCloneTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PixelMapTest: PixelMapCloneTest001 start";
+
+    const int32_t offset = 0;
+    InitializationOptions options;
+    options.size.width = 2;
+    options.size.height = 3;
+    options.srcPixelFormat = PixelFormat::UNKNOWN;
+    options.pixelFormat = PixelFormat::UNKNOWN;
+    options.alphaType = AlphaType::IMAGE_ALPHA_TYPE_OPAQUE;
+    int32_t width = options.size.width;
+
+    std::map<PixelFormat, std::string>::iterator iter;
+
+    // ARGB_8888 to others
+    options.srcPixelFormat = PixelFormat::ARGB_8888;
+    for (iter = allPixelFormat.begin(); iter != allPixelFormat.end() ; ++iter) {
+        uint32_t colorlength = 24;    // w:2 * h:3 * pixelByte:4
+        uint8_t buffer[24] = { 0 };    // w:2 * h:3 * pixelByte:4
+        for (int i = 0; i < colorlength; i += 4) {
+            buffer[i] = 0x78;
+            buffer[i + 1] = 0x83;
+            buffer[i + 2] = 0xDF;
+            buffer[i + 3] = 0x52;
+        }
+        uint32_t *color = reinterpret_cast<uint32_t *>(buffer);
+        options.pixelFormat = iter->first;
+        int32_t errorCode = 0;
+        std::unique_ptr<PixelMap> pixelMap1 = PixelMap::Create(color, colorlength, offset, width, options);
+        std::unique_ptr<PixelMap> pixelMap_clone = nullptr;
+        if (pixelMap1 != nullptr) {
+            pixelMap_clone = pixelMap1->Clone(errorCode);
+            EXPECT_EQ(true, CompareTwoPixelMap(*(pixelMap1.get()), *(pixelMap_clone.get())));
+        } else {
+            GTEST_LOG_(INFO) << "convert to " << iter->second << "from ARGB_8888 failed";
+        }
+        EXPECT_EQ(errorCode, 0);
+        EXPECT_NE(pixelMap_clone, nullptr);
+    }
+    GTEST_LOG_(INFO) << "PixelMapTest: PixelMapCloneTest001 end";
 }
 }
 }
