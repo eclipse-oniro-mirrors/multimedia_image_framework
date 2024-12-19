@@ -43,6 +43,11 @@
 #include "image_system_properties.h"
 #include "image/abs_image_decoder.h"
 #include "pixel_map.h"
+#include "bundle_mgr_interface.h"
+#include "iservice_registry.h"
+#include "ipc_skeleton.h"
+#include "system_ability_definition.h"
+#include "os_account_manager.h"
 #ifdef IOS_PLATFORM
 #include <sys/syscall.h>
 #endif
@@ -81,6 +86,8 @@ constexpr int32_t ASTC_BLOCK_SIZE = 16;
 constexpr int32_t ASTC_HEADER_SIZE = 16;
 constexpr uint8_t FILL_NUMBER = 3;
 constexpr uint8_t ALIGN_NUMBER = 4;
+constexpr int32_t FAULT_API_VERSION = -1;
+constexpr int32_t BUNDLE_MGR_SERVICE_SYS_ABILITY_ID = 401;
 constexpr float EPSILON = 1e-6;
 constexpr int MAX_DIMENSION = INT32_MAX >> 2;
 constexpr int32_t DMA_SIZE = 512 * 512;
@@ -871,6 +878,44 @@ bool ImageUtils::IsInRange(uint32_t value, uint32_t minValue, uint32_t maxValue)
 bool ImageUtils::HasOverflowed(uint32_t num1, uint32_t num2)
 {
     return num1 > std::numeric_limits<uint32_t>::max() - num2;
+}
+
+std::string ImageUtils::GetEncodedHeifFormat()
+{
+    if (GetAPIVersion() > APIVERSION_13) {
+        return "image/heic";
+    } else {
+        return "image/heif";
+    }
+}
+
+int32_t ImageUtils::GetAPIVersion()
+{
+    uint32_t targetVersion = 0;
+    auto samgr = SystemAbilityManagerClient::GetInstance().GetSystemAbilityManager();
+    if (samgr == nullptr) {
+        IMAGE_LOGE("Get ability manager failed");
+        return FAULT_API_VERSION;
+    }
+    sptr<IRemoteObject> object = samgr->GetSystemAbility(BUNDLE_MGR_SERVICE_SYS_ABILITY_ID);
+    if (object == nullptr) {
+        IMAGE_LOGE("Object is NULL");
+        return FAULT_API_VERSION;
+    }
+
+    sptr<OHOS::AppExecFwk::IBundleMgr> bms = iface_cast<OHOS::AppExecFwk::IBundleMgr>(object);
+    if (bms == nullptr) {
+        IMAGE_LOGE("Bundle manager service is NULL.");
+        return FAULT_API_VERSION;
+    }
+    AppExecFwk::BundleInfo bundleInfo;
+    if (bms->GetBundleInfoForSelf(0, bundleInfo) != ERR_OK) {
+        IMAGE_LOGE("Get bundle info for self failed");
+        return FAULT_API_VERSION;
+    }
+    targetVersion = bundleInfo.targetVersion;
+    int32_t apiVersionResult = static_cast<int32_t>(targetVersion % 100);
+    return apiVersionResult;
 }
 } // namespace Media
 } // namespace OHOS
