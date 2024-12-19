@@ -313,7 +313,10 @@ Image_ErrorCode OH_AuxiliaryPictureNative_SetInfo(OH_AuxiliaryPictureNative *aux
         return IMAGE_BAD_PARAMETER;
     }
     auto tempInfo = *(info->GetInnerAuxiliaryPictureInfo().get());
-    auxiliaryPicture->GetInnerAuxiliaryPicture()->SetAuxiliaryPictureInfo(tempInfo);
+    uint32_t res = auxiliaryPicture->GetInnerAuxiliaryPicture()->SetAuxiliaryPictureInfo(tempInfo);
+    if (res != IMAGE_SUCCESS) {
+        return IMAGE_BAD_PARAMETER;
+    }
     return IMAGE_SUCCESS;
 }
 

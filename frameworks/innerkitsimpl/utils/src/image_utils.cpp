@@ -356,6 +356,23 @@ bool ImageUtils::IsValidImageInfo(const ImageInfo &info)
     return true;
 }
 
+bool ImageUtils::IsValidAuxiliaryInfo(const std::shared_ptr<PixelMap> &pixelMap, const AuxiliaryPictureInfo &info)
+{
+    int32_t rowSize = ImageUtils::GetRowDataSizeByPixelFormat(info.size.width, info.pixelFormat);
+    if (rowSize <= 0 || info.size.height <= 0 || rowSize > std::numeric_limits<int32_t>::max() / info.size.height) {
+        IMAGE_LOGE("%{public}s rowSize: %{public}d, height: %{public}d may overflowed",
+            __func__, rowSize, info.size.height);
+        return false;
+    }
+    uint32_t infoSize = static_cast<uint32_t>(rowSize * info.size.height);
+    uint32_t pixelsSize = pixelMap->GetCapacity();
+    if (infoSize > pixelsSize) {
+        IMAGE_LOGE("%{public}s invalid infoSize: %{public}u, pixelsSize: %{public}u", __func__, infoSize, pixelsSize);
+        return false;
+    }
+    return true;
+}
+
 bool ImageUtils::IsAstc(PixelFormat format)
 {
     return format == PixelFormat::ASTC_4x4 || format == PixelFormat::ASTC_6x6 || format == PixelFormat::ASTC_8x8;

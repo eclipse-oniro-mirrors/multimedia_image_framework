@@ -17,6 +17,7 @@
 #include "auxiliary_picture.h"
 #include "media_errors.h"
 #include "image_log.h"
+#include "image_utils.h"
 #include "exif_metadata.h"
 #include "fragment_metadata.h"
 
@@ -261,9 +262,32 @@ AuxiliaryPictureInfo AuxiliaryPicture::GetAuxiliaryPictureInfo()
     return auxiliaryPictureInfo_;
 }
 
-void AuxiliaryPicture::SetAuxiliaryPictureInfo(const AuxiliaryPictureInfo &auxiliaryPictureInfo)
+uint32_t AuxiliaryPicture::SetAuxiliaryPictureInfo(const AuxiliaryPictureInfo &auxiliaryPictureInfo)
 {
+    int32_t apiVersion = ImageUtils::GetAPIVersion();
+    IMAGE_LOGI("%{public}s current apiVersion: %{public}d", __func__, apiVersion);
+    if (apiVersion > APIVERSION_13) {
+        if (content_ == nullptr) {
+            IMAGE_LOGE("%{public}s pixelmap is nullptr", __func__);
+            return ERR_MEDIA_NULL_POINTER;
+        }
+        if (!ImageUtils::IsValidAuxiliaryInfo(content_, auxiliaryPictureInfo)) {
+            IMAGE_LOGE("%{public}s invalid auxiliary picture info", __func__);
+            return ERR_IMAGE_INVALID_PARAMETER;
+        }
+        ImageInfo imageInfo;
+        content_->GetImageInfo(imageInfo);
+        imageInfo.size = auxiliaryPictureInfo.size;
+        imageInfo.pixelFormat = auxiliaryPictureInfo.pixelFormat;
+        imageInfo.colorSpace = auxiliaryPictureInfo.colorSpace;
+        uint32_t err = content_->SetImageInfo(imageInfo, true);
+        if (err != SUCCESS) {
+            IMAGE_LOGE("%{public}s sync info to pixelmap failed", __func__);
+            return err;
+        }
+    }
     auxiliaryPictureInfo_ = auxiliaryPictureInfo;
+    return SUCCESS;
 }
 
 } // namespace Media
