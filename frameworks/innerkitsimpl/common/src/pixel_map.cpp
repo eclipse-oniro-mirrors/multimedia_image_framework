@@ -382,12 +382,13 @@ static void SetYUVDataInfoToPixelMap(unique_ptr<PixelMap> &dstPixelMap)
 static int AllocPixelMapMemory(std::unique_ptr<AbsMemory> &dstMemory, int32_t &dstRowStride,
     const ImageInfo &dstImageInfo, bool useDMA)
 {
-    int64_t bufferSize = PixelMap::GetByteCount(dstImageInfo);
-    if (bufferSize <= 0) {
-        IMAGE_LOGE("[PixelMap] AllocPixelMapMemory: Get byte count failed");
+    int64_t rowDataSize = ImageUtils::GetRowDataSizeByPixelFormat(dstImageInfo.size.width, dstImageInfo.pixelFormat);
+    if (rowDataSize <= 0) {
+        IMAGE_LOGE("[PixelMap] AllocPixelMapMemory: Get row data size failed");
         return IMAGE_RESULT_BAD_PARAMETER;
     }
-    if (bufferSize > INT32_MAX) {
+    int64_t bufferSize = rowDataSize * dstImageInfo.size.height;
+    if (bufferSize > UINT32_MAX) {
         IMAGE_LOGE("[PixelMap]Create: pixelmap size too large: width = %{public}d, height = %{public}d",
             dstImageInfo.size.width, dstImageInfo.size.height);
         return IMAGE_RESULT_BAD_PARAMETER;
@@ -470,7 +471,6 @@ unique_ptr<PixelMap> PixelMap::Create(const uint32_t *colors, uint32_t colorLeng
         nullptr);
     ImageUtils::DumpPixelMapIfDumpEnabled(dstPixelMap);
     SetYUVDataInfoToPixelMap(dstPixelMap);
-    ImageUtils::FlushSurfaceBuffer(dstPixelMap.get());
     return dstPixelMap;
 }
 
@@ -703,7 +703,6 @@ unique_ptr<PixelMap> PixelMap::Create(const InitializationOptions &opts)
             SetYUVDataInfoToPixelMap(dstPixelMap);
         }
     }
-    ImageUtils::FlushSurfaceBuffer(dstPixelMap.get());
     return dstPixelMap;
 }
 
@@ -1482,33 +1481,19 @@ int32_t PixelMap::GetRowBytes()
     return rowDataSize_;
 }
 
-int32_t PixelMap::GetByteCount(const ImageInfo &imageInfo)
+int32_t PixelMap::GetByteCount()
 {
-    if (imageInfo.size.width <= 0 || imageInfo.size.height <= 0) {
-        IMAGE_LOGE("[PixelMap] pixel map width or height invalid.");
-        return 0;
-    }
-    int32_t rowDataSize = ImageUtils::GetRowDataSizeByPixelFormat(imageInfo.size.width, imageInfo.pixelFormat);
-    if (rowDataSize <= 0) {
-        IMAGE_LOGE("[PixelMap]pixel map rowDataSize invalid.");
-        return 0;
-    }
-    if (IsYUV(imageInfo.pixelFormat)) {
-        return PixelMap::GetYUVByteCount(imageInfo);
+    IMAGE_LOGD("GetByteCount");
+    if (IsYUV(imageInfo_.pixelFormat)) {
+        return GetYUVByteCount(imageInfo_);
     } else {
-        uint64_t byteCount = static_cast<uint64_t>(rowDataSize) * static_cast<uint64_t>(imageInfo.size.height);
+        uint64_t byteCount = static_cast<uint64_t>(rowDataSize_) * static_cast<uint64_t>(imageInfo_.size.height);
         if (byteCount > INT_MAX) {
-            IMAGE_LOGE("[PixelMap]GetByteCount failed: byteCount overflowed");
+            IMAGE_LOGE("GetByteCount failed: byteCount overflowed");
             return 0;
         }
         return byteCount;
     }
-}
-
-int32_t PixelMap::GetByteCount()
-{
-    IMAGE_LOGD("GetByteCount");
-    return PixelMap::GetByteCount(imageInfo_);
 }
 
 int32_t PixelMap::GetWidth()
@@ -1603,26 +1588,22 @@ uint8_t PixelMap::GetARGB32ColorB(uint32_t color)
 bool PixelMap::IsSameImage(const PixelMap &other)
 {
     if (isUnMap_ || data_ == nullptr || other.data_ == nullptr) {
-        IMAGE_LOGE("[PixelMap]IsSameImage data_ is nullptr, isUnMap %{public}d.", isUnMap_);
+        IMAGE_LOGE("IsSameImage data_ is nullptr, isUnMap %{public}d.", isUnMap_);
         return false;
     }
     if (imageInfo_.size.width != other.imageInfo_.size.width ||
         imageInfo_.size.height != other.imageInfo_.size.height ||
         imageInfo_.pixelFormat != other.imageInfo_.pixelFormat || imageInfo_.alphaType != other.imageInfo_.alphaType) {
-        IMAGE_LOGI("[PixelMap]IsSameImage imageInfo is not same");
+        IMAGE_LOGI("IsSameImage imageInfo is not same");
         return false;
     }
     if (ImageUtils::CheckMulOverflow(rowDataSize_, imageInfo_.size.height)) {
-        IMAGE_LOGI("[PixelMap]IsSameImage imageInfo is invalid");
+        IMAGE_LOGI("IsSameImage imageInfo is invalid");
         return false;
     }
-    int64_t size = GetByteCount();
-    if (size <= 0) {
-        IMAGE_LOGI("[PixelMap]IsSameImage imageInfo is invalid");
-        return false;
-    }
+    uint64_t size = static_cast<uint64_t>(rowDataSize_) * static_cast<uint64_t>(imageInfo_.size.height);
     if (memcmp(data_, other.data_, size) != 0) {
-        IMAGE_LOGI("[PixelMap]IsSameImage memcmp is not same");
+        IMAGE_LOGI("IsSameImage memcmp is not same");
         return false;
     }
     return true;
