@@ -758,6 +758,41 @@ Image_ErrorCode OH_PixelmapNative_ScaleWithAntiAliasing(OH_PixelmapNative *pixel
 Image_ErrorCode OH_PixelmapNative_Translate(OH_PixelmapNative *pixelmap, float x, float y);
 
 /**
+ * @brief Create a scaled pixelmap based on the source pixelmap and the input width and height.
+ *
+ * @param srcPixelmap The source native pixelmap.
+ * @param dstPixelmap The destination native pixelmap for create.
+ * @param scaleX Scaling ratio of the width.
+ * @param scaleY Scaling ratio of the height.
+ * @return Function result code:
+ *         {@link IMAGE_SUCCESS} If the execution is successful.
+ *         {@link IMAGE_BAD_PARAMETER} If the param is nullptr or invalid.
+ * @see OH_PixelmapNative
+ * @since 16
+ */
+Image_ErrorCode OH_PixelmapNative_CreateScaledPixelMap(OH_PixelmapNative *srcPixelmap, OH_PixelmapNative **dstPixelmap,
+    float scaleX, float scaleY);
+
+/**
+ * @brief Create a scaled pixelmap based on the source pixelmap and the input width and height with anti-aliasing.
+ *
+ * @param srcPixelmap The source native pixelmap.
+ * @param dstPixelmap The destination native pixelmap for create.
+ * @param scaleX Scaling ratio of the width.
+ * @param scaleY Scaling ratio of the height.
+ * @param level The anti-aliasing algorithm to be used.
+ * @return Function result code:
+ *         {@link IMAGE_SUCCESS} If the execution is successful.
+ *         {@link IMAGE_BAD_PARAMETER} If the param is nullptr or invalid.
+ *         {@link IMAGE_TOO_LARGE} If image is too large.
+ *         {@link IMAGE_ALLOC_FAILED} If device has no memory.
+ * @see OH_PixelmapNative
+ * @since 16
+ */
+Image_ErrorCode OH_PixelmapNative_CreateScaledPixelMapWithAntiAliasing(OH_PixelmapNative *srcPixelmap,
+    OH_PixelmapNative **dstPixelmap, float scaleX, float scaleY, OH_PixelmapNative_AntiAliasingLevel level);
+
+/**
  * @brief Rotates this image based on the input angle.
  *
  * @param pixelmap The Pixelmap pointer will be operated.

@@ -515,6 +515,8 @@ std::vector<napi_property_descriptor> PixelMapNapi::RegisterNapi()
         DECLARE_NAPI_FUNCTION("release", Release),
         DECLARE_NAPI_FUNCTION("scale", Scale),
         DECLARE_NAPI_FUNCTION("scaleSync", ScaleSync),
+        DECLARE_NAPI_FUNCTION("createScaledPixelMap", CreateScaledPixelMap),
+        DECLARE_NAPI_FUNCTION("createScaledPixelMapSync", CreateScaledPixelMapSync),
         DECLARE_NAPI_FUNCTION("translate", Translate),
         DECLARE_NAPI_FUNCTION("translateSync", TranslateSync),
         DECLARE_NAPI_FUNCTION("rotate", Rotate),
@@ -2943,6 +2945,166 @@ napi_value PixelMapNapi::ScaleSync(napi_env env, napi_callback_info info)
             pixelMapNapi->nativePixelMap_->scale(static_cast<float>(xArg), static_cast<float>(yArg),
                 ParseAntiAliasingOption(antiAliasing));
         }
+    } else {
+        IMAGE_LOGE("Null native ref");
+    }
+    return result;
+}
+
+static void CreateScaledPixelMapExec(napi_env env, PixelMapAsyncContext* context)
+{
+    if (context == nullptr) {
+        IMAGE_LOGE("Null context");
+        return;
+    }
+    if (context->status == SUCCESS) {
+        if (context->rPixelMap != nullptr) {
+            InitializationOptions opts;
+            std::unique_ptr<PixelMap> clonePixelMap = PixelMap::Create(*(context->rPixelMap), opts);
+            if (clonePixelMap == nullptr) {
+                IMAGE_LOGE("Null clonePixelMap");
+                return;
+            }
+            if (context->antiAliasing == AntiAliasingOption::NONE) {
+                clonePixelMap->scale(static_cast<float>(context->xArg), static_cast<float>(context->yArg));
+            } else {
+                clonePixelMap->scale(static_cast<float>(context->xArg), static_cast<float>(context->yArg),
+                    context->antiAliasing);
+            }
+            context->alphaMap = std::move(clonePixelMap);
+            context->status = SUCCESS;
+        } else {
+            IMAGE_LOGE("Null native ref");
+            context->status = COMMON_ERR_INVALID_PARAMETER;
+        }
+    } else {
+        IMAGE_LOGD("Scale has failed. do nothing");
+    }
+}
+
+static void CreateScaledPixelMapComplete(napi_env env, napi_status status, void *data)
+{
+    if (data == nullptr) {
+        IMAGE_LOGE("CreateScaledPixelMapComplete invalid parameter: data is null");
+        return;
+    }
+    napi_value result = nullptr;
+    napi_get_undefined(env, &result);
+
+    auto context = static_cast<PixelMapAsyncContext*>(data);
+    if (context->alphaMap != nullptr) {
+        result = PixelMapNapi::CreatePixelMap(env, context->alphaMap);
+        context->status = SUCCESS;
+    } else {
+        IMAGE_LOGE("Null alphaMap");
+        context->status = COMMON_ERR_INVALID_PARAMETER;
+    }
+    CommonCallbackRoutine(env, context, result);
+}
+
+napi_value PixelMapNapi::CreateScaledPixelMap(napi_env env, napi_callback_info info)
+{
+    napi_value result = nullptr;
+    napi_get_undefined(env, &result);
+    napi_status status;
+    napi_value thisVar = nullptr;
+    napi_value argValue[NUM_3] = {0};
+    size_t argCount = NUM_3;
+
+    IMAGE_LOGD("CreateScaledPixelMap IN");
+    IMG_JS_ARGS(env, info, status, argCount, argValue, thisVar);
+    IMG_NAPI_CHECK_RET_D(IMG_IS_OK(status), nullptr, IMAGE_LOGE("fail to arg info"));
+    IMG_NAPI_CHECK_RET_D(argCount == NUM_2 || argCount == NUM_3,
+        ImageNapiUtils::ThrowExceptionError(env, COMMON_ERR_INVALID_PARAMETER,
+        "Invalid args count"),
+        IMAGE_LOGE("Invalid args count %{public}zu", argCount));
+
+    std::unique_ptr<PixelMapAsyncContext> asyncContext = std::make_unique<PixelMapAsyncContext>();
+    IMG_NAPI_CHECK_RET_D(IMG_IS_OK(napi_get_value_double(env, argValue[NUM_0], &asyncContext->xArg)),
+        result, IMAGE_LOGE("Arg 0 type mismatch"));
+    IMG_NAPI_CHECK_RET_D(IMG_IS_OK(napi_get_value_double(env, argValue[NUM_1], &asyncContext->yArg)),
+        result, IMAGE_LOGE("Arg 1 type mismatch"));
+    if (argCount == NUM_3) {
+        int32_t antiAliasing = 0;
+        IMG_NAPI_CHECK_RET_D(IMG_IS_OK(napi_get_value_int32(env, argValue[NUM_2], &antiAliasing)),
+            result, IMAGE_LOGE("Arg 2 type mismatch"));
+        asyncContext->antiAliasing = ParseAntiAliasingOption(antiAliasing);
+    }
+
+    status = napi_unwrap(env, thisVar, reinterpret_cast<void**>(&asyncContext->nConstructor));
+    IMG_NAPI_CHECK_RET_D(IMG_IS_READY(status, asyncContext->nConstructor),
+        nullptr, IMAGE_LOGE("fail to unwrap context"));
+
+    asyncContext->rPixelMap = asyncContext->nConstructor->nativePixelMap_;
+    IMG_NAPI_CHECK_RET_D(IMG_IS_READY(status, asyncContext->rPixelMap),
+        nullptr, IMAGE_LOGE("empty native pixelmap"));
+
+    napi_create_promise(env, &(asyncContext->deferred), &result);
+
+    IMG_NAPI_CHECK_BUILD_ERROR(asyncContext->nConstructor->GetPixelNapiEditable(),
+        BuildContextError(env, asyncContext->error, "pixelmap has crossed threads. CreateScaledPixelMap failed",
+        ERR_RESOURCE_UNAVAILABLE), IMG_CREATE_CREATE_ASYNC_WORK(env, status, "CreateScaledPixelMapGeneralError",
+        [](napi_env env, void *data) {}, GeneralErrorComplete, asyncContext, asyncContext->work),
+        result);
+
+    IMG_CREATE_CREATE_ASYNC_WORK(env, status, "CreateScaledPixelMap",
+        [](napi_env env, void *data) {
+            auto context = static_cast<PixelMapAsyncContext*>(data);
+            CreateScaledPixelMapExec(env, context);
+        }, CreateScaledPixelMapComplete, asyncContext, asyncContext->work);
+    IMG_NAPI_CHECK_RET_D(IMG_IS_OK(status), nullptr, IMAGE_LOGE("fail to create deferred async work"));
+    return result;
+}
+
+napi_value PixelMapNapi::CreateScaledPixelMapSync(napi_env env, napi_callback_info info)
+{
+    napi_value result = nullptr;
+    napi_get_undefined(env, &result);
+    napi_status status;
+    napi_value thisVar = nullptr;
+    napi_value argValue[NUM_3] = {0};
+    size_t argCount = NUM_3;
+    double xArg = 0;
+    double yArg = 0;
+    int32_t antiAliasing = 0;
+
+    IMAGE_LOGD("CreateScaledPixelMapSync IN");
+    IMG_JS_ARGS(env, info, status, argCount, argValue, thisVar);
+    IMG_NAPI_CHECK_RET_D(IMG_IS_OK(status), result, IMAGE_LOGE("fail to arg info"));
+    IMG_NAPI_CHECK_RET_D(argCount == NUM_2 || argCount == NUM_3,
+        ImageNapiUtils::ThrowExceptionError(env, COMMON_ERR_INVALID_PARAMETER, "Invalid args count"),
+        IMAGE_LOGE("Invalid args count %{public}zu", argCount));
+    IMG_NAPI_CHECK_RET_D(IMG_IS_OK(napi_get_value_double(env, argValue[NUM_0], &xArg)),
+        result, IMAGE_LOGE("Arg 0 type mismatch"));
+    IMG_NAPI_CHECK_RET_D(IMG_IS_OK(napi_get_value_double(env, argValue[NUM_1], &yArg)),
+        result, IMAGE_LOGE("Arg 1 type mismatch"));
+    if (argCount == NUM_3) {
+        IMG_NAPI_CHECK_RET_D(IMG_IS_OK(napi_get_value_int32(env, argValue[NUM_2], &antiAliasing)),
+            result, IMAGE_LOGE("Arg 2 type mismatch"));
+    }
+
+    PixelMapNapi* pixelMapNapi = nullptr;
+    status = napi_unwrap(env, thisVar, reinterpret_cast<void**>(&pixelMapNapi));
+    IMG_NAPI_CHECK_RET_D(IMG_IS_READY(status, pixelMapNapi), result, IMAGE_LOGE("fail to unwrap context"));
+    IMG_NAPI_CHECK_RET_D(pixelMapNapi->GetPixelNapiEditable(),
+        ImageNapiUtils::ThrowExceptionError(env, ERR_RESOURCE_UNAVAILABLE,
+        "Pixelmap has crossed threads. CreateScaledPixelMapSync failed"),
+        IMAGE_LOGE("Pixelmap has crossed threads. CreateScaledPixelMapSync failed"));
+
+    if (pixelMapNapi->nativePixelMap_ != nullptr) {
+        InitializationOptions opts;
+        std::unique_ptr<PixelMap> clonePixelMap = PixelMap::Create(*(pixelMapNapi->nativePixelMap_), opts);
+        if (clonePixelMap == nullptr) {
+            IMAGE_LOGE("Null clonePixelMap");
+            return result;
+        }
+        if (antiAliasing == 0) {
+            clonePixelMap->scale(static_cast<float>(xArg), static_cast<float>(yArg));
+        } else {
+            clonePixelMap->scale(static_cast<float>(xArg), static_cast<float>(yArg),
+                ParseAntiAliasingOption(antiAliasing));
+        }
+        result = PixelMapNapi::CreatePixelMap(env, std::move(clonePixelMap));
     } else {
         IMAGE_LOGE("Null native ref");
     }

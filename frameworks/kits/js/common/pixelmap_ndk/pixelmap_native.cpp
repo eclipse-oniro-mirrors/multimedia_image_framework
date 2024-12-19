@@ -573,6 +573,40 @@ Image_ErrorCode OH_PixelmapNative_ScaleWithAntiAliasing(OH_PixelmapNative *pixel
 }
 
 MIDK_EXPORT
+Image_ErrorCode OH_PixelmapNative_CreateScaledPixelMap(OH_PixelmapNative *srcPixelmap, OH_PixelmapNative **dstPixelmap,
+    float scaleX, float scaleY)
+{
+    if (srcPixelmap == nullptr || !srcPixelmap->GetInnerPixelmap() || dstPixelmap == nullptr) {
+        return IMAGE_BAD_PARAMETER;
+    }
+    InitializationOptions opts;
+    std::unique_ptr<PixelMap> clonePixelmap = PixelMap::Create(*(srcPixelmap->GetInnerPixelmap()), opts);
+    if (clonePixelmap == nullptr) {
+        return IMAGE_BAD_PARAMETER;
+    }
+    clonePixelmap->scale(scaleX, scaleY);
+    *dstPixelmap = new(std::nothrow) OH_PixelmapNative(std::move(clonePixelmap));
+    return IMAGE_SUCCESS;
+}
+
+MIDK_EXPORT
+Image_ErrorCode OH_PixelmapNative_CreateScaledPixelMapWithAntiAliasing(OH_PixelmapNative *srcPixelmap,
+    OH_PixelmapNative **dstPixelmap, float scaleX, float scaleY, OH_PixelmapNative_AntiAliasingLevel level)
+{
+    if (srcPixelmap == nullptr || !srcPixelmap->GetInnerPixelmap() || dstPixelmap == nullptr) {
+        return IMAGE_BAD_PARAMETER;
+    }
+    InitializationOptions opts;
+    std::unique_ptr<PixelMap> clonePixelmap = PixelMap::Create(*(srcPixelmap->GetInnerPixelmap()), opts);
+    if (clonePixelmap == nullptr) {
+        return IMAGE_BAD_PARAMETER;
+    }
+    clonePixelmap->scale(scaleX, scaleY, static_cast<AntiAliasingOption>(level));
+    *dstPixelmap = new(std::nothrow) OH_PixelmapNative(std::move(clonePixelmap));
+    return IMAGE_SUCCESS;
+}
+
+MIDK_EXPORT
 Image_ErrorCode OH_PixelmapNative_Translate(OH_PixelmapNative *pixelmap, float x, float y)
 {
     if (pixelmap == nullptr || !pixelmap->GetInnerPixelmap()) {
