@@ -77,6 +77,31 @@ OH_PixelmapNative::~OH_PixelmapNative()
     }
 }
 
+bool OH_PixelmapNative::Ref()
+{
+    std::lock_guard<std::mutex> lock(mutex_);
+    if (refCount_ == UINT32_MAX) {
+        return false;
+    }
+    refCount_.fetch_add(1, std::memory_order_relaxed);
+    return true;
+}
+
+bool OH_PixelmapNative::Unref()
+{
+    std::lock_guard<std::mutex> lock(mutex_);
+    if (refCount_ == 0) {
+        return false;
+    }
+    refCount_.fetch_sub(1, std::memory_order_relaxed);
+    return true;
+}
+
+uint32_t OH_PixelmapNative::GetRefCount()
+{
+    return refCount_;
+}
+
 #ifdef __cplusplus
 };
 #endif
