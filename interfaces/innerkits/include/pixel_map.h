@@ -213,6 +213,15 @@ public:
         return editable_;
     }
 
+    NATIVEEXPORT virtual void SetModifiable(bool modifiable)
+    {
+        modifiable_ = modifiable;
+    }
+    NATIVEEXPORT virtual bool IsModifiable()
+    {
+        return modifiable_;
+    }
+
     NATIVEEXPORT virtual bool IsTransformered()
     {
         return isTransformered_;
@@ -513,6 +522,7 @@ protected:
     AllocatorType allocatorType_ = AllocatorType::SHARE_MEM_ALLOC;
     uint32_t pixelsSize_ = 0;
     bool editable_ = false;
+    bool modifiable_ = true; // If this is set to false, any modifications to the pixels data is not allowed
     bool useSourceAsResponse_ = false;
     bool isTransformered_ = false;
     std::shared_ptr<std::mutex> transformMutex_ = std::make_shared<std::mutex>();

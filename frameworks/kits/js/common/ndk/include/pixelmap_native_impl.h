@@ -14,6 +14,8 @@
  */
 #ifndef FRAMEWORKS_KITS_JS_COMMON_INCLUDE_PIXELMAP_NATIVE_IMPL_H
 #define FRAMEWORKS_KITS_JS_COMMON_INCLUDE_PIXELMAP_NATIVE_IMPL_H
+#include <atomic>
+#include <mutex>
 #include <stdint.h>
 #include "pixel_map.h"
 
@@ -30,9 +32,14 @@ public:
     ~OH_PixelmapNative();
 
     std::shared_ptr<OHOS::Media::PixelMap> GetInnerPixelmap();
+    bool Ref();
+    bool Unref();
+    uint32_t GetRefCount();
 
 private:
     std::shared_ptr<OHOS::Media::PixelMap> pixelmap_;
+    std::atomic<uint32_t> refCount_ = 0;
+    std::mutex mutex_;
 };
 
 #ifdef __cplusplus
