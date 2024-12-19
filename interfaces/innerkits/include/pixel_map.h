@@ -238,8 +238,10 @@ public:
     }
 
     NATIVEEXPORT virtual bool Marshalling(Parcel &data) const override;
-    NATIVEEXPORT static PixelMap *Unmarshalling(Parcel &data);
-    NATIVEEXPORT static PixelMap *Unmarshalling(Parcel &parcel, PIXEL_MAP_ERR &error);
+    NATIVEEXPORT static PixelMap *Unmarshalling(Parcel &data,
+        std::function<int(Parcel &parcel, std::function<int(Parcel&)> readFdDefaultFunc)> readSafeFdFunc = nullptr);
+    NATIVEEXPORT static PixelMap *Unmarshalling(Parcel &parcel, PIXEL_MAP_ERR &error,
+        std::function<int(Parcel &parcel, std::function<int(Parcel&)> readFdDefaultFunc)> readSafeFdFunc = nullptr);
     NATIVEEXPORT virtual bool EncodeTlv(std::vector<uint8_t> &buff) const;
     NATIVEEXPORT static PixelMap *DecodeTlv(std::vector<uint8_t> &buff);
     NATIVEEXPORT virtual void SetImageYUVInfo(YUVDataInfo &yuvinfo)
@@ -443,7 +445,8 @@ protected:
     bool ReadBufferSizeFromParcel(Parcel& parcel, const ImageInfo& imgInfo, PixelMemInfo& memInfo,
         PIXEL_MAP_ERR& error);
     bool WriteMemInfoToParcel(Parcel &parcel, const int32_t &bufferSize) const;
-    static bool ReadMemInfoFromParcel(Parcel &parcel, PixelMemInfo &pixelMemInfo, PIXEL_MAP_ERR &error);
+    static bool ReadMemInfoFromParcel(Parcel &parcel, PixelMemInfo &pixelMemInfo, PIXEL_MAP_ERR &error,
+        std::function<int(Parcel &parcel, std::function<int(Parcel&)> readFdDefaultFunc)> readSafeFdFunc = nullptr);
     bool WriteTransformDataToParcel(Parcel &parcel) const;
     bool ReadTransformData(Parcel &parcel, PixelMap *pixelMap);
     bool WriteAstcRealSizeToParcel(Parcel &parcel) const;
@@ -481,9 +484,11 @@ protected:
     static bool UpdatePixelMapMemInfo(PixelMap *pixelMap, ImageInfo &imgInfo, PixelMemInfo &pixelMemInfo);
     bool WriteImageData(Parcel &parcel, size_t size) const;
     bool WriteAshmemDataToParcel(Parcel &parcel, size_t size) const;
-    static uint8_t *ReadImageData(Parcel &parcel, int32_t size);
+    static uint8_t *ReadImageData(Parcel &parcel, int32_t size,
+        std::function<int(Parcel &parcel, std::function<int(Parcel&)> readFdDefaultFunc)> readSafeFdFunc = nullptr);
     static uint8_t *ReadHeapDataFromParcel(Parcel &parcel, int32_t bufferSize);
-    static uint8_t *ReadAshmemDataFromParcel(Parcel &parcel, int32_t bufferSize);
+    static uint8_t *ReadAshmemDataFromParcel(Parcel &parcel, int32_t bufferSize,
+        std::function<int(Parcel &parcel, std::function<int(Parcel&)> readFdDefaultFunc)> readSafeFdFunc = nullptr);
     static int ReadFileDescriptor(Parcel &parcel);
     static bool WriteFileDescriptor(Parcel &parcel, int fd);
     static bool ReadImageInfo(Parcel &parcel, ImageInfo &imgInfo);
