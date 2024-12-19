@@ -22,8 +22,10 @@ namespace OHOS {
 namespace Media {
 
 static const std::string IMAGE_BMP_FORMAT = "image/bmp";
+static const std::string IMAGE_WBMP_FORMAT = "image/wbmp";
 static const std::string IMAGE_JPEG_FORMAT = "image/jpeg";
 static const std::string IMAGE_HEIF_FORMAT = "image/heif";
+static const std::string IMAGE_HEIC_FORMAT = "image/heic";
 static const std::string IMAGE_PNG_FORMAT = "image/png";
 static const std::string IMAGE_WEBP_FORMAT = "image/webp";
 static const std::string IMAGE_GIF_FORMAT = "image/gif";
