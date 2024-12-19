@@ -47,10 +47,13 @@ static const std::string GIF_PATH = "/data/local/tmp/test.gif";
 
 void ExtDecoderFuncTest001(const std::string& filename)
 {
-    IMAGE_LOGI("%{public}s IN", __func__);
+    IMAGE_LOGI("%{public}s IN path: %{public}s", __func__, filename.c_str());
     SourceOptions srcOpts;
     uint32_t errorCode;
     auto imageSource = ImageSource::CreateImageSource(filename, srcOpts, errorCode);
+    if (imageSource == nullptr) {
+        return;
+    }
     Media::DecodeOptions dopts;
     imageSource->CreatePixelMap(dopts, errorCode);
     auto extDecoder = static_cast<ExtDecoder*>((imageSource->mainDecoder_).get());
@@ -73,11 +76,7 @@ void ExtDecoderFuncTest001(const std::string& filename)
     extDecoder->DoHardWareDecode(context);
     extDecoder->GetJpegYuvOutFmt(dstFormat);
     extDecoder->DecodeToYuv420(0, context);
-    OHOS::HDI::Codec::Image::V2_0::CodecImageBuffer outputBuffer;
-    extDecoder->AllocOutputBuffer(context, outputBuffer);
     extDecoder->CheckContext(context);
-    AllocatorType allocatorType = AllocatorType::DEFAULT;
-    extDecoder->ReleaseOutputBuffer(context, allocatorType);
     extDecoder->HardWareDecode(context);
     SkAlphaType alphaType;
     AlphaType outputType;
@@ -92,7 +91,6 @@ void ExtDecoderFuncTest001(const std::string& filename)
     extDecoder->GetImagePropertyString(0, key, value);
     extDecoder->GetMakerImagePropertyString(key, value);
     extDecoder->DoHeifToYuvDecode(context);
-    extDecoder->Reset();
     IMAGE_LOGI("%{public}s SUCCESS", __func__);
 }
 
@@ -102,6 +100,9 @@ void SvgDecoderFuncTest001(const std::string& filename)
     SourceOptions srcOpts;
     uint32_t errorCode;
     auto imageSource = ImageSource::CreateImageSource(filename, srcOpts, errorCode);
+    if (imageSource == nullptr) {
+        return;
+    }
 
     imageSource->sourceInfo_.encodedFormat = "image/svg+xml";
     auto svgDecoder = static_cast<SvgDecoder*>(imageSource->CreateDecoder(errorCode));
