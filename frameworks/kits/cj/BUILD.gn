@@ -52,7 +52,7 @@ ohos_shared_library("cj_image_ffi") {
       "$image_subsystem/frameworks/innerkitsimpl/pixelconverter:pixelconvertadapter",
       "$image_subsystem/frameworks/innerkitsimpl/utils:image_utils",
       "$image_subsystem/interfaces/innerkits:image_native",
-      "$image_subsystem/interfaces/kits/js/commom:image",
+      "$image_subsystem/interfaces/kits/js/common:image",
     ]
     external_deps = [
       "c_utils:utils",

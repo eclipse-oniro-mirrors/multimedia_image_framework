@@ -15,10 +15,10 @@
 #ifndef IMAGE_CREATOR_IMPL_H
 #define IMAGE_CREATOR_IMPL_H
 
-#include "ffi_remote_data.h"
 #include "cj_ffi/cj_common_ffi.h"
-#include "image_log.h"
+#include "ffi_remote_data.h"
 #include "image_creator.h"
+#include "image_log.h"
 
 namespace OHOS {
 namespace Media {

@@ -23,40 +23,40 @@
 const int64_t INIT_FAILED = -1;
 
 extern "C" {
-    typedef struct {
-        int32_t height;
-        int32_t width;
-    } CSize;
+typedef struct {
+    int32_t height;
+    int32_t width;
+} CSize;
 
-    typedef struct {
-        CSize size;
-        int32_t x;
-        int32_t y;
-    } CRegion;
+typedef struct {
+    CSize size;
+    int32_t x;
+    int32_t y;
+} CRegion;
 
-    typedef struct {
-        int32_t componentType;
-        int32_t rowStride;
-        int32_t pixelStride;
-        uint8_t *byteBuffer;
-        int64_t bufSize;
-    } CRetComponent;
+typedef struct {
+    int32_t componentType;
+    int32_t rowStride;
+    int32_t pixelStride;
+    uint8_t* byteBuffer;
+    int64_t bufSize;
+} CRetComponent;
 
-    typedef struct {
-        uint64_t bufferSize;
-        uint32_t offset;
-        uint32_t stride;
-        CRegion region;
-        uint8_t* dst;
-    } CPositionArea;
+typedef struct {
+    uint64_t bufferSize;
+    uint32_t offset;
+    uint32_t stride;
+    CRegion region;
+    uint8_t* dst;
+} CPositionArea;
 
-    typedef struct {
-        uint8_t* data;
-        size_t arrSize;
-        uint32_t offset;
-        uint32_t updateLen;
-        bool isCompleted;
-    } UpdateDataInfo;
+typedef struct {
+    uint8_t* data;
+    size_t arrSize;
+    uint32_t offset;
+    uint32_t updateLen;
+    bool isCompleted;
+} UpdateDataInfo;
 }
 
 #define FFI_EXPORT __attribute__((visibility("default")))

@@ -13,9 +13,10 @@
  * limitations under the License.
  */
 #include "pixel_map_impl.h"
+
 #include "image_log.h"
 #include "media_errors.h"
- 
+
 namespace OHOS {
 namespace Media {
 std::shared_ptr<PixelMap> PixelMapImpl::GetRealPixelMap()
@@ -23,10 +24,9 @@ std::shared_ptr<PixelMap> PixelMapImpl::GetRealPixelMap()
     return real_;
 }
 
-std::unique_ptr<PixelMap> PixelMapImpl::CreatePixelMap(const InitializationOptions &opts)
+std::unique_ptr<PixelMap> PixelMapImpl::CreatePixelMap(const InitializationOptions& opts)
 {
-    if (opts.pixelFormat == PixelFormat::RGBA_1010102 ||
-        opts.pixelFormat == PixelFormat::YCBCR_P010 ||
+    if (opts.pixelFormat == PixelFormat::RGBA_1010102 || opts.pixelFormat == PixelFormat::YCBCR_P010 ||
         opts.pixelFormat == PixelFormat::YCRCB_P010) {
         return nullptr;
     }
@@ -37,11 +37,10 @@ std::unique_ptr<PixelMap> PixelMapImpl::CreatePixelMap(const InitializationOptio
     return ptr_;
 }
 
-std::unique_ptr<PixelMap> PixelMapImpl::CreatePixelMap(uint32_t *colors, uint32_t colorLength,
-    InitializationOptions &opts)
+std::unique_ptr<PixelMap> PixelMapImpl::CreatePixelMap(
+    uint32_t* colors, uint32_t colorLength, InitializationOptions& opts)
 {
-    if (opts.pixelFormat == PixelFormat::RGBA_1010102 ||
-        opts.pixelFormat == PixelFormat::YCBCR_P010 ||
+    if (opts.pixelFormat == PixelFormat::RGBA_1010102 || opts.pixelFormat == PixelFormat::YCBCR_P010 ||
         opts.pixelFormat == PixelFormat::YCRCB_P010) {
         return nullptr;
     }
@@ -52,7 +51,7 @@ std::unique_ptr<PixelMap> PixelMapImpl::CreatePixelMap(uint32_t *colors, uint32_
     return ptr_;
 }
 
-std::unique_ptr<PixelMap> PixelMapImpl::CreateAlphaPixelMap(PixelMap &source, InitializationOptions &opts)
+std::unique_ptr<PixelMap> PixelMapImpl::CreateAlphaPixelMap(PixelMap& source, InitializationOptions& opts)
 {
     std::unique_ptr<PixelMap> ptr_ = PixelMap::Create(source, opts);
     if (ptr_ == nullptr) {
@@ -94,7 +93,7 @@ PixelMapImpl::PixelMapImpl(std::shared_ptr<PixelMap> ptr_)
     real_ = ptr_;
 }
 
-uint32_t PixelMapImpl::ReadPixelsToBuffer(uint64_t &bufferSize, uint8_t *dst)
+uint32_t PixelMapImpl::ReadPixelsToBuffer(uint64_t& bufferSize, uint8_t* dst)
 {
     if (real_ == nullptr) {
         return ERR_IMAGE_READ_PIXELMAP_FAILED;
@@ -102,7 +101,7 @@ uint32_t PixelMapImpl::ReadPixelsToBuffer(uint64_t &bufferSize, uint8_t *dst)
     return real_->ReadPixels(bufferSize, dst);
 }
 
-uint32_t PixelMapImpl::ReadPixels(uint64_t &bufferSize, uint32_t &offset, uint32_t &stride, Rect &region, uint8_t *dst)
+uint32_t PixelMapImpl::ReadPixels(uint64_t& bufferSize, uint32_t& offset, uint32_t& stride, Rect& region, uint8_t* dst)
 {
     if (real_ == nullptr) {
         return ERR_IMAGE_READ_PIXELMAP_FAILED;
@@ -110,7 +109,7 @@ uint32_t PixelMapImpl::ReadPixels(uint64_t &bufferSize, uint32_t &offset, uint32
     return real_->ReadPixels(bufferSize, offset, stride, region, dst);
 }
 
-uint32_t PixelMapImpl::WriteBufferToPixels(uint8_t *source, uint64_t &bufferSize)
+uint32_t PixelMapImpl::WriteBufferToPixels(uint8_t* source, uint64_t& bufferSize)
 {
     if (real_ == nullptr) {
         return ERR_IMAGE_READ_PIXELMAP_FAILED;
@@ -118,8 +117,8 @@ uint32_t PixelMapImpl::WriteBufferToPixels(uint8_t *source, uint64_t &bufferSize
     return real_->WritePixels(source, bufferSize);
 }
 
-uint32_t PixelMapImpl::WritePixels(uint8_t *source, uint64_t &bufferSize, uint32_t &offset, uint32_t &stride,
-    Rect &region)
+uint32_t PixelMapImpl::WritePixels(
+    uint8_t* source, uint64_t& bufferSize, uint32_t& offset, uint32_t& stride, Rect& region)
 {
     if (real_ == nullptr) {
         return ERR_IMAGE_READ_PIXELMAP_FAILED;
@@ -127,7 +126,7 @@ uint32_t PixelMapImpl::WritePixels(uint8_t *source, uint64_t &bufferSize, uint32
     return real_->WritePixels(source, bufferSize, offset, stride, region);
 }
 
-void PixelMapImpl::GetImageInfo(ImageInfo &imageInfo)
+void PixelMapImpl::GetImageInfo(ImageInfo& imageInfo)
 {
     if (real_ == nullptr) {
         IMAGE_LOGE("[PixelMapImpl] get instance!");
@@ -171,7 +170,7 @@ void PixelMapImpl::Scale(float xAxis, float yAxis, AntiAliasingOption option)
     real_->scale(xAxis, yAxis, option);
 }
 
-uint32_t PixelMapImpl::Crop(Rect &rect)
+uint32_t PixelMapImpl::Crop(Rect& rect)
 {
     if (real_ == nullptr) {
         return ERR_IMAGE_READ_PIXELMAP_FAILED;
@@ -289,5 +288,5 @@ uint32_t PixelMapImpl::ApplyColorSpace(std::shared_ptr<OHOS::ColorManager::Color
     }
     return real_->ApplyColorSpace(*colorSpace);
 }
-}
-}
+} // namespace Media
+} // namespace OHOS

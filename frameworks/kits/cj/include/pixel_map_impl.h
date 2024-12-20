@@ -14,37 +14,36 @@
  */
 #ifndef PIXEL_MAP_H
 #define PIXEL_MAP_H
- 
+
+#include <string>
+
 #include "ffi_remote_data.h"
 #include "pixel_map.h"
-#include <string>
- 
+
 namespace OHOS {
 namespace Media {
 class FFI_EXPORT PixelMapImpl : public OHOS::FFI::FFIData {
     DECL_TYPE(PixelMapImpl, OHOS::FFI::FFIData)
 public:
     explicit PixelMapImpl(std::shared_ptr<PixelMap> ptr_);
-    explicit PixelMapImpl(std::shared_ptr<PixelMap> ptr, bool isEditable, bool transferDetach):
-        real_(ptr), isPixelMapImplEditable(isEditable), transferDetach_(transferDetach) {};
+    explicit PixelMapImpl(std::shared_ptr<PixelMap> ptr, bool isEditable, bool transferDetach)
+        : real_(ptr), isPixelMapImplEditable(isEditable), transferDetach_(transferDetach) {};
     std::shared_ptr<PixelMap> GetRealPixelMap();
-    uint32_t ReadPixelsToBuffer(uint64_t &bufferSize, uint8_t *dst);
-    uint32_t WriteBufferToPixels(uint8_t *source, uint64_t &bufferSize);
+    uint32_t ReadPixelsToBuffer(uint64_t& bufferSize, uint8_t* dst);
+    uint32_t WriteBufferToPixels(uint8_t* source, uint64_t& bufferSize);
     int32_t GetDensity();
     uint32_t Opacity(float percent);
-    uint32_t Crop(Rect &rect);
+    uint32_t Crop(Rect& rect);
     uint32_t ToSdr();
     uint32_t GetPixelBytesNumber();
     uint32_t GetBytesNumberPerRow();
-    uint32_t ReadPixels(uint64_t &bufferSize, uint32_t &offset, uint32_t &stride,
-                                Rect &region, uint8_t *dst);
-    uint32_t WritePixels(uint8_t *source, uint64_t &bufferSize, uint32_t &offset,
-                        uint32_t &stride, Rect &region);
+    uint32_t ReadPixels(uint64_t& bufferSize, uint32_t& offset, uint32_t& stride, Rect& region, uint8_t* dst);
+    uint32_t WritePixels(uint8_t* source, uint64_t& bufferSize, uint32_t& offset, uint32_t& stride, Rect& region);
     uint32_t SetColorSpace(std::shared_ptr<OHOS::ColorManager::ColorSpace> colorSpace);
     std::shared_ptr<OHOS::ColorManager::ColorSpace> GetColorSpace();
     uint32_t ApplyColorSpace(std::shared_ptr<OHOS::ColorManager::ColorSpace> colorSpace);
 
-    void GetImageInfo(ImageInfo &imageInfo);
+    void GetImageInfo(ImageInfo& imageInfo);
     void Scale(float xAxis, float yAxis);
     void Scale(float xAxis, float yAxis, AntiAliasingOption option);
     void Flip(bool xAxis, bool yAxis);
@@ -69,18 +68,19 @@ public:
         return isPixelMapImplEditable;
     }
 
-    static std::unique_ptr<PixelMap> CreatePixelMap(const InitializationOptions &opts);
-    static std::unique_ptr<PixelMap> CreatePixelMap(uint32_t *colors, uint32_t colorLength,
-        InitializationOptions &opts);
-    static std::unique_ptr<PixelMap> CreateAlphaPixelMap(PixelMap &source, InitializationOptions &opts);
+    static std::unique_ptr<PixelMap> CreatePixelMap(const InitializationOptions& opts);
+    static std::unique_ptr<PixelMap> CreatePixelMap(
+        uint32_t* colors, uint32_t colorLength, InitializationOptions& opts);
+    static std::unique_ptr<PixelMap> CreateAlphaPixelMap(PixelMap& source, InitializationOptions& opts);
     static uint32_t CreatePremultipliedPixelMap(std::shared_ptr<PixelMap> src, std::shared_ptr<PixelMap> dst);
     static uint32_t CreateUnpremultipliedPixelMap(std::shared_ptr<PixelMap> src, std::shared_ptr<PixelMap> dst);
+
 private:
     std::shared_ptr<PixelMap> real_;
     bool isPixelMapImplEditable = true;
     bool transferDetach_ = false;
 };
-}
-}
- 
+} // namespace Media
+} // namespace OHOS
+
 #endif
