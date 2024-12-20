@@ -79,27 +79,27 @@ OH_PixelmapNative::~OH_PixelmapNative()
 
 bool OH_PixelmapNative::Ref()
 {
-    std::lock_guard<std::mutex> lock(mutex_);
-    if (refCount_ == UINT32_MAX) {
+    std::lock_guard<std::mutex> lock(*mutex_);
+    if (*refCount_ == UINT32_MAX) {
         return false;
     }
-    refCount_++;
+    (*refCount_)++;
     return true;
 }
 
 bool OH_PixelmapNative::Unref()
 {
-    std::lock_guard<std::mutex> lock(mutex_);
-    if (refCount_ == 0) {
+    std::lock_guard<std::mutex> lock(*mutex_);
+    if (*refCount_ == 0) {
         return false;
     }
-    refCount_--;
+    (*refCount_)--;
     return true;
 }
 
 uint32_t OH_PixelmapNative::GetRefCount()
 {
-    return refCount_;
+    return *refCount_;
 }
 
 #ifdef __cplusplus
