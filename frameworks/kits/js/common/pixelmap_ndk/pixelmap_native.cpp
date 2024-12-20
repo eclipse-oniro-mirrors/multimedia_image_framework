@@ -1107,7 +1107,9 @@ Image_ErrorCode OH_PixelmapNative_UnaccessPixels(OH_PixelmapNative *pixelmap)
     if (!pixelmap->Unref()) {
         return IMAGE_LOCK_UNLOCK_FAILED;
     }
-    pixelmap->GetInnerPixelmap()->SetModifiable(true);
+    if (pixelmap->GetRefCount() == 0) {
+        pixelmap->GetInnerPixelmap()->SetModifiable(true);
+    }
     return IMAGE_SUCCESS;
 }
 
