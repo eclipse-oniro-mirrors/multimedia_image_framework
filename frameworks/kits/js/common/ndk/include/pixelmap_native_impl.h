@@ -14,7 +14,6 @@
  */
 #ifndef FRAMEWORKS_KITS_JS_COMMON_INCLUDE_PIXELMAP_NATIVE_IMPL_H
 #define FRAMEWORKS_KITS_JS_COMMON_INCLUDE_PIXELMAP_NATIVE_IMPL_H
-#include <atomic>
 #include <mutex>
 #include <stdint.h>
 #include "pixel_map.h"
