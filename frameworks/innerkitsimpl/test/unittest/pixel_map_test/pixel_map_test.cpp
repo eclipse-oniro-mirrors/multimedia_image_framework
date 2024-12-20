@@ -2602,7 +2602,7 @@ HWTEST_F(PixelMapTest, UnmodifiablePixelMapTest, TestSize.Level3)
     GTEST_LOG_(INFO) << "PixelMapTest: UnmodifiablePixelMapTest start";
 
     auto pixelMap = ConstructPixelMap(1, 1, PixelFormat::BGRA_8888, AlphaType::IMAGE_ALPHA_TYPE_UNKNOWN,
-        AllocatorType::HEAP);
+        AllocatorType::HEAP_ALLOC);
     uint32_t* data = static_cast<uint32_t*>(pixelMap->GetWritablePixels());
     data[0] = 0xFFFFFFFF;
     data[1] = 0xAAAAAAAA;
