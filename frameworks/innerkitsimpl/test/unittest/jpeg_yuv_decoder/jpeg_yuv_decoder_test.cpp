@@ -51,7 +51,7 @@ bool JpgYuvDecoderTest::ReadImageData(std::string jpgpath, uint8_t*& jpegBuffer,
     if (ret != 0) {
         return false;
     }
-    jpegBufferSize = (int)ftell(jpgFile);
+    jpegBufferSize = static_cast<int>(ftell(jpgFile));
     ret = fseek(jpgFile, 0, SEEK_SET);
     if (ret != 0) {
         return false;
