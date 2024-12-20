@@ -3310,7 +3310,7 @@ uint32_t PixelMap::ConvertAlphaFormat(PixelMap &wPixelMap, const bool isPremul)
 
 static uint32_t ValidateSetAlpha(float percent, bool modifiable, AlphaType alphaType)
 {
-    if (!modifiable_) {
+    if (!modifiable) {
         IMAGE_LOGE("[PixelMap] SetAlpha can't be performed: PixelMap is not modifiable");
         return ERR_IMAGE_PIXELMAP_NOT_ALLOW_MODIFY;
     }
