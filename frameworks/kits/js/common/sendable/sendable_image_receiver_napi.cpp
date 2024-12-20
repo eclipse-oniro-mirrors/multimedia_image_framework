@@ -259,7 +259,7 @@ void SendableImageReceiverNapi::Destructor(napi_env env, void *nativeObject, voi
     }
 }
 
-static bool checkFormat(int32_t format)
+static bool CheckFormat(int32_t format)
 {
     return std::any_of(sImageFormatVec.begin(), sImageFormatVec.end(), [format](const auto& imageEnum) {
         return imageEnum.numVal == format;
@@ -275,7 +275,7 @@ napi_value SendableImageReceiverNapi::CreateImageReceiverJsObject(napi_env env, 
     inputArgs.argc = ARGS4;
 
     IMAGE_FUNCTION_IN();
-    if (!checkFormat(args.format)) {
+    if (!CheckFormat(args.format)) {
         IMAGE_ERR("Invalid type");
         return nullptr;
     }
@@ -315,7 +315,7 @@ napi_value SendableImageReceiverNapi::JSCreateImageReceiver(napi_env env, napi_c
         return ImageNapiUtils::ThrowExceptionError(env, COMMON_ERR_INVALID_PARAMETER, errMsg);
     }
 
-    if (!checkFormat(inputArgs.args[PARAM2])) {
+    if (!CheckFormat(inputArgs.args[PARAM2])) {
         return ImageNapiUtils::ThrowExceptionError(env, COMMON_ERR_INVALID_PARAMETER, "Invalid type");
     }
 

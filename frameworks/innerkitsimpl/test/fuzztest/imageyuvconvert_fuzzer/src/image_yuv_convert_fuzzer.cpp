@@ -167,7 +167,7 @@ void YuvP010ConvertToRgb(PixelFormat &srcFormat, PixelFormat &destFormat, Size &
         return;
     }
     const uint32_t dataLength = totalSize * NUM_2;
-    uint32_t *data = (uint32_t *)chOrg;
+    uint32_t *data = reinterpret_cast<uint32_t *>(chOrg);
     InitializationOptions opts;
     opts.srcPixelFormat = srcFormat;
     opts.pixelFormat = srcFormat;
