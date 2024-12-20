@@ -38,7 +38,7 @@ public:
 
 private:
     std::shared_ptr<OHOS::Media::PixelMap> pixelmap_;
-    std::atomic<uint32_t> refCount_ = 0;
+    uint32_t refCount_ = 0;
     std::mutex mutex_;
 };
 
