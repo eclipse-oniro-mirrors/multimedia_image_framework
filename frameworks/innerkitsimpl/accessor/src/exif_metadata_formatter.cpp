@@ -204,6 +204,7 @@ const static std::set<std::string> READ_WRITE_KEYS = {
     "MovingPhotoId",
     "MovingPhotoVersion",
     "MicroVideoPresentationTimestampUS",
+    "HwMnoteAIEdit",
 };
 
 const static std::set<std::string> READ_ONLY_KEYS = {
@@ -1248,6 +1249,7 @@ std::multimap<std::string, ValueFormatDelegate> ExifMetadatFormatter::valueForma
     {"HwMnoteXmageRight", singleInt},
     {"HwMnoteXmageBottom", singleInt},
     {"HwMnoteCloudEnhancementMode", singleInt},
+    {"HwMnoteAIEdit", singleInt},
     {"DateTimeDigitized", dateTimeValidation},
     {"DateTimeDigitized", dateValidation},
     {"OffsetTime", dateTimeValidation},
@@ -1595,7 +1597,7 @@ int32_t ExifMetadatFormatter::Validate(const std::string &keyName, const std::st
         IMAGE_LOGE("Validating uint16 Error %{public}s", result.second.c_str());
         return ERR_MEDIA_VALUE_INVALID;
     }
-    IMAGE_LOGD("Validate ret: %{result.first}d", result.first);
+    IMAGE_LOGD("Validate ret: %{public}d", result.first);
     return result.first;
 }
 

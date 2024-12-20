@@ -281,11 +281,6 @@ if (use_clang_android) {
     external_deps += [ "zlib:libz" ]
 
     if (defined(global_parts_info) &&
-        defined(global_parts_info.graphic_graphic_2d_ext)) {
-      defines += [ "SUT_DECODE_ENABLE" ]
-    }
-
-    if (defined(global_parts_info) &&
         defined(global_parts_info.open_source_libyuv)) {
       defines += [ "EXT_PIXEL" ]
       sources += [

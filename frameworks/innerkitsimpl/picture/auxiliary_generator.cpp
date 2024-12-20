@@ -39,10 +39,8 @@ static constexpr uint32_t FIRST_FRAME = 0;
 static constexpr int32_t DEFAULT_SCALE_DENOMINATOR = 1;
 static constexpr int32_t DEPTH_SCALE_DENOMINATOR = 4;
 static constexpr int32_t LINEAR_SCALE_DENOMINATOR = 4;
-static constexpr uint32_t ARRAY_INDEX_1 = 1;
-static constexpr uint32_t ARRAY_INDEX_2 = 2;
-static constexpr uint32_t SUPPLEMENT_NUM_1 = 1;
-static constexpr uint32_t HALF_DENOMINATOR = 2;
+static constexpr uint32_t NV12_PLANE_UV_INDEX = 1;
+static constexpr uint32_t NV21_PLANE_UV_INDEX = 2;
 
 static inline bool IsSizeVailed(const Size &size)
 {
@@ -158,12 +156,12 @@ static void SetDmaYuvInfo(SurfaceBuffer *&surfaceBuffer, PixelFormat format, YUV
     }
     const OH_NativeBuffer_Plane &planeY = planes->planes[0];
     bool isNV21 = (format == PixelFormat::NV21 || format == PixelFormat::YCRCB_P010);
-    const OH_NativeBuffer_Plane &planeUV = planes->planes[isNV21 ? ARRAY_INDEX_2 : ARRAY_INDEX_1];
+    const OH_NativeBuffer_Plane &planeUV = planes->planes[isNV21 ? NV21_PLANE_UV_INDEX : NV12_PLANE_UV_INDEX];
     if (format == PixelFormat::YCRCB_P010 || format == PixelFormat::YCBCR_P010) {
-        yuvInfo.yStride = planeY.columnStride / HALF_DENOMINATOR;
-        yuvInfo.uvStride = planeUV.columnStride / HALF_DENOMINATOR;
-        yuvInfo.yOffset = planeY.offset / HALF_DENOMINATOR;
-        yuvInfo.uvOffset = planeUV.offset / HALF_DENOMINATOR;
+        yuvInfo.yStride = planeY.columnStride / 2;
+        yuvInfo.uvStride = planeUV.columnStride / 2;
+        yuvInfo.yOffset = planeY.offset / 2;
+        yuvInfo.uvOffset = planeUV.offset / 2;
     } else {
         yuvInfo.yStride = planeY.columnStride;
         yuvInfo.uvStride = planeUV.columnStride;
@@ -176,10 +174,10 @@ static void SetNonDmaYuvInfo(int32_t width, int32_t height, YUVDataInfo &yuvInfo
 {
     yuvInfo.yWidth = static_cast<uint32_t>(width);
     yuvInfo.yHeight = static_cast<uint32_t>(height);
-    yuvInfo.uvWidth = static_cast<uint32_t>((width + SUPPLEMENT_NUM_1) / HALF_DENOMINATOR);
-    yuvInfo.uvHeight = static_cast<uint32_t>((height + SUPPLEMENT_NUM_1) / HALF_DENOMINATOR);
+    yuvInfo.uvWidth = static_cast<uint32_t>((width + 1) / 2);
+    yuvInfo.uvHeight = static_cast<uint32_t>((height + 1) / 2);
     yuvInfo.yStride = static_cast<uint32_t>(width);
-    yuvInfo.uvStride = static_cast<uint32_t>(((width + SUPPLEMENT_NUM_1) / HALF_DENOMINATOR) * HALF_DENOMINATOR);
+    yuvInfo.uvStride = static_cast<uint32_t>(((width + 1) / 2) * 2);
     yuvInfo.uvOffset = static_cast<uint32_t>(width) * static_cast<uint32_t>(height);
 }
 
@@ -196,7 +194,7 @@ static void TrySetYUVDataInfo(std::shared_ptr<PixelMap> &pixelMap)
     }
 
     YUVDataInfo info;
-    if (pixelMap->GetAllocatorType() == AllocatorType::DMA_ALLOC) {
+    if (pixelMap->GetAllocatorType() == AllocatorType::DMA_ALLOC && pixelMap->GetFd() != nullptr) {
         SurfaceBuffer *surfaceBuffer = reinterpret_cast<SurfaceBuffer *>(pixelMap->GetFd());
         SetDmaYuvInfo(surfaceBuffer, format, info);
     } else {

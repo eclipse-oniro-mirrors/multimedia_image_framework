@@ -46,6 +46,10 @@ namespace Multimedia {
 static const std::string IMAGE_INPUT_HEIF_PATH = "/data/local/tmp/image/test.heic";
 static const std::string IMAGE_INPUT_HW_HEIF_PATH = "/data/local/tmp/image/test_hw.heic";
 static const std::string IMAGE_INPUT_EXIF_HEIF_PATH = "/data/local/tmp/image/test_exif.heic";
+static const std::string IMAGE_INPUT_IDEN_HEIF_PATH = "/data/local/tmp/image/iden.heic";
+static const std::string IMAGE_INPUT_NOREF_HEIF_PATH = "/data/local/tmp/image/noref.heic";
+static const std::string IMAGE_INPUT_ALPHA_HEIF_PATH = "/data/local/tmp/image/alpha.heic";
+static const std::string IMAGE_INPUT_HDR_HEIF_PATH = "/data/local/tmp/image/heifhdr.heic";
 static const std::string IMAGE_OUTPUT_HEIF_FILE_PATH = "/data/test/test_file.heic";
 static const std::string IMAGE_OUTPUT_HEIF_BUFFER_PATH = "/data/test/test_buffer.heic";
 static const std::string IMAGE_OUTPUT_HEIF_ISTREAM_PATH = "/data/test/test_istream.heic";
@@ -865,6 +869,121 @@ HWTEST_F(ImageSourceHeifTest, HeifImageHwDecode001, TestSize.Level3)
      */
     int64_t packSize = OHOS::ImageSourceUtil::PackImage(IMAGE_OUTPUT_HW_HEIF_FILE_PATH, std::move(pixelMap));
     ASSERT_NE(packSize, 0);
+}
+
+/**
+ * @tc.name: HeifImageIdenDecode001
+ * @tc.desc: Iden decode heif image from file source stream
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageSourceHeifTest, HeifImageIdenDecode001, TestSize.Level3)
+{
+    /**
+     * @tc.steps: step1. create image source by correct heif file path and heif format hit.
+     * @tc.expected: step1. create image source success.
+     */
+    uint32_t errorCode = 0;
+    SourceOptions opts;
+    opts.formatHint = "image/heif";
+    std::unique_ptr<ImageSource> imageSource =
+        ImageSource::CreateImageSource(IMAGE_INPUT_IDEN_HEIF_PATH, opts, errorCode);
+    ASSERT_EQ(errorCode, SUCCESS);
+    ASSERT_NE(imageSource.get(), nullptr);
+    /**
+     * @tc.steps: step2. decode image source to pixel map by default decode options
+     * @tc.expected: step2. decode image source to pixel map success.
+     */
+    DecodeOptions decodeOpts;
+    std::unique_ptr<PixelMap> pixelMap = imageSource->CreatePixelMap(decodeOpts, errorCode);
+    IMAGE_LOGD("create pixel map ret=%{public}u.", errorCode);
+    ASSERT_EQ(errorCode, SUCCESS);
+    ASSERT_NE(pixelMap.get(), nullptr);
+}
+
+/**
+ * @tc.name: HeifImageNoRefDecode001
+ * @tc.desc: Noref decode heif image from file source stream
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageSourceHeifTest, HeifImageNoRefDecode001, TestSize.Level3)
+{
+    /**
+     * @tc.steps: step1. create image source by correct heif file path and heif format hit.
+     * @tc.expected: step1. create image source success.
+     */
+    uint32_t errorCode = 0;
+    SourceOptions opts;
+    opts.formatHint = "image/heif";
+    std::unique_ptr<ImageSource> imageSource =
+        ImageSource::CreateImageSource(IMAGE_INPUT_NOREF_HEIF_PATH, opts, errorCode);
+    ASSERT_EQ(errorCode, SUCCESS);
+    ASSERT_NE(imageSource.get(), nullptr);
+    /**
+     * @tc.steps: step2. decode image source to pixel map by default decode options
+     * @tc.expected: step2. decode image source to pixel map success.
+     */
+    DecodeOptions decodeOpts;
+    std::unique_ptr<PixelMap> pixelMap = imageSource->CreatePixelMap(decodeOpts, errorCode);
+    IMAGE_LOGD("create pixel map ret=%{public}u.", errorCode);
+    ASSERT_NE(errorCode, SUCCESS);
+}
+
+/**
+ * @tc.name: HeifImageAlphaDecode001
+ * @tc.desc: Alpha decode heif image from file source stream
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageSourceHeifTest, HeifImageAlphaDecode001, TestSize.Level3)
+{
+    /**
+     * @tc.steps: step1. create image source by correct heif file path and heif format hit.
+     * @tc.expected: step1. create image source success.
+     */
+    uint32_t errorCode = 0;
+    SourceOptions opts;
+    opts.formatHint = "image/heif";
+    std::unique_ptr<ImageSource> imageSource =
+        ImageSource::CreateImageSource(IMAGE_INPUT_ALPHA_HEIF_PATH, opts, errorCode);
+    ASSERT_EQ(errorCode, SUCCESS);
+    ASSERT_NE(imageSource.get(), nullptr);
+    /**
+     * @tc.steps: step2. decode image source to pixel map by default decode options
+     * @tc.expected: step2. decode image source to pixel map success.
+     */
+    DecodeOptions decodeOpts;
+    std::unique_ptr<PixelMap> pixelMap = imageSource->CreatePixelMap(decodeOpts, errorCode);
+    IMAGE_LOGD("create pixel map ret=%{public}u.", errorCode);
+    ASSERT_EQ(errorCode, SUCCESS);
+    ASSERT_NE(pixelMap.get(), nullptr);
+}
+
+/**
+ * @tc.name: HeifImageHdrDecode001
+ * @tc.desc: Hdr decode heif image from file source stream
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageSourceHeifTest, HeifImageHdrDecode001, TestSize.Level3)
+{
+    /**
+     * @tc.steps: step1. create image source by correct heif file path and heif format hit.
+     * @tc.expected: step1. create image source success.
+     */
+    uint32_t errorCode = 0;
+    SourceOptions opts;
+    opts.formatHint = "image/heif";
+    std::unique_ptr<ImageSource> imageSource =
+        ImageSource::CreateImageSource(IMAGE_INPUT_HDR_HEIF_PATH, opts, errorCode);
+    ASSERT_EQ(errorCode, SUCCESS);
+    ASSERT_NE(imageSource.get(), nullptr);
+    /**
+     * @tc.steps: step2. decode image source to pixel map by default decode options
+     * @tc.expected: step2. decode image source to pixel map success.
+     */
+    DecodeOptions decodeOpts;
+    std::unique_ptr<PixelMap> pixelMap = imageSource->CreatePixelMap(decodeOpts, errorCode);
+    IMAGE_LOGD("create pixel map ret=%{public}u.", errorCode);
+    ASSERT_EQ(errorCode, SUCCESS);
+    ASSERT_NE(pixelMap.get(), nullptr);
 }
 
 /**

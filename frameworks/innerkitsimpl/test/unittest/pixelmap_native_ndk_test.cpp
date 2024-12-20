@@ -44,6 +44,66 @@ const int32_t VERSION_VALUE = 50;
 constexpr int32_t bufferSize = 256;
 static const std::string IMAGE_JPEG_PATH = "/data/local/tmp/image/test_jpeg_writeexifblob001.jpg";
 static const std::string IMAGE_JPEG_PATH_TEST = "/data/local/tmp/image/test.jpg";
+static const std::string IMAGE_JPEG_PATH_TEST_PICTURE = "/data/local/tmp/image/test_picture.jpg";
+
+static bool CompareImageInfo(OH_Pixelmap_ImageInfo* srcImageInfo, OH_Pixelmap_ImageInfo* dstImageInfo)
+{
+    if (srcImageInfo == nullptr && dstImageInfo == nullptr) {
+        return true;
+    }
+
+    if ((srcImageInfo == nullptr) ^ (dstImageInfo == nullptr)) {
+        return false;
+    }
+
+    uint32_t srcWidth, srcHeight, srcRowStride = 0;
+    int32_t srcPixelFormat, srcAlphaType = 0;
+    bool srcIsHdr = false;
+    OH_PixelmapImageInfo_GetWidth(srcImageInfo, &srcWidth);
+    OH_PixelmapImageInfo_GetHeight(srcImageInfo, &srcHeight);
+    OH_PixelmapImageInfo_GetRowStride(srcImageInfo, &srcRowStride);
+    OH_PixelmapImageInfo_GetPixelFormat(srcImageInfo, &srcPixelFormat);
+    OH_PixelmapImageInfo_GetAlphaType(srcImageInfo, &srcAlphaType);
+    OH_PixelmapImageInfo_GetDynamicRange(srcImageInfo, &srcIsHdr);
+
+    uint32_t dstWidth, dstHeight, dstRowStride = 0;
+    int32_t dstPixelFormat, dstAlphaType = 0;
+    bool dstIsHdr = false;
+    OH_PixelmapImageInfo_GetWidth(dstImageInfo, &dstWidth);
+    OH_PixelmapImageInfo_GetHeight(dstImageInfo, &dstHeight);
+    OH_PixelmapImageInfo_GetRowStride(dstImageInfo, &dstRowStride);
+    OH_PixelmapImageInfo_GetPixelFormat(dstImageInfo, &dstPixelFormat);
+    OH_PixelmapImageInfo_GetAlphaType(dstImageInfo, &dstAlphaType);
+    OH_PixelmapImageInfo_GetDynamicRange(dstImageInfo, &dstIsHdr);
+
+    return srcWidth == dstWidth && srcHeight == dstHeight && srcRowStride == dstRowStride
+        && srcPixelFormat == dstPixelFormat && srcAlphaType == dstAlphaType && srcIsHdr == dstIsHdr;
+}
+
+static void CreatePixelmapNative(OH_PixelmapNative** pixelmapNative)
+{
+    std::string realPath;
+    if (!ImageUtils::PathToRealPath(IMAGE_JPEG_PATH_TEST_PICTURE.c_str(), realPath)) {
+        return;
+    }
+
+    char filePath[bufferSize];
+    if (strcpy_s(filePath, sizeof(filePath), realPath.c_str()) != EOK) {
+        return;
+    }
+
+    size_t length = realPath.size();
+    OH_ImageSourceNative *source = nullptr;
+    OH_ImageSourceNative_CreateFromUri(filePath, length, &source);
+
+    OH_DecodingOptions *opts = nullptr;
+    OH_DecodingOptions_Create(&opts);
+
+    OH_PixelmapNative *pixelmap = nullptr;
+    OH_ImageSourceNative_CreatePixelmap(source, opts, &pixelmap);
+    *pixelmapNative = pixelmap;
+}
+
 /**
  * @tc.name: OH_PixelmapInitializationOptions_Create
  * @tc.desc: OH_PixelmapInitializationOptions_Create
@@ -726,31 +786,14 @@ HWTEST_F(PixelMapNdk2Test, OH_PixelmapNative_SetMetadata, TestSize.Level3)
 HWTEST_F(PixelMapNdk2Test, OH_PixelmapNative_SetGetColorSpace, TestSize.Level3)
 {
     GTEST_LOG_(INFO) << "PixelMapNdk2Test: OH_PixelmapNative_SetGetColorSpace start";
-    std::string realPath;
-    if (!ImageUtils::PathToRealPath(IMAGE_JPEG_PATH.c_str(), realPath)) {
-        if (!ImageUtils::PathToRealPath(IMAGE_JPEG_PATH_TEST.c_str(), realPath)) {
-            return;
-        }
-    }
-    char filePath[bufferSize];
-    if (strcpy_s(filePath, sizeof(filePath), realPath.c_str()) != EOK) {
-        return;
-    }
-    size_t length = realPath.size();
-    OH_ImageSourceNative *source = nullptr;
-    Image_ErrorCode ret = OH_ImageSourceNative_CreateFromUri(filePath, length, &source);
-    EXPECT_EQ(ret, IMAGE_SUCCESS);
-
-    OH_DecodingOptions *opts = nullptr;
     OH_PixelmapNative *pixelmap = nullptr;
-    OH_DecodingOptions_Create(&opts);
-    ret = OH_ImageSourceNative_CreatePixelmap(source, opts, &pixelmap);
-    EXPECT_EQ(ret, IMAGE_SUCCESS);
+    CreatePixelmapNative(&pixelmap);
+    EXPECT_NE(pixelmap, nullptr);
 
     OH_NativeColorSpaceManager *setColorSpaceNative = nullptr;
     ColorSpaceName setColorSpaceName = SRGB_LIMIT;
     setColorSpaceNative = OH_NativeColorSpaceManager_CreateFromName(setColorSpaceName);
-    ret = OH_PixelmapNative_SetColorSpaceNative(pixelmap, setColorSpaceNative);
+    Image_ErrorCode ret = OH_PixelmapNative_SetColorSpaceNative(pixelmap, setColorSpaceNative);
     EXPECT_EQ(ret, IMAGE_SUCCESS);
 
     OH_NativeColorSpaceManager *getColorSpaceNative = nullptr;
@@ -761,6 +804,100 @@ HWTEST_F(PixelMapNdk2Test, OH_PixelmapNative_SetGetColorSpace, TestSize.Level3)
     EXPECT_EQ(setColorSpaceName, getColorSpaceName);
 
     GTEST_LOG_(INFO) << "PixelMapNdk2Test: OH_PixelmapNative_SetGetColorSpace end";
+}
+
+/**
+ * @tc.name: OH_PixelmapNative_CreateScaledPixelMapWithAntiAliasing
+ * @tc.desc: OH_PixelmapNative_CreateScaledPixelMapWithAntiAliasing
+ * @tc.type: FUNC
+ */
+HWTEST_F(PixelMapNdk2Test, OH_PixelmapNative_CreateScaledPixelMapWithAntiAliasing, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PixelMapNdk2Test: OH_PixelmapNative_CreateScaledPixelMapWithAntiAliasing start";
+    OH_PixelmapNative *srcPixelmap = nullptr;
+    CreatePixelmapNative(&srcPixelmap);
+    EXPECT_NE(srcPixelmap, nullptr);
+
+    OH_Pixelmap_ImageInfo *srcImageInfoBefore = nullptr;
+    OH_PixelmapImageInfo_Create(&srcImageInfoBefore);
+    OH_PixelmapNative_GetImageInfo(srcPixelmap, srcImageInfoBefore);
+
+    OH_PixelmapNative *dstPixelmap = nullptr;
+    float scaleX = 0.5;
+    float scaleY = 0.5;
+    Image_ErrorCode ret = OH_PixelmapNative_CreateScaledPixelMapWithAntiAliasing(srcPixelmap, &dstPixelmap,
+        scaleX, scaleY, OH_PixelmapNative_AntiAliasingLevel::OH_PixelmapNative_AntiAliasing_HIGH);
+    EXPECT_EQ(ret, IMAGE_SUCCESS);
+
+    EXPECT_NE(dstPixelmap, nullptr);
+    OH_Pixelmap_ImageInfo *dstImageInfo = nullptr;
+    OH_PixelmapImageInfo_Create(&dstImageInfo);
+    OH_PixelmapNative_GetImageInfo(dstPixelmap, dstImageInfo);
+
+    OH_Pixelmap_ImageInfo *srcImageInfoAfter = nullptr;
+    OH_PixelmapImageInfo_Create(&srcImageInfoAfter);
+    OH_PixelmapNative_GetImageInfo(srcPixelmap, srcImageInfoAfter);
+    EXPECT_EQ(CompareImageInfo(srcImageInfoAfter, srcImageInfoBefore), true);
+
+    OH_PixelmapNative *sameSrcPixelmap = nullptr;
+    CreatePixelmapNative(&sameSrcPixelmap);
+    EXPECT_NE(sameSrcPixelmap, nullptr);
+    ret = OH_PixelmapNative_ScaleWithAntiAliasing(sameSrcPixelmap, scaleX, scaleY,
+        OH_PixelmapNative_AntiAliasingLevel::OH_PixelmapNative_AntiAliasing_HIGH);
+    EXPECT_EQ(ret, IMAGE_SUCCESS);
+
+    OH_Pixelmap_ImageInfo *sameSrcImageInfo = nullptr;
+    OH_PixelmapImageInfo_Create(&sameSrcImageInfo);
+    OH_PixelmapNative_GetImageInfo(sameSrcPixelmap, sameSrcImageInfo);
+    EXPECT_EQ(CompareImageInfo(sameSrcImageInfo, dstImageInfo), true);
+
+    GTEST_LOG_(INFO) << "PixelMapNdk2Test: OH_PixelmapNative_CreateScaledPixelMapWithAntiAliasing end";
+}
+
+/**
+ * @tc.name: OH_PixelmapNative_CreateScaledPixelMap
+ * @tc.desc: OH_PixelmapNative_CreateScaledPixelMap
+ * @tc.type: FUNC
+ */
+HWTEST_F(PixelMapNdk2Test, OH_PixelmapNative_CreateScaledPixelMap, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PixelMapNdk2Test: OH_PixelmapNative_CreateScaledPixelMap start";
+    OH_PixelmapNative *srcPixelmap = nullptr;
+    CreatePixelmapNative(&srcPixelmap);
+    EXPECT_NE(srcPixelmap, nullptr);
+
+    OH_Pixelmap_ImageInfo *srcImageInfoBefore = nullptr;
+    OH_PixelmapImageInfo_Create(&srcImageInfoBefore);
+    OH_PixelmapNative_GetImageInfo(srcPixelmap, srcImageInfoBefore);
+
+    OH_PixelmapNative *dstPixelmap = nullptr;
+    float scaleX = 1.5;
+    float scaleY = 1.5;
+    Image_ErrorCode ret = OH_PixelmapNative_CreateScaledPixelMap(srcPixelmap, &dstPixelmap, scaleX, scaleY);
+    EXPECT_EQ(ret, IMAGE_SUCCESS);
+
+    EXPECT_NE(dstPixelmap, nullptr);
+    OH_Pixelmap_ImageInfo *dstImageInfo = nullptr;
+    OH_PixelmapImageInfo_Create(&dstImageInfo);
+    OH_PixelmapNative_GetImageInfo(dstPixelmap, dstImageInfo);
+
+    OH_Pixelmap_ImageInfo *srcImageInfoAfter = nullptr;
+    OH_PixelmapImageInfo_Create(&srcImageInfoAfter);
+    OH_PixelmapNative_GetImageInfo(srcPixelmap, srcImageInfoAfter);
+    EXPECT_EQ(CompareImageInfo(srcImageInfoAfter, srcImageInfoBefore), true);
+
+    OH_PixelmapNative *sameSrcPixelmap = nullptr;
+    CreatePixelmapNative(&sameSrcPixelmap);
+    EXPECT_NE(sameSrcPixelmap, nullptr);
+    ret = OH_PixelmapNative_Scale(sameSrcPixelmap, scaleX, scaleY);
+    EXPECT_EQ(ret, IMAGE_SUCCESS);
+
+    OH_Pixelmap_ImageInfo *sameSrcImageInfo = nullptr;
+    OH_PixelmapImageInfo_Create(&sameSrcImageInfo);
+    OH_PixelmapNative_GetImageInfo(sameSrcPixelmap, sameSrcImageInfo);
+    EXPECT_EQ(CompareImageInfo(sameSrcImageInfo, dstImageInfo), true);
+
+    GTEST_LOG_(INFO) << "PixelMapNdk2Test: OH_PixelmapNative_CreateScaledPixelMap end";
 }
 
 /**

@@ -436,7 +436,8 @@ HWTEST_F(PictureNdkTest, OH_AuxiliaryPictureNative_SetInfoTest001, TestSize.Leve
     OH_AuxiliaryPictureInfo_Create(&infoptr);
 
     Image_ErrorCode ret = OH_AuxiliaryPictureNative_SetInfo(picture, infoptr);
-    EXPECT_EQ(ret, IMAGE_SUCCESS);
+    Image_ErrorCode expectRet = ImageUtils::GetAPIVersion() > APIVERSION_13 ? IMAGE_BAD_PARAMETER : IMAGE_SUCCESS;
+    EXPECT_EQ(ret, expectRet);
     OH_AuxiliaryPictureNative_Release(picture);
 }
 
