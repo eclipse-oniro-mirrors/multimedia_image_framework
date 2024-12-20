@@ -83,7 +83,7 @@ bool OH_PixelmapNative::Ref()
     if (refCount_ == UINT32_MAX) {
         return false;
     }
-    refCount_.fetch_add(1, std::memory_order_relaxed);
+    refCount_++;
     return true;
 }
 
@@ -93,7 +93,7 @@ bool OH_PixelmapNative::Unref()
     if (refCount_ == 0) {
         return false;
     }
-    refCount_.fetch_sub(1, std::memory_order_relaxed);
+    refCount_--;
     return true;
 }
 
