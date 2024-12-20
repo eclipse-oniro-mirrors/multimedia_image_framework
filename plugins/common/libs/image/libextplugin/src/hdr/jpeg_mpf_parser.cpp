@@ -293,7 +293,7 @@ bool JpegMpfParser::ParsingFragmentMetadata(uint8_t* data, uint32_t size, Rect& 
 
 static void WriteMPEntryToBytes(vector<uint8_t>& bytes, uint32_t& offset, std::vector<SingleJpegImage> images)
 {
-    for (int i = 0; i < images.size(); i++) {
+    for (int i = 0; i < static_cast<int>(images.size()); i++) {
         uint32_t attributeData = 0;
         if (i == 0) {
             // 0x20: representative image flag / 0x03: primary image type code;
