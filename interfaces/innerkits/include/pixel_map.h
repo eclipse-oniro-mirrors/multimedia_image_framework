@@ -565,7 +565,7 @@ private:
     std::shared_ptr<std::mutex> unmapMutex_ = std::make_shared<std::mutex>();
 
     // used to mark whether DMA memory should be refreshed
-    mutable bool isMemoryDirty_;
+    mutable bool isMemoryDirty_ = false;
 };
 } // namespace Media
 } // namespace OHOS

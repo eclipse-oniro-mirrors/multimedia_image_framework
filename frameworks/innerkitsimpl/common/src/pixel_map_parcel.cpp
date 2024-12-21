@@ -14,10 +14,10 @@
  */
 
 #include "pixel_map_parcel.h"
-#include <sys/ioctl.h>
 #include <unistd.h>
 #include "image_log.h"
 #include "media_errors.h"
+#include "pixel_map_utils.h"
 #ifndef _WIN32
 #include "securec.h"
 #else
@@ -62,19 +62,6 @@ void PixelMapParcel::ReleaseMemory(AllocatorType allocType, void *addr, void *co
     }
 }
 
-static bool CheckAshmemSize(const int &fd, const int32_t &bufferSize)
-{
-#if !defined(_WIN32) && !defined(_APPLE) && !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
-    if (fd < 0 || bufferSize <= 0) {
-        return false;
-    }
-    int32_t ashmemSize = TEMP_FAILURE_RETRY(ioctl(fd, ASHMEM_GET_SIZE, nullptr));
-    return ashmemSize == bufferSize;
-#else
-    return false;
-#endif
-}
-
 uint8_t *PixelMapParcel::ReadAshmemDataFromParcel(OHOS::MessageParcel& data, int32_t bufferSize, int32_t*& context)
 {
     uint8_t *base = nullptr;
@@ -84,6 +71,7 @@ uint8_t *PixelMapParcel::ReadAshmemDataFromParcel(OHOS::MessageParcel& data, int
         return nullptr;
     }
     if (!CheckAshmemSize(fd, bufferSize)) {
+        IMAGE_LOGE("bufferSize does not match the fileDescriptor");
         return nullptr;
     }
     void* ptr = ::mmap(nullptr, bufferSize, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
