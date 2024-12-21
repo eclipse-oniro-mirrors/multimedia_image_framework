@@ -313,10 +313,10 @@ public:
         exifMetadata_ = ptr;
     }
 
-    NATIVEEXPORT virtual uint32_t GetImagePropertyInt(const std::string &key, int32_t &value);
-    NATIVEEXPORT virtual uint32_t GetImagePropertyString(const std::string &key, std::string &value);
-    NATIVEEXPORT virtual uint32_t ModifyImageProperty(const std::string &key, const std::string &value);
-    NATIVEEXPORT virtual uint32_t SetMemoryName(const std::string &pixelMapName);
+    NATIVEEXPORT uint32_t GetImagePropertyInt(const std::string &key, int32_t &value);
+    NATIVEEXPORT uint32_t GetImagePropertyString(const std::string &key, std::string &value);
+    NATIVEEXPORT uint32_t ModifyImageProperty(const std::string &key, const std::string &value);
+    NATIVEEXPORT uint32_t SetMemoryName(const std::string &pixelMapName);
     NATIVEEXPORT virtual std::unique_ptr<PixelMap> Clone(int32_t &errorCode);
 
     NATIVEEXPORT bool IsHdr();
