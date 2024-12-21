@@ -1693,10 +1693,31 @@ uint32_t PixelMap::ReadPixels(const uint64_t &bufferSize, const uint32_t &offset
     ImageInfo dstImageInfo =
         MakeImageInfo(region.width, region.height, PixelFormat::BGRA_8888, AlphaType::IMAGE_ALPHA_TYPE_UNPREMUL);
     Position srcPosition { region.left, region.top };
-    if (!PixelConvertAdapter::ReadPixelsConvert(data_, srcPosition, rowStride_, imageInfo_, dst + offset, stride,
-        dstImageInfo)) {
-        IMAGE_LOGE("read pixels by rect call ReadPixelsConvert fail.");
-        return ERR_IMAGE_READ_PIXELMAP_FAILED;
+    if (imageInfo_.pixelFormat == PixelFormat::ARGB_8888) {
+        int32_t srcRowBytes = imageInfo_.size.width * ImageUtils::GetPixelBytes(imageInfo_.pixelFormat);
+        std::unique_ptr<uint8_t[]> srcData = std::make_unique<uint8_t[]>(srcRowBytes * imageInfo_.size.height);
+        if (srcData == nullptr) {
+            IMAGE_LOGE("ReadPixels make srcData fail.");
+            return ERR_IMAGE_READ_PIXELMAP_FAILED;
+        }
+        void* outData = srcData.get();
+        int fd = 0;
+        if (!CopyPixMapToDst(*this, outData, fd, GetByteCount())) {
+            IMAGE_LOGE("ReadPixels CopyPixMapToDst fail.");
+            return ERR_IMAGE_READ_PIXELMAP_FAILED;
+        }
+        PixelConvertAdapter::ARGBToRGBA(srcData.get(), srcRowBytes * imageInfo_.size.height);
+        if (!PixelConvertAdapter::ReadPixelsConvert(srcData.get(), srcPosition, srcRowBytes, imageInfo_,
+            dst + offset, stride, dstImageInfo)) {
+            IMAGE_LOGE("ReadPixels ReadPixelsConvert fail.");
+            return ERR_IMAGE_READ_PIXELMAP_FAILED;
+        }
+    } else {
+        if (!PixelConvertAdapter::ReadPixelsConvert(data_, srcPosition, rowStride_, imageInfo_, dst + offset, stride,
+            dstImageInfo)) {
+            IMAGE_LOGE("read pixels by rect call ReadPixelsConvert fail.");
+            return ERR_IMAGE_READ_PIXELMAP_FAILED;
+        }
     }
     return SUCCESS;
 }
