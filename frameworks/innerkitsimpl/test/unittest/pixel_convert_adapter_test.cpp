@@ -390,6 +390,31 @@ HWTEST_F(PixelConvertAdapterTest, PixelConvertAdapterTest0010, TestSize.Level3)
     ASSERT_EQ(ret, false);
     GTEST_LOG_(INFO) << "PixelConvertAdapterTest: PixelConvertAdapterTest0010 end";
 }
+
+/**
+ * @tc.name: PixelConvertAdapterTest0011
+ * @tc.desc: WritePixelsConvert
+ * @tc.type: FUNC
+ */
+HWTEST_F(PixelConvertAdapterTest, PixelConvertAdapterTest0011, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PixelConvertAdapterTest: PixelConvertAdapterTest0011 start";
+    const int width = 4;
+    const int height = 6;
+    const int bytes = 4;
+    std::unique_ptr<uint8_t[]> srcData = std::make_unique<uint8_t[]>(width * height * bytes);
+    if (srcData == nullptr) {
+        GTEST_LOG_(INFO) << "PixelConvertAdapterTest: PixelConvertAdapterTest0011 fail.";
+        return;
+    }
+    for (int i = 0; i < width * height * bytes; i++) {
+        srcData.get()[i] = i;
+    }
+    bool ret = PixelConvertAdapter::ARGBToRGBA(srcData.get(), width * height * bytes);
+    ASSERT_EQ(ret, true);
+
+    GTEST_LOG_(INFO) << "PixelConvertAdapterTest: PixelConvertAdapterTest0011 end";
+}
 }
 }
 

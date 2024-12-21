@@ -153,7 +153,7 @@ static void BitConvert(T *destinationRow, const uint8_t *sourceRow, uint32_t sou
     for (uint32_t i = 1; i < sourceWidth; i++) {
         bitIndex = i % BYTE_BITS;
         currentSource = *(sourceRow + i / BYTE_BITS);
-        if (BYTE_BITS_MAX_INDEX < bitIndex) {
+        if (bitIndex > BYTE_BITS_MAX_INDEX) {
             continue;
         }
         destinationRow[i] = ((currentSource >> (BYTE_BITS_MAX_INDEX - bitIndex)) & GET_1_BIT) ? white : black;

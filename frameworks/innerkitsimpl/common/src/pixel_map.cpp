@@ -1747,10 +1747,31 @@ uint32_t PixelMap::ReadPixels(const uint64_t &bufferSize, const uint32_t &offset
     ImageInfo dstImageInfo =
         MakeImageInfo(region.width, region.height, PixelFormat::BGRA_8888, AlphaType::IMAGE_ALPHA_TYPE_UNPREMUL);
     Position srcPosition { region.left, region.top };
-    if (!PixelConvertAdapter::ReadPixelsConvert(data_, srcPosition, rowStride_, imageInfo_, dst + offset, stride,
-        dstImageInfo)) {
-        IMAGE_LOGE("read pixels by rect call ReadPixelsConvert fail.");
-        return ERR_IMAGE_READ_PIXELMAP_FAILED;
+    if (imageInfo_.pixelFormat == PixelFormat::ARGB_8888) {
+        int32_t srcRowBytes = imageInfo_.size.width * ImageUtils::GetPixelBytes(imageInfo_.pixelFormat);
+        std::unique_ptr<uint8_t[]> srcData = std::make_unique<uint8_t[]>(srcRowBytes * imageInfo_.size.height);
+        if (srcData == nullptr) {
+            IMAGE_LOGE("ReadPixels make srcData fail.");
+            return ERR_IMAGE_READ_PIXELMAP_FAILED;
+        }
+        void* outData = srcData.get();
+        int fd = 0;
+        if (!CopyPixMapToDst(*this, outData, fd, GetByteCount())) {
+            IMAGE_LOGE("ReadPixels CopyPixMapToDst fail.");
+            return ERR_IMAGE_READ_PIXELMAP_FAILED;
+        }
+        PixelConvertAdapter::ARGBToRGBA(srcData.get(), srcRowBytes * imageInfo_.size.height);
+        if (!PixelConvertAdapter::ReadPixelsConvert(srcData.get(), srcPosition, srcRowBytes, imageInfo_,
+            dst + offset, stride, dstImageInfo)) {
+            IMAGE_LOGE("ReadPixels ReadPixelsConvert fail.");
+            return ERR_IMAGE_READ_PIXELMAP_FAILED;
+        }
+    } else {
+        if (!PixelConvertAdapter::ReadPixelsConvert(data_, srcPosition, rowStride_, imageInfo_, dst + offset, stride,
+            dstImageInfo)) {
+            IMAGE_LOGE("read pixels by rect call ReadPixelsConvert fail.");
+            return ERR_IMAGE_READ_PIXELMAP_FAILED;
+        }
     }
     return SUCCESS;
 }
@@ -1839,8 +1860,8 @@ uint32_t PixelMap::WritePixel(const Position &pos, const uint32_t &color)
             "Width() %{public}d,  Height() %{public}d, ", pos.x, pos.y, GetWidth(), GetHeight());
         return ERR_IMAGE_INVALID_PARAMETER;
     }
-    if (!IsEditable()) {
-        IMAGE_LOGE("write pixel by pos pixelmap is not editable.");
+    if (!IsEditable() || !modifiable_) {
+        IMAGE_LOGE("write pixel by pos pixelmap is not editable or modifiable.");
         return ERR_IMAGE_PIXELMAP_NOT_ALLOW_MODIFY;
     }
     if (!ImageUtils::IsValidImageInfo(imageInfo_)) {
@@ -1871,8 +1892,8 @@ uint32_t PixelMap::WritePixels(const uint8_t *source, const uint64_t &bufferSize
         IMAGE_LOGE("write pixel by rect input parameter fail.");
         return ERR_IMAGE_INVALID_PARAMETER;
     }
-    if (!IsEditable()) {
-        IMAGE_LOGE("write pixel by rect pixelmap data is not editable.");
+    if (!IsEditable() || !modifiable_) {
+        IMAGE_LOGE("write pixel by rect pixelmap data is not editable or modifiable.");
         return ERR_IMAGE_PIXELMAP_NOT_ALLOW_MODIFY;
     }
     if (!ImageUtils::IsValidImageInfo(imageInfo_)) {
@@ -1908,8 +1929,8 @@ uint32_t PixelMap::WritePixels(const uint8_t *source, const uint64_t &bufferSize
             static_cast<unsigned long long>(bufferSize), pixelsSize_);
         return ERR_IMAGE_INVALID_PARAMETER;
     }
-    if (!IsEditable()) {
-        IMAGE_LOGE("write pixels by buffer pixelmap data is not editable.");
+    if (!IsEditable() || !modifiable_) {
+        IMAGE_LOGE("write pixels by buffer pixelmap data is not editable or modifiable.");
         return ERR_IMAGE_PIXELMAP_NOT_ALLOW_MODIFY;
     }
     if (!ImageUtils::IsValidImageInfo(imageInfo_)) {
@@ -1951,8 +1972,8 @@ uint32_t PixelMap::WritePixels(const uint8_t *source, const uint64_t &bufferSize
 
 bool PixelMap::WritePixels(const uint32_t &color)
 {
-    if (!IsEditable()) {
-        IMAGE_LOGE("erase pixels by color pixelmap data is not editable.");
+    if (!IsEditable() || !modifiable_) {
+        IMAGE_LOGE("erase pixels by color pixelmap data is not editable or modifiable.");
         return false;
     }
     if (!ImageUtils::IsValidImageInfo(imageInfo_)) {
@@ -2121,11 +2142,13 @@ uint8_t *PixelMap::ReadHeapDataFromParcel(Parcel &parcel, int32_t bufferSize)
     return base;
 }
 
-uint8_t *PixelMap::ReadAshmemDataFromParcel(Parcel &parcel, int32_t bufferSize)
+uint8_t *PixelMap::ReadAshmemDataFromParcel(Parcel &parcel, int32_t bufferSize,
+    std::function<int(Parcel &parcel, std::function<int(Parcel&)> readFdDefaultFunc)> readSafeFdFunc)
 {
     uint8_t *base = nullptr;
 #if !defined(_WIN32) && !defined(_APPLE) && !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
-    int fd = ReadFileDescriptor(parcel);
+    auto readFdDefaultFunc = [](Parcel &parcel) -> int { return ReadFileDescriptor(parcel); };
+    int fd = ((readSafeFdFunc != nullptr) ? readSafeFdFunc(parcel, readFdDefaultFunc) : readFdDefaultFunc(parcel));
     if (!CheckAshmemSize(fd, bufferSize)) {
         IMAGE_LOGE("ReadAshmemDataFromParcel check ashmem size failed, fd:[%{public}d].", fd);
         return nullptr;
@@ -2161,13 +2184,14 @@ uint8_t *PixelMap::ReadAshmemDataFromParcel(Parcel &parcel, int32_t bufferSize)
     return base;
 }
 
-uint8_t *PixelMap::ReadImageData(Parcel &parcel, int32_t bufferSize)
+uint8_t *PixelMap::ReadImageData(Parcel &parcel, int32_t bufferSize,
+    std::function<int(Parcel &parcel, std::function<int(Parcel&)> readFdDefaultFunc)> readSafeFdFunc)
 {
 #if !defined(_WIN32) && !defined(_APPLE) &&!defined(IOS_PLATFORM) &&!defined(ANDROID_PLATFORM)
     if (static_cast<unsigned int>(bufferSize) <= MIN_IMAGEDATA_SIZE) {
         return ReadHeapDataFromParcel(parcel, bufferSize);
     } else {
-        return ReadAshmemDataFromParcel(parcel, bufferSize);
+        return ReadAshmemDataFromParcel(parcel, bufferSize, readSafeFdFunc);
     }
 #else
     return ReadHeapDataFromParcel(parcel, bufferSize);
@@ -2697,14 +2721,15 @@ bool PixelMap::ReadBufferSizeFromParcel(Parcel& parcel, const ImageInfo& imgInfo
 }
 
 #if !defined(_WIN32) && !defined(_APPLE) && !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
-bool ReadDmaMemInfoFromParcel(Parcel &parcel, PixelMemInfo &pixelMemInfo)
+bool ReadDmaMemInfoFromParcel(Parcel &parcel, PixelMemInfo &pixelMemInfo,
+    std::function<int(Parcel &parcel, std::function<int(Parcel&)> readFdDefaultFunc)> readSafeFdFunc)
 {
     sptr<SurfaceBuffer> surfaceBuffer = SurfaceBuffer::Create();
     if (surfaceBuffer == nullptr) {
         IMAGE_LOGE("SurfaceBuffer failed to be created");
         return false;
     }
-    GSError ret = surfaceBuffer->ReadFromMessageParcel(static_cast<MessageParcel&>(parcel));
+    GSError ret = surfaceBuffer->ReadFromMessageParcel(static_cast<MessageParcel&>(parcel), readSafeFdFunc);
     if (ret != GSError::GSERROR_OK) {
         IMAGE_LOGE("SurfaceBuffer read from message parcel failed: %{public}s", GSErrorStr(ret).c_str());
         return false;
@@ -2718,11 +2743,13 @@ bool ReadDmaMemInfoFromParcel(Parcel &parcel, PixelMemInfo &pixelMemInfo)
 }
 #endif
 
-bool PixelMap::ReadMemInfoFromParcel(Parcel &parcel, PixelMemInfo &pixelMemInfo, PIXEL_MAP_ERR &error)
+bool PixelMap::ReadMemInfoFromParcel(Parcel &parcel, PixelMemInfo &pixelMemInfo, PIXEL_MAP_ERR &error,
+    std::function<int(Parcel &parcel, std::function<int(Parcel&)> readFdDefaultFunc)> readSafeFdFunc)
 {
 #if !defined(_WIN32) && !defined(_APPLE) && !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
     if (pixelMemInfo.allocatorType == AllocatorType::SHARE_MEM_ALLOC) {
-        int fd = ReadFileDescriptor(parcel);
+        auto readFdDefaultFunc = [](Parcel &parcel) -> int { return ReadFileDescriptor(parcel); };
+        int fd = ((readSafeFdFunc != nullptr) ? readSafeFdFunc(parcel, readFdDefaultFunc) : readFdDefaultFunc(parcel));
         if (!CheckAshmemSize(fd, pixelMemInfo.bufferSize, pixelMemInfo.isAstc)) {
             PixelMap::ConstructPixelMapError(error, ERR_IMAGE_GET_FD_BAD, "fd acquisition failed");
             ::close(fd);
@@ -2747,12 +2774,12 @@ bool PixelMap::ReadMemInfoFromParcel(Parcel &parcel, PixelMemInfo &pixelMemInfo,
         *static_cast<int32_t *>(pixelMemInfo.context) = fd;
         pixelMemInfo.base = static_cast<uint8_t *>(ptr);
     } else if (pixelMemInfo.allocatorType == AllocatorType::DMA_ALLOC) {
-        if (!ReadDmaMemInfoFromParcel(parcel, pixelMemInfo)) {
+        if (!ReadDmaMemInfoFromParcel(parcel, pixelMemInfo, readSafeFdFunc)) {
             PixelMap::ConstructPixelMapError(error, ERR_IMAGE_GET_DATA_ABNORMAL, "ReadFromMessageParcel failed");
             return false;
         }
     } else { // Any other allocator types will malloc HEAP memory
-        pixelMemInfo.base = ReadImageData(parcel, pixelMemInfo.bufferSize);
+        pixelMemInfo.base = ReadImageData(parcel, pixelMemInfo.bufferSize, readSafeFdFunc);
         if (pixelMemInfo.base == nullptr) {
             PixelMap::ConstructPixelMapError(error, ERR_IMAGE_GET_DATA_ABNORMAL, "ReadImageData failed");
             return false;
@@ -2793,10 +2820,11 @@ bool PixelMap::UpdatePixelMapMemInfo(PixelMap *pixelMap, ImageInfo &imgInfo, Pix
     return true;
 }
 
-PixelMap *PixelMap::Unmarshalling(Parcel &parcel)
+PixelMap *PixelMap::Unmarshalling(Parcel &parcel,
+    std::function<int(Parcel &parcel, std::function<int(Parcel&)> readFdDefaultFunc)> readSafeFdFunc)
 {
     PIXEL_MAP_ERR error;
-    PixelMap* dstPixelMap = PixelMap::Unmarshalling(parcel, error);
+    PixelMap* dstPixelMap = PixelMap::Unmarshalling(parcel, error, readSafeFdFunc);
     if (dstPixelMap == nullptr || error.errorCode != SUCCESS) {
         IMAGE_LOGE("unmarshalling failed errorCode:%{public}d, errorInfo:%{public}s",
             error.errorCode, error.errorInfo.c_str());
@@ -2851,12 +2879,17 @@ PixelMap *PixelMap::FinishUnmarshalling(PixelMap *pixelMap, Parcel &parcel,
     return pixelMap;
 }
 
-PixelMap *PixelMap::Unmarshalling(Parcel &parcel, PIXEL_MAP_ERR &error)
+PixelMap *PixelMap::Unmarshalling(Parcel &parcel, PIXEL_MAP_ERR &error,
+    std::function<int(Parcel &parcel, std::function<int(Parcel&)> readFdDefaultFunc)> readSafeFdFunc)
 {
     ImageInfo imgInfo;
     PixelMemInfo pixelMemInfo;
     PixelMap* pixelMap = StartUnmarshalling(parcel, imgInfo, pixelMemInfo, error);
-    if (pixelMap && !ReadMemInfoFromParcel(parcel, pixelMemInfo, error)) {
+    if (!pixelMap) {
+        IMAGE_LOGE("StartUnmarshalling: get pixelmap failed");
+        return nullptr;
+    }
+    if (!ReadMemInfoFromParcel(parcel, pixelMemInfo, error)) {
         IMAGE_LOGE("Unmarshalling: read memInfo failed");
         delete pixelMap;
         return nullptr;
@@ -3453,17 +3486,29 @@ uint32_t PixelMap::ConvertAlphaFormat(PixelMap &wPixelMap, const bool isPremul)
     return SUCCESS;
 }
 
+static uint32_t ValidateSetAlpha(float percent, bool modifiable, AlphaType alphaType)
+{
+    if (!modifiable) {
+        IMAGE_LOGE("[PixelMap] SetAlpha can't be performed: PixelMap is not modifiable");
+        return ERR_IMAGE_PIXELMAP_NOT_ALLOW_MODIFY;
+    }
+    if (alphaType == AlphaType::IMAGE_ALPHA_TYPE_UNKNOWN || alphaType == AlphaType::IMAGE_ALPHA_TYPE_OPAQUE) {
+        IMAGE_LOGE("[PixelMap] SetAlpha could not set alpha on %{public}s", GetNamedAlphaType(alphaType).c_str());
+        return ERR_IMAGE_DATA_UNSUPPORT;
+    }
+    if (percent <= 0 || percent > 1) {
+        IMAGE_LOGE("[PixelMap] SetAlpha input should satisfy (0 < input <= 1). Current input is %{public}f", percent);
+        return ERR_IMAGE_INVALID_PARAMETER;
+    }
+    return SUCCESS;
+}
+
 uint32_t PixelMap::SetAlpha(const float percent)
 {
     auto alphaType = GetAlphaType();
-    if (alphaType == AlphaType::IMAGE_ALPHA_TYPE_UNKNOWN || alphaType == AlphaType::IMAGE_ALPHA_TYPE_OPAQUE) {
-        IMAGE_LOGE("Could not set alpha on %{public}s", GetNamedAlphaType(alphaType).c_str());
-        return ERR_IMAGE_DATA_UNSUPPORT;
-    }
-
-    if (percent <= 0 || percent > 1) {
-        IMAGE_LOGE("Set alpha input should (0 < input <= 1). Current input %{public}f", percent);
-        return ERR_IMAGE_INVALID_PARAMETER;
+    uint32_t retCode = ValidateSetAlpha(percent, modifiable_, alphaType);
+    if (retCode != SUCCESS) {
+        return retCode;
     }
 
     bool isPixelPremul = alphaType == AlphaType::IMAGE_ALPHA_TYPE_PREMUL;
@@ -3491,7 +3536,7 @@ uint32_t PixelMap::SetAlpha(const float percent)
     for (uint32_t i = 0; i < uPixelsSize; i += static_cast<uint32_t>(pixelBytes_)) {
         if (i + pixelBytes_ > uPixelsSize) {
             IMAGE_LOGE("In setAlpha, the number of pixelBytes to be configure: %{public}d"
-                " is greater than the remaining size of pixelSize: %{public}d", pixelBytes_, pixelsSize - i);
+                " is greater than the remaining size of pixelSize: %{public}d", pixelBytes_, uPixelsSize - i);
             break;
         }
         uint8_t* pixel = data_ + i;
@@ -3670,6 +3715,11 @@ void DrawImage(bool rectStaysRect, const AntiAliasingOption &option, SkCanvas &c
 
 bool PixelMap::DoTranslation(TransInfos &infos, const AntiAliasingOption &option)
 {
+    if (!modifiable_) {
+        IMAGE_LOGE("[PixelMap] DoTranslation can't be performed: PixelMap is not modifiable");
+        return false;
+    }
+
     std::lock_guard<std::mutex> lock(*translationMutex_);
     ImageInfo imageInfo;
     GetImageInfo(imageInfo);
@@ -3743,6 +3793,10 @@ void PixelMap::scale(float xAxis, float yAxis, const AntiAliasingOption &option)
     ImageTrace imageTrace("PixelMap scale with option");
     if (option == AntiAliasingOption::SLR) {
 #if !defined(_WIN32) && !defined(_APPLE) && !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
+        if (!modifiable_) {
+            IMAGE_LOGE("[PixelMap] scale can't be performed: PixelMap is not modifiable");
+            return;
+        }
         auto start = std::chrono::high_resolution_clock::now();
         ImageInfo tmpInfo;
         GetImageInfo(tmpInfo);
@@ -3842,10 +3896,14 @@ void PixelMap::CopySurfaceBufferInfo(void *data)
 
 uint32_t PixelMap::crop(const Rect &rect)
 {
+    if (!modifiable_) {
+        IMAGE_LOGE("[PixelMap] crop can't be performed: PixelMap is not modifiable");
+        return ERR_IMAGE_PIXELMAP_NOT_ALLOW_MODIFY;
+    }
+
     ImageTrace imageTrace("PixelMap crop");
     ImageInfo imageInfo;
     GetImageInfo(imageInfo);
-
     SkTransInfo src;
 #if !defined(_WIN32) && !defined(_APPLE) && !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
     GenSrcTransInfo(src, imageInfo, this, ToSkColorSpace(this));

@@ -216,6 +216,15 @@ public:
         return editable_;
     }
 
+    NATIVEEXPORT virtual void SetModifiable(bool modifiable)
+    {
+        modifiable_ = modifiable;
+    }
+    NATIVEEXPORT virtual bool IsModifiable()
+    {
+        return modifiable_;
+    }
+
     NATIVEEXPORT virtual bool IsTransformered()
     {
         return isTransformered_;
@@ -238,8 +247,10 @@ public:
     }
 
     NATIVEEXPORT virtual bool Marshalling(Parcel &data) const override;
-    NATIVEEXPORT static PixelMap *Unmarshalling(Parcel &data);
-    NATIVEEXPORT static PixelMap *Unmarshalling(Parcel &parcel, PIXEL_MAP_ERR &error);
+    NATIVEEXPORT static PixelMap *Unmarshalling(Parcel &data,
+        std::function<int(Parcel &parcel, std::function<int(Parcel&)> readFdDefaultFunc)> readSafeFdFunc = nullptr);
+    NATIVEEXPORT static PixelMap *Unmarshalling(Parcel &parcel, PIXEL_MAP_ERR &error,
+        std::function<int(Parcel &parcel, std::function<int(Parcel&)> readFdDefaultFunc)> readSafeFdFunc = nullptr);
     NATIVEEXPORT virtual bool EncodeTlv(std::vector<uint8_t> &buff) const;
     NATIVEEXPORT static PixelMap *DecodeTlv(std::vector<uint8_t> &buff);
     NATIVEEXPORT virtual void SetImageYUVInfo(YUVDataInfo &yuvinfo)
@@ -444,7 +455,8 @@ protected:
     bool ReadBufferSizeFromParcel(Parcel& parcel, const ImageInfo& imgInfo, PixelMemInfo& memInfo,
         PIXEL_MAP_ERR& error);
     bool WriteMemInfoToParcel(Parcel &parcel, const int32_t &bufferSize) const;
-    static bool ReadMemInfoFromParcel(Parcel &parcel, PixelMemInfo &pixelMemInfo, PIXEL_MAP_ERR &error);
+    static bool ReadMemInfoFromParcel(Parcel &parcel, PixelMemInfo &pixelMemInfo, PIXEL_MAP_ERR &error,
+        std::function<int(Parcel &parcel, std::function<int(Parcel&)> readFdDefaultFunc)> readSafeFdFunc = nullptr);
     bool WriteTransformDataToParcel(Parcel &parcel) const;
     bool ReadTransformData(Parcel &parcel, PixelMap *pixelMap);
     bool WriteAstcRealSizeToParcel(Parcel &parcel) const;
@@ -466,11 +478,8 @@ protected:
 
     bool CheckValidParam(int32_t x, int32_t y)
     {
-        return isUnMap_ || (data_ == nullptr) ||
-                       (x >= imageInfo_.size.width) || (x < 0) || (y >= imageInfo_.size.height) ||
-                       (y < 0) || (pixelsSize_ < static_cast<uint64_t>(rowDataSize_) * imageInfo_.size.height)
-                   ? false
-                   : true;
+        return isUnMap_ || data_ == nullptr || x >= imageInfo_.size.width || x < 0 || y >= imageInfo_.size.height ||
+            y < 0 || (pixelsSize_ < static_cast<uint64_t>(rowDataSize_) * imageInfo_.size.height) ? false : true;
     }
 
     static PixelMap *StartUnmarshalling(Parcel &parcel, ImageInfo &imgInfo,
@@ -482,9 +491,11 @@ protected:
     static bool UpdatePixelMapMemInfo(PixelMap *pixelMap, ImageInfo &imgInfo, PixelMemInfo &pixelMemInfo);
     bool WriteImageData(Parcel &parcel, size_t size) const;
     bool WriteAshmemDataToParcel(Parcel &parcel, size_t size) const;
-    static uint8_t *ReadImageData(Parcel &parcel, int32_t size);
+    static uint8_t *ReadImageData(Parcel &parcel, int32_t size,
+        std::function<int(Parcel &parcel, std::function<int(Parcel&)> readFdDefaultFunc)> readSafeFdFunc = nullptr);
     static uint8_t *ReadHeapDataFromParcel(Parcel &parcel, int32_t bufferSize);
-    static uint8_t *ReadAshmemDataFromParcel(Parcel &parcel, int32_t bufferSize);
+    static uint8_t *ReadAshmemDataFromParcel(Parcel &parcel, int32_t bufferSize,
+        std::function<int(Parcel &parcel, std::function<int(Parcel&)> readFdDefaultFunc)> readSafeFdFunc = nullptr);
     static int ReadFileDescriptor(Parcel &parcel);
     static bool WriteFileDescriptor(Parcel &parcel, int fd);
     static bool ReadImageInfo(Parcel &parcel, ImageInfo &imgInfo);
@@ -523,6 +534,7 @@ protected:
     AllocatorType allocatorType_ = AllocatorType::SHARE_MEM_ALLOC;
     uint32_t pixelsSize_ = 0;
     bool editable_ = false;
+    bool modifiable_ = true; // If this is set to false, any modifications to the pixels data is not allowed
     bool useSourceAsResponse_ = false;
     bool isTransformered_ = false;
     std::shared_ptr<std::mutex> transformMutex_ = std::make_shared<std::mutex>();
@@ -561,7 +573,7 @@ private:
     std::shared_ptr<std::mutex> unmapMutex_ = std::make_shared<std::mutex>();
 
     // used to mark whether DMA memory should be refreshed
-    mutable bool isMemoryDirty_;
+    mutable bool isMemoryDirty_ = false;
 };
 } // namespace Media
 } // namespace OHOS

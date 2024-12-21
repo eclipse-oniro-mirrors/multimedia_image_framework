@@ -126,6 +126,8 @@ private:
 
     static napi_value Scale(napi_env env, napi_callback_info info);
     static napi_value ScaleSync(napi_env env, napi_callback_info info);
+    static napi_value CreateScaledPixelMap(napi_env env, napi_callback_info info);
+    static napi_value CreateScaledPixelMapSync(napi_env env, napi_callback_info info);
     static napi_value Translate(napi_env env, napi_callback_info info);
     static napi_value TranslateSync(napi_env env, napi_callback_info info);
     static napi_value Rotate(napi_env env, napi_callback_info info);

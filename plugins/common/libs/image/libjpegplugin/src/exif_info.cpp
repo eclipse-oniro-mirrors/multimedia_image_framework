@@ -423,7 +423,6 @@ EXIFInfo::~EXIFInfo()
         exif_data_unref(exifData_);
         exifData_ = nullptr;
     }
-    exifTags_.Clear();
 }
 
 static void inline DumpTagsMap(SafeMap<ExifTag, std::string> &tags)
@@ -908,6 +907,9 @@ void EXIFInfo::ReleaseExifData(unsigned char *tempBuf, ExifData *ptrExifData, un
 ExifEntry* EXIFInfo::InitExifTag(ExifData *exif, ExifIfd ifd, ExifTag tag)
 {
     ExifEntry *entry;
+    if (ifd < EXIF_IFD_0 || ifd > EXIF_IFD_COUNT) {
+        return nullptr;
+    }
     /* Return an existing tag if one exists */
     if (!(entry = exif_content_get_entry(exif->ifd[ifd], tag))) {
         /* Allocate a new entry */
