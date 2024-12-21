@@ -3218,7 +3218,7 @@ static void CloneExec(napi_env env, PixelMapAsyncContext* context)
         }
     } else {
         context->status = ERR_IMAGE_INIT_ABNORMAL;
-        IMAGE_LOGD("Clone has failed. do nothing");
+        IMAGE_LOGE("Clone has failed. do nothing");
     }
 }
 
