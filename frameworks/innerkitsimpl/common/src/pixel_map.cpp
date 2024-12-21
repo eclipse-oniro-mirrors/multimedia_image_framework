@@ -1006,27 +1006,20 @@ bool PixelMap::CopyPixelMap(PixelMap &source, PixelMap &dstPixelMap, int32_t &er
     return true;
 }
 
-static bool CheckClone(bool isAstc, unique_ptr<PixelMap> &pixelMap, ImageInfo imageInfo, int32_t &errorCode)
+bool CheckImageInfo(const ImageInfo &imageInfo, int32_t &errorCode, AllocatorType type, int32_t rowDataSize)
 {
-    if (isAstc) {
-        IMAGE_LOGE("[PixelMap] Does not support ASTCformat");
+    if (IsYUV(imageInfo.pixelFormat)||
+        imageInfo.pixelFormat == PixelFormat::ASTC_4x4 ||
+        imageInfo.pixelFormat == PixelFormat::ASTC_6x6 ||
+        imageInfo.pixelFormat == PixelFormat::ASTC_8x8) {
         errorCode = IMAGE_RESULT_DATA_UNSUPPORT;
+        IMAGE_LOGE("[PixelMap] PixelMap type does not support clone");
         return false;
     }
-    InitializationOptions opt;
-    opt.pixelFormat = imageInfo.pixelFormat;
-    if (!CheckPixelMap(pixelMap, opt)) {
-        errorCode = IMAGE_RESULT_MALLOC_ABNORMAL;
-        return false;
-    }
-    uint32_t tmpSetInfoCode = pixelMap->SetImageInfo(imageInfo);
-    if (tmpSetInfoCode != SUCCESS) {
-        if (tmpSetInfoCode == ERR_IMAGE_TOO_LARGE) {
-            errorCode = IMAGE_RESULT_TOO_LARGE;
-        } else {
-            errorCode = IMAGE_RESULT_INIT_ABNORMAL;
-        }
-        IMAGE_LOGE("[PixelMapClone] set image info failed");
+    if (static_cast<uint64_t>(rowDataSize) * static_cast<uint64_t>(imageInfo.size.height) >
+        (type == AllocatorType::HEAP_ALLOC ? PIXEL_MAP_MAX_RAM_SIZE : INT_MAX)) {
+        errorCode = IMAGE_RESULT_TOO_LARGE;
+        IMAGE_LOGE("[PixelMap] PixelMap size too large");
         return false;
     }
     errorCode = SUCCESS;
@@ -1035,53 +1028,35 @@ static bool CheckClone(bool isAstc, unique_ptr<PixelMap> &pixelMap, ImageInfo im
 
 unique_ptr<PixelMap> PixelMap::Clone(int32_t &errorCode)
 {
-    unique_ptr<PixelMap> pixelMap = nullptr;
-    if (data_ == nullptr) {
+    if (!CheckImageInfo(imageInfo_, errorCode, allocatorType_, rowDataSize_)) {
+        return nullptr;
+    }
+    InitializationOptions opts;
+    opts.srcPixelFormat = imageInfo_.pixelFormat;
+    opts.pixelFormat = imageInfo_.pixelFormat;
+    opts.alphaType = imageInfo_.alphaType;
+    opts.size = imageInfo_.size;
+    opts.srcRowStride = rowStride_;
+    opts.editable = editable_;
+    opts.useDMA = allocatorType_ == AllocatorType::DMA_ALLOC;
+    unique_ptr<PixelMap> pixelMap = PixelMap::Create(opts);
+    if (!pixelMap) {
         errorCode = IMAGE_RESULT_INIT_ABNORMAL;
+        IMAGE_LOGE("[PixelMap] Initial a empty PixelMap failed");
         return nullptr;
-    }
-    if (!CheckClone(isAstc_, pixelMap, imageInfo_, errorCode)) {
-        return nullptr;
-    }
-    unique_ptr<AbsMemory> dstMemory = nullptr;
-    int32_t dstRowStride = 0;
-    ImageInfo dstImageInfo;
-    pixelMap->GetImageInfo(dstImageInfo);
-    errorCode = AllocPixelMapMemory(dstMemory, dstRowStride, dstImageInfo, allocatorType_ == AllocatorType::DMA_ALLOC);
-    if (errorCode != IMAGE_RESULT_SUCCESS) {
-        errorCode = errorCode ==
-            IMAGE_RESULT_MALLOC_ABNORMAL ? IMAGE_RESULT_MALLOC_ABNORMAL : IMAGE_RESULT_INIT_ABNORMAL;
-        return nullptr;
-    }
-    UpdatePixelsAlpha(dstImageInfo.alphaType, dstImageInfo.pixelFormat,
-                      static_cast<uint8_t *>(dstMemory->data.data), *pixelMap.get());
-    pixelMap->SetEditable(editable_);
-    pixelMap->SetPixelsAddr(dstMemory->data.data, dstMemory->extend.data, dstMemory->data.size, dstMemory->GetType(),
-        nullptr);
-    if (IsYUV(dstImageInfo.pixelFormat)) {
-        if (pixelMap->GetAllocatorType() == AllocatorType::DMA_ALLOC) {
-            YUVDataInfo yuvDatainfo;
-            if (!InitYuvDataOutInfo(reinterpret_cast<SurfaceBuffer*>(dstMemory->extend.data),
-                dstImageInfo, yuvDatainfo)) {
-                errorCode = IMAGE_RESULT_INIT_ABNORMAL;
-                return nullptr;
-            }
-            pixelMap->SetImageYUVInfo(yuvDatainfo);
-        } else {
-            SetYUVDataInfoToPixelMap(pixelMap);
-        }
     }
     if (!CopyPixelMap(*this, *(pixelMap.get()), errorCode)) {
-        errorCode = errorCode == IMAGE_RESULT_DATA_ABNORMAL ? IMAGE_RESULT_INIT_ABNORMAL : IMAGE_RESULT_MALLOC_ABNORMAL;
+        errorCode = IMAGE_RESULT_MALLOC_ABNORMAL;
+        IMAGE_LOGE("[PixelMap] Copy PixelMap data failed");
         return nullptr;
     }
-    errorCode = SUCCESS;
     pixelMap->SetTransformered(isTransformered_);
     TransformData transformData;
     GetTransformData(transformData);
     pixelMap->SetTransformData(transformData);
     pixelMap->SetHdrType(GetHdrType());
     pixelMap->SetHdrMetadata(GetHdrMetadata());
+    errorCode = SUCCESS;
     return pixelMap;
 }
 
