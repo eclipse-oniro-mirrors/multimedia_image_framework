@@ -2631,7 +2631,10 @@ napi_value PixelMapNapi::Release(napi_env env, napi_callback_info info)
     } else {
         napi_get_undefined(env, &result);
     }
-    if (asyncContext->nConstructor->IsLockPixelMap()) {
+
+    if (asyncContext->nConstructor->IsLockPixelMap() ||
+        (asyncContext->nConstructor->nativePixelMap_ && !asyncContext->nConstructor->nativePixelMap_->IsModifiable())) {
+        IMAGE_LOGE("[PixelMap] Release failed: Unable to release the PixelMap because it's locked or unmodifiable");
         asyncContext->status = ERROR;
     } else {
         if (asyncContext->nConstructor->nativePixelMap_ != nullptr) {

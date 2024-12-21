@@ -655,7 +655,7 @@ Image_ErrorCode OH_PixelmapNative_Crop(OH_PixelmapNative *pixelmap, Image_Region
 MIDK_EXPORT
 Image_ErrorCode OH_PixelmapNative_Release(OH_PixelmapNative *pixelmap)
 {
-    if (pixelmap == nullptr) {
+    if (pixelmap == nullptr || pixelmap->GetRefCount() != 0) {
         return IMAGE_BAD_PARAMETER;
     }
     pixelmap->~OH_PixelmapNative();
@@ -1115,6 +1115,35 @@ Image_ErrorCode OH_PixelmapNative_SetMemoryName(OH_PixelmapNative *pixelmap, cha
         return IMAGE_BAD_PARAMETER;
     } else if (ret == ERR_MEMORY_NOT_SUPPORT) {
         return IMAGE_UNSUPPORTED_MEMORY_FORMAT;
+    }
+    return IMAGE_SUCCESS;
+}
+
+MIDK_EXPORT
+Image_ErrorCode OH_PixelmapNative_AccessPixels(OH_PixelmapNative *pixelmap, void **addr)
+{
+    if (pixelmap == nullptr || pixelmap->GetInnerPixelmap() == nullptr || addr == nullptr) {
+        return IMAGE_BAD_PARAMETER;
+    }
+    if (!pixelmap->Ref()) {
+        return IMAGE_LOCK_UNLOCK_FAILED;
+    }
+    pixelmap->GetInnerPixelmap()->SetModifiable(false);
+    *addr = pixelmap->GetInnerPixelmap()->GetWritablePixels();
+    return IMAGE_SUCCESS;
+}
+
+MIDK_EXPORT
+Image_ErrorCode OH_PixelmapNative_UnaccessPixels(OH_PixelmapNative *pixelmap)
+{
+    if (pixelmap == nullptr || pixelmap->GetInnerPixelmap() == nullptr) {
+        return IMAGE_BAD_PARAMETER;
+    }
+    if (!pixelmap->Unref()) {
+        return IMAGE_LOCK_UNLOCK_FAILED;
+    }
+    if (pixelmap->GetRefCount() == 0) {
+        pixelmap->GetInnerPixelmap()->SetModifiable(true);
     }
     return IMAGE_SUCCESS;
 }

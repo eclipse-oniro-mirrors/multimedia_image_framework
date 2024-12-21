@@ -216,6 +216,15 @@ public:
         return editable_;
     }
 
+    NATIVEEXPORT virtual void SetModifiable(bool modifiable)
+    {
+        modifiable_ = modifiable;
+    }
+    NATIVEEXPORT virtual bool IsModifiable()
+    {
+        return modifiable_;
+    }
+
     NATIVEEXPORT virtual bool IsTransformered()
     {
         return isTransformered_;
@@ -468,11 +477,8 @@ protected:
 
     bool CheckValidParam(int32_t x, int32_t y)
     {
-        return isUnMap_ || (data_ == nullptr) ||
-                       (x >= imageInfo_.size.width) || (x < 0) || (y >= imageInfo_.size.height) ||
-                       (y < 0) || (pixelsSize_ < static_cast<uint64_t>(rowDataSize_) * imageInfo_.size.height)
-                   ? false
-                   : true;
+        return isUnMap_ || data_ == nullptr || x >= imageInfo_.size.width || x < 0 || y >= imageInfo_.size.height ||
+            y < 0 || (pixelsSize_ < static_cast<uint64_t>(rowDataSize_) * imageInfo_.size.height) ? false : true;
     }
 
     static PixelMap *StartUnmarshalling(Parcel &parcel, ImageInfo &imgInfo,
@@ -527,6 +533,7 @@ protected:
     AllocatorType allocatorType_ = AllocatorType::SHARE_MEM_ALLOC;
     uint32_t pixelsSize_ = 0;
     bool editable_ = false;
+    bool modifiable_ = true; // If this is set to false, any modifications to the pixels data is not allowed
     bool useSourceAsResponse_ = false;
     bool isTransformered_ = false;
     std::shared_ptr<std::mutex> transformMutex_ = std::make_shared<std::mutex>();
