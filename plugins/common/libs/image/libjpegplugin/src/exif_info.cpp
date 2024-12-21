@@ -423,7 +423,6 @@ EXIFInfo::~EXIFInfo()
         exif_data_unref(exifData_);
         exifData_ = nullptr;
     }
-    exifTags_.Clear();
 }
 
 static void inline DumpTagsMap(SafeMap<ExifTag, std::string> &tags)
