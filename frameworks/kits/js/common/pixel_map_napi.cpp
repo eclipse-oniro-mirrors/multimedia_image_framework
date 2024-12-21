@@ -3214,10 +3214,10 @@ static void CloneExec(napi_env env, PixelMapAsyncContext* context)
             context->status = SUCCESS;
         } else {
             IMAGE_LOGE("Null native ref");
-            context->status = ERR_RESOURCE_UNAVAILABLE;
+            context->status = ERR_IMAGE_INIT_ABNORMAL;
         }
     } else {
-        context->status = ERR_RESOURCE_UNAVAILABLE;
+        context->status = ERR_IMAGE_INIT_ABNORMAL;
         IMAGE_LOGD("Clone has failed. do nothing");
     }
 }
@@ -3236,7 +3236,7 @@ static void CloneComplete(napi_env env, napi_status status, void *data)
         result = PixelMapNapi::CreatePixelMap(env, context->alphaMap);
         context->status = SUCCESS;
     } else {
-        context->status = ERR_RESOURCE_UNAVAILABLE;
+        context->status = ERR_IMAGE_INIT_ABNORMAL;
     }
     CommonCallbackRoutine(env, context, result);
 }
@@ -3309,7 +3309,7 @@ napi_value PixelMapNapi::CloneSync(napi_env env, napi_callback_info info)
         }
         result = PixelMapNapi::CreatePixelMap(env, std::move(clonePixelMap));
     } else {
-        return ImageNapiUtils::ThrowExceptionError(env, ERR_RESOURCE_UNAVAILABLE, "Null Native Ref");
+        return ImageNapiUtils::ThrowExceptionError(env, ERR_IMAGE_INIT_ABNORMAL, "Null Native Ref");
     }
     return result;
 }
