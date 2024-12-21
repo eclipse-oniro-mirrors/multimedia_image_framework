@@ -84,7 +84,7 @@ uint8_t *PixelMapParcel::ReadAshmemDataFromParcel(OHOS::MessageParcel& data, int
         IMAGE_LOGE("read fileDescriptor failed, fd < 0");
         return nullptr;
     }
-    if (!CheckAshmemeSize(fd, bufferSize)) {
+    if (!CheckAshmemSize(fd, bufferSize)) {
         IMAGE_LOGE("bufferSize does not match the fileDescriptor");
         return nullptr;
     }    
