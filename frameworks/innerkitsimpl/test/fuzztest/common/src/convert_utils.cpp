@@ -18,6 +18,8 @@
 #include <chrono>
 #include <unistd.h>
 #include <fcntl.h>
+#include <iostream>
+#include <fstream>
 
 #include "pixel_map.h"
 #include "image_packer.h"
@@ -78,4 +80,24 @@ std::string GetNowTimeStr()
     auto now = std::chrono::system_clock::now();
     auto us = std::chrono::duration_cast<std::chrono::microseconds>(now.time_since_epoch());
     return std::to_string(us.count());
+}
+
+bool WriteDataToFile(const uint8_t* data, size_t size, const std::string& filename)
+{
+    IMAGE_LOGI("%{public}s %{public}s IN", __func__, filename.c_str());
+    std::ifstream file(filename);
+    bool isFileExists = file.good();
+    file.close();
+    if (isFileExists) {
+        std::remove(filename.c_str());
+    }
+    std::ofstream newFile(filename);
+    if (!newFile.is_open()) {
+        IMAGE_LOGI("%{public}s failed, new file: %{public}s error", __func__, filename.c_str());
+        return false;
+    }
+    newFile.write(reinterpret_cast<const char*>(data), size);
+    newFile.close();
+    IMAGE_LOGI("%{public}s %{public}s SUCCESS", __func__, filename.c_str());
+    return true;
 }

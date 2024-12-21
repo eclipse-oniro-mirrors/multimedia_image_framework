@@ -55,6 +55,8 @@ public:
     NATIVEEXPORT static AuxiliaryPicture *Unmarshalling(Parcel &parcel, PICTURE_ERR &error);
 
 protected:
+    void UpdateAuxiliaryPictureInfo();
+
     std::shared_ptr<PixelMap> content_;
     AuxiliaryPictureInfo auxiliaryPictureInfo_;
     std::map<MetadataType, std::shared_ptr<ImageMetadata>> metadatas_;

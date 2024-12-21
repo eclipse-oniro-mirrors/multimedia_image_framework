@@ -38,7 +38,23 @@ std::unique_ptr<AuxiliaryPicture> AuxiliaryPicture::Create(std::shared_ptr<Pixel
     dstAuxPicture->content_ = content;
     dstAuxPicture->SetType(type);
     dstAuxPicture->SetSize(size);
+    dstAuxPicture->UpdateAuxiliaryPictureInfo();
     return dstAuxPicture;
+}
+
+void AuxiliaryPicture::UpdateAuxiliaryPictureInfo()
+{
+    if (content_ == nullptr) {
+        IMAGE_LOGE("%{public}s content_ is nullptr", __func__);
+        return;
+    }
+    ImageInfo imageInfo;
+    content_->GetImageInfo(imageInfo);
+
+    auxiliaryPictureInfo_.size = imageInfo.size;
+    auxiliaryPictureInfo_.rowStride = content_->GetRowStride();
+    auxiliaryPictureInfo_.colorSpace = imageInfo.colorSpace;
+    auxiliaryPictureInfo_.pixelFormat = imageInfo.pixelFormat;
 }
 
 std::unique_ptr<AuxiliaryPicture> AuxiliaryPicture::Create(sptr<SurfaceBuffer> &surfaceBuffer,
@@ -76,6 +92,7 @@ std::shared_ptr<PixelMap> AuxiliaryPicture::GetContentPixel()
 void AuxiliaryPicture::SetContentPixel(std::shared_ptr<PixelMap> content)
 {
     content_ = content;
+    UpdateAuxiliaryPictureInfo();
 }
 
 uint32_t AuxiliaryPicture::ReadPixels(const uint64_t &bufferSize, uint8_t *dst)
@@ -267,23 +284,27 @@ AuxiliaryPictureInfo AuxiliaryPicture::GetAuxiliaryPictureInfo()
 
 uint32_t AuxiliaryPicture::SetAuxiliaryPictureInfo(const AuxiliaryPictureInfo &auxiliaryPictureInfo)
 {
-    if (content_ == nullptr) {
-        IMAGE_LOGE("%{public}s pixelmap is nullptr", __func__);
-        return ERR_MEDIA_NULL_POINTER;
-    }
-    if (!ImageUtils::IsValidAuxiliaryInfo(content_, auxiliaryPictureInfo)) {
-        IMAGE_LOGE("%{public}s invalid auxiliary picture info", __func__);
-        return ERR_IMAGE_INVALID_PARAMETER;
-    }
-    ImageInfo imageInfo;
-    content_->GetImageInfo(imageInfo);
-    imageInfo.size = auxiliaryPictureInfo.size;
-    imageInfo.pixelFormat = auxiliaryPictureInfo.pixelFormat;
-    imageInfo.colorSpace = auxiliaryPictureInfo.colorSpace;
-    uint32_t err = content_->SetImageInfo(imageInfo, true);
-    if (err != SUCCESS) {
-        IMAGE_LOGE("%{public}s sync info to pixelmap failed", __func__);
-        return err;
+    int32_t apiVersion = ImageUtils::GetAPIVersion();
+    IMAGE_LOGI("%{public}s current apiVersion: %{public}d", __func__, apiVersion);
+    if (apiVersion > APIVERSION_13) {
+        if (content_ == nullptr) {
+            IMAGE_LOGE("%{public}s pixelmap is nullptr", __func__);
+            return ERR_MEDIA_NULL_POINTER;
+        }
+        if (!ImageUtils::IsValidAuxiliaryInfo(content_, auxiliaryPictureInfo)) {
+            IMAGE_LOGE("%{public}s invalid auxiliary picture info", __func__);
+            return ERR_IMAGE_INVALID_PARAMETER;
+        }
+        ImageInfo imageInfo;
+        content_->GetImageInfo(imageInfo);
+        imageInfo.size = auxiliaryPictureInfo.size;
+        imageInfo.pixelFormat = auxiliaryPictureInfo.pixelFormat;
+        imageInfo.colorSpace = auxiliaryPictureInfo.colorSpace;
+        uint32_t err = content_->SetImageInfo(imageInfo, true);
+        if (err != SUCCESS) {
+            IMAGE_LOGE("%{public}s sync info to pixelmap failed", __func__);
+            return err;
+        }
     }
     auxiliaryPictureInfo_ = auxiliaryPictureInfo;
     return SUCCESS;

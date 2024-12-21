@@ -223,6 +223,8 @@ uint32_t DmaMemory::Release()
         int32_t err = ImageUtils::SurfaceBuffer_Unreference(static_cast<SurfaceBuffer*>(extend.data));
         if (err != OHOS::GSERROR_OK) {
             IMAGE_LOGE("NativeBufferReference failed");
+            extend.data = nullptr;
+            extend.size = SIZE_ZERO;
             return ERR_DMA_DATA_ABNORMAL;
         }
         extend.data = nullptr;
@@ -276,19 +278,6 @@ std::unique_ptr<AbsMemory> MemoryManager::CreateMemory(AllocatorType type, Memor
             return nullptr;
         }
     }
-    return res;
-}
-
-std::unique_ptr<AbsMemory> MemoryManager::TransMemoryType(const AbsMemory &source, AllocatorType target,
-    std::string tag)
-{
-    MemoryData data = { nullptr, source.data.size, tag.c_str()};
-    data.format = source.data.format;
-    auto res = CreateMemory(target, data);
-    if (res == nullptr) {
-        return res;
-    }
-    memcpy_s(res->data.data, res->data.size, source.data.data, source.data.size);
     return res;
 }
 } // namespace Media

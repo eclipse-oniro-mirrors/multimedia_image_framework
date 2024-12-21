@@ -251,11 +251,6 @@ ohos_shared_library("extplugin") {
       external_deps += [ "opencl-headers:libcl" ]
     }
 
-    if (defined(global_parts_info) &&
-        defined(global_parts_info.graphic_graphic_2d_ext)) {
-      defines += [ "SUT_ENCODE_ENABLE" ]
-    }
-
     if (enable_jpeg_hw_decode) {
       external_deps += [
         "drivers_interface_codec:libimage_proxy_2.0",
@@ -471,15 +466,12 @@ ohos_shared_library("heifimpl") {
       "drivers_peripheral_codec:libcodec_hdi_omx_client",
       "ffmpeg:libohosffmpeg",
       "hdf_core:libhdi",
+      "hitrace:hitrace_meter",
       "init:libbegetutil",
       "ipc:ipc_core",
       "openmax:libopenmax_static",
       "qos_manager:qos",
     ]
-  }
-
-  if (enable_heif_hw_decode && build_variant == "root") {
-    external_deps += [ "hitrace:hitrace_meter" ]
   }
 
   subsystem_name = "multimedia"

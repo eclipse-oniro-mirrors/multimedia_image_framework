@@ -562,7 +562,7 @@ static bool handlePixelMapList(ImagePackerAsyncContext* context)
         IMAGE_LOGE("Parameter input error, invalid frameCount");
         return false;
     }
-    if (context->rPixelMaps->empty()) {
+    if (context->rPixelMaps == nullptr || context->rPixelMaps->empty()) {
         IMAGE_LOGE("Parameter input error, pixelmaplist is empty");
         return false;
     }
@@ -606,11 +606,11 @@ static bool parsePackOptionOfdelayTimes(napi_env env, napi_value root, ImagePack
                 IMAGE_LOGE("Invalid delayTime, out of range");
                 return false;
             }
-            context->packOption.delayTimes.push_back(static_cast<uint16_t>(num & MASK_16));
+            context->packOption.delayTimes.push_back(static_cast<uint16_t>(num) & static_cast<uint16_t>(MASK_16));
         }
         if (len < context->frameCount) {
             for (uint32_t i = len; i < context->frameCount; i++) {
-                context->packOption.delayTimes.push_back(static_cast<uint16_t>(num & MASK_16));
+                context->packOption.delayTimes.push_back(static_cast<uint16_t>(num) & static_cast<uint16_t>(MASK_16));
             }
         }
     }
@@ -657,7 +657,7 @@ static bool parsePackOptionOfdisposalTypes(napi_env env, napi_value root, PackOp
                 IMAGE_LOGE("Invalid disposalTypes, out of range");
                 return false;
             }
-            opts->disposalTypes.push_back(static_cast<uint16_t>(num & MASK_3));
+            opts->disposalTypes.push_back(static_cast<uint8_t>(num) & static_cast<uint8_t>(MASK_3));
         }
     }
     return true;
@@ -680,7 +680,7 @@ static bool parsePackOptionOfLoop(napi_env env, napi_value root, ImagePackerAsyn
         IMAGE_LOGE("Invalid loopCount");
         return false;
     }
-    context->packOption.loop = static_cast<uint16_t>(tmpNumber & MASK_16);
+    context->packOption.loop = static_cast<uint16_t>(tmpNumber) & static_cast<uint16_t>(MASK_16);
     return parsePackOptionOfFrameCout(env, root, context);
 }
 
@@ -840,7 +840,7 @@ static void ParserPackingArguments(napi_env env,
             COMMON_ERR_INVALID_PARAMETER);
     } else if (context->packType == TYPE_PIXEL_MAP) {
         context->rPixelMap = PixelMapNapi::GetPixelMap(env, argv[PARAM0]);
-        BuildMsgOnError(context, context->rPixelMap != nullptr, "PixelMap mismatch",
+        BuildMsgOnError(context, context->rPixelMap != nullptr, "Pixelmap is released",
             COMMON_ERR_INVALID_PARAMETER);
 #if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
     } else if (context->packType == TYPE_PICTURE) {
@@ -1022,7 +1022,7 @@ static void ParserPackToFileArguments(napi_env env,
     } else if (context->packType == TYPE_PIXEL_MAP) {
         context->rPixelMap = PixelMapNapi::GetPixelMap(env, argv[PARAM0]);
         BuildMsgOnError(context, context->rPixelMap != nullptr,
-            "PixelMap mismatch", ERR_IMAGE_INVALID_PARAMETER);
+            "Pixelmap is released", ERR_IMAGE_INVALID_PARAMETER);
 #if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
     } else if (context->packType == TYPE_PICTURE) {
         context->rPicture = PictureNapi::GetPicture(env, argv[PARAM0]);

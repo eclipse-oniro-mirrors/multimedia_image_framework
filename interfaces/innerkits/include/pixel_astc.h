@@ -43,7 +43,6 @@ public:
     NATIVEEXPORT void SetTransformered(bool isTransformered) override;
     NATIVEEXPORT void SetRowStride(uint32_t stride) override;
 
-    NATIVEEXPORT const uint8_t *GetPixel(int32_t x, int32_t y) override;
     NATIVEEXPORT const uint8_t *GetPixel8(int32_t x, int32_t y) override;
     NATIVEEXPORT const uint16_t *GetPixel16(int32_t x, int32_t y) override;
     NATIVEEXPORT const uint32_t *GetPixel32(int32_t x, int32_t y) override;
@@ -60,7 +59,6 @@ public:
     }
 
     NATIVEEXPORT void scale(float xAxis, float yAxis) override;
-    NATIVEEXPORT void scale(float xAxis, float yAxis, const AntiAliasingOption &option) override;
     NATIVEEXPORT bool resize(float xAxis, float yAxis) override;
     NATIVEEXPORT void translate(float xAxis, float yAxis) override;
     NATIVEEXPORT void rotate(float degrees) override;
@@ -76,7 +74,6 @@ public:
     NATIVEEXPORT uint32_t ReadPixels(const uint64_t &bufferSize, const uint32_t &offset, const uint32_t &stride,
                                      const Rect &region, uint8_t *dst) override;
     NATIVEEXPORT uint32_t ReadPixels(const uint64_t &bufferSize, uint8_t *dst) override;
-    NATIVEEXPORT uint32_t ReadARGBPixels(const uint64_t &bufferSize, uint8_t *dst) override;
     NATIVEEXPORT uint32_t ReadPixel(const Position &pos, uint32_t &dst) override;
     NATIVEEXPORT uint32_t ResetConfig(const Size &size, const PixelFormat &format) override;
     NATIVEEXPORT uint32_t WritePixel(const Position &pos, const uint32_t &color) override;
@@ -84,31 +81,6 @@ public:
                          const uint32_t &stride, const Rect &region) override;
     NATIVEEXPORT uint32_t WritePixels(const uint8_t *source, const uint64_t &bufferSize) override;
     NATIVEEXPORT bool WritePixels(const uint32_t &color) override;
-    NATIVEEXPORT uint32_t ConvertAlphaFormat(PixelMap &wPixelMap, const bool isPremul) override;
-
-    NATIVEEXPORT void SetImageYUVInfo(YUVDataInfo &yuvinfo) override {}
-    NATIVEEXPORT void AssignYuvDataOnType(PixelFormat format, int32_t width, int32_t height) override {}
-    NATIVEEXPORT void UpdateYUVDataInfo(PixelFormat format, int32_t width, int32_t height,
-        YUVStrideInfo &strides) override {}
-    NATIVEEXPORT void GetImageYUVInfo(YUVDataInfo &yuvInfo) const override {}
-
-#ifdef IMAGE_COLORSPACE_FLAG
-    NATIVEEXPORT uint32_t ApplyColorSpace(const OHOS::ColorManager::ColorSpace &grColorSpace) override;
-#endif
-    NATIVEEXPORT void SetExifMetadata(std::shared_ptr<ExifMetadata> &ptr) override {}
-    NATIVEEXPORT uint32_t GetImagePropertyInt(const std::string &key, int32_t &value) override;
-    NATIVEEXPORT uint32_t GetImagePropertyString(const std::string &key, std::string &value) override;
-    NATIVEEXPORT uint32_t ModifyImageProperty(const std::string &key, const std::string &value) override;
-    NATIVEEXPORT uint32_t SetMemoryName(const std::string &pixelMapName) override;
-    NATIVEEXPORT bool IsHdr() override;
-    NATIVEEXPORT uint32_t ToSdr() override;
-    NATIVEEXPORT uint32_t ToSdr(PixelFormat format, bool toSRGB) override;
-    NATIVEEXPORT void SetToSdrColorSpaceIsSRGB(bool isSRGB) override;
-    NATIVEEXPORT bool GetToSdrColorSpaceIsSRGB() override;
-    NATIVEEXPORT std::shared_ptr<HdrMetadata> GetHdrMetadata() override;
-    NATIVEEXPORT void SetHdrMetadata(const std::shared_ptr<HdrMetadata> &metadata) override;
-    NATIVEEXPORT ImageHdrType GetHdrType() override;
-    NATIVEEXPORT void SetHdrType(ImageHdrType hdrType) override;
 
 private:
     uint32_t astcId_ = 0;

@@ -70,6 +70,7 @@ FileSourceStream::~FileSourceStream()
     IMAGE_LOGD("[FileSourceStream]destructor enter.");
     if (filePtr_ != nullptr) {
         fclose(filePtr_);
+        filePtr_ = nullptr;
     }
     ResetReadBuffer();
 }
@@ -139,7 +140,7 @@ unique_ptr<FileSourceStream> FileSourceStream::CreateSourceStream(const int fd)
         fclose(filePtr);
         return nullptr;
     }
-    return make_unique<FileSourceStream>(filePtr, size, offset, offset, useMmap, fd);
+    return make_unique<FileSourceStream>(filePtr, size, offset, offset, useMmap, dupFd);
 }
 
 unique_ptr<FileSourceStream> FileSourceStream::CreateSourceStream(
@@ -162,7 +163,7 @@ unique_ptr<FileSourceStream> FileSourceStream::CreateSourceStream(
         IMAGE_LOGE("[FileSourceStream]Go to %{public}d position fail, ret:%{public}d.", offset, ret);
         return nullptr;
     }
-    return make_unique<FileSourceStream>(filePtr, length, offset, offset, useMmap, fd);
+    return make_unique<FileSourceStream>(filePtr, length, offset, offset, useMmap, dupFd);
 }
 
 bool FileSourceStream::Read(uint32_t desiredSize, DataStreamBuffer &outData)
@@ -409,7 +410,7 @@ void FileSourceStream::ResetReadBuffer()
     }
     if (fileData_ != nullptr && !mmapFdPassedOn_ && useMmap_) {
 #ifdef SUPPORT_MMAP
-        ::munmap(fileData_, fileSize_);
+        ::munmap(fileData_, fileSize_ - fileOriginalOffset_);
         close(mmapFd_);
 #endif
     }

@@ -269,7 +269,7 @@ HWTEST_F(PluginTextureEncodeTest, ASTCEncode004, TestSize.Level3)
 
 /**
  * @tc.name: ASTCEncode005
- * @tc.desc: Test the AstcSoftwareEncode function
+ * @tc.desc: AstcSoftwareEncode return error test
  * @tc.type: FUNC
  */
 HWTEST_F(PluginTextureEncodeTest, ASTCEncode005, TestSize.Level3)
@@ -278,7 +278,7 @@ HWTEST_F(PluginTextureEncodeTest, ASTCEncode005, TestSize.Level3)
 
     std::unique_ptr<PixelMap> pixelMap = ConstructPixmap(RGBA_TEST0001_WIDTH, RGBA_TEST0001_HEIGHT);
     ASSERT_NE(pixelMap, nullptr);
-    PixelMap *pixelMapPtr = pixelMap.get();
+    Media::PixelMap *pixelMapPtr = pixelMap.get();
     ASSERT_NE(pixelMapPtr, nullptr);
 
     uint8_t *output = static_cast<uint8_t *>(malloc(OUTPUT_SIZE_MAX));
@@ -286,18 +286,18 @@ HWTEST_F(PluginTextureEncodeTest, ASTCEncode005, TestSize.Level3)
     BufferPackerStream *stream = new (std::nothrow) BufferPackerStream(output, OUTPUT_SIZE_MAX);
     ASSERT_NE(stream, nullptr);
 
-    struct PlEncodeOptions option = { "image/astc/4*4", 20, 1 }; // quality set to 100
+    struct PlEncodeOptions option = { "image/sdr_astc_4x4", 92, 1 };
     AstcCodec astcEncoder;
     uint32_t setRet = astcEncoder.SetAstcEncode(stream, option, pixelMapPtr);
     ASSERT_EQ(setRet, SUCCESS);
     uint32_t astcRet = astcEncoder.ASTCEncode();
     ASSERT_EQ(astcRet, SUCCESS);
 
-    option.quality = 20; // quality 20: HIGH_SPEED_PROFILE
+    option.quality = 20;
     setRet = astcEncoder.SetAstcEncode(stream, option, pixelMapPtr);
     ASSERT_EQ(setRet, SUCCESS);
     astcRet = astcEncoder.ASTCEncode();
-    ASSERT_EQ(astcRet, SUCCESS);
+    ASSERT_NE(astcRet, SUCCESS);
 
     if (output != nullptr) {
         free(output);
@@ -312,7 +312,7 @@ HWTEST_F(PluginTextureEncodeTest, ASTCEncode005, TestSize.Level3)
 
 /**
  * @tc.name: ASTCEncode006
- * @tc.desc: Test the AstcSoftwareEncode function
+ * @tc.desc: AstcSoftwareEncode return error test
  * @tc.type: FUNC
  */
 HWTEST_F(PluginTextureEncodeTest, ASTCEncode006, TestSize.Level3)
@@ -321,7 +321,7 @@ HWTEST_F(PluginTextureEncodeTest, ASTCEncode006, TestSize.Level3)
 
     std::unique_ptr<PixelMap> pixelMap = ConstructPixmap(RGBA_TEST0001_WIDTH, RGBA_TEST0001_HEIGHT);
     ASSERT_NE(pixelMap, nullptr);
-    PixelMap *pixelMapPtr = pixelMap.get();
+    Media::PixelMap *pixelMapPtr = pixelMap.get();
     ASSERT_NE(pixelMapPtr, nullptr);
 
     uint8_t *output = static_cast<uint8_t *>(malloc(OUTPUT_SIZE_MAX));
@@ -329,18 +329,18 @@ HWTEST_F(PluginTextureEncodeTest, ASTCEncode006, TestSize.Level3)
     BufferPackerStream *stream = new (std::nothrow) BufferPackerStream(output, OUTPUT_SIZE_MAX);
     ASSERT_NE(stream, nullptr);
 
-    struct PlEncodeOptions option = { "image/astc/4*4", 30, 1 }; // quality set to 100
+    struct PlEncodeOptions option = { "image/sdr_sut_superfast_4x4", 92, 1 };
     AstcCodec astcEncoder;
     uint32_t setRet = astcEncoder.SetAstcEncode(stream, option, pixelMapPtr);
     ASSERT_EQ(setRet, SUCCESS);
     uint32_t astcRet = astcEncoder.ASTCEncode();
     ASSERT_EQ(astcRet, SUCCESS);
 
-    option.quality = 20; // quality 20: HIGH_SPEED_PROFILE
+    option.quality = 20;
     setRet = astcEncoder.SetAstcEncode(stream, option, pixelMapPtr);
     ASSERT_EQ(setRet, SUCCESS);
     astcRet = astcEncoder.ASTCEncode();
-    ASSERT_EQ(astcRet, SUCCESS);
+    ASSERT_NE(astcRet, SUCCESS);
 
     if (output != nullptr) {
         free(output);
@@ -353,136 +353,6 @@ HWTEST_F(PluginTextureEncodeTest, ASTCEncode006, TestSize.Level3)
     GTEST_LOG_(INFO) << "PluginTextureEncodeTest: ASTCEncode006 end";
 }
 
-#ifdef SUT_ENCODE_ENABLE
-/**
- * @tc.name: ASTCEncode007
- * @tc.desc: Test the AstcSoftwareEncode function
- * @tc.type: FUNC
- */
-HWTEST_F(PluginTextureEncodeTest, ASTCEncode007, TestSize.Level3)
-{
-    GTEST_LOG_(INFO) << "PluginTextureEncodeTest: ASTCEncode007 start";
-
-    std::unique_ptr<PixelMap> pixelMap = ConstructPixmap(RGBA_TEST0001_WIDTH, RGBA_TEST0001_HEIGHT);
-    ASSERT_NE(pixelMap, nullptr);
-    PixelMap *pixelMapPtr = pixelMap.get();
-    ASSERT_NE(pixelMapPtr, nullptr);
-
-    uint8_t *output = static_cast<uint8_t *>(malloc(OUTPUT_SIZE_MAX));
-    ASSERT_NE(output, nullptr);
-    BufferPackerStream *stream = new (std::nothrow) BufferPackerStream(output, OUTPUT_SIZE_MAX);
-    ASSERT_NE(stream, nullptr);
-
-    struct PlEncodeOptions option = { "image/sut", 20, 1 }; // quality set to 100
-    AstcCodec astcEncoder;
-    uint32_t setRet = astcEncoder.SetAstcEncode(stream, option, pixelMapPtr);
-    ASSERT_EQ(setRet, SUCCESS);
-    uint32_t astcRet = astcEncoder.ASTCEncode();
-    ASSERT_EQ(astcRet, SUCCESS);
-
-    option.quality = 20; // quality 20: HIGH_SPEED_PROFILE
-    setRet = astcEncoder.SetAstcEncode(stream, option, pixelMapPtr);
-    ASSERT_EQ(setRet, SUCCESS);
-    astcRet = astcEncoder.ASTCEncode();
-    ASSERT_EQ(astcRet, SUCCESS);
-
-    if (output != nullptr) {
-        free(output);
-        output = nullptr;
-    }
-    if (stream != nullptr) {
-        delete stream;
-        stream = nullptr;
-    }
-    GTEST_LOG_(INFO) << "PluginTextureEncodeTest: ASTCEncode007 end";
-}
-
-/**
- * @tc.name: ASTCEncode008
- * @tc.desc: Test the AstcSoftwareEncode function
- * @tc.type: FUNC
- */
-HWTEST_F(PluginTextureEncodeTest, ASTCEncode008, TestSize.Level3)
-{
-    GTEST_LOG_(INFO) << "PluginTextureEncodeTest: ASTCEncode008 start";
-
-    std::unique_ptr<PixelMap> pixelMap = ConstructPixmap(RGBA_TEST0001_WIDTH, RGBA_TEST0001_HEIGHT);
-    ASSERT_NE(pixelMap, nullptr);
-    PixelMap *pixelMapPtr = pixelMap.get();
-    ASSERT_NE(pixelMapPtr, nullptr);
-
-    uint8_t *output = static_cast<uint8_t *>(malloc(OUTPUT_SIZE_MAX));
-    ASSERT_NE(output, nullptr);
-    BufferPackerStream *stream = new (std::nothrow) BufferPackerStream(output, OUTPUT_SIZE_MAX);
-    ASSERT_NE(stream, nullptr);
-
-    struct PlEncodeOptions option = { "image/sut", 30, 1 }; // quality set to 100
-    AstcCodec astcEncoder;
-    uint32_t setRet = astcEncoder.SetAstcEncode(stream, option, pixelMapPtr);
-    ASSERT_EQ(setRet, SUCCESS);
-    uint32_t astcRet = astcEncoder.ASTCEncode();
-    ASSERT_EQ(astcRet, SUCCESS);
-
-    option.quality = 20; // quality 20: HIGH_SPEED_PROFILE
-    setRet = astcEncoder.SetAstcEncode(stream, option, pixelMapPtr);
-    ASSERT_EQ(setRet, SUCCESS);
-    astcRet = astcEncoder.ASTCEncode();
-    ASSERT_EQ(astcRet, SUCCESS);
-
-    if (output != nullptr) {
-        free(output);
-        output = nullptr;
-    }
-    if (stream != nullptr) {
-        delete stream;
-        stream = nullptr;
-    }
-    GTEST_LOG_(INFO) << "PluginTextureEncodeTest: ASTCEncode008 end";
-}
-
-/**
- * @tc.name: ASTCEncode009
- * @tc.desc: Test the AstcSoftwareEncode function
- * @tc.type: FUNC
- */
-HWTEST_F(PluginTextureEncodeTest, ASTCEncode009, TestSize.Level3)
-{
-    GTEST_LOG_(INFO) << "PluginTextureEncodeTest: ASTCEncode008 start";
-
-    std::unique_ptr<PixelMap> pixelMap = ConstructPixmap(RGBA_TEST0001_WIDTH, RGBA_TEST0001_HEIGHT);
-    ASSERT_NE(pixelMap, nullptr);
-    PixelMap *pixelMapPtr = pixelMap.get();
-    ASSERT_NE(pixelMapPtr, nullptr);
-
-    uint8_t *output = static_cast<uint8_t *>(malloc(OUTPUT_SIZE_MAX));
-    ASSERT_NE(output, nullptr);
-    BufferPackerStream *stream = new (std::nothrow) BufferPackerStream(output, OUTPUT_SIZE_MAX);
-    ASSERT_NE(stream, nullptr);
-
-    struct PlEncodeOptions option = { "image/sut", 90, 1 }; // quality set to 100
-    AstcCodec astcEncoder;
-    uint32_t setRet = astcEncoder.SetAstcEncode(stream, option, pixelMapPtr);
-    ASSERT_EQ(setRet, SUCCESS);
-    uint32_t astcRet = astcEncoder.ASTCEncode();
-    ASSERT_EQ(astcRet, SUCCESS);
-
-    option.quality = 20; // quality 20: HIGH_SPEED_PROFILE
-    setRet = astcEncoder.SetAstcEncode(stream, option, pixelMapPtr);
-    ASSERT_EQ(setRet, SUCCESS);
-    astcRet = astcEncoder.ASTCEncode();
-    ASSERT_EQ(astcRet, SUCCESS);
-
-    if (output != nullptr) {
-        free(output);
-        output = nullptr;
-    }
-    if (stream != nullptr) {
-        delete stream;
-        stream = nullptr;
-    }
-    GTEST_LOG_(INFO) << "PluginTextureEncodeTest: ASTCEncode009 end";
-}
-#endif
 /**
  * @tc.name: AstcSoftwareEncode001
  * @tc.desc: Test the AstcSoftwareEncode function

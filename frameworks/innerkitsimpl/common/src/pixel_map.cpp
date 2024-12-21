@@ -115,8 +115,6 @@ static constexpr uint8_t NUM_6 = 6;
 static constexpr uint8_t NUM_7 = 7;
 static constexpr uint8_t NUM_8 = 8;
 
-constexpr int32_t ANTIALIASING_SIZE = 350;
-
 std::atomic<uint32_t> PixelMap::currentId = 0;
 
 PixelMap::~PixelMap()
@@ -346,7 +344,7 @@ void UpdateYUVDataInfo(int32_t width, int32_t height, YUVDataInfo &yuvInfo)
     yuvInfo.uvHeight = static_cast<uint32_t>((height + 1) / NUM_2);
     yuvInfo.yStride = static_cast<uint32_t>(width);
     yuvInfo.uvStride = static_cast<uint32_t>(((width + 1) / NUM_2) * NUM_2);
-    yuvInfo.uvOffset = static_cast<uint32_t>(width) * height;
+    yuvInfo.uvOffset = static_cast<uint32_t>(width) * static_cast<uint32_t>(height);
 }
 
 static bool ChoosePixelmap(unique_ptr<PixelMap> &dstPixelMap, PixelFormat pixelFormat, int &errorCode)
@@ -384,21 +382,20 @@ static void SetYUVDataInfoToPixelMap(unique_ptr<PixelMap> &dstPixelMap)
 static int AllocPixelMapMemory(std::unique_ptr<AbsMemory> &dstMemory, int32_t &dstRowStride,
     const ImageInfo &dstImageInfo, bool useDMA)
 {
-    if (ImageUtils::CheckMulOverflow(dstImageInfo.size.width, dstImageInfo.size.height,
-                                     ImageUtils::GetPixelBytes(dstImageInfo.pixelFormat))) {
-        IMAGE_LOGE("[PixelMap]Create: pixelmap size overflow: width = %{public}d, height = %{public}d",
-                   dstImageInfo.size.width, dstImageInfo.size.height);
+    int64_t rowDataSize = ImageUtils::GetRowDataSizeByPixelFormat(dstImageInfo.size.width, dstImageInfo.pixelFormat);
+    if (rowDataSize <= 0) {
+        IMAGE_LOGE("[PixelMap] AllocPixelMapMemory: Get row data size failed");
         return IMAGE_RESULT_BAD_PARAMETER;
     }
-    size_t bufferSize = static_cast<size_t>(dstImageInfo.size.width) * static_cast<size_t>(dstImageInfo.size.height) *
-        static_cast<size_t>(ImageUtils::GetPixelBytes(dstImageInfo.pixelFormat));
-    if (bufferSize > UINT_MAX) {
+    int64_t bufferSize = rowDataSize * dstImageInfo.size.height;
+    if (bufferSize > UINT32_MAX) {
         IMAGE_LOGE("[PixelMap]Create: pixelmap size too large: width = %{public}d, height = %{public}d",
             dstImageInfo.size.width, dstImageInfo.size.height);
         return IMAGE_RESULT_BAD_PARAMETER;
     }
 
-    MemoryData memoryData = {nullptr, bufferSize, "Create PixelMap", dstImageInfo.size, dstImageInfo.pixelFormat};
+    MemoryData memoryData = {nullptr, static_cast<size_t>(bufferSize), "Create PixelMap", dstImageInfo.size,
+        dstImageInfo.pixelFormat};
     dstMemory = MemoryManager::CreateMemory(
         ImageUtils::GetPixelMapAllocatorType(dstImageInfo.size, dstImageInfo.pixelFormat, useDMA), memoryData);
     if (dstMemory == nullptr) {
@@ -1211,6 +1208,10 @@ const uint32_t *PixelMap::GetPixel32(int32_t x, int32_t y)
 
 const uint8_t *PixelMap::GetPixel(int32_t x, int32_t y)
 {
+    if (isAstc_) {
+        IMAGE_LOGE("GetPixel does not support astc");
+        return nullptr;
+    }
     if (!CheckValidParam(x, y)) {
         IMAGE_LOGE("input pixel position:(%{public}d, %{public}d) invalid.", x, y);
         return nullptr;
@@ -1583,6 +1584,10 @@ static bool IsSupportConvertToARGB(PixelFormat pixelFormat)
 uint32_t PixelMap::ReadARGBPixels(const uint64_t &bufferSize, uint8_t *dst)
 {
     ImageTrace imageTrace("ReadARGBPixels by bufferSize");
+    if (isAstc_) {
+        IMAGE_LOGE("ReadARGBPixels does not support astc");
+        return ERR_IMAGE_INVALID_PARAMETER;
+    }
     if (dst == nullptr) {
         IMAGE_LOGE("Read ARGB pixels: input dst address is null.");
         return ERR_IMAGE_INVALID_PARAMETER;
@@ -2062,11 +2067,13 @@ uint8_t *PixelMap::ReadHeapDataFromParcel(Parcel &parcel, int32_t bufferSize)
     return base;
 }
 
-uint8_t *PixelMap::ReadAshmemDataFromParcel(Parcel &parcel, int32_t bufferSize)
+uint8_t *PixelMap::ReadAshmemDataFromParcel(Parcel &parcel, int32_t bufferSize,
+    std::function<int(Parcel &parcel, std::function<int(Parcel&)> readFdDefaultFunc)> readSafeFdFunc)
 {
     uint8_t *base = nullptr;
 #if !defined(_WIN32) && !defined(_APPLE) && !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
-    int fd = ReadFileDescriptor(parcel);
+    auto readFdDefaultFunc = [](Parcel &parcel) -> int { return ReadFileDescriptor(parcel); };
+    int fd = ((readSafeFdFunc != nullptr) ? readSafeFdFunc(parcel, readFdDefaultFunc) : readFdDefaultFunc(parcel));
     if (!CheckAshmemSize(fd, bufferSize)) {
         IMAGE_LOGE("ReadAshmemDataFromParcel check ashmem size failed, fd:[%{public}d].", fd);
         return nullptr;
@@ -2102,13 +2109,14 @@ uint8_t *PixelMap::ReadAshmemDataFromParcel(Parcel &parcel, int32_t bufferSize)
     return base;
 }
 
-uint8_t *PixelMap::ReadImageData(Parcel &parcel, int32_t bufferSize)
+uint8_t *PixelMap::ReadImageData(Parcel &parcel, int32_t bufferSize,
+    std::function<int(Parcel &parcel, std::function<int(Parcel&)> readFdDefaultFunc)> readSafeFdFunc)
 {
 #if !defined(_WIN32) && !defined(_APPLE) &&!defined(IOS_PLATFORM) &&!defined(ANDROID_PLATFORM)
     if (static_cast<unsigned int>(bufferSize) <= MIN_IMAGEDATA_SIZE) {
         return ReadHeapDataFromParcel(parcel, bufferSize);
     } else {
-        return ReadAshmemDataFromParcel(parcel, bufferSize);
+        return ReadAshmemDataFromParcel(parcel, bufferSize, readSafeFdFunc);
     }
 #else
     return ReadHeapDataFromParcel(parcel, bufferSize);
@@ -2638,14 +2646,15 @@ bool PixelMap::ReadBufferSizeFromParcel(Parcel& parcel, const ImageInfo& imgInfo
 }
 
 #if !defined(_WIN32) && !defined(_APPLE) && !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
-bool ReadDmaMemInfoFromParcel(Parcel &parcel, PixelMemInfo &pixelMemInfo)
+bool ReadDmaMemInfoFromParcel(Parcel &parcel, PixelMemInfo &pixelMemInfo,
+    std::function<int(Parcel &parcel, std::function<int(Parcel&)> readFdDefaultFunc)> readSafeFdFunc)
 {
     sptr<SurfaceBuffer> surfaceBuffer = SurfaceBuffer::Create();
     if (surfaceBuffer == nullptr) {
         IMAGE_LOGE("SurfaceBuffer failed to be created");
         return false;
     }
-    GSError ret = surfaceBuffer->ReadFromMessageParcel(static_cast<MessageParcel&>(parcel));
+    GSError ret = surfaceBuffer->ReadFromMessageParcel(static_cast<MessageParcel&>(parcel), readSafeFdFunc);
     if (ret != GSError::GSERROR_OK) {
         IMAGE_LOGE("SurfaceBuffer read from message parcel failed: %{public}s", GSErrorStr(ret).c_str());
         return false;
@@ -2659,11 +2668,13 @@ bool ReadDmaMemInfoFromParcel(Parcel &parcel, PixelMemInfo &pixelMemInfo)
 }
 #endif
 
-bool PixelMap::ReadMemInfoFromParcel(Parcel &parcel, PixelMemInfo &pixelMemInfo, PIXEL_MAP_ERR &error)
+bool PixelMap::ReadMemInfoFromParcel(Parcel &parcel, PixelMemInfo &pixelMemInfo, PIXEL_MAP_ERR &error,
+    std::function<int(Parcel &parcel, std::function<int(Parcel&)> readFdDefaultFunc)> readSafeFdFunc)
 {
 #if !defined(_WIN32) && !defined(_APPLE) && !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
     if (pixelMemInfo.allocatorType == AllocatorType::SHARE_MEM_ALLOC) {
-        int fd = ReadFileDescriptor(parcel);
+        auto readFdDefaultFunc = [](Parcel &parcel) -> int { return ReadFileDescriptor(parcel); };
+        int fd = ((readSafeFdFunc != nullptr) ? readSafeFdFunc(parcel, readFdDefaultFunc) : readFdDefaultFunc(parcel));
         if (!CheckAshmemSize(fd, pixelMemInfo.bufferSize, pixelMemInfo.isAstc)) {
             PixelMap::ConstructPixelMapError(error, ERR_IMAGE_GET_FD_BAD, "fd acquisition failed");
             ::close(fd);
@@ -2688,12 +2699,12 @@ bool PixelMap::ReadMemInfoFromParcel(Parcel &parcel, PixelMemInfo &pixelMemInfo,
         *static_cast<int32_t *>(pixelMemInfo.context) = fd;
         pixelMemInfo.base = static_cast<uint8_t *>(ptr);
     } else if (pixelMemInfo.allocatorType == AllocatorType::DMA_ALLOC) {
-        if (!ReadDmaMemInfoFromParcel(parcel, pixelMemInfo)) {
+        if (!ReadDmaMemInfoFromParcel(parcel, pixelMemInfo, readSafeFdFunc)) {
             PixelMap::ConstructPixelMapError(error, ERR_IMAGE_GET_DATA_ABNORMAL, "ReadFromMessageParcel failed");
             return false;
         }
     } else { // Any other allocator types will malloc HEAP memory
-        pixelMemInfo.base = ReadImageData(parcel, pixelMemInfo.bufferSize);
+        pixelMemInfo.base = ReadImageData(parcel, pixelMemInfo.bufferSize, readSafeFdFunc);
         if (pixelMemInfo.base == nullptr) {
             PixelMap::ConstructPixelMapError(error, ERR_IMAGE_GET_DATA_ABNORMAL, "ReadImageData failed");
             return false;
@@ -2734,10 +2745,11 @@ bool PixelMap::UpdatePixelMapMemInfo(PixelMap *pixelMap, ImageInfo &imgInfo, Pix
     return true;
 }
 
-PixelMap *PixelMap::Unmarshalling(Parcel &parcel)
+PixelMap *PixelMap::Unmarshalling(Parcel &parcel,
+    std::function<int(Parcel &parcel, std::function<int(Parcel&)> readFdDefaultFunc)> readSafeFdFunc)
 {
     PIXEL_MAP_ERR error;
-    PixelMap* dstPixelMap = PixelMap::Unmarshalling(parcel, error);
+    PixelMap* dstPixelMap = PixelMap::Unmarshalling(parcel, error, readSafeFdFunc);
     if (dstPixelMap == nullptr || error.errorCode != SUCCESS) {
         IMAGE_LOGE("unmarshalling failed errorCode:%{public}d, errorInfo:%{public}s",
             error.errorCode, error.errorInfo.c_str());
@@ -2792,7 +2804,8 @@ PixelMap *PixelMap::FinishUnmarshalling(PixelMap *pixelMap, Parcel &parcel,
     return pixelMap;
 }
 
-PixelMap *PixelMap::Unmarshalling(Parcel &parcel, PIXEL_MAP_ERR &error)
+PixelMap *PixelMap::Unmarshalling(Parcel &parcel, PIXEL_MAP_ERR &error,
+    std::function<int(Parcel &parcel, std::function<int(Parcel&)> readFdDefaultFunc)> readSafeFdFunc)
 {
     ImageInfo imgInfo;
     PixelMemInfo pixelMemInfo;
@@ -2924,6 +2937,10 @@ bool PixelMap::EncodeTlv(std::vector<uint8_t> &buff) const
     WriteUint8(buff, TLV_IMAGE_BASEDENSITY);
     WriteVarint(buff, GetVarintLen(imageInfo_.baseDensity));
     WriteVarint(buff, imageInfo_.baseDensity);
+    WriteUint8(buff, TLV_IMAGE_ALLOCATORTYPE);
+    AllocatorType tmpAllocatorType = AllocatorType::HEAP_ALLOC;
+    WriteVarint(buff, GetVarintLen(static_cast<int32_t>(tmpAllocatorType)));
+    WriteVarint(buff, static_cast<int32_t>(tmpAllocatorType));
     WriteUint8(buff, TLV_IMAGE_DATA);
     const uint8_t *data = data_;
     uint64_t dataSize = static_cast<uint64_t>(rowDataSize_) * static_cast<uint64_t>(imageInfo_.size.height);
@@ -2947,7 +2964,7 @@ static bool CheckTlvImageInfo(const ImageInfo &info, uint8_t **data)
     return true;
 }
 
-bool PixelMap::ReadTlvAttr(std::vector<uint8_t> &buff, ImageInfo &info, int32_t &size, uint8_t **data)
+bool PixelMap::ReadTlvAttr(std::vector<uint8_t> &buff, ImageInfo &info, int32_t &type, int32_t &size, uint8_t **data)
 {
     int cursor = 0;
     for (uint8_t tag = ReadUint8(buff, cursor); tag != TLV_END; tag = ReadUint8(buff, cursor)) {
@@ -2975,6 +2992,10 @@ bool PixelMap::ReadTlvAttr(std::vector<uint8_t> &buff, ImageInfo &info, int32_t 
             case TLV_IMAGE_BASEDENSITY:
                 info.baseDensity = ReadVarint(buff, cursor);
                 break;
+            case TLV_IMAGE_ALLOCATORTYPE:
+                type = ReadVarint(buff, cursor);
+                IMAGE_LOGI("pixel alloctype: %{public}d", type);
+                break;
             case TLV_IMAGE_DATA:
                 size = len;
                 if (data != nullptr && *data == nullptr) {
@@ -3000,7 +3021,9 @@ PixelMap *PixelMap::DecodeTlv(std::vector<uint8_t> &buff)
     ImageInfo imageInfo;
     int32_t dataSize = 0;
     uint8_t *data = nullptr;
-    if (!ReadTlvAttr(buff, imageInfo, dataSize, &data)) {
+    int32_t allocType = static_cast<int32_t>(AllocatorType::DEFAULT);
+    if (!ReadTlvAttr(buff, imageInfo, allocType, dataSize, &data) ||
+        allocType != static_cast<int32_t>(AllocatorType::HEAP_ALLOC)) {
         if (data != nullptr) {
             free(data);
             data = nullptr;
@@ -3022,7 +3045,7 @@ PixelMap *PixelMap::DecodeTlv(std::vector<uint8_t> &buff)
         IMAGE_LOGE("pixel map tlv decode fail: dataSize not match");
         return nullptr;
     }
-    pixelMap->SetPixelsAddr(data, nullptr, dataSize, AllocatorType::HEAP_ALLOC, nullptr);
+    pixelMap->SetPixelsAddr(data, nullptr, dataSize, static_cast<AllocatorType>(allocType), nullptr);
     return pixelMap;
 }
 
@@ -3361,7 +3384,10 @@ uint32_t PixelMap::ConvertAlphaFormat(PixelMap &wPixelMap, const bool isPremul)
     if (res != SUCCESS) {
         return res;
     }
-
+    if (isAstc_) {
+        IMAGE_LOGE("ConvertAlphaFormat does not support astc");
+        return ERR_IMAGE_INVALID_PARAMETER;
+    }
     ImageInfo dstImageInfo;
     wPixelMap.GetImageInfo(dstImageInfo);
     void* dstData = wPixelMap.GetWritablePixels();
@@ -3577,12 +3603,6 @@ struct TransInfos {
     SkMatrix matrix;
 };
 
-bool IsSupportAntiAliasing(const ImageInfo& imageInfo, const AntiAliasingOption &option)
-{
-    return option != AntiAliasingOption::NONE && imageInfo.size.width <= ANTIALIASING_SIZE &&
-            imageInfo.size.height <= ANTIALIASING_SIZE;
-}
-
 SkSamplingOptions ToSkSamplingOption(const AntiAliasingOption &option)
 {
     switch (option) {
@@ -3674,6 +3694,10 @@ void PixelMap::scale(float xAxis, float yAxis)
 
 void PixelMap::scale(float xAxis, float yAxis, const AntiAliasingOption &option)
 {
+    if (isAstc_) {
+        IMAGE_LOGE("GetPixel does not support astc");
+        return;
+    }
     ImageTrace imageTrace("PixelMap scale with option");
     if (option == AntiAliasingOption::SLR) {
 #if !defined(_WIN32) && !defined(_APPLE) && !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
@@ -3929,7 +3953,7 @@ static void UpdateSdrYuvStrides(const ImageInfo &imageInfo, YUVStrideInfo &dstSt
 }
 
 std::unique_ptr<AbsMemory> PixelMap::CreateSdrMemory(ImageInfo &imageInfo, PixelFormat format,
-                                                     AllocatorType dstType, uint32_t errorCode, bool toSRGB)
+                                                     AllocatorType dstType, uint32_t &errorCode, bool toSRGB)
 {
 #if !defined(_WIN32) && !defined(_APPLE) && !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
     SkImageInfo skInfo = ToSkImageInfo(imageInfo, ToSkColorSpace(this));
@@ -4038,6 +4062,10 @@ uint32_t PixelMap::ToSdr()
 
 uint32_t PixelMap::ToSdr(PixelFormat format, bool toSRGB)
 {
+    if (isAstc_) {
+        IMAGE_LOGE("ToSdr does not support astc");
+        return ERR_MEDIA_INVALID_OPERATION;
+    }
 #if defined(_WIN32) || defined(_APPLE) || defined(IOS_PLATFORM) || defined(ANDROID_PLATFORM)
     IMAGE_LOGI("tosdr is not supported");
     return ERR_MEDIA_INVALID_OPERATION;
@@ -4110,6 +4138,10 @@ static bool isSameColorSpace(const OHOS::ColorManager::ColorSpace &src,
 
 uint32_t PixelMap::ApplyColorSpace(const OHOS::ColorManager::ColorSpace &grColorSpace)
 {
+    if (isAstc_) {
+        IMAGE_LOGE("ApplyColorSpace does not support astc");
+        return ERR_IMAGE_COLOR_CONVERT;
+    }
     auto grName = grColorSpace.GetColorSpaceName();
     if (grColorSpace_ != nullptr && isSameColorSpace(*grColorSpace_, grColorSpace)) {
         if (grColorSpace_->GetColorSpaceName() != grName) {
@@ -4179,5 +4211,32 @@ void PixelMap::SetVersionId(uint32_t versionId)
     versionId_ = versionId;
 }
 
+bool PixelMap::CloseFd()
+{
+#if !defined(_WIN32) && !defined(_APPLE) && !defined(IOS_PLATFORM) &&!defined(ANDROID_PLATFORM)
+    if (allocatorType_ != AllocatorType::SHARE_MEM_ALLOC && allocatorType_ != AllocatorType::DMA_ALLOC) {
+        IMAGE_LOGI("[Pixelmap] CloseFd allocatorType is not share_mem or dma");
+        return false;
+    }
+    if (allocatorType_ == AllocatorType::SHARE_MEM_ALLOC) {
+        int *fd = static_cast<int*>(context_);
+        if (fd == nullptr) {
+            IMAGE_LOGE("[Pixelmap] CloseFd fd is nullptr.");
+            return false;
+        }
+        if (*fd <= 0) {
+            IMAGE_LOGE("[Pixelmap] CloseFd invilid fd is [%{public}d]", *fd);
+            return false;
+        }
+        ::close(*fd);
+        delete fd;
+        context_ = nullptr;
+    }
+    return true;
+#else
+    IMAGE_LOGE("[Pixelmap] CloseFd is not supported on crossplatform");
+    return false;
+#endif
+}
 } // namespace Media
 } // namespace OHOS

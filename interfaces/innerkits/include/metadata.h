@@ -33,6 +33,7 @@ public:
     virtual const ImageMetadata::PropertyMapPtr GetAllProperties() = 0;
     virtual std::shared_ptr<ImageMetadata> CloneMetadata() = 0;
     virtual MetadataType GetType() const = 0;
+    virtual bool RemoveExifThumbnail() = 0;
 };
 } // namespace Media
 } // namespace OHOS

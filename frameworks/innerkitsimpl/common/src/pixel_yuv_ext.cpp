@@ -46,6 +46,7 @@ using namespace std;
 
 static const uint8_t NUM_2 = 2;
 static const uint8_t NUM_4 = 4;
+static const uint8_t RGBA_BIT_DEPTH = 4;
 static const int32_t DEGREES360 = 360;
 static const float ROUND_FLOAT_NUMBER = 0.5f;
 
@@ -148,11 +149,6 @@ void PixelYuvExt::scale(float xAxis, float yAxis, const AntiAliasingOption &opti
     GetImageInfo(imageInfo);
     int32_t dstW = (imageInfo.size.width  * xAxis + ROUND_FLOAT_NUMBER);
     int32_t dstH = (imageInfo.size.height * yAxis + ROUND_FLOAT_NUMBER);
-    if (imageInfo.pixelFormat == PixelFormat::YCBCR_P010 ||
-        imageInfo.pixelFormat == PixelFormat::YCRCB_P010) {
-        dstW = (dstW + 1) / NUM_2 * NUM_2;
-        dstH = (dstH + 1) / NUM_2 * NUM_2;
-    }
     YUVStrideInfo dstStrides;
     auto m = CreateMemory(imageInfo.pixelFormat, "Trans ImageData", dstW, dstH, dstStrides);
     if (m == nullptr) {
@@ -360,6 +356,10 @@ uint32_t PixelYuvExt::ApplyColorSpace(const OHOS::ColorManager::ColorSpace &grCo
 
     int32_t width = imageInfo_.size.width;
     int32_t height = imageInfo_.size.height;
+    if (!PixelYuvUtils::CheckWidthAndHeightMult(width, height, RGBA_BIT_DEPTH)) {
+        IMAGE_LOGE("ApplyColorSpace size overflow width(%{public}d), height(%{public}d)", width, height);
+        return ERR_IMAGE_COLOR_CONVERT;
+    }
     uint8_t *srcData = data_;
     std::unique_ptr<uint8_t[]> RGBAdata =
         std::make_unique<uint8_t[]>(width * height * NUM_4);

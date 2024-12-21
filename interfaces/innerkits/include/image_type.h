@@ -135,6 +135,7 @@ enum class PixelFormat : int32_t {
     YCBCR_P010 = 11, // NV12_P010
     YCRCB_P010 = 12, // NV21_P010
     RGBA_U16 = 13, // Interim format for ffmpeg and skia conversion
+    YUV_400 = 14,
     EXTERNAL_MAX,
     INTERNAL_START = 100,
     CMYK = INTERNAL_START + 1,
@@ -313,6 +314,7 @@ struct DecodeOptions {
     static constexpr uint32_t DEFAULT_SAMPLE_SIZE = 1;
     uint32_t sampleSize = DEFAULT_SAMPLE_SIZE;
     PixelFormat desiredPixelFormat = PixelFormat::UNKNOWN;
+    PixelFormat photoDesiredPixelFormat = PixelFormat::UNKNOWN;
 #if defined(ANDROID_PLATFORM) || defined(IOS_PLATFORM)
     AllocatorType allocatorType = AllocatorType::HEAP_ALLOC;
 #else
@@ -379,6 +381,8 @@ enum class MetadataType {
 
 struct DecodingOptionsForPicture {
     std::set<AuxiliaryPictureType> desireAuxiliaryPictures;
+    PixelFormat desiredPixelFormat = PixelFormat::RGBA_8888;
+    AllocatorType allocatorType = AllocatorType::DMA_ALLOC;
 };
 
 typedef struct PictureError {

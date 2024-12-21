@@ -244,10 +244,10 @@ uint64_t ImageDecoder::GetProducerUsage()
     InitOMXParamExt(vendorUsage);
     vendorUsage.portIndex = static_cast<uint32_t>(OMX_DirOutput);
     if (GetParameter(OMX_IndexParamGetBufferHandleUsage, vendorUsage)) {
-        HLOGI("vendor producer usage = 0x%" PRIx64 "", vendorUsage.usage);
+        HLOGD("vendor producer usage = 0x%" PRIx64 "", vendorUsage.usage);
         producerUsage |= vendorUsage.usage;
     }
-    HLOGI("decoder producer usage = 0x%" PRIx64 "", producerUsage);
+    HLOGD("decoder producer usage = 0x%" PRIx64 "", producerUsage);
     return producerUsage;
 }
 

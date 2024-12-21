@@ -133,19 +133,16 @@ struct HeifEncodeItemInfo {
     std::string itemType = "";
 };
 
-static const std::map<SkEncodedImageFormat, std::string> FORMAT_NAME = {
-    {SkEncodedImageFormat::kBMP, IMAGE_BMP_FORMAT},
-    {SkEncodedImageFormat::kGIF, IMAGE_GIF_FORMAT},
-    {SkEncodedImageFormat::kICO, IMAGE_ICO_FORMAT},
-    {SkEncodedImageFormat::kJPEG, IMAGE_JPEG_FORMAT},
-    {SkEncodedImageFormat::kPNG, IMAGE_PNG_FORMAT},
-    {SkEncodedImageFormat::kWBMP, IMAGE_BMP_FORMAT},
-    {SkEncodedImageFormat::kWEBP, IMAGE_WEBP_FORMAT},
-    {SkEncodedImageFormat::kPKM, ""},
-    {SkEncodedImageFormat::kKTX, ""},
-    {SkEncodedImageFormat::kASTC, ""},
-    {SkEncodedImageFormat::kDNG, ""},
-    {SkEncodedImageFormat::kHEIF, IMAGE_HEIF_FORMAT},
+static const std::map<std::string, SkEncodedImageFormat> FORMAT_NAME = {
+    {IMAGE_BMP_FORMAT, SkEncodedImageFormat::kBMP},
+    {IMAGE_GIF_FORMAT, SkEncodedImageFormat::kGIF},
+    {IMAGE_ICO_FORMAT, SkEncodedImageFormat::kICO},
+    {IMAGE_JPEG_FORMAT, SkEncodedImageFormat::kJPEG},
+    {IMAGE_PNG_FORMAT, SkEncodedImageFormat::kPNG},
+    {IMAGE_WBMP_FORMAT, SkEncodedImageFormat::kWBMP},
+    {IMAGE_WEBP_FORMAT, SkEncodedImageFormat::kWEBP},
+    {IMAGE_HEIF_FORMAT, SkEncodedImageFormat::kHEIF},
+    {IMAGE_HEIC_FORMAT, SkEncodedImageFormat::kHEIF},
 };
 
 static const std::map<AuxiliaryPictureType, std::string> DEFAULT_AUXILIARY_TAG_MAP = {
@@ -158,6 +155,7 @@ static const std::map<AuxiliaryPictureType, std::string> DEFAULT_AUXILIARY_TAG_M
 
 static const uint8_t NUM_3 = 3;
 static const uint8_t NUM_4 = 4;
+static const uint8_t RGBA_BIT_DEPTH = 4;
 
 static constexpr int32_t MAX_IMAGE_SIZE = 8196;
 static constexpr int32_t MIN_IMAGE_SIZE = 128;
@@ -329,9 +327,9 @@ static uint32_t pixelToSkInfo(ImageData &image, SkImageInfo &skInfo, Media::Pixe
     return SUCCESS;
 }
 
-bool IsAstcOrSut(const std::string &format)
+bool IsAstc(const std::string &format)
 {
-    return format.find("image/astc") == 0 || format.find("image/sut") == 0;
+    return format.find("image/astc") == 0;
 }
 
 static uint32_t CreateAndWriteBlob(MetadataWStream &tStream, PixelMap *pixelmap, SkWStream& outStream,
@@ -389,7 +387,13 @@ uint32_t ExtEncoder::PixelmapEncode(ExtWStream& wStream)
     RecycleResources();
     return error;
 }
-
+#if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
+bool IsSuperFastEncode(const std::string &format)
+{
+    return SUT_FORMAT_MAP.find(format) != SUT_FORMAT_MAP.end() ||
+        ASTC_FORMAT_MAP.find(format) != ASTC_FORMAT_MAP.end();
+}
+#endif
 uint32_t ExtEncoder::FinalizeEncode()
 {
     if ((picture_ == nullptr && pixelmap_ == nullptr) || output_ == nullptr) {
@@ -398,16 +402,13 @@ uint32_t ExtEncoder::FinalizeEncode()
     ImageDataStatistics imageDataStatistics("[ExtEncoder]FinalizeEncode imageFormat = %s, quality = %d",
         opts_.format.c_str(), opts_.quality);
 #if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
-    if (IsAstcOrSut(opts_.format)) {
+    if (IsAstc(opts_.format) || IsSuperFastEncode(opts_.format)) {
         AstcCodec astcEncoder;
         astcEncoder.SetAstcEncode(output_, opts_, pixelmap_);
         return astcEncoder.ASTCEncode();
     }
 #endif
-    auto iter = std::find_if(FORMAT_NAME.begin(), FORMAT_NAME.end(),
-        [this](const std::map<SkEncodedImageFormat, std::string>::value_type item) {
-            return IsSameTextStr(item.second, opts_.format);
-    });
+    auto iter = FORMAT_NAME.find(LowerStr(opts_.format));
     if (iter == FORMAT_NAME.end()) {
         IMAGE_LOGE("ExtEncoder::FinalizeEncode unsupported format %{public}s", opts_.format.c_str());
         ReportEncodeFault(0, 0, opts_.format, "Unsupported format:" + opts_.format);
@@ -415,14 +416,14 @@ uint32_t ExtEncoder::FinalizeEncode()
     }
 #if !defined(_WIN32) && !defined(_APPLE) && !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
     if (picture_ != nullptr) {
-        encodeFormat_ = iter->first;
+        encodeFormat_ = iter->second;
         return EncodePicture();
     }
 #endif
     ImageInfo imageInfo;
     pixelmap_->GetImageInfo(imageInfo);
     imageDataStatistics.AddTitle(", width = %d, height =%d", imageInfo.size.width, imageInfo.size.height);
-    encodeFormat_ = iter->first;
+    encodeFormat_ = iter->second;
     ExtWStream wStream(output_);
     return PixelmapEncode(wStream);
 }
@@ -761,6 +762,11 @@ uint32_t ExtEncoder::EncodeImageBySurfaceBuffer(sptr<SurfaceBuffer>& surfaceBuff
     IMAGE_LOGD("HardwareEncode failed or not Supported");
 
     pixelmap_->GetImageInfo(imageInfo);
+    if (!PixelYuvUtils::CheckWidthAndHeightMult(imageInfo.size.width, imageInfo.size.height, RGBA_BIT_DEPTH)) {
+        IMAGE_LOGE("EncodeImageBySurfaceBuffer size overflow width(%{public}d), height(%{public}d)",
+            imageInfo.size.width, imageInfo.size.height);
+        return ERR_IMAGE_INVALID_PARAMETER;
+    }
     std::unique_ptr<uint8_t[]> dstData;
     if (IsYuvImage(imageInfo.pixelFormat)) {
         IMAGE_LOGD("EncodeImageBySurfaceBuffer: YUV format, convert to RGB first");
@@ -1324,6 +1330,8 @@ uint32_t ExtEncoder::EncodeDualVivid(ExtWStream& outputStream)
     HdrMetadata metadata;
     sptr<SurfaceBuffer> hdrSurfaceBuffer(reinterpret_cast<SurfaceBuffer*> (pixelmap_->GetFd()));
     SetHdrColorSpaceType(hdrSurfaceBuffer);
+    CM_HDR_Metadata_Type hdrMetadataType;
+    VpeUtils::GetSbMetadataType(hdrSurfaceBuffer, hdrMetadataType);
     VpeUtils::SetSbMetadataType(hdrSurfaceBuffer, CM_IMAGE_HDR_VIVID_SINGLE);
     VpeSurfaceBuffers buffers = {
         .sdr = baseSptr,
@@ -1335,6 +1343,7 @@ uint32_t ExtEncoder::EncodeDualVivid(ExtWStream& outputStream)
         FreeBaseAndGainMapSurfaceBuffer(baseSptr, gainMapSptr);
         return IMAGE_RESULT_CREATE_SURFAC_FAILED;
     }
+    metadata.hdrMetadataType = static_cast<int32_t>(hdrMetadataType);
     uint32_t error;
     if (encodeFormat_ == SkEncodedImageFormat::kJPEG) {
         sk_sp<SkData> baseImageData = GetImageEncodeData(baseSptr, baseInfo, opts_.needsPackProperties);

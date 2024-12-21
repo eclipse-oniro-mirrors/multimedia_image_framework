@@ -33,6 +33,7 @@
 
 namespace OHOS::Rosen {
 class PixelMapStorage;
+class RSMarshallingHelper;
 class RSProfiler;
 };
 
@@ -187,7 +188,7 @@ public:
     NATIVEEXPORT virtual void *GetFd() const;
     NATIVEEXPORT virtual void SetFreePixelMapProc(CustomFreePixelMap func);
     NATIVEEXPORT virtual void SetTransformered(bool isTransformered);
-    NATIVEEXPORT virtual uint32_t ConvertAlphaFormat(PixelMap &wPixelMap, const bool isPremul);
+    NATIVEEXPORT uint32_t ConvertAlphaFormat(PixelMap &wPixelMap, const bool isPremul);
     NATIVEEXPORT void SetPixelMapError(uint32_t code, const std::string &info)
     {
         errorCode = code;
@@ -237,8 +238,10 @@ public:
     }
 
     NATIVEEXPORT virtual bool Marshalling(Parcel &data) const override;
-    NATIVEEXPORT static PixelMap *Unmarshalling(Parcel &data);
-    NATIVEEXPORT static PixelMap *Unmarshalling(Parcel &parcel, PIXEL_MAP_ERR &error);
+    NATIVEEXPORT static PixelMap *Unmarshalling(Parcel &data,
+        std::function<int(Parcel &parcel, std::function<int(Parcel&)> readFdDefaultFunc)> readSafeFdFunc = nullptr);
+    NATIVEEXPORT static PixelMap *Unmarshalling(Parcel &parcel, PIXEL_MAP_ERR &error,
+        std::function<int(Parcel &parcel, std::function<int(Parcel&)> readFdDefaultFunc)> readSafeFdFunc = nullptr);
     NATIVEEXPORT virtual bool EncodeTlv(std::vector<uint8_t> &buff) const;
     NATIVEEXPORT static PixelMap *DecodeTlv(std::vector<uint8_t> &buff);
     NATIVEEXPORT virtual void SetImageYUVInfo(YUVDataInfo &yuvinfo)
@@ -296,41 +299,41 @@ public:
         return exifMetadata_;
     }
 
-    NATIVEEXPORT virtual void SetExifMetadata(std::shared_ptr<ExifMetadata> &ptr)
+    NATIVEEXPORT void SetExifMetadata(std::shared_ptr<ExifMetadata> &ptr)
     {
         exifMetadata_ = ptr;
     }
 
-    NATIVEEXPORT virtual uint32_t GetImagePropertyInt(const std::string &key, int32_t &value);
-    NATIVEEXPORT virtual uint32_t GetImagePropertyString(const std::string &key, std::string &value);
-    NATIVEEXPORT virtual uint32_t ModifyImageProperty(const std::string &key, const std::string &value);
-    NATIVEEXPORT virtual uint32_t SetMemoryName(const std::string &pixelMapName);
+    NATIVEEXPORT uint32_t GetImagePropertyInt(const std::string &key, int32_t &value);
+    NATIVEEXPORT uint32_t GetImagePropertyString(const std::string &key, std::string &value);
+    NATIVEEXPORT uint32_t ModifyImageProperty(const std::string &key, const std::string &value);
+    NATIVEEXPORT uint32_t SetMemoryName(const std::string &pixelMapName);
 
-    NATIVEEXPORT virtual bool IsHdr();
-    NATIVEEXPORT virtual uint32_t ToSdr();
+    NATIVEEXPORT bool IsHdr();
+    NATIVEEXPORT uint32_t ToSdr();
     // format support rgba8888, nv12, nv21. The default value is rgba8888
     // If toSRGB is false, pixelmap will be converted to display_p3
-    NATIVEEXPORT virtual uint32_t ToSdr(PixelFormat format, bool toSRGB);
+    NATIVEEXPORT uint32_t ToSdr(PixelFormat format, bool toSRGB);
     // use for hdr pixelmap, If isSRGB is false, the colorspace is p3 when converting to SDR.
-    NATIVEEXPORT virtual void SetToSdrColorSpaceIsSRGB(bool isSRGB);
-    NATIVEEXPORT virtual bool GetToSdrColorSpaceIsSRGB();
+    NATIVEEXPORT void SetToSdrColorSpaceIsSRGB(bool isSRGB);
+    NATIVEEXPORT bool GetToSdrColorSpaceIsSRGB();
 
-    NATIVEEXPORT virtual std::shared_ptr<HdrMetadata> GetHdrMetadata()
+    NATIVEEXPORT std::shared_ptr<HdrMetadata> GetHdrMetadata()
     {
         return hdrMetadata_;
     }
 
-    NATIVEEXPORT virtual void SetHdrMetadata(const std::shared_ptr<HdrMetadata> &metadata)
+    NATIVEEXPORT void SetHdrMetadata(const std::shared_ptr<HdrMetadata> &metadata)
     {
         hdrMetadata_ = metadata;
     }
 
-    NATIVEEXPORT virtual ImageHdrType GetHdrType()
+    NATIVEEXPORT ImageHdrType GetHdrType()
     {
         return hdrType_;
     }
 
-    NATIVEEXPORT virtual void SetHdrType(ImageHdrType hdrType)
+    NATIVEEXPORT void SetHdrType(ImageHdrType hdrType)
     {
         hdrType_ = hdrType;
     }
@@ -406,6 +409,7 @@ protected:
     static constexpr size_t MIN_IMAGEDATA_SIZE = 32 * 1024;         // 32k
     friend class ImageSource;
     friend class OHOS::Rosen::PixelMapStorage;
+    friend class OHOS::Rosen::RSMarshallingHelper;
     friend class OHOS::Rosen::RSProfiler;
     static bool ALPHA8ToARGB(const uint8_t *in, uint32_t inCount, uint32_t *out, uint32_t outCount);
     static bool RGB565ToARGB(const uint8_t *in, uint32_t inCount, uint32_t *out, uint32_t outCount);
@@ -441,7 +445,8 @@ protected:
     bool ReadBufferSizeFromParcel(Parcel& parcel, const ImageInfo& imgInfo, PixelMemInfo& memInfo,
         PIXEL_MAP_ERR& error);
     bool WriteMemInfoToParcel(Parcel &parcel, const int32_t &bufferSize) const;
-    static bool ReadMemInfoFromParcel(Parcel &parcel, PixelMemInfo &pixelMemInfo, PIXEL_MAP_ERR &error);
+    static bool ReadMemInfoFromParcel(Parcel &parcel, PixelMemInfo &pixelMemInfo, PIXEL_MAP_ERR &error,
+        std::function<int(Parcel &parcel, std::function<int(Parcel&)> readFdDefaultFunc)> readSafeFdFunc = nullptr);
     bool WriteTransformDataToParcel(Parcel &parcel) const;
     bool ReadTransformData(Parcel &parcel, PixelMap *pixelMap);
     bool WriteAstcRealSizeToParcel(Parcel &parcel) const;
@@ -479,9 +484,11 @@ protected:
     static bool UpdatePixelMapMemInfo(PixelMap *pixelMap, ImageInfo &imgInfo, PixelMemInfo &pixelMemInfo);
     bool WriteImageData(Parcel &parcel, size_t size) const;
     bool WriteAshmemDataToParcel(Parcel &parcel, size_t size) const;
-    static uint8_t *ReadImageData(Parcel &parcel, int32_t size);
+    static uint8_t *ReadImageData(Parcel &parcel, int32_t size,
+        std::function<int(Parcel &parcel, std::function<int(Parcel&)> readFdDefaultFunc)> readSafeFdFunc = nullptr);
     static uint8_t *ReadHeapDataFromParcel(Parcel &parcel, int32_t bufferSize);
-    static uint8_t *ReadAshmemDataFromParcel(Parcel &parcel, int32_t bufferSize);
+    static uint8_t *ReadAshmemDataFromParcel(Parcel &parcel, int32_t bufferSize,
+        std::function<int(Parcel &parcel, std::function<int(Parcel&)> readFdDefaultFunc)> readSafeFdFunc = nullptr);
     static int ReadFileDescriptor(Parcel &parcel);
     static bool WriteFileDescriptor(Parcel &parcel, int fd);
     static bool ReadImageInfo(Parcel &parcel, ImageInfo &imgInfo);
@@ -494,7 +501,7 @@ protected:
     void WriteData(std::vector<uint8_t> &buff, const uint8_t *data,
         const int32_t &height, const int32_t &rowDataSize, const int32_t &rowStride) const;
     static uint8_t *ReadData(std::vector<uint8_t> &buff, int32_t size, int32_t &cursor);
-    static bool ReadTlvAttr(std::vector<uint8_t> &buff, ImageInfo &info, int32_t &size, uint8_t **data);
+    static bool ReadTlvAttr(std::vector<uint8_t> &buff, ImageInfo &info, int32_t &type, int32_t &size, uint8_t **data);
     bool DoTranslation(TransInfos &infos, const AntiAliasingOption &option = AntiAliasingOption::NONE);
     void UpdateImageInfo();
     bool IsYuvFormat() const;
@@ -503,7 +510,9 @@ protected:
     void CopySurfaceBufferInfo(void *data);
     void SetVersionId(uint32_t versionId);
     std::unique_ptr<AbsMemory> CreateSdrMemory(ImageInfo &imageInfo, PixelFormat format,
-                                               AllocatorType dstType, uint32_t errorCode, bool toSRGB);
+                                               AllocatorType dstType, uint32_t &errorCode, bool toSRGB);
+    // used to close fd after mmap in RenderService when memory type is shared-mem or dma.
+    bool CloseFd();
 
     uint8_t *data_ = nullptr;
     // this info SHOULD be the final info for decoded pixelmap, not the original image info

@@ -182,7 +182,7 @@ bool JpegMpfParser::ParsingMpEntry(uint8_t* data, uint32_t size, bool isBigEndia
         images_[i].offset = ImageUtils::BytesToUint32(data, dataOffset, isBigEndian);
         uint16_t image1EntryNum = ImageUtils::BytesToUint16(data, dataOffset, isBigEndian);
         uint16_t image2EntryNum = ImageUtils::BytesToUint16(data, dataOffset, isBigEndian);
-        IMAGE_LOGD("index=%{public}d, imageAttr=%{public}d, image1entrynum=%{public}d, image2entryNum=%{puublic}d",
+        IMAGE_LOGD("index=%{public}d, imageAttr=%{public}d, image1entrynum=%{public}d, image2entryNum=%{public}d",
             i, imageAttr, image1EntryNum, image2EntryNum);
     }
     return true;
@@ -293,7 +293,7 @@ bool JpegMpfParser::ParsingFragmentMetadata(uint8_t* data, uint32_t size, Rect& 
 
 static void WriteMPEntryToBytes(vector<uint8_t>& bytes, uint32_t& offset, std::vector<SingleJpegImage> images)
 {
-    for (int i = 0; i < images.size(); i++) {
+    for (int i = 0; i < static_cast<int>(images.size()); i++) {
         uint32_t attributeData = 0;
         if (i == 0) {
             // 0x20: representative image flag / 0x03: primary image type code;

@@ -239,7 +239,7 @@ void ImageFormatConvertTest::YuvConvertToRgb(PixelFormat &srcFormat, PixelFormat
 bool ImageFormatConvertTest::ReadFile(void *chOrg, std::string path, int32_t totalsize, int32_t srcNum)
 {
     FILE* const fileOrg = fopen(path.c_str(), "rb");
-    if (fileOrg == NULL) {
+    if (fileOrg == nullptr) {
         GTEST_LOG_(INFO) << "Cannot open" << path.c_str();
         GTEST_LOG_(INFO) << "fopen";
         return false;
@@ -274,7 +274,7 @@ void ImageFormatConvertTest::YuvP010ConvertToRgb(PixelFormat &srcFormat, PixelFo
     ASSERT_EQ(result, true);
 
     const uint32_t dataLength = totalSize * NUM_2;
-    uint32_t *data = (uint32_t *)chOrg;
+    uint32_t *data = reinterpret_cast<uint32_t *>(chOrg);
     InitializationOptions opts;
     opts.srcPixelFormat = srcFormat;
     opts.pixelFormat = srcFormat;
@@ -314,7 +314,7 @@ void ImageFormatConvertTest::Rgba1010102ConvertToYuvP010(PixelFormat &srcFormat,
     ASSERT_EQ(result, true);
 
     const uint32_t dataLength = totalSize;
-    uint32_t *data = (uint32_t *)chOrg;
+    uint32_t *data = reinterpret_cast<uint32_t *>(chOrg);
     InitializationOptions opts;
     opts.srcPixelFormat = srcFormat;
     opts.pixelFormat = srcFormat;

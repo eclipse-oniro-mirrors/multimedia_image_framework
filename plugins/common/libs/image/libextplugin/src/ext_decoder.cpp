@@ -24,6 +24,7 @@
 #include "ext_pixel_convert.h"
 #include "image_log.h"
 #include "image_format_convert.h"
+#include "image_mime_type.h"
 #if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
 #include "ffrt.h"
 #include "hisysevent.h"
@@ -221,13 +222,9 @@ static uint32_t ShareMemAlloc(DecodeContext &context, uint64_t count)
 #endif
 }
 
-uint32_t ExtDecoder::DmaMemAlloc(DecodeContext &context, uint64_t count, SkImageInfo &dstInfo)
+#if !defined(_WIN32) && !defined(_APPLE) && !defined(ANDROID_PLATFORM) && !defined(IOS_PLATFORM)
+static BufferRequestConfig CreateDmaRequestConfig(const SkImageInfo &dstInfo, uint64_t &count, PixelFormat pixelFormat)
 {
-#if defined(_WIN32) || defined(_APPLE) || defined(ANDROID_PLATFORM) || defined(IOS_PLATFORM)
-    IMAGE_LOGE("Unsupport dma mem alloc");
-    return ERR_IMAGE_DATA_UNSUPPORT;
-#else
-    sptr<SurfaceBuffer> sb = SurfaceBuffer::Create();
     BufferRequestConfig requestConfig = {
         .width = dstInfo.width(),
         .height = dstInfo.height(),
@@ -238,20 +235,35 @@ uint32_t ExtDecoder::DmaMemAlloc(DecodeContext &context, uint64_t count, SkImage
         .colorGamut = GraphicColorGamut::GRAPHIC_COLOR_GAMUT_SRGB,
         .transform = GraphicTransformType::GRAPHIC_ROTATE_NONE,
     };
-    if (context.info.pixelFormat == PixelFormat::RGBA_1010102) {
+    if (pixelFormat == PixelFormat::RGBA_1010102) {
         requestConfig.format = GRAPHIC_PIXEL_FMT_RGBA_1010102;
-    } else if (context.info.pixelFormat == PixelFormat::YCRCB_P010) {
+    } else if (pixelFormat == PixelFormat::YCRCB_P010) {
         requestConfig.format = GRAPHIC_PIXEL_FMT_YCRCB_P010;
-    } else if (context.info.pixelFormat == PixelFormat::YCBCR_P010) {
+    } else if (pixelFormat == PixelFormat::YCBCR_P010) {
         requestConfig.format = GRAPHIC_PIXEL_FMT_YCBCR_P010;
-    } else if (outputColorFmt_ == PIXEL_FMT_YCRCB_420_SP) {
+    } else if (pixelFormat == PixelFormat::NV12) {
+        requestConfig.format = GRAPHIC_PIXEL_FMT_YCBCR_420_SP;
+    } else if (pixelFormat == PixelFormat::RGBA_F16) {
+        requestConfig.format = GRAPHIC_PIXEL_FMT_RGBA16_FLOAT;
+        count = dstInfo.width() * dstInfo.height() * ImageUtils::GetPixelBytes(PixelFormat::RGBA_F16);
+    }
+    return requestConfig;
+}
+#endif
+
+uint32_t ExtDecoder::DmaMemAlloc(DecodeContext &context, uint64_t count, SkImageInfo &dstInfo)
+{
+#if defined(_WIN32) || defined(_APPLE) || defined(ANDROID_PLATFORM) || defined(IOS_PLATFORM)
+    IMAGE_LOGE("Unsupport dma mem alloc");
+    return ERR_IMAGE_DATA_UNSUPPORT;
+#else
+    sptr<SurfaceBuffer> sb = SurfaceBuffer::Create();
+    BufferRequestConfig requestConfig = CreateDmaRequestConfig(dstInfo, count, context.info.pixelFormat);
+    if (outputColorFmt_ == PIXEL_FMT_YCRCB_420_SP) {
         requestConfig.format = GRAPHIC_PIXEL_FMT_YCRCB_420_SP;
         requestConfig.usage |= BUFFER_USAGE_VENDOR_PRI16; // height is 64-bytes aligned
         IMAGE_LOGD("ExtDecoder::DmaMemAlloc desiredFormat is NV21");
         count = JpegDecoderYuv::GetYuvOutSize(dstInfo.width(), dstInfo.height());
-    } else if (context.info.pixelFormat == PixelFormat::RGBA_F16) {
-        requestConfig.format = GRAPHIC_PIXEL_FMT_RGBA16_FLOAT;
-        count = dstInfo.width() * dstInfo.height() * ImageUtils::GetPixelBytes(PixelFormat::RGBA_F16);
     }
     GSError ret = sb->Alloc(requestConfig);
     if (ret != GSERROR_OK) {
@@ -554,6 +566,14 @@ uint32_t ExtDecoder::CheckDecodeOptions(uint32_t index, const PixelDecodeOptions
         IMAGE_LOGE("Invalid crop rect xy [%{public}d x %{public}d], wh [%{public}d x %{public}d]",
             dstSubset_.left(), dstSubset_.top(), dstSubset_.width(), dstSubset_.height());
         return ERR_IMAGE_INVALID_PARAMETER;
+    }
+    size_t tempSrcByteCount = info_.computeMinByteSize();
+    size_t tempDstByteCount = dstInfo_.computeMinByteSize();
+    if (SkImageInfo::ByteSizeOverflowed(tempSrcByteCount) || SkImageInfo::ByteSizeOverflowed(tempDstByteCount)) {
+        IMAGE_LOGE("Image too large, srcInfo_height: %{public}d, srcInfo_width: %{public}d, "
+                   "dstInfo_height: %{public}d, dstInfo_width: %{public}d",
+                   info_.height(), info_.width(), dstInfo_.height(), dstInfo_.width());
+        return ERR_IMAGE_TOO_LARGE;
     }
 
     dstOptions_.fFrameIndex = static_cast<int>(index);
@@ -862,17 +882,14 @@ uint32_t ExtDecoder::Decode(uint32_t index, DecodeContext &context)
     if (skEncodeFormat == SkEncodedImageFormat::kHEIF) {
         context.isHardDecode = true;
     }
-    size_t tempByteCount = dstInfo_.computeMinByteSize();
-    if (SkImageInfo::ByteSizeOverflowed(tempByteCount)) {
-        IMAGE_LOGE("Image too large, dstInfo_height: %{public}d, dstInfo_width: %{public}d",
-            dstInfo_.height(), dstInfo_.width());
-        return ERR_IMAGE_TOO_LARGE;
-    }
-    uint64_t byteCount = tempByteCount;
+    uint64_t byteCount = dstInfo_.computeMinByteSize();
     uint8_t *dstBuffer = nullptr;
     std::unique_ptr<uint8_t[]> tmpBuffer;
     if (dstInfo_.colorType() == SkColorType::kRGB_888x_SkColorType) {
         tmpBuffer = make_unique<uint8_t[]>(byteCount);
+        if (tmpBuffer == nullptr) {
+            IMAGE_LOGE("Make unique pointer failed, byteCount: %{public}llu", byteCount);
+        }
         dstBuffer = tmpBuffer.get();
         byteCount = byteCount / NUM_4 * NUM_3;
     }
@@ -891,6 +908,10 @@ uint32_t ExtDecoder::Decode(uint32_t index, DecodeContext &context)
 #if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
     if (context.allocatorType == Media::AllocatorType::DMA_ALLOC) {
         SurfaceBuffer* sbBuffer = reinterpret_cast<SurfaceBuffer*> (context.pixelsBuffer.context);
+        if (sbBuffer == nullptr) {
+            IMAGE_LOGE("%{public}s: surface buffer is nullptr", __func__);
+            return ERR_DMA_DATA_ABNORMAL;
+        }
         rowStride = static_cast<uint64_t>(sbBuffer->GetStride());
     }
     ffrt::submit([skEncodeFormat] {
@@ -910,6 +931,7 @@ uint32_t ExtDecoder::Decode(uint32_t index, DecodeContext &context)
     if (ret != SkCodec::kSuccess) {
         IMAGE_LOGE("Decode failed, get pixels failed, ret=%{public}d", ret);
         SetHeifDecodeError(context);
+        ResetCodec(); // release old jpeg codec
         return ERR_IMAGE_DECODE_ABNORMAL;
     }
     if (dstInfo_.colorType() == SkColorType::kRGB_888x_SkColorType) {
@@ -1373,6 +1395,9 @@ static uint32_t GetFormatName(SkEncodedImageFormat format, std::string &name)
     auto formatNameIter = FORMAT_NAME.find(format);
     if (formatNameIter != FORMAT_NAME.end() && !formatNameIter->second.empty()) {
         name = formatNameIter->second;
+        if (name == IMAGE_HEIF_FORMAT && ImageUtils::GetAPIVersion() > APIVERSION_13) {
+            name = IMAGE_HEIC_FORMAT;
+        }
         IMAGE_LOGD("GetFormatName: get encoded format name (%{public}d)=>[%{public}s].",
             format, name.c_str());
         return SUCCESS;
@@ -2220,7 +2245,13 @@ bool ExtDecoder::DecodeHeifAuxiliaryMap(DecodeContext& context, AuxiliaryPicture
     IMAGE_LOGD("DecodeHeifAuxiliaryMap size:%{public}d-%{public}d", width, height);
     SkImageInfo dstInfo = SkImageInfo::Make(static_cast<int>(width), static_cast<int>(height), dstInfo_.colorType(),
         dstInfo_.alphaType(), dstInfo_.refColorSpace());
-    uint64_t byteCount = static_cast<uint64_t>(dstInfo.computeMinByteSize());
+    size_t tempByteCount = dstInfo.computeMinByteSize();
+    if (SkImageInfo::ByteSizeOverflowed(tempByteCount)) {
+        IMAGE_LOGE("Image too large, dstInfo_height: %{public}d, dstInfo_width: %{public}d",
+            dstInfo.height(), dstInfo.width());
+        return ERR_IMAGE_TOO_LARGE;
+    }
+    uint64_t byteCount = tempByteCount;
     context.info.size.width = width;
     context.info.size.height = height;
     if (DmaMemAlloc(context, byteCount, dstInfo) != SUCCESS) {

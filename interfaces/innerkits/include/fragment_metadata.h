@@ -45,6 +45,10 @@ public:
     {
         return MetadataType::FRAGMENT;
     }
+    bool RemoveExifThumbnail() override
+    {
+        return false;
+    }
 
 protected:
     ImageMetadata::PropertyMapPtr properties_ = std::make_shared<ImageMetadata::PropertyMap>();

@@ -33,6 +33,7 @@ constexpr uint32_t ALPHATYPE_MODULO = 4;
 constexpr uint32_t SCALEMODE_MODULO = 2;
 constexpr uint32_t DMA_WIDTH = 1024;
 constexpr uint32_t DMA_HEIGHT = 512;
+constexpr uint32_t BOOLMODULE = 2;
 
 namespace OHOS {
 namespace Media {
@@ -79,22 +80,6 @@ std::string GetStringFromData()
     return str;
 }
 
-/*
- * show PixelMap
- */
-static void ShowPixelMapDetail(PixelMap &pixelmap)
-{
-    ImageInfo imageInfo;
-    pixelmap.GetImageInfo(imageInfo);
-    IMAGE_LOGI("size is %{public}d, %{public}d ", imageInfo.size.width, imageInfo.size.height);
-    IMAGE_LOGI("format is %{public}d ", static_cast<int32_t>(imageInfo.pixelFormat));
-    IMAGE_LOGI("colorSpace is %{public}d ", static_cast<int32_t>(imageInfo.colorSpace));
-    IMAGE_LOGI("alphaType is %{public}d ", static_cast<int32_t>(imageInfo.alphaType));
-    IMAGE_LOGI("baseDensity is %{public}d ", static_cast<int32_t>(imageInfo.baseDensity));
-    IMAGE_LOGI("encodedFormat is %{public}s ", imageInfo.encodedFormat.c_str());
-    IMAGE_LOGI("pixelmap memory type is %{public}d ", static_cast<int32_t>(pixelmap.GetAllocatorType()));
-}
-
 Media::InitializationOptions GetInitialRandomOpts()
 {
     int32_t width = GetData<int32_t>() % MAX_LENGTH_MODULO;
@@ -135,10 +120,8 @@ void FuzzTestSetMemoryName()
     if (!pixelMapFromOpts) {
         return;
     }
-
-    if (SUCCESS != pixelMapFromOpts->SetMemoryName(GetStringFromData())) {
-        IMAGE_LOGI("fail set name");
-    }
+    pixelMapFromOpts->SetMemoryName(GetStringFromData());
+    pixelMapFromOpts->SetMemoryName("");
 }
 
 void FuzzTesGetPixels()
@@ -150,20 +133,12 @@ void FuzzTesGetPixels()
     }
     int32_t pos_x = GetData<uint32_t>() % (opts.size.width + (opts.size.width >> 2)); // 2:adjusting range
     int32_t pos_y = GetData<uint32_t>() % (opts.size.height + (opts.size.height >> 2)); // 2:adjusting range
-    if (!pixelmap->GetPixel16(pos_x, pos_y)) {
-        IMAGE_LOGI("FuzzTesGetPixels get pixels16_1 failed");
-    }
-    if (!pixelmap->GetPixel32(pos_x, pos_y)) {
-        IMAGE_LOGI("FuzzTesGetPixels get pixels32_1 failed");
-    }
+    pixelmap->GetPixel16(pos_x, pos_y);
+    pixelmap->GetPixel32(pos_x, pos_y);
     pos_x = GetData<int32_t>() % (opts.size.width + (opts.size.width >> 2)); // 2:adjusting range
     pos_y = GetData<int32_t>() % (opts.size.height + (opts.size.height >> 2)); // 2:adjusting range
-    if (!pixelmap->GetPixel16(pos_x, pos_y)) {
-        IMAGE_LOGI("FuzzTesGetPixels get pixels16_2 failed");
-    }
-    if (!pixelmap->GetPixel32(pos_x, pos_y)) {
-        IMAGE_LOGI("FuzzTesGetPixels get pixels32_2 failed");
-    }
+    pixelmap->GetPixel16(pos_x, pos_y);
+    pixelmap->GetPixel32(pos_x, pos_y);
 }
 
 void FuzzTestGetAllocatedByteCount()
@@ -216,7 +191,6 @@ void FuzzTestScale()
     Media::InitializationOptions opts = GetInitialRandomOpts();
     std::unique_ptr<Media::PixelMap> pixelmap = GetPixelMapFromOpts(opts);
     if (!pixelmap) {
-        IMAGE_LOGI(" %{public}s create pixelmap failed", __func__);
         return;
     }
     float x = 0.0;
@@ -234,7 +208,6 @@ void FuzzTestIsSameImage()
     }
     std::unique_ptr<Media::PixelMap> pixelmap = GetPixelMapFromOpts(opts);
     if (!pixelmap) {
-        IMAGE_LOGI("%{public}s craete pixelmap failed", __func__);
         return;
     }
     std::unique_ptr<Media::PixelMap> pixelmap_same = GetPixelMapFromOpts(opts);
@@ -243,7 +216,6 @@ void FuzzTestIsSameImage()
     opts = GetInitialRandomOpts();
     std::unique_ptr<Media::PixelMap> pixelmap_dif = GetPixelMapFromOpts(opts);
     if (!pixelmap_dif) {
-        IMAGE_LOGI("%{public}s craete pixelmap_dif failed", __func__);
         return;
     }
     pixelmap->IsSameImage(*(pixelmap_dif.get()));
@@ -257,20 +229,16 @@ void FuzzTestReadPixelsAndWritePixels()
     }
     std::unique_ptr<Media::PixelMap> pixelmap = GetPixelMapFromOpts(opts);
     if (!pixelmap) {
-        IMAGE_LOGI("%{public}s create pixelmap failed", __func__);
         return;
     }
     int32_t size = pixelmap->GetByteCount();
     std::unique_ptr<uint8_t[]> buffer = std::make_unique<uint8_t[]>(size);
     if (SUCCESS != pixelmap->ReadPixels(size, buffer.get())) {
-        IMAGE_LOGI("%{public}s read pixels failed", __func__);
         return;
     }
     if (SUCCESS != pixelmap->WritePixels(buffer.get(), size)) {
-        IMAGE_LOGI("%{public}s write pixels failed", __func__);
         return;
     }
-    IMAGE_LOGI("%{public}s write pixels success", __func__);
 }
 
 static bool NeedToExclude(PixelFormat pixelFormat)
@@ -294,7 +262,7 @@ void FuzzTestReadARGBPixels()
     int32_t size = pixelmap->GetByteCount();
     std::unique_ptr<uint8_t[]> buffer = std::make_unique<uint8_t[]>(size);
     if (SUCCESS != pixelmap->ReadARGBPixels(size, buffer.get())) {
-        IMAGE_LOGI("%{public}s pixelmap read failed", __func__);
+        IMAGE_LOGD("%{public}s pixelmap read failed", __func__);
     }
 }
 
@@ -303,7 +271,6 @@ void FuzzTestAboutMap()
     Media::InitializationOptions opts = GetInitialRandomOpts();
     std::unique_ptr<Media::PixelMap> pixelmap = GetPixelMapFromOpts(opts);
     if (opts.pixelFormat == PixelFormat::ALPHA_8 || !pixelmap) {
-        IMAGE_LOGI("%{public}s create pixelmap failed", __func__);
         return;
     }
     pixelmap->UnMap();
@@ -320,7 +287,7 @@ static Rect GetRandomRect(int32_t width = 0, int32_t height = 0)
     return rect;
 }
 
-void FuzzTestReadAndWritePixelsWith5Args(bool isEditable)
+void FuzzTestReadWith5Args(bool isEditable)
 {
     Media::InitializationOptions opts = GetInitialRandomOpts();
     if (opts.pixelFormat == PixelFormat::ALPHA_8) {
@@ -329,7 +296,6 @@ void FuzzTestReadAndWritePixelsWith5Args(bool isEditable)
     opts.editable = isEditable;
     std::unique_ptr<Media::PixelMap> pixelmap = GetPixelMapFromOpts(opts);
     if (!pixelmap) {
-        IMAGE_LOGI("%{public}s create pixelmap failed", __func__);
         return;
     }
     Rect region = GetRandomRect(opts.size.width, opts.size.height);
@@ -338,23 +304,7 @@ void FuzzTestReadAndWritePixelsWith5Args(bool isEditable)
     uint32_t regionStride = pixelmap->GetPixelBytes() * region.width;
     uint64_t dstSize = regionStride * region.height;
     std::unique_ptr<uint8_t[]> regionBuffer = std::make_unique<uint8_t[]>(dstSize);
-    if (SUCCESS != pixelmap->ReadPixels(dstSize, offset, regionStride, region, regionBuffer.get())) {
-        IMAGE_LOGI("%{public}s read pixels failed", __func__);
-        return;
-    }
-    IMAGE_LOGI("%{public}s read pixels success", __func__);
-
-    region = GetRandomRect(opts.size.width, opts.size.height);
-    srcSize = pixelmap->GetByteCount();
-    offset = GetData<uint32_t>() % (srcSize >> 2);
-    regionStride = pixelmap->GetPixelBytes() * region.width;
-    dstSize = regionStride * region.height;
-    std::unique_ptr<uint8_t[]> regionBuffer_with_write = std::make_unique<uint8_t[]>(dstSize);
-    if (SUCCESS != pixelmap->WritePixels(regionBuffer_with_write.get(), dstSize, offset, regionStride, region)) {
-        IMAGE_LOGI("%{public}s write pixels failed", __func__);
-        return;
-    }
-    IMAGE_LOGI("%{public}s write pixels success", __func__);
+    pixelmap->ReadPixels(dstSize, offset, regionStride, region, regionBuffer.get());
 }
 
 void FuzzTestReadSinglePixel()
@@ -362,7 +312,6 @@ void FuzzTestReadSinglePixel()
     Media::InitializationOptions opts = GetInitialRandomOpts();
     std::unique_ptr<Media::PixelMap> pixelmap = GetPixelMapFromOpts(opts);
     if (!pixelmap) {
-        IMAGE_LOGI("%{public}s create pixelmap failed", __func__);
         return;
     }
     int32_t x = (GetData<int32_t>() % (opts.size.width >> 2));
@@ -370,10 +319,8 @@ void FuzzTestReadSinglePixel()
     Position pos = {x, y};
     uint32_t dst;
     if (SUCCESS != pixelmap->ReadPixel(pos, dst)) {
-        IMAGE_LOGI("%{public}s ReadSinglePixel failed", __func__);
         return;
     }
-    IMAGE_LOGI("%{public}s ReadSinglePixel SUCCESS", __func__);
 }
 
 void FuzzTestPureRandomSetAlpha()
@@ -384,16 +331,12 @@ void FuzzTestPureRandomSetAlpha()
     }
     std::unique_ptr<Media::PixelMap> pixelmap = GetPixelMapFromOpts(opts);
     if (!pixelmap) {
-        IMAGE_LOGI("%{public}s create pixelmap failed", __func__);
         return;
     }
     float percent = static_cast<float>((GetData<int32_t>()) % 10) / 10.0;
-    IMAGE_LOGI("%{public}s create percent is %{public}lf", __func__, percent);
     if (SUCCESS != pixelmap->SetAlpha(percent)) {
-        IMAGE_LOGI("%{public}s set alpha failed", __func__);
         return;
     }
-    IMAGE_LOGI("%{public}s set alpha success", __func__);
 }
 
 void FuzzTestRGBA_F16PixelMapSetAlpha()
@@ -405,16 +348,12 @@ void FuzzTestRGBA_F16PixelMapSetAlpha()
     opts.pixelFormat = PixelFormat::RGBA_F16;
     std::unique_ptr<Media::PixelMap> pixelmap = GetPixelMapFromOpts(opts);
     if (!pixelmap) {
-        IMAGE_LOGI("%{public}s create pixelmap failed", __func__);
         return;
     }
     float percent = static_cast<float>((GetData<int32_t>()) % 10) / 10.0;
-    IMAGE_LOGI("%{public}s create percent is %{public}lf", __func__, percent);
     if (SUCCESS != pixelmap->SetAlpha(percent)) {
-        IMAGE_LOGI("%{public}s RGBA_F16 set alpha failed", __func__);
         return;
     }
-    IMAGE_LOGI("%{public}s RGBA_F16 set alpha success", __func__);
 }
 
 void FuzzTestRGBA_1010102PixelMapSetAlpha()
@@ -426,22 +365,70 @@ void FuzzTestRGBA_1010102PixelMapSetAlpha()
     opts.pixelFormat = PixelFormat::RGBA_1010102;
     std::unique_ptr<Media::PixelMap> pixelmap = GetPixelMapFromOpts(opts);
     if (!pixelmap) {
-        IMAGE_LOGI("%{public}s create pixelmap failed", __func__);
         return;
     }
     float percent = static_cast<float>((GetData<int32_t>()) % 10) / 10.0;
-    IMAGE_LOGI("%{public}s create percent is %{public}lf", __func__, percent);
     if (SUCCESS != pixelmap->SetAlpha(percent)) {
-        IMAGE_LOGI("%{public}s RGBA_1010102 set alpha failed", __func__);
         return;
     }
-    IMAGE_LOGI("%{public}s RGBA_1010102 set alpha success", __func__);
+}
+
+void FuzzTestWritePixelsWith5Args(bool isEditable)
+{
+    Media::InitializationOptions opts = GetInitialRandomOpts();
+    if (opts.pixelFormat == PixelFormat::ALPHA_8) {
+        return;
+    }
+    opts.editable = isEditable;
+    std::unique_ptr<Media::PixelMap> pixelmap = GetPixelMapFromOpts(opts);
+    if (!pixelmap) {
+        return;
+    }
+    Rect region = GetRandomRect(opts.size.width, opts.size.height);
+    int32_t srcSize = pixelmap->GetByteCount();
+    uint32_t offset = GetData<uint32_t>() % (srcSize >> 2);
+    uint32_t regionStride = pixelmap->GetPixelBytes() * region.width;
+    uint64_t dstSize = regionStride * region.height;
+    std::unique_ptr<uint8_t[]> regionBuffer_with_write = std::make_unique<uint8_t[]>(dstSize);
+    pixelmap->WritePixels(regionBuffer_with_write.get(), dstSize, offset, regionStride, region);
+}
+
+void FuzzTestCrop()
+{
+    Media::InitializationOptions opts = GetInitialRandomOpts();
+    if (opts.pixelFormat == PixelFormat::ALPHA_8 || opts.pixelFormat == PixelFormat::RGB_888) {
+        return;
+    }
+    opts.useDMA = GetData<uint32_t>() % BOOLMODULE;
+    if (opts.useDMA) {
+        opts.size.height += DMA_HEIGHT;
+        opts.size.width += DMA_HEIGHT;
+    }
+    std::unique_ptr<Media::PixelMap> pixelmap = GetPixelMapFromOpts(opts);
+    if (!pixelmap) {
+        return;
+    }
+    Rect rect = GetRandomRect(opts.size.width, opts.size.height);
+    pixelmap->crop(rect);
+}
+
+void FuzzTestSetFunc()
+{
+    Media::InitializationOptions opts = GetInitialRandomOpts();
+    std::unique_ptr<Media::PixelMap> pixelmap = GetPixelMapFromOpts(opts);
+    if (!pixelmap) {
+        return;
+    }
+    pixelmap->SetFreePixelMapProc([](void *addr, void *context, uint32_t size) {
+        return;
+    });
 }
 
 void CropCreate()
 {
     Media::InitializationOptions opts = GetInitialRandomOpts();
     std::unique_ptr<Media::PixelMap> pixelmap = GetPixelMapFromOpts(opts);
+    opts.useSourceIfMatch = false;
     if (opts.pixelFormat == PixelFormat::ALPHA_8 || !pixelmap) {
         return;
     }
@@ -450,12 +437,7 @@ void CropCreate()
     Rect rect = GetRandomRect(imageInfo.size.width, imageInfo.size.height);
     opts.size.width = rect.width;
     opts.size.height = rect.height;
-    std::unique_ptr<Media::PixelMap> pixelmap_crop = PixelMap::Create(*(pixelmap.get()), rect, opts);
-    if (!pixelmap_crop) {
-        IMAGE_LOGI("%{public}s create pixelmap failed", __func__);
-        return;
-    }
-    IMAGE_LOGI("%{public}s create pixelmap_crop success", __func__);
+    PixelMap::Create(*(pixelmap.get()), rect, opts);
 }
 
 void DmaAndYuvPixelMapCreate()
@@ -466,13 +448,8 @@ void DmaAndYuvPixelMapCreate()
     opts.useDMA = true;
     opts.pixelFormat = PixelFormat::YCBCR_P010; 
     std::unique_ptr<Media::PixelMap> pixelmap_dma_yuv = GetPixelMapFromOpts(opts);
-
-    if (!pixelmap_dma_yuv) {
-        IMAGE_LOGI("%{public}s create pixelmap_dma_yuv failed", __func__);
-        ShowPixelMapDetail(*(pixelmap_dma_yuv.get()));
-        return;
-    }
-    IMAGE_LOGI("%{public}s create pixelmap_dma_yuv success", __func__);
+    opts.pixelFormat = PixelFormat::NV12;
+    std::unique_ptr<Media::PixelMap> pixelmap_dma_yuv_nv12 = GetPixelMapFromOpts(opts);
 }
 
 void CreatePixelMapFuzzTest()
@@ -493,10 +470,13 @@ void PixelMapInterfaceFuzzTest()
     FuzzTestReadARGBPixels();
     FuzzTestReadSinglePixel();
     FuzzTestAboutMap();
-    FuzzTestReadAndWritePixelsWith5Args(GetData<uint32_t>() % 2); // 2: random true of false
+    FuzzTestReadWith5Args(GetData<uint32_t>() % 2); // 2: true or false
     FuzzTestPureRandomSetAlpha();
     FuzzTestRGBA_F16PixelMapSetAlpha();
     FuzzTestRGBA_1010102PixelMapSetAlpha();
+    FuzzTestWritePixelsWith5Args(GetData<uint32_t>() % 2); // 2: true or false
+    FuzzTestCrop();
+    FuzzTestSetFunc();
 }
 
 bool PixelMapMainFuzzTest(const uint8_t* data, size_t size)

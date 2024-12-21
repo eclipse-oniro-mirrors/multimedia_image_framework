@@ -181,17 +181,17 @@ void AccessorTest001(const uint8_t *data, size_t size)
 
 void AccessorTest002(const uint8_t* data, size_t size)
 {
-    int fd = ConvertDataToFd(data, size);
-    if (fd < 0) {
+    std::string filename = "/data/local/tmp/test_parse_exif.jpg";
+    if (!WriteDataToFile(data, size, filename)) {
+        IMAGE_LOGE("WriteDataToFile failed");
         return;
     }
     BufferMetadataStream::MemoryMode mode = BufferMetadataStream::MemoryMode::Dynamic;
     std::shared_ptr<MetadataAccessor> metadataAccessor1 = MetadataAccessorFactory::Create(const_cast<uint8_t*>(data),
         size, mode);
     MetadataAccessorFuncTest001(metadataAccessor1);
-    std::shared_ptr<MetadataAccessor> metadataAccessor2 = MetadataAccessorFactory::Create(fd);
+    std::shared_ptr<MetadataAccessor> metadataAccessor2 = MetadataAccessorFactory::Create(filename);
     MetadataAccessorFuncTest001(metadataAccessor2);
-    close(fd);
 }
 } // namespace Media
 } // namespace OHOS

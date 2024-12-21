@@ -35,109 +35,112 @@ public:
 
 /**
  * @tc.name: ImagePixelMapSwitchTest001
- * @tc.desc: create pixelmap with color,colorlength,offset,width and initialization options
- * @tc.desc: !CheckParams(colors, colorLength, offset, stride, opts)
+ * @tc.desc: WritePixel
+ * @tc.desc: IsValidImageInfo(imageInfo_)
  * @tc.type: FUNC
  */
 HWTEST_F(ImagePixelMapSwitchTest, ImagePixelMapSwitchTest001, TestSize.Level3)
 {
     GTEST_LOG_(INFO) << "ImagePixelMapSwitchTest: ImagePixelMapSwitchTest001 start";
     /**
-     * @tc.steps: step1. set color,colorlength,offset,width and initialization options
+     * @tc.steps: step1. set pixelmap, rect and initialization options
      * @tc.expected: step1. The new pixelmap is not null.
      */
-    const uint32_t color[8] = {};
-    uint32_t colorlength = 8;
-    const int32_t offset = 1;
-    InitializationOptions opts;
-    opts.size.width = 200;
-    opts.size.height = 300;
-    opts.pixelFormat = PixelFormat::ARGB_8888;
-    opts.alphaType = AlphaType::IMAGE_ALPHA_TYPE_OPAQUE;
-    int32_t width = opts.size.width;
-
-    std::unique_ptr<PixelMap> newPixelMap = PixelMap::Create(color, colorlength, offset, width, opts);
-    EXPECT_EQ(newPixelMap, nullptr);
+    PixelMap pixelMap;
+    ImageInfo info;
+    pixelMap.SetImageInfo(info);
+    Position position;
+    position.x = 0; // 0 means the x point of the position.
+    position.y = 0; // 0 means the y point of the position.
+    uint32_t color = 9; // 9 means the value of each point.
+    uint32_t ret = pixelMap.WritePixel(position, color); // used to test write each pixel.
+    EXPECT_EQ(ret, ERR_IMAGE_INVALID_PARAMETER);
     GTEST_LOG_(INFO) << "ImagePixelMapSwitchTest: ImagePixelMapSwitchTest001 end";
 }
 
 /**
  * @tc.name: ImagePixelMapSwitchTest002
- * @tc.desc: create pixelmap with color,colorlength,offset,width and initialization options
- * @tc.desc: dstPixelMap->SetImageInfo(dstImageInfo) != SUCCESS
+ * @tc.desc: WritePixel
+ * @tc.desc: pos.x < 0 || pos.y < 0 || pos.x >= GetWidth() || pos.y >= GetHeight()
  * @tc.type: FUNC
  */
 HWTEST_F(ImagePixelMapSwitchTest, ImagePixelMapSwitchTest002, TestSize.Level3)
 {
     GTEST_LOG_(INFO) << "ImagePixelMapSwitchTest: ImagePixelMapSwitchTest002 start";
     /**
-     * @tc.steps: step1. set color,colorlength,offset,width and initialization options
+     * @tc.steps: step1. set pixelmap, rect and initialization options
      * @tc.expected: step1. The new pixelmap is not null.
      */
-    const uint32_t color[8] = { 0x80, 0x02, 0x04, 0x08, 0x40, 0x02, 0x04, 0x08 };
-    uint32_t colorlength = sizeof(color) / sizeof(color[0]);
-    const int32_t offset = 1;
-    InitializationOptions opts;
-    opts.size.width = 0;
-    opts.size.height = 300;
-    opts.pixelFormat = PixelFormat::ARGB_8888;
-    opts.alphaType = AlphaType::IMAGE_ALPHA_TYPE_OPAQUE;
-    int32_t width = opts.size.width;
-
-    std::unique_ptr<PixelMap> newPixelMap = PixelMap::Create(color, colorlength, offset, width, opts);
-    EXPECT_EQ(newPixelMap, nullptr);
+    PixelMap pixelMap;
+    ImageInfo info;
+    info.size.width = 200; // 200 means the width of the pixelmap.
+    info.size.height = 300;  // 300 means the height of the pixelmap.
+    info.pixelFormat = PixelFormat::RGB_888;
+    info.colorSpace = ColorSpace::SRGB;
+    pixelMap.SetImageInfo(info);
+    Position position;
+    position.x = 300; // 300 used to check the invalid parameter.
+    position.y = 400; // 400 used to check the invalid parameter.
+    uint32_t color = 9; // 9 means the value of each point.
+    uint32_t ret = pixelMap.WritePixel(position, color);
+    EXPECT_EQ(ret, ERR_IMAGE_INVALID_PARAMETER);
     GTEST_LOG_(INFO) << "ImagePixelMapSwitchTest: ImagePixelMapSwitchTest002 end";
 }
 
 /**
- * @tc.name: ImagePixelMapSwitchTest002
+ * @tc.name: ImagePixelMapSwitchTest002_1
  * @tc.desc: create pixelmap with color,colorlength,offset,width and initialization options
  * @tc.desc: bufferSize == 0
  * @tc.type: FUNC
  */
 HWTEST_F(ImagePixelMapSwitchTest, ImagePixelMapSwitchTest002_1, TestSize.Level3)
 {
-    GTEST_LOG_(INFO) << "ImagePixelMapSwitchTest: ImagePixelMapSwitchTest002 start";
+    GTEST_LOG_(INFO) << "ImagePixelMapSwitchTest: ImagePixelMapSwitchTest002_1 start";
     /**
      * @tc.steps: step1. set color,colorlength,offset,width and initialization options
      * @tc.expected: step1. The new pixelmap is not null.
      */
-    const uint32_t color[8] = {};
-    uint32_t colorlength = 8;
-    const int32_t offset = 1;
+    const uint32_t color[8] = {}; // color means the pixels color.
+    uint32_t colorlength = 8;  // 8 means the colorlength.
+    const int32_t offset = 1;  // 1 means the offset of the color.
     InitializationOptions opts;
-    opts.size.width = 0;
-    opts.size.height = 300;
+    opts.size.width = 0; // 0 means the width of the pixelmap.
+    opts.size.height = 300; // 300 means the height of the pixelmap.
     opts.pixelFormat = PixelFormat::ARGB_8888;
     opts.alphaType = AlphaType::IMAGE_ALPHA_TYPE_OPAQUE;
     int32_t width = opts.size.width;
 
     std::unique_ptr<PixelMap> newPixelMap = PixelMap::Create(color, colorlength, offset, width, opts);
     EXPECT_EQ(newPixelMap, nullptr);
-    GTEST_LOG_(INFO) << "ImagePixelMapSwitchTest: ImagePixelMapSwitchTest002 end";
+    GTEST_LOG_(INFO) << "ImagePixelMapSwitchTest: ImagePixelMapSwitchTest002_1 end";
 }
 
 /**
  * @tc.name: ImagePixelMapSwitchTest003
- * @tc.desc: create pixelmap with initialization options
- * @tc.desc: dstPixelMap->SetImageInfo(dstImageInfo) != SUCCESS
+ * @tc.desc: WritePixel
+ * @tc.desc: !IsEditable()
  * @tc.type: FUNC
  */
 HWTEST_F(ImagePixelMapSwitchTest, ImagePixelMapSwitchTest003, TestSize.Level3)
 {
     GTEST_LOG_(INFO) << "ImagePixelMapSwitchTest: ImagePixelMapSwitchTest003 start";
     /**
-     * @tc.steps: step1. set initialization options
+     * @tc.steps: step1. set pixelmap, rect and initialization options
      * @tc.expected: step1. The new pixelmap is not null.
      */
-    InitializationOptions opts;
-    opts.size.width = 0;
-    opts.size.height = 300;
-    opts.pixelFormat = PixelFormat::ARGB_8888;
-    opts.alphaType = AlphaType::IMAGE_ALPHA_TYPE_OPAQUE;
-
-    std::unique_ptr<PixelMap> newPixelMap = PixelMap::Create(opts);
-    EXPECT_EQ(newPixelMap, nullptr);
+    PixelMap pixelMap;
+    ImageInfo info;
+    info.size.width = 200; // 200 means the width of the pixelmap.
+    info.size.height = 300; // 300 means the height of the pixelmap.
+    info.pixelFormat = PixelFormat::UNKNOWN;
+    info.colorSpace = ColorSpace::SRGB;
+    pixelMap.SetImageInfo(info);
+    Position position;
+    position.x = 100; // 100 means the x point of the position.
+    position.y = 200; // 200 means the y point of the position.
+    uint32_t color = 9;  // 9 means the value of each point.
+    uint32_t ret = pixelMap.WritePixel(position, color);
+    EXPECT_EQ(ret, ERR_IMAGE_INVALID_PARAMETER);
     GTEST_LOG_(INFO) << "ImagePixelMapSwitchTest: ImagePixelMapSwitchTest003 end";
 }
 
@@ -149,14 +152,14 @@ HWTEST_F(ImagePixelMapSwitchTest, ImagePixelMapSwitchTest003, TestSize.Level3)
  */
 HWTEST_F(ImagePixelMapSwitchTest, ImagePixelMapSwitchTest004, TestSize.Level3)
 {
-    GTEST_LOG_(INFO) << "ImagePixelMapSwitchTest: ImagePixelMapSwitchTest003 start";
+    GTEST_LOG_(INFO) << "ImagePixelMapSwitchTest: ImagePixelMapSwitchTest004 start";
     /**
      * @tc.steps: step1. set initialization options
      * @tc.expected: step1. The new pixelmap is not null.
      */
     InitializationOptions opts;
-    opts.size.width = 700 * 1024 * 1024;
-    opts.size.height = 700 * 1024 * 1024;
+    opts.size.width = 700 * 1024 * 1024; // 700 * 1024 * 1024 means the width of the pixelmap.
+    opts.size.height = 700 * 1024 * 1024; // 700 * 1024 * 1024 means the height of the pixelmap.
     opts.pixelFormat = PixelFormat::ARGB_8888;
     opts.alphaType = AlphaType::IMAGE_ALPHA_TYPE_OPAQUE;
 
@@ -179,15 +182,15 @@ HWTEST_F(ImagePixelMapSwitchTest, ImagePixelMapSwitchTest005, TestSize.Level3)
      * @tc.expected: step1. The new pixelmap is not null.
      */
     ImageInfo info;
-    info.size.width = 0;
-    info.size.height = 0;
+    info.size.width = 0; // 0 means the width of the pixelmap.
+    info.size.height = 0; // 0 means the height of the pixelmap.
     info.pixelFormat = PixelFormat::RGB_888;
     info.colorSpace = ColorSpace::SRGB;
     PixelMap srcPixelMap;
     srcPixelMap.SetImageInfo(info);
     InitializationOptions opts;
-    opts.size.width = 200;
-    opts.size.height = 300;
+    opts.size.width = 200; // 200 means the width of the pixelmap.
+    opts.size.height = 300; // 300 means the height of the pixelmap.
     opts.pixelFormat = PixelFormat::ARGB_8888;
     opts.alphaType = AlphaType::IMAGE_ALPHA_TYPE_OPAQUE;
     
@@ -212,8 +215,8 @@ HWTEST_F(ImagePixelMapSwitchTest, ImagePixelMapSwitchTest006, TestSize.Level3)
      */
     PixelMap pixelMap;
     ImageInfo info;
-    info.size.width = 0;
-    info.size.height = 0;
+    info.size.width = 0; // 0 means the width of the pixelmap.
+    info.size.height = 0; // 0 means the height of the pixelmap.
     info.pixelFormat = PixelFormat::RGB_888;
     info.colorSpace = ColorSpace::SRGB;
     bool isReused = false;
@@ -237,8 +240,8 @@ HWTEST_F(ImagePixelMapSwitchTest, ImagePixelMapSwitchTest007, TestSize.Level3)
      */
     PixelMap pixelMap;
     ImageInfo info;
-    info.size.width = 200;
-    info.size.height = 300;
+    info.size.width = 200; // 200 means the width of the pixelmap.
+    info.size.height = 300; // 300 means the height of the pixelmap.
     info.pixelFormat = PixelFormat::UNKNOWN;
     info.colorSpace = ColorSpace::SRGB;
     bool isReused = false;
@@ -262,13 +265,13 @@ HWTEST_F(ImagePixelMapSwitchTest, ImagePixelMapSwitchTest008, TestSize.Level3)
      */
     PixelMap pixelMap;
     ImageInfo info;
-    info.size.width = 200;
-    info.size.height = 300;
+    info.size.width = 200; // 200 means the width of the pixelmap.
+    info.size.height = 300; // 300 means the height of the pixelmap.
     info.pixelFormat = PixelFormat::RGB_888;
     info.colorSpace = ColorSpace::SRGB;
     bool isReused = false;
     pixelMap.SetImageInfo(info, isReused);
-    const uint8_t* ret = pixelMap.GetPixel8(300, 400);
+    const uint8_t* ret = pixelMap.GetPixel8(300, 400); // 300 means x point, 400 means y point.
     EXPECT_EQ(ret, nullptr);
     GTEST_LOG_(INFO) << "ImagePixelMapSwitchTest: ImagePixelMapSwitchTest008 end";
 }
@@ -288,13 +291,13 @@ HWTEST_F(ImagePixelMapSwitchTest, ImagePixelMapSwitchTest009, TestSize.Level3)
      */
     PixelMap pixelMap;
     ImageInfo info;
-    info.size.width = 200;
-    info.size.height = 300;
+    info.size.width = 200; // 200 means the width of the pixelmap.
+    info.size.height = 300; // 300 means the height of the pixelmap.
     info.pixelFormat = PixelFormat::RGB_888;
     info.colorSpace = ColorSpace::SRGB;
     bool isReused = false;
     pixelMap.SetImageInfo(info, isReused);
-    const uint16_t* ret = pixelMap.GetPixel16(300, 400);
+    const uint16_t* ret = pixelMap.GetPixel16(300, 400); // 300 means x point, 400 means y point.
     EXPECT_EQ(ret, nullptr);
     GTEST_LOG_(INFO) << "ImagePixelMapSwitchTest: ImagePixelMapSwitchTest009 end";
 }
@@ -314,13 +317,13 @@ HWTEST_F(ImagePixelMapSwitchTest, ImagePixelMapSwitchTest010, TestSize.Level3)
      */
     PixelMap pixelMap;
     ImageInfo info;
-    info.size.width = 200;
-    info.size.height = 300;
+    info.size.width = 200; // 200 means the width of the pixelmap.
+    info.size.height = 300; // 300 means the height of the pixelmap.
     info.pixelFormat = PixelFormat::RGB_888;
     info.colorSpace = ColorSpace::SRGB;
     bool isReused = false;
     pixelMap.SetImageInfo(info, isReused);
-    const uint32_t* ret = pixelMap.GetPixel32(300, 400);
+    const uint32_t* ret = pixelMap.GetPixel32(300, 400); // 300 means x point, 400 means y point.
     EXPECT_EQ(ret, nullptr);
     GTEST_LOG_(INFO) << "ImagePixelMapSwitchTest: ImagePixelMapSwitchTest010 end";
 }
@@ -340,13 +343,13 @@ HWTEST_F(ImagePixelMapSwitchTest, ImagePixelMapSwitchTest011, TestSize.Level3)
      */
     PixelMap pixelMap;
     ImageInfo info;
-    info.size.width = 200;
-    info.size.height = 300;
+    info.size.width = 200; // 200 means the width of the pixelmap.
+    info.size.height = 300; // 300 means the height of the pixelmap.
     info.pixelFormat = PixelFormat::RGB_888;
     info.colorSpace = ColorSpace::SRGB;
     bool isReused = false;
     pixelMap.SetImageInfo(info, isReused);
-    const uint8_t* ret = pixelMap.GetPixel(300, 400);
+    const uint8_t* ret = pixelMap.GetPixel(300, 400); // 300 means x point, 400 means y point.
     EXPECT_EQ(ret, nullptr);
     GTEST_LOG_(INFO) << "ImagePixelMapSwitchTest: ImagePixelMapSwitchTest011 end";
 }
@@ -366,7 +369,7 @@ HWTEST_F(ImagePixelMapSwitchTest, ImagePixelMapSwitchTest012, TestSize.Level3)
      */
     PixelMap pixelMap;
     uint32_t color = 0;
-    bool ret = pixelMap.GetARGB32Color(200, 300, color);
+    bool ret = pixelMap.GetARGB32Color(200, 300, color); // 200 means x point, 300 means y point.
     EXPECT_EQ(ret, false);
     GTEST_LOG_(INFO) << "ImagePixelMapSwitchTest: ImagePixelMapSwitchTest012 end";
 }
@@ -386,14 +389,14 @@ HWTEST_F(ImagePixelMapSwitchTest, ImagePixelMapSwitchTest013, TestSize.Level3)
      */
     PixelMap pixelMap;
     ImageInfo info;
-    info.size.width = 200;
-    info.size.height = 300;
+    info.size.width = 200; // 200 means the width of the pixelmap.
+    info.size.height = 300; // 300 means the height of the pixelmap.
     info.pixelFormat = PixelFormat::RGB_888;
     info.colorSpace = ColorSpace::SRGB;
     bool isReused = false;
     pixelMap.SetImageInfo(info, isReused);
     uint32_t color = 0;
-    bool ret = pixelMap.GetARGB32Color(300, 400, color);
+    bool ret = pixelMap.GetARGB32Color(300, 400, color); // 300 means x point, 400 means y point.
     EXPECT_EQ(ret, false);
     GTEST_LOG_(INFO) << "ImagePixelMapSwitchTest: ImagePixelMapSwitchTest013 end";
 }
@@ -413,13 +416,13 @@ HWTEST_F(ImagePixelMapSwitchTest, ImagePixelMapSwitchTest014, TestSize.Level3)
      */
     PixelMap pixelMap;
     ImageInfo info;
-    info.size.width = 200;
-    info.size.height = 300;
+    info.size.width = 200; // 200 means the width of the pixelmap.
+    info.size.height = 300; // 300 means the height of the pixelmap.
     info.pixelFormat = PixelFormat::UNKNOWN;
     info.colorSpace = ColorSpace::SRGB;
     bool isReused = false;
     pixelMap.SetImageInfo(info, isReused);
-    float percent = 0.8;
+    float percent = 0.8; // 0.8 means alpha percent
     bool ret = pixelMap.SetAlpha(percent);
     EXPECT_EQ(ret, true);
     GTEST_LOG_(INFO) << "ImagePixelMapSwitchTest: ImagePixelMapSwitchTest014 end";
@@ -440,13 +443,13 @@ HWTEST_F(ImagePixelMapSwitchTest, ImagePixelMapSwitchTest015, TestSize.Level3)
      */
     PixelMap pixelMap;
     ImageInfo info;
-    info.size.width = 200;
-    info.size.height = 300;
+    info.size.width = 200; // 200 means the width of the pixelmap.
+    info.size.height = 300; // 300 means the height of the pixelmap.
     info.pixelFormat = PixelFormat::RGB_888;
     info.colorSpace = ColorSpace::SRGB;
     bool isReused = false;
     pixelMap.SetImageInfo(info, isReused);
-    float percent = 1.5;
+    float percent = 1.5; // 1.5 means alpha percent
     bool ret = pixelMap.SetAlpha(percent);
     EXPECT_EQ(ret, true);
     GTEST_LOG_(INFO) << "ImagePixelMapSwitchTest: ImagePixelMapSwitchTest015 end";
@@ -467,15 +470,15 @@ HWTEST_F(ImagePixelMapSwitchTest, ImagePixelMapSwitchTest016, TestSize.Level3)
      */
     PixelMap pixelMap;
     ImageInfo info;
-    info.size.width = 200;
-    info.size.height = 300;
+    info.size.width = 200; // 200 means the width of the pixelmap.
+    info.size.height = 300; // 300 means the height of the pixelmap.
     info.pixelFormat = PixelFormat::RGB_888;
     info.colorSpace = ColorSpace::SRGB;
     pixelMap.SetImageInfo(info);
     Position position;
-    position.x = -1;
-    position.y = -1;
-    uint32_t color = 9;
+    position.x = -1; // -1 means x point
+    position.y = -1; // -1 means y point
+    uint32_t color = 9; // 9 means the value of each point.
     uint32_t ret = pixelMap.WritePixel(position, color);
     EXPECT_EQ(ret, ERR_IMAGE_INVALID_PARAMETER);
     GTEST_LOG_(INFO) << "ImagePixelMapSwitchTest: ImagePixelMapSwitchTest016 end";
@@ -483,30 +486,29 @@ HWTEST_F(ImagePixelMapSwitchTest, ImagePixelMapSwitchTest016, TestSize.Level3)
 
 /**
  * @tc.name: ImagePixelMapSwitchTest017
- * @tc.desc: WritePixel
- * @tc.desc: pos.x < 0 || pos.y < 0 || pos.x >= GetWidth() || pos.y >= GetHeight()
+ * @tc.desc: create pixelmap with color,colorlength,offset,width and initialization options
+ * @tc.desc: dstPixelMap->SetImageInfo(dstImageInfo) != SUCCESS
  * @tc.type: FUNC
  */
 HWTEST_F(ImagePixelMapSwitchTest, ImagePixelMapSwitchTest017, TestSize.Level3)
 {
     GTEST_LOG_(INFO) << "ImagePixelMapSwitchTest: ImagePixelMapSwitchTest017 start";
     /**
-     * @tc.steps: step1. set pixelmap, rect and initialization options
+     * @tc.steps: step1. set color,colorlength,offset,width and initialization options
      * @tc.expected: step1. The new pixelmap is not null.
      */
-    PixelMap pixelMap;
-    ImageInfo info;
-    info.size.width = 200;
-    info.size.height = 300;
-    info.pixelFormat = PixelFormat::RGB_888;
-    info.colorSpace = ColorSpace::SRGB;
-    pixelMap.SetImageInfo(info);
-    Position position;
-    position.x = 300;
-    position.y = 400;
-    uint32_t color = 9;
-    uint32_t ret = pixelMap.WritePixel(position, color);
-    EXPECT_EQ(ret, ERR_IMAGE_INVALID_PARAMETER);
+    const uint32_t color[8] = { 0x80, 0x02, 0x04, 0x08, 0x40, 0x02, 0x04, 0x08 };
+    uint32_t colorlength = sizeof(color) / sizeof(color[0]);
+    const int32_t offset = 1; // 1 means the offset of the color.
+    InitializationOptions opts;
+    opts.size.width = 0; // 0 means the width of the pixelmap.
+    opts.size.height = 300; // 300 means the width of the pixelmap.
+    opts.pixelFormat = PixelFormat::ARGB_8888;
+    opts.alphaType = AlphaType::IMAGE_ALPHA_TYPE_OPAQUE;
+    int32_t width = opts.size.width;
+
+    std::unique_ptr<PixelMap> newPixelMap = PixelMap::Create(color, colorlength, offset, width, opts);
+    EXPECT_EQ(newPixelMap, nullptr);
     GTEST_LOG_(INFO) << "ImagePixelMapSwitchTest: ImagePixelMapSwitchTest017 end";
 }
 
@@ -525,15 +527,15 @@ HWTEST_F(ImagePixelMapSwitchTest, ImagePixelMapSwitchTest018, TestSize.Level3)
      */
     PixelMap pixelMap;
     ImageInfo info;
-    info.size.width = 200;
-    info.size.height = 300;
+    info.size.width = 200; // 200 means the width of the pixelmap.
+    info.size.height = 300; // 300 means the height of the pixelmap.
     info.pixelFormat = PixelFormat::ARGB_8888;
     info.colorSpace = ColorSpace::SRGB;
     pixelMap.SetImageInfo(info);
     Position position;
-    position.x = 100;
-    position.y = 200;
-    uint32_t color = 9;
+    position.x = 100; // 100 means x point
+    position.y = 200; // 200 means x point
+    uint32_t color = 9; // 9 means the value of each point.
     uint32_t ret = pixelMap.WritePixel(position, color);
     EXPECT_EQ(ret, ERR_IMAGE_PIXELMAP_NOT_ALLOW_MODIFY);
     GTEST_LOG_(INFO) << "ImagePixelMapSwitchTest: ImagePixelMapSwitchTest018 end";
@@ -541,55 +543,53 @@ HWTEST_F(ImagePixelMapSwitchTest, ImagePixelMapSwitchTest018, TestSize.Level3)
 
 /**
  * @tc.name: ImagePixelMapSwitchTest019
- * @tc.desc: WritePixel
- * @tc.desc: !IsEditable()
+ * @tc.desc: create pixelmap with initialization options
+ * @tc.desc: dstPixelMap->SetImageInfo(dstImageInfo) != SUCCESS
  * @tc.type: FUNC
  */
 HWTEST_F(ImagePixelMapSwitchTest, ImagePixelMapSwitchTest019, TestSize.Level3)
 {
     GTEST_LOG_(INFO) << "ImagePixelMapSwitchTest: ImagePixelMapSwitchTest019 start";
     /**
-     * @tc.steps: step1. set pixelmap, rect and initialization options
+     * @tc.steps: step1. set initialization options
      * @tc.expected: step1. The new pixelmap is not null.
      */
-    PixelMap pixelMap;
-    ImageInfo info;
-    info.size.width = 200;
-    info.size.height = 300;
-    info.pixelFormat = PixelFormat::UNKNOWN;
-    info.colorSpace = ColorSpace::SRGB;
-    pixelMap.SetImageInfo(info);
-    Position position;
-    position.x = 100;
-    position.y = 200;
-    uint32_t color = 9;
-    uint32_t ret = pixelMap.WritePixel(position, color);
-    EXPECT_EQ(ret, ERR_IMAGE_INVALID_PARAMETER);
+    InitializationOptions opts;
+    opts.size.width = 0; // 0 means the width of the pixelmap.
+    opts.size.height = 300; // 300 means the height of the pixelmap.
+    opts.pixelFormat = PixelFormat::ARGB_8888;
+    opts.alphaType = AlphaType::IMAGE_ALPHA_TYPE_OPAQUE;
+
+    std::unique_ptr<PixelMap> newPixelMap = PixelMap::Create(opts);
+    EXPECT_EQ(newPixelMap, nullptr);
     GTEST_LOG_(INFO) << "ImagePixelMapSwitchTest: ImagePixelMapSwitchTest019 end";
 }
 
 /**
  * @tc.name: ImagePixelMapSwitchTest020
- * @tc.desc: WritePixel
- * @tc.desc: IsValidImageInfo(imageInfo_)
+ * @tc.desc: create pixelmap with color,colorlength,offset,width and initialization options
+ * @tc.desc: !CheckParams(colors, colorLength, offset, stride, opts)
  * @tc.type: FUNC
  */
 HWTEST_F(ImagePixelMapSwitchTest, ImagePixelMapSwitchTest020, TestSize.Level3)
 {
     GTEST_LOG_(INFO) << "ImagePixelMapSwitchTest: ImagePixelMapSwitchTest020 start";
     /**
-     * @tc.steps: step1. set pixelmap, rect and initialization options
+     * @tc.steps: step1. set color,colorlength,offset,width and initialization options
      * @tc.expected: step1. The new pixelmap is not null.
      */
-    PixelMap pixelMap;
-    ImageInfo info;
-    pixelMap.SetImageInfo(info);
-    Position position;
-    position.x = 0;
-    position.y = 0;
-    uint32_t color = 9;
-    uint32_t ret = pixelMap.WritePixel(position, color);
-    EXPECT_EQ(ret, ERR_IMAGE_INVALID_PARAMETER);
+    const uint32_t color[8] = {};
+    uint32_t colorlength = 8;  // 8 means the length of the color.
+    const int32_t offset = 1; // 1 means the offset of the color.
+    InitializationOptions opts;
+    opts.size.width = 200; // 200 means the width of the pixelmap.
+    opts.size.height = 300; // 300 means the height of the pixelmap.
+    opts.pixelFormat = PixelFormat::ARGB_8888;
+    opts.alphaType = AlphaType::IMAGE_ALPHA_TYPE_OPAQUE;
+    int32_t width = opts.size.width;
+
+    std::unique_ptr<PixelMap> newPixelMap = PixelMap::Create(color, colorlength, offset, width, opts);
+    EXPECT_EQ(newPixelMap, nullptr);
     GTEST_LOG_(INFO) << "ImagePixelMapSwitchTest: ImagePixelMapSwitchTest020 end";
 }
 
