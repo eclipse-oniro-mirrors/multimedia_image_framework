@@ -43,16 +43,16 @@
 #include "image_system_properties.h"
 #include "image/abs_image_decoder.h"
 #include "pixel_map.h"
-#include "bundle_mgr_interface.h"
-#include "iservice_registry.h"
-#include "ipc_skeleton.h"
-#include "system_ability_definition.h"
-#include "os_account_manager.h"
 #ifdef IOS_PLATFORM
 #include <sys/syscall.h>
 #endif
 #if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
 #include "surface_buffer.h"
+#include "bundle_mgr_interface.h"
+#include "iservice_registry.h"
+#include "ipc_skeleton.h"
+#include "system_ability_definition.h"
+#include "os_account_manager.h"
 #else
 #include "refbase.h"
 #endif
@@ -908,6 +908,7 @@ std::string ImageUtils::GetEncodedHeifFormat()
 
 int32_t ImageUtils::GetAPIVersion()
 {
+#if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
     uint32_t targetVersion = 0;
     auto samgr = SystemAbilityManagerClient::GetInstance().GetSystemAbilityManager();
     if (samgr == nullptr) {
@@ -933,6 +934,9 @@ int32_t ImageUtils::GetAPIVersion()
     targetVersion = bundleInfo.targetVersion;
     int32_t apiVersionResult = static_cast<int32_t>(targetVersion % 100);
     return apiVersionResult;
+#else
+    return FAULT_API_VERSION;
+#endif
 }
 } // namespace Media
 } // namespace OHOS
