@@ -1006,6 +1006,60 @@ bool PixelMap::CopyPixelMap(PixelMap &source, PixelMap &dstPixelMap, int32_t &er
     return true;
 }
 
+bool CheckImageInfo(const ImageInfo &imageInfo, int32_t &errorCode, AllocatorType type, int32_t rowDataSize)
+{
+    if (IsYUV(imageInfo.pixelFormat)||
+        imageInfo.pixelFormat == PixelFormat::ASTC_4x4 ||
+        imageInfo.pixelFormat == PixelFormat::ASTC_6x6 ||
+        imageInfo.pixelFormat == PixelFormat::ASTC_8x8) {
+        errorCode = IMAGE_RESULT_DATA_UNSUPPORT;
+        IMAGE_LOGE("[PixelMap] PixelMap type does not support clone");
+        return false;
+    }
+    if (static_cast<uint64_t>(rowDataSize) * static_cast<uint64_t>(imageInfo.size.height) >
+        (type == AllocatorType::HEAP_ALLOC ? PIXEL_MAP_MAX_RAM_SIZE : INT_MAX)) {
+        errorCode = IMAGE_RESULT_TOO_LARGE;
+        IMAGE_LOGE("[PixelMap] PixelMap size too large");
+        return false;
+    }
+    errorCode = SUCCESS;
+    return true;
+}
+
+unique_ptr<PixelMap> PixelMap::Clone(int32_t &errorCode)
+{
+    if (!CheckImageInfo(imageInfo_, errorCode, allocatorType_, rowDataSize_)) {
+        return nullptr;
+    }
+    InitializationOptions opts;
+    opts.srcPixelFormat = imageInfo_.pixelFormat;
+    opts.pixelFormat = imageInfo_.pixelFormat;
+    opts.alphaType = imageInfo_.alphaType;
+    opts.size = imageInfo_.size;
+    opts.srcRowStride = rowStride_;
+    opts.editable = editable_;
+    opts.useDMA = allocatorType_ == AllocatorType::DMA_ALLOC;
+    unique_ptr<PixelMap> pixelMap = PixelMap::Create(opts);
+    if (!pixelMap) {
+        errorCode = IMAGE_RESULT_INIT_ABNORMAL;
+        IMAGE_LOGE("[PixelMap] Initial a empty PixelMap failed");
+        return nullptr;
+    }
+    if (!CopyPixelMap(*this, *(pixelMap.get()), errorCode)) {
+        errorCode = IMAGE_RESULT_MALLOC_ABNORMAL;
+        IMAGE_LOGE("[PixelMap] Copy PixelMap data failed");
+        return nullptr;
+    }
+    pixelMap->SetTransformered(isTransformered_);
+    TransformData transformData;
+    GetTransformData(transformData);
+    pixelMap->SetTransformData(transformData);
+    pixelMap->SetHdrType(GetHdrType());
+    pixelMap->SetHdrMetadata(GetHdrMetadata());
+    errorCode = SUCCESS;
+    return pixelMap;
+}
+
 bool PixelMap::IsSameSize(const Size &src, const Size &dst)
 {
     return (src.width == dst.width) && (src.height == dst.height);

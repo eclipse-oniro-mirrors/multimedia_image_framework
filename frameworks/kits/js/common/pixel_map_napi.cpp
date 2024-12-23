@@ -489,6 +489,15 @@ static napi_value DoInitAfter(napi_env env,
     return exports;
 }
 
+void PixelMapNapi::ExtraAddNapiFunction(std::vector<napi_property_descriptor> &props)
+{
+    props.insert(props.end(), {
+        DECLARE_NAPI_FUNCTION("setMemoryNameSync", SetMemoryNameSync),
+        DECLARE_NAPI_FUNCTION("cloneSync", CloneSync),
+        DECLARE_NAPI_FUNCTION("clone", Clone),
+        });
+}
+
 std::vector<napi_property_descriptor> PixelMapNapi::RegisterNapi()
 {
     std::vector<napi_property_descriptor> props = {
@@ -538,8 +547,8 @@ std::vector<napi_property_descriptor> PixelMapNapi::RegisterNapi()
         DECLARE_NAPI_FUNCTION("getMetadata", GetMetadata),
         DECLARE_NAPI_FUNCTION("setMetadata", SetMetadata),
         DECLARE_NAPI_FUNCTION("setMetadataSync", SetMetadataSync),
-        DECLARE_NAPI_FUNCTION("setMemoryNameSync", SetMemoryNameSync),
     };
+    ExtraAddNapiFunction(props);
     return props;
 }
 
@@ -3168,6 +3177,125 @@ napi_value PixelMapNapi::SetMemoryNameSync(napi_env env, napi_callback_info info
     }
     return result;
 #endif
+}
+
+static void CloneExec(napi_env env, PixelMapAsyncContext* context)
+{
+    if (context == nullptr) {
+        IMAGE_LOGE("Null context");
+        return;
+    }
+    if (context->status == SUCCESS) {
+        if (context->rPixelMap != nullptr) {
+            int32_t errorCode = SUCCESS;
+            auto clonePixelMap = context->rPixelMap->Clone(errorCode);
+            if (clonePixelMap == nullptr) {
+                context->status = errorCode;
+                IMAGE_LOGE("Clone PixelMap failed");
+                return;
+            }
+            context->alphaMap = std::move(clonePixelMap);
+            context->status = SUCCESS;
+        } else {
+            IMAGE_LOGE("Null native ref");
+            context->status = ERR_IMAGE_INIT_ABNORMAL;
+        }
+    } else {
+        context->status = ERR_IMAGE_INIT_ABNORMAL;
+        IMAGE_LOGE("Clone has failed. do nothing");
+    }
+}
+
+static void CloneComplete(napi_env env, napi_status status, void *data)
+{
+    if (data == nullptr) {
+        IMAGE_LOGE("ClonedPixelMapComplete invalid parameter: data is null");
+        return;
+    }
+    napi_value result = nullptr;
+    napi_get_undefined(env, &result);
+ 
+    auto context = static_cast<PixelMapAsyncContext*>(data);
+    if (context->alphaMap != nullptr) {
+        result = PixelMapNapi::CreatePixelMap(env, context->alphaMap);
+        context->status = SUCCESS;
+    } else {
+        context->status = ERR_IMAGE_INIT_ABNORMAL;
+    }
+    CommonCallbackRoutine(env, context, result);
+}
+
+napi_value PixelMapNapi::Clone(napi_env env, napi_callback_info info)
+{
+    napi_value result = nullptr;
+    napi_get_undefined(env, &result);
+    napi_status status;
+    size_t argCount = NUM_0;
+    napi_value thisVar = nullptr;
+    IMAGE_LOGD("Clone IN");
+    IMG_JS_ARGS(env, info, status, argCount, nullptr, thisVar);
+    IMG_NAPI_CHECK_RET_D(IMG_IS_OK(status), nullptr, IMAGE_LOGE("fail to arg info"));
+    std::unique_ptr<PixelMapAsyncContext> asyncContext = std::make_unique<PixelMapAsyncContext>();
+    status = napi_unwrap(env, thisVar, reinterpret_cast<void**>(&asyncContext->nConstructor));
+    IMG_NAPI_CHECK_RET_D(IMG_IS_READY(status, asyncContext->nConstructor),
+        nullptr, IMAGE_LOGE("fail to unwrap context"));
+    asyncContext->rPixelMap = asyncContext->nConstructor->nativePixelMap_;
+    IMG_NAPI_CHECK_RET_D(IMG_IS_READY(status, asyncContext->rPixelMap),
+        nullptr, IMAGE_LOGE("empty native pixelmap"));
+    napi_create_promise(env, &(asyncContext->deferred), &result);
+    IMG_NAPI_CHECK_BUILD_ERROR(asyncContext->nConstructor->GetPixelNapiEditable(),
+        BuildContextError(env, asyncContext->error, "pixelmap has crossed threads. Clone PixelMap failed",
+        ERR_RESOURCE_UNAVAILABLE), IMG_CREATE_CREATE_ASYNC_WORK(env, status, "ClonePixelMapGeneralError",
+        [](napi_env env, void *data) {}, GeneralErrorComplete, asyncContext, asyncContext->work),
+        result);
+    IMG_CREATE_CREATE_ASYNC_WORK(env, status, "Clone",
+        [](napi_env env, void *data) {
+            auto context = static_cast<PixelMapAsyncContext*>(data);
+            CloneExec(env, context);
+        }, CloneComplete, asyncContext, asyncContext->work);
+    IMG_NAPI_CHECK_RET_D(IMG_IS_OK(status), nullptr, IMAGE_LOGE("fail to clone deferred async work"));
+    return result;
+}
+
+napi_value PixelMapNapi::CloneSync(napi_env env, napi_callback_info info)
+{
+    napi_value result = nullptr;
+    napi_get_undefined(env, &result);
+    napi_status status;
+    size_t argCount = NUM_0;
+    napi_value thisVar = nullptr;
+    IMG_JS_ARGS(env, info, status, argCount, nullptr, thisVar);
+    IMG_NAPI_CHECK_RET_D(IMG_IS_OK(status), nullptr, IMAGE_LOGE("fail to arg info"));
+    PixelMapNapi* pixelMapNapi = nullptr;
+    status = napi_unwrap(env, thisVar, reinterpret_cast<void**>(&pixelMapNapi));
+    IMG_NAPI_CHECK_RET_D(IMG_IS_READY(status, pixelMapNapi), result, IMAGE_LOGE("fail to unwrap context"));
+    IMG_NAPI_CHECK_RET_D(pixelMapNapi->GetPixelNapiEditable(),
+        ImageNapiUtils::ThrowExceptionError(env, ERR_RESOURCE_UNAVAILABLE,
+        "Pixelmap has crossed threads. ClonePixelmapSync failed"),
+        IMAGE_LOGE("Pixelmap has crossed threads. ClonePixelmapSync failed"));
+    if (pixelMapNapi->nativePixelMap_ != nullptr) {
+        int32_t errorCode = 0;
+        auto clonePixelMap = pixelMapNapi->nativePixelMap_->Clone(errorCode);
+        if (clonePixelMap == nullptr) {
+            if (errorCode == ERR_IMAGE_INIT_ABNORMAL) {
+                return ImageNapiUtils::ThrowExceptionError(env, errorCode, "Initial a empty pixelmap failed");
+            }
+            if (errorCode == ERR_IMAGE_MALLOC_ABNORMAL) {
+                return ImageNapiUtils::ThrowExceptionError(env, errorCode, "Clone pixelmap data failed");
+            }
+            if (errorCode == ERR_IMAGE_DATA_UNSUPPORT) {
+                return ImageNapiUtils::ThrowExceptionError(env, errorCode, "PixelMap type does not support clone");
+            }
+            if (errorCode == ERR_IMAGE_TOO_LARGE) {
+                return ImageNapiUtils::ThrowExceptionError(env, errorCode, "PixelMap Size (byte count) out of range");
+            }
+            return ImageNapiUtils::ThrowExceptionError(env, errorCode, "Clone PixelMap failed");
+        }
+        result = PixelMapNapi::CreatePixelMap(env, std::move(clonePixelMap));
+    } else {
+        return ImageNapiUtils::ThrowExceptionError(env, ERR_IMAGE_INIT_ABNORMAL, "Null Native Ref");
+    }
+    return result;
 }
 
 static void TranslateExec(napi_env env, PixelMapAsyncContext* context)
