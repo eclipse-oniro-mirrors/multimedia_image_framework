@@ -3179,22 +3179,6 @@ napi_value PixelMapNapi::SetMemoryNameSync(napi_env env, napi_callback_info info
 #endif
 }
 
-static void LogError(int32_t errorCode)
-{
-    if (errorCode == ERR_IMAGE_MALLOC_ABNORMAL) {
-        IMAGE_LOGE("Clone pixelmap data failed");
-    }
-    if (errorCode == ERR_IMAGE_DATA_UNSUPPORT) {
-        IMAGE_LOGE("PixelMap type dose not support clone");
-    }
-    if (errorCode == ERR_IMAGE_TOO_LARGE) {
-        IMAGE_LOGE("PixelMap Size (byte count) out of range");
-    }
-    if (errorCode == ERR_IMAGE_INIT_ABNORMAL) {
-        IMAGE_LOGE("Initial a empty pixelmap failed");
-    }
-}
-
 static void CloneExec(napi_env env, PixelMapAsyncContext* context)
 {
     if (context == nullptr) {
@@ -3207,7 +3191,7 @@ static void CloneExec(napi_env env, PixelMapAsyncContext* context)
             auto clonePixelMap = context->rPixelMap->Clone(errorCode);
             if (clonePixelMap == nullptr) {
                 context->status = errorCode;
-                LogError(errorCode);
+                IMAGE_LOGE("Clone PixelMap failed");
                 return;
             }
             context->alphaMap = std::move(clonePixelMap);
