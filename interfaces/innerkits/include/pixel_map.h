@@ -520,6 +520,7 @@ protected:
                                                AllocatorType dstType, uint32_t &errorCode, bool toSRGB);
     // used to close fd after mmap in RenderService when memory type is shared-mem or dma.
     bool CloseFd();
+    uint32_t CheckPixelMapForWritePixels();
 
     uint8_t *data_ = nullptr;
     // this info SHOULD be the final info for decoded pixelmap, not the original image info

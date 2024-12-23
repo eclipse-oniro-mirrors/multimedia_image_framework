@@ -2167,9 +2167,9 @@ HWTEST_F(ImagePixelMapTest, ImagePixelMapSLR006, TestSize.Level3)
 HWTEST_F(ImagePixelMapTest, ImagePixelMapCreate001, TestSize.Level3)
 {
     GTEST_LOG_(INFO) << "ImagePixelMapTest: ImagePixelMapCreate001 scale start";
-    const int width = 4;
-    const int height = 6;
-    const int bytes = 4;
+    const int width = 4; // width
+    const int height = 6; // height
+    const int bytes = 4; //bytes
     std::unique_ptr<uint32_t[]> srcData = std::make_unique<uint32_t[]>(width * height);
     if (srcData == nullptr) {
         GTEST_LOG_(INFO) << "ImagePixelMapTest: ImagePixelMapCreate001  fail.";
@@ -2194,6 +2194,45 @@ HWTEST_F(ImagePixelMapTest, ImagePixelMapCreate001, TestSize.Level3)
     ASSERT_EQ(ret, 0);
 
     GTEST_LOG_(INFO) << "ImagePixelMapTest: ImagePixelMapCreate001 scale end";
+}
+
+/**
+* @tc.name: ImagePixelMapCreate002
+* @tc.desc: test SLR with DMA
+* @tc.type: FUNC
+*/
+HWTEST_F(ImagePixelMapTest, ImagePixelMapCreate002, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImagePixelMapTest: ImagePixelMapCreate002 scale start";
+    const int width = 4; // width
+    const int height = 6; // height
+    const int bytes = 4; //bytes
+    std::unique_ptr<uint32_t[]> srcData = std::make_unique<uint32_t[]>(width * height);
+    if (srcData == nullptr) {
+        GTEST_LOG_(INFO) << "ImagePixelMapTest: ImagePixelMapCreate002  fail.";
+        return;
+    }
+    for (int i = 0; i < width * height; i++) {
+        srcData.get()[i] = 0xFF000000;
+    }
+    InitializationOptions opt;
+    opt.size.width = width;
+    opt.size.height = height;
+    opt.pixelFormat = Media::PixelFormat::ARGB_8888;
+    opt.editable = true;
+    std::unique_ptr<PixelMap> pixelMap = PixelMap::Create(srcData.get(), width * height, opt);
+    EXPECT_NE(pixelMap, nullptr);
+
+    std::unique_ptr<uint8_t[]> colors = std::make_unique<uint8_t[]>(width * height * bytes);
+    uint64_t bufferSize = width * height * bytes;
+    uint32_t offset = 0;
+    uint32_t stride = width * bytes;
+    Media::Rect region = {0, 0, width, height};
+    auto ret = pixelMap->WritePixels(
+        static_cast<uint8_t*>(colors.get()), bufferSize, offset, stride, region);
+    ASSERT_EQ(ret, 0);
+
+    GTEST_LOG_(INFO) << "ImagePixelMapTest: ImagePixelMapCreate002 scale end";
 }
 } // namespace Multimedia
 } // namespace OHOS
