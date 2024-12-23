@@ -2693,10 +2693,10 @@ HWTEST_F(PixelMapTest, PixelMapCloneTest001, TestSize.Level3)
         std::unique_ptr<PixelMap> pixelMap1 = PixelMap::Create(color, colorlength, offset, width, options);
         if (pixelMap1 != nullptr) {
             std::unique_ptr<PixelMap> pixelMap_clone = pixelMap1->Clone(errorCode);
+            EXPECT_NE(pixelMap_clone, nullptr);
+            EXPECT_EQ(errorCode, 0);
             EXPECT_EQ(true, CompareTwoPixelMap(*(pixelMap1.get()), *(pixelMap_clone.get())));
         }
-        EXPECT_EQ(errorCode, 0);
-        EXPECT_NE(pixelMap_clone, nullptr);
     }
     GTEST_LOG_(INFO) << "PixelMapTest: PixelMapCloneTest001 end";
 }
