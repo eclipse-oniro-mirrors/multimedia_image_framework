@@ -2691,12 +2691,9 @@ HWTEST_F(PixelMapTest, PixelMapCloneTest001, TestSize.Level3)
         options.pixelFormat = iter->first;
         int32_t errorCode = 0;
         std::unique_ptr<PixelMap> pixelMap1 = PixelMap::Create(color, colorlength, offset, width, options);
-        std::unique_ptr<PixelMap> pixelMap_clone = nullptr;
         if (pixelMap1 != nullptr) {
-            pixelMap_clone = pixelMap1->Clone(errorCode);
+            std::unique_ptr<PixelMap> pixelMap_clone = pixelMap1->Clone(errorCode);
             EXPECT_EQ(true, CompareTwoPixelMap(*(pixelMap1.get()), *(pixelMap_clone.get())));
-        } else {
-            GTEST_LOG_(INFO) << "convert to " << iter->second << "from ARGB_8888 failed";
         }
         EXPECT_EQ(errorCode, 0);
         EXPECT_NE(pixelMap_clone, nullptr);
