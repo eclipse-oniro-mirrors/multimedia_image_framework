@@ -4100,8 +4100,12 @@ bool ImageSource::ComposeHdrImage(ImageHdrType hdrType, DecodeContext& baseCtx, 
         metadata.extendMeta.metaISO.useBaseColorFlag, metadata.extendMeta.metaISO.gainmapChannelNum);
     SetVividMetaColor(metadata, baseCmColor, gainmapCmColor, hdrCmColor);
     VpeUtils::SetSurfaceBufferInfo(gainmapSptr, true, hdrType, gainmapCmColor, metadata);
-    CM_HDR_Metadata_Type hdrMediaType = GetHdrMediaType(metadata);
-    VpeUtils::SetSbMetadataType(gainmapSptr, hdrMediaType);
+    // videoHdrImage special process
+    CM_HDR_Metadata_Type videoToimageHdrType = GetHdrMediaType(metadata);
+    bool isVideoMetaDataType = videoToimageHdrType == CM_IMAGE_HDR_VIVID_SINGLE;
+    if (isVideoMetaDataType) {
+        VpeUtils::SetSbMetadataType(gainmapSptr, videoToimageHdrType);
+    }
     // hdr image
     uint32_t errorCode = AllocHdrSurfaceBuffer(hdrCtx, hdrType, hdrCmColor);
     if (errorCode != SUCCESS) {
@@ -4122,7 +4126,9 @@ bool ImageSource::ComposeHdrImage(ImageHdrType hdrType, DecodeContext& baseCtx, 
         FreeContextBuffer(hdrCtx.freeFunc, hdrCtx.allocatorType, hdrCtx.pixelsBuffer);
         return false;
     }
-    VpeUtils::SetSbMetadataType(hdrSptr, static_cast<CM_HDR_Metadata_Type>(metadata.hdrMetadataType));
+    if (isVideoMetaDataType) {
+        VpeUtils::SetSbMetadataType(hdrSptr, static_cast<CM_HDR_Metadata_Type>(metadata.hdrMetadataType));
+    }
     return true;
 #endif
 }
