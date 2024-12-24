@@ -1760,15 +1760,18 @@ uint32_t PixelMap::ReadPixels(const uint64_t &bufferSize, const uint32_t &offset
             return ERR_IMAGE_READ_PIXELMAP_FAILED;
         }
         void* outData = srcData.get();
-        int fd = 0;
-        if (!CopyPixMapToDst(*this, outData, fd, GetByteCount())) {
-            IMAGE_LOGE("ReadPixels CopyPixMapToDst fail.");
+        ImageInfo tempInfo = MakeImageInfo(imageInfo_.size.width, imageInfo_.size.height,
+            PixelFormat::BGRA_8888, AlphaType::IMAGE_ALPHA_TYPE_UNPREMUL);
+        BufferInfo srcInfo = {data_, GetRowStride(), imageInfo_};
+        BufferInfo dstInfo = {outData, 0, tempInfo};
+        int32_t dstLength = PixelConvert::PixelsConvert(srcInfo, dstInfo, IsStrideAlignment());
+        if (dstLength < 0) {
+            IMAGE_LOGE("ReadPixels PixelsConvert to BGRA_8888 failed.");
             return ERR_IMAGE_READ_PIXELMAP_FAILED;
         }
-        PixelConvertAdapter::ARGBToRGBA(srcData.get(), srcRowBytes * imageInfo_.size.height);
-        if (!PixelConvertAdapter::ReadPixelsConvert(srcData.get(), srcPosition, srcRowBytes, imageInfo_,
+        if (!PixelConvertAdapter::ReadPixelsConvert(outData, srcPosition, srcRowBytes, tempInfo,
             dst + offset, stride, dstImageInfo)) {
-            IMAGE_LOGE("ReadPixels ReadPixelsConvert fail.");
+            IMAGE_LOGE("read pixels by rect call ReadPixelsConvert fail.");
             return ERR_IMAGE_READ_PIXELMAP_FAILED;
         }
     } else {
@@ -1890,13 +1893,8 @@ uint32_t PixelMap::WritePixel(const Position &pos, const uint32_t &color)
     return SUCCESS;
 }
 
-uint32_t PixelMap::WritePixels(const uint8_t *source, const uint64_t &bufferSize, const uint32_t &offset,
-                               const uint32_t &stride, const Rect &region)
+uint32_t PixelMap::CheckPixelMapForWritePixels()
 {
-    if (!CheckPixelsInput(source, bufferSize, offset, stride, region)) {
-        IMAGE_LOGE("write pixel by rect input parameter fail.");
-        return ERR_IMAGE_INVALID_PARAMETER;
-    }
     if (!IsEditable() || !modifiable_) {
         IMAGE_LOGE("write pixel by rect pixelmap data is not editable or modifiable.");
         return ERR_IMAGE_PIXELMAP_NOT_ALLOW_MODIFY;
@@ -1914,13 +1912,53 @@ uint32_t PixelMap::WritePixels(const uint8_t *source, const uint64_t &bufferSize
         IMAGE_LOGE("write pixel by rect get bytes by per pixel fail.");
         return ERR_IMAGE_WRITE_PIXELMAP_FAILED;
     }
+    return SUCCESS;
+}
+
+uint32_t PixelMap::WritePixels(const uint8_t *source, const uint64_t &bufferSize, const uint32_t &offset,
+                               const uint32_t &stride, const Rect &region)
+{
+    if (!CheckPixelsInput(source, bufferSize, offset, stride, region)) {
+        IMAGE_LOGE("write pixel by rect input parameter fail.");
+        return ERR_IMAGE_INVALID_PARAMETER;
+    }
+
+    uint32_t ret = CheckPixelMapForWritePixels();
+    if (ret != SUCCESS) {
+        return ret;
+    }
+
     Position dstPosition { region.left, region.top };
     ImageInfo srcInfo =
         MakeImageInfo(region.width, region.height, PixelFormat::BGRA_8888, AlphaType::IMAGE_ALPHA_TYPE_UNPREMUL);
-    if (!PixelConvertAdapter::WritePixelsConvert(source + offset, stride, srcInfo, data_, dstPosition, rowStride_,
-        imageInfo_)) {
-        IMAGE_LOGE("write pixel by rect call WritePixelsConvert fail.");
-        return ERR_IMAGE_WRITE_PIXELMAP_FAILED;
+    if (imageInfo_.pixelFormat == PixelFormat::ARGB_8888) {
+        std::unique_ptr<uint8_t[]> tempPixels = std::make_unique<uint8_t[]>(bufferSize);
+        if (tempPixels == nullptr) {
+            IMAGE_LOGE("WritePixels make tempPixels failed.");
+            return ERR_IMAGE_WRITE_PIXELMAP_FAILED;
+        }
+        void *colors = tempPixels.get();
+        ImageInfo tempInfo =
+            MakeImageInfo(region.width, region.height, PixelFormat::ARGB_8888, AlphaType::IMAGE_ALPHA_TYPE_UNPREMUL);
+        BufferInfo dstInfo = {colors, 0, tempInfo};
+        const void *pixels = source;
+        BufferInfo srcBufferInfo = {const_cast<void*>(pixels), 0, srcInfo};
+        int32_t dstLength = PixelConvert::PixelsConvert(srcBufferInfo, dstInfo, false);
+        if (dstLength < 0) {
+            IMAGE_LOGE("WritePixels pixel convert to BGRA_8888 failed.");
+            return ERR_IMAGE_WRITE_PIXELMAP_FAILED;
+        }
+        if (!PixelConvertAdapter::WritePixelsConvert((uint8_t*)colors + offset, stride, tempInfo,
+            data_, dstPosition, rowStride_, imageInfo_)) {
+            IMAGE_LOGE("write pixel by rect call WritePixelsConvert fail.");
+            return ERR_IMAGE_WRITE_PIXELMAP_FAILED;
+        }
+    } else {
+        if (!PixelConvertAdapter::WritePixelsConvert(source + offset, stride, srcInfo,
+            data_, dstPosition, rowStride_, imageInfo_)) {
+            IMAGE_LOGE("write pixel by rect call WritePixelsConvert fail.");
+            return ERR_IMAGE_WRITE_PIXELMAP_FAILED;
+        }
     }
     AddVersionId();
     return SUCCESS;

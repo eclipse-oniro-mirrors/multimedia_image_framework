@@ -1533,6 +1533,17 @@ static bool IsInterYUVConvert(PixelFormat srcPixelFormat, PixelFormat dstPixelFo
         (dstPixelFormat == PixelFormat::NV12 || dstPixelFormat == PixelFormat::NV21);
 }
 
+int32_t PixelConvert::PixelsConvert(const BufferInfo &src, BufferInfo &dst, bool useDMA)
+{
+    if (!IsValidBufferInfo(src) || !IsValidBufferInfo(dst)) {
+        IMAGE_LOGE("[PixelMap]Convert: pixels or image info or row stride or src pixels length invalid.");
+        return -1;
+    }
+
+    return ConvertAndCollapseByFFMpeg(src.pixels, src.imageInfo, dst.pixels, dst.imageInfo, useDMA) ?
+        PixelMap::GetRGBxByteCount(dst.imageInfo) : -1;
+}
+
 int32_t PixelConvert::PixelsConvert(const BufferInfo &src, BufferInfo &dst, int32_t srcLength, bool useDMA)
 {
     if (!IsValidBufferInfo(src) || !IsValidBufferInfo(dst) || srcLength <= 0) {

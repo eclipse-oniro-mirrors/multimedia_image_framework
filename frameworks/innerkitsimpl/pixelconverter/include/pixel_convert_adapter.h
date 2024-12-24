@@ -44,7 +44,6 @@ public:
                                   const ImageInfo &dstInfo);
     static bool EraseBitmap(const void *srcPixels, uint32_t srcRowBytes, const ImageInfo &srcInfo, uint32_t color);
     static bool YUV420ToRGB888(const uint8_t *in, YuvImageInfo &srcInfo, uint8_t *out, YuvImageInfo &dstInfo);
-    static bool ARGBToRGBA(uint8_t* dstPixels, uint32_t byteCount);
     static const std::map<PixelFormat, AVPixelFormat> FFMPEG_PIXEL_FORMAT_MAP;
 };
 } // namespace Media
