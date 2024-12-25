@@ -117,11 +117,11 @@ void RGBAToARGB(uint8_t* srcPixels, uint8_t* dstPixels, uint32_t byteCount)
     }
 }
 
-static void RGBxToRGB(const uint8_t* srcPixels, uint8_t* dstPixels, uint32_t byteCount)
+bool PixelConvertAdapter::RGBxToRGB(const uint8_t* srcPixels, uint8_t* dstPixels, uint32_t byteCount)
 {
     if (byteCount % NUM_4 != NUM_0) {
-        IMAGE_LOGE("Pixel count must multiple of 4.");
-        return;
+        IMAGE_LOGE("Pixel count must be multiple of 4.");
+        return false;
     }
     const uint8_t *src = srcPixels;
     uint8_t *dst = dstPixels;
@@ -133,13 +133,14 @@ static void RGBxToRGB(const uint8_t* srcPixels, uint8_t* dstPixels, uint32_t byt
         src += NUM_4;
         dst += NUM_3;
     }
+    return true;
 }
 
-static void RGBToRGBx(const uint8_t* srcPixels, uint8_t* dstPixels, uint32_t byteCount)
+bool PixelConvertAdapter::RGBToRGBx(const uint8_t* srcPixels, uint8_t* dstPixels, uint32_t byteCount)
 {
     if (byteCount % NUM_3 != NUM_0) {
-        IMAGE_LOGE("Pixel count must multiple of 3.");
-        return;
+        IMAGE_LOGE("Pixel count must be multiple of 3.");
+        return false;
     }
     const uint8_t *src = srcPixels;
     uint8_t *dst = dstPixels;
@@ -152,6 +153,7 @@ static void RGBToRGBx(const uint8_t* srcPixels, uint8_t* dstPixels, uint32_t byt
         src += NUM_3;
         dst += NUM_4;
     }
+    return true;
 }
 
 static int32_t GetRGBxRowBytes(const ImageInfo &imgInfo)
