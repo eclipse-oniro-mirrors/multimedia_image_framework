@@ -183,9 +183,15 @@ std::pair<std::array<byte, 2>, uint16_t> JpegExifMetadataAccessor::ReadSegmentLe
     std::array<byte, READ_BYTES> buf { 0, 0 };
     uint16_t size { 0 };
     if (HasLength(marker)) {
+        long currentPos = imageStream_->Tell();
         if (imageStream_->Read(buf.data(), buf.size()) == -1) {
             IMAGE_LOGE("Failed to read from image stream. Marker: %{public}u", marker);
             return { buf, size };
+        }
+        if (buf[0] == JPEG_MARKER_HEADER && HasLength(buf[1])) {
+            IMAGE_LOGD("ReadSegmentLength wrong marker, marker: %{public}u", marker);
+            imageStream_->Seek(currentPos, SeekPos::BEGIN);
+            return { buf, 0 };
         }
         size = GetUShort(buf.data(), bigEndian);
     }
