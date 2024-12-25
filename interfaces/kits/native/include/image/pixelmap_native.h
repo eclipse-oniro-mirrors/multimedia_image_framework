@@ -962,6 +962,32 @@ Image_ErrorCode OH_PixelmapNative_SetColorSpaceNative(OH_PixelmapNative *pixelma
 Image_ErrorCode OH_PixelmapNative_SetMemoryName(OH_PixelmapNative *pixelmap, char *name, size_t *size);
 
 /**
+ * @brief Get the total number of bytes occupied by all pixels in the Pixelmap, without any padding.
+ *
+ * @param pixelmap The Pixelmap pointer to be operated.
+ * @param byteCount The total number of bytes to be retrieved.
+ * @return Function result code:
+ *         {@link IMAGE_SUCCESS} If the operation is successful.
+ *         {@link IMAGE_BAD_PARAMETER} If invalid parameter, pixelmap or byteCount are invalid.
+ * @see OH_PixelmapNative
+ * @since 16
+ */
+Image_ErrorCode OH_PixelmapNative_GetByteCount(OH_PixelmapNative *pixelmap, uint32_t *byteCount);
+
+/**
+ * @brief Get the size of the allocated memory used to store this pixelmap's pixels.
+ *
+ * @param pixelmap The Pixelmap pointer to be operated.
+ * @param allocationByteCount The size of the allocated memory.
+ * @return Function result code:
+ *         {@link IMAGE_SUCCESS} If the operation is successful.
+ *         {@link IMAGE_BAD_PARAMETER} If invalid parameter, pixelmap or allocationByteCount are invalid.
+ * @see OH_PixelmapNative
+ * @since 16
+ */
+Image_ErrorCode OH_PixelmapNative_GetAllocationByteCount(OH_PixelmapNative *pixelmap, uint32_t *allocationByteCount);
+
+/**
  * @brief Obtains the memory address of a PixelMap and locks the memory.
  *        When the memory is locked, any operation that modifies or releases the PixelMap will fail and return
  *        {@link IMAGE_BAD_PARAMETER}.
