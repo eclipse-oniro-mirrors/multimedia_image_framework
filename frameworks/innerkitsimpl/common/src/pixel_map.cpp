@@ -3502,6 +3502,43 @@ SkSamplingOptions ToSkSamplingOption(const AntiAliasingOption &option)
     }
 }
 
+// Need this conversion because Skia uses 32-byte RGBX instead of 24-byte RGB when processing translation
+static bool ExpandRGBToRGBX(PixelMap*&& pixelMap, bool reverse)
+{
+    ImageInfo dstImageInfo;
+    pixelMap->GetImageInfo(dstImageInfo);
+    dstImageInfo.pixelFormat = reverse ? PixelFormat::RGB_888 : PixelFormat::RGBA_8888;
+    int32_t srcByteCount = pixelMap->GetByteCount();
+    int64_t dstByteCount =
+        reverse ? srcByteCount / ARGB_8888_BYTES * RGB_888_BYTES : srcByteCount / RGB_888_BYTES * ARGB_8888_BYTES;
+    if (srcByteCount <= 0 || dstByteCount > INT32_MAX) {
+        IMAGE_LOGE("[PixelMap] ExpandRGBToRGBX failed: byte count invalid or overflowed");
+        return false;
+    }
+
+    AllocatorType allocType = pixelMap->GetAllocatorType();
+    MemoryData memoryData = {nullptr, dstByteCount, "Expand RGB to RGBX", dstImageInfo.size, dstImageInfo.pixelFormat};
+    std::unique_ptr<AbsMemory> dstMemory = MemoryManager::CreateMemory(
+        allocType == AllocatorType::CUSTOM_ALLOC ? AllocatorType::DEFAULT : allocType, memoryData);
+    if (dstMemory == nullptr) {
+        IMAGE_LOGE("[PixelMap] ExpandRGBToRGBX failed: allocate memory failed");
+        return false;
+    }
+
+    bool (*ConversionFunc)(const uint8_t*, uint8_t*, uint32_t) =
+        reverse ? &PixelConvertAdapter::RGBxToRGB : &PixelConvertAdapter::RGBToRGBx;
+    if (!ConversionFunc(pixelMap->GetPixels(), static_cast<uint8_t*>(dstMemory->data.data), pixelMap->GetByteCount())) {
+        IMAGE_LOGE("[PixelMap] ExpandRGBToRGBX failed: format conversion failed");
+        dstMemory->Release();
+        return false;
+    }
+
+    pixelMap->SetPixelsAddr(dstMemory->data.data, dstMemory->extend.data, dstMemory->data.size, dstMemory->GetType(),
+        nullptr);
+    pixelMap->SetImageInfo(dstImageInfo, true);
+    return true;
+}
+
 void DrawImage(bool rectStaysRect, const AntiAliasingOption &option, SkCanvas &canvas, sk_sp<SkImage> &skImage)
 {
     if (rectStaysRect) {
@@ -3517,10 +3554,14 @@ void DrawImage(bool rectStaysRect, const AntiAliasingOption &option, SkCanvas &c
 bool PixelMap::DoTranslation(TransInfos &infos, const AntiAliasingOption &option)
 {
     std::lock_guard<std::mutex> lock(*translationMutex_);
+    PixelFormat origPixelFormat = imageInfo_.pixelFormat;
+    if (origPixelFormat == PixelFormat::RGB_888 && !ExpandRGBToRGBX(this, false)) {
+        return false;
+    }
     ImageInfo imageInfo;
     GetImageInfo(imageInfo);
     TransMemoryInfo dstMemory;
-    // We dont know how custom alloc memory
+    // We don't know how custom alloc memory
     dstMemory.allocType = (allocatorType_ == AllocatorType::CUSTOM_ALLOC) ? AllocatorType::DEFAULT : allocatorType_;
     SkTransInfo src;
 #if !defined(_WIN32) && !defined(_APPLE) && !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
@@ -3565,6 +3606,9 @@ bool PixelMap::DoTranslation(TransInfos &infos, const AntiAliasingOption &option
 #endif
     SetPixelsAddr(m->data.data, m->extend.data, m->data.size, m->GetType(), nullptr);
     SetImageInfo(imageInfo, true);
+    if (origPixelFormat == PixelFormat::RGB_888 && !ExpandRGBToRGBX(this, true)) {
+        return false;
+    }
     ImageUtils::FlushSurfaceBuffer(this);
     return true;
 }
@@ -3669,6 +3713,10 @@ void PixelMap::flip(bool xAxis, bool yAxis)
 uint32_t PixelMap::crop(const Rect &rect)
 {
     ImageTrace imageTrace("PixelMap crop");
+    PixelFormat origPixelFormat = imageInfo_.pixelFormat;
+    if (origPixelFormat == PixelFormat::RGB_888 && !ExpandRGBToRGBX(this, false)) {
+        return ERR_IMAGE_CROP;
+    }
     ImageInfo imageInfo;
     GetImageInfo(imageInfo);
 
@@ -3719,6 +3767,11 @@ uint32_t PixelMap::crop(const Rect &rect)
     ToImageInfo(imageInfo, dst.info);
     SetPixelsAddr(m->data.data, m->extend.data, m->data.size, m->GetType(), nullptr);
     SetImageInfo(imageInfo, true);
+    if (origPixelFormat == PixelFormat::RGB_888 && !ExpandRGBToRGBX(this, true)) {
+        return ERR_IMAGE_CROP;
+    }
+    ImageUtils::FlushSurfaceBuffer(this);
+    AddVersionId();
     return SUCCESS;
 }
 
