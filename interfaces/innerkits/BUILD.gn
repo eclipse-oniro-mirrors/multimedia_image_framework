@@ -266,7 +266,10 @@ if (use_clang_android) {
       }
       if (enable_heif_hw_encode) {
         defines += [ "HEIF_HW_ENCODE_ENABLE" ]
-        external_deps += [ "drivers_interface_codec:libcodec_proxy_3.0" ]
+        external_deps += [
+          "drivers_interface_codec:libcodec_proxy_3.0",
+          "drivers_interface_codec:libimage_proxy_2.0",
+        ]
       }
     }
 
