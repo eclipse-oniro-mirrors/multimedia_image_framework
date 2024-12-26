@@ -3631,9 +3631,6 @@ bool PixelMap::DoTranslation(TransInfos &infos, const AntiAliasingOption &option
 
     SetPixelsAddr(m->data.data, m->extend.data, m->data.size, m->GetType(), nullptr);
     SetImageInfo(imageInfo, true);
-    if (origPixelFormat == PixelFormat::RGB_888 && !ExpandRGBToRGBX(this, true)) {
-        return false;
-    }
     ImageUtils::FlushSurfaceBuffer(this);
     return true;
 }
@@ -3738,10 +3735,6 @@ void PixelMap::flip(bool xAxis, bool yAxis)
 uint32_t PixelMap::crop(const Rect &rect)
 {
     ImageTrace imageTrace("PixelMap crop");
-    PixelFormat origPixelFormat = imageInfo_.pixelFormat;
-    if (origPixelFormat == PixelFormat::RGB_888 && !ExpandRGBToRGBX(this, false)) {
-        return ERR_IMAGE_CROP;
-    }
     ImageInfo imageInfo;
     GetImageInfo(imageInfo);
     SkTransInfo src;
