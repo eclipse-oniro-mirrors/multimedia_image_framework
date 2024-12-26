@@ -3558,6 +3558,7 @@ static bool ShrinkRGBXToRGB(const std::unique_ptr<AbsMemory>& srcMemory, std::un
     if (!PixelConvertAdapter::RGBxToRGB(static_cast<uint8_t*>(srcMemory->data.data),
         static_cast<uint8_t*>(dstMemory->data.data), srcBytes)) {
         IMAGE_LOGE("[PixelMap] ShrinkRGBXToRGB failed: format conversion failed");
+        dstMemory->Release();
         return false;
     }
     srcMemory->Release();
