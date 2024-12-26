@@ -89,6 +89,36 @@ public:
     static bool HasOverflowed(uint32_t num1, uint32_t num2);
     static int32_t GetAPIVersion();
     static std::string GetEncodedHeifFormat();
+
+    template<typename T>
+    static bool CheckMulOverflow(const T& num1, const T& num2)
+    {
+        if (num1 == 0 || num2 == 0) {
+            return true;
+        }
+        T mulNum = num1 * num2;
+        if ((mulNum / num1) != num2) {
+            return true;
+        }
+        return false;
+    }
+
+    template<typename T>
+    static bool CheckMulOverflow(const T& num1, const T& num2, const T& num3)
+    {
+        if (num1 == 0 || num2 == 0 || num3 == 0) {
+            return true;
+        }
+        T mulNum1 = num1 * num2;
+        if ((mulNum1 / num1) != num2) {
+            return true;
+        }
+        T mulNum2 = mulNum1 * num3;
+        if ((mulNum2 / num3) != mulNum1) {
+            return true;
+        }
+        return false;
+    }
 private:
     static uint32_t RegisterPluginServer();
     static uint32_t SaveDataToFile(const std::string& fileName, const char* data, const size_t& totalSize);

@@ -361,6 +361,9 @@ private:
     bool PrereadSourceStream();
     void SetDmaContextYuvInfo(ImagePlugin::DecodeContext& context);
     uint8_t* ReadSourceBuffer(uint32_t bufferSize, uint32_t &errorCode);
+    size_t GetByteCount(const ImageInfo &info);
+    bool CheckInfoBytes(uint32_t frameCount, const ImageInfo &info, uint32_t &errorCode);
+    bool CheckPixelMapListInfo(uint32_t frameCount, const DecodeOptions &opts, uint32_t &errorCode);
 #if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
     void SetHdrMetadataForPicture(std::unique_ptr<Picture> &picture);
     void DecodeHeifAuxiliaryPictures(const std::set<AuxiliaryPictureType> &auxTypes, std::unique_ptr<Picture> &picture,
