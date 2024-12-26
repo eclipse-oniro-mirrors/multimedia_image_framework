@@ -3785,7 +3785,6 @@ static bool ShrinkRGBXToRGB(const std::unique_ptr<AbsMemory>& srcMemory, std::un
         dstMemory->Release();
         return false;
     }
-    srcMemory->Release();
     return true;
 }
 
@@ -3872,8 +3871,10 @@ bool PixelMap::DoTranslation(TransInfos &infos, const AntiAliasingOption &option
     if (imageInfo.pixelFormat == PixelFormat::RGB_888) {
         std::unique_ptr<AbsMemory> shrinkedMemory = nullptr;
         if (!ShrinkRGBXToRGB(dstMemory.memory, shrinkedMemory)) {
+            dstMemory->Release();
             return false;
         }
+        dstMemory->Release();
         m = shrinkedMemory.release();
     }
 
@@ -4075,8 +4076,10 @@ uint32_t PixelMap::crop(const Rect &rect)
     if (imageInfo.pixelFormat == PixelFormat::RGB_888) {
         std::unique_ptr<AbsMemory> shrinkedMemory = nullptr;
         if (!ShrinkRGBXToRGB(dstMemory.memory, shrinkedMemory)) {
+            dstMemory->Release();
             return false;
         }
+        dstMemory->Release();
         m = shrinkedMemory.release();
     }
 
