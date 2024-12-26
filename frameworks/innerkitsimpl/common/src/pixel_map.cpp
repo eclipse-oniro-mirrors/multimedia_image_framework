@@ -3519,51 +3519,6 @@ SkSamplingOptions ToSkSamplingOption(const AntiAliasingOption &option)
     }
 }
 
-static bool ExpandRGBToRGBX(const uint8_t* srcPixels, int32_t srcBytes, std::unique_ptr<uint8_t[]>& dstPixels)
-{
-    if (srcPixels == nullptr) {
-        IMAGE_LOGE("[PixelMap] ExpandRGBToRGBX failed: srcPixels is null");
-        return false;
-    }
-    int64_t dstBytes = srcBytes / RGB_888_BYTES * ARGB_8888_BYTES;
-    if (srcBytes <= 0 || dstBytes > INT32_MAX) {
-        IMAGE_LOGE("[PixelMap] ExpandRGBToRGBX failed: byte count invalid or overflowed");
-        return false;
-    }
-
-    dstPixels = std::make_unique<uint8_t[]>(dstBytes);
-    if (!PixelConvertAdapter::RGBToRGBx(srcPixels, dstPixels.get(), srcBytes)) {
-        IMAGE_LOGE("[PixelMap] ExpandRGBToRGBX failed: format conversion failed");
-        return false;
-    }
-    return true;
-}
-
-static bool ShrinkRGBXToRGB(const std::unique_ptr<AbsMemory>& srcMemory, std::unique_ptr<AbsMemory>& dstMemory)
-{
-    size_t srcBytes = srcMemory->data.size;
-    if (srcBytes > INT32_MAX) {
-        IMAGE_LOGE("[PixelMap] ShrinkRGBXToRGB failed: byte count too large");
-        return false;
-    }
-    int32_t dstBytes = static_cast<int32_t>(srcBytes) / ARGB_8888_BYTES * RGB_888_BYTES;
-    MemoryData memoryData = {nullptr, dstBytes, "Shrink RGBX to RGB"};
-    memoryData.format = PixelFormat::RGB_888;
-    dstMemory = MemoryManager::CreateMemory(srcMemory->GetType(), memoryData);
-    if (dstMemory == nullptr) {
-        IMAGE_LOGE("[PixelMap] ShrinkRGBXToRGB failed: allocate memory failed");
-        return false;
-    }
-
-    if (!PixelConvertAdapter::RGBxToRGB(static_cast<uint8_t*>(srcMemory->data.data),
-        static_cast<uint8_t*>(dstMemory->data.data), srcBytes)) {
-        IMAGE_LOGE("[PixelMap] ShrinkRGBXToRGB failed: format conversion failed");
-        dstMemory->Release();
-        return false;
-    }
-    return true;
-}
-
 void DrawImage(bool rectStaysRect, const AntiAliasingOption &option, SkCanvas &canvas, sk_sp<SkImage> &skImage)
 {
     if (rectStaysRect) {
@@ -3647,10 +3602,10 @@ bool PixelMap::DoTranslation(TransInfos &infos, const AntiAliasingOption &option
     if (imageInfo.pixelFormat == PixelFormat::RGB_888) {
         std::unique_ptr<AbsMemory> shrinkedMemory = nullptr;
         if (!ShrinkRGBXToRGB(dstMemory.memory, shrinkedMemory)) {
-            dstMemory->Release();
+            dstMemory.memory->Release();
             return false;
         }
-        dstMemory->Release();
+        dstMemory.memory->Release();
         m = shrinkedMemory.release();
     }
 
@@ -3791,6 +3746,7 @@ uint32_t PixelMap::crop(const Rect &rect)
         GenSrcTransInfo(src, imageInfo, data_, ToSkColorSpace(this));
 #endif
     }
+
     SkTransInfo dst;
     SkIRect dstIRect = SkIRect::MakeXYWH(rect.left, rect.top, rect.width, rect.height);
     dst.r = SkRect::Make(dstIRect);
@@ -3831,7 +3787,7 @@ uint32_t PixelMap::crop(const Rect &rect)
     auto m = dstMemory.get();
     if (imageInfo.pixelFormat == PixelFormat::RGB_888) {
         std::unique_ptr<AbsMemory> shrinkedMemory = nullptr;
-        if (!ShrinkRGBXToRGB(dstMemory.memory, shrinkedMemory)) {
+        if (!ShrinkRGBXToRGB(dstMemory, shrinkedMemory)) {
             dstMemory->Release();
             return false;
         }
