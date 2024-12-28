@@ -444,8 +444,9 @@ int EXIFInfo::ParseExifData(const unsigned char *buf, unsigned len)
         exifData_ = nullptr;
     }
     exifData_ = exif_data_new();
-    bool cond = !exifData_;
-    CHECK_ERROR_RETURN_RET(cond, PARSE_EXIF_DATA_ERROR);
+    if (!exifData_) {
+        return PARSE_EXIF_DATA_ERROR;
+    }
     exif_data_unset_option(exifData_, EXIF_DATA_OPTION_IGNORE_UNKNOWN_TAGS);
     exif_data_load_data (exifData_, buf, len);
     exif_data_foreach_content(exifData_,
@@ -461,7 +462,6 @@ int EXIFInfo::ParseExifData(const unsigned char *buf, unsigned len)
                     if (ee == nullptr) {
                         return;
                     }
-                    CHECK_ERROR_RETURN(cond);
                     char tagValueChar[1024];
                     exif_entry_get_value(ee, tagValueChar, sizeof(tagValueChar));
                     std::string tagValueStr(&tagValueChar[0], &tagValueChar[strlen(tagValueChar)]);
