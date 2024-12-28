@@ -4299,7 +4299,7 @@ static uint32_t DoAiHdrProcess(sptr<SurfaceBuffer> &input, DecodeContext &hdrCtx
     hdrCtx.info.size.height = input->GetHeight();
     uint32_t res = AllocSurfaceBuffer(hdrCtx, GRAPHIC_PIXEL_FMT_RGBA_1010102);
     bool cond = (res != SUCCESS);
-    CHECK_DEBUG_RETURN_RET_LOG(cond, res, "HDR SurfaceBuffer Alloc failed, %{public}d", res);
+    CHECK_ERROR_RETURN_RET_LOG(cond, res, "HDR SurfaceBuffer Alloc failed, %{public}d", res);
 
     sptr<SurfaceBuffer> output = reinterpret_cast<SurfaceBuffer*>(hdrCtx.pixelsBuffer.context);
     VpeUtils::SetSbMetadataType(output, CM_IMAGE_HDR_VIVID_SINGLE);
@@ -4360,7 +4360,7 @@ static bool IsNecessaryAiProcess(const Size &imageSize, const DecodeOptions &opt
                                  bool &needAisr, bool &needHdr)
 {
     auto bRet = CheckCapacityAi();
-    CHECK_ERROR_RETURN_RET_LOG(!bRet, false, "[ImageSource] IsNecessaryAiProcess Unsupported sr and hdr");
+    CHECK_DEBUG_RETURN_RET_LOG(!bRet, false, "[ImageSource] IsNecessaryAiProcess Unsupported sr and hdr");
     if ((IsSizeVailed(opts.desiredSize) && (imageSize.height != opts.desiredSize.height
         || imageSize.width != opts.desiredSize.width) && opts.resolutionQuality != ResolutionQuality::UNKNOWN)
         || opts.resolutionQuality == ResolutionQuality::HIGH) {
