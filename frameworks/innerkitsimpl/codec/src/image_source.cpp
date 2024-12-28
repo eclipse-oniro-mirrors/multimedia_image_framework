@@ -265,7 +265,7 @@ SutDecSoManager::SutDecSoManager()
 SutDecSoManager::~SutDecSoManager()
 {
     bool cond = textureDecSoHandle_ == nullptr;
-    CHECK_ERROR_RETURN_LOG(cond, "[ImageSource] astcenc dec so is not be opened when dlclose!");
+    CHECK_DEBUG_RETURN_LOG(cond, "[ImageSource] astcenc dec so is not be opened when dlclose!");
     if (dlclose(textureDecSoHandle_) != 0) {
         IMAGE_LOGE("[ImageSource] astcenc sut dec so dlclose failed: %{public}s!", g_textureSuperDecSo.c_str());
     } else {
@@ -553,7 +553,7 @@ unique_ptr<ImageSource> ImageSource::CreateIncrementalImageSource(const Incremen
         [&opts]() {
             auto streamPtr = IncrementalSourceStream::CreateSourceStream(opts.incrementalMode);
             bool cond = streamPtr == nullptr;
-            CHECK_ERROR_PRINT_LOG(cond, "[ImageSource]failed to create incremental source stream.");
+            CHECK_DEBUG_PRINT_LOG(cond, "[ImageSource]failed to create incremental source stream.");
             return streamPtr;
         },
         opts.sourceOptions, errorCode, "CreateImageSource by fd");
@@ -1478,7 +1478,7 @@ uint32_t ImageSource::ModifyImageProperty(const std::string &key, const std::str
 {
     uint32_t ret = CreatExifMetadataByImageSource(true);
     bool cond = (ret != SUCCESS);
-    CHECK_ERROR_RETURN_RET_LOG(cond, ret, "Failed to create Exif metadata "
+    CHECK_DEBUG_RETURN_RET_LOG(cond, ret, "Failed to create Exif metadata "
                            "when attempting to modify property.");
     if (!exifMetadata_->SetValue(key, value)) {
         return ERR_IMAGE_DECODE_EXIF_UNSUPPORT;
@@ -1533,7 +1533,7 @@ uint32_t ImageSource::ModifyImageProperty(uint32_t index, const std::string &key
 {
     ImageDataStatistics imageDataStatistics("[ImageSource]ModifyImageProperty by fd.");
     bool cond = (fd <= STDERR_FILENO);
-    CHECK_ERROR_RETURN_RET_LOG(cond, ERR_IMAGE_SOURCE_DATA, "Invalid file descriptor.");
+    CHECK_DEBUG_RETURN_RET_LOG(cond, ERR_IMAGE_SOURCE_DATA, "Invalid file descriptor.");
 
     std::unique_lock<std::mutex> guard(decodingMutex_);
     auto metadataAccessor = MetadataAccessorFactory::Create(fd);
@@ -4021,7 +4021,7 @@ bool ImageSource::ApplyGainMap(ImageHdrType hdrType, DecodeContext& baseCtx, Dec
     if (format == IMAGE_HEIF_FORMAT || format == IMAGE_HEIC_FORMAT) {
         ImageTrace imageTrace("ImageSource decode heif gainmap hdrType:%d, scale:%d", hdrType, scale);
         bool cond = !mainDecoder_->DecodeHeifGainMap(gainMapCtx);
-        CHECK_ERROR_RETURN_RET_LOG(cond, false, "[ImageSource] heif get gainmap failed");
+        CHECK_INFO_RETURN_RET_LOG(cond, false, "[ImageSource] heif get gainmap failed");
         metadata = mainDecoder_->GetHdrMetadata(hdrType);
     } else if (!DecodeJpegGainMap(hdrType, scale, gainMapCtx, metadata)) {
         IMAGE_LOGI("[ImageSource] jpeg get gainmap failed");
