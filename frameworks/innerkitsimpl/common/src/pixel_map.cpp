@@ -3599,14 +3599,14 @@ bool PixelMap::DoTranslation(TransInfos &infos, const AntiAliasingOption &option
     }
 #endif
 
+    std::unique_ptr<AbsMemory> shrinkedMemory = nullptr;
     if (imageInfo.pixelFormat == PixelFormat::RGB_888) {
-        std::unique_ptr<AbsMemory> shrinkedMemory = nullptr;
         if (!ShrinkRGBXToRGB(dstMemory.memory, shrinkedMemory)) {
             dstMemory.memory->Release();
             return false;
         }
         dstMemory.memory->Release();
-        m = shrinkedMemory.release();
+        m = shrinkedMemory.get();
     }
 
     SetPixelsAddr(m->data.data, m->extend.data, m->data.size, m->GetType(), nullptr);
@@ -3785,14 +3785,14 @@ uint32_t PixelMap::crop(const Rect &rect)
     CopySurfaceBufferInfo(dstMemory->extend.data);
 
     auto m = dstMemory.get();
+    std::unique_ptr<AbsMemory> shrinkedMemory = nullptr;
     if (imageInfo.pixelFormat == PixelFormat::RGB_888) {
-        std::unique_ptr<AbsMemory> shrinkedMemory = nullptr;
         if (!ShrinkRGBXToRGB(dstMemory, shrinkedMemory)) {
             dstMemory->Release();
             return false;
         }
         dstMemory->Release();
-        m = shrinkedMemory.release();
+        m = shrinkedMemory.get();
     }
 
     SetPixelsAddr(m->data.data, m->extend.data, m->data.size, m->GetType(), nullptr);
