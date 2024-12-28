@@ -81,6 +81,7 @@ uint32_t PostProc::DecodePostProc(const DecodeOptions &opts, PixelMap &pixelMap,
     ImageInfo dstImageInfo;
     GetDstImageInfo(opts, pixelMap, srcImageInfo, dstImageInfo);
     uint32_t errorCode = ConvertProc(opts.CropRect, dstImageInfo, pixelMap, srcImageInfo);
+    bool cond = false;
     if (errorCode != SUCCESS) {
         IMAGE_LOGE("[PostProc]crop pixel map failed, errcode:%{public}u", errorCode);
         return errorCode;
@@ -88,17 +89,13 @@ uint32_t PostProc::DecodePostProc(const DecodeOptions &opts, PixelMap &pixelMap,
     decodeOpts_.allocatorType = opts.allocatorType;
     bool isNeedRotate = !ImageUtils::FloatCompareZero(opts.rotateDegrees);
     if (isNeedRotate) {
-        if (!RotatePixelMap(opts.rotateDegrees, pixelMap)) {
-            IMAGE_LOGE("[PostProc]rotate:transform pixel map failed");
-            return ERR_IMAGE_TRANSFORM;
-        }
+        cond = !RotatePixelMap(opts.rotateDegrees, pixelMap);
+        CHECK_ERROR_RETURN_RET_LOG(cond, ERR_IMAGE_TRANSFORM, "[PostProc]rotate:transform pixel map failed");
     }
     decodeOpts_.allocatorType = opts.allocatorType;
     if (opts.desiredSize.height > 0 && opts.desiredSize.width > 0) {
-        if (!ScalePixelMap(opts.desiredSize, pixelMap)) {
-            IMAGE_LOGE("[PostProc]scale:transform pixel map failed");
-            return ERR_IMAGE_TRANSFORM;
-        }
+        cond = !ScalePixelMap(opts.desiredSize, pixelMap);
+        CHECK_ERROR_RETURN_RET_LOG(cond, ERR_IMAGE_TRANSFORM, "[PostProc]scale:transform pixel map failed");
     } else {
         ImageInfo info;
         pixelMap.GetImageInfo(info);
@@ -108,10 +105,9 @@ uint32_t PostProc::DecodePostProc(const DecodeOptions &opts, PixelMap &pixelMap,
             Size size;
             size.height = targetHeight;
             size.width = targetWidth;
-            if (!ScalePixelMap(size, pixelMap)) {
-                IMAGE_LOGE("[PostProc]density scale:transform pixel map failed");
-                return ERR_IMAGE_TRANSFORM;
-            }
+            cond = !ScalePixelMap(size, pixelMap);
+            CHECK_ERROR_RETURN_RET_LOG(cond, ERR_IMAGE_TRANSFORM,
+                                       "[PostProc]density scale:transform pixel map failed");
             info.baseDensity = opts.fitDensity;
             pixelMap.SetImageInfo(info, true);
         }
@@ -173,10 +169,8 @@ bool PostProc::CenterScale(const Size &size, PixelMap &pixelMap)
         pixelMap.SetImageInfo(imageInfo, true);
         return true;
     }
-    if (!ScalePixelMap(scale, scale, pixelMap)) {
-        IMAGE_LOGE("[PostProc]center scale pixelmap %{public}f fail", scale);
-        return false;
-    }
+    bool cond = !ScalePixelMap(scale, scale, pixelMap);
+    CHECK_ERROR_RETURN_RET_LOG(cond, false, "[PostProc]center scale pixelmap %{public}f fail", scale);
     srcWidth = pixelMap.GetWidth();
     srcHeight = pixelMap.GetHeight();
     if (srcWidth == targetWidth && srcHeight == targetHeight) {
@@ -238,6 +232,7 @@ bool PostProc::CenterDisplay(PixelMap &pixelMap, int32_t srcWidth, int32_t srcHe
     int32_t srcRowStride = pixelMap.GetAllocatorType() == AllocatorType::DMA_ALLOC ? pixelMap.GetRowStride() : 0;
     dstImageInfo.size.width = targetWidth;
     dstImageInfo.size.height = targetHeight;
+    bool cond = false;
     if (pixelMap.SetImageInfo(dstImageInfo, true) != SUCCESS) {
         IMAGE_LOGE("update ImageInfo failed");
         return false;
@@ -248,18 +243,17 @@ bool PostProc::CenterDisplay(PixelMap &pixelMap, int32_t srcWidth, int32_t srcHe
     int fd = 0;
     int targetRowStride = 0;
     if (pixelMap.GetAllocatorType() == AllocatorType::HEAP_ALLOC) {
-        if (!AllocHeapBuffer(bufferSize, &dstPixels)) {
-            return false;
-        }
+        cond = !AllocHeapBuffer(bufferSize, &dstPixels);
+        CHECK_ERROR_RETURN_RET(cond, false);
     } else if (pixelMap.GetAllocatorType() == AllocatorType::DMA_ALLOC) {
         dstPixels = AllocDmaMemory(dstImageInfo, bufferSize, &nativeBuffer, targetRowStride);
     } else {
         dstPixels = AllocSharedMemory(dstImageInfo.size, bufferSize, fd, pixelMap.GetUniqueId());
     }
-    if (dstPixels == nullptr) {
-        IMAGE_LOGE("[PostProc]CenterDisplay AllocMemory[%{public}d] failed", pixelMap.GetAllocatorType());
-        return false;
-    }
+    cond = dstPixels == nullptr;
+    CHECK_ERROR_RETURN_RET_LOG(cond, false,
+                               "[PostProc]CenterDisplay AllocMemory[%{public}d] failed",
+                               pixelMap.GetAllocatorType());
     if (!CopyPixels(pixelMap, dstPixels, dstImageInfo.size, srcWidth, srcHeight, srcRowStride, targetRowStride)) {
         IMAGE_LOGE("[PostProc]CopyPixels failed");
         ReleaseBuffer(pixelMap.GetAllocatorType(), fd, bufferSize, &dstPixels, nativeBuffer);
@@ -299,10 +293,8 @@ bool PostProc::ProcessScanlineFilter(ScanlineFilter &scanlineFilter, const Rect 
         }
         uint32_t ret = scanlineFilter.FilterLine(resultData + ((scanLine - cropRect.top) * rowBytes), rowBytes,
                                                  srcData + (scanLine * pixelMap.GetRowBytes()));
-        if (ret != SUCCESS) {
-            IMAGE_LOGE("[PostProc]scan line failed, ret:%{public}u", ret);
-            return false;
-        }
+        bool cond = ret != SUCCESS;
+        CHECK_ERROR_RETURN_RET_LOG(cond, false, "[PostProc]scan line failed, ret:%{public}u", ret);
         scanLine++;
     }
     return true;
@@ -323,10 +315,8 @@ uint32_t PostProc::CheckScanlineFilter(const Rect &cropRect, ImageInfo &dstImage
     int fd = 0;
     if (decodeOpts_.allocatorType == AllocatorType::SHARE_MEM_ALLOC) {
         resultData = AllocSharedMemory(dstImageInfo.size, bufferSize, fd, pixelMap.GetUniqueId());
-        if (resultData == nullptr) {
-            IMAGE_LOGE("[PostProc]AllocSharedMemory failed");
-            return ERR_IMAGE_CROP;
-        }
+        bool cond = resultData == nullptr;
+        CHECK_ERROR_RETURN_RET_LOG(cond, ERR_IMAGE_CROP, "[PostProc]AllocSharedMemory failed");
     } else {
         if (!AllocHeapBuffer(bufferSize, &resultData)) {
             return ERR_IMAGE_CROP;
@@ -433,6 +423,7 @@ uint32_t PostProc::PixelConvertProc(ImageInfo &dstImageInfo, PixelMap &pixelMap,
 uint32_t PostProc::AllocBuffer(ImageInfo imageInfo, uint8_t **resultData, uint64_t &bufferSize, int &fd, uint32_t id)
 {
     int32_t pixelBytes = ImageUtils::GetPixelBytes(imageInfo.pixelFormat);
+    bool cond = false;
     if (pixelBytes == 0) {
         return ERR_IMAGE_CROP;
     }
@@ -448,24 +439,19 @@ uint32_t PostProc::AllocBuffer(ImageInfo imageInfo, uint8_t **resultData, uint64
         imageInfo.size.width, imageInfo.size.height, static_cast<long long>(bufferSize));
     if (decodeOpts_.allocatorType == AllocatorType::SHARE_MEM_ALLOC) {
         *resultData = AllocSharedMemory(imageInfo.size, bufferSize, fd, id);
-        if (*resultData == nullptr) {
-            IMAGE_LOGE("[PostProc]AllocSharedMemory failed");
-            return ERR_IMAGE_CROP;
-        }
+        cond = *resultData == nullptr;
+        CHECK_ERROR_RETURN_RET_LOG(cond, ERR_IMAGE_CROP, "[PostProc]AllocSharedMemory failed");
     } else {
-        if (!AllocHeapBuffer(bufferSize, resultData)) {
-            return ERR_IMAGE_CROP;
-        }
+        cond = !AllocHeapBuffer(bufferSize, resultData);
+        CHECK_ERROR_RETURN_RET(cond, ERR_IMAGE_CROP);
     }
     return SUCCESS;
 }
 
 bool PostProc::AllocHeapBuffer(uint64_t bufferSize, uint8_t **buffer)
 {
-    if (bufferSize == 0 || bufferSize > MALLOC_MAX_LENTH) {
-        IMAGE_LOGE("[PostProc]Invalid value of bufferSize");
-        return false;
-    }
+    bool cond = bufferSize == 0 || bufferSize > MALLOC_MAX_LENTH;
+    CHECK_ERROR_RETURN_RET_LOG(cond, false, "[PostProc]Invalid value of bufferSize");
     *buffer = static_cast<uint8_t *>(malloc(bufferSize));
     if (*buffer == nullptr) {
         IMAGE_LOGE("[PostProc]alloc covert color buffersize[%{public}llu] failed.",
@@ -529,9 +515,8 @@ uint8_t *PostProc::AllocDmaMemory(ImageInfo info, const uint64_t bufferSize,
     MemoryData memoryData = {nullptr, (uint32_t)bufferSize, "PostProc", {info.size.width, info.size.height}};
     memoryData.format = info.pixelFormat;
     auto dstMemory = MemoryManager::CreateMemory(AllocatorType::DMA_ALLOC, memoryData);
-    if (dstMemory == nullptr) {
-        return nullptr;
-    }
+    bool cond = dstMemory == nullptr;
+    CHECK_ERROR_RETURN_RET(cond, nullptr);
     *nativeBuffer = dstMemory->extend.data;
     auto sbBuffer = reinterpret_cast<SurfaceBuffer *>(dstMemory->extend.data);
     targetRowStride = sbBuffer->GetStride();

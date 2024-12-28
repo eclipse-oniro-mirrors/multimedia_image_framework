@@ -506,7 +506,7 @@ unique_ptr<ImageSource> ImageSource::CreateImageSource(const std::string &pathNa
                 streamPtr = FileSourceStream::CreateSourceStream(pathName);
             }
             bool cond = (streamPtr == nullptr);
-            CHECK_ERROR_PRINT_LOG(cond, "[ImageSource]failed to create file path source stream");
+            CHECK_DEBUG_PRINT_LOG(cond, "[ImageSource]failed to create file path source stream");
             return streamPtr;
         },
         opts, errorCode, "CreateImageSource by path");
@@ -553,7 +553,7 @@ unique_ptr<ImageSource> ImageSource::CreateIncrementalImageSource(const Incremen
         [&opts]() {
             auto streamPtr = IncrementalSourceStream::CreateSourceStream(opts.incrementalMode);
             bool cond = streamPtr == nullptr;
-            CHECK_DEBUG_PRINT_LOG(cond, "[ImageSource]failed to create incremental source stream.");
+            CHECK_ERROR_PRINT_LOG(cond, "[ImageSource]failed to create incremental source stream.");
             return streamPtr;
         },
         opts.sourceOptions, errorCode, "CreateImageSource by fd");
@@ -4360,7 +4360,7 @@ static bool IsNecessaryAiProcess(const Size &imageSize, const DecodeOptions &opt
                                  bool &needAisr, bool &needHdr)
 {
     auto bRet = CheckCapacityAi();
-    CHECK_ERROR_RETURN_RET_LOG(!bRet, false, "[ImageSource] IsNecessaryAiProcess Unsupported sr and hdr");
+    CHECK_DEBUG_RETURN_RET_LOG(!bRet, false, "[ImageSource] IsNecessaryAiProcess Unsupported sr and hdr");
     if ((IsSizeVailed(opts.desiredSize) && (imageSize.height != opts.desiredSize.height
         || imageSize.width != opts.desiredSize.width) && opts.resolutionQuality != ResolutionQuality::UNKNOWN)
         || opts.resolutionQuality == ResolutionQuality::HIGH) {
