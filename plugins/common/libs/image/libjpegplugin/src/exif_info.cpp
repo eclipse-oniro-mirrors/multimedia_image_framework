@@ -471,7 +471,7 @@ int EXIFInfo::ParseExifData(const unsigned char *buf, unsigned len)
                 }, userData);
         }, this);
 
-    cond = imageFileDirectory_ == EXIF_IFD_COUNT;
+    bool cond = imageFileDirectory_ == EXIF_IFD_COUNT;
     CHECK_ERROR_RETURN_RET(cond, PARSE_EXIF_IFD_ERROR);
     ExifMakerNote exifMakerNote;
     if (exifMakerNote.Parser(exifData_, buf, len) == Media::SUCCESS) {
