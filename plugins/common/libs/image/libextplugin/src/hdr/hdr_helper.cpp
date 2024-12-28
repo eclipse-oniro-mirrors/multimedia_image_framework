@@ -556,7 +556,7 @@ static bool ParseVividJpegMetadata(uint8_t* data, uint32_t& dataOffset, uint32_t
         CHECK_ERROR_RETURN_RET(cond, false);
         metadata.dynamicMetadata.resize(dynamicMetaSize);
         cond = memcpy_s(metadata.dynamicMetadata.data(), dynamicMetaSize, data + dataOffset, dynamicMetaSize) != 0;
-        CHECK_ERROR_RETURN_RET_LOG(cond, false, "get vivid dynamic metadata failed");
+        CHECK_DEBUG_RETURN_RET_LOG(cond, false, "get vivid dynamic metadata failed");
         dataOffset += dynamicMetaSize;
     }
     return true;
@@ -860,7 +860,7 @@ static bool GetHeifMetadata(HeifDecoder* heifDecoder, ImageHdrType type, HdrMeta
             vector<uint8_t> isoMetadata;
             heifDecoder->getISOMetadata(isoMetadata);
             cond = isoMetadata.empty();
-            CHECK_ERROR_RETURN_RET(cond, false);
+            CHECK_ERROR_RETURN_RET(cond, res);
             if (isoMetadata.size() > EMPTY_SIZE && isoMetadata[INDEX_ZERO] == EMPTY_SIZE) {
                 ParseISOMetadata(isoMetadata.data() + INDEX_ONE, isoMetadata.size() - INDEX_ONE, metadata);
             }
