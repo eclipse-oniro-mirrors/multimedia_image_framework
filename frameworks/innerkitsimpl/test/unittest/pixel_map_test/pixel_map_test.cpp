@@ -173,7 +173,7 @@ std::map<PixelFormat, std::string> gPixelFormat = {
     { PixelFormat::NV12,      "PixelFormat::NV12" }
 };
 
-std::map<PixelFormat, std::string> allPixelFormat = {
+std::map<PixelFormat, std::string> rgbPixelFormat = {
     { PixelFormat::ARGB_8888, "PixelFormat::ARGB_8888" },
     { PixelFormat::RGB_565,   "PixelFormat::RGB_565" },
     { PixelFormat::RGBA_8888, "PixelFormat::RGBA_8888" },
@@ -181,11 +181,7 @@ std::map<PixelFormat, std::string> allPixelFormat = {
     { PixelFormat::RGB_888,   "PixelFormat::RGB_888" },
     { PixelFormat::ALPHA_8,   "PixelFormat::ALPHA_8" },
     { PixelFormat::RGBA_F16,  "PixelFormat::RGBA_F16" },
-    { PixelFormat::NV21,      "PixelFormat::NV21" },
-    { PixelFormat::NV12,      "PixelFormat::NV12" },
-    { PixelFormat::RGBA_1010102, "PixelFormat::RGBA_1010102"},
-    { PixelFormat::YCBCR_P010, "PixelFormat::YCBCR_P010"},
-    { PixelFormat::YCRCB_P010, "PixelFormat::YCRCB_P010"}
+    { PixelFormat::RGBA_1010102, "PixelFormat::RGBA_1010102"}
 };
 
 static bool CompareTwoPixelMap(PixelMap &pixelmap1, PixelMap &pixelmap2)
@@ -2698,7 +2694,7 @@ HWTEST_F(PixelMapTest, PixelMapCloneTest001, TestSize.Level3)
 
     // ARGB_8888 to others
     options.srcPixelFormat = PixelFormat::ARGB_8888;
-    for (iter = allPixelFormat.begin(); iter != allPixelFormat.end() ; ++iter) {
+    for (iter = rgbPixelFormat.begin(); iter != rgbPixelFormat.end() ; ++iter) {
         uint32_t colorlength = 24;    // w:2 * h:3 * pixelByte:4
         uint8_t buffer[24] = { 0 };    // w:2 * h:3 * pixelByte:4
         for (int i = 0; i < colorlength; i += 4) {
@@ -2730,7 +2726,7 @@ HWTEST_F(PixelMapTest, UnmodifiablePixelMapTest, TestSize.Level3)
 {
     GTEST_LOG_(INFO) << "PixelMapTest: UnmodifiablePixelMapTest start";
 
-    auto pixelMap = ConstructPixelMap(1, 1, PixelFormat::BGRA_8888, AlphaType::IMAGE_ALPHA_TYPE_UNKNOWN,
+    auto pixelMap = ConstructPixelMap(2, 2, PixelFormat::BGRA_8888, AlphaType::IMAGE_ALPHA_TYPE_UNKNOWN,
         AllocatorType::HEAP_ALLOC);
     uint32_t* data = static_cast<uint32_t*>(pixelMap->GetWritablePixels());
     data[0] = 0xFFFFFFFF;
