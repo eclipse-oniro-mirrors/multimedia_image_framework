@@ -621,6 +621,9 @@ ExifMnoteData* ExifMetadata::GetHwMnoteData(bool &isNewMaker)
     cond = exifData_ == nullptr;
     CHECK_ERROR_RETURN_RET(cond, nullptr);
     ExifMnoteData *md = exif_data_get_mnote_data(exifData_);
+    if (md != nullptr) {
+        return md;
+    }
     IMAGE_LOGD("Makenote not exist & ready to init makernote with hw entry.");
     ExifMem *mem = exif_data_get_priv_mem(exifData_);
     cond = mem == nullptr;
