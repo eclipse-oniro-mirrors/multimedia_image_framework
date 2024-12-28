@@ -72,10 +72,8 @@ uint32_t WebpExifMetadataAccessor::Read()
 
     ExifData *exifData;
     TiffParser::Decode(reinterpret_cast<const unsigned char *>(dataBuf.CData()), dataBuf.Size(), &exifData);
-    if (exifData == nullptr) {
-        IMAGE_LOGD("Image stream does not have exifData.");
-        return ERR_IMAGE_DECODE_FAILED;
-    }
+    bool cond = exifData == nullptr;
+    CHECK_DEBUG_RETURN_RET_LOG(cond, ERR_IMAGE_DECODE_FAILED, "Image stream does not have exifData.");
 
     exifMetadata_ = std::make_shared<OHOS::Media::ExifMetadata>(exifData);
 
@@ -84,11 +82,10 @@ uint32_t WebpExifMetadataAccessor::Read()
 
 bool WebpExifMetadataAccessor::ReadBlob(DataBuf &blob)
 {
+    bool cond = false;
     if (!imageStream_->IsOpen()) {
-        if (!imageStream_->Open(OpenMode::ReadWrite)) {
-            IMAGE_LOGE("Output image stream open failed.");
-            return false;
-        }
+        cond = !imageStream_->Open(OpenMode::ReadWrite);
+        CHECK_ERROR_RETURN_RET_LOG(cond, false, "Output image stream open failed.");
     }
     imageStream_->Seek(WEBP_CHUNK_HEAD_SIZE, SeekPos::BEGIN);
 
@@ -99,24 +96,18 @@ bool WebpExifMetadataAccessor::ReadBlob(DataBuf &blob)
 
     while (!imageStream_->IsEof()) {
         DataBuf chunkId(WEBP_CHUNK_ID_SIZE);
-        if (static_cast<size_t>(imageStream_->Read(chunkId.Data(), chunkId.Size())) != chunkId.Size() ||
-            imageStream_->IsEof()) {
-            IMAGE_LOGE("Image stream does not find chunkid.");
-            return false;
-        }
+        cond = static_cast<size_t>(imageStream_->Read(chunkId.Data(), chunkId.Size())) != chunkId.Size() ||
+               imageStream_->IsEof();
+        CHECK_ERROR_RETURN_RET_LOG(cond, false, "Image stream does not find chunkid.");
 
         DataBuf chunkSize(WEBP_CHUNK_SIZE);
-        if (static_cast<size_t>(imageStream_->Read(chunkSize.Data(), chunkSize.Size())) != chunkSize.Size() ||
-            imageStream_->IsEof()) {
-            IMAGE_LOGE("Image stream does not find chunk size.");
-            return false;
-        }
+        cond = static_cast<size_t>(imageStream_->Read(chunkSize.Data(), chunkSize.Size())) != chunkSize.Size() ||
+               imageStream_->IsEof();
+        CHECK_ERROR_RETURN_RET_LOG(cond, false, "Image stream does not find chunk size.");
         const uint32_t size = chunkSize.ReadUInt32(0, littleEndian);
         const size_t imgSize = static_cast<size_t>(imageStream_->GetSize());
-        if (size > imgSize - imageStream_->Tell()) {
-            IMAGE_LOGE("Read chunk length error.");
-            return false;
-        }
+        cond = size > imgSize - imageStream_->Tell();
+        CHECK_ERROR_RETURN_RET_LOG(cond, false, "Read chunk length error.");
 
         std::string strChunkId(reinterpret_cast<const char*>(chunkId.CData()), WEBP_CHUNK_ID_SIZE);
         if (strChunkId != WEBP_CHUNK_HEADER_EXIF) {
@@ -140,11 +131,10 @@ bool WebpExifMetadataAccessor::ReadBlob(DataBuf &blob)
 bool WebpExifMetadataAccessor::CheckChunkVp8x(Vp8xAndExifInfo &exifFlag) const
 {
     DataBuf chunkId(WEBP_CHUNK_ID_SIZE);
-    if (static_cast<size_t>(imageStream_->Read(chunkId.Data(), chunkId.Size())) != chunkId.Size() ||
-        imageStream_->IsEof()) {
-        IMAGE_LOGD("Image stream does not find vp8x.");
-        return false;
-    }
+    bool cond = false;
+    cond = static_cast<size_t>(imageStream_->Read(chunkId.Data(), chunkId.Size())) != chunkId.Size() ||
+           imageStream_->IsEof();
+    CHECK_DEBUG_RETURN_RET_LOG(cond, false, "Image stream does not find vp8x.");
 
     std::string strChunkId(reinterpret_cast<const char *>(chunkId.CData()), WEBP_CHUNK_ID_SIZE);
     if (strChunkId != WEBP_CHUNK_HEADER_VP8X) {
@@ -154,27 +144,21 @@ bool WebpExifMetadataAccessor::CheckChunkVp8x(Vp8xAndExifInfo &exifFlag) const
     }
 
     byte chunkSize[WEBP_CHUNK_ID_SIZE];
-    if (static_cast<size_t>(imageStream_->Read(chunkSize, WEBP_CHUNK_SIZE)) != WEBP_CHUNK_SIZE ||
-        imageStream_->IsEof()) {
-        IMAGE_LOGE("Image stream does not find vp8x size.");
-        return false;
-    }
+    cond = static_cast<size_t>(imageStream_->Read(chunkSize, WEBP_CHUNK_SIZE)) != WEBP_CHUNK_SIZE ||
+           imageStream_->IsEof();
+    CHECK_ERROR_RETURN_RET_LOG(cond, false, "Image stream does not find vp8x size.");
     const uint32_t size = GetULong(chunkSize, littleEndian);
-    if (size > WEBP_MAX_CHUNKDATA_SIZE) {
-        IMAGE_LOGE("Image stream chunkdata size is too large.");
-        return false;
-    }
+    cond = size > WEBP_MAX_CHUNKDATA_SIZE;
+    CHECK_ERROR_RETURN_RET_LOG(cond, false, "Image stream chunkdata size is too large.");
     DataBuf chunkData(size);
     if (size == 0 || chunkData.Empty() || chunkData.Data() == nullptr) {
         IMAGE_LOGE("Image stream does not find vp8x data.");
         return false;
     }
 
-    if (static_cast<size_t>(imageStream_->Read(chunkData.Data(), chunkData.Size())) != chunkData.Size() ||
-        imageStream_->IsEof()) {
-        IMAGE_LOGE("Image stream does not find vp8x data.");
-        return false;
-    }
+    cond = static_cast<size_t>(imageStream_->Read(chunkData.Data(), chunkData.Size())) != chunkData.Size() ||
+           imageStream_->IsEof();
+    CHECK_ERROR_RETURN_RET_LOG(cond, false, "Image stream does not find vp8x data.");
 
     byte reserved = chunkData.Data()[0];
     if (!(reserved & WEBP_EXIF_FLAG_BIT)) {
@@ -215,10 +199,8 @@ bool WebpExifMetadataAccessor::GetExifEncodeBlob(uint8_t **dataBlob, uint32_t &s
     ExifData *exifData = this->Get()->GetExifData();
     TiffParser::Encode(dataBlob, size, exifData);
 
-    if (dataBlob == nullptr || *dataBlob == nullptr) {
-        IMAGE_LOGE("Encode webp data failed.");
-        return false;
-    }
+    bool cond = dataBlob == nullptr || *dataBlob == nullptr;
+    CHECK_ERROR_RETURN_RET_LOG(cond, false, "Encode webp data failed.");
 
     return (size > 0);
 }
@@ -251,42 +233,32 @@ bool WebpExifMetadataAccessor::GetExifBlob(const DataBuf &blob, uint8_t **dataBl
 uint32_t WebpExifMetadataAccessor::UpdateData(uint8_t *dataBlob, uint32_t size)
 {
     BufferMetadataStream tmpBufStream;
-    if (!tmpBufStream.Open(OpenMode::ReadWrite)) {
-        IMAGE_LOGE("Image temp stream open failed.");
-        return ERR_IMAGE_SOURCE_DATA;
-    }
+    bool cond = false;
+    cond = !tmpBufStream.Open(OpenMode::ReadWrite);
+    CHECK_ERROR_RETURN_RET_LOG(cond, ERR_IMAGE_SOURCE_DATA, "Image temp stream open failed.");
 
-    if (!imageStream_->IsOpen()) {
-        IMAGE_LOGE("Output image stream not open.");
-        return ERR_IMAGE_SOURCE_DATA;
-    }
+    cond = !imageStream_->IsOpen();
+    CHECK_ERROR_RETURN_RET_LOG(cond, ERR_IMAGE_SOURCE_DATA, "Output image stream not open.");
 
-    if (!UpdateExifMetadata(tmpBufStream, dataBlob, size)) {
-        IMAGE_LOGE("Image temp stream write failed.");
-        return ERROR;
-    }
+    cond = !UpdateExifMetadata(tmpBufStream, dataBlob, size);
+    CHECK_ERROR_RETURN_RET_LOG(cond, ERROR, "Image temp stream write failed.");
 
     imageStream_->Seek(0, SeekPos::BEGIN);
-    if (!imageStream_->CopyFrom(tmpBufStream)) {
-        IMAGE_LOGE("Copy from temp stream failed");
-        return ERR_MEDIA_INVALID_OPERATION;
-    }
+    cond = !imageStream_->CopyFrom(tmpBufStream);
+    CHECK_ERROR_RETURN_RET_LOG(cond, ERR_MEDIA_INVALID_OPERATION, "Copy from temp stream failed");
     return SUCCESS;
 }
 
 bool WebpExifMetadataAccessor::UpdateExifMetadata(BufferMetadataStream &bufStream, uint8_t *dataBlob, uint32_t size)
 {
     Vp8xAndExifInfo exifFlag = Vp8xAndExifInfo::UNKNOWN;
-    if (!WriteHeader(bufStream, size, exifFlag)) {
-        IMAGE_LOGE("Output image stream write header failed.");
-        return false;
-    }
+    bool cond = false;
+    cond = !WriteHeader(bufStream, size, exifFlag);
+    CHECK_ERROR_RETURN_RET_LOG(cond, false, "Output image stream write header failed.");
 
     imageStream_->Seek(WEBP_CHUNK_HEAD_SIZE, SeekPos::BEGIN);
-    if (!WirteChunkVp8x(bufStream, exifFlag)) {
-        IMAGE_LOGE("Output image stream write vp8x failed.");
-        return false;
-    }
+    cond = !WirteChunkVp8x(bufStream, exifFlag);
+    CHECK_ERROR_RETURN_RET_LOG(cond, false, "Output image stream write vp8x failed.");
 
     if (exifFlag == Vp8xAndExifInfo::VP8X_NOT_EXIST || exifFlag == Vp8xAndExifInfo::EXIF_NOT_EXIST) {
         return InsertExifMetadata(bufStream, dataBlob, size);
@@ -294,28 +266,22 @@ bool WebpExifMetadataAccessor::UpdateExifMetadata(BufferMetadataStream &bufStrea
 
     while (!imageStream_->IsEof()) {
         DataBuf chunkHead(WEBP_CHUNK_ID_SIZE + WEBP_CHUNK_SIZE);
-        if (static_cast<size_t>(imageStream_->Read(chunkHead.Data(), chunkHead.Size())) != chunkHead.Size() ||
-            imageStream_->IsEof()) {
-            IMAGE_LOGE("Failed to read image chunk header information.");
-            return false;
-        }
+        cond = static_cast<size_t>(imageStream_->Read(chunkHead.Data(), chunkHead.Size())) != chunkHead.Size() ||
+               imageStream_->IsEof();
+        CHECK_ERROR_RETURN_RET_LOG(cond, false, "Failed to read image chunk header information.");
 
         uint32_t chunkSize = chunkHead.ReadUInt32(WEBP_CHUNK_ID_SIZE, littleEndian);
         const ssize_t imgSize = imageStream_->GetSize();
-        if (chunkSize > imgSize - imageStream_->Tell()) {
-            IMAGE_LOGE("Read chunk length error.");
-            return false;
-        }
+        cond = chunkSize > imgSize - imageStream_->Tell();
+        CHECK_ERROR_RETURN_RET_LOG(cond, false, "Read chunk length error.");
 
         if (chunkSize % WEBP_BUF_SIZE) {
             ++chunkSize;
         }
 
         DataBuf chunkData(chunkSize);
-        if (static_cast<size_t>(imageStream_->Read(chunkData.Data(), chunkData.Size())) != chunkData.Size()) {
-            IMAGE_LOGE("Failed to read image chunk data.");
-            return false;
-        }
+        cond = static_cast<size_t>(imageStream_->Read(chunkData.Data(), chunkData.Size())) != chunkData.Size();
+        CHECK_ERROR_RETURN_RET_LOG(cond, false, "Failed to read image chunk data.");
 
         std::string strChunkId(reinterpret_cast<const char *>(chunkHead.CData()), WEBP_CHUNK_ID_SIZE);
         if (strChunkId == WEBP_CHUNK_HEADER_EXIF) {
@@ -337,9 +303,8 @@ bool WebpExifMetadataAccessor::UpdateExifMetadata(BufferMetadataStream &bufStrea
 
 bool WebpExifMetadataAccessor::InsertExifMetadata(BufferMetadataStream &bufStream, uint8_t *dataBlob, uint32_t size)
 {
-    if (!CopyRestData(bufStream)) {
-        return false;
-    }
+    bool cond = !CopyRestData(bufStream);
+    CHECK_ERROR_RETURN_RET(cond, false);
 
     static byte exifChunckId[] = { 0x45, 0x58, 0x49, 0x46 };
     if (bufStream.Write(exifChunckId, WEBP_CHUNK_ID_SIZE) != WEBP_CHUNK_ID_SIZE) {
@@ -457,18 +422,17 @@ bool WebpExifMetadataAccessor::WriteHeader(BufferMetadataStream &bufStream, uint
 {
     DataBuf headInfo(WEBP_CHUNK_HEAD_SIZE);
     imageStream_->Seek(0, SeekPos::BEGIN);
-    if (static_cast<size_t>(imageStream_->Read(headInfo.Data(), headInfo.Size())) != headInfo.Size() ||
-        imageStream_->IsEof()) {
-        return false;
-    }
+    bool cond = false;
+    cond = static_cast<size_t>(imageStream_->Read(headInfo.Data(), headInfo.Size())) != headInfo.Size() ||
+           imageStream_->IsEof();
+    CHECK_ERROR_RETURN_RET(cond, false);
     uint32_t fileSize = GetULong(headInfo.Data(WEBP_RIFF_SIZE), littleEndian) + size;
     if (size % WEBP_BUF_SIZE) {
         ++fileSize;
     }
 
-    if (!CheckChunkVp8x(exifFlag) && exifFlag == Vp8xAndExifInfo::UNKNOWN) {
-        return false;
-    }
+    cond = !CheckChunkVp8x(exifFlag) && exifFlag == Vp8xAndExifInfo::UNKNOWN;
+    CHECK_ERROR_RETURN_RET(cond, false);
 
     if (exifFlag == Vp8xAndExifInfo::VP8X_NOT_EXIST || exifFlag == Vp8xAndExifInfo::EXIF_NOT_EXIST) {
         fileSize += exifFlag == Vp8xAndExifInfo::VP8X_NOT_EXIST ? WEBP_CHUNK_VP8X_SIZE : 0;
@@ -479,9 +443,8 @@ bool WebpExifMetadataAccessor::WriteHeader(BufferMetadataStream &bufStream, uint
     }
 
     DataBuf exifData;
-    if (!ReadBlob(exifData)) {
-        return false;
-    }
+    cond = !ReadBlob(exifData);
+    CHECK_ERROR_RETURN_RET(cond, false);
 
     fileSize -= (exifData.Size() % WEBP_BUF_SIZE) ? (exifData.Size() + 1) : exifData.Size();
     UL2Data(headInfo.Data(WEBP_FILE_SIZE_BUFF_SIZE), fileSize, littleEndian);
@@ -492,12 +455,12 @@ bool WebpExifMetadataAccessor::WriteHeader(BufferMetadataStream &bufStream, uint
 
 bool WebpExifMetadataAccessor::WirteChunkVp8x(BufferMetadataStream &bufStream, const Vp8xAndExifInfo &exifFlag)
 {
+    bool cond = false;
     if (exifFlag == Vp8xAndExifInfo::VP8X_NOT_EXIST) {
         auto [width, height] = GetImageWidthAndHeight();
         imageStream_->Seek(WEBP_CHUNK_HEAD_SIZE, SeekPos::BEGIN);
-        if (width <= 0 || height <= 0) {
-            return false;
-        }
+        cond = width <= 0 || height <= 0;
+        CHECK_ERROR_RETURN_RET(cond, false);
         static byte chunckHeader[] = { 0x56, 0x50, 0x38, 0x58, 0x0a, 0x00, 0x00, 0x00, 0x08,
                                        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 };
         size_t offset = WEBP_CHUNK_HEAD_SIZE;
@@ -514,9 +477,8 @@ bool WebpExifMetadataAccessor::WirteChunkVp8x(BufferMetadataStream &bufStream, c
     }
 
     DataBuf chunkHead(WEBP_CHUNK_ID_SIZE + WEBP_CHUNK_SIZE);
-    if (static_cast<size_t>(imageStream_->Read(chunkHead.Data(), chunkHead.Size())) != chunkHead.Size()) {
-        return false;
-    }
+    cond = static_cast<size_t>(imageStream_->Read(chunkHead.Data(), chunkHead.Size())) != chunkHead.Size();
+    CHECK_ERROR_RETURN_RET(cond, false);
     if (bufStream.Write(chunkHead.Data(), chunkHead.Size()) != (ssize_t)chunkHead.Size()) {
         return false;
     }
@@ -526,9 +488,8 @@ bool WebpExifMetadataAccessor::WirteChunkVp8x(BufferMetadataStream &bufStream, c
     if (static_cast<size_t>(imageStream_->Read(chunkData.Data(), chunkData.Size())) != chunkData.Size()) {
         return false;
     }
-    if (chunkData.Data() == nullptr) {
-        return false;
-    }
+    cond = chunkData.Data() == nullptr;
+    CHECK_ERROR_RETURN_RET(cond, false);
     chunkData.Data()[0] |= WEBP_EXIF_FLAG_BIT;
     return bufStream.Write(chunkData.Data(), chunkData.Size()) == (ssize_t)chunkData.Size();
 }

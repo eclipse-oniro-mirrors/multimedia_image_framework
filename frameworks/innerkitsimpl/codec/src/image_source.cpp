@@ -506,7 +506,7 @@ unique_ptr<ImageSource> ImageSource::CreateImageSource(const std::string &pathNa
                 streamPtr = FileSourceStream::CreateSourceStream(pathName);
             }
             bool cond = (streamPtr == nullptr);
-            CHECK_ERROR_PRINT_LOG(cond, "[ImageSource]failed to create file path source stream");
+            CHECK_DEBUG_PRINT_LOG(cond, "[ImageSource]failed to create file path source stream");
             return streamPtr;
         },
         opts, errorCode, "CreateImageSource by path");
@@ -553,7 +553,7 @@ unique_ptr<ImageSource> ImageSource::CreateIncrementalImageSource(const Incremen
         [&opts]() {
             auto streamPtr = IncrementalSourceStream::CreateSourceStream(opts.incrementalMode);
             bool cond = streamPtr == nullptr;
-            CHECK_DEBUG_PRINT_LOG(cond, "[ImageSource]failed to create incremental source stream.");
+            CHECK_ERROR_PRINT_LOG(cond, "[ImageSource]failed to create incremental source stream.");
             return streamPtr;
         },
         opts.sourceOptions, errorCode, "CreateImageSource by fd");
