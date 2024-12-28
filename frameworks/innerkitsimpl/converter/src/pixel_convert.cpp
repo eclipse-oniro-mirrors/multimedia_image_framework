@@ -1104,7 +1104,8 @@ static bool FFMpegConvert(const void *srcPixels, const FFMPEG_CONVERT_INFO& srcI
         IMAGE_LOGE("unsupport src/dst pixel format!");
         return false;
     }
-    CHECK_ERROR_RETURN_RET_LOG((srcInfo.width <= 0 || srcInfo.height <= 0 || dstInfo.width <= 0 || dstInfo.height <= 0), false, "src/dst width/height error!");
+    CHECK_ERROR_RETURN_RET_LOG((srcInfo.width <= 0 || srcInfo.height <= 0 ||
+        dstInfo.width <= 0 || dstInfo.height <= 0), false, "src/dst width/height error!");
 
     inputFrame = av_frame_alloc();
     outputFrame = av_frame_alloc();
@@ -1162,7 +1163,8 @@ static bool ConvertForFFMPEG(const void *srcPixels, PixelFormat srcpixelmap, Ima
     FFMPEG_CONVERT_INFO dstFFmpegInfo = {PixelFormatToAVPixelFormat(dstpixelmap),
         srcInfo.size.width, srcInfo.size.height, 1};
 
-    CHECK_ERROR_RETURN_RET_LOG((!FFMpegConvert(srcPixels, srcFFmpegInfo, dstPixels, dstFFmpegInfo)), false, "[PixelMap]Convert: ffmpeg convert failed!");
+    CHECK_ERROR_RETURN_RET_LOG((!FFMpegConvert(srcPixels, srcFFmpegInfo, dstPixels, dstFFmpegInfo)),
+        false, "[PixelMap]Convert: ffmpeg convert failed!");
 
     return true;
 }
@@ -1442,12 +1444,11 @@ static int32_t ConvertToYUV(const void *srcPixels, const int32_t srcLength, cons
 static int32_t ConvertToP010(const void *srcPixels, const int32_t srcLength, const ImageInfo &srcInfo,
     void *dstPixels, const ImageInfo &dstInfo)
 {
-    
-    CHECK_ERROR_RETURN_RET_LOG((srcPixels == nullptr || dstPixels == nullptr || srcLength <= 0), -1, "[PixelMap]Convert: src pixels or dst pixels or src pixel length invalid");
-
+    CHECK_ERROR_RETURN_RET_LOG((srcPixels == nullptr || dstPixels == nullptr || srcLength <= 0), -1,
+        "[PixelMap]Convert: src pixels or dst pixels or src pixel length invalid");
     CHECK_ERROR_RETURN_RET_LOG((IsYUVP010Format(srcInfo.pixelFormat) ||
-        (dstInfo.pixelFormat != PixelFormat::YCRCB_P010 && dstInfo.pixelFormat != PixelFormat::YCBCR_P010)), -1, "[PixelMap]Convert: src or dst pixel format invalid.");
-
+        (dstInfo.pixelFormat != PixelFormat::YCRCB_P010 && dstInfo.pixelFormat != PixelFormat::YCBCR_P010)),
+        -1, "[PixelMap]Convert: src or dst pixel format invalid.");
     int32_t dstLength = PixelMap::GetYUVByteCount(dstInfo);
 
     CHECK_ERROR_RETURN_RET_LOG(dstLength <= 0, -1, "[PixelMap]Convert: Get dstP010 length failed!");
@@ -1506,7 +1507,8 @@ static int32_t YUVConvert(const void *srcPixels, const int32_t srcLength, const 
     FFMPEG_CONVERT_INFO dstFFmpegInfo = {PixelFormatToAVPixelFormat(dstInfo.pixelFormat), dstInfo.size.width,
         dstInfo.size.height, 1};
 
-    CHECK_ERROR_RETURN_RET_LOG(!FFMpegConvert(srcPixels, srcFFmpegInfo, dstPixels, dstFFmpegInfo), -1, "[PixelMap]Convert: ffmpeg convert failed!");
+    CHECK_ERROR_RETURN_RET_LOG(!FFMpegConvert(srcPixels, srcFFmpegInfo, dstPixels, dstFFmpegInfo),
+        -1, "[PixelMap]Convert: ffmpeg convert failed!");
     
     return av_image_get_buffer_size(dstFFmpegInfo.format, dstFFmpegInfo.width, dstFFmpegInfo.height,
         dstFFmpegInfo.alignSize);
