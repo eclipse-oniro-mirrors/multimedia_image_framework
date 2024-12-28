@@ -439,13 +439,12 @@ static void inline DumpTagsMap(SafeMap<ExifTag, std::string> &tags)
 int EXIFInfo::ParseExifData(const unsigned char *buf, unsigned len)
 {
     IMAGE_LOGD("ParseExifData ENTER");
-    bool cond = false;
     if (exifData_ != nullptr) {
         exif_data_unref(exifData_);
         exifData_ = nullptr;
     }
     exifData_ = exif_data_new();
-    cond = !exifData_;
+    bool cond = !exifData_;
     CHECK_ERROR_RETURN_RET(cond, PARSE_EXIF_DATA_ERROR);
     exif_data_unset_option(exifData_, EXIF_DATA_OPTION_IGNORE_UNKNOWN_TAGS);
     exif_data_load_data (exifData_, buf, len);
@@ -453,11 +452,15 @@ int EXIFInfo::ParseExifData(const unsigned char *buf, unsigned len)
         [](ExifContent *ec, void *userData) {
             ExifIfd ifd = exif_content_get_ifd(ec);
             (static_cast<EXIFInfo*>(userData))->imageFileDirectory_ = ifd;
-            cond = ifd == EXIF_IFD_COUNT;
-            CHECK_DEBUG_RETURN_LOG(cond, "GetIfd ERROR");
+            if (ifd == EXIF_IFD_COUNT) {
+                IMAGE_LOGD("GetIfd ERROR");
+                return;
+            }
             exif_content_foreach_entry(ec,
                 [](ExifEntry *ee, void* userData) {
-                    cond = ee == nullptr;
+                    if (ee == nullptr) {
+                        return;
+                    }
                     CHECK_ERROR_RETURN(cond);
                     char tagValueChar[1024];
                     exif_entry_get_value(ee, tagValueChar, sizeof(tagValueChar));
@@ -1370,7 +1373,7 @@ bool EXIFInfo::CreateExifEntry(const ExifTag &tag, ExifData *data, const std::st
         return CreateExifEntryOfBitsPerSample(tag, data, value, order, ptrEntry);
     } else if (std::find(vector1.begin(), vector1.end(), tag) != vector1.end()) {
         *ptrEntry = InitExifTag(data, GetExifIfdByExifTag(tag), tag);
-        cond = *ptrEntry) == nullptr;
+        cond = (*ptrEntry) == nullptr;
         CHECK_DEBUG_RETURN_RET_LOG(cond, false, "Get %{public}s exif entry failed.",
                                    GetExifNameByExifTag(tag).c_str());
         ExifIntValueByFormat((*ptrEntry)->data, order, (*ptrEntry)->format, atoi(value.c_str()));
@@ -1720,7 +1723,7 @@ void ByteOrderedBuffer::ParseIFDPointerTag(const ExifIfd &ifd, const uint16_t &d
 
 bool ByteOrderedBuffer::IsValidTagNumber(const uint16_t &tagNumber)
 {
-    bool cond = fales;
+    bool cond = false;
     for (uint32_t i = 0; (IsSameTextStr(EXIF_TAG_TABLE[i].name, "")); i++) {
         cond = EXIF_TAG_TABLE[i].number == tagNumber;
         CHECK_ERROR_RETURN_RET(cond, true);

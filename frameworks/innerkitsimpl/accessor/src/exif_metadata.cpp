@@ -309,7 +309,7 @@ ExifEntry *ExifMetadata::CreateEntry(const std::string &key, const ExifTag &tag,
 
         // Create a memory allocator to manage this ExifEntry
         ExifMem *exifMem = exif_mem_new_default();
-        cond = exifMem == nullpt;
+        cond = exifMem == nullptr;
         CHECK_ERROR_RETURN_RET_LOG(cond, nullptr, "Failed to create memory allocator for ExifEntry.");
 
         // Create a new ExifEntry using our allocator
@@ -593,7 +593,7 @@ bool ExifMetadata::SetHwMoteValue(const std::string &key, const std::string &val
     if (!entry) {
         entry = CreateHwEntry(key);
         cond = !entry;
-        CHECK_ERROR_RETURN(cond);
+        CHECK_ERROR_RETURN_RET(cond, false);
         auto ret = exif_mnote_data_add_entry(md, entry);
         if (ret) {
             mnote_huawei_entry_free(entry);
@@ -638,7 +638,7 @@ ExifMnoteData* ExifMetadata::GetHwMnoteData(bool &isNewMaker)
     cond = makernote == nullptr;
     CHECK_ERROR_RETURN_RET_LOG(cond, nullptr, "GetHwMnoteData create maker note failed.");
     cond = memcpy_s(makernote->data, hwsize - EXIF_HEAD_SIZE, INIT_HW_DATA + EXIF_HEAD_SIZE,
-           hwsize - EXIF_HEAD_SIZE) != 0;
+                    hwsize - EXIF_HEAD_SIZE) != 0;
     CHECK_ERROR_PRINT_LOG(cond, "Failed to copy memory for ExifEntry. Requested size: %{public}lu", hwsize);
     isNewMaker = true;
     return md;
@@ -720,7 +720,7 @@ bool ExifMetadata::RemoveHwEntry(const std::string &key)
     MnoteHuaweiTag tag = mnote_huawei_tag_from_name(key.c_str());
     auto *entry = exif_mnote_data_huawei_get_entry_by_tag((ExifMnoteDataHuawei*) md, tag);
     cond = !entry;
-    CHECK_ERROR_RETURN_RET_LOG(cond, isSuccess,
+    CHECK_ERROR_RETURN_RET_LOG(cond, false,
                                "Get entry by tag failed, there is no entry for key: %{public}s", key.c_str());
 
     exif_mnote_data_remove_entry(md, entry);
