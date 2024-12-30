@@ -1256,7 +1256,7 @@ ExtDecoder::FrameCacheInfo ExtDecoder::InitFrameCacheInfo(const uint64_t rowStri
 
 bool ExtDecoder::FrameCacheInfoIsEqual(ExtDecoder::FrameCacheInfo& src, ExtDecoder::FrameCacheInfo& dst)
 {
-    bool cond = src.byteCount == 0 || src.rowStride == 0 || src.height == 0 || src.width == 0；
+    bool cond = src.byteCount == 0 || src.rowStride == 0 || src.height == 0 || src.width == 0;
     CHECK_ERROR_RETURN_RET_LOG(cond, false, "FrameCacheInfoIsEqual, incorrect info");
     return (src.byteCount == dst.byteCount) && (src.rowStride == dst.rowStride) &&
         (src.height == dst.height) && (src.width == dst.width);
