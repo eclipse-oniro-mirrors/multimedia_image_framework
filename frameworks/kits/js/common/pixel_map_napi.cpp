@@ -3022,7 +3022,6 @@ napi_value PixelMapNapi::CreateScaledPixelMap(napi_env env, napi_callback_info i
     napi_value thisVar = nullptr;
     napi_value argValue[NUM_3] = {0};
     size_t argCount = NUM_3;
-
     IMAGE_LOGD("CreateScaledPixelMap IN");
     IMG_JS_ARGS(env, info, status, argCount, argValue, thisVar);
     IMG_NAPI_CHECK_RET_D(IMG_IS_OK(status), nullptr, IMAGE_LOGE("fail to arg info"));
@@ -3031,41 +3030,33 @@ napi_value PixelMapNapi::CreateScaledPixelMap(napi_env env, napi_callback_info i
     IMG_NAPI_CHECK_BUILD_ERROR(argCount == NUM_2 || argCount == NUM_3,
         BuildContextError(env, asyncContext->error, "Invalid args count",
         COMMON_ERR_INVALID_PARAMETER), IMG_CREATE_CREATE_ASYNC_WORK(env, status, "CreateScaledPixelMapGeneralError",
-        [](napi_env env, void *data) {}, GeneralErrorComplete, asyncContext, asyncContext->work),
-        result);
+        [](napi_env env, void *data) {}, GeneralErrorComplete, asyncContext, asyncContext->work), result);
     IMG_NAPI_CHECK_BUILD_ERROR(IMG_IS_OK(napi_get_value_double(env, argValue[NUM_0], &asyncContext->xArg)),
         BuildContextError(env, asyncContext->error, "Arg 0 type mismatch",
         COMMON_ERR_INVALID_PARAMETER), IMG_CREATE_CREATE_ASYNC_WORK(env, status, "CreateScaledPixelMapGeneralError",
-        [](napi_env env, void *data) {}, GeneralErrorComplete, asyncContext, asyncContext->work),
-        result);
+        [](napi_env env, void *data) {}, GeneralErrorComplete, asyncContext, asyncContext->work), result);
     IMG_NAPI_CHECK_BUILD_ERROR(IMG_IS_OK(napi_get_value_double(env, argValue[NUM_1], &asyncContext->yArg)),
         BuildContextError(env, asyncContext->error, "Arg 1 type mismatch",
         COMMON_ERR_INVALID_PARAMETER), IMG_CREATE_CREATE_ASYNC_WORK(env, status, "CreateScaledPixelMapGeneralError",
-        [](napi_env env, void *data) {}, GeneralErrorComplete, asyncContext, asyncContext->work),
-        result);
+        [](napi_env env, void *data) {}, GeneralErrorComplete, asyncContext, asyncContext->work), result);
     if (argCount == NUM_3) {
         int32_t antiAliasing = 0;
         IMG_NAPI_CHECK_BUILD_ERROR(IMG_IS_OK(napi_get_value_int32(env, argValue[NUM_2], &antiAliasing)),
             BuildContextError(env, asyncContext->error, "Arg 2 type mismatch",
             COMMON_ERR_INVALID_PARAMETER), IMG_CREATE_CREATE_ASYNC_WORK(env, status, "CreateScaledPixelMapGeneralError",
-            [](napi_env env, void *data) {}, GeneralErrorComplete, asyncContext, asyncContext->work),
-            result);
+            [](napi_env env, void *data) {}, GeneralErrorComplete, asyncContext, asyncContext->work), result);
         asyncContext->antiAliasing = ParseAntiAliasingOption(antiAliasing);
     }
-
     status = napi_unwrap(env, thisVar, reinterpret_cast<void**>(&asyncContext->nConstructor));
     IMG_NAPI_CHECK_RET_D(IMG_IS_READY(status, asyncContext->nConstructor),
         nullptr, IMAGE_LOGE("fail to unwrap context"));
-
     asyncContext->rPixelMap = asyncContext->nConstructor->nativePixelMap_;
     IMG_NAPI_CHECK_RET_D(IMG_IS_READY(status, asyncContext->rPixelMap),
         nullptr, IMAGE_LOGE("empty native pixelmap"));
     IMG_NAPI_CHECK_BUILD_ERROR(asyncContext->nConstructor->GetPixelNapiEditable(),
         BuildContextError(env, asyncContext->error, "pixelmap has crossed threads. CreateScaledPixelMap failed",
         ERR_RESOURCE_UNAVAILABLE), IMG_CREATE_CREATE_ASYNC_WORK(env, status, "CreateScaledPixelMapGeneralError",
-        [](napi_env env, void *data) {}, GeneralErrorComplete, asyncContext, asyncContext->work),
-        result);
-
+        [](napi_env env, void *data) {}, GeneralErrorComplete, asyncContext, asyncContext->work), result);
     IMG_CREATE_CREATE_ASYNC_WORK(env, status, "CreateScaledPixelMap",
         [](napi_env env, void *data) {
             auto context = static_cast<PixelMapAsyncContext*>(data);
@@ -3086,7 +3077,6 @@ napi_value PixelMapNapi::CreateScaledPixelMapSync(napi_env env, napi_callback_in
     double xArg = 0;
     double yArg = 0;
     int32_t antiAliasing = 0;
-
     IMAGE_LOGD("CreateScaledPixelMapSync IN");
     IMG_JS_ARGS(env, info, status, argCount, argValue, thisVar);
     IMG_NAPI_CHECK_RET_D(IMG_IS_OK(status), result, IMAGE_LOGE("fail to arg info"));
@@ -3104,7 +3094,6 @@ napi_value PixelMapNapi::CreateScaledPixelMapSync(napi_env env, napi_callback_in
             ImageNapiUtils::ThrowExceptionError(env, COMMON_ERR_INVALID_PARAMETER, "Arg 2 type mismatch"),
             IMAGE_LOGE("Arg 2 type mismatch"));
     }
-
     PixelMapNapi* pixelMapNapi = nullptr;
     status = napi_unwrap(env, thisVar, reinterpret_cast<void**>(&pixelMapNapi));
     IMG_NAPI_CHECK_RET_D(IMG_IS_READY(status, pixelMapNapi), result, IMAGE_LOGE("fail to unwrap context"));
@@ -3112,7 +3101,6 @@ napi_value PixelMapNapi::CreateScaledPixelMapSync(napi_env env, napi_callback_in
         ImageNapiUtils::ThrowExceptionError(env, ERR_RESOURCE_UNAVAILABLE,
         "Pixelmap has crossed threads. CreateScaledPixelMapSync failed"),
         IMAGE_LOGE("Pixelmap has crossed threads. CreateScaledPixelMapSync failed"));
-
     if (pixelMapNapi->nativePixelMap_ != nullptr) {
         InitializationOptions opts;
         std::unique_ptr<PixelMap> clonePixelMap = PixelMap::Create(*(pixelMapNapi->nativePixelMap_), opts);
