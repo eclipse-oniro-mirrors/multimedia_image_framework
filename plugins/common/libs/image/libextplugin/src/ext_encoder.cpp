@@ -987,7 +987,7 @@ uint32_t ExtEncoder::AssembleHeifHdrPicture(
     inputImgs.push_back(*gainmapItem);
     ColorManager::ColorSpaceName tmapColor = picture_->GetMainPixel()->InnerGetGrColorSpace().GetColorSpaceName();
     std::shared_ptr<ImageItem> tmapItem = AssembleTmapImageItem(tmapColor, metadata, opts_);
-    cond = tmapItem == nullptr；
+    cond = tmapItem == nullptr;
     CHECK_ERROR_RETURN_RET_LOG(cond, ERR_IMAGE_INVALID_PARAMETER, "%{public}s, get tmap image item failed", __func__);
     inputImgs.push_back(*tmapItem);
     return SUCCESS;
@@ -1022,7 +1022,7 @@ uint32_t ExtEncoder::AssembleSdrImageItem(
 uint32_t ExtEncoder::AssembleHeifAuxiliaryPicture(std::vector<ImageItem>& inputImgs, std::vector<ItemRef>& refs)
 {
     bool cond = !picture_;
-    CHECK_INFO_RETURN_RET_LOG(cond, ERR_IMAGE_INVALID_PARAMETER, "picture_ is nullptr");
+    CHECK_ERROR_RETURN_RET_LOG(cond, ERR_IMAGE_INVALID_PARAMETER, "picture_ is nullptr");
     if (picture_->HasAuxiliaryPicture(AuxiliaryPictureType::DEPTH_MAP) &&
         AssembleHeifAuxiliaryNoncodingMap(inputImgs, AuxiliaryPictureType::DEPTH_MAP) == SUCCESS) {
         AssembleAuxiliaryRefItem(AuxiliaryPictureType::DEPTH_MAP, refs);
@@ -1215,10 +1215,10 @@ uint32_t ExtEncoder::AssembleHeifFragmentMap(std::vector<ImageItem>& inputImgs)
     ColorType colorType = ColorType::RICC;
     cond = !FillLitePropertyItem(item.liteProperties, offset, PropertyType::COLOR_TYPE, &colorType, sizeof(ColorType));
     CHECK_ERROR_RETURN_RET_LOG(cond, ERR_IMAGE_INVALID_PARAMETER, "%{public}s Fill color type failed", __func__);
-    cond = !FillLitePropertyItemByString(item.liteProperties, offset, PropertyType::AUX_TYPE, auxTypeStr;
+    cond = !FillLitePropertyItemByString(item.liteProperties, offset, PropertyType::AUX_TYPE, auxTypeStr);
     CHECK_ERROR_RETURN_RET_LOG(cond, ERR_IMAGE_INVALID_PARAMETER, "%{public}s Fill auxiliary type failed", __func__);
     RelativeLocation loc = GetFragmentRelLocation(fragmentMap);
-    cond = !FillLitePropertyItem(item.liteProperties, offset, PropertyType::RLOC_INFO, &loc, sizeof(RelativeLocation);
+    cond = !FillLitePropertyItem(item.liteProperties, offset, PropertyType::RLOC_INFO, &loc, sizeof(RelativeLocation));
     CHECK_ERROR_RETURN_RET_LOG(cond, ERR_IMAGE_INVALID_PARAMETER, "%{public}s Fill auxiliary type failed", __func__);
     inputImgs.push_back(item);
     return SUCCESS;
@@ -2002,7 +2002,7 @@ bool ExtEncoder::AssembleICCImageProperty(sk_sp<SkData>& iccProfile, SharedBuffe
     std::shared_ptr<AbsMemory> propertyAshmem =
         AllocateNewSharedMem(GetBufferSize(iccProfile->size()), ICC_ASHMEM_TAG);
     cond = propertyAshmem == nullptr;
-    CHECK_INFO_RETURN_RET_LOG(cond, false, "AssembleICCImageProperty alloc failed");
+    CHECK_ERROR_RETURN_RET_LOG(cond, false, "AssembleICCImageProperty alloc failed");
     tmpMemoryList_.push_back(propertyAshmem);
     bool fillRes = FillImagePropertyItem(propertyAshmem, 0, PropertyType::ICC_PROFILE,
         iccProfile->data(), iccProfile->size());
@@ -2072,7 +2072,7 @@ uint32_t ExtEncoder::DoHeifEncode(std::vector<ImageItem>& inputImgs, std::vector
     CHECK_ERROR_RETURN_RET(codec == nullptr, ERR_IMAGE_ENCODE_FAILED);
     uint32_t outSize = DEFAULT_OUTPUT_SIZE;
     int32_t encodeRes = codec->DoHeifEncode(inputImgs, inputMetas, refs, outputBuffer, outSize);
-    bool cond = encodeRes != HDF_SUCCESS;
+    cond = encodeRes != HDF_SUCCESS;
     CHECK_ERROR_RETURN_RET_LOG(cond, ERR_IMAGE_ENCODE_FAILED, "ExtEncoder::DoHeifEncode DoHeifEncode failed");
     IMAGE_LOGI("ExtEncoder::DoHeifEncode output type is %{public}d", output_->GetType());
     bool writeRes = output_->Write(reinterpret_cast<uint8_t *>(outputAshmem->data.data), outSize);
@@ -2236,7 +2236,7 @@ bool ExtEncoder::FillPixelSharedBuffer(sptr<SurfaceBuffer> sbBuffer, uint32_t ca
     CHECK_ERROR_RETURN_RET_LOG(cond, false,
         "%{public}s shared capacity[%{public}d] over memSize[%{public}ld]", __func__, capacity, memSize);
     cond = sharedMem->extend.data == nullptr;
-    CHECK_ERROR_RETURN_RET_LOG(cond, false, "%{public}s sharedMem's extend data is nullptr", __func_);
+    CHECK_ERROR_RETURN_RET_LOG(cond, false, "%{public}s sharedMem's extend data is nullptr", __func__);
     if (memcpy_s(memData, memSize, sbBuffer->GetVirAddr(), capacity) == EOK) {
         outBuffer.fd = *static_cast<int *>(sharedMem->extend.data);
         outBuffer.capacity = memSize;
