@@ -97,9 +97,6 @@ constexpr uint8_t BGRA_BYTES = 4;
 constexpr uint8_t RGBA_F16_BYTES = 8;
 constexpr uint8_t PER_PIXEL_LEN = 1;
 constexpr uint32_t MAX_READ_COUNT = 2048;
-static constexpr int32_t PLANE_Y = 0;
-static constexpr int32_t PLANE_U = 1;
-static constexpr int32_t PLANE_V = 2;
 
 constexpr uint8_t FILL_NUMBER = 3;
 constexpr uint8_t ALIGN_NUMBER = 4;
