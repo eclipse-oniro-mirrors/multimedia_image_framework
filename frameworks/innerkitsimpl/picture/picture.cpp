@@ -118,6 +118,7 @@ namespace {
 #endif
 }
 const static uint64_t MAX_AUXILIARY_PICTURE_COUNT = 32;
+const static uint64_t MAX_EXIFMETADATA_SIZE = 1024 * 1024;
 static const uint8_t NUM_0 = 0;
 static const uint8_t NUM_1 = 1;
 static const uint8_t NUM_2 = 2;
@@ -465,6 +466,11 @@ void Picture::SetAuxiliaryPicture(std::shared_ptr<AuxiliaryPicture> &picture)
         IMAGE_LOGE("Auxiliary picture is nullptr.");
         return;
     }
+    if (auxiliaryPictures_.size() >= MAX_AUXILIARY_PICTURE_COUNT) {
+        IMAGE_LOGE("The size of auxiliary picture exceeds the maximum limit %{public}llu.",
+            static_cast<unsigned long long>(MAX_AUXILIARY_PICTURE_COUNT));
+        return;
+    }
     AuxiliaryPictureType type = picture->GetType();
     auxiliaryPictures_[type] = picture;
 }
@@ -618,6 +624,16 @@ int32_t Picture::SetExifMetadata(sptr<SurfaceBuffer> &surfaceBuffer)
         return ERR_IMAGE_SOURCE_DATA;
     }
 
+    if (size > surfaceBuffer->GetSize() || tiffHeaderPos > surfaceBuffer->GetSize()) {
+        IMAGE_LOGE("The size of exif metadata exceeds the buffer size.");
+        return ERR_IMAGE_INVALID_PARAMETER;
+    }
+
+    if (size - tiffHeaderPos > MAX_EXIFMETADATA_SIZE) {
+        IMAGE_LOGE("Failed to set exif metadata, the size of exif metadata exceeds the maximum limit %{public}llu.",
+            static_cast<unsigned long long>(MAX_EXIFMETADATA_SIZE));
+        return ERR_IMAGE_INVALID_PARAMETER;
+    }
     ExifData *exifData;
     TiffParser::Decode(static_cast<const unsigned char *>(surfaceBuffer->GetVirAddr()) + tiffHeaderPos,
         size - tiffHeaderPos, &exifData);
