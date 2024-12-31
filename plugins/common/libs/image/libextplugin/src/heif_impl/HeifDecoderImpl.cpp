@@ -327,6 +327,8 @@ bool HeifDecoderImpl::CheckAuxiliaryMap(AuxiliaryPictureType type)
 
 bool HeifDecoderImpl::setAuxiliaryMap(AuxiliaryPictureType type)
 {
+    bool cond = auxiliaryImage_ == nullptr && !CheckAuxiliaryMap(type);
+    CHECK_ERROR_RETURN_RET_LOG(cond, false, "make heif parser failed");
     if (auxiliaryImage_ == nullptr && !CheckAuxiliaryMap(type)) {
         IMAGE_LOGE("make heif parser failed");
         return false;
@@ -738,11 +740,15 @@ bool HeifDecoderImpl::HwDecodeIdenImage(HeifHardwareDecoder *hwDecoder,
                                         std::shared_ptr<HeifImage> &image, GridInfo &gridInfo,
                                         sptr<SurfaceBuffer> *outBuffer, bool isPrimary)
 {
+    bool cond = !image;
+    CHECK_ERROR_RETURN_RET(cond, false);
     if (!image) {
         return false;
     }
     std::shared_ptr<HeifImage> idenImage;
     parser_->GetIdenImage(image->GetItemId(), idenImage);
+    cond = idenImage == nullptr || idenImage == image;
+    CHECK_ERROR_RETURN_RET_LOG(cond, false, "invalid iden image");
     if (idenImage == nullptr || idenImage == image) {
         IMAGE_LOGE("invalid iden image");
         return false;
@@ -837,6 +843,10 @@ bool HeifDecoderImpl::SwDecodeImage(std::shared_ptr<HeifImage> &image, HevcSoftD
 bool HeifDecoderImpl::SwDecodeGrids(ImageFwkExtManager &extManager,
                                     std::shared_ptr<HeifImage> &image, HevcSoftDecodeParam &param)
 {
+    bool cond = extManager.hevcSoftwareDecodeFunc_ == nullptr && !extManager.LoadImageFwkExtNativeSo();
+    CHECK_ERROR_RETURN_RET(cond, false);
+    cond = param.dstBuffer == nullptr || param.dstStride == 0;
+    CHECK_ERROR_RETURN_RET(cond, false);
     if (extManager.hevcSoftwareDecodeFunc_ == nullptr && !extManager.LoadImageFwkExtNativeSo()) {
         return false;
     }
@@ -845,6 +855,8 @@ bool HeifDecoderImpl::SwDecodeGrids(ImageFwkExtManager &extManager,
     }
     std::vector<std::shared_ptr<HeifImage>> tileImages;
     parser_->GetTileImages(image->GetItemId(), tileImages);
+    cond = tileImages.empty();
+    CHECK_ERROR_RETURN_RET_LOG(cond, false, "grid image has no tile image");
     if (tileImages.empty()) {
         IMAGE_LOGE("grid image has no tile image");
         return false;
@@ -860,6 +872,8 @@ bool HeifDecoderImpl::SwDecodeGrids(ImageFwkExtManager &extManager,
     }
 
     int32_t retCode = extManager.hevcSoftwareDecodeFunc_(inputs, param);
+    cond = retCode != 0;
+    CHECK_ERROR_RETURN_RET_LOG(cond, false, "SwDecodeGrids decode failed: %{public}d", retCode);
     if (retCode != 0) {
         IMAGE_LOGE("SwDecodeGrids decode failed: %{public}d", retCode);
         return false;
@@ -870,11 +884,15 @@ bool HeifDecoderImpl::SwDecodeGrids(ImageFwkExtManager &extManager,
 bool HeifDecoderImpl::SwDecodeIdenImage(std::shared_ptr<HeifImage> &image,
                                         HevcSoftDecodeParam &param, GridInfo &gridInfo, bool isPrimary)
 {
+    bool cond = !image;
+    CHECK_ERROR_RETURN_RET(cond, false);
     if (!image) {
         return false;
     }
     std::shared_ptr<HeifImage> idenImage;
     parser_->GetIdenImage(image->GetItemId(), idenImage);
+    cond = idenImage == nullptr || idenImage == image;
+    CHECK_ERROR_RETURN_RET_LOG(cond, false, "invalid iden image");
     if (idenImage == nullptr || idenImage == image) {
         IMAGE_LOGE("invalid iden image");
         return false;
@@ -953,6 +971,8 @@ bool HeifDecoderImpl::SwdecodeGainmap(std::shared_ptr<HeifImage> &gainMapImage,
 }
 static bool IsEmptyBuffer(uint8_t *buffer, uint32_t width, uint32_t height, uint32_t bpp, uint32_t rowStride)
 {
+    bool cond = buffer == nullptr;
+    CHECK_ERROR_RETURN_RET(cond, true);
     if (buffer == nullptr) {
         return true;
     }
@@ -977,6 +997,8 @@ static bool FillAlphaChannel(std::shared_ptr<HeifImage> &masterImage, uint8_t *a
     uint8_t *dstRowStart = dstMemory;
     uint32_t width = masterImage->GetOriginalWidth();
     uint32_t height = masterImage->GetOriginalHeight();
+    bool cond = IsEmptyBuffer(reinterpret_cast<uint8_t*>(alphaMemory), width, height, 1, alphaStride);
+    CHECK_ERROR_RETURN_RET(cond, false);
     if (IsEmptyBuffer(reinterpret_cast<uint8_t*>(alphaMemory), width, height, 1, alphaStride)) {
         return false;
     }
@@ -1059,6 +1081,8 @@ bool HeifDecoderImpl::SwApplyAlphaImage(std::shared_ptr<HeifImage> &masterImage,
         alphaGridInfo, alphaDstFmt, alphaMemory.get(), alphaMemorySize, alphaStride, nullptr
     };
     bool decodeRes = SwDecodeImage(alphaImage, param, alphaGridInfo, false);
+    bool cond = !decodeRes;
+    CHECK_ERROR_RETURN_RET(cond, false);
     if (!decodeRes) {
         IMAGE_LOGE("sw decode alpha image failed");
         return false;
