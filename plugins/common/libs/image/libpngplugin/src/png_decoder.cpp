@@ -965,7 +965,7 @@ uint32_t PngDecoder::IncrementalReadRows(InputDataStream *stream)
     }
     uint32_t ret = PushCurrentToDecode(stream);
     bool cond = ret != SUCCESS;
-    CHECK_ERROR_RETURN_RET_LOG(cond, ret, "push stream to decode fail",
+    CHECK_ERROR_RETURN_RET_LOG(cond, ret, "push stream to decode fail, "
                                "ret:%{public}u, idatLen:%{public}zu, incrementalLen:%{public}zu.",
                                ret, idatLength_, incrementalLength_);
     return SUCCESS;
