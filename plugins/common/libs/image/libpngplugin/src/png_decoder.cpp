@@ -326,10 +326,6 @@ bool AllocBufferForPlatform(DecodeContext &context, uint64_t byteCount)
 {
     bool cond = byteCount == 0;
     CHECK_ERROR_RETURN_RET_LOG(cond, false, "alloc output buffer size: 0 error.");
-    if (byteCount == 0) {
-        IMAGE_LOGE("alloc output buffer size: 0 error.");
-        return false;
-    }
     void *outputBuffer = malloc(byteCount);
     if (outputBuffer == nullptr) {
         IMAGE_LOGE("alloc output buffer size:[%{public}llu] error.", static_cast<unsigned long long>(byteCount));
@@ -821,11 +817,6 @@ void PngDecoder::SaveInterlacedRows(png_bytep row, png_uint_32 rowNum, int pass)
     CHECK_ERROR_PRINT_LOG(cond, "malloc byte size is(%{public}llu), but actual needs (%{public}llu)",
                           static_cast<unsigned long long>(mollocByteCount),
                           static_cast<unsigned long long>(needByteCount));
-    if (mollocByteCount < needByteCount) {
-        IMAGE_LOGE("malloc byte size is(%{public}llu), but actual needs (%{public}llu)",
-            static_cast<unsigned long long>(mollocByteCount), static_cast<unsigned long long>(needByteCount));
-        return;
-    }
     png_progressive_combine_row(pngStructPtr_, oldRow, row);
     if (pass == 0) {
         // The first pass initializes all rows.
@@ -977,11 +968,6 @@ uint32_t PngDecoder::IncrementalReadRows(InputDataStream *stream)
     CHECK_ERROR_RETURN_RET_LOG(cond, ret, "push stream to decode fail, ret:%{public}u,
                                idatLen:%{public}zu, incrementalLen:%{public}zu.",
                                ret, idatLength_, incrementalLength_);
-    if (ret != SUCCESS) {
-        IMAGE_LOGE("push stream to decode fail, ret:%{public}u, idatLen:%{public}zu, incrementalLen:%{public}zu.",
-            ret, idatLength_, incrementalLength_);
-        return ret;
-    }
     return SUCCESS;
 }
 
