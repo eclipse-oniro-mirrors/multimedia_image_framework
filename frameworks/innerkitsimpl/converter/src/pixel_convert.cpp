@@ -1104,10 +1104,8 @@ static bool FFMpegConvert(const void *srcPixels, const FFMPEG_CONVERT_INFO& srcI
         IMAGE_LOGE("unsupport src/dst pixel format!");
         return false;
     }
-    if (srcInfo.width <= 0 || srcInfo.height <= 0 || dstInfo.width <= 0 || dstInfo.height <= 0) {
-        IMAGE_LOGE("src/dst width/height error!");
-        return false;
-    }
+    CHECK_ERROR_RETURN_RET_LOG((srcInfo.width <= 0 || srcInfo.height <= 0 ||
+        dstInfo.width <= 0 || dstInfo.height <= 0), false, "src/dst width/height error!");
 
     inputFrame = av_frame_alloc();
     outputFrame = av_frame_alloc();
@@ -1164,10 +1162,10 @@ static bool ConvertForFFMPEG(const void *srcPixels, PixelFormat srcpixelmap, Ima
         srcInfo.size.width, srcInfo.size.height, 1};
     FFMPEG_CONVERT_INFO dstFFmpegInfo = {PixelFormatToAVPixelFormat(dstpixelmap),
         srcInfo.size.width, srcInfo.size.height, 1};
-    if (!FFMpegConvert(srcPixels, srcFFmpegInfo, dstPixels, dstFFmpegInfo)) {
-        IMAGE_LOGE("[PixelMap]Convert: ffmpeg convert failed!");
-        return false;
-    }
+
+    CHECK_ERROR_RETURN_RET_LOG((!FFMpegConvert(srcPixels, srcFFmpegInfo, dstPixels, dstFFmpegInfo)),
+        false, "[PixelMap]Convert: ffmpeg convert failed!");
+
     return true;
 }
 
@@ -1195,10 +1193,9 @@ static bool P010ConvertRGBA1010102(const void *srcPixels, ImageInfo srcInfo,
         srcInfo.size.width, srcInfo.size.height, 1};
     int tmpPixelsLen = av_image_get_buffer_size(tmpFFmpegInfo.format, tmpFFmpegInfo.width, tmpFFmpegInfo.height,
         tmpFFmpegInfo.alignSize);
-    if (tmpPixelsLen <= 0) {
-        IMAGE_LOGE("[PixelMap]Convert: Get tmp pixels length failed!");
-        return false;
-    }
+   
+    CHECK_ERROR_RETURN_RET_LOG((tmpPixelsLen <= 0), false, "[PixelMap]Convert: Get tmp pixels length failed!");
+
     uint8_t* tmpPixels = new(std::nothrow) uint8_t[tmpPixelsLen];
     if (tmpPixels == nullptr) {
         IMAGE_LOGE("[PixelMap]Convert: alloc memory failed!");
@@ -1238,10 +1235,7 @@ static bool ConvertRGBA1010102ToYUV(const void *srcPixels, ImageInfo srcInfo,
         return false;
     }
     uint8_t* tmpPixels = new(std::nothrow) uint8_t[tmpPixelsLen];
-    if (tmpPixels == nullptr) {
-        IMAGE_LOGE("[PixelMap]Convert: alloc memory failed!");
-        return false;
-    }
+    CHECK_ERROR_RETURN_RET_LOG(tmpPixels == nullptr, false, "[PixelMap]Convert: alloc memory failed!");
     memset_s(tmpPixels, tmpPixelsLen, 0, tmpPixelsLen);
 
     Position pos;
@@ -1277,10 +1271,9 @@ static int32_t YUVConvertRGB(const void *srcPixels, const ImageInfo &srcInfo,
         srcInfo.size.width, srcInfo.size.height, 1};
     int tmpPixelsLen = av_image_get_buffer_size(tmpFFmpegInfo.format, tmpFFmpegInfo.width, tmpFFmpegInfo.height,
         tmpFFmpegInfo.alignSize);
-    if (tmpPixelsLen <= 0) {
-        IMAGE_LOGE("[PixelMap]Convert: Get tmp pixels length failed!");
-        return -1;
-    }
+
+    CHECK_ERROR_RETURN_RET_LOG((tmpPixelsLen <= 0), -1, "[PixelMap]Convert: Get tmp pixels length failed!");
+
     uint8_t* tmpPixels = new(std::nothrow) uint8_t[tmpPixelsLen];
     if (tmpPixels == nullptr) {
         IMAGE_LOGE("[PixelMap]Convert: alloc memory failed!");
@@ -1395,10 +1388,9 @@ static int32_t RGBConvertYUV(const void *srcPixels, const ImageInfo &srcInfo,
         return -1;
     }
     uint8_t* tmpPixels = new(std::nothrow) uint8_t[tmpPixelsLen];
-    if (tmpPixels == nullptr) {
-        IMAGE_LOGE("[PixelMap]Convert: alloc memory failed!");
-        return -1;
-    }
+
+    CHECK_ERROR_RETURN_RET_LOG((tmpPixels == nullptr), -1, "[PixelMap]Convert: alloc memory failed!");
+
     memset_s(tmpPixels, tmpPixelsLen, 0, tmpPixelsLen);
     Position pos;
     if (!PixelConvertAdapter::WritePixelsConvert(srcPixels, PixelMap::GetRGBxRowDataSize(srcInfo), srcInfo,
@@ -1452,20 +1444,15 @@ static int32_t ConvertToYUV(const void *srcPixels, const int32_t srcLength, cons
 static int32_t ConvertToP010(const void *srcPixels, const int32_t srcLength, const ImageInfo &srcInfo,
     void *dstPixels, const ImageInfo &dstInfo)
 {
-    if (srcPixels == nullptr || dstPixels == nullptr || srcLength <= 0) {
-        IMAGE_LOGE("[PixelMap]Convert: src pixels or dst pixels or src pixel length invalid");
-        return -1;
-    }
-    if (IsYUVP010Format(srcInfo.pixelFormat) ||
-        (dstInfo.pixelFormat != PixelFormat::YCRCB_P010 && dstInfo.pixelFormat != PixelFormat::YCBCR_P010)) {
-        IMAGE_LOGE("[PixelMap]Convert: src or dst pixel format invalid.");
-        return -1;
-    }
+    CHECK_ERROR_RETURN_RET_LOG((srcPixels == nullptr || dstPixels == nullptr || srcLength <= 0), -1,
+        "[PixelMap]Convert: src pixels or dst pixels or src pixel length invalid");
+    CHECK_ERROR_RETURN_RET_LOG((IsYUVP010Format(srcInfo.pixelFormat) ||
+        (dstInfo.pixelFormat != PixelFormat::YCRCB_P010 && dstInfo.pixelFormat != PixelFormat::YCBCR_P010)),
+        -1, "[PixelMap]Convert: src or dst pixel format invalid.");
     int32_t dstLength = PixelMap::GetYUVByteCount(dstInfo);
-    if (dstLength <= 0) {
-        IMAGE_LOGE("[PixelMap]Convert: Get dstP010 length failed!");
-        return -1;
-    }
+
+    CHECK_ERROR_RETURN_RET_LOG(dstLength <= 0, -1, "[PixelMap]Convert: Get dstP010 length failed!");
+
     uint8_t* dstP010 = new(std::nothrow) uint8_t[dstLength];
     if (dstP010 == nullptr) {
         IMAGE_LOGE("[PixelMap]Convert: alloc memory failed!");
@@ -1519,10 +1506,10 @@ static int32_t YUVConvert(const void *srcPixels, const int32_t srcLength, const 
         srcInfo.size.height, 1};
     FFMPEG_CONVERT_INFO dstFFmpegInfo = {PixelFormatToAVPixelFormat(dstInfo.pixelFormat), dstInfo.size.width,
         dstInfo.size.height, 1};
-    if (!FFMpegConvert(srcPixels, srcFFmpegInfo, dstPixels, dstFFmpegInfo)) {
-        IMAGE_LOGE("[PixelMap]Convert: ffmpeg convert failed!");
-        return -1;
-    }
+
+    CHECK_ERROR_RETURN_RET_LOG(!FFMpegConvert(srcPixels, srcFFmpegInfo, dstPixels, dstFFmpegInfo),
+        -1, "[PixelMap]Convert: ffmpeg convert failed!");
+    
     return av_image_get_buffer_size(dstFFmpegInfo.format, dstFFmpegInfo.width, dstFFmpegInfo.height,
         dstFFmpegInfo.alignSize);
 }
