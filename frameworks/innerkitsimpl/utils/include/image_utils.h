@@ -90,7 +90,7 @@ public:
     static int32_t GetAPIVersion();
     static std::string GetEncodedHeifFormat();
     static void UpdateSdrYuvStrides(const ImageInfo &imageInfo, YUVStrideInfo &dstStrides,
-                                void *context, AllocatorType dstType);
+        void *context, AllocatorType dstType);
 
     template<typename T>
     static bool CheckMulOverflow(const T& num1, const T& num2)
