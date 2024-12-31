@@ -4101,70 +4101,6 @@ bool PixelMap::GetToSdrColorSpaceIsSRGB()
     return toSdrColorIsSRGB_;
 }
 
-#if !defined(_WIN32) && !defined(_APPLE) && !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
-static void GetYUVStrideInfo(int32_t pixelFmt, OH_NativeBuffer_Planes *planes, YUVStrideInfo &dstStrides)
-{
-    if (pixelFmt == GRAPHIC_PIXEL_FMT_YCBCR_420_SP) {
-        auto yStride = planes->planes[PLANE_Y].columnStride;
-        auto uvStride = planes->planes[PLANE_U].columnStride;
-        auto yOffset = planes->planes[PLANE_Y].offset;
-        auto uvOffset = planes->planes[PLANE_U].offset;
-        dstStrides = {yStride, uvStride, yOffset, uvOffset};
-    } else if (pixelFmt == GRAPHIC_PIXEL_FMT_YCRCB_420_SP) {
-        auto yStride = planes->planes[PLANE_Y].columnStride;
-        auto uvStride = planes->planes[PLANE_V].columnStride;
-        auto yOffset = planes->planes[PLANE_Y].offset;
-        auto uvOffset = planes->planes[PLANE_V].offset;
-        dstStrides = {yStride, uvStride, yOffset, uvOffset};
-    } else if (pixelFmt == GRAPHIC_PIXEL_FMT_YCBCR_P010) {
-        auto yStride = planes->planes[PLANE_Y].columnStride / 2;
-        auto uvStride = planes->planes[PLANE_U].columnStride / 2;
-        auto yOffset = planes->planes[PLANE_Y].offset / 2;
-        auto uvOffset = planes->planes[PLANE_U].offset / 2;
-        dstStrides = {yStride, uvStride, yOffset, uvOffset};
-    } else if (pixelFmt == GRAPHIC_PIXEL_FMT_YCRCB_P010) {
-        auto yStride = planes->planes[PLANE_Y].columnStride / 2;
-        auto uvStride = planes->planes[PLANE_V].columnStride / 2;
-        auto yOffset = planes->planes[PLANE_Y].offset / 2;
-        auto uvOffset = planes->planes[PLANE_V].offset / 2;
-        dstStrides = {yStride, uvStride, yOffset, uvOffset};
-    }
-}
-#endif
-
-static void UpdateSdrYuvStrides(const ImageInfo &imageInfo, YUVStrideInfo &dstStrides,
-                                void *context, AllocatorType dstType)
-{
-    int32_t dstWidth = imageInfo.size.width;
-    int32_t dstHeight = imageInfo.size.height;
-    int32_t dstYStride = dstWidth;
-    int32_t dstUvStride = (dstWidth + 1) / NUM_2 * NUM_2;
-    int32_t dstYOffset = 0;
-    int32_t dstUvOffset = dstYStride * dstHeight;
-    dstStrides = {dstYStride, dstUvStride, dstYOffset, dstUvOffset};
-
-#if !defined(_WIN32) && !defined(_APPLE) && !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
-    if (context == nullptr) {
-        return;
-    }
-    if (dstType == AllocatorType::DMA_ALLOC) {
-        auto sb = static_cast<SurfaceBuffer*>(context);
-        if (sb == nullptr) {
-            IMAGE_LOGE("get SurfaceBuffer failed");
-            return;
-        }
-        OH_NativeBuffer_Planes *planes = nullptr;
-        GSError retVal = sb->GetPlanesInfo(reinterpret_cast<void**>(&planes));
-        if (retVal != OHOS::GSERROR_OK || planes == nullptr) {
-            IMAGE_LOGE("UpdateSdrYuvStrides Get planesInfo failed, retVal:%{public}d", retVal);
-        } else if (planes->planeCount >= NUM_2) {
-            int32_t pixelFmt = sb->GetFormat();
-            GetYUVStrideInfo(pixelFmt, planes, dstStrides);
-        }
-    }
-#endif
-}
-
 std::unique_ptr<AbsMemory> PixelMap::CreateSdrMemory(ImageInfo &imageInfo, PixelFormat format,
                                                      AllocatorType dstType, uint32_t &errorCode, bool toSRGB)
 {
@@ -4269,8 +4205,7 @@ uint32_t PixelMap::ToSdr()
     } else if (imageInfo.pixelFormat == PixelFormat::YCRCB_P010) {
         outFormat = PixelFormat::NV21;
     }
-    bool toSRGB = toSdrColorIsSRGB_;
-    return ToSdr(outFormat, toSRGB);
+    return ToSdr(outFormat, toSdrColorIsSRGB_);
 }
 
 uint32_t PixelMap::ToSdr(PixelFormat format, bool toSRGB)
@@ -4300,7 +4235,7 @@ uint32_t PixelMap::ToSdr(PixelFormat format, bool toSRGB)
     imageInfo.pixelFormat = sdrMemory->data.format;
     SetImageInfo(imageInfo, true);
     YUVStrideInfo dstStrides;
-    UpdateSdrYuvStrides(imageInfo, dstStrides, sdrMemory->extend.data, dstType);
+    ImageUtils::UpdateSdrYuvStrides(imageInfo, dstStrides, sdrMemory->extend.data, dstType);
     UpdateYUVDataInfo(sdrMemory->data.format, imageInfo.size.width, imageInfo.size.height, dstStrides);
 #ifdef IMAGE_COLORSPACE_FLAG
     InnerSetColorSpace(OHOS::ColorManager::ColorSpace(toSRGB ? ColorManager::SRGB : ColorManager::DISPLAY_P3));
