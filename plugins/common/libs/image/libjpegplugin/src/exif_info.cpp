@@ -428,10 +428,8 @@ EXIFInfo::~EXIFInfo()
 static void inline DumpTagsMap(SafeMap<ExifTag, std::string> &tags)
 {
     auto callbackIt = [](const ExifTag &key, std::string &value) {
-        if (TAG_MAP.count(key) == 0) {
-            IMAGE_LOGD("DumpTagsMap %{public}d.", key);
-            return;
-        }
+        bool cond = TAG_MAP.count(key) == 0;
+        CHECK_DEBUG_RETURN_LOG(cond, "DumpTagsMap %{public}d.", key);
         std::string name = TAG_MAP.at(key);
         IMAGE_LOGD("DumpTagsMap %{public}s(%{public}d).", name.c_str(), key);
     };
@@ -473,9 +471,8 @@ int EXIFInfo::ParseExifData(const unsigned char *buf, unsigned len)
                 }, userData);
         }, this);
 
-    if (imageFileDirectory_ == EXIF_IFD_COUNT) {
-        return PARSE_EXIF_IFD_ERROR;
-    }
+    bool cond = imageFileDirectory_ == EXIF_IFD_COUNT;
+    CHECK_ERROR_RETURN_RET(cond, PARSE_EXIF_IFD_ERROR);
     ExifMakerNote exifMakerNote;
     if (exifMakerNote.Parser(exifData_, buf, len) == Media::SUCCESS) {
         SetExifTagValues(static_cast<ExifTag>(ExifMakerNote::HW_MNOTE_TAG_CAPTURE_MODE),
@@ -788,9 +785,8 @@ uint32_t EXIFInfo::ModifyExifData(const ExifTag &tag, const std::string &value,
     unsigned char *data, uint32_t size)
 {
     uint32_t checkInputRes = CheckInputDataValid(data, size);
-    if (checkInputRes != Media::SUCCESS) {
-        return checkInputRes;
-    }
+    bool cond = checkInputRes != Media::SUCCESS;
+    CHECK_ERROR_RETURN_RET(cond, checkInputRes);
 
     ExifData *ptrExifData = nullptr;
     bool isNewExifData = false;
@@ -907,17 +903,15 @@ void EXIFInfo::ReleaseExifData(unsigned char *tempBuf, ExifData *ptrExifData, un
 ExifEntry* EXIFInfo::InitExifTag(ExifData *exif, ExifIfd ifd, ExifTag tag)
 {
     ExifEntry *entry;
-    if (ifd < EXIF_IFD_0 || ifd > EXIF_IFD_COUNT) {
-        return nullptr;
-    }
+    bool cond = false;
+    cond = ifd < EXIF_IFD_0 || ifd > EXIF_IFD_COUNT;
+    CHECK_ERROR_RETURN_RET(cond, nullptr);
     /* Return an existing tag if one exists */
     if (!(entry = exif_content_get_entry(exif->ifd[ifd], tag))) {
         /* Allocate a new entry */
         entry = exif_entry_new();
-        if (entry == nullptr) {
-            IMAGE_LOGD("Create new entry failed!");
-            return nullptr;
-        }
+        cond = entry == nullptr;
+        CHECK_DEBUG_RETURN_RET_LOG(cond, nullptr, "Create new entry failed!");
         entry->tag = tag; // tag must be set before calling exif_content_add_entry
         /* Attach the ExifEntry to an IFD */
         exif_content_add_entry (exif->ifd[ifd], entry);
@@ -942,10 +936,8 @@ static void EXIFInfoBufferCheck(ExifEntry *exifEntry, size_t len)
     }
     /* Create a memory allocator to manage this ExifEntry */
     ExifMem *exifMem = exif_mem_new_default();
-    if (exifMem == nullptr) {
-        IMAGE_LOGD("Create mem failed!");
-        return;
-    }
+    bool cond = exifMem == nullptr;
+    CHECK_DEBUG_RETURN_LOG(cond, "Create mem failed!");
     auto buf = exif_mem_realloc(exifMem, exifEntry->data, len);
     if (buf != nullptr) {
         exifEntry->data = static_cast<unsigned char*>(buf);
@@ -959,6 +951,7 @@ ExifEntry* EXIFInfo::CreateExifTag(ExifData *exif, ExifIfd ifd, ExifTag tag,
 {
     void *buf;
     ExifEntry *exifEntry;
+    bool cond = false;
 
     if ((exifEntry = exif_content_get_entry(exif->ifd[ifd], tag)) != nullptr) {
         EXIFInfoBufferCheck(exifEntry, len);
@@ -967,24 +960,18 @@ ExifEntry* EXIFInfo::CreateExifTag(ExifData *exif, ExifIfd ifd, ExifTag tag,
 
     /* Create a memory allocator to manage this ExifEntry */
     ExifMem *exifMem = exif_mem_new_default();
-    if (exifMem == nullptr) {
-        IMAGE_LOGD("Create mem failed!");
-        return nullptr;
-    }
+    cond = exifMem == nullptr;
+    CHECK_DEBUG_RETURN_RET_LOG(cond, nullptr, "Create mem failed!");
 
     /* Create a new ExifEntry using our allocator */
     exifEntry = exif_entry_new_mem (exifMem);
-    if (exifEntry == nullptr) {
-        IMAGE_LOGD("Create entry by mem failed!");
-        return nullptr;
-    }
+    cond = exifEntry == nullptr;
+    CHECK_DEBUG_RETURN_RET_LOG(cond, nullptr, "Create entry by mem failed!");
 
     /* Allocate memory to use for holding the tag data */
     buf = exif_mem_alloc(exifMem, len);
-    if (buf == nullptr) {
-        IMAGE_LOGD("Allocate memory failed!");
-        return nullptr;
-    }
+    cond = buf == nullptr;
+    CHECK_DEBUG_RETURN_RET_LOG(cond, nullptr, "Allocate memory failed!");
 
     /* Fill in the entry */
     exifEntry->data = static_cast<unsigned char*>(buf);
@@ -1035,25 +1022,20 @@ unsigned long EXIFInfo::GetFileSize(FILE *fp)
 
 bool EXIFInfo::CreateExifData(unsigned char *buf, unsigned long length, ExifData **ptrData, bool &isNewExifData)
 {
-    if (buf == nullptr) {
-        IMAGE_LOGD("Create exif data but buf is null");
-        return false;
-    }
+    bool cond = false;
+    cond = buf == nullptr;
+    CHECK_DEBUG_RETURN_RET_LOG(cond, false, "Create exif data but buf is null");
     if ((buf[BUFFER_POSITION_6] == 'E' && buf[BUFFER_POSITION_7] == 'x' &&
         buf[BUFFER_POSITION_8] == 'i' && buf[BUFFER_POSITION_9] == 'f')) {
         *ptrData = exif_data_new_from_data(buf, static_cast<unsigned int>(length));
-        if (!(*ptrData)) {
-            IMAGE_LOGD("Create exif data from file failed.");
-            return false;
-        }
+        cond = !(*ptrData);
+        CHECK_DEBUG_RETURN_RET_LOG(cond, false, "Create exif data from file failed.");
         isNewExifData = false;
         IMAGE_LOGD("Create exif data from buffer.");
     } else {
         *ptrData = exif_data_new();
-        if (!(*ptrData)) {
-            IMAGE_LOGD("Create exif data failed.");
-            return false;
-        }
+        cond = !(*ptrData);
+        CHECK_DEBUG_RETURN_RET_LOG(cond, false, "Create exif data failed.");
         /* Set the image options */
         exif_data_set_option(*ptrData, EXIF_DATA_OPTION_FOLLOW_SPECIFICATION);
         exif_data_set_data_type(*ptrData, EXIF_DATA_TYPE_COMPRESSED);
@@ -1107,10 +1089,8 @@ static bool GetFractionFromStr(const std::string &decimal, ExifRational &result)
     int denominator = pow(10, decimal.length() - decimal.find(".") - 1);
 
     int gcdVal = GCD(numerator, denominator);
-    if (gcdVal == 0) {
-        IMAGE_LOGD("gcdVal is zero");
-        return false;
-    }
+    bool cond = gcdVal == 0;
+    CHECK_DEBUG_RETURN_RET_LOG(cond, false, "gcdVal is zero");
     numerator /= gcdVal;
     denominator /= gcdVal;
 
@@ -1156,10 +1136,9 @@ static bool ConvertStringToDouble(const std::string &str, double &number)
 
 static bool IsValidGpsData(const std::vector<std::string> &dataVec, const ExifTag &tag)
 {
-    if (dataVec.size() != SIZE_3 || (tag != EXIF_TAG_GPS_LATITUDE && tag != EXIF_TAG_GPS_LONGITUDE)) {
-        IMAGE_LOGD("Gps dms data size is invalid.");
-        return false;
-    }
+    bool cond = false;
+    cond = dataVec.size() != SIZE_3 || (tag != EXIF_TAG_GPS_LATITUDE && tag != EXIF_TAG_GPS_LONGITUDE);
+    CHECK_DEBUG_RETURN_RET_LOG(cond, false, "Gps dms data size is invalid.");
     double degree = 0.0;
     double minute = 0.0;
     double second = 0.0;
@@ -1171,21 +1150,17 @@ static bool IsValidGpsData(const std::vector<std::string> &dataVec, const ExifTa
     }
     constexpr uint32_t timePeriod = 60;
     double latOrLong = degree + minute / timePeriod + second / (timePeriod * timePeriod);
-    if ((tag == EXIF_TAG_GPS_LATITUDE && (latOrLong > GPS_MAX_LATITUDE || latOrLong < GPS_MIN_LATITUDE)) ||
-        (tag == EXIF_TAG_GPS_LONGITUDE && (latOrLong > GPS_MAX_LONGITUDE || latOrLong < GPS_MIN_LONGITUDE))) {
-        IMAGE_LOGD("Gps latitude or longitude is out of range.");
-        return false;
-    }
+    cond = (tag == EXIF_TAG_GPS_LATITUDE && (latOrLong > GPS_MAX_LATITUDE || latOrLong < GPS_MIN_LATITUDE)) ||
+            (tag == EXIF_TAG_GPS_LONGITUDE && (latOrLong > GPS_MAX_LONGITUDE || latOrLong < GPS_MIN_LONGITUDE));
+    CHECK_DEBUG_RETURN_RET_LOG(cond, false, "Gps latitude or longitude is out of range.");
     return true;
 }
 
 static bool ConvertGpsDataToRationals(const std::vector<std::string> &dataVec,
     std::vector<ExifRational> &exifRationals)
 {
-    if (!(dataVec.size() == SIZE_3 && exifRationals.size() == SIZE_3)) {
-        IMAGE_LOGD("Data size is invalid.");
-        return false;
-    }
+    bool cond = !(dataVec.size() == SIZE_3 && exifRationals.size() == SIZE_3);
+    CHECK_DEBUG_RETURN_RET_LOG(cond, false, "Data size is invalid.");
 
     int32_t degree = static_cast<int32_t>(atoi(dataVec[CONSTANT_0].c_str()));
     int32_t minute = static_cast<int32_t>(atoi(dataVec[CONSTANT_1].c_str()));
@@ -1231,10 +1206,8 @@ bool EXIFInfo::SetGpsDegreeRational(ExifData *data, ExifEntry **ptrEntry, ExifBy
     exifRational.numerator = static_cast<ExifLong>(atoi(dataVec[CONSTANT_0].c_str()));
     exifRational.denominator = static_cast<ExifLong>(atoi(dataVec[CONSTANT_1].c_str()));
     *ptrEntry = CreateExifTag(data, EXIF_IFD_GPS, tag, MOVE_OFFSET_8, EXIF_FORMAT_RATIONAL);
-    if ((*ptrEntry) == nullptr) {
-        IMAGE_LOGD("Get exif entry failed.");
-        return false;
-    }
+    bool cond = (*ptrEntry) == nullptr;
+    CHECK_DEBUG_RETURN_RET_LOG(cond, false, "Get exif entry failed.");
     exif_set_rational((*ptrEntry)->data, order, exifRational);
     return true;
 }
@@ -1243,10 +1216,8 @@ bool EXIFInfo::CreateExifEntryOfBitsPerSample(const ExifTag &tag, ExifData *data
     ExifByteOrder order, ExifEntry **ptrEntry)
 {
     *ptrEntry = InitExifTag(data, EXIF_IFD_0, EXIF_TAG_BITS_PER_SAMPLE);
-    if ((*ptrEntry) == nullptr) {
-        IMAGE_LOGD("Get exif entry failed.");
-        return false;
-    }
+    bool cond = (*ptrEntry) == nullptr;
+    CHECK_DEBUG_RETURN_RET_LOG(cond, false, "Get exif entry failed.");
     std::vector<std::string> bitsVec;
     SplitStr(value, ",", bitsVec);
     if (bitsVec.size() > CONSTANT_4) {
@@ -1327,10 +1298,8 @@ bool EXIFInfo::CreateExifEntryOfRationalExif(const ExifTag &tag, ExifData *data,
     longRational.numerator = static_cast<ExifLong>(atoi(longVec[0].c_str()));
     longRational.denominator = static_cast<ExifLong>(atoi(longVec[1].c_str()));
     *ptrEntry = CreateExifTag(data, GetExifIfdByExifTag(tag), tag, sizeof(longRational), GetExifFormatByExifTag(tag));
-    if ((*ptrEntry) == nullptr) {
-        IMAGE_LOGD("Get %{public}s exif entry failed.", GetExifNameByExifTag(tag).c_str());
-        return false;
-    }
+    bool cond = (*ptrEntry) == nullptr;
+    CHECK_DEBUG_RETURN_RET_LOG(cond, false, "Get %{public}s exif entry failed.", GetExifNameByExifTag(tag).c_str());
     exif_set_rational((*ptrEntry)->data, order, longRational);
     return true;
 }
@@ -1345,10 +1314,8 @@ bool EXIFInfo::CreateExifEntryOfGpsTimeStamp(const ExifTag &tag, ExifData *data,
         return false;
     }
     *ptrEntry = CreateExifTag(data, EXIF_IFD_GPS, tag, MOVE_OFFSET_24, EXIF_FORMAT_SRATIONAL);
-    if ((*ptrEntry) == nullptr) {
-        IMAGE_LOGD("Get GPS time stamp exif entry failed.");
-        return false;
-    }
+    bool cond = (*ptrEntry) == nullptr;
+    CHECK_DEBUG_RETURN_RET_LOG(cond, false, "Get GPS time stamp exif entry failed.");
     exif_set_long((*ptrEntry)->data, order, static_cast<ExifSLong>(atoi(longVec[CONSTANT_0].c_str())));
     exif_set_long((*ptrEntry)->data + MOVE_OFFSET_8, order,
                   static_cast<ExifSLong>(atoi(longVec[CONSTANT_1].c_str())));
@@ -1361,15 +1328,12 @@ bool EXIFInfo::CreateExifEntryOfCompressedBitsPerPixel(const ExifTag &tag, ExifD
     ExifByteOrder order, ExifEntry **ptrEntry)
 {
     *ptrEntry = InitExifTag(data, EXIF_IFD_EXIF, tag);
-    if ((*ptrEntry) == nullptr) {
-        IMAGE_LOGD("Get exif entry failed.");
-        return false;
-    }
+    bool cond = false;
+    cond = (*ptrEntry) == nullptr;
+    CHECK_DEBUG_RETURN_RET_LOG(cond, false, "Get exif entry failed.");
     ExifRational rat;
-    if (!GetFractionFromStr(value, rat)) {
-        IMAGE_LOGD("Get fraction from value failed.");
-        return false;
-    }
+    cond = !GetFractionFromStr(value, rat);
+    CHECK_DEBUG_RETURN_RET_LOG(cond, false, "Get fraction from value failed.");
     exif_set_rational((*ptrEntry)->data, order, rat);
     return true;
 }
@@ -1404,22 +1368,21 @@ bool EXIFInfo::CreateExifEntry(const ExifTag &tag, ExifData *data, const std::st
         EXIF_TAG_DATE_TIME, EXIF_TAG_GPS_LATITUDE_REF, EXIF_TAG_GPS_LONGITUDE_REF};
     static std::vector vector3{EXIF_TAG_APERTURE_VALUE, EXIF_TAG_EXPOSURE_BIAS_VALUE, EXIF_TAG_EXPOSURE_TIME,
         EXIF_TAG_FNUMBER, EXIF_TAG_FOCAL_LENGTH};
+    bool cond = false;
     if (tag == EXIF_TAG_BITS_PER_SAMPLE) {
         return CreateExifEntryOfBitsPerSample(tag, data, value, order, ptrEntry);
     } else if (std::find(vector1.begin(), vector1.end(), tag) != vector1.end()) {
         *ptrEntry = InitExifTag(data, GetExifIfdByExifTag(tag), tag);
-        if ((*ptrEntry) == nullptr) {
-            IMAGE_LOGD("Get %{public}s exif entry failed.", GetExifNameByExifTag(tag).c_str());
-            return false;
-        }
+        cond = (*ptrEntry) == nullptr;
+        CHECK_DEBUG_RETURN_RET_LOG(cond, false, "Get %{public}s exif entry failed.",
+                                   GetExifNameByExifTag(tag).c_str());
         ExifIntValueByFormat((*ptrEntry)->data, order, (*ptrEntry)->format, atoi(value.c_str()));
         return true;
     } else if (std::find(vector2.begin(), vector2.end(), tag) != vector2.end()) {
         *ptrEntry = CreateExifTag(data, GetExifIfdByExifTag(tag), tag, value.length(), GetExifFormatByExifTag(tag));
-        if ((*ptrEntry) == nullptr || (*ptrEntry)->size < value.length()) {
-            IMAGE_LOGD("Get %{public}s exif entry failed.", GetExifNameByExifTag(tag).c_str());
-            return false;
-        }
+        cond = (*ptrEntry) == nullptr || (*ptrEntry)->size < value.length();
+        CHECK_DEBUG_RETURN_RET_LOG(cond, false, "Get %{public}s exif entry failed.",
+                                   GetExifNameByExifTag(tag).c_str());
         if (memcpy_s((*ptrEntry)->data, value.length(), value.c_str(), value.length()) != 0) {
             IMAGE_LOGD("%{public}s memcpy error", GetExifNameByExifTag(tag).c_str());
         }
@@ -1542,10 +1505,8 @@ uint32_t EXIFInfo::GetFilterArea(const uint8_t *buf,
     }
 
     GetAreaFromExifEntries(privacyType, byteOrderedBuffer->directoryEntryArray_, ranges);
-    if (ranges.size() == 0) {
-        IMAGE_LOGD("There is no exif info need filtered in this image.");
-        return ERROR_NO_EXIF_TAGS;
-    }
+    bool cond = ranges.size() == 0;
+    CHECK_DEBUG_RETURN_RET_LOG(cond, ERROR_NO_EXIF_TAGS, "There is no exif info need filtered in this image.");
 
     return Media::SUCCESS;
 }
@@ -1593,10 +1554,8 @@ void ByteOrderedBuffer::GenerateDEArray()
     // Move current position to begin of IFD0 segment
     curPosition_ = static_cast<uint32_t>(ifd0Offset);
 
-    if (curPosition_ + CONSTANT_2 > bufferLength_) {
-        IMAGE_LOGD("There is no data from the offset: %{public}d.", curPosition_);
-        return;
-    }
+    bool cond = curPosition_ + CONSTANT_2 > bufferLength_;
+    CHECK_DEBUG_RETURN_LOG(cond, "There is no data from the offset: %{public}d.", curPosition_);
     GetDataRangeFromIFD(EXIF_IFD_0);
 }
 
@@ -1764,10 +1723,10 @@ void ByteOrderedBuffer::ParseIFDPointerTag(const ExifIfd &ifd, const uint16_t &d
 
 bool ByteOrderedBuffer::IsValidTagNumber(const uint16_t &tagNumber)
 {
+    bool cond = false;
     for (uint32_t i = 0; (IsSameTextStr(EXIF_TAG_TABLE[i].name, "")); i++) {
-        if (EXIF_TAG_TABLE[i].number == tagNumber) {
-            return true;
-        }
+        cond = EXIF_TAG_TABLE[i].number == tagNumber;
+        CHECK_ERROR_RETURN_RET(cond, true);
     }
     return false;
 }
@@ -1966,9 +1925,8 @@ bool EXIFInfo::CheckExifEntryValidEx(const ExifIfd &ifd, const ExifTag &tag)
 
 static void NumSplit(std::string &src, std::vector<std::string> &out)
 {
-    if (src.size() == 0) {
-        return;
-    }
+    bool cond = src.size() == 0;
+    CHECK_ERROR_RETURN(cond);
     std::vector<std::string> res;
     size_t last = 0;
     for (size_t i = 0; i < src.size(); i++) {
@@ -2030,11 +1988,10 @@ static uint32_t SpecialExifData(EXIFInfo* info, const std::string &name, std::st
         if (res != Media::SUCCESS) {
             return res;
         }
-        if (ORIENTATION_INT_MAP.count(orgValue) == 0) {
-            IMAGE_LOGD("SpecialExifData %{public}s not found %{public}s.",
-                name.c_str(), orgValue.c_str());
-            return Media::ERR_IMAGE_DECODE_EXIF_UNSUPPORT;
-        }
+        bool cond = ORIENTATION_INT_MAP.count(orgValue) == 0;
+        CHECK_DEBUG_RETURN_RET_LOG(cond, Media::ERR_IMAGE_DECODE_EXIF_UNSUPPORT,
+                                   "SpecialExifData %{public}s not found %{public}s.",
+                                   name.c_str(), orgValue.c_str());
         value = std::to_string(ORIENTATION_INT_MAP.at(orgValue));
         return res;
     }
@@ -2071,11 +2028,10 @@ uint32_t EXIFInfo::GetExifData(const std::string name, std::string &value)
         return Media::ERR_IMAGE_DECODE_EXIF_UNSUPPORT;
     }
     DumpTagsMap(exifTags_);
-    if (!exifTags_.Find(tag, value)) {
-        IMAGE_LOGD("GetExifData has no tag %{public}s[%{public}d], tags Size: %{public}zu.",
-            name.c_str(), tag, static_cast<size_t>(exifTags_.Size()));
-        return Media::ERR_IMAGE_DECODE_EXIF_UNSUPPORT;
-    }
+    bool cond = !exifTags_.Find(tag, value);
+    CHECK_DEBUG_RETURN_RET_LOG(cond, Media::ERR_IMAGE_DECODE_EXIF_UNSUPPORT,
+                               "GetExifData has no tag %{public}s[%{public}d], tags Size: %{public}zu.",
+                               name.c_str(), tag, static_cast<size_t>(exifTags_.Size()));
     if (IsSameTextStr(value, DEFAULT_EXIF_VALUE)) {
         IMAGE_LOGD("GetExifData %{public}s[%{public}d] value is DEFAULT_EXIF_VALUE.",
             name.c_str(), tag);
