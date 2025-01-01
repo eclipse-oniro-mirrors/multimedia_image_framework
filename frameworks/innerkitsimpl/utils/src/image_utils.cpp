@@ -1019,7 +1019,7 @@ static void GetYUVStrideInfo(int32_t pixelFmt, OH_NativeBuffer_Planes *planes, Y
 }
 
 void ImageUtils::UpdateSdrYuvStrides(const ImageInfo &imageInfo, YUVStrideInfo &dstStrides,
-                                void *context, AllocatorType dstType)
+    void *context, AllocatorType dstType)
 {
     int32_t dstWidth = imageInfo.size.width;
     int32_t dstHeight = imageInfo.size.height;
