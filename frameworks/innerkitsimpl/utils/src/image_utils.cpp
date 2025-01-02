@@ -987,9 +987,9 @@ int32_t ImageUtils::GetAPIVersion()
 #endif
 }
 
+#if !defined(_WIN32) && !defined(_APPLE) && !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
 static void GetYUVStrideInfo(int32_t pixelFmt, OH_NativeBuffer_Planes *planes, YUVStrideInfo &dstStrides)
 {
-#if !defined(_WIN32) && !defined(_APPLE) && !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
     if (pixelFmt == GRAPHIC_PIXEL_FMT_YCBCR_420_SP) {
         auto yStride = planes->planes[PLANE_Y].columnStride;
         auto uvStride = planes->planes[PLANE_U].columnStride;
@@ -1015,8 +1015,8 @@ static void GetYUVStrideInfo(int32_t pixelFmt, OH_NativeBuffer_Planes *planes, Y
         auto uvOffset = planes->planes[PLANE_V].offset / 2;
         dstStrides = {yStride, uvStride, yOffset, uvOffset};
     }
-#endif
 }
+#endif
 
 void ImageUtils::UpdateSdrYuvStrides(const ImageInfo &imageInfo, YUVStrideInfo &dstStrides,
     void *context, AllocatorType dstType)
