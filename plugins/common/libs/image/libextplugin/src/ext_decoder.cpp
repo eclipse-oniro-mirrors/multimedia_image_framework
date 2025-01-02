@@ -584,7 +584,7 @@ static bool IsWideGamut(const skcms_ICCProfile& profile) {
 sk_sp<SkColorSpace> ExtDecoder::GetDesiredColorSpace(SkImageInfo &srcInfo, const PixelDecodeOptions &opts)
 {
     if (opts.plDesiredColorSpace == nullptr) {
-        const skcms_ICCProfile* encodedProfile = !codec_ ? nullptr : codec_->getICCProfile();
+        const skcms_ICCProfile* encodedProfile = codec_ ? codec_->getICCProfile() : nullptr;
         if (encodedProfile && IsWideGamut(*encodedProfile)) {
             IMAGE_LOGD("GetDesiredColorSpace ICC Profile is wide gamut.");
             return SkColorSpace::MakeRGB(SkNamedTransferFn::kSRGB, SkNamedGamut::kDisplayP3);
