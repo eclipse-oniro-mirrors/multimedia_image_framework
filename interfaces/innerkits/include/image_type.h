@@ -380,6 +380,8 @@ enum class MetadataType {
 
 struct DecodingOptionsForPicture {
     std::set<AuxiliaryPictureType> desireAuxiliaryPictures;
+    PixelFormat desiredPixelFormat = PixelFormat::RGBA_8888;
+    AllocatorType allocatorType = AllocatorType::DMA_ALLOC;
 };
 
 typedef struct PictureError {
