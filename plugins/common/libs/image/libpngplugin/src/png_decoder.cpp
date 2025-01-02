@@ -324,10 +324,8 @@ bool AllocOutBuffer(DecodeContext &context, uint64_t byteCount)
 
 bool AllocBufferForPlatform(DecodeContext &context, uint64_t byteCount)
 {
-    if (byteCount == 0) {
-        IMAGE_LOGE("alloc output buffer size: 0 error.");
-        return false;
-    }
+    bool cond = byteCount == 0;
+    CHECK_ERROR_RETURN_RET_LOG(cond, false, "alloc output buffer size: 0 error.");
     void *outputBuffer = malloc(byteCount);
     if (outputBuffer == nullptr) {
         IMAGE_LOGE("alloc output buffer size:[%{public}llu] error.", static_cast<unsigned long long>(byteCount));
@@ -815,11 +813,10 @@ void PngDecoder::SaveInterlacedRows(png_bytep row, png_uint_32 rowNum, int pass)
     png_bytep oldRow = pixelsData_ + (rowNum - firstRow_) * pngImageInfo_.rowDataSize;
     uint64_t mollocByteCount = static_cast<uint64_t>(pngImageInfo_.rowDataSize) * pngImageInfo_.height;
     uint64_t needByteCount = static_cast<uint64_t>(pngStructPtr_->width) * sizeof(*oldRow);
-    if (mollocByteCount < needByteCount) {
-        IMAGE_LOGE("malloc byte size is(%{public}llu), but actual needs (%{public}llu)",
-            static_cast<unsigned long long>(mollocByteCount), static_cast<unsigned long long>(needByteCount));
-        return;
-    }
+    bool cond = mollocByteCount < needByteCount;
+    CHECK_ERROR_PRINT_LOG(cond, "malloc byte size is(%{public}llu), but actual needs (%{public}llu)",
+                          static_cast<unsigned long long>(mollocByteCount),
+                          static_cast<unsigned long long>(needByteCount));
     png_progressive_combine_row(pngStructPtr_, oldRow, row);
     if (pass == 0) {
         // The first pass initializes all rows.
@@ -967,11 +964,10 @@ uint32_t PngDecoder::IncrementalReadRows(InputDataStream *stream)
         return SUCCESS;
     }
     uint32_t ret = PushCurrentToDecode(stream);
-    if (ret != SUCCESS) {
-        IMAGE_LOGE("push stream to decode fail, ret:%{public}u, idatLen:%{public}zu, incrementalLen:%{public}zu.",
-            ret, idatLength_, incrementalLength_);
-        return ret;
-    }
+    bool cond = ret != SUCCESS;
+    CHECK_ERROR_RETURN_RET_LOG(cond, ret, "push stream to decode fail, "
+                               "ret:%{public}u, idatLen:%{public}zu, incrementalLen:%{public}zu.",
+                               ret, idatLength_, incrementalLength_);
     return SUCCESS;
 }
 
