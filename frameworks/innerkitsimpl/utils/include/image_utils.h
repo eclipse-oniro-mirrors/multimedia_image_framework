@@ -91,6 +91,17 @@ public:
     static std::string GetEncodedHeifFormat();
     static void UpdateSdrYuvStrides(const ImageInfo &imageInfo, YUVStrideInfo &dstStrides,
         void *context, AllocatorType dstType);
+    static bool NeedReusePixelMap(ImagePlugin::DecodeContext& context, int width,
+        int height, const std::shared_ptr<PixelMap> &reusePixelmap, uint16_t reuseRefCount);
+    static bool NeedReusePixelMapHdr(ImagePlugin::DecodeContext& context, int width,
+        int height, const std::shared_ptr<PixelMap> &reusePixelmap, uint16_t reuseRefCount);
+    static bool NeedReusePixelMapSingle(ImagePlugin::DecodeContext& context, int width,
+        int height, const std::shared_ptr<PixelMap> &reusePixelmap, uint16_t reuseRefCount);
+    static bool ReusePixelMapHdr(ImagePlugin::DecodeContext& context,
+        const std::shared_ptr<PixelMap> &reusePixelmap);
+    static void SetContextHdr(ImagePlugin::DecodeContext& context, uint32_t format);
+    static void SetDecodeContextBufferHdr(ImagePlugin::DecodeContext& context,
+        AllocatorType type, uint8_t* ptr, uint64_t count, void* fd);
 
     template<typename T>
     static bool CheckMulOverflow(const T& num1, const T& num2)

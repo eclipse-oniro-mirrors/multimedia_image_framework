@@ -408,6 +408,7 @@ private:
     bool isExifReadFailed_ = false;
     uint32_t exifReadStatus_ = 0;
     uint32_t heifParseErr_ = 0;
+    uint16_t reusePixelRefCount_ = 0;
 };
 } // namespace Media
 } // namespace OHOS

@@ -124,6 +124,7 @@ private:
     uint32_t GetFramePixels(SkImageInfo& info, uint8_t* buffer, uint64_t rowStride, SkCodec::Options options);
     FrameCacheInfo InitFrameCacheInfo(const uint64_t rowStride, SkImageInfo info);
     bool FrameCacheInfoIsEqual(FrameCacheInfo& src, FrameCacheInfo& dst);
+    uint32_t ReusePixelMapSingle(DecodeContext &context);
 
     ImagePlugin::InputDataStream *stream_ = nullptr;
     uint32_t streamOff_ = 0;
@@ -138,6 +139,8 @@ private:
     int gifCacheIndex_ = 0;
     FrameCacheInfo frameCacheInfo_ = {0, 0, 0, 0};
     uint32_t heifParseErr_ = 0;
+    std::shared_ptr<Media::PixelMap> reusePixelmap_ = nullptr;
+    uint16_t rePixelRefCount_ = 0;
 #ifdef IMAGE_COLORSPACE_FLAG
     std::shared_ptr<OHOS::ColorManager::ColorSpace> dstColorSpace_ = nullptr;
 #endif

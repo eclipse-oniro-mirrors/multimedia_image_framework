@@ -42,6 +42,7 @@
 #include "image_system_properties.h"
 #include "image/abs_image_decoder.h"
 #include "pixel_map.h"
+#include "surface_type.h"
 #ifdef IOS_PLATFORM
 #include <sys/syscall.h>
 #endif
@@ -1049,6 +1050,106 @@ void ImageUtils::UpdateSdrYuvStrides(const ImageInfo &imageInfo, YUVStrideInfo &
         }
     }
 #endif
+}
+
+bool ImageUtils::NeedReusePixelMap(ImagePlugin::DecodeContext& context, int width,
+    int height, const std::shared_ptr<PixelMap> &reusePixelmap, uint16_t reuseRefCount)
+{
+    if (reusePixelmap == nullptr) {
+        IMAGE_LOGD("reusePixelmap is nullptr");
+        return false;
+    }
+    if (reuseRefCount != 1) {
+        IMAGE_LOGD("reusePixelmap reference count is not equal to 1");
+        return false;
+    }
+    if ((width != reusePixelmap->GetWidth()) || (height != reusePixelmap->GetHeight())) {
+        IMAGE_LOGD("The height or width of image is not equal to reusePixelmap");
+        return false;
+    }
+    return true;
+}
+
+bool ImageUtils::NeedReusePixelMapHdr(ImagePlugin::DecodeContext& context, int width,
+    int height, const std::shared_ptr<PixelMap> &reusePixelmap, uint16_t reuseRefCount)
+{
+    if (!NeedReusePixelMap(context, width, height, reusePixelmap, reuseRefCount)) {
+        return false;
+    }
+    auto hdrPixelFormat = GRAPHIC_PIXEL_FMT_RGBA_1010102;
+    if (context.photoDesiredPixelFormat == PixelFormat::YCBCR_P010) {
+        hdrPixelFormat = GRAPHIC_PIXEL_FMT_YCBCR_P010;
+    }
+    SetContextHdr(context, hdrPixelFormat);
+    if ((reusePixelmap->GetPixelFormat() != PixelFormat::RGBA_1010102) ||
+        (context.info.pixelFormat != PixelFormat::RGBA_1010102)) {
+            IMAGE_LOGD("PixelFormat of Hdrimage is not equal to reusePixelmap");
+            return false;
+    }
+    return true;
+}
+
+bool ImageUtils::NeedReusePixelMapSingle(ImagePlugin::DecodeContext& context, int width,
+    int height, const std::shared_ptr<PixelMap> &reusePixelmap, uint16_t reuseRefCount)
+{
+    if (!NeedReusePixelMap(context, width, height, reusePixelmap, reuseRefCount)) {
+        return false;
+    }
+    if ((reusePixelmap->GetPixelFormat() == PixelFormat::RGBA_1010102) ||
+        (context.info.pixelFormat == PixelFormat::RGBA_1010102)) {
+            IMAGE_LOGD("Single image is not RGBA 10bit");
+            return false;
+    }
+    if ((((reusePixelmap->GetPixelFormat() == PixelFormat::NV12) ||
+        (reusePixelmap->GetPixelFormat() == PixelFormat::NV21)) &&
+        ((context.info.pixelFormat != PixelFormat::NV12) && (context.info.pixelFormat != PixelFormat::NV21))) ||
+        (((reusePixelmap->GetPixelFormat() == PixelFormat::RGBA_8888) ||
+        (reusePixelmap->GetPixelFormat() == PixelFormat::BGRA_8888)) &&
+        ((context.info.pixelFormat != PixelFormat::RGBA_8888) &&
+        (context.info.pixelFormat != PixelFormat::BGRA_8888)))) {
+            IMAGE_LOGD("PixelFormat of Singleimage is not equal to reusePixelmap");
+            return false;
+    }
+    return true;
+}
+
+bool ImageUtils::ReusePixelMapHdr(ImagePlugin::DecodeContext& context,
+    const std::shared_ptr<PixelMap> &reusePixelmap)
+{
+    uint8_t *reusePixelBuffer = const_cast<uint8_t *>(reusePixelmap->GetPixels());
+    context.pixelsBuffer.buffer = static_cast<void *>(reusePixelBuffer);
+    int32_t err = ImageUtils::SurfaceBuffer_Reference(reusePixelmap->GetFd());
+    if (err != OHOS::GSERROR_OK) {
+        IMAGE_LOGD("reusePixelmapBuffer Reference failed");
+        return false;
+    }
+    SetDecodeContextBufferHdr(context, AllocatorType::DMA_ALLOC, reusePixelBuffer, reusePixelmap->GetCapacity(),
+        reusePixelmap->GetFd());
+    return true;
+}
+
+void ImageUtils::SetContextHdr(ImagePlugin::DecodeContext& context, uint32_t format)
+{
+    context.info.alphaType = AlphaType::IMAGE_ALPHA_TYPE_UNPREMUL;
+    if (format == GRAPHIC_PIXEL_FMT_RGBA_1010102) {
+        context.pixelFormat = PixelFormat::RGBA_1010102;
+        context.info.pixelFormat = PixelFormat::RGBA_1010102;
+        context.grColorSpaceName = ColorManager::BT2020_HLG;
+    } else if (format == GRAPHIC_PIXEL_FMT_YCBCR_P010) {
+        context.pixelFormat = PixelFormat::YCBCR_P010;
+        context.info.pixelFormat = PixelFormat::YCBCR_P010;
+        context.grColorSpaceName = ColorManager::BT2020_HLG;
+    }
+}
+
+void ImageUtils::SetDecodeContextBufferHdr(ImagePlugin::DecodeContext& context,
+    AllocatorType type, uint8_t* ptr, uint64_t count, void* fd)
+{
+    context.allocatorType = type;
+    context.freeFunc = nullptr;
+    context.pixelsBuffer.buffer = ptr;
+    context.pixelsBuffer.bufferSize = count;
+    context.pixelsBuffer.context = fd;
 }
 } // namespace Media
 } // namespace OHOS

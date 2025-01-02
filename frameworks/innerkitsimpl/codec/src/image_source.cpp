@@ -586,7 +586,13 @@ unique_ptr<PixelMap> ImageSource::CreatePixelMapEx(uint32_t index, const DecodeO
     IMAGE_LOGD("CreatePixelMapEx imageId_: %{public}lu, desiredPixelFormat: %{public}d,"
         "desiredSize: (%{public}d, %{public}d)",
         static_cast<unsigned long>(imageId_), opts.desiredPixelFormat, opts.desiredSize.width, opts.desiredSize.height);
-
+    if (opts.reusePixelmap != nullptr) {
+        void* sbBuffer = opts.reusePixelmap->GetFd();
+        if (sbBuffer != nullptr) {
+            OHOS::RefBase *ref = reinterpret_cast<OHOS::RefBase *>(sbBuffer);
+            reusePixelRefCount_ = static_cast<uint16_t>(ref->GetSptrRefCount());
+        }
+    }
 #if !defined(ANDROID_PLATFORM) && !defined(IOS_PLATFORM)
     if (!isAstc_.has_value()) {
         ImagePlugin::DataStreamBuffer outData;
@@ -2428,6 +2434,8 @@ void ImageSource::CopyOptionsToPlugin(const DecodeOptions &opts, PixelDecodeOpti
         plOpts.plSVGResize.resizePercentage = opts.SVGOpts.SVGResize.resizePercentage;
     }
     plOpts.plDesiredColorSpace = opts.desiredColorSpaceInfo;
+    plOpts.plReusePixelmap = opts.reusePixelmap;
+    plOpts.plRePixelRefCount = reusePixelRefCount_;
 }
 
 void ImageSource::CopyOptionsToProcOpts(const DecodeOptions &opts, DecodeOptions &procOpts, PixelMap &pixelMap)
@@ -4132,9 +4140,24 @@ bool ImageSource::ComposeHdrImage(ImageHdrType hdrType, DecodeContext& baseCtx, 
         VpeUtils::SetSbMetadataType(gainmapSptr, videoToimageHdrType);
     }
     // hdr image
-    uint32_t errorCode = AllocHdrSurfaceBuffer(hdrCtx, hdrType, hdrCmColor);
-    bool cond = (errorCode != SUCCESS);
-    CHECK_ERROR_RETURN_RET_LOG(cond, false, "HDR SurfaceBuffer Alloc failed, %{public}d", errorCode);
+
+    if ((ImageUtils::NeedReusePixelMapHdr(hdrCtx, hdrCtx.info.size.width, hdrCtx.info.size.height,
+        opts_.reusePixelmap, reusePixelRefCount_)) && (ImageUtils::ReusePixelMapHdr(hdrCtx, opts_.reusePixelmap))) {
+        hdrCtx.grColorSpaceName = ConvertColorSpaceName(hdrCmColor, false);
+        CM_HDR_Metadata_Type type;
+        if (hdrType == ImageHdrType::HDR_VIVID_DUAL || hdrType == ImageHdrType::HDR_CUVA) {
+            type = CM_IMAGE_HDR_VIVID_SINGLE;
+        } else if (hdrType == ImageHdrType::HDR_ISO_DUAL) {
+            type = CM_IMAGE_HDR_ISO_SINGLE;
+        }
+        sptr<SurfaceBuffer> surfaceBuf(reinterpret_cast<SurfaceBuffer*>(opts_.reusePixelmap->GetFd()));
+        VpeUtils::SetSbMetadataType(surfaceBuf, type);
+        VpeUtils::SetSbColorSpaceType(surfaceBuf, hdrCmColor);
+    } else {
+        uint32_t errorCode = AllocHdrSurfaceBuffer(hdrCtx, hdrType, hdrCmColor);
+        bool cond = (errorCode != SUCCESS);
+        CHECK_ERROR_RETURN_RET_LOG(cond, false, "HDR SurfaceBuffer Alloc failed, %{public}d", errorCode);
+    }
     sptr<SurfaceBuffer> hdrSptr(reinterpret_cast<SurfaceBuffer*>(hdrCtx.pixelsBuffer.context));
     VpeSurfaceBuffers buffers = {
         .sdr = baseSptr,
