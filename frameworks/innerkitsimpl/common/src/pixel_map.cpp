@@ -1936,10 +1936,9 @@ uint32_t PixelMap::CheckPixelMapForWritePixels()
     return SUCCESS;
 }
 
-uint32_t PixelMap::WritePixels(const uint8_t *source, const uint64_t &bufferSize, const uint32_t &offset,
-                               const uint32_t &stride, const Rect &region)
+uint32_t PixelMap::WritePixels(const WritePixelsOptions &opts)
 {
-    if (!CheckPixelsInput(source, bufferSize, offset, stride, region)) {
+    if (!CheckPixelsInput(opts.source, opts.bufferSize, opts.offset, opts.stride, opts.region)) {
         IMAGE_LOGE("write pixel by rect input parameter fail.");
         return ERR_IMAGE_INVALID_PARAMETER;
     }
@@ -1949,33 +1948,34 @@ uint32_t PixelMap::WritePixels(const uint8_t *source, const uint64_t &bufferSize
         return ret;
     }
 
-    Position dstPosition { region.left, region.top };
+    Position dstPosition { opts.region.left, opts.region.top };
     ImageInfo srcInfo =
-        MakeImageInfo(region.width, region.height, PixelFormat::BGRA_8888, AlphaType::IMAGE_ALPHA_TYPE_UNPREMUL);
+        MakeImageInfo(opts.region.width, opts.region.height, opts.srcPixelFormat, AlphaType::IMAGE_ALPHA_TYPE_UNPREMUL);
     if (imageInfo_.pixelFormat == PixelFormat::ARGB_8888) {
-        std::unique_ptr<uint8_t[]> tempPixels = std::make_unique<uint8_t[]>(bufferSize);
+        std::unique_ptr<uint8_t[]> tempPixels = std::make_unique<uint8_t[]>(opts.bufferSize);
         if (tempPixels == nullptr) {
             IMAGE_LOGE("WritePixels make tempPixels failed.");
             return ERR_IMAGE_WRITE_PIXELMAP_FAILED;
         }
         void *colors = tempPixels.get();
-        ImageInfo tempInfo =
-            MakeImageInfo(region.width, region.height, PixelFormat::ARGB_8888, AlphaType::IMAGE_ALPHA_TYPE_UNPREMUL);
+        ImageInfo tempInfo = MakeImageInfo(
+            opts.region.width, opts.region.height, PixelFormat::ARGB_8888,
+            AlphaType::IMAGE_ALPHA_TYPE_UNPREMUL);
         BufferInfo dstInfo = {colors, 0, tempInfo};
-        const void *pixels = source;
+        const void *pixels = opts.source;
         BufferInfo srcBufferInfo = {const_cast<void*>(pixels), 0, srcInfo};
         int32_t dstLength = PixelConvert::PixelsConvert(srcBufferInfo, dstInfo, false);
         if (dstLength < 0) {
             IMAGE_LOGE("WritePixels pixel convert to BGRA_8888 failed.");
             return ERR_IMAGE_WRITE_PIXELMAP_FAILED;
         }
-        if (!PixelConvertAdapter::WritePixelsConvert((uint8_t*)colors + offset, stride, tempInfo,
+        if (!PixelConvertAdapter::WritePixelsConvert((uint8_t*)colors + opts.offset, opts.stride, tempInfo,
             data_, dstPosition, rowStride_, imageInfo_)) {
             IMAGE_LOGE("write pixel by rect call WritePixelsConvert fail.");
             return ERR_IMAGE_WRITE_PIXELMAP_FAILED;
         }
     } else {
-        if (!PixelConvertAdapter::WritePixelsConvert(source + offset, stride, srcInfo,
+        if (!PixelConvertAdapter::WritePixelsConvert(opts.source + opts.offset, opts.stride, srcInfo,
             data_, dstPosition, rowStride_, imageInfo_)) {
             IMAGE_LOGE("write pixel by rect call WritePixelsConvert fail.");
             return ERR_IMAGE_WRITE_PIXELMAP_FAILED;
@@ -1983,6 +1983,12 @@ uint32_t PixelMap::WritePixels(const uint8_t *source, const uint64_t &bufferSize
     }
     AddVersionId();
     return SUCCESS;
+}
+
+uint32_t PixelMap::WritePixels(const uint8_t *source, const uint64_t &bufferSize, const uint32_t &offset,
+                               const uint32_t &stride, const Rect &region)
+{
+    return WritePixels(WritePixelsOptions{source, bufferSize, offset, stride, region, PixelFormat::BGRA_8888});
 }
 
 uint32_t PixelMap::WritePixels(const uint8_t *source, const uint64_t &bufferSize)

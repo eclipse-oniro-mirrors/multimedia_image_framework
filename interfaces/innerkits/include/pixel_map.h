@@ -100,6 +100,15 @@ struct PixelMemInfo {
     bool isAstc = false;
 };
 
+struct WritePixelsOptions {
+    const uint8_t* source = nullptr;
+    uint64_t bufferSize = 0;
+    uint32_t offset = 0;
+    uint32_t stride = 0;
+    Rect region;
+    PixelFormat srcPixelFormat = PixelFormat::BGRA_8888;
+};
+
 class ExifMetadata;
 class AbsMemory;
 
@@ -179,6 +188,7 @@ public:
     NATIVEEXPORT virtual uint32_t ResetConfig(const Size &size, const PixelFormat &format);
     NATIVEEXPORT virtual bool SetAlphaType(const AlphaType &alphaType);
     NATIVEEXPORT virtual uint32_t WritePixel(const Position &pos, const uint32_t &color);
+    NATIVEEXPORT virtual uint32_t WritePixels(const WritePixelsOptions &opts);
     NATIVEEXPORT virtual uint32_t WritePixels(const uint8_t *source, const uint64_t &bufferSize, const uint32_t &offset,
                          const uint32_t &stride, const Rect &region);
     NATIVEEXPORT virtual uint32_t WritePixels(const uint8_t *source, const uint64_t &bufferSize);
