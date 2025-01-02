@@ -16,6 +16,7 @@
 #include <fstream>
 #include "hardware/imagecodec/image_codec.h"
 #include "hardware/imagecodec/image_codec_log.h"
+#include "image_log.h"
 
 namespace OHOS::ImagePlugin {
 using namespace std;
@@ -86,9 +87,8 @@ void ImageCodec::ChangeOwner(BufferInfo& info, BufferOwner newOwner)
 
 void ImageCodec::UpdateInputRecord(const BufferInfo& info, std::chrono::time_point<std::chrono::steady_clock> now)
 {
-    if (!info.IsValidFrame()) {
-        return;
-    }
+    bool cond = !info.IsValidFrame();
+    CHECK_ERROR_RETURN(cond);
     inTimeMap_[info.omxBuffer->pts] = now;
     if (inTotalCnt_ == 0) {
         firstInTime_ = now;
@@ -108,13 +108,11 @@ void ImageCodec::UpdateInputRecord(const BufferInfo& info, std::chrono::time_poi
 
 void ImageCodec::UpdateOutputRecord(const BufferInfo& info, std::chrono::time_point<std::chrono::steady_clock> now)
 {
-    if (!info.IsValidFrame()) {
-        return;
-    }
+    bool cond = !info.IsValidFrame();
+    CHECK_ERROR_RETURN(cond);
     auto it = inTimeMap_.find(info.omxBuffer->pts);
-    if (it == inTimeMap_.end()) {
-        return;
-    }
+    cond = it == inTimeMap_.end();
+    CHECK_ERROR_RETURN(cond);
     if (outRecord_.totalCnt == 0) {
         firstOutTime_ = now;
     }
@@ -143,15 +141,12 @@ void ImageCodec::UpdateOutputRecord(const BufferInfo& info, std::chrono::time_po
 
 bool ImageCodec::BufferInfo::IsValidFrame() const
 {
-    if (omxBuffer->flag & OMX_BUFFERFLAG_EOS) {
-        return false;
-    }
-    if (omxBuffer->flag & OMX_BUFFERFLAG_CODECCONFIG) {
-        return false;
-    }
-    if (omxBuffer->filledLen == 0) {
-        return false;
-    }
+    bool cond = omxBuffer->flag & OMX_BUFFERFLAG_EOS;
+    CHECK_ERROR_RETURN_RET(cond, false);
+    cond = omxBuffer->flag & OMX_BUFFERFLAG_CODECCONFIG;
+    CHECK_ERROR_RETURN_RET(cond, false);
+    cond = omxBuffer->filledLen == 0;
+    CHECK_ERROR_RETURN_RET(cond, false);
     return true;
 }
 
@@ -179,9 +174,8 @@ void ImageCodec::BufferInfo::DumpSurfaceBuffer(const std::string& prefix) const
         return;
     }
     bool eos = (omxBuffer->flag & OMX_BUFFERFLAG_EOS);
-    if (eos || omxBuffer->filledLen == 0) {
-        return;
-    }
+    bool cond = eos || omxBuffer->filledLen == 0;
+    CHECK_ERROR_RETURN(cond);
     int w = surfaceBuffer->GetWidth();
     int h = surfaceBuffer->GetHeight();
     int alignedW = surfaceBuffer->GetStride();

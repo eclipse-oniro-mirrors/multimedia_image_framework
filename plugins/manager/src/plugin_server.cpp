@@ -87,10 +87,8 @@ uint32_t PluginServer::Register(vector<string> &&pluginPaths)
 
     if (!canonicalPaths.empty()) {
         uint32_t result = pluginFw_.Register(canonicalPaths);
-        if (result != SUCCESS) {
-            IMAGE_LOGE("failed to register plugin path, ERRNO: %{public}u.", result);
-            return result;
-        }
+        bool cond = result != SUCCESS;
+        CHECK_ERROR_RETURN_RET_LOG(cond, result, "failed to register plugin path, ERRNO: %{public}u.", result);
     }
 
     return SUCCESS;
@@ -112,9 +110,8 @@ PluginClassBase *PluginServer::CreateObject(uint16_t interfaceID, const string &
     if (GetInterfaceIDType(interfaceID) == IID_TYPE_PIPELINE) {
         IMAGE_LOGD("it is a pipeline interface type.");
         obj = gstPluginFw_.CreateObject(interfaceID, className, errorCode);
-        if (obj != nullptr) {
-            return obj;
-        }
+        bool cond = obj != nullptr;
+        CHECK_ERROR_RETURN_RET(cond, obj);
     }
 
     obj = pluginFw_.CreateObject(interfaceID, className, errorCode);
