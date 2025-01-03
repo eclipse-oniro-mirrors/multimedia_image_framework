@@ -62,6 +62,8 @@ public:
     HeifImageHdrType getHdrType() override;
     void getVividMetadata(std::vector<uint8_t>& uwaInfo, std::vector<uint8_t>& displayInfo,
         std::vector<uint8_t>& lightInfo) override;
+    bool DodecodeGainmap(std::shared_ptr<HeifImage> &gainmapImage, GridInfo &gainmapGridInfo,
+                         uint8_t* gainmapDstMemory, size_t gainmapDstRowStride);
     void getISOMetadata(std::vector<uint8_t>& isoMetadata) override;
     void getErrMsg(std::string& errMsg) override;
     bool CheckAuxiliaryMap(Media::AuxiliaryPictureType type);
@@ -108,6 +110,8 @@ private:
 
     bool SwDecodeImage(std::shared_ptr<HeifImage> &image, HevcSoftDecodeParam &param,
                        GridInfo &gridInfo, bool isPrimary);
+    bool SwDecodeGainmap(std::shared_ptr<HeifImage> &gainMapImage,
+                         GridInfo &gainmapGridInfo, sptr<SurfaceBuffer> *outputBuf);
 
     bool SwDecodeGrids(Media::ImageFwkExtManager &extManager,
                        std::shared_ptr<HeifImage> &image, HevcSoftDecodeParam &param);

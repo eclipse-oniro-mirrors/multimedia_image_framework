@@ -135,6 +135,7 @@ enum class PixelFormat : int32_t {
     YCBCR_P010 = 11, // NV12_P010
     YCRCB_P010 = 12, // NV21_P010
     RGBA_U16 = 13, // Interim format for ffmpeg and skia conversion
+    YUV_400 = 14,
     EXTERNAL_MAX,
     INTERNAL_START = 100,
     CMYK = INTERNAL_START + 1,
