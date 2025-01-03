@@ -42,6 +42,11 @@ public:
     void InitTextureEncodeOptions(TextureEncodeOptions &param, uint8_t &colorData);
     bool TryEncSUT(TextureEncodeOptions &param, uint8_t* astcBuffer, AstcExtendInfo &extendInfo);
 private:
+    bool IsAstcEnc(Media::ImageInfo &info, uint8_t* pixmapIn, TextureEncodeOptions &param,
+        AstcExtendInfo &extendInfo);
+    bool InitBeforeAstcEncode(ImageInfo &imageInfo, TextureEncodeOptions &param, uint8_t &colorData,
+        uint8_t **pixmapIn, uint32_t &stride);
+private:
     DISALLOW_COPY_AND_MOVE(AstcCodec);
     OutputDataStream* astcOutput_ = nullptr;
     PlEncodeOptions astcOpts_;
