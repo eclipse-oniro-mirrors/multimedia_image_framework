@@ -14,6 +14,7 @@
  */
 
 #include "box/item_data_box.h"
+#include "image_log.h"
 
 namespace {
     const uint8_t CONSTRUCTION_METHOD_FILE_OFFSET = 0;

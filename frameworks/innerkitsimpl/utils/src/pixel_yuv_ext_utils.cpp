@@ -126,7 +126,7 @@ bool PixelYuvExtUtils::Yuv420ToARGB(const uint8_t *sample, uint8_t *dstArgb,
     }
     auto converter = ConverterHandle::GetInstance().GetHandle();
     bool cond = converter.ARGBToBGRA(temp.get(), size.width * NUM_4, dstArgb,
-                size.width * NUM_4, size.width, size.height) != SUCCESS;
+                                     size.width * NUM_4, size.width, size.height) != SUCCESS;
     CHECK_ERROR_RETURN_RET_LOG(cond, false, "ARGBToBGRA failed");
     return true;
 }

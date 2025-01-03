@@ -227,7 +227,7 @@ uint32_t ImagePacker::StartPackingAdapter(PackerStream &outputStream, const Pack
     bool cond = !IsPackOptionValid(option);
     CHECK_ERROR_RETURN_RET_LOG(cond, ERR_IMAGE_INVALID_PARAMETER,
                                "packer stream option invalid %{public}s, %{public}u.",
-                                option.format.c_str(), option.quality);
+                               option.format.c_str(), option.quality);
     return StartPackingImpl(option);
 }
 
