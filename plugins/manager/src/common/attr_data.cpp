@@ -679,11 +679,15 @@ bool AttrData::InRange(const uint32_t (&uint32Rang)[RANGE_ARRAY_SIZE]) const
         }
         case AttrDataType::ATTR_DATA_UINT32_SET: {
             auto lowerIter = value_.uint32Set->find(uint32Rang[LOWER_BOUND_INDEX]);
+            bool cond = lowerIter == value_.uint32Set->end();
+            CHECK_ERROR_RETURN_RET(cond, false);
             if (lowerIter == value_.uint32Set->end()) {
                 return false;
             }
 
             auto upperIter = value_.uint32Set->find(uint32Rang[UPPER_BOUND_INDEX]);
+            cond = upperIter == value_.uint32Set->end();
+            CHECK_ERROR_RETURN_RET(cond, false);
             if (upperIter == value_.uint32Set->end()) {
                 return false;
             }
@@ -693,6 +697,8 @@ bool AttrData::InRange(const uint32_t (&uint32Rang)[RANGE_ARRAY_SIZE]) const
                 count++;
             }
 
+            cond = count != (uint32Rang[UPPER_BOUND_INDEX] - uint32Rang[LOWER_BOUND_INDEX]);
+            CHECK_ERROR_RETURN_RET(cond, false);
             if (count != (uint32Rang[UPPER_BOUND_INDEX] - uint32Rang[LOWER_BOUND_INDEX])) {
                 return false;
             }

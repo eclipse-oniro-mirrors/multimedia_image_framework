@@ -99,10 +99,10 @@ heif_error HeifIlocBox::ParseContent(HeifStreamReader &reader)
 
 heif_error HeifIlocBox::GetIlocDataLength(const Item &item, size_t &length)
 {
+    bool cond = false;
     for (const auto &extent: item.extents) {
-        if (extent.length > MAX_HEIF_IMAGE_GRID_SIZE) {
-            return heif_error_grid_too_large;
-        }
+        cond = extent.length > MAX_HEIF_IMAGE_GRID_SIZE;
+        CHECK_ERROR_RETURN_RET(cond, heif_error_grid_too_large);
         length = extent.length;
     }
     return heif_error_ok;

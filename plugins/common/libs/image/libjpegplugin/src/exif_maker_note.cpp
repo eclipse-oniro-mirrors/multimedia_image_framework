@@ -540,6 +540,8 @@ bool ExifMakerNote::ParserItem(uint32_t offset, uint32_t ifd, uint32_t deep)
         IMAGE_LOGE("ParserItem leave, components, false");
         return false;
     }
+    bool cond = !GetUInt32(offset, dataOrOffset);
+    CHECK_ERROR_RETURN_RET_LOG(cond, false, "ParserItem leave, data, false");
     if (!GetUInt32(offset, dataOrOffset)) {
         IMAGE_LOGE("ParserItem leave, data, false");
         return false;
@@ -554,12 +556,16 @@ bool ExifMakerNote::ParserItem(uint32_t offset, uint32_t ifd, uint32_t deep)
     GetData(offset, sizeof(uint32_t), back.data);
     back.Dump("ParserItem", order_);
 
+    cond = deep > 0;
+    CHECK_DEBUG_RETURN_RET_LOG(cond, true, "ParserItem leave, deep=%{public}u", deep);
     if (deep > 0) {
         IMAGE_LOGD("ParserItem leave, deep=%{public}u", deep);
         return true;
     }
 
     if ((back.tag == HW_MNOTE_TAG_SCENE_INFO_OFFSET) || (back.tag ==  HW_MNOTE_TAG_FACE_INFO_OFFSET)) {
+        cond = !ParserIFD((tiff_offset_ + dataOrOffset), back.tag, (deep + 1));
+        CHECK_ERROR_RETURN_RET_LOG(cond, false, "ParserItem leave, ifd, false");
         if (!ParserIFD((tiff_offset_ + dataOrOffset), back.tag, (deep + 1))) {
             IMAGE_LOGE("ParserItem leave, ifd, false");
             return false;

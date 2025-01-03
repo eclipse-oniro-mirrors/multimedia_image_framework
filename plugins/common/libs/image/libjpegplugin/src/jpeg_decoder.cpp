@@ -524,10 +524,8 @@ uint32_t JpegDecoder::Decode(uint32_t index, DecodeContext &context)
         }
         state_ = JpegDecodingState::BASE_INFO_PARSED;
         ret = StartDecompress(opts_);
-        if (ret != Media::SUCCESS) {
-            IMAGE_LOGE("start decompress failed on decode:%{public}u.", ret);
-            return ret;
-        }
+        bool cond = ret != Media::SUCCESS;
+        CHECK_ERROR_RETURN_RET_LOG(cond, ret, "start decompress failed on decode:%{public}u.", ret);
         state_ = JpegDecodingState::IMAGE_DECODING;
     }
     // only state JpegDecodingState::IMAGE_DECODING can go here.
@@ -1092,10 +1090,8 @@ uint32_t JpegDecoder::GetFilterArea(const int &privacyType, std::vector<std::pai
         static_cast<unsigned int>(app1SizeBuf[1]) | static_cast<unsigned int>(app1SizeBuf[0] << OFFSET_8);
     delete[] app1SizeBuf;
     uint32_t fsize = static_cast<uint32_t>(srcMgr_.inputStream->GetStreamSize());
-    if (app1Size > fsize) {
-        IMAGE_LOGE("[GetFilterArea] file format is illegal.");
-        return Media::ERR_MEDIA_INVALID_OPERATION;
-    }
+    bool cond = app1Size > fsize;
+    CHECK_ERROR_RETURN_RET_LOG(cond, Media::ERR_MEDIA_INVALID_OPERATION, "[GetFilterArea] file format is illegal.");
 
     srcMgr_.inputStream->Seek(0);
     uint32_t bufSize = app1Size + ADDRESS_4;
@@ -1105,10 +1101,8 @@ uint32_t JpegDecoder::GetFilterArea(const int &privacyType, std::vector<std::pai
     uint32_t ret = exifInfo_.GetFilterArea(buf, bufSize, privacyType, ranges);
     delete[] buf;
     srcMgr_.inputStream->Seek(curPos);
-    if (ret != Media::SUCCESS) {
-        IMAGE_LOGE("[GetFilterArea]: failed to get area, errno %{public}d", ret);
-        return ret;
-    }
+    cond = ret != Media::SUCCESS;
+    CHECK_ERROR_RETURN_RET_LOG(cond, ret, "[GetFilterArea]: failed to get area, errno %{public}d", ret);
     return Media::SUCCESS;
 }
 

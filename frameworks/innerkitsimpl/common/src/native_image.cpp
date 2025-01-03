@@ -161,6 +161,8 @@ int32_t NativeImage::SplitSurfaceToComponent()
         case int32_t(GRAPHIC_PIXEL_FMT_YCBCR_422_SP):
             return SplitYUV422SPComponent();
         case int32_t(ImageFormat::JPEG):
+            bool cond = CreateCombineComponent(int32_t(ComponentType::JPEG)) != nullptr;
+            CHECK_ERROR_RETURN_RET(cond, SUCCESS);
             if (CreateCombineComponent(int32_t(ComponentType::JPEG)) != nullptr) {
                 return SUCCESS;
             }
@@ -184,6 +186,8 @@ int32_t NativeImage::CombineYUVComponents()
     auto y = GetComponent(int32_t(ComponentType::YUV_Y));
     auto u = GetComponent(int32_t(ComponentType::YUV_U));
     auto v = GetComponent(int32_t(ComponentType::YUV_V));
+    bool cond = (y == nullptr) || (u == nullptr) || (v == nullptr);
+    CHECK_ERROR_RETURN_RET_LOG(cond, ERR_MEDIA_DATA_UNSUPPORT, "No component need to combine");
     if ((y == nullptr) || (u == nullptr) || (v == nullptr)) {
         IMAGE_LOGE("No component need to combine");
         return ERR_MEDIA_DATA_UNSUPPORT;

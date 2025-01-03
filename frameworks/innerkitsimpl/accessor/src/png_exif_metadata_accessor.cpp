@@ -386,18 +386,13 @@ uint32_t PngExifMetadataAccessor::GetFilterArea(const std::vector<std::string> &
     std::vector<std::pair<uint32_t, uint32_t>> &ranges)
 {
     uint32_t ret = Read();
-    if (ret != SUCCESS) {
-        IMAGE_LOGD("Failed to read the exif info.");
-        return E_NO_EXIF_TAG;
-    }
-    if (isCompressed_) {
-        IMAGE_LOGD("This png is compressed.");
-        return E_NO_EXIF_TAG;
-    }
+    bool cond = ret != SUCCESS;
+    CHECK_DEBUG_RETURN_RET_LOG(cond, E_NO_EXIF_TAG, "Failed to read the exif info.");
+    cond = isCompressed_;
+    CHECK_DEBUG_RETURN_RET_LOG(cond, E_NO_EXIF_TAG, "This png is compressed.");
     exifMetadata_->GetFilterArea(exifKeys, ranges);
-    if (ranges.empty()) {
-        return E_NO_EXIF_TAG;
-    }
+    cond = ranges.empty();
+    CHECK_ERROR_RETURN_RET(cond, E_NO_EXIF_TAG);
     for (auto& range : ranges) {
         range.first += static_cast<uint32_t>(GetTiffOffset());
     }
