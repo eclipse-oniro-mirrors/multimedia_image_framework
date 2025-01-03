@@ -14,7 +14,6 @@
  */
 
 #include "box/item_data_box.h"
-#include "image_log.h"
 
 namespace {
     const uint8_t CONSTRUCTION_METHOD_FILE_OFFSET = 0;
@@ -100,10 +99,10 @@ heif_error HeifIlocBox::ParseContent(HeifStreamReader &reader)
 
 heif_error HeifIlocBox::GetIlocDataLength(const Item &item, size_t &length)
 {
-    bool cond = false;
     for (const auto &extent: item.extents) {
-        cond = extent.length > MAX_HEIF_IMAGE_GRID_SIZE;
-        CHECK_ERROR_RETURN_RET(cond, heif_error_grid_too_large);
+        if (extent.length > MAX_HEIF_IMAGE_GRID_SIZE) {
+            return heif_error_grid_too_large;
+        }
         length = extent.length;
     }
     return heif_error_ok;
