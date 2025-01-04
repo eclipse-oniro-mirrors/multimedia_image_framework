@@ -13,9 +13,10 @@
  * limitations under the License.
  */
 #include "image_receiver_impl.h"
+
+#include "cj_color_mgr_utils.h"
 #include "image_log.h"
 #include "securec.h"
-#include "cj_color_mgr_utils.h"
 
 namespace OHOS {
 namespace Media {
@@ -30,8 +31,8 @@ struct ImageEnum {
 };
 
 static std::vector<struct ImageEnum> sImageFormatMap = {
-    {"CAMERA_APP_INNER", CAMERA_APP_INNER_ENCODING_FORMAT, ""},
-    {"JPEG", JPEG_ENCODING_FORMAT, ""},
+    { "CAMERA_APP_INNER", CAMERA_APP_INNER_ENCODING_FORMAT, "" },
+    { "JPEG", JPEG_ENCODING_FORMAT, "" },
 };
 
 static bool CheckFormat(int32_t format)
@@ -65,7 +66,7 @@ ImageReceiverImpl::ImageReceiverImpl(std::shared_ptr<ImageReceiver> imageReceive
     imageReceiver_ = imageReceiver;
 }
 
-uint32_t ImageReceiverImpl::GetSize(CSize *ret)
+uint32_t ImageReceiverImpl::GetSize(CSize* ret)
 {
     if (imageReceiver_ == nullptr || imageReceiver_->iraContext_ == nullptr) {
         IMAGE_LOGE("[ImageReceiverImpl] GetSize : Image receiver context is nullptr");
@@ -77,7 +78,7 @@ uint32_t ImageReceiverImpl::GetSize(CSize *ret)
     return SUCCESS;
 }
 
-uint32_t ImageReceiverImpl::GetCapacity(int32_t *ret)
+uint32_t ImageReceiverImpl::GetCapacity(int32_t* ret)
 {
     if (imageReceiver_ == nullptr || imageReceiver_->iraContext_ == nullptr) {
         IMAGE_LOGE("[ImageReceiverImpl] GetCapacity : Image receiver context is nullptr");
@@ -88,7 +89,7 @@ uint32_t ImageReceiverImpl::GetCapacity(int32_t *ret)
     return SUCCESS;
 }
 
-uint32_t ImageReceiverImpl::GetFormat(int32_t *ret)
+uint32_t ImageReceiverImpl::GetFormat(int32_t* ret)
 {
     if (imageReceiver_ == nullptr || imageReceiver_->iraContext_ == nullptr) {
         IMAGE_LOGE("[ImageReceiverImpl] GetFormat : Image receiver context is nullptr");
@@ -99,7 +100,7 @@ uint32_t ImageReceiverImpl::GetFormat(int32_t *ret)
     return SUCCESS;
 }
 
-char *ImageReceiverImpl::GetReceivingSurfaceId()
+char* ImageReceiverImpl::GetReceivingSurfaceId()
 {
     if (imageReceiver_ == nullptr) {
         return nullptr;
@@ -108,9 +109,9 @@ char *ImageReceiverImpl::GetReceivingSurfaceId()
     if (iraContext == nullptr) {
         return nullptr;
     }
-    
+
     auto str = iraContext->GetReceiverKey().c_str();
-    char *newStr = Utils::MallocCString(str);
+    char* newStr = Utils::MallocCString(str);
     return newStr;
 }
 
@@ -149,5 +150,5 @@ void ImageReceiverImpl::Release()
 {
     imageReceiver_ = nullptr;
 }
-}
-}
+} // namespace Media
+} // namespace OHOS

@@ -16,8 +16,8 @@
 #define IMAGE_IMPL_H
 
 #include "ffi_remote_data.h"
-#include "image_utils.h"
 #include "image_holder_manager.h"
+#include "image_utils.h"
 #include "native_image.h"
 
 namespace OHOS {
@@ -28,20 +28,20 @@ class ImageImpl : public OHOS::FFI::FFIData {
 public:
     explicit ImageImpl(std::shared_ptr<NativeImage> nativeImage);
     std::shared_ptr<NativeImage> GetNativeImage();
-    uint32_t GetClipRect(CRegion *ret);
-    uint32_t GetSize(CSize *ret);
-    uint32_t GetFormat(int32_t *ret);
+    uint32_t GetClipRect(CRegion* ret);
+    uint32_t GetSize(CSize* ret);
+    uint32_t GetFormat(int32_t* ret);
     int64_t GetTimestamp();
-    uint32_t GetComponent(int32_t componentType, CRetComponent *ret);
+    uint32_t GetComponent(int32_t componentType, CRetComponent* ret);
     void Release();
 
 private:
-    static int64_t Create(ImageImpl *image, std::shared_ptr<NativeImage> nativeImage);
+    static int64_t Create(ImageImpl* image, std::shared_ptr<NativeImage> nativeImage);
     std::shared_ptr<NativeImage> native_;
     bool isTestImage_;
     static ImageHolderManager<NativeImage> sNativeImageHolder_;
 };
-}
-}
+} // namespace Media
+} // namespace OHOS
 
 #endif
