@@ -100,8 +100,12 @@ public:
     static bool ReusePixelMapHdr(ImagePlugin::DecodeContext& context,
         const std::shared_ptr<PixelMap> &reusePixelmap);
     static void SetContextHdr(ImagePlugin::DecodeContext& context, uint32_t format);
-    static void SetDecodeContextBufferHdr(ImagePlugin::DecodeContext& context,
+    static void SetReuseContextBuffer(ImagePlugin::DecodeContext& context,
         AllocatorType type, uint8_t* ptr, uint64_t count, void* fd);
+    static bool ReusePixelMapSingle(ImagePlugin::DecodeContext& context, int width,
+        int height, const std::shared_ptr<PixelMap> &reusePixelmap, uint16_t reuseRefCount);
+    static bool IsReuseYUV(ImagePlugin::DecodeContext& context, const std::shared_ptr<PixelMap> &reusePixelmap);
+    static bool IsReuseRGB(ImagePlugin::DecodeContext& context, const std::shared_ptr<PixelMap> &reusePixelmap);
 
     template<typename T>
     static bool CheckMulOverflow(const T& num1, const T& num2)

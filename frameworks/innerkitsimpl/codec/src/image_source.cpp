@@ -586,7 +586,7 @@ unique_ptr<PixelMap> ImageSource::CreatePixelMapEx(uint32_t index, const DecodeO
     IMAGE_LOGD("CreatePixelMapEx imageId_: %{public}lu, desiredPixelFormat: %{public}d,"
         "desiredSize: (%{public}d, %{public}d)",
         static_cast<unsigned long>(imageId_), opts.desiredPixelFormat, opts.desiredSize.width, opts.desiredSize.height);
-    if (opts.reusePixelmap != nullptr) {
+    if (opts.reusePixelmap != nullptr && opts.reusePixelmap->GetAllocatorType() == AllocatorType::DMA_ALLOC) {
         void* sbBuffer = opts.reusePixelmap->GetFd();
         if (sbBuffer != nullptr) {
             OHOS::RefBase *ref = reinterpret_cast<OHOS::RefBase *>(sbBuffer);
@@ -4141,8 +4141,8 @@ bool ImageSource::ComposeHdrImage(ImageHdrType hdrType, DecodeContext& baseCtx, 
     }
     // hdr image
 
-    if ((ImageUtils::NeedReusePixelMapHdr(hdrCtx, hdrCtx.info.size.width, hdrCtx.info.size.height,
-        opts_.reusePixelmap, reusePixelRefCount_)) && (ImageUtils::ReusePixelMapHdr(hdrCtx, opts_.reusePixelmap))) {
+    if (ImageUtils::ReusePixelMapHdr(hdrCtx, hdrCtx.info.size.width, hdrCtx.info.size.height,
+        opts_.reusePixelmap, reusePixelRefCount_)) {
         hdrCtx.grColorSpaceName = ConvertColorSpaceName(hdrCmColor, false);
         CM_HDR_Metadata_Type type;
         if (hdrType == ImageHdrType::HDR_VIVID_DUAL || hdrType == ImageHdrType::HDR_CUVA) {

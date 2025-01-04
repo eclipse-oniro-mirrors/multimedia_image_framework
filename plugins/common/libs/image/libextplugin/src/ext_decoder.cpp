@@ -836,20 +836,6 @@ uint32_t ExtDecoder::DoHardWareDecode(DecodeContext &context)
 }
 #endif
 
-uint32_t ExtDecoder::ReusePixelMapSingle(DecodeContext &context)
-{
-    uint8_t *reusePixelBuffer = const_cast<uint8_t *>(reusePixelmap_->GetPixels());
-    context.pixelsBuffer.buffer = static_cast<void *>(reusePixelBuffer);
-    int32_t err = ImageUtils::SurfaceBuffer_Reference(reusePixelmap_->GetFd());
-    if (err != OHOS::GSERROR_OK) {
-        IMAGE_LOGD("reusePixelmapBuffer Reference failed");
-        return ERR_DMA_DATA_ABNORMAL;
-    }
-    SetDecodeContextBuffer(context, AllocatorType::DMA_ALLOC, reusePixelBuffer, reusePixelmap_->GetCapacity(),
-        reusePixelmap_->GetFd());
-    return SUCCESS;
-}
-
 uint32_t ExtDecoder::Decode(uint32_t index, DecodeContext &context)
 {
 #ifdef JPEG_HW_DECODE_ENABLE
@@ -904,12 +890,9 @@ uint32_t ExtDecoder::Decode(uint32_t index, DecodeContext &context)
         byteCount = byteCount / NUM_4 * NUM_3;
     }
     if (context.pixelsBuffer.buffer == nullptr) {
-        if (ImageUtils::NeedReusePixelMapSingle(context, info_.width(), info_.height(),
+        if (ImageUtils::ReusePixelMapSingle(context, info_.width(), info_.height(),
             reusePixelmap_, rePixelRefCount_)) {
-            res = ReusePixelMapSingle(context);
-            if (res != SUCCESS) {
-                return res;
-            }
+            IMAGE_LOGI("extdecode reusePixelmap success");
         } else {
             res = SetContextPixelsBuffer(byteCount, context);
             if (res != SUCCESS) {
@@ -1136,12 +1119,9 @@ uint32_t ExtDecoder::AllocOutputBuffer(DecodeContext &context,
             static_cast<uint64_t>(hwDstInfo_.width()) *
             static_cast<uint64_t>(hwDstInfo_.bytesPerPixel());
     context.allocatorType = AllocatorType::DMA_ALLOC;
-    if (ImageUtils::NeedReusePixelMapSingle(context, info_.width(), info_.height(),
+    if (ImageUtils::ReusePixelMapSingle(context, info_.width(), info_.height(),
         reusePixelmap_, rePixelRefCount_)) {
-        uint32_t res = ReusePixelMapSingle(context);
-        if (res != SUCCESS) {
-            return res;
-        }
+        IMAGE_LOGI("Jpeg hardware decode reusePixelmap success");
     } else {
         uint32_t ret = DmaMemAlloc(context, byteCount, hwDstInfo_);
         if (ret != SUCCESS) {
@@ -1926,12 +1906,9 @@ uint32_t ExtDecoder::DoHeifToYuvDecode(OHOS::ImagePlugin::DecodeContext &context
         IMAGE_LOGE("YUV Decode HeifDecoder is nullptr");
         return ERR_IMAGE_DATA_UNSUPPORT;
     }
-    if (ImageUtils::NeedReusePixelMapSingle(context, info_.width(), info_.height(),
+    if (ImageUtils::ReusePixelMapSingle(context, info_.width(), info_.height(),
         reusePixelmap_, rePixelRefCount_)) {
-        uint32_t res = ReusePixelMapSingle(context);
-        if (res != SUCCESS) {
-            return res;
-        }
+        IMAGE_LOGI("DoHeifToYuvDecode reusePixelmap success");
     } else {
         uint32_t allocRet = HeifYUVMemAlloc(context);
         if (allocRet != SUCCESS) {
