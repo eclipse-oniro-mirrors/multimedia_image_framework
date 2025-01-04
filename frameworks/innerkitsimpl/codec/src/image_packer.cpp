@@ -190,10 +190,8 @@ uint32_t ImagePacker::StartPacking(const int &fd, const PackOption &option)
         return ERR_IMAGE_INVALID_PARAMETER;
     }
     FilePackerStream *stream = new (std::nothrow) FilePackerStream(fd);
-    if (stream == nullptr) {
-        IMAGE_LOGE("make file packer stream failed.");
-        return ERR_IMAGE_DATA_ABNORMAL;
-    }
+    bool cond = (stream == nullptr);
+    CHECK_ERROR_RETURN_RET_LOG(cond, ERR_IMAGE_DATA_ABNORMAL, "make file packer stream failed");
     FreeOldPackerStream();
     packerStream_ = std::unique_ptr<FilePackerStream>(stream);
     return StartPackingImpl(option);
