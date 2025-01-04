@@ -4545,6 +4545,14 @@ DecodeContext ImageSource::DecodeImageDataToContextExtended(uint32_t index, Imag
 #if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
 std::unique_ptr<Picture> ImageSource::CreatePicture(const DecodingOptionsForPicture &opts, uint32_t &errorCode)
 {
+    ImageInfo info;
+    GetImageInfo(info);
+    if (info.encodedFormat != IMAGE_HEIF_FORMAT && info.encodedFormat != IMAGE_JPEG_FORMAT &&
+        info.encodedFormat != IMAGE_HEIC_FORMAT) {
+        IMAGE_LOGE("CreatePicture failed, unsupport format: %{public}s", info.encodedFormat.c_str());
+        errorCode = ERR_IMAGE_MISMATCHED_FORMAT;
+        return nullptr;
+    }
     DecodeOptions dopts;
     dopts.desiredPixelFormat = opts.desiredPixelFormat;
     dopts.allocatorType = opts.allocatorType;
@@ -4561,18 +4569,11 @@ std::unique_ptr<Picture> ImageSource::CreatePicture(const DecodingOptionsForPict
         return nullptr;
     }
 
-    string format = GetExtendedCodecMimeType(mainDecoder_.get());
-    if (format != IMAGE_HEIF_FORMAT && format != IMAGE_JPEG_FORMAT && format != IMAGE_HEIC_FORMAT) {
-        IMAGE_LOGE("CreatePicture failed, unsupport format: %{public}s", format.c_str());
-        errorCode = ERR_IMAGE_MISMATCHED_FORMAT;
-        return nullptr;
-    }
-
     std::set<AuxiliaryPictureType> auxTypes = (opts.desireAuxiliaryPictures.size() > 0) ?
             opts.desireAuxiliaryPictures : ImageUtils::GetAllAuxiliaryPictureType();
-    if (format == IMAGE_HEIF_FORMAT || format == IMAGE_HEIC_FORMAT) {
+    if (info.encodedFormat == IMAGE_HEIF_FORMAT || info.encodedFormat == IMAGE_HEIC_FORMAT) {
         DecodeHeifAuxiliaryPictures(auxTypes, picture, errorCode);
-    } else if (format == IMAGE_JPEG_FORMAT) {
+    } else if (info.encodedFormat == IMAGE_JPEG_FORMAT) {
         DecodeJpegAuxiliaryPicture(auxTypes, picture, errorCode);
     }
     SetHdrMetadataForPicture(picture);
