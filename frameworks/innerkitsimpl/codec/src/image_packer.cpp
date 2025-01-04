@@ -224,10 +224,10 @@ uint32_t ImagePacker::StartPackingAdapter(PackerStream &outputStream, const Pack
     FreeOldPackerStream();
     packerStream_ = std::unique_ptr<PackerStream>(&outputStream);
 
-    if (!IsPackOptionValid(option)) {
-        IMAGE_LOGE("packer stream option invalid %{public}s, %{public}u.", option.format.c_str(), option.quality);
-        return ERR_IMAGE_INVALID_PARAMETER;
-    }
+    bool cond = !IsPackOptionValid(option);
+    CHECK_ERROR_RETURN_RET_LOG(cond, ERR_IMAGE_INVALID_PARAMETER,
+                               "packer stream option invalid %{public}s, %{public}u.",
+                               option.format.c_str(), option.quality);
     return StartPackingImpl(option);
 }
 
@@ -278,10 +278,8 @@ uint32_t ImagePacker::AddImage(ImageSource &source, uint32_t index)
         IMAGE_LOGE("image source create pixel map failed.");
         return ret;
     }
-    if (pixelMap_ == nullptr || pixelMap_.get() == nullptr) {
-        IMAGE_LOGE("create the pixel map unique_ptr fail.");
-        return ERR_IMAGE_MALLOC_ABNORMAL;
-    }
+    bool cond = pixelMap_ == nullptr || pixelMap_.get() == nullptr;
+    CHECK_ERROR_RETURN_RET_LOG(cond, ERR_IMAGE_MALLOC_ABNORMAL, "create the pixel map unique_ptr fail.");
 
     return AddImage(*pixelMap_.get());
 }

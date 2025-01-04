@@ -61,10 +61,8 @@ int64_t PackImage(int &fd, std::unique_ptr<PixelMap> pixelMap)
     option.quality = ImageReceiver::OPTION_QUALITY;
     option.numberHint = ImageReceiver::OPTION_NUMBERHINT;
     std::set<std::string> formats;
-    if (pixelMap == nullptr) {
-        IMAGE_LOGE("pixelMap is nullptr");
-        return 0;
-    }
+    bool cond = pixelMap == nullptr;
+    CHECK_ERROR_RETURN_RET_LOG(cond, 0, "pixelMap is nullptr");
     uint32_t ret = imagePacker.GetSupportedFormats(formats);
     if (ret != SUCCESS) {
         IMAGE_LOGE("image packer get supported format failed, ret=%{public}u.", ret);

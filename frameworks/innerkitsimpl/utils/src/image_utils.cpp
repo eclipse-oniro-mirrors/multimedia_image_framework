@@ -361,17 +361,15 @@ bool ImageUtils::IsValidImageInfo(const ImageInfo &info)
 bool ImageUtils::IsValidAuxiliaryInfo(const std::shared_ptr<PixelMap> &pixelMap, const AuxiliaryPictureInfo &info)
 {
     int32_t rowSize = ImageUtils::GetRowDataSizeByPixelFormat(info.size.width, info.pixelFormat);
-    if (rowSize <= 0 || info.size.height <= 0 || rowSize > std::numeric_limits<int32_t>::max() / info.size.height) {
-        IMAGE_LOGE("%{public}s rowSize: %{public}d, height: %{public}d may overflowed",
-            __func__, rowSize, info.size.height);
-        return false;
-    }
+    bool cond = rowSize <= 0 || info.size.height <= 0 ||
+                rowSize > std::numeric_limits<int32_t>::max() / info.size.height;
+    CHECK_ERROR_RETURN_RET_LOG(cond, false, "%{public}s rowSize: %{public}d, height: %{public}d may overflowed",
+                               __func__, rowSize, info.size.height);
     uint32_t infoSize = static_cast<uint32_t>(rowSize * info.size.height);
     uint32_t pixelsSize = pixelMap->GetCapacity();
-    if (infoSize > pixelsSize) {
-        IMAGE_LOGE("%{public}s invalid infoSize: %{public}u, pixelsSize: %{public}u", __func__, infoSize, pixelsSize);
-        return false;
-    }
+    cond = infoSize > pixelsSize;
+    CHECK_ERROR_RETURN_RET_LOG(cond, false, "%{public}s invalid infoSize: %{public}u, pixelsSize: %{public}u",
+                               __func__, infoSize, pixelsSize);
     return true;
 }
 
