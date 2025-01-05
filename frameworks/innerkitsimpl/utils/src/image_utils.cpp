@@ -1115,7 +1115,7 @@ bool ImageUtils::IsReuseRGB(ImagePlugin::DecodeContext& context, const std::shar
     return false;
 }
 
-bool ImageUtils::NeedReusePixelMapSingle(ImagePlugin::DecodeContext& context, int width,
+bool ImageUtils::NeedReusePixelMapSdr(ImagePlugin::DecodeContext& context, int width,
     int height, const std::shared_ptr<PixelMap> &reusePixelmap, uint16_t reuseRefCount)
 {
     if (!NeedReusePixelMap(context, width, height, reusePixelmap, reuseRefCount)) {
@@ -1123,20 +1123,20 @@ bool ImageUtils::NeedReusePixelMapSingle(ImagePlugin::DecodeContext& context, in
     }
     if ((reusePixelmap->GetPixelFormat() == PixelFormat::RGBA_1010102) ||
         (context.info.pixelFormat == PixelFormat::RGBA_1010102)) {
-            IMAGE_LOGD("Single image is not RGBA 10bit");
+            IMAGE_LOGD("Sdr image is not RGBA 10bit");
             return false;
     }
     if (!IsReuseYUV(context, reusePixelmap) && !IsReuseRGB(context, reusePixelmap)) {
-        IMAGE_LOGI("PixelFormat of Singleimage is not equal to reusePixelmap");
+        IMAGE_LOGI("PixelFormat of Sdrimage is not equal to reusePixelmap");
         return false;
     }
     return true;
 }
 
-bool ImageUtils::ReusePixelMapSingle(ImagePlugin::DecodeContext& context, int width,
+bool ImageUtils::ReusePixelMapSdr(ImagePlugin::DecodeContext& context, int width,
     int height, const std::shared_ptr<PixelMap> &reusePixelmap, uint16_t reuseRefCount)
 {
-    if (!NeedReusePixelMapSingle(context, width, height, reusePixelmap, reuseRefCount)) {
+    if (!NeedReusePixelMapSdr(context, width, height, reusePixelmap, reuseRefCount)) {
         return false;
     }
     uint8_t *reusePixelBuffer = const_cast<uint8_t *>(reusePixelmap->GetPixels());

@@ -890,7 +890,7 @@ uint32_t ExtDecoder::Decode(uint32_t index, DecodeContext &context)
         byteCount = byteCount / NUM_4 * NUM_3;
     }
     if (context.pixelsBuffer.buffer == nullptr) {
-        if (ImageUtils::ReusePixelMapSingle(context, info_.width(), info_.height(),
+        if (ImageUtils::ReusePixelMapSdr(context, info_.width(), info_.height(),
             reusePixelmap_, rePixelRefCount_)) {
             IMAGE_LOGI("Maindecode reusePixelmap success");
         } else {
@@ -1119,7 +1119,7 @@ uint32_t ExtDecoder::AllocOutputBuffer(DecodeContext &context,
             static_cast<uint64_t>(hwDstInfo_.width()) *
             static_cast<uint64_t>(hwDstInfo_.bytesPerPixel());
     context.allocatorType = AllocatorType::DMA_ALLOC;
-    if (ImageUtils::ReusePixelMapSingle(context, info_.width(), info_.height(),
+    if (ImageUtils::ReusePixelMapSdr(context, info_.width(), info_.height(),
         reusePixelmap_, rePixelRefCount_)) {
         IMAGE_LOGI("Jpeg hardware decode reusePixelmap success");
     } else {
@@ -1906,7 +1906,7 @@ uint32_t ExtDecoder::DoHeifToYuvDecode(OHOS::ImagePlugin::DecodeContext &context
         IMAGE_LOGE("YUV Decode HeifDecoder is nullptr");
         return ERR_IMAGE_DATA_UNSUPPORT;
     }
-    if (ImageUtils::ReusePixelMapSingle(context, info_.width(), info_.height(),
+    if (ImageUtils::ReusePixelMapSdr(context, info_.width(), info_.height(),
         reusePixelmap_, rePixelRefCount_)) {
         IMAGE_LOGI("DoHeifToYuvDecode reusePixelmap success");
     } else {

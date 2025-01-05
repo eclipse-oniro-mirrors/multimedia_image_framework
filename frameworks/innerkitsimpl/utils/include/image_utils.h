@@ -95,14 +95,14 @@ public:
         int height, const std::shared_ptr<PixelMap> &reusePixelmap, uint16_t reuseRefCount);
     static bool NeedReusePixelMapHdr(ImagePlugin::DecodeContext& context, int width,
         int height, const std::shared_ptr<PixelMap> &reusePixelmap, uint16_t reuseRefCount);
-    static bool NeedReusePixelMapSingle(ImagePlugin::DecodeContext& context, int width,
+    static bool NeedReusePixelMapSdr(ImagePlugin::DecodeContext& context, int width,
         int height, const std::shared_ptr<PixelMap> &reusePixelmap, uint16_t reuseRefCount);
     static bool ReusePixelMapHdr(ImagePlugin::DecodeContext& context, int width,
         int height, const std::shared_ptr<PixelMap> &reusePixelmap, uint16_t reuseRefCount);
     static void SetContextHdr(ImagePlugin::DecodeContext& context, uint32_t format);
     static void SetReuseContextBuffer(ImagePlugin::DecodeContext& context,
         AllocatorType type, uint8_t* ptr, uint64_t count, void* fd);
-    static bool ReusePixelMapSingle(ImagePlugin::DecodeContext& context, int width,
+    static bool ReusePixelMapSdr(ImagePlugin::DecodeContext& context, int width,
         int height, const std::shared_ptr<PixelMap> &reusePixelmap, uint16_t reuseRefCount);
     static bool IsReuseYUV(ImagePlugin::DecodeContext& context, const std::shared_ptr<PixelMap> &reusePixelmap);
     static bool IsReuseRGB(ImagePlugin::DecodeContext& context, const std::shared_ptr<PixelMap> &reusePixelmap);

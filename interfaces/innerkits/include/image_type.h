@@ -334,7 +334,6 @@ struct DecodeOptions {
     ResolutionQuality resolutionQuality = ResolutionQuality::UNKNOWN;
     bool isAisr = false;
     std::shared_ptr<PixelMap> reusePixelmap = nullptr;
-    uint16_t rePixelRefCount = 0;
 };
 
 enum class ScaleMode : int32_t {
