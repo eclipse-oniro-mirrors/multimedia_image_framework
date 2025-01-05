@@ -892,7 +892,7 @@ uint32_t ExtDecoder::Decode(uint32_t index, DecodeContext &context)
     if (context.pixelsBuffer.buffer == nullptr) {
         if (ImageUtils::ReusePixelMapSingle(context, info_.width(), info_.height(),
             reusePixelmap_, rePixelRefCount_)) {
-            IMAGE_LOGI("extdecode reusePixelmap success");
+            IMAGE_LOGI("Maindecode reusePixelmap success");
         } else {
             res = SetContextPixelsBuffer(byteCount, context);
             if (res != SUCCESS) {

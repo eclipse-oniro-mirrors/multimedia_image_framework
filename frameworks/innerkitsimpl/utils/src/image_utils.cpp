@@ -1143,11 +1143,11 @@ bool ImageUtils::ReusePixelMapSingle(ImagePlugin::DecodeContext& context, int wi
     int32_t err = ImageUtils::SurfaceBuffer_Reference(reusePixelmap->GetFd());
     if (err != OHOS::GSERROR_OK) {
         IMAGE_LOGD("reusePixelmapBuffer Reference failed");
-        return ERR_DMA_DATA_ABNORMAL;
+        return false;
     }
     SetReuseContextBuffer(context, AllocatorType::DMA_ALLOC, reusePixelBuffer, reusePixelmap->GetCapacity(),
         reusePixelmap->GetFd());
-    return SUCCESS;
+    return true;
 }
 
 bool ImageUtils::ReusePixelMapHdr(ImagePlugin::DecodeContext& context, int width,
