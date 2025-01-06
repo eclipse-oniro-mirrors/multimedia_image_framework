@@ -895,6 +895,8 @@ napi_value PixelMapNapi::Constructor(napi_env env, napi_callback_info info)
         IMAGE_LOGE("Constructor nativePixelMap is nullptr");
     }
 
+    IMG_NAPI_CHECK_RET(IMG_NOT_NULL(pPixelMapNapi->nativePixelMap_), undefineVar);
+
     napi_coerce_to_native_binding_object(
         env, thisVar, DetachPixelMapFunc, AttachPixelMapFunc, pPixelMapNapi.get(), nullptr);
 
