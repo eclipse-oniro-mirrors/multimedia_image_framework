@@ -796,9 +796,8 @@ static uint32_t RGBxToRGB(uint8_t* srcBuffer, size_t srsSize,
     ExtPixels src = {srcBuffer, srsSize, pixelCount};
     ExtPixels dst = {dstBuffer, dstSize, pixelCount};
     auto res = ExtPixelConvert::RGBxToRGB(src, dst);
-    if (res != SUCCESS) {
-        IMAGE_LOGE("RGBxToRGB failed %{public}d", res);
-    }
+    bool cond = res != SUCCESS;
+    CHECK_ERROR_PRINT_LOG(cond, "RGBxToRGB failed %{public}d", res);
     return res;
 }
 
@@ -1967,17 +1966,14 @@ uint32_t ExtDecoder::DoHeifToSingleHdrDecode(DecodeContext &context)
 {
 #ifdef HEIF_HW_DECODE_ENABLE
     auto decoder = reinterpret_cast<HeifDecoder*>(codec_->getHeifContext());
-    if (decoder == nullptr) {
-        IMAGE_LOGE("SingleHdrDecode, HeifDecoder is nullptr");
-        return ERR_IMAGE_DATA_UNSUPPORT;
-    }
+    bool cond = decoder == nullptr;
+    CHECK_ERROR_RETURN_RET_LOG(cond, ERR_IMAGE_DATA_UNSUPPORT, "SingleHdrDecode, HeifDecoder is nullptr");
 
     uint64_t byteCount = static_cast<uint64_t>(info_.computeMinByteSize());
     if (context.info.pixelFormat == PixelFormat::YCBCR_P010 || context.info.pixelFormat == PixelFormat::YCRCB_P010) {
         uint32_t allocRet = HeifYUVMemAlloc(context);
-        if (allocRet != SUCCESS) {
-            return allocRet;
-        }
+        cond = allocRet != SUCCESS;
+        CHECK_ERROR_RETURN_RET(cond, allocRet);
     } else {
         if (DmaMemAlloc(context, byteCount, info_) != SUCCESS) {
             return ERR_IMAGE_DATA_UNSUPPORT;
@@ -2072,32 +2068,25 @@ bool ExtDecoder::GetHeifFragmentMetadata(Media::Rect &metadata)
 bool ExtDecoder::DecodeHeifGainMap(DecodeContext& context)
 {
 #ifdef HEIF_HW_DECODE_ENABLE
-    if (codec_ == nullptr || codec_->getEncodedFormat() != SkEncodedImageFormat::kHEIF) {
-        IMAGE_LOGE("decode heif gainmap, codec error");
-        return false;
-    }
+    bool cond = codec_ == nullptr || codec_->getEncodedFormat() != SkEncodedImageFormat::kHEIF;
+    CHECK_ERROR_RETURN_RET_LOG(cond, false, "decode heif gainmap, codec error");
     auto decoder = reinterpret_cast<HeifDecoder*>(codec_->getHeifContext());
-    if (decoder == nullptr) {
-        IMAGE_LOGE("decode heif gainmap, decoder error");
-        return false;
-    }
+    cond = decoder == nullptr;
+    CHECK_ERROR_RETURN_RET_LOG(cond, false, "decode heif gainmap, decoder error");
     HeifFrameInfo gainmapInfo;
     decoder->getGainmapInfo(&gainmapInfo);
     uint32_t width = gainmapInfo.mWidth;
     uint32_t height = gainmapInfo.mHeight;
-    if (width > INT_MAX || height > INT_MAX) {
-        IMAGE_LOGI("DecodeHeifGainmap size exceeds the maximum value");
-        return false;
-    }
+    cond = width > INT_MAX || height > INT_MAX;
+    CHECK_INFO_RETURN_RET_LOG(cond, false, "DecodeHeifGainmap size exceeds the maximum value");
     IMAGE_LOGD("DecodeHeifGainmap size:%{public}d-%{public}d", width, height);
     SkImageInfo dstInfo = SkImageInfo::Make(static_cast<int>(width), static_cast<int>(height),
         dstInfo_.colorType(), dstInfo_.alphaType(), dstInfo_.refColorSpace());
     uint64_t byteCount = static_cast<uint64_t>(dstInfo.computeMinByteSize());
     context.info.size.width = width;
     context.info.size.height = height;
-    if (DmaMemAlloc(context, byteCount, dstInfo) != SUCCESS) {
-        return false;
-    }
+    cond = DmaMemAlloc(context, byteCount, dstInfo) != SUCCESS;
+    CHECK_ERROR_RETURN_RET(cond, false);
     auto* dstBuffer = static_cast<uint8_t*>(context.pixelsBuffer.buffer);
     auto* sbBuffer = reinterpret_cast<SurfaceBuffer*>(context.pixelsBuffer.context);
     int32_t rowStride = sbBuffer->GetStride();
@@ -2118,13 +2107,11 @@ bool ExtDecoder::DecodeHeifGainMap(DecodeContext& context)
 bool ExtDecoder::GetHeifHdrColorSpace(ColorManager::ColorSpaceName& gainmap, ColorManager::ColorSpaceName& hdr)
 {
 #ifdef HEIF_HW_DECODE_ENABLE
-    if (codec_ == nullptr || codec_->getEncodedFormat() != SkEncodedImageFormat::kHEIF) {
-        return false;
-    }
+    bool cond = codec_ == nullptr || codec_->getEncodedFormat() != SkEncodedImageFormat::kHEIF;
+    CHECK_ERROR_RETURN_RET(cond, false);
     auto decoder = reinterpret_cast<HeifDecoder*>(codec_->getHeifContext());
-    if (decoder == nullptr) {
-        return false;
-    }
+    cond = decoder == nullptr;
+    CHECK_ERROR_RETURN_RET(cond, false);
     HeifFrameInfo gainmapInfo;
     decoder->getGainmapInfo(&gainmapInfo);
     if (gainmapInfo.hasNclxColor) {

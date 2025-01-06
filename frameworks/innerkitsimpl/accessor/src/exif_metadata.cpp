@@ -247,10 +247,8 @@ bool ExifMetadata::CreateExifdata()
         exif_data_unref(exifData_);
         exifData_ = nullptr;
         exifData_ = exif_data_new();
-        if (exifData_ == nullptr) {
-            IMAGE_LOGE("Failed to recreate exif data after unref.");
-            return false;
-        }
+        bool cond = exifData_ == nullptr;
+        CHECK_ERROR_RETURN_RET_LOG(cond, false, "Failed to recreate exif data after unref.");
 
         // Set the image options
         exif_data_set_option(exifData_, EXIF_DATA_OPTION_FOLLOW_SPECIFICATION);

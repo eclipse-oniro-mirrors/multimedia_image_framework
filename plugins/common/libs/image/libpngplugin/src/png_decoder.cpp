@@ -187,10 +187,8 @@ uint32_t PngDecoder::Decode(uint32_t index, DecodeContext &context)
             return ret;
         }
         ret = ConfigInfo(opts_);
-        if (ret != SUCCESS) {
-            IMAGE_LOGE("config decoding info failed on decode:%{public}u.", ret);
-            return ret;
-        }
+        bool cond = ret != SUCCESS;
+        CHECK_ERROR_RETURN_RET_LOG(cond, ret, "config decoding info failed on decode:%{public}u.", ret);
         state_ = PngDecodingState::IMAGE_DECODING;
     }
     // only state PngDecodingState::IMAGE_DECODING can go here.
@@ -273,10 +271,8 @@ bool AllocBufferForDmaType(DecodeContext &context, uint64_t byteCount, PngImageI
     }
     void* nativeBuffer = sb.GetRefPtr();
     int32_t err = ImageUtils::SurfaceBuffer_Reference(nativeBuffer);
-    if (err != OHOS::GSERROR_OK) {
-        IMAGE_LOGE("NativeBufferReference failed");
-        return false;
-    }
+    bool cond = err != OHOS::GSERROR_OK;
+    CHECK_ERROR_RETURN_RET_LOG(cond, false, "NativeBufferReference failed");
 
     context.pixelsBuffer.buffer = sb->GetVirAddr();
     context.pixelsBuffer.context = nativeBuffer;
@@ -984,13 +980,12 @@ uint32_t PngDecoder::PushCurrentToDecode(InputDataStream *stream)
 
     DataStreamBuffer ReadData;
     uint32_t ret = 0;
+    bool cond = false;
     while (incrementalLength_ < idatLength_) {
         const size_t targetSize = std::min(DECODE_BUFFER_SIZE, idatLength_ - incrementalLength_);
         ret = IncrementalRead(stream, targetSize, ReadData);
-        if (ret != SUCCESS) {
-            IMAGE_LOGD("push current stream read fail, ret:%{public}u", ret);
-            return ret;
-        }
+        cond = ret != SUCCESS;
+        CHECK_DEBUG_RETURN_RET_LOG(cond, ret, "push current stream read fail, ret:%{public}u", ret);
         incrementalLength_ += ReadData.dataSize;
         png_process_data(pngStructPtr_, pngInfoPtr_, (png_bytep)ReadData.inputStreamBuffer, ReadData.dataSize);
     }

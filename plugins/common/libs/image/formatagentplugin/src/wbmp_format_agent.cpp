@@ -94,9 +94,8 @@ bool WbmpFormatAgent::read_header(const void *stream, uint32_t dataSize)
     }
     IMAGE_LOGD("read_header width %{public}lld.", static_cast<long long>(width));
 
-    if (!read_mbf(pData, height, offset, dataSize) || height > 0xFFFF || !height) {
-        return false;
-    }
+    bool cond = !read_mbf(pData, height, offset, dataSize) || height > 0xFFFF || !height;
+    CHECK_ERROR_RETURN_RET(cond, false);
     IMAGE_LOGD("read_header height %{public}lld.", static_cast<long long>(height));
 
     return true;
