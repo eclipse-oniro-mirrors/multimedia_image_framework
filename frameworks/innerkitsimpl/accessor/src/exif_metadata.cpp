@@ -47,6 +47,7 @@ namespace OHOS {
 namespace Media {
 const auto KEY_SIZE = 2;
 const auto TAG_VALUE_SIZE = 1024;
+const auto TAG_VALUE_SIZE_LARGE = 64 * 1024;
 const auto EXIF_HEAD_SIZE = 6;
 const static std::string DEFAULT_EXIF_VALUE = "default_exif_value";
 const static std::string HW_CAPTURE_MODE = "HwMnoteCaptureMode";
@@ -117,7 +118,7 @@ int ExifMetadata::GetValue(const std::string &key, std::string &value) const
     if (key == "MakerNote") {
         return HandleMakerNote(value);
     }
-    char tagValueChar[TAG_VALUE_SIZE];
+    
     if ((key.size() > KEY_SIZE && key.substr(0, KEY_SIZE) == "Hw") || IsSpecialHwKey(key)) {
         return HandleHwMnote(key, value);
     } else {
@@ -128,6 +129,16 @@ int ExifMetadata::GetValue(const std::string &key, std::string &value) const
             return ERR_IMAGE_DECODE_EXIF_UNSUPPORT;
         }
         IMAGE_LOGD("Using exif_entry_get_value for key: %{public}s, tag: %{public}d", key.c_str(), entry->tag);
+        
+        int tagValueSizeTmp = 0;
+        if (entry->size >= TAG_VALUE_SIZE && (entry->format == EXIF_FORMAT_ASCII ||
+            entry->format == EXIF_FORMAT_UNDEFINED)) {
+            tagValueSizeTmp = TAG_VALUE_SIZE_LARGE;
+        } else {
+            tagValueSizeTmp = TAG_VALUE_SIZE;
+        }
+        char tagValueChar[tagValueSizeTmp];
+
         exif_entry_get_value(entry, tagValueChar, sizeof(tagValueChar));
         value = tagValueChar;
     }
