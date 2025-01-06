@@ -1776,8 +1776,5 @@ HWTEST_F(ExifMetadataTest, ExifExtend64k, TestSize.Level3)
     }
 }
 
-
-
-
 } // namespace Multimedia
 } // namespace OHOS
