@@ -1156,8 +1156,8 @@ bool CanApplyMemForReusePixel(ImagePlugin::DecodeContext& context,
         IMAGE_LOGD("reusePixelmapBuffer Reference failed");
         return false;
     }
-    SetReuseContextBuffer(context, AllocatorType::DMA_ALLOC, reusePixelBuffer, reusePixelmap->GetCapacity(),
-        reusePixelmap->GetFd());
+    ImageUtils::SetReuseContextBuffer(context, AllocatorType::DMA_ALLOC, reusePixelBuffer,
+        reusePixelmap->GetCapacity(), reusePixelmap->GetFd());
     return true;
 }
 
