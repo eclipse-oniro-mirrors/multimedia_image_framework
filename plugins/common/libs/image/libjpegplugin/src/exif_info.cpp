@@ -904,7 +904,7 @@ ExifEntry* EXIFInfo::InitExifTag(ExifData *exif, ExifIfd ifd, ExifTag tag)
 {
     ExifEntry *entry;
     bool cond = false;
-    cond = ifd < EXIF_IFD_0 || ifd > EXIF_IFD_COUNT;
+    cond = ifd < EXIF_IFD_0 || ifd >= EXIF_IFD_COUNT;
     CHECK_ERROR_RETURN_RET(cond, nullptr);
     /* Return an existing tag if one exists */
     if (!(entry = exif_content_get_entry(exif->ifd[ifd], tag))) {
