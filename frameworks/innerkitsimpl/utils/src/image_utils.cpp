@@ -1055,7 +1055,7 @@ void ImageUtils::UpdateSdrYuvStrides(const ImageInfo &imageInfo, YUVStrideInfo &
 uint16_t ImageUtils::GetReusePixelRefCount(const std::shared_ptr<PixelMap> &reusePixelmap)
 {
     if (reusePixelmap->GetAllocatorType() == AllocatorType::DMA_ALLOC) {
-        void* sbBuffer = opts.reusePixelmap->GetFd();
+        void* sbBuffer = reusePixelmap->GetFd();
         if (sbBuffer != nullptr) {
             OHOS::RefBase *ref = reinterpret_cast<OHOS::RefBase *>(sbBuffer);
             uint16_t reusePixelRefCount = static_cast<uint16_t>(ref->GetSptrRefCount());
@@ -1121,7 +1121,7 @@ bool ImageUtils::IsReuseYUV(ImagePlugin::DecodeContext& context, const std::shar
 //Determine whether the reusePixelmap and decoding image are both RGB format.
 bool ImageUtils::IsReuseRGB(ImagePlugin::DecodeContext& context, const std::shared_ptr<PixelMap> &reusePixelmap)
 {
-    if(((reusePixelmap->GetPixelFormat() == PixelFormat::RGBA_8888) ||
+    if (((reusePixelmap->GetPixelFormat() == PixelFormat::RGBA_8888) ||
         (reusePixelmap->GetPixelFormat() == PixelFormat::BGRA_8888)) &&
         ((context.info.pixelFormat == PixelFormat::RGBA_8888) ||
         (context.info.pixelFormat == PixelFormat::BGRA_8888))) {
