@@ -1054,7 +1054,7 @@ void ImageUtils::UpdateSdrYuvStrides(const ImageInfo &imageInfo, YUVStrideInfo &
 
 uint16_t ImageUtils::GetReusePixelRefCount(const std::shared_ptr<PixelMap> &reusePixelmap)
 {
-    if (opts.reusePixelmap->GetAllocatorType() == AllocatorType::DMA_ALLOC) {
+    if (reusePixelmap->GetAllocatorType() == AllocatorType::DMA_ALLOC) {
         void* sbBuffer = opts.reusePixelmap->GetFd();
         if (sbBuffer != nullptr) {
             OHOS::RefBase *ref = reinterpret_cast<OHOS::RefBase *>(sbBuffer);
@@ -1072,7 +1072,6 @@ bool ImageUtils::CanReusePixelMap(ImagePlugin::DecodeContext& context, int width
         IMAGE_LOGD("reusePixelmap is nullptr");
         return false;
     }
-
     if (GetReusePixelRefCount(reusePixelmap) != 1) {
         IMAGE_LOGI("reusePixelmap reference count is not equal to 1");
         return false;
