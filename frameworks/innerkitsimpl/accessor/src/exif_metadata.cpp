@@ -131,14 +131,14 @@ int ExifMetadata::GetValue(const std::string &key, std::string &value) const
         }
         IMAGE_LOGD("Using exif_entry_get_value for key: %{public}s, tag: %{public}d", key.c_str(), entry->tag);
         
-        int TagValueSizeTmp = 0;
+        int tagValueSizeTmp = 0;
         if (entry->size >= TAG_VALUE_SIZE && (entry->format == EXIF_FORMAT_ASCII ||
             entry->format == EXIF_FORMAT_UNDEFINED)) {
-            TagValueSizeTmp = TAG_VALUE_SIZE_LARGE;
+            tagValueSizeTmp = TAG_VALUE_SIZE_LARGE;
         } else {
-            TagValueSizeTmp = TAG_VALUE_SIZE;
+            tagValueSizeTmp = TAG_VALUE_SIZE;
         }
-        char tagValueChar[TagValueSizeTmp];
+        char tagValueChar[tagValueSizeTmp];
 
         exif_entry_get_value(entry, tagValueChar, sizeof(tagValueChar));
         value = tagValueChar;
