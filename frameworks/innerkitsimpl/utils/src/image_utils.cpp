@@ -1137,8 +1137,8 @@ bool ImageUtils::CanReusePixelMapSdr(ImagePlugin::DecodeContext& context, int wi
     }
     if ((reusePixelmap->GetPixelFormat() == PixelFormat::RGBA_1010102) ||
         (context.info.pixelFormat == PixelFormat::RGBA_1010102)) {
-            IMAGE_LOGD("Sdr image is not RGBA 10bit");
-            return false;
+        IMAGE_LOGD("Sdr image is not RGBA 10bit");
+        return false;
     }
     if (!IsReuseYUV(context, reusePixelmap) && !IsReuseRGB(context, reusePixelmap)) {
         IMAGE_LOGI("PixelFormat of Sdrimage is not equal to reusePixelmap");
