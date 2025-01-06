@@ -1759,5 +1759,25 @@ HWTEST_F(ExifMetadataTest, RemoveBatch001, TestSize.Level3)
     }
 }
 
+HWTEST_F(ExifMetadataTest, ExifExtend64k, TestSize.Level3)
+{
+    auto exifData = exif_data_new_from_file(IMAGE_INPUT_JPEG_PATH.c_str());
+    ASSERT_NE(exifData, nullptr);
+    ExifMetadata metadata(exifData);
+
+    std::vector<std::string> keys = {"UserComment", "Make", "ImageDescription", "LensMake"};
+    std::string valueBefore = "aaa" + std::string(1024, 'b'); + "ccc";
+    std::string valueAfter = "";
+    for (auto key : keys) 
+    {
+        metadata.SetValue(key, valueBefore);
+        metadata.GetValue(key, valueAfter);
+        ASSERT_EQ(valueBefore, valueAfter);
+    }
+}
+
+
+
+
 } // namespace Multimedia
 } // namespace OHOS
