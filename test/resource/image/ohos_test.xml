@@ -451,4 +451,9 @@
             <option name="push" value="images/moving_test.gif -> /data/local/tmp/image" src="res"/>
         </preparer>
     </target>
+    <target name="pixelmaptest">
+        <preparer>
+            <option name="push" value="images/P010.yuv -> /data/local/tmp/image" src="res"/>
+        </preparer>
+    </target>
 </configuration>
