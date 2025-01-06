@@ -586,13 +586,7 @@ unique_ptr<PixelMap> ImageSource::CreatePixelMapEx(uint32_t index, const DecodeO
     IMAGE_LOGD("CreatePixelMapEx imageId_: %{public}lu, desiredPixelFormat: %{public}d,"
         "desiredSize: (%{public}d, %{public}d)",
         static_cast<unsigned long>(imageId_), opts.desiredPixelFormat, opts.desiredSize.width, opts.desiredSize.height);
-    if (opts.reusePixelmap != nullptr && opts.reusePixelmap->GetAllocatorType() == AllocatorType::DMA_ALLOC) {
-        void* sbBuffer = opts.reusePixelmap->GetFd();
-        if (sbBuffer != nullptr) {
-            OHOS::RefBase *ref = reinterpret_cast<OHOS::RefBase *>(sbBuffer);
-            reusePixelRefCount_ = static_cast<uint16_t>(ref->GetSptrRefCount());
-        }
-    }
+
 #if !defined(ANDROID_PLATFORM) && !defined(IOS_PLATFORM)
     if (!isAstc_.has_value()) {
         ImagePlugin::DataStreamBuffer outData;
@@ -2435,7 +2429,6 @@ void ImageSource::CopyOptionsToPlugin(const DecodeOptions &opts, PixelDecodeOpti
     }
     plOpts.plDesiredColorSpace = opts.desiredColorSpaceInfo;
     plOpts.plReusePixelmap = opts.reusePixelmap;
-    plOpts.plRePixelRefCount = reusePixelRefCount_;
 }
 
 void ImageSource::CopyOptionsToProcOpts(const DecodeOptions &opts, DecodeOptions &procOpts, PixelMap &pixelMap)
@@ -4110,6 +4103,20 @@ static uint32_t AllocHdrSurfaceBuffer(DecodeContext& context, ImageHdrType hdrTy
 }
 #endif
 
+void ImageSource::ApplyMemoryForHdr(DecodeContext& hdrCtx, CM_ColorSpaceType hdrCmColor, ImageHdrType hdrType)
+{
+    hdrCtx.grColorSpaceName = ConvertColorSpaceName(hdrCmColor, false);
+    CM_HDR_Metadata_Type type;
+    if (hdrType == ImageHdrType::HDR_VIVID_DUAL || hdrType == ImageHdrType::HDR_CUVA) {
+        type = CM_IMAGE_HDR_VIVID_SINGLE;
+    } else if (hdrType == ImageHdrType::HDR_ISO_DUAL) {
+        type = CM_IMAGE_HDR_ISO_SINGLE;
+    }
+    sptr<SurfaceBuffer> surfaceBuf(reinterpret_cast<SurfaceBuffer*>(opts_.reusePixelmap->GetFd()));
+    VpeUtils::SetSbMetadataType(surfaceBuf, type);
+    VpeUtils::SetSbColorSpaceType(surfaceBuf, hdrCmColor);
+}
+
 bool ImageSource::ComposeHdrImage(ImageHdrType hdrType, DecodeContext& baseCtx, DecodeContext& gainMapCtx,
                                   DecodeContext& hdrCtx, HdrMetadata metadata)
 {
@@ -4141,18 +4148,9 @@ bool ImageSource::ComposeHdrImage(ImageHdrType hdrType, DecodeContext& baseCtx, 
     }
     // hdr image
 
-    if (ImageUtils::ReusePixelMapHdr(hdrCtx, hdrCtx.info.size.width, hdrCtx.info.size.height,
-        opts_.reusePixelmap, reusePixelRefCount_)) {
-        hdrCtx.grColorSpaceName = ConvertColorSpaceName(hdrCmColor, false);
-        CM_HDR_Metadata_Type type;
-        if (hdrType == ImageHdrType::HDR_VIVID_DUAL || hdrType == ImageHdrType::HDR_CUVA) {
-            type = CM_IMAGE_HDR_VIVID_SINGLE;
-        } else if (hdrType == ImageHdrType::HDR_ISO_DUAL) {
-            type = CM_IMAGE_HDR_ISO_SINGLE;
-        }
-        sptr<SurfaceBuffer> surfaceBuf(reinterpret_cast<SurfaceBuffer*>(opts_.reusePixelmap->GetFd()));
-        VpeUtils::SetSbMetadataType(surfaceBuf, type);
-        VpeUtils::SetSbColorSpaceType(surfaceBuf, hdrCmColor);
+    if (ImageUtils::IsHdrPixelMapReuseSuccess(hdrCtx, hdrCtx.info.size.width, hdrCtx.info.size.height,
+        opts_.reusePixelmap)) {
+        ApplyMemoryForHdr(hdrCtx, hdrCmColor, hdrType);
     } else {
         uint32_t errorCode = AllocHdrSurfaceBuffer(hdrCtx, hdrType, hdrCmColor);
         bool cond = (errorCode != SUCCESS);

@@ -313,6 +313,7 @@ private:
                                                     ImagePlugin::DecodeContext& context, uint32_t &errorCode);
     bool ApplyGainMap(ImageHdrType hdrType, ImagePlugin::DecodeContext& baseCtx,
                       ImagePlugin::DecodeContext& hdrCtx, float scale);
+    void ApplyMemoryForHdr(DecodeContext& hdrCtx, CM_ColorSpaceType hdrCmColor, ImageHdrType hdrType);
     bool ComposeHdrImage(ImageHdrType hdrType, ImagePlugin::DecodeContext& baseCtx,
         ImagePlugin::DecodeContext& gainMapCtx, ImagePlugin::DecodeContext& hdrCtx, HdrMetadata metadata);
     uint32_t SetGainMapDecodeOption(std::unique_ptr<ImagePlugin::AbsImageDecoder>& decoder,
@@ -408,7 +409,6 @@ private:
     bool isExifReadFailed_ = false;
     uint32_t exifReadStatus_ = 0;
     uint32_t heifParseErr_ = 0;
-    uint16_t reusePixelRefCount_ = 0;
 };
 } // namespace Media
 } // namespace OHOS

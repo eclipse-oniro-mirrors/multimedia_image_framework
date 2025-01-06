@@ -91,21 +91,22 @@ public:
     static std::string GetEncodedHeifFormat();
     static void UpdateSdrYuvStrides(const ImageInfo &imageInfo, YUVStrideInfo &dstStrides,
         void *context, AllocatorType dstType);
-    static bool NeedReusePixelMap(ImagePlugin::DecodeContext& context, int width,
-        int height, const std::shared_ptr<PixelMap> &reusePixelmap, uint16_t reuseRefCount);
-    static bool NeedReusePixelMapHdr(ImagePlugin::DecodeContext& context, int width,
-        int height, const std::shared_ptr<PixelMap> &reusePixelmap, uint16_t reuseRefCount);
-    static bool NeedReusePixelMapSdr(ImagePlugin::DecodeContext& context, int width,
-        int height, const std::shared_ptr<PixelMap> &reusePixelmap, uint16_t reuseRefCount);
-    static bool ReusePixelMapHdr(ImagePlugin::DecodeContext& context, int width,
-        int height, const std::shared_ptr<PixelMap> &reusePixelmap, uint16_t reuseRefCount);
+    static bool CanReusePixelMap(ImagePlugin::DecodeContext& context, int width,
+        int height, const std::shared_ptr<PixelMap> &reusePixelmap);
+    static bool CanReusePixelMapHdr(ImagePlugin::DecodeContext& context, int width,
+        int height, const std::shared_ptr<PixelMap> &reusePixelmap);
+    static bool CanReusePixelMapSdr(ImagePlugin::DecodeContext& context, int width,
+        int height, const std::shared_ptr<PixelMap> &reusePixelmap);
+    static bool IsHdrPixelMapReuseSuccess(ImagePlugin::DecodeContext& context, int width,
+        int height, const std::shared_ptr<PixelMap> &reusePixelmap);
     static void SetContextHdr(ImagePlugin::DecodeContext& context, uint32_t format);
     static void SetReuseContextBuffer(ImagePlugin::DecodeContext& context,
         AllocatorType type, uint8_t* ptr, uint64_t count, void* fd);
-    static bool ReusePixelMapSdr(ImagePlugin::DecodeContext& context, int width,
-        int height, const std::shared_ptr<PixelMap> &reusePixelmap, uint16_t reuseRefCount);
+    static bool IsSdrPixelMapReuseSuccess(ImagePlugin::DecodeContext& context, int width,
+        int height, const std::shared_ptr<PixelMap> &reusePixelmap);
     static bool IsReuseYUV(ImagePlugin::DecodeContext& context, const std::shared_ptr<PixelMap> &reusePixelmap);
     static bool IsReuseRGB(ImagePlugin::DecodeContext& context, const std::shared_ptr<PixelMap> &reusePixelmap);
+    static uint16_t GetReusePixelRefCount(const std::shared_ptr<PixelMap> &reusePixelmap);
 
     template<typename T>
     static bool CheckMulOverflow(const T& num1, const T& num2)

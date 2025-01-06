@@ -638,7 +638,6 @@ uint32_t ExtDecoder::SetDecodeOptions(uint32_t index, const PixelDecodeOptions &
     info.size.width = static_cast<uint32_t>(dstInfo_.width());
     info.size.height = static_cast<uint32_t>(dstInfo_.height());
     reusePixelmap_ = opts.plReusePixelmap;
-    rePixelRefCount_ = opts.plRePixelRefCount;
     return SUCCESS;
 }
 
@@ -890,8 +889,7 @@ uint32_t ExtDecoder::Decode(uint32_t index, DecodeContext &context)
         byteCount = byteCount / NUM_4 * NUM_3;
     }
     if (context.pixelsBuffer.buffer == nullptr) {
-        if (ImageUtils::ReusePixelMapSdr(context, info_.width(), info_.height(),
-            reusePixelmap_, rePixelRefCount_)) {
+        if (ImageUtils::IsSdrPixelMapReuseSuccess(context, info_.width(), info_.height(), reusePixelmap_)) {
             IMAGE_LOGI("Maindecode reusePixelmap success");
         } else {
             res = SetContextPixelsBuffer(byteCount, context);
@@ -1119,8 +1117,7 @@ uint32_t ExtDecoder::AllocOutputBuffer(DecodeContext &context,
             static_cast<uint64_t>(hwDstInfo_.width()) *
             static_cast<uint64_t>(hwDstInfo_.bytesPerPixel());
     context.allocatorType = AllocatorType::DMA_ALLOC;
-    if (ImageUtils::ReusePixelMapSdr(context, info_.width(), info_.height(),
-        reusePixelmap_, rePixelRefCount_)) {
+    if (ImageUtils::IsSdrPixelMapReuseSuccess(context, info_.width(), info_.height(), reusePixelmap_)) {
         IMAGE_LOGI("Jpeg hardware decode reusePixelmap success");
     } else {
         uint32_t ret = DmaMemAlloc(context, byteCount, hwDstInfo_);
@@ -1906,8 +1903,7 @@ uint32_t ExtDecoder::DoHeifToYuvDecode(OHOS::ImagePlugin::DecodeContext &context
         IMAGE_LOGE("YUV Decode HeifDecoder is nullptr");
         return ERR_IMAGE_DATA_UNSUPPORT;
     }
-    if (ImageUtils::ReusePixelMapSdr(context, info_.width(), info_.height(),
-        reusePixelmap_, rePixelRefCount_)) {
+    if (ImageUtils::IsSdrPixelMapReuseSuccess(context, info_.width(), info_.height(), reusePixelmap_)) {
         IMAGE_LOGI("DoHeifToYuvDecode reusePixelmap success");
     } else {
         uint32_t allocRet = HeifYUVMemAlloc(context);
