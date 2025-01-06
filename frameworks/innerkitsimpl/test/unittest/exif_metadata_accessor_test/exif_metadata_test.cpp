@@ -1768,7 +1768,7 @@ HWTEST_F(ExifMetadataTest, ExifExtend64k, TestSize.Level3)
     std::vector<std::string> keys = {"UserComment", "Make", "ImageDescription", "LensMake"};
     std::string valueBefore = "aaa" + std::string(1024, 'b') + "ccc";
     std::string valueAfter = "";
-    for (auto key : keys) 
+    for (auto key : keys)
     {
         metadata.SetValue(key, valueBefore);
         metadata.GetValue(key, valueAfter);
