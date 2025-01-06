@@ -1107,27 +1107,26 @@ bool ImageUtils::CanReusePixelMapHdr(ImagePlugin::DecodeContext& context, int wi
     return true;
 }
 
+bool IsReuseYUVFormat(PixelFormat format)
+{
+    return format == PixelFormat::NV12 || format == PixelFormat::NV21;
+}
+
 //Determine whether the reusePixelmap and decoding image are both YUV format.
 bool ImageUtils::IsReuseYUV(ImagePlugin::DecodeContext& context, const std::shared_ptr<PixelMap> &reusePixelmap)
 {
-    if (((reusePixelmap->GetPixelFormat() == PixelFormat::NV12) ||
-        (reusePixelmap->GetPixelFormat() == PixelFormat::NV21)) &&
-        ((context.info.pixelFormat == PixelFormat::NV12) || (context.info.pixelFormat == PixelFormat::NV21))) {
-        return true;
-    }
-    return false;
+    return IsReuseYUVFormat(reusePixelmap->GetPixelFormat()) && IsReuseYUVFormat(context.info.pixelFormat);
+}
+
+bool IsReuseRGBFormat(PixelFormat format)
+{
+    return format == PixelFormat::RGBA_8888 || format == PixelFormat::BGRA_8888;
 }
 
 //Determine whether the reusePixelmap and decoding image are both RGB format.
 bool ImageUtils::IsReuseRGB(ImagePlugin::DecodeContext& context, const std::shared_ptr<PixelMap> &reusePixelmap)
 {
-    if (((reusePixelmap->GetPixelFormat() == PixelFormat::RGBA_8888) ||
-        (reusePixelmap->GetPixelFormat() == PixelFormat::BGRA_8888)) &&
-        ((context.info.pixelFormat == PixelFormat::RGBA_8888) ||
-        (context.info.pixelFormat == PixelFormat::BGRA_8888))) {
-        return true;
-    }
-    return false;
+    return IsReuseRGBFormat(reusePixelmap->GetPixelFormat()) && IsReuseRGBFormat(context.info.pixelFormat);
 }
 
 bool ImageUtils::CanReusePixelMapSdr(ImagePlugin::DecodeContext& context, int width,
@@ -1148,12 +1147,9 @@ bool ImageUtils::CanReusePixelMapSdr(ImagePlugin::DecodeContext& context, int wi
     return true;
 }
 
-bool ImageUtils::IsSdrPixelMapReuseSuccess(ImagePlugin::DecodeContext& context, int width,
-    int height, const std::shared_ptr<PixelMap> &reusePixelmap)
+bool CanApplyMemForReusePixel(ImagePlugin::DecodeContext& context,
+    const std::shared_ptr<PixelMap> &reusePixelmap)
 {
-    if (!CanReusePixelMapSdr(context, width, height, reusePixelmap)) {
-        return false;
-    }
     uint8_t *reusePixelBuffer = const_cast<uint8_t *>(reusePixelmap->GetPixels());
     int32_t err = ImageUtils::SurfaceBuffer_Reference(reusePixelmap->GetFd());
     if (err != OHOS::GSERROR_OK) {
@@ -1165,21 +1161,22 @@ bool ImageUtils::IsSdrPixelMapReuseSuccess(ImagePlugin::DecodeContext& context, 
     return true;
 }
 
+bool ImageUtils::IsSdrPixelMapReuseSuccess(ImagePlugin::DecodeContext& context, int width,
+    int height, const std::shared_ptr<PixelMap> &reusePixelmap)
+{
+    if (!CanReusePixelMapSdr(context, width, height, reusePixelmap)) {
+        return false;
+    }
+    return CanApplyMemForReusePixel(context, reusePixelmap);
+}
+
 bool ImageUtils::IsHdrPixelMapReuseSuccess(ImagePlugin::DecodeContext& context, int width,
     int height, const std::shared_ptr<PixelMap> &reusePixelmap)
 {
     if (!CanReusePixelMapHdr(context, width, height, reusePixelmap)) {
         return false;
     }
-    uint8_t *reusePixelBuffer = const_cast<uint8_t *>(reusePixelmap->GetPixels());
-    int32_t err = ImageUtils::SurfaceBuffer_Reference(reusePixelmap->GetFd());
-    if (err != OHOS::GSERROR_OK) {
-        IMAGE_LOGD("reusePixelmapBuffer Reference failed");
-        return false;
-    }
-    SetReuseContextBuffer(context, AllocatorType::DMA_ALLOC, reusePixelBuffer, reusePixelmap->GetCapacity(),
-        reusePixelmap->GetFd());
-    return true;
+    return CanApplyMemForReusePixel(context, reusePixelmap);
 }
 
 void ImageUtils::SetContextHdr(ImagePlugin::DecodeContext& context, uint32_t format)
