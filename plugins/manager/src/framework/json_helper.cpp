@@ -69,7 +69,7 @@ uint32_t JsonHelper::GetUint32Value(const json &jsonNum, uint32_t &value)
     bool cond = jsonNum < 0;
     CHECK_ERROR_RETURN_RET_LOG(cond, ERR_DATA_TYPE,
                                "GetUint32Value: not a unsigned integer type value, num: %{public}lld.",
-                                static_cast<long long>(jsonNum));
+                               static_cast<long long>(jsonNum));
 
     cond = jsonNum > UINT32_MAX_VALUE;
     CHECK_ERROR_RETURN_RET_LOG(cond, ERR_DATA_TYPE, "GetUint32Value: out of range value, num: %{public}llu.",
