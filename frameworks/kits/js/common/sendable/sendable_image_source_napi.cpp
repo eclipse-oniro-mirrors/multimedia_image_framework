@@ -511,7 +511,10 @@ static void ImageSourceCallbackRoutine(napi_env env, ImageSourceAsyncContext* &c
 
     if (context->deferred) {
         if (context->status == SUCCESS) {
-            napi_resolve_deferred(env, context->deferred, result[NUM_1]);
+            napi_status status = napi_resolve_deferred(env, context->deferred, result[NUM_1]);
+            if (status != napi_ok) {
+                IMAGE_LOGE("napi resolve failed");
+            }
         } else {
             napi_reject_deferred(env, context->deferred, result[NUM_0]);
         }
@@ -585,7 +588,7 @@ static void CreatePixelMapExecute(napi_env env, void *data)
 
 static void CreatePixelMapComplete(napi_env env, napi_status status, void *data)
 {
-    IMAGE_LOGD("CreatePixelMapComplete IN");
+    IMAGE_LOGI("CreatePixelMapComplete IN");
     napi_value result = nullptr;
     auto context = static_cast<ImageSourceAsyncContext*>(data);
 
@@ -594,7 +597,7 @@ static void CreatePixelMapComplete(napi_env env, napi_status status, void *data)
     } else {
         napi_get_undefined(env, &result);
     }
-    IMAGE_LOGD("CreatePixelMapComplete OUT");
+    IMAGE_LOGI("CreatePixelMapComplete OUT");
     ImageSourceCallbackRoutine(env, context, result);
 }
 
