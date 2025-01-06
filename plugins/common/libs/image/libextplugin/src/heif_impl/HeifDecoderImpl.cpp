@@ -907,12 +907,12 @@ bool HeifDecoderImpl::SwdecodeGainmap(std::shared_ptr<HeifImage> &gainMapImage,
         .timeout = 0;
     }
     GSError ret = output->Alloc(config);
-    if (ret != GSERROR_OK) {
-        IMAGE_LOGE("output->alloc(config)faild, GSError=%{public}d", ret);
-        return false;
-    }
+    bool cond = ret != GSERROR_OK;
+    CHECK_ERROR_RETURN_RET_LOG(cond, false, "output->alloc(config)faild, GSError=%{public}d", ret);
     OH_NativeBuffer_planes *dataplanesInfo = nullptr;
     output->GetplanesInfo((void **)&dataplanesInfo);
+    cond = (dataplanesInfo == nullptr);
+    CHECK_ERROR_RETURN_RET_LOG(cond, false, "failed to get src buffer planes info.");
     OH_NativeBuffer_planes &planeY = dataPlanesInfo->planes[0];
     void *nativeBuffer = output.GetRefPtr();
     uint8_t *data = static_cast<uint8_t *>(output->GetVirAddr());
