@@ -2418,6 +2418,7 @@ void ImageSource::CopyOptionsToPlugin(const DecodeOptions &opts, PixelDecodeOpti
         plOpts.plSVGResize.resizePercentage = opts.SVGOpts.SVGResize.resizePercentage;
     }
     plOpts.plDesiredColorSpace = opts.desiredColorSpaceInfo;
+    plOpts.plReusePixelmap = opts.reusePixelmap;
 }
 
 void ImageSource::CopyOptionsToProcOpts(const DecodeOptions &opts, DecodeOptions &procOpts, PixelMap &pixelMap)
@@ -3898,6 +3899,22 @@ static uint32_t AllocHdrSurfaceBuffer(DecodeContext& context, ImageHdrType hdrTy
 // LCOV_EXCL_STOP
 #endif
 
+void ImageSource::ApplyMemoryForHdr(DecodeContext& hdrCtx, CM_ColorSpaceType hdrCmColor, ImageHdrType hdrType)
+{
+#if !defined(CROSS_PLATFORM)
+    hdrCtx.grColorSpaceName = ConvertColorSpaceName(hdrCmColor, false);
+    CM_HDR_Metadata_Type type;
+    if (hdrType == ImageHdrType::HDR_VIVID_DUAL || hdrType == ImageHdrType::HDR_CUVA) {
+        type = CM_IMAGE_HDR_VIVID_SINGLE;
+    } else if (hdrType == ImageHdrType::HDR_ISO_DUAL) {
+        type = CM_IMAGE_HDR_ISO_SINGLE;
+    }
+    sptr<SurfaceBuffer> surfaceBuf(reinterpret_cast<SurfaceBuffer*>(opts_.reusePixelmap->GetFd()));
+    VpeUtils::SetSbMetadataType(surfaceBuf, type);
+    VpeUtils::SetSbColorSpaceType(surfaceBuf, hdrCmColor);
+#endif
+}
+
 bool ImageSource::ComposeHdrImage(ImageHdrType hdrType, DecodeContext& baseCtx, DecodeContext& gainMapCtx,
                                   DecodeContext& hdrCtx, HdrMetadata metadata)
 {
@@ -3922,10 +3939,17 @@ bool ImageSource::ComposeHdrImage(ImageHdrType hdrType, DecodeContext& baseCtx, 
     SetVividMetaColor(metadata, baseCmColor, gainmapCmColor, hdrCmColor);
     VpeUtils::SetSurfaceBufferInfo(gainmapSptr, true, hdrType, gainmapCmColor, metadata);
     // hdr image
-    uint32_t errorCode = AllocHdrSurfaceBuffer(hdrCtx, hdrType, hdrCmColor);
-    if (errorCode != SUCCESS) {
-        IMAGE_LOGE("HDR SurfaceBuffer Alloc failed, %{public}d", errorCode);
-        return false;
+
+    if (ImageUtils::IsHdrPixelMapReuseSuccess(hdrCtx, hdrCtx.info.size.width, hdrCtx.info.size.height,
+        opts_.reusePixelmap)) {
+        ApplyMemoryForHdr(hdrCtx, hdrCmColor, hdrType);
+        IMAGE_LOGI("HDR reusePixelmap success");
+    } else {
+        uint32_t errorCode = AllocHdrSurfaceBuffer(hdrCtx, hdrType, hdrCmColor);
+        if (errorCode != SUCCESS) {
+            IMAGE_LOGE("HDR SurfaceBuffer Alloc failed, %{public}d", errorCode);
+            return false;
+        }
     }
     sptr<SurfaceBuffer> hdrSptr(reinterpret_cast<SurfaceBuffer*>(hdrCtx.pixelsBuffer.context));
     VpeSurfaceBuffers buffers = {

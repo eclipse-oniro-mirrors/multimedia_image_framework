@@ -140,6 +140,7 @@ private:
     int gifCacheIndex_ = 0;
     FrameCacheInfo frameCacheInfo_ = {0, 0, 0, 0};
     uint32_t heifParseErr_ = 0;
+    std::shared_ptr<Media::PixelMap> reusePixelmap_ = nullptr;
 #ifdef IMAGE_COLORSPACE_FLAG
     std::shared_ptr<OHOS::ColorManager::ColorSpace> dstColorSpace_ = nullptr;
 #endif
