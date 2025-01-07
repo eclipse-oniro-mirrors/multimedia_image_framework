@@ -81,10 +81,8 @@ static SkColorType PixelFormatConvert(const PixelFormat &pixelFormat)
 
 void ARGBToRGBA(uint8_t* srcPixels, uint8_t* dstPixels, uint32_t byteCount)
 {
-    if (byteCount % NUM_4 != NUM_0) {
-        IMAGE_LOGE("Pixel count must multiple of 4.");
-        return;
-    }
+    bool cond = byteCount % NUM_4 != NUM_0;
+    CHECK_ERROR_RETURN_LOG(cond, "Pixel count must multiple of 4.");
     uint8_t *src = srcPixels;
     uint8_t *dst = dstPixels;
     for (uint32_t i = NUM_0 ; i < byteCount; i += NUM_4) {
@@ -100,10 +98,8 @@ void ARGBToRGBA(uint8_t* srcPixels, uint8_t* dstPixels, uint32_t byteCount)
 
 void RGBAToARGB(uint8_t* srcPixels, uint8_t* dstPixels, uint32_t byteCount)
 {
-    if (byteCount % NUM_4 != NUM_0) {
-        IMAGE_LOGE("Pixel count must multiple of 4.");
-        return;
-    }
+    bool cond = byteCount % NUM_4 != NUM_0;
+    CHECK_ERROR_RETURN_LOG(cond, "Pixel count must multiple of 4.");
     uint8_t *src = srcPixels;
     uint8_t *dst = dstPixels;
     for (uint32_t i = NUM_0 ; i < byteCount; i += NUM_4) {
@@ -271,10 +267,8 @@ bool PixelConvertAdapter::EraseBitmap(const void *srcPixels, uint32_t srcRowByte
 
 bool PixelConvertAdapter::YUV420ToRGB888(const uint8_t *in, YuvImageInfo &srcInfo, uint8_t *out, YuvImageInfo &dstInfo)
 {
-    if (PixelYuvUtils::YuvScale(const_cast<uint8_t *>(in), srcInfo, out, dstInfo, SWS_BICUBIC) != SUCCESS) {
-        IMAGE_LOGE("YUV420ToRGB888 failed");
-        return false;
-    }
+    bool cond = PixelYuvUtils::YuvScale(const_cast<uint8_t *>(in), srcInfo, out, dstInfo, SWS_BICUBIC) != SUCCESS;
+    CHECK_ERROR_RETURN_RET_LOG(cond, false, "YUV420ToRGB888 failed");
     return true;
 }
 

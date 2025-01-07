@@ -2753,17 +2753,13 @@ unique_ptr<SourceStream> ImageSource::DecodeBase64(const uint8_t *data, uint32_t
 #ifdef NEW_SKIA
     size_t outputLen = 0;
     SkBase64::Error error = SkBase64::Decode(sub, subSize, nullptr, &outputLen);
-    if (error != SkBase64::Error::kNoError) {
-        IMAGE_LOGE("[ImageSource]Base64 decode get out size failed.");
-        return nullptr;
-    }
+    bool cond = error != SkBase64::Error::kNoError;
+    CHECK_ERROR_RETURN_RET_LOG(cond, nullptr, "[ImageSource]Base64 decode get out size failed.");
 
     sk_sp<SkData> resData = SkData::MakeUninitialized(outputLen);
     error = SkBase64::Decode(sub, subSize, resData->writable_data(), &outputLen);
-    if (error != SkBase64::Error::kNoError) {
-        IMAGE_LOGE("[ImageSource]Base64 decode get data failed.");
-        return nullptr;
-    }
+    cond = error != SkBase64::Error::kNoError;
+    CHECK_ERROR_RETURN_RET_LOG(cond, nullptr, "[ImageSource]Base64 decode get data failed.");
     IMAGE_LOGD("[ImageSource][NewSkia]Create BufferSource from decoded base64 string.");
     auto imageData = static_cast<const uint8_t *>(resData->data());
     return BufferSourceStream::CreateSourceStream(imageData, resData->size());
@@ -2888,11 +2884,9 @@ unique_ptr<PixelMap> ImageSource::CreatePixelMapForYUV(uint32_t &errorCode)
         IMAGE_LOGE("Error updating pixelmap info. Return code: %{public}u.", errorCode);
         return nullptr;
     }
-    if (ImageUtils::CheckMulOverflow(pixelMap->GetWidth(), pixelMap->GetHeight(), pixelMap->GetPixelBytes())) {
-        IMAGE_LOGE("Invalid pixelmap params width:%{public}d, height:%{public}d",
-                   pixelMap->GetWidth(), pixelMap->GetHeight());
-        return nullptr;
-    }
+    bool cond = ImageUtils::CheckMulOverflow(pixelMap->GetWidth(), pixelMap->GetHeight(), pixelMap->GetPixelBytes());
+    CHECK_ERROR_RETURN_RET_LOG(cond, nullptr, "Invalid pixelmap params width:%{public}d, height:%{public}d",
+                               pixelMap->GetWidth(), pixelMap->GetHeight());
     size_t bufferSize = static_cast<size_t>(pixelMap->GetWidth() * pixelMap->GetHeight() * pixelMap->GetPixelBytes());
     auto buffer = malloc(bufferSize);
     if (buffer == nullptr) {
@@ -2986,10 +2980,9 @@ enum class AstcExtendInfoType : uint8_t {
 #ifdef SUT_DECODE_ENABLE
 static size_t GetAstcSizeBytes(const uint8_t *fileBuf, size_t fileSize)
 {
-    if ((fileBuf == nullptr) || (fileSize <= ASTC_HEAD_BYTES)) {
-        IMAGE_LOGE("astc GetAstcSizeBytes input is nullptr or fileSize is smaller than ASTC HEADER");
-        return 0;
-    }
+    bool cond = (fileBuf == nullptr) || (fileSize <= ASTC_HEAD_BYTES);
+    CHECK_ERROR_RETURN_RET_LOG(cond, 0,
+                               "astc GetAstcSizeBytes input is nullptr or fileSize is smaller than ASTC HEADER");
     if (g_sutDecSoManager.sutDecSoGetSizeFunc_ != nullptr) {
         return g_sutDecSoManager.sutDecSoGetSizeFunc_(fileBuf, fileSize);
     } else {
@@ -3009,14 +3002,10 @@ static void FreeAllExtMemSut(AstcOutInfo &astcInfo)
 
 static bool FillAstcSutExtInfo(AstcOutInfo &astcInfo, SutInInfo &sutInfo)
 {
-    if (g_sutDecSoManager.getExpandInfoFromSutFunc_ == nullptr) {
-        IMAGE_LOGE("[ImageSource] SUT dec getExpandInfoFromSutFunc_ is nullptr!");
-        return false;
-    }
-    if (!g_sutDecSoManager.getExpandInfoFromSutFunc_(sutInfo, astcInfo, false)) {
-        IMAGE_LOGE("[ImageSource] GetExpandInfoFromSut failed!");
-        return false;
-    }
+    bool cond = g_sutDecSoManager.getExpandInfoFromSutFunc_ == nullptr;
+    CHECK_ERROR_RETURN_RET_LOG(cond, false, "[ImageSource] SUT dec getExpandInfoFromSutFunc_ is nullptr!");
+    cond = !g_sutDecSoManager.getExpandInfoFromSutFunc_(sutInfo, astcInfo, false);
+    CHECK_ERROR_RETURN_RET_LOG(cond, false, "[ImageSource] GetExpandInfoFromSut failed!");
     int32_t expandTotalBytes = 0;
     for (uint8_t idx = 0; idx < astcInfo.expandNums; idx++) {
         astcInfo.expandInfoCapacity[idx] = astcInfo.expandInfoBytes[idx];
@@ -3059,15 +3048,11 @@ static bool TextureSuperCompressDecodeInit(AstcOutInfo *astcInfo, SutInInfo *sut
         IMAGE_LOGE("astc SuperDecompressTexture memset failed!");
         return false;
     }
-    if (inBytes > static_cast<size_t>(std::numeric_limits<int32_t>::max())) {
-        IMAGE_LOGE("astc SuperDecompressTexture inBytes overflow!");
-        return false;
-    }
+    bool cond = inBytes > static_cast<size_t>(std::numeric_limits<int32_t>::max());
+    CHECK_ERROR_RETURN_RET_LOG(cond, false, "astc SuperDecompressTexture inBytes overflow!");
     sutInfo->sutBytes = static_cast<int32_t>(inBytes);
-    if (outBytes > static_cast<size_t>(std::numeric_limits<int32_t>::max())) {
-        IMAGE_LOGE("astc SuperDecompressTexture outBytes overflow!");
-        return false;
-    }
+    cond = outBytes > static_cast<size_t>(std::numeric_limits<int32_t>::max());
+    CHECK_ERROR_RETURN_RET_LOG(cond, false, "astc SuperDecompressTexture outBytes overflow!");
     astcInfo->astcBytes = static_cast<int32_t>(outBytes);
     return true;
 }
@@ -3076,19 +3061,16 @@ static bool TextureSuperCompressDecode(const uint8_t *inData, size_t inBytes, ui
     unique_ptr<PixelAstc> &pixelAstc)
 {
     size_t preOutBytes = outBytes;
-    if ((inData == nullptr) || (outData == nullptr)) {
-        IMAGE_LOGE("astc TextureSuperCompressDecode input check failed!");
-        return false;
-    }
+    bool cond = (inData == nullptr) || (outData == nullptr);
+    CHECK_ERROR_RETURN_RET_LOG(cond, false, "astc TextureSuperCompressDecode input check failed!");
     if (g_sutDecSoManager.sutDecSoDecFunc_ == nullptr) {
         IMAGE_LOGE("[ImageSource] SUT dec sutDecSoDecFunc_ is nullptr!");
         return false;
     }
     AstcOutInfo astcInfo = {0};
     SutInInfo sutInfo = {0};
-    if (!TextureSuperCompressDecodeInit(&astcInfo, &sutInfo, inBytes, outBytes)) {
-        return false;
-    }
+    cond = !TextureSuperCompressDecodeInit(&astcInfo, &sutInfo, inBytes, outBytes);
+    CHECK_ERROR_RETURN_RET(cond, false);
     sutInfo.sutBuf = inData;
     astcInfo.astcBuf = outData;
     if (!FillAstcSutExtInfo(astcInfo, sutInfo)) {
@@ -3107,15 +3089,11 @@ static bool TextureSuperCompressDecode(const uint8_t *inData, size_t inBytes, ui
         return false;
     }
     FreeAllExtMemSut(astcInfo);
-    if (astcInfo.astcBytes < 0) {
-        IMAGE_LOGE("astc SuperDecompressTexture astcInfo.astcBytes sub overflow!");
-        return false;
-    }
+    cond = astcInfo.astcBytes < 0;
+    CHECK_ERROR_RETURN_RET_LOG(cond, false, "astc SuperDecompressTexture astcInfo.astcBytes sub overflow!");
     outBytes = static_cast<size_t>(astcInfo.astcBytes);
-    if (outBytes != preOutBytes) {
-        IMAGE_LOGE("astc SuperDecompressTexture Dec size is predicted failed!");
-        return false;
-    }
+    cond = outBytes != preOutBytes;
+    CHECK_ERROR_RETURN_RET_LOG(cond, false, "astc SuperDecompressTexture Dec size is predicted failed!");
     return true;
 }
 #endif
@@ -3659,9 +3637,8 @@ static bool DecomposeImage(sptr<SurfaceBuffer>& hdr, sptr<SurfaceBuffer>& sdr)
     VpeUtils::SetSbColorSpaceType(sdr, HDI::Display::Graphic::Common::V1_0::CM_P3_FULL);
     std::unique_ptr<VpeUtils> utils = std::make_unique<VpeUtils>();
     int32_t res = utils->ColorSpaceConverterImageProcess(hdr, sdr);
-    if (res != VPE_ERROR_OK || sdr == nullptr) {
-        return false;
-    }
+    bool cond = res != VPE_ERROR_OK || sdr == nullptr;
+    CHECK_ERROR_RETURN_RET(cond, false);
     return true;
 }
 
@@ -3837,9 +3814,8 @@ DecodeContext ImageSource::HandleSingleHdrImage(ImageHdrType decodedHdrType,
     IMAGE_LOGE("UnSupport HandleSingleHdrImage");
     return context;
 #else
-    if (context.allocatorType != AllocatorType::DMA_ALLOC) {
-        return context;
-    }
+    bool cond = context.allocatorType != AllocatorType::DMA_ALLOC;
+    CHECK_ERROR_RETURN_RET(cond, context);
     sptr<SurfaceBuffer> hdrSptr(reinterpret_cast<SurfaceBuffer*>(context.pixelsBuffer.context));
     HdrMetadata metadata = mainDecoder_->GetHdrMetadata(decodedHdrType);
     CM_ColorSpaceType baseCmColor = ConvertColorSpaceType(context.grColorSpaceName, true);
@@ -3854,10 +3830,8 @@ DecodeContext ImageSource::HandleSingleHdrImage(ImageHdrType decodedHdrType,
         auto allocFormat =
             (formatSearch != SINGLE_HDR_CONVERT_FORMAT_MAP.end()) ? formatSearch->second : GRAPHIC_PIXEL_FMT_RGBA_8888;
         uint32_t res = AllocSurfaceBuffer(sdrCtx, allocFormat);
-        if (res != SUCCESS) {
-            IMAGE_LOGI("single hdr convert to sdr,alloc surfacebuffer failed");
-            return context;
-        }
+        cond = res != SUCCESS;
+        CHECK_INFO_RETURN_RET_LOG(cond, context, "single hdr convert to sdr,alloc surfacebuffer failed");
         sptr<SurfaceBuffer> sdr(reinterpret_cast<SurfaceBuffer*>(sdrCtx.pixelsBuffer.context));
         if (DecomposeImage(hdrSptr, sdr)) {
             FreeContextBuffer(context.freeFunc, context.allocatorType, context.pixelsBuffer);

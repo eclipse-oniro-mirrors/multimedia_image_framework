@@ -94,12 +94,9 @@ void DataBuf::WriteUInt8(size_t offset, uint8_t value)
 
 void DataBuf::WriteUInt32(size_t offset, uint32_t x, ByteOrder byteOrder)
 {
-    if (pData_.size() < UINT32_SIZE || offset > (pData_.size() - UINT32_SIZE)) {
-        IMAGE_LOGE("Attempted to write beyond the buffer size while writing a 32-bit unsigned integer. "
-            "Offset: %{public}zu, Buffer size: %{public}zu",
-            offset, pData_.size());
-        return;
-    }
+    bool cond = pData_.size() < UINT32_SIZE || offset > (pData_.size() - UINT32_SIZE);
+    CHECK_ERROR_RETURN_LOG(cond, "Attempted to write beyond the buffer size while writing a 32-bit unsigned integer. "
+                            "Offset: %{public}zu, Buffer size: %{public}zu", offset, pData_.size());
     UL2Data(&pData_[offset], x, byteOrder);
 }
 

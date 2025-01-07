@@ -241,9 +241,8 @@ static sk_sp<SkColorSpace> ToSkColorSpace(PixelMap *pixelmap)
     bool cond = pixelmap->InnerGetGrColorSpacePtr() == nullptr;
     CHECK_ERROR_RETURN_RET(cond, nullptr);
 
-    if (pixelmap->InnerGetGrColorSpace().GetColorSpaceName() == ColorManager::ColorSpaceName::NONE) {
-        return SkColorSpace::MakeSRGB();
-    }
+    cond = pixelmap->InnerGetGrColorSpace().GetColorSpaceName() == ColorManager::ColorSpaceName::NONE;
+    CHECK_ERROR_RETURN_RET(cond, SkColorSpace::MakeSRGB());
     return pixelmap->InnerGetGrColorSpacePtr()->ToSkColorSpace();
 #else
     return nullptr;
@@ -1774,9 +1773,8 @@ uint32_t ExtEncoder::WriteJpegCodedData(std::shared_ptr<AuxiliaryPicture>& auxPi
     }
     cond = skData == nullptr;
     CHECK_ERROR_RETURN_RET(cond, ERR_IMAGE_ENCODE_FAILED);
-    if (auxPicture->GetType() == AuxiliaryPictureType::FRAGMENT_MAP) {
-        return SpliceFragmentStream(skStream, skData);
-    }
+    cond = auxPicture->GetType() == AuxiliaryPictureType::FRAGMENT_MAP;
+    CHECK_ERROR_RETURN_RET(cond, SpliceFragmentStream(skStream, skData));
     skStream.write(skData->data(), skData->size());
     return SUCCESS;
 }
