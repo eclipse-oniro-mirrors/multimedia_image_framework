@@ -22,6 +22,7 @@
 #include <sstream>
 #include <utility>
 #include <charconv>
+#include <system_error>
 
 #include "exif_metadata_formatter.h"
 #include "hilog/log_cpp.h"
@@ -700,9 +701,18 @@ void ExifMetadatFormatter::RationalFormat(std::string &value)
 }
 
 // convert decimal to rational string. 2.5 -> 5/2
-std::string ExifMetadatFormatter::GetFractionFromStr(const std::string &decimal)
+std::string ExifMetadatFormatter::GetFractionFromStr(const std::string &decimal, bool &outRange)
 {
-    int intPart = stoi(decimal.substr(0, decimal.find(".")));
+    // check int part out of range
+    std::string inPareStr = decimal.substr(0, decimal.find("."));
+    int intPart = 0;
+    auto [p, ec] = std::from_chars(inPareStr.data(), inPareStr.data() + inPareStr.size(), intPart);
+    if (ec != std::errc()) {
+        IMAGE_LOGE("GetFractionFromStr failed, value is out of range");
+        outRange = true;
+        return "";
+    }
+
     double decPart = stod(decimal.substr(decimal.find(".")));
 
     int numerator = decPart * pow(DECIMAL_BASE, decimal.length() - decimal.find(".") - 1);
@@ -721,7 +731,7 @@ std::string ExifMetadatFormatter::GetFractionFromStr(const std::string &decimal)
 }
 
 // convert decimal to rational format. For example 2.5 -> 5/2
-void ExifMetadatFormatter::DecimalRationalFormat(std::string &value)
+bool ExifMetadatFormatter::DecimalRationalFormat(std::string &value)
 {
     std::string result;
     int icount = 0;
@@ -744,14 +754,20 @@ void ExifMetadatFormatter::DecimalRationalFormat(std::string &value)
         }
         if (ValidRegex(match[0], "\\d+\\.\\d+")) {
             // segment is decimal call decimalToFraction 2.5 -> 5/2
-            result += GetFractionFromStr(match[0]);
+            bool outRange = false;
+            auto tmpRes = GetFractionFromStr(match[0], outRange);
+            if (outRange) {
+                return false;
+            }
+            result += tmpRes;
         }
         icount++;
     }
     value = result;
+    return true;
 }
 
-void ExifMetadatFormatter::ConvertRationalFormat(std::string &value)
+bool ExifMetadatFormatter::ConvertRationalFormat(std::string &value)
 {
     std::string result;
     int icount = 0;
@@ -777,11 +793,17 @@ void ExifMetadatFormatter::ConvertRationalFormat(std::string &value)
         }
         if (ValidRegex(match[0], "\\d+\\.\\d+")) {
             // segment is decimal call decimalToFraction 2.5 -> 5/2
-            result += GetFractionFromStr(match[0]);
+            bool outRange = false;
+            auto tmpRes = GetFractionFromStr(match[0], outRange);
+            if (outRange) {
+                return false;
+            }
+            result += tmpRes;
         }
         icount++;
     }
     value = result;
+    return true;
 }
 
 // validate regex & convert integer to rational format. For example 23 15 83 --> 23/1 15/1 83
@@ -850,8 +872,7 @@ bool ExifMetadatFormatter::ValidRegxWithCommaDecimalRationalFormat(std::string &
     ReplaceAsSpace(value, COMMA_REGEX);
 
     // convert decimal to rationl 2.5 -> 5/2
-    DecimalRationalFormat(value);
-    return true;
+    return DecimalRationalFormat(value);
 }
 
 bool ExifMetadatFormatter::ValidRegxAndConvertRationalFormat(std::string &value, const std::string &regex)
@@ -866,8 +887,7 @@ bool ExifMetadatFormatter::ValidRegxAndConvertRationalFormat(std::string &value,
     // replace colon
     ReplaceAsSpace(value, COLON_REGEX);
 
-    ConvertRationalFormat(value);
-    return true;
+    return ConvertRationalFormat(value);
 }
 
 
@@ -879,8 +899,7 @@ bool ExifMetadatFormatter::ValidRegexWithDecimalRationalFormat(std::string &valu
     }
 
     // convert decimal to rationl 2.5 -> 5/2
-    DecimalRationalFormat(value);
-    return true;
+    return DecimalRationalFormat(value);
 }
 
 bool ExifMetadatFormatter::ValidRegexWithVersionFormat(std::string &value, const std::string &regex)
@@ -1284,8 +1303,11 @@ int32_t ExifMetadatFormatter::ValidateValueRange(const std::string &keyName, con
     std::regex regNum(R"(^[0-9]+$)");    // regex for integer value. For example WhiteBalance support 0 or 1
     std::regex regChar(R"(^[a-zA-Z]$)"); // regex for char value. For example GPSLatitudeRef support N or S
     if (std::regex_match(value, regNum)) {
-        // convert string to integer such as "15" -> 15
-        ivalue = std::stoll(value);
+        // convert string to integer such as "15" -> 15  and check ll out of range
+        auto [p, ec] = std::from_chars(value.data(), value.data() + value.size(), ivalue);
+        if (ec != std::errc()) {
+            return Media::ERR_MEDIA_OUT_OF_RANGE;
+        }
     }
     if (std::regex_match(value, regChar)) {
         // convert char to integer such as "N" -> 78
