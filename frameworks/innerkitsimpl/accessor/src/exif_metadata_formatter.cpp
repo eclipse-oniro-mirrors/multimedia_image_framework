@@ -709,9 +709,9 @@ std::string ExifMetadatFormatter::GetFractionFromStr(const std::string &decimal,
     int intPart = 0;
     auto [p, ec] = std::from_chars(inPareStr.data(), inPareStr.data() + inPareStr.size(), intPart);
     if (ec == std::errc::result_out_of_range) {
-        IMAGE_LOGE("Validating Decimal(GPSLatLong) Out Of Range");
+        IMAGE_LOGE("GetFractionFromStr failed, value is out of range");
         outRange = true;
-        return "1/1";
+        return "";
     }
 
     double decPart = stod(decimal.substr(decimal.find(".")));
@@ -756,10 +756,11 @@ bool ExifMetadatFormatter::DecimalRationalFormat(std::string &value)
         if (ValidRegex(match[0], "\\d+\\.\\d+")) {
             // segment is decimal call decimalToFraction 2.5 -> 5/2
             bool outRange = false;
-            result += GetFractionFromStr(match[0], outRange);
+            auto tmpRes = GetFractionFromStr(match[0], outRange);
             if (outRange) {
                 return false;
             }
+            result += tmpRes;
         }
         icount++;
     }
@@ -1305,7 +1306,7 @@ int32_t ExifMetadatFormatter::ValidateValueRange(const std::string &keyName, con
     if (std::regex_match(value, regNum)) {
         // convert string to integer such as "15" -> 15  and check ll out of range
         auto [p, ec] = std::from_chars(value.data(), value.data() + value.size(), ivalue);
-        if (ec != std::errc()) {
+        if (ec == std::errc::result_out_of_range) {
             return Media::ERR_MEDIA_OUT_OF_RANGE;
         }
     }
