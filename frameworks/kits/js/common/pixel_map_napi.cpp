@@ -55,7 +55,8 @@ namespace {
 enum class FormatType:int8_t {
     UNKNOWN,
     YUV,
-    RGB
+    RGB,
+    ASTC
 };
 
 namespace OHOS {
@@ -4085,6 +4086,15 @@ static bool IsMatchFormatType(FormatType type, PixelFormat format)
                 return false;
             }
         }
+    } else if (type == FormatType::ASTC) {
+        switch (format) {
+            case PixelFormat::ASTC_4x4:{
+                return true;
+            }
+            default:{
+                return false;
+            }
+        }
     } else {
         return false;
     }
@@ -4117,6 +4127,9 @@ static FormatType TypeFormat(PixelFormat &pixelForamt)
         case PixelFormat::YCBCR_P010:
         case PixelFormat::YCRCB_P010:{
             return FormatType::YUV;
+        }
+        case PixelFormat::ASTC_4x4:{
+            return FormatType::ASTC;
         }
         default:
             return FormatType::UNKNOWN;
@@ -4225,6 +4238,11 @@ static napi_value RGBToYUV(napi_env env, napi_callback_info &info,  PixelMapAsyn
     return Convert(env, info, FormatType::RGB, "RGBToYUV", context);
 }
 
+static napi_value ASTCToRGB(napi_env env, napi_callback_info &info, PixelMapAsyncContext* context)
+{
+    return Convert(env, info, FormatType::ASTC, "ASTCToRGB", context);
+}
+
 static napi_value PixelFormatConvert(napi_env env, napi_callback_info &info, PixelMapAsyncContext* context)
 {
     if (context == nullptr) {
@@ -4244,6 +4262,8 @@ static napi_value PixelFormatConvert(napi_env env, napi_callback_info &info, Pix
         } else if ((context->dstFormatType == FormatType::RGB) &&
             (context->srcFormatType == FormatType::UNKNOWN || context->srcFormatType == FormatType::YUV)) {
             result = YUVToRGB(env, info, context);
+        } else if ((context->dstFormatType == FormatType::RGB) && (context->srcFormatType == FormatType::ASTC)) {
+            result = ASTCToRGB(env, info, context);
         }
     }
     return result;
@@ -4284,6 +4304,9 @@ napi_value PixelMapNapi::ConvertPixelMapFormat(napi_env env, napi_callback_info 
     int32_t pixelFormatInt;
     napi_get_value_int32(env, jsArg, &pixelFormatInt);
     nVal.context->destFormat = static_cast<PixelFormat>(pixelFormatInt);
+    if (nVal.context->nConstructor->nativePixelMap_->GetPixelFormat() == PixelFormat::ASTC_4x4) {
+        nVal.context->srcFormatType = FormatType::ASTC;
+    }
 
     if (TypeFormat(nVal.context->destFormat) == FormatType::UNKNOWN) {
         napi_value errCode = nullptr;

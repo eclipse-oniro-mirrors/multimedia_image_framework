@@ -125,6 +125,8 @@ public:
                                                          const InitializationOptions &opts);
     NATIVEEXPORT static std::unique_ptr<PixelMap> Create(PixelMap &source, const Rect &srcRect,
         const InitializationOptions &opts, int32_t &errorCode);
+    NATIVEEXPORT static std::unique_ptr<PixelMap> ConvertFromAstc(PixelMap *source, uint32_t &errorCode,
+        PixelFormat destFormat);
 
     NATIVEEXPORT virtual uint32_t SetImageInfo(ImageInfo &info);
     NATIVEEXPORT virtual uint32_t SetImageInfo(ImageInfo &info, bool isReused);

@@ -325,6 +325,16 @@ uint32_t ImageFormatConvert::ConvertImageFormat(std::shared_ptr<PixelMap> &srcPi
         }
         return ret;
     }
+    if (srcPiexlMap->IsAstc()) {
+        uint32_t ret = 0;
+        std::unique_ptr<PixelMap> resultPixelMap = IncrementalPixelMap::ConvertFromAstc(srcPiexlMap.get(), ret,
+            destFormat);
+        srcPiexlMap = std::move(resultPixelMap);
+        if (ret != SUCCESS) {
+            IMAGE_LOGE("convert astc format failed!");
+        }
+        return ret;
+    }
     uint32_t ret = RGBConvertImageFormatOption(srcPiexlMap, srcFormat, destFormat);
     if (ret != SUCCESS) {
         IMAGE_LOGE("convert rgb format failed!");
