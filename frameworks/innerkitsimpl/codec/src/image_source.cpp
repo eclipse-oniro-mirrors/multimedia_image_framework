@@ -1449,6 +1449,11 @@ uint32_t ImageSource::GetImageInfo(uint32_t index, ImageInfo &imageInfo)
     return SUCCESS;
 }
 
+uint64_t ImageSource::GetImageId()
+{
+    return imageId_;
+}
+
 uint32_t ImageSource::GetImageInfoFromExif(uint32_t index, ImageInfo &imageInfo)
 {
     ImageTrace imageTrace("GetImageInfoFromExif by index");
