@@ -253,6 +253,7 @@ public:
     NATIVEEXPORT void SetExifMetadata(std::shared_ptr<ExifMetadata> &ptr);
     NATIVEEXPORT static void ContextToAddrInfos(ImagePlugin::DecodeContext &context, PixelMapAddrInfos &addrInfos);
     NATIVEEXPORT static bool IsYuvFormat(PixelFormat format);
+    NATIVEEXPORT uint64_t GetImageId();
 
 private:
     DISALLOW_COPY_AND_MOVE(ImageSource);

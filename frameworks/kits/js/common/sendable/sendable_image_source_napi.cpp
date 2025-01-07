@@ -513,7 +513,11 @@ static void ImageSourceCallbackRoutine(napi_env env, ImageSourceAsyncContext* &c
         if (context->status == SUCCESS) {
             napi_status status = napi_resolve_deferred(env, context->deferred, result[NUM_1]);
             if (status != napi_ok) {
-                IMAGE_LOGE("napi resolve failed");
+                IMAGE_LOGE("napi resolve failed, imageId:%{public}lu, status:%{public}d",
+                    static_cast<unsigned long>(context->rImageSource->GetImageId()), status);
+            } else {
+                IMAGE_LOGI("napi resolve success, imageId:%{public}lu",
+                    static_cast<unsigned long>(context->rImageSource->GetImageId()));
             }
         } else {
             napi_reject_deferred(env, context->deferred, result[NUM_0]);
@@ -588,16 +592,18 @@ static void CreatePixelMapExecute(napi_env env, void *data)
 
 static void CreatePixelMapComplete(napi_env env, napi_status status, void *data)
 {
-    IMAGE_LOGI("CreatePixelMapComplete IN");
     napi_value result = nullptr;
     auto context = static_cast<ImageSourceAsyncContext*>(data);
+    IMAGE_LOGI("CreatePixelMapComplete IN imageId:%{public}lu",
+        static_cast<unsigned long>(context->rImageSource->GetImageId()));
 
     if (context->status == SUCCESS) {
         result = SendablePixelMapNapi::CreateSendablePixelMap(env, context->rPixelMap);
     } else {
         napi_get_undefined(env, &result);
     }
-    IMAGE_LOGI("CreatePixelMapComplete OUT");
+    IMAGE_LOGI("CreatePixelMapComplete OUT imageId:%{public}lu",
+        static_cast<unsigned long>(context->rImageSource->GetImageId()));
     ImageSourceCallbackRoutine(env, context, result);
 }
 
