@@ -895,13 +895,17 @@ napi_value PixelMapNapi::Constructor(napi_env env, napi_callback_info info)
         IMAGE_LOGE("Constructor nativePixelMap is nullptr");
     }
 
-    IMG_NAPI_CHECK_RET(IMG_NOT_NULL(pPixelMapNapi->nativePixelMap_), undefineVar);
-
     napi_coerce_to_native_binding_object(
         env, thisVar, DetachPixelMapFunc, AttachPixelMapFunc, pPixelMapNapi.get(), nullptr);
 
-    status = napi_wrap_with_size(env, thisVar, reinterpret_cast<void*>(pPixelMapNapi.get()), PixelMapNapi::Destructor,
-        nullptr, nullptr, static_cast<size_t>(pPixelMapNapi->nativePixelMap_->GetByteCount()));
+    if (pPixelMapNapi->nativePixelMap_ == nullptr) {
+        status = napi_wrap(env, thisVar, reinterpret_cast<void*>(pPixelMapNapi.get()), PixelMapNapi::Destructor,
+            nullptr, nullptr);
+    } else {
+        status = napi_wrap_with_size(env, thisVar, reinterpret_cast<void*>(pPixelMapNapi.get()),
+            PixelMapNapi::Destructor, nullptr, nullptr,
+            static_cast<size_t>(pPixelMapNapi->nativePixelMap_->GetByteCount()));
+    }
     IMG_NAPI_CHECK_RET_D(IMG_IS_OK(status), undefineVar, IMAGE_LOGE("Failure wrapping js to native napi"));
 
     pPixelMapNapi.release();
