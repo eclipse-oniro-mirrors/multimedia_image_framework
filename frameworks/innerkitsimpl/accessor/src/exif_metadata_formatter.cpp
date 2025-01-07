@@ -22,6 +22,7 @@
 #include <sstream>
 #include <utility>
 #include <charconv>
+#include <system_error>
 
 #include "exif_metadata_formatter.h"
 #include "hilog/log_cpp.h"
@@ -701,9 +702,19 @@ void ExifMetadatFormatter::RationalFormat(std::string &value)
 }
 
 // convert decimal to rational string. 2.5 -> 5/2
-std::string ExifMetadatFormatter::GetFractionFromStr(const std::string &decimal)
+std::string ExifMetadatFormatter::GetFractionFromStr(const std::string &decimal, bool &outRange)
 {
+    // check int part out of range
     int intPart = stoi(decimal.substr(0, decimal.find(".")));
+    std::string inPareStr = decimal.substr(0, decimal.find("."));
+    int intPart = 0;
+    auto [p, ec] = std::from_chars(inPareStr.data(), inPareStr.data() + inPareStr.size(), intPart);
+    if (ec == std::errc::result_out_of_range) {
+        IMAGE_LOGE("Validating Decimal(GPSLatLong) Out Of Range");
+        outRange = true;
+        return "1/1";
+    }
+
     double decPart = stod(decimal.substr(decimal.find(".")));
 
     int numerator = decPart * pow(DECIMAL_BASE, decimal.length() - decimal.find(".") - 1);
@@ -722,7 +733,7 @@ std::string ExifMetadatFormatter::GetFractionFromStr(const std::string &decimal)
 }
 
 // convert decimal to rational format. For example 2.5 -> 5/2
-void ExifMetadatFormatter::DecimalRationalFormat(std::string &value)
+bool ExifMetadatFormatter::DecimalRationalFormat(std::string &value)
 {
     std::string result;
     int icount = 0;
@@ -745,14 +756,19 @@ void ExifMetadatFormatter::DecimalRationalFormat(std::string &value)
         }
         if (ValidRegex(match[0], "\\d+\\.\\d+")) {
             // segment is decimal call decimalToFraction 2.5 -> 5/2
-            result += GetFractionFromStr(match[0]);
+            bool outRange = false;
+            result += GetFractionFromStr(match[0], outRange);
+            if (outRange) {
+                return false;
+            }
         }
         icount++;
     }
     value = result;
+    return true;
 }
 
-void ExifMetadatFormatter::ConvertRationalFormat(std::string &value)
+bool ExifMetadatFormatter::ConvertRationalFormat(std::string &value)
 {
     std::string result;
     int icount = 0;
@@ -778,11 +794,16 @@ void ExifMetadatFormatter::ConvertRationalFormat(std::string &value)
         }
         if (ValidRegex(match[0], "\\d+\\.\\d+")) {
             // segment is decimal call decimalToFraction 2.5 -> 5/2
-            result += GetFractionFromStr(match[0]);
+            bool outRange = false;
+            result += GetFractionFromStr(match[0], outRange);
+            if (outRange) {
+                return false;
+            }
         }
         icount++;
     }
     value = result;
+    return true;
 }
 
 // validate regex & convert integer to rational format. For example 23 15 83 --> 23/1 15/1 83
@@ -851,8 +872,7 @@ bool ExifMetadatFormatter::ValidRegxWithCommaDecimalRationalFormat(std::string &
     ReplaceAsSpace(value, COMMA_REGEX);
 
     // convert decimal to rationl 2.5 -> 5/2
-    DecimalRationalFormat(value);
-    return true;
+    return DecimalRationalFormat(value);
 }
 
 bool ExifMetadatFormatter::ValidRegxAndConvertRationalFormat(std::string &value, const std::string &regex)
@@ -867,8 +887,7 @@ bool ExifMetadatFormatter::ValidRegxAndConvertRationalFormat(std::string &value,
     // replace colon
     ReplaceAsSpace(value, COLON_REGEX);
 
-    ConvertRationalFormat(value);
-    return true;
+    return ConvertRationalFormat(value);
 }
 
 
@@ -880,8 +899,7 @@ bool ExifMetadatFormatter::ValidRegexWithDecimalRationalFormat(std::string &valu
     }
 
     // convert decimal to rationl 2.5 -> 5/2
-    DecimalRationalFormat(value);
-    return true;
+    return DecimalRationalFormat(value);
 }
 
 bool ExifMetadatFormatter::ValidRegexWithVersionFormat(std::string &value, const std::string &regex)
