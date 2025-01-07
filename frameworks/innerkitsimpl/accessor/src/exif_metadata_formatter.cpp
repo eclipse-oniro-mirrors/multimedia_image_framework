@@ -705,7 +705,6 @@ void ExifMetadatFormatter::RationalFormat(std::string &value)
 std::string ExifMetadatFormatter::GetFractionFromStr(const std::string &decimal, bool &outRange)
 {
     // check int part out of range
-    int intPart = stoi(decimal.substr(0, decimal.find(".")));
     std::string inPareStr = decimal.substr(0, decimal.find("."));
     int intPart = 0;
     auto [p, ec] = std::from_chars(inPareStr.data(), inPareStr.data() + inPareStr.size(), intPart);
@@ -1304,8 +1303,11 @@ int32_t ExifMetadatFormatter::ValidateValueRange(const std::string &keyName, con
     std::regex regNum(R"(^[0-9]+$)");    // regex for integer value. For example WhiteBalance support 0 or 1
     std::regex regChar(R"(^[a-zA-Z]$)"); // regex for char value. For example GPSLatitudeRef support N or S
     if (std::regex_match(value, regNum)) {
-        // convert string to integer such as "15" -> 15
-        ivalue = std::stoll(value);
+        // convert string to integer such as "15" -> 15  and check ll out of range
+        auto [p, ec] = std::from_chars(value.data(), value.data() + value.size(), ivalue);
+        if (ec != std::errc()) {
+            return Media::ERR_MEDIA_OUT_OF_RANGE;
+        }
     }
     if (std::regex_match(value, regChar)) {
         // convert char to integer such as "N" -> 78
