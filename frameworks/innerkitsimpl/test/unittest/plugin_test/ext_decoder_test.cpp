@@ -38,49 +38,11 @@ constexpr static int32_t ZERO = 0;
 constexpr static size_t SIZE_ZERO = 0;
 constexpr static uint32_t NO_EXIF_TAG = 1;
 constexpr static uint32_t OFFSET_2 = 2;
-constexpr static uint32_t MATRIX_NUM = 3;
 const static string CODEC_INITED_KEY = "CodecInited";
 const static string ENCODED_FORMAT_KEY = "EncodedFormat";
 const static string SUPPORT_SCALE_KEY = "SupportScale";
 const static string SUPPORT_CROP_KEY = "SupportCrop";
 const static string EXT_SHAREMEM_NAME = "EXT RawData";
-
-static bool NearlyEqual(float x, float y)
-{
-    // A note on why I chose this tolerance:  transfer_fn_almost_equal() uses a
-    // tolerance of 0.001f, which doesn't seem to be enough to distinguish
-    // between similar transfer functions, for example: gamma2.2 and sRGB.
-    //
-    // If the tolerance is 0.0f, then this we can't distinguish between two
-    // different encodings of what is clearly the same colorspace.  Some
-    // experimentation with example files lead to this number:
-    static constexpr float kTolerance = 1.0f / (1 << 11);
-    return ::fabsf(x - y) <= kTolerance;
-}
-
-static bool NearlyEqual(const skcms_TransferFunction& u, const skcms_TransferFunction& v)
-{
-    return NearlyEqual(u.g, v.g)
-           && NearlyEqual(u.a, v.a)
-           && NearlyEqual(u.b, v.b)
-           && NearlyEqual(u.c, v.c)
-           && NearlyEqual(u.d, v.d)
-           && NearlyEqual(u.e, v.e)
-           && NearlyEqual(u.f, v.f);
-}
-
-static bool NearlyEqual(const skcms_Matrix3x3& u, const skcms_Matrix3x3& v)
-{
-    for (int row = 0; row < MATRIX_NUM; row++) {
-        for (int column = 0; column < MATRIX_NUM; column++) {
-            if (!NearlyEqual(u.vals[row][column], v.vals[row][column])) {
-                return false;
-            }
-        }
-    }
-    return true;
-}
-
 class ExtDecoderTest : public testing::Test {
 public:
     ExtDecoderTest() {}
@@ -1170,31 +1132,6 @@ HWTEST_F(ExtDecoderTest, DataStatisticsNUllTest, TestSize.Level3)
     ImageDataStatistics imageDataStatistics(nullptr);
     ASSERT_EQ(imageDataStatistics.title_, "ImageDataTraceFmt Param invalid");
     GTEST_LOG_(INFO) << "ExtDecoderTest: DataStatisticsNUllTest end";
-}
-
-/**
- * @tc.name: GetDesiredColorSpaceTest001
- * @tc.desc: test GetDesiredColorSpace wide rgb
- * @tc.type: FUNC
- */
-HWTEST_F(ExtDecoderTest, GetDesiredColorSpace, TestSize.Level3)
-{
-    GTEST_LOG_(INFO) << "ExtDecoderTest: GetDesiredColorSpace start";
-    std::shared_ptr<ExtDecoder> extDecoder = std::make_shared<ExtDecoder>();
-    const int fd = open("/data/local/tmp/image/test_hw2.jpg", O_RDWR | O_CREAT, S_IRUSR | S_IWUSR);
-    std::unique_ptr<FileSourceStream> streamPtr = FileSourceStream::CreateSourceStream(fd);
-    ASSERT_NE(streamPtr, nullptr);
-    extDecoder->SetSource(*streamPtr);
-    ASSERT_NE(extDecoder->stream_, nullptr);
-    extDecoder->codec_ = SkCodec::MakeFromStream(std::make_unique<ExtStream>(extDecoder->stream_));
-    ASSERT_NE(extDecoder->codec_, nullptr);
-    SkImageInfo srcInfo = extDecoder->codec_->getInfo();
-    PixelDecodeOptions opts;
-    auto colorSpace = extDecoder->GetDesiredColorSpace(srcInfo, opts);
-    ASSERT_NE(colorSpace, nullptr);
-    ASSERT_EQ(NearlyEqual(colorSpace->fTransferFn, SkNamedTransferFn::kSRGB), true);
-    ASSERT_EQ(NearlyEqual(colorSpace->fToXYZD50, SkNamedGamut::kDisplayP3), true);
-    GTEST_LOG_(INFO) << "ExtDecoderTest: GetDesiredColorSpace end";
 }
 }
 }

@@ -19,8 +19,6 @@
 #include <map>
 #include <sstream>
 
-#include "include/core/SkPoint.h"
-#include "include/third_party/skcms/skcms.h"
 #include "src/codec/SkJpegCodec.h"
 #include "src/codec/SkJpegDecoderMgr.h"
 #include "ext_pixel_convert.h"
@@ -89,7 +87,6 @@ namespace {
     constexpr static int32_t LOOP_COUNT_INFINITE = 0;
     constexpr static int32_t SK_REPETITION_COUNT_INFINITE = -1;
     constexpr static int32_t SK_REPETITION_COUNT_ERROR_VALUE = -2;
-    constexpr static float SRGB_D50_GAMUTAREA = 0.084f;
 }
 
 namespace OHOS {
@@ -545,50 +542,9 @@ static inline bool IsValidCrop(const OHOS::Media::Rect &crop, SkImageInfo &info,
     return true;
 }
 
-/**
- *  Loads the gamut as a set of three points (triangle).
- */
-static void LoadGamut(SkPoint rgb[], const skcms_Matrix3x3& xyz) {
-    // rx = rX / (rX + rY + rZ)
-    // ry = rY / (rX + rY + rZ)
-    // gx, gy, bx, and gy are calulcated similarly.
-    for (int rgbIdx = 0; rgbIdx < 3; rgbIdx++) {
-        float sum = xyz.vals[rgbIdx][0] + xyz.vals[rgbIdx][1] + xyz.vals[rgbIdx][2];
-        rgb[rgbIdx].fX = xyz.vals[rgbIdx][0] / sum;
-        rgb[rgbIdx].fY = xyz.vals[rgbIdx][1] / sum;
-    }
-}
-
-/**
- *  Calculates the area of the triangular gamut.
- */
-static float CalculateArea(SkPoint abc[]) {
-    SkPoint a = abc[0];
-    SkPoint b = abc[1];
-    SkPoint c = abc[2];
-    return 0.5f * SkTAbs(a.fX*b.fY + b.fX*c.fY - a.fX*c.fY - c.fX*b.fY - b.fX*a.fY);
-}
-
-static bool IsWideGamut(const skcms_ICCProfile& profile) {
-    // Determine if the source image has a gamut that is wider than sRGB.  If so, we
-    // will use P3 as the output color space to avoid clipping the gamut.
-    if (profile.has_toXYZD50) {
-        SkPoint rgb[3];
-        LoadGamut(rgb, profile.toXYZD50);
-        return CalculateArea(rgb) > SRGB_D50_GAMUTAREA;
-    }
-
-    return false;
-}
-
-sk_sp<SkColorSpace> ExtDecoder::GetDesiredColorSpace(SkImageInfo &srcInfo, const PixelDecodeOptions &opts)
+static sk_sp<SkColorSpace> getDesiredColorSpace(SkImageInfo &srcInfo, const PixelDecodeOptions &opts)
 {
     if (opts.plDesiredColorSpace == nullptr) {
-        const skcms_ICCProfile* encodedProfile = codec_ ? codec_->getICCProfile() : nullptr;
-        if (encodedProfile && IsWideGamut(*encodedProfile)) {
-            IMAGE_LOGD("GetDesiredColorSpace ICC Profile is wide gamut.");
-            return SkColorSpace::MakeRGB(SkNamedTransferFn::kSRGB, SkNamedGamut::kDisplayP3);
-        }
         return srcInfo.refColorSpace();
     }
     return opts.plDesiredColorSpace->ToSkColorSpace();
@@ -669,10 +625,10 @@ uint32_t ExtDecoder::SetDecodeOptions(uint32_t index, const PixelDecodeOptions &
 #endif
     if (IsLowDownScale(opts.desiredSize, info_) && GetScaledSize(dstWidth, dstHeight, scale)) {
         dstInfo_ = SkImageInfo::Make(dstWidth, dstHeight, desireColor, desireAlpha,
-            GetDesiredColorSpace(info_, opts));
+            getDesiredColorSpace(info_, opts));
     } else {
         dstInfo_ = SkImageInfo::Make(info_.width(), info_.height(),
-            desireColor, desireAlpha, GetDesiredColorSpace(info_, opts));
+            desireColor, desireAlpha, getDesiredColorSpace(info_, opts));
     }
     auto resCode = CheckDecodeOptions(index, opts);
     if (resCode != SUCCESS) {
