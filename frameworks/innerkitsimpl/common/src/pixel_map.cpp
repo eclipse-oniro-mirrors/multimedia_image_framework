@@ -4432,10 +4432,7 @@ static bool CheckAstcHead(uint8_t *astcBuf, unsigned int &blockX, unsigned int &
     }
     blockX = static_cast<unsigned int>(astcBuf[BYTE_POS_4]);
     blockY = static_cast<unsigned int>(astcBuf[BYTE_POS_5]);
-    if (blockX != ASTC_BLOCK_SIZE_4 || blockY != blockX) {
-        IMAGE_LOGE("DecAstc blockX: %{public}d blockY: %{public}d not 4x4 or w!=h", blockX, blockY);
-        return false;
-    }
+    
     // 只支持一维
     if (astcBuf[BYTE_POS_6] != 1) {
         IMAGE_LOGE("DecAstc astc buffer is not 1d");
@@ -4452,11 +4449,15 @@ static bool CheckAstcHead(uint8_t *astcBuf, unsigned int &blockX, unsigned int &
         IMAGE_LOGE("DecAstc astc buffer is not 1d");
         return false;
     }
+    if (blockX != ASTC_BLOCK_SIZE_4 || blockY != blockX) {
+        IMAGE_LOGE("DecAstc blockX: %{public}d blockY: %{public}d not 4x4 or w!=h", blockX, blockY);
+        return false;
+    }
     unsigned int xblocks = (dimX + blockX - 1) / blockX;
     unsigned int yblocks = (dimY + blockY - 1) / blockY;
     dataSize = xblocks * yblocks * ASTC_UNIT_BYTES;
     if (dataSize + ASTC_UNIT_BYTES > astcBufSize) {
-        IMAGE_LOGE("DecAstc astc buffer is invalid, dataSize: %{public}lu, astcBufSize: %{public}d",
+        IMAGE_LOGE("DecAstc astc buffer is invalid, dataSize: %{public}zu, astcBufSize: %{public}d",
             dataSize, astcBufSize);
         return false;
     }
@@ -4546,7 +4547,8 @@ std::unique_ptr<PixelMap> PixelMap::ConvertFromAstc(PixelMap *source, uint32_t &
     Size astcSize;
     source->GetAstcRealSize(astcSize);
     bool isInvalidAstcSize = (astcSize.width <= 0 || astcSize.height <= 0 ||
-        astcSize.width > ASTC_DIM_MAX || astcSize.height > ASTC_DIM_MAX);
+        static_cast<uint32_t>(astcSize.width) > ASTC_DIM_MAX ||
+        static_cast<uint32_t>(astcSize.height) > ASTC_DIM_MAX);
     if (isInvalidAstcSize) {
         IMAGE_LOGE("DecAstc astc width: %{public}d, height: %{public}d is invalid", astcSize.width,
             astcSize.height);
