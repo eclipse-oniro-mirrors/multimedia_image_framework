@@ -512,12 +512,16 @@ static void ImageSourceCallbackRoutine(napi_env env, ImageSourceAsyncContext* &c
     if (context->deferred) {
         if (context->status == SUCCESS) {
             napi_status status = napi_resolve_deferred(env, context->deferred, result[NUM_1]);
+            uint64_t imageId = 0;
+            if (context->rImageSource != nullptr) {
+                imageId = context->rImageSource->GetImageId();
+            }
             if (status != napi_ok) {
                 IMAGE_LOGE("napi resolve failed, imageId:%{public}lu, status:%{public}d",
-                    static_cast<unsigned long>(context->rImageSource->GetImageId()), status);
+                    static_cast<unsigned long>(imageId), status);
             } else {
                 IMAGE_LOGI("napi resolve success, imageId:%{public}lu",
-                    static_cast<unsigned long>(context->rImageSource->GetImageId()));
+                    static_cast<unsigned long>(imageId));
             }
         } else {
             napi_reject_deferred(env, context->deferred, result[NUM_0]);
@@ -594,16 +598,18 @@ static void CreatePixelMapComplete(napi_env env, napi_status status, void *data)
 {
     napi_value result = nullptr;
     auto context = static_cast<ImageSourceAsyncContext*>(data);
-    IMAGE_LOGI("CreatePixelMapComplete IN imageId:%{public}lu",
-        static_cast<unsigned long>(context->rImageSource->GetImageId()));
+    uint64_t imageId = 0;
+    if (context->rImageSource != nullptr) {
+        imageId = context->rImageSource->GetImageId();
+    }
+    IMAGE_LOGI("CreatePixelMapComplete IN imageId:%{public}lu", static_cast<unsigned long>(imageId));
 
     if (context->status == SUCCESS) {
         result = SendablePixelMapNapi::CreateSendablePixelMap(env, context->rPixelMap);
     } else {
         napi_get_undefined(env, &result);
     }
-    IMAGE_LOGI("CreatePixelMapComplete OUT imageId:%{public}lu",
-        static_cast<unsigned long>(context->rImageSource->GetImageId()));
+    IMAGE_LOGI("CreatePixelMapComplete OUT imageId:%{public}lu", static_cast<unsigned long>(imageId));
     ImageSourceCallbackRoutine(env, context, result);
 }
 
