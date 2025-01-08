@@ -190,6 +190,7 @@ public:
 
     static int32_t PixelsConvert(const BufferInfo &src, BufferInfo &dst, int32_t srcLength, bool useDMA);
     static int32_t PixelsConvert(const BufferInfo &src, BufferInfo &dst, bool useDMA);
+    static bool DecAstc(uint8_t *recRgba, uint8_t *astcBuf, uint32_t astcBufSize, uint32_t stride);
 
 private:
     static AlphaConvertType GetAlphaConvertType(const AlphaType &srcType, const AlphaType &dstType);
