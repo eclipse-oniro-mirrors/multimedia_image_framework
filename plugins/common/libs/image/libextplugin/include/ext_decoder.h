@@ -124,7 +124,6 @@ private:
     uint32_t GetFramePixels(SkImageInfo& info, uint8_t* buffer, uint64_t rowStride, SkCodec::Options options);
     FrameCacheInfo InitFrameCacheInfo(const uint64_t rowStride, SkImageInfo info);
     bool FrameCacheInfoIsEqual(FrameCacheInfo& src, FrameCacheInfo& dst);
-    sk_sp<SkColorSpace> GetDesiredColorSpace(SkImageInfo &srcInfo, const PixelDecodeOptions &opts);
 
     ImagePlugin::InputDataStream *stream_ = nullptr;
     uint32_t streamOff_ = 0;
