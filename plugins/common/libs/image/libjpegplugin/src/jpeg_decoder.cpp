@@ -416,10 +416,8 @@ uint32_t JpegDecoder::DoSwDecode(DecodeContext &context) __attribute__((no_sanit
             }
             void* nativeBuffer = sb.GetRefPtr();
             int32_t err = ImageUtils::SurfaceBuffer_Reference(nativeBuffer);
-            if (err != OHOS::GSERROR_OK) {
-                IMAGE_LOGE("NativeBufferReference failed");
-                return ERR_DMA_DATA_ABNORMAL;
-            }
+            bool cond = err != OHOS::GSERROR_OK;
+            CHECK_ERROR_RETURN_RET_LOG(cond, ERR_DMA_DATA_ABNORMAL, "NativeBufferReference failed");
 
             context.pixelsBuffer.buffer = sb->GetVirAddr();
             context.pixelsBuffer.context = nativeBuffer;
@@ -1030,9 +1028,8 @@ uint32_t JpegDecoder::ModifyImageProperty(uint32_t index, const std::string &key
     }
 
     uint32_t ret = exifInfo_.ModifyExifData(tag, value, path);
-    if (ret != Media::SUCCESS) {
-        return ret;
-    }
+    bool cond = ret != Media::SUCCESS;
+    CHECK_ERROR_RETURN_RET(cond, ret);
     return Media::SUCCESS;
 }
 
