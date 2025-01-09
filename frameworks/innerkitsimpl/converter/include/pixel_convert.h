@@ -191,7 +191,7 @@ public:
     static int32_t PixelsConvert(const BufferInfo &src, BufferInfo &dst, int32_t srcLength, bool useDMA);
     static int32_t PixelsConvert(const BufferInfo &src, BufferInfo &dst, bool useDMA);
     static bool DecAstc(uint8_t *recRgba, uint8_t *astcBuf, uint32_t astcBufSize, uint32_t stride);
-
+    static std::unique_ptr<PixelMap> AstcToRgba(PixelMap *source, uint32_t &errorCode, PixelFormat destFormat);
 private:
     static AlphaConvertType GetAlphaConvertType(const AlphaType &srcType, const AlphaType &dstType);
     static bool IsValidRowStride(int32_t rowStride, const ImageInfo &imageInfo);

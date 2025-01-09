@@ -113,9 +113,6 @@ static constexpr uint8_t NUM_6 = 6;
 static constexpr uint8_t NUM_7 = 7;
 static constexpr uint8_t NUM_8 = 8;
 
-constexpr uint32_t BYTES_PER_PIXEL = 4;
-constexpr uint32_t ASTC_DIM_MAX = 8192; // astcDec support max dim
-
 std::atomic<uint32_t> PixelMap::currentId = 0;
 
 PixelMap::~PixelMap()
@@ -4388,59 +4385,7 @@ bool PixelMap::CloseFd()
 
 std::unique_ptr<PixelMap> PixelMap::ConvertFromAstc(PixelMap *source, uint32_t &errorCode, PixelFormat destFormat)
 {
-    uint32_t astcBufSize = source->GetCapacity();
-    uint8_t *astcBuf = const_cast<uint8_t *>(source->GetPixels());
-    PixelFormat format = source->GetPixelFormat();
-    auto colorSpace = source->InnerGetGrColorSpace();
-    bool isInvalidInput = (astcBufSize == 0 || astcBuf == nullptr ||
-        format != PixelFormat::ASTC_4x4 || destFormat != PixelFormat::RGBA_8888);
-    if (isInvalidInput) {
-        IMAGE_LOGE("DecAstc input astcBuf is null or src is not astc_4x4 or dst is not rgba_8888");
-        errorCode = ERR_IMAGE_INVALID_PARAMETER;
-        return nullptr;
-    }
-
-    Size astcSize;
-    source->GetAstcRealSize(astcSize);
-    bool isInvalidAstcSize = (astcSize.width <= 0 || astcSize.height <= 0 ||
-        static_cast<uint32_t>(astcSize.width) > ASTC_DIM_MAX ||
-        static_cast<uint32_t>(astcSize.height) > ASTC_DIM_MAX);
-    if (isInvalidAstcSize) {
-        IMAGE_LOGE("DecAstc astc width: %{public}d, height: %{public}d is invalid", astcSize.width,
-            astcSize.height);
-        errorCode = ERR_IMAGE_INVALID_PARAMETER;
-        return nullptr;
-    }
-
-    uint32_t byteCount = astcSize.width * astcSize.height * BYTES_PER_PIXEL;
-    MemoryData memoryData = {nullptr, byteCount, "Create PixelMap", astcSize, PixelFormat::RGBA_8888};
-    AllocatorType allocatorType = ImageUtils::GetPixelMapAllocatorType(astcSize, PixelFormat::RGBA_8888, true);
-    std::unique_ptr<AbsMemory> dstMemory = MemoryManager::CreateMemory(allocatorType, memoryData);
-    if (dstMemory == nullptr) {
-        IMAGE_LOGE("DecAstc malloc failed");
-        errorCode = ERR_IMAGE_MALLOC_ABNORMAL;
-        return nullptr;
-    }
-    uint8_t *recRgba = static_cast<uint8_t *>(dstMemory->data.data);
-    uint32_t stride = 0;
-    if (allocatorType == AllocatorType::DMA_ALLOC) {
-        SurfaceBuffer *surfaceBuffer = reinterpret_cast<SurfaceBuffer *>(dstMemory->extend.data);
-        stride = static_cast<uint32_t>(surfaceBuffer->GetStride()) >> NUM_2;
-    } else {
-        stride = static_cast<uint32_t>(astcSize.width);
-    }
-    if (!PixelConvert::DecAstc(recRgba, astcBuf, astcBufSize, stride)) {
-        IMAGE_LOGE("DecAstc failed");
-        dstMemory->Release();
-        errorCode = ERR_IMAGE_DECODE_FAILED;
-        return nullptr;
-    }
-
-    InitializationOptions opts = { astcSize, PixelFormat::RGBA_8888 };
-    std::unique_ptr<PixelMap> result = PixelMap::Create(opts);
-    result->SetPixelsAddr(static_cast<void *>(recRgba), dstMemory->extend.data, byteCount, allocatorType, nullptr);
-    result->InnerSetColorSpace(colorSpace);
-    return result;
+    return PixelConvert::AstcToRgba(source, errorCode, destFormat);
 }
 } // namespace Media
 } // namespace OHOS
