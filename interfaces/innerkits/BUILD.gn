@@ -237,6 +237,7 @@ if (use_clang_android) {
         deps += [ "//third_party/libpng:libpng" ]
       }
       external_deps = [
+        "astc-encoder:astc_encoder_shared",
         "c_utils:utils",
         "drivers_interface_display:libdisplay_commontype_proxy_1.0",
         "ffmpeg:libohosffmpeg",

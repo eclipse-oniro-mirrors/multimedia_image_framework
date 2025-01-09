@@ -17,6 +17,7 @@
 
 #include <map>
 #include <mutex>
+#include "astcenc.h"
 #ifndef _WIN32
 #include "securec.h"
 #else
@@ -27,6 +28,11 @@
 #include "pixel_map.h"
 
 #include "image_log.h"
+#include "media_errors.h"
+#include "memory_manager.h"
+#if !defined(_WIN32) && !defined(_APPLE) && !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
+#include "surface_buffer.h"
+#endif
 
 #ifdef __cplusplus
 extern "C" {
@@ -56,6 +62,31 @@ constexpr bool IS_LITTLE_ENDIAN = false;
 constexpr int32_t DMA_LINE_SIZE = 256;
 static const uint8_t NUM_2 = 2;
 constexpr uint8_t YUV420_P010_BYTES = 2;
+
+constexpr uint8_t BYTE_POS_0 = 0;
+constexpr uint8_t BYTE_POS_1 = 1;
+constexpr uint8_t BYTE_POS_2 = 2;
+constexpr uint8_t BYTE_POS_3 = 3;
+constexpr uint8_t BYTE_POS_4 = 4;
+constexpr uint8_t BYTE_POS_5 = 5;
+constexpr uint8_t BYTE_POS_6 = 6;
+constexpr uint8_t BYTE_POS_7 = 7;
+constexpr uint8_t BYTE_POS_8 = 8;
+constexpr uint8_t BYTE_POS_9 = 9;
+constexpr uint8_t BYTE_POS_10 = 10;
+constexpr uint8_t BYTE_POS_11 = 11;
+constexpr uint8_t BYTE_POS_12 = 12;
+constexpr uint8_t BYTE_POS_13 = 13;
+constexpr uint8_t BYTE_POS_14 = 14;
+constexpr uint8_t BYTE_POS_15 = 15;
+constexpr uint32_t ASTC_BLOCK_SIZE_4 = 4;
+constexpr uint32_t ASTC_MAGIC_ID = 0x5CA1AB13;
+constexpr uint32_t UNPACK_SHIFT_1 = 8;
+constexpr uint32_t UNPACK_SHIFT_2 = 16;
+constexpr uint32_t UNPACK_SHIFT_3 = 24;
+constexpr uint32_t ASTC_UNIT_BYTES = 16;
+constexpr uint32_t ASTC_DIM_MAX = 8192;
+constexpr uint32_t BYTES_PER_PIXEL = 4;
 
 static void AlphaTypeConvertOnRGB(uint32_t &A, uint32_t &R, uint32_t &G, uint32_t &B,
                                   const ProcFuncExtension &extension)
@@ -1640,6 +1671,192 @@ void PixelConvert::Convert(void *destinationPixels, const uint8_t *sourcePixels,
         return;
     }
     procFunc_(destinationPixels, sourcePixels, sourcePixelsNum, procFuncExtension_);
+}
+
+static unsigned int UnpackBytes(uint8_t a, uint8_t b, uint8_t c, uint8_t d)
+{
+    return static_cast<unsigned int>(a) +
+        (static_cast<unsigned int>(b) << UNPACK_SHIFT_1) +
+        (static_cast<unsigned int>(c) << UNPACK_SHIFT_2) +
+        (static_cast<unsigned int>(d) << UNPACK_SHIFT_3);
+}
+
+static bool CheckAstcHead(uint8_t *astcBuf, unsigned int &blockX, unsigned int &blockY, size_t &dataSize,
+    uint32_t astcBufSize)
+{
+    if (astcBufSize < ASTC_UNIT_BYTES + ASTC_UNIT_BYTES) {
+        IMAGE_LOGE("DecAstc astcBufSize: %{public}d is invalid", astcBufSize);
+        return false;
+    }
+    unsigned int magicVal = UnpackBytes(astcBuf[BYTE_POS_0], astcBuf[BYTE_POS_1], astcBuf[BYTE_POS_2],
+        astcBuf[BYTE_POS_3]);
+    if (magicVal != ASTC_MAGIC_ID) {
+        IMAGE_LOGE("DecAstc magicVal: %{public}d is invalid", magicVal);
+        return false;
+    }
+    blockX = static_cast<unsigned int>(astcBuf[BYTE_POS_4]);
+    blockY = static_cast<unsigned int>(astcBuf[BYTE_POS_5]);
+    if (blockX != ASTC_BLOCK_SIZE_4 || blockY != blockX) {
+        IMAGE_LOGE("DecAstc blockX: %{public}d blockY: %{public}d not 4x4 or w!=h", blockX, blockY);
+        return false;
+    }
+    if (astcBuf[BYTE_POS_6] != 1) {
+        IMAGE_LOGE("DecAstc astc buffer is not 1d");
+        return false;
+    }
+    unsigned int dimX = UnpackBytes(astcBuf[BYTE_POS_7], astcBuf[BYTE_POS_8], astcBuf[BYTE_POS_9], 0);
+    unsigned int dimY = UnpackBytes(astcBuf[BYTE_POS_10], astcBuf[BYTE_POS_11], astcBuf[BYTE_POS_12], 0);
+    if (dimX > ASTC_DIM_MAX || dimY > ASTC_DIM_MAX) {
+        IMAGE_LOGE("DecAstc dimX: %{public}d dimY: %{public}d overflow", dimX, dimY);
+        return false;
+    }
+    // dimZ = 1
+    if (UnpackBytes(astcBuf[BYTE_POS_13], astcBuf[BYTE_POS_14], astcBuf[BYTE_POS_15], 0) != 1) {
+        IMAGE_LOGE("DecAstc astc buffer is not 1d");
+        return false;
+    }
+    if (blockX == 0 || blockY == 0) {
+        return false;
+    }
+    unsigned int xblocks = (dimX + blockX - 1) / blockX;
+    unsigned int yblocks = (dimY + blockY - 1) / blockY;
+    dataSize = xblocks * yblocks * ASTC_UNIT_BYTES;
+    if (dataSize + ASTC_UNIT_BYTES > astcBufSize) {
+        IMAGE_LOGE("DecAstc astc buffer is invalid, dataSize: %{public}zu, astcBufSize: %{public}d",
+            dataSize, astcBufSize);
+        return false;
+    }
+    return true;
+}
+
+static bool InitAstcOutImage(astcenc_image &outImage, uint8_t *astcBuf, uint8_t *recRgba, uint32_t stride)
+{
+    outImage.dim_x = UnpackBytes(astcBuf[BYTE_POS_7], astcBuf[BYTE_POS_8], astcBuf[BYTE_POS_9], 0);
+    outImage.dim_y = UnpackBytes(astcBuf[BYTE_POS_10], astcBuf[BYTE_POS_11], astcBuf[BYTE_POS_12], 0);
+    outImage.dim_z = 1;
+    outImage.dim_stride = stride;
+    outImage.data_type = ASTCENC_TYPE_U8;
+    outImage.data = new void* [1];
+    if (outImage.data == nullptr) {
+        IMAGE_LOGE("DecAstc outImage.data is null");
+        return false;
+    }
+    outImage.data[0] = recRgba;
+    return true;
+}
+
+static void FreeAstcMem(astcenc_image &outImage, astcenc_context *codec_context)
+{
+    if (outImage.data != nullptr) {
+        delete[] outImage.data;
+    }
+    if (codec_context != nullptr) {
+        astcenc_context_free(codec_context);
+    }
+}
+
+static bool DecAstc(uint8_t *recRgba, uint8_t *astcBuf, uint32_t astcBufSize, uint32_t stride)
+{
+    unsigned int blockX = 0;
+    unsigned int blockY = 0;
+    size_t dataSize = 0;
+
+    if (!CheckAstcHead(astcBuf, blockX, blockY, dataSize, astcBufSize)) {
+        return false;
+    }
+
+    astcenc_config config = {};
+    astcenc_error status = astcenc_config_init(ASTCENC_PRF_LDR_SRGB, blockX, blockY, 1, 0, 0x10, &config);
+    if (status != ASTCENC_SUCCESS) {
+        IMAGE_LOGE("DecAstc init config failed with %{public}s", astcenc_get_error_string(status));
+        return false;
+    }
+    config.flags = 0x12;
+    astcenc_context *codec_context = nullptr;
+    status = astcenc_context_alloc(&config, 1, &codec_context);
+    if (status != ASTCENC_SUCCESS) {
+        IMAGE_LOGE("DecAstc codec context alloc failed: %{public}s", astcenc_get_error_string(status));
+        return false;
+    }
+    astcenc_image outImage;
+    if (!InitAstcOutImage(outImage, astcBuf, recRgba, stride)) {
+        FreeAstcMem(outImage, codec_context);
+        return false;
+    }
+
+    astcenc_swizzle swz_decode {ASTCENC_SWZ_R, ASTCENC_SWZ_G, ASTCENC_SWZ_B, ASTCENC_SWZ_A};
+    status = astcenc_decompress_image(codec_context, astcBuf + ASTC_UNIT_BYTES, dataSize, &outImage,
+        &swz_decode, 0);
+    if (status != ASTCENC_SUCCESS) {
+        IMAGE_LOGE("DecAstc codec decompress failed: %{public}s", astcenc_get_error_string(status));
+        FreeAstcMem(outImage, codec_context);
+        return false;
+    }
+    FreeAstcMem(outImage, codec_context);
+    return true;
+}
+
+static bool CheckInputValid(uint32_t astcBufSize, uint8_t *astcBuf, PixelFormat format, PixelFormat destFormat,
+    Size astcSize)
+{
+    bool isInvalidInput = (astcBufSize == 0 || astcBuf == nullptr ||
+        format != PixelFormat::ASTC_4x4 || destFormat != PixelFormat::RGBA_8888);
+    if (isInvalidInput) {
+        IMAGE_LOGE("DecAstc input astcBuf is null or src is not astc_4x4 or dst is not rgba_8888");
+        return false;
+    }
+    bool isInvalidAstcSize = (astcSize.width <= 0 || astcSize.height <= 0 ||
+        static_cast<uint32_t>(astcSize.width) > ASTC_DIM_MAX ||
+        static_cast<uint32_t>(astcSize.height) > ASTC_DIM_MAX);
+    if (isInvalidAstcSize) {
+        IMAGE_LOGE("DecAstc astc width: %{public}d, height: %{public}d is invalid", astcSize.width,
+            astcSize.height);
+        return false;
+    }
+    return true;
+}
+
+std::unique_ptr<PixelMap> PixelConvert::AstcToRgba(PixelMap *source, uint32_t &errorCode, PixelFormat destFormat)
+{
+    uint32_t astcBufSize = source->GetCapacity();
+    uint8_t *astcBuf = const_cast<uint8_t *>(source->GetPixels());
+    PixelFormat format = source->GetPixelFormat();
+    auto colorSpace = source->InnerGetGrColorSpace();
+    Size astcSize;
+    source->GetAstcRealSize(astcSize);
+    if (!CheckInputValid(astcBufSize, astcBuf, format, destFormat, astcSize)) {
+        errorCode = ERR_IMAGE_INVALID_PARAMETER;
+        return nullptr;
+    }
+    uint32_t byteCount = astcSize.width * astcSize.height * BYTES_PER_PIXEL;
+    MemoryData memoryData = {nullptr, byteCount, "Create PixelMap", astcSize, PixelFormat::RGBA_8888};
+    AllocatorType allocatorType = ImageUtils::GetPixelMapAllocatorType(astcSize, PixelFormat::RGBA_8888, true);
+    std::unique_ptr<AbsMemory> dstMemory = MemoryManager::CreateMemory(allocatorType, memoryData);
+    if (dstMemory == nullptr) {
+        IMAGE_LOGE("DecAstc malloc failed");
+        errorCode = ERR_IMAGE_MALLOC_ABNORMAL;
+        return nullptr;
+    }
+    uint8_t *recRgba = static_cast<uint8_t *>(dstMemory->data.data);
+    uint32_t stride = 0;
+    if (allocatorType == AllocatorType::DMA_ALLOC) {
+        SurfaceBuffer *surfaceBuffer = reinterpret_cast<SurfaceBuffer *>(dstMemory->extend.data);
+        stride = static_cast<uint32_t>(surfaceBuffer->GetStride()) >> NUM_2;
+    } else {
+        stride = static_cast<uint32_t>(astcSize.width);
+    }
+    if (!DecAstc(recRgba, astcBuf, astcBufSize, stride)) {
+        IMAGE_LOGE("DecAstc failed");
+        dstMemory->Release();
+        errorCode = ERR_IMAGE_DECODE_FAILED;
+        return nullptr;
+    }
+
+    InitializationOptions opts = { astcSize, PixelFormat::RGBA_8888 };
+    std::unique_ptr<PixelMap> result = PixelMap::Create(opts);
+    result->SetPixelsAddr(static_cast<void *>(recRgba), dstMemory->extend.data, byteCount, allocatorType, nullptr);
+    result->InnerSetColorSpace(colorSpace);
+    return result;
 }
 } // namespace Media
 } // namespace OHOS

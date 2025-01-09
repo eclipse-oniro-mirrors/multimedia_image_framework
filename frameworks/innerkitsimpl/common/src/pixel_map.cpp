@@ -37,6 +37,7 @@
 #include "include/core/SkImage.h"
 #include "hitrace_meter.h"
 #include "media_errors.h"
+#include "pixel_convert.h"
 #include "pixel_convert_adapter.h"
 #include "pixel_map_utils.h"
 #include "post_proc.h"
@@ -4380,6 +4381,11 @@ bool PixelMap::CloseFd()
     IMAGE_LOGE("[Pixelmap] CloseFd is not supported on crossplatform");
     return false;
 #endif
+}
+
+std::unique_ptr<PixelMap> PixelMap::ConvertFromAstc(PixelMap *source, uint32_t &errorCode, PixelFormat destFormat)
+{
+    return PixelConvert::AstcToRgba(source, errorCode, destFormat);
 }
 } // namespace Media
 } // namespace OHOS
