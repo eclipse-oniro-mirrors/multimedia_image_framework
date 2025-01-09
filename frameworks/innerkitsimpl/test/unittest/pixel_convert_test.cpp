@@ -24,7 +24,7 @@
 #include "pixel_map.h"
 #include "image_source_util.h"
 #include "pixel_convert.h"
-
+#include "securec.h"
 using namespace testing::ext;
 using namespace OHOS::Media;
 namespace OHOS {
@@ -34,6 +34,19 @@ constexpr bool IS_LITTLE_ENDIAN = true;
 #else
 constexpr bool IS_LITTLE_ENDIAN = false;
 #endif
+
+constexpr uint8_t ASTC_MAGIC_0 = 0x13;
+constexpr uint8_t ASTC_MAGIC_1 = 0xAB;
+constexpr uint8_t ASTC_MAGIC_2 = 0xA1;
+constexpr uint8_t ASTC_MAGIC_3 = 0x5C;
+constexpr uint8_t ASTC_1TH_BYTES = 8;
+constexpr uint8_t ASTC_2TH_BYTES = 16;
+constexpr uint8_t MASKBITS_FOR_8BIT = 255;
+constexpr uint8_t ASTC_PER_BLOCK_BYTES = 16;
+constexpr uint8_t ASTC_HEADER_BYTES = 16;
+constexpr uint8_t ASTC_BLOCK4X4_FIT_ASTC_EXAMPLE0[ASTC_PER_BLOCK_BYTES] = {
+    0x43, 0x80, 0xE9, 0xE8, 0xFA, 0xFC, 0x14, 0x17, 0xFF, 0xFF, 0x81, 0x42, 0x12, 0x5A, 0xD4, 0xE9
+};
 class PixelConvertTest : public testing::Test {
 public:
     PixelConvertTest() {}
@@ -1988,6 +2001,116 @@ HWTEST_F(PixelConvertTest, PixelConvertTest0052, TestSize.Level3)
     colorConverterPointer->Convert(destination, source, 2);
     ASSERT_NE(source[0], 0x80020408);
     GTEST_LOG_(INFO) << "PixelConvertTest: PixelConvertTest0052 start";
+}
+
+/**
+ * @tc.name: PixelConvertTest0053
+ * @tc.desc: ASTC to RGBA
+ * @tc.type: FUNC
+ */
+static bool GenAstcHeader(uint8_t *header, size_t blockSize, size_t width, size_t height)
+{
+    if (header == nullptr) {
+        return false;
+    }
+    uint8_t *tmp = header;
+    *tmp++ = ASTC_MAGIC_0;
+    *tmp++ = ASTC_MAGIC_1;
+    *tmp++ = ASTC_MAGIC_2;
+    *tmp++ = ASTC_MAGIC_3;
+    *tmp++ = static_cast<uint8_t>(blockSize);
+    *tmp++ = static_cast<uint8_t>(blockSize);
+    *tmp++ = 1;
+    *tmp++ = width & MASKBITS_FOR_8BIT;
+    *tmp++ = (width >> ASTC_1TH_BYTES) & MASKBITS_FOR_8BIT;
+    *tmp++ = (width >> ASTC_2TH_BYTES) & MASKBITS_FOR_8BIT;
+    *tmp++ = height & MASKBITS_FOR_8BIT;
+    *tmp++ = (height >> ASTC_1TH_BYTES) & MASKBITS_FOR_8BIT;
+    *tmp++ = (height >> ASTC_2TH_BYTES) & MASKBITS_FOR_8BIT;
+    *tmp++ = 1;
+    *tmp++ = 0;
+    *tmp++ = 0;
+    return true;
+}
+
+static bool ConstructAstcBody(uint8_t *astcBody, size_t &blockNums, const uint8_t* astcBlockPart)
+{
+    if (astcBody == nullptr || astcBlockPart == nullptr) {
+        return false;
+    }
+    uint8_t astcBuf = astcBody;
+    for (size_t blockIdx = 0; blockIdx < blockNums, blockIdx++) {
+        if (memcpy_s(astcBuf, ASTC_PER_BLOCK_BYTES, astcBlockPart, ASTC_PER_BLOCK_BYTES) != 0) {
+            return false;
+        }
+        astcBuf += ASTC_PER_BLOCK_BYTES;
+    }
+    return true;
+}
+
+static bool GenSubAstc(uint8_t *&inBuffer, uint32_t *astcBytes)
+{
+    size_t subPicBlockNums = 256;
+    astcBytes = ASTC_HEADER_BYTES + subPicBlockNums * ASTC_PER_BLOCK_BYTES;
+
+    inBuffer = static_cast<uint8_t *>(malloc(astcBytes));
+    if (inBuffer == nullptr) {
+        return false;
+    }
+
+    if (!GenAstcHeader(inBuffer, 4, 64, 64)) {
+        free(inBuffer);
+        return false;
+    }
+
+    if (!ConstructAstcBody(inBuffer + ASTC_HEADER_BYTES, subPicBlockNums, ASTC_BLOCK4X4_FIT_ASTC_EXAMPLE0)) {
+        free(inBuffer);
+        return false;
+    }
+    return true;
+}
+
+static std::unique_ptr<PixelMap> ConstructPixmap(int32_t width, int32_t height, PixelFormat format,
+    AlphaType alphaType, AllocatorType type)
+{
+    std::unique_ptr<PixelMap> pixelMap = std::make_unique<PixelMap>();
+    ImageInfo info;
+    info.size.width = width;
+    info.size.height = height;
+    info.pixelFormat = format;
+    info.colorSpace = ColorSpace::SRGB;
+    info.alphaType = alphaType;
+    pixelMap->SetImageInfo(info);
+
+    Size astcSize;
+    astcSize.width = 64;
+    astcSize.height = 64;
+    pixelMap->SetAstcRealSize(astcSize);
+    uint8_t *astcInput = nullptr;
+    uint32_t astcLen = 0;
+    if (!GenSubAstc(astcInput, astcLen)) {
+        return nullptr;
+    }
+    pixelMap->SetPixelsAddr(astcInput, nullptr, astcLen, type, nullptr);
+
+    return pixelMap;
+}
+
+HWTEST_F(PixelConvertTest, PixelConvertTest0053, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PixelConvertTest: PixelConvertTest0053 start";
+    auto pixelMap = ConstructPixmap(64, 64, PixelFormat::ASTC_4x4, AlphaType::IMAGE_ALPHA_TYPE_PREMUL,
+        AllocatorType::DMA_ALLOC);
+    uint32_t errorCode = 0;
+    auto result = PixelConvert::AstcToRgba(pixelMap.get(), errorCode, PixelFormat::RGBA_8888);
+    EXPECT_EQ(errorCode, 0);
+    result = PixelConvert::AstcToRgba(pixelMap.get(), errorCode, PixelFormat::ARGB_8888);
+    EXPECT_NE(errorCode, 0);
+    auto pixelMap2 = ConstructPixmap(64, 64, PixelFormat::ASTC_6x6, AlphaType::IMAGE_ALPHA_TYPE_PREMUL,
+        AllocatorType::DMA_ALLOC);
+    result = PixelConvert::AstcToRgba(pixelMap.get(), errorCode, PixelFormat::RGBA_8888);
+    EXPECT_NE(errorCode, 0);
+    GTEST_LOG_(INFO) << "PixelConvertTest: PixelConvertTest0053 end";
 }
 }
 }

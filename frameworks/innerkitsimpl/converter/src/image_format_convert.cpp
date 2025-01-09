@@ -327,7 +327,7 @@ uint32_t ImageFormatConvert::ConvertImageFormat(std::shared_ptr<PixelMap> &srcPi
     }
     if (srcPiexlMap->IsAstc()) {
         uint32_t ret = 0;
-        std::unique_ptr<PixelMap> resultPixelMap = IncrementalPixelMap::ConvertFromAstc(srcPiexlMap.get(), ret,
+        std::unique_ptr<PixelMap> resultPixelMap = PixelMap::ConvertFromAstc(srcPiexlMap.get(), ret,
             destFormat);
         srcPiexlMap = std::move(resultPixelMap);
         if (ret != SUCCESS) {
