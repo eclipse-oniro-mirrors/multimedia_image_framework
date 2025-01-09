@@ -1696,7 +1696,10 @@ static bool CheckAstcHead(uint8_t *astcBuf, unsigned int &blockX, unsigned int &
     }
     blockX = static_cast<unsigned int>(astcBuf[BYTE_POS_4]);
     blockY = static_cast<unsigned int>(astcBuf[BYTE_POS_5]);
-    
+    if (blockX != ASTC_BLOCK_SIZE_4 || blockY != blockX) {
+        IMAGE_LOGE("DecAstc blockX: %{public}d blockY: %{public}d not 4x4 or w!=h", blockX, blockY);
+        return false;
+    }
     if (astcBuf[BYTE_POS_6] != 1) {
         IMAGE_LOGE("DecAstc astc buffer is not 1d");
         return false;
@@ -1712,8 +1715,7 @@ static bool CheckAstcHead(uint8_t *astcBuf, unsigned int &blockX, unsigned int &
         IMAGE_LOGE("DecAstc astc buffer is not 1d");
         return false;
     }
-    if (blockX != ASTC_BLOCK_SIZE_4 || blockY != blockX) {
-        IMAGE_LOGE("DecAstc blockX: %{public}d blockY: %{public}d not 4x4 or w!=h", blockX, blockY);
+    if (blockX == 0 || blockY == 0) {
         return false;
     }
     unsigned int xblocks = (dimX + blockX - 1) / blockX;
