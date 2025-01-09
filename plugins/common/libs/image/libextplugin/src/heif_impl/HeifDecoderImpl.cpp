@@ -874,9 +874,8 @@ bool HeifDecoderImpl::SwDecodeSingleImage(ImageFwkExtManager &extManager,
     if (extManager.hevcSoftwareDecodeFunc_ == nullptr && !extManager.LoadImageFwkExtNativeSo()) {
         return false;
     }
-    if (param.dstBuffer == nullptr || param.dstStride == 0) {
-        return false;
-    }
+    bool cond = (param.dstBuffer == nullptr || param.dstStride == 0);
+    CHECK_ERROR_RETURN_RET(cond, false);
     std::vector<std::vector<uint8_t>> inputs(1);
     parser_->GetItemData(image->GetItemId(), &inputs[0], heif_header_data);
     ProcessChunkHead(inputs[0].data(), inputs[0].size());
