@@ -1794,7 +1794,8 @@ static bool DecAstc(uint8_t *recRgba, uint8_t *astcBuf, uint32_t astcBufSize, ui
     return true;
 }
 
-static bool CheckInputValid(uint32_t astcBufSize, uint8_t *astcBuf, PixelFormat format, PixelFormat destFormat, Size astcSize)
+static bool CheckInputValid(uint32_t astcBufSize, uint8_t *astcBuf, PixelFormat format, PixelFormat destFormat,
+    Size astcSize)
 {
     bool isInvalidInput = (astcBufSize == 0 || astcBuf == nullptr ||
         format != PixelFormat::ASTC_4x4 || destFormat != PixelFormat::RGBA_8888);
