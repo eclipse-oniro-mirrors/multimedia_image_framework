@@ -828,15 +828,13 @@ void ImageUtils::FlushContextSurfaceBuffer(ImagePlugin::DecodeContext& context)
 void ImageUtils::InvalidateContextSurfaceBuffer(ImagePlugin::DecodeContext& context)
 {
 #if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
-    if (context.pixelsBuffer.context == nullptr || context.allocatorType != AllocatorType::DMA_ALLOC) {
-        return;
-    }
+    bool cond = context.pixelsBuffer.context == nullptr || context.allocatorType != AllocatorType::DMA_ALLOC;
+    CHECK_ERROR_RETURN(cond);
     SurfaceBuffer* surfaceBuffer = static_cast<SurfaceBuffer*>(context.pixelsBuffer.context);
     if (surfaceBuffer && (surfaceBuffer->GetUsage() & BUFFER_USAGE_MEM_MMZ_CACHE)) {
         GSError err = surfaceBuffer->InvalidateCache();
-        if (err != GSERROR_OK) {
-            IMAGE_LOGE("ImageUtils FlushCache failed, GSError=%{public}d", err);
-        }
+        cond = err != GSERROR_OK;
+        CHECK_ERROR_PRINT_LOG(cond, "ImageUtils FlushCache failed, GSError=%{public}d", err);
     }
 #else
     return;

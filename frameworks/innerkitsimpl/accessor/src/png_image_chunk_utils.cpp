@@ -261,10 +261,7 @@ bool PngImageChunkUtils::FindExifFromTxt(DataBuf &chunkData)
     }
 
     bool foundExifKeyword = FindExifKeyword(keyword.CData(), keyword.Size());
-    if (!foundExifKeyword) {
-        IMAGE_LOGI("The text chunk is without exif keyword");
-        return false;
-    }
+    CHECK_INFO_RETURN_RET_LOG(!foundExifKeyword, false, "The text chunk is without exif keyword");
     return true;
 }
 
