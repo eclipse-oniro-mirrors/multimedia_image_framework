@@ -73,7 +73,7 @@ public:
     bool CheckAuxiliaryMap(Media::AuxiliaryPictureType type) override;
     bool GetHeifFragmentMetadata(Media::Rect& metadata) override;
 #ifdef IMAGE_COLORSPACE_FLAG
-    OHOS::ColorManager::ColorSpace getGrColorSpace() override;
+    OHOS::ColorManager::ColorSpace GetPixelMapColorSpace() override;
     bool IsSupportICCProfile() override;
 #endif
 
@@ -124,6 +124,7 @@ private:
     uint32_t GetFramePixels(SkImageInfo& info, uint8_t* buffer, uint64_t rowStride, SkCodec::Options options);
     FrameCacheInfo InitFrameCacheInfo(const uint64_t rowStride, SkImageInfo info);
     bool FrameCacheInfoIsEqual(FrameCacheInfo& src, FrameCacheInfo& dst);
+    void UpdateHardWareDecodeInfo(DecodeContext &context);
 
     ImagePlugin::InputDataStream *stream_ = nullptr;
     uint32_t streamOff_ = 0;
@@ -140,6 +141,9 @@ private:
     uint32_t heifParseErr_ = 0;
 #ifdef IMAGE_COLORSPACE_FLAG
     std::shared_ptr<OHOS::ColorManager::ColorSpace> dstColorSpace_ = nullptr;
+    std::shared_ptr<OHOS::ColorManager::ColorSpace> srcColorSpace_ = nullptr;
+    OHOS::ColorManager::ColorSpace GetSrcColorSpace();
+    uint32_t ApplyDesiredColorSpace(DecodeContext &context);
 #endif
 
 #if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)

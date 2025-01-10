@@ -51,6 +51,11 @@
 #include "heif_type.h"
 #include "image/image_plugin_type.h"
 
+#include "image_type_converter.h"
+#include "include/core/SkBitmap.h"
+#include "include/core/SkCanvas.h"
+#include "include/core/SkImage.h"
+
 #undef LOG_DOMAIN
 #define LOG_DOMAIN LOG_TAG_DOMAIN_ID_PLUGIN
 
@@ -138,6 +143,12 @@ const static uint32_t PLANE_COUNT_TWO = 2;
 struct ColorTypeOutput {
     PixelFormat outFormat;
     SkColorType skFormat;
+};
+
+struct SkTransInfo {
+    SkRect r;
+    SkImageInfo info;
+    SkBitmap bitmap;
 };
 
 static const map<PixelFormat, ColorTypeOutput> COLOR_TYPE_MAP = {
@@ -1158,32 +1169,51 @@ void ExtDecoder::ReleaseOutputBuffer(DecodeContext &context, Media::AllocatorTyp
     context.pixelsBuffer.context = nullptr;
 }
 
-uint32_t ExtDecoder::HardWareDecode(DecodeContext &context)
+uint32_t ExtDecoder::ApplyDesiredColorSpace(DecodeContext &context)
 {
-    JpegHardwareDecoder hwDecoder;
-    orgImgSize_.width = static_cast<uint32_t>(info_.width());
-    orgImgSize_.height = static_cast<uint32_t>(info_.height());
+    SurfaceBuffer* sbuffer = static_cast<SurfaceBuffer*>(context.pixelsBuffer.context);
+    int32_t width = sbuffer->GetWidth();
+    int32_t height = sbuffer->GetHeight();
+    uint64_t rowStride = static_cast<uint64_t>(sbuffer->GetStride());
 
-    if (!CheckContext(context)) {
-        return ERROR;
+    // build sk source information
+    SkTransInfo src;
+    uint8_t* srcData = static_cast<uint8_t*>(sbuffer->GetVirAddr());
+    SkColorType colorType = ImageTypeConverter::ToSkColorType(context.pixelFormat);
+    SkAlphaType alphaType = ImageTypeConverter::ToSkAlphaType(OHOS::Media::AlphaType::IMAGE_ALPHA_TYPE_PREMUL);
+
+    if (!src.bitmap.installPixels(info_, srcData, rowStride)) {
+        IMAGE_LOGE("apply colorspace get install failed.");
+        return ERR_IMAGE_COLOR_CONVERT;
     }
 
-    Media::AllocatorType tmpAllocatorType = context.allocatorType;
-    OHOS::HDI::Codec::Image::V2_0::CodecImageBuffer outputBuffer;
-    uint32_t ret = AllocOutputBuffer(context, outputBuffer);
-    if (ret != SUCCESS) {
-        IMAGE_LOGE("Decode failed, Alloc OutputBuffer failed, ret=%{public}d", ret);
-        context.hardDecodeError = "Decode failed, Alloc OutputBuffer failed, ret=" + std::to_string(ret);
-        return ERR_IMAGE_DECODE_ABNORMAL;
-    }
-    ret = hwDecoder.Decode(codec_.get(), stream_, orgImgSize_, sampleSize_, outputBuffer);
-    if (ret != SUCCESS) {
-        IMAGE_LOGE("failed to do jpeg hardware decode, err=%{public}d", ret);
-        context.hardDecodeError = "failed to do jpeg hardware decode, err=" + std::to_string(ret);
-        ReleaseOutputBuffer(context, tmpAllocatorType);
-        return ERR_IMAGE_DECODE_ABNORMAL;
+    // build target information
+    SkTransInfo dst;
+    dst.info = SkImageInfo::Make(width, height, colorType, alphaType, dstColorSpace_->ToSkColorSpace());
+
+    MemoryData memoryData = {nullptr, hwDstInfo_.computeMinByteSize(),
+        "Trans ImageData", {hwDstInfo_.width(), hwDstInfo_.height()}, context.pixelFormat};
+    AllocatorType allocatorType = context.allocatorType;
+    auto m = MemoryManager::CreateMemory(allocatorType, memoryData);
+    if (m == nullptr) {
+        IMAGE_LOGE("applyColorSpace CreateMemory failed");
+        return ERR_IMAGE_COLOR_CONVERT;
     }
 
+    // Transfor pixels by readPixels
+    if (!src.bitmap.readPixels(dst.info, m->data.data, rowStride, 0, 0)) {
+        m->Release();
+        IMAGE_LOGE("applyColorSpace ReadPixels failded");
+        return ERR_IMAGE_COLOR_CONVERT;
+    }
+    FreeContextBuffer(context.freeFunc, context.allocatorType, context.pixelsBuffer);
+    SetDecodeContextBuffer(context, context.allocatorType, static_cast<uint8_t *>(m->data.data),
+                           m->data.size, m->extend.data);
+    return SUCCESS;
+}
+
+void ExtDecoder::UpdateHardWareDecodeInfo(DecodeContext &context)
+{
     SurfaceBuffer* sbuffer = static_cast<SurfaceBuffer*>(context.pixelsBuffer.context);
     if (sbuffer && sbuffer->GetFormat() != GRAPHIC_PIXEL_FMT_RGBA_8888) {
         OH_NativeBuffer_Planes *planes = nullptr;
@@ -1199,7 +1229,6 @@ uint32_t ExtDecoder::HardWareDecode(DecodeContext &context)
             context.yuvInfo.uvHeight = static_cast<uint32_t>((hwDstInfo_.height() + 1) / NUM_2);
         }
     }
-
     context.outInfo.size.width = static_cast<uint32_t>(hwDstInfo_.width());
     context.outInfo.size.height = static_cast<uint32_t>(hwDstInfo_.height());
     if (outputColorFmt_ == PIXEL_FMT_YCRCB_420_SP) {
@@ -1213,6 +1242,36 @@ uint32_t ExtDecoder::HardWareDecode(DecodeContext &context)
         }
     }
 #endif
+}
+
+uint32_t ExtDecoder::HardWareDecode(DecodeContext &context)
+{
+    JpegHardwareDecoder hwDecoder;
+    orgImgSize_.width = static_cast<uint32_t>(info_.width());
+    orgImgSize_.height = static_cast<uint32_t>(info_.height());
+    if (!CheckContext(context)) {
+        return ERROR;
+    }
+    Media::AllocatorType tmpAllocatorType = context.allocatorType;
+    OHOS::HDI::Codec::Image::V2_0::CodecImageBuffer outputBuffer;
+    uint32_t ret = AllocOutputBuffer(context, outputBuffer);
+    if (ret != SUCCESS) {
+        IMAGE_LOGE("Decode failed, Alloc OutputBuffer failed, ret=%{public}d", ret);
+        context.hardDecodeError = "Decode failed, Alloc OutputBuffer failed, ret=" + std::to_string(ret);
+        return ERR_IMAGE_DECODE_ABNORMAL;
+    }
+    ret = hwDecoder.Decode(codec_.get(), stream_, orgImgSize_, sampleSize_, outputBuffer);
+    if (ret != SUCCESS) {
+        IMAGE_LOGE("failed to do jpeg hardware decode, err=%{public}d", ret);
+        context.hardDecodeError = "failed to do jpeg hardware decode, err=" + std::to_string(ret);
+        ReleaseOutputBuffer(context, tmpAllocatorType);
+        return ERR_IMAGE_DECODE_ABNORMAL;
+    }
+    if (srcColorSpace_ != nullptr && dstColorSpace_ != nullptr &&
+        srcColorSpace_->GetColorSpaceName()!= dstColorSpace_->GetColorSpaceName()) {
+        ApplyDesiredColorSpace(context);
+    }
+    UpdateHardWareDecodeInfo(context);
     return SUCCESS;
 }
 #endif
@@ -1561,11 +1620,8 @@ static OHOS::ColorManager::ColorSpaceName GetHeifNclxColor(SkCodec* codec)
     return ColorManager::NONE;
 }
 
-OHOS::ColorManager::ColorSpace ExtDecoder::getGrColorSpace()
+OHOS::ColorManager::ColorSpace ExtDecoder::GetSrcColorSpace()
 {
-    if (dstColorSpace_ != nullptr) {
-        return *dstColorSpace_;
-    }
     auto skColorSpace = dstInfo_.isEmpty() ? info_.refColorSpace() : dstInfo_.refColorSpace();
     OHOS::ColorManager::ColorSpaceName name = OHOS::ColorManager::ColorSpaceName::CUSTOM;
     if (codec_ != nullptr) {
@@ -1590,6 +1646,19 @@ OHOS::ColorManager::ColorSpace ExtDecoder::getGrColorSpace()
         }
     }
     return OHOS::ColorManager::ColorSpace(skColorSpace, name);
+}
+
+// get graphic ColorSpace and set to pixelMap
+OHOS::ColorManager::ColorSpace ExtDecoder::GetPixelMapColorSpace()
+{
+    if (dstColorSpace_ != nullptr) {
+        if (srcColorSpace_ == nullptr) {
+            auto colorSpace = GetSrcColorSpace();
+            srcColorSpace_ = std::make_shared<OHOS::ColorManager::ColorSpace>(colorSpace);
+        }
+        return *dstColorSpace_;
+    }
+    return GetSrcColorSpace();
 }
 
 bool ExtDecoder::IsSupportICCProfile()
