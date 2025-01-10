@@ -444,15 +444,15 @@ bool FileSourceStream::ShouldUseMmap(int fd)
     int location = INVALID_POSITION;
     bool useMmap = false;
     int err = ioctl(fd, HMDFS_IOC_GET_LOCATION, &location);
-    if (err == IOCTL_SUCCESS) {
-        if (location == LOCAL_FILE_POSITION) {
-            useMmap = true;
-            return useMmap;
-        }
-        IMAGE_LOGI("[FileSourceStream] File position: %{public}d.", location);
+    if (err != IOCTL_SUCCESS) {
+        IMAGE_LOGD("[FileSourceStream] ioctl failed, error: %{public}d, errno: %{public}d.", err, errno);
         return useMmap;
     }
-    IMAGE_LOGD("[FileSourceStream] ioctl failed, error: %{public}d, errno: %{public}d.", err, errno);
+
+    if (location == LOCAL_FILE_POSITION) {
+        useMmap = true;
+    }
+    IMAGE_LOGD("[FileSourceStream] File position: %{public}d.", location);
     return useMmap;
 }
 
