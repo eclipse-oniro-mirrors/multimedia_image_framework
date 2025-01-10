@@ -44,6 +44,9 @@ constexpr uint8_t ASTC_2TH_BYTES = 16;
 constexpr uint8_t MASKBITS_FOR_8BIT = 255;
 constexpr uint8_t ASTC_PER_BLOCK_BYTES = 16;
 constexpr uint8_t ASTC_HEADER_BYTES = 16;
+constexpr uint8_t ASTC_BLOCK_SIZE = 4;
+constexpr uint8_t ASTC_DIM_SIZE = 64;
+constexpr uint8_t ASTC_BLOCK_NUM = 256;
 constexpr uint8_t ASTC_BLOCK4X4_FIT_ASTC_EXAMPLE0[ASTC_PER_BLOCK_BYTES] = {
     0x43, 0x80, 0xE9, 0xE8, 0xFA, 0xFC, 0x14, 0x17, 0xFF, 0xFF, 0x81, 0x42, 0x12, 0x5A, 0xD4, 0xE9
 };
@@ -2050,20 +2053,21 @@ static bool ConstructAstcBody(uint8_t *astcBody, size_t &blockNums, const uint8_
 
 static bool GenSubAstc(uint8_t *&inBuffer, uint32_t &astcBytes)
 {
-    size_t subPicBlockNums = 256;
-    astcBytes = ASTC_HEADER_BYTES + subPicBlockNums * ASTC_PER_BLOCK_BYTES;
-
+    astcBytes = ASTC_HEADER_BYTES + ASTC_BLOCK_NUM * ASTC_PER_BLOCK_BYTES;
+    if (astcBytes <= 0 || astcBytes > MALLOC_MAX_LENTH) {
+        return false;
+    }
     inBuffer = static_cast<uint8_t *>(malloc(astcBytes));
     if (inBuffer == nullptr) {
         return false;
     }
 
-    if (!GenAstcHeader(inBuffer, 4, 64, 64)) {
+    if (!GenAstcHeader(inBuffer, ASTC_BLOCK_SIZE, ASTC_DIM_SIZE, ASTC_DIM_SIZE)) {
         free(inBuffer);
         return false;
     }
 
-    if (!ConstructAstcBody(inBuffer + ASTC_HEADER_BYTES, subPicBlockNums, ASTC_BLOCK4X4_FIT_ASTC_EXAMPLE0)) {
+    if (!ConstructAstcBody(inBuffer + ASTC_HEADER_BYTES, ASTC_BLOCK_NUM, ASTC_BLOCK4X4_FIT_ASTC_EXAMPLE0)) {
         free(inBuffer);
         return false;
     }
@@ -2083,8 +2087,8 @@ static std::unique_ptr<PixelMap> ConstructPixmap(int32_t width, int32_t height, 
     pixelMap->SetImageInfo(info);
 
     Size astcSize;
-    astcSize.width = 64;
-    astcSize.height = 64;
+    astcSize.width = ASTC_DIM_SIZE;
+    astcSize.height = ASTC_DIM_SIZE;
     pixelMap->SetAstcRealSize(astcSize);
 
     uint8_t *astcInput = nullptr;
