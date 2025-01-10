@@ -2033,13 +2033,13 @@ static bool GenAstcHeader(uint8_t *header, size_t blockSize, size_t width, size_
     return true;
 }
 
-static bool ConstructAstcBody(uint8_t *astcBody, size_t &blockNums, const uint8_t* astcBlockPart)
+static bool ConstructAstcBody(uint8_t *astcBody, size_t &blockNums, const uint8_t *astcBlockPart)
 {
     if (astcBody == nullptr || astcBlockPart == nullptr) {
         return false;
     }
-    uint8_t astcBuf = astcBody;
-    for (size_t blockIdx = 0; blockIdx < blockNums, blockIdx++) {
+    uint8_t *astcBuf = astcBody;
+    for (size_t blockIdx = 0; blockIdx < blockNums; blockIdx++) {
         if (memcpy_s(astcBuf, ASTC_PER_BLOCK_BYTES, astcBlockPart, ASTC_PER_BLOCK_BYTES) != 0) {
             return false;
         }
@@ -2048,7 +2048,7 @@ static bool ConstructAstcBody(uint8_t *astcBody, size_t &blockNums, const uint8_
     return true;
 }
 
-static bool GenSubAstc(uint8_t *&inBuffer, uint32_t *astcBytes)
+static bool GenSubAstc(uint8_t *&inBuffer, uint32_t &astcBytes)
 {
     size_t subPicBlockNums = 256;
     astcBytes = ASTC_HEADER_BYTES + subPicBlockNums * ASTC_PER_BLOCK_BYTES;
@@ -2086,6 +2086,7 @@ static std::unique_ptr<PixelMap> ConstructPixmap(int32_t width, int32_t height, 
     astcSize.width = 64;
     astcSize.height = 64;
     pixelMap->SetAstcRealSize(astcSize);
+
     uint8_t *astcInput = nullptr;
     uint32_t astcLen = 0;
     if (!GenSubAstc(astcInput, astcLen)) {
@@ -2108,7 +2109,7 @@ HWTEST_F(PixelConvertTest, PixelConvertTest0053, TestSize.Level3)
     EXPECT_NE(errorCode, 0);
     auto pixelMap2 = ConstructPixmap(64, 64, PixelFormat::ASTC_6x6, AlphaType::IMAGE_ALPHA_TYPE_PREMUL,
         AllocatorType::DMA_ALLOC);
-    result = PixelConvert::AstcToRgba(pixelMap.get(), errorCode, PixelFormat::RGBA_8888);
+    result = PixelConvert::AstcToRgba(pixelMap2.get(), errorCode, PixelFormat::RGBA_8888);
     EXPECT_NE(errorCode, 0);
     GTEST_LOG_(INFO) << "PixelConvertTest: PixelConvertTest0053 end";
 }
