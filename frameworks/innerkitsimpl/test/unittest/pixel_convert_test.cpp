@@ -2036,7 +2036,7 @@ static bool GenAstcHeader(uint8_t *header, size_t blockSize, size_t width, size_
     return true;
 }
 
-static bool ConstructAstcBody(uint8_t *astcBody, size_t &blockNums, const uint8_t *astcBlockPart)
+static bool ConstructAstcBody(uint8_t *astcBody, const uint32_t &blockNums, const uint8_t *astcBlockPart)
 {
     if (astcBody == nullptr || astcBlockPart == nullptr) {
         return false;
