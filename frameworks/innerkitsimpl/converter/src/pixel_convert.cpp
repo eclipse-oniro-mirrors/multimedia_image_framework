@@ -17,7 +17,9 @@
 
 #include <map>
 #include <mutex>
+#if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
 #include "astcenc.h"
+#endif
 #ifndef _WIN32
 #include "securec.h"
 #else
@@ -1673,6 +1675,7 @@ void PixelConvert::Convert(void *destinationPixels, const uint8_t *sourcePixels,
     procFunc_(destinationPixels, sourcePixels, sourcePixelsNum, procFuncExtension_);
 }
 
+#if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
 static unsigned int UnpackBytes(uint8_t a, uint8_t b, uint8_t c, uint8_t d)
 {
     return static_cast<unsigned int>(a) +
@@ -1815,9 +1818,11 @@ static bool CheckInputValid(uint32_t astcBufSize, uint8_t *astcBuf, PixelFormat 
     }
     return true;
 }
+#endif
 
 std::unique_ptr<PixelMap> PixelConvert::AstcToRgba(PixelMap *source, uint32_t &errorCode, PixelFormat destFormat)
 {
+#if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
     uint32_t astcBufSize = source->GetCapacity();
     uint8_t *astcBuf = const_cast<uint8_t *>(source->GetPixels());
     PixelFormat format = source->GetPixelFormat();
@@ -1857,6 +1862,10 @@ std::unique_ptr<PixelMap> PixelConvert::AstcToRgba(PixelMap *source, uint32_t &e
     result->SetPixelsAddr(static_cast<void *>(recRgba), dstMemory->extend.data, byteCount, allocatorType, nullptr);
     result->InnerSetColorSpace(colorSpace);
     return result;
+#else
+    errorCode = ERR_IMAGE_DECODE_FAILED;
+    return nullptr;
+#endif
 }
 } // namespace Media
 } // namespace OHOS

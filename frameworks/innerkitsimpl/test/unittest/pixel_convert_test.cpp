@@ -46,7 +46,7 @@ constexpr uint8_t ASTC_PER_BLOCK_BYTES = 16;
 constexpr uint8_t ASTC_HEADER_BYTES = 16;
 constexpr uint8_t ASTC_BLOCK_SIZE = 4;
 constexpr uint8_t ASTC_DIM_SIZE = 64;
-constexpr uint8_t ASTC_BLOCK_NUM = 256;
+constexpr uint32_t ASTC_BLOCK_NUM = 256;
 constexpr uint8_t ASTC_BLOCK4X4_FIT_ASTC_EXAMPLE0[ASTC_PER_BLOCK_BYTES] = {
     0x43, 0x80, 0xE9, 0xE8, 0xFA, 0xFC, 0x14, 0x17, 0xFF, 0xFF, 0x81, 0x42, 0x12, 0x5A, 0xD4, 0xE9
 };
@@ -2107,13 +2107,25 @@ HWTEST_F(PixelConvertTest, PixelConvertTest0053, TestSize.Level3)
     auto pixelMap = ConstructPixmap(64, 64, PixelFormat::ASTC_4x4, AlphaType::IMAGE_ALPHA_TYPE_PREMUL,
         AllocatorType::DMA_ALLOC);
     uint32_t errorCode = 0;
+    // correct
     auto result = PixelConvert::AstcToRgba(pixelMap.get(), errorCode, PixelFormat::RGBA_8888);
     EXPECT_EQ(errorCode, 0);
-    result = PixelConvert::AstcToRgba(pixelMap.get(), errorCode, PixelFormat::ARGB_8888);
-    EXPECT_NE(errorCode, 0);
+    // err dst format
+    for (int i = 0; i < static_cast<int>(PixelFormat::EXTERNAL_MAX); i++) {
+        if (i == 3) {
+            continue;
+        }
+        result = PixelConvert::AstcToRgba(pixelMap.get(), errorCode, static_cast<PixelFormat>(i));
+        EXPECT_NE(errorCode, 0);
+    }
+    // err src format
     auto pixelMap2 = ConstructPixmap(64, 64, PixelFormat::ASTC_6x6, AlphaType::IMAGE_ALPHA_TYPE_PREMUL,
         AllocatorType::DMA_ALLOC);
     result = PixelConvert::AstcToRgba(pixelMap2.get(), errorCode, PixelFormat::RGBA_8888);
+    EXPECT_NE(errorCode, 0);
+    auto pixelMap3 = ConstructPixmap(64, 64, PixelFormat::ASTC_8x8, AlphaType::IMAGE_ALPHA_TYPE_PREMUL,
+        AllocatorType::DMA_ALLOC);
+    result = PixelConvert::AstcToRgba(pixelMap3.get(), errorCode, PixelFormat::RGBA_8888);
     EXPECT_NE(errorCode, 0);
     GTEST_LOG_(INFO) << "PixelConvertTest: PixelConvertTest0053 end";
 }
