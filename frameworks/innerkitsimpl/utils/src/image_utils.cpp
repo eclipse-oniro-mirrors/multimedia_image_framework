@@ -1060,6 +1060,7 @@ uint16_t ImageUtils::GetReusePixelRefCount(const std::shared_ptr<PixelMap> &reus
         uint16_t reusePixelRefCount = static_cast<uint16_t>(ref->GetSptrRefCount());
         return reusePixelRefCount;
     }
+    return 0;
 #else
     return 0;
 #endif

@@ -2115,7 +2115,8 @@ HWTEST_F(ImageSourceTest, ReusePixelmap001, TestSize.Level3)
     uint32_t errorCode = 0;
     SourceOptions opts;
     opts.formatHint = "image/heif";
-    std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(IMAGE_INPUT_HEIF_PATH, opts, errorCode);
+    std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(IMAGE_INPUT_HEIF_PATH,
+        opts, errorCode);
     ASSERT_EQ(errorCode, SUCCESS);
     ASSERT_NE(imageSource.get(), nullptr);
     uint32_t index = 0;
@@ -2123,7 +2124,8 @@ HWTEST_F(ImageSourceTest, ReusePixelmap001, TestSize.Level3)
     std::unique_ptr<PixelMap> pixelMap = imageSource->CreatePixelMap(index, optsPixel, errorCode);
     ASSERT_EQ(errorCode, SUCCESS);
 
-    std::unique_ptr<ImageSource> reuseImageSource = ImageSource::CreateImageSource(IMAGE_INPUT_HEIF_PATH, opts, errorCode);
+    std::unique_ptr<ImageSource> reuseImageSource = ImageSource::CreateImageSource(IMAGE_INPUT_HEIF_PATH,
+        opts, errorCode);
     ASSERT_EQ(errorCode, SUCCESS);
     ASSERT_NE(reuseImageSource.get(), nullptr);
     DecodeOptions reusePixelmapOpts;
@@ -2143,7 +2145,8 @@ HWTEST_F(ImageSourceTest, ReusePixelmap002, TestSize.Level3)
     uint32_t errorCode = 0;
     SourceOptions opts;
     opts.formatHint = "image/jpeg";
-    std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(IMAGE_INPUT_JPEG_HDR_PATH, opts, errorCode);
+    std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(IMAGE_INPUT_JPEG_HDR_PATH,
+        opts, errorCode);
     ASSERT_EQ(errorCode, SUCCESS);
     ASSERT_NE(imageSource.get(), nullptr);
     uint32_t index = 0;
@@ -2152,7 +2155,8 @@ HWTEST_F(ImageSourceTest, ReusePixelmap002, TestSize.Level3)
     std::unique_ptr<PixelMap> pixelMap = imageSource->CreatePixelMap(index, optsPixel, errorCode);
     ASSERT_EQ(errorCode, SUCCESS);
 
-    std::unique_ptr<ImageSource> reuseImageSource = ImageSource::CreateImageSource(IMAGE_INPUT_JPEG_HDR_PATH, opts, errorCode);
+    std::unique_ptr<ImageSource> reuseImageSource = ImageSource::CreateImageSource(IMAGE_INPUT_JPEG_HDR_PATH,
+        opts, errorCode);
     ASSERT_EQ(errorCode, SUCCESS);
     ASSERT_NE(reuseImageSource.get(), nullptr);
     DecodeOptions reusePixelmapOpts;
@@ -2173,7 +2177,8 @@ HWTEST_F(ImageSourceTest, ReusePixelmap003, TestSize.Level3)
     uint32_t errorCode = 0;
     SourceOptions opts;
     opts.formatHint = "image/heif";
-    std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(IMAGE_INPUT_HEIF_PATH, opts, errorCode);
+    std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(IMAGE_INPUT_HEIF_PATH,
+        opts, errorCode);
     ASSERT_EQ(errorCode, SUCCESS);
     ASSERT_NE(imageSource.get(), nullptr);
     uint32_t index = 0;
@@ -2182,7 +2187,8 @@ HWTEST_F(ImageSourceTest, ReusePixelmap003, TestSize.Level3)
     std::unique_ptr<PixelMap> pixelMap = imageSource->CreatePixelMap(index, optsPixel, errorCode);
     ASSERT_EQ(errorCode, SUCCESS);
 
-    std::unique_ptr<ImageSource> reuseImageSource = ImageSource::CreateImageSource(IMAGE_INPUT_HEIF_PATH, opts, errorCode);
+    std::unique_ptr<ImageSource> reuseImageSource = ImageSource::CreateImageSource(IMAGE_INPUT_HEIF_PATH,
+        opts, errorCode);
     ASSERT_EQ(errorCode, SUCCESS);
     ASSERT_NE(reuseImageSource.get(), nullptr);
     DecodeOptions reusePixelmapOpts;
