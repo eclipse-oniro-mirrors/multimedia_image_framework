@@ -1086,6 +1086,7 @@ bool ImageUtils::CanReusePixelMap(ImagePlugin::DecodeContext& context, int width
 bool ImageUtils::CanReusePixelMapHdr(ImagePlugin::DecodeContext& context, int width,
     int height, const std::shared_ptr<PixelMap> &reusePixelmap)
 {
+#if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
     if (!CanReusePixelMap(context, width, height, reusePixelmap)) {
         return false;
     }
@@ -1098,6 +1099,9 @@ bool ImageUtils::CanReusePixelMapHdr(ImagePlugin::DecodeContext& context, int wi
         (context.info.pixelFormat != PixelFormat::RGBA_1010102));
     CHECK_ERROR_RETURN_RET_LOG(cond, false, "PixelFormat of Hdrimage is not equal to reusePixelmap");
     return true;
+#else
+    return false;
+#endif
 }
 
 bool IsReuseYUVFormat(PixelFormat format)
