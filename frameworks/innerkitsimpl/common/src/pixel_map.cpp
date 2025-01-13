@@ -3986,7 +3986,7 @@ uint32_t PixelMap::crop(const Rect &rect)
         IMAGE_LOGE("[PixelMap] crop can't be performed: PixelMap is not modifiable");
         return ERR_IMAGE_PIXELMAP_NOT_ALLOW_MODIFY;
     }
-
+    std::lock_guard<std::mutex> lock(*translationMutex_);
     ImageTrace imageTrace("PixelMap crop");
     ImageInfo imageInfo;
     GetImageInfo(imageInfo);
