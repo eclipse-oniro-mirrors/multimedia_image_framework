@@ -236,6 +236,7 @@ ohos_static_library("image_utils_static") {
     deps += [ "//third_party/ffmpeg:libohosffmpeg" ]
   } else if (use_clang_ios) {
     defines = image_decode_ios_defines
+    defines += [ "CROSS_PLATFORM" ]
     include_dirs += [
       "$image_subsystem/mock/native/include/log",
       "//third_party/bounds_checking_function/include",
@@ -256,6 +257,7 @@ ohos_static_library("image_utils_static") {
     deps += [ "//third_party/ffmpeg:libohosffmpeg_static" ]
   } else if (use_clang_android) {
     defines = image_decode_android_defines
+    defines += [ "CROSS_PLATFORM" ]
     include_dirs += [
       "$image_subsystem/mock/native/include/log",
       "//third_party/bounds_checking_function/include",
