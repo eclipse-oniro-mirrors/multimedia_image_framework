@@ -163,6 +163,9 @@ if (use_clang_ios) {
       } else {
         external_deps += [ "startup:syspara" ]
       }
+      if (is_arkui_x) {
+        defines += [ "CROSS_PLATFORM" ]
+      }
     }
 
     if (defined(global_parts_info) &&

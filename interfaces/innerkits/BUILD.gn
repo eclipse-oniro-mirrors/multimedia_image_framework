@@ -126,6 +126,9 @@ if (use_clang_android) {
         debug = false
       }
     }
+    if (is_arkui_x) {
+      defines += [ "CROSS_PLATFORM" ]
+    }
     public_configs = [ ":image_external_config" ]
 
     cflags = [

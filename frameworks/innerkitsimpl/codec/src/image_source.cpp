@@ -4084,7 +4084,7 @@ static uint32_t AllocHdrSurfaceBuffer(DecodeContext& context, ImageHdrType hdrTy
 
 void ImageSource::ApplyMemoryForHdr(DecodeContext& hdrCtx, CM_ColorSpaceType hdrCmColor, ImageHdrType hdrType)
 {
-#if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
+#if !defined(CROSS_PLATFORM)
     hdrCtx.grColorSpaceName = ConvertColorSpaceName(hdrCmColor, false);
     CM_HDR_Metadata_Type type;
     if (hdrType == ImageHdrType::HDR_VIVID_DUAL || hdrType == ImageHdrType::HDR_CUVA) {

@@ -1050,7 +1050,7 @@ void ImageUtils::UpdateSdrYuvStrides(const ImageInfo &imageInfo, YUVStrideInfo &
 
 uint16_t ImageUtils::GetReusePixelRefCount(const std::shared_ptr<PixelMap> &reusePixelmap)
 {
-#if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
+#if !defined(CROSS_PLATFORM)
     if (reusePixelmap->GetAllocatorType() != AllocatorType::DMA_ALLOC) {
         return 0;
     }
@@ -1086,7 +1086,7 @@ bool ImageUtils::CanReusePixelMap(ImagePlugin::DecodeContext& context, int width
 bool ImageUtils::CanReusePixelMapHdr(ImagePlugin::DecodeContext& context, int width,
     int height, const std::shared_ptr<PixelMap> &reusePixelmap)
 {
-#if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
+#if !defined(CROSS_PLATFORM)
     if (!CanReusePixelMap(context, width, height, reusePixelmap)) {
         return false;
     }
@@ -1143,7 +1143,7 @@ bool ImageUtils::CanReusePixelMapSdr(ImagePlugin::DecodeContext& context, int wi
 bool CanApplyMemForReusePixel(ImagePlugin::DecodeContext& context,
     const std::shared_ptr<PixelMap> &reusePixelmap)
 {
-#if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
+#if !defined(CROSS_PLATFORM)
     uint8_t *reusePixelBuffer = const_cast<uint8_t *>(reusePixelmap->GetPixels());
     int32_t err = ImageUtils::SurfaceBuffer_Reference(reusePixelmap->GetFd());
     bool cond = err != OHOS::GSERROR_OK;
@@ -1159,7 +1159,7 @@ bool CanApplyMemForReusePixel(ImagePlugin::DecodeContext& context,
 bool ImageUtils::IsSdrPixelMapReuseSuccess(ImagePlugin::DecodeContext& context, int width,
     int height, const std::shared_ptr<PixelMap> &reusePixelmap)
 {
-#if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
+#if !defined(CROSS_PLATFORM)
     if (!CanReusePixelMapSdr(context, width, height, reusePixelmap)) {
         return false;
     }
@@ -1172,7 +1172,7 @@ bool ImageUtils::IsSdrPixelMapReuseSuccess(ImagePlugin::DecodeContext& context, 
 bool ImageUtils::IsHdrPixelMapReuseSuccess(ImagePlugin::DecodeContext& context, int width,
     int height, const std::shared_ptr<PixelMap> &reusePixelmap)
 {
-#if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
+#if !defined(CROSS_PLATFORM)
     if (!CanReusePixelMapHdr(context, width, height, reusePixelmap)) {
         return false;
     }
@@ -1184,7 +1184,7 @@ bool ImageUtils::IsHdrPixelMapReuseSuccess(ImagePlugin::DecodeContext& context, 
 
 void ImageUtils::SetContextHdr(ImagePlugin::DecodeContext& context, uint32_t format)
 {
-#if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
+#if !defined(CROSS_PLATFORM)
     context.info.alphaType = AlphaType::IMAGE_ALPHA_TYPE_UNPREMUL;
     if (format == GRAPHIC_PIXEL_FMT_RGBA_1010102) {
         context.pixelFormat = PixelFormat::RGBA_1010102;
