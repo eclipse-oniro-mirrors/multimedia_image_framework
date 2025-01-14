@@ -38,6 +38,7 @@ if (use_clang_ios) {
     ]
 
     defines = image_decode_ios_defines
+    defines += [ "CROSS_PLATFORM" ]
     sources -= [ "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/utils/src/image_trace.cpp" ]
     sources += [ "src/image_dfx.cpp" ]
     sources += [ "src/image_data_statistics.cpp" ]
@@ -116,6 +117,7 @@ if (use_clang_ios) {
       deps += [ "//third_party/ffmpeg:libohosffmpeg" ]
     } else if (use_clang_android) {
       defines = image_decode_android_defines
+      defines += [ "CROSS_PLATFORM" ]
       include_dirs += [ "//third_party/ffmpeg" ]
       sources -= [ "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/utils/src/image_trace.cpp" ]
       include_dirs += [ "$image_subsystem/mock/native/include/log" ]
@@ -234,6 +236,7 @@ ohos_static_library("image_utils_static") {
     deps += [ "//third_party/ffmpeg:libohosffmpeg" ]
   } else if (use_clang_ios) {
     defines = image_decode_ios_defines
+    defines += [ "CROSS_PLATFORM" ]
     include_dirs += [
       "$image_subsystem/mock/native/include/log",
       "//third_party/bounds_checking_function/include",
@@ -254,6 +257,7 @@ ohos_static_library("image_utils_static") {
     deps += [ "//third_party/ffmpeg:libohosffmpeg_static" ]
   } else if (use_clang_android) {
     defines = image_decode_android_defines
+    defines += [ "CROSS_PLATFORM" ]
     include_dirs += [
       "$image_subsystem/mock/native/include/log",
       "//third_party/bounds_checking_function/include",

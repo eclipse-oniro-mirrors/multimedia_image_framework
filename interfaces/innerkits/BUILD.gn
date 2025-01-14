@@ -93,6 +93,7 @@ if (use_clang_android) {
     public_configs = [ ":image_external_config" ]
     configs = [ ":image_postproc_config" ]
     defines = image_decode_android_defines
+    defines += [ "CROSS_PLATFORM" ]
     cflags = image_native_android_cflags
     sources = image_native_android_sources
     include_dirs = image_native_android_include_dirs
@@ -106,6 +107,7 @@ if (use_clang_android) {
     public_configs = [ ":image_external_config" ]
     configs = [ ":image_postproc_config" ]
     defines = image_decode_ios_defines
+    defines += [ "CROSS_PLATFORM" ]
     cflags = image_native_ios_cflags
     include_dirs = image_native_ios_include_dirs
     sources = image_native_ios_sources
@@ -395,6 +397,7 @@ ohos_static_library("image_static") {
     external_deps = [ "graphic_surface:surface" ]
   } else if (use_clang_ios) {
     defines = image_decode_ios_defines
+    defines += [ "CROSS_PLATFORM" ]
     sources -= [
       "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/creator/src/image_creator.cpp",
       "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/creator/src/image_creator_manager.cpp",
@@ -412,6 +415,7 @@ ohos_static_library("image_static") {
     external_deps = []
   } else if (use_clang_android) {
     defines = image_decode_android_defines
+    defines += [ "CROSS_PLATFORM" ]
     sources -= [
       "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/creator/src/image_creator.cpp",
       "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/creator/src/image_creator_manager.cpp",
