@@ -93,6 +93,7 @@ if (use_clang_android) {
     public_configs = [ ":image_external_config" ]
     configs = [ ":image_postproc_config" ]
     defines = image_decode_android_defines
+    defines += [ "CROSS_PLATFORM" ]
     cflags = image_native_android_cflags
     sources = image_native_android_sources
     include_dirs = image_native_android_include_dirs
@@ -106,6 +107,7 @@ if (use_clang_android) {
     public_configs = [ ":image_external_config" ]
     configs = [ ":image_postproc_config" ]
     defines = image_decode_ios_defines
+    defines += [ "CROSS_PLATFORM" ]
     cflags = image_native_ios_cflags
     include_dirs = image_native_ios_include_dirs
     sources = image_native_ios_sources
@@ -125,9 +127,6 @@ if (use_clang_android) {
         cfi_vcall_icall_only = true
         debug = false
       }
-    }
-    if (is_arkui_x) {
-      defines += [ "CROSS_PLATFORM" ]
     }
     public_configs = [ ":image_external_config" ]
 
