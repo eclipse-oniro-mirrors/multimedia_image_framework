@@ -70,9 +70,9 @@ private:
     static void ReplaceAsSpace(std::string &value, const std::string &regex);
     static void ReplaceAsContent(std::string &value, const std::string &regex, const std::string &content);
     static void RationalFormat(std::string &value);
-    static std::string GetFractionFromStr(const std::string &decimal);
-    static void DecimalRationalFormat(std::string &value);
-    static void ConvertRationalFormat(std::string &value);
+    static std::string GetFractionFromStr(const std::string &decimal, bool &outRang);
+    static bool DecimalRationalFormat(std::string &value);
+    static bool ConvertRationalFormat(std::string &value);
     static ValueFormatDelegate doubleIntToOneRationalWithComma;
     static ValueFormatDelegate doubleIntWithBlank;
     static ValueFormatDelegate doubleIntWithComma;
