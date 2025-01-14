@@ -130,7 +130,7 @@ int ExifMetadata::GetValue(const std::string &key, std::string &value) const
         }
         IMAGE_LOGD("Using exif_entry_get_value for key: %{public}s, tag: %{public}d", key.c_str(), entry->tag);
         
-        int tagValueSizeTmp = 0;
+        unsigned int tagValueSizeTmp = 0;
         if (entry->size >= TAG_VALUE_SIZE && (entry->format == EXIF_FORMAT_ASCII ||
             entry->format == EXIF_FORMAT_UNDEFINED)) {
             tagValueSizeTmp = entry->size > MAX_TAG_VALUE_SIZE_FOR_STR ? MAX_TAG_VALUE_SIZE_FOR_STR : entry->size;
