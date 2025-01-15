@@ -245,7 +245,7 @@ HWTEST_F(ImageSourceTest, CreateImageSource008, TestSize.Level3)
     uint32_t errorCode = 0;
     const SourceOptions opts;
     const int fd = 0;
-    td::unique_ptr<ImageSource> creimagesource = ImageSource::CreateImageSource(fd, opts, errorCode);
+    std::unique_ptr<ImageSource> creimagesource = ImageSource::CreateImageSource(fd, opts, errorCode);
     ASSERT_EQ(creimagesource, nullptr);
 }
 
@@ -509,7 +509,7 @@ HWTEST_F(ImageSourceTest, RegisterListener001, TestSize.Level3)
     SourceOptions opts;
     std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(IMAGE_INPUT_JPEG_PATH, opts, errorCode);
     imageSource->RegisterListener(listener);
-    ASSERT_EQ(imageSource->listener_.size(), 0);
+    ASSERT_EQ(imageSource->listeners_.size(), 0);
 }
 
 /**
@@ -523,10 +523,10 @@ HWTEST_F(ImageSourceTest, UnRegisterListener001, TestSize.Level3)
     uint32_t errorCode = 0;
     SourceOptions opts;
     std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(IMAGE_INPUT_JPEG_PATH, opts, errorCode);
-    imageSource->listener_.insert(mockPeerListener.get());
-    ASSERT_EQ(imageSource->listener_.size(), 1);
+    imageSource->listeners_.insert(mockPeerListener.get());
+    ASSERT_EQ(imageSource->listeners_.size(), 1);
     imageSource->UnRegisterListener(mockPeerListener.get());
-    ASSERT_EQ(imageSource->listener_.size(), 0);
+    ASSERT_EQ(imageSource->listeners_.size(), 0);
 }
 
 /**
@@ -563,7 +563,7 @@ HWTEST_F(ImageSourceTest, AddDecodeListener001, TestSize.Level3)
     SourceOptions opts;
     std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(IMAGE_INPUT_JPEG_PATH, opts, errorCode);
     imageSource->AddDecodeListener(listener);
-    ASSERT_EQ(imageSource->decodeListener_.size(), 0);
+    ASSERT_EQ(imageSource->decodeListeners_.size(), 0);
 }
 
 /**
@@ -577,10 +577,10 @@ HWTEST_F(ImageSourceTest, RemoveDecodeListener001, TestSize.Level3)
     uint32_t errorCode = 0;
     SourceOptions opts;
     std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(IMAGE_INPUT_JPEG_PATH, opts, errorCode);
-    imageSource->listener_.insert(mockDecodeListener.get());
-    ASSERT_EQ(imageSource->decodeListener_.size(), 1);
+    imageSource->decodeListeners_.insert(mockDecodeListener.get());
+    ASSERT_EQ(imageSource->decodeListeners_.size(), 1);
     imageSource->RemoveDecodeListener(mockDecodeListener.get());
-    ASSERT_EQ(imageSource->decodeListener_.size(), 0);
+    ASSERT_EQ(imageSource->decodeListeners_.size(), 0);
 }
 
 /**
