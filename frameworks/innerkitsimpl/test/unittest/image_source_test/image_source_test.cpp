@@ -50,6 +50,7 @@ static const std::string IMAGE_INPUT_EXIF_JPEG_PATH = "/data/local/tmp/image/tes
 static const std::string IMAGE_OUTPUT_JPEG_PATH = "/data/local/tmp/image/test_out.jpg";
 static const std::string IMAGE_INPUT_ICO_PATH = "/data/local/tmp/image/test.ico";
 static const std::string IMAGE_INPUT_HEIF_PATH = "/data/local/tmp/image/test.heic";
+static const std::string IMAGE_INPUT_JPEG_HDR_PATH = "/data/local/tmp/image/hdr.jpg";
 
 class ImageSourceTest : public testing::Test {
 public:
@@ -2102,6 +2103,100 @@ HWTEST_F(ImageSourceTest, ApplyGainMap001, TestSize.Level3)
     baseCtx.allocatorType = AllocatorType::DEFAULT;
     ret = imageSource->ComposeHdrImage(hdrType, baseCtx, gainMapCtx, hdrCtx, metadata);
     ASSERT_EQ(ret, false);
+}
+
+/**
+ * @tc.name: ReusePixelmap001
+ * @tc.desc: test ReusePixelmap Heif SDR RGBA
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageSourceTest, ReusePixelmap001, TestSize.Level3)
+{
+    uint32_t errorCode = 0;
+    SourceOptions opts;
+    opts.formatHint = "image/heif";
+    std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(IMAGE_INPUT_HEIF_PATH,
+        opts, errorCode);
+    ASSERT_EQ(errorCode, SUCCESS);
+    ASSERT_NE(imageSource.get(), nullptr);
+    uint32_t index = 0;
+    DecodeOptions optsPixel;
+    std::unique_ptr<PixelMap> pixelMap = imageSource->CreatePixelMap(index, optsPixel, errorCode);
+    ASSERT_EQ(errorCode, SUCCESS);
+
+    std::unique_ptr<ImageSource> reuseImageSource = ImageSource::CreateImageSource(IMAGE_INPUT_HEIF_PATH,
+        opts, errorCode);
+    ASSERT_EQ(errorCode, SUCCESS);
+    ASSERT_NE(reuseImageSource.get(), nullptr);
+    DecodeOptions reusePixelmapOpts;
+    std::shared_ptr<PixelMap> rPixelmap = std::move(pixelMap);
+    reusePixelmapOpts.reusePixelmap = rPixelmap;
+    std::unique_ptr<PixelMap> newPixelMap = reuseImageSource->CreatePixelMap(index, reusePixelmapOpts, errorCode);
+    ASSERT_EQ(errorCode, SUCCESS);
+}
+
+/**
+ * @tc.name: ReusePixelmap002
+ * @tc.desc: test ReusePixelmap Jpeg HDR
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageSourceTest, ReusePixelmap002, TestSize.Level3)
+{
+    uint32_t errorCode = 0;
+    SourceOptions opts;
+    opts.formatHint = "image/jpeg";
+    std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(IMAGE_INPUT_JPEG_HDR_PATH,
+        opts, errorCode);
+    ASSERT_EQ(errorCode, SUCCESS);
+    ASSERT_NE(imageSource.get(), nullptr);
+    uint32_t index = 0;
+    DecodeOptions optsPixel;
+    optsPixel.desiredDynamicRange = Media::DecodeDynamicRange::HDR;
+    std::unique_ptr<PixelMap> pixelMap = imageSource->CreatePixelMap(index, optsPixel, errorCode);
+    ASSERT_EQ(errorCode, SUCCESS);
+
+    std::unique_ptr<ImageSource> reuseImageSource = ImageSource::CreateImageSource(IMAGE_INPUT_JPEG_HDR_PATH,
+        opts, errorCode);
+    ASSERT_EQ(errorCode, SUCCESS);
+    ASSERT_NE(reuseImageSource.get(), nullptr);
+    DecodeOptions reusePixelmapOpts;
+    std::shared_ptr<PixelMap> rPixelmap = std::move(pixelMap);
+    reusePixelmapOpts.reusePixelmap = rPixelmap;
+    reusePixelmapOpts.desiredDynamicRange = Media::DecodeDynamicRange::HDR;
+    std::unique_ptr<PixelMap> newPixelMap = reuseImageSource->CreatePixelMap(index, reusePixelmapOpts, errorCode);
+    ASSERT_EQ(errorCode, SUCCESS);
+}
+
+/**
+ * @tc.name: ReusePixelmap003
+ * @tc.desc: test ReusePixelmap Heif SDR YUV
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageSourceTest, ReusePixelmap003, TestSize.Level3)
+{
+    uint32_t errorCode = 0;
+    SourceOptions opts;
+    opts.formatHint = "image/heif";
+    std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(IMAGE_INPUT_HEIF_PATH,
+        opts, errorCode);
+    ASSERT_EQ(errorCode, SUCCESS);
+    ASSERT_NE(imageSource.get(), nullptr);
+    uint32_t index = 0;
+    DecodeOptions optsPixel;
+    optsPixel.desiredPixelFormat = PixelFormat::NV12;
+    std::unique_ptr<PixelMap> pixelMap = imageSource->CreatePixelMap(index, optsPixel, errorCode);
+    ASSERT_EQ(errorCode, SUCCESS);
+
+    std::unique_ptr<ImageSource> reuseImageSource = ImageSource::CreateImageSource(IMAGE_INPUT_HEIF_PATH,
+        opts, errorCode);
+    ASSERT_EQ(errorCode, SUCCESS);
+    ASSERT_NE(reuseImageSource.get(), nullptr);
+    DecodeOptions reusePixelmapOpts;
+    std::shared_ptr<PixelMap> rPixelmap = std::move(pixelMap);
+    reusePixelmapOpts.desiredPixelFormat = PixelFormat::NV12;
+    reusePixelmapOpts.reusePixelmap = rPixelmap;
+    std::unique_ptr<PixelMap> newPixelMap = reuseImageSource->CreatePixelMap(index, reusePixelmapOpts, errorCode);
+    ASSERT_EQ(errorCode, SUCCESS);
 }
 } // namespace Multimedia
 } // namespace OHOS
