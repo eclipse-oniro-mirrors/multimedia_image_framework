@@ -1393,6 +1393,7 @@ HWTEST_F(MetadataStreamTest, BufferMetadataStream_Close002, TestSize.Level3)
 {
     BufferMetadataStream stream;
     stream.Write((byte *)"Hello, world!", 13);
+    ASSERT_NE(stream.buffer_, nullptr);
 }
 
 /**
@@ -1406,6 +1407,7 @@ HWTEST_F(MetadataStreamTest, BufferImageStream_Close003, TestSize.Level3)
     BufferMetadataStream stream;
     stream.Write((byte *)"Hello, world!", 13);
     delete[] stream.Release();
+    ASSERT_EQ(stream.buffer_, nullptr);
 }
 
 /**
@@ -1419,6 +1421,7 @@ HWTEST_F(MetadataStreamTest, BufferMetadataStream_Close004, TestSize.Level3)
     BufferMetadataStream stream;
     stream.Write((byte *)"Hello, world!", 13);
     stream.Close();
+    ASSERT_EQ(stream.buffer_, nullptr);
 }
 
 /**
@@ -1432,6 +1435,7 @@ HWTEST_F(MetadataStreamTest, BufferImageStream_Close006, TestSize.Level3)
     char text[] = "Hello, world!";
     BufferMetadataStream stream((byte *)text, sizeof(text), BufferMetadataStream::Fix);
     stream.Release();
+    ASSERT_EQ(stream.buffer_, nullptr);
 }
 
 /**
@@ -1510,7 +1514,8 @@ HWTEST_F(MetadataStreamTest, BufferMetadataStream_CopyFrom005, TestSize.Level3)
     FileMetadataStream dest(filePathSource);
     src.Open();
     dest.Open();
-    src.CopyFrom(dest);
+    bool ret = src.CopyFrom(dest);
+    ASSERT_EQ(ret, true);
 }
 
 /**

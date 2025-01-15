@@ -94,6 +94,19 @@ private:
     int returnVoid_;
 };
 
+class MockPeerListener : public PeerListener {
+public:
+    MockDecodeListener() = default;
+    ~MockDecodeListener() {}
+
+    void OnPeerDestory() override
+    {
+        returnVoid_ = 0;
+    }
+private:
+    int returnVoid_;
+};
+
 /**
  * @tc.name: GetSupportedFormats001
  * @tc.desc: test GetSupportedFormats
@@ -122,7 +135,8 @@ HWTEST_F(ImageSourceTest, GetSupportedFormats002, TestSize.Level3)
     opts.formatHint = "image/jpeg";
     std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(IMAGE_INPUT_JPEG_PATH, opts, errorCode);
     std::set<std::string> formats;
-    imageSource->GetSupportedFormats(formats);
+    uint32_t ret = imageSource->GetSupportedFormats(formats);
+    ASSERT_EQ(ret, SUCCESS);
 }
 
 /**
@@ -138,7 +152,8 @@ HWTEST_F(ImageSourceTest, GetSupportedFormats003, TestSize.Level3)
     std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(IMAGE_INPUT_JPEG_PATH, opts, errorCode);
     std::set<std::string> formats;
     if (imageSource != nullptr) {
-        imageSource->GetSupportedFormats(formats);
+        int32_t ret = imageSource->GetSupportedFormats(formats);
+        ASSERT_EQ(ret, SUCCESS);
     }
 }
 
@@ -188,7 +203,8 @@ HWTEST_F(ImageSourceTest, CreateImageSource005, TestSize.Level3)
     uint32_t errorCode = 0;
     const SourceOptions opts;
     const std::string pathName = IMAGE_INPUT_JPEG_PATH;
-    ImageSource::CreateImageSource(pathName, opts, errorCode);
+    std::unique_ptr<ImageSource> creimagesource = ImageSource::CreateImageSource(pathName, opts, errorCode);
+    ASSERT_NE(creimagesource, nullptr);
 }
 
 /**
@@ -201,7 +217,8 @@ HWTEST_F(ImageSourceTest, CreateImageSource006, TestSize.Level3)
     uint32_t errorCode = 0;
     const SourceOptions opts;
     const std::string pathName = "a";
-    ImageSource::CreateImageSource(pathName, opts, errorCode);
+    std::unique_ptr<ImageSource> creimagesource = ImageSource::CreateImageSource(pathName, opts, errorCode);
+    ASSERT_EQ(creimagesource, nullptr);
 }
 
 /**
@@ -214,7 +231,8 @@ HWTEST_F(ImageSourceTest, CreateImageSource007, TestSize.Level3)
     uint32_t errorCode = 0;
     const SourceOptions opts;
     const int fd = open("/data/local/tmp/image/test.jpg", O_RDWR | O_CREAT, S_IRUSR | S_IWUSR);
-    ImageSource::CreateImageSource(fd, opts, errorCode);
+    std::unique_ptr<ImageSource> creimagesource = ImageSource::CreateImageSource(fd, opts, errorCode);
+    ASSERT_NE(creimagesource, nullptr);
 }
 
 /**
@@ -227,7 +245,8 @@ HWTEST_F(ImageSourceTest, CreateImageSource008, TestSize.Level3)
     uint32_t errorCode = 0;
     const SourceOptions opts;
     const int fd = 0;
-    ImageSource::CreateImageSource(fd, opts, errorCode);
+    td::unique_ptr<ImageSource> creimagesource = ImageSource::CreateImageSource(fd, opts, errorCode);
+    ASSERT_EQ(creimagesource, nullptr);
 }
 
 /**
@@ -272,7 +291,8 @@ HWTEST_F(ImageSourceTest, CreatePixelMapEx002, TestSize.Level3)
     std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(IMAGE_INPUT_JPEG_PATH, opts, errorCode);
     uint32_t index = 1;
     const DecodeOptions opt;
-    imageSource->CreatePixelMapEx(index, opt, errorCode);
+    std::unique_ptr<PixelMap> crepixelmapex = imageSource->CreatePixelMapEx(index, opt, errorCode);
+    ASSERT_EQ(crepixelmapex, nullptr);
 }
 
 /**
@@ -365,10 +385,12 @@ HWTEST_F(ImageSourceTest, CreateIncrementalPixelMap002, TestSize.Level3)
     uint32_t info = 100;
     DecodeOptions op;
     op.sampleSize = 1;
-    imageSource->CreatePixelMap(info, op, errorCode);
+    std::unique_ptr<PixelMap> incPixelMap = imageSource->CreatePixelMap(info, op, errorCode);
+    ASSERT_EQ(incPixelMap, nullptr);
     info = -1;
     op.sampleSize = 0;
-    imageSource->CreatePixelMap(info, op, errorCode);
+    incPixelMap = imageSource->CreatePixelMap(info, op, errorCode);
+    ASSERT_EQ(incPixelMap, nullptr);
 }
 
 /**
@@ -436,7 +458,8 @@ HWTEST_F(ImageSourceTest, GetImageInfo002, TestSize.Level3)
 
     ImageInfo imageInfo;
     uint32_t index = 1;
-    imageSource->GetImageInfo(index, imageInfo);
+    uint32_t ret = imageSource->GetImageInfo(index, imageInfo);
+    ASSERT_NE(ret, SUCCESS);
 }
 
  /**
@@ -471,6 +494,7 @@ HWTEST_F(ImageSourceTest, GetSourceInfo001, TestSize.Level3)
     std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(IMAGE_INPUT_JPEG_PATH, opts, errorCode);
 
     SourceInfo sourceInfo = imageSource->GetSourceInfo(errorCode);
+    ASSERT_NE(&sourceInfo, nullptr);
 }
 
 /**
@@ -485,6 +509,7 @@ HWTEST_F(ImageSourceTest, RegisterListener001, TestSize.Level3)
     SourceOptions opts;
     std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(IMAGE_INPUT_JPEG_PATH, opts, errorCode);
     imageSource->RegisterListener(listener);
+    ASSERT_EQ(imageSource->listener_.size(), 0);
 }
 
 /**
@@ -494,11 +519,14 @@ HWTEST_F(ImageSourceTest, RegisterListener001, TestSize.Level3)
  */
 HWTEST_F(ImageSourceTest, UnRegisterListener001, TestSize.Level3)
 {
-    PeerListener *listener = nullptr;
+    std::shared_ptr<MockPeerListener> mockPeerListener = std::make_shared<MockPeerListener>();
     uint32_t errorCode = 0;
     SourceOptions opts;
     std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(IMAGE_INPUT_JPEG_PATH, opts, errorCode);
-    imageSource->UnRegisterListener(listener);
+    imageSource->listener_.insert(mockPeerListener.get());
+    ASSERT_EQ(imageSource->listener_.size(), 1);
+    imageSource->UnRegisterListener(mockPeerListener.get());
+    ASSERT_EQ(imageSource->listener_.size(), 0);
 }
 
 /**
@@ -535,6 +563,7 @@ HWTEST_F(ImageSourceTest, AddDecodeListener001, TestSize.Level3)
     SourceOptions opts;
     std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(IMAGE_INPUT_JPEG_PATH, opts, errorCode);
     imageSource->AddDecodeListener(listener);
+    ASSERT_EQ(imageSource->decodeListener_.size(), 0);
 }
 
 /**
@@ -544,11 +573,14 @@ HWTEST_F(ImageSourceTest, AddDecodeListener001, TestSize.Level3)
  */
 HWTEST_F(ImageSourceTest, RemoveDecodeListener001, TestSize.Level3)
 {
-    DecodeListener *listener = nullptr;
+    std::shared_ptr<MockDecodeListener> mockDecodeListener = std::make_shared<MockDecodeListener>();
     uint32_t errorCode = 0;
     SourceOptions opts;
     std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(IMAGE_INPUT_JPEG_PATH, opts, errorCode);
-    imageSource->RemoveDecodeListener(listener);
+    imageSource->listener_.insert(mockDecodeListener.get());
+    ASSERT_EQ(imageSource->decodeListener_.size(), 1);
+    imageSource->RemoveDecodeListener(mockDecodeListener.get());
+    ASSERT_EQ(imageSource->decodeListener_.size(), 0);
 }
 
 /**
@@ -563,6 +595,7 @@ HWTEST_F(ImageSourceTest, IsIncrementalSource001, TestSize.Level3)
     SourceOptions opts;
     std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(IMAGE_INPUT_JPEG_PATH, opts, errorCode);
     isIncrementalSource = imageSource->IsIncrementalSource();
+    ASSERT_EQ(isIncrementalSource, false);
 }
 
 /**
@@ -597,7 +630,8 @@ HWTEST_F(ImageSourceTest, GetImagePropertyInt002, TestSize.Level3)
     uint32_t index = 0;
     int32_t value = 0;
     std::string key;
-    imageSource->GetImagePropertyInt(index, key, value);
+    uint32_t ret = imageSource->GetImagePropertyInt(index, key, value);
+    ASSERT_EQ(ret, Media::ERR_IMAGE_DECODE_EXIF_UNSUPPORT);
 }
 
 /**
@@ -632,7 +666,8 @@ HWTEST_F(ImageSourceTest, GetImagePropertyString002, TestSize.Level3)
     uint32_t index = 0;
     std::string key = "";
     std::string value;
-    imageSource->GetImagePropertyString(index, key, value);
+    uint32_t ret = imageSource->GetImagePropertyString(index, key, value);
+    ASSERT_EQ(ret, Media::ERR_IMAGE_DECODE_EXIF_UNSUPPORT);
 }
 
 /**
