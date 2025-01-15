@@ -368,9 +368,14 @@ uint8_t *FileSourceStream::GetDataPtr(bool populate)
             IMAGE_LOGE("[FileSourceStream] Failed to new stream buffer.");
             return nullptr;
         }
+        uint32_t savedPosition = Tell();
+        Seek(0);
         uint32_t readSize = 0;
-        if (!GetData(size, buffer, size, readSize)) {
-            delete [] buffer;
+        bool retRead = Read(size, buffer, size, readSize);
+        Seek(savedPosition);
+        if (!retRead) {
+            IMAGE_LOGE("[FileSourceStream] GetDataPtr read failed.");
+            delete[] buffer;
             return nullptr;
         }
         IMAGE_LOGD("[FileSourceStream] UseMmap is false, read buffer success.");
