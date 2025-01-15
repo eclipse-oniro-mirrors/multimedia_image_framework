@@ -96,8 +96,8 @@ private:
 
 class MockPeerListener : public PeerListener {
 public:
-    MockDecodeListener() = default;
-    ~MockDecodeListener() {}
+    MockPeerListener() = default;
+    ~MockPeerListener() {}
 
     void OnPeerDestory() override
     {
@@ -152,7 +152,7 @@ HWTEST_F(ImageSourceTest, GetSupportedFormats003, TestSize.Level3)
     std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(IMAGE_INPUT_JPEG_PATH, opts, errorCode);
     std::set<std::string> formats;
     if (imageSource != nullptr) {
-        int32_t ret = imageSource->GetSupportedFormats(formats);
+        uint32_t ret = imageSource->GetSupportedFormats(formats);
         ASSERT_EQ(ret, SUCCESS);
     }
 }
