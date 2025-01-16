@@ -35,6 +35,8 @@
 
 namespace {
     constexpr uint32_t INPUT_MAX_64K = 64 * 1024;
+    constexpr uint32_t BUFFER_SIZE_0 = 0;
+    constexpr uint32_t TERMINATOR_SIZE = 1;
     constexpr int INVALID_FD = -1;
     constexpr uint32_t NUM_0 = 0;
     constexpr uint32_t NUM_1 = 1;
@@ -393,18 +395,18 @@ static std::string GetStringArgumentForModify(napi_env env, napi_value value)
 {
     std::string strValue = "";
     size_t bufLength = 0;
-    napi_status status = napi_get_value_string_utf8(env, value, nullptr, NUM_0, &bufLength);
-    if (status == napi_ok && bufLength > NUM_0 && bufLength < INPUT_MAX_64K) {
-        char *buffer = reinterpret_cast<char *>(malloc((bufLength + NUM_1) * sizeof(char)));
+    napi_status status = napi_get_value_string_utf8(env, value, nullptr, BUFFER_SIZE_0, &bufLength);
+    if (status == napi_ok && bufLength > BUFFER_SIZE_0 && bufLength < INPUT_MAX_64K) {
+        char *buffer = reinterpret_cast<char *>(malloc((bufLength + TERMINATOR_SIZE) * sizeof(char)));
         if (buffer == nullptr) {
             IMAGE_LOGE("No memory");
             return strValue;
         }
 
-        status = napi_get_value_string_utf8(env, value, buffer, bufLength + NUM_1, &bufLength);
+        status = napi_get_value_string_utf8(env, value, buffer, bufLength + TERMINATOR_SIZE, &bufLength);
         if (status == napi_ok) {
             IMAGE_LOGD("Get Success");
-            strValue.assign(buffer, 0, bufLength + NUM_1);
+            strValue.assign(buffer, 0, bufLength + TERMINATOR_SIZE);
         }
         if (buffer != nullptr) {
             free(buffer);
