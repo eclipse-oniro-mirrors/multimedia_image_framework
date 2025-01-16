@@ -73,6 +73,7 @@ public:
     bool decodeAuxiliaryMap();
     void setAuxiliaryDstBuffer(uint8_t* dstBuffer, size_t dstSize, size_t rowStride);
     void getFragmentMetadata(Media::Rect& fragmentMetadata);
+    bool SwDecode(bool isSharedMemory = false);
 private:
     bool Reinit(HeifFrameInfo *frameInfo);
 
@@ -87,8 +88,6 @@ private:
     GraphicPixelFormat GetInPixelFormat(const std::shared_ptr<HeifImage> &image);
 
     bool ProcessChunkHead(uint8_t *data, size_t len);
-
-    bool SwDecode();
 
     void ReleaseHwDecoder(HeifHardwareDecoder *hwDecoder, bool isReuse);
 

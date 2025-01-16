@@ -334,6 +334,20 @@ static void ParseDecodingOps(DecodeOptions &decOps, struct OH_DecodingOptions *o
     }
 }
 
+static AllocatorType ConvertAllocatorType(std::shared_ptr<OHOS::Media::ImageSource> imageSource,
+    IMAGE_ALLOCATOR_TYPE allocatorType, DecodeOptions decodeOpts)
+{
+    switch (allocatorType) {
+        case IMAGE_ALLOCATOR_TYPE::IMAGE_ALLOCATOR_TYPE_DMA:
+            return AllocatorType::DMA_ALLOC;
+        case IMAGE_ALLOCATOR_TYPE::IMAGE_ALLOCATOR_TYPE_SHARE_MEMORY:
+            return AllocatorType::SHARE_MEM_ALLOC;
+        case IMAGE_ALLOCATOR_TYPE::IMAGE_ALLOCATOR_TYPE_AUTO:
+        default:
+            return imageSource->ConvertAutoAllocatorType(decodeOpts);
+    }
+}
+
 static void ParseImageSourceInfo(struct OH_ImageSource_Info *source, const ImageInfo &info)
 {
     source->width = info.size.width;
@@ -442,6 +456,37 @@ Image_ErrorCode OH_ImageSourceNative_CreatePixelmap(OH_ImageSourceNative *source
     std::unique_ptr<PixelMap> tmpPixelmap = source->GetInnerImageSource()->CreatePixelMapEx(index, decOps, errorCode);
     if (tmpPixelmap == nullptr || errorCode != IMAGE_SUCCESS) {
         return IMAGE_UNSUPPORTED_OPERATION;
+    }
+    std::shared_ptr<PixelMap> nativePixelmap = std::move(tmpPixelmap);
+    OH_PixelmapNative *stPixMap = new OH_PixelmapNative(nativePixelmap);
+    *pixelmap = stPixMap;
+    return IMAGE_SUCCESS;
+}
+
+MIDK_EXPORT
+Image_ErrorCode OH_ImageSourceNative_CreatePixelmapUsingAllocator(OH_ImageSourceNative *source, OH_DecodingOptions *ops,
+    IMAGE_ALLOCATOR_TYPE allocator, OH_PixelmapNative **pixelmap)
+{
+    if (source == nullptr || ops == nullptr || pixelmap == nullptr) {
+        return IMAGE_BAD_PARAMETER;
+    }
+    DecodeOptions decOps;
+    uint32_t index = DEFAULT_INDEX;
+    uint32_t errorCode = IMAGE_BAD_PARAMETER;
+    ParseDecodingOps(decOps, ops);
+    index = ops->index;
+    decOps.isAppUseAllocator = true;
+    if (source->GetInnerImageSource() == nullptr) {
+        return IMAGE_BAD_SOURCE;
+    }
+    decOps.allocatorType = ConvertAllocatorType(source->GetInnerImageSource(), allocator, decOps);
+    if (decOps.allocatorType == AllocatorType::SHARE_MEM_ALLOC &&
+        source->GetInnerImageSource()->IsDecodeHdrImage(decOps)) {
+        return IMAGE_UNSUPPORTED_OPERATION;
+    }
+    std::unique_ptr<PixelMap> tmpPixelmap = source->GetInnerImageSource()->CreatePixelMapEx(index, decOps, errorCode);
+    if (tmpPixelmap == nullptr || errorCode != IMAGE_SUCCESS) {
+        return IMAGE_DECODE_FAILED;
     }
     std::shared_ptr<PixelMap> nativePixelmap = std::move(tmpPixelmap);
     OH_PixelmapNative *stPixMap = new OH_PixelmapNative(nativePixelmap);

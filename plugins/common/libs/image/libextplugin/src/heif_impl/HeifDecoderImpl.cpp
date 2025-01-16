@@ -512,12 +512,13 @@ bool HeifDecoderImpl::decode(HeifFrameInfo *frameInfo)
     return true;
 }
 
-bool HeifDecoderImpl::SwDecode()
+bool HeifDecoderImpl::SwDecode(bool isSharedMemory)
 {
     HevcSoftDecodeParam param {
             gridInfo_, outPixelFormat_,
             dstMemory_, 0,
-            static_cast<uint32_t>(dstRowStride_), dstHwBuffer_
+            static_cast<uint32_t>(dstRowStride_), dstHwBuffer_,
+            isSharedMemory
     };
     bool decodeRes = SwDecodeImage(primaryImage_, param, gridInfo_, true);
     if (!decodeRes) {

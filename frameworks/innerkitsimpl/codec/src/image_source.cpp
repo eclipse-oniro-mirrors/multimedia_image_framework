@@ -672,6 +672,28 @@ static void NotifyDecodeEvent(set<DecodeListener *> &listeners, DecodeEvent even
     }
 }
 
+bool ImageSource::IsDecodeHdrImage(const DecodeOptions &opts)
+{
+    return (opts.desiredDynamicRange == DecodeDynamicRange::AUTO && sourceHdrType_ > ImageHdrType::SDR) ||
+        opts.desiredDynamicRange == DecodeDynamicRange::HDR;
+}
+
+AllocatorType ImageSource::ConvertAutoAllocatorType(const DecodeOptions &opts)
+{
+    ImageInfo info;
+    GetImageInfo(FIRST_FRAME, info);
+    bool hasDesiredSizeOptions = IsSizeVailed(opts.desiredSize);
+    if (ImageUtils::IsSizeSupportDma(hasDesiredSizeOptions ? opts.desiredSize : info.size) ||
+        info.encodedFormat == IMAGE_HEIF_FORMAT || info.encodedFormat == IMAGE_HEIC_FORMAT) {
+        return AllocatorType::DMA_ALLOC;
+    }
+    ParseHdrType();
+    if (IsDecodeHdrImage(opts)) {
+        return AllocatorType::DMA_ALLOC;
+    }
+    return AllocatorType::SHARE_MEM_ALLOC;
+}
+
 static void FreeContextBuffer(const Media::CustomFreePixelMap &func, AllocatorType allocType, PlImageBuffer &buffer)
 {
     if (func != nullptr) {
@@ -828,6 +850,11 @@ unique_ptr<PixelMap> ImageSource::CreatePixelMapExtended(uint32_t index, const D
     ImageInfo info;
     errorCode = GetImageInfo(FIRST_FRAME, info);
     ParseHdrType();
+    if (opts_.isAppUseAllocator && opts_.allocatorType == AllocatorType::SHARE_MEM_ALLOC && IsDecodeHdrImage(opts)) {
+        IMAGE_LOGE("HDR image can't use SHARE_MEM_ALLOC");
+        errorCode = ERR_MEDIA_INVALID_OPERATION;
+        return nullptr;
+    }
 #ifdef IMAGE_QOS_ENABLE
     if (ImageUtils::IsSizeSupportDma(info.size) && getpid() != gettid()) {
         OHOS::QOS::SetThreadQos(OHOS::QOS::QosLevel::QOS_USER_INTERACTIVE);
@@ -3868,6 +3895,7 @@ DecodeContext ImageSource::DecodeImageDataToContext(uint32_t index, ImageInfo in
                                                     uint32_t& errorCode)
 {
     DecodeContext context = InitDecodeContext(opts_, info, preference_, hasDesiredSizeOptions, plInfo);
+    context.isAppUseAllocator = opts_.isAppUseAllocator;
     ImageHdrType decodedHdrType = context.hdrType;
     context.grColorSpaceName = mainDecoder_->GetPixelMapColorSpace().GetColorSpaceName();
     errorCode = mainDecoder_->Decode(index, context);
