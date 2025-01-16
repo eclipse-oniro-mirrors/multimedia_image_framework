@@ -183,9 +183,15 @@ std::pair<std::array<byte, 2>, uint16_t> JpegExifMetadataAccessor::ReadSegmentLe
     std::array<byte, READ_BYTES> buf { 0, 0 };
     uint16_t size { 0 };
     if (HasLength(marker)) {
+        long currentPos = imageStream_->Tell();
         if (imageStream_->Read(buf.data(), buf.size()) == -1) {
             IMAGE_LOGE("Failed to read from image stream. Marker: %{public}u", marker);
             return { buf, size };
+        }
+        if (buf[0] == JPEG_MARKER_HEADER && HasLength(buf[1])) {
+            IMAGE_LOGD("ReadSegmentLength wrong marker, marker: %{public}u", marker);
+            imageStream_->Seek(currentPos, SeekPos::BEGIN);
+            return { buf, 0 };
         }
         size = GetUShort(buf.data(), bigEndian);
     }
@@ -252,6 +258,8 @@ std::tuple<size_t, size_t> JpegExifMetadataAccessor::GetInsertPosAndMarkerAPP1()
     size_t markerCount = 0;
     size_t skipExifSeqNum = -1;
     size_t insertPos = 0;
+    size_t insertPosApp0 = 0;
+    size_t insertPosApp1 = 0;
 
     imageStream_->Seek(0, SeekPos::BEGIN);
 
@@ -264,10 +272,11 @@ std::tuple<size_t, size_t> JpegExifMetadataAccessor::GetInsertPosAndMarkerAPP1()
     while ((marker != JPEG_MARKER_SOS) && (marker != JPEG_MARKER_EOI)) {
         DataBuf buf = ReadNextSegment(marker);
         if (marker == JPEG_MARKER_APP0) {
-            insertPos = markerCount + 1;
+            insertPosApp0 = markerCount + 1;
         } else if ((marker == JPEG_MARKER_APP1) && (buf.Size() >= APP1_EXIF_LENGTH) &&
             (buf.CmpBytes(EXIF_BLOB_OFFSET, EXIF_ID, EXIF_ID_SIZE) == 0)) {
             skipExifSeqNum = markerCount;
+            insertPosApp1 = markerCount;
         }
 
         int ret = FindNextMarker();
@@ -277,7 +286,7 @@ std::tuple<size_t, size_t> JpegExifMetadataAccessor::GetInsertPosAndMarkerAPP1()
         marker = static_cast<byte>(ret);
         ++markerCount;
     }
-
+    insertPos = insertPosApp1 == 0 ? insertPosApp0 : insertPosApp1;
     return std::make_tuple(insertPos, skipExifSeqNum);
 }
 

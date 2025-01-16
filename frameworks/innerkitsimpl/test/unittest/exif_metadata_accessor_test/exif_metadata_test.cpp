@@ -1085,6 +1085,7 @@ std::string g_batchData006[][3] = {
     {"MovingPhotoId", "110", "110"},
     {"MovingPhotoVersion", "1", "1"},
     {"MicroVideoPresentationTimestampUS", "123232", "123232"},
+    {"HwMnoteAiEdit", "1", "1"},
 };
 
 HWTEST_F(ExifMetadataTest, SetValueBatch006, TestSize.Level3)
@@ -1755,6 +1756,23 @@ HWTEST_F(ExifMetadataTest, RemoveBatch001, TestSize.Level3)
         } else {
             ASSERT_EQ(value, DEFAULT_EXIF_VALUE);
         }
+    }
+}
+
+HWTEST_F(ExifMetadataTest, ExifExtend64k, TestSize.Level3)
+{
+    auto exifData = exif_data_new_from_file(IMAGE_INPUT_JPEG_PATH.c_str());
+    ASSERT_NE(exifData, nullptr);
+    ExifMetadata metadata(exifData);
+
+    std::vector<std::string> keys = {"UserComment", "Make", "ImageDescription", "LensMake"};
+    std::string valueBefore = "aaa" + std::string(1024, 'b') + "ccc";
+    std::string valueAfter = "";
+    for (auto key : keys)
+    {
+        metadata.SetValue(key, valueBefore);
+        metadata.GetValue(key, valueAfter);
+        ASSERT_EQ(valueBefore, valueAfter);
     }
 }
 

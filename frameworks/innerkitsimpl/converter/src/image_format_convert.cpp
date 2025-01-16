@@ -325,6 +325,16 @@ uint32_t ImageFormatConvert::ConvertImageFormat(std::shared_ptr<PixelMap> &srcPi
         }
         return ret;
     }
+    if (srcPiexlMap->IsAstc()) {
+        uint32_t ret = 0;
+        std::unique_ptr<PixelMap> resultPixelMap = PixelMap::ConvertFromAstc(srcPiexlMap.get(), ret,
+            destFormat);
+        srcPiexlMap = std::move(resultPixelMap);
+        if (ret != SUCCESS) {
+            IMAGE_LOGE("convert astc format failed!");
+        }
+        return ret;
+    }
     uint32_t ret = RGBConvertImageFormatOption(srcPiexlMap, srcFormat, destFormat);
     if (ret != SUCCESS) {
         IMAGE_LOGE("convert rgb format failed!");
@@ -569,10 +579,8 @@ uint32_t ImageFormatConvert::RGBConvertImageFormatOptionUnique(
     std::unique_ptr<PixelMap> &srcPiexlMap, const PixelFormat &srcFormat, PixelFormat destFormat)
 {
     ConvertFunction cvtFunc = GetConvertFuncByFormat(srcFormat, destFormat);
-    if (cvtFunc == nullptr) {
-        IMAGE_LOGE("get convert function by format failed!");
-        return ERR_IMAGE_INVALID_PARAMETER;
-    }
+    bool cond = cvtFunc == nullptr;
+    CHECK_ERROR_RETURN_RET_LOG(cond, ERR_IMAGE_INVALID_PARAMETER, "get convert function by format failed!");
     const_uint8_buffer_type srcBuffer = srcPiexlMap->GetPixels();
     ImageInfo imageInfo;
     srcPiexlMap->GetImageInfo(imageInfo);
@@ -582,10 +590,8 @@ uint32_t ImageFormatConvert::RGBConvertImageFormatOptionUnique(
     YUVStrideInfo dstStrides;
     auto allocType = srcPiexlMap->GetAllocatorType();
     auto memory = CreateMemory(destFormat, allocType, width, height, dstStrides);
-    if (memory == nullptr) {
-        IMAGE_LOGE("CreateMemory failed");
-        return ERR_IMAGE_INVALID_PARAMETER;
-    }
+    cond = memory == nullptr;
+    CHECK_ERROR_RETURN_RET_LOG(cond, ERR_IMAGE_INVALID_PARAMETER, "CreateMemory failed");
     int32_t stride = srcPiexlMap->GetRowStride();
     #if !defined(_WIN32) && !defined(_APPLE) && !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
     if (allocType == AllocatorType::DMA_ALLOC) {
@@ -783,10 +789,9 @@ uint32_t ImageFormatConvert::MakeDestPixelMap(std::shared_ptr<PixelMap> &destPix
 uint32_t ImageFormatConvert::MakeDestPixelMapUnique(std::unique_ptr<PixelMap> &destPixelMap, ImageInfo &srcImageinfo,
     DestConvertInfo &destInfo, void *context)
 {
-    if (srcImageinfo.size.width == 0 || srcImageinfo.size.height == 0 || destInfo.width == 0 ||
-        destInfo.height == 0 || destInfo.format == PixelFormat::UNKNOWN) {
-            return ERR_IMAGE_INVALID_PARAMETER;
-    }
+    bool cond = srcImageinfo.size.width == 0 || srcImageinfo.size.height == 0 || destInfo.width == 0 ||
+                destInfo.height == 0 || destInfo.format == PixelFormat::UNKNOWN;
+    CHECK_ERROR_RETURN_RET(cond, ERR_IMAGE_INVALID_PARAMETER);
     ImageInfo info = SetImageInfo(srcImageinfo, destInfo);
     auto allcatorType = destInfo.allocType;
     std::unique_ptr<PixelMap> pixelMap;
@@ -815,10 +820,8 @@ uint32_t ImageFormatConvert::MakeDestPixelMapUnique(std::unique_ptr<PixelMap> &d
     pixelMap->SetPixelsAddr(destInfo.buffer, context, destInfo.bufferSize, allcatorType, nullptr);
     auto ret = pixelMap->SetImageInfo(info, true);
     bool isSetMetaData = SetConvertImageMetaData(destPixelMap, pixelMap);
-    if (ret != SUCCESS || isSetMetaData == false) {
-        IMAGE_LOGE("set imageInfo failed");
-        return ret;
-    }
+    cond = ret != SUCCESS || isSetMetaData == false;
+    CHECK_ERROR_RETURN_RET_LOG(cond, ret, "set imageInfo failed");
 #ifdef IMAGE_COLORSPACE_FLAG
     if (NeedProtectionConversion(srcImageinfo.pixelFormat, info.pixelFormat)) {
         pixelMap->InnerSetColorSpace(OHOS::ColorManager::ColorSpace(ColorManager::ColorSpaceName::BT2020_HLG));

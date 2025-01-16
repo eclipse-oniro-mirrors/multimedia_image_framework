@@ -416,10 +416,8 @@ uint32_t JpegDecoder::DoSwDecode(DecodeContext &context) __attribute__((no_sanit
             }
             void* nativeBuffer = sb.GetRefPtr();
             int32_t err = ImageUtils::SurfaceBuffer_Reference(nativeBuffer);
-            if (err != OHOS::GSERROR_OK) {
-                IMAGE_LOGE("NativeBufferReference failed");
-                return ERR_DMA_DATA_ABNORMAL;
-            }
+            bool cond = err != OHOS::GSERROR_OK;
+            CHECK_ERROR_RETURN_RET_LOG(cond, ERR_DMA_DATA_ABNORMAL, "NativeBufferReference failed");
 
             context.pixelsBuffer.buffer = sb->GetVirAddr();
             context.pixelsBuffer.context = nativeBuffer;
@@ -524,10 +522,8 @@ uint32_t JpegDecoder::Decode(uint32_t index, DecodeContext &context)
         }
         state_ = JpegDecodingState::BASE_INFO_PARSED;
         ret = StartDecompress(opts_);
-        if (ret != Media::SUCCESS) {
-            IMAGE_LOGE("start decompress failed on decode:%{public}u.", ret);
-            return ret;
-        }
+        bool cond = ret != Media::SUCCESS;
+        CHECK_ERROR_RETURN_RET_LOG(cond, ret, "start decompress failed on decode:%{public}u.", ret);
         state_ = JpegDecodingState::IMAGE_DECODING;
     }
     // only state JpegDecodingState::IMAGE_DECODING can go here.
@@ -1032,9 +1028,8 @@ uint32_t JpegDecoder::ModifyImageProperty(uint32_t index, const std::string &key
     }
 
     uint32_t ret = exifInfo_.ModifyExifData(tag, value, path);
-    if (ret != Media::SUCCESS) {
-        return ret;
-    }
+    bool cond = ret != Media::SUCCESS;
+    CHECK_ERROR_RETURN_RET(cond, ret);
     return Media::SUCCESS;
 }
 
@@ -1092,10 +1087,8 @@ uint32_t JpegDecoder::GetFilterArea(const int &privacyType, std::vector<std::pai
         static_cast<unsigned int>(app1SizeBuf[1]) | static_cast<unsigned int>(app1SizeBuf[0] << OFFSET_8);
     delete[] app1SizeBuf;
     uint32_t fsize = static_cast<uint32_t>(srcMgr_.inputStream->GetStreamSize());
-    if (app1Size > fsize) {
-        IMAGE_LOGE("[GetFilterArea] file format is illegal.");
-        return Media::ERR_MEDIA_INVALID_OPERATION;
-    }
+    bool cond = app1Size > fsize;
+    CHECK_ERROR_RETURN_RET_LOG(cond, Media::ERR_MEDIA_INVALID_OPERATION, "[GetFilterArea] file format is illegal.");
 
     srcMgr_.inputStream->Seek(0);
     uint32_t bufSize = app1Size + ADDRESS_4;
@@ -1105,15 +1098,13 @@ uint32_t JpegDecoder::GetFilterArea(const int &privacyType, std::vector<std::pai
     uint32_t ret = exifInfo_.GetFilterArea(buf, bufSize, privacyType, ranges);
     delete[] buf;
     srcMgr_.inputStream->Seek(curPos);
-    if (ret != Media::SUCCESS) {
-        IMAGE_LOGE("[GetFilterArea]: failed to get area, errno %{public}d", ret);
-        return ret;
-    }
+    cond = ret != Media::SUCCESS;
+    CHECK_ERROR_RETURN_RET_LOG(cond, ret, "[GetFilterArea]: failed to get area, errno %{public}d", ret);
     return Media::SUCCESS;
 }
 
 #ifdef IMAGE_COLORSPACE_FLAG
-OHOS::ColorManager::ColorSpace JpegDecoder::getGrColorSpace()
+OHOS::ColorManager::ColorSpace JpegDecoder::GetPixelMapColorSpace()
 {
     OHOS::ColorManager::ColorSpace grColorSpace = iccProfileInfo_.getGrColorSpace();
     return grColorSpace;

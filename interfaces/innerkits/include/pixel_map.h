@@ -100,6 +100,15 @@ struct PixelMemInfo {
     bool isAstc = false;
 };
 
+struct WritePixelsOptions {
+    const uint8_t* source = nullptr;
+    uint64_t bufferSize = 0;
+    uint32_t offset = 0;
+    uint32_t stride = 0;
+    Rect region;
+    PixelFormat srcPixelFormat = PixelFormat::BGRA_8888;
+};
+
 class ExifMetadata;
 class AbsMemory;
 
@@ -125,6 +134,8 @@ public:
                                                          const InitializationOptions &opts);
     NATIVEEXPORT static std::unique_ptr<PixelMap> Create(PixelMap &source, const Rect &srcRect,
         const InitializationOptions &opts, int32_t &errorCode);
+    NATIVEEXPORT static std::unique_ptr<PixelMap> ConvertFromAstc(PixelMap *source, uint32_t &errorCode,
+        PixelFormat destFormat);
 
     NATIVEEXPORT virtual uint32_t SetImageInfo(ImageInfo &info);
     NATIVEEXPORT virtual uint32_t SetImageInfo(ImageInfo &info, bool isReused);
@@ -138,6 +149,7 @@ public:
     NATIVEEXPORT virtual int32_t GetPixelBytes();
     NATIVEEXPORT virtual int32_t GetRowBytes();
     NATIVEEXPORT virtual int32_t GetByteCount();
+    NATIVEEXPORT virtual uint32_t GetAllocationByteCount();
     NATIVEEXPORT virtual int32_t GetWidth();
     NATIVEEXPORT virtual int32_t GetHeight();
     NATIVEEXPORT void GetAstcRealSize(Size &size)
@@ -178,6 +190,7 @@ public:
     NATIVEEXPORT virtual uint32_t ResetConfig(const Size &size, const PixelFormat &format);
     NATIVEEXPORT virtual bool SetAlphaType(const AlphaType &alphaType);
     NATIVEEXPORT virtual uint32_t WritePixel(const Position &pos, const uint32_t &color);
+    NATIVEEXPORT virtual uint32_t WritePixels(const WritePixelsOptions &opts);
     NATIVEEXPORT virtual uint32_t WritePixels(const uint8_t *source, const uint64_t &bufferSize, const uint32_t &offset,
                          const uint32_t &stride, const Rect &region);
     NATIVEEXPORT virtual uint32_t WritePixels(const uint8_t *source, const uint64_t &bufferSize);
@@ -216,6 +229,15 @@ public:
         return editable_;
     }
 
+    NATIVEEXPORT virtual void SetModifiable(bool modifiable)
+    {
+        modifiable_ = modifiable;
+    }
+    NATIVEEXPORT virtual bool IsModifiable()
+    {
+        return modifiable_;
+    }
+
     NATIVEEXPORT virtual bool IsTransformered()
     {
         return isTransformered_;
@@ -238,8 +260,10 @@ public:
     }
 
     NATIVEEXPORT virtual bool Marshalling(Parcel &data) const override;
-    NATIVEEXPORT static PixelMap *Unmarshalling(Parcel &data);
-    NATIVEEXPORT static PixelMap *Unmarshalling(Parcel &parcel, PIXEL_MAP_ERR &error);
+    NATIVEEXPORT static PixelMap *Unmarshalling(Parcel &data,
+        std::function<int(Parcel &parcel, std::function<int(Parcel&)> readFdDefaultFunc)> readSafeFdFunc = nullptr);
+    NATIVEEXPORT static PixelMap *Unmarshalling(Parcel &parcel, PIXEL_MAP_ERR &error,
+        std::function<int(Parcel &parcel, std::function<int(Parcel&)> readFdDefaultFunc)> readSafeFdFunc = nullptr);
     NATIVEEXPORT virtual bool EncodeTlv(std::vector<uint8_t> &buff) const;
     NATIVEEXPORT static PixelMap *DecodeTlv(std::vector<uint8_t> &buff);
     NATIVEEXPORT virtual void SetImageYUVInfo(YUVDataInfo &yuvinfo)
@@ -306,6 +330,7 @@ public:
     NATIVEEXPORT uint32_t GetImagePropertyString(const std::string &key, std::string &value);
     NATIVEEXPORT uint32_t ModifyImageProperty(const std::string &key, const std::string &value);
     NATIVEEXPORT uint32_t SetMemoryName(const std::string &pixelMapName);
+    NATIVEEXPORT virtual std::unique_ptr<PixelMap> Clone(int32_t &errorCode);
 
     NATIVEEXPORT bool IsHdr();
     NATIVEEXPORT uint32_t ToSdr();
@@ -443,7 +468,8 @@ protected:
     bool ReadBufferSizeFromParcel(Parcel& parcel, const ImageInfo& imgInfo, PixelMemInfo& memInfo,
         PIXEL_MAP_ERR& error);
     bool WriteMemInfoToParcel(Parcel &parcel, const int32_t &bufferSize) const;
-    static bool ReadMemInfoFromParcel(Parcel &parcel, PixelMemInfo &pixelMemInfo, PIXEL_MAP_ERR &error);
+    static bool ReadMemInfoFromParcel(Parcel &parcel, PixelMemInfo &pixelMemInfo, PIXEL_MAP_ERR &error,
+        std::function<int(Parcel &parcel, std::function<int(Parcel&)> readFdDefaultFunc)> readSafeFdFunc = nullptr);
     bool WriteTransformDataToParcel(Parcel &parcel) const;
     bool ReadTransformData(Parcel &parcel, PixelMap *pixelMap);
     bool WriteAstcRealSizeToParcel(Parcel &parcel) const;
@@ -465,11 +491,8 @@ protected:
 
     bool CheckValidParam(int32_t x, int32_t y)
     {
-        return isUnMap_ || (data_ == nullptr) ||
-                       (x >= imageInfo_.size.width) || (x < 0) || (y >= imageInfo_.size.height) ||
-                       (y < 0) || (pixelsSize_ < static_cast<uint64_t>(rowDataSize_) * imageInfo_.size.height)
-                   ? false
-                   : true;
+        return isUnMap_ || data_ == nullptr || x >= imageInfo_.size.width || x < 0 || y >= imageInfo_.size.height ||
+            y < 0 || (pixelsSize_ < static_cast<uint64_t>(rowDataSize_) * imageInfo_.size.height) ? false : true;
     }
 
     static PixelMap *StartUnmarshalling(Parcel &parcel, ImageInfo &imgInfo,
@@ -481,9 +504,11 @@ protected:
     static bool UpdatePixelMapMemInfo(PixelMap *pixelMap, ImageInfo &imgInfo, PixelMemInfo &pixelMemInfo);
     bool WriteImageData(Parcel &parcel, size_t size) const;
     bool WriteAshmemDataToParcel(Parcel &parcel, size_t size) const;
-    static uint8_t *ReadImageData(Parcel &parcel, int32_t size);
+    static uint8_t *ReadImageData(Parcel &parcel, int32_t size,
+        std::function<int(Parcel &parcel, std::function<int(Parcel&)> readFdDefaultFunc)> readSafeFdFunc = nullptr);
     static uint8_t *ReadHeapDataFromParcel(Parcel &parcel, int32_t bufferSize);
-    static uint8_t *ReadAshmemDataFromParcel(Parcel &parcel, int32_t bufferSize);
+    static uint8_t *ReadAshmemDataFromParcel(Parcel &parcel, int32_t bufferSize,
+        std::function<int(Parcel &parcel, std::function<int(Parcel&)> readFdDefaultFunc)> readSafeFdFunc = nullptr);
     static int ReadFileDescriptor(Parcel &parcel);
     static bool WriteFileDescriptor(Parcel &parcel, int fd);
     static bool ReadImageInfo(Parcel &parcel, ImageInfo &imgInfo);
@@ -508,6 +533,7 @@ protected:
                                                AllocatorType dstType, uint32_t &errorCode, bool toSRGB);
     // used to close fd after mmap in RenderService when memory type is shared-mem or dma.
     bool CloseFd();
+    uint32_t CheckPixelMapForWritePixels();
 
     uint8_t *data_ = nullptr;
     // this info SHOULD be the final info for decoded pixelmap, not the original image info
@@ -522,6 +548,7 @@ protected:
     AllocatorType allocatorType_ = AllocatorType::SHARE_MEM_ALLOC;
     uint32_t pixelsSize_ = 0;
     bool editable_ = false;
+    bool modifiable_ = true; // If this is set to false, any modifications to the pixels data is not allowed
     bool useSourceAsResponse_ = false;
     bool isTransformered_ = false;
     std::shared_ptr<std::mutex> transformMutex_ = std::make_shared<std::mutex>();
@@ -560,7 +587,7 @@ private:
     std::shared_ptr<std::mutex> unmapMutex_ = std::make_shared<std::mutex>();
 
     // used to mark whether DMA memory should be refreshed
-    mutable bool isMemoryDirty_;
+    mutable bool isMemoryDirty_ = false;
 };
 } // namespace Media
 } // namespace OHOS

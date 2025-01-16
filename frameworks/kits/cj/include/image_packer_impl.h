@@ -17,11 +17,11 @@
 
 #include "cj_ffi/cj_common_ffi.h"
 #include "ffi_remote_data.h"
-#include "media_errors.h"
 #include "image_log.h"
-#include "pixel_map_impl.h"
 #include "image_packer.h"
 #include "inttypes.h"
+#include "media_errors.h"
+#include "pixel_map_impl.h"
 
 namespace OHOS {
 namespace Media {
@@ -52,7 +52,7 @@ public:
             IMAGE_LOGE("Packing failed, bufferSize cannot be less than or equal to 0");
             return std::make_tuple(ERR_IMAGE_INIT_ABNORMAL, nullptr, 0);
         }
-        
+
         uint8_t* resultBuffer = static_cast<uint8_t*>(malloc(sizeof(uint8_t) * bufferSize));
         if (resultBuffer == nullptr) {
             IMAGE_LOGE("Packing failed, malloc buffer failed");
@@ -111,7 +111,7 @@ public:
             IMAGE_LOGE("Packing failed, FinalizePacking failed, ret=%{public}u.", finalPackRet);
             return finalPackRet;
         }
-        IMAGE_LOGD("packedSize=%{public}"  PRId64, packedSize);
+        IMAGE_LOGD("packedSize=%{public}" PRId64, packedSize);
         return SUCCESS;
     }
 

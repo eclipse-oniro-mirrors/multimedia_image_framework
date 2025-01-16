@@ -37,6 +37,7 @@
 #include "include/core/SkImage.h"
 #include "hitrace_meter.h"
 #include "media_errors.h"
+#include "pixel_convert.h"
 #include "pixel_convert_adapter.h"
 #include "pixel_map_utils.h"
 #include "post_proc.h"
@@ -97,9 +98,6 @@ constexpr uint8_t BGRA_BYTES = 4;
 constexpr uint8_t RGBA_F16_BYTES = 8;
 constexpr uint8_t PER_PIXEL_LEN = 1;
 constexpr uint32_t MAX_READ_COUNT = 2048;
-static constexpr int32_t PLANE_Y = 0;
-static constexpr int32_t PLANE_U = 1;
-static constexpr int32_t PLANE_V = 2;
 
 constexpr uint8_t FILL_NUMBER = 3;
 constexpr uint8_t ALIGN_NUMBER = 4;
@@ -776,6 +774,11 @@ unique_ptr<PixelMap> PixelMap::Create(PixelMap &source, const Rect &srcRect, con
     IMAGE_LOGD("PixelMap::Create5 enter");
     ImageInfo srcImageInfo;
     source.GetImageInfo(srcImageInfo);
+    if (IsYUV(srcImageInfo.pixelFormat) || IsYUV(opts.pixelFormat)) {
+        IMAGE_LOGE("PixelMap::Create does not support yuv format.");
+        errorCode = IMAGE_RESULT_DECODE_FAILED;
+        return nullptr;
+    }
     PostProc postProc;
     Rect sRect = srcRect;
     CropValue cropType = PostProc::ValidCropValue(sRect, srcImageInfo.size);
@@ -1004,6 +1007,60 @@ bool PixelMap::CopyPixelMap(PixelMap &source, PixelMap &dstPixelMap, int32_t &er
     }
     SetDstPixelMapInfo(source, dstPixelMap, dstPixels, uBufferSize, memory);
     return true;
+}
+
+bool CheckImageInfo(const ImageInfo &imageInfo, int32_t &errorCode, AllocatorType type, int32_t rowDataSize)
+{
+    if (IsYUV(imageInfo.pixelFormat)||
+        imageInfo.pixelFormat == PixelFormat::ASTC_4x4 ||
+        imageInfo.pixelFormat == PixelFormat::ASTC_6x6 ||
+        imageInfo.pixelFormat == PixelFormat::ASTC_8x8) {
+        errorCode = IMAGE_RESULT_DATA_UNSUPPORT;
+        IMAGE_LOGE("[PixelMap] PixelMap type does not support clone");
+        return false;
+    }
+    if (static_cast<uint64_t>(rowDataSize) * static_cast<uint64_t>(imageInfo.size.height) >
+        (type == AllocatorType::HEAP_ALLOC ? PIXEL_MAP_MAX_RAM_SIZE : INT_MAX)) {
+        errorCode = IMAGE_RESULT_TOO_LARGE;
+        IMAGE_LOGE("[PixelMap] PixelMap size too large");
+        return false;
+    }
+    errorCode = SUCCESS;
+    return true;
+}
+
+unique_ptr<PixelMap> PixelMap::Clone(int32_t &errorCode)
+{
+    if (!CheckImageInfo(imageInfo_, errorCode, allocatorType_, rowDataSize_)) {
+        return nullptr;
+    }
+    InitializationOptions opts;
+    opts.srcPixelFormat = imageInfo_.pixelFormat;
+    opts.pixelFormat = imageInfo_.pixelFormat;
+    opts.alphaType = imageInfo_.alphaType;
+    opts.size = imageInfo_.size;
+    opts.srcRowStride = rowStride_;
+    opts.editable = editable_;
+    opts.useDMA = allocatorType_ == AllocatorType::DMA_ALLOC;
+    unique_ptr<PixelMap> pixelMap = PixelMap::Create(opts);
+    if (!pixelMap) {
+        errorCode = IMAGE_RESULT_INIT_ABNORMAL;
+        IMAGE_LOGE("[PixelMap] Initial a empty PixelMap failed");
+        return nullptr;
+    }
+    if (!CopyPixelMap(*this, *(pixelMap.get()), errorCode)) {
+        errorCode = IMAGE_RESULT_MALLOC_ABNORMAL;
+        IMAGE_LOGE("[PixelMap] Copy PixelMap data failed");
+        return nullptr;
+    }
+    pixelMap->SetTransformered(isTransformered_);
+    TransformData transformData;
+    GetTransformData(transformData);
+    pixelMap->SetTransformData(transformData);
+    pixelMap->SetHdrType(GetHdrType());
+    pixelMap->SetHdrMetadata(GetHdrMetadata());
+    errorCode = SUCCESS;
+    return pixelMap;
 }
 
 bool PixelMap::IsSameSize(const Size &src, const Size &dst)
@@ -1407,14 +1464,38 @@ int32_t PixelMap::GetByteCount()
     IMAGE_LOGD("GetByteCount");
     if (IsYUV(imageInfo_.pixelFormat)) {
         return GetYUVByteCount(imageInfo_);
-    } else {
-        uint64_t byteCount = static_cast<uint64_t>(rowDataSize_) * static_cast<uint64_t>(imageInfo_.size.height);
-        if (byteCount > INT_MAX) {
-            IMAGE_LOGE("GetByteCount failed: byteCount overflowed");
+    }
+
+    int64_t rowDataSize = rowDataSize_;
+    int64_t height = imageInfo_.size.height;
+    if (isAstc_) {
+        Size realSize;
+        GetAstcRealSize(realSize);
+        rowDataSize = ImageUtils::GetRowDataSizeByPixelFormat(realSize.width, imageInfo_.pixelFormat);
+        height = realSize.height;
+    }
+    int64_t byteCount = rowDataSize * height;
+    if (rowDataSize <= 0 || byteCount > INT32_MAX) {
+        IMAGE_LOGE("[PixelMap] GetByteCount failed: invalid rowDataSize or byteCount overflowed");
+        return 0;
+    }
+    return static_cast<int32_t>(byteCount);
+}
+
+uint32_t PixelMap::GetAllocationByteCount()
+{
+    uint32_t allocatedBytes = pixelsSize_;
+#if !defined(_WIN32) && !defined(_APPLE) && !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
+    if (allocatorType_ == AllocatorType::DMA_ALLOC) {
+        if (context_ == nullptr) {
+            IMAGE_LOGE("[PixelMap] GetAllocationByteCount failed: context_ is null");
             return 0;
         }
-        return byteCount;
+        SurfaceBuffer* sb = static_cast<SurfaceBuffer*>(context_);
+        allocatedBytes = sb->GetSize();
     }
+#endif
+    return allocatedBytes;
 }
 
 int32_t PixelMap::GetWidth()
@@ -1693,10 +1774,34 @@ uint32_t PixelMap::ReadPixels(const uint64_t &bufferSize, const uint32_t &offset
     ImageInfo dstImageInfo =
         MakeImageInfo(region.width, region.height, PixelFormat::BGRA_8888, AlphaType::IMAGE_ALPHA_TYPE_UNPREMUL);
     Position srcPosition { region.left, region.top };
-    if (!PixelConvertAdapter::ReadPixelsConvert(data_, srcPosition, rowStride_, imageInfo_, dst + offset, stride,
-        dstImageInfo)) {
-        IMAGE_LOGE("read pixels by rect call ReadPixelsConvert fail.");
-        return ERR_IMAGE_READ_PIXELMAP_FAILED;
+    if (imageInfo_.pixelFormat == PixelFormat::ARGB_8888) {
+        int32_t srcRowBytes = imageInfo_.size.width * ImageUtils::GetPixelBytes(imageInfo_.pixelFormat);
+        std::unique_ptr<uint8_t[]> srcData = std::make_unique<uint8_t[]>(srcRowBytes * imageInfo_.size.height);
+        if (srcData == nullptr) {
+            IMAGE_LOGE("ReadPixels make srcData fail.");
+            return ERR_IMAGE_READ_PIXELMAP_FAILED;
+        }
+        void* outData = srcData.get();
+        ImageInfo tempInfo = MakeImageInfo(imageInfo_.size.width, imageInfo_.size.height,
+            PixelFormat::BGRA_8888, AlphaType::IMAGE_ALPHA_TYPE_UNPREMUL);
+        BufferInfo srcInfo = {data_, GetRowStride(), imageInfo_};
+        BufferInfo dstInfo = {outData, 0, tempInfo};
+        int32_t dstLength = PixelConvert::PixelsConvert(srcInfo, dstInfo, IsStrideAlignment());
+        if (dstLength < 0) {
+            IMAGE_LOGE("ReadPixels PixelsConvert to BGRA_8888 failed.");
+            return ERR_IMAGE_READ_PIXELMAP_FAILED;
+        }
+        if (!PixelConvertAdapter::ReadPixelsConvert(outData, srcPosition, srcRowBytes, tempInfo,
+            dst + offset, stride, dstImageInfo)) {
+            IMAGE_LOGE("read pixels by rect call ReadPixelsConvert fail.");
+            return ERR_IMAGE_READ_PIXELMAP_FAILED;
+        }
+    } else {
+        if (!PixelConvertAdapter::ReadPixelsConvert(data_, srcPosition, rowStride_, imageInfo_, dst + offset, stride,
+            dstImageInfo)) {
+            IMAGE_LOGE("read pixels by rect call ReadPixelsConvert fail.");
+            return ERR_IMAGE_READ_PIXELMAP_FAILED;
+        }
     }
     return SUCCESS;
 }
@@ -1785,8 +1890,8 @@ uint32_t PixelMap::WritePixel(const Position &pos, const uint32_t &color)
             "Width() %{public}d,  Height() %{public}d, ", pos.x, pos.y, GetWidth(), GetHeight());
         return ERR_IMAGE_INVALID_PARAMETER;
     }
-    if (!IsEditable()) {
-        IMAGE_LOGE("write pixel by pos pixelmap is not editable.");
+    if (!IsEditable() || !modifiable_) {
+        IMAGE_LOGE("write pixel by pos pixelmap is not editable or modifiable.");
         return ERR_IMAGE_PIXELMAP_NOT_ALLOW_MODIFY;
     }
     if (!ImageUtils::IsValidImageInfo(imageInfo_)) {
@@ -1810,15 +1915,10 @@ uint32_t PixelMap::WritePixel(const Position &pos, const uint32_t &color)
     return SUCCESS;
 }
 
-uint32_t PixelMap::WritePixels(const uint8_t *source, const uint64_t &bufferSize, const uint32_t &offset,
-                               const uint32_t &stride, const Rect &region)
+uint32_t PixelMap::CheckPixelMapForWritePixels()
 {
-    if (!CheckPixelsInput(source, bufferSize, offset, stride, region)) {
-        IMAGE_LOGE("write pixel by rect input parameter fail.");
-        return ERR_IMAGE_INVALID_PARAMETER;
-    }
-    if (!IsEditable()) {
-        IMAGE_LOGE("write pixel by rect pixelmap data is not editable.");
+    if (!IsEditable() || !modifiable_) {
+        IMAGE_LOGE("write pixel by rect pixelmap data is not editable or modifiable.");
         return ERR_IMAGE_PIXELMAP_NOT_ALLOW_MODIFY;
     }
     if (!ImageUtils::IsValidImageInfo(imageInfo_)) {
@@ -1834,16 +1934,62 @@ uint32_t PixelMap::WritePixels(const uint8_t *source, const uint64_t &bufferSize
         IMAGE_LOGE("write pixel by rect get bytes by per pixel fail.");
         return ERR_IMAGE_WRITE_PIXELMAP_FAILED;
     }
-    Position dstPosition { region.left, region.top };
+    return SUCCESS;
+}
+
+uint32_t PixelMap::WritePixels(const WritePixelsOptions &opts)
+{
+    if (!CheckPixelsInput(opts.source, opts.bufferSize, opts.offset, opts.stride, opts.region)) {
+        IMAGE_LOGE("write pixel by rect input parameter fail.");
+        return ERR_IMAGE_INVALID_PARAMETER;
+    }
+
+    uint32_t ret = CheckPixelMapForWritePixels();
+    if (ret != SUCCESS) {
+        return ret;
+    }
+
+    Position dstPosition { opts.region.left, opts.region.top };
     ImageInfo srcInfo =
-        MakeImageInfo(region.width, region.height, PixelFormat::BGRA_8888, AlphaType::IMAGE_ALPHA_TYPE_UNPREMUL);
-    if (!PixelConvertAdapter::WritePixelsConvert(source + offset, stride, srcInfo, data_, dstPosition, rowStride_,
-        imageInfo_)) {
-        IMAGE_LOGE("write pixel by rect call WritePixelsConvert fail.");
-        return ERR_IMAGE_WRITE_PIXELMAP_FAILED;
+        MakeImageInfo(opts.region.width, opts.region.height, opts.srcPixelFormat, AlphaType::IMAGE_ALPHA_TYPE_UNPREMUL);
+    if (imageInfo_.pixelFormat == PixelFormat::ARGB_8888) {
+        std::unique_ptr<uint8_t[]> tempPixels = std::make_unique<uint8_t[]>(opts.bufferSize);
+        if (tempPixels == nullptr) {
+            IMAGE_LOGE("WritePixels make tempPixels failed.");
+            return ERR_IMAGE_WRITE_PIXELMAP_FAILED;
+        }
+        void *colors = tempPixels.get();
+        ImageInfo tempInfo = MakeImageInfo(
+            opts.region.width, opts.region.height, PixelFormat::ARGB_8888,
+            AlphaType::IMAGE_ALPHA_TYPE_UNPREMUL);
+        BufferInfo dstInfo = {colors, 0, tempInfo};
+        const void *pixels = opts.source;
+        BufferInfo srcBufferInfo = {const_cast<void*>(pixels), 0, srcInfo};
+        int32_t dstLength = PixelConvert::PixelsConvert(srcBufferInfo, dstInfo, false);
+        if (dstLength < 0) {
+            IMAGE_LOGE("WritePixels pixel convert to BGRA_8888 failed.");
+            return ERR_IMAGE_WRITE_PIXELMAP_FAILED;
+        }
+        if (!PixelConvertAdapter::WritePixelsConvert((uint8_t*)colors + opts.offset, opts.stride, tempInfo,
+            data_, dstPosition, rowStride_, imageInfo_)) {
+            IMAGE_LOGE("write pixel by rect call WritePixelsConvert fail.");
+            return ERR_IMAGE_WRITE_PIXELMAP_FAILED;
+        }
+    } else {
+        if (!PixelConvertAdapter::WritePixelsConvert(opts.source + opts.offset, opts.stride, srcInfo,
+            data_, dstPosition, rowStride_, imageInfo_)) {
+            IMAGE_LOGE("write pixel by rect call WritePixelsConvert fail.");
+            return ERR_IMAGE_WRITE_PIXELMAP_FAILED;
+        }
     }
     AddVersionId();
     return SUCCESS;
+}
+
+uint32_t PixelMap::WritePixels(const uint8_t *source, const uint64_t &bufferSize, const uint32_t &offset,
+                               const uint32_t &stride, const Rect &region)
+{
+    return WritePixels(WritePixelsOptions{source, bufferSize, offset, stride, region, PixelFormat::BGRA_8888});
 }
 
 uint32_t PixelMap::WritePixels(const uint8_t *source, const uint64_t &bufferSize)
@@ -1854,8 +2000,8 @@ uint32_t PixelMap::WritePixels(const uint8_t *source, const uint64_t &bufferSize
             static_cast<unsigned long long>(bufferSize), pixelsSize_);
         return ERR_IMAGE_INVALID_PARAMETER;
     }
-    if (!IsEditable()) {
-        IMAGE_LOGE("write pixels by buffer pixelmap data is not editable.");
+    if (!IsEditable() || !modifiable_) {
+        IMAGE_LOGE("write pixels by buffer pixelmap data is not editable or modifiable.");
         return ERR_IMAGE_PIXELMAP_NOT_ALLOW_MODIFY;
     }
     if (!ImageUtils::IsValidImageInfo(imageInfo_)) {
@@ -1897,8 +2043,8 @@ uint32_t PixelMap::WritePixels(const uint8_t *source, const uint64_t &bufferSize
 
 bool PixelMap::WritePixels(const uint32_t &color)
 {
-    if (!IsEditable()) {
-        IMAGE_LOGE("erase pixels by color pixelmap data is not editable.");
+    if (!IsEditable() || !modifiable_) {
+        IMAGE_LOGE("erase pixels by color pixelmap data is not editable or modifiable.");
         return false;
     }
     if (!ImageUtils::IsValidImageInfo(imageInfo_)) {
@@ -2067,11 +2213,13 @@ uint8_t *PixelMap::ReadHeapDataFromParcel(Parcel &parcel, int32_t bufferSize)
     return base;
 }
 
-uint8_t *PixelMap::ReadAshmemDataFromParcel(Parcel &parcel, int32_t bufferSize)
+uint8_t *PixelMap::ReadAshmemDataFromParcel(Parcel &parcel, int32_t bufferSize,
+    std::function<int(Parcel &parcel, std::function<int(Parcel&)> readFdDefaultFunc)> readSafeFdFunc)
 {
     uint8_t *base = nullptr;
 #if !defined(_WIN32) && !defined(_APPLE) && !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
-    int fd = ReadFileDescriptor(parcel);
+    auto readFdDefaultFunc = [](Parcel &parcel) -> int { return ReadFileDescriptor(parcel); };
+    int fd = ((readSafeFdFunc != nullptr) ? readSafeFdFunc(parcel, readFdDefaultFunc) : readFdDefaultFunc(parcel));
     if (!CheckAshmemSize(fd, bufferSize)) {
         IMAGE_LOGE("ReadAshmemDataFromParcel check ashmem size failed, fd:[%{public}d].", fd);
         return nullptr;
@@ -2107,13 +2255,14 @@ uint8_t *PixelMap::ReadAshmemDataFromParcel(Parcel &parcel, int32_t bufferSize)
     return base;
 }
 
-uint8_t *PixelMap::ReadImageData(Parcel &parcel, int32_t bufferSize)
+uint8_t *PixelMap::ReadImageData(Parcel &parcel, int32_t bufferSize,
+    std::function<int(Parcel &parcel, std::function<int(Parcel&)> readFdDefaultFunc)> readSafeFdFunc)
 {
 #if !defined(_WIN32) && !defined(_APPLE) &&!defined(IOS_PLATFORM) &&!defined(ANDROID_PLATFORM)
     if (static_cast<unsigned int>(bufferSize) <= MIN_IMAGEDATA_SIZE) {
         return ReadHeapDataFromParcel(parcel, bufferSize);
     } else {
-        return ReadAshmemDataFromParcel(parcel, bufferSize);
+        return ReadAshmemDataFromParcel(parcel, bufferSize, readSafeFdFunc);
     }
 #else
     return ReadHeapDataFromParcel(parcel, bufferSize);
@@ -2643,14 +2792,15 @@ bool PixelMap::ReadBufferSizeFromParcel(Parcel& parcel, const ImageInfo& imgInfo
 }
 
 #if !defined(_WIN32) && !defined(_APPLE) && !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
-bool ReadDmaMemInfoFromParcel(Parcel &parcel, PixelMemInfo &pixelMemInfo)
+bool ReadDmaMemInfoFromParcel(Parcel &parcel, PixelMemInfo &pixelMemInfo,
+    std::function<int(Parcel &parcel, std::function<int(Parcel&)> readFdDefaultFunc)> readSafeFdFunc)
 {
     sptr<SurfaceBuffer> surfaceBuffer = SurfaceBuffer::Create();
     if (surfaceBuffer == nullptr) {
         IMAGE_LOGE("SurfaceBuffer failed to be created");
         return false;
     }
-    GSError ret = surfaceBuffer->ReadFromMessageParcel(static_cast<MessageParcel&>(parcel));
+    GSError ret = surfaceBuffer->ReadFromMessageParcel(static_cast<MessageParcel&>(parcel), readSafeFdFunc);
     if (ret != GSError::GSERROR_OK) {
         IMAGE_LOGE("SurfaceBuffer read from message parcel failed: %{public}s", GSErrorStr(ret).c_str());
         return false;
@@ -2664,11 +2814,13 @@ bool ReadDmaMemInfoFromParcel(Parcel &parcel, PixelMemInfo &pixelMemInfo)
 }
 #endif
 
-bool PixelMap::ReadMemInfoFromParcel(Parcel &parcel, PixelMemInfo &pixelMemInfo, PIXEL_MAP_ERR &error)
+bool PixelMap::ReadMemInfoFromParcel(Parcel &parcel, PixelMemInfo &pixelMemInfo, PIXEL_MAP_ERR &error,
+    std::function<int(Parcel &parcel, std::function<int(Parcel&)> readFdDefaultFunc)> readSafeFdFunc)
 {
 #if !defined(_WIN32) && !defined(_APPLE) && !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
     if (pixelMemInfo.allocatorType == AllocatorType::SHARE_MEM_ALLOC) {
-        int fd = ReadFileDescriptor(parcel);
+        auto readFdDefaultFunc = [](Parcel &parcel) -> int { return ReadFileDescriptor(parcel); };
+        int fd = ((readSafeFdFunc != nullptr) ? readSafeFdFunc(parcel, readFdDefaultFunc) : readFdDefaultFunc(parcel));
         if (!CheckAshmemSize(fd, pixelMemInfo.bufferSize, pixelMemInfo.isAstc)) {
             PixelMap::ConstructPixelMapError(error, ERR_IMAGE_GET_FD_BAD, "fd acquisition failed");
             ::close(fd);
@@ -2693,12 +2845,12 @@ bool PixelMap::ReadMemInfoFromParcel(Parcel &parcel, PixelMemInfo &pixelMemInfo,
         *static_cast<int32_t *>(pixelMemInfo.context) = fd;
         pixelMemInfo.base = static_cast<uint8_t *>(ptr);
     } else if (pixelMemInfo.allocatorType == AllocatorType::DMA_ALLOC) {
-        if (!ReadDmaMemInfoFromParcel(parcel, pixelMemInfo)) {
+        if (!ReadDmaMemInfoFromParcel(parcel, pixelMemInfo, readSafeFdFunc)) {
             PixelMap::ConstructPixelMapError(error, ERR_IMAGE_GET_DATA_ABNORMAL, "ReadFromMessageParcel failed");
             return false;
         }
     } else { // Any other allocator types will malloc HEAP memory
-        pixelMemInfo.base = ReadImageData(parcel, pixelMemInfo.bufferSize);
+        pixelMemInfo.base = ReadImageData(parcel, pixelMemInfo.bufferSize, readSafeFdFunc);
         if (pixelMemInfo.base == nullptr) {
             PixelMap::ConstructPixelMapError(error, ERR_IMAGE_GET_DATA_ABNORMAL, "ReadImageData failed");
             return false;
@@ -2739,10 +2891,11 @@ bool PixelMap::UpdatePixelMapMemInfo(PixelMap *pixelMap, ImageInfo &imgInfo, Pix
     return true;
 }
 
-PixelMap *PixelMap::Unmarshalling(Parcel &parcel)
+PixelMap *PixelMap::Unmarshalling(Parcel &parcel,
+    std::function<int(Parcel &parcel, std::function<int(Parcel&)> readFdDefaultFunc)> readSafeFdFunc)
 {
     PIXEL_MAP_ERR error;
-    PixelMap* dstPixelMap = PixelMap::Unmarshalling(parcel, error);
+    PixelMap* dstPixelMap = PixelMap::Unmarshalling(parcel, error, readSafeFdFunc);
     if (dstPixelMap == nullptr || error.errorCode != SUCCESS) {
         IMAGE_LOGE("unmarshalling failed errorCode:%{public}d, errorInfo:%{public}s",
             error.errorCode, error.errorInfo.c_str());
@@ -2797,12 +2950,17 @@ PixelMap *PixelMap::FinishUnmarshalling(PixelMap *pixelMap, Parcel &parcel,
     return pixelMap;
 }
 
-PixelMap *PixelMap::Unmarshalling(Parcel &parcel, PIXEL_MAP_ERR &error)
+PixelMap *PixelMap::Unmarshalling(Parcel &parcel, PIXEL_MAP_ERR &error,
+    std::function<int(Parcel &parcel, std::function<int(Parcel&)> readFdDefaultFunc)> readSafeFdFunc)
 {
     ImageInfo imgInfo;
     PixelMemInfo pixelMemInfo;
     PixelMap* pixelMap = StartUnmarshalling(parcel, imgInfo, pixelMemInfo, error);
-    if (pixelMap && !ReadMemInfoFromParcel(parcel, pixelMemInfo, error)) {
+    if (!pixelMap) {
+        IMAGE_LOGE("StartUnmarshalling: get pixelmap failed");
+        return nullptr;
+    }
+    if (!ReadMemInfoFromParcel(parcel, pixelMemInfo, error, readSafeFdFunc)) {
         IMAGE_LOGE("Unmarshalling: read memInfo failed");
         delete pixelMap;
         return nullptr;
@@ -2878,9 +3036,7 @@ void PixelMap::WriteData(std::vector<uint8_t> &buff, const uint8_t *data,
         }
     } else {
         int32_t size = pixelsSize_;
-        for (int32_t offset = 0; offset < size; offset++) {
-            buff.push_back(*(data + offset));
-        }
+        buff.insert(buff.end(), data, data + size);
     }
 }
 
@@ -3399,17 +3555,29 @@ uint32_t PixelMap::ConvertAlphaFormat(PixelMap &wPixelMap, const bool isPremul)
     return SUCCESS;
 }
 
+static uint32_t ValidateSetAlpha(float percent, bool modifiable, AlphaType alphaType)
+{
+    if (!modifiable) {
+        IMAGE_LOGE("[PixelMap] SetAlpha can't be performed: PixelMap is not modifiable");
+        return ERR_IMAGE_PIXELMAP_NOT_ALLOW_MODIFY;
+    }
+    if (alphaType == AlphaType::IMAGE_ALPHA_TYPE_UNKNOWN || alphaType == AlphaType::IMAGE_ALPHA_TYPE_OPAQUE) {
+        IMAGE_LOGE("[PixelMap] SetAlpha could not set alpha on %{public}s", GetNamedAlphaType(alphaType).c_str());
+        return ERR_IMAGE_DATA_UNSUPPORT;
+    }
+    if (percent <= 0 || percent > 1) {
+        IMAGE_LOGE("[PixelMap] SetAlpha input should satisfy (0 < input <= 1). Current input is %{public}f", percent);
+        return ERR_IMAGE_INVALID_PARAMETER;
+    }
+    return SUCCESS;
+}
+
 uint32_t PixelMap::SetAlpha(const float percent)
 {
     auto alphaType = GetAlphaType();
-    if (alphaType == AlphaType::IMAGE_ALPHA_TYPE_UNKNOWN || alphaType == AlphaType::IMAGE_ALPHA_TYPE_OPAQUE) {
-        IMAGE_LOGE("Could not set alpha on %{public}s", GetNamedAlphaType(alphaType).c_str());
-        return ERR_IMAGE_DATA_UNSUPPORT;
-    }
-
-    if (percent <= 0 || percent > 1) {
-        IMAGE_LOGE("Set alpha input should (0 < input <= 1). Current input %{public}f", percent);
-        return ERR_IMAGE_INVALID_PARAMETER;
+    uint32_t retCode = ValidateSetAlpha(percent, modifiable_, alphaType);
+    if (retCode != SUCCESS) {
+        return retCode;
     }
 
     bool isPixelPremul = alphaType == AlphaType::IMAGE_ALPHA_TYPE_PREMUL;
@@ -3437,7 +3605,7 @@ uint32_t PixelMap::SetAlpha(const float percent)
     for (uint32_t i = 0; i < uPixelsSize; i += static_cast<uint32_t>(pixelBytes_)) {
         if (i + pixelBytes_ > uPixelsSize) {
             IMAGE_LOGE("In setAlpha, the number of pixelBytes to be configure: %{public}d"
-                " is greater than the remaining size of pixelSize: %{public}d", pixelBytes_, pixelsSize - i);
+                " is greater than the remaining size of pixelSize: %{public}d", pixelBytes_, uPixelsSize - i);
             break;
         }
         uint8_t* pixel = data_ + i;
@@ -3528,7 +3696,7 @@ static void GenSrcTransInfo(SkTransInfo &srcInfo, ImageInfo &imageInfo, PixelMap
     }
     srcInfo.bitmap.installPixels(srcInfo.info, static_cast<uint8_t *>(pixelmap->GetWritablePixels()), rowStride);
 }
-#else
+#endif
 static void GenSrcTransInfo(SkTransInfo &srcInfo, ImageInfo &imageInfo, uint8_t* pixels,
     sk_sp<SkColorSpace> colorSpace)
 {
@@ -3536,7 +3704,6 @@ static void GenSrcTransInfo(SkTransInfo &srcInfo, ImageInfo &imageInfo, uint8_t*
     srcInfo.info = ToSkImageInfo(imageInfo, colorSpace);
     srcInfo.bitmap.installPixels(srcInfo.info, pixels, srcInfo.info.minRowBytes());
 }
-#endif
 
 static bool GendstTransInfo(SkTransInfo &srcInfo, SkTransInfo &dstInfo, SkMatrix &matrix,
     TransMemoryInfo &memoryInfo)
@@ -3616,22 +3783,40 @@ void DrawImage(bool rectStaysRect, const AntiAliasingOption &option, SkCanvas &c
 
 bool PixelMap::DoTranslation(TransInfos &infos, const AntiAliasingOption &option)
 {
+    if (!modifiable_) {
+        IMAGE_LOGE("[PixelMap] DoTranslation can't be performed: PixelMap is not modifiable");
+        return false;
+    }
+
     std::lock_guard<std::mutex> lock(*translationMutex_);
     ImageInfo imageInfo;
     GetImageInfo(imageInfo);
+    IMAGE_LOGD("[PixelMap] DoTranslation: width = %{public}d, height = %{public}d, pixelFormat = %{public}d, alphaType"
+        " = %{public}d", imageInfo.size.width, imageInfo.size.height, imageInfo.pixelFormat, imageInfo.alphaType);
     TransMemoryInfo dstMemory;
-    // We dont know how custom alloc memory
+    // We don't know how custom alloc memory
     dstMemory.allocType = (allocatorType_ == AllocatorType::CUSTOM_ALLOC) ? AllocatorType::DEFAULT : allocatorType_;
     SkTransInfo src;
+
+    if (imageInfo.pixelFormat == PixelFormat::RGB_888) {
+        // Need this conversion because Skia uses 32-byte RGBX instead of 24-byte RGB when processing translation
+        std::unique_ptr<uint8_t[]> rgbxPixels = nullptr;
+        if (!ExpandRGBToRGBX(data_, GetByteCount(), rgbxPixels)) {
+            return false;
+        }
+        GenSrcTransInfo(src, imageInfo, rgbxPixels.get(), ToSkColorSpace(this));
+    } else {
 #if !defined(_WIN32) && !defined(_APPLE) && !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
-    GenSrcTransInfo(src, imageInfo, this, ToSkColorSpace(this));
+        GenSrcTransInfo(src, imageInfo, this, ToSkColorSpace(this));
 #else
-    if (isUnMap_) {
-        IMAGE_LOGE("DoTranslation falied, isUnMap %{public}d", isUnMap_);
-        return false;
-    }
-    GenSrcTransInfo(src, imageInfo, data_, ToSkColorSpace(this));
+        if (isUnMap_) {
+            IMAGE_LOGE("DoTranslation falied, isUnMap %{public}d", isUnMap_);
+            return false;
+        }
+        GenSrcTransInfo(src, imageInfo, data_, ToSkColorSpace(this));
 #endif
+    }
+
     SkTransInfo dst;
     if (!GendstTransInfo(src, dst, infos.matrix, dstMemory)) {
         IMAGE_LOGE("GendstTransInfo dstMemory falied");
@@ -3663,6 +3848,17 @@ bool PixelMap::DoTranslation(TransInfos &infos, const AntiAliasingOption &option
         VpeUtils::CopySurfaceBufferInfo(sourceSurfaceBuffer, dstSurfaceBuffer);
     }
 #endif
+
+    std::unique_ptr<AbsMemory> shrinkedMemory = nullptr;
+    if (imageInfo.pixelFormat == PixelFormat::RGB_888) {
+        if (!ShrinkRGBXToRGB(dstMemory.memory, shrinkedMemory)) {
+            dstMemory.memory->Release();
+            return false;
+        }
+        dstMemory.memory->Release();
+        m = shrinkedMemory.get();
+    }
+
     SetPixelsAddr(m->data.data, m->extend.data, m->data.size, m->GetType(), nullptr);
     SetImageInfo(imageInfo, true);
     ImageUtils::FlushSurfaceBuffer(this);
@@ -3689,6 +3885,10 @@ void PixelMap::scale(float xAxis, float yAxis, const AntiAliasingOption &option)
     ImageTrace imageTrace("PixelMap scale with option");
     if (option == AntiAliasingOption::SLR) {
 #if !defined(_WIN32) && !defined(_APPLE) && !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
+        if (!modifiable_) {
+            IMAGE_LOGE("[PixelMap] scale can't be performed: PixelMap is not modifiable");
+            return;
+        }
         auto start = std::chrono::high_resolution_clock::now();
         ImageInfo tmpInfo;
         GetImageInfo(tmpInfo);
@@ -3788,20 +3988,35 @@ void PixelMap::CopySurfaceBufferInfo(void *data)
 
 uint32_t PixelMap::crop(const Rect &rect)
 {
+    if (!modifiable_) {
+        IMAGE_LOGE("[PixelMap] crop can't be performed: PixelMap is not modifiable");
+        return ERR_IMAGE_PIXELMAP_NOT_ALLOW_MODIFY;
+    }
+    std::lock_guard<std::mutex> lock(*translationMutex_);
     ImageTrace imageTrace("PixelMap crop");
     ImageInfo imageInfo;
     GetImageInfo(imageInfo);
-
     SkTransInfo src;
+
+    if (imageInfo.pixelFormat == PixelFormat::RGB_888) {
+        // Need this conversion because Skia uses 32-byte RGBX instead of 24-byte RGB when processing translation
+        std::unique_ptr<uint8_t[]> rgbxPixels = nullptr;
+        if (!ExpandRGBToRGBX(data_, GetByteCount(), rgbxPixels)) {
+            return false;
+        }
+        GenSrcTransInfo(src, imageInfo, rgbxPixels.get(), ToSkColorSpace(this));
+    } else {
 #if !defined(_WIN32) && !defined(_APPLE) && !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
-    GenSrcTransInfo(src, imageInfo, this, ToSkColorSpace(this));
+        GenSrcTransInfo(src, imageInfo, this, ToSkColorSpace(this));
 #else
-    if (isUnMap_) {
-        IMAGE_LOGE("PixelMap::crop falied, isUnMap %{public}d", isUnMap_);
-        return ERR_IMAGE_CROP;
-    }
-    GenSrcTransInfo(src, imageInfo, data_, ToSkColorSpace(this));
+        if (isUnMap_) {
+            IMAGE_LOGE("PixelMap::crop falied, isUnMap %{public}d", isUnMap_);
+            return ERR_IMAGE_CROP;
+        }
+        GenSrcTransInfo(src, imageInfo, data_, ToSkColorSpace(this));
 #endif
+    }
+
     SkTransInfo dst;
     SkIRect dstIRect = SkIRect::MakeXYWH(rect.left, rect.top, rect.width, rect.height);
     dst.r = SkRect::Make(dstIRect);
@@ -3817,27 +4032,39 @@ uint32_t PixelMap::crop(const Rect &rect)
     Size desiredSize = {dst.info.width(), dst.info.height()};
     MemoryData memoryData = {nullptr, dst.info.computeMinByteSize(), "Trans ImageData", desiredSize,
                              imageInfo.pixelFormat};
-    auto m = MemoryManager::CreateMemory(allocatorType_, memoryData);
-    if (m == nullptr || m->data.data == nullptr) {
+    auto dstMemory = MemoryManager::CreateMemory(allocatorType_, memoryData);
+    if (dstMemory == nullptr || dstMemory->data.data == nullptr) {
         return ERR_IMAGE_CROP;
     }
     uint64_t rowStride = dst.info.minRowBytes();
 #if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
     if (allocatorType_ == AllocatorType::DMA_ALLOC) {
-        if (m->extend.data == nullptr) {
+        if (dstMemory->extend.data == nullptr) {
             IMAGE_LOGE("GendstTransInfo get surfacebuffer failed");
             return ERR_IMAGE_CROP;
         }
-        rowStride = static_cast<uint64_t>(static_cast<SurfaceBuffer*>(m->extend.data)->GetStride());
+        rowStride = static_cast<uint64_t>(static_cast<SurfaceBuffer*>(dstMemory->extend.data)->GetStride());
     }
 #endif
-    if (!src.bitmap.readPixels(dst.info, m->data.data, rowStride, dstIRect.fLeft, dstIRect.fTop)) {
-        m->Release();
+    if (!src.bitmap.readPixels(dst.info, dstMemory->data.data, rowStride, dstIRect.fLeft, dstIRect.fTop)) {
+        dstMemory->Release();
         IMAGE_LOGE("ReadPixels failed");
         return ERR_IMAGE_CROP;
     }
     ToImageInfo(imageInfo, dst.info);
-    CopySurfaceBufferInfo(m->extend.data);
+    CopySurfaceBufferInfo(dstMemory->extend.data);
+
+    auto m = dstMemory.get();
+    std::unique_ptr<AbsMemory> shrinkedMemory = nullptr;
+    if (imageInfo.pixelFormat == PixelFormat::RGB_888) {
+        if (!ShrinkRGBXToRGB(dstMemory, shrinkedMemory)) {
+            dstMemory->Release();
+            return false;
+        }
+        dstMemory->Release();
+        m = shrinkedMemory.get();
+    }
+
     SetPixelsAddr(m->data.data, m->extend.data, m->data.size, m->GetType(), nullptr);
     SetImageInfo(imageInfo, true);
     ImageUtils::FlushSurfaceBuffer(this);
@@ -3874,70 +4101,6 @@ void PixelMap::SetToSdrColorSpaceIsSRGB(bool isSRGB)
 bool PixelMap::GetToSdrColorSpaceIsSRGB()
 {
     return toSdrColorIsSRGB_;
-}
-
-#if !defined(_WIN32) && !defined(_APPLE) && !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
-static void GetYUVStrideInfo(int32_t pixelFmt, OH_NativeBuffer_Planes *planes, YUVStrideInfo &dstStrides)
-{
-    if (pixelFmt == GRAPHIC_PIXEL_FMT_YCBCR_420_SP) {
-        auto yStride = planes->planes[PLANE_Y].columnStride;
-        auto uvStride = planes->planes[PLANE_U].columnStride;
-        auto yOffset = planes->planes[PLANE_Y].offset;
-        auto uvOffset = planes->planes[PLANE_U].offset;
-        dstStrides = {yStride, uvStride, yOffset, uvOffset};
-    } else if (pixelFmt == GRAPHIC_PIXEL_FMT_YCRCB_420_SP) {
-        auto yStride = planes->planes[PLANE_Y].columnStride;
-        auto uvStride = planes->planes[PLANE_V].columnStride;
-        auto yOffset = planes->planes[PLANE_Y].offset;
-        auto uvOffset = planes->planes[PLANE_V].offset;
-        dstStrides = {yStride, uvStride, yOffset, uvOffset};
-    } else if (pixelFmt == GRAPHIC_PIXEL_FMT_YCBCR_P010) {
-        auto yStride = planes->planes[PLANE_Y].columnStride / 2;
-        auto uvStride = planes->planes[PLANE_U].columnStride / 2;
-        auto yOffset = planes->planes[PLANE_Y].offset / 2;
-        auto uvOffset = planes->planes[PLANE_U].offset / 2;
-        dstStrides = {yStride, uvStride, yOffset, uvOffset};
-    } else if (pixelFmt == GRAPHIC_PIXEL_FMT_YCRCB_P010) {
-        auto yStride = planes->planes[PLANE_Y].columnStride / 2;
-        auto uvStride = planes->planes[PLANE_V].columnStride / 2;
-        auto yOffset = planes->planes[PLANE_Y].offset / 2;
-        auto uvOffset = planes->planes[PLANE_V].offset / 2;
-        dstStrides = {yStride, uvStride, yOffset, uvOffset};
-    }
-}
-#endif
-
-static void UpdateSdrYuvStrides(const ImageInfo &imageInfo, YUVStrideInfo &dstStrides,
-                                void *context, AllocatorType dstType)
-{
-    int32_t dstWidth = imageInfo.size.width;
-    int32_t dstHeight = imageInfo.size.height;
-    int32_t dstYStride = dstWidth;
-    int32_t dstUvStride = (dstWidth + 1) / NUM_2 * NUM_2;
-    int32_t dstYOffset = 0;
-    int32_t dstUvOffset = dstYStride * dstHeight;
-    dstStrides = {dstYStride, dstUvStride, dstYOffset, dstUvOffset};
-
-#if !defined(_WIN32) && !defined(_APPLE) && !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
-    if (context == nullptr) {
-        return;
-    }
-    if (dstType == AllocatorType::DMA_ALLOC) {
-        auto sb = static_cast<SurfaceBuffer*>(context);
-        if (sb == nullptr) {
-            IMAGE_LOGE("get SurfaceBuffer failed");
-            return;
-        }
-        OH_NativeBuffer_Planes *planes = nullptr;
-        GSError retVal = sb->GetPlanesInfo(reinterpret_cast<void**>(&planes));
-        if (retVal != OHOS::GSERROR_OK || planes == nullptr) {
-            IMAGE_LOGE("UpdateSdrYuvStrides Get planesInfo failed, retVal:%{public}d", retVal);
-        } else if (planes->planeCount >= NUM_2) {
-            int32_t pixelFmt = sb->GetFormat();
-            GetYUVStrideInfo(pixelFmt, planes, dstStrides);
-        }
-    }
-#endif
 }
 
 std::unique_ptr<AbsMemory> PixelMap::CreateSdrMemory(ImageInfo &imageInfo, PixelFormat format,
@@ -4044,8 +4207,7 @@ uint32_t PixelMap::ToSdr()
     } else if (imageInfo.pixelFormat == PixelFormat::YCRCB_P010) {
         outFormat = PixelFormat::NV21;
     }
-    bool toSRGB = toSdrColorIsSRGB_;
-    return ToSdr(outFormat, toSRGB);
+    return ToSdr(outFormat, toSdrColorIsSRGB_);
 }
 
 uint32_t PixelMap::ToSdr(PixelFormat format, bool toSRGB)
@@ -4075,7 +4237,7 @@ uint32_t PixelMap::ToSdr(PixelFormat format, bool toSRGB)
     imageInfo.pixelFormat = sdrMemory->data.format;
     SetImageInfo(imageInfo, true);
     YUVStrideInfo dstStrides;
-    UpdateSdrYuvStrides(imageInfo, dstStrides, sdrMemory->extend.data, dstType);
+    ImageUtils::UpdateSdrYuvStrides(imageInfo, dstStrides, sdrMemory->extend.data, dstType);
     UpdateYUVDataInfo(sdrMemory->data.format, imageInfo.size.width, imageInfo.size.height, dstStrides);
 #ifdef IMAGE_COLORSPACE_FLAG
     InnerSetColorSpace(OHOS::ColorManager::ColorSpace(toSRGB ? ColorManager::SRGB : ColorManager::DISPLAY_P3));
@@ -4225,6 +4387,11 @@ bool PixelMap::CloseFd()
     IMAGE_LOGE("[Pixelmap] CloseFd is not supported on crossplatform");
     return false;
 #endif
+}
+
+std::unique_ptr<PixelMap> PixelMap::ConvertFromAstc(PixelMap *source, uint32_t &errorCode, PixelFormat destFormat)
+{
+    return PixelConvert::AstcToRgba(source, errorCode, destFormat);
 }
 } // namespace Media
 } // namespace OHOS

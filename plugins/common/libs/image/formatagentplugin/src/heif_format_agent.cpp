@@ -87,9 +87,8 @@ bool HeifFormatAgent::CheckFormat(const void *headerData, uint32_t dataSize)
     }
 
     int64_t offset = OFFSET_SIZE;
-    if (!IsHeif64(tmpBuff, dataSize, offset, chunkSize)) {
-        return false;
-    }
+    bool cond = !IsHeif64(tmpBuff, dataSize, offset, chunkSize);
+    CHECK_ERROR_RETURN_RET(cond, false);
     int64_t chunkDataSize = static_cast<int64_t>(chunkSize) - offset;
     // It should at least have major brand (4-byte) and minor version (4-bytes).
     // The rest of the chunk (if any) is a list of (4-byte) compatible brands.
@@ -111,10 +110,9 @@ bool HeifFormatAgent::CheckFormat(const void *headerData, uint32_t dataSize)
             }
             auto *brandPtr = static_cast<const uint32_t *>(tmpBuff) + (numCompatibleBrands + i);
             uint32_t brand = EndianSwap32(*brandPtr);
-            if (brand == Fourcc('m', 'i', 'f', '1') || brand == Fourcc('h', 'e', 'i', 'c') ||
-                brand == Fourcc('m', 's', 'f', '1') || brand == Fourcc('h', 'e', 'v', 'c')) {
-                return true;
-            }
+            cond = brand == Fourcc('m', 'i', 'f', '1') || brand == Fourcc('h', 'e', 'i', 'c') ||
+                   brand == Fourcc('m', 's', 'f', '1') || brand == Fourcc('h', 'e', 'v', 'c');
+            CHECK_ERROR_RETURN_RET(cond, true);
         }
     }
     IMAGE_LOGI("check heif format failed.");

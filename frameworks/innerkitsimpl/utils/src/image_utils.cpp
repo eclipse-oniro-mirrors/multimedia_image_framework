@@ -46,6 +46,7 @@
 #include <sys/syscall.h>
 #endif
 #if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
+#include "surface_type.h"
 #include "surface_buffer.h"
 #include "bundle_mgr_interface.h"
 #include "iservice_registry.h"
@@ -102,6 +103,9 @@ static const uint8_t NUM_6 = 6;
 static const uint8_t NUM_7 = 7;
 static const uint8_t INT_255 = 255;
 static const string FILE_DIR_IN_THE_SANDBOX = "/data/storage/el2/base/files/";
+static constexpr int32_t PLANE_Y = 0;
+static constexpr int32_t PLANE_U = 1;
+static constexpr int32_t PLANE_V = 2;
 
 bool ImageUtils::GetFileSize(const string &pathName, size_t &size)
 {
@@ -358,17 +362,15 @@ bool ImageUtils::IsValidImageInfo(const ImageInfo &info)
 bool ImageUtils::IsValidAuxiliaryInfo(const std::shared_ptr<PixelMap> &pixelMap, const AuxiliaryPictureInfo &info)
 {
     int32_t rowSize = ImageUtils::GetRowDataSizeByPixelFormat(info.size.width, info.pixelFormat);
-    if (rowSize <= 0 || info.size.height <= 0 || rowSize > std::numeric_limits<int32_t>::max() / info.size.height) {
-        IMAGE_LOGE("%{public}s rowSize: %{public}d, height: %{public}d may overflowed",
-            __func__, rowSize, info.size.height);
-        return false;
-    }
+    bool cond = rowSize <= 0 || info.size.height <= 0 ||
+                rowSize > std::numeric_limits<int32_t>::max() / info.size.height;
+    CHECK_ERROR_RETURN_RET_LOG(cond, false, "%{public}s rowSize: %{public}d, height: %{public}d may overflowed",
+                               __func__, rowSize, info.size.height);
     uint32_t infoSize = static_cast<uint32_t>(rowSize * info.size.height);
     uint32_t pixelsSize = pixelMap->GetCapacity();
-    if (infoSize > pixelsSize) {
-        IMAGE_LOGE("%{public}s invalid infoSize: %{public}u, pixelsSize: %{public}u", __func__, infoSize, pixelsSize);
-        return false;
-    }
+    cond = infoSize > pixelsSize;
+    CHECK_ERROR_RETURN_RET_LOG(cond, false, "%{public}s invalid infoSize: %{public}u, pixelsSize: %{public}u",
+                               __func__, infoSize, pixelsSize);
     return true;
 }
 
@@ -826,15 +828,13 @@ void ImageUtils::FlushContextSurfaceBuffer(ImagePlugin::DecodeContext& context)
 void ImageUtils::InvalidateContextSurfaceBuffer(ImagePlugin::DecodeContext& context)
 {
 #if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
-    if (context.pixelsBuffer.context == nullptr || context.allocatorType != AllocatorType::DMA_ALLOC) {
-        return;
-    }
+    bool cond = context.pixelsBuffer.context == nullptr || context.allocatorType != AllocatorType::DMA_ALLOC;
+    CHECK_ERROR_RETURN(cond);
     SurfaceBuffer* surfaceBuffer = static_cast<SurfaceBuffer*>(context.pixelsBuffer.context);
     if (surfaceBuffer && (surfaceBuffer->GetUsage() & BUFFER_USAGE_MEM_MMZ_CACHE)) {
         GSError err = surfaceBuffer->InvalidateCache();
-        if (err != GSERROR_OK) {
-            IMAGE_LOGE("ImageUtils FlushCache failed, GSError=%{public}d", err);
-        }
+        cond = err != GSERROR_OK;
+        CHECK_ERROR_PRINT_LOG(cond, "ImageUtils FlushCache failed, GSError=%{public}d", err);
     }
 #else
     return;
@@ -982,6 +982,230 @@ int32_t ImageUtils::GetAPIVersion()
 #else
     return FAULT_API_VERSION;
 #endif
+}
+
+#if !defined(_WIN32) && !defined(_APPLE) && !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
+static void GetYUVStrideInfo(int32_t pixelFmt, OH_NativeBuffer_Planes *planes, YUVStrideInfo &dstStrides)
+{
+    if (pixelFmt == GRAPHIC_PIXEL_FMT_YCBCR_420_SP) {
+        auto yStride = planes->planes[PLANE_Y].columnStride;
+        auto uvStride = planes->planes[PLANE_U].columnStride;
+        auto yOffset = planes->planes[PLANE_Y].offset;
+        auto uvOffset = planes->planes[PLANE_U].offset;
+        dstStrides = {yStride, uvStride, yOffset, uvOffset};
+    } else if (pixelFmt == GRAPHIC_PIXEL_FMT_YCRCB_420_SP) {
+        auto yStride = planes->planes[PLANE_Y].columnStride;
+        auto uvStride = planes->planes[PLANE_V].columnStride;
+        auto yOffset = planes->planes[PLANE_Y].offset;
+        auto uvOffset = planes->planes[PLANE_V].offset;
+        dstStrides = {yStride, uvStride, yOffset, uvOffset};
+    } else if (pixelFmt == GRAPHIC_PIXEL_FMT_YCBCR_P010) {
+        auto yStride = planes->planes[PLANE_Y].columnStride / 2;
+        auto uvStride = planes->planes[PLANE_U].columnStride / 2;
+        auto yOffset = planes->planes[PLANE_Y].offset / 2;
+        auto uvOffset = planes->planes[PLANE_U].offset / 2;
+        dstStrides = {yStride, uvStride, yOffset, uvOffset};
+    } else if (pixelFmt == GRAPHIC_PIXEL_FMT_YCRCB_P010) {
+        auto yStride = planes->planes[PLANE_Y].columnStride / 2;
+        auto uvStride = planes->planes[PLANE_V].columnStride / 2;
+        auto yOffset = planes->planes[PLANE_Y].offset / 2;
+        auto uvOffset = planes->planes[PLANE_V].offset / 2;
+        dstStrides = {yStride, uvStride, yOffset, uvOffset};
+    }
+}
+#endif
+
+void ImageUtils::UpdateSdrYuvStrides(const ImageInfo &imageInfo, YUVStrideInfo &dstStrides,
+    void *context, AllocatorType dstType)
+{
+    int32_t dstWidth = imageInfo.size.width;
+    int32_t dstHeight = imageInfo.size.height;
+    int32_t dstYStride = dstWidth;
+    int32_t dstUvStride = (dstWidth + 1) / NUM_2 * NUM_2;
+    int32_t dstYOffset = 0;
+    int32_t dstUvOffset = dstYStride * dstHeight;
+    dstStrides = {dstYStride, dstUvStride, dstYOffset, dstUvOffset};
+
+#if !defined(_WIN32) && !defined(_APPLE) && !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
+    if (context == nullptr) {
+        return;
+    }
+    if (dstType == AllocatorType::DMA_ALLOC) {
+        auto sb = static_cast<SurfaceBuffer*>(context);
+        if (sb == nullptr) {
+            IMAGE_LOGE("get SurfaceBuffer failed");
+            return;
+        }
+        OH_NativeBuffer_Planes *planes = nullptr;
+        GSError retVal = sb->GetPlanesInfo(reinterpret_cast<void**>(&planes));
+        if (retVal != OHOS::GSERROR_OK || planes == nullptr) {
+            IMAGE_LOGE("UpdateSdrYuvStrides Get planesInfo failed, retVal:%{public}d", retVal);
+        } else if (planes->planeCount >= NUM_2) {
+            int32_t pixelFmt = sb->GetFormat();
+            GetYUVStrideInfo(pixelFmt, planes, dstStrides);
+        }
+    }
+#endif
+}
+
+uint16_t ImageUtils::GetReusePixelRefCount(const std::shared_ptr<PixelMap> &reusePixelmap)
+{
+#if !defined(CROSS_PLATFORM)
+    if (reusePixelmap->GetAllocatorType() != AllocatorType::DMA_ALLOC) {
+        return 0;
+    }
+    void* sbBuffer = reusePixelmap->GetFd();
+    if (sbBuffer != nullptr) {
+        OHOS::RefBase *ref = reinterpret_cast<OHOS::RefBase *>(sbBuffer);
+        uint16_t reusePixelRefCount = static_cast<uint16_t>(ref->GetSptrRefCount());
+        return reusePixelRefCount;
+    }
+    return 0;
+#else
+    return 0;
+#endif
+}
+
+bool ImageUtils::CanReusePixelMap(ImagePlugin::DecodeContext& context, int width,
+    int height, const std::shared_ptr<PixelMap> &reusePixelmap)
+{
+    if (reusePixelmap == nullptr) {
+        IMAGE_LOGD("reusePixelmap is nullptr");
+        return false;
+    }
+    bool cond = GetReusePixelRefCount(reusePixelmap) != 1;
+    CHECK_ERROR_RETURN_RET_LOG(cond, false, "reusePixelmap reference count is not equal to 1");
+    cond = ((width != reusePixelmap->GetWidth()) || (height != reusePixelmap->GetHeight()));
+    CHECK_ERROR_RETURN_RET_LOG(cond, false, "The height or width of image is not equal to reusePixelmap");
+    cond = ((reusePixelmap->GetAllocatorType() != AllocatorType::DMA_ALLOC) ||
+        (context.allocatorType != AllocatorType::DMA_ALLOC));
+    CHECK_ERROR_RETURN_RET_LOG(cond, false, "Image allocatortype is not DMA");
+    return true;
+}
+
+bool ImageUtils::CanReusePixelMapHdr(ImagePlugin::DecodeContext& context, int width,
+    int height, const std::shared_ptr<PixelMap> &reusePixelmap)
+{
+#if !defined(CROSS_PLATFORM)
+    if (!CanReusePixelMap(context, width, height, reusePixelmap)) {
+        return false;
+    }
+    auto hdrPixelFormat = GRAPHIC_PIXEL_FMT_RGBA_1010102;
+    if (context.photoDesiredPixelFormat == PixelFormat::YCBCR_P010) {
+        hdrPixelFormat = GRAPHIC_PIXEL_FMT_YCBCR_P010;
+    }
+    SetContextHdr(context, hdrPixelFormat);
+    bool cond = ((reusePixelmap->GetPixelFormat() != PixelFormat::RGBA_1010102) ||
+        (context.info.pixelFormat != PixelFormat::RGBA_1010102));
+    CHECK_ERROR_RETURN_RET_LOG(cond, false, "PixelFormat of Hdrimage is not equal to reusePixelmap");
+    return true;
+#else
+    return false;
+#endif
+}
+
+bool IsReuseYUVFormat(PixelFormat format)
+{
+    return format == PixelFormat::NV12 || format == PixelFormat::NV21;
+}
+
+// Determine whether the reusePixelmap and decoding image are both YUV format.
+bool ImageUtils::IsReuseYUV(ImagePlugin::DecodeContext& context, const std::shared_ptr<PixelMap> &reusePixelmap)
+{
+    return IsReuseYUVFormat(reusePixelmap->GetPixelFormat()) && IsReuseYUVFormat(context.info.pixelFormat);
+}
+
+bool IsReuseRGBFormat(PixelFormat format)
+{
+    return format == PixelFormat::RGBA_8888 || format == PixelFormat::BGRA_8888;
+}
+
+// Determine whether the reusePixelmap and decoding image are both RGB format.
+bool ImageUtils::IsReuseRGB(ImagePlugin::DecodeContext& context, const std::shared_ptr<PixelMap> &reusePixelmap)
+{
+    return IsReuseRGBFormat(reusePixelmap->GetPixelFormat()) && IsReuseRGBFormat(context.info.pixelFormat);
+}
+
+bool ImageUtils::CanReusePixelMapSdr(ImagePlugin::DecodeContext& context, int width,
+    int height, const std::shared_ptr<PixelMap> &reusePixelmap)
+{
+    if (!CanReusePixelMap(context, width, height, reusePixelmap)) {
+        return false;
+    }
+    bool cond = ((reusePixelmap->GetPixelFormat() == PixelFormat::RGBA_1010102) ||
+        (context.info.pixelFormat == PixelFormat::RGBA_1010102));
+    CHECK_ERROR_RETURN_RET_LOG(cond, false, "Sdr image is not RGBA 10bit");
+    cond = (!IsReuseYUV(context, reusePixelmap) && !IsReuseRGB(context, reusePixelmap));
+    CHECK_ERROR_RETURN_RET_LOG(cond, false, "PixelFormat of Sdrimage is not equal to reusePixelmap");
+    return true;
+}
+
+bool CanApplyMemForReusePixel(ImagePlugin::DecodeContext& context,
+    const std::shared_ptr<PixelMap> &reusePixelmap)
+{
+#if !defined(CROSS_PLATFORM)
+    uint8_t *reusePixelBuffer = const_cast<uint8_t *>(reusePixelmap->GetPixels());
+    int32_t err = ImageUtils::SurfaceBuffer_Reference(reusePixelmap->GetFd());
+    bool cond = err != OHOS::GSERROR_OK;
+    CHECK_ERROR_RETURN_RET_LOG(cond, false, "reusePixelmapBuffer Reference failed");
+    ImageUtils::SetReuseContextBuffer(context, AllocatorType::DMA_ALLOC, reusePixelBuffer,
+        reusePixelmap->GetCapacity(), reusePixelmap->GetFd());
+    return true;
+#else
+    return false;
+#endif
+}
+
+bool ImageUtils::IsSdrPixelMapReuseSuccess(ImagePlugin::DecodeContext& context, int width,
+    int height, const std::shared_ptr<PixelMap> &reusePixelmap)
+{
+#if !defined(CROSS_PLATFORM)
+    if (!CanReusePixelMapSdr(context, width, height, reusePixelmap)) {
+        return false;
+    }
+    return CanApplyMemForReusePixel(context, reusePixelmap);
+#else
+    return false;
+#endif
+}
+
+bool ImageUtils::IsHdrPixelMapReuseSuccess(ImagePlugin::DecodeContext& context, int width,
+    int height, const std::shared_ptr<PixelMap> &reusePixelmap)
+{
+#if !defined(CROSS_PLATFORM)
+    if (!CanReusePixelMapHdr(context, width, height, reusePixelmap)) {
+        return false;
+    }
+    return CanApplyMemForReusePixel(context, reusePixelmap);
+#else
+    return false;
+#endif
+}
+
+void ImageUtils::SetContextHdr(ImagePlugin::DecodeContext& context, uint32_t format)
+{
+#if !defined(CROSS_PLATFORM)
+    context.info.alphaType = AlphaType::IMAGE_ALPHA_TYPE_UNPREMUL;
+    if (format == GRAPHIC_PIXEL_FMT_RGBA_1010102) {
+        context.pixelFormat = PixelFormat::RGBA_1010102;
+        context.info.pixelFormat = PixelFormat::RGBA_1010102;
+        context.grColorSpaceName = ColorManager::BT2020_HLG;
+    } else if (format == GRAPHIC_PIXEL_FMT_YCBCR_P010) {
+        context.pixelFormat = PixelFormat::YCBCR_P010;
+        context.info.pixelFormat = PixelFormat::YCBCR_P010;
+        context.grColorSpaceName = ColorManager::BT2020_HLG;
+    }
+#endif
+}
+
+void ImageUtils::SetReuseContextBuffer(ImagePlugin::DecodeContext& context,
+    AllocatorType type, uint8_t* ptr, uint64_t count, void* fd)
+{
+    context.allocatorType = type;
+    context.freeFunc = nullptr;
+    context.pixelsBuffer.buffer = ptr;
+    context.pixelsBuffer.bufferSize = count;
+    context.pixelsBuffer.context = fd;
 }
 } // namespace Media
 } // namespace OHOS

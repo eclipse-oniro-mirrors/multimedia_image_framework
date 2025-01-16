@@ -16,10 +16,10 @@
 #define IMAGE_RECEIVER_IMPL_H
 
 #include "ffi_remote_data.h"
-#include "image_utils.h"
+#include "image_impl.h"
 #include "image_receiver.h"
 #include "image_receiver_manager.h"
-#include "image_impl.h"
+#include "image_utils.h"
 
 namespace OHOS {
 namespace Media {
@@ -28,10 +28,10 @@ class ImageReceiverImpl : public OHOS::FFI::FFIData {
 public:
     explicit ImageReceiverImpl(std::shared_ptr<ImageReceiver> imageReceiver);
     static int64_t CreateImageReceiver(int32_t width, int32_t height, int32_t format, int32_t capacity);
-    uint32_t GetSize(CSize *ret);
-    uint32_t GetCapacity(int32_t *ret);
-    uint32_t GetFormat(int32_t *ret);
-    char *GetReceivingSurfaceId();
+    uint32_t GetSize(CSize* ret);
+    uint32_t GetCapacity(int32_t* ret);
+    uint32_t GetFormat(int32_t* ret);
+    char* GetReceivingSurfaceId();
     sptr<ImageImpl> ReadNextImage();
     sptr<ImageImpl> ReadLatestImage();
     void Release();
@@ -40,7 +40,7 @@ private:
     std::shared_ptr<ImageReceiver> imageReceiver_;
 };
 
-}
-}
+} // namespace Media
+} // namespace OHOS
 
 #endif

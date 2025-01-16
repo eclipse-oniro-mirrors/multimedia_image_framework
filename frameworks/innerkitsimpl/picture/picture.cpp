@@ -188,9 +188,8 @@ static ImageInfo MakeImageInfo(int width, int height, PixelFormat pf, AlphaType 
 
 static void SetYuvDataInfo(std::unique_ptr<PixelMap> &pixelMap, sptr<OHOS::SurfaceBuffer> &sBuffer)
 {
-    if (pixelMap == nullptr || sBuffer == nullptr) {
-        return;
-    }
+    bool cond = pixelMap == nullptr || sBuffer == nullptr;
+    CHECK_ERROR_RETURN(cond);
     int32_t width = sBuffer->GetWidth();
     int32_t height = sBuffer->GetHeight();
     OH_NativeBuffer_Planes *planes = nullptr;
@@ -610,34 +609,27 @@ int32_t Picture::SetExifMetadata(sptr<SurfaceBuffer> &surfaceBuffer)
 
     int32_t size = NUM_0;
     extraData->ExtraGet(EXIF_DATA_SIZE_TAG, size);
-    if (size <= 0) {
-        IMAGE_LOGE("Invalid buffer size: %d.", size);
-        return ERR_IMAGE_INVALID_PARAMETER;
-    }
+    bool cond = size <= 0;
+    CHECK_ERROR_RETURN_RET_LOG(cond, ERR_IMAGE_INVALID_PARAMETER, "Invalid buffer size: %d.", size);
 
     size_t tiffHeaderPos = TiffParser::FindTiffPos(reinterpret_cast<const byte *>(surfaceBuffer->GetVirAddr()), size);
-    if (tiffHeaderPos == std::numeric_limits<size_t>::max()) {
-        IMAGE_LOGE("Input image stream is not tiff type.");
-        return ERR_IMAGE_SOURCE_DATA;
-    }
+    cond = tiffHeaderPos == std::numeric_limits<size_t>::max();
+    CHECK_ERROR_RETURN_RET_LOG(cond, ERR_IMAGE_SOURCE_DATA, "Input image stream is not tiff type.");
 
-    if (static_cast<uint32_t>(size) > surfaceBuffer->GetSize() || tiffHeaderPos > surfaceBuffer->GetSize()) {
-        IMAGE_LOGE("The size of exif metadata exceeds the buffer size.");
-        return ERR_IMAGE_INVALID_PARAMETER;
-    }
+    cond = static_cast<uint32_t>(size) > surfaceBuffer->GetSize() || tiffHeaderPos > surfaceBuffer->GetSize();
+    CHECK_ERROR_RETURN_RET_LOG(cond, ERR_IMAGE_INVALID_PARAMETER,
+                               "The size of exif metadata exceeds the buffer size.");
 
-    if (static_cast<uint32_t>(size) - tiffHeaderPos > MAX_EXIFMETADATA_SIZE) {
-        IMAGE_LOGE("Failed to set exif metadata, the size of exif metadata exceeds the maximum limit %{public}llu.",
-            static_cast<unsigned long long>(MAX_EXIFMETADATA_SIZE));
-        return ERR_IMAGE_INVALID_PARAMETER;
-    }
+    cond = static_cast<uint32_t>(size) - tiffHeaderPos > MAX_EXIFMETADATA_SIZE;
+    CHECK_ERROR_RETURN_RET_LOG(cond, ERR_IMAGE_INVALID_PARAMETER,
+                               "Failed to set exif metadata,"
+                               "the size of exif metadata exceeds the maximum limit %{public}llu.",
+                               static_cast<unsigned long long>(MAX_EXIFMETADATA_SIZE));
     ExifData *exifData;
     TiffParser::Decode(static_cast<const unsigned char *>(surfaceBuffer->GetVirAddr()) + tiffHeaderPos,
         size - tiffHeaderPos, &exifData);
-    if (exifData == nullptr) {
-        IMAGE_LOGE("Failed to decode EXIF data from image stream.");
-        return ERR_EXIF_DECODE_FAILED;
-    }
+    cond = exifData == nullptr;
+    CHECK_ERROR_RETURN_RET_LOG(cond, ERR_EXIF_DECODE_FAILED, "Failed to decode EXIF data from image stream.");
 
     exifMetadata_ = std::make_shared<OHOS::Media::ExifMetadata>(exifData);
     return SUCCESS;

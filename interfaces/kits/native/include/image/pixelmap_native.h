@@ -758,6 +758,41 @@ Image_ErrorCode OH_PixelmapNative_ScaleWithAntiAliasing(OH_PixelmapNative *pixel
 Image_ErrorCode OH_PixelmapNative_Translate(OH_PixelmapNative *pixelmap, float x, float y);
 
 /**
+ * @brief Create a scaled pixelmap based on the source pixelmap and the input width and height.
+ *
+ * @param srcPixelmap The source native pixelmap.
+ * @param dstPixelmap The destination native pixelmap for create.
+ * @param scaleX Scaling ratio of the width.
+ * @param scaleY Scaling ratio of the height.
+ * @return Function result code:
+ *         {@link IMAGE_SUCCESS} If the execution is successful.
+ *         {@link IMAGE_BAD_PARAMETER} If the param is nullptr or invalid.
+ * @see OH_PixelmapNative
+ * @since 16
+ */
+Image_ErrorCode OH_PixelmapNative_CreateScaledPixelMap(OH_PixelmapNative *srcPixelmap, OH_PixelmapNative **dstPixelmap,
+    float scaleX, float scaleY);
+
+/**
+ * @brief Create a scaled pixelmap based on the source pixelmap and the input width and height with anti-aliasing.
+ *
+ * @param srcPixelmap The source native pixelmap.
+ * @param dstPixelmap The destination native pixelmap for create.
+ * @param scaleX Scaling ratio of the width.
+ * @param scaleY Scaling ratio of the height.
+ * @param level The anti-aliasing algorithm to be used.
+ * @return Function result code:
+ *         {@link IMAGE_SUCCESS} If the execution is successful.
+ *         {@link IMAGE_BAD_PARAMETER} If the param is nullptr or invalid.
+ *         {@link IMAGE_TOO_LARGE} If image is too large.
+ *         {@link IMAGE_ALLOC_FAILED} If device has no memory.
+ * @see OH_PixelmapNative
+ * @since 16
+ */
+Image_ErrorCode OH_PixelmapNative_CreateScaledPixelMapWithAntiAliasing(OH_PixelmapNative *srcPixelmap,
+    OH_PixelmapNative **dstPixelmap, float scaleX, float scaleY, OH_PixelmapNative_AntiAliasingLevel level);
+
+/**
  * @brief Rotates this image based on the input angle.
  *
  * @param pixelmap The Pixelmap pointer will be operated.
@@ -925,6 +960,62 @@ Image_ErrorCode OH_PixelmapNative_SetColorSpaceNative(OH_PixelmapNative *pixelma
  * @since 13
  */
 Image_ErrorCode OH_PixelmapNative_SetMemoryName(OH_PixelmapNative *pixelmap, char *name, size_t *size);
+
+/**
+ * @brief Get the total number of bytes occupied by all pixels in the Pixelmap, without any padding.
+ *
+ * @param pixelmap The Pixelmap pointer to be operated.
+ * @param byteCount The total number of bytes to be retrieved.
+ * @return Function result code:
+ *         {@link IMAGE_SUCCESS} If the operation is successful.
+ *         {@link IMAGE_BAD_PARAMETER} If invalid parameter, pixelmap or byteCount are invalid.
+ * @see OH_PixelmapNative
+ * @since 16
+ */
+Image_ErrorCode OH_PixelmapNative_GetByteCount(OH_PixelmapNative *pixelmap, uint32_t *byteCount);
+
+/**
+ * @brief Get the size of the allocated memory used to store this pixelmap's pixels.
+ *
+ * @param pixelmap The Pixelmap pointer to be operated.
+ * @param allocationByteCount The size of the allocated memory.
+ * @return Function result code:
+ *         {@link IMAGE_SUCCESS} If the operation is successful.
+ *         {@link IMAGE_BAD_PARAMETER} If invalid parameter, pixelmap or allocationByteCount are invalid.
+ * @see OH_PixelmapNative
+ * @since 16
+ */
+Image_ErrorCode OH_PixelmapNative_GetAllocationByteCount(OH_PixelmapNative *pixelmap, uint32_t *allocationByteCount);
+
+/**
+ * @brief Obtains the memory address of a PixelMap and locks the memory.
+ *        When the memory is locked, any operation that modifies or releases the PixelMap will fail and return
+ *        {@link IMAGE_BAD_PARAMETER}.
+ *
+ * @param pixelmap The PixelMap pointer to be operated.
+ * @param addr The double pointer to the memory address of the PixelMap.
+ * @return Function result code:
+ *         {@link IMAGE_SUCCESS} If the operation is successful.
+ *         {@link IMAGE_BAD_PARAMETER} If invalid parameter, pixelmap or addr are invalid.
+ *         {@link IMAGE_LOCK_UNLOCK_FAILED} If memory failed to be locked.
+ * @see OH_PixelmapNative
+ * @since 16
+ */
+Image_ErrorCode OH_PixelmapNative_AccessPixels(OH_PixelmapNative *pixelmap, void **addr);
+
+/**
+ * @brief Unlocks the memory of the PixelMap data.
+ *        This function is used with {@link OH_PixelmapNative_AccessPixels} in pairs.
+ *
+ * @param pixelmap The PixelMap pointer to be operated.
+ * @return Function result code:
+ *         {@link IMAGE_SUCCESS} If the operation is successful.
+ *         {@link IMAGE_BAD_PARAMETER} If invalid parameter, pixelmap is invalid.
+ *         {@link IMAGE_LOCK_UNLOCK_FAILED} If memory failed to be unlocked.
+ * @see OH_PixelmapNative
+ * @since 16
+ */
+Image_ErrorCode OH_PixelmapNative_UnaccessPixels(OH_PixelmapNative *pixelmap);
 
 #ifdef __cplusplus
 };

@@ -47,6 +47,8 @@ namespace OHOS {
 namespace Media {
 const auto KEY_SIZE = 2;
 const auto TAG_VALUE_SIZE = 1024;
+const auto MAX_TAG_VALUE_SIZE_FOR_STR = 64 * 1024;
+const auto TERMINATOR_SIZE = 1;
 const auto EXIF_HEAD_SIZE = 6;
 const static std::string DEFAULT_EXIF_VALUE = "default_exif_value";
 const static std::string HW_CAPTURE_MODE = "HwMnoteCaptureMode";
@@ -107,10 +109,9 @@ int ExifMetadata::GetValue(const std::string &key, std::string &value) const
 {
     value.clear();
     IMAGE_LOGD("Retrieving value for key: %{public}s", key.c_str());
-    if (exifData_ == nullptr) {
-        IMAGE_LOGE("Exif data is null for key: %{public}s", key.c_str());
-        return ERR_IMAGE_DECODE_EXIF_UNSUPPORT;
-    }
+    bool cond = exifData_ == nullptr;
+    CHECK_ERROR_RETURN_RET_LOG(cond, ERR_IMAGE_DECODE_EXIF_UNSUPPORT,
+                               "Exif data is null for key: %{public}s", key.c_str());
     if (!ExifMetadatFormatter::IsKeySupported(key)) {
         IMAGE_LOGD("Key is not supported.");
         return ERR_IMAGE_DECODE_EXIF_UNSUPPORT;
@@ -118,7 +119,7 @@ int ExifMetadata::GetValue(const std::string &key, std::string &value) const
     if (key == "MakerNote") {
         return HandleMakerNote(value);
     }
-    char tagValueChar[TAG_VALUE_SIZE];
+    
     if ((key.size() > KEY_SIZE && key.substr(0, KEY_SIZE) == "Hw") || IsSpecialHwKey(key)) {
         return HandleHwMnote(key, value);
     } else {
@@ -129,6 +130,17 @@ int ExifMetadata::GetValue(const std::string &key, std::string &value) const
             return ERR_IMAGE_DECODE_EXIF_UNSUPPORT;
         }
         IMAGE_LOGD("Using exif_entry_get_value for key: %{public}s, tag: %{public}d", key.c_str(), entry->tag);
+        
+        unsigned int tagValueSizeTmp = 0;
+        if (entry->size >= TAG_VALUE_SIZE && (entry->format == EXIF_FORMAT_ASCII ||
+            entry->format == EXIF_FORMAT_UNDEFINED)) {
+            tagValueSizeTmp = entry->size + TERMINATOR_SIZE > MAX_TAG_VALUE_SIZE_FOR_STR ?
+                MAX_TAG_VALUE_SIZE_FOR_STR : entry->size + TERMINATOR_SIZE;
+        } else {
+            tagValueSizeTmp = TAG_VALUE_SIZE;
+        }
+        char tagValueChar[tagValueSizeTmp];
+
         exif_entry_get_value(entry, tagValueChar, sizeof(tagValueChar));
         value = tagValueChar;
     }
@@ -170,19 +182,17 @@ int ExifMetadata::HandleMakerNote(std::string &value) const
     value.clear();
     std::vector<char> tagValueChar(TAG_VALUE_SIZE, 0);
     ExifMnoteData *md = exif_data_get_mnote_data(exifData_);
+    bool cond = false;
     if (md == nullptr) {
         IMAGE_LOGD("Exif data mnote data md is a nullptr.");
         return ERR_IMAGE_DECODE_EXIF_UNSUPPORT;
     }
-    if (!is_huawei_md(md)) {
-        IMAGE_LOGD("Exif data mnote data md is not ours md.");
-        return ERR_IMAGE_DECODE_EXIF_UNSUPPORT;
-    }
+    cond = !is_huawei_md(md);
+    CHECK_DEBUG_RETURN_RET_LOG(cond, ERR_IMAGE_DECODE_EXIF_UNSUPPORT, "Exif data mnote data md is not ours md.");
     MnoteHuaweiEntryCount *ec = nullptr;
     mnote_huawei_get_entry_count(reinterpret_cast<ExifMnoteDataHuawei *>(md), &ec);
-    if (ec == nullptr) {
-        return ERR_IMAGE_DECODE_EXIF_UNSUPPORT;
-    }
+    cond = ec == nullptr;
+    CHECK_ERROR_RETURN_RET(cond, ERR_IMAGE_DECODE_EXIF_UNSUPPORT);
 
     for (unsigned int i = 0; i < ec->size; i++) {
         MnoteHuaweiEntry *entry = ec->entries[i];
@@ -208,19 +218,15 @@ int ExifMetadata::HandleHwMnote(const std::string &key, std::string &value) cons
     value = DEFAULT_EXIF_VALUE;
     char tagValueChar[TAG_VALUE_SIZE];
     ExifMnoteData *md = exif_data_get_mnote_data(exifData_);
-    if (md == nullptr) {
-        IMAGE_LOGD("Exif data mnote data md is nullptr");
-        return SUCCESS;
-    }
-    if (!is_huawei_md(md)) {
-        IMAGE_LOGE("Exif data returned null for key: %{public}s", key.c_str());
-        return SUCCESS;
-    }
+    bool cond = false;
+    cond = md == nullptr;
+    CHECK_DEBUG_RETURN_RET_LOG(cond, SUCCESS, "Exif data mnote data md is nullptr");
+    cond = !is_huawei_md(md);
+    CHECK_ERROR_RETURN_RET_LOG(cond, SUCCESS, "Exif data returned null for key: %{public}s", key.c_str());
     MnoteHuaweiEntryCount *ec = nullptr;
     mnote_huawei_get_entry_count(reinterpret_cast<ExifMnoteDataHuawei *>(md), &ec);
-    if (ec == nullptr) {
-        return ERR_IMAGE_DECODE_EXIF_UNSUPPORT;
-    }
+    cond = ec == nullptr;
+    CHECK_ERROR_RETURN_RET(cond, ERR_IMAGE_DECODE_EXIF_UNSUPPORT);
     for (unsigned int i = 0; i < ec->size; i++) {
         MnoteHuaweiEntry *entry = ec->entries[i];
         if (key == mnote_huawei_tag_get_name(entry->tag)) {
@@ -258,10 +264,8 @@ bool ExifMetadata::CreateExifdata()
         return true;
     }
     exifData_ = exif_data_new();
-    if (exifData_ == nullptr) {
-        IMAGE_LOGE("Failed to create new exif data.");
-        return false;
-    }
+    bool cond = exifData_ == nullptr;
+    CHECK_ERROR_RETURN_RET_LOG(cond, false, "Failed to create new exif data.");
 
     // Set the image options
     exif_data_set_option(exifData_, EXIF_DATA_OPTION_FOLLOW_SPECIFICATION);
@@ -292,9 +296,8 @@ std::shared_ptr<ExifMetadata> ExifMetadata::Clone()
     }
     ExifData *newExifData = nullptr;
     TiffParser::Decode(dataBlob, size, &newExifData);
-    if (newExifData == nullptr) {
-        return nullptr;
-    }
+    bool cond = newExifData == nullptr;
+    CHECK_ERROR_RETURN_RET(cond, nullptr);
     std::shared_ptr<ExifMetadata> exifDataPtr = std::make_shared<ExifMetadata>(newExifData);
     if (dataBlob != nullptr) {
         free(dataBlob);
@@ -306,10 +309,9 @@ std::shared_ptr<ExifMetadata> ExifMetadata::Clone()
 ExifEntry *ExifMetadata::CreateEntry(const std::string &key, const ExifTag &tag, const size_t valueLen)
 {
     ExifEntry *entry = exif_entry_new();
-    if (entry == nullptr) {
-        IMAGE_LOGE("Failed to create new ExifEntry.");
-        return nullptr;
-    }
+    bool cond = false;
+    cond = entry == nullptr;
+    CHECK_ERROR_RETURN_RET_LOG(cond, nullptr, "Failed to create new ExifEntry.");
     entry->tag = tag; // tag must be set before calling exif_content_add_entry
     auto ifdindex = exif_ifd_from_name(key.c_str());
     exif_content_add_entry(exifData_->ifd[ifdindex], entry);
@@ -320,10 +322,8 @@ ExifEntry *ExifMetadata::CreateEntry(const std::string &key, const ExifTag &tag,
 
         // Create a memory allocator to manage this ExifEntry
         ExifMem *exifMem = exif_mem_new_default();
-        if (exifMem == nullptr) {
-            IMAGE_LOGE("Failed to create memory allocator for ExifEntry.");
-            return nullptr;
-        }
+        cond = exifMem == nullptr;
+        CHECK_ERROR_RETURN_RET_LOG(cond, nullptr, "Failed to create memory allocator for ExifEntry.");
 
         // Create a new ExifEntry using our allocator
         entry = exif_entry_new_mem(exifMem);
@@ -362,17 +362,14 @@ ExifEntry *ExifMetadata::CreateEntry(const std::string &key, const ExifTag &tag,
 MnoteHuaweiEntry *ExifMetadata::CreateHwEntry(const std::string &key)
 {
     ExifMnoteData *md = exif_data_get_mnote_data (exifData_);
-    if (!is_huawei_md(md)) {
-        IMAGE_LOGE("Failed to create MnoteHuaweiEntry is not Huawei MakeNote.");
-        return nullptr;
-    }
+    bool cond = false;
+    cond = !is_huawei_md(md);
+    CHECK_ERROR_RETURN_RET_LOG(cond, nullptr, "Failed to create MnoteHuaweiEntry is not Huawei MakeNote.");
 
     ExifByteOrder order = exif_mnote_data_huawei_get_byte_order(md);
     MnoteHuaweiEntry* entry = mnote_huawei_entry_new(md);
-    if (!entry) {
-        IMAGE_LOGE("Failed to create MnoteHuaweiEntry.");
-        return nullptr;
-    }
+    cond = !entry;
+    CHECK_ERROR_RETURN_RET_LOG(cond, nullptr, "Failed to create MnoteHuaweiEntry.");
 
     MnoteHuaweiTag tag = mnote_huawei_tag_from_name(key.c_str());
     mnote_huawei_entry_initialize(entry, tag, order);
@@ -383,10 +380,9 @@ void ExifMetadata::ReallocEntry(ExifEntry *ptrEntry, const size_t valueLen)
 {
     // Create a memory allocator to manage this ExifEntry
     ExifMem *exifMem = exif_mem_new_default();
-    if (exifMem == nullptr) {
-        IMAGE_LOGE("Failed to create memory allocator for ExifEntry. Value length: %{public}zu", valueLen);
-        return;
-    }
+    bool cond = exifMem == nullptr;
+    CHECK_ERROR_RETURN_LOG(cond, "Failed to create memory allocator for ExifEntry. Value length: %{public}zu",
+                           valueLen);
     auto buf = exif_mem_realloc(exifMem, ptrEntry->data, valueLen);
     if (buf != nullptr) {
         ptrEntry->data = static_cast<unsigned char *>(buf);
@@ -415,10 +411,8 @@ ExifEntry *ExifMetadata::GetEntry(const std::string &key, const size_t valueLen)
         entry = CreateEntry(key, tag, valueLen);
     }
 
-    if (entry == nullptr) {
-        IMAGE_LOGE("GetEntry entry is nullptr fail.");
-        return nullptr;
-    }
+    bool cond = entry == nullptr;
+    CHECK_ERROR_RETURN_RET_LOG(cond, nullptr, "GetEntry entry is nullptr fail.");
 
     if ((entry->format == EXIF_FORMAT_UNDEFINED || entry->format == EXIF_FORMAT_ASCII) &&
         (entry->size != static_cast<unsigned int>(valueLen))) {
@@ -446,12 +440,12 @@ bool ExifMetadata::SetShort(ExifEntry *ptrEntry, const ExifByteOrder &order, con
     std::istringstream is(value);
     unsigned long icount = 0;
     ExifShort tmp;
+    bool cond = false;
     while (!is.eof() && ptrEntry->components > icount) {
         is >> tmp;
-        if (is.fail()) {
-            IMAGE_LOGE("Failed to read ExifShort from string. Current count: %{public}lu", icount);
-            return false;
-        }
+        cond = is.fail();
+        CHECK_ERROR_RETURN_RET_LOG(cond, false,
+                                   "Failed to read ExifShort from string. Current count: %{public}lu", icount);
         exif_set_short(ptrEntry->data + icount * exif_format_get_size(ptrEntry->format), order, tmp);
         icount++;
     }
@@ -463,12 +457,12 @@ bool ExifMetadata::SetLong(ExifEntry *ptrEntry, const ExifByteOrder &order, cons
     std::istringstream is(value);
     unsigned long icount = 0;
     ExifLong tmp;
+    bool cond = false;
     while (!is.eof() && ptrEntry->components > icount) {
         is >> tmp;
-        if (is.fail()) {
-            IMAGE_LOGE("Failed to read ExifLong from string. Current count: %{public}lu", icount);
-            return false;
-        }
+        cond = is.fail();
+        CHECK_ERROR_RETURN_RET_LOG(cond, false,
+                                   "Failed to read ExifLong from string. Current count: %{public}lu", icount);
         exif_set_long(ptrEntry->data + icount * exif_format_get_size(ptrEntry->format), order, tmp);
         icount++;
     }
@@ -480,12 +474,12 @@ bool ExifMetadata::SetSShort(ExifEntry *ptrEntry, const ExifByteOrder &order, co
     std::istringstream is(value);
     unsigned long icount = 0;
     ExifSShort tmp;
+    bool cond = false;
     while (!is.eof() && ptrEntry->components > icount) {
         is >> tmp;
-        if (is.fail()) {
-            IMAGE_LOGE("Failed to read ExifSShort from string. Current count: %{public}lu", icount);
-            return false;
-        }
+        cond = is.fail();
+        CHECK_ERROR_RETURN_RET_LOG(cond, false,
+                                   "Failed to read ExifSShort from string. Current count: %{public}lu", icount);
         exif_set_sshort(ptrEntry->data + icount * exif_format_get_size(ptrEntry->format), order, tmp);
         icount++;
     }
@@ -497,12 +491,12 @@ bool ExifMetadata::SetSLong(ExifEntry *ptrEntry, const ExifByteOrder &order, con
     std::istringstream is(value);
     unsigned long icount = 0;
     ExifSLong tmp;
+    bool cond = false;
     while (!is.eof() && ptrEntry->components > icount) {
         is >> tmp;
-        if (is.fail()) {
-            IMAGE_LOGE("Failed to read ExifSLong from string. Current count: %{public}lu", icount);
-            return false;
-        }
+        cond = is.fail();
+        CHECK_ERROR_RETURN_RET_LOG(cond, false,
+                                   "Failed to read ExifSLong from string. Current count: %{public}lu", icount);
         exif_set_slong(ptrEntry->data + icount * exif_format_get_size(ptrEntry->format), order, tmp);
         icount++;
     }
@@ -514,12 +508,12 @@ bool ExifMetadata::SetRational(ExifEntry *ptrEntry, const ExifByteOrder &order, 
     std::istringstream is(value);
     unsigned long icount = 0;
     ExifRational rat;
+    bool cond = false;
     while (!is.eof() && ptrEntry->components > icount) {
         is >> rat;
-        if (is.fail()) {
-            IMAGE_LOGE("Failed to read ExifRational from string. Current count: %{public}lu", icount);
-            return false;
-        }
+        cond = is.fail();
+        CHECK_ERROR_RETURN_RET_LOG(cond, false,
+                                   "Failed to read ExifRational from string. Current count: %{public}lu", icount);
         unsigned long offset = icount * exif_format_get_size(ptrEntry->format);
         exif_set_rational(ptrEntry->data + offset, order, rat);
         icount++;
@@ -532,12 +526,12 @@ bool ExifMetadata::SetSRational(ExifEntry *ptrEntry, const ExifByteOrder &order,
     std::istringstream is(value);
     unsigned long icount = 0;
     ExifSRational rat;
+    bool cond = false;
     while (!is.eof() && ptrEntry->components > icount) {
         is >> rat;
-        if (is.fail()) {
-            IMAGE_LOGE("Failed to read ExifSRational from string. Current count: %{public}lu", icount);
-            return false;
-        }
+        cond = is.fail();
+        CHECK_ERROR_RETURN_RET_LOG(cond, false,
+                                   "Failed to read ExifSRational from string. Current count: %{public}lu", icount);
         unsigned long offset = icount * exif_format_get_size(ptrEntry->format);
         exif_set_srational(ptrEntry->data + offset, order, rat);
         icount++;
@@ -575,10 +569,8 @@ bool ExifMetadata::SetMem(ExifEntry *ptrEntry, const std::string &value, const s
 
 bool ExifMetadata::SetValue(const std::string &key, const std::string &value)
 {
-    if (exifData_ == nullptr) {
-        IMAGE_LOGE("Exif data is null. Cannot set value for key: %{public}s", key.c_str());
-        return false;
-    }
+    bool cond = exifData_ == nullptr;
+    CHECK_ERROR_RETURN_RET_LOG(cond, false, "Exif data is null. Cannot set value for key: %{public}s", key.c_str());
     if (value.empty()) {
         IMAGE_LOGE("Set empty value.");
         return false;
@@ -602,23 +594,19 @@ bool ExifMetadata::SetHwMoteValue(const std::string &key, const std::string &val
 {
     bool isNewMaker = false;
     ExifMnoteData *md = GetHwMnoteData(isNewMaker);
-    if (!is_huawei_md(md)) {
-        IMAGE_LOGD("Makernote is not huawei makernote.");
-        return false;
-    }
+    bool cond = false;
+    cond = !is_huawei_md(md);
+    CHECK_DEBUG_RETURN_RET_LOG(cond, false, "Makernote is not huawei makernote.");
 
     MnoteHuaweiTag hwTag = mnote_huawei_tag_from_name(key.c_str());
-    if (hwTag == MNOTE_HUAWEI_INFO) {
-        IMAGE_LOGD("The key: %{public}s is unknow hwTag", key.c_str());
-        return false;
-    }
+    cond = hwTag == MNOTE_HUAWEI_INFO;
+    CHECK_DEBUG_RETURN_RET_LOG(cond, false, "The key: %{public}s is unknow hwTag", key.c_str());
 
     auto *entry = exif_mnote_data_huawei_get_entry_by_tag(reinterpret_cast<ExifMnoteDataHuawei *>(md), hwTag);
     if (!entry) {
         entry = CreateHwEntry(key);
-        if (!entry) {
-            return false;
-        }
+        cond = !entry;
+        CHECK_ERROR_RETURN_RET(cond, false);
         auto ret = exif_mnote_data_add_entry(md, entry);
         if (ret) {
             mnote_huawei_entry_free(entry);
@@ -642,36 +630,29 @@ bool ExifMetadata::SetHwMoteValue(const std::string &key, const std::string &val
 
 ExifMnoteData* ExifMetadata::GetHwMnoteData(bool &isNewMaker)
 {
-    if (exifData_ == nullptr) {
-        return nullptr;
-    }
+    bool cond = false;
+    cond = exifData_ == nullptr;
+    CHECK_ERROR_RETURN_RET(cond, nullptr);
     ExifMnoteData *md = exif_data_get_mnote_data(exifData_);
     if (md != nullptr) {
         return md;
     }
     IMAGE_LOGD("Makenote not exist & ready to init makernote with hw entry.");
     ExifMem *mem = exif_data_get_priv_mem(exifData_);
-    if (mem == nullptr) {
-        IMAGE_LOGE("GetHwMnoteData exif data with no ExifMem.");
-        return nullptr;
-    }
+    cond = mem == nullptr;
+    CHECK_ERROR_RETURN_RET_LOG(cond, nullptr, "GetHwMnoteData exif data with no ExifMem.");
     md = exif_mnote_data_huawei_new(mem);
-    if (md == nullptr || md->methods.load == nullptr) {
-        IMAGE_LOGE("GetHwMnoteData new mnote hw data failed.");
-        return nullptr;
-    }
+    cond = md == nullptr || md->methods.load == nullptr;
+    CHECK_ERROR_RETURN_RET_LOG(cond, nullptr, "GetHwMnoteData new mnote hw data failed.");
     exif_data_set_priv_md(exifData_, (ExifMnoteData *)md);
     unsigned long hwsize = sizeof(INIT_HW_DATA) / sizeof(INIT_HW_DATA[0]);
     md->methods.load(md, INIT_HW_DATA, hwsize);
     auto makernote = CreateEntry("MakerNote", EXIF_TAG_MAKER_NOTE, hwsize);
-    if (makernote == nullptr) {
-        IMAGE_LOGE("GetHwMnoteData create maker note failed.");
-        return nullptr;
-    }
-    if (memcpy_s(makernote->data, hwsize - EXIF_HEAD_SIZE, INIT_HW_DATA + EXIF_HEAD_SIZE,
-        hwsize - EXIF_HEAD_SIZE) != 0) {
-        IMAGE_LOGE("Failed to copy memory for ExifEntry. Requested size: %{public}lu", hwsize);
-    }
+    cond = makernote == nullptr;
+    CHECK_ERROR_RETURN_RET_LOG(cond, nullptr, "GetHwMnoteData create maker note failed.");
+    cond = memcpy_s(makernote->data, hwsize - EXIF_HEAD_SIZE, INIT_HW_DATA + EXIF_HEAD_SIZE,
+                    hwsize - EXIF_HEAD_SIZE) != 0;
+    CHECK_ERROR_PRINT_LOG(cond, "Failed to copy memory for ExifEntry. Requested size: %{public}lu", hwsize);
     isNewMaker = true;
     return md;
 }
@@ -680,9 +661,8 @@ bool ExifMetadata::SetCommonValue(const std::string &key, const std::string &val
 {
     size_t valueLen = value.length();
     ExifEntry *ptrEntry = GetEntry(key, valueLen);
-    if (ptrEntry == nullptr) {
-        return false;
-    }
+    bool cond = ptrEntry == nullptr;
+    CHECK_ERROR_RETURN_RET(cond, false);
     ExifByteOrder order = exif_data_get_byte_order(ptrEntry->parent->parent);
     bool isSetSuccess = false;
     switch (ptrEntry->format) {
@@ -721,10 +701,10 @@ bool ExifMetadata::SetCommonValue(const std::string &key, const std::string &val
 bool ExifMetadata::RemoveEntry(const std::string &key)
 {
     bool isSuccess = false;
-    if (!(exifData_ && ExifMetadatFormatter::IsModifyAllowed(key))) {
-        IMAGE_LOGD("RemoveEntry failed, can not remove entry for key: %{public}s", key.c_str());
-        return isSuccess;
-    }
+    bool cond = false;
+    cond = !(exifData_ && ExifMetadatFormatter::IsModifyAllowed(key));
+    CHECK_DEBUG_RETURN_RET_LOG(cond, isSuccess,
+                               "RemoveEntry failed, can not remove entry for key: %{public}s", key.c_str());
 
     if ((key.size() > KEY_SIZE && key.substr(0, KEY_SIZE) == "Hw") ||
         IsSpecialHwKey(key)) {
@@ -732,10 +712,9 @@ bool ExifMetadata::RemoveEntry(const std::string &key)
     }
 
     ExifEntry *entry = GetEntry(key);
-    if (!entry) {
-        IMAGE_LOGD("RemoveEntry failed, can not find entry for key: %{public}s", key.c_str());
-        return isSuccess;
-    }
+    cond = !entry;
+    CHECK_DEBUG_RETURN_RET_LOG(cond, isSuccess,
+                               "RemoveEntry failed, can not find entry for key: %{public}s", key.c_str());
 
     IMAGE_LOGD("RemoveEntry for key: %{public}s", key.c_str());
     exif_content_remove_entry(entry->parent, entry);
@@ -747,17 +726,15 @@ bool ExifMetadata::RemoveHwEntry(const std::string &key)
 {
     ExifMnoteData *md = exif_data_get_mnote_data(exifData_);
 
-    if (!is_huawei_md(md)) {
-        IMAGE_LOGD("Exif makernote is not huawei makernote");
-        return false;
-    }
+    bool cond = false;
+    cond = !is_huawei_md(md);
+    CHECK_DEBUG_RETURN_RET_LOG(cond, false, "Exif makernote is not huawei makernote");
 
     MnoteHuaweiTag tag = mnote_huawei_tag_from_name(key.c_str());
     auto *entry = exif_mnote_data_huawei_get_entry_by_tag((ExifMnoteDataHuawei*) md, tag);
-    if (!entry) {
-        IMAGE_LOGE("Get entry by tag failed, there is no entry for key: %{public}s", key.c_str());
-        return false;
-    }
+    cond = !entry;
+    CHECK_ERROR_RETURN_RET_LOG(cond, false,
+                               "Get entry by tag failed, there is no entry for key: %{public}s", key.c_str());
 
     exif_mnote_data_remove_entry(md, entry);
     return true;
@@ -818,25 +795,23 @@ bool ExifMetadata::Marshalling(Parcel &parcel) const
     unsigned char *data = nullptr;
     unsigned int size = 0;
     exif_data_save_data(exifData_, &data, &size);
+    bool cond = false;
 
     if (!parcel.WriteBool(data != nullptr && size != 0)) {
         IMAGE_LOGE("Failed to write exif data buffer existence value.");
         return false;
     }
 
-    if (size > MAX_EXIFMETADATA_MAX_SIZE) {
-        IMAGE_LOGE("The size of exif metadata exceeds the maximum limit.");
-        return false;
-    }
+    cond = size > MAX_EXIFMETADATA_MAX_SIZE;
+    CHECK_ERROR_RETURN_RET_LOG(cond, false, "The size of exif metadata exceeds the maximum limit.");
 
     if (data != nullptr && size != 0) {
         std::unique_ptr<unsigned char[]> exifData(data);
         if (!parcel.WriteUint32(static_cast<uint32_t>(size))) {
             return false;
         }
-        if (!parcel.WriteUnpadBuffer(exifData.get(), size)) {
-            return false;
-        }
+        cond = !parcel.WriteUnpadBuffer(exifData.get(), size);
+        CHECK_ERROR_RETURN_RET(cond, false);
         return true;
     }
     return false;
@@ -856,25 +831,23 @@ ExifMetadata *ExifMetadata::Unmarshalling(Parcel &parcel)
 ExifMetadata *ExifMetadata::Unmarshalling(Parcel &parcel, PICTURE_ERR &error)
 {
     bool hasExifDataBuffer = parcel.ReadBool();
+    bool cond = false;
     if (hasExifDataBuffer) {
         uint32_t size = 0;
         if (!parcel.ReadUint32(size)) {
             return nullptr;
         }
 
-        if (size > MAX_EXIFMETADATA_MAX_SIZE) {
-            IMAGE_LOGE("The size of exif metadata exceeds the maximum limit.");
-            return nullptr;
-        }
+        cond = size > MAX_EXIFMETADATA_MAX_SIZE;
+        CHECK_ERROR_RETURN_RET_LOG(cond, nullptr, "The size of exif metadata exceeds the maximum limit.");
         
         const uint8_t *data = parcel.ReadUnpadBuffer(static_cast<size_t>(size));
         if (!data) {
             return nullptr;
         }
         ExifData *ptrData = exif_data_new();
-        if (ptrData == nullptr) {
-            return nullptr;
-        }
+        cond = ptrData == nullptr;
+        CHECK_ERROR_RETURN_RET(cond, nullptr);
         exif_data_unset_option(ptrData, EXIF_DATA_OPTION_IGNORE_UNKNOWN_TAGS);
         exif_data_load_data(ptrData, static_cast<const unsigned char *>(data), static_cast<unsigned int>(size));
         ExifMetadata *exifMetadata = new(std::nothrow) ExifMetadata(ptrData);
@@ -885,9 +858,8 @@ ExifMetadata *ExifMetadata::Unmarshalling(Parcel &parcel, PICTURE_ERR &error)
 
 bool ExifMetadata::RemoveExifThumbnail()
 {
-    if (exifData_ == nullptr) {
-        return false;
-    }
+    bool cond = exifData_ == nullptr;
+    CHECK_ERROR_RETURN_RET(cond, false);
     exifData_->remove_thumbnail = 1;
     return true;
 }

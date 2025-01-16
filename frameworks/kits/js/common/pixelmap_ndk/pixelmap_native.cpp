@@ -573,6 +573,40 @@ Image_ErrorCode OH_PixelmapNative_ScaleWithAntiAliasing(OH_PixelmapNative *pixel
 }
 
 MIDK_EXPORT
+Image_ErrorCode OH_PixelmapNative_CreateScaledPixelMap(OH_PixelmapNative *srcPixelmap, OH_PixelmapNative **dstPixelmap,
+    float scaleX, float scaleY)
+{
+    if (srcPixelmap == nullptr || !srcPixelmap->GetInnerPixelmap() || dstPixelmap == nullptr) {
+        return IMAGE_BAD_PARAMETER;
+    }
+    InitializationOptions opts;
+    std::unique_ptr<PixelMap> clonePixelmap = PixelMap::Create(*(srcPixelmap->GetInnerPixelmap()), opts);
+    if (clonePixelmap == nullptr) {
+        return IMAGE_BAD_PARAMETER;
+    }
+    clonePixelmap->scale(scaleX, scaleY);
+    *dstPixelmap = new(std::nothrow) OH_PixelmapNative(std::move(clonePixelmap));
+    return IMAGE_SUCCESS;
+}
+
+MIDK_EXPORT
+Image_ErrorCode OH_PixelmapNative_CreateScaledPixelMapWithAntiAliasing(OH_PixelmapNative *srcPixelmap,
+    OH_PixelmapNative **dstPixelmap, float scaleX, float scaleY, OH_PixelmapNative_AntiAliasingLevel level)
+{
+    if (srcPixelmap == nullptr || !srcPixelmap->GetInnerPixelmap() || dstPixelmap == nullptr) {
+        return IMAGE_BAD_PARAMETER;
+    }
+    InitializationOptions opts;
+    std::unique_ptr<PixelMap> clonePixelmap = PixelMap::Create(*(srcPixelmap->GetInnerPixelmap()), opts);
+    if (clonePixelmap == nullptr) {
+        return IMAGE_BAD_PARAMETER;
+    }
+    clonePixelmap->scale(scaleX, scaleY, static_cast<AntiAliasingOption>(level));
+    *dstPixelmap = new(std::nothrow) OH_PixelmapNative(std::move(clonePixelmap));
+    return IMAGE_SUCCESS;
+}
+
+MIDK_EXPORT
 Image_ErrorCode OH_PixelmapNative_Translate(OH_PixelmapNative *pixelmap, float x, float y)
 {
     if (pixelmap == nullptr || !pixelmap->GetInnerPixelmap()) {
@@ -621,7 +655,7 @@ Image_ErrorCode OH_PixelmapNative_Crop(OH_PixelmapNative *pixelmap, Image_Region
 MIDK_EXPORT
 Image_ErrorCode OH_PixelmapNative_Release(OH_PixelmapNative *pixelmap)
 {
-    if (pixelmap == nullptr) {
+    if (pixelmap == nullptr || pixelmap->GetRefCount() != 0) {
         return IMAGE_BAD_PARAMETER;
     }
     pixelmap->~OH_PixelmapNative();
@@ -1081,6 +1115,63 @@ Image_ErrorCode OH_PixelmapNative_SetMemoryName(OH_PixelmapNative *pixelmap, cha
         return IMAGE_BAD_PARAMETER;
     } else if (ret == ERR_MEMORY_NOT_SUPPORT) {
         return IMAGE_UNSUPPORTED_MEMORY_FORMAT;
+    }
+    return IMAGE_SUCCESS;
+}
+
+MIDK_EXPORT
+Image_ErrorCode OH_PixelmapNative_GetByteCount(OH_PixelmapNative *pixelmap, uint32_t *byteCount)
+{
+    if (pixelmap == nullptr || pixelmap->GetInnerPixelmap() == nullptr || byteCount == nullptr) {
+        return IMAGE_BAD_PARAMETER;
+    }
+    int32_t rawByteCount = pixelmap->GetInnerPixelmap()->GetByteCount();
+    if (rawByteCount <= 0) {
+        return IMAGE_BAD_PARAMETER;
+    }
+    *byteCount = static_cast<uint32_t>(rawByteCount);
+    return IMAGE_SUCCESS;
+}
+
+MIDK_EXPORT
+Image_ErrorCode OH_PixelmapNative_GetAllocationByteCount(OH_PixelmapNative *pixelmap, uint32_t *allocationByteCount)
+{
+    if (pixelmap == nullptr || pixelmap->GetInnerPixelmap() == nullptr || allocationByteCount == nullptr) {
+        return IMAGE_BAD_PARAMETER;
+    }
+    uint32_t rawByteCount = pixelmap->GetInnerPixelmap()->GetAllocationByteCount();
+    if (rawByteCount == 0) {
+        return IMAGE_BAD_PARAMETER;
+    }
+    *allocationByteCount = rawByteCount;
+    return IMAGE_SUCCESS;
+}
+
+MIDK_EXPORT
+Image_ErrorCode OH_PixelmapNative_AccessPixels(OH_PixelmapNative *pixelmap, void **addr)
+{
+    if (pixelmap == nullptr || pixelmap->GetInnerPixelmap() == nullptr || addr == nullptr) {
+        return IMAGE_BAD_PARAMETER;
+    }
+    if (!pixelmap->Ref()) {
+        return IMAGE_LOCK_UNLOCK_FAILED;
+    }
+    pixelmap->GetInnerPixelmap()->SetModifiable(false);
+    *addr = pixelmap->GetInnerPixelmap()->GetWritablePixels();
+    return IMAGE_SUCCESS;
+}
+
+MIDK_EXPORT
+Image_ErrorCode OH_PixelmapNative_UnaccessPixels(OH_PixelmapNative *pixelmap)
+{
+    if (pixelmap == nullptr || pixelmap->GetInnerPixelmap() == nullptr) {
+        return IMAGE_BAD_PARAMETER;
+    }
+    if (!pixelmap->Unref()) {
+        return IMAGE_LOCK_UNLOCK_FAILED;
+    }
+    if (pixelmap->GetRefCount() == 0) {
+        pixelmap->GetInnerPixelmap()->SetModifiable(true);
     }
     return IMAGE_SUCCESS;
 }

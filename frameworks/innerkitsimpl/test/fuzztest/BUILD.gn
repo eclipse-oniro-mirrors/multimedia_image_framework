@@ -28,6 +28,5 @@ group("fuzztest") {
     "imageplugin_fuzzer:ImagePluginFuzzTest",
     "imagepngplugin_fuzzer:ImagePngPluginFuzzTest",
     "imagesource_fuzzer:ImageSourceFuzzTest",
-    "imageyuvconvert_fuzzer:ImageYuvConvertFuzzTest",
   ]
 }

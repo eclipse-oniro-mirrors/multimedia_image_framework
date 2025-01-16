@@ -512,8 +512,11 @@ static napi_status NewPixelNapiInstance(napi_env &env, napi_value &constructor,
     }
     size_t argc = NEW_INSTANCE_ARGC;
     napi_value argv[NEW_INSTANCE_ARGC] = { 0 };
-    napi_create_int32(env, pixelMap->GetUniqueId(), &argv[0]);
-    PixelMapContainer::GetInstance().Insert(pixelMap->GetUniqueId(), pixelMap);
+
+    uint64_t pixelMapId = (static_cast<uint64_t>(pixelMap->GetUniqueId()) << 32) | static_cast<uint64_t>(gettid());
+    napi_create_bigint_uint64(env, pixelMapId, &argv[0]);
+    PixelMapContainer::GetInstance().Insert(pixelMapId, pixelMap);
+
     status = napi_new_instance(env, constructor, argc, argv, &result);
     return status;
 }
@@ -531,8 +534,12 @@ napi_value SendablePixelMapNapi::Constructor(napi_env env, napi_callback_info in
     IMAGE_LOGD("Constructor IN");
     status = napi_get_cb_info(env, info, &argc, argv, &thisVar, nullptr);
     IMG_NAPI_CHECK_RET(IMG_IS_READY(status, thisVar), undefineVar);
-    uint32_t pixelMapId = 0;
-    napi_get_value_uint32(env, argv[0], &pixelMapId);
+    uint64_t pixelMapId = 0;
+    bool lossless = true;
+    if (!IMG_IS_OK(napi_get_value_bigint_uint64(env, argv[0], &pixelMapId, &lossless))) {
+        IMAGE_LOGE("Constructor napi_get_value_bigint_uint64 failed");
+        return undefineVar;
+    }
     std::unique_ptr<SendablePixelMapNapi> pPixelMapNapi = std::make_unique<SendablePixelMapNapi>();
 
     IMG_NAPI_CHECK_RET(IMG_NOT_NULL(pPixelMapNapi), undefineVar);

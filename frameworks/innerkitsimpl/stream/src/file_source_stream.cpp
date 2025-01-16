@@ -70,6 +70,7 @@ FileSourceStream::~FileSourceStream()
     IMAGE_LOGD("[FileSourceStream]destructor enter.");
     if (filePtr_ != nullptr) {
         fclose(filePtr_);
+        filePtr_ = nullptr;
     }
     ResetReadBuffer();
 }
@@ -367,9 +368,14 @@ uint8_t *FileSourceStream::GetDataPtr(bool populate)
             IMAGE_LOGE("[FileSourceStream] Failed to new stream buffer.");
             return nullptr;
         }
+        uint32_t savedPosition = Tell();
+        Seek(0);
         uint32_t readSize = 0;
-        if (!GetData(size, buffer, size, readSize)) {
-            delete [] buffer;
+        bool retRead = Read(size, buffer, size, readSize);
+        Seek(savedPosition);
+        if (!retRead) {
+            IMAGE_LOGE("[FileSourceStream] GetDataPtr read failed.");
+            delete[] buffer;
             return nullptr;
         }
         IMAGE_LOGD("[FileSourceStream] UseMmap is false, read buffer success.");
@@ -443,15 +449,15 @@ bool FileSourceStream::ShouldUseMmap(int fd)
     int location = INVALID_POSITION;
     bool useMmap = false;
     int err = ioctl(fd, HMDFS_IOC_GET_LOCATION, &location);
-    if (err == IOCTL_SUCCESS) {
-        if (location == LOCAL_FILE_POSITION) {
-            useMmap = true;
-            return useMmap;
-        }
-        IMAGE_LOGI("[FileSourceStream] File position: %{public}d.", location);
+    if (err != IOCTL_SUCCESS) {
+        IMAGE_LOGD("[FileSourceStream] ioctl failed, error: %{public}d, errno: %{public}d.", err, errno);
         return useMmap;
     }
-    IMAGE_LOGD("[FileSourceStream] ioctl failed, error: %{public}d, errno: %{public}d.", err, errno);
+
+    if (location == LOCAL_FILE_POSITION) {
+        useMmap = true;
+    }
+    IMAGE_LOGD("[FileSourceStream] File position: %{public}d.", location);
     return useMmap;
 }
 

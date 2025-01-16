@@ -30,6 +30,8 @@
 #include "include/jpeg_encoder.h"
 #endif
 #ifdef HEIF_HW_ENCODE_ENABLE
+#include "image/v2_0/icodec_image.h"
+#include "image/v2_0/codec_image_type.h"
 #include "v3_0/codec_types.h"
 #include "v3_0/icodec_component_manager.h"
 #endif
@@ -64,24 +66,19 @@ static bool IsEncodeSecureMode(const std::string &name)
 static bool IsSupportHeifEncode()
 {
 #ifdef HEIF_HW_ENCODE_ENABLE
-    sptr<HDI::Codec::V3_0::ICodecComponentManager> manager =
-            HDI::Codec::V3_0::ICodecComponentManager::Get(false);
-    if (manager == nullptr) {
+    sptr<HDI::Codec::Image::V2_0::ICodecImage> image =
+            HDI::Codec::Image::V2_0::ICodecImage::Get(false);
+    if (image == nullptr) {
         return false;
     }
-    int32_t compCnt = 0;
-    int32_t ret = manager->GetComponentNum(compCnt);
-    if (ret != HDF_SUCCESS || compCnt <= 0) {
-        return false;
-    }
-    std::vector<HDI::Codec::V3_0::CodecCompCapability> capList(compCnt);
-    ret = manager->GetComponentCapabilityList(capList, compCnt);
+    std::vector<HDI::Codec::Image::V2_0::CodecImageCapability> capList;
+    int32_t ret = image->GetImageCapability(capList);
     if (ret != HDF_SUCCESS || capList.empty()) {
         return false;
     }
     for (const auto& cap : capList) {
-        if (cap.role == HDI::Codec::V3_0::MEDIA_ROLETYPE_VIDEO_HEVC &&
-            cap.type == HDI::Codec::V3_0::VIDEO_ENCODER && !IsEncodeSecureMode(cap.compName)) {
+        if (cap.role == HDI::Codec::Image::V2_0::CODEC_IMAGE_HEIF &&
+            cap.type == HDI::Codec::Image::V2_0::CODEC_IMAGE_TYPE_ENCODER && !IsEncodeSecureMode(cap.name)) {
             return true;
         }
     }
@@ -193,10 +190,8 @@ uint32_t ImagePacker::StartPacking(const int &fd, const PackOption &option)
         return ERR_IMAGE_INVALID_PARAMETER;
     }
     FilePackerStream *stream = new (std::nothrow) FilePackerStream(fd);
-    if (stream == nullptr) {
-        IMAGE_LOGE("make file packer stream failed.");
-        return ERR_IMAGE_DATA_ABNORMAL;
-    }
+    bool cond = (stream == nullptr);
+    CHECK_ERROR_RETURN_RET_LOG(cond, ERR_IMAGE_DATA_ABNORMAL, "make file packer stream failed");
     FreeOldPackerStream();
     packerStream_ = std::unique_ptr<FilePackerStream>(stream);
     return StartPackingImpl(option);
@@ -227,10 +222,10 @@ uint32_t ImagePacker::StartPackingAdapter(PackerStream &outputStream, const Pack
     FreeOldPackerStream();
     packerStream_ = std::unique_ptr<PackerStream>(&outputStream);
 
-    if (!IsPackOptionValid(option)) {
-        IMAGE_LOGE("packer stream option invalid %{public}s, %{public}u.", option.format.c_str(), option.quality);
-        return ERR_IMAGE_INVALID_PARAMETER;
-    }
+    bool cond = !IsPackOptionValid(option);
+    CHECK_ERROR_RETURN_RET_LOG(cond, ERR_IMAGE_INVALID_PARAMETER,
+                               "packer stream option invalid %{public}s, %{public}u.",
+                               option.format.c_str(), option.quality);
     return StartPackingImpl(option);
 }
 
@@ -281,10 +276,8 @@ uint32_t ImagePacker::AddImage(ImageSource &source, uint32_t index)
         IMAGE_LOGE("image source create pixel map failed.");
         return ret;
     }
-    if (pixelMap_ == nullptr || pixelMap_.get() == nullptr) {
-        IMAGE_LOGE("create the pixel map unique_ptr fail.");
-        return ERR_IMAGE_MALLOC_ABNORMAL;
-    }
+    bool cond = pixelMap_ == nullptr || pixelMap_.get() == nullptr;
+    CHECK_ERROR_RETURN_RET_LOG(cond, ERR_IMAGE_MALLOC_ABNORMAL, "create the pixel map unique_ptr fail.");
 
     return AddImage(*pixelMap_.get());
 }

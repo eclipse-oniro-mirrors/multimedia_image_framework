@@ -225,10 +225,8 @@ uint32_t Capability::AnalyzeUint32Set(const json &capInfo, AttrData &attrData)
     }
     IMAGE_LOGD("uint32Set size: %{public}zu.", arraySize);
 
-    if (arraySize < SET_MIN_VALUE_NUM) {
-        IMAGE_LOGE("invalid uint32Set size: %{public}zu.", arraySize);
-        return ERR_INVALID_PARAMETER;
-    }
+    bool cond = arraySize < SET_MIN_VALUE_NUM;
+    CHECK_ERROR_RETURN_RET_LOG(cond, ERR_INVALID_PARAMETER, "invalid uint32Set size: %{public}zu.", arraySize);
 
     uint32_t value;
     const json &valueArray = capInfo["value"];
@@ -258,10 +256,8 @@ uint32_t Capability::AnalyzeUint32Range(const json &capInfo, AttrData &attrData)
     }
     IMAGE_LOGD("uint32Range size: %{public}zu.", arraySize);
 
-    if (arraySize != AttrData::RANGE_ARRAY_SIZE) {
-        IMAGE_LOGE("invalid uint32Range size: %{public}zu.", arraySize);
-        return ERR_INVALID_PARAMETER;
-    }
+    bool cond = arraySize != AttrData::RANGE_ARRAY_SIZE;
+    CHECK_ERROR_RETURN_RET_LOG(cond, ERR_INVALID_PARAMETER, "invalid uint32Range size: %{public}zu.", arraySize);
 
     const json &valueArray = capInfo["value"];
     uint32_t lowerBound = 0;
@@ -277,10 +273,8 @@ uint32_t Capability::AnalyzeUint32Range(const json &capInfo, AttrData &attrData)
     }
 
     IMAGE_LOGD("AnalyzeUint32Range: get lowerBound: %{public}u, upperBound: %{public}u.", lowerBound, upperBound);
-    if (attrData.SetData(lowerBound, upperBound) != SUCCESS) {
-        IMAGE_LOGE("AnalyzeUint32Range: failed to call SetData.");
-        return ERR_INTERNAL;
-    }
+    cond = attrData.SetData(lowerBound, upperBound) != SUCCESS;
+    CHECK_ERROR_RETURN_RET_LOG(cond, ERR_INTERNAL, "AnalyzeUint32Range: failed to call SetData.");
 
     return SUCCESS;
 }
@@ -294,10 +288,8 @@ uint32_t Capability::AnalyzeStringSet(const json &capInfo, AttrData &attrData)
     }
     IMAGE_LOGD("stringSet size: %{public}zu.", arraySize);
 
-    if (arraySize < SET_MIN_VALUE_NUM) {
-        IMAGE_LOGE("invalid stringSet size: %{public}zu.", arraySize);
-        return ERR_INVALID_PARAMETER;
-    }
+    bool cond = arraySize < SET_MIN_VALUE_NUM;
+    CHECK_ERROR_RETURN_RET_LOG(cond, ERR_INVALID_PARAMETER, "invalid stringSet size: %{public}zu.", arraySize);
 
     const json &valueArray = capInfo["value"];
     string value;

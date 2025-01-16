@@ -79,12 +79,10 @@ static SkColorType PixelFormatConvert(const PixelFormat &pixelFormat)
     return (formatSearch != PIXEL_FORMAT_MAP.end()) ? formatSearch->second : SkColorType::kUnknown_SkColorType;
 }
 
-static void ARGBToRGBA(uint8_t* srcPixels, uint8_t* dstPixels, uint32_t byteCount)
+void ARGBToRGBA(uint8_t* srcPixels, uint8_t* dstPixels, uint32_t byteCount)
 {
-    if (byteCount % NUM_4 != NUM_0) {
-        IMAGE_LOGE("Pixel count must multiple of 4.");
-        return;
-    }
+    bool cond = byteCount % NUM_4 != NUM_0;
+    CHECK_ERROR_RETURN_LOG(cond, "Pixel count must multiple of 4.");
     uint8_t *src = srcPixels;
     uint8_t *dst = dstPixels;
     for (uint32_t i = NUM_0 ; i < byteCount; i += NUM_4) {
@@ -98,12 +96,10 @@ static void ARGBToRGBA(uint8_t* srcPixels, uint8_t* dstPixels, uint32_t byteCoun
     }
 }
 
-static void RGBAToARGB(uint8_t* srcPixels, uint8_t* dstPixels, uint32_t byteCount)
+void RGBAToARGB(uint8_t* srcPixels, uint8_t* dstPixels, uint32_t byteCount)
 {
-    if (byteCount % NUM_4 != NUM_0) {
-        IMAGE_LOGE("Pixel count must multiple of 4.");
-        return;
-    }
+    bool cond = byteCount % NUM_4 != NUM_0;
+    CHECK_ERROR_RETURN_LOG(cond, "Pixel count must multiple of 4.");
     uint8_t *src = srcPixels;
     uint8_t *dst = dstPixels;
     for (uint32_t i = NUM_0 ; i < byteCount; i += NUM_4) {
@@ -117,11 +113,11 @@ static void RGBAToARGB(uint8_t* srcPixels, uint8_t* dstPixels, uint32_t byteCoun
     }
 }
 
-static void RGBxToRGB(const uint8_t* srcPixels, uint8_t* dstPixels, uint32_t byteCount)
+bool PixelConvertAdapter::RGBxToRGB(const uint8_t* srcPixels, uint8_t* dstPixels, uint32_t byteCount)
 {
     if (byteCount % NUM_4 != NUM_0) {
-        IMAGE_LOGE("Pixel count must multiple of 4.");
-        return;
+        IMAGE_LOGE("Pixel count must be multiple of 4.");
+        return false;
     }
     const uint8_t *src = srcPixels;
     uint8_t *dst = dstPixels;
@@ -133,13 +129,14 @@ static void RGBxToRGB(const uint8_t* srcPixels, uint8_t* dstPixels, uint32_t byt
         src += NUM_4;
         dst += NUM_3;
     }
+    return true;
 }
 
-static void RGBToRGBx(const uint8_t* srcPixels, uint8_t* dstPixels, uint32_t byteCount)
+bool PixelConvertAdapter::RGBToRGBx(const uint8_t* srcPixels, uint8_t* dstPixels, uint32_t byteCount)
 {
     if (byteCount % NUM_3 != NUM_0) {
-        IMAGE_LOGE("Pixel count must multiple of 3.");
-        return;
+        IMAGE_LOGE("Pixel count must be multiple of 3.");
+        return false;
     }
     const uint8_t *src = srcPixels;
     uint8_t *dst = dstPixels;
@@ -152,6 +149,7 @@ static void RGBToRGBx(const uint8_t* srcPixels, uint8_t* dstPixels, uint32_t byt
         src += NUM_3;
         dst += NUM_4;
     }
+    return true;
 }
 
 static int32_t GetRGBxRowBytes(const ImageInfo &imgInfo)
@@ -197,10 +195,6 @@ bool PixelConvertAdapter::WritePixelsConvert(const void *srcPixels, uint32_t src
         srcRowBytes = static_cast<uint32_t>(GetRGBxRowBytes(srcInfo));
     }
     SkPixmap srcPixmap(srcImageInfo, srcPixels, srcRowBytes);
-    if (srcInfo.pixelFormat == PixelFormat::ARGB_8888) {
-        uint8_t* src = static_cast<uint8_t*>(srcPixmap.writable_addr());
-        ARGBToRGBA(src, src, srcRowBytes * srcInfo.size.height);
-    }
 
     SkBitmap dstBitmap;
     if (!dstBitmap.installPixels(dstImageInfo, dstPixels, dstRowBytes)) {
@@ -212,10 +206,7 @@ bool PixelConvertAdapter::WritePixelsConvert(const void *srcPixels, uint32_t src
         return false;
     }
 
-    if (dstInfo.pixelFormat == PixelFormat::ARGB_8888) {
-        uint32_t dstSize = dstRowBytes * dstInfo.size.height;
-        RGBAToARGB(static_cast<uint8_t*>(dstPixels), static_cast<uint8_t*>(dstPixels), dstSize);
-    } else if (dstInfo.pixelFormat == PixelFormat::RGB_888) {
+    if (dstInfo.pixelFormat == PixelFormat::RGB_888) {
         RGBxToRGB(&dstRGBxPixels[0], static_cast<uint8_t*>(keepDstPixels), dstRGBxSize);
     }
 
@@ -276,10 +267,8 @@ bool PixelConvertAdapter::EraseBitmap(const void *srcPixels, uint32_t srcRowByte
 
 bool PixelConvertAdapter::YUV420ToRGB888(const uint8_t *in, YuvImageInfo &srcInfo, uint8_t *out, YuvImageInfo &dstInfo)
 {
-    if (PixelYuvUtils::YuvScale(const_cast<uint8_t *>(in), srcInfo, out, dstInfo, SWS_BICUBIC) != SUCCESS) {
-        IMAGE_LOGE("YUV420ToRGB888 failed");
-        return false;
-    }
+    bool cond = PixelYuvUtils::YuvScale(const_cast<uint8_t *>(in), srcInfo, out, dstInfo, SWS_BICUBIC) != SUCCESS;
+    CHECK_ERROR_RETURN_RET_LOG(cond, false, "YUV420ToRGB888 failed");
     return true;
 }
 

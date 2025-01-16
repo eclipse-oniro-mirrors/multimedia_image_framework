@@ -31,4 +31,74 @@
 #define IMAGE_LOGI(...) HILOG_INFO(LOG_CORE, __VA_ARGS__)
 #define IMAGE_LOGD(...) HILOG_DEBUG(LOG_CORE, __VA_ARGS__)
 
-#endif // FRAMEWORKS_INNERKITSIMPL_UTILS_INCLUDE_IMAGE_LOG_H
+#define CHECK_ERROR_RETURN_RET_LOG(cond, ret, ...)      \
+    do {                                                \
+        if (cond) {                                     \
+            HILOG_ERROR(LOG_CORE, __VA_ARGS__);         \
+            return ret;                                 \
+        }                                               \
+    } while (0)                                         \
+
+#define CHECK_ERROR_RETURN(cond)                        \
+    do {                                                \
+        if (cond) {                                     \
+            return;                                     \
+        }                                               \
+    } while (0)                                         \
+
+
+#define CHECK_ERROR_RETURN_LOG(cond, ...) \
+    do {                                                \
+        if (cond) {                                     \
+            HILOG_ERROR(LOG_CORE, __VA_ARGS__);         \
+            return;                                     \
+        }                                               \
+    } while (0)
+
+#define CHECK_ERROR_PRINT_LOG(cond, ...)                \
+    do {                                                \
+        if (cond) {                                     \
+            HILOG_ERROR(LOG_CORE, __VA_ARGS__);         \
+        }                                               \
+    } while (0)
+
+
+#define CHECK_ERROR_RETURN_RET(cond, ret)               \
+    do {                                                \
+        if (cond) {                                     \
+            return ret;                                 \
+        }                                               \
+    } while (0)
+
+#define CHECK_DEBUG_RETURN_RET_LOG(cond, ret, ...)      \
+    do {                                                \
+        if (cond) {                                     \
+            HILOG_DEBUG(LOG_CORE, __VA_ARGS__);         \
+            return ret;                                 \
+        }                                               \
+    } while (0)                                         \
+
+#define CHECK_DEBUG_RETURN_LOG(cond, ...) \
+    do {                                                \
+        if (cond) {                                     \
+            HILOG_DEBUG(LOG_CORE, __VA_ARGS__);         \
+            return;                                     \
+        }                                               \
+    } while (0)
+
+#define CHECK_DEBUG_PRINT_LOG(cond, ...)                \
+    do {                                                \
+        if (cond) {                                     \
+            HILOG_DEBUG(LOG_CORE, __VA_ARGS__);         \
+        }                                               \
+    } while (0)
+
+#define CHECK_INFO_RETURN_RET_LOG(cond, ret, ...)      \
+    do {                                                \
+        if (cond) {                                     \
+            HILOG_INFO(LOG_CORE, __VA_ARGS__);         \
+            return ret;                                 \
+        }                                               \
+    } while (0)                                         \
+
+#endif

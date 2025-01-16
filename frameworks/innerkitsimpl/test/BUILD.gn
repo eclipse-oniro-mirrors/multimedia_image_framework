@@ -1432,6 +1432,7 @@ ohos_unittest("textureencodetest") {
   if (defined(global_parts_info) &&
       defined(global_parts_info.graphic_graphic_2d_ext)) {
     defines += [ "ASTC_CUSTOMIZED_ENABLE" ]
+    defines += [ "SUT_ENCODE_ENABLE" ]
   }
 
   external_deps = [
@@ -1860,6 +1861,7 @@ ohos_unittest("image_cj_test") {
   ]
 
   external_deps = [
+    "napi:ace_napi",
     "napi:cj_bind_ffi",
     "napi:cj_bind_native",
   ]

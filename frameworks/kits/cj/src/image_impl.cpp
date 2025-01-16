@@ -13,6 +13,7 @@
  * limitations under the License.
  */
 #include "image_impl.h"
+
 #include "image_log.h"
 #include "media_errors.h"
 
@@ -35,7 +36,7 @@ std::shared_ptr<NativeImage> ImageImpl::GetNativeImage()
     return native_;
 }
 
-int64_t ImageImpl::Create(ImageImpl *image, std::shared_ptr<NativeImage> nativeImage)
+int64_t ImageImpl::Create(ImageImpl* image, std::shared_ptr<NativeImage> nativeImage)
 {
     auto id = sNativeImageHolder_.save(nativeImage);
     image->native_ = sNativeImageHolder_.get(id);
@@ -47,7 +48,7 @@ int64_t ImageImpl::Create(ImageImpl *image, std::shared_ptr<NativeImage> nativeI
     return SUCCESS;
 }
 
-uint32_t ImageImpl::GetClipRect(CRegion *ret)
+uint32_t ImageImpl::GetClipRect(CRegion* ret)
 {
     if (isTestImage_ == true) {
         ret->size.width = DEFAULT_WIDTH;
@@ -69,7 +70,7 @@ uint32_t ImageImpl::GetClipRect(CRegion *ret)
     return retCode;
 }
 
-uint32_t ImageImpl::GetSize(CSize *ret)
+uint32_t ImageImpl::GetSize(CSize* ret)
 {
     if (isTestImage_ == true) {
         ret->width = DEFAULT_WIDTH;
@@ -87,7 +88,7 @@ uint32_t ImageImpl::GetSize(CSize *ret)
     return retCode;
 }
 
-uint32_t ImageImpl::GetFormat(int32_t *ret)
+uint32_t ImageImpl::GetFormat(int32_t* ret)
 {
     if (isTestImage_ == true) {
         *ret = DEFAULT_FORMAT;
@@ -117,7 +118,7 @@ int64_t ImageImpl::GetTimestamp()
     return timestamp;
 }
 
-uint32_t ImageImpl::GetComponent(int32_t componentType, CRetComponent *ret)
+uint32_t ImageImpl::GetComponent(int32_t componentType, CRetComponent* ret)
 {
     if (native_ == nullptr) {
         IMAGE_LOGE("Image buffer cannot be nullptr");
@@ -146,5 +147,5 @@ uint32_t ImageImpl::GetComponent(int32_t componentType, CRetComponent *ret)
 }
 
 void ImageImpl::Release() {}
-}  // namespace Media
-}  // namespace OHOS
+} // namespace Media
+} // namespace OHOS

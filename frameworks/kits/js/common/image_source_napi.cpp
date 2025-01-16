@@ -34,6 +34,9 @@
 #define LOG_TAG "ImageSourceNapi"
 
 namespace {
+    constexpr uint32_t INPUT_MAX_64K = 64 * 1024;
+    constexpr uint32_t BUFFER_SIZE_0 = 0;
+    constexpr uint32_t TERMINATOR_SIZE = 1;
     constexpr int INVALID_FD = -1;
     constexpr uint32_t NUM_0 = 0;
     constexpr uint32_t NUM_1 = 1;
@@ -393,6 +396,32 @@ static std::string GetStringArgument(napi_env env, napi_value value)
         if (status == napi_ok) {
             IMAGE_LOGD("Get Success");
             strValue.assign(buffer, 0, bufLength + NUM_1);
+        }
+        if (buffer != nullptr) {
+            free(buffer);
+            buffer = nullptr;
+        }
+    }
+    return strValue;
+}
+
+// for Exif Input 64K
+static std::string GetStringArgumentForModify(napi_env env, napi_value value)
+{
+    std::string strValue = "";
+    size_t bufLength = 0;
+    napi_status status = napi_get_value_string_utf8(env, value, nullptr, BUFFER_SIZE_0, &bufLength);
+    if (status == napi_ok && bufLength > BUFFER_SIZE_0 && bufLength < INPUT_MAX_64K) {
+        char *buffer = reinterpret_cast<char *>(malloc((bufLength + TERMINATOR_SIZE) * sizeof(char)));
+        if (buffer == nullptr) {
+            IMAGE_LOGE("No memory");
+            return strValue;
+        }
+
+        status = napi_get_value_string_utf8(env, value, buffer, bufLength + TERMINATOR_SIZE, &bufLength);
+        if (status == napi_ok) {
+            IMAGE_LOGD("Get Success");
+            strValue.assign(buffer, 0, bufLength + TERMINATOR_SIZE);
         }
         if (buffer != nullptr) {
             free(buffer);
@@ -1135,6 +1164,13 @@ static bool ParseDecodeOptions2(napi_env env, napi_value root, DecodeOptions* op
     }
     opts->desiredDynamicRange = ParseDynamicRange(env, root);
     opts->resolutionQuality = ParseResolutionQuality(env, root);
+
+    napi_value nPixelmap = nullptr;
+    if (napi_get_named_property(env, root, "reusePixelMap", &nPixelmap) == napi_ok) {
+        std::shared_ptr<PixelMap> rPixelmap = PixelMapNapi::GetPixelMap(env, nPixelmap);
+        opts->reusePixelmap = rPixelmap;
+        IMAGE_LOGD("reusePixelMap parse finished");
+    }
     return true;
 }
 
@@ -2240,7 +2276,7 @@ static std::unique_ptr<ImageSourceAsyncContext> UnwrapContextForModify(napi_env 
     }
     if (argCount == NUM_2 || argCount == NUM_3 || argCount == NUM_4) {
         if (ImageNapiUtils::getType(env, argValue[NUM_1]) == napi_string) {
-            context->valueStr = GetStringArgument(env, argValue[NUM_1]);
+            context->valueStr = GetStringArgumentForModify(env, argValue[NUM_1]);
         } else {
             IMAGE_LOGE("arg 1 type mismatch");
             return nullptr;

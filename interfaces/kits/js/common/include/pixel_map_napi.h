@@ -126,6 +126,8 @@ private:
 
     static napi_value Scale(napi_env env, napi_callback_info info);
     static napi_value ScaleSync(napi_env env, napi_callback_info info);
+    static napi_value CreateScaledPixelMap(napi_env env, napi_callback_info info);
+    static napi_value CreateScaledPixelMapSync(napi_env env, napi_callback_info info);
     static napi_value Translate(napi_env env, napi_callback_info info);
     static napi_value TranslateSync(napi_env env, napi_callback_info info);
     static napi_value Rotate(napi_env env, napi_callback_info info);
@@ -147,6 +149,9 @@ private:
     static napi_value SetMetadata(napi_env env, napi_callback_info info);
     static napi_value SetMetadataSync(napi_env env, napi_callback_info info);
     static napi_value SetMemoryNameSync(napi_env env, napi_callback_info info);
+    static napi_value CloneSync(napi_env env, napi_callback_info info);
+    static napi_value Clone(napi_env env, napi_callback_info info);
+    static void ExtraAddNapiFunction(std::vector<napi_property_descriptor> &props);
     static std::vector<napi_property_descriptor> RegisterNapi();
 
     void release();
@@ -171,7 +176,7 @@ public:
         return source;
     }
 
-    std::shared_ptr<PixelMap>& operator[](const uint32_t &key)
+    std::shared_ptr<PixelMap>& operator[](const uint64_t &key)
     {
         std::shared_lock<std::shared_mutex> lock(mutex_);
         return map_[key];
@@ -182,22 +187,22 @@ public:
         return map_.empty();
     }
 
-    bool Insert(const uint32_t &key, const std::shared_ptr<PixelMap> &value)
+    bool Insert(const uint64_t &key, const std::shared_ptr<PixelMap> &value)
     {
         std::unique_lock<std::shared_mutex> lock(mutex_);
         if (!IsEmpty() && (map_.find(key) != map_.end())) map_.erase(key);
-        auto ret = map_.insert(std::pair<uint32_t, std::shared_ptr<PixelMap>>(key, value));
+        auto ret = map_.insert(std::pair<uint64_t, std::shared_ptr<PixelMap>>(key, value));
         return ret.second;
     }
 
-    bool Find(const uint32_t &key)
+    bool Find(const uint64_t &key)
     {
         std::shared_lock<std::shared_mutex> lock(mutex_);
         auto it = map_.find(key);
         return it != map_.end() ? true : false;
     }
 
-    void Erase(const uint32_t &key)
+    void Erase(const uint64_t &key)
     {
         std::unique_lock<std::shared_mutex> lock(mutex_);
         if (map_.find(key) != map_.end()) {
@@ -219,7 +224,7 @@ private:
     PixelMapContainer(const PixelMapContainer&&) = delete;
     PixelMapContainer &operator=(const PixelMapContainer&) = delete;
     std::shared_mutex mutex_;
-    std::map<uint32_t, std::shared_ptr<PixelMap>> map_;
+    std::map<uint64_t, std::shared_ptr<PixelMap>> map_;
 };
 } // namespace Media
 } // namespace OHOS
