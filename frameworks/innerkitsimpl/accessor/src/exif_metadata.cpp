@@ -134,7 +134,8 @@ int ExifMetadata::GetValue(const std::string &key, std::string &value) const
         unsigned int tagValueSizeTmp = 0;
         if (entry->size >= TAG_VALUE_SIZE && (entry->format == EXIF_FORMAT_ASCII ||
             entry->format == EXIF_FORMAT_UNDEFINED)) {
-            tagValueSizeTmp = entry->size + TERMINATOR_SIZE > MAX_TAG_VALUE_SIZE_FOR_STR ? MAX_TAG_VALUE_SIZE_FOR_STR : entry->size + TERMINATOR_SIZE;
+            tagValueSizeTmp = entry->size + TERMINATOR_SIZE > MAX_TAG_VALUE_SIZE_FOR_STR ?
+                MAX_TAG_VALUE_SIZE_FOR_STR : entry->size + TERMINATOR_SIZE;
         } else {
             tagValueSizeTmp = TAG_VALUE_SIZE;
         }
