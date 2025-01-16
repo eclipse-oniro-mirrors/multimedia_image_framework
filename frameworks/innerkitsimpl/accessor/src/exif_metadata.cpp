@@ -48,6 +48,7 @@ namespace Media {
 const auto KEY_SIZE = 2;
 const auto TAG_VALUE_SIZE = 1024;
 const auto MAX_TAG_VALUE_SIZE_FOR_STR = 64 * 1024;
+const auto TERMINATOR_SIZE = 1;
 const auto EXIF_HEAD_SIZE = 6;
 const static std::string DEFAULT_EXIF_VALUE = "default_exif_value";
 const static std::string HW_CAPTURE_MODE = "HwMnoteCaptureMode";
@@ -133,7 +134,7 @@ int ExifMetadata::GetValue(const std::string &key, std::string &value) const
         unsigned int tagValueSizeTmp = 0;
         if (entry->size >= TAG_VALUE_SIZE && (entry->format == EXIF_FORMAT_ASCII ||
             entry->format == EXIF_FORMAT_UNDEFINED)) {
-            tagValueSizeTmp = entry->size > MAX_TAG_VALUE_SIZE_FOR_STR ? MAX_TAG_VALUE_SIZE_FOR_STR : entry->size;
+            tagValueSizeTmp = entry->size + TERMINATOR_SIZE > MAX_TAG_VALUE_SIZE_FOR_STR ? MAX_TAG_VALUE_SIZE_FOR_STR : entry->size + TERMINATOR_SIZE;
         } else {
             tagValueSizeTmp = TAG_VALUE_SIZE;
         }
