@@ -117,7 +117,8 @@ protected:
     static uint32_t GetJpegDecompressedYuvSize(uint32_t width, uint32_t height, int subsample);
     static void InitYuvDataOutInfoTo420(uint32_t width, uint32_t height, OHOS::Media::YUVDataInfo &info,
                                         JpegYuvFmt fmt);
-    static void InitYuvDataOutInfoTo420NV(uint32_t width, uint32_t height, OHOS::Media::YUVDataInfo &info);
+    static void InitYuvDataOutInfoTo420NV(uint32_t width, uint32_t height, OHOS::Media::YUVDataInfo &info,
+        const DecodeContext &context = {});
     static void InitYuvDataOutInfo(uint32_t width, uint32_t height, OHOS::Media::YUVDataInfo &info);
     static bool IsYU12YV12Format(JpegYuvFmt fmt);
     static tjscalingfactor GetScaledFactor(uint32_t jpgwidth, uint32_t jpgheight, uint32_t width, uint32_t height);
@@ -129,7 +130,7 @@ protected:
     int DoDecodeToYuvPlane(DecodeContext &context, tjhandle dehandle, uint32_t outw, uint32_t outh);
     int DecodeFrom420To420(DecodeContext &context, tjhandle dehandle, uint32_t width, uint32_t height);
     bool ValidateParameter(YuvPlaneInfo &srcPlaneInfo, ConverterPair &converter);
-    int ConvertFrom4xx(YuvPlaneInfo &srcPlaneInfo, ConverterPair &converter);
+    int ConvertFrom4xx(YuvPlaneInfo &srcPlaneInfo, ConverterPair &converter, const DecodeContext &context = {});
     int ConvertFromGray(YuvPlaneInfo &srcPlaneInfo);
 
 protected:

@@ -91,6 +91,8 @@ namespace {
     constexpr static int32_t LOOP_COUNT_INFINITE = 0;
     constexpr static int32_t SK_REPETITION_COUNT_INFINITE = -1;
     constexpr static int32_t SK_REPETITION_COUNT_ERROR_VALUE = -2;
+    constexpr static int32_t NUM_YUV_COMPONENTS = 3;
+    constexpr static int32_t BYTES_PER_YUV_SAMPLE = 2;
 }
 
 namespace OHOS {
@@ -272,7 +274,9 @@ uint32_t ExtDecoder::DmaMemAlloc(DecodeContext &context, uint64_t count, SkImage
     BufferRequestConfig requestConfig = CreateDmaRequestConfig(dstInfo, count, context.info.pixelFormat);
     if (outputColorFmt_ == PIXEL_FMT_YCRCB_420_SP) {
         requestConfig.format = GRAPHIC_PIXEL_FMT_YCRCB_420_SP;
-        requestConfig.usage |= BUFFER_USAGE_VENDOR_PRI16; // height is 64-bytes aligned
+        if (IsSupportHardwareDecode() && !context.hwDecodeFailed) {
+            requestConfig.usage |= BUFFER_USAGE_VENDOR_PRI16; // height is 64-bytes aligned
+        }
         IMAGE_LOGD("ExtDecoder::DmaMemAlloc desiredFormat is NV21");
         count = JpegDecoderYuv::GetYuvOutSize(dstInfo.width(), dstInfo.height());
     }
@@ -847,14 +851,77 @@ uint32_t ExtDecoder::DoHardWareDecode(DecodeContext &context)
     if (HardWareDecode(context) == SUCCESS) {
         return SUCCESS;
     }
+    context.hwDecodeFailed = true;
     return ERROR;
 }
 #endif
 
+static bool IsAllocatorTypeSupportHwDecode(const DecodeContext &context)
+{
+    if (!context.isAppUseAllocator) {
+        return true;
+    }
+    return context.allocatorType == Media::AllocatorType::DMA_ALLOC;
+}
+
+bool ExtDecoder::IsHeifSharedMemDecode(DecodeContext &context)
+{
+    return codec_->getEncodedFormat() == SkEncodedImageFormat::kHEIF && context.isAppUseAllocator &&
+        context.allocatorType == Media::AllocatorType::SHARE_MEM_ALLOC;
+}
+
+void ExtDecoder::FillYuvInfo(DecodeContext &context, SkImageInfo &dstInfo)
+{
+    if (context.allocatorType == AllocatorType::SHARE_MEM_ALLOC) {
+        context.yuvInfo.imageSize = {dstInfo.width(), dstInfo.height()};
+        context.yuvInfo.yWidth = dstInfo.width();
+        context.yuvInfo.yHeight = dstInfo.height();
+        context.yuvInfo.uvWidth = static_cast<uint32_t>((dstInfo.width() + 1) / BYTES_PER_YUV_SAMPLE);
+        context.yuvInfo.uvHeight = static_cast<uint32_t>((dstInfo.height() + 1) / BYTES_PER_YUV_SAMPLE);
+        context.yuvInfo.yStride = dstInfo.width();
+        context.yuvInfo.uvStride = dstInfo.width();
+        context.yuvInfo.yOffset = 0;
+        context.yuvInfo.uvOffset = dstInfo.width() * dstInfo.height();
+    }
+}
+
+uint32_t ExtDecoder::DoHeifSharedMemDecode(DecodeContext &context)
+{
+#ifdef HEIF_HW_DECODE_ENABLE
+    auto decoder = reinterpret_cast<HeifDecoderImpl*>(codec_->getHeifContext());
+    if (decoder == nullptr) {
+        IMAGE_LOGE("Decode HeifDecoder is nullptr");
+        return ERR_IMAGE_DATA_UNSUPPORT;
+    }
+    uint64_t rowStride = dstInfo_.minRowBytes64();
+    uint64_t byteCount = dstInfo_.computeMinByteSize();
+    if (IsYuv420Format(context.info.pixelFormat)) {
+        rowStride = dstInfo_.width();
+        byteCount = dstInfo_.width() * dstInfo_.height() * NUM_YUV_COMPONENTS / BYTES_PER_YUV_SAMPLE;
+        decoder->setOutputColor(
+            context.info.pixelFormat == PixelFormat::NV12 ? kHeifColorFormat_NV12 : kHeifColorFormat_NV21);
+    }
+    uint32_t res = ShareMemAlloc(context, byteCount);
+    if (res != SUCCESS) {
+        return res;
+    }
+    decoder->setDstBuffer(reinterpret_cast<uint8_t *>(context.pixelsBuffer.buffer), rowStride, nullptr);
+    bool decodeRet = decoder->SwDecode(context.isAppUseAllocator);
+    if (!decodeRet) {
+        decoder->getErrMsg(context.hardDecodeError);
+    } else if (IsYuv420Format(context.info.pixelFormat)) {
+        FillYuvInfo(context, dstInfo_);
+    }
+    return decodeRet ? SUCCESS : ERR_IMAGE_DATA_UNSUPPORT;
+#else
+    return ERR_IMAGE_DATA_UNSUPPORT;
+#endif
+}
+
 uint32_t ExtDecoder::Decode(uint32_t index, DecodeContext &context)
 {
 #ifdef JPEG_HW_DECODE_ENABLE
-    if (IsSupportHardwareDecode() && DoHardWareDecode(context) == SUCCESS) {
+    if (IsAllocatorTypeSupportHwDecode(context) && IsSupportHardwareDecode() && DoHardWareDecode(context) == SUCCESS) {
         context.isHardDecode = true;
         return SUCCESS;
     }
@@ -865,6 +932,10 @@ uint32_t ExtDecoder::Decode(uint32_t index, DecodeContext &context)
     }
     context.outInfo.size.width = static_cast<uint32_t>(dstInfo_.width());
     context.outInfo.size.height = static_cast<uint32_t>(dstInfo_.height());
+    if (IsHeifSharedMemDecode(context)) {
+        context.isHardDecode = false;
+        return DoHeifSharedMemDecode(context);
+    }
     if (IsHeifToYuvDecode(context)) {
         context.isHardDecode = true;
         return DoHeifToYuvDecode(context);
@@ -1043,6 +1114,7 @@ uint32_t ExtDecoder::DecodeToYuv420(uint32_t index, DecodeContext &context)
         return ERR_IMAGE_INVALID_PARAMETER;
     }
     uint64_t yuvBufferSize = JpegDecoderYuv::GetYuvOutSize(desiredSize.width, desiredSize.height);
+    dstInfo_ = dstInfo_.makeWH(desiredSize.width, desiredSize.height);
     res = SetContextPixelsBuffer(yuvBufferSize, context);
     if (res != SUCCESS) {
         IMAGE_LOGE("ExtDecoder::DecodeToYuv420 SetContextPixelsBuffer failed");

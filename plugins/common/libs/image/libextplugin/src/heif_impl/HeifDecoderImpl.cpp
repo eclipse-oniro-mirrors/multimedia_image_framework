@@ -534,7 +534,34 @@ bool HeifDecoderImpl::decode(HeifFrameInfo *frameInfo)
     return true;
 }
 
-bool HeifDecodeImpl::DodecodeGainmap(std::shared_ptr<HeifImage> &gainmapImage, GridInfo &gainmapGridInfo,
+bool HeifDecoderImpl::SwDecode(bool isSharedMemory)
+{
+    HevcSoftDecodeParam param {
+            gridInfo_, outPixelFormat_,
+            dstMemory_, 0,
+            static_cast<uint32_t>(dstRowStride_), dstHwBuffer_,
+            isSharedMemory
+    };
+    bool decodeRes = SwDecodeImage(primaryImage_, param, gridInfo_, true);
+    if (!decodeRes) {
+        return false;
+    }
+    SwApplyAlphaImage(primaryImage_, dstMemory_, dstRowStride_);
+    if (dstHwBuffer_ && (dstHwBuffer_->GetUsage() & BUFFER_USAGE_MEM_MMZ_CACHE)) {
+        GSError err = dstHwBuffer_->Map();
+        if (err != GSERROR_OK) {
+            IMAGE_LOGE("SurfaceBuffer Map failed, GSError=%{public}d", err);
+            return true;
+        }
+        err = dstHwBuffer_->FlushCache();
+        if (err != GSERROR_OK) {
+            IMAGE_LOGE("FlushCache failed, GSError=%{public}d", err);
+        }
+    }
+    return true;
+}
+
+bool HeifDecodeImpl::DodecodeGainmap(std::shared_ptr<HeifImage> &gainmap, GridInfo &gainmapGridInfo,
                                      uint8_t *gainmapDstMemory, size_t gainmapDstRowStride)
 {
     sptr<SurfaceBuffer> hwBuffer;

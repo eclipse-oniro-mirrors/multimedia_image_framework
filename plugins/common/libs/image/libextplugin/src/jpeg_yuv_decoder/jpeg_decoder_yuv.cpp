@@ -23,12 +23,14 @@
 #include "image_log.h"
 #include "securec.h"
 #include "jpegint.h"
+#include "surface_buffer.h"
 
 namespace OHOS {
 namespace ImagePlugin {
 using namespace OHOS::Media;
 
 const std::string YUV_LIB_PATH = "libyuv.z.so";
+static const uint32_t STRIDE_DIVISOR = 2;
 
 void* JpegDecoderYuv::dlHandler_ = nullptr;
 LibYuvConvertFuncs JpegDecoderYuv::libyuvFuncs_ = { nullptr };
@@ -255,7 +257,7 @@ void JpegDecoderYuv::InitYuvDataOutInfoTo420(uint32_t width, uint32_t height, YU
     }
 }
 
-void JpegDecoderYuv::InitYuvDataOutInfoTo420NV(uint32_t width, uint32_t height, YUVDataInfo &info)
+void JpegDecoderYuv::InitYuvDataOutInfoTo420NV(uint32_t width, uint32_t height, YUVDataInfo &info, const DecodeContext &context)
 {
     if (width == 0 || height == 0) {
         return;
@@ -268,6 +270,12 @@ void JpegDecoderYuv::InitYuvDataOutInfoTo420NV(uint32_t width, uint32_t height, 
     info.uvHeight = Get420OutPlaneHeight(UCOM, height);
     info.yStride = info.yWidth;
     info.uvStride = info.uvWidth + info.uvWidth;
+    if (context.allocatorType == OHOS::Media::AllocatorType::DMA_ALLOC) {
+        SurfaceBuffer* sbBuffer = reinterpret_cast<SurfaceBuffer *>(context.pixelsBuffer.context);
+        int32_t stride = sbBuffer->GetStride();
+        info.yStride = stride;
+        info.uvStride = stride;
+    }
     info.yOffset = 0;
     info.uvOffset = info.yHeight * info.yStride;
 }
@@ -349,7 +357,7 @@ int JpegDecoderYuv::DoDecode(DecodeContext &context, JpegDecoderYuvParameter &de
         if (JpegDecoderYuv::IsYU12YV12Format(decodeParameter_.outfmt_)) {
             JpegDecoderYuv::InitYuvDataOutInfoTo420(outwidth, outheight, context.yuvInfo, decodeParameter_.outfmt_);
         } else {
-            JpegDecoderYuv::InitYuvDataOutInfoTo420NV(outwidth, outheight, context.yuvInfo);
+            JpegDecoderYuv::InitYuvDataOutInfoTo420NV(outwidth, outheight, context.yuvInfo, context);
         }
     }
     return ret;
@@ -465,7 +473,7 @@ int JpegDecoderYuv::DoDecodeToYuvPlane(DecodeContext &context, tjhandle dehandle
     if (iter != CONVERTER_MAP.end()) {
         convertFunc = iter->second;
     }
-    return ConvertFrom4xx(jpegOutYuvInfo, convertFunc);
+    return ConvertFrom4xx(jpegOutYuvInfo, convertFunc, context);
 }
 
 int JpegDecoderYuv::DecodeFrom420To420(DecodeContext &context, tjhandle dehandle, uint32_t width, uint32_t height)
@@ -530,7 +538,7 @@ bool JpegDecoderYuv::ValidateParameter(YuvPlaneInfo &srcPlaneInfo, ConverterPair
     return true;
 }
 
-int JpegDecoderYuv::ConvertFrom4xx(YuvPlaneInfo &srcPlaneInfo, ConverterPair &converter)
+int JpegDecoderYuv::ConvertFrom4xx(YuvPlaneInfo &srcPlaneInfo, ConverterPair &converter, const DecodeContext &context)
 {
     if (!ValidateParameter(srcPlaneInfo, converter)) {
         return JpegYuvDecodeError_ConvertError;
@@ -565,6 +573,14 @@ int JpegDecoderYuv::ConvertFrom4xx(YuvPlaneInfo &srcPlaneInfo, ConverterPair &co
             JpegDecoderYuv::InitPlaneOutInfoTo420NV(width, height, dest);
             dest.planes[YCOM] = outYData;
             dest.planes[UVCOM] = outUVData;
+            if (context.allocatorType == Media::AllocatorType::DMA_ALLOC) {
+                auto surfaceBuffer = reinterpret_cast<SurfaceBuffer *>(context.pixelsBuffer.context);
+                dest.planes[UVCOM] = outYData + surfaceBuffer->GetStride() * height;
+                dest.strides[YCOM] = surfaceBuffer->GetStride();
+                dest.strides[UCOM] = surfaceBuffer->GetStride() / STRIDE_DIVISOR;
+                dest.strides[VCOM] = surfaceBuffer->GetStride() / STRIDE_DIVISOR;
+                dest.strides[UVCOM] = surfaceBuffer->GetStride();
+            }
             ret = converter.toNV21Func(srcYVU, dest);
             break;
         }
@@ -572,6 +588,14 @@ int JpegDecoderYuv::ConvertFrom4xx(YuvPlaneInfo &srcPlaneInfo, ConverterPair &co
             JpegDecoderYuv::InitPlaneOutInfoTo420NV(width, height, dest);
             dest.planes[YCOM] = outYData;
             dest.planes[UVCOM] = outUVData;
+            if (context.allocatorType == Media::AllocatorType::DMA_ALLOC) {
+                auto surfaceBuffer = reinterpret_cast<SurfaceBuffer *>(context.pixelsBuffer.context);
+                dest.planes[UVCOM] = outYData + surfaceBuffer->GetStride() * height;
+                dest.strides[YCOM] = surfaceBuffer->GetStride();
+                dest.strides[UCOM] = surfaceBuffer->GetStride() / STRIDE_DIVISOR;
+                dest.strides[VCOM] = surfaceBuffer->GetStride() / STRIDE_DIVISOR;
+                dest.strides[UVCOM] = surfaceBuffer->GetStride();
+            }
             ret = converter.toNV21Func(srcPlaneInfo, dest);
             break;
         }

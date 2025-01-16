@@ -78,7 +78,7 @@ public:
     OHOS::ColorManager::ColorSpace GetPixelMapColorSpace() override;
     bool IsSupportICCProfile() override;
 #endif
-
+    static void FillYuvInfo(DecodeContext &context, SkImageInfo &dstInfo);
 private:
     typedef struct FrameCacheInfo {
         int width;
@@ -99,6 +99,8 @@ private:
     bool IsYuv420Format(OHOS::Media::PixelFormat format) const;
     bool IsHeifToYuvDecode(const DecodeContext &context) const;
     uint32_t DoHeifToYuvDecode(DecodeContext &context);
+    uint32_t DoHeifSharedMemDecode(DecodeContext &context);
+    bool IsHeifSharedMemDecode(DecodeContext &context);
     bool ConvertInfoToAlphaType(SkAlphaType &alphaType, OHOS::Media::AlphaType &outputType);
     bool ConvertInfoToColorType(SkColorType &format, OHOS::Media::PixelFormat &outputFormat);
     bool GetPropertyCheck(uint32_t index, const std::string &key, uint32_t &res);

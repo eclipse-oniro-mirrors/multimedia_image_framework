@@ -40,6 +40,9 @@ namespace {
     constexpr uint32_t NUM_3 = 3;
     constexpr uint32_t NUM_4 = 4;
     constexpr uint32_t NUM_5 = 5;
+    constexpr int32_t TWO_ARGS = 2;
+    constexpr int32_t DECODE_OPTS_INDEX_0 = 0;
+    constexpr int32_t ALLOCATOR_TYPE_INDEX_1 = 1;
 }
 
 namespace OHOS {
@@ -62,6 +65,7 @@ napi_ref ImageSourceNapi::scaleModeRef_ = nullptr;
 napi_ref ImageSourceNapi::componentTypeRef_ = nullptr;
 napi_ref ImageSourceNapi::decodingDynamicRangeRef_ = nullptr;
 napi_ref ImageSourceNapi::decodingResolutionQualityRef_ = nullptr;
+napi_ref ImageSourceNapi::decodingAllocatorTypeRef_ = nullptr;
 
 static std::mutex imageSourceCrossThreadMutex_;
 
@@ -358,6 +362,17 @@ static std::vector<struct ImageEnum> sDecodingResolutionQualityMap = {
     {"LOW", 1, ""},
     {"MEDIUM", 2, ""},
     {"HIGH", 3, ""},
+};
+static std::vector<struct ImageEnum> sAllocatorType = {
+    {"AUTO", 0, ""},
+    {"DMA", 1, ""},
+    {"SHARE_MEMORY", 2, ""},
+};
+
+enum class DecodeAllocatorType : int32_t {
+    AUTO = 0,
+    DMA = 1,
+    SHARE_MEMORY = 2
 };
 
 static std::string GetStringArgument(napi_env env, napi_value value)
@@ -777,6 +792,8 @@ std::vector<napi_property_descriptor> ImageSourceNapi::RegisterNapi()
         DECLARE_NAPI_FUNCTION("createPixelMapList", CreatePixelMapList),
         DECLARE_NAPI_FUNCTION("createPixelMap", CreatePixelMap),
         DECLARE_NAPI_FUNCTION("createPixelMapSync", CreatePixelMapSync),
+        DECLARE_NAPI_FUNCTION("createPixelMapUsingAllocator", CreatePixelMapUsingAllocator),
+        DECLARE_NAPI_FUNCTION("createPixelMapUsingAllocatorSync", CreatePixelMapUsingAllocatorSync),
         DECLARE_NAPI_FUNCTION("updateData", UpdateData),
         DECLARE_NAPI_FUNCTION("release", Release),
         DECLARE_NAPI_GETTER("supportedFormats", GetSupportedFormats),
@@ -806,6 +823,8 @@ napi_value ImageSourceNapi::Init(napi_env env, napi_value exports)
             CreateEnumTypeObject(env, napi_number, &decodingDynamicRangeRef_, sDecodingDynamicRangeMap)),
         DECLARE_NAPI_PROPERTY("ResolutionQuality",
             CreateEnumTypeObject(env, napi_number, &decodingResolutionQualityRef_, sDecodingResolutionQualityMap)),
+        DECLARE_NAPI_PROPERTY("AllocatorType",
+            CreateEnumTypeObject(env, napi_number, &decodingAllocatorTypeRef_, sAllocatorType)),
     };
 
     struct ImageConstructorInfo info = {
@@ -1028,6 +1047,20 @@ static PixelFormat ParsePixlForamt(int32_t val)
     }
 
     return PixelFormat::UNKNOWN;
+}
+
+static AllocatorType ConvertAllocatorType(std::shared_ptr<ImageSource> imageSource, DecodeAllocatorType allocatorType,
+    DecodeOptions decodeOpts)
+{
+    switch (allocatorType) {
+        case DecodeAllocatorType::DMA:
+            return AllocatorType::DMA_ALLOC;
+        case DecodeAllocatorType::SHARE_MEMORY:
+            return AllocatorType::SHARE_MEM_ALLOC;
+        case DecodeAllocatorType::AUTO:
+        default:
+            return imageSource->ConvertAutoAllocatorType(decodeOpts);
+    }
 }
 
 static ResolutionQuality ParseResolutionQuality(napi_env env, napi_value root)
@@ -1577,6 +1610,24 @@ static void CreatePixelMapExecute(napi_env env, void *data)
     IMAGE_LOGD("CreatePixelMapExecute OUT");
 }
 
+static void CreatePixelMapUsingAllocatorExecute(napi_env env, void *data)
+{
+    if (data == nullptr) {
+        IMAGE_LOGE("data is nullptr");
+        return;
+    }
+    auto context = static_cast<ImageSourceAsyncContext*>(data);
+    if (context == nullptr) {
+        IMAGE_LOGE("empty context");
+        return;
+    }
+    context->rPixelMap = CreatePixelMapInner(context->constructor_, context->rImageSource,
+        context->index, context->decodeOpts, context->status);
+    if (context->status != SUCCESS) {
+        context->errMsgArray.insert({IMAGE_DECODE_FAILED, "CreatePixelMapUsingAllocator failed"});
+    }
+}
+
 static void CreatePixelMapComplete(napi_env env, napi_status status, void *data)
 {
     IMAGE_LOGD("CreatePixelMapComplete IN");
@@ -1603,6 +1654,21 @@ static napi_value CreatePixelMapCompleteSync(napi_env env, napi_status status, I
         napi_get_undefined(env, &result);
     }
     IMAGE_LOGD("CreatePixelMapCompleteSync OUT");
+    return result;
+}
+
+static napi_value CreatePixelMapAllocatorTypeCompleteSync(napi_env env, napi_status status,
+    ImageSourceSyncContext *context)
+{
+    napi_value result = nullptr;
+    if (!context->errMsg.empty()) {
+        ImageNapiUtils::ThrowExceptionError(env, IMAGE_DECODE_FAILED, "CreatePixelMapUsingAllocatorTypeSync failed");
+    }
+    if (context->status == SUCCESS) {
+        result = PixelMapNapi::CreatePixelMap(env, context->rPixelMap);
+    } else {
+        napi_get_undefined(env, &result);
+    }
     return result;
 }
 
@@ -1706,6 +1772,123 @@ napi_value ImageSourceNapi::CreatePixelMapSync(napi_env env, napi_callback_info 
 
     IMG_NAPI_CHECK_RET_D(IMG_IS_OK(status),
         nullptr, IMAGE_LOGE("fail to create PixelMap"));
+    return result;
+}
+
+napi_value ImageSourceNapi::CreatePixelMapUsingAllocator(napi_env env, napi_callback_info info)
+{
+    napi_value result = nullptr;
+    napi_get_undefined(env, &result);
+
+    napi_status status;
+    napi_value thisVar = nullptr;
+    napi_value argValue[TWO_ARGS] = {0};
+    size_t argCount = TWO_ARGS;
+    IMG_JS_ARGS(env, info, status, argCount, argValue, thisVar);
+    IMG_NAPI_CHECK_RET_D(IMG_IS_READY(status, thisVar), nullptr, IMAGE_LOGE("Fail to get thisVar."));
+    IMG_NAPI_CHECK_RET_D(IMG_IS_OK(status), nullptr, IMAGE_LOGE("Fail to napi_get_cb_info."));
+    std::unique_ptr<ImageSourceAsyncContext> asyncContext = std::make_unique<ImageSourceAsyncContext>();
+    status = napi_unwrap(env, thisVar, reinterpret_cast<void**>(&asyncContext->constructor_));
+    IMG_NAPI_CHECK_RET_D(IMG_IS_READY(status, asyncContext->constructor_),
+        nullptr, IMAGE_LOGE("Fail to unwrap context."));
+    IMG_NAPI_CHECK_RET_D(IMG_IS_READY(status, asyncContext->constructor_->nativeImgSrc),
+        nullptr, IMAGE_LOGE("Fail to unwrap nativeImgSrc."));
+    asyncContext->rImageSource = asyncContext->constructor_->nativeImgSrc;
+    IMG_NAPI_CHECK_RET_D(IMG_IS_READY(status, asyncContext->rImageSource),
+        nullptr, IMAGE_LOGE("Empty native rImageSource."));
+
+    if (argCount > 0) {
+        if (ImageNapiUtils::getType(env, argValue[DECODE_OPTS_INDEX_0]) == napi_object) {
+            if (!ParseDecodeOptions(env, argValue[DECODE_OPTS_INDEX_0], &(asyncContext->decodeOpts),
+                &(asyncContext->index), asyncContext->errMsg)) {
+                IMAGE_LOGE("DecodeOptions mismatch");
+                return ImageNapiUtils::ThrowExceptionError(env, IMAGE_BAD_PARAMETER,
+                    "DecodeOptions mismatch.");
+            }
+        } else {
+            return ImageNapiUtils::ThrowExceptionError(env, IMAGE_BAD_PARAMETER, "DecodingOption type does not match.");
+        }
+    }
+    int32_t allocatorType = 0;
+    if (argCount == TWO_ARGS) {
+        if (ImageNapiUtils::getType(env, argValue[ALLOCATOR_TYPE_INDEX_1]) == napi_number) {
+            napi_get_value_int32(env, argValue[ALLOCATOR_TYPE_INDEX_1], &allocatorType);
+        } else {
+            return ImageNapiUtils::ThrowExceptionError(env, IMAGE_BAD_PARAMETER, "AllocatorType type does not match.");
+        }
+    }
+    asyncContext->decodeOpts.isAppUseAllocator = true;
+    asyncContext->decodeOpts.allocatorType = ConvertAllocatorType(asyncContext->rImageSource,
+        DecodeAllocatorType(allocatorType), asyncContext->decodeOpts);
+    if (asyncContext->decodeOpts.allocatorType == AllocatorType::SHARE_MEM_ALLOC &&
+        asyncContext->rImageSource->IsDecodeHdrImage(asyncContext->decodeOpts)) {
+        return ImageNapiUtils::ThrowExceptionError(env, IMAGE_UNSUPPORTED_OPERATION, "Unsupported operation.");
+    }
+    IMAGE_LOGD("%{public}s allocator type is %{public}d.", __func__, asyncContext->decodeOpts.allocatorType);
+    napi_create_promise(env, &(asyncContext->deferred), &result);
+    ImageNapiUtils::HicheckerReport();
+    IMG_CREATE_CREATE_ASYNC_WORK_WITH_QOS(env, status, "CreatePixelMap", CreatePixelMapUsingAllocatorExecute,
+        CreatePixelMapComplete, asyncContext, asyncContext->work, napi_qos_user_initiated);
+    IMG_NAPI_CHECK_RET_D(IMG_IS_OK(status), nullptr, IMAGE_LOGE("Fail to create async work."));
+    return result;
+}
+
+napi_value ImageSourceNapi::CreatePixelMapUsingAllocatorSync(napi_env env, napi_callback_info info)
+{
+    napi_value result = nullptr;
+    napi_get_undefined(env, &result);
+
+    napi_status status;
+    napi_value thisVar = nullptr;
+    napi_value argValue[TWO_ARGS] = {0};
+    size_t argCount = TWO_ARGS;
+    IMG_JS_ARGS(env, info, status, argCount, argValue, thisVar);
+    IMG_NAPI_CHECK_RET_D(IMG_IS_READY(status, thisVar), nullptr, IMAGE_LOGE("Fail to get thisVar."));
+    IMG_NAPI_CHECK_RET_D(IMG_IS_OK(status), nullptr, IMAGE_LOGE("Fail to napi_get_cb_info."));
+
+    std::unique_ptr<ImageSourceSyncContext> syncContext = std::make_unique<ImageSourceSyncContext>();
+    status = napi_unwrap(env, thisVar, reinterpret_cast<void**>(&syncContext->constructor_));
+    IMG_NAPI_CHECK_RET_D(IMG_IS_READY(status, syncContext->constructor_),
+        nullptr, IMAGE_LOGE("Fail to unwrap context."));
+    IMG_NAPI_CHECK_RET_D(IMG_IS_READY(status, syncContext->constructor_->nativeImgSrc),
+        nullptr, IMAGE_LOGE("Fail to unwrap nativeImgSrc."));
+    if (argCount > 0) {
+        if (ImageNapiUtils::getType(env, argValue[DECODE_OPTS_INDEX_0]) == napi_object) {
+            if (!ParseDecodeOptions(env, argValue[DECODE_OPTS_INDEX_0], &(syncContext->decodeOpts),
+                &(syncContext->index), syncContext->errMsg)) {
+                IMAGE_LOGE("DecodeOptions mismatch");
+                return ImageNapiUtils::ThrowExceptionError(env, IMAGE_BAD_PARAMETER,
+                    "DecodeOptions mismatch.");
+            }
+        } else {
+            return ImageNapiUtils::ThrowExceptionError(env, IMAGE_BAD_PARAMETER, "DecodingOption type does not match.");
+        }
+    }
+    int32_t allocatorType = 0;
+    if (argCount == TWO_ARGS) {
+        if (ImageNapiUtils::getType(env, argValue[ALLOCATOR_TYPE_INDEX_1]) == napi_number) {
+            napi_get_value_int32(env, argValue[ALLOCATOR_TYPE_INDEX_1], &allocatorType);
+        } else {
+            return ImageNapiUtils::ThrowExceptionError(env, IMAGE_BAD_PARAMETER, "AllocatorType type does not match.");
+        }
+    }
+    syncContext->decodeOpts.isAppUseAllocator = true;
+    syncContext->decodeOpts.allocatorType = ConvertAllocatorType(syncContext->constructor_->nativeImgSrc,
+        DecodeAllocatorType(allocatorType), syncContext->decodeOpts);
+    if (syncContext->decodeOpts.allocatorType == AllocatorType::SHARE_MEM_ALLOC &&
+        syncContext->constructor_->nativeImgSrc->IsDecodeHdrImage(syncContext->decodeOpts)) {
+        return ImageNapiUtils::ThrowExceptionError(env, IMAGE_UNSUPPORTED_OPERATION, "Unsupported operation.");
+    }
+    IMAGE_LOGI("%{public}s allocator type is %{public}d.", __func__, syncContext->decodeOpts.allocatorType);
+    syncContext->rPixelMap = CreatePixelMapInner(syncContext->constructor_, syncContext->constructor_->nativeImgSrc,
+        syncContext->index, syncContext->decodeOpts, syncContext->status);
+    if (syncContext->status != SUCCESS) {
+        syncContext->errMsg = "Create PixelMap using allocator error.";
+    }
+    result = CreatePixelMapAllocatorTypeCompleteSync(env, status,
+        static_cast<ImageSourceSyncContext*>((syncContext).get()));
+
+    IMG_NAPI_CHECK_RET_D(IMG_IS_OK(status), nullptr, IMAGE_LOGE("Fail to create PixelMap."));
     return result;
 }
 
