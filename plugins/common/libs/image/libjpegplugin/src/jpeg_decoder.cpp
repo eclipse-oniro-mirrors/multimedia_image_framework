@@ -1104,7 +1104,7 @@ uint32_t JpegDecoder::GetFilterArea(const int &privacyType, std::vector<std::pai
 }
 
 #ifdef IMAGE_COLORSPACE_FLAG
-OHOS::ColorManager::ColorSpace JpegDecoder::getGrColorSpace()
+OHOS::ColorManager::ColorSpace JpegDecoder::GetPixelMapColorSpace()
 {
     OHOS::ColorManager::ColorSpace grColorSpace = iccProfileInfo_.getGrColorSpace();
     return grColorSpace;
