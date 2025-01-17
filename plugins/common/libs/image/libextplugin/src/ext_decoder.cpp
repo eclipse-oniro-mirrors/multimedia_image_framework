@@ -274,7 +274,7 @@ uint32_t ExtDecoder::DmaMemAlloc(DecodeContext &context, uint64_t count, SkImage
     BufferRequestConfig requestConfig = CreateDmaRequestConfig(dstInfo, count, context.info.pixelFormat);
     if (outputColorFmt_ == PIXEL_FMT_YCRCB_420_SP) {
         requestConfig.format = GRAPHIC_PIXEL_FMT_YCRCB_420_SP;
-        if (IsSupportHardwareDecode() && !context.hwDecodeFailed) {
+        if (IsSupportHardwareDecode() && !hwDecodeFailed_) {
             requestConfig.usage |= BUFFER_USAGE_VENDOR_PRI16; // height is 64-bytes aligned
         }
         IMAGE_LOGD("ExtDecoder::DmaMemAlloc desiredFormat is NV21");
@@ -845,7 +845,7 @@ uint32_t ExtDecoder::DoHardWareDecode(DecodeContext &context)
     if (HardWareDecode(context) == SUCCESS) {
         return SUCCESS;
     }
-    context.hwDecodeFailed = true;
+    hwDecodeFailed_ = true;
     return ERROR;
 }
 #endif

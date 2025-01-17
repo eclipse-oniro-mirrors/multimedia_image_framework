@@ -166,6 +166,8 @@ private:
     // hdr
     Media::ImageHdrType hdrType_ = Media::ImageHdrType::UNKNOWN;
     uint32_t gainMapOffset_ = 0;
+    // Hard Decode failed.
+    bool hwDecodeFailed_ = false;
 };
 } // namespace ImagePlugin
 } // namespace OHOS

@@ -18,6 +18,7 @@
 #include "image_common.h"
 #include "image_log.h"
 #include "image_napi_utils.h"
+#include "jpeg_decoder_yuv.h"
 #include "media_errors.h"
 #include "string_ex.h"
 #include "image_trace.h"
@@ -72,6 +73,8 @@ napi_ref ImageSourceNapi::decodingResolutionQualityRef_ = nullptr;
 napi_ref ImageSourceNapi::decodingAllocatorTypeRef_ = nullptr;
 
 static std::mutex imageSourceCrossThreadMutex_;
+
+using JpegYuvDecodeError = OHOS::ImagePlugin::JpegYuvDecodeError;
 
 struct RawFileDescriptorInfo {
     int32_t fd = INVALID_FD;
@@ -131,6 +134,7 @@ struct ImageSourceSyncContext {
     DecodeOptions decodeOpts;
     std::shared_ptr<PixelMap> rPixelMap;
     std::string errMsg;
+    std::multimap<std::int32_t, std::string> errMsgArray;
 };
 
 struct ImageEnum {
@@ -380,6 +384,71 @@ enum class DecodeAllocatorType : int32_t {
     SHARE_MEMORY = 2
 };
 
+static const std::map<int32_t, Image_ErrorCode> ERROR_CODE_MAP = {
+    {ERR_IMAGE_INVALID_PARAMETER, Image_ErrorCode::IMAGE_BAD_PARAMETER},
+    {COMMON_ERR_INVALID_PARAMETER, Image_ErrorCode::IMAGE_BAD_PARAMETER},
+    {JpegYuvDecodeError::JpegYuvDecodeError_InvalidParameter, Image_ErrorCode::IMAGE_BAD_PARAMETER},
+    {ERR_IMAGE_SOURCE_DATA, Image_ErrorCode::IMAGE_BAD_SOURCE},
+    {ERR_IMAGE_SOURCE_DATA_INCOMPLETE, Image_ErrorCode::IMAGE_BAD_SOURCE},
+    {JpegYuvDecodeError::JpegYuvDecodeError_BadImage, Image_ErrorCode::IMAGE_BAD_SOURCE},
+    {ERR_IMAGE_MISMATCHED_FORMAT, Image_ErrorCode::IMAGE_SOURCE_UNSUPPORTED_MIMETYPE},
+    {ERR_IMAGE_UNKNOWN_FORMAT, Image_ErrorCode::IMAGE_SOURCE_UNSUPPORTED_MIMETYPE},
+    {ERR_IMAGE_DECODE_HEAD_ABNORMAL, Image_ErrorCode::IMAGE_SOURCE_UNSUPPORTED_MIMETYPE},
+    {ERR_IMAGE_TOO_LARGE, Image_ErrorCode::IMAGE_SOURCE_TOO_LARGE},
+    {ERR_MEDIA_INVALID_OPERATION, Image_ErrorCode::IMAGE_SOURCE_UNSUPPORTED_OPERATION},
+    {IMAGE_RESULT_FORMAT_CONVERT_FAILED, Image_ErrorCode::IMAGE_SOURCE_UNSUPPORTED_CONVERSION},
+    {ERR_MEDIA_FORMAT_UNSUPPORT, Image_ErrorCode::IMAGE_SOURCE_UNSUPPORTED_CONVERSION},
+    {JpegYuvDecodeError::JpegYuvDecodeError_ConvertError, Image_ErrorCode::IMAGE_SOURCE_UNSUPPORTED_CONVERSION},
+    {ERR_IMAGE_CROP, Image_ErrorCode::IMAGE_SOURCE_INVALID_REGION},
+    {ERR_IMAGE_DECODE_FAILED, Image_ErrorCode::IMAGE_DECODE_FAILED},
+    {ERR_IMAGE_DECODE_ABNORMAL, Image_ErrorCode::IMAGE_DECODE_FAILED},
+    {ERR_IMAGE_GET_DATA_ABNORMAL, Image_ErrorCode::IMAGE_DECODE_FAILED},
+    {ERR_IMAGE_PLUGIN_CREATE_FAILED, Image_ErrorCode::IMAGE_DECODE_FAILED},
+    {JpegYuvDecodeError::JpegYuvDecodeError_DecodeFailed, Image_ErrorCode::IMAGE_DECODE_FAILED},
+    {JpegYuvDecodeError::JpegYuvDecodeError_MemoryNotEnoughToSaveResult, Image_ErrorCode::IMAGE_DECODE_FAILED},
+    {ERR_IMAGE_MALLOC_ABNORMAL, Image_ErrorCode::IMAGE_SOURCE_ALLOC_FAILED},
+    {ERR_IMAGE_DATA_UNSUPPORT, Image_ErrorCode::IMAGE_SOURCE_ALLOC_FAILED},
+    {ERR_DMA_NOT_EXIST, Image_ErrorCode::IMAGE_SOURCE_ALLOC_FAILED},
+    {ERR_DMA_DATA_ABNORMAL, Image_ErrorCode::IMAGE_SOURCE_ALLOC_FAILED},
+    {ERR_SHAMEM_DATA_ABNORMAL, Image_ErrorCode::IMAGE_SOURCE_ALLOC_FAILED}
+};
+
+static const std::map<Image_ErrorCode, std::string> ERROR_CODE_MESSAGE_MAP = {
+    {Image_ErrorCode::IMAGE_BAD_PARAMETER, "Parameter error. Possible causes:"
+        "1.Mandatory parameters are left unspecified. 2.Incorrect parameter types. 3.Parameter verification failed."},
+    {Image_ErrorCode::IMAGE_BAD_SOURCE, "Bad source."},
+    {Image_ErrorCode::IMAGE_SOURCE_UNSUPPORTED_MIMETYPE, "Unsupported mimetype."},
+    {Image_ErrorCode::IMAGE_SOURCE_TOO_LARGE, "Image too large."},
+    {Image_ErrorCode::IMAGE_SOURCE_UNSUPPORTED_OPERATION, "Unsupported operation. e.g.,"
+        "use share memory to decode a HDR image as only DMA supported hdr metadata."},
+    {Image_ErrorCode::IMAGE_SOURCE_UNSUPPORTED_CONVERSION, "Unsupported conversion. e.g.,"
+        "try to convert the original image into desired colorspace."},
+    {Image_ErrorCode::IMAGE_SOURCE_INVALID_REGION, "Invalid region."},
+    {Image_ErrorCode::IMAGE_DECODE_FAILED, "Decode failed."},
+    {Image_ErrorCode::IMAGE_SOURCE_ALLOC_FAILED, "Memory allocation failed."},
+    {Image_ErrorCode::IMAGE_SOURCE_UNKNOWN_ERROR, "Unknown error."}
+};
+
+static Image_ErrorCode ConvertToErrorCode(int32_t errorCode)
+{
+    Image_ErrorCode apiErrorCode = Image_ErrorCode::IMAGE_SOURCE_UNKNOWN_ERROR;
+    auto iter = ERROR_CODE_MAP.find(errorCode);
+    if (iter != ERROR_CODE_MAP.end()) {
+        apiErrorCode = iter->second;
+    }
+    return apiErrorCode;
+}
+
+static std::string GetErrorCodeMsg(Image_ErrorCode apiErrorCode)
+{
+    std::string errMsg = "Unknown error.";
+    auto iter = ERROR_CODE_MESSAGE_MAP.find(apiErrorCode);
+    if (iter != ERROR_CODE_MESSAGE_MAP.end()) {
+        errMsg = iter->second;
+    }
+    return errMsg;
+}
+
 static std::string GetStringArgument(napi_env env, napi_value value)
 {
     std::string strValue = "";
@@ -448,9 +517,8 @@ static void ImageSourceCallbackRoutine(napi_env env, ImageSourceAsyncContext* &c
     if (context->status == SUCCESS) {
         result[NUM_1] = valueParam;
     } else if (context->errMsgArray.size() > 0) {
-        auto iter = context->errMsgArray.find(IMAGE_DECODE_FAILED);
-        if (iter != context->errMsgArray.end()) {
-            ImageNapiUtils::CreateErrorObj(env, result[NUM_0], iter->first, iter->second);
+        for (const auto &[errorCode, errMsg] : context->errMsgArray) {
+            ImageNapiUtils::CreateErrorObj(env, result[NUM_0], errorCode, errMsg);
         }
     } else if (context->errMsg.size() > 0) {
         napi_create_string_utf8(env, context->errMsg.c_str(), NAPI_AUTO_LENGTH, &result[NUM_0]);
@@ -1655,7 +1723,9 @@ static void CreatePixelMapUsingAllocatorExecute(napi_env env, void *data)
     context->rPixelMap = CreatePixelMapInner(context->constructor_, context->rImageSource,
         context->index, context->decodeOpts, context->status);
     if (context->status != SUCCESS) {
-        context->errMsgArray.insert({IMAGE_DECODE_FAILED, "CreatePixelMapUsingAllocator failed"});
+        Image_ErrorCode apiErrorCode = ConvertToErrorCode(context->status);
+        std::string apiErrorMsg = GetErrorCodeMsg(apiErrorCode);
+        context->errMsgArray.emplace(apiErrorCode, apiErrorMsg);
     }
 }
 
@@ -1692,8 +1762,8 @@ static napi_value CreatePixelMapAllocatorTypeCompleteSync(napi_env env, napi_sta
     ImageSourceSyncContext *context)
 {
     napi_value result = nullptr;
-    if (!context->errMsg.empty()) {
-        ImageNapiUtils::ThrowExceptionError(env, IMAGE_DECODE_FAILED, "CreatePixelMapUsingAllocatorTypeSync failed");
+    for (const auto &[errorCode, errMsg] : context->errMsgArray) {
+        ImageNapiUtils::ThrowExceptionError(env, errorCode, errMsg);
     }
     if (context->status == SUCCESS) {
         result = PixelMapNapi::CreatePixelMap(env, context->rPixelMap);
@@ -1806,6 +1876,17 @@ napi_value ImageSourceNapi::CreatePixelMapSync(napi_env env, napi_callback_info 
     return result;
 }
 
+bool CheckAndSetAllocatorType(std::shared_ptr<ImageSource> imageSource, DecodeOptions &decodeOpts,
+    int32_t allocatorType)
+{
+    decodeOpts.isAppUseAllocator = true;
+    decodeOpts.allocatorType = ConvertAllocatorType(imageSource, DecodeAllocatorType(allocatorType), decodeOpts);
+    if (decodeOpts.allocatorType == AllocatorType::SHARE_MEM_ALLOC && imageSource->IsDecodeHdrImage(decodeOpts)) {
+        return false;
+    }
+    return true;
+}
+
 napi_value ImageSourceNapi::CreatePixelMapUsingAllocator(napi_env env, napi_callback_info info)
 {
     napi_value result = nullptr;
@@ -1848,11 +1929,7 @@ napi_value ImageSourceNapi::CreatePixelMapUsingAllocator(napi_env env, napi_call
             return ImageNapiUtils::ThrowExceptionError(env, IMAGE_BAD_PARAMETER, "AllocatorType type does not match.");
         }
     }
-    asyncContext->decodeOpts.isAppUseAllocator = true;
-    asyncContext->decodeOpts.allocatorType = ConvertAllocatorType(asyncContext->rImageSource,
-        DecodeAllocatorType(allocatorType), asyncContext->decodeOpts);
-    if (asyncContext->decodeOpts.allocatorType == AllocatorType::SHARE_MEM_ALLOC &&
-        asyncContext->rImageSource->IsDecodeHdrImage(asyncContext->decodeOpts)) {
+    if (!CheckAndSetAllocatorType(asyncContext->rImageSource, asyncContext->decodeOpts, allocatorType)) {
         return ImageNapiUtils::ThrowExceptionError(env, IMAGE_UNSUPPORTED_OPERATION, "Unsupported operation.");
     }
     IMAGE_LOGD("%{public}s allocator type is %{public}d.", __func__, asyncContext->decodeOpts.allocatorType);
@@ -1903,18 +1980,16 @@ napi_value ImageSourceNapi::CreatePixelMapUsingAllocatorSync(napi_env env, napi_
             return ImageNapiUtils::ThrowExceptionError(env, IMAGE_BAD_PARAMETER, "AllocatorType type does not match.");
         }
     }
-    syncContext->decodeOpts.isAppUseAllocator = true;
-    syncContext->decodeOpts.allocatorType = ConvertAllocatorType(syncContext->constructor_->nativeImgSrc,
-        DecodeAllocatorType(allocatorType), syncContext->decodeOpts);
-    if (syncContext->decodeOpts.allocatorType == AllocatorType::SHARE_MEM_ALLOC &&
-        syncContext->constructor_->nativeImgSrc->IsDecodeHdrImage(syncContext->decodeOpts)) {
+    if (!CheckAndSetAllocatorType(syncContext->constructor_->nativeImgSrc, syncContext->decodeOpts, allocatorType)) {
         return ImageNapiUtils::ThrowExceptionError(env, IMAGE_UNSUPPORTED_OPERATION, "Unsupported operation.");
     }
     IMAGE_LOGI("%{public}s allocator type is %{public}d.", __func__, syncContext->decodeOpts.allocatorType);
     syncContext->rPixelMap = CreatePixelMapInner(syncContext->constructor_, syncContext->constructor_->nativeImgSrc,
         syncContext->index, syncContext->decodeOpts, syncContext->status);
     if (syncContext->status != SUCCESS) {
-        syncContext->errMsg = "Create PixelMap using allocator error.";
+        Image_ErrorCode apiErrorCode = ConvertToErrorCode(syncContext->status);
+        std::string apiErrorMsg = GetErrorCodeMsg(apiErrorCode);
+        syncContext->errMsgArray.emplace(apiErrorCode, apiErrorMsg);
     }
     result = CreatePixelMapAllocatorTypeCompleteSync(env, status,
         static_cast<ImageSourceSyncContext*>((syncContext).get()));

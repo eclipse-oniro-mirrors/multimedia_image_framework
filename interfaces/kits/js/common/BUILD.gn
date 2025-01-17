@@ -37,6 +37,7 @@ config("image_external_config") {
     "//foundation/multimedia/image_framework/interfaces/kits/native/include",
     "${image_subsystem}/interfaces/kits/js/common/include/sendable",
     "${image_subsystem}/interfaces/kits/native/include/image",
+    "${image_subsystem}/plugins/common/libs/image/libextplugin/include/jpeg_yuv_decoder",
   ]
 
   include_dirs += [
@@ -239,7 +240,7 @@ if (use_clang_ios) {
       "-DIMAGE_DEBUG_FLAG",
       "-DIMAGE_COLORSPACE_FLAG",
     ]
-    external_deps = []
+    external_deps = [ "skia:libjpeg" ]
 
     if (use_clang_android) {
       defines = image_decode_android_defines
