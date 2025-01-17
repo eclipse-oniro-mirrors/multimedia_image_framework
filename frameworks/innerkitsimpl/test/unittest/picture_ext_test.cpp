@@ -231,6 +231,50 @@ HWTEST_F(PictureExtTest, CreatePicture003, TestSize.Level3)
     ASSERT_NE(picture, nullptr);
 }
 
+/**
+ * @tc.name: CreatePicture004
+ * @tc.desc: Verifies that the ImageSource class can create a Picture object from a JPEG image
+ *           with the specified format hint and pixelFormat is NV21.
+ * @tc.type: FUNC
+ */
+HWTEST_F(PictureExtTest, CreatePicture004, TestSize.Level3)
+{
+    uint32_t errorCode = -1;
+    SourceOptions sourceOpts;
+    sourceOpts.formatHint = "image/jpeg";
+    std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(IMAGE_JPEG_SRC, sourceOpts, errorCode);
+    ASSERT_NE(imageSource, nullptr);
+    DecodingOptionsForPicture opts;
+    opts.desiredPixelFormat = PixelFormat::NV21;
+    std::unique_ptr<Picture> picture = imageSource->CreatePicture(opts, errorCode);
+    ASSERT_NE(picture, nullptr);
+    auto mainPixelmap = picture->GetMainPixel();
+    ASSERT_NE(mainPixelmap, nullptr);
+    ASSERT_EQ(mainPixelmap->GetPixelFormat(), PixelFormat::NV21);
+}
+
+/**
+ * @tc.name: CreatePicture005
+ * @tc.desc: Checks the successful creation of an ImageSource and Picture object from a HEIF file
+ *           with default options and pixelFormat is NV12.
+ * @tc.type: FUNC
+ */
+HWTEST_F(PictureExtTest, CreatePicture005, TestSize.Level3)
+{
+    uint32_t errorCode = -1;
+    SourceOptions sourceOpts;
+    sourceOpts.formatHint = "image/heif";
+    std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(IMAGE_HEIF_SRC, sourceOpts, errorCode);
+    ASSERT_NE(imageSource, nullptr);
+    DecodingOptionsForPicture opts;
+    opts.desiredPixelFormat = PixelFormat::NV12;
+    std::unique_ptr<Picture> picture = imageSource->CreatePicture(opts, errorCode);
+    ASSERT_NE(picture, nullptr);
+    auto mainPixelmap = picture->GetMainPixel();
+    ASSERT_NE(mainPixelmap, nullptr);
+    ASSERT_EQ(mainPixelmap->GetPixelFormat(), PixelFormat::NV12);
+}
+
 bool EncodePictureMethodOne(std::shared_ptr<Picture> picture, std::string format, std::string IMAGE_DEST)
 {
     const int fileSize = 1024 * 1024 * 35;  // 35M
