@@ -257,7 +257,8 @@ void JpegDecoderYuv::InitYuvDataOutInfoTo420(uint32_t width, uint32_t height, YU
     }
 }
 
-void JpegDecoderYuv::InitYuvDataOutInfoTo420NV(uint32_t width, uint32_t height, YUVDataInfo &info, const DecodeContext &context)
+void JpegDecoderYuv::InitYuvDataOutInfoTo420NV(uint32_t width, uint32_t height, YUVDataInfo &info,
+    const DecodeContext &context)
 {
     if (width == 0 || height == 0) {
         return;
@@ -538,6 +539,27 @@ bool JpegDecoderYuv::ValidateParameter(YuvPlaneInfo &srcPlaneInfo, ConverterPair
     return true;
 }
 
+void UpdateDestStride(JpegDecoderYuvParameter decodeParameter, const DecodeContext &context, YuvPlaneInfo &dest,
+    uint32_t height)
+{
+    unsigned char* outYData = decodeParameter.yuvBuffer_;
+    if (context.allocatorType == Media::AllocatorType::DMA_ALLOC) {
+        auto surfaceBuffer = reinterpret_cast<SurfaceBuffer *>(context.pixelsBuffer.context);
+        if (surfaceBuffer == nullptr) {
+            IMAGE_LOGE("JpegDecoderYuv surfaceBuffer is nullptr");
+            return;
+        }
+        if (decodeParameter.outfmt_ == JpegYuvFmt::OutFmt_NV12 ||
+            decodeParameter.outfmt_ == JpegYuvFmt::OutFmt_NV21) {
+            dest.planes[UVCOM] = outYData + surfaceBuffer->GetStride() * height;
+            dest.strides[YCOM] = surfaceBuffer->GetStride();
+            dest.strides[UCOM] = surfaceBuffer->GetStride() / STRIDE_DIVISOR;
+            dest.strides[VCOM] = surfaceBuffer->GetStride() / STRIDE_DIVISOR;
+            dest.strides[UVCOM] = surfaceBuffer->GetStride();
+        }
+    }
+}
+
 int JpegDecoderYuv::ConvertFrom4xx(YuvPlaneInfo &srcPlaneInfo, ConverterPair &converter, const DecodeContext &context)
 {
     if (!ValidateParameter(srcPlaneInfo, converter)) {
@@ -573,14 +595,7 @@ int JpegDecoderYuv::ConvertFrom4xx(YuvPlaneInfo &srcPlaneInfo, ConverterPair &co
             JpegDecoderYuv::InitPlaneOutInfoTo420NV(width, height, dest);
             dest.planes[YCOM] = outYData;
             dest.planes[UVCOM] = outUVData;
-            if (context.allocatorType == Media::AllocatorType::DMA_ALLOC) {
-                auto surfaceBuffer = reinterpret_cast<SurfaceBuffer *>(context.pixelsBuffer.context);
-                dest.planes[UVCOM] = outYData + surfaceBuffer->GetStride() * height;
-                dest.strides[YCOM] = surfaceBuffer->GetStride();
-                dest.strides[UCOM] = surfaceBuffer->GetStride() / STRIDE_DIVISOR;
-                dest.strides[VCOM] = surfaceBuffer->GetStride() / STRIDE_DIVISOR;
-                dest.strides[UVCOM] = surfaceBuffer->GetStride();
-            }
+            UpdateDestStride(decodeParameter_, context, dest, height);
             ret = converter.toNV21Func(srcYVU, dest);
             break;
         }
@@ -588,14 +603,7 @@ int JpegDecoderYuv::ConvertFrom4xx(YuvPlaneInfo &srcPlaneInfo, ConverterPair &co
             JpegDecoderYuv::InitPlaneOutInfoTo420NV(width, height, dest);
             dest.planes[YCOM] = outYData;
             dest.planes[UVCOM] = outUVData;
-            if (context.allocatorType == Media::AllocatorType::DMA_ALLOC) {
-                auto surfaceBuffer = reinterpret_cast<SurfaceBuffer *>(context.pixelsBuffer.context);
-                dest.planes[UVCOM] = outYData + surfaceBuffer->GetStride() * height;
-                dest.strides[YCOM] = surfaceBuffer->GetStride();
-                dest.strides[UCOM] = surfaceBuffer->GetStride() / STRIDE_DIVISOR;
-                dest.strides[VCOM] = surfaceBuffer->GetStride() / STRIDE_DIVISOR;
-                dest.strides[UVCOM] = surfaceBuffer->GetStride();
-            }
+            UpdateDestStride(decodeParameter_, context, dest, height);
             ret = converter.toNV21Func(srcPlaneInfo, dest);
             break;
         }

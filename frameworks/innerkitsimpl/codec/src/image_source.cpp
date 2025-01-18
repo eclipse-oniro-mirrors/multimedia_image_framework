@@ -674,6 +674,7 @@ static void NotifyDecodeEvent(set<DecodeListener *> &listeners, DecodeEvent even
 
 bool ImageSource::IsDecodeHdrImage(const DecodeOptions &opts)
 {
+    ParseHdrType();
     return (opts.desiredDynamicRange == DecodeDynamicRange::AUTO && sourceHdrType_ > ImageHdrType::SDR) ||
         opts.desiredDynamicRange == DecodeDynamicRange::HDR;
 }
