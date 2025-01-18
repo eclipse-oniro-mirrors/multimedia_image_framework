@@ -375,6 +375,74 @@ enum class DecodeAllocatorType : int32_t {
     SHARE_MEMORY = 2
 };
 
+static const std::map<int32_t, Image_ErrorCode> ERROR_CODE_MAP = {
+    {ERR_IMAGE_INVALID_PARAMETER, Image_ErrorCode::IMAGE_BAD_PARAMETER},
+    {COMMON_ERR_INVALID_PARAMETER, Image_ErrorCode::IMAGE_BAD_PARAMETER},
+    {JpegYuvDecodeError::JpegYuvDecodeError_InvalidParameter, Image_ErrorCode::IMAGE_BAD_PARAMETER},
+    {ERR_IMAGE_SOURCE_DATA, Image_ErrorCode::IMAGE_BAD_SOURCE},
+    {ERR_IMAGE_SOURCE_DATA_INCOMPLETE, Image_ErrorCode::IMAGE_BAD_SOURCE},
+    {ERR_IMAGE_GET_DATA_ABNORMAL, Image_ErrorCode::IMAGE_BAD_SOURCE},
+    {ERR_IMAGE_DATA_ABNORMAL, Image_ErrorCode::IMAGE_BAD_SOURCE},
+    {ERROR, Image_ErrorCode::IMAGE_BAD_SOURCE},
+    {JpegYuvDecodeError::JpegYuvDecodeError_BadImage, Image_ErrorCode::IMAGE_BAD_SOURCE},
+    {ERR_IMAGE_MISMATCHED_FORMAT, Image_ErrorCode::IMAGE_SOURCE_UNSUPPORTED_MIMETYPE},
+    {ERR_IMAGE_UNKNOWN_FORMAT, Image_ErrorCode::IMAGE_SOURCE_UNSUPPORTED_MIMETYPE},
+    {ERR_IMAGE_DECODE_HEAD_ABNORMAL, Image_ErrorCode::IMAGE_SOURCE_UNSUPPORTED_MIMETYPE},
+    {ERR_IMAGE_TOO_LARGE, Image_ErrorCode::IMAGE_SOURCE_TOO_LARGE},
+    {ERR_MEDIA_INVALID_OPERATION, Image_ErrorCode::IMAGE_SOURCE_UNSUPPORTED_ALLOCATOR_TYPE},
+    {IMAGE_RESULT_FORMAT_CONVERT_FAILED, Image_ErrorCode::IMAGE_SOURCE_UNSUPPORTED_OPTIONS},
+    {ERR_MEDIA_FORMAT_UNSUPPORT, Image_ErrorCode::IMAGE_SOURCE_UNSUPPORTED_OPTIONS},
+    {ERR_IMAGE_PIXELMAP_CREATE_FAILED, Image_ErrorCode::IMAGE_SOURCE_UNSUPPORTED_OPTIONS},
+    {JpegYuvDecodeError::JpegYuvDecodeError_ConvertError, Image_ErrorCode::IMAGE_SOURCE_UNSUPPORTED_OPTIONS},
+    {ERR_IMAGE_CROP, Image_ErrorCode::IMAGE_SOURCE_UNSUPPORTED_OPTIONS},
+    {ERR_IMAGE_DECODE_FAILED, Image_ErrorCode::IMAGE_DECODE_FAILED},
+    {ERR_IMAGE_DECODE_ABNORMAL, Image_ErrorCode::IMAGE_DECODE_FAILED},
+    {ERR_IMAGE_PLUGIN_CREATE_FAILED, Image_ErrorCode::IMAGE_DECODE_FAILED},
+    {JpegYuvDecodeError::JpegYuvDecodeError_DecodeFailed, Image_ErrorCode::IMAGE_DECODE_FAILED},
+    {JpegYuvDecodeError::JpegYuvDecodeError_MemoryNotEnoughToSaveResult, Image_ErrorCode::IMAGE_DECODE_FAILED},
+    {ERR_IMAGE_MALLOC_ABNORMAL, Image_ErrorCode::IMAGE_SOURCE_ALLOC_FAILED},
+    {ERR_IMAGE_DATA_UNSUPPORT, Image_ErrorCode::IMAGE_SOURCE_ALLOC_FAILED},
+    {ERR_DMA_NOT_EXIST, Image_ErrorCode::IMAGE_SOURCE_ALLOC_FAILED},
+    {ERR_DMA_DATA_ABNORMAL, Image_ErrorCode::IMAGE_SOURCE_ALLOC_FAILED},
+    {ERR_SHAMEM_DATA_ABNORMAL, Image_ErrorCode::IMAGE_SOURCE_ALLOC_FAILED}
+};
+
+static const std::map<Image_ErrorCode, std::string> ERROR_CODE_MESSAGE_MAP = {
+    {Image_ErrorCode::IMAGE_BAD_PARAMETER, "Parameter error. Possible causes:"
+        "1.Mandatory parameters are left unspecified. 2.Incorrect parameter types. 3.Parameter verification failed."},
+    {Image_ErrorCode::IMAGE_BAD_SOURCE, "Bad source. e.g.,1.Image has invalid width or height."
+        "2.Image source incomplete. 3.Read image data failed. 4. Codec create failed."
+        "5.The sourceOption specifies an odd width, causing the YUV420 PixelMap conversion to RGBA failed."},
+    {Image_ErrorCode::IMAGE_SOURCE_UNSUPPORTED_MIMETYPE, "Unsupported mimetype."},
+    {Image_ErrorCode::IMAGE_SOURCE_TOO_LARGE, "Image too large."},
+    {Image_ErrorCode::IMAGE_SOURCE_UNSUPPORTED_ALLOCATOR_TYPE, "Unsupported allocator type. e.g.,"
+        "use share memory to decode a HDR image as only DMA supported hdr metadata."},
+    {Image_ErrorCode::IMAGE_SOURCE_UNSUPPORTED_OPTIONS, "Unsupported options. e.g.,"
+        "1.Convert image into desired pixelFormat failed. 2.Crop pixelMap failed."},
+    {Image_ErrorCode::IMAGE_DECODE_FAILED, "Decode failed. e.g.,Decode image header failed."},
+    {Image_ErrorCode::IMAGE_SOURCE_ALLOC_FAILED, "Memory allocation failed."}
+};
+
+static Image_ErrorCode ConvertToErrorCode(int32_t errorCode)
+{
+    Image_ErrorCode apiErrorCode = Image_ErrorCode::IMAGE_DECODE_FAILED;
+    auto iter = ERROR_CODE_MAP.find(errorCode);
+    if (iter != ERROR_CODE_MAP.end()) {
+        apiErrorCode = iter->second;
+    }
+    return apiErrorCode;
+}
+
+static std::string GetErrorCodeMsg(Image_ErrorCode apiErrorCode)
+{
+    std::string errMsg = "Decode failed.";
+    auto iter = ERROR_CODE_MESSAGE_MAP.find(apiErrorCode);
+    if (iter != ERROR_CODE_MESSAGE_MAP.end()) {
+        errMsg = iter->second;
+    }
+    return errMsg;
+}
+
 static std::string GetStringArgument(napi_env env, napi_value value)
 {
     std::string strValue = "";

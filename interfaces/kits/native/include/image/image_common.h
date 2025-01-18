@@ -182,8 +182,18 @@ typedef enum {
     IMAGE_UNKNOWN_ERROR = 7600901,
     /** decode data source exception */
     IMAGE_BAD_SOURCE = 7700101,
+    /** unsupported mimetype */
+    IMAGE_SOURCE_UNSUPPORTED_MIMETYPE = 7700102,
+    /** image too large */
+    IMAGE_SOURCE_TOO_LARGE = 7700103,
+    /** unsupported allocator type */
+    IMAGE_SOURCE_UNSUPPORTED_ALLOCATOR_TYPE = 7700201,
+    /** unsupported options */
+    IMAGE_SOURCE_UNSUPPORTED_OPTIONS = 7700203,
     /** decode failed */
     IMAGE_DECODE_FAILED = 7700301,
+    /** memory allocation failed */
+    IMAGE_SOURCE_ALLOC_FAILED = 7700302,
     /** encode failed */
     IMAGE_ENCODE_FAILED = 7800301,
 } Image_ErrorCode;
