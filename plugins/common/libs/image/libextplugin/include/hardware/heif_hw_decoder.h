@@ -71,7 +71,7 @@ private:
     void ReceiveOutputBufferLoop();
     static int64_t GetTimestampInUs();
     void ReleaseDecoder();
-
+    void StopLoopThread();
     void SignalError();
     bool HasError();
     void Reset();
