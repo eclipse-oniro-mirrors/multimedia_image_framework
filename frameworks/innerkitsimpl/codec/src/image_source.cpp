@@ -4394,9 +4394,9 @@ static bool IsNecessaryAiProcess(const Size &imageSize, const DecodeOptions &opt
 {
     auto bRet = CheckCapacityAi();
     CHECK_DEBUG_RETURN_RET_LOG(!bRet, false, "[ImageSource] IsNecessaryAiProcess Unsupported sr and hdr");
-    if ((IsSizeVailed(opts.desiredSize) && (imageSize.height != opts.desiredSize.height
+    if (IsSizeVailed(opts.desiredSize) && (((imageSize.height != opts.desiredSize.height
         || imageSize.width != opts.desiredSize.width) && opts.resolutionQuality != ResolutionQuality::UNKNOWN)
-        || opts.resolutionQuality == ResolutionQuality::HIGH) {
+        || opts.resolutionQuality == ResolutionQuality::HIGH)) {
         IMAGE_LOGD("[ImageSource] IsNecessaryAiProcess needAisr");
         needAisr = true;
     }
