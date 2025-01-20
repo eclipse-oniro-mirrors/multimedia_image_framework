@@ -234,7 +234,7 @@ static std::shared_ptr<PixelMap> CreatePixelMapByContext(DecodeContext &context,
     if (context.hdrType > ImageHdrType::SDR) {
         pixelMap->InnerSetColorSpace(ColorManager::ColorSpace(context.grColorSpaceName));
     } else if (decoder->IsSupportICCProfile()) {
-        pixelMap->InnerSetColorSpace(decoder->getGrColorSpace());
+        pixelMap->InnerSetColorSpace(decoder->GetPixelMapColorSpace());
     }
 #endif
     return pixelMap;

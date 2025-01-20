@@ -966,7 +966,8 @@ void ImageSource::SetPixelMapColorSpace(ImagePlugin::DecodeContext& context, uni
         pixelMap->SetToSdrColorSpaceIsSRGB(false);
     } else {
         if (isSupportICCProfile) {
-            pixelMap->SetToSdrColorSpaceIsSRGB(decoder->getGrColorSpace().GetColorSpaceName() == ColorManager::SRGB);
+            pixelMap->SetToSdrColorSpaceIsSRGB(decoder->GetPixelMapColorSpace().GetColorSpaceName() ==
+            ColorManager::SRGB);
         }
     }
     // If the original image is a single-layer HDR, colorSpace needs to be obtained from the DecodeContext.
@@ -977,7 +978,7 @@ void ImageSource::SetPixelMapColorSpace(ImagePlugin::DecodeContext& context, uni
         return ;
     }
     if (isSupportICCProfile) {
-        OHOS::ColorManager::ColorSpace grColorSpace = decoder->getGrColorSpace();
+        OHOS::ColorManager::ColorSpace grColorSpace = decoder->GetPixelMapColorSpace();
         pixelMap->InnerSetColorSpace(grColorSpace);
     }
 #endif
@@ -1236,7 +1237,7 @@ unique_ptr<PixelMap> ImageSource::CreatePixelMap(uint32_t index, const DecodeOpt
     // add graphic colorspace object to pixelMap.
     bool isSupportICCProfile = mainDecoder_->IsSupportICCProfile();
     if (isSupportICCProfile) {
-        OHOS::ColorManager::ColorSpace grColorSpace = mainDecoder_->getGrColorSpace();
+        OHOS::ColorManager::ColorSpace grColorSpace = mainDecoder_->GetPixelMapColorSpace();
         pixelMap->InnerSetColorSpace(grColorSpace);
     }
 #endif
@@ -3694,8 +3695,8 @@ DecodeContext ImageSource::DecodeImageDataToContext(uint32_t index, ImageInfo in
 {
     DecodeContext context = InitDecodeContext(opts_, info, preference_, hasDesiredSizeOptions, plInfo);
     ImageHdrType decodedHdrType = context.hdrType;
+    context.grColorSpaceName = mainDecoder_->GetPixelMapColorSpace().GetColorSpaceName();
     errorCode = mainDecoder_->Decode(index, context);
-    context.grColorSpaceName = mainDecoder_->getGrColorSpace().GetColorSpaceName();
     if (plInfo.size.width != context.outInfo.size.width || plInfo.size.height != context.outInfo.size.height) {
         // hardware decode success, update plInfo.size
         IMAGE_LOGI("hardware decode success, soft decode dstInfo:(%{public}u, %{public}u), use hardware dstInfo:"
@@ -4333,7 +4334,7 @@ uint32_t ImageSource::ImageAiProcess(Size imageSize, const DecodeOptions &opts, 
         dstCtx.info.size.height = opts.desiredSize.height;
     }
     CM_ColorSpaceType cmColorSpaceType =
-        ConvertColorSpaceType(mainDecoder_->getGrColorSpace().GetColorSpaceName(), true);
+        ConvertColorSpaceType(mainDecoder_->GetPixelMapColorSpace().GetColorSpaceName(), true);
     auto res = DoImageAiProcess(input, dstCtx, cmColorSpaceType, needAisr, needHdr);
     if (res == SUCCESS || res == ERR_IMAGE_AI_ONLY_SR_SUCCESS) {
         FreeContextBuffer(context.freeFunc, context.allocatorType, context.pixelsBuffer);
