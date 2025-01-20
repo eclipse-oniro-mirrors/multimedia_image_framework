@@ -51,6 +51,11 @@ static const std::string IMAGE_OUTPUT_JPEG_PATH = "/data/local/tmp/image/test_ou
 static const std::string IMAGE_INPUT_ICO_PATH = "/data/local/tmp/image/test.ico";
 static const std::string IMAGE_INPUT_HEIF_PATH = "/data/local/tmp/image/test.heic";
 static const std::string IMAGE_INPUT_JPEG_HDR_PATH = "/data/local/tmp/image/hdr.jpg";
+static const std::string IMAGE_INPUT_JPEG_ALLOCATORTYPE_PATH = "/data/local/tmp/image/test.jpg";
+static const std::string IMAGE_INPUT_HEIC_ALLOCATORTYPE_PATH = "/data/local/tmp/image/test.heic";
+static const Size DESIREDSIZE_SIZE_400_400 = {400, 400};
+static const Size DESIREDSIZE_SIZE_600_600 = {600, 600};
+static const Size DESIREDSIZE_SIZE_512_512 = {512, 512};
 
 class ImageSourceTest : public testing::Test {
 public:
@@ -2232,6 +2237,100 @@ HWTEST_F(ImageSourceTest, ReusePixelmap003, TestSize.Level3)
     reusePixelmapOpts.reusePixelmap = rPixelmap;
     std::unique_ptr<PixelMap> newPixelMap = reuseImageSource->CreatePixelMap(index, reusePixelmapOpts, errorCode);
     ASSERT_EQ(errorCode, SUCCESS);
+}
+
+/**
+ * @tc.name: ConvertAutoAllocatorTypeTest001
+ * @tc.desc: Test ConvertAutoAllocatorType use jpeg image and set desiredSize 400 * 400.
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageSourceTest, ConvertAutoAllocatorTypeTest001, TestSize.Level3)
+{
+    uint32_t errorCode = 0;
+    SourceOptions opts;
+    std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(IMAGE_INPUT_JPEG_ALLOCATORTYPE_PATH,
+        opts, errorCode);
+    ASSERT_NE(imageSource.get(), nullptr);
+    EXPECT_EQ(errorCode, 0);
+    DecodeOptions dopts;
+    dopts.desiredSize = DESIREDSIZE_SIZE_400_400;
+    AllocatorType allocatorType = imageSource->ConvertAutoAllocatorType(dopts);
+    EXPECT_EQ(allocatorType, AllocatorType::SHARE_MEM_ALLOC);
+}
+
+/**
+ * @tc.name: ConvertAutoAllocatorTypeTest002
+ * @tc.desc: Test ConvertAutoAllocatorType use jpeg image and set desiredSize 600 * 600.
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageSourceTest, ConvertAutoAllocatorTypeTest002, TestSize.Level3)
+{
+    uint32_t errorCode = 0;
+    SourceOptions opts;
+    std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(IMAGE_INPUT_JPEG_ALLOCATORTYPE_PATH,
+        opts, errorCode);
+    ASSERT_NE(imageSource.get(), nullptr);
+    EXPECT_EQ(errorCode, 0);
+    DecodeOptions dopts;
+    dopts.desiredSize = DESIREDSIZE_SIZE_600_600;
+    AllocatorType allocatorType = imageSource->ConvertAutoAllocatorType(dopts);
+    EXPECT_EQ(allocatorType, AllocatorType::DMA_ALLOC);
+}
+
+/**
+ * @tc.name: ConvertAutoAllocatorTypeTest003
+ * @tc.desc: Test ConvertAutoAllocatorType use no desiredSize.
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageSourceTest, ConvertAutoAllocatorTypeTest003, TestSize.Level3)
+{
+    uint32_t errorCode = 0;
+    SourceOptions opts;
+    std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(IMAGE_INPUT_JPEG_ALLOCATORTYPE_PATH,
+        opts, errorCode);
+    ASSERT_NE(imageSource.get(), nullptr);
+    EXPECT_EQ(errorCode, 0);
+    DecodeOptions dopts;
+    AllocatorType allocatorType = imageSource->ConvertAutoAllocatorType(dopts);
+    EXPECT_EQ(allocatorType, AllocatorType::SHARE_MEM_ALLOC);
+}
+
+/**
+ * @tc.name: ConvertAutoAllocatorTypeTest004
+ * @tc.desc: Test ConvertAutoAllocatorType use jpeg image and set desiredSize 512 * 512.
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageSourceTest, ConvertAutoAllocatorTypeTest004, TestSize.Level3)
+{
+    uint32_t errorCode = 0;
+    SourceOptions opts;
+    std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(IMAGE_INPUT_JPEG_ALLOCATORTYPE_PATH,
+        opts, errorCode);
+    ASSERT_NE(imageSource.get(), nullptr);
+    EXPECT_EQ(errorCode, 0);
+    DecodeOptions dopts;
+    dopts.desiredSize = DESIREDSIZE_SIZE_512_512;
+    AllocatorType allocatorType = imageSource->ConvertAutoAllocatorType(dopts);
+    EXPECT_EQ(allocatorType, AllocatorType::DMA_ALLOC);
+}
+
+/**
+ * @tc.name: ConvertAutoAllocatorTypeTest005
+ * @tc.desc: Test ConvertAutoAllocatorType use heic image.
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageSourceTest, ConvertAutoAllocatorTypeTest005, TestSize.Level3)
+{
+    uint32_t errorCode = 0;
+    SourceOptions opts;
+    std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(IMAGE_INPUT_HEIC_ALLOCATORTYPE_PATH,
+        opts, errorCode);
+    ASSERT_NE(imageSource.get(), nullptr);
+    EXPECT_EQ(errorCode, 0);
+    DecodeOptions dopts;
+    dopts.desiredSize = DESIREDSIZE_SIZE_512_512;
+    AllocatorType allocatorType = imageSource->ConvertAutoAllocatorType(dopts);
+    EXPECT_EQ(allocatorType, AllocatorType::DMA_ALLOC);
 }
 } // namespace Multimedia
 } // namespace OHOS
