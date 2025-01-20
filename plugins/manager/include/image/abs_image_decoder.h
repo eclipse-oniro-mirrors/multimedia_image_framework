@@ -207,7 +207,7 @@ public:
     }
 
     // if current source support icc. get relevant color gamut information by this method.
-    virtual OHOS::ColorManager::ColorSpace getGrColorSpace()
+    virtual OHOS::ColorManager::ColorSpace GetPixelMapColorSpace()
     {
         return OHOS::ColorManager::ColorSpace(OHOS::ColorManager::ColorSpaceName::NONE);
     }
