@@ -87,6 +87,11 @@ struct PackOption {
      * Paking for edit scene.
      */
     bool isEditScene = true;
+
+    /**
+     * delayTime
+     */
+    uint32_t delayTime = 0;
 };
 
 class PackerStream;
