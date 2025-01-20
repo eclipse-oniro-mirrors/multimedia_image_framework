@@ -523,7 +523,7 @@ Image_ErrorCode OH_ImageSourceNative_CreatePixelmapUsingAllocator(OH_ImageSource
     decOps.allocatorType = ConvertAllocatorType(source->GetInnerImageSource(), allocator, decOps);
     if (decOps.allocatorType == AllocatorType::SHARE_MEM_ALLOC &&
         source->GetInnerImageSource()->IsDecodeHdrImage(decOps)) {
-        return IMAGE_UNSUPPORTED_OPERATION;
+        return IMAGE_SOURCE_UNSUPPORTED_ALLOCATOR_TYPE;
     }
     std::unique_ptr<PixelMap> tmpPixelmap = source->GetInnerImageSource()->CreatePixelMapEx(index, decOps, errorCode);
     if (tmpPixelmap == nullptr || errorCode != IMAGE_SUCCESS) {
