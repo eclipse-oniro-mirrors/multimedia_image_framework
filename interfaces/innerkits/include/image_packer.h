@@ -87,7 +87,6 @@ struct PackOption {
      * Paking for edit scene.
      */
     bool isEditScene = true;
-
 };
 
 class PackerStream;
