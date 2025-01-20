@@ -45,7 +45,7 @@ static napi_module g_module = {
     .nm_flags = 0,
     .nm_filename = nullptr,
     .nm_register_func = Export,
-    .nm_modname = "multimedia.sendableImage",
+    .nm_modname = "multimedia.sendableimage",
     .nm_priv = (reinterpret_cast<void *>(0)),
     .reserved = {0}
 };
