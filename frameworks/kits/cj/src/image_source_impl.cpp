@@ -320,7 +320,7 @@ std::vector<int64_t> ImageSourceImpl::CreatePixelMapList(uint32_t index, DecodeO
     if ((*errorCode == SUCCESS) && (index >= 0) && (index < frameCount)) {
         pixelMaps = nativeImgSrc->CreatePixelMapList(opts, *errorCode);
     }
-    if (*errorCode != SUCCESS) {
+    if (*errorCode != SUCCESS || pixelMaps == nullptr) {
         return ret;
     }
     for (size_t i = 0; i < pixelMaps->size(); i++) {
