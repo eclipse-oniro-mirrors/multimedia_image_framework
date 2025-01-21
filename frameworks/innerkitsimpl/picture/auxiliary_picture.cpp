@@ -52,7 +52,7 @@ void AuxiliaryPicture::UpdateAuxiliaryPictureInfo()
     content_->GetImageInfo(imageInfo);
 
     auxiliaryPictureInfo_.size = imageInfo.size;
-    auxiliaryPictureInfo_.rowStride = content_->GetRowStride();
+    auxiliaryPictureInfo_.rowStride = static_cast<uint32_t>(content_->GetRowStride());
     auxiliaryPictureInfo_.colorSpace = imageInfo.colorSpace;
     auxiliaryPictureInfo_.pixelFormat = imageInfo.pixelFormat;
 }
