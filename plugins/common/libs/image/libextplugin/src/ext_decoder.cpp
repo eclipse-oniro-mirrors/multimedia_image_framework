@@ -646,6 +646,7 @@ uint32_t ExtDecoder::SetDecodeOptions(uint32_t index, const PixelDecodeOptions &
 
     info.size.width = static_cast<uint32_t>(dstInfo_.width());
     info.size.height = static_cast<uint32_t>(dstInfo_.height());
+    reusePixelmap_ = opts.plReusePixelmap;
     return SUCCESS;
 }
 
@@ -906,9 +907,13 @@ uint32_t ExtDecoder::Decode(uint32_t index, DecodeContext &context)
         byteCount = byteCount / NUM_4 * NUM_3;
     }
     if (context.pixelsBuffer.buffer == nullptr) {
-        res = SetContextPixelsBuffer(byteCount, context);
-        if (res != SUCCESS) {
-            return res;
+        if (ImageUtils::IsSdrPixelMapReuseSuccess(context, info_.width(), info_.height(), reusePixelmap_)) {
+            IMAGE_LOGI("Maindecode reusePixelmap success");
+        } else {
+            res = SetContextPixelsBuffer(byteCount, context);
+            if (res != SUCCESS) {
+                return res;
+            }
         }
         if (dstBuffer == nullptr) {
             dstBuffer = static_cast<uint8_t *>(context.pixelsBuffer.buffer);
@@ -1123,11 +1128,17 @@ uint32_t ExtDecoder::AllocOutputBuffer(DecodeContext &context,
     uint64_t byteCount = static_cast<uint64_t>(hwDstInfo_.height()) *
             static_cast<uint64_t>(hwDstInfo_.width()) *
             static_cast<uint64_t>(hwDstInfo_.bytesPerPixel());
-    uint32_t ret = DmaMemAlloc(context, byteCount, hwDstInfo_);
-    if (ret != SUCCESS) {
-        IMAGE_LOGE("Alloc OutputBuffer failed, ret=%{public}d", ret);
-        return ERR_IMAGE_DECODE_ABNORMAL;
+    context.allocatorType = AllocatorType::DMA_ALLOC;
+    if (ImageUtils::IsSdrPixelMapReuseSuccess(context, info_.width(), info_.height(), reusePixelmap_)) {
+        IMAGE_LOGI("Jpeg hardware decode reusePixelmap success");
+    } else {
+        uint32_t ret = DmaMemAlloc(context, byteCount, hwDstInfo_);
+        if (ret != SUCCESS) {
+            IMAGE_LOGE("Alloc OutputBuffer failed, ret=%{public}d", ret);
+            return ERR_IMAGE_DECODE_ABNORMAL;
+        }
     }
+
     if (context.pixelsBuffer.context == nullptr) {
         IMAGE_LOGE("Alloc OutputBuffer failed, context is null");
         return ERR_IMAGE_DECODE_ABNORMAL;
@@ -1981,9 +1992,13 @@ uint32_t ExtDecoder::DoHeifToYuvDecode(OHOS::ImagePlugin::DecodeContext &context
         IMAGE_LOGE("YUV Decode HeifDecoder is nullptr");
         return ERR_IMAGE_DATA_UNSUPPORT;
     }
-    uint32_t allocRet = HeifYUVMemAlloc(context);
-    if (allocRet != SUCCESS) {
-        return allocRet;
+    if (ImageUtils::IsSdrPixelMapReuseSuccess(context, info_.width(), info_.height(), reusePixelmap_)) {
+        IMAGE_LOGI("DoHeifToYuvDecode reusePixelmap success");
+    } else {
+        uint32_t allocRet = HeifYUVMemAlloc(context);
+        if (allocRet != SUCCESS) {
+            return allocRet;
+        }
     }
     auto dstBuffer = reinterpret_cast<SurfaceBuffer*>(context.pixelsBuffer.context);
     decoder->setOutputColor(context.info.pixelFormat

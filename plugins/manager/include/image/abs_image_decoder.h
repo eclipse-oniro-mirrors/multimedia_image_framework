@@ -118,6 +118,7 @@ struct PixelDecodeOptions {
     OHOS::Media::FillColor plStrokeColor;
     OHOS::Media::SVGResize plSVGResize;
     std::shared_ptr<OHOS::ColorManager::ColorSpace> plDesiredColorSpace = nullptr;
+    std::shared_ptr<Media::PixelMap> plReusePixelmap = nullptr;
 };
 
 class AbsImageDecoder {

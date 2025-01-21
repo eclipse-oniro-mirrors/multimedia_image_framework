@@ -94,6 +94,7 @@ if (use_clang_android) {
     sources = image_native_android_sources
     include_dirs = image_native_android_include_dirs
     deps = image_native_android_deps
+    defines += [ "CROSS_PLATFORM" ]
     deps += [ "//third_party/ffmpeg:libohosffmpeg_static" ]
     subsystem_name = "multimedia"
     part_name = "image_framework"
@@ -107,6 +108,7 @@ if (use_clang_android) {
     include_dirs = image_native_ios_include_dirs
     sources = image_native_ios_sources
     deps = image_native_ios_deps
+    defines += [ "CROSS_PLATFORM" ]
     deps += [ "//third_party/ffmpeg:libohosffmpeg_static" ]
     external_deps = image_native_ios_external_deps
     subsystem_name = "multimedia"
@@ -396,6 +398,7 @@ ohos_static_library("image_static") {
     external_deps = [ "graphic_surface:surface" ]
   } else if (use_clang_ios) {
     defines = image_decode_ios_defines
+    defines += [ "CROSS_PLATFORM" ]
     sources -= [
       "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/creator/src/image_creator.cpp",
       "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/creator/src/image_creator_manager.cpp",
@@ -413,6 +416,7 @@ ohos_static_library("image_static") {
     external_deps = []
   } else if (use_clang_android) {
     defines = image_decode_android_defines
+    defines += [ "CROSS_PLATFORM" ]
     sources -= [
       "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/creator/src/image_creator.cpp",
       "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/creator/src/image_creator_manager.cpp",

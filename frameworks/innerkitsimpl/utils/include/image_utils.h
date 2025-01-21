@@ -83,6 +83,22 @@ public:
     static bool HasOverflowed(uint32_t num1, uint32_t num2);
     static int32_t GetAPIVersion();
     static std::string GetEncodedHeifFormat();
+    static bool CanReusePixelMap(ImagePlugin::DecodeContext& context, int width,
+        int height, const std::shared_ptr<PixelMap> &reusePixelmap);
+    static bool CanReusePixelMapHdr(ImagePlugin::DecodeContext& context, int width,
+        int height, const std::shared_ptr<PixelMap> &reusePixelmap);
+    static bool CanReusePixelMapSdr(ImagePlugin::DecodeContext& context, int width,
+        int height, const std::shared_ptr<PixelMap> &reusePixelmap);
+    static bool IsHdrPixelMapReuseSuccess(ImagePlugin::DecodeContext& context, int width,
+        int height, const std::shared_ptr<PixelMap> &reusePixelmap);
+    static void SetContextHdr(ImagePlugin::DecodeContext& context, uint32_t format);
+    static void SetReuseContextBuffer(ImagePlugin::DecodeContext& context,
+        AllocatorType type, uint8_t* ptr, uint64_t count, void* fd);
+    static bool IsSdrPixelMapReuseSuccess(ImagePlugin::DecodeContext& context, int width,
+        int height, const std::shared_ptr<PixelMap> &reusePixelmap);
+    static bool IsReuseYUV(ImagePlugin::DecodeContext& context, const std::shared_ptr<PixelMap> &reusePixelmap);
+    static bool IsReuseRGB(ImagePlugin::DecodeContext& context, const std::shared_ptr<PixelMap> &reusePixelmap);
+    static uint16_t GetReusePixelRefCount(const std::shared_ptr<PixelMap> &reusePixelmap);
 private:
     static uint32_t RegisterPluginServer();
     static uint32_t SaveDataToFile(const std::string& fileName, const char* data, const size_t& totalSize);

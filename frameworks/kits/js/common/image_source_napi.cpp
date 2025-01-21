@@ -1100,6 +1100,13 @@ static bool ParseDecodeOptions2(napi_env env, napi_value root, DecodeOptions* op
     }
     opts->desiredDynamicRange = ParseDynamicRange(env, root);
     opts->resolutionQuality = ParseResolutionQuality(env, root);
+
+    napi_value nPixelmap = nullptr;
+    if (napi_get_named_property(env, root, "reusePixelMap", &nPixelmap) == napi_ok) {
+        std::shared_ptr<PixelMap> rPixelmap = PixelMapNapi::GetPixelMap(env, nPixelmap);
+        opts->reusePixelmap = rPixelmap;
+        IMAGE_LOGD("reusePixelMap parse finished");
+    }
     return true;
 }
 
