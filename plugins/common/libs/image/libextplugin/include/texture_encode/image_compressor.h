@@ -17,6 +17,7 @@
 #define PLUGINS_COMMON_LIBS_IMAGE_LIBEXTPLUGIN_INCLUDE_TEXTURE_ENCODE_IMAGE_COMPRESSOR_H
 
 #include <cstdint>
+#include <mutex>
 
 #ifndef USE_OPENCL_WRAPPER
 #define USE_OPENCL_WRAPPER
@@ -29,6 +30,8 @@ namespace ImagePlugin {
 namespace AstcEncBasedCl {
 
 #define CL_ASTC_SHARE_LIB_API
+
+extern std::mutex checkClBinPathMutex;
 
 enum CL_ASTC_STATUS {
     CL_ASTC_ENC_SUCCESS = 0,
