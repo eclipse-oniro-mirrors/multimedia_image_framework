@@ -369,11 +369,14 @@ uint8_t *FileSourceStream::GetDataPtr(bool populate)
             return nullptr;
         }
         uint32_t savedPosition = Tell();
-        Seek(0);
+        if (!Seek(0)) {
+            IMAGE_LOGE("[FileSourceStream] GetDataPtr seek start failed.");
+            delete[] buffer;
+            return nullptr;
+        }
         uint32_t readSize = 0;
         bool retRead = Read(size, buffer, size, readSize);
-        Seek(savedPosition);
-        if (!retRead) {
+        if (!Seek(savedPosition) || !retRead) {
             IMAGE_LOGE("[FileSourceStream] GetDataPtr read failed.");
             delete[] buffer;
             return nullptr;
