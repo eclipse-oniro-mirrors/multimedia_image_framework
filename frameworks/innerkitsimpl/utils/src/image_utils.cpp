@@ -985,9 +985,6 @@ bool ImageUtils::CanReusePixelMapHdr(ImagePlugin::DecodeContext& context, int wi
         return false;
     }
     auto hdrPixelFormat = GRAPHIC_PIXEL_FMT_RGBA_1010102;
-    if (context.photoDesiredPixelFormat == PixelFormat::YCBCR_P010) {
-        hdrPixelFormat = GRAPHIC_PIXEL_FMT_YCBCR_P010;
-    }
     SetContextHdr(context, hdrPixelFormat);
     if ((reusePixelmap->GetPixelFormat() != PixelFormat::RGBA_1010102) ||
         (context.info.pixelFormat != PixelFormat::RGBA_1010102)) {
