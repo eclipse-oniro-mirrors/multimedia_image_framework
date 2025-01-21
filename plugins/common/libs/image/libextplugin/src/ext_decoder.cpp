@@ -1237,7 +1237,6 @@ void ExtDecoder::UpdateHardWareDecodeInfo(DecodeContext &context)
         context.yuvInfo.imageSize = {hwDstInfo_.width(), hwDstInfo_.height()};
     }
 }
-#endif
 
 uint32_t ExtDecoder::HardWareDecode(DecodeContext &context)
 {
@@ -1269,6 +1268,7 @@ uint32_t ExtDecoder::HardWareDecode(DecodeContext &context)
     UpdateHardWareDecodeInfo(context);
     return SUCCESS;
 }
+#endif
 
 uint32_t ExtDecoder::HandleGifCache(uint8_t* src, uint8_t* dst, uint64_t rowStride, int dstHeight)
 {
