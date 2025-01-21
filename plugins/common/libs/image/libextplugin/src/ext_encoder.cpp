@@ -160,6 +160,7 @@ static const uint8_t RGBA_BIT_DEPTH = 4;
 
 static constexpr int32_t MAX_IMAGE_SIZE = 8196;
 static constexpr int32_t MIN_IMAGE_SIZE = 128;
+static constexpr int32_t MIN_RGBA_IMAGE_SIZE = 1024;
 
 #ifdef HEIF_HW_ENCODE_ENABLE
 using namespace OHOS::HDI::Codec::Image::V2_0;
@@ -430,9 +431,10 @@ bool ExtEncoder::IsHardwareEncodeSupported(const PlEncodeOptions &opts, Media::P
     }
     bool isSupport = ImageSystemProperties::GetHardWareEncodeEnabled() && opts.format == "image/jpeg" &&
         (pixelMap->GetWidth() % 2 == 0) && (pixelMap->GetHeight() % 2 == 0) &&
-        (pixelMap->GetPixelFormat() == PixelFormat::NV12 || pixelMap->GetPixelFormat() == PixelFormat::NV21) &&
+        (pixelMap->GetPixelFormat() == PixelFormat::NV12 || pixelMap->GetPixelFormat() == PixelFormat::NV21 ||
+        pixelMap->GetPixelFormat() == PixelFormat::RGBA_8888) &&
         pixelMap->GetWidth() <= MAX_IMAGE_SIZE && pixelMap->GetHeight() <= MAX_IMAGE_SIZE &&
-        pixelMap->GetWidth() >= MIN_IMAGE_SIZE && pixelMap->GetHeight() >= MIN_IMAGE_SIZE;
+        pixelMap->GetWidth() >= MIN_RGBA_IMAGE_SIZE && pixelMap->GetHeight() >= MIN_RGBA_IMAGE_SIZE;
     if (!isSupport) {
         IMAGE_LOGD("hardware encode is not support, dstEncodeFormat:%{public}s, pixelWidth:%{public}d, "
             "pixelHeight:%{public}d, pixelFormat:%{public}d", opts.format.c_str(), pixelMap->GetWidth(),
