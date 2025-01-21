@@ -767,6 +767,11 @@ unique_ptr<PixelMap> PixelMap::Create(PixelMap &source, const Rect &srcRect, con
     IMAGE_LOGD("PixelMap::Create5 enter");
     ImageInfo srcImageInfo;
     source.GetImageInfo(srcImageInfo);
+    if (IsYUV(srcImageInfo.pixelFormat) || IsYUV(opts.pixelFormat)) {
+        IMAGE_LOGE("PixelMap::Create does not support yuv format.");
+        errorCode = IMAGE_RESULT_DECODE_FAILED;
+        return nullptr;
+    }
     PostProc postProc;
     Rect sRect = srcRect;
     CropValue cropType = PostProc::ValidCropValue(sRect, srcImageInfo.size);
