@@ -70,13 +70,13 @@ struct PackOption {
      * Specify the delay time for each frame of the dynamic image.
      * Only for gif.
      */
-    std::vector<uint16_t> delayTimes;
+    std::vector<uint16_t> delayTimes = {};
 
     /**
      * Specify the the decoder process each frame after displaying it.
      * Only for gif.
      */
-    std::vector<uint8_t> disposalTypes;
+    std::vector<uint8_t> disposalTypes = {};
 
     /**
      * Hint to pack image with properties.
