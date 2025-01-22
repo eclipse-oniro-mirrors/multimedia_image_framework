@@ -906,15 +906,15 @@ short QuantizeWeight(uint weightRange, float weight)
     return clamp(q, (short)(QUANTIZE_WEIGHT_MIN), (short)(weightRange));
 }
 
-void CalculateNormalWeights(int part, PartInfo* partInfo, float4* texels,
+void CalculateNormalWeights(int part, float4* texels,
     float4 endPoint[END_POINT_NUM], float* projw)
 {
-    if ((partInfo == NULL) || (texels == NULL) || (endPoint == NULL) || (projw == NULL)) {
+    if ((texels == NULL) || (endPoint == NULL) || (projw == NULL)) {
         return;
     }
     int i = START_INDEX;
     float4 vecK = endPoint[EP1_INDEX] - endPoint[EP0_INDEX];
-    if (length(vecK) < SMALL_VALUE && !partInfo) {
+    if (length(vecK) < SMALL_VALUE) {
         for (i = START_INDEX; i < X_GRIDS * Y_GRIDS; ++i) {
             projw[i] = FLOAT_ZERO;
         }
@@ -923,20 +923,16 @@ void CalculateNormalWeights(int part, PartInfo* partInfo, float4* texels,
         float minw = 1e31f; // max float is clipped to 1e31f
         float maxw = -1e31f; // min float is clipped to -1e31f
         for (i = START_INDEX; i < BLOCK_SIZE; ++i) {
-            if ((!partInfo) || (GetPart(partInfo, i) == part)) {
-                float w = dot(vecK, texels[i] - endPoint[EP0_INDEX]);
-                minw = min(w, minw);
-                maxw = max(w, maxw);
-                projw[i] = w;
-            }
+            float w = dot(vecK, texels[i] - endPoint[EP0_INDEX]);
+            minw = min(w, minw);
+            maxw = max(w, maxw);
+            projw[i] = w;
         }
         float invlen = maxw - minw;
         invlen = max(SMALL_VALUE, invlen);
         invlen = FLOAT_ONE / invlen; // invlen min is SMALL_VALUE, not zero
         for (i = START_INDEX; i < X_GRIDS * Y_GRIDS; ++i) {
-            if ((!partInfo) || (GetPart(partInfo, i) == part)) {
-                projw[i] = (projw[i] - minw) * invlen;
-            }
+            projw[i] = (projw[i] - minw) * invlen;
         }
     }
 }
@@ -954,7 +950,7 @@ void CalculateQuantizedWeights(float4* texels, uint weightRange, float4 endPoint
         return;
     }
     float projw[X_GRIDS * Y_GRIDS];
-    CalculateNormalWeights(INT_ZERO, NULL, texels, endPoint, projw);
+    CalculateNormalWeights(INT_ZERO, texels, endPoint, projw);
     QuantizeWeights(projw, weightRange, weights);
 }
 
@@ -1301,9 +1297,11 @@ public:
 private:
     void *clSoHandle = nullptr;
     bool loadSuccess = false;
+    std::mutex openClSoMutex_ = {};
 };
 
 static OpenCLSoManager g_clSoManager;
+std::mutex checkClBinPathMutex = {};
 
 OpenCLSoManager::OpenCLSoManager()
 {
@@ -1323,6 +1321,7 @@ OpenCLSoManager::~OpenCLSoManager()
 
 bool OpenCLSoManager::LoadOpenCLSo()
 {
+    std::lock_guard<std::mutex> lock(openClSoMutex_);
     if (!loadSuccess) {
         loadSuccess = InitOpenCLExtern(&clSoHandle);
     }
@@ -1372,11 +1371,13 @@ CL_ASTC_SHARE_LIB_API CL_ASTC_STATUS AstcClClose(ClAstcHandle *clAstcHandle)
 
 static bool CheckClBinIsExist(const std::string &name)
 {
+    std::lock_guard<std::mutex> lock(checkClBinPathMutex);
     return (access(name.c_str(), F_OK) != -1); // -1 means that the file is  not exist
 }
 
 static CL_ASTC_STATUS SaveClBin(cl_program program, const std::string &clBinPath)
 {
+    std::lock_guard<std::mutex> lock(checkClBinPathMutex);
     size_t programBinarySizes;
     cl_int clRet = clGetProgramInfo(program, CL_PROGRAM_BINARY_SIZES, sizeof(size_t), &programBinarySizes, NULL);
     if (clRet != CL_SUCCESS) {
