@@ -1005,10 +1005,12 @@ uint32_t ExtDecoder::Decode(uint32_t index, DecodeContext &context)
         return res;
     }
     SkCodec::Result ret = codec_->getPixels(dstInfo_, dstBuffer, rowStride, &dstOptions_);
-    if (ret != SkCodec::kSuccess && ResetCodec() && skEncodeFormat != SkEncodedImageFormat::kHEIF) {
+    if (ret == SkCodec::kIncompleteInput) {
+        IMAGE_LOGI("Decode broken data success. Triggered kIncompleteInput feature of skia!");
+    } else if (ret != SkCodec::kSuccess && ResetCodec() && skEncodeFormat != SkEncodedImageFormat::kHEIF) {
         ret = codec_->getPixels(dstInfo_, dstBuffer, rowStride, &dstOptions_); // Try again
     }
-    if (ret != SkCodec::kSuccess) {
+    if (ret != SkCodec::kSuccess && ret != SkCodec::kIncompleteInput) {
         IMAGE_LOGE("Decode failed, get pixels failed, ret=%{public}d", ret);
         SetHeifDecodeError(context);
         ResetCodec(); // release old jpeg codec

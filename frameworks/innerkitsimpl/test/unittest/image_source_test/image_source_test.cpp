@@ -51,6 +51,8 @@ static const std::string IMAGE_OUTPUT_JPEG_PATH = "/data/local/tmp/image/test_ou
 static const std::string IMAGE_INPUT_ICO_PATH = "/data/local/tmp/image/test.ico";
 static const std::string IMAGE_INPUT_HEIF_PATH = "/data/local/tmp/image/test.heic";
 static const std::string IMAGE_INPUT_JPEG_HDR_PATH = "/data/local/tmp/image/hdr.jpg";
+static const std::string IMAGE_INPUT_JPEG_BROKEN_ONE = "/data/local/tmp/image/test_jpeg_broken_one.jpg";
+static const std::string IMAGE_INPUT_JPEG_BROKEN_TWO = "/data/local/tmp/image/test_jpeg_broken_two.jpg";
 
 class ImageSourceTest : public testing::Test {
 public:
@@ -2232,6 +2234,46 @@ HWTEST_F(ImageSourceTest, ReusePixelmap003, TestSize.Level3)
     reusePixelmapOpts.reusePixelmap = rPixelmap;
     std::unique_ptr<PixelMap> newPixelMap = reuseImageSource->CreatePixelMap(index, reusePixelmapOpts, errorCode);
     ASSERT_EQ(errorCode, SUCCESS);
+}
+
+/**
+ * @tc.name: CreatePixelMapUsingBrokenImage001
+ * @tc.desc: test CreatePixelMap use broken jpeg image.
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageSourceTest, CreatePixelMapUsingBrokenImage001, TestSize.Level1)
+{
+    uint32_t errorCode = 0;
+    SourceOptions opts;
+    std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(IMAGE_INPUT_JPEG_BROKEN_ONE,
+        opts, errorCode);
+    ASSERT_EQ(errorCode, SUCCESS);
+    ASSERT_NE(imageSource.get(), nullptr);
+    uint32_t index = 0;
+    DecodeOptions dopts;
+    std::unique_ptr<PixelMap> pixelMap = imageSource->CreatePixelMap(index, dopts, errorCode);
+    ASSERT_EQ(errorCode, SUCCESS);
+    ASSERT_NE(pixelMap.get(), nullptr);
+}
+
+/**
+ * @tc.name: CreatePixelMapUsingBrokenImage002
+ * @tc.desc: test CreatePixelMap use broken jpeg image.
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageSourceTest, CreatePixelMapUsingBrokenImage002, TestSize.Level1)
+{
+    uint32_t errorCode = 0;
+    SourceOptions opts;
+    std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(IMAGE_INPUT_JPEG_BROKEN_TWO,
+        opts, errorCode);
+    ASSERT_EQ(errorCode, SUCCESS);
+    ASSERT_NE(imageSource.get(), nullptr);
+    uint32_t index = 0;
+    DecodeOptions dopts;
+    std::unique_ptr<PixelMap> pixelMap = imageSource->CreatePixelMap(index, dopts, errorCode);
+    ASSERT_EQ(errorCode, SUCCESS);
+    ASSERT_NE(pixelMap.get(), nullptr);
 }
 } // namespace Multimedia
 } // namespace OHOS
