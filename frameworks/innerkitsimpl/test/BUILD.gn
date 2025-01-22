@@ -1888,6 +1888,7 @@ ohos_unittest("picture_ext_test") {
     "${image_subsystem}/frameworks/kits/js/common/ndk:image_packer",
     "${image_subsystem}/frameworks/kits/js/common/ndk:image_source",
     "${image_subsystem}/frameworks/kits/js/common/picture_ndk:picture",
+    "${image_subsystem}/frameworks/kits/js/common/pixelmap_ndk:pixelmap",
     "${image_subsystem}/interfaces/innerkits:image_native",
     "//third_party/googletest:gmock_main",
     "//third_party/googletest:gtest_main",
