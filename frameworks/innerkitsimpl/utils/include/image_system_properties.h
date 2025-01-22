@@ -33,6 +33,7 @@ public:
     static bool GetSLRParallelEnabled();
     static bool GetSutEncodeEnabled();
     static bool GetMediaLibraryAstcEnabled();
+    static bool GetGenThumbWithGpu();
 private:
     ImageSystemProperties() = default;
 };

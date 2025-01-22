@@ -429,10 +429,12 @@ bool ExtEncoder::IsHardwareEncodeSupported(const PlEncodeOptions &opts, Media::P
         IMAGE_LOGE("pixelMap is nullptr");
         return false;
     }
+    bool isSupportedWithRgba = ImageSystemProperties::GetGenThumbWithGpu() &&
+        pixelMap->GetPixelFormat() == PixelFormat::RGBA_8888;
     bool isSupport = ImageSystemProperties::GetHardWareEncodeEnabled() && opts.format == "image/jpeg" &&
         (pixelMap->GetWidth() % 2 == 0) && (pixelMap->GetHeight() % 2 == 0) &&
         (pixelMap->GetPixelFormat() == PixelFormat::NV12 || pixelMap->GetPixelFormat() == PixelFormat::NV21 ||
-        pixelMap->GetPixelFormat() == PixelFormat::RGBA_8888) &&
+        isSupportedWithRgba) &&
         pixelMap->GetWidth() <= MAX_IMAGE_SIZE && pixelMap->GetHeight() <= MAX_IMAGE_SIZE &&
         pixelMap->GetWidth() >= MIN_RGBA_IMAGE_SIZE && pixelMap->GetHeight() >= MIN_RGBA_IMAGE_SIZE;
     if (!isSupport) {
