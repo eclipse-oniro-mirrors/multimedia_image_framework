@@ -304,6 +304,18 @@ bool HeifHardwareDecoder::IsPackedInputSupported()
     return packedInputFlag_;
 }
 
+void HeifHardwareDecoder::StopLoopThread()
+{
+    {
+        lock_guard<mutex> lk(inputMtx_);
+        inputCond_.notify_all();
+    }
+    {
+        lock_guard<mutex> lk(outputMtx_);
+        outputCond_.notify_all();
+    }
+}
+
 uint32_t HeifHardwareDecoder::DoDecode(const GridInfo& gridInfo, std::vector<std::vector<uint8_t>>& inputs,
                                        sptr<SurfaceBuffer>& output)
 {
@@ -337,6 +349,7 @@ uint32_t HeifHardwareDecoder::DoDecode(const GridInfo& gridInfo, std::vector<std
     if (ret != IC_ERR_OK) {
         LOGE("failed to start decoder, err=%{public}d", ret);
         SignalError();
+        StopLoopThread();
     }
     if (inputThread.joinable()) {
         inputThread.join();
@@ -472,9 +485,9 @@ bool HeifHardwareDecoder::WaitForOmxToReturnInputBuffer(uint32_t& bufferId, shar
 {
     unique_lock<mutex> lk(inputMtx_);
     bool ret = inputCond_.wait_for(lk, chrono::milliseconds(BUFFER_CIRCULATE_TIMEOUT_IN_MS), [this] {
-        return !inputList_.empty();
+        return (!inputList_.empty() || HasError());
     });
-    if (!ret) {
+    if (!ret || HasError()) {
         return false;
     }
     std::tie(bufferId, buffer) = inputList_.front();
@@ -521,9 +534,9 @@ bool HeifHardwareDecoder::WaitForOmxToReturnOutputBuffer(uint32_t& bufferId, sha
 {
     unique_lock<mutex> lk(outputMtx_);
     bool ret = outputCond_.wait_for(lk, chrono::milliseconds(BUFFER_CIRCULATE_TIMEOUT_IN_MS), [this] {
-        return !outputList_.empty();
+        return (!outputList_.empty() || HasError());
     });
-    if (!ret) {
+    if (!ret || HasError()) {
         return false;
     }
     std::tie(bufferId, buffer) = outputList_.front();
