@@ -37,6 +37,7 @@
 #include "pixel_map.h"
 #include "image_format_convert.h"
 #include <securec.h>
+#include <sys/syscall.h>
 
 #undef LOG_DOMAIN
 #define LOG_DOMAIN LOG_TAG_DOMAIN_ID_IMAGE
@@ -807,10 +808,14 @@ static napi_status NewPixelNapiInstance(napi_env &env, napi_value &constructor,
     }
     size_t argc = NEW_INSTANCE_ARGC;
     napi_value argv[NEW_INSTANCE_ARGC] = { 0 };
-
+#if !defined(CROSS_PLATFORM)
     uint64_t pixelMapId = (static_cast<uint64_t>(pixelMap->GetUniqueId()) << 32) | static_cast<uint64_t>(gettid());
     napi_create_bigint_uint64(env, pixelMapId, &argv[0]);
     PixelMapContainer::GetInstance().Insert(pixelMapId, pixelMap);
+#else
+    napi_create_int32(env, pixelMap->GetUniqueId(), &argv[0]);
+    PixelMapContainer::GetInstance().Insert(pixelMap->GetUniqueId(), pixelMap);
+#endif
 
     status = napi_new_instance(env, constructor, argc, argv, &result);
     return status;
