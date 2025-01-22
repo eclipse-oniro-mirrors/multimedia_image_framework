@@ -1132,8 +1132,20 @@ static bool ParseRegion(napi_env env, napi_value root, Rect* region)
     return true;
 }
 
+static bool IsAstc(int32_t val)
+{
+    if (val >= static_cast<int32_t>(PixelFormat::ASTC_4x4) &&
+        val <= static_cast<int32_t>(PixelFormat::ASTC_8x8)) {
+        return true;
+    }
+    return false;
+}
+
 static bool IsSupportPixelFormat(int32_t val)
 {
+    if (IsAstc(val)) {
+        return true;
+    }
     if (val >= static_cast<int32_t>(PixelFormat::UNKNOWN) &&
         val < static_cast<int32_t>(PixelFormat::EXTERNAL_MAX)) {
         return true;

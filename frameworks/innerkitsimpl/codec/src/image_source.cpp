@@ -45,6 +45,7 @@
 #include "image/image_plugin_type.h"
 #include "image_format_convert.h"
 #include "image_log.h"
+#include "image_packer.h"
 #include "image_system_properties.h"
 #include "image_utils.h"
 #include "incremental_source_stream.h"
@@ -160,6 +161,9 @@ constexpr uint8_t ASTC_EXTEND_INFO_TLV_NUM = 1; // curren only one group TLV
 constexpr uint32_t ASTC_EXTEND_INFO_SIZE_DEFINITION_LENGTH = 4; // 4 bytes to discripte for extend info summary bytes
 constexpr uint32_t ASTC_EXTEND_INFO_LENGTH_LENGTH = 4; // 4 bytes to discripte the content bytes for every TLV group
 constexpr uint32_t ASTC_EXTEND_INFO_TLV_SUM_BYTES = 6; // The colorspace TLV length in the astc file stream is 6
+constexpr int32_t ASTC_MAX_SIZE = 8192;
+constexpr size_t ASTC_TLV_SIZE = 10; // 10 is tlv size, colorspace size
+constexpr uint8_t ASTC_OPTION_QUALITY = 85;
 static constexpr uint32_t SINGLE_FRAME_SIZE = 1;
 static constexpr uint8_t ISO_USE_BASE_COLOR = 0x01;
 
@@ -599,6 +603,10 @@ unique_ptr<PixelMap> ImageSource::CreatePixelMapEx(uint32_t index, const DecodeO
         return CreatePixelMapForASTC(errorCode, opts);
     }
 #endif
+
+    if (opts.desiredPixelFormat == PixelFormat::ASTC_4x4) {
+        return CreatePixelAstcFromImageFile(index, opts, errorCode);
+    }
 
     if (IsSpecialYUV()) {
         opts_ = opts;
@@ -4802,6 +4810,87 @@ void ImageSource::DecodeJpegAuxiliaryPicture(
     }
 }
 #endif
+
+unique_ptr<PixelMap> ImageSource::CreatePixelAstcFromImageFile(uint32_t index, const DecodeOptions &opts,
+    uint32_t &errorCode)
+{
+    ImageInfo originInfo;
+    uint32_t ret = GetImageInfo(originInfo);
+    if (ret != SUCCESS) {
+        IMAGE_LOGE("CreatePixelAstcFromImageFile GetImageInfo failed");
+        return nullptr;
+    }
+    if ((originInfo.size.width > ASTC_MAX_SIZE || originInfo.size.height > ASTC_MAX_SIZE) ||
+        (opts.desiredSize.width > ASTC_MAX_SIZE || opts.desiredSize.height > ASTC_MAX_SIZE)) {
+        IMAGE_LOGE("CreatePixelAstcFromImageFile size is too large");
+        return nullptr;
+    }
+
+    DecodeOptions& modifiableOpts = const_cast<DecodeOptions&>(opts);
+    modifiableOpts.desiredPixelFormat = PixelFormat::RGBA_8888;
+    unique_ptr<PixelMap> rgbaPixelmap = CreatePixelMap(index, modifiableOpts, errorCode);
+    if (rgbaPixelmap == nullptr) {
+        IMAGE_LOGE("CreatePixelAstcFromImageFile pixelMap is nullptr");
+        return nullptr;
+    }
+    ImageInfo rgbaInfo;
+    rgbaPixelmap->GetImageInfo(rgbaInfo);
+    rgbaInfo.pixelFormat = PixelFormat::ASTC_4x4;
+    size_t allocMemSize = ImageUtils::GetAstcBytesCount(rgbaInfo) + ASTC_TLV_SIZE;
+
+    OHOS::Media::ImagePacker imagePacker;
+    OHOS::Media::PackOption option;
+    option.format = "image/sdr_astc_4x4";
+    option.quality = ASTC_OPTION_QUALITY;
+
+    Size desiredSize = {allocMemSize, 1};
+    MemoryData memoryData = {nullptr, allocMemSize, "CreatePixelAstcFromImageFile Data", desiredSize,
+        opts.desiredPixelFormat};
+    AllocatorType allocatorType = (opts.allocatorType == AllocatorType::DEFAULT) ?
+        (IsSupportAstcZeroCopy(pixelAstcInfo.size) ? AllocatorType::DMA_ALLOC : AllocatorType::SHARE_MEM_ALLOC) :
+        opts.allocatorType;
+    std::unique_ptr<AbsMemory> dstMemory = MemoryManager::CreateMemory(allocatorType, memoryData);
+    if (dstMemory == nullptr) {
+        IMAGE_LOGE("CreatePixelAstcFromImageFile CreateMemory failed");
+        return nullptr;
+    }
+
+    ret = imagePacker.StartPacking(reinterpret_cast<uint8_t *>(dstMemory->data.data), allocMemSize, option);
+    if (ret != 0) {
+        IMAGE_LOGE("CreatePixelAstcFromImageFile failed to start parking");
+        return nullptr;
+    }
+    ret = imagePacker.AddImage(*(rgbaPixelmap.get()));
+    if (ret != 0) {
+        IMAGE_LOGE("CreatePixelAstcFromImageFile failed add image");
+        return nullptr;
+    }
+    int64_t packedSize = 0;
+    ret = imagePacker.FinalizePacking(packedSize);
+    if (ret != 0) {
+        IMAGE_LOGE("CreatePixelAstcFromImageFile failed to finalize parking");
+        return nullptr;
+    }
+
+    unique_ptr<PixelAstc> dstPixelAstc = make_unique<PixelAstc>();
+    ImageInfo info;
+    if (!GetImageInfoForASTC(info, reinterpret_cast<uint8_t *>(dstMemory->data.data))) {
+        IMAGE_LOGE("[ImageSource] get astc image info failed.");
+        return nullptr;
+    }
+    ret = dstPixelAstc->SetImageInfo(info);
+    dstPixelAstc->SetAstcRealSize(info.size);
+    if (ret != SUCCESS) {
+        IMAGE_LOGE("[ImageSource]update pixelmap info error ret:%{public}u.", ret);
+        return nullptr;
+    }
+    dstPixelAstc->SetPixelsAddr(dstMemory->data.data, dstMemory->extend.data, dstMemory->data.size,
+        dstMemory->GetType(), nullptr);
+    dstPixelAstc->SetAstc(true);
+    dstPixelAstc->SetEditable(false);
+    ImageUtils::FlushSurfaceBuffer(dstPixelAstc.get());
+    return dstPixelAstc;
+}
 
 } // namespace Media
 } // namespace OHOS
