@@ -241,6 +241,7 @@ image_native_android_include_dirs = [
   # ext
   "//foundation/multimedia/image_framework/plugins/common/libs/image/libextplugin/include",
   "//foundation/multimedia/image_framework/plugins/common/libs/image/libextplugin/include/hdr",
+  "//foundation/multimedia/image_framework/plugins/common/libs/image/libextplugin/include/jpeg_yuv_decoder",
   "//foundation/graphic/graphic_2d/interfaces/inner_api/surface",
 ]
 
