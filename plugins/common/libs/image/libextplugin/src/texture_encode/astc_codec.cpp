@@ -60,12 +60,13 @@ constexpr int32_t HEIGHT_CL_THRESHOLD = 256;
 constexpr int32_t WIDTH_MAX_ASTC = 8192;
 constexpr int32_t HEIGHT_MAX_ASTC = 8192;
 
-#if (defined SUT_ENCODE_ENABLE) || (defined ENABLE_ASTC_ENCODE_BASED_GPU)
+#ifdef SUT_ENCODE_ENABLE
 static bool CheckClBinIsExist(const std::string &name)
 {
     return (access(name.c_str(), F_OK) != -1); // -1 means that the file is  not exist
 }
-
+#endif
+#ifdef ENABLE_ASTC_ENCODE_BASED_GPU
 static bool CheckClBinIsExistWithLock(const std::string &name)
 {
     std::lock_guard<std::mutex> lock(checkClBinPathMutex);
