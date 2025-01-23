@@ -746,7 +746,7 @@ static bool parsePackOptions(napi_env env, napi_value root, PackOption* opts)
         return false;
     }
     opts->desiredDynamicRange = parseDynamicRange(env, root);
-    IMAGE_LOGD("parsePackOptions format:[%{public}s]", opts->format.c_str());
+    IMAGE_LOGI("parsePackOptions format:[%{public}s]", opts->format.c_str());
     opts->needsPackProperties = parseNeedsPackProperties(env, root);
     return parsePackOptionOfQuality(env, root, opts);
 }
@@ -877,6 +877,7 @@ static void ParserPackingArguments(napi_env env,
 napi_value ImagePackerNapi::Packing(napi_env env, napi_callback_info info, bool needReturnError)
 {
     ImageTrace imageTrace("ImagePackerNapi::Packing");
+    IMAGE_LOGI("PackingFromNapi IN");
     napi_status status;
     napi_value result = nullptr;
     size_t argc = ARGS_THREE;
