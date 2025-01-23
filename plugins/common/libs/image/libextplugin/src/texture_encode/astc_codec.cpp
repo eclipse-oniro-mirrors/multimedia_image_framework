@@ -22,6 +22,7 @@
 #endif
 #include "image_log.h"
 #include "image_system_properties.h"
+#include "image_trace.h"
 #include "securec.h"
 #include "media_errors.h"
 
@@ -697,7 +698,7 @@ static bool AstcEncProcess(TextureEncodeOptions &param, uint8_t *pixmapIn, uint8
 #ifdef ENABLE_ASTC_ENCODE_BASED_GPU
     bool openClEnc = param.width_ >= WIDTH_CL_THRESHOLD && param.height_ >= HEIGHT_CL_THRESHOLD &&
         param.privateProfile_ == QualityProfile::HIGH_SPEED_PROFILE;
-    bool enableClEnc = openClEnc && ImageSystemProperties::GetAstcHardWareEncodeEnabled() &&
+    bool enableClEnc = openClEnc && ImageSystemProperties::GetGenThumbWithGpu() &&
         (param.blockX_ == DEFAULT_DIM) && (param.blockY_ == DEFAULT_DIM); // HardWare only support 4x4 now
     if (enableClEnc) {
         IMAGE_LOGI("astc hardware encode begin");
@@ -816,6 +817,7 @@ uint32_t AstcCodec::ASTCEncode() __attribute__((no_sanitize("cfi")))
     if (!InitBeforeAstcEncode(imageInfo, param, colorData, &pixmapIn, stride)) {
         return ERROR;
     }
+    ImageTrace("[AstcCodec] ASTCEncode Size: %d, %d", imageInfo.size.width, imageInfo.size.height);
     AstcExtendInfo extendInfo = {0};
     if (!InitAstcExtendInfo(extendInfo)) {
         return ERROR;
@@ -829,7 +831,6 @@ uint32_t AstcCodec::ASTCEncode() __attribute__((no_sanitize("cfi")))
     }
     uint8_t *astcBuffer = static_cast<uint8_t *>(malloc(packSize));
     if (astcBuffer == nullptr) {
-        IMAGE_LOGE("astc astcBuffer malloc failed!");
         ReleaseExtendInfoMemory(extendInfo);
         return ERROR;
     }
