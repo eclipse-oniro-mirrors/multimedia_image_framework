@@ -108,6 +108,12 @@ std::unique_ptr<Media::PixelMap> GetPixelMapFromOpts(const Media::Initialization
     return pixelmap;
 }
 
+bool IsYuv(Media::PixelFormat format)
+{
+    return format == Media::PixelFormat::NV12 || format == Media::PixelFormat::NV21 ||
+        format == Media::PixelFormat::YCBCR_P010 || format == Media::PixelFormat::YCRCB_P010;
+}
+
 void FuzzTestSetMemoryName()
 {
     Media::InitializationOptions opts = GetInitialRandomOpts();
@@ -424,6 +430,20 @@ void FuzzTestSetFunc()
     });
 }
 
+void FuzzTestClone()
+{
+    Media::InitializationOptions opts = GetInitialRandomOpts();
+    if (IsYuv(opts.pixelFormat)) {
+        return;
+    }
+    std::unique_ptr<Media::PixelMap> pixelMap = GetPixelMapFromOpts(opts);
+    if (pixelMap != nullptr && pixelMap->IsAstc()) {
+        return;
+    }
+    int32_t errorCode = 0;
+    pixelMap->Clone(errorCode);
+}
+
 void CropCreate()
 {
     Media::InitializationOptions opts = GetInitialRandomOpts();
@@ -477,6 +497,7 @@ void PixelMapInterfaceFuzzTest()
     FuzzTestWritePixelsWith5Args(GetData<uint32_t>() % 2); // 2: true or false
     FuzzTestCrop();
     FuzzTestSetFunc();
+    FuzzTestClone();
 }
 
 bool PixelMapMainFuzzTest(const uint8_t* data, size_t size)

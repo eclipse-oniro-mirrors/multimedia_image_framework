@@ -94,14 +94,14 @@ uint8_t *PixelMapParcel::ReadAshmemDataFromParcel(OHOS::MessageParcel& data, int
 
 uint8_t *PixelMapParcel::ReadHeapDataFromParcel(OHOS::MessageParcel& data, int32_t bufferSize)
 {
+    if (bufferSize <= 0 || bufferSize > PIXEL_MAP_MAX_RAM_SIZE) {
+        IMAGE_LOGE("read bufferSize failed, invalid bufferSize.");
+        return nullptr;
+    }
     const uint8_t *addr = data.ReadBuffer(bufferSize);
     uint8_t *base = nullptr;
     if (addr == nullptr) {
         IMAGE_LOGE("read buffer from parcel failed, read buffer addr is null");
-        return nullptr;
-    }
-    if (bufferSize <= 0 || bufferSize > PIXEL_MAP_MAX_RAM_SIZE) {
-        IMAGE_LOGE("read bufferSize failed, invalid bufferSize.");
         return nullptr;
     }
     base = static_cast<uint8_t *>(malloc(bufferSize));
