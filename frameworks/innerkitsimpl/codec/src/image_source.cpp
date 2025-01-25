@@ -679,6 +679,13 @@ bool ImageSource::IsDecodeHdrImage(const DecodeOptions &opts)
         opts.desiredDynamicRange == DecodeDynamicRange::HDR;
 }
 
+bool ImageSource::IsSvgUseDma(const DecodeOptions &opts)
+{
+    ImageInfo info;
+    GetImageInfo(FIRST_FRAME, info);
+    return info.encodedFormat == IMAGE_SVG_FORMAT && opts.allocatorType == AllocatorType::DMA_ALLOC;
+}
+
 AllocatorType ImageSource::ConvertAutoAllocatorType(const DecodeOptions &opts)
 {
     ImageInfo info;
@@ -687,6 +694,8 @@ AllocatorType ImageSource::ConvertAutoAllocatorType(const DecodeOptions &opts)
     if (ImageUtils::IsSizeSupportDma(hasDesiredSizeOptions ? opts.desiredSize : info.size) ||
         info.encodedFormat == IMAGE_HEIF_FORMAT || info.encodedFormat == IMAGE_HEIC_FORMAT) {
         return AllocatorType::DMA_ALLOC;
+    } else if (info.encodedFormat == IMAGE_SVG_FORMAT) {
+        return AllocatorType::SHARE_MEM_ALLOC;
     }
     ParseHdrType();
     if (IsDecodeHdrImage(opts)) {
