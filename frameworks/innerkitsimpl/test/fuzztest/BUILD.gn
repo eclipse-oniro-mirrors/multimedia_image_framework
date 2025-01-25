@@ -23,6 +23,7 @@ group("fuzztest") {
     "imagepixelmapGetColorARGB_fuzzer:ImagePixelmapGetColorARGBFuzzTest",
     "imagepixelmapHdr_fuzzer:ImagePixelmapHdrFuzzTest",
     "imagepixelmapMarshalling_fuzzer:ImagePixelmapMarshallingFuzzTest",
+    "imagepixelmapSlrGpu_fuzzer:ImagePixelmapSlrGpuFuzzTest",
     "imagepixelmapTlv_fuzzer:ImagePixelmapTlvFuzzTest",
     "imagepixelmapsetalpha_fuzzer:ImagePixelmapSetAlphaFuzzTest",
     "imageplugin_fuzzer:ImagePluginFuzzTest",

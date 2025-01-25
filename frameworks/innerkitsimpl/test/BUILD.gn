@@ -32,9 +32,11 @@ ohos_unittest("pixelmaptest") {
     "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/utils/include",
     "//foundation/multimedia/image_framework/interfaces/innerkits/include",
     "//foundation/multimedia/image_framework/plugins/manager/include",
+    "${image_subsystem}/frameworks/innerkitsimpl/egl_image/include",
   ]
   sources = [
     "$image_subsystem/frameworks/innerkitsimpl/test/unittest/pixel_map_test/native_image_test.cpp",
+    "$image_subsystem/frameworks/innerkitsimpl/test/unittest/pixel_map_test/pixel_map_gl_test.cpp",
     "$image_subsystem/frameworks/innerkitsimpl/test/unittest/pixel_map_test/pixel_map_parcel_test.cpp",
     "$image_subsystem/frameworks/innerkitsimpl/test/unittest/pixel_map_test/pixel_map_test.cpp",
     "$image_subsystem/frameworks/innerkitsimpl/test/unittest/pixel_map_test/pixel_yuv_ext_test.cpp",
@@ -44,7 +46,10 @@ ohos_unittest("pixelmaptest") {
     "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/utils:image_utils",
     "//foundation/multimedia/image_framework/interfaces/innerkits:image_native",
   ]
-
+  if (!use_clang_android && !use_clang_ios) {
+    deps +=
+        [ "${image_subsystem}/frameworks/innerkitsimpl/egl_image:post_proc_gl" ]
+  }
   external_deps = [
     "c_utils:utils",
     "drivers_peripheral_display:hdi_gralloc_client",
