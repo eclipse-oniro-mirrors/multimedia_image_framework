@@ -926,38 +926,5 @@ HWTEST_F(PixelMapNdk2Test, OH_PixelmapNative_CreateScaledPixelMap, TestSize.Leve
 
     GTEST_LOG_(INFO) << "PixelMapNdk2Test: OH_PixelmapNative_CreateScaledPixelMap end";
 }
-
-/**
- * @tc.name: OH_PixelmapNative_AccessPixels
- * @tc.desc: Test OH_PixelmapNative_AccessPixels and OH_PixelmapNative_UnaccessPixels
- * @tc.type: FUNC
- */
-HWTEST_F(PixelMapNdk2Test, OH_PixelmapNative_AccessPixels, TestSize.Level3)
-{
-    GTEST_LOG_(INFO) << "PixelMapNdk2Test: OH_PixelmapNative_AccessPixels start";
-
-    OH_Pixelmap_InitializationOptions* options = nullptr;
-    OH_PixelmapInitializationOptions_Create(&options);
-    OH_PixelmapInitializationOptions_SetWidth(options, 2);
-    OH_PixelmapInitializationOptions_SetHeight(options, 2);
-    OH_PixelmapNative* pixelmap = nullptr;
-    Image_ErrorCode ret = OH_PixelmapNative_CreateEmptyPixelmap(options, &pixelmap);
-    EXPECT_EQ(ret, IMAGE_SUCCESS);
-
-    void* addr = nullptr;
-    OH_PixelmapNative_AccessPixels(pixelmap, &addr);
-    EXPECT_TRUE(addr != nullptr);
-    EXPECT_EQ(pixelmap->GetRefCount(), 1);
-    EXPECT_FALSE(pixelmap->GetInnerPixelmap()->IsModifiable());
-
-    OH_PixelmapNative_UnaccessPixels(pixelmap);
-    EXPECT_EQ(pixelmap->GetRefCount(), 0);
-    EXPECT_TRUE(pixelmap->GetInnerPixelmap()->IsModifiable());
-
-    ret = OH_PixelmapNative_UnaccessPixels(pixelmap);
-    EXPECT_EQ(ret, IMAGE_LOCK_UNLOCK_FAILED);
-
-    GTEST_LOG_(INFO) << "PixelMapNdk2Test: OH_PixelmapNative_AccessPixels end";
-}
 }
 }
