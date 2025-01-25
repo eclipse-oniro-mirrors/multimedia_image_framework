@@ -1,0 +1,39 @@
+# Copyright (c) 2024 Huawei Device Co., Ltd.
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+import("//build/test.gni")
+import("//foundation/multimedia/image_framework/ide/image_decode_config.gni")
+
+config("image_external_config") {
+  include_dirs = [
+    "./include",
+    "$image_subsystem/interfaces/innerkits/include",
+  ]
+}
+
+ohos_fuzztest("ImagePixelmapSlrGpuFuzzTest") {
+  public_configs = [ ":image_external_config" ]
+  sources = [ "src/pixelmap_SlrGpu.cpp" ]
+  deps = [ "$image_subsystem/interfaces/innerkits:image_native" ]
+  external_deps = [
+    "c_utils:utils",
+    "graphic_2d:EGL",
+    "graphic_2d:GLESv3",
+    "graphic_surface:surface",
+    "graphic_surface:sync_fence",
+    "hilog:libhilog",
+    "hitrace:hitrace_meter",
+  ]
+  fuzz_config_file = "$image_subsystem/frameworks/innerkitsimpl/test/fuzztest/imagepixelmapSlrGpu_fuzzer"
+  module_out_path = "multimedia_image/image_framework"
+}

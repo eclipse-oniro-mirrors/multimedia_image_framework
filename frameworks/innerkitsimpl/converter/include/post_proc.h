@@ -44,6 +44,12 @@ public:
     bool ScalePixelMapWithSLR(const Size &desiredSize, PixelMap &pixelMap);
     bool ScalePixelMapEx(const Size &desiredSize, PixelMap &pixelMap,
         const AntiAliasingOption &option = AntiAliasingOption::NONE);
+#if !defined(_WIN32) && !defined(_APPLE) && !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
+    static bool RotateInRectangularSteps(PixelMap &pixelMap, float degrees, bool useGpu = false);
+    static bool ScalePixelMapWithGPU(PixelMap &pixelMap, const Size &desiredSize,
+        const AntiAliasingOption &option, bool useGpu = false);
+#endif
+
 private:
     static uint8_t *AllocSharedMemory(const Size &size, const uint64_t bufferSize, int &fd, uint32_t uniqueId);
     static uint8_t *AllocDmaMemory(ImageInfo info, const uint64_t bufferSize,
