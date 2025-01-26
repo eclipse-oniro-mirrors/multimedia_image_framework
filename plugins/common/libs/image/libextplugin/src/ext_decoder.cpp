@@ -18,6 +18,9 @@
 #include <algorithm>
 #include <map>
 #include <sstream>
+#include <sys/ioctl.h>
+
+#include <linux/dma-buf.h>
 
 #include "src/codec/SkJpegCodec.h"
 #include "src/codec/SkJpegDecoderMgr.h"
@@ -55,6 +58,8 @@
 #include "include/core/SkBitmap.h"
 #include "include/core/SkCanvas.h"
 #include "include/core/SkImage.h"
+
+#define DMA_BUF_SET_TYPE _IOW(DMA_BUF_BASE, 2, const char *)
 
 #undef LOG_DOMAIN
 #define LOG_DOMAIN LOG_TAG_DOMAIN_ID_PLUGIN
@@ -284,6 +289,10 @@ uint32_t ExtDecoder::DmaMemAlloc(DecodeContext &context, uint64_t count, SkImage
     bool cond = ret != GSERROR_OK;
     CHECK_ERROR_RETURN_RET_LOG(cond, ERR_DMA_NOT_EXIST,
                                "SurfaceBuffer Alloc failed, %{public}s", GSErrorStr(ret).c_str());
+    int fd = sb->GetFileDescriptor();
+    if (fd > 0) {
+        ioctl(fd, DMA_BUF_SET_TYPE, "pixelmap");
+    }
     void* nativeBuffer = sb.GetRefPtr();
     int32_t err = ImageUtils::SurfaceBuffer_Reference(nativeBuffer);
     if (err != OHOS::GSERROR_OK) {
