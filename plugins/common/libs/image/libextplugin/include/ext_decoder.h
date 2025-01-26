@@ -32,6 +32,10 @@
 #include "jpeg_yuv_decoder/jpeg_decoder_yuv.h"
 
 namespace OHOS {
+    struct BufferRequestConfig;
+}
+
+namespace OHOS {
 namespace ImagePlugin {
 class ExtDecoder : public AbsImageDecoder, public OHOS::MultimediaPlugin::PluginClassBase, NoCopyable {
 public:
@@ -117,6 +121,8 @@ private:
     static void ReportImageType(SkEncodedImageFormat skEncodeFormat);
     bool CheckContext(const DecodeContext &context);
     uint32_t DmaMemAlloc(DecodeContext &context, uint64_t count, SkImageInfo &dstInfo);
+    uint32_t JpegHwDmaMemAlloc(DecodeContext &context, uint64_t count, SkImageInfo &dstInfo);
+    uint32_t DmaAlloc(DecodeContext &context, uint64_t count, const OHOS::BufferRequestConfig &requestConfig);
     uint32_t HeifYUVMemAlloc(DecodeContext &context);
     void SetHeifDecodeError(DecodeContext &context);
     void SetHeifParseError();

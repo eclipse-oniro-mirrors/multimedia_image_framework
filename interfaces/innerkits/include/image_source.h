@@ -255,6 +255,7 @@ public:
     NATIVEEXPORT static void ContextToAddrInfos(ImagePlugin::DecodeContext &context, PixelMapAddrInfos &addrInfos);
     NATIVEEXPORT static bool IsYuvFormat(PixelFormat format);
     NATIVEEXPORT bool IsDecodeHdrImage(const DecodeOptions &opts);
+    NATIVEEXPORT bool IsSvgUseDma(const DecodeOptions &opts);
 
 private:
     DISALLOW_COPY_AND_MOVE(ImageSource);
