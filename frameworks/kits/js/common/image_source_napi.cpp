@@ -1885,6 +1885,10 @@ bool CheckAndSetAllocatorType(std::shared_ptr<ImageSource> imageSource, DecodeOp
     decodeOpts.isAppUseAllocator = true;
     decodeOpts.allocatorType = ConvertAllocatorType(imageSource, DecodeAllocatorType(allocatorType), decodeOpts);
     if (decodeOpts.allocatorType == AllocatorType::SHARE_MEM_ALLOC && imageSource->IsDecodeHdrImage(decodeOpts)) {
+        IMAGE_LOGE("%{public}s Hdr image can not use share memory.", __func__);
+        return false;
+    } else if (imageSource->IsSvgUseDma(decodeOpts)) {
+        IMAGE_LOGE("%{public}s Svg image can not use dma.", __func__);
         return false;
     }
     return true;
@@ -1934,7 +1938,7 @@ napi_value ImageSourceNapi::CreatePixelMapUsingAllocator(napi_env env, napi_call
     }
     if (!CheckAndSetAllocatorType(asyncContext->rImageSource, asyncContext->decodeOpts, allocatorType)) {
         return ImageNapiUtils::ThrowExceptionError(env, IMAGE_SOURCE_UNSUPPORTED_ALLOCATOR_TYPE,
-            "Does not support specifying sharememory to decode HDR images.");
+            "Unsupported allocator type.");
     }
     IMAGE_LOGD("%{public}s allocator type is %{public}d.", __func__, asyncContext->decodeOpts.allocatorType);
     napi_create_promise(env, &(asyncContext->deferred), &result);
@@ -1986,7 +1990,7 @@ napi_value ImageSourceNapi::CreatePixelMapUsingAllocatorSync(napi_env env, napi_
     }
     if (!CheckAndSetAllocatorType(syncContext->constructor_->nativeImgSrc, syncContext->decodeOpts, allocatorType)) {
         return ImageNapiUtils::ThrowExceptionError(env, IMAGE_SOURCE_UNSUPPORTED_ALLOCATOR_TYPE,
-            "Does not support specifying sharememory to decode HDR images.");
+            "Unsupported allocator type.");
     }
     IMAGE_LOGI("%{public}s allocator type is %{public}d.", __func__, syncContext->decodeOpts.allocatorType);
     syncContext->rPixelMap = CreatePixelMapInner(syncContext->constructor_, syncContext->constructor_->nativeImgSrc,
