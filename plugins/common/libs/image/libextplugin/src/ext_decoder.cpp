@@ -188,6 +188,7 @@ static const map<SkEncodedImageFormat, string> FORMAT_NAME = {
     { SkEncodedImageFormat::kHEIF, "image/heif" },
 };
 
+#if !defined(CROSS_PLATFORM)
 static const map<PixelFormat, int32_t> PIXELFORMAT_TOGRAPHIC_MAP = {
     {PixelFormat::RGBA_1010102, GRAPHIC_PIXEL_FMT_RGBA_1010102},
     {PixelFormat::YCRCB_P010, GRAPHIC_PIXEL_FMT_YCRCB_P010},
@@ -198,6 +199,7 @@ static const map<PixelFormat, int32_t> PIXELFORMAT_TOGRAPHIC_MAP = {
     {PixelFormat::BGRA_8888, GRAPHIC_PIXEL_FMT_BGRA_8888},
     {PixelFormat::RGB_565, GRAPHIC_PIXEL_FMT_RGB_565},
 };
+#endif
 
 #ifdef HEIF_HW_DECODE_ENABLE
 static const map<PixelFormat, SkHeifColorFormat> HEIF_FORMAT_MAP = {
