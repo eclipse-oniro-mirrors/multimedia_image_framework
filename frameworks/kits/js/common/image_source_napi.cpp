@@ -1890,6 +1890,10 @@ bool CheckAndSetAllocatorType(std::shared_ptr<ImageSource> imageSource, DecodeOp
     } else if (imageSource->IsSvgUseDma(decodeOpts)) {
         IMAGE_LOGE("%{public}s Svg image can not use dma.", __func__);
         return false;
+    } else if (!imageSource->IsDecodeHdrImage(decodeOpts) && decodeOpts.allocatorType == AllocatorType::DMA_ALLOC &&
+        decodeOpts.desiredPixelFormat == PixelFormat::ARGB_8888) {
+        IMAGE_LOGE("%{public}s SDR image can't set ARGB_8888 and DMA_ALLOC at the same time!", __func__);
+        return false;
     }
     return true;
 }

@@ -96,6 +96,10 @@ typedef enum {
     */
     PIXEL_FORMAT_UNKNOWN = 0,
     /*
+    * ARGB_8888 format
+    */
+    PIXEL_FORMAT_ARGB_8888 = 1,
+    /*
     * RGB_565 format
     */
     PIXEL_FORMAT_RGB_565 = 2,

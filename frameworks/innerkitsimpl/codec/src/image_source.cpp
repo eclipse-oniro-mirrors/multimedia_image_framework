@@ -56,6 +56,7 @@
 #include "metadata_accessor_factory.h"
 #include "pixel_astc.h"
 #include "pixel_map.h"
+#include "pixel_map_utils.h"
 #include "pixel_yuv.h"
 #include "plugin_server.h"
 #include "post_proc.h"
@@ -690,16 +691,19 @@ AllocatorType ImageSource::ConvertAutoAllocatorType(const DecodeOptions &opts)
 {
     ImageInfo info;
     GetImageInfo(FIRST_FRAME, info);
+    ParseHdrType();
+    if (IsDecodeHdrImage(opts)) {
+        return AllocatorType::DMA_ALLOC;
+    }
+    if (opts.desiredPixelFormat == PixelFormat::ARGB_8888) {
+        return AllocatorType::SHARE_MEM_ALLOC;
+    }
     bool hasDesiredSizeOptions = IsSizeVailed(opts.desiredSize);
     if (ImageUtils::IsSizeSupportDma(hasDesiredSizeOptions ? opts.desiredSize : info.size) ||
         info.encodedFormat == IMAGE_HEIF_FORMAT || info.encodedFormat == IMAGE_HEIC_FORMAT) {
         return AllocatorType::DMA_ALLOC;
     } else if (info.encodedFormat == IMAGE_SVG_FORMAT) {
         return AllocatorType::SHARE_MEM_ALLOC;
-    }
-    ParseHdrType();
-    if (IsDecodeHdrImage(opts)) {
-        return AllocatorType::DMA_ALLOC;
     }
     return AllocatorType::SHARE_MEM_ALLOC;
 }
@@ -792,6 +796,10 @@ DecodeContext ImageSource::InitDecodeContext(const DecodeOptions &opts, const Im
             context.allocatorType = AllocatorType::SHARE_MEM_ALLOC;
         }
     }
+    if (opts.desiredPixelFormat == PixelFormat::ARGB_8888) {
+        IMAGE_LOGD("%{public}s ARGB use SHARE_MEM_ALLOC", __func__);
+        context.allocatorType = AllocatorType::SHARE_MEM_ALLOC;
+    }
 
     context.info.pixelFormat = plInfo.pixelFormat;
     ImageHdrType hdrType = sourceHdrType_;
@@ -851,6 +859,11 @@ bool NeedConvertToYuv(PixelFormat optsPixelFormat, PixelFormat curPixelFormat)
         curPixelFormat == PixelFormat::RGB_888);
 }
 
+static bool IsSupportConvertToArgb(PixelMap *pixelMap)
+{
+    return pixelMap != nullptr && !pixelMap->IsHdr() && pixelMap->GetAllocatorType() != AllocatorType::DMA_ALLOC;
+}
+
 unique_ptr<PixelMap> ImageSource::CreatePixelMapExtended(uint32_t index, const DecodeOptions &opts, uint32_t &errorCode)
 {
     ImageEvent imageEvent;
@@ -863,6 +876,10 @@ unique_ptr<PixelMap> ImageSource::CreatePixelMapExtended(uint32_t index, const D
     if (opts_.isAppUseAllocator && opts_.allocatorType == AllocatorType::SHARE_MEM_ALLOC && IsDecodeHdrImage(opts)) {
         IMAGE_LOGE("HDR image can't use SHARE_MEM_ALLOC");
         errorCode = ERR_MEDIA_INVALID_OPERATION;
+        return nullptr;
+    } else if (!IsDecodeHdrImage(opts) && opts_.allocatorType == AllocatorType::DMA_ALLOC &&
+        opts_.desiredPixelFormat == PixelFormat::ARGB_8888) {
+        IMAGE_LOGE("%{public}s SDR image can't set ARGB_8888 and DMA_ALLOC at the same time!", __func__);
         return nullptr;
     }
 #ifdef IMAGE_QOS_ENABLE
@@ -926,6 +943,12 @@ unique_ptr<PixelMap> ImageSource::CreatePixelMapExtended(uint32_t index, const D
             pixelMap, plInfo.pixelFormat, opts_.desiredPixelFormat);
         if (convertRes != SUCCESS) {
             IMAGE_LOGE("convert rgb to yuv failed, return origin rgb!");
+        }
+    }
+    if (opts.desiredPixelFormat == PixelFormat::ARGB_8888 && IsSupportConvertToArgb(pixelMap.get())) {
+        uint32_t convertRes = ConvertArgbAndRgba(pixelMap.get(), PixelFormat::ARGB_8888);
+        if (convertRes != SUCCESS) {
+            IMAGE_LOGE("convert RGBA to ARGB failed, return origin RGBA! error:%{public}u", convertRes);
         }
     }
     return pixelMap;
@@ -4593,6 +4616,10 @@ std::unique_ptr<Picture> ImageSource::CreatePicture(const DecodingOptionsForPict
         info.encodedFormat != IMAGE_HEIC_FORMAT) {
         IMAGE_LOGE("CreatePicture failed, unsupport format: %{public}s", info.encodedFormat.c_str());
         errorCode = ERR_IMAGE_MISMATCHED_FORMAT;
+        return nullptr;
+    }
+    if (opts.desiredPixelFormat == PixelFormat::ARGB_8888) {
+        IMAGE_LOGE("%{public}s picture not support ARGB decode", __func__);
         return nullptr;
     }
     DecodeOptions dopts;

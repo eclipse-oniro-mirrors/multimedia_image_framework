@@ -1059,6 +1059,11 @@ unique_ptr<PixelMap> PixelMap::Clone(int32_t &errorCode)
     pixelMap->SetTransformData(transformData);
     pixelMap->SetHdrType(GetHdrType());
     pixelMap->SetHdrMetadata(GetHdrMetadata());
+    std::shared_ptr<ExifMetadata> exifMetadata = GetExifMetadata();
+    if (exifMetadata != nullptr) {
+        std::shared_ptr<ExifMetadata> newExifMetadata = exifMetadata->Clone();
+        pixelMap->SetExifMetadata(newExifMetadata);
+    }
     errorCode = SUCCESS;
     return pixelMap;
 }

@@ -45,6 +45,15 @@ static const uint8_t NUM_1 = 1;
 static const uint8_t NUM_2 = 2;
 static const uint8_t NUM_3 = 3;
 static const uint8_t NUM_4 = 4;
+constexpr int32_t ARGB8888_BYTES = 4;
+static constexpr int32_t RGBA_CHANNEL_R = 0;
+static constexpr int32_t RGBA_CHANNEL_G = 1;
+static constexpr int32_t RGBA_CHANNEL_B = 2;
+static constexpr int32_t RGBA_CHANNEL_A = 3;
+static constexpr int32_t ARGB_CHANNEL_A = 0;
+static constexpr int32_t ARGB_CHANNEL_R = 1;
+static constexpr int32_t ARGB_CHANNEL_G = 2;
+static constexpr int32_t ARGB_CHANNEL_B = 3;
 
 const std::map<PixelFormat, AVPixelFormat> PixelConvertAdapter::FFMPEG_PIXEL_FORMAT_MAP = {
     {PixelFormat::UNKNOWN, AV_PIX_FMT_NONE},
@@ -79,37 +88,41 @@ static SkColorType PixelFormatConvert(const PixelFormat &pixelFormat)
     return (formatSearch != PIXEL_FORMAT_MAP.end()) ? formatSearch->second : SkColorType::kUnknown_SkColorType;
 }
 
-void ARGBToRGBA(uint8_t* srcPixels, uint8_t* dstPixels, uint32_t byteCount)
+static void ARGBToRGBA(const uint8_t* srcPixels, uint8_t* dstPixels, uint32_t byteCount)
 {
-    bool cond = byteCount % NUM_4 != NUM_0;
+    bool cond = srcPixels == nullptr || dstPixels == nullptr || byteCount % ARGB8888_BYTES != NUM_0;
     CHECK_ERROR_RETURN_LOG(cond, "Pixel count must multiple of 4.");
-    uint8_t *src = srcPixels;
+    uint8_t tmpValue = NUM_0;
+    const uint8_t *src = srcPixels;
     uint8_t *dst = dstPixels;
-    for (uint32_t i = NUM_0 ; i < byteCount; i += NUM_4) {
+    for (uint32_t i = NUM_0; i < byteCount; i += ARGB8888_BYTES) {
         // 0-R 1-G 2-B 3-A
-        dst[NUM_0] = src[NUM_1];
-        dst[NUM_1] = src[NUM_2];
-        dst[NUM_2] = src[NUM_3];
-        dst[NUM_3] = src[NUM_0];
-        src += NUM_4;
-        dst += NUM_4;
+        tmpValue = src[ARGB_CHANNEL_A];
+        dst[RGBA_CHANNEL_R] = src[ARGB_CHANNEL_R];
+        dst[RGBA_CHANNEL_G] = src[ARGB_CHANNEL_G];
+        dst[RGBA_CHANNEL_B] = src[ARGB_CHANNEL_B];
+        dst[RGBA_CHANNEL_A] = tmpValue;
+        src += ARGB8888_BYTES;
+        dst += ARGB8888_BYTES;
     }
 }
 
-void RGBAToARGB(uint8_t* srcPixels, uint8_t* dstPixels, uint32_t byteCount)
+static void RGBAToARGB(const uint8_t* srcPixels, uint8_t* dstPixels, uint32_t byteCount)
 {
-    bool cond = byteCount % NUM_4 != NUM_0;
+    bool cond = srcPixels == nullptr || dstPixels == nullptr || byteCount % ARGB8888_BYTES != NUM_0;
     CHECK_ERROR_RETURN_LOG(cond, "Pixel count must multiple of 4.");
-    uint8_t *src = srcPixels;
+    uint8_t tmpValue = NUM_0;
+    const uint8_t *src = srcPixels;
     uint8_t *dst = dstPixels;
-    for (uint32_t i = NUM_0 ; i < byteCount; i += NUM_4) {
+    for (uint32_t i = NUM_0; i < byteCount; i += ARGB8888_BYTES) {
         // 0-A 1-R 2-G 3-B
-        dst[NUM_0] = src[NUM_3];
-        dst[NUM_1] = src[NUM_0];
-        dst[NUM_2] = src[NUM_1];
-        dst[NUM_3] = src[NUM_2];
-        src += NUM_4;
-        dst += NUM_4;
+        tmpValue = src[RGBA_CHANNEL_A];
+        dst[ARGB_CHANNEL_B] = src[RGBA_CHANNEL_B];
+        dst[ARGB_CHANNEL_G] = src[RGBA_CHANNEL_G];
+        dst[ARGB_CHANNEL_R] = src[RGBA_CHANNEL_R];
+        dst[ARGB_CHANNEL_A] = tmpValue;
+        src += ARGB8888_BYTES;
+        dst += ARGB8888_BYTES;
     }
 }
 
@@ -162,6 +175,13 @@ static int32_t GetRGBxSize(const ImageInfo &imgInfo)
     return imgInfo.size.height * GetRGBxRowBytes(imgInfo);
 }
 
+static SkImageInfo MakeSkImageInfo(const ImageInfo &info)
+{
+    SkAlphaType alphaType = static_cast<SkAlphaType>(info.alphaType);
+    SkColorType colorType = PixelFormatConvert(info.pixelFormat);
+    return SkImageInfo::Make(info.size.width, info.size.height, colorType, alphaType);
+}
+
 bool PixelConvertAdapter::WritePixelsConvert(const void *srcPixels, uint32_t srcRowBytes, const ImageInfo &srcInfo,
                                              void *dstPixels, const Position &dstPos, uint32_t dstRowBytes,
                                              const ImageInfo &dstInfo)
@@ -172,12 +192,8 @@ bool PixelConvertAdapter::WritePixelsConvert(const void *srcPixels, uint32_t src
         return false;
     }
 
-    SkAlphaType srcAlphaType = static_cast<SkAlphaType>(srcInfo.alphaType);
-    SkAlphaType dstAlphaType = static_cast<SkAlphaType>(dstInfo.alphaType);
-    SkColorType srcColorType = PixelFormatConvert(srcInfo.pixelFormat);
-    SkColorType dstColorType = PixelFormatConvert(dstInfo.pixelFormat);
-    SkImageInfo srcImageInfo = SkImageInfo::Make(srcInfo.size.width, srcInfo.size.height, srcColorType, srcAlphaType);
-    SkImageInfo dstImageInfo = SkImageInfo::Make(dstInfo.size.width, dstInfo.size.height, dstColorType, dstAlphaType);
+    SkImageInfo srcImageInfo = MakeSkImageInfo(srcInfo);
+    SkImageInfo dstImageInfo = MakeSkImageInfo(dstInfo);
 
     int32_t dstRGBxSize = (dstInfo.pixelFormat == PixelFormat::RGB_888) ?
         GetRGBxSize(dstInfo) : static_cast<int32_t>(NUM_1);
@@ -195,6 +211,14 @@ bool PixelConvertAdapter::WritePixelsConvert(const void *srcPixels, uint32_t src
         srcRowBytes = static_cast<uint32_t>(GetRGBxRowBytes(srcInfo));
     }
     SkPixmap srcPixmap(srcImageInfo, srcPixels, srcRowBytes);
+    if (srcInfo.pixelFormat == PixelFormat::ARGB_8888) {
+        uint8_t* src = static_cast<uint8_t*>(srcPixmap.writable_addr());
+        ARGBToRGBA(src, src, srcRowBytes * srcInfo.size.height);
+    }
+    if (dstInfo.pixelFormat == PixelFormat::ARGB_8888) {
+        ARGBToRGBA(static_cast<const uint8_t*>(dstPixels), static_cast<uint8_t*>(dstPixels),
+            dstRowBytes * dstInfo.size.height);
+    }
 
     SkBitmap dstBitmap;
     if (!dstBitmap.installPixels(dstImageInfo, dstPixels, dstRowBytes)) {
@@ -206,7 +230,10 @@ bool PixelConvertAdapter::WritePixelsConvert(const void *srcPixels, uint32_t src
         return false;
     }
 
-    if (dstInfo.pixelFormat == PixelFormat::RGB_888) {
+    if (dstInfo.pixelFormat == PixelFormat::ARGB_8888) {
+        uint32_t dstSize = dstRowBytes * dstInfo.size.height;
+        RGBAToARGB(static_cast<const uint8_t*>(dstPixels), static_cast<uint8_t*>(dstPixels), dstSize);
+    } else if (dstInfo.pixelFormat == PixelFormat::RGB_888) {
         RGBxToRGB(&dstRGBxPixels[0], static_cast<uint8_t*>(keepDstPixels), dstRGBxSize);
     }
 
