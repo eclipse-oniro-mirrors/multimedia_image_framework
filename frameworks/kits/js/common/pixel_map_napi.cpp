@@ -33,7 +33,7 @@
 #include "transaction/rs_interfaces.h"
 #include "color_utils.h"
 #else
-static int g_uniqueTid = 0;
+static uint32_t g_uniqueTid = 0;
 #endif
 #include "hitrace_meter.h"
 #include "pixel_map.h"

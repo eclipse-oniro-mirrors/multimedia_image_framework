@@ -27,7 +27,7 @@
 #include "pixel_map.h"
 #include "transaction/rs_interfaces.h"
 #if defined(IOS_PLATFORM) || defined(ANDROID_PLATFORM)
-static int g_uniqueTid = 0;
+static uint32_t g_uniqueTid = 0;
 #endif
 
 #undef LOG_DOMAIN
