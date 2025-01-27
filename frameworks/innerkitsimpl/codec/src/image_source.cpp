@@ -4822,7 +4822,7 @@ unique_ptr<PixelMap> ImageSource::CreatePixelAstcFromImageFile(uint32_t index, c
     }
     if ((originInfo.size.width > ASTC_MAX_SIZE || originInfo.size.height > ASTC_MAX_SIZE) ||
         (opts.desiredSize.width > ASTC_MAX_SIZE || opts.desiredSize.height > ASTC_MAX_SIZE)) {
-        IMAGE_LOGE("CreatePixelAstcFromImageFile size is too large");
+        IMAGE_LOGE("CreatePixelAstcFromImageFile imageInfo size is too large");
         return nullptr;
     }
 
@@ -4833,6 +4833,7 @@ unique_ptr<PixelMap> ImageSource::CreatePixelAstcFromImageFile(uint32_t index, c
         IMAGE_LOGE("CreatePixelAstcFromImageFile pixelMap is nullptr");
         return nullptr;
     }
+
     ImageInfo rgbaInfo;
     rgbaPixelmap->GetImageInfo(rgbaInfo);
     rgbaInfo.pixelFormat = PixelFormat::ASTC_4x4;
@@ -4847,7 +4848,7 @@ unique_ptr<PixelMap> ImageSource::CreatePixelAstcFromImageFile(uint32_t index, c
     MemoryData memoryData = {nullptr, allocMemSize, "CreatePixelAstcFromImageFile Data", desiredSize,
         opts.desiredPixelFormat};
     AllocatorType allocatorType = (opts.allocatorType == AllocatorType::DEFAULT) ?
-        (IsSupportAstcZeroCopy(pixelAstcInfo.size) ? AllocatorType::DMA_ALLOC : AllocatorType::SHARE_MEM_ALLOC) :
+        (IsSupportAstcZeroCopy(rgbaInfo.size) ? AllocatorType::DMA_ALLOC : AllocatorType::SHARE_MEM_ALLOC) :
         opts.allocatorType;
     std::unique_ptr<AbsMemory> dstMemory = MemoryManager::CreateMemory(allocatorType, memoryData);
     if (dstMemory == nullptr) {
@@ -4857,18 +4858,18 @@ unique_ptr<PixelMap> ImageSource::CreatePixelAstcFromImageFile(uint32_t index, c
 
     ret = imagePacker.StartPacking(reinterpret_cast<uint8_t *>(dstMemory->data.data), allocMemSize, option);
     if (ret != 0) {
-        IMAGE_LOGE("CreatePixelAstcFromImageFile failed to start parking");
+        IMAGE_LOGE("CreatePixelAstcFromImageFile failed to start packing");
         return nullptr;
     }
     ret = imagePacker.AddImage(*(rgbaPixelmap.get()));
     if (ret != 0) {
-        IMAGE_LOGE("CreatePixelAstcFromImageFile failed add image");
+        IMAGE_LOGE("CreatePixelAstcFromImageFile failed to add image");
         return nullptr;
     }
     int64_t packedSize = 0;
     ret = imagePacker.FinalizePacking(packedSize);
     if (ret != 0) {
-        IMAGE_LOGE("CreatePixelAstcFromImageFile failed to finalize parking");
+        IMAGE_LOGE("CreatePixelAstcFromImageFile failed to finalize packing");
         return nullptr;
     }
 

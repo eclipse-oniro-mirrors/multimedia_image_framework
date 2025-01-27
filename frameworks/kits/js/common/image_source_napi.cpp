@@ -1156,6 +1156,9 @@ static bool IsSupportPixelFormat(int32_t val)
 
 static PixelFormat ParsePixlForamt(int32_t val)
 {
+    if (IsAstc(val)) {
+        return PixelFormat(val);
+    }
     if (val < static_cast<int32_t>(PixelFormat::EXTERNAL_MAX)) {
         return PixelFormat(val);
     }
