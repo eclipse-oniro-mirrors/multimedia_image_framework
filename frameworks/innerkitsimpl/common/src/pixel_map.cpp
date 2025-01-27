@@ -3601,20 +3601,16 @@ uint32_t PixelMap::SetAlpha(const float percent)
         return ERR_IMAGE_INVALID_PARAMETER;
     }
 
-    uint32_t uPixelsSize = static_cast<uint32_t>(pixelsSize);
-    for (uint32_t i = 0; i < uPixelsSize; i += static_cast<uint32_t>(pixelBytes_)) {
-        if (i + pixelBytes_ > uPixelsSize) {
-            IMAGE_LOGE("In setAlpha, the number of pixelBytes to be configure: %{public}d"
-                " is greater than the remaining size of pixelSize: %{public}d", pixelBytes_, uPixelsSize - i);
-            break;
-        }
-        uint8_t* pixel = data_ + i;
-        if (pixelFormat == PixelFormat::RGBA_F16) {
-            SetF16PixelAlpha(pixel, percent, isPixelPremul);
-        } else if (pixelFormat == PixelFormat::RGBA_1010102) {
-            SetRGBA1010102PixelAlpha(pixel, percent, alphaIndex, isPixelPremul);
-        } else {
-            SetUintPixelAlpha(pixel, percent, pixelBytes_, alphaIndex, isPixelPremul);
+    for (int i = 0; i < GetHeight(); i++) {
+        for (int j = 0; j < GetRowStride(); j += pixelBytes_) {
+            uint8_t* pixel = data_ + GetRowStride() * i + j;
+            if (pixelFormat == PixelFormat::RGBA_F16) {
+                SetF16PixelAlpha(pixel, percent, isPixelPremul);
+            } else if (pixelFormat == PixelFormat::RGBA_1010102) {
+                SetRGBA1010102PixelAlpha(pixel, percent, alphaIndex, isPixelPremul);
+            } else {
+                SetUintPixelAlpha(pixel, percent, pixelBytes_, alphaIndex, isPixelPremul);
+            }
         }
     }
     AddVersionId();

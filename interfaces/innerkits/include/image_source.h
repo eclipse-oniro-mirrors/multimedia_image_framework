@@ -256,6 +256,7 @@ public:
     NATIVEEXPORT static bool IsYuvFormat(PixelFormat format);
     NATIVEEXPORT bool IsDecodeHdrImage(const DecodeOptions &opts);
     NATIVEEXPORT uint64_t GetImageId();
+    NATIVEEXPORT bool IsSvgUseDma(const DecodeOptions &opts);
 
 private:
     DISALLOW_COPY_AND_MOVE(ImageSource);

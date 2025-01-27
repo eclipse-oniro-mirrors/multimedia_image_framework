@@ -18,6 +18,9 @@
 #include <algorithm>
 #include <map>
 #include <sstream>
+#include <sys/ioctl.h>
+
+#include <linux/dma-buf.h>
 
 #include "src/codec/SkJpegCodec.h"
 #include "src/codec/SkJpegDecoderMgr.h"
@@ -55,6 +58,8 @@
 #include "include/core/SkBitmap.h"
 #include "include/core/SkCanvas.h"
 #include "include/core/SkImage.h"
+
+#define DMA_BUF_SET_TYPE _IOW(DMA_BUF_BASE, 2, const char *)
 
 #undef LOG_DOMAIN
 #define LOG_DOMAIN LOG_TAG_DOMAIN_ID_PLUGIN
@@ -183,6 +188,19 @@ static const map<SkEncodedImageFormat, string> FORMAT_NAME = {
     { SkEncodedImageFormat::kHEIF, "image/heif" },
 };
 
+#if !defined(CROSS_PLATFORM)
+static const map<PixelFormat, int32_t> PIXELFORMAT_TOGRAPHIC_MAP = {
+    {PixelFormat::RGBA_1010102, GRAPHIC_PIXEL_FMT_RGBA_1010102},
+    {PixelFormat::YCRCB_P010, GRAPHIC_PIXEL_FMT_YCRCB_P010},
+    {PixelFormat::YCBCR_P010, GRAPHIC_PIXEL_FMT_YCBCR_P010},
+    {PixelFormat::NV12, GRAPHIC_PIXEL_FMT_YCBCR_420_SP},
+    {PixelFormat::NV21, GRAPHIC_PIXEL_FMT_YCRCB_420_SP},
+    {PixelFormat::RGBA_F16, GRAPHIC_PIXEL_FMT_RGBA16_FLOAT},
+    {PixelFormat::BGRA_8888, GRAPHIC_PIXEL_FMT_BGRA_8888},
+    {PixelFormat::RGB_565, GRAPHIC_PIXEL_FMT_RGB_565},
+};
+#endif
+
 #ifdef HEIF_HW_DECODE_ENABLE
 static const map<PixelFormat, SkHeifColorFormat> HEIF_FORMAT_MAP = {
     { PixelFormat::RGBA_1010102, kHeifColorFormat_RGBA_1010102 },
@@ -248,16 +266,13 @@ static BufferRequestConfig CreateDmaRequestConfig(const SkImageInfo &dstInfo, ui
         .colorGamut = GraphicColorGamut::GRAPHIC_COLOR_GAMUT_SRGB,
         .transform = GraphicTransformType::GRAPHIC_ROTATE_NONE,
     };
-    if (pixelFormat == PixelFormat::RGBA_1010102) {
-        requestConfig.format = GRAPHIC_PIXEL_FMT_RGBA_1010102;
-    } else if (pixelFormat == PixelFormat::YCRCB_P010) {
-        requestConfig.format = GRAPHIC_PIXEL_FMT_YCRCB_P010;
-    } else if (pixelFormat == PixelFormat::YCBCR_P010) {
-        requestConfig.format = GRAPHIC_PIXEL_FMT_YCBCR_P010;
-    } else if (pixelFormat == PixelFormat::NV12) {
-        requestConfig.format = GRAPHIC_PIXEL_FMT_YCBCR_420_SP;
-    } else if (pixelFormat == PixelFormat::RGBA_F16) {
-        requestConfig.format = GRAPHIC_PIXEL_FMT_RGBA16_FLOAT;
+    auto formatSearch = PIXELFORMAT_TOGRAPHIC_MAP.find(pixelFormat);
+    requestConfig.format = (formatSearch != PIXELFORMAT_TOGRAPHIC_MAP.end()) ?
+        formatSearch->second : GRAPHIC_PIXEL_FMT_RGBA_8888;
+    if (requestConfig.format == GRAPHIC_PIXEL_FMT_YCBCR_420_SP ||
+        requestConfig.format == GRAPHIC_PIXEL_FMT_YCRCB_420_SP) {
+        count = JpegDecoderYuv::GetYuvOutSize(dstInfo.width(), dstInfo.height());
+    } else if (requestConfig.format == GRAPHIC_PIXEL_FMT_RGBA16_FLOAT) {
         count = dstInfo.width() * dstInfo.height() * ImageUtils::GetPixelBytes(PixelFormat::RGBA_F16);
     }
     return requestConfig;
@@ -270,20 +285,43 @@ uint32_t ExtDecoder::DmaMemAlloc(DecodeContext &context, uint64_t count, SkImage
     IMAGE_LOGE("Unsupport dma mem alloc");
     return ERR_IMAGE_DATA_UNSUPPORT;
 #else
-    sptr<SurfaceBuffer> sb = SurfaceBuffer::Create();
+    BufferRequestConfig requestConfig = CreateDmaRequestConfig(dstInfo, count, context.info.pixelFormat);
+    return DmaAlloc(context, count, requestConfig);
+#endif
+}
+
+uint32_t ExtDecoder::JpegHwDmaMemAlloc(DecodeContext &context, uint64_t count, SkImageInfo &dstInfo)
+{
+#if defined(_WIN32) || defined(_APPLE) || defined(ANDROID_PLATFORM) || defined(IOS_PLATFORM)
+    IMAGE_LOGE("Unsupport dma mem alloc");
+    return ERR_IMAGE_DATA_UNSUPPORT;
+#else
     BufferRequestConfig requestConfig = CreateDmaRequestConfig(dstInfo, count, context.info.pixelFormat);
     if (outputColorFmt_ == PIXEL_FMT_YCRCB_420_SP) {
         requestConfig.format = GRAPHIC_PIXEL_FMT_YCRCB_420_SP;
-        if (IsSupportHardwareDecode() && !hwDecodeFailed_) {
-            requestConfig.usage |= BUFFER_USAGE_VENDOR_PRI16; // height is 64-bytes aligned
-        }
+        requestConfig.usage |= BUFFER_USAGE_VENDOR_PRI16; // height is 64-bytes aligned
         IMAGE_LOGD("ExtDecoder::DmaMemAlloc desiredFormat is NV21");
         count = JpegDecoderYuv::GetYuvOutSize(dstInfo.width(), dstInfo.height());
     }
+    return DmaAlloc(context, count, requestConfig);
+#endif
+}
+
+uint32_t ExtDecoder::DmaAlloc(DecodeContext &context, uint64_t count, const OHOS::BufferRequestConfig &requestConfig)
+{
+#if defined(CROSS_PLATFORM)
+    IMAGE_LOGE("Unsupport dma mem alloc");
+    return ERR_IMAGE_DATA_UNSUPPORT;
+#else
+    sptr<SurfaceBuffer> sb = SurfaceBuffer::Create();
     GSError ret = sb->Alloc(requestConfig);
     bool cond = ret != GSERROR_OK;
     CHECK_ERROR_RETURN_RET_LOG(cond, ERR_DMA_NOT_EXIST,
                                "SurfaceBuffer Alloc failed, %{public}s", GSErrorStr(ret).c_str());
+    int fd = sb->GetFileDescriptor();
+    if (fd > 0) {
+        ioctl(fd, DMA_BUF_SET_TYPE, "pixelmap");
+    }
     void* nativeBuffer = sb.GetRefPtr();
     int32_t err = ImageUtils::SurfaceBuffer_Reference(nativeBuffer);
     if (err != OHOS::GSERROR_OK) {
@@ -293,8 +331,8 @@ uint32_t ExtDecoder::DmaMemAlloc(DecodeContext &context, uint64_t count, SkImage
 
     IMAGE_LOGD("ExtDecoder::DmaMemAlloc sb stride is %{public}d, height is %{public}d, size is %{public}d",
         sb->GetStride(), sb->GetHeight(), sb->GetSize());
-    SetDecodeContextBuffer(context,
-        AllocatorType::DMA_ALLOC, static_cast<uint8_t*>(sb->GetVirAddr()), count, nativeBuffer);
+    SetDecodeContextBuffer(context, AllocatorType::DMA_ALLOC, static_cast<uint8_t*>(sb->GetVirAddr()), count,
+        nativeBuffer);
     return SUCCESS;
 #endif
 }
@@ -845,7 +883,6 @@ uint32_t ExtDecoder::DoHardWareDecode(DecodeContext &context)
     if (HardWareDecode(context) == SUCCESS) {
         return SUCCESS;
     }
-    hwDecodeFailed_ = true;
     return ERROR;
 }
 #endif
@@ -879,6 +916,25 @@ void ExtDecoder::FillYuvInfo(DecodeContext &context, SkImageInfo &dstInfo)
     }
 }
 
+#ifdef HEIF_HW_DECODE_ENABLE
+bool SetOutPutFormat(OHOS::Media::PixelFormat pixelFormat, HeifDecoderImpl* decoder)
+{
+    bool ret = true;
+    if (pixelFormat == PixelFormat::RGB_565) {
+        ret = decoder->setOutputColor(kHeifColorFormat_RGB565);
+    } else if (pixelFormat == PixelFormat::RGBA_8888) {
+        ret = decoder->setOutputColor(kHeifColorFormat_RGBA_8888);
+    } else if (pixelFormat == PixelFormat::BGRA_8888) {
+        ret = decoder->setOutputColor(kHeifColorFormat_BGRA_8888);
+    } else if (pixelFormat == PixelFormat::NV12) {
+        ret = decoder->setOutputColor(kHeifColorFormat_NV12);
+    } else if (pixelFormat == PixelFormat::NV21) {
+        ret = decoder->setOutputColor(kHeifColorFormat_NV21);
+    }
+    return ret;
+}
+#endif
+
 uint32_t ExtDecoder::DoHeifSharedMemDecode(DecodeContext &context)
 {
 #ifdef HEIF_HW_DECODE_ENABLE
@@ -892,8 +948,9 @@ uint32_t ExtDecoder::DoHeifSharedMemDecode(DecodeContext &context)
     if (IsYuv420Format(context.info.pixelFormat)) {
         rowStride = dstInfo_.width();
         byteCount = dstInfo_.width() * dstInfo_.height() * NUM_YUV_COMPONENTS / BYTES_PER_YUV_SAMPLE;
-        decoder->setOutputColor(
-            context.info.pixelFormat == PixelFormat::NV12 ? kHeifColorFormat_NV12 : kHeifColorFormat_NV21);
+    }
+    if (!SetOutPutFormat(context.info.pixelFormat, decoder)) {
+        return ERR_IMAGE_DATA_UNSUPPORT;
     }
     uint32_t res = ShareMemAlloc(context, byteCount);
     if (res != SUCCESS) {
@@ -1202,7 +1259,7 @@ uint32_t ExtDecoder::AllocOutputBuffer(DecodeContext &context,
     if (ImageUtils::IsSdrPixelMapReuseSuccess(context, info_.width(), info_.height(), reusePixelmap_)) {
         IMAGE_LOGI("Jpeg hardware decode reusePixelmap success");
     } else {
-        uint32_t ret = DmaMemAlloc(context, byteCount, hwDstInfo_);
+        uint32_t ret = JpegHwDmaMemAlloc(context, byteCount, hwDstInfo_);
         if (ret != SUCCESS) {
             IMAGE_LOGE("Alloc OutputBuffer failed, ret=%{public}d", ret);
             return ERR_IMAGE_DECODE_ABNORMAL;

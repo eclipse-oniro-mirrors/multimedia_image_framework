@@ -179,5 +179,14 @@ bool ImageSystemProperties::GetSLRParallelEnabled()
 #endif
 }
 
+bool ImageSystemProperties::GetGenThumbWithGpu()
+{
+#if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
+    static bool ret = system::GetBoolParameter("persist.multimedia.image.GenThumbWithGpu.endabled", false);
+    return ret;
+#else
+    return false;
+#endif
+}
 } // namespace Media
 } // namespace OHOS

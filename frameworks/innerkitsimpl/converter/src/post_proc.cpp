@@ -30,13 +30,12 @@
 #else
 #include "memory.h"
 #endif
-
 #if !defined(_WIN32) && !defined(_APPLE) && !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
 #include <sys/mman.h>
 #include "ashmem.h"
 #include "surface_buffer.h"
 #include "vpe_utils.h"
-
+#include "pixel_map_program_manager.h"
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -823,6 +822,226 @@ bool CheckPixelMapSLR(const Size &desiredSize, PixelMap &pixelMap)
     return true;
 }
 
+#if !defined(_WIN32) && !defined(_APPLE) && !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
+static int g_minSize = 512;
+static bool CheckPixelMapSLR(PixelMap &pixelMap, const Size &desiredSize, GPUTransformData &trans)
+{
+    ImageInfo imgInfo;
+    pixelMap.GetImageInfo(imgInfo);
+    if (imgInfo.pixelFormat != PixelFormat::RGBA_8888) {
+        IMAGE_LOGE("slr_gpu CheckPixelMapSLR only support RGBA_8888 format  %{public}d", imgInfo.pixelFormat);
+        return false;
+    }
+    int32_t srcWidth = pixelMap.GetWidth();
+    int32_t srcHeight = pixelMap.GetHeight();
+    if (srcWidth <= 0 || srcHeight <= 0 || !pixelMap.GetWritablePixels()) {
+        IMAGE_LOGE("slr_gpu CheckPixelMapSLR invalid src size, %{public}d, %{public}d", srcWidth, srcHeight);
+        return false;
+    }
+    if (desiredSize.width <= 0 || desiredSize.height <= 0) {
+        IMAGE_LOGE("slr_gpu CheckPixelMapSLR invalid desired size, %{public}d, %{public}d",
+            desiredSize.width, desiredSize.height);
+        return false;
+    }
+    int32_t pixelBytes = pixelMap.GetPixelBytes();
+    if (pixelBytes <= 0) {
+        IMAGE_LOGE("slr_gpu CheckPixelMapSLR invalid pixel bytes, %{public}d", pixelBytes);
+        return false;
+    }
+    uint64_t dstSizeOverflow =
+        static_cast<uint64_t>(desiredSize.width) * static_cast<uint64_t>(desiredSize.height) *
+        static_cast<uint64_t>(pixelBytes);
+    if (dstSizeOverflow > UINT_MAX) {
+        IMAGE_LOGE("slr_gpu ScalePixelMapWithSLR desired size overflow");
+        return false;
+    }
+    if (trans.transformationType == TransformationType::SCALE &&
+        (srcWidth <= desiredSize.width || srcHeight <= desiredSize.height)) {
+        IMAGE_LOGI("slr_gpu  CheckPixelMapSLR  failed. Only zoom-out is supported.");
+        return false;
+    }
+    if (trans.transformationType == TransformationType::SCALE &&
+        (srcWidth * srcHeight < g_minSize * g_minSize)) {
+        IMAGE_LOGI("slr_gpu  CheckPixelMapSLR  failed. srcWidth * srcHeight < minSize * minSize.");
+        return false;
+    }
+    if (trans.transformationType == TransformationType::ROTATE &&
+        !(std::fabs(std::fmod(trans.rotateDegreeZ, 90.f)) < 1e-6)) {
+        IMAGE_LOGI("slr_gpu  CheckPixelMapSLR  failed. Only 90* is supported.");
+        return false;
+    }
+    return true;
+}
+
+static void GetPixelMapInfo(PixelMap &source, Size &size, GLenum &glFormat, int &perPixelSize)
+{
+    size = {
+        .width = source.GetWidth(),
+        .height = source.GetHeight(),
+    };
+    glFormat = GL_RGBA;
+    perPixelSize = ImageUtils::GetPixelBytes(PixelFormat::RGBA_8888);
+    PixelFormat originFormat = source.GetPixelFormat();
+    switch (originFormat) {
+        case PixelFormat::RGBA_8888:
+            glFormat = GL_RGBA;
+            break;
+        case PixelFormat::RGB_565:
+            glFormat = GL_RGB565;
+            perPixelSize = ImageUtils::GetPixelBytes(PixelFormat::RGB_565);
+            break;
+        case PixelFormat::RGB_888:
+            glFormat = GL_RGB;
+            perPixelSize = ImageUtils::GetPixelBytes(PixelFormat::RGB_888);
+            break;
+        case PixelFormat::BGRA_8888:
+            glFormat = GL_BGRA_EXT;
+            break;
+        case PixelFormat::ALPHA_8:
+            glFormat = GL_ALPHA8_EXT;
+            perPixelSize = ImageUtils::GetPixelBytes(PixelFormat::ALPHA_8);
+            break;
+        default:
+            IMAGE_LOGE("slr_gpu %{public}s format %{public}d is not support! ", __func__, originFormat);
+            break;
+    }
+}
+
+static bool PixelMapPostProcWithGL(PixelMap &sourcePixelMap, GPUTransformData &trans, bool needHighQuality)
+{
+    Size &desiredSize = trans.targetInfo_.size;
+    if (!CheckPixelMapSLR(sourcePixelMap, trans.targetInfo_.size, trans)) {
+        return false;
+    }
+    Size sourceSize;
+    GLenum glFormat = GL_RGBA;
+    int perPixelSize = ImageUtils::GetPixelBytes(sourcePixelMap.GetPixelFormat());
+    GetPixelMapInfo(sourcePixelMap, sourceSize, glFormat, perPixelSize);
+    ImageTrace imageTrace("PixelMapPostProcWithGL (%d, %d)=>(%d, %d) stride %d type %d transtype:%d",
+        sourceSize.width, sourceSize.height, desiredSize.width, desiredSize.height,
+        sourcePixelMap.GetRowStride(), (int)sourcePixelMap.GetAllocatorType(), (int)trans.transformationType);
+    IMAGE_LOGI("slr_gpu PixelMapPostProcWithGL uniqueId:%{public}d AllocatorType:%{public}d "
+        "size (%{public}d, %{public}d)=>(%{public}d, %{public}d) stride %{public}d transtype:%{public}d",
+        sourcePixelMap.GetUniqueId(), (int)sourcePixelMap.GetAllocatorType(), sourceSize.width, sourceSize.height,
+        desiredSize.width, desiredSize.height, sourcePixelMap.GetRowStride(), (int)trans.transformationType);
+    AllocatorType allocType = sourcePixelMap.GetAllocatorType();
+    size_t buffersize = 4 * desiredSize.width * desiredSize.height;
+    MemoryData memoryData = {nullptr, buffersize, "PixelMapPostProcWithGL", desiredSize};
+    std::unique_ptr<AbsMemory> dstMemory = MemoryManager::CreateMemory(allocType, memoryData);
+    if (dstMemory == nullptr || dstMemory->data.data == nullptr) {
+        IMAGE_LOGE("slr_gpu PixelMapPostProcWithGL dstMemory is null");
+        return false;
+    }
+    int outputStride = 4 * desiredSize.width;
+    if (allocType == AllocatorType::DMA_ALLOC) {
+        SurfaceBuffer* sbBuffer = reinterpret_cast<SurfaceBuffer*>(dstMemory->extend.data);
+        outputStride = sbBuffer->GetStride();
+        buffersize = sbBuffer->GetStride() * desiredSize.height;
+    }
+    PixelMapProgramManager::BuildShader();
+    bool ret = true;
+    auto program = PixelMapProgramManager::GetInstance().GetProgram();
+    if (program == nullptr) {
+        IMAGE_LOGE("slr_gpu PixelMapPostProcWithGL %{public}s create gl context failed", __func__);
+        ret = false;
+    } else {
+        trans.targetInfo_.stride = outputStride;
+        trans.targetInfo_.pixelBytes = perPixelSize;
+        trans.targetInfo_.outdata = dstMemory->data.data;
+        trans.targetInfo_.context = dstMemory->extend.data;
+        trans.glFormat = glFormat;
+        trans.isDma = allocType == AllocatorType::DMA_ALLOC ? true : false;
+        program->SetGPUTransformData(trans);
+        ret = PixelMapProgramManager::GetInstance().ExecutProgram(program);
+    }
+    if (!ret) {
+        dstMemory->Release();
+        IMAGE_LOGE("slr_gpu PixelMapPostProcWithGL Resize failed");
+        return false;
+    }
+    sourcePixelMap.SetPixelsAddr(dstMemory->data.data, dstMemory->extend.data,
+        desiredSize.height * outputStride, allocType, nullptr);
+    ImageInfo info;
+    info.size = desiredSize;
+    info.pixelFormat = PixelFormat::RGBA_8888;
+    info.alphaType = AlphaType::IMAGE_ALPHA_TYPE_UNPREMUL;
+    sourcePixelMap.SetImageInfo(info, true);
+    return true;
+}
+#endif
+
+bool PostProc::RotateInRectangularSteps(PixelMap &pixelMap, float degrees, bool useGpu)
+{
+#if !defined(_WIN32) && !defined(_APPLE) && !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
+    if (useGpu && ImageSystemProperties::GetGenThumbWithGpu() &&
+        std::fabs(std::fmod(degrees, 90.f)) < 1e-6) { // degrees 90
+        ImageTrace imageTrace("RotateInRectangularSteps:%f", degrees);
+        IMAGE_LOGI("slr_gpu RotateInRectangularSteps in :%{public}f", degrees);
+        GPUTransformData gpuTransform;
+        ImageInfo imageInfo;
+        pixelMap.GetImageInfo(imageInfo);
+        Mat4 tmpMat4;
+        std::array<float, 3> axis = { 0.0f, 0.0f, 1.0f }; // capacity 3
+        float angle = degrees * M_PI / 180.f; // degrees 180
+        gpuTransform.targetInfo_.size = {
+            std::abs(imageInfo.size.width * std::cos(angle)) + std::abs(imageInfo.size.height * std::sin(angle)),
+            std::abs(imageInfo.size.height * std::cos(angle)) + std::abs(imageInfo.size.width * std::sin(angle))
+        };
+        degrees = std::fmod(360.f - degrees, 360.f); // degrees 360
+        gpuTransform.rotateTrans = Mat4(tmpMat4, degrees, axis);
+        gpuTransform.rotateDegreeZ = degrees;
+        gpuTransform.sourceInfo_ = {
+            .size = imageInfo.size,
+            .stride = pixelMap.GetRowStride(),
+            .pixelBytes = ImageUtils::GetPixelBytes(pixelMap.GetPixelFormat()),
+            .addr = pixelMap.GetPixels(),
+            .context = pixelMap.GetFd(),
+        };
+        gpuTransform.transformationType = TransformationType::ROTATE;
+        if (PixelMapPostProcWithGL(pixelMap, gpuTransform, true)) {
+            IMAGE_LOGI("slr_gpu RotateInRectangularSteps success");
+            return true;
+        }
+        IMAGE_LOGI("slr_gpu RotateInRectangularSteps rotate with cpu");
+    }
+#endif
+    pixelMap.rotate(degrees);
+    return true;
+}
+
+bool PostProc::ScalePixelMapWithGPU(PixelMap &pixelMap, const Size &desiredSize,
+    const AntiAliasingOption &option, bool useGpu)
+{
+#if !defined(_WIN32) && !defined(_APPLE) && !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
+    if (useGpu && ImageSystemProperties::GetGenThumbWithGpu() &&
+        option == AntiAliasingOption::HIGH) {
+        ImageTrace imageTrace("ScalePixelMapWithGPU:wh(%d,%d)->(%d,%d)",
+            pixelMap.GetWidth(), pixelMap.GetHeight(), desiredSize.width, desiredSize.height);
+        IMAGE_LOGI("slr_gpu ScalePixelMapWithGPU:wh(%{public}d,%{public}d)->(%{public}d,%{public}d)",
+            pixelMap.GetWidth(), pixelMap.GetHeight(), desiredSize.width, desiredSize.height);
+        GPUTransformData gpuTransform;
+        gpuTransform.targetInfo_.size = desiredSize;
+        ImageInfo imageInfo;
+        pixelMap.GetImageInfo(imageInfo);
+        gpuTransform.sourceInfo_ = {
+            .size = imageInfo.size,
+            .stride = pixelMap.GetRowStride(),
+            .pixelBytes = ImageUtils::GetPixelBytes(pixelMap.GetPixelFormat()),
+            .addr = pixelMap.GetPixels(),
+            .context = pixelMap.GetFd(),
+        };
+        gpuTransform.transformationType = TransformationType::SCALE;
+        if (PixelMapPostProcWithGL(pixelMap, gpuTransform, true)) {
+            IMAGE_LOGI("slr_gpu ScalePixelMapWithGPU success");
+            return true;
+        }
+        IMAGE_LOGI("slr_gpu ScalePixelMapWithGPU failed scale with cpu");
+    }
+#endif
+    PostProc postProc;
+    return postProc.ScalePixelMapEx(desiredSize, pixelMap, option);
+}
+
 bool PostProc::ScalePixelMapWithSLR(const Size &desiredSize, PixelMap &pixelMap)
 {
     ImageInfo imgInfo;
@@ -873,12 +1092,12 @@ bool PostProc::ScalePixelMapWithSLR(const Size &desiredSize, PixelMap &pixelMap)
 
 bool PostProc::ScalePixelMapEx(const Size &desiredSize, PixelMap &pixelMap, const AntiAliasingOption &option)
 {
-    ImageTrace imageTrace("PixelMap ScalePixelMapEx");
-    IMAGE_LOGD("ScalePixelMapEx pixelMap: width = %{public}d, height = %{public}d, pixelFormat = %{public}d, "
+    ImageTrace imageTrace("PixelMap ScalePixelMapEx, srcSize[%d, %d], dstSize[%d, %d] ",
+        pixelMap.GetWidth(), pixelMap.GetHeight(), desiredSize.width, desiredSize.height);
+    IMAGE_LOGI("slr_gpu ScalePixelMapEx pixelMap: width = %{public}d, height = %{public}d, pixelFormat = %{public}d, "
         "allocatorType = %{public}d; desiredSize: width = %{public}d, height = %{public}d",
         pixelMap.GetWidth(), pixelMap.GetHeight(), pixelMap.GetPixelFormat(),
         pixelMap.GetAllocatorType(), desiredSize.width, desiredSize.height);
-
     ImageInfo imgInfo;
     pixelMap.GetImageInfo(imgInfo);
     int32_t srcWidth = pixelMap.GetWidth();

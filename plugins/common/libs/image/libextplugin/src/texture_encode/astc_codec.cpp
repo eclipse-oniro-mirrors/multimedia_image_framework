@@ -23,6 +23,7 @@
 #include "image_log.h"
 #include "image_trace.h"
 #include "image_system_properties.h"
+#include "image_trace.h"
 #include "securec.h"
 #include "media_errors.h"
 
@@ -60,12 +61,13 @@ constexpr int32_t HEIGHT_CL_THRESHOLD = 256;
 constexpr int32_t WIDTH_MAX_ASTC = 8192;
 constexpr int32_t HEIGHT_MAX_ASTC = 8192;
 
-#if (defined SUT_ENCODE_ENABLE) || (defined ENABLE_ASTC_ENCODE_BASED_GPU)
+#ifdef SUT_ENCODE_ENABLE
 static bool CheckClBinIsExist(const std::string &name)
 {
     return (access(name.c_str(), F_OK) != -1); // -1 means that the file is  not exist
 }
-
+#endif
+#ifdef ENABLE_ASTC_ENCODE_BASED_GPU
 static bool CheckClBinIsExistWithLock(const std::string &name)
 {
     std::lock_guard<std::mutex> lock(checkClBinPathMutex);
@@ -699,7 +701,7 @@ static bool AstcEncProcess(TextureEncodeOptions &param, uint8_t *pixmapIn, uint8
 #ifdef ENABLE_ASTC_ENCODE_BASED_GPU
     bool openClEnc = param.width_ >= WIDTH_CL_THRESHOLD && param.height_ >= HEIGHT_CL_THRESHOLD &&
         param.privateProfile_ == QualityProfile::HIGH_SPEED_PROFILE;
-    bool enableClEnc = openClEnc && ImageSystemProperties::GetAstcHardWareEncodeEnabled() &&
+    bool enableClEnc = openClEnc && ImageSystemProperties::GetGenThumbWithGpu() &&
         (param.blockX_ == DEFAULT_DIM) && (param.blockY_ == DEFAULT_DIM); // HardWare only support 4x4 now
     if (enableClEnc) {
         IMAGE_LOGI("astc hardware encode begin");
@@ -832,7 +834,6 @@ uint32_t AstcCodec::ASTCEncode() __attribute__((no_sanitize("cfi")))
     }
     uint8_t *astcBuffer = static_cast<uint8_t *>(malloc(packSize));
     if (astcBuffer == nullptr) {
-        IMAGE_LOGE("astc astcBuffer malloc failed!");
         ReleaseExtendInfoMemory(extendInfo);
         return ERROR;
     }
