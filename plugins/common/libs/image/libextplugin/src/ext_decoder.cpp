@@ -20,7 +20,6 @@
 #include <sstream>
 #include <sys/ioctl.h>
 
-#include <linux/dma-buf.h>
 
 #include "src/codec/SkJpegCodec.h"
 #include "src/codec/SkJpegDecoderMgr.h"
@@ -29,6 +28,7 @@
 #include "image_format_convert.h"
 #include "image_mime_type.h"
 #if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
+#include <linux/dma-buf.h>
 #include "ffrt.h"
 #include "hisysevent.h"
 #endif
