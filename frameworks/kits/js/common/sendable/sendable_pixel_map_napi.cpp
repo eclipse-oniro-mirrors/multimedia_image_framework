@@ -26,6 +26,9 @@
 #include "hitrace_meter.h"
 #include "pixel_map.h"
 #include "transaction/rs_interfaces.h"
+#if defined(IOS_PLATFORM) || defined(ANDROID_PLATFORM)
+static uint32_t g_uniqueTid = 0;
+#endif
 
 #undef LOG_DOMAIN
 #define LOG_DOMAIN LOG_TAG_DOMAIN_ID_IMAGE
@@ -513,7 +516,14 @@ static napi_status NewPixelNapiInstance(napi_env &env, napi_value &constructor,
     size_t argc = NEW_INSTANCE_ARGC;
     napi_value argv[NEW_INSTANCE_ARGC] = { 0 };
 
-    uint64_t pixelMapId = (static_cast<uint64_t>(pixelMap->GetUniqueId()) << 32) | static_cast<uint64_t>(gettid());
+    uint64_t pixelMapId;
+    uint64_t UNIQUE_ID_SHIFT = 32;
+#if defined(IOS_PLATFORM) || defined(ANDROID_PLATFORM)
+    pixelMapId = (static_cast<uint64_t>(pixelMap->GetUniqueId()) << UNIQUE_ID_SHIFT) |
+        static_cast<uint64_t>(g_uniqueTid++);
+#else
+    pixelMapId = (static_cast<uint64_t>(pixelMap->GetUniqueId()) << UNIQUE_ID_SHIFT) | static_cast<uint64_t>(gettid());
+#endif
     status = napi_create_bigint_uint64(env, pixelMapId, &argv[0]);
     if (!IMG_IS_OK(status)) {
         IMAGE_LOGE("NewPixelNapiInstance napi_create_bigint_uint64 failed");
