@@ -1929,7 +1929,7 @@ uint32_t PixelMap::CheckPixelMapForWritePixels()
         IMAGE_LOGE("write pixel by rect current pixel map data is null, isUnMap %{public}d.", isUnMap_);
         return ERR_IMAGE_WRITE_PIXELMAP_FAILED;
     }
-    uint32_t bytesPerPixel = ImageUtils::GetPixelBytes(imageInfo_.pixelFormat);
+    int32_t bytesPerPixel = ImageUtils::GetPixelBytes(imageInfo_.pixelFormat);
     if (bytesPerPixel == 0) {
         IMAGE_LOGE("write pixel by rect get bytes by per pixel fail.");
         return ERR_IMAGE_WRITE_PIXELMAP_FAILED;

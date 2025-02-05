@@ -34,7 +34,7 @@ constexpr uint32_t BOOLEANMODULO = 2;
 constexpr uint32_t SETALPHAMINWIDTH = 50;
 constexpr uint32_t SETALPHAMINHEIGHT = 50;
 constexpr uint32_t NUM_15 = 15;
-constexpr uint32_t NUM_10 = 10;
+constexpr uint32_t NUM_12 = 12;
 
 namespace OHOS {
 namespace Media {
@@ -100,7 +100,7 @@ std::unique_ptr<Media::PixelMap> GetPixelMapFromOptsAndRandomData(const Media::I
 {
     uint32_t size = opts.size.width * opts.size.height;
     std::unique_ptr<uint32_t[]> buffer = std::make_unique<uint32_t[]>(size);
-    for (int i = 0; i < size; i++) {
+    for (uint32_t i = 0; i < size; i++) {
         buffer[i] = GetData<uint32_t>();
     }
     auto pixelmap = Media::PixelMap::Create(buffer.get(), size, opts);
@@ -168,8 +168,8 @@ void FuzzTestPremulPixelMapSetAlpha()
 {
     Media::InitializationOptions opts = GetInitialRandomOpts();
     opts.pixelFormat = PixelFormat::RGBA_8888;
-    opts.size.width = NUM_10;
-    opts.size.height = NUM_10;
+    opts.size.width = NUM_12;
+    opts.size.height = NUM_12;
     opts.alphaType = AlphaType::IMAGE_ALPHA_TYPE_PREMUL;
 
     std::unique_ptr<Media::PixelMap> pixelmap = GetPixelMapFromOptsAndRandomData(opts);

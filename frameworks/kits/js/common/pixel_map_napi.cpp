@@ -3212,7 +3212,7 @@ static void CloneExec(napi_env env, PixelMapAsyncContext* context)
             int32_t errorCode = SUCCESS;
             auto clonePixelMap = context->rPixelMap->Clone(errorCode);
             if (clonePixelMap == nullptr) {
-                context->status = errorCode;
+                context->status = static_cast<uint32_t>(errorCode);
                 IMAGE_LOGE("Clone PixelMap failed");
                 return;
             }
