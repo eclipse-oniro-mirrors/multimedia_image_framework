@@ -1992,9 +1992,8 @@ uint32_t ExtDecoder::GetFilterArea(const int &privacyType, std::vector<std::pair
         IMAGE_LOGD("[GetFilterArea]: get app1 area size");
         appSize += APP1_SIZE_H_OFF;
         auto ret = exifInfo_.GetFilterArea(buffer, (appSize < size) ? appSize : size, privacyType, ranges);
-        if (ret != SUCCESS) {
-            IMAGE_LOGE("[GetFilterArea]: failed to get area %{public}d", ret);
-        }
+        bool cond = (ret != SUCCESS);
+        CHECK_ERROR_PRINT_LOG(cond, "[GetFilterArea]: failed to get area %{public}d", ret);
         return ret;
     });
 }
