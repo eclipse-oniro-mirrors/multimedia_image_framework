@@ -307,6 +307,8 @@ private:
     bool ConvertYUV420ToRGBA(uint8_t *data, uint32_t size, bool isSupportOdd, bool isAddUV, uint32_t &errorCode);
     std::unique_ptr<PixelMap> CreatePixelMapForYUV(uint32_t &errorCode);
     std::unique_ptr<PixelMap> CreatePixelMapForASTC(uint32_t &errorCode, const DecodeOptions &opts);
+    bool CompressToAstcFromPixelmap(const DecodeOptions &opts, std::unique_ptr<PixelMap> &rgbaPixelmap,
+        std::unique_ptr<AbsMemory> &dstMemory);
     std::unique_ptr<PixelMap> CreatePixelAstcFromImageFile(uint32_t index, const DecodeOptions &opts,
         uint32_t &errorCode);
     uint32_t GetFormatExtended(std::string &format);

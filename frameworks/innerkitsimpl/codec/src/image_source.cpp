@@ -4820,29 +4820,10 @@ void ImageSource::DecodeJpegAuxiliaryPicture(
 }
 #endif
 
-unique_ptr<PixelMap> ImageSource::CreatePixelAstcFromImageFile(uint32_t index, const DecodeOptions &opts,
-    uint32_t &errorCode)
+bool ImageSource::CompressToAstcFromPixelmap(const DecodeOptions &opts, unique_ptr<PixelMap> &rgbaPixelmap,
+    unique_ptr<AbsMemory> &dstMemory)
 {
-    ImageInfo originInfo;
-    uint32_t ret = GetImageInfo(originInfo);
-    if (ret != SUCCESS) {
-        IMAGE_LOGE("CreatePixelAstcFromImageFile GetImageInfo failed");
-        return nullptr;
-    }
-    if ((originInfo.size.width > ASTC_MAX_SIZE || originInfo.size.height > ASTC_MAX_SIZE) ||
-        (opts.desiredSize.width > ASTC_MAX_SIZE || opts.desiredSize.height > ASTC_MAX_SIZE)) {
-        IMAGE_LOGE("CreatePixelAstcFromImageFile imageInfo size is too large");
-        return nullptr;
-    }
-
-    DecodeOptions& modifiableOpts = const_cast<DecodeOptions&>(opts);
-    modifiableOpts.desiredPixelFormat = PixelFormat::RGBA_8888;
-    unique_ptr<PixelMap> rgbaPixelmap = CreatePixelMap(index, modifiableOpts, errorCode);
-    if (rgbaPixelmap == nullptr) {
-        IMAGE_LOGE("CreatePixelAstcFromImageFile pixelMap is nullptr");
-        return nullptr;
-    }
-
+#if !defined(_WIN32) && !defined(_APPLE) && !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
     ImageInfo rgbaInfo;
     rgbaPixelmap->GetImageInfo(rgbaInfo);
     rgbaInfo.pixelFormat = PixelFormat::ASTC_4x4;
@@ -4854,44 +4835,76 @@ unique_ptr<PixelMap> ImageSource::CreatePixelAstcFromImageFile(uint32_t index, c
     option.quality = ASTC_OPTION_QUALITY;
 
     Size desiredSize = {allocMemSize, 1};
-    MemoryData memoryData = {nullptr, allocMemSize, "CreatePixelAstcFromImageFile Data", desiredSize,
+    MemoryData memoryData = {nullptr, allocMemSize, "CompressToAstcFromPixelmap Data", desiredSize,
         opts.desiredPixelFormat};
     AllocatorType allocatorType = (opts.allocatorType == AllocatorType::DEFAULT) ?
         (IsSupportAstcZeroCopy(rgbaInfo.size) ? AllocatorType::DMA_ALLOC : AllocatorType::SHARE_MEM_ALLOC) :
         opts.allocatorType;
-    std::unique_ptr<AbsMemory> dstMemory = MemoryManager::CreateMemory(allocatorType, memoryData);
+    dstMemory = MemoryManager::CreateMemory(allocatorType, memoryData);
     if (dstMemory == nullptr) {
-        IMAGE_LOGE("CreatePixelAstcFromImageFile CreateMemory failed");
-        return nullptr;
+        IMAGE_LOGE("CompressToAstcFromPixelmap CreateMemory failed");
+        return false;
     }
 
-    ret = imagePacker.StartPacking(reinterpret_cast<uint8_t *>(dstMemory->data.data), allocMemSize, option);
+    uint32_t ret = imagePacker.StartPacking(reinterpret_cast<uint8_t *>(dstMemory->data.data), allocMemSize, option);
     if (ret != 0) {
-        IMAGE_LOGE("CreatePixelAstcFromImageFile failed to start packing");
-        return nullptr;
+        IMAGE_LOGE("CompressToAstcFromPixelmap failed to start packing");
+        return false;
     }
     ret = imagePacker.AddImage(*(rgbaPixelmap.get()));
     if (ret != 0) {
-        IMAGE_LOGE("CreatePixelAstcFromImageFile failed to add image");
-        return nullptr;
+        IMAGE_LOGE("CompressToAstcFromPixelmap failed to add image");
+        return false;
     }
     int64_t packedSize = 0;
     ret = imagePacker.FinalizePacking(packedSize);
     if (ret != 0) {
-        IMAGE_LOGE("CreatePixelAstcFromImageFile failed to finalize packing");
+        IMAGE_LOGE("CompressToAstcFromPixelmap failed to finalize packing");
+        return false;
+    }
+    return true;
+#else
+    return false;
+#endif
+}
+
+unique_ptr<PixelMap> ImageSource::CreatePixelAstcFromImageFile(uint32_t index, const DecodeOptions &opts,
+    uint32_t &errorCode)
+{
+#if !defined(_WIN32) && !defined(_APPLE) && !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
+    ImageInfo originInfo;
+    uint32_t ret = GetImageInfo(originInfo);
+    if (ret != SUCCESS) {
+        IMAGE_LOGE("CreatePixelAstcFromImageFile GetImageInfo failed");
         return nullptr;
     }
-
+    if ((originInfo.size.width > ASTC_MAX_SIZE || originInfo.size.height > ASTC_MAX_SIZE) ||
+        (opts.desiredSize.width > ASTC_MAX_SIZE || opts.desiredSize.height > ASTC_MAX_SIZE)) {
+        IMAGE_LOGE("CreatePixelAstcFromImageFile imageInfo size is too large");
+        return nullptr;
+    }
+    DecodeOptions& modifiableOpts = const_cast<DecodeOptions&>(opts);
+    modifiableOpts.desiredPixelFormat = PixelFormat::RGBA_8888;
+    unique_ptr<PixelMap> rgbaPixelmap = CreatePixelMap(index, modifiableOpts, errorCode);
+    if (rgbaPixelmap == nullptr) {
+        IMAGE_LOGE("CreatePixelAstcFromImageFile pixelMap is nullptr");
+        return nullptr;
+    }
+    unique_ptr<AbsMemory> dstMemory = nullptr;
+    if (!CompressToAstcFromPixelmap(opts, rgbaPixelmap, dstMemory)) {
+        IMAGE_LOGE("CreatePixelAstcFromImageFile CompressToAstcFromPixelmap failed");
+        return nullptr;
+    }
     unique_ptr<PixelAstc> dstPixelAstc = make_unique<PixelAstc>();
     ImageInfo info;
     if (!GetImageInfoForASTC(info, reinterpret_cast<uint8_t *>(dstMemory->data.data))) {
-        IMAGE_LOGE("[ImageSource] get astc image info failed.");
+        IMAGE_LOGE("CreatePixelAstcFromImageFile get astc image info failed.");
         return nullptr;
     }
     ret = dstPixelAstc->SetImageInfo(info);
     dstPixelAstc->SetAstcRealSize(info.size);
     if (ret != SUCCESS) {
-        IMAGE_LOGE("[ImageSource]update pixelmap info error ret:%{public}u.", ret);
+        IMAGE_LOGE("CreatePixelAstcFromImageFile update pixelmap info error ret:%{public}u.", ret);
         return nullptr;
     }
     dstPixelAstc->SetPixelsAddr(dstMemory->data.data, dstMemory->extend.data, dstMemory->data.size,
@@ -4900,7 +4913,9 @@ unique_ptr<PixelMap> ImageSource::CreatePixelAstcFromImageFile(uint32_t index, c
     dstPixelAstc->SetEditable(false);
     ImageUtils::FlushSurfaceBuffer(dstPixelAstc.get());
     return dstPixelAstc;
+#else
+    return nullptr;
+#endif
 }
-
 } // namespace Media
 } // namespace OHOS
