@@ -559,10 +559,10 @@ static bool GetSutSdrProfile(PlEncodeOptions &astcOpts,
 
 static bool GetAstcSdrProfile(PlEncodeOptions &astcOpts, QualityProfile &privateProfile)
 {
-    std::map<std::string, std::map<uint8_t, QualityProfile>>::iterator astcNode = ASTC_FORMAT_MAP.find(astcOpts.format);
+    auto astcNode = ASTC_FORMAT_MAP.find(astcOpts.format);
     if (astcNode != ASTC_FORMAT_MAP.end()) {
-        const std::map<uint8_t, QualityProfile> &qualityMap = astcNode->second;
-        std::map<uint8_t, QualityProfile>::iterator qualityNode = qualityMap.find(astcOpts.quality);
+        const auto &qualityMap = astcNode->second;
+        auto qualityNode = qualityMap.find(astcOpts.quality);
         if (qualityNode != qualityMap.end()) {
             privateProfile = qualityNode->second;
             return true;
