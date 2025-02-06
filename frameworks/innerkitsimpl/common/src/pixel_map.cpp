@@ -3782,7 +3782,6 @@ uint32_t PixelMap::crop(const Rect &rect)
         return ERR_IMAGE_CROP;
     }
     ToImageInfo(imageInfo, dst.info);
-    CopySurfaceBufferInfo(dstMemory->extend.data);
 
     auto m = dstMemory.get();
     std::unique_ptr<AbsMemory> shrinkedMemory = nullptr;
