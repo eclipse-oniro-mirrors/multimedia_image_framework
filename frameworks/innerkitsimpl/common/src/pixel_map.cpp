@@ -3796,7 +3796,6 @@ uint32_t PixelMap::crop(const Rect &rect)
 
     SetPixelsAddr(m->data.data, m->extend.data, m->data.size, m->GetType(), nullptr);
     SetImageInfo(imageInfo, true);
-    ImageUtils::FlushSurfaceBuffer(this);
     return SUCCESS;
 }
 
