@@ -190,7 +190,7 @@ Image_ErrorCode OH_ImageReceiverNative_GetReceivingSurfaceId(OH_ImageReceiverNat
         IMAGE_LOGE("Bad data: key string empty.");
         return IMAGE_UNKNOWN_ERROR;
     }
-    IMAGE_LOGI("OH_ImageReceiverNative_GetReceivingSurfaceId Receiver key = %{public}s", strKey.c_str());
+    IMAGE_LOGD("OH_ImageReceiverNative_GetReceivingSurfaceId Receiver key = %{public}s", strKey.c_str());
 
     if (!ConvertToUint64(strKey, *surfaceId)) {
         IMAGE_LOGI("strKey = %{public}s convert string to uint64_t failed", strKey.c_str());
@@ -238,7 +238,7 @@ Image_ErrorCode OH_ImageReceiverNative_ReadLatestImage(OH_ImageReceiverNative* r
     }
 
     *image = rst;
-    IMAGE_LOGI("OH_ImageNative ReadLatestImage.");
+    IMAGE_LOGD("OH_ImageNative ReadLatestImage.");
     return IMAGE_SUCCESS;
 }
 
