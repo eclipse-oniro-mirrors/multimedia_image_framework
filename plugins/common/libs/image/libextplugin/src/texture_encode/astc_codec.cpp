@@ -21,6 +21,7 @@
 #include "image_compressor.h"
 #endif
 #include "image_log.h"
+#include "image_trace.h"
 #include "image_system_properties.h"
 #include "image_trace.h"
 #include "securec.h"
@@ -560,13 +561,14 @@ static bool GetAstcSdrProfile(PlEncodeOptions &astcOpts, QualityProfile &private
 {
     auto astcNode = ASTC_FORMAT_MAP.find(astcOpts.format);
     if (astcNode != ASTC_FORMAT_MAP.end()) {
-        auto [astcQ, astcP] = astcNode->second;
-        if (astcQ != astcOpts.quality) {
-            IMAGE_LOGE("GetAstcSdrProfile failed %{public}d is invalid!", astcOpts.quality);
-            return false;
+        const auto &qualityMap = astcNode->second;
+        auto qualityNode = qualityMap.find(astcOpts.quality);
+        if (qualityNode != qualityMap.end()) {
+            privateProfile = qualityNode->second;
+            return true;
         }
-        privateProfile = astcP;
-        return true;
+        IMAGE_LOGE("GetAstcSdrProfile failed %{public}d is invalid!", astcOpts.quality);
+        return false;
     }
     return false;
 }
