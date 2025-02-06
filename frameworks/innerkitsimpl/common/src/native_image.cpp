@@ -231,7 +231,7 @@ NativeComponent* NativeImage::CreateComponent(int32_t type, size_t size, int32_t
 {
     NativeComponent* res = GetCachedComponent(type);
     if (res != nullptr) {
-        IMAGE_LOGI("Component %{public}d already exist. No need create", type);
+        IMAGE_LOGD("Component %{public}d already exist. No need create", type);
         return res;
     }
 
