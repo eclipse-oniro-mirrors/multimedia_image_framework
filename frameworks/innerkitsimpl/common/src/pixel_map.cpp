@@ -3763,7 +3763,7 @@ uint32_t PixelMap::crop(const Rect &rect)
     MemoryData memoryData = {nullptr, dst.info.computeMinByteSize(), "Trans ImageData", desiredSize,
                              imageInfo.pixelFormat};
     auto dstMemory = MemoryManager::CreateMemory(allocatorType_, memoryData);
-    if (dstMemory == nullptr || dstMemory->data.data == nullptr) {
+    if (dstMemory == nullptr) {
         return ERR_IMAGE_CROP;
     }
     uint64_t rowStride = dst.info.minRowBytes();
@@ -3773,7 +3773,7 @@ uint32_t PixelMap::crop(const Rect &rect)
             IMAGE_LOGE("GendstTransInfo get surfacebuffer failed");
             return ERR_IMAGE_CROP;
         }
-        rowStride = static_cast<uint64_t>(static_cast<SurfaceBuffer*>(dstMemory->extend.data)->GetStride());
+        rowStride = static_cast<uint64_t>(reinterpret_cast<SurfaceBuffer*>(dstMemory->extend.data)->GetStride());
     }
 #endif
     if (!src.bitmap.readPixels(dst.info, dstMemory->data.data, rowStride, dstIRect.fLeft, dstIRect.fTop)) {
@@ -3798,7 +3798,6 @@ uint32_t PixelMap::crop(const Rect &rect)
     SetPixelsAddr(m->data.data, m->extend.data, m->data.size, m->GetType(), nullptr);
     SetImageInfo(imageInfo, true);
     ImageUtils::FlushSurfaceBuffer(this);
-    AddVersionId();
     return SUCCESS;
 }
 
