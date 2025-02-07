@@ -61,7 +61,9 @@
 #include "include/core/SkCanvas.h"
 #include "include/core/SkImage.h"
 
+#if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
 #define DMA_BUF_SET_TYPE _IOW(DMA_BUF_BASE, 2, const char *)
+#endif
 
 #undef LOG_DOMAIN
 #define LOG_DOMAIN LOG_TAG_DOMAIN_ID_PLUGIN
