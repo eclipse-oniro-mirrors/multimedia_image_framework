@@ -18,9 +18,11 @@
 #include <algorithm>
 #include <map>
 #include <sstream>
+#if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
 #include <sys/ioctl.h>
 
 #include <linux/dma-buf.h>
+#endif
 
 #include "src/codec/SkJpegCodec.h"
 #include "src/codec/SkJpegDecoderMgr.h"
