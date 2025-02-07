@@ -208,8 +208,11 @@ struct StreamInfo {
 constexpr uint8_t ASTC_HEAD_BYTES = 16;
 constexpr uint8_t SUT_HEAD_BYTES = 16
 constexpr uint32_t SUT_FILE_SIGNATURE = 0x5CA1AB13;
+#ifdef SUT_PATH_X64
 static const std::string g_textureSuperDecSo = "/system/lib64/module/hms/graphic/libtextureSuperDecompress.z.so";
-
+#else
+static const std::string g_textureSuperDecSo = "/system/lib/module/hms/graphic/libtextureSuperDecompress.z.so";
+#endif
 constexpr uint8_t EXPAND_ASTC_INFO_MAX_DEC = 16; // reserve max 16 groups TLV info
 
 struct AstcOutInfo {
