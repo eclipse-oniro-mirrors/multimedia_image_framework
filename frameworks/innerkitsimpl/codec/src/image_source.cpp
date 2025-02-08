@@ -2799,6 +2799,24 @@ unique_ptr<SourceStream> ImageSource::DecodeBase64(const uint8_t *data, uint32_t
     sub = sub + BASE64_URL_PREFIX.size();
     uint32_t subSize = size - (sub - data1);
     IMAGE_LOGD("[ImageSource]Base64 image input: size %{public}u.", subSize);
+
+    std::unique_ptr<uint8_t[]> dataCopy;
+    if (sub[subSize - 1] != '\0') {
+        dataCopy = make_unique<uint8_t[]>(subSize + 1);
+        if (dataCopy == nullptr) {
+            IMAGE_LOGE("[ImageSource]Base64 malloc data buffer fail.");
+            return nullptr;
+        }
+        errno_t ret = memcpy_s(dataCopy.get(), subSize, sub, subSize);
+        dataCopy[subSize] = '\0';
+        sub = reinterpret_cast<char *>(dataCopy.get());
+        subSize++;
+        if (ret != EOK) {
+            IMAGE_LOGE("[ImageSource]Base64 copy data fail, ret:%{public}d", ret);
+            return nullptr;
+        }
+    }
+
 #ifdef NEW_SKIA
     size_t outputLen = 0;
     SkBase64::Error error = SkBase64::Decode(sub, subSize, nullptr, &outputLen);
