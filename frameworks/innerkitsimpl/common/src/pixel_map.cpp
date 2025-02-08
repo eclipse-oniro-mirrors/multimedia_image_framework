@@ -851,7 +851,10 @@ bool PixelMap::SourceCropAndConvert(PixelMap &source, const ImageInfo &srcImageI
         ReleaseBuffer(fd > 0 ? AllocatorType::SHARE_MEM_ALLOC : AllocatorType::HEAP_ALLOC, fd, uBufferSize, &dstPixels);
         return false;
     }
-
+#ifdef IMAGE_COLORSPACE_FLAG
+    OHOS::ColorManager::ColorSpace colorspace = source.InnerGetGrColorSpace();
+    dstPixelMap.InnerSetColorSpace(colorspace);
+#endif
     if (fd <= 0) {
         dstPixelMap.SetPixelsAddr(dstPixels, nullptr, uBufferSize, AllocatorType::HEAP_ALLOC, nullptr);
         return true;
