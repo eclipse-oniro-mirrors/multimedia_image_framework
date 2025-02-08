@@ -42,6 +42,7 @@
 
 namespace OHOS {
 namespace Media {
+using namespace GlCommon;
 std::once_flag shaderInitFlag[PixelMapGlShader::SHADER_MAX];
 std::mutex g_shaderMtx;
 std::condition_variable g_shaderCv;

@@ -47,6 +47,7 @@ const uint8_t* g_data = nullptr;
 size_t g_size = 0;
 size_t g_pos;
 } // namespace
+using namespace GlCommon;
 void PixelMapResize(std::unique_ptr<Media::PixelMap> &pixelMapFromOpts);
 
 /*
