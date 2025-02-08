@@ -24,6 +24,7 @@
 #include "jpeg_mpf_parser.h"
 #include "metadata.h"
 #include "pixel_map.h"
+#include "pixel_map_utils.h"
 #include "pixel_yuv.h"
 #ifdef EXT_PIXEL
 #include "pixel_yuv_ext.h"
@@ -383,6 +384,8 @@ static std::unique_ptr<AuxiliaryPicture> GenerateAuxiliaryPicture(const MainPict
 
     std::string encodedFormat = ImageUtils::IsAuxiliaryPictureEncoded(type) ? format : "";
     std::shared_ptr<PixelMap> pixelMap = CreatePixelMapByContext(context, extDecoder, encodedFormat, errorCode);
+    bool cond = pixelMap == nullptr || errorCode != SUCCESS;
+    CHECK_ERROR_RETURN_RET_LOG(cond, nullptr, "%{public}s CreatePixelMapByContext failed!", __func__);
     auto auxPicture = AuxiliaryPicture::Create(pixelMap, type, context.outInfo.size);
     auxPicture->SetAuxiliaryPictureInfo(
         MakeAuxiliaryPictureInfo(type, context.outInfo.size, pixelMap->GetRowStride(),

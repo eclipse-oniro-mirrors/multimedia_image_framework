@@ -148,6 +148,7 @@ private:
     uint32_t PixelmapEncode(ExtWStream& wStream);
     uint32_t EncodeHeifByPixelmap(Media::PixelMap* pixelmap, const PlEncodeOptions& opts);
     void RecycleResources();
+    uint32_t CheckArgbEncode();
 
     SkEncodedImageFormat encodeFormat_;
     OutputDataStream* output_ = nullptr;
@@ -155,6 +156,7 @@ private:
     Media::PixelMap* pixelmap_ = nullptr;
     Media::Picture* picture_ = nullptr;
     std::vector<std::shared_ptr<Media::AbsMemory>> tmpMemoryList_;
+    bool releasePixelMap_ = false;
 };
 } // namespace ImagePlugin
 } // namespace OHOS
