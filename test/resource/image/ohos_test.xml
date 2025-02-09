@@ -90,6 +90,8 @@
             <option name="push" value="images/non_hdr.jpg -> /data/local/tmp/image" src="res"/>
             <option name="push" value="images/hdr_1.jpg -> /data/local/tmp/image" src="res"/>
             <option name="push" value="images/test-10bit-1.heic -> /data/local/tmp/image" src="res"/>
+            <option name="push" value="images/test_jpeg_100_100.jpg -> /data/local/tmp/image" src="res"/>
+            <option name="push" value="images/test_jpeg_128_128.jpg -> /data/local/tmp/image" src="res"/>
         </preparer>
     </target>
     <target name="imagecolorspacetest">
@@ -436,6 +438,9 @@
             <option name="push" value="images/test_jpeg_hdr.jpg -> /data/local/tmp/image" src="res"/>
             <option name="push" value="images/test_heif_hdr.heic -> /data/local/tmp/image" src="res"/>
             <option name="push" value="images/test_allocator_heif.heic -> /data/local/tmp/image" src="res"/>
+            <option name="push" value="images/test_picture.jpg -> /data/local/tmp/image" src="res"/>
+            <option name="push" value="images/test_heic_664_374.heic -> /data/local/tmp/image" src="res"/>
+            <option name="push" value="images/test_heic_3024_4032.heic -> /data/local/tmp/image" src="res"/>
         </preparer>
     </target>
     <target name="ImagePictureFuzzTest">

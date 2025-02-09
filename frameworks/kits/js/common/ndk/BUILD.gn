@@ -155,6 +155,7 @@ ohos_shared_library("image_source") {
 
   external_deps = [
     "c_utils:utils",
+    "hilog:libhilog",
     "napi:ace_napi",
     "resource_management:librawfile",
     "skia:libjpeg",

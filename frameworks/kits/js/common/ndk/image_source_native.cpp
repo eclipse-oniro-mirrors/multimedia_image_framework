@@ -23,6 +23,7 @@
 #include "pixelmap_native_impl.h"
 #include "picture_native.h"
 #include "media_errors.h"
+#include "image_log.h"
 
 #ifndef _WIN32
 #include "securec.h"
@@ -379,20 +380,6 @@ static void ParseDecodingOps(DecodeOptions &decOps, struct OH_DecodingOptions *o
     }
 }
 
-static AllocatorType ConvertAllocatorType(std::shared_ptr<OHOS::Media::ImageSource> imageSource,
-    IMAGE_ALLOCATOR_TYPE allocatorType, DecodeOptions decodeOpts)
-{
-    switch (allocatorType) {
-        case IMAGE_ALLOCATOR_TYPE::IMAGE_ALLOCATOR_TYPE_DMA:
-            return AllocatorType::DMA_ALLOC;
-        case IMAGE_ALLOCATOR_TYPE::IMAGE_ALLOCATOR_TYPE_SHARE_MEMORY:
-            return AllocatorType::SHARE_MEM_ALLOC;
-        case IMAGE_ALLOCATOR_TYPE::IMAGE_ALLOCATOR_TYPE_AUTO:
-        default:
-            return imageSource->ConvertAutoAllocatorType(decodeOpts);
-    }
-}
-
 static void ParseImageSourceInfo(struct OH_ImageSource_Info *source, const ImageInfo &info)
 {
     source->width = info.size.width;
@@ -520,17 +507,10 @@ Image_ErrorCode OH_ImageSourceNative_CreatePixelmapUsingAllocator(OH_ImageSource
     uint32_t errorCode = IMAGE_BAD_PARAMETER;
     ParseDecodingOps(decOps, ops);
     index = ops->index;
-    decOps.isAppUseAllocator = true;
     if (source->GetInnerImageSource() == nullptr) {
         return IMAGE_BAD_SOURCE;
     }
-    decOps.allocatorType = ConvertAllocatorType(source->GetInnerImageSource(), allocator, decOps);
-    if (decOps.allocatorType == AllocatorType::SHARE_MEM_ALLOC &&
-        source->GetInnerImageSource()->IsDecodeHdrImage(decOps)) {
-        return IMAGE_SOURCE_UNSUPPORTED_ALLOCATOR_TYPE;
-    } else if (!source->GetInnerImageSource()->IsDecodeHdrImage(decOps) &&
-        decOps.allocatorType == AllocatorType::DMA_ALLOC &&
-        decOps.desiredPixelFormat == PixelFormat::ARGB_8888) {
+    if (!source->GetInnerImageSource()->IsSupportAllocatorType(decOps, static_cast<int32_t>(allocator))) {
         return IMAGE_SOURCE_UNSUPPORTED_ALLOCATOR_TYPE;
     }
     std::unique_ptr<PixelMap> tmpPixelmap = source->GetInnerImageSource()->CreatePixelMapEx(index, decOps, errorCode);
