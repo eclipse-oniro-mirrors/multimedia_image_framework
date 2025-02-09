@@ -1900,7 +1900,8 @@ napi_value ImageSourceNapi::CreatePixelMapUsingAllocator(napi_env env, napi_call
             return ImageNapiUtils::ThrowExceptionError(env, IMAGE_BAD_PARAMETER, "AllocatorType type does not match.");
         }
     }
-    if (!CheckAndSetAllocatorType(asyncContext->rImageSource, asyncContext->decodeOpts, allocatorType)) {
+    if (!asyncContext->rImageSource->IsSupportAllocatorType(asyncContext->decodeOpts,
+        static_cast<int32_t>(allocatorType))) {
         return ImageNapiUtils::ThrowExceptionError(env, IMAGE_SOURCE_UNSUPPORTED_ALLOCATOR_TYPE,
             "Unsupported allocator type.");
     }
@@ -1952,7 +1953,8 @@ napi_value ImageSourceNapi::CreatePixelMapUsingAllocatorSync(napi_env env, napi_
             return ImageNapiUtils::ThrowExceptionError(env, IMAGE_BAD_PARAMETER, "AllocatorType type does not match.");
         }
     }
-    if (!CheckAndSetAllocatorType(syncContext->constructor_->nativeImgSrc, syncContext->decodeOpts, allocatorType)) {
+    if (!syncContext->constructor_->nativeImgSrc->IsSupportAllocatorType(syncContext->decodeOpts,
+        static_cast<int32_t>(allocatorType))) {
         return ImageNapiUtils::ThrowExceptionError(env, IMAGE_SOURCE_UNSUPPORTED_ALLOCATOR_TYPE,
             "Unsupported allocator type.");
     }
