@@ -771,6 +771,7 @@ void ExifMetadata::FindRationalRanges(ExifContent *content,
             exif_format_get_size(content->entries[index]->format) * i, NUMERATOR_SIZE);
         ranges.push_back(range);
     }
+    return;
 }
 
 void ExifMetadata::FindRanges(const ExifTag &tag, std::vector<std::pair<uint32_t, uint32_t>> &ranges)
