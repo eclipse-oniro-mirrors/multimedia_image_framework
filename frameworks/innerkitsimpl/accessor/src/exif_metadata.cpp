@@ -788,16 +788,10 @@ void ExifMetadata::FindRanges(const ExifTag &tag, std::vector<std::pair<uint32_t
         int i = 0;
         while (i < static_cast<int>(content->count) && !hasRange) {
             if (tag == content->entries[i]->tag) {
-<<<<<<< HEAD
-                std::pair<uint32_t, uint32_t> range =
-                        std::make_pair(content->entries[i]->offset, content->entries[i]->size);
-                ranges.push_back(range);
-=======
                 (content->entries[i]->format == EXIF_FORMAT_RATIONAL ||
                     content->entries[i]->format == EXIF_FORMAT_SRATIONAL)
                     ? FindRationalRanges(content, ranges, i)
                     : ranges.push_back(std::make_pair(content->entries[i]->offset, content->entries[i]->size));
->>>>>>> 64a72ff1... final version
                 hasRange = true;
             }
             ++i;
