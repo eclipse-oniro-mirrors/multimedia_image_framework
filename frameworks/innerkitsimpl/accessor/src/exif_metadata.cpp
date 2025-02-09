@@ -50,7 +50,7 @@ const auto TAG_VALUE_SIZE = 1024;
 const auto MAX_TAG_VALUE_SIZE_FOR_STR = 64 * 1024;
 const auto TERMINATOR_SIZE = 1;
 const auto EXIF_HEAD_SIZE = 6;
-const int NUMERATOR_SIZE = 4
+const int NUMERATOR_SIZE = 4 // 4 bytes for numeratior
 const static std::string DEFAULT_EXIF_VALUE = "default_exif_value";
 const static std::string HW_CAPTURE_MODE = "HwMnoteCaptureMode";
 const static uint64_t MAX_EXIFMETADATA_MAX_SIZE = 1024 * 1024;
@@ -771,7 +771,6 @@ void ExifMetadata::FindRationalRanges(ExifContent *content,
             exif_format_get_size(content->entries[index]->format) * i, NUMERATOR_SIZE);
         ranges.push_back(range);
     }
-    return;
 }
 
 void ExifMetadata::FindRanges(const ExifTag &tag, std::vector<std::pair<uint32_t, uint32_t>> &ranges)
