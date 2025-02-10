@@ -44,6 +44,8 @@ static const std::string IMAGE_HEIF_DEST = "/data/local/tmp/image/test_heif_out.
 static const std::string IMAGE_INPUT_JPEGHDR_PATH = "/data/local/tmp/image/test_jpeg_hdr.jpg";
 static const std::string IMAGE_INPUT_HEIFHDR_PATH = "/data/local/tmp/image/test_heif_hdr.heic";
 static const std::string IMAGE_JPEG_WRONG_SRC = "/data/local/tmp/image/test_picture_wrong.jpg";
+static const std::string IMAGE_HEIC_64_64 = "/data/local/tmp/image/test_heic_64_64.heic";
+static const std::string IMAGE_HEIC_128_128 = "/data/local/tmp/image/test_heic_128_128.heic";
 
 class PictureExtTest : public testing::Test {
 public:
@@ -987,6 +989,40 @@ HWTEST_F(PictureExtTest, OH_PictureNative_GetHdrComposedPixelmap002, TestSize.Le
 {
     Image_ErrorCode ret = OH_PictureNative_GetHdrComposedPixelmap(nullptr, nullptr);
     EXPECT_EQ(ret, IMAGE_BAD_PARAMETER);
+}
+
+/**
+ * @tc.name: ConvertAutoAllocatorTypeTest001
+ * @tc.desc: Test ConvertAutoAllocatorType use 64 * 64 heic image.
+ * @tc.type: FUNC
+ */
+HWTEST_F(PictureExtTest, ConvertAutoAllocatorTypeTest001, TestSize.Level3)
+{
+    uint32_t errorCode = 0;
+    SourceOptions opts;
+    std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(IMAGE_HEIC_64_64, opts, errorCode);
+    ASSERT_NE(imageSource.get(), nullptr);
+    EXPECT_EQ(errorCode, 0);
+    DecodeOptions dopts;
+    AllocatorType allocatorType = imageSource->ConvertAutoAllocatorType(dopts);
+    EXPECT_EQ(allocatorType, AllocatorType::SHARE_MEM_ALLOC);
+}
+
+/**
+ * @tc.name: ConvertAutoAllocatorTypeTest002
+ * @tc.desc: Test ConvertAutoAllocatorType use 128 * 128 heic image.
+ * @tc.type: FUNC
+ */
+HWTEST_F(PictureExtTest, ConvertAutoAllocatorTypeTest002, TestSize.Level3)
+{
+    uint32_t errorCode = 0;
+    SourceOptions opts;
+    std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(IMAGE_HEIC_128_128, opts, errorCode);
+    ASSERT_NE(imageSource.get(), nullptr);
+    EXPECT_EQ(errorCode, 0);
+    DecodeOptions dopts;
+    AllocatorType allocatorType = imageSource->ConvertAutoAllocatorType(dopts);
+    EXPECT_EQ(allocatorType, AllocatorType::DMA_ALLOC);
 }
 } // namespace Multimedia
 } // namespace OHOS

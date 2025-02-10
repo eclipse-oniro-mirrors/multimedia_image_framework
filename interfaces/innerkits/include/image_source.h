@@ -257,6 +257,7 @@ public:
     NATIVEEXPORT bool IsDecodeHdrImage(const DecodeOptions &opts);
     NATIVEEXPORT uint64_t GetImageId();
     NATIVEEXPORT bool IsSvgUseDma(const DecodeOptions &opts);
+    NATIVEEXPORT bool IsSupportAllocatorType(DecodeOptions& decOps, int32_t allocatorType);
 
 private:
     DISALLOW_COPY_AND_MOVE(ImageSource);
