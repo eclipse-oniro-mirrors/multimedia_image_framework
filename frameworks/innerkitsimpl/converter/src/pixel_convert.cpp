@@ -1833,7 +1833,7 @@ std::unique_ptr<PixelMap> PixelConvert::AstcToRgba(PixelMap *source, uint32_t &e
         errorCode = ERR_IMAGE_INVALID_PARAMETER;
         return nullptr;
     }
-    uint32_t byteCount = astcSize.width * astcSize.height * BYTES_PER_PIXEL;
+    uint32_t byteCount = static_cast<uint32_t>(astcSize.width * astcSize.height * BYTES_PER_PIXEL);
     MemoryData memoryData = {nullptr, byteCount, "Create PixelMap", astcSize, PixelFormat::RGBA_8888};
     AllocatorType allocatorType = ImageUtils::GetPixelMapAllocatorType(astcSize, PixelFormat::RGBA_8888, true);
     std::unique_ptr<AbsMemory> dstMemory = MemoryManager::CreateMemory(allocatorType, memoryData);
