@@ -1765,7 +1765,7 @@ static OHOS::ColorManager::ColorSpaceName GetHeifNclxColor(SkCodec* codec)
 
 OHOS::ColorManager::ColorSpace ExtDecoder::GetSrcColorSpace()
 {
-    auto skColorSpace = dstInfo_.isEmpty() ? info_.refColorSpace() : dstInfo_.refColorSpace();
+    auto skColorSpace = info_.refColorSpace();
     OHOS::ColorManager::ColorSpaceName name = OHOS::ColorManager::ColorSpaceName::CUSTOM;
     if (codec_ != nullptr) {
         auto profile = codec_->getICCProfile();
@@ -1778,17 +1778,22 @@ OHOS::ColorManager::ColorSpace ExtDecoder::GetSrcColorSpace()
                 profile->cicp.transfer_characteristics, profile->cicp.matrix_coefficients,
                 profile->cicp.full_range_flag);
             if (cName != ColorManager::NONE) {
-                return ColorManager::ColorSpace(skColorSpace, cName);
+                return ColorManager::ColorSpace(cName);
             }
         }
         if (codec_->getEncodedFormat() == SkEncodedImageFormat::kHEIF) {
             ColorManager::ColorSpaceName cName = GetHeifNclxColor(codec_.get());
             if (cName != ColorManager::NONE) {
-                return ColorManager::ColorSpace(skColorSpace, cName);
+                return ColorManager::ColorSpace(cName);
             }
         }
     }
-    return OHOS::ColorManager::ColorSpace(skColorSpace, name);
+    // use info_ to make a custom graphic colorspace.
+    if (name == OHOS::ColorManager::ColorSpaceName::CUSTOM ||
+        name == OHOS::ColorManager::ColorSpaceName::NONE) {
+        return OHOS::ColorManager::ColorSpace(skColorSpace, name);
+    }
+    return OHOS::ColorManager::ColorSpace(name);
 }
 
 // get graphic ColorSpace and set to pixelMap
