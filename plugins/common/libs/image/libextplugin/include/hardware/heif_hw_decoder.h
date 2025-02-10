@@ -57,7 +57,8 @@ private:
     static bool GetUvPlaneOffsetFromSurfaceBuffer(sptr<SurfaceBuffer>& surfaceBuffer, uint64_t& offset);
     bool IsHardwareDecodeSupported(const GridInfo& gridInfo);
     bool SetCallbackForDecoder();
-    void GetPackedInputFlag();
+    bool SetPackedInputFlag(bool packedInputFlag);
+    void GetPackedInputCapability();
     bool ConfigureDecoder(const GridInfo& gridInfo, sptr<SurfaceBuffer>& output);
     bool SetOutputBuffer(const GridInfo& gridInfo, sptr<SurfaceBuffer> output);
     bool WaitForOmxToReturnInputBuffer(uint32_t& bufferId, std::shared_ptr<ImageCodecBuffer>& buffer);
@@ -90,6 +91,7 @@ private:
     static constexpr int MAX_PATH_LEN = 256;
 
     bool packedInputFlag_ = false;
+    bool isPackedInputSupported_ = false;
 
     std::shared_ptr<ImageCodec> heifDecoderImpl_;
 

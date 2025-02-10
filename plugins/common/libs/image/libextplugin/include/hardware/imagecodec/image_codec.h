@@ -57,7 +57,8 @@ public:
     int32_t Release();
     int32_t GetOutputBufferUsage(uint64_t& usage);
     int32_t SetOutputBuffer(sptr<SurfaceBuffer> output);
-    int32_t GetPackedInputFlag(bool& flag);
+    int32_t GetPackedInputCapability(bool& flag);
+    int32_t SetPackedInputFlag(bool flag);
 protected:
     enum MsgWhat : MsgType {
         INIT,
@@ -71,7 +72,8 @@ protected:
         RELEASE,
         GET_OUTPUT_BUFFER_USAGE,
         SET_OUTPUT_BUFFER,
-        GET_PACKED_INPUT_FLAG,
+        GET_PACKED_CAPABILITY,
+        SET_PACKED_INPUT_FLAG,
 
         INNER_MSG_BEGIN = 1000,
         CODEC_EVENT,
@@ -151,7 +153,8 @@ protected:
     virtual int32_t ReConfigureOutputBufferCnt() = 0;
     virtual uint64_t OnGetOutputBufferUsage() = 0;
     virtual int32_t OnSetOutputBuffer(sptr<SurfaceBuffer> output) = 0;
-    virtual bool OnGetPackedInputFlag() = 0;
+    virtual bool OnGetPackedInputCapability() = 0;
+    virtual bool OnSetPackedInputFlag(bool flag) = 0;
 
     // start
     virtual bool ReadyToStart() = 0;
@@ -326,7 +329,8 @@ private:
         void OnConfigure(const MsgInfo &info);
         void OnGetOutputBufferUsage(const MsgInfo &info);
         void OnSetOutputBuffer(const MsgInfo &info);
-        void OnGetPackedInputFlag(const MsgInfo &info);
+        void OnGetPackedInputCapability(const MsgInfo &info);
+        void OnSetPackedInputFlag(const MsgInfo &info);
         void OnStart(const MsgInfo &info);
         void OnShutDown(const MsgInfo &info) override;
     };

@@ -249,8 +249,12 @@ void ImageCodec::InitializedState::OnMsgReceived(const MsgInfo &info)
             OnSetOutputBuffer(info);
             break;
         }
-        case MsgWhat::GET_PACKED_INPUT_FLAG: {
-            OnGetPackedInputFlag(info);
+        case MsgWhat::GET_PACKED_CAPABILITY: {
+            OnGetPackedInputCapability(info);
+            break;
+        }
+        case MsgWhat::SET_PACKED_INPUT_FLAG: {
+            OnSetPackedInputFlag(info);
             break;
         }
         case MsgWhat::START: {
@@ -300,11 +304,18 @@ void ImageCodec::InitializedState::OnSetOutputBuffer(const MsgInfo &info)
     ReplyErrorCode(info.id, codec_->OnSetOutputBuffer(output));
 }
 
-void ImageCodec::InitializedState::OnGetPackedInputFlag(const MsgInfo &info)
+void ImageCodec::InitializedState::OnSetPackedInputFlag(const MsgInfo &info)
+{
+    bool flag = false;
+    (void)info.param->GetValue("packedInputFlag", flag);
+    ReplyErrorCode(info.id, codec_->OnSetPackedInputFlag(flag));
+}
+
+void ImageCodec::InitializedState::OnGetPackedInputCapability(const MsgInfo &info)
 {
     ParamSP reply = make_shared<ParamBundle>();
     reply->SetValue<int32_t>("err", IC_ERR_OK);
-    reply->SetValue("packedInputFlag", codec_->OnGetPackedInputFlag());
+    reply->SetValue("isPackedInputSupported", codec_->OnGetPackedInputCapability());
     codec_->PostReply(info.id, reply);
 }
 

@@ -145,15 +145,24 @@ int32_t ImageCodec::SetOutputBuffer(sptr<SurfaceBuffer> output)
     return DoSyncCall(MsgWhat::SET_OUTPUT_BUFFER, proc);
 }
 
-int32_t ImageCodec::GetPackedInputFlag(bool& flag)
+int32_t ImageCodec::SetPackedInputFlag(bool flag)
+{
+    HLOGI(">>");
+    std::function<void(ParamSP)> proc = [&](ParamSP msg) {
+        msg->SetValue("packedInputFlag", flag);
+    };
+    return DoSyncCall(MsgWhat::SET_PACKED_INPUT_FLAG, proc);
+}
+
+int32_t ImageCodec::GetPackedInputCapability(bool& flag)
 {
     ParamSP reply;
-    int32_t ret = DoSyncCallAndGetReply(MsgWhat::GET_PACKED_INPUT_FLAG, nullptr, reply);
+    int32_t ret = DoSyncCallAndGetReply(MsgWhat::GET_PACKED_CAPABILITY, nullptr, reply);
     if (ret != IC_ERR_OK) {
         HLOGE("failed to get packed input flag");
         return ret;
     }
-    IF_TRUE_RETURN_VAL_WITH_MSG(!reply->GetValue("packedInputFlag", flag),
+    IF_TRUE_RETURN_VAL_WITH_MSG(!reply->GetValue("isPackedInputSupported", flag),
         IC_ERR_UNKNOWN, "packed input flag not replied");
     return IC_ERR_OK;
 }
@@ -218,7 +227,8 @@ const char* ImageCodec::ToString(MsgWhat what)
         { RELEASE,                 "RELEASE"                 },
         { GET_OUTPUT_BUFFER_USAGE, "GET_OUTPUT_BUFFER_USAGE" },
         { SET_OUTPUT_BUFFER,       "SET_OUTPUT_BUFFER"       },
-        { GET_PACKED_INPUT_FLAG,   "GET_PACKED_INPUT_FLAG"   },
+        { GET_PACKED_CAPABILITY,   "GET_PACKED_CAPABILITY"   },
+        { SET_PACKED_INPUT_FLAG,   "SET_PACKED_INPUT_FLAG"   },
         { CODEC_EVENT,             "CODEC_EVENT"             },
         { OMX_EMPTY_BUFFER_DONE,   "OMX_EMPTY_BUFFER_DONE"   },
         { OMX_FILL_BUFFER_DONE,    "OMX_FILL_BUFFER_DONE"    },

@@ -185,15 +185,15 @@ bool HeifHardwareDecoder::ConfigureDecoder(const GridInfo& gridInfo, sptr<Surfac
     format.SetValue(ImageCodecDescriptionKey::PIXEL_FORMAT, pixelFmt);
     is10Bit_ = (pixelFmt == GRAPHIC_PIXEL_FMT_YCBCR_P010 || pixelFmt == GRAPHIC_PIXEL_FMT_YCRCB_P010);
     format.SetValue(ImageCodecDescriptionKey::ENABLE_HEIF_GRID, gridInfo.enableGrid);
-    if (!gridInfo.enableGrid || packedInputFlag_) {
+    if (!gridInfo.enableGrid || (packedInputFlag_ && isPackedInputSupported_)) {
         static constexpr uint32_t INPUT_BUFFER_CNT = 3;
         format.SetValue(ImageCodecDescriptionKey::INPUT_BUFFER_COUNT, INPUT_BUFFER_CNT);
     }
-    if (!gridInfo.enableGrid || !packedInputFlag_) {
+    if (!gridInfo.enableGrid || !(packedInputFlag_ && isPackedInputSupported_)) {
         static constexpr uint32_t OUTPUT_BUFFER_CNT = 1;
         format.SetValue(ImageCodecDescriptionKey::OUTPUT_BUFFER_COUNT, OUTPUT_BUFFER_CNT);
     }
-    if (packedInputFlag_) {
+    if (isPackedInputSupported_) {
         static constexpr char HEIF_HW_DECODER_NAME[] = "heif_hw_decoder";
         format.SetValue(ImageCodecDescriptionKey::PROCESS_NAME, string(HEIF_HW_DECODER_NAME));
     }
@@ -302,18 +302,30 @@ bool HeifHardwareDecoder::CheckOutputBuffer(const GridInfo& gridInfo, sptr<Surfa
     return true;
 }
 
-void HeifHardwareDecoder::GetPackedInputFlag()
+bool HeifHardwareDecoder::SetPackedInputFlag(bool packedInputFlag)
 {
-    packedInputFlag_ = false;
+    IF_TRUE_RETURN_VAL_WITH_MSG(heifDecoderImpl_ == nullptr, false, "heifDecoderImpl is nullptr");
+    int32_t ret = heifDecoderImpl_->SetPackedInputFlag(packedInputFlag);
+    if (ret != IC_ERR_OK) {
+        LOGE("failed to set PackedInputFlag, err=%{public}d", ret);
+        return false;
+    }
+    packedInputFlag_ = packedInputFlag;
+    return true;
+}
+
+void HeifHardwareDecoder::GetPackedInputCapability()
+{
+    isPackedInputSupported_ = false;
     if (heifDecoderImpl_ != nullptr) {
-        (void)heifDecoderImpl_->GetPackedInputFlag(packedInputFlag_);
+        (void)heifDecoderImpl_->GetPackedInputCapability(isPackedInputSupported_);
     }
 }
 
 bool HeifHardwareDecoder::IsPackedInputSupported()
 {
-    GetPackedInputFlag();
-    return packedInputFlag_;
+    GetPackedInputCapability();
+    return isPackedInputSupported_;
 }
 
 uint32_t HeifHardwareDecoder::DoDecode(const GridInfo& gridInfo, std::vector<std::vector<uint8_t>>& inputs,
@@ -333,9 +345,10 @@ uint32_t HeifHardwareDecoder::DoDecode(const GridInfo& gridInfo, std::vector<std
     if (OHOS::system::GetBoolParameter("image.codec.dump", false)) {
         DumpInput(gridInfo, inputs);
     }
+    SetPackedInputFlag(gridInfo.enableGrid);
     IF_TRUE_RETURN_VAL(!IsHardwareDecodeSupported(gridInfo), Media::ERR_IMAGE_HW_DECODE_UNSUPPORT);
     IF_TRUE_RETURN_VAL(!SetCallbackForDecoder(), Media::ERR_IMAGE_DECODE_FAILED);
-    GetPackedInputFlag();
+    GetPackedInputCapability();
     IF_TRUE_RETURN_VAL(!ConfigureDecoder(gridInfo, output), Media::ERR_IMAGE_DECODE_FAILED);
     IF_TRUE_RETURN_VAL(!SetOutputBuffer(gridInfo, output), Media::ERR_IMAGE_DECODE_FAILED);
     Reset();
