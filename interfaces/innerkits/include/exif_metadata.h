@@ -70,6 +70,8 @@ private:
     bool RemoveHwEntry(const std::string &key);
     bool SetCommonValue(const std::string &key, const std::string &value);
     bool IsSpecialHwKey(const std::string &key) const;
+    void FindRationalRanges(ExifContent *content,
+        std::vector<std::pair<uint32_t, uint32_t>> &ranges, int index);
     void FindRanges(const ExifTag &tag, std::vector<std::pair<uint32_t, uint32_t>> &ranges);
     ExifData *exifData_;
 };

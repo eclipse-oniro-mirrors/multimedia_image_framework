@@ -50,6 +50,7 @@ const auto TAG_VALUE_SIZE = 1024;
 const auto MAX_TAG_VALUE_SIZE_FOR_STR = 64 * 1024;
 const auto TERMINATOR_SIZE = 1;
 const auto EXIF_HEAD_SIZE = 6;
+const int NUMERATOR_SIZE = 4; // 4 bytes for numeratior
 const static std::string DEFAULT_EXIF_VALUE = "default_exif_value";
 const static std::string HW_CAPTURE_MODE = "HwMnoteCaptureMode";
 const static uint64_t MAX_EXIFMETADATA_MAX_SIZE = 1024 * 1024;
@@ -760,6 +761,19 @@ void ExifMetadata::GetFilterArea(const std::vector<std::string> &exifKeys,
     }
 }
 
+// If the tag is a rational or srational, we need to store the offset and size of the numerator
+void ExifMetadata::FindRationalRanges(ExifContent *content,
+    std::vector<std::pair<uint32_t, uint32_t>> &ranges, int index)
+{
+    for (int i = 0; i < static_cast<int>(content->entries[index]->components); i++) {
+        std::pair<uint32_t, uint32_t> range =
+            std::make_pair(content->entries[index]->offset +
+            exif_format_get_size(content->entries[index]->format) * i, NUMERATOR_SIZE);
+        ranges.push_back(range);
+    }
+    return;
+}
+
 void ExifMetadata::FindRanges(const ExifTag &tag, std::vector<std::pair<uint32_t, uint32_t>> &ranges)
 {
     bool hasRange = false;
@@ -775,9 +789,10 @@ void ExifMetadata::FindRanges(const ExifTag &tag, std::vector<std::pair<uint32_t
         int i = 0;
         while (i < static_cast<int>(content->count) && !hasRange) {
             if (tag == content->entries[i]->tag) {
-                std::pair<uint32_t, uint32_t> range =
-                        std::make_pair(content->entries[i]->offset, content->entries[i]->size);
-                ranges.push_back(range);
+                (content->entries[i]->format == EXIF_FORMAT_RATIONAL ||
+                    content->entries[i]->format == EXIF_FORMAT_SRATIONAL)
+                    ? FindRationalRanges(content, ranges, i)
+                    : ranges.push_back(std::make_pair(content->entries[i]->offset, content->entries[i]->size));
                 hasRange = true;
             }
             ++i;
