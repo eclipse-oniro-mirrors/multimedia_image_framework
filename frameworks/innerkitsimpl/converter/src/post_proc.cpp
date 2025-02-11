@@ -973,6 +973,7 @@ static bool PixelMapPostProcWithGL(PixelMap &sourcePixelMap, GPUTransformData &t
 bool PostProc::RotateInRectangularSteps(PixelMap &pixelMap, float degrees, bool useGpu)
 {
 #if !defined(_WIN32) && !defined(_APPLE) && !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
+    float oldDegrees = degrees;
     if (useGpu && ImageSystemProperties::GetGenThumbWithGpu() &&
         std::fabs(std::fmod(degrees, 90.f)) < 1e-6) { // degrees 90
         ImageTrace imageTrace("RotateInRectangularSteps:%f", degrees);
@@ -980,7 +981,7 @@ bool PostProc::RotateInRectangularSteps(PixelMap &pixelMap, float degrees, bool 
         GPUTransformData gpuTransform;
         ImageInfo imageInfo;
         pixelMap.GetImageInfo(imageInfo);
-        Mat4 tmpMat4;
+        GlCommon::Mat4 tmpMat4;
         std::array<float, 3> axis = { 0.0f, 0.0f, 1.0f }; // capacity 3
         float angle = degrees * M_PI / 180.f; // degrees 180
         gpuTransform.targetInfo_.size = {
@@ -988,7 +989,7 @@ bool PostProc::RotateInRectangularSteps(PixelMap &pixelMap, float degrees, bool 
             std::abs(imageInfo.size.height * std::cos(angle)) + std::abs(imageInfo.size.width * std::sin(angle))
         };
         degrees = std::fmod(360.f - degrees, 360.f); // degrees 360
-        gpuTransform.rotateTrans = Mat4(tmpMat4, degrees, axis);
+        gpuTransform.rotateTrans = GlCommon::Mat4(tmpMat4, degrees, axis);
         gpuTransform.rotateDegreeZ = degrees;
         gpuTransform.sourceInfo_ = {
             .size = imageInfo.size,
@@ -1005,7 +1006,7 @@ bool PostProc::RotateInRectangularSteps(PixelMap &pixelMap, float degrees, bool 
         IMAGE_LOGI("slr_gpu RotateInRectangularSteps rotate with cpu");
     }
 #endif
-    pixelMap.rotate(degrees);
+    pixelMap.rotate(oldDegrees);
     return true;
 }
 

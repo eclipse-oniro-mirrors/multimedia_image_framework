@@ -32,6 +32,7 @@
 namespace OHOS {
 namespace Media {
 namespace PixelMapGlShader {
+using namespace GlCommon;
 const int MAX_SLR_WIN_SIZE = 12;
 std::string g_shaderPath = "/data/storage/el1/base/";
 static int g_shaderVersion = 2;
@@ -58,7 +59,6 @@ float GeSLRFactor(float x, int a)
     if (std::abs(x) < 1e-16) {
         return 0.0f;
     }
-
     x *= PI;
     if (std::abs(x * x) < 1e-6 || x * x == 0.0f ||
         std::abs(a) < 1e-6 || a == 0.0f) {
@@ -153,7 +153,7 @@ static bool loadShaderFromFile(unsigned char*&shaderBinary, GLenum &binaryFormat
     if (readLen != fileStat.st_size) {
         delete[] binaryData;
         IMAGE_LOGE("slr_gpu shader cache read failed! error "
-            "%{public}d readnum %{public}d realnum %{public}lld", errno, readLen, fileStat.st_size);
+            "%{public}d readnum %{public}d", errno, readLen);
         return false;
     }
     binarySize = fileStat.st_size - sizeof(GLenum) - sizeof(version);

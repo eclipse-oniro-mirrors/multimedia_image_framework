@@ -26,6 +26,7 @@
 
 namespace OHOS {
 namespace Media {
+namespace GlCommon {
 static const int NUM_1 = 1;
 static const int NUM_2 = 2;
 static const int NUM_3 = 3;
@@ -145,6 +146,7 @@ public:
 private:
     std::array<std::array<float, NUM_4>, NUM_4> data;
 };
+} // GlCommon
 
 enum TransformationType {
     SCALE = 1,
@@ -161,7 +163,7 @@ struct GlImageInfo {
 };
 typedef struct {
     float rotateDegreeZ;
-    Mat4 rotateTrans;
+    GlCommon::Mat4 rotateTrans;
     TransformationType transformationType;
     GLenum glFormat;
     bool isDma;

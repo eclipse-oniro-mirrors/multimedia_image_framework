@@ -129,7 +129,7 @@ private:
     GLuint texClipRatioLoc_ = 0U;
     GLuint useNativeLoc_ = 0U;
     float rotateDegreeZ_;
-    Mat4 rotateTrans_ = Mat4(1.0f);
+    GlCommon::Mat4 rotateTrans_ = GlCommon::Mat4(1.0f);
 };
 
 class SLRShader : public Shader {
