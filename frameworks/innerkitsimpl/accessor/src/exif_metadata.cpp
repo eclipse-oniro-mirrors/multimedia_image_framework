@@ -768,7 +768,7 @@ void ExifMetadata::FindRationalRanges(ExifContent *content,
     for (unsigned long i = 0; i < content->entries[index]->components; i++) {
         std::pair<uint32_t, uint32_t> range =
             std::make_pair(content->entries[index]->offset +
-                static_cast<unsigned long>(exif_format_get_size(content->entries[index]->format)) * i, NUMERATOR_SIZE);
+            static_cast<unsigned long>(exif_format_get_size(content->entries[index]->format)) * i, NUMERATOR_SIZE);
         ranges.push_back(range);
     }
     return;
