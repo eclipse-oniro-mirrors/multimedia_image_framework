@@ -2768,7 +2768,7 @@ bool PixelMap::ReadBufferSizeFromParcel(Parcel& parcel, const ImageInfo& imgInfo
 
     int32_t rowDataSize = ImageUtils::GetRowDataSizeByPixelFormat(imgInfo.size.width, imgInfo.pixelFormat);
     if (rowDataSize <= 0) {
-        IMAGE_LOGE("ReadBufferSizeFromParcel: rowDataSize (%{public}d) invalid", rowDataSize);
+        IMAGE_LOGE("[PixelMap] ReadBufferSizeFromParcel: rowDataSize (%{public}d) invalid", rowDataSize);
         PixelMap::ConstructPixelMapError(error, ERR_IMAGE_PIXELMAP_CREATE_FAILED, "row data size invalid");
         return false;
     }
@@ -2783,7 +2783,7 @@ bool PixelMap::ReadBufferSizeFromParcel(Parcel& parcel, const ImageInfo& imgInfo
     if (!IsYUV(imgInfo.pixelFormat) && imgInfo.pixelFormat != PixelFormat::RGBA_F16 &&
         (expectedBufferSize > (memInfo.allocatorType == AllocatorType::HEAP_ALLOC ? PIXEL_MAP_MAX_RAM_SIZE : INT_MAX) ||
         static_cast<uint64_t>(memInfo.bufferSize) != expectedBufferSize)) {
-        IMAGE_LOGE("ReadBufferSizeFromParcel: bufferSize invalid, expect:%{public}llu, actual:%{public}d",
+        IMAGE_LOGE("[PixelMap] ReadBufferSizeFromParcel: bufferSize invalid, expect:%{public}llu, actual:%{public}d",
             static_cast<unsigned long long>(expectedBufferSize), memInfo.bufferSize);
         PixelMap::ConstructPixelMapError(error, ERR_IMAGE_PIXELMAP_CREATE_FAILED, "buffer size invalid");
         return false;
