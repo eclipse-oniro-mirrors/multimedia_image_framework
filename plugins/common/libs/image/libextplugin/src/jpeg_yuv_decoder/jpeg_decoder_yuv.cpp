@@ -273,7 +273,7 @@ void JpegDecoderYuv::InitYuvDataOutInfoTo420NV(uint32_t width, uint32_t height, 
     info.uvStride = info.uvWidth + info.uvWidth;
     if (context.allocatorType == OHOS::Media::AllocatorType::DMA_ALLOC) {
         SurfaceBuffer* sbBuffer = reinterpret_cast<SurfaceBuffer *>(context.pixelsBuffer.context);
-        int32_t stride = sbBuffer->GetStride();
+        uint32_t stride = static_cast<uint32_t>(sbBuffer->GetStride());
         info.yStride = stride;
         info.uvStride = stride;
     }
@@ -551,11 +551,12 @@ void UpdateDestStride(JpegDecoderYuvParameter decodeParameter, const DecodeConte
         }
         if (decodeParameter.outfmt_ == JpegYuvFmt::OutFmt_NV12 ||
             decodeParameter.outfmt_ == JpegYuvFmt::OutFmt_NV21) {
-            dest.planes[UVCOM] = outYData + surfaceBuffer->GetStride() * height;
-            dest.strides[YCOM] = surfaceBuffer->GetStride();
-            dest.strides[UCOM] = surfaceBuffer->GetStride() / STRIDE_DIVISOR;
-            dest.strides[VCOM] = surfaceBuffer->GetStride() / STRIDE_DIVISOR;
-            dest.strides[UVCOM] = surfaceBuffer->GetStride();
+            uint32_t stride = static_cast<uint32_t>(surfaceBuffer->GetStride());
+            dest.planes[UVCOM] = outYData + stride * height;
+            dest.strides[YCOM] = stride;
+            dest.strides[UCOM] = stride / STRIDE_DIVISOR;
+            dest.strides[VCOM] = stride / STRIDE_DIVISOR;
+            dest.strides[UVCOM] = stride;
         }
     }
 }
