@@ -110,6 +110,9 @@ private:
 
     bool HwDecodeMimeImage(std::shared_ptr<HeifImage> &image);
 
+    bool HwDecodeMovieFirstFrameImage(HeifHardwareDecoder *hwDecoder, std::shared_ptr<HeifImage> &image,
+                                      GridInfo &gridInfo, sptr<SurfaceBuffer> &hwBuffer);
+
     bool SwDecodeImage(std::shared_ptr<HeifImage> &image, HevcSoftDecodeParam &param,
                        GridInfo &gridInfo, bool isPrimary);
     bool SwDecodeGainmap(std::shared_ptr<HeifImage> &gainMapImage,
@@ -123,6 +126,9 @@ private:
 
     bool SwDecodeSingleImage(Media::ImageFwkExtManager &extManager,
                              std::shared_ptr<HeifImage> &image, HevcSoftDecodeParam &param);
+
+    bool SwDecodeMovieFirstFrameImage(Media::ImageFwkExtManager &extManager,
+                                      std::shared_ptr<HeifImage> &image, HevcSoftDecodeParam &param);
 
     bool HwApplyAlphaImage(std::shared_ptr<HeifImage> &masterImage, uint8_t *dstMemory, size_t dstRowStride);
 

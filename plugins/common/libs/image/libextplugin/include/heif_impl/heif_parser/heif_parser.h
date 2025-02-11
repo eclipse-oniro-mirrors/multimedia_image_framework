@@ -20,6 +20,7 @@
 #include "box/basic_box.h"
 #include "box/item_data_box.h"
 #include "box/item_info_box.h"
+#include "box/item_movie_box.h"
 #include "box/item_property_box.h"
 #include "box/item_property_color_box.h"
 #include "box/item_property_hvcc_box.h"
@@ -67,6 +68,10 @@ public:
     heif_error GetItemData(heif_item_id itemId, std::vector<uint8_t> *out,
                            heif_header_option option = heif_no_header) const;
 
+    heif_error GetMovieFrameData(uint32_t index, std::vector<uint8_t> *dest, heif_header_option option) const;
+
+    heif_error GetSampleData(uint32_t index, std::vector<uint8_t> *dest) const;
+
     void GetTileImages(heif_item_id gridItemId, std::vector<std::shared_ptr<HeifImage>> &out);
 
     void GetIdenImage(heif_item_id itemId, std::shared_ptr<HeifImage> &out);
@@ -105,6 +110,23 @@ private:
     std::shared_ptr<HeifIlocBox> ilocBox_;
     std::vector<std::shared_ptr<HeifBox> > topBoxes_;
 
+    std::shared_ptr<HeifMoovBox> moovBox_;
+    std::shared_ptr<HeifMvhdBox> mvhdBox_;
+    std::shared_ptr<HeifTrakBox> trakBox_;
+    std::shared_ptr<HeifTkhdBox> tkhdBox_;
+    std::shared_ptr<HeifMdiaBox> mdiaBox_;
+    std::shared_ptr<HeifMdhdBox> mdhdBox_;
+    std::shared_ptr<HeifMinfBox> minfBox_;
+    std::shared_ptr<HeifVmhdBox> vmhdBox_;
+    std::shared_ptr<HeifDinfBox> dinfBox_;
+    std::shared_ptr<HeifDrefBox> drefBox_;
+    std::shared_ptr<HeifStblBox> stblBox_;
+    std::shared_ptr<HeifStsdBox> stsdBox_;
+    std::shared_ptr<HeifSttsBox> sttsBox_;
+    std::shared_ptr<HeifStscBox> stscBox_;
+    std::shared_ptr<HeifStcoBox> stcoBox_;
+    std::shared_ptr<HeifStszBox> stszBox_;
+
     // images
     std::map<heif_item_id, std::shared_ptr<HeifImage>> images_;
     std::shared_ptr<HeifImage> primaryImage_; // shortcut to primary image
@@ -112,6 +134,8 @@ private:
 
     // reading functions for boxes
     heif_error AssembleBoxes(HeifStreamReader &reader);
+
+    heif_error AssembleMovieBoxes();
 
     heif_item_id GetPrimaryItemId() const;
 
@@ -146,6 +170,8 @@ private:
     heif_error AssembleImages();
 
     void ExtractImageProperties(std::shared_ptr<HeifImage> &image);
+
+    void ExtractMovieImageProperties(std::shared_ptr<HeifImage> &image);
 
     void ExtractDerivedImageProperties();
 

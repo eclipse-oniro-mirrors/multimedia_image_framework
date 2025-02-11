@@ -413,7 +413,7 @@ void HeifDecoderImpl::GetTileSize(const std::shared_ptr<HeifImage> &image, GridI
     }
 
     std::string imageType = parser_->GetItemType(image->GetItemId());
-    if (imageType == "hvc1") {
+    if (imageType == "hvc1" || image->IsMovieImage()) {
         gridInfo.tileWidth = image->GetOriginalWidth();
         gridInfo.tileHeight = image->GetOriginalHeight();
         return;
@@ -616,6 +616,15 @@ bool HeifDecoderImpl::HwDecodeImage(HeifHardwareDecoder *hwDecoder,
         }
     }
 
+    if (image->IsMovieImage()) {
+        sptr<SurfaceBuffer> hwMovieBuffer = IsDirectYUVDecode() ? sptr<SurfaceBuffer>(dstHwBuffer_) :
+                                            hwDecoder->AllocateOutputBuffer(gridInfo.tileWidth, gridInfo.tileHeight,
+                                                                            GRAPHIC_PIXEL_FMT_YCBCR_420_SP);
+        bool res = HwDecodeMovieFirstFrameImage(hwDecoder, image, gridInfo, hwMovieBuffer);
+        *outBuffer = hwMovieBuffer;
+        return res;
+    }
+
     std::string imageType = parser_->GetItemType(image->GetItemId());
     if (imageType == "iden") {
         bool res = HwDecodeIdenImage(hwDecoder, image, gridInfo, outBuffer, isPrimary);
@@ -799,6 +808,36 @@ bool HeifDecoderImpl::HwDecodeMimeImage(std::shared_ptr<HeifImage> &image)
     return true;
 }
 
+bool HeifDecoderImpl::HwDecodeMovieFirstFrameImage(HeifHardwareDecoder *hwDecoder,
+                                                   std::shared_ptr<HeifImage> &image,
+                                                   GridInfo &gridInfo, sptr<SurfaceBuffer> &hwBuffer)
+{
+    if (hwDecoder == nullptr || image == nullptr) {
+        IMAGE_LOGE("HeifDecoderImpl::HwDecodeMovieFirstFrameImage hwDecoder or image is nullptr");
+        return false;
+    }
+    std::vector<std::vector<uint8_t>> inputs(GRID_NUM_2);
+
+    parser_->GetMovieFrameData(0, &inputs[0], heif_only_header);
+    ProcessChunkHead(inputs[0].data(), inputs[0].size());
+
+    parser_->GetMovieFrameData(0, &inputs[0], heif_no_header);
+    ProcessChunkHead(inputs[1].data(), inputs[1].size());
+
+    uint32_t err = hwDecoder->DoDecode(gridInfo, inputs, hwBuffer);
+    if (err != SUCCESS) {
+        IMAGE_LOGE("heif hw decoder return error: %{public}d, width: %{public}d, height: %{public}d,"
+                   " imageType: hvc1, inPixelFormat: %{public}d, colNum: %{public}d, rowNum: %{public}d,"
+                   " tileWidth: %{public}d, tileHeight: %{public}d, hvccLen: %{public}zu, dataLen: %{public}zu",
+                   err, gridInfo.displayWidth, gridInfo.displayHeight,
+                   hwBuffer->GetFormat(), gridInfo.cols, gridInfo.rows,
+                   gridInfo.tileWidth, gridInfo.tileHeight, inputs[0].size(), inputs[1].size());
+        SetHardwareDecodeErrMsg(gridInfo.tileWidth, gridInfo.tileHeight);
+        return false;
+    }
+    return true;
+}
+
 bool HeifDecoderImpl::SwDecodeImage(std::shared_ptr<HeifImage> &image, HevcSoftDecodeParam &param,
                                     GridInfo &gridInfo, bool isPrimary)
 {
@@ -811,12 +850,15 @@ bool HeifDecoderImpl::SwDecodeImage(std::shared_ptr<HeifImage> &image, HevcSoftD
         return false;
     }
 
+    static ImageFwkExtManager imageFwkExtManager;
+    if (image->IsMovieImage()) {
+        return SwDecodeMovieFirstFrameImage(imageFwkExtManager, image, param);
+    }
     std::string imageType = parser_->GetItemType(image->GetItemId());
     if (imageType == "iden") {
         return SwDecodeIdenImage(image, param, gridInfo, isPrimary);
     }
 
-    static ImageFwkExtManager imageFwkExtManager;
     bool res = false;
     if (imageType == "grid") {
         param.gridInfo.enableGrid = true;
@@ -884,6 +926,26 @@ bool HeifDecoderImpl::SwDecodeSingleImage(ImageFwkExtManager &extManager,
     int32_t retCode = extManager.hevcSoftwareDecodeFunc_(inputs, param);
     if (retCode != 0) {
         IMAGE_LOGE("SwDecodeSingleImage decode failed: %{public}d", retCode);
+        return false;
+    }
+    return true;
+}
+
+bool HeifDecoderImpl::SwDecodeMovieFirstFrameImage(ImageFwkExtManager &extManager,
+    std::shared_ptr<HeifImage> &image, HevcSoftDecodeParam &param)
+{
+    if (extManager.hevcSoftwareDecodeFunc_ == nullptr && !extManager.LoadImageFwkExtNativeSo()) {
+        return false;
+    }
+    bool cond = (param.dstBuffer == nullptr || param.dstStride == 0);
+    CHECK_ERROR_RETURN_RET(cond, false);
+    std::vector<std::vector<uint8_t>> inputs(1);
+    parser_->GetMovieFrameData(0, &inputs[0], heif_header_data);
+    ProcessChunkHead(inputs[0].data(), inputs[0].size());
+
+    int32_t retCode = extManager.hevcSoftwareDecodeFunc_(inputs, param);
+    if (retCode != 0) {
+        IMAGE_LOGE("SwDecodeMovieFirstFrameImage decode failed: %{public}d", retCode);
         return false;
     }
     return true;
