@@ -46,6 +46,8 @@ static const std::string IMAGE_INPUT_HEIFHDR_PATH = "/data/local/tmp/image/test_
 static const std::string IMAGE_JPEG_WRONG_SRC = "/data/local/tmp/image/test_picture_wrong.jpg";
 static const std::string IMAGE_HEIC_64_64 = "/data/local/tmp/image/test_heic_64_64.heic";
 static const std::string IMAGE_HEIC_128_128 = "/data/local/tmp/image/test_heic_128_128.heic";
+static const std::string IMAGE_JPEG_100_100 = "/data/local/tmp/image/test_jpeg_100_100.jpg";
+static const std::string IMAGE_JPEG_128_128 = "/data/local/tmp/image/test_jpeg_128_128.jpg";
 
 class PictureExtTest : public testing::Test {
 public:
@@ -1055,6 +1057,40 @@ HWTEST_F(PictureExtTest, ConvertAutoAllocatorTypeTest002, TestSize.Level3)
     uint32_t errorCode = 0;
     SourceOptions opts;
     std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(IMAGE_HEIC_128_128, opts, errorCode);
+    ASSERT_NE(imageSource.get(), nullptr);
+    EXPECT_EQ(errorCode, 0);
+    DecodeOptions dopts;
+    AllocatorType allocatorType = imageSource->ConvertAutoAllocatorType(dopts);
+    EXPECT_EQ(allocatorType, AllocatorType::DMA_ALLOC);
+}
+
+/**
+ * @tc.name: ConvertAutoAllocatorTypeTest003
+ * @tc.desc: Test ConvertAutoAllocatorType use 100 * 100 jpeg image.
+ * @tc.type: FUNC
+ */
+HWTEST_F(PictureExtTest, ConvertAutoAllocatorTypeTest003, TestSize.Level3)
+{
+    uint32_t errorCode = 0;
+    SourceOptions opts;
+    std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(IMAGE_JPEG_100_100, opts, errorCode);
+    ASSERT_NE(imageSource.get(), nullptr);
+    EXPECT_EQ(errorCode, 0);
+    DecodeOptions dopts;
+    AllocatorType allocatorType = imageSource->ConvertAutoAllocatorType(dopts);
+    EXPECT_EQ(allocatorType, AllocatorType::SHARE_MEM_ALLOC);
+}
+
+/**
+ * @tc.name: ConvertAutoAllocatorTypeTest004
+ * @tc.desc: Test ConvertAutoAllocatorType use 128 * 128 jpeg image.
+ * @tc.type: FUNC
+ */
+HWTEST_F(PictureExtTest, ConvertAutoAllocatorTypeTest004, TestSize.Level3)
+{
+    uint32_t errorCode = 0;
+    SourceOptions opts;
+    std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(IMAGE_JPEG_128_128, opts, errorCode);
     ASSERT_NE(imageSource.get(), nullptr);
     EXPECT_EQ(errorCode, 0);
     DecodeOptions dopts;
