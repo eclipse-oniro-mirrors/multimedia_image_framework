@@ -18,6 +18,8 @@
 
 #include "image_source_native.h"
 #include "image_source_native_impl.h"
+#include "pixelmap_native.h"
+#include "pixelmap_native_impl.h"
 #include "image_utils.h"
 #include "pixelmap_native.h"
 #include "securec.h"
@@ -958,6 +960,160 @@ HWTEST_F(ImagSourceNdk2Test, OH_ImageSourceNative_CreatePixelmapUsingAllocatorTe
     ret = OH_ImageSourceNative_CreatePixelmapUsingAllocator(imageSource, opts, allocator, &resPixMap);
     EXPECT_EQ(ret, IMAGE_SOURCE_UNSUPPORTED_ALLOCATOR_TYPE);
     EXPECT_EQ(resPixMap, nullptr);
+    OH_ImageSourceNative_Release(imageSource);
+    OH_DecodingOptions_Release(opts);
+    OH_PixelmapNative_Release(resPixMap);
+}
+
+/**
+ * @tc.name: OH_ImageSourceNative_CreatePixelmapUsingAllocatorTest027
+ * @tc.desc: Test the creation of a pixelmap using a shared memory allocator, with ARGB pixel format and SDR
+ *           dynamic range.
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImagSourceNdk2Test, OH_ImageSourceNative_CreatePixelmapUsingAllocatorTest027, TestSize.Level1)
+{
+    OH_ImageSourceNative *imageSource = CreateImageSourceNative(IMAGE_JPEG_HDR_PATH);
+    ASSERT_NE(imageSource, nullptr);
+    OH_DecodingOptions *opts = nullptr;
+    OH_DecodingOptions_Create(&opts);
+    ASSERT_NE(opts, nullptr);
+    OH_DecodingOptions_SetPixelFormat(opts, PIXEL_FORMAT_ARGB_8888);
+    OH_DecodingOptions_SetDesiredDynamicRange(opts, IMAGE_DYNAMIC_RANGE::IMAGE_DYNAMIC_RANGE_SDR);
+    OH_PixelmapNative* resPixMap = nullptr;
+    IMAGE_ALLOCATOR_TYPE allocator = IMAGE_ALLOCATOR_TYPE::IMAGE_ALLOCATOR_TYPE_SHARE_MEMORY;
+    Image_ErrorCode ret = OH_ImageSourceNative_CreatePixelmapUsingAllocator(imageSource, opts, allocator, &resPixMap);
+    EXPECT_EQ(ret, IMAGE_SUCCESS);
+    EXPECT_NE(resPixMap, nullptr);
+    EXPECT_EQ(resPixMap->GetInnerPixelmap()->GetPixelFormat(), PixelFormat::ARGB_8888);
+    OH_ImageSourceNative_Release(imageSource);
+    OH_DecodingOptions_Release(opts);
+    OH_PixelmapNative_Release(resPixMap);
+}
+
+/**
+ * @tc.name: OH_ImageSourceNative_CreatePixelmapUsingAllocatorTest028
+ * @tc.desc: Test the creation of a pixelmap using a dma memory allocator, with ARGB pixel format and SDR
+ *           dynamic range.
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImagSourceNdk2Test, OH_ImageSourceNative_CreatePixelmapUsingAllocatorTest028, TestSize.Level1)
+{
+    OH_ImageSourceNative *imageSource = CreateImageSourceNative(IMAGE_JPEG_HDR_PATH);
+    ASSERT_NE(imageSource, nullptr);
+    OH_DecodingOptions *opts = nullptr;
+    OH_DecodingOptions_Create(&opts);
+    ASSERT_NE(opts, nullptr);
+    OH_DecodingOptions_SetPixelFormat(opts, PIXEL_FORMAT_ARGB_8888);
+    OH_DecodingOptions_SetDesiredDynamicRange(opts, IMAGE_DYNAMIC_RANGE::IMAGE_DYNAMIC_RANGE_SDR);
+    OH_PixelmapNative* resPixMap = nullptr;
+    IMAGE_ALLOCATOR_TYPE allocator = IMAGE_ALLOCATOR_TYPE::IMAGE_ALLOCATOR_TYPE_DMA;
+    Image_ErrorCode ret = OH_ImageSourceNative_CreatePixelmapUsingAllocator(imageSource, opts, allocator, &resPixMap);
+    EXPECT_EQ(ret, IMAGE_SOURCE_UNSUPPORTED_ALLOCATOR_TYPE);
+    EXPECT_EQ(resPixMap, nullptr);
+    OH_ImageSourceNative_Release(imageSource);
+    OH_DecodingOptions_Release(opts);
+    OH_PixelmapNative_Release(resPixMap);
+}
+
+/**
+ * @tc.name: OH_ImageSourceNative_CreatePixelmapUsingAllocatorTest029
+ * @tc.desc: Test the creation of a pixelmap using a auto memory allocator, with ARGB pixel format and SDR
+ *           dynamic range.
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImagSourceNdk2Test, OH_ImageSourceNative_CreatePixelmapUsingAllocatorTest029, TestSize.Level1)
+{
+    OH_ImageSourceNative *imageSource = CreateImageSourceNative(IMAGE_JPEG_HDR_PATH);
+    ASSERT_NE(imageSource, nullptr);
+    OH_DecodingOptions *opts = nullptr;
+    OH_DecodingOptions_Create(&opts);
+    ASSERT_NE(opts, nullptr);
+    OH_DecodingOptions_SetPixelFormat(opts, PIXEL_FORMAT_ARGB_8888);
+    OH_DecodingOptions_SetDesiredDynamicRange(opts, IMAGE_DYNAMIC_RANGE::IMAGE_DYNAMIC_RANGE_SDR);
+    OH_PixelmapNative* resPixMap = nullptr;
+    IMAGE_ALLOCATOR_TYPE allocator = IMAGE_ALLOCATOR_TYPE::IMAGE_ALLOCATOR_TYPE_AUTO;
+    Image_ErrorCode ret = OH_ImageSourceNative_CreatePixelmapUsingAllocator(imageSource, opts, allocator, &resPixMap);
+    EXPECT_EQ(ret, IMAGE_SUCCESS);
+    EXPECT_NE(resPixMap, nullptr);
+    EXPECT_EQ(resPixMap->GetInnerPixelmap()->GetPixelFormat(), PixelFormat::ARGB_8888);
+    OH_ImageSourceNative_Release(imageSource);
+    OH_DecodingOptions_Release(opts);
+    OH_PixelmapNative_Release(resPixMap);
+}
+
+/**
+ * @tc.name: OH_ImageSourceNative_CreatePixelmapUsingAllocatorTest030
+ * @tc.desc: Test the creation of a pixelmap using a share memory allocator, with ARGB pixel format and HDR
+ *           dynamic range.
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImagSourceNdk2Test, OH_ImageSourceNative_CreatePixelmapUsingAllocatorTest030, TestSize.Level1)
+{
+    OH_ImageSourceNative *imageSource = CreateImageSourceNative(IMAGE_JPEG_HDR_PATH);
+    ASSERT_NE(imageSource, nullptr);
+    OH_DecodingOptions *opts = nullptr;
+    OH_DecodingOptions_Create(&opts);
+    ASSERT_NE(opts, nullptr);
+    OH_DecodingOptions_SetPixelFormat(opts, PIXEL_FORMAT_ARGB_8888);
+    OH_DecodingOptions_SetDesiredDynamicRange(opts, IMAGE_DYNAMIC_RANGE::IMAGE_DYNAMIC_RANGE_HDR);
+    OH_PixelmapNative* resPixMap = nullptr;
+    IMAGE_ALLOCATOR_TYPE allocator = IMAGE_ALLOCATOR_TYPE::IMAGE_ALLOCATOR_TYPE_SHARE_MEMORY;
+    Image_ErrorCode ret = OH_ImageSourceNative_CreatePixelmapUsingAllocator(imageSource, opts, allocator, &resPixMap);
+    EXPECT_EQ(ret, IMAGE_SOURCE_UNSUPPORTED_ALLOCATOR_TYPE);
+    EXPECT_EQ(resPixMap, nullptr);
+    OH_ImageSourceNative_Release(imageSource);
+    OH_DecodingOptions_Release(opts);
+    OH_PixelmapNative_Release(resPixMap);
+}
+
+/**
+ * @tc.name: OH_ImageSourceNative_CreatePixelmapUsingAllocatorTest031
+ * @tc.desc: Test the creation of a pixelmap using a dma memory allocator, with ARGB pixel format and HDR
+ *           dynamic range.
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImagSourceNdk2Test, OH_ImageSourceNative_CreatePixelmapUsingAllocatorTest031, TestSize.Level1)
+{
+    OH_ImageSourceNative *imageSource = CreateImageSourceNative(IMAGE_JPEG_HDR_PATH);
+    ASSERT_NE(imageSource, nullptr);
+    OH_DecodingOptions *opts = nullptr;
+    OH_DecodingOptions_Create(&opts);
+    ASSERT_NE(opts, nullptr);
+    OH_DecodingOptions_SetPixelFormat(opts, PIXEL_FORMAT_ARGB_8888);
+    OH_DecodingOptions_SetDesiredDynamicRange(opts, IMAGE_DYNAMIC_RANGE::IMAGE_DYNAMIC_RANGE_HDR);
+    OH_PixelmapNative* resPixMap = nullptr;
+    IMAGE_ALLOCATOR_TYPE allocator = IMAGE_ALLOCATOR_TYPE::IMAGE_ALLOCATOR_TYPE_DMA;
+    Image_ErrorCode ret = OH_ImageSourceNative_CreatePixelmapUsingAllocator(imageSource, opts, allocator, &resPixMap);
+    EXPECT_EQ(ret, IMAGE_SUCCESS);
+    EXPECT_NE(resPixMap, nullptr);
+    EXPECT_EQ(resPixMap->GetInnerPixelmap()->GetPixelFormat(), PixelFormat::RGBA_1010102);
+    OH_ImageSourceNative_Release(imageSource);
+    OH_DecodingOptions_Release(opts);
+    OH_PixelmapNative_Release(resPixMap);
+}
+
+/**
+ * @tc.name: OH_ImageSourceNative_CreatePixelmapUsingAllocatorTest032
+ * @tc.desc: Test the creation of a pixelmap using a auto memory allocator, with ARGB pixel format and HDR
+ *           dynamic range.
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImagSourceNdk2Test, OH_ImageSourceNative_CreatePixelmapUsingAllocatorTest032, TestSize.Level1)
+{
+    OH_ImageSourceNative *imageSource = CreateImageSourceNative(IMAGE_JPEG_HDR_PATH);
+    ASSERT_NE(imageSource, nullptr);
+    OH_DecodingOptions *opts = nullptr;
+    OH_DecodingOptions_Create(&opts);
+    ASSERT_NE(opts, nullptr);
+    OH_DecodingOptions_SetPixelFormat(opts, PIXEL_FORMAT_ARGB_8888);
+    OH_DecodingOptions_SetDesiredDynamicRange(opts, IMAGE_DYNAMIC_RANGE::IMAGE_DYNAMIC_RANGE_HDR);
+    OH_PixelmapNative* resPixMap = nullptr;
+    IMAGE_ALLOCATOR_TYPE allocator = IMAGE_ALLOCATOR_TYPE::IMAGE_ALLOCATOR_TYPE_AUTO;
+    Image_ErrorCode ret = OH_ImageSourceNative_CreatePixelmapUsingAllocator(imageSource, opts, allocator, &resPixMap);
+    EXPECT_EQ(ret, IMAGE_SUCCESS);
+    EXPECT_NE(resPixMap, nullptr);
+    EXPECT_EQ(resPixMap->GetInnerPixelmap()->GetPixelFormat(), PixelFormat::RGBA_1010102);
     OH_ImageSourceNative_Release(imageSource);
     OH_DecodingOptions_Release(opts);
     OH_PixelmapNative_Release(resPixMap);
