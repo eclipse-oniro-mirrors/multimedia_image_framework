@@ -91,7 +91,6 @@ namespace {
     constexpr static int32_t LOOP_COUNT_INFINITE = 0;
     constexpr static int32_t SK_REPETITION_COUNT_INFINITE = -1;
     constexpr static int32_t SK_REPETITION_COUNT_ERROR_VALUE = -2;
-    constexpr static int32_t NUM_YUV_COMPONENTS = 3;
     constexpr static int32_t BYTES_PER_YUV_SAMPLE = 2;
 }
 
@@ -905,7 +904,7 @@ void ExtDecoder::FillYuvInfo(DecodeContext &context, SkImageInfo &dstInfo)
         context.yuvInfo.uvWidth = static_cast<uint32_t>((dstInfo.width() + 1) / BYTES_PER_YUV_SAMPLE);
         context.yuvInfo.uvHeight = static_cast<uint32_t>((dstInfo.height() + 1) / BYTES_PER_YUV_SAMPLE);
         context.yuvInfo.yStride = dstInfo.width();
-        context.yuvInfo.uvStride = dstInfo.width();
+        context.yuvInfo.uvStride = context.yuvInfo.uvWidth + context.yuvInfo.uvWidth;
         context.yuvInfo.yOffset = 0;
         context.yuvInfo.uvOffset = dstInfo.width() * dstInfo.height();
     }
@@ -942,7 +941,7 @@ uint32_t ExtDecoder::DoHeifSharedMemDecode(DecodeContext &context)
     uint64_t byteCount = dstInfo_.computeMinByteSize();
     if (IsYuv420Format(context.info.pixelFormat)) {
         rowStride = dstInfo_.width();
-        byteCount = dstInfo_.width() * dstInfo_.height() * NUM_YUV_COMPONENTS / BYTES_PER_YUV_SAMPLE;
+        byteCount = JpegDecoderYuv::GetYuvOutSize(dstInfo_.width(), dstInfo_.height());
     }
     if (!SetOutPutFormat(context.info.pixelFormat, decoder)) {
         return ERR_IMAGE_DATA_UNSUPPORT;
