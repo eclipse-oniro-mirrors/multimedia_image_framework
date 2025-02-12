@@ -395,6 +395,7 @@ bool IsSuperFastEncode(const std::string &format)
 }
 #endif
 
+#if !defined(_WIN32) && !defined(_APPLE) && !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
 static bool CheckPictureHasArgb(Picture *picture)
 {
     bool cond = picture == nullptr || picture->GetMainPixel() == nullptr;
@@ -440,16 +441,19 @@ uint32_t ExtEncoder::CheckArgbEncode()
     }
     return SUCCESS;
 }
+#endif
 
 uint32_t ExtEncoder::FinalizeEncode()
 {
     if ((picture_ == nullptr && pixelmap_ == nullptr) || output_ == nullptr) {
         return ERR_IMAGE_INVALID_PARAMETER;
     }
+#if !defined(_WIN32) && !defined(_APPLE) && !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
     uint32_t convertRes = CheckArgbEncode();
     if (convertRes != SUCCESS) {
         return convertRes;
     }
+#endif
     ImageDataStatistics imageDataStatistics("[ExtEncoder]FinalizeEncode imageFormat = %s, quality = %d",
         opts_.format.c_str(), opts_.quality);
 #if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)

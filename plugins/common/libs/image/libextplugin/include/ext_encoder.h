@@ -96,6 +96,7 @@ private:
         Media::HdrMetadata& metadata, bool sdrIsSRGB = false);
     uint32_t EncodeHeifSdrImage(sptr<SurfaceBuffer>& sdr, SkImageInfo sdrInfo);
     void SetHdrColorSpaceType(sptr<SurfaceBuffer>& surfaceBuffer);
+    uint32_t CheckArgbEncode();
 #endif
     uint32_t EncodeImageByBitmap(SkBitmap& bitmap, bool needExif, SkWStream& outStream);
     uint32_t EncodeImageByPixelMap(Media::PixelMap* pixelMap, bool needExif, SkWStream& outputStream);
@@ -148,7 +149,6 @@ private:
     uint32_t PixelmapEncode(ExtWStream& wStream);
     uint32_t EncodeHeifByPixelmap(Media::PixelMap* pixelmap, const PlEncodeOptions& opts);
     void RecycleResources();
-    uint32_t CheckArgbEncode();
 
     SkEncodedImageFormat encodeFormat_;
     OutputDataStream* output_ = nullptr;
