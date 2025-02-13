@@ -169,9 +169,9 @@ typedef enum {
  */
 struct OhosImageSize {
     /** Image width, in pixels. */
-    int32_t width;
+    int32_t width = 0;
     /** Image height, in pixels. */
-    int32_t height;
+    int32_t height = 0;
 };
 
 #ifdef __cplusplus
