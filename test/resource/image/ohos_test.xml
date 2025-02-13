@@ -441,6 +441,7 @@
             <option name="push" value="images/test_heic_128_128.heic -> /data/local/tmp/image" src="res"/>
             <option name="push" value="images/test_jpeg_100_100.jpg -> /data/local/tmp/image" src="res"/>
             <option name="push" value="images/test_jpeg_128_128.jpg -> /data/local/tmp/image" src="res"/>
+            <option name="push" value="images/test.jpg -> /data/local/tmp/image" src="res"/>
         </preparer>
     </target>
     <target name="ImagePictureFuzzTest">

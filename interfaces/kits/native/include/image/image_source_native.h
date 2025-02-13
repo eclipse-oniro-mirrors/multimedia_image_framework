@@ -157,6 +157,18 @@ Image_ErrorCode OH_ImageSourceInfo_GetHeight(OH_ImageSource_Info *info, uint32_t
 Image_ErrorCode OH_ImageSourceInfo_GetDynamicRange(OH_ImageSource_Info *info, bool *isHdr);
 
 /**
+ * @brief Get mime type from OH_ImageSource_Info struct.
+ *
+ * @param info The OH_ImageSource_Info pointer will be operated.
+ * @param mimeType The mime type of the image.
+ * @return Returns {@link Image_ErrorCode} IMAGE_SUCCESS - if the operation is successful.
+ * returns {@link Image_ErrorCode} IMAGE_BAD_PARAMETER - if invalid parameter, info or mimeType is nullptr.
+ * returns {@link Image_ErrorCode} IMAGE_UNKNOWN_MIME_TYPE - if the mimeType data in OH_ImageSource_Info is nullptr.
+ * @since 16
+ */
+Image_ErrorCode OH_ImageSourceInfo_GetMimeType(OH_ImageSource_Info *info, Image_MimeType *mimeType);
+
+/**
  * @brief delete OH_ImageSource_Info pointer.
  *
  * @param info The OH_ImageSource_Info pointer will be operated.

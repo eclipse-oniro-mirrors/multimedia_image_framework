@@ -21,9 +21,21 @@
 #include "securec.h"
 #include "image_utils.h"
 #include "native_color_space_manager.h"
+#include "image_mime_type.h"
 
 using namespace testing::ext;
 using namespace OHOS::Media;
+
+struct OH_Pixelmap_ImageInfo {
+    uint32_t width = 0;
+    uint32_t height = 0;
+    uint32_t rowStride = 0;
+    int32_t pixelFormat = PIXEL_FORMAT::PIXEL_FORMAT_UNKNOWN;
+    PIXELMAP_ALPHA_TYPE alphaType = PIXELMAP_ALPHA_TYPE::PIXELMAP_ALPHA_TYPE_UNKNOWN;
+    bool isHdr = false;
+    Image_MimeType mimeType;
+};
+
 namespace OHOS {
 namespace Media {
 
@@ -566,6 +578,108 @@ HWTEST_F(PixelMapNdk2Test, OH_PixelmapNative_Release, TestSize.Level3)
     Image_ErrorCode ret = OH_PixelmapNative_Release(pixelMap);
     ASSERT_EQ(ret, IMAGE_BAD_PARAMETER);
     GTEST_LOG_(INFO) << "PixelMapNdk2Test: OH_PixelmapNative_Release end";
+}
+
+/**
+ * @tc.name: OH_PixelmapImageInfo_GetMimeType001
+ * @tc.desc: test OH_PixelmapImageInfo_GetMimeType
+ * @tc.type: FUNC
+ */
+HWTEST_F(PixelMapNdk2Test, OH_PixelmapImageInfo_GetMimeType001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PixelMapNdk2Test: OH_PixelmapImageInfo_GetMimeType001 start";
+    OH_Pixelmap_ImageInfo *info1 = nullptr;
+    Image_ErrorCode ret = OH_PixelmapImageInfo_Create(&info1);
+    ASSERT_EQ(ret, IMAGE_SUCCESS);
+    ASSERT_NE(info1, nullptr);
+    OH_Pixelmap_ImageInfo *info2 = nullptr;
+
+    Image_MimeType mimeType1;
+    Image_MimeType *mimeType2 = nullptr;
+    ret = OH_PixelmapImageInfo_GetMimeType(info1, &mimeType1);
+    EXPECT_EQ(ret, IMAGE_UNKNOWN_MIME_TYPE);
+    ret = OH_PixelmapImageInfo_GetMimeType(info2, &mimeType1);
+    EXPECT_EQ(ret, IMAGE_BAD_PARAMETER);
+    ret = OH_PixelmapImageInfo_GetMimeType(info1, mimeType2);
+    EXPECT_EQ(ret, IMAGE_BAD_PARAMETER);
+    ret = OH_PixelmapImageInfo_GetMimeType(info2, mimeType2);
+    EXPECT_EQ(ret, IMAGE_BAD_PARAMETER);
+
+    ret = OH_PixelmapImageInfo_Release(info1);
+    EXPECT_EQ(ret, IMAGE_SUCCESS);
+    GTEST_LOG_(INFO) << "PixelMapNdk2Test: OH_PixelmapImageInfo_GetMimeType001 end";
+}
+
+/**
+ * @tc.name: OH_PixelmapImageInfo_GetMimeType002
+ * @tc.desc: test OH_PixelmapImageInfo_GetMimeType
+ * @tc.type: FUNC
+ */
+HWTEST_F(PixelMapNdk2Test, OH_PixelmapImageInfo_GetMimeType002, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PixelMapNdk2Test: OH_PixelmapImageInfo_GetMimeType002 start";
+    OH_Pixelmap_ImageInfo *info = nullptr;
+    Image_ErrorCode ret = OH_PixelmapImageInfo_Create(&info);
+    ASSERT_EQ(ret, IMAGE_SUCCESS);
+
+    Image_MimeType mimeType;
+    ret = OH_PixelmapImageInfo_GetMimeType(info, &mimeType);
+    EXPECT_EQ(ret, IMAGE_UNKNOWN_MIME_TYPE);
+
+    info->mimeType.size = TWO;
+    ret = OH_PixelmapImageInfo_GetMimeType(info, &mimeType);
+    EXPECT_EQ(ret, IMAGE_UNKNOWN_MIME_TYPE);
+
+    ret = OH_PixelmapImageInfo_Release(info);
+    EXPECT_EQ(ret, IMAGE_SUCCESS);
+    GTEST_LOG_(INFO) << "PixelMapNdk2Test: OH_PixelmapImageInfo_GetMimeType002 end";
+}
+
+/**
+ * @tc.name: OH_PixelmapImageInfo_GetMimeType003
+ * @tc.desc: test OH_PixelmapImageInfo_GetMimeType
+ * @tc.type: FUNC
+ */
+HWTEST_F(PixelMapNdk2Test, OH_PixelmapImageInfo_GetMimeType003, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PixelMapNdk2Test: OH_PixelmapImageInfo_GetMimeType003 start";
+    size_t length = IMAGE_JPEG_PATH_TEST.size();
+    char filePath[length + 1];
+    strcpy_s(filePath, sizeof(filePath), IMAGE_JPEG_PATH_TEST.c_str());
+
+    OH_ImageSourceNative *source = nullptr;
+    Image_ErrorCode ret = OH_ImageSourceNative_CreateFromUri(filePath, length, &source);
+    EXPECT_EQ(ret, IMAGE_SUCCESS);
+    ASSERT_NE(source, nullptr);
+
+    OH_DecodingOptions *opts = nullptr;
+    OH_DecodingOptions_Create(&opts);
+    OH_PixelmapNative *pixelmap = nullptr;
+    ret = OH_ImageSourceNative_CreatePixelmap(source, opts, &pixelmap);
+    EXPECT_EQ(ret, IMAGE_SUCCESS);
+    ASSERT_NE(pixelmap, nullptr);
+
+    OH_Pixelmap_ImageInfo *imageInfo = nullptr;
+    OH_PixelmapImageInfo_Create(&imageInfo);
+    ret = OH_PixelmapNative_GetImageInfo(pixelmap, imageInfo);
+    EXPECT_EQ(ret, IMAGE_SUCCESS);
+    ASSERT_NE(imageInfo, nullptr);
+
+    Image_MimeType mimeType;
+    ret = OH_PixelmapImageInfo_GetMimeType(imageInfo, &mimeType);
+    EXPECT_EQ(ret, IMAGE_SUCCESS);
+    ASSERT_NE(mimeType.data, nullptr);
+    EXPECT_EQ(strcmp(mimeType.data, IMAGE_JPEG_FORMAT.c_str()), 0);
+
+    imageInfo->mimeType.size = 0;
+    ret = OH_PixelmapImageInfo_GetMimeType(imageInfo, &mimeType);
+    EXPECT_EQ(ret, IMAGE_UNKNOWN_MIME_TYPE);
+
+    OH_ImageSourceNative_Release(source);
+    OH_DecodingOptions_Release(opts);
+    OH_PixelmapNative_Release(pixelmap);
+    OH_PixelmapImageInfo_Release(imageInfo);
+    GTEST_LOG_(INFO) << "PixelMapNdk2Test: OH_PixelmapImageInfo_GetMimeType003 end";
 }
 
 /**

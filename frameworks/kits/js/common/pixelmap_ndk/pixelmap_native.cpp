@@ -28,6 +28,7 @@
 #include "securec.h"
 #include "color_utils.h"
 #include "media_errors.h"
+#include "memory.h"
 #include "image_log.h"
 
 #include "native_color_space_manager.h"
@@ -73,6 +74,7 @@ struct OH_Pixelmap_ImageInfo {
     int32_t pixelFormat = PIXEL_FORMAT::PIXEL_FORMAT_UNKNOWN;
     PIXELMAP_ALPHA_TYPE alphaType = PIXELMAP_ALPHA_TYPE::PIXELMAP_ALPHA_TYPE_UNKNOWN;
     bool isHdr = false;
+    Image_MimeType mimeType;
 };
 
 static PIXEL_FORMAT ParsePixelForamt(int32_t val)
@@ -158,6 +160,15 @@ static bool IsMatchType(IMAGE_FORMAT type, PixelFormat format)
     } else {
         return false;
     }
+}
+
+static void releaseMimeType(Image_MimeType *mimeType)
+{
+    if (mimeType->data != nullptr) {
+        free(mimeType->data);
+        mimeType->data = nullptr;
+    }
+    mimeType->size = 0;
 }
 
 MIDK_EXPORT
@@ -390,11 +401,25 @@ Image_ErrorCode OH_PixelmapImageInfo_GetDynamicRange(OH_Pixelmap_ImageInfo *info
 }
 
 MIDK_EXPORT
+Image_ErrorCode OH_PixelmapImageInfo_GetMimeType(OH_Pixelmap_ImageInfo *info, Image_MimeType *mimeType)
+{
+    if (info == nullptr || mimeType == nullptr) {
+        return IMAGE_BAD_PARAMETER;
+    }
+    if (info->mimeType.data == nullptr || info->mimeType.size == 0) {
+        return IMAGE_UNKNOWN_MIME_TYPE;
+    }
+    *mimeType = info->mimeType;
+    return IMAGE_SUCCESS;
+}
+
+MIDK_EXPORT
 Image_ErrorCode OH_PixelmapImageInfo_Release(OH_Pixelmap_ImageInfo *info)
 {
     if (info == nullptr) {
         return IMAGE_BAD_PARAMETER;
     }
+    releaseMimeType(&info->mimeType);
     delete  info;
     info = nullptr;
     return IMAGE_SUCCESS;
@@ -538,6 +563,16 @@ Image_ErrorCode OH_PixelmapNative_GetImageInfo(OH_PixelmapNative *pixelmap, OH_P
     imageInfo->rowStride = static_cast<uint32_t>(pixelmap->GetInnerPixelmap()->GetRowStride());
     imageInfo->pixelFormat = static_cast<int32_t>(srcInfo.pixelFormat);
     imageInfo->isHdr = pixelmap->GetInnerPixelmap()->IsHdr();
+
+    if (!srcInfo.encodedFormat.empty() && imageInfo->mimeType.data == nullptr) {
+        imageInfo->mimeType.size = srcInfo.encodedFormat.size();
+        imageInfo->mimeType.data = static_cast<char *>(malloc(imageInfo->mimeType.size));
+        if (memcpy_s(imageInfo->mimeType.data, imageInfo->mimeType.size, srcInfo.encodedFormat.c_str(),
+            srcInfo.encodedFormat.size()) != 0) {
+            releaseMimeType(&imageInfo->mimeType);
+        }
+    }
+
     return IMAGE_SUCCESS;
 }
 

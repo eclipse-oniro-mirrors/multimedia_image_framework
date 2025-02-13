@@ -70,6 +70,8 @@ struct OH_ImageSource_Info {
     int32_t height;
     /** Image dynamicRange*/
     bool isHdr;
+    /** Image mime type. */
+    Image_MimeType mimeType;
 };
 
 static const std::map<int32_t, Image_ErrorCode> ERROR_CODE_MAP = {
@@ -130,6 +132,15 @@ static DecodeDynamicRange ParseImageDynamicRange(int32_t val)
     }
 
     return DecodeDynamicRange::SDR;
+}
+
+static void releaseMimeType(Image_MimeType *mimeType)
+{
+    if (mimeType->data != nullptr) {
+        free(mimeType->data);
+        mimeType->data = nullptr;
+    }
+    mimeType->size = 0;
 }
 
 MIDK_EXPORT
@@ -329,12 +340,27 @@ Image_ErrorCode OH_ImageSourceInfo_GetDynamicRange(OH_ImageSource_Info *info, bo
 }
 
 MIDK_EXPORT
+Image_ErrorCode OH_ImageSourceInfo_GetMimeType(OH_ImageSource_Info *info, Image_MimeType *mimeType)
+{
+    if (info == nullptr || mimeType == nullptr) {
+        return IMAGE_BAD_PARAMETER;
+    }
+    if (info->mimeType.data == nullptr || info->mimeType.size == 0) {
+        return IMAGE_UNKNOWN_MIME_TYPE;
+    }
+    *mimeType = info->mimeType;
+    return IMAGE_SUCCESS;
+}
+
+MIDK_EXPORT
 Image_ErrorCode OH_ImageSourceInfo_Release(OH_ImageSource_Info *info)
 {
     if (info == nullptr) {
         return IMAGE_BAD_PARAMETER;
     }
+    releaseMimeType(&info->mimeType);
     delete info;
+    info = nullptr;
     return IMAGE_SUCCESS;
 }
 
@@ -382,8 +408,20 @@ static void ParseDecodingOps(DecodeOptions &decOps, struct OH_DecodingOptions *o
 
 static void ParseImageSourceInfo(struct OH_ImageSource_Info *source, const ImageInfo &info)
 {
+    if (source == nullptr) {
+        return;
+    }
     source->width = info.size.width;
     source->height = info.size.height;
+
+    if (!info.encodedFormat.empty() && source->mimeType.data == nullptr) {
+        source->mimeType.size = info.encodedFormat.size();
+        source->mimeType.data = static_cast<char *>(malloc(source->mimeType.size));
+        if (memcpy_s(source->mimeType.data, source->mimeType.size, info.encodedFormat.c_str(),
+            info.encodedFormat.size()) != 0) {
+            releaseMimeType(&source->mimeType);
+        }
+    }
 }
 
 MIDK_EXPORT
