@@ -1773,8 +1773,8 @@ uint32_t PixelMap::WritePixel(const Position &pos, const uint32_t &color)
             "Width() %{public}d,  Height() %{public}d, ", pos.x, pos.y, GetWidth(), GetHeight());
         return ERR_IMAGE_INVALID_PARAMETER;
     }
-    if (!IsEditable()) {
-        IMAGE_LOGE("write pixel by pos pixelmap is not editable.");
+    if (!IsEditable() || !modifiable_) {
+        IMAGE_LOGE("write pixel by pos pixelmap is not editable or modifiable.");
         return ERR_IMAGE_PIXELMAP_NOT_ALLOW_MODIFY;
     }
     if (!ImageUtils::IsValidImageInfo(imageInfo_)) {
@@ -1804,8 +1804,8 @@ uint32_t PixelMap::WritePixels(const uint8_t *source, const uint64_t &bufferSize
         IMAGE_LOGE("write pixel by rect input parameter fail.");
         return ERR_IMAGE_INVALID_PARAMETER;
     }
-    if (!IsEditable()) {
-        IMAGE_LOGE("write pixel by rect pixelmap data is not editable.");
+    if (!IsEditable() || !modifiable_) {
+        IMAGE_LOGE("write pixel by rect pixelmap data is not editable or modifiable.");
         return ERR_IMAGE_PIXELMAP_NOT_ALLOW_MODIFY;
     }
     if (!ImageUtils::IsValidImageInfo(imageInfo_)) {
@@ -1840,8 +1840,8 @@ uint32_t PixelMap::WritePixels(const uint8_t *source, const uint64_t &bufferSize
             static_cast<unsigned long long>(bufferSize), pixelsSize_);
         return ERR_IMAGE_INVALID_PARAMETER;
     }
-    if (!IsEditable()) {
-        IMAGE_LOGE("write pixels by buffer pixelmap data is not editable.");
+    if (!IsEditable() || !modifiable_) {
+        IMAGE_LOGE("write pixels by buffer pixelmap data is not editable or modifiable.");
         return ERR_IMAGE_PIXELMAP_NOT_ALLOW_MODIFY;
     }
     if (!ImageUtils::IsValidImageInfo(imageInfo_)) {
@@ -1882,8 +1882,8 @@ uint32_t PixelMap::WritePixels(const uint8_t *source, const uint64_t &bufferSize
 
 bool PixelMap::WritePixels(const uint32_t &color)
 {
-    if (!IsEditable()) {
-        IMAGE_LOGE("erase pixels by color pixelmap data is not editable.");
+    if (!IsEditable() || !modifiable_) {
+        IMAGE_LOGE("erase pixels by color pixelmap data is not editable or modifiable.");
         return false;
     }
     if (!ImageUtils::IsValidImageInfo(imageInfo_)) {
@@ -3308,17 +3308,29 @@ uint32_t PixelMap::ConvertAlphaFormat(PixelMap &wPixelMap, const bool isPremul)
     return SUCCESS;
 }
 
+static uint32_t ValidateSetAlpha(float percent, bool modifiable, AlphaType alphaType)
+{
+    if (!modifiable) {
+        IMAGE_LOGE("[PixelMap] SetAlpha can't be performed: PixelMap is not modifiable");
+        return ERR_IMAGE_PIXELMAP_NOT_ALLOW_MODIFY;
+    }
+    if (alphaType == AlphaType::IMAGE_ALPHA_TYPE_UNKNOWN || alphaType == AlphaType::IMAGE_ALPHA_TYPE_OPAQUE) {
+        IMAGE_LOGE("[PixelMap] SetAlpha could not set alpha on %{public}s", GetNamedAlphaType(alphaType).c_str());
+        return ERR_IMAGE_DATA_UNSUPPORT;
+    }
+    if (percent <= 0 || percent > 1) {
+        IMAGE_LOGE("[PixelMap] SetAlpha input should satisfy (0 < input <= 1). Current input is %{public}f", percent);
+        return ERR_IMAGE_INVALID_PARAMETER;
+    }
+    return SUCCESS;
+}
+
 uint32_t PixelMap::SetAlpha(const float percent)
 {
     auto alphaType = GetAlphaType();
-    if (alphaType == AlphaType::IMAGE_ALPHA_TYPE_UNKNOWN || alphaType == AlphaType::IMAGE_ALPHA_TYPE_OPAQUE) {
-        IMAGE_LOGE("Could not set alpha on %{public}s", GetNamedAlphaType(alphaType).c_str());
-        return ERR_IMAGE_DATA_UNSUPPORT;
-    }
-
-    if (percent <= 0 || percent > 1) {
-        IMAGE_LOGE("Set alpha input should (0 < input <= 1). Current input %{public}f", percent);
-        return ERR_IMAGE_INVALID_PARAMETER;
+    uint32_t retCode = ValidateSetAlpha(percent, modifiable_, alphaType);
+    if (retCode != SUCCESS) {
+        return retCode;
     }
 
     bool isPixelPremul = alphaType == AlphaType::IMAGE_ALPHA_TYPE_PREMUL;
@@ -3522,6 +3534,11 @@ void DrawImage(bool rectStaysRect, const AntiAliasingOption &option, SkCanvas &c
 
 bool PixelMap::DoTranslation(TransInfos &infos, const AntiAliasingOption &option)
 {
+    if (!modifiable_) {
+        IMAGE_LOGE("[PixelMap] DoTranslation can't be performed: PixelMap is not modifiable");
+        return false;
+    }
+
     std::lock_guard<std::mutex> lock(*translationMutex_);
     ImageInfo imageInfo;
     GetImageInfo(imageInfo);
@@ -3590,6 +3607,10 @@ void PixelMap::scale(float xAxis, float yAxis, const AntiAliasingOption &option)
     ImageTrace imageTrace("PixelMap scale with option");
     if (option == AntiAliasingOption::SLR) {
 #if !defined(_WIN32) && !defined(_APPLE) && !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
+        if (!modifiable_) {
+            IMAGE_LOGE("[PixelMap] scale can't be performed: PixelMap is not modifiable");
+            return;
+        }
         auto start = std::chrono::high_resolution_clock::now();
         ImageInfo tmpInfo;
         GetImageInfo(tmpInfo);
@@ -3674,10 +3695,14 @@ void PixelMap::flip(bool xAxis, bool yAxis)
 
 uint32_t PixelMap::crop(const Rect &rect)
 {
+    if (!modifiable_) {
+        IMAGE_LOGE("[PixelMap] crop can't be performed: PixelMap is not modifiable");
+        return ERR_IMAGE_PIXELMAP_NOT_ALLOW_MODIFY;
+    }
+
     ImageTrace imageTrace("PixelMap crop");
     ImageInfo imageInfo;
     GetImageInfo(imageInfo);
-
     SkTransInfo src;
 #if !defined(_WIN32) && !defined(_APPLE) && !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
     GenSrcTransInfo(src, imageInfo, this, ToSkColorSpace(this));
