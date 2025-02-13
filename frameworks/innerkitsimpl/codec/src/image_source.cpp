@@ -246,14 +246,15 @@ class SutDecSoManager {
 public:
     SutDecSoManager();
     ~SutDecSoManager();
+    bool LoadSutDecSo();
     GetSuperCompressAstcSize sutDecSoGetSizeFunc_;
     SuperDecompressTexture sutDecSoDecFunc_;
     IsSut isSutFunc_;
     GetTextureInfoFromSut getTextureInfoFunc_;
     GetExpandInfoFromSut getExpandInfoFromSutFunc_;
 private:
+    bool sutDecSoOpened_;
     void *textureDecSoHandle_;
-    bool LoadSutDecSo();
     void DlcloseHandle();
 };
 
@@ -261,28 +262,21 @@ static SutDecSoManager g_sutDecSoManager;
 
 SutDecSoManager::SutDecSoManager()
 {
+    sutDecSoOpened_ = false;
     textureDecSoHandle_ = nullptr;
     sutDecSoGetSizeFunc_ = nullptr;
     sutDecSoDecFunc_ = nullptr;
     isSutFunc_ = nullptr;
     getTextureInfoFunc_ = nullptr;
     getExpandInfoFromSutFunc_ = nullptr;
-    if (LoadSutDecSo()) {
-        IMAGE_LOGD("[ImageSource] astcenc sut dec so is success to be opened!");
-    } else {
-        IMAGE_LOGD("[ImageSource] astcenc sut dec so is failed to be opened!");
-    }
 }
 
 SutDecSoManager::~SutDecSoManager()
 {
-    bool cond = textureDecSoHandle_ == nullptr;
+    bool cond = (!sutDecSoOpened_ || textureDecSoHandle_ == nullptr);
     CHECK_DEBUG_RETURN_LOG(cond, "[ImageSource] astcenc dec so is not be opened when dlclose!");
-    if (dlclose(textureDecSoHandle_) != 0) {
-        IMAGE_LOGE("[ImageSource] astcenc sut dec so dlclose failed: %{public}s!", g_textureSuperDecSo.c_str());
-    } else {
-        IMAGE_LOGD("[ImageSource] astcenc sut dec so dlclose success: %{public}s!", g_textureSuperDecSo.c_str());
-    }
+    cond = dlclose(textureDecSoHandle_) != 0;
+    CHECK_ERROR_RETURN_LOG(cond, "[ImageSource] astcenc dlclose failed: %{public}s!", g_textureSuperDecSo.c_str());
 }
 
 static bool CheckClBinIsExist(const std::string &name)
@@ -300,44 +294,51 @@ void SutDecSoManager::DlcloseHandle()
 
 bool SutDecSoManager::LoadSutDecSo()
 {
-    bool cond = !CheckClBinIsExist(g_textureSuperDecSo);
-    CHECK_ERROR_RETURN_RET_LOG(cond, false, "[ImageSource] %{public}s! is not found", g_textureSuperDecSo.c_str());
-    textureDecSoHandle_ = dlopen(g_textureSuperDecSo.c_str(), 1);
-    cond = textureDecSoHandle_ == nullptr;
-    CHECK_ERROR_RETURN_RET_LOG(cond, false, "[ImageSource] astc libtextureSuperDecompress dlopen failed!");
-    sutDecSoGetSizeFunc_ =
-        reinterpret_cast<GetSuperCompressAstcSize>(dlsym(textureDecSoHandle_, "GetSuperCompressAstcSize"));
-    if (sutDecSoGetSizeFunc_ == nullptr) {
-        IMAGE_LOGE("[ImageSource] astc GetSuperCompressAstcSize dlsym failed!");
-        DlcloseHandle();
-        return false;
-    }
-    sutDecSoDecFunc_ =
-        reinterpret_cast<SuperDecompressTexture>(dlsym(textureDecSoHandle_, "SuperDecompressTextureTlv"));
-    if (sutDecSoDecFunc_ == nullptr) {
-        IMAGE_LOGE("[ImageSource] astc SuperDecompressTextureTlv dlsym failed!");
-        DlcloseHandle();
-        return false;
-    }
-    isSutFunc_ = reinterpret_cast<IsSut>(dlsym(textureDecSoHandle_, "IsSut"));
-    if (isSutFunc_ == nullptr) {
-        IMAGE_LOGE("[ImageSource] astc IsSut dlsym failed!");
-        DlcloseHandle();
-        return false;
-    }
-    getTextureInfoFunc_ =
-        reinterpret_cast<GetTextureInfoFromSut>(dlsym(textureDecSoHandle_, "GetTextureInfoFromSut"));
-    if (getTextureInfoFunc_ == nullptr) {
-        IMAGE_LOGE("[ImageSource] astc GetTextureInfoFromSut dlsym failed!");
-        DlcloseHandle();
-        return false;
-    }
-    getExpandInfoFromSutFunc_ =
-        reinterpret_cast<GetExpandInfoFromSut>(dlsym(textureDecSoHandle_, "GetExpandInfoFromSut"));
-    if (getExpandInfoFromSutFunc_ == nullptr) {
-        IMAGE_LOGE("[ImageSource] astc GetExpandInfoFromSut dlsym failed!");
-        DlcloseHandle();
-        return false;
+    if (!sutDecSoOpened_) {
+        if (!CheckClBinIsExist(g_textureSuperDecSo)) {
+            IMAGE_LOGE("[ImageSource] %{public}s! is not found", g_textureSuperDecSo.c_str());
+            return false;
+        }
+        textureDecSoHandle_ = dlopen(g_textureSuperDecSo.c_str(), 1);
+        if (textureDecSoHandle_ == nullptr) {
+            IMAGE_LOGE("[ImageSource] astc libtextureSuperDecompress dlopen failed!");
+            return false;
+        }
+        sutDecSoGetSizeFunc_ =
+            reinterpret_cast<GetSuperCompressAstcSize>(dlsym(textureDecSoHandle_, "GetSuperCompressAstcSize"));
+        if (sutDecSoGetSizeFunc_ == nullptr) {
+            IMAGE_LOGE("[ImageSource] astc GetSuperCompressAstcSize dlsym failed!");
+            DlcloseHandle();
+            return false;
+        }
+        sutDecSoDecFunc_ =
+            reinterpret_cast<SuperDecompressTexture>(dlsym(textureDecSoHandle_, "SuperDecompressTextureTlv"));
+        if (sutDecSoDecFunc_ == nullptr) {
+            IMAGE_LOGE("[ImageSource] astc SuperDecompressTextureTlv dlsym failed!");
+            DlcloseHandle();
+            return false;
+        }
+        isSutFunc_ = reinterpret_cast<IsSut>(dlsym(textureDecSoHandle_, "IsSut"));
+        if (isSutFunc_ == nullptr) {
+            IMAGE_LOGE("[ImageSource] astc IsSut dlsym failed!");
+            DlcloseHandle();
+            return false;
+        }
+        getTextureInfoFunc_ =
+            reinterpret_cast<GetTextureInfoFromSut>(dlsym(textureDecSoHandle_, "GetTextureInfoFromSut"));
+        if (getTextureInfoFunc_ == nullptr) {
+            IMAGE_LOGE("[ImageSource] astc GetTextureInfoFromSut dlsym failed!");
+            DlcloseHandle();
+            return false;
+        }
+        getExpandInfoFromSutFunc_ =
+            reinterpret_cast<GetExpandInfoFromSut>(dlsym(textureDecSoHandle_, "GetExpandInfoFromSut"));
+        if (getExpandInfoFromSutFunc_ == nullptr) {
+            IMAGE_LOGE("[ImageSource] astc GetExpandInfoFromSut dlsym failed!");
+            DlcloseHandle();
+            return false;
+        }
+        sutDecSoOpened_ = true;
     }
     return true;
 }
@@ -3104,12 +3105,10 @@ static size_t GetAstcSizeBytes(const uint8_t *fileBuf, size_t fileSize)
     bool cond = (fileBuf == nullptr) || (fileSize <= ASTC_HEAD_BYTES);
     CHECK_ERROR_RETURN_RET_LOG(cond, 0,
                                "astc GetAstcSizeBytes input is nullptr or fileSize is smaller than ASTC HEADER");
-    if (g_sutDecSoManager.sutDecSoGetSizeFunc_ != nullptr) {
-        return g_sutDecSoManager.sutDecSoGetSizeFunc_(fileBuf, fileSize);
-    } else {
-        IMAGE_LOGE("sutDecSoGetSizeFunc_ is nullptr!");
-        return 0;
-    }
+    cond = !g_sutDecSoManager.LoadSutDecSo() || g_sutDecSoManager.sutDecSoGetSizeFunc_ == nullptr;
+    CHECK_ERROR_RETURN_RET_LOG(cond, 0,
+                               "[ImageSource] SUT dec so dlopen failed or sutDecSoGetSizeFunc_ is nullptr!");
+    return g_sutDecSoManager.sutDecSoGetSizeFunc_(fileBuf, fileSize);
 }
 
 static void FreeAllExtMemSut(AstcOutInfo &astcInfo)
@@ -3123,7 +3122,7 @@ static void FreeAllExtMemSut(AstcOutInfo &astcInfo)
 
 static bool FillAstcSutExtInfo(AstcOutInfo &astcInfo, SutInInfo &sutInfo)
 {
-    bool cond = g_sutDecSoManager.getExpandInfoFromSutFunc_ == nullptr;
+    bool cond = !g_sutDecSoManager.LoadSutDecSo() || g_sutDecSoManager.getExpandInfoFromSutFunc_ == nullptr;
     CHECK_ERROR_RETURN_RET_LOG(cond, false, "[ImageSource] SUT dec getExpandInfoFromSutFunc_ is nullptr!");
     cond = !g_sutDecSoManager.getExpandInfoFromSutFunc_(sutInfo, astcInfo, false);
     CHECK_ERROR_RETURN_RET_LOG(cond, false, "[ImageSource] GetExpandInfoFromSut failed!");
@@ -3133,7 +3132,6 @@ static bool FillAstcSutExtInfo(AstcOutInfo &astcInfo, SutInInfo &sutInfo)
         astcInfo.expandInfoBuf[idx] = static_cast<uint8_t *>(malloc(astcInfo.expandInfoCapacity[idx]));
         if (astcInfo.expandInfoBuf[idx] == nullptr) {
             IMAGE_LOGE("[ImageSource] astcInfo.expandInfoBuf malloc failed!");
-            FreeBeforeMem(astcInfo, idx);
             return false;
         }
         expandTotalBytes += sizeof(uint8_t) + sizeof(int32_t) + astcInfo.expandInfoBytes[idx];
@@ -3184,10 +3182,8 @@ static bool TextureSuperCompressDecode(const uint8_t *inData, size_t inBytes, ui
     size_t preOutBytes = outBytes;
     bool cond = (inData == nullptr) || (outData == nullptr);
     CHECK_ERROR_RETURN_RET_LOG(cond, false, "astc TextureSuperCompressDecode input check failed!");
-    if (g_sutDecSoManager.sutDecSoDecFunc_ == nullptr) {
-        IMAGE_LOGE("[ImageSource] SUT dec sutDecSoDecFunc_ is nullptr!");
-        return false;
-    }
+    cond = !g_sutDecSoManager.LoadSutDecSo() || g_sutDecSoManager.sutDecSoDecFunc_ == nullptr;
+    CHECK_ERROR_RETURN_RET_LOG(cond, false, "[ImageSource] SUT dec so dlopen failed or sutDecSoDecFunc_ is nullptr!");
     AstcOutInfo astcInfo = {0};
     SutInInfo sutInfo = {0};
     cond = !TextureSuperCompressDecodeInit(&astcInfo, &sutInfo, inBytes, outBytes);
@@ -3460,8 +3456,8 @@ bool ImageSource::GetASTCInfo(const uint8_t *fileData, size_t fileSize, ASTCInfo
         return true;
     }
 #ifdef SUT_DECODE_ENABLE
-    if (g_sutDecSoManager.getTextureInfoFunc_ == nullptr) {
-        IMAGE_LOGE("[ImageSource] SUT dec getTextureInfoFunc_ is nullptr!");
+    if (!g_sutDecSoManager.LoadSutDecSo() || g_sutDecSoManager.getTextureInfoFunc_ == nullptr) {
+        IMAGE_LOGE("[ImageSource] SUT dec so dlopen failed or getTextureInfoFunc_ is nullptr!");
         return false;
     }
     uint32_t blockXY;
