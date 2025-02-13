@@ -175,7 +175,7 @@ typedef enum {
     IMAGE_COPY_FAILED = 7600302,
     /**
      * @error memory lock or unlock failed
-     * @since 16
+     * @since 15
      */
     IMAGE_LOCK_UNLOCK_FAILED = 7600303,
     /** unknown error */

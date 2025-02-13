@@ -1003,7 +1003,7 @@ Image_ErrorCode OH_PixelmapNative_GetAllocationByteCount(OH_PixelmapNative *pixe
  *         {@link IMAGE_BAD_PARAMETER} If invalid parameter, pixelmap or addr are invalid.
  *         {@link IMAGE_LOCK_UNLOCK_FAILED} If memory failed to be locked.
  * @see OH_PixelmapNative
- * @since 16
+ * @since 15
  */
 Image_ErrorCode OH_PixelmapNative_AccessPixels(OH_PixelmapNative *pixelmap, void **addr);
 
@@ -1017,7 +1017,7 @@ Image_ErrorCode OH_PixelmapNative_AccessPixels(OH_PixelmapNative *pixelmap, void
  *         {@link IMAGE_BAD_PARAMETER} If invalid parameter, pixelmap is invalid.
  *         {@link IMAGE_LOCK_UNLOCK_FAILED} If memory failed to be unlocked.
  * @see OH_PixelmapNative
- * @since 16
+ * @since 15
  */
 Image_ErrorCode OH_PixelmapNative_UnaccessPixels(OH_PixelmapNative *pixelmap);
 
