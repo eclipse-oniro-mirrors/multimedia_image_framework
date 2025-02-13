@@ -3179,7 +3179,7 @@ static bool TextureSuperCompressDecode(const uint8_t *inData, size_t inBytes, ui
     CHECK_ERROR_RETURN_RET_LOG(cond, false, "astc TextureSuperCompressDecode input check failed!");
     cond = !g_sutDecSoManager.LoadSutDecSo() || g_sutDecSoManager.sutDecSoDecFunc_ == nullptr;
     CHECK_ERROR_RETURN_RET_LOG(cond, false,
-                                "[ImageSource] SUT dec so dlopen failed or sutDecSoDecFunc_ is nullptr!");
+        "[ImageSource] SUT dec so dlopen failed or sutDecSoDecFunc_ is nullptr!");
     AstcOutInfo astcInfo = {0};
     SutInInfo sutInfo = {0};
     cond = !TextureSuperCompressDecodeInit(&astcInfo, &sutInfo, inBytes, outBytes);
