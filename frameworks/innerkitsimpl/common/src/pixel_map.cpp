@@ -4253,6 +4253,7 @@ uint32_t PixelMap::ToSdr(PixelFormat format, bool toSRGB)
 #ifdef IMAGE_COLORSPACE_FLAG
 void PixelMap::InnerSetColorSpace(const OHOS::ColorManager::ColorSpace &grColorSpace, bool direct)
 {
+    std::lock_guard<std::mutex> lock(*colorSpaceMutex_);
     if (direct) {
         grColorSpace_ = std::make_shared<OHOS::ColorManager::ColorSpace>(grColorSpace);
     } else {
@@ -4340,7 +4341,7 @@ uint32_t PixelMap::ApplyColorSpace(const OHOS::ColorManager::ColorSpace &grColor
     }
     // Restore target infomation into pixelmap
     ToImageInfo(imageInfo, dst.info);
-    grColorSpace_ = std::make_shared<OHOS::ColorManager::ColorSpace>(dst.info.refColorSpace(), grName);
+    InnerSetColorSpace(OHOS::ColorManager::ColorSpace(dst.info.refColorSpace(), grName), true);
     SetPixelsAddr(m->data.data, m->extend.data, m->data.size, m->GetType(), nullptr);
     SetImageInfo(imageInfo, true);
     return SUCCESS;
