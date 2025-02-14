@@ -26,6 +26,7 @@
 #include "mock_skw_stream.h"
 #include "file_source_stream.h"
 #include "image_data_statistics.h"
+#include "image_source.h"
 
 using namespace testing::ext;
 using namespace OHOS::Media;
@@ -43,6 +44,7 @@ const static string ENCODED_FORMAT_KEY = "EncodedFormat";
 const static string SUPPORT_SCALE_KEY = "SupportScale";
 const static string SUPPORT_CROP_KEY = "SupportCrop";
 const static string EXT_SHAREMEM_NAME = "EXT RawData";
+const static string IMAGE_INPUT_JPEG_PATH = "/data/local/tmp/image/test_hw1.jpg";
 class ExtDecoderTest : public testing::Test {
 public:
     ExtDecoderTest() {}
@@ -1132,6 +1134,320 @@ HWTEST_F(ExtDecoderTest, DataStatisticsNUllTest, TestSize.Level3)
     ImageDataStatistics imageDataStatistics(nullptr);
     ASSERT_EQ(imageDataStatistics.title_, "ImageDataTraceFmt Param invalid");
     GTEST_LOG_(INFO) << "ExtDecoderTest: DataStatisticsNUllTest end";
+}
+
+/**
+ * @tc.name: ExtDecoderTest
+ * @tc.desc: test the function of WriteJpegCodedData
+             when auxPicture == nullptr, return ERR_IMAGE_DATA_ABNORMAL
+ * @tc.type: FUNC
+ */
+HWTEST_F(ExtDecoderTest, WriteJpegCodedDataTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ExtDecoderTest: WriteJpegCodedDataTest001 start";
+    ExtEncoder extEncoder;
+    auto auxPicture = std::make_shared<AuxiliaryPicture>();
+    auxPicture = nullptr;
+    MockSkWStream skStream;
+    uint32_t ret = extEncoder.WriteJpegCodedData(auxPicture, skStream);
+    ASSERT_EQ(ret, ERR_IMAGE_DATA_ABNORMAL);
+    GTEST_LOG_(INFO) << "ExtDecoderTest: WriteJpegCodedDataTest001 end";
+}
+
+/**
+ * @tc.name: ExtDecoderTest
+ * @tc.desc: test the function of WriteJpegUncodedData
+             when auxPicture == nullptr, return ERR_IMAGE_ENCODE_FAILED
+ * @tc.type: FUNC
+ */
+HWTEST_F(ExtDecoderTest, WriteJpegUncodedDataTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ExtDecoderTest: WriteJpegUncodedDataTest001 start";
+    ExtEncoder extEncoder;
+    auto auxPicture = std::make_shared<AuxiliaryPicture>();
+    auxPicture = nullptr;
+    MockSkWStream skStream;
+    uint32_t ret = extEncoder.WriteJpegUncodedData(auxPicture, skStream);
+    ASSERT_EQ(ret, ERR_IMAGE_ENCODE_FAILED);
+    GTEST_LOG_(INFO) << "ExtDecoderTest: WriteJpegUncodedDataTest001 end";
+}
+
+/**
+ * @tc.name: ExtDecoderTest
+ * @tc.desc: test the function of WriteJpegCodedData
+             when pixelMap->GetAllocatorType() != AllocatorType::DMA_ALLOC
+             and pixelMap->GetFd() != nullptr, return SUCCESS
+ * @tc.type: FUNC
+ */
+HWTEST_F(ExtDecoderTest, WriteJpegCodedDataTest002, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ExtDecoderTest: WriteJpegCodedDataTest002 start";
+    ExtEncoder extEncoder;
+    const uint32_t color[8] = { 0x80, 0x02, 0x04, 0x08, 0x40, 0x02, 0x04, 0x08 };
+    InitializationOptions options;
+    options.size.width = 2;
+    options.size.height = 3;
+    options.srcPixelFormat = PixelFormat::UNKNOWN;
+    options.pixelFormat = PixelFormat::UNKNOWN;
+    options.alphaType = AlphaType::IMAGE_ALPHA_TYPE_OPAQUE;
+    std::unique_ptr<PixelMap> tmpPixelMap = PixelMap::Create(color, 8, options);
+    std::shared_ptr<PixelMap> pixelMap = std::move(tmpPixelMap);
+    ASSERT_NE(pixelMap->GetAllocatorType(), AllocatorType::DMA_ALLOC);
+    ASSERT_NE(pixelMap->GetFd(), nullptr);
+    AuxiliaryPictureType type = AuxiliaryPictureType::GAINMAP;
+    Size size = {2, 3};
+    std::unique_ptr<AuxiliaryPicture> tmpAuxPicture = AuxiliaryPicture::Create(pixelMap, type, size);
+    std::shared_ptr<AuxiliaryPicture> auxPicture = std::move(tmpAuxPicture);
+    MockSkWStream skStream;
+    uint32_t ret = extEncoder.WriteJpegCodedData(auxPicture, skStream);
+    ASSERT_EQ(ret, SUCCESS);
+    GTEST_LOG_(INFO) << "ExtDecoderTest: WriteJpegCodedDataTest002 end";
+}
+
+/**
+ * @tc.name: ExtDecoderTest
+ * @tc.desc: test the function of WriteJpegUncodedData
+             when pixelMap->GetAllocatorType() != AllocatorType::DMA_ALLOC
+             and pixelMap->GetFd() != nullptr, return SUCCESS
+ * @tc.type: FUNC
+ */
+HWTEST_F(ExtDecoderTest, WriteJpegUncodedDataTest002, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ExtDecoderTest: WriteJpegUncodedDataTest002 start";
+    ExtEncoder extEncoder;
+    const uint32_t color[8] = { 0x80, 0x02, 0x04, 0x08, 0x40, 0x02, 0x04, 0x08 };
+    InitializationOptions options;
+    options.size.width = 2;
+    options.size.height = 3;
+    options.srcPixelFormat = PixelFormat::UNKNOWN;
+    options.pixelFormat = PixelFormat::UNKNOWN;
+    options.alphaType = AlphaType::IMAGE_ALPHA_TYPE_OPAQUE;
+    std::unique_ptr<PixelMap> tmpPixelMap = PixelMap::Create(color, 8, options);
+    std::shared_ptr<PixelMap> pixelMap = std::move(tmpPixelMap);
+    ASSERT_NE(pixelMap->GetAllocatorType(), AllocatorType::DMA_ALLOC);
+    ASSERT_NE(pixelMap->GetFd(), nullptr);
+    AuxiliaryPictureType type = AuxiliaryPictureType::GAINMAP;
+    Size size = {2, 3};
+    std::unique_ptr<AuxiliaryPicture> tmpAuxPicture = AuxiliaryPicture::Create(pixelMap, type, size);
+    std::shared_ptr<AuxiliaryPicture> auxPicture = std::move(tmpAuxPicture);
+    MockSkWStream skStream;
+    uint32_t ret = extEncoder.WriteJpegUncodedData(auxPicture, skStream);
+    ASSERT_EQ(ret, SUCCESS);
+    GTEST_LOG_(INFO) << "ExtDecoderTest: WriteJpegUncodedDataTest002 end";
+}
+
+/**
+ * @tc.name: ExtDecoderTest
+ * @tc.desc: test the function of WriteJpegCodedData
+             when pixelMap->GetAllocatorType() != AllocatorType::DMA_ALLOC
+             and pixelMap->GetFd() == nullptr, return SUCCESS
+ * @tc.type: FUNC
+ */
+HWTEST_F(ExtDecoderTest, WriteJpegCodedDataTest003, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ExtDecoderTest: WriteJpegCodedDataTest003 start";
+    ExtEncoder extEncoder;
+    const uint32_t color[8] = { 0x80, 0x02, 0x04, 0x08, 0x40, 0x02, 0x04, 0x08 };
+    InitializationOptions options;
+    options.size.width = 2;
+    options.size.height = 3;
+    options.srcPixelFormat = PixelFormat::UNKNOWN;
+    options.pixelFormat = PixelFormat::UNKNOWN;
+    options.alphaType = AlphaType::IMAGE_ALPHA_TYPE_OPAQUE;
+    std::unique_ptr<PixelMap> tmpPixelMap = PixelMap::Create(color, 8, options);
+    std::shared_ptr<PixelMap> pixelMap = std::move(tmpPixelMap);
+    ASSERT_NE(pixelMap->GetAllocatorType(), AllocatorType::DMA_ALLOC);
+    pixelMap->context_ = nullptr;
+    ASSERT_EQ(pixelMap->GetFd(), nullptr);
+    AuxiliaryPictureType type = AuxiliaryPictureType::GAINMAP;
+    Size size = {2, 3};
+    std::unique_ptr<AuxiliaryPicture> tmpAuxPicture = AuxiliaryPicture::Create(pixelMap, type, size);
+    std::shared_ptr<AuxiliaryPicture> auxPicture = std::move(tmpAuxPicture);
+    MockSkWStream skStream;
+    uint32_t ret = extEncoder.WriteJpegCodedData(auxPicture, skStream);
+    ASSERT_EQ(ret, SUCCESS);
+    GTEST_LOG_(INFO) << "ExtDecoderTest: WriteJpegCodedDataTest003 end";
+}
+
+/**
+ * @tc.name: ExtDecoderTest
+ * @tc.desc: test the function of WriteJpegUncodedData
+             when pixelMap->GetAllocatorType() != AllocatorType::DMA_ALLOC
+             and pixelMap->GetFd() == nullptr, return SUCCESS
+ * @tc.type: FUNC
+ */
+HWTEST_F(ExtDecoderTest, WriteJpegUncodedDataTest003, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ExtDecoderTest: WriteJpegUncodedDataTest003 start";
+    ExtEncoder extEncoder;
+    const uint32_t color[8] = { 0x80, 0x02, 0x04, 0x08, 0x40, 0x02, 0x04, 0x08 };
+    InitializationOptions options;
+    options.size.width = 2;
+    options.size.height = 3;
+    options.srcPixelFormat = PixelFormat::UNKNOWN;
+    options.pixelFormat = PixelFormat::UNKNOWN;
+    options.alphaType = AlphaType::IMAGE_ALPHA_TYPE_OPAQUE;
+    std::unique_ptr<PixelMap> tmpPixelMap = PixelMap::Create(color, 8, options);
+    std::shared_ptr<PixelMap> pixelMap = std::move(tmpPixelMap);
+    ASSERT_NE(pixelMap->GetAllocatorType(), AllocatorType::DMA_ALLOC);
+    pixelMap->context_ = nullptr;
+    ASSERT_EQ(pixelMap->GetFd(), nullptr);
+    AuxiliaryPictureType type = AuxiliaryPictureType::GAINMAP;
+    Size size = {2, 3};
+    std::unique_ptr<AuxiliaryPicture> tmpAuxPicture = AuxiliaryPicture::Create(pixelMap, type, size);
+    std::shared_ptr<AuxiliaryPicture> auxPicture = std::move(tmpAuxPicture);
+    MockSkWStream skStream;
+    uint32_t ret = extEncoder.WriteJpegUncodedData(auxPicture, skStream);
+    ASSERT_EQ(ret, SUCCESS);
+    GTEST_LOG_(INFO) << "ExtDecoderTest: WriteJpegUncodedDataTest003 end";
+}
+
+/**
+ * @tc.name: ExtDecoderTest
+ * @tc.desc: test the function of WriteJpegCodedData
+             when pixelMap->GetAllocatorType() == AllocatorType::DMA_ALLOC
+             and pixelMap->GetFd() != nullptr, return ERR_IMAGE_ENCODE_FAILED
+ * @tc.type: FUNC
+ */
+HWTEST_F(ExtDecoderTest, WriteJpegCodedDataTest004, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ExtDecoderTest: WriteJpegCodedDataTest004 start";
+    ExtEncoder extEncoder;
+    uint32_t errorCode = 0;
+    SourceOptions opts;
+    opts.formatHint = "image/jpeg";
+    std::unique_ptr<ImageSource> imageSource =
+        ImageSource::CreateImageSource(IMAGE_INPUT_JPEG_PATH, opts, errorCode);
+    DecodeOptions decodeOpts;
+    decodeOpts.allocatorType = AllocatorType::DMA_ALLOC;
+    std::unique_ptr<PixelMap> tmpPixelMap = imageSource->CreatePixelMap(decodeOpts, errorCode);
+    std::shared_ptr<PixelMap> pixelMap = std::move(tmpPixelMap);
+    ASSERT_EQ(pixelMap->GetAllocatorType(), AllocatorType::DMA_ALLOC);
+    ASSERT_NE(pixelMap->GetFd(), nullptr);
+    AuxiliaryPictureType type = AuxiliaryPictureType::GAINMAP;
+    Size size = {2, 3};
+    std::unique_ptr<AuxiliaryPicture> tmpAuxPicture = AuxiliaryPicture::Create(pixelMap, type, size);
+    std::shared_ptr<AuxiliaryPicture> auxPicture = std::move(tmpAuxPicture);
+    MockSkWStream skStream;
+    uint32_t ret = extEncoder.WriteJpegCodedData(auxPicture, skStream);
+    ASSERT_EQ(ret, ERR_IMAGE_ENCODE_FAILED);
+    GTEST_LOG_(INFO) << "ExtDecoderTest: WriteJpegCodedDataTest004 end";
+}
+
+/**
+ * @tc.name: ExtDecoderTest
+ * @tc.desc: test the function of WriteJpegUncodedData
+             when pixelMap->GetAllocatorType() == AllocatorType::DMA_ALLOC
+             and pixelMap->GetFd() != nullptr, return SUCCESS
+ * @tc.type: FUNC
+ */
+HWTEST_F(ExtDecoderTest, WriteJpegUncodedDataTest004, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ExtDecoderTest: WriteJpegUncodedDataTest004 start";
+    ExtEncoder extEncoder;
+    uint32_t errorCode = 0;
+    SourceOptions opts;
+    opts.formatHint = "image/jpeg";
+    std::unique_ptr<ImageSource> imageSource =
+        ImageSource::CreateImageSource(IMAGE_INPUT_JPEG_PATH, opts, errorCode);
+    DecodeOptions decodeOpts;
+    decodeOpts.allocatorType = AllocatorType::DMA_ALLOC;
+    std::unique_ptr<PixelMap> tmpPixelMap = imageSource->CreatePixelMap(decodeOpts, errorCode);
+    std::shared_ptr<PixelMap> pixelMap = std::move(tmpPixelMap);
+    ASSERT_EQ(pixelMap->GetAllocatorType(), AllocatorType::DMA_ALLOC);
+    ASSERT_NE(pixelMap->GetFd(), nullptr);
+    AuxiliaryPictureType type = AuxiliaryPictureType::GAINMAP;
+    Size size = {2, 3};
+    std::unique_ptr<AuxiliaryPicture> tmpAuxPicture = AuxiliaryPicture::Create(pixelMap, type, size);
+    std::shared_ptr<AuxiliaryPicture> auxPicture = std::move(tmpAuxPicture);
+    MockSkWStream skStream;
+    uint32_t ret = extEncoder.WriteJpegUncodedData(auxPicture, skStream);
+    ASSERT_EQ(ret, SUCCESS);
+    GTEST_LOG_(INFO) << "ExtDecoderTest: WriteJpegUncodedDataTest004 end";
+}
+
+/**
+ * @tc.name: ExtDecoderTest
+ * @tc.desc: test the function of WriteJpegUncodedData
+             when auxiliaryPictureType == AuxiliaryPictureType::DEPTH_MAP
+             pixelMap->GetAllocatorType() == AllocatorType::DMA_ALLOC
+             and pixelMap->GetFd() != nullptr, return SUCCESS
+ * @tc.type: FUNC
+ */
+HWTEST_F(ExtDecoderTest, WriteJpegUncodedDataTest005, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ExtDecoderTest: WriteJpegUncodedDataTest005 start";
+    ExtEncoder extEncoder;
+    uint32_t errorCode = 0;
+    SourceOptions opts;
+    opts.formatHint = "image/jpeg";
+    std::unique_ptr<ImageSource> imageSource =
+        ImageSource::CreateImageSource(IMAGE_INPUT_JPEG_PATH, opts, errorCode);
+    DecodeOptions decodeOpts;
+    decodeOpts.allocatorType = AllocatorType::DMA_ALLOC;
+    std::unique_ptr<PixelMap> tmpPixelMap = imageSource->CreatePixelMap(decodeOpts, errorCode);
+    std::shared_ptr<PixelMap> pixelMap = std::move(tmpPixelMap);
+    ASSERT_EQ(pixelMap->GetAllocatorType(), AllocatorType::DMA_ALLOC);
+    ASSERT_NE(pixelMap->GetFd(), nullptr);
+    AuxiliaryPictureType type = AuxiliaryPictureType::DEPTH_MAP;
+    Size size = {2, 3};
+    std::unique_ptr<AuxiliaryPicture> tmpAuxPicture = AuxiliaryPicture::Create(pixelMap, type, size);
+    std::shared_ptr<AuxiliaryPicture> auxPicture = std::move(tmpAuxPicture);
+    MockSkWStream skStream;
+    uint32_t ret = extEncoder.WriteJpegUncodedData(auxPicture, skStream);
+    ASSERT_EQ(ret, SUCCESS);
+    GTEST_LOG_(INFO) << "ExtDecoderTest: WriteJpegUncodedDataTest005 end";
+}
+
+/**
+ * @tc.name: ExtDecoderTest
+ * @tc.desc: test the function of WriteJpegUncodedData
+             when auxiliaryPictureType == AuxiliaryPictureType::LINEAR_MAP
+             pixelMap->GetAllocatorType() == AllocatorType::DMA_ALLOC
+             and pixelMap->GetFd() != nullptr, return SUCCESS
+ * @tc.type: FUNC
+ */
+HWTEST_F(ExtDecoderTest, WriteJpegUncodedDataTest006, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ExtDecoderTest: WriteJpegUncodedDataTest006 start";
+    ExtEncoder extEncoder;
+    uint32_t errorCode = 0;
+    SourceOptions opts;
+    opts.formatHint = "image/jpeg";
+    std::unique_ptr<ImageSource> imageSource =
+        ImageSource::CreateImageSource(IMAGE_INPUT_JPEG_PATH, opts, errorCode);
+    DecodeOptions decodeOpts;
+    decodeOpts.allocatorType = AllocatorType::DMA_ALLOC;
+    std::unique_ptr<PixelMap> tmpPixelMap = imageSource->CreatePixelMap(decodeOpts, errorCode);
+    std::shared_ptr<PixelMap> pixelMap = std::move(tmpPixelMap);
+    ASSERT_EQ(pixelMap->GetAllocatorType(), AllocatorType::DMA_ALLOC);
+    ASSERT_NE(pixelMap->GetFd(), nullptr);
+    AuxiliaryPictureType type = AuxiliaryPictureType::LINEAR_MAP;
+    Size size = {2, 3};
+    std::unique_ptr<AuxiliaryPicture> tmpAuxPicture = AuxiliaryPicture::Create(pixelMap, type, size);
+    std::shared_ptr<AuxiliaryPicture> auxPicture = std::move(tmpAuxPicture);
+    MockSkWStream skStream;
+    uint32_t ret = extEncoder.WriteJpegUncodedData(auxPicture, skStream);
+    ASSERT_EQ(ret, SUCCESS);
+    GTEST_LOG_(INFO) << "ExtDecoderTest: WriteJpegUncodedDataTest006 end";
+}
+
+/**
+ * @tc.name: ExtDecoderTest
+ * @tc.desc: test the function of EncodeJpegPicture
+             when opts_.desiredDynamicRange == EncodeDynamicRange::HDR_VIVID_SINGLE
+             return ERR_IMAGE_DECODE_FAILED
+ * @tc.type: FUNC
+ */
+HWTEST_F(ExtDecoderTest, EncodeJpegPictureTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ExtDecoderTest: EncodeJpegPictureTest001 start";
+    ExtEncoder extEncoder;
+    extEncoder.opts_.desiredDynamicRange = EncodeDynamicRange::HDR_VIVID_SINGLE;
+    MockSkWStream skStream;
+    uint32_t ret = extEncoder.EncodeJpegPicture(skStream);
+    ASSERT_EQ(ret, ERR_IMAGE_DECODE_FAILED);
+    GTEST_LOG_(INFO) << "ExtDecoderTest: EncodeJpegPictureTest001 end";
 }
 }
 }
