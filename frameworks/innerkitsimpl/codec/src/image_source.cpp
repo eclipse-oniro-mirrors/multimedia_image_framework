@@ -25,6 +25,7 @@
 #include <cstring>
 #include <dlfcn.h>
 #include <filesystem>
+#include <mutex>
 #include <vector>
 
 #if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
@@ -249,13 +250,13 @@ public:
     bool LoadSutDecSo();
     GetSuperCompressAstcSize sutDecSoGetSizeFunc_;
     SuperDecompressTexture sutDecSoDecFunc_;
-    IsSut isSutFunc_;
     GetTextureInfoFromSut getTextureInfoFunc_;
     GetExpandInfoFromSut getExpandInfoFromSutFunc_;
 private:
     bool sutDecSoOpened_;
     void *textureDecSoHandle_;
     void DlcloseHandle();
+    std::mutex sutDecSoMutex_ = {};
 };
 
 static SutDecSoManager g_sutDecSoManager;
@@ -266,7 +267,6 @@ SutDecSoManager::SutDecSoManager()
     textureDecSoHandle_ = nullptr;
     sutDecSoGetSizeFunc_ = nullptr;
     sutDecSoDecFunc_ = nullptr;
-    isSutFunc_ = nullptr;
     getTextureInfoFunc_ = nullptr;
     getExpandInfoFromSutFunc_ = nullptr;
 }
@@ -294,6 +294,7 @@ void SutDecSoManager::DlcloseHandle()
 
 bool SutDecSoManager::LoadSutDecSo()
 {
+    std::lock_guard<std::mutex> lock(sutDecSoMutex_);
     if (!sutDecSoOpened_) {
         if (!CheckClBinIsExist(g_textureSuperDecSo)) {
             IMAGE_LOGE("[ImageSource] %{public}s! is not found", g_textureSuperDecSo.c_str());
@@ -315,12 +316,6 @@ bool SutDecSoManager::LoadSutDecSo()
             reinterpret_cast<SuperDecompressTexture>(dlsym(textureDecSoHandle_, "SuperDecompressTextureTlv"));
         if (sutDecSoDecFunc_ == nullptr) {
             IMAGE_LOGE("[ImageSource] astc SuperDecompressTextureTlv dlsym failed!");
-            DlcloseHandle();
-            return false;
-        }
-        isSutFunc_ = reinterpret_cast<IsSut>(dlsym(textureDecSoHandle_, "IsSut"));
-        if (isSutFunc_ == nullptr) {
-            IMAGE_LOGE("[ImageSource] astc IsSut dlsym failed!");
             DlcloseHandle();
             return false;
         }
@@ -3183,7 +3178,8 @@ static bool TextureSuperCompressDecode(const uint8_t *inData, size_t inBytes, ui
     bool cond = (inData == nullptr) || (outData == nullptr);
     CHECK_ERROR_RETURN_RET_LOG(cond, false, "astc TextureSuperCompressDecode input check failed!");
     cond = !g_sutDecSoManager.LoadSutDecSo() || g_sutDecSoManager.sutDecSoDecFunc_ == nullptr;
-    CHECK_ERROR_RETURN_RET_LOG(cond, false, "[ImageSource] SUT dec so dlopen failed or sutDecSoDecFunc_ is nullptr!");
+    CHECK_ERROR_RETURN_RET_LOG(cond, false,
+        "[ImageSource] SUT dec so dlopen failed or sutDecSoDecFunc_ is nullptr!");
     AstcOutInfo astcInfo = {0};
     SutInInfo sutInfo = {0};
     cond = !TextureSuperCompressDecodeInit(&astcInfo, &sutInfo, inBytes, outBytes);
