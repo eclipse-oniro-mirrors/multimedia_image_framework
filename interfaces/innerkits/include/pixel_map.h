@@ -576,7 +576,7 @@ protected:
     std::shared_ptr<ExifMetadata> exifMetadata_ = nullptr;
     std::shared_ptr<std::mutex> metadataMutex_ = std::make_shared<std::mutex>();
     std::shared_ptr<std::mutex> translationMutex_ = std::make_shared<std::mutex>();
-    std::shared_ptr<std::mutex> colorSpaceMutex_ = std::make_shared<std::mutex>();
+    std::shared_ptr<std::shared_mutex> colorSpaceMutex_ = std::make_shared<std::shared_mutex>();
     bool toSdrColorIsSRGB_ = false;
     uint32_t versionId_ = 1;
     std::shared_ptr<std::shared_mutex> versionMutex_ = std::make_shared<std::shared_mutex>();
