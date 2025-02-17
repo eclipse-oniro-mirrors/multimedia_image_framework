@@ -91,8 +91,9 @@ ohos_shared_library("picture") {
     "${image_subsystem}/interfaces/innerkits:image_native",
   ]
 
+  external_deps = [ "c_utils:utils" ]
   if (enable_libexif) {
-    external_deps = [ "libexif:libexif" ]
+    external_deps += [ "libexif:libexif" ]
   }
   innerapi_tags = [ "ndk" ]
   subsystem_name = "multimedia"
