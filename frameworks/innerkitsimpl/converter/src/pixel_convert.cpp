@@ -1838,7 +1838,7 @@ static void InitAstcInfo(AstcInfo &astcInfo, PixelMap *source)
     astcInfo.astcBufSize = source->GetCapacity();
     astcInfo.astcBuf = const_cast<uint8_t *>(source->GetPixels());
     astcInfo.format = source->GetPixelFormat();
-    source->GetAstcRealSize(astcSize);
+    source->GetAstcRealSize(astcInfo.astcSize);
 }
 #endif
 
