@@ -489,6 +489,10 @@ bool ExtEncoder::IsHardwareEncodeSupported(const PlEncodeOptions &opts, Media::P
         IMAGE_LOGE("pixelMap is nullptr");
         return false;
     }
+    if (opts.quality < LOW_QUALITY_BOUNDARY) {
+        IMAGE_LOGE("%{public}s Low quality use software encode", __func__);
+        return false;
+    }
     bool isSupportedWithRgba = ImageSystemProperties::GetGenThumbWithGpu() &&
         pixelMap->GetPixelFormat() == PixelFormat::RGBA_8888;
     bool isSupport = ImageSystemProperties::GetHardWareEncodeEnabled() && opts.format == "image/jpeg" &&
