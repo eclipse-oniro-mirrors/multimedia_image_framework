@@ -2406,7 +2406,7 @@ bool PixelMap::WriteMemInfoToParcel(Parcel &parcel, const int32_t &bufferSize) c
 
         int *fd = static_cast<int *>(context_);
         if (fd == nullptr || *fd <= 0) {
-            IMAGE_LOGD("write pixel map failed, fd is [%{public}d] or fd <= 0.", fd == nullptr ? 1 : 0);
+            IMAGE_LOGE("write pixel map failed, fd is [%{public}d] or fd <= 0.", fd == nullptr ? 1 : 0);
             return false;
         }
         if (!CheckAshmemSize(*fd, bufferSize, isAstc_)) {
@@ -2588,7 +2588,7 @@ bool PixelMap::Marshalling(Parcel &parcel) const
         return false;
     }
     if (!WriteMemInfoToParcel(parcel, bufferSize)) {
-        IMAGE_LOGD("write memory info to parcel failed.");
+        IMAGE_LOGE("write memory info to parcel failed.");
         return false;
     }
 
