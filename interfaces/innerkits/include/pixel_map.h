@@ -64,6 +64,7 @@ struct InitializationOptions {
     PixelFormat pixelFormat = PixelFormat::UNKNOWN;
     AlphaType alphaType = AlphaType::IMAGE_ALPHA_TYPE_UNKNOWN;
     ScaleMode scaleMode = ScaleMode::FIT_TARGET_SIZE;
+    YUVConvertColorSpaceDetails convertColorSpace;
     int32_t srcRowStride = 0;
     bool editable = false;
     bool useSourceIfMatch = false;
