@@ -2479,5 +2479,70 @@ HWTEST_F(PixelMapTest, MarshallingUnmarshallingDefaultAllocPixelMapTest, TestSiz
 
     GTEST_LOG_(INFO) << "PixelMapTest: MarshallingUnmarshallingDefaultAllocPixelMapTest end";
 }
+
+/**
+ * @tc.name: UnmodifiablePixelMapTest
+ * @tc.desc: Test unmodifiable PixelMap
+ * @tc.type: FUNC
+ */
+HWTEST_F(PixelMapTest, UnmodifiablePixelMapTest, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PixelMapTest: UnmodifiablePixelMapTest start";
+
+    auto pixelMap = ConstructPixelMap(2, 2, PixelFormat::BGRA_8888, AlphaType::IMAGE_ALPHA_TYPE_UNKNOWN,
+        AllocatorType::HEAP_ALLOC);
+    uint32_t* data = static_cast<uint32_t*>(pixelMap->GetWritablePixels());
+    data[0] = 0xFFFFFFFF;
+    data[1] = 0xAAAAAAAA;
+    data[2] = 0x66666666;
+    data[3] = 0x00000000;
+
+    pixelMap->SetModifiable(false);
+    EXPECT_FALSE(pixelMap->IsModifiable());
+
+    pixelMap->scale(10, 10);
+    EXPECT_EQ(data, pixelMap->GetWritablePixels());
+    EXPECT_EQ(pixelMap->GetWidth(), 2);
+    EXPECT_EQ(pixelMap->GetHeight(), 2);
+
+    Rect rect = {0, 0, 1, 1};
+    pixelMap->crop(rect);
+    EXPECT_EQ(data, pixelMap->GetWritablePixels());
+    EXPECT_EQ(pixelMap->GetWidth(), 2);
+    EXPECT_EQ(pixelMap->GetHeight(), 2);
+
+    pixelMap->translate(2, 2);
+    EXPECT_EQ(data, pixelMap->GetWritablePixels());
+    EXPECT_EQ(pixelMap->GetWidth(), 2);
+    EXPECT_EQ(pixelMap->GetHeight(), 2);
+
+    pixelMap->rotate(90);
+    EXPECT_EQ(data, pixelMap->GetWritablePixels());
+    EXPECT_EQ(data[0], 0xFFFFFFFF);
+    EXPECT_EQ(data[1], 0xAAAAAAAA);
+    EXPECT_EQ(data[2], 0x66666666);
+    EXPECT_EQ(data[3], 0x00000000);
+
+    pixelMap->flip(true, false);
+    EXPECT_EQ(data, pixelMap->GetWritablePixels());
+    EXPECT_EQ(data[0], 0xFFFFFFFF);
+    EXPECT_EQ(data[1], 0xAAAAAAAA);
+    EXPECT_EQ(data[2], 0x66666666);
+    EXPECT_EQ(data[3], 0x00000000);
+
+    pixelMap->SetAlpha(0.5);
+    EXPECT_EQ(data, pixelMap->GetWritablePixels());
+    EXPECT_EQ(data[0], 0xFFFFFFFF);
+    EXPECT_EQ(data[1], 0xAAAAAAAA);
+    EXPECT_EQ(data[2], 0x66666666);
+    EXPECT_EQ(data[3], 0x00000000);
+
+    Position pos = {0, 0};
+    uint32_t ret = pixelMap->WritePixel(pos, 0xCCCCCCCC);
+    EXPECT_NE(ret, SUCCESS);
+    EXPECT_EQ(data[0], 0xFFFFFFFF);
+
+    GTEST_LOG_(INFO) << "PixelMapTest: UnmodifiablePixelMapTest end";
+}
 }
 }
