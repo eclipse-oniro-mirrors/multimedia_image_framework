@@ -1846,7 +1846,7 @@ std::unique_ptr<PixelMap> PixelConvert::AstcToRgba(PixelMap *source, uint32_t &e
 {
 #if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
     auto colorSpace = source->InnerGetGrColorSpace();
-    AstcInfo astcInfo = {0};
+    AstcInfo astcInfo;
     if (memset_s(&astcInfo, sizeof(AstcInfo), 0, sizeof(AstcInfo)) != 0) {
         IMAGE_LOGE("DecAstc memset failed");
         errorCode = ERR_IMAGE_INIT_ABNORMAL;
