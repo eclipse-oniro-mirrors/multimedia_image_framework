@@ -97,7 +97,7 @@ struct AstcInfo {
     Size astcSize;
     unsigned int dimX;
     unsigned int dimY;
-}
+};
 
 static void AlphaTypeConvertOnRGB(uint32_t &A, uint32_t &R, uint32_t &G, uint32_t &B,
                                   const ProcFuncExtension &extension)
