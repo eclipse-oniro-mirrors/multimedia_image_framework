@@ -821,6 +821,7 @@ DecodeContext ImageSource::InitDecodeContext(const DecodeOptions &opts, const Im
     const MemoryUsagePreference &preference, bool hasDesiredSizeOptions, PlImageInfo& plInfo)
 {
     DecodeContext context;
+    context.isAppUseAllocator = opts.isAppUseAllocator;
     context.photoDesiredPixelFormat = opts.photoDesiredPixelFormat;
     if (opts.allocatorType != AllocatorType::DEFAULT) {
         context.allocatorType = opts.allocatorType;
@@ -837,6 +838,7 @@ DecodeContext ImageSource::InitDecodeContext(const DecodeOptions &opts, const Im
     if (opts.desiredPixelFormat == PixelFormat::ARGB_8888) {
         IMAGE_LOGD("%{public}s ARGB use SHARE_MEM_ALLOC", __func__);
         context.allocatorType = AllocatorType::SHARE_MEM_ALLOC;
+        context.isAppUseAllocator = true;
     }
 
     context.info.pixelFormat = plInfo.pixelFormat;
@@ -3980,7 +3982,6 @@ DecodeContext ImageSource::DecodeImageDataToContext(uint32_t index, ImageInfo in
                                                     uint32_t& errorCode)
 {
     DecodeContext context = InitDecodeContext(opts_, info, preference_, hasDesiredSizeOptions, plInfo);
-    context.isAppUseAllocator = opts_.isAppUseAllocator;
     ImageHdrType decodedHdrType = context.hdrType;
     context.grColorSpaceName = mainDecoder_->GetPixelMapColorSpace().GetColorSpaceName();
     errorCode = mainDecoder_->Decode(index, context);
@@ -4668,10 +4669,6 @@ std::unique_ptr<Picture> ImageSource::CreatePicture(const DecodingOptionsForPict
         info.encodedFormat != IMAGE_HEIC_FORMAT) {
         IMAGE_LOGE("CreatePicture failed, unsupport format: %{public}s", info.encodedFormat.c_str());
         errorCode = ERR_IMAGE_MISMATCHED_FORMAT;
-        return nullptr;
-    }
-    if (opts.desiredPixelFormat == PixelFormat::ARGB_8888) {
-        IMAGE_LOGE("%{public}s picture not support ARGB decode", __func__);
         return nullptr;
     }
     DecodeOptions dopts;
