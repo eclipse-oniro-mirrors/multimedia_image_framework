@@ -49,10 +49,6 @@ static const std::string IMAGE_INPUT_JPEG_PATH = "/data/local/tmp/image/test.jpg
 static const std::string IMAGE_INPUT_EXIF_JPEG_PATH = "/data/local/tmp/image/test_exif.jpg";
 static const std::string IMAGE_OUTPUT_JPEG_PATH = "/data/local/tmp/image/test_out.jpg";
 static const std::string IMAGE_INPUT_ICO_PATH = "/data/local/tmp/image/test.ico";
-static const std::string IMAGE_INPUT_HEIF_PATH = "/data/local/tmp/image/test.heic";
-static const std::string IMAGE_INPUT_JPEG_HDR_PATH = "/data/local/tmp/image/hdr.jpg";
-static const std::string IMAGE_JPEG_100_100 = "/data/local/tmp/image/test_jpeg_100_100.jpg";
-static const std::string IMAGE_JPEG_128_128 = "/data/local/tmp/image/test_jpeg_128_128.jpg";
 
 class ImageSourceTest : public testing::Test {
 public:
@@ -2116,40 +2112,6 @@ HWTEST_F(ImageSourceTest, ApplyGainMap001, TestSize.Level3)
     baseCtx.allocatorType = AllocatorType::DEFAULT;
     ret = imageSource->ComposeHdrImage(hdrType, baseCtx, gainMapCtx, hdrCtx, metadata);
     ASSERT_EQ(ret, false);
-}
-
-/**
- * @tc.name: ConvertAutoAllocatorTypeTest001
- * @tc.desc: Test ConvertAutoAllocatorType use 100 * 100 jpeg image.
- * @tc.type: FUNC
- */
-HWTEST_F(ImageSourceTest, ConvertAutoAllocatorTypeTest001, TestSize.Level3)
-{
-    uint32_t errorCode = 0;
-    SourceOptions opts;
-    std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(IMAGE_JPEG_100_100, opts, errorCode);
-    ASSERT_NE(imageSource.get(), nullptr);
-    EXPECT_EQ(errorCode, 0);
-    DecodeOptions dopts;
-    AllocatorType allocatorType = imageSource->ConvertAutoAllocatorType(dopts);
-    EXPECT_EQ(allocatorType, AllocatorType::SHARE_MEM_ALLOC);
-}
-
-/**
- * @tc.name: ConvertAutoAllocatorTypeTest002
- * @tc.desc: Test ConvertAutoAllocatorType use 128 * 128 jpeg image.
- * @tc.type: FUNC
- */
-HWTEST_F(ImageSourceTest, ConvertAutoAllocatorTypeTest002, TestSize.Level3)
-{
-    uint32_t errorCode = 0;
-    SourceOptions opts;
-    std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(IMAGE_JPEG_128_128, opts, errorCode);
-    ASSERT_NE(imageSource.get(), nullptr);
-    EXPECT_EQ(errorCode, 0);
-    DecodeOptions dopts;
-    AllocatorType allocatorType = imageSource->ConvertAutoAllocatorType(dopts);
-    EXPECT_EQ(allocatorType, AllocatorType::DMA_ALLOC);
 }
 } // namespace Multimedia
 } // namespace OHOS

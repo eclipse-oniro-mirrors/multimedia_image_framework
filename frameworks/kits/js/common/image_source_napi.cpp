@@ -18,6 +18,7 @@
 #include "image_common.h"
 #include "image_log.h"
 #include "image_napi_utils.h"
+#include "jpeg_decoder_yuv.h"
 #include "media_errors.h"
 #include "string_ex.h"
 #include "image_trace.h"
@@ -68,6 +69,8 @@ napi_ref ImageSourceNapi::decodingResolutionQualityRef_ = nullptr;
 napi_ref ImageSourceNapi::decodingAllocatorTypeRef_ = nullptr;
 
 static std::mutex imageSourceCrossThreadMutex_;
+
+using JpegYuvDecodeError = OHOS::ImagePlugin::JpegYuvDecodeError;
 
 struct RawFileDescriptorInfo {
     int32_t fd = INVALID_FD;
@@ -127,6 +130,7 @@ struct ImageSourceSyncContext {
     DecodeOptions decodeOpts;
     std::shared_ptr<PixelMap> rPixelMap;
     std::string errMsg;
+    std::multimap<std::int32_t, std::string> errMsgArray;
 };
 
 struct ImageEnum {
@@ -485,9 +489,8 @@ static void ImageSourceCallbackRoutine(napi_env env, ImageSourceAsyncContext* &c
     if (context->status == SUCCESS) {
         result[NUM_1] = valueParam;
     } else if (context->errMsgArray.size() > 0) {
-        auto iter = context->errMsgArray.find(IMAGE_DECODE_FAILED);
-        if (iter != context->errMsgArray.end()) {
-            ImageNapiUtils::CreateErrorObj(env, result[NUM_0], iter->first, iter->second);
+        for (const auto &[errorCode, errMsg] : context->errMsgArray) {
+            ImageNapiUtils::CreateErrorObj(env, result[NUM_0], errorCode, errMsg);
         }
     } else if (context->errMsg.size() > 0) {
         napi_create_string_utf8(env, context->errMsg.c_str(), NAPI_AUTO_LENGTH, &result[NUM_0]);
@@ -1692,7 +1695,9 @@ static void CreatePixelMapUsingAllocatorExecute(napi_env env, void *data)
     context->rPixelMap = CreatePixelMapInner(context->constructor_, context->rImageSource,
         context->index, context->decodeOpts, context->status);
     if (context->status != SUCCESS) {
-        context->errMsgArray.insert({IMAGE_DECODE_FAILED, "CreatePixelMapUsingAllocator failed"});
+        Image_ErrorCode apiErrorCode = ConvertToErrorCode(context->status);
+        std::string apiErrorMsg = GetErrorCodeMsg(apiErrorCode);
+        context->errMsgArray.emplace(apiErrorCode, apiErrorMsg);
     }
 }
 
@@ -1962,7 +1967,9 @@ napi_value ImageSourceNapi::CreatePixelMapUsingAllocatorSync(napi_env env, napi_
     syncContext->rPixelMap = CreatePixelMapInner(syncContext->constructor_, syncContext->constructor_->nativeImgSrc,
         syncContext->index, syncContext->decodeOpts, syncContext->status);
     if (syncContext->status != SUCCESS) {
-        syncContext->errMsg = "Create PixelMap using allocator error.";
+        Image_ErrorCode apiErrorCode = ConvertToErrorCode(syncContext->status);
+        std::string apiErrorMsg = GetErrorCodeMsg(apiErrorCode);
+        syncContext->errMsgArray.emplace(apiErrorCode, apiErrorMsg);
     }
     result = CreatePixelMapAllocatorTypeCompleteSync(env, status,
         static_cast<ImageSourceSyncContext*>((syncContext).get()));

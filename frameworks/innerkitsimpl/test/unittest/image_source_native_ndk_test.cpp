@@ -31,7 +31,6 @@ public:
     ~ImagSourceNdk2Test() {}
 };
 
-static constexpr int32_t TestLength = 2;
 static const std::string IMAGE_JPEG_PATH = "/data/local/tmp/image/test_picture.jpg";
 static const std::string IMAGE_JPEG_HDR_PATH = "/data/local/tmp/image/test_jpeg_hdr.jpg";
 static const std::string IMAGE_HEIF_PATH = "/data/local/tmp/image/test_allocator_heif.heic";

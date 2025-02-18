@@ -14,6 +14,7 @@
  */
 
 #include "image_source_native.h"
+#include "jpeg_decoder_yuv.h"
 #include "picture_native_impl.h"
 #include "common_utils.h"
 #include "image_source.h"
@@ -49,6 +50,7 @@ static constexpr int32_t FORMAT_6 = 6;
 static constexpr int32_t FORMAT_7 = 7;
 static constexpr int32_t FORMAT_8 = 8;
 static constexpr int32_t FORMAT_9 = 9;
+using JpegYuvDecodeError = OHOS::ImagePlugin::JpegYuvDecodeError;
 
 struct OH_DecodingOptions {
     int32_t pixelFormat;
@@ -511,7 +513,7 @@ Image_ErrorCode OH_ImageSourceNative_CreatePixelmapUsingAllocator(OH_ImageSource
     }
     std::unique_ptr<PixelMap> tmpPixelmap = source->GetInnerImageSource()->CreatePixelMapEx(index, decOps, errorCode);
     if (tmpPixelmap == nullptr || errorCode != IMAGE_SUCCESS) {
-        return IMAGE_DECODE_FAILED;
+        return ConvertToErrorCode(errorCode);
     }
     std::shared_ptr<PixelMap> nativePixelmap = std::move(tmpPixelmap);
     OH_PixelmapNative *stPixMap = new OH_PixelmapNative(nativePixelmap);

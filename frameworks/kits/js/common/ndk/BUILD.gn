@@ -158,6 +158,7 @@ ohos_shared_library("image_source") {
     "hilog:libhilog",
     "napi:ace_napi",
     "resource_management:librawfile",
+    "skia:libjpeg",
   ]
 
   innerapi_tags = [ "ndk" ]

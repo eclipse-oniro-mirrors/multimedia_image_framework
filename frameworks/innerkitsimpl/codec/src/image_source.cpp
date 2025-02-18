@@ -637,6 +637,11 @@ static void NotifyDecodeEvent(set<DecodeListener *> &listeners, DecodeEvent even
     }
 }
 
+bool IsWidthAligned(const int32_t &width)
+{
+    return ((width * NUM_4) & INT_255) == 0;
+}
+
 const std::unordered_map<std::string, int32_t> formatThresholds{
     {IMAGE_JPEG_FORMAT, JPEG_DMA_SIZE},
     {IMAGE_HEIF_FORMAT, HEIF_DMA_SIZE},
@@ -658,7 +663,7 @@ static bool IsSizeSupportDma(const ImageInfo& info)
     if (it != formatThresholds.end()) {
         return area >= it->second;
     }
-    return area >= DEFAULT_DMA_SIZE && ImageUtils::IsWidthAligned(info.size.width);
+    return area >= DEFAULT_DMA_SIZE && IsWidthAligned(info.size.width);
 }
 
 bool ImageSource::IsDecodeHdrImage(const DecodeOptions &opts)
@@ -682,7 +687,7 @@ AllocatorType ImageSource::ConvertAutoAllocatorType(const DecodeOptions &opts)
     if (IsDecodeHdrImage(opts)) {
         return AllocatorType::DMA_ALLOC;
     }
-    if (opts.desiredPixelFormat == PixelFormat::ARGB_8888 || info.encodedFormat == IMAGE_SVG_FORMAT) {
+    if (info.encodedFormat == IMAGE_SVG_FORMAT) {
         return AllocatorType::SHARE_MEM_ALLOC;
     }
     if (IsSizeSupportDma(info)) {
@@ -710,10 +715,6 @@ bool ImageSource::IsSupportAllocatorType(DecodeOptions& decOps, int32_t allocato
     decOps.allocatorType = ConvertAllocatorType(this, allocatorType, decOps);
     if (decOps.allocatorType == AllocatorType::SHARE_MEM_ALLOC && IsDecodeHdrImage(decOps)) {
         IMAGE_LOGE("%{public}s Hdr image can't use share memory allocator", __func__);
-        return false;
-    } else if (!IsDecodeHdrImage(decOps) && decOps.allocatorType == AllocatorType::DMA_ALLOC &&
-        decOps.desiredPixelFormat == PixelFormat::ARGB_8888) {
-        IMAGE_LOGE("%{public}s SDR image can't set ARGB_8888 and DMA_ALLOC at the same time!", __func__);
         return false;
     } else if (IsSvgUseDma(decOps)) {
         IMAGE_LOGE("%{public}s Svg image can't use dma allocator", __func__);
@@ -785,11 +786,6 @@ bool IsSupportSize(const Size &size)
 bool IsSupportAstcZeroCopy(const Size &size)
 {
     return ImageSystemProperties::GetAstcEnabled() && size.width * size.height >= ASTC_SIZE;
-}
-
-bool IsWidthAligned(const int32_t &width)
-{
-    return ((width * NUM_4) & INT_255) == 0;
 }
 
 bool IsSupportDma(const DecodeOptions &opts, const ImageInfo &info, bool hasDesiredSizeOptions)
