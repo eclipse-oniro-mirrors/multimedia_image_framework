@@ -37,6 +37,7 @@
 #include "include/core/SkImage.h"
 #include "hitrace_meter.h"
 #include "media_errors.h"
+#include "pixel_astc.h"
 #include "pixel_convert.h"
 #include "pixel_convert_adapter.h"
 #include "pixel_map_utils.h"
@@ -203,6 +204,10 @@ void PixelMap::SetTransformered(bool isTransformered)
 
 void PixelMap::SetPixelsAddr(void *addr, void *context, uint32_t size, AllocatorType type, CustomFreePixelMap func)
 {
+    if (type < AllocatorType::DEFAULT || type > AllocatorType::DMA_ALLOC) {
+        IMAGE_LOGE("SetPixelsAddr error invalid allocatorType");
+        return;
+    }
     if (data_ != nullptr) {
         IMAGE_LOGD("SetPixelsAddr release the existed data first");
         FreePixelMap();
@@ -2734,6 +2739,8 @@ bool PixelMap::ReadPropertiesFromParcel(Parcel& parcel, PixelMap*& pixelMap, Ima
 #else
         pixelMap = new(std::nothrow) PixelYuv();
 #endif
+    } else if (ImageUtils::IsAstc(imgInfo.pixelFormat)) {
+        pixelMap = new(std::nothrow) PixelAstc();
     } else {
         pixelMap = new(std::nothrow) PixelMap();
     }
@@ -2746,7 +2753,13 @@ bool PixelMap::ReadPropertiesFromParcel(Parcel& parcel, PixelMap*& pixelMap, Ima
     pixelMap->SetEditable(parcel.ReadBool());
     memInfo.isAstc = parcel.ReadBool();
     pixelMap->SetAstc(memInfo.isAstc);
-    memInfo.allocatorType = static_cast<AllocatorType>(parcel.ReadInt32());
+    int32_t readAllocatorValue = parcel.ReadInt32();
+    if (readAllocatorValue < static_cast<int32_t>(AllocatorType::DEFAULT) ||
+        readAllocatorValue > static_cast<int32_t>(AllocatorType::DMA_ALLOC)) {
+        IMAGE_LOGE("ReadPropertiesFromParcel invalid allocatorType");
+        return false;
+    }
+    memInfo.allocatorType = static_cast<AllocatorType>(readAllocatorValue);
     if (memInfo.allocatorType == AllocatorType::DEFAULT || memInfo.allocatorType == AllocatorType::CUSTOM_ALLOC) {
         memInfo.allocatorType = AllocatorType::HEAP_ALLOC;
     }
