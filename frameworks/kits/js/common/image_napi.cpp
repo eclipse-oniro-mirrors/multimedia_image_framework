@@ -604,6 +604,8 @@ static void TestGetComponentCallBack(napi_env env, napi_status status, ImageAsyn
     napi_value array;
     void *nativePtr = nullptr;
     if (napi_create_arraybuffer(env, NUM1, &nativePtr, &array) != napi_ok || nativePtr == nullptr) {
+        delete context;
+        context = nullptr;
         return;
     }
     napi_create_object(env, &result);
