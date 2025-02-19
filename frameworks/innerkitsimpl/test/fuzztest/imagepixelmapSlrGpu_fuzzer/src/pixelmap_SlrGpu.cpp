@@ -138,7 +138,25 @@ std::unique_ptr<Media::PixelMap> GetPixelMapFromOpts(Media::PixelFormat pixelFor
     return pixelmap;
 }
 
+void PixelMapScale(std::unique_ptr<Media::PixelMap> &pixelMapFromOpts)
+{
+    if (!pixelMapFromOpts) {
+        return;
+    }
+    float xy = GetData<float>();
+    PostProc::ScalePixelMapWithGPU(*(pixelMapFromOpts.get()),
+        {pixelMapFromOpts->GetWidth() * xy, pixelMapFromOpts->GetHeight() * xy}, AntiAliasingOption::HIGH);
+}
+
 void PixelMapResize(std::unique_ptr<Media::PixelMap> &pixelMapFromOpts)
+{
+    if (!pixelMapFromOpts) {
+        return;
+    }
+    PostProc::RotateInRectangularSteps(*(pixelMapFromOpts.get()), GetData<int32_t>() % NUM_360);
+}
+
+void PixelMapRotate(std::unique_ptr<Media::PixelMap> &pixelMapFromOpts)
 {
     if (!pixelMapFromOpts) {
         return;
@@ -183,6 +201,47 @@ std::unique_ptr<Media::PixelMap> GetPixelMapFromPixelmap(std::unique_ptr<Media::
         return nullptr;
     }
     return outPixelmap;
+}
+
+bool PixelMapMainScaleFuzzTest(const uint8_t* data, size_t size)
+{
+if (data == nullptr) {
+        return false;
+    }
+    // initialize
+    g_data = data;
+    g_size = size;
+    g_pos = 0;
+
+    // create PixelMap from opts
+    std::unique_ptr<Media::PixelMap> pixelMapFromOpts = GetPixelMapFromOpts();
+    if (!pixelMapFromOpts) {
+        return false;
+    }
+    PixelMapScale(pixelMapFromOpts);
+
+    // PixelMap Transform Test
+    std::unique_ptr<Media::PixelMap> pixelMapTransform = GetPixelMapFromOpts(Media::PixelFormat::RGBA_8888);
+    if (!pixelMapTransform) {
+        return false;
+    }
+    PixelMapScale(pixelMapFromOpts);
+
+    // create from opts with PixelFormat::RGBA_8888
+    std::unique_ptr<Media::PixelMap> pixelMapFromOpts_rgba8888 = GetPixelMapFromOpts(Media::PixelFormat::RGBA_8888);
+    if (!pixelMapFromOpts_rgba8888) {
+        return false;
+    }
+    PixelMapScale(pixelMapFromOpts);
+
+    // create PixelMap from other PixelMap
+    std::unique_ptr<Media::PixelMap> pixelMapFromOtherPixelMap = GetPixelMapFromPixelmap(pixelMapFromOpts_rgba8888,
+        Media::PixelFormat::RGBA_8888);
+    if (!pixelMapFromOtherPixelMap) {
+        return false;
+    }
+    PixelMapScale(pixelMapFromOpts);
+    return true;
 }
 
 bool PixelMapMainFuzzTest(const uint8_t* data, size_t size)
@@ -243,6 +302,8 @@ bool PixelMapMainFuzzTest(const uint8_t* data, size_t size)
         PixelFormat::RGBA_8888);
     CreatePixelMapFromAddr(GetData<int32_t>() % MAX_LENGTH_MODULO, GetData<int32_t>() % MAX_LENGTH_MODULO,
         PixelFormat(GetData<int32_t>()));
+
+    PixelMapMainScaleFuzzTest(data, size);
     return true;
 }
 
