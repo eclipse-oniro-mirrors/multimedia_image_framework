@@ -634,8 +634,8 @@ static void FillAstcEncCheckInfo(AstcEncCheckInfo &checkInfo, Media::PixelMap* a
 
 static bool CheckAstcEncInput(TextureEncodeOptions &param, AstcEncCheckInfo checkInfo)
 {
-    int32_t pixmapStride = param.stride_ << RGBA_BYTES_PIXEL_LOG2;
-    if ((param.width_ <= 0) || (param.height_ <= 0) || (pixmapStride < param.width_)) {
+    uint32_t pixmapStride = static_cast<uint32_t>(param.stride_) << RGBA_BYTES_PIXEL_LOG2;
+    if ((param.width_ <= 0) || (param.height_ <= 0) || (param.stride_ < param.width_)) {
         IMAGE_LOGE("CheckAstcEncInput width <= 0 or height <= 0 or stride < width!");
         return false;
     }
@@ -644,12 +644,13 @@ static bool CheckAstcEncInput(TextureEncodeOptions &param, AstcEncCheckInfo chec
                    param.width_, param.height_, WIDTH_MAX_ASTC, HEIGHT_MAX_ASTC);
         return false;
     }
-    if (param.height_ > std::numeric_limits<int32_t>::max() / pixmapStride) {
+    uint64_t allocByteCount = static_cast<uint32_t>(param.height_) * pixmapStride;
+    if (allocByteCount > std::numeric_limits<uint32_t>::max()) {
         IMAGE_LOGE("CheckAstcEncInput height %{public}d stride %{public}d overflow!",
                     param.height_, pixmapStride);
         return false;
     }
-    if (checkInfo.pixmapInSize < static_cast<uint32_t>(param.height_ * pixmapStride)) {
+    if (checkInfo.pixmapInSize < static_cast<uint32_t>(allocByteCount)) {
         IMAGE_LOGE("CheckAstcEncInput pixmapInSize %{public}d not enough for height %{public}d stride %{public}d!",
                    checkInfo.pixmapInSize, param.height_, pixmapStride);
         return false;
@@ -666,7 +667,7 @@ static bool CheckAstcEncInput(TextureEncodeOptions &param, AstcEncCheckInfo chec
         IMAGE_LOGE("CheckAstcEncInput pixmapFormat %{public}d must be RGBA!", checkInfo.pixmapFormat);
         return false;
     }
-    uint32_t packSize = param.astcBytes + checkInfo.extendInfoSize + checkInfo.extendBufferSize;
+    uint32_t packSize = static_cast<uint32_t>(param.astcBytes) + checkInfo.extendInfoSize + checkInfo.extendBufferSize;
     if (checkInfo.astcBufferSize < packSize) {
         IMAGE_LOGE("CheckAstcEncInput astcBufferSize %{public}d not enough for %{public}d!",
                    checkInfo.astcBufferSize, packSize);
