@@ -40,6 +40,7 @@ extern "C" {
 
 #include <cmath>
 #include <sstream>
+#include <sys/timerfd.h>
 
 #undef LOG_DOMAIN
 #define LOG_DOMAIN LOG_TAG_DOMAIN_ID_PLUGIN
@@ -588,6 +589,11 @@ void HeifDecoderImpl::ReleaseHwDecoder(HeifHardwareDecoder *hwDecoder, bool isRe
     if (isReuse || hwDecoder == nullptr) {
         return;
     }
+    int timerFd = timerfd_create(CLOCK_MONOTONIC, TFD_NONBLOCK | TFD_CLOEXEC);
+    if (timerFd < 0) {
+        return;
+    }
+    close(timerFd);
     ffrt::submit([hwDecoder] {
         ImageTrace trace("delete hwDecoder");
         delete hwDecoder;

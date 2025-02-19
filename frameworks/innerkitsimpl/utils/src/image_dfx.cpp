@@ -18,6 +18,7 @@
 #include <unistd.h>
 #include <fstream>
 #include <chrono>
+#include <sys/timerfd.h>
 
 #if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
 #include "ffrt.h"
@@ -62,6 +63,11 @@ void ImageEvent::SetDecodeErrorMsg(std::string msg)
 
 void ImageEvent::ReportDecodeFault()
 {
+    int timerFd = timerfd_create(CLOCK_MONOTONIC, TFD_NONBLOCK | TFD_CLOEXEC);
+    if (timerFd < 0) {
+        return;
+    }
+    close(timerFd);
     std::string temp;
     switch (options_.invokeType) {
         case (JS_INTERFACE):
@@ -125,6 +131,11 @@ std::string GetInvokeTypeStr(uint16_t invokeType)
 
 void ImageEvent::ReportDecodeInfo()
 {
+    int timerFd = timerfd_create(CLOCK_MONOTONIC, TFD_NONBLOCK | TFD_CLOEXEC);
+    if (timerFd < 0) {
+        return;
+    }
+    close(timerFd);
     uint64_t costTime = ImageUtils::GetNowTimeMilliSeconds() - startTime_;
     std::string temp = GetInvokeTypeStr(options_.invokeType);
 #if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
