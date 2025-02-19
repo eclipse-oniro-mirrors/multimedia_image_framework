@@ -85,6 +85,8 @@ struct DecodeContext {
     bool isAisr = false;
     // Out: colorSpace
     ColorManager::ColorSpaceName grColorSpaceName = ColorManager::NONE;
+    // In: User set allocatorType.
+    bool isAppUseAllocator = false;
 };
 
 struct ProgDecodeContext {

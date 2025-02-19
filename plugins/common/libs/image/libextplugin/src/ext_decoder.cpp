@@ -91,6 +91,7 @@ namespace {
     constexpr static int32_t LOOP_COUNT_INFINITE = 0;
     constexpr static int32_t SK_REPETITION_COUNT_INFINITE = -1;
     constexpr static int32_t SK_REPETITION_COUNT_ERROR_VALUE = -2;
+    constexpr static int32_t BYTES_PER_YUV_SAMPLE = 2;
 }
 
 namespace OHOS {
@@ -180,6 +181,17 @@ static const map<SkEncodedImageFormat, string> FORMAT_NAME = {
     { SkEncodedImageFormat::kHEIF, "image/heif" },
 };
 
+static const map<PixelFormat, int32_t> PIXELFORMAT_TOGRAPHIC_MAP = {
+    {PixelFormat::RGBA_1010102, GRAPHIC_PIXEL_FMT_RGBA_1010102},
+    {PixelFormat::YCRCB_P010, GRAPHIC_PIXEL_FMT_YCRCB_P010},
+    {PixelFormat::YCBCR_P010, GRAPHIC_PIXEL_FMT_YCBCR_P010},
+    {PixelFormat::NV12, GRAPHIC_PIXEL_FMT_YCBCR_420_SP},
+    {PixelFormat::NV21, GRAPHIC_PIXEL_FMT_YCRCB_420_SP},
+    {PixelFormat::RGBA_F16, GRAPHIC_PIXEL_FMT_RGBA16_FLOAT},
+    {PixelFormat::BGRA_8888, GRAPHIC_PIXEL_FMT_BGRA_8888},
+    {PixelFormat::RGB_565, GRAPHIC_PIXEL_FMT_RGB_565},
+};
+
 #ifdef HEIF_HW_DECODE_ENABLE
 static const map<PixelFormat, SkHeifColorFormat> HEIF_FORMAT_MAP = {
     { PixelFormat::RGBA_1010102, kHeifColorFormat_RGBA_1010102 },
@@ -246,16 +258,13 @@ static BufferRequestConfig CreateDmaRequestConfig(const SkImageInfo &dstInfo, ui
         .colorGamut = GraphicColorGamut::GRAPHIC_COLOR_GAMUT_SRGB,
         .transform = GraphicTransformType::GRAPHIC_ROTATE_NONE,
     };
-    if (pixelFormat == PixelFormat::RGBA_1010102) {
-        requestConfig.format = GRAPHIC_PIXEL_FMT_RGBA_1010102;
-    } else if (pixelFormat == PixelFormat::YCRCB_P010) {
-        requestConfig.format = GRAPHIC_PIXEL_FMT_YCRCB_P010;
-    } else if (pixelFormat == PixelFormat::YCBCR_P010) {
-        requestConfig.format = GRAPHIC_PIXEL_FMT_YCBCR_P010;
-    } else if (pixelFormat == PixelFormat::NV12) {
-        requestConfig.format = GRAPHIC_PIXEL_FMT_YCBCR_420_SP;
-    } else if (pixelFormat == PixelFormat::RGBA_F16) {
-        requestConfig.format = GRAPHIC_PIXEL_FMT_RGBA16_FLOAT;
+    auto formatSearch = PIXELFORMAT_TOGRAPHIC_MAP.find(pixelFormat);
+    requestConfig.format = (formatSearch != PIXELFORMAT_TOGRAPHIC_MAP.end()) ?
+        formatSearch->second : GRAPHIC_PIXEL_FMT_RGBA_8888;
+    if (requestConfig.format == GRAPHIC_PIXEL_FMT_YCBCR_420_SP ||
+        requestConfig.format == GRAPHIC_PIXEL_FMT_YCRCB_420_SP) {
+        count = JpegDecoderYuv::GetYuvOutSize(dstInfo.width(), dstInfo.height());
+    } else if (requestConfig.format == GRAPHIC_PIXEL_FMT_RGBA16_FLOAT) {
         count = dstInfo.width() * dstInfo.height() * ImageUtils::GetPixelBytes(PixelFormat::RGBA_F16);
     }
     return requestConfig;
@@ -268,7 +277,17 @@ uint32_t ExtDecoder::DmaMemAlloc(DecodeContext &context, uint64_t count, SkImage
     IMAGE_LOGE("Unsupport dma mem alloc");
     return ERR_IMAGE_DATA_UNSUPPORT;
 #else
-    sptr<SurfaceBuffer> sb = SurfaceBuffer::Create();
+    BufferRequestConfig requestConfig = CreateDmaRequestConfig(dstInfo, count, context.info.pixelFormat);
+    return DmaAlloc(context, count, requestConfig);
+#endif
+}
+
+uint32_t ExtDecoder::JpegHwDmaMemAlloc(DecodeContext &context, uint64_t count, SkImageInfo &dstInfo)
+{
+#if defined(_WIN32) || defined(_APPLE) || defined(ANDROID_PLATFORM) || defined(IOS_PLATFORM)
+    IMAGE_LOGE("Unsupport dma mem alloc");
+    return ERR_IMAGE_DATA_UNSUPPORT;
+#else
     BufferRequestConfig requestConfig = CreateDmaRequestConfig(dstInfo, count, context.info.pixelFormat);
     if (outputColorFmt_ == PIXEL_FMT_YCRCB_420_SP) {
         requestConfig.format = GRAPHIC_PIXEL_FMT_YCRCB_420_SP;
@@ -276,6 +295,17 @@ uint32_t ExtDecoder::DmaMemAlloc(DecodeContext &context, uint64_t count, SkImage
         IMAGE_LOGD("ExtDecoder::DmaMemAlloc desiredFormat is NV21");
         count = JpegDecoderYuv::GetYuvOutSize(dstInfo.width(), dstInfo.height());
     }
+    return DmaAlloc(context, count, requestConfig);
+#endif
+}
+
+uint32_t ExtDecoder::DmaAlloc(DecodeContext &context, uint64_t count, const OHOS::BufferRequestConfig &requestConfig)
+{
+#if defined(CROSS_PLATFORM)
+    IMAGE_LOGE("Unsupport dma mem alloc");
+    return ERR_IMAGE_DATA_UNSUPPORT;
+#else
+    sptr<SurfaceBuffer> sb = SurfaceBuffer::Create();
     GSError ret = sb->Alloc(requestConfig);
     if (ret != GSERROR_OK) {
         IMAGE_LOGE("SurfaceBuffer Alloc failed, %{public}s", GSErrorStr(ret).c_str());
@@ -290,8 +320,8 @@ uint32_t ExtDecoder::DmaMemAlloc(DecodeContext &context, uint64_t count, SkImage
 
     IMAGE_LOGD("ExtDecoder::DmaMemAlloc sb stride is %{public}d, height is %{public}d, size is %{public}d",
         sb->GetStride(), sb->GetHeight(), sb->GetSize());
-    SetDecodeContextBuffer(context,
-        AllocatorType::DMA_ALLOC, static_cast<uint8_t*>(sb->GetVirAddr()), count, nativeBuffer);
+    SetDecodeContextBuffer(context, AllocatorType::DMA_ALLOC, static_cast<uint8_t*>(sb->GetVirAddr()), count,
+        nativeBuffer);
     return SUCCESS;
 #endif
 }
@@ -851,10 +881,92 @@ uint32_t ExtDecoder::DoHardWareDecode(DecodeContext &context)
 }
 #endif
 
+static bool IsAllocatorTypeSupportHwDecode(const DecodeContext &context)
+{
+    if (!context.isAppUseAllocator) {
+        return true;
+    }
+    return context.allocatorType == Media::AllocatorType::DMA_ALLOC;
+}
+
+bool ExtDecoder::IsHeifSharedMemDecode(DecodeContext &context)
+{
+    return codec_->getEncodedFormat() == SkEncodedImageFormat::kHEIF && context.isAppUseAllocator &&
+        context.allocatorType == Media::AllocatorType::SHARE_MEM_ALLOC;
+}
+
+void ExtDecoder::FillYuvInfo(DecodeContext &context, SkImageInfo &dstInfo)
+{
+    if (context.allocatorType == AllocatorType::SHARE_MEM_ALLOC) {
+        context.yuvInfo.imageSize = {dstInfo.width(), dstInfo.height()};
+        context.yuvInfo.yWidth = dstInfo.width();
+        context.yuvInfo.yHeight = dstInfo.height();
+        context.yuvInfo.uvWidth = static_cast<uint32_t>((dstInfo.width() + 1) / BYTES_PER_YUV_SAMPLE);
+        context.yuvInfo.uvHeight = static_cast<uint32_t>((dstInfo.height() + 1) / BYTES_PER_YUV_SAMPLE);
+        context.yuvInfo.yStride = dstInfo.width();
+        context.yuvInfo.uvStride = context.yuvInfo.uvWidth + context.yuvInfo.uvWidth;
+        context.yuvInfo.yOffset = 0;
+        context.yuvInfo.uvOffset = dstInfo.width() * dstInfo.height();
+    }
+}
+
+#ifdef HEIF_HW_DECODE_ENABLE
+bool SetOutPutFormat(OHOS::Media::PixelFormat pixelFormat, HeifDecoderImpl* decoder)
+{
+    bool ret = true;
+    if (pixelFormat == PixelFormat::RGB_565) {
+        ret = decoder->setOutputColor(kHeifColorFormat_RGB565);
+    } else if (pixelFormat == PixelFormat::RGBA_8888) {
+        ret = decoder->setOutputColor(kHeifColorFormat_RGBA_8888);
+    } else if (pixelFormat == PixelFormat::BGRA_8888) {
+        ret = decoder->setOutputColor(kHeifColorFormat_BGRA_8888);
+    } else if (pixelFormat == PixelFormat::NV12) {
+        ret = decoder->setOutputColor(kHeifColorFormat_NV12);
+    } else if (pixelFormat == PixelFormat::NV21) {
+        ret = decoder->setOutputColor(kHeifColorFormat_NV21);
+    }
+    return ret;
+}
+#endif
+
+uint32_t ExtDecoder::DoHeifSharedMemDecode(DecodeContext &context)
+{
+#ifdef HEIF_HW_DECODE_ENABLE
+    auto decoder = reinterpret_cast<HeifDecoderImpl*>(codec_->getHeifContext());
+    if (decoder == nullptr) {
+        IMAGE_LOGE("Decode HeifDecoder is nullptr");
+        return ERR_IMAGE_DATA_UNSUPPORT;
+    }
+    uint64_t rowStride = dstInfo_.minRowBytes64();
+    uint64_t byteCount = dstInfo_.computeMinByteSize();
+    if (IsYuv420Format(context.info.pixelFormat)) {
+        rowStride = dstInfo_.width();
+        byteCount = JpegDecoderYuv::GetYuvOutSize(dstInfo_.width(), dstInfo_.height());
+    }
+    if (!SetOutPutFormat(context.info.pixelFormat, decoder)) {
+        return ERR_IMAGE_DATA_UNSUPPORT;
+    }
+    uint32_t res = ShareMemAlloc(context, byteCount);
+    if (res != SUCCESS) {
+        return res;
+    }
+    decoder->setDstBuffer(reinterpret_cast<uint8_t *>(context.pixelsBuffer.buffer), rowStride, nullptr);
+    bool decodeRet = decoder->SwDecode(context.isAppUseAllocator);
+    if (!decodeRet) {
+        decoder->getErrMsg(context.hardDecodeError);
+    } else if (IsYuv420Format(context.info.pixelFormat)) {
+        FillYuvInfo(context, dstInfo_);
+    }
+    return decodeRet ? SUCCESS : ERR_IMAGE_DATA_UNSUPPORT;
+#else
+    return ERR_IMAGE_DATA_UNSUPPORT;
+#endif
+}
+
 uint32_t ExtDecoder::Decode(uint32_t index, DecodeContext &context)
 {
 #ifdef JPEG_HW_DECODE_ENABLE
-    if (IsSupportHardwareDecode() && DoHardWareDecode(context) == SUCCESS) {
+    if (IsAllocatorTypeSupportHwDecode(context) && IsSupportHardwareDecode() && DoHardWareDecode(context) == SUCCESS) {
         context.isHardDecode = true;
         return SUCCESS;
     }
@@ -865,6 +977,10 @@ uint32_t ExtDecoder::Decode(uint32_t index, DecodeContext &context)
     }
     context.outInfo.size.width = static_cast<uint32_t>(dstInfo_.width());
     context.outInfo.size.height = static_cast<uint32_t>(dstInfo_.height());
+    if (IsHeifSharedMemDecode(context)) {
+        context.isHardDecode = false;
+        return DoHeifSharedMemDecode(context);
+    }
     if (IsHeifToYuvDecode(context)) {
         context.isHardDecode = true;
         return DoHeifToYuvDecode(context);
@@ -1043,6 +1159,7 @@ uint32_t ExtDecoder::DecodeToYuv420(uint32_t index, DecodeContext &context)
         return ERR_IMAGE_INVALID_PARAMETER;
     }
     uint64_t yuvBufferSize = JpegDecoderYuv::GetYuvOutSize(desiredSize.width, desiredSize.height);
+    dstInfo_ = dstInfo_.makeWH(desiredSize.width, desiredSize.height);
     res = SetContextPixelsBuffer(yuvBufferSize, context);
     if (res != SUCCESS) {
         IMAGE_LOGE("ExtDecoder::DecodeToYuv420 SetContextPixelsBuffer failed");
@@ -1132,7 +1249,7 @@ uint32_t ExtDecoder::AllocOutputBuffer(DecodeContext &context,
     if (ImageUtils::IsSdrPixelMapReuseSuccess(context, info_.width(), info_.height(), reusePixelmap_)) {
         IMAGE_LOGI("Jpeg hardware decode reusePixelmap success");
     } else {
-        uint32_t ret = DmaMemAlloc(context, byteCount, hwDstInfo_);
+        uint32_t ret = JpegHwDmaMemAlloc(context, byteCount, hwDstInfo_);
         if (ret != SUCCESS) {
             IMAGE_LOGE("Alloc OutputBuffer failed, ret=%{public}d", ret);
             return ERR_IMAGE_DECODE_ABNORMAL;

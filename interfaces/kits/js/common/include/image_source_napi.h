@@ -80,6 +80,8 @@ private:
 #if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
     static napi_value CreatePicture(napi_env env, napi_callback_info info);
 #endif
+    static napi_value CreatePixelMapUsingAllocator(napi_env env, napi_callback_info info);
+    static napi_value CreatePixelMapUsingAllocatorSync(napi_env env, napi_callback_info info);
 
     void release();
     static thread_local napi_ref sConstructor_;
@@ -94,6 +96,7 @@ private:
     static napi_ref componentTypeRef_;
     static napi_ref decodingDynamicRangeRef_;
     static napi_ref decodingResolutionQualityRef_;
+    static napi_ref decodingAllocatorTypeRef_;
 
     napi_env env_ = nullptr;
     bool isRelease = false;

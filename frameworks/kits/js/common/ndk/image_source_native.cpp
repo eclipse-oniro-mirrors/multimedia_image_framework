@@ -14,6 +14,7 @@
  */
 
 #include "image_source_native.h"
+#include "jpeg_decoder_yuv.h"
 #include "picture_native_impl.h"
 #include "common_utils.h"
 #include "image_source.h"
@@ -22,6 +23,7 @@
 #include "pixelmap_native_impl.h"
 #include "picture_native.h"
 #include "media_errors.h"
+#include "image_log.h"
 
 #ifndef _WIN32
 #include "securec.h"
@@ -48,6 +50,7 @@ static constexpr int32_t FORMAT_6 = 6;
 static constexpr int32_t FORMAT_7 = 7;
 static constexpr int32_t FORMAT_8 = 8;
 static constexpr int32_t FORMAT_9 = 9;
+using JpegYuvDecodeError = OHOS::ImagePlugin::JpegYuvDecodeError;
 
 struct OH_DecodingOptions {
     int32_t pixelFormat;
@@ -67,6 +70,47 @@ struct OH_ImageSource_Info {
     /** Image dynamicRange*/
     bool isHdr;
 };
+
+static const std::map<int32_t, Image_ErrorCode> ERROR_CODE_MAP = {
+    {ERR_IMAGE_INVALID_PARAMETER, Image_ErrorCode::IMAGE_BAD_PARAMETER},
+    {COMMON_ERR_INVALID_PARAMETER, Image_ErrorCode::IMAGE_BAD_PARAMETER},
+    {JpegYuvDecodeError::JpegYuvDecodeError_InvalidParameter, Image_ErrorCode::IMAGE_BAD_PARAMETER},
+    {ERR_IMAGE_SOURCE_DATA, Image_ErrorCode::IMAGE_BAD_SOURCE},
+    {ERR_IMAGE_SOURCE_DATA_INCOMPLETE, Image_ErrorCode::IMAGE_BAD_SOURCE},
+    {ERR_IMAGE_GET_DATA_ABNORMAL, Image_ErrorCode::IMAGE_BAD_SOURCE},
+    {ERR_IMAGE_DATA_ABNORMAL, Image_ErrorCode::IMAGE_BAD_SOURCE},
+    {ERROR, Image_ErrorCode::IMAGE_BAD_SOURCE},
+    {JpegYuvDecodeError::JpegYuvDecodeError_BadImage, Image_ErrorCode::IMAGE_BAD_SOURCE},
+    {ERR_IMAGE_MISMATCHED_FORMAT, Image_ErrorCode::IMAGE_SOURCE_UNSUPPORTED_MIMETYPE},
+    {ERR_IMAGE_UNKNOWN_FORMAT, Image_ErrorCode::IMAGE_SOURCE_UNSUPPORTED_MIMETYPE},
+    {ERR_IMAGE_DECODE_HEAD_ABNORMAL, Image_ErrorCode::IMAGE_SOURCE_UNSUPPORTED_MIMETYPE},
+    {ERR_IMAGE_TOO_LARGE, Image_ErrorCode::IMAGE_SOURCE_TOO_LARGE},
+    {ERR_MEDIA_INVALID_OPERATION, Image_ErrorCode::IMAGE_SOURCE_UNSUPPORTED_ALLOCATOR_TYPE},
+    {IMAGE_RESULT_FORMAT_CONVERT_FAILED, Image_ErrorCode::IMAGE_SOURCE_UNSUPPORTED_OPTIONS},
+    {ERR_MEDIA_FORMAT_UNSUPPORT, Image_ErrorCode::IMAGE_SOURCE_UNSUPPORTED_OPTIONS},
+    {ERR_IMAGE_PIXELMAP_CREATE_FAILED, Image_ErrorCode::IMAGE_SOURCE_UNSUPPORTED_OPTIONS},
+    {JpegYuvDecodeError::JpegYuvDecodeError_ConvertError, Image_ErrorCode::IMAGE_SOURCE_UNSUPPORTED_OPTIONS},
+    {ERR_IMAGE_CROP, Image_ErrorCode::IMAGE_SOURCE_UNSUPPORTED_OPTIONS},
+    {ERR_IMAGE_DECODE_FAILED, Image_ErrorCode::IMAGE_DECODE_FAILED},
+    {ERR_IMAGE_DECODE_ABNORMAL, Image_ErrorCode::IMAGE_DECODE_FAILED},
+    {ERR_IMAGE_PLUGIN_CREATE_FAILED, Image_ErrorCode::IMAGE_DECODE_FAILED},
+    {JpegYuvDecodeError::JpegYuvDecodeError_DecodeFailed, Image_ErrorCode::IMAGE_DECODE_FAILED},
+    {JpegYuvDecodeError::JpegYuvDecodeError_MemoryNotEnoughToSaveResult, Image_ErrorCode::IMAGE_DECODE_FAILED},
+    {ERR_IMAGE_MALLOC_ABNORMAL, Image_ErrorCode::IMAGE_SOURCE_ALLOC_FAILED},
+    {ERR_IMAGE_DATA_UNSUPPORT, Image_ErrorCode::IMAGE_SOURCE_ALLOC_FAILED},
+    {ERR_DMA_NOT_EXIST, Image_ErrorCode::IMAGE_SOURCE_ALLOC_FAILED},
+    {ERR_DMA_DATA_ABNORMAL, Image_ErrorCode::IMAGE_SOURCE_ALLOC_FAILED},
+    {ERR_SHAMEM_DATA_ABNORMAL, Image_ErrorCode::IMAGE_SOURCE_ALLOC_FAILED}
+};
+static Image_ErrorCode ConvertToErrorCode(int32_t errorCode)
+{
+    Image_ErrorCode apiErrorCode = Image_ErrorCode::IMAGE_DECODE_FAILED;
+    auto iter = ERROR_CODE_MAP.find(errorCode);
+    if (iter != ERROR_CODE_MAP.end()) {
+        apiErrorCode = iter->second;
+    }
+    return apiErrorCode;
+}
 
 static Image_AuxiliaryPictureType AuxTypeInnerToNative(OHOS::Media::AuxiliaryPictureType type)
 {
@@ -442,6 +486,34 @@ Image_ErrorCode OH_ImageSourceNative_CreatePixelmap(OH_ImageSourceNative *source
     std::unique_ptr<PixelMap> tmpPixelmap = source->GetInnerImageSource()->CreatePixelMapEx(index, decOps, errorCode);
     if (tmpPixelmap == nullptr || errorCode != IMAGE_SUCCESS) {
         return IMAGE_UNSUPPORTED_OPERATION;
+    }
+    std::shared_ptr<PixelMap> nativePixelmap = std::move(tmpPixelmap);
+    OH_PixelmapNative *stPixMap = new OH_PixelmapNative(nativePixelmap);
+    *pixelmap = stPixMap;
+    return IMAGE_SUCCESS;
+}
+
+MIDK_EXPORT
+Image_ErrorCode OH_ImageSourceNative_CreatePixelmapUsingAllocator(OH_ImageSourceNative *source, OH_DecodingOptions *ops,
+    IMAGE_ALLOCATOR_TYPE allocator, OH_PixelmapNative **pixelmap)
+{
+    if (source == nullptr || ops == nullptr || pixelmap == nullptr) {
+        return IMAGE_BAD_PARAMETER;
+    }
+    DecodeOptions decOps;
+    uint32_t index = DEFAULT_INDEX;
+    uint32_t errorCode = IMAGE_BAD_PARAMETER;
+    ParseDecodingOps(decOps, ops);
+    index = ops->index;
+    if (source->GetInnerImageSource() == nullptr) {
+        return IMAGE_BAD_SOURCE;
+    }
+    if (!source->GetInnerImageSource()->IsSupportAllocatorType(decOps, static_cast<int32_t>(allocator))) {
+        return IMAGE_SOURCE_UNSUPPORTED_ALLOCATOR_TYPE;
+    }
+    std::unique_ptr<PixelMap> tmpPixelmap = source->GetInnerImageSource()->CreatePixelMapEx(index, decOps, errorCode);
+    if (tmpPixelmap == nullptr || errorCode != IMAGE_SUCCESS) {
+        return ConvertToErrorCode(errorCode);
     }
     std::shared_ptr<PixelMap> nativePixelmap = std::move(tmpPixelmap);
     OH_PixelmapNative *stPixMap = new OH_PixelmapNative(nativePixelmap);

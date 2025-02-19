@@ -333,6 +333,8 @@ struct DecodeOptions {
     DecodeDynamicRange desiredDynamicRange = DecodeDynamicRange::SDR;
     ResolutionQuality resolutionQuality = ResolutionQuality::UNKNOWN;
     bool isAisr = false;
+    // CreatePixelMapUsingAllocatorType is true, CreatePixelMap is false.
+    bool isAppUseAllocator = false;
     std::shared_ptr<PixelMap> reusePixelmap = nullptr;
 };
 

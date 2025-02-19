@@ -73,6 +73,7 @@ config("third_part_includes") {
 config("win_config") {
   if (use_mingw_win) {
     defines = image_decode_windows_defines
+    defines += [ "CROSS_PLATFORM" ]
     include_dirs += [
       "${image_subsystem}/mock/native/include",
       "${image_subsystem}/mock/native/include/secure",
@@ -86,6 +87,7 @@ config("win_config") {
 config("mac_config") {
   if (use_clang_mac) {
     defines = image_decode_mac_defines
+    defines += [ "CROSS_PLATFORM" ]
     include_dirs += [
       "${image_subsystem}/mock/native/include",
       "${asdk_dir}/static_library/${target_os}_${target_cpu}/include/external/skia/include/codec",

@@ -163,6 +163,13 @@ constexpr uint32_t ASTC_EXTEND_INFO_SIZE_DEFINITION_LENGTH = 4; // 4 bytes to di
 constexpr uint32_t ASTC_EXTEND_INFO_LENGTH_LENGTH = 4; // 4 bytes to discripte the content bytes for every TLV group
 static constexpr uint32_t SINGLE_FRAME_SIZE = 1;
 static constexpr uint8_t ISO_USE_BASE_COLOR = 0x01;
+constexpr int32_t JPEG_DMA_SIZE = 128 * 128;
+constexpr int32_t PNG_DMA_SIZE = 256 * 256;
+constexpr int32_t HEIF_DMA_SIZE = 128 * 128;
+constexpr int32_t DEFAULT_DMA_SIZE = 512 * 512;
+constexpr int32_t DMA_ALLOC = 1;
+constexpr int32_t SHARE_MEMORY_ALLOC = 2;
+constexpr int32_t AUTO_ALLOC = 0;
 
 struct AstcExtendInfo {
     uint32_t extendBufferSumBytes = 0;
@@ -630,6 +637,92 @@ static void NotifyDecodeEvent(set<DecodeListener *> &listeners, DecodeEvent even
     }
 }
 
+bool IsWidthAligned(const int32_t &width)
+{
+    return ((width * NUM_4) & INT_255) == 0;
+}
+
+const std::unordered_map<std::string, int32_t> formatThresholds{
+    {IMAGE_JPEG_FORMAT, JPEG_DMA_SIZE},
+    {IMAGE_HEIF_FORMAT, HEIF_DMA_SIZE},
+    {IMAGE_HEIC_FORMAT, HEIF_DMA_SIZE},
+    {IMAGE_PNG_FORMAT, PNG_DMA_SIZE},
+    {IMAGE_WEBP_FORMAT, DEFAULT_DMA_SIZE},
+    {IMAGE_GIF_FORMAT, DEFAULT_DMA_SIZE},
+    {IMAGE_BMP_FORMAT, DEFAULT_DMA_SIZE}
+};
+
+static bool IsSizeSupportDma(const ImageInfo& info)
+{
+    // Check for overflow risk
+    if (info.size.width > 0 && info.size.height > INT_MAX / info.size.width) {
+        return false;
+    }
+    const int64_t area = info.size.width * info.size.height;
+    auto it = formatThresholds.find(info.encodedFormat);
+    if (it != formatThresholds.end()) {
+        return area >= it->second;
+    }
+    return area >= DEFAULT_DMA_SIZE && IsWidthAligned(info.size.width);
+}
+
+bool ImageSource::IsDecodeHdrImage(const DecodeOptions &opts)
+{
+    return (opts.desiredDynamicRange == DecodeDynamicRange::AUTO && sourceHdrType_ > ImageHdrType::SDR) ||
+        opts.desiredDynamicRange == DecodeDynamicRange::HDR;
+}
+
+bool ImageSource::IsSvgUseDma(const DecodeOptions &opts)
+{
+    ImageInfo info;
+    GetImageInfo(FIRST_FRAME, info);
+    return info.encodedFormat == IMAGE_SVG_FORMAT && opts.allocatorType == AllocatorType::DMA_ALLOC;
+}
+
+AllocatorType ImageSource::ConvertAutoAllocatorType(const DecodeOptions &opts)
+{
+    ImageInfo info;
+    GetImageInfo(FIRST_FRAME, info);
+    ParseHdrType();
+    if (IsDecodeHdrImage(opts)) {
+        return AllocatorType::DMA_ALLOC;
+    }
+    if (info.encodedFormat == IMAGE_SVG_FORMAT) {
+        return AllocatorType::SHARE_MEM_ALLOC;
+    }
+    if (IsSizeSupportDma(info)) {
+        return AllocatorType::DMA_ALLOC;
+    }
+    return AllocatorType::SHARE_MEM_ALLOC;
+}
+
+static AllocatorType ConvertAllocatorType(ImageSource *imageSource, int32_t allocatorType, DecodeOptions& decodeOpts)
+{
+    switch (allocatorType) {
+        case DMA_ALLOC:
+            return AllocatorType::DMA_ALLOC;
+        case SHARE_MEMORY_ALLOC:
+            return AllocatorType::SHARE_MEM_ALLOC;
+        case AUTO_ALLOC:
+        default:
+            return imageSource->ConvertAutoAllocatorType(decodeOpts);
+    }
+}
+
+bool ImageSource::IsSupportAllocatorType(DecodeOptions& decOps, int32_t allocatorType)
+{
+    decOps.isAppUseAllocator = true;
+    decOps.allocatorType = ConvertAllocatorType(this, allocatorType, decOps);
+    if (decOps.allocatorType == AllocatorType::SHARE_MEM_ALLOC && IsDecodeHdrImage(decOps)) {
+        IMAGE_LOGE("%{public}s Hdr image can't use share memory allocator", __func__);
+        return false;
+    } else if (IsSvgUseDma(decOps)) {
+        IMAGE_LOGE("%{public}s Svg image can't use dma allocator", __func__);
+        return false;
+    }
+    return true;
+}
+
 static void FreeContextBuffer(const Media::CustomFreePixelMap &func, AllocatorType allocType, PlImageBuffer &buffer)
 {
     if (func != nullptr) {
@@ -693,11 +786,6 @@ bool IsSupportSize(const Size &size)
 bool IsSupportAstcZeroCopy(const Size &size)
 {
     return ImageSystemProperties::GetAstcEnabled() && size.width * size.height >= ASTC_SIZE;
-}
-
-bool IsWidthAligned(const int32_t &width)
-{
-    return ((width * NUM_4) & INT_255) == 0;
 }
 
 bool IsSupportDma(const DecodeOptions &opts, const ImageInfo &info, bool hasDesiredSizeOptions)
@@ -805,6 +893,11 @@ unique_ptr<PixelMap> ImageSource::CreatePixelMapExtended(uint32_t index, const D
     ImageInfo info;
     errorCode = GetImageInfo(FIRST_FRAME, info);
     ParseHdrType();
+    if (opts_.isAppUseAllocator && opts_.allocatorType == AllocatorType::SHARE_MEM_ALLOC && IsDecodeHdrImage(opts)) {
+        IMAGE_LOGE("HDR image can't use SHARE_MEM_ALLOC");
+        errorCode = ERR_MEDIA_INVALID_OPERATION;
+        return nullptr;
+    }
 #ifdef IMAGE_QOS_ENABLE
     if (IsSupportSize(info.size) && getpid() != gettid()) {
         OHOS::QOS::SetThreadQos(OHOS::QOS::QosLevel::QOS_USER_INTERACTIVE);
@@ -3695,6 +3788,7 @@ DecodeContext ImageSource::DecodeImageDataToContext(uint32_t index, ImageInfo in
                                                     uint32_t& errorCode)
 {
     DecodeContext context = InitDecodeContext(opts_, info, preference_, hasDesiredSizeOptions, plInfo);
+    context.isAppUseAllocator = opts_.isAppUseAllocator;
     ImageHdrType decodedHdrType = context.hdrType;
     context.grColorSpaceName = mainDecoder_->GetPixelMapColorSpace().GetColorSpaceName();
     errorCode = mainDecoder_->Decode(index, context);

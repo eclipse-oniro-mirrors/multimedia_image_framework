@@ -72,6 +72,7 @@ public:
     bool decodeAuxiliaryMap();
     void setAuxiliaryDstBuffer(uint8_t* dstBuffer, size_t dstSize, size_t rowStride);
     void getFragmentMetadata(Media::Rect& fragmentMetadata);
+    bool SwDecode(bool isSharedMemory = false);
 private:
     bool Reinit(HeifFrameInfo *frameInfo);
 
