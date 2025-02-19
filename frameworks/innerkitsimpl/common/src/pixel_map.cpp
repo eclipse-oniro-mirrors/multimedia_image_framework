@@ -37,7 +37,9 @@
 #include "include/core/SkImage.h"
 #include "hitrace_meter.h"
 #include "media_errors.h"
+#if !defined(_WIN32) && !defined(_APPLE) && !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
 #include "pixel_astc.h"
+#endif
 #include "pixel_convert.h"
 #include "pixel_convert_adapter.h"
 #include "pixel_map_utils.h"
@@ -2740,7 +2742,11 @@ bool PixelMap::ReadPropertiesFromParcel(Parcel& parcel, PixelMap*& pixelMap, Ima
         pixelMap = new(std::nothrow) PixelYuv();
 #endif
     } else if (ImageUtils::IsAstc(imgInfo.pixelFormat)) {
+#if !defined(_WIN32) && !defined(_APPLE) && !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
         pixelMap = new(std::nothrow) PixelAstc();
+#else
+        pixelMap = new(std::nothrow) PixelMap();
+#endif
     } else {
         pixelMap = new(std::nothrow) PixelMap();
     }
