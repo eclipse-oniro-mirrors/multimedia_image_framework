@@ -15,12 +15,14 @@
 
 #include "post_proc.h"
 
+#include <memory>
 #include <unistd.h>
 
 #include "basic_transformer.h"
 #include "image_log.h"
 #include "image_system_properties.h"
 #include "image_trace.h"
+#include "image_type.h"
 #include "image_utils.h"
 #include "media_errors.h"
 #include "memory_manager.h"
@@ -775,7 +777,7 @@ static SkSLRCacheMgr GetNewSkSLRCacheMgr()
     return SkSLRCacheMgr(slrCache, slrMutex);
 }
 
-std::shared_ptr<SLRWeightTuple> PostProc::initSLRFactor(Size srcSize, Size dstSize)
+std::shared_ptr<SLRWeightTuple> initSLRFactor(Size srcSize, Size dstSize)
 {
     if (srcSize.width == 0 || srcSize.height == 0 || dstSize.width == 0 || dstSize.height == 0) {
         IMAGE_LOGE("initSLRFactor invalid size, %{public}d, %{public}d, %{public}d, %{public}d",
@@ -838,27 +840,92 @@ bool CheckPixelMapSLR(const Size &desiredSize, PixelMap &pixelMap)
     return true;
 }
 
-bool PostProc::ScalePixelMapWithSLR(const Size &desiredSize, PixelMap &pixelMap)
+static std::unique_ptr<AbsMemory> CreateSLRMemory(PixelMap &pixelMap, uint32_t dstBufferSize, const Size &desiredSize,
+    std::unique_ptr<AbsMemory> &dstMemory, bool useLap)
+{
+    AllocatorType allocatorType = pixelMap.GetAllocatorType();
+    if (useLap && allocatorType == AllocatorType::DMA_ALLOC) {
+        allocatorType = AllocatorType::SHARE_MEM_ALLOC;
+    }
+    MemoryData memoryData = {nullptr, dstBufferSize, "ScalePixelMapWithSLR ImageData", desiredSize,
+        pixelMap.GetPixelFormat()};
+    dstMemory = MemoryManager::CreateMemory(allocatorType, memoryData);
+    if (dstMemory == nullptr) {
+        IMAGE_LOGE("ScalePixelMapWithSLR create dstMemory failed");
+        return nullptr;
+    }
+    std::unique_ptr<AbsMemory> lapMemory = nullptr;
+    if (useLap) {
+        MemoryData lapMemoryData = {nullptr, dstBufferSize, "ScalePixelMapWithSLR ImageData Lap", desiredSize,
+            pixelMap.GetPixelFormat()};
+        lapMemory = MemoryManager::CreateMemory(pixelMap.GetAllocatorType(), lapMemoryData);
+        if (lapMemory == nullptr) {
+            IMAGE_LOGE("ScalePixelMapWithSLR create lapMemory failed");
+            dstMemory->Release();
+            return nullptr;
+        }
+    }
+    return lapMemory;
+}
+
+float getLapFactor(const ImageInfo& imgInfo, const Size &desiredSize)
+{
+    float coeff = ((float)desiredSize.width) / imgInfo.size.width;
+    if (coeff > 0.8f) { // 0.8f max coeff size
+        return .0f;
+    } else if (coeff > 0.6f) { // 0.6f mid coeff size
+        return 0.06f; // 0.06f mid coeff size
+    } else if (coeff > 0.5f) {  // 0.5f mid coeff size
+        return 0.1f;  // 0.1f mid coeff size
+    }
+    return 0.15f; // 0.15f default coeff size
+}
+
+struct SLRContext {
+    void *data;
+    bool useLap;
+};
+
+bool ExecuteSLR(PixelMap& pixelMap, const Size& desiredSize, SLRMat &src, SLRMat &dst,
+    SLRContext scalingContext)
+{
+    ImageInfo imgInfo;
+    pixelMap.GetImageInfo(imgInfo);
+    std::shared_ptr<SLRWeightTuple> weightTuplePtr = initSLRFactor(imgInfo.size, desiredSize);
+    if (weightTuplePtr == nullptr) {
+        IMAGE_LOGE("PostProcExecuteSLR init failed");
+        return false;
+    }
+    SLRWeightMat slrWeightX = std::get<0>(*weightTuplePtr);
+    SLRWeightMat slrWeightY = std::get<1>(*weightTuplePtr);
+    if (ImageSystemProperties::GetSLRParallelEnabled()) {
+        SLRProc::Parallel(src, dst, slrWeightX, slrWeightY);
+    } else {
+        SLRProc::Serial(src, dst, slrWeightX, slrWeightY);
+    }
+    if (scalingContext.useLap) {
+        float factor = getLapFactor(imgInfo, desiredSize);
+        SLRProc::Laplacian(dst, scalingContext.data, factor);
+    }
+    return true;
+}
+
+bool PostProc::ScalePixelMapWithSLR(const Size &desiredSize, PixelMap &pixelMap, bool useLap)
 {
     ImageInfo imgInfo;
     pixelMap.GetImageInfo(imgInfo);
     if (!CheckPixelMapSLR(desiredSize, pixelMap)) {
         return false;
     }
+    useLap = useLap || ImageSystemProperties::GetSLRLaplacianEnabled();
     ImageTrace imageTrace("ScalePixelMapWithSLR");
-    std::shared_ptr<SLRWeightTuple> weightTuplePtr = initSLRFactor(imgInfo.size, desiredSize);
-    if (weightTuplePtr == nullptr) {
-        IMAGE_LOGE("ScalePixelMapWithSLR init failed");
-        return false;
-    }
     int32_t pixelBytes = pixelMap.GetPixelBytes();
     SLRMat src(imgInfo.size, imgInfo.pixelFormat, pixelMap.GetWritablePixels(), pixelMap.GetRowStride() / pixelBytes);
     uint32_t dstBufferSize = desiredSize.height * desiredSize.width * pixelBytes;
-    MemoryData memoryData = {nullptr, dstBufferSize, "ScalePixelMapWithSLR ImageData", desiredSize,
-        pixelMap.GetPixelFormat()};
-    auto m = MemoryManager::CreateMemory(pixelMap.GetAllocatorType(), memoryData);
-    if (m == nullptr) {
-        IMAGE_LOGE("ScalePixelMapWithSLR create memory failed");
+    std::unique_ptr<AbsMemory> m = nullptr;
+    auto lapMemory = CreateSLRMemory(pixelMap, dstBufferSize, desiredSize, m, useLap);
+    if (m == nullptr || (useLap && (lapMemory == nullptr))) {
+        IMAGE_LOGE("pixelMap scale slr memory nullptr");
         return false;
     }
     size_t rowStride;
@@ -869,19 +936,23 @@ bool PostProc::ScalePixelMapWithSLR(const Size &desiredSize, PixelMap &pixelMap)
     } else {
         rowStride = desiredSize.width * pixelBytes;
     }
-    SLRMat dst({desiredSize.width, desiredSize.height}, imgInfo.pixelFormat, m->data.data, rowStride / pixelBytes);
-    SLRWeightMat slrWeightX = std::get<0>(*weightTuplePtr);
-    SLRWeightMat slrWeightY = std::get<1>(*weightTuplePtr);
-    if (ImageSystemProperties::GetSLRParallelEnabled()) {
-        SLRProc::Parallel(src, dst, slrWeightX, slrWeightY);
-    } else {
-        SLRProc::Serial(src, dst, slrWeightX, slrWeightY);
+    void *data = useLap ? lapMemory->data.data : m->data.data;
+    SLRMat dst({desiredSize.width, desiredSize.height}, imgInfo.pixelFormat, data, rowStride / pixelBytes);
+    if (!ExecuteSLR(pixelMap, desiredSize, src, dst, {m->data.data, useLap})) {
+        m->Release();
+        if (useLap && lapMemory) {
+            lapMemory->Release();
+        }
+        return false;
     }
     pixelMap.SetPixelsAddr(m->data.data, m->extend.data, dstBufferSize, m->GetType(), nullptr);
     imgInfo.size = desiredSize;
     pixelMap.SetImageInfo(imgInfo, true);
     if (m->GetType() == AllocatorType::DMA_ALLOC) {
         ImageUtils::FlushSurfaceBuffer(&pixelMap);
+    }
+    if (lapMemory) {
+        lapMemory->Release();
     }
     return true;
 }

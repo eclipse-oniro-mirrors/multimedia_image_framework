@@ -30,6 +30,7 @@ public:
     static bool GetHardWareEncodeEnabled();
     static bool GetHeifHardwareDecodeEnabled();
     static bool GetSLRParallelEnabled();
+    static bool GetSLRLaplacianEnabled();
     static bool GetSutEncodeEnabled();
     static bool GetMediaLibraryAstcEnabled();
     static bool GetAstcHardWareEncodeEnabled();

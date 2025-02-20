@@ -25,6 +25,7 @@ namespace Media {
 
 class SLRMat {
 public:
+    SLRMat() = default;
     SLRMat(Size size, PixelFormat format, void *data, int32_t rowStride)
         :size_(size), format_(format), data_(data), rowStride_(rowStride) {}
     ~SLRMat() = default;
@@ -126,6 +127,7 @@ public:
     static SLRWeightMat GetWeights(float coeff, int n);
     static void Serial(const SLRMat &src, SLRMat &dst, const SLRWeightMat &x, const SLRWeightMat &y);
     static void Parallel(const SLRMat &src, SLRMat &dst, const SLRWeightMat &x, const SLRWeightMat &y);
+    static void Laplacian(SLRMat &srcMat, void* data, float alpha);
 };
 } // namespace Media
 } // namespace OHOS
