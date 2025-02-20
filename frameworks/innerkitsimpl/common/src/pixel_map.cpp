@@ -219,7 +219,6 @@ void PixelMap::SetPixelsAddr(void *addr, void *context, uint32_t size, Allocator
     }
     data_ = static_cast<uint8_t *>(addr);
     isUnMap_ = false;
-    unMapCount_ = 0;
     context_ = context;
     pixelsSize_ = size;
     allocatorType_ = type;
@@ -4175,10 +4174,8 @@ bool PixelMap::UnMap()
         return false;
     }
     std::lock_guard<std::mutex> lock(*unmapMutex_);
-    if (!isUnMap_) {
-        unMapCount_++;
+    if (!isUnMap_ && useCount_ == 1) {
         isUnMap_ = true;
-        
         if (data_ != nullptr) {
             ::munmap(data_, pixelsSize_);
             data_ = nullptr;

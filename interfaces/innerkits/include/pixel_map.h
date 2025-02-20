@@ -382,20 +382,10 @@ public:
             useCount_ -= 1;
         }
     }
-    NATIVEEXPORT void ResetUseCount()
-    {
-        std::lock_guard<std::mutex> lock(*unmapMutex_);
-        useCount_ = 0;
-    }
     NATIVEEXPORT uint64_t GetUseCount()
     {
         std::lock_guard<std::mutex> lock(*unmapMutex_);
         return useCount_;
-    }
-    NATIVEEXPORT uint64_t GetUnMapCount()
-    {
-        std::lock_guard<std::mutex> lock(*unmapMutex_);
-        return unMapCount_;
     }
 
     // pixelmap with DMA memory should be marked dirty when memory was changed
@@ -585,7 +575,6 @@ private:
     // unmap方案, 减少RenderService内存占用
     bool isUnMap_ = false;
     uint64_t useCount_ = 0ULL;
-    uint64_t unMapCount_ = 0;
     std::shared_ptr<std::mutex> unmapMutex_ = std::make_shared<std::mutex>();
 
     // used to mark whether DMA memory should be refreshed
