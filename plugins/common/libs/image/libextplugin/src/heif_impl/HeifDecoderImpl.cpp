@@ -589,11 +589,6 @@ void HeifDecoderImpl::ReleaseHwDecoder(HeifHardwareDecoder *hwDecoder, bool isRe
     if (isReuse || hwDecoder == nullptr) {
         return;
     }
-    int timerFd = timerfd_create(CLOCK_MONOTONIC, TFD_NONBLOCK | TFD_CLOEXEC);
-    if (timerFd < 0) {
-        return;
-    }
-    close(timerFd);
     ffrt::submit([hwDecoder] {
         ImageTrace trace("delete hwDecoder");
         delete hwDecoder;
