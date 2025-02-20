@@ -379,6 +379,32 @@ bool ImageUtils::IsAstc(PixelFormat format)
     return format == PixelFormat::ASTC_4x4 || format == PixelFormat::ASTC_6x6 || format == PixelFormat::ASTC_8x8;
 }
 
+bool ImageUtils::IsYUV(PixelFormat format)
+{
+    return format == PixelFormat::NV12 || format == PixelFormat::NV21 ||
+        format == PixelFormat::YCBCR_P010 || format == PixelFormat::YCRCB_P010;
+}
+
+bool ImageUtils::IsRGBX(PixelFormat format)
+{
+    return format == PixelFormat::ARGB_8888 || format == PixelFormat::RGB_565 ||
+        format == PixelFormat::RGBA_8888 || format == PixelFormat::BGRA_8888 ||
+        format == PixelFormat::RGB_888 || format == PixelFormat::ALPHA_8 ||
+        format == PixelFormat::RGBA_F16 || format == PixelFormat::RGBA_1010102 ||
+        format == PixelFormat::RGBA_U16 || format == PixelFormat::UNKNOWN;
+}
+
+bool ImageUtils::PixelMapCreateCheckFormat(PixelFormat format)
+{
+    if (IsRGBX(format)) {
+        return true;
+    }
+    if (IsYUV(format)) {
+        return true;
+    }
+    return false;
+}
+
 bool ImageUtils::IsWidthAligned(const int32_t &width)
 {
     return ((static_cast<uint32_t>(width) * NUM_4) & INT_255) == 0;
