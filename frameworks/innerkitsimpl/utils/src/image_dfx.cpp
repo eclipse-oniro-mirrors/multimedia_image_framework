@@ -70,22 +70,27 @@ bool ImageEvent::checkTimerFd() {
     return true;
 }
 
+std::string ImageEvent::getInvokeType() {
+    std::string invokeType;
+    switch (options_.invokeType) {
+        case (JS_INTERFACE):
+            invokeType = "js_interface";
+            break;
+        case (C_INTERFACE):
+            invokeType = "c_interface";
+            break;
+        default:
+            invokeType = "inner_interface";
+    }
+    return invokeType;
+}
+
 void ImageEvent::ReportDecodeFault()
 {
     if (!checkTimerFd()) {
         return;
     }
-    std::string temp;
-    switch (options_.invokeType) {
-        case (JS_INTERFACE):
-            temp = "js_interface";
-            break;
-        case (C_INTERFACE):
-            temp = "c_interface";
-            break;
-        default:
-            temp = "inner_interface";
-    }
+    std::string temp = getInvokeType();
 #if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
     DecodeInfoOptions options = options_;
     ffrt::submit([options, temp] {
