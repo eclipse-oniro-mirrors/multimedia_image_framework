@@ -40,7 +40,6 @@ extern "C" {
 
 #include <cmath>
 #include <sstream>
-#include <sys/timerfd.h>
 
 #undef LOG_DOMAIN
 #define LOG_DOMAIN LOG_TAG_DOMAIN_ID_PLUGIN
