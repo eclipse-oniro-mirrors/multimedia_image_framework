@@ -18,6 +18,7 @@
 #include <algorithm>
 #include <map>
 #include <sstream>
+#include <sys/timerfd.h>
 #if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
 #include <sys/ioctl.h>
 
@@ -1054,9 +1055,13 @@ uint32_t ExtDecoder::Decode(uint32_t index, DecodeContext &context)
         }
         rowStride = static_cast<uint64_t>(sbBuffer->GetStride());
     }
-    ffrt::submit([skEncodeFormat] {
-        ReportImageType(skEncodeFormat);
-    }, {}, {});
+    int timerFd = timerfd_create(CLOCK_MONOTONIC, TFD_NONBLOCK | TFD_CLOEXEC);
+    if (timerFd >= 0) {
+        close(timerFd);
+        ffrt::submit([skEncodeFormat] {
+            ReportImageType(skEncodeFormat);
+        }, {}, {});
+    }
 #endif
     IMAGE_LOGD("decode format %{public}d", skEncodeFormat);
     if (skEncodeFormat == SkEncodedImageFormat::kGIF || skEncodeFormat == SkEncodedImageFormat::kWEBP) {
