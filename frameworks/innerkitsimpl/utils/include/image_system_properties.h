@@ -34,6 +34,7 @@ public:
     static bool GetSutEncodeEnabled();
     static bool GetMediaLibraryAstcEnabled();
     static bool GetGenThumbWithGpu();
+    static bool GetSLRLaplacianEnabled();
 private:
     ImageSystemProperties() = default;
 };

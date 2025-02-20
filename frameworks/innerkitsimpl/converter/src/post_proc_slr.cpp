@@ -201,7 +201,8 @@ void SLRBox(const SLRSliceKey &key, const SLRMat &src, SLRMat &dst, const SLRWei
 
 void SLRProc::Laplacian(SLRMat &srcMat, void* data, float alpha)
 {
-    IMAGE_LOGD("SLRProc Laplacian weight:%{public}.2f", alpha);
+    IMAGE_LOGD("Laplacian pixelMap SLR:width=%{public}d,height=%{public}d,alpha=%{public}f", srcMat.size_.width,
+        srcMat.size_.height, alpha);
     if (data == nullptr) {
         IMAGE_LOGE("SLRProc::Laplacian create memory failed");
         return;
@@ -225,10 +226,10 @@ void SLRProc::Laplacian(SLRMat &srcMat, void* data, float alpha)
         for (int j = 0; j < n; j++) {
             const uint32_t pixels[5] = {
                 getPixel(i, j),       // center
-                getPixel(i, j-1),     // left
-                getPixel(i, j+1),     // right
-                getPixel(i-1, j),     // up
-                getPixel(i+1, j)      // down
+                getPixel(i, j - 1),     // left
+                getPixel(i, j + 1),     // right
+                getPixel(i - 1, j),     // up
+                getPixel(i + 1, j)      // down
             };
             const int cr = extract(pixels[0], 24); // 24 r
             const int cg = extract(pixels[0], 16); // 16 g
