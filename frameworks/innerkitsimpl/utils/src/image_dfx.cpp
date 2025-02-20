@@ -61,7 +61,8 @@ void ImageEvent::SetDecodeErrorMsg(std::string msg)
     options_.errorMsg = msg;
 }
 
-bool ImageEvent::checkTimerFd() {
+bool ImageEvent::checkTimerFd()
+{
     int timerFd = timerfd_create(CLOCK_MONOTONIC, TFD_NONBLOCK | TFD_CLOEXEC);
     if (timerFd < 0) {
         return false;
@@ -70,7 +71,8 @@ bool ImageEvent::checkTimerFd() {
     return true;
 }
 
-std::string ImageEvent::getInvokeType() {
+std::string ImageEvent::getInvokeType()
+{
     std::string invokeType;
     switch (options_.invokeType) {
         case (JS_INTERFACE):
