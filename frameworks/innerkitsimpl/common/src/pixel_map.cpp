@@ -573,6 +573,12 @@ void *PixelMap::AllocSharedMemory(const uint64_t bufferSize, int &fd, uint32_t u
 bool PixelMap::CheckParams(const uint32_t *colors, uint32_t colorLength, int32_t offset, int32_t width,
     const InitializationOptions &opts)
 {
+    if (!ImageUtils::PixelMapCreateCheckFormat(opts.srcPixelFormat) ||
+        !ImageUtils::PixelMapCreateCheckFormat(opts.pixelFormat)) {
+        IMAGE_LOGE("[PixelMap] Check format failed. src format: %{public}d, dst format: %{public}d",
+            static_cast<uint32_t>(opts.srcPixelFormat), static_cast<uint32_t>(opts.pixelFormat));
+        return false;
+    }
     if (colors == nullptr || colorLength <= 0) {
         IMAGE_LOGE("colors invalid");
         return false;

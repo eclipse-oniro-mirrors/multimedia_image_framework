@@ -106,6 +106,9 @@ public:
         int height, const std::shared_ptr<PixelMap> &reusePixelmap);
     static bool IsReuseYUV(ImagePlugin::DecodeContext& context, const std::shared_ptr<PixelMap> &reusePixelmap);
     static bool IsReuseRGB(ImagePlugin::DecodeContext& context, const std::shared_ptr<PixelMap> &reusePixelmap);
+    static bool IsYUV(PixelFormat format);
+    static bool IsRGBX(PixelFormat format);
+    static bool PixelMapCreateCheckFormat(PixelFormat format);
     static uint16_t GetReusePixelRefCount(const std::shared_ptr<PixelMap> &reusePixelmap);
 
     template<typename T>
