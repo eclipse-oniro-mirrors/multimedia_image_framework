@@ -48,8 +48,8 @@ public:
             return std::make_tuple(ERR_IMAGE_INIT_ABNORMAL, nullptr, 0);
         }
 
-        if (bufferSize <= 0) {
-            IMAGE_LOGE("Packing failed, bufferSize cannot be less than or equal to 0");
+        if (bufferSize <= 0 || bufferSize > INT32_MAX) {
+            IMAGE_LOGE("Packing failed, bufferSize cannot be less than or equal to 0 or more than INT32_MAX");
             return std::make_tuple(ERR_IMAGE_INIT_ABNORMAL, nullptr, 0);
         }
 
