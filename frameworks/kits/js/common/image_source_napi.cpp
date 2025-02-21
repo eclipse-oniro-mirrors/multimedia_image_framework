@@ -2228,21 +2228,7 @@ static void ModifyImagePropertiesExecute(napi_env env, void *data)
             context->errMsgArray.insert(std::make_pair(status, context->errMsg));
             continue;
         }
-        if (!IsSameTextStr(context->pathName, "")) {
-            status = context->rImageSource->ModifyImageProperty(0, recordIterator->first,
-                recordIterator->second, context->pathName);
-        } else if (context->fdIndex != -1) {
-            status = context->rImageSource->ModifyImageProperty(0, recordIterator->first,
-                recordIterator->second, context->fdIndex);
-        } else if (context->sourceBuffer != nullptr) {
-            status = context->rImageSource->ModifyImageProperty(0, recordIterator->first,
-                recordIterator->second, static_cast<uint8_t *>(context->sourceBuffer),
-                context->sourceBufferSize);
-        } else {
-            context->errMsgArray.insert(std::make_pair(ERROR, recordIterator->first));
-            IMAGE_LOGE("There is no image source!");
-            continue;
-        }
+        status = context->rImageSource->ModifyImagePropertyEx(0, recordIterator->first, recordIterator->second);
         if (status != SUCCESS) {
             context->errMsgArray.insert(std::make_pair(status, recordIterator->first));
         }
@@ -2265,20 +2251,7 @@ static void ModifyImagePropertyExecute(napi_env env, void *data)
         context->status = status;
         return;
     }
-    if (!IsSameTextStr(context->pathName, "")) {
-        context->status = context->rImageSource->ModifyImageProperty(context->index,
-            context->keyStr, context->valueStr, context->pathName);
-    } else if (context->fdIndex != -1) {
-        context->status = context->rImageSource->ModifyImageProperty(context->index,
-            context->keyStr, context->valueStr, context->fdIndex);
-    } else if (context->sourceBuffer != nullptr) {
-        context->status = context->rImageSource->ModifyImageProperty(context->index,
-            context->keyStr, context->valueStr, static_cast<uint8_t *>(context->sourceBuffer),
-            context->sourceBufferSize);
-    } else {
-        context->status = ERROR;
-        IMAGE_LOGE("There is no image source!");
-    }
+    context->status = context->rImageSource->ModifyImagePropertyEx(context->index, context->keyStr, context->valueStr);
 }
 
 static void GetImagePropertiesExecute(napi_env env, void *data)
