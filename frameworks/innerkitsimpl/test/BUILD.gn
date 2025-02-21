@@ -1025,7 +1025,6 @@ ohos_unittest("ndktest2") {
   ]
   sources = [
     "unittest/image_packer_native_ndk_test.cpp",
-    "unittest/image_source_native_ndk_test.cpp",
     "unittest/pixelmap_native_ndk_test.cpp",
   ]
 

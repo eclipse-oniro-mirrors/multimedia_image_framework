@@ -26,6 +26,7 @@
 #include <dlfcn.h>
 #include <filesystem>
 #include <vector>
+#include <unordered_map>
 
 #if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
 #include "auxiliary_generator.h"
