@@ -226,6 +226,7 @@ public:
     NATIVEEXPORT uint32_t ModifyImageProperty(uint32_t index, const std::string &key, const std::string &value,
         uint8_t *data, uint32_t size);
     NATIVEEXPORT uint32_t ModifyImageProperty(uint32_t index, const std::string &key, const std::string &value);
+    NATIVEEXPORT uint32_t ModifyImagePropertyEx(uint32_t index, const std::string &key, const std::string &value);
     NATIVEEXPORT uint32_t RemoveImageProperties(uint32_t index, const std::set<std::string> &keys,
         const std::string &path);
     NATIVEEXPORT uint32_t RemoveImageProperties(uint32_t index, const std::set<std::string> &keys,
@@ -374,6 +375,9 @@ private:
     size_t GetByteCount(const ImageInfo &info);
     bool CheckInfoBytes(uint32_t frameCount, const ImageInfo &info, uint32_t &errorCode);
     bool CheckPixelMapListInfo(uint32_t frameCount, const DecodeOptions &opts, uint32_t &errorCode);
+    void SetSrcFd(const int& fd);
+    void SetSrcFilePath(const std::string& pathName);
+    void SetSrcBuffer(const uint8_t* buffer, uint32_t size);
 #if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
     void SetHdrMetadataForPicture(std::unique_ptr<Picture> &picture);
     void DecodeHeifAuxiliaryPictures(const std::set<AuxiliaryPictureType> &auxTypes, std::unique_ptr<Picture> &picture,
@@ -418,6 +422,10 @@ private:
     bool isExifReadFailed_ = false;
     uint32_t exifReadStatus_ = 0;
     uint32_t heifParseErr_ = 0;
+    std::string srcFilePath_ = "";
+    int srcFd_ = -1;
+    uint8_t* srcBuffer_ = nullptr;
+    uint32_t srcBufferSize_ = 0;
 };
 } // namespace Media
 } // namespace OHOS
