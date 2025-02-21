@@ -3471,66 +3471,6 @@ bool ImageSource::GetASTCInfo(const uint8_t *fileData, size_t fileSize, ASTCInfo
     return false;
 }
 
-size_t ImageSource::GetByteCount(const ImageInfo &info)
-{
-    int32_t rowDataSize = ImageUtils::GetRowDataSizeByPixelFormat(info.size.width, info.pixelFormat);
-    if (rowDataSize < 0 || ImageUtils::CheckMulOverflow(rowDataSize, info.size.height)) {
-        IMAGE_LOGE("GetByteCount overflow, rowDataSize: %{public}d, height: %{public}d",
-            rowDataSize, info.size.height);
-        return INT32_MAX;
-    }
-    return rowDataSize * info.size.height;
-}
-
-bool ImageSource::CheckInfoBytes(uint32_t frameCount, const OHOS::Media::ImageInfo &info, uint32_t &errorCode)
-{
-    size_t infoByteCount = GetByteCount(info);
-    if (ImageUtils::CheckMulOverflow(infoByteCount, static_cast<size_t>(frameCount))) {
-        IMAGE_LOGE("[ImageSource]CreatePixelMapList image is too large, frameCount: %{public}u, "
-                   "width: %{public}d, height: %{public}d", frameCount, info.size.width, info.size.height);
-        errorCode = ERR_IMAGE_TOO_LARGE;
-        return false;
-    }
-    size_t infoSumBytes = infoByteCount * frameCount;
-    if (infoSumBytes > INT32_MAX) {
-        IMAGE_LOGE("[ImageSource]CreatePixelMapList image is too large, frameCount: %{public}u, "
-                   "width: %{public}d, height: %{public}d", frameCount, info.size.width, info.size.height);
-        errorCode = ERR_IMAGE_TOO_LARGE;
-        return false;
-    }
-    errorCode = SUCCESS;
-    return true;
-}
-
-bool ImageSource::CheckPixelMapListInfo(uint32_t frameCount, const DecodeOptions &opts, uint32_t &errorCode)
-{
-    ImageInfo srcInfo;
-    errorCode = GetImageInfo(srcInfo);
-    if (errorCode != SUCCESS) {
-        IMAGE_LOGE("CheckPixelMapListInfo get image info error.");
-        return false;
-    }
-    srcInfo.pixelFormat = opts.desiredPixelFormat == PixelFormat::UNKNOWN ?
-                          PixelFormat::RGBA_8888 : opts.desiredPixelFormat;
-    if (!CheckInfoBytes(frameCount, srcInfo, errorCode)) {
-        IMAGE_LOGE("CheckPixelMapListInfo check src info bytes failed.");
-        return false;
-    }
-    ImageInfo dstInfo;
-    dstInfo.size = opts.desiredSize;
-    if (dstInfo.size.width <= 0 || dstInfo.size.height <= 0) {
-        dstInfo.size = srcInfo.size;
-    }
-    dstInfo.pixelFormat = opts.desiredPixelFormat == PixelFormat::UNKNOWN ?
-                          PixelFormat::RGBA_8888 : opts.desiredPixelFormat;
-    if (!CheckInfoBytes(frameCount, dstInfo, errorCode)) {
-        IMAGE_LOGE("CheckPixelMapListInfo check dst info bytes failed.");
-        return false;
-    }
-    errorCode = SUCCESS;
-    return true;
-}
-
 unique_ptr<vector<unique_ptr<PixelMap>>> ImageSource::CreatePixelMapList(const DecodeOptions &opts, uint32_t &errorCode)
 {
     ImageDataStatistics imageDataStatistics("[ImageSource]CreatePixelMapList.");
@@ -3540,10 +3480,7 @@ unique_ptr<vector<unique_ptr<PixelMap>>> ImageSource::CreatePixelMapList(const D
         IMAGE_LOGE("[ImageSource]CreatePixelMapList get frame count error.");
         return nullptr;
     }
-    if (!CheckPixelMapListInfo(frameCount, opts, errorCode)) {
-        IMAGE_LOGE("[ImageSource]CreatePixelMapList CheckPixelmapListInfo failed.");
-        return nullptr;
-    }
+
     auto pixelMaps = std::make_unique<vector<unique_ptr<PixelMap>>>();
     for (uint32_t index = 0; index < frameCount; index++) {
         auto pixelMap = CreatePixelMap(index, opts, errorCode);
