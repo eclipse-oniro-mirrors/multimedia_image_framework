@@ -683,10 +683,10 @@ std::string ImageUtils::GetPixelMapName(PixelMap* pixelMap)
 }
 
  // BytesToUint16 function will modify the offset value.
-uint16_t ImageUtils::BytesToUint16(uint8_t* bytes, uint32_t& offset, bool isBigEndian)
+uint16_t ImageUtils::BytesToUint16(uint8_t* bytes, uint32_t& offset, uint32_t size, bool isBigEndian)
 {
     uint16_t data = 0;
-    if (bytes == nullptr) {
+    if (bytes == nullptr || offset + NUM_2 >= size) {
         return data;
     }
     if (isBigEndian) {
@@ -699,10 +699,10 @@ uint16_t ImageUtils::BytesToUint16(uint8_t* bytes, uint32_t& offset, bool isBigE
 }
 
 // BytesToUint32 function will modify the offset value.
-uint32_t ImageUtils::BytesToUint32(uint8_t* bytes, uint32_t& offset, bool isBigEndian)
+uint32_t ImageUtils::BytesToUint32(uint8_t* bytes, uint32_t& offset, uint32_t size, bool isBigEndian)
 {
     uint32_t data = 0;
-    if (bytes == nullptr) {
+    if (bytes == nullptr || offset + NUM_4 >= size) {
         return data;
     }
     if (isBigEndian) {
@@ -717,10 +717,10 @@ uint32_t ImageUtils::BytesToUint32(uint8_t* bytes, uint32_t& offset, bool isBigE
 }
 
 // BytesToInt32 function will modify the offset value.
-int32_t ImageUtils::BytesToInt32(uint8_t* bytes, uint32_t& offset, bool isBigEndian)
+int32_t ImageUtils::BytesToInt32(uint8_t* bytes, uint32_t& offset, uint32_t size, bool isBigEndian)
 {
     int32_t data = 0;
-    if (bytes == nullptr) {
+    if (bytes == nullptr || offset + NUM_4 >= size) {
         return data;
     }
     if (isBigEndian) {
@@ -735,9 +735,9 @@ int32_t ImageUtils::BytesToInt32(uint8_t* bytes, uint32_t& offset, bool isBigEnd
 }
 
 // BytesToFloat function will modify the offset value.
-float ImageUtils::BytesToFloat(uint8_t* bytes, uint32_t& offset, bool isBigEndian)
+float ImageUtils::BytesToFloat(uint8_t* bytes, uint32_t& offset, uint32_t size, bool isBigEndian)
 {
-    uint32_t data = BytesToUint32(bytes, offset, isBigEndian);
+    uint32_t data = BytesToUint32(bytes, offset, size, isBigEndian);
     union {
         uint32_t i;
         float f;
