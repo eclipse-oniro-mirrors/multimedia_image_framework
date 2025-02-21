@@ -443,8 +443,8 @@ unique_ptr<PixelMap> PixelMap::Create(const uint32_t *colors, uint32_t colorLeng
     }
 
     BufferInfo srcInfo = {const_cast<void*>(reinterpret_cast<const void*>(colors + offset)), opts.srcRowStride,
-        srcImageInfo};
-    BufferInfo dstInfo = {dstMemory->data.data, dstRowStride, dstImageInfo};
+        srcImageInfo, opts.convertColorSpace.srcRange};
+    BufferInfo dstInfo = {dstMemory->data.data, dstRowStride, dstImageInfo, opts.convertColorSpace.dstRange};
     int32_t dstLength =
         PixelConvert::PixelsConvert(srcInfo, dstInfo, colorLength, dstMemory->GetType() == AllocatorType::DMA_ALLOC);
     if (dstLength < 0) {

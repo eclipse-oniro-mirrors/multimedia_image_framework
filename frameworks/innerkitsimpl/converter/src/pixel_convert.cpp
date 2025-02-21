@@ -56,6 +56,7 @@ constexpr bool IS_LITTLE_ENDIAN = false;
 constexpr int32_t DMA_LINE_SIZE = 256;
 static const uint8_t NUM_2 = 2;
 constexpr uint8_t YUV420_P010_BYTES = 2;
+constexpr uint32_t BIT_SHIFT_16BITS = 16;
 
 static void AlphaTypeConvertOnRGB(uint32_t &A, uint32_t &R, uint32_t &G, uint32_t &B,
                                   const ProcFuncExtension &extension)
@@ -1093,7 +1094,7 @@ typedef struct FFMpegConvertInfo {
 } FFMPEG_CONVERT_INFO;
 
 static bool FFMpegConvert(const void *srcPixels, const FFMPEG_CONVERT_INFO& srcInfo,
-    void *dstPixels, const FFMPEG_CONVERT_INFO& dstInfo)
+    void *dstPixels, const FFMPEG_CONVERT_INFO& dstInfo, YUVConvertColorSpaceDetails &colorSpaceDetails)
 {
     bool ret = true;
     AVFrame *inputFrame = nullptr;
@@ -1115,6 +1116,17 @@ static bool FFMpegConvert(const void *srcPixels, const FFMPEG_CONVERT_INFO& srcI
         struct SwsContext *ctx = sws_getContext(srcInfo.width, srcInfo.height, srcInfo.format,
             dstInfo.width, dstInfo.height, dstInfo.format, SWS_POINT, nullptr, nullptr, nullptr);
         if (ctx != nullptr) {
+            //if need applu colorspace in scale, change defult table;
+            auto srcColorTable = sws_getCoefficients(SWS_CS_DEFAULT);
+            auto dstColorTable = sws_getCoefficients(SWS_CS_DEFAULT);
+            sws_setColorspaceDetails(ctx,
+                // src convert matrix(YUV2RGB), Range: 0 means limit range, 1 means full range.
+                srcColorTable, colorSpaceDetails.srcRange,
+                // dst convert matrix(RGB2YUV, not used here).
+                dstColorTable, colorSpaceDetails.dstRange,
+                // brightness, contrast, saturation not adjusted.
+                0, 1 << BIT_SHIFT_16BITS, 1 << BIT_SHIFT_16BITS);
+
             av_image_fill_arrays(inputFrame->data, inputFrame->linesize, (uint8_t *)srcPixels,
                 srcInfo.format, srcInfo.width, srcInfo.height, srcInfo.alignSize);
             av_image_fill_arrays(outputFrame->data, outputFrame->linesize, (uint8_t *)dstPixels,
@@ -1134,6 +1146,13 @@ static bool FFMpegConvert(const void *srcPixels, const FFMPEG_CONVERT_INFO& srcI
     av_frame_free(&inputFrame);
     av_frame_free(&outputFrame);
     return ret;
+}
+
+static bool FFMpegConvert(const void *srcPixels, const FFMPEG_CONVERT_INFO& srcInfo,
+    void *dstPixels, const FFMPEG_CONVERT_INFO& dstInfo)
+{
+    YUVConvertColorSpaceDetails colorSpaceDetails = { 0, 0 };
+    return FFMpegConvert(srcPixels, srcInfo, dstPixels, dstInfo, colorSpaceDetails);
 }
 
 static bool NV12P010ToNV21P010(const uint16_t *srcBuffer, const ImageInfo &info, uint16_t *destBuffer)
@@ -1268,7 +1287,7 @@ static bool ConvertRGBA1010102ToYUV(const void *srcPixels, ImageInfo srcInfo,
 }
 
 static int32_t YUVConvertRGB(const void *srcPixels, const ImageInfo &srcInfo,
-    void *dstPixels, const ImageInfo &dstInfo)
+    void *dstPixels, const ImageInfo &dstInfo, YUVConvertColorSpaceDetails &colorSpaceDetails)
 {
     FFMPEG_CONVERT_INFO srcFFmpegInfo = {PixelFormatToAVPixelFormat(srcInfo.pixelFormat),
         srcInfo.size.width, srcInfo.size.height, 1};
@@ -1286,7 +1305,7 @@ static int32_t YUVConvertRGB(const void *srcPixels, const ImageInfo &srcInfo,
         return -1;
     }
     memset_s(tmpPixels, tmpPixelsLen, 0, tmpPixelsLen);
-    if (!FFMpegConvert(srcPixels, srcFFmpegInfo, reinterpret_cast<void *>(tmpPixels), tmpFFmpegInfo)) {
+    if (!FFMpegConvert(srcPixels, srcFFmpegInfo, (void *)tmpPixels, tmpFFmpegInfo, colorSpaceDetails)) {
         IMAGE_LOGE("[PixelMap]Convert: ffmpeg convert failed!");
         delete[] tmpPixels;
         tmpPixels = nullptr;
@@ -1309,13 +1328,17 @@ static int32_t YUVConvertRGB(const void *srcPixels, const ImageInfo &srcInfo,
     return PixelMap::GetRGBxByteCount(dstInfo);
 }
 
-static int32_t ConvertFromYUV(const void *srcPixels, const int32_t srcLength, const ImageInfo &srcInfo,
-    void *dstPixels, const ImageInfo &dstInfo)
+static int32_t ConvertFromYUV(const BufferInfo &srcBufferInfo, const int32_t srcLength, BufferInfo &dstBufferInfo)
 {
-    if (srcPixels == nullptr || dstPixels == nullptr || srcLength <= 0) {
+    if (srcBufferInfo.pixels == nullptr || dstBufferInfo.pixels == nullptr || srcLength <= 0) {
         IMAGE_LOGE("[PixelMap]Convert: src pixels or dst pixels or src pixels length invalid.");
         return -1;
     }
+
+    const ImageInfo &srcInfo = srcBufferInfo.imageInfo;
+    const ImageInfo &dstInfo = dstBufferInfo.imageInfo;
+    YUVConvertColorSpaceDetails colorSpaceDetails = { srcBufferInfo.range, dstBufferInfo.range };
+
     if ((srcInfo.pixelFormat != PixelFormat::NV21 && srcInfo.pixelFormat != PixelFormat::NV12) ||
         (dstInfo.pixelFormat == PixelFormat::NV21 || dstInfo.pixelFormat == PixelFormat::NV12)) {
         IMAGE_LOGE("[PixelMap]Convert: src or dst pixel format invalid.");
@@ -1323,16 +1346,16 @@ static int32_t ConvertFromYUV(const void *srcPixels, const int32_t srcLength, co
     }
     if ((srcInfo.pixelFormat == PixelFormat::NV12 && dstInfo.pixelFormat == PixelFormat::YCBCR_P010) ||
         (srcInfo.pixelFormat == PixelFormat::NV21 && dstInfo.pixelFormat == PixelFormat::YCRCB_P010)) {
-        return ConvertForFFMPEG(srcPixels, PixelFormat::NV12, srcInfo, dstPixels,
+        return ConvertForFFMPEG(srcBufferInfo.pixels, PixelFormat::NV12, srcInfo, dstBufferInfo.pixels,
             PixelFormat::YCBCR_P010) == true ? PixelMap::GetYUVByteCount(dstInfo) : -1;
     }
     if ((srcInfo.pixelFormat == PixelFormat::NV12 && dstInfo.pixelFormat == PixelFormat::YCRCB_P010) ||
         (srcInfo.pixelFormat == PixelFormat::NV21 && dstInfo.pixelFormat == PixelFormat::YCBCR_P010)) {
-        return ConvertForFFMPEG(srcPixels, PixelFormat::NV21, srcInfo, dstPixels,
+        return ConvertForFFMPEG(srcBufferInfo.pixels, PixelFormat::NV21, srcInfo, dstBufferInfo.pixels,
             PixelFormat::YCBCR_P010) == true ? PixelMap::GetYUVByteCount(dstInfo) : -1;
     }
 
-    return YUVConvertRGB(srcPixels, srcInfo, dstPixels, dstInfo);
+    return YUVConvertRGB(srcBufferInfo.pixels, srcInfo, dstBufferInfo.pixels, dstInfo, colorSpaceDetails);
 }
 
 static int32_t ConvertFromP010(const void *srcPixels, const int32_t srcLength, const ImageInfo &srcInfo,
@@ -1550,7 +1573,7 @@ int32_t PixelConvert::PixelsConvert(const BufferInfo &srcInfo, BufferInfo &dstIn
         return YUVConvert(srcInfo.pixels, srcLength, srcImageInfo, dstInfo.pixels, dstImageInfo);
     }
     if (srcImageInfo.pixelFormat == PixelFormat::NV12 || srcImageInfo.pixelFormat == PixelFormat::NV21) {
-        return ConvertFromYUV(srcInfo.pixels, srcLength, srcImageInfo, dstInfo.pixels, dstImageInfo);
+        return ConvertFromYUV(srcInfo, srcLength, dstInfo);
     } else if (dstImageInfo.pixelFormat == PixelFormat::NV12 || dstImageInfo.pixelFormat == PixelFormat::NV21) {
         return ConvertToYUV(srcInfo.pixels, srcLength, srcImageInfo, dstInfo.pixels, dstImageInfo);
     } else if (IsYUVP010Format(srcImageInfo.pixelFormat)) {
