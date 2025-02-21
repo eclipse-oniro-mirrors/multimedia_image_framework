@@ -674,7 +674,6 @@ Image_ErrorCode OH_ImageSourceNative_GetImageProperty(OH_ImageSourceNative *sour
     if (value->size != SIZE_ZERO && value->size < val.size()) {
         return IMAGE_BAD_PARAMETER;
     }
-    
     value->size = (value->size == SIZE_ZERO) ? val.size() : value->size;
     value->data = static_cast<char *>(malloc(value->size));
     if (value->data == nullptr) {
