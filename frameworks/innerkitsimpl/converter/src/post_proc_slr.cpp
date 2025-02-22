@@ -134,8 +134,10 @@ bool SLRBoxCheck(const SLRSliceKey &key, const SLRMat &src, const SLRMat &dst, c
         IMAGE_LOGE("SLRBoxCheck dstArr null");
         return false;
     }
-    int srcM = src.size_.height, srcN = src.size_.width;
-    int dstM = dst.size_.height, dstN = dst.size_.width;
+    int srcM = src.size_.height;
+    int srcN = src.size_.width;
+    int dstM = dst.size_.height;
+    int dstN = dst.size_.width;
     float coeffX = static_cast<float>(dstM) / srcM;
     float coeffY = static_cast<float>(dstN) / srcN;
     float taoX = 1 / coeffX;
@@ -166,15 +168,22 @@ void SLRBox(const SLRSliceKey &key, const SLRMat &src, SLRMat &dst, const SLRWei
     }
     uint32_t* srcArr = static_cast<uint32_t*>(src.data_);
     uint32_t* dstArr = static_cast<uint32_t*>(dst.data_);
-    int srcM = src.size_.height, srcN = src.size_.width, dstM = dst.size_.height, dstN = dst.size_.width;
-    float coeffX = static_cast<float>(dstM) / srcM, coeffY = static_cast<float>(dstN) / srcN;
-    float taoX = 1 / coeffX, taoY = 1 / coeffY;
+    int srcM = src.size_.height;
+    int srcN = src.size_.width;
+    int dstM = dst.size_.height;
+    int dstN = dst.size_.width;
+    float coeffX = static_cast<float>(dstM) / srcM;
+    float coeffY = static_cast<float>(dstN) / srcN;
+    float taoX = 1 / coeffX;
+    float taoY = 1 / coeffY;
     int aX = std::max(2, static_cast<int>(std::floor(taoX)));
     int aY = std::max(2, static_cast<int>(std::floor(taoY))); // 2 default size
     int etaI = static_cast<int>((key.x + 0.5) * taoX - 0.5); // 0.5 middle index
     int etaJ = static_cast<int>((key.y + 0.5) * taoY - 0.5); // 0.5 middle index
-    int rStart = etaI - aX + 1, rEnd = etaI + aX;
-    int cStart = etaJ - aY + 1, cEnd = etaJ + aY;
+    int rStart = etaI - aX + 1;
+    int rEnd = etaI + aX;
+    int cStart = etaJ - aY + 1;
+    int cEnd = etaJ + aY;
     float rgba[4]{ .0f, .0f, .0f, .0f };
     int maxSrcSize = srcM * src.rowStride_; // the rowStride_ here represents pixel
     for (int r = rStart; r <= rEnd; ++r) {
@@ -195,7 +204,10 @@ void SLRBox(const SLRSliceKey &key, const SLRMat &src, SLRMat &dst, const SLRWei
             rgba[3] += (color & 0xFF) * w;         // 3 rgba a
         }
     }
-    uint32_t r = SLRCast(rgba[0]), g = SLRCast(rgba[1]), b = SLRCast(rgba[2]), a = SLRCast(rgba[3]); // 2 3 rgba
+    uint32_t r = SLRCast(rgba[0]);
+    uint32_t g = SLRCast(rgba[1]);
+    uint32_t b = SLRCast(rgba[2]); // 2 rgba
+    uint32_t a = SLRCast(rgba[3]); // 3 rgba
     dstArr[key.x * dst.rowStride_ + key.y] = (r << 24) | (g << 16) | (b << 8) | a; // 24 16 8 rgba
 }
 
@@ -218,7 +230,7 @@ void SLRProc::Laplacian(SLRMat &srcMat, void* data, float alpha)
         return *(srcArr + i * stride + j);
     };
 
-    auto extract = [](uint32_t color, int shift) -> int {
+    auto extract = [](uint32_t color, int shift) -> uint32_t {
         return (color >> shift) & 0xFF;
     };
     for (int i = 0; i < m; i++) {
@@ -230,12 +242,12 @@ void SLRProc::Laplacian(SLRMat &srcMat, void* data, float alpha)
                 getPixel(i-1, j),     // up
                 getPixel(i+1, j)      // down
             };
-            const int cr = extract(pixels[0], 24); // 24 r
-            const int cg = extract(pixels[0], 16); // 16 g
-            const int cb = extract(pixels[0], 8); // 8 b
-            const int ca = pixels[0] & 0xFF;
+            const uint32_t cr = extract(pixels[0], 24); // 24 r
+            const uint32_t cg = extract(pixels[0], 16); // 16 g
+            const uint32_t cb = extract(pixels[0], 8); // 8 b
+            const uint32_t ca = pixels[0] & 0xFF;
 
-            auto delta = [&](int c, int shift) {
+            auto delta = [&](uint32_t c, int shift) -> uint32_t {
                 return 4 * c
                      - extract(pixels[1], shift) // l left
                      - extract(pixels[2], shift) // 2 right
@@ -258,7 +270,8 @@ void SLRProc::Serial(const SLRMat &src, SLRMat &dst, const SLRWeightMat &x, cons
         return;
     }
 
-    int m = dst.size_.height, n = dst.size_.width;
+    int m = dst.size_.height;
+    int n = dst.size_.width;
     for (int i = 0; i < m; i++) {
         for (int j = 0; j < n; j++) {
             SLRSliceKey key(i, j);
@@ -289,7 +302,8 @@ void SLRProc::Parallel(const SLRMat &src, SLRMat &dst, const SLRWeightMat &x, co
         return;
     }
     const int maxThread = 16; // 16 max thread size
-    int m = dst.size_.height, n = dst.size_.width;
+    int m = dst.size_.height;
+    int n = dst.size_.width;
     int step = m / maxThread;
     int stepMod = (m % maxThread == 0) ? 1 : 0;
     std::vector<ffrt::dependence> ffrtHandles;
