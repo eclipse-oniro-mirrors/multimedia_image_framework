@@ -4414,7 +4414,11 @@ static uint32_t DoAiHdrProcess(sptr<SurfaceBuffer> &input, DecodeContext &hdrCtx
     VpeUtils::SetSurfaceBufferInfo(input, cmColorSpaceType);
     hdrCtx.info.size.width = input->GetWidth();
     hdrCtx.info.size.height = input->GetHeight();
-    uint32_t res = AllocSurfaceBuffer(hdrCtx, GRAPHIC_PIXEL_FMT_RGBA_1010102);
+    auto hdrPixelFormat = GRAPHIC_PIXEL_FMT_RGBA_1010102;
+    if (hdrCtx.photoDesiredPixelFormat == PixelFormat::YCBCR_P010) {
+        hdrPixelFormat = GRAPHIC_PIXEL_FMT_YCBCR_P010;
+    }
+    uint32_t res = AllocSurfaceBuffer(hdrCtx, hdrPixelFormat);
     bool cond = (res != SUCCESS);
     CHECK_ERROR_RETURN_RET_LOG(cond, res, "HDR SurfaceBuffer Alloc failed, %{public}d", res);
 
@@ -4432,8 +4436,13 @@ static uint32_t DoAiHdrProcess(sptr<SurfaceBuffer> &input, DecodeContext &hdrCtx
         hdrCtx.hdrType = ImageHdrType::HDR_VIVID_SINGLE;
         hdrCtx.outInfo.size.width = output->GetWidth();
         hdrCtx.outInfo.size.height = output->GetHeight();
-        hdrCtx.pixelFormat = PixelFormat::RGBA_1010102;
-        hdrCtx.info.pixelFormat = PixelFormat::RGBA_1010102;
+        if (hdrCtx.photoDesiredPixelFormat == PixelFormat::YCBCR_P010) {
+            hdrCtx.pixelFormat = PixelFormat::YCBCR_P010;
+            hdrCtx.info.pixelFormat = PixelFormat::YCBCR_P010;
+        } else {
+            hdrCtx.pixelFormat = PixelFormat::RGBA_1010102;
+            hdrCtx.info.pixelFormat = PixelFormat::RGBA_1010102;
+        }
         hdrCtx.allocatorType = AllocatorType::DMA_ALLOC;
     }
     return res;
@@ -4530,6 +4539,7 @@ static void CopyOutInfoOfContext(const DecodeContext &srcCtx, DecodeContext &dst
     dstCtx.grColorSpaceName = srcCtx.grColorSpaceName;
     dstCtx.yuvInfo.imageSize.width = srcCtx.outInfo.size.width;
     dstCtx.yuvInfo.imageSize.height = srcCtx.outInfo.size.height;
+    dstCtx.photoDesiredPixelFormat = srcCtx.photoDesiredPixelFormat;
 }
 
 static uint32_t AiHdrProcess(const DecodeContext &aisrCtx, DecodeContext &hdrCtx, CM_ColorSpaceType cmColorSpaceType)
@@ -4537,6 +4547,7 @@ static uint32_t AiHdrProcess(const DecodeContext &aisrCtx, DecodeContext &hdrCtx
     hdrCtx.pixelsBuffer.bufferSize = aisrCtx.pixelsBuffer.bufferSize;
     hdrCtx.info.size.width = aisrCtx.outInfo.size.width;
     hdrCtx.info.size.height = aisrCtx.outInfo.size.height;
+    hdrCtx.photoDesiredPixelFormat = aisrCtx.photoDesiredPixelFormat;
 
     sptr<SurfaceBuffer> inputHdr = reinterpret_cast<SurfaceBuffer*> (aisrCtx.pixelsBuffer.context);
     return DoAiHdrProcess(inputHdr, hdrCtx, cmColorSpaceType);

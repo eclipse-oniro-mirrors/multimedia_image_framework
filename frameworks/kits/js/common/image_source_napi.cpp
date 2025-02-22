@@ -1207,20 +1207,33 @@ static DecodeDynamicRange ParseDynamicRange(napi_env env, napi_value root)
     return DecodeDynamicRange::SDR;
 }
 
-
-static bool ParseDecodeOptions2(napi_env env, napi_value root, DecodeOptions* opts, std::string &error)
+static bool ParsePixelFormat(napi_env env, napi_value root, const char* name,
+                             DecodeOptions* opts, std::string &error)
 {
     uint32_t tmpNumber = 0;
-    if (!GET_UINT32_BY_NAME(root, "desiredPixelFormat", tmpNumber)) {
-        IMAGE_LOGD("no desiredPixelFormat");
+    if (!GET_UINT32_BY_NAME(root, name, tmpNumber)) {
+        IMAGE_LOGD("no %{public}s", name);
     } else {
         if (IsSupportPixelFormat(tmpNumber)) {
-            opts->desiredPixelFormat = ParsePixlForamt(tmpNumber);
+            if (strcmp(name, "desiredPixelFormat") == 0) {
+                opts->desiredPixelFormat = ParsePixlForamt(tmpNumber);
+            } else if (strcmp(name, "photoDesiredPixelFormat") == 0) {
+                opts->photoDesiredPixelFormat = ParsePixlForamt(tmpNumber);
+            }
         } else {
-            IMAGE_LOGD("Invalid desiredPixelFormat %{public}d", tmpNumber);
+            IMAGE_LOGD("Invalid %{public}s %{public}d", name, tmpNumber);
             error = "DecodeOptions mismatch";
             return false;
         }
+    }
+    return true;
+}
+
+static bool ParseDecodeOptions2(napi_env env, napi_value root, DecodeOptions* opts, std::string &error)
+{
+    if (!ParsePixelFormat(env, root, "desiredPixelFormat", opts, error)
+        || !ParsePixelFormat(env, root, "photoDesiredPixelFormat", opts, error)) {
+        return false;
     }
 
     if (!GET_INT32_BY_NAME(root, "fitDensity", opts->fitDensity)) {
