@@ -109,6 +109,7 @@ public:
     static bool IsYUV(PixelFormat format);
     static bool IsRGBX(PixelFormat format);
     static bool PixelMapCreateCheckFormat(PixelFormat format);
+    static bool CheckTlvSupportedFormat(PixelFormat format);
     static uint16_t GetReusePixelRefCount(const std::shared_ptr<PixelMap> &reusePixelmap);
 
     template<typename T>

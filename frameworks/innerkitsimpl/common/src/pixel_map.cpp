@@ -3074,7 +3074,7 @@ void PixelMap::WriteData(std::vector<uint8_t> &buff, const uint8_t *data,
 
 uint8_t *PixelMap::ReadData(std::vector<uint8_t> &buff, int32_t size, int32_t &cursor)
 {
-    if (size <= 0) {
+    if (size <= 0 || size > MAX_IMAGEDATA_SIZE) {
         IMAGE_LOGE("pixel map tlv read data fail: invalid size[%{public}d]", size);
         return nullptr;
     }
@@ -3095,6 +3095,10 @@ uint8_t *PixelMap::ReadData(std::vector<uint8_t> &buff, int32_t size, int32_t &c
 
 bool PixelMap::EncodeTlv(std::vector<uint8_t> &buff) const
 {
+    if (ImageUtils::CheckTlvSupportedFormat(imageInfo_.pixelFormat)) {
+        IMAGE_LOGE("[PixelMap] EncodeTlv fail, format not supported, format: %{public}d", imageInfo_.pixelFormat);
+        return false;
+    }
     WriteUint8(buff, TLV_IMAGE_WIDTH);
     WriteVarint(buff, GetVarintLen(imageInfo_.size.width));
     WriteVarint(buff, imageInfo_.size.width);
@@ -3158,6 +3162,10 @@ bool PixelMap::ReadTlvAttr(std::vector<uint8_t> &buff, ImageInfo &info, int32_t 
                 break;
             case TLV_IMAGE_PIXELFORMAT:
                 info.pixelFormat = static_cast<PixelFormat>(ReadVarint(buff, cursor));
+                if (ImageUtils::CheckTlvSupportedFormat(info.pixelFormat)) {
+                    IMAGE_LOGE("[Pixelmap] tlv decode unsupported pixelformat: %{public}d", info.pixelFormat);
+                    return false;
+                }
                 break;
             case TLV_IMAGE_COLORSPACE:
                 info.colorSpace = static_cast<ColorSpace>(ReadVarint(buff, cursor));
