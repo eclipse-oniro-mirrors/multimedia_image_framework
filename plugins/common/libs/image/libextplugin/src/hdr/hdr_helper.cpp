@@ -150,6 +150,7 @@ static bool GetVividJpegGainMapOffset(const vector<jpeg_marker_struct*>& markerL
     }
     for (uint32_t i = 0; i < markerList.size(); i++) {
         jpeg_marker_struct* marker = markerList[i];
+        uint32_t size = marker->data_length;
         if (JPEG_MARKER_APP8 != marker->marker || marker->data_length < VIVID_BASE_IMAGE_MARKER_SIZE) {
             continue;
         }
@@ -160,8 +161,8 @@ static bool GetVividJpegGainMapOffset(const vector<jpeg_marker_struct*>& markerL
         }
         dataOffset += ITUT35_TAG_SIZE;
         uint8_t itut35CountryCode = data[dataOffset++];
-        uint16_t terminalProvideCode = ImageUtils::BytesToUint16(data, dataOffset);
-        uint16_t terminalProvideOrientedCode = ImageUtils::BytesToUint16(data, dataOffset);
+        uint16_t terminalProvideCode = ImageUtils::BytesToUint16(data, dataOffset, size);
+        uint16_t terminalProvideOrientedCode = ImageUtils::BytesToUint16(data, dataOffset, size);
         IMAGE_LOGD("vivid base info countryCode=%{public}d,terminalCode=%{public}d,orientedcode=%{public}d",
             itut35CountryCode, terminalProvideCode, terminalProvideOrientedCode);
         uint8_t extendedFrameNumber = data[dataOffset++];
@@ -177,9 +178,9 @@ static bool GetVividJpegGainMapOffset(const vector<jpeg_marker_struct*>& markerL
         if (fileType != VIVID_FILE_TYPE_BASE) {
             continue;
         }
-        uint32_t originOffset = ImageUtils::BytesToUint32(data, dataOffset);
+        uint32_t originOffset = ImageUtils::BytesToUint32(data, dataOffset, size);
         offset = originOffset + preOffsets[i];
-        uint32_t relativeOffset = ImageUtils::BytesToUint32(data, dataOffset); // offset minus all app size
+        uint32_t relativeOffset = ImageUtils::BytesToUint32(data, dataOffset, size); // offset minus all app size
         IMAGE_LOGD("vivid base info originOffset=%{public}d, relativeOffset=%{public}d, offset=%{public}d",
             originOffset, relativeOffset, offset);
         return true;
@@ -380,7 +381,7 @@ static bool ParseVividJpegStaticMetadata(uint8_t* data, uint32_t& offset, uint32
 #if defined(_WIN32) || defined(_APPLE) || defined(IOS_PLATFORM) || defined(ANDROID_PLATFORM)
     return false;
 #else
-    uint16_t staticMetadataSize = ImageUtils::BytesToUint16(data, offset);
+    uint16_t staticMetadataSize = ImageUtils::BytesToUint16(data, offset, size);
     if (staticMetadataSize == EMPTY_SIZE) {
         staticMetaVec.resize(EMPTY_SIZE);
         return true;
@@ -389,18 +390,18 @@ static bool ParseVividJpegStaticMetadata(uint8_t* data, uint32_t& offset, uint32
     CHECK_ERROR_RETURN_RET(cond, false);
 
     HdrStaticMetadata staticMeta{};
-    staticMeta.smpte2086.displayPrimaryRed.x = (float)ImageUtils::BytesToUint16(data, offset) * SM_COLOR_SCALE;
-    staticMeta.smpte2086.displayPrimaryRed.y = (float)ImageUtils::BytesToUint16(data, offset) * SM_COLOR_SCALE;
-    staticMeta.smpte2086.displayPrimaryGreen.x = (float)ImageUtils::BytesToUint16(data, offset) * SM_COLOR_SCALE;
-    staticMeta.smpte2086.displayPrimaryGreen.y = (float)ImageUtils::BytesToUint16(data, offset) * SM_COLOR_SCALE;
-    staticMeta.smpte2086.displayPrimaryBlue.x = (float)ImageUtils::BytesToUint16(data, offset) * SM_COLOR_SCALE;
-    staticMeta.smpte2086.displayPrimaryBlue.y = (float)ImageUtils::BytesToUint16(data, offset) * SM_COLOR_SCALE;
-    staticMeta.smpte2086.whitePoint.x = (float)ImageUtils::BytesToUint16(data, offset) * SM_COLOR_SCALE;
-    staticMeta.smpte2086.whitePoint.y = (float)ImageUtils::BytesToUint16(data, offset) * SM_COLOR_SCALE;
-    staticMeta.smpte2086.maxLuminance = (float)ImageUtils::BytesToUint32(data, offset);
-    staticMeta.smpte2086.minLuminance = (float)ImageUtils::BytesToUint32(data, offset) * SM_LUM_SCALE;
-    staticMeta.cta861.maxContentLightLevel = (float)ImageUtils::BytesToUint16(data, offset);
-    staticMeta.cta861.maxFrameAverageLightLevel = (float)ImageUtils::BytesToUint16(data, offset);
+    staticMeta.smpte2086.displayPrimaryRed.x = (float)ImageUtils::BytesToUint16(data, offset, size) * SM_COLOR_SCALE;
+    staticMeta.smpte2086.displayPrimaryRed.y = (float)ImageUtils::BytesToUint16(data, offset, size) * SM_COLOR_SCALE;
+    staticMeta.smpte2086.displayPrimaryGreen.x = (float)ImageUtils::BytesToUint16(data, offset, size) * SM_COLOR_SCALE;
+    staticMeta.smpte2086.displayPrimaryGreen.y = (float)ImageUtils::BytesToUint16(data, offset, size) * SM_COLOR_SCALE;
+    staticMeta.smpte2086.displayPrimaryBlue.x = (float)ImageUtils::BytesToUint16(data, offset, size) * SM_COLOR_SCALE;
+    staticMeta.smpte2086.displayPrimaryBlue.y = (float)ImageUtils::BytesToUint16(data, offset, size) * SM_COLOR_SCALE;
+    staticMeta.smpte2086.whitePoint.x = (float)ImageUtils::BytesToUint16(data, offset, size) * SM_COLOR_SCALE;
+    staticMeta.smpte2086.whitePoint.y = (float)ImageUtils::BytesToUint16(data, offset, size) * SM_COLOR_SCALE;
+    staticMeta.smpte2086.maxLuminance = (float)ImageUtils::BytesToUint32(data, offset, size);
+    staticMeta.smpte2086.minLuminance = (float)ImageUtils::BytesToUint32(data, offset, size) * SM_LUM_SCALE;
+    staticMeta.cta861.maxContentLightLevel = (float)ImageUtils::BytesToUint16(data, offset, size);
+    staticMeta.cta861.maxFrameAverageLightLevel = (float)ImageUtils::BytesToUint16(data, offset, size);
     uint32_t vecSize = sizeof(HdrStaticMetadata);
     staticMetaVec.resize(vecSize);
     if (memcpy_s(staticMetaVec.data(), vecSize, &staticMeta, vecSize) != EOK) {
@@ -413,25 +414,25 @@ static bool ParseVividJpegStaticMetadata(uint8_t* data, uint32_t& offset, uint32
 #endif
 }
 
-static ExtendInfoMain ParseExtendInfoMain(uint8_t* data, uint32_t& offset, bool isThreeCom)
+static ExtendInfoMain ParseExtendInfoMain(uint8_t* data, uint32_t& offset, uint32_t size, bool isThreeCom)
 {
     ExtendInfoMain infoMain{};
-    infoMain.gainMapMin[INDEX_ZERO] = ImageUtils::BytesToFloat(data, offset);
-    infoMain.gainMapMax[INDEX_ZERO] = ImageUtils::BytesToFloat(data, offset);
-    infoMain.gamma[INDEX_ZERO] = ImageUtils::BytesToFloat(data, offset);
-    infoMain.baseSdrImageOffset[INDEX_ZERO] = ImageUtils::BytesToFloat(data, offset);
-    infoMain.altHdrImageOffset[INDEX_ZERO] = ImageUtils::BytesToFloat(data, offset);
+    infoMain.gainMapMin[INDEX_ZERO] = ImageUtils::BytesToFloat(data, offset, size);
+    infoMain.gainMapMax[INDEX_ZERO] = ImageUtils::BytesToFloat(data, offset, size);
+    infoMain.gamma[INDEX_ZERO] = ImageUtils::BytesToFloat(data, offset, size);
+    infoMain.baseSdrImageOffset[INDEX_ZERO] = ImageUtils::BytesToFloat(data, offset, size);
+    infoMain.altHdrImageOffset[INDEX_ZERO] = ImageUtils::BytesToFloat(data, offset, size);
     if (isThreeCom) {
-        infoMain.gainMapMin[INDEX_ONE] = ImageUtils::BytesToFloat(data, offset);
-        infoMain.gainMapMax[INDEX_ONE] = ImageUtils::BytesToFloat(data, offset);
-        infoMain.gamma[INDEX_ONE] = ImageUtils::BytesToFloat(data, offset);
-        infoMain.baseSdrImageOffset[INDEX_ONE] = ImageUtils::BytesToFloat(data, offset);
-        infoMain.altHdrImageOffset[INDEX_ONE] = ImageUtils::BytesToFloat(data, offset);
-        infoMain.gainMapMin[INDEX_TWO] = ImageUtils::BytesToFloat(data, offset);
-        infoMain.gainMapMax[INDEX_TWO] = ImageUtils::BytesToFloat(data, offset);
-        infoMain.gamma[INDEX_TWO] = ImageUtils::BytesToFloat(data, offset);
-        infoMain.baseSdrImageOffset[INDEX_TWO] = ImageUtils::BytesToFloat(data, offset);
-        infoMain.altHdrImageOffset[INDEX_TWO] = ImageUtils::BytesToFloat(data, offset);
+        infoMain.gainMapMin[INDEX_ONE] = ImageUtils::BytesToFloat(data, offset, size);
+        infoMain.gainMapMax[INDEX_ONE] = ImageUtils::BytesToFloat(data, offset, size);
+        infoMain.gamma[INDEX_ONE] = ImageUtils::BytesToFloat(data, offset, size);
+        infoMain.baseSdrImageOffset[INDEX_ONE] = ImageUtils::BytesToFloat(data, offset, size);
+        infoMain.altHdrImageOffset[INDEX_ONE] = ImageUtils::BytesToFloat(data, offset, size);
+        infoMain.gainMapMin[INDEX_TWO] = ImageUtils::BytesToFloat(data, offset, size);
+        infoMain.gainMapMax[INDEX_TWO] = ImageUtils::BytesToFloat(data, offset, size);
+        infoMain.gamma[INDEX_TWO] = ImageUtils::BytesToFloat(data, offset, size);
+        infoMain.baseSdrImageOffset[INDEX_TWO] = ImageUtils::BytesToFloat(data, offset, size);
+        infoMain.altHdrImageOffset[INDEX_TWO] = ImageUtils::BytesToFloat(data, offset, size);
     } else {
         infoMain.gainMapMin[INDEX_ONE] = infoMain.gainMapMin[INDEX_ZERO];
         infoMain.gainMapMax[INDEX_ONE] = infoMain.gainMapMax[INDEX_ZERO];
@@ -462,7 +463,7 @@ static bool ParseColorInfo(const uint8_t* data, uint32_t& offset, uint32_t lengt
 
 static bool ParseTransformInfo(uint8_t* data, uint32_t& offset, uint32_t length, TransformInfo& info)
 {
-    uint8_t size = ImageUtils::BytesToUint16(data, offset);
+    uint8_t size = ImageUtils::BytesToUint16(data, offset, length);
     if (size == EMPTY_SIZE) {
         info.mappingFlag = EMPTY_SIZE;
         info.mapping.resize(EMPTY_SIZE);
@@ -546,11 +547,11 @@ static void ConvertExtendInfoExtention(ExtendInfoExtention ext, HDRVividExtendMe
 
 static bool ParseVividJpegMetadata(uint8_t* data, uint32_t& dataOffset, uint32_t length, HdrMetadata& metadata)
 {
-    uint16_t metadataSize = ImageUtils::BytesToUint16(data, dataOffset);
+    uint16_t metadataSize = ImageUtils::BytesToUint16(data, dataOffset, length);
     CHECK_ERROR_RETURN_RET(metadataSize > length - dataOffset, false);
     bool cond = !ParseVividJpegStaticMetadata(data, dataOffset, metadataSize, metadata.staticMetadata);
     CHECK_ERROR_RETURN_RET(cond, false);
-    uint16_t dynamicMetaSize = ImageUtils::BytesToUint16(data, dataOffset);
+    uint16_t dynamicMetaSize = ImageUtils::BytesToUint16(data, dataOffset, length);
     if (dynamicMetaSize > 0) {
         cond = dynamicMetaSize > length - dataOffset;
         CHECK_ERROR_RETURN_RET(cond, false);
@@ -565,12 +566,12 @@ static bool ParseVividJpegMetadata(uint8_t* data, uint32_t& dataOffset, uint32_t
 static bool ParseVividJpegExtendInfo(uint8_t* data, uint32_t length, HDRVividExtendMetadata& metadata)
 {
     uint32_t dataOffset = 0;
-    uint16_t metadataSize = ImageUtils::BytesToUint16(data, dataOffset);
+    uint16_t metadataSize = ImageUtils::BytesToUint16(data, dataOffset, length);
     CHECK_ERROR_RETURN_RET(metadataSize > length - UINT16_BYTE_COUNT, false);
     uint8_t components = data[dataOffset++];
     bool cond = components != THREE_COMPONENTS && components != ONE_COMPONENT;
     CHECK_ERROR_RETURN_RET(cond, false);
-    ExtendInfoMain extendInfoMain = ParseExtendInfoMain(data, dataOffset, components == THREE_COMPONENTS);
+    ExtendInfoMain extendInfoMain = ParseExtendInfoMain(data, dataOffset, length, components == THREE_COMPONENTS);
     ExtendInfoExtention extendInfoExtention;
     cond = !ParseColorInfo(data, dataOffset, length, extendInfoExtention.baseColor);
     CHECK_ERROR_RETURN_RET(cond, false);
@@ -593,8 +594,8 @@ static bool ParseVividMetadata(uint8_t* data, uint32_t length, HdrMetadata& meta
 {
     uint32_t dataOffset = 0;
     uint8_t itut35CountryCode = data[dataOffset++];
-    uint16_t terminalProvideCode = ImageUtils::BytesToUint16(data, dataOffset);
-    uint16_t terminalProvideOrientedCode = ImageUtils::BytesToUint16(data, dataOffset);
+    uint16_t terminalProvideCode = ImageUtils::BytesToUint16(data, dataOffset, length);
+    uint16_t terminalProvideOrientedCode = ImageUtils::BytesToUint16(data, dataOffset, length);
     IMAGE_LOGD("vivid metadata countryCode=%{public}d,terminalCode=%{public}d,orientedcode=%{public}d",
         itut35CountryCode, terminalProvideCode, terminalProvideOrientedCode);
     uint8_t extendedFrameNumber = data[dataOffset++];
@@ -638,20 +639,21 @@ static bool GetVividJpegMetadata(jpeg_marker_struct* markerList, HdrMetadata& me
     return false;
 }
 
-static void ParseISOExtendInfoMain(uint8_t* data, uint32_t& offset, ExtendInfoMain& info, uint8_t index)
+static void ParseISOExtendInfoMain(uint8_t* data, uint32_t& offset, uint32_t length,
+                                   ExtendInfoMain& info, uint8_t index)
 {
     bool cond = index > INDEX_TWO;
     CHECK_ERROR_RETURN(cond);
-    int32_t minGainmapNumerator = ImageUtils::BytesToInt32(data, offset);
-    uint32_t minGainmapDenominator = ImageUtils::BytesToUint32(data, offset);
-    int32_t maxGainmapNumerator = ImageUtils::BytesToInt32(data, offset);
-    uint32_t maxGainmapDenominator = ImageUtils::BytesToUint32(data, offset);
-    uint32_t gammaNumerator = ImageUtils::BytesToUint32(data, offset);
-    uint32_t gammaDenominator = ImageUtils::BytesToUint32(data, offset);
-    int32_t baseImageOffsetNumerator = ImageUtils::BytesToInt32(data, offset);
-    uint32_t baseImageOffsetDenominator = ImageUtils::BytesToUint32(data, offset);
-    int32_t altImageOffsetNumerator = ImageUtils::BytesToInt32(data, offset);
-    uint32_t altImageOffsetDenominator = ImageUtils::BytesToUint32(data, offset);
+    int32_t minGainmapNumerator = ImageUtils::BytesToInt32(data, offset, length);
+    uint32_t minGainmapDenominator = ImageUtils::BytesToUint32(data, offset, length);
+    int32_t maxGainmapNumerator = ImageUtils::BytesToInt32(data, offset, length);
+    uint32_t maxGainmapDenominator = ImageUtils::BytesToUint32(data, offset, length);
+    uint32_t gammaNumerator = ImageUtils::BytesToUint32(data, offset, length);
+    uint32_t gammaDenominator = ImageUtils::BytesToUint32(data, offset, length);
+    int32_t baseImageOffsetNumerator = ImageUtils::BytesToInt32(data, offset, length);
+    uint32_t baseImageOffsetDenominator = ImageUtils::BytesToUint32(data, offset, length);
+    int32_t altImageOffsetNumerator = ImageUtils::BytesToInt32(data, offset, length);
+    uint32_t altImageOffsetDenominator = ImageUtils::BytesToUint32(data, offset, length);
     if (minGainmapDenominator == EMPTY_SIZE) {
         info.gainMapMin[index] = EMPTY_SIZE;
     } else {
@@ -683,12 +685,13 @@ static void ParseISOExtendInfoMain(uint8_t* data, uint32_t& offset, ExtendInfoMa
     }
 }
 
-static void ParseISOExtendInfoThreeCom(uint8_t* data, uint32_t& offset, uint8_t channelNum, ExtendInfoMain& info)
+static void ParseISOExtendInfoThreeCom(uint8_t* data, uint32_t& offset, uint32_t lenght,
+                                       uint8_t channelNum, ExtendInfoMain& info)
 {
-    ParseISOExtendInfoMain(data, offset, info, INDEX_ZERO);
+    ParseISOExtendInfoMain(data, offset, lenght, info, INDEX_ZERO);
     if (channelNum == THREE_COMPONENTS) {
-        ParseISOExtendInfoMain(data, offset, info, INDEX_ONE);
-        ParseISOExtendInfoMain(data, offset, info, INDEX_TWO);
+        ParseISOExtendInfoMain(data, offset, lenght, info, INDEX_ONE);
+        ParseISOExtendInfoMain(data, offset, lenght, info, INDEX_TWO);
     } else {
         info.gainMapMin[INDEX_ONE] = info.gainMapMin[INDEX_ZERO];
         info.gainMapMax[INDEX_ONE] = info.gainMapMax[INDEX_ZERO];
@@ -708,7 +711,7 @@ static bool ParseISOMetadata(uint8_t* data, uint32_t length, HdrMetadata& metada
     uint32_t dataOffset = 0;
     bool cond = length < ISO_GAINMAP_METADATA_PAYLOAD_MIN_SIZE;
     CHECK_ERROR_RETURN_RET(cond, false);
-    metadata.extendMeta.metaISO.writeVersion = ImageUtils::BytesToUint32(data, dataOffset);
+    metadata.extendMeta.metaISO.writeVersion = ImageUtils::BytesToUint32(data, dataOffset, length);
     metadata.extendMeta.metaISO.miniVersion = metadata.extendMeta.metaISO.writeVersion & 0xFF;
     cond = metadata.extendMeta.metaISO.miniVersion != EMPTY_SIZE;
     CHECK_ERROR_RETURN_RET(cond, false);
@@ -716,10 +719,10 @@ static bool ParseISOMetadata(uint8_t* data, uint32_t length, HdrMetadata& metada
     metadata.extendMeta.metaISO.gainmapChannelNum = ((flag & 0x80) == 0x80) ? THREE_COMPONENTS : ONE_COMPONENT;
     metadata.extendMeta.metaISO.useBaseColorFlag = ((flag & 0x40) == 0x40) ? 0x01 : 0x00;
 
-    uint32_t baseHeadroomNumerator = ImageUtils::BytesToUint32(data, dataOffset);
-    uint32_t baseHeadroomDenominator = ImageUtils::BytesToUint32(data, dataOffset);
-    uint32_t altHeadroomNumerator = ImageUtils::BytesToUint32(data, dataOffset);
-    uint32_t altHeadroomDenominator = ImageUtils::BytesToUint32(data, dataOffset);
+    uint32_t baseHeadroomNumerator = ImageUtils::BytesToUint32(data, dataOffset, length);
+    uint32_t baseHeadroomDenominator = ImageUtils::BytesToUint32(data, dataOffset, length);
+    uint32_t altHeadroomNumerator = ImageUtils::BytesToUint32(data, dataOffset, length);
+    uint32_t altHeadroomDenominator = ImageUtils::BytesToUint32(data, dataOffset, length);
 
     if (baseHeadroomDenominator != EMPTY_SIZE) {
         metadata.extendMeta.metaISO.baseHeadroom = (float)baseHeadroomNumerator / (float)baseHeadroomDenominator;
@@ -732,7 +735,7 @@ static bool ParseISOMetadata(uint8_t* data, uint32_t length, HdrMetadata& metada
         metadata.extendMeta.metaISO.alternateHeadroom = (float)EMPTY_SIZE;
     }
     ExtendInfoMain infoMain{};
-    ParseISOExtendInfoThreeCom(data, dataOffset, metadata.extendMeta.metaISO.gainmapChannelNum, infoMain);
+    ParseISOExtendInfoThreeCom(data, dataOffset, length, metadata.extendMeta.metaISO.gainmapChannelNum, infoMain);
     ConvertExtendInfoMain(infoMain, metadata.extendMeta);
     metadata.extendMetaFlag = true;
     return true;
@@ -767,7 +770,7 @@ static bool GetHdrMediaTypeInfo(jpeg_marker_struct* markerList, HdrMetadata& met
         }
         uint8_t* data = marker->data + HDR_MEDIA_TYPE_TAG_SIZE;
         uint32_t dataOffset = 0;
-        uint32_t hdrMediaType = ImageUtils::BytesToUint32(data, dataOffset);
+        uint32_t hdrMediaType = ImageUtils::BytesToUint32(data, dataOffset, marker->data_length);
         metadata.hdrMetadataType = static_cast<int32_t>(hdrMediaType);
         return true;
     }

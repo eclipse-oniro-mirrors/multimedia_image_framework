@@ -674,7 +674,7 @@ Image_ErrorCode OH_ImageSourceNative_GetImageProperty(OH_ImageSourceNative *sour
     if (value->size != SIZE_ZERO && value->size < val.size()) {
         return IMAGE_BAD_PARAMETER;
     }
-    value->size = (value->size == SIZE_ZERO) ? val.size() + 1 : value->size;
+    value->size = (value->size == SIZE_ZERO) ? val.size() : value->size;
     value->data = static_cast<char *>(malloc(value->size));
     if (value->data == nullptr) {
         return IMAGE_ALLOC_FAILED;
@@ -682,7 +682,6 @@ Image_ErrorCode OH_ImageSourceNative_GetImageProperty(OH_ImageSourceNative *sour
     if (EOK != memcpy_s(value->data, value->size, val.c_str(), val.size())) {
         return IMAGE_COPY_FAILED;
     }
-    value->data[value->size - 1] = '\0';
     return IMAGE_SUCCESS;
 }
 

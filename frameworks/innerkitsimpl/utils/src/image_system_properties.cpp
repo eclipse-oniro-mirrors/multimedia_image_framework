@@ -188,5 +188,15 @@ bool ImageSystemProperties::GetGenThumbWithGpu()
     return false;
 #endif
 }
+
+bool ImageSystemProperties::GetSLRLaplacianEnabled()
+{
+#if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
+    static bool ret = system::GetBoolParameter("persist.multimedia.image.PostProcLaplacian.endabled", false);
+    return ret;
+#else
+    return false;
+#endif
+}
 } // namespace Media
 } // namespace OHOS

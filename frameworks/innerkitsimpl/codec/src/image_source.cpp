@@ -484,7 +484,7 @@ unique_ptr<ImageSource> ImageSource::CreateImageSource(const uint8_t *data, uint
         errorCode = ERR_MEDIA_INVALID_PARAM;
         return nullptr;
     }
-    return DoImageSourceCreate(
+    auto imageSource = DoImageSourceCreate(
         [&data, &size]() {
             auto streamPtr = DecodeBase64(data, size);
             if (streamPtr == nullptr) {
@@ -496,6 +496,10 @@ unique_ptr<ImageSource> ImageSource::CreateImageSource(const uint8_t *data, uint
             return streamPtr;
         },
         opts, errorCode, "CreateImageSource by data");
+    if (imageSource != nullptr) {
+        imageSource->SetSrcBuffer(data, size);
+    }
+    return imageSource;
 }
 
 unique_ptr<ImageSource> ImageSource::CreateImageSource(const std::string &pathName, const SourceOptions &opts,
@@ -507,7 +511,7 @@ unique_ptr<ImageSource> ImageSource::CreateImageSource(const std::string &pathNa
         IMAGE_LOGE("[ImageSource]parameter error.");
         return nullptr;
     }
-    return DoImageSourceCreate(
+    auto imageSource = DoImageSourceCreate(
         [&pathName]() {
             auto streamPtr = DecodeBase64(pathName);
             if (streamPtr == nullptr) {
@@ -518,13 +522,17 @@ unique_ptr<ImageSource> ImageSource::CreateImageSource(const std::string &pathNa
             return streamPtr;
         },
         opts, errorCode, "CreateImageSource by path");
+    if (imageSource != nullptr) {
+        imageSource->SetSrcFilePath(pathName);
+    }
+    return imageSource;
 }
 
 unique_ptr<ImageSource> ImageSource::CreateImageSource(const int fd, const SourceOptions &opts, uint32_t &errorCode)
 {
     IMAGE_LOGD("[ImageSource]create Imagesource with fd.");
     ImageDataStatistics imageDataStatistics("[ImageSource]CreateImageSource with fd.");
-    return DoImageSourceCreate(
+    auto imageSource = DoImageSourceCreate(
         [&fd]() {
             auto streamPtr = FileSourceStream::CreateSourceStream(fd);
             if (streamPtr == nullptr) {
@@ -533,6 +541,10 @@ unique_ptr<ImageSource> ImageSource::CreateImageSource(const int fd, const Sourc
             return streamPtr;
         },
         opts, errorCode, "CreateImageSource by fd");
+    if (imageSource != nullptr) {
+        imageSource->SetSrcFd(fd);
+    }
+    return imageSource;
 }
 
 unique_ptr<ImageSource> ImageSource::CreateImageSource(const int fd, int32_t offset, int32_t length,
@@ -540,7 +552,7 @@ unique_ptr<ImageSource> ImageSource::CreateImageSource(const int fd, int32_t off
 {
     IMAGE_LOGD("[ImageSource]create Imagesource with fd offset and length.");
     ImageDataStatistics imageDataStatistics("[ImageSource]CreateImageSource with offset.");
-    return DoImageSourceCreate(
+    auto imageSource = DoImageSourceCreate(
         [&fd, offset, length]() {
             auto streamPtr = FileSourceStream::CreateSourceStream(fd, offset, length);
             if (streamPtr == nullptr) {
@@ -549,6 +561,10 @@ unique_ptr<ImageSource> ImageSource::CreateImageSource(const int fd, int32_t off
             return streamPtr;
         },
         opts, errorCode, "CreateImageSource by fd offset and length");
+    if (imageSource != nullptr) {
+        imageSource->SetSrcFd(fd);
+    }
+    return imageSource;
 }
 
 unique_ptr<ImageSource> ImageSource::CreateIncrementalImageSource(const IncrementalSourceOptions &opts,
@@ -1613,6 +1629,22 @@ uint32_t ImageSource::ModifyImageProperty(uint32_t index, const std::string &key
     return ModifyImageProperty(key, value);
 }
 
+uint32_t ImageSource::ModifyImagePropertyEx(uint32_t index, const std::string &key, const std::string &value)
+{
+    if (srcFd_ != -1) {
+        return ModifyImageProperty(index, key, value, srcFd_);
+    }
+
+    if (!srcFilePath_.empty()) {
+        return ModifyImageProperty(index, key, value, srcFilePath_);
+    }
+
+    if (srcBuffer_ != nullptr && srcBufferSize_ != 0) {
+        return ModifyImageProperty(index, key, value, srcBuffer_, srcBufferSize_);
+    }
+    return ERROR;
+}
+
 uint32_t ImageSource::ModifyImageProperty(uint32_t index, const std::string &key, const std::string &value,
     const std::string &path)
 {
@@ -1900,6 +1932,9 @@ ImageSource::~ImageSource() __attribute__((no_sanitize("cfi")))
         } else {
             listener->OnPeerDestory();
         }
+    }
+    if (srcFd_ != -1) {
+        close(srcFd_);
     }
 }
 
@@ -4925,5 +4960,22 @@ unique_ptr<PixelMap> ImageSource::CreatePixelAstcFromImageFile(uint32_t index, c
     return nullptr;
 #endif
 }
+
+void ImageSource::SetSrcFd(const int& fd)
+{
+    srcFd_ = dup(fd);
+}
+
+void ImageSource::SetSrcFilePath(const std::string& pathName)
+{
+    srcFilePath_ = pathName;
+}
+
+void ImageSource::SetSrcBuffer(const uint8_t* buffer, uint32_t size)
+{
+    srcBuffer_ = const_cast<uint8_t*>(buffer);
+    srcBufferSize_ = size;
+}
+
 } // namespace Media
 } // namespace OHOS

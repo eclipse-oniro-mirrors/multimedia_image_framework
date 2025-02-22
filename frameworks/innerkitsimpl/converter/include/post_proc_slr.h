@@ -26,14 +26,13 @@ namespace Media {
 class SLRMat {
 public:
     SLRMat() = default;
-    SLRMat(Size size, PixelFormat format, void *data, int32_t rowStride, AllocatorType type)
-        :size_(size), format_(format), data_(data), rowStride_(rowStride), type_(type) {}
+    SLRMat(Size size, PixelFormat format, void *data, int32_t rowStride)
+        :size_(size), format_(format), data_(data), rowStride_(rowStride) {}
     ~SLRMat() = default;
     Size size_;
     PixelFormat format_;
     void *data_;
     int32_t rowStride_;
-    AllocatorType type_;
 };
 
 class SLRWeightKey {
