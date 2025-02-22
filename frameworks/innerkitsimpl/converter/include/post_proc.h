@@ -75,7 +75,6 @@ private:
                     int srcRowStride = 0, int targetRowStride = 0);
     bool ProcessScanlineFilter(ScanlineFilter &scanlineFilter, const Rect &cropRect, PixelMap &pixelMap,
                                uint8_t *resultData, uint32_t rowBytes);
-    std::shared_ptr<SLRWeightTuple> initSLRFactor(Size srcSize, Size dstSize);
 private:
     DecodeOptions decodeOpts_;
 };
