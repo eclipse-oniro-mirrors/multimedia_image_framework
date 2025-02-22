@@ -379,10 +379,19 @@ bool ImageUtils::IsAstc(PixelFormat format)
     return format == PixelFormat::ASTC_4x4 || format == PixelFormat::ASTC_6x6 || format == PixelFormat::ASTC_8x8;
 }
 
+bool IsYUV8Bit(PixelFormat &format)
+{
+    return format == PixelFormat::NV12 || format == PixelFormat::NV21;
+}
+
+bool IsYUV10Bit(PixelFormat &format)
+{
+    return format == PixelFormat::YCBCR_P010 || format == PixelFormat::YCRCB_P010;
+}
+
 bool ImageUtils::IsYUV(PixelFormat format)
 {
-    return format == PixelFormat::NV12 || format == PixelFormat::NV21 ||
-        format == PixelFormat::YCBCR_P010 || format == PixelFormat::YCRCB_P010;
+    return IsYUV8Bit(format) || IsYUV10Bit(format);
 }
 
 bool ImageUtils::IsRGBX(PixelFormat format)
@@ -400,6 +409,21 @@ bool ImageUtils::PixelMapCreateCheckFormat(PixelFormat format)
         return true;
     }
     if (IsYUV(format)) {
+        return true;
+    }
+    return false;
+}
+
+bool ImageUtils::CheckTlvSupportedFormat(PixelFormat format)
+{
+    if (format == PixelFormat::UNKNOWN || format == PixelFormat::RGBA_U16 ||
+        IsYUV8Bit(format)) {
+        return false;
+    }
+    if (IsRGBX(format)) {
+        return true;
+    }
+    if (IsYUV10Bit(format)) {
         return true;
     }
     return false;
