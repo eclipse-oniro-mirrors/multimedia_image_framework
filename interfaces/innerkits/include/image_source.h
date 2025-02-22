@@ -372,9 +372,6 @@ private:
     bool PrereadSourceStream();
     void SetDmaContextYuvInfo(ImagePlugin::DecodeContext& context);
     uint8_t* ReadSourceBuffer(uint32_t bufferSize, uint32_t &errorCode);
-    size_t GetByteCount(const ImageInfo &info);
-    bool CheckInfoBytes(uint32_t frameCount, const ImageInfo &info, uint32_t &errorCode);
-    bool CheckPixelMapListInfo(uint32_t frameCount, const DecodeOptions &opts, uint32_t &errorCode);
     void SetSrcFd(const int& fd);
     void SetSrcFilePath(const std::string& pathName);
     void SetSrcBuffer(const uint8_t* buffer, uint32_t size);

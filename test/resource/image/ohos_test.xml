@@ -48,7 +48,6 @@
             <option name="push" value="images/test.jpg -> /data/local/tmp/image" src="res"/>
             <option name="push" value="images/test.gif -> /data/local/tmp/image" src="res"/>
             <option name="push" value="images/moving_test.gif -> /data/local/tmp/image" src="res"/>
-            <option name="push" value="images/test_large_gif.gif -> /data/local/tmp/image" src="res"/>
             <option name="push" value="images/test_hw.heic -> /data/local/tmp/image" src="res"/>
             <option name="push" value="images/test_hw.jpg -> /data/local/tmp/image" src="res"/>
             <option name="push" value="images/test_exif.heic -> /data/local/tmp/image" src="res"/>
