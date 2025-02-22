@@ -41,7 +41,7 @@ public:
     bool CenterScale(const Size &size, PixelMap &pixelMap);
     static CropValue GetCropValue(const Rect &rect, const Size &size);
     static CropValue ValidCropValue(Rect &rect, const Size &size);
-    bool ScalePixelMapWithSLR(const Size &desiredSize, PixelMap &pixelMap);
+    bool ScalePixelMapWithSLR(const Size &desiredSize, PixelMap &pixelMap, bool useLap = false);
     bool ScalePixelMapEx(const Size &desiredSize, PixelMap &pixelMap,
         const AntiAliasingOption &option = AntiAliasingOption::NONE);
 private:
@@ -69,7 +69,6 @@ private:
                     int srcRowStride = 0, int targetRowStride = 0);
     bool ProcessScanlineFilter(ScanlineFilter &scanlineFilter, const Rect &cropRect, PixelMap &pixelMap,
                                uint8_t *resultData, uint32_t rowBytes);
-    std::shared_ptr<SLRWeightTuple> initSLRFactor(Size srcSize, Size dstSize);
 private:
     DecodeOptions decodeOpts_;
 };

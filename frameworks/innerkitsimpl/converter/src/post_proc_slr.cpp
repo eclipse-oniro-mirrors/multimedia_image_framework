@@ -25,6 +25,7 @@
 #include "image_log.h"
 #include "image_trace.h"
 #include "image_utils.h"
+#include "memory_manager.h"
 
 namespace OHOS {
 namespace Media {
@@ -198,6 +199,59 @@ void SLRBox(const SLRSliceKey &key, const SLRMat &src, SLRMat &dst, const SLRWei
     dstArr[key.x * dst.rowStride_ + key.y] = (r << 24) | (g << 16) | (b << 8) | a; // 24 16 8 rgba
 }
 
+void SLRProc::Laplacian(SLRMat &srcMat, void* data, float alpha)
+{
+    IMAGE_LOGD("Laplacian pixelMap SLR:width=%{public}d,height=%{public}d,alpha=%{public}f", srcMat.size_.width,
+        srcMat.size_.height, alpha);
+    if (data == nullptr) {
+        IMAGE_LOGE("SLRProc::Laplacian create memory failed");
+        return;
+    }
+    const int m = srcMat.size_.height;
+    const int n = srcMat.size_.width;
+    const int stride = srcMat.rowStride_;
+    uint32_t* srcArr = static_cast<uint32_t*>(srcMat.data_);
+    uint32_t* dstArr = static_cast<uint32_t*>(data);
+  
+    auto getPixel = [&](int i, int j) ->uint32_t {
+        i = std::clamp(i, 0, m - 1);
+        j = std::clamp(j, 0, n - 1);
+        return *(srcArr + i * stride + j);
+    };
+
+    auto extract = [](uint32_t color, int shift) -> int {
+        return (color >> shift) & 0xFF;
+    };
+    for (int i = 0; i < m; i++) {
+        for (int j = 0; j < n; j++) {
+            const uint32_t pixels[5] = {
+                getPixel(i, j),       // center
+                getPixel(i, j - 1),     // left
+                getPixel(i, j + 1),     // right
+                getPixel(i - 1, j),     // up
+                getPixel(i + 1, j)      // down
+            };
+            const int cr = extract(pixels[0], 24); // 24 r
+            const int cg = extract(pixels[0], 16); // 16 g
+            const int cb = extract(pixels[0], 8); // 8 b
+            const int ca = pixels[0] & 0xFF;
+
+            auto delta = [&](int c, int shift) {
+                return 4 * c
+                     - extract(pixels[1], shift) // l left
+                     - extract(pixels[2], shift) // 2 right
+                     - extract(pixels[3], shift) // 3 up
+                     - extract(pixels[4], shift); // 4 down
+            };
+            dstArr[i * stride + j] =
+                (SLRCast(cr + alpha * delta(cr, 24)) << 24) | // 24 r
+                (SLRCast(cg + alpha * delta(cg, 16)) << 16) | // 16 g
+                (SLRCast(cb + alpha * delta(cb, 8))  << 8)  | // 8 b
+                ca;
+        }
+    }
+}
+ 
 void SLRProc::Serial(const SLRMat &src, SLRMat &dst, const SLRWeightMat &x, const SLRWeightMat &y)
 {
     if (!SLRCheck(src, dst, x, y)) {
