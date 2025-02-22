@@ -27,7 +27,7 @@ public:
     ImageCommonNdkTest() {}
     ~ImageCommonNdkTest() {}
 };
-static constexpr Image_MetadataType INVALID_METADATA = static_cast<Image_MetadataType>(3);
+static constexpr Image_MetadataType INVALID_METADATA = static_cast<Image_MetadataType>(100);
 
 static void TestMetaDataClone(Image_MetadataType metadataType)
 {
