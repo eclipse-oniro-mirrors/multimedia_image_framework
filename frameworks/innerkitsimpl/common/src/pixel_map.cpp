@@ -3095,7 +3095,7 @@ uint8_t *PixelMap::ReadData(std::vector<uint8_t> &buff, int32_t size, int32_t &c
 
 bool PixelMap::EncodeTlv(std::vector<uint8_t> &buff) const
 {
-    if (ImageUtils::CheckTlvSupportedFormat(imageInfo_.pixelFormat)) {
+    if (!ImageUtils::CheckTlvSupportedFormat(imageInfo_.pixelFormat)) {
         IMAGE_LOGE("[PixelMap] EncodeTlv fail, format not supported, format: %{public}d", imageInfo_.pixelFormat);
         return false;
     }
@@ -3162,7 +3162,7 @@ bool PixelMap::ReadTlvAttr(std::vector<uint8_t> &buff, ImageInfo &info, int32_t 
                 break;
             case TLV_IMAGE_PIXELFORMAT:
                 info.pixelFormat = static_cast<PixelFormat>(ReadVarint(buff, cursor));
-                if (ImageUtils::CheckTlvSupportedFormat(info.pixelFormat)) {
+                if (!ImageUtils::CheckTlvSupportedFormat(info.pixelFormat)) {
                     IMAGE_LOGE("[Pixelmap] tlv decode unsupported pixelformat: %{public}d", info.pixelFormat);
                     return false;
                 }
