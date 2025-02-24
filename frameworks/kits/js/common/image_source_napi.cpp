@@ -1734,8 +1734,8 @@ static napi_value CreatePixelMapAllocatorTypeCompleteSync(napi_env env, napi_sta
     ImageSourceSyncContext *context)
 {
     napi_value result = nullptr;
-    if (!context->errMsg.empty()) {
-        ImageNapiUtils::ThrowExceptionError(env, IMAGE_DECODE_FAILED, "CreatePixelMapUsingAllocatorTypeSync failed");
+    for (const auto &[errorCode, errMsg] : context->errMsgArray) {
+        ImageNapiUtils::ThrowExceptionError(env, errorCode, errMsg);
     }
     if (context->status == SUCCESS) {
         result = PixelMapNapi::CreatePixelMap(env, context->rPixelMap);
