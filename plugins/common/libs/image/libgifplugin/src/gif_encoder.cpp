@@ -385,8 +385,11 @@ void InitColorCube(ColorCoordinate *colorCoordinate, uint16_t width, uint16_t he
         colorCoordinate[i].rgb[B_IN_RGB] = (static_cast<uint32_t>(i) >> BLUE_COORDINATE) & 0x1F;
         colorCoordinate[i].pixelNum = 0;
     }
-
-    for (int i = 0; i < static_cast<int>(width * height); i++) {
+    int imageSize = static_cast<int>(width * height);
+    if (imageSize < 0) {
+        return;
+    }
+    for (int i = 0; i < imageSize; i++) {
         uint16_t index = ((colorInput->redInput[i] >> (BITS_IN_BYTE - BITS_PER_PRIM_COLOR)) << RED_COORDINATE) +
                  ((colorInput->greenInput[i] >> (BITS_IN_BYTE - BITS_PER_PRIM_COLOR)) << GREEN_COORDINATE) +
                  ((colorInput->blueInput[i] >> (BITS_IN_BYTE - BITS_PER_PRIM_COLOR)) << BLUE_COORDINATE);
@@ -396,6 +399,9 @@ void InitColorCube(ColorCoordinate *colorCoordinate, uint16_t width, uint16_t he
 
 void InitColorSubdivMap(ColorSubdivMap* colorSubdivMap, int32_t colorSubdivMapSize, uint16_t width, uint16_t height)
 {
+    if (colorSubdivMapSize < 0 || colorSubdivMapSize > COLOR_OF_GIF) {
+        return;
+    }
     for (int i = 0; i < colorSubdivMapSize; i++) {
         for (int j = 0; j < NUM_OF_RGB; j++) {
             colorSubdivMap[i].rgbMin[j] = 0;
