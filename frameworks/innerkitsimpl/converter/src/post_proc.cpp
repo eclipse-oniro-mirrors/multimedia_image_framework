@@ -809,6 +809,11 @@ bool CheckPixelMapSLR(const Size &desiredSize, PixelMap &pixelMap)
             desiredSize.width, desiredSize.height);
         return false;
     }
+    if (static_cast<float>(desiredSize.width) / srcWidth < EPSILON ||
+        static_cast<float>(desiredSize.height) / srcHeight < EPSILON) {
+        IMAGE_LOGE("CheckPixelMapSLR scaling factor overflow");
+        return false;
+    }
     int32_t pixelBytes = pixelMap.GetPixelBytes();
     if (pixelBytes <= 0) {
         IMAGE_LOGE("CheckPixelMapSLR invalid pixel bytes, %{public}d", pixelBytes);

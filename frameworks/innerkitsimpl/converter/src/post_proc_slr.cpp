@@ -248,7 +248,7 @@ void SLRProc::Laplacian(SLRMat &srcMat, void* data, float alpha)
             const uint32_t cb = extract(pixels[0], 8); // 8 b
             const uint32_t ca = pixels[0] & 0xFF;
 
-            auto delta = [&](uint32_t c, int shift) -> uint32_t {
+            auto delta = [&](uint32_t c, int shift) -> int {
                 return 4 * c
                      - extract(pixels[1], shift) // l left
                      - extract(pixels[2], shift) // 2 right
