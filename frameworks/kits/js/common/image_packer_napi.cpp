@@ -910,7 +910,7 @@ napi_value ImagePackerNapi::Packing(napi_env env, napi_callback_info info, bool 
     ImageNapiUtils::HicheckerReport();
 
     if (IsImagePackerErrorOccur(asyncContext.get())) {
-        if (PackingErrorSendEvent(env, asyncContext.get(), napi_eprio_high) == true) {
+        if (PackingErrorSendEvent(env, asyncContext.get(), napi_eprio_high)) {
             asyncContext.release();
         }
     } else {
@@ -1018,7 +1018,7 @@ napi_value ImagePackerNapi::Release(napi_env env, napi_callback_info info)
         napi_create_promise(env, &(context->deferred), &result);
     }
 
-    if (ReleaseSendEvent(env, context.get(), napi_eprio_high) == true) {
+    if (ReleaseSendEvent(env, context.get(), napi_eprio_high)) {
         context.release();
     }
     return result;
@@ -1173,7 +1173,7 @@ napi_value ImagePackerNapi::PackToFile(napi_env env, napi_callback_info info)
     ImageNapiUtils::HicheckerReport();
 
     if (IsImagePackerErrorOccur(asyncContext.get())) {
-        if (PackingErrorSendEvent(env, asyncContext.get(), napi_eprio_high) == true) {
+        if (PackingErrorSendEvent(env, asyncContext.get(), napi_eprio_high)) {
             asyncContext.release();
         }
     } else {

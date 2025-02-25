@@ -2644,7 +2644,7 @@ napi_value ImageSourceNapi::Release(napi_env env, napi_callback_info info)
         napi_create_promise(env, &(asyncContext->deferred), &result);
     }
 
-    if (ReleaseSendEvent(env, asyncContext.get(), napi_eprio_high) == true) {
+    if (ReleaseSendEvent(env, asyncContext.get(), napi_eprio_high)) {
         asyncContext.release();
     }
     IMAGE_LOGD("Release exit");
