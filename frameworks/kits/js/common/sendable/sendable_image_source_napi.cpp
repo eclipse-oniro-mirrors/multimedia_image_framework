@@ -893,8 +893,8 @@ static bool ReleaseSendEvent(napi_env env, ImageSourceAsyncContext* context,
         context->constructor_ = nullptr;
         ImageSourceCallbackRoutine(env, const_cast<ImageSourceAsyncContext *&>(context), result);
     };
-    if (ReleaseSendEvent(env, asyncContext.get(), napi_eprio_high) == true) {
-        asyncContext.release();
+    if (napi_status::napi_ok != napi_send_event(env, task, prio)) {
+        IMAGE_LOGE("ReleaseSendEvent: failed to SendEvent!");
     }
     return true;
 }
@@ -930,8 +930,9 @@ napi_value SendableImageSourceNapi::Release(napi_env env, napi_callback_info inf
         napi_create_promise(env, &(asyncContext->deferred), &result);
     }
 
-    IMG_CREATE_CREATE_ASYNC_WORK(env, status, "Release",
-        [](napi_env env, void *data) {}, ReleaseComplete, asyncContext, asyncContext->work);
+    if (ReleaseSendEvent(env, asyncContext.get(), napi_eprio_high) == true) {
+        asyncContext.release();
+    }
     IMAGE_LOGD("Release exit");
     return result;
 }
