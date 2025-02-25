@@ -351,13 +351,20 @@ STATIC_EXEC_FUNC(Packing)
     }
 }
 
-STATIC_COMPLETE_FUNC(PackingError)
+static bool PackingErrorSendEvent(napi_env env, ImagePackerAsyncContext* context,
+                                  napi_event_priority prio)
 {
-    napi_value result = nullptr;
-    napi_get_undefined(env, &result);
-    auto context = static_cast<ImagePackerAsyncContext*>(data);
-    context->status = ERROR;
-    CommonCallbackRoutine(env, context, result);
+    auto task = [env, context]() {
+        napi_value result = nullptr;
+        napi_get_undefined(env, &result);
+        context->status = ERROR;
+        CommonCallbackRoutine(env, const_cast<ImagePackerAsyncContext *&>(context), result);
+    };
+    if (napi_status::napi_ok != napi_send_event(env, task, prio)) {
+        IMAGE_LOGE("PackingErrorSendEvent: failed to SendEvent!");
+        return false;
+    }
+    return true;
 }
 
 STATIC_COMPLETE_FUNC(Packing)
@@ -903,8 +910,9 @@ napi_value ImagePackerNapi::Packing(napi_env env, napi_callback_info info, bool 
     ImageNapiUtils::HicheckerReport();
 
     if (IsImagePackerErrorOccur(asyncContext.get())) {
-        IMG_CREATE_CREATE_ASYNC_WORK(env, status, "PackingError",
-            [](napi_env env, void *data) {}, PackingErrorComplete, asyncContext, asyncContext->work);
+        if (PackingErrorSendEvent(env, asyncContext.get(), napi_eprio_high) == true) {
+            asyncContext.release();
+        }
     } else {
         IMG_CREATE_CREATE_ASYNC_WORK_WITH_QOS(env, status, "Packing",
             PackingExec, PackingComplete, asyncContext, asyncContext->work, napi_qos_user_initiated);
@@ -960,17 +968,24 @@ napi_value ImagePackerNapi::GetSupportedFormats(napi_env env, napi_callback_info
     return result;
 }
 
-static void ReleaseComplete(napi_env env, napi_status status, void *data)
+static bool ReleaseSendEvent(napi_env env, ImagePackerAsyncContext* context,
+                             napi_event_priority prio)
 {
-    napi_value result = nullptr;
-    napi_get_undefined(env, &result);
+    auto task = [env, context]() {
+        napi_value result = nullptr;
+        napi_get_undefined(env, &result);
 
-    auto context = static_cast<ImagePackerAsyncContext*>(data);
-    if (context != nullptr && context->constructor_ != nullptr) {
-        delete context->constructor_;
-        context->constructor_ = nullptr;
+        if (context != nullptr && context->constructor_ != nullptr) {
+            delete context->constructor_;
+            context->constructor_ = nullptr;
+        }
+        CommonCallbackRoutine(env, const_cast<ImagePackerAsyncContext *&>(context), result);
+    };
+    if (napi_status::napi_ok != napi_send_event(env, task, prio)) {
+        IMAGE_LOGE("ReleaseSendEvent: failed to SendEvent!");
+        return false;
     }
-    CommonCallbackRoutine(env, context, result);
+    return true;
 }
 
 napi_value ImagePackerNapi::Release(napi_env env, napi_callback_info info)
@@ -1003,8 +1018,9 @@ napi_value ImagePackerNapi::Release(napi_env env, napi_callback_info info)
         napi_create_promise(env, &(context->deferred), &result);
     }
 
-    IMG_CREATE_CREATE_ASYNC_WORK(env, status, "Release",
-        [](napi_env env, void *data) {}, ReleaseComplete, context, context->work);
+    if (ReleaseSendEvent(env, context.get(), napi_eprio_high) == true) {
+        context.release();
+    }
     return result;
 }
 
@@ -1157,8 +1173,9 @@ napi_value ImagePackerNapi::PackToFile(napi_env env, napi_callback_info info)
     ImageNapiUtils::HicheckerReport();
 
     if (IsImagePackerErrorOccur(asyncContext.get())) {
-        IMG_CREATE_CREATE_ASYNC_WORK(env, status, "PackingError",
-            [](napi_env env, void *data) {}, PackingErrorComplete, asyncContext, asyncContext->work);
+        if (PackingErrorSendEvent(env, asyncContext.get(), napi_eprio_high) == true) {
+            asyncContext.release();
+        }
     } else {
         IMG_CREATE_CREATE_ASYNC_WORK_WITH_QOS(env, status, "PackToFile",
             PackToFileExec, PackToFileComplete, asyncContext, asyncContext->work, napi_qos_user_initiated);

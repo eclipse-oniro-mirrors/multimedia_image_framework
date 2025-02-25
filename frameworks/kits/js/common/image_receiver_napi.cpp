@@ -374,6 +374,17 @@ static bool PrepareOneArg(ImageReceiverCommonArgs &args, struct ImageReceiverInn
     return true;
 }
 
+static void JSCommonProcessSendEvent(ImageReceiverCommonArgs &args, napi_status status,
+                                     ImageReceiverAsyncContext* context, napi_event_priority prio)
+{
+    auto task = [args, status, context]() {
+        (void)args.callBack(args.env, status, context);
+    };
+    if (napi_status::napi_ok != napi_send_event(args.env, task, prio)) {
+        IMAGE_LOGE("JSCommonProcessSendEvent: failed to SendEvent!");
+    }
+}
+
 napi_value ImageReceiverNapi::JSCommonProcess(ImageReceiverCommonArgs &args)
 {
     IMAGE_FUNCTION_IN();
@@ -415,13 +426,7 @@ napi_value ImageReceiverNapi::JSCommonProcess(ImageReceiverCommonArgs &args)
         if (args.asyncLater) {
             args.nonAsyncBack(args, ic);
         } else {
-            napi_value _resource = nullptr;
-            napi_create_string_utf8((args.env), (args.name.c_str()), NAPI_AUTO_LENGTH, &_resource);
-            (ic.status) = napi_create_async_work(args.env, nullptr, _resource,
-                                                 ([](napi_env env, void *data) {}),
-                                                 (reinterpret_cast<napi_async_complete_callback>(args.callBack)),
-                                                 static_cast<void *>((ic.context).get()), &(ic.context->work));
-            napi_queue_async_work((args.env), (ic.context->work));
+            JSCommonProcessSendEvent(args, ic.status, ic.context.get(), napi_eprio_high);
             ic.context.release();
         }
     } else {
@@ -900,10 +905,9 @@ static bool JsOnQueryArgs(ImageReceiverCommonArgs &args, ImageReceiverInnerConte
     return true;
 }
 
-static void Callback(uv_work_t *work, int status)
+static void DoCallBackNoUvWork(napi_env env, ImageReceiverAsyncContext* context)
 {
     IMAGE_LINE_IN();
-    Context context = reinterpret_cast<Context>(work->data);
     if (context == nullptr) {
         IMAGE_ERR("context is empty");
     } else {
@@ -914,7 +918,6 @@ static void Callback(uv_work_t *work, int status)
             napi_value retVal;
             napi_value callback = nullptr;
             if (scope == nullptr) {
-                delete work;
                 return;
             }
             napi_create_uint32(context->env, SUCCESS, &result[0]);
@@ -930,7 +933,6 @@ static void Callback(uv_work_t *work, int status)
             IMAGE_ERR("env or callbackRef is empty");
         }
     }
-    delete work;
     IMAGE_LINE_OUT();
 }
 
@@ -950,28 +952,11 @@ void ImageReceiverNapi::DoCallBack(shared_ptr<ImageReceiverAsyncContext> &contex
         return;
     }
 
-    uv_loop_s *loop = nullptr;
-    napi_get_uv_event_loop(context->env, &loop);
-    if (loop == nullptr) {
-        IMAGE_ERR("napi_get_uv_event_loop failed");
-        localContext.release();
-        return;
-    }
-
-    unique_ptr<uv_work_t> work = make_unique<uv_work_t>();
-    if (work == nullptr) {
-        IMAGE_ERR("DoCallBack: No memory");
-        localContext.release();
-        return;
-    }
-    work->data = reinterpret_cast<void *>(context.get());
-    int ret = uv_queue_work(loop, work.get(), [] (uv_work_t *work) {}, [] (uv_work_t *work, int status) {
-        Callback(work, status);
-    });
-    if (ret != 0) {
-        IMAGE_ERR("Failed to execute DoCallBack work queue");
-    } else {
-        work.release();
+    auto task = [context]() {
+        (void)DoCallBackNoUvWork(context->env, context.get());
+    };
+    if (napi_status::napi_ok != napi_send_event(context->env, task, napi_eprio_high)) {
+        IMAGE_LOGE("DoCallBackSendEvent: failed to SendEvent!");
     }
     localContext.release();
     IMAGE_FUNCTION_OUT();

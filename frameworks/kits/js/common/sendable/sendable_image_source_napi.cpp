@@ -882,15 +882,21 @@ void SendableImageSourceNapi::Destructor(napi_env env, void *nativeObject, void 
     IMAGE_LOGD("ImageSourceNapi::Destructor");
 }
 
-static void ReleaseComplete(napi_env env, napi_status status, void *data)
+static bool ReleaseSendEvent(napi_env env, ImageSourceAsyncContext* context,
+                             napi_event_priority prio)
 {
-    napi_value result = nullptr;
-    napi_get_undefined(env, &result);
+    auto task = [env, context]() {
+        napi_value result = nullptr;
+        napi_get_undefined(env, &result);
 
-    auto context = static_cast<ImageSourceAsyncContext*>(data);
-    delete context->constructor_;
-    context->constructor_ = nullptr;
-    ImageSourceCallbackRoutine(env, context, result);
+        delete context->constructor_;
+        context->constructor_ = nullptr;
+        ImageSourceCallbackRoutine(env, const_cast<ImageSourceAsyncContext *&>(context), result);
+    };
+    if (ReleaseSendEvent(env, asyncContext.get(), napi_eprio_high) == true) {
+        asyncContext.release();
+    }
+    return true;
 }
 
 napi_value SendableImageSourceNapi::Release(napi_env env, napi_callback_info info)
