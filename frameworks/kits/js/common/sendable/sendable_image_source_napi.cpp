@@ -895,6 +895,7 @@ static bool ReleaseSendEvent(napi_env env, ImageSourceAsyncContext* context,
     };
     if (napi_status::napi_ok != napi_send_event(env, task, prio)) {
         IMAGE_LOGE("ReleaseSendEvent: failed to SendEvent!");
+        return false;
     }
     return true;
 }
