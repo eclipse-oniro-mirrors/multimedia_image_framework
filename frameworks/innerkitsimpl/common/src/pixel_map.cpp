@@ -3446,7 +3446,7 @@ static void GenSrcTransInfo(SkTransInfo &srcInfo, ImageInfo &imageInfo, PixelMap
     }
     srcInfo.bitmap.installPixels(srcInfo.info, static_cast<uint8_t *>(pixelmap->GetWritablePixels()), rowStride);
 }
-#else
+#endif
 static void GenSrcTransInfo(SkTransInfo &srcInfo, ImageInfo &imageInfo, uint8_t* pixels,
     sk_sp<SkColorSpace> colorSpace)
 {
@@ -3454,7 +3454,6 @@ static void GenSrcTransInfo(SkTransInfo &srcInfo, ImageInfo &imageInfo, uint8_t*
     srcInfo.info = ToSkImageInfo(imageInfo, colorSpace);
     srcInfo.bitmap.installPixels(srcInfo.info, pixels, srcInfo.info.minRowBytes());
 }
-#endif
 
 static bool GendstTransInfo(SkTransInfo &srcInfo, SkTransInfo &dstInfo, SkMatrix &matrix,
     TransMemoryInfo &memoryInfo)
@@ -3545,19 +3544,32 @@ bool PixelMap::DoTranslation(TransInfos &infos, const AntiAliasingOption &option
     std::lock_guard<std::mutex> lock(*translationMutex_);
     ImageInfo imageInfo;
     GetImageInfo(imageInfo);
+    IMAGE_LOGD("[PixelMap] DoTranslation: width = %{public}d, height = %{public}d, pixelFormat = %{public}d, alphaType"
+        " = %{public}d", imageInfo.size.width, imageInfo.size.height, imageInfo.pixelFormat, imageInfo.alphaType);
     TransMemoryInfo dstMemory;
-    // We dont know how custom alloc memory
+    // We don't know how custom alloc memory
     dstMemory.allocType = (allocatorType_ == AllocatorType::CUSTOM_ALLOC) ? AllocatorType::DEFAULT : allocatorType_;
     SkTransInfo src;
+
+    if (imageInfo.pixelFormat == PixelFormat::RGB_888) {
+        // Need this conversion because Skia uses 32-byte RGBX instead of 24-byte RGB when processing translation
+        std::unique_ptr<uint8_t[]> rgbxPixels = nullptr;
+        if (!ExpandRGBToRGBX(data_, GetByteCount(), rgbxPixels)) {
+            return false;
+        }
+        GenSrcTransInfo(src, imageInfo, rgbxPixels.get(), ToSkColorSpace(this));
+    } else {
 #if !defined(_WIN32) && !defined(_APPLE) && !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
-    GenSrcTransInfo(src, imageInfo, this, ToSkColorSpace(this));
+        GenSrcTransInfo(src, imageInfo, this, ToSkColorSpace(this));
 #else
-    if (isUnMap_) {
-        IMAGE_LOGE("DoTranslation falied, isUnMap %{public}d", isUnMap_);
-        return false;
-    }
-    GenSrcTransInfo(src, imageInfo, data_, ToSkColorSpace(this));
+        if (isUnMap_) {
+            IMAGE_LOGE("DoTranslation falied, isUnMap %{public}d", isUnMap_);
+            return false;
+        }
+        GenSrcTransInfo(src, imageInfo, data_, ToSkColorSpace(this));
 #endif
+    }
+
     SkTransInfo dst;
     if (!GendstTransInfo(src, dst, infos.matrix, dstMemory)) {
         IMAGE_LOGE("GendstTransInfo dstMemory falied");
@@ -3589,6 +3601,17 @@ bool PixelMap::DoTranslation(TransInfos &infos, const AntiAliasingOption &option
         VpeUtils::CopySurfaceBufferInfo(sourceSurfaceBuffer, dstSurfaceBuffer);
     }
 #endif
+
+    std::unique_ptr<AbsMemory> shrinkedMemory = nullptr;
+    if (imageInfo.pixelFormat == PixelFormat::RGB_888) {
+        if (!ShrinkRGBXToRGB(dstMemory.memory, shrinkedMemory)) {
+            dstMemory.memory->Release();
+            return false;
+        }
+        dstMemory.memory->Release();
+        m = shrinkedMemory.get();
+    }
+
     SetPixelsAddr(m->data.data, m->extend.data, m->data.size, m->GetType(), nullptr);
     SetImageInfo(imageInfo, true);
     ImageUtils::FlushSurfaceBuffer(this);
@@ -3707,15 +3730,26 @@ uint32_t PixelMap::crop(const Rect &rect)
     ImageInfo imageInfo;
     GetImageInfo(imageInfo);
     SkTransInfo src;
+
+    if (imageInfo.pixelFormat == PixelFormat::RGB_888) {
+        // Need this conversion because Skia uses 32-byte RGBX instead of 24-byte RGB when processing translation
+        std::unique_ptr<uint8_t[]> rgbxPixels = nullptr;
+        if (!ExpandRGBToRGBX(data_, GetByteCount(), rgbxPixels)) {
+            return false;
+        }
+        GenSrcTransInfo(src, imageInfo, rgbxPixels.get(), ToSkColorSpace(this));
+    } else {
 #if !defined(_WIN32) && !defined(_APPLE) && !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
-    GenSrcTransInfo(src, imageInfo, this, ToSkColorSpace(this));
+        GenSrcTransInfo(src, imageInfo, this, ToSkColorSpace(this));
 #else
-    if (isUnMap_) {
-        IMAGE_LOGE("PixelMap::crop falied, isUnMap %{public}d", isUnMap_);
-        return ERR_IMAGE_CROP;
-    }
-    GenSrcTransInfo(src, imageInfo, data_, ToSkColorSpace(this));
+        if (isUnMap_) {
+            IMAGE_LOGE("PixelMap::crop falied, isUnMap %{public}d", isUnMap_);
+            return ERR_IMAGE_CROP;
+        }
+        GenSrcTransInfo(src, imageInfo, data_, ToSkColorSpace(this));
 #endif
+    }
+
     SkTransInfo dst;
     SkIRect dstIRect = SkIRect::MakeXYWH(rect.left, rect.top, rect.width, rect.height);
     dst.r = SkRect::Make(dstIRect);
@@ -3731,26 +3765,38 @@ uint32_t PixelMap::crop(const Rect &rect)
     Size desiredSize = {dst.info.width(), dst.info.height()};
     MemoryData memoryData = {nullptr, dst.info.computeMinByteSize(), "Trans ImageData", desiredSize,
                              imageInfo.pixelFormat};
-    auto m = MemoryManager::CreateMemory(allocatorType_, memoryData);
-    if (m == nullptr) {
+    auto dstMemory = MemoryManager::CreateMemory(allocatorType_, memoryData);
+    if (dstMemory == nullptr) {
         return ERR_IMAGE_CROP;
     }
     uint64_t rowStride = dst.info.minRowBytes();
 #if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
     if (allocatorType_ == AllocatorType::DMA_ALLOC) {
-        if (m->extend.data == nullptr) {
+        if (dstMemory->extend.data == nullptr) {
             IMAGE_LOGE("GendstTransInfo get surfacebuffer failed");
             return ERR_IMAGE_CROP;
         }
-        rowStride = static_cast<uint64_t>(reinterpret_cast<SurfaceBuffer*>(m->extend.data)->GetStride());
+        rowStride = static_cast<uint64_t>(reinterpret_cast<SurfaceBuffer*>(dstMemory->extend.data)->GetStride());
     }
 #endif
-    if (!src.bitmap.readPixels(dst.info, m->data.data, rowStride, dstIRect.fLeft, dstIRect.fTop)) {
-        m->Release();
+    if (!src.bitmap.readPixels(dst.info, dstMemory->data.data, rowStride, dstIRect.fLeft, dstIRect.fTop)) {
+        dstMemory->Release();
         IMAGE_LOGE("ReadPixels failed");
         return ERR_IMAGE_CROP;
     }
     ToImageInfo(imageInfo, dst.info);
+
+    auto m = dstMemory.get();
+    std::unique_ptr<AbsMemory> shrinkedMemory = nullptr;
+    if (imageInfo.pixelFormat == PixelFormat::RGB_888) {
+        if (!ShrinkRGBXToRGB(dstMemory, shrinkedMemory)) {
+            dstMemory->Release();
+            return false;
+        }
+        dstMemory->Release();
+        m = shrinkedMemory.get();
+    }
+
     SetPixelsAddr(m->data.data, m->extend.data, m->data.size, m->GetType(), nullptr);
     SetImageInfo(imageInfo, true);
     return SUCCESS;
