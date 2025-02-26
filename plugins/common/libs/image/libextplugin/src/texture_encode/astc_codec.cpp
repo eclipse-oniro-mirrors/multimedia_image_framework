@@ -343,6 +343,10 @@ static bool InitMem(AstcEncoder *work, TextureEncodeOptions param)
 #if defined(QUALITY_CONTROL) && (QUALITY_CONTROL == 1)
     work->mse[R_COM] = work->mse[G_COM] = work->mse[B_COM] = work->mse[A_COM] = nullptr;
     work->calQualityEnable = param.enableQualityCheck;
+    if (param.blocksNum <= 0) {
+        IMAGE_LOGE("[AstcCodec] InitMem blocksNum is invalid");
+        return false;
+    }
     if (work->calQualityEnable) {
         for (int i = R_COM; i < RGBA_COM; i++) {
             work->mse[i] = static_cast<int32_t *>(calloc(param.blocksNum, sizeof(int32_t)));
@@ -577,6 +581,28 @@ static bool GetAstcSdrProfile(PlEncodeOptions &astcOpts, QualityProfile &private
     return false;
 }
 
+bool CheckParamBlockSize(TextureEncodeOptions &param)
+{
+    if ((param.width_ <= 0) || (param.height_ <= 0)) {
+        IMAGE_LOGE("CheckAstcEncInput width <= 0 or height <= 0 !");
+        return false;
+    }
+    if ((param.width_ > WIDTH_MAX_ASTC) || (param.height_ > HEIGHT_MAX_ASTC)) {
+        IMAGE_LOGE("CheckAstcEncInput width %{public}d height %{public}d out of range %{public}d x %{public}d!",
+                   param.width_, param.height_, WIDTH_MAX_ASTC, HEIGHT_MAX_ASTC);
+        return false;
+    }
+    if ((param.blockX_ < DEFAULT_DIM) || (param.blockY_ < DEFAULT_DIM)) {
+        IMAGE_LOGE("CheckAstcEncInput block %{public}d x %{public}d < 4 x 4!", param.blockX_, param.blockY_);
+        return false;
+    }
+    if ((param.blockX_ > MAX_DIM) || (param.blockY_ > MAX_DIM)) {
+        IMAGE_LOGE("CheckAstcEncInput block %{public}d x %{public}d > 12 x 12!", param.blockX_, param.blockY_);
+        return false;
+    }
+    return true;
+}
+
 static bool InitAstcEncPara(TextureEncodeOptions &param,
     int32_t width, int32_t height, int32_t stride, PlEncodeOptions &astcOpts)
 {
@@ -612,7 +638,7 @@ static bool InitAstcEncPara(TextureEncodeOptions &param,
     param.privateProfile_ = GetAstcQuality(astcOpts.quality);
     param.outIsSut = false;
     extractDimensions(astcOpts.format, param);
-    if ((param.blockX_ < DEFAULT_DIM) || (param.blockY_ < DEFAULT_DIM)) { // DEFAULT_DIM = 4
+    if (!CheckParamBlockSize(param)) { // DEFAULT_DIM = 4
         IMAGE_LOGE("InitAstcEncPara failed %{public}dx%{public}d is invalid!", param.blockX_, param.blockY_);
         return false;
     }
