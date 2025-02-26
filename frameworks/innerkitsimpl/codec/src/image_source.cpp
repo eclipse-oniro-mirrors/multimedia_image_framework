@@ -2884,6 +2884,10 @@ unique_ptr<SourceStream> ImageSource::DecodeBase64(const uint8_t *data, uint32_t
     sub = sub + BASE64_URL_PREFIX.size();
     uint32_t subSize = size - (sub - data1);
     IMAGE_LOGD("[ImageSource]Base64 image input: size %{public}u.", subSize);
+    if (subSize == 0) {
+        IMAGE_LOGE("%{public}s input subsize is %{public}u.", __func__, subSize);
+        return nullptr;
+    }
 
     std::unique_ptr<uint8_t[]> dataCopy;
     if (sub[subSize - 1] != '\0') {
