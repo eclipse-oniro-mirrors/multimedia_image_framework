@@ -1048,7 +1048,7 @@ uint32_t ExtEncoder::AssembleHeifHdrPicture(
     CHECK_ERROR_RETURN_RET_LOG(cond, ERR_IMAGE_INVALID_PARAMETER, "%{public}s, get primary image failed", __func__);
     inputImgs.push_back(*primaryItem);
     std::shared_ptr<ImageItem> gainmapItem = AssembleGainmapImageItem(gainMapSptr, colorspaceName, opts_);
-    cond = primaryItem == nullptr;
+    cond = gainmapItem == nullptr;
     CHECK_ERROR_RETURN_RET_LOG(cond, ERR_IMAGE_INVALID_PARAMETER,
         "%{public}s, get gainmap image item failed", __func__);
     inputImgs.push_back(*gainmapItem);
