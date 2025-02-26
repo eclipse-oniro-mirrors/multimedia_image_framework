@@ -44,6 +44,7 @@ constexpr uint32_t COMPONENT_NUM_RGB = 3;
 constexpr uint32_t COMPONENT_NUM_GRAY = 1;
 constexpr uint32_t PIXEL_SIZE_RGBA_F16 = 8;
 constexpr uint32_t PIXEL_SIZE_RGB565 = 2;
+constexpr uint32_t BLOCK_SIZE = 8; // libjpeg use 8x8 block to compress
 // yuv format
 constexpr uint8_t COMPONENT_NUM_YUV420SP = 3;
 constexpr uint8_t Y_SAMPLE_ROW = 16;
@@ -280,6 +281,10 @@ uint32_t JpegEncoder::Yuv420spEncoder(const uint8_t *data)
     uint32_t yPlaneSize = width * height;
     uint8_t *yPlane = const_cast<uint8_t *>(data);
     uint8_t *uvPlane = const_cast<uint8_t *>(data + yPlaneSize);
+    if (width % BLOCK_SIZE || height % BLOCK_SIZE) {
+        IMAGE_LOGE("yuv420sp image width or height is not available.");
+        return ERR_IMAGE_DATA_ABNORMAL;
+    }
     auto uPlane = std::make_unique<uint8_t[]>((width >> SHIFT_MASK) * UV_SAMPLE_ROW);
     if (uPlane == nullptr) {
         IMAGE_LOGE("allocate uPlane memory failed.");
