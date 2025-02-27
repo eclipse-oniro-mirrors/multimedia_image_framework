@@ -1048,7 +1048,7 @@ uint32_t ExtEncoder::AssembleHeifHdrPicture(
     CHECK_ERROR_RETURN_RET_LOG(cond, ERR_IMAGE_INVALID_PARAMETER, "%{public}s, get primary image failed", __func__);
     inputImgs.push_back(*primaryItem);
     std::shared_ptr<ImageItem> gainmapItem = AssembleGainmapImageItem(gainMapSptr, colorspaceName, opts_);
-    cond = primaryItem == nullptr;
+    cond = gainmapItem == nullptr;
     CHECK_ERROR_RETURN_RET_LOG(cond, ERR_IMAGE_INVALID_PARAMETER,
         "%{public}s, get gainmap image item failed", __func__);
     inputImgs.push_back(*gainmapItem);
@@ -1677,6 +1677,10 @@ uint32_t ExtEncoder::EncodeJpegPictureDualVividInner(SkWStream& skStream, std::s
     VpeUtils::SetSbMetadataType(baseSptr, CM_IMAGE_HDR_VIVID_DUAL);
     VpeUtils::SetSbColorSpaceType(baseSptr, mainIsSRGB ? CM_SRGB_FULL : CM_P3_FULL);
     pixelmap_ = mainPixelmap.get();
+    if (pixelmap_ != nullptr && pixelmap_->GetExifMetadata() == nullptr) {
+        auto exifData = picture_->GetExifMetadata();
+        pixelmap_->SetExifMetadata(exifData);
+    }
     sk_sp<SkData> baseImageData = GetImageEncodeData(baseSptr, baseInfo, opts_.needsPackProperties);
 
     bool gainmapIsSRGB = gainmapPixelmap->GetToSdrColorSpaceIsSRGB();
@@ -1730,6 +1734,10 @@ uint32_t ExtEncoder::EncodeJpegPictureSdr(SkWStream& skStream)
     bool cond = !mainPixelmap;
     CHECK_ERROR_RETURN_RET_LOG(cond, ERR_IMAGE_INVALID_PARAMETER, "%{public}s mainPixelmap is null", __func__);
     pixelmap_ = mainPixelmap.get();
+    if (pixelmap_ != nullptr && pixelmap_->GetExifMetadata() == nullptr) {
+        auto exifData = picture_->GetExifMetadata();
+        pixelmap_->SetExifMetadata(exifData);
+    }
     uint32_t error = ERR_IMAGE_ENCODE_FAILED;
     if (!mainPixelmap->IsHdr()) {
         error = EncodeImageByPixelMap(mainPixelmap.get(), opts_.needsPackProperties, skStream);
