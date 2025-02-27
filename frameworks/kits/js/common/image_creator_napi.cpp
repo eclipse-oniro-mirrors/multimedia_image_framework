@@ -299,6 +299,17 @@ static bool PrepareOneArg(ImageCreatorCommonArgs &args, struct ImageCreatorInner
     return true;
 }
 
+static void JSCommonProcessSendEvent(ImageCreatorCommonArgs &args, napi_status status,
+                                     ImageCreatorAsyncContext* context, napi_event_priority prio)
+{
+    auto task = [args, status, context]() {
+        (void)args.callBack(args.env, status, context);
+    };
+    if (napi_status::napi_ok != napi_send_event(args.env, task, prio)) {
+        IMAGE_LOGE("JSCommonProcessSendEvent: failed to SendEvent!");
+    }
+}
+
 napi_value ImageCreatorNapi::JSCommonProcess(ImageCreatorCommonArgs &args)
 {
     IMAGE_FUNCTION_IN();
@@ -338,13 +349,7 @@ napi_value ImageCreatorNapi::JSCommonProcess(ImageCreatorCommonArgs &args)
         if (args.asyncLater) {
             args.nonAsyncBack(args, ic);
         } else {
-            napi_value _resource = nullptr;
-            napi_create_string_utf8((args.env), (args.name.c_str()), NAPI_AUTO_LENGTH, &_resource);
-            (ic.status) = napi_create_async_work(args.env, nullptr, _resource,
-                                                 ([](napi_env env, void *data) {}),
-                                                 (reinterpret_cast<napi_async_complete_callback>(args.callBack)),
-                                                 static_cast<void *>((ic.context).get()), &(ic.context->work));
-            napi_queue_async_work((args.env), (ic.context->work));
+            JSCommonProcessSendEvent(args, ic.status, ic.context.get(), napi_eprio_high);
             ic.context.release();
         }
     } else {
@@ -632,31 +637,35 @@ static bool JsQueueArgs(napi_env env, size_t argc, napi_value* argv,
     return true;
 }
 
-void ImageCreatorNapi::JsQueueImageCallBack(napi_env env, napi_status status,
-                                            ImageCreatorAsyncContext* context)
+void ImageCreatorNapi::JsQueueImageSendEvent(napi_env env, ImageCreatorAsyncContext* context,
+                                             napi_event_priority prio)
 {
-    IMAGE_FUNCTION_IN();
-    napi_value result = nullptr;
-    napi_get_undefined(env, &result);
-    if (g_isCreatorTest) {
-        context->status = SUCCESS;
-        CommonCallbackRoutine(env, context, result);
-        return;
-    }
-
-    auto native = context->constructor_->imageCreator_;
-    if (native == nullptr || context->imageNapi_ == nullptr) {
-        IMAGE_ERR("Native instance is nullptr");
-        context->status = ERR_IMAGE_INIT_ABNORMAL;
-    } else {
-        if (SUCCESS != context->imageNapi_->CombineYUVComponents()) {
-            IMAGE_ERR("JsQueueImageCallBack: try to combine componests");
+    auto task = [env, context]() {
+        IMAGE_FUNCTION_IN();
+        napi_value result = nullptr;
+        napi_get_undefined(env, &result);
+        if (g_isCreatorTest) {
+            context->status = SUCCESS;
+            CommonCallbackRoutine(env, const_cast<ImageCreatorAsyncContext *&>(context), result);
+            return;
         }
-        native->QueueNativeImage(context->imageNapi_);
-        context->status = SUCCESS;
+        auto native = context->constructor_->imageCreator_;
+        if (native == nullptr || context->imageNapi_ == nullptr) {
+            IMAGE_ERR("Native instance is nullptr");
+            context->status = ERR_IMAGE_INIT_ABNORMAL;
+        } else {
+            if (SUCCESS != context->imageNapi_->CombineYUVComponents()) {
+                IMAGE_ERR("JsQueueImageCallBack: try to combine componests");
+            }
+            native->QueueNativeImage(context->imageNapi_);
+            context->status = SUCCESS;
+        }
+        IMAGE_LINE_OUT();
+        CommonCallbackRoutine(env, const_cast<ImageCreatorAsyncContext *&>(context), result);
+    };
+    if (napi_status::napi_ok != napi_send_event(env, task, prio)) {
+        IMAGE_LOGE("JsQueueImageSendEvent: failed to SendEvent!");
     }
-    IMAGE_LINE_OUT();
-    CommonCallbackRoutine(env, context, result);
 }
 
 napi_value ImageCreatorNapi::JsQueueImage(napi_env env, napi_callback_info info)
@@ -689,22 +698,7 @@ napi_value ImageCreatorNapi::JsQueueImage(napi_env env, napi_callback_info info)
         napi_create_promise(env, &(context->deferred), &result);
     }
 
-    napi_value resource = nullptr;
-    napi_create_string_utf8(env, "JsQueueImage", NAPI_AUTO_LENGTH, &resource);
-    status = napi_create_async_work(
-        env, nullptr, resource, [](napi_env env, void* data) {},
-        reinterpret_cast<napi_async_complete_callback>(JsQueueImageCallBack),
-        static_cast<void *>(context.get()), &(context->work));
-    if (status != napi_ok) {
-        IMAGE_ERR("fail to create async work %{public}d", status);
-        return result;
-    }
-
-    status = napi_queue_async_work(env, context->work);
-    if (status != napi_ok) {
-        IMAGE_ERR("fail to queue async work %{public}d", status);
-        return result;
-    }
+    JsQueueImageSendEvent(env, context.get(), napi_eprio_high);
     context.release();
 
     IMAGE_FUNCTION_OUT();
@@ -811,6 +805,38 @@ static void DoCallBackAfterWork(uv_work_t *work, int status)
     delete work;
     IMAGE_LINE_OUT();
 }
+
+static void DoCallBackNoUvWork(napi_env env, ImageCreatorAsyncContext* context)
+{
+    IMAGE_LINE_IN();
+    if (context == nullptr) {
+        IMAGE_ERR("context is empty");
+    } else {
+        if (context->env != nullptr && context->callbackRef != nullptr) {
+            napi_handle_scope scope = nullptr;
+            napi_open_handle_scope(context->env, &scope);
+            if (scope == nullptr) {
+                return;
+            }
+            napi_value result[PARAM2] = {0};
+            napi_value retVal = nullptr;
+            napi_value callback = nullptr;
+            napi_create_uint32(context->env, SUCCESS, &result[0]);
+            napi_get_undefined(context->env, &result[1]);
+            napi_get_reference_value(context->env, context->callbackRef, &callback);
+            if (callback != nullptr) {
+                napi_call_function(context->env, nullptr, callback, PARAM2, result, &retVal);
+            } else {
+                IMAGE_ERR("napi_get_reference_value callback is empty");
+            }
+            napi_close_handle_scope(context->env, scope);
+        } else {
+            IMAGE_ERR("env or callbackRef is empty");
+        }
+    }
+    IMAGE_LINE_OUT();
+}
+
 void ImageCreatorNapi::DoCallBack(shared_ptr<ImageCreatorAsyncContext> context,
     string name, CompleteCreatorCallback callBack)
 {
@@ -820,25 +846,11 @@ void ImageCreatorNapi::DoCallBack(shared_ptr<ImageCreatorAsyncContext> context,
         return;
     }
 
-    uv_loop_s *loop = nullptr;
-    napi_get_uv_event_loop(context->env, &loop);
-    if (loop == nullptr) {
-        IMAGE_ERR("napi_get_uv_event_loop failed");
-        return;
-    }
-
-    unique_ptr<uv_work_t> work = make_unique<uv_work_t>();
-    if (work == nullptr) {
-        IMAGE_ERR("DoCallBack: No memory");
-        return;
-    }
-
-    work->data = reinterpret_cast<void *>(context.get());
-    int ret = uv_queue_work(loop, work.get(), [] (uv_work_t *work) {}, DoCallBackAfterWork);
-    if (ret != 0) {
-        IMAGE_ERR("Failed to execute DoCallBack work queue");
-    } else {
-        work.release();
+    auto task = [context]() {
+        (void)DoCallBackNoUvWork(context->env, context.get());
+    };
+    if (napi_status::napi_ok != napi_send_event(context->env, task, napi_eprio_high)) {
+        IMAGE_LOGE("DoCallBackSendEvent: failed to SendEvent!");
     }
     IMAGE_FUNCTION_OUT();
 }

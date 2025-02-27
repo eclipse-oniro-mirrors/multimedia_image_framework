@@ -71,8 +71,8 @@ private:
 
     static bool GetNativeFromEnv(napi_env env, napi_callback_info info, std::shared_ptr<ImageCreator> &native);
     static napi_value JSCommonProcess(ImageCreatorCommonArgs &args);
-    static void JsQueueImageCallBack(napi_env env, napi_status status,
-                                     ImageCreatorAsyncContext* context);
+    static void JsQueueImageSendEvent(napi_env env, ImageCreatorAsyncContext* context,
+                                      napi_event_priority prio);
     static napi_value JsOffOneArg(napi_env env, napi_callback_info info);
     static napi_value JsOffTwoArgs(napi_env env, napi_callback_info info);
 #ifdef IMAGE_DEBUG_FLAG
