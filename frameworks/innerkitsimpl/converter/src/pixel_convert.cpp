@@ -1508,9 +1508,14 @@ static int32_t ConvertToYUV(const void *srcPixels, const int32_t srcLength, cons
     return RGBConvertYUV(srcPixels, srcInfo, dstPixels, dstInfo);
 }
 
-static int32_t ConvertToP010(const void *srcPixels, const int32_t srcLength, const ImageInfo &srcInfo,
-    void *dstPixels, const ImageInfo &dstInfo)
+static int32_t ConvertToP010(const BufferInfo &src, BufferInfo &dst)
 {
+    const void *srcPixels = src.pixels;
+    const int32_t srcLength = src.length;
+    const ImageInfo &srcInfo = src.imageInfo;
+    void *dstPixels = dst.pixels;
+    const ImageInfo &dstInfo = dst.imageInfo;
+
     CHECK_ERROR_RETURN_RET_LOG((srcPixels == nullptr || dstPixels == nullptr || srcLength <= 0), -1,
         "[PixelMap]Convert: src pixels or dst pixels or src pixel length invalid");
     CHECK_ERROR_RETURN_RET_LOG((IsYUVP010Format(srcInfo.pixelFormat) ||
@@ -1520,37 +1525,30 @@ static int32_t ConvertToP010(const void *srcPixels, const int32_t srcLength, con
 
     CHECK_ERROR_RETURN_RET_LOG(dstLength <= 0, -1, "[PixelMap]Convert: Get dstP010 length failed!");
 
-    uint8_t* dstP010 = new(std::nothrow) uint8_t[dstLength];
-    if (dstP010 == nullptr) {
+    std::unique_ptr<uint8_t[]> dstP010Buffer = std::make_unique<uint8_t[]>(dstLength);
+    if (dstP010Buffer == nullptr) {
         IMAGE_LOGE("[PixelMap]Convert: alloc memory failed!");
         return -1;
     }
+    uint8_t* dstP010 = dstP010Buffer.get();
     memset_s(dstP010, dstLength, 0, dstLength);
 
     if (srcInfo.pixelFormat == PixelFormat::RGBA_1010102) {
         if (!ConvertRGBA1010102ToYUV(srcPixels, srcInfo, dstP010, dstInfo)) {
-            delete[] dstP010;
-            dstP010 = nullptr;
             return -1;
         }
     } else {
         if (!ConvertForFFMPEG(srcPixels, srcInfo.pixelFormat, srcInfo, dstP010, dstInfo.pixelFormat)) {
-            delete[] dstP010;
-            dstP010 = nullptr;
             return -1;
         }
     }
     if (dstInfo.pixelFormat == PixelFormat::YCRCB_P010) {
         NV12P010ToNV21P010((uint16_t *)dstP010, dstInfo, (uint16_t *)dstPixels);
     } else {
-        if (memcpy_s(dstPixels, dstLength, dstP010, dstLength) != 0) {
-            delete[] dstP010;
-            dstP010 = nullptr;
+        if (memcpy_s(dstPixels, dst.length, dstP010, dstLength) != 0) {
             return -1;
         }
     }
-    delete[] dstP010;
-    dstP010 = nullptr;
     return dstLength;
 }
 
@@ -1620,7 +1618,7 @@ int32_t PixelConvert::PixelsConvert(const BufferInfo &src, BufferInfo &dst, int3
     } else if (IsYUVP010Format(src.imageInfo.pixelFormat)) {
         return ConvertFromP010(src.pixels, srcLength, src.imageInfo, dst.pixels, dst.imageInfo);
     } else if (IsYUVP010Format(dst.imageInfo.pixelFormat)) {
-        return ConvertToP010(src.pixels, srcLength, src.imageInfo, dst.pixels, dst.imageInfo);
+        return ConvertToP010(src, dst);
     }
 
     Position pos;

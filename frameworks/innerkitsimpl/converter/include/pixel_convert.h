@@ -41,6 +41,7 @@ struct BufferInfo {
     int32_t rowStride;
     ImageInfo imageInfo;
     uint8_t range;
+    uint32_t length;
 };
 
 // These values SHOULD be sync with image_type.h PixelFormat

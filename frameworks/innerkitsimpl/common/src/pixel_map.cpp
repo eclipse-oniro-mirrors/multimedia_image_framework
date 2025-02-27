@@ -397,6 +397,9 @@ static int AllocPixelMapMemory(std::unique_ptr<AbsMemory> &dstMemory, int32_t &d
             dstImageInfo.size.width, dstImageInfo.size.height);
         return IMAGE_RESULT_BAD_PARAMETER;
     }
+    if (IsYUV(dstImageInfo.pixelFormat)) {
+        bufferSize = PixelMap::GetYUVByteCount(dstImageInfo);
+    }
 
     MemoryData memoryData = {nullptr, static_cast<size_t>(bufferSize), "Create PixelMap", dstImageInfo.size,
         dstImageInfo.pixelFormat};
@@ -459,8 +462,9 @@ unique_ptr<PixelMap> PixelMap::Create(const uint32_t *colors, uint32_t colorLeng
     }
 
     BufferInfo srcInfo = {const_cast<void*>(static_cast<const void*>(colors + offset)), opts.srcRowStride,
-        srcImageInfo, opts.convertColorSpace.srcRange};
-    BufferInfo dstInfo = {dstMemory->data.data, dstRowStride, dstImageInfo, opts.convertColorSpace.dstRange};
+        srcImageInfo, opts.convertColorSpace.srcRange, colorLength};
+    BufferInfo dstInfo = {dstMemory->data.data, dstRowStride, dstImageInfo, opts.convertColorSpace.dstRange,
+        dstMemory->data.size};
     int32_t dstLength =
         PixelConvert::PixelsConvert(srcInfo, dstInfo, colorLength, dstMemory->GetType() == AllocatorType::DMA_ALLOC);
     if (dstLength < 0) {
