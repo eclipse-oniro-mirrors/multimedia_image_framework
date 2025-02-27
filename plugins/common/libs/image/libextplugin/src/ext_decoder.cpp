@@ -18,9 +18,9 @@
 #include <algorithm>
 #include <map>
 #include <sstream>
-#include <sys/timerfd.h>
 #if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
 #include <sys/ioctl.h>
+#include <sys/timerfd.h>
 
 #include <linux/dma-buf.h>
 #endif

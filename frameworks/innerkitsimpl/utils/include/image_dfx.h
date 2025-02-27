@@ -56,7 +56,6 @@ class ImageEvent {
 public:
     ImageEvent();
     ~ImageEvent();
-    bool checkTimerFd();
     std::string getInvokeType();
     void SetDecodeInfoOptions(const DecodeInfoOptions &options);
     void SetDecodeErrorMsg(std::string msg);
