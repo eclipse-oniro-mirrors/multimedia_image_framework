@@ -16,6 +16,7 @@
 #include "HeifDecoderImpl.h"
 
 #ifdef HEIF_HW_DECODE_ENABLE
+#include <sys/timerfd.h>
 #include "ffrt.h"
 #include "image_fwk_ext_manager.h"
 #include "image_func_timer.h"
@@ -588,10 +589,16 @@ void HeifDecoderImpl::ReleaseHwDecoder(HeifHardwareDecoder *hwDecoder, bool isRe
     if (isReuse || hwDecoder == nullptr) {
         return;
     }
-    ffrt::submit([hwDecoder] {
-        ImageTrace trace("delete hwDecoder");
-        delete hwDecoder;
+    int timerFd = timerfd_create(CLOCK_MONOTONIC, TFD_NONBLOCK | TFD_CLOEXEC);
+    if (timerFd >= 0) {
+        close(timerFd);
+        ffrt::submit([hwDecoder] {
+            ImageTrace trace("delete hwDecoder");
+            delete hwDecoder;
         }, {}, {});
+    } else {
+        delete hwDecoder;
+    }
 }
 
 bool HeifDecoderImpl::HwDecodeImage(HeifHardwareDecoder *hwDecoder,
