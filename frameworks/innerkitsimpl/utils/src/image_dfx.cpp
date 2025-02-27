@@ -18,12 +18,13 @@
 #include <unistd.h>
 #include <fstream>
 #include <chrono>
-#include <sys/timerfd.h>
 
 #if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
+#include <sys/timerfd.h>
 #include "ffrt.h"
 #include "hisysevent.h"
 #endif
+
 #include "image_utils.h"
 #include "image_log.h"
 
@@ -61,16 +62,6 @@ void ImageEvent::SetDecodeErrorMsg(std::string msg)
     options_.errorMsg = msg;
 }
 
-bool ImageEvent::checkTimerFd()
-{
-    int timerFd = timerfd_create(CLOCK_MONOTONIC, TFD_NONBLOCK | TFD_CLOEXEC);
-    if (timerFd < 0) {
-        return false;
-    }
-    close(timerFd);
-    return true;
-}
-
 std::string ImageEvent::getInvokeType()
 {
     std::string invokeType;
@@ -89,11 +80,13 @@ std::string ImageEvent::getInvokeType()
 
 void ImageEvent::ReportDecodeFault()
 {
-    if (!checkTimerFd()) {
-        return;
-    }
     std::string temp = getInvokeType();
 #if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
+    int timerFd = timerfd_create(CLOCK_MONOTONIC, TFD_NONBLOCK | TFD_CLOEXEC);
+    if (timerFd < 0) {
+        return;
+    }
+    close(timerFd);
     DecodeInfoOptions options = options_;
     ffrt::submit([options, temp] {
         std::string packageName = ImageUtils::GetCurrentProcessName();
@@ -145,12 +138,14 @@ std::string GetInvokeTypeStr(uint16_t invokeType)
 
 void ImageEvent::ReportDecodeInfo()
 {
-    if (!checkTimerFd()) {
-        return;
-    }
     uint64_t costTime = ImageUtils::GetNowTimeMilliSeconds() - startTime_;
     std::string temp = GetInvokeTypeStr(options_.invokeType);
 #if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
+    int timerFd = timerfd_create(CLOCK_MONOTONIC, TFD_NONBLOCK | TFD_CLOEXEC);
+    if (timerFd < 0) {
+        return;
+    }
+    close(timerFd);
     DecodeInfoOptions options = options_;
     ffrt::submit([options, temp, costTime] {
         std::string packageName = ImageUtils::GetCurrentProcessName();
