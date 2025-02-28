@@ -1354,8 +1354,11 @@ uint32_t ExtDecoder::ApplyDesiredColorSpace(DecodeContext &context)
     return SUCCESS;
 }
 
-void ExtDecoder::UpdateHardWareDecodeInfo(DecodeContext &context)
+uint32_t ExtDecoder::UpdateHardWareDecodeInfo(DecodeContext &context)
 {
+    if (context.pixelsBuffer.context == nullptr) {
+        return ERR_IMAGE_PROPERTY_NOT_EXIST;
+    }
     SurfaceBuffer* sbuffer = static_cast<SurfaceBuffer*>(context.pixelsBuffer.context);
     if (sbuffer && sbuffer->GetFormat() != GRAPHIC_PIXEL_FMT_RGBA_8888) {
         OH_NativeBuffer_Planes *planes = nullptr;
@@ -1382,8 +1385,10 @@ void ExtDecoder::UpdateHardWareDecodeInfo(DecodeContext &context)
         if (err != GSERROR_OK) {
             IMAGE_LOGE("InvalidateCache failed, GSError=%{public}d", err);
         }
+        return ERR_IMAGE_PROPERTY_NOT_EXIST;
     }
 #endif
+    return SUCCESS;
 }
 
 uint32_t ExtDecoder::HardWareDecode(DecodeContext &context)
@@ -1411,9 +1416,19 @@ uint32_t ExtDecoder::HardWareDecode(DecodeContext &context)
     }
     if (srcColorSpace_ != nullptr && dstColorSpace_ != nullptr &&
         srcColorSpace_->GetColorSpaceName()!= dstColorSpace_->GetColorSpaceName()) {
-        ApplyDesiredColorSpace(context);
+        ret = ApplyDesiredColorSpace(context);
+        if (ret != SUCCESS) {
+            IMAGE_LOGE("failed to hardware decode ApplyDesiredColorSpace, err=%{public}d", ret);
+            ReleaseOutputBuffer(context, tmpAllocatorType);
+            return ERR_IMAGE_DECODE_ABNORMAL;
+        }
     }
-    UpdateHardWareDecodeInfo(context);
+    ret = UpdateHardWareDecodeInfo(context);
+    if (ret != SUCCESS) {
+        IMAGE_LOGE("failed to UpdateHardWareDecodeInfo when hardware decode, err=%{public}d", ret);
+        ReleaseOutputBuffer(context, tmpAllocatorType);
+        return ERR_IMAGE_DECODE_ABNORMAL;
+    }
     return SUCCESS;
 }
 #endif
