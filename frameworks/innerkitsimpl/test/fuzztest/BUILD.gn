@@ -30,5 +30,6 @@ group("fuzztest") {
     "imagepngplugin_fuzzer:ImagePngPluginFuzzTest",
     "imagesource_fuzzer:ImageSourceFuzzTest",
     "imagetextureencode_fuzzer:ImageTextureEncodeFuzzTest",
+    "imagefwkconvertastc2rgb_fuzzer:ImageFwkConvertAstc2RgbFuzzTest"
   ]
 }
