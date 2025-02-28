@@ -210,6 +210,10 @@ ExtEncoder::~ExtEncoder()
         delete pixelmap_;
         pixelmap_ = nullptr;
     }
+    if (releasePicture_ && picture_ != nullptr) {
+        delete picture_;
+        picture_ = nullptr;
+    }
 }
 
 uint32_t ExtEncoder::StartEncode(OutputDataStream &outputStream, PlEncodeOptions &option)
@@ -404,22 +408,44 @@ static bool CheckPictureHasArgb(Picture *picture)
         IMAGE_LOGI("%{public}s picture has ARGB format. mainPixelMap is ARGB!", __func__);
         return true;
     }
-    const auto &auxTypes = ImageUtils::GetAllAuxiliaryPictureType();
-    for (const auto &type : auxTypes) {
-        if (!ImageUtils::IsAuxiliaryPictureEncoded(type)) {
-            continue;
-        }
-        auto auxPicture = picture->GetAuxiliaryPicture(type);
-        if (auxPicture == nullptr || auxPicture->GetContentPixel() == nullptr) {
-            continue;
-        }
-        if (auxPicture->GetContentPixel()->GetPixelFormat() == PixelFormat::ARGB_8888) {
-            IMAGE_LOGI("%{public}s picture has ARGB format. auxType: %{public}d is ARGB!", __func__, type);
-            return true;
-        }
-    }
     IMAGE_LOGD("%{public}s picture does not have ARGB format.", __func__);
     return false;
+}
+
+static std::unique_ptr<Picture> ConvertToRgbaPicture(Picture *picture)
+{
+    bool cond = picture == nullptr || picture->GetMainPixel() == nullptr;
+    CHECK_ERROR_RETURN_RET_LOG(cond, nullptr,
+        "%{public}s picture or mainPixelMap is nullptr!", __func__);
+    cond = !CheckPictureHasArgb(picture);
+    CHECK_ERROR_RETURN_RET_LOG(cond, nullptr, "%{public}s no need to convert!", __func__);
+
+    std::shared_ptr<PixelMap> mainPixelMap = picture->GetMainPixel();
+    std::unique_ptr<Picture> newPicture = Picture::Create(mainPixelMap);
+    cond = newPicture == nullptr;
+    CHECK_ERROR_RETURN_RET_LOG(cond, nullptr,
+        "%{public}s newPicture create failed! Stop ConvertToRgbaPicture.", __func__);
+    int32_t errorCode;
+    if (mainPixelMap->GetPixelFormat() == PixelFormat::ARGB_8888) {
+        std::shared_ptr<PixelMap> newPixelMap = mainPixelMap->Clone(errorCode);
+        cond = errorCode != SUCCESS || newPixelMap == nullptr ||
+            ConvertArgbAndRgba(newPixelMap.get(), PixelFormat::RGBA_8888) != SUCCESS;
+        CHECK_ERROR_RETURN_RET_LOG(cond, nullptr,
+            "%{public}s mainPixelMap Convert failed! Stop ConvertToRgbaPicture.", __func__);
+        newPicture->SetMainPixel(newPixelMap);
+    }
+
+    sptr<SurfaceBuffer> maintenanceData = picture->GetMaintenanceData();
+    if (maintenanceData != nullptr) {
+        cond = !newPicture->SetMaintenanceData(maintenanceData);
+        CHECK_ERROR_PRINT_LOG(cond, "%{public}s SetMaintenanceData for newPicture failed!", __func__);
+    }
+    std::shared_ptr<ExifMetadata> exifMetadata = picture->GetExifMetadata();
+    if (exifMetadata != nullptr) {
+        cond = newPicture->SetExifMetadata(exifMetadata) != SUCCESS;
+        CHECK_ERROR_PRINT_LOG(cond, "%{public}s SetExifMetadata for newPicture failed!", __func__);
+    }
+    return newPicture;
 }
 
 uint32_t ExtEncoder::CheckArgbEncode()
@@ -428,16 +454,22 @@ uint32_t ExtEncoder::CheckArgbEncode()
         int32_t errorCode = ERROR;
         std::unique_ptr<PixelMap> newPixelMap = pixelmap_->Clone(errorCode);
         if (errorCode != SUCCESS || ConvertArgbAndRgba(newPixelMap.get(), PixelFormat::RGBA_8888) != SUCCESS) {
-            IMAGE_LOGE("%{public}s Convert ARGB to RGBA failed!", __func__);
+            IMAGE_LOGE("%{public}s Pixelmap Convert ARGB to RGBA failed!", __func__);
             return IMAGE_RESULT_FORMAT_CONVERT_FAILED;
         }
         pixelmap_ = newPixelMap.release();
         releasePixelMap_ = true;
-        IMAGE_LOGI("%{public}s Convert ARGB to RGBA pixelMap success!", __func__);
+        IMAGE_LOGI("%{public}s PixelMap Convert ARGB to RGBA success!", __func__);
     }
     if (picture_ != nullptr && CheckPictureHasArgb(picture_)) {
-        IMAGE_LOGE("%{public}s picture not support ARGB encode!", __func__);
-        return ERR_MEDIA_INVALID_OPERATION;
+        std::unique_ptr<Picture> newPicture = ConvertToRgbaPicture(picture_);
+        if (newPicture == nullptr) {
+            IMAGE_LOGE("%{public}s picture's mainPixelMap Convert ARGB to RGBA failed!", __func__);
+            return IMAGE_RESULT_FORMAT_CONVERT_FAILED;
+        }
+        picture_ = newPicture.release();
+        releasePicture_ = true;
+        IMAGE_LOGI("%{public}s picture's mainPixelMap Convert ARGB to RGBA success!", __func__);
     }
     return SUCCESS;
 }
@@ -472,6 +504,11 @@ uint32_t ExtEncoder::FinalizeEncode()
 #if !defined(_WIN32) && !defined(_APPLE) && !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
     if (picture_ != nullptr) {
         encodeFormat_ = iter->second;
+        if ((encodeFormat_ == SkEncodedImageFormat::kHEIF) &&
+            picture_->GetMainPixel()->GetAllocatorType() == Media::AllocatorType::SHARE_MEM_ALLOC) {
+            pixelmap_ = picture_->GetMainPixel().get();
+            return EncodeHeifByPixelmap(picture_->GetMainPixel().get(), opts_);
+        }
         return EncodePicture();
     }
 #endif

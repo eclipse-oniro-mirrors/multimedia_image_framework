@@ -346,11 +346,15 @@ static void SetUncodedAuxilaryPictureInfo(std::unique_ptr<AuxiliaryPicture> &aux
     auxPicture->SetAuxiliaryPictureInfo(auxInfo);
 }
 
-static std::unique_ptr<AuxiliaryPicture> GenerateAuxiliaryPicture(const MainPictureInfo &mainInfo,
+static std::unique_ptr<AuxiliaryPicture> GenerateAuxiliaryPicture(MainPictureInfo &mainInfo,
     AuxiliaryPictureType type, const std::string &format,
     std::unique_ptr<AbsImageDecoder> &extDecoder, uint32_t &errorCode)
 {
     IMAGE_LOGI("Generate by decoder, type: %{public}d, format: %{public}s", static_cast<int>(type), format.c_str());
+    if (mainInfo.imageInfo.pixelFormat == PixelFormat::ARGB_8888) {
+        IMAGE_LOGW("The auxiliaryPicture cannot use ARGB_8888, convert to RGBA_8888");
+        mainInfo.imageInfo.pixelFormat = PixelFormat::RGBA_8888;
+    }
     DecodeContext context;
     context.allocatorType = AllocatorType::DMA_ALLOC;
     errorCode = SetAuxiliaryDecodeOption(extDecoder, mainInfo.imageInfo.pixelFormat, context.info, type);
@@ -393,7 +397,7 @@ static std::unique_ptr<AuxiliaryPicture> GenerateAuxiliaryPicture(const MainPict
     return auxPicture;
 }
 
-std::shared_ptr<AuxiliaryPicture> AuxiliaryGenerator::GenerateHeifAuxiliaryPicture(const MainPictureInfo &mainInfo,
+std::shared_ptr<AuxiliaryPicture> AuxiliaryGenerator::GenerateHeifAuxiliaryPicture(MainPictureInfo &mainInfo,
     AuxiliaryPictureType type, std::unique_ptr<AbsImageDecoder> &extDecoder, uint32_t &errorCode)
 {
     IMAGE_LOGI("Generate heif auxiliary picture, type: %{public}d", static_cast<int>(type));
@@ -420,7 +424,7 @@ std::shared_ptr<AuxiliaryPicture> AuxiliaryGenerator::GenerateHeifAuxiliaryPictu
 }
 
 std::shared_ptr<AuxiliaryPicture> AuxiliaryGenerator::GenerateJpegAuxiliaryPicture(
-    const MainPictureInfo &mainInfo, AuxiliaryPictureType type, std::unique_ptr<InputDataStream> &auxStream,
+    MainPictureInfo &mainInfo, AuxiliaryPictureType type, std::unique_ptr<InputDataStream> &auxStream,
     std::unique_ptr<AbsImageDecoder> &extDecoder, uint32_t &errorCode)
 {
     IMAGE_LOGI("Generate jpeg auxiliary picture, type: %{public}d", static_cast<int>(type));

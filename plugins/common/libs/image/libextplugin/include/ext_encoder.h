@@ -157,6 +157,7 @@ private:
     Media::Picture* picture_ = nullptr;
     std::vector<std::shared_ptr<Media::AbsMemory>> tmpMemoryList_;
     bool releasePixelMap_ = false;
+    bool releasePicture_ = false;
 };
 } // namespace ImagePlugin
 } // namespace OHOS
