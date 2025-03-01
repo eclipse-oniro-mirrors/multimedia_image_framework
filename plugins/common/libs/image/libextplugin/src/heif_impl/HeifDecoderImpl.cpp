@@ -632,7 +632,8 @@ bool HeifDecoderImpl::HwDecodeImage(HeifHardwareDecoder *hwDecoder,
 
     GraphicPixelFormat inPixelFormat = GetInPixelFormat(image);
     sptr<SurfaceBuffer> hwBuffer = isPrimary && IsDirectYUVDecode() ? sptr<SurfaceBuffer>(dstHwBuffer_) :
-                                   hwDecoder->AllocateOutputBuffer(gridInfo.displayWidth, gridInfo.displayHeight, inPixelFormat);
+                                   hwDecoder->AllocateOutputBuffer(gridInfo.displayWidth, gridInfo.displayHeight,
+                                   inPixelFormat);
     if (hwBuffer == nullptr) {
         IMAGE_LOGE("decode AllocateOutputBuffer return null");
         ReleaseHwDecoder(hwDecoder, isReuseHwDecoder);
