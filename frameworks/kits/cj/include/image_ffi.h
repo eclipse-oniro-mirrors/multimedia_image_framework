@@ -27,6 +27,12 @@ struct CImageInfo {
     int32_t height;
     int32_t width;
     int32_t density;
+};
+
+struct CImageInfoV2 {
+    int32_t height;
+    int32_t width;
+    int32_t density;
     int32_t stride;
     int32_t pixelFormat;
     int32_t alphaType;
@@ -93,6 +99,7 @@ FFI_EXPORT int64_t FfiOHOSCreateImageSourceByBufferWithOption(
 FFI_EXPORT int64_t FfiOHOSCreateIncrementalSource(
     const uint8_t* data, uint32_t size, CSourceOptions opts, uint32_t* errCode);
 FFI_EXPORT CImageInfo FfiOHOSImageSourceGetImageInfo(int64_t id, uint32_t index, uint32_t* errCode);
+FFI_EXPORT CImageInfoV2 FfiOHOSImageSourceGetImageInfoV2(int64_t id, uint32_t index, uint32_t* errCode);
 FFI_EXPORT CArrString FfiOHOSGetSupportedFormats(int64_t id, uint32_t* errCode);
 FFI_EXPORT char* FfiOHOSGetImageProperty(int64_t id, char* key, uint32_t index, char* defaultValue, uint32_t* errCode);
 FFI_EXPORT uint32_t FfiOHOSModifyImageProperty(int64_t id, char* key, char* value);
@@ -120,6 +127,7 @@ FFI_EXPORT uint32_t FfiOHOSCrop(int64_t id, CRegion rect);
 FFI_EXPORT uint32_t FfiOHOSGetPixelBytesNumber(int64_t id, uint32_t* errCode);
 FFI_EXPORT uint32_t FfiOHOSGetBytesNumberPerRow(int64_t id, uint32_t* errCode);
 FFI_EXPORT CImageInfo FfiOHOSGetImageInfo(int64_t id, uint32_t* errCode);
+FFI_EXPORT CImageInfoV2 FfiOHOSGetImageInfoV2(int64_t id, uint32_t* errCode);
 FFI_EXPORT uint32_t FfiOHOSScale(int64_t id, float xAxis, float yAxis);
 FFI_EXPORT uint32_t FfiImagePixelMapImplScale(int64_t id, float xAxis, float yAxis, int32_t antiAliasing);
 FFI_EXPORT uint32_t FfiOHOSFlip(int64_t id, bool xAxis, bool yAxis);

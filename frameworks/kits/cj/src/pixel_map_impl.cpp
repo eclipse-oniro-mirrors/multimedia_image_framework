@@ -129,7 +129,7 @@ uint32_t PixelMapImpl::WritePixels(
 void PixelMapImpl::GetImageInfo(ImageInfo& imageInfo)
 {
     if (real_ == nullptr) {
-        IMAGE_LOGE("[PixelMapImpl] get instance!");
+        IMAGE_LOGE("[PixelMapImpl] real_ is nullptr!");
         return;
     }
     real_->GetImageInfo(imageInfo);
@@ -138,7 +138,7 @@ void PixelMapImpl::GetImageInfo(ImageInfo& imageInfo)
 int32_t PixelMapImpl::GetDensity()
 {
     if (real_ == nullptr) {
-        IMAGE_LOGE("[PixelMapImpl] get instance!");
+        IMAGE_LOGE("[PixelMapImpl] real_ is nullptr!");
         return 0;
     }
     return real_->GetBaseDensity();
@@ -155,7 +155,7 @@ uint32_t PixelMapImpl::Opacity(float percent)
 void PixelMapImpl::Scale(float xAxis, float yAxis)
 {
     if (real_ == nullptr) {
-        IMAGE_LOGE("[PixelMapImpl] get instance!");
+        IMAGE_LOGE("[PixelMapImpl] real_ is nullptr!");
         return;
     }
     real_->scale(xAxis, yAxis);
@@ -164,7 +164,7 @@ void PixelMapImpl::Scale(float xAxis, float yAxis)
 void PixelMapImpl::Scale(float xAxis, float yAxis, AntiAliasingOption option)
 {
     if (real_ == nullptr) {
-        IMAGE_LOGE("[PixelMapImpl] get instance!");
+        IMAGE_LOGE("[PixelMapImpl] real_ is nullptr!");
         return;
     }
     real_->scale(xAxis, yAxis, option);
@@ -193,7 +193,7 @@ uint32_t PixelMapImpl::ToSdr()
 void PixelMapImpl::Flip(bool xAxis, bool yAxis)
 {
     if (real_ == nullptr) {
-        IMAGE_LOGE("[PixelMapImpl] get instance!");
+        IMAGE_LOGE("[PixelMapImpl] real_ is nullptr!");
         return;
     }
     real_->flip(xAxis, yAxis);
@@ -202,7 +202,7 @@ void PixelMapImpl::Flip(bool xAxis, bool yAxis)
 void PixelMapImpl::Rotate(float degrees)
 {
     if (real_ == nullptr) {
-        IMAGE_LOGE("[PixelMapImpl] get instance!");
+        IMAGE_LOGE("[PixelMapImpl] real_ is nullptr!");
         return;
     }
     real_->rotate(degrees);
@@ -211,7 +211,7 @@ void PixelMapImpl::Rotate(float degrees)
 void PixelMapImpl::Translate(float xAxis, float yAxis)
 {
     if (real_ == nullptr) {
-        IMAGE_LOGE("[PixelMapImpl] get instance!");
+        IMAGE_LOGE("[PixelMapImpl] real_ is nullptr!");
         return;
     }
     real_->translate(xAxis, yAxis);
@@ -220,7 +220,7 @@ void PixelMapImpl::Translate(float xAxis, float yAxis)
 uint32_t PixelMapImpl::GetPixelBytesNumber()
 {
     if (real_ == nullptr) {
-        IMAGE_LOGE("[PixelMapImpl] get instance!");
+        IMAGE_LOGE("[PixelMapImpl] real_ is nullptr!");
         return 0;
     }
     return real_->GetByteCount();
@@ -229,7 +229,7 @@ uint32_t PixelMapImpl::GetPixelBytesNumber()
 uint32_t PixelMapImpl::GetBytesNumberPerRow()
 {
     if (real_ == nullptr) {
-        IMAGE_LOGE("[PixelMapImpl] get instance!");
+        IMAGE_LOGE("[PixelMapImpl] real_ is nullptr!");
         return 0;
     }
     return real_->GetRowBytes();
@@ -238,7 +238,7 @@ uint32_t PixelMapImpl::GetBytesNumberPerRow()
 bool PixelMapImpl::GetIsEditable()
 {
     if (real_ == nullptr) {
-        IMAGE_LOGE("[PixelMapImpl] get instance!");
+        IMAGE_LOGE("[PixelMapImpl] real_ is nullptr!");
         return false;
     }
     return real_->IsEditable();
@@ -247,7 +247,7 @@ bool PixelMapImpl::GetIsEditable()
 bool PixelMapImpl::GetIsStrideAlignment()
 {
     if (real_ == nullptr) {
-        IMAGE_LOGE("[PixelMapImpl] get instance!");
+        IMAGE_LOGE("[PixelMapImpl] real_ is nullptr!");
         return false;
     }
     bool isDMA = real_->IsStrideAlignment();
@@ -257,7 +257,7 @@ bool PixelMapImpl::GetIsStrideAlignment()
 uint32_t PixelMapImpl::SetColorSpace(std::shared_ptr<OHOS::ColorManager::ColorSpace> colorSpace)
 {
 #ifdef IMAGE_COLORSPACE_FLAG
-    if (real_ == nullptr) {
+    if (real_ == nullptr || colorSpace == nullptr) {
         return ERR_IMAGE_SOURCE_DATA_INCOMPLETE;
     }
     real_->InnerSetColorSpace(*colorSpace);
@@ -271,7 +271,7 @@ std::shared_ptr<OHOS::ColorManager::ColorSpace> PixelMapImpl::GetColorSpace()
 {
 #ifdef IMAGE_COLORSPACE_FLAG
     if (real_ == nullptr) {
-        IMAGE_LOGE("[PixelMapImpl] get instance!");
+        IMAGE_LOGE("[PixelMapImpl] real_ is nullptr!");
         return nullptr;
     }
     auto colorSpace = real_->InnerGetGrColorSpacePtr();
@@ -283,7 +283,7 @@ std::shared_ptr<OHOS::ColorManager::ColorSpace> PixelMapImpl::GetColorSpace()
 
 uint32_t PixelMapImpl::ApplyColorSpace(std::shared_ptr<OHOS::ColorManager::ColorSpace> colorSpace)
 {
-    if (real_ == nullptr) {
+    if (real_ == nullptr || colorSpace == nullptr) {
         return ERR_IMAGE_READ_PIXELMAP_FAILED;
     }
     return real_->ApplyColorSpace(*colorSpace);
