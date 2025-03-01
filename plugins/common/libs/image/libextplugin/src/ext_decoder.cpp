@@ -378,7 +378,8 @@ uint32_t ExtDecoder::HeifYUVMemAlloc(OHOS::ImagePlugin::DecodeContext &context)
     } else if (context.info.pixelFormat == PixelFormat::YCBCR_P010) {
         graphicPixelFormat = GRAPHIC_PIXEL_FMT_YCBCR_P010;
     }
-    sptr<SurfaceBuffer> hwBuffer = decoder.AllocateOutputBuffer(gridInfo.displayWidth, gridInfo.displayHeight, graphicPixelFormat);
+    sptr<SurfaceBuffer> hwBuffer = decoder.AllocateOutputBuffer(gridInfo.displayWidth, gridInfo.displayHeight,
+                                                                graphicPixelFormat);
     if (hwBuffer == nullptr) {
         IMAGE_LOGE("HeifHardwareDecoder AllocateOutputBuffer return null");
         return ERR_DMA_NOT_EXIST;
