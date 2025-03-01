@@ -203,8 +203,8 @@ bool HeifHwDecoderFlow::AllocOutput(UserPixelFormat userPixelFormat)
         return false;
     }
     GraphicPixelFormat pixelFmt = iter->second;
-    output_ = hwDecoder_.AllocateOutputBuffer(gridInfo_.tileWidth * gridInfo_.cols,
-                                              gridInfo_.tileHeight * gridInfo_.rows,
+    output_ = hwDecoder_.AllocateOutputBuffer(gridInfo_.displayWidth,
+                                              gridInfo_.displayHeight,
                                               pixelFmt);
     if (output_ == nullptr) {
         LOGE("failed to alloc output");

@@ -47,8 +47,9 @@ private:
     struct RawYuvCopyInfo {
         uint8_t* yStart = 0;
         uint8_t* uvStart = 0;
+        uint32_t width = 0;
         uint32_t stride = 0;
-        uint32_t yStride = 0;
+        uint32_t height = 0;
         uint32_t yOffset = 0;
         uint32_t uvOffset = 0;
     };
@@ -67,6 +68,8 @@ private:
     void SendInputBufferLoop(const std::vector<std::vector<uint8_t>>& inputs);
     bool WaitForOmxToReturnOutputBuffer(uint32_t& bufferId, std::shared_ptr<ImageCodecBuffer>& buffer);
     void AssembleOutput(uint32_t outputIndex, std::shared_ptr<ImageCodecBuffer>& buffer);
+    static uint32_t CalculateDirtyLen(uint32_t displayAlignedLen, uint32_t gridLen, uint32_t gridAlignedLen,
+                                      uint32_t totalGrid, uint32_t curGrid);
     static bool CopyRawYuvData(const RawYuvCopyInfo& src, const RawYuvCopyInfo& dst,
                                uint32_t dirtyWidth, uint32_t dirtyHeight);
     void ReceiveOutputBufferLoop();
