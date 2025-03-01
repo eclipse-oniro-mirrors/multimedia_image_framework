@@ -1201,7 +1201,7 @@ static bool NV12P010ToNV21P010(const uint16_t *srcBuffer, const ImageInfo &info,
     const uint16_t *srcUV = srcBuffer + info.size.width * info.size.height;
     uint16_t *dstVU = destBuffer + info.size.width * info.size.height;
     uint32_t sizeUV = info.size.width * info.size.height / NUM_2;
-    for (uint32_t i = 0; i < info.size.width * info.size.height; i++) {
+    for (uint32_t i = 0; i < static_cast<uint32_t>(info.size.width) * static_cast<uint32_t>(info.size.height); i++) {
         destBuffer[i] = srcBuffer[i];
     }
     for (uint32_t i = 0; i < sizeUV; i += NUM_2) {
@@ -1554,13 +1554,17 @@ static int32_t ConvertToP010(const void *srcPixels, const int32_t srcLength, con
     return dstLength;
 }
 
-static int32_t YUVConvert(const void *srcPixels, const int32_t srcLength, const ImageInfo &srcInfo,
-    void *dstPixels, const ImageInfo &dstInfo)
+static int32_t YUVConvert(const BufferInfo &src, const int32_t srcLength, BufferInfo &dst)
 {
+    ImageInfo srcInfo = src.imageInfo;
+    ImageInfo dstInfo = dst.imageInfo;
+    const void *srcPixels = src.pixels;
+    void* dstPixels = dst.pixels;
     if (srcInfo.pixelFormat == dstInfo.pixelFormat &&
         srcInfo.size.width == dstInfo.size.width && srcInfo.size.height == dstInfo.size.height) {
             IMAGE_LOGE("src pixel format is equal dst pixel format. no need to convert.");
-            auto result = memcpy_s(dstPixels, srcLength, srcPixels, srcLength);
+            int32_t dstLength = dst.rowStride * dst.imageInfo.size.height;
+            auto result = memcpy_s(dstPixels, dstLength, srcPixels, srcLength);
             return result == 0 ? srcLength : -1;
     }
     if (IsYUVP010Format(srcInfo.pixelFormat) && IsYUVP010Format(dstInfo.pixelFormat)) {
@@ -1611,7 +1615,7 @@ int32_t PixelConvert::PixelsConvert(const BufferInfo &src, BufferInfo &dst, int3
     }
     if (IsInterYUVConvert(src.imageInfo.pixelFormat, dst.imageInfo.pixelFormat) ||
         (IsYUVP010Format(src.imageInfo.pixelFormat) && IsYUVP010Format(dst.imageInfo.pixelFormat))) {
-        return YUVConvert(src.pixels, srcLength, src.imageInfo, dst.pixels, dst.imageInfo);
+        return YUVConvert(src, srcLength, dst);
     }
     if (src.imageInfo.pixelFormat == PixelFormat::NV12 || src.imageInfo.pixelFormat == PixelFormat::NV21) {
         return ConvertFromYUV(src, srcLength, dst);
