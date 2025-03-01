@@ -1563,8 +1563,7 @@ static int32_t YUVConvert(const BufferInfo &src, const int32_t srcLength, Buffer
     if (srcInfo.pixelFormat == dstInfo.pixelFormat &&
         srcInfo.size.width == dstInfo.size.width && srcInfo.size.height == dstInfo.size.height) {
             IMAGE_LOGE("src pixel format is equal dst pixel format. no need to convert.");
-            int32_t dstLength = dst.rowStride * dst.imageInfo.size.height;
-            auto result = memcpy_s(dstPixels, dstLength, srcPixels, srcLength);
+            auto result = memcpy_s(dstPixels, srcLength, srcPixels, srcLength);
             return result == 0 ? srcLength : -1;
     }
     if (IsYUVP010Format(srcInfo.pixelFormat) && IsYUVP010Format(dstInfo.pixelFormat)) {
