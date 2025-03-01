@@ -378,6 +378,11 @@ const char *PngImageChunkUtils::GetExifInfoLen(const char *sourcePtr, size_t *le
 
 int PngImageChunkUtils::ConvertAsciiToInt(const char *sourcePtr, size_t exifInfoLength, unsigned char *destPtr)
 {
+    if (sourcePtr == nullptr || destPtr == nullptr) {
+        IMAGE_LOGE("The scrPointer or destPointer is not valid.");
+        return ERR_IMAGE_SOURCE_DATA_INCOMPLETE;
+    }
+
     static const unsigned char hexAsciiToInt[ASCII_TO_HEX_MAP_SIZE] = {
         0, 0, 0, 0, 0,    0, 0, 0, 0, 0,    0, 0, 0, 0, 0,    0, 0, 0, 0, 0,
         0, 0, 0, 0, 0,    0, 0, 0, 0, 0,    0, 0, 0, 0, 0,    0, 0, 0, 0, 0,

@@ -56,6 +56,7 @@ namespace {
     static constexpr int CONSTANT_2 = 2;
     static constexpr int CONSTANT_3 = 3;
     static constexpr int CONSTANT_4 = 4;
+    static constexpr int FILE_HEADER_LENGTH = 2;
     static constexpr unsigned long MAX_FILE_SIZE = 1000 * 1000 * 1000;
     static constexpr unsigned long GPS_DIGIT_NUMBER = 1e6;
     static constexpr uint32_t GPS_DMS_COUNT = 3;
@@ -611,7 +612,7 @@ uint32_t EXIFInfo::GetFileInfoByPath(const std::string &path, FILE **file, unsig
         return Media::ERR_MEDIA_READ_PARCEL_FAIL;
     }
 
-    if (!((*fileBuf)[0] == 0xFF && (*fileBuf)[1] == 0xD8)) {
+    if (fileLength < FILE_HEADER_LENGTH || !((*fileBuf)[0] == 0xFF && (*fileBuf)[1] == 0xD8)) {
         IMAGE_LOGD("%{public}s is not jpeg file.", path.c_str());
         ReleaseSource(fileBuf, file);
         return Media::ERR_IMAGE_MISMATCHED_FORMAT;
@@ -700,7 +701,7 @@ uint32_t EXIFInfo::GetFileInfoByFd(int localFd, FILE **file, unsigned long &file
         return Media::ERR_MEDIA_READ_PARCEL_FAIL;
     }
 
-    if (!((*fileBuf)[0] == 0xFF && (*fileBuf)[1] == 0xD8)) {
+    if (fileLength < FILE_HEADER_LENGTH || !((*fileBuf)[0] == 0xFF && (*fileBuf)[1] == 0xD8)) {
         IMAGE_LOGD("%{public}d is not jpeg file.", localFd);
         ReleaseSource(fileBuf, file);
         return Media::ERR_IMAGE_MISMATCHED_FORMAT;
@@ -952,7 +953,8 @@ ExifEntry* EXIFInfo::CreateExifTag(ExifData *exif, ExifIfd ifd, ExifTag tag,
     void *buf;
     ExifEntry *exifEntry;
     bool cond = false;
-
+    cond = ifd < EXIF_IFD_0 || ifd >= EXIF_IFD_COUNT;
+    CHECK_DEBUG_RETURN_RET_LOG(cond, nullptr, "Invalid IFD.");
     if ((exifEntry = exif_content_get_entry(exif->ifd[ifd], tag)) != nullptr) {
         EXIFInfoBufferCheck(exifEntry, len);
         return exifEntry;
