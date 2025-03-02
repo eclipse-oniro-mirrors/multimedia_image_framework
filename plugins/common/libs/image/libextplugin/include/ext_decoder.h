@@ -132,7 +132,7 @@ private:
     uint32_t GetFramePixels(SkImageInfo& info, uint8_t* buffer, uint64_t rowStride, SkCodec::Options options);
     FrameCacheInfo InitFrameCacheInfo(const uint64_t rowStride, SkImageInfo info);
     bool FrameCacheInfoIsEqual(FrameCacheInfo& src, FrameCacheInfo& dst);
-    void UpdateHardWareDecodeInfo(DecodeContext &context);
+    uint32_t UpdateHardWareDecodeInfo(DecodeContext &context);
 
     ImagePlugin::InputDataStream *stream_ = nullptr;
     uint32_t streamOff_ = 0;
