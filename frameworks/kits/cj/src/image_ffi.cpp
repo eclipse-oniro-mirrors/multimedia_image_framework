@@ -225,9 +225,31 @@ int64_t FfiOHOSCreateIncrementalSource(const uint8_t* data, uint32_t size, CSour
     return nativeImage->GetID();
 }
 
-static CImageInfo ParseImageSourceImageInfo(ImageInfo info, ImageSource* imageSource)
+CImageInfo FfiOHOSImageSourceGetImageInfo(int64_t id, uint32_t index, uint32_t* errCode)
 {
+    IMAGE_LOGD("[ImageSource] FfiOHOSImageSourceGetImageInfo start");
+    auto instance = FFIData::GetData<ImageSourceImpl>(id);
     CImageInfo ret = {};
+    if (!instance) {
+        IMAGE_LOGE("[ImageSource] instance not exist %{public}" PRId64, id);
+        *errCode = ERR_IMAGE_INIT_ABNORMAL;
+        return ret;
+    }
+    ImageInfo info;
+    *errCode = instance->GetImageInfo(index, info);
+    if (*errCode != 0) {
+        return ret;
+    }
+    ret.height = info.size.height;
+    ret.width = info.size.width;
+    ret.density = info.baseDensity;
+    IMAGE_LOGD("[ImageSource] FfiOHOSImageSourceGetImageInfo success");
+    return ret;
+}
+
+static CImageInfoV2 ParseImageSourceImageInfo(ImageInfo info, ImageSource* imageSource)
+{
+    CImageInfoV2 ret = {};
     ret.height = info.size.height;
     ret.width = info.size.width;
     ret.density = info.baseDensity;
@@ -238,11 +260,11 @@ static CImageInfo ParseImageSourceImageInfo(ImageInfo info, ImageSource* imageSo
     return ret;
 }
 
-CImageInfo FfiOHOSImageSourceGetImageInfo(int64_t id, uint32_t index, uint32_t* errCode)
+CImageInfoV2 FfiOHOSImageSourceGetImageInfoV2(int64_t id, uint32_t index, uint32_t* errCode)
 {
     IMAGE_LOGD("[ImageSource] FfiOHOSImageSourceGetImageInfo start");
     auto instance = FFIData::GetData<ImageSourceImpl>(id);
-    CImageInfo ret = {};
+    CImageInfoV2 ret = {};
     if (!instance) {
         IMAGE_LOGE("[ImageSource] instance not exist %{public}" PRId64, id);
         *errCode = ERR_IMAGE_INIT_ABNORMAL;
@@ -325,6 +347,9 @@ char* FfiOHOSGetImageProperty(int64_t id, char* key, uint32_t index, char* defau
     std::string skey = key;
     std::string value = defaultValue;
     *errCode = instance->GetImageProperty(skey, index, value);
+    if (*errCode != SUCCESS_CODE) {
+        return ret;
+    }
     ret = Utils::MallocCString(value);
     IMAGE_LOGD("[ImageSource] FfiOHOSGetImageProperty success");
     return ret;
@@ -786,9 +811,28 @@ uint32_t FfiOHOSGetBytesNumberPerRow(int64_t id, uint32_t* errCode)
     return ret;
 }
 
-static CImageInfo ParsePixelMapImageInfo(ImageInfo info, PixelMap* pixelMap)
+CImageInfo FfiOHOSGetImageInfo(int64_t id, uint32_t* errCode)
 {
+    IMAGE_LOGD("[PixelMap] FfiOHOSGetImageInfo start");
     CImageInfo ret = {};
+    auto instance = FFIData::GetData<PixelMapImpl>(id);
+    if (!instance || !instance->GetRealPixelMap()) {
+        IMAGE_LOGE("[PixelMap] instance not exist %{public}" PRId64, id);
+        *errCode = ERR_IMAGE_INIT_ABNORMAL;
+        return ret;
+    }
+    ImageInfo info;
+    instance->GetImageInfo(info);
+    ret.height = info.size.height;
+    ret.width = info.size.width;
+    ret.density = info.baseDensity;
+    IMAGE_LOGD("[PixelMap] FfiOHOSGetImageInfo success");
+    return ret;
+}
+
+static CImageInfoV2 ParsePixelMapImageInfo(ImageInfo info, PixelMap* pixelMap)
+{
+    CImageInfoV2 ret = {};
     ret.height = info.size.height;
     ret.width = info.size.width;
     ret.density = info.baseDensity;
@@ -800,10 +844,10 @@ static CImageInfo ParsePixelMapImageInfo(ImageInfo info, PixelMap* pixelMap)
     return ret;
 }
 
-CImageInfo FfiOHOSGetImageInfo(int64_t id, uint32_t* errCode)
+CImageInfoV2 FfiOHOSGetImageInfoV2(int64_t id, uint32_t* errCode)
 {
     IMAGE_LOGD("[PixelMap] FfiOHOSGetImageInfo start");
-    CImageInfo ret = {};
+    CImageInfoV2 ret = {};
     auto instance = FFIData::GetData<PixelMapImpl>(id);
     if (!instance || !instance->GetRealPixelMap()) {
         IMAGE_LOGE("[PixelMap] instance not exist %{public}" PRId64, id);
