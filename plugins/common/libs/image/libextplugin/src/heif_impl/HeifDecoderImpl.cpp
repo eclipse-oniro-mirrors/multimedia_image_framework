@@ -16,6 +16,7 @@
 #include "HeifDecoderImpl.h"
 
 #ifdef HEIF_HW_DECODE_ENABLE
+#include <dlfcn.h>
 #include <sys/timerfd.h>
 #include "ffrt.h"
 #include "image_fwk_ext_manager.h"
@@ -33,7 +34,6 @@
 extern "C" {
 #endif
 #include "libswscale/swscale.h"
-#include "libavutil/imgutils.h"
 #include "libavcodec/avcodec.h"
 #ifdef __cplusplus
 }
@@ -79,6 +79,29 @@ const static size_t MAX_INPUT_BUFFER_SIZE = 5 * 1024 * 1024;
 const static uint16_t BT2020_PRIMARIES = 9;
 const static int BIT_SHIFT_16BITS = 16;
 
+typedef uint8_t uvec8[16];
+typedef int16_t vec16[8];
+struct YuvConstants {
+    uvec8 kUVCoeff;
+    vec16 kRGBCoeffBias;
+};
+
+typedef int (*FUNC_NV21ToARGBMatrix)(const uint8_t* src_y,
+    int src_stride_y,
+    const uint8_t* src_vu,
+    int src_stride_vu,
+    uint8_t* dst_argb,
+    int dst_stride_argb,
+    const struct YuvConstants* yuvconstants,
+    int width,
+    int height);
+
+const std::string YUV_LIB_PATH = "libyuv.z.so";
+static void* g_dlHandler = nullptr;
+static FUNC_NV21ToARGBMatrix g_libyuvNV21ToARGBMatrixFunc = nullptr;
+static struct YuvConstants* g_kYuvI601Constants = nullptr;
+static struct YuvConstants* g_kYuvJPEGConstants = nullptr;
+
 struct PixelFormatConvertParam {
     uint8_t *data;
     uint32_t width;
@@ -122,10 +145,76 @@ static bool FillFrameInfoForPixelConvert(AVFrame *frame, PixelFormatConvertParam
     return true;
 }
 
+static void UnloadLibYuv()
+{
+    g_libyuvNV21ToARGBMatrixFunc = nullptr;
+    g_kYuvI601Constants = nullptr;
+    g_kYuvJPEGConstants = nullptr;
+    if (g_dlHandler) {
+        dlclose(g_dlHandler);
+        g_dlHandler = nullptr;
+    }
+}
+
+__attribute__((destructor)) void DeinitLibyuv()
+{
+    UnloadLibYuv();
+}
+
+static bool LoadLibyuv()
+{
+    if (g_libyuvNV21ToARGBMatrixFunc && g_kYuvI601Constants && g_kYuvJPEGConstants) {
+        return true;
+    }
+    void* g_dlHandler = dlopen(YUV_LIB_PATH.c_str(), RTLD_LAZY | RTLD_NODELETE);
+    if (g_dlHandler == nullptr) {
+        IMAGE_LOGE("HeifDecoder dlopen libyuv, failed");
+        return false;
+    }
+    g_libyuvNV21ToARGBMatrixFunc = (FUNC_NV21ToARGBMatrix)dlsym(g_dlHandler, "NV21ToARGBMatrix");
+    g_kYuvI601Constants = (YuvConstants*)dlsym(g_dlHandler, "kYuvI601Constants");
+    g_kYuvJPEGConstants = (YuvConstants*)dlsym(g_dlHandler, "kYuvJPEGConstants");
+    if (!g_libyuvNV21ToARGBMatrixFunc || !g_kYuvI601Constants || !g_kYuvJPEGConstants) {
+        IMAGE_LOGE("HeifDecoder load func, failed");
+        return false;
+    }
+    return true;
+}
+
+static bool ConvertNV12ToRGBA(PixelFormatConvertParam &srcParam, PixelFormatConvertParam &dstParam)
+{
+    ImageTrace trace(__func__);
+    if (!LoadLibyuv()) {
+        return false;
+    }
+    AVFrame *srcFrame = av_frame_alloc();
+    AVFrame *dstFrame = av_frame_alloc();
+    const YuvConstants *yuvConstants = g_kYuvI601Constants;
+    if (srcParam.colorRangeFlag == 1) {
+        yuvConstants = g_kYuvJPEGConstants;
+    }
+    bool res = FillFrameInfoForPixelConvert(srcFrame, srcParam) &&
+        FillFrameInfoForPixelConvert(dstFrame, dstParam) &&
+        0 == g_libyuvNV21ToARGBMatrixFunc(
+            srcFrame->data[0], srcFrame->linesize[0],
+            srcFrame->data[1], srcFrame->linesize[1],
+            dstFrame->data[0], dstFrame->linesize[0],
+            yuvConstants,
+            static_cast<int>(srcParam.width),
+            static_cast<int>(srcParam.height));
+    av_frame_free(&srcFrame);
+    av_frame_free(&dstFrame);
+    return res;
+}
+
 static bool ConvertPixelFormat(PixelFormatConvertParam &srcParam, PixelFormatConvertParam &dstParam)
 {
     ImageTrace trace("ConvertPixelFormat %d %d", srcParam.format, dstParam.format);
     IMAGE_LOGD("ConvertPixelFormat %{public}d %{public}d", srcParam.format, dstParam.format);
+    if (srcParam.format == AV_PIX_FMT_NV12 && dstParam.format == AV_PIX_FMT_RGBA &&
+        ConvertNV12ToRGBA(srcParam, dstParam)) {
+        return true;
+    }
     bool res = false;
     AVFrame *srcFrame = av_frame_alloc();
     AVFrame *dstFrame = av_frame_alloc();
