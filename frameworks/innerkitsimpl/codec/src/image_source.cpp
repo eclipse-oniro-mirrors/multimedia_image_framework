@@ -3304,6 +3304,19 @@ static bool ExtInfoColorSpaceCheck(AstcExtendInfo &extInfo)
     return true;
 }
 
+static bool CheckAstcExtInfoBytes(AstcExtendInfo &extInfo, size_t astcSize, size_t fileSize)
+{
+    if (extInfo.extendBufferSumBytes != ASTC_EXTEND_INFO_TLV_SUM_BYTES) {
+        IMAGE_LOGE("CheckAstcExtInfoBytes extendBufferSumBytes is invalid: %{public}d", extInfo.extendBufferSumBytes);
+        return false;
+    }
+    if (extInfo.extendBufferSumBytes + astcSize + ASTC_EXTEND_INFO_SIZE_DEFINITION_LENGTH != fileSize) {
+        IMAGE_LOGE("CheckAstcExtInfoBytes extendBufferSumBytes is large than filesize");
+        return false;
+    }
+    return true;
+}
+
 static bool ResolveExtInfo(const uint8_t *sourceFilePtr, size_t astcSize, size_t fileSize,
     unique_ptr<PixelAstc> &pixelAstc)
 {
@@ -3317,7 +3330,7 @@ static bool ResolveExtInfo(const uint8_t *sourceFilePtr, size_t astcSize, size_t
         return false;
     }
     extInfo.extendBufferSumBytes = GetDataSize(extInfoBuf);
-    if (extInfo.extendBufferSumBytes + astcSize + ASTC_EXTEND_INFO_SIZE_DEFINITION_LENGTH != fileSize) {
+    if (!CheckAstcExtInfoBytes(extInfo, astcSize, fileSize)) {
         IMAGE_LOGE("ResolveExtInfo file size is not equal to astc add ext bytes!");
         return false;
     }
