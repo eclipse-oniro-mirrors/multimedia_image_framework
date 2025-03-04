@@ -3074,7 +3074,7 @@ void PixelMap::WriteData(std::vector<uint8_t> &buff, const uint8_t *data,
 
 uint8_t *PixelMap::ReadData(std::vector<uint8_t> &buff, int32_t size, int32_t &cursor)
 {
-    if (size <= 0 || size > MAX_IMAGEDATA_SIZE) {
+    if (size <= 0 || static_cast<size_t>(size) > MAX_IMAGEDATA_SIZE) {
         IMAGE_LOGE("pixel map tlv read data fail: invalid size[%{public}d]", size);
         return nullptr;
     }
