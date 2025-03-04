@@ -753,16 +753,22 @@ bool PixelYuvUtils::ReadYuvConvert(const void *srcPixels, const Position &srcPos
 void PixelYuvUtils::SetTranslateDataDefault(uint8_t *srcPixels, int32_t width, int32_t height, PixelFormat format,
     YUVStrideInfo &dstStrides)
 {
-    if (dstStrides.yStride > INT32_MAX || dstStrides.uvStride > INT32_MAX) {
+    if (dstStrides.yStride > UINT32_MAX || dstStrides.uvStride > UINT32_MAX) {
         IMAGE_LOGE("check yStride(%{public}d) or uvStride(%{public}d)", dstStrides.yStride, dstStrides.uvStride);
         return;
     }
-    auto ySizeNormal = static_cast<int32_t>(dstStrides.yStride) * height;
-    auto uvSizeNormal = static_cast<int32_t>(dstStrides.uvStride) * GetUVHeight(height);
+    auto ySizeNormal = dstStrides.yStride * static_cast<uint32_t>(height);
+    auto uvSizeNormal = dstStrides.uvStride * static_cast<uint32_t>(GetUVHeight(height));
     if (IsYUVP010Format(format)) {
         ySizeNormal *= NUM_2;
         uvSizeNormal *= NUM_2;
     }
+
+    if (ySizeNormal > UINT32_MAX || uvSizeNormal > UINT32_MAX) {
+        IMAGE_LOGE("ySizeNormal or uvSizeNormal is overflow.");
+        return;
+    }
+
     if (memset_s(srcPixels, ySizeNormal, Y_DEFAULT, ySizeNormal) != EOK ||
         memset_s(srcPixels + ySizeNormal, uvSizeNormal, UV_DEFAULT, uvSizeNormal) != EOK) {
         IMAGE_LOGW("set translate default color failed");
