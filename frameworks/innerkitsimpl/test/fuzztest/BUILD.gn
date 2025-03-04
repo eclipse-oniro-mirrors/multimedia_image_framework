@@ -15,6 +15,7 @@ group("fuzztest") {
   testonly = true
   deps = [
     "imageaccessor_fuzzer:ImageAccessorFuzzTest",
+    "imagefwkconvertastc2rgb_fuzzer:ImageFwkConvertAstc2RgbFuzzTest",
     "imagegifencoder_fuzzer:ImageGifEnCoderFuzzTest",
     "imageheifimpl_fuzzer:ImageHeifImplFuzzTest",
     "imageinterfacepixelmap_fuzzer:ImageInterfacePixelmapFuzzTest",
@@ -30,6 +31,5 @@ group("fuzztest") {
     "imagepngplugin_fuzzer:ImagePngPluginFuzzTest",
     "imagesource_fuzzer:ImageSourceFuzzTest",
     "imagetextureencode_fuzzer:ImageTextureEncodeFuzzTest",
-    "imagefwkconvertastc2rgb_fuzzer:ImageFwkConvertAstc2RgbFuzzTest"
   ]
 }
