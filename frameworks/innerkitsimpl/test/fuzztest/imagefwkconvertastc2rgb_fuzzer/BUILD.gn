@@ -19,11 +19,11 @@ ohos_fuzztest("ImageFwkConvertAstc2RgbFuzzTest") {
   fuzz_config_file = "$image_subsystem/frameworks/innerkitsimpl/test/fuzztest/imagefwkconvertastc2rgb_fuzzer"
   include_dirs = [
     "./include",
-    "$image_subsystem/interfaces/innerkits/include",
     "$image_subsystem/frameworks/innerkitsimpl/converter/include",
+    "$image_subsystem/interfaces/innerkits/include",
   ]
   sources = [ "src/image_fwk_convert_astc2rgb_fuzzer.cpp" ]
-  defines = [ "EXT_PIXEL"]
+  defines = [ "EXT_PIXEL" ]
   deps = [ "$image_subsystem/interfaces/innerkits:image_native" ]
   external_deps = [
     "c_utils:utils",
