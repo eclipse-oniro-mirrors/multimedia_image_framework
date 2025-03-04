@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024 Huawei Device Co., Ltd.
+ * Copyright (c) 2025 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -17,13 +17,13 @@
 
 #include <fstream>
 #include <securec.h>
-#include "pixel_convert.h"
-#include "pixel_map.h"
 #include "image_format_convert.h"
 #include "image_log.h"
 #include "image_source.h"
 #include "image_type.h"
 #include "media_errors.h"
+#include "pixel_convert.h"
+#include "pixel_map.h"
 
 namespace OHOS {
 namespace Media {
