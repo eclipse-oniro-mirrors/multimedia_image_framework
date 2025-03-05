@@ -1133,7 +1133,7 @@ bool PostProc::ScalePixelMapWithSLR(const Size &desiredSize, PixelMap &pixelMap,
     if (!CheckPixelMapSLR(desiredSize, pixelMap)) {
         return false;
     }
-    useLap = useLap || ImageSystemProperties::GetSLRLaplacianEnabled();
+    useLap = useLap && ImageSystemProperties::GetSLRLaplacianEnabled();
     ImageTrace imageTrace("ScalePixelMapWithSLR");
     int32_t pixelBytes = pixelMap.GetPixelBytes();
     SLRMat src(imgInfo.size, imgInfo.pixelFormat, pixelMap.GetWritablePixels(), pixelMap.GetRowStride() / pixelBytes);
