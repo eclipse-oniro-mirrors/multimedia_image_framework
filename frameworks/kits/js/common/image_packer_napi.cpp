@@ -433,6 +433,8 @@ napi_value ImagePackerNapi::Init(napi_env env, napi_value exports)
         DECLARE_NAPI_FUNCTION("packToData", PackToData),
         DECLARE_NAPI_FUNCTION("packToFile", PackToFile),
         DECLARE_NAPI_FUNCTION("packingFromPixelMap", Packing),
+        DECLARE_NAPI_FUNCTION("packToDataFromPixelmapSequence", PackToData),
+        DECLARE_NAPI_FUNCTION("packToFileFromPixelmapSequence", PackToFile),
         DECLARE_NAPI_FUNCTION("release", Release),
         DECLARE_NAPI_GETTER("supportedFormats", GetSupportedFormats),
     };
@@ -1051,7 +1053,8 @@ static void ParserPackToFileArguments(napi_env env,
         BuildMsgOnError(context, context->rPixelMaps != nullptr, "PixelMap mismatch", COMMON_ERR_INVALID_PARAMETER);
     }
     if (argc > PARAM1 && ImageNapiUtils::getType(env, argv[PARAM1]) == napi_number) {
-        uint32_t errorCode = (context->packType == TYPE_PICTURE) ? IMAGE_BAD_PARAMETER : ERR_IMAGE_INVALID_PARAMETER;
+        uint32_t errorCode = ((context->packType == TYPE_PICTURE ||
+            context->packType == TYPE_ARRAY)) ? IMAGE_BAD_PARAMETER : ERR_IMAGE_INVALID_PARAMETER;
         BuildMsgOnError(context, (napi_get_value_int32(env, argv[PARAM1], &(context->fd)) == napi_ok &&
             context->fd > INVALID_FD), "fd mismatch", errorCode);
     }
@@ -1094,7 +1097,8 @@ STATIC_EXEC_FUNC(PackToFile)
 {
     auto context = static_cast<ImagePackerAsyncContext*>(data);
     if (context->fd <= INVALID_FD) {
-        uint32_t errorCode = context->packType == TYPE_PICTURE ? IMAGE_BAD_PARAMETER : ERR_IMAGE_INVALID_PARAMETER;
+        uint32_t errorCode = ((context->packType == TYPE_PICTURE) ||
+            (context->packType == TYPE_ARRAY)) ? IMAGE_BAD_PARAMETER : ERR_IMAGE_INVALID_PARAMETER;
         BuildMsgOnError(context, false, "ImagePacker invalid fd", errorCode);
         return;
     }
