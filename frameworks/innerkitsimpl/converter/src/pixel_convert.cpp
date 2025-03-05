@@ -1447,7 +1447,8 @@ static int32_t RGBConvertYUV(const void *srcPixels, const ImageInfo &srcInfo,
 {
     ImageInfo tmpInfo = srcInfo;
     tmpInfo.pixelFormat = PixelFormat::RGB_888;
-    uint32_t tmpWidth = (tmpInfo.size.width & 1) == 1 ? tmpInfo.size.width + 1 : tmpInfo.size.width;
+    uint32_t tmpWidth = (static_cast<uint32_t>(tmpInfo.size.width) & 1) == 1 ?
+        static_cast<uint32_t>(tmpInfo.size.width) + 1 : static_cast<uint32_t>(tmpInfo.size.width);
     size_t tmpPixelsLen = static_cast<size_t>(tmpWidth) * static_cast<size_t>(tmpInfo.size.height) *
         static_cast<size_t>(ImageUtils::GetPixelBytes(tmpInfo.pixelFormat));
     if (tmpPixelsLen == 0 || tmpPixelsLen > INT32_MAX) {
