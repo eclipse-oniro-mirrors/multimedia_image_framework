@@ -272,9 +272,15 @@ std::unique_ptr<AbsMemory> PixelYuv::CreateMemory(PixelFormat pixelFormat, std::
     int32_t dst_uvStride = (dstWidth + 1) / NUM_2 * NUM_2;
     int32_t dst_yOffset = 0;
     int32_t dst_uvOffset = dst_yStride * dstHeight;
-
+    uint64_t usage = 0;
+    if (allocatorType_ == AllocatorType::DMA_ALLOC) {
+        auto sb = reinterpret_cast<SurfaceBuffer*>(GetFd());
+        if (sb != nullptr) {
+            usage = sb->GetUsage();
+        }
+    }
     dstStrides = {dst_yStride, dst_uvStride, dst_yOffset, dst_uvOffset};
-    MemoryData memoryData = {nullptr, pictureSize, memoryTag.c_str(), {dstWidth, dstHeight}, pixelFormat};
+    MemoryData memoryData = {nullptr, pictureSize, memoryTag.c_str(), {dstWidth, dstHeight}, pixelFormat, usage};
     auto m = MemoryManager::CreateMemory(allocatorType_, memoryData);
     if (m == nullptr) {
         IMAGE_LOGE("CreateMemory failed");
