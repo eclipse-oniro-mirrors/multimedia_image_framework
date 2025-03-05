@@ -375,6 +375,10 @@ private:
     void SetSrcFd(const int& fd);
     void SetSrcFilePath(const std::string& pathName);
     void SetSrcBuffer(const uint8_t* buffer, uint32_t size);
+    bool CheckDecodeOptions(const DecodeOptions &opts);
+    bool CheckAllocatorTypeValid(const DecodeOptions &opts);
+    bool CheckCropRectValid(const DecodeOptions &opts);
+
 #if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
     void SetHdrMetadataForPicture(std::unique_ptr<Picture> &picture);
     void DecodeHeifAuxiliaryPictures(const std::set<AuxiliaryPictureType> &auxTypes, std::unique_ptr<Picture> &picture,

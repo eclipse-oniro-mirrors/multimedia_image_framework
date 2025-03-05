@@ -61,6 +61,7 @@ struct OH_DecodingOptions {
     struct Image_Size desiredSize;
     struct Image_Region desiredRegion;
     int32_t desiredDynamicRange = IMAGE_DYNAMIC_RANGE_SDR;
+    int32_t cropAndScaleStrategy;
 };
 
 struct OH_ImageSource_Info {
@@ -172,6 +173,26 @@ Image_ErrorCode OH_DecodingOptions_SetPixelFormat(OH_DecodingOptions *options,
         return IMAGE_BAD_PARAMETER;
     }
     options->pixelFormat = pixelFormat;
+    return IMAGE_SUCCESS;
+}
+
+Image_ErrorCode OH_DecodingOptions_GetCropAndScaleStrategy(OH_DecodingOptions *options,
+    int32_t *cropAndScaleStrategy)
+{
+    if (options == nullptr || cropAndScaleStrategy == nullptr) {
+        return IMAGE_BAD_PARAMETER;
+    }
+    *cropAndScaleStrategy = options->cropAndScaleStrategy;
+    return IMAGE_SUCCESS;
+}
+
+Image_ErrorCode OH_DecodingOptions_SetCropAndScaleStrategy(OH_DecodingOptions *options,
+    int32_t cropAndScaleStrategy)
+{
+    if (options == nullptr) {
+        return IMAGE_BAD_PARAMETER;
+    }
+    options->cropAndScaleStrategy = cropAndScaleStrategy;
     return IMAGE_SUCCESS;
 }
 
@@ -383,10 +404,10 @@ static void ParseDecodingOps(DecodeOptions &decOps, struct OH_DecodingOptions *o
     decOps.rotateNewDegrees = ops->rotate;
     decOps.desiredSize.width = static_cast<int32_t>(ops->desiredSize.width);
     decOps.desiredSize.height = static_cast<int32_t>(ops->desiredSize.height);
-    decOps.desiredRegion.left = static_cast<int32_t>(ops->desiredRegion.x);
-    decOps.desiredRegion.top = static_cast<int32_t>(ops->desiredRegion.y);
-    decOps.desiredRegion.width = static_cast<int32_t>(ops->desiredRegion.width);
-    decOps.desiredRegion.height = static_cast<int32_t>(ops->desiredRegion.height);
+    decOps.CropRect.left = static_cast<int32_t>(ops->desiredRegion.x);
+    decOps.CropRect.top = static_cast<int32_t>(ops->desiredRegion.y);
+    decOps.CropRect.width = static_cast<int32_t>(ops->desiredRegion.width);
+    decOps.CropRect.height = static_cast<int32_t>(ops->desiredRegion.height);
     decOps.desiredDynamicRange = ParseImageDynamicRange(ops->desiredDynamicRange);
     switch (static_cast<int32_t>(ops->pixelFormat)) {
         case FORMAT_0:
@@ -403,6 +424,10 @@ static void ParseDecodingOps(DecodeOptions &decOps, struct OH_DecodingOptions *o
             break;
         default:
             decOps.desiredPixelFormat = PixelFormat::UNKNOWN;
+    }
+    if (ops->cropAndScaleStrategy >= static_cast<int32_t>(OHOS::Media::CropAndScaleStrategy::SCALE_FIRST) &&
+        ops->cropAndScaleStrategy <= static_cast<int32_t>(OHOS::Media::CropAndScaleStrategy::CROP_FIRST)) {
+        decOps.cropAndScaleStrategy = static_cast<OHOS::Media::CropAndScaleStrategy>(ops->cropAndScaleStrategy);
     }
 }
 

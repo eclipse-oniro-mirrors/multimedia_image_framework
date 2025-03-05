@@ -166,6 +166,7 @@ ohos_shared_library("extplugin") {
     "$image_subsystem/frameworks/innerkitsimpl/accessor/src/webp_exif_metadata_accessor.cpp",
     "src/ext_decoder.cpp",
     "src/ext_encoder.cpp",
+    "src/ext_ohoscodec.cpp",
     "src/ext_pixel_convert.cpp",
     "src/ext_stream.cpp",
     "src/ext_wstream.cpp",
@@ -292,6 +293,9 @@ ohos_shared_library("extplugin") {
       defines += [ "HEIF_HW_ENCODE_ENABLE" ]
       external_deps += [ "drivers_interface_codec:libimage_proxy_2.0" ]
     }
+  }
+  if (is_ohos) {
+    defines += [ "SK_ENABLE_OHOS_CODEC" ]
   }
   cflags = [
     "-DIMAGE_COLORSPACE_FLAG",

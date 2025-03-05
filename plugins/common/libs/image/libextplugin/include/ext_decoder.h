@@ -95,6 +95,7 @@ private:
     bool IsSupportScaleOnDecode();
     bool GetScaledSize(int &dWidth, int &dHeight, float &scale);
     bool GetHardwareScaledSize(int &dWidth, int &dHeight, float &scale);
+    int GetSoftwareScaledSize(int dwidth, int dheight);
     bool IsSupportCropOnDecode();
     bool IsSupportCropOnDecode(SkIRect &target);
     bool IsSupportHardwareDecode();
@@ -133,6 +134,8 @@ private:
     FrameCacheInfo InitFrameCacheInfo(const uint64_t rowStride, SkImageInfo info);
     bool FrameCacheInfoIsEqual(FrameCacheInfo& src, FrameCacheInfo& dst);
     uint32_t UpdateHardWareDecodeInfo(DecodeContext &context);
+    bool IsRegionDecodeSupported(uint32_t index, const PixelDecodeOptions &opts, PlImageInfo &info);
+    SkCodec::Result DoRegionDecode(DecodeContext &context);
 
     ImagePlugin::InputDataStream *stream_ = nullptr;
     uint32_t streamOff_ = 0;
@@ -165,7 +168,9 @@ private:
     static constexpr uint32_t ALIGN_8 = 8;
     static constexpr uint32_t ALIGN_16 = 16;
 #endif
-
+    OHOS::Media::CropAndScaleStrategy cropAndScaleStrategy_ = OHOS::Media::CropAndScaleStrategy::DEFAULT;
+    OHOS::Media::Size RegiondesiredSize_;
+    bool SupportRegionFlag_;
     //Yuv
     OHOS::Media::Size desiredSizeYuv_;
 

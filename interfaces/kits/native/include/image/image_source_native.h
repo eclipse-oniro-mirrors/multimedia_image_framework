@@ -118,6 +118,22 @@ typedef enum {
 } IMAGE_ALLOCATOR_TYPE;
 
 /**
+ * @brief Confirm the enumeration type for decoding and scaling order of the region.
+ *
+ * @since 18
+ */
+typedef enum {
+    /*
+    * First scale, then crop.
+    */
+    SCALE_FIRST = 1,
+    /*
+    * Perform region decoding first, then scaling.
+    */
+    CROP_FIRST = 2
+} CROP_SCALE_STRATEGY;
+
+/**
  * @brief Create a pointer for OH_ImageSource_Info struct.
  *
  * @param info The OH_ImageSource_Info pointer will be operated.
@@ -216,6 +232,28 @@ Image_ErrorCode OH_DecodingOptions_GetPixelFormat(OH_DecodingOptions *options,
  */
 Image_ErrorCode OH_DecodingOptions_SetPixelFormat(OH_DecodingOptions *options,
     int32_t pixelFormat);
+
+/**
+ * @brief Get strategy number for OH_DecodingOptions struct.
+ *
+ * @param options The OH_DecodingOptions pointer will be operated.
+ * @param cropAndScaleStrategy the number of Scaling and cropping strategy.
+ * @return Returns {@link Image_ErrorCode}
+ * @since 18
+ */
+Image_ErrorCode OH_DecodingOptions_GetCropAndScaleStrategy(OH_DecodingOptions *options,
+    int32_t *cropAndScaleStrategy);
+
+/**
+ * @brief Set strategy number for OH_DecodingOptions struct.
+ *
+ * @param options The OH_DecodingOptions pointer will be operated.
+ * @param cropAndScaleStrategy the number of Scaling and cropping strategy.
+ * @return Returns {@link Image_ErrorCode}
+ * @since 18
+ */
+Image_ErrorCode OH_DecodingOptions_SetCropAndScaleStrategy(OH_DecodingOptions *options,
+    int32_t cropAndScaleStrategy);
 
 /**
  * @brief Get index number for DecodingOptions struct.

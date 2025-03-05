@@ -523,6 +523,35 @@ uint32_t SvgDecoder::DoDecodeHeader()
     return Media::SUCCESS;
 }
 
+bool IsSrcRectContainsDistRect(const OHOS::Media::Rect &srcRect, const OHOS::Media::Rect &distRect)
+{
+    if (srcRect.left < 0 || srcRect.top < 0 || srcRect.width <= 0 || srcRect.height <= 0) {
+        return false;
+    }
+    if (distRect.left < 0 || distRect.top < 0 || distRect.width <= 0 || distRect.height <= 0) {
+        return false;
+    }
+    return srcRect.left <= distRect.left && srcRect.top <= distRect.top &&
+        (srcRect.left + srcRect.width) >= (distRect.left + distRect.width) &&
+        (srcRect.top + srcRect.height) >= (distRect.top + distRect.height);
+}
+
+bool CheckCropRectValid(const PixelDecodeOptions &opts, const SkSize &svgSize)
+{
+    OHOS::Media::Rect srcRect = {0, 0, 0, 0};
+    if (opts.cropAndScaleStrategy == CropAndScaleStrategy::DEFAULT) {
+        return true;
+    }
+    srcRect.width = svgSize.width();
+    srcRect.height = svgSize.height();
+    if (opts.cropAndScaleStrategy == CropAndScaleStrategy::SCALE_FIRST &&
+        (opts.desiredSize.width != 0 || opts.desiredSize.height != 0)) {
+        srcRect.width = opts.desiredSize.width;
+        srcRect.height = opts.desiredSize.height;
+    }
+    return IsSrcRectContainsDistRect(srcRect, opts.CropRect);
+}
+
 uint32_t SvgDecoder::DoSetDecodeOptions(uint32_t index, const PixelDecodeOptions &opts, PlImageInfo &info)
 {
     IMAGE_LOGD("[DoSetDecodeOptions] IN index=%{public}u", index);
@@ -539,9 +568,14 @@ uint32_t SvgDecoder::DoSetDecodeOptions(uint32_t index, const PixelDecodeOptions
         IMAGE_LOGE("[DoSetDecodeOptions] size is empty.");
         return Media::ERROR;
     }
+    if (!CheckCropRectValid(opts_, svgSize)) {
+        IMAGE_LOGI("crop rect is invalid.");
+        return ERR_MEDIA_INVALID_OPERATION;
+    }
 
     float scaleFitDesired = 1.0;
-    if (opts_.desiredSize.width && opts_.desiredSize.height) {
+    if (opts_.desiredSize.width && opts_.desiredSize.height &&
+        opts.cropAndScaleStrategy == CropAndScaleStrategy::DEFAULT) {
         scaleFitDesired = std::min(static_cast<float>(opts_.desiredSize.width) / svgSize.width(),
             static_cast<float>(opts_.desiredSize.height) / svgSize.height());
     }
