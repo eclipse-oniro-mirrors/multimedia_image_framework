@@ -185,12 +185,14 @@ uint32_t DmaMemory::Create()
         return ERR_DMA_DATA_ABNORMAL;
     }
     GraphicPixelFormat format = GetRequestBufferFormatWithPixelFormat(data.format);
+    uint64_t usage = data.usage == 0 ? BUFFER_USAGE_CPU_READ | BUFFER_USAGE_CPU_WRITE | BUFFER_USAGE_MEM_DMA |
+        BUFFER_USAGE_MEM_MMZ_CACHE : data.usage;
     BufferRequestConfig requestConfig = {
         .width = data.desiredSize.width,
         .height = data.desiredSize.height,
         .strideAlignment = 0x8, // set 0x8 as default value to alloc SurfaceBufferImpl
         .format = format, // PixelFormat
-        .usage = BUFFER_USAGE_CPU_READ | BUFFER_USAGE_CPU_WRITE | BUFFER_USAGE_MEM_DMA | BUFFER_USAGE_MEM_MMZ_CACHE,
+        .usage = usage,
         .timeout = 0,
     };
     GSError ret = sb->Alloc(requestConfig);
@@ -268,6 +270,7 @@ std::unique_ptr<AbsMemory> MemoryManager::CreateMemory(AllocatorType type, Memor
     res->data.tag = data.tag;
     res->data.desiredSize = data.desiredSize;
     res->data.format = data.format;
+    res->data.usage = data.usage;
     res->extend.data = extend.data;
     res->extend.size = extend.size;
     res->extend.tag = extend.tag;
