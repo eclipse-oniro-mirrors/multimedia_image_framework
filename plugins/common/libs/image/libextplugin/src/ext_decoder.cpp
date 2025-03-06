@@ -646,7 +646,9 @@ uint32_t ExtDecoder::SetDecodeOptions(uint32_t index, const PixelDecodeOptions &
     auto desireColor = ConvertToColorType(opts.desiredPixelFormat, info.pixelFormat);
     auto desireAlpha = ConvertToAlphaType(opts.desireAlphaType, info.alphaType);
 #if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
-    outputColorFmt_ = (opts.desiredPixelFormat == PixelFormat::NV21 ? PIXEL_FMT_YCRCB_420_SP : PIXEL_FMT_RGBA_8888);
+    outputColorFmt_ = (opts.desiredPixelFormat == PixelFormat::NV21 ||
+                       opts.desiredPixelFormat == PixelFormat::YCBCR_P010) ?
+                       PIXEL_FMT_YCRCB_420_SP : PIXEL_FMT_RGBA_8888;
 #endif
 
     if (codec_) {
