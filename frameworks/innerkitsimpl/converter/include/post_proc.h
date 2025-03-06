@@ -41,7 +41,7 @@ public:
     bool CenterScale(const Size &size, PixelMap &pixelMap);
     static CropValue GetCropValue(const Rect &rect, const Size &size);
     static CropValue ValidCropValue(Rect &rect, const Size &size);
-    bool ScalePixelMapWithSLR(const Size &desiredSize, PixelMap &pixelMap, bool useLap = false);
+    bool ScalePixelMapWithSLR(const Size &desiredSize, PixelMap &pixelMap, bool useLap = true);
     bool ScalePixelMapEx(const Size &desiredSize, PixelMap &pixelMap,
         const AntiAliasingOption &option = AntiAliasingOption::NONE);
 #if !defined(_WIN32) && !defined(_APPLE) && !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
