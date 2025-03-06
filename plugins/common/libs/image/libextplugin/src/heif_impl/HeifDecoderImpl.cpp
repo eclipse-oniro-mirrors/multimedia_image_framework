@@ -99,8 +99,8 @@ typedef int (*FUNC_NV21ToARGBMatrix)(const uint8_t* src_y,
 const std::string YUV_LIB_PATH = "libyuv.z.so";
 static void* g_dlHandler = nullptr;
 static FUNC_NV21ToARGBMatrix g_libyuvNV21ToARGBMatrixFunc = nullptr;
-static struct YuvConstants* g_kYuvI601Constants = nullptr;
-static struct YuvConstants* g_kYuvJPEGConstants = nullptr;
+static struct YuvConstants* g_kYvuI601Constants = nullptr;
+static struct YuvConstants* g_kYvuJPEGConstants = nullptr;
 
 struct PixelFormatConvertParam {
     uint8_t *data;
@@ -148,8 +148,8 @@ static bool FillFrameInfoForPixelConvert(AVFrame *frame, PixelFormatConvertParam
 static void UnloadLibYuv()
 {
     g_libyuvNV21ToARGBMatrixFunc = nullptr;
-    g_kYuvI601Constants = nullptr;
-    g_kYuvJPEGConstants = nullptr;
+    g_kYvuI601Constants = nullptr;
+    g_kYvuJPEGConstants = nullptr;
     if (g_dlHandler) {
         dlclose(g_dlHandler);
         g_dlHandler = nullptr;
@@ -163,7 +163,7 @@ __attribute__((destructor)) void DeinitLibyuv()
 
 static bool LoadLibyuv()
 {
-    if (g_libyuvNV21ToARGBMatrixFunc && g_kYuvI601Constants && g_kYuvJPEGConstants) {
+    if (g_libyuvNV21ToARGBMatrixFunc && g_kYvuI601Constants && g_kYvuJPEGConstants) {
         return true;
     }
     void* g_dlHandler = dlopen(YUV_LIB_PATH.c_str(), RTLD_LAZY | RTLD_NODELETE);
@@ -172,9 +172,9 @@ static bool LoadLibyuv()
         return false;
     }
     g_libyuvNV21ToARGBMatrixFunc = (FUNC_NV21ToARGBMatrix)dlsym(g_dlHandler, "NV21ToARGBMatrix");
-    g_kYuvI601Constants = (YuvConstants*)dlsym(g_dlHandler, "kYuvI601Constants");
-    g_kYuvJPEGConstants = (YuvConstants*)dlsym(g_dlHandler, "kYuvJPEGConstants");
-    if (!g_libyuvNV21ToARGBMatrixFunc || !g_kYuvI601Constants || !g_kYuvJPEGConstants) {
+    g_kYvuI601Constants = (YuvConstants*)dlsym(g_dlHandler, "kYvuI601Constants");
+    g_kYvuJPEGConstants = (YuvConstants*)dlsym(g_dlHandler, "kYvuJPEGConstants");
+    if (!g_libyuvNV21ToARGBMatrixFunc || !g_kYvuI601Constants || !g_kYvuJPEGConstants) {
         IMAGE_LOGE("HeifDecoder load func, failed");
         return false;
     }
@@ -189,9 +189,9 @@ static bool ConvertNV12ToRGBA(PixelFormatConvertParam &srcParam, PixelFormatConv
     }
     AVFrame *srcFrame = av_frame_alloc();
     AVFrame *dstFrame = av_frame_alloc();
-    const YuvConstants *yuvConstants = g_kYuvI601Constants;
+    const YuvConstants *yuvConstants = g_kYvuI601Constants;
     if (srcParam.colorRangeFlag == 1) {
-        yuvConstants = g_kYuvJPEGConstants;
+        yuvConstants = g_kYvuJPEGConstants;
     }
     bool res = FillFrameInfoForPixelConvert(srcFrame, srcParam) &&
         FillFrameInfoForPixelConvert(dstFrame, dstParam) &&
