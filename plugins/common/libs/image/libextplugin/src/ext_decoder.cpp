@@ -613,8 +613,8 @@ uint32_t ExtDecoder::CheckDecodeOptions(uint32_t index, const PixelDecodeOptions
         return ERR_IMAGE_INVALID_PARAMETER;
     }
     if (!IsValidCrop(opts.CropRect, info_, dstSubset_)) {
-        IMAGE_LOGE("Invalid crop rect xy [%{public}d x %{public}d], wh [%{public}d x %{public}d]",
-            dstSubset_.left(), dstSubset_.top(), dstSubset_.width(), dstSubset_.height());
+        IMAGE_LOGE("Invalid crop rect top:%{public}d, bottom:%{public}d, left:%{public}d, right:%{public}d",
+            dstSubset_.top(), dstSubset_.bottom(), dstSubset_.left(), dstSubset_.right());
         return ERR_IMAGE_INVALID_PARAMETER;
     }
     size_t tempSrcByteCount = info_.computeMinByteSize();

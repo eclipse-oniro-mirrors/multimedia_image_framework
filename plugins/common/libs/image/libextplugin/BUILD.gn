@@ -140,10 +140,13 @@ ohos_shared_library("extplugin") {
   if (!use_clang_android && !use_clang_ios) {
     branch_protector_ret = "pac_ret"
     sanitize = {
+      boundary_sanitizer = true
       cfi = true
       cfi_cross_dso = true
       cfi_vcall_icall_only = true
       debug = false
+      integer_overflow = true
+      ubsan = true
     }
   }
   sources = [
@@ -293,6 +296,7 @@ ohos_shared_library("extplugin") {
   cflags = [
     "-DIMAGE_COLORSPACE_FLAG",
     "-O3",
+    "-fstack-protector-strong",
   ]
   cflags_cc = [ "-O3" ]
   innerapi_tags = [ "platformsdk" ]
