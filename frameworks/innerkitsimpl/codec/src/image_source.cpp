@@ -2487,13 +2487,21 @@ uint32_t ImageSource::SetDecodeOptions(std::unique_ptr<AbsImageDecoder> &decoder
         IMAGE_LOGE("decoder is nullptr");
         return ERROR;
     }
-    if (sourceHdrType_ <= ImageHdrType::SDR && opts.photoDesiredPixelFormat != PixelFormat::UNKNOWN) {
-        if (opts.photoDesiredPixelFormat == PixelFormat::RGBA_1010102 ||
-            opts.photoDesiredPixelFormat == PixelFormat::YCBCR_P010) {
-                return COMMON_ERR_INVALID_PARAMETER;
+    
+    bool isDecodeHdrImage = (opts.desiredDynamicRange == DecodeDynamicRange::AUTO &&
+                            (sourceHdrType_ > ImageHdrType::SDR)) ||
+                            opts.desiredDynamicRange == DecodeDynamicRange::HDR;
+    bool isVpeSupport10BitOutputFormat = (opts.photoDesiredPixelFormat == PixelFormat::YCBCR_P010 ||
+                                          opts.photoDesiredPixelFormat == PixelFormat::RGBA_1010102);
+    if (opts.photoDesiredPixelFormat != PixelFormat::UNKNOWN) {
+        if ((isDecodeHdrImage && !isVpeSupport10BitOutputFormat) ||
+        (!isDecodeHdrImage && isVpeSupport10BitOutputFormat)) {
+            IMAGE_LOGE("Photos provided a error parameter");
+            return COMMON_ERR_INVALID_PARAMETER;
         }
         plOptions.desiredPixelFormat = opts.photoDesiredPixelFormat;
     }
+    
     uint32_t ret = decoder->SetDecodeOptions(index, plOptions, plInfo);
     if (ret != SUCCESS) {
         IMAGE_LOGE("[ImageSource]decoder plugin set decode options fail (image index:%{public}u),"
