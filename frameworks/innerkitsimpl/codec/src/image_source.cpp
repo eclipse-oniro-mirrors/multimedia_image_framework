@@ -1612,6 +1612,15 @@ uint32_t ImageSource::ModifyImageProperty(const std::string &key, const std::str
 uint32_t ImageSource::ModifyImageProperty(std::shared_ptr<MetadataAccessor> metadataAccessor,
     const std::string &key, const std::string &value)
 {
+    if (srcFd_ != -1) {
+        size_t fileSize = 0;
+        if (!ImageUtils::GetFileSize(srcFd_, fileSize)) {
+            IMAGE_LOGE("ModifyImageProperty accessor start get file size failed.");
+        } else {
+            IMAGE_LOGI("ModifyImageProperty accessor start fd file size:%{public}llu",
+                static_cast<unsigned long long>(fileSize));
+        }
+    }
     uint32_t ret = ModifyImageProperty(key, value);
     bool cond = (ret != SUCCESS);
     CHECK_ERROR_RETURN_RET_LOG(cond, ret, "Failed to create ExifMetadata.");
@@ -1621,8 +1630,20 @@ uint32_t ImageSource::ModifyImageProperty(std::shared_ptr<MetadataAccessor> meta
     CHECK_ERROR_RETURN_RET_LOG(cond, ret,
                                "Failed to create image accessor when attempting to modify image property.");
 
+    if (srcFd_ != -1) {
+        size_t fileSize = 0;
+        if (!ImageUtils::GetFileSize(srcFd_, fileSize)) {
+            IMAGE_LOGE("ModifyImageProperty accessor end get file size failed.");
+        } else {
+            IMAGE_LOGI("ModifyImageProperty accessor end fd file size:%{public}llu",
+                static_cast<unsigned long long>(fileSize));
+        }
+    }
     metadataAccessor->Set(exifMetadata_);
-    return metadataAccessor->Write();
+    IMAGE_LOGI("ModifyImageProperty accesssor modify start");
+    ret = metadataAccessor->Write();
+    IMAGE_LOGI("ModifyImageProperty accesssor modify end");
+    return ret;
 }
 
 uint32_t ImageSource::ModifyImageProperty(uint32_t index, const std::string &key, const std::string &value)
@@ -1674,8 +1695,17 @@ uint32_t ImageSource::ModifyImageProperty(uint32_t index, const std::string &key
     CHECK_DEBUG_RETURN_RET_LOG(cond, ERR_IMAGE_SOURCE_DATA, "Invalid file descriptor.");
 
     std::unique_lock<std::mutex> guard(decodingMutex_);
+    size_t fileSize = 0;
+    if (!ImageUtils::GetFileSize(fd, fileSize)) {
+        IMAGE_LOGE("ModifyImageProperty get file size failed.");
+    }
+    IMAGE_LOGI("ModifyImageProperty accesssor create start, fd file size:%{public}llu",
+        static_cast<unsigned long long>(fileSize));
     auto metadataAccessor = MetadataAccessorFactory::Create(fd);
-    return ModifyImageProperty(metadataAccessor, key, value);
+    IMAGE_LOGI("ModifyImageProperty accesssor create end");
+
+    auto ret = ModifyImageProperty(metadataAccessor, key, value);
+    return ret;
 }
 
 uint32_t ImageSource::ModifyImageProperty(uint32_t index, const std::string &key, const std::string &value,
