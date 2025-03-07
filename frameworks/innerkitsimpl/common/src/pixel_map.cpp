@@ -3837,10 +3837,9 @@ bool PixelMap::DoTranslation(TransInfos &infos, const AntiAliasingOption &option
     // We don't know how custom alloc memory
     dstMemory.allocType = (allocatorType_ == AllocatorType::CUSTOM_ALLOC) ? AllocatorType::DEFAULT : allocatorType_;
     SkTransInfo src;
-
+    std::unique_ptr<uint8_t[]> rgbxPixels = nullptr;
     if (imageInfo.pixelFormat == PixelFormat::RGB_888) {
         // Need this conversion because Skia uses 32-byte RGBX instead of 24-byte RGB when processing translation
-        std::unique_ptr<uint8_t[]> rgbxPixels = nullptr;
         if (!ExpandRGBToRGBX(data_, GetByteCount(), rgbxPixels)) {
             return false;
         }
