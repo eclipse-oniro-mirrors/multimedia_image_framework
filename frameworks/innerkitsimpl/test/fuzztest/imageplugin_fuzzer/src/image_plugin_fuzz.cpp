@@ -21,6 +21,7 @@
 #include <string>
 #include <unistd.h>
 #include <fcntl.h>
+#include <securec.h>
 
 #include "convert_utils.h"
 #include "image_source.h"
@@ -37,6 +38,11 @@
 namespace OHOS {
 namespace Media {
 using namespace OHOS::ImagePlugin;
+namespace {
+    const uint8_t* g_data = nullptr;
+    size_t g_size = 0;
+    size_t g_pos = 0;
+} // namespace
 
 static const std::string JPEG_HW_PATH = "/data/local/tmp/test_hw.jpg";
 static const std::string JPEG_SW_PATH = "/data/local/tmp/test-tree-420.jpg";
@@ -44,6 +50,26 @@ static const std::string HEIF_HW_PATH = "/data/local/tmp/test_hw.heic";
 static const std::string HDR_PATH = "/data/local/tmp/HEIFISOMultiChannelBaseColor0512V12.heic";
 static const std::string WEBP_PATH = "/data/local/tmp/test.webp";
 static const std::string GIF_PATH = "/data/local/tmp/test.gif";
+
+/*
+ * describe: get data from outside untrusted data(g_data) which size is according to sizeof(T)
+ * tips: only support basic type
+ */
+template<class T>
+T GetData()
+{
+    T object {};
+    size_t objectSize = sizeof(object);
+    if (g_data == nullptr || objectSize > g_size - g_pos) {
+        return object;
+    }
+    errno_t ret = memcpy_s(&object, objectSize, g_data + g_pos, objectSize);
+    if (ret != EOK) {
+        return {};
+    }
+    g_pos += objectSize;
+    return object;
+}
 
 void ExtDecoderFuncTest001(const std::string& filename)
 {
@@ -130,6 +156,58 @@ void SvgDecoderFuncTest001(const std::string& filename)
     imageSource->Reset();
     IMAGE_LOGI("%{public}s SUCCESS", __func__);
 }
+
+void ExtDecoderRegionFuncTest001(const std::string& filename)
+{
+    IMAGE_LOGI("%{public}s IN path: %{public}s", __func__, filename.c_str());
+    SourceOptions srcOpts;
+    uint32_t errorCode;
+    auto imageSource = ImageSource::CreateImageSource(filename, srcOpts, errorCode);
+    if (imageSource == nullptr) {
+        return;
+    }
+    int32_t x = GetData<int32_t>();
+    int32_t y = GetData<int32_t>();
+    int32_t width = GetData<int32_t>();
+    int32_t height = GetData<int32_t>();
+    Media::DecodeOptions dopts;
+    dopts.desiredRegion.left = x;
+    dopts.desiredRegion.top = y;
+    dopts.desiredRegion.width = width;
+    dopts.desiredRegion.height = height;
+    dopts.cropAndScaleStrategy = CropAndScaleStrategy::CROP_FIRST;
+    imageSource->CreatePixelMap(dopts, errorCode);
+    auto extDecoder = static_cast<ExtDecoder*>((imageSource->mainDecoder_).get());
+    if (extDecoder == nullptr || !extDecoder->DecodeHeader()) {
+        return;
+    }
+    DecodeContext context;
+    extDecoder->HeifYUVMemAlloc(context);
+    int dWidth;
+    int dHeight;
+    float scale;
+    extDecoder->GetScaledSize(dWidth, dHeight, scale);
+    extDecoder->GetHardwareScaledSize(dWidth, dHeight, scale);
+    extDecoder->IsSupportScaleOnDecode();
+    PixelDecodeOptions plOpts;
+    PlImageInfo plInfo;
+    extDecoder->SetDecodeOptions(0, plOpts, plInfo);
+    PixelFormat dstFormat = PixelFormat::UNKNOWN;
+    extDecoder->PreDecodeCheckYuv(0, dstFormat);
+    extDecoder->DoHardWareDecode(context);
+    extDecoder->GetJpegYuvOutFmt(dstFormat);
+    extDecoder->DecodeToYuv420(0, context);
+    extDecoder->CheckContext(context);
+    extDecoder->HardWareDecode(context);
+    SkAlphaType alphaType;
+    AlphaType outputType;
+    extDecoder->ConvertInfoToAlphaType(alphaType, outputType);
+    SkColorType format;
+    PixelFormat outputFormat;
+    extDecoder->ConvertInfoToColorType(format, outputFormat);
+    IMAGE_LOGI("%{public}s SUCCESS", __func__);
+}
+
 
 void PixelMapTest001(PixelMap* pixelMap)
 {
@@ -330,6 +408,7 @@ void ImagePluginFuzzTest001(const uint8_t* data, size_t size)
     GifTest001(GIF_PATH);
     GifTest001(WEBP_PATH);
     HdrTest001();
+    ExtDecoderRegionFuncTest001(filename);
 }
 } // namespace Media
 } // namespace OHOS

@@ -71,6 +71,7 @@ napi_ref ImageSourceNapi::componentTypeRef_ = nullptr;
 napi_ref ImageSourceNapi::decodingDynamicRangeRef_ = nullptr;
 napi_ref ImageSourceNapi::decodingResolutionQualityRef_ = nullptr;
 napi_ref ImageSourceNapi::decodingAllocatorTypeRef_ = nullptr;
+napi_ref ImageSourceNapi::cropAndScaleStrategyRef_ = nullptr;
 
 static std::mutex imageSourceCrossThreadMutex_;
 
@@ -382,6 +383,11 @@ enum class DecodeAllocatorType : int32_t {
     AUTO = 0,
     DMA = 1,
     SHARE_MEMORY = 2
+};
+
+static std::vector<struct ImageEnum> sCropAndScaleStrategyMap = {
+    {"SCALE_FIRST", 1, ""},
+    {"CROP_FIRST", 2, ""},
 };
 
 static const std::map<int32_t, Image_ErrorCode> ERROR_CODE_MAP = {
@@ -927,6 +933,8 @@ napi_value ImageSourceNapi::Init(napi_env env, napi_value exports)
             CreateEnumTypeObject(env, napi_number, &decodingResolutionQualityRef_, sDecodingResolutionQualityMap)),
         DECLARE_NAPI_PROPERTY("AllocatorType",
             CreateEnumTypeObject(env, napi_number, &decodingAllocatorTypeRef_, sAllocatorType)),
+        DECLARE_NAPI_PROPERTY("CropAndScaleStrategy",
+            CreateEnumTypeObject(env, napi_number, &cropAndScaleStrategyRef_, sCropAndScaleStrategyMap)),
     };
 
     struct ImageConstructorInfo info = {
@@ -1166,6 +1174,12 @@ static PixelFormat ParsePixlForamt(int32_t val)
     return PixelFormat::UNKNOWN;
 }
 
+static inline bool IsCropStrategyVaild(int32_t strategy)
+{
+    return strategy >= static_cast<int32_t>(CropAndScaleStrategy::SCALE_FIRST) &&
+        strategy <= static_cast<int32_t>(CropAndScaleStrategy::CROP_FIRST);
+}
+
 static AllocatorType ConvertAllocatorType(std::shared_ptr<ImageSource> imageSource, DecodeAllocatorType allocatorType,
     DecodeOptions decodeOpts)
 {
@@ -1234,6 +1248,14 @@ static bool ParseDecodeOptions2(napi_env env, napi_value root, DecodeOptions* op
     if (!ParsePixelFormat(env, root, "desiredPixelFormat", opts, error)
         || !ParsePixelFormat(env, root, "photoDesiredPixelFormat", opts, error)) {
         return false;
+    }
+
+    int32_t cropAndScaleNum = 0;
+    if (GET_INT32_BY_NAME(root, "cropAndScaleStrategy", cropAndScaleNum) && IsCropStrategyVaild(cropAndScaleNum)) {
+        IMAGE_LOGI("The strategy has taken effect");
+        opts->cropAndScaleStrategy = CropAndScaleStrategy(cropAndScaleNum);
+    } else {
+        IMAGE_LOGI("default cropAndScaleStrategy");
     }
 
     if (!GET_INT32_BY_NAME(root, "fitDensity", opts->fitDensity)) {

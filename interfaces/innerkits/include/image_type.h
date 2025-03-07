@@ -304,6 +304,18 @@ struct SVGDecodeOptions {
     SVGResize SVGResize;
 };
 
+enum class CropAndScaleStrategy : int32_t {
+    DEFAULT = 0,
+    /**
+     * First scale, then crop; this is the default value to maintain interface compatiblity.
+     */
+    SCALE_FIRST = 1,
+    /**
+     * Perform region decoding first, then scaling.
+     */
+    CROP_FIRST = 2
+};
+
 class PixelMap;
 struct DecodeOptions {
     int32_t fitDensity = 0;
@@ -336,6 +348,7 @@ struct DecodeOptions {
     // CreatePixelMapUsingAllocatorType is true, CreatePixelMap is false.
     bool isAppUseAllocator = false;
     std::shared_ptr<PixelMap> reusePixelmap = nullptr;
+    CropAndScaleStrategy cropAndScaleStrategy = CropAndScaleStrategy::DEFAULT;
 };
 
 enum class ScaleMode : int32_t {

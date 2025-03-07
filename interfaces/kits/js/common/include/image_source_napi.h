@@ -97,6 +97,7 @@ private:
     static napi_ref decodingDynamicRangeRef_;
     static napi_ref decodingResolutionQualityRef_;
     static napi_ref decodingAllocatorTypeRef_;
+    static napi_ref cropAndScaleStrategyRef_;
 
     napi_env env_ = nullptr;
     bool isRelease = false;

@@ -77,16 +77,24 @@ static const map<PixelFormat, AVPixelFormat> PIXEL_FORMAT_MAP = {
 
 uint32_t PostProc::DecodePostProc(const DecodeOptions &opts, PixelMap &pixelMap, FinalOutputStep finalOutputStep)
 {
-    ImageInfo srcImageInfo;
-    pixelMap.GetImageInfo(srcImageInfo);
-    ImageInfo dstImageInfo;
-    GetDstImageInfo(opts, pixelMap, srcImageInfo, dstImageInfo);
-    uint32_t errorCode = ConvertProc(opts.CropRect, dstImageInfo, pixelMap, srcImageInfo);
-    bool cond = false;
-    if (errorCode != SUCCESS) {
-        IMAGE_LOGE("[PostProc]crop pixel map failed, errcode:%{public}u", errorCode);
-        return errorCode;
+    if (opts.cropAndScaleStrategy == CropAndScaleStrategy::SCALE_FIRST && opts.desiredSize.height > 0 &&
+        opts.desiredSize.width > 0) {
+        CHECK_ERROR_RETURN_RET_LOG(!ScalePixelMap(opts.desiredSize, pixelMap), ERR_IMAGE_TRANSFORM,
+            "[PostProc]scale:transform pixelMap failed");
+        CHECK_ERROR_RETURN_RET_LOG(pixelMap.crop(opts.CropRect) != SUCCESS, ERR_IMAGE_TRANSFORM,
+            "[PostProc]crop:transform pixelMap failed");
+    } else {
+        ImageInfo srcImageInfo;
+        pixelMap.GetImageInfo(srcImageInfo);
+        ImageInfo dstImageInfo;
+        GetDstImageInfo(opts, pixelMap, srcImageInfo, dstImageInfo);
+        uint32_t errorCode = ConvertProc(opts.CropRect, dstImageInfo, pixelMap, srcImageInfo);
+        if (errorCode != SUCCESS) {
+            IMAGE_LOGE("[PostProc]crop pixel map failed, errcode:%{public}u", errorCode);
+            return errorCode;
+        }
     }
+    bool cond = false;
     decodeOpts_.allocatorType = opts.allocatorType;
     bool isNeedRotate = !ImageUtils::FloatCompareZero(opts.rotateDegrees);
     if (isNeedRotate) {
@@ -94,10 +102,11 @@ uint32_t PostProc::DecodePostProc(const DecodeOptions &opts, PixelMap &pixelMap,
         CHECK_ERROR_RETURN_RET_LOG(cond, ERR_IMAGE_TRANSFORM, "[PostProc]rotate:transform pixel map failed");
     }
     decodeOpts_.allocatorType = opts.allocatorType;
-    if (opts.desiredSize.height > 0 && opts.desiredSize.width > 0) {
+    if (opts.desiredSize.height > 0 && opts.desiredSize.width > 0 &&
+        opts.cropAndScaleStrategy != CropAndScaleStrategy::SCALE_FIRST) {
         cond = !ScalePixelMap(opts.desiredSize, pixelMap);
         CHECK_ERROR_RETURN_RET_LOG(cond, ERR_IMAGE_TRANSFORM, "[PostProc]scale:transform pixel map failed");
-    } else {
+    } else if (opts.cropAndScaleStrategy != CropAndScaleStrategy::SCALE_FIRST) {
         ImageInfo info;
         pixelMap.GetImageInfo(info);
         if ((finalOutputStep == FinalOutputStep::DENSITY_CHANGE) && (info.baseDensity != 0)) {
