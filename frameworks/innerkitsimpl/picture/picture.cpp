@@ -591,6 +591,9 @@ Picture *Picture::Unmarshalling(Parcel &parcel, PICTURE_ERR &error)
     bool hasExifData = parcel.ReadBool();
     if (hasExifData) {
         picture->exifMetadata_ = std::shared_ptr<ExifMetadata>(ExifMetadata::Unmarshalling(parcel));
+        if (picture->GetMainPixel() != nullptr) {
+            picture->GetMainPixel()->SetExifMetadata(picture->exifMetadata_);
+        }
     }
 
     return picture.release();
@@ -632,6 +635,9 @@ int32_t Picture::SetExifMetadata(sptr<SurfaceBuffer> &surfaceBuffer)
     CHECK_ERROR_RETURN_RET_LOG(cond, ERR_EXIF_DECODE_FAILED, "Failed to decode EXIF data from image stream.");
 
     exifMetadata_ = std::make_shared<OHOS::Media::ExifMetadata>(exifData);
+    if (mainPixelMap_ != nullptr) {
+        mainPixelMap_->SetExifMetadata(exifMetadata_);
+    }
     return SUCCESS;
 }
 
@@ -641,6 +647,9 @@ int32_t Picture::SetExifMetadata(std::shared_ptr<ExifMetadata> exifMetadata)
         return ERR_IMAGE_INVALID_PARAMETER;
     }
     exifMetadata_ = exifMetadata;
+    if (mainPixelMap_ != nullptr) {
+        mainPixelMap_->SetExifMetadata(exifMetadata_);
+    }
     return SUCCESS;
 }
 
