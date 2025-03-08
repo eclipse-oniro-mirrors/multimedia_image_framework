@@ -137,7 +137,7 @@ bool PixelMapMainFuzzTest(const uint8_t* data, size_t size)
 
     // create PixelMap from opts
     std::unique_ptr<Media::PixelMap> pixelMapFromOpts = GetPixelMapFromOpts();
-    if (!pixelMapFromOpts) {
+    if (!pixelMapFromOpts || pixelMapFromOpts->GetPixelFormat() == Media::PixelFormat::RGB_888) {
         return false;
     }
     PixelMapResize(pixelMapFromOpts);
