@@ -4680,7 +4680,8 @@ std::unique_ptr<Picture> ImageSource::CreatePicture(const DecodingOptionsForPict
         return nullptr;
     }
     DecodeOptions dopts;
-    dopts.desiredPixelFormat = opts.desiredPixelFormat;
+    dopts.desiredPixelFormat = (info.encodedFormat == IMAGE_JPEG_FORMAT) ?
+        opts.desiredPixelFormat : PixelFormat::RGBA_8888;
     dopts.allocatorType = opts.allocatorType;
     dopts.desiredDynamicRange = (ParseHdrType() && IsSingleHdrImage(sourceHdrType_)) ?
         DecodeDynamicRange::HDR : DecodeDynamicRange::SDR;
