@@ -42,7 +42,10 @@ std::string ANIUtils_ANIStringToStdString2(ani_env *env, ani_string ani_str)
     char* utfBuffer = buffer.data();
 
     ani_size bytes_written = 0;
-    env->String_GetUTF8(ani_str, utfBuffer, strSize + 1, &bytes_written);
+    if (ANI_OK != env->String_GetUTF8(ani_str, utfBuffer, strSize + 1, &bytes_written)) {
+        IMAGE_LOGE("ANIUtils_ANIStringToStdString fail");
+        return "";
+    }
 
     utfBuffer[bytes_written] = '\0';
     std::string content = std::string(utfBuffer);

@@ -16,13 +16,14 @@
 #include <ani.h>
 #include <array>
 #include <iostream>
+
 #include "ani_utils.h"
 #include "image_packer_ani.h"
-#include "pixel_map_ani.h"
-#include "securec.h"
+#include "image_log.h"
 #include "log_tags.h"
 #include "media_errors.h"
-#include "image_log.h"
+#include "pixel_map_ani.h"
+#include "securec.h"
 
 #undef LOG_DOMAIN
 #define LOG_DOMAIN LOG_TAG_DOMAIN_ID_IMAGE
@@ -70,6 +71,10 @@ ImagePacker* GetImagePackerFromAniEnv([[maybe_unused]] ani_env* env, [[maybe_unu
         return nullptr;
     }
     ImagePackerAni* imagePackerAni = reinterpret_cast<ImagePackerAni*>(nativeObj);
+    if (!imagePackerAni) {
+        IMAGE_LOGE("[GetImagePackerFromAniEnv] imagePackerAni field ");
+        return nullptr;
+    }
     return (imagePackerAni->nativeImagePacker_).get();
 }
 
@@ -183,11 +188,7 @@ ani_arraybuffer nativePackingWithPixelMap([[maybe_unused]] ani_env* env,
         IMAGE_LOGE("FinalizePacking  failed: %{public}d", pacRes);
         return nullptr;
     }
-    void* outData = malloc(packedSize);
-    if (memcpy_s(outData, packedSize, data, packedSize) != 0) {
-        IMAGE_LOGE("copy source memory size failed ");
-        return nullptr;
-    }
+    void* outData = static_cast<void*>(data);
     ani_arraybuffer arrayBuffer;
     env->CreateArrayBuffer(packedSize, &outData, &arrayBuffer);
     return arrayBuffer;

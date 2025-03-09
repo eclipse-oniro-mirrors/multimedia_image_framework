@@ -14,9 +14,9 @@
  */
 
 #include "ani_image_module.h"
+#include "image_log.h"
 #include "log_tags.h"
 #include "media_errors.h"
-#include "image_log.h"
 
 #undef LOG_DOMAIN
 #define LOG_DOMAIN LOG_TAG_DOMAIN_ID_IMAGE
@@ -28,7 +28,7 @@ ANI_EXPORT
 ani_status ANI_Constructor(ani_vm* vm, uint32_t* result)
 {
     ani_env* env;
-    IMAGE_LOGE("ANI_Constructor in");
+    IMAGE_LOGD("ANI_Constructor in");
     if (ANI_OK != vm->GetEnv(ANI_VERSION_1, &env)) {
         IMAGE_LOGE("Unsupported ANI_VERSION_1");
         return ANI_ERROR;
