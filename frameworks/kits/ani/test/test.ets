@@ -19,15 +19,15 @@ function main() {
   loadLibrary("image_ani");
 
   // test createPixemap & getImageInfo
-  console.log("Test PixelMap START 22222222");
+  console.log("Test PixelMap START");
    const opts: image.InitializationOptions = {
      size: { width: 480, height: 360 },
      editable: true,
      pixelFormat: 4,
    };
+  let pixelMap:image.PixelMap = image.createPixelMapSync(opts);
 
-  const pixelMap = image.createPixelMapSync(opts);
-  if (pixelMap) {
+  if (pixelMap != undefined) {
     console.log("Create PixelMap success");
   }
   //  console.log(`PixelMap create with size: ${pixelMap.getImageInfoSync().size.width}, ${pixelMap.getImageInfoSync().size.height}`);
@@ -40,7 +40,7 @@ function main() {
   }
 
   let imageSource: image.ImageSource = image.createImageSource(1); //"/data/local/tmp/test.png"
-  if (imageSource) {
+  if (imageSource != undefined) {
     console.log("Create ImageSource success");
   }
   let imagesourceImageInfo: image.ImageInfo  = imageSource.getImageInfo(1);
@@ -49,7 +49,7 @@ function main() {
         editable: 1,
     };
   let pixelmap2: image.PixelMap = imageSource.createPixelMapSync(decodeOpt);
-  if (pixelmap2) {
+  if (pixelmap2 != undefined) {
     console.log("Create imageSource.createPixelMapSync success");
   }
   imageSource.modifyImageProperty("Orientation", "Right-top");
@@ -67,11 +67,17 @@ function main() {
   let propertys: Record<string, string> = imageSource.getImageProperties(array);
   console.log("Create imageSource.getImageProperties :" + propertys);
   imageSource.release();
+
+  console.log("TEST ImagePacker begin");
   const imagePacker = image.createImagePacker();
   let packOpts: image.PackingOption = new image.PackingOption(); 
   packOpts.format = "image/jpeg";
   packOpts.quality = 90;
+  let packBuffer: ArrayBuffer = imagePacker.packing(pixelMap, packOpts);
+  console.log("TEST ImagePacker end, bufferSize: " + packBuffer.byteLength);
+
+  console.log("TEST pixelMap readPixelsToBuffer begin");
   let arrayBuffer:ArrayBuffer = new ArrayBuffer(opts.size.width * opts.size.height *4);
   pixelMap.readPixelsToBuffer(arrayBuffer);
-  console.log("pixelMap.readPixelsToBuffer sucess");
+  console.log("pixelMap.readPixelsToBuffer sucess, size: " + arrayBuffer.byteLength);
 }

@@ -172,7 +172,6 @@ static ani_object GetImageInfo([[maybe_unused]] ani_env* env, [[maybe_unused]] a
     }
     ImageInfo imgInfo;
     pixelmap->GetImageInfo(imgInfo);
-    imgInfo.encodedFormat = "testString";
     return AniUtils::CreateImageInfoValueFromNative(env, imgInfo, pixelmap);
 }
 
@@ -195,11 +194,15 @@ static void ReadPixelsToBuffer(ani_env* env, ani_object obj, ani_object param0)
         IMAGE_LOGE("[ReadPixelsToBuffer] pixelmap nullptr ");
         return;
     }
-    void* data = malloc(pixelmap->GetByteCount());
-    pixelmap->ReadPixels(static_cast<uint64_t>(pixelmap->GetByteCount()), static_cast<uint8_t*>(data));
-    if (data) {
-        free(data);
-        data = nullptr;
+    size_t bufferLength = 0;
+    void *dstbuffer = nullptr;
+    ani_arraybuffer arraybuffer = static_cast<ani_arraybuffer>(param0);
+    if (ANI_OK != env->ArrayBuffer_GetInfo(arraybuffer, &dstbuffer, &bufferLength)) {
+        IMAGE_LOGE("[ReadPixelsToBuffer] ArrayBuffer_GetInfo failed");
+    }
+    uint32_t ret = pixelmap->ReadPixels(bufferLength, static_cast<uint8_t*>(dstbuffer));
+    if (ret != 0) {
+        IMAGE_LOGE("[ReadPixelsToBuffer] failed");
     }
 }
 
