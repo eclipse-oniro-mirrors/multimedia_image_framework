@@ -39,8 +39,11 @@ PixelMap* AniUtils::GetPixelMapFromEnv([[maybe_unused]] ani_env* env, [[maybe_un
         IMAGE_LOGE("[GetPixelMapFromEnv] Object_GetField_Long fetch field ");
         return nullptr;
     }
-    IMAGE_LOGE("[GetPixelMapFromEnv] Object_GetField_Long sucess ");
     PixelMapAni* pixelmapAni = reinterpret_cast<PixelMapAni*>(nativeObj);
+    if (!pixelmapAni) {
+        IMAGE_LOGE("[GetPixelMapFromEnv] pixelmapAni field ");
+        return nullptr;
+    }
     return (pixelmapAni->nativePixelMap_).get();
 }
 

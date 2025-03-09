@@ -16,11 +16,12 @@
 #include <ani.h>
 #include <array>
 #include <iostream>
-#include "pixel_map_ani.h"
+
 #include "ani_utils.h"
+#include "image_log.h"
 #include "log_tags.h"
 #include "media_errors.h"
-#include "image_log.h"
+#include "pixel_map_ani.h"
 
 #undef LOG_DOMAIN
 #define LOG_DOMAIN LOG_TAG_DOMAIN_ID_IMAGE
@@ -196,6 +197,10 @@ static void ReadPixelsToBuffer(ani_env* env, ani_object obj, ani_object param0)
     }
     void* data = malloc(pixelmap->GetByteCount());
     pixelmap->ReadPixels(static_cast<uint64_t>(pixelmap->GetByteCount()), static_cast<uint8_t*>(data));
+    if (data) {
+        free(data);
+        data = nullptr;
+    }
 }
 
 ani_status PixelMapAni::Init(ani_env* env)
