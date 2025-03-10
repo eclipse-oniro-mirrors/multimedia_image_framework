@@ -840,7 +840,7 @@ bool CheckPixelMapSLR(const Size &desiredSize, PixelMap &pixelMap)
 
 #if !defined(_WIN32) && !defined(_APPLE) && !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
 static int g_minSize = 512;
-static int g_maxSize = 8000;
+static constexpr int g_maxTextureSize = 8192;
 static bool CheckPixelMapSLR(PixelMap &pixelMap, const Size &desiredSize, GPUTransformData &trans)
 {
     ImageInfo imgInfo;
@@ -865,8 +865,8 @@ static bool CheckPixelMapSLR(PixelMap &pixelMap, const Size &desiredSize, GPUTra
         IMAGE_LOGE("slr_gpu CheckPixelMapSLR invalid pixel bytes, %{public}d", pixelBytes);
         return false;
     }
-    if (srcWidth > g_maxSize || srcHeight > g_maxSize) {
-        IMAGE_LOGI("slr_gpu  CheckPixelMapSLR  The maximum width and height cannot exceed 8000.");
+    if (srcWidth > g_maxTextureSize || srcHeight > g_maxTextureSize) {
+        IMAGE_LOGI("slr_gpu CheckPixelMapSLR The maximum width and height cannot exceed:%{public}d.", g_maxTextureSize);
         return false;
     }
     uint64_t dstSizeOverflow = static_cast<uint64_t>(desiredSize.width) * static_cast<uint64_t>(desiredSize.height) *

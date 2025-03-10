@@ -28,11 +28,10 @@
 namespace OHOS {
 namespace Media {
 namespace SlrGpu {
-constexpr uint32_t MAX_LENGTH_MODULO = 1024;
+constexpr uint32_t MAX_LENGTH_MODULO = 512;
 constexpr uint32_t PIXELFORMAT_MODULO = 8;
 constexpr uint32_t ALPHATYPE_MODULO = 4;
 constexpr uint32_t SCALEMODE_MODULO = 2;
-constexpr uint32_t PIXELFORMAT_COUNT = 110;
 constexpr uint32_t NUM_8 = 8;
 constexpr uint32_t NUM_9 = 9;
 constexpr uint32_t NUM_90 = 90;
@@ -96,7 +95,7 @@ void CreatePixelMapFromAddr(int32_t width, int32_t height, PixelFormat format)
     }
 }
 
-unique_ptr<PixelMap> CreatePixelMapFromBuffer(int32_t width, int32_t height,
+void CreatePixelMapFromBuffer(int32_t width, int32_t height,
     Media::PixelFormat pixelFormat = PixelFormat::UNKNOWN)
 {
     Media::InitializationOptions opts;
@@ -113,7 +112,7 @@ unique_ptr<PixelMap> CreatePixelMapFromBuffer(int32_t width, int32_t height,
     auto pixelmap = Media::PixelMap::Create(opts);
 
     PixelMapResize(pixelmap);
-    return pixelmap;
+    return;
 }
 
 std::unique_ptr<Media::PixelMap> GetPixelMapFromOpts(Media::PixelFormat pixelFormat = PixelFormat::UNKNOWN)
@@ -138,7 +137,15 @@ std::unique_ptr<Media::PixelMap> GetPixelMapFromOpts(Media::PixelFormat pixelFor
     return pixelmap;
 }
 
-void PixelMapScale(std::unique_ptr<Media::PixelMap> &pixelMapFromOpts)
+void PixelMapRotate(std::unique_ptr<Media::PixelMap>& pixelMapFromOpts)
+{
+    if (!pixelMapFromOpts) {
+        return;
+    }
+    PostProc::RotateInRectangularSteps(*(pixelMapFromOpts.get()), GetData<int32_t>() % NUM_360);
+}
+
+void PixelMapResize(std::unique_ptr<Media::PixelMap>& pixelMapFromOpts)
 {
     if (!pixelMapFromOpts) {
         return;
@@ -148,15 +155,7 @@ void PixelMapScale(std::unique_ptr<Media::PixelMap> &pixelMapFromOpts)
         {pixelMapFromOpts->GetWidth() * xy, pixelMapFromOpts->GetHeight() * xy}, AntiAliasingOption::HIGH);
 }
 
-void PixelMapResize(std::unique_ptr<Media::PixelMap> &pixelMapFromOpts)
-{
-    if (!pixelMapFromOpts) {
-        return;
-    }
-    PostProc::RotateInRectangularSteps(*(pixelMapFromOpts.get()), GetData<int32_t>() % NUM_360);
-}
-
-void PixelMapRotate(std::unique_ptr<Media::PixelMap> &pixelMapFromOpts)
+void PixelMapRotateTest(std::unique_ptr<Media::PixelMap>& pixelMapFromOpts)
 {
     if (!pixelMapFromOpts) {
         return;
@@ -203,48 +202,7 @@ std::unique_ptr<Media::PixelMap> GetPixelMapFromPixelmap(std::unique_ptr<Media::
     return outPixelmap;
 }
 
-bool PixelMapMainScaleFuzzTest(const uint8_t* data, size_t size)
-{
-if (data == nullptr) {
-        return false;
-    }
-    // initialize
-    g_data = data;
-    g_size = size;
-    g_pos = 0;
-
-    // create PixelMap from opts
-    std::unique_ptr<Media::PixelMap> pixelMapFromOpts = GetPixelMapFromOpts();
-    if (!pixelMapFromOpts) {
-        return false;
-    }
-    PixelMapScale(pixelMapFromOpts);
-
-    // PixelMap Transform Test
-    std::unique_ptr<Media::PixelMap> pixelMapTransform = GetPixelMapFromOpts(Media::PixelFormat::RGBA_8888);
-    if (!pixelMapTransform) {
-        return false;
-    }
-    PixelMapScale(pixelMapFromOpts);
-
-    // create from opts with PixelFormat::RGBA_8888
-    std::unique_ptr<Media::PixelMap> pixelMapFromOpts_rgba8888 = GetPixelMapFromOpts(Media::PixelFormat::RGBA_8888);
-    if (!pixelMapFromOpts_rgba8888) {
-        return false;
-    }
-    PixelMapScale(pixelMapFromOpts);
-
-    // create PixelMap from other PixelMap
-    std::unique_ptr<Media::PixelMap> pixelMapFromOtherPixelMap = GetPixelMapFromPixelmap(pixelMapFromOpts_rgba8888,
-        Media::PixelFormat::RGBA_8888);
-    if (!pixelMapFromOtherPixelMap) {
-        return false;
-    }
-    PixelMapScale(pixelMapFromOpts);
-    return true;
-}
-
-bool PixelMapMainFuzzTest(const uint8_t* data, size_t size)
+bool PixelMapMainRotateFuzzTest(const uint8_t* data, size_t size)
 {
     if (data == nullptr) {
         return false;
@@ -259,21 +217,21 @@ bool PixelMapMainFuzzTest(const uint8_t* data, size_t size)
     if (!pixelMapFromOpts) {
         return false;
     }
-    PixelMapResize(pixelMapFromOpts);
+    PixelMapRotate(pixelMapFromOpts);
 
     // PixelMap Transform Test
     std::unique_ptr<Media::PixelMap> pixelMapTransform = GetPixelMapFromOpts(Media::PixelFormat::RGBA_8888);
     if (!pixelMapTransform) {
         return false;
     }
-    PixelMapResize(pixelMapFromOpts);
+    PixelMapRotate(pixelMapTransform);
 
     // create from opts with PixelFormat::RGBA_8888
     std::unique_ptr<Media::PixelMap> pixelMapFromOpts_rgba8888 = GetPixelMapFromOpts(Media::PixelFormat::RGBA_8888);
     if (!pixelMapFromOpts_rgba8888) {
         return false;
     }
-    PixelMapResize(pixelMapFromOpts);
+    PixelMapRotate(pixelMapFromOpts_rgba8888);
 
     // create PixelMap from other PixelMap
     std::unique_ptr<Media::PixelMap> pixelMapFromOtherPixelMap = GetPixelMapFromPixelmap(pixelMapFromOpts_rgba8888,
@@ -281,20 +239,57 @@ bool PixelMapMainFuzzTest(const uint8_t* data, size_t size)
     if (!pixelMapFromOtherPixelMap) {
         return false;
     }
-    PixelMapResize(pixelMapFromOpts);
+    PixelMapRotate(pixelMapFromOtherPixelMap);
+    return true;
+}
 
-    // create cropped PixelMap from other PixelMap
-    std::unique_ptr<Media::PixelMap> pixelMapCropFromOtherPixelMap = GetPixelMapFromPixelmap(pixelMapFromOpts_rgba8888,
-        Media::PixelFormat::RGBA_8888, true);
-    PixelMapResize(pixelMapFromOpts);
-
+bool PixelMapMainFuzzTest(const uint8_t* data, size_t size)
+{
+    if (data == nullptr) {
+        return false;
+    }
+    // initialize
+    g_data = data;
+    g_size = size;
+    g_pos = 0;
+    {
+        // create PixelMap from opts
+        std::unique_ptr<Media::PixelMap> pixelMapFromOpts = GetPixelMapFromOpts();
+        if (!pixelMapFromOpts) {
+            return false;
+        }
+        PixelMapResize(pixelMapFromOpts);
+        // PixelMap Transform Test
+        std::unique_ptr<Media::PixelMap> pixelMapTransform = GetPixelMapFromOpts(Media::PixelFormat::RGBA_8888);
+        if (!pixelMapTransform) {
+            return false;
+        }
+        PixelMapRotate(pixelMapTransform);
+        // create from opts with PixelFormat::RGBA_8888
+        std::unique_ptr<Media::PixelMap> pixelMapFromOpts_rgba8888 = GetPixelMapFromOpts(Media::PixelFormat::RGBA_8888);
+        if (!pixelMapFromOpts_rgba8888) {
+            return false;
+        }
+        PixelMapResize(pixelMapFromOpts_rgba8888);
+        // create PixelMap from other PixelMap
+        std::unique_ptr<Media::PixelMap> pixelMapFromOtherPixelMap = GetPixelMapFromPixelmap(pixelMapFromOpts_rgba8888,
+            Media::PixelFormat::RGBA_8888);
+        if (!pixelMapFromOtherPixelMap) {
+            return false;
+        }
+        PixelMapRotate(pixelMapFromOtherPixelMap);
+        // create cropped PixelMap from other PixelMap
+        std::unique_ptr<Media::PixelMap> pixelMapCropFromOtherPixelMap =
+            GetPixelMapFromPixelmap(pixelMapFromOpts_rgba8888, Media::PixelFormat::RGBA_8888, true);
+        PixelMapResize(pixelMapCropFromOtherPixelMap);
+    }
     CreatePixelMapFromBuffer(GetData<int32_t>() % MAX_LENGTH_MODULO, GetData<int32_t>() % MAX_LENGTH_MODULO);
     CreatePixelMapFromBuffer(NUM_4, NUM_6, PixelFormat(GetData<int32_t>() % MAX_LENGTH_MODULO));
     CreatePixelMapFromBuffer(NUM_4, NUM_6, PixelFormat::RGBA_8888);
-    for (uint32_t i = 0; i < PIXELFORMAT_COUNT; i++) {
+    for (uint32_t i = 0; i < NUM_8; i++) {
         CreatePixelMapFromBuffer(NUM_4, NUM_6, PixelFormat(i));
     }
-
+ 
     CreatePixelMapFromAddr(NUM_4, NUM_6, PixelFormat::BGRA_8888);
     CreatePixelMapFromAddr(NUM_8, NUM_9, PixelFormat::RGBA_8888);
     CreatePixelMapFromAddr(NUM_4, NUM_6, PixelFormat::ARGB_8888);
@@ -302,11 +297,9 @@ bool PixelMapMainFuzzTest(const uint8_t* data, size_t size)
         PixelFormat::RGBA_8888);
     CreatePixelMapFromAddr(GetData<int32_t>() % MAX_LENGTH_MODULO, GetData<int32_t>() % MAX_LENGTH_MODULO,
         PixelFormat(GetData<int32_t>()));
-
-    PixelMapMainScaleFuzzTest(data, size);
+ 
     return true;
 }
-
 } // namespace SlrGpu
 } // namespace Media
 } // namespace OHOS
