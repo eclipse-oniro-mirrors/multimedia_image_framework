@@ -75,7 +75,7 @@ generate_static_abc("image_framework_abc") {
 ohos_prebuilt_etc("image_framework_abc_etc") {
   source = "$target_out_dir/image_framework.abc"
   module_install_dir = "framework"
-  subsystem_name = "image_framework"
-  part_name = "multimedia"
+  subsystem_name = "multimedia"
+  part_name = "image_framework"
   deps = [ ":image_framework_abc" ]
 }
