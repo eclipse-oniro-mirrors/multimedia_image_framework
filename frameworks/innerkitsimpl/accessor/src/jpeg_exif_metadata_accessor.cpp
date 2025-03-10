@@ -96,14 +96,15 @@ bool JpegExifMetadataAccessor::ReadBlob(DataBuf &blob)
     }
 
     while ((marker != JPEG_MARKER_SOS) && (marker != JPEG_MARKER_EOI)) {
-        const auto [sizeBuf, size] = ReadSegmentLength(marker);
-
-        if ((marker == JPEG_MARKER_APP1) && (size >= APP1_EXIF_LENGTH)) {
-            blob.Resize(size - SEGMENT_LENGTH_SIZE);
-            if (imageStream_->Read(blob.Data(), (size - SEGMENT_LENGTH_SIZE)) == -1) {
+        if (marker == JPEG_MARKER_APP1) {
+            const auto [sizeBuf, size] = ReadSegmentLength(marker);
+            if (size >= APP1_EXIF_LENGTH) {
+                blob.Resize(size - SEGMENT_LENGTH_SIZE);
+            }
+            if (size >= APP1_EXIF_LENGTH && (imageStream_->Read(blob.Data(), (size - SEGMENT_LENGTH_SIZE)) == -1)) {
                 return false;
             }
-            if (blob.CmpBytes(0, EXIF_ID, EXIF_ID_SIZE) == 0) {
+            if (size >= APP1_EXIF_LENGTH && (blob.CmpBytes(0, EXIF_ID, EXIF_ID_SIZE) == 0)) {
                 tiffOffset_ = imageStream_->Tell() - static_cast<long>(blob.Size()) + EXIF_ID_SIZE;
                 return true;
             }
@@ -183,15 +184,9 @@ std::pair<std::array<byte, 2>, uint16_t> JpegExifMetadataAccessor::ReadSegmentLe
     std::array<byte, READ_BYTES> buf { 0, 0 };
     uint16_t size { 0 };
     if (HasLength(marker)) {
-        long currentPos = imageStream_->Tell();
         if (imageStream_->Read(buf.data(), buf.size()) == -1) {
             IMAGE_LOGE("Failed to read from image stream. Marker: %{public}u", marker);
             return { buf, size };
-        }
-        if (buf[0] == JPEG_MARKER_HEADER && HasLength(buf[1])) {
-            IMAGE_LOGD("ReadSegmentLength wrong marker, marker: %{public}u", marker);
-            imageStream_->Seek(currentPos, SeekPos::BEGIN);
-            return { buf, 0 };
         }
         size = GetUShort(buf.data(), bigEndian);
     }
@@ -270,13 +265,14 @@ std::tuple<size_t, size_t> JpegExifMetadataAccessor::GetInsertPosAndMarkerAPP1()
     }
     byte marker = static_cast<byte>(ret);
     while ((marker != JPEG_MARKER_SOS) && (marker != JPEG_MARKER_EOI)) {
-        DataBuf buf = ReadNextSegment(marker);
         if (marker == JPEG_MARKER_APP0) {
             insertPosApp0 = markerCount + 1;
-        } else if ((marker == JPEG_MARKER_APP1) && (buf.Size() >= APP1_EXIF_LENGTH) &&
-            (buf.CmpBytes(EXIF_BLOB_OFFSET, EXIF_ID, EXIF_ID_SIZE) == 0)) {
-            skipExifSeqNum = markerCount;
-            insertPosApp1 = markerCount;
+        } else if (marker == JPEG_MARKER_APP1) {
+            DataBuf buf = ReadNextSegment(marker);
+            if ((buf.Size() >= APP1_EXIF_LENGTH) && (buf.CmpBytes(EXIF_BLOB_OFFSET, EXIF_ID, EXIF_ID_SIZE) == 0)) {
+                skipExifSeqNum = markerCount;
+                insertPosApp1 = markerCount;
+            }
         }
 
         int ret = FindNextMarker();
