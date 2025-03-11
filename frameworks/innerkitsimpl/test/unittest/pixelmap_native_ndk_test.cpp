@@ -194,6 +194,58 @@ HWTEST_F(PixelMapNdk2Test, OH_PixelmapInitializationOptions_SetGetAlphaType, Tes
 }
 
 /**
+ * @tc.name: OH_PixelmapInitializationOptions_SetEditable
+ * @tc.desc: OH_PixelmapInitializationOptions_SetEditable
+ * @tc.type: FUNC
+ */
+HWTEST_F(PixelMapNdk2Test, OH_PixelmapInitializationOptions_SetEditable, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PixelMapNdk2Test: OH_PixelmapInitializationOptions_SetEditable start";
+    OH_Pixelmap_InitializationOptions *ops = nullptr;
+    OH_PixelmapInitializationOptions_Create(&ops);
+    bool editable = false;
+    OH_PixelmapInitializationOptions_GetEditable(ops, &editable);
+    ASSERT_EQ(editable, true);
+    OH_PixelmapInitializationOptions_SetEditable(ops, false);
+    OH_PixelmapInitializationOptions_GetEditable(ops, &editable);
+    ASSERT_EQ(editable, false);
+    ASSERT_EQ(OH_PixelmapInitializationOptions_SetEditable(nullptr, true), 401);
+    ASSERT_EQ(OH_PixelmapInitializationOptions_SetEditable(nullptr, false), 401);
+    ASSERT_EQ(OH_PixelmapInitializationOptions_GetEditable(nullptr, &editable), 401);
+    ASSERT_EQ(OH_PixelmapInitializationOptions_GetEditable(nullptr, &editable), 401);
+    OH_PixelmapInitializationOptions_Release(ops);
+    GTEST_LOG_(INFO) << "PixelMapNdk2Test: OH_PixelmapInitializationOptions_SetEditable end";
+}
+
+/**
+ * @tc.name: OH_PixelmapNative_Destroy
+ * @tc.desc: Test OH_PixelmapNative_Destroy with valid inputs
+ * @tc.type: FUNC
+ */
+HWTEST_F(PixelMapNdk2Test, OH_PixelmapNative_Destroy, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PixelMapNdk2Test: OH_PixelmapNative_Destroy start";
+
+    size_t dataSize = ARGB_8888_BYTES;
+    uint8_t data[] = {0x01, 0x02, 0x03, 0xFF};
+    OH_Pixelmap_InitializationOptions *createOpts;
+    OH_PixelmapInitializationOptions_Create(&createOpts);
+    OH_PixelmapInitializationOptions_SetWidth(createOpts, 1);
+    OH_PixelmapInitializationOptions_SetHeight(createOpts, 1);
+    OH_PixelmapInitializationOptions_SetPixelFormat(createOpts, PIXEL_FORMAT_BGRA_8888);
+    OH_PixelmapNative *pixelMap = nullptr;
+    Image_ErrorCode errCode = OH_PixelmapNative_CreatePixelmap(data, dataSize, createOpts, &pixelMap);
+    ASSERT_EQ(errCode, IMAGE_SUCCESS);
+
+    OH_PixelmapNative_Destroy(&pixelMap);
+    ASSERT_EQ(pixelMap, nullptr);
+    ASSERT_EQ(OH_PixelmapNative_Destroy(nullptr), 401);
+    OH_PixelmapInitializationOptions_Release(createOpts);
+    GTEST_LOG_(INFO) << "PixelMapNdk2Test: OH_PixelmapNative_Destroy end";
+}
+
+
+/**
  * @tc.name: OH_PixelmapInitializationOptions_Release
  * @tc.desc: OH_PixelmapInitializationOptions_Release
  * @tc.type: FUNC

@@ -509,6 +509,30 @@ Image_ErrorCode OH_PixelmapInitializationOptions_SetAlphaType(OH_Pixelmap_Initia
     int32_t alphaType);
 
 /**
+ * @brief Get editable for InitializationOptions struct.
+ *
+ * @param options The InitializationOptions pointer will be operated.
+ * @param editable The boolean value representing the editable status.
+ * @return Returns {@link Image_ErrorCode} IMAGE_SUCCESS - if the operation is successful.
+ * returns {@link Image_ErrorCode} IMAGE_BAD_PARAMETER - if options or editable is invalid.
+ * @since 18
+ */
+Image_ErrorCode OH_PixelmapInitializationOptions_GetEditable(OH_Pixelmap_InitializationOptions *options,
+    bool *editable);
+
+/**
+ * @brief Set editable for InitializationOptions struct.
+ *
+ * @param options The InitializationOptions pointer will be operated.
+ * @param editable The boolean value representing the editable status.
+ * @return Returns {@link Image_ErrorCode} IMAGE_SUCCESS - if the operation is successful.
+ * returns {@link Image_ErrorCode} IMAGE_BAD_PARAMETER - if options is invalid.
+ * @since 18
+ */
+Image_ErrorCode OH_PixelmapInitializationOptions_SetEditable(OH_Pixelmap_InitializationOptions *options,
+    bool editable);
+
+/**
  * @brief delete InitializationOtions pointer.
  *
  * @param options The InitializationOtions pointer will be operated.
@@ -852,6 +876,16 @@ Image_ErrorCode OH_PixelmapNative_Crop(OH_PixelmapNative *pixelmap, Image_Region
  * @since 12
  */
 Image_ErrorCode OH_PixelmapNative_Release(OH_PixelmapNative *pixelmap);
+
+/**
+ * @brief Destroys an <b>OH_PixelmapNative</b> object and deallocates its resources.
+ *
+ * @param pixelmap A pointer to the OH_PixelmapNative pointer to destroy.
+ * @return Returns {@link Image_ErrorCode} IMAGE_SUCCESS - if the operation is successful.
+ * returns {@link Image_ErrorCode} IMAGE_BAD_PARAMETER - if pixelmap is null or *pixelmap is null.
+ * @since 18
+ */
+Image_ErrorCode OH_PixelmapNative_Destroy(OH_PixelmapNative **pixelmap);
 
 /**
  * @brief Converting images to alpha format
