@@ -723,7 +723,7 @@ ani_status ImageSourceAni::Init(ani_env* env)
         return ANI_ERROR;
     }
     std::array methods = {
-        ani_native_function {"getImageInfo", "I:L@ohos/multimedia/image/image/ImageInfo;",
+        ani_native_function {"nativeGetImageInfo", "I:L@ohos/multimedia/image/image/ImageInfo;",
             reinterpret_cast<void *>(OHOS::Media::GetImageInfo)},
         ani_native_function {"createPixelMapSync",
             "L@ohos/multimedia/image/image/DecodingOptions;:L@ohos/multimedia/image/image/PixelMap;",

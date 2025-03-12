@@ -32,6 +32,8 @@ class Result<T, E>{
 
 export namespace image {
 
+  loadLibrary("image_ani");
+
 enum DecodingDynamicRange {
   /**
     * Decoding according to the content of the image.
@@ -2062,7 +2064,7 @@ export interface InitializationOptions {
   scaleMode?: Int;
 }
 
-export class InitializationOptionsInner implements InitializationOptions{
+export class InitializationOptionsInner implements InitializationOptions {
   size: Size = { width: 0, height:0 };
   pixelFormat?: Int | undefined = 0;
   srcPixelFormat?: Int | undefined = 0;
@@ -2071,7 +2073,15 @@ export class InitializationOptionsInner implements InitializationOptions{
   scaleMode?: Int | undefined = 0;
 }
 
-class PixelMapInner implements PixelMap{
+export interface PixelMap {
+  getImageInfoSync(): ImageInfo;
+  getImageInfo(): Promise<ImageInfo>;
+  readPixelsToBufferSync(buff: ArrayBuffer);
+  readPixelsToBuffer(buff: ArrayBuffer): Promise<void>;
+  release();
+}
+
+class PixelMapInner implements PixelMap {
   private nativeObj: long = 0;
 
   constructor(context: long) {
@@ -2082,33 +2092,37 @@ class PixelMapInner implements PixelMap{
 
   native nativeGetImageInfo(): ImageInfo;
 
-  public GetImageInfoSync(): ImageInfo {
-    console.log("Test PixelMap sync GetImageInfo");
+  public getImageInfoSync(): ImageInfo {
+    console.log("Test PixelMap getImageInfoSync");
     return this.nativeGetImageInfo();
   }
 
-  public GetImageInfo(): Promise<ImageInfo> {
-    let p = new Promise<ImageInfo>((resolve: (v: ImageInfo) => void, reject: (error: Object) => void) => {
-        // 选项2： 推荐用法
-        let cb = (): undefined => {
-            this.nativeGetImageInfo()
-            return undefined
-        }
-        let p1 = taskpool.execute(cb);
-        p1.then((e: NullishType)=>{
-            let r : ImageInfo =  e as ImageInfo;
-            resolve(r);
-        });
+  public getImageInfo(): Promise<ImageInfo> {
+    return new Promise<ImageInfo>((resolve: (v: ImageInfo) => void, reject: (error: Object) => void) => {
+      const cb = (): ImageInfo => {
+        return this.nativeGetImageInfo();
+      };
+      taskpool.execute(cb)
+        .then((e: NullishType) => resolve(e as ImageInfo));
     });
-    return p;
   }
 
+  native nativeReadPixelsToBuffer(buff: ArrayBuffer): void;
 
-  native nativeReadPixelsToBuffer(buff:ArrayBuffer): void;
-
-  public readPixelsToBuffer(buff:ArrayBuffer): void {
+  public readPixelsToBufferSync(buff: ArrayBuffer): void {
     console.log("Test PixelMap sync GetImageInfo");
     return this.nativeReadPixelsToBuffer(buff);
+  }
+
+  public readPixelsToBuffer(buff: ArrayBuffer): Promise<void> {
+    return new Promise<void>((resolve: (v: Promise<void>) => void, reject: (error: Object) => void) => {
+      const cb = (): boolean => {
+        this.nativeReadPixelsToBuffer(buff);
+        return true;
+      };
+      taskpool.execute(cb)
+        .then((): void => resolve(Promise.resolve()));
+    });
   }
 
   native nativeRelase(): void;
@@ -2117,13 +2131,6 @@ class PixelMapInner implements PixelMap{
     console.log("Test PixelMap sync GetImageInfo");
     return this.nativeRelase();
   }
-}
-
-export interface PixelMap {
-  GetImageInfoSync(): ImageInfo;
-  GetImageInfo():Promise<ImageInfo>;
-  readPixelsToBuffer(buff:ArrayBuffer);
-  release();
 }
 
 export native function createPixelMapSync(options: InitializationOptions): PixelMap;
@@ -2200,7 +2207,8 @@ export class DecodingOptionsInner implements DecodingOptions{
 
 
 export interface ImageSource {
-  getImageInfo(index: int): ImageInfo;
+  getImageInfoSync(index: int): ImageInfo;
+  getImageInfo(index: int): Promise<ImageInfo>;
   createPixelMapSync(options?: DecodingOptions): PixelMap;
   modifyImageProperty(key: string, value: string): void;
   modifyImageProperties(records: Record<string, string>): void;
@@ -2217,7 +2225,7 @@ export class ImageSourceInner implements ImageSource {
       this.nativeObj = context;
     }
   }
-  native getImageInfo(index: int): ImageInfo;
+  native nativeGetImageInfo(index: int): ImageInfo;
   native createPixelMapSync(options?: DecodingOptions): PixelMap;
   private native modifyImageProperty(nativeObj: long, key: string, value: string): void;
   native modifyImageProperties(records: Record<string, string>): void;
@@ -2229,6 +2237,19 @@ export class ImageSourceInner implements ImageSource {
     return;
   }
 
+  public getImageInfoSync(index: int): ImageInfo {
+    return this.nativeGetImageInfo(index);
+  }
+
+  public getImageInfo(index: int): Promise<ImageInfo> {
+    return new Promise<ImageInfo>((resolve: (v: ImageInfo) => void, reject: (error: Object) => void) => {
+      const cb = (): ImageInfo => {
+        return this.nativeGetImageInfo(index);
+      };
+      taskpool.execute(cb)
+        .then((e: NullishType) => resolve(e as ImageInfo));
+    });
+  }
 }
 
 type ImageSourceDatyType = string | int;
@@ -2263,7 +2284,12 @@ export class PackingOption  implements PackingOptionInterface{
   needsPackProperties?: Int | undefined = 0;
 }
 
-class ImagePacker{
+export interface ImagePacker {
+  packing(source: PixelMap, option: PackingOption): ArrayBuffer;
+  release(): void;
+}
+
+class ImagePackerInner implements ImagePacker {
   private nativeObj: long = 0;
 
   constructor(context: long) {
@@ -2277,8 +2303,9 @@ class ImagePacker{
   native nativeRelease(): void;
 
   public release(): void {
-    
+    this.nativeRelease();
   }
+
   public packing(source: PixelMap, option: PackingOption): ArrayBuffer {
     console.log("Test PixelMap sync GetImageInfo");
     return this.nativePackingWithPixelMap(source, option);

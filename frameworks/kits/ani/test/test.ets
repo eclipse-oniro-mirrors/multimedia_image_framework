@@ -16,8 +16,6 @@
 import { image } from "../ets/@ohos.multimedia.image.ets";
 
 function main() {
-  loadLibrary("image_ani");
-
   // test createPixemap & getImageInfo
   console.log("Test PixelMap START");
    const opts: image.InitializationOptions = {
@@ -30,9 +28,14 @@ function main() {
   if (pixelMap != undefined) {
     console.log("Create PixelMap success");
   }
-  //  console.log(`PixelMap create with size: ${pixelMap.getImageInfoSync().size.width}, ${pixelMap.getImageInfoSync().size.height}`);
-  let retImageInfo:image.ImageInfo = pixelMap.GetImageInfoSync();
-  console.log("Test PixelMap end, width: ", retImageInfo.size.width, retImageInfo.size.height, retImageInfo.pixelFormat, retImageInfo.mimeType);
+
+  const retImageInfo: image.ImageInfo = pixelMap.getImageInfoSync();
+  console.log("Get image info: ", retImageInfo.size.width, retImageInfo.size.height, retImageInfo.pixelFormat, retImageInfo.mimeType);
+  pixelMap.getImageInfo()
+    .then((imageInfo: image.ImageInfo) => {
+      console.log("ASYNC Get image info: ", imageInfo.size.width, imageInfo.size.height, imageInfo.pixelFormat, imageInfo.mimeType);
+    });
+
   if (retImageInfo.isHdr) {
       console.log("Test PixelMap hdr ");
   } else {
@@ -43,11 +46,15 @@ function main() {
   if (imageSource != undefined) {
     console.log("Create ImageSource success");
   }
-  let imagesourceImageInfo: image.ImageInfo  = imageSource.getImageInfo(1);
+  let imagesourceImageInfo: image.ImageInfo  = imageSource.getImageInfoSync(1);
   console.log("Test ImageSource.getImageInfoSync width: ", imagesourceImageInfo.size.width, imagesourceImageInfo.size.height, imagesourceImageInfo.pixelFormat, imagesourceImageInfo.density, imagesourceImageInfo.mimeType);
-    const decodeOpt: image.DecodingOptions = {
-        editable: 1,
-    };
+  imageSource.getImageInfo(1)
+    .then((imageInfo: image.ImageInfo) => {
+      console.log("ASYNC ImageSource get image info:", imageInfo.size.width, imageInfo.size.height, imageInfo.pixelFormat, imageInfo.density, imageInfo.mimeType);
+    });
+  const decodeOpt: image.DecodingOptions = {
+      editable: 1,
+  };
   let pixelmap2: image.PixelMap = imageSource.createPixelMapSync(decodeOpt);
   if (pixelmap2 != undefined) {
     console.log("Create imageSource.createPixelMapSync success");
@@ -75,9 +82,12 @@ function main() {
   packOpts.quality = 90;
   let packBuffer: ArrayBuffer = imagePacker.packing(pixelMap, packOpts);
   console.log("TEST ImagePacker end, bufferSize: " + packBuffer.byteLength);
+  imagePacker.release();
 
   console.log("TEST pixelMap readPixelsToBuffer begin");
-  let arrayBuffer:ArrayBuffer = new ArrayBuffer(opts.size.width * opts.size.height *4);
-  pixelMap.readPixelsToBuffer(arrayBuffer);
-  console.log("pixelMap.readPixelsToBuffer sucess, size: " + arrayBuffer.byteLength);
+  let arrayBuffer: ArrayBuffer = new ArrayBuffer(opts.size.width * opts.size.height * 4);
+  pixelMap.readPixelsToBufferSync(arrayBuffer);
+  console.log("Read pixels to buffer success, size: " + arrayBuffer.byteLength); 
+  pixelMap.readPixelsToBuffer(arrayBuffer)
+    .then((): void => console.log("ASYNC Read pixels to buffer success, size: " + arrayBuffer.byteLength));
 }
