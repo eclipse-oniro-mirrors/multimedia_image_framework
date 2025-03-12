@@ -166,7 +166,6 @@ ohos_shared_library("extplugin") {
     "$image_subsystem/frameworks/innerkitsimpl/accessor/src/webp_exif_metadata_accessor.cpp",
     "src/ext_decoder.cpp",
     "src/ext_encoder.cpp",
-    "src/ext_ohoscodec.cpp",
     "src/ext_pixel_convert.cpp",
     "src/ext_stream.cpp",
     "src/ext_wstream.cpp",
@@ -295,6 +294,7 @@ ohos_shared_library("extplugin") {
     }
   }
   if (is_ohos) {
+    sources += [ "src/ext_ohoscodec.cpp" ]
     defines += [ "SK_ENABLE_OHOS_CODEC" ]
   }
   cflags = [
