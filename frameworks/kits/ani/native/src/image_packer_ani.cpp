@@ -42,7 +42,7 @@ ani_object ImagePackerAni::CreateImagePackerAni([[maybe_unused]] ani_env* env,
     std::shared_ptr<ImagePacker> imagePacker = std::make_shared<ImagePacker>();
     imagePackerAni->nativeImagePacker_ = imagePacker;
 
-    static const char* className = "L@ohos/multimedia/image/image/ImagePacker;";
+    static const char* className = "L@ohos/multimedia/image/image/ImagePackerInner;";
     ani_class cls;
     if (ANI_OK != env->FindClass(className, &cls)) {
         IMAGE_LOGE("Not found L@ohos/multimedia/image/image/ImagePacker;");
@@ -194,9 +194,26 @@ ani_arraybuffer nativePackingWithPixelMap([[maybe_unused]] ani_env* env,
     return arrayBuffer;
 }
 
+static void Release([[maybe_unused]] ani_env* env, [[maybe_unused]] ani_object obj)
+{
+    ani_long nativeObj {};
+    bool ret;
+    if ((ret = env->Object_GetFieldByName_Long(obj, "nativeObj", &nativeObj)) != ANI_OK) {
+        IMAGE_LOGE("[Release] Object_GetField_Long fetch field ret:%{public}d", ret);
+        return;
+    }
+    ImagePackerAni* imagePackerAni = reinterpret_cast<ImagePackerAni*>(nativeObj);
+    if (imagePackerAni == nullptr) {
+        IMAGE_LOGE("[Release] get ImagePackerAni failed");
+    }
+    imagePackerAni->nativeImagePacker_ = nullptr;
+    std::cerr << "nativeImagePacker_ Release '" << "scuess" << std::endl;
+    return;
+}
+
 ani_status ImagePackerAni::Init(ani_env* env)
 {
-    static const char *className = "L@ohos/multimedia/image/image/ImagePacker;";
+    static const char *className = "L@ohos/multimedia/image/image/ImagePackerInner;";
     ani_class cls;
     if (ANI_OK != env->FindClass(className, &cls)) {
         IMAGE_LOGE("Not found L@ohos/multimedia/image/image/ImagePacker;");
@@ -205,7 +222,8 @@ ani_status ImagePackerAni::Init(ani_env* env)
     std::array methods = {
         ani_native_function {"nativePackingWithPixelMap",
             "L@ohos/multimedia/image/image/PixelMap;L@ohos/multimedia/image/image/PackingOption;:Lescompat/ArrayBuffer;",
-            reinterpret_cast<void *>(OHOS::Media::nativePackingWithPixelMap)},
+            reinterpret_cast<void*>(OHOS::Media::nativePackingWithPixelMap)},
+        ani_native_function {"nativeRelease", ":V", reinterpret_cast<void*>(OHOS::Media::Release)},
     };
     ani_status ret = env->Class_BindNativeMethods(cls, methods.data(), methods.size());
     if (ANI_OK != ret) {
