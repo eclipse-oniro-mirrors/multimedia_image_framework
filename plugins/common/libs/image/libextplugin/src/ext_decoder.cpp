@@ -2574,7 +2574,7 @@ uint32_t ExtDecoder::AllocateHeifYUVAuxiBuffer(DecodeContext& context, uint32_t 
         IMAGE_LOGE("YUV AuxiliaryMap MemAlloc Reference failed");
         return ERR_DMA_DATA_ABNORMAL;
     }
-    IMAGE_LOGI("ExtDecoder::Allocate HeifYUV AuxiBuffer sb stride is %{public}d, height is %{public}d, size is %{public}d",
+    IMAGE_LOGI("Allocate HeifYUV AuxiBuffer sb stride is %{public}d, height is %{public}d, size is %{public}d",
         hwBuffer->GetStride(), hwBuffer->GetHeight(), hwBuffer->GetSize());
     uint64_t yuvBufferSize = JpegDecoderYuv::GetYuvOutSize(width, height);
     SetDecodeContextBuffer(context, AllocatorType::DMA_ALLOC,
