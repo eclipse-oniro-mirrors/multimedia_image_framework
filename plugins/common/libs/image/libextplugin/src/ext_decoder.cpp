@@ -2554,6 +2554,39 @@ bool ExtDecoder::CheckAuxiliaryMap(AuxiliaryPictureType type)
     return false;
 }
 
+uint32_t ExtDecoder::AllocateHeifYUVAuxiBuffer(DecodeContext& context, uint32_t width, uint32_t height)
+{
+#ifdef HEIF_HW_DECODE_ENABLE
+    HeifHardwareDecoder heifDecoder;
+    auto decoder = reinterpret_cast<HeifDecoderImpl*>(codec_->getHeifContext());
+    GraphicPixelFormat graphicPixelFormat = GRAPHIC_PIXEL_FMT_YCRCB_420_SP;
+    if (context.info.pixelFormat == PixelFormat::NV12) {
+        graphicPixelFormat = GRAPHIC_PIXEL_FMT_YCBCR_420_SP;
+    }
+    sptr<SurfaceBuffer> hwBuffer = heifDecoder.AllocateOutputBuffer(width, height, graphicPixelFormat);
+    if (hwBuffer == nullptr) {
+        IMAGE_LOGE("HeifHardwareDecoder YUV AuxiliaryMap AllocateOutputBuffer return null");
+        return ERR_DMA_NOT_EXIST;
+    }
+    void* nativeBuffer = hwBuffer.GetRefPtr();
+    int32_t err = ImageUtils::SurfaceBuffer_Reference(nativeBuffer);
+    if (err != OHOS::GSERROR_OK) {
+        IMAGE_LOGE("YUV AuxiliaryMap MemAlloc Reference failed");
+        return ERR_DMA_DATA_ABNORMAL;
+    }
+    IMAGE_LOGI("ExtDecoder::Allocate HeifYUV AuxiBuffer sb stride is %{public}d, height is %{public}d, size is %{public}d",
+        hwBuffer->GetStride(), hwBuffer->GetHeight(), hwBuffer->GetSize());
+    uint64_t yuvBufferSize = JpegDecoderYuv::GetYuvOutSize(width, height);
+    SetDecodeContextBuffer(context, AllocatorType::DMA_ALLOC,
+        static_cast<uint8_t*>(hwBuffer->GetVirAddr()), yuvBufferSize, nativeBuffer);
+    decoder->setAuxiliaryDstBuffer(reinterpret_cast<uint8_t *>(context.pixelsBuffer.buffer),
+        context.pixelsBuffer.bufferSize, hwBuffer->GetStride(), context.pixelsBuffer.context);
+    return SUCCESS;
+#else
+    return ERR_IMAGE_DATA_UNSUPPORT;
+#endif
+}
+
 bool ExtDecoder::DecodeHeifAuxiliaryMap(DecodeContext& context, AuxiliaryPictureType type)
 {
 #ifdef HEIF_HW_DECODE_ENABLE
@@ -2583,19 +2616,26 @@ bool ExtDecoder::DecodeHeifAuxiliaryMap(DecodeContext& context, AuxiliaryPicture
     uint64_t byteCount = tempByteCount;
     context.info.size.width = width;
     context.info.size.height = height;
-    cond = DmaMemAlloc(context, byteCount, dstInfo) != SUCCESS;
-    CHECK_INFO_RETURN_RET_LOG(cond, false, "DmaMemAlloc execution failed.");
-    auto* dstBuffer = static_cast<uint8_t*>(context.pixelsBuffer.buffer);
-    auto* sbBuffer = reinterpret_cast<SurfaceBuffer*>(context.pixelsBuffer.context);
-    int32_t rowStride = sbBuffer->GetStride();
-    if (rowStride <= 0) {
-        return false;
+    if (IsYuv420Format(context.info.pixelFormat)) {
+        uint32_t allocRet = AllocateHeifYUVAuxiBuffer(context, width, height);
+        if (allocRet != SUCCESS) {
+            return false;
+        }
+    } else {
+        cond = DmaMemAlloc(context, byteCount, dstInfo) != SUCCESS;
+        CHECK_INFO_RETURN_RET_LOG(cond, false, "DmaMemAlloc execution failed.");
+        auto* dstBuffer = static_cast<uint8_t*>(context.pixelsBuffer.buffer);
+        auto* sbBuffer = reinterpret_cast<SurfaceBuffer*>(context.pixelsBuffer.context);
+        int32_t rowStride = sbBuffer->GetStride();
+        if (rowStride <= 0) {
+            return false;
+        }
+        decoder->setAuxiliaryDstBuffer(dstBuffer, context.pixelsBuffer.bufferSize,
+            static_cast<size_t>(rowStride), context.pixelsBuffer.context);
     }
-    decoder->setAuxiliaryDstBuffer(dstBuffer, context.pixelsBuffer.bufferSize, static_cast<size_t>(rowStride));
     cond = !decoder->decodeAuxiliaryMap();
     CHECK_ERROR_RETURN_RET_LOG(cond, false,
-                               "Decoded auxiliary map type is not supported, or decoded failed. Type: %{public}d",
-                               type);
+        "Decoded auxiliary map type is not supported, or decoded failed. Type: %{public}d", type);
     context.outInfo.size.width = width;
     context.outInfo.size.height = height;
     return true;
