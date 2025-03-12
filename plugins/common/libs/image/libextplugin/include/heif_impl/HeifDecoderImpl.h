@@ -71,7 +71,7 @@ public:
     bool setAuxiliaryMap(Media::AuxiliaryPictureType type);
     bool getAuxiliaryMapInfo(HeifFrameInfo* frameInfo);
     bool decodeAuxiliaryMap();
-    void setAuxiliaryDstBuffer(uint8_t* dstBuffer, size_t dstSize, size_t rowStride);
+    void setAuxiliaryDstBuffer(uint8_t* dstBuffer, size_t dstSize, size_t rowStride, void *context);
     void getFragmentMetadata(Media::Rect& fragmentMetadata);
     bool SwDecode(bool isSharedMemory = false);
 private:
@@ -159,6 +159,8 @@ private:
     uint8_t* auxiliaryDstMemory_;
     size_t auxiliaryDstRowStride_;
     size_t auxiliaryDstMemorySize_;
+    bool isAuxiliaryDecode_ = false;
+    SurfaceBuffer *auxiliaryDstHwbuffer_;
 
     HeifFrameInfo tmapInfo_{};
     std::string errMsg_;
