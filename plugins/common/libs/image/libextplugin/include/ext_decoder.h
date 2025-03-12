@@ -122,7 +122,7 @@ private:
     uint32_t DmaMemAlloc(DecodeContext &context, uint64_t count, SkImageInfo &dstInfo);
     uint32_t JpegHwDmaMemAlloc(DecodeContext &context, uint64_t count, SkImageInfo &dstInfo);
     uint32_t DmaAlloc(DecodeContext &context, uint64_t count, const OHOS::BufferRequestConfig &requestConfig);
-    uint32_t AllocateHeifYUVAuxiBuffer(DecodeContext& context, uint32_t width, uint32_t height);
+    uint32_t AllocateHeifYuvAuxiliaryBuffer(DecodeContext& context, uint32_t width, uint32_t height);
     uint32_t HeifYUVMemAlloc(DecodeContext &context);
     void SetHeifDecodeError(DecodeContext &context);
     void SetHeifParseError();

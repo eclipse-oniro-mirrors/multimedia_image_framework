@@ -2554,7 +2554,7 @@ bool ExtDecoder::CheckAuxiliaryMap(AuxiliaryPictureType type)
     return false;
 }
 
-uint32_t ExtDecoder::AllocateHeifYUVAuxiBuffer(DecodeContext& context, uint32_t width, uint32_t height)
+uint32_t ExtDecoder::AllocateHeifYuvAuxiliaryBuffer(DecodeContext& context, uint32_t width, uint32_t height)
 {
 #ifdef HEIF_HW_DECODE_ENABLE
     HeifHardwareDecoder heifDecoder;
@@ -2617,7 +2617,7 @@ bool ExtDecoder::DecodeHeifAuxiliaryMap(DecodeContext& context, AuxiliaryPicture
     context.info.size.width = width;
     context.info.size.height = height;
     if (IsYuv420Format(context.info.pixelFormat)) {
-        uint32_t allocRet = AllocateHeifYUVAuxiBuffer(context, width, height);
+        uint32_t allocRet = AllocateHeifYuvAuxiliaryBuffer(context, width, height);
         if (allocRet != SUCCESS) {
             return false;
         }
