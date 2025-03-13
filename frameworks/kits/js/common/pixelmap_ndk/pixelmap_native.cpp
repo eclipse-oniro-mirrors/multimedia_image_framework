@@ -62,7 +62,7 @@ struct OH_Pixelmap_InitializationOptions {
     uint32_t height;
     PIXEL_FORMAT srcPixelFormat = PIXEL_FORMAT::PIXEL_FORMAT_BGRA_8888;
     PIXEL_FORMAT pixelFormat = PIXEL_FORMAT::PIXEL_FORMAT_UNKNOWN;
-    uint32_t editable = false;
+    bool editable = true;
     PIXELMAP_ALPHA_TYPE alphaType = PIXELMAP_ALPHA_TYPE::PIXELMAP_ALPHA_TYPE_UNKNOWN;
     int32_t srcRowStride = 0;
 };
@@ -295,6 +295,28 @@ Image_ErrorCode OH_PixelmapInitializationOptions_SetAlphaType(OH_Pixelmap_Initia
 }
 
 MIDK_EXPORT
+Image_ErrorCode OH_PixelmapInitializationOptions_GetEditable(OH_Pixelmap_InitializationOptions *options,
+    bool *editable)
+{
+    if (options == nullptr || editable == nullptr) {
+        return IMAGE_BAD_PARAMETER;
+    }
+    *editable = options->editable;
+    return IMAGE_SUCCESS;
+}
+
+MIDK_EXPORT
+Image_ErrorCode OH_PixelmapInitializationOptions_SetEditable(OH_Pixelmap_InitializationOptions *options,
+    bool editable)
+{
+    if (options == nullptr) {
+        return IMAGE_BAD_PARAMETER;
+    }
+    options->editable = editable;
+    return IMAGE_SUCCESS;
+}
+
+MIDK_EXPORT
 Image_ErrorCode OH_PixelmapInitializationOptions_GetRowStride(OH_Pixelmap_InitializationOptions *options,
     int32_t *rowStride)
 {
@@ -433,7 +455,7 @@ Image_ErrorCode OH_PixelmapNative_CreatePixelmap(uint8_t *data, size_t dataLengt
         return IMAGE_BAD_PARAMETER;
     }
     InitializationOptions info;
-    info.editable = true;
+    info.editable = options->editable;
     info.alphaType = static_cast<AlphaType>(options->alphaType);
     info.srcPixelFormat = static_cast<PixelFormat>(options->srcPixelFormat);
     info.pixelFormat = static_cast<PixelFormat>(options->pixelFormat);
@@ -460,7 +482,7 @@ Image_ErrorCode OH_PixelmapNative_CreateEmptyPixelmap(
         return IMAGE_BAD_PARAMETER;
     }
     InitializationOptions info;
-    info.editable = true;
+    info.editable = options->editable;
     info.alphaType = static_cast<AlphaType>(options->alphaType);
     info.srcPixelFormat = static_cast<PixelFormat>(options->srcPixelFormat);
     info.pixelFormat = static_cast<PixelFormat>(options->pixelFormat);
@@ -695,6 +717,17 @@ Image_ErrorCode OH_PixelmapNative_Release(OH_PixelmapNative *pixelmap)
         return IMAGE_BAD_PARAMETER;
     }
     pixelmap->~OH_PixelmapNative();
+    return IMAGE_SUCCESS;
+}
+
+MIDK_EXPORT
+Image_ErrorCode OH_PixelmapNative_Destroy(OH_PixelmapNative **pixelmap)
+{
+    if (pixelmap == nullptr || *pixelmap == nullptr) {
+        return IMAGE_BAD_PARAMETER;
+    }
+    delete *pixelmap;
+    *pixelmap = nullptr;
     return IMAGE_SUCCESS;
 }
 

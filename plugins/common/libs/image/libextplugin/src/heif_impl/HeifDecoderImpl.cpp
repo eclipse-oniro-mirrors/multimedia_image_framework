@@ -331,7 +331,8 @@ HeifDecoderImpl::HeifDecoderImpl()
     dstMemory_(nullptr), dstRowStride_(0), dstHwBuffer_(nullptr),
     gainmapDstMemory_(nullptr), gainmapDstRowStride_(0),
     auxiliaryDstMemory_(nullptr), auxiliaryDstRowStride_(0),
-    auxiliaryDstMemorySize_(0) {}
+    auxiliaryDstMemorySize_(0), isAuxiliaryDecode_(false),
+    auxiliaryDstHwbuffer_(nullptr) {}
 
 HeifDecoderImpl::~HeifDecoderImpl()
 {
@@ -720,9 +721,13 @@ bool HeifDecoderImpl::HwDecodeImage(HeifHardwareDecoder *hwDecoder,
     }
 
     GraphicPixelFormat inPixelFormat = GetInPixelFormat(image);
-    sptr<SurfaceBuffer> hwBuffer = isPrimary && IsDirectYUVDecode() ? sptr<SurfaceBuffer>(dstHwBuffer_) :
-                                   hwDecoder->AllocateOutputBuffer(gridInfo.displayWidth, gridInfo.displayHeight,
-                                                                   inPixelFormat);
+    sptr<SurfaceBuffer> hwBuffer;
+    if (isAuxiliaryDecode_ && IsDirectYUVDecode()) {
+        hwBuffer = sptr<SurfaceBuffer>(auxiliaryDstHwbuffer_);
+    } else {
+        hwBuffer = isPrimary && IsDirectYUVDecode() ? sptr<SurfaceBuffer>(dstHwBuffer_) :
+            hwDecoder->AllocateOutputBuffer(gridInfo.displayWidth, gridInfo.displayHeight, inPixelFormat);
+    }
     if (hwBuffer == nullptr) {
         IMAGE_LOGE("decode AllocateOutputBuffer return null");
         ReleaseHwDecoder(hwDecoder, isReuseHwDecoder);
@@ -1232,11 +1237,13 @@ void HeifDecoderImpl::setGainmapDstBuffer(uint8_t* dstBuffer, size_t rowStride)
     }
 }
 
-void HeifDecoderImpl::setAuxiliaryDstBuffer(uint8_t* dstBuffer, size_t dstSize, size_t rowStride)
+void HeifDecoderImpl::setAuxiliaryDstBuffer(uint8_t* dstBuffer, size_t dstSize, size_t rowStride, void *context)
 {
     auxiliaryDstMemory_ = dstBuffer;
     auxiliaryDstMemorySize_ = dstSize;
     auxiliaryDstRowStride_ = rowStride;
+    isAuxiliaryDecode_ = true;
+    auxiliaryDstHwbuffer_ = reinterpret_cast<SurfaceBuffer*>(context);
 }
 
 bool HeifDecoderImpl::getScanline(uint8_t *dst)

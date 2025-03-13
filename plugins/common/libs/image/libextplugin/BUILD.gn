@@ -293,6 +293,10 @@ ohos_shared_library("extplugin") {
       external_deps += [ "drivers_interface_codec:libimage_proxy_2.0" ]
     }
   }
+  if (is_ohos) {
+    sources += [ "src/ext_ohoscodec.cpp" ]
+    defines += [ "SK_ENABLE_OHOS_CODEC" ]
+  }
   cflags = [
     "-DIMAGE_COLORSPACE_FLAG",
     "-O3",

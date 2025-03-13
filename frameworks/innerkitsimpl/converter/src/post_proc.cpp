@@ -77,16 +77,24 @@ static const map<PixelFormat, AVPixelFormat> PIXEL_FORMAT_MAP = {
 
 uint32_t PostProc::DecodePostProc(const DecodeOptions &opts, PixelMap &pixelMap, FinalOutputStep finalOutputStep)
 {
-    ImageInfo srcImageInfo;
-    pixelMap.GetImageInfo(srcImageInfo);
-    ImageInfo dstImageInfo;
-    GetDstImageInfo(opts, pixelMap, srcImageInfo, dstImageInfo);
-    uint32_t errorCode = ConvertProc(opts.CropRect, dstImageInfo, pixelMap, srcImageInfo);
-    bool cond = false;
-    if (errorCode != SUCCESS) {
-        IMAGE_LOGE("[PostProc]crop pixel map failed, errcode:%{public}u", errorCode);
-        return errorCode;
+    if (opts.cropAndScaleStrategy == CropAndScaleStrategy::SCALE_FIRST && opts.desiredSize.height > 0 &&
+        opts.desiredSize.width > 0) {
+        CHECK_ERROR_RETURN_RET_LOG(!ScalePixelMap(opts.desiredSize, pixelMap), ERR_IMAGE_TRANSFORM,
+            "[PostProc]scale:transform pixelMap failed");
+        CHECK_ERROR_RETURN_RET_LOG(pixelMap.crop(opts.CropRect) != SUCCESS, ERR_IMAGE_TRANSFORM,
+            "[PostProc]crop:transform pixelMap failed");
+    } else {
+        ImageInfo srcImageInfo;
+        pixelMap.GetImageInfo(srcImageInfo);
+        ImageInfo dstImageInfo;
+        GetDstImageInfo(opts, pixelMap, srcImageInfo, dstImageInfo);
+        uint32_t errorCode = ConvertProc(opts.CropRect, dstImageInfo, pixelMap, srcImageInfo);
+        if (errorCode != SUCCESS) {
+            IMAGE_LOGE("[PostProc]crop pixel map failed, errcode:%{public}u", errorCode);
+            return errorCode;
+        }
     }
+    bool cond = false;
     decodeOpts_.allocatorType = opts.allocatorType;
     bool isNeedRotate = !ImageUtils::FloatCompareZero(opts.rotateDegrees);
     if (isNeedRotate) {
@@ -94,10 +102,11 @@ uint32_t PostProc::DecodePostProc(const DecodeOptions &opts, PixelMap &pixelMap,
         CHECK_ERROR_RETURN_RET_LOG(cond, ERR_IMAGE_TRANSFORM, "[PostProc]rotate:transform pixel map failed");
     }
     decodeOpts_.allocatorType = opts.allocatorType;
-    if (opts.desiredSize.height > 0 && opts.desiredSize.width > 0) {
+    if (opts.desiredSize.height > 0 && opts.desiredSize.width > 0 &&
+        opts.cropAndScaleStrategy != CropAndScaleStrategy::SCALE_FIRST) {
         cond = !ScalePixelMap(opts.desiredSize, pixelMap);
         CHECK_ERROR_RETURN_RET_LOG(cond, ERR_IMAGE_TRANSFORM, "[PostProc]scale:transform pixel map failed");
-    } else {
+    } else if (opts.cropAndScaleStrategy != CropAndScaleStrategy::SCALE_FIRST) {
         ImageInfo info;
         pixelMap.GetImageInfo(info);
         if ((finalOutputStep == FinalOutputStep::DENSITY_CHANGE) && (info.baseDensity != 0)) {
@@ -831,7 +840,7 @@ bool CheckPixelMapSLR(const Size &desiredSize, PixelMap &pixelMap)
 
 #if !defined(_WIN32) && !defined(_APPLE) && !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
 static int g_minSize = 512;
-static int g_maxSize = 8000;
+static constexpr int g_maxTextureSize = 8192;
 static bool CheckPixelMapSLR(PixelMap &pixelMap, const Size &desiredSize, GPUTransformData &trans)
 {
     ImageInfo imgInfo;
@@ -856,8 +865,8 @@ static bool CheckPixelMapSLR(PixelMap &pixelMap, const Size &desiredSize, GPUTra
         IMAGE_LOGE("slr_gpu CheckPixelMapSLR invalid pixel bytes, %{public}d", pixelBytes);
         return false;
     }
-    if (srcWidth > g_maxSize || srcHeight > g_maxSize) {
-        IMAGE_LOGI("slr_gpu  CheckPixelMapSLR  The maximum width and height cannot exceed 8000.");
+    if (srcWidth > g_maxTextureSize || srcHeight > g_maxTextureSize) {
+        IMAGE_LOGI("slr_gpu CheckPixelMapSLR The maximum width and height cannot exceed:%{public}d.", g_maxTextureSize);
         return false;
     }
     uint64_t dstSizeOverflow = static_cast<uint64_t>(desiredSize.width) * static_cast<uint64_t>(desiredSize.height) *

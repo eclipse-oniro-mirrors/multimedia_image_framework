@@ -48,6 +48,7 @@ static const std::string IMAGE_JPEG_PATH = "/data/local/tmp/image/test_picture.j
 static const std::string IMAGE_JPEG_HDR_PATH = "/data/local/tmp/image/test_jpeg_hdr.jpg";
 static const std::string IMAGE_HEIF_PATH = "/data/local/tmp/image/test_allocator_heif.heic";
 static const std::string IMAGE_HEIF_HDR_PATH = "/data/local/tmp/image/test_heif_hdr.heic";
+static const std::string IMAGE_PNG_PATH = "/data/local/tmp/image/test_picture_png.png";
 static const int32_t MAX_BUFFER_SIZE = 256;
 static const int32_t INVALID_INDEX = 1000;
 
@@ -321,6 +322,426 @@ HWTEST_F(ImagSourceNdk2Test, OH_ImageSourceNative_CreatePixelmap, TestSize.Level
     Image_ErrorCode ret = OH_ImageSourceNative_CreatePixelmap(imageSource, ops, &resPixMap);
     ASSERT_EQ(ret, IMAGE_BAD_PARAMETER);
     GTEST_LOG_(INFO) << "ImagSourceNdk2Test: OH_ImageSourceNative_CreatePixelmap end";
+}
+
+/**
+ * @tc.name: OH_ImageSourceNative_CreatePixelmapTest001
+ * @tc.desc: test OH_ImageSourceNative_CreatePixelmapTest001
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImagSourceNdk2Test, OH_ImageSourceNative_CreatePixelmapTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImagSourceNdk2Test: OH_ImageSourceNative_CreatePixelmapTest001 start";
+    OH_ImageSourceNative *imageSource = CreateImageSourceNative(IMAGE_JPEG_PATH);
+    ASSERT_NE(imageSource, nullptr);
+    OH_DecodingOptions* ops = nullptr;
+    Image_Region desiredRegion = {0, 0, 0, 0};
+    Image_Region desiredRegion2 = {1920, 1080, 1920, 1080};
+    OH_DecodingOptions_Create(&ops);
+    OH_DecodingOptions_SetDesiredRegion(ops, &desiredRegion2);
+    OH_DecodingOptions_GetDesiredRegion(ops, &desiredRegion);
+    ASSERT_EQ(desiredRegion.x, 1920);
+    ASSERT_EQ(desiredRegion.y, 1080);
+    ASSERT_EQ(desiredRegion.width, 1920);
+    ASSERT_EQ(desiredRegion.height, 1080);
+    OH_DecodingOptions_SetCropAndScaleStrategy(ops, 2);
+    OH_PixelmapNative* resPixMap = nullptr;
+    Image_ErrorCode ret = OH_ImageSourceNative_CreatePixelmap(imageSource, ops, &resPixMap);
+    EXPECT_EQ(ret, IMAGE_SUCCESS);
+    OH_ImageSourceNative_Release(imageSource);
+    OH_DecodingOptions_Release(ops);
+    OH_PixelmapNative_Release(resPixMap);
+    GTEST_LOG_(INFO) << "ImagSourceNdk2Test: OH_ImageSourceNative_CreatePixelmapTest001 end";
+}
+
+/**
+ * @tc.name: OH_ImageSourceNative_CreatePixelmapTest002
+ * @tc.desc: test OH_ImageSourceNative_CreatePixelmapTest002
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImagSourceNdk2Test, OH_ImageSourceNative_CreatePixelmapTest002, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImagSourceNdk2Test: OH_ImageSourceNative_CreatePixelmapTest002 start";
+    OH_ImageSourceNative *imageSource = CreateImageSourceNative(IMAGE_JPEG_PATH);
+    ASSERT_NE(imageSource, nullptr);
+    OH_DecodingOptions* ops = nullptr;
+    Image_Region desiredRegion = {0, 0, 0, 0};
+    Image_Region desiredRegion2 = {0, 0, 1920, 2160};
+    OH_DecodingOptions_Create(&ops);
+    OH_DecodingOptions_SetDesiredRegion(ops, &desiredRegion2);
+    OH_DecodingOptions_GetDesiredRegion(ops, &desiredRegion);
+    ASSERT_EQ(desiredRegion.x, 0);
+    ASSERT_EQ(desiredRegion.y, 0);
+    ASSERT_EQ(desiredRegion.width, 1920);
+    ASSERT_EQ(desiredRegion.height, 2160);
+    OH_DecodingOptions_SetCropAndScaleStrategy(ops, 2);
+    OH_PixelmapNative* resPixMap = nullptr;
+    Image_ErrorCode ret = OH_ImageSourceNative_CreatePixelmap(imageSource, ops, &resPixMap);
+    EXPECT_EQ(ret, IMAGE_SUCCESS);
+    OH_ImageSourceNative_Release(imageSource);
+    OH_DecodingOptions_Release(ops);
+    OH_PixelmapNative_Release(resPixMap);
+    GTEST_LOG_(INFO) << "ImagSourceNdk2Test: OH_ImageSourceNative_CreatePixelmapTest002 end";
+}
+
+/**
+ * @tc.name: OH_ImageSourceNative_CreatePixelmapTest003
+ * @tc.desc: test OH_ImageSourceNative_CreatePixelmapTest003
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImagSourceNdk2Test, OH_ImageSourceNative_CreatePixelmapTest003, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImagSourceNdk2Test: OH_ImageSourceNative_CreatePixelmapTest003 start";
+    OH_ImageSourceNative *imageSource = CreateImageSourceNative(IMAGE_JPEG_PATH);
+    ASSERT_NE(imageSource, nullptr);
+    OH_DecodingOptions* ops = nullptr;
+    Image_Region desiredRegion = {0, 0, 0, 0};
+    Image_Region desiredRegion2 = {0, 0, 3840, 1080};
+    OH_DecodingOptions_Create(&ops);
+    OH_DecodingOptions_SetDesiredRegion(ops, &desiredRegion2);
+    OH_DecodingOptions_GetDesiredRegion(ops, &desiredRegion);
+    ASSERT_EQ(desiredRegion.x, 0);
+    ASSERT_EQ(desiredRegion.y, 0);
+    ASSERT_EQ(desiredRegion.width, 3840);
+    ASSERT_EQ(desiredRegion.height, 1080);
+    OH_DecodingOptions_SetCropAndScaleStrategy(ops, 2);
+    OH_PixelmapNative* resPixMap = nullptr;
+    Image_ErrorCode ret = OH_ImageSourceNative_CreatePixelmap(imageSource, ops, &resPixMap);
+    EXPECT_EQ(ret, IMAGE_SUCCESS);
+    OH_ImageSourceNative_Release(imageSource);
+    OH_DecodingOptions_Release(ops);
+    OH_PixelmapNative_Release(resPixMap);
+    GTEST_LOG_(INFO) << "ImagSourceNdk2Test: OH_ImageSourceNative_CreatePixelmapTest003 end";
+}
+
+/**
+ * @tc.name: OH_ImageSourceNative_CreatePixelmapTest004
+ * @tc.desc: test OH_ImageSourceNative_CreatePixelmapTest004
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImagSourceNdk2Test, OH_ImageSourceNative_CreatePixelmapTest004, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImagSourceNdk2Test: OH_ImageSourceNative_CreatePixelmapTest004 start";
+    OH_ImageSourceNative *imageSource = CreateImageSourceNative(IMAGE_JPEG_PATH);
+    ASSERT_NE(imageSource, nullptr);
+    OH_DecodingOptions* ops = nullptr;
+    Image_Region desiredRegion = {0, 0, 0, 0};
+    Image_Region desiredRegion2 = {1920, 1080, 3840, 1080};
+    OH_DecodingOptions_Create(&ops);
+    OH_DecodingOptions_SetDesiredRegion(ops, &desiredRegion2);
+    OH_DecodingOptions_GetDesiredRegion(ops, &desiredRegion);
+    ASSERT_EQ(desiredRegion.x, 1920);
+    ASSERT_EQ(desiredRegion.y, 1080);
+    ASSERT_EQ(desiredRegion.width, 3840);
+    ASSERT_EQ(desiredRegion.height, 1080);
+    OH_DecodingOptions_SetCropAndScaleStrategy(ops, 2);
+    OH_PixelmapNative* resPixMap = nullptr;
+    Image_ErrorCode ret = OH_ImageSourceNative_CreatePixelmap(imageSource, ops, &resPixMap);
+    EXPECT_EQ(ret, IMAGE_SUCCESS);
+    OH_ImageSourceNative_Release(imageSource);
+    OH_DecodingOptions_Release(ops);
+    OH_PixelmapNative_Release(resPixMap);
+    GTEST_LOG_(INFO) << "ImagSourceNdk2Test: OH_ImageSourceNative_CreatePixelmapTest004 end";
+}
+
+/**
+ * @tc.name: OH_ImageSourceNative_CreatePixelmapTest005
+ * @tc.desc: test OH_ImageSourceNative_CreatePixelmapTest005
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImagSourceNdk2Test, OH_ImageSourceNative_CreatePixelmapTest005, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImagSourceNdk2Test: OH_ImageSourceNative_CreatePixelmapTest005 start";
+    OH_ImageSourceNative *imageSource = CreateImageSourceNative(IMAGE_JPEG_PATH);
+    ASSERT_NE(imageSource, nullptr);
+    OH_DecodingOptions* ops = nullptr;
+    Image_Region desiredRegion = {0, 0, 0, 0};
+    Image_Region desiredRegion2 = {3840, 2160, 1920, 1080};
+    OH_DecodingOptions_Create(&ops);
+    OH_DecodingOptions_SetDesiredRegion(ops, &desiredRegion2);
+    OH_DecodingOptions_GetDesiredRegion(ops, &desiredRegion);
+    ASSERT_EQ(desiredRegion.x, 3840);
+    ASSERT_EQ(desiredRegion.y, 2160);
+    ASSERT_EQ(desiredRegion.width, 1920);
+    ASSERT_EQ(desiredRegion.height, 1080);
+    OH_DecodingOptions_SetCropAndScaleStrategy(ops, 2);
+    OH_PixelmapNative* resPixMap = nullptr;
+    Image_ErrorCode ret = OH_ImageSourceNative_CreatePixelmap(imageSource, ops, &resPixMap);
+    EXPECT_EQ(ret, IMAGE_SUCCESS);
+    OH_ImageSourceNative_Release(imageSource);
+    OH_DecodingOptions_Release(ops);
+    OH_PixelmapNative_Release(resPixMap);
+    GTEST_LOG_(INFO) << "ImagSourceNdk2Test: OH_ImageSourceNative_CreatePixelmapTest005 end";
+}
+
+/**
+ * @tc.name: OH_ImageSourceNative_CreatePixelmapTest006
+ * @tc.desc: test OH_ImageSourceNative_CreatePixelmapTest006
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImagSourceNdk2Test, OH_ImageSourceNative_CreatePixelmapTest006, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImagSourceNdk2Test: OH_ImageSourceNative_CreatePixelmapTest006 start";
+    OH_ImageSourceNative *imageSource = CreateImageSourceNative(IMAGE_PNG_PATH);
+    ASSERT_NE(imageSource, nullptr);
+    OH_DecodingOptions* ops = nullptr;
+    Image_Region desiredRegion = {0, 0, 0, 0};
+    Image_Region desiredRegion2 = {1920, 1080, 1920, 1080};
+    OH_DecodingOptions_Create(&ops);
+    OH_DecodingOptions_SetDesiredRegion(ops, &desiredRegion2);
+    OH_DecodingOptions_GetDesiredRegion(ops, &desiredRegion);
+    ASSERT_EQ(desiredRegion.x, 1920);
+    ASSERT_EQ(desiredRegion.y, 1080);
+    ASSERT_EQ(desiredRegion.width, 1920);
+    ASSERT_EQ(desiredRegion.height, 1080);
+    OH_DecodingOptions_SetCropAndScaleStrategy(ops, 2);
+    OH_PixelmapNative* resPixMap = nullptr;
+    Image_ErrorCode ret = OH_ImageSourceNative_CreatePixelmap(imageSource, ops, &resPixMap);
+    EXPECT_EQ(ret, IMAGE_SUCCESS);
+    OH_ImageSourceNative_Release(imageSource);
+    OH_DecodingOptions_Release(ops);
+    OH_PixelmapNative_Release(resPixMap);
+    GTEST_LOG_(INFO) << "ImagSourceNdk2Test: OH_ImageSourceNative_CreatePixelmapTest006 end";
+}
+
+/**
+ * @tc.name: OH_ImageSourceNative_CreatePixelmapTest007
+ * @tc.desc: test OH_ImageSourceNative_CreatePixelmapTest007
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImagSourceNdk2Test, OH_ImageSourceNative_CreatePixelmapTest007, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImagSourceNdk2Test: OH_ImageSourceNative_CreatePixelmapTest007 start";
+    OH_ImageSourceNative *imageSource = CreateImageSourceNative(IMAGE_PNG_PATH);
+    ASSERT_NE(imageSource, nullptr);
+    OH_DecodingOptions* ops = nullptr;
+    Image_Region desiredRegion = {0, 0, 0, 0};
+    Image_Region desiredRegion2 = {0, 0, 1920, 2160};
+    OH_DecodingOptions_Create(&ops);
+    OH_DecodingOptions_SetDesiredRegion(ops, &desiredRegion2);
+    OH_DecodingOptions_GetDesiredRegion(ops, &desiredRegion);
+    ASSERT_EQ(desiredRegion.x, 0);
+    ASSERT_EQ(desiredRegion.y, 0);
+    ASSERT_EQ(desiredRegion.width, 1920);
+    ASSERT_EQ(desiredRegion.height, 2160);
+    OH_DecodingOptions_SetCropAndScaleStrategy(ops, 2);
+    OH_PixelmapNative* resPixMap = nullptr;
+    Image_ErrorCode ret = OH_ImageSourceNative_CreatePixelmap(imageSource, ops, &resPixMap);
+    EXPECT_EQ(ret, IMAGE_SUCCESS);
+    OH_ImageSourceNative_Release(imageSource);
+    OH_DecodingOptions_Release(ops);
+    OH_PixelmapNative_Release(resPixMap);
+    GTEST_LOG_(INFO) << "ImagSourceNdk2Test: OH_ImageSourceNative_CreatePixelmapTest007 end";
+}
+
+/**
+ * @tc.name: OH_ImageSourceNative_CreatePixelmapTest008
+ * @tc.desc: test OH_ImageSourceNative_CreatePixelmapTest008
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImagSourceNdk2Test, OH_ImageSourceNative_CreatePixelmapTest008, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImagSourceNdk2Test: OH_ImageSourceNative_CreatePixelmapTest008 start";
+    OH_ImageSourceNative *imageSource = CreateImageSourceNative(IMAGE_PNG_PATH);
+    ASSERT_NE(imageSource, nullptr);
+    OH_DecodingOptions* ops = nullptr;
+    Image_Region desiredRegion = {0, 0, 0, 0};
+    Image_Region desiredRegion2 = {0, 0, 3840, 1080};
+    OH_DecodingOptions_Create(&ops);
+    OH_DecodingOptions_SetDesiredRegion(ops, &desiredRegion2);
+    OH_DecodingOptions_GetDesiredRegion(ops, &desiredRegion);
+    ASSERT_EQ(desiredRegion.x, 0);
+    ASSERT_EQ(desiredRegion.y, 0);
+    ASSERT_EQ(desiredRegion.width, 3840);
+    ASSERT_EQ(desiredRegion.height, 1080);
+    OH_DecodingOptions_SetCropAndScaleStrategy(ops, 2);
+    OH_PixelmapNative* resPixMap = nullptr;
+    Image_ErrorCode ret = OH_ImageSourceNative_CreatePixelmap(imageSource, ops, &resPixMap);
+    EXPECT_EQ(ret, IMAGE_SUCCESS);
+    OH_ImageSourceNative_Release(imageSource);
+    OH_DecodingOptions_Release(ops);
+    OH_PixelmapNative_Release(resPixMap);
+    GTEST_LOG_(INFO) << "ImagSourceNdk2Test: OH_ImageSourceNative_CreatePixelmapTest008 end";
+}
+
+/**
+ * @tc.name: OH_ImageSourceNative_CreatePixelmapTest009
+ * @tc.desc: test OH_ImageSourceNative_CreatePixelmapTest009
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImagSourceNdk2Test, OH_ImageSourceNative_CreatePixelmapTest009, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImagSourceNdk2Test: OH_ImageSourceNative_CreatePixelmapTest009 start";
+    OH_ImageSourceNative *imageSource = CreateImageSourceNative(IMAGE_PNG_PATH);
+    ASSERT_NE(imageSource, nullptr);
+    OH_DecodingOptions* ops = nullptr;
+    Image_Region desiredRegion = {0, 0, 0, 0};
+    Image_Region desiredRegion2 = {1920, 1080, 3840, 1080};
+    OH_DecodingOptions_Create(&ops);
+    OH_DecodingOptions_SetDesiredRegion(ops, &desiredRegion2);
+    OH_DecodingOptions_GetDesiredRegion(ops, &desiredRegion);
+    ASSERT_EQ(desiredRegion.x, 1920);
+    ASSERT_EQ(desiredRegion.y, 1080);
+    ASSERT_EQ(desiredRegion.width, 3840);
+    ASSERT_EQ(desiredRegion.height, 1080);
+    OH_DecodingOptions_SetCropAndScaleStrategy(ops, 2);
+    OH_PixelmapNative* resPixMap = nullptr;
+    Image_ErrorCode ret = OH_ImageSourceNative_CreatePixelmap(imageSource, ops, &resPixMap);
+    EXPECT_EQ(ret, IMAGE_SUCCESS);
+    OH_ImageSourceNative_Release(imageSource);
+    OH_DecodingOptions_Release(ops);
+    OH_PixelmapNative_Release(resPixMap);
+    GTEST_LOG_(INFO) << "ImagSourceNdk2Test: OH_ImageSourceNative_CreatePixelmapTest009 end";
+}
+
+/**
+ * @tc.name: OH_ImageSourceNative_CreatePixelmapTest010
+ * @tc.desc: test OH_ImageSourceNative_CreatePixelmapTest010
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImagSourceNdk2Test, OH_ImageSourceNative_CreatePixelmapTest010, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImagSourceNdk2Test: OH_ImageSourceNative_CreatePixelmapTest010 start";
+    OH_ImageSourceNative *imageSource = CreateImageSourceNative(IMAGE_PNG_PATH);
+    ASSERT_NE(imageSource, nullptr);
+    OH_DecodingOptions* ops = nullptr;
+    Image_Region desiredRegion = {0, 0, 0, 0};
+    Image_Region desiredRegion2 = {3840, 2160, 1920, 1080};
+    OH_DecodingOptions_Create(&ops);
+    OH_DecodingOptions_SetDesiredRegion(ops, &desiredRegion2);
+    OH_DecodingOptions_GetDesiredRegion(ops, &desiredRegion);
+    ASSERT_EQ(desiredRegion.x, 3840);
+    ASSERT_EQ(desiredRegion.y, 2160);
+    ASSERT_EQ(desiredRegion.width, 1920);
+    ASSERT_EQ(desiredRegion.height, 1080);
+    OH_DecodingOptions_SetCropAndScaleStrategy(ops, 2);
+    OH_PixelmapNative* resPixMap = nullptr;
+    Image_ErrorCode ret = OH_ImageSourceNative_CreatePixelmap(imageSource, ops, &resPixMap);
+    EXPECT_EQ(ret, IMAGE_SUCCESS);
+    OH_ImageSourceNative_Release(imageSource);
+    OH_DecodingOptions_Release(ops);
+    OH_PixelmapNative_Release(resPixMap);
+    GTEST_LOG_(INFO) << "ImagSourceNdk2Test: OH_ImageSourceNative_CreatePixelmapTest010 end";
+}
+
+/**
+ * @tc.name: OH_ImageSourceNative_CreatePixelmapTest011
+ * @tc.desc: test OH_ImageSourceNative_CreatePixelmapTest011
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImagSourceNdk2Test, OH_ImageSourceNative_CreatePixelmapTest011, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImagSourceNdk2Test: OH_ImageSourceNative_CreatePixelmapTest011 start";
+    OH_ImageSourceNative *imageSource = CreateImageSourceNative(IMAGE_PNG_PATH);
+    ASSERT_NE(imageSource, nullptr);
+    OH_DecodingOptions* ops = nullptr;
+    Image_Region desiredRegion = {0, 0, 0, 0};
+    Image_Region desiredRegion2 = {960, 540, 1920, 1080};
+    OH_DecodingOptions_Create(&ops);
+    OH_DecodingOptions_SetDesiredRegion(ops, &desiredRegion2);
+    OH_DecodingOptions_GetDesiredRegion(ops, &desiredRegion);
+    ASSERT_EQ(desiredRegion.x, 960);
+    ASSERT_EQ(desiredRegion.y, 540);
+    ASSERT_EQ(desiredRegion.width, 1920);
+    ASSERT_EQ(desiredRegion.height, 1080);
+    OH_DecodingOptions_SetCropAndScaleStrategy(ops, 2);
+    OH_PixelmapNative* resPixMap = nullptr;
+    Image_ErrorCode ret = OH_ImageSourceNative_CreatePixelmap(imageSource, ops, &resPixMap);
+    EXPECT_EQ(ret, IMAGE_SUCCESS);
+    OH_ImageSourceNative_Release(imageSource);
+    OH_DecodingOptions_Release(ops);
+    OH_PixelmapNative_Release(resPixMap);
+    GTEST_LOG_(INFO) << "ImagSourceNdk2Test: OH_ImageSourceNative_CreatePixelmapTest011 end";
+}
+
+/**
+ * @tc.name: OH_ImageSourceNative_CreatePixelmapTest012
+ * @tc.desc: test OH_ImageSourceNative_CreatePixelmapTest012
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImagSourceNdk2Test, OH_ImageSourceNative_CreatePixelmapTest012, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImagSourceNdk2Test: OH_ImageSourceNative_CreatePixelmapTest012 start";
+    OH_ImageSourceNative *imageSource = CreateImageSourceNative(IMAGE_JPEG_PATH);
+    ASSERT_NE(imageSource, nullptr);
+    OH_DecodingOptions* ops = nullptr;
+    Image_Region desiredRegion = {0, 0, 0, 0};
+    Image_Region desiredRegion2 = {960, 540, 1920, 1080};
+    OH_DecodingOptions_Create(&ops);
+    OH_DecodingOptions_SetDesiredRegion(ops, &desiredRegion2);
+    OH_DecodingOptions_GetDesiredRegion(ops, &desiredRegion);
+    ASSERT_EQ(desiredRegion.x, 960);
+    ASSERT_EQ(desiredRegion.y, 540);
+    ASSERT_EQ(desiredRegion.width, 1920);
+    ASSERT_EQ(desiredRegion.height, 1080);
+    OH_DecodingOptions_SetCropAndScaleStrategy(ops, 2);
+    OH_PixelmapNative* resPixMap = nullptr;
+    Image_ErrorCode ret = OH_ImageSourceNative_CreatePixelmap(imageSource, ops, &resPixMap);
+    EXPECT_EQ(ret, IMAGE_SUCCESS);
+    OH_ImageSourceNative_Release(imageSource);
+    OH_DecodingOptions_Release(ops);
+    OH_PixelmapNative_Release(resPixMap);
+    GTEST_LOG_(INFO) << "ImagSourceNdk2Test: OH_ImageSourceNative_CreatePixelmapTest012 end";
+}
+
+/**
+ * @tc.name: OH_ImageSourceNative_CreatePixelmapTest013
+ * @tc.desc: test OH_ImageSourceNative_CreatePixelmapTest013
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImagSourceNdk2Test, OH_ImageSourceNative_CreatePixelmapTest013, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImagSourceNdk2Test: OH_ImageSourceNative_CreatePixelmapTest013 start";
+    OH_ImageSourceNative *imageSource = CreateImageSourceNative(IMAGE_JPEG_PATH);
+    ASSERT_NE(imageSource, nullptr);
+    OH_DecodingOptions* ops = nullptr;
+    Image_Region desiredRegion = {0, 0, 0, 0};
+    Image_Region desiredRegion2 = {0, 0, 3840, 2160};
+    OH_DecodingOptions_Create(&ops);
+    OH_DecodingOptions_SetDesiredRegion(ops, &desiredRegion2);
+    OH_DecodingOptions_GetDesiredRegion(ops, &desiredRegion);
+    ASSERT_EQ(desiredRegion.x, 0);
+    ASSERT_EQ(desiredRegion.y, 0);
+    ASSERT_EQ(desiredRegion.width, 3840);
+    ASSERT_EQ(desiredRegion.height, 2160);
+    OH_DecodingOptions_SetCropAndScaleStrategy(ops, 2);
+    OH_PixelmapNative* resPixMap = nullptr;
+    Image_ErrorCode ret = OH_ImageSourceNative_CreatePixelmap(imageSource, ops, &resPixMap);
+    EXPECT_EQ(ret, IMAGE_SUCCESS);
+    OH_ImageSourceNative_Release(imageSource);
+    OH_DecodingOptions_Release(ops);
+    OH_PixelmapNative_Release(resPixMap);
+    GTEST_LOG_(INFO) << "ImagSourceNdk2Test: OH_ImageSourceNative_CreatePixelmapTest013 end";
+}
+
+/**
+ * @tc.name: OH_ImageSourceNative_CreatePixelmapTest014
+ * @tc.desc: test OH_ImageSourceNative_CreatePixelmapTest014
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImagSourceNdk2Test, OH_ImageSourceNative_CreatePixelmapTest014, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImagSourceNdk2Test: OH_ImageSourceNative_CreatePixelmapTest014 start";
+    OH_ImageSourceNative *imageSource = CreateImageSourceNative(IMAGE_PNG_PATH);
+    ASSERT_NE(imageSource, nullptr);
+    OH_DecodingOptions* ops = nullptr;
+    Image_Region desiredRegion = {0, 0, 0, 0};
+    Image_Region desiredRegion2 = {0, 0, 3840, 2160};
+    OH_DecodingOptions_Create(&ops);
+    OH_DecodingOptions_SetDesiredRegion(ops, &desiredRegion2);
+    OH_DecodingOptions_GetDesiredRegion(ops, &desiredRegion);
+    ASSERT_EQ(desiredRegion.x, 0);
+    ASSERT_EQ(desiredRegion.y, 0);
+    ASSERT_EQ(desiredRegion.width, 3840);
+    ASSERT_EQ(desiredRegion.height, 2160);
+    OH_DecodingOptions_SetCropAndScaleStrategy(ops, 2);
+    OH_PixelmapNative* resPixMap = nullptr;
+    Image_ErrorCode ret = OH_ImageSourceNative_CreatePixelmap(imageSource, ops, &resPixMap);
+    EXPECT_EQ(ret, IMAGE_SUCCESS);
+    OH_ImageSourceNative_Release(imageSource);
+    OH_DecodingOptions_Release(ops);
+    OH_PixelmapNative_Release(resPixMap);
+    GTEST_LOG_(INFO) << "ImagSourceNdk2Test: OH_ImageSourceNative_CreatePixelmapTest014 end";
 }
 
 /**

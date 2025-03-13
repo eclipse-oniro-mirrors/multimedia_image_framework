@@ -920,6 +920,57 @@ static bool IsSupportConvertToArgb(PixelMap *pixelMap)
     return pixelMap != nullptr && !pixelMap->IsHdr() && pixelMap->GetAllocatorType() != AllocatorType::DMA_ALLOC;
 }
 
+bool ImageSource::CheckAllocatorTypeValid(const DecodeOptions &opts)
+{
+    if (opts.isAppUseAllocator && opts.allocatorType == AllocatorType::SHARE_MEM_ALLOC && IsDecodeHdrImage(opts)) {
+        IMAGE_LOGE("HDR image can't use SHARE_MEM_ALLOC");
+        return false;
+    } else if (!IsDecodeHdrImage(opts) && opts.allocatorType == AllocatorType::DMA_ALLOC &&
+        opts.desiredPixelFormat == PixelFormat::ARGB_8888) {
+        IMAGE_LOGE("%{public}s SDR image can't set ARGB_8888 and DMA_ALLOC at the same time!", __func__);
+        return false;
+    }
+    return true;
+}
+
+bool IsSrcRectContainsDistRect(const Rect &srcRect, const Rect &dstRect)
+{
+    if (srcRect.left < 0 || srcRect.top < 0 || srcRect.width <= 0 || srcRect.height <= 0) {
+        return false;
+    }
+    if (dstRect.left < 0 || dstRect.top < 0 || dstRect.width <= 0 || dstRect.height <= 0) {
+        return false;
+    }
+    return srcRect.left <= dstRect.left && srcRect.top <= dstRect.top &&
+        (srcRect.left + srcRect.width) >= (dstRect.left + dstRect.width) &&
+        (srcRect.top + srcRect.height) >= (dstRect.top + dstRect.height);
+}
+
+bool ImageSource::CheckCropRectValid(const DecodeOptions &opts)
+{
+    Rect srcRect = {0, 0, 0, 0};
+    if (opts.cropAndScaleStrategy == CropAndScaleStrategy::DEFAULT) {
+        return true;
+    }
+    ImageInfo info;
+    if (GetImageInfo(FIRST_FRAME, info) != SUCCESS) {
+        return false;
+    }
+    srcRect.width = info.size.width;
+    srcRect.height = info.size.height;
+    if (opts.cropAndScaleStrategy == CropAndScaleStrategy::SCALE_FIRST &&
+        (opts.desiredSize.width != 0 || opts.desiredSize.height != 0)) {
+        srcRect.width = opts.desiredSize.width;
+        srcRect.height = opts.desiredSize.height;
+    }
+    return IsSrcRectContainsDistRect(srcRect, opts.CropRect);
+}
+
+bool ImageSource::CheckDecodeOptions(const DecodeOptions &opts)
+{
+    return CheckAllocatorTypeValid(opts) && CheckCropRectValid(opts);
+}
+
 unique_ptr<PixelMap> ImageSource::CreatePixelMapExtended(uint32_t index, const DecodeOptions &opts, uint32_t &errorCode)
 {
     ImageEvent imageEvent;
@@ -929,13 +980,9 @@ unique_ptr<PixelMap> ImageSource::CreatePixelMapExtended(uint32_t index, const D
     ImageInfo info;
     errorCode = GetImageInfo(FIRST_FRAME, info);
     ParseHdrType();
-    if (opts_.isAppUseAllocator && opts_.allocatorType == AllocatorType::SHARE_MEM_ALLOC && IsDecodeHdrImage(opts)) {
-        IMAGE_LOGE("HDR image can't use SHARE_MEM_ALLOC");
+    if (!CheckDecodeOptions(opts)) {
+        IMAGE_LOGI("CheckDecodeOptions failed.");
         errorCode = ERR_MEDIA_INVALID_OPERATION;
-        return nullptr;
-    } else if (!IsDecodeHdrImage(opts) && opts_.allocatorType == AllocatorType::DMA_ALLOC &&
-        opts_.desiredPixelFormat == PixelFormat::ARGB_8888) {
-        IMAGE_LOGE("%{public}s SDR image can't set ARGB_8888 and DMA_ALLOC at the same time!", __func__);
         return nullptr;
     }
 #ifdef IMAGE_QOS_ENABLE
@@ -1010,7 +1057,7 @@ unique_ptr<PixelMap> ImageSource::CreatePixelMapExtended(uint32_t index, const D
     return pixelMap;
 }
 
-static void GetValidCropRect(const Rect &src, ImagePlugin::PlImageInfo &plInfo, Rect &dst)
+static void GetValidCropRect(const Rect &src, const Size& size, Rect &dst)
 {
     dst.top = src.top;
     dst.left = src.left;
@@ -1018,11 +1065,11 @@ static void GetValidCropRect(const Rect &src, ImagePlugin::PlImageInfo &plInfo, 
     dst.height = src.height;
     int32_t dstBottom = dst.top + dst.height;
     int32_t dstRight = dst.left + dst.width;
-    if (dst.top >= 0 && dstBottom > 0 && dstBottom > plInfo.size.height) {
-        dst.height = plInfo.size.height - dst.top;
+    if (dst.top >= 0 && dstBottom > 0 && dstBottom > size.height) {
+        dst.height = size.height - dst.top;
     }
-    if (dst.left >= 0 && dstRight > 0 && dstRight > plInfo.size.width) {
-        dst.width = plInfo.size.width - dst.left;
+    if (dst.left >= 0 && dstRight > 0 && dstRight > size.width) {
+        dst.width = size.width - dst.left;
     }
 }
 
@@ -1145,11 +1192,17 @@ unique_ptr<PixelMap> ImageSource::CreatePixelMapByInfos(ImagePlugin::PlImageInfo
     // 3. density
     // 4. rotate
     // 5. format
+    if (opts_.cropAndScaleStrategy == CropAndScaleStrategy::SCALE_FIRST) {
+        if (!(ResizePixelMap(pixelMap, imageId_, opts_))) {
+            IMAGE_LOGE("[ImageSource]Resize pixelmap fail.");
+            return nullptr;
+        }
+    }
     const static string SUPPORT_CROP_KEY = "SupportCrop";
     if (!mainDecoder_->HasProperty(SUPPORT_CROP_KEY) && opts_.CropRect.width > INT_ZERO &&
         opts_.CropRect.height > INT_ZERO) {
         Rect crop;
-        GetValidCropRect(opts_.CropRect, plInfo, crop);
+        GetValidCropRect(opts_.CropRect, {pixelMap->GetWidth(), pixelMap->GetHeight()}, crop);
         errorCode = pixelMap->crop(crop);
         if (errorCode != SUCCESS) {
             IMAGE_LOGE("[ImageSource]CropRect pixelmap fail, ret:%{public}u.", errorCode);
@@ -1165,7 +1218,8 @@ unique_ptr<PixelMap> ImageSource::CreatePixelMapByInfos(ImagePlugin::PlImageInfo
     } else if (opts_.rotateNewDegrees != INT_ZERO) {
         pixelMap->rotate(opts_.rotateNewDegrees);
     }
-    if (!(ResizePixelMap(pixelMap, imageId_, opts_))) {
+    if (opts_.cropAndScaleStrategy != CropAndScaleStrategy::SCALE_FIRST &&
+        !(ResizePixelMap(pixelMap, imageId_, opts_))) {
         IMAGE_LOGE("[ImageSource]Resize pixelmap fail.");
         return nullptr;
     }
@@ -1374,7 +1428,8 @@ unique_ptr<PixelMap> ImageSource::CreatePixelMap(uint32_t index, const DecodeOpt
     pixelMap->SetPixelsAddr(context.pixelsBuffer.buffer, context.pixelsBuffer.context, context.pixelsBuffer.bufferSize,
         context.allocatorType, context.freeFunc);
     DecodeOptions procOpts;
-    CopyOptionsToProcOpts(opts_, procOpts, *(pixelMap.get()));
+    CopyOptionsToProcOpts(opts_.cropAndScaleStrategy == CropAndScaleStrategy::DEFAULT ? opts_ : opts, procOpts,
+        *(pixelMap.get()));
     PostProc postProc;
     errorCode = postProc.DecodePostProc(procOpts, *(pixelMap.get()), finalOutputStep);
     bool cond = (errorCode != SUCCESS);
@@ -1612,6 +1667,15 @@ uint32_t ImageSource::ModifyImageProperty(const std::string &key, const std::str
 uint32_t ImageSource::ModifyImageProperty(std::shared_ptr<MetadataAccessor> metadataAccessor,
     const std::string &key, const std::string &value)
 {
+    if (srcFd_ != -1) {
+        size_t fileSize = 0;
+        if (!ImageUtils::GetFileSize(srcFd_, fileSize)) {
+            IMAGE_LOGE("ModifyImageProperty accessor start get file size failed.");
+        } else {
+            IMAGE_LOGI("ModifyImageProperty accessor start fd file size:%{public}llu",
+                static_cast<unsigned long long>(fileSize));
+        }
+    }
     uint32_t ret = ModifyImageProperty(key, value);
     bool cond = (ret != SUCCESS);
     CHECK_ERROR_RETURN_RET_LOG(cond, ret, "Failed to create ExifMetadata.");
@@ -1621,8 +1685,20 @@ uint32_t ImageSource::ModifyImageProperty(std::shared_ptr<MetadataAccessor> meta
     CHECK_ERROR_RETURN_RET_LOG(cond, ret,
                                "Failed to create image accessor when attempting to modify image property.");
 
+    if (srcFd_ != -1) {
+        size_t fileSize = 0;
+        if (!ImageUtils::GetFileSize(srcFd_, fileSize)) {
+            IMAGE_LOGE("ModifyImageProperty accessor end get file size failed.");
+        } else {
+            IMAGE_LOGI("ModifyImageProperty accessor end fd file size:%{public}llu",
+                static_cast<unsigned long long>(fileSize));
+        }
+    }
     metadataAccessor->Set(exifMetadata_);
-    return metadataAccessor->Write();
+    IMAGE_LOGI("ModifyImageProperty accesssor modify start");
+    ret = metadataAccessor->Write();
+    IMAGE_LOGI("ModifyImageProperty accesssor modify end");
+    return ret;
 }
 
 uint32_t ImageSource::ModifyImageProperty(uint32_t index, const std::string &key, const std::string &value)
@@ -1674,8 +1750,17 @@ uint32_t ImageSource::ModifyImageProperty(uint32_t index, const std::string &key
     CHECK_DEBUG_RETURN_RET_LOG(cond, ERR_IMAGE_SOURCE_DATA, "Invalid file descriptor.");
 
     std::unique_lock<std::mutex> guard(decodingMutex_);
+    size_t fileSize = 0;
+    if (!ImageUtils::GetFileSize(fd, fileSize)) {
+        IMAGE_LOGE("ModifyImageProperty get file size failed.");
+    }
+    IMAGE_LOGI("ModifyImageProperty accesssor create start, fd file size:%{public}llu",
+        static_cast<unsigned long long>(fileSize));
     auto metadataAccessor = MetadataAccessorFactory::Create(fd);
-    return ModifyImageProperty(metadataAccessor, key, value);
+    IMAGE_LOGI("ModifyImageProperty accesssor create end");
+
+    auto ret = ModifyImageProperty(metadataAccessor, key, value);
+    return ret;
 }
 
 uint32_t ImageSource::ModifyImageProperty(uint32_t index, const std::string &key, const std::string &value,
@@ -2578,6 +2663,7 @@ void ImageSource::CopyOptionsToPlugin(const DecodeOptions &opts, PixelDecodeOpti
     }
     plOpts.plDesiredColorSpace = opts.desiredColorSpaceInfo;
     plOpts.plReusePixelmap = opts.reusePixelmap;
+    plOpts.cropAndScaleStrategy = opts.cropAndScaleStrategy;
 }
 
 void ImageSource::CopyOptionsToProcOpts(const DecodeOptions &opts, DecodeOptions &procOpts, PixelMap &pixelMap)
@@ -2602,6 +2688,7 @@ void ImageSource::CopyOptionsToProcOpts(const DecodeOptions &opts, DecodeOptions
     procOpts.editable = opts.editable;
     // we need preference_ when post processing
     procOpts.preference = preference_;
+    procOpts.cropAndScaleStrategy = opts.cropAndScaleStrategy;
 }
 
 ImageSource::ImageStatusMap::iterator ImageSource::GetValidImageStatus(uint32_t index, uint32_t &errorCode)
