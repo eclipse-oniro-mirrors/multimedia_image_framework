@@ -1449,5 +1449,213 @@ HWTEST_F(ExtDecoderTest, EncodeJpegPictureTest001, TestSize.Level3)
     ASSERT_EQ(ret, ERR_IMAGE_DECODE_FAILED);
     GTEST_LOG_(INFO) << "ExtDecoderTest: EncodeJpegPictureTest001 end";
 }
+
+/**
+ * @tc.name: ExtDecoderTest
+ * @tc.desc: test the function of AssembleExifMetaItem
+             when opts_.needsPackProperties == false, return false
+ * @tc.type: FUNC
+ */
+HWTEST_F(ExtDecoderTest, AssembleExifMetaItemTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ExtDecoderTest: AssembleExifMetaItemTest001 start";
+    #ifdef HEIF_HW_ENCODE_ENABLE
+    ExtEncoder extEncoder;
+    extEncoder.opts_.needsPackProperties = false;
+    HDI::Codec::Image::V2_0::MetaItem item;
+    std::vector<HDI::Codec::Image::V2_0::MetaItem> vec_item(1, item);
+    bool ret = extEncoder.AssembleExifMetaItem(vec_item);
+    ASSERT_EQ(ret, false);
+    #endif
+    GTEST_LOG_(INFO) << "ExtDecoderTest: AssembleExifMetaItemTest001 end";
+}
+
+/**
+ * @tc.name: ExtDecoderTest
+ * @tc.desc: test the function of AssembleExifMetaItem
+             when opts_.needsPackProperties == true and picture_ is nullptr
+             return false
+ * @tc.type: FUNC
+ */
+HWTEST_F(ExtDecoderTest, AssembleExifMetaItemTest002, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ExtDecoderTest: AssembleExifMetaItemTest002 start";
+    #ifdef HEIF_HW_ENCODE_ENABLE
+    ExtEncoder extEncoder;
+    extEncoder.opts_.needsPackProperties = true;
+    extEncoder.picture_ = nullptr;
+    HDI::Codec::Image::V2_0::MetaItem item;
+    std::vector<HDI::Codec::Image::V2_0::MetaItem> vec_item(1, item);
+    bool ret = extEncoder.AssembleExifMetaItem(vec_item);
+    ASSERT_EQ(ret, false);
+    #endif
+    GTEST_LOG_(INFO) << "ExtDecoderTest: AssembleExifMetaItemTest002 end";
+}
+
+/**
+ * @tc.name: ExtDecoderTest
+ * @tc.desc: test the function of AssembleExifMetaItem
+             when opts_.needsPackProperties == true and picture_ != nullptr
+             and picture_->GetExifMetadata() != nullptr
+             and picture_->GetExifMetadata()->GetExifData() != nullptr
+             return false
+ * @tc.type: FUNC
+ */
+HWTEST_F(ExtDecoderTest, AssembleExifMetaItemTest003, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ExtDecoderTest: AssembleExifMetaItemTest003 start";
+    #ifdef HEIF_HW_ENCODE_ENABLE
+    ExtEncoder extEncoder;
+    extEncoder.opts_.needsPackProperties = true;
+    uint32_t errorCode = 0;
+    SourceOptions opts;
+    opts.formatHint = "image/jpeg";
+    std::unique_ptr<ImageSource> imageSource =
+        ImageSource::CreateImageSource(IMAGE_INPUT_JPEG_PATH, opts, errorCode);
+    DecodeOptions decodeOpts;
+    decodeOpts.allocatorType = AllocatorType::DMA_ALLOC;
+    std::unique_ptr<PixelMap> tmpPixelMap = imageSource->CreatePixelMap(decodeOpts, errorCode);
+    std::shared_ptr<PixelMap> pixelMap = std::move(tmpPixelMap);
+    ASSERT_EQ(pixelMap->GetAllocatorType(), AllocatorType::DMA_ALLOC);
+    ASSERT_NE(pixelMap->GetFd(), nullptr);
+    AuxiliaryPictureType type = AuxiliaryPictureType::LINEAR_MAP;
+    Size size = {2, 3};
+    std::unique_ptr<AuxiliaryPicture> tmpAuxPicture = AuxiliaryPicture::Create(pixelMap, type, size);
+    std::shared_ptr<AuxiliaryPicture> auxPicture = std::move(tmpAuxPicture);
+    extEncoder.picture_ = auxPicture;
+    ASSERT_NE(extEncoder.picture_, nullptr);
+    ASSERT_NE(extEncoder.picture_->GetExifMetadata(), nullptr);
+    ASSERT_NE(extEncoder.picture_->GetExifMetadata()->GetExifData(), nullptr);
+    HDI::Codec::Image::V2_0::MetaItem item;
+    std::vector<HDI::Codec::Image::V2_0::MetaItem> vec_item(1, item);
+    bool ret = extEncoder.AssembleExifMetaItem(vec_item);
+    ASSERT_EQ(ret, false);
+    #endif
+    GTEST_LOG_(INFO) << "ExtDecoderTest: AssembleExifMetaItemTest003 end";
+}
+
+/**
+ * @tc.name: ExtDecoderTest
+ * @tc.desc: test the function of GetToneMapMetadata
+             when baseHeadroom == 0.0f, return false
+ * @tc.type: FUNC
+ */
+HWTEST_F(ExtDecoderTest, GetToneMapMetadataTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ExtDecoderTest: GetToneMapMetadataTest001 start";
+    #ifdef HEIF_HW_ENCODE_ENABLE
+    ExtEncoder extEncoder;
+    HdrMetadata metadata;
+    metadata.extendMeta.metaISO.baseHeadroom = 0.0f;
+    HDI::Codec::Image::V2_0::ToneMapMetadata toneMapMetadata;
+    bool ret = extEncoder.GetToneMapMetadata(metadata, toneMapMetadata);
+    ASSERT_EQ(ret, false);
+    #endif
+    GTEST_LOG_(INFO) << "ExtDecoderTest: GetToneMapMetadataTest001 end";
+}
+
+/**
+ * @tc.name: ExtDecoderTest
+ * @tc.desc: test the function of GetToneMapMetadata
+             when baseHeadroom > 0.0f, return false
+ * @tc.type: FUNC
+ */
+HWTEST_F(ExtDecoderTest, GetToneMapMetadataTest002, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ExtDecoderTest: GetToneMapMetadataTest002 start";
+    #ifdef HEIF_HW_ENCODE_ENABLE
+    ExtEncoder extEncoder;
+    HdrMetadata metadata;
+    metadata.extendMeta.metaISO.baseHeadroom = 0.1f;
+    HDI::Codec::Image::V2_0::ToneMapMetadata toneMapMetadata;
+    bool ret = extEncoder.GetToneMapMetadata(metadata, toneMapMetadata);
+    ASSERT_EQ(ret, false);
+    #endif
+    GTEST_LOG_(INFO) << "ExtDecoderTest: GetToneMapMetadataTest002 end";
+}
+
+/**
+ * @tc.name: ExtDecoderTest
+ * @tc.desc: test the function of AssembleAuxiliaryRefItem
+             when type == AuxiliaryPictureType::DEPTH_MAP
+             return refs[1].from == DEPTH_MAP_ITEM_ID
+ * @tc.type: FUNC
+ */
+HWTEST_F(ExtDecoderTest, AssembleAuxiliaryRefItemTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ExtDecoderTest: AssembleAuxiliaryRefItemTest001 start";
+    #ifdef HEIF_HW_ENCODE_ENABLE
+    ExtEncoder extEncoder;
+    AuxiliaryPictureType type = AuxiliaryPictureType::DEPTH_MAP;
+    HDI::Codec::Image::V2_0::ItemRef itemRef;
+    std::vector<HDI::Codec::Image::V2_0::ItemRef> refs(1, itemRef);
+    extEncoder.AssembleAuxiliaryRefItem(type, refs);
+    ASSERT_EQ(refs[1].from, DEPTH_MAP_ITEM_ID);
+    #endif
+    GTEST_LOG_(INFO) << "ExtDecoderTest: AssembleAuxiliaryRefItemTest001 end";
+}
+
+/**
+ * @tc.name: ExtDecoderTest
+ * @tc.desc: test the function of AssembleAuxiliaryRefItem
+             when type == AuxiliaryPictureType::UNREFOCUS_MAP
+             return refs[1].from == UNREFOCUS_MAP_ITEM_ID
+ * @tc.type: FUNC
+ */
+HWTEST_F(ExtDecoderTest, AssembleAuxiliaryRefItemTest002, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ExtDecoderTest: AssembleAuxiliaryRefItemTest002 start";
+    #ifdef HEIF_HW_ENCODE_ENABLE
+    ExtEncoder extEncoder;
+    AuxiliaryPictureType type = AuxiliaryPictureType::UNREFOCUS_MAP;
+    HDI::Codec::Image::V2_0::ItemRef itemRef;
+    std::vector<HDI::Codec::Image::V2_0::ItemRef> refs(1, itemRef);
+    extEncoder.AssembleAuxiliaryRefItem(type, refs);
+    ASSERT_EQ(refs[1].from, UNREFOCUS_MAP_ITEM_ID);
+    #endif
+    GTEST_LOG_(INFO) << "ExtDecoderTest: AssembleAuxiliaryRefItemTest002 end";
+}
+
+/**
+ * @tc.name: ExtDecoderTest
+ * @tc.desc: test the function of AssembleAuxiliaryRefItem
+             when type == AuxiliaryPictureType::LINEAR_MAP
+             return refs[1].from == LINEAR_MAP_ITEM_ID
+ * @tc.type: FUNC
+ */
+HWTEST_F(ExtDecoderTest, AssembleAuxiliaryRefItemTest003, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ExtDecoderTest: AssembleAuxiliaryRefItemTest003 start";
+    #ifdef HEIF_HW_ENCODE_ENABLE
+    ExtEncoder extEncoder;
+    AuxiliaryPictureType type = AuxiliaryPictureType::LINEAR_MAP;
+    HDI::Codec::Image::V2_0::ItemRef itemRef;
+    std::vector<HDI::Codec::Image::V2_0::ItemRef> refs(1, itemRef);
+    extEncoder.AssembleAuxiliaryRefItem(type, refs);
+    ASSERT_EQ(refs[1].from, LINEAR_MAP_ITEM_ID);
+    #endif
+    GTEST_LOG_(INFO) << "ExtDecoderTest: AssembleAuxiliaryRefItemTest003 end";
+}
+
+/**
+ * @tc.name: ExtDecoderTest
+ * @tc.desc: test the function of AssembleAuxiliaryRefItem
+             when type == AuxiliaryPictureType::FRAGMENT_MAP
+             return refs[1].from == FRAGMENT_MAP_ITEM_ID
+ * @tc.type: FUNC
+ */
+HWTEST_F(ExtDecoderTest, AssembleAuxiliaryRefItemTest004, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ExtDecoderTest: AssembleAuxiliaryRefItemTest004 start";
+    #ifdef HEIF_HW_ENCODE_ENABLE
+    ExtEncoder extEncoder;
+    AuxiliaryPictureType type = AuxiliaryPictureType::FRAGMENT_MAP;
+    HDI::Codec::Image::V2_0::ItemRef itemRef;
+    std::vector<HDI::Codec::Image::V2_0::ItemRef> refs(1, itemRef);
+    extEncoder.AssembleAuxiliaryRefItem(type, refs);
+    ASSERT_EQ(refs[1].from, FRAGMENT_MAP_ITEM_ID);
+    #endif
+    GTEST_LOG_(INFO) << "ExtDecoderTest: AssembleAuxiliaryRefItemTest004 end";
+}
 }
 }
