@@ -49,65 +49,65 @@ bool ParseInitializationOptions([[maybe_unused]] ani_env* env, ani_object para, 
     }
     ani_ref size;
     if (ANI_OK != env->Object_CallMethodByName_Ref(para, "<get>size", ":L@ohos/multimedia/image/image/Size;", &size)) {
-        IMAGE_LOGE("Object_GetFieldByName_Ref Faild");
+        IMAGE_LOGE("Object_GetFieldByName_Ref Failed");
     }
     ani_status ret;
     if (ANI_OK != env->Object_CallMethodByName_Int(reinterpret_cast<ani_object>(size),
         "<get>width", ":I", &opts.size.width)) {
-        IMAGE_LOGE("Object_CallMethodByName_Int width Faild");
+        IMAGE_LOGE("Object_CallMethodByName_Int width Failed");
     }
     if ((ret = env->Object_CallMethodByName_Int(reinterpret_cast<ani_object>(size),
         "<get>height", ":I", &opts.size.height)) != ANI_OK) {
-        IMAGE_LOGE("Object_CallMethodByName_Int Faild");
+        IMAGE_LOGE("Object_CallMethodByName_Int height Failed");
     }
     ani_ref srcPixelFormatRef;
     if (ANI_OK != (ret = env->Object_CallMethodByName_Ref(para, "<get>srcPixelFormat",
         ":Lstd/core/Int;", &srcPixelFormatRef))) {
-        IMAGE_LOGE("Object_CallMethodByName_Int Faild srcPixelFormatRef:%{public}d", ret);
+        IMAGE_LOGE("Object_CallMethodByName_Int Failed srcPixelFormatRef:%{public}d", ret);
     }
     ani_int srcPixelFormat;
     if ((ret = env->Object_CallMethodByName_Int(reinterpret_cast<ani_object>(srcPixelFormatRef),
         "unboxed", ":I", &srcPixelFormat)) != ANI_OK) {
-        IMAGE_LOGE("Object_CallMethodByName_Int Faild srcPixelFormat:%{public}d", ret);
+        IMAGE_LOGE("Object_CallMethodByName_Int Failed srcPixelFormat:%{public}d", ret);
     }
     ani_ref pixelFormatRef;
     if (ANI_OK != (ret = env->Object_CallMethodByName_Ref(para, "<get>pixelFormat",
         ":Lstd/core/Int;", &pixelFormatRef))) {
-        IMAGE_LOGE("Object_CallMethodByName_Int Faild pixelFormatRef:%{public}d", ret);
+        IMAGE_LOGE("Object_CallMethodByName_Int Failed pixelFormatRef:%{public}d", ret);
     }
     ani_int pixelFormat;
     if ((ret = env->Object_CallMethodByName_Int(reinterpret_cast<ani_object>(pixelFormatRef),
         "unboxed", ":I", &pixelFormat)) != ANI_OK) {
-        IMAGE_LOGE("Object_CallMethodByName_Int Faild pixelFormat:%{public}d", ret);
+        IMAGE_LOGE("Object_CallMethodByName_Int Failed pixelFormat:%{public}d", ret);
     }
     opts.pixelFormat = static_cast<PixelFormat>(pixelFormat);
     ani_ref editableRef;
     if (ANI_OK != (ret = env->Object_CallMethodByName_Ref(para,
         "<get>editable", ":Lstd/core/Boolean;", &editableRef))) {
-        IMAGE_LOGE("Object_CallMethodByName_Int Faild editableRef:%{public}d", ret);
+        IMAGE_LOGE("Object_CallMethodByName_Int Failed editableRef:%{public}d", ret);
     }
     ani_boolean editable;
     if ((ret = env->Object_CallMethodByName_Boolean(reinterpret_cast<ani_object>(editableRef),
         "unboxed", ":Z", &editable)) != ANI_OK) {
-        IMAGE_LOGE("Object_CallMethodByName_Int Faild editable :%{public}d", ret);
+        IMAGE_LOGE("Object_CallMethodByName_Int Failed editable:%{public}d", ret);
     }
     ani_ref alphaTypeRef;
     if (ANI_OK != (ret = env->Object_CallMethodByName_Ref(para, "<get>alphaType", ":Lstd/core/Int;", &alphaTypeRef))) {
-        IMAGE_LOGE("Object_CallMethodByName_Int Faild alphaTypeRef:%{public}d", ret);
+        IMAGE_LOGE("Object_CallMethodByName_Int Failed alphaTypeRef:%{public}d", ret);
     }
     ani_int alphaType;
     if ((ret = env->Object_CallMethodByName_Int(reinterpret_cast<ani_object>(alphaTypeRef),
         "unboxed", ":I", &alphaType)) != ANI_OK) {
-        IMAGE_LOGE("Object_CallMethodByName_Int Faild alphaType:%{public}d", ret);
+        IMAGE_LOGE("Object_CallMethodByName_Int Failed alphaType:%{public}d", ret);
     }
     ani_ref scaleModeRef;
     if (ANI_OK != (ret = env->Object_CallMethodByName_Ref(para, "<get>scaleMode", ":Lstd/core/Int;", &scaleModeRef))) {
-        IMAGE_LOGE("Object_CallMethodByName_Int Faild scaleModeRef:%{public}d", ret);
+        IMAGE_LOGE("Object_CallMethodByName_Int Failed scaleModeRef:%{public}d", ret);
     }
     ani_int scaleMode;
     if ((ret = env->Object_CallMethodByName_Int(reinterpret_cast<ani_object>(scaleModeRef),
         "unboxed", ":I", &scaleMode)) != ANI_OK) {
-        IMAGE_LOGE("Object_CallMethodByName_Int Faild scaleMode:%{public}d", ret);
+        IMAGE_LOGE("Object_CallMethodByName_Int Failed scaleMode:%{public}d", ret);
     }
     return true;
 }
