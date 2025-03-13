@@ -69,6 +69,8 @@ public:
 
     void GetTileImages(heif_item_id gridItemId, std::vector<std::shared_ptr<HeifImage>> &out);
 
+    void GetIovlImages(heif_item_id itemId, std::vector<std::shared_ptr<HeifImage>> &out);
+
     void GetIdenImage(heif_item_id itemId, std::shared_ptr<HeifImage> &out);
 
     void GetAllItemId(std::vector<heif_item_id> &itemIdList) const;
