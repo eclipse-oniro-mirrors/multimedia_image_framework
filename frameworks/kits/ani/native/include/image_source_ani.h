@@ -24,8 +24,8 @@ namespace Media {
 
 class ImageSourceAni {
 public:
-    static ani_object CreateImageSourceAni([[maybe_unused]] ani_env* env,
-        [[maybe_unused]] ani_class clazz, [[maybe_unused]]ani_object obj);
+    static ani_object CreateImageSourceAni([[maybe_unused]] ani_env* env, [[maybe_unused]] ani_class clazz,
+        [[maybe_unused]] ani_object obj);
     static ani_status Init(ani_env* env);
     std::shared_ptr<ImageSource> nativeImageSource_;
 };

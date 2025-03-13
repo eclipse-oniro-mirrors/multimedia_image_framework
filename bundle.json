@@ -190,6 +190,15 @@
           },
           {
             "header": {
+              "header_base": "//foundation/multimedia/image_framework/frameworks/kits/ani/native/include/",
+              "header_files": [
+                "pixel_map_ani.h"
+              ]
+            },
+            "name": "//foundation/multimedia/image_framework/frameworks/kits/ani:image_ani"
+          },
+          {
+            "header": {
               "header_base": "//foundation/multimedia/image_framework/interfaces/kits/native/include/",
               "header_files": [
                 "image_source_mdk.h"

@@ -207,7 +207,6 @@ static void Release([[maybe_unused]] ani_env* env, [[maybe_unused]] ani_object o
         IMAGE_LOGE("[Release] get ImagePackerAni failed");
     }
     imagePackerAni->nativeImagePacker_ = nullptr;
-    std::cerr << "nativeImagePacker_ Release '" << "scuess" << std::endl;
     return;
 }
 

@@ -44,7 +44,9 @@ ani_status ANI_Constructor(ani_vm* vm, uint32_t* result)
             reinterpret_cast<void*>(OHOS::Media::PixelMapAni::CreatePixelMapAni)},
         ani_native_function {"createImagePacker", nullptr,
             reinterpret_cast<void*>(OHOS::Media::ImagePackerAni::CreateImagePackerAni)},
-        ani_native_function {"createImageSource", nullptr,
+        ani_native_function {"nativeCreateImageSourceByUri", nullptr,
+            reinterpret_cast<void*>(OHOS::Media::ImageSourceAni::CreateImageSourceAni)},
+        ani_native_function {"nativeCreateImageSourceByFd", nullptr,
             reinterpret_cast<void*>(OHOS::Media::ImageSourceAni::CreateImageSourceAni)},
     };
     if (ANI_OK != env->Class_BindNativeMethods(staticCls, staticMethods.data(), staticMethods.size())) {
