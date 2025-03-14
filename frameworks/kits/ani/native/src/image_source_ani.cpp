@@ -18,7 +18,7 @@
 #include <iostream>
 #include "image_source_ani.h"
 #include "pixel_map_ani.h"
-#include "ani_utils.h"
+#include "image_ani_utils.h"
 #include "log_tags.h"
 #include "media_errors.h"
 #include "image_log.h"
@@ -52,8 +52,8 @@ std::string ANIUtils_ANIStringToStdString2(ani_env *env, ani_string ani_str)
     return content;
 }
 
-ani_object ImageSourceAni::CreateImageSourceAni([[maybe_unused]] ani_env* env,
-    [[maybe_unused]] ani_class clazz, [[maybe_unused]]ani_object obj)
+ani_object ImageSourceAni::CreateImageSourceAni([[maybe_unused]] ani_env* env, [[maybe_unused]] ani_class clazz,
+    [[maybe_unused]] ani_object obj)
 {
     std::unique_ptr<ImageSourceAni> pImageSourceAni = std::make_unique<ImageSourceAni>();
     ani_class stringClass;
@@ -78,7 +78,7 @@ ani_object ImageSourceAni::CreateImageSourceAni([[maybe_unused]] ani_env* env,
     if (isArrayBuffer) {
         ani_int length;
         env->Object_CallMethodByName_Int(obj, "getByteLength", nullptr, &length);
-        IMAGE_LOGI("Object is ArraryBuffer Lenght: %{public}d", length);
+        IMAGE_LOGI("Object is ArraryBuffer Length: %{public}d", length);
     }
 
     ani_class intClass;
@@ -97,26 +97,8 @@ ani_object ImageSourceAni::CreateImageSourceAni([[maybe_unused]] ani_env* env,
     if (pImageSourceAni->nativeImageSource_ == nullptr) {
         IMAGE_LOGE("CreateImageSource failed'");
     }
-    static const char* className = "L@ohos/multimedia/image/image/ImageSourceInner;";
-    ani_class cls;
-    if (ANI_OK != env->FindClass(className, &cls)) {
-        IMAGE_LOGE("Not found");
-        return nullptr;
-    }
-
-    ani_method ctor;
-    if (ANI_OK != env->Class_FindMethod(cls, "<ctor>", "J:V", &ctor)) {
-        IMAGE_LOGE("Not found");
-        return nullptr;
-    }
-
-    ani_object aniValue;
-    if (ANI_OK != env->Object_New(cls, ctor, &aniValue, reinterpret_cast<ani_long>(pImageSourceAni.release()))) {
-        IMAGE_LOGE("New Context Fail");
-    }
-    return aniValue;
+    return ImageAniUtils::CreateAniImageSource(env, pImageSourceAni);
 }
-
 
 ani_object CreateImageInfoValueFromNative(ani_env* env, const ImageInfo &imgInfo)
 {
@@ -172,7 +154,7 @@ ani_object CreateImageInfoValueFromNative(ani_env* env, const ImageInfo &imgInfo
         IMAGE_LOGE("Object_CallMethodByName_Void <set>alphaType failed");
         return nullptr;
     }
-    ani_string encodeStr =  AniUtils::GetAniString(env, imgInfo.encodedFormat);
+    ani_string encodeStr = ImageAniUtils::GetAniString(env, imgInfo.encodedFormat);
     if (ANI_OK != env->Object_CallMethodByName_Void(imageInfoValue, "<set>mimeType",
         "Lstd/core/String;:V", encodeStr)) {
         IMAGE_LOGE("Object_CallMethodByName_Void <set>encodedFormat failed");
@@ -372,13 +354,13 @@ bool ParseDecodingOptions([[maybe_unused]] ani_env* env, ani_object para, Decode
     return true;
 }
 
-static ani_object CreatePixelMapSync([[maybe_unused]] ani_env* env,
+static ani_object CreatePixelMap([[maybe_unused]] ani_env* env,
     [[maybe_unused]] ani_object obj, [[maybe_unused]]ani_object para)
 {
     ani_status ret;
     ani_long nativeObj {};
     if ((ret = env->Object_GetFieldByName_Long(obj, "nativeObj", &nativeObj)) != ANI_OK) {
-        IMAGE_LOGE("[CreatePixelMapSync] Object_GetField_Long fetch field ");
+        IMAGE_LOGE("[CreatePixelMap] Object_GetField_Long fetch field ");
         return nullptr;
     }
     ImageSourceAni* imageSourceAni = reinterpret_cast<ImageSourceAni*>(nativeObj);
@@ -386,7 +368,7 @@ static ani_object CreatePixelMapSync([[maybe_unused]] ani_env* env,
     imgInfo.encodedFormat = "abcdefg";
     if (imageSourceAni != nullptr) {
     } else {
-        IMAGE_LOGE("[CreatePixelMapSync] imageSourceAni is nullptr");
+        IMAGE_LOGE("[CreatePixelMap] imageSourceAni is nullptr");
     }
 
     DecodeOptions opts;
@@ -725,9 +707,9 @@ ani_status ImageSourceAni::Init(ani_env* env)
     std::array methods = {
         ani_native_function {"nativeGetImageInfo", "I:L@ohos/multimedia/image/image/ImageInfo;",
             reinterpret_cast<void *>(OHOS::Media::GetImageInfo)},
-        ani_native_function {"createPixelMapSync",
+        ani_native_function {"nativeCreatePixelMap",
             "L@ohos/multimedia/image/image/DecodingOptions;:L@ohos/multimedia/image/image/PixelMap;",
-            reinterpret_cast<void *>(OHOS::Media::CreatePixelMapSync)},
+            reinterpret_cast<void *>(OHOS::Media::CreatePixelMap)},
         ani_native_function {"modifyImageProperty", "JLstd/core/String;Lstd/core/String;:V",
             reinterpret_cast<void *>(OHOS::Media::ModifyImageProperty)},
         ani_native_function {"modifyImageProperties", "Lescompat/Record;:V",

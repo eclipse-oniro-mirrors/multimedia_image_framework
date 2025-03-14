@@ -17,7 +17,7 @@
 #include <array>
 #include <iostream>
 
-#include "ani_utils.h"
+#include "image_ani_utils.h"
 #include "image_log.h"
 #include "log_tags.h"
 #include "media_errors.h"
@@ -49,7 +49,7 @@ bool ParseInitializationOptions([[maybe_unused]] ani_env* env, ani_object para, 
     }
     ani_ref size;
     if (ANI_OK != env->Object_CallMethodByName_Ref(para, "<get>size", ":L@ohos/multimedia/image/image/Size;", &size)) {
-        IMAGE_LOGE("Object_GetFieldByName_Ref Faild");
+        IMAGE_LOGE("Object_GetFieldByName_Ref Failed");
     }
     ani_status ret;
     if (ANI_OK != env->Object_CallMethodByName_Int(reinterpret_cast<ani_object>(size),
@@ -135,7 +135,7 @@ ani_object PixelMapAni::CreatePixelMap([[maybe_unused]] ani_env* env, std::share
 }
 
 ani_object PixelMapAni::CreatePixelMapAni([[maybe_unused]] ani_env* env,
-    [[maybe_unused]] ani_class clazz, [[maybe_unused]]ani_object obj)
+    [[maybe_unused]] ani_class clazz, [[maybe_unused]] ani_object obj)
 {
     std::unique_ptr<PixelMapAni> pPixelMapAni = std::make_unique<PixelMapAni>();
     InitializationOptions opts;
@@ -143,44 +143,54 @@ ani_object PixelMapAni::CreatePixelMapAni([[maybe_unused]] ani_env* env,
         IMAGE_LOGE("ParseInitializationOptions failed '");
         return nullptr;
     }
-    unique_ptr<Media::PixelMap> pixelmap = PixelMap::Create(opts);
-    pPixelMapAni->nativePixelMap_ = std::move(pixelmap);
-    static const char* className = "L@ohos/multimedia/image/image/PixelMapInner;";
-    ani_class cls;
-    if (ANI_OK != env->FindClass(className, &cls)) {
-        IMAGE_LOGE("Not found L@ohos/multimedia/image/image/PixelMapInner;");
+
+    pPixelMapAni->nativePixelMap_ = PixelMap::Create(opts);
+    return ImageAniUtils::CreateAniPixelMap(env, pPixelMapAni);
+}
+
+static ani_object CreateAlphaPixelmap([[maybe_unused]] ani_env* env, [[maybe_unused]] ani_object obj)
+{
+    PixelMap* pixelMap = ImageAniUtils::GetPixelMapFromEnv(env, obj);
+    if (pixelMap == nullptr) {
+        IMAGE_LOGE("[GetPixelMapFromEnv] pixelMap nullptr");
         return nullptr;
     }
-    ani_method ctor;
-    if (ANI_OK != env->Class_FindMethod(cls, "<ctor>", "J:V", &ctor)) {
-        IMAGE_LOGE("Not found Class_FindMethod");
-        return nullptr;
-    }
-    ani_object aniValue;
-    if (ANI_OK != env->Object_New(cls, ctor, &aniValue, reinterpret_cast<ani_long>(pPixelMapAni.release()))) {
-        IMAGE_LOGE("New Context Fail");
-    }
-    return aniValue;
+
+    std::unique_ptr<PixelMapAni> pPixelMapAni = std::make_unique<PixelMapAni>();
+    InitializationOptions opts;
+    opts.pixelFormat = PixelFormat::ALPHA_8;
+    pPixelMapAni->nativePixelMap_ = PixelMap::Create(*pixelMap, opts);
+    return ImageAniUtils::CreateAniPixelMap(env, pPixelMapAni);
 }
 
 static ani_object GetImageInfo([[maybe_unused]] ani_env* env, [[maybe_unused]] ani_object obj)
 {
-    PixelMap* pixelmap = AniUtils::GetPixelMapFromEnv(env, obj);
+    PixelMap* pixelmap = ImageAniUtils::GetPixelMapFromEnv(env, obj);
     if (pixelmap == nullptr) {
         IMAGE_LOGE("[GetPixelMapFromEnv] pixelmap nullptr ");
         return nullptr;
     }
     ImageInfo imgInfo;
     pixelmap->GetImageInfo(imgInfo);
-    return AniUtils::CreateImageInfoValueFromNative(env, imgInfo, pixelmap);
+    return ImageAniUtils::CreateImageInfoValueFromNative(env, imgInfo, pixelmap);
 }
 
-static void Relase([[maybe_unused]] ani_env* env, [[maybe_unused]] ani_object obj)
+static ani_int GetPixelBytesNumber([[maybe_unused]] ani_env* env, [[maybe_unused]] ani_object obj)
+{
+    PixelMap* pixelmap = ImageAniUtils::GetPixelMapFromEnv(env, obj);
+    if (pixelmap == nullptr) {
+        IMAGE_LOGE("[GetPixelMapFromEnv] pixelmap nullptr");
+        return 0;
+    }
+    return pixelmap->GetByteCount();
+}
+
+static void Release([[maybe_unused]] ani_env* env, [[maybe_unused]] ani_object obj)
 {
     ani_status ret;
     ani_long nativeObj {};
     if ((ret = env->Object_GetFieldByName_Long(obj, "nativeObj", &nativeObj)) != ANI_OK) {
-        IMAGE_LOGE("[nativeRelase] Object_GetField_Long fetch field");
+        IMAGE_LOGE("[nativeRelease] Object_GetField_Long fetch field");
         return;
     }
     PixelMapAni* pixelmapAni = reinterpret_cast<PixelMapAni*>(nativeObj);
@@ -189,7 +199,7 @@ static void Relase([[maybe_unused]] ani_env* env, [[maybe_unused]] ani_object ob
 
 static void ReadPixelsToBuffer(ani_env* env, ani_object obj, ani_object param0)
 {
-    PixelMap* pixelmap = AniUtils::GetPixelMapFromEnv(env, obj);
+    PixelMap* pixelmap = ImageAniUtils::GetPixelMapFromEnv(env, obj);
     if (pixelmap == nullptr) {
         IMAGE_LOGE("[ReadPixelsToBuffer] pixelmap nullptr ");
         return;
@@ -215,11 +225,14 @@ ani_status PixelMapAni::Init(ani_env* env)
         return ANI_ERROR;
     }
     std::array methods = {
+        ani_native_function {"nativeCreateAlphaPixelmap", ":L@ohos/multimedia/image/image/PixelMap;",
+            reinterpret_cast<void*>(OHOS::Media::CreateAlphaPixelmap)},
         ani_native_function {"nativeGetImageInfo", ":L@ohos/multimedia/image/image/ImageInfo;",
-            reinterpret_cast<void *>(OHOS::Media::GetImageInfo)},
-        ani_native_function {"nativeRelase", ":V", reinterpret_cast<void *>(OHOS::Media::Relase)},
+            reinterpret_cast<void*>(OHOS::Media::GetImageInfo)},
+        ani_native_function {"getPixelBytesNumber", ":I", reinterpret_cast<void*>(OHOS::Media::GetPixelBytesNumber)},
+        ani_native_function {"nativeRelease", ":V", reinterpret_cast<void*>(OHOS::Media::Release)},
         ani_native_function {"nativeReadPixelsToBuffer", "Lescompat/ArrayBuffer;:V",
-            reinterpret_cast<void *>(OHOS::Media::ReadPixelsToBuffer)},
+            reinterpret_cast<void*>(OHOS::Media::ReadPixelsToBuffer)},
     };
     ani_status ret = env->Class_BindNativeMethods(cls, methods.data(), methods.size());
     if (ANI_OK != ret) {

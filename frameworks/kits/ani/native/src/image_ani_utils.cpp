@@ -13,7 +13,7 @@
 * limitations under the License.
 */
 
-#include "ani_utils.h"
+#include "image_ani_utils.h"
 #include <array>
 #include <iostream>
 #include "pixel_map_ani.h"
@@ -31,29 +31,24 @@ namespace OHOS {
 namespace Media {
 using namespace std;
 
-PixelMap* AniUtils::GetPixelMapFromEnv([[maybe_unused]] ani_env* env, [[maybe_unused]] ani_object obj)
+PixelMap* ImageAniUtils::GetPixelMapFromEnv([[maybe_unused]] ani_env* env, [[maybe_unused]] ani_object obj)
 {
     ani_status ret;
     ani_long nativeObj {};
     if ((ret = env->Object_GetFieldByName_Long(obj, "nativeObj", &nativeObj)) != ANI_OK) {
-        IMAGE_LOGE("[GetPixelMapFromEnv] Object_GetField_Long fetch field ");
+        IMAGE_LOGE("[GetPixelMapFromEnv] Object_GetField_Long fetch failed");
         return nullptr;
     }
     PixelMapAni* pixelmapAni = reinterpret_cast<PixelMapAni*>(nativeObj);
     if (!pixelmapAni) {
-        IMAGE_LOGE("[GetPixelMapFromEnv] pixelmapAni field ");
+        IMAGE_LOGE("[GetPixelMapFromEnv] pixelmapAni failed");
         return nullptr;
     }
     return (pixelmapAni->nativePixelMap_).get();
 }
 
-ani_object AniUtils::CreateImageInfoValueFromNative(ani_env* env, const ImageInfo &imgInfo, PixelMap* pixelmap)
+static ani_object CreateAniImageInfo(ani_env* env)
 {
-    if (pixelmap == nullptr) {
-        IMAGE_LOGE("[CreateImageInfoValueFromNative] pixelmap nullptr ");
-        return nullptr;
-    }
-    //  imageinfo value begin
     static const char* imageInfoClassName = "L@ohos/multimedia/image/image/ImageInfoInner;";
     ani_class imageInfoCls;
     if (ANI_OK != env->FindClass(imageInfoClassName, &imageInfoCls)) {
@@ -68,22 +63,46 @@ ani_object AniUtils::CreateImageInfoValueFromNative(ani_env* env, const ImageInf
     ani_object imageInfoValue;
     if (ANI_OK != env->Object_New(imageInfoCls, imageInfoCtor, &imageInfoValue)) {
         IMAGE_LOGE("New Context Fail");
+        return nullptr;
     }
+    return imageInfoValue;
+}
+
+static bool SetImageInfoSize(ani_env* env, const ImageInfo& imgInfo, ani_object& imageInfoValue)
+{
     ani_ref sizeref;
     if (ANI_OK != env->Object_CallMethodByName_Ref(imageInfoValue, "<get>size",
         ":L@ohos/multimedia/image/image/Size;", &sizeref)) {
         IMAGE_LOGE("Object_CallMethodByName_Ref failed");
-        return nullptr;
+        return false;
     }
     ani_object sizeObj = reinterpret_cast<ani_object>(sizeref);
     if (ANI_OK != env->Object_CallMethodByName_Void(sizeObj, "<set>width", "I:V",
         static_cast<ani_int>(imgInfo.size.width))) {
         IMAGE_LOGE("Object_CallMethodByName_Void <set>width failed");
-        return nullptr;
+        return false;
     }
     if (ANI_OK != env->Object_CallMethodByName_Void(sizeObj, "<set>height", "I:V",
         static_cast<ani_int>(imgInfo.size.height))) {
         IMAGE_LOGE("Object_CallMethodByName_Void <set>height failed");
+        return false;
+    }
+    return true;
+}
+
+ani_object ImageAniUtils::CreateImageInfoValueFromNative(ani_env* env, const ImageInfo &imgInfo, PixelMap* pixelmap)
+{
+    if (pixelmap == nullptr) {
+        IMAGE_LOGE("[CreateImageInfoValueFromNative] pixelmap nullptr ");
+        return nullptr;
+    }
+
+    ani_object imageInfoValue = CreateAniImageInfo(env);
+    if (imageInfoValue == nullptr) {
+        return nullptr;
+    }
+
+    if (!SetImageInfoSize(env, imgInfo, imageInfoValue)) {
         return nullptr;
     }
     if (ANI_OK != env->Object_CallMethodByName_Void(imageInfoValue, "<set>density", "I:V",
@@ -106,7 +125,7 @@ ani_object AniUtils::CreateImageInfoValueFromNative(ani_env* env, const ImageInf
         IMAGE_LOGE("Object_CallMethodByName_Void <set>alphaType failed");
         return nullptr;
     }
-    ani_string encodeStr =  AniUtils::GetAniString(env, imgInfo.encodedFormat);
+    ani_string encodeStr = ImageAniUtils::GetAniString(env, imgInfo.encodedFormat);
     if (ANI_OK != env->Object_CallMethodByName_Void(imageInfoValue, "<set>mimeType",
         "Lstd/core/String;:V", encodeStr)) {
         IMAGE_LOGE("Object_CallMethodByName_Void <set>encodedFormat failed ");
@@ -119,7 +138,49 @@ ani_object AniUtils::CreateImageInfoValueFromNative(ani_env* env, const ImageInf
     return imageInfoValue;
 }
 
-ani_string AniUtils::GetAniString(ani_env *env, const string &str)
+ani_object ImageAniUtils::CreateAniPixelMap(ani_env* env, std::unique_ptr<PixelMapAni>& pPixelMapAni)
+{
+    static const char* className = "L@ohos/multimedia/image/image/PixelMapInner;";
+    ani_class cls;
+    if (ANI_OK != env->FindClass(className, &cls)) {
+        IMAGE_LOGE("Not found L@ohos/multimedia/image/image/PixelMapInner;");
+        return nullptr;
+    }
+    ani_method ctor;
+    if (ANI_OK != env->Class_FindMethod(cls, "<ctor>", "J:V", &ctor)) {
+        IMAGE_LOGE("Not found <ctor>");
+        return nullptr;
+    }
+    ani_object aniValue;
+    if (ANI_OK != env->Object_New(cls, ctor, &aniValue, reinterpret_cast<ani_long>(pPixelMapAni.release()))) {
+        IMAGE_LOGE("New Context Fail");
+    }
+    return aniValue;
+}
+
+ani_object ImageAniUtils::CreateAniImageSource(ani_env* env, std::unique_ptr<ImageSourceAni>& pImageSourceAni)
+{
+    static const char* className = "L@ohos/multimedia/image/image/ImageSourceInner;";
+    ani_class cls;
+    if (ANI_OK != env->FindClass(className, &cls)) {
+        IMAGE_LOGE("Not found L@ohos/multimedia/image/image/ImageSourceInner;");
+        return nullptr;
+    }
+
+    ani_method ctor;
+    if (ANI_OK != env->Class_FindMethod(cls, "<ctor>", "J:V", &ctor)) {
+        IMAGE_LOGE("Not found <ctor>");
+        return nullptr;
+    }
+
+    ani_object aniValue;
+    if (ANI_OK != env->Object_New(cls, ctor, &aniValue, reinterpret_cast<ani_long>(pImageSourceAni.release()))) {
+        IMAGE_LOGE("New Context Fail");
+    }
+    return aniValue;
+}
+
+ani_string ImageAniUtils::GetAniString(ani_env *env, const string &str)
 {
     ani_string aniMimeType = nullptr;
     const char *utf8String = str.c_str();

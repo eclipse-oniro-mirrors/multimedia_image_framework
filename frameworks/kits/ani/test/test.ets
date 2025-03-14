@@ -35,6 +35,9 @@ function main() {
     .then((imageInfo: image.ImageInfo) => {
       console.log("ASYNC Get image info: ", imageInfo.size.width, imageInfo.size.height, imageInfo.pixelFormat, imageInfo.mimeType);
     });
+  
+  const bytes = pixelMap.getPixelBytesNumber();
+  console.log("PixelMap bytes number: " + bytes);
 
   if (retImageInfo.isHdr) {
       console.log("Test PixelMap hdr ");
@@ -42,10 +45,27 @@ function main() {
       console.log("Test PixelMap not hdr ");
   }
 
-  let imageSource: image.ImageSource = image.createImageSource(1); //"/data/local/tmp/test.png"
-  if (imageSource != undefined) {
-    console.log("Create ImageSource success");
+  const alphaPixelMap = pixelMap.createAlphaPixelmapSync();
+  if (alphaPixelMap != undefined) {
+    console.log("Create alpha PixelMap success");
   }
+  const alphaImageInfo = alphaPixelMap.getImageInfoSync();
+  console.log("Alpha get image info: ", alphaImageInfo.size.width, alphaImageInfo.size.height, alphaImageInfo.pixelFormat, alphaImageInfo.alphaType);
+  pixelMap.createAlphaPixelmap()
+    .then((alphaPixelMap: image.PixelMap) => {
+      const alphaImageInfo = alphaPixelMap.getImageInfoSync();
+      console.log("ASYNC Alpha get image info: ", alphaImageInfo.size.width, alphaImageInfo.size.height, alphaImageInfo.pixelFormat, alphaImageInfo.alphaType);
+    })
+
+  let imageSource: image.ImageSource = image.createImageSource("/data/local/tmp/test.png");
+  if (imageSource != undefined) {
+    console.log("Create ImageSource by URI success");
+  }
+  let imageSource2: image.ImageSource = image.createImageSource(1);
+  if (imageSource2 != undefined) {
+    console.log("Create ImageSource by FD success");
+  }
+  
   let imagesourceImageInfo: image.ImageInfo  = imageSource.getImageInfoSync(1);
   console.log("Test ImageSource.getImageInfoSync width: ", imagesourceImageInfo.size.width, imagesourceImageInfo.size.height, imagesourceImageInfo.pixelFormat, imagesourceImageInfo.density, imagesourceImageInfo.mimeType);
   imageSource.getImageInfo(1)
@@ -59,6 +79,15 @@ function main() {
   if (pixelmap2 != undefined) {
     console.log("Create imageSource.createPixelMapSync success");
   }
+  imageSource.createPixelMap(decodeOpt)
+    .then((pixelmap2: image.PixelMap) => {
+      if (pixelmap2 != undefined) {
+        console.log("ASYNC Create imageSource PixelMap success")
+      }
+    });
+  pixelmap2.release()
+    .then((): void => console.log("ASYNC Release PixelMap success"));
+
   imageSource.modifyImageProperty("Orientation", "Right-top");
   let map: Record<string, string> = {
     "Orientation": "Right-top",
@@ -90,4 +119,5 @@ function main() {
   console.log("Read pixels to buffer success, size: " + arrayBuffer.byteLength); 
   pixelMap.readPixelsToBuffer(arrayBuffer)
     .then((): void => console.log("ASYNC Read pixels to buffer success, size: " + arrayBuffer.byteLength));
+  console.log("====== Sync methods completed ======")
 }
