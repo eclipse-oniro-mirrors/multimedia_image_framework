@@ -47,13 +47,8 @@ PixelMap* ImageAniUtils::GetPixelMapFromEnv([[maybe_unused]] ani_env* env, [[may
     return (pixelmapAni->nativePixelMap_).get();
 }
 
-ani_object ImageAniUtils::CreateImageInfoValueFromNative(ani_env* env, const ImageInfo &imgInfo, PixelMap* pixelmap)
+static ani_object CreateAniImageInfo(ani_env* env)
 {
-    if (pixelmap == nullptr) {
-        IMAGE_LOGE("[CreateImageInfoValueFromNative] pixelmap nullptr ");
-        return nullptr;
-    }
-    //  imageinfo value begin
     static const char* imageInfoClassName = "L@ohos/multimedia/image/image/ImageInfoInner;";
     ani_class imageInfoCls;
     if (ANI_OK != env->FindClass(imageInfoClassName, &imageInfoCls)) {
@@ -68,22 +63,46 @@ ani_object ImageAniUtils::CreateImageInfoValueFromNative(ani_env* env, const Ima
     ani_object imageInfoValue;
     if (ANI_OK != env->Object_New(imageInfoCls, imageInfoCtor, &imageInfoValue)) {
         IMAGE_LOGE("New Context Fail");
+        return nullptr;
     }
+    return imageInfoValue;
+}
+
+static bool SetImageInfoSize(ani_env* env, const ImageInfo& imgInfo, ani_object& imageInfoValue)
+{
     ani_ref sizeref;
     if (ANI_OK != env->Object_CallMethodByName_Ref(imageInfoValue, "<get>size",
         ":L@ohos/multimedia/image/image/Size;", &sizeref)) {
         IMAGE_LOGE("Object_CallMethodByName_Ref failed");
-        return nullptr;
+        return false;
     }
     ani_object sizeObj = reinterpret_cast<ani_object>(sizeref);
     if (ANI_OK != env->Object_CallMethodByName_Void(sizeObj, "<set>width", "I:V",
         static_cast<ani_int>(imgInfo.size.width))) {
         IMAGE_LOGE("Object_CallMethodByName_Void <set>width failed");
-        return nullptr;
+        return false;
     }
     if (ANI_OK != env->Object_CallMethodByName_Void(sizeObj, "<set>height", "I:V",
         static_cast<ani_int>(imgInfo.size.height))) {
         IMAGE_LOGE("Object_CallMethodByName_Void <set>height failed");
+        return false;
+    }
+    return true;
+}
+
+ani_object ImageAniUtils::CreateImageInfoValueFromNative(ani_env* env, const ImageInfo &imgInfo, PixelMap* pixelmap)
+{
+    if (pixelmap == nullptr) {
+        IMAGE_LOGE("[CreateImageInfoValueFromNative] pixelmap nullptr ");
+        return nullptr;
+    }
+
+    ani_object imageInfoValue = CreateAniImageInfo(env);
+    if (imageInfoValue == nullptr) {
+        return nullptr;
+    }
+
+    if (!SetImageInfoSize(env, imgInfo, imageInfoValue)) {
         return nullptr;
     }
     if (ANI_OK != env->Object_CallMethodByName_Void(imageInfoValue, "<set>density", "I:V",
