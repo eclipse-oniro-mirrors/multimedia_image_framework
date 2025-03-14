@@ -27,7 +27,9 @@
 #include "src/codec/SkJpegCodec.h"
 #include "src/codec/SkJpegDecoderMgr.h"
 #include "ext_pixel_convert.h"
+#ifdef SK_ENABLE_OHOS_CODEC
 #include "ext_ohoscodec.h"
+#endif
 #include "image_log.h"
 #include "image_format_convert.h"
 #include "image_mime_type.h"
@@ -1034,6 +1036,7 @@ uint32_t ExtDecoder::DoHeifSharedMemDecode(DecodeContext &context)
 
 SkCodec::Result ExtDecoder::DoRegionDecode(DecodeContext &context)
 {
+#ifdef SK_ENABLE_OHOS_CODEC
     ImageFuncTimer imageFuncTimer("%s, dstSubset_XYWH: %d, %d, %d, %d, srcSize: %d, %d, alloctype: %d", __func__,
       dstSubset_.left(), dstSubset_.top(), dstSubset_.width(), dstSubset_.height(), info_.width(), info_.height(),
       context.allocatorType);
@@ -1094,10 +1097,14 @@ SkCodec::Result ExtDecoder::DoRegionDecode(DecodeContext &context)
             SkCodecPrintf("Error: Could not get pixels with message \"%s\".\n", SkCodec::ResultToString(result));
             return result;
     }
+#else
+    return SkCodec::kSuccess;
+#endif
 }
 
 uint32_t ExtDecoder::Decode(uint32_t index, DecodeContext &context)
 {
+#ifdef SK_ENABLE_OHOS_CODEC
     if (SupportRegionFlag_) {
         DebugInfo(info_, dstInfo_, dstOptions_);
         SkCodec::Result regionDecodeRes = DoRegionDecode(context);
@@ -1110,6 +1117,7 @@ uint32_t ExtDecoder::Decode(uint32_t index, DecodeContext &context)
             return ERR_IMAGE_DECODE_FAILED;
         }
     }
+#endif
 #ifdef JPEG_HW_DECODE_ENABLE
     if (IsAllocatorTypeSupportHwDecode(context) && IsSupportHardwareDecode() && DoHardWareDecode(context) == SUCCESS) {
         context.isHardDecode = true;
