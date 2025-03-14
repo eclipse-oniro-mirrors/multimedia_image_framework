@@ -17,6 +17,7 @@
 #define ANI_SRC_INCLUDE_ANI_UTILS_H
  
 #include <ani.h>
+#include "image_source_ani.h"
 #include "pixel_map.h"
 #include "pixel_map_ani.h"
  
@@ -28,6 +29,7 @@ public:
     static PixelMap* GetPixelMapFromEnv([[maybe_unused]] ani_env* env, [[maybe_unused]] ani_object obj);
     static ani_object CreateImageInfoValueFromNative(ani_env* env, const ImageInfo &imgInfo, PixelMap* pixelmap);
     static ani_object CreateAniPixelMap(ani_env* env, std::unique_ptr<PixelMapAni>& pPixelMapAni);
+    static ani_object CreateAniImageSource(ani_env* env, std::unique_ptr<ImageSourceAni>& pImageSourceAni);
     static ani_string GetAniString(ani_env *env, const std::string& str);
 };
 

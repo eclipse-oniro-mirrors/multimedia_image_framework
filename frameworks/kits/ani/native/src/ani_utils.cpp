@@ -129,11 +129,33 @@ ani_object AniUtils::CreateAniPixelMap(ani_env* env, std::unique_ptr<PixelMapAni
     }
     ani_method ctor;
     if (ANI_OK != env->Class_FindMethod(cls, "<ctor>", "J:V", &ctor)) {
-        IMAGE_LOGE("Not found Class_FindMethod");
+        IMAGE_LOGE("Not found <ctor>");
         return nullptr;
     }
     ani_object aniValue;
     if (ANI_OK != env->Object_New(cls, ctor, &aniValue, reinterpret_cast<ani_long>(pPixelMapAni.release()))) {
+        IMAGE_LOGE("New Context Fail");
+    }
+    return aniValue;
+}
+
+ani_object AniUtils::CreateAniImageSource(ani_env* env, std::unique_ptr<ImageSourceAni>& pImageSourceAni)
+{
+    static const char* className = "L@ohos/multimedia/image/image/ImageSourceInner;";
+    ani_class cls;
+    if (ANI_OK != env->FindClass(className, &cls)) {
+        IMAGE_LOGE("Not found L@ohos/multimedia/image/image/ImageSourceInner;");
+        return nullptr;
+    }
+
+    ani_method ctor;
+    if (ANI_OK != env->Class_FindMethod(cls, "<ctor>", "J:V", &ctor)) {
+        IMAGE_LOGE("Not found <ctor>");
+        return nullptr;
+    }
+
+    ani_object aniValue;
+    if (ANI_OK != env->Object_New(cls, ctor, &aniValue, reinterpret_cast<ani_long>(pImageSourceAni.release()))) {
         IMAGE_LOGE("New Context Fail");
     }
     return aniValue;

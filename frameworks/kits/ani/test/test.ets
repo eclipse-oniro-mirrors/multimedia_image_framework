@@ -119,4 +119,5 @@ function main() {
   console.log("Read pixels to buffer success, size: " + arrayBuffer.byteLength); 
   pixelMap.readPixelsToBuffer(arrayBuffer)
     .then((): void => console.log("ASYNC Read pixels to buffer success, size: " + arrayBuffer.byteLength));
+  console.log("====== Sync methods completed ======")
 }

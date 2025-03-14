@@ -144,8 +144,7 @@ ani_object PixelMapAni::CreatePixelMapAni([[maybe_unused]] ani_env* env,
         return nullptr;
     }
 
-    unique_ptr<Media::PixelMap> pixelmap = PixelMap::Create(opts);
-    pPixelMapAni->nativePixelMap_ = std::move(pixelmap);
+    pPixelMapAni->nativePixelMap_ = PixelMap::Create(opts);
     return AniUtils::CreateAniPixelMap(env, pPixelMapAni);
 }
 
@@ -160,8 +159,7 @@ static ani_object CreateAlphaPixelmap([[maybe_unused]] ani_env* env, [[maybe_unu
     std::unique_ptr<PixelMapAni> pPixelMapAni = std::make_unique<PixelMapAni>();
     InitializationOptions opts;
     opts.pixelFormat = PixelFormat::ALPHA_8;
-    auto alphaPixelMap = PixelMap::Create(*pixelMap, opts);
-    pPixelMapAni->nativePixelMap_ = std::move(alphaPixelMap);
+    pPixelMapAni->nativePixelMap_ = PixelMap::Create(*pixelMap, opts);
     return AniUtils::CreateAniPixelMap(env, pPixelMapAni);
 }
 

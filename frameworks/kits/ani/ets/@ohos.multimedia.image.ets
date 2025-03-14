@@ -2096,7 +2096,6 @@ class PixelMapInner implements PixelMap {
   native nativeCreateAlphaPixelmap(): PixelMap;
 
   public createAlphaPixelmapSync(): PixelMap {
-    console.log("Test PixelMap createAlphaPixelmapSync");
     return this.nativeCreateAlphaPixelmap();
   }
 
@@ -2113,7 +2112,6 @@ class PixelMapInner implements PixelMap {
   native nativeGetImageInfo(): ImageInfo;
 
   public getImageInfoSync(): ImageInfo {
-    console.log("Test PixelMap getImageInfoSync");
     return this.nativeGetImageInfo();
   }
 
@@ -2132,7 +2130,6 @@ class PixelMapInner implements PixelMap {
   native nativeReadPixelsToBuffer(buff: ArrayBuffer): void;
 
   public readPixelsToBufferSync(buff: ArrayBuffer): void {
-    console.log("Test PixelMap sync GetImageInfo");
     return this.nativeReadPixelsToBuffer(buff);
   }
 
@@ -2351,7 +2348,6 @@ class ImagePackerInner implements ImagePacker {
   }
 
   public packing(source: PixelMap, option: PackingOption): ArrayBuffer {
-    console.log("Test PixelMap sync GetImageInfo");
     return this.nativePackingWithPixelMap(source, option);
   }
   supportedFormats:Array<string> =  new Array<string>("");
