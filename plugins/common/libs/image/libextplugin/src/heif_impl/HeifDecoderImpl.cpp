@@ -189,6 +189,11 @@ static bool ConvertNV12ToRGBA(PixelFormatConvertParam &srcParam, PixelFormatConv
     }
     AVFrame *srcFrame = av_frame_alloc();
     AVFrame *dstFrame = av_frame_alloc();
+    if (srcFrame == nullptr || dstFrame == nullptr) {
+        av_frame_free(&srcFrame);
+        av_frame_free(&dstFrame);
+        return false;
+    }
     const YuvConstants *yuvConstants = g_kYvuI601Constants;
     if (srcParam.colorRangeFlag == 1) {
         yuvConstants = g_kYvuJPEGConstants;
