@@ -16,9 +16,7 @@ import("//build/ohos.gni")
 import("//foundation/multimedia/image_framework/ide/image_decode_config.gni")
 
 config("ani_config") {
-  include_dirs = [
-    "native/include"
-  ]
+  include_dirs = [ "native/include" ]
 }
 
 group("image_framework_ani") {
