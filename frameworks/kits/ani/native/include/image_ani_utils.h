@@ -13,8 +13,8 @@
  * limitations under the License.
  */
 
-#ifndef ANI_SRC_INCLUDE_ANI_UTILS_H
-#define ANI_SRC_INCLUDE_ANI_UTILS_H
+#ifndef ANI_SRC_INCLUDE_IMAGE_ANI_UTILS_H
+#define ANI_SRC_INCLUDE_IMAGE_ANI_UTILS_H
  
 #include <ani.h>
 #include "image_source_ani.h"
@@ -24,7 +24,7 @@
 namespace OHOS {
 namespace Media {
 
-class AniUtils {
+class ImageAniUtils {
 public:
     static PixelMap* GetPixelMapFromEnv([[maybe_unused]] ani_env* env, [[maybe_unused]] ani_object obj);
     static ani_object CreateImageInfoValueFromNative(ani_env* env, const ImageInfo &imgInfo, PixelMap* pixelmap);
@@ -36,4 +36,4 @@ public:
 } // namespace Media
 } // namespace OHOS
  
-#endif // ANI_SRC_INCLUDE_ANI_UTILS_H
+#endif // ANI_SRC_INCLUDE_IMAGE_ANI_UTILS_H

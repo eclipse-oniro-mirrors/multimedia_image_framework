@@ -18,7 +18,7 @@
 #include <iostream>
 #include "image_source_ani.h"
 #include "pixel_map_ani.h"
-#include "ani_utils.h"
+#include "image_ani_utils.h"
 #include "log_tags.h"
 #include "media_errors.h"
 #include "image_log.h"
@@ -97,7 +97,7 @@ ani_object ImageSourceAni::CreateImageSourceAni([[maybe_unused]] ani_env* env, [
     if (pImageSourceAni->nativeImageSource_ == nullptr) {
         IMAGE_LOGE("CreateImageSource failed'");
     }
-    return AniUtils::CreateAniImageSource(env, pImageSourceAni);
+    return ImageAniUtils::CreateAniImageSource(env, pImageSourceAni);
 }
 
 ani_object CreateImageInfoValueFromNative(ani_env* env, const ImageInfo &imgInfo)
@@ -154,7 +154,7 @@ ani_object CreateImageInfoValueFromNative(ani_env* env, const ImageInfo &imgInfo
         IMAGE_LOGE("Object_CallMethodByName_Void <set>alphaType failed");
         return nullptr;
     }
-    ani_string encodeStr =  AniUtils::GetAniString(env, imgInfo.encodedFormat);
+    ani_string encodeStr = ImageAniUtils::GetAniString(env, imgInfo.encodedFormat);
     if (ANI_OK != env->Object_CallMethodByName_Void(imageInfoValue, "<set>mimeType",
         "Lstd/core/String;:V", encodeStr)) {
         IMAGE_LOGE("Object_CallMethodByName_Void <set>encodedFormat failed");

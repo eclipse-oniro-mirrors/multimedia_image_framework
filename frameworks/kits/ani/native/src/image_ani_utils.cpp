@@ -13,7 +13,7 @@
 * limitations under the License.
 */
 
-#include "ani_utils.h"
+#include "image_ani_utils.h"
 #include <array>
 #include <iostream>
 #include "pixel_map_ani.h"
@@ -31,7 +31,7 @@ namespace OHOS {
 namespace Media {
 using namespace std;
 
-PixelMap* AniUtils::GetPixelMapFromEnv([[maybe_unused]] ani_env* env, [[maybe_unused]] ani_object obj)
+PixelMap* ImageAniUtils::GetPixelMapFromEnv([[maybe_unused]] ani_env* env, [[maybe_unused]] ani_object obj)
 {
     ani_status ret;
     ani_long nativeObj {};
@@ -47,7 +47,7 @@ PixelMap* AniUtils::GetPixelMapFromEnv([[maybe_unused]] ani_env* env, [[maybe_un
     return (pixelmapAni->nativePixelMap_).get();
 }
 
-ani_object AniUtils::CreateImageInfoValueFromNative(ani_env* env, const ImageInfo &imgInfo, PixelMap* pixelmap)
+ani_object ImageAniUtils::CreateImageInfoValueFromNative(ani_env* env, const ImageInfo &imgInfo, PixelMap* pixelmap)
 {
     if (pixelmap == nullptr) {
         IMAGE_LOGE("[CreateImageInfoValueFromNative] pixelmap nullptr ");
@@ -106,7 +106,7 @@ ani_object AniUtils::CreateImageInfoValueFromNative(ani_env* env, const ImageInf
         IMAGE_LOGE("Object_CallMethodByName_Void <set>alphaType failed");
         return nullptr;
     }
-    ani_string encodeStr =  AniUtils::GetAniString(env, imgInfo.encodedFormat);
+    ani_string encodeStr = ImageAniUtils::GetAniString(env, imgInfo.encodedFormat);
     if (ANI_OK != env->Object_CallMethodByName_Void(imageInfoValue, "<set>mimeType",
         "Lstd/core/String;:V", encodeStr)) {
         IMAGE_LOGE("Object_CallMethodByName_Void <set>encodedFormat failed ");
@@ -119,7 +119,7 @@ ani_object AniUtils::CreateImageInfoValueFromNative(ani_env* env, const ImageInf
     return imageInfoValue;
 }
 
-ani_object AniUtils::CreateAniPixelMap(ani_env* env, std::unique_ptr<PixelMapAni>& pPixelMapAni)
+ani_object ImageAniUtils::CreateAniPixelMap(ani_env* env, std::unique_ptr<PixelMapAni>& pPixelMapAni)
 {
     static const char* className = "L@ohos/multimedia/image/image/PixelMapInner;";
     ani_class cls;
@@ -139,7 +139,7 @@ ani_object AniUtils::CreateAniPixelMap(ani_env* env, std::unique_ptr<PixelMapAni
     return aniValue;
 }
 
-ani_object AniUtils::CreateAniImageSource(ani_env* env, std::unique_ptr<ImageSourceAni>& pImageSourceAni)
+ani_object ImageAniUtils::CreateAniImageSource(ani_env* env, std::unique_ptr<ImageSourceAni>& pImageSourceAni)
 {
     static const char* className = "L@ohos/multimedia/image/image/ImageSourceInner;";
     ani_class cls;
@@ -161,7 +161,7 @@ ani_object AniUtils::CreateAniImageSource(ani_env* env, std::unique_ptr<ImageSou
     return aniValue;
 }
 
-ani_string AniUtils::GetAniString(ani_env *env, const string &str)
+ani_string ImageAniUtils::GetAniString(ani_env *env, const string &str)
 {
     ani_string aniMimeType = nullptr;
     const char *utf8String = str.c_str();

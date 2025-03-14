@@ -17,7 +17,7 @@
 #include <array>
 #include <iostream>
 
-#include "ani_utils.h"
+#include "image_ani_utils.h"
 #include "image_packer_ani.h"
 #include "image_log.h"
 #include "log_tags.h"
@@ -157,7 +157,7 @@ ani_arraybuffer nativePackingWithPixelMap([[maybe_unused]] ani_env* env,
         IMAGE_LOGE("nativePackingWithPixelMap  isPacker null ");
         return nullptr;
     }
-    PixelMap* pixelamp = AniUtils::GetPixelMapFromEnv(env, obj2);
+    PixelMap* pixelamp = ImageAniUtils::GetPixelMapFromEnv(env, obj2);
     if (!pixelamp) {
         IMAGE_LOGE("nativePackingWithPixelMap  pixmap null ");
         return nullptr;
