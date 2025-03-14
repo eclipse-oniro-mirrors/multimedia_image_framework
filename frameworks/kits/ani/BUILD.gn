@@ -17,7 +17,7 @@ import("//foundation/multimedia/image_framework/ide/image_decode_config.gni")
 
 config("ani_config") {
   include_dirs = [
-    "//foundation/multimedia/image_framework/frameworks/kits/ani/native/include"
+    "native/include"
   ]
 }
 
