@@ -26,12 +26,21 @@
 #include "image_source.h"
 #include "convert_utils.h"
 #include "image_log.h"
+#include "image_packer.h"
+#include "media_errors.h"
 
 #undef LOG_DOMAIN
 #define LOG_DOMAIN LOG_TAG_DOMAIN_ID_IMAGE
 
 #undef LOG_TAG
 #define LOG_TAG "IMAGE_SOURCE_FUZZ"
+
+static const std::string JPEG_FORMAT = "image/jpeg";
+static const std::string HEIF_FORMAT = "image/heif";
+static const std::string WEBP_FORMAT = "image/webp";
+static const std::string GIF_FORMAT = "image/gif";
+static const std::string PNG_FORMAT = "image/png";
+static const std::string IMAGE_ENCODE_DEST = "/data/local/tmp/test_out.dat";
 
 namespace OHOS {
 namespace Media {
@@ -176,6 +185,145 @@ void CreateImageSourceByPathname(const uint8_t* data, size_t size)
     SourceOptions opts;
     std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(data, size, opts, errCode);
 }
+
+bool CreatePixelMapByRandomImageSource(const uint8_t *data, size_t size)
+{
+    IMAGE_LOGI("%{public}s start.", __func__);
+    if (data == nullptr) {
+        IMAGE_LOGE("%{public}s failed, data is nullptr", __func__);
+        return false;
+    }
+    Media::SourceOptions opts;
+    uint32_t errorCode;
+    auto imageSource = Media::ImageSource::CreateImageSource(data, size, opts, errorCode);
+    if (imageSource == nullptr) {
+        IMAGE_LOGE("%{public}s failed, imageSource is nullotr", __func__);
+    }
+    DecodeOptions dopts;
+    dopts.desiredDynamicRange = DecodeDynamicRange::AUTO;
+    dopts.isAppUseAllocator = true;
+    dopts.allocatorType = AllocatorType::DMA_ALLOC;
+    std::shared_ptr<PixelMap> pixelMap = imageSource->CreatePixelMap(0, dopts, errorCode);
+
+    dopts.desiredDynamicRange = DecodeDynamicRange::AUTO;
+    dopts.isAppUseAllocator = true;
+    dopts.allocatorType = imageSource->ConvertAutoAllocatorType(dopts);
+    pixelMap = imageSource->CreatePixelMap(0, dopts, errorCode);
+
+    dopts.desiredDynamicRange = DecodeDynamicRange::AUTO;
+    dopts.isAppUseAllocator = true;
+    dopts.desiredPixelFormat = PixelFormat::NV12;
+    dopts.allocatorType = AllocatorType::DMA_ALLOC;
+    pixelMap = imageSource->CreatePixelMap(0, dopts, errorCode);
+
+    dopts.desiredDynamicRange = DecodeDynamicRange::AUTO;
+    dopts.isAppUseAllocator = true;
+    dopts.desiredPixelFormat = PixelFormat::NV21;
+    dopts.allocatorType = AllocatorType::DMA_ALLOC;
+    pixelMap = imageSource->CreatePixelMap(0, dopts, errorCode);
+    return true;
+}
+
+void EncodePictureTest(std::shared_ptr<Picture> picture, const std::string& format, const std::string& outputPath)
+{
+    IMAGE_LOGI("%{public}s start.", __func__);
+    if (picture == nullptr) {
+        IMAGE_LOGE("%{public}s picture null.", __func__);
+        return;
+    }
+    ImagePacker pack;
+    PackOption packOption;
+    packOption.format = format;
+    if (pack.StartPacking(outputPath, packOption) != SUCCESS) {
+        IMAGE_LOGE("%{public}s StartPacking failed.", __func__);
+        return;
+    }
+    if (pack.AddPicture(*picture) != SUCCESS) {
+        IMAGE_LOGE("%{public}s AddPicture failed.",  __func__);
+        return;
+    }
+    if (pack.FinalizePacking() != SUCCESS) {
+        IMAGE_LOGE("%{public}s FinalizePacking failed.",  __func__);
+        return;
+    }
+    IMAGE_LOGI("%{public}s SUCCESS.",  __func__);
+}
+
+void EncodePixelMapTest(std::shared_ptr<PixelMap> pixelmap, const std::string& format, const std::string& outputPath)
+{
+    IMAGE_LOGI("%{public}s start.", __func__);
+    if (pixelmap == nullptr) {
+        IMAGE_LOGE("%{public}s picture null.", __func__);
+        return;
+    }
+    ImagePacker pack;
+    PackOption packOption;
+    packOption.format = format;
+    if (pack.StartPacking(outputPath, packOption) != SUCCESS) {
+        IMAGE_LOGE("%{public}s StartPacking failed.", __func__);
+        return;
+    }
+    if (pack.AddImage(*pixelmap) != SUCCESS) {
+        IMAGE_LOGE("%{public}s AddImage failed.",  __func__);
+        return;
+    }
+    if (pack.FinalizePacking() != SUCCESS) {
+        IMAGE_LOGE("%{public}s FinalizePacking failed.",  __func__);
+        return;
+    }
+    IMAGE_LOGI("%{public}s SUCCESS.",  __func__);
+}
+
+bool CreatePixelMapUseArgbByRandomImageSource(const uint8_t *data, size_t size)
+{
+    if (data == nullptr) {
+        return false;
+    }
+    SourceOptions opts;
+    uint32_t errorCode;
+    std::shared_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(data, size, opts, errorCode);
+    if (imageSource == nullptr) {
+        return false;
+    }
+    DecodeOptions dopts;
+    dopts.desiredPixelFormat = PixelFormat::ARGB_8888;
+    dopts .desiredDynamicRange = DecodeDynamicRange::AUTO;
+    dopts.allocatorType = AllocatorType::DMA_ALLOC;
+    std::shared_ptr<PixelMap> pixelMap = imageSource->CreatePixelMap(0, dopts, errorCode);
+    dopts.desiredPixelFormat = PixelFormat::ARGB_8888;
+    dopts.desiredDynamicRange = DecodeDynamicRange::AUTO;
+    dopts.allocatorType = AllocatorType::SHARE_MEM_ALLOC;
+    pixelMap = imageSource->CreatePixelMap(0, dopts, errorCode);
+    if (pixelMap != nullptr) {
+        EncodePixelMapTest(pixelMap, JPEG_FORMAT, IMAGE_ENCODE_DEST);
+        EncodePixelMapTest(pixelMap, HEIF_FORMAT, IMAGE_ENCODE_DEST);
+        EncodePixelMapTest(pixelMap, PNG_FORMAT, IMAGE_ENCODE_DEST);
+        EncodePixelMapTest(pixelMap, WEBP_FORMAT, IMAGE_ENCODE_DEST);
+        EncodePixelMapTest(pixelMap, GIF_FORMAT, IMAGE_ENCODE_DEST);
+    }
+    dopts.desiredPixelFormat = PixelFormat::ARGB_8888;
+    dopts .desiredDynamicRange = DecodeDynamicRange::AUTO;
+    dopts.allocatorType = imageSource->ConvertAutoAllocatorType(dopts);
+    pixelMap = imageSource->CreatePixelMap(0, dopts, errorCode);
+    ImageInfo info;
+    if (pixelMap == nullptr) {
+        pixelMap->GetImageInfo(info);
+    }
+    std::shared_ptr<AuxiliaryPicture> auxPicture = AuxiliaryPicture::Create(pixelMap,
+        AuxiliaryPictureType::FRAGMENT_MAP, info.size);
+    DecodingOptionsForPicture doptsForPicture;
+    doptsForPicture.desiredPixelFormat = PixelFormat::ARGB_8888;
+    std::shared_ptr<Picture> picture = imageSource->CreatePicture(doptsForPicture, errorCode);
+    if (auxPicture != nullptr && picture != nullptr) {
+        picture->SetAuxiliaryPicture(auxPicture);
+    }
+    if (picture != nullptr) {
+        EncodePictureTest(picture, JPEG_FORMAT, IMAGE_ENCODE_DEST);
+        EncodePictureTest(picture, HEIF_FORMAT, IMAGE_ENCODE_DEST);
+    }
+    return true;
+}
+    
 } // namespace Media
 } // namespace OHOS
 
@@ -189,5 +337,7 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
     OHOS::Media::CreateImageSourceByPathNameFuzz(data, size);
     OHOS::Media::CreateIncrementalPixelMapFuzz(data, size);
     OHOS::Media::CreateImageSourceByPathname(data, size);
+    OHOS::Media::CreatePixelMapByRandomImageSource(data, size);
+    OHOS::Media::CreatePixelMapUseArgbByRandomImageSource(data, size);
     return 0;
 }

@@ -47,6 +47,16 @@ void HeifImage::SetPrimaryImage(bool flag)
     isPrimaryImage_ = flag;
 }
 
+bool HeifImage::IsMovieImage() const
+{
+    return isMovieImage_;
+}
+
+void HeifImage::SetMovieImage(bool flag)
+{
+    isMovieImage_ = flag;
+}
+
 uint32_t HeifImage::GetOriginalWidth() const
 {
     return originalWidth_;
