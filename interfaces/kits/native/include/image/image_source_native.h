@@ -118,20 +118,22 @@ typedef enum {
 } IMAGE_ALLOCATOR_TYPE;
 
 /**
- * @brief Confirm the enumeration type for decoding and scaling order of the region.
+ * @brief The strategy for the cropping and scaling operations when both desiredSize and desiredRegion
+ * are specified.
  *
  * @since 18
  */
 typedef enum {
-    /*
-    * First scale, then crop.
-    */
-    SCALE_FIRST = 1,
-    /*
-    * Perform region decoding first, then scaling.
-    */
-    CROP_FIRST = 2
-} CROP_SCALE_STRATEGY;
+    /**
+     * Scale first, then crop.
+     */
+    IMAGE_CROP_AND_SCALE_STRATEGY_SCALE_FIRST = 1,
+
+    /**
+     * Crop first, then scale.
+     */
+    IMAGE_CROP_AND_SCALE_STRATEGY_CROP_FIRST = 2,
+} Image_CropAndScaleStrategy;
 
 /**
  * @brief Create a pointer for OH_ImageSource_Info struct.
