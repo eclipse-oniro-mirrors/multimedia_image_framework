@@ -4767,8 +4767,7 @@ std::unique_ptr<Picture> ImageSource::CreatePicture(const DecodingOptionsForPict
         return nullptr;
     }
     DecodeOptions dopts;
-    dopts.desiredPixelFormat = (info.encodedFormat == IMAGE_JPEG_FORMAT) ?
-        opts.desiredPixelFormat : PixelFormat::RGBA_8888;
+    dopts.desiredPixelFormat = opts.desiredPixelFormat;
     dopts.allocatorType = opts.allocatorType;
     dopts.desiredDynamicRange = (ParseHdrType() && IsSingleHdrImage(sourceHdrType_)) ?
         DecodeDynamicRange::HDR : DecodeDynamicRange::SDR;
@@ -4794,6 +4793,7 @@ std::unique_ptr<Picture> ImageSource::CreatePicture(const DecodingOptionsForPict
     if (errorCode != SUCCESS) {
         IMAGE_LOGE("Decode auxiliary pictures failed, error code: %{public}u", errorCode);
     }
+    Picture::DumpPictureIfDumpEnabled(*picture, "picture_decode_after");
     return picture;
 }
 
