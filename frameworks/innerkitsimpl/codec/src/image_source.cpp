@@ -4351,6 +4351,7 @@ bool ImageSource::ComposeHdrImage(ImageHdrType hdrType, DecodeContext& baseCtx, 
         FreeContextBuffer(hdrCtx.freeFunc, hdrCtx.allocatorType, hdrCtx.pixelsBuffer);
         return false;
     }
+    SetDmaContextYuvInfo(hdrCtx);
     if (isVideoMetaDataType) {
         VpeUtils::SetSbMetadataType(hdrSptr, static_cast<CM_HDR_Metadata_Type>(metadata.hdrMetadataType));
     }
@@ -4722,6 +4723,7 @@ uint32_t ImageSource::ImageAiProcess(Size imageSize, const DecodeOptions &opts, 
     if (res == SUCCESS || res == ERR_IMAGE_AI_ONLY_SR_SUCCESS) {
         FreeContextBuffer(context.freeFunc, context.allocatorType, context.pixelsBuffer);
         CopyOutInfoOfContext(dstCtx, context);
+        SetDmaContextYuvInfo(context);
     }
     FreeContextBuffer(srcCtx.freeFunc, srcCtx.allocatorType, srcCtx.pixelsBuffer);
     return res;
