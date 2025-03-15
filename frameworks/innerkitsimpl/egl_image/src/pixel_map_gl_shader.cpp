@@ -156,7 +156,7 @@ static bool loadShaderFromFile(unsigned char*&shaderBinary, GLenum &binaryFormat
             "%{public}d readnum %{public}d", errno, readLen);
         return false;
     }
-    binarySize = fileStat.st_size - sizeof(GLenum) - sizeof(version);
+    binarySize = static_cast<uint32_t>(fileStat.st_size - sizeof(GLenum) - sizeof(version));
     binaryFormat = *reinterpret_cast<int *>(binaryData + binarySize);
     int oldVersion = *reinterpret_cast<int *>(binaryData + fileStat.st_size - sizeof(version));
     if (oldVersion != version) {
@@ -183,7 +183,7 @@ bool saveShaderToFile(unsigned char*&shaderBinary, GLenum &binaryFormat,
             return false;
         }
         glGetProgramBinary(programId, size, NULL, &binaryFormat, binary);
-        binarySize = size;
+        binarySize = static_cast<uint32_t>(size);
         shaderBinary = binary;
     }
     if (shaderBinary == nullptr) {
@@ -193,7 +193,7 @@ bool saveShaderToFile(unsigned char*&shaderBinary, GLenum &binaryFormat,
     if (std::filesystem::exists(filePath)) {
         std::filesystem::remove(filePath);
     }
-    int binaryFd = open(filePath, O_WRONLY | O_CREAT, 0666);
+    int binaryFd = open(filePath, O_WRONLY | O_CREAT, 0644);
     if (binaryFd <= 0) {
         IMAGE_LOGE("slr_gpu shader cache open(write) failed! error %{public}d", errno);
         return false;
@@ -504,8 +504,10 @@ bool RotateShader::Use()
     glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, writeTexId_, 0); //绑定
     glClearColor(0, 1, 0, 0);
     glClear(GL_COLOR_BUFFER_BIT);
-    uint32_t calculationTargetHeight =  rotateDegreeZ_ !=0 ? targetSize_.width : targetSize_.height;
-    uint32_t calculationTargetWidth =  rotateDegreeZ_ !=0 ? targetSize_.height : targetSize_.width;
+    uint32_t calculationTargetHeight =  rotateDegreeZ_ !=0 ?
+        static_cast<uint32_t>(targetSize_.width) : static_cast<uint32_t>(targetSize_.height);
+    uint32_t calculationTargetWidth =  rotateDegreeZ_ !=0 ?
+        static_cast<uint32_t>(targetSize_.width) : static_cast<uint32_t>(targetSize_.height);
     float clipRatioX = sourceSize_.width > sourceSize_.height ?
         (sourceSize_.height * 1.0f / calculationTargetHeight) * calculationTargetWidth / sourceSize_.width : 1;
     float clipRatioY = sourceSize_.height > sourceSize_.width ?

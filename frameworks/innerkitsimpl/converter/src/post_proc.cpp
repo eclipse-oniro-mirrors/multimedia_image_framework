@@ -945,7 +945,7 @@ static bool PixelMapPostProcWithGL(PixelMap &sourcePixelMap, GPUTransformData &t
         sourcePixelMap.GetUniqueId(), (int)sourcePixelMap.GetAllocatorType(), sourceSize.width, sourceSize.height,
         desiredSize.width, desiredSize.height, sourcePixelMap.GetRowStride(), (int)trans.transformationType);
     AllocatorType allocType = sourcePixelMap.GetAllocatorType();
-    size_t buffersize = 4 * desiredSize.width * desiredSize.height;
+    size_t buffersize = static_cast<size_t>(4 * desiredSize.width * desiredSize.height); // 4: 4 bytes per pixel
     MemoryData memoryData = {nullptr, buffersize, "PixelMapPostProcWithGL", desiredSize};
     std::unique_ptr<AbsMemory> dstMemory = MemoryManager::CreateMemory(allocType, memoryData);
     if (dstMemory == nullptr || dstMemory->data.data == nullptr) {
@@ -956,7 +956,7 @@ static bool PixelMapPostProcWithGL(PixelMap &sourcePixelMap, GPUTransformData &t
     if (allocType == AllocatorType::DMA_ALLOC) {
         SurfaceBuffer* sbBuffer = reinterpret_cast<SurfaceBuffer*>(dstMemory->extend.data);
         outputStride = sbBuffer->GetStride();
-        buffersize = sbBuffer->GetStride() * desiredSize.height;
+        buffersize = static_cast<uint32_t>(sbBuffer->GetStride() * desiredSize.height);
     }
     PixelMapProgramManager::BuildShader();
     bool ret = true;
@@ -1008,6 +1008,7 @@ bool PostProc::RotateInRectangularSteps(PixelMap &pixelMap, float degrees, bool 
             std::abs(imageInfo.size.width * std::cos(angle)) + std::abs(imageInfo.size.height * std::sin(angle)),
             std::abs(imageInfo.size.height * std::cos(angle)) + std::abs(imageInfo.size.width * std::sin(angle))
         };
+        degrees = std::fmod(degrees, 360.f); // degrees 360
         degrees = std::fmod(360.f - degrees, 360.f); // degrees 360
         gpuTransform.rotateTrans = GlCommon::Mat4(tmpMat4, degrees, axis);
         gpuTransform.rotateDegreeZ = degrees;

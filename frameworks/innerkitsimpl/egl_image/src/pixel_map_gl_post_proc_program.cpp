@@ -446,7 +446,7 @@ bool PixelMapGLPostProcProgram::ReadEndDMAData(void *surfaceBuffer, GLuint &writ
     ImageTrace imageTrace("ReadEndDMAData ");
     OHNativeWindowBuffer *nativeBuffer = CreateNativeWindowBufferFromSurfaceBuffer(&surfaceBuffer);
     EGLImage endEglImage;
-    GLuint endReadTexId;
+    GLuint endReadTexId = 0U;
     if (!CreateEGLImage(nativeBuffer, endEglImage, endReadTexId)) {
         IMAGE_LOGE("slr_gpu ReadEndDMAData CreateEGLImage fail %{public}d", eglGetError());
         return false;
