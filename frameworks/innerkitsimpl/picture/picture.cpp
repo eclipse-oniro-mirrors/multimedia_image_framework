@@ -31,6 +31,7 @@
 #include "metadata_helper.h"
 #include "v1_0/cm_color_space.h"
 #include "vpe_utils.h"
+#include "image_system_properties.h"
 
 namespace OHOS {
 namespace Media {
@@ -672,5 +673,27 @@ sptr<SurfaceBuffer> Picture::GetMaintenanceData() const
     return maintenanceData_;
 }
 
+void Picture::DumpPictureIfDumpEnabled(Picture& picture, std::string dumpType)
+{
+    if (!ImageSystemProperties::GetDumpPictureEnabled()) {
+        return;
+    }
+    if (picture.GetMainPixel() == nullptr) {
+        IMAGE_LOGE("DumpPictureIfDumpEnabled mainPixelmap is null");
+        return;
+    }
+    ImageUtils::DumpPixelMap(picture.GetMainPixel().get(), dumpType + "_MainPixelmap");
+    auto auxTypes = ImageUtils::GetAllAuxiliaryPictureType();
+    for (AuxiliaryPictureType auxType : auxTypes) {
+        auto auxPicture = picture.GetAuxiliaryPicture(auxType);
+        if (auxPicture == nullptr) {
+            continue;
+        }
+        auto pixelMap = auxPicture->GetContentPixel();
+        if (pixelMap != nullptr) {
+            ImageUtils::DumpPixelMap(pixelMap.get(), dumpType + "_AuxiliaryType", static_cast<uint64_t>(auxType));
+        }
+    }
+}
 } // namespace Media
 } // namespace OHOS

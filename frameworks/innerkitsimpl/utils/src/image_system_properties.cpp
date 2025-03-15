@@ -116,6 +116,15 @@ bool ImageSystemProperties::GetDumpImageEnabled()
 #endif
 }
 
+bool ImageSystemProperties::GetDumpPictureEnabled()
+{
+#if !defined(CROSS_PLATFORM)
+    return system::GetBoolParameter("persist.multimedia.image.dumppicture.enabled", false);
+#else
+    return false;
+#endif
+}
+
 bool ImageSystemProperties::GetHardWareDecodeEnabled()
 {
 #if !defined(IOS_PLATFORM) &&!defined(ANDROID_PLATFORM)
