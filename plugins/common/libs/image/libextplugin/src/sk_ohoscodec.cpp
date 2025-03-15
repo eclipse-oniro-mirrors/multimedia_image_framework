@@ -13,7 +13,7 @@
  * limitations under the License.
  */
 
-#include "ext_ohoscodec.h"
+#include "sk_ohoscodec.h"
 #include "src/codec/SkSampler.h"
 #include "include/codec/SkCodec.h"
 #include "include/core/SkPixmap.h"
@@ -25,13 +25,18 @@ static bool is_valid_sample_size(int sampleSize)
 {
     return sampleSize > 0;
 }
+
+static constexpr int RGB_CHANNEL_COUNT = 3;
+static constexpr int SAMPLE_SIZE_TWO = 2;
+static constexpr int SAMPLE_SIZE_FOUR = 4;
+static constexpr int SAMPLE_SIZE_EIGHT = 8;
  
 static void load_gamut(SkPoint rgb[], const skcms_Matrix3x3& xyz)
 {
     // rx = rX / (rX + rY + rZ)
     // ry = rY / (rX + rY + rZ)
     // gx, gy, bx, and gy are calulcated similarly.
-    for (int rgbIdx = 0; rgbIdx < 3; rgbIdx++) {
+    for (int rgbIdx = 0; rgbIdx < RGB_CHANNEL_COUNT; rgbIdx++) {
         float sum = xyz.vals[rgbIdx][0] + xyz.vals[rgbIdx][1] + xyz.vals[rgbIdx][2];
         rgb[rgbIdx].fX = xyz.vals[rgbIdx][0] / sum;
         rgb[rgbIdx].fY = xyz.vals[rgbIdx][1] / sum;
@@ -46,14 +51,14 @@ static float calculate_area(SkPoint abc[])
     return 0.5f * SkTAbs(a.fX*b.fY + b.fX*c.fY - a.fX*c.fY - c.fX*b.fY - b.fX*a.fY);
 }
   
-static constexpr float kSRGB_D50_GamutArea = 0.084f;
-  
+static constexpr float SRGB_D50_GAMUT_AREA = 0.084f;
+
 static bool is_wide_gamut(const skcms_ICCProfile& profile)
 {
     if (profile.has_toXYZD50) {
         SkPoint rgb[3];
         load_gamut(rgb, profile.toXYZD50);
-        return calculate_area(rgb) > kSRGB_D50_GamutArea;
+        return calculate_area(rgb) > SRGB_D50_GAMUT_AREA;
     }
 
     return false;
@@ -261,7 +266,7 @@ int SkOHOSCodec::computeSampleSize(SkISize* desiredSize) const
         return sampleSize;
     }
 
-    while (sampleSize > 2) {
+    while (sampleSize > SAMPLE_SIZE_TWO) {
         auto bigger = this->getSampledDimensions(sampleSize - 1);
         if (bigger == *desiredSize || !smaller_than(bigger, *desiredSize)) {
             *desiredSize = bigger;
@@ -401,9 +406,9 @@ SkISize SkOHOSSampledCodec::accountForNativeScaling(int* sampleSizePtr, int* nat
 
     if (this->codec()->getEncodedFormat() == SkEncodedImageFormat::kJPEG) {
         switch (sampleSize) {
-            case 2:
-            case 4:
-            case 8:
+            case SAMPLE_SIZE_TWO:
+            case SAMPLE_SIZE_FOUR:
+            case SAMPLE_SIZE_EIGHT:
                 *sampleSizePtr = 1;
                 return this->codec()->getScaledDimensions(get_scale_from_sample_size(sampleSize));
             default:
