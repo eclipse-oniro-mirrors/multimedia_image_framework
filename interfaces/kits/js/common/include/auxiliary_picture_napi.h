@@ -60,6 +60,7 @@ private:
     napi_env env_ = nullptr;
     bool isRelease = false;
     uint32_t uniqueId_ = 0;
+    static napi_ref fragmentpropertyKeyRef_;
 };
 } // namespace Media
 } // namespace OHOS
