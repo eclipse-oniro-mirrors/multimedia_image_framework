@@ -35,8 +35,8 @@
 namespace OHOS {
 namespace Media {
 
-static const uint8_t ODD = 1;
-static const uint8_t EVEN = 2;
+static const int64_t ODD = 1;
+static const int64_t EVEN = 2;
 static const uint8_t NUM_2 = 2;
 
 static const int32_t degrees360 = 360;
