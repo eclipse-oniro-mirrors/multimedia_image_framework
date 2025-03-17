@@ -28,7 +28,7 @@
 #include "src/codec/SkJpegDecoderMgr.h"
 #include "ext_pixel_convert.h"
 #ifdef SK_ENABLE_OHOS_CODEC
-#include "ext_ohoscodec.h"
+#include "sk_ohoscodec.h"
 #endif
 #include "image_log.h"
 #include "image_format_convert.h"
@@ -471,6 +471,12 @@ bool ExtDecoder::GetScaledSize(int &dWidth, int &dHeight, float &scale)
     }
     bool cond = info_.isEmpty();
     CHECK_ERROR_RETURN_RET_LOG(cond, false, "empty image info in GetScaledSize!");
+    if (cropAndScaleStrategy_ == OHOS::Media::CropAndScaleStrategy::CROP_FIRST) {
+        dWidth = info_.width();
+        dHeight = info_.height();
+        IMAGE_LOGI("do not scale while decoding");
+        return true;
+    }
     float finalScale = scale;
     if (scale == ZERO) {
         finalScale = Max(static_cast<float>(dWidth) / info_.width(),
@@ -1037,31 +1043,29 @@ uint32_t ExtDecoder::DoHeifSharedMemDecode(DecodeContext &context)
 SkCodec::Result ExtDecoder::DoRegionDecode(DecodeContext &context)
 {
 #ifdef SK_ENABLE_OHOS_CODEC
-    ImageFuncTimer imageFuncTimer("%s, dstSubset_XYWH: %d, %d, %d, %d, srcSize: %d, %d, alloctype: %d", __func__,
-      dstSubset_.left(), dstSubset_.top(), dstSubset_.width(), dstSubset_.height(), info_.width(), info_.height(),
-      context.allocatorType);
     auto SkOHOSCodec = SkOHOSCodec::MakeFromCodec(std::move(codec_));
     // Ask the codec for a scaled subset
     SkIRect decodeSubset = dstSubset_;
     if (!SkOHOSCodec->getSupportedSubset(&decodeSubset)) {
-        IMAGE_LOGE("Error: Could not get subset.\n");
+        IMAGE_LOGE("Error: Could not get subset");
         return SkCodec::kErrorInInput;
     }
-    int dstWidth = RegiondesiredSize_.width;
-    int dstHeight = RegiondesiredSize_.height;
-    int sampleSize = GetSoftwareScaledSize(dstWidth, dstHeight);
+    int sampleSize = GetSoftwareScaledSize(RegiondesiredSize_.width, RegiondesiredSize_.height);
+    ImageFuncTimer imageFuncTimer("%s, decodeSubset: left:%d, top:%d, width:%d, height:%d, sampleSize:%d", __func__,
+        decodeSubset.left(), decodeSubset.top(), decodeSubset.width(), decodeSubset.height(), sampleSize);
     SkISize scaledSize = SkOHOSCodec->getSampledSubsetDimensions(sampleSize, decodeSubset);
     SkImageInfo decodeInfo = dstInfo_.makeWH(scaledSize.width(), scaledSize.height());
 
     uint64_t byteCount = decodeInfo.computeMinByteSize();
+    uint32_t res = 0;
     if (context.allocatorType == Media::AllocatorType::DMA_ALLOC) {
-        uint32_t res = DmaMemAlloc(context, byteCount, decodeInfo);
-        if (res != SUCCESS) {
-            IMAGE_LOGE("do region decode failed, SetContextPixelsBuffer failed");
-            return SkCodec::kErrorInInput;
-        }
+        res = DmaMemAlloc(context, byteCount, decodeInfo);
     } else if (context.allocatorType == Media::AllocatorType::SHARE_MEM_ALLOC) {
         ShareMemAlloc(context, byteCount);
+    }
+    if (res != SUCCESS) {
+        IMAGE_LOGE("do region decode failed, SetContextPixelsBuffer failed");
+        return SkCodec::kErrorInInput;
     }
 
     uint8_t* dstBuffer = static_cast<uint8_t *>(context.pixelsBuffer.buffer);
@@ -1073,19 +1077,13 @@ SkCodec::Result ExtDecoder::DoRegionDecode(DecodeContext &context)
             return SkCodec::kErrorInInput;
         }
         rowStride = static_cast<uint64_t>(sbBuffer->GetStride());
-        IMAGE_LOGI("sbBuffer.size=%{public}d", sbBuffer->GetSize());
     }
 
     // Decode into the destination bitmap
     SkOHOSCodec::OHOSOptions options;
     options.fSampleSize = sampleSize;
     options.fSubset = &decodeSubset;
-    IMAGE_LOGI("decodeSubset_XYWH: %{public}d, %{public}d, %{public}d, %{public}d",
-        decodeSubset.left(), decodeSubset.top(), decodeSubset.width(), decodeSubset.height());
     SkCodec::Result result = SkOHOSCodec->getOHOSPixels(decodeInfo, dstBuffer, rowStride, &options);
-    if (result == SkCodec::kSuccess) {
-        context.info.pixelFormat = PixelFormat::NV21;
-    }
     switch (result) {
         case SkCodec::kSuccess:
         case SkCodec::kIncompleteInput:
@@ -1094,7 +1092,7 @@ SkCodec::Result ExtDecoder::DoRegionDecode(DecodeContext &context)
             context.outInfo.size.height = static_cast<uint32_t>(decodeInfo.height());
             return SkCodec::kSuccess;
         default:
-            SkCodecPrintf("Error: Could not get pixels with message \"%s\".\n", SkCodec::ResultToString(result));
+            IMAGE_LOGE("Error: Could not get pixels with message %{public}s", SkCodec::ResultToString(result));
             return result;
     }
 #else
@@ -1110,10 +1108,9 @@ uint32_t ExtDecoder::Decode(uint32_t index, DecodeContext &context)
         SkCodec::Result regionDecodeRes = DoRegionDecode(context);
         ResetCodec();
         if (SkCodec::kSuccess == regionDecodeRes) {
-            IMAGE_LOGI("%{public}s IN, do region decode success", __func__);
             return SUCCESS;
         } else {
-            IMAGE_LOGE("%{public}s IN, do region decode failed", __func__);
+            IMAGE_LOGE("do region decode failed");
             return ERR_IMAGE_DECODE_FAILED;
         }
     }
