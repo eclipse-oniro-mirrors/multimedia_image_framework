@@ -64,12 +64,15 @@ ohos_shared_library("image_ani") {
 }
 
 generate_static_abc("image_framework_abc") {
-  arktsconfig = "${image_subsystem}/frameworks/kits/ani/arktsconfig.json"
+  base_url = "./ets"
+  files = [
+    "./ets/@ohos.multimedia.image.ets",
+    "./ets/imageTest.ets",
+  ]
   dst_file = "$target_out_dir/image_framework.abc"
   out_puts = [ "$target_out_dir/image_framework.abc" ]
   is_boot_abc = "True"
   device_dst_file = "/system/framework/image_framework.abc"
-  cache_path = "$target_out_dir/cache"
 }
 
 ohos_prebuilt_etc("image_framework_abc_etc") {

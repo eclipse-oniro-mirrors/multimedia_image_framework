@@ -13,7 +13,7 @@
  * limitations under the License.
  */
 
-import { image } from "../ets/@ohos.multimedia.image.ets";
+import image from "@ohos.multimedia.image.ets";
 
 function main() {
   // test createPixemap & getImageInfo
