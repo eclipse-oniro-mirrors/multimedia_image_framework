@@ -161,12 +161,12 @@ struct GlImageInfo {
     void *context = nullptr;
     void *outdata = nullptr;
 };
-typedef struct {
+typedef struct GPUTransformData {
     float rotateDegreeZ;
     GlCommon::Mat4 rotateTrans;
     TransformationType transformationType;
-    GLenum glFormat;
-    bool isDma;
+    GLenum glFormat = GL_RGBA;
+    bool isDma = false;
     GlImageInfo sourceInfo_;
     GlImageInfo targetInfo_;
 } GPUTransformData;

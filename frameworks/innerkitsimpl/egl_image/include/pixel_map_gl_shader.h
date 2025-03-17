@@ -125,10 +125,10 @@ private:
     static unsigned char *shaderBinary_;
     static GLenum binaryFormat_;
     static GLuint binarySize_;
-    GLuint transformLoc_ = 0U;
-    GLuint texClipRatioLoc_ = 0U;
-    GLuint useNativeLoc_ = 0U;
-    float rotateDegreeZ_;
+    GLint transformLoc_ = 0;
+    GLint texClipRatioLoc_ = 0;
+    GLint useNativeLoc_ = 0;
+    float rotateDegreeZ_ = 0.0f;
     GlCommon::Mat4 rotateTrans_ = GlCommon::Mat4(1.0f);
 };
 
@@ -151,13 +151,13 @@ private:
     static unsigned char *shaderBinary_;
     static GLenum binaryFormat_;
     static GLuint binarySize_;
-    GLuint utexture_ = 0U;
-    GLuint utexturew_ = 0U;
-    GLuint utextureh_ = 0U;
-    GLuint slrA_ = 0U;
-    GLuint slrAMax_ = 0U;
-    GLuint slrCoeff_ = 0U;
-    GLuint slrCoeffTao_ = 0U;
+    GLint utexture_ = 0;
+    GLint utexturew_ = 0;
+    GLint utextureh_ = 0;
+    GLint slrA_ = 0;
+    GLint slrAMax_ = 0;
+    GLint slrCoeff_ = 0;
+    GLint slrCoeffTao_ = 0;
     GLuint texture_[2] = {0U, 0U};
     EGLImageKHR eglImage_ = EGL_NO_IMAGE;
 };
@@ -177,8 +177,8 @@ private:
     static unsigned char *shaderBinary_;
     static GLenum binaryFormat_;
     static GLuint binarySize_;
-    GLuint utexture_ = 0U;
-    GLuint alpha_ = 0U;
+    GLint utexture_ = 0;
+    GLint alpha_ = 0;
     float param_ = 0.15;
 };
 
