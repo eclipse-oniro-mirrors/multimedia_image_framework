@@ -65,10 +65,7 @@ ohos_shared_library("image_ani") {
 
 generate_static_abc("image_framework_abc") {
   base_url = "./ets"
-  files = [
-    "./ets/@ohos.multimedia.image.ets",
-    "./ets/imageTest.ets",
-  ]
+  files = [ "./ets/@ohos.multimedia.image.ets" ]
   dst_file = "$target_out_dir/image_framework.abc"
   out_puts = [ "$target_out_dir/image_framework.abc" ]
   is_boot_abc = "True"
@@ -81,4 +78,16 @@ ohos_prebuilt_etc("image_framework_abc_etc") {
   subsystem_name = "multimedia"
   part_name = "image_framework"
   deps = [ ":image_framework_abc" ]
+}
+
+generate_static_abc("image_framework_test_abc") {
+  base_url = "./ets"
+  files = [
+    "./ets/imageTest.ets",
+    "./ets/@ohos.multimedia.image.ets",
+  ]
+  dst_file = "$target_out_dir/image_framework_test.abc"
+  out_puts = [ "$target_out_dir/image_framework_test.abc" ]
+  is_boot_abc = "True"
+  device_dst_file = "/system/framework/image_framework_test.abc"
 }
