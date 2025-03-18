@@ -379,6 +379,9 @@ bool JpegExifMetadataAccessor::UpdateExifMetadata(BufferMetadataStream &bufStrea
     size_t markerCount = 0;
     auto [insertPos, skipExifSeqNum] = GetInsertPosAndMarkerAPP1();
 
+    // Write Exif data segment after 0xFFD8
+    insertPos = 0;
+
     if (!WriteHeader(bufStream)) {
         IMAGE_LOGE("Failed to write header to output image stream");
         return false;
