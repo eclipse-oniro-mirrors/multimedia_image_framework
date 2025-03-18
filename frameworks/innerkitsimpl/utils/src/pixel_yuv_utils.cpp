@@ -35,8 +35,8 @@
 namespace OHOS {
 namespace Media {
 
-static const uint8_t ODD = 1;
-static const uint8_t EVEN = 2;
+static const int64_t ODD = 1;
+static const int64_t EVEN = 2;
 static const uint8_t NUM_2 = 2;
 
 static const int32_t degrees360 = 360;
@@ -998,27 +998,39 @@ void PixelYuvUtils::Yuv420SPTranslate(const uint8_t *srcPixels, YUVDataInfo &yuv
     uint8_t *dstY = dstPixels;
     uint8_t *dstUV = dstPixels + strides.uvOffset;
 
-    int32_t yCopySize = info.size.width;
-    int32_t yCopyLine = info.size.height;
+    int64_t yCopySize = static_cast<int64_t>(info.size.width);
+    int64_t yCopyLine = static_cast<int64_t>(info.size.height);
+    int64_t dstYStride = static_cast<int64_t>(strides.yStride);
+    int64_t srcYStride = static_cast<int64_t>(yuvInfo.yStride);
+    int64_t dstTotalSize = dstYStride * static_cast<int64_t>(yuvInfo.yHeight);
+    int64_t srcTotalSize = srcYStride * static_cast<int64_t>(yuvInfo.yHeight);
+
     uint8_t *dst = nullptr;
     const uint8_t *src = nullptr;
-    for (int32_t y = 0; y<yCopyLine ; y++) {
-        int32_t newY = y + xyAxis.yAxis;
-        dst = dstY + newY * static_cast<int32_t>(strides.yStride) + static_cast<int32_t>(xyAxis.xAxis);
-        src = srcY + y * static_cast<int32_t>(yuvInfo.yStride);
-        memcpy_s(dst, yCopySize,  src, yCopySize);
+    for (int64_t y = 0; y < yCopyLine ; y++) {
+        int64_t newY = y + static_cast<int64_t>(xyAxis.yAxis);
+        int64_t dstOffset = newY * dstYStride + static_cast<int64_t>(xyAxis.xAxis);
+        int64_t srcOffset = y * srcYStride;
+        if ((dstOffset > 0 && dstOffset < dstTotalSize) && (srcOffset < srcTotalSize)) {
+            dst = dstY + dstOffset;
+            src = srcY + srcOffset;
+            memcpy_s(dst, yCopySize, src, yCopySize);
+        }
     }
-    int32_t xOffset = ((int32_t)xyAxis.xAxis % EVEN == 0) ?  xyAxis.xAxis : xyAxis.xAxis - 1;
-    int32_t uvWidth = (info.size.width + ODD) / EVEN * EVEN;
-    int32_t uvHeight = (static_cast<int32_t>(yuvInfo.uvHeight) != 0) ? static_cast<int32_t>(yuvInfo.uvHeight)
-        : ((info.size.height + ODD) / EVEN);
-    int32_t uvCopySize = uvWidth;
-    int32_t uvCopyLine = uvHeight;
-    for (int32_t y = 0; y<uvCopyLine ; y++) {
-        int32_t newY = (y + xyAxis.yAxis / EVEN);
-        dst = dstUV+ newY * static_cast<int32_t>(strides.uvStride) + xOffset;
-        src = srcUV + y * static_cast<int32_t>(yuvInfo.uvStride);
-        memcpy_s(dst, uvCopySize,  src, uvCopySize);
+
+    int64_t xOffset = (static_cast<int64_t>(xyAxis.xAxis) % EVEN == 0) ? static_cast<int64_t>(xyAxis.xAxis)
+                                                                      : static_cast<int64_t>(xyAxis.xAxis) - 1;
+    int64_t uvWidth = (static_cast<int64_t>(info.size.width) + ODD) / EVEN * EVEN;
+    int64_t uvHeight = (static_cast<int64_t>(yuvInfo.uvHeight) != 0) ? static_cast<int64_t>(yuvInfo.uvHeight)
+        : ((static_cast<int64_t>(info.size.height) + ODD) / EVEN);
+    int64_t uvCopySize = uvWidth;
+    int64_t uvCopyLine = uvHeight;
+
+    for (int64_t y = 0; y < uvCopyLine ; y++) {
+        int64_t newY = (y + static_cast<int64_t>(xyAxis.yAxis) / EVEN);
+        dst = dstUV + newY * static_cast<int64_t>(strides.uvStride) + xOffset;
+        src = srcUV + y * static_cast<int64_t>(yuvInfo.uvStride);
+        memcpy_s(dst, uvCopySize, src, uvCopySize);
     }
 }
 
@@ -1030,28 +1042,39 @@ static void P010Translate(YuvPixelsP010Translate yuvPixels, YUVDataInfo &yuvInfo
     uint16_t *dstY = yuvPixels.dstPixels;
     uint16_t *dstUV = yuvPixels.dstPixels + strides.uvOffset;
 
-    for (int32_t y = 0; y < info.size.height; y++) {
-        for (int32_t x = 0; x < info.size.width; x++) {
-            int32_t newX = x + xyAxis.xAxis;
-            int32_t newY = y + xyAxis.yAxis;
-            if (newX >= 0 && newY >= 0 && newX < static_cast<int32_t>(info.size.width + xyAxis.xAxis) &&
-                newY < static_cast<int32_t>(info.size.height + xyAxis.yAxis)) {
-                *(dstY + newY * static_cast<int32_t>(strides.yStride) + newX) =
-                    *(srcY + y * static_cast<int32_t>(yuvInfo.yStride) + x);
+    int64_t dstYStride = static_cast<int64_t>(strides.yStride);
+    int64_t srcYStride = static_cast<int64_t>(yuvInfo.yStride);
+    int64_t dstTotalSize = dstYStride * static_cast<int64_t>(yuvInfo.yHeight);
+    int64_t srcTotalSize = srcYStride * static_cast<int64_t>(yuvInfo.yHeight);
+    int64_t widthWithOffset = static_cast<int64_t>(info.size.width + xyAxis.xAxis);
+    int64_t heightWithOffset = static_cast<int64_t>(info.size.height + xyAxis.yAxis);
+
+    for (int64_t y = 0; y < info.size.height; y++) {
+        for (int64_t x = 0; x < info.size.width; x++) {
+            int64_t newX = x + xyAxis.xAxis;
+            int64_t newY = y + xyAxis.yAxis;
+            int64_t dstOffset = newY * dstYStride + newX;
+            int64_t srcOffset = y * srcYStride + x;
+
+            if (newX >= 0 && newY >= 0 && newX < widthWithOffset &&
+                newY < heightWithOffset &&
+                dstOffset < dstTotalSize &&
+                srcOffset < srcTotalSize) {
+                *(dstY + dstOffset) = *(srcY + srcOffset);
             }
         }
     }
 
-    for (int32_t y = 0; y < GetUVHeight(yuvInfo.yHeight); y++) {
-        for (int32_t x = 0; x < GetUVStride(yuvInfo.yWidth); x += NUM_2) {
-            int32_t newX = x + GetUVStride(xyAxis.xAxis);
-            int32_t newY = y + GetUVHeight(xyAxis.yAxis);
+    for (int64_t y = 0; y < GetUVHeight(yuvInfo.yHeight); y++) {
+        for (int64_t x = 0; x < GetUVStride(yuvInfo.yWidth); x += NUM_2) {
+            int64_t newX = x + GetUVStride(xyAxis.xAxis);
+            int64_t newY = y + GetUVHeight(xyAxis.yAxis);
             if (newX >= 0 && newX < GetUVStride(strides.yStride + xyAxis.xAxis) && newY >= 0 &&
                 newY < GetUVHeight(yuvInfo.yHeight + xyAxis.yAxis)) {
-                *(dstUV + newY * static_cast<int32_t>(strides.yStride) + newX) =
-                    *(srcUV + y * static_cast<int32_t>(yuvInfo.yStride) + x);
-                *(dstUV + newY * static_cast<int32_t>(strides.yStride) + newX + 1) =
-                    *(srcUV + y * static_cast<int32_t>(yuvInfo.yStride) + x + 1);
+                *(dstUV + newY * static_cast<int64_t>(strides.yStride) + newX) =
+                    *(srcUV + y * static_cast<int64_t>(yuvInfo.yStride) + x);
+                *(dstUV + newY * static_cast<int64_t>(strides.yStride) + newX + 1) =
+                    *(srcUV + y * static_cast<int64_t>(yuvInfo.yStride) + x + 1);
             }
         }
     }
