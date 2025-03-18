@@ -82,17 +82,13 @@ unique_ptr<FileSourceStream> FileSourceStream::CreateSourceStream(const string &
         IMAGE_LOGE("[FileSourceStream]input the file path exception, errno:%{public}d.", errno);
         return nullptr;
     }
-    int fd = open(realPath.c_str(), O_RDONLY);
-    bool useMmap = false;
-    if (fd >= 0) {
-        useMmap = ShouldUseMmap(fd);
-        close(fd);
-    }
     FILE *filePtr = fopen(realPath.c_str(), "rb");
     if (filePtr == nullptr) {
         IMAGE_LOGE("[FileSourceStream]open file fail.");
         return nullptr;
     }
+    int fd = fileno(filePtr);
+    bool useMmap = ShouldUseMmap(fd);
     size_t size = 0;
     if (!ImageUtils::GetFileSize(realPath, size)) {
         IMAGE_LOGE("[FileSourceStream]get the file size fail");
