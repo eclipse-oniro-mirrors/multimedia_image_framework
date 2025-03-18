@@ -13,7 +13,7 @@
 
 import("//build/test.gni")
 
-module_output_path = "multimedia_image/plugins"
+module_output_path = "image_framework/image_framework"
 
 ###############################################################################
 config("module_private_config") {

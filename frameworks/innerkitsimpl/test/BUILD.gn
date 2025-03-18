@@ -15,7 +15,7 @@ import("//build/test.gni")
 import("//commonlibrary/memory_utils/purgeable_mem_config.gni")
 import("//foundation/multimedia/image_framework/ide/image_decode_config.gni")
 
-module_output_path = "multimedia_image/image_framework"
+module_output_path = "image_framework/image_framework"
 
 ohos_unittest("pixelmaptest") {
   module_out_path = module_output_path
