@@ -61,10 +61,10 @@ public:
     static uint64_t GetNowTimeMicroSeconds();
     static std::string GetCurrentProcessName();
     // BytesToXXX and xxxToBytes function will modify the offset value.
-    static uint16_t BytesToUint16(uint8_t* bytes, uint32_t& offset, bool isBigEndian = true);
-    static uint32_t BytesToUint32(uint8_t* bytes, uint32_t& offset, bool isBigEndian = true);
-    static int32_t BytesToInt32(uint8_t* bytes, uint32_t& offset, bool isBigEndian = true);
-    static float BytesToFloat(uint8_t* bytes, uint32_t& offset, bool isBigEndian = true);
+    static uint16_t BytesToUint16(uint8_t* bytes, uint32_t& offset, uint32_t size, bool isBigEndian = true);
+    static uint32_t BytesToUint32(uint8_t* bytes, uint32_t& offset, uint32_t size, bool isBigEndian = true);
+    static int32_t BytesToInt32(uint8_t* bytes, uint32_t& offset, uint32_t size, bool isBigEndian = true);
+    static float BytesToFloat(uint8_t* bytes, uint32_t& offset, uint32_t size, bool isBigEndian = true);
     static void Uint16ToBytes(uint16_t data, std::vector<uint8_t>& bytes, uint32_t& offset, bool isBigEndian = true);
     static void Uint32ToBytes(uint32_t data, std::vector<uint8_t>& bytes, uint32_t& offset, bool isBigEndian = true);
     static void FloatToBytes(float data, std::vector<uint8_t>& bytes, uint32_t& offset, bool isBigEndian = true);

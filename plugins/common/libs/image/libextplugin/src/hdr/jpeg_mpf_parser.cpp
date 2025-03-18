@@ -45,6 +45,8 @@ constexpr uint16_t AUXILIARY_TAG_NAME_LENGTH = 8;
 constexpr uint8_t JPEG_MARKER_PREFIX = 0xFF;
 constexpr uint8_t JPEG_MARKER_APP2 = 0xE2;
 
+constexpr uint8_t MAX_IMAGE_NUM = 32;
+
 static constexpr uint8_t MULTI_PICTURE_HEADER_FLAG[] = {
     'M', 'P', 'F', '\0'
 };
@@ -113,7 +115,7 @@ bool JpegMpfParser::Parsing(uint8_t* data, uint32_t size)
         return false;
     }
     dataOffset += UINT32_BYTE_SIZE;
-    uint32_t ifdOffset = ImageUtils::BytesToUint32(data, dataOffset, isBigEndian);
+    uint32_t ifdOffset = ImageUtils::BytesToUint32(data, dataOffset, size, isBigEndian);
     if (ifdOffset < dataOffset || ifdOffset > size) {
         IMAGE_LOGD("get ifd offset error");
         return false;
@@ -124,20 +126,20 @@ bool JpegMpfParser::Parsing(uint8_t* data, uint32_t size)
 
 bool JpegMpfParser::ParsingMpIndexIFD(uint8_t* data, uint32_t size, uint32_t dataOffset, bool isBigEndian)
 {
-    uint16_t tagCount = ImageUtils::BytesToUint16(data, dataOffset, isBigEndian);
+    uint16_t tagCount = ImageUtils::BytesToUint16(data, dataOffset, size, isBigEndian);
     if (dataOffset + MP_INDEX_IFD_BYTE_SIZE * tagCount > size) {
         return false;
     }
     uint16_t previousTag = 0;
     for (int i = 0; i < tagCount; i++) {
-        uint16_t tag = ImageUtils::BytesToUint16(data, dataOffset, isBigEndian);
+        uint16_t tag = ImageUtils::BytesToUint16(data, dataOffset, size, isBigEndian);
         if (tag <= previousTag) {
             return false;
         }
         previousTag = tag;
-        uint16_t type = ImageUtils::BytesToUint16(data, dataOffset, isBigEndian);
-        uint32_t count = ImageUtils::BytesToUint32(data, dataOffset, isBigEndian);
-        uint32_t value = ImageUtils::BytesToUint32(data, dataOffset, isBigEndian);
+        uint16_t type = ImageUtils::BytesToUint16(data, dataOffset, size, isBigEndian);
+        uint32_t count = ImageUtils::BytesToUint32(data, dataOffset, size, isBigEndian);
+        uint32_t value = ImageUtils::BytesToUint32(data, dataOffset, size, isBigEndian);
         IMAGE_LOGD("mpf tag=%{public}d,type=%{public}d,count=%{public}d,value=%{public}d", tag, type, count, value);
         switch (tag) {
             case MpfIFDTag::MPF_VERSION_TAG:
@@ -162,7 +164,7 @@ bool JpegMpfParser::ParsingMpIndexIFD(uint8_t* data, uint32_t size, uint32_t dat
                 break;
         }
     }
-    uint32_t mpAttrIFDOffset = ImageUtils::BytesToUint32(data, dataOffset, isBigEndian);
+    uint32_t mpAttrIFDOffset = ImageUtils::BytesToUint32(data, dataOffset, size, isBigEndian);
     if (mpAttrIFDOffset > 0 && dataOffset > mpAttrIFDOffset) {
         return false;
     }
@@ -172,16 +174,17 @@ bool JpegMpfParser::ParsingMpIndexIFD(uint8_t* data, uint32_t size, uint32_t dat
 bool JpegMpfParser::ParsingMpEntry(uint8_t* data, uint32_t size, bool isBigEndian, uint32_t imageNums)
 {
     uint32_t dataOffset = 0;
-    if (imageNums == 0 || imageNums * MP_ENTRY_BYTE_SIZE > size) {
+    if (imageNums == 0 || imageNums * MP_ENTRY_BYTE_SIZE > size || imageNums > MAX_IMAGE_NUM) {
+        IMAGE_LOGE("Parsing imageNums error");
         return false;
     }
     images_.resize(imageNums);
     for (uint32_t i = 0; i < imageNums; i++) {
-        uint32_t imageAttr = ImageUtils::BytesToUint32(data, dataOffset, isBigEndian);
-        images_[i].size = ImageUtils::BytesToUint32(data, dataOffset, isBigEndian);
-        images_[i].offset = ImageUtils::BytesToUint32(data, dataOffset, isBigEndian);
-        uint16_t image1EntryNum = ImageUtils::BytesToUint16(data, dataOffset, isBigEndian);
-        uint16_t image2EntryNum = ImageUtils::BytesToUint16(data, dataOffset, isBigEndian);
+        uint32_t imageAttr = ImageUtils::BytesToUint32(data, dataOffset, size, isBigEndian);
+        images_[i].size = ImageUtils::BytesToUint32(data, dataOffset, size, isBigEndian);
+        images_[i].offset = ImageUtils::BytesToUint32(data, dataOffset, size, isBigEndian);
+        uint16_t image1EntryNum = ImageUtils::BytesToUint16(data, dataOffset, size, isBigEndian);
+        uint16_t image2EntryNum = ImageUtils::BytesToUint16(data, dataOffset, size, isBigEndian);
         IMAGE_LOGD("index=%{public}d, imageAttr=%{public}d, image1entrynum=%{public}d, image2entryNum=%{puublic}d",
             i, imageAttr, image1EntryNum, image2EntryNum);
     }
@@ -247,7 +250,8 @@ bool JpegMpfParser::ParsingAuxiliaryPictures(uint8_t* data, uint32_t dataSize, b
             continue;
         }
         offset -= UINT32_BYTE_SIZE;
-        uint32_t imageSize = ImageUtils::BytesToUint32(data, offset, isBigEndian);
+        // tag and image size before this position
+        uint32_t imageSize = ImageUtils::BytesToUint32(data, offset, dataSize, isBigEndian);
         if (offset < imageSize + UINT32_BYTE_SIZE) {
             IMAGE_LOGW("%{public}s invalid image size: %{public}u, offset: %{public}u, auxiliary tag: %{public}s",
                 __func__, imageSize, offset, foundTag.c_str());
@@ -279,10 +283,10 @@ bool JpegMpfParser::ParsingFragmentMetadata(uint8_t* data, uint32_t size, Rect& 
                 return false;
             }
             offset += UINT32_BYTE_SIZE;
-            fragmentRect.left = ImageUtils::BytesToInt32(data, offset, isBigEndian);
-            fragmentRect.top = ImageUtils::BytesToInt32(data, offset, isBigEndian);
-            fragmentRect.width = ImageUtils::BytesToInt32(data, offset, isBigEndian);
-            fragmentRect.height = ImageUtils::BytesToInt32(data, offset, isBigEndian);
+            fragmentRect.left = ImageUtils::BytesToInt32(data, offset, size, isBigEndian);
+            fragmentRect.top = ImageUtils::BytesToInt32(data, offset, size, isBigEndian);
+            fragmentRect.width = ImageUtils::BytesToInt32(data, offset, size, isBigEndian);
+            fragmentRect.height = ImageUtils::BytesToInt32(data, offset, size, isBigEndian);
             IMAGE_LOGD("[%{public}s] left=%{public}d, top=%{public}d, width=%{public}d, height=%{public}d",
                 __func__, fragmentRect.left, fragmentRect.top, fragmentRect.width, fragmentRect.height);
             return true;

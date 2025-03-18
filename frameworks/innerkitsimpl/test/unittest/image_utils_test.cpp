@@ -33,6 +33,7 @@ constexpr int32_t ARGB8888_BYTES = 4;
 constexpr int32_t RGBA_F16_BYTES = 8;
 constexpr int32_t NV21_BYTES = 2;  // Each pixel is sorted on 3/2 bytes.
 constexpr int32_t ASTC_4X4_BYTES = 1;
+constexpr uint32_t MAX_BYTE_NUM = 8;
 
 
 using namespace testing::ext;
@@ -510,26 +511,27 @@ HWTEST_F(ImageUtilsTest, ImageUtilsTest001, TestSize.Level3)
 {
     GTEST_LOG_(INFO) << "ImageUtilsTest: ImageUtilsTest001 start";
     uint32_t offset = 0;
+    uint32_t size = MAX_BYTE_NUM;
     uint8_t* nullBytes = nullptr;
     uint8_t bytes[NUM_2] = {0x01, 0x02};
     std::vector<uint8_t> byte(128);
     bool isBigEndian = true;
-    ImageUtils::BytesToUint16(nullBytes, offset, isBigEndian);
-    ImageUtils::BytesToUint32(nullBytes, offset, isBigEndian);
-    ImageUtils::BytesToInt32(nullBytes, offset, isBigEndian);
-    ImageUtils::BytesToUint16(bytes, offset, isBigEndian);
-    ImageUtils::BytesToUint32(bytes, offset, isBigEndian);
-    ImageUtils::BytesToInt32(bytes, offset, isBigEndian);
+    ImageUtils::BytesToUint16(nullBytes, offset, size, isBigEndian);
+    ImageUtils::BytesToUint32(nullBytes, offset, size, isBigEndian);
+    ImageUtils::BytesToInt32(nullBytes, offset, size, isBigEndian);
+    ImageUtils::BytesToUint16(bytes, offset, size, isBigEndian);
+    ImageUtils::BytesToUint32(bytes, offset, size, isBigEndian);
+    ImageUtils::BytesToInt32(bytes, offset, size, isBigEndian);
     ImageUtils::Uint16ToBytes(0, byte, offset, isBigEndian);
     ImageUtils::Uint32ToBytes(0, byte, offset, isBigEndian);
     ImageUtils::FloatToBytes(0, byte, offset, isBigEndian);
     ImageUtils::Int32ToBytes(0, byte, offset, isBigEndian);
     ImageUtils::ArrayToBytes(bytes, 2, byte, offset);
     isBigEndian = false;
-    ImageUtils::BytesToUint16(bytes, offset, isBigEndian);
-    ImageUtils::BytesToUint32(bytes, offset, isBigEndian);
-    ImageUtils::BytesToInt32(bytes, offset, isBigEndian);
-    ImageUtils::BytesToFloat(bytes, offset, isBigEndian);
+    ImageUtils::BytesToUint16(bytes, offset, size, isBigEndian);
+    ImageUtils::BytesToUint32(bytes, offset, size, isBigEndian);
+    ImageUtils::BytesToInt32(bytes, offset, size, isBigEndian);
+    ImageUtils::BytesToFloat(bytes, offset, size, isBigEndian);
     ImageUtils::Uint16ToBytes(0, byte, offset, isBigEndian);
     ImageUtils::Uint32ToBytes(0, byte, offset, isBigEndian);
     GTEST_LOG_(INFO) << "ImageUtilsTest: ImageUtilsTest001 end";
