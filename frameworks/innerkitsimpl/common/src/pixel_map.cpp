@@ -473,12 +473,12 @@ unique_ptr<PixelMap> PixelMap::Create(const uint32_t *colors, uint32_t colorLeng
         errorCode = IMAGE_RESULT_THIRDPART_SKIA_ERROR;
         return nullptr;
     }
-
     dstPixelMap->SetEditable(opts.editable);
     dstPixelMap->SetPixelsAddr(dstMemory->data.data, dstMemory->extend.data, dstMemory->data.size, dstMemory->GetType(),
         nullptr);
     ImageUtils::DumpPixelMapIfDumpEnabled(dstPixelMap);
     SetYUVDataInfoToPixelMap(dstPixelMap);
+    ImageUtils::FlushSurfaceBuffer(const_cast<PixelMap*>(dstPixelMap.get()));
     return dstPixelMap;
 }
 
