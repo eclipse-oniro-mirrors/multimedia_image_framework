@@ -1022,7 +1022,7 @@ void PixelYuvUtils::Yuv420SPTranslate(const uint8_t *srcPixels, YUVDataInfo &yuv
                                                                       : static_cast<int64_t>(xyAxis.xAxis) - 1;
     int64_t uvWidth = (static_cast<int64_t>(info.size.width) + ODD) / EVEN * EVEN;
     int64_t uvHeight = (static_cast<int64_t>(yuvInfo.uvHeight) != 0) ? static_cast<int64_t>(yuvInfo.uvHeight)
-                                                                     : ((static_cast<int64_t>(info.size.height) + ODD) / EVEN);
+        : ((static_cast<int64_t>(info.size.height) + ODD) / EVEN);
     int64_t uvCopySize = uvWidth;
     int64_t uvCopyLine = uvHeight;
 
