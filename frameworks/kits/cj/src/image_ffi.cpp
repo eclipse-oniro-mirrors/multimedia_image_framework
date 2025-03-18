@@ -454,6 +454,35 @@ static DecodeOptions ParseCDecodingOptions(CDecodingOptions& opts)
             decodeOpts.desiredColorSpaceInfo = colorSpace->GetColorSpaceToken();
         }
     }
+    return decodeOpts;
+}
+
+static DecodeOptions ParseCDecodingOptionsV2(CDecodingOptionsV2& opts)
+{
+    DecodeOptions decodeOpts = {};
+    decodeOpts.fitDensity = opts.fitDensity;
+    decodeOpts.desiredSize.height = opts.desiredSize.height;
+    decodeOpts.desiredSize.width = opts.desiredSize.width;
+    IMAGE_LOGD("[ImageSource] desiredSize height is %{public}d, width is %{public}d", decodeOpts.desiredSize.height,
+        decodeOpts.desiredSize.width);
+    decodeOpts.desiredRegion.height = opts.desiredRegion.size.height;
+    decodeOpts.desiredRegion.width = opts.desiredRegion.size.width;
+    decodeOpts.desiredRegion.left = opts.desiredRegion.x;
+    decodeOpts.desiredRegion.top = opts.desiredRegion.y;
+    IMAGE_LOGD("[ImageSource] desiredRegion height is %{public}d, width is %{public}d,"
+               "left is %{public}d, top is %{public}d",
+        decodeOpts.desiredRegion.height, decodeOpts.desiredRegion.width, decodeOpts.desiredRegion.left,
+        decodeOpts.desiredRegion.top);
+    decodeOpts.rotateDegrees = opts.rotateDegrees;
+    decodeOpts.sampleSize = opts.sampleSize;
+    decodeOpts.desiredPixelFormat = PixelFormat(opts.desiredPixelFormat);
+    decodeOpts.editable = opts.editable;
+    if (opts.desiredColorSpace != 0) {
+        auto colorSpace = FFIData::GetData<ColorManager::CjColorManager>(opts.desiredColorSpace);
+        if (colorSpace != nullptr) {
+            decodeOpts.desiredColorSpaceInfo = colorSpace->GetColorSpaceToken();
+        }
+    }
     decodeOpts.desiredDynamicRange = DecodeDynamicRange(opts.desiredDynamicRange);
     return decodeOpts;
 }
@@ -489,6 +518,42 @@ CArrI64 FfiOHOSImageSourceCreatePixelMapList(int64_t id, uint32_t index, CDecodi
         }
         ret.head = arr;
         ret.size = static_cast<int64_t>(data.size());
+    }
+    IMAGE_LOGD("[ImageSource] CreatePixelMapList success");
+    return ret;
+}
+
+CArrI64 FfiOHOSImageSourceCreatePixelMapListV2(int64_t id, uint32_t index, CDecodingOptionsV2 opts, uint32_t* errorCode)
+{
+    IMAGE_LOGD("[ImageSource] CreatePixelMapList start");
+    CArrI64 ret = { .head = nullptr, .size = 0 };
+    auto instance = FFIData::GetData<ImageSourceImpl>(id);
+    if (!instance) {
+        IMAGE_LOGE("[ImageSource] instance not exist %{public}" PRId64, id);
+        *errorCode = ERR_IMAGE_INIT_ABNORMAL;
+        return ret;
+    }
+    DecodeOptions decodeOpts = ParseCDecodingOptionsV2(opts);
+    std::vector<int64_t> data = instance->CreatePixelMapList(index, decodeOpts, errorCode);
+    if (*errorCode == SUCCESS_CODE) {
+        auto size = data.size();
+        if (size > 0) {
+            auto arr = static_cast<int64_t*>(malloc(sizeof(int64_t) * size));
+            if (!arr) {
+                IMAGE_LOGE("[ImageSource] FfiOHOSImageSourceCreatePixelMapList failed to malloc arr.");
+                *errorCode = ERR_IMAGE_MALLOC_ABNORMAL;
+                return ret;
+            }
+            for (int i = 0; i < static_cast<int>(size); ++i) {
+                arr[i] = data[i];
+            }
+            ret.head = arr;
+            ret.size = static_cast<int64_t>(data.size());
+        } else {
+            *errorCode = ERR_IMAGE_MALLOC_ABNORMAL;
+            IMAGE_LOGE("[ImageSource] CreatePixelMapList size error.");
+            return ret;
+        }
     }
     IMAGE_LOGD("[ImageSource] CreatePixelMapList success");
     return ret;
@@ -611,9 +676,24 @@ RetDataI64U32 FfiOHOSImageSourceCreatePixelMap(int64_t id, uint32_t index, CDeco
     return ret;
 }
 
+RetDataI64U32 FfiOHOSImageSourceCreatePixelMapV2(int64_t id, uint32_t index, CDecodingOptionsV2 opts)
+{
+    IMAGE_LOGD("[ImageSource] FfiOHOSImageSourceCreatePixelMap start");
+    RetDataI64U32 ret = { .code = ERR_IMAGE_INIT_ABNORMAL, .data = 0 };
+    auto instance = FFIData::GetData<ImageSourceImpl>(id);
+    if (!instance) {
+        IMAGE_LOGE("[ImageSource] instance not exist %{public}" PRId64, id);
+        return ret;
+    }
+    DecodeOptions decodeOpts = ParseCDecodingOptionsV2(opts);
+    ret.data = instance->CreatePixelMap(index, decodeOpts, ret.code);
+    IMAGE_LOGD("[ImageSource] FfiOHOSImageSourceCreatePixelMap success");
+    return ret;
+}
+
 //--------------------- PixelMap ---------------------------------------------------------------------------
 
-static InitializationOptions ParsePixelMapCInitializationOptions(CInitializationOptions opts)
+static InitializationOptions ParsePixelMapCInitializationOptions(CInitializationOptionsV2 opts)
 {
     InitializationOptions option;
     option.alphaType = AlphaType(opts.alphaType);
@@ -627,6 +707,30 @@ static InitializationOptions ParsePixelMapCInitializationOptions(CInitialization
 }
 
 int64_t FfiOHOSCreatePixelMap(uint8_t* colors, uint32_t colorLength, CInitializationOptions opts)
+{
+    IMAGE_LOGD("[PixelMap] FfiOHOSCreatePixelMap start");
+    InitializationOptions option;
+    option.alphaType = AlphaType(opts.alphaType);
+    option.editable = opts.editable;
+    option.pixelFormat = PixelFormat(opts.pixelFormat);
+    option.scaleMode = ScaleMode(opts.scaleMode);
+    option.size.height = opts.height;
+    option.size.width = opts.width;
+    std::unique_ptr<PixelMap> ptr_ =
+        PixelMapImpl::CreatePixelMap(reinterpret_cast<uint32_t*>(colors), colorLength, option);
+    if (!ptr_) {
+        return INIT_FAILED;
+    }
+    auto native = FFIData::Create<PixelMapImpl>(move(ptr_));
+    if (!native) {
+        IMAGE_LOGE("[ImageSource] FfiOHOSCreatePixelMap failed");
+        return INIT_FAILED;
+    }
+    IMAGE_LOGD("[PixelMap] FfiOHOSCreatePixelMap success");
+    return native->GetID();
+}
+
+int64_t FfiOHOSCreatePixelMapV2(uint8_t* colors, uint32_t colorLength, CInitializationOptionsV2 opts)
 {
     IMAGE_LOGD("[PixelMap] FfiOHOSCreatePixelMap start");
     InitializationOptions option = ParsePixelMapCInitializationOptions(opts);
@@ -644,7 +748,7 @@ int64_t FfiOHOSCreatePixelMap(uint8_t* colors, uint32_t colorLength, CInitializa
     return native->GetID();
 }
 
-int64_t FfiImagePixelMapImplCreatePixelMap(CInitializationOptions opts)
+int64_t FfiImagePixelMapImplCreatePixelMap(CInitializationOptionsV2 opts)
 {
     IMAGE_LOGD("[PixelMap] FfiImagePixelMapImplCreatePixelMap start");
     InitializationOptions option = ParsePixelMapCInitializationOptions(opts);
@@ -1293,7 +1397,7 @@ int64_t FFiOHOSImagePackerConstructor()
     return ret->GetID();
 }
 
-static PackOption ParseCPackOption(CPackingOption option)
+static PackOption ParseCPackOption(CPackingOptionV2 option)
 {
     PackOption packOption = {
         .format = option.format,
@@ -1320,7 +1424,39 @@ RetDataCArrUI8 FfiOHOSImagePackerPackingPixelMap(int64_t id, int64_t source, CPa
         if (!pixelMap) {
             return ret;
         }
-        PackOption packOption = ParseCPackOption(option);
+        PackOption packOption = { .format = option.format, .quality = option.quality};
+        auto [code, head, size] = imagePackerImpl->Packing(*pixelMap, packOption, option.bufferSize);
+        if (code != SUCCESS_CODE) {
+            IMAGE_LOGE("Packing failed, error code is %{public}d", code);
+        }
+        data.head = head;
+        data.size = size;
+        ret.code = code;
+        ret.data = data;
+        return ret;
+    }
+
+    IMAGE_LOGE("Packing failed, invalid id of PixelMapImpl");
+    return ret;
+}
+
+RetDataCArrUI8 FfiOHOSImagePackerPackingPixelMapV2(int64_t id, int64_t source, CPackingOptionV2 option)
+{
+    CArrUI8 data = { .head = nullptr, .size = 0 };
+    RetDataCArrUI8 ret = { .code = ERR_IMAGE_INIT_ABNORMAL, .data = data };
+    auto imagePackerImpl = FFIData::GetData<ImagePackerImpl>(id);
+    if (!imagePackerImpl) {
+        IMAGE_LOGE("Packing failed, invalid id of ImagePackerImpl");
+        return ret;
+    }
+
+    auto pixelMapImpl = FFIData::GetData<PixelMapImpl>(source);
+    if (pixelMapImpl != nullptr) {
+        auto pixelMap = pixelMapImpl->GetRealPixelMap();
+        if (!pixelMap) {
+            return ret;
+        }
+        PackOption packOption = { .format = option.format, .quality = option.quality};
         auto [code, head, size] = imagePackerImpl->Packing(*pixelMap, packOption, option.bufferSize);
         if (code != SUCCESS_CODE) {
             IMAGE_LOGE("Packing failed, error code is %{public}d", code);
@@ -1337,6 +1473,38 @@ RetDataCArrUI8 FfiOHOSImagePackerPackingPixelMap(int64_t id, int64_t source, CPa
 }
 
 RetDataCArrUI8 FfiOHOSImagePackerPackingImageSource(int64_t id, int64_t source, CPackingOption option)
+{
+    CArrUI8 data = { .head = nullptr, .size = 0 };
+    RetDataCArrUI8 ret = { .code = ERR_IMAGE_INIT_ABNORMAL, .data = data };
+    auto imagePackerImpl = FFIData::GetData<ImagePackerImpl>(id);
+    if (!imagePackerImpl) {
+        IMAGE_LOGE("Packing failed, invalid id of ImagePackerImpl");
+        return ret;
+    }
+
+    auto imageSourceImpl = FFIData::GetData<ImageSourceImpl>(source);
+    if (imageSourceImpl != nullptr) {
+        PackOption packOption = { .format = option.format, .quality = option.quality};
+        auto imageSource = imageSourceImpl->nativeImgSrc;
+        if (!imageSource) {
+            return ret;
+        }
+        auto [code, head, size] = imagePackerImpl->Packing(*imageSource, packOption, option.bufferSize);
+        if (code != SUCCESS_CODE) {
+            IMAGE_LOGE("Packing failed, error code is %{public}d", code);
+        }
+        data.head = head;
+        data.size = size;
+        ret.code = code;
+        ret.data = data;
+        return ret;
+    }
+
+    IMAGE_LOGE("Packing failed, invalid id of ImageSourceImpl");
+    return ret;
+}
+
+RetDataCArrUI8 FfiOHOSImagePackerPackingImageSourceV2(int64_t id, int64_t source, CPackingOptionV2 option)
 {
     CArrUI8 data = { .head = nullptr, .size = 0 };
     RetDataCArrUI8 ret = { .code = ERR_IMAGE_INIT_ABNORMAL, .data = data };
@@ -1439,6 +1607,28 @@ uint32_t FfiOHOSImagePackerPackPixelMapToFile(int64_t id, int64_t source, int fd
             return ERR_IMAGE_INIT_ABNORMAL;
         }
 
+        PackOption packOption = { .format = option.format, .quality = option.quality};
+        uint32_t ret = imagePackerImpl->PackToFile(*pixelMap, fd, packOption);
+        return ret;
+    }
+    return ERR_IMAGE_INIT_ABNORMAL;
+}
+
+uint32_t FfiOHOSImagePackerPackPixelMapToFileV2(int64_t id, int64_t source, int fd, CPackingOptionV2 option)
+{
+    auto imagePackerImpl = FFIData::GetData<ImagePackerImpl>(id);
+    if (!imagePackerImpl) {
+        IMAGE_LOGE("Packing failed, invalid id of ImagePackerImpl");
+        return ERR_IMAGE_INIT_ABNORMAL;
+    }
+
+    auto pixelMapImpl = FFIData::GetData<PixelMapImpl>(source);
+    if (pixelMapImpl != nullptr) {
+        auto pixelMap = pixelMapImpl->GetRealPixelMap();
+        if (!pixelMap) {
+            return ERR_IMAGE_INIT_ABNORMAL;
+        }
+
         PackOption packOption = ParseCPackOption(option);
         uint32_t ret = imagePackerImpl->PackToFile(*pixelMap, fd, packOption);
         return ret;
@@ -1447,6 +1637,28 @@ uint32_t FfiOHOSImagePackerPackPixelMapToFile(int64_t id, int64_t source, int fd
 }
 
 uint32_t FfiOHOSImagePackerImageSourcePackToFile(int64_t id, int64_t source, int fd, CPackingOption option)
+{
+    auto imagePackerImpl = FFIData::GetData<ImagePackerImpl>(id);
+    if (!imagePackerImpl) {
+        IMAGE_LOGE("Packing failed, invalid id of ImagePackerImpl");
+        return ERR_IMAGE_INIT_ABNORMAL;
+    }
+
+    auto imageSourceImpl = FFIData::GetData<ImageSourceImpl>(source);
+    if (imageSourceImpl != nullptr) {
+        PackOption packOption = { .format = option.format, .quality = option.quality};
+        auto imageSource = imageSourceImpl->nativeImgSrc;
+        if (!imageSource) {
+            return ERR_IMAGE_INIT_ABNORMAL;
+        }
+
+        uint32_t ret = imagePackerImpl->PackToFile(*imageSource, fd, packOption);
+        return ret;
+    }
+    return ERR_IMAGE_INIT_ABNORMAL;
+}
+
+uint32_t FfiOHOSImagePackerImageSourcePackToFileV2(int64_t id, int64_t source, int fd, CPackingOptionV2 option)
 {
     auto imagePackerImpl = FFIData::GetData<ImagePackerImpl>(id);
     if (!imagePackerImpl) {
