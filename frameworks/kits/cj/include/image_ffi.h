@@ -50,6 +50,15 @@ struct CSourceOptions {
 struct CInitializationOptions {
     int32_t alphaType;
     bool editable = false;
+    int32_t pixelFormat;
+    int32_t scaleMode;
+    int32_t width;
+    int32_t height;
+};
+
+struct CInitializationOptionsV2 {
+    int32_t alphaType;
+    bool editable = false;
     int32_t srcPixelFormat;
     int32_t pixelFormat;
     int32_t scaleMode;
@@ -66,10 +75,27 @@ struct CDecodingOptions {
     int32_t desiredPixelFormat;
     bool editable;
     int64_t desiredColorSpace;
+};
+
+struct CDecodingOptionsV2 {
+    int32_t fitDensity;
+    CSize desiredSize;
+    CRegion desiredRegion;
+    float rotateDegrees;
+    uint32_t sampleSize;
+    int32_t desiredPixelFormat;
+    bool editable;
+    int64_t desiredColorSpace;
     int32_t desiredDynamicRange;
 };
 
 struct CPackingOption {
+    const char* format;
+    uint8_t quality;
+    uint64_t bufferSize;
+};
+
+struct CPackingOptionV2 {
     const char* format;
     uint8_t quality;
     uint64_t bufferSize;
@@ -107,8 +133,11 @@ FFI_EXPORT RetDataUI32 FfiOHOSGetFrameCount(int64_t id);
 FFI_EXPORT uint32_t FfiOHOSUpdateData(int64_t id, UpdateDataInfo info);
 FFI_EXPORT uint32_t FfiOHOSRelease(int64_t id);
 FFI_EXPORT RetDataI64U32 FfiOHOSImageSourceCreatePixelMap(int64_t id, uint32_t index, CDecodingOptions opts);
+FFI_EXPORT RetDataI64U32 FfiOHOSImageSourceCreatePixelMapV2(int64_t id, uint32_t index, CDecodingOptionsV2 opts);
 FFI_EXPORT CArrI64 FfiOHOSImageSourceCreatePixelMapList(
     int64_t id, uint32_t index, CDecodingOptions opts, uint32_t* errorCode);
+FFI_EXPORT CArrI64 FfiOHOSImageSourceCreatePixelMapListV2(
+    int64_t id, uint32_t index, CDecodingOptionsV2 opts, uint32_t* errorCode);
 FFI_EXPORT CArrI32 FfiOHOSImageSourceGetDelayTime(int64_t id, uint32_t* errorCode);
 FFI_EXPORT CArrI32 FfiImageImageSourceImplGetDisposalTypeList(int64_t id, uint32_t* errorCode);
 FFI_EXPORT uint32_t FfiImageImageSourceImplModifyImageProperties(int64_t id, CArrString key, CArrString value);
@@ -116,7 +145,8 @@ FFI_EXPORT uint32_t FfiImageImageSourceImplGetImageProperties(int64_t id, CArrSt
 
 // PixelMap
 FFI_EXPORT int64_t FfiOHOSCreatePixelMap(uint8_t* colors, uint32_t colorLength, CInitializationOptions opts);
-FFI_EXPORT int64_t FfiImagePixelMapImplCreatePixelMap(CInitializationOptions opts);
+FFI_EXPORT int64_t FfiOHOSCreatePixelMapV2(uint8_t* colors, uint32_t colorLength, CInitializationOptionsV2 opts);
+FFI_EXPORT int64_t FfiImagePixelMapImplCreatePixelMap(CInitializationOptionsV2 opts);
 FFI_EXPORT bool FfiOHOSGetIsEditable(int64_t id, uint32_t* errCode);
 FFI_EXPORT bool FfiOHOSGetIsStrideAlignment(int64_t id, uint32_t* errCode);
 FFI_EXPORT uint32_t FfiOHOSReadPixelsToBuffer(int64_t id, uint64_t bufferSize, uint8_t* dst);
@@ -167,10 +197,15 @@ FFI_EXPORT void FfiOHOSReceiverRelease(int64_t id);
 FFI_EXPORT int64_t FFiOHOSImagePackerConstructor();
 FFI_EXPORT uint64_t FfiOHOSGetPackOptionSize();
 FFI_EXPORT RetDataCArrUI8 FfiOHOSImagePackerPackingPixelMap(int64_t id, int64_t source, CPackingOption option);
+FFI_EXPORT RetDataCArrUI8 FfiOHOSImagePackerPackingPixelMapV2(int64_t id, int64_t source, CPackingOptionV2 option);
 FFI_EXPORT RetDataCArrUI8 FfiOHOSImagePackerPackingImageSource(int64_t id, int64_t source, CPackingOption option);
+FFI_EXPORT RetDataCArrUI8 FfiOHOSImagePackerPackingImageSourceV2(int64_t id, int64_t source, CPackingOptionV2 option);
 FFI_EXPORT RetDataCArrString FfiOHOSImagePackerGetSupportedFormats(int64_t id);
 FFI_EXPORT uint32_t FfiOHOSImagePackerPackPixelMapToFile(int64_t id, int64_t source, int fd, CPackingOption option);
+FFI_EXPORT uint32_t FfiOHOSImagePackerPackPixelMapToFileV2(int64_t id, int64_t source, int fd, CPackingOptionV2 option);
 FFI_EXPORT uint32_t FfiOHOSImagePackerImageSourcePackToFile(int64_t id, int64_t source, int fd, CPackingOption option);
+FFI_EXPORT uint32_t FfiOHOSImagePackerImageSourcePackToFileV2(
+    int64_t id, int64_t source, int fd, CPackingOptionV2 option);
 FFI_EXPORT void FFiOHOSImagePackerRelease(int64_t id);
 
 // ImageCreator
