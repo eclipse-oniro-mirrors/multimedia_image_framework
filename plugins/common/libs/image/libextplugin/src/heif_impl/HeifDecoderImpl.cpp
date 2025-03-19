@@ -677,7 +677,7 @@ bool HeifDecodeImpl::DodecodeGainmap(std::shared_ptr<HeifImage> &gainmap, GridIn
     bool decodeRes = HwDecodeImage(nullptr, gainmapImage, gainmapGridInfo, &hwBuffer, false);
     if (!decodeRes) {
         sptr<SurfaceBuffer> swHwBuffer;
-        bool swdecodeRes = swDecodeGainmap(gainmapImage, gainmapGridInfo, &swHwBuffer);
+        bool swdecodeRes = SwDecodeGainmap(gainmapImage, gainmapGridInfo, &swHwBuffer);
         if (!swdecodeRes) {
             IMAGE_LOGE("HeifDecoderImpl::SwDecodeGainmap failed too");
             return false;
@@ -1153,8 +1153,8 @@ bool HeifDecoderImpl::SwdecodeGainmap(std::shared_ptr<HeifImage> &gainMapImage,
     GSError ret = output->Alloc(config);
     bool cond = ret != GSERROR_OK;
     CHECK_ERROR_RETURN_RET_LOG(cond, false, "output->alloc(config)faild, GSError=%{public}d", ret);
-    uint32_t gainMapStride = output->GetStride();
-    uint32_t gainMapMemorySize = gainMapStride * output->GetHeight();
+    uint32_t gainMapStride = static_cast<uint32_t>(output->GetStride());
+    uint32_t gainMapMemorySize = gainMapStride * static_cast<uint32_t>(output->GetHeight());
     OH_NativeBuffer_planes *dataplanesInfo = nullptr;
     output->GetplanesInfo((void **)&dataplanesInfo);
     cond = (dataplanesInfo == nullptr);
