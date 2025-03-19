@@ -1003,7 +1003,7 @@ void PixelYuvUtils::Yuv420SPTranslate(const uint8_t *srcPixels, YUVDataInfo &yuv
     uint8_t *dst = nullptr;
     const uint8_t *src = nullptr;
     for (int32_t y = 0; y < yCopyLine ; y++) {
-        int32_t newY = y + static_cast<int32_t>xyAxis.yAxis;
+        int32_t newY = y + static_cast<int32_t>(xyAxis.yAxis);
         if (newY >= 0 && static_cast<int64_t>(newY) <= static_cast<int64_t>(yuvInfo.yHeight)) {
             dst = dstY + newY * static_cast<int32_t>(strides.yStride) + static_cast<int32_t>(xyAxis.xAxis);
             src = srcY + y * static_cast<int32_t>(yuvInfo.yStride);
