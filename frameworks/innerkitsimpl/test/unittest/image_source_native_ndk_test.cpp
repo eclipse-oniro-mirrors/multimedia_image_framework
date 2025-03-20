@@ -1884,5 +1884,449 @@ HWTEST_F(ImagSourceNdk2Test, OH_ImageSourceNative_CreatePictureTest002, TestSize
     OH_PictureNative_Release(picture);
     ASSERT_EQ(ret, IMAGE_SUCCESS);
 }
+
+/**
+ * @tc.name: ImageRegionDecode001
+ * @tc.desc: Test Region decode, CropAndScaleStrategy is DEFAULT, Showing the original image.        
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImagSourceNdk2Test, ImageRegionDecode001, TestSize.Level3)
+{
+    OH_ImageSourceNative *imageSource = CreateImageSourceNative(IMAGE_JPEG_PATH);
+    ASSERT_NE(imageSource, nullptr);
+    OH_DecodingOptions *opts = nullptr;
+    OH_DecodingOptions_Create(&opts);
+    ASSERT_NE(opts, nullptr);
+    OH_PixelmapNative* resPixMap = nullptr;
+    IMAGE_ALLOCATOR_TYPE allocator = IMAGE_ALLOCATOR_TYPE::IMAGE_ALLOCATOR_TYPE_SHARE_MEMORY;
+    Image_Region desiredRegion = {0, 0, 1920, 1080};
+    OH_DecodingOptions_SetDesiredRegion(opts, &desiredRegion);
+    Image_ErrorCode ret = OH_ImageSourceNative_CreatePixelmapUsingAllocator(imageSource, opts, allocator, &resPixMap);
+    EXPECT_EQ(ret, IMAGE_SUCCESS);
+    EXPECT_NE(resPixMap, nullptr);
+    OH_ImageSourceNative_Release(imageSource);
+    OH_DecodingOptions_Release(opts);
+    OH_PixelmapNative_Release(resPixMap);
+}
+
+/**
+ * @tc.name: ImageRegionDecode002
+ * @tc.desc: Test Region decode, CropAndScaleStrategy is SCALE_FIRST, Showing the original image.        
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImagSourceNdk2Test, ImageRegionDecode002, TestSize.Level3)
+{
+    OH_ImageSourceNative *imageSource = CreateImageSourceNative(IMAGE_JPEG_PATH);
+    ASSERT_NE(imageSource, nullptr);
+    OH_DecodingOptions *opts = nullptr;
+    OH_DecodingOptions_Create(&opts);
+    ASSERT_NE(opts, nullptr);
+    OH_PixelmapNative* resPixMap = nullptr;
+    IMAGE_ALLOCATOR_TYPE allocator = IMAGE_ALLOCATOR_TYPE::IMAGE_ALLOCATOR_TYPE_SHARE_MEMORY;
+    Image_Region desiredRegion = {0, 0, 1000, 1000};
+    OH_DecodingOptions_SetDesiredRegion(opts, &desiredRegion);
+    int32_t cropAndScaleStrategy = 1;
+    OH_DecodingOptions_SetCropAndScaleStrategy(opts, cropAndScaleStrategy);
+    Image_Size desiredSize = {1000, 1000};
+    OH_DecodingOptions_SetDesiredSize(opts, &desiredSize);
+    Image_ErrorCode ret = OH_ImageSourceNative_CreatePixelmapUsingAllocator(imageSource, opts, allocator, &resPixMap);
+    EXPECT_EQ(ret, IMAGE_SUCCESS);
+    EXPECT_NE(resPixMap, nullptr);
+    OH_ImageSourceNative_Release(imageSource);
+    OH_DecodingOptions_Release(opts);
+    OH_PixelmapNative_Release(resPixMap);
+}
+
+/**
+ * @tc.name: ImageRegionDecode003
+ * @tc.desc: Test Region decode, CropAndScaleStrategy is SCALE_FIRST, Showing the left half image.        
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImagSourceNdk2Test, ImageRegionDecode003, TestSize.Level3)
+{
+    OH_ImageSourceNative *imageSource = CreateImageSourceNative(IMAGE_JPEG_PATH);
+    ASSERT_NE(imageSource, nullptr);
+    OH_DecodingOptions *opts = nullptr;
+    OH_DecodingOptions_Create(&opts);
+    ASSERT_NE(opts, nullptr);
+    OH_PixelmapNative* resPixMap = nullptr;
+    IMAGE_ALLOCATOR_TYPE allocator = IMAGE_ALLOCATOR_TYPE::IMAGE_ALLOCATOR_TYPE_SHARE_MEMORY;
+    Image_Region desiredRegion = {0, 0, 500, 1000};
+    OH_DecodingOptions_SetDesiredRegion(opts, &desiredRegion);
+    int32_t cropAndScaleStrategy = 1;
+    OH_DecodingOptions_SetCropAndScaleStrategy(opts, cropAndScaleStrategy);
+    Image_Size desiredSize = {1000, 1000};
+    OH_DecodingOptions_SetDesiredSize(opts, &desiredSize);
+    Image_ErrorCode ret = OH_ImageSourceNative_CreatePixelmapUsingAllocator(imageSource, opts, allocator, &resPixMap);
+    EXPECT_EQ(ret, IMAGE_SUCCESS);
+    EXPECT_NE(resPixMap, nullptr);
+    OH_ImageSourceNative_Release(imageSource);
+    OH_DecodingOptions_Release(opts);
+    OH_PixelmapNative_Release(resPixMap);
+}
+
+/**
+ * @tc.name: ImageRegionDecode004
+ * @tc.desc: Test Region decode, CropAndScaleStrategy is SCALE_FIRST, Showing the top half image.        
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImagSourceNdk2Test, ImageRegionDecode004, TestSize.Level3)
+{
+    OH_ImageSourceNative *imageSource = CreateImageSourceNative(IMAGE_JPEG_PATH);
+    ASSERT_NE(imageSource, nullptr);
+    OH_DecodingOptions *opts = nullptr;
+    OH_DecodingOptions_Create(&opts);
+    ASSERT_NE(opts, nullptr);
+    OH_PixelmapNative* resPixMap = nullptr;
+    IMAGE_ALLOCATOR_TYPE allocator = IMAGE_ALLOCATOR_TYPE::IMAGE_ALLOCATOR_TYPE_SHARE_MEMORY;
+    Image_Region desiredRegion = {0, 0, 1000, 500};
+    OH_DecodingOptions_SetDesiredRegion(opts, &desiredRegion);
+    int32_t cropAndScaleStrategy = 1;
+    OH_DecodingOptions_SetCropAndScaleStrategy(opts, cropAndScaleStrategy);
+    Image_Size desiredSize = {1000, 1000};
+    OH_DecodingOptions_SetDesiredSize(opts, &desiredSize);
+    Image_ErrorCode ret = OH_ImageSourceNative_CreatePixelmapUsingAllocator(imageSource, opts, allocator, &resPixMap);
+    EXPECT_EQ(ret, IMAGE_SUCCESS);
+    EXPECT_NE(resPixMap, nullptr);
+    OH_ImageSourceNative_Release(imageSource);
+    OH_DecodingOptions_Release(opts);
+    OH_PixelmapNative_Release(resPixMap);
+}
+
+/**
+ * @tc.name: ImageRegionDecode005
+ * @tc.desc: Test Region decode, CropAndScaleStrategy is SCALE_FIRST, Showing the right bottom image.        
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImagSourceNdk2Test, ImageRegionDecode005, TestSize.Level3)
+{
+    OH_ImageSourceNative *imageSource = CreateImageSourceNative(IMAGE_JPEG_PATH);
+    ASSERT_NE(imageSource, nullptr);
+    OH_DecodingOptions *opts = nullptr;
+    OH_DecodingOptions_Create(&opts);
+    ASSERT_NE(opts, nullptr);
+    OH_PixelmapNative* resPixMap = nullptr;
+    IMAGE_ALLOCATOR_TYPE allocator = IMAGE_ALLOCATOR_TYPE::IMAGE_ALLOCATOR_TYPE_SHARE_MEMORY;
+    Image_Region desiredRegion = {500, 500, 500, 500};
+    OH_DecodingOptions_SetDesiredRegion(opts, &desiredRegion);
+    int32_t cropAndScaleStrategy = 1;
+    OH_DecodingOptions_SetCropAndScaleStrategy(opts, cropAndScaleStrategy);
+    Image_Size desiredSize = {1000, 1000};
+    OH_DecodingOptions_SetDesiredSize(opts, &desiredSize);
+    Image_ErrorCode ret = OH_ImageSourceNative_CreatePixelmapUsingAllocator(imageSource, opts, allocator, &resPixMap);
+    EXPECT_EQ(ret, IMAGE_SUCCESS);
+    EXPECT_NE(resPixMap, nullptr);
+    OH_ImageSourceNative_Release(imageSource);
+    OH_DecodingOptions_Release(opts);
+    OH_PixelmapNative_Release(resPixMap);
+}
+
+/**
+ * @tc.name: ImageRegionDecode006
+ * @tc.desc: Test Region decode, CropAndScaleStrategy is SCALE_FIRST, Showing NULL.        
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImagSourceNdk2Test, ImageRegionDecode006, TestSize.Level3)
+{
+    OH_ImageSourceNative *imageSource = CreateImageSourceNative(IMAGE_JPEG_PATH);
+    ASSERT_NE(imageSource, nullptr);
+    OH_DecodingOptions *opts = nullptr;
+    OH_DecodingOptions_Create(&opts);
+    ASSERT_NE(opts, nullptr);
+    OH_PixelmapNative* resPixMap = nullptr;
+    IMAGE_ALLOCATOR_TYPE allocator = IMAGE_ALLOCATOR_TYPE::IMAGE_ALLOCATOR_TYPE_SHARE_MEMORY;
+    Image_Region desiredRegion = {500, 500, 1000, 500};
+    OH_DecodingOptions_SetDesiredRegion(opts, &desiredRegion);
+    int32_t cropAndScaleStrategy = 1;
+    OH_DecodingOptions_SetCropAndScaleStrategy(opts, cropAndScaleStrategy);
+    Image_Size desiredSize = {1000, 1000};
+    OH_DecodingOptions_SetDesiredSize(opts, &desiredSize);
+    Image_ErrorCode ret = OH_ImageSourceNative_CreatePixelmapUsingAllocator(imageSource, opts, allocator, &resPixMap);
+    EXPECT_NE(ret, IMAGE_SUCCESS);
+    EXPECT_EQ(resPixMap, nullptr);
+    OH_ImageSourceNative_Release(imageSource);
+    OH_DecodingOptions_Release(opts);
+    OH_PixelmapNative_Release(resPixMap);
+}
+
+/**
+ * @tc.name: ImageRegionDecode007
+ * @tc.desc: Test Region decode, CropAndScaleStrategy is SCALE_FIRST, Showing NULL.        
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImagSourceNdk2Test, ImageRegionDecode007, TestSize.Level3)
+{
+    OH_ImageSourceNative *imageSource = CreateImageSourceNative(IMAGE_JPEG_PATH);
+    ASSERT_NE(imageSource, nullptr);
+    OH_DecodingOptions *opts = nullptr;
+    OH_DecodingOptions_Create(&opts);
+    ASSERT_NE(opts, nullptr);
+    OH_PixelmapNative* resPixMap = nullptr;
+    IMAGE_ALLOCATOR_TYPE allocator = IMAGE_ALLOCATOR_TYPE::IMAGE_ALLOCATOR_TYPE_SHARE_MEMORY;
+    Image_Region desiredRegion = {1000, 1000, 500, 500};
+    OH_DecodingOptions_SetDesiredRegion(opts, &desiredRegion);
+    int32_t cropAndScaleStrategy = 1;
+    OH_DecodingOptions_SetCropAndScaleStrategy(opts, cropAndScaleStrategy);
+    Image_Size desiredSize = {1000, 1000};
+    OH_DecodingOptions_SetDesiredSize(opts, &desiredSize);
+    Image_ErrorCode ret = OH_ImageSourceNative_CreatePixelmapUsingAllocator(imageSource, opts, allocator, &resPixMap);
+    EXPECT_NE(ret, IMAGE_SUCCESS);
+    EXPECT_EQ(resPixMap, nullptr);
+    OH_ImageSourceNative_Release(imageSource);
+    OH_DecodingOptions_Release(opts);
+    OH_PixelmapNative_Release(resPixMap);
+}
+
+/**
+ * @tc.name: ImageRegionDecode008
+ * @tc.desc: Test Region decode, CropAndScaleStrategy is SCALE_FIRST, Showing the middle quarter image.        
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImagSourceNdk2Test, ImageRegionDecode008, TestSize.Level3)
+{
+    OH_ImageSourceNative *imageSource = CreateImageSourceNative(IMAGE_JPEG_PATH);
+    ASSERT_NE(imageSource, nullptr);
+    OH_DecodingOptions *opts = nullptr;
+    OH_DecodingOptions_Create(&opts);
+    ASSERT_NE(opts, nullptr);
+    OH_PixelmapNative* resPixMap = nullptr;
+    IMAGE_ALLOCATOR_TYPE allocator = IMAGE_ALLOCATOR_TYPE::IMAGE_ALLOCATOR_TYPE_SHARE_MEMORY;
+    Image_Region desiredRegion = {250, 250, 500, 500};
+    OH_DecodingOptions_SetDesiredRegion(opts, &desiredRegion);
+    int32_t cropAndScaleStrategy = 1;
+    OH_DecodingOptions_SetCropAndScaleStrategy(opts, cropAndScaleStrategy);
+    Image_Size desiredSize = {1000, 1000};
+    OH_DecodingOptions_SetDesiredSize(opts, &desiredSize);
+    Image_ErrorCode ret = OH_ImageSourceNative_CreatePixelmapUsingAllocator(imageSource, opts, allocator, &resPixMap);
+    EXPECT_EQ(ret, IMAGE_SUCCESS);
+    EXPECT_NE(resPixMap, nullptr);
+    OH_ImageSourceNative_Release(imageSource);
+    OH_DecodingOptions_Release(opts);
+    OH_PixelmapNative_Release(resPixMap);
+}
+
+/**
+ * @tc.name: ImageRegionDecode009
+ * @tc.desc: Test Region decode, CropAndScaleStrategy is CROP_FIRST, Showing the original image.        
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImagSourceNdk2Test, ImageRegionDecode009, TestSize.Level3)
+{
+    OH_ImageSourceNative *imageSource = CreateImageSourceNative(IMAGE_JPEG_PATH);
+    ASSERT_NE(imageSource, nullptr);
+    OH_DecodingOptions *opts = nullptr;
+    OH_DecodingOptions_Create(&opts);
+    ASSERT_NE(opts, nullptr);
+    OH_PixelmapNative* resPixMap = nullptr;
+    IMAGE_ALLOCATOR_TYPE allocator = IMAGE_ALLOCATOR_TYPE::IMAGE_ALLOCATOR_TYPE_SHARE_MEMORY;
+    Image_Region desiredRegion = {0, 0, 3840, 2160};
+    OH_DecodingOptions_SetDesiredRegion(opts, &desiredRegion);
+    int32_t cropAndScaleStrategy = 2;
+    OH_DecodingOptions_SetCropAndScaleStrategy(opts, cropAndScaleStrategy);
+    Image_Size desiredSize = {1000, 1000};
+    OH_DecodingOptions_SetDesiredSize(opts, &desiredSize);
+    Image_ErrorCode ret = OH_ImageSourceNative_CreatePixelmapUsingAllocator(imageSource, opts, allocator, &resPixMap);
+    EXPECT_EQ(ret, IMAGE_SUCCESS);
+    EXPECT_NE(resPixMap, nullptr);
+    OH_ImageSourceNative_Release(imageSource);
+    OH_DecodingOptions_Release(opts);
+    OH_PixelmapNative_Release(resPixMap);
+}
+
+/**
+ * @tc.name: ImageRegionDecode010
+ * @tc.desc: Test Region decode, CropAndScaleStrategy is CROP_FIRST, Showing the left half image.        
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImagSourceNdk2Test, ImageRegionDecode010, TestSize.Level3)
+{
+    OH_ImageSourceNative *imageSource = CreateImageSourceNative(IMAGE_JPEG_PATH);
+    ASSERT_NE(imageSource, nullptr);
+    OH_DecodingOptions *opts = nullptr;
+    OH_DecodingOptions_Create(&opts);
+    ASSERT_NE(opts, nullptr);
+    OH_PixelmapNative* resPixMap = nullptr;
+    IMAGE_ALLOCATOR_TYPE allocator = IMAGE_ALLOCATOR_TYPE::IMAGE_ALLOCATOR_TYPE_SHARE_MEMORY;
+    Image_Region desiredRegion = {0, 0, 1920, 2160};
+    OH_DecodingOptions_SetDesiredRegion(opts, &desiredRegion);
+    int32_t cropAndScaleStrategy = 2;
+    OH_DecodingOptions_SetCropAndScaleStrategy(opts, cropAndScaleStrategy);
+    Image_Size desiredSize = {1000, 1000};
+    OH_DecodingOptions_SetDesiredSize(opts, &desiredSize);
+    Image_ErrorCode ret = OH_ImageSourceNative_CreatePixelmapUsingAllocator(imageSource, opts, allocator, &resPixMap);
+    EXPECT_EQ(ret, IMAGE_SUCCESS);
+    EXPECT_NE(resPixMap, nullptr);
+    OH_ImageSourceNative_Release(imageSource);
+    OH_DecodingOptions_Release(opts);
+    OH_PixelmapNative_Release(resPixMap);
+}
+
+/**
+ * @tc.name: ImageRegionDecode011
+ * @tc.desc: Test Region decode, CropAndScaleStrategy is CROP_FIRST, Showing the top half image.        
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImagSourceNdk2Test, ImageRegionDecode011, TestSize.Level3)
+{
+    OH_ImageSourceNative *imageSource = CreateImageSourceNative(IMAGE_JPEG_PATH);
+    ASSERT_NE(imageSource, nullptr);
+    OH_DecodingOptions *opts = nullptr;
+    OH_DecodingOptions_Create(&opts);
+    ASSERT_NE(opts, nullptr);
+    OH_PixelmapNative* resPixMap = nullptr;
+    IMAGE_ALLOCATOR_TYPE allocator = IMAGE_ALLOCATOR_TYPE::IMAGE_ALLOCATOR_TYPE_SHARE_MEMORY;
+    Image_Region desiredRegion = {0, 0, 3840, 1080};
+    OH_DecodingOptions_SetDesiredRegion(opts, &desiredRegion);
+    int32_t cropAndScaleStrategy = 2;
+    OH_DecodingOptions_SetCropAndScaleStrategy(opts, cropAndScaleStrategy);
+    Image_Size desiredSize = {1000, 1000};
+    OH_DecodingOptions_SetDesiredSize(opts, &desiredSize);
+    Image_ErrorCode ret = OH_ImageSourceNative_CreatePixelmapUsingAllocator(imageSource, opts, allocator, &resPixMap);
+    EXPECT_EQ(ret, IMAGE_SUCCESS);
+    EXPECT_NE(resPixMap, nullptr);
+    OH_ImageSourceNative_Release(imageSource);
+    OH_DecodingOptions_Release(opts);
+    OH_PixelmapNative_Release(resPixMap);
+}
+
+/**
+ * @tc.name: ImageRegionDecode012
+ * @tc.desc: Test Region decode, CropAndScaleStrategy is CROP_FIRST, Showing the right bottom image.        
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImagSourceNdk2Test, ImageRegionDecode012, TestSize.Level3)
+{
+    OH_ImageSourceNative *imageSource = CreateImageSourceNative(IMAGE_JPEG_PATH);
+    ASSERT_NE(imageSource, nullptr);
+    OH_DecodingOptions *opts = nullptr;
+    OH_DecodingOptions_Create(&opts);
+    ASSERT_NE(opts, nullptr);
+    OH_PixelmapNative* resPixMap = nullptr;
+    IMAGE_ALLOCATOR_TYPE allocator = IMAGE_ALLOCATOR_TYPE::IMAGE_ALLOCATOR_TYPE_SHARE_MEMORY;
+    Image_Region desiredRegion = {1920, 1080, 1920, 1080};
+    OH_DecodingOptions_SetDesiredRegion(opts, &desiredRegion);
+    int32_t cropAndScaleStrategy = 2;
+    OH_DecodingOptions_SetCropAndScaleStrategy(opts, cropAndScaleStrategy);
+    Image_Size desiredSize = {1000, 1000};
+    OH_DecodingOptions_SetDesiredSize(opts, &desiredSize);
+    Image_ErrorCode ret = OH_ImageSourceNative_CreatePixelmapUsingAllocator(imageSource, opts, allocator, &resPixMap);
+    EXPECT_EQ(ret, IMAGE_SUCCESS);
+    EXPECT_NE(resPixMap, nullptr);
+    OH_ImageSourceNative_Release(imageSource);
+    OH_DecodingOptions_Release(opts);
+    OH_PixelmapNative_Release(resPixMap);
+}
+
+/**
+ * @tc.name: ImageRegionDecode013
+ * @tc.desc: Test Region decode, CropAndScaleStrategy is CROP_FIRST, Showing NULL.        
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImagSourceNdk2Test, ImageRegionDecode013, TestSize.Level3)
+{
+    OH_ImageSourceNative *imageSource = CreateImageSourceNative(IMAGE_JPEG_PATH);
+    ASSERT_NE(imageSource, nullptr);
+    OH_DecodingOptions *opts = nullptr;
+    OH_DecodingOptions_Create(&opts);
+    ASSERT_NE(opts, nullptr);
+    OH_PixelmapNative* resPixMap = nullptr;
+    IMAGE_ALLOCATOR_TYPE allocator = IMAGE_ALLOCATOR_TYPE::IMAGE_ALLOCATOR_TYPE_SHARE_MEMORY;
+    Image_Region desiredRegion = {1920, 1080, 3840, 1080};
+    OH_DecodingOptions_SetDesiredRegion(opts, &desiredRegion);
+    int32_t cropAndScaleStrategy = 2;
+    OH_DecodingOptions_SetCropAndScaleStrategy(opts, cropAndScaleStrategy);
+    Image_Size desiredSize = {1000, 1000};
+    OH_DecodingOptions_SetDesiredSize(opts, &desiredSize);
+    Image_ErrorCode ret = OH_ImageSourceNative_CreatePixelmapUsingAllocator(imageSource, opts, allocator, &resPixMap);
+    EXPECT_NE(ret, IMAGE_SUCCESS);
+    EXPECT_EQ(resPixMap, nullptr);
+    OH_ImageSourceNative_Release(imageSource);
+    OH_DecodingOptions_Release(opts);
+    OH_PixelmapNative_Release(resPixMap);
+}
+
+/**
+ * @tc.name: ImageRegionDecode014
+ * @tc.desc: Test Region decode, CropAndScaleStrategy is CROP_FIRST, Showing NULL.        
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImagSourceNdk2Test, ImageRegionDecode014, TestSize.Level3)
+{
+    OH_ImageSourceNative *imageSource = CreateImageSourceNative(IMAGE_JPEG_PATH);
+    ASSERT_NE(imageSource, nullptr);
+    OH_DecodingOptions *opts = nullptr;
+    OH_DecodingOptions_Create(&opts);
+    ASSERT_NE(opts, nullptr);
+    OH_PixelmapNative* resPixMap = nullptr;
+    IMAGE_ALLOCATOR_TYPE allocator = IMAGE_ALLOCATOR_TYPE::IMAGE_ALLOCATOR_TYPE_SHARE_MEMORY;
+    Image_Region desiredRegion = {3840, 2160, 1920, 1080};
+    OH_DecodingOptions_SetDesiredRegion(opts, &desiredRegion);
+    int32_t cropAndScaleStrategy = 2;
+    OH_DecodingOptions_SetCropAndScaleStrategy(opts, cropAndScaleStrategy);
+    Image_Size desiredSize = {1000, 1000};
+    OH_DecodingOptions_SetDesiredSize(opts, &desiredSize);
+    Image_ErrorCode ret = OH_ImageSourceNative_CreatePixelmapUsingAllocator(imageSource, opts, allocator, &resPixMap);
+    EXPECT_NE(ret, IMAGE_SUCCESS);
+    EXPECT_EQ(resPixMap, nullptr);
+    OH_ImageSourceNative_Release(imageSource);
+    OH_DecodingOptions_Release(opts);
+    OH_PixelmapNative_Release(resPixMap);
+}
+
+/**
+ * @tc.name: ImageRegionDecode015
+ * @tc.desc: Test Region decode, CropAndScaleStrategy is CROP_FIRST, Showing the middle quarter image.        
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImagSourceNdk2Test, ImageRegionDecode015, TestSize.Level3)
+{
+    OH_ImageSourceNative *imageSource = CreateImageSourceNative(IMAGE_JPEG_PATH);
+    ASSERT_NE(imageSource, nullptr);
+    OH_DecodingOptions *opts = nullptr;
+    OH_DecodingOptions_Create(&opts);
+    ASSERT_NE(opts, nullptr);
+    OH_PixelmapNative* resPixMap = nullptr;
+    IMAGE_ALLOCATOR_TYPE allocator = IMAGE_ALLOCATOR_TYPE::IMAGE_ALLOCATOR_TYPE_SHARE_MEMORY;
+    Image_Region desiredRegion = {960, 540, 1920, 1080};
+    OH_DecodingOptions_SetDesiredRegion(opts, &desiredRegion);
+    int32_t cropAndScaleStrategy = 2;
+    OH_DecodingOptions_SetCropAndScaleStrategy(opts, cropAndScaleStrategy);
+    Image_Size desiredSize = {1000, 1000};
+    OH_DecodingOptions_SetDesiredSize(opts, &desiredSize);
+    Image_ErrorCode ret = OH_ImageSourceNative_CreatePixelmapUsingAllocator(imageSource, opts, allocator, &resPixMap);
+    EXPECT_EQ(ret, IMAGE_SUCCESS);
+    EXPECT_NE(resPixMap, nullptr);
+    OH_ImageSourceNative_Release(imageSource);
+    OH_DecodingOptions_Release(opts);
+    OH_PixelmapNative_Release(resPixMap);
+}
+
+/**
+ * @tc.name: ImageRegionDecode016
+ * @tc.desc: Test Region decode, CropAndScaleStrategy is OTHER, Showing the original image.        
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImagSourceNdk2Test, ImageRegionDecode016, TestSize.Level3)
+{
+    OH_ImageSourceNative *imageSource = CreateImageSourceNative(IMAGE_JPEG_PATH);
+    ASSERT_NE(imageSource, nullptr);
+    OH_DecodingOptions *opts = nullptr;
+    OH_DecodingOptions_Create(&opts);
+    ASSERT_NE(opts, nullptr);
+    OH_PixelmapNative* resPixMap = nullptr;
+    IMAGE_ALLOCATOR_TYPE allocator = IMAGE_ALLOCATOR_TYPE::IMAGE_ALLOCATOR_TYPE_SHARE_MEMORY;
+    Image_Region desiredRegion = {0, 0, 1920, 1080};
+    OH_DecodingOptions_SetDesiredRegion(opts, &desiredRegion);
+    int32_t cropAndScaleStrategy = 3;
+    OH_DecodingOptions_SetCropAndScaleStrategy(opts, cropAndScaleStrategy);
+    Image_Size desiredSize = {1920, 1080};
+    OH_DecodingOptions_SetDesiredSize(opts, &desiredSize);
+    Image_ErrorCode ret = OH_ImageSourceNative_CreatePixelmapUsingAllocator(imageSource, opts, allocator, &resPixMap);
+    EXPECT_EQ(ret, IMAGE_SUCCESS);
+    EXPECT_NE(resPixMap, nullptr);
+    OH_ImageSourceNative_Release(imageSource);
+    OH_DecodingOptions_Release(opts);
+    OH_PixelmapNative_Release(resPixMap);
+}
 }
 }
