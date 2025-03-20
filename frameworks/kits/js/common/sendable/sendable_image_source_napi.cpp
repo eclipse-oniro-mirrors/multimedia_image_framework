@@ -520,7 +520,7 @@ static void ImageSourceCallbackRoutine(napi_env env, ImageSourceAsyncContext* &c
                 IMAGE_LOGE("napi resolve failed, imageId:%{public}lu, status:%{public}d",
                     static_cast<unsigned long>(imageId), status);
             } else {
-                IMAGE_LOGI("napi resolve success, imageId:%{public}lu",
+                IMAGE_LOGD("napi resolve success, imageId:%{public}lu",
                     static_cast<unsigned long>(imageId));
             }
         } else {
