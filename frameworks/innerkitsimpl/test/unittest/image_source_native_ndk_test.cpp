@@ -1887,7 +1887,7 @@ HWTEST_F(ImagSourceNdk2Test, OH_ImageSourceNative_CreatePictureTest002, TestSize
 
 /**
  * @tc.name: ImageRegionDecode001
- * @tc.desc: Test Region decode, CropAndScaleStrategy is DEFAULT, Showing the original image.        
+ * @tc.desc: Test Region decode, CropAndScaleStrategy is DEFAULT, Showing the original image.
  * @tc.type: FUNC
  */
 HWTEST_F(ImagSourceNdk2Test, ImageRegionDecode001, TestSize.Level3)
@@ -1911,7 +1911,7 @@ HWTEST_F(ImagSourceNdk2Test, ImageRegionDecode001, TestSize.Level3)
 
 /**
  * @tc.name: ImageRegionDecode002
- * @tc.desc: Test Region decode, CropAndScaleStrategy is SCALE_FIRST, Showing the original image.        
+ * @tc.desc: Test Region decode, CropAndScaleStrategy is SCALE_FIRST, Showing the original image.
  * @tc.type: FUNC
  */
 HWTEST_F(ImagSourceNdk2Test, ImageRegionDecode002, TestSize.Level3)
@@ -1939,7 +1939,7 @@ HWTEST_F(ImagSourceNdk2Test, ImageRegionDecode002, TestSize.Level3)
 
 /**
  * @tc.name: ImageRegionDecode003
- * @tc.desc: Test Region decode, CropAndScaleStrategy is SCALE_FIRST, Showing the left half image.        
+ * @tc.desc: Test Region decode, CropAndScaleStrategy is SCALE_FIRST, Showing the left half image.
  * @tc.type: FUNC
  */
 HWTEST_F(ImagSourceNdk2Test, ImageRegionDecode003, TestSize.Level3)
@@ -1967,7 +1967,7 @@ HWTEST_F(ImagSourceNdk2Test, ImageRegionDecode003, TestSize.Level3)
 
 /**
  * @tc.name: ImageRegionDecode004
- * @tc.desc: Test Region decode, CropAndScaleStrategy is SCALE_FIRST, Showing the top half image.        
+ * @tc.desc: Test Region decode, CropAndScaleStrategy is SCALE_FIRST, Showing the top half image.
  * @tc.type: FUNC
  */
 HWTEST_F(ImagSourceNdk2Test, ImageRegionDecode004, TestSize.Level3)
@@ -1995,7 +1995,7 @@ HWTEST_F(ImagSourceNdk2Test, ImageRegionDecode004, TestSize.Level3)
 
 /**
  * @tc.name: ImageRegionDecode005
- * @tc.desc: Test Region decode, CropAndScaleStrategy is SCALE_FIRST, Showing the right bottom image.        
+ * @tc.desc: Test Region decode, CropAndScaleStrategy is SCALE_FIRST, Showing the right bottom image.
  * @tc.type: FUNC
  */
 HWTEST_F(ImagSourceNdk2Test, ImageRegionDecode005, TestSize.Level3)
@@ -2023,7 +2023,7 @@ HWTEST_F(ImagSourceNdk2Test, ImageRegionDecode005, TestSize.Level3)
 
 /**
  * @tc.name: ImageRegionDecode006
- * @tc.desc: Test Region decode, CropAndScaleStrategy is SCALE_FIRST, Showing NULL.        
+ * @tc.desc: Test Region decode, CropAndScaleStrategy is SCALE_FIRST, Showing NULL.
  * @tc.type: FUNC
  */
 HWTEST_F(ImagSourceNdk2Test, ImageRegionDecode006, TestSize.Level3)
@@ -2051,7 +2051,7 @@ HWTEST_F(ImagSourceNdk2Test, ImageRegionDecode006, TestSize.Level3)
 
 /**
  * @tc.name: ImageRegionDecode007
- * @tc.desc: Test Region decode, CropAndScaleStrategy is SCALE_FIRST, Showing NULL.        
+ * @tc.desc: Test Region decode, CropAndScaleStrategy is SCALE_FIRST, Showing NULL.
  * @tc.type: FUNC
  */
 HWTEST_F(ImagSourceNdk2Test, ImageRegionDecode007, TestSize.Level3)
@@ -2079,7 +2079,7 @@ HWTEST_F(ImagSourceNdk2Test, ImageRegionDecode007, TestSize.Level3)
 
 /**
  * @tc.name: ImageRegionDecode008
- * @tc.desc: Test Region decode, CropAndScaleStrategy is SCALE_FIRST, Showing the middle quarter image.        
+ * @tc.desc: Test Region decode, CropAndScaleStrategy is SCALE_FIRST, Showing the middle quarter image.
  * @tc.type: FUNC
  */
 HWTEST_F(ImagSourceNdk2Test, ImageRegionDecode008, TestSize.Level3)
@@ -2107,7 +2107,7 @@ HWTEST_F(ImagSourceNdk2Test, ImageRegionDecode008, TestSize.Level3)
 
 /**
  * @tc.name: ImageRegionDecode009
- * @tc.desc: Test Region decode, CropAndScaleStrategy is CROP_FIRST, Showing the original image.        
+ * @tc.desc: Test Region decode, CropAndScaleStrategy is CROP_FIRST, Showing the original image.
  * @tc.type: FUNC
  */
 HWTEST_F(ImagSourceNdk2Test, ImageRegionDecode009, TestSize.Level3)
@@ -2135,7 +2135,7 @@ HWTEST_F(ImagSourceNdk2Test, ImageRegionDecode009, TestSize.Level3)
 
 /**
  * @tc.name: ImageRegionDecode010
- * @tc.desc: Test Region decode, CropAndScaleStrategy is CROP_FIRST, Showing the left half image.        
+ * @tc.desc: Test Region decode, CropAndScaleStrategy is CROP_FIRST, Showing the left half image.
  * @tc.type: FUNC
  */
 HWTEST_F(ImagSourceNdk2Test, ImageRegionDecode010, TestSize.Level3)
@@ -2163,7 +2163,7 @@ HWTEST_F(ImagSourceNdk2Test, ImageRegionDecode010, TestSize.Level3)
 
 /**
  * @tc.name: ImageRegionDecode011
- * @tc.desc: Test Region decode, CropAndScaleStrategy is CROP_FIRST, Showing the top half image.        
+ * @tc.desc: Test Region decode, CropAndScaleStrategy is CROP_FIRST, Showing the top half image.
  * @tc.type: FUNC
  */
 HWTEST_F(ImagSourceNdk2Test, ImageRegionDecode011, TestSize.Level3)
@@ -2191,7 +2191,7 @@ HWTEST_F(ImagSourceNdk2Test, ImageRegionDecode011, TestSize.Level3)
 
 /**
  * @tc.name: ImageRegionDecode012
- * @tc.desc: Test Region decode, CropAndScaleStrategy is CROP_FIRST, Showing the right bottom image.        
+ * @tc.desc: Test Region decode, CropAndScaleStrategy is CROP_FIRST, Showing the right bottom image.
  * @tc.type: FUNC
  */
 HWTEST_F(ImagSourceNdk2Test, ImageRegionDecode012, TestSize.Level3)
@@ -2219,7 +2219,7 @@ HWTEST_F(ImagSourceNdk2Test, ImageRegionDecode012, TestSize.Level3)
 
 /**
  * @tc.name: ImageRegionDecode013
- * @tc.desc: Test Region decode, CropAndScaleStrategy is CROP_FIRST, Showing NULL.        
+ * @tc.desc: Test Region decode, CropAndScaleStrategy is CROP_FIRST, Showing NULL.
  * @tc.type: FUNC
  */
 HWTEST_F(ImagSourceNdk2Test, ImageRegionDecode013, TestSize.Level3)
@@ -2247,7 +2247,7 @@ HWTEST_F(ImagSourceNdk2Test, ImageRegionDecode013, TestSize.Level3)
 
 /**
  * @tc.name: ImageRegionDecode014
- * @tc.desc: Test Region decode, CropAndScaleStrategy is CROP_FIRST, Showing NULL.        
+ * @tc.desc: Test Region decode, CropAndScaleStrategy is CROP_FIRST, Showing NULL.
  * @tc.type: FUNC
  */
 HWTEST_F(ImagSourceNdk2Test, ImageRegionDecode014, TestSize.Level3)
@@ -2275,7 +2275,7 @@ HWTEST_F(ImagSourceNdk2Test, ImageRegionDecode014, TestSize.Level3)
 
 /**
  * @tc.name: ImageRegionDecode015
- * @tc.desc: Test Region decode, CropAndScaleStrategy is CROP_FIRST, Showing the middle quarter image.        
+ * @tc.desc: Test Region decode, CropAndScaleStrategy is CROP_FIRST, Showing the middle quarter image.
  * @tc.type: FUNC
  */
 HWTEST_F(ImagSourceNdk2Test, ImageRegionDecode015, TestSize.Level3)
@@ -2303,7 +2303,7 @@ HWTEST_F(ImagSourceNdk2Test, ImageRegionDecode015, TestSize.Level3)
 
 /**
  * @tc.name: ImageRegionDecode016
- * @tc.desc: Test Region decode, CropAndScaleStrategy is OTHER, Showing the original image.        
+ * @tc.desc: Test Region decode, CropAndScaleStrategy is OTHER, Showing the original image.
  * @tc.type: FUNC
  */
 HWTEST_F(ImagSourceNdk2Test, ImageRegionDecode016, TestSize.Level3)
