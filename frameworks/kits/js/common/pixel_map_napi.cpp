@@ -37,6 +37,7 @@
 #include "pixel_map.h"
 #include "image_format_convert.h"
 #include <securec.h>
+#include "image_utils.h"
 
 #undef LOG_DOMAIN
 #define LOG_DOMAIN LOG_TAG_DOMAIN_ID_IMAGE
@@ -3838,6 +3839,7 @@ static napi_value Convert(napi_env &env, napi_callback_info &info, FormatType sr
 
     context->status = ImageFormatConvert::ConvertImageFormat(context->rPixelMap, context->destFormat);
     if (context->status == SUCCESS) {
+        ImageUtils::FlushSurfaceBuffer(const_cast<PixelMap*>(context->rPixelMap.get()));
         result = PixelMapNapi::CreatePixelMap(env, context->rPixelMap);
         return result;
     }
