@@ -819,6 +819,9 @@ bool AstcCodec::IsAstcEnc(Media::ImageInfo &info, uint8_t* pixelmapIn, TextureEn
 bool AstcCodec::InitBeforeAstcEncode(ImageInfo &imageInfo, TextureEncodeOptions &param, uint8_t &colorData,
     uint8_t **pixmapIn, uint32_t &stride)
 {
+    if (astcPixelMap_ == nullptr || astcOutput_ == nullptr) {
+        return false;
+    }
     astcPixelMap_->GetImageInfo(imageInfo);
     InitTextureEncodeOptions(param, colorData);
     param.extInfoBuf = &colorData;
