@@ -175,6 +175,16 @@ static ani_object GetImageInfo([[maybe_unused]] ani_env* env, [[maybe_unused]] a
     return ImageAniUtils::CreateImageInfoValueFromNative(env, imgInfo, pixelmap);
 }
 
+static ani_int GetBytesNumberPerRow([[maybe_unused]] ani_env* env, [[maybe_unused]] ani_object obj)
+{
+    PixelMap* pixelmap = ImageAniUtils::GetPixelMapFromEnv(env, obj);
+    if (pixelmap == nullptr) {
+        IMAGE_LOGE("[GetPixelMapFromEnv] pixelmap nullptr");
+        return 0;
+    }
+    return pixelmap->GetRowBytes();
+}
+
 static ani_int GetPixelBytesNumber([[maybe_unused]] ani_env* env, [[maybe_unused]] ani_object obj)
 {
     PixelMap* pixelmap = ImageAniUtils::GetPixelMapFromEnv(env, obj);
@@ -229,6 +239,7 @@ ani_status PixelMapAni::Init(ani_env* env)
             reinterpret_cast<void*>(OHOS::Media::CreateAlphaPixelmap)},
         ani_native_function {"nativeGetImageInfo", ":L@ohos/multimedia/image/image/ImageInfo;",
             reinterpret_cast<void*>(OHOS::Media::GetImageInfo)},
+        ani_native_function {"getBytesNumberPerRow", ":I", reinterpret_cast<void*>(OHOS::Media::GetBytesNumberPerRow)},
         ani_native_function {"getPixelBytesNumber", ":I", reinterpret_cast<void*>(OHOS::Media::GetPixelBytesNumber)},
         ani_native_function {"nativeRelease", ":V", reinterpret_cast<void*>(OHOS::Media::Release)},
         ani_native_function {"nativeReadPixelsToBuffer", "Lescompat/ArrayBuffer;:V",

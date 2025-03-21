@@ -36,8 +36,10 @@ function main() {
       console.log("ASYNC Get image info: ", imageInfo.size.width, imageInfo.size.height, imageInfo.pixelFormat, imageInfo.mimeType);
     });
   
-  const bytes = pixelMap.getPixelBytesNumber();
-  console.log("PixelMap bytes number: " + bytes);
+  const rowBytes = pixelMap.getBytesNumberPerRow();
+  console.log("PixelMap bytes per row: " + rowBytes);
+  const totalBytes = pixelMap.getPixelBytesNumber();
+  console.log("PixelMap total bytes: " + totalBytes);
 
   if (retImageInfo.isHdr) {
       console.log("Test PixelMap hdr ");

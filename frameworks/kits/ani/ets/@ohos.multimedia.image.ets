@@ -345,6 +345,7 @@ export namespace image {
     createAlphaPixelmap(): Promise<PixelMap>;
     getImageInfoSync(): ImageInfo;
     getImageInfo(): Promise<ImageInfo>;
+    getBytesNumberPerRow(): int;
     getPixelBytesNumber(): int;
     readPixelsToBufferSync(buff: ArrayBuffer);
     readPixelsToBuffer(buff: ArrayBuffer): Promise<void>;
@@ -375,6 +376,8 @@ export namespace image {
           .then((e: NullishType) => resolve(e as PixelMap));
       });
     }
+
+    native getBytesNumberPerRow(): int;
 
     native nativeGetImageInfo(): ImageInfo;
 
