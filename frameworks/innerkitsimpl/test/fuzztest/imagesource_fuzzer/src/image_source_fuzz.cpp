@@ -24,7 +24,7 @@
 
 #include "securec.h"
 #include "image_source.h"
-#include "convert_utils.h"
+#include "common_fuzztest_function.h"
 #include "image_log.h"
 #include "image_packer.h"
 #include "media_errors.h"

@@ -26,7 +26,7 @@ ohos_fuzztest("ImagePngPluginFuzzTest") {
   ]
 
   sources = [
-    "$image_subsystem/frameworks/innerkitsimpl/test/fuzztest/common/src/convert_utils.cpp",
+    "$image_subsystem/frameworks/innerkitsimpl/test/fuzztest/common/src/common_fuzztest_function.cpp",
     "src/image_png_plugin_fuzz.cpp",
   ]
 

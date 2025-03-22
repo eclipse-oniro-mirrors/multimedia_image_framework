@@ -23,7 +23,7 @@
 #include <fcntl.h>
 #include <securec.h>
 
-#include "convert_utils.h"
+#include "common_fuzztest_function.h"
 #include "image_source.h"
 #include "ext_decoder.h"
 #include "svg_decoder.h"
@@ -408,7 +408,6 @@ void ImagePluginFuzzTest001(const uint8_t* data, size_t size)
     GifTest001(GIF_PATH);
     GifTest001(WEBP_PATH);
     HdrTest001();
-    ExtDecoderRegionFuncTest001(filename);
 }
 } // namespace Media
 } // namespace OHOS

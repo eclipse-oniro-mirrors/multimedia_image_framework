@@ -23,7 +23,7 @@
 #include <fcntl.h>
 #include "securec.h"
 
-#include "convert_utils.h"
+#include "common_fuzztest_function.h"
 #include "metadata_accessor_factory.h"
 #include "dng_exif_metadata_accessor.h"
 #include "heif_exif_metadata_accessor.h"

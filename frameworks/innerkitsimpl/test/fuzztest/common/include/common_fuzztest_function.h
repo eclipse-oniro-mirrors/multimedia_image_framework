@@ -12,12 +12,17 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef FRAMEWORKS_INNERKITSIMPL_TEST_FUZZTEST_COMMON_CONVERT_UTILS_H
-#define FRAMEWORKS_INNERKITSIMPL_TEST_FUZZTEST_COMMON_CONVERT_UTILS_H
+#ifndef FRAMEWORKS_INNERKITSIMPL_TEST_FUZZTEST_COMMON_FUZZTEST_FUNCTION_H
+#define FRAMEWORKS_INNERKITSIMPL_TEST_FUZZTEST_COMMON_FUZZTEST_FUNCTION_H
 
 #include <cstdint>
 #include <stddef.h>
 #include <string>
+namespace OHOS {
+namespace Media {
+    class PixelMap;
+}
+}
 
 // create pixelMap by data, and encode to the file descriptor
 int ConvertDataToFd(const uint8_t* data, size_t size, std::string encodeFormat = "image/jpeg");
@@ -25,5 +30,13 @@ int ConvertDataToFd(const uint8_t* data, size_t size, std::string encodeFormat =
 std::string GetNowTimeStr();
 
 bool WriteDataToFile(const uint8_t* data, size_t size, const std::string& filename);
+
+void PixelMapTest001(OHOS::Media::PixelMap* pixelMap);
+
+void PixelMapTest002(OHOS::Media::PixelMap* pixelMap);
+
+void PixelYuvTest001(OHOS::Media::PixelMap* pixelMap);
+
+void PixelYuvTest002(OHOS::Media::PixelMap* pixelMap);
 
 #endif
