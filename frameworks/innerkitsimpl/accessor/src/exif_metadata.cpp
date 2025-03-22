@@ -53,6 +53,8 @@ const auto EXIF_HEAD_SIZE = 6;
 const int NUMERATOR_SIZE = 4; // 4 bytes for numeratior
 const static std::string DEFAULT_EXIF_VALUE = "default_exif_value";
 const static std::string HW_CAPTURE_MODE = "HwMnoteCaptureMode";
+const static std::string HW_FOCUS_MODE_EXIF = "HwMnoteFocusModeExif";
+const static std::string MAKER_NOTE_TAG = "MakerNote";
 const static uint64_t MAX_EXIFMETADATA_MAX_SIZE = 1024 * 1024;
 const std::set<std::string_view> HW_SPECIAL_KEYS = {
     "MovingPhotoId",
@@ -117,7 +119,7 @@ int ExifMetadata::GetValue(const std::string &key, std::string &value) const
         IMAGE_LOGD("Key is not supported.");
         return ERR_IMAGE_DECODE_EXIF_UNSUPPORT;
     }
-    if (key == "MakerNote") {
+    if (key == MAKER_NOTE_TAG) {
         return HandleMakerNote(value);
     }
     
@@ -218,6 +220,14 @@ int ExifMetadata::HandleHwMnote(const std::string &key, std::string &value) cons
 {
     value = DEFAULT_EXIF_VALUE;
     char tagValueChar[TAG_VALUE_SIZE];
+    if (key == HW_FOCUS_MODE_EXIF) {
+        auto entry = exif_data_get_entry_ext(exifData_, EXIF_TAG_MAKER_NOTE);
+        exif_entry_get_value(entry, tagValueChar, sizeof(tagValueChar));
+        value = tagValueChar;
+        bool cond = value.empty();
+        CHECK_ERROR_RETURN_RET(cond, ERR_IMAGE_DECODE_EXIF_UNSUPPORT);
+        return SUCCESS;
+    }
     ExifMnoteData *md = exif_data_get_mnote_data(exifData_);
     bool cond = false;
     cond = md == nullptr;
@@ -594,6 +604,19 @@ bool ExifMetadata::SetValue(const std::string &key, const std::string &value)
 bool ExifMetadata::SetHwMoteValue(const std::string &key, const std::string &value)
 {
     bool isNewMaker = false;
+    if (key == HW_FOCUS_MODE_EXIF) {
+        auto entry = exif_data_get_entry_ext(exifData_, EXIF_TAG_MAKER_NOTE);
+        if (entry == nullptr) {
+            entry = CreateEntry(key, EXIF_TAG_MAKER_NOTE, value.size() + 1);
+        }
+        if (entry != nullptr) {
+            if ((entry->format == EXIF_FORMAT_UNDEFINED || entry->format == EXIF_FORMAT_ASCII) &&
+            (entry->size != static_cast<unsigned int>(value.size() + 1))) {
+                ReallocEntry(entry, value.size() + 1);
+            }
+            SetMem(entry, value, value.size() + 1);
+        }
+    }
     ExifMnoteData *md = GetHwMnoteData(isNewMaker);
     bool cond = false;
     cond = !is_huawei_md(md);
@@ -648,7 +671,7 @@ ExifMnoteData* ExifMetadata::GetHwMnoteData(bool &isNewMaker)
     exif_data_set_priv_md(exifData_, (ExifMnoteData *)md);
     unsigned long hwsize = sizeof(INIT_HW_DATA) / sizeof(INIT_HW_DATA[0]);
     md->methods.load(md, INIT_HW_DATA, hwsize);
-    auto makernote = CreateEntry("MakerNote", EXIF_TAG_MAKER_NOTE, hwsize);
+    auto makernote = CreateEntry(MAKER_NOTE_TAG, EXIF_TAG_MAKER_NOTE, hwsize);
     cond = makernote == nullptr;
     CHECK_ERROR_RETURN_RET_LOG(cond, nullptr, "GetHwMnoteData create maker note failed.");
     cond = memcpy_s(makernote->data, hwsize - EXIF_HEAD_SIZE, INIT_HW_DATA + EXIF_HEAD_SIZE,
