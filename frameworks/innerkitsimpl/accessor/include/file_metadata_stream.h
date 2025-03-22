@@ -264,6 +264,7 @@ private:
     FILE *fp_;                                 // File descriptor
     int dupFD_;                                // Duplicated file descriptor
     std::string filePath_;                     // File path
+    ssize_t fileSize_;                         // File size
     void *mappedMemory_;                       // Address of memory mapping
     std::unique_ptr<FileWrapper> fileWrapper_; // File wrapper class, used for testing
 
