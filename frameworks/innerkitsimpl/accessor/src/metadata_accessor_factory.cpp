@@ -156,7 +156,7 @@ EncodedFormat MetadataAccessorFactory::GetImageType(std::shared_ptr<MetadataStre
         (memcmp(buff, DNG_BIG_ENDIAN_HEADER, sizeof(DNG_BIG_ENDIAN_HEADER) * byteSize) == 0)) {
         return EncodedFormat::DNG;
     }
-    IMAGE_LOGE("This is unknown image file, file size:%{public}llu.",
+    IMAGE_LOGD("This is unknown image file, file size:%{public}llu.",
         static_cast<unsigned long long>(stream->GetSize()));
     return EncodedFormat::UNKNOWN;
 }
