@@ -225,6 +225,7 @@ const static std::set<std::string> READ_ONLY_KEYS = {
     "HwMnoteFaceReyeCenter",   "HwMnoteFaceMouthCenter",
     "JPEGInterchangeFormat",   "JPEGInterchangeFormatLength",
     "MakerNote",               "HwMnoteWindSnapshotMode",
+    "HwMnoteFocusModeExif",
 };
 
 // Orientation, tag 0x0112

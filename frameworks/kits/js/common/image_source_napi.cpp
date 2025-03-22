@@ -212,6 +212,7 @@ static std::vector<struct ImageEnum> sPropertyKeyMap = {
     {"SCENE_TEXT_CONF", 0, "HwMnoteSceneTextConf"},
     {"FACE_COUNT", 0, "HwMnoteFaceCount"},
     {"FOCUS_MODE", 0, "HwMnoteFocusMode"},
+    {"FOCUS_MODE_EXIF", 0, "HwMnoteFocusModeExif"},
     {"COMPRESSION", 0, "Compression"},
     {"PHOTOMETRIC_INTERPRETATION", 0, "PhotometricInterpretation"},
     {"STRIP_OFFSETS", 0, "StripOffsets"},

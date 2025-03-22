@@ -60,6 +60,10 @@ static const std::string IMAGE_OUTPUT_JPEG_MULTI_INC2_PATH = "/data/test/test_in
 static const std::string IMAGE_OUTPUT_JPEG_MULTI_ONETIME2_PATH = "/data/test/test_onetime2.jpg";
 static const std::string IMAGE_HW_EXIF_PATH = "/data/local/tmp/image/test_jpeg_readmetadata004.jpg";
 static const std::string IMAGE_NO_EXIF_PATH = "/data/local/tmp/image/hasNoExif.jpg";
+static const std::string IMAGE_HW_MNOTE_FOCUS_MODE_EXIF_AUTO_PATH = "/data/local/tmp/image/focus_mode_exif_auto.jpg";
+static const std::string IMAGE_HW_MNOTE_FOCUS_MODE_EXIF_AF_S_PATH = "/data/local/tmp/image/focus_mode_exif_af_s.jpg";
+static const std::string IMAGE_HW_MNOTE_FOCUS_MODE_EXIF_AF_C_PATH = "/data/local/tmp/image/focus_mode_exif_af_c.jpg";
+static const std::string IMAGE_HW_MNOTE_FOCUS_MODE_EXIF_AF_MF_PATH = "/data/local/tmp/image/focus_mode_exif_af_mf.jpg";
 
 const std::string ORIENTATION = "Orientation";
 const std::string IMAGE_HEIGHT = "ImageHeight";
@@ -2253,6 +2257,90 @@ HWTEST_F(ImageSourceJpegTest, GetImagePropertyStringTest0053, TestSize.Level3)
     uint32_t res = imageSource->GetImagePropertyString(index, key, value);
     ASSERT_EQ(res, SUCCESS);
     ASSERT_EQ(value, "default_exif_value");
+}
+
+/**
+ * @tc.name: GetImagePropertyStringTest0054
+ * @tc.desc: get HwMnoteFocusModeExif auto test
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageSourceJpegTest, GetImagePropertyStringTest0054, TestSize.Level3)
+{
+    uint32_t errorCode = 0;
+    SourceOptions opts;
+    std::unique_ptr<ImageSource> imageSource =
+        ImageSource::CreateImageSource(IMAGE_HW_MNOTE_FOCUS_MODE_EXIF_AUTO_PATH, opts, errorCode);
+    ASSERT_EQ(errorCode, SUCCESS);
+
+    uint32_t index = 0;
+    std::string value = "0";
+    std::string key = "HwMnoteFocusModeExif";
+    uint32_t res = imageSource->GetImagePropertyString(index, key, value);
+    ASSERT_EQ(res, SUCCESS);
+    ASSERT_EQ(value, "Auto");
+}
+
+/**
+ * @tc.name: GetImagePropertyStringTest0055
+ * @tc.desc: get HwMnoteFocusModeExif AF_S test
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageSourceJpegTest, GetImagePropertyStringTest0055, TestSize.Level3)
+{
+    uint32_t errorCode = 0;
+    SourceOptions opts;
+    std::unique_ptr<ImageSource> imageSource =
+        ImageSource::CreateImageSource(IMAGE_HW_MNOTE_FOCUS_MODE_EXIF_AF_S_PATH, opts, errorCode);
+    ASSERT_EQ(errorCode, SUCCESS);
+
+    uint32_t index = 0;
+    std::string value = "0";
+    std::string key = "HwMnoteFocusModeExif";
+    uint32_t res = imageSource->GetImagePropertyString(index, key, value);
+    ASSERT_EQ(res, SUCCESS);
+    ASSERT_EQ(value, "AF_S");
+}
+
+/**
+ * @tc.name: GetImagePropertyStringTest0056
+ * @tc.desc: get HwMnoteFocusModeExif AF_C test
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageSourceJpegTest, GetImagePropertyStringTest0056, TestSize.Level3)
+{
+    uint32_t errorCode = 0;
+    SourceOptions opts;
+    std::unique_ptr<ImageSource> imageSource =
+            ImageSource::CreateImageSource(IMAGE_HW_MNOTE_FOCUS_MODE_EXIF_AF_C_PATH, opts, errorCode);
+    ASSERT_EQ(errorCode, SUCCESS);
+
+    uint32_t index = 0;
+    std::string value = "0";
+    std::string key = "HwMnoteFocusModeExif";
+    uint32_t res = imageSource->GetImagePropertyString(index, key, value);
+    ASSERT_EQ(res, SUCCESS);
+    ASSERT_EQ(value, "AF_C");
+}
+
+/**
+ * @tc.name: GetImagePropertyStringTest0057
+ * @tc.desc: get HwMnoteFocusModeExif AF_MF test
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageSourceJpegTest, GetImagePropertyStringTest0057, TestSize.Level3)
+{
+    uint32_t errorCode = 0;
+    SourceOptions opts;
+    std::unique_ptr<ImageSource> imageSource =
+            ImageSource::CreateImageSource(IMAGE_HW_MNOTE_FOCUS_MODE_EXIF_AF_MF_PATH, opts, errorCode);
+    ASSERT_EQ(errorCode, SUCCESS);
+
+    uint32_t index = 0;
+    std::string value = "0";
+    std::string key = "HwMnoteFocusModeExif";
+    uint32_t res = imageSource->GetImagePropertyString(index, key, value);
+    ASSERT_EQ(res, SUCCESS);
+    ASSERT_EQ(value, "AF_MF");
 }
 
 /**
