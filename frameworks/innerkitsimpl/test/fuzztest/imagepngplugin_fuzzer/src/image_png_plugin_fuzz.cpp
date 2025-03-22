@@ -21,7 +21,7 @@
 #include <unistd.h>
 #include <fcntl.h>
 
-#include "convert_utils.h"
+#include "common_fuzztest_function.h"
 #include "image_source.h"
 #include "png_decoder.h"
 #include "nine_patch_listener.h"
