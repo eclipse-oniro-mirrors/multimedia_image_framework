@@ -319,7 +319,7 @@ bool FileMetadataStream::Open(OpenMode mode)
     if (!openResult) {
         return false;
     }
-    fileSize_ = GetSize();
+
     return true;
 }
 
@@ -341,6 +341,7 @@ byte *FileMetadataStream::GetAddr(bool isWriteable)
     int fileDescriptor = fileno(fp_);
 
     // Create a memory map
+    fileSize_ = GetSize();
     if (fileSize_ <= 0) {
         mappedMemory_ = nullptr;
     } else {
