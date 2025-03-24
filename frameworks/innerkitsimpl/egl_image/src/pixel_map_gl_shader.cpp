@@ -507,7 +507,7 @@ bool RotateShader::Use()
     uint32_t calculationTargetHeight =  rotateDegreeZ_ !=0 ?
         static_cast<uint32_t>(targetSize_.width) : static_cast<uint32_t>(targetSize_.height);
     uint32_t calculationTargetWidth =  rotateDegreeZ_ !=0 ?
-        static_cast<uint32_t>(targetSize_.width) : static_cast<uint32_t>(targetSize_.height);
+        static_cast<uint32_t>(targetSize_.height) : static_cast<uint32_t>(targetSize_.width);
     float clipRatioX = sourceSize_.width > sourceSize_.height ?
         (sourceSize_.height * 1.0f / calculationTargetHeight) * calculationTargetWidth / sourceSize_.width : 1;
     float clipRatioY = sourceSize_.height > sourceSize_.width ?
