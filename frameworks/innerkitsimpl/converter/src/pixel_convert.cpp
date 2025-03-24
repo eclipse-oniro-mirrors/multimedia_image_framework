@@ -90,6 +90,7 @@ constexpr uint32_t ASTC_UNIT_BYTES = 16;
 constexpr uint32_t ASTC_DIM_MAX = 8192;
 constexpr uint32_t BYTES_PER_PIXEL = 4;
 constexpr uint32_t BIT_SHIFT_16BITS = 16;
+constexpr uint32_t EVEN_ALIGNMENT = 2;
 
 struct AstcInfo {
     uint32_t astcBufSize;
@@ -1406,38 +1407,35 @@ static int32_t ConvertFromP010(const void *srcPixels, const int32_t srcLength, c
         IMAGE_LOGE("[PixelMap]Convert: src or dst pixel format invalid.");
         return -1;
     }
-    uint8_t* srcP010 = new(std::nothrow) uint8_t[srcLength];
-    if (srcP010 == nullptr) {
+    ImageInfo copySrcInfo = srcInfo;
+    if (!ImageUtils::GetAlignedNumber(copySrcInfo.size.width, EVEN_ALIGNMENT) ||
+        !ImageUtils::GetAlignedNumber(copySrcInfo.size.height, EVEN_ALIGNMENT)) {
+        return -1;
+    }
+    int32_t srcP010Length = PixelMap::GetAllocatedByteCount(copySrcInfo);
+    std::unique_ptr<uint8_t[]> srcP010Buffer = std::make_unique<uint8_t[]>(srcP010Length);
+    if (srcP010Buffer == nullptr) {
         IMAGE_LOGE("[PixelMap]Convert: alloc memory failed!");
         return -1;
     }
-    memset_s(srcP010, srcLength, 0, srcLength);
+    uint8_t* srcP010 = srcP010Buffer.get();
+    memset_s(srcP010, srcP010Length, 0, srcP010Length);
     if (srcInfo.pixelFormat == PixelFormat::YCRCB_P010) {
         NV12P010ToNV21P010((uint16_t *)srcPixels, srcInfo, (uint16_t *)srcP010);
     } else {
-        if (memcpy_s(srcP010, srcLength, srcPixels, srcLength) != 0) {
-            delete[] srcP010;
-            srcP010 = nullptr;
+        if (memcpy_s(srcP010, srcP010Length, srcPixels, srcLength) != 0) {
             return -1;
         }
     }
     if (dstInfo.pixelFormat == PixelFormat::RGBA_1010102) {
         if (P010ConvertRGBA1010102(srcP010, srcInfo, dstPixels, dstInfo)) {
-            delete[] srcP010;
-            srcP010 = nullptr;
             return PixelMap::GetRGBxByteCount(dstInfo);
         }
-        delete[] srcP010;
-        srcP010 = nullptr;
         return -1;
     } else {
         if (ConvertForFFMPEG(srcP010, srcInfo.pixelFormat, srcInfo, dstPixels, dstInfo.pixelFormat)) {
-            delete[] srcP010;
-            srcP010 = nullptr;
             return PixelMap::GetRGBxByteCount(dstInfo);
         }
-        delete[] srcP010;
-        srcP010 = nullptr;
         return -1;
     }
 }
@@ -1539,7 +1537,18 @@ static int32_t ConvertToP010(const BufferInfo &src, BufferInfo &dst)
             return -1;
         }
     } else {
-        if (!ConvertForFFMPEG(srcPixels, srcInfo.pixelFormat, srcInfo, dstP010, dstInfo.pixelFormat)) {
+        ImageInfo copySrcInfo = srcInfo;
+        if (!ImageUtils::GetAlignedNumber(copySrcInfo.size.width, EVEN_ALIGNMENT) ||
+            !ImageUtils::GetAlignedNumber(copySrcInfo.size.height, EVEN_ALIGNMENT)) {
+            return -1;
+        }
+        int32_t copySrcLength = PixelMap::GetAllocatedByteCount(copySrcInfo);
+        std::unique_ptr<uint8_t[]> copySrcBuffer = std::make_unique<uint8_t[]>(copySrcLength);
+        if (copySrcBuffer == nullptr || EOK != memcpy_s(copySrcBuffer.get(), srcLength, srcPixels, srcLength)) {
+            IMAGE_LOGE("alloc memory or memcpy_s failed!");
+            return -1;
+        }
+        if (!ConvertForFFMPEG(copySrcBuffer.get(), srcInfo.pixelFormat, srcInfo, dstP010, dstInfo.pixelFormat)) {
             return -1;
         }
     }

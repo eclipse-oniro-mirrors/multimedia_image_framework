@@ -1257,5 +1257,19 @@ void ImageUtils::SetReuseContextBuffer(ImagePlugin::DecodeContext& context,
     context.pixelsBuffer.bufferSize = count;
     context.pixelsBuffer.context = fd;
 }
+
+bool ImageUtils::GetAlignedNumber(int32_t& number, int32_t align)
+{
+    if (number < 0 || align <= 0) {
+        return false;
+    }
+    int64_t res = number;
+    res = (res + align - 1) / align * align;
+    if (res > INT32_MAX) {
+        return false;
+    }
+    number = static_cast<int32_t>(res);
+    return true;
+}
 } // namespace Media
 } // namespace OHOS
