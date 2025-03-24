@@ -34,13 +34,14 @@ namespace Media {
 #define FRAGMENT_METADATA_KEY_WIDTH "FragmentImageWidth"
 #define FRAGMENT_METADATA_KEY_HEIGHT "FragmentImageHeight"
 
-// There is no definite tag name for gainmap
+// There is no definite tag name for gainmap and thumbnail
 #define AUXILIARY_TAG_GAINMAP ""
 #define AUXILIARY_TAG_DEPTH_MAP_BACK "DepthP"
 #define AUXILIARY_TAG_DEPTH_MAP_FRONT "VShapEn"
 #define AUXILIARY_TAG_UNREFOCUS_MAP "edof"
 #define AUXILIARY_TAG_LINEAR_MAP "HighBit"
 #define AUXILIARY_TAG_FRAGMENT_MAP "Fragmnt"
+#define AUXILIARY_TAG_THUMBNAIL ""
 
 #define HEIF_AUXTTYPE_ID_GAINMAP "urn:iso:std:iso:ts:21496:-1"
 #define HEIF_AUXTTYPE_ID_DEPTH_MAP "urn:com:huawei:photo:5:0:0:aux:depthmap"
@@ -380,6 +381,8 @@ enum class AuxiliaryPictureType {
     UNREFOCUS_MAP = 3,
     LINEAR_MAP = 4,
     FRAGMENT_MAP = 5,
+    THUMBNAIL = 6,
+    MAX_AUXILIARY_PICTURE_TYPE,
 };
 
 struct AuxiliaryPictureInfo {
@@ -400,6 +403,11 @@ struct DecodingOptionsForPicture {
     std::set<AuxiliaryPictureType> desireAuxiliaryPictures;
     PixelFormat desiredPixelFormat = PixelFormat::RGBA_8888;
     AllocatorType allocatorType = AllocatorType::DMA_ALLOC;
+};
+
+struct DecodingOptionsForThumbnail {
+    Size desiredSize;
+    bool needGenerate = false;
 };
 
 typedef struct PictureError {

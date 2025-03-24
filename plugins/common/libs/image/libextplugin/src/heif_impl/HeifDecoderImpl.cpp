@@ -337,7 +337,7 @@ HeifDecoderImpl::HeifDecoderImpl()
     gainmapDstMemory_(nullptr), gainmapDstRowStride_(0),
     auxiliaryDstMemory_(nullptr), auxiliaryDstRowStride_(0),
     auxiliaryDstMemorySize_(0), isAuxiliaryDecode_(false),
-    auxiliaryDstHwbuffer_(nullptr) {}
+    auxiliaryDstHwBuffer_(nullptr) {}
 
 HeifDecoderImpl::~HeifDecoderImpl()
 {
@@ -389,6 +389,22 @@ GridInfo HeifDecoderImpl::GetGridInfo()
     return gridInfo_;
 }
 
+bool HeifDecoderImpl::ProcessThumbnailImage()
+{
+    if (primaryImage_ == nullptr) {
+        IMAGE_LOGE("Primary image is not init");
+        return false;
+    }
+    auto thumbImages = primaryImage_->GetThumbnailImages();
+    if (thumbImages.size() > 0) {
+        auxiliaryImage_ = thumbImages[0];
+    } else {
+        IMAGE_LOGE("Heif parser has not thumbnail Images.");
+        return false;
+    }
+    return true;
+}
+
 bool HeifDecoderImpl::CheckAuxiliaryMap(AuxiliaryPictureType type)
 {
     if (parser_ == nullptr) {
@@ -407,6 +423,12 @@ bool HeifDecoderImpl::CheckAuxiliaryMap(AuxiliaryPictureType type)
         case AuxiliaryPictureType::FRAGMENT_MAP:
             auxiliaryImage_ = parser_->GetAuxiliaryMapImage(iter->second);
             break;
+        case AuxiliaryPictureType::THUMBNAIL: {
+            if (!ProcessThumbnailImage()) {
+                return false;
+            }
+            break;
+        }
         default:
             auxiliaryImage_ = nullptr;
             IMAGE_LOGE("Invalid AuxiliaryPictureType: %{public}d", type);
@@ -670,29 +692,29 @@ bool HeifDecoderImpl::SwDecode(bool isSharedMemory)
     return true;
 }
 
-bool HeifDecodeImpl::DodecodeGainmap(std::shared_ptr<HeifImage> &gainmap, GridInfo &gainmapGridInfo,
-                                     uint8_t *gainmapDstMemory, size_t gainmapDstRowStride)
+bool HeifDecoderImpl::DoDecodeAuxiliaryImage(std::shared_ptr<HeifImage> &auxiliaryImage, GridInfo &auxiliaryGridInfo,
+                                             uint8_t *auxiliaryDstMemory, size_t auxiliaryDstRowStride)
 {
     sptr<SurfaceBuffer> hwBuffer;
-    bool decodeRes = HwDecodeImage(nullptr, gainmapImage, gainmapGridInfo, &hwBuffer, false);
+    bool decodeRes = HwDecodeImage(nullptr, auxiliaryImage, auxiliaryGridInfo, &hwBuffer, false);
     if (!decodeRes) {
         sptr<SurfaceBuffer> swHwBuffer;
-        bool swdecodeRes = SwDecodeGainmap(gainmapImage, gainmapGridInfo, &swHwBuffer);
+        bool swdecodeRes = SwDecodeAuxiliaryImage(auxiliaryImage, auxiliaryGridInfo, &swHwBuffer);
         if (!swdecodeRes) {
-            IMAGE_LOGE("HeifDecoderImpl::SwDecodeGainmap failed too");
+            IMAGE_LOGE("HeifDecoderImpl::SwDecodeAuxiliaryImage failed too");
             return false;
         }
-        bool swConvertRes = IsDirectYuvDecode() ||
-            ConvertHwBufferPixelFormat(swHwBuffer, gainmapGridInfo, gainmapDstMemory, gainmapDstRowStride);
+        bool swConvertRes = IsAuxiliaryDirectYUVDecode(auxiliaryImage) ||
+            ConvertHwBufferPixelFormat(swHwBuffer, auxiliaryGridInfo, auxiliaryDstMemory, auxiliaryDstRowStride);
         if (!swConvertRes) {
             return false;
         }
         return true;
     }
 
-    bool ConvertRes = IsDirectYuvDecode() ||
-        ConvertHwBufferPixelFormat(hwBuffer, gainmapGridInfo, gainmapDstMemory, gainmapDstRowStride);
-    if (!ConvertRes) {
+    bool convertRes = IsAuxiliaryDirectYUVDecode(auxiliaryImage) ||
+        ConvertHwBufferPixelFormat(hwBuffer, auxiliaryGridInfo, auxiliaryDstMemory, auxiliaryDstRowStride);
+    if (!convertRes) {
         return false;
     }
     return true;
@@ -701,7 +723,7 @@ bool HeifDecodeImpl::DodecodeGainmap(std::shared_ptr<HeifImage> &gainmap, GridIn
 bool HeifDecoderImpl::decodeGainmap()
 {
     ImageTrace trace("HeifDecoderImpl::decodeGainmap");
-    return DodecodeGainmap(gainmapImage_, gainmapGridInfo_, gainmapDstMemory_, gainmapDstRowStride_);
+    return DoDecodeAuxiliaryImage(gainmapImage_, gainmapGridInfo_, gainmapDstMemory_, gainmapDstRowStride_);
 }
 
 bool HeifDecoderImpl::decodeAuxiliaryMap()
@@ -711,7 +733,7 @@ bool HeifDecoderImpl::decodeAuxiliaryMap()
         parser_->GetItemType(auxiliaryImage_->GetItemId()) == "mime") {
         return HwDecodeMimeImage(auxiliaryImage_);
     }
-    return DodecodeGainmap(auxiliaryImage_, auxiliaryGridInfo_, auxiliaryDstMemory_, auxiliaryDstRowStride_);
+    return DoDecodeAuxiliaryImage(auxiliaryImage_, auxiliaryGridInfo_, auxiliaryDstMemory_, auxiliaryDstRowStride_);
 }
 
 void HeifDecoderImpl::ReleaseHwDecoder(HeifHardwareDecoder *hwDecoder, bool isReuse)
@@ -771,8 +793,8 @@ bool HeifDecoderImpl::HwDecodeImage(HeifHardwareDecoder *hwDecoder,
 
     GraphicPixelFormat inPixelFormat = GetInPixelFormat(image);
     sptr<SurfaceBuffer> hwBuffer;
-    if (isAuxiliaryDecode_ && IsDirectYUVDecode()) {
-        hwBuffer = sptr<SurfaceBuffer>(auxiliaryDstHwbuffer_);
+    if (isAuxiliaryDecode_ && IsAuxiliaryDirectYUVDecode()) {
+        hwBuffer = sptr<SurfaceBuffer>(auxiliaryDstHwBuffer_);
     } else {
         hwBuffer = isPrimary && IsDirectYUVDecode() ? sptr<SurfaceBuffer>(dstHwBuffer_) :
             hwDecoder->AllocateOutputBuffer(gridInfo.displayWidth, gridInfo.displayHeight, inPixelFormat);
@@ -1135,8 +1157,8 @@ bool HeifDecoderImpl::SwDecodeMovieFirstFrameImage(ImageFwkExtManager &extManage
     return true;
 }
 
-bool HeifDecoderImpl::SwdecodeGainmap(std::shared_ptr<HeifImage> &gainMapImage,
-                                      GridInfo &gainmapGridInfo, sptr<SurfaceBuffer> *outputBuf)
+bool HeifDecoderImpl::SwDecodeAuxiliaryImage(std::shared_ptr<HeifImage> &gainMapImage,
+                                             GridInfo &gainmapGridInfo, sptr<SurfaceBuffer> *outputBuf)
 {
     ImageTrace trace("HeifDecoderImpl::SwdecodeGainmap");
     uint32_t width = gainMapImage->GetOriginalWidth();
@@ -1167,13 +1189,13 @@ bool HeifDecoderImpl::SwdecodeGainmap(std::shared_ptr<HeifImage> &gainMapImage,
         return false;
     }
     HevcSoftDecodeParam gainMapparam {
-        gainMapgridInfo, gainMapdstfmt,
+        gainmapGridInfo, gainMapdstfmt,
         data + planeY.offset, gainMapMemorySize,
         gainMapStride, nullptr
     };
-    bool decodeRes = SwDecodeImage(gainMapImage, gainMapParam, gainMapgridInfo, false);
+    bool decodeRes = SwDecodeImage(gainMapImage, gainMapParam, gainmapGridInfo, false);
     if (!decodeRes) {
-        IMAGE_LOGE("SwDecodeGainmap failed");
+        IMAGE_LOGE("SwDecodeAuxiliaryImage failed");
         retur false;
     } else {
         *outputBuf = output;
@@ -1183,6 +1205,7 @@ bool HeifDecoderImpl::SwdecodeGainmap(std::shared_ptr<HeifImage> &gainMapImage,
     }
     return true;
 }
+
 static bool IsEmptyBuffer(uint8_t *buffer, uint32_t width, uint32_t height, uint32_t bpp, uint32_t rowStride)
 {
     bool cond = buffer == nullptr;
@@ -1361,6 +1384,17 @@ bool HeifDecoderImpl::IsDirectYUVDecode()
     return outPixelFormat_ == Media::PixelFormat::NV21 || outPixelFormat_ == Media::PixelFormat::NV12;
 }
 
+bool HeifDecoderImpl::IsAuxiliaryDirectYUVDecode(std::shared_ptr<HeifImage> &auxiliaryImage)
+{
+    if (auxiliaryDstHwBuffer_ == nullptr) {
+        return false;
+    }
+    if (auxiliaryImage->GetLumaBitNum() == LUMA_10_BIT) {
+        return outPixelFormat_ == Media::PixelFormat::YCRCB_P010 || outPixelFormat_ == Media::PixelFormat::YCBCR_P010;
+    }
+    return outPixelFormat_ == Media::PixelFormat::NV21 || outPixelFormat_ == Media::PixelFormat::NV12;
+}
+
 bool HeifDecoderImpl::decodeSequence(int frameIndex, HeifFrameInfo *frameInfo)
 {
     // unimplemented
@@ -1388,7 +1422,7 @@ void HeifDecoderImpl::setAuxiliaryDstBuffer(uint8_t* dstBuffer, size_t dstSize, 
     auxiliaryDstMemorySize_ = dstSize;
     auxiliaryDstRowStride_ = rowStride;
     isAuxiliaryDecode_ = true;
-    auxiliaryDstHwbuffer_ = reinterpret_cast<SurfaceBuffer*>(context);
+    auxiliaryDstHwBuffer_ = reinterpret_cast<SurfaceBuffer*>(context);
 }
 
 bool HeifDecoderImpl::getScanline(uint8_t *dst)
