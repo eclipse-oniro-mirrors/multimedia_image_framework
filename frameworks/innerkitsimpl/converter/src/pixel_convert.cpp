@@ -1610,6 +1610,33 @@ int32_t PixelConvert::PixelsConvert(const BufferInfo &src, BufferInfo &dst, bool
         PixelMap::GetRGBxByteCount(dst.imageInfo) : -1;
 }
 
+int32_t PixelConvert::CopySrcBufferAndConvert(void *srcPixels, const ImageInfo &srcInfo, int32_t srcLength,
+    void *dstPixels, ImageInfo &dstInfo, bool useDMA)
+{
+    if (srcPixels == nullptr || dstPixels == nullptr || srcLength <= 0) {
+        IMAGE_LOGE("[PixelMap]Convert: src pixels or dst pixels or src pixels length invalid.");
+        return -1;
+    }
+    ImageInfo tempInfo = srcInfo;
+    if (!ImageUtils::GetAlignedNumber(tempInfo.size.width, EVEN_ALIGNMENT) ||
+        !ImageUtils::GetAlignedNumber(tempInfo.size.height, EVEN_ALIGNMENT)) {
+        return -1;
+    }
+    int32_t tempSrcLen = PixelMap::GetAllocatedByteCount(tempInfo);
+    std::unique_ptr<uint8_t[]> tempSrcBuffer = std::make_unique<uint8_t[]>(tempSrcLen);
+    if (tempSrcBuffer == nullptr) {
+        IMAGE_LOGE("[PixelMap]Convert: alloc memory failed!");
+        return -1;
+    }
+    uint8_t* tempSrcPixels = tempSrcBuffer.get();
+    memset_s(tempSrcPixels, tempSrcLen, 0, srcLength);
+    if (memcpy_s(tempSrcPixels, tempSrcLen, srcPixels, srcLength) != 0) {
+        return -1;
+    }
+    return ConvertAndCollapseByFFMpeg(tempSrcPixels, tempInfo, dstPixels, dstInfo, useDMA) ?
+        PixelMap::GetRGBxByteCount(dstInfo) : -1;
+}
+
 int32_t PixelConvert::PixelsConvert(const BufferInfo &src, BufferInfo &dst, int32_t srcLength, bool useDMA)
 {
     if (!IsValidBufferInfo(src) || !IsValidBufferInfo(dst) || srcLength <= 0) {
@@ -1618,8 +1645,13 @@ int32_t PixelConvert::PixelsConvert(const BufferInfo &src, BufferInfo &dst, int3
     }
 
     if (dst.imageInfo.pixelFormat == PixelFormat::ARGB_8888) {
-        return ConvertAndCollapseByFFMpeg(src.pixels, src.imageInfo, dst.pixels, dst.imageInfo, useDMA) ?
-            PixelMap::GetRGBxByteCount(dst.imageInfo) : -1;
+        if (!useDMA && (src.imageInfo.size.width % EVEN_ALIGNMENT != 0 ||
+            src.imageInfo.size.height % EVEN_ALIGNMENT != 0)) {
+            return CopySrcBufferAndConvert(src.pixels, src.imageInfo, srcLength, dst.pixels, dst.imageInfo, useDMA);
+        } else {
+            return ConvertAndCollapseByFFMpeg(src.pixels, src.imageInfo, dst.pixels, dst.imageInfo, useDMA) ?
+                PixelMap::GetRGBxByteCount(dst.imageInfo) : -1;
+        }
     }
     if (IsInterYUVConvert(src.imageInfo.pixelFormat, dst.imageInfo.pixelFormat) ||
         (IsYUVP010Format(src.imageInfo.pixelFormat) && IsYUVP010Format(dst.imageInfo.pixelFormat))) {
