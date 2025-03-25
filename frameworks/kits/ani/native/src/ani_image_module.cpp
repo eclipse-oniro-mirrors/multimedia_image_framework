@@ -48,6 +48,8 @@ ani_status ANI_Constructor(ani_vm* vm, uint32_t* result)
             reinterpret_cast<void*>(OHOS::Media::ImageSourceAni::CreateImageSourceAni)},
         ani_native_function {"nativeCreateImageSourceByFd", nullptr,
             reinterpret_cast<void*>(OHOS::Media::ImageSourceAni::CreateImageSourceAni)},
+        ani_native_function {"createPicture", nullptr,
+            reinterpret_cast<void*>(OHOS::Media::PictureAni::CreatePictureAni)},
     };
     if (ANI_OK != env->Class_BindNativeMethods(staticCls, staticMethods.data(), staticMethods.size())) {
         IMAGE_LOGE("Class_BindNativeMethods failed");
@@ -56,6 +58,7 @@ ani_status ANI_Constructor(ani_vm* vm, uint32_t* result)
     OHOS::Media::PixelMapAni::Init(env);
     OHOS::Media::ImagePackerAni::Init(env);
     OHOS::Media::ImageSourceAni::Init(env);
+    OHOS::Media::PictureAni::Init(env);
     *result = ANI_VERSION_1;
     return ANI_OK;
 }

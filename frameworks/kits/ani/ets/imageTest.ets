@@ -136,6 +136,15 @@ function main() {
   console.log("Read pixels to buffer success, size: " + arrayBuffer.byteLength); 
   pixelMap.readPixelsToBuffer(arrayBuffer)
     .then((): void => console.log("ASYNC Read pixels to buffer success, size: " + arrayBuffer.byteLength));
+
+  console.log("TEST Picture begin");
+  const picture = image.createPicture(pixelMap);
+  if (picture != undefined) {
+    console.log("Create picture success");
+  }
+  const picturePixelMap = picture.getMainPixelmap();
+  const pictureInfo = picturePixelMap.getImageInfoSync();
+  console.log("Picture PixelMap get image info: ", pictureInfo.size.width, pictureInfo.size.height, pictureInfo.pixelFormat, pictureInfo.alphaType);
   
   const regionAsync: image.Region = {
     size: { width: 1, height: 1 },

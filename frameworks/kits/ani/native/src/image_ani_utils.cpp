@@ -31,7 +31,7 @@ namespace OHOS {
 namespace Media {
 using namespace std;
 
-PixelMap* ImageAniUtils::GetPixelMapFromEnv([[maybe_unused]] ani_env* env, [[maybe_unused]] ani_object obj)
+shared_ptr<PixelMap> ImageAniUtils::GetPixelMapFromEnv([[maybe_unused]] ani_env* env, [[maybe_unused]] ani_object obj)
 {
     ani_status ret;
     ani_long nativeObj {};
@@ -44,7 +44,23 @@ PixelMap* ImageAniUtils::GetPixelMapFromEnv([[maybe_unused]] ani_env* env, [[may
         IMAGE_LOGE("[GetPixelMapFromEnv] pixelmapAni failed");
         return nullptr;
     }
-    return (pixelmapAni->nativePixelMap_).get();
+    return pixelmapAni->nativePixelMap_;
+}
+
+shared_ptr<Picture> ImageAniUtils::GetPictureFromEnv([[maybe_unused]] ani_env* env, [[maybe_unused]] ani_object obj)
+{
+    ani_status ret;
+    ani_long nativeObj {};
+    if ((ret = env->Object_GetFieldByName_Long(obj, "nativeObj", &nativeObj)) != ANI_OK) {
+        IMAGE_LOGE("[GetPictureFromEnv] Object_GetField_Long fetch failed");
+        return nullptr;
+    }
+    PictureAni* pictureAni = reinterpret_cast<PictureAni*>(nativeObj);
+    if (!pictureAni) {
+        IMAGE_LOGE("[GetPictureFromEnv] pictureAni failed");
+        return nullptr;
+    }
+    return pictureAni->nativePicture_;
 }
 
 static ani_object CreateAniImageInfo(ani_env* env)
@@ -175,6 +191,26 @@ ani_object ImageAniUtils::CreateAniImageSource(ani_env* env, std::unique_ptr<Ima
 
     ani_object aniValue;
     if (ANI_OK != env->Object_New(cls, ctor, &aniValue, reinterpret_cast<ani_long>(pImageSourceAni.release()))) {
+        IMAGE_LOGE("New Context Fail");
+    }
+    return aniValue;
+}
+
+ani_object ImageAniUtils::CreateAniPicture(ani_env* env, std::unique_ptr<PictureAni>& pPictureAni)
+{
+    static const char* className = "L@ohos/multimedia/image/image/PictureInner;";
+    ani_class cls;
+    if (ANI_OK != env->FindClass(className, &cls)) {
+        IMAGE_LOGE("Not found L@ohos/multimedia/image/image/PictureInner;");
+        return nullptr;
+    }
+    ani_method ctor;
+    if (ANI_OK != env->Class_FindMethod(cls, "<ctor>", "J:V", &ctor)) {
+        IMAGE_LOGE("Not found <ctor>");
+        return nullptr;
+    }
+    ani_object aniValue;
+    if (ANI_OK != env->Object_New(cls, ctor, &aniValue, reinterpret_cast<ani_long>(pPictureAni.release()))) {
         IMAGE_LOGE("New Context Fail");
     }
     return aniValue;

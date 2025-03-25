@@ -152,7 +152,7 @@ bool ParseRegion([[maybe_unused]] ani_env* env, ani_object region, Rect& rect)
 
 ani_object PixelMapAni::CreatePixelMap([[maybe_unused]] ani_env* env, std::shared_ptr<PixelMap> pixelMap)
 {
-    std::unique_ptr<PixelMapAni> pPixelMapAni = std::make_unique<PixelMapAni>();
+    unique_ptr<PixelMapAni> pPixelMapAni = make_unique<PixelMapAni>();
     pPixelMapAni->nativePixelMap_ = pixelMap;
     static const char* className = "L@ohos/multimedia/image/image/PixelMapInner;";
     ani_class cls;
@@ -175,7 +175,7 @@ ani_object PixelMapAni::CreatePixelMap([[maybe_unused]] ani_env* env, std::share
 ani_object PixelMapAni::CreatePixelMapAni([[maybe_unused]] ani_env* env,
     [[maybe_unused]] ani_class clazz, [[maybe_unused]] ani_object obj)
 {
-    std::unique_ptr<PixelMapAni> pPixelMapAni = std::make_unique<PixelMapAni>();
+    unique_ptr<PixelMapAni> pPixelMapAni = make_unique<PixelMapAni>();
     InitializationOptions opts;
     if (!ParseInitializationOptions(env, obj, opts)) {
         IMAGE_LOGE("ParseInitializationOptions failed '");
@@ -188,7 +188,7 @@ ani_object PixelMapAni::CreatePixelMapAni([[maybe_unused]] ani_env* env,
 
 static ani_object CreateAlphaPixelmap([[maybe_unused]] ani_env* env, [[maybe_unused]] ani_object obj)
 {
-    PixelMap* pixelMap = ImageAniUtils::GetPixelMapFromEnv(env, obj);
+    auto pixelMap = ImageAniUtils::GetPixelMapFromEnv(env, obj);
     if (pixelMap == nullptr) {
         IMAGE_LOGE("[GetPixelMapFromEnv] pixelMap nullptr");
         return nullptr;
@@ -203,19 +203,19 @@ static ani_object CreateAlphaPixelmap([[maybe_unused]] ani_env* env, [[maybe_unu
 
 static ani_object GetImageInfo([[maybe_unused]] ani_env* env, [[maybe_unused]] ani_object obj)
 {
-    PixelMap* pixelmap = ImageAniUtils::GetPixelMapFromEnv(env, obj);
+    auto pixelmap = ImageAniUtils::GetPixelMapFromEnv(env, obj);
     if (pixelmap == nullptr) {
         IMAGE_LOGE("[GetPixelMapFromEnv] pixelmap nullptr ");
         return nullptr;
     }
     ImageInfo imgInfo;
     pixelmap->GetImageInfo(imgInfo);
-    return ImageAniUtils::CreateImageInfoValueFromNative(env, imgInfo, pixelmap);
+    return ImageAniUtils::CreateImageInfoValueFromNative(env, imgInfo, pixelmap.get());
 }
 
 static ani_int GetBytesNumberPerRow([[maybe_unused]] ani_env* env, [[maybe_unused]] ani_object obj)
 {
-    PixelMap* pixelmap = ImageAniUtils::GetPixelMapFromEnv(env, obj);
+    auto pixelmap = ImageAniUtils::GetPixelMapFromEnv(env, obj);
     if (pixelmap == nullptr) {
         IMAGE_LOGE("[GetPixelMapFromEnv] pixelmap nullptr");
         return 0;
@@ -225,7 +225,7 @@ static ani_int GetBytesNumberPerRow([[maybe_unused]] ani_env* env, [[maybe_unuse
 
 static ani_int GetPixelBytesNumber([[maybe_unused]] ani_env* env, [[maybe_unused]] ani_object obj)
 {
-    PixelMap* pixelmap = ImageAniUtils::GetPixelMapFromEnv(env, obj);
+    auto pixelmap = ImageAniUtils::GetPixelMapFromEnv(env, obj);
     if (pixelmap == nullptr) {
         IMAGE_LOGE("[GetPixelMapFromEnv] pixelmap nullptr");
         return 0;
@@ -247,7 +247,7 @@ static void Release([[maybe_unused]] ani_env* env, [[maybe_unused]] ani_object o
 
 static void ReadPixelsToBuffer(ani_env* env, ani_object obj, ani_object param0)
 {
-    PixelMap* pixelmap = ImageAniUtils::GetPixelMapFromEnv(env, obj);
+    auto pixelmap = ImageAniUtils::GetPixelMapFromEnv(env, obj);
     if (pixelmap == nullptr) {
         IMAGE_LOGE("[ReadPixelsToBuffer] pixelmap nullptr ");
         return;
@@ -267,7 +267,7 @@ static void ReadPixelsToBuffer(ani_env* env, ani_object obj, ani_object param0)
 static void Scale([[maybe_unused]] ani_env* env, [[maybe_unused]] ani_object obj, ani_double x, ani_double y,
     ani_int level)
 {
-    PixelMap* pixelmap = ImageAniUtils::GetPixelMapFromEnv(env, obj);
+    auto pixelmap = ImageAniUtils::GetPixelMapFromEnv(env, obj);
     if (pixelmap == nullptr) {
         IMAGE_LOGE("[GetPixelMapFromEnv] pixelmap nullptr");
         return;
@@ -278,7 +278,7 @@ static void Scale([[maybe_unused]] ani_env* env, [[maybe_unused]] ani_object obj
 
 static void Crop([[maybe_unused]] ani_env* env, [[maybe_unused]] ani_object obj, ani_object region)
 {
-    PixelMap* pixelmap = ImageAniUtils::GetPixelMapFromEnv(env, obj);
+    auto pixelmap = ImageAniUtils::GetPixelMapFromEnv(env, obj);
     if (pixelmap == nullptr) {
         IMAGE_LOGE("[GetPixelMapFromEnv] pixelmap nullptr");
         return;
@@ -296,7 +296,7 @@ static void Crop([[maybe_unused]] ani_env* env, [[maybe_unused]] ani_object obj,
 static void Flip([[maybe_unused]] ani_env* env, [[maybe_unused]] ani_object obj, ani_boolean horizontal,
     ani_boolean vertical)
 {
-    PixelMap* pixelmap = ImageAniUtils::GetPixelMapFromEnv(env, obj);
+    auto pixelmap = ImageAniUtils::GetPixelMapFromEnv(env, obj);
     if (pixelmap == nullptr) {
         IMAGE_LOGE("[GetPixelMapFromEnv] pixelmap nullptr");
         return;

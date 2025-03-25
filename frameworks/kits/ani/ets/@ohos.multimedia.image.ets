@@ -682,6 +682,24 @@ export namespace image {
   }
 
   // picture
+  interface Picture {
+    getMainPixelmap(): PixelMap;
+  }
+
+  export class PictureInner implements Picture {
+    private nativeObj: long = 0;
+
+    constructor(context: long) {
+      if (this.nativeObj == 0) {
+        this.nativeObj = context;
+      }
+    }
+
+    native getMainPixelmap(): PixelMap;
+  }
+
+  export native function createPicture(mainPixelmap: PixelMap): Picture;
+
   interface AuxiliaryPicture {
     writePixelsFromBuffer(data: ArrayBuffer): Promise<void>;
     readPixelsToBuffer(): Promise<ArrayBuffer>;
