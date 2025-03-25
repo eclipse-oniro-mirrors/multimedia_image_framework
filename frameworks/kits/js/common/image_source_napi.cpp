@@ -126,6 +126,7 @@ struct ImageSourceAsyncContext {
     DecodingOptionsForPicture decodingOptsForPicture;
     std::shared_ptr<Picture> rPicture;
 #endif
+    DecodingOptionsForThumbnail decodingOptsForThumbnail;
 };
 
 struct ImageSourceSyncContext {
@@ -136,6 +137,7 @@ struct ImageSourceSyncContext {
     std::shared_ptr<PixelMap> rPixelMap;
     std::string errMsg;
     std::multimap<std::int32_t, std::string> errMsgArray;
+    DecodingOptionsForThumbnail decodingOptsForThumbnail;
 };
 
 struct ImageEnum {
@@ -906,6 +908,8 @@ std::vector<napi_property_descriptor> ImageSourceNapi::RegisterNapi()
         DECLARE_NAPI_FUNCTION("updateData", UpdateData),
         DECLARE_NAPI_FUNCTION("release", Release),
         DECLARE_NAPI_GETTER("supportedFormats", GetSupportedFormats),
+        DECLARE_NAPI_FUNCTION("createThumbnail", CreateThumbnail),
+        DECLARE_NAPI_FUNCTION("createThumbnailSync", CreateThumbnailSync),
 #if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
         DECLARE_NAPI_FUNCTION("createPicture", CreatePicture),
 #endif
@@ -1163,7 +1167,7 @@ static bool IsSupportPixelFormat(int32_t val)
     return false;
 }
 
-static PixelFormat ParsePixlForamt(int32_t val)
+static PixelFormat ParsePixelFormat(int32_t val)
 {
     if (IsAstc(val)) {
         return PixelFormat(val);
@@ -1231,9 +1235,9 @@ static bool ParsePixelFormat(napi_env env, napi_value root, const char* name,
     } else {
         if (IsSupportPixelFormat(tmpNumber)) {
             if (strcmp(name, "desiredPixelFormat") == 0) {
-                opts->desiredPixelFormat = ParsePixlForamt(tmpNumber);
+                opts->desiredPixelFormat = ParsePixelFormat(tmpNumber);
             } else if (strcmp(name, "photoDesiredPixelFormat") == 0) {
-                opts->photoDesiredPixelFormat = ParsePixlForamt(tmpNumber);
+                opts->photoDesiredPixelFormat = ParsePixelFormat(tmpNumber);
             }
         } else {
             IMAGE_LOGD("Invalid %{public}s %{public}d", name, tmpNumber);
@@ -1347,6 +1351,38 @@ static bool ParseDecodeOptions(napi_env env, napi_value root, DecodeOptions* opt
         }
     }
     return ParseDecodeOptions2(env, root, opts, error);
+}
+
+static bool IsSizeInValid(const Size &size)
+{
+    return size.width < 0 || size.height < 0;
+}
+
+static bool ParseDecodeOptionsForThumbnail(napi_env env, napi_value root, DecodingOptionsForThumbnail *opts,
+    std::string &error)
+{
+    napi_value tmpValue = nullptr;
+
+    if (opts == nullptr) {
+        IMAGE_LOGE("opts is nullptr");
+        return false;
+    }
+
+    if (!GET_NODE_BY_NAME(root, "desiredSize", tmpValue)) {
+        IMAGE_LOGD("no desiredSize");
+    } else {
+        if (!ParseSize(env, tmpValue, &(opts->desiredSize))) {
+            IMAGE_LOGD("ParseSize error");
+        }
+        if (IsSizeInValid(opts->desiredSize)) {
+            IMAGE_LOGE("desiredSize is invalid");
+            return false;
+        }
+    }
+    if (!GET_BOOL_BY_NAME(root, "needGenerate", opts->needGenerate)) {
+        IMAGE_LOGD("no needGenerate");
+    }
+    return true;
 }
 
 static std::string FileUrlToRawPath(const std::string &path)
@@ -1783,6 +1819,28 @@ static void CreatePixelMapUsingAllocatorExecute(napi_env env, void *data)
     }
 }
 
+static void CreateThumbnailExecute(napi_env env, void *data)
+{
+    IMAGE_LOGD("CreateThumbnailExecute IN");
+    if (data == nullptr) {
+        IMAGE_LOGE("data is nullptr");
+        return;
+    }
+    auto context = static_cast<ImageSourceAsyncContext*>(data);
+    if (context == nullptr) {
+        IMAGE_LOGE("empty context");
+        return;
+    }
+
+    context->rPixelMap = context->rImageSource->CreateThumbnail(context->decodingOptsForThumbnail, context->status);
+    if (context->status != SUCCESS) {
+        Image_ErrorCode apiErrorCode = ConvertToErrorCode(context->status);
+        std::string apiErrorMsg = GetErrorCodeMsg(apiErrorCode);
+        context->errMsgArray.emplace(apiErrorCode, apiErrorMsg);
+    }
+    IMAGE_LOGD("CreateThumbnailExecute OUT");
+}
+
 static void CreatePixelMapComplete(napi_env env, napi_status status, void *data)
 {
     IMAGE_LOGD("CreatePixelMapComplete IN");
@@ -1812,7 +1870,7 @@ static napi_value CreatePixelMapCompleteSync(napi_env env, napi_status status, I
     return result;
 }
 
-static napi_value CreatePixelMapAllocatorTypeCompleteSync(napi_env env, napi_status status,
+static napi_value CreatePixelMapThrowErrorCompleteSync(napi_env env, napi_status status,
     ImageSourceSyncContext *context)
 {
     napi_value result = nullptr;
@@ -2057,10 +2115,95 @@ napi_value ImageSourceNapi::CreatePixelMapUsingAllocatorSync(napi_env env, napi_
         std::string apiErrorMsg = GetErrorCodeMsg(apiErrorCode);
         syncContext->errMsgArray.emplace(apiErrorCode, apiErrorMsg);
     }
-    result = CreatePixelMapAllocatorTypeCompleteSync(env, status,
+    result = CreatePixelMapThrowErrorCompleteSync(env, status,
         static_cast<ImageSourceSyncContext*>((syncContext).get()));
 
     IMG_NAPI_CHECK_RET_D(IMG_IS_OK(status), nullptr, IMAGE_LOGE("Fail to create PixelMap."));
+    return result;
+}
+
+napi_value ImageSourceNapi::CreateThumbnail(napi_env env, napi_callback_info info)
+{
+    napi_value result = nullptr;
+    napi_get_undefined(env, &result);
+
+    napi_status status;
+    napi_value thisVar = nullptr;
+    napi_value argValue[TWO_ARGS] = {0};
+    size_t argCount = TWO_ARGS;
+    IMG_JS_ARGS(env, info, status, argCount, argValue, thisVar);
+    IMG_NAPI_CHECK_RET_D(IMG_IS_READY(status, thisVar), nullptr, IMAGE_LOGE("fail to get thisVar"));
+    IMG_NAPI_CHECK_RET_D(IMG_IS_OK(status), nullptr, IMAGE_LOGE("fail to napi_get_cb_info"));
+
+    std::unique_ptr<ImageSourceAsyncContext> asyncContext = std::make_unique<ImageSourceAsyncContext>();
+    status = napi_unwrap(env, thisVar, reinterpret_cast<void**>(&asyncContext->constructor_));
+    IMG_NAPI_CHECK_RET_D(IMG_IS_READY(status, asyncContext->constructor_),
+        nullptr, IMAGE_LOGE("fail to unwrap context"));
+    IMG_NAPI_CHECK_RET_D(IMG_IS_READY(status, asyncContext->constructor_->nativeImgSrc),
+        nullptr, IMAGE_LOGE("fail to unwrap nativeImgSrc"));
+    asyncContext->rImageSource = asyncContext->constructor_->nativeImgSrc;
+    IMG_NAPI_CHECK_RET_D(IMG_IS_READY(status, asyncContext->rImageSource),
+        nullptr, IMAGE_LOGE("empty native rImageSource"));
+
+    if (argCount > 0) {
+        if (ImageNapiUtils::getType(env, argValue[DECODE_OPTS_INDEX_0]) == napi_object) {
+            if (!ParseDecodeOptionsForThumbnail(env, argValue[DECODE_OPTS_INDEX_0],
+                &(asyncContext->decodingOptsForThumbnail), asyncContext->errMsg)) {
+                IMAGE_LOGE("DecodeOptions mismatch");
+                return ImageNapiUtils::ThrowExceptionError(env, IMAGE_BAD_PARAMETER, "DecodeOptions mismatch");
+            }
+        } else {
+            return ImageNapiUtils::ThrowExceptionError(env, IMAGE_BAD_PARAMETER, "DecodeOptions type mismatch");
+        }
+    }
+    napi_create_promise(env, &(asyncContext->deferred), &result);
+    ImageNapiUtils::HicheckerReport();
+    IMG_CREATE_CREATE_ASYNC_WORK_WITH_QOS(env, status, "CreateThumbnail", CreateThumbnailExecute,
+        CreatePixelMapComplete, asyncContext, asyncContext->work, napi_qos_user_initiated);
+
+    IMG_NAPI_CHECK_RET_D(IMG_IS_OK(status), nullptr, IMAGE_LOGE("fail to create async work"));
+    return result;
+}
+
+napi_value ImageSourceNapi::CreateThumbnailSync(napi_env env, napi_callback_info info)
+{
+    napi_value result = nullptr;
+    napi_get_undefined(env, &result);
+    napi_status status;
+    napi_value thisVar = nullptr;
+    napi_value argValue[TWO_ARGS] = {0};
+    size_t argCount = TWO_ARGS;
+    IMG_JS_ARGS(env, info, status, argCount, argValue, thisVar);
+    IMG_NAPI_CHECK_RET_D(IMG_IS_READY(status, thisVar), nullptr, IMAGE_LOGE("fail to get thisVar"));
+    IMG_NAPI_CHECK_RET_D(IMG_IS_OK(status), nullptr, IMAGE_LOGE("fail to napi_get_cb_info"));
+    std::unique_ptr<ImageSourceSyncContext> syncContext = std::make_unique<ImageSourceSyncContext>();
+    status = napi_unwrap(env, thisVar, reinterpret_cast<void**>(&syncContext->constructor_));
+    IMG_NAPI_CHECK_RET_D(IMG_IS_READY(status, syncContext->constructor_),
+        nullptr, IMAGE_LOGE("fail to unwrap context"));
+    IMG_NAPI_CHECK_RET_D(IMG_IS_READY(status, syncContext->constructor_->nativeImgSrc),
+        nullptr, IMAGE_LOGE("fail to unwrap nativeImgSrc"));
+
+    if (argCount > 0) {
+        if (ImageNapiUtils::getType(env, argValue[DECODE_OPTS_INDEX_0]) == napi_object) {
+            if (!ParseDecodeOptionsForThumbnail(env, argValue[DECODE_OPTS_INDEX_0],
+                &(syncContext->decodingOptsForThumbnail), syncContext->errMsg)) {
+                IMAGE_LOGE("DecodeOptions mismatch");
+                return ImageNapiUtils::ThrowExceptionError(env, IMAGE_BAD_PARAMETER, "DecodeOptions mismatch");
+            }
+        } else {
+            return ImageNapiUtils::ThrowExceptionError(env, IMAGE_BAD_PARAMETER, "DecodeOptions type mismatch");
+        }
+    }
+    syncContext->rPixelMap = syncContext->constructor_->nativeImgSrc->CreateThumbnail(
+        syncContext->decodingOptsForThumbnail, syncContext->status);
+    if (syncContext->status != SUCCESS) {
+        Image_ErrorCode apiErrorCode = ConvertToErrorCode(syncContext->status);
+        std::string apiErrorMsg = GetErrorCodeMsg(apiErrorCode);
+        syncContext->errMsgArray.emplace(apiErrorCode, apiErrorMsg);
+    }
+    result = CreatePixelMapThrowErrorCompleteSync(env, status,
+        static_cast<ImageSourceSyncContext*>((syncContext).get()));
+    IMG_NAPI_CHECK_RET_D(IMG_IS_OK(status), nullptr, IMAGE_LOGE("fail to create Thumbnail"));
     return result;
 }
 
@@ -3208,7 +3351,7 @@ static bool ParseDecodingOptionsForPicture(napi_env env, napi_value root, Decodi
             IMAGE_LOGE("get type from element failed");
             return false;
         }
-        if (type <= static_cast<uint32_t>(AuxiliaryPictureType::FRAGMENT_MAP)) {
+        if (type < static_cast<uint32_t>(AuxiliaryPictureType::MAX_AUXILIARY_PICTURE_TYPE)) {
             opts->desireAuxiliaryPictures.insert(AuxiliaryPictureType(type));
             IMAGE_LOGD("desireAuxiliaryPictures[%{public}d]: %{public}d", i, type);
         } else {
@@ -3245,7 +3388,7 @@ napi_value ImageSourceNapi::CreatePicture(napi_env env, napi_callback_info info)
 
     if (argCount == NUM_0) {
         for (int32_t type = static_cast<int32_t>(AuxiliaryPictureType::GAINMAP);
-            type <= static_cast<int32_t>(AuxiliaryPictureType::FRAGMENT_MAP); type++) {
+            type < static_cast<int32_t>(AuxiliaryPictureType::MAX_AUXILIARY_PICTURE_TYPE); type++) {
                 asyncContext->decodingOptsForPicture.desireAuxiliaryPictures.insert(AuxiliaryPictureType(type));
         }
     } else if (argCount == NUM_1) {

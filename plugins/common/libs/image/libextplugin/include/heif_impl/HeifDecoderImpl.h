@@ -63,10 +63,11 @@ public:
     void getVividMetadata(std::vector<uint8_t>& uwaInfo, std::vector<uint8_t>& displayInfo,
         std::vector<uint8_t>& lightInfo) override;
     void getISOMetadata(std::vector<uint8_t>& isoMetadata) override;
-    bool DodecodeGainmap(std::shared_ptr<HeifImage> &gainmapImage, GridInfo &gainmapGridInfo,
-                         uint8_t* gainmapDstMemory, size_t gainmapDstRowStride);
+    bool DoDecodeAuxiliaryImage(std::shared_ptr<HeifImage> &auxiliaryImage, GridInfo &auxiliaryGridInfo,
+                                uint8_t *auxiliaryDstMemory, size_t auxiliaryDstRowStride);
     void getErrMsg(std::string& errMsg) override;
     GridInfo GetGridInfo();
+    bool ProcessThumbnailImage();
     bool CheckAuxiliaryMap(Media::AuxiliaryPictureType type);
     bool setAuxiliaryMap(Media::AuxiliaryPictureType type);
     bool getAuxiliaryMapInfo(HeifFrameInfo* frameInfo);
@@ -118,7 +119,7 @@ private:
 
     bool SwDecodeImage(std::shared_ptr<HeifImage> &image, HevcSoftDecodeParam &param,
                        GridInfo &gridInfo, bool isPrimary);
-    bool SwDecodeGainmap(std::shared_ptr<HeifImage> &gainMapImage,
+    bool SwDecodeAuxiliaryImage(std::shared_ptr<HeifImage> &gainMapImage,
                          GridInfo &gainmapGridInfo, sptr<SurfaceBuffer> *outputBuf);
 
     bool SwDecodeGrids(Media::ImageFwkExtManager &extManager,
@@ -144,6 +145,8 @@ private:
                                     uint8_t *dstMemory, size_t dstRowStride);
 
     bool IsDirectYUVDecode();
+
+    bool IsAuxiliaryDirectYUVDecode(std::shared_ptr<HeifImage> &auxiliaryImage);
 
     void SetColorSpaceInfo(HeifFrameInfo* info, const std::shared_ptr<HeifImage>& image);
 
@@ -172,7 +175,7 @@ private:
     size_t auxiliaryDstRowStride_;
     size_t auxiliaryDstMemorySize_;
     bool isAuxiliaryDecode_ = false;
-    SurfaceBuffer *auxiliaryDstHwbuffer_;
+    SurfaceBuffer *auxiliaryDstHwBuffer_;
 
     HeifFrameInfo tmapInfo_{};
     std::string errMsg_;

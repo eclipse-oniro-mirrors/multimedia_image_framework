@@ -322,7 +322,7 @@ static bool ParseBuffer(napi_env env, napi_value argValue,
 static AuxiliaryPictureType ParseAuxiliaryPictureType(int32_t val)
 {
     if (val >= static_cast<int32_t>(AuxiliaryPictureType::GAINMAP)
-        && val <= static_cast<int32_t>(AuxiliaryPictureType::FRAGMENT_MAP)) {
+        && val < static_cast<int32_t>(AuxiliaryPictureType::MAX_AUXILIARY_PICTURE_TYPE)) {
         return AuxiliaryPictureType(val);
     }
     return AuxiliaryPictureType::NONE;
@@ -365,7 +365,7 @@ napi_value AuxiliaryPictureNapi::CreateAuxiliaryPicture(napi_env env, napi_callb
     status = napi_get_value_uint32(env, argValue[NUM_2], &auxiType);
     IMG_NAPI_CHECK_RET_D(IMG_IS_OK(status), result, IMAGE_LOGE("Fail to get auxiliary picture Type"));
     if (auxiType < static_cast<uint32_t>(AuxiliaryPictureType::GAINMAP)
-        || auxiType > static_cast<uint32_t>(AuxiliaryPictureType::FRAGMENT_MAP)) {
+        || auxiType >= static_cast<uint32_t>(AuxiliaryPictureType::MAX_AUXILIARY_PICTURE_TYPE)) {
         IMAGE_LOGE("Auxiliary picture type is invalid");
         return ImageNapiUtils::ThrowExceptionError(env, IMAGE_BAD_PARAMETER, "Invalid args.");
     }
@@ -398,7 +398,7 @@ napi_value AuxiliaryPictureNapi::GetType(napi_env env, napi_callback_info info)
     if (auxPictureNapi->nativeAuxiliaryPicture_ != nullptr) {
         auto auxType = auxPictureNapi->nativeAuxiliaryPicture_->GetType();
         IMAGE_LOGD("AuxiliaryPictureNapi::GetType %{public}d", auxType);
-        if (static_cast<int32_t>(auxType) >= NUM_0 && auxType <= AuxiliaryPictureType::FRAGMENT_MAP) {
+        if (auxType >= AuxiliaryPictureType::GAINMAP && auxType < AuxiliaryPictureType::MAX_AUXILIARY_PICTURE_TYPE) {
             napi_create_int32(env, static_cast<int32_t>(auxType), &nVal.result);
         }
     } else {
