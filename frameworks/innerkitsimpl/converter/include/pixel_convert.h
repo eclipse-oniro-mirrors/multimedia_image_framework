@@ -197,6 +197,8 @@ private:
     static AlphaConvertType GetAlphaConvertType(const AlphaType &srcType, const AlphaType &dstType);
     static bool IsValidRowStride(int32_t rowStride, const ImageInfo &imageInfo);
     static bool IsValidBufferInfo(const BufferInfo &bufferInfo);
+    static int32_t CopySrcBufferAndConvert(void *srcPixels, const ImageInfo &srcInfo, int32_t srcLength,
+        void *dstPixels, ImageInfo &dstInfo, bool useDMA);
 
     ProcFuncType procFunc_;
     ProcFuncExtension procFuncExtension_;
