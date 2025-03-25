@@ -349,6 +349,11 @@ export namespace image {
     getPixelBytesNumber(): int;
     readPixelsToBufferSync(buff: ArrayBuffer);
     readPixelsToBuffer(buff: ArrayBuffer): Promise<void>;
+    scaleSync(x: double, y: double): void;
+    scaleSync(x: double, y: double, level: int): void;
+    cropSync(region: Region): void;
+    crop(region: Region): Promise<void>;
+    flipSync(horizontal: boolean, vertical: boolean): void;
     release(): Promise<void>;
   }
 
@@ -412,6 +417,37 @@ export namespace image {
         taskpool.execute(cb)
           .then((): void => resolve(Promise.resolve()));
       });
+    }
+
+    native nativeScale(x: double, y: double, level: int): void;
+
+    public scaleSync(x: double, y: double): void {
+      this.nativeScale(x, y, 0);
+    }
+    public scaleSync(x: double, y: double, level: int): void {
+      this.nativeScale(x, y, level);
+    }
+
+    native nativeCrop(region: Region): void;
+
+    public cropSync(region: Region): void {
+      this.nativeCrop(region);
+    }
+    public crop(region: Region): Promise<void> {
+      return new Promise<void>((resolve: (v: Promise<void>) => void, reject: (error: Object) => void) => {
+        const cb = (): boolean => {
+          this.nativeCrop(region);
+          return true;
+        };
+        taskpool.execute(cb)
+          .then((): void => resolve(Promise.resolve()));
+      });
+    }
+
+    native nativeFlip(horizontal: boolean, vertical: boolean): void;
+
+    public flipSync(horizontal: boolean, vertical: boolean): void {
+      this.nativeFlip(horizontal, vertical);
     }
 
     native nativeRelease(): void;
