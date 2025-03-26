@@ -157,9 +157,9 @@ ani_arraybuffer nativePackingWithPixelMap([[maybe_unused]] ani_env* env,
         IMAGE_LOGE("nativePackingWithPixelMap  isPacker null ");
         return nullptr;
     }
-    PixelMap* pixelamp = ImageAniUtils::GetPixelMapFromEnv(env, obj2);
-    if (!pixelamp) {
-        IMAGE_LOGE("nativePackingWithPixelMap  pixmap null ");
+    PixelMap* pixelmap = ImageAniUtils::GetPixelMapFromEnv(env, obj2);
+    if (!pixelmap) {
+        IMAGE_LOGE("nativePackingWithPixelMap  pixelmap null ");
         return nullptr;
     }
     ani_class optsClass;
@@ -167,7 +167,7 @@ ani_arraybuffer nativePackingWithPixelMap([[maybe_unused]] ani_env* env,
     ani_boolean isOpts;
     env->Object_InstanceOf(obj3, optsClass, &isOpts);
     if (!isOpts) {
-        IMAGE_LOGE("nativePackingWithPixelMap  pixmap null ");
+        IMAGE_LOGE("nativePackingWithPixelMap  pixelmap null ");
         return nullptr;
     } else {
         IMAGE_LOGE("nativePackingWithPixelMap  opts sucess ");
@@ -181,7 +181,7 @@ ani_arraybuffer nativePackingWithPixelMap([[maybe_unused]] ani_env* env,
     std::unique_ptr<uint8_t[]> outBuffer = std::make_unique<uint8_t[]>(bufferSize);
     uint8_t* data = outBuffer.get();
     imgPacker->StartPacking(data, bufferSize, packOpts);
-    imgPacker->AddImage(*(pixelamp));
+    imgPacker->AddImage(*pixelmap);
     int64_t packedSize = 0;
     auto pacRes = imgPacker->FinalizePacking(packedSize);
     if (pacRes) {

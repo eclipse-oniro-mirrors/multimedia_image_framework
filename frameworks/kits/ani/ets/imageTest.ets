@@ -36,14 +36,31 @@ function main() {
       console.log("ASYNC Get image info: ", imageInfo.size.width, imageInfo.size.height, imageInfo.pixelFormat, imageInfo.mimeType);
     });
   
-  const bytes = pixelMap.getPixelBytesNumber();
-  console.log("PixelMap bytes number: " + bytes);
+  const rowBytes = pixelMap.getBytesNumberPerRow();
+  console.log("PixelMap bytes per row: " + rowBytes);
+  const totalBytes = pixelMap.getPixelBytesNumber();
+  console.log("PixelMap total bytes: " + totalBytes);
 
   if (retImageInfo.isHdr) {
       console.log("Test PixelMap hdr ");
   } else {
       console.log("Test PixelMap not hdr ");
   }
+
+  pixelMap.scaleSync(2, 2);
+  const scaledInfo = pixelMap.getImageInfoSync();
+  console.log("Scaled image info: ", scaledInfo.size.width, scaledInfo.size.height);
+  const region: image.Region = {
+    size: { width: 512, height: 512 },
+    x: 0,
+    y: 0
+  };
+  pixelMap.cropSync(region);
+  const croppedInfo = pixelMap.getImageInfoSync();
+  console.log("Cropped image info: ", croppedInfo.size.width, croppedInfo.size.height);
+  pixelMap.flipSync(true, true);
+  const flippedInfo = pixelMap.getImageInfoSync();
+  console.log("Flipped image info: ", flippedInfo.size.width, flippedInfo.size.height);
 
   const alphaPixelMap = pixelMap.createAlphaPixelmapSync();
   if (alphaPixelMap != undefined) {
@@ -119,5 +136,26 @@ function main() {
   console.log("Read pixels to buffer success, size: " + arrayBuffer.byteLength); 
   pixelMap.readPixelsToBuffer(arrayBuffer)
     .then((): void => console.log("ASYNC Read pixels to buffer success, size: " + arrayBuffer.byteLength));
+
+  console.log("TEST Picture begin");
+  const picture = image.createPicture(pixelMap);
+  if (picture != undefined) {
+    console.log("Create picture success");
+  }
+  const picturePixelMap = picture.getMainPixelmap();
+  const pictureInfo = picturePixelMap.getImageInfoSync();
+  console.log("Picture PixelMap image info: ", pictureInfo.size.width, pictureInfo.size.height, pictureInfo.pixelFormat, pictureInfo.alphaType);
+  
+  const regionAsync: image.Region = {
+    size: { width: 1, height: 1 },
+    x: 256,
+    y: 256
+  }
+  pixelMap.crop(regionAsync)
+    .then((): void => {
+      const croppedInfo = pixelMap.getImageInfoSync();
+      console.log("ASYNC Cropped image info: ", croppedInfo.size.width, croppedInfo.size.height);
+    });
+
   console.log("====== Sync methods completed ======")
 }

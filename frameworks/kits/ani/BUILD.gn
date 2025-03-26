@@ -42,6 +42,7 @@ ohos_shared_library("image_ani") {
     "native/src/image_ani_utils.cpp",
     "native/src/image_packer_ani.cpp",
     "native/src/image_source_ani.cpp",
+    "native/src/picture_ani.cpp",
     "native/src/pixel_map_ani.cpp",
   ]
   deps = [

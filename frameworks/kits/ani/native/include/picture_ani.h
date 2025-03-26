@@ -13,12 +13,24 @@
  * limitations under the License.
  */
 
-#ifndef ANI_SRC_INCLUDE_ANI_IMAGE_MODULE_H
-#define ANI_SRC_INCLUDE_ANI_IMAGE_MODULE_H
+#ifndef ANI_SRC_INCLUDE_PICTURE_ANI_H
+#define ANI_SRC_INCLUDE_PICTURE_ANI_H
 
-#include "pixel_map_ani.h"
-#include "image_source_ani.h"
-#include "image_packer_ani.h"
-#include "picture_ani.h"
+#include <ani.h>
+#include "picture.h"
 
-#endif // ANI_SRC_INCLUDE_ANI_IMAGE_MODULE_H
+namespace OHOS {
+namespace Media {
+
+class PictureAni {
+public:
+    static ani_object CreatePictureAni([[maybe_unused]] ani_env* env, [[maybe_unused]] ani_class clazz,
+        [[maybe_unused]] ani_object obj);
+    static ani_status Init(ani_env* env);
+    std::shared_ptr<Picture> nativePicture_;
+};
+
+} // namespace Media
+} // namespace OHOS
+
+#endif // ANI_SRC_INCLUDE_PICTURE_ANI_H

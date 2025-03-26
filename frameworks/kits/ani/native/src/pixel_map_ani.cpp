@@ -112,9 +112,47 @@ bool ParseInitializationOptions([[maybe_unused]] ani_env* env, ani_object para, 
     return true;
 }
 
+bool ParseRegion([[maybe_unused]] ani_env* env, ani_object region, Rect& rect)
+{
+    ani_boolean undefined;
+    env->Reference_IsUndefined(region, &undefined);
+    if (undefined) {
+        IMAGE_LOGE("ParseRegion argument undefined");
+        return false;
+    }
+
+    ani_ref size;
+    if (ANI_OK != env->Object_CallMethodByName_Ref(region, "<get>size", ":L@ohos/multimedia/image/image/Size;",
+        &size)) {
+        IMAGE_LOGE("Object_GetFieldByName_Ref Failed");
+        return false;
+    }
+    if (ANI_OK != env->Object_CallMethodByName_Int(reinterpret_cast<ani_object>(size), "<get>width", ":I",
+        &rect.width)) {
+        IMAGE_LOGE("Object_CallMethodByName_Int width Failed");
+        return false;
+    }
+    if (ANI_OK != env->Object_CallMethodByName_Int(reinterpret_cast<ani_object>(size), "<get>height", ":I",
+        &rect.height)) {
+        IMAGE_LOGE("Object_CallMethodByName_Int height Failed");
+        return false;
+    }
+
+    if (ANI_OK != env->Object_CallMethodByName_Int(region, "<get>x", ":I", &rect.left)) {
+        IMAGE_LOGE("Object_CallMethodByName_Int x Failed");
+        return false;
+    }
+    if (ANI_OK != env->Object_CallMethodByName_Int(region, "<get>y", ":I", &rect.top)) {
+        IMAGE_LOGE("Object_CallMethodByName_Int y Failed");
+        return false;
+    }
+
+    return true;
+}
+
 ani_object PixelMapAni::CreatePixelMap([[maybe_unused]] ani_env* env, std::shared_ptr<PixelMap> pixelMap)
 {
-    std::unique_ptr<PixelMapAni> pPixelMapAni = std::make_unique<PixelMapAni>();
+    unique_ptr<PixelMapAni> pPixelMapAni = make_unique<PixelMapAni>();
     pPixelMapAni->nativePixelMap_ = pixelMap;
     static const char* className = "L@ohos/multimedia/image/image/PixelMapInner;";
     ani_class cls;
@@ -137,7 +175,7 @@ ani_object PixelMapAni::CreatePixelMap([[maybe_unused]] ani_env* env, std::share
 ani_object PixelMapAni::CreatePixelMapAni([[maybe_unused]] ani_env* env,
     [[maybe_unused]] ani_class clazz, [[maybe_unused]] ani_object obj)
 {
-    std::unique_ptr<PixelMapAni> pPixelMapAni = std::make_unique<PixelMapAni>();
+    unique_ptr<PixelMapAni> pPixelMapAni = make_unique<PixelMapAni>();
     InitializationOptions opts;
     if (!ParseInitializationOptions(env, obj, opts)) {
         IMAGE_LOGE("ParseInitializationOptions failed '");
@@ -173,6 +211,16 @@ static ani_object GetImageInfo([[maybe_unused]] ani_env* env, [[maybe_unused]] a
     ImageInfo imgInfo;
     pixelmap->GetImageInfo(imgInfo);
     return ImageAniUtils::CreateImageInfoValueFromNative(env, imgInfo, pixelmap);
+}
+
+static ani_int GetBytesNumberPerRow([[maybe_unused]] ani_env* env, [[maybe_unused]] ani_object obj)
+{
+    PixelMap* pixelmap = ImageAniUtils::GetPixelMapFromEnv(env, obj);
+    if (pixelmap == nullptr) {
+        IMAGE_LOGE("[GetPixelMapFromEnv] pixelmap nullptr");
+        return 0;
+    }
+    return pixelmap->GetRowBytes();
 }
 
 static ani_int GetPixelBytesNumber([[maybe_unused]] ani_env* env, [[maybe_unused]] ani_object obj)
@@ -216,6 +264,47 @@ static void ReadPixelsToBuffer(ani_env* env, ani_object obj, ani_object param0)
     }
 }
 
+static void Scale([[maybe_unused]] ani_env* env, [[maybe_unused]] ani_object obj, ani_double x, ani_double y,
+    ani_int level)
+{
+    PixelMap* pixelmap = ImageAniUtils::GetPixelMapFromEnv(env, obj);
+    if (pixelmap == nullptr) {
+        IMAGE_LOGE("[GetPixelMapFromEnv] pixelmap nullptr");
+        return;
+    }
+
+    pixelmap->scale(static_cast<float>(x), static_cast<float>(y), static_cast<AntiAliasingOption>(level));
+}
+
+static void Crop([[maybe_unused]] ani_env* env, [[maybe_unused]] ani_object obj, ani_object region)
+{
+    PixelMap* pixelmap = ImageAniUtils::GetPixelMapFromEnv(env, obj);
+    if (pixelmap == nullptr) {
+        IMAGE_LOGE("[GetPixelMapFromEnv] pixelmap nullptr");
+        return;
+    }
+
+    Rect rect;
+    if (!ParseRegion(env, region, rect)) {
+        IMAGE_LOGE("ParseRegion failed");
+        return;
+    }
+    
+    pixelmap->crop(rect);
+}
+
+static void Flip([[maybe_unused]] ani_env* env, [[maybe_unused]] ani_object obj, ani_boolean horizontal,
+    ani_boolean vertical)
+{
+    PixelMap* pixelmap = ImageAniUtils::GetPixelMapFromEnv(env, obj);
+    if (pixelmap == nullptr) {
+        IMAGE_LOGE("[GetPixelMapFromEnv] pixelmap nullptr");
+        return;
+    }
+
+    pixelmap->flip(static_cast<bool>(horizontal), static_cast<bool>(vertical));
+}
+
 ani_status PixelMapAni::Init(ani_env* env)
 {
     static const char *className = "L@ohos/multimedia/image/image/PixelMapInner;";
@@ -229,10 +318,15 @@ ani_status PixelMapAni::Init(ani_env* env)
             reinterpret_cast<void*>(OHOS::Media::CreateAlphaPixelmap)},
         ani_native_function {"nativeGetImageInfo", ":L@ohos/multimedia/image/image/ImageInfo;",
             reinterpret_cast<void*>(OHOS::Media::GetImageInfo)},
+        ani_native_function {"getBytesNumberPerRow", ":I", reinterpret_cast<void*>(OHOS::Media::GetBytesNumberPerRow)},
         ani_native_function {"getPixelBytesNumber", ":I", reinterpret_cast<void*>(OHOS::Media::GetPixelBytesNumber)},
         ani_native_function {"nativeRelease", ":V", reinterpret_cast<void*>(OHOS::Media::Release)},
         ani_native_function {"nativeReadPixelsToBuffer", "Lescompat/ArrayBuffer;:V",
             reinterpret_cast<void*>(OHOS::Media::ReadPixelsToBuffer)},
+        ani_native_function {"nativeScale", "DDI:V", reinterpret_cast<void*>(OHOS::Media::Scale)},
+        ani_native_function {"nativeCrop", "L@ohos/multimedia/image/image/Region;:V",
+            reinterpret_cast<void*>(OHOS::Media::Crop)},
+        ani_native_function {"nativeFlip", "ZZ:V", reinterpret_cast<void*>(OHOS::Media::Flip)},
     };
     ani_status ret = env->Class_BindNativeMethods(cls, methods.data(), methods.size());
     if (ANI_OK != ret) {
