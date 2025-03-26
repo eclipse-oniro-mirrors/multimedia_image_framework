@@ -31,7 +31,12 @@ namespace OHOS {
 namespace Media {
 using namespace std;
 
-shared_ptr<PixelMap> ImageAniUtils::GetPixelMapFromEnv([[maybe_unused]] ani_env* env, [[maybe_unused]] ani_object obj)
+PixelMap* ImageAniUtils::GetPixelMapFromEnv([[maybe_unused]] ani_env* env, [[maybe_unused]] ani_object obj)
+{
+    return ImageAniUtils::GetPixelMapFromEnv2(env, obj).get();
+}
+
+shared_ptr<PixelMap> ImageAniUtils::GetPixelMapFromEnv2([[maybe_unused]] ani_env* env, [[maybe_unused]] ani_object obj)
 {
     ani_status ret;
     ani_long nativeObj {};

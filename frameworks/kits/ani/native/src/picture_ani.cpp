@@ -37,9 +37,9 @@ ani_object PictureAni::CreatePictureAni([[maybe_unused]] ani_env* env, [[maybe_u
     [[maybe_unused]] ani_object obj)
 {
     unique_ptr<PictureAni> pPictureAni = std::make_unique<PictureAni>();
-    auto pixelMap = ImageAniUtils::GetPixelMapFromEnv(env, obj);
+    auto pixelMap = ImageAniUtils::GetPixelMapFromEnv2(env, obj);
     if (pixelMap == nullptr) {
-        IMAGE_LOGE("[GetPixelMapFromEnv] pixelMap nullptr");
+        IMAGE_LOGE("[GetPixelMapFromEnv2] pixelMap nullptr");
         return nullptr;
     }
 

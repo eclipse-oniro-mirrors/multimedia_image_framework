@@ -157,7 +157,7 @@ ani_arraybuffer nativePackingWithPixelMap([[maybe_unused]] ani_env* env,
         IMAGE_LOGE("nativePackingWithPixelMap  isPacker null ");
         return nullptr;
     }
-    auto pixelmap = ImageAniUtils::GetPixelMapFromEnv(env, obj2);
+    PixelMap* pixelmap = ImageAniUtils::GetPixelMapFromEnv(env, obj2);
     if (!pixelmap) {
         IMAGE_LOGE("nativePackingWithPixelMap  pixelmap null ");
         return nullptr;

@@ -144,7 +144,7 @@ function main() {
   }
   const picturePixelMap = picture.getMainPixelmap();
   const pictureInfo = picturePixelMap.getImageInfoSync();
-  console.log("Picture PixelMap get image info: ", pictureInfo.size.width, pictureInfo.size.height, pictureInfo.pixelFormat, pictureInfo.alphaType);
+  console.log("Picture PixelMap image info: ", pictureInfo.size.width, pictureInfo.size.height, pictureInfo.pixelFormat, pictureInfo.alphaType);
   
   const regionAsync: image.Region = {
     size: { width: 1, height: 1 },
