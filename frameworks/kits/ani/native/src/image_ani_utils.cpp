@@ -33,10 +33,10 @@ using namespace std;
 
 PixelMap* ImageAniUtils::GetPixelMapFromEnv([[maybe_unused]] ani_env* env, [[maybe_unused]] ani_object obj)
 {
-    return ImageAniUtils::GetPixelMapFromEnv2(env, obj).get();
+    return ImageAniUtils::GetPixelMapFromEnvSp(env, obj).get();
 }
 
-shared_ptr<PixelMap> ImageAniUtils::GetPixelMapFromEnv2([[maybe_unused]] ani_env* env, [[maybe_unused]] ani_object obj)
+shared_ptr<PixelMap> ImageAniUtils::GetPixelMapFromEnvSp([[maybe_unused]] ani_env* env, [[maybe_unused]] ani_object obj)
 {
     ani_status ret;
     ani_long nativeObj {};

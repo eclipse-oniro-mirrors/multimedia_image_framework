@@ -28,7 +28,7 @@ namespace Media {
 class ImageAniUtils {
 public:
     static PixelMap* GetPixelMapFromEnv([[maybe_unused]] ani_env* env, [[maybe_unused]] ani_object obj);
-    static std::shared_ptr<PixelMap> GetPixelMapFromEnv2([[maybe_unused]] ani_env* env,
+    static std::shared_ptr<PixelMap> GetPixelMapFromEnvSp([[maybe_unused]] ani_env* env,
         [[maybe_unused]] ani_object obj);
     static std::shared_ptr<Picture> GetPictureFromEnv([[maybe_unused]] ani_env* env, [[maybe_unused]] ani_object obj);
     static ani_object CreateImageInfoValueFromNative(ani_env* env, const ImageInfo &imgInfo, PixelMap* pixelmap);
