@@ -91,6 +91,7 @@ constexpr uint32_t ASTC_DIM_MAX = 8192;
 constexpr uint32_t BYTES_PER_PIXEL = 4;
 constexpr uint32_t BIT_SHIFT_16BITS = 16;
 constexpr uint32_t EVEN_ALIGNMENT = 2;
+constexpr uint32_t UV_PLANES_COUNT = 2;
 
 struct AstcInfo {
     uint32_t astcBufSize;
@@ -1205,9 +1206,9 @@ static bool NV12P010ToNV21P010(const uint16_t *srcBuffer, const ImageInfo &info,
     for (uint32_t i = 0; i < static_cast<uint32_t>(info.size.width) * static_cast<uint32_t>(info.size.height); i++) {
         destBuffer[i] = srcBuffer[i];
     }
-    for (uint32_t i = 0; i < sizeUV; i += NUM_2) {
-        dstVU[i] = srcUV[i + 1];
-        dstVU[i + 1] = srcUV[i];
+    for (uint32_t i = 0; i < sizeUV / UV_PLANES_COUNT; i++) {
+        dstVU[UV_PLANES_COUNT * i] = srcUV[UV_PLANES_COUNT * i + 1];
+        dstVU[UV_PLANES_COUNT * i + 1] = srcUV[UV_PLANES_COUNT * i];
     }
     return true;
 }
