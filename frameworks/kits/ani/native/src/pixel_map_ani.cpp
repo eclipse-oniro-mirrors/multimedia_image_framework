@@ -324,7 +324,8 @@ ani_status PixelMapAni::Init(ani_env* env)
         ani_native_function {"nativeReadPixelsToBuffer", "Lescompat/ArrayBuffer;:V",
             reinterpret_cast<void*>(OHOS::Media::ReadPixelsToBuffer)},
         ani_native_function {"nativeScale", "DDI:V", reinterpret_cast<void*>(OHOS::Media::Scale)},
-        ani_native_function {"nativeCrop", "L@ohos/multimedia/image/image/Region;:V", reinterpret_cast<void*>(OHOS::Media::Crop)},
+        ani_native_function {"nativeCrop", "L@ohos/multimedia/image/image/Region;:V",
+            reinterpret_cast<void*>(OHOS::Media::Crop)},
         ani_native_function {"nativeFlip", "ZZ:V", reinterpret_cast<void*>(OHOS::Media::Flip)},
     };
     ani_status ret = env->Class_BindNativeMethods(cls, methods.data(), methods.size());
