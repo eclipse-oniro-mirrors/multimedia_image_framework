@@ -893,7 +893,10 @@ uint32_t AstcCodec::ASTCEncode() __attribute__((no_sanitize("cfi")))
         packSize = static_cast<uint32_t>(param.sutBytes);
     }
     ReleaseExtendInfoMemory(extendInfo);
-    astcOutput_->Write(astcBuffer, packSize);
+    if (!astcOutput_->Write(astcBuffer, packSize)) {
+        free(astcBuffer);
+        return ERROR;
+    }
     free(astcBuffer);
     IMAGE_LOGD("astcenc end: %{public}dx%{public}d, GpuFlag %{public}d, sut%{public}d",
         imageInfo.size.width, imageInfo.size.height, param.hardwareFlag, param.sutProfile);
