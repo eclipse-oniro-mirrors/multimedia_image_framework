@@ -883,7 +883,8 @@ uint32_t ExtDecoder::Decode(uint32_t index, DecodeContext &context)
     if (dstInfo_.colorType() == SkColorType::kRGB_888x_SkColorType) {
         tmpBuffer = make_unique<uint8_t[]>(byteCount);
         if (tmpBuffer == nullptr) {
-            IMAGE_LOGE("Make unique pointer failed, byteCount: %{public}llu", byteCount);
+            IMAGE_LOGE("Make unique pointer failed, byteCount: %{public}llu",
+                static_cast<unsigned long long>(byteCount));
         }
         dstBuffer = tmpBuffer.get();
         byteCount = byteCount / NUM_4 * NUM_3;
