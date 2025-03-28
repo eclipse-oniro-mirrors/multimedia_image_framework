@@ -17,6 +17,8 @@
 
 #include <fcntl.h>
 #include <surface.h>
+#define private public
+#define protected public
 #include "picture.h"
 #include "image_type.h"
 #include "image_utils.h"
@@ -32,6 +34,11 @@
 #include "tiff_parser.h"
 #include "securec.h"
 #include "image_log.h"
+#include "ext_stream.h"
+#include "include/codec/SkCodec.h"
+#include "HeifDecoderImpl.h"
+#include "HeifDecoder.h"
+#include "buffer_source_stream.h"
 
 #undef LOG_DOMAIN
 #define LOG_DOMAIN LOG_TAG_DOMAIN_ID_IMAGE
@@ -41,6 +48,7 @@
 
 namespace OHOS {
 namespace Media {
+using namespace OHOS::ImagePlugin;
 using namespace std;
 
 constexpr int32_t SIZE_WIDTH = 2;
@@ -53,6 +61,7 @@ static const std::string IMAGE_JPEG_SRC = "/data/local/tmp/test_jpeg.jpg";
 static const std::string IMAGE_JPEG_DEST = "/data/local/tmp/test_jpeg_out.jpg";
 static const std::string IMAGE_HEIF_SRC = "/data/local/tmp/test_heif.heic";
 static const std::string IMAGE_HEIF_DEST = "/data/local/tmp/test_heif_out.heic";
+static const std::string IMAGE_ENCODE_DEST = "/data/local/tmp/test_out.dat";
 
 static std::shared_ptr<PixelMap> CreatePixelMap()
 {
@@ -255,6 +264,36 @@ void CreateAuxiliaryPictureTestBySurfaceBuffer()
     OHOS::sptr<OHOS::SurfaceBuffer> buffer = SurfaceBuffer::Create();
     AuxiliaryPicture::Create(buffer, OHOS::Media::AuxiliaryPictureType::GAINMAP);
 }
+
+void HeifDecodeFuzz(const uint8_t *data, size_t size)
+{
+#ifdef HEIF_HW_DECODE_ENABLE
+    SourceOptions opts;
+    uint32_t errorCode;
+    std::shared_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(data, size, opts, errorCode);
+    if (imageSource == nullptr) {
+        return;
+    }
+    auto extStream = std::make_unique<ImagePlugin::ExtStream>;
+    if (extStream == nullptr) {
+        return;
+    }
+    extStream->stream_ = imageSource->sourceStreamPtr_.get();
+    std::unique_ptr<SkCodec> codec =
+        SkCodec::MakeFromStream(std::make_unique<ImagePlugin::ExtStream>(extStream->stream_));
+    if (codec == nullptr) {
+        return;
+    }
+    auto heifContext = reinterpret_cast<ImagePlugin::HeifDecoderImpl*>(codec->getHeifContext());
+    if (heifContext == nullptr) {
+        return;
+    }
+    sptr<SurfaceBuffer> hwBuffer;
+    heifContext->HwDecodeIdenImage(nullptr, heifContext->primaryImage_, heifContext->gridInfo_, &hwBuffer, true);
+    HeifFrameInfo* frameInfo = nullptr;
+    heifContext->getTmapInfo(frameInfo);
+#endif
+}
 } // namespace Media
 } // namespace OHOS
 
@@ -269,5 +308,6 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
     OHOS::Media::ExifMetadataTest();
     OHOS::Media::ImagePackingTest001();
     OHOS::Media::ImagePackingTest002();
+    OHOS::Media::HeifDecodeFuzz(data, size);
     return 0;
 }
