@@ -76,6 +76,7 @@ public:
                           OpenSourceLibyuv::RotationMode &rotateNum, YUVDataInfo yuvDataInfo);
 protected:
     bool CheckPixelsInput(const uint8_t *dst, const uint64_t &bufferSize, const uint32_t &offset, const Rect &region);
+    bool IsLegalAxis(float xAxis, float yAxis);
     void SetRowDataSizeForImageInfo(ImageInfo info);
     static uint32_t GetImageSize(int32_t width, int32_t height, PixelFormat format);
     uint32_t SetColorSpace(const OHOS::ColorManager::ColorSpace &grColorSpace, SkTransYuvInfo &src,

@@ -12,7 +12,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
+#include <cmath>
 #include "pixel_yuv.h"
 
 #include "image_utils.h"
@@ -716,10 +716,19 @@ uint32_t PixelYuv::ReadPixels(const uint64_t &bufferSize, uint8_t *dst)
 }
 
 // To check the axis is legal
-bool IsLegalAxis(float xAxis, float yAxis)
+bool PixelYuv::IsLegalAxis(float xAxis, float yAxis)
 {
-    if (xAxis > static_cast<float>(INT32_MAX) || yAxis > static_cast<float>(INT32_MAX)) {
+    if (!IsYuvFormat()) {
+        IMAGE_LOGE("translate not yuv format");
+        return false;
+    }
+    if (xAxis < -static_cast<float>(INT32_MAX) || xAxis > static_cast<float>(INT32_MAX) ||
+        yAxis < -static_cast<float>(INT32_MAX) || yAxis > static_cast<float>(INT32_MAX)) {
         IMAGE_LOGE("translate axis overflow xAxis(%{public}f), yAxis(%{public}f)", xAxis, yAxis);
+        return false;
+    }
+    if (!std::isfinite(xAxis) || !std::isfinite(yAxis)) {
+        IMAGE_LOGE("translate axis not finite");
         return false;
     }
     int32_t xOffset = static_cast<int32_t>(xAxis);
@@ -732,12 +741,11 @@ bool IsLegalAxis(float xAxis, float yAxis)
         IMAGE_LOGE("translate height overflow height(%{public}d) + yOffset(%{public}d)", imageInfo_.size.height, yOffset);
         return false;
     }
-    if (!IsYuvFormat() || (xOffset == 0 && yOffset == 0)) {
+    if (xOffset == 0 && yOffset == 0) {
         return false;
     }
     int32_t width = imageInfo_.size.width + xOffset;
     int32_t height = imageInfo_.size.height + yOffset;
-
     if (width < 1 || height < 1 || width > MAX_DIMENSION || height > MAX_DIMENSION) {
         IMAGE_LOGE("Checktranslate size overflow width(%{public}d), height(%{public}d)", width, height);
         return false;
