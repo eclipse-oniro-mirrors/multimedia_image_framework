@@ -186,6 +186,27 @@ void CreateImageSourceByPathname(const uint8_t* data, size_t size)
     std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(data, size, opts, errCode);
 }
 
+void ImageSourceFuzzTest(const uint8_t *data, size_t size)
+{
+    if (data == nullptr) {
+        return;
+    }
+    SourceOptions opts;
+    uint32_t errorCode = 0;
+    std::shared_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(data, size, opts, errorCode);
+    if (imageSource == nullptr) {
+        return;
+    }
+    std::string key = "ImageWidth";
+    std::string value = "500";
+    imageSource->ModifyImageProperty(0, key, value);
+    imageSource->ModifyImagePropertyEx(0, key, value);
+    bool isSupportOdd = false;
+    bool isAddUV = false;
+    std::vector<uint8_t> buffer;
+    imageSource->ConvertYUV420ToRGBA(buffer.data(), size, isSupportOdd, isAddUV, errorCode);
+}
+
 bool CreatePixelMapByRandomImageSource(const uint8_t *data, size_t size)
 {
     IMAGE_LOGI("%{public}s start.", __func__);
@@ -207,6 +228,11 @@ bool CreatePixelMapByRandomImageSource(const uint8_t *data, size_t size)
 
     dopts.desiredDynamicRange = DecodeDynamicRange::AUTO;
     dopts.isAppUseAllocator = true;
+    dopts.allocatorType = AllocatorType::SHARE_MEM_ALLOC;
+    pixelMap = imageSource->CreatePixelMap(0, dopts, errorCode);
+
+    dopts.desiredDynamicRange = DecodeDynamicRange::AUTO;
+    dopts.isAppUseAllocator = true;
     dopts.allocatorType = imageSource->ConvertAutoAllocatorType(dopts);
     pixelMap = imageSource->CreatePixelMap(0, dopts, errorCode);
 
@@ -220,6 +246,12 @@ bool CreatePixelMapByRandomImageSource(const uint8_t *data, size_t size)
     dopts.isAppUseAllocator = true;
     dopts.desiredPixelFormat = PixelFormat::NV21;
     dopts.allocatorType = AllocatorType::DMA_ALLOC;
+    pixelMap = imageSource->CreatePixelMap(0, dopts, errorCode);
+
+    dopts.desiredDynamicRange = DecodeDynamicRange::AUTO;
+    dopts.isAppUseAllocator = true;
+    dopts.desiredPixelFormat = PixelFormat::NV21;
+    dopts.allocatorType = AllocatorType::SHARE_MEM_ALLOC;
     pixelMap = imageSource->CreatePixelMap(0, dopts, errorCode);
     return true;
 }
@@ -339,5 +371,6 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
     OHOS::Media::CreateImageSourceByPathname(data, size);
     OHOS::Media::CreatePixelMapByRandomImageSource(data, size);
     OHOS::Media::CreatePixelMapUseArgbByRandomImageSource(data, size);
+    OHOS::Media::ImageSourceFuzzTest(data, size);
     return 0;
 }

@@ -28,6 +28,8 @@
 #include "ext_decoder.h"
 #include "svg_decoder.h"
 #include "image_log.h"
+#include "ext_wstream.h"
+#include "hdr_helper.h"
 
 #undef LOG_DOMAIN
 #define LOG_DOMAIN LOG_TAG_DOMAIN_ID_IMAGE
@@ -50,6 +52,7 @@ static const std::string HEIF_HW_PATH = "/data/local/tmp/test_hw.heic";
 static const std::string HDR_PATH = "/data/local/tmp/HEIFISOMultiChannelBaseColor0512V12.heic";
 static const std::string WEBP_PATH = "/data/local/tmp/test.webp";
 static const std::string GIF_PATH = "/data/local/tmp/test.gif";
+constexpr uint8_t ITUT35_TAG_SIZE = 6;
 
 /*
  * describe: get data from outside untrusted data(g_data) which size is according to sizeof(T)
@@ -376,6 +379,33 @@ void HdrTest001()
     IMAGE_LOGI("%{public}s SUCCESS", __func__);
 }
 
+void HdrHelperFucTest()
+{
+    HdrMetadata metadataOne;
+    metadataOne.extendMeta.baseColorMeta.baseMappingFlag = ITUT35_TAG_SIZE;
+    metadataOne.extendMeta.gainmapColorMeta.combineMappingFlag = ITUT35_TAG_SIZE;
+    ImagePlugin::HdrJpegPackerHelper::PackVividMetadataMarker(metadataOne);
+
+    HdrMetadata metadataTwo;
+    metadataTwo.extendMeta.baseColorMeta.baseMappingFlag = ITUT35_TAG_SIZE;
+    metadataTwo.extendMeta.gainmapColorMeta.combineMappingFlag = ITUT35_TAG_SIZE;
+    ImagePlugin::HdrJpegPackerHelper::PackISOMetadataMarker(metadataTwo);
+
+    HdrMetadata metadataThree;
+    metadataThree.extendMeta.baseColorMeta.baseMappingFlag = ITUT35_TAG_SIZE;
+    metadataThree.extendMeta.gainmapColorMeta.combineMappingFlag = ITUT35_TAG_SIZE;
+    sk_sp<SkData> baseImageData;
+    sk_sp<SkData> gainMapImageData;
+    ExtWStream extWStream(nullptr);
+    ImagePlugin::HdrJpegPackerHelper::SpliceHdrStream(baseImageData, gainMapImageData, extWStream, metadataThree);
+
+    HdrMetadata metadataFour;
+    metadataFour.extendMeta.baseColorMeta.baseMappingFlag = ITUT35_TAG_SIZE;
+    metadataFour.extendMeta.gainmapColorMeta.combineMappingFlag = ITUT35_TAG_SIZE;
+    std::vector<uint8_t> it35Info;
+    ImagePlugin::HdrHeifPackerHelper::PackIT35Info(metadataFour, it35Info);
+}
+
 void GifTest001(const std::string& pathName)
 {
     IMAGE_LOGI("%{public}s IN", __func__);
@@ -408,6 +438,8 @@ void ImagePluginFuzzTest001(const uint8_t* data, size_t size)
     GifTest001(GIF_PATH);
     GifTest001(WEBP_PATH);
     HdrTest001();
+    ExtDecoderRegionFuncTest001(filename);
+    HdrHelperFucTest();
 }
 } // namespace Media
 } // namespace OHOS
