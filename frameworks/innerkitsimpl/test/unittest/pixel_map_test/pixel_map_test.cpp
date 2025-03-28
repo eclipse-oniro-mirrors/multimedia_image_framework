@@ -15,11 +15,13 @@
 
 #define protected public
 #include <gtest/gtest.h>
+#include "image_source.h"
 #include "image_type.h"
 #include "image_utils.h"
 #include "media_errors.h"
 #include "pixel_map.h"
 #include "pixel_convert_adapter.h"
+#include "securec.h"
 
 #define IMAGE_YUV_PATH  "/data/local/tmp/image/P010.yuv"
 
@@ -33,6 +35,26 @@ const uint8_t red = 0xFF;
 const uint8_t green = 0x8F;
 const uint8_t blue = 0x7F;
 const uint8_t alpha = 0x7F;
+constexpr uint32_t ASTC_WIDTH = 256;
+constexpr uint32_t ASTC_HEIGHT = 256;
+// 16 means header bytes
+constexpr uint32_t HEADER_BYTES = 16;
+// 4 means ASTC compression format is 4x4
+constexpr uint32_t COMPRESSION_FORMAT = 4;
+// 16 means ASTC per block bytes and header bytes
+constexpr uint32_t PER_BLOCK_BYTES = 16;
+constexpr uint32_t BLOCK_SIZE = 4;
+constexpr uint8_t ASTC_PER_BLOCK_BYTES = 16;
+constexpr uint8_t ASTC_MAGIC_0 = 0x13; // ASTC MAGIC ID 0x13
+constexpr uint8_t ASTC_MAGIC_1 = 0xAB; // ASTC MAGIC ID 0xAB
+constexpr uint8_t ASTC_MAGIC_2 = 0xA1; // ASTC MAGIC ID 0xA1
+constexpr uint8_t ASTC_MAGIC_3 = 0x5C; // ASTC MAGIC ID 0x5C
+constexpr uint8_t MASKBITS_FOR_8BIT = 0xFF;
+constexpr uint8_t ASTC_1TH_BYTES = 8;
+constexpr uint8_t ASTC_2TH_BYTES = 16;
+constexpr uint8_t ASTC_BLOCK4X4_FIT_SUT_ASTC_EXAMPLE0[ASTC_PER_BLOCK_BYTES] = {
+    0x43, 0x80, 0xE9, 0xE8, 0xFA, 0xFC, 0x14, 0x17, 0xFF, 0xFF, 0x81, 0x42, 0x12, 0x5A, 0xD4, 0xE9
+};
 
 struct ImageSize {
     int32_t width = 0;
@@ -231,6 +253,80 @@ static bool CompareTwoPixelMap(PixelMap &pixelmap1, PixelMap &pixelmap2)
         flag = false;
     }
     return flag;
+}
+
+static bool ConstructAstcBody(uint8_t* astcBody, size_t& blockNums, const uint8_t* astcBlockPart)
+{
+    if (astcBody == nullptr || astcBlockPart == nullptr) {
+        return false;
+    }
+ 
+    uint8_t* astcBuf = astcBody;
+    for (size_t blockIdx = 0; blockIdx < blockNums; blockIdx++) {
+        if (memcpy_s(astcBuf, ASTC_PER_BLOCK_BYTES, astcBlockPart, ASTC_PER_BLOCK_BYTES) != 0) {
+            return false;
+        }
+        astcBuf += ASTC_PER_BLOCK_BYTES;
+    }
+    return true;
+}
+ 
+static bool GenAstcHeader(uint8_t* header, size_t blockSize, size_t width, size_t height)
+{
+    if (header == nullptr) {
+        return false;
+    }
+    uint8_t* tmp = header;
+    *tmp++ = ASTC_MAGIC_0;
+    *tmp++ = ASTC_MAGIC_1;
+    *tmp++ = ASTC_MAGIC_2;
+    *tmp++ = ASTC_MAGIC_3;
+    *tmp++ = static_cast<uint8_t>(blockSize);
+    *tmp++ = static_cast<uint8_t>(blockSize);
+    // 1 means 3D block size
+    *tmp++ = 1;
+    *tmp++ = width & MASKBITS_FOR_8BIT;
+    *tmp++ = (width >> ASTC_1TH_BYTES) & MASKBITS_FOR_8BIT;
+    *tmp++ = (width >> ASTC_2TH_BYTES) & MASKBITS_FOR_8BIT;
+    *tmp++ = height & MASKBITS_FOR_8BIT;
+    *tmp++ = (height >> ASTC_1TH_BYTES) & MASKBITS_FOR_8BIT;
+    *tmp++ = (height >> ASTC_2TH_BYTES) & MASKBITS_FOR_8BIT;
+    // astc support 3D, for 2D,the 3D size is 1
+    *tmp++ = 1;
+    *tmp++ = 0;
+    *tmp++ = 0;
+    return true;
+}
+ 
+static bool ConstructPixelAstc(int32_t width, int32_t height, std::unique_ptr<Media::PixelMap>& pixelMap)
+{
+    SourceOptions opts;
+    size_t blockNum = ((ASTC_WIDTH + COMPRESSION_FORMAT - 1) / COMPRESSION_FORMAT) *
+        ((height + COMPRESSION_FORMAT - 1) / COMPRESSION_FORMAT);
+    size_t size = blockNum * PER_BLOCK_BYTES + HEADER_BYTES;
+    // malloc data here
+    uint8_t* data = (uint8_t*)malloc(size);
+
+    if (!GenAstcHeader(data, BLOCK_SIZE, width, height)) {
+        GTEST_LOG_(ERROR) << "ConstructPixelAstc GenAstcHeader failed\n";
+
+        return false;
+    }
+    if (!ConstructAstcBody(data + HEADER_BYTES, blockNum, ASTC_BLOCK4X4_FIT_SUT_ASTC_EXAMPLE0)) {
+        GTEST_LOG_(ERROR) << "ConstructAstcBody ConstructAstcBody failed\n";
+        return false;
+    }
+    uint32_t errorCode = 0;
+    std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(data, size, opts, errorCode);
+    if (errorCode != SUCCESS || !imageSource) {
+        return false;
+    }
+    DecodeOptions decodeOpts;
+    pixelMap = imageSource->CreatePixelMap(decodeOpts, errorCode);
+    if (errorCode != SUCCESS) {
+        return false;
+    }
+    return true;
 }
 
 void CreateBuffer(const uint32_t width, const uint32_t height, const uint32_t pixelByte,
@@ -2780,6 +2876,135 @@ HWTEST_F(PixelMapTest, UnmodifiablePixelMapTest, TestSize.Level3)
     EXPECT_EQ(data[0], 0xFFFFFFFF);
 
     GTEST_LOG_(INFO) << "PixelMapTest: UnmodifiablePixelMapTest end";
+}
+
+/**
+ * @tc.name: UnMapPixelMapTest
+ * @tc.desc: Test UnMap PixelMap
+ * @tc.type: FUNC
+ */
+HWTEST_F(PixelMapTest, UnMapPixelMapTest, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PixelMapTest: UnMapPixelMapTest start";
+    auto pixelMap_sharedMem = ConstructPixmap(PixelFormat::RGBA_8888, AlphaType::IMAGE_ALPHA_TYPE_UNKNOWN);
+    EXPECT_NE(pixelMap_sharedMem, nullptr);
+    EXPECT_EQ(pixelMap_sharedMem->GetAllocatorType(), AllocatorType::SHARE_MEM_ALLOC);
+    EXPECT_NE(true, pixelMap_sharedMem->UnMap());
+    EXPECT_NE(true, pixelMap_sharedMem->IsUnMap());
+    pixelMap_sharedMem->IncreaseUseCount();
+    EXPECT_NE(false, pixelMap_sharedMem->UnMap());
+    EXPECT_NE(false, pixelMap_sharedMem->IsUnMap());
+    auto pixelMap = ConstructPixmap(AllocatorType::DMA_ALLOC);
+    EXPECT_NE(pixelMap, nullptr);
+    EXPECT_NE(true, pixelMap->UnMap());
+    GTEST_LOG_(INFO) << "PixelMapTest: UnMapPixelMapTest end";
+}
+ 
+/**
+ * @tc.name: GetImagePropertyIntPixelMapTest
+ * @tc.desc: Test GetImagePropertyInt PixelMap
+ * @tc.type: FUNC
+ */
+HWTEST_F(PixelMapTest, GetImagePropertyIntPixelMapTest, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PixelMapTest: GetImagePropertyIntPixelMapTest start";
+    auto pixelMap = ConstructPixmap(AllocatorType::SHARE_MEM_ALLOC);
+    string key = "GPSLatitude";
+
+    int32_t val = 0;
+    EXPECT_NE(true, pixelMap->GetImagePropertyInt(key, val));
+    GTEST_LOG_(INFO) << "PixelMapTest: GetImagePropertyIntPixelMapTest end";
+}
+ 
+/**
+ * @tc.name: UseCountPixelMapTest
+ * @tc.desc: Test UseCount PixelMap
+ * @tc.type: FUNC
+ */
+HWTEST_F(PixelMapTest, UseCountPixelMapTest, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PixelMapTest: UseCountPixelMapTest start";
+    auto pixelMap = ConstructPixmap(AllocatorType::SHARE_MEM_ALLOC);
+   
+    pixelMap->IncreaseUseCount();
+    pixelMap->IncreaseUseCount();
+    EXPECT_EQ(2, pixelMap->GetUseCount());
+    pixelMap->DecreaseUseCount();
+    EXPECT_EQ(1, pixelMap->GetUseCount());
+    GTEST_LOG_(INFO) << "PixelMapTest: UseCountPixelMapTest end";
+}
+ 
+/**
+ * @tc.name: MemoryDirtyPixelMapTest
+ * @tc.desc: Test MemoryDirty PixelMap
+ * @tc.type: FUNC
+ */
+HWTEST_F(PixelMapTest, MemoryDirtyPixelMapTest, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PixelMapTest: MemoryDirtyPixelMapTest start";
+    auto pixelMap = ConstructPixmap(AllocatorType::SHARE_MEM_ALLOC);
+    pixelMap->MarkDirty();
+    EXPECT_EQ(true, pixelMap->IsMemoryDirty());
+    GTEST_LOG_(INFO) << "PixelMapTest: MemoryDirtyPixelMapTest end";
+}
+
+/**
+ * @tc.name: ConvertFromAstcPixelMapTest
+ * @tc.desc: Test ConvertFromAstc PixelMap
+ * @tc.type: FUNC
+ */
+HWTEST_F(PixelMapTest, ConvertFromAstcPixelMapTest, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PixelMapTest: ConvertFromAstcPixelMapTest start";
+    std::unique_ptr<PixelMap> pixelMap = nullptr;
+    OHOS::Multimedia::ConstructPixelAstc(ASTC_WIDTH, ASTC_HEIGHT, pixelMap);
+    ASSERT_NE(pixelMap, nullptr);
+    uint32_t errorCode = 0;
+    auto result = PixelMap::ConvertFromAstc(pixelMap.get(), errorCode, PixelFormat::RGBA_8888);
+    ASSERT_EQ(errorCode, 0);
+    for (int i = 0; i < static_cast<int>(PixelFormat::EXTERNAL_MAX); i++) {
+        if (i == 3) {
+            continue;
+        }
+        result = PixelMap::ConvertFromAstc(pixelMap.get(), errorCode, static_cast<PixelFormat>(i));
+        EXPECT_NE(errorCode, 0);
+    }
+    GTEST_LOG_(INFO) << "PixelMapTest: ConvertFromAstcPixelMapTest end";
+}
+ 
+// For test closeFd func
+class TestPixelMap : public PixelMap {
+public:
+    TestPixelMap() {}
+    virtual ~TestPixelMap() {}
+    bool CloseFd()
+    {
+        return PixelMap::CloseFd();
+    }
+};
+ 
+/**
+ * @tc.name: CloseFdPixelMapTest
+ * @tc.desc: Test CloseFd PixelMap
+ * @tc.type: FUNC
+ */
+HWTEST_F(PixelMapTest, CloseFdPixelMapTest, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PixelMapTest: CloseFdPixelMapTest start";
+    std::unique_ptr<PixelMap> pixelMapBase =
+        ConstructPixmap(PixelFormat::RGBA_8888, AlphaType::IMAGE_ALPHA_TYPE_UNKNOWN);
+    EXPECT_NE(nullptr, pixelMapBase);
+    TestPixelMap* testPixelMap = (TestPixelMap*)pixelMapBase.release();
+    EXPECT_EQ(true, testPixelMap->CloseFd());
+ 
+    std::unique_ptr<PixelMap> testHeapPixelMap = ConstructPixmap(AllocatorType::HEAP_ALLOC);
+    EXPECT_NE(nullptr, testHeapPixelMap);
+    TestPixelMap* heapPixelMap = (TestPixelMap*)testHeapPixelMap.release();
+    EXPECT_EQ(false, heapPixelMap->CloseFd());
+ 
+    delete testPixelMap;
+    delete heapPixelMap;
+    GTEST_LOG_(INFO) << "PixelMapTest: CloseFdPixelMapTest end";
 }
 }
 }
