@@ -715,19 +715,44 @@ uint32_t PixelYuv::ReadPixels(const uint64_t &bufferSize, uint8_t *dst)
     return SUCCESS;
 }
 
+// To check the axis is legal
+bool IsLegalAxis(float xAxis, float yAxis)
+{
+    if (xAxis > static_cast<float>(INT32_MAX) || yAxis > static_cast<float>(INT32_MAX)) {
+        IMAGE_LOGE("translate axis overflow xAxis(%{public}f), yAxis(%{public}f)", xAxis, yAxis);
+        return false;
+    }
+    int32_t xOffset = static_cast<int32_t>(xAxis);
+    int32_t yOffset = static_cast<int32_t>(yAxis);
+    if (imageInfo_.size.width > INT32_MAX - xOffset) {
+        IMAGE_LOGE("translate width overflow width(%{public}d) + xOffset(%{public}d)", imageInfo_.size.width, xOffset);
+        return false;
+    }
+    if (imageInfo_.size.height > INT32_MAX - yOffset) {
+        IMAGE_LOGE("translate height overflow height(%{public}d) + yOffset(%{public}d)", imageInfo_.size.height, yOffset);
+        return false;
+    }
+    if (!IsYuvFormat() || (xOffset == 0 && yOffset == 0)) {
+        return false;
+    }
+    int32_t width = imageInfo_.size.width + xOffset;
+    int32_t height = imageInfo_.size.height + yOffset;
+
+    if (width < 1 || height < 1 || width > MAX_DIMENSION || height > MAX_DIMENSION) {
+        IMAGE_LOGE("Checktranslate size overflow width(%{public}d), height(%{public}d)", width, height);
+        return false;
+    }
+    return true;
+}
+
 void PixelYuv::translate(float xAxis, float yAxis)
 {
-    if (!IsYuvFormat() || (xAxis == 0 && yAxis == 0)) {
+    if (!IsLegalAxis(xAxis, yAxis)) {
         return;
     }
     int32_t width = imageInfo_.size.width + xAxis;
     int32_t height = imageInfo_.size.height + yAxis;
-    if (width < 1 || height < 1 || width > MAX_DIMENSION || height > MAX_DIMENSION) {
-        IMAGE_LOGE("Checktranslate size overflow width(%{public}d), height(%{public}d)", width, height);
-        return;
-    }
     PixelFormat format = imageInfo_.pixelFormat;
-
     YUVStrideInfo dstStrides;
     auto dstMemory = CreateMemory(imageInfo_.pixelFormat, "translate ImageData", width, height, dstStrides);
     if (dstMemory == nullptr) {
