@@ -1003,12 +1003,10 @@ void PixelYuvUtils::Yuv420SPTranslate(const uint8_t *srcPixels, YUVDataInfo &yuv
     uint8_t *dst = nullptr;
     const uint8_t *src = nullptr;
     for (int32_t y = 0; y < yCopyLine ; y++) {
-        int32_t newY = y + static_cast<int32_t>(xyAxis.yAxis);
-        if (newY >= 0 && static_cast<int64_t>(newY) <= static_cast<int64_t>(yuvInfo.yHeight)) {
-            dst = dstY + newY * static_cast<int32_t>(strides.yStride) + static_cast<int32_t>(xyAxis.xAxis);
-            src = srcY + y * static_cast<int32_t>(yuvInfo.yStride);
-            memcpy_s(dst, yCopySize,  src, yCopySize);
-        }
+        int32_t newY = y + xyAxis.yAxis;
+        dst = dstY + newY * static_cast<int32_t>(strides.yStride) + static_cast<int32_t>(xyAxis.xAxis);
+        src = srcY + y * static_cast<int32_t>(yuvInfo.yStride);
+        memcpy_s(dst, yCopySize, src, yCopySize);
     }
     int32_t xOffset = ((int32_t)xyAxis.xAxis % EVEN == 0) ?  xyAxis.xAxis : xyAxis.xAxis - 1;
     int32_t uvWidth = (info.size.width + ODD) / EVEN * EVEN;
@@ -1037,9 +1035,7 @@ static void P010Translate(YuvPixelsP010Translate yuvPixels, YUVDataInfo &yuvInfo
             int32_t newX = x + xyAxis.xAxis;
             int32_t newY = y + xyAxis.yAxis;
             if (newX >= 0 && newY >= 0 && newX < static_cast<int32_t>(info.size.width + xyAxis.xAxis) &&
-                newY < static_cast<int32_t>(info.size.height + xyAxis.yAxis) &&
-                static_cast<int64_t>(y) < static_cast<int64_t>(yuvInfo.yHeight) &&
-                static_cast<int64_t>(x) < static_cast<int64_t>(yuvInfo.yWidth)) {
+                newY < static_cast<int32_t>(info.size.height + xyAxis.yAxis)) {
                 *(dstY + newY * static_cast<int32_t>(strides.yStride) + newX) =
                     *(srcY + y * static_cast<int32_t>(yuvInfo.yStride) + x);
             }
