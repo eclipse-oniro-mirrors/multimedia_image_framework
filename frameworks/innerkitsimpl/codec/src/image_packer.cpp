@@ -285,6 +285,7 @@ uint32_t ImagePacker::AddImage(ImageSource &source, uint32_t index)
 #if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
 uint32_t ImagePacker::AddPicture(Picture &picture)
 {
+    Picture::DumpPictureIfDumpEnabled(picture, "picture_encode_before");
     return DoEncodingFunc([this, &picture](ImagePlugin::AbsImageEncoder* encoder) {
         return encoder->AddPicture(picture);
     });

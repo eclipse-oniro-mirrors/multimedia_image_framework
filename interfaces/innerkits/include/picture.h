@@ -52,6 +52,7 @@ public:
     NATIVEEXPORT std::shared_ptr<ExifMetadata> GetExifMetadata();
     NATIVEEXPORT bool SetMaintenanceData(sptr<SurfaceBuffer> &surfaceBuffer);
     NATIVEEXPORT sptr<SurfaceBuffer> GetMaintenanceData() const;
+    NATIVEEXPORT static void DumpPictureIfDumpEnabled(Picture& picture, std::string dumpType);
 
 private:
     std::shared_ptr<PixelMap> mainPixelMap_;
