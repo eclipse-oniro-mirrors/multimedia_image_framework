@@ -730,11 +730,13 @@ bool PixelYuv::IsLegalAxis(float xAxis, float yAxis)
     int32_t xOffset = static_cast<int32_t>(xAxis);
     int32_t yOffset = static_cast<int32_t>(yAxis);
     if (imageInfo_.size.width > INT32_MAX - xOffset) {
-        IMAGE_LOGE("translate width overflow width(%{public}d) + xOffset(%{public}d)", imageInfo_.size.width, xOffset);
+        IMAGE_LOGE("translate width overflow width(%{public}d) + xOffset(%{public}d)",
+            imageInfo_.size.width, xOffset);
         return false;
     }
     if (imageInfo_.size.height > INT32_MAX - yOffset) {
-        IMAGE_LOGE("translate height overflow height(%{public}d) + yOffset(%{public}d)", imageInfo_.size.height, yOffset);
+        IMAGE_LOGE("translate height overflow height(%{public}d) + yOffset(%{public}d)",
+            imageInfo_.size.height, yOffset);
         return false;
     }
     if (xOffset == 0 && yOffset == 0) {
