@@ -4793,6 +4793,7 @@ std::unique_ptr<Picture> ImageSource::CreatePicture(const DecodingOptionsForPict
     if (errorCode != SUCCESS) {
         IMAGE_LOGE("Decode auxiliary pictures failed, error code: %{public}u", errorCode);
     }
+    Picture::DumpPictureIfDumpEnabled(*picture, "picture_decode_after");
     return picture;
 }
 
