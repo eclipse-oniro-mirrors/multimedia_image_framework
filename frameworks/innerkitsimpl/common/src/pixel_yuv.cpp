@@ -718,12 +718,8 @@ uint32_t PixelYuv::ReadPixels(const uint64_t &bufferSize, uint8_t *dst)
 // To check the axis is legal
 bool PixelYuv::IsLegalAxis(float xAxis, float yAxis)
 {
-    if (!IsYuvFormat()) {
-        IMAGE_LOGE("translate not yuv format");
-        return false;
-    }
-    if (xAxis < -static_cast<float>(INT32_MAX) || xAxis > static_cast<float>(INT32_MAX) ||
-        yAxis < -static_cast<float>(INT32_MAX) || yAxis > static_cast<float>(INT32_MAX)) {
+    if (abs(xAxis) > static_cast<float>(INT32_MAX) ||
+        abs(yAxis) > static_cast<float>(INT32_MAX)) {
         IMAGE_LOGE("translate axis overflow xAxis(%{public}f), yAxis(%{public}f)", xAxis, yAxis);
         return false;
     }
@@ -755,6 +751,10 @@ bool PixelYuv::IsLegalAxis(float xAxis, float yAxis)
 
 void PixelYuv::translate(float xAxis, float yAxis)
 {
+    if (!IsYuvFormat()) {
+        IMAGE_LOGE("translate not yuv format");
+        return;
+    }
     if (!IsLegalAxis(xAxis, yAxis)) {
         return;
     }
