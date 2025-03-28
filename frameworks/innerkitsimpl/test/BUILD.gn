@@ -41,9 +41,13 @@ ohos_unittest("pixelmaptest") {
     "$image_subsystem/frameworks/innerkitsimpl/test/unittest/pixel_map_test/pixel_map_parcel_test.cpp",
     "$image_subsystem/frameworks/innerkitsimpl/test/unittest/pixel_map_test/pixel_map_test.cpp",
     "$image_subsystem/frameworks/innerkitsimpl/test/unittest/pixel_map_test/pixel_yuv_ext_test.cpp",
+    "$image_subsystem/frameworks/innerkitsimpl/test/unittest/pixel_map_test/pixelmap_native_test.cpp",
   ]
 
   deps = [
+    "$image_subsystem/frameworks/kits/js/common/ndk:image_ndk",
+    "$image_subsystem/frameworks/kits/js/common/ndk:image_source",
+    "$image_subsystem/frameworks/kits/js/common/pixelmap_ndk:pixelmap",
     "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/utils:image_utils",
     "//foundation/multimedia/image_framework/interfaces/innerkits:image_native",
   ]
@@ -58,9 +62,11 @@ ohos_unittest("pixelmaptest") {
     "googletest:gmock_main",
     "googletest:gtest_main",
     "graphic_2d:color_manager",
+    "graphic_2d:libnative_color_space_manager",
     "graphic_surface:surface",
     "hilog:libhilog",
     "ipc:ipc_core",
+    "resource_management:librawfile",
   ]
 
   defines = []
