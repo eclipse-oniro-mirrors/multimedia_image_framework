@@ -1057,22 +1057,9 @@ static void P010Translate(YuvPixelsP010Translate yuvPixels, YUVDataInfo &yuvInfo
     }
 }
 
-// Check if translation is legal
-bool IsLegalAxis(XYaxis &xyAxis, ImageInfo &info)
-{
-    if (xyAxis.xAxis >= -info.size.width && xyAxis.xAxis <= info.size.width &&
-        xyAxis.yAxis >= -info.size.height && xyAxis.yAxis <= info.size.height) {
-        return true;
-    }
-    return false;
-}
-
 bool PixelYuvUtils::YuvTranslate(const uint8_t *srcPixels, YUVDataInfo &yuvInfo, uint8_t *dstPixels, XYaxis &xyAxis,
     ImageInfo &info, YUVStrideInfo &dstStrides)
 {
-    if (!IsLegalAxis(xyAxis, info)) {
-        return false;
-    }
     switch (info.pixelFormat) {
         case PixelFormat::NV21:
         case PixelFormat::NV12: {
