@@ -1115,7 +1115,7 @@ static bool ResizePixelMap(std::unique_ptr<PixelMap>& pixelMap, uint64_t imageId
     ImageUtils::DumpPixelMapIfDumpEnabled(pixelMap, imageId);
     if (opts.desiredSize.height != pixelMap->GetHeight() ||
         opts.desiredSize.width != pixelMap->GetWidth()) {
-        if (pixelMap->GetPixelFormat() == PixelFormat::NV12 || pixelMap->GetPixelFormat() == PixelFormat::NV21) {
+        if (ImageSource::IsYuvFormat(pixelMap->GetPixelFormat())) {
 #ifdef EXT_PIXEL
             auto pixelYuv = reinterpret_cast<PixelYuvExt *>(pixelMap.get());
             bool cond = !pixelYuv->resize(opts.desiredSize.width, opts.desiredSize.height);
