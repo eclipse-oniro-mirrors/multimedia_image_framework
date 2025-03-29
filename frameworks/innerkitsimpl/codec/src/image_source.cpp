@@ -58,7 +58,6 @@
 #include "metadata_accessor_factory.h"
 #include "pixel_astc.h"
 #include "pixel_map.h"
-#include "pixel_map_utils.h"
 #include "pixel_yuv.h"
 #include "plugin_server.h"
 #include "post_proc.h"
@@ -724,7 +723,7 @@ AllocatorType ImageSource::ConvertAutoAllocatorType(const DecodeOptions &opts)
     if (IsDecodeHdrImage(opts)) {
         return AllocatorType::DMA_ALLOC;
     }
-    if (opts.desiredPixelFormat == PixelFormat::ARGB_8888 || info.encodedFormat == IMAGE_SVG_FORMAT) {
+    if (info.encodedFormat == IMAGE_SVG_FORMAT) {
         return AllocatorType::SHARE_MEM_ALLOC;
     }
     if (ImageUtils::IsSizeSupportDma(info.size)) {
@@ -752,10 +751,6 @@ bool ImageSource::IsSupportAllocatorType(DecodeOptions& decOps, int32_t allocato
     decOps.allocatorType = ConvertAllocatorType(this, allocatorType, decOps);
     if (decOps.allocatorType == AllocatorType::SHARE_MEM_ALLOC && IsDecodeHdrImage(decOps)) {
         IMAGE_LOGE("%{public}s Hdr image can't use share memory allocator", __func__);
-        return false;
-    } else if (!IsDecodeHdrImage(decOps) && decOps.allocatorType == AllocatorType::DMA_ALLOC &&
-        decOps.desiredPixelFormat == PixelFormat::ARGB_8888) {
-        IMAGE_LOGE("%{public}s SDR image can't set ARGB_8888 and DMA_ALLOC at the same time!", __func__);
         return false;
     } else if (IsSvgUseDma(decOps)) {
         IMAGE_LOGE("%{public}s Svg image can't use dma allocator", __func__);
@@ -839,7 +834,6 @@ DecodeContext ImageSource::InitDecodeContext(const DecodeOptions &opts, const Im
     const MemoryUsagePreference &preference, bool hasDesiredSizeOptions, PlImageInfo& plInfo)
 {
     DecodeContext context;
-    context.isAppUseAllocator = opts.isAppUseAllocator;
     context.photoDesiredPixelFormat = opts.photoDesiredPixelFormat;
     if (opts.allocatorType != AllocatorType::DEFAULT) {
         context.allocatorType = opts.allocatorType;
@@ -852,11 +846,6 @@ DecodeContext ImageSource::InitDecodeContext(const DecodeOptions &opts, const Im
         } else {
             context.allocatorType = AllocatorType::SHARE_MEM_ALLOC;
         }
-    }
-    if (opts.desiredPixelFormat == PixelFormat::ARGB_8888) {
-        IMAGE_LOGD("%{public}s ARGB use SHARE_MEM_ALLOC", __func__);
-        context.allocatorType = AllocatorType::SHARE_MEM_ALLOC;
-        context.isAppUseAllocator = true;
     }
 
     context.info.pixelFormat = plInfo.pixelFormat;
@@ -917,19 +906,10 @@ bool NeedConvertToYuv(PixelFormat optsPixelFormat, PixelFormat curPixelFormat)
         curPixelFormat == PixelFormat::RGB_888);
 }
 
-static bool IsSupportConvertToArgb(PixelMap *pixelMap)
-{
-    return pixelMap != nullptr && !pixelMap->IsHdr() && pixelMap->GetAllocatorType() != AllocatorType::DMA_ALLOC;
-}
-
 bool ImageSource::CheckAllocatorTypeValid(const DecodeOptions &opts)
 {
     if (opts.isAppUseAllocator && opts.allocatorType == AllocatorType::SHARE_MEM_ALLOC && IsDecodeHdrImage(opts)) {
         IMAGE_LOGE("HDR image can't use SHARE_MEM_ALLOC");
-        return false;
-    } else if (!IsDecodeHdrImage(opts) && opts.allocatorType == AllocatorType::DMA_ALLOC &&
-        opts.desiredPixelFormat == PixelFormat::ARGB_8888) {
-        IMAGE_LOGE("%{public}s SDR image can't set ARGB_8888 and DMA_ALLOC at the same time!", __func__);
         return false;
     }
     return true;
@@ -1048,12 +1028,6 @@ unique_ptr<PixelMap> ImageSource::CreatePixelMapExtended(uint32_t index, const D
             pixelMap, plInfo.pixelFormat, opts_.desiredPixelFormat);
         if (convertRes != SUCCESS) {
             IMAGE_LOGE("convert rgb to yuv failed, return origin rgb!");
-        }
-    }
-    if (opts.desiredPixelFormat == PixelFormat::ARGB_8888 && IsSupportConvertToArgb(pixelMap.get())) {
-        uint32_t convertRes = ConvertArgbAndRgba(pixelMap.get(), PixelFormat::ARGB_8888);
-        if (convertRes != SUCCESS) {
-            IMAGE_LOGE("convert RGBA to ARGB failed, return origin RGBA! error:%{public}u", convertRes);
         }
     }
     return pixelMap;
@@ -4068,6 +4042,7 @@ DecodeContext ImageSource::DecodeImageDataToContext(uint32_t index, ImageInfo in
                                                     uint32_t& errorCode)
 {
     DecodeContext context = InitDecodeContext(opts_, info, preference_, hasDesiredSizeOptions, plInfo);
+    context.isAppUseAllocator = opts_.isAppUseAllocator;
     ImageHdrType decodedHdrType = context.hdrType;
     context.grColorSpaceName = mainDecoder_->GetPixelMapColorSpace().GetColorSpaceName();
     errorCode = mainDecoder_->Decode(index, context);

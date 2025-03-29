@@ -42,7 +42,6 @@
 #include "media_errors.h"
 #include "metadata_accessor.h"
 #include "metadata_accessor_factory.h"
-#include "pixel_map_utils.h"
 #include "pixel_convert_adapter.h"
 #include "string_ex.h"
 #if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
@@ -207,14 +206,6 @@ ExtEncoder::ExtEncoder()
 
 ExtEncoder::~ExtEncoder()
 {
-    if (releasePixelMap_ && pixelmap_ != nullptr) {
-        delete pixelmap_;
-        pixelmap_ = nullptr;
-    }
-    if (releasePicture_ && picture_ != nullptr) {
-        delete picture_;
-        picture_ = nullptr;
-    }
 }
 
 uint32_t ExtEncoder::StartEncode(OutputDataStream &outputStream, PlEncodeOptions &option)
@@ -400,93 +391,11 @@ bool IsSuperFastEncode(const std::string &format)
 }
 #endif
 
-#if !defined(_WIN32) && !defined(_APPLE) && !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
-static bool CheckPictureHasArgb(Picture *picture)
-{
-    bool cond = picture == nullptr || picture->GetMainPixel() == nullptr;
-    CHECK_ERROR_RETURN_RET_LOG(cond, false, "%{public}s picture is nullptr or mainPixelMap is nullptr", __func__);
-    if (picture->GetMainPixel()->GetPixelFormat() == PixelFormat::ARGB_8888) {
-        IMAGE_LOGI("%{public}s picture has ARGB format. mainPixelMap is ARGB!", __func__);
-        return true;
-    }
-    IMAGE_LOGD("%{public}s picture does not have ARGB format.", __func__);
-    return false;
-}
-
-static std::unique_ptr<Picture> ConvertToRgbaPicture(Picture *picture)
-{
-    bool cond = picture == nullptr || picture->GetMainPixel() == nullptr;
-    CHECK_ERROR_RETURN_RET_LOG(cond, nullptr,
-        "%{public}s picture or mainPixelMap is nullptr!", __func__);
-    cond = !CheckPictureHasArgb(picture);
-    CHECK_ERROR_RETURN_RET_LOG(cond, nullptr, "%{public}s no need to convert!", __func__);
-
-    std::shared_ptr<PixelMap> mainPixelMap = picture->GetMainPixel();
-    std::unique_ptr<Picture> newPicture = Picture::Create(mainPixelMap);
-    cond = newPicture == nullptr;
-    CHECK_ERROR_RETURN_RET_LOG(cond, nullptr,
-        "%{public}s newPicture create failed! Stop ConvertToRgbaPicture.", __func__);
-    int32_t errorCode;
-    if (mainPixelMap->GetPixelFormat() == PixelFormat::ARGB_8888) {
-        std::shared_ptr<PixelMap> newPixelMap = mainPixelMap->Clone(errorCode);
-        cond = errorCode != SUCCESS || newPixelMap == nullptr ||
-            ConvertArgbAndRgba(newPixelMap.get(), PixelFormat::RGBA_8888) != SUCCESS;
-        CHECK_ERROR_RETURN_RET_LOG(cond, nullptr,
-            "%{public}s mainPixelMap Convert failed! Stop ConvertToRgbaPicture.", __func__);
-        newPicture->SetMainPixel(newPixelMap);
-    }
-
-    sptr<SurfaceBuffer> maintenanceData = picture->GetMaintenanceData();
-    if (maintenanceData != nullptr) {
-        cond = !newPicture->SetMaintenanceData(maintenanceData);
-        CHECK_ERROR_PRINT_LOG(cond, "%{public}s SetMaintenanceData for newPicture failed!", __func__);
-    }
-    std::shared_ptr<ExifMetadata> exifMetadata = picture->GetExifMetadata();
-    if (exifMetadata != nullptr) {
-        cond = newPicture->SetExifMetadata(exifMetadata) != SUCCESS;
-        CHECK_ERROR_PRINT_LOG(cond, "%{public}s SetExifMetadata for newPicture failed!", __func__);
-    }
-    return newPicture;
-}
-
-uint32_t ExtEncoder::CheckArgbEncode()
-{
-    if (pixelmap_ != nullptr && pixelmap_->GetPixelFormat() == PixelFormat::ARGB_8888) {
-        int32_t errorCode = ERROR;
-        std::unique_ptr<PixelMap> newPixelMap = pixelmap_->Clone(errorCode);
-        if (errorCode != SUCCESS || ConvertArgbAndRgba(newPixelMap.get(), PixelFormat::RGBA_8888) != SUCCESS) {
-            IMAGE_LOGE("%{public}s Pixelmap Convert ARGB to RGBA failed!", __func__);
-            return IMAGE_RESULT_FORMAT_CONVERT_FAILED;
-        }
-        pixelmap_ = newPixelMap.release();
-        releasePixelMap_ = true;
-        IMAGE_LOGI("%{public}s PixelMap Convert ARGB to RGBA success!", __func__);
-    }
-    if (picture_ != nullptr && CheckPictureHasArgb(picture_)) {
-        std::unique_ptr<Picture> newPicture = ConvertToRgbaPicture(picture_);
-        if (newPicture == nullptr) {
-            IMAGE_LOGE("%{public}s picture's mainPixelMap Convert ARGB to RGBA failed!", __func__);
-            return IMAGE_RESULT_FORMAT_CONVERT_FAILED;
-        }
-        picture_ = newPicture.release();
-        releasePicture_ = true;
-        IMAGE_LOGI("%{public}s picture's mainPixelMap Convert ARGB to RGBA success!", __func__);
-    }
-    return SUCCESS;
-}
-#endif
-
 uint32_t ExtEncoder::FinalizeEncode()
 {
     if ((picture_ == nullptr && pixelmap_ == nullptr) || output_ == nullptr) {
         return ERR_IMAGE_INVALID_PARAMETER;
     }
-#if !defined(_WIN32) && !defined(_APPLE) && !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
-    uint32_t convertRes = CheckArgbEncode();
-    if (convertRes != SUCCESS) {
-        return convertRes;
-    }
-#endif
     ImageDataStatistics imageDataStatistics("[ExtEncoder]FinalizeEncode imageFormat = %s, quality = %d",
         opts_.format.c_str(), opts_.quality);
 #if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
@@ -505,11 +414,6 @@ uint32_t ExtEncoder::FinalizeEncode()
 #if !defined(_WIN32) && !defined(_APPLE) && !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
     if (picture_ != nullptr) {
         encodeFormat_ = iter->second;
-        if ((encodeFormat_ == SkEncodedImageFormat::kHEIF) &&
-            picture_->GetMainPixel()->GetAllocatorType() == Media::AllocatorType::SHARE_MEM_ALLOC) {
-            pixelmap_ = picture_->GetMainPixel().get();
-            return EncodeHeifByPixelmap(picture_->GetMainPixel().get(), opts_);
-        }
         return EncodePicture();
     }
 #endif

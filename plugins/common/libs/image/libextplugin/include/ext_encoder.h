@@ -96,7 +96,6 @@ private:
         Media::HdrMetadata& metadata, bool sdrIsSRGB = false);
     uint32_t EncodeHeifSdrImage(sptr<SurfaceBuffer>& sdr, SkImageInfo sdrInfo);
     void SetHdrColorSpaceType(sptr<SurfaceBuffer>& surfaceBuffer);
-    uint32_t CheckArgbEncode();
 #endif
     uint32_t EncodeImageByBitmap(SkBitmap& bitmap, bool needExif, SkWStream& outStream);
     uint32_t EncodeImageByPixelMap(Media::PixelMap* pixelMap, bool needExif, SkWStream& outputStream);
@@ -156,8 +155,6 @@ private:
     Media::PixelMap* pixelmap_ = nullptr;
     Media::Picture* picture_ = nullptr;
     std::vector<std::shared_ptr<Media::AbsMemory>> tmpMemoryList_;
-    bool releasePixelMap_ = false;
-    bool releasePicture_ = false;
 };
 } // namespace ImagePlugin
 } // namespace OHOS

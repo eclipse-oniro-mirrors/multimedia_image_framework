@@ -34,10 +34,10 @@ struct MainPictureInfo {
 
 class AuxiliaryGenerator {
 public:
-    static std::shared_ptr<AuxiliaryPicture> GenerateHeifAuxiliaryPicture(MainPictureInfo &mainInfo,
+    static std::shared_ptr<AuxiliaryPicture> GenerateHeifAuxiliaryPicture(const MainPictureInfo &mainInfo,
         AuxiliaryPictureType type, std::unique_ptr<AbsImageDecoder> &extDecoder, uint32_t &errorCode);
     static std::shared_ptr<AuxiliaryPicture> GenerateJpegAuxiliaryPicture(
-        MainPictureInfo &mainInfo, AuxiliaryPictureType type, std::unique_ptr<InputDataStream> &auxStream,
+        const MainPictureInfo &mainInfo, AuxiliaryPictureType type, std::unique_ptr<InputDataStream> &auxStream,
         std::unique_ptr<AbsImageDecoder> &extDecoder, uint32_t &errorCode);
     static ImageInfo MakeImageInfo(const Size &size, PixelFormat format, AlphaType alphaType,
         ColorSpace colorSpace, const std::string &encodedFormat);
