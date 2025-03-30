@@ -13,7 +13,7 @@
  * limitations under the License.
  */
 
-#include "image_source_fuzz.h"
+#include "image_fwk_image_source_fuzz.h"
 
 #define private public
 #include <cstdint>

@@ -12,8 +12,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef IMAGE_SOURCE_FUZZER_H
-#define IMAGE_SOURCE_FUZZER_H
+#ifndef IMAGE_FWK_IMAGE_SOURCE_FUZZER_H
+#define IMAGE_FWK_IMAGE_SOURCE_FUZZER_H
 
-#define FUZZ_PROJECT_NAME "image_source_fuzzer"
+#define FUZZ_PROJECT_NAME "image_fwk_image_source_fuzzer"
 #endif
