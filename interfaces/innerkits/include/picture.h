@@ -47,6 +47,7 @@ public:
     NATIVEEXPORT virtual bool Marshalling(Parcel &data) const override;
     NATIVEEXPORT static Picture *Unmarshalling(Parcel &data);
     NATIVEEXPORT static Picture *Unmarshalling(Parcel &data, PICTURE_ERR &error);
+    NATIVEEXPORT int32_t CreateExifMetadata();
     NATIVEEXPORT int32_t SetExifMetadata(sptr<SurfaceBuffer> &surfaceBuffer);
     NATIVEEXPORT int32_t SetExifMetadata(std::shared_ptr<ExifMetadata> exifMetadata);
     NATIVEEXPORT std::shared_ptr<ExifMetadata> GetExifMetadata();
