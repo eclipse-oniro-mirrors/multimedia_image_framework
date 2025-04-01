@@ -46,10 +46,32 @@ shared_ptr<PixelMap> ImageAniUtils::GetPixelMapFromEnvSp([[maybe_unused]] ani_en
     }
     PixelMapAni* pixelmapAni = reinterpret_cast<PixelMapAni*>(nativeObj);
     if (!pixelmapAni) {
-        IMAGE_LOGE("[GetPixelMapFromEnv] pixelmapAni failed");
+        IMAGE_LOGE("[GetPixelMapFromEnv] pixelmapAni nullptr");
         return nullptr;
     }
     return pixelmapAni->nativePixelMap_;
+}
+
+ImageSourceAni* ImageAniUtils::GetImageSourceAniFromEnv([[maybe_unused]] ani_env* env, [[maybe_unused]] ani_object obj)
+{
+    ani_status ret;
+    ani_long nativeObj {};
+    if ((ret = env->Object_GetFieldByName_Long(obj, "nativeObj", &nativeObj)) != ANI_OK) {
+        IMAGE_LOGE("[GetImageSourceFromEnv] Object_GetField_Long fetch failed");
+        return nullptr;
+    }
+    return reinterpret_cast<ImageSourceAni*>(nativeObj);
+}
+
+shared_ptr<ImageSource> ImageAniUtils::GetImageSourceFromEnv([[maybe_unused]] ani_env* env,
+    [[maybe_unused]] ani_object obj)
+{
+    ImageSourceAni* imageSourceAni = ImageAniUtils::GetImageSourceAniFromEnv(env, obj);
+    if (!imageSourceAni) {
+        IMAGE_LOGE("[GetPictureFromEnv] imageSourceAni nullptr");
+        return nullptr;
+    }
+    return imageSourceAni->nativeImageSource_;
 }
 
 shared_ptr<Picture> ImageAniUtils::GetPictureFromEnv([[maybe_unused]] ani_env* env, [[maybe_unused]] ani_object obj)
@@ -62,7 +84,7 @@ shared_ptr<Picture> ImageAniUtils::GetPictureFromEnv([[maybe_unused]] ani_env* e
     }
     PictureAni* pictureAni = reinterpret_cast<PictureAni*>(nativeObj);
     if (!pictureAni) {
-        IMAGE_LOGE("[GetPictureFromEnv] pictureAni failed");
+        IMAGE_LOGE("[GetPictureFromEnv] pictureAni nullptr");
         return nullptr;
     }
     return pictureAni->nativePicture_;
@@ -228,6 +250,35 @@ ani_string ImageAniUtils::GetAniString(ani_env *env, const string &str)
     const ani_size stringLength = strlen(utf8String);
     env->String_NewUTF8(utf8String, stringLength, &aniMimeType);
     return aniMimeType;
+}
+
+ani_method ImageAniUtils::GetRecordSetMethod(ani_env* env, ani_object &argumentObj)
+{
+    ani_status status;
+    ani_class recordCls;
+    status = env->FindClass("Lescompat/Record;", &recordCls);
+    if (status != ANI_OK) {
+        IMAGE_LOGE("FindClass failed status :%{public}u", status);
+        return nullptr;
+    }
+    ani_method ctor;
+    status = env->Class_FindMethod(recordCls, "<ctor>", nullptr, &ctor);
+    if (status != ANI_OK) {
+        IMAGE_LOGE("Class_FindMethod failed status :%{public}u", status);
+        return nullptr;
+    }
+    if (ANI_OK != env->Object_New(recordCls, ctor, &argumentObj)) {
+        IMAGE_LOGE("Object_New Failed");
+        return nullptr;
+    }
+    ani_method recordSetMethod;
+    status = env->Class_FindMethod(recordCls, "$_set",
+        "Lstd/core/Object;Lstd/core/Object;:V", &recordSetMethod);
+    if (status != ANI_OK) {
+        IMAGE_LOGE("Class_FindMethod recordSetMethod Failed");
+        return nullptr;
+    }
+    return recordSetMethod;
 }
 } // Meida
 } // OHOS
