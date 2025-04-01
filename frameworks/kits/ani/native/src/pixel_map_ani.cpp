@@ -238,7 +238,7 @@ static void Release([[maybe_unused]] ani_env* env, [[maybe_unused]] ani_object o
     ani_status ret;
     ani_long nativeObj {};
     if ((ret = env->Object_GetFieldByName_Long(obj, "nativeObj", &nativeObj)) != ANI_OK) {
-        IMAGE_LOGE("[nativeRelease] Object_GetField_Long fetch field");
+        IMAGE_LOGE("[Release] Object_GetField_Long fetch field");
         return;
     }
     PixelMapAni* pixelmapAni = reinterpret_cast<PixelMapAni*>(nativeObj);

@@ -28,6 +28,8 @@ public:
         [[maybe_unused]] ani_object obj);
     static ani_status Init(ani_env* env);
     std::shared_ptr<ImageSource> nativeImageSource_;
+    std::string filePath_;
+    int fileDescriptor_;
 };
 
 } // namespace Media
