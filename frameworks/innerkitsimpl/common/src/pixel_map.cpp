@@ -4198,7 +4198,7 @@ bool PixelMap::UnMap()
             data_ = nullptr;
         }
     }
-    return true;
+    return isUnMap_;
 #else
     return false;
 #endif
