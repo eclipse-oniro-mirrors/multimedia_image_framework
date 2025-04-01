@@ -1557,7 +1557,17 @@ STATIC_EXEC_FUNC(Unmarshalling)
     }
     auto context = static_cast<PixelMapAsyncContext*>(data);
 
+    if (!napi_messageSequence) {
+        context->status = ERROR;
+        IMAGE_LOGE("UnmarshallingExec invalid parameter: napi_messageSequence is null");
+        return;
+    }
     auto messageParcel = napi_messageSequence->GetMessageParcel();
+    if (!messageParcel) {
+        context->status = ERROR;
+        IMAGE_LOGE("UnmarshallingExec invalid parameter: messageParcel is null");
+        return;
+    }
     auto pixelmap = PixelMap::Unmarshalling(*messageParcel);
     std::unique_ptr<OHOS::Media::PixelMap> pixelmap_ptr(pixelmap);
 
