@@ -534,21 +534,38 @@ bool HeifDecoderImpl::decode(HeifFrameInfo *frameInfo)
     return true;
 }
 
-bool HeifDecoderImpl::decodeGainmap()
+bool HeifDecodeImpl::DodecodeGainmap(std::shared_ptr<HeifImage> &gainmap, GridInfo &gainmapGridInfo,
+                                     uint8_t *gainmapDstMemory, size_t gainmapDstRowStride)
 {
-    ImageTrace trace("HeifDecoderImpl::decodeGainmap");
     sptr<SurfaceBuffer> hwBuffer;
-    bool decodeRes = HwDecodeImage(nullptr, gainmapImage_, gainmapGridInfo_, &hwBuffer, false);
+    bool decodeRes = HwDecodeImage(nullptr, gainmapImage, gainmapGridInfo, &hwBuffer, false);
     if (!decodeRes) {
-        return false;
+        sptr<SurfaceBuffer> swHwBuffer;
+        bool swdecodeRes = SwDecodeGainmap(gainmapImage, gainmapGridInfo, &swHwBuffer);
+        if (!swdecodeRes) {
+            IMAGE_LOGE("HeifDecoderImpl::SwDecodeGainmap failed too");
+            return false;
+        }
+        bool swConvertRes = IsDirectYuvDecode() ||
+            ConvertHwBufferPixelFormat(swHwBuffer, gainmapGridInfo, gainmapDstMemory, gainmapDstRowStride);
+        if (!swConvertRes) {
+            return false;
+        }
+        return true;
     }
 
-    bool convertRes = IsDirectYUVDecode() ||
-            ConvertHwBufferPixelFormat(hwBuffer, gainmapGridInfo_, gainmapDstMemory_, gainmapDstRowStride_);
+    bool convertRes = IsDirectYuvDecode() ||
+        convertHwBufferPixelFormat(hwBuffer, gainmapGridInfo, gainmapDstMemory, gainmapDstRowStride);
     if (!convertRes) {
         return false;
     }
     return true;
+}
+
+bool HeifDecoderImpl::decodeGainmap()
+{
+    ImageTrace trace("HeifDecoderImpl::decodeGainmap");
+    return DodecodeGainmap(gainmapImage_, gainmapGridInfo_, gainmapDstMemory_, gainmapDstRowStride_);
 }
 
 bool HeifDecoderImpl::decodeAuxiliaryMap()
@@ -558,18 +575,7 @@ bool HeifDecoderImpl::decodeAuxiliaryMap()
         parser_->GetItemType(auxiliaryImage_->GetItemId()) == "mime") {
         return HwDecodeMimeImage(auxiliaryImage_);
     }
-    sptr<SurfaceBuffer> hwBuffer;
-    bool decodeRes = HwDecodeImage(nullptr, auxiliaryImage_, auxiliaryGridInfo_, &hwBuffer, false);
-    if (!decodeRes) {
-        return false;
-    }
-
-    bool convertRes = IsDirectYUVDecode() ||
-            ConvertHwBufferPixelFormat(hwBuffer, auxiliaryGridInfo_, auxiliaryDstMemory_, auxiliaryDstRowStride_);
-    if (!convertRes) {
-        return false;
-    }
-    return true;
+    return DodecodeGainmap(auxiliaryImage_, auxiliaryGridInfo_, auxiliaryDstMemory_, auxiliaryDstRowStride_);
 }
 
 void HeifDecoderImpl::ReleaseHwDecoder(HeifHardwareDecoder *hwDecoder, bool isReuse)
@@ -891,6 +897,54 @@ bool HeifDecoderImpl::SwDecodeSingleImage(ImageFwkExtManager &extManager,
     return true;
 }
 
+bool HeifDecoderImpl::SwdecodeGainmap(std::shared_ptr<HeifImage> &gainMapImage,
+                                      GridInfo &gainmapGridInfo, sptr<SurfaceBuffer> *outputBuf)
+{
+    ImageTrace trace("HeifDecodeImpl::SwdecodeGainmap");
+    uint32_t width = gainMapImage->GetOriginalWidth();
+    uint32_t height = gainMapImage->GetOriginalHeight();
+    sptr<SurfaceBuffer> output = SurfaceBuffer::Create();
+    BufferRequestConfig = {
+        .width = width,
+        .height = height,
+        .format = GRAPHIC_PIXEL_FMT_YCBCR_420_SP,
+        .usage = BUFFER_USAGE_CPU_READ | BUFFER_USAGE_CPU_WRITE | BUFFER_USAGE_MEM_DMA | BUFFER_USAGE_MEM_MMZ_CACHE,
+        .timeout = 0;
+    }
+    GSError ret = output->Alloc(config);
+    if (ret != GSERROR_OK) {
+        IMAGE_LOGE("output->alloc(config)faild, GSError=%{public}d", ret);
+        return false;
+    }
+    OH_NativeBuffer_planes *dataplanesInfo = nullptr;
+    output->GetplanesInfo((void **)&dataplanesInfo);
+    OH_NativeBuffer_planes &planeY = dataPlanesInfo->planes[0];
+    void *nativeBuffer = output.GetRefPtr();
+    uint8_t *data = static_cast<uint8_t *>(output->GetVirAddr());
+    int32_t err = ImageUtils::SurfaceBuffer_Reference(nativeBuffer);
+    if (err != OHOS::GSERROR_OK) {
+        return false;
+    }
+    PixelFormat gainMapDstFmt = PixelFormat::YUV_400;
+    uint32_t gainMapStride = static_cast<uint32_t>(output->GetStride());
+    uint32_t gainMapMemorySize = gainMapStride * static_cast<uint32_t>(gainMapImage->GetHeight());
+    HevcSoftDecodeParam gainMapparam {
+        gainMapgridInfo, gainMapdstfmt,
+        data + planeY.offset, gainMapMemorySize,
+        gainMapStride, nullptr
+    };
+    bool decodeRes = SwDecodeImage(gainMapImage, gainMapParam, gainMapgridInfo, false);
+    if (!decodeRes) {
+        IMAGE_LOGE("SwDecodeGainmap failed");
+        retur false;
+    } else {
+        *outputBuf = output;
+        if (output != nullptr) {
+            ImageUtils::SurfaceBuffer_Unreference(nativeBuffer);
+        }
+    }
+    return true;
+}
 static bool IsEmptyBuffer(uint8_t *buffer, uint32_t width, uint32_t height, uint32_t bpp, uint32_t rowStride)
 {
     if (buffer == nullptr) {
