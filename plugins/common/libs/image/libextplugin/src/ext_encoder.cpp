@@ -32,6 +32,7 @@
 #include "ext_wstream.h"
 #include "image_data_statistics.h"
 #include "image_dfx.h"
+#include "image_format_convert.h"
 #include "image_func_timer.h"
 #include "image_fwk_ext_manager.h"
 #include "image_log.h"
@@ -122,6 +123,7 @@ namespace {
     constexpr uint32_t LINEAR_MAP_BYTES = sizeof(short) * 3 / 2; // 16bit yuv420
     constexpr uint32_t PLACE_HOLDER_LENGTH = 1;
     constexpr uint32_t LOW_QUALITY_BOUNDARY = 85;
+    constexpr uint32_t RGBA8888_PIXEL_BYTES = 4;
 
     // exif/0/0
     constexpr uint8_t EXIF_PRE_TAG[EXIF_PRE_SIZE] = {
@@ -299,11 +301,17 @@ static uint32_t YuvToRgbaSkInfo(ImageInfo info, SkImageInfo &skInfo, uint8_t * d
     uint8_t *srcData = static_cast<uint8_t*>(pixelMap->GetWritablePixels());
     YUVDataInfo yuvInfo;
     pixelMap->GetImageYUVInfo(yuvInfo);
-    YuvImageInfo srcInfo = {PixelYuvUtils::ConvertFormat(info.pixelFormat),
-        info.size.width, info.size.height, info.pixelFormat, yuvInfo};
-    YuvImageInfo dstInfo = {PixelYuvUtils::ConvertFormat(PixelFormat::RGBA_8888), info.size.width, info.size.height};
-    bool cond = !PixelConvertAdapter::YUV420ToRGB888(srcData, srcInfo, dstData, dstInfo);
+    ConvertDataInfo srcDataInfo = {srcData, static_cast<size_t>(pixelMap->GetByteCount()), info.size,
+                                   info.pixelFormat, pixelMap->GetColorSpace(), yuvInfo};
+    DestConvertInfo dstDataInfo;
+    dstDataInfo.format = PixelFormat::RGBA_8888;
+    dstDataInfo.allocType = AllocatorType::HEAP_ALLOC;
+    bool cond = ImageFormatConvert::ConvertImageFormat(srcDataInfo, dstDataInfo) != SUCCESS;
     CHECK_ERROR_RETURN_RET_LOG(cond, ERR_IMAGE_ENCODE_FAILED, "YuvToSkInfo Support YUV format RGB convert failed ");
+    cond  = memcpy_s(dstData, info.size.width * info.size.height * RGBA8888_PIXEL_BYTES,
+        dstDataInfo.buffer, dstDataInfo.bufferSize) != 0;
+    delete dstDataInfo.buffer;
+    CHECK_ERROR_RETURN_RET_LOG(cond, ERR_IMAGE_ENCODE_FAILED, "YuvToSkInfo memcpy failed ");
     auto alpha = pixelMap->GetAlphaType();
     if (alpha == AlphaType::IMAGE_ALPHA_TYPE_UNKNOWN)
         alpha = AlphaType::IMAGE_ALPHA_TYPE_OPAQUE;

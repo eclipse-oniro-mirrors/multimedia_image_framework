@@ -260,25 +260,70 @@ static void CalcRGBStride(PixelFormat format, uint32_t width, uint32_t &stride)
     }
 }
 
-uint32_t ImageFormatConvert::ConvertImageFormat(const ConvertDataInfo &srcDataInfo, DestConvertInfo &destInfo)
+static bool IsYUVConvert(PixelFormat srcFormat)
 {
-    if (!CheckConvertDataInfo(srcDataInfo)) {
-        IMAGE_LOGE("source convert data info is invalid");
+    bool ret = srcFormat == PixelFormat::NV21 || srcFormat == PixelFormat::NV12 ||
+               srcFormat == PixelFormat::YCBCR_P010 || srcFormat == PixelFormat::YCRCB_P010;
+    return ret;
+}
+
+uint32_t ImageFormatConvert::YUVConvert(const OHOS::Media::ConvertDataInfo &srcDataInfo,
+                                        OHOS::Media::DestConvertInfo &destInfo)
+{
+    YUVConvertFunction yuvConvertFunction = YUVGetConvertFuncByFormat(srcDataInfo.pixelFormat, destInfo.format);
+    if (yuvConvertFunction == nullptr) {
+        IMAGE_LOGE("YUVConvert get convert function by format failed!");
         return ERR_IMAGE_INVALID_PARAMETER;
     }
-    if (!IsSupport(destInfo.format)) {
-        IMAGE_LOGE("destination format is not support or invalid");
+    YUVDataInfo yuvDataInfo = srcDataInfo.yuvDataInfo;
+    int32_t width = srcDataInfo.imageSize.width;
+    int32_t height = srcDataInfo.imageSize.height;
+    if (destInfo.width == 0 || destInfo.height == 0) {
+        destInfo.width = static_cast<uint32_t>(width);
+        destInfo.height = static_cast<uint32_t>(height);
+    }
+    if (yuvDataInfo.yWidth == 0 || yuvDataInfo.yHeight == 0 || yuvDataInfo.uvWidth == 0 || yuvDataInfo.uvHeight == 0) {
+        yuvDataInfo.yWidth = static_cast<uint32_t>(width);
+        yuvDataInfo.yHeight = static_cast<uint32_t>(height);
+        yuvDataInfo.uvWidth = static_cast<uint32_t>((width + 1) / NUM_2);
+        yuvDataInfo.uvHeight = static_cast<uint32_t>((height + 1) / NUM_2);
+    }
+    YUVStrideInfo dstStrides;
+    auto m = CreateMemory(destInfo.format, destInfo.allocType, destInfo.width,
+                          destInfo.height, dstStrides);
+    if (m == nullptr) {
+        IMAGE_LOGE("YUVConvert create memory failed!");
         return ERR_IMAGE_INVALID_PARAMETER;
     }
+    destInfo.context = m->extend.data;
+    destInfo.yStride = dstStrides.yStride;
+    destInfo.uvStride = dstStrides.uvStride;
+    destInfo.yOffset = dstStrides.yOffset;
+    destInfo.uvOffset = dstStrides.uvOffset;
+    destInfo.buffer = reinterpret_cast<uint8_t *>(m->data.data);
+    destInfo.bufferSize = GetBufferSizeByFormat(destInfo.format, {destInfo.width, destInfo.height});
+
+    if (!yuvConvertFunction(srcDataInfo.buffer, yuvDataInfo, destInfo, srcDataInfo.colorSpace)) {
+        IMAGE_LOGE("YUVConvert format convert failed!");
+        m->Release();
+        return IMAGE_RESULT_FORMAT_CONVERT_FAILED;
+    }
+    return SUCCESS;
+}
+
+uint32_t ImageFormatConvert::RGBConvert(const OHOS::Media::ConvertDataInfo &srcDataInfo,
+                                        OHOS::Media::DestConvertInfo &destInfo)
+{
     ConvertFunction cvtFunc = GetConvertFuncByFormat(srcDataInfo.pixelFormat, destInfo.format);
     if (cvtFunc == nullptr) {
-        IMAGE_LOGE("get convert function by format failed!");
+        IMAGE_LOGE("RGBConvert get convert function by format failed!");
         return ERR_IMAGE_INVALID_PARAMETER;
     }
     YUVStrideInfo dstStrides;
     auto m = CreateMemory(destInfo.format, destInfo.allocType, destInfo.width,
                           destInfo.height, dstStrides);
     if (m == nullptr) {
+        IMAGE_LOGE("RGBConvert create memory failed!");
         return ERR_IMAGE_INVALID_PARAMETER;
     }
     destInfo.context = m->extend.data;
@@ -292,18 +337,27 @@ uint32_t ImageFormatConvert::ConvertImageFormat(const ConvertDataInfo &srcDataIn
     CalcRGBStride(srcDataInfo.pixelFormat, srcDataInfo.imageSize.width, srcStride);
     RGBDataInfo rgbDataInfo = {srcDataInfo.imageSize.width, srcDataInfo.imageSize.height, srcStride};
     if (!cvtFunc(srcDataInfo.buffer, rgbDataInfo, destInfo, srcDataInfo.colorSpace)) {
-        IMAGE_LOGE("format convert failed!");
+        IMAGE_LOGE("RGBConvert format convert failed!");
         m->Release();
         return IMAGE_RESULT_FORMAT_CONVERT_FAILED;
     }
     return SUCCESS;
 }
 
-static bool IsYUVConvert(PixelFormat srcFormat)
+uint32_t ImageFormatConvert::ConvertImageFormat(const ConvertDataInfo &srcDataInfo, DestConvertInfo &destInfo)
 {
-    bool ret = srcFormat == PixelFormat::NV21 || srcFormat == PixelFormat::NV12 ||
-        srcFormat == PixelFormat::YCBCR_P010 || srcFormat == PixelFormat::YCRCB_P010;
-    return ret;
+    if (!CheckConvertDataInfo(srcDataInfo)) {
+        IMAGE_LOGE("source convert data info is invalid");
+        return ERR_IMAGE_INVALID_PARAMETER;
+    }
+    if (!IsSupport(destInfo.format)) {
+        IMAGE_LOGE("destination format is not support or invalid");
+        return ERR_IMAGE_INVALID_PARAMETER;
+    }
+    if (IsYUVConvert(srcDataInfo.pixelFormat)) {
+        return YUVConvert(srcDataInfo, destInfo);
+    }
+    return RGBConvert(srcDataInfo, destInfo);
 }
 
 uint32_t ImageFormatConvert::ConvertImageFormat(std::shared_ptr<PixelMap> &srcPiexlMap, PixelFormat destFormat)

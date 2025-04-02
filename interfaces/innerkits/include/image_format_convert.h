@@ -39,6 +39,7 @@ struct ConvertDataInfo {
     Size imageSize;
     PixelFormat pixelFormat = PixelFormat::UNKNOWN;
     ColorSpace colorSpace = ColorSpace::SRGB;
+    YUVDataInfo yuvDataInfo;
 };
 
 class ImageFormatConvert {
@@ -68,6 +69,8 @@ private:
                                                    YUVStrideInfo &strides);
     static uint32_t RGBConvertImageFormatOption(std::shared_ptr<PixelMap> &srcPiexlMap,
                                                 const PixelFormat &srcFormat, PixelFormat destFormat);
+    static uint32_t YUVConvert(const ConvertDataInfo &srcDataInfo, DestConvertInfo &destInfo);
+    static uint32_t RGBConvert(const ConvertDataInfo &srcDataInfo, DestConvertInfo &destInfo);
 };
 } //OHOS
 } //Media
