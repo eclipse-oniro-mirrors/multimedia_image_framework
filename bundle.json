@@ -57,7 +57,7 @@
           "json",
           "ffrt",
           "openmax",
-          "os_account",
+          "runtime_core",
           "qos_manager",
           "eventhandler",
           "ets_runtime"
@@ -69,7 +69,8 @@
       "build": {
         "sub_component": [
           "//foundation/multimedia/image_framework:image_framework",
-          "//foundation/multimedia/image_framework:plugins"
+          "//foundation/multimedia/image_framework:plugins",
+          "//foundation/multimedia/image_framework/frameworks/kits/ani:image_framework_ani"
         ],
         "inner_kits": [
           {
@@ -187,6 +188,15 @@
               ]
             },
             "name": "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/utils:image_utils"
+          },
+          {
+            "header": {
+              "header_base": "//foundation/multimedia/image_framework/frameworks/kits/ani/native/include/",
+              "header_files": [
+                "pixel_map_ani.h"
+              ]
+            },
+            "name": "//foundation/multimedia/image_framework/frameworks/kits/ani:image_ani"
           },
           {
             "header": {
