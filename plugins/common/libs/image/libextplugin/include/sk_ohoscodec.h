@@ -61,7 +61,7 @@ public:
     SkISize getSampledSubsetDimensions(int sampleSize, const SkIRect& subset) const;
     struct OHOSOptions : public SkCodec::Options {
         OHOSOptions()
-            : SkCodec::Options() , fSampleSize(1)
+            : SkCodec::Options(), fSampleSize(1)
         {}
 
         int fSampleSize;

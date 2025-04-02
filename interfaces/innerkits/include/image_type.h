@@ -307,7 +307,7 @@ struct SVGDecodeOptions {
 enum class CropAndScaleStrategy : int32_t {
     DEFAULT = 0,
     /**
-     * First scale, then crop; this is the default value to maintain interface compatiblity.
+     * First scale, then crop.
      */
     SCALE_FIRST = 1,
     /**

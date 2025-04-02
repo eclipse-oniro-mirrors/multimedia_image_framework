@@ -294,7 +294,7 @@ ohos_shared_library("extplugin") {
     }
   }
   if (is_ohos) {
-    sources += [ "src/ext_ohoscodec.cpp" ]
+    sources += [ "src/sk_ohoscodec.cpp" ]
     defines += [ "SK_ENABLE_OHOS_CODEC" ]
   }
   cflags = [
