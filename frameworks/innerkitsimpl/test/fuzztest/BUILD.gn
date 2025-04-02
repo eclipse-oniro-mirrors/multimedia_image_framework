@@ -21,6 +21,7 @@ group("fuzztest") {
     "imageheifimpl_fuzzer:ImageHeifImplFuzzTest",
     "imageinterfacepixelmap_fuzzer:ImageInterfacePixelmapFuzzTest",
     "imagepicture_fuzzer:ImagePictureFuzzTest",
+    "imagepixelYuv_fuzzer:ImagePixelYuvFuzzTest",
     "imagepixelmapBase_fuzzer:ImagePixelmapBaseFuzzTest",
     "imagepixelmapGetColorARGB_fuzzer:ImagePixelmapGetColorARGBFuzzTest",
     "imagepixelmapHdr_fuzzer:ImagePixelmapHdrFuzzTest",
