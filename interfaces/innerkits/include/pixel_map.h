@@ -409,6 +409,16 @@ public:
 
     NATIVEEXPORT uint32_t GetVersionId();
     NATIVEEXPORT void AddVersionId();
+
+    NATIVEEXPORT bool IsDisplayOnly()
+    {
+        return displayOnly_;
+    }
+
+    NATIVEEXPORT void SetDisplayOnly(bool displayOnly)
+    {
+        displayOnly_ = displayOnly;
+    }
 protected:
     static constexpr uint8_t TLV_VARINT_BITS = 7;
     static constexpr uint8_t TLV_VARINT_MASK = 0x7F;
@@ -575,16 +585,6 @@ protected:
     uint32_t versionId_ = 1;
     std::shared_ptr<std::shared_mutex> versionMutex_ = std::make_shared<std::shared_mutex>();
 private:
-    NATIVEEXPORT bool IsDisplayOnly()
-    {
-        return displayOnly_;
-    }
-
-    NATIVEEXPORT void SetDisplayOnly(bool displayOnly)
-    {
-        displayOnly_ = displayOnly;
-    }
-
     // unmap方案, 减少RenderService内存占用
     bool isUnMap_ = false;
     uint64_t useCount_ = 0ULL;
