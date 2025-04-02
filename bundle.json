@@ -57,6 +57,7 @@
           "json",
           "ffrt",
           "openmax",
+          "os_account",
           "runtime_core",
           "qos_manager",
           "eventhandler",
