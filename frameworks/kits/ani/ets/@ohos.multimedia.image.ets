@@ -272,6 +272,12 @@ export namespace image {
     UNPREMUL = 3
   }
 
+  enum ResolutionQuality {
+    LOW = 1,
+    MEDIUM = 2,
+    HIGH = 3
+  }
+
   // common
   export interface Size {
     width: int,
