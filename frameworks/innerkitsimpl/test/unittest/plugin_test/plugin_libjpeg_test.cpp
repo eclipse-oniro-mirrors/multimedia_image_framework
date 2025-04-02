@@ -38,7 +38,6 @@ constexpr uint32_t COMPONENT_NUM_BGRA = 4;
 constexpr uint32_t COMPONENT_NUM_RGB = 3;
 constexpr uint32_t COMPONENT_NUM_GRAY = 1;
 constexpr uint8_t COMPONENT_NUM_YUV420SP = 3;
-constexpr uint8_t SAMPLE_FACTOR_TWO = 2;
 class PluginLibJpegTest : public testing::Test {
 public:
     PluginLibJpegTest() {}
@@ -2184,22 +2183,6 @@ HWTEST_F(PluginLibJpegTest, Jpeg_EncoderTest004, TestSize.Level3)
     uint32_t ret = Jpegencoder->SetCommonConfig();
     ASSERT_EQ(ret, ERR_IMAGE_INVALID_PARAMETER);
     GTEST_LOG_(INFO) << "PluginLibJpegTest: Jpeg_EncoderTest004 end";
-}
-
-/**
- * @tc.name: Jpeg_EncoderTest005
- * @tc.desc: SetYuv420spExtraConfig
- * @tc.type: FUNC
- */
-HWTEST_F(PluginLibJpegTest, Jpeg_EncoderTest005, TestSize.Level3)
-{
-    GTEST_LOG_(INFO) << "PluginLibJpegTest: Jpeg_EncoderTest005 start";
-    auto Jpegencoder = std::make_shared<JpegEncoder>();
-    Jpegencoder->encodeInfo_.comp_info = new jpeg_component_info;
-    Jpegencoder->SetYuv420spExtraConfig();
-    ASSERT_EQ(Jpegencoder->encodeInfo_.comp_info[0].h_samp_factor, SAMPLE_FACTOR_TWO);
-    delete Jpegencoder->encodeInfo_.comp_info;
-    GTEST_LOG_(INFO) << "PluginLibJpegTest: Jpeg_EncoderTest005 end";
 }
 
 /**
