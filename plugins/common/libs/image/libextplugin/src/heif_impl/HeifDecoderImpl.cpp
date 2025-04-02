@@ -900,12 +900,9 @@ bool HeifDecoderImpl::SwDecodeSingleImage(ImageFwkExtManager &extManager,
 bool HeifDecoderImpl::SwdecodeGainmap(std::shared_ptr<HeifImage> &gainMapImage,
                                       GridInfo &gainmapGridInfo, sptr<SurfaceBuffer> *outputBuf)
 {
+    ImageTrace trace("HeifDecodeImpl::SwdecodeGainmap");
     uint32_t width = gainMapImage->GetOriginalWidth();
     uint32_t height = gainMapImage->GetOriginalHeight();
-    uint32_t gainMapStride = gainMapImage->GetOriginalWidth();
-    uint32_t gainMapMemorySize = gainMapStride * height;
-    PixelFormat gainMapDstFmt = PixelFormat::YUV_400;
-    uint64_t usage;
     sptr<SurfaceBuffer> output = SurfaceBuffer::Create();
     BufferRequestConfig = {
         .width = width,
@@ -928,10 +925,13 @@ bool HeifDecoderImpl::SwdecodeGainmap(std::shared_ptr<HeifImage> &gainMapImage,
     if (err != OHOS::GSERROR_OK) {
         return false;
     }
+    PixelFormat gainMapDstFmt = PixelFormat::YUV_400;
+    uint32_t gainMapStride = static_cast<uint32_t>(output->GetStride());
+    uint32_t gainMapMemorySize = gainMapStride * static_cast<uint32_t>(gainMapImage->GetHeight());
     HevcSoftDecodeParam gainMapparam {
         gainMapgridInfo, gainMapdstfmt,
         data + planeY.offset, gainMapMemorySize,
-        static_cast<uint32_t>(dstRowStride_), nullptr
+        gainMapStride, nullptr
     };
     bool decodeRes = SwDecodeImage(gainMapImage, gainMapParam, gainMapgridInfo, false);
     if (!decodeRes) {
@@ -945,6 +945,7 @@ bool HeifDecoderImpl::SwdecodeGainmap(std::shared_ptr<HeifImage> &gainMapImage,
     }
     return true;
 }
+
 static bool IsEmptyBuffer(uint8_t *buffer, uint32_t width, uint32_t height, uint32_t bpp, uint32_t rowStride)
 {
     if (buffer == nullptr) {
