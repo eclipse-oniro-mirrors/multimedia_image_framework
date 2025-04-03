@@ -256,14 +256,6 @@ ohos_shared_library("extplugin") {
       external_deps += [ "opencl-headers:libcl" ]
     }
 
-    if (defined(global_parts_info) &&
-        defined(global_parts_info.graphic_graphic_2d_ext)) {
-      defines += [ "SUT_ENCODE_ENABLE" ]
-      if (target_cpu == "arm64" || is_emulator) {
-        defines += [ "SUT_PATH_X64" ]
-      }
-    }
-
     if (enable_jpeg_hw_decode) {
       external_deps += [
         "drivers_interface_codec:libimage_proxy_2.0",
