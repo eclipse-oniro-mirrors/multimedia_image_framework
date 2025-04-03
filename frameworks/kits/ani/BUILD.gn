@@ -46,9 +46,9 @@ ohos_shared_library("image_ani") {
     "native/src/pixel_map_ani.cpp",
   ]
   deps = [
-    "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/utils:image_utils",
-    "//foundation/multimedia/image_framework/interfaces/innerkits:image_native",
-    "//foundation/multimedia/image_framework/interfaces/kits/js/common:image",
+    "${image_subsystem}/frameworks/innerkitsimpl/utils:image_utils",
+    "${image_subsystem}/interfaces/innerkits:image_native",
+    "${image_subsystem}/interfaces/kits/js/common:image",
   ]
   external_deps = [
     "ability_runtime:ability_runtime",
