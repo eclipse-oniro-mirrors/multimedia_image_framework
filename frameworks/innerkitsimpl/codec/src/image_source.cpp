@@ -2587,6 +2587,10 @@ uint32_t ImageSource::SetDecodeOptions(std::unique_ptr<AbsImageDecoder> &decoder
             return COMMON_ERR_INVALID_PARAMETER;
         }
         plOptions.desiredPixelFormat = opts.photoDesiredPixelFormat;
+        if (opts.photoDesiredPixelFormat == PixelFormat::YCBCR_P010) {
+            // if need 10bit yuv, set plOptions to nv21
+            plOptions.desiredPixelFormat = PixelFormat::NV21;
+        }
     }
     
     uint32_t ret = decoder->SetDecodeOptions(index, plOptions, plInfo);
