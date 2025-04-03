@@ -803,8 +803,7 @@ uint32_t AstcCodec::ASTCEncode() __attribute__((no_sanitize("cfi")))
     if (!InitAstcExtendInfo(extendInfo)) {
         return ERROR;
     }
-    uint32_t packSize = static_cast<uint32_t>(param.astcBytes) +
-        extendInfo.extendBufferSumBytes + ASTC_EXTEND_INFO_SIZE_DEFINITION_LENGTH;
+    uint32_t packSize = static_cast<uint32_t>(param.astcBytes) + extendInfo.extendBufferSumBytes + ASTC_NUM_4;
     uint8_t *astcBuffer = static_cast<uint8_t *>(malloc(packSize));
     if (astcBuffer == nullptr) {
         ReleaseExtendInfoMemory(extendInfo);
