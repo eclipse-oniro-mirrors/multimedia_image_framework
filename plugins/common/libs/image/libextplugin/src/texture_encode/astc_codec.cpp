@@ -769,6 +769,60 @@ void AstcCodec::InitTextureEncodeOptions(TextureEncodeOptions &param, uint8_t &c
 #endif
 }
 
+bool AstcCodec::IsAstcEnc(Media::ImageInfo &info, uint8_t* pixelmapIn, TextureEncodeOptions &param,
+    AstcExtendInfo &extendInfo)
+{
+    int32_t bufferSize = astcPixelMap_->GetCapacity();
+    if (info.pixelFormat == PixelFormat::ASTC_4x4 && astcOpts_.format == "image/sdr_astc_4x4") {
+        if (!astcOutput_->Write(pixelmapIn, bufferSize)) {
+            IMAGE_LOGE("fail to write to astcout");
+            return false;
+        }
+        return true;
+    }
+    if (info.pixelFormat == PixelFormat::ASTC_4x4 && astcOpts_.format == "image/sdr_sut_superfast_4x4") {
+        uint8_t *astcBuffer = static_cast<uint8_t *>(malloc(bufferSize));
+        if (astcBuffer == nullptr) {
+            IMAGE_LOGE("Buffer malloc failed in packing");
+            return false;
+        }
+        if (memcpy_s(astcBuffer, bufferSize, pixelmapIn, bufferSize) < 0) {
+            IMAGE_LOGE("Copy data failed in packing");
+            free(astcBuffer);
+            return false;
+        }
+        if (!TryEncSUT(param, astcBuffer, extendInfo)) {
+            IMAGE_LOGE("Astc encode sut failed in packing");
+            return false;
+        }
+        bufferSize = static_cast<uint32_t>(param.sutBytes);
+        if (!astcOutput_->Write(astcBuffer, bufferSize)) {
+            IMAGE_LOGE("Write to astcout failed in packing");
+            free(astcBuffer);
+            return false;
+        }
+        free(astcBuffer);
+        return true;
+    }
+    IMAGE_LOGE("Does not support packing format");
+    return false;
+}
+
+bool AstcCodec::InitBeforeAstcEncode(ImageInfo &imageInfo, TextureEncodeOptions &param, uint8_t &colorData,
+    uint8_t **pixmapIn, uint32_t &stride)
+{
+    astcPixelMap_->GetImageInfo(imageInfo);
+    InitTextureEncodeOptions(param, colorData);
+    param.extInfoBuf = &colorData;
+    *pixmapIn = const_cast<uint8_t*>(astcPixelMap_->GetPixels());
+    stride = static_cast<uint32_t>(astcPixelMap_->GetRowStride()) >> RGBA_BYTES_PIXEL_LOG2;
+    if (!InitAstcEncPara(param, imageInfo.size.width, imageInfo.size.height, static_cast<int32_t>(stride), astcOpts_)) {
+        IMAGE_LOGE("InitAstcEncPara failed");
+        return false;
+    }
+    return true;
+}
+
 bool AstcCodec::TryEncSUT(TextureEncodeOptions &param, uint8_t* astcBuffer, AstcExtendInfo &extendInfo)
 {
 #ifdef SUT_ENCODE_ENABLE
@@ -787,15 +841,11 @@ bool AstcCodec::TryEncSUT(TextureEncodeOptions &param, uint8_t* astcBuffer, Astc
 uint32_t AstcCodec::ASTCEncode() __attribute__((no_sanitize("cfi")))
 {
     ImageInfo imageInfo;
-    astcPixelMap_->GetImageInfo(imageInfo);
     TextureEncodeOptions param;
     uint8_t colorData;
-    InitTextureEncodeOptions(param, colorData);
-    param.extInfoBuf = &colorData;
-    uint8_t *pixmapIn = static_cast<uint8_t *>(astcPixelMap_->GetWritablePixels());
-    uint32_t stride = static_cast<uint32_t>(astcPixelMap_->GetRowStride()) >> RGBA_BYTES_PIXEL_LOG2;
-    if (!InitAstcEncPara(param, imageInfo.size.width, imageInfo.size.height, static_cast<int32_t>(stride), astcOpts_)) {
-        IMAGE_LOGE("InitAstcEncPara failed");
+    uint8_t *pixmapIn = nullptr;
+    uint32_t stride = 0;
+    if (!InitBeforeAstcEncode(imageInfo, param, colorData, &pixmapIn, stride)) {
         return ERROR;
     }
     ImageTrace("[AstcCodec] ASTCEncode Size: %d, %d", imageInfo.size.width, imageInfo.size.height);
@@ -804,6 +854,12 @@ uint32_t AstcCodec::ASTCEncode() __attribute__((no_sanitize("cfi")))
         return ERROR;
     }
     uint32_t packSize = static_cast<uint32_t>(param.astcBytes) + extendInfo.extendBufferSumBytes + ASTC_NUM_4;
+    if (astcPixelMap_->IsAstc()) {
+        if (!IsAstcEnc(imageInfo, pixmapIn, param, extendInfo)) {
+            return ERROR;
+        }
+        return SUCCESS;
+    }
     uint8_t *astcBuffer = static_cast<uint8_t *>(malloc(packSize));
     if (astcBuffer == nullptr) {
         ReleaseExtendInfoMemory(extendInfo);

@@ -23,6 +23,7 @@
 #include "image_compressor.h"
 #endif
 #include "image_source_util.h"
+#include "image_source.h"
 #include "image_system_properties.h"
 #include "image_utils.h"
 #include "media_errors.h"
@@ -53,8 +54,28 @@ constexpr int64_t SECOND_TO_MICROS = 1000000;
 constexpr size_t FILE_NAME_LENGTH = 512;
 constexpr uint32_t EXTEND_BUFFER_SUM_BYTES = 6;
 constexpr uint32_t EXTEND_INFO_DEFINITION = 6;
+constexpr uint32_t ASTC_WIDTH = 256;
+constexpr uint32_t ASTC_HEIGHT = 256;
+// 16 means header bytes
+constexpr uint32_t HEADER_BYTES = 16;
+// 4 means ASTC compression format is 4x4
+constexpr uint32_t COMPRESSION_FORMAT = 4;
+// 16 means ASTC per block bytes and header bytes
+constexpr uint32_t PER_BLOCK_BYTES = 16;
+constexpr uint32_t BLOCK_SIZE = 4;
+constexpr uint8_t ASTC_PER_BLOCK_BYTES = 16;
+constexpr uint8_t ASTC_MAGIC_0 = 0x13; // ASTC MAGIC ID 0x13
+constexpr uint8_t ASTC_MAGIC_1 = 0xAB; // ASTC MAGIC ID 0xAB
+constexpr uint8_t ASTC_MAGIC_2 = 0xA1; // ASTC MAGIC ID 0xA1
+constexpr uint8_t ASTC_MAGIC_3 = 0x5C; // ASTC MAGIC ID 0x5C
+constexpr uint8_t MASKBITS_FOR_8BIT = 0xFF;
+constexpr uint8_t ASTC_1TH_BYTES = 8;
+constexpr uint8_t ASTC_2TH_BYTES = 16;
 constexpr uint8_t COLOR_SPACE_NAME = 4;
 constexpr uint8_t COLOR_SPACE_OFFSET = 9;
+constexpr uint8_t ASTC_BLOCK4X4_FIT_SUT_ASTC_EXAMPLE0[ASTC_PER_BLOCK_BYTES] = {
+    0x43, 0x80, 0xE9, 0xE8, 0xFA, 0xFC, 0x14, 0x17, 0xFF, 0xFF, 0x81, 0x42, 0x12, 0x5A, 0xD4, 0xE9
+};
 struct AstcEncTestPara {
     TextureEncodeOptions param;
     int32_t width;
@@ -121,6 +142,71 @@ static std::unique_ptr<PixelMap> ConstructPixmap(int32_t width, int32_t height)
     pixelMap->SetPixelsAddr(buffer, nullptr, bufferSize, AllocatorType::HEAP_ALLOC, nullptr);
 
     return pixelMap;
+}
+
+bool ConstructAstcBody(uint8_t* astcBody, size_t& blockNums, const uint8_t* astcBlockPart)
+{
+    uint8_t* astcBuf = astcBody;
+    for (size_t blockIdx = 0; blockIdx < blockNums; blockIdx++) {
+        if (memcpy_s(astcBuf, ASTC_PER_BLOCK_BYTES, astcBlockPart, ASTC_PER_BLOCK_BYTES) != 0) {
+            return false;
+        }
+        astcBuf += ASTC_PER_BLOCK_BYTES;
+    }
+    return true;
+}
+
+bool GenAstcHeader(uint8_t* header, size_t blockSize, size_t width, size_t height)
+{
+    uint8_t* tmp = header;
+    *tmp++ = ASTC_MAGIC_0;
+    *tmp++ = ASTC_MAGIC_1;
+    *tmp++ = ASTC_MAGIC_2;
+    *tmp++ = ASTC_MAGIC_3;
+    *tmp++ = static_cast<uint8_t>(blockSize);
+    *tmp++ = static_cast<uint8_t>(blockSize);
+    // 1 means 3D block size
+    *tmp++ = 1;
+    *tmp++ = width & MASKBITS_FOR_8BIT;
+    *tmp++ = (width >> ASTC_1TH_BYTES) & MASKBITS_FOR_8BIT;
+    *tmp++ = (width >> ASTC_2TH_BYTES) & MASKBITS_FOR_8BIT;
+    *tmp++ = height & MASKBITS_FOR_8BIT;
+    *tmp++ = (height >> ASTC_1TH_BYTES) & MASKBITS_FOR_8BIT;
+    *tmp++ = (height >> ASTC_2TH_BYTES) & MASKBITS_FOR_8BIT;
+    // astc support 3D, for 2D,the 3D size is 1
+    *tmp++ = 1;
+    *tmp++ = 0;
+    *tmp++ = 0;
+    return true;
+}
+
+bool ConstructPixelAstc(int32_t width, int32_t height, std::unique_ptr<Media::PixelMap>& pixelMap)
+{
+    SourceOptions opts;
+    size_t blockNum = ((ASTC_WIDTH + COMPRESSION_FORMAT - 1) / COMPRESSION_FORMAT) *
+        ((height + COMPRESSION_FORMAT - 1) / COMPRESSION_FORMAT);
+    size_t size = blockNum * PER_BLOCK_BYTES + HEADER_BYTES;
+    // malloc data here
+    uint8_t* data = (uint8_t*)malloc(size);
+    if (!GenAstcHeader(data, BLOCK_SIZE, width, height)) {
+        GTEST_LOG_(ERROR) << "ConstructPixelAstc GenAstcHeader failed\n";
+        return false;
+    }
+    if (!ConstructAstcBody(data + HEADER_BYTES, blockNum, ASTC_BLOCK4X4_FIT_SUT_ASTC_EXAMPLE0)) {
+        GTEST_LOG_(ERROR) << "ConstructAstcBody ConstructAstcBody failed\n";
+        return false;
+    }
+    uint32_t errorCode = 0;
+    std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(data, size, opts, errorCode);
+    if (errorCode != SUCCESS || !imageSource) {
+        return false;
+    }
+    DecodeOptions decodeOpts;
+    pixelMap = imageSource->CreatePixelMap(decodeOpts, errorCode);
+    if (errorCode != SUCCESS) {
+        return false;
+    }
+    return true;
 }
 
 static int64_t CurrentTimeInUs(void)
@@ -351,6 +437,82 @@ HWTEST_F(PluginTextureEncodeTest, ASTCEncode006, TestSize.Level3)
         stream = nullptr;
     }
     GTEST_LOG_(INFO) << "PluginTextureEncodeTest: ASTCEncode006 end";
+}
+
+/**
+ * @tc.name: ASTCEncode007
+ * @tc.desc: AstcSoftwareEncode return error test
+ * @tc.type: FUNC
+ */
+HWTEST_F(PluginTextureEncodeTest, ASTCEncode007, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PluginTextureEncodeTest: ASTCEncode007 start";
+
+    std::unique_ptr<PixelMap> pixelMap = nullptr;
+    ConstructPixelAstc(ASTC_WIDTH, ASTC_HEIGHT, pixelMap);
+    ASSERT_NE(pixelMap, nullptr);
+    Media::PixelMap *pixelMapPtr = pixelMap.get();
+    ASSERT_NE(pixelMapPtr, nullptr);
+
+    uint8_t *output = static_cast<uint8_t *>(malloc(OUTPUT_SIZE_MAX));
+    ASSERT_NE(output, nullptr);
+    BufferPackerStream *stream = new (std::nothrow) BufferPackerStream(output, OUTPUT_SIZE_MAX);
+    ASSERT_NE(stream, nullptr);
+
+    struct PlEncodeOptions option = { "image/sdr_sut_superfast_4x4", 92, 1 };
+    AstcCodec astcEncoder;
+    uint32_t setRet = astcEncoder.SetAstcEncode(stream, option, pixelMapPtr);
+    ASSERT_EQ(setRet, SUCCESS);
+    uint32_t astcRet = astcEncoder.ASTCEncode();
+    ASSERT_EQ(astcRet, SUCCESS);
+
+    if (output != nullptr) {
+        free(output);
+        output = nullptr;
+    }
+    if (stream != nullptr) {
+        delete stream;
+        stream = nullptr;
+    }
+    GTEST_LOG_(INFO) << "PluginTextureEncodeTest: ASTCEncode007 end";
+}
+
+/**
+ * @tc.name: ASTCEncode008
+ * @tc.desc: AstcSoftwareEncode return error test
+ * @tc.type: FUNC
+ */
+HWTEST_F(PluginTextureEncodeTest, ASTCEncode008, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PluginTextureEncodeTest: ASTCEncode008 start";
+
+    std::unique_ptr<PixelMap> pixelMap = nullptr;
+    ConstructPixelAstc(ASTC_WIDTH, ASTC_HEIGHT, pixelMap);
+    ASSERT_NE(pixelMap, nullptr);
+    Media::PixelMap *pixelMapPtr = pixelMap.get();
+    ASSERT_NE(pixelMapPtr, nullptr);
+
+    uint8_t *output = static_cast<uint8_t *>(malloc(OUTPUT_SIZE_MAX));
+    ASSERT_NE(output, nullptr);
+    BufferPackerStream *stream = new (std::nothrow) BufferPackerStream(output, OUTPUT_SIZE_MAX);
+    ASSERT_NE(stream, nullptr);
+
+    struct PlEncodeOptions option = { "image/sdr_astc_4x4", 92, 1 };
+    AstcCodec astcEncoder;
+    uint32_t setRet = astcEncoder.SetAstcEncode(stream, option, pixelMapPtr);
+    ASSERT_EQ(setRet, SUCCESS);
+    uint32_t astcRet = astcEncoder.ASTCEncode();
+    ASSERT_EQ(astcRet, SUCCESS);
+
+    if (output != nullptr) {
+        free(output);
+        output = nullptr;
+    }
+    if (stream != nullptr) {
+        delete stream;
+        stream = nullptr;
+    }
+    GTEST_LOG_(INFO) << "PluginTextureEncodeTest: ASTCEncode008 end";
 }
 
 /**
