@@ -167,8 +167,9 @@ static bool I420ToRGB(I420Info &i420, DestConvertParam &destParam, [[maybe_unuse
     auto &converter = ConverterHandle::GetInstance().GetHandle();
     switch (destParam.format) {
         case PixelFormat::RGBA_8888:
-            converter.I420ToABGR(i420.I420Y, i420.yStride, i420.I420U, i420.uStride, i420.I420V, i420.vStride,
-                destParam.slice[0], destParam.stride[0], destParam.width, destParam.height);
+            converter.I420ToARGBMatrix(i420.I420Y, i420.yStride, i420.I420V, i420.vStride, i420.I420U, i420.uStride,
+                destParam.slice[0], destParam.stride[0], OHOS::OpenSourceLibyuv::YuvConstants::YvuF709,
+                destParam.width, destParam.height);
             break;
         case PixelFormat::RGB_565:
             converter.I420ToRGB565Matrix(i420.I420Y, i420.yStride, i420.I420U, i420.uStride, i420.I420V, i420.vStride,
