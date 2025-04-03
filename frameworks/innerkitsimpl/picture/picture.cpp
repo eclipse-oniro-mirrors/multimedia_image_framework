@@ -600,6 +600,25 @@ Picture *Picture::Unmarshalling(Parcel &parcel, PICTURE_ERR &error)
     return picture.release();
 }
 
+int32_t Picture::CreateExifMetadata()
+{
+    if (exifMetadata_ != nullptr) {
+        IMAGE_LOGE("exifMetadata is already created");
+        return SUCCESS;
+    }
+    exifMetadata_ = std::make_shared<OHOS::Media::ExifMetadata>();
+    if (exifMetadata_ == nullptr) {
+        IMAGE_LOGE("Failed to create ExifMetadata object");
+        return ERR_IMAGE_MALLOC_ABNORMAL;
+    }
+    if (!exifMetadata_->CreateExifdata()) {
+        IMAGE_LOGE("Failed to create exif metadata data");
+        exifMetadata_ = nullptr;
+        return ERR_IMAGE_INVALID_PARAMETER;
+    }
+    return SUCCESS;
+}
+
 int32_t Picture::SetExifMetadata(sptr<SurfaceBuffer> &surfaceBuffer)
 {
     if (surfaceBuffer == nullptr) {

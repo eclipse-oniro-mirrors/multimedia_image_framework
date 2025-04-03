@@ -617,6 +617,21 @@ HWTEST_F(PictureTest, GetGainmapPixelmapTest002, TestSize.Level2)
 }
 
 /**
+ * @tc.name: CreateExifMetadataTest001
+ * @tc.desc: test the Create ExifMetadata of Picture
+ * @tc.type: FUNC
+ */
+HWTEST_F(PictureTest, CreateExifMetadataTest001, TestSize.Level2)
+{
+    GTEST_LOG_(INFO) << "PictureTest: CreateExifMetadataTest001 start";
+    std::unique_ptr<Picture> picture = CreatePicture();
+    EXPECT_EQ(picture->GetExifMetadata(), nullptr);
+    picture->CreateExifMetadata();
+    EXPECT_NE(picture->GetExifMetadata(), nullptr);
+    GTEST_LOG_(INFO) << "PictureTest: CreateExifMetadataTest001 end";
+}
+
+/**
  * @tc.name: SetExifMetadataByExifMetadataTest001
  * @tc.desc: Set nullptr to picture exifMetadata_.
  * @tc.type: FUNC
