@@ -108,6 +108,8 @@ private:
 
     bool SwDecodeImage(std::shared_ptr<HeifImage> &image, HevcSoftDecodeParam &param,
                        GridInfo &gridInfo, bool isPrimary);
+    bool SwDecodeGainmap(std::shared_ptr<HeifImage> &gainMapImage,
+                         GridInfo &gainmapGridInfo, sptr<SurfaceBuffer> *outputBuf);
 
     bool SwDecodeGrids(Media::ImageFwkExtManager &extManager,
                        std::shared_ptr<HeifImage> &image, HevcSoftDecodeParam &param);
