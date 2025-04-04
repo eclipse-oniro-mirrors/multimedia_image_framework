@@ -773,6 +773,14 @@ bool AstcCodec::IsAstcEnc(Media::ImageInfo &info, uint8_t* pixelmapIn, TextureEn
     AstcExtendInfo &extendInfo)
 {
     int32_t bufferSize = astcPixelMap_->GetCapacity();
+    if (bufferSize <= 0) {
+        IMAGE_LOGE("buffer size is less and equal than zero in packing");
+        return false;
+    }
+    if (pixelmapIn == nullptr) {
+        IMAGE_LOGE("pixelmap data is nullptr in packing");
+        return false;
+    }
     if (info.pixelFormat == PixelFormat::ASTC_4x4 && astcOpts_.format == "image/sdr_astc_4x4") {
         if (!astcOutput_->Write(pixelmapIn, bufferSize)) {
             IMAGE_LOGE("fail to write to astcout");
@@ -811,10 +819,13 @@ bool AstcCodec::IsAstcEnc(Media::ImageInfo &info, uint8_t* pixelmapIn, TextureEn
 bool AstcCodec::InitBeforeAstcEncode(ImageInfo &imageInfo, TextureEncodeOptions &param, uint8_t &colorData,
     uint8_t **pixmapIn, uint32_t &stride)
 {
+    if (astcPixelMap_ == nullptr || astcOutput_ == nullptr) {
+        return false;
+    }
     astcPixelMap_->GetImageInfo(imageInfo);
     InitTextureEncodeOptions(param, colorData);
     param.extInfoBuf = &colorData;
-    *pixmapIn = const_cast<uint8_t*>(astcPixelMap_->GetPixels());
+    *pixmapIn = const_cast<uint8_t *>(astcPixelMap_->GetPixels());
     stride = static_cast<uint32_t>(astcPixelMap_->GetRowStride()) >> RGBA_BYTES_PIXEL_LOG2;
     if (!InitAstcEncPara(param, imageInfo.size.width, imageInfo.size.height, static_cast<int32_t>(stride), astcOpts_)) {
         IMAGE_LOGE("InitAstcEncPara failed");

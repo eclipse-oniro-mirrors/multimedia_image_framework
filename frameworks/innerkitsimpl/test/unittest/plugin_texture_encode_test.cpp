@@ -146,6 +146,10 @@ static std::unique_ptr<PixelMap> ConstructPixmap(int32_t width, int32_t height)
 
 bool ConstructAstcBody(uint8_t* astcBody, size_t& blockNums, const uint8_t* astcBlockPart)
 {
+    if (astcBody == nullptr || astcBlockPart == nullptr) {
+        return false;
+    }
+
     uint8_t* astcBuf = astcBody;
     for (size_t blockIdx = 0; blockIdx < blockNums; blockIdx++) {
         if (memcpy_s(astcBuf, ASTC_PER_BLOCK_BYTES, astcBlockPart, ASTC_PER_BLOCK_BYTES) != 0) {
@@ -158,6 +162,9 @@ bool ConstructAstcBody(uint8_t* astcBody, size_t& blockNums, const uint8_t* astc
 
 bool GenAstcHeader(uint8_t* header, size_t blockSize, size_t width, size_t height)
 {
+    if (header == nullptr) {
+        return false;
+    }
     uint8_t* tmp = header;
     *tmp++ = ASTC_MAGIC_0;
     *tmp++ = ASTC_MAGIC_1;
