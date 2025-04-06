@@ -134,6 +134,30 @@ HWTEST_F(PictureTest, SurfaceBuffer2PixelMapTest002, TestSize.Level1)
 }
 
 /**
+ * @tc.name: SurfaceBuffer2PixelMapTest003
+ * @tc.desc: Obtain pixelmap through surfaceBuffer.
+ * @tc.type: FUNC
+ */
+HWTEST_F(PictureTest, SurfaceBuffer2PixelMapTest003, TestSize.Level1)
+{
+    OHOS::sptr<OHOS::SurfaceBuffer> buffer = SurfaceBuffer::Create();
+    ASSERT_NE(buffer, nullptr);
+    BufferRequestConfig requestConfig = {
+        .width = 10,
+        .height = 20,
+        .format = GraphicPixelFormat::GRAPHIC_PIXEL_FMT_YCRCB_420_SP,
+        .usage = BUFFER_USAGE_CPU_READ | BUFFER_USAGE_CPU_WRITE | BUFFER_USAGE_MEM_DMA | BUFFER_USAGE_MEM_MMZ_CACHE,
+        .timeout = 0,
+        .colorGamut = GraphicColorGamut::GRAPHIC_COLOR_GAMUT_SRGB,
+        .transform = GraphicTransformType::GRAPHIC_ROTATE_NONE,
+    };
+    GSError ret = buffer->Alloc(requestConfig);
+    ASSERT_EQ(ret, GSERROR_OK);
+    std::shared_ptr<PixelMap> pixelmap = Picture::SurfaceBuffer2PixelMap(buffer);
+    EXPECT_NE(nullptr, pixelmap);
+}
+
+/**
  * @tc.name: SetAuxiliaryPictureTest001
  * @tc.desc: Set gainmap to picture.
  * @tc.type: FUNC
