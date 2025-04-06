@@ -13,7 +13,7 @@
  * limitations under the License.
  */
 
-#include "image_fwk_image_source_fuzz.h"
+#include "image_fwk_image_source_fuzzer.h"
 
 #define private public
 #include <cstdint>
@@ -21,12 +21,12 @@
 #include <unistd.h>
 #include <fcntl.h>
 #include <fstream>
-
-#include "securec.h"
-#include "image_source.h"
 #include "common_fuzztest_function.h"
+
 #include "image_log.h"
 #include "image_packer.h"
+#include "image_source.h"
+#include "image_utils.h"
 #include "media_errors.h"
 
 #undef LOG_DOMAIN
@@ -44,8 +44,33 @@ static const std::string IMAGE_ENCODE_DEST = "/data/local/tmp/test_out.dat";
 
 namespace OHOS {
 namespace Media {
+void ImageSourceFuncTest002(std::unique_ptr<ImageSource>& imageSource, DecodeOptions& opts, PixelMap& pixelMap)
+{
+    IMAGE_LOGI("%{public}s IN", __func__);
+    uint32_t errCode = 0;
+    Rect cropRect;
+    ImageInfo imageInfo;
+    imageSource->ImageConverChange(cropRect, imageInfo, imageInfo);
+    imageSource->CreatePixelMapForYUV(errCode);
+    imageSource->CreatePixelMapList(opts, errCode);
+    imageSource->GetDelayTime(errCode);
+    imageSource->GetDisposalType(errCode);
+    imageSource->GetFrameCount(errCode);
+    imageSource->GetLoopCount(errCode);
+    auto exifMeta = imageSource->GetExifMetadata();
+    imageSource->SetExifMetadata(exifMeta);
+    imageSource->GetFinalOutputStep(opts, pixelMap, false);
+    imageSource->SetDngImageSize(0, imageInfo);
+    imageSource->SetIncrementalSource(false);
+    auto incrementalRecordIter = imageSource->incDecodingMap_.find(&pixelMap);
+    imageSource->AddIncrementalContext(pixelMap, incrementalRecordIter);
+    imageSource->GetImageInfoFromExif(0, imageInfo);
+    IMAGE_LOGI("%{public}s SUCCESS", __func__);
+}
+
 void ImageSourceFuncTest001(std::unique_ptr<ImageSource>& imageSource)
 {
+    IMAGE_LOGI("%{public}s IN", __func__);
     std::set<std::string> formats;
     imageSource->GetSupportedFormats(formats);
     imageSource->GetDecodeEvent();
@@ -80,106 +105,99 @@ void ImageSourceFuncTest001(std::unique_ptr<ImageSource>& imageSource)
     MemoryUsagePreference preference = MemoryUsagePreference::LOW_RAM;
     imageSource->SetMemoryUsagePreference(preference);
     imageSource->ImageSizeChange(1, 1, 1, 1);
-    Rect cropRect;
-    ImageInfo imageInfo;
-    imageSource->ImageConverChange(cropRect, imageInfo, imageInfo);
-    imageSource->CreatePixelMapForYUV(errCode);
-    imageSource->CreatePixelMapList(opts, errCode);
-    imageSource->GetDelayTime(errCode);
-    imageSource->GetDisposalType(errCode);
-    imageSource->GetFrameCount(errCode);
+    ImageSourceFuncTest002(imageSource, opts, pixelMap);
+    IMAGE_LOGI("%{public}s SUCCESS", __func__);
 }
 
-void CreateImageSourceByDataFuzz(const uint8_t* data, size_t size)
+void CreateIncrementalPixelMapByDataFuzz(const uint8_t* data, size_t size)
 {
-    uint8_t dest[size + 1];
-    int ret = memcpy_s(dest, sizeof(dest), data, size);
-    if (ret != 0) {
-        return;
+    Media::SourceOptions opts;
+    uint32_t errorCode = 0;
+    Media::IncrementalSourceOptions incOpts;
+    incOpts.incrementalMode = IncrementalMode::INCREMENTAL_DATA;
+    auto imageSource = Media::ImageSource::CreateIncrementalImageSource(incOpts, errorCode);
+    if (imageSource != nullptr) {
+        DecodeOptions decoodeOpts;
+        std::unique_ptr<IncrementalPixelMap> incPixelMap =
+            imageSource->CreateIncrementalPixelMap(0, decoodeOpts, errorCode);
+        uint32_t res = imageSource->UpdateData(data, size, true);
+        uint8_t decodeProgress = 0;
+        res = incPixelMap->PromoteDecoding(decodeProgress);
     }
-    dest[sizeof(dest) - 1] = '\0';
+}
+
+void CreateImageSourceByPathFuzz(const std::string& pathName)
+{
+    IMAGE_LOGI("%{public}s IN", __func__);
     Media::SourceOptions opts;
     uint32_t errorCode;
-    auto imagesource = Media::ImageSource::CreateImageSource(dest, sizeof(dest), opts, errorCode);
-    ImageSourceFuncTest001(imagesource);
+    auto imageSource = Media::ImageSource::CreateImageSource(pathName, opts, errorCode);
+    if (imageSource == nullptr) {
+        IMAGE_LOGI("%{public}s failed", __func__);
+        return;
+    }
+    ImageSourceFuncTest001(imageSource);
     Media::DecodeOptions dopts;
-    imagesource->CreatePixelMap(dopts, errorCode);
-    imagesource->Reset();
+    imageSource->CreatePixelMap(dopts, errorCode);
+    imageSource->Reset();
+    IMAGE_LOGI("%{public}s SUCCESS", __func__);
 }
 
-void CreateImageSourceByFDEXFuzz(const uint8_t* data, size_t size)
+void CreateImageSourceByFDEXFuzz(const std::string& pathName)
 {
-    Media::SourceOptions opts;
-    uint32_t errorCode;
-    uint32_t offset = 0;
-    uint32_t length = 1;
-    std::string pathName = "/data/local/tmp/test_create_imagesource_fdex.jpg";
-    if (!WriteDataToFile(data, size, pathName)) {
-        IMAGE_LOGE("WriteDataToFile failed");
-        return;
-    }
     int fd = open(pathName.c_str(), O_RDWR | O_CREAT, S_IRUSR | S_IWUSR);
     if (fd < 0) {
         IMAGE_LOGE("open file failed, %{public}s", pathName.c_str());
         return;
     }
-    auto imagesource = Media::ImageSource::CreateImageSource(fd, offset, length, opts, errorCode);
+    Media::SourceOptions opts;
+    uint32_t errorCode;
+    uint32_t offset = 0;
+    uint32_t length = 1;
+    auto imageSource = Media::ImageSource::CreateImageSource(fd, offset, length, opts, errorCode);
     Media ::DecodeOptions dopts;
-    imagesource->CreatePixelMap(dopts, errorCode);
+    if (imageSource != nullptr) {
+        imageSource->CreatePixelMap(dopts, errorCode);
+    }
     close(fd);
 }
 
-void CreateImageSourceByIstreamFuzz(const uint8_t* data, size_t size)
+void CreateImageSourceByIstreamFuzz(const std::string& pathName)
 {
-    std::string pathName = "/data/local/tmp/test_create_imagesource_istream.jpg";
-    if (!WriteDataToFile(data, size, pathName)) {
-        IMAGE_LOGE("WriteDataToFile failed");
-        return;
-    }
     std::unique_ptr<std::istream> is = std::make_unique<std::ifstream>(pathName.c_str());
     Media::SourceOptions opts;
     uint32_t errorCode;
     Media ::DecodeOptions dopts;
-    auto imagesource = Media::ImageSource::CreateImageSource(std::move(is), opts, errorCode);
-    if (imagesource != nullptr) {
-        imagesource->CreatePixelMap(dopts, errorCode);
+    auto imageSource = Media::ImageSource::CreateImageSource(std::move(is), opts, errorCode);
+    if (imageSource != nullptr) {
+        imageSource->CreatePixelMap(dopts, errorCode);
     }
 }
 
-void CreateImageSourceByPathNameFuzz(const uint8_t* data, size_t size)
+void CreateImageSourceByPathNameFuzz(const std::string& pathName)
 {
-    std::string pathName = "/data/local/tmp/test_create_imagesource_pathname.jpg";
-    if (!WriteDataToFile(data, size, pathName)) {
-        IMAGE_LOGE("WriteDataToFile failed");
-        return;
-    }
     Media::SourceOptions opts;
     uint32_t errorCode;
     Media ::DecodeOptions dopts;
-    auto imagesource = Media::ImageSource::CreateImageSource(pathName, opts, errorCode);
-    if (imagesource != nullptr) {
-        imagesource->CreatePixelMap(dopts, errorCode);
+    auto imageSource = Media::ImageSource::CreateImageSource(pathName, opts, errorCode);
+    if (imageSource != nullptr) {
+        imageSource->CreatePixelMap(dopts, errorCode);
     }
 }
 
-void CreateIncrementalPixelMapFuzz(const uint8_t* data, size_t size)
+void CreateIncrementalPixelMapFuzz(const std::string& pathName)
 {
-    std::string pathName = "/data/local/tmp/test_incremental_pixelmap.jpg";
-    if (!WriteDataToFile(data, size, pathName)) {
-        IMAGE_LOGE("WriteDataToFile failed");
-        return;
-    }
     Media::SourceOptions opts;
     uint32_t errorCode;
-    auto imagesource = Media::ImageSource::CreateImageSource(pathName, opts, errorCode);
+    auto imageSource = Media::ImageSource::CreateImageSource(pathName, opts, errorCode);
     Media ::DecodeOptions dopts;
     uint32_t index = 1;
-    if (imagesource != nullptr) {
-        imagesource->CreateIncrementalPixelMap(index, dopts, errorCode);
+    if (imageSource != nullptr) {
+        imageSource->CreateIncrementalPixelMap(index, dopts, errorCode);
     }
 }
 
-void CreateImageSourceByPathname(const uint8_t* data, size_t size)
+void CreateImageSourceByDataFuzz(const uint8_t* data, size_t size)
 {
     uint32_t errCode = 0;
     SourceOptions opts;
@@ -207,6 +225,32 @@ void ImageSourceFuzzTest(const uint8_t *data, size_t size)
     imageSource->ConvertYUV420ToRGBA(buffer.data(), size, isSupportOdd, isAddUV, errorCode);
 }
 
+static std::string GetProperty(std::unique_ptr<ImageSource>& imageSource, const std::string& prop)
+{
+    std::string value = "";
+    imageSource->GetImagePropertyString(0, prop, value);
+    return value;
+}
+
+void GetImagePropertyFuzzTest001(const std::string& pathName)
+{
+    uint32_t errCode = 0;
+    SourceOptions srcOpts;
+    auto imageSource = ImageSource::CreateImageSource(pathName, srcOpts, errCode);
+    GetProperty(imageSource, "DateTimeOriginal");
+    GetProperty(imageSource, "ExposureTime");
+    GetProperty(imageSource, "SceneType");
+    std::set<std::string> keys = {"DateTimeOriginal", "ExposureTime", "SceneType"};
+    errCode = imageSource->RemoveImageProperties(0, keys, pathName);
+    if (errCode != SUCCESS) {
+        return;
+    }
+    auto imageSourceNew = ImageSource::CreateImageSource(pathName, srcOpts, errCode);
+    GetProperty(imageSource, "DateTimeOriginal");
+    GetProperty(imageSource, "ExposureTime");
+    GetProperty(imageSource, "SceneType");
+}
+
 bool CreatePixelMapByRandomImageSource(const uint8_t *data, size_t size)
 {
     IMAGE_LOGI("%{public}s start.", __func__);
@@ -218,7 +262,8 @@ bool CreatePixelMapByRandomImageSource(const uint8_t *data, size_t size)
     uint32_t errorCode;
     auto imageSource = Media::ImageSource::CreateImageSource(data, size, opts, errorCode);
     if (imageSource == nullptr) {
-        IMAGE_LOGE("%{public}s failed, imageSource is nullotr", __func__);
+        IMAGE_LOGE("%{public}s failed, imageSource is nullptr", __func__);
+        return false;
     }
     DecodeOptions dopts;
     dopts.desiredDynamicRange = DecodeDynamicRange::AUTO;
@@ -363,12 +408,28 @@ bool CreatePixelMapUseArgbByRandomImageSource(const uint8_t *data, size_t size)
 extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
 {
     /* Run your code on data */
+    static const std::string imagePath1 = "/data/local/tmp/test_source.gif";
+    OHOS::Media::CreateImageSourceByPathFuzz(imagePath1);
+    static const std::string imagePath2 = "/data/local/tmp/test_source.svg";
+    OHOS::Media::CreateImageSourceByPathFuzz(imagePath2);
+    static const std::string imagePath3 = "/data/local/tmp/test_source.jpg";
+    OHOS::Media::CreateImageSourceByPathFuzz(imagePath3);
+    OHOS::Media::CreateImageSourceByFDEXFuzz(imagePath3);
+    OHOS::Media::CreateImageSourceByIstreamFuzz(imagePath3);
+    OHOS::Media::CreateIncrementalPixelMapFuzz(imagePath3);
+    OHOS::Media::GetImagePropertyFuzzTest001(imagePath3);
+    std::string pathName = "/data/local/tmp/test_create_imagesource_pathname.png";
+    if (!WriteDataToFile(data, size, pathName)) {
+        IMAGE_LOGE("WriteDataToFile failed");
+        return 0;
+    }
+    OHOS::Media::CreateImageSourceByFDEXFuzz(pathName);
+    OHOS::Media::CreateImageSourceByIstreamFuzz(pathName);
+    OHOS::Media::CreateImageSourceByPathFuzz(pathName);
+    OHOS::Media::CreateIncrementalPixelMapFuzz(pathName);
     OHOS::Media::CreateImageSourceByDataFuzz(data, size);
-    OHOS::Media::CreateImageSourceByFDEXFuzz(data, size);
-    OHOS::Media::CreateImageSourceByIstreamFuzz(data, size);
-    OHOS::Media::CreateImageSourceByPathNameFuzz(data, size);
-    OHOS::Media::CreateIncrementalPixelMapFuzz(data, size);
-    OHOS::Media::CreateImageSourceByPathname(data, size);
+    OHOS::Media::CreateIncrementalPixelMapByDataFuzz(data, size);
+    OHOS::Media::GetImagePropertyFuzzTest001(pathName);
     OHOS::Media::CreatePixelMapByRandomImageSource(data, size);
     OHOS::Media::CreatePixelMapUseArgbByRandomImageSource(data, size);
     OHOS::Media::ImageSourceFuzzTest(data, size);
