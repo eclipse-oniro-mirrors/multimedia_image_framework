@@ -61,6 +61,10 @@ std::unique_ptr<PixelMap> PixelMapParcel::CreateFromParcel(OHOS::MessageParcel& 
     uint8_t *base = nullptr;
     int32_t *context = nullptr;
 
+    if (bufferSize <= 0 || bufferSize > PIXEL_MAP_MAX_RAM_SIZE) {
+        IMAGE_LOGE("read bufferSize failed, invalid bufferSize.");
+        return nullptr;
+    }
     const uint8_t *addr = data.ReadBuffer(bufferSize);
     base = static_cast<uint8_t *>(malloc(bufferSize));
     memcpy_s(base, bufferSize, addr, bufferSize);
