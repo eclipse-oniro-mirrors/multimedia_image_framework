@@ -20,7 +20,7 @@
 #include "src/codec/SkCodecPriv.h"
 #include "src/codec/SkSampledCodec.h"
 #include "src/core/SkMathPriv.h"
- 
+
 static bool is_valid_sample_size(int sampleSize)
 {
     return sampleSize > 0;
@@ -30,68 +30,68 @@ static constexpr int RGB_CHANNEL_COUNT = 3;
 static constexpr int SAMPLE_SIZE_TWO = 2;
 static constexpr int SAMPLE_SIZE_FOUR = 4;
 static constexpr int SAMPLE_SIZE_EIGHT = 8;
- 
-static void load_gamut(SkPoint rgb[], const skcms_Matrix3x3& xyz)
+
+static void load_gamut(SkPoint rgb[], int length, const skcms_Matrix3x3& xyz)
 {
     // rx = rX / (rX + rY + rZ)
     // ry = rY / (rX + rY + rZ)
     // gx, gy, bx, and gy are calulcated similarly.
-    for (int rgbIdx = 0; rgbIdx < RGB_CHANNEL_COUNT; rgbIdx++) {
+    for (int rgbIdx = 0; rgbIdx < length; rgbIdx++) {
         float sum = xyz.vals[rgbIdx][0] + xyz.vals[rgbIdx][1] + xyz.vals[rgbIdx][2];
         rgb[rgbIdx].fX = xyz.vals[rgbIdx][0] / sum;
         rgb[rgbIdx].fY = xyz.vals[rgbIdx][1] / sum;
     }
 }
- 
-static float calculate_area(SkPoint abc[])
+
+static float calculate_area(SkPoint abc[], int length)
 {
-    SkPoint a = abc[0];
-    SkPoint b = abc[1];
-    SkPoint c = abc[2];
+    SkPoint a = abc[length - 3];
+    SkPoint b = abc[length - 2];
+    SkPoint c = abc[length - 1];
     return 0.5f * SkTAbs(a.fX*b.fY + b.fX*c.fY - a.fX*c.fY - c.fX*b.fY - b.fX*a.fY);
 }
-  
+
 static constexpr float SRGB_D50_GAMUT_AREA = 0.084f;
 
 static bool is_wide_gamut(const skcms_ICCProfile& profile)
 {
     if (profile.has_toXYZD50) {
         SkPoint rgb[3];
-        load_gamut(rgb, profile.toXYZD50);
-        return calculate_area(rgb) > SRGB_D50_GAMUT_AREA;
+        load_gamut(rgb, RGB_CHANNEL_COUNT, profile.toXYZD50);
+        return calculate_area(rgb, RGB_CHANNEL_COUNT) > SRGB_D50_GAMUT_AREA;
     }
 
     return false;
 }
- 
+
 static bool supports_any_down_scale(const SkCodec* codec)
 {
     return codec->getEncodedFormat() == SkEncodedImageFormat::kWEBP;
 }
- 
+
 static inline bool smaller_than(const SkISize& a, const SkISize& b)
 {
     return a.width() < b.width() || a.height() < b.height();
 }
- 
+
 static inline bool strictly_bigger_than(const SkISize& a, const SkISize& b)
 {
     return a.width() > b.width() && a.height() > b.height();
 }
- 
+
 SkOHOSCodec::SkOHOSCodec(SkCodec* codec)
     : fInfo(codec->getInfo()), fCodec(codec)
 {}
-  
+
 SkOHOSCodec::~SkOHOSCodec() {}
-  
+
 std::unique_ptr<SkOHOSCodec> SkOHOSCodec::MakeFromStream(std::unique_ptr<SkStream> stream,
                                                          SkPngChunkReader* chunkReader)
 {
     auto codec = SkCodec::MakeFromStream(std::move(stream), nullptr, chunkReader);
     return MakeFromCodec(std::move(codec));
 }
-  
+
 std::unique_ptr<SkOHOSCodec> SkOHOSCodec::MakeFromCodec(std::unique_ptr<SkCodec> codec)
 {
     if (nullptr == codec) {
@@ -137,7 +137,7 @@ std::unique_ptr<SkOHOSCodec> SkOHOSCodec::MakeFromData(sk_sp<SkData> data,
 
     return MakeFromStream(SkMemoryStream::Make(std::move(data)), chunkReader);
 }
-  
+
 SkColorType SkOHOSCodec::computeOutputColorType(SkColorType requestedColorType)
 {
     bool highPrecision = fCodec->callGetEncodedInfo().bitsPerComponent() > 8;
@@ -168,7 +168,7 @@ SkColorType SkOHOSCodec::computeOutputColorType(SkColorType requestedColorType)
 
     return highPrecision ? kRGBA_F16_SkColorType : kN32_SkColorType;
 }
-  
+
 SkAlphaType SkOHOSCodec::computeOutputAlphaType(bool requestedUnpremul)
 {
     if (kOpaque_SkAlphaType == this->getInfo().alphaType()) {
@@ -176,7 +176,7 @@ SkAlphaType SkOHOSCodec::computeOutputAlphaType(bool requestedUnpremul)
     }
     return requestedUnpremul ? kUnpremul_SkAlphaType : kPremul_SkAlphaType;
 }
-  
+
 sk_sp<SkColorSpace> SkOHOSCodec::computeOutputColorSpace(SkColorType outputColorType,
                                                          sk_sp<SkColorSpace> prefColorSpace)
 {
@@ -206,7 +206,7 @@ sk_sp<SkColorSpace> SkOHOSCodec::computeOutputColorSpace(SkColorType outputColor
             return nullptr;
     }
 }
-  
+
 int SkOHOSCodec::computeSampleSize(SkISize* desiredSize) const
 {
     SkASSERT(desiredSize);
@@ -291,7 +291,7 @@ SkISize SkOHOSCodec::getSampledDimensions(int sampleSize) const
 
     return this->onGetSampledDimensions(sampleSize);
 }
-  
+
 bool SkOHOSCodec::getSupportedSubset(SkIRect* desiredSubset) const
 {
     if (!desiredSubset || !is_valid_subset(*desiredSubset, fCodec->dimensions())) {
@@ -300,7 +300,7 @@ bool SkOHOSCodec::getSupportedSubset(SkIRect* desiredSubset) const
 
     return this->onGetSupportedSubset(desiredSubset);
 }
-  
+
 SkISize SkOHOSCodec::getSampledSubsetDimensions(int sampleSize, const SkIRect& subset) const
 {
     if (!is_valid_sample_size(sampleSize)) {
@@ -362,7 +362,7 @@ SkCodec::Result SkOHOSCodec::getOHOSPixels(const SkImageInfo& requestInfo,
 
     return this->onGetOHOSPixels(requestInfo, requestPixels, requestRowBytes, *options);
 }
-  
+
 SkCodec::Result SkOHOSCodec::getOHOSPixels(const SkImageInfo& info, void* pixels,
     size_t rowBytes)
 {
