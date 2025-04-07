@@ -162,7 +162,6 @@ static const uint32_t MAX_SOURCE_SIZE = 300 * 1024 * 1024;
 constexpr uint8_t ASTC_EXTEND_INFO_TLV_NUM = 1; // curren only one group TLV
 constexpr uint32_t ASTC_EXTEND_INFO_SIZE_DEFINITION_LENGTH = 4; // 4 bytes to discripte for extend info summary bytes
 constexpr uint32_t ASTC_EXTEND_INFO_LENGTH_LENGTH = 4; // 4 bytes to discripte the content bytes for every TLV group
-constexpr uint32_t ASTC_EXTEND_INFO_TLV_SUM_BYTES = 6; // The colorspace TLV length in the astc file stream is 6
 constexpr int32_t ASTC_MAX_SIZE = 8192;
 constexpr size_t ASTC_TLV_SIZE = 10; // 10 is tlv size, colorspace size
 constexpr uint8_t ASTC_OPTION_QUALITY = 85;
@@ -3390,21 +3389,6 @@ static bool GetExtInfoForPixelAstc(AstcExtendInfo &extInfo, unique_ptr<PixelAstc
     return true;
 }
 
-static bool ExtInfoColorSpaceCheck(AstcExtendInfo &extInfo)
-{
-    int32_t leftBytes = static_cast<int32_t>(extInfo.extendBufferSumBytes);
-    if (leftBytes != ASTC_EXTEND_INFO_TLV_SUM_BYTES) {
-        IMAGE_LOGE("ExtInfoColorSpaceCheck colorspace TLV decode size failed. bytes:%{public}d", leftBytes);
-        return false;
-    }
-    if (extInfo.extendInfoLength[extInfo.extendNums] != ASTC_EXTEND_INFO_TLV_NUM) {
-        IMAGE_LOGE("ExtInfoColorSpaceCheck colorspace TLV decode length failed. length: %{public}d",
-            extInfo.extendInfoLength[extInfo.extendNums]);
-        return false;
-    }
-    return true;
-}
-
 static bool CheckAstcExtInfoBytes(AstcExtendInfo &extInfo, size_t astcSize, size_t fileSize)
 {
     if (extInfo.extendBufferSumBytes != ASTC_EXTEND_INFO_TLV_SUM_BYTES) {
@@ -3444,9 +3428,6 @@ static bool ResolveExtInfo(const uint8_t *sourceFilePtr, size_t astcSize, size_t
         extInfo.extendInfoType[extInfo.extendNums] = *extInfoBuf++;
         leftBytes--;
         extInfo.extendInfoLength[extInfo.extendNums] = GetDataSize(extInfoBuf);
-        if (!ExtInfoColorSpaceCheck(extInfo)) {
-            return false;
-        }
         leftBytes -= ASTC_EXTEND_INFO_LENGTH_LENGTH;
         extInfoBuf += ASTC_EXTEND_INFO_LENGTH_LENGTH;
         if (extInfo.extendInfoLength[extInfo.extendNums] > 0) {
@@ -3553,10 +3534,8 @@ unique_ptr<PixelMap> ImageSource::CreatePixelMapForASTC(uint32_t &errorCode, con
     }
     pixelAstc->SetEditable(false);
     size_t fileSize = sourceStreamPtr_->GetStreamSize();
-    bool isSUT = false;
 #ifdef SUT_DECODE_ENABLE
-    isSUT = FormatIsSUT(sourceFilePtr, fileSize);
-    size_t astcSize = !isSUT ?
+    size_t astcSize = (!FormatIsSUT(sourceFilePtr, fileSize)) ?
         ImageUtils::GetAstcBytesCount(info) : GetAstcSizeBytes(sourceFilePtr, fileSize);
     if (astcSize == 0) {
         IMAGE_LOGE("[ImageSource] astc GetAstcSizeBytes failed.");
@@ -3565,10 +3544,6 @@ unique_ptr<PixelMap> ImageSource::CreatePixelMapForASTC(uint32_t &errorCode, con
 #else
     size_t astcSize = ImageUtils::GetAstcBytesCount(info);
 #endif
-    if (!isSUT && astcSize > fileSize) {
-        IMAGE_LOGE("[ImageSource] astcSize > fileSize.");
-        return nullptr;
-    }
     if (!ReadFileAndResoveAstc(fileSize, astcSize, pixelAstc, sourceFilePtr, opts)) {
         IMAGE_LOGE("[ImageSource] astc ReadFileAndResoveAstc failed.");
         return nullptr;
@@ -3600,10 +3575,6 @@ bool ImageSource::GetASTCInfo(const uint8_t *fileData, size_t fileSize, ASTCInfo
         astcInfo.size.height = static_cast<int32_t>(astcHeight);
         astcInfo.blockFootprint.width = fileData[ASTC_HEADER_BLOCK_X];
         astcInfo.blockFootprint.height = fileData[ASTC_HEADER_BLOCK_Y];
-        if (astcInfo.blockFootprint.width != astcInfo.blockFootprint.height) {
-            IMAGE_LOGE("[ImageSource]GetASTCInfo blockFootprint failed");
-            return false;
-        }
         return true;
     }
 #ifdef SUT_DECODE_ENABLE
