@@ -33,10 +33,9 @@ ani_status ANI_Constructor(ani_vm* vm, uint32_t* result)
         IMAGE_LOGE("Unsupported ANI_VERSION_1");
         return ANI_ERROR;
     }
-    static const char *staticClassName = "L@ohos/multimedia/image/image;";
-    ani_class staticCls;
-    if (ANI_OK != env->FindClass(staticClassName, &staticCls)) {
-        IMAGE_LOGE("[ANI_Constructor] FindClass Not found ");
+    ani_namespace imageNamespace;
+    if (ANI_OK != env->FindNamespace("L@ohos/multimedia/image/image;", &imageNamespace)) {
+        IMAGE_LOGE("[ANI_Constructor] FindNamespace failed");
         return ANI_ERROR;
     }
     std::array staticMethods = {
@@ -51,8 +50,8 @@ ani_status ANI_Constructor(ani_vm* vm, uint32_t* result)
         ani_native_function {"createPicture", nullptr,
             reinterpret_cast<void*>(OHOS::Media::PictureAni::CreatePictureAni)},
     };
-    if (ANI_OK != env->Class_BindNativeMethods(staticCls, staticMethods.data(), staticMethods.size())) {
-        IMAGE_LOGE("Class_BindNativeMethods failed");
+    if (ANI_OK != env->Namespace_BindNativeFunctions(imageNamespace, staticMethods.data(), staticMethods.size())) {
+        IMAGE_LOGE("[ANI_Constructor] Namespace_BindNativeFunctions failed");
         return ANI_ERROR;
     };
     OHOS::Media::PixelMapAni::Init(env);
