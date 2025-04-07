@@ -41,83 +41,6 @@ using namespace std;
 
 constexpr int32_t PIXEL_MAP_INFO_MAX_LENGTH = 128;
 
-void PixelMapParcel::ReleaseMemory(AllocatorType allocType, void *addr, void *context, uint32_t size)
-{
-    if (allocType == AllocatorType::SHARE_MEM_ALLOC) {
-#if !defined(_WIN32) && !defined(_APPLE)
-        int *fd = static_cast<int *>(context);
-        if (addr != nullptr) {
-            ::munmap(addr, size);
-        }
-        if (fd != nullptr) {
-            ::close(*fd);
-            delete fd;
-        }
-#endif
-    } else if (allocType == AllocatorType::HEAP_ALLOC) {
-        if (addr != nullptr) {
-            free(addr);
-            addr = nullptr;
-        }
-    }
-}
-
-uint8_t *PixelMapParcel::ReadAshmemDataFromParcel(OHOS::MessageParcel& data, int32_t bufferSize, int32_t*& context)
-{
-    uint8_t *base = nullptr;
-    int fd = data.ReadFileDescriptor();
-    if (fd < 0) {
-        IMAGE_LOGE("read fileDescriptor failed, fd < 0");
-        return nullptr;
-    }
-    if (!CheckAshmemSize(fd, bufferSize)) {
-        IMAGE_LOGE("bufferSize does not match the fileDescriptor");
-        return nullptr;
-    }
-    void* ptr = ::mmap(nullptr, bufferSize, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
-    if (ptr == MAP_FAILED) {
-        ::close(fd);
-        IMAGE_LOGE("mmap shared memory failed");
-        return nullptr;
-    }
-    context = new(std::nothrow) int32_t();
-    if (context == nullptr) {
-        IMAGE_LOGE("alloc context failed.");
-        ::munmap(ptr, bufferSize);
-        ::close(fd);
-        return nullptr;
-    }
-    *static_cast<int32_t *>(context) = fd;
-    base = static_cast<uint8_t *>(ptr);
-    return base;
-}
-
-uint8_t *PixelMapParcel::ReadHeapDataFromParcel(OHOS::MessageParcel& data, int32_t bufferSize)
-{
-    if (bufferSize <= 0 || bufferSize > PIXEL_MAP_MAX_RAM_SIZE) {
-        IMAGE_LOGE("read bufferSize failed, invalid bufferSize.");
-        return nullptr;
-    }
-    const uint8_t *addr = data.ReadBuffer(bufferSize);
-    uint8_t *base = nullptr;
-    if (addr == nullptr) {
-        IMAGE_LOGE("read buffer from parcel failed, read buffer addr is null");
-        return nullptr;
-    }
-    base = static_cast<uint8_t *>(malloc(bufferSize));
-    if (base == nullptr) {
-        IMAGE_LOGE("alloc new pixel memory size:[%{public}d] failed.", bufferSize);
-        return nullptr;
-    }
-    if (memcpy_s(base, bufferSize, addr, bufferSize) != 0) {
-        free(base);
-        base = nullptr;
-        IMAGE_LOGE("memcpy pixel data size:[%{public}d] error.", bufferSize);
-        return nullptr;
-    }
-    return base;
-}
-
 std::unique_ptr<PixelMap> PixelMapParcel::CreateFromParcel(OHOS::MessageParcel& data)
 {
     unique_ptr<PixelMap> pixelMap = make_unique<PixelMap>();
@@ -137,17 +60,17 @@ std::unique_ptr<PixelMap> PixelMapParcel::CreateFromParcel(OHOS::MessageParcel& 
     AllocatorType allocType = static_cast<AllocatorType>(data.ReadInt32());
     uint8_t *base = nullptr;
     int32_t *context = nullptr;
-    if (allocType == AllocatorType::SHARE_MEM_ALLOC) {
-#if !defined(_WIN32) && !defined(_APPLE)
-        base = ReadAshmemDataFromParcel(data, bufferSize, context);
-#endif
-    } else {
-        base = ReadHeapDataFromParcel(data, bufferSize);
+
+    if (bufferSize <= 0 || bufferSize > PIXEL_MAP_MAX_RAM_SIZE) {
+        IMAGE_LOGE("read bufferSize failed, invalid bufferSize.");
+        return nullptr;
     }
+    const uint8_t *addr = data.ReadBuffer(bufferSize);
+    base = static_cast<uint8_t *>(malloc(bufferSize));
+    memcpy_s(base, bufferSize, addr, bufferSize);
 
     uint32_t ret = pixelMap->SetImageInfo(imgInfo);
     if (ret != SUCCESS) {
-        ReleaseMemory(allocType, base, reinterpret_cast<void *>(context), bufferSize);
         IMAGE_LOGE("create pixel map from parcel failed, set image info error.");
         return nullptr;
     }
