@@ -1046,7 +1046,7 @@ SkCodec::Result ExtDecoder::DoRegionDecode(DecodeContext &context)
     auto SkOHOSCodec = SkOHOSCodec::MakeFromCodec(std::move(codec_));
     // Ask the codec for a scaled subset
     SkIRect decodeSubset = dstSubset_;
-    if (!SkOHOSCodec->getSupportedSubset(&decodeSubset)) {
+    if (SkOHOSCodec == nullptr || !SkOHOSCodec->getSupportedSubset(&decodeSubset)) {
         IMAGE_LOGE("Error: Could not get subset");
         return SkCodec::kErrorInInput;
     }
