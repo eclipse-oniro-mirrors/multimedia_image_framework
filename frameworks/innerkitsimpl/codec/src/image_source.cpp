@@ -3467,19 +3467,6 @@ static bool FormatIsSUT(const uint8_t *fileData, size_t fileSize)
 }
 #endif
 
-static bool CheckAstcExtInfoBytes(AstcExtendInfo &extInfo, size_t astcSize, size_t fileSize)
-{
-    if (extInfo.extendBufferSumBytes != ASTC_EXTEND_INFO_TLV_SUM_BYTES) {
-        IMAGE_LOGE("CheckAstcExtInfoBytes extendBufferSumBytes is invalid: %{public}d", extInfo.extendBufferSumBytes);
-        return false;
-    }
-    if (extInfo.extendBufferSumBytes + astcSize + ASTC_EXTEND_INFO_SIZE_DEFINITION_LENGTH != fileSize) {
-        IMAGE_LOGE("CheckAstcExtInfoBytes extendBufferSumBytes is large than filesize");
-        return false;
-    }
-    return true;
-}
-
 static bool ReadFileAndResoveAstc(size_t fileSize, size_t astcSize, unique_ptr<PixelAstc> &pixelAstc,
     const uint8_t *sourceFilePtr, const DecodeOptions &opts)
 {
