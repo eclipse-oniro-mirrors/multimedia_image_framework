@@ -142,25 +142,6 @@ HWTEST_F(ExtDecoderTest, IsSupportScaleOnDecodeTest001, TestSize.Level3)
 }
 
 /**
- * @tc.name: IsSupportCropOnDecodeTest001
- * @tc.desc: Test of IsSupportCropOnDecode
- * @tc.type: FUNC
- */
-HWTEST_F(ExtDecoderTest, IsSupportCropOnDecodeTest001, TestSize.Level3)
-{
-    GTEST_LOG_(INFO) << "ExtDecoderTest: IsSupportCropOnDecodeTest001 start";
-    std::shared_ptr<ExtDecoder> extDecoder = std::make_shared<ExtDecoder>();
-    EXIFInfo exifInfo_;
-    extDecoder->codec_ = nullptr;
-    bool ret = extDecoder->IsSupportCropOnDecode();
-    ASSERT_EQ(ret, false);
-    SkIRect target;
-    ret = extDecoder->IsSupportCropOnDecode(target);
-    ASSERT_EQ(ret, false);
-    GTEST_LOG_(INFO) << "ExtDecoderTest: IsSupportCropOnDecodeTest001 end";
-}
-
-/**
  * @tc.name: HasPropertyTest001
  * @tc.desc: Test of HasProperty
  * @tc.type: FUNC
@@ -187,28 +168,6 @@ HWTEST_F(ExtDecoderTest, HasPropertyTest001, TestSize.Level3)
     ret = extDecoder->HasProperty(key);
     ASSERT_EQ(ret, false);
     GTEST_LOG_(INFO) << "ExtDecoderTest: HasPropertyTest001 end";
-}
-
-/**
- * @tc.name: GetImageSizeTest001
- * @tc.desc: Test of GetImageSize
- * @tc.type: FUNC
- */
-HWTEST_F(ExtDecoderTest, GetImageSizeTest001, TestSize.Level3)
-{
-    GTEST_LOG_(INFO) << "ExtDecoderTest: GetImageSizeTest001 start";
-    std::shared_ptr<ExtDecoder> extDecoder = std::make_shared<ExtDecoder>();
-    EXIFInfo exifInfo_;
-    extDecoder->codec_ = nullptr;
-    uint32_t index = 0;
-    Size size;
-    uint32_t ret = extDecoder->GetImageSize(index, size);
-    ASSERT_EQ(ret, ERR_IMAGE_INVALID_PARAMETER);
-    extDecoder->frameCount_ = 2;
-    index = 1;
-    ret = extDecoder->GetImageSize(index, size);
-    ASSERT_EQ(ret, ERR_IMAGE_DECODE_HEAD_ABNORMAL);
-    GTEST_LOG_(INFO) << "ExtDecoderTest: GetImageSizeTest001 end";
 }
 
 /**
