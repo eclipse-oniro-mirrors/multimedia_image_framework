@@ -24,8 +24,7 @@ namespace Media {
 
 class PixelMapAni {
 public:
-    static ani_object CreatePixelMapAni([[maybe_unused]] ani_env* env,
-        [[maybe_unused]] ani_class clazz, [[maybe_unused]]ani_object obj);
+    static ani_object CreatePixelMapAni([[maybe_unused]] ani_env* env, ani_object obj);
     static ani_object CreatePixelMap([[maybe_unused]] ani_env* env, std::shared_ptr<PixelMap> pixelMap);
     static ani_status Init(ani_env* env);
     std::shared_ptr<PixelMap> nativePixelMap_;

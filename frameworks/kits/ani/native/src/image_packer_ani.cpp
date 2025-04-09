@@ -35,8 +35,7 @@ namespace OHOS {
 namespace Media {
 using namespace std;
 
-ani_object ImagePackerAni::CreateImagePackerAni([[maybe_unused]] ani_env* env,
-    [[maybe_unused]] ani_class clazz, [[maybe_unused]]ani_object obj)
+ani_object ImagePackerAni::CreateImagePackerAni([[maybe_unused]] ani_env* env, ani_object obj)
 {
     std::unique_ptr<ImagePackerAni> imagePackerAni = std::make_unique<ImagePackerAni>();
     std::shared_ptr<ImagePacker> imagePacker = std::make_shared<ImagePacker>();

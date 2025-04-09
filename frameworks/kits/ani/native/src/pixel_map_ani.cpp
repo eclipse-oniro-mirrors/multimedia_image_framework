@@ -172,8 +172,7 @@ ani_object PixelMapAni::CreatePixelMap([[maybe_unused]] ani_env* env, std::share
     return aniValue;
 }
 
-ani_object PixelMapAni::CreatePixelMapAni([[maybe_unused]] ani_env* env,
-    [[maybe_unused]] ani_class clazz, [[maybe_unused]] ani_object obj)
+ani_object PixelMapAni::CreatePixelMapAni([[maybe_unused]] ani_env* env, ani_object obj)
 {
     unique_ptr<PixelMapAni> pPixelMapAni = make_unique<PixelMapAni>();
     InitializationOptions opts;
