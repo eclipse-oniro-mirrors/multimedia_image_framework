@@ -136,7 +136,7 @@ void PixelMap::FreePixelMap() __attribute__((no_sanitize("cfi")))
     }
 #endif
 
-    if (!isUnMap_ && data_ == nullptr) {
+    if (!isUnMap_ && data_ == nullptr && !displayOnly_) {
         return;
     }
 
@@ -1784,10 +1784,9 @@ bool PixelMap::CheckPixelsInput(const uint8_t *dst, const uint64_t &bufferSize, 
     return true;
 }
 
-uint32_t PixelMap::ReadPixels(const uint64_t &bufferSize, const uint32_t &offset, const uint32_t &stride,
-                              const Rect &region, uint8_t *dst)
+uint32_t PixelMap::ReadPixels(const RWPixelsOptions &opts)
 {
-    if (!CheckPixelsInput(dst, bufferSize, offset, stride, region)) {
+    if (!CheckPixelsInput(opts.pixels, opts.bufferSize, opts.offset, opts.stride, opts.region)) {
         IMAGE_LOGE("read pixels by rect input parameter fail.");
         return ERR_IMAGE_INVALID_PARAMETER;
     }
@@ -1796,8 +1795,9 @@ uint32_t PixelMap::ReadPixels(const uint64_t &bufferSize, const uint32_t &offset
         return ERR_IMAGE_READ_PIXELMAP_FAILED;
     }
     ImageInfo dstImageInfo =
-        MakeImageInfo(region.width, region.height, PixelFormat::BGRA_8888, AlphaType::IMAGE_ALPHA_TYPE_UNPREMUL);
-    Position srcPosition { region.left, region.top };
+        MakeImageInfo(opts.region.width, opts.region.height, opts.pixelFormat, AlphaType::IMAGE_ALPHA_TYPE_UNPREMUL);
+    Position srcPosition { opts.region.left, opts.region.top };
+    uint8_t *pixels = const_cast<uint8_t *>(opts.pixels);
     if (imageInfo_.pixelFormat == PixelFormat::ARGB_8888) {
         int32_t srcRowBytes = imageInfo_.size.width * ImageUtils::GetPixelBytes(imageInfo_.pixelFormat);
         std::unique_ptr<uint8_t[]> srcData = std::make_unique<uint8_t[]>(srcRowBytes * imageInfo_.size.height);
@@ -1807,27 +1807,33 @@ uint32_t PixelMap::ReadPixels(const uint64_t &bufferSize, const uint32_t &offset
         }
         void* outData = srcData.get();
         ImageInfo tempInfo = MakeImageInfo(imageInfo_.size.width, imageInfo_.size.height,
-            PixelFormat::BGRA_8888, AlphaType::IMAGE_ALPHA_TYPE_UNPREMUL);
+            opts.pixelFormat, AlphaType::IMAGE_ALPHA_TYPE_UNPREMUL);
         BufferInfo srcInfo = {data_, GetRowStride(), imageInfo_};
         BufferInfo dstInfo = {outData, 0, tempInfo};
         int32_t dstLength = PixelConvert::PixelsConvert(srcInfo, dstInfo, IsStrideAlignment());
         if (dstLength < 0) {
-            IMAGE_LOGE("ReadPixels PixelsConvert to BGRA_8888 failed.");
+            IMAGE_LOGE("ReadPixels PixelsConvert to format:%{public}d failed.", opts.pixelFormat);
             return ERR_IMAGE_READ_PIXELMAP_FAILED;
         }
         if (!PixelConvertAdapter::ReadPixelsConvert(outData, srcPosition, srcRowBytes, tempInfo,
-            dst + offset, stride, dstImageInfo)) {
+            pixels + opts.offset, opts.stride, dstImageInfo)) {
             IMAGE_LOGE("read pixels by rect call ReadPixelsConvert fail.");
             return ERR_IMAGE_READ_PIXELMAP_FAILED;
         }
     } else {
-        if (!PixelConvertAdapter::ReadPixelsConvert(data_, srcPosition, rowStride_, imageInfo_, dst + offset, stride,
-            dstImageInfo)) {
+        if (!PixelConvertAdapter::ReadPixelsConvert(data_, srcPosition, rowStride_, imageInfo_, pixels + opts.offset,
+            opts.stride, dstImageInfo)) {
             IMAGE_LOGE("read pixels by rect call ReadPixelsConvert fail.");
             return ERR_IMAGE_READ_PIXELMAP_FAILED;
         }
     }
     return SUCCESS;
+}
+
+uint32_t PixelMap::ReadPixels(const uint64_t &bufferSize, const uint32_t &offset, const uint32_t &stride,
+                              const Rect &region, uint8_t *dst)
+{
+    return ReadPixels(RWPixelsOptions{dst, bufferSize, offset, stride, region, PixelFormat::BGRA_8888});
 }
 
 uint32_t PixelMap::ReadPixel(const Position &pos, uint32_t &dst)
@@ -1961,9 +1967,9 @@ uint32_t PixelMap::CheckPixelMapForWritePixels()
     return SUCCESS;
 }
 
-uint32_t PixelMap::WritePixels(const WritePixelsOptions &opts)
+uint32_t PixelMap::WritePixels(const RWPixelsOptions &opts)
 {
-    if (!CheckPixelsInput(opts.source, opts.bufferSize, opts.offset, opts.stride, opts.region)) {
+    if (!CheckPixelsInput(opts.pixels, opts.bufferSize, opts.offset, opts.stride, opts.region)) {
         IMAGE_LOGE("write pixel by rect input parameter fail.");
         return ERR_IMAGE_INVALID_PARAMETER;
     }
@@ -1975,7 +1981,7 @@ uint32_t PixelMap::WritePixels(const WritePixelsOptions &opts)
 
     Position dstPosition { opts.region.left, opts.region.top };
     ImageInfo srcInfo =
-        MakeImageInfo(opts.region.width, opts.region.height, opts.srcPixelFormat, AlphaType::IMAGE_ALPHA_TYPE_UNPREMUL);
+        MakeImageInfo(opts.region.width, opts.region.height, opts.pixelFormat, AlphaType::IMAGE_ALPHA_TYPE_UNPREMUL);
     if (imageInfo_.pixelFormat == PixelFormat::ARGB_8888) {
         std::unique_ptr<uint8_t[]> tempPixels = std::make_unique<uint8_t[]>(opts.bufferSize);
         if (tempPixels == nullptr) {
@@ -1987,7 +1993,7 @@ uint32_t PixelMap::WritePixels(const WritePixelsOptions &opts)
             opts.region.width, opts.region.height, PixelFormat::ARGB_8888,
             AlphaType::IMAGE_ALPHA_TYPE_UNPREMUL);
         BufferInfo dstInfo = {colors, 0, tempInfo};
-        const void *pixels = opts.source;
+        const void *pixels = opts.pixels;
         BufferInfo srcBufferInfo = {const_cast<void*>(pixels), 0, srcInfo};
         int32_t dstLength = PixelConvert::PixelsConvert(srcBufferInfo, dstInfo, false);
         if (dstLength < 0) {
@@ -2000,7 +2006,7 @@ uint32_t PixelMap::WritePixels(const WritePixelsOptions &opts)
             return ERR_IMAGE_WRITE_PIXELMAP_FAILED;
         }
     } else {
-        if (!PixelConvertAdapter::WritePixelsConvert(opts.source + opts.offset, opts.stride, srcInfo,
+        if (!PixelConvertAdapter::WritePixelsConvert(opts.pixels + opts.offset, opts.stride, srcInfo,
             data_, dstPosition, rowStride_, imageInfo_)) {
             IMAGE_LOGE("write pixel by rect call WritePixelsConvert fail.");
             return ERR_IMAGE_WRITE_PIXELMAP_FAILED;
@@ -2013,7 +2019,7 @@ uint32_t PixelMap::WritePixels(const WritePixelsOptions &opts)
 uint32_t PixelMap::WritePixels(const uint8_t *source, const uint64_t &bufferSize, const uint32_t &offset,
                                const uint32_t &stride, const Rect &region)
 {
-    return WritePixels(WritePixelsOptions{source, bufferSize, offset, stride, region, PixelFormat::BGRA_8888});
+    return WritePixels(RWPixelsOptions{source, bufferSize, offset, stride, region, PixelFormat::BGRA_8888});
 }
 
 uint32_t PixelMap::WritePixels(const uint8_t *source, const uint64_t &bufferSize)
@@ -2385,6 +2391,11 @@ bool PixelMap::WritePropertiesToParcel(Parcel &parcel) const
 
     if (!parcel.WriteBool(isAstc_)) {
         IMAGE_LOGE("write pixel map isAstc_ to parcel failed.");
+        return false;
+    }
+
+    if (!parcel.WriteBool(displayOnly_)) {
+        IMAGE_LOGE("write pixel map displayOnly_ to parcel failed.");
         return false;
     }
 
@@ -2768,6 +2779,8 @@ bool PixelMap::ReadPropertiesFromParcel(Parcel& parcel, PixelMap*& pixelMap, Ima
     pixelMap->SetEditable(parcel.ReadBool());
     memInfo.isAstc = parcel.ReadBool();
     pixelMap->SetAstc(memInfo.isAstc);
+    bool displayOnly = parcel.ReadBool();
+    pixelMap->SetDisplayOnly(displayOnly);
     int32_t readAllocatorValue = parcel.ReadInt32();
     if (readAllocatorValue < static_cast<int32_t>(AllocatorType::DEFAULT) ||
         readAllocatorValue > static_cast<int32_t>(AllocatorType::DMA_ALLOC)) {
@@ -2844,7 +2857,9 @@ bool ReadDmaMemInfoFromParcel(Parcel &parcel, PixelMemInfo &pixelMemInfo,
 
     void* nativeBuffer = surfaceBuffer.GetRefPtr();
     ImageUtils::SurfaceBuffer_Reference(nativeBuffer);
-    pixelMemInfo.base = static_cast<uint8_t*>(surfaceBuffer->GetVirAddr());
+    if (!pixelMemInfo.displayOnly) {
+        pixelMemInfo.base = static_cast<uint8_t*>(surfaceBuffer->GetVirAddr());
+    }
     pixelMemInfo.context = nativeBuffer;
     return true;
 }
@@ -2959,6 +2974,7 @@ PixelMap *PixelMap::StartUnmarshalling(Parcel &parcel, ImageInfo &imgInfo,
         delete pixelMap;
         return nullptr;
     }
+    pixelMemInfo.displayOnly = pixelMap->IsDisplayOnly();
     return pixelMap;
 }
 

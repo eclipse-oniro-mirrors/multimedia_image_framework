@@ -35,6 +35,7 @@ namespace OHOS::Rosen {
 class PixelMapStorage;
 class RSMarshallingHelper;
 class RSProfiler;
+class RSModifiersDraw;
 };
 
 namespace OHOS {
@@ -99,15 +100,16 @@ struct PixelMemInfo {
     int32_t bufferSize = 0;
     AllocatorType allocatorType = AllocatorType::SHARE_MEM_ALLOC;
     bool isAstc = false;
+    bool displayOnly = false;
 };
 
-struct WritePixelsOptions {
-    const uint8_t* source = nullptr;
+struct RWPixelsOptions {
+    const uint8_t* pixels = nullptr;
     uint64_t bufferSize = 0;
     uint32_t offset = 0;
     uint32_t stride = 0;
     Rect region;
-    PixelFormat srcPixelFormat = PixelFormat::BGRA_8888;
+    PixelFormat pixelFormat = PixelFormat::BGRA_8888;
 };
 
 class ExifMetadata;
@@ -183,6 +185,7 @@ public:
     NATIVEEXPORT virtual uint8_t GetARGB32ColorB(uint32_t color);
     // Config the pixel map parameter
     NATIVEEXPORT virtual bool IsSameImage(const PixelMap &other);
+    NATIVEEXPORT virtual uint32_t ReadPixels(const RWPixelsOptions &opts);
     NATIVEEXPORT virtual uint32_t ReadPixels(const uint64_t &bufferSize, const uint32_t &offset, const uint32_t &stride,
                                      const Rect &region, uint8_t *dst);
     NATIVEEXPORT virtual uint32_t ReadPixels(const uint64_t &bufferSize, uint8_t *dst);
@@ -191,7 +194,7 @@ public:
     NATIVEEXPORT virtual uint32_t ResetConfig(const Size &size, const PixelFormat &format);
     NATIVEEXPORT virtual bool SetAlphaType(const AlphaType &alphaType);
     NATIVEEXPORT virtual uint32_t WritePixel(const Position &pos, const uint32_t &color);
-    NATIVEEXPORT virtual uint32_t WritePixels(const WritePixelsOptions &opts);
+    NATIVEEXPORT virtual uint32_t WritePixels(const RWPixelsOptions &opts);
     NATIVEEXPORT virtual uint32_t WritePixels(const uint8_t *source, const uint64_t &bufferSize, const uint32_t &offset,
                          const uint32_t &stride, const Rect &region);
     NATIVEEXPORT virtual uint32_t WritePixels(const uint8_t *source, const uint64_t &bufferSize);
@@ -572,6 +575,16 @@ protected:
     uint32_t versionId_ = 1;
     std::shared_ptr<std::shared_mutex> versionMutex_ = std::make_shared<std::shared_mutex>();
 private:
+    NATIVEEXPORT bool IsDisplayOnly()
+    {
+        return displayOnly_;
+    }
+
+    NATIVEEXPORT void SetDisplayOnly(bool displayOnly)
+    {
+        displayOnly_ = displayOnly;
+    }
+
     // unmap方案, 减少RenderService内存占用
     bool isUnMap_ = false;
     uint64_t useCount_ = 0ULL;
@@ -579,6 +592,10 @@ private:
 
     // used to mark whether DMA memory should be refreshed
     mutable bool isMemoryDirty_ = false;
+
+    bool displayOnly_ = false;
+
+    friend class OHOS::Rosen::RSModifiersDraw;
 };
 } // namespace Media
 } // namespace OHOS
