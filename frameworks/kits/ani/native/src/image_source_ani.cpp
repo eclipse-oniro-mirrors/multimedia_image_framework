@@ -626,7 +626,7 @@ static ani_object GetImageProperties([[maybe_unused]] ani_env* env, [[maybe_unus
 
     vector<string> keyStrArray;
     ParseArrayString(env, arrayObj, keyStrArray);
-    
+
     vector<pair<string, string>> kVStrArray;
     uint32_t errCode = SUCCESS;
     for (auto keyStrIt = keyStrArray.begin(); keyStrIt != keyStrArray.end(); ++keyStrIt) {
