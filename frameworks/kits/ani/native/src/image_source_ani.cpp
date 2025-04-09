@@ -72,7 +72,7 @@ ani_object ImageSourceAni::CreateImageSourceAni([[maybe_unused]] ani_env* env, a
     ani_boolean isString;
     env->Object_InstanceOf(obj, stringClass, &isString);
     if (isString) {
-        string fileUrl = ANIUtils_ANIStringToStdString2(env, static_cast<ani_string>(obj)); 
+        string fileUrl = ANIUtils_ANIStringToStdString2(env, static_cast<ani_string>(obj));
         IMAGE_LOGI("Image source URI: %{public}s", fileUrl.c_str());
         pImageSourceAni->filePath_ = FileUrlToRawPath(fileUrl);
         SourceOptions opts;
@@ -565,7 +565,6 @@ bool ProcMapEntry(ani_env* env, ani_ref key, ani_ref value, ImageSourceAni* imag
     auto valueStr = ANIUtils_ANIStringToStdString2(env, static_cast<ani_string>(value));
     IMAGE_LOGI("[ProcMapEntry] ProcMapEntry key:%{public}s value:%{public}s", keyStr.c_str(), valueStr.c_str());
 
-
     if (!IsSameTextStr(imageSourceAni->filePath_, "")) {
         imageSource->ModifyImageProperty(0, keyStr, valueStr, imageSourceAni->filePath_);
     } else if (imageSourceAni->fileDescriptor_ != -1) {
@@ -627,10 +626,7 @@ static ani_object GetImageProperties([[maybe_unused]] ani_env* env, [[maybe_unus
 
     vector<string> keyStrArray;
     ParseArrayString(env, arrayObj, keyStrArray);
-    for (const auto &key : keyStrArray) {
-        cerr << "Array String Content: " << key << endl;
-    }
-
+    
     vector<pair<string, string>> kVStrArray;
     uint32_t errCode = SUCCESS;
     for (auto keyStrIt = keyStrArray.begin(); keyStrIt != keyStrArray.end(); ++keyStrIt) {
@@ -645,7 +641,7 @@ static ani_object GetImageProperties([[maybe_unused]] ani_env* env, [[maybe_unus
     }
 
     ani_object argumentObj = {};
-    ani_method recordSetMethod = ImageAniUtils::GetRecordSetMethod(env, argumentObj); 
+    ani_method recordSetMethod = ImageAniUtils::GetRecordSetMethod(env, argumentObj);
     if (recordSetMethod == nullptr) {
         IMAGE_LOGE("[GetImageProperties] recordSetMethod nullptr");
     }
