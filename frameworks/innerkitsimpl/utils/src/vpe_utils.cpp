@@ -266,6 +266,10 @@ bool VpeUtils::GetSbColorSpaceType(const sptr<SurfaceBuffer>& buffer, CM_ColorSp
 
 bool VpeUtils::SetSbMetadataType(sptr<SurfaceBuffer>& buffer, const CM_HDR_Metadata_Type& metadataType)
 {
+    if (buffer == nullptr) {
+        IMAGE_LOGE("SetSbMetadataType: buffer is nullptr");
+        return false;
+    }
     std::vector<uint8_t> hdrMetadataTypeVec;
     auto ret = MetadataManager::ConvertMetadataToVec(metadataType, hdrMetadataTypeVec);
     if (ret != GSERROR_OK) {

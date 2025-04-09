@@ -117,13 +117,19 @@ uint32_t ICCProfileInfo::PackingICCProfile(j_compress_ptr cinfo, const SkImageIn
         sk_sp<SkData> jpegMarkerData =
                 SkData::MakeUninitialized(ICC_MARKER_HEADER_SIZE + icc->size());
         uint8_t* ptrMaker = static_cast<uint8_t*>(jpegMarkerData->writable_data());
-        (void)memcpy_s(ptrMaker, sizeof(*ptrMaker), ICC_SIGNATURE, sizeof(ICC_SIGNATURE));
+        if (EOK != memcpy_s(ptrMaker, sizeof(*ptrMaker), ICC_SIGNATURE, sizeof(ICC_SIGNATURE))) {
+            IMAGE_LOGE("PackingICCProfile: ICC_SIGNATURE memcpy error");
+            return packingResult;
+        }
         ptrMaker += sizeof(ICC_SIGNATURE);
         // first marker
         *ptrMaker++ = 1;
          // total markers
         *ptrMaker++ = 1;
-        (void)memcpy_s(ptrMaker, sizeof(*ptrMaker), icc->data(), icc->size());
+        if (EOK != memcpy_s(ptrMaker, sizeof(*ptrMaker), icc->data(), icc->size())) {
+            IMAGE_LOGE("PackingICCProfile: icc->data() memcpy error");
+            return packingResult;
+        }
         jpeg_write_marker(cinfo, ICC_MARKER, jpegMarkerData->bytes(), jpegMarkerData->size());
         packingResult = OHOS::Media::SUCCESS;
     } else {

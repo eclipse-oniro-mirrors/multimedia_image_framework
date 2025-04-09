@@ -19,6 +19,7 @@
 #include <cstdio>
 #include <memory>
 #include <unistd.h>
+#include <charconv>
 
 #include "exif_maker_note.h"
 #include "image_log.h"
@@ -730,7 +731,7 @@ uint32_t EXIFInfo::ModifyExifData(const ExifTag &tag, const std::string &value, 
     unsigned int orginExifDataLength = GetOrginExifDataLength(isNewExifData, fileBuf);
     if (!isNewExifData && orginExifDataLength == 0) {
         IMAGE_LOGD("There is no orginExifDataLength node in %{public}d.", localFd);
-        free(fileBuf);
+        ReleaseSource(&fileBuf, &file);
         exif_data_unref(ptrExifData);
         return Media::ERR_IMAGE_DECODE_EXIF_UNSUPPORT;
     }
@@ -1084,8 +1085,20 @@ static int GCD(int a, int b)
 
 static bool GetFractionFromStr(const std::string &decimal, ExifRational &result)
 {
-    int intPart = stoi(decimal.substr(0, decimal.find(".")));
-    double decPart = stod(decimal.substr(decimal.find(".")));
+    int intPart;
+    auto [ptr1, ec1] = std::from_chars(decimal.data(), decimal.data() + decimal.find("."), intPart);
+    if (ec1 != std::errc()) {
+        IMAGE_LOGE("Convert string to int failed.");
+        return false;
+    }
+
+    double decPart = 0.0;
+    errno = 0;
+    char* endPtr = nullptr;
+    decPart = strtod(decimal.substr(decimal.find(".")).c_str(), &endPtr);
+    if (errno == ERANGE) {
+        return false;
+    }
 
     int numerator = decPart * pow(10, decimal.length() - decimal.find(".") - 1);
     int denominator = pow(10, decimal.length() - decimal.find(".") - 1);

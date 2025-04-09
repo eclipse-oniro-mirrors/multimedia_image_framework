@@ -715,7 +715,15 @@ std::string ExifMetadatFormatter::GetFractionFromStr(const std::string &decimal,
         return "";
     }
 
-    double decPart = stod(decimal.substr(decimal.find(".")));
+    double decPart = 0.0;
+    errno = 0;
+    char* endPtr = nullptr;
+    decPart = strtod(decimal.substr(decimal.find(".")).c_str(), &endPtr);
+    if (errno == ERANGE) {
+        IMAGE_LOGE("GetFractionFromStr failed, value out of range");
+        isOutRange = true;
+        return "";
+    }
 
     int numerator = decPart * pow(DECIMAL_BASE, decimal.length() - decimal.find(".") - 1);
     int denominator = pow(DECIMAL_BASE, decimal.length() - decimal.find(".") - 1);
