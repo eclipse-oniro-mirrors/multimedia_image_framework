@@ -14,6 +14,7 @@
  */
 
 #include "sendable_pixel_map_napi.h"
+#include <charconv>
 #include <mutex>
 #include "media_errors.h"
 #include "image_log.h"
@@ -974,8 +975,14 @@ STATIC_EXEC_FUNC(CreateSendablePixelMapFromSurface)
         .w = context->area.region.width,
         .h = context->area.region.height,
     };
-    std::shared_ptr<Media::PixelMap> pixelMap =
-        rsClient.CreatePixelMapFromSurfaceId(std::stoull(context->surfaceId), r);
+    unsigned long surfaceId = 0;
+    auto res = std::from_chars(context->surfaceId.c_str(),
+        context->surfaceId.c_str() + context->surfaceId.size(), surfaceId);
+    if (res.ec != std::errc()) {
+        IMAGE_LOGE("CreateSendablePixelMapFromSurface invalid surfaceId");
+        return;
+    }
+    std::shared_ptr<Media::PixelMap> pixelMap = rsClient.CreatePixelMapFromSurfaceId(surfaceId, r);
     context->rPixelMap = std::move(pixelMap);
 
     if (IMG_NOT_NULL(context->rPixelMap)) {
