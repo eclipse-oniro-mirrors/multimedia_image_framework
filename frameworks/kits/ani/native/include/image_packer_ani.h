@@ -24,8 +24,7 @@ namespace Media {
 
 class ImagePackerAni {
 public:
-    static ani_object CreateImagePackerAni([[maybe_unused]] ani_env* env,
-        [[maybe_unused]] ani_class clazz, [[maybe_unused]]ani_object obj);
+    static ani_object CreateImagePackerAni([[maybe_unused]] ani_env* env, ani_object obj);
     static ani_status Init(ani_env* env);
     std::shared_ptr<ImagePacker> nativeImagePacker_ = nullptr;
 };

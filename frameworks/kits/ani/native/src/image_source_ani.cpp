@@ -64,8 +64,7 @@ static string FileUrlToRawPath(const string &path)
     return path;
 }
 
-ani_object ImageSourceAni::CreateImageSourceAni([[maybe_unused]] ani_env* env, [[maybe_unused]] ani_class clazz,
-    [[maybe_unused]] ani_object obj)
+ani_object ImageSourceAni::CreateImageSourceAni([[maybe_unused]] ani_env* env, ani_object obj)
 {
     std::unique_ptr<ImageSourceAni> pImageSourceAni = std::make_unique<ImageSourceAni>();
     ani_class stringClass;

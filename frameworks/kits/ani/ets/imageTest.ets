@@ -18,11 +18,14 @@ import { image } from "../ets/@ohos.multimedia.image.ets";
 function main() {
   // test createPixemap & getImageInfo
   console.log("Test PixelMap START");
-   const opts: image.InitializationOptions = {
-     size: { width: 480, height: 360 },
-     editable: true,
-     pixelFormat: 4,
-   };
+  const opts: image.InitializationOptions = {
+    size: { width: 480, height: 360 },
+    srcPixelFormat: 4,
+    pixelFormat: 4,
+    editable: true,
+    alphaType: 2,
+    scaleMode: 0
+  };
   let pixelMap:image.PixelMap = image.createPixelMapSync(opts);
 
   if (pixelMap != undefined) {
@@ -89,8 +92,25 @@ function main() {
     .then((imageInfo: image.ImageInfo) => {
       console.log("ASYNC Image source image info:", imageInfo.size.width, imageInfo.size.height, imageInfo.pixelFormat, imageInfo.density, imageInfo.mimeType);
     });
+  
+  const desiredSize: image.Size | undefined = { width: 60, height: 60 };
+  const desiredRegion: image.Region | undefined = {
+    size: { width: 60, height: 60 },
+    x: 0,
+    y: 0
+  };
   const decodeOpt: image.DecodingOptions = {
-      editable: 1,
+    index: 0,
+    sampleSize: 1,
+    rotate: 0,
+    editable: 1,
+    desiredSize,
+    desiredRegion,
+    desiredPixelFormat: 4,
+    fitDensity: 1,
+    desiredColorSpace: 1,
+    desiredDynamicRange: 1,
+    resolutionQuality: 100
   };
   let pixelmap2: image.PixelMap = imageSource.createPixelMapSync(decodeOpt);
   if (pixelmap2 != undefined) {

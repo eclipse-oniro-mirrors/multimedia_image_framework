@@ -33,8 +33,7 @@ namespace OHOS {
 namespace Media {
 using namespace std;
 
-ani_object PictureAni::CreatePictureAni([[maybe_unused]] ani_env* env, [[maybe_unused]] ani_class clazz,
-    [[maybe_unused]] ani_object obj)
+ani_object PictureAni::CreatePictureAni([[maybe_unused]] ani_env* env, ani_object obj)
 {
     unique_ptr<PictureAni> pPictureAni = std::make_unique<PictureAni>();
     auto pixelMap = ImageAniUtils::GetPixelMapFromEnvSp(env, obj);
