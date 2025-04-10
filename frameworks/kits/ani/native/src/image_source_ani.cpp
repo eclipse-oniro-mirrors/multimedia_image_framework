@@ -543,9 +543,9 @@ public:
         return true;
     }
 private:
-    ani_class stringType;
-    ani_class recordType;
-    ani_class numberType;
+    ani_class stringType = nullptr;
+    ani_class recordType = nullptr;
+    ani_class numberType = nullptr;
     ani_env *env;
     bool inited = false;
 };
