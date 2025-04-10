@@ -243,15 +243,17 @@ void FileMetadataStream::Close()
         fp_ = nullptr;
     }
 
-    // Close the file
-    int tmpFD = dupFD_;
-    dupFD_ = -1;
-
     // Reset all member variables
     if (initPath_ == INIT_FROM_FD) {
-        IMAGE_LOGD("File closed: %{public}d", tmpFD);
+        IMAGE_LOGD("File closed: %{public}d", dupFD_);
     } else if (initPath_ == INIT_FROM_PATH) {
         IMAGE_LOGD("File closed: %{public}s", filePath_.c_str());
+    }
+
+    // Close the file
+    if (dupFD_ != -1) {
+        close(dupFD_);
+        dupFD_ = -1;
     }
     initPath_ = INIT_FROM_UNKNOWN;
 }

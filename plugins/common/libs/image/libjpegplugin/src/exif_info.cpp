@@ -19,6 +19,7 @@
 #include <cstdio>
 #include <memory>
 #include <unistd.h>
+#include <charconv>
 
 #include "exif_maker_note.h"
 #include "image_log.h"
@@ -730,7 +731,7 @@ uint32_t EXIFInfo::ModifyExifData(const ExifTag &tag, const std::string &value, 
     unsigned int orginExifDataLength = GetOrginExifDataLength(isNewExifData, fileBuf);
     if (!isNewExifData && orginExifDataLength == 0) {
         IMAGE_LOGD("There is no orginExifDataLength node in %{public}d.", localFd);
-        free(fileBuf);
+        ReleaseSource(&fileBuf, &file);
         exif_data_unref(ptrExifData);
         return Media::ERR_IMAGE_DECODE_EXIF_UNSUPPORT;
     }
@@ -1082,10 +1083,39 @@ static int GCD(int a, int b)
     return GCD(b, a % b);
 }
 
+static bool ConvertToInt(const std::string& str, int& value)
+{
+    auto [ptr, errCode] = std::from_chars(str.data(), str.data() + str.size(), value);
+    bool ret = errCode == std::errc{} && (ptr == str.data() + str.size());
+    return ret;
+}
+
+static bool ConvertToDouble(const std::string& str, double& value)
+{
+    errno = 0;
+    char* endPtr = nullptr;
+    value = strtod(str.c_str(), &endPtr);
+    if (errno == ERANGE && *endPtr != '\0') {
+        return false;
+    }
+    return true;
+}
+
 static bool GetFractionFromStr(const std::string &decimal, ExifRational &result)
 {
-    int intPart = stoi(decimal.substr(0, decimal.find(".")));
-    double decPart = stod(decimal.substr(decimal.find(".")));
+    int intPart = 0;
+    std::string intPartStr = decimal.substr(0, decimal.find("."));
+    if (!ConvertToInt(intPartStr, intPart)) {
+        IMAGE_LOGE("%{public}s failed, value out of range", __func__);
+        return false;
+    }
+
+    double decPart = 0.0;
+    std::string decPartStr = decimal.substr(decimal.find("."));
+    if (!ConvertToDouble(decPartStr, decPart)) {
+        IMAGE_LOGE("%{public}s failed, value out of range", __func__);
+        return false;
+    }
 
     int numerator = decPart * pow(10, decimal.length() - decimal.find(".") - 1);
     int denominator = pow(10, decimal.length() - decimal.find(".") - 1);
