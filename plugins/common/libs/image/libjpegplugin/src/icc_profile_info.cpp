@@ -118,7 +118,7 @@ uint32_t ICCProfileInfo::PackingICCProfile(j_compress_ptr cinfo, const SkImageIn
                 SkData::MakeUninitialized(ICC_MARKER_HEADER_SIZE + icc->size());
         uint8_t* ptrMaker = static_cast<uint8_t*>(jpegMarkerData->writable_data());
         if (EOK != memcpy_s(ptrMaker, sizeof(*ptrMaker), ICC_SIGNATURE, sizeof(ICC_SIGNATURE))) {
-            IMAGE_LOGE("PackingICCProfile: ICC_SIGNATURE memcpy error");
+            IMAGE_LOGE("%{public}s failed, ICC_SIGNATURE memcpy error", __func__);
             return packingResult;
         }
         ptrMaker += sizeof(ICC_SIGNATURE);
@@ -127,7 +127,7 @@ uint32_t ICCProfileInfo::PackingICCProfile(j_compress_ptr cinfo, const SkImageIn
          // total markers
         *ptrMaker++ = 1;
         if (EOK != memcpy_s(ptrMaker, sizeof(*ptrMaker), icc->data(), icc->size())) {
-            IMAGE_LOGE("PackingICCProfile: icc->data() memcpy error");
+            IMAGE_LOGE("%{public}s failed, icc->data() memcpy error", __func__);
             return packingResult;
         }
         jpeg_write_marker(cinfo, ICC_MARKER, jpegMarkerData->bytes(), jpegMarkerData->size());

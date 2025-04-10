@@ -702,6 +702,17 @@ void ExifMetadatFormatter::RationalFormat(std::string &value)
     value = result;
 }
 
+static bool ConvertToDouble(const std::string& str, double& value)
+{
+    errno = 0;
+    char* endPtr = nullptr;
+    value = strtod(str.c_str(), &endPtr);
+    if (errno == ERANGE && *endPtr != '\0') {
+        return false;
+    }
+    return true;
+}
+
 // convert decimal to rational string. 2.5 -> 5/2
 std::string ExifMetadatFormatter::GetFractionFromStr(const std::string &decimal, bool &isOutRange)
 {
@@ -716,11 +727,9 @@ std::string ExifMetadatFormatter::GetFractionFromStr(const std::string &decimal,
     }
 
     double decPart = 0.0;
-    errno = 0;
-    char* endPtr = nullptr;
-    decPart = strtod(decimal.substr(decimal.find(".")).c_str(), &endPtr);
-    if (errno == ERANGE) {
-        IMAGE_LOGE("GetFractionFromStr failed, value out of range");
+    std::string decPartStr = decimal.substr(decimal.find("."));
+    if (!ConvertToDouble(decPartStr, decPart)) {
+        IMAGE_LOGE("%{public}s failed, value out of range", __func__);
         isOutRange = true;
         return "";
     }

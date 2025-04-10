@@ -1083,21 +1083,39 @@ static int GCD(int a, int b)
     return GCD(b, a % b);
 }
 
+static bool ConvertToInt(const std::string& str, int& value)
+{
+    auto [ptr, errCode] = std::from_chars(str.data(), str.data() + str.size(), value);
+    bool ret = errCode == std::errc{} && (ptr == str.data() + str.size());
+    return ret;
+}
+
+static bool ConvertToDouble(const std::string& str, double& value)
+{
+    errno = 0;
+    char* endPtr = nullptr;
+    value = strtod(str.c_str(), &endPtr);
+    if (errno == ERANGE && *endPtr != '\0') {
+        return false;
+    }
+    return true;
+}
+
 static bool GetFractionFromStr(const std::string &decimal, ExifRational &result)
 {
-    int intPart;
-    auto [ptr1, ec1] = std::from_chars(decimal.data(), decimal.data() + decimal.find("."), intPart);
-    if (ec1 != std::errc()) {
-        IMAGE_LOGE("Convert string to int failed.");
+    int intPart = 0;
+    std::string intPartStr = decimal.substr(0, decimal.find("."));
+    if (!ConvertToInt(intPartStr, intPart)) {
+        IMAGE_LOGE("%{public}s failed, value out of range", __func__);
         return false;
     }
 
     double decPart = 0.0;
-    errno = 0;
-    char* endPtr = nullptr;
-    decPart = strtod(decimal.substr(decimal.find(".")).c_str(), &endPtr);
-    if (errno == ERANGE) {
-        return false;
+    std::string decPartStr = decimal.substr(decimal.find("."));
+    if (!ConvertToDouble(decPartStr, decPart)) {
+        IMAGE_LOGE("%{public}s failed, value out of range", __func__);
+        isOutRange = true;
+        return "";
     }
 
     int numerator = decPart * pow(10, decimal.length() - decimal.find(".") - 1);
