@@ -1114,8 +1114,7 @@ static bool GetFractionFromStr(const std::string &decimal, ExifRational &result)
     std::string decPartStr = decimal.substr(decimal.find("."));
     if (!ConvertToDouble(decPartStr, decPart)) {
         IMAGE_LOGE("%{public}s failed, value out of range", __func__);
-        isOutRange = true;
-        return "";
+        return false;
     }
 
     int numerator = decPart * pow(10, decimal.length() - decimal.find(".") - 1);
