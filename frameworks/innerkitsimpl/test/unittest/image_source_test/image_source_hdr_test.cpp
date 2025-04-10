@@ -516,5 +516,36 @@ HWTEST_F(ImageSourceHdrTest, PackHdrMediaTypeMarkerTest001, TestSize.Level3)
     auto bytes = ImagePlugin::HdrJpegPackerHelper::PackHdrMediaTypeMarker(hdrMetadata);
     ASSERT_EQ(bytes, HDR_METADATA_TYPE_BYTES);
 }
+
+/**
+ * @tc.name: CheckPhotoDesiredPixelForamt001
+ * @tc.desc: Test IsHdrImage()
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageSourceHdrTest, CheckPhotoDesiredPixelForamt001, TestSize.Level3)
+{
+    uint32_t errorCode = 0;
+    SourceOptions opts;
+    std::unique_ptr<ImageSource> imageSource =
+        ImageSource::CreateImageSource(IMAGE_INPUT_JPEG_HDR_VIVID_PATH, opts, errorCode);
+    ASSERT_EQ(errorCode, SUCCESS);
+    ASSERT_NE(imageSource.get(), nullptr);
+
+    uint32_t index = 0;
+    DecodeOptions optsPixel;
+    optsPixel.desiredDynamicRange = Media::DecodeDynamicRange::AUTO;
+    optsPixel.photoDesiredPixelFormat = PixelFormat::YCBCR_P010;
+    errorCode = 0;
+    std::unique_ptr<PixelMap> pixelMap = imageSource->CreatePixelMap(index, optsPixel, errorCode);
+    Media::PixelFormat outputPixelFormat = pixelMap->GetPixelFormat();
+    bool isYcbcrP010 = outputPixelFormat == PixelFormat::YCBCR_P010;
+    ASSERT_EQ(errorCode, SUCCESS);
+    ASSERT_NE(pixelMap.get(), nullptr);
+    bool isHdr = pixelMap->IsHdr();
+#ifdef IMAGE_VPE_FLAG
+    ASSERT_EQ(isHdr, true);
+    ASSERT_EQ(isYcbcrP010, true);
+#endif
+}
 }
 }
