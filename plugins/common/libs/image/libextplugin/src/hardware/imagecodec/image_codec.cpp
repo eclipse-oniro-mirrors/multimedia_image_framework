@@ -272,6 +272,10 @@ bool ImageCodec::GetPixelFmtFromUser(const Format &format)
         HLOGE("pixel format unspecified");
         return false;
     }
+    if (!fmt.has_value()) {
+        HLOGE("pixel format unsupported");
+        return false;
+    }
     configuredFmt_ = fmt.value();
     HLOGI("configured pixel format is %{public}s", configuredFmt_.strFmt.c_str());
     return true;
