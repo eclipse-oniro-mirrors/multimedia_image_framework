@@ -23,6 +23,7 @@
 #include "log_tags.h"
 #include "color_space_object_convertor.h"
 #if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
+#include <charconv>
 #include <cstdint>
 #include <regex>
 #include <vector>
@@ -1288,6 +1289,12 @@ static bool GetSurfaceSize(size_t argc, Rect &region, std::string fd)
         return false;
     }
     if (region.width <= 0 || region.height <= 0) {
+        unsigned long number_fd = 0;
+        auto res = std::from_chars(fd.c_str(), fd.c_str() + fd.size(), number_fd);
+        if (res.ec != std::errc()) {
+            IMAGE_LOGE("GetSurfaceSize invalid fd");
+            return false;
+        }
         sptr<Surface> surface = SurfaceUtils::GetInstance()->GetSurface(std::stoull(fd));
         if (surface == nullptr) {
             return false;
@@ -1334,17 +1341,25 @@ STATIC_EXEC_FUNC(CreatePixelMapFromSurface)
         return;
     }
     auto &rsClient = Rosen::RSInterfaces::GetInstance();
-    OHOS::Rect r = {
-        .x = context->area.region.left,
-        .y = context->area.region.top,
-        .w = context->area.region.width,
-        .h = context->area.region.height,
-    };
-    std::shared_ptr<Media::PixelMap> pixelMap =
-        rsClient.CreatePixelMapFromSurfaceId(std::stoull(context->surfaceId), r);
+    OHOS::Rect r = {.x = context->area.region.left, .y = context->area.region.top,
+        .w = context->area.region.width, .h = context->area.region.height, };
+    unsigned long surfaceId = 0;
+    auto res = std::from_chars(context->surfaceId.c_str(),
+        context->surfaceId.c_str() + context->surfaceId.size(), surfaceId);
+    if (res.ec != std::errc()) {
+        IMAGE_LOGE("CreatePixelMapFromSurface invalid surfaceId");
+        return;
+    }
+    std::shared_ptr<Media::PixelMap> pixelMap = rsClient.CreatePixelMapFromSurfaceId(surfaceId, r);
 #ifndef EXT_PIXEL
     if (pixelMap == nullptr) {
-        pixelMap = CreatePixelMapFromSurfaceId(std::stoull(context->surfaceId), context->area.region);
+        res = std::from_chars(context->surfaceId.c_str(),
+            context->surfaceId.c_str() + context->surfaceId.size(), surfaceId);
+        if (res.ec != std::errc()) {
+            IMAGE_LOGE("CreatePixelMapFromSurface invalid surfaceId");
+            return;
+        }
+        pixelMap = CreatePixelMapFromSurfaceId(surfaceId, context->area.region);
     }
 #endif
     context->rPixelMap = std::move(pixelMap);
