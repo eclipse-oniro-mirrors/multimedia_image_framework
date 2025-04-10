@@ -18,11 +18,14 @@ import { image } from "../ets/@ohos.multimedia.image.ets";
 function main() {
   // test createPixemap & getImageInfo
   console.log("Test PixelMap START");
-   const opts: image.InitializationOptions = {
-     size: { width: 480, height: 360 },
-     editable: true,
-     pixelFormat: 4,
-   };
+  const opts: image.InitializationOptions = {
+    size: { width: 480, height: 360 },
+    srcPixelFormat: 4,
+    pixelFormat: 4,
+    editable: true,
+    alphaType: 2,
+    scaleMode: 0
+  };
   let pixelMap:image.PixelMap = image.createPixelMapSync(opts);
 
   if (pixelMap != undefined) {
@@ -83,14 +86,31 @@ function main() {
     console.log("Create ImageSource by FD success");
   }
   
-  let imagesourceImageInfo: image.ImageInfo  = imageSource.getImageInfoSync(1);
-  console.log("Test ImageSource.getImageInfoSync width: ", imagesourceImageInfo.size.width, imagesourceImageInfo.size.height, imagesourceImageInfo.pixelFormat, imagesourceImageInfo.density, imagesourceImageInfo.mimeType);
-  imageSource.getImageInfo(1)
+  let imagesourceImageInfo: image.ImageInfo = imageSource.getImageInfoSync(0);
+  console.log("Image source image info: ", imagesourceImageInfo.size.width, imagesourceImageInfo.size.height, imagesourceImageInfo.pixelFormat, imagesourceImageInfo.density, imagesourceImageInfo.mimeType);
+  imageSource.getImageInfo(0)
     .then((imageInfo: image.ImageInfo) => {
-      console.log("ASYNC ImageSource get image info:", imageInfo.size.width, imageInfo.size.height, imageInfo.pixelFormat, imageInfo.density, imageInfo.mimeType);
+      console.log("ASYNC Image source image info:", imageInfo.size.width, imageInfo.size.height, imageInfo.pixelFormat, imageInfo.density, imageInfo.mimeType);
     });
+  
+  const desiredSize: image.Size | undefined = { width: 60, height: 60 };
+  const desiredRegion: image.Region | undefined = {
+    size: { width: 60, height: 60 },
+    x: 0,
+    y: 0
+  };
   const decodeOpt: image.DecodingOptions = {
-      editable: 1,
+    index: 0,
+    sampleSize: 1,
+    rotate: 0,
+    editable: 1,
+    desiredSize,
+    desiredRegion,
+    desiredPixelFormat: 4,
+    fitDensity: 1,
+    desiredColorSpace: 1,
+    desiredDynamicRange: 1,
+    resolutionQuality: 100
   };
   let pixelmap2: image.PixelMap = imageSource.createPixelMapSync(decodeOpt);
   if (pixelmap2 != undefined) {
@@ -106,20 +126,24 @@ function main() {
     .then((): void => console.log("ASYNC Release PixelMap success"));
 
   imageSource.modifyImageProperty("Orientation", "Right-top");
-  let map: Record<string, string> = {
-    "Orientation": "Right-top",
-    "Software" : "",
-    "test" : "xxxxx",
-    };
-  imageSource.modifyImageProperties(map);
-  let array:Array<string> = new Array<string>(4);
-    array[0] = "aa"
-    array[1] = "bb"
-    array[2] = "cc"
-    array[3] = "dd"
-  let propertys: Record<string, string> = imageSource.getImageProperties(array);
-  console.log("Create imageSource.getImageProperties :" + propertys);
-  imageSource.release();
+  const map: Record<string, string | null> = {
+    "Artist": "CQY",
+    "Make": "Huawei",
+    "Gamma": "0.9",
+  };
+  imageSource.modifyImageProperties(map)
+    .then((): void => {
+      let array: Array<string> = new Array<string>(4);
+      array[0] = "Orientation";
+      array[1] = "Artist";
+      array[2] = "Make";
+      array[3] = "Gamma";
+      imageSource.getImageProperties(array)
+        .then((properties: Record<string, string | null>): void => {
+          console.log("ASYNC Get image properties: " + properties);
+        });
+    })
+  // imageSource.release();
 
   console.log("TEST ImagePacker begin");
   const imagePacker = image.createImagePacker();

@@ -22,6 +22,7 @@
 #include "log_tags.h"
 #include "media_errors.h"
 #include "image_log.h"
+#include "string_ex.h"
 
 #undef LOG_DOMAIN
 #define LOG_DOMAIN LOG_TAG_DOMAIN_ID_IMAGE
@@ -33,9 +34,11 @@ namespace OHOS {
 namespace Media {
 using namespace std;
 
+static const string FILE_URL_PREFIX = "file://";
+
 std::string ANIUtils_ANIStringToStdString2(ani_env *env, ani_string ani_str)
 {
-    ani_size  strSize;
+    ani_size strSize;
     env->String_GetUTF8Size(ani_str, &strSize);
 
     std::vector<char> buffer(strSize + 1); // +1 for null terminator
@@ -52,8 +55,16 @@ std::string ANIUtils_ANIStringToStdString2(ani_env *env, ani_string ani_str)
     return content;
 }
 
-ani_object ImageSourceAni::CreateImageSourceAni([[maybe_unused]] ani_env* env, [[maybe_unused]] ani_class clazz,
-    [[maybe_unused]] ani_object obj)
+static string FileUrlToRawPath(const string &path)
+{
+    if (path.size() > FILE_URL_PREFIX.size() &&
+        (path.compare(0, FILE_URL_PREFIX.size(), FILE_URL_PREFIX) == 0)) {
+        return path.substr(FILE_URL_PREFIX.size());
+    }
+    return path;
+}
+
+ani_object ImageSourceAni::CreateImageSourceAni([[maybe_unused]] ani_env* env, ani_object obj)
 {
     std::unique_ptr<ImageSourceAni> pImageSourceAni = std::make_unique<ImageSourceAni>();
     ani_class stringClass;
@@ -61,11 +72,13 @@ ani_object ImageSourceAni::CreateImageSourceAni([[maybe_unused]] ani_env* env, [
     ani_boolean isString;
     env->Object_InstanceOf(obj, stringClass, &isString);
     if (isString) {
-        auto stringContent = ANIUtils_ANIStringToStdString2(env, static_cast<ani_string>(obj));
-        IMAGE_LOGE("Object is String Object Content");
+        string fileUrl = ANIUtils_ANIStringToStdString2(env, static_cast<ani_string>(obj));
+        IMAGE_LOGI("Image source URI: %{public}s", fileUrl.c_str());
+        pImageSourceAni->filePath_ = FileUrlToRawPath(fileUrl);
         SourceOptions opts;
         uint32_t errorCode;
-        pImageSourceAni->nativeImageSource_ = ImageSource::CreateImageSource(stringContent, opts, errorCode);
+        pImageSourceAni->nativeImageSource_ =
+            ImageSource::CreateImageSource(pImageSourceAni->filePath_, opts, errorCode);
         if (pImageSourceAni->nativeImageSource_ == nullptr) {
             IMAGE_LOGE("CreateImageSource failed'");
         }
@@ -88,7 +101,7 @@ ani_object ImageSourceAni::CreateImageSourceAni([[maybe_unused]] ani_env* env, [
     if (isInt) {
         ani_int fd;
         env->Object_CallMethodByName_Int(obj, "unboxed", ":I", &fd);
-        IMAGE_LOGI("fd: %{public}d", fd);
+        IMAGE_LOGI("Image source fd: %{public}d", fd);
         SourceOptions opts;
         uint32_t errorCode;
         pImageSourceAni->nativeImageSource_ = ImageSource::CreateImageSource(fd, opts, errorCode);
@@ -97,6 +110,7 @@ ani_object ImageSourceAni::CreateImageSourceAni([[maybe_unused]] ani_env* env, [
     if (pImageSourceAni->nativeImageSource_ == nullptr) {
         IMAGE_LOGE("CreateImageSource failed'");
     }
+
     return ImageAniUtils::CreateAniImageSource(env, pImageSourceAni);
 }
 
@@ -410,8 +424,7 @@ template <typename F>
 static bool forEachMapEntry(ani_env *env, ani_object map_object, F &&callback)
 {
     ani_ref keys;
-    if (ANI_OK !=
-        env->Object_CallMethodByName_Ref(map_object, "keys", nullptr, &keys)) {
+    if (ANI_OK != env->Object_CallMethodByName_Ref(map_object, "keys", ":Lescompat/IterableIterator;", &keys)) {
         IMAGE_LOGE("Failed to get keys iterator");
         return false;
     }
@@ -421,15 +434,13 @@ static bool forEachMapEntry(ani_env *env, ani_object map_object, F &&callback)
         ani_ref next;
         ani_boolean done;
 
-        if (ANI_OK != env->Object_CallMethodByName_Ref(
-            static_cast<ani_object>(keys), "next", nullptr, &next)) {
+        if (ANI_OK != env->Object_CallMethodByName_Ref(static_cast<ani_object>(keys), "next", nullptr, &next)) {
             IMAGE_LOGE("Failed to get next key");
             success = false;
             break;
         }
 
-        if (ANI_OK != env->Object_GetFieldByName_Boolean(
-            static_cast<ani_object>(next), "done", &done)) {
+        if (ANI_OK != env->Object_GetFieldByName_Boolean(static_cast<ani_object>(next), "done", &done)) {
             IMAGE_LOGE("Failed to check iterator done");
             success = false;
             break;
@@ -440,25 +451,20 @@ static bool forEachMapEntry(ani_env *env, ani_object map_object, F &&callback)
         }
 
         ani_ref key_value;
-        if (ANI_OK != env->Object_GetFieldByName_Ref(static_cast<ani_object>(next),
-            "value", &key_value)) {
+        if (ANI_OK != env->Object_GetFieldByName_Ref(static_cast<ani_object>(next), "value", &key_value)) {
             IMAGE_LOGE("Failed to get key value");
             success = false;
             break;
         }
 
         ani_ref value_obj;
-        if (ANI_OK != env->Object_CallMethodByName_Ref(map_object, "$_get", nullptr,
-            &value_obj, key_value)) {
+        if (ANI_OK != env->Object_CallMethodByName_Ref(map_object, "$_get", nullptr, &value_obj, key_value)) {
             IMAGE_LOGE("Failed to get value for key");
             success = false;
             break;
         }
 
-        if (!callback(key_value, value_obj)) {
-            success = false;
-            break;
-        }
+        callback(key_value, value_obj);
     }
     return success;
 }
@@ -471,15 +477,15 @@ public:
     bool Init()
     {
         if (ANI_OK != env->FindClass("Lstd/core/String;", &stringType)) {
-            IMAGE_LOGE("FindClass std/core/String FAILD");
+            IMAGE_LOGE("FindClass std/core/String failed");
             return false;
         }
         if (ANI_OK != env->FindClass("Lescompat/Record;", &recordType)) {
-            IMAGE_LOGE("FindClass Lescompat/Record; FAILD");
+            IMAGE_LOGE("FindClass Lescompat/Record; failed");
             return false;
         }
         if (ANI_OK != env->FindClass("Lstd/core/Numeric;", &numberType)) {
-            IMAGE_LOGE("Lstd/core/Numeric; FAILD");
+            IMAGE_LOGE("Lstd/core/Numeric; failed");
             return false;
         }
         inited = true;
@@ -493,7 +499,7 @@ public:
         ani_boolean is_string;
         if (ANI_OK != env->Object_InstanceOf(static_cast<ani_object>(obj),
             static_cast<ani_type>(stringType), &is_string)) {
-            IMAGE_LOGE("Call Object_InstanceOf Fail");
+            IMAGE_LOGE("Call Object_InstanceOf failed");
             return false;
         }
         return (bool)is_string;
@@ -506,7 +512,7 @@ public:
         ani_boolean is_record;
         if (ANI_OK != env->Object_InstanceOf(static_cast<ani_object>(obj),
             static_cast<ani_type>(recordType), &is_record)) {
-            IMAGE_LOGE("Call Object_InstanceOf Fail");
+            IMAGE_LOGE("Call Object_InstanceOf failed");
             return false;
         }
         return (bool)is_record;
@@ -544,57 +550,57 @@ private:
     bool inited = false;
 };
 
-bool ProcMapEntry(ani_env *env, ani_ref key, ani_ref value,
-    ANIIntanceHelper &ih, std::map<std::string, std::string> &input)
+bool ProcMapEntry(ani_env* env, ani_ref key, ani_ref value, ImageSourceAni* imageSourceAni, ANIIntanceHelper &ih)
 {
+    auto imageSource = imageSourceAni->nativeImageSource_;
+    if (imageSource == nullptr) {
+        IMAGE_LOGE("[ProcMapEntry] imageSource nullptr");
+        return false;
+    }
     if (!ih.isString(static_cast<ani_object>(key))) {
         IMAGE_LOGE("[ProcMapEntry] key is not string");
         return false;
     }
-    auto key_string =
-        ANIUtils_ANIStringToStdString2(env, static_cast<ani_string>(key));
-    auto value_string =
-        ANIUtils_ANIStringToStdString2(env, static_cast<ani_string>(value));
-    IMAGE_LOGI("[ProcMapEntry] ProcMapEntry  key: %{public}s value:%{public}s",
-        key_string.c_str(), value_string.c_str());
-    input[key_string] = value_string;
+    auto keyStr = ANIUtils_ANIStringToStdString2(env, static_cast<ani_string>(key));
+    auto valueStr = ANIUtils_ANIStringToStdString2(env, static_cast<ani_string>(value));
+    IMAGE_LOGI("[ProcMapEntry] ProcMapEntry key:%{public}s value:%{public}s", keyStr.c_str(), valueStr.c_str());
+
+    if (!IsSameTextStr(imageSourceAni->filePath_, "")) {
+        imageSource->ModifyImageProperty(0, keyStr, valueStr, imageSourceAni->filePath_);
+    } else if (imageSourceAni->fileDescriptor_ != -1) {
+        imageSource->ModifyImageProperty(0, keyStr, valueStr, imageSourceAni->fileDescriptor_);
+    } else {
+        IMAGE_LOGE("There is no image source!");
+        return false;
+    }
     return true;
 }
 
-static void ModifyImageProperties([[maybe_unused]] ani_env* env,
-    [[maybe_unused]] ani_object obj, ani_object map_object)
+static void ModifyImageProperties([[maybe_unused]] ani_env* env, [[maybe_unused]] ani_object obj, ani_object recordsObj)
 {
-    ani_long nativeObj {};
-    bool ret;
-    if ((ret = env->Object_GetFieldByName_Long(obj, "nativeObj", &nativeObj)) != ANI_OK) {
-        IMAGE_LOGE("[ModifyImageProperties] Object_GetField_Long fetch field ret:%{public}d", ret);
+    ImageSourceAni* imageSourceAni = ImageAniUtils::GetImageSourceAniFromEnv(env, obj);
+    if (imageSourceAni == nullptr) {
+        IMAGE_LOGE("[GetImageSourceFromEnv] imageSource nullptr");
         return;
     }
-    ImageSourceAni* imageSourceAni = reinterpret_cast<ImageSourceAni*>(nativeObj);
-    if (imageSourceAni == nullptr) {
-        IMAGE_LOGE("[ModifyImageProperties] get imageSourceAni failed");
-    }
-    IMAGE_LOGI("[ModifyImageProperties] get imageSourceAni success");
-
+    
     ANIIntanceHelper ih(env);
     if (!ih.Init()) {
-        IMAGE_LOGE("ih init fail");
+        IMAGE_LOGE("[ModifyImageProperties] ih init fail");
         return;
     }
-  
-    std::map<std::string, std::string> input;
-    forEachMapEntry(env, map_object,
-        [env, &ih, &input](ani_ref key, ani_ref value) -> bool {
-            return ProcMapEntry(env, key, value, ih, input);
+
+    forEachMapEntry(env, recordsObj,
+        [env, &imageSourceAni, &ih](ani_ref key, ani_ref value) -> bool {
+            return ProcMapEntry(env, key, value, imageSourceAni, ih);
         });
-    return;
 }
 
 bool ParseArrayString([[maybe_unused]] ani_env* env, ani_object arrayObj, std::vector<std::string> &strings)
 {
     ani_double length;
     if (ANI_OK != env->Object_GetPropertyByName_Double(arrayObj, "length", &length)) {
-        IMAGE_LOGE("Object_GetPropertyByName_Double length Failed");
+        IMAGE_LOGE("Object_GetPropecortyByName_Double length Failed");
         return false;
     }
     for (int i = 0; i < int(length); i++) {
@@ -609,57 +615,41 @@ bool ParseArrayString([[maybe_unused]] ani_env* env, ani_object arrayObj, std::v
     return true;
 }
 
-static ani_object GetImageProperties([[maybe_unused]] ani_env* env,
-    [[maybe_unused]] ani_object obj, ani_object arrayObj)
+static ani_object GetImageProperties([[maybe_unused]] ani_env* env, [[maybe_unused]] ani_object obj,
+    ani_object arrayObj)
 {
-    ani_long nativeObj {};
-    bool ret;
-    if ((ret = env->Object_GetFieldByName_Long(obj, "nativeObj", &nativeObj)) != ANI_OK) {
-        IMAGE_LOGE("[GetImageProperties] Object_GetField_Long fetch field ret:%{public}d", ret);
+    auto imageSource = ImageAniUtils::GetImageSourceFromEnv(env, obj);
+    if (imageSource == nullptr) {
+        IMAGE_LOGE("[GetImageProperties] imageSource nullptr");
+        return nullptr;
     }
-    ImageSourceAni* imageSourceAni = reinterpret_cast<ImageSourceAni*>(nativeObj);
-    if (imageSourceAni == nullptr) {
-        IMAGE_LOGE("[GetImageProperties] get imageSourceAni failed");
-    }
-    IMAGE_LOGI("[GetImageProperties] get imageSourceAni success");
 
-    std::vector<std::string> strings;
-    ParseArrayString(env, arrayObj, strings);
-    for (const auto &s : strings) {
-        IMAGE_LOGE("Array String Content:%{public}s", s.c_str());
+    vector<string> keyStrArray;
+    ParseArrayString(env, arrayObj, keyStrArray);
+
+    vector<pair<string, string>> kVStrArray;
+    uint32_t errCode = SUCCESS;
+    for (auto keyStrIt = keyStrArray.begin(); keyStrIt != keyStrArray.end(); ++keyStrIt) {
+        string valueStr = "";
+        errCode = imageSource->GetImagePropertyString(0, *keyStrIt, valueStr);
+        if (errCode == SUCCESS) {
+            kVStrArray.emplace_back(make_pair(*keyStrIt, valueStr));
+        } else {
+            kVStrArray.emplace_back(make_pair(*keyStrIt, ""));
+            IMAGE_LOGE("errCode: %{public}u , exif key: %{public}s", errCode, keyStrIt->c_str());
+        }
     }
-    std::map<std::string, std::string> paras = {
-        {"aa", "11"},
-        {"bb", "22"},
-    };
+
+    ani_object argumentObj = {};
+    ani_method recordSetMethod = ImageAniUtils::GetRecordSetMethod(env, argumentObj);
+    if (recordSetMethod == nullptr) {
+        IMAGE_LOGE("[GetImageProperties] recordSetMethod nullptr");
+    }
+
     ani_status status;
-    ani_class recordCls;
-    status = env->FindClass("Lescompat/Record;", &recordCls);
-    if (status != ANI_OK) {
-        IMAGE_LOGE("FindClass failed status :%{public}u", status);
-        return nullptr;
-    }
-    ani_method ctor;
-    status = env->Class_FindMethod(recordCls, "<ctor>", nullptr, &ctor);
-    if (status != ANI_OK) {
-        IMAGE_LOGE("Class_FindMethod failed status :%{public}u", status);
-        return nullptr;
-    }
-    ani_object argumentObject = {};
-    if (ANI_OK != env->Object_New(recordCls, ctor, &argumentObject)) {
-        IMAGE_LOGE("Object_New Failed");
-        return nullptr;
-    }
-    ani_method recordSetMethod;
-    status = env->Class_FindMethod(recordCls, "$_set",
-        "Lstd/core/Object;Lstd/core/Object;:V", &recordSetMethod);
-    if (status != ANI_OK) {
-        IMAGE_LOGE("Class_FindMethod recordSetMethod Failed");
-        return nullptr;
-    }
-    for (auto iter = paras.begin(); iter != paras.end(); ++iter) {
-        std::string key = iter->first;
-        std::string value = iter->second;
+    for (auto iter = kVStrArray.begin(); iter != kVStrArray.end(); ++iter) {
+        string key = iter->first;
+        string value = iter->second;
         ani_string ani_key;
         ani_string ani_value;
         status = env->String_NewUTF8(key.c_str(), key.length(), &ani_key);
@@ -672,28 +662,25 @@ static ani_object GetImageProperties([[maybe_unused]] ani_env* env,
             IMAGE_LOGE("String_NewUTF8 value failed status : %{public}u", status);
             return nullptr;
         }
-        status = env->Object_CallMethod_Void(argumentObject, recordSetMethod, ani_key, ani_value);
+        status = env->Object_CallMethod_Void(argumentObj, recordSetMethod, ani_key, ani_value);
         if (status != ANI_OK) {
             IMAGE_LOGE("Object_CallMethod_Void value failed status : %{public}u", status);
             return nullptr;
         }
     }
-    return argumentObject;
+    return argumentObj;
 }
 
 static void Release([[maybe_unused]] ani_env* env, [[maybe_unused]] ani_object obj)
 {
+    ani_status ret;
     ani_long nativeObj {};
-    bool ret;
     if ((ret = env->Object_GetFieldByName_Long(obj, "nativeObj", &nativeObj)) != ANI_OK) {
         IMAGE_LOGE("[Release] Object_GetField_Long fetch field ret:%{public}d", ret);
         return;
     }
     ImageSourceAni* imageSourceAni = reinterpret_cast<ImageSourceAni*>(nativeObj);
-    if (imageSourceAni == nullptr) {
-        IMAGE_LOGE("[Release] get imageSourceAni failed");
-    }
-    return;
+    imageSourceAni->nativeImageSource_ = nullptr;
 }
 
 ani_status ImageSourceAni::Init(ani_env* env)
@@ -706,16 +693,16 @@ ani_status ImageSourceAni::Init(ani_env* env)
     }
     std::array methods = {
         ani_native_function {"nativeGetImageInfo", "I:L@ohos/multimedia/image/image/ImageInfo;",
-            reinterpret_cast<void *>(OHOS::Media::GetImageInfo)},
+            reinterpret_cast<void*>(OHOS::Media::GetImageInfo)},
         ani_native_function {"nativeCreatePixelMap",
             "L@ohos/multimedia/image/image/DecodingOptions;:L@ohos/multimedia/image/image/PixelMap;",
-            reinterpret_cast<void *>(OHOS::Media::CreatePixelMap)},
+            reinterpret_cast<void*>(OHOS::Media::CreatePixelMap)},
         ani_native_function {"modifyImageProperty", "JLstd/core/String;Lstd/core/String;:V",
-            reinterpret_cast<void *>(OHOS::Media::ModifyImageProperty)},
-        ani_native_function {"modifyImageProperties", "Lescompat/Record;:V",
-            reinterpret_cast<void *>(OHOS::Media::ModifyImageProperties)},
-        ani_native_function {"getImageProperties", "Lescompat/Array;:Lescompat/Record;",
-            reinterpret_cast<void *>(OHOS::Media::GetImageProperties)},
+            reinterpret_cast<void*>(OHOS::Media::ModifyImageProperty)},
+        ani_native_function {"nativeModifyImageProperties", "Lescompat/Record;:V",
+            reinterpret_cast<void*>(OHOS::Media::ModifyImageProperties)},
+        ani_native_function {"nativeGetImageProperties", "Lescompat/Array;:Lescompat/Record;",
+            reinterpret_cast<void*>(OHOS::Media::GetImageProperties)},
         ani_native_function {"release", ":V", reinterpret_cast<void *>(OHOS::Media::Release)},
     };
     ani_status ret = env->Class_BindNativeMethods(cls, methods.data(), methods.size());

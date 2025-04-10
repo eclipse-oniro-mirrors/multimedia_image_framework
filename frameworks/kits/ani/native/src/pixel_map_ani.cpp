@@ -172,8 +172,7 @@ ani_object PixelMapAni::CreatePixelMap([[maybe_unused]] ani_env* env, std::share
     return aniValue;
 }
 
-ani_object PixelMapAni::CreatePixelMapAni([[maybe_unused]] ani_env* env,
-    [[maybe_unused]] ani_class clazz, [[maybe_unused]] ani_object obj)
+ani_object PixelMapAni::CreatePixelMapAni([[maybe_unused]] ani_env* env, ani_object obj)
 {
     unique_ptr<PixelMapAni> pPixelMapAni = make_unique<PixelMapAni>();
     InitializationOptions opts;
@@ -238,7 +237,7 @@ static void Release([[maybe_unused]] ani_env* env, [[maybe_unused]] ani_object o
     ani_status ret;
     ani_long nativeObj {};
     if ((ret = env->Object_GetFieldByName_Long(obj, "nativeObj", &nativeObj)) != ANI_OK) {
-        IMAGE_LOGE("[nativeRelease] Object_GetField_Long fetch field");
+        IMAGE_LOGE("[Release] Object_GetField_Long fetch field");
         return;
     }
     PixelMapAni* pixelmapAni = reinterpret_cast<PixelMapAni*>(nativeObj);

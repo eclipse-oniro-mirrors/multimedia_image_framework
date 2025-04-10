@@ -272,6 +272,12 @@ export namespace image {
     UNPREMUL = 3
   }
 
+  enum ResolutionQuality {
+    LOW = 1,
+    MEDIUM = 2,
+    HIGH = 3
+  }
+
   // common
   export interface Size {
     width: int,
@@ -520,8 +526,8 @@ export namespace image {
     createPixelMapSync(options?: DecodingOptions): PixelMap;
     createPixelMap(options?: DecodingOptions): Promise<PixelMap>;
     modifyImageProperty(key: string, value: string): void;
-    modifyImageProperties(records: Record<string, string>): void;
-    getImageProperties(key: Array<string>): Record<string, string>;
+    modifyImageProperties(records: Record<string, string | null>): Promise<void>;
+    getImageProperties(key: Array<string>): Promise<Record<string, string | null>>;
     release(): void;
   }
 
@@ -534,11 +540,37 @@ export namespace image {
         this.nativeObj = context;
       }
     }
+    
     native nativeGetImageInfo(index: int): ImageInfo;
     native nativeCreatePixelMap(options?: DecodingOptions): PixelMap;
     private native modifyImageProperty(nativeObj: long, key: string, value: string): void;
-    native modifyImageProperties(records: Record<string, string>): void;
-    native getImageProperties(key: Array<string>): Record<string, string>;
+    
+    native nativeModifyImageProperties(records: Record<string, string | null>): void;
+
+    modifyImageProperties(records: Record<string, string | null>): Promise<void> {
+      return new Promise<void>((resolve: (v: Promise<void>) => void, reject: (error: Object) => void) => {
+        const cb = (): boolean => {
+          this.nativeModifyImageProperties(records);
+          return true;
+        };
+        taskpool.execute(cb)
+          .then((): void => resolve(Promise.resolve()));
+      });
+    }
+
+    native nativeGetImageProperties(key: Array<string>): Record<string, string | null>;
+
+    public getImageProperties(key: Array<string>): Promise<Record<string, string | null>> {
+      return new Promise<Record<string, string | null>>(
+        (resolve: (v: Record<string, string | null>) => void, reject: (error: Object) => void) => {
+        const cb = (): Record<string, string | null> => {
+          return this.nativeGetImageProperties(key);
+        };
+        taskpool.execute(cb)
+          .then((e: NullishType) => resolve(e as Record<string, string | null>));
+      });
+    }
+
     native release(): void;
 
     public createPixelMapSync(options?: DecodingOptions): PixelMap {
