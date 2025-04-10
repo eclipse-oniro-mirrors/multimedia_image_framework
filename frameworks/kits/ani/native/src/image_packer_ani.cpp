@@ -118,8 +118,8 @@ bool ParsePackingOptions([[maybe_unused]] ani_env* env, ani_object para, PackOpt
     }
     ani_int bufferSize;
     if ((ret = env->Object_CallMethodByName_Int(reinterpret_cast<ani_object>(bufferSizeRef),
-        "unboxed", ":I", &bufferSize)) != ANI_OK) {
-        IMAGE_LOGE("Object_CallMethodByName_Int Faild bufferSize:%{public}d", ret);
+        "unboxed", ":I", &bufferSize)) != ANI_OK || bufferSize <= 0) {
+        IMAGE_LOGE("Object_CallMethodByName_Int Faild bufferSize or invalid bufferSize:%{public}d", ret);
     }
     ani_ref desiredDynamicRangeRef;
     if (ANI_OK != (ret = env->Object_CallMethodByName_Ref(para, "<get>desiredDynamicRange",
@@ -144,7 +144,7 @@ bool ParsePackingOptions([[maybe_unused]] ani_env* env, ani_object para, PackOpt
 
     packOpts.format = retStr;
     packOpts.quality = static_cast<uint8_t>(quality);
-    outBufferSize = bufferSize;
+    outBufferSize = static_cast<uint32_t>(bufferSize);
     return true;
 }
 
@@ -204,9 +204,9 @@ static void Release([[maybe_unused]] ani_env* env, [[maybe_unused]] ani_object o
     ImagePackerAni* imagePackerAni = reinterpret_cast<ImagePackerAni*>(nativeObj);
     if (imagePackerAni == nullptr) {
         IMAGE_LOGE("[Release] get ImagePackerAni failed");
+        return;
     }
     imagePackerAni->nativeImagePacker_ = nullptr;
-    return;
 }
 
 ani_status ImagePackerAni::Init(ani_env* env)
@@ -219,7 +219,8 @@ ani_status ImagePackerAni::Init(ani_env* env)
     }
     std::array methods = {
         ani_native_function {"nativePackingWithPixelMap",
-            "L@ohos/multimedia/image/image/PixelMap;L@ohos/multimedia/image/image/PackingOption;:Lescompat/ArrayBuffer;",
+            "L@ohos/multimedia/image/image/PixelMap;L@ohos/multimedia/image/image/PackingOption;"
+            ":Lescompat/ArrayBuffer;",
             reinterpret_cast<void*>(OHOS::Media::nativePackingWithPixelMap)},
         ani_native_function {"nativeRelease", ":V", reinterpret_cast<void*>(OHOS::Media::Release)},
     };
