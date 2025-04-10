@@ -702,6 +702,17 @@ void ExifMetadatFormatter::RationalFormat(std::string &value)
     value = result;
 }
 
+static bool ConvertToDouble(const std::string& str, double& value)
+{
+    errno = 0;
+    char* endPtr = nullptr;
+    value = strtod(str.c_str(), &endPtr);
+    if (errno == ERANGE && *endPtr != '\0') {
+        return false;
+    }
+    return true;
+}
+
 // convert decimal to rational string. 2.5 -> 5/2
 std::string ExifMetadatFormatter::GetFractionFromStr(const std::string &decimal, bool &isOutRange)
 {
@@ -715,7 +726,13 @@ std::string ExifMetadatFormatter::GetFractionFromStr(const std::string &decimal,
         return "";
     }
 
-    double decPart = stod(decimal.substr(decimal.find(".")));
+    double decPart = 0.0;
+    std::string decPartStr = decimal.substr(decimal.find("."));
+    if (!ConvertToDouble(decPartStr, decPart)) {
+        IMAGE_LOGE("%{public}s failed, value out of range", __func__);
+        isOutRange = true;
+        return "";
+    }
 
     int numerator = decPart * pow(DECIMAL_BASE, decimal.length() - decimal.find(".") - 1);
     int denominator = pow(DECIMAL_BASE, decimal.length() - decimal.find(".") - 1);

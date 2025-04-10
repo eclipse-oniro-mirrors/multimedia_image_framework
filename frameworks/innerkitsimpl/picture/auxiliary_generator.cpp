@@ -244,6 +244,10 @@ std::unique_ptr<PixelMap> AuxiliaryGenerator::CreatePixelMapByContext(DecodeCont
 static uint32_t DecodeHdrMetadata(ImageHdrType hdrType, std::unique_ptr<AbsImageDecoder> &extDecoder,
     std::unique_ptr<AuxiliaryPicture> &auxPicture)
 {
+    if (auxPicture == nullptr) {
+        IMAGE_LOGE("DecodeHdrMetadata: AuxiliaryPicture is null");
+        return ERR_IMAGE_GET_DATA_ABNORMAL;
+    }
     std::shared_ptr<HdrMetadata> hdrMetadata = std::make_shared<HdrMetadata>(extDecoder->GetHdrMetadata(hdrType));
     std::shared_ptr<PixelMap> pixelMap = auxPicture->GetContentPixel();
     if (pixelMap == nullptr) {

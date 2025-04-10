@@ -160,7 +160,7 @@ static bool SoftDecode(const SrcConvertParam &srcParam, const DestConvertParam &
     }
     AVFrame *srcFrame = av_frame_alloc();
     AVFrame *dstFrame = av_frame_alloc();
-    if (srcFrame == nullptr && dstFrame == nullptr) {
+    if (srcFrame == nullptr || dstFrame == nullptr) {
         IMAGE_LOGE("FFMpeg: av_frame_alloc failed!");
         sws_freeContext(swsContext);
         return false;

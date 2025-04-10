@@ -1622,6 +1622,11 @@ napi_value ImageSourceNapi::CreateIncrementalSource(napi_env env, napi_callback_
 
     incOpts.incrementalMode = IncrementalMode::INCREMENTAL_DATA;
     std::unique_ptr<ImageSource> imageSource = ImageSource::CreateIncrementalImageSource(incOpts, errorCode);
+    if (imageSource == nullptr) {
+        IMAGE_LOGE("%{public}s error", __func__);
+        napi_get_undefined(env, &result);
+        return result;
+    }
     DecodeOptions decodeOpts;
     std::unique_ptr<IncrementalPixelMap> incPixelMap = imageSource->CreateIncrementalPixelMap(0, decodeOpts, errorCode);
     IMAGE_LOGD("CreateIncrementalImageSource end");
