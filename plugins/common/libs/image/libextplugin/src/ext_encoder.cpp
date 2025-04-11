@@ -797,6 +797,12 @@ sptr<SurfaceBuffer> ExtEncoder::ConvertToSurfaceBuffer(PixelMap* pixelmap)
         dstSize -= dstStride;
         src += srcStride;
     }
+    if (surfaceBuffer && (surfaceBuffer->GetUsage() & BUFFER_USAGE_MEM_MMZ_CACHE)) {
+        GSError err = surfaceBuffer->FlushCache();
+        if (err != GSERROR_OK) {
+            IMAGE_LOGE("FlushCache failed, GSError=%{public}d", err);
+        }
+    }
     return surfaceBuffer;
 }
 
