@@ -89,6 +89,11 @@ public:
         uint32_t destBuffersize);
     void PixelMap10bitConvert(PixelFormat &srcFormat, PixelFormat &destFormat, Size &srcSize,
         uint32_t destBuffersize);
+    void RGBConvertToYUVByUnique(PixelFormat &srcFormat, PixelFormat &desFormat,
+        AllocatorType allocType = AllocatorType::DEFAULT);
+    uint32_t YUVConvertToSameYUV(PixelFormat &srcFormat, PixelFormat &desFormat);
+    void YUVConvertToRGBByDataInfo(PixelFormat &srcFormat, PixelFormat &desFormat);
+    uint32_t RGBConvertToSameRGB(PixelFormat &srcFormat, PixelFormat &desFormat);
 };
 
 ConvertFunction ImageFormatConvertTest::TestGetConvertFuncByFormat(PixelFormat srcFormat, PixelFormat destFormat)
@@ -568,6 +573,28 @@ void ImageFormatConvertTest::PixelMap10bitConvert(PixelFormat &srcFormat, PixelF
     uint8_t *data8 = const_cast<uint8_t *>(pixelMap->GetPixels());
     ASSERT_NE(data8, nullptr);
     WriteToFile(outpath, size, outname, data8, destBuffersize);
+}
+
+void ImageFormatConvertTest::RGBConvertToYUVByUnique(PixelFormat &srcFormat, PixelFormat &destFormat,
+    AllocatorType allocType)
+{
+    uint32_t errorCode = 0;
+    SourceOptions opts;
+    opts.formatHint = "image/jpeg";
+    std::shared_ptr<ImageSource> rImageSource = ImageSource::CreateImageSource(IMAGE_INPUT_JPG_PATH1, opts, errorCode);
+    ASSERT_EQ(errorCode, SUCCESS);
+    ASSERT_NE(rImageSource.get(), nullptr);
+    Size srcSize = { TREE_ORIGINAL_WIDTH, TREE_ORIGINAL_HEIGHT };
+    DecodeOptions decodeOpts;
+    decodeOpts.desiredPixelFormat = srcFormat;
+    decodeOpts.desiredSize.width = srcSize.width;
+    decodeOpts.desiredSize.height = srcSize.height;
+    decodeOpts.allocatorType = allocType;
+    std::unique_ptr<PixelMap> srcPixelMap = rImageSource->CreatePixelMap(decodeOpts, errorCode);
+    ASSERT_EQ(errorCode, SUCCESS);
+    ASSERT_NE(srcPixelMap.get(), nullptr);
+    errorCode = ImageFormatConvert::RGBConvertImageFormatOptionUnique(srcPixelMap, srcFormat, destFormat);
+    ASSERT_EQ(errorCode, SUCCESS);
 }
 
 HWTEST_F(ImageFormatConvertTest, RGBAF16ToNV21_001, TestSize.Level3)
@@ -2185,6 +2212,20 @@ HWTEST_F(ImageFormatConvertTest, PixelMapFormatConvert_032, TestSize.Level3)
         ((srcSize.height + 1) / EVEN_ODD_DIVISOR) * TWO_SLICES;
     PixelMap10bitConvert(srcFormat, destFormat, srcSize, destBuffersize);
     GTEST_LOG_(INFO) << "ImageFormatConvertTest.PixelMapFormatConvert_032: end";
+}
+
+/**
+ * @tc.name: RGBConvertImageFormatOptionUnique_001
+ * @tc.desc: Verify RGB convert image format option using RGBConvertImageFormatOptionUnique.
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageFormatConvertTest, RGBConvertImageFormatOptionUnique_001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImageFormatConvertTest.RGBConvertImageFormatOptionUnique_001: start";
+    PixelFormat srcFormat = PixelFormat::RGBA_8888;
+    PixelFormat destFormat = PixelFormat::NV12;
+    RGBConvertToYUVByUnique(srcFormat, destFormat);
+    GTEST_LOG_(INFO) << "ImageFormatConvertTest.RGBConvertImageFormatOptionUnique_001: end";
 }
 } // namespace Media
 } // namespace OHOS
