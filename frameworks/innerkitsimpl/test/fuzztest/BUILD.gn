@@ -16,11 +16,12 @@ group("fuzztest") {
   deps = [
     "imageaccessor_fuzzer:ImageAccessorFuzzTest",
     "imagefwkconvertastc2rgb_fuzzer:ImageFwkConvertAstc2RgbFuzzTest",
+    "imagefwkconvertp010yuv2rgbext_fuzzer:ImageFwkConvertP010Yuv2RgbExtFuzzTest",
+    "imagefwkdecodepicture_fuzzer:ImageFwkDecodePictureFuzzTest",
     "imagefwkimagesource_fuzzer:ImageFwkImageSourceFuzzTest",
     "imagegifencoder_fuzzer:ImageGifEnCoderFuzzTest",
     "imageheifimpl_fuzzer:ImageHeifImplFuzzTest",
     "imageinterfacepixelmap_fuzzer:ImageInterfacePixelmapFuzzTest",
-    "imagepicture_fuzzer:ImagePictureFuzzTest",
     "imagepixelYuv_fuzzer:ImagePixelYuvFuzzTest",
     "imagepixelmapBase_fuzzer:ImagePixelmapBaseFuzzTest",
     "imagepixelmapGetColorARGB_fuzzer:ImagePixelmapGetColorARGBFuzzTest",
