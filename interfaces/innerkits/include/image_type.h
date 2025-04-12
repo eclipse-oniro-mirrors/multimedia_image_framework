@@ -400,6 +400,11 @@ struct MaintenanceData {
     MaintenanceData(std::shared_ptr<uint8_t[]> data, size_t size) : data_(data), size_(size) {}
 };
 
+struct YUVConvertColorSpaceDetails {
+    // Range: 0 means limit range, 1 means full range.
+    uint8_t srcRange = 0;
+    uint8_t dstRange = 0;
+};
 } // namespace Media
 } // namespace OHOS
 
