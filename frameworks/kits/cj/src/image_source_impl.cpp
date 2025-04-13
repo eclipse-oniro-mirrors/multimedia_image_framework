@@ -86,7 +86,10 @@ std::tuple<std::unique_ptr<ImageSource>, std::unique_ptr<IncrementalPixelMap>> I
     incOpts.sourceOptions = opts;
     incOpts.incrementalMode = IncrementalMode::INCREMENTAL_DATA;
     std::unique_ptr<ImageSource> imageSource = ImageSource::CreateIncrementalImageSource(incOpts, errorCode);
-
+    if (imageSource == nullptr) {
+        IMAGE_LOGE("imageSource is nullptr.");
+        return std::make_tuple(nullptr, nullptr);
+    }
     DecodeOptions decodeOpts;
     std::unique_ptr<IncrementalPixelMap> incPixelMap = imageSource->CreateIncrementalPixelMap(0, decodeOpts, errorCode);
     if (errorCode != SUCCESS) {
