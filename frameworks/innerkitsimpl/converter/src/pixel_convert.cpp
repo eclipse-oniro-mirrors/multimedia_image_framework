@@ -93,6 +93,12 @@ constexpr uint32_t BIT_SHIFT_16BITS = 16;
 constexpr uint32_t EVEN_ALIGNMENT = 2;
 constexpr uint32_t UV_PLANES_COUNT = 2;
 
+static const std::map<YuvConversion, const int> SWS_CS_COEFFICIENT = {
+    {YuvConversion::BT601, SWS_CS_DEFAULT},
+    {YuvConversion::BT709, SWS_CS_ITU709},
+    {YuvConversion::BT2020, SWS_CS_BT2020}
+};
+
 struct AstcInfo {
     uint32_t astcBufSize;
     uint8_t *astcBuf;
@@ -1150,7 +1156,10 @@ static bool FFMpegConvert(const void *srcPixels, const FFMPEG_CONVERT_INFO& srcI
         return false;
     }
     CHECK_ERROR_RETURN_RET_LOG((srcInfo.width <= 0 || srcInfo.height <= 0 ||
-        dstInfo.width <= 0 || dstInfo.height <= 0), false, "src/dst width/height error!");
+        dstInfo.width <= 0 || dstInfo.height <= 0 ||
+        (SWS_CS_COEFFICIENT.find(colorSpaceDetails.srcYuvConversion) == SWS_CS_COEFFICIENT.end()) ||
+        (SWS_CS_COEFFICIENT.find(colorSpaceDetails.dstYuvConversion) == SWS_CS_COEFFICIENT.end())),
+        false, "src/dst width/height colorTableCoefficients error!");
 
     inputFrame = av_frame_alloc();
     outputFrame = av_frame_alloc();
@@ -1160,8 +1169,8 @@ static bool FFMpegConvert(const void *srcPixels, const FFMPEG_CONVERT_INFO& srcI
         IMAGE_LOGE("srcInfo.width:%{public}d, srcInfo.height:%{public}d", srcInfo.width, srcInfo.height);
         if (ctx != nullptr) {
             //if need applu colorspace in scale, change defult table;
-            auto srcColorTable = sws_getCoefficients(SWS_CS_DEFAULT);
-            auto dstColorTable = sws_getCoefficients(SWS_CS_DEFAULT);
+            auto srcColorTable = sws_getCoefficients(SWS_CS_COEFFICIENT.at(colorSpaceDetails.srcYuvConversion));
+            auto dstColorTable = sws_getCoefficients(SWS_CS_COEFFICIENT.at(colorSpaceDetails.dstYuvConversion));
             sws_setColorspaceDetails(ctx,
                 // src convert matrix(YUV2RGB), Range: 0 means limit range, 1 means full range.
                 srcColorTable, colorSpaceDetails.srcRange,
@@ -1375,7 +1384,12 @@ static int32_t ConvertFromYUV(const BufferInfo &srcBufferInfo, const int32_t src
 
     const ImageInfo &srcInfo = srcBufferInfo.imageInfo;
     const ImageInfo &dstInfo = dstBufferInfo.imageInfo;
-    YUVConvertColorSpaceDetails colorSpaceDetails = { srcBufferInfo.range, dstBufferInfo.range };
+    YUVConvertColorSpaceDetails colorSpaceDetails = {
+        srcBufferInfo.range,
+        dstBufferInfo.range,
+        srcBufferInfo.yuvConversion,
+        dstBufferInfo.yuvConversion
+    };
 
     if ((srcInfo.pixelFormat != PixelFormat::NV21 && srcInfo.pixelFormat != PixelFormat::NV12) ||
         (dstInfo.pixelFormat == PixelFormat::NV21 || dstInfo.pixelFormat == PixelFormat::NV12)) {
