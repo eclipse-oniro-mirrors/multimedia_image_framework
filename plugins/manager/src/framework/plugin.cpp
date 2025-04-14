@@ -21,6 +21,7 @@
 #include "json_helper.h"
 #include "platform_adp.h"
 #include "singleton.h"
+#include <charconv>
 #ifdef _WIN32
 #include <windows.h>
 HMODULE hDll = NULL;
@@ -424,6 +425,13 @@ uint32_t Plugin::ExecuteVersionAnalysis(const string &input, VersionParseStep &s
     return SUCCESS;
 }
 
+static bool ConvertToUnsignedLong(const std::string& str, unsigned long& value)
+{
+    auto [ptr, errCode] = std::from_chars(str.data(), str.data() + str.size(), value);
+    bool ret = errCode == std::errc{} && (ptr == str.data() + str.size());
+    return ret;
+}
+
 uint32_t Plugin::GetUint16ValueFromDecimal(const string &source, uint16_t &result)
 {
     if (source.empty() || source.size() > UINT16_MAX_DECIMAL_DIGITS) {
@@ -439,7 +447,11 @@ uint32_t Plugin::GetUint16ValueFromDecimal(const string &source, uint16_t &resul
         }
     }
 
-    unsigned long tmp = stoul(source);
+    unsigned long tmp = 0;
+    if (!ConvertToUnsignedLong(source, tmp)) {
+        IMAGE_LOGE("source = %{public}s convert string to unsigned long failed", source.c_str());
+        return ERR_INVALID_PARAMETER;
+    }
     if (tmp > UINT16_MAX_VALUE) {
         IMAGE_LOGE("result out of the range of uint16: %{public}s.", source.c_str());
         return ERR_INVALID_PARAMETER;
