@@ -2971,6 +2971,50 @@ HWTEST_F(PixelMapTest, ConvertFromAstcPixelMapTest, TestSize.Level3)
     }
     GTEST_LOG_(INFO) << "PixelMapTest: ConvertFromAstcPixelMapTest end";
 }
+
+/**
+ * @tc.name: ColorTableCoefficientstest
+ * @tc.desc: Test of Create
+ * @tc.type: FUNC
+ */
+HWTEST_F(PixelMapTest, ColorTableCoefficientstest, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PixelMapTest: ColorTableCoefficientstest start";
+    // 0x80, 0x02, 0x04, 0x08, 0x40, 0x02, 0x04, 0x08 means buffer
+    // 8 means color length
+    const uint32_t color[8] = { 0x80, 0x02, 0x04, 0x08, 0x40, 0x02, 0x04, 0x08 };
+    uint32_t colorlength = sizeof(color) / sizeof(color[0]);
+    EXPECT_TRUE(colorlength == 8);
+    // -1 means offset
+    const int32_t offset = -1;
+    InitializationOptions opts;
+    // 2, 3 means size
+    opts.size.width = 3;
+    opts.size.height = 2;
+    opts.pixelFormat = PixelFormat::ARGB_8888;
+    opts.alphaType = AlphaType::IMAGE_ALPHA_TYPE_OPAQUE;
+    opts.convertColorSpace = {0, 0, YuvConversion::BT601,
+        YuvConversion::BT601};
+    int32_t width = opts.size.width;
+    // 1 means width
+    std::unique_ptr<PixelMap> pixelMap1 = PixelMap::Create(color, colorlength, offset, 1, opts);
+    EXPECT_NE(pixelMap1, nullptr);
+
+    opts.convertColorSpace = {0, 0, YuvConversion::BT709,
+        YuvConversion::BT709};
+    std::unique_ptr<PixelMap> pixelMap2 = PixelMap::Create(color, colorlength, offset, INT32_MAX, opts);
+    EXPECT_NE(pixelMap2, nullptr);
+
+    opts.convertColorSpace = {0, 0, YuvConversion::BT2020, YuvConversion::BT2020};
+    std::unique_ptr<PixelMap> pixelMap3= PixelMap::Create(color, colorlength, offset, width, opts);
+    EXPECT_NE(pixelMap3, nullptr);
+
+    opts.convertColorSpace = {0, 0, YuvConversion(8), YuvConversion::BT709};
+    std::unique_ptr<PixelMap> pixelMap4= PixelMap::Create(color, colorlength, 0, width, opts);
+    EXPECT_EQ(pixelMap4, nullptr);
+
+    GTEST_LOG_(INFO) << "PixelMapTest: ColorTableCoefficientstest end";
+}
  
 // For test closeFd func
 class TestPixelMap : public PixelMap {

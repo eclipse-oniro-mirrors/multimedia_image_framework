@@ -462,9 +462,9 @@ unique_ptr<PixelMap> PixelMap::Create(const uint32_t *colors, uint32_t colorLeng
     }
 
     BufferInfo srcInfo = {const_cast<void*>(static_cast<const void*>(colors + offset)), opts.srcRowStride,
-        srcImageInfo, opts.convertColorSpace.srcRange, colorLength};
+        srcImageInfo, opts.convertColorSpace.srcRange, colorLength, opts.convertColorSpace.srcYuvConversion};
     BufferInfo dstInfo = {dstMemory->data.data, dstRowStride, dstImageInfo, opts.convertColorSpace.dstRange,
-        dstMemory->data.size};
+        dstMemory->data.size, opts.convertColorSpace.dstYuvConversion};
     int32_t dstLength =
         PixelConvert::PixelsConvert(srcInfo, dstInfo, colorLength, dstMemory->GetType() == AllocatorType::DMA_ALLOC);
     if (dstLength < 0) {
@@ -616,6 +616,14 @@ bool PixelMap::CheckParams(const uint32_t *colors, uint32_t colorLength, int32_t
     if (offset < 0 || static_cast<int64_t>(offset) + dstWidth > colorLength || lastLine + dstWidth > colorLength) {
         IMAGE_LOGE("colors length: %{public}u, offset: %{public}d, width: %{public}d  is invalid",
             colorLength, offset, width);
+        return false;
+    }
+    if (opts.convertColorSpace.srcYuvConversion < YuvConversion::BT601 ||
+        opts.convertColorSpace.srcYuvConversion >= YuvConversion::BT_MAX ||
+        opts.convertColorSpace.dstYuvConversion < YuvConversion::BT601 ||
+        opts.convertColorSpace.dstYuvConversion >= YuvConversion::BT_MAX) {
+        IMAGE_LOGE("convertColorSpace yuvConversion:%{public}d,%{public}d error",
+            opts.convertColorSpace.srcYuvConversion, opts.convertColorSpace.dstYuvConversion);
         return false;
     }
     return true;
