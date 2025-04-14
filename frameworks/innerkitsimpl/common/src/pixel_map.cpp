@@ -846,7 +846,7 @@ bool PixelMap::SourceCropAndConvert(PixelMap &source, const ImageInfo &srcImageI
         return false;
     }
     size_t uBufferSize = static_cast<size_t>(bufferSize);
-    int fd = 0;
+    int fd = -1;
     void *dstPixels = nullptr;
     if (source.GetAllocatorType() == AllocatorType::SHARE_MEM_ALLOC) {
         dstPixels = AllocSharedMemory(uBufferSize, fd, dstPixelMap.GetUniqueId());
@@ -864,14 +864,15 @@ bool PixelMap::SourceCropAndConvert(PixelMap &source, const ImageInfo &srcImageI
     if (!PixelConvertAdapter::ReadPixelsConvert(source.GetPixels(), srcPosition, source.GetRowStride(), srcImageInfo,
         dstPixels, dstPixelMap.GetRowStride(), dstImageInfo)) {
         IMAGE_LOGE("pixel convert in adapter failed.");
-        ReleaseBuffer(fd > 0 ? AllocatorType::SHARE_MEM_ALLOC : AllocatorType::HEAP_ALLOC, fd, uBufferSize, &dstPixels);
+        ReleaseBuffer(fd >= 0 ? AllocatorType::SHARE_MEM_ALLOC : AllocatorType::HEAP_ALLOC,
+            fd, uBufferSize, &dstPixels);
         return false;
     }
 #ifdef IMAGE_COLORSPACE_FLAG
     OHOS::ColorManager::ColorSpace colorspace = source.InnerGetGrColorSpace();
     dstPixelMap.InnerSetColorSpace(colorspace);
 #endif
-    if (fd <= 0) {
+    if (fd < 0) {
         dstPixelMap.SetPixelsAddr(dstPixels, nullptr, uBufferSize, AllocatorType::HEAP_ALLOC, nullptr);
         return true;
     }
@@ -2421,8 +2422,8 @@ bool PixelMap::WriteMemInfoToParcel(Parcel &parcel, const int32_t &bufferSize) c
         }
 
         int *fd = static_cast<int *>(context_);
-        if (fd == nullptr || *fd <= 0) {
-            IMAGE_LOGE("write pixel map failed, fd is [%{public}d] or fd <= 0.", fd == nullptr ? 1 : 0);
+        if (fd == nullptr || *fd < 0) {
+            IMAGE_LOGE("write pixel map failed, fd is [%{public}d] or fd < 0.", fd == nullptr ? 1 : 0);
             return false;
         }
         if (!CheckAshmemSize(*fd, bufferSize, isAstc_)) {
@@ -4413,7 +4414,7 @@ bool PixelMap::CloseFd()
             IMAGE_LOGE("[Pixelmap] CloseFd fd is nullptr.");
             return false;
         }
-        if (*fd <= 0) {
+        if (*fd < 0) {
             IMAGE_LOGE("[Pixelmap] CloseFd invilid fd is [%{public}d]", *fd);
             return false;
         }
