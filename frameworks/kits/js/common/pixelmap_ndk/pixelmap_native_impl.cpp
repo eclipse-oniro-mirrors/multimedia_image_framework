@@ -44,14 +44,8 @@ OH_PixelmapNative::OH_PixelmapNative(const uint32_t *colors, uint32_t colorLengt
 
 OH_PixelmapNative::OH_PixelmapNative(const InitializationOptions &opts)
 {
-    if (opts.pixelFormat == PixelFormat::RGBA_1010102 ||
-        opts.pixelFormat == PixelFormat::YCBCR_P010 ||
-        opts.pixelFormat == PixelFormat::YCRCB_P010) {
-        pixelmap_ = nullptr;
-    } else {
-        auto tmpPixelmap = PixelMap::Create(opts);
-        pixelmap_ = std::move(tmpPixelmap);
-    }
+    auto tmpPixelmap = PixelMap::Create(opts);
+    pixelmap_ = std::move(tmpPixelmap);
 }
 
 OH_PixelmapNative::OH_PixelmapNative(OH_PixelmapNative *OH_PixelmapNative, const InitializationOptions &opts)
