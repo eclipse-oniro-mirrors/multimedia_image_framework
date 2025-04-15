@@ -235,6 +235,7 @@ ohos_shared_library("extplugin") {
       "astc-encoder:astc_encoder_shared",
       "c_utils:utils",
       "drivers_interface_display:libdisplay_commontype_proxy_1.0",
+      "drivers_peripheral_display:hdi_gralloc_client",
       "ffmpeg:libohosffmpeg",
       "ffrt:libffrt",
       "graphic_2d:color_manager",
@@ -481,7 +482,6 @@ ohos_shared_library("heifimpl") {
     external_deps += [
       "c_utils:utils",
       "drivers_interface_codec:libcodec_proxy_3.0",
-      "drivers_peripheral_codec:libcodec_hdi_omx_client",
       "ffmpeg:libohosffmpeg",
       "hdf_core:libhdi",
       "hitrace:hitrace_meter",
