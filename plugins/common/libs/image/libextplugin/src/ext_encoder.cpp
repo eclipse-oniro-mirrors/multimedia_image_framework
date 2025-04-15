@@ -945,8 +945,8 @@ static SkImageInfo GetSkInfo(PixelMap* pixelMap, bool isGainmap, bool isSRGB = f
 #ifdef IMAGE_COLORSPACE_FLAG
         if (pixelMap->InnerGetGrColorSpacePtr() != nullptr &&
             pixelMap->InnerGetGrColorSpace().GetColorSpaceName() != ColorManager::ColorSpaceName::NONE) {
-            auto graphicColor = OHOS::ColorManager::colorSpace(OHOS::ColorManager::ColorSpaceName::DISPLAY_P3);
-            colorSpace = graphicColor.ToSkColorSpace();
+            auto gainMapColorSpace = OHOS::ColorManager::ColorSpace(OHOS::ColorManager::ColorSpaceName::DISPLAY_P3);
+            colorSpace = gainMapColorSpace.ToSkColorSpace();
         }
         skcms_CICP cicp;
         ColorUtils::ColorSpaceGetCicp(pixelMap->InnerGetGrColorSpace().GetColorSpaceName(),
