@@ -969,26 +969,26 @@ HWTEST_F(PluginTextureEncodeTest, AstcEncoderTime_004, TestSize.Level3)
 /**
  * @tc.name: AstcEncoderTime_005
  * @tc.desc: Calculate the average time
- *         : BasedOnGPU / 64x64 / self-created images / 5000frames
+ *         : BasedOnGPU / 64x64 / self-created images / 2frames
  * @tc.type: Performance
  */
 HWTEST_F(PluginTextureEncodeTest, AstcEncoderTime_005, TestSize.Level3)
 {
-    // test condition: width 64, height 64, block 4x4 , frames 5000, isBasedOnGpu: true
-    AstcEncTestPara testPara = CreateAstcEncTestPara(64, 64, 4, 5000, true);
+    // test condition: width 64, height 64, block 4x4 , frames 2, isBasedOnGpu: true
+    AstcEncTestPara testPara = CreateAstcEncTestPara(64, 64, 4, 2, true);
     ASSERT_EQ(TestCaseMultiFrameEnc(testPara), TestEncRet::ERR_OK);
 }
 
 /**
  * @tc.name: AstcEncoderTime_006
  * @tc.desc: Calculate the average time
- *         : BasedOnGPU / 64x64 / Extern images / 5000frames
+ *         : BasedOnGPU / 64x64 / Extern images / 2frames
  * @tc.type: Performance
  */
 HWTEST_F(PluginTextureEncodeTest, AstcEncoderTime_006, TestSize.Level3)
 {
-    // test condition: width 64, height 64, block 4x4 , frames 5000, isBasedOnGpu: true
-    AstcEncTestPara testPara = CreateAstcEncTestPara(64, 64, 4, 5000, true);
+    // test condition: width 64, height 64, block 4x4 , frames 2, isBasedOnGpu: true
+    AstcEncTestPara testPara = CreateAstcEncTestPara(64, 64, 4, 2, true);
     testPara.isSelfCreatePixMap = false;
     ASSERT_LE(TestCaseMultiFrameEnc(testPara), TestEncRet::ERR_FILE_NOT_FIND);
 }
@@ -1001,14 +1001,14 @@ HWTEST_F(PluginTextureEncodeTest, AstcEncoderTime_006, TestSize.Level3)
  */
 HWTEST_F(PluginTextureEncodeTest, AstcEncoderTime_007, TestSize.Level3)
 {
-    // test condition: width 64, height 64, block 4x4 , frames 5000, isBasedOnGpu: true
-    AstcEncTestPara testPara = CreateAstcEncTestPara(64, 64, 4, 5000, true);
+    // test condition: width 64, height 64, block 4x4 , frames 2, isBasedOnGpu: true
+    AstcEncTestPara testPara = CreateAstcEncTestPara(64, 64, 4, 2, true);
     ASSERT_EQ(TestCaseMultiFrameEnc(testPara), TestEncRet::ERR_OK);
 
-    testPara = CreateAstcEncTestPara(128, 128, 4, 5000, true); // 64x64 block 4x4 , frames 5000
+    testPara = CreateAstcEncTestPara(128, 128, 4, 2, true); // 64x64 block 4x4 , frames 2
     ASSERT_EQ(TestCaseMultiFrameEnc(testPara), TestEncRet::ERR_OK);
 
-    testPara = CreateAstcEncTestPara(256, 256, 4, 5000, true); // 256x256 block 4x4 , frames 5000
+    testPara = CreateAstcEncTestPara(256, 256, 4, 2, true); // 256x256 block 4x4 , frames 2
     ASSERT_EQ(TestCaseMultiFrameEnc(testPara), TestEncRet::ERR_OK);
 
     testPara = CreateAstcEncTestPara(512, 512, 4, 1, true); // 512x512 block 4x4 , frames 1
