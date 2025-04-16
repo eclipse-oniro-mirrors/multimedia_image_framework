@@ -25,10 +25,10 @@
 #include "iremote_object.h"
 #include "iproxy_broker.h"
 #include "media_errors.h"
+#include "image_trace.h"
 #include "src/codec/SkJpegUtility.h"
 #include "src/codec/SkJpegDecoderMgr.h"
 #include "src/codec/SkJpegCodec.h"
-#include "image_trace.h"
 
 namespace OHOS::ImagePlugin {
 using namespace OHOS::HDI::Codec::Image::V2_0;
@@ -171,7 +171,7 @@ bool JpegHardwareDecoder::CheckInputColorFmt(SkCodec *codec)
 uint32_t JpegHardwareDecoder::Decode(SkCodec *codec, ImagePlugin::InputDataStream *srcStream,
                                      OHOS::Media::Size srcImgSize, uint32_t sampleSize, CodecImageBuffer& outputBuffer)
 {
-    Media::ImageTrace imageTrace("jpeg_hw_decoder Decode");
+    Media::ImageTrace imageTrace("JpegHardwareDecoder::Decode");
     LifeSpanTimer decodeTimer("jpeg hardware decode");
     JPEG_HW_LOGD("img=[%{public}ux%{public}u], sampleSize=%{public}u",
                  srcImgSize.width, srcImgSize.height, sampleSize);
