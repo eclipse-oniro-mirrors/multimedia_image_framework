@@ -1211,6 +1211,9 @@ ohos_unittest("napitest") {
 ohos_unittest("jpeg_hw_decoder_test") {
   module_out_path = module_output_path
 
+  if (is_ohos) {
+    defines = [ "SK_ENABLE_OHOS_CODEC" ]
+  }
   sources = [
     "${image_subsystem}/frameworks/innerkitsimpl/test/unittest/plugin_test/ext_decoder_test.cpp",
     "${image_subsystem}/plugins/common/libs/image/libextplugin/src/ext_stream.cpp",

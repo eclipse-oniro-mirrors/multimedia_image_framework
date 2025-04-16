@@ -20,12 +20,16 @@
 #include "raw_stream.h"
 #include "mock_data_stream.h"
 #include "mock_abs_image_decoder.h"
+#include "image_source.h"
 
 using namespace testing::ext;
 using namespace OHOS::Media;
 using namespace OHOS::ImagePlugin;
 namespace OHOS {
 namespace Multimedia {
+
+static const std::string IMAGE_RAW_PATH = "/data/local/tmp/image/test_raw_dng.dng";
+
 class RawDecoderTest : public testing::Test {
 public:
     RawDecoderTest() {}
@@ -781,6 +785,71 @@ HWTEST_F(RawDecoderTest, GetDataTest001, TestSize.Level3)
     result = rawStream->GetData(offset, length, data);
     ASSERT_EQ(result, piex::kFail);
     GTEST_LOG_(INFO) << "RawStreamTest: GetDataTest001 end";
+}
+
+/**
+ * @tc.name: SetDecodeOptionsTest009
+ * @tc.desc: Verify RawDecoder using raw image to call SetDecodeOptions.
+ * @tc.type: FUNC
+ */
+HWTEST_F(RawDecoderTest, SetDecodeOptionsTest009, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "RawStreamTest: SetDecodeOptionsTest009 start";
+    auto rawDecoder = std::make_shared<RawDecoder>();
+    ASSERT_NE(rawDecoder, nullptr);
+    uint32_t errorCode = -1;
+    SourceOptions sourceOpts;
+    sourceOpts.formatHint = "image/jpeg";
+    std::unique_ptr<ImageSource> imageSource =
+        ImageSource::CreateImageSource(IMAGE_RAW_PATH, sourceOpts, errorCode);
+    ASSERT_NE(imageSource, nullptr);
+    rawDecoder->SetSource(*(imageSource->sourceStreamPtr_.get()));
+    PixelDecodeOptions opts;
+    PlImageInfo info;
+    rawDecoder->SetDecodeOptions(0, opts, info);
+    ASSERT_NE(rawDecoder, nullptr);
+    GTEST_LOG_(INFO) << "RawStreamTest: SetDecodeOptionsTest009 end";
+}
+
+/**
+ * @tc.name: GetImageSizeTest007
+ * @tc.desc: Verify RawDecoder using raw image to call GetImageSize.
+ * @tc.type: FUNC
+ */
+HWTEST_F(RawDecoderTest, GetImageSizeTest007, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "RawStreamTest: GetImageSizeTest007 start";
+    auto rawDecoder = std::make_shared<RawDecoder>();
+    ASSERT_NE(rawDecoder, nullptr);
+    uint32_t errorCode = -1;
+    SourceOptions sourceOpts;
+    sourceOpts.formatHint = "image/jpeg";
+    std::unique_ptr<ImageSource> imageSource =
+        ImageSource::CreateImageSource(IMAGE_RAW_PATH, sourceOpts, errorCode);
+    ASSERT_NE(imageSource, nullptr);
+    rawDecoder->SetSource(*(imageSource->sourceStreamPtr_.get()));
+    ImagePlugin::Size plSize;
+    rawDecoder->GetImageSize(0, plSize);
+    ASSERT_NE(rawDecoder, nullptr);
+    GTEST_LOG_(INFO) << "RawStreamTest: GetImageSizeTest007 end";
+}
+
+/**
+ * @tc.name: DecodeTest004
+ * @tc.desc: Verify that the RawDecoder's state is IMAGE_DECODING and call Decode.
+ * @tc.type: FUNC
+ */
+HWTEST_F(RawDecoderTest, DecodeTest004, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "RawStreamTest: DecodeTest004 start";
+    auto rawDecoder = std::make_shared<RawDecoder>();
+    ASSERT_NE(rawDecoder, nullptr);
+    uint32_t index = 0;
+    DecodeContext context;
+    rawDecoder->state_ = ImagePlugin::RawDecoder::RawDecodingState::IMAGE_DECODING;
+    uint32_t result = rawDecoder->Decode(index, context);
+    ASSERT_EQ(result, Media::ERR_IMAGE_DATA_UNSUPPORT);
+    GTEST_LOG_(INFO) << "RawStreamTest: DecodeTest004 end";
 }
 }
 }

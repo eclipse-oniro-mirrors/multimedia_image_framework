@@ -19,10 +19,12 @@
 #include "securec.h"
 #include "memory.h"
 #include "nine_patch_listener.h"
+#include "png_ninepatch_res.h"
 
 using namespace testing::ext;
 namespace OHOS {
 namespace Multimedia {
+    
 class NinePathListenerTest : public testing::Test {
 public:
     NinePathListenerTest() {}

@@ -32,6 +32,11 @@ public:
     ~ImageCreatorTest() {}
 };
 
+class ImageCreatorReleaseListenerTest : public SurfaceBufferReleaseListener {
+public:
+    void OnSurfaceBufferRelease() override {}
+};
+
 /**
  * @tc.name: CreateImageCreator001
  * @tc.desc: test CreateImageCreator
@@ -396,5 +401,45 @@ HWTEST_F(ImageCreatorTest, DequeueNativeImage001, TestSize.Level3)
     ASSERT_NE(buffer, nullptr);
     GTEST_LOG_(INFO) << "ImageCreatorTest: DequeueNativeImage001 end";
 }
+
+/**
+ * @tc.name: OnBufferRelease004
+ * @tc.desc: Verify ImageCreator using other buffer release listener to call onBufferRelease.
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageCreatorTest, OnBufferRelease004, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImageCreatorTest: OnBufferRelease004 start";
+    std::shared_ptr<ImageCreator> creator = ImageCreator::CreateImageCreator(1, 1, 1, 1);
+    ASSERT_NE(creator, nullptr);
+    std::shared_ptr<ImageCreatorReleaseListenerTest> release =
+        std::make_shared<ImageCreatorReleaseListenerTest>();
+    ASSERT_NE(release, nullptr);
+    creator->RegisterBufferReleaseListener(release);
+    OHOS::sptr<OHOS::SurfaceBuffer> buffer = creator->DequeueImage();
+    ASSERT_NE(buffer, nullptr);
+    GSError error = ImageCreator::OnBufferRelease(buffer);
+    ASSERT_EQ(error, GSERROR_NO_ENTRY);
+    GTEST_LOG_(INFO) << "ImageCreatorTest: OnBufferRelease004 end";
+}
+
+/**
+ * @tc.name: QueueNativeImage002
+ * @tc.desc: Verify ImageCreator using native image as parameter to call QueueNativeImage.
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageCreatorTest, QueueNativeImage002, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImageCreatorTest: QueueNativeImage002 start";
+    std::shared_ptr<ImageCreator> creator = ImageCreator::CreateImageCreator(1, 1, 1, 1);
+    ASSERT_NE(creator, nullptr);
+    std::shared_ptr<NativeImage> image = creator->DequeueNativeImage();
+    ASSERT_NE(image, nullptr);
+    creator->QueueNativeImage(image);
+    image = creator->DequeueNativeImage();
+    ASSERT_NE(image, nullptr);
+    GTEST_LOG_(INFO) << "ImageCreatorTest: QueueNativeImage002 end";
+}
+
 } // namespace Multimedia
 } // namespace OHOS
