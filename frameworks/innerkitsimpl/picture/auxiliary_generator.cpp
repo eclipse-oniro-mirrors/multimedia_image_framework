@@ -18,6 +18,7 @@
 #include "fragment_metadata.h"
 #include "hdr_type.h"
 #include "image_log.h"
+#include "image_trace.h"
 #include "image_utils.h"
 #include "image_mime_type.h"
 #include "image_source.h"
@@ -432,6 +433,7 @@ std::shared_ptr<AuxiliaryPicture> AuxiliaryGenerator::GenerateJpegAuxiliaryPictu
     MainPictureInfo &mainInfo, AuxiliaryPictureType type, std::unique_ptr<InputDataStream> &auxStream,
     std::unique_ptr<AbsImageDecoder> &extDecoder, uint32_t &errorCode)
 {
+    ImageTrace trace("GenerateJpegAuxiliaryPicture Type:(%d)", static_cast<int>(type));
     IMAGE_LOGI("Generate jpeg auxiliary picture, type: %{public}d", static_cast<int>(type));
     if (!ImageUtils::IsAuxiliaryPictureTypeSupported(type) || auxStream == nullptr || extDecoder == nullptr) {
         errorCode = ERR_IMAGE_INVALID_PARAMETER;
