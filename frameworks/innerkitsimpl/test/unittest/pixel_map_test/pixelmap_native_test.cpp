@@ -1098,5 +1098,101 @@ HWTEST_F(PixelMapNdk2Test, OH_PixelmapNative_CreateScaledPixelMap, TestSize.Leve
 
     GTEST_LOG_(INFO) << "PixelMapNdk2Test: OH_PixelmapNative_CreateScaledPixelMap end";
 }
+
+/**
+ * @tc.name: OH_PixelmapNative_CreateEmptyPixelmap
+ * @tc.desc: OH_PixelmapNative_CreateEmptyPixelmap For PIXEL_FORMAT_RGBA_1010102
+ * @tc.type: FUNC
+ */
+HWTEST_F(PixelMapNdk2Test, OH_PixelmapNative_CreateEmptyPixelmapForRGBA_1010102, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PixelMapNdk2Test: OH_PixelmapNative_CreateEmptyPixelmapForRGBA_1010102 start";
+    OH_Pixelmap_InitializationOptions *options = nullptr;
+    OH_PixelmapInitializationOptions_Create(&options);
+    OH_PixelmapInitializationOptions_SetWidth(options, 512);
+    OH_PixelmapInitializationOptions_SetHeight(options, 512);
+    OH_PixelmapInitializationOptions_SetPixelFormat(options, PIXEL_FORMAT_RGBA_1010102);
+    OH_PixelmapNative *pixelmap = nullptr;
+
+    Image_ErrorCode ret = OH_PixelmapNative_CreateEmptyPixelmap(options, &pixelmap);
+    ASSERT_EQ(ret, IMAGE_SUCCESS);
+    ret = OH_PixelmapNative_Scale(pixelmap, 2, 2); // 2: scale size
+    ASSERT_EQ(ret, IMAGE_SUCCESS);
+    ret = OH_PixelmapNative_Rotate(pixelmap, 64.0); // 64.0: rotate angle
+    ASSERT_EQ(ret, IMAGE_SUCCESS);
+    uint32_t byteCount = 0;
+    ret = OH_PixelmapNative_GetByteCount(pixelmap, &byteCount);
+    ASSERT_EQ(ret, IMAGE_SUCCESS);
+    uint32_t allocByteCount = 0;
+    ret = OH_PixelmapNative_GetAllocationByteCount(pixelmap, &allocByteCount);
+    ASSERT_EQ(ret, IMAGE_SUCCESS);
+    ret = OH_PixelmapNative_Flip(pixelmap, 0, 1); // 1: need to flip; 0: no need flip
+    ASSERT_EQ(ret, IMAGE_SUCCESS);
+    GTEST_LOG_(INFO) << "PixelMapNdk2Test: OH_PixelmapNative_CreateEmptyPixelmapForRGBA_1010102 end";
+}
+
+/**
+ * @tc.name: OH_PixelmapNative_CreateEmptyPixelmap
+ * @tc.desc: OH_PixelmapNative_CreateEmptyPixelmap For PIXEL_FORMAT_YCBCR_P010
+ * @tc.type: FUNC
+ */
+HWTEST_F(PixelMapNdk2Test, OH_PixelmapNative_CreateEmptyPixelmapForPIXEL_FORMAT_YCBCR_P010, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PixelMapNdk2Test: OH_PixelmapNative_CreateEmptyPixelmapForPIXEL_FORMAT_YCBCR_P010 start";
+    OH_Pixelmap_InitializationOptions *options = nullptr;
+    OH_PixelmapInitializationOptions_Create(&options);
+    OH_PixelmapInitializationOptions_SetWidth(options, 512);
+    OH_PixelmapInitializationOptions_SetHeight(options, 512);
+    OH_PixelmapInitializationOptions_SetPixelFormat(options, PIXEL_FORMAT_YCBCR_P010);
+    OH_PixelmapNative *pixelmap = nullptr;
+
+    Image_ErrorCode ret = OH_PixelmapNative_CreateEmptyPixelmap(options, &pixelmap);
+    ASSERT_EQ(ret, IMAGE_SUCCESS);
+    ret = OH_PixelmapNative_Scale(pixelmap, 2, 2); // 2: scale size
+    ASSERT_EQ(ret, IMAGE_SUCCESS);
+    ret = OH_PixelmapNative_Rotate(pixelmap, 64.0); // 64.0: rotate angle
+    ASSERT_EQ(ret, IMAGE_SUCCESS);
+    uint32_t byteCount = 0;
+    ret = OH_PixelmapNative_GetByteCount(pixelmap, &byteCount);
+    ASSERT_EQ(ret, IMAGE_SUCCESS);
+    uint32_t allocByteCount = 0;
+    ret = OH_PixelmapNative_GetAllocationByteCount(pixelmap, &allocByteCount);
+    ASSERT_EQ(ret, IMAGE_SUCCESS);
+    ret = OH_PixelmapNative_Flip(pixelmap, 0, 1); // 1: need to flip; 0: no need flip
+    ASSERT_EQ(ret, IMAGE_SUCCESS);
+    GTEST_LOG_(INFO) << "PixelMapNdk2Test: OH_PixelmapNative_CreateEmptyPixelmapForPIXEL_FORMAT_YCBCR_P010 end";
+}
+
+/**
+ * @tc.name: OH_PixelmapNative_CreateEmptyPixelmap
+ * @tc.desc: OH_PixelmapNative_CreateEmptyPixelmap For PIXEL_FORMAT_YCRCB_P010
+ * @tc.type: FUNC
+ */
+HWTEST_F(PixelMapNdk2Test, OH_PixelmapNative_CreateEmptyPixelmapForPIXEL_FORMAT_YCRCB_P010, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PixelMapNdk2Test: OH_PixelmapNative_CreateEmptyPixelmapForPIXEL_FORMAT_YCRCB_P010 start";
+    OH_Pixelmap_InitializationOptions *options = nullptr;
+    OH_PixelmapInitializationOptions_Create(&options);
+    OH_PixelmapInitializationOptions_SetWidth(options, 512);
+    OH_PixelmapInitializationOptions_SetHeight(options, 512);
+    OH_PixelmapInitializationOptions_SetPixelFormat(options, PIXEL_FORMAT_YCRCB_P010);
+    OH_PixelmapNative *pixelmap = nullptr;
+
+    Image_ErrorCode ret = OH_PixelmapNative_CreateEmptyPixelmap(options, &pixelmap);
+    ASSERT_EQ(ret, IMAGE_SUCCESS);
+    ret = OH_PixelmapNative_Scale(pixelmap, 2, 2); // 2: scale size
+    ASSERT_EQ(ret, IMAGE_SUCCESS);
+    ret = OH_PixelmapNative_Rotate(pixelmap, 64.0); // 64.0: rotate angle
+    ASSERT_EQ(ret, IMAGE_SUCCESS);
+    uint32_t byteCount = 0;
+    ret = OH_PixelmapNative_GetByteCount(pixelmap, &byteCount);
+    ASSERT_EQ(ret, IMAGE_SUCCESS);
+    uint32_t allocByteCount = 0;
+    ret = OH_PixelmapNative_GetAllocationByteCount(pixelmap, &allocByteCount);
+    ASSERT_EQ(ret, IMAGE_SUCCESS);
+    ret = OH_PixelmapNative_Flip(pixelmap, 0, 1); // 1: need to flip; 0: no need flip
+    ASSERT_EQ(ret, IMAGE_SUCCESS);
+    GTEST_LOG_(INFO) << "PixelMapNdk2Test: OH_PixelmapNative_CreateEmptyPixelmapForPIXEL_FORMAT_YCRCB_P010 end";
+}
 }
 }
