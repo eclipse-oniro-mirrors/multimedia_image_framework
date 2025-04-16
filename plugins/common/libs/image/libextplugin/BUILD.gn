@@ -283,7 +283,6 @@ ohos_shared_library("extplugin") {
       include_dirs += [ "include/heif_impl/heif_parser" ]
       external_deps += [
         "drivers_interface_codec:libcodec_proxy_3.0",
-        "drivers_peripheral_codec:libcodec_hdi_omx_client",
         "openmax:libopenmax_static",
       ]
     }
@@ -483,7 +482,6 @@ ohos_shared_library("heifimpl") {
     external_deps += [
       "c_utils:utils",
       "drivers_interface_codec:libcodec_proxy_3.0",
-      "drivers_peripheral_codec:libcodec_hdi_omx_client",
       "ffmpeg:libohosffmpeg",
       "hdf_core:libhdi",
       "hitrace:hitrace_meter",
