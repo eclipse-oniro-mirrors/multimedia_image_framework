@@ -656,14 +656,14 @@ uint32_t ExtDecoder::CheckDecodeOptions(uint32_t index, const PixelDecodeOptions
                      dstInfo_.width(), dstInfo_.height());
         return ERR_IMAGE_INVALID_PARAMETER;
     }
-    IMAGE_LOGI("%{public}s IN, opts.CropRect: xy [%{public}d x %{public}d] wh [%{public}d x %{public}d]",
+    IMAGE_LOGD("%{public}s IN, opts.CropRect: xy [%{public}d x %{public}d] wh [%{public}d x %{public}d]",
         __func__, opts.CropRect.left, opts.CropRect.top, opts.CropRect.width, opts.CropRect.height);
     if (!IsValidCrop(opts.CropRect, info_, dstSubset_)) {
         IMAGE_LOGE("Invalid crop rect top:%{public}d, bottom:%{public}d, left:%{public}d, right:%{public}d",
             dstSubset_.top(), dstSubset_.bottom(), dstSubset_.left(), dstSubset_.right());
         return ERR_IMAGE_INVALID_PARAMETER;
     }
-    IMAGE_LOGI("%{public}s IN, dstSubset_: xy [%{public}d x %{public}d] wh [%{public}d x %{public}d]",
+    IMAGE_LOGD("%{public}s IN, dstSubset_: xy [%{public}d x %{public}d] wh [%{public}d x %{public}d]",
         __func__, dstSubset_.left(), dstSubset_.top(), dstSubset_.width(), dstSubset_.height());
     size_t tempSrcByteCount = info_.computeMinByteSize();
     size_t tempDstByteCount = dstInfo_.computeMinByteSize();
