@@ -379,7 +379,7 @@ export namespace image {
     }
 
     public createAlphaPixelmap(): Promise<PixelMap> {
-      return new Promise<PixelMap>((resolve: (v: PixelMap) => void, reject: (error: Object) => void) => {
+      return new Promise<PixelMap>((resolve: (v: PixelMap) => void, reject: (error: Error) => void) => {
         const cb = (): PixelMap => {
           return this.nativeCreateAlphaPixelmap();
         };
@@ -397,7 +397,7 @@ export namespace image {
     }
 
     public getImageInfo(): Promise<ImageInfo> {
-      return new Promise<ImageInfo>((resolve: (v: ImageInfo) => void, reject: (error: Object) => void) => {
+      return new Promise<ImageInfo>((resolve: (v: ImageInfo) => void, reject: (error: Error) => void) => {
         const cb = (): ImageInfo => {
           return this.nativeGetImageInfo();
         };
@@ -415,7 +415,7 @@ export namespace image {
     }
 
     public readPixelsToBuffer(buff: ArrayBuffer): Promise<void> {
-      return new Promise<void>((resolve: (v: Promise<void>) => void, reject: (error: Object) => void) => {
+      return new Promise<void>((resolve: (v: Promise<void>) => void, reject: (error: Error) => void) => {
         const cb = (): boolean => {
           this.nativeReadPixelsToBuffer(buff);
           return true;
@@ -440,7 +440,7 @@ export namespace image {
       this.nativeCrop(region);
     }
     public crop(region: Region): Promise<void> {
-      return new Promise<void>((resolve: (v: Promise<void>) => void, reject: (error: Object) => void) => {
+      return new Promise<void>((resolve: (v: Promise<void>) => void, reject: (error: Error) => void) => {
         const cb = (): boolean => {
           this.nativeCrop(region);
           return true;
@@ -459,7 +459,7 @@ export namespace image {
     native nativeRelease(): void;
 
     public release(): Promise<void> {
-      return new Promise<void>((resolve: (v: Promise<void>) => void, reject: (error: Object) => void) => {
+      return new Promise<void>((resolve: (v: Promise<void>) => void, reject: (error: Error) => void) => {
         const cb = (): boolean => {
           this.nativeRelease();
           return true;
@@ -548,7 +548,7 @@ export namespace image {
     native nativeModifyImageProperties(records: Record<string, string | null>): void;
 
     modifyImageProperties(records: Record<string, string | null>): Promise<void> {
-      return new Promise<void>((resolve: (v: Promise<void>) => void, reject: (error: Object) => void) => {
+      return new Promise<void>((resolve: (v: Promise<void>) => void, reject: (error: Error) => void) => {
         const cb = (): boolean => {
           this.nativeModifyImageProperties(records);
           return true;
@@ -562,7 +562,7 @@ export namespace image {
 
     public getImageProperties(key: Array<string>): Promise<Record<string, string | null>> {
       return new Promise<Record<string, string | null>>(
-        (resolve: (v: Record<string, string | null>) => void, reject: (error: Object) => void) => {
+        (resolve: (v: Record<string, string | null>) => void, reject: (error: Error) => void) => {
         const cb = (): Record<string, string | null> => {
           return this.nativeGetImageProperties(key);
         };
@@ -578,7 +578,7 @@ export namespace image {
     }
 
     public createPixelMap(options?: DecodingOptions): Promise<PixelMap> {
-      return new Promise<PixelMap>((resolve: (v: PixelMap) => void, reject: (error: Object) => void) => {
+      return new Promise<PixelMap>((resolve: (v: PixelMap) => void, reject: (error: Error) => void) => {
         const cb = (): PixelMap => {
           return this.nativeCreatePixelMap(options);
         };
@@ -597,7 +597,7 @@ export namespace image {
     }
 
     public getImageInfo(index: int): Promise<ImageInfo> {
-      return new Promise<ImageInfo>((resolve: (v: ImageInfo) => void, reject: (error: Object) => void) => {
+      return new Promise<ImageInfo>((resolve: (v: ImageInfo) => void, reject: (error: Error) => void) => {
         const cb = (): ImageInfo => {
           return this.nativeGetImageInfo(index);
         };
