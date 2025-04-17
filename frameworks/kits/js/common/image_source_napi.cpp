@@ -1259,8 +1259,6 @@ static bool ParseDecodeOptions2(napi_env env, napi_value root, DecodeOptions* op
     if (GET_INT32_BY_NAME(root, "cropAndScaleStrategy", cropAndScaleNum) && IsCropStrategyVaild(cropAndScaleNum)) {
         IMAGE_LOGI("The strategy has taken effect");
         opts->cropAndScaleStrategy = CropAndScaleStrategy(cropAndScaleNum);
-    } else {
-        IMAGE_LOGI("default cropAndScaleStrategy");
     }
 
     if (!GET_INT32_BY_NAME(root, "fitDensity", opts->fitDensity)) {
