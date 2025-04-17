@@ -490,6 +490,16 @@ bool RotateShader::LoadProgram()
     return true;
 }
 
+bool IsOddMultipleOf90(float degree)
+{
+    const float ratio = degree / 90.0f;
+    const int rounded = static_cast<int>(std::round(ratio));
+    if (std::abs(ratio - rounded) > 1e-6f) {
+        return false;
+    }
+    return (std::abs(rounded) % NUM_2) == 1;
+}
+
 bool RotateShader::Use()
 {
     ImageTrace imageTrace("RotateShader::Use");
@@ -504,9 +514,9 @@ bool RotateShader::Use()
     glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, writeTexId_, 0); //绑定
     glClearColor(0, 1, 0, 0);
     glClear(GL_COLOR_BUFFER_BIT);
-    uint32_t calculationTargetHeight =  rotateDegreeZ_ !=0 ?
+    uint32_t calculationTargetHeight = IsOddMultipleOf90(rotateDegreeZ_) ?
         static_cast<uint32_t>(targetSize_.width) : static_cast<uint32_t>(targetSize_.height);
-    uint32_t calculationTargetWidth =  rotateDegreeZ_ !=0 ?
+    uint32_t calculationTargetWidth = IsOddMultipleOf90(rotateDegreeZ_) ?
         static_cast<uint32_t>(targetSize_.height) : static_cast<uint32_t>(targetSize_.width);
     float clipRatioX = sourceSize_.width > sourceSize_.height ?
         (sourceSize_.height * 1.0f / calculationTargetHeight) * calculationTargetWidth / sourceSize_.width : 1;
