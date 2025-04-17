@@ -206,7 +206,7 @@ export namespace image {
     GIF_LOOP_COUNT = 'GIFLoopCount'
   }
 
-  enum AntiAliasingLevel {
+  export enum AntiAliasingLevel {
     NONE = 0,
     LOW = 1,
     MEDIUM = 2,
@@ -232,7 +232,7 @@ export namespace image {
     SDR = 1,
   }
 
-  enum ScaleMode {
+  export enum ScaleMode {
     FIT_TARGET_SIZE = 0,
     CENTER_CROP = 1
   }
@@ -250,8 +250,9 @@ export namespace image {
     FRAGMENT_METADATA = 2,
   }
 
-  enum PixelMapFormat {
+  export enum PixelMapFormat {
     UNKNOWN = 0,
+    ARGB_8888 = 1,
     RGB_565 = 2,
     RGBA_8888 = 3,
     BGRA_8888 = 4,
@@ -262,10 +263,11 @@ export namespace image {
     NV12 = 9,
     RGBA_1010102 = 10,
     YCBCR_P010 = 11,
-    YCRCB_P010 = 12
+    YCRCB_P010 = 12,
+    ASTC_4x4 = 102
   }
 
-  enum AlphaType {
+  export enum AlphaType {
     UNKNOWN = 0,
     OPAQUE = 1,
     PREMUL = 2,
@@ -310,8 +312,8 @@ export namespace image {
     size: Size;
     density: int;
     stride: int;
-    pixelFormat: int;
-    alphaType: int;
+    pixelFormat: PixelMapFormat;
+    alphaType: AlphaType;
     mimeType: string;
     isHdr: boolean;
   }
@@ -320,9 +322,9 @@ export namespace image {
     size: Size = { width: 0, height: 0 };
     density: int = 0;
     stride: int = 0;
-    pixelFormat: int = 0;
-    alphaType: int = 0;
-    mimeType: string = " ";
+    pixelFormat: PixelMapFormat = PixelMapFormat.UNKNOWN;
+    alphaType: AlphaType = AlphaType.UNKNOWN;
+    mimeType: string = "";
     isHdr: boolean = false;
   }
   // end common
@@ -330,20 +332,11 @@ export namespace image {
   // pixelmap
   export interface InitializationOptions {
     size: Size;
-    srcPixelFormat?: Int;
-    pixelFormat?: Int;
+    srcPixelFormat?: PixelMapFormat;
+    pixelFormat?: PixelMapFormat;
     editable?: boolean;
-    alphaType?: Int;
-    scaleMode?: Int;
-  }
-
-  export class InitializationOptionsInner implements InitializationOptions {
-    size: Size = { width: 0, height: 0 };
-    pixelFormat?: Int | undefined = 0;
-    srcPixelFormat?: Int | undefined = 0;
-    editable?: boolean | undefined = false;
-    alphaType?: Int | undefined = 0;
-    scaleMode?: Int | undefined = 0;
+    alphaType?: AlphaType;
+    scaleMode?: ScaleMode;
   }
 
   export interface PixelMap {
@@ -356,7 +349,7 @@ export namespace image {
     readPixelsToBufferSync(buff: ArrayBuffer);
     readPixelsToBuffer(buff: ArrayBuffer): Promise<void>;
     scaleSync(x: double, y: double): void;
-    scaleSync(x: double, y: double, level: int): void;
+    scaleSync(x: double, y: double, level: AntiAliasingLevel): void;
     cropSync(region: Region): void;
     crop(region: Region): Promise<void>;
     flipSync(horizontal: boolean, vertical: boolean): void;
@@ -425,12 +418,12 @@ export namespace image {
       });
     }
 
-    native nativeScale(x: double, y: double, level: int): void;
+    native nativeScale(x: double, y: double, level: AntiAliasingLevel): void;
 
     public scaleSync(x: double, y: double): void {
-      this.nativeScale(x, y, 0);
+      this.nativeScale(x, y, AntiAliasingLevel.NONE);
     }
-    public scaleSync(x: double, y: double, level: int): void {
+    public scaleSync(x: double, y: double, level: AntiAliasingLevel): void {
       this.nativeScale(x, y, level);
     }
 
