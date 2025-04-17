@@ -70,7 +70,7 @@ HWTEST_F(ImageSourceImplTest, ImageSourceImplTest002, TestSize.Level3)
 {
     GTEST_LOG_(INFO) << "ImageSourceImplTest: ImageSourceImplTest002 start";
     SourceOptions opts;
-    uint32_t errorCode = 0;
+    uint32_t errorCode = 1;
     std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(IMAGE_JPEG_PATH, opts, errorCode);
     ASSERT_EQ(errorCode, 0);
     ImageSourceImpl imageSourceImpl(std::move(imageSource));
@@ -124,7 +124,8 @@ HWTEST_F(ImageSourceImplTest, ImageSourceImplTest003, TestSize.Level3)
     GTEST_LOG_(INFO) << "ImageSourceImplTest: ImageSourceImplTest003 start";
     ImageSourceImpl imageSourceImplNull(nullptr);
     ImageInfo imageInfo;
-    imageSourceImplNull.GetImageInfo(0, imageInfo);
+    uint32_t ret = imageSourceImplNull.GetImageInfo(0, imageInfo);
+    ASSERT_NE(ret, 0);
     std::set<std::string> formats{};
     imageSourceImplNull.GetSupportedFormats(formats);
     uint32_t errorCode = 0;

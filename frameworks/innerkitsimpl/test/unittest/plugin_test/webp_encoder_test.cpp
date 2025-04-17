@@ -708,7 +708,9 @@ HWTEST_F(WebpEncoderTest, MakeImageInfoTest002, TestSize.Level3)
     Media::PixelFormat pf = PixelFormat::RGB_565;
     Media::AlphaType at = AlphaType::IMAGE_ALPHA_TYPE_UNPREMUL;
     Media::ColorSpace cs = ColorSpace::EXTENDED_SRGB;
-    encoder.MakeImageInfo(width, height, pf, at, cs);
+    ImageInfo ret = encoder.MakeImageInfo(width, height, pf, at, cs);
+    ASSERT_EQ(ret.size.width, 1);
+    ASSERT_EQ(ret.size.height, 2);
     GTEST_LOG_(INFO) << "WebpEncoderTest: MakeImageInfoTest002 end";
 }
 

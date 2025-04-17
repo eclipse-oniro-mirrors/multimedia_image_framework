@@ -66,8 +66,11 @@ HWTEST_F(BasicTransformerTest, ReleaseBufferTest001, TestSize.Level3)
     int dataSize = 2;
     uint8_t *buffer = new uint8_t;
     basicTransformer.ReleaseBuffer(allocatorType, fd, dataSize, buffer);
+    ASSERT_NE(buffer, nullptr);
+    buffer = new uint8_t;
     allocatorType = AllocatorType::HEAP_ALLOC;
     basicTransformer.ReleaseBuffer(allocatorType, fd, dataSize, buffer);
+    ASSERT_NE(buffer, nullptr);
     GTEST_LOG_(INFO) << "BasicTransformerTest: ReleaseBufferTest001 end";
 }
 

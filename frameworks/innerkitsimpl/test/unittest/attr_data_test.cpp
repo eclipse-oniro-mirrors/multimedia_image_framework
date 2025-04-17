@@ -1239,18 +1239,25 @@ HWTEST_F(AttrDataTest, AttrDataTest0073, TestSize.Level3)
     uint32_t value = 1;
     MultimediaPlugin::AttrData aData(value);
     aData.SetData(value);
+    ASSERT_EQ(aData.value_.uint32Value, 1);
     value = 2;
     aData.SetData(value);
+    ASSERT_EQ(aData.value_.uint32Value, 2);
     value = 3;
     aData.SetData(value);
+    ASSERT_EQ(aData.value_.uint32Value, 3);
     value = 4;
     aData.SetData(value);
+    ASSERT_EQ(aData.value_.uint32Value, 4);
     value = 5;
     aData.SetData(value);
+    ASSERT_EQ(aData.value_.uint32Value, 5);
     value = 6;
     aData.SetData(value);
+    ASSERT_EQ(aData.value_.uint32Value, 6);
     value = 7;
     aData.SetData(value);
+    ASSERT_EQ(aData.value_.uint32Value, 7);
     GTEST_LOG_(INFO) << "AttrDataTest: AttrDataTest0073 end";
 }
 

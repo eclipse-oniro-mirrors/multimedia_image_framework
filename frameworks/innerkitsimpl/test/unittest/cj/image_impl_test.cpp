@@ -40,7 +40,8 @@ HWTEST_F(ImageImplTest, ImageImplTest001, TestSize.Level3)
     CRegion region;
     imageImplNull.GetClipRect(&region);
     CSize size;
-    imageImplNull.GetSize(&size);
+    uint32_t ret = imageImplNull.GetSize(&size);
+    ASSERT_NE(ret, 0);
     int32_t format;
     imageImplNull.GetFormat(&format);
     CRetComponent component;

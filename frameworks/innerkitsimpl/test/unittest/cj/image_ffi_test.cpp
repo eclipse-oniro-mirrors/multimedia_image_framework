@@ -41,6 +41,7 @@ HWTEST_F(ImageFfiTest, ImageFfiTest001, TestSize.Level3)
     std::string invalidPath = "";
     uint32_t errCode;
     int64_t imageSourceId = FfiOHOSCreateImageSourceByPath(const_cast<char*>(invalidPath.c_str()), &errCode);
+    ASSERT_NE(imageSourceId, 0);
     FfiOHOSImageSourceGetImageInfo(imageSourceId, 0, &errCode);
     FfiOHOSGetSupportedFormats(imageSourceId, &errCode);
     FfiOHOSGetImageProperty(imageSourceId, const_cast<char*>(KEY), 0, const_cast<char*>(VALUE), &errCode);
@@ -77,6 +78,7 @@ HWTEST_F(ImageFfiTest, ImageFfiTest002, TestSize.Level3)
     uint32_t errCode;
     char* jpgPath = const_cast<char*>(IMAGE_JPEG_PATH.c_str());
     int64_t imageSourceId = FfiOHOSCreateImageSourceByPath(jpgPath, &errCode);
+    ASSERT_NE(imageSourceId, INIT_FAILED);
     FfiOHOSImageSourceGetImageInfo(imageSourceId, 0, &errCode);
     FfiOHOSGetSupportedFormats(imageSourceId, &errCode);
     FfiOHOSGetImageProperty(imageSourceId, const_cast<char*>(KEY), 0, const_cast<char*>(VALUE), &errCode);
@@ -102,6 +104,7 @@ HWTEST_F(ImageFfiTest, ImageFfiTest003, TestSize.Level3)
 {
     GTEST_LOG_(INFO) << "ImageFfiTest: ImageFfiTest003 start";
     int64_t imageReceiverId = FfiOHOSCreateImageReceiver(0, 0, 0, 0);
+    ASSERT_EQ(imageReceiverId, INIT_FAILED);
     CSize size;
     FfiOHOSReceiverGetSize(imageReceiverId, &size);
     int32_t capacity;
@@ -131,6 +134,7 @@ HWTEST_F(ImageFfiTest, ImageFfiTest004, TestSize.Level3)
 {
     GTEST_LOG_(INFO) << "ImageFfiTest: ImageFfiTest004 start";
     int64_t imageReceiverId = FfiOHOSCreateImageReceiver(100, 100, 2000, 8);
+    ASSERT_NE(imageReceiverId, INIT_FAILED);
     CSize size;
     FfiOHOSReceiverGetSize(imageReceiverId, &size);
     int32_t capacity;
@@ -160,6 +164,7 @@ HWTEST_F(ImageFfiTest, ImageFfiTest005, TestSize.Level3)
 {
     GTEST_LOG_(INFO) << "ImageFfiTest: ImageFfiTest005 start";
     int64_t imageCreatorId = FFiOHOSImageCreatorConstructor(0, 0, 0, 0);
+    ASSERT_NE(imageCreatorId, INIT_FAILED);
     FFiOHOSImageCreatorGetCapacity(imageCreatorId);
     FFiOHOSImageCreatorGetformat(imageCreatorId);
     uint32_t errCode;

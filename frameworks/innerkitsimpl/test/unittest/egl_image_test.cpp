@@ -518,7 +518,7 @@ HWTEST_F(EglImageTest, PixelMapFromSurfaceTest018, TestSize.Level3)
 HWTEST_F(EglImageTest, Clear001, TestSize.Level3)
 {
     auto renderContext = std::make_unique<RenderContext>();
-    renderContext->eglDisplay_ = EGL_NO_DISPLAY;
+    renderContext->eglDisplay_ = EGL_DEFAULT_DISPLAY;
     renderContext->Clear();
     EXPECT_EQ(renderContext->eglDisplay_, EGL_NO_DISPLAY);
 }

@@ -1051,7 +1051,7 @@ HWTEST_F(PictureExtTest, OH_PictureNative_GetHdrComposedPixelmap002, TestSize.Le
  */
 HWTEST_F(PictureExtTest, ConvertAutoAllocatorTypeTest001, TestSize.Level3)
 {
-    uint32_t errorCode = 0;
+    uint32_t errorCode = 1;
     SourceOptions opts;
     std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(IMAGE_HEIC_64_64, opts, errorCode);
     ASSERT_NE(imageSource.get(), nullptr);
@@ -1068,7 +1068,7 @@ HWTEST_F(PictureExtTest, ConvertAutoAllocatorTypeTest001, TestSize.Level3)
  */
 HWTEST_F(PictureExtTest, ConvertAutoAllocatorTypeTest002, TestSize.Level3)
 {
-    uint32_t errorCode = 0;
+    uint32_t errorCode = 1;
     SourceOptions opts;
     std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(IMAGE_HEIC_128_128, opts, errorCode);
     ASSERT_NE(imageSource.get(), nullptr);
@@ -1085,7 +1085,7 @@ HWTEST_F(PictureExtTest, ConvertAutoAllocatorTypeTest002, TestSize.Level3)
  */
 HWTEST_F(PictureExtTest, ConvertAutoAllocatorTypeTest003, TestSize.Level3)
 {
-    uint32_t errorCode = 0;
+    uint32_t errorCode = 1;
     SourceOptions opts;
     std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(IMAGE_JPEG_100_100, opts, errorCode);
     ASSERT_NE(imageSource.get(), nullptr);
@@ -1102,7 +1102,7 @@ HWTEST_F(PictureExtTest, ConvertAutoAllocatorTypeTest003, TestSize.Level3)
  */
 HWTEST_F(PictureExtTest, ConvertAutoAllocatorTypeTest004, TestSize.Level3)
 {
-    uint32_t errorCode = 0;
+    uint32_t errorCode = 1;
     SourceOptions opts;
     std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(IMAGE_JPEG_128_128, opts, errorCode);
     ASSERT_NE(imageSource.get(), nullptr);

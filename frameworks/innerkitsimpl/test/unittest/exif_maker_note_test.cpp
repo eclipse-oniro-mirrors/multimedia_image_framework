@@ -648,6 +648,9 @@ HWTEST_F(ExifMakerNoteTest, DumpTest004, TestSize.Level3)
     ExifMakerNote::ExifItem item;
     item.data.reserve(0);
     ExifByteOrder order = ExifByteOrder::EXIF_BYTE_ORDER_INTEL;
+    uint32_t dataOrOffset = 0;
+    bool ret = ExifMakerNote::GetUInt32(item.data, order, 0, dataOrOffset);
+    ASSERT_EQ(ret, false);
     ExifMakerNote->Dump(info, item, order);
     GTEST_LOG_(INFO) << "ExifMakerNoteTest: DumpTest004 end";
 }

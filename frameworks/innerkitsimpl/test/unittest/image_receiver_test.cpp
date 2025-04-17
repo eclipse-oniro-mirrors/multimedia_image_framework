@@ -247,6 +247,7 @@ HWTEST_F(ImageReceiverTest, ImageReceiver0010, TestSize.Level3) {
     GTEST_LOG_(INFO) << "ImageReceiverTest: ImageReceiver0010 start";
     std::shared_ptr<ImageReceiver> iva = std::make_shared<ImageReceiver>();
     iva->iraContext_ = ImageReceiverContext::CreateImageReceiverContext();
+    ASSERT_NE(iva->iraContext_, nullptr);
     GTEST_LOG_(INFO) << "ImageReceiverTest: ImageReceiver0010 end";
 }
 
@@ -505,6 +506,7 @@ HWTEST_F(ImageReceiverTest, ReleaseReceiverTest001, TestSize.Level3)
     imageReceiver = ImageReceiver::CreateImageReceiver(RECEIVER_TEST_WIDTH,
         RECEIVER_TEST_HEIGHT, RECEIVER_TEST_FORMAT, RECEIVER_TEST_CAPACITY);
     imageReceiver->ReleaseReceiver();
+    ASSERT_EQ(imageReceiver->iraContext_, nullptr);
     GTEST_LOG_(INFO) << "ImageReceiverTest: ReleaseReceiverTest001 end";
 }
 
