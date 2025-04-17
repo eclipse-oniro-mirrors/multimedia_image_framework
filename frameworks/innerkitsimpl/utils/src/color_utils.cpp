@@ -199,6 +199,7 @@ HDI::Display::Graphic::Common::V1_0::CM_ColorSpaceType ColorUtils::ConvertToCMCo
         case ColorManager::ColorSpaceName::SRGB_LIMIT :
             return HDI::Display::Graphic::Common::V1_0::CM_SRGB_LIMIT;
         case ColorManager::ColorSpaceName::DISPLAY_P3 :
+        case ColorManager::ColorSpaceName::DCI_P3 :
             return HDI::Display::Graphic::Common::V1_0::CM_P3_FULL;
         case ColorManager::ColorSpaceName::DISPLAY_P3_LIMIT :
             return HDI::Display::Graphic::Common::V1_0::CM_P3_LIMIT;
