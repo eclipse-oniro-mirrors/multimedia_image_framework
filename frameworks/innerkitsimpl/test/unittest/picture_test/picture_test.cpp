@@ -700,5 +700,36 @@ HWTEST_F(PictureTest, SetExifMetadataTest002, TestSize.Level3)
     ASSERT_EQ(ret, ERR_IMAGE_INVALID_PARAMETER);
     GTEST_LOG_(INFO) << "PictureTest: SetExifMetadataTest002 end";
 }
+
+/**
+ * @tc.name: SetAuxiliaryPictureTest007
+ * @tc.desc: Verify that SetAuxiliaryPicture correctly handles a nullptr AuxiliaryPicture and GetAuxiliaryPicture
+ *           returns nullptr for AuxiliaryPictureType::NONE.
+ * @tc.type: FUNC
+ */
+HWTEST_F(PictureTest, SetAuxiliaryPictureTest007, TestSize.Level3)
+{
+    std::unique_ptr<Picture> picture = CreatePicture();
+    ASSERT_NE(picture, nullptr);
+    std::shared_ptr<AuxiliaryPicture> auxiliaryPicture = nullptr;
+    picture->SetAuxiliaryPicture(auxiliaryPicture);
+    auto auxiliaryPictureByGet = picture->GetAuxiliaryPicture(AuxiliaryPictureType::NONE);
+    EXPECT_EQ(auxiliaryPictureByGet, nullptr);
+}
+
+/**
+ * @tc.name: SetMaintenanceDataTest001
+ * @tc.desc: Verify that SetMaintenanceData returns false when a nullptr SurfaceBuffer is provided.
+ * @tc.type: FUNC
+ */
+HWTEST_F(PictureTest, SetMaintenanceDataTest001, TestSize.Level3)
+{
+    std::unique_ptr<Picture> picture = CreatePicture();
+    ASSERT_NE(picture, nullptr);
+    sptr<SurfaceBuffer> surfaceBuffer = nullptr;
+    bool isSetMaintenanceData = picture->SetMaintenanceData(surfaceBuffer);
+    EXPECT_EQ(isSetMaintenanceData, false);
+}
+
 } // namespace Media
 } // namespace OHOS

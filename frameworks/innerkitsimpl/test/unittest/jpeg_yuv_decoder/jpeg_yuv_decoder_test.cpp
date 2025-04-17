@@ -33,6 +33,12 @@ static const std::string IMAGE_INPUT_JPG_PATH = "/data/local/tmp/image/";
 #define TREE_ORIGINAL_HEIGHT 360
 #define ODDTREE_ORIGINAL_WIDTH 481
 #define ODDTREE_ORIGINAL_HEIGHT 361
+#define YUV_BUFF_SIZE 20
+#define JPG_WIDTH 800
+#define JPG_HEIGHT 600
+#define OUT_WIDTH 1024
+#define OUT_HEIGHT 768
+#define PLANE_SIZE 240000
 class JpgYuvDecoderTest : public testing::Test {
 public:
     JpgYuvDecoderTest() {}
@@ -636,5 +642,86 @@ HWTEST_F(JpgYuvDecoderTest, ConvertFromGray003, TestSize.Level3)
     ASSERT_EQ(ret, JpegYuvDecodeError_ConvertError);
     GTEST_LOG_(INFO) << "JpgYuvDecoderTest: ConvertFromGray003 end";
 }
+
+/**
+ * @tc.name: Get420OutPlaneSize002
+ * @tc.desc: Verify that Get420OutPlaneSize returns 0 when the input parameters are invalid or unsupported.
+ * @tc.type: FUNC
+ */
+HWTEST_F(JpgYuvDecoderTest, Get420OutPlaneSize002, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "JpgYuvDecoderTest: Get420OutPlaneSize002 start";
+    JpegDecoderYuv jpegDecoderYuv;
+    YuvComponentIndex com = YuvComponentIndex::UVCOM;
+    int imageWidth = JPG_WIDTH;
+    int imageHeight = JPG_HEIGHT;
+    uint32_t ret = jpegDecoderYuv.Get420OutPlaneSize(com, imageWidth, imageHeight);
+    EXPECT_EQ(ret, PLANE_SIZE);
+    GTEST_LOG_(INFO) << "JpgYuvDecoderTest: Get420OutPlaneSize002 end";
+}
+
+/**
+ * @tc.name: DoDecode001
+ * @tc.desc: Verify that DoDecode returns JpegYuvDecodeError_InvalidParameter when the input parameters are invalid.
+ * @tc.type: FUNC
+ */
+HWTEST_F(JpgYuvDecoderTest, DoDecode001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "JpgYuvDecoderTest: DoDecode001 start";
+    JpegDecoderYuv jpegDecoderYuv;
+    JpegDecoderYuvParameter para = { 0, 0, nullptr, 0, nullptr, 0, JpegYuvFmt::OutFmt_YU12, 0, 0 };
+    DecodeContext context;
+    int ret = jpegDecoderYuv.DoDecode(context, para);
+    EXPECT_EQ(ret, JpegYuvDecodeError_InvalidParameter);
+    GTEST_LOG_(INFO) << "JpgYuvDecoderTest: DoDecode001 end";
+}
+
+/**
+ * @tc.name: DoDecode002
+ * @tc.desc: Verify that DoDecode returns JpegYuvDecodeError_InvalidParameter
+ *           when the input JPEG buffer is valid but other parameters are invalid.
+ * @tc.type: FUNC
+ */
+HWTEST_F(JpgYuvDecoderTest, DoDecode002, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "JpgYuvDecoderTest: DoDecode002 start";
+    JpegDecoderYuv jpegDecoderYuv;
+    uint8_t* jpegBuffer = new uint8_t[YUV_BUFF_SIZE];
+    uint8_t* yuvBuffer = new uint8_t[YUV_BUFF_SIZE];
+    JpegDecoderYuvParameter para = { 0, 0, jpegBuffer, YUV_BUFF_SIZE, yuvBuffer, YUV_BUFF_SIZE,
+        JpegYuvFmt::OutFmt_YU12, 0, 0 };
+    DecodeContext context;
+    int ret = jpegDecoderYuv.DoDecode(context, para);
+    EXPECT_EQ(ret, JpegYuvDecodeError_InvalidParameter);
+    delete[] yuvBuffer;
+    delete[] jpegBuffer;
+    GTEST_LOG_(INFO) << "JpgYuvDecoderTest: DoDecode002 end";
+}
+
+/**
+ * @tc.name: ConvertFrom4xx001
+ * @tc.desc: Verify that ConvertFrom4xx returns JpegYuvDecodeError_ConvertError
+ *           when the input parameters are invalid.
+ * @tc.type: FUNC
+ */
+HWTEST_F(JpgYuvDecoderTest, ConvertFrom4xx001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "JpgYuvDecoderTest: ConvertFrom4xx001 start";
+    YuvPlaneInfo srcPlaneInfo;
+    srcPlaneInfo.imageWidth = 0;
+    srcPlaneInfo.imageHeight = 0;
+    srcPlaneInfo.planes[YCOM] = nullptr;
+    srcPlaneInfo.planes[UCOM] = nullptr;
+    srcPlaneInfo.planes[VCOM] = nullptr;
+
+    ConverterPair converter;
+    JpegDecoderYuv decoder;
+    DecodeContext context;
+    int ret = decoder.ConvertFrom4xx(srcPlaneInfo, converter, context);
+
+    EXPECT_EQ(ret, JpegYuvDecodeError_ConvertError);
+    GTEST_LOG_(INFO) << "JpgYuvDecoderTest: ConvertFrom4xx001 end";
+}
+
 }
 }

@@ -32,13 +32,39 @@ static constexpr int32_t RECEIVER_TEST_WIDTH = 8192;
 static constexpr int32_t RECEIVER_TEST_HEIGHT = 8;
 static constexpr int32_t RECEIVER_TEST_CAPACITY = 8;
 static constexpr int32_t RECEIVER_TEST_FORMAT = 4;
+static const std::string IMAGE_INPUT_JPG_PATH = "/data/local/tmp/image/800-500.jpg";
+static constexpr int32_t RECEIVER_TEST_TRUE_WIDTH = 800;
+static constexpr int32_t RECEIVER_TEST_TRUE_HEIGHT = 500;
 
 class ImageReceiverTest : public testing::Test {
 public:
     ImageReceiverTest() {}
     ~ImageReceiverTest() {}
+    void AllocSurfaceBuffer(OHOS::sptr<OHOS::SurfaceBuffer> surfaceBuffer);
 };
 
+class SurfaceBufferAvaliableListenerTest : public SurfaceBufferAvaliableListener {
+public:
+    void OnSurfaceBufferAvaliable()
+    {
+        testBool_ = true;
+    }
+    bool testBool_{false};
+};
+
+void ImageReceiverTest::AllocSurfaceBuffer(OHOS::sptr<OHOS::SurfaceBuffer> surfaceBuffer)
+{
+    BufferRequestConfig requestConfig = {
+        .width = RECEIVER_TEST_TRUE_WIDTH,
+        .height = RECEIVER_TEST_TRUE_HEIGHT,
+        .strideAlignment = 0x8, // set 0x8 as default value to alloc SurfaceBufferImpl
+        .format = GRAPHIC_PIXEL_FMT_RGBA_8888,
+        .usage = BUFFER_USAGE_CPU_READ | BUFFER_USAGE_CPU_WRITE | BUFFER_USAGE_MEM_DMA | BUFFER_USAGE_MEM_MMZ_CACHE,
+        .timeout = 0,
+    };
+    GSError ret = surfaceBuffer->Alloc(requestConfig);
+    ASSERT_EQ(ret, GSERROR_OK);
+}
 /**
  * @tc.name: ImageReceiver001
  * @tc.desc: test SaveBufferAsImage buffer is not nullptr
@@ -639,6 +665,127 @@ HWTEST_F(ImageReceiverTest, getSurfacePixelMapTest001, TestSize.Level3)
     std::unique_ptr<PixelMap> pixelmp_ptr = imageReceiver->getSurfacePixelMap(opts);
     ASSERT_EQ(pixelmp_ptr, nullptr);
     GTEST_LOG_(INFO) << "ImageReceiverTest: getSurfacePixelMapTest001 end";
+}
+
+/**
+ * @tc.name: ImageReceiverTest_PackImageTest001
+ * @tc.desc: Verify that save and pack image from buffer.
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageReceiverTest, PackImageTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImageReceiverTest: ImageReceiverTest_PackImageTest001 start";
+    std::shared_ptr<ImageReceiver> imageReceiver;
+    imageReceiver = ImageReceiver::CreateImageReceiver(RECEIVER_TEST_TRUE_WIDTH,
+        RECEIVER_TEST_TRUE_HEIGHT, RECEIVER_TEST_FORMAT, RECEIVER_TEST_CAPACITY);
+    ASSERT_NE(imageReceiver, nullptr);
+    ASSERT_NE(imageReceiver->iraContext_, nullptr);
+
+    InitializationOptions opts;
+    opts.size.width = RECEIVER_TEST_TRUE_WIDTH;
+    opts.size.height = RECEIVER_TEST_TRUE_HEIGHT;
+    opts.pixelFormat = Media::PixelFormat::RGBA_8888;
+    opts.editable = true;
+
+    imageReceiver->iraContext_->currentBuffer_ = SurfaceBuffer::Create();
+    AllocSurfaceBuffer(imageReceiver->iraContext_->currentBuffer_);
+    int fd = open(IMAGE_INPUT_JPG_PATH.c_str(), O_RDWR | O_CREAT, S_IRUSR | S_IWUSR);
+    ASSERT_NE(fd, 0);
+    int32_t errorCode = imageReceiver->SaveBufferAsImage(fd, opts);
+    ASSERT_EQ(errorCode, SUCCESS);
+    GTEST_LOG_(INFO) << "ImageReceiverTest: ImageReceiverTest_PackImageTest001 end";
+}
+
+/**
+ * @tc.name: ImageReceiverTest_ReleaseBufferTest001
+ * @tc.desc: Verify that call releaseBuffer when buffer and iraContext_ is effective.
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageReceiverTest, ReleaseBufferTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImageReceiverTest: ImageReceiverTest_ReleaseBufferTest001 start";
+    std::shared_ptr<ImageReceiver> imageReceiver;
+    imageReceiver = ImageReceiver::CreateImageReceiver(RECEIVER_TEST_TRUE_WIDTH,
+        RECEIVER_TEST_TRUE_HEIGHT, RECEIVER_TEST_FORMAT, RECEIVER_TEST_CAPACITY);
+    ASSERT_NE(imageReceiver, nullptr);
+    ASSERT_NE(imageReceiver->iraContext_, nullptr);
+
+    imageReceiver->iraContext_->currentBuffer_ = SurfaceBuffer::Create();
+    AllocSurfaceBuffer(imageReceiver->iraContext_->currentBuffer_);
+    imageReceiver->ReleaseBuffer(imageReceiver->iraContext_->currentBuffer_);
+    ASSERT_EQ(imageReceiver->iraContext_->currentBuffer_, nullptr);
+    GTEST_LOG_(INFO) << "ImageReceiverTest: ImageReceiverTest_ReleaseBufferTest001 end";
+}
+
+/**
+ * @tc.name: ImageReceiverTest_ReleaseBufferTest002
+ * @tc.desc: Verify that call releaseBuffer when buffer and iraContext_ is effective,
+ *           but receiverConsumerSurface_ is disable.
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageReceiverTest, ReleaseBufferTest002, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImageReceiverTest: ImageReceiverTest_ReleaseBufferTest002 start";
+    std::shared_ptr<ImageReceiver> imageReceiver;
+    imageReceiver = ImageReceiver::CreateImageReceiver(RECEIVER_TEST_TRUE_WIDTH,
+        RECEIVER_TEST_TRUE_HEIGHT, RECEIVER_TEST_FORMAT, RECEIVER_TEST_CAPACITY);
+    ASSERT_NE(imageReceiver, nullptr);
+    ASSERT_NE(imageReceiver->iraContext_, nullptr);
+
+    OHOS::sptr<OHOS::SurfaceBuffer> mockSurfaceBuffer = SurfaceBuffer::Create();
+    AllocSurfaceBuffer(mockSurfaceBuffer);
+    imageReceiver->iraContext_->receiverConsumerSurface_ = nullptr;
+    imageReceiver->ReleaseBuffer(mockSurfaceBuffer);
+    ASSERT_EQ(mockSurfaceBuffer, nullptr);
+    GTEST_LOG_(INFO) << "ImageReceiverTest: ImageReceiverTest_ReleaseBufferTest002 end";
+}
+
+/**
+ * @tc.name: ImageReceiverTest_ReleaseBufferTest003
+ * @tc.desc: Verify that call releaseBuffer when buffer is effective,
+ *           but iraContext_ is disable.
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageReceiverTest, ReleaseBufferTest003, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImageReceiverTest: ImageReceiverTest_ReleaseBufferTest003 start";
+    std::shared_ptr<ImageReceiver> imageReceiver;
+    imageReceiver = ImageReceiver::CreateImageReceiver(RECEIVER_TEST_TRUE_WIDTH,
+        RECEIVER_TEST_TRUE_HEIGHT, RECEIVER_TEST_FORMAT, RECEIVER_TEST_CAPACITY);
+    ASSERT_NE(imageReceiver, nullptr);
+    ASSERT_NE(imageReceiver->iraContext_, nullptr);
+
+    OHOS::sptr<OHOS::SurfaceBuffer> mockSurfaceBuffer = SurfaceBuffer::Create();
+    AllocSurfaceBuffer(mockSurfaceBuffer);
+    imageReceiver->iraContext_.reset();
+    imageReceiver->ReleaseBuffer(mockSurfaceBuffer);
+    ASSERT_EQ(mockSurfaceBuffer, nullptr);
+    GTEST_LOG_(INFO) << "ImageReceiverTest: ImageReceiverTest_ReleaseBufferTest003 end";
+}
+
+/**
+ * @tc.name: ImageReceiverTest_OnBufferAvailableTest001
+ * @tc.desc: Verify that ImageSurfaceReceiverListener call OnBufferAvailable when ir_ is effective.
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageReceiverTest, OnBufferAvailableTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImageReceiverTest: ImageReceiverTest_OnBufferAvailableTest001 start";
+    std::shared_ptr<ImageReceiver> imageReceiver;
+    imageReceiver = ImageReceiver::CreateImageReceiver(RECEIVER_TEST_TRUE_WIDTH,
+        RECEIVER_TEST_TRUE_HEIGHT, RECEIVER_TEST_FORMAT, RECEIVER_TEST_CAPACITY);
+    ASSERT_NE(imageReceiver, nullptr);
+    ASSERT_NE(imageReceiver->iraContext_, nullptr);
+    auto avaiableListener = std::make_shared<SurfaceBufferAvaliableListenerTest>();
+    ASSERT_NE(avaiableListener, nullptr);
+    imageReceiver->RegisterBufferAvaliableListener(avaiableListener);
+
+    auto receiverListener = std::make_shared<ImageReceiverSurfaceListener>();
+    ASSERT_NE(receiverListener, nullptr);
+    receiverListener->ir_ = imageReceiver;
+    receiverListener->OnBufferAvailable();
+    ASSERT_EQ(avaiableListener->testBool_, true);
+    GTEST_LOG_(INFO) << "ImageReceiverTest: ImageReceiverTest_OnBufferAvailableTest001 end";
 }
 }
 }

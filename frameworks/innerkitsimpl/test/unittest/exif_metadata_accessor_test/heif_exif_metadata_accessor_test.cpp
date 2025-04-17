@@ -13,6 +13,9 @@
  * limitations under the License.
  */
 
+#define private public
+#define protected public
+
 #include <gtest/gtest.h>
 #include <memory>
 
@@ -244,6 +247,83 @@ HWTEST_F(HeifExifMetadataAccessorTest, Append001, TestSize.Level3)
     GTEST_LOG_(INFO) << "HeifExifMetadataAccessorTest: Append001 end";
 }
 
+/**
+ * @tc.name: Read011
+ * @tc.desc: test the Read method
+ * @tc.type: FUNC
+ */
+HWTEST_F(HeifExifMetadataAccessorTest, Read011, TestSize.Level3)
+{
+    auto fileStream = std::make_shared<FileMetadataStream>(IMAGE_INPUT_HEIF_EXIF_PATH);
+    ASSERT_NE(fileStream, nullptr);
+    fileStream->fp_ = nullptr;
+    std::shared_ptr<MetadataStream> stream = fileStream;
+    ASSERT_NE(stream, nullptr);
+    ASSERT_TRUE(stream->Open(OpenMode::ReadWrite));
+    HeifExifMetadataAccessor imageAccessor(stream);
+    uint32_t res = imageAccessor.Read();
+    EXPECT_EQ(res, SUCCESS);
+}
 
+/**
+ * @tc.name: Write011
+ * @tc.desc: test the Write method when exifData is nullptr
+ * @tc.type: FUNC
+ */
+HWTEST_F(HeifExifMetadataAccessorTest, Write011, TestSize.Level3)
+{
+    std::shared_ptr<MetadataStream> stream = std::make_shared<FileMetadataStream>(IMAGE_INPUT_HEIF_EXIF_PATH);
+    ASSERT_NE(stream, nullptr);
+    ASSERT_TRUE(stream->Open(OpenMode::ReadWrite));
+    HeifExifMetadataAccessor imageAccessor(stream);
+    uint32_t result = imageAccessor.Read();
+    ASSERT_EQ(result, 0);
+    auto exifMetadata = imageAccessor.Get();
+    exifMetadata->SetValue("Model", "test heif");
+
+    imageAccessor.Get()->exifData_ = nullptr;
+    uint32_t res = imageAccessor.Write();
+    EXPECT_EQ(res, ERR_IMAGE_DECODE_EXIF_UNSUPPORT);
+}
+
+/**
+ * @tc.name: WriteMetadata001
+ * @tc.desc: test the WriteMetadata method when fp is nullptr
+ * @tc.type: FUNC
+ */
+HWTEST_F(HeifExifMetadataAccessorTest, WriteMetadata001, TestSize.Level3)
+{
+    DataBuf dataBuf;
+    auto fileStream = std::make_shared<FileMetadataStream>(IMAGE_INPUT_HEIF_EXIF_PATH);
+    ASSERT_NE(fileStream, nullptr);
+    fileStream->fp_ = nullptr;
+    std::shared_ptr<MetadataStream> stream = fileStream;
+    ASSERT_NE(stream, nullptr);
+    ASSERT_TRUE(stream->Open(OpenMode::ReadWrite));
+    HeifExifMetadataAccessor imageAccessor(stream);
+    uint32_t res = imageAccessor.WriteMetadata(dataBuf);
+    EXPECT_EQ(res, ERR_IMAGE_DECODE_EXIF_UNSUPPORT);
+}
+
+/**
+ * @tc.name: WriteMetadata002
+ * @tc.desc: test the WriteMetadata method when buff is nullptr and size is 0
+ * @tc.type: FUNC
+ */
+HWTEST_F(HeifExifMetadataAccessorTest, WriteMetadata002, TestSize.Level3)
+{
+    size_t byteOrderPos = 0;
+    std::shared_ptr<MetadataStream> stream = std::make_shared<FileMetadataStream>(IMAGE_INPUT_HEIF_EXIF_PATH);
+    ASSERT_NE(stream, nullptr);
+    ASSERT_TRUE(stream->Open(OpenMode::ReadWrite));
+    HeifExifMetadataAccessor imageAccessor(stream);
+    bool res = imageAccessor.CheckTiffPos(nullptr, 0, byteOrderPos);
+    EXPECT_FALSE(res);
+
+    std::string buffer = "buffer";
+    byte* buff = reinterpret_cast<byte*>(buffer.data());
+    res = imageAccessor.CheckTiffPos(buff, 0, byteOrderPos);
+    EXPECT_FALSE(res);
+}
 } // namespace Multimedia
 } // namespace OHOS
