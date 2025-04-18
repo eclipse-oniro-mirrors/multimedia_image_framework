@@ -2781,5 +2781,56 @@ HWTEST_F(PixelMapTest, UnmodifiablePixelMapTest, TestSize.Level3)
 
     GTEST_LOG_(INFO) << "PixelMapTest: UnmodifiablePixelMapTest end";
 }
+
+// For test closeFd func
+class TestPixelMap : public PixelMap {
+public:
+    TestPixelMap() {}
+    virtual ~TestPixelMap() {}
+    bool CloseFd()
+    {
+        return PixelMap::CloseFd();
+    }
+};
+
+/**
+ * @tc.name: pixelmapfd001
+ * @tc.desc: Marshalling
+ * @tc.type: FUNC
+ */
+HWTEST_F(PixelMapTest, pixelmapfd001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PixelMapTest: pixelmapfd001 start";
+    close(0); // close 0
+    InitializationOptions opts;
+    // 200, 300 means size
+    opts.size.width = 200;
+    opts.size.height = 300;
+    opts.pixelFormat = PixelFormat::RGBA_8888;
+    opts.alphaType = AlphaType::IMAGE_ALPHA_TYPE_OPAQUE;
+    opts.useSourceIfMatch = true;
+    opts.editable = true;
+    opts.useDMA = false;
+    std::unique_ptr<PixelMap> pixelMap1 = PixelMap::Create(opts);
+    EXPECT_TRUE(pixelMap1 != nullptr);
+    Parcel data;
+    auto ret = pixelMap1->Marshalling(data);
+    EXPECT_TRUE(ret);
+    PixelMap *pixelMap2 = PixelMap::Unmarshalling(data);
+    EXPECT_EQ(pixelMap1->GetHeight(), pixelMap2->GetHeight());
+
+    std::unique_ptr<PixelMap> pixelMapBase =
+        ConstructPixmap(PixelFormat::RGBA_8888, AlphaType::IMAGE_ALPHA_TYPE_UNKNOWN);
+    EXPECT_NE(nullptr, pixelMapBase);
+    TestPixelMap* testPixelMap = (TestPixelMap*)pixelMapBase.release();
+    EXPECT_EQ(true, testPixelMap->CloseFd());
+    delete testPixelMap;
+
+    std::unique_ptr<PixelMap> pixelMap3 = PixelMap::Create(opts);
+    std::unique_ptr<PixelMap> pixelMap4 = PixelMap::Create(*(pixelMap3.get()), opts);
+    EXPECT_TRUE(pixelMap4 != nullptr);
+
+    GTEST_LOG_(INFO) << "PixelMapTest: pixelmapfd001 end";
+}
 }
 }
