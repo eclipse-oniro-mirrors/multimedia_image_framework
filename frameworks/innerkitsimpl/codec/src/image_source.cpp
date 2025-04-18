@@ -1586,22 +1586,6 @@ DecodeEvent ImageSource::GetDecodeEvent()
 {
     return decodeEvent_;
 }
-void ImageSource::SetDngImageSize(uint32_t index, ImageInfo &imageInfo)
-{
-    Size rawSize {0, 0};
-    uint32_t exifWidthRet = SUCCESS;
-    uint32_t exifHeightRet = SUCCESS;
-    if (imageInfo.encodedFormat == IMAGE_FORMAT_RAW) {
-        exifWidthRet = GetImagePropertyInt(index, KEY_IMAGE_WIDTH, rawSize.width);
-        exifHeightRet = GetImagePropertyInt(index, KEY_IMAGE_HEIGHT, rawSize.height);
-    }
-
-    if (rawSize.width != 0 && rawSize.height != 0
-        && exifWidthRet == SUCCESS && exifHeightRet == SUCCESS) {
-        imageInfo.size.width = rawSize.width;
-        imageInfo.size.height = rawSize.height;
-    }
-}
 
 uint32_t ImageSource::GetImageInfo(uint32_t index, ImageInfo &imageInfo)
 {
@@ -1630,26 +1614,7 @@ uint64_t ImageSource::GetImageId()
 
 uint32_t ImageSource::GetImageInfoFromExif(uint32_t index, ImageInfo &imageInfo)
 {
-    ImageTrace imageTrace("GetImageInfoFromExif by index");
-    uint32_t ret = SUCCESS;
-    std::unique_lock<std::mutex> guard(decodingMutex_);
-    auto iter = GetValidImageStatus(index, ret);
-    if (iter == imageStatusMap_.end()) {
-        guard.unlock();
-        IMAGE_LOGE("[ImageSource]get valid image status fail on get image info from exif, ret:%{public}u.", ret);
-        return ret;
-    }
-    ImageInfo &info = (iter->second).imageInfo;
-    bool cond = (info.size.width == 0 || info.size.height == 0);
-    CHECK_ERROR_RETURN_RET_LOG(cond, ERR_IMAGE_DECODE_FAILED,
-                               "[ImageSource]get the image size fail on get image info, width:%{public}d,"
-                               "height:%{public}d.",
-                               info.size.width, info.size.height);
-    imageInfo = info;
-    guard.unlock();
-
-    SetDngImageSize(index, imageInfo);
-    return SUCCESS;
+    return GetImageInfo(index, imageInfo);
 }
 
 
