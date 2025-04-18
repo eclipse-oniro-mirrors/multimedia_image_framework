@@ -96,7 +96,9 @@ constexpr uint32_t UV_PLANES_COUNT = 2;
 static const std::map<YuvConversion, const int> SWS_CS_COEFFICIENT = {
     {YuvConversion::BT601, SWS_CS_DEFAULT},
     {YuvConversion::BT709, SWS_CS_ITU709},
-    {YuvConversion::BT2020, SWS_CS_BT2020}
+    {YuvConversion::BT2020, SWS_CS_BT2020},
+    {YuvConversion::BT240, SWS_CS_SMPTE240M},
+    {YuvConversion::BTFCC, SWS_CS_FCC}
 };
 
 struct AstcInfo {

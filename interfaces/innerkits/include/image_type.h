@@ -425,6 +425,8 @@ enum class YuvConversion : int {
     BT601 = 0,
     BT709 = 1,
     BT2020 = 2,
+    BT240 = 3,
+    BTFCC = 4,
     BT_MAX,
 };
 
