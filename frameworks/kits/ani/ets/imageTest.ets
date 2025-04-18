@@ -13,18 +13,17 @@
  * limitations under the License.
  */
 
-import { image } from "../ets/@ohos.multimedia.image.ets";
+import { image } from "./@ohos.multimedia.image.ets";
 
 function main() {
   // test createPixemap & getImageInfo
   console.log("Test PixelMap START");
   const opts: image.InitializationOptions = {
     size: { width: 480, height: 360 },
-    srcPixelFormat: 4,
-    pixelFormat: 4,
+    srcPixelFormat: image.PixelMapFormat.RGBA_8888,
+    pixelFormat: image.PixelMapFormat.BGRA_8888,
     editable: true,
-    alphaType: 2,
-    scaleMode: 0
+    alphaType: image.AlphaType.UNPREMUL
   };
   let pixelMap:image.PixelMap = image.createPixelMapSync(opts);
 
@@ -33,10 +32,10 @@ function main() {
   }
 
   const retImageInfo: image.ImageInfo = pixelMap.getImageInfoSync();
-  console.log("Get image info: ", retImageInfo.size.width, retImageInfo.size.height, retImageInfo.pixelFormat, retImageInfo.mimeType);
+  console.log("Get image info: ", retImageInfo.size.width, retImageInfo.size.height, retImageInfo.pixelFormat, retImageInfo.alphaType);
   pixelMap.getImageInfo()
     .then((imageInfo: image.ImageInfo) => {
-      console.log("ASYNC Get image info: ", imageInfo.size.width, imageInfo.size.height, imageInfo.pixelFormat, imageInfo.mimeType);
+      console.log("ASYNC Get image info: ", imageInfo.size.width, imageInfo.size.height, imageInfo.pixelFormat, imageInfo.alphaType);
     });
   
   const rowBytes = pixelMap.getBytesNumberPerRow();
