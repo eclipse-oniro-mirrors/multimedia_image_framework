@@ -23,7 +23,8 @@ function main() {
     srcPixelFormat: image.PixelMapFormat.RGBA_8888,
     pixelFormat: image.PixelMapFormat.BGRA_8888,
     editable: true,
-    alphaType: image.AlphaType.UNPREMUL
+    alphaType: image.AlphaType.UNPREMUL,
+    scaleMode: image.ScaleMode.FIT_TARGET_SIZE
   };
   let pixelMap:image.PixelMap = image.createPixelMapSync(opts);
 
@@ -145,7 +146,10 @@ function main() {
   const imagePacker = image.createImagePacker();
   let packOpts: image.PackingOption = {
     format: "image/jpeg",
-    quality: 90
+    quality: 90,
+    bufferSize: 0,
+    PackingDynamicRange: image.PackingDynamicRange.AUTO,
+    needsPackProperties: false
   };
   let packBuffer: ArrayBuffer = imagePacker.packing(pixelMap, packOpts);
   console.log("TEST ImagePacker end, bufferSize: " + packBuffer.byteLength);
