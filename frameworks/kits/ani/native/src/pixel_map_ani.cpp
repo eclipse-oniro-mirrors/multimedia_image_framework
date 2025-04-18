@@ -33,7 +33,7 @@ namespace OHOS {
 namespace Media {
 using namespace std;
 
-static ani_int parseEnumFromStruct([[maybe_unused]] ani_env* env, ani_object &param, string propertyGet, string enumType)
+static ani_int parseEnumFromStruct(ani_env* env, ani_object &param, string propertyGet, string enumType)
 {
     ani_status ret;
     ani_ref enumRef;
