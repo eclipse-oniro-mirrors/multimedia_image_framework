@@ -229,7 +229,7 @@ export namespace image {
     ALTERNATE = 3,
   }
 
-  enum PackingDynamicRange {
+  export enum PackingDynamicRange {
     AUTO = 0,
     SDR = 1,
   }
@@ -332,22 +332,13 @@ export namespace image {
   // end common
 
   // pixelmap
-  interface IInitializationOptions {
+  export interface InitializationOptions {
     size: Size;
     srcPixelFormat?: PixelMapFormat;
     pixelFormat?: PixelMapFormat;
     editable?: boolean;
     alphaType?: AlphaType;
     scaleMode?: ScaleMode;
-  }
-  
-  export class InitializationOptions implements IInitializationOptions {
-    size: Size = { width: 0, height: 0 };
-    srcPixelFormat?: PixelMapFormat = PixelMapFormat.UNKNOWN;
-    pixelFormat?: PixelMapFormat = PixelMapFormat.UNKNOWN;
-    editable?: boolean = false;
-    alphaType?: AlphaType = AlphaType.UNKNOWN;
-    scaleMode?: ScaleMode = ScaleMode.FIT_TARGET_SIZE;
   }
 
   export interface PixelMap {
@@ -495,7 +486,7 @@ export namespace image {
     defaultValue?: string;
   }
 
-  interface IDecodingOptions {
+  export interface DecodingOptions {
     index?: int;
     sampleSize?: int;
     rotate?: int;
@@ -509,24 +500,6 @@ export namespace image {
     resolutionQuality?: ResolutionQuality;
   }
 
-  export class DecodingOptions implements IDecodingOptions {
-    index?: int | undefined = 0;
-    sampleSize?: int | undefined = 0;
-    rotate?: int | undefined = 0;
-    editable?: boolean | undefined = false;
-    desiredSize?: Size | undefined = { width: 0, height: 0 };
-    desiredRegion?: Region | undefined = {
-      size: { width: 0, height: 0 },
-      x: 0,
-      y: 0
-    };
-    desiredPixelFormat?: PixelMapFormat | undefined = PixelMapFormat.UNKNOWN;
-    fitDensity?: int | undefined = 0;
-    desiredColorSpace?: colorSpaceManager.ColorSpaceManager | undefined = undefined;
-    desiredDynamicRange?: DecodingDynamicRange | undefined = undefined;
-    resolutionQuality?: ResolutionQuality | undefined = undefined;
-  }
-
   export interface ImageSource {
     getImageInfoSync(index: int): ImageInfo;
     getImageInfo(index: int): Promise<ImageInfo>;
@@ -537,7 +510,6 @@ export namespace image {
     getImageProperties(key: Array<string>): Promise<Record<string, string | null>>;
     release(): void;
   }
-
 
   export class ImageSourceInner implements ImageSource {
     private nativeObj: long = 0;
@@ -633,20 +605,12 @@ export namespace image {
     loopCount?: int;
   }
 
-  interface IPackingOption {
+  export interface PackingOption {
     format: string;
     quality: int;
     bufferSize?: int;
     desiredDynamicRange?: PackingDynamicRange;
     needsPackProperties?: boolean;
-  }
-
-  export class PackingOption implements IPackingOption {
-    format: string = "";
-    quality: int = 0;
-    bufferSize?: int | undefined = 20971520;
-    desiredDynamicRange?: PackingDynamicRange | undefined = PackingDynamicRange.AUTO;
-    needsPackProperties?: boolean | undefined = false;
   }
 
   export interface ImagePacker {
