@@ -332,13 +332,22 @@ export namespace image {
   // end common
 
   // pixelmap
-  export interface InitializationOptions {
+  interface IInitializationOptions {
     size: Size;
     srcPixelFormat?: PixelMapFormat;
     pixelFormat?: PixelMapFormat;
     editable?: boolean;
     alphaType?: AlphaType;
     scaleMode?: ScaleMode;
+  }
+  
+  export class InitializationOptions implements IInitializationOptions {
+    size: Size = { width: 0, height: 0 };
+    srcPixelFormat?: PixelMapFormat = PixelMapFormat.UNKNOWN;
+    pixelFormat?: PixelMapFormat = PixelMapFormat.UNKNOWN;
+    editable?: boolean = false;
+    alphaType?: AlphaType = AlphaType.UNKNOWN;
+    scaleMode?: ScaleMode = ScaleMode.FIT_TARGET_SIZE;
   }
 
   export interface PixelMap {
@@ -486,18 +495,36 @@ export namespace image {
     defaultValue?: string;
   }
 
-  export interface DecodingOptions {
-    index?: Int;
-    sampleSize?: Int;
-    rotate?: Int;
-    editable?: Int;
+  interface IDecodingOptions {
+    index?: int;
+    sampleSize?: int;
+    rotate?: int;
+    editable?: boolean;
     desiredSize?: Size;
     desiredRegion?: Region;
     desiredPixelFormat?: PixelMapFormat;
-    fitDensity?: Int;
+    fitDensity?: int;
     desiredColorSpace?: colorSpaceManager.ColorSpaceManager;
     desiredDynamicRange?: DecodingDynamicRange;
     resolutionQuality?: ResolutionQuality;
+  }
+
+  export class DecodingOptions implements IDecodingOptions {
+    index?: int | undefined = 0;
+    sampleSize?: int | undefined = 0;
+    rotate?: int | undefined = 0;
+    editable?: boolean | undefined = false;
+    desiredSize?: Size | undefined = { width: 0, height: 0 };
+    desiredRegion?: Region | undefined = {
+      size: { width: 0, height: 0 },
+      x: 0,
+      y: 0
+    };
+    desiredPixelFormat?: PixelMapFormat | undefined = PixelMapFormat.UNKNOWN;
+    fitDensity?: int | undefined = 0;
+    desiredColorSpace?: colorSpaceManager.ColorSpaceManager | undefined = undefined;
+    desiredDynamicRange?: DecodingDynamicRange | undefined = undefined;
+    resolutionQuality?: ResolutionQuality | undefined = undefined;
   }
 
   export interface ImageSource {
@@ -606,20 +633,20 @@ export namespace image {
     loopCount?: int;
   }
 
-  interface PackingOptionInterface {
+  interface IPackingOption {
     format: string;
-    quality: Int;
-    bufferSize?: Int;
-    desiredDynamicRange?: Int;
-    needsPackProperties?: Int;
+    quality: int;
+    bufferSize?: int;
+    desiredDynamicRange?: PackingDynamicRange;
+    needsPackProperties?: boolean;
   }
 
-  export class PackingOption implements PackingOptionInterface {
+  export class PackingOption implements IPackingOption {
     format: string = "";
-    quality: Int = 0;
-    bufferSize?: Int | undefined = 20971520;
-    desiredDynamicRange?: Int | undefined = 0;
-    needsPackProperties?: Int | undefined = 0;
+    quality: int = 0;
+    bufferSize?: int | undefined = 20971520;
+    desiredDynamicRange?: PackingDynamicRange | undefined = PackingDynamicRange.AUTO;
+    needsPackProperties?: boolean | undefined = false;
   }
 
   export interface ImagePacker {

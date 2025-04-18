@@ -276,14 +276,16 @@ static bool ParseDecodingOptions([[maybe_unused]] ani_env* env, ani_object para,
     }
 
     ani_ref editableRef;
-    if (ANI_OK != (ret = env->Object_CallMethodByName_Ref(para, "<get>editable", ":Lstd/core/Int;", &editableRef))) {
+    if (ANI_OK != (ret = env->Object_CallMethodByName_Ref(para, "<get>editable", ":Lstd/core/Boolean;",
+        &editableRef))) {
         IMAGE_LOGE("Object_CallMethodByName_Ref Faild editableRef:%{public}d", ret);
     }
-    ani_int editable;
-    if ((ret = env->Object_CallMethodByName_Int(reinterpret_cast<ani_object>(editableRef),
-        "unboxed", ":I", &editable)) != ANI_OK) {
+    ani_boolean editable;
+    if ((ret = env->Object_CallMethodByName_Boolean(reinterpret_cast<ani_object>(editableRef),
+        "unboxed", ":Z", &editable)) != ANI_OK) {
         IMAGE_LOGE("Object_CallMethodByName_Int Faild editable:%{public}d", ret);
     }
+    opts.editable = static_cast<bool>(editable);
 
     if (!ParseDecodingOptions2(env, para, opts)) {
         return false;

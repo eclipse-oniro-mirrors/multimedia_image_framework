@@ -102,44 +102,40 @@ bool ParsePackingOptions([[maybe_unused]] ani_env* env, ani_object para, PackOpt
     }
     std::string retStr = ANIUtils_ANIStringToStdString(env, static_cast<ani_string>(tmptest));
     ani_status ret;
-    ani_ref qualityRef;
-    if (ANI_OK != (ret = env->Object_CallMethodByName_Ref(para, "<get>quality", ":Lstd/core/Int;", &qualityRef))) {
-        IMAGE_LOGE("Object_CallMethodByName_Int Faild qualityRef:%{public}d", ret);
-    }
     ani_int quality;
-    if ((ret = env->Object_CallMethodByName_Int(reinterpret_cast<ani_object>(qualityRef),
-        "unboxed", ":I", &quality)) != ANI_OK) {
-        IMAGE_LOGE("Object_CallMethodByName_Int Faild quality:%{public}d", ret);
+    if ((ret = env->Object_CallMethodByName_Int(para, "<get>quality", ":I",
+        &quality)) != ANI_OK) {
+        IMAGE_LOGE("Object_CallMethodByName_Int Failed quality:%{public}d", ret);
     }
     ani_ref bufferSizeRef;
-    if (ANI_OK != (ret = env->Object_CallMethodByName_Ref(para,
-        "<get>bufferSize", ":Lstd/core/Int;", &bufferSizeRef))) {
-        IMAGE_LOGE("Object_CallMethodByName_Int Faild bufferSizeRef:%{public}d", ret);
+    if (ANI_OK != (ret = env->Object_CallMethodByName_Ref(para, "<get>bufferSize", ":Lstd/core/Int;",
+        &bufferSizeRef))) {
+        IMAGE_LOGE("Object_CallMethodByName_Int Failed bufferSizeRef:%{public}d", ret);
     }
     ani_int bufferSize;
     if ((ret = env->Object_CallMethodByName_Int(reinterpret_cast<ani_object>(bufferSizeRef),
         "unboxed", ":I", &bufferSize)) != ANI_OK || bufferSize <= 0) {
-        IMAGE_LOGE("Object_CallMethodByName_Int Faild bufferSize or invalid bufferSize:%{public}d", ret);
+        IMAGE_LOGE("Object_CallMethodByName_Int Failed bufferSize or invalid bufferSize:%{public}d", ret);
     }
     ani_ref desiredDynamicRangeRef;
     if (ANI_OK != (ret = env->Object_CallMethodByName_Ref(para, "<get>desiredDynamicRange",
         ":Lstd/core/Int;", &desiredDynamicRangeRef))) {
-        IMAGE_LOGE("Object_CallMethodByName_Int Faild desiredDynamicRangeRef:%{public}d", ret);
+        IMAGE_LOGE("Object_CallMethodByName_Int Failed desiredDynamicRangeRef:%{public}d", ret);
     }
     ani_int desiredDynamicRange;
     if ((ret = env->Object_CallMethodByName_Int(reinterpret_cast<ani_object>(desiredDynamicRangeRef),
         "unboxed", ":I", &desiredDynamicRange)) != ANI_OK) {
-        IMAGE_LOGE("Object_CallMethodByName_Int Faild desiredDynamicRange:%{public}d", ret);
+        IMAGE_LOGE("Object_CallMethodByName_Int Failed desiredDynamicRange:%{public}d", ret);
     }
     ani_ref needsPackPropertiesRef;
     if (ANI_OK != (ret = env->Object_CallMethodByName_Ref(para, "<get>needsPackProperties",
-        ":Lstd/core/Int;", &needsPackPropertiesRef))) {
-        IMAGE_LOGE("Object_CallMethodByName_Int Faild needsPackPropertiesRef:%{public}d", ret);
+        ":Lstd/core/Boolean;", &needsPackPropertiesRef))) {
+        IMAGE_LOGE("Object_CallMethodByName_Int Failed needsPackPropertiesRef:%{public}d", ret);
     }
-    ani_int needsPackProperties;
-    if ((ret = env->Object_CallMethodByName_Int(reinterpret_cast<ani_object>(needsPackPropertiesRef),
-        "unboxed", ":I", &needsPackProperties)) != ANI_OK) {
-        IMAGE_LOGE("Object_CallMethodByName_Int Faild needsPackProperties:%{public}d", ret);
+    ani_boolean needsPackProperties;
+    if ((ret = env->Object_CallMethodByName_Boolean(reinterpret_cast<ani_object>(needsPackPropertiesRef),
+        "unboxed", ":Z", &needsPackProperties)) != ANI_OK) {
+        IMAGE_LOGE("Object_CallMethodByName_Int Failed needsPackProperties:%{public}d", ret);
     }
 
     packOpts.format = retStr;

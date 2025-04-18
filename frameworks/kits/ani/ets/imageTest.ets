@@ -102,7 +102,7 @@ function main() {
     index: 0,
     sampleSize: 1,
     rotate: 0,
-    editable: 1,
+    editable: true,
     desiredSize,
     desiredRegion,
     desiredPixelFormat: image.PixelMapFormat.RGBA_8888,
@@ -143,9 +143,10 @@ function main() {
 
   console.log("TEST ImagePacker begin");
   const imagePacker = image.createImagePacker();
-  let packOpts: image.PackingOption = new image.PackingOption(); 
-  packOpts.format = "image/jpeg";
-  packOpts.quality = 90;
+  let packOpts: image.PackingOption = {
+    format: "image/jpeg",
+    quality: 90
+  };
   let packBuffer: ArrayBuffer = imagePacker.packing(pixelMap, packOpts);
   console.log("TEST ImagePacker end, bufferSize: " + packBuffer.byteLength);
   imagePacker.release();
