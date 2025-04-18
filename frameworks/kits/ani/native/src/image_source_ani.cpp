@@ -114,70 +114,6 @@ ani_object ImageSourceAni::CreateImageSourceAni([[maybe_unused]] ani_env* env, a
     return ImageAniUtils::CreateAniImageSource(env, pImageSourceAni);
 }
 
-ani_object CreateImageInfoValueFromNative(ani_env* env, const ImageInfo &imgInfo)
-{
-    static const char* imageInfoClassName = "L@ohos/multimedia/image/image/ImageInfoInner;";
-    ani_class imageInfoCls;
-    if (ANI_OK != env->FindClass(imageInfoClassName, &imageInfoCls)) {
-        IMAGE_LOGE("Not found %{public}s", imageInfoClassName);
-        return nullptr;
-    }
-    ani_method imageInfoCtor;
-    if (ANI_OK != env->Class_FindMethod(imageInfoCls, "<ctor>", nullptr, &imageInfoCtor)) {
-        IMAGE_LOGE("Not found Class_FindMethod");
-        return nullptr;
-    }
-    ani_object imageInfoValue;
-    if (ANI_OK !=env->Object_New(imageInfoCls, imageInfoCtor, &imageInfoValue)) {
-        IMAGE_LOGE("New Context Fail");
-    }
-    ani_ref sizeref;
-    if (ANI_OK != env->Object_CallMethodByName_Ref(imageInfoValue, "<get>size",
-        ":L@ohos/multimedia/image/image/Size;", &sizeref)) {
-        IMAGE_LOGE("Object_CallMethodByName_Ref failed");
-        return nullptr;
-    }
-    ani_object sizeObj = reinterpret_cast<ani_object>(sizeref);
-    if (ANI_OK != env->Object_CallMethodByName_Void(sizeObj, "<set>width", "I:V",
-        static_cast<ani_int>(imgInfo.size.width))) {
-        IMAGE_LOGE("Object_CallMethodByName_Void <set>width failed");
-        return nullptr;
-    }
-    if (ANI_OK != env->Object_CallMethodByName_Void(sizeObj, "<set>height", "I:V",
-        static_cast<ani_int>(imgInfo.size.height))) {
-        IMAGE_LOGE("Object_CallMethodByName_Void <set>height failed");
-        return nullptr;
-    }
-    if (ANI_OK != env->Object_CallMethodByName_Void(imageInfoValue, "<set>density", "I:V",
-        static_cast<ani_int>(imgInfo.baseDensity))) {
-        IMAGE_LOGE("Object_CallMethodByName_Void <set>density failed");
-        return nullptr;
-    }
-    if (ANI_OK != env->Object_CallMethodByName_Void(imageInfoValue, "<set>stride", "I:V",
-        static_cast<ani_int>(imgInfo.size.height))) {
-        IMAGE_LOGE("Object_CallMethodByName_Void <set>stride failed");
-        return nullptr;
-    }
-    if (ANI_OK != env->Object_CallMethodByName_Void(imageInfoValue, "<set>pixelFormat", "I:V",
-        static_cast<ani_int>(imgInfo.pixelFormat))) {
-        IMAGE_LOGE("Object_CallMethodByName_Void <set>pixelFormat failed");
-        return nullptr;
-    }
-    if (ANI_OK != env->Object_CallMethodByName_Void(imageInfoValue, "<set>alphaType", "I:V",
-        static_cast<ani_int>(imgInfo.alphaType))) {
-        IMAGE_LOGE("Object_CallMethodByName_Void <set>alphaType failed");
-        return nullptr;
-    }
-    ani_string encodeStr = ImageAniUtils::GetAniString(env, imgInfo.encodedFormat);
-    if (ANI_OK != env->Object_CallMethodByName_Void(imageInfoValue, "<set>mimeType",
-        "Lstd/core/String;:V", encodeStr)) {
-        IMAGE_LOGE("Object_CallMethodByName_Void <set>encodedFormat failed");
-        return nullptr;
-    }
-
-    return imageInfoValue;
-}
-
 static ani_object GetImageInfo([[maybe_unused]] ani_env* env, [[maybe_unused]] ani_object obj, ani_int indexObj)
 {
     ani_status ret;
@@ -198,7 +134,7 @@ static ani_object GetImageInfo([[maybe_unused]] ani_env* env, [[maybe_unused]] a
         IMAGE_LOGE("[GetImageInfo] imageSourceAni is nullptr ");
         return nullptr;
     }
-    return CreateImageInfoValueFromNative(env, imgInfo);
+    return ImageAniUtils::CreateImageInfoValueFromNative(env, imgInfo, nullptr);
 }
 
 bool ParseDecodingOptions([[maybe_unused]] ani_env* env, ani_object para, DecodeOptions &opts)

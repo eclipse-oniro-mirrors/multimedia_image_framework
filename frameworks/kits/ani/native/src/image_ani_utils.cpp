@@ -133,13 +133,94 @@ static bool SetImageInfoSize(ani_env* env, const ImageInfo& imgInfo, ani_object&
     return true;
 }
 
-ani_object ImageAniUtils::CreateImageInfoValueFromNative(ani_env* env, const ImageInfo &imgInfo, PixelMap* pixelmap)
+static string getPixelFormatItemName(PixelFormat format)
 {
-    if (pixelmap == nullptr) {
-        IMAGE_LOGE("[CreateImageInfoValueFromNative] pixelmap nullptr ");
-        return nullptr;
+    switch (format) {
+        case PixelFormat::ARGB_8888:
+            return "ARGB_8888";
+        case PixelFormat::RGB_565:
+            return "RGB_565";
+        case PixelFormat::RGBA_8888:
+            return "RGBA_8888";
+        case PixelFormat::BGRA_8888:
+            return "BGRA_8888";
+        case PixelFormat::RGB_888:
+            return "RGB_888";
+        case PixelFormat::ALPHA_8:
+            return "ALPHA_8";
+        case PixelFormat::RGBA_F16:
+            return "RGBA_F16";
+        case PixelFormat::NV21:
+            return "NV21";
+        case PixelFormat::NV12:
+            return "NV12";
+        case PixelFormat::RGBA_1010102:
+            return "RGBA_1010102";
+        case PixelFormat::YCBCR_P010:
+            return "YCBCR_P010";
+        case PixelFormat::YCRCB_P010:
+            return "YCRCB_P010";
+        case PixelFormat::ASTC_4x4:
+            return "ASTC_4x4";
+        default:
+            return "UNKNOWN";
+    }
+}
+
+static ani_enum_item findPixelFormatEnumItem([[maybe_unused]] ani_env* env, PixelFormat format)
+{
+    ani_enum type;
+    if (ANI_OK != env->FindEnum("L@ohos/multimedia/image/image/PixelMapFormat;", &type)) {
+        IMAGE_LOGE("FindEnum for PixelMapFormat Failed");
+        return {};
     }
 
+    string itemName = getPixelFormatItemName(format);
+    
+    ani_enum_item enumItem;
+    if (ANI_OK != env->Enum_GetEnumItemByName(type, itemName.c_str(), &enumItem)) {
+        IMAGE_LOGE("Enum_GetEnumItemByName for PixelMapFormat Failed");
+        return {};
+    }
+
+    return enumItem;
+}
+
+static string getAlphaTypeItemName(AlphaType alphaType)
+{
+    switch (alphaType) {
+        case AlphaType::IMAGE_ALPHA_TYPE_OPAQUE:
+            return "OPAQUE";
+        case AlphaType::IMAGE_ALPHA_TYPE_PREMUL:
+            return "PREMUL";
+        case AlphaType::IMAGE_ALPHA_TYPE_UNPREMUL:
+            return "UNPREMUL";
+        default:
+            return "UNKNOWN";
+    }
+}
+
+static ani_enum_item findAlphaTypeEnumItem([[maybe_unused]] ani_env* env, AlphaType alphaType)
+{
+    ani_enum type;
+    if (ANI_OK != env->FindEnum("L@ohos/multimedia/image/image/AlphaType;", &type)) {
+        IMAGE_LOGE("FindEnum for AlphaType Failed");
+        return {};
+    }
+
+    string itemName = getAlphaTypeItemName(alphaType);
+    
+    ani_enum_item enumItem;
+    if (ANI_OK != env->Enum_GetEnumItemByName(type, itemName.c_str(), &enumItem)) {
+        IMAGE_LOGE("Enum_GetEnumItemByName for AlphaType Failed");
+        return {};
+    }
+
+    return enumItem;
+}
+
+ani_object ImageAniUtils::CreateImageInfoValueFromNative(ani_env* env, const ImageInfo &imgInfo, PixelMap* pixelmap)
+{
     ani_object imageInfoValue = CreateAniImageInfo(env);
     if (imageInfoValue == nullptr) {
         return nullptr;
@@ -158,13 +239,13 @@ ani_object ImageAniUtils::CreateImageInfoValueFromNative(ani_env* env, const Ima
         IMAGE_LOGE("Object_CallMethodByName_Void <set>stride failed");
         return nullptr;
     }
-    if (ANI_OK != env->Object_CallMethodByName_Void(imageInfoValue, "<set>pixelFormat", "I:V",
-        static_cast<ani_int>(imgInfo.pixelFormat))) {
+    if (ANI_OK != env->Object_CallMethodByName_Void(imageInfoValue, "<set>pixelFormat",
+        "L@ohos/multimedia/image/image/PixelMapFormat;:V", findPixelFormatEnumItem(env, imgInfo.pixelFormat))) {
         IMAGE_LOGE("Object_CallMethodByName_Void <set>pixelFormat failed");
         return nullptr;
     }
-    if (ANI_OK != env->Object_CallMethodByName_Void(imageInfoValue, "<set>alphaType", "I:V",
-        static_cast<ani_int>(imgInfo.alphaType))) {
+    if (ANI_OK != env->Object_CallMethodByName_Void(imageInfoValue, "<set>alphaType",
+        "L@ohos/multimedia/image/image/AlphaType;:V", findAlphaTypeEnumItem(env, imgInfo.alphaType))) {
         IMAGE_LOGE("Object_CallMethodByName_Void <set>alphaType failed");
         return nullptr;
     }
@@ -174,9 +255,12 @@ ani_object ImageAniUtils::CreateImageInfoValueFromNative(ani_env* env, const Ima
         IMAGE_LOGE("Object_CallMethodByName_Void <set>encodedFormat failed ");
         return nullptr;
     }
-    if (ANI_OK != env->Object_CallMethodByName_Void(imageInfoValue, "<set>isHdr", "Z:V", pixelmap->IsHdr())) {
-        IMAGE_LOGE("Object_CallMethodByName_Void <set>isHdr failed ");
-        return nullptr;
+
+    if (pixelmap != nullptr) {
+        if (ANI_OK != env->Object_CallMethodByName_Void(imageInfoValue, "<set>isHdr", "Z:V", pixelmap->IsHdr())) {
+            IMAGE_LOGE("Object_CallMethodByName_Void <set>isHdr failed ");
+            return nullptr;
+        }
     }
     return imageInfoValue;
 }
