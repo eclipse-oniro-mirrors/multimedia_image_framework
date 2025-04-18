@@ -605,12 +605,20 @@ export namespace image {
     loopCount?: int;
   }
 
-  export interface PackingOption {
+  interface IPackingOption {
     format: string;
     quality: int;
     bufferSize?: int;
     desiredDynamicRange?: PackingDynamicRange;
     needsPackProperties?: boolean;
+  }
+
+  export class PackingOption implements IPackingOption {
+    format: string = "";
+    quality: int = 0;
+    bufferSize?: int = 20971520;
+    desiredDynamicRange?: PackingDynamicRange = PackingDynamicRange.AUTO;
+    needsPackProperties?: boolean = false;
   }
 
   export interface ImagePacker {
