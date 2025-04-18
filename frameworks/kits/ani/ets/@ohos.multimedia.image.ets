@@ -13,6 +13,8 @@
  * limitations under the License.
  */
 
+import type colorSpaceManager from '@ohos.graphics.colorSpaceManager';
+
 export namespace image {
 
   loadLibrary("image_ani");
@@ -470,7 +472,7 @@ export namespace image {
   // imageSource
   export interface SourceOptions {
     sourceDensity: int;
-    sourcePixelFormat?: int;
+    sourcePixelFormat?: PixelMapFormat;
     sourceSize?: Size;
   }
 
@@ -491,27 +493,12 @@ export namespace image {
     editable?: Int;
     desiredSize?: Size;
     desiredRegion?: Region;
-    desiredPixelFormat?: Int;
+    desiredPixelFormat?: PixelMapFormat;
     fitDensity?: Int;
-    desiredColorSpace?: Int;
-    desiredDynamicRange?: Int;
-    resolutionQuality?: Int;
+    desiredColorSpace?: colorSpaceManager.ColorSpaceManager;
+    desiredDynamicRange?: DecodingDynamicRange;
+    resolutionQuality?: ResolutionQuality;
   }
-
-  export class DecodingOptionsInner implements DecodingOptions {
-    index?: Int | undefined = 0;
-    sampleSize?: Int | undefined = 1;
-    rotate?: Int | undefined = 0;
-    editable?: Int | undefined = 0;
-    desiredSize?: Size | undefined = { width: 100, height: 200 }
-    desiredRegion?: Region | undefined = { size: { width: 10, height: 20 }, x: 30, y: 40 };
-    desiredPixelFormat?: Int | undefined = 3;
-    fitDensity?: Int | undefined = 1;
-    desiredColorSpace?: Int | undefined = 1;
-    desiredDynamicRange?: Int | undefined = 1;
-    resolutionQuality?: Int | undefined = 1;
-  }
-
 
   export interface ImageSource {
     getImageInfoSync(index: int): ImageInfo;

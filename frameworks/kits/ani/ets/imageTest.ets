@@ -105,11 +105,8 @@ function main() {
     editable: 1,
     desiredSize,
     desiredRegion,
-    desiredPixelFormat: 4,
-    fitDensity: 1,
-    desiredColorSpace: 1,
-    desiredDynamicRange: 1,
-    resolutionQuality: 100
+    desiredPixelFormat: image.PixelMapFormat.RGBA_8888,
+    fitDensity: 1
   };
   let pixelmap2: image.PixelMap = imageSource.createPixelMapSync(decodeOpt);
   if (pixelmap2 != undefined) {

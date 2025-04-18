@@ -33,7 +33,7 @@ namespace OHOS {
 namespace Media {
 using namespace std;
 
-ani_int parseEnumFromStruct([[maybe_unused]] ani_env* env, ani_object &param, string propertyGet, string enumType)
+static ani_int parseEnumFromStruct([[maybe_unused]] ani_env* env, ani_object &param, string propertyGet, string enumType)
 {
     ani_status ret;
     ani_ref enumRef;
@@ -56,7 +56,7 @@ ani_int parseEnumFromStruct([[maybe_unused]] ani_env* env, ani_object &param, st
     return enumIndex;
 }
 
-bool ParseInitializationOptions([[maybe_unused]] ani_env* env, ani_object param, InitializationOptions &opts)
+static bool ParseInitializationOptions([[maybe_unused]] ani_env* env, ani_object param, InitializationOptions &opts)
 {
     ani_boolean isUndefined;
     env->Reference_IsUndefined(param, &isUndefined);
@@ -104,7 +104,7 @@ bool ParseInitializationOptions([[maybe_unused]] ani_env* env, ani_object param,
     return true;
 }
 
-bool ParseRegion([[maybe_unused]] ani_env* env, ani_object region, Rect& rect)
+static bool ParseRegion([[maybe_unused]] ani_env* env, ani_object region, Rect& rect)
 {
     ani_boolean undefined;
     env->Reference_IsUndefined(region, &undefined);
