@@ -137,15 +137,110 @@ static ani_object GetImageInfo([[maybe_unused]] ani_env* env, [[maybe_unused]] a
     return ImageAniUtils::CreateImageInfoValueFromNative(env, imgInfo, nullptr);
 }
 
-bool ParseDecodingOptions([[maybe_unused]] ani_env* env, ani_object para, DecodeOptions &opts)
+static ani_int parseEnumFromStruct(ani_env* env, ani_object &param, string propertyGet, string enumType)
 {
-    ani_boolean isUndefined;
-    env->Reference_IsUndefined(para, &isUndefined);
-    if (isUndefined) {
-        IMAGE_LOGE("ParseInitializationOptions isUndefined ");
+    ani_status ret;
+    ani_ref enumRef;
+    if (ANI_OK != (ret = env->Object_CallMethodByName_Ref(param, propertyGet.c_str(), enumType.c_str(), &enumRef))) {
+        IMAGE_LOGE("Object_CallMethodByName_Int enumRef Failed: %{public}d", ret);
+        return 0;
+    }
+    ani_boolean undefined;
+    env->Reference_IsUndefined(enumRef, &undefined);
+    if (undefined) {
+        IMAGE_LOGI("Enum %{public}s is undefined", propertyGet.c_str());
+        return 0;
+    }
+
+    ani_int enumIndex;
+    if (ANI_OK != env->EnumItem_GetValue_Int(static_cast<ani_enum_item>(enumRef), &enumIndex)) {
+        IMAGE_LOGE("EnumItem_GetValue_Int enumIndex Failed: %{public}d", ret);
+        return 0;
+    }
+    return enumIndex;
+}
+
+static bool ParseRegion([[maybe_unused]] ani_env* env, ani_object region, Rect& rect)
+{
+    ani_boolean undefined;
+    env->Reference_IsUndefined(region, &undefined);
+    if (undefined) {
+        IMAGE_LOGE("ParseRegion argument undefined");
         return false;
     }
 
+    ani_ref size;
+    if (ANI_OK != env->Object_CallMethodByName_Ref(region, "<get>size", ":L@ohos/multimedia/image/image/Size;",
+        &size)) {
+        IMAGE_LOGE("Object_GetFieldByName_Ref Failed");
+        return false;
+    }
+    if (ANI_OK != env->Object_CallMethodByName_Int(reinterpret_cast<ani_object>(size), "<get>width", ":I",
+        &rect.width)) {
+        IMAGE_LOGE("Object_CallMethodByName_Int width Failed");
+        return false;
+    }
+    if (ANI_OK != env->Object_CallMethodByName_Int(reinterpret_cast<ani_object>(size), "<get>height", ":I",
+        &rect.height)) {
+        IMAGE_LOGE("Object_CallMethodByName_Int height Failed");
+        return false;
+    }
+
+    if (ANI_OK != env->Object_CallMethodByName_Int(region, "<get>x", ":I", &rect.left)) {
+        IMAGE_LOGE("Object_CallMethodByName_Int x Failed");
+        return false;
+    }
+    if (ANI_OK != env->Object_CallMethodByName_Int(region, "<get>y", ":I", &rect.top)) {
+        IMAGE_LOGE("Object_CallMethodByName_Int y Failed");
+        return false;
+    }
+
+    return true;
+}
+
+static bool ParseDecodingOptions2([[maybe_unused]] ani_env* env, ani_object &param, DecodeOptions &opts)
+{
+    ani_status ret;
+    ani_ref size;
+    if (ANI_OK != env->Object_CallMethodByName_Ref(param, "<get>desiredSize",
+        ":L@ohos/multimedia/image/image/Size;", &size)) {
+        IMAGE_LOGE("Object_CallMethodByName_Ref size Faild");
+    }
+    if (ANI_OK != env->Object_CallMethodByName_Int(reinterpret_cast<ani_object>(size), "<get>width", ":I",
+        &opts.desiredSize.width)) {
+        IMAGE_LOGE("Object_CallMethodByName_Int width Faild");
+    }
+    if ((ret = env->Object_CallMethodByName_Int(reinterpret_cast<ani_object>(size), "<get>height", ":I",
+        &opts.desiredSize.height)) != ANI_OK) {
+        IMAGE_LOGE("Object_CallMethodByName_Int height Faild :%{public}d", ret);
+    }
+
+    ani_ref regionRef;
+    if (ANI_OK != env->Object_CallMethodByName_Ref(param, "<get>desiredRegion",
+        ":L@ohos/multimedia/image/image/Region;", &regionRef)) {
+        IMAGE_LOGE("Object_CallMethodByName_Ref desiredRegion Faild");
+    }
+    if (!ParseRegion(env, static_cast<ani_object>(regionRef), opts.desiredRegion)) {
+        IMAGE_LOGE("Parse desiredRegion Faild");
+    }
+    opts.desiredPixelFormat = PixelFormat(parseEnumFromStruct(env, param, "<get>desiredPixelFormat",
+        ":L@ohos/multimedia/image/image/PixelMapFormat;"));
+    ani_ref fitDensityRef;
+    if (ANI_OK != (ret = env->Object_CallMethodByName_Ref(param,
+        "<get>fitDensity", ":Lstd/core/Int;", &fitDensityRef))) {
+        IMAGE_LOGE("Object_CallMethodByName_Ref Faild fitDensityRef:%{public}d", ret);
+    }
+    ani_int fitDensity;
+    if ((ret = env->Object_CallMethodByName_Int(reinterpret_cast<ani_object>(fitDensityRef),
+        "unboxed", ":I", &fitDensity)) != ANI_OK) {
+        IMAGE_LOGE("Object_CallMethodByName_Int Faild fitDensity:%{public}d", ret);
+    }
+    return true;
+}
+
+static bool ParseDecodingOptions([[maybe_unused]] ani_env* env, ani_object para, DecodeOptions &opts)
+{
+    ani_boolean isUndefined;
     ani_status ret;
     ani_ref indexRef;
     if (ANI_OK != (ret = env->Object_CallMethodByName_Ref(para, "<get>index", ":Lstd/core/Int;", &indexRef))) {
@@ -158,7 +253,6 @@ bool ParseDecodingOptions([[maybe_unused]] ani_env* env, ani_object para, Decode
             "unboxed", ":I", &index) != ANI_OK) {
             IMAGE_LOGE("Object_CallMethodByName_Int Faild");
         }
-        IMAGE_LOGE("ParseDecodingOptions get index:%{public}d", index);
     }
 
     ani_ref sampleRef;
@@ -170,7 +264,6 @@ bool ParseDecodingOptions([[maybe_unused]] ani_env* env, ani_object para, Decode
         "unboxed", ":I", &sample)) != ANI_OK) {
         IMAGE_LOGE("Object_CallMethodByName_Int Faild sample:%{public}d", ret);
     }
-    IMAGE_LOGE("ParseDecodingOptions get sample:%{public}d", sample);
 
     ani_ref rotateRef;
     if (ANI_OK != (ret = env->Object_CallMethodByName_Ref(para, "<get>rotate", ":Lstd/core/Int;", &rotateRef))) {
@@ -181,126 +274,23 @@ bool ParseDecodingOptions([[maybe_unused]] ani_env* env, ani_object para, Decode
         "unboxed", ":I", &rotate)) != ANI_OK) {
         IMAGE_LOGE("Object_CallMethodByName_Int Faild rotate:%{public}d", ret);
     }
-    IMAGE_LOGE("ParseDecodingOptions get rotate:%{public}d", rotate);
 
     ani_ref editableRef;
-    if (ANI_OK != (ret = env->Object_CallMethodByName_Ref(para, "<get>editable", ":Lstd/core/Int;", &editableRef))) {
+    if (ANI_OK != (ret = env->Object_CallMethodByName_Ref(para, "<get>editable", ":Lstd/core/Boolean;",
+        &editableRef))) {
         IMAGE_LOGE("Object_CallMethodByName_Ref Faild editableRef:%{public}d", ret);
     }
-    ani_int editable;
-    if ((ret = env->Object_CallMethodByName_Int(reinterpret_cast<ani_object>(editableRef),
-        "unboxed", ":I", &editable)) != ANI_OK) {
+    ani_boolean editable;
+    if ((ret = env->Object_CallMethodByName_Boolean(reinterpret_cast<ani_object>(editableRef),
+        "unboxed", ":Z", &editable)) != ANI_OK) {
         IMAGE_LOGE("Object_CallMethodByName_Int Faild editable:%{public}d", ret);
     }
-    IMAGE_LOGE("ParseDecodingOptions get editable:%{public}d", rotate);
+    opts.editable = static_cast<bool>(editable);
 
-    ani_ref size;
-    if (ANI_OK != env->Object_CallMethodByName_Ref(para, "<get>desiredSize",
-        ":L@ohos/multimedia/image/image/Size;", &size)) {
-        IMAGE_LOGE("Object_CallMethodByName_Ref size Faild");
+    if (!ParseDecodingOptions2(env, para, opts)) {
+        return false;
     }
-    int32_t width;
-    if (ANI_OK != env->Object_CallMethodByName_Int(reinterpret_cast<ani_object>(size), "<get>width", ":I", &width)) {
-        IMAGE_LOGE("Object_CallMethodByName_Int width Faild");
-    }
-    int32_t height;
-    if ((ret = env->Object_CallMethodByName_Int(reinterpret_cast<ani_object>(size),
-        "<get>height", ":I", &height)) != ANI_OK) {
-        IMAGE_LOGE("Object_CallMethodByName_Int height Faild :%{public}d", ret);
-    }
-    IMAGE_LOGE("ParseDecodingOptions get width:%{public}d", width);
 
-    ani_ref reginRef;
-    if (ANI_OK != env->Object_CallMethodByName_Ref(para, "<get>desiredRegion",
-        ":L@ohos/multimedia/image/image/Region;", &reginRef)) {
-        IMAGE_LOGE("Object_CallMethodByName_Ref desiredRegion Faild");
-    }
-    if (ANI_OK != env->Object_CallMethodByName_Ref(static_cast<ani_object>(reginRef),
-        "<get>size", ":L@ohos/multimedia/image/image/Size;", &size)) {
-        IMAGE_LOGE("Object_CallMethodByName_Ref desiredRegion size Faild");
-    }
-    width = 0;
-    if (ANI_OK != env->Object_CallMethodByName_Int(reinterpret_cast<ani_object>(size), "<get>width", ":I", &width)) {
-        IMAGE_LOGE("Object_CallMethodByName_Int desiredRegion size width Faild");
-    }
-    height = 0;
-    if ((ret = env->Object_CallMethodByName_Int(reinterpret_cast<ani_object>(size),
-        "<get>height", ":I", &height)) != ANI_OK) {
-        IMAGE_LOGE("Object_CallMethodByName_Int desiredRegion size height Faild :%{public}d", ret);
-    }
-    ani_ref xRef;
-    if (ANI_OK != env->Object_CallMethodByName_Ref(reinterpret_cast<ani_object>(reginRef),
-        "<get>x", ":Lstd/core/Int;", &xRef)) {
-        IMAGE_LOGE("Object_CallMethodByName_Ref desiredRegion xRef Faild");
-    }
-    ani_int x;
-    if ((ret = env->Object_CallMethodByName_Int(reinterpret_cast<ani_object>(xRef), "unboxed", ":I", &x)) != ANI_OK) {
-        IMAGE_LOGE("Object_CallMethodByName_Int desiredRegion x Faild :%{public}d", ret);
-    }
-    ani_ref yRef;
-    if (ANI_OK != env->Object_CallMethodByName_Ref(reinterpret_cast<ani_object>(reginRef),
-        "<get>y", ":Lstd/core/Int;", &yRef)) {
-        IMAGE_LOGE("Object_CallMethodByName_Ref desiredRegion yRef Faild");
-    }
-    ani_int y;
-    if ((ret = env->Object_CallMethodByName_Int(reinterpret_cast<ani_object>(yRef), "unboxed", ":I", &y)) != ANI_OK) {
-        IMAGE_LOGE("Object_CallMethodByName_Int desiredRegion y Faild :%{public}d", ret);
-    }
-    ani_ref desiredPixelFormatRef;
-    if (ANI_OK != (ret = env->Object_CallMethodByName_Ref(para, "<get>desiredPixelFormat",
-        ":Lstd/core/Int;", &desiredPixelFormatRef))) {
-        IMAGE_LOGE("Object_CallMethodByName_Ref Faild desiredPixelFormatRef:%{public}d", ret);
-    }
-    ani_int desiredPixelFormat;
-    if ((ret = env->Object_CallMethodByName_Int(reinterpret_cast<ani_object>(desiredPixelFormatRef),
-        "unboxed", ":I", &desiredPixelFormat)) != ANI_OK) {
-        IMAGE_LOGE("Object_CallMethodByName_Int Faild desiredPixelFormat:%{public}d", ret);
-    }
-    IMAGE_LOGE("ParseDecodingOptions get desiredPixelFormat:%{public}d", desiredPixelFormat);
-    ani_ref fitDensityRef;
-    if (ANI_OK != (ret = env->Object_CallMethodByName_Ref(para,
-        "<get>fitDensity", ":Lstd/core/Int;", &fitDensityRef))) {
-        IMAGE_LOGE("Object_CallMethodByName_Ref Faild fitDensityRef:%{public}d", ret);
-    }
-    ani_int fitDensity;
-    if ((ret = env->Object_CallMethodByName_Int(reinterpret_cast<ani_object>(fitDensityRef),
-        "unboxed", ":I", &fitDensity)) != ANI_OK) {
-        IMAGE_LOGE("Object_CallMethodByName_Int Faild fitDensity:%{public}d", ret);
-    }
-    IMAGE_LOGE("ParseDecodingOptions get fitDensity:%{public}d", fitDensity);
-    ani_ref desiredColorSpaceRef;
-    if (ANI_OK != (ret = env->Object_CallMethodByName_Ref(para, "<get>desiredColorSpace",
-        ":Lstd/core/Int;", &desiredColorSpaceRef))) {
-        IMAGE_LOGE("Object_CallMethodByName_Ref Faild desiredColorSpaceRef:%{public}d", ret);
-    }
-    ani_int desiredColorSpace;
-    if ((ret = env->Object_CallMethodByName_Int(reinterpret_cast<ani_object>(desiredColorSpaceRef),
-        "unboxed", ":I", &desiredColorSpace)) != ANI_OK) {
-        IMAGE_LOGE("Object_CallMethodByName_Int Faild desiredColorSpace:%{public}d", ret);
-    }
-    IMAGE_LOGE("ParseDecodingOptions get desiredColorSpace:%{public}d", desiredColorSpace);
-    ani_ref desiredDynamicRangeRef;
-    if (ANI_OK != (ret = env->Object_CallMethodByName_Ref(para, "<get>desiredDynamicRange",
-        ":Lstd/core/Int;", &desiredDynamicRangeRef))) {
-        IMAGE_LOGE("Object_CallMethodByName_Ref Faild desiredDynamicRangeRef:%{public}d", ret);
-    }
-    ani_int desiredDynamicRange;
-    if ((ret = env->Object_CallMethodByName_Int(reinterpret_cast<ani_object>(desiredDynamicRangeRef),
-        "unboxed", ":I", &desiredDynamicRange)) != ANI_OK) {
-        IMAGE_LOGE("Object_CallMethodByName_Int Faild desiredDynamicRange:%{public}d", ret);
-    }
-    IMAGE_LOGE("ParseDecodingOptions get desiredDynamicRange:%{public}d", desiredDynamicRange);
-    ani_ref resolutionQualityRef;
-    if (ANI_OK != (ret = env->Object_CallMethodByName_Ref(para, "<get>resolutionQuality",
-        ":Lstd/core/Int;", &resolutionQualityRef))) {
-        IMAGE_LOGE("Object_CallMethodByName_Ref Faild resolutionQualityRef:%{public}d", ret);
-    }
-    ani_int resolutionQuality;
-    if ((ret = env->Object_CallMethodByName_Int(reinterpret_cast<ani_object>(resolutionQualityRef),
-        "unboxed", ":I", &resolutionQuality)) != ANI_OK) {
-        IMAGE_LOGE("Object_CallMethodByName_Int Faild resolutionQuality:%{public}d", ret);
-    }
-    IMAGE_LOGE("ParseDecodingOptions get resolutionQuality:%{public}d", resolutionQuality);
     return true;
 }
 

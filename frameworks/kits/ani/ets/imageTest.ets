@@ -23,7 +23,8 @@ function main() {
     srcPixelFormat: image.PixelMapFormat.RGBA_8888,
     pixelFormat: image.PixelMapFormat.BGRA_8888,
     editable: true,
-    alphaType: image.AlphaType.UNPREMUL
+    alphaType: image.AlphaType.UNPREMUL,
+    scaleMode: image.ScaleMode.FIT_TARGET_SIZE
   };
   let pixelMap:image.PixelMap = image.createPixelMapSync(opts);
 
@@ -102,14 +103,11 @@ function main() {
     index: 0,
     sampleSize: 1,
     rotate: 0,
-    editable: 1,
+    editable: true,
     desiredSize,
     desiredRegion,
-    desiredPixelFormat: 4,
-    fitDensity: 1,
-    desiredColorSpace: 1,
-    desiredDynamicRange: 1,
-    resolutionQuality: 100
+    desiredPixelFormat: image.PixelMapFormat.RGBA_8888,
+    fitDensity: 1
   };
   let pixelmap2: image.PixelMap = imageSource.createPixelMapSync(decodeOpt);
   if (pixelmap2 != undefined) {
