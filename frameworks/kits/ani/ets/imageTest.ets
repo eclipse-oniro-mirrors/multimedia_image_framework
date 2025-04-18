@@ -144,13 +144,9 @@ function main() {
 
   console.log("TEST ImagePacker begin");
   const imagePacker = image.createImagePacker();
-  let packOpts: image.PackingOption = {
-    format: "image/jpeg",
-    quality: 90,
-    bufferSize: 0,
-    desiredDynamicRange: image.PackingDynamicRange.AUTO,
-    needsPackProperties: false
-  };
+  let packOpts: image.PackingOption = new image.PackingOption(); 
+  packOpts.format = "image/jpeg";
+  packOpts.quality = 90;
   let packBuffer: ArrayBuffer = imagePacker.packing(pixelMap, packOpts);
   console.log("TEST ImagePacker end, bufferSize: " + packBuffer.byteLength);
   imagePacker.release();
