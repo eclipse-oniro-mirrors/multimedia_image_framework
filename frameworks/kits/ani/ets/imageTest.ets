@@ -148,7 +148,7 @@ function main() {
     format: "image/jpeg",
     quality: 90,
     bufferSize: 0,
-    PackingDynamicRange: image.PackingDynamicRange.AUTO,
+    desiredDynamicRange: image.PackingDynamicRange.AUTO,
     needsPackProperties: false
   };
   let packBuffer: ArrayBuffer = imagePacker.packing(pixelMap, packOpts);
