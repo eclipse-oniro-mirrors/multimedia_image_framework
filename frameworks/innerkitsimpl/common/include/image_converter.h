@@ -58,6 +58,21 @@ typedef enum ColorSpace {
     SMPTE_C = 16,
 } ColorSpaceEnum;
 
+typedef enum YuvConstants {
+    YuvI601 = 1,
+    YuvJPEG = 2,
+    YuvH709 = 3,
+    YuvF709 = 4,
+    Yuv2020 = 5,
+    YuvV2020 = 6,
+    YvuI601 = 7,
+    YvuJPEG = 8,
+    YvuH709 = 9,
+    YvuF709 = 10,
+    Yvu2020 = 11,
+    YvuV2020 = 12,
+} YuvConstantsEnum;
+
 struct ImageYuvConverter {
     int32_t (*NV12ToI420)(const uint8_t *src_y, int src_stride_y, const uint8_t *src_uv, int src_stride_uv,
         uint8_t *dst_y, int dst_stride_y, uint8_t *dst_u, int dst_stride_u, uint8_t *dst_v, int dst_stride_v, int width,
@@ -109,6 +124,9 @@ struct ImageYuvConverter {
     int32_t (*I420ToRGB565Matrix)(const uint8_t* src_y, int src_stride_y, const uint8_t* src_u, int src_stride_u,
         const uint8_t* src_v, int src_stride_v, uint8_t* dst_rgb565, int dst_stride_rgb565,
         enum ColorSpace colorSpace, int width, int height);
+    int32_t (*I420ToARGBMatrix)(const uint8_t* src_y, int src_stride_y, const uint8_t* src_u, int src_stride_u,
+        const uint8_t* src_v, int src_stride_v, uint8_t* dst_argb, int dst_stride_argb,
+        enum YuvConstants yuvConstants, int width, int height);
     int32_t (*I420ToABGR)(const uint8_t* src_y, int src_stride_y, const uint8_t* src_u, int src_stride_u,
         const uint8_t* src_v, int src_stride_v, uint8_t* dst_abgr, int dst_stride_abgr,
         int width, int height);
