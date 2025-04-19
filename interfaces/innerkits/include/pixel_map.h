@@ -115,6 +115,10 @@ struct RWPixelsOptions {
 class ExifMetadata;
 class AbsMemory;
 
+#define PIXELMAP_VERSION_START (1<<16)
+#define PIXELMAP_VERSION_DISPLAY_ONLY (PIXELMAP_VERSION_START + 1)
+#define PIXELMAP_VERSION_LATEST PIXELMAP_VERSION_DISPLAY_ONLY
+
 class PixelMap : public Parcelable, public PIXEL_MAP_ERR {
 public:
     static std::atomic<uint32_t> currentId;
@@ -585,6 +589,16 @@ private:
         displayOnly_ = displayOnly;
     }
 
+    NATIVEEXPORT void SetReadVersion(int32_t version)
+    {
+        readVersion_ = version;
+    }
+
+    NATIVEEXPORT int32_t GetReadVersion()
+    {
+        return readVersion_;
+    }
+
     // unmap方案, 减少RenderService内存占用
     bool isUnMap_ = false;
     uint64_t useCount_ = 0ULL;
@@ -593,6 +607,8 @@ private:
     // used to mark whether DMA memory should be refreshed
     mutable bool isMemoryDirty_ = false;
 
+    // pixelmap versioning added since 16th of April 2025
+    int32_t readVersion_ = PIXELMAP_VERSION_LATEST;
     bool displayOnly_ = false;
 
     friend class OHOS::Rosen::RSModifiersDraw;
