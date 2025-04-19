@@ -190,7 +190,6 @@ public:
     ~PixelConvert() = default;
     static std::unique_ptr<PixelConvert> Create(const ImageInfo &srcInfo, const ImageInfo &dstInfo);
     void Convert(void *destinationPixels, const uint8_t *sourcePixels, uint32_t sourcePixelsNum);
-
     static int32_t PixelsConvert(const BufferInfo &src, BufferInfo &dst, int32_t srcLength, bool useDMA);
     static int32_t PixelsConvert(const BufferInfo &src, BufferInfo &dst, bool useDMA);
     static std::unique_ptr<PixelMap> AstcToRgba(PixelMap *source, uint32_t &errorCode, PixelFormat destFormat);
@@ -198,8 +197,7 @@ private:
     static AlphaConvertType GetAlphaConvertType(const AlphaType &srcType, const AlphaType &dstType);
     static bool IsValidRowStride(int32_t rowStride, const ImageInfo &imageInfo);
     static bool IsValidBufferInfo(const BufferInfo &bufferInfo);
-    static int32_t CopySrcBufferAndConvert(void *srcPixels, const ImageInfo &srcInfo, int32_t srcLength,
-        void *dstPixels, ImageInfo &dstInfo, bool useDMA);
+    static int32_t CopySrcBufferAndConvert(const BufferInfo &src, BufferInfo &dst, int32_t srcLength, bool useDMA);
 
     ProcFuncType procFunc_;
     ProcFuncExtension procFuncExtension_;
