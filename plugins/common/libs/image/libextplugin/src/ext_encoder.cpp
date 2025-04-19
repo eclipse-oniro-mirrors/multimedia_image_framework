@@ -1606,7 +1606,9 @@ uint32_t ExtEncoder::EncodeEditScenePicture()
     sptr<SurfaceBuffer> baseSptr(reinterpret_cast<SurfaceBuffer*>(mainPixelMap->GetFd()));
     cond = !baseSptr;
     CHECK_ERROR_RETURN_RET_LOG(cond, IMAGE_RESULT_CREATE_SURFAC_FAILED, "creat main pixels surfaceBuffer error");
-    return EncodeHeifPicture(baseSptr, baseInfo, sdrIsSRGB);
+    uint32_t errorCode = EncodeHeifPicture(baseSptr, baseInfo, sdrIsSRGB);
+    RecycleResources();
+    return errorCode;
 }
 
 uint32_t ExtEncoder::EncodeHeifPicture(sptr<SurfaceBuffer>& mainSptr, SkImageInfo mainInfo, bool sdrIsSRGB)

@@ -44,7 +44,7 @@ constexpr uint32_t COMPONENT_NUM_RGB = 3;
 constexpr uint32_t COMPONENT_NUM_GRAY = 1;
 constexpr uint32_t PIXEL_SIZE_RGBA_F16 = 8;
 constexpr uint32_t PIXEL_SIZE_RGB565 = 2;
-constexpr uint32_t BLOCK_SIZE = 8; // libjpeg use 8x8 block to compress
+constexpr uint32_t BLOCK_SIZE = 16;
 // yuv format
 constexpr uint8_t COMPONENT_NUM_YUV420SP = 3;
 constexpr uint8_t Y_SAMPLE_ROW = 16;
