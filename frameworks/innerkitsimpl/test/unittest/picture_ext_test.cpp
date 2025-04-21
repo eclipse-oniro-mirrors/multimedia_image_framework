@@ -26,17 +26,21 @@
 #include "image_packer_native_impl.h"
 #include "media_errors.h"
 #include "securec.h"
+#include "native_color_space_manager.h"
+#include "ndk_color_space.h"
 using namespace OHOS::Media;
 using namespace testing::ext;
 namespace OHOS {
 namespace Multimedia {
 
+static const int32_t COLORSPACE_SRGB = 4;
 static const int32_t SIZE_WIDTH = 2;
 static const int32_t SIZE_HEIGHT = 3;
 static const int32_t STRIDE_ALIGNMENT = 8;
 static const int32_t BUFFER_SIZE = 256;
 static const int32_t DEFAULT_BUFF_SIZE = 25 * 1024 * 1024;
 static const int32_t DEFAULT_QUALITY = 98;
+static const int32_t INVALID_COLOR_SPACE_OVERFLOW = 100;
 static const std::string IMAGE_JPEG_SRC = "/data/local/tmp/image/test_jpeg.jpg";
 static const std::string IMAGE_JPEG_DEST = "/data/local/tmp/image/test_jpeg_out.jpg";
 static const std::string IMAGE_HEIF_SRC = "/data/local/tmp/image/test_heif.heic";
@@ -1276,6 +1280,91 @@ HWTEST_F(PictureExtTest, EncodeARGBPicture003, TestSize.Level1)
     ASSERT_NE(auxPicture, nullptr);
     picture->SetAuxiliaryPicture(auxPicture);
     EncodePictureMethodOne(picture, "image/jpeg", IMAGE_JPEG_PICTURE_ARGB_DEST);
+}
+
+/**
+ * @tc.name: OH_DecodingOptions_GetDesiredColorSpaceTest001
+ * @tc.desc: Verify the basic functionality of `OH_DecodingOptions_SetDesiredColorSpace` and
+ *           `OH_DecodingOptions_GetDesiredColorSpace`.
+ * @tc.type: FUNC
+ */
+HWTEST_F(PictureExtTest, OH_DecodingOptions_SetGetDesiredColorSpaceTest001, TestSize.Level1)
+{
+    OH_DecodingOptions *opts = nullptr;
+    OH_DecodingOptions_Create(&opts);
+    ASSERT_NE(opts, nullptr);
+    Image_ErrorCode ret = OH_DecodingOptions_SetDesiredColorSpace(opts, COLORSPACE_SRGB);
+    EXPECT_EQ(ret, IMAGE_SUCCESS);
+    int32_t getColorSpace = 0;
+    ret = OH_DecodingOptions_GetDesiredColorSpace(opts, &getColorSpace);
+    OH_NativeColorSpaceManager* colorSpaceNative =
+        OH_NativeColorSpaceManager_CreateFromName(ColorSpaceName(getColorSpace));
+    ASSERT_NE(colorSpaceNative, nullptr);
+    EXPECT_EQ(ret, IMAGE_SUCCESS);
+    EXPECT_EQ(OH_NativeColorSpaceManager_GetColorSpaceName(colorSpaceNative), COLORSPACE_SRGB);
+}
+
+/**
+ * @tc.name: OH_DecodingOptions_GetDesiredColorSpaceTest002
+ * @tc.desc: Verify the robustness of `OH_DecodingOptions_SetDesiredColorSpace` and
+ *           `OH_DecodingOptions_GetDesiredColorSpace` when handling invalid inputs.
+ * @tc.type: FUNC
+ */
+HWTEST_F(PictureExtTest, OH_DecodingOptions_SetGetDesiredColorSpaceTest002, TestSize.Level1)
+{
+    OH_DecodingOptions *opts = nullptr;
+    OH_DecodingOptions_Create(&opts);
+    ASSERT_NE(opts, nullptr);
+    int32_t getColorSpace = 0;
+    Image_ErrorCode ret = OH_DecodingOptions_GetDesiredColorSpace(nullptr, &getColorSpace);
+    EXPECT_EQ(ret, IMAGE_SOURCE_INVALID_PARAMETER);
+    ret = OH_DecodingOptions_SetDesiredColorSpace(nullptr, COLORSPACE_SRGB);
+    EXPECT_EQ(ret, IMAGE_SOURCE_INVALID_PARAMETER);
+    ret = OH_DecodingOptions_GetDesiredColorSpace(opts, nullptr);
+    EXPECT_EQ(ret, IMAGE_SOURCE_INVALID_PARAMETER);
+    ret = OH_DecodingOptions_SetDesiredColorSpace(opts, 0);
+    EXPECT_EQ(ret, IMAGE_SOURCE_INVALID_PARAMETER);
+    ret = OH_DecodingOptions_GetDesiredColorSpace(nullptr, nullptr);
+    EXPECT_EQ(ret, IMAGE_SOURCE_INVALID_PARAMETER);
+    ret = OH_DecodingOptions_SetDesiredColorSpace(nullptr, 0);
+    EXPECT_EQ(ret, IMAGE_SOURCE_INVALID_PARAMETER);
+    ret = OH_DecodingOptions_SetDesiredColorSpace(opts, INVALID_COLOR_SPACE_OVERFLOW);
+    EXPECT_EQ(ret, IMAGE_SOURCE_INVALID_PARAMETER);
+}
+
+/**
+ * @tc.name: OH_DecodingOptions_SetGetDesiredColorSpaceTest003
+ * @tc.desc: Verify the end-to-end workflow of color space configuration in image decoding process.
+ * @tc.type: FUNC
+ */
+HWTEST_F(PictureExtTest, OH_DecodingOptions_SetGetDesiredColorSpaceTest003, TestSize.Level1)
+{
+    std::string realPath;
+    ASSERT_TRUE(ImageUtils::PathToRealPath(IMAGE_JPEG_SRC.c_str(), realPath));
+    ASSERT_NE(realPath.c_str(), nullptr);
+    char filePath[BUFFER_SIZE];
+    ASSERT_EQ(strcpy_s(filePath, sizeof(filePath), realPath.c_str()), EOK);
+    size_t length = realPath.size();
+    OH_ImageSourceNative *source = nullptr;
+
+    Image_ErrorCode ret = OH_ImageSourceNative_CreateFromUri(filePath, length, &source);
+    ASSERT_EQ(ret, IMAGE_SUCCESS);
+    ASSERT_NE(source, nullptr);
+    OH_DecodingOptions *opts = nullptr;
+    OH_DecodingOptions_Create(&opts);
+    ASSERT_NE(opts, nullptr);
+
+    ret = OH_DecodingOptions_SetDesiredColorSpace(opts, COLORSPACE_SRGB);
+    ASSERT_EQ(ret, IMAGE_SUCCESS);
+    OH_PixelmapNative *pixelmap = nullptr;
+    ret = OH_ImageSourceNative_CreatePixelmap(source, opts, &pixelmap);
+    ASSERT_EQ(ret, IMAGE_SUCCESS);
+    ASSERT_NE(pixelmap, nullptr);
+    OH_NativeColorSpaceManager *getColorSpaceNative = 0;
+    ret = OH_PixelmapNative_GetColorSpaceNative(pixelmap, &getColorSpaceNative);
+    ASSERT_NE(getColorSpaceNative, nullptr);
+    ASSERT_EQ(ret, IMAGE_SUCCESS);
+    EXPECT_EQ(OH_NativeColorSpaceManager_GetColorSpaceName(getColorSpaceNative), COLORSPACE_SRGB);
 }
 } // namespace Multimedia
 } // namespace OHOS
