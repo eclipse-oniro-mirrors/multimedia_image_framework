@@ -691,6 +691,31 @@ Image_ErrorCode OH_DecodingOptionsForPicture_SetDesiredAuxiliaryPictures(OH_Deco
  * @since 13
  */
 Image_ErrorCode OH_DecodingOptionsForPicture_Release(OH_DecodingOptionsForPicture *options);
+
+/**
+  * @brief Gets the decode supported image format list.
+  *
+  * @param supportedFormat Pointer to receive allocated array of supported image formats.
+  * @param length Pointer to receive number of supported formats.
+  * @return Image functions result code.
+  *         {@link IMAGE_SUCCESS} if the execution is successful.
+  *         {@link IMAGE_BAD_PARAMETER} one of the pointer type parameters is nullptr, or length is invalid.
+  * @since 20
+ */
+Image_ErrorCode OH_ImageSourceNative_GetSupportedFormat(Image_MimeType** supportedFormat, size_t* length);
+
+/**
+  * @brief Obtains the image formats (MIME types) that can be decoded.
+  *
+  * @param supportedFormat An array of the supported image formats.
+  * @param length Length of supportedFormats.
+  * @return Image functions result code.
+  *         {@link IMAGE_SUCCESS} if the execution is successful.
+  *         {@link IMAGE_SOURCE_BAD_PARAMETER} if supportedFormats or length is nullptr.
+  * @since 20
+ */
+Image_ErrorCode OH_ImageSourceNative_GetSupportedFormats(Image_MimeType** supportedFormat, size_t* length);
+
 #ifdef __cplusplus
 };
 #endif

@@ -436,5 +436,40 @@ HWTEST_F(ImagePackerNdk2Test, OH_ImagePackerNative_Release, TestSize.Level3)
     ASSERT_EQ(ret, IMAGE_BAD_PARAMETER);
     GTEST_LOG_(INFO) << "ImagePackerNdk2Test: OH_ImagePackerNative_Release end";
 }
+
+/**
+ * @tc.name: OH_ImageSourceNative_GetSupportedFormatTest001
+ * @tc.desc: Verify GetSupportedFormat returns valid format list with non-empty data and correct size.
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImagePackerNdk2Test, OH_ImagePackerNative_GetSupportedFormatTest001, TestSize.Level3)
+{
+    Image_MimeType* supportedFormat = nullptr;
+    size_t length = 0;
+    Image_ErrorCode ret = OH_ImagePackerNative_GetSupportedFormats(&supportedFormat, &length);
+    EXPECT_EQ(ret, IMAGE_SUCCESS);
+    for (size_t i = 0; i < length; i++) {
+        EXPECT_NE(supportedFormat[i].data, nullptr);
+        EXPECT_NE(supportedFormat[i].size, 0);
+    }
+    EXPECT_NE(length, 0);
+}
+
+/**
+ * @tc.name: OH_ImagePackerNative_GetSupportedFormatTest002
+ * @tc.desc: Verify GetSupportedFormat returns IMAGE_PACKER_INVALID_PARAMETER when given null input parameters.
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImagePackerNdk2Test, OH_ImagePackerNative_GetSupportedFormatTest002, TestSize.Level3)
+{
+    Image_MimeType* supportedFormat = nullptr;
+    size_t length = 0;
+    Image_ErrorCode ret = OH_ImagePackerNative_GetSupportedFormats(nullptr, &length);
+    EXPECT_EQ(ret, IMAGE_PACKER_INVALID_PARAMETER);
+    ret = OH_ImagePackerNative_GetSupportedFormats(&supportedFormat, nullptr);
+    EXPECT_EQ(ret, IMAGE_PACKER_INVALID_PARAMETER);
+    ret = OH_ImagePackerNative_GetSupportedFormats(nullptr, nullptr);
+    EXPECT_EQ(ret, IMAGE_PACKER_INVALID_PARAMETER);
+}
 }
 }

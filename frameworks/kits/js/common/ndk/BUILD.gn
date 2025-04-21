@@ -199,6 +199,7 @@ ohos_shared_library("image_packer") {
 
   external_deps = [
     "c_utils:utils",
+    "hilog:libhilog",
     "napi:ace_napi",
     "resource_management:librawfile",
   ]

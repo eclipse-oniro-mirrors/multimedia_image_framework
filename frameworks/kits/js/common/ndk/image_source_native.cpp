@@ -52,6 +52,8 @@ static constexpr int32_t FORMAT_7 = 7;
 static constexpr int32_t FORMAT_8 = 8;
 static constexpr int32_t FORMAT_9 = 9;
 using JpegYuvDecodeError = OHOS::ImagePlugin::JpegYuvDecodeError;
+static Image_MimeType *IMAGE_SOURCE_SUPPORTED_FORMATS = nullptr;
+static size_t SUPPORTED_FORMATS_SIZE = 0;
 
 struct OH_DecodingOptionsForThumbnail {
     struct Image_Size desiredSize;
@@ -965,6 +967,32 @@ Image_ErrorCode OH_DecodingOptionsForPicture_Release(OH_DecodingOptionsForPictur
     }
     delete options;
     options = nullptr;
+    return IMAGE_SUCCESS;
+}
+
+MIDK_EXPORT
+Image_ErrorCode OH_ImageSourceNative_GetSupportedFormats(Image_MimeType** supportedFormat, size_t* length)
+{
+    if (supportedFormat == nullptr || length == nullptr) {
+        return IMAGE_SOURCE_INVALID_PARAMETER;
+    }
+    if (IMAGE_SOURCE_SUPPORTED_FORMATS != nullptr || SUPPORTED_FORMATS_SIZE != 0) {
+        *supportedFormat = IMAGE_SOURCE_SUPPORTED_FORMATS;
+        *length = SUPPORTED_FORMATS_SIZE;
+        return IMAGE_SUCCESS;
+    }
+    std::set<std::string> formats;
+    ImageSource::GetSupportedFormats(formats);
+    *length = formats.size();
+    *supportedFormat = new Image_MimeType[*length];
+    size_t count = 0;
+    for (const auto& str : formats) {
+        (*supportedFormat)[count].data = strdup(str.c_str());
+        (*supportedFormat)[count].size = str.size();
+        count++;
+    }
+    IMAGE_SOURCE_SUPPORTED_FORMATS = *supportedFormat;
+    SUPPORTED_FORMATS_SIZE = *length;
     return IMAGE_SUCCESS;
 }
 
