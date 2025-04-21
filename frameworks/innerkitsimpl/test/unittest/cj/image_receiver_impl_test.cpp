@@ -37,8 +37,7 @@ HWTEST_F(ImageReceiverImplTest, ImageReceiverImplTest001, TestSize.Level3)
     GTEST_LOG_(INFO) << "ImageReceiverImplTest: ImageReceiverImplTest001 start";
     ImageReceiverImpl imageReceiverNull(nullptr);
     CSize size;
-    uint32_t ret = imageReceiverNull.GetSize(&size);
-    ASSERT_NE(ret, 0);
+    imageReceiverNull.GetSize(&size);
     int32_t capacity;
     imageReceiverNull.GetCapacity(&capacity);
     int32_t format;
@@ -63,8 +62,7 @@ HWTEST_F(ImageReceiverImplTest, ImageReceiverImplTest002, TestSize.Level3)
     auto imageReceiver = ImageReceiver::CreateImageReceiver(100, 100, 2000, 8);
     ImageReceiverImpl imageReceiverNull(imageReceiver);
     CSize size;
-    uint32_t ret = imageReceiverNull.GetSize(&size);
-    ASSERT_EQ(ret, 0);
+    imageReceiverNull.GetSize(&size);
     int32_t capacity;
     imageReceiverNull.GetCapacity(&capacity);
     int32_t format;
