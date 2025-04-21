@@ -1767,5 +1767,24 @@ HWTEST_F(WebpExifMetadataAccessorTest, ConvertAsciiToInt, TestSize.Level3)
     int ret = png->ConvertAsciiToInt(&sourcePtr, exifInfoLength, &destPtr);
     ASSERT_EQ(ret, ERR_IMAGE_SOURCE_DATA_INCOMPLETE);
 }
+
+/**
+ * @tc.name: ReadBlob011
+ * @tc.desc: Testing ReadBlob method when fp is nullptr
+ * @tc.type: FUNC
+ */
+HWTEST_F(WebpExifMetadataAccessorTest, ReadBlob011, TestSize.Level3)
+{
+    auto stream = std::make_shared<FileMetadataStream>(IMAGE_INPUT_READ1_WEBP_PATH);
+    ASSERT_NE(stream, nullptr);
+    stream->fp_ = nullptr;
+    std::shared_ptr<MetadataStream> readStream = stream;
+    EXPECT_TRUE(readStream->Open(OpenMode::ReadWrite));
+    WebpExifMetadataAccessor imageReadAccessor(readStream);
+
+    DataBuf blob;
+    bool res = imageReadAccessor.ReadBlob(blob);
+    EXPECT_TRUE(res);
+}
 } // namespace Multimedia
 } // namespace OHOS

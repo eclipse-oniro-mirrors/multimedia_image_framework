@@ -488,6 +488,7 @@ ohos_unittest("imageutilstest") {
     "$image_subsystem/frameworks/innerkitsimpl/test/unittest/color_utils_test.cpp",
     "$image_subsystem/frameworks/innerkitsimpl/test/unittest/image_utils_test.cpp",
     "$image_subsystem/frameworks/innerkitsimpl/test/unittest/pixel_yuv_ext_utils_test.cpp",
+    "$image_subsystem/frameworks/innerkitsimpl/test/unittest/vpe_utils_test.cpp",
   ]
 
   deps = [
@@ -500,6 +501,7 @@ ohos_unittest("imageutilstest") {
     "drivers_interface_display:libdisplay_commontype_proxy_1.0",
     "ffmpeg:libohosffmpeg",
     "graphic_2d:color_manager",
+    "graphic_surface:surface",
 
     #"hilog:libhilog",
     "hitrace:hitrace_meter",
@@ -1572,6 +1574,7 @@ ohos_unittest("jpeg_yuv_decoder_test") {
     "c_utils:utils",
     "googletest:gtest",
     "googletest:gtest_main",
+    "libjpeg-turbo:turbojpeg",
     "skia:libjpeg",
   ]
 }
@@ -1631,10 +1634,12 @@ ohos_unittest("imageaccessortest") {
     "${image_subsystem}/frameworks/innerkitsimpl/accessor/src/png_image_chunk_utils.cpp",
     "${image_subsystem}/frameworks/innerkitsimpl/accessor/src/tiff_parser.cpp",
     "${image_subsystem}/frameworks/innerkitsimpl/accessor/src/webp_exif_metadata_accessor.cpp",
+    "${image_subsystem}/frameworks/innerkitsimpl/test/unittest/exif_metadata_accessor_test/abstract_exif_metadata_accessor_test.cpp",
     "${image_subsystem}/frameworks/innerkitsimpl/test/unittest/exif_metadata_accessor_test/dng_exif_metadata_accessor_test.cpp",
     "${image_subsystem}/frameworks/innerkitsimpl/test/unittest/exif_metadata_accessor_test/heif_exif_metadata_accessor_test.cpp",
     "${image_subsystem}/frameworks/innerkitsimpl/test/unittest/exif_metadata_accessor_test/jpeg_exif_metadata_accessor_test.cpp",
     "${image_subsystem}/frameworks/innerkitsimpl/test/unittest/exif_metadata_accessor_test/png_exif_metadata_accessor_test.cpp",
+    "${image_subsystem}/frameworks/innerkitsimpl/test/unittest/exif_metadata_accessor_test/png_image_chunk_utils_test.cpp",
     "${image_subsystem}/frameworks/innerkitsimpl/test/unittest/exif_metadata_accessor_test/webp_exif_metadata_accessor_test.cpp",
   ]
 
@@ -1925,6 +1930,49 @@ ohos_unittest("picture_ext_test") {
   resource_config_file = "${image_subsystem}/test/resource/image/ohos_test.xml"
 }
 
+ohos_unittest("imagecodectest") {
+  module_out_path = module_output_path
+
+  cflags = [
+    "-DIMAGE_DEBUG_FLAG",
+    "-DIMAGE_COLORSPACE_FLAG",
+  ]
+
+  include_dirs = [ "${image_subsystem}/plugins/common/libs/image/libextplugin/include/hardware/imagecodec/" ]
+
+  sources = [
+    "${image_subsystem}/frameworks/innerkitsimpl/test/unittest/imagecodec/image_codec_test.cpp",
+    "${image_subsystem}/plugins/common/libs/image/libextplugin/src/hardware/imagecodec/codec_state.cpp",
+    "${image_subsystem}/plugins/common/libs/image/libextplugin/src/hardware/imagecodec/format.cpp",
+    "${image_subsystem}/plugins/common/libs/image/libextplugin/src/hardware/imagecodec/image_codec.cpp",
+    "${image_subsystem}/plugins/common/libs/image/libextplugin/src/hardware/imagecodec/image_codec_buffer.cpp",
+    "${image_subsystem}/plugins/common/libs/image/libextplugin/src/hardware/imagecodec/image_codec_dfx.cpp",
+    "${image_subsystem}/plugins/common/libs/image/libextplugin/src/hardware/imagecodec/image_codec_list.cpp",
+    "${image_subsystem}/plugins/common/libs/image/libextplugin/src/hardware/imagecodec/image_decoder.cpp",
+    "${image_subsystem}/plugins/common/libs/image/libextplugin/src/hardware/imagecodec/msg_handle_loop.cpp",
+    "${image_subsystem}/plugins/common/libs/image/libextplugin/src/hardware/imagecodec/state_machine.cpp",
+    "${image_subsystem}/plugins/common/libs/image/libextplugin/src/hardware/imagecodec/type_converter.cpp",
+  ]
+
+  deps = [ "${image_subsystem}/interfaces/innerkits:image_native" ]
+
+  external_deps = [
+    "c_utils:utils",
+    "drivers_interface_codec:libcodec_proxy_3.0",
+    "drivers_peripheral_codec:libcodec_hdi_omx_client",
+    "googletest:gmock_main",
+    "googletest:gtest_main",
+    "graphic_surface:surface",
+    "hdf_core:libhdi",
+    "hilog:libhilog",
+    "hitrace:hitrace_meter",
+    "init:libbegetutil",
+    "openmax:libopenmax_static",
+    "qos_manager:qos",
+  ]
+  resource_config_file = "${image_subsystem}/test/resource/image/ohos_test.xml"
+}
+
 ################################################
 group("unittest") {
   testonly = true
@@ -1989,6 +2037,7 @@ group("unittest") {
     deps += [
       ":heif_hw_decoder_test",
       ":heifyuvtest",
+      ":imagecodectest",
     ]
   }
 

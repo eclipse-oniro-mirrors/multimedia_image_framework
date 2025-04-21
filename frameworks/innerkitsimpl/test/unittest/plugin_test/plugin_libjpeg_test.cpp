@@ -17,6 +17,7 @@
 #define private public
 #define protected public
 #include <fcntl.h>
+#include "buffer_packer_stream.h"
 #include "buffer_source_stream.h"
 #include "exif_info.h"
 #include "plugin_export.h"
@@ -39,11 +40,37 @@ constexpr uint32_t COMPONENT_NUM_RGB = 3;
 constexpr uint32_t COMPONENT_NUM_GRAY = 1;
 constexpr uint8_t COMPONENT_NUM_YUV420SP = 3;
 constexpr uint8_t SAMPLE_FACTOR_TWO = 2;
+static constexpr uint32_t NUM_1000 = 1000;
+constexpr int32_t OPTS_SIZE = 16;
+
 class PluginLibJpegTest : public testing::Test {
 public:
     PluginLibJpegTest() {}
     ~PluginLibJpegTest() {}
+    void FinalizeEncodeTest(PixelFormat format);
 };
+void PluginLibJpegTest::FinalizeEncodeTest(PixelFormat format)
+{
+    uint32_t errorCode = 0;
+    auto jpegEncoder = std::make_shared<JpegEncoder>();
+    ASSERT_NE(jpegEncoder, nullptr);
+    PlEncodeOptions plOpts;
+    auto outputData = std::make_unique<uint8_t[]>(NUM_1000);
+    auto maxSize = NUM_1000;
+    auto stream = std::make_shared<BufferPackerStream>(outputData.get(), maxSize);
+    jpegEncoder->StartEncode(*(stream.get()), plOpts);
+    Media::InitializationOptions opts;
+    opts.pixelFormat = format;
+    opts.size.width = OPTS_SIZE;
+    opts.size.height = OPTS_SIZE;
+    opts.editable = true;
+    auto pixelMap = Media::PixelMap::Create(opts);
+    ASSERT_NE(pixelMap.get(), nullptr);
+    errorCode = jpegEncoder->AddImage(*(pixelMap.get()));
+    ASSERT_EQ(errorCode, SUCCESS);
+    errorCode = jpegEncoder->FinalizeEncode();
+    ASSERT_EQ(errorCode, SUCCESS);
+}
 
 /**
  * @tc.name: exif_info001
@@ -2241,6 +2268,42 @@ HWTEST_F(PluginLibJpegTest, Jpeg_EncoderTest006, TestSize.Level3)
     Jpegencoder->Deinterweave(uvPlane, uPlane, vPlane, curRow, width, height);
     ASSERT_EQ(pixelmap.imageInfo_.pixelFormat, PixelFormat::UNKNOWN);
     GTEST_LOG_(INFO) << "PluginLibJpegTest: Jpeg_EncoderTest006 end";
+}
+
+/**
+ * @tc.name: PluginLibJpegTest_FinalizeEncodeTest001
+ * @tc.desc: Verify that JpegEncoder encodes NV12 format image using FinalizeEncode.
+ * @tc.type: FUNC
+ */
+HWTEST_F(PluginLibJpegTest, FinalizeEncodeTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PluginLibJpegTest:PluginLibJpegTest_FinalizeEncodeTest001 start";
+    FinalizeEncodeTest(PixelFormat::NV12);
+    GTEST_LOG_(INFO) << "PluginLibJpegTest:PluginLibJpegTest_FinalizeEncodeTest001 end";
+}
+
+/**
+ * @tc.name: PluginLibJpegTest_FinalizeEncodeTest002
+ * @tc.desc: Verify that JpegEncoder encodes RGBA_F16 format image using FinalizeEncode.
+ * @tc.type: FUNC
+ */
+HWTEST_F(PluginLibJpegTest, FinalizeEncodeTest002, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PluginLibJpegTest:PluginLibJpegTest_FinalizeEncodeTest002 start";
+    FinalizeEncodeTest(PixelFormat::RGBA_F16);
+    GTEST_LOG_(INFO) << "PluginLibJpegTest:PluginLibJpegTest_FinalizeEncodeTest002 end";
+}
+
+/**
+ * @tc.name: PluginLibJpegTest_FinalizeEncodeTest003
+ * @tc.desc: Verify that JpegEncoder encodes RGB_565 format image using FinalizeEncode.
+ * @tc.type: FUNC
+ */
+HWTEST_F(PluginLibJpegTest, FinalizeEncodeTest003, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PluginLibJpegTest:PluginLibJpegTest_FinalizeEncodeTest003 start";
+    FinalizeEncodeTest(PixelFormat::RGB_565);
+    GTEST_LOG_(INFO) << "PluginLibJpegTest:PluginLibJpegTest_FinalizeEncodeTest003 end";
 }
 } // namespace Multimedia
 } // namespace OHOS
