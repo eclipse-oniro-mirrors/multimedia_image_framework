@@ -549,7 +549,8 @@ HWTEST_F(ImageTransformTest, ImageTransformTest0018, TestSize.Level3)
     outPutInfo.imageInfo.pixelFormat = PixelFormat::RGB_888;
 
     BasicTransformer trans;
-    trans.TransformPixmap(inPutInfo, outPutInfo);
+    uint32_t ret = trans.TransformPixmap(inPutInfo, outPutInfo);
+    ASSERT_EQ(ret, IMAGE_SUCCESS);
     GTEST_LOG_(INFO) << "ImageTransformTest: ImageTransform0018 end";
 }
 
@@ -574,7 +575,8 @@ HWTEST_F(ImageTransformTest, ImageTransformTest0019, TestSize.Level3)
     outPutInfo.imageInfo.pixelFormat = PixelFormat::ALPHA_8;
 
     BasicTransformer trans;
-    trans.TransformPixmap(inPutInfo, outPutInfo);
+    uint32_t ret = trans.TransformPixmap(inPutInfo, outPutInfo);
+    ASSERT_EQ(ret, IMAGE_SUCCESS);
     GTEST_LOG_(INFO) << "ImageTransformTest: ImageTransform0019 end";
 }
 
@@ -598,7 +600,8 @@ HWTEST_F(ImageTransformTest, ImageTransformTest0020, TestSize.Level3)
     outPutInfo.imageInfo.size.height = 4;
 
     BasicTransformer trans;
-    trans.TransformPixmap(inPutInfo, outPutInfo);
+    uint32_t ret = trans.TransformPixmap(inPutInfo, outPutInfo);
+    ASSERT_EQ(ret, IMAGE_SUCCESS);
     GTEST_LOG_(INFO) << "ImageTransformTest: ImageTransform0020 end";
 }
 } // namespace Multimedia

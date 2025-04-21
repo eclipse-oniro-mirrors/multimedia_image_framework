@@ -531,7 +531,8 @@ HWTEST_F(ImageUtilsTest, GetLocalTimeTest001, TestSize.Level3)
     std::stringstream ss;
     int millSecondWidth = 3;
     ss << std::put_time(&tm, "%Y-%m-%d %H_%M_%S.") << std::setfill('0') << std::setw(millSecondWidth) << ms.count();
-    ImageUtils::GetLocalTime();
+    std::string ret = ImageUtils::GetLocalTime();
+    ASSERT_NE(ret, "");
     GTEST_LOG_(INFO) << "ImageUtilsTest: GetLocalTimeTest001 end";
 }
 
@@ -548,6 +549,7 @@ HWTEST_F(ImageUtilsTest, ImageUtilsTest001, TestSize.Level3)
     uint8_t* nullBytes = nullptr;
     uint8_t bytes[NUM_2] = {0x01, 0x02};
     std::vector<uint8_t> byte(128);
+    std::vector<uint8_t> byte_uint32(128);
     bool isBigEndian = true;
     ImageUtils::BytesToUint16(nullBytes, offset, size, isBigEndian);
     ImageUtils::BytesToUint32(nullBytes, offset, size, isBigEndian);
@@ -566,7 +568,8 @@ HWTEST_F(ImageUtilsTest, ImageUtilsTest001, TestSize.Level3)
     ImageUtils::BytesToInt32(bytes, offset, size, isBigEndian);
     ImageUtils::BytesToFloat(bytes, offset, size, isBigEndian);
     ImageUtils::Uint16ToBytes(0, byte, offset, isBigEndian);
-    ImageUtils::Uint32ToBytes(0, byte, offset, isBigEndian);
+    ImageUtils::Uint32ToBytes(1, byte, offset, isBigEndian);
+    ASSERT_NE(byte_uint32[0], 1);
     GTEST_LOG_(INFO) << "ImageUtilsTest: ImageUtilsTest001 end";
 }
 

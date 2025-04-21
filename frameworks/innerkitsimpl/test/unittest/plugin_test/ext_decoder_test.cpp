@@ -349,6 +349,7 @@ HWTEST_F(ExtDecoderTest, ReportImageTypeTest001, TestSize.Level3)
 {
     GTEST_LOG_(INFO) << "ExtDecoderTest: ReportImageTypeTest001 start";
     std::shared_ptr<ExtDecoder> extDecoder = std::make_shared<ExtDecoder>();
+    ASSERT_NE(extDecoder, nullptr);
     EXIFInfo exifInfo_;
     SkEncodedImageFormat skEncodeFormat = SkEncodedImageFormat::kBMP;
     extDecoder->ReportImageType(skEncodeFormat);

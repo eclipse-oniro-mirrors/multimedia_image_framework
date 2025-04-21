@@ -1289,7 +1289,8 @@ HWTEST_F(JpegDecoderTest, GetImageSizeTest003, TestSize.Level3)
     ImagePlugin::Size plSize;
     ErrCodeOffset(2, 0);
     jpegDecoder->GetImageSize(1, plSize);
-    jpegDecoder->GetImageSize(0, plSize);
+    uint32_t ret = jpegDecoder->GetImageSize(0, plSize);
+    ASSERT_EQ(ret, ERR_MEDIA_INVALID_OPERATION);
     GTEST_LOG_(INFO) << "JpegDecoderTest: GetImageSizeTest003 end";
 }
 
@@ -1302,7 +1303,8 @@ HWTEST_F(JpegDecoderTest, GetRowBytesTest001, TestSize.Level3)
 {
     GTEST_LOG_(INFO) << "JpegDecoderTest: GetRowBytesTest001 start";
     auto jpegDecoder = std::make_shared<JpegDecoder>();
-    jpegDecoder->GetRowBytes();
+    uint32_t ret = jpegDecoder->GetRowBytes();
+    ASSERT_EQ(ret, 0);
     GTEST_LOG_(INFO) << "JpegDecoderTest: GetRowBytesTest001 end";
 }
 
@@ -1316,6 +1318,7 @@ HWTEST_F(JpegDecoderTest, ResetTest001, TestSize.Level3)
     GTEST_LOG_(INFO) << "JpegDecoderTest: ResetTest001 start";
     auto jpegDecoder = std::make_shared<JpegDecoder>();
     jpegDecoder->JpegDecoder::Reset();
+    ASSERT_EQ(jpegDecoder->srcMgr_.inputStream, nullptr);
     GTEST_LOG_(INFO) << "JpegDecoderTest: ResetTest001 end";
 }
 
@@ -1327,8 +1330,11 @@ HWTEST_F(JpegDecoderTest, ResetTest001, TestSize.Level3)
 HWTEST_F(JpegDecoderTest, FinishOldDecompressTest001, TestSize.Level3)
 {
     GTEST_LOG_(INFO) << "JpegDecoderTest: FinishOldDecompressTest001 start";
+    jpeg_decompress_struct jpegCompressInfo;
     auto jpegDecoder = std::make_shared<JpegDecoder>();
+    jpegDecoder->decodeInfo_ = jpegCompressInfo;
     jpegDecoder->FinishOldDecompress();
+    ASSERT_NE(&(jpegDecoder->decodeInfo_), nullptr);
     GTEST_LOG_(INFO) << "JpegDecoderTest: FinishOldDecompressTest001 end";
 }
 
@@ -1344,6 +1350,7 @@ HWTEST_F(JpegDecoderTest, FormatTimeStampTest001, TestSize.Level3)
     std::string value = "";
     std::string src = "2023-10-15 12:34:56";
     jpegDecoder->FormatTimeStamp(value, src);
+    ASSERT_EQ(value, "2023-10-15 12:34:56");
     GTEST_LOG_(INFO) << "JpegDecoderTest: FormatTimeStampTest001 end";
 }
 
@@ -1357,35 +1364,50 @@ HWTEST_F(JpegDecoderTest, getExifTagFromKeyTest001, TestSize.Level3)
     GTEST_LOG_(INFO) << "JpegDecoderTest: getExifTagFromKeyTest001 start";
     auto jpegDecoder = std::make_shared<JpegDecoder>();
     const std::string key1 ="BitsPerSample";
-    jpegDecoder->JpegDecoder::getExifTagFromKey(key1);
+    ExifTag ret = jpegDecoder->JpegDecoder::getExifTagFromKey(key1);
+    ASSERT_EQ(ret, EXIF_TAG_BITS_PER_SAMPLE);
     const std::string key2 ="Orientation";
-    jpegDecoder->JpegDecoder::getExifTagFromKey(key2);
+    ret = jpegDecoder->JpegDecoder::getExifTagFromKey(key2);
+    ASSERT_EQ(ret, EXIF_TAG_ORIENTATION);
     const std::string key3 ="ImageLength";
-    jpegDecoder->JpegDecoder::getExifTagFromKey(key3);
+    ret = jpegDecoder->JpegDecoder::getExifTagFromKey(key3);
+    ASSERT_EQ(ret, EXIF_TAG_IMAGE_LENGTH);
     const std::string key4 ="ImageWidth";
-    jpegDecoder->JpegDecoder::getExifTagFromKey(key4);
+    ret = jpegDecoder->JpegDecoder::getExifTagFromKey(key4);
+    ASSERT_EQ(ret, EXIF_TAG_IMAGE_WIDTH);
     const std::string key5 ="GPSLatitude";
-    jpegDecoder->JpegDecoder::getExifTagFromKey(key5);
+    ret = jpegDecoder->JpegDecoder::getExifTagFromKey(key5);
+    ASSERT_EQ(ret, EXIF_TAG_GPS_LATITUDE);
     const std::string key6 ="GPSLongitude";
-    jpegDecoder->JpegDecoder::getExifTagFromKey(key6);
+    ret = jpegDecoder->JpegDecoder::getExifTagFromKey(key6);
+    ASSERT_EQ(ret, EXIF_TAG_GPS_LONGITUDE);
     const std::string key7 ="GPSLatitudeRef";
-    jpegDecoder->JpegDecoder::getExifTagFromKey(key7);
+    ret = jpegDecoder->JpegDecoder::getExifTagFromKey(key7);
+    ASSERT_EQ(ret, EXIF_TAG_GPS_LATITUDE_REF);
     const std::string key8 ="GPSLongitudeRef";
-    jpegDecoder->JpegDecoder::getExifTagFromKey(key8);
+    ret = jpegDecoder->JpegDecoder::getExifTagFromKey(key8);
+    ASSERT_EQ(ret, EXIF_TAG_GPS_LONGITUDE_REF);
     const std::string key9 ="DateTimeOriginal";
-    jpegDecoder->JpegDecoder::getExifTagFromKey(key9);
+    ret = jpegDecoder->JpegDecoder::getExifTagFromKey(key9);
+    ASSERT_EQ(ret, EXIF_TAG_DATE_TIME_ORIGINAL);
     const std::string key10 ="ExposureTime";
-    jpegDecoder->JpegDecoder::getExifTagFromKey(key10);
+    ret = jpegDecoder->JpegDecoder::getExifTagFromKey(key10);
+    ASSERT_EQ(ret, EXIF_TAG_EXPOSURE_TIME);
     const std::string key11 ="FNumber";
-    jpegDecoder->JpegDecoder::getExifTagFromKey(key11);
+    ret = jpegDecoder->JpegDecoder::getExifTagFromKey(key11);
+    ASSERT_EQ(ret, EXIF_TAG_FNUMBER);
     const std::string key12 ="ISOSpeedRatings";
-    jpegDecoder->JpegDecoder::getExifTagFromKey(key12);
+    ret = jpegDecoder->JpegDecoder::getExifTagFromKey(key12);
+    ASSERT_EQ(ret, EXIF_TAG_ISO_SPEED_RATINGS);
     const std::string key13 ="SceneType";
-    jpegDecoder->JpegDecoder::getExifTagFromKey(key13);
+    ret = jpegDecoder->JpegDecoder::getExifTagFromKey(key13);
+    ASSERT_EQ(ret, EXIF_TAG_SCENE_TYPE);
     const std::string key14 ="CompressedBitsPerPixel";
-    jpegDecoder->JpegDecoder::getExifTagFromKey(key14);
+    ret = jpegDecoder->JpegDecoder::getExifTagFromKey(key14);
+    ASSERT_EQ(ret, EXIF_TAG_COMPRESSED_BITS_PER_PIXEL);
     const std::string key15 ="GPSTimeStamp";
-    jpegDecoder->JpegDecoder::getExifTagFromKey(key15);
+    ret = jpegDecoder->JpegDecoder::getExifTagFromKey(key15);
+    ASSERT_EQ(ret, EXIF_TAG_PRINT_IMAGE_MATCHING);
     GTEST_LOG_(INFO) << "JpegDecoderTest: getExifTagFromKeyTest001 end";
 }
 

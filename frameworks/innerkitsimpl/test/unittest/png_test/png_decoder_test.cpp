@@ -869,7 +869,8 @@ HWTEST_F(PngDecoderTest, PushCurrentToDecode003, TestSize.Level3)
     pngDecoder->SetSource(*mock.get());
     pngDecoder->incrementalLength_ = 5;
     pngDecoder->idatLength_ = 20;
-    pngDecoder->PushCurrentToDecode(mock.get());
+    uint32_t ret = pngDecoder->PushCurrentToDecode(mock.get());
+    ASSERT_EQ(ret, ERR_IMAGE_SOURCE_DATA_INCOMPLETE);
     GTEST_LOG_(INFO) << "PngDecoderTest: PushCurrentToDecode003 end";
 }
 
@@ -1004,6 +1005,7 @@ HWTEST_F(PngDecoderTest, SaveRows001, TestSize.Level3)
     DataStreamBuffer readData;
     readData.inputStreamBuffer= new uint8_t;
     png_bytep row = const_cast<png_bytep>(readData.inputStreamBuffer);
+    ASSERT_EQ(pngDecoder->inputStreamPtr_, nullptr);
     png_uint_32 rowNum = 1;
     pngDecoder->SaveRows(row, rowNum);
     delete readData.inputStreamBuffer;
@@ -1023,6 +1025,7 @@ HWTEST_F(PngDecoderTest, SaveRows002, TestSize.Level3)
     DataStreamBuffer readData;
     readData.inputStreamBuffer= new uint8_t;
     png_bytep row = const_cast<png_bytep>(readData.inputStreamBuffer);
+    ASSERT_EQ(pngDecoder->inputStreamPtr_, nullptr);
     png_uint_32 rowNum = 0;
     pngDecoder->SaveRows(row, rowNum);
     delete readData.inputStreamBuffer;
@@ -1058,6 +1061,7 @@ HWTEST_F(PngDecoderTest, SaveInterlacedRows002, TestSize.Level3)
     DataStreamBuffer readData;
     readData.inputStreamBuffer= new uint8_t;
     png_bytep row = const_cast<png_bytep>(readData.inputStreamBuffer);
+    ASSERT_NE(row, nullptr);
     png_uint_32 rowNum = 1;
     int pass = 0;
     pngDecoder->SaveInterlacedRows(row, rowNum, pass);
@@ -1094,9 +1098,11 @@ HWTEST_F(PngDecoderTest, GetAllRows002, TestSize.Level3)
     auto pngDecoder = std::make_shared<PngDecoder>();
     png_structp pngPtr = png_create_read_struct(PNG_LIBPNG_VER_STRING,
         nullptr, pngDecoder->PngErrorExit, pngDecoder->PngWarning);
+    ASSERT_NE(pngPtr, nullptr);
     DataStreamBuffer readData;
     readData.inputStreamBuffer= new uint8_t;
     png_bytep row = const_cast<png_bytep>(readData.inputStreamBuffer);
+    ASSERT_NE(row, nullptr);
     png_uint_32 rowNum = 0;
     int pass = 0;
     pngDecoder->GetAllRows(pngPtr, row, rowNum, pass);
@@ -1308,6 +1314,7 @@ HWTEST_F(PngDecoderTest, DealNinePatch001, TestSize.Level3)
     auto pngDecoder = std::make_shared<PngDecoder>();
     const  PixelDecodeOptions opts;
     pngDecoder->ninePatch_.patch_ = new PngNinePatchRes;
+    ASSERT_NE(pngDecoder->ninePatch_.patch_, nullptr);
     pngDecoder->DealNinePatch(opts);
     delete pngDecoder->ninePatch_.patch_;
     pngDecoder->ninePatch_.patch_ = nullptr;
@@ -1502,6 +1509,7 @@ HWTEST_F(PngDecoderTest, SaveInterlacedRows003, TestSize.Level3)
     auto pngDecoder = std::make_shared<PngDecoder>();
     DataStreamBuffer readData;
     png_bytep row = const_cast<png_bytep>(readData.inputStreamBuffer);
+    ASSERT_EQ(row, nullptr);
     png_uint_32 rowNum = 0;
     int pass = 0;
     pngDecoder->SaveInterlacedRows(row, rowNum, pass);
