@@ -2721,7 +2721,8 @@ napi_value PixelMapNapi::Release(napi_env env, napi_callback_info info)
         }
         asyncContext->status = SUCCESS;
     }
-    NapiSendEvent(env, asyncContext.release(), napi_eprio_high);
+    uint32_t resultCode = asyncContext->status;
+    NapiSendEvent(env, asyncContext.release(), napi_eprio_high, resultCode);
     return result;
 }
 
@@ -5030,7 +5031,8 @@ napi_value PixelMapNapi::SetMetadata(napi_env env, napi_callback_info info)
         nVal.context->status = ERR_RESOURCE_UNAVAILABLE;
         IMAGE_LOGE("Pixelmap has crossed threads . SetColorSpace failed");
     }
-    NapiSendEvent(env, nVal.context.release(), napi_eprio_high);
+    uint32_t errorCode = nVal.context->status;
+    NapiSendEvent(env, nVal.context.release(), napi_eprio_high, errorCode);
     return nVal.result;
 }
 #else
