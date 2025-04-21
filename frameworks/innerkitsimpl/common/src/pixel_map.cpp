@@ -2618,7 +2618,10 @@ bool PixelMap::Marshalling(Parcel &parcel) const
         IMAGE_LOGE("set parcel max capacity:[%{public}zu] failed.", capacityLength);
         return false;
     }
-
+    if (!parcel.WriteInt32(static_cast<int32_t>(-PIXELMAP_VERSION_LATEST))) {
+        IMAGE_LOGE("write image info pixelmap version to parcel failed.");
+        return false;
+    }
     if (!WritePropertiesToParcel(parcel)) {
         IMAGE_LOGE("write info to parcel failed.");
         return false;
@@ -2754,6 +2757,17 @@ bool PixelMap::ReadAstcRealSize(Parcel &parcel, PixelMap *pixelMap)
 
 bool PixelMap::ReadPropertiesFromParcel(Parcel& parcel, PixelMap*& pixelMap, ImageInfo& imgInfo, PixelMemInfo& memInfo)
 {
+    int32_t readVersion = PIXELMAP_VERSION_START;
+    const size_t startReadPosition = parcel.GetReadPosition();
+
+    int32_t firstInt32 = parcel.ReadInt32();
+    if (firstInt32 <= -PIXELMAP_VERSION_START) {
+        // version present in parcel (consider width < -2^16 is not possible), read it first
+        readVersion = -firstInt32;
+    } else {
+        // old way: no version let's consider it's oldest
+        parcel.RewindRead(startReadPosition);
+    }
     if (!ReadImageInfo(parcel, imgInfo)) {
         IMAGE_LOGE("ReadPropertiesFromParcel: read image info failed");
         return false;
@@ -2785,11 +2799,16 @@ bool PixelMap::ReadPropertiesFromParcel(Parcel& parcel, PixelMap*& pixelMap, Ima
         return false;
     }
 
+    pixelMap->SetReadVersion(readVersion);
     pixelMap->SetEditable(parcel.ReadBool());
     memInfo.isAstc = parcel.ReadBool();
     pixelMap->SetAstc(memInfo.isAstc);
-    bool displayOnly = parcel.ReadBool();
-    pixelMap->SetDisplayOnly(displayOnly);
+    if (pixelMap->GetReadVersion() >= PIXELMAP_VERSION_DISPLAY_ONLY) {
+        bool displayOnly = parcel.ReadBool();
+        pixelMap->SetDisplayOnly(displayOnly);
+    } else {
+        pixelMap->SetDisplayOnly(false);
+    }
     int32_t readAllocatorValue = parcel.ReadInt32();
     if (readAllocatorValue < static_cast<int32_t>(AllocatorType::DEFAULT) ||
         readAllocatorValue > static_cast<int32_t>(AllocatorType::DMA_ALLOC)) {
