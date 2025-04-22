@@ -70,6 +70,7 @@ const static int PIXEL_SIZE_4 = 4;
 const static int MAX_ALPHA = 255;
 
 const static int GRID_NUM_2 = 2;
+const static uint32_t YCBCR_UV_PLANE = 1;
 const static uint32_t PLANE_COUNT_TWO = 2;
 const static uint32_t HEIF_HARDWARE_TILE_MIN_DIM = 128;
 const static uint32_t HEIF_HARDWARE_TILE_MAX_DIM = 4096;
@@ -648,7 +649,7 @@ bool HeifDecoderImpl::decode(HeifFrameInfo *frameInfo)
     }
 
     bool convertRes = IsDirectYUVDecode() ||
-            ConvertHwBufferPixelFormat(hwBuffer, gridInfo_, dstMemory_, dstRowStride_);
+            ConvertHwBufferPixelFormat(hwBuffer, gridInfo_, dstMemory_, dstRowStride_, true);
     if (!convertRes) {
         return false;
     }
@@ -705,7 +706,8 @@ bool HeifDecoderImpl::DoDecodeAuxiliaryImage(std::shared_ptr<HeifImage> &auxilia
             return false;
         }
         bool swConvertRes = IsAuxiliaryDirectYUVDecode(auxiliaryImage) ||
-            ConvertHwBufferPixelFormat(swHwBuffer, auxiliaryGridInfo, auxiliaryDstMemory, auxiliaryDstRowStride);
+            ConvertHwBufferPixelFormat(swHwBuffer, auxiliaryGridInfo, auxiliaryDstMemory,
+                                       auxiliaryDstRowStride, false);
         if (!swConvertRes) {
             return false;
         }
@@ -713,7 +715,8 @@ bool HeifDecoderImpl::DoDecodeAuxiliaryImage(std::shared_ptr<HeifImage> &auxilia
     }
 
     bool convertRes = IsAuxiliaryDirectYUVDecode(auxiliaryImage) ||
-        ConvertHwBufferPixelFormat(hwBuffer, auxiliaryGridInfo, auxiliaryDstMemory, auxiliaryDstRowStride);
+        ConvertHwBufferPixelFormat(hwBuffer, auxiliaryGridInfo, auxiliaryDstMemory,
+                                   auxiliaryDstRowStride, false);
     if (!convertRes) {
         return false;
     }
@@ -1157,13 +1160,12 @@ bool HeifDecoderImpl::SwDecodeMovieFirstFrameImage(ImageFwkExtManager &extManage
     return true;
 }
 
-bool HeifDecoderImpl::SwDecodeAuxiliaryImage(std::shared_ptr<HeifImage> &gainMapImage,
+bool HeifDecoderImpl::SwDecodeAuxiliaryImage(std::shared_ptr<HeifImage> &gainmapImage,
                                              GridInfo &gainmapGridInfo, sptr<SurfaceBuffer> *outputBuf)
 {
     ImageTrace trace("HeifDecoderImpl::SwdecodeGainmap");
-    uint32_t width = gainMapImage->GetOriginalWidth();
-    uint32_t height = gainMapImage->GetOriginalHeight();
-    PixelFormat gainMapDstFmt = PixelFormat::YUV_400;
+    uint32_t width = gainmapImage->GetOriginalWidth();
+    uint32_t height = gainmapImage->GetOriginalHeight();
     sptr<SurfaceBuffer> output = SurfaceBuffer::Create();
     BufferRequestConfig = {
         .width = width,
@@ -1175,11 +1177,36 @@ bool HeifDecoderImpl::SwDecodeAuxiliaryImage(std::shared_ptr<HeifImage> &gainMap
     GSError ret = output->Alloc(config);
     bool cond = ret != GSERROR_OK;
     CHECK_ERROR_RETURN_RET_LOG(cond, false, "output->alloc(config)faild, GSError=%{public}d", ret);
-    uint32_t gainMapStride = static_cast<uint32_t>(output->GetStride());
-    uint32_t gainMapMemorySize = gainMapStride * static_cast<uint32_t>(output->GetHeight());
+    if (!DoSwDecodeAuxiliaryImage(gainmapImage, gainmapGridInfo, output, outputBuf)) {
+        IMAGE_LOGE("HDR-IMAGE SwDecodeGainmap failed");
+    }
+    return true;
+}
+
+Media::PixelFormat GetDecodeHeifFormat(std::shared_ptr<HeifImage> &heifImage)
+{
+    switch (heifImage->GetDefaultPixelFormat()) {
+        case  HeifPixelFormat::MONOCHROME:
+            return PixelFormat::YUV_400;
+        case HeifPixelFormat::YUV420:
+            return PixelFormat::NV12;
+        default:
+            return PixelFormat::UNKNOWN;
+    }
+    return PixelFormat::UNKNOWN;
+}
+
+bool HeifDecoderImpl::DoSwDecodeAuxiliaryImage(std::shared_ptr<HeifImage> &gainmapImage, GridInfo &gainmapGridInfo,
+                                               sptr<SurfaceBuffer> &output, sptr<SurfaceBuffer> *outputBuf)
+{
+    PixelFormat gainmapDstFmt = GetDecodeHeifFormat(gainmapImage);
+    if (gainmapDstFmt == PixelFormat::UNKNOWN) {
+        IMAGE_LOGE("HDR-IMAGE Unsupported gainmap default DstFmt");
+        return false;
+    }
     OH_NativeBuffer_planes *dataplanesInfo = nullptr;
     output->GetplanesInfo((void **)&dataplanesInfo);
-    cond = (dataplanesInfo == nullptr);
+    bool cond = (dataplanesInfo == nullptr);
     CHECK_ERROR_RETURN_RET_LOG(cond, false, "failed to get src buffer planes info.");
     OH_NativeBuffer_planes &planeY = dataPlanesInfo->planes[0];
     void *nativeBuffer = output.GetRefPtr();
@@ -1188,20 +1215,30 @@ bool HeifDecoderImpl::SwDecodeAuxiliaryImage(std::shared_ptr<HeifImage> &gainMap
     if (err != OHOS::GSERROR_OK) {
         return false;
     }
-    HevcSoftDecodeParam gainMapparam {
-        gainmapGridInfo, gainMapdstfmt,
-        data + planeY.offset, gainMapMemorySize,
-        gainMapStride, nullptr
+    uint32_t gainmapStride = static_cast<uint32_t>(output->GetStride());
+    uint32_t gainmapMemorySize = gainmapStride * static_cast<uint32_t>(output->GetHeight());
+    HevcSoftDecodeParam gainmapParam {
+        gainmapGridInfo, gainmapDstFmt,
+        data + planeY.offset, gainmapMemorySize,
+        gainmapStride, nullptr
     };
-    bool decodeRes = SwDecodeImage(gainMapImage, gainMapParam, gainmapGridInfo, false);
-    if (!decodeRes) {
-        IMAGE_LOGE("SwDecodeAuxiliaryImage failed");
+    if (!SwDecodeImage(gainmapImage, gainmapParam, gainmapGridInfo, false)) {
+        ImageUtils::SurfaceBuffer_Unreference(nativeBuffer);
+        IMAGE_LOGE("HDR-IMAGE SwDecodeImage failed");
         retur false;
-    } else {
-        *outputBuf = output;
-        if (output != nullptr) {
+    }
+    if (gainmapImage->GetDefaultPixelFormat() == HeifPixelFormat::MONOCHROME) {
+        OH_NativeBuffer_Plane &planeUV = dataPlanesInfo->planes[YCBCR_UV_PLANE];
+        // set UV plane to 0x80.
+        if (memset_s(data + planeUV.offset, gainmapMemorySize / PLANE_COUNT_TWO,
+            0x80, gainmapMemorySize / PLANE_COUNT_TWO) != EOK) {
             ImageUtils::SurfaceBuffer_Unreference(nativeBuffer);
+            return false;
         }
+    }
+    *outputBuf = outPut;
+    if (output != nullptr) {
+        ImageUtils::SurfaceBuffer_Unreference(nativeBuffer);
     }
     return true;
 }
@@ -1320,7 +1357,7 @@ bool HeifDecoderImpl::SwApplyAlphaImage(std::shared_ptr<HeifImage> &masterImage,
 }
 
 bool HeifDecoderImpl::ConvertHwBufferPixelFormat(sptr<SurfaceBuffer> &hwBuffer, GridInfo &gridInfo,
-                                                 uint8_t *dstMemory, size_t dstRowStride)
+                                                 uint8_t *dstMemory, size_t dstRowStride, bool isPrimary)
 {
     OH_NativeBuffer_Planes *srcBufferPlanesInfo = nullptr;
     hwBuffer->GetPlanesInfo((void **)&srcBufferPlanesInfo);
@@ -1337,7 +1374,7 @@ bool HeifDecoderImpl::ConvertHwBufferPixelFormat(sptr<SurfaceBuffer> &hwBuffer, 
             return false;
         }
     }
-
+    PixelFormat outFormat = isPrimary ? outPixelFormat_ : gainmapOutPixelFormat_;
     PixelFormatConvertParam srcParam = {static_cast<uint8_t *>(hwBuffer->GetVirAddr()),
                                         gridInfo.displayWidth, gridInfo.displayHeight,
                                         static_cast<uint32_t>(hwBuffer->GetStride()),
@@ -1349,7 +1386,7 @@ bool HeifDecoderImpl::ConvertHwBufferPixelFormat(sptr<SurfaceBuffer> &hwBuffer, 
                                         static_cast<uint32_t>(dstRowStride),
                                         gridInfo.colorRangeFlag,
                                         dstBufferPlanesInfo,
-                                        PixFmt2AvPixFmtForOutput(outPixelFormat_)};
+                                        PixFmt2AvPixFmtForOutput(outFormat)};
     return ConvertPixelFormat(srcParam, dstParam);
 }
 
@@ -1375,7 +1412,7 @@ bool HeifDecoderImpl::ProcessChunkHead(uint8_t *data, size_t len)
 
 bool HeifDecoderImpl::IsDirectYUVDecode()
 {
-    if (dstHwBuffer_ == nullptr) {
+    if (dstHwBuffer_ == nullptr || isGainmapDecode_) {
         return false;
     }
     if (primaryImage_->GetLumaBitNum() == LUMA_10_BIT) {
@@ -1386,7 +1423,7 @@ bool HeifDecoderImpl::IsDirectYUVDecode()
 
 bool HeifDecoderImpl::IsAuxiliaryDirectYUVDecode(std::shared_ptr<HeifImage> &auxiliaryImage)
 {
-    if (auxiliaryDstHwBuffer_ == nullptr) {
+    if (auxiliaryDstHwBuffer_ == nullptr || isGainmapDecode_) {
         return false;
     }
     if (auxiliaryImage->GetLumaBitNum() == LUMA_10_BIT) {
@@ -1413,6 +1450,7 @@ void HeifDecoderImpl::setGainmapDstBuffer(uint8_t* dstBuffer, size_t rowStride)
     if (gainmapDstMemory_ == nullptr) {
         gainmapDstMemory_ = dstBuffer;
         gainmapDstRowStride_ = rowStride;
+        isGainmapDecode_ = true;
     }
 }
 

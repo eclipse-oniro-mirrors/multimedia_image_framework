@@ -63,8 +63,6 @@ public:
     void getVividMetadata(std::vector<uint8_t>& uwaInfo, std::vector<uint8_t>& displayInfo,
         std::vector<uint8_t>& lightInfo) override;
     void getISOMetadata(std::vector<uint8_t>& isoMetadata) override;
-    bool DoDecodeAuxiliaryImage(std::shared_ptr<HeifImage> &auxiliaryImage, GridInfo &auxiliaryGridInfo,
-                                uint8_t *auxiliaryDstMemory, size_t auxiliaryDstRowStride);
     void getErrMsg(std::string& errMsg) override;
     GridInfo GetGridInfo();
     bool ProcessThumbnailImage();
@@ -119,8 +117,10 @@ private:
 
     bool SwDecodeImage(std::shared_ptr<HeifImage> &image, HevcSoftDecodeParam &param,
                        GridInfo &gridInfo, bool isPrimary);
-    bool SwDecodeAuxiliaryImage(std::shared_ptr<HeifImage> &gainMapImage,
-                         GridInfo &gainmapGridInfo, sptr<SurfaceBuffer> *outputBuf);
+    bool SwDecodeAuxiliaryImage(std::shared_ptr<HeifImage> &gainmapImage,
+                                GridInfo &gainmapGridInfo, sptr<SurfaceBuffer> *outputBuf);
+    bool DoSwDecodeAuxiliaryImage(std::shared_ptr<HeifImage> &gainmapImage, GridInfo &gainmapGridInfo,
+                                  sptr<SurfaceBuffer> &output, sptr<SurfaceBuffer> *outputBuf);
 
     bool SwDecodeGrids(Media::ImageFwkExtManager &extManager,
                        std::shared_ptr<HeifImage> &image, HevcSoftDecodeParam &param);
@@ -142,7 +142,7 @@ private:
     bool SwApplyAlphaImage(std::shared_ptr<HeifImage> &masterImage, uint8_t *dstMemory, size_t dstRowStride);
 
     bool ConvertHwBufferPixelFormat(sptr<SurfaceBuffer> &hwBuffer, GridInfo &gridInfo,
-                                    uint8_t *dstMemory, size_t dstRowStride);
+                                    uint8_t *dstMemory, size_t dstRowStride, bool isPrimary);
 
     bool IsDirectYUVDecode();
 
@@ -155,6 +155,7 @@ private:
     std::shared_ptr<HeifParser> parser_;
     std::shared_ptr<HeifImage> primaryImage_;
     Media::PixelFormat outPixelFormat_;
+    Media::PixelFormat gainmapOutPixelFormat_ = Media::PixelFormat::RGBA_8888;
     HeifFrameInfo imageInfo_{};
 
     GridInfo gridInfo_ = {0, 0, false, 0, 0, 0, 0, 1};
@@ -175,6 +176,7 @@ private:
     size_t auxiliaryDstRowStride_;
     size_t auxiliaryDstMemorySize_;
     bool isAuxiliaryDecode_ = false;
+    bool isGainmapDecode_ = false;
     SurfaceBuffer *auxiliaryDstHwBuffer_;
 
     HeifFrameInfo tmapInfo_{};
