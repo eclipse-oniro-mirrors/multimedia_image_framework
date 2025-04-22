@@ -4004,12 +4004,10 @@ void ImageSource::SetDmaContextYuvInfo(DecodeContext& context)
         context.yuvInfo.uvOffset = planeUV.offset;
     }
     context.yuvInfo.imageSize = context.info.size;
-    int32_t width = context.info.size.width;
-    int32_t height = context.info.size.height;
-    context.yuvInfo.yWidth = static_cast<uint32_t>(width);
-    context.yuvInfo.yHeight = static_cast<uint32_t>(height);
-    context.yuvInfo.uvWidth = static_cast<uint32_t>((width + 1) / NUM_2);
-    context.yuvInfo.uvHeight = static_cast<uint32_t>((height + 1) / NUM_2);
+    context.yuvInfo.yWidth = static_cast<uint32_t>(context.info.size.width);
+    context.yuvInfo.yHeight = static_cast<uint32_t>(context.info.size.height);
+    context.yuvInfo.uvWidth = static_cast<uint32_t>((context.info.size.width + 1) / NUM_2);
+    context.yuvInfo.uvHeight = static_cast<uint32_t>((context.info.size.height + 1) / NUM_2);
     IMAGE_LOGD("SetDmaContextYuvInfo format:%{public}d, yStride:%{public}d, uvStride:%{public}d, yOffset:%{public}d,"
         "uvOffset:%{public}d, imageSize:%{public}d-%{public}d", format, context.yuvInfo.yStride,
         context.yuvInfo.uvStride, context.yuvInfo.yOffset, context.yuvInfo.uvOffset,
