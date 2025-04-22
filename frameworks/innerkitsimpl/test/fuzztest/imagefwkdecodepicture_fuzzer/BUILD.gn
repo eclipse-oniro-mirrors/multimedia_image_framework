@@ -22,12 +22,16 @@ ohos_fuzztest("ImageFwkDecodePictureFuzzTest") {
   include_dirs = [
     "./include",
     "$image_subsystem/interfaces/innerkits/include",
+    "$image_subsystem/frameworks/innerkitsimpl/test/fuzztest/common/include",
     "$image_subsystem/frameworks/innerkitsimpl/test/fuzztest/imagefwkdecodepicture_fuzzer/include",
     "$image_subsystem/plugins/common/libs/image/libextplugin/include",
     "$image_subsystem/plugins/common/libs/image/libextplugin/include/heif_impl",
   ]
 
-  sources = [ "src/image_fwk_decode_picture_fuzzer.cpp" ]
+  sources = [
+    "$image_subsystem/frameworks/innerkitsimpl/test/fuzztest/common/src/common_fuzztest_function.cpp",
+    "src/image_fwk_decode_picture_fuzzer.cpp",
+  ]
 
   deps = [
     "$image_subsystem/frameworks/innerkitsimpl/utils:image_utils",
@@ -40,7 +44,9 @@ ohos_fuzztest("ImageFwkDecodePictureFuzzTest") {
     "c_utils:utils",
     "graphic_surface:surface",
     "hilog:libhilog",
-    "libexif:libexif",
     "ipc:ipc_core",
   ]
+  if (enable_libexif) {
+    external_deps += [ "libexif:libexif" ]
+  }
 }

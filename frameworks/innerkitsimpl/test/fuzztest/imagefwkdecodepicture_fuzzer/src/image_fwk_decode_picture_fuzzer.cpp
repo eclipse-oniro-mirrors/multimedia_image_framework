@@ -12,8 +12,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
+#include <fuzzer/FuzzedDataProvider.h>
 #include "image_fwk_decode_picture_fuzzer.h"
+#include "common_fuzztest_function.h"
 
 #include <fcntl.h>
 #include <surface.h>
@@ -47,109 +48,23 @@
 #undef LOG_TAG
 #define LOG_TAG "IMAGE_PICTURE_FUZZ"
 
-static const std::string IMAGE_JPEG_DEST = "/data/local/tmp/test_jpeg_out.jpg";
-static const std::string IMAGE_HEIF_DEST = "/data/local/tmp/test_heif_out.heic";
-static const std::string JPEG_FORMAT = "image/jpeg";
-static const std::string HEIF_FORMAT = "image/heif";
-static const std::string IMAGE_ENCODE_DEST = "/data/local/tmp/test_out.dat";
-static const uint32_t WIDTH_FACTOR = 4;
-static const uint32_t SIZE_WIDTH = 3072;
-static const uint32_t SIZE_HEIGHT = 4096;
-static const int32_t MAX_WIDTH = 4096;
-static const int32_t MAX_HEIGHT = 4096;
+static const std::string IMAGE_DEST = "/data/local/tmp/test_out.dat";
+static constexpr uint32_t SIZE_WIDTH = 3072;
+static constexpr uint32_t SIZE_HEIGHT = 4096;
+static constexpr uint32_t MAX_LENGTH_MODULO = 0xfff;
+static constexpr uint32_t PIXELFORMAT_MODULO = 105;
+static constexpr uint32_t ALPHATYPE_MODULO = 4;
+static constexpr uint32_t SCALEMODE_MODULO = 2;
+static constexpr uint32_t AUXILIARYMODE_MODULO = 6;
+static constexpr uint32_t MIMETYPE_MODULO = 14;
+static constexpr uint32_t OPT_SIZE = 785;
+static constexpr uint32_t DELAY_TIMES_SIZE = 2;
+static constexpr uint32_t IMAGE_SOURCE_MIMETYPE_MODULO = 3;
 
 namespace OHOS {
 namespace Media {
 using namespace OHOS::ImagePlugin;
-
-namespace {
-    const uint8_t* g_data = nullptr;
-    size_t g_size = 0;
-    size_t g_pos = 0;
-} // namespace
-/*
- *describe: get data from outside untrusted data(g_data) which size is according to sizeof(T)
- * tips: only support basic type
- */
-template<class T>
-T GetData()
-{
-    T object {};
-    size_t objectsize = sizeof(object);
-    if (g_data == nullptr || objectsize > g_size - g_pos) {
-        return object;
-    }
-    errno_t ret = memcpy_s(&object, objectsize, g_data + g_pos, objectsize);
-    if (ret != EOK) {
-        return {};
-    }
-    g_pos += objectsize;
-    return object;
-}
-/*
- *get parcel from g_data
- */
-bool ChangeParcel(Parcel &parcel)
-{
-    if (!parcel.WriteBuffer(g_data, g_size)) {
-        return false;
-    }
-    return true;
-}
-/*
- *get a pixelmap from opts
- */
-std::unique_ptr<Media::PixelMap> GetPixelMapFromOpts(Media::PixelFormat pixelFormat = PixelFormat::UNKNOWN)
-{
-    int32_t width = GetData<int32_t>();
-    int32_t height = GetData<int32_t>();
-    if (width <= 0 || width > MAX_WIDTH) {
-        return nullptr;
-    }
-    if (height <= 0 || height > MAX_HEIGHT) {
-        return nullptr;
-    }
-    Media::InitializationOptions opts;
-    opts.size.width = width;
-    opts.size.height = height;
-    opts.pixelFormat = pixelFormat == PixelFormat::UNKNOWN ?
-        static_cast<Media::PixelFormat>(GetData<int32_t>()) : pixelFormat;
-    opts.alphaType = static_cast<Media::AlphaType>(GetData<int32_t>());
-    opts.scaleMode = static_cast<Media::ScaleMode>(GetData<int32_t>());
-    opts.editable = GetData<bool>();
-    opts.useSourceIfMatch = GetData<bool>();
-    return Media::PixelMap::Create(opts);
-}
-
-/*
- * get a pixelmap from g_data
- */
-std::unique_ptr<Media::PixelMap> GetPixelMapFromData(Media::PixelFormat pixelFormat = PixelFormat::UNKNOWN)
-{
-    int32_t width = GetData<int32_t>();
-    int32_t height = GetData<int32_t>();
-    if (width <= 0 || width > MAX_WIDTH) {
-        return nullptr;
-    }
-    if (height <= 0 || height > MAX_HEIGHT) {
-        return nullptr;
-    }
-    Media::InitializationOptions opts;
-    opts.size.width = width;
-    opts.size.height = height;
-    opts.pixelFormat = pixelFormat == PixelFormat::UNKNOWN ?
-        static_cast<Media::PixelFormat>(GetData<int32_t>()) : pixelFormat;
-    opts.alphaType = static_cast<Media::AlphaType>(GetData<int32_t>());
-    opts.scaleMode = static_cast<Media::ScaleMode>(GetData<int32_t>());
-    opts.editable = GetData<bool>();
-    opts.useSourceIfMatch = GetData<bool>();
-    size_t datalength = width * height * WIDTH_FACTOR;
-    std::unique_ptr<uint32_t[]> colorData = std::make_unique<uint32_t[]>(datalength);
-    for (size_t i = 0; i < datalength; i++) {
-        colorData[i] = GetData<uint32_t>();
-    }
-    return Media::PixelMap::Create(colorData.get(), datalength, opts);
-}
+FuzzedDataProvider* FDP;
 
 void AuxiliaryPictureFuncTest(std::shared_ptr<AuxiliaryPicture> auxPicture)
 {
@@ -200,52 +115,44 @@ void AuxiliaryPictureFuncTest(std::shared_ptr<AuxiliaryPicture> auxPicture)
 static void TestAllAuxiliaryPicture(std::shared_ptr<Picture> &picture)
 {
     IMAGE_LOGI("%{public}s start.", __func__);
-    std::shared_ptr<AuxiliaryPicture> auxGainPic = picture->GetAuxiliaryPicture(AuxiliaryPictureType::GAINMAP);
-    if (auxGainPic != nullptr) {
-        IMAGE_LOGI("Picture has GAINMAP auxiliaryPicture.");
-        picture->SetAuxiliaryPicture(auxGainPic);
-        AuxiliaryPictureFuncTest(auxGainPic);
-    }
-    std::shared_ptr<AuxiliaryPicture> auxDepthPic = picture->GetAuxiliaryPicture(AuxiliaryPictureType::DEPTH_MAP);
-    if (auxDepthPic != nullptr) {
-        IMAGE_LOGI("Picture has DEPTH_MAP auxiliaryPicture.");
-        picture->SetAuxiliaryPicture(auxDepthPic);
-        AuxiliaryPictureFuncTest(auxDepthPic);
-    }
-    std::shared_ptr<AuxiliaryPicture> auxUnrefocusPic =
-        picture->GetAuxiliaryPicture(AuxiliaryPictureType::UNREFOCUS_MAP);
-    if (auxUnrefocusPic != nullptr) {
-        IMAGE_LOGI("Picture has UNREFOCUS_MAP auxiliaryPicture.");
-        picture->SetAuxiliaryPicture(auxUnrefocusPic);
-        AuxiliaryPictureFuncTest(auxUnrefocusPic);
-    }
-    std::shared_ptr<AuxiliaryPicture> auxLinearPic = picture->GetAuxiliaryPicture(AuxiliaryPictureType::LINEAR_MAP);
-    if (auxLinearPic != nullptr) {
-        IMAGE_LOGI("Picture has LINEAR_MAP auxiliaryPicture.");
-        picture->SetAuxiliaryPicture(auxLinearPic);
-        AuxiliaryPictureFuncTest(auxLinearPic);
-    }
-    std::shared_ptr<AuxiliaryPicture> auxFramentPic = picture->GetAuxiliaryPicture(AuxiliaryPictureType::FRAGMENT_MAP);
-    if (auxFramentPic != nullptr) {
-        IMAGE_LOGI("Picture has FRAGMENT _MAP auxiliaryPicture.");
-        picture->SetAuxiliaryPicture(auxFramentPic);
-        AuxiliaryPictureFuncTest(auxFramentPic);
+    AuxiliaryPictureType type =
+        static_cast<Media::AuxiliaryPictureType>(FDP->ConsumeIntegral<uint8_t>() % AUXILIARYMODE_MODULO);
+    std::shared_ptr<AuxiliaryPicture> auxPicture = picture->GetAuxiliaryPicture(type);
+    if (auxPicture != nullptr) {
+        IMAGE_LOGI("Picture has %{public}d auxiliaryPicture.", static_cast<int32_t>(type));
+        picture->SetAuxiliaryPicture(auxPicture);
+        AuxiliaryPictureFuncTest(auxPicture);
     }
     IMAGE_LOGI("%{public}s SUCCESS.", __func__);
 }
 
-static void EncodePictureTest(std::shared_ptr<Picture> picture, const std::string& format,
-    const std::string& outputPath)
+static void EncodePictureTest(std::shared_ptr<Picture> picture)
 {
     IMAGE_LOGI("%{public}s start.", __func__);
     if (picture == nullptr) {
         IMAGE_LOGE("%{public}s picture null.", __func__);
         return;
     }
+    std::string mimeType[] = {"image/png", "image/raw", "image/vnd.wap.wbmp", "image/bmp", "image/gif", "image/jpeg",
+        "image/mpo", "image/heic", "image/heif", "image/x-adobe-dng", "image/webp", "image/tiff", "image/x-icon",
+        "image/x-sony-arw"};
     ImagePacker pack;
-    PackOption packoption;
-    packoption.format = format;
-    if (pack.StartPacking(outputPath, packoption) != SUCCESS) {
+    PackOption packOption;
+    packOption.format = mimeType[FDP->ConsumeIntegral<uint8_t>() % MIMETYPE_MODULO];
+    packOption.quality = FDP->ConsumeIntegral<uint8_t>();
+    packOption.numberHint = FDP->ConsumeIntegral<uint32_t>();
+    packOption.desiredDynamicRange =
+        static_cast<Media::EncodeDynamicRange>(FDP->ConsumeIntegral<uint8_t>() % ALPHATYPE_MODULO);
+    packOption.needsPackProperties = FDP->ConsumeBool();
+    packOption.isEditScene = FDP->ConsumeBool();
+    packOption.loop = FDP->ConsumeIntegral<uint16_t>();
+    uint8_t delayTimesSize = FDP->ConsumeIntegral<uint8_t>();
+    std::vector<uint16_t> delayTimes(delayTimesSize);
+    FDP->ConsumeData(delayTimes.data(), delayTimesSize * DELAY_TIMES_SIZE);
+    packOption.delayTimes = delayTimes;
+    uint8_t disposalSize = FDP->ConsumeIntegral<uint8_t>();
+    packOption.disposalTypes = FDP->ConsumeBytes<uint8_t>(disposalSize);
+    if (pack.StartPacking(IMAGE_DEST, packOption) != SUCCESS) {
         IMAGE_LOGE("%{public}s StartPacking failed.", __func__);
         return;
     }
@@ -290,60 +197,53 @@ void PictureFuncTest(std::shared_ptr<Picture> picture)
 /*
  *test picture IPc interface
  */
-bool PictureIPCTest(std::unique_ptr<Picture> &picture)
+bool PictureIPCTest(const uint8_t *data, size_t size)
 {
-    if (picture == nullptr) {
-        IMAGE_LOGE("%{public}s picture is nullptr.", __func__);
+    if (data == nullptr) {
+        IMAGE_LOGE("%{public}s data is nullptr.", __func__);
         return false;
     }
     //test parcel picture
     MessageParcel parcel;
-    if (picture->Marshalling(parcel)) {
-        ChangeParcel(parcel);
-        Media::Picture* unmarshallingPicture = Media::Picture::Unmarshalling(parcel);
-        if (unmarshallingPicture != nullptr) {
-            delete unmarshallingPicture;
-            unmarshallingPicture = nullptr;
-        } else {
-            IMAGE_LOGE("%{public}s Unmarshalling falied.", __func__);
-        }
-    } else {
-        IMAGE_LOGE("%{public}s Marshalling falied.", __func__);
+    parcel.WriteBuffer(data, size);
+    Media::Picture* unmarshallingPicture = Media::Picture::Unmarshalling(parcel);
+    if (unmarshallingPicture != nullptr) {
+        delete unmarshallingPicture;
+        unmarshallingPicture = nullptr;
     }
     return true;
 }
 
-bool PictureRandomFuzzTest(const uint8_t* data, size_t size)
+bool PictureRandomFuzzTest()
 {
     IMAGE_LOGI("%{public}s start.", __func__);
-    if (data == nullptr) {
-    return false;
+    Media::InitializationOptions opts;
+    opts.size.width = FDP->ConsumeIntegral<uint16_t>() % MAX_LENGTH_MODULO;
+    opts.size.height = FDP->ConsumeIntegral<uint16_t>() % MAX_LENGTH_MODULO;
+    opts.srcPixelFormat = static_cast<Media::PixelFormat>(FDP->ConsumeIntegral<uint8_t>() % PIXELFORMAT_MODULO);
+    opts.pixelFormat = static_cast<Media::PixelFormat>(FDP->ConsumeIntegral<uint8_t>() % PIXELFORMAT_MODULO);
+    opts.alphaType = static_cast<Media::AlphaType>(FDP->ConsumeIntegral<uint8_t>() % ALPHATYPE_MODULO);
+    opts.scaleMode = static_cast<Media::ScaleMode>(FDP->ConsumeIntegral<uint8_t>() % SCALEMODE_MODULO);
+    opts.editable = FDP->ConsumeBool();
+    opts.useSourceIfMatch = FDP->ConsumeBool();
+    int32_t pixelBytes = Media::ImageUtils::GetPixelBytes(opts.srcPixelFormat);
+    size_t dataLength = opts.size.width * opts.size.height * pixelBytes;
+    std::unique_ptr<uint8_t> colorData = std::make_unique<uint8_t>(dataLength);
+    if (colorData == nullptr) {
+        return false;
     }
-    //initialize
-    g_data = data;
-    g_size = size;
-    g_pos = 0;
-    // create from opts
-    std::shared_ptr<PixelMap> pixelMapFromOpts = GetPixelMapFromOpts(Media::PixelFormat::RGBA_8888);
-    if (!pixelMapFromOpts) {
+    FDP->ConsumeData(colorData.get(), dataLength);
+    std::shared_ptr<PixelMap> pixelMapFromOpts = Media::PixelMap::Create(reinterpret_cast<uint32_t*>(colorData.get()),
+        dataLength, opts);
+    if (pixelMapFromOpts.get() == nullptr) {
         return false;
     }
     std::unique_ptr<Picture> pictureFromOpts = Picture::Create(pixelMapFromOpts);
-    if (!pictureFromOpts) {
+    if (pictureFromOpts.get() == nullptr) {
         return false;
     }
-    //create from data
-    std::shared_ptr<Media::PixelMap> pixelMapFromData = GetPixelMapFromData(Media::PixelFormat::RGBA_8888);
-    if (!pixelMapFromData) {
-        return false;
-    }
-    std::unique_ptr<Picture> pictureFromData = Picture::Create(pixelMapFromData);
-    if (!pictureFromData) {
-        return false;
-    }
-    PictureIPCTest(pictureFromOpts);
-    PictureIPCTest(pictureFromData);
-    IMAGE_LOGI("%{public}s SUCCESS.", __func__);
+    MessageParcel parcel;
+    pictureFromOpts->Marshalling(parcel);
     return true;
 }
 
@@ -353,7 +253,7 @@ bool CreatePictureByRandomImageSource(const uint8_t *data, size_t size, const st
     BufferRequestConfig requestConfig = {
         .width = SIZE_WIDTH,
         .height = SIZE_HEIGHT,
-        .strideAlignment = 0x8, // set Ox8 as default value to alloc SurfaceBufferImpl
+        .strideAlignment = 0x8, // set 0x8 as default value to alloc SurfaceBufferImpl
         .format = GRAPHIC_PIXEL_FMT_YCRCB_420_SP, // hardware decode only support rgba8888
         .usage = BUFFER_USAGE_CPU_READ | BUFFER_USAGE_CPU_WRITE | BUFFER_USAGE_MEM_DMA | BUFFER_USAGE_MEM_MMZ_CACHE,
         .timeout = 0,
@@ -361,9 +261,13 @@ bool CreatePictureByRandomImageSource(const uint8_t *data, size_t size, const st
         .transform = GraphicTransformType::GRAPHIC_ROTATE_NONE,
     };
     sptr<SurfaceBuffer> sb = SurfaceBuffer::Create();
-    sb->Alloc(requestConfig);
-    Picture::Create(sb);
+    if (sb != nullptr) {
+        sb->Alloc(requestConfig);
+        Picture::Create(sb);
+    }
+    std::string mimeType[] = {"image/jpeg", "image/heic", "image/heif"};
     SourceOptions opts;
+    opts.formatHint = mimeType[FDP->ConsumeIntegral<uint8_t>() % IMAGE_SOURCE_MIMETYPE_MODULO];
     uint32_t errorCode;
     std::shared_ptr<ImageSource> imageSource = nullptr;
     if (pathName != "") {
@@ -376,15 +280,13 @@ bool CreatePictureByRandomImageSource(const uint8_t *data, size_t size, const st
         return false;
     }
     DecodingOptionsForPicture pictureOpts;
+    pictureOpts.desireAuxiliaryPictures.insert(static_cast<Media::AuxiliaryPictureType>(
+        FDP->ConsumeIntegral<uint8_t>()% AUXILIARYMODE_MODULO));
+    pictureOpts.desiredPixelFormat = static_cast<Media::PixelFormat>(FDP->ConsumeIntegral<uint8_t>() %
+        PIXELFORMAT_MODULO);
     std::shared_ptr<Picture> picture = imageSource->CreatePicture(pictureOpts, errorCode);
     PictureFuncTest(picture);
-    EncodePictureTest(picture, JPEG_FORMAT, IMAGE_JPEG_DEST);
-    EncodePictureTest(picture, HEIF_FORMAT, IMAGE_HEIF_DEST);
-    pictureOpts.desiredPixelFormat = PixelFormat::NV21;
-    picture = imageSource->CreatePicture(pictureOpts, errorCode);
-    PictureFuncTest(picture);
-    EncodePictureTest(picture, JPEG_FORMAT, IMAGE_JPEG_DEST);
-    EncodePictureTest(picture, HEIF_FORMAT, IMAGE_HEIF_DEST);
+    EncodePictureTest(picture);
     IMAGE_LOGI("%{public}s SUCCESS.", __func__);
     return true;
 }
@@ -404,7 +306,7 @@ void HeifDecodeFuzz(const uint8_t *data, size_t size, const std::string& pathNam
     if (imageSource == nullptr) {
         return;
     }
-    auto extStream = std::make_unique<ImagePlugin::ExtStream>;
+    auto extStream = std::make_unique<ImagePlugin::ExtStream>();
     if (extStream == nullptr) {
         return;
     }
@@ -431,12 +333,31 @@ void HeifDecodeFuzz(const uint8_t *data, size_t size, const std::string& pathNam
 extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
 {
     /*Run your code on data */
-    OHOS::Media::PictureRandomFuzzTest(data, size);
-    std::string pathName = "/data/local/tmp/test_jpeg·jpg";
-    OHOS::Media::HeifDecodeFuzz(data, size, pathName);
+    FuzzedDataProvider fdp(data, size);
+    OHOS::Media::FDP = &fdp;
+    std::string pathName = "/data/local/tmp/test_jpeg.jpg";
     OHOS::Media::CreatePictureByRandomImageSource(data, size, pathName);
     pathName = "/data/local/tmp/test_heif.heic";
     OHOS::Media::HeifDecodeFuzz(data, size, pathName);
     OHOS::Media::CreatePictureByRandomImageSource(data, size, pathName);
+    uint8_t action = fdp.ConsumeIntegral<uint8_t>() % 3;
+    switch (action) {
+        case 0:
+            OHOS::Media::PictureRandomFuzzTest();
+            break;
+        case 1:
+            OHOS::Media::PictureIPCTest(data, size - 1);
+            break;
+        default:
+            if (size < OPT_SIZE) {
+                return -1;
+            }
+            FuzzedDataProvider fdp(data + size - OPT_SIZE, OPT_SIZE - 1);
+            OHOS::Media::FDP = &fdp;
+            std::string path = "/data/local/tmp/test_picture_fuzz.jpg";
+            WriteDataToFile(data, size - OPT_SIZE, path);
+            OHOS::Media::CreatePictureByRandomImageSource(data, size, path);
+            break;
+    }
     return 0;
 }
