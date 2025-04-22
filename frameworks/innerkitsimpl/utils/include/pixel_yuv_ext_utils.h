@@ -28,11 +28,19 @@
 
 namespace OHOS {
 namespace Media {
+enum YuvSizeType {
+    FLOAT,
+    INT,
+};
+
 struct YuvPixels {
     uint8_t *srcPixels;
     uint8_t *dstPixels;
     float xAxis;
     float yAxis;
+    int32_t dstWidth;
+    int32_t dstHeight;
+    YuvSizeType sizeType = YuvSizeType::FLOAT;
 };
 
 class PixelYuvExtUtils {
