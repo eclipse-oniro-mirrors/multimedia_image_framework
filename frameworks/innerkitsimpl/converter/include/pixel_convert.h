@@ -42,6 +42,7 @@ struct BufferInfo {
     ImageInfo imageInfo;
     uint8_t range;
     uint32_t length;
+    YuvConversion yuvConversion;
 };
 
 // These values SHOULD be sync with image_type.h PixelFormat
