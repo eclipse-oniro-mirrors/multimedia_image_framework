@@ -28,11 +28,19 @@
 
 namespace OHOS {
 namespace Media {
+enum YuvSizeType {
+    FLOAT,
+    INT,
+};
+
 struct YuvPixels {
     uint8_t *srcPixels;
     uint8_t *dstPixels;
     float xAxis;
     float yAxis;
+    int32_t dstWidth;
+    int32_t dstHeight;
+    YuvSizeType sizeType = YuvSizeType::FLOAT;
 };
 
 class PixelYuvExtUtils {
@@ -48,7 +56,7 @@ public:
     static void ConvertYuvMode(OpenSourceLibyuv ::FilterMode &filterMode, const AntiAliasingOption &option);
     static void ScaleYuv420(float xAxis, float yAxis, const AntiAliasingOption &option,
         YuvImageInfo &yuvInfo, uint8_t *src, uint8_t *dst, YUVStrideInfo &dstStrides);
-    static void ScaleYuv420(int32_t dst_width, int32_t dst_height, const AntiAliasingOption &option,
+    static void ScaleYuv420(int32_t dstWidth, int32_t dstHeight, const AntiAliasingOption &option,
         YuvImageInfo &yuvInfo, uint8_t *src, uint8_t *dst, YUVStrideInfo &dstStrides);
     static bool Mirror(uint8_t *src, uint8_t *dst, Size &size, PixelFormat format, YUVDataInfo &info,
         YUVStrideInfo &dstStrides, bool isReversed);
