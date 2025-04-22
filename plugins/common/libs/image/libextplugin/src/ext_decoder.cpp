@@ -663,8 +663,8 @@ uint32_t ExtDecoder::CheckDecodeOptions(uint32_t index, const PixelDecodeOptions
             dstSubset_.top(), dstSubset_.bottom(), dstSubset_.left(), dstSubset_.right());
         return ERR_IMAGE_INVALID_PARAMETER;
     }
-    IMAGE_LOGI("%{public}s IN, dstSubset_: xy [%{public}d x %{public}d] wh [%{public}d x %{public}d]",
-        __func__, dstSubset_.left(), dstSubset_.top(), dstSubset_.width(), dstSubset_.height());
+    IMAGE_LOGI("%{public}s IN, dstSubset_: xy [%{public}d x %{public}d] right,bottom: [%{public}d x %{public}d]",
+        __func__, dstSubset_.left(), dstSubset_.top(), dstSubset_.right(), dstSubset_.bottom());
     size_t tempSrcByteCount = info_.computeMinByteSize();
     size_t tempDstByteCount = dstInfo_.computeMinByteSize();
     if (SkImageInfo::ByteSizeOverflowed(tempSrcByteCount) || SkImageInfo::ByteSizeOverflowed(tempDstByteCount)) {
