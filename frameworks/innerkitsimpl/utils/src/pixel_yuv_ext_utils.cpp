@@ -376,8 +376,10 @@ static void ScaleP010(YuvPixels yuvPixels, OpenSourceLibyuv::ImageYuvConverter &
     int32_t srcWidth = yuvInfo.width;
     int32_t srcHeight = yuvInfo.height;
     uint16_t *dstBuffer = reinterpret_cast<uint16_t *>(yuvPixels.dstPixels);
-    int32_t dst_width = yuvInfo.width * yuvPixels.xAxis + ROUND_FLOAT_NUMBER;
-    int32_t dst_height = yuvInfo.height * yuvPixels.yAxis + ROUND_FLOAT_NUMBER;
+    int32_t dst_width = yuvPixels.sizeType == YuvSizeType::FLOAT ?
+        yuvInfo.width * yuvPixels.xAxis + ROUND_FLOAT_NUMBER : yuvPixels.dstWidth;
+    int32_t dst_height = yuvPixels.sizeType == YuvSizeType::FLOAT ?
+        yuvInfo.height * yuvPixels.yAxis + ROUND_FLOAT_NUMBER : yuvPixels.dstHeight;
     std::unique_ptr<uint16_t[]> dstPixels = std::make_unique<uint16_t[]>(GetImageSize(srcWidth, srcHeight));
     if (dstPixels == nullptr) {
         IMAGE_LOGE("ScaleP010 dstPixels make unique ptr failed");
@@ -475,8 +477,10 @@ void PixelYuvExtUtils::ScaleYuv420(int32_t dst_width, int32_t dst_height, const 
     int dstUVStride = static_cast<int>(dstStrides.uvStride);
     auto converter = ConverterHandle::GetInstance().GetHandle();
 
-    PixelSize pixelSize = {srcWidth, srcHeight, dst_width, dst_height};
-    if (yuvInfo.yuvFormat != PixelFormat::YCBCR_P010 && yuvInfo.yuvFormat != PixelFormat::YCRCB_P010) {
+    YuvPixels yuvPixels = {src, dst, 0.0, 0.0, dst_width, dst_height, YuvSizeType::INT};
+    if (yuvInfo.yuvFormat == PixelFormat::YCBCR_P010 || yuvInfo.yuvFormat == PixelFormat::YCRCB_P010) {
+        ScaleP010(yuvPixels, converter, filterMode, yuvInfo, dstStrides);
+    } else {
         converter.NV12Scale(srcY, srcYStride, srcUV, srcUVStride, srcWidth, srcHeight,
             dstY, dstYStride, dstUV, dstUVStride, dst_width, dst_height, filterMode);
     }
