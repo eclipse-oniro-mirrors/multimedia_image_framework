@@ -60,7 +60,6 @@ void ImageSourceFuncTest002(std::unique_ptr<ImageSource>& imageSource, DecodeOpt
     auto exifMeta = imageSource->GetExifMetadata();
     imageSource->SetExifMetadata(exifMeta);
     imageSource->GetFinalOutputStep(opts, pixelMap, false);
-    imageSource->SetDngImageSize(0, imageInfo);
     imageSource->SetIncrementalSource(false);
     auto incrementalRecordIter = imageSource->incDecodingMap_.find(&pixelMap);
     imageSource->AddIncrementalContext(pixelMap, incrementalRecordIter);
