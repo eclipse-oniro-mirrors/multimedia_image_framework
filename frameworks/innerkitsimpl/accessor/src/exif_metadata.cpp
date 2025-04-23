@@ -69,6 +69,8 @@ const unsigned char INIT_HW_DATA[] = {
     0x00
 };
 
+static const int GET_SUPPORT_MAKERNOTE_COUNT = 1;
+static const int INIT_HW_DATA_HEAD_LENGTH = 8;
 template <typename T, typename U> std::istream &OutputRational(std::istream &is, T &r)
 {
     U nominator = 0;
@@ -188,10 +190,21 @@ int ExifMetadata::HandleMakerNote(std::string &value) const
     bool cond = false;
     if (md == nullptr) {
         IMAGE_LOGD("Exif data mnote data md is a nullptr.");
-        return ERR_IMAGE_DECODE_EXIF_UNSUPPORT;
     }
-    cond = !is_huawei_md(md);
-    CHECK_DEBUG_RETURN_RET_LOG(cond, ERR_IMAGE_DECODE_EXIF_UNSUPPORT, "Exif data mnote data md is not ours md.");
+    if (!is_huawei_md(md)) {
+        std::vector<char> userValueChar(MAX_TAG_VALUE_SIZE_FOR_STR, 0);
+        int count = exif_data_get_maker_note_entry_count(exifData_);
+        cond = count != GET_SUPPORT_MAKERNOTE_COUNT;
+        CHECK_ERROR_RETURN_RET(cond, ERR_IMAGE_DECODE_EXIF_UNSUPPORT);
+        ExifEntry *entry = exif_data_get_entry(exifData_, EXIF_TAG_MAKER_NOTE);
+        cond = entry == nullptr;
+        CHECK_ERROR_RETURN_RET(cond, ERR_IMAGE_DECODE_EXIF_UNSUPPORT);
+        cond = entry->size >= MAX_TAG_VALUE_SIZE_FOR_STR;
+        CHECK_ERROR_RETURN_RET(cond, ERR_IMAGE_DECODE_EXIF_UNSUPPORT);
+        exif_entry_get_value(entry, userValueChar.data(), userValueChar.size());
+        value.assign(userValueChar.data(), entry->size);
+        return SUCCESS;
+    }
     MnoteHuaweiEntryCount *ec = nullptr;
     mnote_huawei_get_entry_count(reinterpret_cast<ExifMnoteDataHuawei *>(md), &ec);
     cond = ec == nullptr;
@@ -608,8 +621,61 @@ bool ExifMetadata::SetValue(const std::string &key, const std::string &value)
         IMAGE_LOGD("Set HwMoteValue %{public}s", value.c_str());
         return SetHwMoteValue(key, result.second);
     }
+    if (key == MAKER_NOTE_TAG) {
+        IMAGE_LOGD("Set MakerNote %{public}s", value.c_str());
+        return SetMakerNoteValue(value);
+    }
 
     return SetCommonValue(key, result.second);
+}
+
+bool ExifMetadata::SetMakerNoteValue(const std::string &value)
+{
+    bool cond = exifData_ == nullptr;
+    CHECK_ERROR_RETURN_RET_LOG(cond, false, "exifData_ is nullptr");
+    cond = value.length() >= MAX_TAG_VALUE_SIZE_FOR_STR;
+    CHECK_ERROR_RETURN_RET_LOG(cond, false, "value length is too long. length: %{public}zu", value.length());
+    //clear all makernote data.
+    ExifEntry *entry = nullptr;
+    do {
+        entry = exif_data_get_entry(exifData_, EXIF_TAG_MAKER_NOTE);
+        if (entry != nullptr) {
+            exif_content_remove_entry(entry->parent, entry);
+        }
+    } while (entry != nullptr);
+
+    auto md = exif_data_get_mnote_data(exifData_);
+    if (md != nullptr) {
+        exif_mnote_data_unref(md);
+        exif_data_set_priv_md(exifData_, nullptr);
+    }
+
+    size_t valueLen = value.length();
+    entry = CreateEntry(MAKER_NOTE_TAG, EXIF_TAG_MAKER_NOTE, valueLen);
+    cond = entry == nullptr;
+    CHECK_ERROR_RETURN_RET_LOG(cond, false, "Create entry is nullptr");
+    if (memcpy_s(entry->data, entry->size, value.c_str(), valueLen) != 0) {
+        IMAGE_LOGE("Failed to copy memory for ExifEntry. Requested size: %{public}zu", valueLen);
+        return false;
+    }
+
+    bool isHwHead = entry->size > INIT_HW_DATA_HEAD_LENGTH &&
+                        memcmp(entry->data, INIT_HW_DATA + EXIF_HEAD_SIZE, INIT_HW_DATA_HEAD_LENGTH) == 0;
+    if (isHwHead) {
+        uint32_t tempSize = EXIF_HEAD_SIZE + entry->size;
+        std::vector<unsigned char> tempData(tempSize, 0);
+        cond = memcpy_s(tempData.data() + EXIF_HEAD_SIZE, tempSize - EXIF_HEAD_SIZE, entry->data, entry->size) != EOK;
+        CHECK_ERROR_RETURN_RET_LOG(cond, false, "memcpy is failed");
+        auto mem = exif_data_get_priv_mem(exifData_);
+        auto hwMd = exif_mnote_data_huawei_new(mem);
+        if (hwMd != nullptr) {
+            exif_data_set_priv_md(exifData_, hwMd);
+            exif_mnote_data_set_offset(hwMd, 0);
+            exif_mnote_data_load(hwMd, tempData.data(), tempSize);
+            IMAGE_LOGD("value is hw makernote data. load finished! res:%{public}d", is_huawei_md(hwMd));
+        }
+    }
+    return true;
 }
 
 bool ExifMetadata::SetHwMoteValue(const std::string &key, const std::string &value)

@@ -206,6 +206,7 @@ const static std::set<std::string> READ_WRITE_KEYS = {
     "MovingPhotoVersion",
     "MicroVideoPresentationTimestampUS",
     "HwMnoteAiEdit",
+    "MakerNote",
 };
 
 const static std::set<std::string> READ_ONLY_KEYS = {
@@ -224,8 +225,7 @@ const static std::set<std::string> READ_ONLY_KEYS = {
     "HwMnoteFaceRect",         "HwMnoteFaceLeyeCenter",
     "HwMnoteFaceReyeCenter",   "HwMnoteFaceMouthCenter",
     "JPEGInterchangeFormat",   "JPEGInterchangeFormatLength",
-    "MakerNote",               "HwMnoteWindSnapshotMode",
-    "HwMnoteFocusModeExif",
+    "HwMnoteWindSnapshotMode", "HwMnoteFocusModeExif",
 };
 
 // Orientation, tag 0x0112
