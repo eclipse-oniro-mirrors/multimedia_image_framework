@@ -1432,6 +1432,9 @@ unique_ptr<PixelMap> ImageSource::CreatePixelMap(uint32_t index, const DecodeOpt
     DecodeOptions procOpts;
     CopyOptionsToProcOpts(opts_.cropAndScaleStrategy == CropAndScaleStrategy::DEFAULT ? opts_ : opts, procOpts,
         *(pixelMap.get()));
+    if (context.allocatorType != procOpts.allocatorType) {
+        procOpts.allocatorType = context.allocatorType;
+    }
     PostProc postProc;
     errorCode = postProc.DecodePostProc(procOpts, *(pixelMap.get()), finalOutputStep);
     bool cond = (errorCode != SUCCESS);
