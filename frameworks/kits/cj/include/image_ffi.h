@@ -16,10 +16,11 @@
 #define IMAGE_FFI_H
 
 #include "cj_ffi/cj_common_ffi.h"
+#include "cj_image_utils.h"
 #include "cj_lambda.h"
 #include "image_type.h"
-#include "image_utils.h"
 #include "napi/native_api.h"
+#include "picture_impl.h"
 #include "pixel_map.h"
 
 extern "C" {
@@ -103,9 +104,9 @@ struct CPackingOptionV2 {
     bool needsPackProperties;
 };
 
-struct CImageProperties {
-    const char* key;
-    char* value;
+struct CjProperties {
+    char** key;
+    char** value;
     int64_t size;
 };
 
@@ -174,6 +175,12 @@ FFI_EXPORT uint32_t FfiImagePixelMapImplCreatePremultipliedPixelMap(int64_t srcI
 FFI_EXPORT uint32_t FfiImagePixelMapImplCreateUnpremultipliedPixelMap(int64_t srcId, int64_t dstId);
 FFI_EXPORT uint32_t FfiImagePixelMapImplSetTransferDetached(int64_t id, bool detached);
 FFI_EXPORT uint32_t FfiImagePixelMapImplToSdr(int64_t id);
+FFI_EXPORT uint32_t FfiImagePixelMapImplMarshalling(int64_t id, int64_t rpcId);
+FFI_EXPORT int64_t FfiImagePixelMapImplUnmarshalling(int64_t id, int64_t rpcId, uint32_t* errCode);
+FFI_EXPORT uint32_t FfiImagePixelMapImplConvertPixelMapFormat(int64_t id, int32_t targetFormat);
+FFI_EXPORT int64_t FfiImagePixelMapImplCreatePixelMapFromSurface(
+    char* surfaceId, CRegion rect, size_t argc, uint32_t* errCode);
+FFI_EXPORT int64_t FfiImagePixelMapImplCreatePixelMapFromParcel(int64_t rpcId, uint32_t* errCode);
 
 // Image
 FFI_EXPORT uint32_t FfiOHOSImageGetClipRect(int64_t id, CRegion* retVal);
@@ -192,6 +199,7 @@ FFI_EXPORT char* FfiOHOSGetReceivingSurfaceId(int64_t id);
 FFI_EXPORT int64_t FfiOHOSReadNextImage(int64_t id);
 FFI_EXPORT int64_t FfiOHOSReadLatestImage(int64_t id);
 FFI_EXPORT void FfiOHOSReceiverRelease(int64_t id);
+FFI_EXPORT uint32_t FfiImageReceiverImplOn(int64_t id, char* name, int64_t callbackId);
 
 // ImagePacker
 FFI_EXPORT int64_t FFiOHOSImagePackerConstructor();
@@ -200,11 +208,18 @@ FFI_EXPORT RetDataCArrUI8 FfiOHOSImagePackerPackingPixelMap(int64_t id, int64_t 
 FFI_EXPORT RetDataCArrUI8 FfiOHOSImagePackerPackingPixelMapV2(int64_t id, int64_t source, CPackingOptionV2 option);
 FFI_EXPORT RetDataCArrUI8 FfiOHOSImagePackerPackingImageSource(int64_t id, int64_t source, CPackingOption option);
 FFI_EXPORT RetDataCArrUI8 FfiOHOSImagePackerPackingImageSourceV2(int64_t id, int64_t source, CPackingOptionV2 option);
+FFI_EXPORT RetDataCArrUI8 FfiImageImagePackerImplPackToDataPixelMap(
+    int64_t id, int64_t source, CPackingOptionV2 option);
+FFI_EXPORT RetDataCArrUI8 FfiImageImagePackerImplPackToDataImageSource(
+    int64_t id, int64_t source, CPackingOptionV2 option);
+FFI_EXPORT RetDataCArrUI8 FfiImageImagePackerImplPackingPicture(int64_t id, int64_t source, CPackingOptionV2 option);
 FFI_EXPORT RetDataCArrString FfiOHOSImagePackerGetSupportedFormats(int64_t id);
 FFI_EXPORT uint32_t FfiOHOSImagePackerPackPixelMapToFile(int64_t id, int64_t source, int fd, CPackingOption option);
 FFI_EXPORT uint32_t FfiOHOSImagePackerPackPixelMapToFileV2(int64_t id, int64_t source, int fd, CPackingOptionV2 option);
 FFI_EXPORT uint32_t FfiOHOSImagePackerImageSourcePackToFile(int64_t id, int64_t source, int fd, CPackingOption option);
 FFI_EXPORT uint32_t FfiOHOSImagePackerImageSourcePackToFileV2(
+    int64_t id, int64_t source, int fd, CPackingOptionV2 option);
+FFI_EXPORT uint32_t FfiImageImagePackerImplPackToFilePicture(
     int64_t id, int64_t source, int fd, CPackingOptionV2 option);
 FFI_EXPORT void FFiOHOSImagePackerRelease(int64_t id);
 
@@ -216,6 +231,15 @@ FFI_EXPORT int64_t FFiOHOSImageCreatorDequeueImage(int64_t id, uint32_t* errCode
 FFI_EXPORT void FFiOHOSImageCreatorQueueImage(int64_t id, int64_t imageId);
 FFI_EXPORT void FFiOHOSImageCreatorRelease(int64_t id);
 FFI_EXPORT uint32_t FfiImageImageCreatorImplOn(int64_t id, char* name, int64_t callbackId);
+
+// Pictute
+FFI_EXPORT int64_t FfiImagePictureImplCreatePicture(int64_t id, uint32_t* errCode);
+FFI_EXPORT uint32_t FfiImagePictureImplSetMetadata(int64_t id, int32_t metadataType, int64_t metadataId);
+FFI_EXPORT int64_t FfiImagePictureImplGetMetadata(int64_t id, int32_t metadataType, uint32_t* errCode);
+
+// Metadata
+FFI_EXPORT CjProperties FfiImageMetadataImplGetAllProperties(int64_t id, uint32_t* errCode);
+FFI_EXPORT void FfiImageMetadataImplReleaseProperties(CjProperties* properties);
 }
 
 #endif

@@ -18,7 +18,6 @@
 #include "cj_ffi/cj_common_ffi.h"
 #include "ffi_remote_data.h"
 #include "image_creator.h"
-#include "image_log.h"
 
 namespace OHOS {
 namespace Media {

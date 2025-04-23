@@ -15,11 +15,11 @@
 #ifndef IMAGE_RECEIVER_IMPL_H
 #define IMAGE_RECEIVER_IMPL_H
 
+#include "cj_image_utils.h"
 #include "ffi_remote_data.h"
 #include "image_impl.h"
 #include "image_receiver.h"
 #include "image_receiver_manager.h"
-#include "image_utils.h"
 
 namespace OHOS {
 namespace Media {
@@ -35,11 +35,27 @@ public:
     sptr<ImageImpl> ReadNextImage();
     sptr<ImageImpl> ReadLatestImage();
     void Release();
+    uint32_t CjOn(std::string name, std::function<void()> callBack);
 
 private:
     std::shared_ptr<ImageReceiver> imageReceiver_;
 };
 
+class CjImageReceiverAvaliableListener : public SurfaceBufferAvaliableListener {
+public:
+    ~CjImageReceiverAvaliableListener() override
+    {
+        callBack = nullptr;
+    }
+    void OnSurfaceBufferAvaliable() override
+    {
+        if (callBack != nullptr) {
+            callBack();
+        }
+    }
+    std::string name;
+    std::function<void()> callBack = nullptr;
+};
 } // namespace Media
 } // namespace OHOS
 

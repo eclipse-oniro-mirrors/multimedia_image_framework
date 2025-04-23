@@ -14,8 +14,25 @@
  */
 #include "pixel_map_impl.h"
 
+#include "image_format_convert.h"
 #include "image_log.h"
+#if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
+#include <charconv>
+#include <regex>
+
+#include "pixel_map_from_surface.h"
+#include "sync_fence.h"
+#include "transaction/rs_interfaces.h"
+#endif
+#include "image_utils.h"
 #include "media_errors.h"
+#include "message_sequence_impl.h"
+
+namespace {
+constexpr uint32_t NUM_2 = 2;
+}
+
+enum class FormatType : int8_t { UNKNOWN, YUV, RGB, ASTC };
 
 namespace OHOS {
 namespace Media {
@@ -287,6 +304,239 @@ uint32_t PixelMapImpl::ApplyColorSpace(std::shared_ptr<OHOS::ColorManager::Color
         return ERR_IMAGE_READ_PIXELMAP_FAILED;
     }
     return real_->ApplyColorSpace(*colorSpace);
+}
+
+#if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
+static bool GetSurfaceSize(size_t argc, Rect& region, std::string fd)
+{
+    if (argc == NUM_2 && (region.width <= 0 || region.height <= 0)) {
+        IMAGE_LOGE("GetSurfaceSize invalid parameter argc = %{public}zu", argc);
+        return false;
+    }
+    if (region.width <= 0 || region.height <= 0) {
+        unsigned long numberFd = 0;
+        auto res = std::from_chars(fd.c_str(), fd.c_str() + fd.size(), numberFd);
+        if (res.ec != std::errc()) {
+            IMAGE_LOGE("GetSurfaceSize invalid fd");
+            return false;
+        }
+        sptr<Surface> surface = SurfaceUtils::GetInstance()->GetSurface(std::stoull(fd));
+        if (surface == nullptr) {
+            return false;
+        }
+        sptr<SyncFence> fence = SyncFence::InvalidFence();
+        // a 4 * 4 idetity matrix
+        float matrix[16] = { 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1 };
+        sptr<SurfaceBuffer> surfaceBuffer = nullptr;
+        GSError ret = surface->GetLastFlushedBuffer(surfaceBuffer, fence, matrix);
+        if (ret != OHOS::GSERROR_OK || surfaceBuffer == nullptr) {
+            IMAGE_LOGE("GetLastFlushedBuffer fail, ret = %{public}d", ret);
+            return false;
+        }
+        region.width = surfaceBuffer->GetWidth();
+        region.height = surfaceBuffer->GetHeight();
+    }
+    return true;
+}
+#endif
+
+std::shared_ptr<PixelMap> PixelMapImpl::CreatePixelMapFromSurface(
+    char* surfaceId, Rect region, size_t argc, uint32_t* errCode)
+{
+#if defined(IOS_PLATFORM) || defined(ANDROID_PLATFORM)
+    *errCode = ERR_IMAGE_PIXELMAP_CREATE_FAILED;
+    return nullptr;
+#else
+    *errCode = argc == NUM_2 ? ERR_IMAGE_INVALID_PARAMETER : COMMON_ERR_INVALID_PARAMETER;
+    if (surfaceId == nullptr) {
+        IMAGE_LOGE("surfaceId is nullptr!");
+        return nullptr;
+    }
+    IMAGE_LOGD("CreatePixelMapFromSurface IN");
+    IMAGE_LOGD("CreatePixelMapFromSurface id:%{public}s,area:%{public}d,%{public}d,%{public}d,%{public}d", surfaceId,
+        region.left, region.top, region.height, region.width);
+    if (!std::regex_match(surfaceId, std::regex("\\d+"))) {
+        IMAGE_LOGE("CreatePixelMapFromSurface empty or invalid surfaceId");
+        return nullptr;
+    }
+    if (!GetSurfaceSize(argc, region, surfaceId)) {
+        return nullptr;
+    }
+    auto& rsClient = Rosen::RSInterfaces::GetInstance();
+    OHOS::Rect r = {
+        .x = region.left,
+        .y = region.top,
+        .w = region.width,
+        .h = region.height,
+    };
+    unsigned long newSurfaceId = 0;
+    auto res = std::from_chars(surfaceId, surfaceId + std::string(surfaceId).size(), newSurfaceId);
+    if (res.ec != std::errc()) {
+        IMAGE_LOGE("CreatePixelMapFromSurface invalid surfaceId");
+        *errCode = ERR_IMAGE_PIXELMAP_CREATE_FAILED;
+        return nullptr;
+    }
+    std::shared_ptr<PixelMap> pixelMap = rsClient.CreatePixelMapFromSurfaceId(newSurfaceId, r);
+#ifndef EXT_PIXEL
+    if (pixelMap == nullptr) {
+        res = std::from_chars(surfaceId, surfaceId + std::string(surfaceId).size(), newSurfaceId);
+        if (res.ec != std::errc()) {
+            IMAGE_LOGE("CreatePixelMapFromSurface invalid surfaceId");
+            *errCode = ERR_IMAGE_PIXELMAP_CREATE_FAILED;
+            return nullptr;
+        }
+        pixelMap = CreatePixelMapFromSurfaceId(newSurfaceId, region);
+    }
+#endif
+    *errCode = SUCCESS;
+    return pixelMap;
+#endif
+}
+
+uint32_t PixelMapImpl::Marshalling(int64_t rpcId)
+{
+#if defined(IOS_PLATFORM) || defined(ANDROID_PLATFORM)
+    return ERR_IMAGE_INVALID_PARAMETER;
+#else
+    IMAGE_LOGD("Marshalling IN");
+    if (real_ == nullptr) {
+        IMAGE_LOGE("marshalling pixel map to parcel failed.");
+        return ERR_IPC;
+    }
+    auto messageSequence = FFIData::GetData<MessageSequenceImpl>(rpcId);
+    if (!messageSequence) {
+        IMAGE_LOGE("[PixelMap] rpc not exist %{public}" PRId64, rpcId);
+        return ERR_IMAGE_INVALID_PARAMETER;
+    }
+    auto messageParcel = messageSequence->GetMessageParcel();
+    if (messageParcel == nullptr) {
+        IMAGE_LOGE("marshalling pixel map to parcel failed.");
+        return ERR_IPC;
+    }
+    bool st = real_->Marshalling(*messageParcel);
+    if (!st) {
+        IMAGE_LOGE("marshalling pixel map to parcel failed.");
+        return ERR_IPC;
+    }
+    return SUCCESS;
+#endif
+}
+
+std::shared_ptr<PixelMap> PixelMapImpl::Unmarshalling(int64_t rpcId, uint32_t* errCode)
+{
+#if defined(IOS_PLATFORM) || defined(ANDROID_PLATFORM)
+    *errCode = ERR_IMAGE_INVALID_PARAMETER;
+    return nullptr;
+#else
+    IMAGE_LOGD("Unmarshalling IN");
+    auto messageSequence = FFIData::GetData<MessageSequenceImpl>(rpcId);
+    if (!messageSequence) {
+        IMAGE_LOGE("[PixelMap] rpc not exist %{public}" PRId64, rpcId);
+        *errCode = ERR_IMAGE_INVALID_PARAMETER;
+        return nullptr;
+    }
+    auto messageParcel = messageSequence->GetMessageParcel();
+    if (messageParcel == nullptr) {
+        IMAGE_LOGE("UnmarshallingExec invalid parameter: messageParcel is null");
+        *errCode = ERR_IPC;
+        return nullptr;
+    }
+    PIXEL_MAP_ERR error;
+    auto pixelmap = PixelMap::Unmarshalling(*messageParcel, error);
+    if (pixelmap == nullptr) {
+        *errCode = error.errorCode;
+        return nullptr;
+    }
+    std::shared_ptr<PixelMap> pixelPtr(pixelmap);
+    return pixelPtr;
+#endif
+}
+
+std::shared_ptr<PixelMap> PixelMapImpl::CreatePixelMapFromParcel(int64_t rpcId, uint32_t* errCode)
+{
+#if defined(IOS_PLATFORM) || defined(ANDROID_PLATFORM)
+    *errCode = ERR_IMAGE_PIXELMAP_CREATE_FAILED;
+    return nullptr;
+#else
+    IMAGE_LOGD("CreatePixelMapFromParcel IN");
+    auto messageSequence = FFIData::GetData<MessageSequenceImpl>(rpcId);
+    if (!messageSequence) {
+        IMAGE_LOGE("[PixelMap] rpc not exist %{public}" PRId64, rpcId);
+        *errCode = ERR_IMAGE_INVALID_PARAMETER;
+        return nullptr;
+    }
+    auto messageParcel = messageSequence->GetMessageParcel();
+    if (messageParcel == nullptr) {
+        IMAGE_LOGE("get pacel failed");
+        *errCode = ERR_IPC;
+        return nullptr;
+    }
+    PIXEL_MAP_ERR error;
+    auto pixelmap = PixelMap::Unmarshalling(*messageParcel, error);
+    if (pixelmap == nullptr) {
+        *errCode = error.errorCode;
+        return nullptr;
+    }
+    std::shared_ptr<PixelMap> pixelPtr(pixelmap);
+    return pixelPtr;
+#endif
+}
+
+static FormatType TypeFormat(PixelFormat& pixelForamt)
+{
+    switch (pixelForamt) {
+        case PixelFormat::ARGB_8888:
+        case PixelFormat::RGB_565:
+        case PixelFormat::RGBA_8888:
+        case PixelFormat::BGRA_8888:
+        case PixelFormat::RGB_888:
+        case PixelFormat::RGBA_F16:
+        case PixelFormat::RGBA_1010102: {
+            return FormatType::RGB;
+        }
+        case PixelFormat::NV21:
+        case PixelFormat::NV12:
+        case PixelFormat::YCBCR_P010:
+        case PixelFormat::YCRCB_P010: {
+            return FormatType::YUV;
+        }
+        case PixelFormat::ASTC_4x4: {
+            return FormatType::ASTC;
+        }
+        default:
+            return FormatType::UNKNOWN;
+    }
+}
+
+uint32_t PixelMapImpl::ConvertPixelMapFormat(PixelFormat destFormat)
+{
+    if (real_ == nullptr) {
+        IMAGE_LOGE("pixelmap is nullptr");
+        return ERR_IMAGE_PIXELMAP_CREATE_FAILED;
+    }
+    if (TypeFormat(destFormat) == FormatType::UNKNOWN) {
+        IMAGE_LOGE("dstFormat is not support or invalid");
+        return ERR_IMAGE_INVALID_PARAMETER;
+    }
+    FormatType srcFormatType = FormatType::UNKNOWN;
+    if (real_->GetPixelFormat() == PixelFormat::ASTC_4x4) {
+        srcFormatType = FormatType::ASTC;
+    }
+    FormatType dstFormatType = TypeFormat(destFormat);
+    uint32_t result = SUCCESS;
+    if (dstFormatType == FormatType::YUV &&
+        (srcFormatType == FormatType::UNKNOWN || srcFormatType == FormatType::RGB)) {
+        result = ImageFormatConvert::ConvertImageFormat(real_, destFormat);
+    } else if ((dstFormatType == FormatType::RGB) &&
+               (srcFormatType == FormatType::UNKNOWN || srcFormatType == FormatType::YUV)) {
+        result = ImageFormatConvert::ConvertImageFormat(real_, destFormat);
+    } else if ((dstFormatType == FormatType::RGB) && (srcFormatType == FormatType::ASTC)) {
+        result = ImageFormatConvert::ConvertImageFormat(real_, destFormat);
+    }
+    if (result == SUCCESS) {
+        ImageUtils::FlushSurfaceBuffer(const_cast<PixelMap*>(real_.get()));
+    }
+    return result;
 }
 } // namespace Media
 } // namespace OHOS

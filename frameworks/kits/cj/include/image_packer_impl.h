@@ -21,6 +21,7 @@
 #include "image_packer.h"
 #include "inttypes.h"
 #include "media_errors.h"
+#include "picture_impl.h"
 #include "pixel_map_impl.h"
 
 namespace OHOS {
@@ -31,8 +32,15 @@ public:
     ImagePackerImpl();
     std::tuple<int32_t, uint8_t*, int64_t> Packing(PixelMap& source, const PackOption& option, uint64_t bufferSize);
     std::tuple<int32_t, uint8_t*, int64_t> Packing(ImageSource& source, const PackOption& option, uint64_t bufferSize);
-    uint32_t PackToFile(PixelMap& source, int fd, const PackOption& option);
-    uint32_t PackToFile(ImageSource& source, int fd, const PackOption& option);
+    std::tuple<int32_t, uint8_t*, int64_t> PackToData(
+        std::shared_ptr<PixelMap> source, const PackOption& option, uint64_t bufferSize);
+    std::tuple<int32_t, uint8_t*, int64_t> PackToData(
+        std::shared_ptr<ImageSource> source, const PackOption& option, uint64_t bufferSize);
+    std::tuple<int32_t, uint8_t*, int64_t> PackToData(
+        std::shared_ptr<Picture> source, const PackOption& option, uint64_t bufferSize);
+    uint32_t PackToFile(std::shared_ptr<PixelMap> source, int fd, const PackOption& option);
+    uint32_t PackToFile(std::shared_ptr<ImageSource> source, int fd, const PackOption& option);
+    uint32_t PackToFile(std::shared_ptr<Picture> source, int fd, const PackOption& option);
     std::shared_ptr<ImagePacker> GetImagePacker();
 
     void Release()
@@ -83,36 +91,6 @@ public:
         IMAGE_LOGD("packedSize=%{public}" PRId64, packedSize);
 
         return std::make_tuple(SUCCESS_CODE, resultBuffer, packedSize);
-    }
-
-    template<typename T>
-    uint32_t CommonPackToFile(T& source, int fd, const PackOption& option)
-    {
-        if (real_ == nullptr) {
-            IMAGE_LOGE("Packing failed, real_ is nullptr");
-            return ERR_IMAGE_INIT_ABNORMAL;
-        }
-
-        uint32_t packingRet = real_->StartPacking(fd, option);
-        if (packingRet != SUCCESS) {
-            IMAGE_LOGE("Packing failed, StartPacking failed, ret=%{public}u.", packingRet);
-            return packingRet;
-        }
-
-        uint32_t addImageRet = real_->AddImage(source);
-        if (addImageRet != SUCCESS) {
-            IMAGE_LOGE("Packing failed, AddImage failed, ret=%{public}u.", addImageRet);
-            return addImageRet;
-        }
-
-        int64_t packedSize = 0;
-        uint32_t finalPackRet = real_->FinalizePacking(packedSize);
-        if (finalPackRet != SUCCESS) {
-            IMAGE_LOGE("Packing failed, FinalizePacking failed, ret=%{public}u.", finalPackRet);
-            return finalPackRet;
-        }
-        IMAGE_LOGD("packedSize=%{public}" PRId64, packedSize);
-        return SUCCESS;
     }
 
 private:

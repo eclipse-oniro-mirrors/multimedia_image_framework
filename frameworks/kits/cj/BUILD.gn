@@ -45,38 +45,39 @@ ohos_shared_library("cj_image_ffi") {
     defines = []
   }
 
-  if (!ohos_indep_compiler_enable && !build_ohos_sdk &&
-      product_name != "qemu-arm-linux-min" &&
-      product_name != "rk3568_mini_system") {
-    deps = [
-      "$image_subsystem/frameworks/innerkitsimpl/pixelconverter:pixelconvertadapter",
-      "$image_subsystem/frameworks/innerkitsimpl/utils:image_utils",
-      "$image_subsystem/interfaces/innerkits:image_native",
-      "$image_subsystem/interfaces/kits/js/common:image",
-    ]
-    external_deps = [
-      "c_utils:utils",
-      "graphic_2d:cj_color_manager_ffi",
-      "hilog:libhilog",
-      "hitrace:hitrace_meter",
-      "ipc:ipc_napi",
-      "napi:ace_napi",
-      "napi:cj_bind_ffi",
-      "napi:cj_bind_native",
-    ]
-    sources = [
-      "src/image_creator_impl.cpp",
-      "src/image_ffi.cpp",
-      "src/image_impl.cpp",
-      "src/image_packer_impl.cpp",
-      "src/image_receiver_impl.cpp",
-      "src/image_source_impl.cpp",
-      "src/pixel_map_impl.cpp",
-    ]
-  } else {
-    defines += [ "PREVIEWER" ]
-    sources = [ "src/cj_image_mock.cpp" ]
-  }
+  deps = [
+    "$image_subsystem/frameworks/innerkitsimpl/egl_image:egl_image",
+    "$image_subsystem/frameworks/innerkitsimpl/pixelconverter:pixelconvertadapter",
+    "$image_subsystem/frameworks/innerkitsimpl/utils:image_utils",
+    "$image_subsystem/interfaces/innerkits:image_native",
+    "$image_subsystem/interfaces/kits/js/common:image",
+  ]
+  external_deps = [
+    "c_utils:utils",
+    "graphic_2d:cj_color_manager_ffi",
+    "graphic_2d:EGL",
+    "graphic_2d:librender_service_base",
+    "graphic_2d:librender_service_client",
+    "graphic_surface:surface",
+    "graphic_surface:sync_fence",
+    "hilog:libhilog",
+    "ipc:cj_ipc_ffi",
+    "napi:ace_napi",
+    "napi:cj_bind_ffi",
+    "napi:cj_bind_native",
+  ]
+  sources = [
+    "src/image_creator_impl.cpp",
+    "src/image_ffi.cpp",
+    "src/image_impl.cpp",
+    "src/image_packer_impl.cpp",
+    "src/image_pixel_map_ffi.cpp",
+    "src/image_receiver_impl.cpp",
+    "src/image_source_impl.cpp",
+    "src/metadata_impl.cpp",
+    "src/picture_impl.cpp",
+    "src/pixel_map_impl.cpp",
+  ]
 
   if (is_ohos) {
     defines += [ "OHOS_PLATFORM" ]
