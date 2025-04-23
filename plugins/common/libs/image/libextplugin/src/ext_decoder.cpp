@@ -64,6 +64,9 @@
 #include "include/core/SkBitmap.h"
 #include "include/core/SkCanvas.h"
 #include "include/core/SkImage.h"
+#ifdef USE_M133_SKIA
+#include "include/codec/SkCodecAnimation.h"
+#endif
 
 #if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
 #define DMA_BUF_SET_TYPE _IOW(DMA_BUF_BASE, 2, const char *)
@@ -1935,9 +1938,15 @@ OHOS::ColorManager::ColorSpace ExtDecoder::GetSrcColorSpace()
             GetColorSpaceName(profile, name);
         }
         if (profile != nullptr && profile->has_CICP) {
+#ifdef USE_M133_SKIA
+            ColorManager::ColorSpaceName cName = Media::ColorUtils::CicpToColorSpace(profile->CICP.color_primaries,
+                profile->CICP.transfer_characteristics, profile->CICP.matrix_coefficients,
+                profile->CICP.video_full_range_flag);
+#else
             ColorManager::ColorSpaceName cName = Media::ColorUtils::CicpToColorSpace(profile->cicp.colour_primaries,
                 profile->cicp.transfer_characteristics, profile->cicp.matrix_coefficients,
                 profile->cicp.full_range_flag);
+#endif
             if (cName != ColorManager::NONE) {
                 return ColorManager::ColorSpace(cName);
             }

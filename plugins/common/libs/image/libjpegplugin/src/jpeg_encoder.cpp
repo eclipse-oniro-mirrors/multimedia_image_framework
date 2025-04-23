@@ -24,7 +24,11 @@
 #include "jerror.h"
 #include "media_errors.h"
 #include "pixel_convert.h"
+#ifdef USE_M133_SKIA
+#include "src/encode/SkImageEncoderFns.h"
+#else
 #include "src/images/SkImageEncoderFns.h"
+#endif
 
 #undef LOG_DOMAIN
 #define LOG_DOMAIN LOG_TAG_DOMAIN_ID_PLUGIN

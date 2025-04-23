@@ -178,7 +178,11 @@ void PixelMapGlContext::MakeCurrent(EGLSurface surface) const
 
 bool PixelMapGlContext::InitGrContext()
 {
+#ifdef USE_M133_SKIA
+    sk_sp<const GrGLInterface> glInterface(GrGLMakeNativeInterface());
+#else
     sk_sp<const GrGLInterface> glInterface(GrGLCreateNativeInterface());
+#endif
     if (glInterface == nullptr) {
         IMAGE_LOGE("SetUpGrContext failed to make native interface");
         return false;
@@ -188,7 +192,11 @@ bool PixelMapGlContext::InitGrContext()
     options.fGpuPathRenderers &= ~GpuPathRenderers::kCoverageCounting;
     options.fPreferExternalImagesOverES3 = true;
     options.fDisableDistanceFieldPaths = true;
+#ifdef USE_M133_SKIA
+    grContext_ = GrDirectContexts::MakeGL(std::move(glInterface), options);
+#else
     grContext_ = GrDirectContext::MakeGL(std::move(glInterface), options);
+#endif
     return grContext_ != nullptr;
 }
 

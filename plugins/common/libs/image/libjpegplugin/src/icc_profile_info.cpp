@@ -110,7 +110,11 @@ uint32_t ICCProfileInfo::PackingICCProfile(j_compress_ptr cinfo, const SkImageIn
     uint32_t packingResult = OHOS::Media::ERR_IMAGE_ENCODE_ICC_FAILED;
 
     // write colorspace to SKData
+#ifdef USE_M133_SKIA
+    sk_sp<SkData> icc = icc_from_color_space(info, nullptr, nullptr);
+#else
     sk_sp<SkData> icc = icc_from_color_space(info);
+#endif
 
     if (icc) {
         // get a contiguous block of profile memory with the icc signature

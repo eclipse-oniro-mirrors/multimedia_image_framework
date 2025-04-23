@@ -3870,9 +3870,17 @@ bool PixelMap::DoTranslation(TransInfos &infos, const AntiAliasingOption &option
     }
     canvas.concat(infos.matrix);
     src.bitmap.setImmutable();
+#ifdef USE_M133_SKIA
+    auto skimage = SkImages::RasterFromBitmap(src.bitmap);
+#else
     auto skimage = SkImage::MakeFromBitmap(src.bitmap);
+#endif
     if (skimage == nullptr) {
+#ifdef USE_M133_SKIA
+        IMAGE_LOGE("RasterFromBitmap failed with nullptr");
+#else
         IMAGE_LOGE("MakeFromBitmap failed with nullptr");
+#endif
         dstMemory.memory->Release();
         this->errorCode = IMAGE_RESULT_TRANSFORM;
         return false;

@@ -79,7 +79,9 @@ ohos_shared_library("rawplugin") {
       "skia:skia_canvaskit",
     ]
   }
-
+  if (use_new_skia) {
+    defines += [ "USE_M133_SKIA" ]
+  }
   innerapi_tags = [ "platformsdk" ]
   part_name = "image_framework"
   subsystem_name = "multimedia"

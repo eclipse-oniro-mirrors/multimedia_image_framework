@@ -17,8 +17,15 @@
 #include <algorithm>
 #include <map>
 
+#ifdef USE_M133_SKIA
+#include "include/encode/SkJpegEncoder.h"
+#include "include/encode/SkPngEncoder.h"
+#include "include/encode/SkWebpEncoder.h"
+#include "src/encode/SkImageEncoderFns.h"
+#else
 #include "include/core/SkImageEncoder.h"
 #include "src/images/SkImageEncoderFns.h"
+#endif
 #include "include/core/SkBitmap.h"
 #include "pixel_yuv_utils.h"
 #ifdef IMAGE_COLORSPACE_FLAG
@@ -122,6 +129,8 @@ namespace {
     constexpr uint32_t LINEAR_MAP_BYTES = sizeof(short) * 3 / 2; // 16bit yuv420
     constexpr uint32_t PLACE_HOLDER_LENGTH = 1;
     constexpr uint32_t LOW_QUALITY_BOUNDARY = 85;
+    constexpr uint32_t HIGHEST_QUALITY = 100;
+    constexpr uint32_t DEFAULT_QUALITY = 75;
 
     // exif/0/0
     constexpr uint8_t EXIF_PRE_TAG[EXIF_PRE_SIZE] = {
@@ -566,6 +575,52 @@ uint32_t ExtEncoder::DoHardWareEncode(SkWStream* skStream)
     return ERR_IMAGE_ENCODE_FAILED;
 }
 
+#ifdef USE_M133_SKIA
+bool ExtEncoder::SkEncodeImage(SkWStream* dst, const SkBitmap& src, SkEncodedImageFormat format, int quality)
+{
+    SkPixmap pixmap;
+    if (!src.peekPixels(&pixmap)) {
+        return false;
+    }
+    switch (format) {
+        case SkEncodedImageFormat::kJPEG: {
+            SkJpegEncoder::Options opts;
+            opts.fQuality = quality;
+            return SkJpegEncoder::Encode(dst, pixmap, opts);
+        }
+        case SkEncodedImageFormat::kPNG: {
+            SkPngEncoder::Options opts;
+            return SkPngEncoder::Encode(dst, pixmap, opts);
+        }
+        case SkEncodedImageFormat::kWEBP: {
+            SkWebpEncoder::Options opts;
+            if (quality == HIGHEST_QUALITY) {
+                opts.fCompression = SkWebpEncoder::Compression::kLossless;
+                // Note: SkEncodeImage treats 0 quality as the lowest quality
+                // (greatest compression) and 100 as the highest quality (least
+                // compression). For kLossy, this matches libwebp's
+                // interpretation, so it is passed directly to libwebp. But
+                // with kLossless, libwebp always creates the highest quality
+                // image. In this case, fQuality is reinterpreted as how much
+                // effort (time) to put into making a smaller file. This API
+                // does not provide a way to specify this value (though it can
+                // be specified by using SkWebpEncoder::Encode) so we have to
+                // pick one arbitrarily. This value matches that chosen by
+                // blink::ImageEncoder::ComputeWebpOptions as well
+                // WebPConfigInit.
+                opts.fQuality = DEFAULT_QUALITY;
+            } else {
+                opts.fCompression = SkWebpEncoder::Compression::kLossy;
+                opts.fQuality = quality;
+            }
+            return SkWebpEncoder::Encode(dst, pixmap, opts);
+        }
+        default:
+            return false;
+    }
+}
+#endif
+
 uint32_t ExtEncoder::DoEncode(SkWStream* skStream, const SkBitmap& src, const SkEncodedImageFormat& skFormat)
 {
     ImageFuncTimer imageFuncTimer("%s:(%d, %d)", __func__, pixelmap_->GetWidth(), pixelmap_->GetHeight());
@@ -941,7 +996,11 @@ static SkImageInfo GetSkInfo(PixelMap* pixelMap, bool isGainmap, bool isSRGB = f
         }
         skcms_CICP cicp;
         ColorUtils::ColorSpaceGetCicp(pixelMap->InnerGetGrColorSpace().GetColorSpaceName(),
+#ifdef USE_M133_SKIA
+            cicp.color_primaries, cicp.transfer_characteristics, cicp.matrix_coefficients, cicp.video_full_range_flag);
+#else
             cicp.colour_primaries, cicp.transfer_characteristics, cicp.matrix_coefficients, cicp.full_range_flag);
+#endif
         colorSpace->SetIccCicp(cicp);
 #endif
     }

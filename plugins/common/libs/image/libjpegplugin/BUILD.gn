@@ -97,7 +97,9 @@ ohos_shared_library("jpegplugin") {
         "//third_party/skia/third_party/externals/libjpeg-turbo",
       ]
     }
-
+    if (use_new_skia) {
+      defines += [ "USE_M133_SKIA" ]
+    }
     external_deps = [
       "c_utils:utils",
       "graphic_2d:color_manager",

@@ -24,11 +24,16 @@
 #include "include/core/SkData.h"
 #include "include/core/SkColorSpace.h"
 #include "include/core/SkImageInfo.h"
-#include "include/third_party/skcms/skcms.h"
 #include "jpeg_utils.h"
 #include "jpeglib.h"
 #include "media_errors.h"
+#ifdef USE_M133_SKIA
+#include "modules/skcms/skcms.h"
+#include "src/encode/SkImageEncoderFns.h"
+#else
+#include "include/third_party/skcms/skcms.h"
 #include "src/images/SkImageEncoderFns.h"
+#endif
 namespace OHOS {
 namespace ImagePlugin {
 /*
