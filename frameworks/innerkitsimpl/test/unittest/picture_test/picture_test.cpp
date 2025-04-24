@@ -731,5 +731,43 @@ HWTEST_F(PictureTest, SetMaintenanceDataTest001, TestSize.Level3)
     EXPECT_EQ(isSetMaintenanceData, false);
 }
 
+/**
+ * @tc.name: dropAuxiliaryPictureTest001
+ * @tc.desc: Verify whether the auxiliary picture set is successfully deleted based on the stored type.
+ * @tc.type: FUNC
+ */
+HWTEST_F(PictureTest, dropAuxiliaryPictureTest001, TestSize.Level1)
+{
+    std::unique_ptr<Picture> picture = CreatePicture();
+    std::shared_ptr<AuxiliaryPicture> auxiliaryPictureGainmap = CreateAuxiliaryPicture(AuxiliaryPictureType::GAINMAP);
+    std::shared_ptr<AuxiliaryPicture> auxiliaryPictureFragment =
+        CreateAuxiliaryPicture(AuxiliaryPictureType::FRAGMENT_MAP);
+    picture->SetAuxiliaryPicture(auxiliaryPictureGainmap);
+    picture->SetAuxiliaryPicture(auxiliaryPictureFragment);
+
+    picture->DropAuxiliaryPicture(AuxiliaryPictureType::FRAGMENT_MAP);
+    EXPECT_TRUE(picture->HasAuxiliaryPicture(AuxiliaryPictureType::GAINMAP));
+    EXPECT_FALSE(picture->HasAuxiliaryPicture(AuxiliaryPictureType::FRAGMENT_MAP));
+}
+
+/**
+ * @tc.name: dropAuxiliaryPictureTest002
+ * @tc.desc: Verify whether the auxiliary picture set is successfully deleted based on the unstored type.
+ * @tc.type: FUNC
+ */
+HWTEST_F(PictureTest, dropAuxiliaryPictureTest002, TestSize.Level1)
+{
+    std::unique_ptr<Picture> picture = CreatePicture();
+    std::shared_ptr<AuxiliaryPicture> auxiliaryPictureGainmap = CreateAuxiliaryPicture(AuxiliaryPictureType::GAINMAP);
+    std::shared_ptr<AuxiliaryPicture> auxiliaryPictureFragment =
+        CreateAuxiliaryPicture(AuxiliaryPictureType::FRAGMENT_MAP);
+    picture->SetAuxiliaryPicture(auxiliaryPictureGainmap);
+    picture->SetAuxiliaryPicture(auxiliaryPictureFragment);
+
+    picture->DropAuxiliaryPicture(AuxiliaryPictureType::DEPTH_MAP);
+    EXPECT_TRUE(picture->HasAuxiliaryPicture(AuxiliaryPictureType::GAINMAP));
+    EXPECT_TRUE(picture->HasAuxiliaryPicture(AuxiliaryPictureType::FRAGMENT_MAP));
+}
+
 } // namespace Media
 } // namespace OHOS

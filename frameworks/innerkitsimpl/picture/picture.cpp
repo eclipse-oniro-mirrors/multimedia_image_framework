@@ -478,6 +478,16 @@ bool Picture::HasAuxiliaryPicture(AuxiliaryPictureType type)
     return item != auxiliaryPictures_.end() && item->second != nullptr;
 }
 
+void Picture::DropAuxiliaryPicture(AuxiliaryPictureType type)
+{
+    auto it = auxiliaryPictures_.find(type);
+    if (it != auxiliaryPictures_.end()) {
+        auxiliaryPictures_.erase(it);
+    } else {
+        IMAGE_LOGE("Failed to drop auxiliary picture.");
+    }
+}
+
 bool Picture::Marshalling(Parcel &data) const
 {
     if (!mainPixelMap_) {
