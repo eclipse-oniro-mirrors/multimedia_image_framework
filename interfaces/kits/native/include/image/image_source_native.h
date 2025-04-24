@@ -374,6 +374,30 @@ Image_ErrorCode OH_DecodingOptions_SetDesiredDynamicRange(OH_DecodingOptions *op
     int32_t desiredDynamicRange);
 
 /**
+ * @brief Gets desired color space for decoding options.
+ *
+ * @param options Pointer to the decoding options.
+ * @param colorSpace desired color space, {@link ColorSpaceName}.
+ * @return Returns one of the following result codes:
+ * {@link IMAGE_SUCCESS}: The execution is successful.
+ * {@link IMAGE_SOURCE_INVALID_PARAMETER}: options or colorSpace is a null pointer.
+ * @since 20
+ */
+Image_ErrorCode OH_DecodingOptions_GetDesiredColorSpace(OH_DecodingOptions *options, int32_t *colorSpace);
+
+/**
+ * @brief Sets desired color space for decoding options.
+ *
+ * @param options Pointer to the decoding options.
+ * @param colorSpace desired color space, {@link ColorSpaceName}.
+ * @return Returns one of the following result codes:
+ * {@link IMAGE_SUCCESS}: The execution is successful.
+ * {@link IMAGE_SOURCE_INVALID_PARAMETER}: options is a null pointer or colorSpace is not supported.
+ * @since 20
+ */
+Image_ErrorCode OH_DecodingOptions_SetDesiredColorSpace(OH_DecodingOptions *options, int32_t colorSpace);
+
+/**
  * @brief delete DecodingOptions pointer.
  *
  * @param  options The DecodingOptions pointer will be operated.

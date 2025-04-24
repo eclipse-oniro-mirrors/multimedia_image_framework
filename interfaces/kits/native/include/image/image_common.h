@@ -190,6 +190,8 @@ typedef enum {
     IMAGE_SOURCE_UNSUPPORTED_ALLOCATOR_TYPE = 7700201,
     /** unsupported options */
     IMAGE_SOURCE_UNSUPPORTED_OPTIONS = 7700203,
+    /** invalid parameter */
+    IMAGE_SOURCE_INVALID_PARAMETER = 7700204,
     /** decode failed */
     IMAGE_DECODE_FAILED = 7700301,
     /** memory allocation failed */
