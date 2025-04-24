@@ -421,10 +421,21 @@ struct MaintenanceData {
     MaintenanceData(std::shared_ptr<uint8_t[]> data, size_t size) : data_(data), size_(size) {}
 };
 
+enum class YuvConversion : int {
+    BT601 = 0,
+    BT709 = 1,
+    BT2020 = 2,
+    BT240 = 3,
+    BTFCC = 4,
+    BT_MAX,
+};
+
 struct YUVConvertColorSpaceDetails {
     // Range: 0 means limit range, 1 means full range.
     uint8_t srcRange = 0;
     uint8_t dstRange = 0;
+    YuvConversion srcYuvConversion = YuvConversion::BT601;
+    YuvConversion dstYuvConversion = YuvConversion::BT601;
 };
 } // namespace Media
 } // namespace OHOS

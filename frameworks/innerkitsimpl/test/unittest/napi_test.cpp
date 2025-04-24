@@ -216,6 +216,8 @@ HWTEST_F(NapiTest, NapiTest0012, TestSize.Level3)
     ImageSourceNapi napi;
     std::shared_ptr<IncrementalPixelMap> incrementalPixelMap = nullptr;
     napi.SetIncrementalPixelMap(incrementalPixelMap);
+    std::shared_ptr<IncrementalPixelMap> ret = napi.GetIncrementalPixelMap();
+    ASSERT_EQ(ret, nullptr);
 
     GTEST_LOG_(INFO) << "NapiTest: NapiTest0012 end";
 }
@@ -231,6 +233,7 @@ HWTEST_F(NapiTest, NapiTest0013, TestSize.Level3)
     ImageSourceNapi napi;
     std::shared_ptr<ImageSource> imageSource = nullptr;
     napi.SetNativeImageSource(imageSource);
+    ASSERT_EQ(napi.nativeImgSrc, nullptr);
 
     GTEST_LOG_(INFO) << "NapiTest: NapiTest0013 end";
 }
@@ -246,6 +249,8 @@ HWTEST_F(NapiTest, NapiTest0014, TestSize.Level3)
     ImageSourceNapi napi;
     ImageResource resource;
     napi.SetImageResource(resource);
+    ImageResource ret = napi.GetImageResource();
+    ASSERT_EQ(ret.buffer, nullptr);
 
     GTEST_LOG_(INFO) << "NapiTest: NapiTest0014 end";
 }

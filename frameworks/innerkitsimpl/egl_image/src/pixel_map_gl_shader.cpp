@@ -35,7 +35,7 @@ namespace PixelMapGlShader {
 using namespace GlCommon;
 const int MAX_SLR_WIN_SIZE = 12;
 std::string g_shaderPath = "/data/storage/el1/base/";
-static int g_shaderVersion = 2;
+static int g_shaderVersion = 3;
 const std::string &g_rotateFilePath = g_shaderPath + "pixelMapRotate.shader";
 unsigned char *RotateShader::shaderBinary_ = nullptr;
 GLenum RotateShader::binaryFormat_ = 0;
@@ -490,6 +490,16 @@ bool RotateShader::LoadProgram()
     return true;
 }
 
+bool IsOddMultipleOf90(float degree)
+{
+    const float ratio = degree / 90.0f;
+    const int rounded = static_cast<int>(std::round(ratio));
+    if (std::abs(ratio - rounded) > 1e-6f) {
+        return false;
+    }
+    return (std::abs(rounded) % NUM_2) == 1;
+}
+
 bool RotateShader::Use()
 {
     ImageTrace imageTrace("RotateShader::Use");
@@ -504,9 +514,9 @@ bool RotateShader::Use()
     glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, writeTexId_, 0); //绑定
     glClearColor(0, 1, 0, 0);
     glClear(GL_COLOR_BUFFER_BIT);
-    uint32_t calculationTargetHeight =  rotateDegreeZ_ !=0 ?
+    uint32_t calculationTargetHeight = IsOddMultipleOf90(rotateDegreeZ_) ?
         static_cast<uint32_t>(targetSize_.width) : static_cast<uint32_t>(targetSize_.height);
-    uint32_t calculationTargetWidth =  rotateDegreeZ_ !=0 ?
+    uint32_t calculationTargetWidth = IsOddMultipleOf90(rotateDegreeZ_) ?
         static_cast<uint32_t>(targetSize_.height) : static_cast<uint32_t>(targetSize_.width);
     float clipRatioX = sourceSize_.width > sourceSize_.height ?
         (sourceSize_.height * 1.0f / calculationTargetHeight) * calculationTargetWidth / sourceSize_.width : 1;
@@ -584,6 +594,7 @@ bool SLRShader::Build()
         out vec4 FragColor;
         void main()
         {
+            ivec2 tex_size = textureSize(utexture, 0);
             vec2 eta = (gl_FragCoord.xy + vec2(0.5)) * slr_coeff_tao  - vec2(0.5);
             ivec2 eta_c = ivec2(floor(eta.x), floor(eta.y));
             ivec2 coord_s = ivec2(eta_c.x - slr_a.x + 1, eta_c.y - slr_a.y + 1);
@@ -593,7 +604,8 @@ bool SLRShader::Build()
                 vec4 t = vec4(0, 0, 0, 0);
                 for (int j = 0; j < slr_max.x; j++) {
                     float w_j = texelFetch(utexturew, ivec2(j, gl_FragCoord.x), 0).r;
-                    t += w_j * texelFetch(utexture, coord_s + ivec2(j, i), 0);
+                    ivec2 coord = clamp(coord_s + ivec2(j, i), ivec2(0), tex_size - ivec2(1));
+                    t += w_j * texelFetch(utexture, coord, 0);
                 }
                 color += t * w_i;
             }

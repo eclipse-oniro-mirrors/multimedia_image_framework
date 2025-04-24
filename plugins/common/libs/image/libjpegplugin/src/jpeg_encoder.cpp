@@ -270,6 +270,10 @@ void JpegEncoder::SetYuv420spExtraConfig()
 
 uint32_t JpegEncoder::Yuv420spEncoder(const uint8_t *data)
 {
+    if (setjmp(jerr_.setjmp_buffer)) {
+        IMAGE_LOGE("encode image error.");
+        return ERR_IMAGE_ENCODE_FAILED;
+    }
     SetYuv420spExtraConfig();
     jpeg_start_compress(&encodeInfo_, TRUE);
     JSAMPROW y[Y_SAMPLE_ROW];

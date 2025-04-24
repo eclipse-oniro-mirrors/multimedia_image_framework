@@ -30,6 +30,10 @@ static constexpr int32_t RECEIVER_TEST_WIDTH = 8192;
 static constexpr int32_t RECEIVER_TEST_HEIGHT = 8;
 static constexpr int32_t RECEIVER_TEST_CAPACITY = 8;
 static constexpr int32_t RECEIVER_TEST_FORMAT = 4;
+static constexpr int32_t ROWSTRIDE = 2;
+static constexpr int32_t WIDTH = 10;
+static constexpr int32_t SIZE_WIDTH = 100;
+static constexpr int32_t SIZE_HEIGHT = 100;
 class NativeImageTest : public testing::Test {
 public:
     NativeImageTest() {}
@@ -469,6 +473,28 @@ HWTEST_F(NativeImageTest, CheckParamsTest001, TestSize.Level3)
     ret = pixelmap.CheckParams(&colors, colorLength, offset, width, opts);
     ASSERT_EQ(ret, false);
     GTEST_LOG_(INFO) << "NativeImageTest: CheckParamsTest001 end";
+}
+
+/**
+ * @tc.name: CheckParamsTest002
+ * @tc.desc: Verify CheckParams returns false with invalid input params.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeImageTest, CheckParamsTest002, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "NativeImageTest: CheckParamsTest002 start";
+    PixelMap pixelmap;
+    uint32_t colors = 1;
+    uint32_t colorLength = 1;
+    int32_t offset = 0;
+    int32_t width = WIDTH;
+    InitializationOptions opts;
+    opts.size.width = SIZE_WIDTH;
+    opts.size.height = SIZE_HEIGHT;
+    opts.srcRowStride = ROWSTRIDE;
+    bool ret = pixelmap.CheckParams(&colors, colorLength, offset, width, opts);
+    EXPECT_FALSE(ret);
+    GTEST_LOG_(INFO) << "NativeImageTest: CheckParamsTest002 end";
 }
 
 /**

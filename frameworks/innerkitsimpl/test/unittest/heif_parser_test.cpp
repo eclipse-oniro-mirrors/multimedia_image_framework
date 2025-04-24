@@ -218,7 +218,9 @@ HWTEST_F(HeifParserTest, HeifImageTest001, TestSize.Level3)
 {
     GTEST_LOG_(INFO) << "HeifParserTest: HeifImageTest001 start";
     HeifImage heifImage(3);
-    heifImage.IsPrimaryImage();
+    heifImage.SetPrimaryImage(true);
+    bool ret = heifImage.IsPrimaryImage();
+    ASSERT_EQ(ret, true);
     heifImage.GetMirrorDirection();
     heifImage.SetMirrorDirection(HeifTransformMirrorDirection::VERTICAL);
     heifImage.IsResolutionReverse();
@@ -246,6 +248,7 @@ HWTEST_F(HeifParserTest, WriteTest003, TestSize.Level3)
     HeifStreamWriter write;
     heifParser.ilocBox_ = std::make_shared<HeifIlocBox>();
     heifParser.Write(write);
+    ASSERT_EQ(heifParser.ilocBox_->WriteMdatBox(write), heif_error_ok);
     GTEST_LOG_(INFO) << "HeifParserTest: WriteTest003 end";
 }
 
@@ -326,6 +329,7 @@ HWTEST_F(HeifParserTest, GetTileImagesTest001, TestSize.Level3)
     heif_item_id gridItemId = 0;
     std::vector<std::shared_ptr<HeifImage>> out;
     heifParser.infeBoxes_.clear();
+    ASSERT_EQ(heifParser.GetInfeBox(gridItemId), nullptr);
     heifParser.GetTileImages(gridItemId, out);
     GTEST_LOG_(INFO) << "HeifParserTest: GetTileImagesTest001 end";
 }
@@ -347,6 +351,7 @@ HWTEST_F(HeifParserTest, ExtractDerivedImagePropertiesTest001, TestSize.Level3)
     heifParser.irefBox_ = std::make_shared<HeifIrefBox>();
     struct HeifIrefBox::Reference ref {.fromItemId = 1};
     heifParser.irefBox_->references_.push_back(ref);
+    ASSERT_NE(heifParser.irefBox_->references_.size(), 0);
     heifParser.ExtractDerivedImageProperties();
     GTEST_LOG_(INFO) << "HeifParserTest: ExtractDerivedImagePropertiesTest001 end";
 }
@@ -426,7 +431,8 @@ HWTEST_F(HeifParserTest, HeifParserTest001, TestSize.Level3)
     heifParser.idatBox_ = std::make_shared<HeifIdatBox>();
     std::shared_ptr<HeifBox> property = std::make_shared<HeifBox>(0);
     std::string type;
-    heifParser.GetNextItemId();
+    heif_item_id ret = heifParser.GetNextItemId();
+    ASSERT_EQ(ret, 1);
     heifParser.AddIspeProperty(0, 0, 0);
     heifParser.AddProperty(0, property, false);
     heifParser.AddPixiProperty(0, 0, 0, 0);
@@ -473,6 +479,7 @@ HWTEST_F(HeifParserTest, HeifParserTest003, TestSize.Level3)
     heifParser.pitmBox_ = nullptr;
     heifParser.irefBox_ = nullptr;
     heifParser.metaBox_ = std::make_shared<HeifMetaBox>();
+    ASSERT_NE(heifParser.metaBox_, nullptr);
     heifParser.AppendIlocData(itemId, data, construction_method);
     heifParser.SetPrimaryItemId(itemId);
     heifParser.AddReference(fromItemId, type, toItemIds);

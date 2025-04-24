@@ -28,6 +28,9 @@ using namespace OHOS::Media;
 using namespace OHOS::ImagePlugin;
 namespace OHOS {
 namespace Multimedia {
+static constexpr int32_t SIZE_WIDTH = 2;
+static constexpr int32_t SIZE_HEIGHT = 2;
+
 class PngDecoderTest : public testing::Test {
 public:
     PngDecoderTest() {}
@@ -679,6 +682,23 @@ HWTEST_F(PngDecoderTest, ConvertOriginalFormat, TestSize.Level3)
 }
 
 /**
+ * @tc.name: ConvertOriginalFormat002
+ * @tc.desc: Verify PNG color format conversion when pngInfoPtr is null.
+ * @tc.type: FUNC
+ */
+HWTEST_F(PngDecoderTest, ConvertOriginalFormat002, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PngDecoderTest: ConvertOriginalFormat002 start";
+    auto pngDecoder = std::make_shared<PngDecoder>();
+    ASSERT_NE(pngDecoder, nullptr);
+    png_byte destination;
+    pngDecoder->pngInfoPtr_ = nullptr;
+    pngDecoder->ConvertOriginalFormat(PNG_COLOR_TYPE_RGB, destination);
+    ASSERT_EQ(destination, PNG_COLOR_TYPE_RGB);
+    GTEST_LOG_(INFO) << "PngDecoderTest: ConvertOriginalFormat002 end";
+}
+
+/**
  * @tc.name: ProcessData001
  * @tc.desc: Test of ProcessData
  * @tc.type: FUNC
@@ -849,7 +869,8 @@ HWTEST_F(PngDecoderTest, PushCurrentToDecode003, TestSize.Level3)
     pngDecoder->SetSource(*mock.get());
     pngDecoder->incrementalLength_ = 5;
     pngDecoder->idatLength_ = 20;
-    pngDecoder->PushCurrentToDecode(mock.get());
+    uint32_t ret = pngDecoder->PushCurrentToDecode(mock.get());
+    ASSERT_EQ(ret, ERR_IMAGE_SOURCE_DATA_INCOMPLETE);
     GTEST_LOG_(INFO) << "PngDecoderTest: PushCurrentToDecode003 end";
 }
 
@@ -984,6 +1005,7 @@ HWTEST_F(PngDecoderTest, SaveRows001, TestSize.Level3)
     DataStreamBuffer readData;
     readData.inputStreamBuffer= new uint8_t;
     png_bytep row = const_cast<png_bytep>(readData.inputStreamBuffer);
+    ASSERT_EQ(pngDecoder->inputStreamPtr_, nullptr);
     png_uint_32 rowNum = 1;
     pngDecoder->SaveRows(row, rowNum);
     delete readData.inputStreamBuffer;
@@ -1003,6 +1025,7 @@ HWTEST_F(PngDecoderTest, SaveRows002, TestSize.Level3)
     DataStreamBuffer readData;
     readData.inputStreamBuffer= new uint8_t;
     png_bytep row = const_cast<png_bytep>(readData.inputStreamBuffer);
+    ASSERT_EQ(pngDecoder->inputStreamPtr_, nullptr);
     png_uint_32 rowNum = 0;
     pngDecoder->SaveRows(row, rowNum);
     delete readData.inputStreamBuffer;
@@ -1038,6 +1061,7 @@ HWTEST_F(PngDecoderTest, SaveInterlacedRows002, TestSize.Level3)
     DataStreamBuffer readData;
     readData.inputStreamBuffer= new uint8_t;
     png_bytep row = const_cast<png_bytep>(readData.inputStreamBuffer);
+    ASSERT_NE(row, nullptr);
     png_uint_32 rowNum = 1;
     int pass = 0;
     pngDecoder->SaveInterlacedRows(row, rowNum, pass);
@@ -1074,9 +1098,11 @@ HWTEST_F(PngDecoderTest, GetAllRows002, TestSize.Level3)
     auto pngDecoder = std::make_shared<PngDecoder>();
     png_structp pngPtr = png_create_read_struct(PNG_LIBPNG_VER_STRING,
         nullptr, pngDecoder->PngErrorExit, pngDecoder->PngWarning);
+    ASSERT_NE(pngPtr, nullptr);
     DataStreamBuffer readData;
     readData.inputStreamBuffer= new uint8_t;
     png_bytep row = const_cast<png_bytep>(readData.inputStreamBuffer);
+    ASSERT_NE(row, nullptr);
     png_uint_32 rowNum = 0;
     int pass = 0;
     pngDecoder->GetAllRows(pngPtr, row, rowNum, pass);
@@ -1160,6 +1186,31 @@ HWTEST_F(PngDecoderTest, ConfigInfo001, TestSize.Level3)
 }
 
 /**
+ * @tc.name: ConfigInfo002
+ * @tc.desc: Verify PNG decoder configuration with abnormal width and RGB_565 format.
+ * @tc.type: FUNC
+ */
+HWTEST_F(PngDecoderTest, ConfigInfo002, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PngDecoderTest: ConfigInfo002 start";
+    auto pngDecoder = std::make_shared<PngDecoder>();
+    ASSERT_NE(pngDecoder, nullptr);
+    NinePatchListener nine;
+    PixelDecodeOptions opts;
+    opts.desiredPixelFormat =  PixelFormat::RGB_565;
+    nine.patch_ = new PngNinePatchRes;
+    pngDecoder->idatLength_ = 1;
+    pngDecoder->pngImageInfo_.width = UINT32_MAX;
+    pngDecoder->ninePatch_.patch_ = nine.patch_;
+    uint32_t ret = pngDecoder->ConfigInfo(opts);
+    EXPECT_EQ(ret, ERR_IMAGE_DATA_ABNORMAL);
+    pngDecoder->ninePatch_.patch_ = nullptr;
+    delete nine.patch_;
+    nine.patch_ = nullptr;
+    GTEST_LOG_(INFO) << "PngDecoderTest: ConfigInfo002 end";
+}
+
+/**
  * @tc.name: DoOneTimeDecode001
  * @tc.desc: Test of DoOneTimeDecode
  * @tc.type: FUNC
@@ -1189,6 +1240,24 @@ HWTEST_F(PngDecoderTest, DoOneTimeDecode002, TestSize.Level3)
     uint32_t ret = pngDecoder->DoOneTimeDecode(context);
     ASSERT_NE(ret, ERR_IMAGE_DECODE_ABNORMAL);
     GTEST_LOG_(INFO) << "PngDecoderTest: DoOneTimeDecode002 end";
+}
+
+/**
+ * @tc.name: DoOneTimeDecode003
+ * @tc.desc: Verify one-time PNG decoding with null struct pointer and non-zero IDAT length.
+ * @tc.type: FUNC
+ */
+HWTEST_F(PngDecoderTest, DoOneTimeDecode003, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PngDecoderTest: DoOneTimeDecode003 end";
+    auto pngDecoder = std::make_shared<PngDecoder>();
+    ASSERT_NE(pngDecoder, nullptr);
+    DecodeContext context;
+    pngDecoder->pngStructPtr_ = nullptr;
+    pngDecoder->idatLength_ = 1;
+    uint32_t ret = pngDecoder->DoOneTimeDecode(context);
+    EXPECT_EQ(ret, ERR_IMAGE_DECODE_ABNORMAL);
+    GTEST_LOG_(INFO) << "PngDecoderTest: DoOneTimeDecode003 end";
 }
 
 /**
@@ -1245,10 +1314,35 @@ HWTEST_F(PngDecoderTest, DealNinePatch001, TestSize.Level3)
     auto pngDecoder = std::make_shared<PngDecoder>();
     const  PixelDecodeOptions opts;
     pngDecoder->ninePatch_.patch_ = new PngNinePatchRes;
+    ASSERT_NE(pngDecoder->ninePatch_.patch_, nullptr);
     pngDecoder->DealNinePatch(opts);
     delete pngDecoder->ninePatch_.patch_;
     pngDecoder->ninePatch_.patch_ = nullptr;
     GTEST_LOG_(INFO) << "PngDecoderTest: DealNinePatch001 end";
+}
+
+/**
+ * @tc.name: DealNinePatch002
+ * @tc.desc: Verify nine-patch PNG scaling with small original size and valid padding.
+ * @tc.type: FUNC
+ */
+HWTEST_F(PngDecoderTest, DealNinePatch002, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PngDecoderTest: DealNinePatch002 start";
+    auto pngDecoder = std::make_shared<PngDecoder>();
+    ASSERT_NE(pngDecoder, nullptr);
+    PixelDecodeOptions opts;
+    pngDecoder->ninePatch_.patch_ = new PngNinePatchRes;
+    opts.desiredSize.width = SIZE_WIDTH;
+    opts.desiredSize.height = SIZE_HEIGHT;
+    pngDecoder->pngImageInfo_.width = 1;
+    pngDecoder->pngImageInfo_.height = 1;
+    pngDecoder->ninePatch_.patch_->paddingLeft = 1;
+    pngDecoder->DealNinePatch(opts);
+    EXPECT_NE(pngDecoder->ninePatch_.patch_->paddingLeft, 0);
+    delete pngDecoder->ninePatch_.patch_;
+    pngDecoder->ninePatch_.patch_ = nullptr;
+    GTEST_LOG_(INFO) << "PngDecoderTest: DealNinePatch002 end";
 }
 
 /**
@@ -1415,6 +1509,7 @@ HWTEST_F(PngDecoderTest, SaveInterlacedRows003, TestSize.Level3)
     auto pngDecoder = std::make_shared<PngDecoder>();
     DataStreamBuffer readData;
     png_bytep row = const_cast<png_bytep>(readData.inputStreamBuffer);
+    ASSERT_EQ(row, nullptr);
     png_uint_32 rowNum = 0;
     int pass = 0;
     pngDecoder->SaveInterlacedRows(row, rowNum, pass);

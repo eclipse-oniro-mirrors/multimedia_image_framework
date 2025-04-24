@@ -1211,7 +1211,7 @@ napi_value ImagePackerNapi::GetImagePackerSupportedFormats(napi_env env, napi_ca
     napi_get_undefined(env, &result);
     std::set<std::string> formats;
     uint32_t ret = ImagePacker::GetSupportedFormats(formats);
-    IMG_NAPI_CHECK_RET_D((ret == SUCCESS), nullptr, IMAGE_LOGE("Fail to get encode supported formats"));
+    IMG_NAPI_CHECK_RET_D((ret == SUCCESS), result, IMAGE_LOGE("Fail to get encode supported formats"));
     napi_create_array(env, &result);
     size_t count = 0;
     for (const std::string& formatStr: formats) {

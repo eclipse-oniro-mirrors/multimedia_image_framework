@@ -112,15 +112,35 @@ HWTEST_F(ColorUtilsTest, ColorSpaceGetCicpTest001, TestSize.Level3)
     uint16_t matrix = 0;
     uint8_t range = 0;
     ColorUtils::ColorSpaceGetCicp(ColorManager::ColorSpaceName::SRGB, primaries, transfer, matrix, range);
+    ASSERT_EQ(primaries, CICP_COLORPRIMARIES_SRGB);
+    primaries = 0;
     ColorUtils::ColorSpaceGetCicp(ColorManager::ColorSpaceName::SRGB_LIMIT, primaries, transfer, matrix, range);
+    ASSERT_EQ(primaries, CICP_COLORPRIMARIES_SRGB);
+    primaries = 0;
     ColorUtils::ColorSpaceGetCicp(ColorManager::ColorSpaceName::DISPLAY_P3, primaries, transfer, matrix, range);
+    ASSERT_EQ(primaries, CICP_COLORPRIMARIES_P3_D65);
+    primaries = 0;
     ColorUtils::ColorSpaceGetCicp(ColorManager::ColorSpaceName::DISPLAY_P3_LIMIT, primaries, transfer, matrix, range);
+    ASSERT_EQ(primaries, CICP_COLORPRIMARIES_P3_D65);
+    primaries = 0;
     ColorUtils::ColorSpaceGetCicp(ColorManager::ColorSpaceName::DCI_P3, primaries, transfer, matrix, range);
+    ASSERT_EQ(primaries, CICP_COLORPRIMARIES_P3_D65);
+    primaries = 0;
     ColorUtils::ColorSpaceGetCicp(ColorManager::ColorSpaceName::BT2020, primaries, transfer, matrix, range);
+    ASSERT_EQ(primaries, CICP_COLORPRIMARIES_BT2020);
+    primaries = 0;
     ColorUtils::ColorSpaceGetCicp(ColorManager::ColorSpaceName::BT2020_HLG, primaries, transfer, matrix, range);
+    ASSERT_EQ(primaries, CICP_COLORPRIMARIES_BT2020);
+    primaries = 0;
     ColorUtils::ColorSpaceGetCicp(ColorManager::ColorSpaceName::BT2020_HLG_LIMIT, primaries, transfer, matrix, range);
+    ASSERT_EQ(primaries, CICP_COLORPRIMARIES_BT2020);
+    primaries = 0;
     ColorUtils::ColorSpaceGetCicp(ColorManager::ColorSpaceName::BT2020_PQ, primaries, transfer, matrix, range);
+    ASSERT_EQ(primaries, CICP_COLORPRIMARIES_BT2020);
+    primaries = 0;
     ColorUtils::ColorSpaceGetCicp(ColorManager::ColorSpaceName::BT2020_PQ_LIMIT, primaries, transfer, matrix, range);
+    ASSERT_EQ(primaries, CICP_COLORPRIMARIES_BT2020);
+    primaries = 0;
     GTEST_LOG_(INFO) << "ColorUtilsTest: ColorSpaceGetCicpTest001 end";
 }
 

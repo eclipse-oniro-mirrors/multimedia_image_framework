@@ -1260,8 +1260,6 @@ static bool ParseDecodeOptions2(napi_env env, napi_value root, DecodeOptions* op
     if (GET_INT32_BY_NAME(root, "cropAndScaleStrategy", cropAndScaleNum) && IsCropStrategyVaild(cropAndScaleNum)) {
         IMAGE_LOGI("The strategy has taken effect");
         opts->cropAndScaleStrategy = CropAndScaleStrategy(cropAndScaleNum);
-    } else {
-        IMAGE_LOGI("default cropAndScaleStrategy");
     }
 
     if (!GET_INT32_BY_NAME(root, "fitDensity", opts->fitDensity)) {
@@ -1656,7 +1654,7 @@ napi_value ImageSourceNapi::GetImageSourceSupportedFormats(napi_env env, napi_ca
     napi_get_undefined(env, &result);
     std::set<std::string> formats;
     uint32_t ret = ImageSource::GetSupportedFormats(formats);
-    IMG_NAPI_CHECK_RET_D((ret == SUCCESS), nullptr, IMAGE_LOGE("Fail to get decode supported formats"));
+    IMG_NAPI_CHECK_RET_D((ret == SUCCESS), result, IMAGE_LOGE("Fail to get decode supported formats"));
     napi_create_array(env, &result);
     size_t count = 0;
     for (const std::string& formatStr: formats) {

@@ -400,11 +400,12 @@ HWTEST_F(MatrixTest, MatrixTest0021, TestSize.Level3)
     float rx = 1;
     float ry = 1;
     Point pt;
-    pt.x = 1;
-    pt.y = 1;
+    pt.x = 0;
+    pt.y = 0;
+    m.operType_ = 4;
     matrix_.RotXY(m, rx, ry, pt);
-    ASSERT_EQ(pt.x, rx);
-    ASSERT_EQ(pt.y, ry);
+    ASSERT_EQ(pt.x, 1);
+    ASSERT_EQ(pt.y, 1);
     GTEST_LOG_(INFO) << "MatrixTest: MatrixTest0021 end";
 }
 

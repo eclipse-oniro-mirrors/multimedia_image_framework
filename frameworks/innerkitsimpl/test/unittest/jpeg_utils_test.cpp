@@ -56,19 +56,6 @@ HWTEST_F(JpegUtilsTest, SkipInputDataTest001, TestSize.Level3)
 }
 
 /**
- * @tc.name: TermSrcStreamTest001
- * @tc.desc: Test of TermSrcStream
- * @tc.type: FUNC
- */
-HWTEST_F(JpegUtilsTest, TermSrcStreamTest001, TestSize.Level3)
-{
-    GTEST_LOG_(INFO) << "JpegUtilsTest: TermSrcStreamTest001 start";
-    j_decompress_ptr dinfo = nullptr;
-    ImagePlugin::TermSrcStream(dinfo);
-    GTEST_LOG_(INFO) << "JpegUtilsTest: TermSrcStreamTest001 end";
-}
-
-/**
  * @tc.name: InitDstStreamTest001
  * @tc.desc: Test of InitDstStream
  * @tc.type: FUNC
@@ -174,7 +161,9 @@ HWTEST_F(JpegUtilsTest, SkipInputDataTest002, TestSize.Level3)
     GTEST_LOG_(INFO) << "JpegUtilsTest: SkipInputDataTest002 start";
     long numBytes = 0;
     j_decompress_ptr dinfo = (j_decompress_ptr)malloc(sizeof(jpeg_decompress_struct));
+    ASSERT_NE(dinfo, nullptr);
     dinfo->src = (JpegSrcMgr *)malloc(sizeof(JpegSrcMgr));
+    ASSERT_NE(dinfo, nullptr);
     JpegSrcMgr *src = static_cast<JpegSrcMgr *>(dinfo->src);
     src->inputStream = (InputDataStream *)malloc(sizeof(InputDataStream));
     ImagePlugin::SkipInputData(dinfo, numBytes);

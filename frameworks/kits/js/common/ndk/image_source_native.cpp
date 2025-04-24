@@ -24,6 +24,8 @@
 #include "picture_native.h"
 #include "media_errors.h"
 #include "image_log.h"
+#include "native_color_space_manager.h"
+#include "ndk_color_space.h"
 
 #ifndef _WIN32
 #include "securec.h"
@@ -69,6 +71,7 @@ struct OH_DecodingOptions {
     struct Image_Region desiredRegion;
     int32_t desiredDynamicRange = IMAGE_DYNAMIC_RANGE_SDR;
     int32_t cropAndScaleStrategy;
+    int32_t desiredColorSpace = 0;
 };
 
 struct OH_ImageSource_Info {
@@ -333,6 +336,32 @@ Image_ErrorCode OH_DecodingOptions_SetDesiredDynamicRange(OH_DecodingOptions *op
 }
 
 MIDK_EXPORT
+Image_ErrorCode OH_DecodingOptions_GetDesiredColorSpace(OH_DecodingOptions *options, int32_t *colorSpace)
+{
+    if (options == nullptr || colorSpace == nullptr) {
+        return IMAGE_SOURCE_INVALID_PARAMETER;
+    }
+    *colorSpace = options->desiredColorSpace;
+    return IMAGE_SUCCESS;
+}
+
+inline static bool IsColorSpaceInvalid(int32_t colorSpace)
+{
+    return colorSpace <= static_cast<int32_t>(ColorSpaceName::NONE) ||
+        colorSpace > static_cast<int32_t>(ColorSpaceName::LINEAR_BT2020);
+}
+
+MIDK_EXPORT
+Image_ErrorCode OH_DecodingOptions_SetDesiredColorSpace(OH_DecodingOptions *options, int32_t colorSpace)
+{
+    if (options == nullptr || IsColorSpaceInvalid(colorSpace)) {
+        return IMAGE_SOURCE_INVALID_PARAMETER;
+    }
+    options->desiredColorSpace = colorSpace;
+    return IMAGE_SUCCESS;
+}
+
+MIDK_EXPORT
 Image_ErrorCode OH_DecodingOptions_Release(OH_DecodingOptions *options)
 {
     if (options == nullptr) {
@@ -456,6 +485,15 @@ static void ParseDecodingOps(DecodeOptions &decOps, struct OH_DecodingOptions *o
     }
     if (IsCropStrategyVaild(ops->cropAndScaleStrategy)) {
         decOps.cropAndScaleStrategy = static_cast<OHOS::Media::CropAndScaleStrategy>(ops->cropAndScaleStrategy);
+    }
+    OH_NativeColorSpaceManager* colorSpaceNative =
+        OH_NativeColorSpaceManager_CreateFromName(ColorSpaceName(ops->desiredColorSpace));
+    if (colorSpaceNative != nullptr) {
+        ColorManager::ColorSpace nativeColorspace =
+            reinterpret_cast<NativeColorSpaceManager*>(colorSpaceNative)->GetInnerColorSpace();
+        decOps.desiredColorSpaceInfo = std::make_shared<OHOS::ColorManager::ColorSpace>(nativeColorspace);
+    } else {
+        IMAGE_LOGD("no colorSpace");
     }
 }
 

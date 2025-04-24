@@ -13,6 +13,7 @@
  * limitations under the License.
  */
 #define private public
+#define protected public
 #include <gtest/gtest.h>
 #include <fcntl.h>
 #include <fstream>
@@ -22,6 +23,7 @@
 #include "istream_source_stream.h"
 #include "image_type.h"
 #include "image_system_properties.h"
+#include "pixel_map.h"
 
 static const uint8_t NUM_0 = 0;
 static const uint8_t NUM_2 = 2;
@@ -34,6 +36,7 @@ constexpr int32_t RGBA_F16_BYTES = 8;
 constexpr int32_t NV21_BYTES = 2;  // Each pixel is sorted on 3/2 bytes.
 constexpr int32_t ASTC_4X4_BYTES = 1;
 constexpr uint32_t MAX_BYTE_NUM = 8;
+constexpr int MAX_DIMENSION = INT32_MAX >> 2;
 
 
 using namespace testing::ext;
@@ -531,7 +534,8 @@ HWTEST_F(ImageUtilsTest, GetLocalTimeTest001, TestSize.Level3)
     std::stringstream ss;
     int millSecondWidth = 3;
     ss << std::put_time(&tm, "%Y-%m-%d %H_%M_%S.") << std::setfill('0') << std::setw(millSecondWidth) << ms.count();
-    ImageUtils::GetLocalTime();
+    std::string ret = ImageUtils::GetLocalTime();
+    ASSERT_NE(ret, "");
     GTEST_LOG_(INFO) << "ImageUtilsTest: GetLocalTimeTest001 end";
 }
 
@@ -548,6 +552,7 @@ HWTEST_F(ImageUtilsTest, ImageUtilsTest001, TestSize.Level3)
     uint8_t* nullBytes = nullptr;
     uint8_t bytes[NUM_2] = {0x01, 0x02};
     std::vector<uint8_t> byte(128);
+    std::vector<uint8_t> byte_uint32(128);
     bool isBigEndian = true;
     ImageUtils::BytesToUint16(nullBytes, offset, size, isBigEndian);
     ImageUtils::BytesToUint32(nullBytes, offset, size, isBigEndian);
@@ -566,7 +571,8 @@ HWTEST_F(ImageUtilsTest, ImageUtilsTest001, TestSize.Level3)
     ImageUtils::BytesToInt32(bytes, offset, size, isBigEndian);
     ImageUtils::BytesToFloat(bytes, offset, size, isBigEndian);
     ImageUtils::Uint16ToBytes(0, byte, offset, isBigEndian);
-    ImageUtils::Uint32ToBytes(0, byte, offset, isBigEndian);
+    ImageUtils::Uint32ToBytes(1, byte, offset, isBigEndian);
+    ASSERT_NE(byte_uint32[0], 1);
     GTEST_LOG_(INFO) << "ImageUtilsTest: ImageUtilsTest001 end";
 }
 
@@ -634,6 +640,112 @@ HWTEST_F(ImageUtilsTest, GetRowDataSizeByPixelFormatTest001, TestSize.Level3)
     ret = ImageUtils::GetRowDataSizeByPixelFormat(width, format2);
     ASSERT_EQ(ret, 8);
     GTEST_LOG_(INFO) << "ImageUtilsTest: GetRowDataSizeByPixelFormatTest001 end";
+}
+
+/**
+ * @tc.name: IsValidImageInfoTest001
+ * @tc.desc: test IsValidImageInfo method when the size of height error
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageUtilsTest, IsValidImageInfoTest001, TestSize.Level3)
+{
+    ImageInfo info;
+    info.size.width = MAX_DIMENSION;
+    info.size.height = 0;
+
+    bool res = ImageUtils::IsValidImageInfo(info);
+    EXPECT_FALSE(res);
+
+    info.size.width = MAX_DIMENSION;
+    info.size.height = MAX_DIMENSION;
+    res = ImageUtils::IsValidImageInfo(info);
+    EXPECT_FALSE(res);
+
+    info.size.width = MAX_DIMENSION;
+    info.size.height = MAX_DIMENSION + 1;
+    info.pixelFormat = PixelFormat::UNKNOWN;
+    res = ImageUtils::IsValidImageInfo(info);
+    EXPECT_FALSE(res);
+}
+
+/**
+ * @tc.name: CheckTlvSupportedFormatTest001
+ * @tc.desc: test CheckTlvSupportedFormat method when format is not tlv supported or is tlv supported
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageUtilsTest, CheckTlvSupportedFormatTest001, TestSize.Level3)
+{
+    bool res = ImageUtils::CheckTlvSupportedFormat(PixelFormat::UNKNOWN);
+    EXPECT_FALSE(res);
+
+    res = ImageUtils::CheckTlvSupportedFormat(PixelFormat::RGBA_U16);
+    EXPECT_FALSE(res);
+
+    res = ImageUtils::CheckTlvSupportedFormat(PixelFormat::NV12);
+    EXPECT_FALSE(res);
+
+    res = ImageUtils::CheckTlvSupportedFormat(PixelFormat::YCBCR_P010);
+    EXPECT_TRUE(res);
+
+    res = ImageUtils::CheckTlvSupportedFormat(PixelFormat::EXTERNAL_MAX);
+    EXPECT_FALSE(res);
+}
+
+/**
+ * @tc.name: IsSizeSupportDmaTest001
+ * @tc.desc: test IsSizeSupportDma method when the size is normal or overflow
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageUtilsTest, IsSizeSupportDmaTest001, TestSize.Level3)
+{
+    Size size;
+    size.width = 0;
+    size.height = 0;
+    bool res = ImageUtils::IsSizeSupportDma(size);
+    EXPECT_FALSE(res);
+
+    size.width = 1;
+    size.height = INT32_MAX / size.width + 1;
+    res = ImageUtils::IsSizeSupportDma(size);
+    EXPECT_FALSE(res);
+
+    size.width = 1;
+    size.height = INT32_MAX / size.width;
+    res = ImageUtils::IsSizeSupportDma(size);
+    EXPECT_TRUE(res);
+}
+
+/**
+ * @tc.name: CheckMulOverflowTest011
+ * @tc.desc: test CheckMulOverflow witdh only method when size overflow
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageUtilsTest, CheckMulOverflowTest011, TestSize.Level3)
+{
+    bool res = ImageUtils::CheckMulOverflow(INT32_MAX, 0);
+    EXPECT_TRUE(res);
+
+    res = ImageUtils::CheckMulOverflow(INT32_MAX, INT32_MAX);
+    EXPECT_FALSE(res);
+}
+
+/**
+ * @tc.name: CheckMulOverflowTest012
+ * @tc.desc: test CheckMulOverflow both width and height method when size overflow
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageUtilsTest, CheckMulOverflowTest012, TestSize.Level3)
+{
+    bool res = ImageUtils::CheckMulOverflow(INT32_MAX, INT32_MAX, INT32_MAX);
+    EXPECT_FALSE(res);
+
+    int32_t mockWidth = 1;
+    int32_t mockHeight = 1;
+    res = ImageUtils::CheckMulOverflow(mockWidth, INT32_MAX, INT32_MAX);
+    EXPECT_FALSE(res);
+
+    res = ImageUtils::CheckMulOverflow(INT32_MAX, mockHeight, INT32_MAX);
+    EXPECT_FALSE(res);
 }
 }
 }

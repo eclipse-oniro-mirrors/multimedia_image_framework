@@ -45,7 +45,8 @@ HWTEST_F(HeifParserBoxTest, ParseContentTest001, TestSize.Level3)
     HeifImirBox heifImirBox;
     auto stream = std::make_shared<HeifBufferInputStream>(nullptr, 0, true);
     HeifStreamReader reader(stream, 0, 0);
-    heifImirBox.ParseContent(reader);
+    heif_error ret = heifImirBox.ParseContent(reader);
+    ASSERT_NE(ret, heif_error_ok);
     GTEST_LOG_(INFO) << "HeifParserBoxTest: ParseContentTest001 end";
 }
 
@@ -179,6 +180,7 @@ HWTEST_F(HeifParserBoxTest, InferFullBoxVersionTest001, TestSize.Level3)
     struct PropertyEntry ref {.itemId = 0xFFFFFFFF};
     heifIpmaBox->entries_.push_back(ref);
     heifIpmaBox->InferFullBoxVersion();
+    EXPECT_EQ(heifIpmaBox->version_, HEIF_BOX_VERSION_ONE);
     heifIpmaBox->entries_.clear();
     struct PropertyAssociation rec {
         .essential = false,
@@ -190,6 +192,7 @@ HWTEST_F(HeifParserBoxTest, InferFullBoxVersionTest001, TestSize.Level3)
     ref.associations = proPerty;
     heifIpmaBox->entries_.push_back(ref);
     heifIpmaBox->InferFullBoxVersion();
+    EXPECT_EQ(heifIpmaBox->version_, HEIF_BOX_VERSION_ZERO);
     GTEST_LOG_(INFO) << "HeifParserBoxTest: InferFullBoxVersionTest001 end";
 }
 
@@ -207,6 +210,7 @@ HWTEST_F(HeifParserBoxTest, ParseItemRefTest001, TestSize.Level3)
     HeifIrefBox::Reference ref;
     heifIrefBox->version_ = 1;
     heifIrefBox->ParseItemRef(reader, ref);
+    ASSERT_EQ(ref.toItemIds.size(), 0);
     GTEST_LOG_(INFO) << "HeifParserBoxTest: ParseItemRefTest001 end";
 }
 
@@ -357,6 +361,7 @@ HWTEST_F(HeifParserBoxTest, ParseExtentsTest001, TestSize.Level3)
     heifIlocBox.version_ = HEIF_BOX_VERSION_ONE;
     heifIlocBox.ParseExtents(item, reader, 4, 4, 4);
     heifIlocBox.ParseExtents(item, reader, 8, 8, 8);
+    ASSERT_EQ(item.extents.size(), 0);
     GTEST_LOG_(INFO) << "HeifParserBoxTest: ParseExtentsTest001 end";
 }
 

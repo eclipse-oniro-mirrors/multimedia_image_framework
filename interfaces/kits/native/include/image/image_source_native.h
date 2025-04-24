@@ -374,6 +374,30 @@ Image_ErrorCode OH_DecodingOptions_SetDesiredDynamicRange(OH_DecodingOptions *op
     int32_t desiredDynamicRange);
 
 /**
+ * @brief Gets desired color space for decoding options.
+ *
+ * @param options Pointer to the decoding options.
+ * @param colorSpace desired color space, {@link ColorSpaceName}.
+ * @return Returns one of the following result codes:
+ * {@link IMAGE_SUCCESS}: The execution is successful.
+ * {@link IMAGE_SOURCE_INVALID_PARAMETER}: options or colorSpace is a null pointer.
+ * @since 20
+ */
+Image_ErrorCode OH_DecodingOptions_GetDesiredColorSpace(OH_DecodingOptions *options, int32_t *colorSpace);
+
+/**
+ * @brief Sets desired color space for decoding options.
+ *
+ * @param options Pointer to the decoding options.
+ * @param colorSpace desired color space, {@link ColorSpaceName}.
+ * @return Returns one of the following result codes:
+ * {@link IMAGE_SUCCESS}: The execution is successful.
+ * {@link IMAGE_SOURCE_INVALID_PARAMETER}: options is a null pointer or colorSpace is not supported.
+ * @since 20
+ */
+Image_ErrorCode OH_DecodingOptions_SetDesiredColorSpace(OH_DecodingOptions *options, int32_t colorSpace);
+
+/**
  * @brief delete DecodingOptions pointer.
  *
  * @param  options The DecodingOptions pointer will be operated.
@@ -691,18 +715,6 @@ Image_ErrorCode OH_DecodingOptionsForPicture_SetDesiredAuxiliaryPictures(OH_Deco
  * @since 13
  */
 Image_ErrorCode OH_DecodingOptionsForPicture_Release(OH_DecodingOptionsForPicture *options);
-
-/**
-  * @brief Gets the decode supported image format list.
-  *
-  * @param supportedFormat Pointer to receive allocated array of supported image formats.
-  * @param length Pointer to receive number of supported formats.
-  * @return Image functions result code.
-  *         {@link IMAGE_SUCCESS} if the execution is successful.
-  *         {@link IMAGE_BAD_PARAMETER} one of the pointer type parameters is nullptr, or length is invalid.
-  * @since 20
- */
-Image_ErrorCode OH_ImageSourceNative_GetSupportedFormat(Image_MimeType** supportedFormat, size_t* length);
 
 /**
   * @brief Obtains the image formats (MIME types) that can be decoded.

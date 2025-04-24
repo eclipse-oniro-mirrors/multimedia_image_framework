@@ -797,6 +797,12 @@ sptr<SurfaceBuffer> ExtEncoder::ConvertToSurfaceBuffer(PixelMap* pixelmap)
         dstSize -= dstStride;
         src += srcStride;
     }
+    if (surfaceBuffer && (surfaceBuffer->GetUsage() & BUFFER_USAGE_MEM_MMZ_CACHE)) {
+        GSError err = surfaceBuffer->FlushCache();
+        if (err != GSERROR_OK) {
+            IMAGE_LOGE("FlushCache failed, GSError=%{public}d", err);
+        }
+    }
     return surfaceBuffer;
 }
 
@@ -945,7 +951,8 @@ static SkImageInfo GetSkInfo(PixelMap* pixelMap, bool isGainmap, bool isSRGB = f
 #ifdef IMAGE_COLORSPACE_FLAG
         if (pixelMap->InnerGetGrColorSpacePtr() != nullptr &&
             pixelMap->InnerGetGrColorSpace().GetColorSpaceName() != ColorManager::ColorSpaceName::NONE) {
-            colorSpace = pixelMap->InnerGetGrColorSpacePtr()->ToSkColorSpace();
+            auto gainMapColorSpace = OHOS::ColorManager::ColorSpace(OHOS::ColorManager::ColorSpaceName::DISPLAY_P3);
+            colorSpace = gainMapColorSpace.ToSkColorSpace();
         }
         skcms_CICP cicp;
         ColorUtils::ColorSpaceGetCicp(pixelMap->InnerGetGrColorSpace().GetColorSpaceName(),

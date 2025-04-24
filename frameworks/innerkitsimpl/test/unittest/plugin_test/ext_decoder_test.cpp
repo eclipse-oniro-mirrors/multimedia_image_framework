@@ -27,6 +27,9 @@
 #include "file_source_stream.h"
 #include "image_data_statistics.h"
 #include "image_source.h"
+#ifdef SK_ENABLE_OHOS_CODEC
+#include "sk_ohoscodec.h"
+#endif
 
 using namespace testing::ext;
 using namespace OHOS::Media;
@@ -346,6 +349,7 @@ HWTEST_F(ExtDecoderTest, ReportImageTypeTest001, TestSize.Level3)
 {
     GTEST_LOG_(INFO) << "ExtDecoderTest: ReportImageTypeTest001 start";
     std::shared_ptr<ExtDecoder> extDecoder = std::make_shared<ExtDecoder>();
+    ASSERT_NE(extDecoder, nullptr);
     EXIFInfo exifInfo_;
     SkEncodedImageFormat skEncodeFormat = SkEncodedImageFormat::kBMP;
     extDecoder->ReportImageType(skEncodeFormat);
@@ -1656,6 +1660,70 @@ HWTEST_F(ExtDecoderTest, AssembleAuxiliaryRefItemTest004, TestSize.Level3)
     ASSERT_EQ(refs[1].from, FRAGMENT_MAP_ITEM_ID);
     #endif
     GTEST_LOG_(INFO) << "ExtDecoderTest: AssembleAuxiliaryRefItemTest004 end";
+}
+
+/**
+ * @tc.name: SkOHOSCodecTest001
+ * @tc.desc: Verify SkOHOSCodec returns nullptr when input null codec.
+ * @tc.type: FUNC
+ */
+HWTEST_F(ExtDecoderTest, SkOHOSCodecTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PixelMapTest: SkOHOSCodecTest001 start";
+#ifdef SK_ENABLE_OHOS_CODEC
+    auto ret = SkOHOSCodec::MakeFromCodec(nullptr);
+    EXPECT_EQ(ret, nullptr);
+#endif
+    GTEST_LOG_(INFO) << "ExtDecoderTest: SkOHOSCodecTest001 end";
+}
+
+/**
+ * @tc.name: SkOHOSCodecTest002
+ * @tc.desc: Verify SkOHOSCodec returns nullptr when input null data or decoder
+ * @tc.type: FUNC
+ */
+HWTEST_F(ExtDecoderTest, SkOHOSCodecTest002, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PixelMapTest: SkOHOSCodecTest002 start";
+#ifdef SK_ENABLE_OHOS_CODEC
+    auto ret = SkOHOSCodec::MakeFromData(nullptr, nullptr);
+    EXPECT_EQ(ret, nullptr);
+#endif
+    GTEST_LOG_(INFO) << "ExtDecoderTest: SkOHOSCodecTest002 end";
+}
+
+/**
+ * @tc.name: SkOHOSCodecTest003
+ * @tc.desc: Verify SkOHOSCodec dimension and subset operations with different sampling sizes.
+ * @tc.type: FUNC
+ */
+HWTEST_F(ExtDecoderTest, SkOHOSCodecTest003, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PixelMapTest: SkOHOSCodecTest004 start";
+#ifdef SK_ENABLE_OHOS_CODEC
+    const int fd = open("/data/local/tmp/image/test_hw1.jpg", O_RDWR | O_CREAT, S_IRUSR | S_IWUSR);
+    std::unique_ptr<FileSourceStream> streamPtr = FileSourceStream::CreateSourceStream(fd);
+    ASSERT_NE(streamPtr, nullptr);
+    auto codec = SkCodec::MakeFromStream(std::make_unique<ExtStream>(streamPtr.get()));
+    ASSERT_NE(codec, nullptr);
+    auto skOHOSCodec = SkOHOSCodec::MakeFromCodec(std::move(codec));
+    ASSERT_NE(skOHOSCodec, nullptr);
+    auto size = skOHOSCodec->getSampledDimensions(1);
+    size = skOHOSCodec->getSampledDimensions(2);
+    size = skOHOSCodec->getSampledDimensions(0);
+    EXPECT_EQ(size.width(), 0);
+    auto isSupport = skOHOSCodec->getSupportedSubset(nullptr);
+    EXPECT_EQ(isSupport, false);
+    SkIRect subset;
+    auto scaledSize = skOHOSCodec->getSampledSubsetDimensions(0, subset);
+    EXPECT_EQ(scaledSize.width(), 0);
+    scaledSize = skOHOSCodec->getSampledSubsetDimensions(1, subset);
+    EXPECT_EQ(scaledSize.width(), 0);
+    SkImageInfo decodeInfo;
+    SkCodec::Result result = skOHOSCodec->getOHOSPixels(decodeInfo, nullptr, 0, nullptr);
+    EXPECT_EQ(result, SkCodec::kInvalidParameters);
+#endif
+    GTEST_LOG_(INFO) << "ExtDecoderTest: SkOHOSCodecTest004 end";
 }
 }
 }

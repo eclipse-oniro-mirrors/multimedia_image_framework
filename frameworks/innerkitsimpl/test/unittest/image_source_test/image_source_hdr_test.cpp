@@ -44,6 +44,13 @@ static constexpr OHOS::HiviewDFX::HiLogLabel LABEL_TEST = {
     LOG_CORE, LOG_TAG_DOMAIN_ID_IMAGE, "ImageSourceHdrTest"
 };
 
+constexpr uint8_t JPEG_MARKER_PREFIX = 0xFF;
+constexpr uint8_t JPEG_MARKER_APP2 = 0xE2;
+constexpr uint8_t UINT32_BYTE_SIZE = 4;
+constexpr uint8_t MAX_IMAGE_NUM = 32;
+constexpr uint8_t MP_ENTRY_BYTE_SIZE = 16;
+constexpr uint16_t AUXILIARY_TAG_NAME_LENGTH = 8;
+
 static const std::string IMAGE_INPUT_JPEG_SDR_PATH = "/data/local/tmp/image/test.jpg";
 static const std::string IMAGE_INPUT_HEIF_SDR_PATH = "/data/local/tmp/image/test.heic";
 static const std::string IMAGE_INPUT_HEIF_10BIT_SDR_PATH = "/data/local/tmp/image/test-10bit-1.heic";
@@ -546,6 +553,199 @@ HWTEST_F(ImageSourceHdrTest, CheckPhotoDesiredPixelForamt001, TestSize.Level3)
     ASSERT_EQ(isHdr, true);
     ASSERT_EQ(isYcbcrP010, true);
 #endif
+}
+
+/**
+ * @tc.name: CheckMpfOffsetTest001
+ * @tc.desc: test CheckMptOffsetTest when data is normal or nullptr
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageSourceHdrTest, CheckMpfOffsetTest001, TestSize.Level3)
+{
+    auto jpegMpfParser = std::make_shared<JpegMpfParser>();
+    ASSERT_NE(jpegMpfParser, nullptr);
+    uint8_t buf[] = {0, 0, 0, 0, 0};
+    uint32_t size = sizeof(buf);
+    uint32_t offsetZero = 0;
+
+    bool res = jpegMpfParser->CheckMpfOffset(nullptr, size, offsetZero);
+    EXPECT_FALSE(res);
+
+    res = jpegMpfParser->CheckMpfOffset(buf, size, offsetZero);
+    EXPECT_FALSE(res);
+}
+
+/**
+ * @tc.name: CheckMpfOffsetTest002
+ * @tc.desc: test CheckMptOffset when data is JPEG_MARKER_PREFIX or JPEG_MARKER_APP2
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageSourceHdrTest, CheckMpfOffsetTest002, TestSize.Level3)
+{
+    auto jpegMpfParser = std::make_shared<JpegMpfParser>();
+    ASSERT_NE(jpegMpfParser, nullptr);
+    uint8_t buf[] = {0, 0, 0, 0, 0};
+    uint32_t size = sizeof(buf);
+    uint32_t offset = 0;
+
+    bool res = jpegMpfParser->CheckMpfOffset(buf, size, offset);
+    EXPECT_FALSE(res);
+
+    offset = 0;
+    buf[0] = JPEG_MARKER_PREFIX;
+    res = jpegMpfParser->CheckMpfOffset(buf, size, offset);
+    EXPECT_FALSE(res);
+
+    offset = 0;
+    buf[0] = 1;
+    buf[1] = JPEG_MARKER_APP2;
+    res = jpegMpfParser->CheckMpfOffset(buf, size, offset);
+    EXPECT_FALSE(res);
+
+    offset = 0;
+    buf[0] = JPEG_MARKER_PREFIX;
+    buf[1] = JPEG_MARKER_APP2;
+    res = jpegMpfParser->CheckMpfOffset(buf, size, offset);
+    EXPECT_TRUE(res);
+    EXPECT_EQ(offset, UINT32_BYTE_SIZE);
+}
+
+/**
+ * @tc.name: ParsingTest001
+ * @tc.desc: test Parsing when data is nullptr or size is 0
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageSourceHdrTest, ParsingTest001, TestSize.Level3)
+{
+    auto jpegMpfParser = std::make_shared<JpegMpfParser>();
+    ASSERT_NE(jpegMpfParser, nullptr);
+    uint8_t buf[] = {0, 0, 0, 0, 0};
+    uint32_t size = sizeof(buf);
+
+    bool res = jpegMpfParser->Parsing(nullptr, size);
+    EXPECT_FALSE(res);
+
+    res = jpegMpfParser->Parsing(nullptr, 0);
+    EXPECT_FALSE(res);
+
+    res = jpegMpfParser->Parsing(buf, 0);
+    EXPECT_FALSE(res);
+}
+
+/**
+ * @tc.name: ParsingMpIndexIFDTest001
+ * @tc.desc: test ParsingMpIndexIFD when size is less than offset
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageSourceHdrTest, ParsingMpIndexIFDTest001, TestSize.Level3)
+{
+    auto jpegMpfParser = std::make_shared<JpegMpfParser>();
+    ASSERT_NE(jpegMpfParser, nullptr);
+
+    bool res = jpegMpfParser->ParsingMpIndexIFD(nullptr, 0, 1, true);
+    EXPECT_FALSE(res);
+}
+
+/**
+ * @tc.name: ParsingMpEntryTest001
+ * @tc.desc: test ParsingMpEntry when imageNums is 0 or imageNums multiply MP_ENTRY_BYTE_SIZE over than size or
+ *           imageNums over than MAX_IMAGE_NUM
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageSourceHdrTest, ParsingMpEntryTest001, TestSize.Level3)
+{
+    auto jpegMpfParser = std::make_shared<JpegMpfParser>();
+    ASSERT_NE(jpegMpfParser, nullptr);
+    uint8_t buf[] = {0, 0, 0, 0, 0};
+    uint32_t size = sizeof(buf);
+
+    bool res = jpegMpfParser->ParsingMpEntry(buf, size, true, 0);
+    EXPECT_FALSE(res);
+
+    res = jpegMpfParser->ParsingMpEntry(buf, 0, true, 1);
+    EXPECT_FALSE(res);
+
+    size = (MAX_IMAGE_NUM + 1) * MP_ENTRY_BYTE_SIZE + 1;
+    res = jpegMpfParser->ParsingMpEntry(buf, size, true, MAX_IMAGE_NUM + 1);
+    EXPECT_FALSE(res);
+}
+
+/**
+ * @tc.name: ParsingAuxiliaryPicturesTest001
+ * @tc.desc: test ParsingAuxiliaryPictures when data is nullptr or dataSize is 0
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageSourceHdrTest, ParsingAuxiliaryPicturesTest001, TestSize.Level3)
+{
+    auto jpegMpfParser = std::make_shared<JpegMpfParser>();
+    ASSERT_NE(jpegMpfParser, nullptr);
+    uint8_t buf[] = {0, 0, 0, 0, 0};
+    uint32_t dataSize = sizeof(buf);
+
+    bool res = jpegMpfParser->ParsingAuxiliaryPictures(nullptr, dataSize, true);
+    EXPECT_FALSE(res);
+
+    res = jpegMpfParser->ParsingAuxiliaryPictures(nullptr, 0, true);
+    EXPECT_FALSE(res);
+
+    res = jpegMpfParser->ParsingAuxiliaryPictures(buf, 0, true);
+    EXPECT_FALSE(res);
+}
+
+/**
+ * @tc.name: ParsingAuxiliaryPicturesTest002
+ * @tc.desc: test ParsingAuxiliaryPictures when size less than AUXILIARY_TAG_NAME_LENGTH
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageSourceHdrTest, ParsingAuxiliaryPicturesTest002, TestSize.Level3)
+{
+    auto jpegMpfParser = std::make_shared<JpegMpfParser>();
+    ASSERT_NE(jpegMpfParser, nullptr);
+    uint8_t buf[] = {0, 0, 0, 0, 0};
+    uint32_t dataSize = AUXILIARY_TAG_NAME_LENGTH - 1;
+
+    bool res = jpegMpfParser->ParsingAuxiliaryPictures(buf, dataSize, true);
+    EXPECT_TRUE(res);
+}
+
+/**
+ * @tc.name: ParsingFragmentMetadataTest001
+ * @tc.desc: test ParsingFragmentMetadata when data is nullptr or dataSize is 0
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageSourceHdrTest, ParsingFragmentMetadataTest001, TestSize.Level3)
+{
+    auto jpegMpfParser = std::make_shared<JpegMpfParser>();
+    ASSERT_NE(jpegMpfParser, nullptr);
+    uint8_t buf[] = {0, 0, 0, 0, 0};
+    uint32_t dataSize = sizeof(buf);
+    OHOS::Media::Rect fragmentRect;
+
+    bool res = jpegMpfParser->ParsingFragmentMetadata(nullptr, dataSize, fragmentRect, true);
+    EXPECT_FALSE(res);
+
+    res = jpegMpfParser->ParsingFragmentMetadata(nullptr, 0, fragmentRect, true);
+    EXPECT_FALSE(res);
+
+    res = jpegMpfParser->ParsingFragmentMetadata(buf, 0, fragmentRect, true);
+    EXPECT_FALSE(res);
+}
+
+/**
+ * @tc.name: ParsingFragmentMetadataTest002
+ * @tc.desc: test ParsingFragmentMetadata when size is less than the size calculated by offset
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageSourceHdrTest, ParsingFragmentMetadataTest002, TestSize.Level3)
+{
+    auto jpegMpfParser = std::make_shared<JpegMpfParser>();
+    ASSERT_NE(jpegMpfParser, nullptr);
+    uint8_t buf[] = {0, 0, 0, 0, 0};
+    uint32_t dataSize = sizeof(buf);
+    OHOS::Media::Rect fragmentRect;
+
+    bool res = jpegMpfParser->ParsingFragmentMetadata(buf, dataSize, fragmentRect, true);
+    EXPECT_FALSE(res);
 }
 }
 }

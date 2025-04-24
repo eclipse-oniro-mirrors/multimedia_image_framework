@@ -91,7 +91,16 @@ constexpr uint32_t ASTC_DIM_MAX = 8192;
 constexpr uint32_t BYTES_PER_PIXEL = 4;
 constexpr uint32_t BIT_SHIFT_16BITS = 16;
 constexpr uint32_t EVEN_ALIGNMENT = 2;
+constexpr int32_t CONVERT_ERROR = -1;
 constexpr uint32_t UV_PLANES_COUNT = 2;
+
+static const std::map<YuvConversion, const int> SWS_CS_COEFFICIENT = {
+    {YuvConversion::BT601, SWS_CS_DEFAULT},
+    {YuvConversion::BT709, SWS_CS_ITU709},
+    {YuvConversion::BT2020, SWS_CS_BT2020},
+    {YuvConversion::BT240, SWS_CS_SMPTE240M},
+    {YuvConversion::BTFCC, SWS_CS_FCC}
+};
 
 struct AstcInfo {
     uint32_t astcBufSize;
@@ -1150,7 +1159,10 @@ static bool FFMpegConvert(const void *srcPixels, const FFMPEG_CONVERT_INFO& srcI
         return false;
     }
     CHECK_ERROR_RETURN_RET_LOG((srcInfo.width <= 0 || srcInfo.height <= 0 ||
-        dstInfo.width <= 0 || dstInfo.height <= 0), false, "src/dst width/height error!");
+        dstInfo.width <= 0 || dstInfo.height <= 0 ||
+        (SWS_CS_COEFFICIENT.find(colorSpaceDetails.srcYuvConversion) == SWS_CS_COEFFICIENT.end()) ||
+        (SWS_CS_COEFFICIENT.find(colorSpaceDetails.dstYuvConversion) == SWS_CS_COEFFICIENT.end())),
+        false, "src/dst width/height colorTableCoefficients error!");
 
     inputFrame = av_frame_alloc();
     outputFrame = av_frame_alloc();
@@ -1160,8 +1172,8 @@ static bool FFMpegConvert(const void *srcPixels, const FFMPEG_CONVERT_INFO& srcI
         IMAGE_LOGE("srcInfo.width:%{public}d, srcInfo.height:%{public}d", srcInfo.width, srcInfo.height);
         if (ctx != nullptr) {
             //if need applu colorspace in scale, change defult table;
-            auto srcColorTable = sws_getCoefficients(SWS_CS_DEFAULT);
-            auto dstColorTable = sws_getCoefficients(SWS_CS_DEFAULT);
+            auto srcColorTable = sws_getCoefficients(SWS_CS_COEFFICIENT.at(colorSpaceDetails.srcYuvConversion));
+            auto dstColorTable = sws_getCoefficients(SWS_CS_COEFFICIENT.at(colorSpaceDetails.dstYuvConversion));
             sws_setColorspaceDetails(ctx,
                 // src convert matrix(YUV2RGB), Range: 0 means limit range, 1 means full range.
                 srcColorTable, colorSpaceDetails.srcRange,
@@ -1290,38 +1302,37 @@ static bool P010ConvertRGBA1010102(const void *srcPixels, ImageInfo srcInfo,
 static bool ConvertRGBA1010102ToYUV(const void *srcPixels, ImageInfo srcInfo,
     void *dstPixels, ImageInfo dstInfo)
 {
-    ImageInfo tmpInfo = srcInfo;
-    tmpInfo.pixelFormat = PixelFormat::RGBA_U16;
-    int tmpPixelsLen = PixelMap::GetRGBxByteCount(tmpInfo);
-    if (tmpPixelsLen <= 0) {
-        IMAGE_LOGE("[PixelMap]Convert: Get tmp pixels length failed!");
+    ImageInfo copySrcInfo = srcInfo;
+    copySrcInfo.pixelFormat = PixelFormat::RGBA_U16;
+    if (!ImageUtils::GetAlignedNumber(copySrcInfo.size.width, EVEN_ALIGNMENT) ||
+        !ImageUtils::GetAlignedNumber(copySrcInfo.size.height, EVEN_ALIGNMENT)) {
         return false;
     }
-    uint8_t* tmpPixels = new(std::nothrow) uint8_t[tmpPixelsLen];
-    CHECK_ERROR_RETURN_RET_LOG(tmpPixels == nullptr, false, "[PixelMap]Convert: alloc memory failed!");
-    memset_s(tmpPixels, tmpPixelsLen, 0, tmpPixelsLen);
+    int copySrcLen = PixelMap::GetRGBxByteCount(copySrcInfo);
+    if (copySrcLen <= 0) {
+        IMAGE_LOGE("[PixelMap]Convert: Get copySrc pixels length failed!");
+        return false;
+    }
+    std::unique_ptr<uint8_t[]> copySrcBuffer = std::make_unique<uint8_t[]>(copySrcLen);
+    CHECK_ERROR_RETURN_RET_LOG(copySrcBuffer == nullptr, false, "[PixelMap]Convert: alloc memory failed!");
+    uint8_t* copySrcPixels = copySrcBuffer.get();
+    memset_s(copySrcPixels, copySrcLen, 0, copySrcLen);
 
     Position pos;
     if (!PixelConvertAdapter::WritePixelsConvert(srcPixels, PixelMap::GetRGBxRowDataSize(srcInfo), srcInfo,
-        tmpPixels, pos, PixelMap::GetRGBxRowDataSize(tmpInfo), tmpInfo)) {
+        copySrcPixels, pos, PixelMap::GetRGBxRowDataSize(copySrcInfo), copySrcInfo)) {
         IMAGE_LOGE("[PixelMap]Convert: ConvertToYUV: pixel convert in adapter failed.");
-        delete[] tmpPixels;
-        tmpPixels = nullptr;
         return false;
     }
 
     FFMPEG_CONVERT_INFO srcFFmpegInfo = {PixelFormatToAVPixelFormat(PixelFormat::RGBA_F16),
-        tmpInfo.size.width, tmpInfo.size.height, 1};
+        copySrcInfo.size.width, copySrcInfo.size.height, 1};
     FFMPEG_CONVERT_INFO dstFFmpegInfo = {PixelFormatToAVPixelFormat(dstInfo.pixelFormat),
         dstInfo.size.width, dstInfo.size.height, 1};
-    if (!FFMpegConvert(tmpPixels, srcFFmpegInfo, dstPixels, dstFFmpegInfo)) {
+    if (!FFMpegConvert(copySrcPixels, srcFFmpegInfo, dstPixels, dstFFmpegInfo)) {
         IMAGE_LOGE("[PixelMap]Convert: ffmpeg convert failed!");
-        delete[] tmpPixels;
-        tmpPixels = nullptr;
         return false;
     }
-    delete[] tmpPixels;
-    tmpPixels = nullptr;
     return true;
 }
 
@@ -1375,7 +1386,12 @@ static int32_t ConvertFromYUV(const BufferInfo &srcBufferInfo, const int32_t src
 
     const ImageInfo &srcInfo = srcBufferInfo.imageInfo;
     const ImageInfo &dstInfo = dstBufferInfo.imageInfo;
-    YUVConvertColorSpaceDetails colorSpaceDetails = { srcBufferInfo.range, dstBufferInfo.range };
+    YUVConvertColorSpaceDetails colorSpaceDetails = {
+        srcBufferInfo.range,
+        dstBufferInfo.range,
+        srcBufferInfo.yuvConversion,
+        dstBufferInfo.yuvConversion
+    };
 
     if ((srcInfo.pixelFormat != PixelFormat::NV21 && srcInfo.pixelFormat != PixelFormat::NV12) ||
         (dstInfo.pixelFormat == PixelFormat::NV21 || dstInfo.pixelFormat == PixelFormat::NV12)) {
@@ -1611,31 +1627,30 @@ int32_t PixelConvert::PixelsConvert(const BufferInfo &src, BufferInfo &dst, bool
         PixelMap::GetRGBxByteCount(dst.imageInfo) : -1;
 }
 
-int32_t PixelConvert::CopySrcBufferAndConvert(void *srcPixels, const ImageInfo &srcInfo, int32_t srcLength,
-    void *dstPixels, ImageInfo &dstInfo, bool useDMA)
+int32_t PixelConvert::CopySrcBufferAndConvert(const BufferInfo &src, BufferInfo &dst, int32_t srcLength, bool useDMA)
 {
-    if (srcPixels == nullptr || dstPixels == nullptr || srcLength <= 0) {
+    if (src.pixels == nullptr || dst.pixels == nullptr || srcLength <= 0) {
         IMAGE_LOGE("[PixelMap]Convert: src pixels or dst pixels or src pixels length invalid.");
-        return -1;
+        return CONVERT_ERROR;
     }
-    ImageInfo copySrcInfo = srcInfo;
+    ImageInfo copySrcInfo = src.imageInfo;
     if (!ImageUtils::GetAlignedNumber(copySrcInfo.size.width, EVEN_ALIGNMENT) ||
         !ImageUtils::GetAlignedNumber(copySrcInfo.size.height, EVEN_ALIGNMENT)) {
-        return -1;
+        return CONVERT_ERROR;
     }
     int32_t copySrcLen = PixelMap::GetAllocatedByteCount(copySrcInfo);
     std::unique_ptr<uint8_t[]> copySrcBuffer = std::make_unique<uint8_t[]>(copySrcLen);
     if (copySrcBuffer == nullptr) {
         IMAGE_LOGE("[PixelMap]Convert: alloc memory failed!");
-        return -1;
+        return CONVERT_ERROR;
     }
     uint8_t* copySrcPixels = copySrcBuffer.get();
     memset_s(copySrcPixels, copySrcLen, 0, copySrcLen);
-    if (memcpy_s(copySrcPixels, copySrcLen, srcPixels, srcLength) != 0) {
-        return -1;
+    if (memcpy_s(copySrcPixels, copySrcLen, src.pixels, srcLength) != 0) {
+        return CONVERT_ERROR;
     }
-    return ConvertAndCollapseByFFMpeg(copySrcPixels, copySrcInfo, dstPixels, dstInfo, useDMA) ?
-        PixelMap::GetRGBxByteCount(dstInfo) : -1;
+    return ConvertAndCollapseByFFMpeg(copySrcPixels, src.imageInfo, dst.pixels, dst.imageInfo, useDMA) ?
+        PixelMap::GetRGBxByteCount(dst.imageInfo) : CONVERT_ERROR;
 }
 
 int32_t PixelConvert::PixelsConvert(const BufferInfo &src, BufferInfo &dst, int32_t srcLength, bool useDMA)
@@ -1649,9 +1664,9 @@ int32_t PixelConvert::PixelsConvert(const BufferInfo &src, BufferInfo &dst, int3
         if (useDMA || (src.imageInfo.size.width % EVEN_ALIGNMENT == 0 &&
             src.imageInfo.size.height % EVEN_ALIGNMENT == 0)) {
             return ConvertAndCollapseByFFMpeg(src.pixels, src.imageInfo, dst.pixels, dst.imageInfo, useDMA) ?
-                PixelMap::GetRGBxByteCount(dst.imageInfo) : -1;
+                PixelMap::GetRGBxByteCount(dst.imageInfo) : CONVERT_ERROR;
         } else {
-            return CopySrcBufferAndConvert(src.pixels, src.imageInfo, srcLength, dst.pixels, dst.imageInfo, useDMA);
+            return CopySrcBufferAndConvert(src, dst, srcLength, useDMA);
         }
     }
     if (IsInterYUVConvert(src.imageInfo.pixelFormat, dst.imageInfo.pixelFormat) ||

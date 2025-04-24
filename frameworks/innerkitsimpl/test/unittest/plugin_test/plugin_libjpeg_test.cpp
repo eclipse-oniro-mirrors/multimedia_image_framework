@@ -17,6 +17,7 @@
 #define private public
 #define protected public
 #include <fcntl.h>
+#include "buffer_packer_stream.h"
 #include "buffer_source_stream.h"
 #include "exif_info.h"
 #include "plugin_export.h"
@@ -39,11 +40,37 @@ constexpr uint32_t COMPONENT_NUM_RGB = 3;
 constexpr uint32_t COMPONENT_NUM_GRAY = 1;
 constexpr uint8_t COMPONENT_NUM_YUV420SP = 3;
 constexpr uint8_t SAMPLE_FACTOR_TWO = 2;
+static constexpr uint32_t NUM_1000 = 1000;
+constexpr int32_t OPTS_SIZE = 16;
+
 class PluginLibJpegTest : public testing::Test {
 public:
     PluginLibJpegTest() {}
     ~PluginLibJpegTest() {}
+    void FinalizeEncodeTest(PixelFormat format);
 };
+void PluginLibJpegTest::FinalizeEncodeTest(PixelFormat format)
+{
+    uint32_t errorCode = 0;
+    auto jpegEncoder = std::make_shared<JpegEncoder>();
+    ASSERT_NE(jpegEncoder, nullptr);
+    PlEncodeOptions plOpts;
+    auto outputData = std::make_unique<uint8_t[]>(NUM_1000);
+    auto maxSize = NUM_1000;
+    auto stream = std::make_shared<BufferPackerStream>(outputData.get(), maxSize);
+    jpegEncoder->StartEncode(*(stream.get()), plOpts);
+    Media::InitializationOptions opts;
+    opts.pixelFormat = format;
+    opts.size.width = OPTS_SIZE;
+    opts.size.height = OPTS_SIZE;
+    opts.editable = true;
+    auto pixelMap = Media::PixelMap::Create(opts);
+    ASSERT_NE(pixelMap.get(), nullptr);
+    errorCode = jpegEncoder->AddImage(*(pixelMap.get()));
+    ASSERT_EQ(errorCode, SUCCESS);
+    errorCode = jpegEncoder->FinalizeEncode();
+    ASSERT_EQ(errorCode, SUCCESS);
+}
 
 /**
  * @tc.name: exif_info001
@@ -56,7 +83,8 @@ HWTEST_F(PluginLibJpegTest, exif_info001, TestSize.Level3)
     EXIFInfo exinfo;
     unsigned char *buf = nullptr;
     unsigned len = 1000;
-    exinfo.ParseExifData(buf, len);
+    int ret = exinfo.ParseExifData(buf, len);
+    ASSERT_EQ(ret, 0);
     GTEST_LOG_(INFO) << "PluginLibJpegTest: exif_info001 end";
 }
 
@@ -71,7 +99,8 @@ HWTEST_F(PluginLibJpegTest, exif_info001_1, TestSize.Level3)
     EXIFInfo exinfo;
     unsigned char buf = 'n';
     unsigned len = 1000;
-    exinfo.ParseExifData(&buf, len);
+    int ret = exinfo.ParseExifData(&buf, len);
+    ASSERT_EQ(ret, 0);
     GTEST_LOG_(INFO) << "PluginLibJpegTest: exif_info001_1 end";
 }
 
@@ -86,7 +115,8 @@ HWTEST_F(PluginLibJpegTest, exif_info001_2, TestSize.Level3)
     EXIFInfo exinfo;
     unsigned char *buf = nullptr;
     unsigned len = 0;
-    exinfo.ParseExifData(buf, len);
+    int ret = exinfo.ParseExifData(buf, len);
+    ASSERT_EQ(ret, 0);
     GTEST_LOG_(INFO) << "PluginLibJpegTest: exif_info001_2 end";
 }
 
@@ -100,7 +130,8 @@ HWTEST_F(PluginLibJpegTest, exif_info001_3, TestSize.Level3)
     GTEST_LOG_(INFO) << "PluginLibJpegTest: exif_info001_3 start";
     EXIFInfo exinfo;
     string data = "";
-    exinfo.ParseExifData(data);
+    int ret = exinfo.ParseExifData(data);
+    ASSERT_EQ(ret, 0);
     GTEST_LOG_(INFO) << "PluginLibJpegTest: exif_info001_3 end";
 }
 
@@ -114,7 +145,8 @@ HWTEST_F(PluginLibJpegTest, exif_info001_4, TestSize.Level3)
     GTEST_LOG_(INFO) << "PluginLibJpegTest: exif_info001_4 start";
     EXIFInfo exinfo;
     string data = "aaaaaaa";
-    exinfo.ParseExifData(data);
+    int ret = exinfo.ParseExifData(data);
+    ASSERT_EQ(ret, 0);
     GTEST_LOG_(INFO) << "PluginLibJpegTest: exif_info001_4 end";
 }
 
@@ -302,7 +334,8 @@ HWTEST_F(PluginLibJpegTest, exif_info012, TestSize.Level3)
     uint8_t buf[bufSize] = "exif";
     int filterType = 0;
     std::vector<std::pair<uint32_t, uint32_t>> ranges;
-    exinfo.GetFilterArea(buf, bufSize, filterType, ranges);
+    uint32_t ret = exinfo.GetFilterArea(buf, bufSize, filterType, ranges);
+    ASSERT_EQ(ret, 1);
     GTEST_LOG_(INFO) << "PluginLibJpegTest: exif_info012 end";
 }
 
@@ -521,6 +554,7 @@ HWTEST_F(PluginLibJpegTest, UpdateCacheExifData001, TestSize.Level3)
     GTEST_LOG_(INFO) << "PluginLibJpegTest: UpdateCacheExifData001 start";
     EXIFInfo exinfo;
     FILE *file = fopen("/data/local/tmp/image/test.txt", "rb");
+    ASSERT_NE(file, nullptr);
     exinfo.UpdateCacheExifData(file);
     fclose(file);
     GTEST_LOG_(INFO) << "PluginLibJpegTest: UpdateCacheExifData001 end";
@@ -540,6 +574,7 @@ HWTEST_F(PluginLibJpegTest, GetAreaFromExifEntries001, TestSize.Level3)
     byteOrderedBuffer.GenerateDEArray();
     std::vector<std::pair<uint32_t, uint32_t>> ranges;
     exinfo.GetAreaFromExifEntries(1, byteOrderedBuffer.directoryEntryArray_, ranges);
+    ASSERT_EQ(ranges.size(), 0);
     delete buf;
     buf = nullptr;
     GTEST_LOG_(INFO) << "PluginLibJpegTest: GetAreaFromExifEntries001 end";
@@ -631,6 +666,7 @@ HWTEST_F(PluginLibJpegTest, GetDataRangeFromIFD001, TestSize.Level3)
     ByteOrderedBuffer byteorder(buf, 10);
     byteorder.curPosition_ = 0;
     byteorder.bufferLength_ = 20;
+    ASSERT_NE(byteorder.ReadShort(), -1);
     byteorder.GetDataRangeFromIFD(EXIF_IFD_0);
     delete buf;
     buf = nullptr;
@@ -648,6 +684,7 @@ HWTEST_F(PluginLibJpegTest, GetDataRangeFromIFD002, TestSize.Level3)
     const uint8_t *buf = new uint8_t;
     ByteOrderedBuffer byteorder(buf, 10);
     byteorder.bufferLength_ = 8;
+    ASSERT_NE(byteorder.ReadShort(), -1);
     byteorder.GetDataRangeFromIFD(EXIF_IFD_0);
     delete buf;
     buf = nullptr;
@@ -667,6 +704,7 @@ HWTEST_F(PluginLibJpegTest, ParseIFDPointerTag001, TestSize.Level3)
     uint16_t tagNumber = byteorder.ReadUnsignedShort();
     const ExifIfd ifd = byteorder.GetIFDOfIFDPointerTag(tagNumber);;
     const uint16_t dataFormat = byteorder.ReadUnsignedShort();
+    ASSERT_EQ(dataFormat, 0);
     byteorder.ParseIFDPointerTag(ifd, dataFormat);
     delete buf;
     buf = nullptr;
@@ -1325,6 +1363,7 @@ HWTEST_F(PluginLibJpegTest, ParseIFDPointerTag002, TestSize.Level3)
     const uint8_t *buf = new uint8_t;
     ByteOrderedBuffer byteorder(buf, 10);
     uint16_t tagNumber = byteorder.ReadUnsignedShort();
+    ASSERT_EQ(tagNumber, 0);
     const ExifIfd ifd = byteorder.GetIFDOfIFDPointerTag(tagNumber);;
     byteorder.ParseIFDPointerTag(ifd, EXIF_FORMAT_SHORT);
     byteorder.ParseIFDPointerTag(ifd, EXIF_FORMAT_SSHORT);
@@ -1365,6 +1404,7 @@ HWTEST_F(PluginLibJpegTest, GenerateDEArray001, TestSize.Level3)
     ByteOrderedBuffer byteOrderedBuffer(buf, 10);
     byteOrderedBuffer.bufferLength_ = 0;
     byteOrderedBuffer.GenerateDEArray();
+    ASSERT_NE(byteOrderedBuffer.curPosition_, 0);
     delete buf;
     buf = nullptr;
     GTEST_LOG_(INFO) << "PluginLibJpegTest: GenerateDEArray001 end";
@@ -1383,6 +1423,7 @@ HWTEST_F(PluginLibJpegTest, GenerateDEArray002, TestSize.Level3)
     ByteOrderedBuffer byteOrderedBuffer(buf, 10);
     byteOrderedBuffer.bufferLength_ = 21;
     byteOrderedBuffer.GenerateDEArray();
+    ASSERT_NE(byteOrderedBuffer.curPosition_, 0);
     delete buf;
     buf = nullptr;
     GTEST_LOG_(INFO) << "PluginLibJpegTest: GenerateDEArray002 end";
@@ -1633,6 +1674,7 @@ HWTEST_F(PluginLibJpegTest, GetDataRangeFromDE001, TestSize.Level3)
     const uint8_t *buf = new uint8_t;
     ByteOrderedBuffer byteOrderedBuffer(buf, 10);
     int16_t entryCount = byteOrderedBuffer.ReadShort();
+    ASSERT_EQ(entryCount, 0);
     byteOrderedBuffer.GetDataRangeFromDE(EXIF_IFD_0, entryCount);
     GTEST_LOG_(INFO) << "PluginLibJpegTest: GetDataRangeFromDE001 end";
 }
@@ -1801,6 +1843,7 @@ HWTEST_F(PluginLibJpegTest, GenerateDEArray003, TestSize.Level3)
     ByteOrderedBuffer byteOrderedBuffer(buf, 10);
     byteOrderedBuffer.bufferLength_ = 1;
     byteOrderedBuffer.GenerateDEArray();
+    ASSERT_NE(byteOrderedBuffer.curPosition_, 0);
     delete buf;
     buf = nullptr;
     GTEST_LOG_(INFO) << "PluginLibJpegTest: GenerateDEArray003 end";
@@ -1835,6 +1878,7 @@ HWTEST_F(PluginLibJpegTest, UpdateCacheExifData002, TestSize.Level3)
     GTEST_LOG_(INFO) << "PluginLibJpegTest: UpdateCacheExifData002 start";
     EXIFInfo exinfo;
     FILE *file = fopen("/data/local/tmp/image/testtest.txt", "w+");
+    ASSERT_NE(file, nullptr);
     exinfo.UpdateCacheExifData(file);
     GTEST_LOG_(INFO) << "PluginLibJpegTest: UpdateCacheExifData002 end";
 }
@@ -1856,6 +1900,7 @@ HWTEST_F(PluginLibJpegTest, GetAreaFromExifEntries002, TestSize.Level3)
     Direc.ifd = EXIF_IFD_GPS;
     byteOrderedBuffer.directoryEntryArray_.push_back(Direc);
     exinfo.GetAreaFromExifEntries(1, byteOrderedBuffer.directoryEntryArray_, ranges);
+    ASSERT_NE(ranges.size(), 0);
     delete buf;
     buf = nullptr;
     GTEST_LOG_(INFO) << "PluginLibJpegTest: GetAreaFromExifEntries002 end";
@@ -1888,6 +1933,7 @@ HWTEST_F(PluginLibJpegTest, getGrColorSpaceTest001, TestSize.Level3)
     GTEST_LOG_(INFO) << "IccProfileInfoTest: getGrColorSpaceTest001 start";
     ICCProfileInfo iccProfileInfo;
     iccProfileInfo.getGrColorSpace();
+    ASSERT_EQ(iccProfileInfo.grColorSpace_.colorSpaceName, OHOS::ColorManager::ColorSpaceName::SRGB);
     GTEST_LOG_(INFO) << "IccProfileInfoTest: getGrColorSpaceTest001 end";
 }
 
@@ -2222,6 +2268,42 @@ HWTEST_F(PluginLibJpegTest, Jpeg_EncoderTest006, TestSize.Level3)
     Jpegencoder->Deinterweave(uvPlane, uPlane, vPlane, curRow, width, height);
     ASSERT_EQ(pixelmap.imageInfo_.pixelFormat, PixelFormat::UNKNOWN);
     GTEST_LOG_(INFO) << "PluginLibJpegTest: Jpeg_EncoderTest006 end";
+}
+
+/**
+ * @tc.name: PluginLibJpegTest_FinalizeEncodeTest001
+ * @tc.desc: Verify that JpegEncoder encodes NV12 format image using FinalizeEncode.
+ * @tc.type: FUNC
+ */
+HWTEST_F(PluginLibJpegTest, FinalizeEncodeTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PluginLibJpegTest:PluginLibJpegTest_FinalizeEncodeTest001 start";
+    FinalizeEncodeTest(PixelFormat::NV12);
+    GTEST_LOG_(INFO) << "PluginLibJpegTest:PluginLibJpegTest_FinalizeEncodeTest001 end";
+}
+
+/**
+ * @tc.name: PluginLibJpegTest_FinalizeEncodeTest002
+ * @tc.desc: Verify that JpegEncoder encodes RGBA_F16 format image using FinalizeEncode.
+ * @tc.type: FUNC
+ */
+HWTEST_F(PluginLibJpegTest, FinalizeEncodeTest002, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PluginLibJpegTest:PluginLibJpegTest_FinalizeEncodeTest002 start";
+    FinalizeEncodeTest(PixelFormat::RGBA_F16);
+    GTEST_LOG_(INFO) << "PluginLibJpegTest:PluginLibJpegTest_FinalizeEncodeTest002 end";
+}
+
+/**
+ * @tc.name: PluginLibJpegTest_FinalizeEncodeTest003
+ * @tc.desc: Verify that JpegEncoder encodes RGB_565 format image using FinalizeEncode.
+ * @tc.type: FUNC
+ */
+HWTEST_F(PluginLibJpegTest, FinalizeEncodeTest003, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PluginLibJpegTest:PluginLibJpegTest_FinalizeEncodeTest003 start";
+    FinalizeEncodeTest(PixelFormat::RGB_565);
+    GTEST_LOG_(INFO) << "PluginLibJpegTest:PluginLibJpegTest_FinalizeEncodeTest003 end";
 }
 } // namespace Multimedia
 } // namespace OHOS

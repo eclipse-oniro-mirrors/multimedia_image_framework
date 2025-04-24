@@ -61,7 +61,8 @@ HWTEST_F(InterfaceTest, InterfaceTest001, TestSize.Level3)
     std::unique_ptr<IncrementalPixelMap> incPixelMap = imageSource->CreateIncrementalPixelMap(0, decodeOpts,
         errorCode);
     uint8_t decodeProgress = 0;
-    incPixelMap->PromoteDecoding(decodeProgress);
+    uint32_t ret = incPixelMap->PromoteDecoding(decodeProgress);
+    ASSERT_EQ(ret, ERR_IMAGE_SOURCE_DATA);
     GTEST_LOG_(INFO) << "InterfaceTest: InterfaceTest001 end";
 }
 

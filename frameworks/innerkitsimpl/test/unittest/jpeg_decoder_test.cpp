@@ -53,6 +53,10 @@ constexpr uint8_t JPG_MARKER_RST = 0XD0;
 constexpr uint8_t JPG_MARKER_RST0 = 0XD0;
 constexpr uint8_t JPG_MARKER_APP = 0XE0;
 constexpr uint8_t JPG_MARKER_APP0 = 0XE0;
+static const std::string IMAGE_INPUT_JPG_PATH = "/data/local/tmp/image/800-500.jpg";
+static constexpr int32_t IMAGE_INPUT_JPG_WIDTH = 800;
+static constexpr int32_t IMAGE_INPUT_JPG_HEIGHT = 500;
+static constexpr int32_t NUM_4 = 4;
 class JpegDecoderTest : public testing::Test {
 public:
     JpegDecoderTest() {}
@@ -1243,6 +1247,35 @@ HWTEST_F(JpegDecoderTest, JpegDecoderTest0058, TestSize.Level3)
     ASSERT_EQ(value, 90);
     ASSERT_EQ(ret, Media::SUCCESS);
     GTEST_LOG_(INFO) << "JpegDecoderTest: JpegDecoderTest0058 end";
+}
+
+/**
+ * @tc.name: JpegDecoderTest_SetDecodeOptionsTest001
+ * @tc.desc: Verify that JpegDecoder decoders image when desired size is smaller than the actual size.
+ * @tc.type: FUNC
+ */
+HWTEST_F(JpegDecoderTest, SetDecodeOptionsTest006, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "JpegDecoderTest: SetDecodeOptionsTest006 start";
+    auto jpegDecoder = std::make_shared<JpegDecoder>();
+    ASSERT_NE(jpegDecoder.get(), nullptr);
+    uint32_t errorCode = -1;
+    SourceOptions sourceOpts;
+    sourceOpts.formatHint = "image/jpeg";
+    std::unique_ptr<ImageSource> imageSource =
+        ImageSource::CreateImageSource(IMAGE_INPUT_JPG_PATH, sourceOpts, errorCode);
+    ASSERT_NE(imageSource, nullptr);
+    ASSERT_EQ(errorCode, SUCCESS);
+    jpegDecoder->SetSource(*(imageSource->sourceStreamPtr_.get()));
+    PixelDecodeOptions decodeOpts;
+    decodeOpts.desiredPixelFormat = PixelFormat::ARGB_8888;
+    decodeOpts.editable = true;
+    decodeOpts.desiredSize.width = IMAGE_INPUT_JPG_WIDTH / NUM_4;
+    decodeOpts.desiredSize.height = IMAGE_INPUT_JPG_HEIGHT / NUM_4;
+    PlImageInfo plInfo;
+    errorCode = jpegDecoder->SetDecodeOptions(0, decodeOpts, plInfo);
+    ASSERT_EQ(errorCode, SUCCESS);
+    GTEST_LOG_(INFO) << "JpegDecoderTest: SetDecodeOptionsTest006 end";
 }
 }
 }

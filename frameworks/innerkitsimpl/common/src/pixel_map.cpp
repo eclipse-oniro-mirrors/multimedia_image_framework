@@ -462,9 +462,9 @@ unique_ptr<PixelMap> PixelMap::Create(const uint32_t *colors, uint32_t colorLeng
     }
 
     BufferInfo srcInfo = {const_cast<void*>(static_cast<const void*>(colors + offset)), opts.srcRowStride,
-        srcImageInfo, opts.convertColorSpace.srcRange, colorLength};
+        srcImageInfo, opts.convertColorSpace.srcRange, colorLength, opts.convertColorSpace.srcYuvConversion};
     BufferInfo dstInfo = {dstMemory->data.data, dstRowStride, dstImageInfo, opts.convertColorSpace.dstRange,
-        dstMemory->data.size};
+        dstMemory->data.size, opts.convertColorSpace.dstYuvConversion};
     int32_t dstLength =
         PixelConvert::PixelsConvert(srcInfo, dstInfo, colorLength, dstMemory->GetType() == AllocatorType::DMA_ALLOC);
     if (dstLength < 0) {
@@ -616,6 +616,14 @@ bool PixelMap::CheckParams(const uint32_t *colors, uint32_t colorLength, int32_t
     if (offset < 0 || static_cast<int64_t>(offset) + dstWidth > colorLength || lastLine + dstWidth > colorLength) {
         IMAGE_LOGE("colors length: %{public}u, offset: %{public}d, width: %{public}d  is invalid",
             colorLength, offset, width);
+        return false;
+    }
+    if (opts.convertColorSpace.srcYuvConversion < YuvConversion::BT601 ||
+        opts.convertColorSpace.srcYuvConversion >= YuvConversion::BT_MAX ||
+        opts.convertColorSpace.dstYuvConversion < YuvConversion::BT601 ||
+        opts.convertColorSpace.dstYuvConversion >= YuvConversion::BT_MAX) {
+        IMAGE_LOGE("convertColorSpace yuvConversion:%{public}d,%{public}d error",
+            opts.convertColorSpace.srcYuvConversion, opts.convertColorSpace.dstYuvConversion);
         return false;
     }
     return true;
@@ -2610,7 +2618,10 @@ bool PixelMap::Marshalling(Parcel &parcel) const
         IMAGE_LOGE("set parcel max capacity:[%{public}zu] failed.", capacityLength);
         return false;
     }
-
+    if (!parcel.WriteInt32(static_cast<int32_t>(-PIXELMAP_VERSION_LATEST))) {
+        IMAGE_LOGE("write image info pixelmap version to parcel failed.");
+        return false;
+    }
     if (!WritePropertiesToParcel(parcel)) {
         IMAGE_LOGE("write info to parcel failed.");
         return false;
@@ -2746,6 +2757,17 @@ bool PixelMap::ReadAstcRealSize(Parcel &parcel, PixelMap *pixelMap)
 
 bool PixelMap::ReadPropertiesFromParcel(Parcel& parcel, PixelMap*& pixelMap, ImageInfo& imgInfo, PixelMemInfo& memInfo)
 {
+    int32_t readVersion = PIXELMAP_VERSION_START;
+    const size_t startReadPosition = parcel.GetReadPosition();
+
+    int32_t firstInt32 = parcel.ReadInt32();
+    if (firstInt32 <= -PIXELMAP_VERSION_START) {
+        // version present in parcel (consider width < -2^16 is not possible), read it first
+        readVersion = -firstInt32;
+    } else {
+        // old way: no version let's consider it's oldest
+        parcel.RewindRead(startReadPosition);
+    }
     if (!ReadImageInfo(parcel, imgInfo)) {
         IMAGE_LOGE("ReadPropertiesFromParcel: read image info failed");
         return false;
@@ -2777,11 +2799,16 @@ bool PixelMap::ReadPropertiesFromParcel(Parcel& parcel, PixelMap*& pixelMap, Ima
         return false;
     }
 
+    pixelMap->SetReadVersion(readVersion);
     pixelMap->SetEditable(parcel.ReadBool());
     memInfo.isAstc = parcel.ReadBool();
     pixelMap->SetAstc(memInfo.isAstc);
-    bool displayOnly = parcel.ReadBool();
-    pixelMap->SetDisplayOnly(displayOnly);
+    if (pixelMap->GetReadVersion() >= PIXELMAP_VERSION_DISPLAY_ONLY) {
+        bool displayOnly = parcel.ReadBool();
+        pixelMap->SetDisplayOnly(displayOnly);
+    } else {
+        pixelMap->SetDisplayOnly(false);
+    }
     int32_t readAllocatorValue = parcel.ReadInt32();
     if (readAllocatorValue < static_cast<int32_t>(AllocatorType::DEFAULT) ||
         readAllocatorValue > static_cast<int32_t>(AllocatorType::DMA_ALLOC)) {
