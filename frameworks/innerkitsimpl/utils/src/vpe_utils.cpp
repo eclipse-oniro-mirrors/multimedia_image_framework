@@ -214,6 +214,10 @@ int32_t VpeUtils::ColorSpaceConverterDecomposeImage(VpeSurfaceBuffers& sb)
 // surfacebuffer metadata
 static GSError SetColorSpaceInfo(sptr<SurfaceBuffer>& buffer, const CM_ColorSpaceInfo& colorSpaceInfo)
 {
+    if (buffer == nullptr) {
+        IMAGE_LOGE("%{public}s failed, buffer is nullptr", __func__);
+        return GSERROR_INVALID_ARGUMENTS;
+    }
     std::vector<uint8_t> colorSpaceInfoVec;
     auto ret = MetadataManager::ConvertMetadataToVec(colorSpaceInfo, colorSpaceInfoVec);
     if (ret != GSERROR_OK) {
