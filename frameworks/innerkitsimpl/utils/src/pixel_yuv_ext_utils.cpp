@@ -368,6 +368,11 @@ static void ScaleP010(YuvPixels yuvPixels, OpenSourceLibyuv::ImageYuvConverter &
     YUVStrideInfo srcStrides = {yuvInfo.yuvDataInfo.yStride, yuvInfo.yuvDataInfo.uvStride,
         yuvInfo.yuvDataInfo.yOffset, yuvInfo.yuvDataInfo.uvOffset};
     YUVStrideInfo dstStride = {yuvInfo.width, GetUVStride(yuvInfo.width), 0, GetYSize(yuvInfo.width, yuvInfo.height)};
+    if (srcStrides.yStride > yuvInfo.yuvDataInfo.yStride ||
+        dstStride.yStride * height > GetImageSize(yuvInfo.width, height)) {
+        IMAGE_LOGE("%{public}s, At CopyP010Pixels use memcpy data ptr not match data size", __func__);
+        return;
+    }
     if (!CopyP010Pixels(srcBuffer, srcStrides, srcPixels.get(), dstStride, yuvInfo.yuvDataInfo.yHeight)) {
         return;
     }
