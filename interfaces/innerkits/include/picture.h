@@ -44,6 +44,7 @@ public:
     NATIVEEXPORT std::shared_ptr<AuxiliaryPicture> GetAuxiliaryPicture(AuxiliaryPictureType type);
     NATIVEEXPORT void SetAuxiliaryPicture(std::shared_ptr<AuxiliaryPicture> &picture);
     NATIVEEXPORT bool HasAuxiliaryPicture(AuxiliaryPictureType type);
+    NATIVEEXPORT void DropAuxiliaryPicture(AuxiliaryPictureType type);
     NATIVEEXPORT virtual bool Marshalling(Parcel &data) const override;
     NATIVEEXPORT static Picture *Unmarshalling(Parcel &data);
     NATIVEEXPORT static Picture *Unmarshalling(Parcel &data, PICTURE_ERR &error);
