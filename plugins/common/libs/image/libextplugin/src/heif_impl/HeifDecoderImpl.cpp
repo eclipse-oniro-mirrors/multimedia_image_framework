@@ -365,6 +365,10 @@ bool HeifDecoderImpl::init(HeifStream *stream, HeifFrameInfo *frameInfo)
         }
         stream->read(srcMemory_, fileLength);
     }
+    if (stream != nullptr) {
+        delete stream;
+        stream = nullptr;
+    }
 
     heif_error err = HeifParser::MakeFromMemory(srcMemory_, fileLength, false, &parser_);
     if (parser_ == nullptr || err != heif_error_ok) {
