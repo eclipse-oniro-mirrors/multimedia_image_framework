@@ -56,6 +56,7 @@ static const int32_t DEGREES360 = 360;
 static const int32_t PLANE_Y = 0;
 static const int32_t PLANE_U = 1;
 static const int32_t PLANE_V = 2;
+static const float ROUND_FLOAT_NUMBER = 0.5f;
 constexpr uint8_t Y_SHIFT = 16;
 constexpr uint8_t U_SHIFT = 8;
 constexpr uint8_t V_SHIFT = 0;
@@ -418,8 +419,8 @@ void PixelYuv::scale(float xAxis, float yAxis, const AntiAliasingOption &option)
     }
     ImageInfo imageInfo;
     GetImageInfo(imageInfo);
-    int32_t dstW = imageInfo.size.width * xAxis;
-    int32_t dstH = imageInfo.size.height * yAxis;
+    int32_t dstW = (imageInfo.size.width * xAxis + ROUND_FLOAT_NUMBER);
+    int32_t dstH = (imageInfo.size.height * yAxis + ROUND_FLOAT_NUMBER);
     YUVStrideInfo dstStrides;
     auto dstMemory = CreateMemory(imageInfo.pixelFormat, "scale ImageData", dstW, dstH, dstStrides);
     if (dstMemory == nullptr) {
