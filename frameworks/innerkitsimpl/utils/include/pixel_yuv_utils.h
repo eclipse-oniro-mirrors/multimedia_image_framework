@@ -101,6 +101,16 @@ public:
     static void Yuv420SPTranslate(const uint8_t *srcPixels, YUVDataInfo &yuvInfo,
         uint8_t *dstPixels, XYaxis &xyAxis, ImageInfo &info, YUVStrideInfo &strides);
     static bool CheckWidthAndHeightMult(const int32_t &width, const int32_t &height, const int32_t &multiples);
+
+    /**
+     * @brief Check the axis is legal, about the overflow and not finite and compare with the max dimension,
+     *        if the axis is legal, return true, otherwise return false
+     * @param xAxis The x axis it is the offset of the width
+     * @param yAxis The y axis it is the offset of the height
+     * @param info The image info it is the image info of the source image
+     * @return true if the axis is legal, false otherwise
+     */
+    static bool IsLegalAxis(float xAxis, float yAxis, ImageInfo &info);
 };
 } // namespace Media
 } // namespace OHOS

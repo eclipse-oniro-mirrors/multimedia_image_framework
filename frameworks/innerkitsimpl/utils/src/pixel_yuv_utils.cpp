@@ -52,6 +52,7 @@ constexpr uint8_t UV_DEFAULT = 0x80;
 constexpr uint8_t TRANSPOSE_CLOCK = 1;
 constexpr uint8_t TRANSPOSE_CCLOCK = 2;
 constexpr int32_t EXPR_SUCCESS = 0;
+constexpr int32_t MAX_DIMENSION = INT32_MAX >> NUM_2;
 
 static const std::map<PixelFormat, AVPixelFormat> FFMPEG_PIXEL_FORMAT_MAP = {
     {PixelFormat::UNKNOWN, AVPixelFormat::AV_PIX_FMT_NONE},
@@ -1057,9 +1058,47 @@ static void P010Translate(YuvPixelsP010Translate yuvPixels, YUVDataInfo &yuvInfo
     }
 }
 
+bool PixelYuvUtils::IsLegalAxis(float xAxis, float yAxis, ImageInfo &imageInfo_)
+{
+    if (abs(xAxis) > static_cast<float>(INT32_MAX) ||
+        abs(yAxis) > static_cast<float>(INT32_MAX)) {
+        IMAGE_LOGE("translate axis overflow xAxis(%{public}f), yAxis(%{public}f)", xAxis, yAxis);
+        return false;
+    }
+    if (!std::isfinite(xAxis) || !std::isfinite(yAxis)) {
+        IMAGE_LOGE("translate axis not finite");
+        return false;
+    }
+    int32_t xOffset = static_cast<int32_t>(xAxis);
+    int32_t yOffset = static_cast<int32_t>(yAxis);
+    if (imageInfo_.size.width > INT32_MAX - xOffset) {
+        IMAGE_LOGE("translate width overflow width(%{public}d) + xOffset(%{public}d)",
+            imageInfo_.size.width, xOffset);
+        return false;
+    }
+    if (imageInfo_.size.height > INT32_MAX - yOffset) {
+        IMAGE_LOGE("translate height overflow height(%{public}d) + yOffset(%{public}d)",
+            imageInfo_.size.height, yOffset);
+        return false;
+    }
+    if (xOffset == 0 && yOffset == 0) {
+        return false;
+    }
+    int32_t width = imageInfo_.size.width + xOffset;
+    int32_t height = imageInfo_.size.height + yOffset;
+    if (width < 1 || height < 1 || width > MAX_DIMENSION || height > MAX_DIMENSION) {
+        IMAGE_LOGE("Checktranslate size overflow width(%{public}d), height(%{public}d)", width, height);
+        return false;
+    }
+    return true;
+}
+
 bool PixelYuvUtils::YuvTranslate(const uint8_t *srcPixels, YUVDataInfo &yuvInfo, uint8_t *dstPixels, XYaxis &xyAxis,
     ImageInfo &info, YUVStrideInfo &dstStrides)
 {
+    if (!IsLegalAxis(xyAxis.xAxis, xyAxis.yAxis, info)) {
+        return false;
+    }
     switch (info.pixelFormat) {
         case PixelFormat::NV21:
         case PixelFormat::NV12: {
