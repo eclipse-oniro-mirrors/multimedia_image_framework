@@ -65,7 +65,6 @@ public:
     void getISOMetadata(std::vector<uint8_t>& isoMetadata) override;
     void getErrMsg(std::string& errMsg) override;
     GridInfo GetGridInfo();
-    bool ProcessThumbnailImage();
     bool CheckAuxiliaryMap(Media::AuxiliaryPictureType type);
     bool setAuxiliaryMap(Media::AuxiliaryPictureType type);
     bool getAuxiliaryMapInfo(HeifFrameInfo* frameInfo);

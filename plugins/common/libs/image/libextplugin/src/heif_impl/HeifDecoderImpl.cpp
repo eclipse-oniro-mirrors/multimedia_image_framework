@@ -394,22 +394,6 @@ GridInfo HeifDecoderImpl::GetGridInfo()
     return gridInfo_;
 }
 
-bool HeifDecoderImpl::ProcessThumbnailImage()
-{
-    if (primaryImage_ == nullptr) {
-        IMAGE_LOGE("Primary image is not init");
-        return false;
-    }
-    auto thumbImages = primaryImage_->GetThumbnailImages();
-    if (thumbImages.size() > 0) {
-        auxiliaryImage_ = thumbImages[0];
-    } else {
-        IMAGE_LOGE("Heif parser has not thumbnail Images.");
-        return false;
-    }
-    return true;
-}
-
 bool HeifDecoderImpl::CheckAuxiliaryMap(AuxiliaryPictureType type)
 {
     if (parser_ == nullptr) {
@@ -428,12 +412,6 @@ bool HeifDecoderImpl::CheckAuxiliaryMap(AuxiliaryPictureType type)
         case AuxiliaryPictureType::FRAGMENT_MAP:
             auxiliaryImage_ = parser_->GetAuxiliaryMapImage(iter->second);
             break;
-        case AuxiliaryPictureType::THUMBNAIL: {
-            if (!ProcessThumbnailImage()) {
-                return false;
-            }
-            break;
-        }
         default:
             auxiliaryImage_ = nullptr;
             IMAGE_LOGE("Invalid AuxiliaryPictureType: %{public}d", type);
