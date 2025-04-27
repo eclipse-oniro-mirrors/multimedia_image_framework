@@ -30,9 +30,26 @@
 using namespace testing::ext;
 using namespace OHOS::Media;
 using namespace OHOS::MultimediaPlugin;
+
+struct OHOS::MultimediaPlugin::VersionNum {
+    uint16_t major = 0;
+    uint16_t minor = 0;
+    uint16_t micro = 0;
+    uint16_t nano = 0;
+};
+
 namespace OHOS {
 namespace Multimedia {
 static constexpr uint32_t SUCCESS = 0;
+static constexpr uint16_t UINT16_ONE = 1;
+static const std::string OVER_UINT16_VALUE_STRING = "70000";
+
+static void StopFunction() {}
+static bool StartFunction()
+{
+    return false;
+}
+
 class PluginsManagerSrcFrameWorkTest : public testing::Test {
 public:
     PluginsManagerSrcFrameWorkTest() {}
@@ -1514,6 +1531,425 @@ HWTEST_F(PluginsManagerSrcFrameWorkTest, ComparePriorityTest015, TestSize.Level3
     uint32_t ret = implClassMgr.ComparePriority(lhs, rhs, type);
     ASSERT_EQ(ret, ERR_COMP_ERROR);
     GTEST_LOG_(INFO) << "PluginsManagerSrcFrameWorkTest: ComparePriorityTest015 end";
+}
+
+/**
+ * @tc.name: GetUint32ValueTest011
+ * @tc.desc: test the GetUint32Value when in the normal scen
+ * @tc.type: FUNC
+ */
+HWTEST_F(PluginsManagerSrcFrameWorkTest, GetUint32ValueTest011, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PluginsManagerSrcFrameWorkTest: GetUint32ValueTest011 start";
+    const nlohmann::json jsonNum = 0;
+    uint32_t value = 0;
+    uint32_t ret = JsonHelper::GetUint32Value(jsonNum, value);
+    ASSERT_EQ(ret, SUCCESS);
+    GTEST_LOG_(INFO) << "PluginsManagerSrcFrameWorkTest: GetUint32ValueTest011 end";
+}
+
+/**
+ * @tc.name: GetUint32ValueTest012
+ * @tc.desc: test the GetUint32Value when in the normal scen
+ * @tc.type: FUNC
+ */
+HWTEST_F(PluginsManagerSrcFrameWorkTest, GetUint32ValueTest012, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PluginsManagerSrcFrameWorkTest: GetUint32ValueTest012 start";
+    const std::string key = "Num_0";
+    const nlohmann::json jsonNum = 0;
+    const nlohmann::json jsonObject = {{"Num_0", jsonNum}};
+    uint32_t value = 0;
+
+    uint32_t ret = JsonHelper::GetUint32Value(jsonObject, key, value);
+    ASSERT_EQ(ret, SUCCESS);
+    GTEST_LOG_(INFO) << "PluginsManagerSrcFrameWorkTest: GetUint32ValueTest012 end";
+}
+
+/**
+ * @tc.name: GetUint16ValueTest011
+ * @tc.desc: test the GetUint16Value when in the jsonNum is not integer
+ * @tc.type: FUNC
+ */
+HWTEST_F(PluginsManagerSrcFrameWorkTest, GetUint16ValueTest011, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PluginsManagerSrcFrameWorkTest: GetUint16ValueTest011 start";
+    const nlohmann::json jsonNum;
+    const std::string key = "key";
+    const nlohmann::json jsonObject = {{"key", jsonNum}};
+    uint16_t value = 0;
+
+    uint32_t ret = JsonHelper::GetUint16Value(jsonObject, key, value);
+    EXPECT_EQ(ret, ERR_DATA_TYPE);
+    GTEST_LOG_(INFO) << "PluginsManagerSrcFrameWorkTest: GetUint16ValueTest011 end";
+}
+
+/**
+ * @tc.name: GetUint16ValueTest012
+ * @tc.desc: test the GetUint16Value when in the jsonNum is less than 0
+ * @tc.type: FUNC
+ */
+HWTEST_F(PluginsManagerSrcFrameWorkTest, GetUint16ValueTest012, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PluginsManagerSrcFrameWorkTest: GetUint16ValueTest012 start";
+    const nlohmann::json jsonNum = -1;
+    const std::string key = "key";
+    const nlohmann::json jsonObject = {{"key", jsonNum}};
+    uint16_t value = 0;
+
+    uint32_t ret = JsonHelper::GetUint16Value(jsonObject, key, value);
+    EXPECT_EQ(ret, ERR_DATA_TYPE);
+    GTEST_LOG_(INFO) << "PluginsManagerSrcFrameWorkTest: GetUint16ValueTest012 end";
+}
+
+/**
+ * @tc.name: GetUint16ValueTest013
+ * @tc.desc: test the GetUint16Value when in the jsonNum is over than UINT16_MAX_VALUE
+ * @tc.type: FUNC
+ */
+HWTEST_F(PluginsManagerSrcFrameWorkTest, GetUint16ValueTest013, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PluginsManagerSrcFrameWorkTest: GetUint16ValueTest013 start";
+    const nlohmann::json jsonNum = UINT16_MAX_VALUE + 1;
+    const std::string key = "key";
+    const nlohmann::json jsonObject = {{"key", jsonNum}};
+    uint16_t value = 0;
+
+    uint32_t ret = JsonHelper::GetUint16Value(jsonObject, key, value);
+    EXPECT_EQ(ret, ERR_DATA_TYPE);
+    GTEST_LOG_(INFO) << "PluginsManagerSrcFrameWorkTest: GetUint16ValueTest013 end";
+}
+
+/**
+ * @tc.name: GetArraySizeTest011
+ * @tc.desc: test the GetArraySize when jsonArray is not array
+ * @tc.type: FUNC
+ */
+HWTEST_F(PluginsManagerSrcFrameWorkTest, GetArraySizeTest011, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PluginsManagerSrcFrameWorkTest: GetArraySizeTest011 start";
+    const nlohmann::json jsonNum = 0;
+    const std::string key = "Num_0";
+    size_t size = 0;
+
+    uint32_t ret = JsonHelper::GetArraySize(jsonNum, key, size);
+    EXPECT_EQ(ret, ERR_DATA_TYPE);
+    GTEST_LOG_(INFO) << "PluginsManagerSrcFrameWorkTest: GetArraySizeTest011 end";
+}
+
+/**
+ * @tc.name: RegisterTest011
+ * @tc.desc: test the Register when state is not PLUGIN_STATE_UNREGISTER
+ * @tc.type: FUNC
+ */
+HWTEST_F(PluginsManagerSrcFrameWorkTest, RegisterTest011, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PluginsManagerSrcFrameWorkTest: RegisterTest011 start";
+    std::istringstream istream("");
+    std::string libraryPath = "libraryPath";
+    std::weak_ptr<Plugin> pluginWptr;
+    Plugin plugin;
+    plugin.state_ = PluginState::PLUGIN_STATE_REGISTERED;
+
+    uint32_t res = plugin.Register(istream, move(libraryPath), pluginWptr);
+    EXPECT_EQ(res, ERR_INTERNAL);
+    GTEST_LOG_(INFO) << "PluginsManagerSrcFrameWorkTest: RegisterTest011 end";
+}
+
+/**
+ * @tc.name: RefTest011
+ * @tc.desc: test the Ref when state is PLUGIN_STATE_REGISTERED and ResolveLibrary fail
+ * @tc.type: FUNC
+ */
+HWTEST_F(PluginsManagerSrcFrameWorkTest, RefTest011, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PluginsManagerSrcFrameWorkTest: RefTest011 start";
+    Plugin plugin;
+    plugin.state_ = PluginState::PLUGIN_STATE_REGISTERED;
+    plugin.libraryPath_ = "";
+
+    uint32_t errCode = plugin.Ref();
+    EXPECT_EQ(errCode, ERR_GENERAL);
+    GTEST_LOG_(INFO) << "PluginsManagerSrcFrameWorkTest: RefTest011 end";
+}
+
+/**
+ * @tc.name: RefTest012
+ * @tc.desc: test the Ref when state is PLUGIN_STATE_RESOLVE and startFun return false
+ * @tc.type: FUNC
+ */
+HWTEST_F(PluginsManagerSrcFrameWorkTest, RefTest012, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PluginsManagerSrcFrameWorkTest: RefTest012 start";
+    Plugin plugin;
+    plugin.state_ = PluginState::PLUGIN_STATE_RESOLVED;
+    plugin.startFunc_ = (PluginStartFunc)StartFunction;
+
+    uint32_t errCode = plugin.Ref();
+    EXPECT_EQ(errCode, ERR_GENERAL);
+    EXPECT_EQ(plugin.state_, PluginState::PLUGIN_STATE_REGISTERED);
+    GTEST_LOG_(INFO) << "PluginsManagerSrcFrameWorkTest: RefTest012 end";
+}
+
+/**
+ * @tc.name: GetCreateFuncTest011
+ * @tc.desc: test the GetCreateFunc when state is PluginState::PLUGIN_STATE_ACTIVE or not or refNum_ is 0
+ * @tc.type: FUNC
+ */
+HWTEST_F(PluginsManagerSrcFrameWorkTest, GetCreateFuncTest011, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PluginsManagerSrcFrameWorkTest: GetCreateFuncTest011 start";
+    Plugin plugin;
+    plugin.state_ = PluginState::PLUGIN_STATE_UNREGISTER;
+
+    auto res = plugin.GetCreateFunc();
+    EXPECT_EQ(res, nullptr);
+
+    plugin.state_ = PluginState::PLUGIN_STATE_ACTIVE;
+    plugin.refNum_ = 0;
+    res = plugin.GetCreateFunc();
+    EXPECT_EQ(res, nullptr);
+
+    plugin.state_ = PluginState::PLUGIN_STATE_ACTIVE;
+    plugin.refNum_++;
+    res = plugin.GetCreateFunc();
+    EXPECT_EQ(res, nullptr);
+    GTEST_LOG_(INFO) << "PluginsManagerSrcFrameWorkTest: GetCreateFuncTest011 end";
+}
+
+/**
+ * @tc.name: FreeLibraryTest011
+ * @tc.desc: test the FreeLibrary when state is PLUGIN_STATE_STARTING or PLUGIN_STATE_ACTIVE and stopFunc_ is nullptr
+ *           or not and handle is nullptr or not
+ * @tc.type: FUNC
+ */
+HWTEST_F(PluginsManagerSrcFrameWorkTest, FreeLibraryTest011, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PluginsManagerSrcFrameWorkTest: FreeLibraryTest011 start";
+    std::string handleStr = "handle";
+    void* handle = reinterpret_cast<void*>(handleStr.data());
+    Plugin plugin;
+    plugin.state_ = PluginState::PLUGIN_STATE_UNREGISTER;
+    plugin.handle_ = handle;
+
+    plugin.FreeLibrary();
+    EXPECT_EQ(plugin.handle_, nullptr);
+
+    plugin.handle_ = handle;
+    plugin.state_ = PluginState::PLUGIN_STATE_STARTING;
+    plugin.stopFunc_ = (PluginStopFunc)StopFunction;
+    plugin.FreeLibrary();
+    EXPECT_EQ(plugin.stopFunc_, nullptr);
+
+    plugin.handle_ = handle;
+    plugin.state_ = PluginState::PLUGIN_STATE_ACTIVE;
+    plugin.startFunc_ = (PluginStartFunc)StartFunction;
+    plugin.stopFunc_= nullptr;
+    plugin.FreeLibrary();
+    EXPECT_EQ(plugin.startFunc_, nullptr);
+    GTEST_LOG_(INFO) << "PluginsManagerSrcFrameWorkTest: FreeLibraryTest011 end";
+}
+
+/**
+ * @tc.name: CheckTargetVersionTest011
+ * @tc.desc: test the CheckTargetVersion when versionNum is empty
+ * @tc.type: FUNC
+ */
+HWTEST_F(PluginsManagerSrcFrameWorkTest, CheckTargetVersionTest011, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PluginsManagerSrcFrameWorkTest: CheckTargetVersionTest011 start";
+    Plugin plugin;
+    const std::string versionStr = "";
+
+    uint32_t errCode = plugin.CheckTargetVersion(versionStr);
+    EXPECT_NE(errCode, SUCCESS);
+    GTEST_LOG_(INFO) << "PluginsManagerSrcFrameWorkTest: CheckTargetVersionTest011 end";
+}
+
+/**
+ * @tc.name: AnalyzeVersionTest011
+ * @tc.desc: test the AnalyzeVersion when versionNum is error
+ * @tc.type: FUNC
+ */
+HWTEST_F(PluginsManagerSrcFrameWorkTest, AnalyzeVersionTest011, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PluginsManagerSrcFrameWorkTest: AnalyzeVersionTest011 start";
+    Plugin plugin;
+    const std::string errVersionStr = ".0";
+
+    uint32_t errCode = plugin.CheckTargetVersion(errVersionStr);
+    EXPECT_EQ(errCode, ERR_INVALID_PARAMETER);
+    GTEST_LOG_(INFO) << "PluginsManagerSrcFrameWorkTest: AnalyzeVersionTest011 end";
+}
+
+/**
+ * @tc.name: AnalyzeVersionTest012
+ * @tc.desc: test the AnalyzeVersion when versionNum is full
+ * @tc.type: FUNC
+ */
+HWTEST_F(PluginsManagerSrcFrameWorkTest, AnalyzeVersionTest012, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PluginsManagerSrcFrameWorkTest: AnalyzeVersionTest011 start";
+    Plugin plugin;
+    const std::string versionStr = "1.2.3.4";
+    VersionNum versionNum;
+
+    uint32_t errCode = plugin.AnalyzeVersion(versionStr, versionNum);
+    EXPECT_EQ(errCode, SUCCESS);
+    GTEST_LOG_(INFO) << "PluginsManagerSrcFrameWorkTest: AnalyzeVersionTest011 end";
+}
+
+/**
+ * @tc.name: GetUint16ValueFromDecimalTest011
+ * @tc.desc: test the GetUint16ValueFromDecimal when the character in source is invalid
+ * @tc.type: FUNC
+ */
+HWTEST_F(PluginsManagerSrcFrameWorkTest, GetUint16ValueFromDecimalTest011, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PluginsManagerSrcFrameWorkTest: GetUint16ValueFromDecimalTest011 start";
+    Plugin plugin;
+    std::string source = "-0123";
+    uint16_t result = 0;
+    uint32_t errCode = plugin.GetUint16ValueFromDecimal(source, result);
+    EXPECT_EQ(errCode, ERR_INVALID_PARAMETER);
+
+    source = "abc";
+    result = 0;
+    errCode = plugin.GetUint16ValueFromDecimal(source, result);
+    EXPECT_EQ(errCode, ERR_INVALID_PARAMETER);
+
+    source = OVER_UINT16_VALUE_STRING;
+    result = 0;
+    errCode = plugin.GetUint16ValueFromDecimal(source, result);
+    EXPECT_EQ(errCode, ERR_INVALID_PARAMETER);
+    GTEST_LOG_(INFO) << "PluginsManagerSrcFrameWorkTest: GetUint16ValueFromDecimalTest011 end";
+}
+
+/**
+ * @tc.name: TraverseFilesTest011
+ * @tc.desc: test the TraverseFiles when strFiles is empty
+ * @tc.type: FUNC
+ */
+HWTEST_F(PluginsManagerSrcFrameWorkTest, TraverseFilesTest011, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PluginsManagerSrcFrameWorkTest: TraverseFilesTest011 start";
+    PluginMgr &pluginMgr = DelayedRefSingleton<PluginMgr>::GetInstance();
+    std::string canonicalPath = "";
+    uint32_t errCode = pluginMgr.TraverseFiles(canonicalPath);
+    EXPECT_EQ(errCode, ERR_GENERAL);
+    GTEST_LOG_(INFO) << "PluginsManagerSrcFrameWorkTest: TraverseFilesTest011 end";
+}
+
+/**
+ * @tc.name: CheckPluginMetaFileTest011
+ * @tc.desc: test the CheckPluginMetaFile when candidateFile is invalid or fileExt is invalid
+ * @tc.type: FUNC
+ */
+HWTEST_F(PluginsManagerSrcFrameWorkTest, CheckPluginMetaFileTest011, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PluginsManagerSrcFrameWorkTest: CheckPluginMetaFileTest011 start";
+    const std::string libraryFileSuffix = "so";
+    PluginMgr &pluginMgr = DelayedRefSingleton<PluginMgr>::GetInstance();
+    std::string canonicalPath = "test.test";
+    std::string libraryPath = "libraryPath.test";
+    bool res = pluginMgr.CheckPluginMetaFile(canonicalPath, libraryPath, libraryFileSuffix);
+    EXPECT_FALSE(res);
+
+    canonicalPath = "test.pluginmeta";
+    libraryPath = "libraryPath.test";
+    res = pluginMgr.CheckPluginMetaFile(canonicalPath, libraryPath, libraryFileSuffix);
+    EXPECT_FALSE(res);
+
+    canonicalPath = "test.pluginmeta";
+    libraryPath = "/test/libraryPath.so";
+    res = pluginMgr.CheckPluginMetaFile(canonicalPath, libraryPath, libraryFileSuffix);
+    EXPECT_FALSE(res);
+    GTEST_LOG_(INFO) << "PluginsManagerSrcFrameWorkTest: CheckPluginMetaFileTest011 end";
+}
+
+/**
+ * @tc.name: RegisterPluginTest011
+ * @tc.desc: test the RegisterPlugin when metadataJson is empty or not json format
+ * @tc.type: FUNC
+ */
+HWTEST_F(PluginsManagerSrcFrameWorkTest, RegisterPluginTest011, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PluginsManagerSrcFrameWorkTest: RegisterPluginTest011 start";
+    PluginMgr &pluginMgr = DelayedRefSingleton<PluginMgr>::GetInstance();
+    std::string metadataJson = "";
+    uint32_t errCode = pluginMgr.RegisterPlugin(metadataJson);
+    EXPECT_EQ(errCode, ERR_INVALID_PARAMETER);
+
+    metadataJson = "error_json_format";
+    errCode = pluginMgr.RegisterPlugin(metadataJson);
+    EXPECT_EQ(errCode, ERR_INVALID_PARAMETER);
+    GTEST_LOG_(INFO) << "PluginsManagerSrcFrameWorkTest: RegisterPluginTest011 end";
+}
+
+/**
+ * @tc.name: AnalysisServicesTest011
+ * @tc.desc: test the AnalysisServices when classInfo is invalid
+ * @tc.type: FUNC
+ */
+HWTEST_F(PluginsManagerSrcFrameWorkTest, AnalysisServicesTest011, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PluginsManagerSrcFrameWorkTest: AnalysisServicesTest011 start";
+    ImplClass implClass;
+    const nlohmann::json classInfo;
+    bool res = implClass.AnalysisServices(classInfo);
+    EXPECT_FALSE(res);
+    GTEST_LOG_(INFO) << "PluginsManagerSrcFrameWorkTest: AnalysisServicesTest011 end";
+}
+
+/**
+ * @tc.name: AnalysisMaxInstanceTest011
+ * @tc.desc: test the AnalysisMaxInstance when maxInstance is 0 or result is not ERR_NO_TARGET
+ * @tc.type: FUNC
+ */
+HWTEST_F(PluginsManagerSrcFrameWorkTest, AnalysisMaxInstanceTest011, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PluginsManagerSrcFrameWorkTest: AnalysisMaxInstanceTest011 start";
+    ImplClass implClass;
+    nlohmann::json jsonNum = 0;
+    nlohmann::json classInfo = {{"maxInstance", jsonNum}};
+    bool res = implClass.AnalysisMaxInstance(classInfo);
+    EXPECT_FALSE(res);
+    EXPECT_EQ(implClass.maxInstance_, 0);
+
+    classInfo = "error_json_format";
+    res = implClass.AnalysisMaxInstance(classInfo);
+    EXPECT_FALSE(res);
+
+    jsonNum = 1;
+    classInfo = {{"maxInstance", jsonNum}};
+    res = implClass.AnalysisMaxInstance(classInfo);
+    EXPECT_TRUE(res);
+    EXPECT_EQ(implClass.maxInstance_, UINT16_ONE);
+
+    classInfo = {{"key", jsonNum}};
+    res = implClass.AnalysisMaxInstance(classInfo);
+    EXPECT_TRUE(res);
+    EXPECT_EQ(implClass.maxInstance_, ImplClass::INSTANCE_NO_LIMIT_NUM);
+    GTEST_LOG_(INFO) << "PluginsManagerSrcFrameWorkTest: AnalysisMaxInstanceTest011 end";
+}
+
+/**
+ * @tc.name: DoCreateObjectTest011
+ * @tc.desc: test the DoCreateObject when factory is nullptr
+ * @tc.type: FUNC
+ */
+HWTEST_F(PluginsManagerSrcFrameWorkTest, DoCreateObjectTest011, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PluginsManagerSrcFrameWorkTest: DoCreateObjectTest011 start";
+    auto pluginSptr = std::make_shared<Plugin>();
+    ASSERT_NE(pluginSptr, nullptr);
+    pluginSptr->state_ = PluginState::PLUGIN_STATE_UNREGISTER;
+    ASSERT_EQ(pluginSptr->GetCreateFunc(), nullptr);
+
+    ImplClass implClass;
+    auto res = implClass.DoCreateObject(pluginSptr);
+    EXPECT_EQ(res, nullptr);
+    GTEST_LOG_(INFO) << "PluginsManagerSrcFrameWorkTest: DoCreateObjectTest011 end";
 }
 }
 }

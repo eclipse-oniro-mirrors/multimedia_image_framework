@@ -108,5 +108,23 @@ HWTEST_F(ImageCreatorManagerTest, GetImageCreatorByKeyId001, TestSize.Level3)
     ASSERT_EQ(getimagec, nullptr);
     GTEST_LOG_(INFO) << "ImageCreatorManagerTest: GetImageCreatorByKeyId001 end";
 }
+
+/**
+ * @tc.name: GetSurfaceByKeyId003
+ * @tc.desc: Vertify that GetSurfaceByKeyId can get valid imageCreator.
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageCreatorManagerTest, GetSurfaceByKeyId003, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImageCreatorManagerTest: GetSurfaceByKeyId003 start";
+    ImageCreatorManager& imageCreatorManager = ImageCreatorManager::getInstance();
+    shared_ptr<ImageCreator> imageCreator = std::make_shared<ImageCreator>();
+    imageCreator->iraContext_ = ImageCreatorContext::CreateImageCreatorContext();
+    string keyId = imageCreatorManager.SaveImageCreator(imageCreator);
+    ASSERT_NE(keyId, std::string{});
+    auto ret = imageCreatorManager.GetSurfaceByKeyId(keyId);
+    ASSERT_EQ(ret, nullptr);
+    GTEST_LOG_(INFO) << "ImageCreatorManagerTest: GetSurfaceByKeyId003 end";
+}
 } // namespace Multimedia
 } // namespace OHOS

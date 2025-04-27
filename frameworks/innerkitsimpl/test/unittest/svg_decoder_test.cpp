@@ -13,11 +13,12 @@
  * limitations under the License.
  */
 
-#define private public
 #include <gtest/gtest.h>
-#include "svg_decoder.h"
+#define private public
 #include "buffer_source_stream.h"
 #include "mock_data_stream.h"
+#include "plugin_export.h"
+#include "svg_decoder.h"
 
 using namespace testing::ext;
 using namespace OHOS::Media;
@@ -484,6 +485,23 @@ HWTEST_F(SvgDecoderTest, DoDecode001, TestSize.Level3)
     uint32_t ret = svgDecoder->DoDecode(index, context);
     ASSERT_EQ(ret, Media::ERROR);
     GTEST_LOG_(INFO) << "SvgDecoderTest: DoDecode001 end";
+}
+
+/**
+ * @tc.name: PluginExternalCreateTest001
+ * @tc.desc: Test of PluginExternalCreate when not find class or creator is nullptr
+ * @tc.type: FUNC
+ */
+HWTEST_F(SvgDecoderTest, PluginExternalCreateTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "SvgDecoderTest: PluginExternalCreateTest001 start";
+    std::string className = "";
+    auto result = PluginExternalCreate(className);
+    ASSERT_EQ(result, nullptr);
+    className = "#ImplClassType";
+    result = PluginExternalCreate(className);
+    ASSERT_EQ(result, nullptr);
+    GTEST_LOG_(INFO) << "SvgDecoderTest: PluginExternalCreateTest001 end";
 }
 }
 }

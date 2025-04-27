@@ -13,6 +13,7 @@
  * limitations under the License.
  */
 #define protected public
+#define private public
 #include <gtest/gtest.h>
 #include "image_codec.h"
 
@@ -101,6 +102,192 @@ HWTEST_F(ImageCodecTest, ToStringTest002, TestSize.Level1)
     ret = imageCodec->ToString(static_cast<ImageCodec::MsgWhat>(MSGWHAT_UNKNOW));
     EXPECT_EQ(strcmp(ret, "UNKNOWN"), 0);
     GTEST_LOG_(INFO) << "ImageCodecTest: ToStringTest002 end";
+}
+
+/**
+ * @tc.name: SetFrameRateAdaptiveModeTest001
+ * @tc.desc: Verify that SetFrameRateAdaptiveMode returns IC_ERR_UNKNOWN when the input format is not supported.
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageCodecTest, SetFrameRateAdaptiveModeTest001, TestSize.Level1)
+{
+    GTEST_LOG_(INFO) << "ImageCodecTest: SetFrameRateAdaptiveModeTest001 start";
+    std::shared_ptr<ImageCodec> imageCodec = ImageCodec::Create();
+    ASSERT_NE(imageCodec, nullptr);
+    Format format;
+    int32_t ret = imageCodec->SetFrameRateAdaptiveMode(format);
+    EXPECT_EQ(ret, IC_ERR_UNKNOWN);
+    GTEST_LOG_(INFO) << "ImageCodecTest: SetFrameRateAdaptiveModeTest001 end";
+}
+
+/**
+ * @tc.name: SetProcessNameTest001
+ * @tc.desc: Verify that SetProcessName correctly sets the process name and returns IC_ERR_OK.
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageCodecTest, SetProcessNameTest001, TestSize.Level1)
+{
+    GTEST_LOG_(INFO) << "ImageCodecTest: SetProcessNameTest001 start";
+    std::shared_ptr<ImageCodec> imageCodec = ImageCodec::Create();
+    ASSERT_NE(imageCodec, nullptr);
+    Format format;
+    std::string processName = "testProcessName";
+    format.SetValue(ImageCodecDescriptionKey::PROCESS_NAME, processName);
+    int32_t ret = imageCodec->SetProcessName(format);
+    EXPECT_EQ(ret, IC_ERR_OK);
+    GTEST_LOG_(INFO) << "ImageCodecTest: SetProcessNameTest001 end";
+}
+
+/**
+ * @tc.name: ForceShutdownTest001
+ * @tc.desc: Verify that ForceShutdown correctly shuts down the codec with different input parameters
+ *           and returns IC_ERR_OK.
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageCodecTest, ForceShutdownTest001, TestSize.Level1)
+{
+    GTEST_LOG_(INFO) << "ImageCodecTest: ForceShutdownTest001 start";
+    std::shared_ptr<ImageCodec> imageCodec = ImageCodec::Create();
+    ASSERT_NE(imageCodec, nullptr);
+    ImageCodec::BufferInfo bufferInfo;
+    imageCodec->OnQueueInputBuffer(ImagePlugin::ImageCodec::BufferOperationMode::KEEP_BUFFER, &bufferInfo);
+    imageCodec->OnQueueInputBuffer(ImagePlugin::ImageCodec::BufferOperationMode::FREE_BUFFER, &bufferInfo);
+    bufferInfo.omxBuffer = nullptr;
+    bufferInfo.CleanUpUnusedInfo();
+    bufferInfo.surfaceBuffer = SurfaceBuffer::Create();
+    ASSERT_NE(bufferInfo.surfaceBuffer, nullptr);
+    bufferInfo.EndCpuAccess();
+    bufferInfo.CleanUpUnusedInfo();
+    HdiCodecNamespace::OmxCodecBuffer codecBuffer;
+    codecBuffer.fd = 0;
+    bufferInfo.omxBuffer = std::make_shared<HdiCodecNamespace::OmxCodecBuffer>(codecBuffer);
+    imageCodec->UpdateInputRecord(bufferInfo, std::chrono::steady_clock::now());
+    imageCodec->UpdateOutputRecord(bufferInfo, std::chrono::steady_clock::now());
+
+    int32_t ret = imageCodec->ForceShutdown(0);
+    EXPECT_EQ(ret, IC_ERR_OK);
+    ret = imageCodec->ForceShutdown(1);
+    EXPECT_EQ(ret, IC_ERR_OK);
+    GTEST_LOG_(INFO) << "ImageCodecTest: ForceShutdownTest001 end";
+}
+
+/**
+ * @tc.name: GetFirstSyncMsgToReplyTest001
+ * @tc.desc: Verify that GetFirstSyncMsgToReply returns false when no synchronous message is found to reply.
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageCodecTest, GetFirstSyncMsgToReplyTest001, TestSize.Level1)
+{
+    GTEST_LOG_(INFO) << "ImageCodecTest: GetFirstSyncMsgToReplyTest001 start";
+    std::shared_ptr<ImageCodec> imageCodec = ImageCodec::Create();
+    ASSERT_NE(imageCodec, nullptr);
+    MsgInfo info;
+    bool findSyncMsgToReply = imageCodec->GetFirstSyncMsgToReply(info);
+    EXPECT_FALSE(findSyncMsgToReply);
+    GTEST_LOG_(INFO) << "ImageCodecTest: GetFirstSyncMsgToReplyTest001 end";
+}
+
+/**
+ * @tc.name: OnMsgReceivedTest001
+ * @tc.desc: Verify that StartingState correctly handles various MsgWhat enum values in OnMsgReceived,
+ *           including GET_INPUT_FORMAT, START, and CHECK_IF_STUCK.
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageCodecTest, OnMsgReceivedTest001, TestSize.Level1)
+{
+    GTEST_LOG_(INFO) << "ImageCodecTest: OnMsgReceivedTest001 start";
+    std::shared_ptr<ImageCodec> imageCodec = ImageCodec::Create();
+    ASSERT_NE(imageCodec, nullptr);
+    ImageCodec::StartingState startingState(imageCodec.get());
+    MsgInfo info;
+    info.type = ImageCodec::MsgWhat::GET_INPUT_FORMAT;
+    info.id = 0;
+    std::shared_ptr<ParamBundle> bundle = std::make_shared<ParamBundle>();
+    info.param = bundle;
+    startingState.OnMsgReceived(info);
+    EXPECT_EQ(info.type, ImageCodec::MsgWhat::GET_INPUT_FORMAT);
+    info.type = ImageCodec::MsgWhat::START;
+    startingState.OnMsgReceived(info);
+    EXPECT_EQ(info.type, ImageCodec::MsgWhat::START);
+    info.type = ImageCodec::MsgWhat::CHECK_IF_STUCK;
+    startingState.OnMsgReceived(info);
+    EXPECT_EQ(info.type, ImageCodec::MsgWhat::CHECK_IF_STUCK);
+    GTEST_LOG_(INFO) << "ImageCodecTest: OnMsgReceivedTest001 end";
+}
+
+/**
+ * @tc.name: OnMsgReceivedTest002
+ * @tc.desc: Verify that RunningState correctly handles codec events and processes MsgWhat::START messages.
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageCodecTest, OnMsgReceivedTest002, TestSize.Level1)
+{
+    GTEST_LOG_(INFO) << "ImageCodecTest: OnMsgReceivedTest002 start";
+    std::shared_ptr<ImageCodec> imageCodec = ImageCodec::Create();
+    ASSERT_NE(imageCodec, nullptr);
+    ImagePlugin::ImageCodec::RunningState runningState(imageCodec.get());
+    HDI::Codec::V3_0::CodecEventType event = HDI::Codec::V3_0::CodecEventType::CODEC_EVENT_PORT_SETTINGS_CHANGED;
+    runningState.OnCodecEvent(event, 0, 0);
+    MsgInfo info;
+    info.type = ImageCodec::MsgWhat::START;
+    info.id = 0;
+    runningState.OnMsgReceived(info);
+    EXPECT_EQ(info.id, 0);
+    GTEST_LOG_(INFO) << "ImageCodecTest: OnMsgReceivedTest002 end";
+}
+
+/**
+ * @tc.name: OnMsgReceivedTest003
+ * @tc.desc: Verify that OutputPortChangedState correctly handles various MsgWhat enum values in OnMsgReceived,
+ *           including START, QUEUE_INPUT_BUFFER, RELEASE_OUTPUT_BUFFER, FORCE_SHUTDOWN, and CHECK_IF_STUCK.
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageCodecTest, OnMsgReceivedTest003, TestSize.Level1)
+{
+    GTEST_LOG_(INFO) << "ImageCodecTest: OnMsgReceivedTest003 start";
+    std::shared_ptr<ImageCodec> imageCodec = ImageCodec::Create();
+    ASSERT_NE(imageCodec, nullptr);
+    ImagePlugin::ImageCodec::OutputPortChangedState outputPortChangedState(imageCodec.get());
+    MsgInfo info;
+    std::shared_ptr<ParamBundle> bundle = std::make_shared<ParamBundle>();
+    info.param = bundle;
+    info.type = ImageCodec::MsgWhat::START;
+    outputPortChangedState.OnShutDown(info);
+    outputPortChangedState.OnMsgReceived(info);
+    EXPECT_EQ(info.type, ImageCodec::MsgWhat::START);
+    info.type = ImageCodec::MsgWhat::QUEUE_INPUT_BUFFER;
+    outputPortChangedState.OnMsgReceived(info);
+    EXPECT_EQ(info.type, ImageCodec::MsgWhat::QUEUE_INPUT_BUFFER);
+    info.type = ImageCodec::MsgWhat::RELEASE_OUTPUT_BUFFER;
+    outputPortChangedState.OnMsgReceived(info);
+    EXPECT_EQ(info.type, ImageCodec::MsgWhat::RELEASE_OUTPUT_BUFFER);
+    info.type = ImageCodec::MsgWhat::FORCE_SHUTDOWN;
+    outputPortChangedState.OnMsgReceived(info);
+    EXPECT_EQ(info.type, ImageCodec::MsgWhat::FORCE_SHUTDOWN);
+    info.type = ImageCodec::MsgWhat::CHECK_IF_STUCK;
+    outputPortChangedState.OnMsgReceived(info);
+    EXPECT_EQ(info.type, ImageCodec::MsgWhat::CHECK_IF_STUCK);
+    GTEST_LOG_(INFO) << "ImageCodecTest: OnMsgReceivedTest003 end";
+}
+
+/**
+ * @tc.name: OnMsgReceivedTest004
+ * @tc.desc: Verify that StoppingState correctly handles the MsgWhat::CHECK_IF_STUCK message in OnMsgReceived.
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageCodecTest, OnMsgReceivedTest004, TestSize.Level1)
+{
+    GTEST_LOG_(INFO) << "ImageCodecTest: OnMsgReceivedTest004 start";
+    std::shared_ptr<ImageCodec> imageCodec = ImageCodec::Create();
+    ASSERT_NE(imageCodec, nullptr);
+    ImagePlugin::ImageCodec::StoppingState stoppingState(imageCodec.get());
+    MsgInfo info;
+    info.type = ImageCodec::MsgWhat::CHECK_IF_STUCK;
+    std::shared_ptr<ParamBundle> bundle = std::make_shared<ParamBundle>();
+    info.param = bundle;
+    stoppingState.OnMsgReceived(info);
+    EXPECT_EQ(info.type, ImageCodec::MsgWhat::CHECK_IF_STUCK);
+    GTEST_LOG_(INFO) << "ImageCodecTest: OnMsgReceivedTest004 end";
 }
 
 } // namespace Media

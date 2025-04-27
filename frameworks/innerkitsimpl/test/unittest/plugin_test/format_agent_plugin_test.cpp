@@ -806,5 +806,23 @@ HWTEST_F(FormatAgentPluginTest, JpegFormatAgentPluginTest007, TestSize.Level3)
     ASSERT_EQ(ret, false);
     GTEST_LOG_(INFO) << "FormatAgentPluginTest: JpegFormatAgentPluginTest007 end";
 }
+
+/**
+ * @tc.name: WbmpFormatAgentReadByteTest001
+ * @tc.desc: test read_byte method when stream is nullptr
+ * @tc.type: FUNC
+ */
+HWTEST_F(FormatAgentPluginTest, WbmpFormatAgentReadByteTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "FormatAgentPluginTest: WbmpFormatAgentReadByteTest001 start";
+    ImagePlugin::WbmpFormatAgent formatAgent;
+    uint8_t value = 0;
+    uint32_t offset = 0;
+    uint32_t dataSize = 0;
+
+    bool res = formatAgent.read_byte(nullptr, value, offset, dataSize);
+    ASSERT_FALSE(res);
+    GTEST_LOG_(INFO) << "FormatAgentPluginTest: WbmpFormatAgentReadByteTest001 end";
+}
 }
 }

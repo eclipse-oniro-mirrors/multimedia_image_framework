@@ -42,6 +42,7 @@ constexpr static int32_t ZERO = 0;
 constexpr static size_t SIZE_ZERO = 0;
 constexpr static uint32_t NO_EXIF_TAG = 1;
 constexpr static uint32_t OFFSET_2 = 2;
+constexpr static uint32_t INVALID_ENCODE_DYNAMIC_RANGE_VALUE = 20;
 const static string CODEC_INITED_KEY = "CodecInited";
 const static string ENCODED_FORMAT_KEY = "EncodedFormat";
 const static string SUPPORT_SCALE_KEY = "SupportScale";
@@ -1455,6 +1456,28 @@ HWTEST_F(ExtDecoderTest, EncodeJpegPictureTest001, TestSize.Level3)
 }
 
 /**
+ * @tc.name: EncodeJpegPictureTest002
+ * @tc.desc: Verify that EncodeJpegPicture returns ERR_IMAGE_INVALID_PARAMETER
+ *           when desiredDynamicRange is set to HDR_VIVID_DUAL or an invalid value.
+ * @tc.type: FUNC
+ */
+HWTEST_F(ExtDecoderTest, EncodeJpegPictureTest002, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ExtDecoderTest: EncodeJpegPictureTest002 start";
+    ExtEncoder extEncoder;
+    extEncoder.opts_.desiredDynamicRange = EncodeDynamicRange::HDR_VIVID_DUAL;
+    ExtWStream skStream;
+    Picture picture;
+    extEncoder.AddPicture(picture);
+    uint32_t code = extEncoder.EncodeJpegPicture(skStream);
+    EXPECT_EQ(code, ERR_IMAGE_INVALID_PARAMETER);
+    extEncoder.opts_.desiredDynamicRange = static_cast<EncodeDynamicRange>(INVALID_ENCODE_DYNAMIC_RANGE_VALUE);
+    code = extEncoder.EncodeJpegPicture(skStream);
+    EXPECT_EQ(code, ERR_IMAGE_INVALID_PARAMETER);
+    GTEST_LOG_(INFO) << "ExtDecoderTest: EncodeJpegPictureTest002 end";
+}
+
+/**
  * @tc.name: ExtDecoderTest
  * @tc.desc: test the function of AssembleExifMetaItem
              when opts_.needsPackProperties == false, return false
@@ -1725,5 +1748,66 @@ HWTEST_F(ExtDecoderTest, SkOHOSCodecTest003, TestSize.Level3)
 #endif
     GTEST_LOG_(INFO) << "ExtDecoderTest: SkOHOSCodecTest004 end";
 }
+
+/**
+ * @tc.name: PixelmapEncodeTest001
+ * @tc.desc: Test PixelmapEncode when desiredDynamicRange changes.
+ * @tc.type: FUNC
+ */
+HWTEST_F(ExtDecoderTest, PixelmapEncodeTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ExtDecoderTest: PixelmapEncodeTest001 start";
+    ExtEncoder extEncoder;
+    sptr<SurfaceBuffer> surfaceBuffer = SurfaceBuffer::Create();
+    extEncoder.SetHdrColorSpaceType(surfaceBuffer);
+    extEncoder.opts_.desiredDynamicRange = EncodeDynamicRange::HDR_VIVID_DUAL;
+    ExtWStream wStream;
+    PixelMap pixelMap;
+    extEncoder.AddImage(pixelMap);
+    uint32_t ret = extEncoder.PixelmapEncode(wStream);
+    EXPECT_EQ(ret, ERR_IMAGE_INVALID_PARAMETER);
+    extEncoder.opts_.desiredDynamicRange = EncodeDynamicRange::HDR_VIVID_SINGLE;
+    ret = extEncoder.PixelmapEncode(wStream);
+    EXPECT_EQ(ret, ERR_IMAGE_INVALID_PARAMETER);
+    extEncoder.opts_.desiredDynamicRange = static_cast<EncodeDynamicRange>(INVALID_ENCODE_DYNAMIC_RANGE_VALUE);
+    ret = extEncoder.PixelmapEncode(wStream);
+    EXPECT_EQ(ret, ERR_IMAGE_ENCODE_FAILED);
+    GTEST_LOG_(INFO) << "ExtDecoderTest: PixelmapEncodeTest001 end";
+}
+
+/**
+ * @tc.name: EncodeHeifByPixelmapTest001
+ * @tc.desc: Verify that EncodeHeifByPixelmap returns ERR_IMAGE_INVALID_PARAMETER when given invalid input.
+ * @tc.type: FUNC
+ */
+HWTEST_F(ExtDecoderTest, EncodeHeifByPixelmapTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ExtDecoderTest: EncodeHeifByPixelmapTest001 start";
+    ExtEncoder extEncoder;
+    PixelMap pixelMap;
+    PlEncodeOptions opts;
+    uint32_t code = extEncoder.EncodeHeifByPixelmap(&pixelMap, opts);
+    EXPECT_EQ(code, ERR_IMAGE_INVALID_PARAMETER);
+    GTEST_LOG_(INFO) << "ExtDecoderTest: EncodeHeifByPixelmapTest001 end";
+}
+
+/**
+ * @tc.name: TryHardwareEncodePictureTest001
+ * @tc.desc: test the function of TryHardwareEncodePicture
+             when picture is nullptr, return ERR_IMAGE_DATA_ABNORMAL
+ * @tc.type: FUNC
+ */
+HWTEST_F(ExtDecoderTest, TryHardwareEncodePictureTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ExtDecoderTest: TryHardwareEncodePictureTest001 start";
+    ExtEncoder extEncoder;
+    extEncoder.CheckJpegAuxiliaryTagName();
+    std::string errorMsg;
+    ExtWStream skStream;
+    uint32_t code = extEncoder.TryHardwareEncodePicture(skStream, errorMsg);
+    EXPECT_EQ(code, ERR_IMAGE_DATA_ABNORMAL);
+    GTEST_LOG_(INFO) << "ExtDecoderTest: TryHardwareEncodePictureTest001 end";
+}
+
 }
 }

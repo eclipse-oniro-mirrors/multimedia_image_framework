@@ -31,6 +31,11 @@ using namespace OHOS::Media;
 namespace OHOS {
 namespace Multimedia {
 static const std::string IMAGE_INPUT_JPEG_PATH = "/data/local/tmp/image/test.jpg";
+static const std::string IMAGE_INPUT_JPG_PATH_EXACTSIZE = "/data/local/tmp/image/800-500.jpg";
+static constexpr int32_t IMAGE_INPUT_JPG_WIDTH = 800;
+static constexpr int32_t IMAGE_INPUT_JPG_HEIGHT = 500;
+static const int32_t NUM_2 = 2;
+
 class PostProcTest : public testing::Test {
 public:
     PostProcTest() {}
@@ -1028,6 +1033,103 @@ HWTEST_F(PostProcTest, ScalePixelMapExTest001, TestSize.Level3)
     ASSERT_EQ(ret, false);
     delete pixelMap.data_;
     GTEST_LOG_(INFO) << "PostProcTest: ScalePixelMapExTest001 end";
+}
+
+/**
+ * @tc.name: DecodePostProc001
+ * @tc.desc: Vertify that DecodePostProc when cropAndScaleStrategy is scale first.
+ * @tc.type: FUNC
+ */
+HWTEST_F(PostProcTest, DecodePostProc001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PostProcTest: DecodePostProc001 start";
+    uint32_t errorCode = 0;
+    SourceOptions opts;
+    opts.formatHint = "image/jpeg";
+    std::unique_ptr<ImageSource> imageSource =
+        ImageSource::CreateImageSource(IMAGE_INPUT_JPG_PATH_EXACTSIZE, opts, errorCode);
+    ASSERT_NE(imageSource, nullptr);
+
+    DecodeOptions decodeOpts;
+    decodeOpts.desiredSize = Size{.width = IMAGE_INPUT_JPG_WIDTH, .height = IMAGE_INPUT_JPG_HEIGHT};
+    decodeOpts.desiredPixelFormat = PixelFormat::RGBA_8888;
+
+    auto pixelMap = imageSource->CreatePixelMap(decodeOpts, errorCode);
+    ASSERT_NE(pixelMap, nullptr);
+    decodeOpts.cropAndScaleStrategy = CropAndScaleStrategy::SCALE_FIRST;
+
+    PostProc postProc;
+    errorCode = postProc.DecodePostProc(decodeOpts, *(pixelMap.get()), FinalOutputStep::NO_CHANGE);
+    ASSERT_EQ(errorCode, ERR_IMAGE_TRANSFORM);
+    GTEST_LOG_(INFO) << "PostProcTest: DecodePostProc001 end";
+}
+
+/**
+ * @tc.name: DecodePostProc002
+ * @tc.desc: Vertify that DecodePostProc when finalOutputStep is DENSITY_CHANGE.
+ * @tc.type: FUNC
+ */
+HWTEST_F(PostProcTest, DecodePostProc002, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PostProcTest: DecodePostProc002 start";
+    uint32_t errorCode = 0;
+    SourceOptions opts;
+    opts.formatHint = "image/jpeg";
+    std::unique_ptr<ImageSource> imageSource =
+        ImageSource::CreateImageSource(IMAGE_INPUT_JPG_PATH_EXACTSIZE, opts, errorCode);
+    ASSERT_NE(imageSource, nullptr);
+
+    DecodeOptions decodeOpts;
+    decodeOpts.desiredSize = Size{.width = IMAGE_INPUT_JPG_WIDTH, .height = IMAGE_INPUT_JPG_HEIGHT};
+    decodeOpts.desiredPixelFormat = PixelFormat::RGBA_8888;
+
+    auto pixelMap = imageSource->CreatePixelMap(decodeOpts, errorCode);
+    ASSERT_NE(pixelMap, nullptr);
+    decodeOpts.desiredSize = Size{};
+    decodeOpts.cropAndScaleStrategy = CropAndScaleStrategy::CROP_FIRST;
+    pixelMap->imageInfo_.baseDensity = NUM_2;
+
+    PostProc postProc;
+    errorCode = postProc.DecodePostProc(decodeOpts, *(pixelMap.get()), FinalOutputStep::DENSITY_CHANGE);
+    ASSERT_EQ(errorCode, ERR_IMAGE_TRANSFORM);
+    GTEST_LOG_(INFO) << "PostProcTest: DecodePostProc002 end";
+}
+
+/**
+ * @tc.name: GetDstImageInfo001
+ * @tc.desc: Vertify that GetDstImageInfo when preference is LOW_RAW and alphaType is IMAGE_ALPHA_TYPE_OPAQUE.
+ * @tc.type: FUNC
+ */
+HWTEST_F(PostProcTest, GetDstImageInfo001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PostProcTest: GetDstImageInfo001 start";
+    uint32_t errorCode = 0;
+    SourceOptions opts;
+    opts.formatHint = "image/jpeg";
+    std::unique_ptr<ImageSource> imageSource =
+        ImageSource::CreateImageSource(IMAGE_INPUT_JPG_PATH_EXACTSIZE, opts, errorCode);
+    ASSERT_NE(imageSource, nullptr);
+
+    DecodeOptions decodeOpts;
+    decodeOpts.desiredSize = Size{.width = IMAGE_INPUT_JPG_WIDTH, .height = IMAGE_INPUT_JPG_HEIGHT};
+    decodeOpts.desiredPixelFormat = PixelFormat::RGBA_8888;
+
+    auto pixelMap = imageSource->CreatePixelMap(decodeOpts, errorCode);
+    ASSERT_NE(pixelMap, nullptr);
+
+    decodeOpts.desiredPixelFormat = PixelFormat::UNKNOWN;
+    decodeOpts.preference = MemoryUsagePreference::LOW_RAM;
+
+    ImageInfo srcImageInfo, dstImageInfo;
+    pixelMap->GetImageInfo(srcImageInfo);
+    srcImageInfo.alphaType = AlphaType::IMAGE_ALPHA_TYPE_OPAQUE;
+    pixelMap->imageInfo_.alphaType = AlphaType::IMAGE_ALPHA_TYPE_UNPREMUL;
+
+    PostProc postProc;
+    postProc.GetDstImageInfo(decodeOpts, *(pixelMap.get()), srcImageInfo, dstImageInfo);
+    ASSERT_EQ(dstImageInfo.pixelFormat, PixelFormat::RGB_565);
+    ASSERT_EQ(dstImageInfo.alphaType, AlphaType::IMAGE_ALPHA_TYPE_PREMUL);
+    GTEST_LOG_(INFO) << "PostProcTest: GetDstImageInfo001 end";
 }
 }
 }

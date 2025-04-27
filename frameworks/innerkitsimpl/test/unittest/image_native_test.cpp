@@ -21,6 +21,8 @@
 #include "image_kits.h"
 #include "image_receiver.h"
 
+struct OH_NativeBuffer {};
+
 using namespace testing::ext;
 namespace OHOS {
 namespace Media {
@@ -348,6 +350,293 @@ HWTEST_F(ImageNativeTest, OH_ImageNative_GetTimestampTest003, TestSize.Level3)
     Image_ErrorCode nRst = OH_ImageNative_GetTimestamp(pImg, &timestamp);
     ASSERT_EQ(nRst, IMAGE_BAD_PARAMETER);
     GTEST_LOG_(INFO) << "ImageNativeTest: OH_ImageNative_GetTimestampTest003 end";
+}
+
+/**
+ * @tc.name: OH_ImageNative_GetImageSizeTest001
+ * @tc.desc: test the OH_ImageNative_GetImageSize when image, imgNative and size is nullptr or not
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageNativeTest, OH_ImageNative_GetImageSizeTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImageNativeTest: OH_ImageNative_GetImageSizeTest001 start";
+    OH_ImageNative* image = new OH_ImageNative;
+    ASSERT_NE(image, nullptr);
+    Image_Size* size = new Image_Size;
+    ASSERT_NE(size, nullptr);
+    image->imgNative = nullptr;
+
+    Image_ErrorCode errCode = OH_ImageNative_GetImageSize(nullptr, nullptr);
+    EXPECT_EQ(errCode, IMAGE_BAD_PARAMETER);
+
+    errCode = OH_ImageNative_GetImageSize(image, nullptr);
+    EXPECT_EQ(errCode, IMAGE_BAD_PARAMETER);
+
+    sptr<SurfaceBuffer> buffer = nullptr;
+    std::shared_ptr<IBufferProcessor> releaser;
+    NativeImage imgNative(buffer, releaser);
+    image->imgNative = &imgNative;
+    errCode = OH_ImageNative_GetImageSize(image, nullptr);
+    EXPECT_EQ(errCode, IMAGE_BAD_PARAMETER);
+
+    ASSERT_NE(image->imgNative, nullptr);
+    imgNative.buffer_ = nullptr;
+    errCode = OH_ImageNative_GetImageSize(image, size);
+    EXPECT_EQ(errCode, ERR_MEDIA_DEAD_OBJECT);
+
+    delete image;
+    delete size;
+    GTEST_LOG_(INFO) << "ImageNativeTest: OH_ImageNative_GetImageSizeTest001 end";
+}
+
+/**
+ * @tc.name: OH_ImageNative_GetComponentTypesTest001
+ * @tc.desc: test the OH_ImageNative_GetComponentTypes when image, imgNative, typeSize and types are nullptr or not
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageNativeTest, OH_ImageNative_GetComponentTypesTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImageNativeTest: OH_ImageNative_GetComponentTypesTest001 start";
+    OH_ImageNative* image = new OH_ImageNative;
+    ASSERT_NE(image, nullptr);
+    uint32_t typesArr = 0;
+    uint32_t* typesPtr = &typesArr;
+    uint32_t** types = &typesPtr;
+    size_t typeSize = 5;
+    image->imgNative = nullptr;
+
+    Image_ErrorCode errCode = OH_ImageNative_GetComponentTypes(nullptr, nullptr, nullptr);
+    EXPECT_EQ(errCode, IMAGE_BAD_PARAMETER);
+
+    errCode = OH_ImageNative_GetComponentTypes(image, nullptr, nullptr);
+    EXPECT_EQ(errCode, IMAGE_BAD_PARAMETER);
+
+    sptr<SurfaceBuffer> buffer = nullptr;
+    std::shared_ptr<IBufferProcessor> releaser;
+    NativeImage imgNative(buffer, releaser);
+    image->imgNative = &imgNative;
+    errCode = OH_ImageNative_GetComponentTypes(image, nullptr, nullptr);
+    EXPECT_EQ(errCode, IMAGE_BAD_PARAMETER);
+
+    ASSERT_NE(image->imgNative, nullptr);
+    errCode = OH_ImageNative_GetComponentTypes(image, nullptr, &typeSize);
+    EXPECT_EQ(errCode, IMAGE_SUCCESS);
+
+    ASSERT_NE(image->imgNative, nullptr);
+    errCode = OH_ImageNative_GetComponentTypes(image, types, &typeSize);
+    EXPECT_EQ(errCode, IMAGE_SUCCESS);
+
+    delete image;
+    GTEST_LOG_(INFO) << "ImageNativeTest: OH_ImageNative_GetComponentTypesTest001 end";
+}
+
+/**
+ * @tc.name: OH_ImageNative_GetByteBufferTest001
+ * @tc.desc: test the OH_ImageNative_GetByteBuffer when image, imgNative, nativeBuffer and buffer are nullptr or not
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageNativeTest, OH_ImageNative_GetByteBufferTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImageNativeTest: OH_ImageNative_GetByteBufferTest001 start";
+    OH_ImageNative* image = new OH_ImageNative;
+    ASSERT_NE(image, nullptr);
+    uint32_t componentType = 0;
+    int32_t type = 0;
+    OH_NativeBuffer nativeBuffer;
+    OH_NativeBuffer* nativeBufferPtr = &nativeBuffer;
+
+    Image_ErrorCode errCode = OH_ImageNative_GetByteBuffer(nullptr, componentType, nullptr);
+    EXPECT_EQ(errCode, IMAGE_BAD_PARAMETER);
+
+    image->imgNative = nullptr;
+    errCode = OH_ImageNative_GetByteBuffer(image, componentType, nullptr);
+    EXPECT_EQ(errCode, IMAGE_BAD_PARAMETER);
+
+    sptr<SurfaceBuffer> buffer = SurfaceBuffer::Create();
+    ASSERT_NE(buffer, nullptr);
+    std::shared_ptr<IBufferProcessor> releaser;
+    std::unique_ptr<NativeComponent> component = std::make_unique<NativeComponent>();
+    ASSERT_NE(component, nullptr);
+    NativeImage imgNative(buffer, releaser);
+    imgNative.components_.emplace(type, std::move(component));
+    image->imgNative = &imgNative;
+    errCode = OH_ImageNative_GetByteBuffer(image, componentType, nullptr);
+    EXPECT_EQ(errCode, IMAGE_BAD_PARAMETER);
+
+    ASSERT_NE(image->imgNative, nullptr);
+    errCode = OH_ImageNative_GetByteBuffer(image, componentType, static_cast<OH_NativeBuffer**>(&nativeBufferPtr));
+    EXPECT_EQ(errCode, IMAGE_SUCCESS);
+
+    delete image;
+    GTEST_LOG_(INFO) << "ImageNativeTest: OH_ImageNative_GetByteBufferTest001 end";
+}
+
+/**
+ * @tc.name: OH_ImageNative_GetBufferSizeTest001
+ * @tc.desc: test the OH_ImageNative_GetBufferSize when image, imgNative, size and component are nullptr or not
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageNativeTest, OH_ImageNative_GetBufferSizeTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImageNativeTest: OH_ImageNative_GetBufferSizeTest001 start";
+    OH_ImageNative* image = new OH_ImageNative;
+    ASSERT_NE(image, nullptr);
+    uint32_t componentType = 0;
+    int32_t type = 0;
+    size_t size = 0;
+
+    Image_ErrorCode errCode = OH_ImageNative_GetBufferSize(nullptr, componentType, nullptr);
+    EXPECT_EQ(errCode, IMAGE_BAD_PARAMETER);
+
+    image->imgNative = nullptr;
+    errCode = OH_ImageNative_GetBufferSize(image, componentType, nullptr);
+    EXPECT_EQ(errCode, IMAGE_BAD_PARAMETER);
+
+    sptr<SurfaceBuffer> buffer = SurfaceBuffer::Create();
+    ASSERT_NE(buffer, nullptr);
+    std::shared_ptr<IBufferProcessor> releaser;
+    std::unique_ptr<NativeComponent> component = std::make_unique<NativeComponent>();
+    NativeImage imgNative(buffer, releaser);
+    imgNative.components_.emplace(type, std::move(component));
+    image->imgNative = &imgNative;
+    errCode = OH_ImageNative_GetBufferSize(image, componentType, nullptr);
+    EXPECT_EQ(errCode, IMAGE_BAD_PARAMETER);
+
+    ASSERT_NE(image->imgNative, nullptr);
+    errCode = OH_ImageNative_GetBufferSize(image, componentType, static_cast<size_t*>(&size));
+    EXPECT_EQ(errCode, IMAGE_SUCCESS);
+
+    delete image;
+    GTEST_LOG_(INFO) << "ImageNativeTest: OH_ImageNative_GetBufferSizeTest001 end";
+}
+
+/**
+ * @tc.name: OH_ImageNative_GetRowStrideTest001
+ * @tc.desc: test the OH_ImageNative_GetRowStride when image, imgNative, rowStride and component are nullptr or not
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageNativeTest, OH_ImageNative_GetRowStrideTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImageNativeTest: OH_ImageNative_GetRowStrideTest001 start";
+    OH_ImageNative* image = new OH_ImageNative;
+    ASSERT_NE(image, nullptr);
+    uint32_t componentType = 0;
+    int32_t type = 0;
+    int32_t rowStride = 0;
+
+    Image_ErrorCode errCode = OH_ImageNative_GetRowStride(nullptr, componentType, nullptr);
+    EXPECT_EQ(errCode, IMAGE_BAD_PARAMETER);
+
+    image->imgNative = nullptr;
+    errCode = OH_ImageNative_GetRowStride(image, componentType, nullptr);
+    EXPECT_EQ(errCode, IMAGE_BAD_PARAMETER);
+
+    sptr<SurfaceBuffer> buffer = SurfaceBuffer::Create();
+    ASSERT_NE(buffer, nullptr);
+    std::shared_ptr<IBufferProcessor> releaser;
+    std::unique_ptr<NativeComponent> component = std::make_unique<NativeComponent>();
+    NativeImage imgNative(buffer, releaser);
+    imgNative.components_.emplace(type, std::move(component));
+    image->imgNative = &imgNative;
+    errCode = OH_ImageNative_GetRowStride(image, componentType, nullptr);
+    EXPECT_EQ(errCode, IMAGE_BAD_PARAMETER);
+
+    errCode = OH_ImageNative_GetRowStride(image, componentType, &rowStride);
+    EXPECT_EQ(errCode, IMAGE_SUCCESS);
+
+    delete image;
+    GTEST_LOG_(INFO) << "ImageNativeTest: OH_ImageNative_GetRowStrideTest001 end";
+}
+
+/**
+ * @tc.name: OH_ImageNative_GetPixelStrideTest001
+ * @tc.desc: test the OH_ImageNative_GetPixelStride when image, imgNative, pixelStride and component are nullptr or not
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageNativeTest, OH_ImageNative_GetPixelStrideTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImageNativeTest: OH_ImageNative_GetPixelStrideTest001 start";
+    OH_ImageNative* image = new OH_ImageNative;
+    ASSERT_NE(image, nullptr);
+    uint32_t componentType = 0;
+    int32_t type = 0;
+    int32_t pixelStride = 0;
+
+    Image_ErrorCode errCode = OH_ImageNative_GetRowStride(nullptr, componentType, nullptr);
+    EXPECT_EQ(errCode, IMAGE_BAD_PARAMETER);
+
+    image->imgNative = nullptr;
+    errCode = OH_ImageNative_GetRowStride(image, componentType, nullptr);
+    EXPECT_EQ(errCode, IMAGE_BAD_PARAMETER);
+
+    sptr<SurfaceBuffer> buffer = SurfaceBuffer::Create();
+    ASSERT_NE(buffer, nullptr);
+    std::shared_ptr<IBufferProcessor> releaser;
+    std::unique_ptr<NativeComponent> component = std::make_unique<NativeComponent>();
+    NativeImage imgNative(buffer, releaser);
+    imgNative.components_.emplace(type, std::move(component));
+    image->imgNative = &imgNative;
+    errCode = OH_ImageNative_GetRowStride(image, componentType, nullptr);
+    EXPECT_EQ(errCode, IMAGE_BAD_PARAMETER);
+
+    errCode = OH_ImageNative_GetRowStride(image, componentType, &pixelStride);
+    EXPECT_EQ(errCode, IMAGE_SUCCESS);
+
+    delete image;
+    GTEST_LOG_(INFO) << "ImageNativeTest: OH_ImageNative_GetPixelStrideTest001 end";
+}
+
+/**
+ * @tc.name: OH_ImageNative_GetTimestampTest011
+ * @tc.desc: test the OH_ImageNative_GetTimestamp when image, imgNative and timestamp are nullptr or not
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageNativeTest, OH_ImageNative_GetTimestampTest011, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImageNativeTest: OH_ImageNative_GetTimestampTest011 start";
+    OH_ImageNative* image = new OH_ImageNative;
+    ASSERT_NE(image, nullptr);
+    int64_t timestamp = 0;
+
+    Image_ErrorCode errCode = OH_ImageNative_GetTimestamp(nullptr, nullptr);
+    EXPECT_EQ(errCode, IMAGE_BAD_PARAMETER);
+
+    image->imgNative = nullptr;
+    errCode = OH_ImageNative_GetTimestamp(image, nullptr);
+    EXPECT_EQ(errCode, IMAGE_BAD_PARAMETER);
+
+    sptr<SurfaceBuffer> buffer = nullptr;
+    std::shared_ptr<IBufferProcessor> releaser;
+    NativeImage imgNative(buffer, releaser);
+    image->imgNative = &imgNative;
+    errCode = OH_ImageNative_GetTimestamp(image, nullptr);
+    EXPECT_EQ(errCode, IMAGE_BAD_PARAMETER);
+
+    errCode = OH_ImageNative_GetTimestamp(image, &timestamp);
+    EXPECT_EQ(errCode, IMAGE_BAD_PARAMETER);
+
+    delete image;
+    GTEST_LOG_(INFO) << "ImageNativeTest: OH_ImageNative_GetTimestampTest011 end";
+}
+
+/**
+ * @tc.name: OH_ImageNative_ReleaseTest001
+ * @tc.desc: test the OH_ImageNative_Release when image and imgNative is nullptr or not
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageNativeTest, OH_ImageNative_ReleaseTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImageNativeTest: OH_ImageNative_ReleaseTest001 start";
+    OH_ImageNative* image = new OH_ImageNative;
+    ASSERT_NE(image, nullptr);
+
+    Image_ErrorCode errCode = OH_ImageNative_Release(nullptr);
+    EXPECT_EQ(errCode, IMAGE_BAD_PARAMETER);
+
+    image->imgNative = nullptr;
+    errCode = OH_ImageNative_Release(image);
+    EXPECT_EQ(errCode, IMAGE_SUCCESS);
+    GTEST_LOG_(INFO) << "ImageNativeTest: OH_ImageNative_ReleaseTest001 end";
 }
 } // namespace Media
 } // namespace OHOS
