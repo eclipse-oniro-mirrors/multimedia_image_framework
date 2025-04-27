@@ -884,5 +884,29 @@ HWTEST_F(ImagePackerTest, IsPackOptionValidTest002, TestSize.Level3)
     ASSERT_EQ(ret, true);
     GTEST_LOG_(INFO) << "ImagePackerTest: IsPackOptionValidTest002 end";
 }
+
+/**
+ * @tc.name: Write001
+ * @tc.desc: test Write method when buffer is nullptr or size is 0 or file is nullptr
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImagePackerTest, Write001, TestSize.Level3)
+{
+    std::string filePath = "filePath";
+    auto stream = std::make_shared<FilePackerStream>(filePath);
+    ASSERT_NE(stream, nullptr);
+    uint8_t buffer[] = {0, 0, 0, 0, 0};
+    uint32_t size = sizeof(buffer);
+
+    bool res = stream->Write(nullptr, 0);
+    EXPECT_FALSE(res);
+
+    res = stream->Write(buffer, 0);
+    EXPECT_FALSE(res);
+
+    stream->file_ = nullptr;
+    res = stream->Write(buffer, size);
+    EXPECT_FALSE(res);
+}
 } // namespace Multimedia
 } // namespace OHOS

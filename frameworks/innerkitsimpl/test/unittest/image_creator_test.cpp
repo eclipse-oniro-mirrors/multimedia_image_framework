@@ -26,6 +26,8 @@ using namespace testing::ext;
 using namespace OHOS::Media;
 namespace OHOS {
 namespace Multimedia {
+static constexpr int32_t NUM_1 = 1;
+
 class ImageCreatorTest : public testing::Test {
 public:
     ImageCreatorTest() {}
@@ -35,6 +37,15 @@ public:
 class ImageCreatorReleaseListenerTest : public SurfaceBufferReleaseListener {
 public:
     void OnSurfaceBufferRelease() override {}
+};
+
+class ImageCreatorAvailableListenerTest : public SurfaceBufferAvaliableListener {
+public:
+    int32_t cnt_{0};
+    void OnSurfaceBufferAvaliable()
+    {
+        cnt_ = NUM_1;
+    }
 };
 
 /**
@@ -441,5 +452,28 @@ HWTEST_F(ImageCreatorTest, QueueNativeImage002, TestSize.Level3)
     GTEST_LOG_(INFO) << "ImageCreatorTest: QueueNativeImage002 end";
 }
 
+/**
+ * @tc.name: OnBufferAvailable004
+ * @tc.desc: Verify ImageCreator using other buffer avaliable listener to call OnBufferAvailable.
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageCreatorTest, OnBufferAvailable004, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImageCreatorTest: OnBufferAvailable004 start";
+    std::shared_ptr<ImageCreator> creator = ImageCreator::CreateImageCreator(1, 1, 1, 1);
+    ASSERT_NE(creator, nullptr);
+
+    std::shared_ptr<ImageCreatorAvailableListenerTest> available =
+        std::make_shared<ImageCreatorAvailableListenerTest>();
+    creator->RegisterBufferAvaliableListener(available);
+
+    std::shared_ptr<ImageCreatorSurfaceListener> surfaceListener =
+        std::make_shared<ImageCreatorSurfaceListener>();
+    surfaceListener->ic_ = creator;
+
+    surfaceListener->OnBufferAvailable();
+    ASSERT_EQ(available->cnt_, NUM_1);
+    GTEST_LOG_(INFO) << "ImageCreatorTest: OnBufferAvailable004 end";
+}
 } // namespace Multimedia
 } // namespace OHOS

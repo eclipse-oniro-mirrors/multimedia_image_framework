@@ -14,6 +14,7 @@
  */
 
 #define private public
+#include <fcntl.h>
 #include <gtest/gtest.h>
 #include "jpeg_decoder.h"
 #include "image_packer.h"
@@ -57,6 +58,8 @@ static const std::string IMAGE_INPUT_JPG_PATH = "/data/local/tmp/image/800-500.j
 static constexpr int32_t IMAGE_INPUT_JPG_WIDTH = 800;
 static constexpr int32_t IMAGE_INPUT_JPG_HEIGHT = 500;
 static constexpr int32_t NUM_4 = 4;
+static constexpr int PERMISSION_GPS_TYPE = 1;
+static const std::string IMAGE_INPUT_EXIF_PATH = "/data/local/tmp/image/test_exif.jpg";
 class JpegDecoderTest : public testing::Test {
 public:
     JpegDecoderTest() {}
@@ -1251,14 +1254,14 @@ HWTEST_F(JpegDecoderTest, JpegDecoderTest0058, TestSize.Level3)
 
 /**
  * @tc.name: JpegDecoderTest_SetDecodeOptionsTest001
- * @tc.desc: Verify that JpegDecoder decoders image when desired size is smaller than the actual size.
+ * @tc.desc: Verify that JpegDecoder decodes image when desired size is smaller than the actual size.
  * @tc.type: FUNC
  */
 HWTEST_F(JpegDecoderTest, SetDecodeOptionsTest006, TestSize.Level3)
 {
     GTEST_LOG_(INFO) << "JpegDecoderTest: SetDecodeOptionsTest006 start";
     auto jpegDecoder = std::make_shared<JpegDecoder>();
-    ASSERT_NE(jpegDecoder.get(), nullptr);
+    ASSERT_NE(jpegDecoder, nullptr);
     uint32_t errorCode = -1;
     SourceOptions sourceOpts;
     sourceOpts.formatHint = "image/jpeg";
@@ -1267,15 +1270,373 @@ HWTEST_F(JpegDecoderTest, SetDecodeOptionsTest006, TestSize.Level3)
     ASSERT_NE(imageSource, nullptr);
     ASSERT_EQ(errorCode, SUCCESS);
     jpegDecoder->SetSource(*(imageSource->sourceStreamPtr_.get()));
+
     PixelDecodeOptions decodeOpts;
     decodeOpts.desiredPixelFormat = PixelFormat::ARGB_8888;
     decodeOpts.editable = true;
     decodeOpts.desiredSize.width = IMAGE_INPUT_JPG_WIDTH / NUM_4;
     decodeOpts.desiredSize.height = IMAGE_INPUT_JPG_HEIGHT / NUM_4;
+
     PlImageInfo plInfo;
     errorCode = jpegDecoder->SetDecodeOptions(0, decodeOpts, plInfo);
     ASSERT_EQ(errorCode, SUCCESS);
     GTEST_LOG_(INFO) << "JpegDecoderTest: SetDecodeOptionsTest006 end";
+}
+
+/**
+ * @tc.name: JpegDecoderTest_DecodeTest003
+ * @tc.desc: Verify that JpegDecoder decodes image and using DMA_ALLOC allocator type.
+ * @tc.type: FUNC
+ */
+HWTEST_F(JpegDecoderTest, DecodeTest003, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "JpegDecoderTest: DecodeTest003 start";
+    auto jpegDecoder = std::make_shared<JpegDecoder>();
+    ASSERT_NE(jpegDecoder, nullptr);
+    uint32_t errorCode = -1;
+    SourceOptions sourceOpts;
+    sourceOpts.formatHint = "image/jpeg";
+    std::unique_ptr<ImageSource> imageSource =
+        ImageSource::CreateImageSource(IMAGE_INPUT_JPG_PATH, sourceOpts, errorCode);
+    ASSERT_NE(imageSource, nullptr);
+    ASSERT_EQ(errorCode, SUCCESS);
+    jpegDecoder->SetSource(*(imageSource->sourceStreamPtr_.get()));
+
+    PixelDecodeOptions decodeOpts;
+    decodeOpts.desiredPixelFormat = PixelFormat::RGBA_8888;
+    decodeOpts.editable = true;
+    decodeOpts.desiredSize.width = IMAGE_INPUT_JPG_WIDTH;
+    decodeOpts.desiredSize.height = IMAGE_INPUT_JPG_HEIGHT;
+    PlImageInfo plInfo;
+
+    errorCode = jpegDecoder->SetDecodeOptions(0, decodeOpts, plInfo);
+    ASSERT_EQ(errorCode, SUCCESS);
+
+    DecodeContext decodeContext;
+    decodeContext.allocatorType = AllocatorType::DMA_ALLOC;
+    errorCode = jpegDecoder->Decode(0, decodeContext);
+    ASSERT_EQ(errorCode, SUCCESS);
+    GTEST_LOG_(INFO) << "JpegDecoderTest: DecodeTest003 end";
+}
+
+/**
+ * @tc.name: JpegDecoderTest_DecodeTest004
+ * @tc.desc: Verify that JpegDecoder decodes image double.
+ * @tc.type: FUNC
+ */
+HWTEST_F(JpegDecoderTest, DecodeTest004, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "JpegDecoderTest: DecodeTest004 start";
+    auto jpegDecoder = std::make_shared<JpegDecoder>();
+    ASSERT_NE(jpegDecoder, nullptr);
+    uint32_t errorCode = -1;
+    SourceOptions sourceOpts;
+    sourceOpts.formatHint = "image/jpeg";
+    std::unique_ptr<ImageSource> imageSource =
+        ImageSource::CreateImageSource(IMAGE_INPUT_JPG_PATH, sourceOpts, errorCode);
+    ASSERT_NE(imageSource, nullptr);
+    ASSERT_EQ(errorCode, SUCCESS);
+    jpegDecoder->SetSource(*(imageSource->sourceStreamPtr_.get()));
+
+    PixelDecodeOptions decodeOpts;
+    decodeOpts.desiredPixelFormat = PixelFormat::RGBA_8888;
+    decodeOpts.editable = true;
+    decodeOpts.desiredSize.width = IMAGE_INPUT_JPG_WIDTH;
+    decodeOpts.desiredSize.height = IMAGE_INPUT_JPG_HEIGHT;
+
+    PlImageInfo plInfo;
+    errorCode = jpegDecoder->SetDecodeOptions(0, decodeOpts, plInfo);
+    ASSERT_EQ(errorCode, SUCCESS);
+
+    DecodeContext decodeContext;
+    decodeContext.allocatorType = AllocatorType::HEAP_ALLOC;
+    errorCode = jpegDecoder->Decode(0, decodeContext);
+    ASSERT_EQ(errorCode, SUCCESS);
+
+    DecodeContext decodeContext_double;
+    errorCode = jpegDecoder->Decode(0, decodeContext_double);
+    ASSERT_EQ(errorCode, SUCCESS);
+    GTEST_LOG_(INFO) << "JpegDecoderTest: DecodeTest004 end";
+}
+
+/**
+ * @tc.name: JpegDecoderTest_StartDecompressTest001
+ * @tc.desc: Verify that JpegDecoder call StartDecompress jpeg_color_space == JCS_CMYK and
+ *           desiredPixelFormat == PixelFormat::ALPHA_8.
+ * @tc.type: FUNC
+ */
+HWTEST_F(JpegDecoderTest, StartDecompressTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "JpegDecoderTest: StartDecompressTest001 start";
+    auto jpegDecoder = std::make_shared<JpegDecoder>();
+    ASSERT_NE(jpegDecoder, nullptr);
+    uint32_t errorCode = -1;
+    SourceOptions sourceOpts;
+    sourceOpts.formatHint = "image/jpeg";
+    std::unique_ptr<ImageSource> imageSource =
+        ImageSource::CreateImageSource(IMAGE_INPUT_JPG_PATH, sourceOpts, errorCode);
+    ASSERT_NE(imageSource, nullptr);
+    ASSERT_EQ(errorCode, SUCCESS);
+    jpegDecoder->SetSource(*(imageSource->sourceStreamPtr_.get()));
+
+    PixelDecodeOptions decodeOpts;
+    decodeOpts.desiredPixelFormat = PixelFormat::ALPHA_8;
+    decodeOpts.editable = true;
+    decodeOpts.desiredSize.width = IMAGE_INPUT_JPG_WIDTH;
+    decodeOpts.desiredSize.height = IMAGE_INPUT_JPG_HEIGHT;
+
+    jpegDecoder->CreateDecoder();
+    jpegDecoder->decodeInfo_.jpeg_color_space = JCS_CMYK;
+    errorCode = jpegDecoder->StartDecompress(decodeOpts);
+    ASSERT_EQ(errorCode, ERR_IMAGE_UNKNOWN_FORMAT);
+    GTEST_LOG_(INFO) << "JpegDecoderTest: StartDecompressTest001 end";
+}
+
+/**
+ * @tc.name: JpegDecoderTest_FormatTimeStampTest002
+ * @tc.desc: Verify that JpegDecoder call FormatTimeStamp when input is all numbers.
+ * @tc.type: FUNC
+ */
+HWTEST_F(JpegDecoderTest, FormatTimeStampTest002, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "JpegDecoderTest: FormatTimeStampTest002 start";
+    auto jpegDecoder = std::make_shared<JpegDecoder>();
+    ASSERT_NE(jpegDecoder, nullptr);
+    std::string src{"123456789"}, des;
+    jpegDecoder->FormatTimeStamp(des, src);
+    src += "-01-01 00:00:00";
+    ASSERT_EQ(des, src);
+    GTEST_LOG_(INFO) << "JpegDecoderTest: FormatTimeStampTest002 end";
+}
+
+/**
+ * @tc.name: JpegDecoderTest_FormatTimeStampTest003
+ * @tc.desc: Verify that JpegDecoder call FormatTimeStamp when input is 123456789-.
+ * @tc.type: FUNC
+ */
+HWTEST_F(JpegDecoderTest, FormatTimeStampTest003, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "JpegDecoderTest: FormatTimeStampTest003 start";
+    auto jpegDecoder = std::make_shared<JpegDecoder>();
+    ASSERT_NE(jpegDecoder, nullptr);
+    std::string src{"123456789-"}, des;
+    jpegDecoder->FormatTimeStamp(des, src);
+    src = "123456789--01 00:00:00";
+    ASSERT_EQ(des, src);
+    GTEST_LOG_(INFO) << "JpegDecoderTest: FormatTimeStampTest003 end";
+}
+
+/**
+ * @tc.name: JpegDecoderTest_FormatTimeStampTest004
+ * @tc.desc: Verify that JpegDecoder call FormatTimeStamp when input is 12345 6789.
+ * @tc.type: FUNC
+ */
+HWTEST_F(JpegDecoderTest, FormatTimeStampTest004, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "JpegDecoderTest: FormatTimeStampTest004 start";
+    auto jpegDecoder = std::make_shared<JpegDecoder>();
+    ASSERT_NE(jpegDecoder, nullptr);
+    std::string src{"12345 6789"}, des;
+    jpegDecoder->FormatTimeStamp(des, src);
+    src = "12345-01-01 6789:00:00";
+    ASSERT_EQ(des, src);
+    GTEST_LOG_(INFO) << "JpegDecoderTest: FormatTimeStampTest004 end";
+}
+
+/**
+ * @tc.name: JpegDecoderTest_FormatTimeStampTest005
+ * @tc.desc: Verify that JpegDecoder call FormatTimeStamp when input is 123-45 6789:.
+ * @tc.type: FUNC
+ */
+HWTEST_F(JpegDecoderTest, FormatTimeStampTest005, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "JpegDecoderTest: FormatTimeStampTest005 start";
+    auto jpegDecoder = std::make_shared<JpegDecoder>();
+    ASSERT_NE(jpegDecoder, nullptr);
+    std::string src{"123-45 6789:"}, des;
+    jpegDecoder->FormatTimeStamp(des, src);
+    src = "123-45-01 6789::00";
+    ASSERT_EQ(des, src);
+    GTEST_LOG_(INFO) << "JpegDecoderTest: FormatTimeStampTest005 end";
+}
+
+/**
+ * @tc.name: JpegDecoderTest_GetFilterAreaTest002
+ * @tc.desc: Verify that JpegDecoder call GetFileterArea.
+ * @tc.type: FUNC
+ */
+HWTEST_F(JpegDecoderTest, GetFilterAreaTest002, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "JpegDecoderTest: GetFilterAreaTest002 start";
+    uint32_t errorCode = -1;
+    auto jpegDecoder = std::make_shared<JpegDecoder>();
+    ASSERT_NE(jpegDecoder, nullptr);
+    SourceOptions sourceOpts;
+    sourceOpts.formatHint = "image/jpeg";
+    std::unique_ptr<ImageSource> imageSource =
+        ImageSource::CreateImageSource(IMAGE_INPUT_EXIF_PATH, sourceOpts, errorCode);
+    ASSERT_NE(imageSource, nullptr);
+    ASSERT_EQ(errorCode, SUCCESS);
+    jpegDecoder->SetSource(*(imageSource->sourceStreamPtr_.get()));
+
+    int privacyType = PERMISSION_GPS_TYPE;
+    std::vector<std::pair<uint32_t, uint32_t>> ranges;
+    errorCode = jpegDecoder->GetFilterArea(privacyType, ranges);
+    ASSERT_EQ(errorCode, SUCCESS);
+    GTEST_LOG_(INFO) << "JpegDecoderTest: GetFilterAreaTest002 end";
+}
+
+/**
+ * @tc.name: JpegDecoderTest_ModifyImagePropertyTest007
+ * @tc.desc: Verify that JpegDecoder call ModifyImageProperty.
+ * @tc.type: FUNC
+ */
+HWTEST_F(JpegDecoderTest, ModifyImagePropertyTest007, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "JpegDecoderTest: ModifyImagePropertyTest007 start";
+    uint32_t errorCode = -1;
+    auto jpegDecoder = std::make_shared<JpegDecoder>();
+    ASSERT_NE(jpegDecoder, nullptr);
+    SourceOptions sourceOpts;
+    sourceOpts.formatHint = "image/jpeg";
+    std::unique_ptr<ImageSource> imageSource =
+        ImageSource::CreateImageSource(IMAGE_INPUT_EXIF_PATH, sourceOpts, errorCode);
+    ASSERT_NE(imageSource, nullptr);
+    ASSERT_EQ(errorCode, SUCCESS);
+    jpegDecoder->SetSource(*(imageSource->sourceStreamPtr_.get()));
+
+    std::string key{SCENE_TYPE}, value{"t"};
+    errorCode = jpegDecoder->ModifyImageProperty(0, key, value,
+        imageSource->sourceStreamPtr_->GetDataPtr(), imageSource->sourceStreamPtr_->GetStreamSize());
+    ASSERT_EQ(errorCode, SUCCESS);
+
+    errorCode = jpegDecoder->exifInfo_.ModifyExifData(key, value,
+        imageSource->sourceStreamPtr_->GetDataPtr(), imageSource->sourceStreamPtr_->GetStreamSize());
+    ASSERT_EQ(errorCode, SUCCESS);
+    GTEST_LOG_(INFO) << "JpegDecoderTest: ModifyImagePropertyTest007 end";
+}
+
+/**
+ * @tc.name: JpegDecoderTest_ModifyImagePropertyTest008
+ * @tc.desc: Verify that JpegDecoder call ModifyImageProperty.
+ * @tc.type: FUNC
+ */
+HWTEST_F(JpegDecoderTest, ModifyImagePropertyTest008, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "JpegDecoderTest: ModifyImagePropertyTest008 start";
+    uint32_t errorCode = -1;
+    auto jpegDecoder = std::make_shared<JpegDecoder>();
+    ASSERT_NE(jpegDecoder, nullptr);
+
+    std::string key{SCENE_TYPE}, value{"t"};
+    uint8_t* data = nullptr;
+    uint32_t size = 0;
+
+    errorCode = jpegDecoder->ModifyImageProperty(0, key, value, data, size);
+    ASSERT_EQ(errorCode, ERR_IMAGE_SOURCE_DATA);
+    GTEST_LOG_(INFO) << "JpegDecoderTest: ModifyImagePropertyTest008 end";
+}
+
+/**
+ * @tc.name: JpegDecoderTest_ModifyImagePropertyTest009
+ * @tc.desc: Verify that JpegDecoder call ModifyImageProperty.
+ * @tc.type: FUNC
+ */
+HWTEST_F(JpegDecoderTest, ModifyImagePropertyTest009, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "JpegDecoderTest: ModifyImagePropertyTest009 start";
+    uint32_t errorCode = -1;
+    auto jpegDecoder = std::make_shared<JpegDecoder>();
+    ASSERT_NE(jpegDecoder, nullptr);
+
+    std::string key{SCENE_TYPE}, value{"t"};
+    errorCode = jpegDecoder->ModifyImageProperty(0, key, value, IMAGE_INPUT_EXIF_PATH);
+    ASSERT_EQ(errorCode, SUCCESS);
+
+    errorCode = jpegDecoder->exifInfo_.ModifyExifData(key, value, IMAGE_INPUT_EXIF_PATH);
+    ASSERT_EQ(errorCode, SUCCESS);
+    GTEST_LOG_(INFO) << "JpegDecoderTest: ModifyImagePropertyTest009 end";
+}
+
+/**
+ * @tc.name: JpegDecoderTest_ModifyImagePropertyTest010
+ * @tc.desc: Verify that JpegDecoder call ModifyImageProperty.
+ * @tc.type: FUNC
+ */
+HWTEST_F(JpegDecoderTest, ModifyImagePropertyTest010, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "JpegDecoderTest: ModifyImagePropertyTest010 start";
+    uint32_t errorCode = -1;
+    auto jpegDecoder = std::make_shared<JpegDecoder>();
+    ASSERT_NE(jpegDecoder, nullptr);
+
+    std::string key{SCENE_TYPE}, value{"t"};
+    int fd = open(IMAGE_INPUT_EXIF_PATH.c_str(), O_RDWR, S_IRUSR | S_IWUSR);
+    bool exifOpenFailed = (fd < 0);
+    ASSERT_EQ(exifOpenFailed, false);
+
+    errorCode = jpegDecoder->ModifyImageProperty(0, key, value, fd);
+    ASSERT_EQ(errorCode, SUCCESS);
+
+    errorCode = jpegDecoder->exifInfo_.ModifyExifData(key, value, fd);
+    ASSERT_EQ(errorCode, SUCCESS);
+    GTEST_LOG_(INFO) << "JpegDecoderTest: ModifyImagePropertyTest010 end";
+}
+
+/**
+ * @tc.name: JpegDecoderTest_ModifyImagePropertyTest011
+ * @tc.desc: Verify that JpegDecoder call ModifyImageProperty that modify latitude property.
+ * @tc.type: FUNC
+ */
+HWTEST_F(JpegDecoderTest, ModifyImagePropertyTest011, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "JpegDecoderTest: ModifyImagePropertyTest011 start";
+    uint32_t errorCode = -1;
+    auto jpegDecoder = std::make_shared<JpegDecoder>();
+    ASSERT_NE(jpegDecoder, nullptr);
+
+    std::string key{GPS_LATITUDE}, value{"38,51,6"};
+    errorCode = jpegDecoder->ModifyImageProperty(0, key, value, IMAGE_INPUT_EXIF_PATH);
+    ASSERT_EQ(errorCode, SUCCESS);
+    GTEST_LOG_(INFO) << "JpegDecoderTest: ModifyImagePropertyTest011 end";
+}
+
+/**
+ * @tc.name: JpegDecoderTest_GetExifDataTest001
+ * @tc.desc: Verify that JpegDecoder's exifInfo_ call GetExifData to get DATE_TIME_ORIGINAL_MEDIA.
+ * @tc.type: FUNC
+ */
+HWTEST_F(JpegDecoderTest, GetExifDataTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "JpegDecoderTest: GetExifDataTest001 start";
+    uint32_t errorCode = -1;
+    auto jpegDecoder = std::make_shared<JpegDecoder>();
+    ASSERT_NE(jpegDecoder, nullptr);
+
+    errorCode = jpegDecoder->ModifyImageProperty(0, "DateTimeOriginal", "1234-5-6 12:00:00", IMAGE_INPUT_EXIF_PATH);
+    std::string key{"DateTimeOriginalForMedia"}, value;
+    errorCode = jpegDecoder->exifInfo_.GetExifData(key, value);
+    ASSERT_EQ(errorCode, SUCCESS);
+    GTEST_LOG_(INFO) << "JpegDecoderTest: GetExifDataTest001 end";
+}
+
+/**
+ * @tc.name: JpegDecoderTest_GetExifDataTest002
+ * @tc.desc: Verify that JpegDecoder's exifInfo_ call GetExifData to get TAG_ORIENTATION_INT.
+ * @tc.type: FUNC
+ */
+HWTEST_F(JpegDecoderTest, GetExifDataTest002, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "JpegDecoderTest: GetExifDataTest002 start";
+    uint32_t errorCode = -1;
+    auto jpegDecoder = std::make_shared<JpegDecoder>();
+    ASSERT_NE(jpegDecoder, nullptr);
+
+    errorCode = jpegDecoder->ModifyImageProperty(0, "Orientation", "Right-top", IMAGE_INPUT_EXIF_PATH);
+    std::string key{"OrientationInt"}, value;
+    errorCode = jpegDecoder->exifInfo_.GetExifData(key, value);
+    ASSERT_EQ(errorCode, ERR_IMAGE_DECODE_EXIF_UNSUPPORT);
+    GTEST_LOG_(INFO) << "JpegDecoderTest: GetExifDataTest002 end";
 }
 }
 }

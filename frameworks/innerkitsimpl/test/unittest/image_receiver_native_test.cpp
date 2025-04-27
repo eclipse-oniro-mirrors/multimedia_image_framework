@@ -14,6 +14,8 @@
  */
 
 #include <gtest/gtest.h>
+#define private public
+#define protected public
 #include "common_utils.h"
 #include "image_native.h"
 #include "image_receiver_native.h"
@@ -22,6 +24,13 @@
 
 struct OH_ImageReceiverNative {
     std::shared_ptr<OHOS::Media::ImageReceiver> ptrImgRcv;
+};
+
+struct OH_ImageReceiverOptions {
+    int32_t width = 0;
+    int32_t height = 0;
+    int32_t format = 0;
+    int32_t capacity = 0;
 };
 
 using namespace testing::ext;
@@ -587,6 +596,188 @@ HWTEST_F(ImageReceiverNativeTest, OH_ImageReceiverNative_GetCapacityTest002, Tes
     Image_ErrorCode ret = OH_ImageReceiverNative_GetCapacity(receiver, &capacity);
     ASSERT_EQ(ret, IMAGE_BAD_PARAMETER);
     GTEST_LOG_(INFO) << "ImageReceiverNativeTest: OH_ImageReceiverNative_GetCapacityTest002 end";
+}
+
+/**
+ * @tc.name: OH_ImageReceiverOptions_ReleaseTest001
+ * @tc.desc: test the OH_ImageReceiverOptions_Release when options is not nullptr or nullptr
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageReceiverNativeTest, OH_ImageReceiverOptions_ReleaseTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImageReceiverNativeTest: OH_ImageReceiverOptions_ReleaseTest001 start";
+    OH_ImageReceiverOptions* options = new OH_ImageReceiverOptions;
+    ASSERT_NE(options, nullptr);
+    Image_ErrorCode errCode = OH_ImageReceiverOptions_Release(options);
+    EXPECT_EQ(errCode, IMAGE_SUCCESS);
+
+    errCode = OH_ImageReceiverOptions_Release(nullptr);
+    EXPECT_EQ(errCode, IMAGE_SUCCESS);
+    GTEST_LOG_(INFO) << "ImageReceiverNativeTest: OH_ImageReceiverOptions_ReleaseTest001 end";
+}
+
+/**
+ * @tc.name: OH_ImageReceiverNative_CreateTest001
+ * @tc.desc: test the OH_ImageReceiverNative_Create when options and receiver is nullptr or not
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageReceiverNativeTest, OH_ImageReceiverNative_CreateTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImageReceiverNativeTest: OH_ImageReceiverNative_CreateTest001 start";
+    Image_ErrorCode errCode = OH_ImageReceiverNative_Create(nullptr, nullptr);
+    EXPECT_EQ(errCode, IMAGE_BAD_PARAMETER);
+
+    OH_ImageReceiverOptions* options = new OH_ImageReceiverOptions;
+    ASSERT_NE(options, nullptr);
+    errCode = OH_ImageReceiverNative_Create(options, nullptr);
+    EXPECT_EQ(errCode, IMAGE_BAD_PARAMETER);
+
+    OH_ImageReceiverNative* receiver = new OH_ImageReceiverNative;
+    ASSERT_NE(receiver, nullptr);
+    errCode = OH_ImageReceiverNative_Create(options, &receiver);
+    EXPECT_EQ(errCode, IMAGE_SUCCESS);
+
+    delete options;
+    delete receiver;
+    GTEST_LOG_(INFO) << "ImageReceiverNativeTest: OH_ImageReceiverNative_CreateTest001 end";
+}
+
+/**
+ * @tc.name: OH_ImageReceiverNative_GetReceivingSurfaceIdTest001
+ * @tc.desc: test the OH_ImageReceiverNative_GetReceivingSurfaceId when ptrImgRcv or iraContexe is nullptr or not
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageReceiverNativeTest, OH_ImageReceiverNative_GetReceivingSurfaceIdTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImageReceiverNativeTest: OH_ImageReceiverNative_GetReceivingSurfaceIdTest001 start";
+    OH_ImageReceiverNative* receiver = new OH_ImageReceiverNative;
+    ASSERT_NE(receiver, nullptr);
+    uint64_t mockSurfaceId = 1;
+    receiver->ptrImgRcv = nullptr;
+
+    Image_ErrorCode errCode = OH_ImageReceiverNative_GetReceivingSurfaceId(receiver, &mockSurfaceId);
+    EXPECT_EQ(errCode, IMAGE_BAD_PARAMETER);
+
+    receiver->ptrImgRcv = std::make_shared<OHOS::Media::ImageReceiver>();
+    ASSERT_NE(receiver->ptrImgRcv, nullptr);
+    receiver->ptrImgRcv->iraContext_ = nullptr;
+    errCode = OH_ImageReceiverNative_GetReceivingSurfaceId(receiver, &mockSurfaceId);
+    EXPECT_EQ(errCode, IMAGE_BAD_PARAMETER);
+
+    ASSERT_NE(receiver->ptrImgRcv, nullptr);
+    receiver->ptrImgRcv->iraContext_ = std::make_shared<OHOS::Media::ImageReceiverContext>();
+    ASSERT_NE(receiver->ptrImgRcv->iraContext_, nullptr);
+    receiver->ptrImgRcv->iraContext_->receiverKey_ = "";
+    errCode = OH_ImageReceiverNative_GetReceivingSurfaceId(receiver, &mockSurfaceId);
+    EXPECT_EQ(errCode, IMAGE_UNKNOWN_ERROR);
+
+    delete receiver;
+    GTEST_LOG_(INFO) << "ImageReceiverNativeTest: OH_ImageReceiverNative_GetReceivingSurfaceIdTest001 end";
+}
+
+/**
+ * @tc.name: OH_ImageReceiverNative_OnTest001
+ * @tc.desc: test the OH_ImageReceiverNative_On when receiver and callback is nullptr or not
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageReceiverNativeTest, OH_ImageReceiverNative_OnTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImageReceiverNativeTest: OH_ImageReceiverNative_OnTest001 start";
+    OH_ImageReceiverNative* receiver = new OH_ImageReceiverNative;
+    ASSERT_NE(receiver, nullptr);
+    receiver->ptrImgRcv = nullptr;
+
+    Image_ErrorCode errCode = OH_ImageReceiverNative_On(nullptr, nullptr);
+    EXPECT_EQ(errCode, IMAGE_BAD_PARAMETER);
+
+    errCode = OH_ImageReceiverNative_On(receiver, nullptr);
+    EXPECT_EQ(errCode, IMAGE_BAD_PARAMETER);
+
+    errCode = OH_ImageReceiverNative_On(receiver, OH_ImageReceiver_OnCallback);
+    EXPECT_EQ(errCode, IMAGE_BAD_PARAMETER);
+
+    delete receiver;
+    GTEST_LOG_(INFO) << "ImageReceiverNativeTest: OH_ImageReceiverNative_OnTest001 end";
+}
+
+/**
+ * @tc.name: OH_ImageReceiverNative_GetSizeTest001
+ * @tc.desc: test the OH_ImageReceiverNative_GetSize when size and iraContext is nullptr or not
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageReceiverNativeTest, OH_ImageReceiverNative_GetSizeTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImageReceiverNativeTest: OH_ImageReceiverNative_GetSizeTest001 start";
+    OH_ImageReceiverNative* receiver = new OH_ImageReceiverNative;
+    ASSERT_NE(receiver, nullptr);
+    Image_Size* size = new Image_Size;
+    ASSERT_NE(size, nullptr);
+
+    Image_ErrorCode errCode = OH_ImageReceiverNative_GetSize(nullptr, nullptr);
+    EXPECT_EQ(errCode, IMAGE_BAD_PARAMETER);
+
+    errCode = OH_ImageReceiverNative_GetSize(receiver, nullptr);
+    EXPECT_EQ(errCode, IMAGE_BAD_PARAMETER);
+
+    receiver->ptrImgRcv = nullptr;
+    errCode = OH_ImageReceiverNative_GetSize(receiver, size);
+    EXPECT_EQ(errCode, IMAGE_BAD_PARAMETER);
+
+    receiver->ptrImgRcv = std::make_shared<OHOS::Media::ImageReceiver>();
+    ASSERT_NE(receiver->ptrImgRcv, nullptr);
+    receiver->ptrImgRcv->iraContext_ = nullptr;
+    errCode = OH_ImageReceiverNative_GetSize(receiver, size);
+    EXPECT_EQ(errCode, IMAGE_BAD_PARAMETER);
+
+    ASSERT_NE(receiver->ptrImgRcv, nullptr);
+    receiver->ptrImgRcv->iraContext_ = std::make_shared<OHOS::Media::ImageReceiverContext>();
+    ASSERT_NE(receiver->ptrImgRcv->iraContext_, nullptr);
+    errCode = OH_ImageReceiverNative_GetSize(receiver, size);
+    EXPECT_EQ(errCode, IMAGE_SUCCESS);
+
+    delete receiver;
+    delete size;
+    GTEST_LOG_(INFO) << "ImageReceiverNativeTest: OH_ImageReceiverNative_GetSizeTest001 end";
+}
+
+/**
+ * @tc.name: OH_ImageReceiverNative_GetCapacityTest001
+ * @tc.desc: test the OH_ImageReceiverNative_GetCapacity when capacity and iraContext is nullptr or not
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageReceiverNativeTest, OH_ImageReceiverNative_GetCapacityTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImageReceiverNativeTest: OH_ImageReceiverNative_GetCapacityTest001 start";
+    OH_ImageReceiverNative* receiver = new OH_ImageReceiverNative;
+    ASSERT_NE(receiver, nullptr);
+    int32_t mockCapacity = 32;
+
+    Image_ErrorCode errCode = OH_ImageReceiverNative_GetCapacity(nullptr, nullptr);
+    EXPECT_EQ(errCode, IMAGE_BAD_PARAMETER);
+
+    errCode = OH_ImageReceiverNative_GetCapacity(receiver, nullptr);
+    EXPECT_EQ(errCode, IMAGE_BAD_PARAMETER);
+
+    receiver->ptrImgRcv = nullptr;
+    errCode = OH_ImageReceiverNative_GetCapacity(receiver, &mockCapacity);
+    EXPECT_EQ(errCode, IMAGE_BAD_PARAMETER);
+
+    receiver->ptrImgRcv = std::make_shared<OHOS::Media::ImageReceiver>();
+    ASSERT_NE(receiver->ptrImgRcv, nullptr);
+    receiver->ptrImgRcv->iraContext_ = nullptr;
+    mockCapacity = 32;
+    errCode = OH_ImageReceiverNative_GetCapacity(receiver, &mockCapacity);
+    EXPECT_EQ(errCode, IMAGE_BAD_PARAMETER);
+
+    ASSERT_NE(receiver->ptrImgRcv, nullptr);
+    receiver->ptrImgRcv->iraContext_ = std::make_shared<OHOS::Media::ImageReceiverContext>();
+    ASSERT_NE(receiver->ptrImgRcv->iraContext_, nullptr);
+    mockCapacity = 32;
+    errCode = OH_ImageReceiverNative_GetCapacity(receiver, &mockCapacity);
+    EXPECT_EQ(errCode, IMAGE_SUCCESS);
+
+    delete receiver;
+    GTEST_LOG_(INFO) << "ImageReceiverNativeTest: OH_ImageReceiverNative_GetCapacityTest001 end";
 }
 } // namespace Media
 } // namespace OHOS

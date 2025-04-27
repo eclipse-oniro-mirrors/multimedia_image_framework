@@ -53,11 +53,33 @@ static const std::string IMAGE_INPUT_HEIF_PATH = "/data/local/tmp/image/test.hei
 static const std::string IMAGE_INPUT_JPEG_HDR_PATH = "/data/local/tmp/image/hdr.jpg";
 static const std::string IMAGE_INPUT_JPEG_BROKEN_ONE = "/data/local/tmp/image/test_jpeg_broken_one.jpg";
 static const std::string IMAGE_INPUT_JPEG_BROKEN_TWO = "/data/local/tmp/image/test_jpeg_broken_two.jpg";
+static const std::string IMAGE_URL_PREFIX = "data:image/";
+static const std::string IMAGE_INPUT_JPG_PATH_EXACTSIZE = "/data/local/tmp/image/800-500.jpg";
+static const int32_t DEFAULT_DMA_SIZE = 512 * 512;
+static const int32_t NUM_1_MINUS = -1;
+static const int32_t IMAGE_INPUT_JPG_WIDTH = 800;
+static const int32_t IMAGE_INPUT_JPG_HEIGHT = 500;
+static const uint32_t MAX_SOURCE_SIZE = 300 * 1024 * 1024;
+static const uint32_t NUM_1 = 1;
+static const uint32_t NUM_2 = 2;
+static const uint32_t NUM_10 = 10;
+static const uint32_t NUM_64 = 64;
+static const uint32_t TRUE_SETTING = 0;
+static const uint32_t HDR_USE_SHAREMEM = 1;
+static const uint32_t SDR_SET_ARGB8888_DMA = 2;
+static const uint32_t SCALE_FIRST_SETTING = 1;
+static const uint32_t CROP_FIRST_SETTING = 2;
+static const uint32_t ASTC_SETTING = 3;
 
 class ImageSourceTest : public testing::Test {
 public:
     ImageSourceTest() {}
     ~ImageSourceTest() {}
+    void InitDecodeContextTest(PixelFormat srcFormat, PixelFormat desiredFormat);
+    void CreatePixelMapExtendedUseInvalidOptsTest(uint32_t isAllocatorTypeValid, uint32_t isCropRectValid,
+        uint32_t desiredErrorCode = ERR_MEDIA_INVALID_OPERATION);
+    void SetAllocatorTypeByParam(uint32_t param, ImageSource* imageSource, DecodeOptions& decodeOpts);
+    void SetCropRectByParam(uint32_t param, ImageSource* imageSource, DecodeOptions& decodeOpts);
 };
 
 class MockAbsImageFormatAgent : public ImagePlugin::AbsImageFormatAgent {
@@ -108,6 +130,93 @@ public:
 private:
     int returnVoid_;
 };
+
+void ImageSourceTest::InitDecodeContextTest(PixelFormat srcFormat, PixelFormat desiredFormat)
+{
+    uint32_t errorCode = 0;
+    SourceOptions opts;
+    opts.formatHint = "image/jpeg";
+    std::unique_ptr<ImageSource> imageSource =
+        ImageSource::CreateImageSource(IMAGE_INPUT_JPEG_PATH, opts, errorCode);
+    ASSERT_NE(imageSource, nullptr);
+
+    DecodeOptions decodeOpts;
+    decodeOpts.allocatorType = AllocatorType::HEAP_ALLOC;
+    decodeOpts.isAppUseAllocator = false;
+    decodeOpts.desiredPixelFormat = srcFormat;
+
+    ImageInfo imageInfo;
+    ImagePlugin::PlImageInfo plImageInfo;
+    imageSource->sourceHdrType_ = ImageHdrType::HDR_VIVID_SINGLE;
+    auto ret = imageSource->InitDecodeContext(decodeOpts, imageInfo, imageSource->preference_,
+        false, plImageInfo);
+    ASSERT_EQ(ret.pixelFormat, desiredFormat);
+}
+
+void ImageSourceTest::SetAllocatorTypeByParam(uint32_t param, ImageSource* imageSource, DecodeOptions& decodeOpts)
+{
+    switch (param) {
+        case TRUE_SETTING:
+            imageSource->sourceHdrType_ = ImageHdrType::SDR;
+            decodeOpts.allocatorType = AllocatorType::SHARE_MEM_ALLOC;
+            decodeOpts.desiredPixelFormat = PixelFormat::RGBA_8888;
+            break;
+        case HDR_USE_SHAREMEM:
+            decodeOpts.desiredDynamicRange = DecodeDynamicRange::HDR;
+            decodeOpts.allocatorType = AllocatorType::SHARE_MEM_ALLOC;
+            decodeOpts.isAppUseAllocator = true;
+            break;
+        case SDR_SET_ARGB8888_DMA:
+            imageSource->sourceHdrType_ = ImageHdrType::SDR;
+            decodeOpts.allocatorType = AllocatorType::DMA_ALLOC;
+            decodeOpts.desiredPixelFormat = PixelFormat::ARGB_8888;
+            break;
+        default:
+            break;
+    };
+}
+
+void ImageSourceTest::SetCropRectByParam(uint32_t param, ImageSource* imageSource, DecodeOptions& decodeOpts)
+{
+    switch (param) {
+        case TRUE_SETTING:
+            decodeOpts.cropAndScaleStrategy = CropAndScaleStrategy::DEFAULT;
+            break;
+        case SCALE_FIRST_SETTING:
+            decodeOpts.cropAndScaleStrategy = CropAndScaleStrategy::SCALE_FIRST;
+            decodeOpts.desiredSize.width = NUM_1;
+            break;
+        case CROP_FIRST_SETTING:
+            decodeOpts.cropAndScaleStrategy = CropAndScaleStrategy::CROP_FIRST;
+            decodeOpts.CropRect.top = -NUM_1_MINUS;
+            decodeOpts.CropRect.left = -NUM_1_MINUS;
+            break;
+        case ASTC_SETTING:
+            imageSource->sourceInfo_.encodedFormat = "image/astc";
+            break;
+        default:
+            break;
+    };
+}
+
+void ImageSourceTest::CreatePixelMapExtendedUseInvalidOptsTest(uint32_t isAllocatorTypeValid,
+    uint32_t isCropRectValid, uint32_t desiredErrorCode)
+{
+    uint32_t errorCode = 0;
+    SourceOptions opts;
+    opts.formatHint = "image/jpeg";
+    std::unique_ptr<ImageSource> imageSource =
+        ImageSource::CreateImageSource(IMAGE_INPUT_JPEG_PATH, opts, errorCode);
+    ASSERT_NE(imageSource, nullptr);
+
+    DecodeOptions decodeOpts;
+    SetAllocatorTypeByParam(isAllocatorTypeValid, imageSource.get(), decodeOpts);
+    SetCropRectByParam(isCropRectValid, imageSource.get(), decodeOpts);
+
+    auto ret = imageSource->CreatePixelMapExtended(0, decodeOpts, errorCode);
+    ASSERT_EQ(errorCode, desiredErrorCode);
+    ASSERT_EQ(ret, nullptr);
+}
 
 /**
  * @tc.name: GetSupportedFormats001
@@ -2274,6 +2383,722 @@ HWTEST_F(ImageSourceTest, CreatePixelMapUsingBrokenImage002, TestSize.Level1)
     std::unique_ptr<PixelMap> pixelMap = imageSource->CreatePixelMap(index, dopts, errorCode);
     ASSERT_EQ(errorCode, SUCCESS);
     ASSERT_NE(pixelMap.get(), nullptr);
+}
+
+/**
+ * @tc.name: ImageSourceTest_CreateImageSourceTest003
+ * @tc.desc: Verify that create image source when use larger than MAX_SOURCE_SIZE size.
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageSourceTest, CreateImageSourceTest003, TestSize.Level1)
+{
+    GTEST_LOG_(INFO) << "ImageSourceTest: CreateImageSourceTest003 start";
+    uint32_t errorCode = -1;
+    uint8_t* data = nullptr;
+    uint32_t size = MAX_SOURCE_SIZE + 1;
+    SourceOptions opts;
+    auto errImageSource = ImageSource::CreateImageSource(data, size, opts, errorCode);
+    ASSERT_EQ(errImageSource, nullptr);
+    ASSERT_EQ(errorCode, ERR_IMAGE_TOO_LARGE);
+    GTEST_LOG_(INFO) << "ImageSourceTest: CreateImageSourceTest003 end";
+}
+
+/**
+ * @tc.name: ImageSourceTest_CreateImageSourceTest004
+ * @tc.desc: Verify that create image source when use letter than IMAGE_URL_PREFIX's size.
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageSourceTest, CreateImageSourceTest004, TestSize.Level1)
+{
+    GTEST_LOG_(INFO) << "ImageSourceTest: CreateImageSourceTest004 start";
+    uint32_t errorCode = -1;
+    uint32_t size = IMAGE_URL_PREFIX.size() - NUM_1;
+    std::unique_ptr<uint8_t[]> data = std::make_unique<uint8_t[]>(size);
+
+    SourceOptions opts;
+    opts.pixelFormat = PixelFormat::NV12;
+    opts.size.width = NUM_1;
+    opts.size.height = NUM_10;
+    auto errImageSource = ImageSource::CreateImageSource(data.get(), size, opts, errorCode);
+    ASSERT_NE(errImageSource, nullptr);
+
+    DecodeOptions decodeOpts;
+    decodeOpts.desiredSize.width = NUM_1;
+    decodeOpts.desiredSize.height = NUM_10;
+
+    auto errPixelMap = errImageSource->CreatePixelMapEx(0, decodeOpts, errorCode);
+    ASSERT_EQ(errPixelMap, nullptr);
+    ASSERT_EQ(errorCode, ERROR);
+    GTEST_LOG_(INFO) << "ImageSourceTest: CreateImageSourceTest004 end";
+}
+
+/**
+ * @tc.name: ImageSourceTest_ConvertAutoAllocatorTypeTest001
+ * @tc.desc: Verify that ConvertAutoAllocatorType when decode hdr image.
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageSourceTest, ConvertAutoAllocatorTypeTest001, TestSize.Level1)
+{
+    GTEST_LOG_(INFO) << "ImageSourceTest: ConvertAutoAllocatorTypeTest001 start";
+    uint32_t errorCode = 0;
+    SourceOptions opts;
+    opts.formatHint = "image/jpeg";
+    std::unique_ptr<ImageSource> imageSource =
+        ImageSource::CreateImageSource(IMAGE_INPUT_JPEG_PATH, opts, errorCode);
+    ASSERT_NE(imageSource, nullptr);
+
+    DecodeOptions decodeOpts;
+    decodeOpts.desiredDynamicRange = DecodeDynamicRange::HDR;
+
+    auto ret = imageSource->ConvertAutoAllocatorType(decodeOpts);
+    ASSERT_EQ(ret, AllocatorType::DMA_ALLOC);
+    GTEST_LOG_(INFO) << "ImageSourceTest: ConvertAutoAllocatorTypeTest001 end";
+}
+
+/**
+ * @tc.name: ImageSourceTest_ConvertAutoAllocatorTypeTest002
+ * @tc.desc: Verify that ConvertAutoAllocatorType when decode sdr image and decode format is ARGB_8888.
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageSourceTest, ConvertAutoAllocatorTypeTest002, TestSize.Level1)
+{
+    GTEST_LOG_(INFO) << "ImageSourceTest: ConvertAutoAllocatorTypeTest002 start";
+    uint32_t errorCode = 0;
+    SourceOptions opts;
+    opts.formatHint = "image/jpeg";
+    std::unique_ptr<ImageSource> imageSource =
+        ImageSource::CreateImageSource(IMAGE_INPUT_JPEG_PATH, opts, errorCode);
+    ASSERT_NE(imageSource, nullptr);
+
+    DecodeOptions decodeOpts;
+    decodeOpts.desiredDynamicRange = DecodeDynamicRange::SDR;
+    decodeOpts.desiredPixelFormat = PixelFormat::ARGB_8888;
+    imageSource->sourceHdrType_ = ImageHdrType::SDR;
+
+    auto ret = imageSource->ConvertAutoAllocatorType(decodeOpts);
+    ASSERT_EQ(ret, AllocatorType::SHARE_MEM_ALLOC);
+    GTEST_LOG_(INFO) << "ImageSourceTest: ConvertAutoAllocatorTypeTest002 end";
+}
+
+/**
+ * @tc.name: ImageSourceTest_ConvertAutoAllocatorTypeTest003
+ * @tc.desc: Verify that ConvertAutoAllocatorType when decode sdr image but overflow risk.
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageSourceTest, ConvertAutoAllocatorTypeTest003, TestSize.Level1)
+{
+    GTEST_LOG_(INFO) << "ImageSourceTest: ConvertAutoAllocatorTypeTest003 start";
+    uint32_t errorCode = 0;
+    SourceOptions opts;
+    opts.formatHint = "image/jpeg";
+    std::unique_ptr<ImageSource> imageSource =
+        ImageSource::CreateImageSource(IMAGE_INPUT_JPEG_PATH, opts, errorCode);
+    ASSERT_NE(imageSource, nullptr);
+
+    DecodeOptions decodeOpts;
+    decodeOpts.desiredDynamicRange = DecodeDynamicRange::SDR;
+    decodeOpts.desiredPixelFormat = PixelFormat::RGBA_8888;
+    imageSource->sourceHdrType_ = ImageHdrType::SDR;
+
+    auto iter = imageSource->GetValidImageStatus(0, errorCode);
+    ASSERT_NE(iter, imageSource->imageStatusMap_.end());
+    ImageInfo& firstImageInfo = (iter->second).imageInfo;
+    firstImageInfo.encodedFormat = "image/jpeg";
+    firstImageInfo.size.width = NUM_2;
+    firstImageInfo.size.height = INT_MAX;
+
+    auto ret = imageSource->ConvertAutoAllocatorType(decodeOpts);
+    ASSERT_EQ(ret, AllocatorType::SHARE_MEM_ALLOC);
+    GTEST_LOG_(INFO) << "ImageSourceTest: ConvertAutoAllocatorTypeTest003 end";
+}
+
+/**
+ * @tc.name: ImageSourceTest_ConvertAutoAllocatorTypeTest004
+ * @tc.desc: Verify that ConvertAutoAllocatorType when decode sdr image but unknown encodedFormat.
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageSourceTest, ConvertAutoAllocatorTypeTest004, TestSize.Level1)
+{
+    GTEST_LOG_(INFO) << "ImageSourceTest: ConvertAutoAllocatorTypeTest004 start";
+    uint32_t errorCode = 0;
+    SourceOptions opts;
+    opts.formatHint = "image/jpeg";
+    std::unique_ptr<ImageSource> imageSource =
+        ImageSource::CreateImageSource(IMAGE_INPUT_JPEG_PATH, opts, errorCode);
+    ASSERT_NE(imageSource, nullptr);
+
+    DecodeOptions decodeOpts;
+    decodeOpts.desiredDynamicRange = DecodeDynamicRange::SDR;
+    decodeOpts.desiredPixelFormat = PixelFormat::RGBA_8888;
+    imageSource->sourceHdrType_ = ImageHdrType::SDR;
+
+    auto iter = imageSource->GetValidImageStatus(0, errorCode);
+    ASSERT_NE(iter, imageSource->imageStatusMap_.end());
+    ImageInfo& firstImageInfo = (iter->second).imageInfo;
+    firstImageInfo.encodedFormat = "mock format";
+    firstImageInfo.size.width = NUM_64;
+    firstImageInfo.size.height = DEFAULT_DMA_SIZE / NUM_64;
+
+    auto ret = imageSource->ConvertAutoAllocatorType(decodeOpts);
+    ASSERT_EQ(ret, AllocatorType::DMA_ALLOC);
+    GTEST_LOG_(INFO) << "ImageSourceTest: ConvertAutoAllocatorTypeTest004 end";
+}
+
+/**
+ * @tc.name: ImageSourceTest_IsSupportAllocatorTypeTest001
+ * @tc.desc: Verify that IsSupportAllocatorType satisify IsSvgUseDma condition.
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageSourceTest, IsSupportAllocatorTypeTest001, TestSize.Level1)
+{
+    GTEST_LOG_(INFO) << "ImageSourceTest: IsSupportAllocatorTypeTest001 start";
+    uint32_t errorCode = 0;
+    SourceOptions opts;
+    opts.formatHint = "image/jpeg";
+    std::unique_ptr<ImageSource> imageSource =
+        ImageSource::CreateImageSource(IMAGE_INPUT_JPEG_PATH, opts, errorCode);
+    ASSERT_NE(imageSource, nullptr);
+
+    DecodeOptions decodeOpts;
+    auto iter = imageSource->GetValidImageStatus(0, errorCode);
+    ASSERT_NE(iter, imageSource->imageStatusMap_.end());
+    ImageInfo& firstImageInfo = (iter->second).imageInfo;
+    firstImageInfo.encodedFormat = "image/svg+xml";
+
+    auto ret = imageSource->IsSupportAllocatorType(decodeOpts, NUM_1);
+    ASSERT_EQ(ret, false);
+    GTEST_LOG_(INFO) << "ImageSourceTest: IsSupportAllocatorTypeTest001 end";
+}
+
+/**
+ * @tc.name: ImageSourceTest_IsSupportAllocatorTypeTest002
+ * @tc.desc: Verify that IsSupportAllocatorType when decode sdr image and pixel format is ARGB_8888
+ *           and allocatype is DMA_ALLOC.
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageSourceTest, IsSupportAllocatorTypeTest002, TestSize.Level1)
+{
+    GTEST_LOG_(INFO) << "ImageSourceTest: IsSupportAllocatorTypeTest002 start";
+    uint32_t errorCode = 0;
+    SourceOptions opts;
+    opts.formatHint = "image/jpeg";
+    std::unique_ptr<ImageSource> imageSource =
+        ImageSource::CreateImageSource(IMAGE_INPUT_JPEG_PATH, opts, errorCode);
+    ASSERT_NE(imageSource, nullptr);
+    ASSERT_EQ(errorCode, SUCCESS);
+
+    imageSource->sourceHdrType_ = ImageHdrType::SDR;
+    DecodeOptions decodeOpts;
+    decodeOpts.desiredDynamicRange = DecodeDynamicRange::SDR;
+    decodeOpts.desiredPixelFormat = PixelFormat::ARGB_8888;
+
+    auto iter = imageSource->GetValidImageStatus(0, errorCode);
+    ASSERT_NE(iter, imageSource->imageStatusMap_.end());
+    ImageInfo& firstImageInfo = (iter->second).imageInfo;
+    firstImageInfo.encodedFormat = "image/jpeg";
+
+    auto ret = imageSource->IsSupportAllocatorType(decodeOpts, NUM_1);
+    ASSERT_EQ(ret, false);
+    GTEST_LOG_(INFO) << "ImageSourceTest: IsSupportAllocatorTypeTest002 end";
+}
+
+/**
+ * @tc.name: ImageSourceTest_InitDecodeContextTest001
+ * @tc.desc: Verify that InitDecodeContext when desiredPixelFormat is ARGB_8888.
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageSourceTest, InitDecodeContextTest001, TestSize.Level1)
+{
+    GTEST_LOG_(INFO) << "ImageSourceTest: InitDecodeContextTest001 start";
+    uint32_t errorCode = 0;
+    SourceOptions opts;
+    opts.formatHint = "image/jpeg";
+    std::unique_ptr<ImageSource> imageSource =
+        ImageSource::CreateImageSource(IMAGE_INPUT_JPEG_PATH, opts, errorCode);
+    ASSERT_NE(imageSource, nullptr);
+
+    DecodeOptions decodeOpts;
+    decodeOpts.allocatorType = AllocatorType::HEAP_ALLOC;
+    decodeOpts.isAppUseAllocator = false;
+    decodeOpts.desiredPixelFormat = PixelFormat::ARGB_8888;
+    ImageInfo imageInfo;
+    ImagePlugin::PlImageInfo plImageInfo;
+
+    auto ret = imageSource->InitDecodeContext(decodeOpts, imageInfo, imageSource->preference_,
+        false, plImageInfo);
+    ASSERT_EQ(ret.isAppUseAllocator, true);
+    GTEST_LOG_(INFO) << "ImageSourceTest: InitDecodeContextTest001 end";
+}
+
+/**
+ * @tc.name: ImageSourceTest_InitDecodeContextTest002
+ * @tc.desc: Verify that InitDecodeContext when desiredPixelFormat is NV12.
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageSourceTest, InitDecodeContextTest002, TestSize.Level1)
+{
+    GTEST_LOG_(INFO) << "ImageSourceTest: InitDecodeContextTest002 start";
+    InitDecodeContextTest(PixelFormat::NV12, PixelFormat::YCBCR_P010);
+    GTEST_LOG_(INFO) << "ImageSourceTest: InitDecodeContextTest002 end";
+}
+
+/**
+ * @tc.name: ImageSourceTest_InitDecodeContextTest003
+ * @tc.desc: Verify that InitDecodeContext when desiredPixelFormat is NV21.
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageSourceTest, InitDecodeContextTest003, TestSize.Level1)
+{
+    GTEST_LOG_(INFO) << "ImageSourceTest: InitDecodeContextTest003 start";
+    InitDecodeContextTest(PixelFormat::NV21, PixelFormat::YCRCB_P010);
+    GTEST_LOG_(INFO) << "ImageSourceTest: InitDecodeContextTest003 end";
+}
+
+/**
+ * @tc.name: ImageSourceTest_CreatePixelMapExtendedTest001
+ * @tc.desc: Verify that CreatePixelMapExtended when decode options is invalid data.
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageSourceTest, CreatePixelMapExtendedTest001, TestSize.Level1)
+{
+    GTEST_LOG_(INFO) << "ImageSourceTest: CreatePixelMapExtendedTest001 start";
+    CreatePixelMapExtendedUseInvalidOptsTest(1, 0);
+    GTEST_LOG_(INFO) << "ImageSourceTest: CreatePixelMapExtendedTest001 end";
+}
+
+/**
+ * @tc.name: ImageSourceTest_CreatePixelMapExtendedTest002
+ * @tc.desc: Verify that CreatePixelMapExtended when decode options is invalid data.
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageSourceTest, CreatePixelMapExtendedTest002, TestSize.Level1)
+{
+    GTEST_LOG_(INFO) << "ImageSourceTest: CreatePixelMapExtendedTest002 start";
+    CreatePixelMapExtendedUseInvalidOptsTest(2, 0);
+    GTEST_LOG_(INFO) << "ImageSourceTest: CreatePixelMapExtendedTest002 end";
+}
+
+/**
+ * @tc.name: ImageSourceTest_CreatePixelMapExtendedTest003
+ * @tc.desc: Verify that CreatePixelMapExtended when decode options is invalid data.
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageSourceTest, CreatePixelMapExtendedTest003, TestSize.Level1)
+{
+    GTEST_LOG_(INFO) << "ImageSourceTest: CreatePixelMapExtendedTest003 start";
+    CreatePixelMapExtendedUseInvalidOptsTest(0, 1);
+    GTEST_LOG_(INFO) << "ImageSourceTest: CreatePixelMapExtendedTest003 end";
+}
+
+/**
+ * @tc.name: ImageSourceTest_CreatePixelMapExtendedTest004
+ * @tc.desc: Verify that CreatePixelMapExtended when decode options is invalid data.
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageSourceTest, CreatePixelMapExtendedTest004, TestSize.Level1)
+{
+    GTEST_LOG_(INFO) << "ImageSourceTest: CreatePixelMapExtendedTest004 start";
+    CreatePixelMapExtendedUseInvalidOptsTest(0, 2);
+    GTEST_LOG_(INFO) << "ImageSourceTest: CreatePixelMapExtendedTest004 end";
+}
+
+/**
+ * @tc.name: ImageSourceTest_CreatePixelMapExtendedTest005
+ * @tc.desc: Verify that CreatePixelMapExtended when decode options is invalid data.
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageSourceTest, CreatePixelMapExtendedTest005, TestSize.Level1)
+{
+    GTEST_LOG_(INFO) << "ImageSourceTest: CreatePixelMapExtendedTest005 start";
+    CreatePixelMapExtendedUseInvalidOptsTest(0, 3, ERR_IMAGE_DATA_ABNORMAL);
+    GTEST_LOG_(INFO) << "ImageSourceTest: CreatePixelMapExtendedTest005 end";
+}
+
+/**
+ * @tc.name: ImageSourceTest_ModifyImagePropertyExTest001
+ * @tc.desc: Verify that ModifyImagePropertyEx when srcFd_ is -1 and srcFilePath_ is empty and
+ *           srcBuffer_ is nullptr.
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageSourceTest, ModifyImagePropertyExTest001, TestSize.Level1)
+{
+    GTEST_LOG_(INFO) << "ImageSourceTest: ModifyImagePropertyExTest001 start";
+    uint32_t errorCode = 0;
+    SourceOptions opts;
+    opts.formatHint = "image/jpeg";
+    std::unique_ptr<ImageSource> imageSource =
+        ImageSource::CreateImageSource(IMAGE_INPUT_JPEG_PATH, opts, errorCode);
+    ASSERT_NE(imageSource, nullptr);
+
+    imageSource->srcFd_ = -1;
+    imageSource->srcFilePath_ = "";
+    std::string key, value;
+
+    auto ret = imageSource->ModifyImagePropertyEx(0, key, value);
+    ASSERT_EQ(ret, ERROR);
+    GTEST_LOG_(INFO) << "ImageSourceTest: ModifyImagePropertyExTest001 end";
+}
+
+/**
+ * @tc.name: ImageSourceTest_ModifyImagePropertyExTest002
+ * @tc.desc: Verify that ModifyImagePropertyEx when srcFd_ is 0.
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageSourceTest, ModifyImagePropertyExTest002, TestSize.Level1)
+{
+    GTEST_LOG_(INFO) << "ImageSourceTest: ModifyImagePropertyExTest002 start";
+    uint32_t errorCode = 0;
+    SourceOptions opts;
+    opts.formatHint = "image/jpeg";
+    std::unique_ptr<ImageSource> imageSource =
+        ImageSource::CreateImageSource(IMAGE_INPUT_JPEG_PATH, opts, errorCode);
+    ASSERT_NE(imageSource, nullptr);
+
+    imageSource->srcFd_ = 0;
+    std::string key, value;
+
+    auto ret = imageSource->ModifyImagePropertyEx(0, key, value);
+    ASSERT_EQ(ret, ERR_IMAGE_SOURCE_DATA);
+    GTEST_LOG_(INFO) << "ImageSourceTest: ModifyImagePropertyExTest002 end";
+}
+
+/**
+ * @tc.name: ImageSourceTest_ModifyImagePropertyExTest003
+ * @tc.desc: Verify that ModifyImagePropertyEx when srcFilePath_ is not exist.
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageSourceTest, ModifyImagePropertyExTest003, TestSize.Level1)
+{
+    GTEST_LOG_(INFO) << "ImageSourceTest: ModifyImagePropertyExTest003 start";
+    uint32_t errorCode = 0;
+    SourceOptions opts;
+    opts.formatHint = "image/jpeg";
+    std::unique_ptr<ImageSource> imageSource =
+        ImageSource::CreateImageSource(IMAGE_INPUT_JPEG_PATH, opts, errorCode);
+    ASSERT_NE(imageSource, nullptr);
+
+    imageSource->srcFd_ = -1;
+    imageSource->srcFilePath_ = std::string{"/data/local/tmp/image/mock.notexist"};
+    std::string key, value;
+
+    auto ret = imageSource->ModifyImagePropertyEx(0, key, value);
+    ASSERT_EQ(ret, ERR_IMAGE_SOURCE_DATA);
+    GTEST_LOG_(INFO) << "ImageSourceTest: ModifyImagePropertyExTest003 end";
+}
+
+/**
+ * @tc.name: ImageSourceTest_ModifyImagePropertyExTest004
+ * @tc.desc: Verify that ModifyImagePropertyEx when srcBuffer_ is not exist.
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageSourceTest, ModifyImagePropertyExTest004, TestSize.Level1)
+{
+    GTEST_LOG_(INFO) << "ImageSourceTest: ModifyImagePropertyExTest004 start";
+    uint32_t errorCode = 0;
+    SourceOptions opts;
+    opts.formatHint = "image/jpeg";
+    std::unique_ptr<ImageSource> imageSource =
+        ImageSource::CreateImageSource(IMAGE_INPUT_JPEG_PATH, opts, errorCode);
+    ASSERT_NE(imageSource, nullptr);
+
+    imageSource->srcFd_ = -1;
+    imageSource->srcFilePath_ = "";
+    std::unique_ptr<uint8_t[]> mockBuffer = std::make_unique<uint8_t[]>(1);
+    imageSource->srcBuffer_ = mockBuffer.get();
+    imageSource->srcBufferSize_ = 1;
+    std::string key, value;
+
+    auto ret = imageSource->ModifyImagePropertyEx(0, key, value);
+    ASSERT_EQ(ret, ERR_MEDIA_WRITE_PARCEL_FAIL);
+    GTEST_LOG_(INFO) << "ImageSourceTest: ModifyImagePropertyExTest004 end";
+}
+
+/**
+ * @tc.name: ImageSourceTest_ModifyImagePropertyExTest005
+ * @tc.desc: Verify that ModifyImagePropertyEx when srcBuffer_ is not exist but srcBufferSize_ is 0.
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageSourceTest, ModifyImagePropertyExTest005, TestSize.Level1)
+{
+    GTEST_LOG_(INFO) << "ImageSourceTest: ModifyImagePropertyExTest005 start";
+    uint32_t errorCode = 0;
+    SourceOptions opts;
+    opts.formatHint = "image/jpeg";
+    std::unique_ptr<ImageSource> imageSource =
+        ImageSource::CreateImageSource(IMAGE_INPUT_JPEG_PATH, opts, errorCode);
+    ASSERT_NE(imageSource, nullptr);
+
+    imageSource->srcFd_ = -1;
+    imageSource->srcFilePath_ = "";
+    std::unique_ptr<uint8_t[]> mockBuffer = std::make_unique<uint8_t[]>(1);
+    imageSource->srcBuffer_ = mockBuffer.get();
+    imageSource->srcBufferSize_ = 0;
+    std::string key, value;
+
+    auto ret = imageSource->ModifyImagePropertyEx(0, key, value);
+    ASSERT_EQ(ret, ERROR);
+    GTEST_LOG_(INFO) << "ImageSourceTest: ModifyImagePropertyExTest005 end";
+}
+
+/**
+ * @tc.name: ImageSourceTest_GetImagePropertyCommonTest001
+ * @tc.desc: Verify that GetImagePropertyCommon when key is Hw.
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageSourceTest, GetImagePropertyCommonTest001, TestSize.Level1)
+{
+    GTEST_LOG_(INFO) << "ImageSourceTest: GetImagePropertyCommonTest001 start";
+    uint32_t errorCode = 0;
+    SourceOptions opts;
+    opts.formatHint = "image/jpeg";
+    std::unique_ptr<ImageSource> imageSource =
+        ImageSource::CreateImageSource(IMAGE_INPUT_JPEG_PATH, opts, errorCode);
+    ASSERT_NE(imageSource, nullptr);
+
+    imageSource->sourceStreamPtr_.reset();
+    imageSource->isExifReadFailed_ = false;
+    imageSource->exifMetadata_.reset();
+    std::string key{"Hw"}, value;
+
+    errorCode = imageSource->GetImagePropertyCommon(0, key, value);
+    ASSERT_EQ(value, std::string{"default_exif_value"});
+    ASSERT_EQ(errorCode, SUCCESS);
+    GTEST_LOG_(INFO) << "ImageSourceTest: GetImagePropertyCommonTest001 end";
+}
+
+/**
+ * @tc.name: ImageSourceTest_GetImagePropertyStringTest001
+ * @tc.desc: Verify that GetImagePropertyString when key is IMAGE_GIFLOOPCOUNT_TYPE.
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageSourceTest, GetImagePropertyStringTest001, TestSize.Level1)
+{
+    GTEST_LOG_(INFO) << "ImageSourceTest: GetImagePropertyStringTest001 start";
+    uint32_t errorCode = 0;
+    SourceOptions opts;
+    opts.formatHint = "image/jpeg";
+    std::unique_ptr<ImageSource> imageSource =
+        ImageSource::CreateImageSource(IMAGE_INPUT_JPEG_PATH, opts, errorCode);
+    ASSERT_NE(imageSource, nullptr);
+
+    std::string key{"GIFLoopCount"}, value;
+    errorCode = imageSource->GetImagePropertyString(0, key, value);
+    ASSERT_EQ(errorCode, ERR_MEDIA_INVALID_PARAM);
+    GTEST_LOG_(INFO) << "ImageSourceTest: GetImagePropertyStringTest001 end";
+}
+
+/**
+ * @tc.name: ImageSourceTest_GetImagePropertyStringTest002
+ * @tc.desc: Verify that GetImagePropertyString when key is IMAGE_GIFLOOPCOUNT_TYPE.
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageSourceTest, GetImagePropertyStringTest002, TestSize.Level1)
+{
+    GTEST_LOG_(INFO) << "ImageSourceTest: GetImagePropertyStringTest002 start";
+    uint32_t errorCode = 0;
+    SourceOptions opts;
+    opts.formatHint = "image/jpeg";
+    std::unique_ptr<ImageSource> imageSource =
+        ImageSource::CreateImageSource(IMAGE_INPUT_JPEG_PATH, opts, errorCode);
+    ASSERT_NE(imageSource, nullptr);
+
+    std::string key{"GIFLoopCount"}, value;
+    imageSource->decodeState_ = SourceDecodingState::SOURCE_ERROR;
+
+    errorCode = imageSource->GetImagePropertyString(0, key, value);
+    ASSERT_EQ(errorCode, ERR_IMAGE_SOURCE_DATA);
+    GTEST_LOG_(INFO) << "ImageSourceTest: GetImagePropertyStringTest002 end";
+}
+
+/**
+ * @tc.name: ImageSourceTest_RemoveImagePropertiesTest001
+ * @tc.desc: Verify that RemoveImageProperties when path is not exist.
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageSourceTest, RemoveImagePropertiesTest001, TestSize.Level1)
+{
+    GTEST_LOG_(INFO) << "ImageSourceTest: RemoveImagePropertiesTest001 start";
+    uint32_t errorCode = 0;
+    SourceOptions opts;
+    opts.formatHint = "image/jpeg";
+    std::unique_ptr<ImageSource> imageSource =
+        ImageSource::CreateImageSource(IMAGE_INPUT_JPEG_PATH, opts, errorCode);
+    ASSERT_NE(imageSource, nullptr);
+
+    std::string path{"/data/local/tmp/mock.notexist"};
+    std::set<std::string> keys;
+
+    errorCode = imageSource->RemoveImageProperties(0, keys, path);
+    ASSERT_EQ(errorCode, ERR_IMAGE_SOURCE_DATA);
+    GTEST_LOG_(INFO) << "ImageSourceTest: RemoveImagePropertiesTest001 end";
+}
+
+/**
+ * @tc.name: ImageSourceTest_RemoveImagePropertiesTest002
+ * @tc.desc: Verify that RemoveImageProperties when fd is 0/1/2.
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageSourceTest, RemoveImagePropertiesTest002, TestSize.Level1)
+{
+    GTEST_LOG_(INFO) << "ImageSourceTest: RemoveImagePropertiesTest002 start";
+    uint32_t errorCode = 0;
+    SourceOptions opts;
+    opts.formatHint = "image/jpeg";
+    std::unique_ptr<ImageSource> imageSource =
+        ImageSource::CreateImageSource(IMAGE_INPUT_JPEG_PATH, opts, errorCode);
+    ASSERT_NE(imageSource, nullptr);
+
+    int fd = 0;
+    std::set<std::string> keys;
+
+    errorCode = imageSource->RemoveImageProperties(0, keys, fd);
+    ASSERT_EQ(errorCode, ERR_IMAGE_SOURCE_DATA);
+    GTEST_LOG_(INFO) << "ImageSourceTest: RemoveImagePropertiesTest002 end";
+}
+
+/**
+ * @tc.name: ImageSourceTest_CreatePixelMapForYUVTest002
+ * @tc.desc: Verify that CreatePixelMapForYUV is valid.
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageSourceTest, CreatePixelMapForYUVTest002, TestSize.Level1)
+{
+    GTEST_LOG_(INFO) << "ImageSourceTest: CreatePixelMapForYUVTest002 start";
+    uint32_t errorCode = 0;
+    SourceOptions opts;
+    opts.formatHint = "image/jpeg";
+    opts.size.width = IMAGE_INPUT_JPG_WIDTH;
+    opts.size.height = IMAGE_INPUT_JPG_HEIGHT;
+    opts.pixelFormat = PixelFormat::NV12;
+
+    std::unique_ptr<ImageSource> imageSource =
+        ImageSource::CreateImageSource(IMAGE_INPUT_JPG_PATH_EXACTSIZE, opts, errorCode);
+    ASSERT_NE(imageSource, nullptr);
+
+    auto pixelMap = imageSource->CreatePixelMapForYUV(errorCode);
+    ASSERT_NE(pixelMap, nullptr);
+    GTEST_LOG_(INFO) << "ImageSourceTest: CreatePixelMapForYUVTest002 end";
+}
+
+/**
+ * @tc.name: ImageSourceTest_CreatePixelAstcFromImageFileTest001
+ * @tc.desc: Verify that CreatePixelAstcFromImageFile is valid.
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageSourceTest, CreatePixelAstcFromImageFileTest001, TestSize.Level1)
+{
+    GTEST_LOG_(INFO) << "ImageSourceTest: CreatePixelAstcFromImageFileTest001 start";
+    uint32_t errorCode = 0;
+    SourceOptions opts;
+    opts.formatHint = "image/jpeg";
+    std::unique_ptr<ImageSource> imageSource =
+        ImageSource::CreateImageSource(IMAGE_INPUT_JPG_PATH_EXACTSIZE, opts, errorCode);
+    ASSERT_NE(imageSource, nullptr);
+
+    DecodeOptions decodeOpts;
+    decodeOpts.desiredSize.width = IMAGE_INPUT_JPG_WIDTH;
+    decodeOpts.desiredSize.height = IMAGE_INPUT_JPG_HEIGHT;
+
+    auto pixelMap = imageSource->CreatePixelAstcFromImageFile(0, decodeOpts, errorCode);
+    ASSERT_NE(pixelMap, nullptr);
+    GTEST_LOG_(INFO) << "ImageSourceTest: CreatePixelAstcFromImageFileTest001 end";
+}
+
+/**
+ * @tc.name: ImageSourceTest_DecodeJpegAuxiliaryPictureTest001
+ * @tc.desc: Verify that DecodeJpegAuxiliaryPicture when sourceStream_ is nullptr.
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageSourceTest, DecodeJpegAuxiliaryPictureTest001, TestSize.Level1)
+{
+    GTEST_LOG_(INFO) << "ImageSourceTest: DecodeJpegAuxiliaryPictureTest001 start";
+    uint32_t errorCode = 0;
+    SourceOptions opts;
+    opts.formatHint = "image/jpeg";
+    std::unique_ptr<ImageSource> imageSource =
+        ImageSource::CreateImageSource(IMAGE_INPUT_JPG_PATH_EXACTSIZE, opts, errorCode);
+    ASSERT_NE(imageSource, nullptr);
+
+    imageSource->sourceStreamPtr_.reset();
+    std::set<AuxiliaryPictureType> auxTypes;
+    std::unique_ptr<Picture> picture;
+
+    imageSource->DecodeJpegAuxiliaryPicture(auxTypes, picture, errorCode);
+    ASSERT_EQ(errorCode, ERR_IMAGE_DATA_ABNORMAL);
+    GTEST_LOG_(INFO) << "ImageSourceTest: DecodeJpegAuxiliaryPictureTest001 end";
+}
+
+/**
+ * @tc.name: ImageSourceTest_CreatePixelAstcFromImageFileTest002
+ * @tc.desc: Verify that CreatePixelAstcFromImageFile when input size is overlarge.
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageSourceTest, CreatePixelAstcFromImageFileTest002, TestSize.Level1)
+{
+    GTEST_LOG_(INFO) << "ImageSourceTest: CreatePixelAstcFromImageFileTest002 start";
+    uint32_t errorCode = 0;
+    SourceOptions opts;
+    opts.formatHint = "image/jpeg";
+    std::unique_ptr<ImageSource> imageSource =
+        ImageSource::CreateImageSource(IMAGE_INPUT_JPG_PATH_EXACTSIZE, opts, errorCode);
+    ASSERT_NE(imageSource, nullptr);
+
+    DecodeOptions decodeOpts;
+    decodeOpts.desiredSize.width = IMAGE_INPUT_JPG_WIDTH * (NUM_10 + NUM_2);
+    decodeOpts.desiredSize.height = IMAGE_INPUT_JPG_HEIGHT;
+
+    auto pixelMap = imageSource->CreatePixelAstcFromImageFile(0, decodeOpts, errorCode);
+    ASSERT_EQ(pixelMap, nullptr);
+    GTEST_LOG_(INFO) << "ImageSourceTest: CreatePixelAstcFromImageFileTest002 end";
+}
+
+/**
+ * @tc.name: ImageSourceTest_DecodeHeifAuxiliaryPicturesTest001
+ * @tc.desc: Verify that DecodeHeifAuxiliaryPictures when mainDecoder is nullptr.
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageSourceTest, DecodeHeifAuxiliaryPicturesTest001, TestSize.Level1)
+{
+    GTEST_LOG_(INFO) << "ImageSourceTest: DecodeHeifAuxiliaryPicturesTest001 start";
+    uint32_t errorCode = 0;
+    SourceOptions opts;
+    opts.formatHint = "image/jpeg";
+    std::unique_ptr<ImageSource> imageSource =
+        ImageSource::CreateImageSource(IMAGE_INPUT_JPG_PATH_EXACTSIZE, opts, errorCode);
+    ASSERT_NE(imageSource, nullptr);
+
+    imageSource->mainDecoder_.reset();
+    std::set<AuxiliaryPictureType> auxTypes;
+    std::unique_ptr<Picture> picture;
+
+    imageSource->DecodeHeifAuxiliaryPictures(auxTypes, picture, errorCode);
+    ASSERT_EQ(errorCode, ERR_IMAGE_PLUGIN_CREATE_FAILED);
+    GTEST_LOG_(INFO) << "ImageSourceTest: DecodeHeifAuxiliaryPicturesTest001 end";
+}
+
+/**
+ * @tc.name: ImageSourceTest_DecodeHeifAuxiliaryPicturesTest002
+ * @tc.desc: Verify that DecodeHeifAuxiliaryPictures when picture is nullptr.
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageSourceTest, DecodeHeifAuxiliaryPicturesTest002, TestSize.Level1)
+{
+    GTEST_LOG_(INFO) << "ImageSourceTest: DecodeHeifAuxiliaryPicturesTest002 start";
+    uint32_t errorCode = 0;
+    SourceOptions opts;
+    opts.formatHint = "image/jpeg";
+    std::unique_ptr<ImageSource> imageSource =
+        ImageSource::CreateImageSource(IMAGE_INPUT_JPG_PATH_EXACTSIZE, opts, errorCode);
+    ASSERT_NE(imageSource, nullptr);
+
+    bool ret = imageSource->ParseHdrType();
+    ASSERT_EQ(ret, true);
+    std::set<AuxiliaryPictureType> auxTypes;
+    std::unique_ptr<Picture> picture;
+
+    imageSource->DecodeHeifAuxiliaryPictures(auxTypes, picture, errorCode);
+    ASSERT_EQ(errorCode, ERR_IMAGE_DATA_ABNORMAL);
+    GTEST_LOG_(INFO) << "ImageSourceTest: DecodeHeifAuxiliaryPicturesTest002 end";
 }
 } // namespace Multimedia
 } // namespace OHOS
