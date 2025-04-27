@@ -15,6 +15,8 @@
 
 #include <gtest/gtest.h>
 #include <memory>
+#define private public
+#define protected public
 #include "media_errors.h"
 #include "metadata.h"
 #include "fragment_metadata.h"
@@ -25,6 +27,9 @@ using namespace testing::ext;
 
 namespace OHOS {
 namespace Multimedia {
+const static uint64_t MAX_FRAGMENT_MAP_META_COUNT = 10;
+const static uint64_t MAX_FRAGMENT_MAP_META_LENGTH = 100;
+
 class FragmentMetadataTest : public testing::Test {
 public:
     FragmentMetadataTest() {}
@@ -304,5 +309,140 @@ HWTEST_F(FragmentMetadataTest, UnmarshallingTest002, TestSize.Level2)
     delete newfragmentMetadata;
 }
 
+/**
+ * @tc.name: GetValueTest005
+ * @tc.desc: Test GetValue when properties is nullptr or didn't find key in properties.
+ * @tc.type: FUNC
+ */
+HWTEST_F(FragmentMetadataTest, GetValueTest005, TestSize.Level2)
+{
+    FragmentMetadata fragmentMetadata;
+    std::string key = "key";
+    std::string value = "value";
+    fragmentMetadata.properties_ = nullptr;
+
+    int errCode = fragmentMetadata.GetValue(key, value);
+    EXPECT_EQ(errCode, ERR_IMAGE_INVALID_PARAMETER);
+
+    fragmentMetadata.properties_ = std::make_shared<ImageMetadata::PropertyMap>();
+    ASSERT_NE(fragmentMetadata.properties_, nullptr);
+    errCode = fragmentMetadata.GetValue(key, value);
+    EXPECT_EQ(errCode, ERR_IMAGE_INVALID_PARAMETER);
+    key = FRAGMENT_METADATA_KEY_X;
+
+    errCode = fragmentMetadata.GetValue(key, value);
+    EXPECT_EQ(errCode, ERR_IMAGE_INVALID_PARAMETER);
+}
+
+/**
+ * @tc.name: SetValueTest003
+ * @tc.desc: Test SetValue when properties is nullptr or value is empty.
+ * @tc.type: FUNC
+ */
+HWTEST_F(FragmentMetadataTest, SetValueTest003, TestSize.Level2)
+{
+    FragmentMetadata fragmentMetadata;
+    std::string key = FRAGMENT_METADATA_KEY_X;
+    std::string value = "";
+    fragmentMetadata.properties_ = nullptr;
+
+    bool res = fragmentMetadata.SetValue(key, value);
+    EXPECT_FALSE(res);
+
+    fragmentMetadata.properties_ = std::make_shared<ImageMetadata::PropertyMap>();
+    ASSERT_NE(fragmentMetadata.properties_, nullptr);
+    res = fragmentMetadata.SetValue(key, value);
+    EXPECT_FALSE(res);
+}
+
+/**
+ * @tc.name: SetValueTest004
+ * @tc.desc: Test SetValue when the size of properties is invalid or the length of value is invalid.
+ * @tc.type: FUNC
+ */
+HWTEST_F(FragmentMetadataTest, SetValueTest004, TestSize.Level2)
+{
+    FragmentMetadata fragmentMetadata;
+    fragmentMetadata.properties_ = std::make_shared<ImageMetadata::PropertyMap>();
+    ASSERT_NE(fragmentMetadata.properties_, nullptr);
+    *fragmentMetadata.properties_ = {
+        {"key0", "value0"}, {"key1", "value1"}, {"key2", "value2"}, {"key3", "value3"}, {"key4", "value4"},
+        {"key5", "value5"}, {"key6", "value6"}, {"key7", "value7"}, {"key8", "value8"}, {"key9", "value9"}
+    };
+    std::string key = FRAGMENT_METADATA_KEY_X;
+    std::string value = "value";
+    ASSERT_EQ(fragmentMetadata.properties_->size(), MAX_FRAGMENT_MAP_META_COUNT);
+
+    bool res = fragmentMetadata.SetValue(key, value);
+    EXPECT_FALSE(res);
+
+    while (value.length() > MAX_FRAGMENT_MAP_META_LENGTH) {
+        value += value;
+    }
+    res = fragmentMetadata.SetValue(key, value);
+    EXPECT_FALSE(res);
+}
+
+/**
+ * @tc.name: RemoveEntryTest003
+ * @tc.desc: Test RemoveEntry when propertie is nullptr.
+ * @tc.type: FUNC
+ */
+HWTEST_F(FragmentMetadataTest, RemoveEntryTest003, TestSize.Level2)
+{
+    FragmentMetadata fragmentMetadata;
+    std::string key = "key";
+    fragmentMetadata.properties_ = nullptr;
+
+    bool res = fragmentMetadata.RemoveEntry(key);
+    EXPECT_FALSE(res);
+}
+
+/**
+ * @tc.name: CloneMetadataTest002
+ * @tc.desc: Test CloneMetadata when the size of properties is invalid.
+ * @tc.type: FUNC
+ */
+HWTEST_F(FragmentMetadataTest, CloneMetadataTest002, TestSize.Level2)
+{
+    FragmentMetadata fragmentMetadata;
+    fragmentMetadata.properties_ = std::make_shared<ImageMetadata::PropertyMap>();
+    ASSERT_NE(fragmentMetadata.properties_, nullptr);
+    *fragmentMetadata.properties_ = {
+        {"key0", "value0"}, {"key1", "value1"}, {"key2", "value2"}, {"key3", "value3"}, {"key4", "value4"},
+        {"key5", "value5"}, {"key6", "value6"}, {"key7", "value7"}, {"key8", "value8"}, {"key9", "value9"},
+        {"over_size", "over_size"}
+    };
+    ASSERT_EQ(fragmentMetadata.properties_->size(), MAX_FRAGMENT_MAP_META_COUNT + 1);
+
+    auto res = fragmentMetadata.CloneMetadata();
+    ASSERT_EQ(res, nullptr);
+}
+
+/**
+ * @tc.name: MarshallingTest002
+ * @tc.desc: Test Marshalling when properties is nullptr or the size of properties is invalid.
+ * @tc.type: FUNC
+ */
+HWTEST_F(FragmentMetadataTest, MarshallingTest002, TestSize.Level2)
+{
+    Parcel parcel;
+    FragmentMetadata fragmentMetadata;
+    fragmentMetadata.properties_ = nullptr;
+
+    bool res = fragmentMetadata.Marshalling(parcel);
+    EXPECT_FALSE(res);
+
+    fragmentMetadata.properties_ = std::make_shared<ImageMetadata::PropertyMap>();
+    ASSERT_NE(fragmentMetadata.properties_, nullptr);
+    *fragmentMetadata.properties_ = {
+        {"key0", "value0"}, {"key1", "value1"}, {"key2", "value2"}, {"key3", "value3"}, {"key4", "value4"},
+        {"key5", "value5"}, {"key6", "value6"}, {"key7", "value7"}, {"key8", "value8"}, {"key9", "value9"},
+        {"over_size", "over_size"}
+    };
+    ASSERT_EQ(fragmentMetadata.properties_->size(), MAX_FRAGMENT_MAP_META_COUNT + 1);
+    res = fragmentMetadata.Marshalling(parcel);
+    EXPECT_FALSE(res);
+}
 } // namespace OHOS
 } // namespace Multimedia

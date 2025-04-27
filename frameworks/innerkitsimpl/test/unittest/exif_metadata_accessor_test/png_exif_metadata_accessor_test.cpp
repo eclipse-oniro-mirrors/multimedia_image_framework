@@ -15,7 +15,8 @@
 
 #include <memory>
 #include <gtest/gtest.h>
-
+#define private public
+#define protected public
 #include "file_metadata_stream.h"
 #include "image_log.h"
 #include "media_errors.h"
@@ -45,6 +46,7 @@ static const std::string IMAGE_OUTPUT_ITXT_NOCOMPRESS_PNG_PATH =
     "/data/local/tmp/image/test_out_chunk_itxt_nocompress.png";
 static const std::string IMAGE_OUTPUT_ITXT_WITHCOMPRESS_PNG_PATH =
     "/data/local/tmp/image/test_out_chunk_itxt_withcompress.png";
+static const std::string IMAGE_INPUT1_JPEG_PATH = "/data/local/tmp/image/test_jpeg_readmetadata001.jpg";
 static const auto TIFF_IFH_LENGTH = 8;
 }
 class PngExifMetadataAccessorTest : public testing::Test {
@@ -1253,6 +1255,79 @@ HWTEST_F(PngExifMetadataAccessorTest, WriteBlob004, TestSize.Level3)
     DataBuf outputBuf;
     ASSERT_TRUE(imageWriteAccessor.ReadBlob(outputBuf));
     ASSERT_EQ(outputBuf.Size(), inputBuf.Size());
+}
+
+/**
+ * @tc.name: IsPngTypeTest001
+ * @tc.desc: Test IsPngType when imageStream is eof.
+ * @tc.type: FUNC
+ */
+HWTEST_F(PngExifMetadataAccessorTest, IsPngTypeTest001, TestSize.Level2)
+{
+    auto readStream = std::make_shared<FileMetadataStream>(IMAGE_INPUT_EXIF_PNG_PATH);
+    ASSERT_NE(readStream, nullptr);
+    readStream->fp_ = nullptr;
+    std::shared_ptr<MetadataStream> stream = readStream;
+    PngExifMetadataAccessor imageReadAccessor(stream);
+
+    bool res = imageReadAccessor.IsPngType();
+    EXPECT_FALSE(res);
+}
+
+/**
+ * @tc.name: ReadBlobTest001
+ * @tc.desc: Test ReadBlob when imageStream open failed.
+ * @tc.type: FUNC
+ */
+HWTEST_F(PngExifMetadataAccessorTest, ReadBlobTest001, TestSize.Level2)
+{
+    auto readStream = std::make_shared<FileMetadataStream>(IMAGE_INPUT_EXIF_PNG_PATH);
+    ASSERT_NE(readStream, nullptr);
+    readStream->fp_ = nullptr;
+    std::shared_ptr<MetadataStream> stream = readStream;
+    PngExifMetadataAccessor imageReadAccessor(stream);
+    DataBuf dataBuf;
+
+    bool res = imageReadAccessor.ReadBlob(dataBuf);
+    EXPECT_FALSE(res);
+}
+
+/**
+ * @tc.name: ReadBlobTest002
+ * @tc.desc: Test ReadBlob when imageStream file is not png format.
+ * @tc.type: FUNC
+ */
+HWTEST_F(PngExifMetadataAccessorTest, ReadBlobTest002, TestSize.Level2)
+{
+    std::shared_ptr<MetadataStream> readStream = std::make_shared<FileMetadataStream>(IMAGE_INPUT1_JPEG_PATH);
+    ASSERT_TRUE(readStream->Open(OpenMode::ReadWrite));
+    PngExifMetadataAccessor imageReadAccessor(readStream);
+    DataBuf dataBuf;
+
+    bool res = imageReadAccessor.ReadBlob(dataBuf);
+    EXPECT_FALSE(res);
+}
+
+/**
+ * @tc.name: WriteExifDataTest001
+ * @tc.desc: Test WriteExifData when dataBlob is nullptr or size is 0.
+ * @tc.type: FUNC
+ */
+HWTEST_F(PngExifMetadataAccessorTest, WriteExifDataTest001, TestSize.Level2)
+{
+    std::shared_ptr<MetadataStream> readStream = std::make_shared<FileMetadataStream>(IMAGE_INPUT_EXIF_PNG_PATH);
+    ASSERT_TRUE(readStream->Open(OpenMode::ReadWrite));
+    PngExifMetadataAccessor imageReadAccessor(readStream);
+    BufferMetadataStream bufMdataStream;
+    uint8_t dataBlob;
+    DataBuf dataBuf;
+    std::string chunkType = "chunkType";
+
+    bool res = imageReadAccessor.WriteExifData(bufMdataStream, nullptr, 0, dataBuf, chunkType);
+    EXPECT_FALSE(res);
+
+    res = imageReadAccessor.WriteExifData(bufMdataStream, &dataBlob, 0, dataBuf, chunkType);
+    EXPECT_FALSE(res);
 }
 } // namespace Multimedia
 } // namespace OHOS

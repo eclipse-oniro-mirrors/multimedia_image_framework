@@ -14,20 +14,100 @@
  */
 
 #define private public
+#define protected public
 #include <gtest/gtest.h>
 #include "heif_image.h"
 #include "heif_stream.h"
 #include "heif_parser.h"
 #include "heif_utils.h"
+#include "item_property_transform_box.h"
 
 using namespace testing::ext;
 namespace OHOS {
 namespace ImagePlugin {
+static const heif_item_id MOCK_ITEM_ID = UINT32_MAX;
+static const heif_item_id IT35_TRUE_ID = 1;
+static const heif_item_id IT35_MOCK_ID = 2;
+static const heif_item_id TMAP_TRUE_ID = 3;
+static const heif_item_id TMAP_MOCK_ID = 4;
+static const heif_item_id IDEN_TRUE_ID = 5;
+static const heif_item_id MIME_TRUE_ID = 6;
+static const uint16_t INDEX_1 = 1;
+static const uint16_t INDEX_2 = 2;
+static const uint16_t INDEX_3 = 3;
+static const uint8_t MOCK_DATA_1 = 1;
+static const uint8_t MOCK_DATA_2 = 2;
+static const uint32_t MOCK_DATA_SIZE = 5;
+static const uint32_t NUM_1 = 1;
+
 class HeifParserTest : public testing::Test {
 public:
     HeifParserTest() {}
     ~HeifParserTest() {}
+    void AddHdlrBox(HeifParser& heifParser);
+    void AddPtimBox(HeifParser& heifParser);
+    void AddIinfBox(HeifParser& heifParser);
+    void AddIprpBox(HeifParser& heifParser);
+    void AddIpcoBox(HeifParser& heifParser);
+    void AddIpmaBox(HeifParser& heifParser);
 };
+
+void HeifParserTest::AddHdlrBox(HeifParser& heifParser)
+{
+    std::shared_ptr<HeifHdlrBox> mockHdlr = std::make_shared<HeifHdlrBox>();
+    mockHdlr->boxType_ = BOX_TYPE_HDLR;
+    mockHdlr->handlerType_ = HANDLER_TYPE_PICT;
+    heifParser.metaBox_->AddChild(mockHdlr);
+}
+
+void HeifParserTest::AddPtimBox(HeifParser& heifParser)
+{
+    std::shared_ptr<HeifPtimBox> mockPtim = std::make_shared<HeifPtimBox>();
+    mockPtim->boxType_ = BOX_TYPE_PITM;
+    heifParser.metaBox_->AddChild(mockPtim);
+}
+
+void HeifParserTest::AddIinfBox(HeifParser& heifParser)
+{
+    std::shared_ptr<HeifIinfBox> mockIinf = std::make_shared<HeifIinfBox>();
+    mockIinf->boxType_ = BOX_TYPE_IINF;
+    heifParser.metaBox_->AddChild(mockIinf);
+}
+
+void HeifParserTest::AddIprpBox(HeifParser& heifParser)
+{
+    std::shared_ptr<HeifIprpBox> mockIprp = std::make_shared<HeifIprpBox>();
+    mockIprp->boxType_ = BOX_TYPE_IPRP;
+    heifParser.metaBox_->AddChild(mockIprp);
+}
+
+void HeifParserTest::AddIpcoBox(HeifParser& heifParser)
+{
+    std::shared_ptr<HeifIprpBox> mockIprp = std::make_shared<HeifIprpBox>();
+    mockIprp->boxType_ = BOX_TYPE_IPRP;
+
+    std::shared_ptr<HeifIpcoBox> mockIpco = std::make_shared<HeifIpcoBox>();
+    mockIpco->boxType_ = BOX_TYPE_IPCO;
+    mockIprp->AddChild(mockIpco);
+
+    heifParser.metaBox_->AddChild(mockIprp);
+}
+
+void HeifParserTest::AddIpmaBox(HeifParser& heifParser)
+{
+    std::shared_ptr<HeifIprpBox> mockIprp = std::make_shared<HeifIprpBox>();
+    mockIprp->boxType_ = BOX_TYPE_IPRP;
+
+    std::shared_ptr<HeifIpcoBox> mockIpco = std::make_shared<HeifIpcoBox>();
+    mockIpco->boxType_ = BOX_TYPE_IPCO;
+    mockIprp->AddChild(mockIpco);
+
+    std::shared_ptr<HeifIpmaBox> mockIpma = std::make_shared<HeifIpmaBox>();
+    mockIpma->boxType_ = BOX_TYPE_IPMA;
+    mockIprp->AddChild(mockIpma);
+
+    heifParser.metaBox_->AddChild(mockIprp);
+}
 
 /**
  * @tc.name: ReadTest001
@@ -510,6 +590,752 @@ HWTEST_F(HeifParserTest, SetPrimaryImageTest001, TestSize.Level3)
     heifParser.pitmBox_ = nullptr;
     heifParser.SetPrimaryImage(image);
     GTEST_LOG_(INFO) << "HeifParserTest: SetPrimaryImageTest001 end";
+}
+
+/**
+ * @tc.name: ParseContentChildrenTest001
+ * @tc.desc: Test ParseContentChildren of HeifIprpBox when recursionCount over than MAX_RECURSION_COUNT
+ * @tc.type: FUNC
+ */
+HWTEST_F(HeifParserTest, ParseContentChildrenTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "HeifParserBoxTest: ParseContentChildrenTest001 start";
+    HeifIprpBox heifIprpBox;
+    auto stream = std::make_shared<HeifBufferInputStream>(nullptr, 0, true);
+    ASSERT_NE(stream, nullptr);
+    HeifStreamReader reader(stream, 0, 0);
+
+    uint32_t recursionCount = heifIprpBox.MAX_RECURSION_COUNT;
+    heif_error error = heifIprpBox.ParseContentChildren(reader, recursionCount);
+    EXPECT_EQ(error, heif_error_too_many_recursion);
+    GTEST_LOG_(INFO) << "HeifParserBoxTest: ParseContentChildrenTest001 end";
+}
+
+/**
+ * @tc.name: ParseContentChildrenTest002
+ * @tc.desc: Test ParseContentChildren of HeifIpcoBox when recursionCount over than MAX_RECURSION_COUNT
+ * @tc.type: FUNC
+ */
+HWTEST_F(HeifParserTest, ParseContentChildrenTest002, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "HeifParserBoxTest: ParseContentChildrenTest002 start";
+    HeifIpcoBox heifIpcoBox;
+    auto stream = std::make_shared<HeifBufferInputStream>(nullptr, 0, true);
+    ASSERT_NE(stream, nullptr);
+    HeifStreamReader reader(stream, 0, 0);
+
+    uint32_t recursionCount = heifIpcoBox.MAX_RECURSION_COUNT;
+    heif_error error = heifIpcoBox.ParseContentChildren(reader, recursionCount);
+    EXPECT_EQ(error, heif_error_too_many_recursion);
+    GTEST_LOG_(INFO) << "HeifParserBoxTest: ParseContentChildrenTest002 end";
+}
+
+/**
+ * @tc.name: ParseContentChildrenTest003
+ * @tc.desc: Test ParseContentChildren of HeifIpcoBox when recursionCount over than MAX_RECURSION_COUNT
+ * @tc.type: FUNC
+ */
+HWTEST_F(HeifParserTest, ParseContentChildrenTest003, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "HeifParserBoxTest: ParseContentChildrenTest003Test001 start";
+    HeifMetaBox heifMetaBox;
+    auto stream = std::make_shared<HeifBufferInputStream>(nullptr, 0, true);
+    ASSERT_NE(stream, nullptr);
+    HeifStreamReader reader(stream, 0, 0);
+
+    uint32_t recursionCount = heifMetaBox.MAX_RECURSION_COUNT;
+    heif_error error = heifMetaBox.ParseContentChildren(reader, recursionCount);
+    EXPECT_EQ(error, heif_error_too_many_recursion);
+    GTEST_LOG_(INFO) << "HeifParserBoxTest: ParseContentChildrenTest003Test001 end";
+}
+
+/**
+ * @tc.name: MakeFromMemoryTest001
+ * @tc.desc: Verify that HeifParser call MakeFromMemory when data is nullptr.
+ * @tc.type: FUNC
+ */
+HWTEST_F(HeifParserTest, MakeFromMemoryTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "HeifParserTest: MakeFromMemoryTest001 start";
+    HeifParser heifParser;
+    auto ret = heifParser.MakeFromMemory(nullptr, 0, false, nullptr);
+    ASSERT_EQ(ret, heif_error_no_data);
+    GTEST_LOG_(INFO) << "HeifParserTest: MakeFromMemoryTest001 end";
+}
+
+/**
+ * @tc.name: MakeFromStreamTest001
+ * @tc.desc: Verify that HeifParser call MakeFromStream when stream is nullptr.
+ * @tc.type: FUNC
+ */
+HWTEST_F(HeifParserTest, MakeFromStreamTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "HeifParserTest: MakeFromStreamTest001 start";
+    HeifParser heifParser;
+    std::shared_ptr<HeifInputStream> stream;
+    auto ret = heifParser.MakeFromStream(stream, nullptr);
+    ASSERT_EQ(ret, heif_error_no_data);
+    GTEST_LOG_(INFO) << "HeifParserTest: MakeFromStreamTest001 end";
+}
+
+/**
+ * @tc.name: GetGridLengthTest001
+ * @tc.desc: Verify that HeifParser call GetGridLength when item id is mock.
+ * @tc.type: FUNC
+ */
+HWTEST_F(HeifParserTest, GetGridLengthTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "HeifParserTest: GetGridLengthTest001 start";
+    HeifParser heifParser;
+    size_t mockSize = 0;
+    auto ret = heifParser.GetGridLength(MOCK_ITEM_ID, mockSize);
+    ASSERT_EQ(ret, heif_error_item_not_found);
+    GTEST_LOG_(INFO) << "HeifParserTest: GetGridLengthTest001 end";
+}
+
+/**
+ * @tc.name: GetIdenImageTest001
+ * @tc.desc: Verify that HeifParser call GetIdenImage when item id is mock.
+ * @tc.type: FUNC
+ */
+HWTEST_F(HeifParserTest, GetIdenImageTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "HeifParserTest: GetIdenImageTest001 start";
+    HeifParser heifParser;
+    std::shared_ptr<HeifImage> resImage;
+    heifParser.GetIdenImage(MOCK_ITEM_ID, resImage);
+    ASSERT_EQ(resImage, nullptr);
+    GTEST_LOG_(INFO) << "HeifParserTest: GetIdenImageTest001 end";
+}
+
+/**
+ * @tc.name: GetIdenImageTest002
+ * @tc.desc: Verify that HeifParser call GetIdenImage when irefBox_ is nullptr.
+ * @tc.type: FUNC
+ */
+HWTEST_F(HeifParserTest, GetIdenImageTest002, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "HeifParserTest: GetIdenImageTest002 start";
+    HeifParser heifParser;
+    std::shared_ptr<HeifInfeBox> mockBox = std::make_shared<HeifInfeBox>(MOCK_ITEM_ID, "iden", false);
+    ASSERT_NE(mockBox, nullptr);
+    heifParser.infeBoxes_[MOCK_ITEM_ID] = mockBox;
+    heifParser.irefBox_.reset();
+    std::shared_ptr<HeifImage> resImage;
+    heifParser.GetIdenImage(MOCK_ITEM_ID, resImage);
+    ASSERT_EQ(resImage, nullptr);
+    GTEST_LOG_(INFO) << "HeifParserTest: GetIdenImageTest002 end";
+}
+
+/**
+ * @tc.name: GetIdenImageTest003
+ * @tc.desc: Verify that HeifParser call GetIdenImage when infe's itemType is not iden.
+ * @tc.type: FUNC
+ */
+HWTEST_F(HeifParserTest, GetIdenImageTest003, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "HeifParserTest: GetIdenImageTest003 start";
+    HeifParser heifParser;
+    std::shared_ptr<HeifInfeBox> mockBox = std::make_shared<HeifInfeBox>(MOCK_ITEM_ID, "mock", false);
+    ASSERT_NE(mockBox, nullptr);
+    heifParser.infeBoxes_[MOCK_ITEM_ID] = mockBox;
+    std::shared_ptr<HeifImage> resImage;
+    heifParser.GetIdenImage(MOCK_ITEM_ID, resImage);
+    ASSERT_EQ(resImage, nullptr);
+    GTEST_LOG_(INFO) << "HeifParserTest: GetIdenImageTest003 end";
+}
+
+/**
+ * @tc.name: AssembleImagesTest001
+ * @tc.desc: Verify that HeifParser call AssembleImages when primaryImage_ is invalid.
+ * @tc.type: FUNC
+ */
+HWTEST_F(HeifParserTest, AssembleImagesTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "HeifParserTest: AssembleImagesTest001 start";
+    HeifParser heifParser;
+    decltype(heifParser.infeBoxes_) mockMap;
+    heifParser.infeBoxes_.swap(mockMap);
+    heifParser.infeBoxes_[MOCK_ITEM_ID] = std::make_shared<HeifInfeBox>(0, "hollow", false);
+    heifParser.primaryImage_.reset();
+    auto ret = heifParser.AssembleImages();
+    ASSERT_EQ(ret, heif_error_primary_item_not_found);
+    GTEST_LOG_(INFO) << "HeifParserTest: AssembleImagesTest001 end";
+}
+
+/**
+ * @tc.name: AssembleImagesTest002
+ * @tc.desc: Verify that HeifParser call AssembleImages when primaryImage_ is valid.
+ * @tc.type: FUNC
+ */
+HWTEST_F(HeifParserTest, AssembleImagesTest002, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "HeifParserTest: AssembleImagesTest002 start";
+    HeifParser heifParser;
+    decltype(heifParser.infeBoxes_) mockMap;
+    mockMap[MOCK_ITEM_ID] = std::make_shared<HeifInfeBox>(0, "hollow", false);
+    mockMap[IT35_TRUE_ID] = std::make_shared<HeifInfeBox>(IT35_TRUE_ID, "it35", false);
+    mockMap[IT35_MOCK_ID] = std::make_shared<HeifInfeBox>(TMAP_MOCK_ID, "it35", false);
+    mockMap[TMAP_TRUE_ID] = std::make_shared<HeifInfeBox>(TMAP_TRUE_ID, "tmap", false);
+    mockMap[TMAP_MOCK_ID] = std::make_shared<HeifInfeBox>(IT35_MOCK_ID, "tmap", false);
+    mockMap[IDEN_TRUE_ID] = std::make_shared<HeifInfeBox>(IDEN_TRUE_ID, "iden", false);
+    mockMap[MIME_TRUE_ID] = std::make_shared<HeifInfeBox>(MIME_TRUE_ID, "mime", false);
+    mockMap[MIME_TRUE_ID]->SetItemName(std::string{"RfDataB\0"});
+    heifParser.infeBoxes_.swap(mockMap);
+    heifParser.ilocBox_ = std::make_shared<HeifIlocBox>();
+    heifParser.pitmBox_ = std::make_shared<HeifPtimBox>();
+    heifParser.pitmBox_->itemId_ = IDEN_TRUE_ID;
+    heifParser.ipcoBox_.reset();
+    heifParser.ipmaBox_.reset();
+    auto ret = heifParser.AssembleImages();
+    ASSERT_EQ(ret, heif_error_ok);
+    GTEST_LOG_(INFO) << "HeifParserTest: AssembleImagesTest002 end";
+}
+
+/**
+ * @tc.name: AssembleImagesTest003
+ * @tc.desc: Verify that HeifParser call AssembleImages when satisfy imir mdvc clli property.
+ * @tc.type: FUNC
+ */
+HWTEST_F(HeifParserTest, AssembleImagesTest003, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "HeifParserTest: AssembleImagesTest003 start";
+    HeifParser heifParser;
+    decltype(heifParser.infeBoxes_) mockMap;
+    mockMap[TMAP_TRUE_ID] = std::make_shared<HeifInfeBox>(TMAP_TRUE_ID, "tmap", false);
+    heifParser.infeBoxes_.swap(mockMap);
+    heifParser.ilocBox_ = std::make_shared<HeifIlocBox>();
+    heifParser.pitmBox_ = std::make_shared<HeifPtimBox>();
+
+    heifParser.ipmaBox_ = std::make_shared<HeifIpmaBox>();
+    heifParser.ipmaBox_->AddProperty(TMAP_TRUE_ID, PropertyAssociation{.essential = false, .propertyIndex = INDEX_1});
+    heifParser.ipmaBox_->AddProperty(TMAP_TRUE_ID, PropertyAssociation{.essential = false, .propertyIndex = INDEX_2});
+    heifParser.ipmaBox_->AddProperty(TMAP_TRUE_ID, PropertyAssociation{.essential = false, .propertyIndex = INDEX_3});
+
+    heifParser.ipcoBox_ = std::make_shared<HeifIpcoBox>();
+    heifParser.ipcoBox_->AddChild(std::make_shared<HeifImirBox>());
+    heifParser.ipcoBox_->AddChild(std::make_shared<HeifMdcvBox>());
+    heifParser.ipcoBox_->AddChild(std::make_shared<HeifClliBox>());
+
+    auto ret = heifParser.AssembleImages();
+    ASSERT_EQ(ret, heif_error_primary_item_not_found);
+    GTEST_LOG_(INFO) << "HeifParserTest: AssembleImagesTest003 end";
+}
+
+/**
+ * @tc.name: AppendHvccNalDataTest001
+ * @tc.desc: Verify that HeifParser call AppendHvccNalData when hvcc is invalid.
+ * @tc.type: FUNC
+ */
+HWTEST_F(HeifParserTest, AppendHvccNalDataTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "HeifParserTest: AppendHvccNalDataTest001 start";
+    HeifParser heifParser;
+    heifParser.ipmaBox_ = std::make_shared<HeifIpmaBox>();
+    heifParser.ipmaBox_->AddProperty(TMAP_TRUE_ID, PropertyAssociation{.essential = false, .propertyIndex = INDEX_1});
+    heifParser.ipcoBox_ = std::make_shared<HeifIpcoBox>();
+    std::vector<uint8_t> mockData;
+    auto ret = heifParser.AppendHvccNalData(TMAP_TRUE_ID, mockData);
+    ASSERT_EQ(ret, heif_error_no_hvcc);
+    GTEST_LOG_(INFO) << "HeifParserTest: AppendHvccNalDataTest001 end";
+}
+
+/**
+ * @tc.name: AppendHvccNalDataTest002
+ * @tc.desc: Verify that HeifParser call AppendHvccNalData when hvcc is valid.
+ * @tc.type: FUNC
+ */
+HWTEST_F(HeifParserTest, AppendHvccNalDataTest002, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "HeifParserTest: AppendHvccNalDataTest002 start";
+    HeifParser heifParser;
+    heifParser.ipmaBox_ = std::make_shared<HeifIpmaBox>();
+    heifParser.ipmaBox_->AddProperty(TMAP_TRUE_ID, PropertyAssociation{.essential = false, .propertyIndex = INDEX_1});
+    heifParser.ipcoBox_ = std::make_shared<HeifIpcoBox>();
+    heifParser.ipcoBox_->AddChild(std::make_shared<HeifHvccBox>());
+    std::vector<uint8_t> mockData{MOCK_DATA_1, MOCK_DATA_2};
+    auto ret = heifParser.AppendHvccNalData(TMAP_TRUE_ID, mockData);
+    ASSERT_EQ(ret, heif_error_ok);
+    GTEST_LOG_(INFO) << "HeifParserTest: AppendHvccNalDataTest002 end";
+}
+
+/**
+ * @tc.name: SetHvccConfigTest001
+ * @tc.desc: Verify that HeifParser call SetHvccConfig when hvcc is valid.
+ * @tc.type: FUNC
+ */
+HWTEST_F(HeifParserTest, SetHvccConfigTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "HeifParserTest: SetHvccConfigTest001 start";
+    HeifParser heifParser;
+    heifParser.ipmaBox_ = std::make_shared<HeifIpmaBox>();
+    heifParser.ipmaBox_->AddProperty(TMAP_TRUE_ID, PropertyAssociation{.essential = false, .propertyIndex = INDEX_1});
+    heifParser.ipcoBox_ = std::make_shared<HeifIpcoBox>();
+    heifParser.ipcoBox_->AddChild(std::make_shared<HeifHvccBox>());
+    HvccConfig mockConfig;
+    auto ret = heifParser.SetHvccConfig(TMAP_TRUE_ID, mockConfig);
+    ASSERT_EQ(ret, heif_error_ok);
+    GTEST_LOG_(INFO) << "HeifParserTest: SetHvccConfigTest001 end";
+}
+
+/**
+ * @tc.name: GetExifHeaderOffsetTest001
+ * @tc.desc: Verify that HeifParser call GetExifHeaderOffset when data is mock.
+ * @tc.type: FUNC
+ */
+HWTEST_F(HeifParserTest, GetExifHeaderOffsetTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "HeifParserTest: GetExifHeaderOffsetTest001 start";
+    HeifParser heifParser;
+    std::unique_ptr<uint8_t[]> mockData = std::make_unique<uint8_t[]>(MOCK_DATA_SIZE);
+    auto ret = heifParser.GetExifHeaderOffset(mockData.get(), MOCK_DATA_SIZE);
+    ASSERT_EQ(ret, NUM_1);
+    GTEST_LOG_(INFO) << "HeifParserTest: GetExifHeaderOffsetTest001 end";
+}
+
+/**
+ * @tc.name: SetExifMetadataTest001
+ * @tc.desc: Verify that HeifParser call SetExifMetadata when data is mock.
+ * @tc.type: FUNC
+ */
+HWTEST_F(HeifParserTest, SetExifMetadataTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "HeifParserTest: SetExifMetadataTest001 start";
+    HeifParser heifParser;
+    auto ret = heifParser.SetExifMetadata(nullptr, nullptr, 0);
+    ASSERT_EQ(ret, heif_invalid_exif_data);
+    GTEST_LOG_(INFO) << "HeifParserTest: SetExifMetadataTest001 end";
+}
+
+/**
+ * @tc.name: UpdateExifMetadataTest001
+ * @tc.desc: Verify that HeifParser call UpdateExifMetadata when data is mock.
+ * @tc.type: FUNC
+ */
+HWTEST_F(HeifParserTest, UpdateExifMetadataTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "HeifParserTest: UpdateExifMetadataTest001 start";
+    HeifParser heifParser;
+    auto ret = heifParser.UpdateExifMetadata(nullptr, nullptr, 0, MOCK_ITEM_ID);
+    ASSERT_EQ(ret, heif_invalid_exif_data);
+    GTEST_LOG_(INFO) << "HeifParserTest: UpdateExifMetadataTest001 end";
+}
+
+/**
+ * @tc.name: GetTiffOffsetTest001
+ * @tc.desc: Verify that HeifParser call GetTiffOffset when tiffoffset_ is invalid.
+ * @tc.type: FUNC
+ */
+HWTEST_F(HeifParserTest, GetTiffOffsetTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "HeifParserTest: GetTiffOffsetTest001 start";
+    HeifParser heifParser;
+    heifParser.tiffOffset_ = NUM_1;
+    auto ret = heifParser.GetTiffOffset();
+    ASSERT_EQ(ret, NUM_1);
+    GTEST_LOG_(INFO) << "HeifParserTest: GetTiffOffsetTest001 end";
+}
+
+/**
+ * @tc.name: GetTiffOffsetTest002
+ * @tc.desc: Verify that HeifParser call GetTiffOffset when primaryImage_ is invalid.
+ * @tc.type: FUNC
+ */
+HWTEST_F(HeifParserTest, GetTiffOffsetTest002, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "HeifParserTest: GetTiffOffsetTest002 start";
+    HeifParser heifParser;
+    heifParser.tiffOffset_ = 0;
+    heifParser.primaryImage_.reset();
+    auto ret = heifParser.GetTiffOffset();
+    ASSERT_EQ(ret, 0);
+    GTEST_LOG_(INFO) << "HeifParserTest: GetTiffOffsetTest002 end";
+}
+
+/**
+ * @tc.name: GetTiffOffsetTest003
+ * @tc.desc: Verify that HeifParser call GetTiffOffset when exifId is 0.
+ * @tc.type: FUNC
+ */
+HWTEST_F(HeifParserTest, GetTiffOffsetTest003, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "HeifParserTest: GetTiffOffsetTest003 start";
+    HeifParser heifParser;
+    heifParser.tiffOffset_ = 0;
+    heifParser.primaryImage_ = std::make_shared<HeifImage>(MOCK_ITEM_ID);
+    auto ret = heifParser.GetTiffOffset();
+    ASSERT_EQ(ret, 0);
+    GTEST_LOG_(INFO) << "HeifParserTest: GetTiffOffsetTest003 end";
+}
+
+/**
+ * @tc.name: GetTiffOffsetTest004
+ * @tc.desc: Verify that HeifParser call GetTiffOffset when infeBoxes_ is empty.
+ * @tc.type: FUNC
+ */
+HWTEST_F(HeifParserTest, GetTiffOffsetTest004, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "HeifParserTest: GetTiffOffsetTest004 start";
+    HeifParser heifParser;
+    heifParser.tiffOffset_ = 0;
+    heifParser.primaryImage_ = std::make_shared<HeifImage>(MOCK_ITEM_ID);
+    std::shared_ptr<HeifMetadata> mockMetaData = std::make_shared<HeifMetadata>();
+    mockMetaData->itemId = MOCK_ITEM_ID;
+    mockMetaData->itemType = std::string{"Exif\0\0"};
+    heifParser.primaryImage_->AddMetadata(mockMetaData);
+    auto ret = heifParser.GetTiffOffset();
+    ASSERT_EQ(ret, 0);
+    GTEST_LOG_(INFO) << "HeifParserTest: GetTiffOffsetTest004 end";
+}
+
+/**
+ * @tc.name: GetTiffOffsetTest005
+ * @tc.desc: Verify that HeifParser call GetTiffOffset when ilocItem is nullptr.
+ * @tc.type: FUNC
+ */
+HWTEST_F(HeifParserTest, GetTiffOffsetTest005, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "HeifParserTest: GetTiffOffsetTest005 start";
+    HeifParser heifParser;
+    heifParser.tiffOffset_ = 0;
+    heifParser.primaryImage_ = std::make_shared<HeifImage>(MOCK_ITEM_ID);
+    std::shared_ptr<HeifMetadata> mockMetaData = std::make_shared<HeifMetadata>();
+    mockMetaData->itemId = MOCK_ITEM_ID;
+    mockMetaData->itemType = std::string{"Exif\0\0"};
+    heifParser.primaryImage_->AddMetadata(mockMetaData);
+    heifParser.infeBoxes_[MOCK_ITEM_ID] = std::make_shared<HeifInfeBox>(MOCK_ITEM_ID, "mock", false);
+    heifParser.ilocBox_ = std::make_shared<HeifIlocBox>();
+    auto ret = heifParser.GetTiffOffset();
+    ASSERT_EQ(ret, 0);
+    GTEST_LOG_(INFO) << "HeifParserTest: GetTiffOffsetTest005 end";
+}
+
+/**
+ * @tc.name: AssembleImagesTest004
+ * @tc.desc: Verify that HeifParser call AssembleImages when ExtractGainmap include invalid data.
+ * @tc.type: FUNC
+ */
+HWTEST_F(HeifParserTest, AssembleImagesTest004, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "HeifParserTest: AssembleImagesTest004 start";
+    HeifParser heifParser;
+    decltype(heifParser.infeBoxes_) mockMap;
+    mockMap[IDEN_TRUE_ID] = std::make_shared<HeifInfeBox>(IDEN_TRUE_ID, "iden", false);
+    mockMap[TMAP_TRUE_ID] = std::make_shared<HeifInfeBox>(TMAP_TRUE_ID, "tmap", false);
+
+    heifParser.infeBoxes_.swap(mockMap);
+    heifParser.ilocBox_ = std::make_shared<HeifIlocBox>();
+    heifParser.pitmBox_ = std::make_shared<HeifPtimBox>();
+    heifParser.pitmBox_->itemId_ = IDEN_TRUE_ID;
+    heifParser.ipcoBox_.reset();
+    heifParser.ipmaBox_.reset();
+
+    heifParser.irefBox_ = std::make_shared<HeifIrefBox>();
+    heifParser.irefBox_->AddReferences(TMAP_TRUE_ID, BOX_TYPE_THMB, std::vector<heif_item_id>{});
+    heifParser.irefBox_->AddReferences(TMAP_TRUE_ID, BOX_TYPE_DIMG, std::vector<heif_item_id>{});
+
+    auto ret = heifParser.AssembleImages();
+    ASSERT_EQ(ret, heif_error_ok);
+
+    heifParser.irefBox_->references_[INDEX_1].toItemIds = std::vector<heif_item_id>{MOCK_ITEM_ID, TMAP_TRUE_ID};
+    ret = heifParser.AssembleImages();
+    ASSERT_EQ(ret, heif_error_ok);
+
+    heifParser.irefBox_->references_[INDEX_1].toItemIds = std::vector<heif_item_id>{IDEN_TRUE_ID, MOCK_ITEM_ID};
+    ret = heifParser.AssembleImages();
+    ASSERT_EQ(ret, heif_error_ok);
+    GTEST_LOG_(INFO) << "HeifParserTest: AssembleImagesTest004 end";
+}
+
+/**
+ * @tc.name: MakeFromMemoryTest002
+ * @tc.desc: Verify that HeifParser call MakeFromMemory when ftypBox_ is nullptr.
+ * @tc.type: FUNC
+ */
+HWTEST_F(HeifParserTest, MakeFromMemoryTest002, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "HeifParserTest: MakeFromMemoryTest002 start";
+    std::unique_ptr<uint8_t[]> mockData = std::make_unique<uint8_t[]>(NUM_1);
+    std::shared_ptr<HeifParser> heifParser;
+    auto ret = HeifParser::MakeFromMemory(mockData.get(), NUM_1, false, &heifParser);
+    ASSERT_EQ(ret, heif_error_no_ftyp);
+    GTEST_LOG_(INFO) << "HeifParserTest: MakeFromMemoryTest002 end";
+}
+
+/**
+ * @tc.name: AssembleBoxesTest001
+ * @tc.desc: Verify that HeifParser call AssembleBoxes when metaBox_ is nullptr.
+ * @tc.type: FUNC
+ */
+HWTEST_F(HeifParserTest, AssembleBoxesTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "HeifParserTest: AssembleBoxesTest001 start";
+    std::unique_ptr<uint8_t[]> mockData = std::make_unique<uint8_t[]>(NUM_1);
+    auto stream = std::make_shared<HeifBufferInputStream>(mockData.get(), NUM_1, false);
+
+    HeifParser heifParser(stream);
+    heifParser.ftypBox_ = std::make_shared<HeifFtypBox>();
+
+    auto maxSize = static_cast<uint64_t>(std::numeric_limits<int64_t>::max());
+    HeifStreamReader reader(stream, 0, maxSize);
+
+    auto ret = heifParser.AssembleBoxes(reader);
+    ASSERT_EQ(ret, heif_error_no_meta);
+    GTEST_LOG_(INFO) << "HeifParserTest: AssembleBoxesTest001 end";
+}
+
+/**
+ * @tc.name: AssembleBoxesTest002
+ * @tc.desc: Verify that HeifParser call AssembleBoxes when hdlrBox_ is nullptr.
+ * @tc.type: FUNC
+ */
+HWTEST_F(HeifParserTest, AssembleBoxesTest002, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "HeifParserTest: AssembleBoxesTest002 start";
+    std::unique_ptr<uint8_t[]> mockData = std::make_unique<uint8_t[]>(NUM_1);
+    auto stream = std::make_shared<HeifBufferInputStream>(mockData.get(), NUM_1, false);
+
+    HeifParser heifParser(stream);
+    heifParser.ftypBox_ = std::make_shared<HeifFtypBox>();
+    heifParser.metaBox_ = std::make_shared<HeifMetaBox>();
+
+    auto maxSize = static_cast<uint64_t>(std::numeric_limits<int64_t>::max());
+    HeifStreamReader reader(stream, 0, maxSize);
+
+    auto ret = heifParser.AssembleBoxes(reader);
+    ASSERT_EQ(ret, heif_error_invalid_handler);
+    GTEST_LOG_(INFO) << "HeifParserTest: AssembleBoxesTest002 end";
+}
+
+/**
+ * @tc.name: AssembleBoxesTest003
+ * @tc.desc: Verify that HeifParser call AssembleBoxes when pitmBox_ is nullptr.
+ * @tc.type: FUNC
+ */
+HWTEST_F(HeifParserTest, AssembleBoxesTest003, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "HeifParserTest: AssembleBoxesTest003 start";
+    std::unique_ptr<uint8_t[]> mockData = std::make_unique<uint8_t[]>(NUM_1);
+    auto stream = std::make_shared<HeifBufferInputStream>(mockData.get(), NUM_1, false);
+
+    HeifParser heifParser(stream);
+    heifParser.ftypBox_ = std::make_shared<HeifFtypBox>();
+    heifParser.metaBox_ = std::make_shared<HeifMetaBox>();
+
+    AddHdlrBox(heifParser);
+
+    auto maxSize = static_cast<uint64_t>(std::numeric_limits<int64_t>::max());
+    HeifStreamReader reader(stream, 0, maxSize);
+
+    auto ret = heifParser.AssembleBoxes(reader);
+    ASSERT_EQ(ret, heif_error_no_pitm);
+    GTEST_LOG_(INFO) << "HeifParserTest: AssembleBoxesTest003 end";
+}
+
+/**
+ * @tc.name: AssembleBoxesTest004
+ * @tc.desc: Verify that HeifParser call AssembleBoxes when iinfBox_ is nullptr.
+ * @tc.type: FUNC
+ */
+HWTEST_F(HeifParserTest, AssembleBoxesTest004, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "HeifParserTest: AssembleBoxesTest004 start";
+    std::unique_ptr<uint8_t[]> mockData = std::make_unique<uint8_t[]>(NUM_1);
+    auto stream = std::make_shared<HeifBufferInputStream>(mockData.get(), NUM_1, false);
+
+    HeifParser heifParser(stream);
+    heifParser.ftypBox_ = std::make_shared<HeifFtypBox>();
+    heifParser.metaBox_ = std::make_shared<HeifMetaBox>();
+
+    AddHdlrBox(heifParser);
+    AddPtimBox(heifParser);
+
+    auto maxSize = static_cast<uint64_t>(std::numeric_limits<int64_t>::max());
+    HeifStreamReader reader(stream, 0, maxSize);
+
+    auto ret = heifParser.AssembleBoxes(reader);
+    ASSERT_EQ(ret, heif_error_no_iinf);
+    GTEST_LOG_(INFO) << "HeifParserTest: AssembleBoxesTest004 end";
+}
+
+/**
+ * @tc.name: AssembleBoxesTest005
+ * @tc.desc: Verify that HeifParser call AssembleBoxes when iprpBox_ is nullptr.
+ * @tc.type: FUNC
+ */
+HWTEST_F(HeifParserTest, AssembleBoxesTest005, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "HeifParserTest: AssembleBoxesTest005 start";
+    std::unique_ptr<uint8_t[]> mockData = std::make_unique<uint8_t[]>(NUM_1);
+    auto stream = std::make_shared<HeifBufferInputStream>(mockData.get(), NUM_1, false);
+
+    HeifParser heifParser(stream);
+    heifParser.ftypBox_ = std::make_shared<HeifFtypBox>();
+    heifParser.metaBox_ = std::make_shared<HeifMetaBox>();
+
+    AddHdlrBox(heifParser);
+    AddPtimBox(heifParser);
+    AddIinfBox(heifParser);
+
+    auto maxSize = static_cast<uint64_t>(std::numeric_limits<int64_t>::max());
+    HeifStreamReader reader(stream, 0, maxSize);
+
+    auto ret = heifParser.AssembleBoxes(reader);
+    ASSERT_EQ(ret, heif_error_no_iprp);
+    GTEST_LOG_(INFO) << "HeifParserTest: AssembleBoxesTest005 end";
+}
+
+/**
+ * @tc.name: AssembleBoxesTest006
+ * @tc.desc: Verify that HeifParser call AssembleBoxes when ipcoBox_ is nullptr.
+ * @tc.type: FUNC
+ */
+HWTEST_F(HeifParserTest, AssembleBoxesTest006, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "HeifParserTest: AssembleBoxesTest006 start";
+    std::unique_ptr<uint8_t[]> mockData = std::make_unique<uint8_t[]>(NUM_1);
+    auto stream = std::make_shared<HeifBufferInputStream>(mockData.get(), NUM_1, false);
+
+    HeifParser heifParser(stream);
+    heifParser.ftypBox_ = std::make_shared<HeifFtypBox>();
+    heifParser.metaBox_ = std::make_shared<HeifMetaBox>();
+
+    AddHdlrBox(heifParser);
+    AddPtimBox(heifParser);
+    AddIinfBox(heifParser);
+    AddIprpBox(heifParser);
+
+    auto maxSize = static_cast<uint64_t>(std::numeric_limits<int64_t>::max());
+    HeifStreamReader reader(stream, 0, maxSize);
+
+    auto ret = heifParser.AssembleBoxes(reader);
+    ASSERT_EQ(ret, heif_error_no_ipco);
+    GTEST_LOG_(INFO) << "HeifParserTest: AssembleBoxesTest006 end";
+}
+
+/**
+ * @tc.name: AssembleBoxesTest007
+ * @tc.desc: Verify that HeifParser call AssembleBoxes when ipmas is empty.
+ * @tc.type: FUNC
+ */
+HWTEST_F(HeifParserTest, AssembleBoxesTest007, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "HeifParserTest: AssembleBoxesTest007 start";
+    std::unique_ptr<uint8_t[]> mockData = std::make_unique<uint8_t[]>(NUM_1);
+    auto stream = std::make_shared<HeifBufferInputStream>(mockData.get(), NUM_1, false);
+
+    HeifParser heifParser(stream);
+    heifParser.ftypBox_ = std::make_shared<HeifFtypBox>();
+    heifParser.metaBox_ = std::make_shared<HeifMetaBox>();
+
+    AddHdlrBox(heifParser);
+    AddPtimBox(heifParser);
+    AddIinfBox(heifParser);
+    AddIpcoBox(heifParser);
+
+    auto maxSize = static_cast<uint64_t>(std::numeric_limits<int64_t>::max());
+    HeifStreamReader reader(stream, 0, maxSize);
+
+    auto ret = heifParser.AssembleBoxes(reader);
+    ASSERT_EQ(ret, heif_error_no_ipma);
+    GTEST_LOG_(INFO) << "HeifParserTest: AssembleBoxesTest007 end";
+}
+
+/**
+ * @tc.name: AssembleBoxesTest008
+ * @tc.desc: Verify that HeifParser call AssembleBoxes when ilocBox_ is nullptr.
+ * @tc.type: FUNC
+ */
+HWTEST_F(HeifParserTest, AssembleBoxesTest008, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "HeifParserTest: AssembleBoxesTest008 start";
+    std::unique_ptr<uint8_t[]> mockData = std::make_unique<uint8_t[]>(NUM_1);
+    auto stream = std::make_shared<HeifBufferInputStream>(mockData.get(), NUM_1, false);
+
+    HeifParser heifParser(stream);
+    heifParser.ftypBox_ = std::make_shared<HeifFtypBox>();
+    heifParser.metaBox_ = std::make_shared<HeifMetaBox>();
+
+    AddHdlrBox(heifParser);
+    AddPtimBox(heifParser);
+    AddIinfBox(heifParser);
+    AddIpmaBox(heifParser);
+
+    auto maxSize = static_cast<uint64_t>(std::numeric_limits<int64_t>::max());
+    HeifStreamReader reader(stream, 0, maxSize);
+
+    auto ret = heifParser.AssembleBoxes(reader);
+    ASSERT_EQ(ret, heif_error_no_iloc);
+    GTEST_LOG_(INFO) << "HeifParserTest: AssembleBoxesTest008 end";
+}
+
+/**
+ * @tc.name: GetGridLengthTest002
+ * @tc.desc: Verify that HeifParser call GetGridLength when item data id is mock.
+ * @tc.type: FUNC
+ */
+HWTEST_F(HeifParserTest, GetGridLengthTest002, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "HeifParserTest: GetGridLengthTest002 start";
+    HeifParser heifParser;
+    heifParser.ilocBox_ = std::make_shared<HeifIlocBox>();
+    heifParser.infeBoxes_[MOCK_ITEM_ID] = std::make_shared<HeifInfeBox>();
+
+    size_t mockSize = 0;
+    auto ret = heifParser.GetGridLength(MOCK_ITEM_ID, mockSize);
+    ASSERT_EQ(ret, heif_error_item_data_not_found);
+    GTEST_LOG_(INFO) << "HeifParserTest: GetGridLengthTest002 end";
+}
+
+/**
+ * @tc.name: GetItemDataTest002
+ * @tc.desc: Verify that HeifParser call GetItemData when hvcc id is nullptr.
+ * @tc.type: FUNC
+ */
+HWTEST_F(HeifParserTest, GetItemDataTest002, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "HeifParserTest: GetItemDataTest002 start";
+    HeifParser heifParser;
+    heifParser.ilocBox_ = std::make_shared<HeifIlocBox>();
+    heifParser.ilocBox_->AppendData(MOCK_ITEM_ID, std::vector<uint8_t>());
+
+    heifParser.infeBoxes_[MOCK_ITEM_ID] = std::make_shared<HeifInfeBox>(MOCK_ITEM_ID, "hvc1", false);
+
+    auto ret = heifParser.GetItemData(MOCK_ITEM_ID, nullptr);
+    ASSERT_EQ(ret, heif_error_no_hvcc);
+    GTEST_LOG_(INFO) << "HeifParserTest: GetItemDataTest002 end";
+}
+
+/**
+ * @tc.name: AddItemTest001
+ * @tc.desc: Verify that HeifParser call AddItem when iinfBox_ is nullptr.
+ * @tc.type: FUNC
+ */
+HWTEST_F(HeifParserTest, AddItemTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "HeifParserTest: AddItemTest001 start";
+    HeifParser heifParser;
+    heifParser.iinfBox_.reset();
+    auto ret = heifParser.AddItem("mock", false);
+    ASSERT_EQ(ret, nullptr);
+    GTEST_LOG_(INFO) << "HeifParserTest: AddItemTest001 end";
+}
+
+/**
+ * @tc.name: SetMetadataTest001
+ * @tc.desc: Verify that HeifParser call SetMetadata when content_type is not nullptr.
+ * @tc.type: FUNC
+ */
+HWTEST_F(HeifParserTest, SetMetadataTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "HeifParserTest: SetMetadataTest001 start";
+    HeifParser heifParser;
+    heifParser.iinfBox_ = std::make_shared<HeifIinfBox>();
+    heifParser.metaBox_ = std::make_shared<HeifMetaBox>();
+    std::shared_ptr<HeifImage> mockImage = std::make_shared<HeifImage>(MOCK_ITEM_ID);
+    auto ret = heifParser.SetMetadata(mockImage, std::vector<uint8_t>(), "mock", "mock");
+    ASSERT_EQ(ret, heif_error_ok);
+    GTEST_LOG_(INFO) << "HeifParserTest: SetMetadataTest001 end";
 }
 }
 }

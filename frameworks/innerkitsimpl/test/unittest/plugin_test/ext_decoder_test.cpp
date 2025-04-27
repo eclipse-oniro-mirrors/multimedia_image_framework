@@ -43,6 +43,15 @@ constexpr static size_t SIZE_ZERO = 0;
 constexpr static uint32_t NO_EXIF_TAG = 1;
 constexpr static uint32_t OFFSET_2 = 2;
 constexpr static uint32_t INVALID_ENCODE_DYNAMIC_RANGE_VALUE = 20;
+#ifdef EXIF_INFO_ENABLE
+constexpr static uint32_t INVALID_COLOR_TYPE = 100;
+constexpr static int DEFAULT_SCALE_SIZE = 1;
+constexpr static int FOURTH_SCALE_SIZE = 4;
+constexpr static int MAX_SCALE_SIZE = 8;
+constexpr static int SUBSET_SIZE_SMALL = 5;
+constexpr static int SUBSET_SIZE_LARGE = 9;
+constexpr static int DEFAULT_SAMPLE_SIZE = 10;
+#endif
 const static string CODEC_INITED_KEY = "CodecInited";
 const static string ENCODED_FORMAT_KEY = "EncodedFormat";
 const static string SUPPORT_SCALE_KEY = "SupportScale";
@@ -1808,6 +1817,449 @@ HWTEST_F(ExtDecoderTest, TryHardwareEncodePictureTest001, TestSize.Level3)
     EXPECT_EQ(code, ERR_IMAGE_DATA_ABNORMAL);
     GTEST_LOG_(INFO) << "ExtDecoderTest: TryHardwareEncodePictureTest001 end";
 }
+
+#ifdef EXIF_INFO_ENABLE
+/**
+ * @tc.name: DecodeToYuv420Test001
+ * @tc.desc: Verify that DecodeToYuv420 returns ERR_IMAGE_INVALID_PARAMETER when the codec is null.
+ * @tc.type: FUNC
+ */
+HWTEST_F(ExtDecoderTest, DecodeToYuv420Test001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ExtDecoderTest: DecodeToYuv420Test001 start";
+    std::shared_ptr<ExtDecoder> extDecoder = std::make_shared<ExtDecoder>();
+    uint32_t index = 0;
+    DecodeContext context;
+    extDecoder->codec_ = nullptr;
+    uint32_t ret = extDecoder->DecodeToYuv420(index, context);
+    EXPECT_EQ(ret, ERR_IMAGE_INVALID_PARAMETER);
+    GTEST_LOG_(INFO) << "ExtDecoderTest: DecodeToYuv420Test001 end";
+}
+
+/**
+ * @tc.name: IsYuv420FormatTest001
+ * @tc.desc: Verify that IsYuv420Format correctly identifies YUV420 formats.
+ * @tc.type: FUNC
+ */
+HWTEST_F(ExtDecoderTest, IsYuv420FormatTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ExtDecoderTest: IsYuv420FormatTest001 start";
+    std::shared_ptr<ExtDecoder> extDecoder = std::make_shared<ExtDecoder>();
+
+    PixelFormat format = PixelFormat::UNKNOWN;
+    bool ret = extDecoder->IsYuv420Format(format);
+    EXPECT_EQ(ret, false);
+    format = PixelFormat::NV12;
+    ret = extDecoder->IsYuv420Format(format);
+    EXPECT_EQ(ret, true);
+    GTEST_LOG_(INFO) << "ExtDecoderTest: IsYuv420FormatTest001 end";
+}
+
+/**
+ * @tc.name: GetGainMapOffsetTest001
+ * @tc.desc: Verify that GetGainMapOffset returns the correct gain map offset value.
+ * @tc.type: FUNC
+ */
+HWTEST_F(ExtDecoderTest, GetGainMapOffsetTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ExtDecoderTest: GetGainMapOffsetTest001 start";
+    std::shared_ptr<ExtDecoder> extDecoder = std::make_shared<ExtDecoder>();
+
+    extDecoder->gainMapOffset_ = 0;
+    uint32_t ret = extDecoder->GetGainMapOffset();
+    ASSERT_EQ(ret, 0);
+    GTEST_LOG_(INFO) << "ExtDecoderTest: GetGainMapOffsetTest001 end";
+}
+
+/**
+ * @tc.name: DecodeHeifGainMapTest001
+ * @tc.desc: Verify that DecodeHeifGainMap returns false when decoding the HEIF gain map fails.
+ * @tc.type: FUNC
+ */
+HWTEST_F(ExtDecoderTest, DecodeHeifGainMapTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ExtDecoderTest: DecodeHeifGainMapTest001 start";
+    std::shared_ptr<ExtDecoder> extDecoder = std::make_shared<ExtDecoder>();
+
+    DecodeContext context;
+    bool ret = extDecoder->DecodeHeifGainMap(context);
+    EXPECT_EQ(ret, false);
+    GTEST_LOG_(INFO) << "ExtDecoderTest: DecodeHeifGainMapTest001 end";
+}
+
+/**
+ * @tc.name: GetHeifHdrColorSpaceTest001
+ * @tc.desc: Verify that GetHeifHdrColorSpace returns false when it fails to retrieve the HEIF HDR color space.
+ * @tc.type: FUNC
+ */
+HWTEST_F(ExtDecoderTest, GetHeifHdrColorSpaceTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ExtDecoderTest: GetHeifHdrColorSpaceTest001 start";
+    std::shared_ptr<ExtDecoder> extDecoder = std::make_shared<ExtDecoder>();
+
+    ColorManager::ColorSpaceName gainmap;
+    ColorManager::ColorSpaceName hdr;
+    bool ret = extDecoder->GetHeifHdrColorSpace(gainmap, hdr);
+    EXPECT_EQ(ret, false);
+    GTEST_LOG_(INFO) << "ExtDecoderTest: GetHeifHdrColorSpaceTest001 end";
+}
+
+/**
+ * @tc.name: DecodeHeifAuxiliaryMapTest001
+ * @tc.desc: Verify that DecodeHeifAuxiliaryMap returns false when decoding the HEIF auxiliary map fails.
+ * @tc.type: FUNC
+ */
+HWTEST_F(ExtDecoderTest, DecodeHeifAuxiliaryMapTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ExtDecoderTest: DecodeHeifAuxiliaryMapTest001 start";
+    std::shared_ptr<ExtDecoder> extDecoder = std::make_shared<ExtDecoder>();
+
+    DecodeContext context;
+    Media::AuxiliaryPictureType type = Media::AuxiliaryPictureType::NONE;
+    bool ret = extDecoder->DecodeHeifAuxiliaryMap(context, type);
+    EXPECT_EQ(ret, false);
+    GTEST_LOG_(INFO) << "ExtDecoderTest: DecodeHeifAuxiliaryMapTest001 end";
+}
+
+/**
+ * @tc.name: CheckAuxiliaryMapTest001
+ * @tc.desc: Verify that CheckAuxiliaryMap returns false for unsupported auxiliary picture types,
+ *           including NONE and GAINMAP.
+ * @tc.type: FUNC
+ */
+HWTEST_F(ExtDecoderTest, CheckAuxiliaryMapTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ExtDecoderTest: CheckAuxiliaryMapTest001 start";
+    std::shared_ptr<ExtDecoder> extDecoder = std::make_shared<ExtDecoder>();
+
+    Media::AuxiliaryPictureType type = Media::AuxiliaryPictureType::NONE;
+    bool ret = extDecoder->CheckAuxiliaryMap(type);
+    EXPECT_EQ(ret, false);
+    type = Media::AuxiliaryPictureType::GAINMAP;
+    ret = extDecoder->CheckAuxiliaryMap(type);
+    EXPECT_EQ(ret, false);
+    GTEST_LOG_(INFO) << "ExtDecoderTest: CheckAuxiliaryMapTest001 end";
+}
+
+/**
+ * @tc.name: GetHeifFragmentMetadataTest001
+ * @tc.desc: Verify that GetHeifFragmentMetadata returns false when it fails to retrieve HEIF fragment metadata.
+ * @tc.type: FUNC
+ */
+HWTEST_F(ExtDecoderTest, GetHeifFragmentMetadataTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ExtDecoderTest: GetHeifFragmentMetadataTest001 start";
+    std::shared_ptr<ExtDecoder> extDecoder = std::make_shared<ExtDecoder>();
+
+    Media::Rect metadata;
+    bool ret = extDecoder->GetHeifFragmentMetadata(metadata);
+    EXPECT_EQ(ret, false);
+    GTEST_LOG_(INFO) << "ExtDecoderTest: GetHeifFragmentMetadataTest001 end";
+}
+
+/**
+ * @tc.name: GetSoftwareScaledSizeTest001
+ * @tc.desc: test the function of TryHardwareEncodePicture
+             when picture is nullptr, return ERR_IMAGE_DATA_ABNORMAL
+ * @tc.type: FUNC
+ */
+HWTEST_F(ExtDecoderTest, GetSoftwareScaledSizeTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ExtDecoderTest: GetSoftwareScaledSizeTest001 start";
+    std::shared_ptr<ExtDecoder> extDecoder = std::make_shared<ExtDecoder>();
+    ASSERT_NE(extDecoder, nullptr);
+    extDecoder->codec_ = nullptr;
+    extDecoder->stream_ = nullptr;
+
+    int code = extDecoder->GetSoftwareScaledSize(0, 0);
+    EXPECT_EQ(code, DEFAULT_SCALE_SIZE);
+    extDecoder->dstSubset_ = SkIRect::MakeXYWH(0, 0, 0, 0);
+    code = extDecoder->GetSoftwareScaledSize(1, 1);
+    EXPECT_EQ(code, DEFAULT_SCALE_SIZE);
+    extDecoder->dstSubset_ = SkIRect::MakeXYWH(0, 0, SUBSET_SIZE_SMALL, SUBSET_SIZE_SMALL);
+    code = extDecoder->GetSoftwareScaledSize(1, 0);
+    EXPECT_EQ(code, FOURTH_SCALE_SIZE);
+    extDecoder->dstSubset_ = SkIRect::MakeXYWH(0, 0, SUBSET_SIZE_LARGE, SUBSET_SIZE_LARGE);
+    code = extDecoder->GetSoftwareScaledSize(1, 0);
+    EXPECT_EQ(code, MAX_SCALE_SIZE);
+    GTEST_LOG_(INFO) << "ExtDecoderTest: GetSoftwareScaledSizeTest001 end";
+}
+
+/**
+ * @tc.name: IsRegionDecodeSupportedTest001
+ * @tc.desc: test the function of TryHardwareEncodePicture
+             when picture is nullptr, return ERR_IMAGE_DATA_ABNORMAL
+ * @tc.type: FUNC
+ */
+HWTEST_F(ExtDecoderTest, IsRegionDecodeSupportedTest001, TestSize.Level3)
+{
+    std::shared_ptr<ExtDecoder> extDecoder = std::make_shared<ExtDecoder>();
+    ASSERT_NE(extDecoder, nullptr);
+    PixelDecodeOptions opts;
+    PlImageInfo info;
+    extDecoder->codec_ = nullptr;
+    bool isRegionDecodeSupport = extDecoder->IsRegionDecodeSupported(0, opts, info);
+    EXPECT_FALSE(isRegionDecodeSupport);
+}
+
+/**
+ * @tc.name: DoHeifSharedMemDecodeTest001
+ * @tc.desc: test the function of TryHardwareEncodePicture
+             when picture is nullptr, return ERR_IMAGE_DATA_ABNORMAL
+ * @tc.type: FUNC
+ */
+HWTEST_F(ExtDecoderTest, DoHeifSharedMemDecodeTest001, TestSize.Level3)
+{
+    std::shared_ptr<ExtDecoder> extDecoder = std::make_shared<ExtDecoder>();
+    ASSERT_NE(extDecoder, nullptr);
+    const int fd = open(IMAGE_INPUT_JPEG_PATH.c_str(), O_RDWR | O_CREAT, S_IRUSR | S_IWUSR);
+    std::unique_ptr<FileSourceStream> streamPtr = FileSourceStream::CreateSourceStream(fd);
+    ASSERT_NE(streamPtr, nullptr);
+    extDecoder->SetSource(*streamPtr);
+    ASSERT_NE(extDecoder->stream_, nullptr);
+    extDecoder->codec_ = SkCodec::MakeFromStream(std::make_unique<ExtStream>(extDecoder->stream_));
+    DecodeContext context;
+    uint32_t code = extDecoder->DoHeifSharedMemDecode(context);
+    close(fd);
+    EXPECT_EQ(code, ERR_IMAGE_DATA_UNSUPPORT);
+}
+
+/**
+ * @tc.name: HandleGifCacheTest001
+ * @tc.desc: test the function of TryHardwareEncodePicture
+             when picture is nullptr, return ERR_IMAGE_DATA_ABNORMAL
+ * @tc.type: FUNC
+ */
+HWTEST_F(ExtDecoderTest, HandleGifCacheTest001, TestSize.Level3)
+{
+    std::shared_ptr<ExtDecoder> extDecoder = std::make_shared<ExtDecoder>();
+    ASSERT_NE(extDecoder, nullptr);
+    extDecoder->SetHeifParseError();
+    uint32_t code = extDecoder->HandleGifCache(nullptr, nullptr, 0, 0);
+    EXPECT_EQ(code, ERR_IMAGE_DECODE_ABNORMAL);
+}
+
+/**
+ * @tc.name: GetGainMapOffsetTest002
+ * @tc.desc: test the function of TryHardwareEncodePicture
+             when picture is nullptr, return ERR_IMAGE_DATA_ABNORMAL
+ * @tc.type: FUNC
+ */
+HWTEST_F(ExtDecoderTest, GetGainMapOffsetTest002, TestSize.Level3)
+{
+    std::shared_ptr<ExtDecoder> extDecoder = std::make_shared<ExtDecoder>();
+    ASSERT_NE(extDecoder, nullptr);
+    extDecoder->codec_ = nullptr;
+    uint32_t code = extDecoder->GetGainMapOffset();
+    EXPECT_EQ(code, 0);
+}
+
+/**
+ * @tc.name: computeOutputColorTypeTest001
+ * @tc.desc: Verify that computeOutputColorType correctly maps various SkColorType inputs to their expected outputs.
+ */
+HWTEST_F(ExtDecoderTest, computeOutputColorTypeTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ExtDecoderTest: computeOutputColorTypeTest001 start";
+#ifdef SK_ENABLE_OHOS_CODEC
+    const int fd = open(IMAGE_INPUT_JPEG_PATH.c_str(), O_RDWR | O_CREAT, S_IRUSR | S_IWUSR);
+    std::unique_ptr<FileSourceStream> streamPtr = FileSourceStream::CreateSourceStream(fd);
+    ASSERT_NE(streamPtr, nullptr);
+    auto codec = SkCodec::MakeFromStream(std::make_unique<ExtStream>(streamPtr.get()));
+    ASSERT_NE(codec, nullptr);
+    auto skOHOSCodec = SkOHOSCodec::MakeFromCodec(std::move(codec));
+    ASSERT_NE(skOHOSCodec, nullptr);
+
+    SkColorType skColorType= skOHOSCodec->computeOutputColorType(SkColorType::kARGB_4444_SkColorType);
+    EXPECT_EQ(skColorType, SkColorType::kN32_SkColorType);
+    skColorType= skOHOSCodec->computeOutputColorType(SkColorType::kN32_SkColorType);
+    EXPECT_EQ(skColorType, SkColorType::kN32_SkColorType);
+    skColorType= skOHOSCodec->computeOutputColorType(SkColorType::kAlpha_8_SkColorType);
+    EXPECT_EQ(skColorType, SkColorType::kN32_SkColorType);
+    skColorType= skOHOSCodec->computeOutputColorType(SkColorType::kRGB_565_SkColorType);
+    EXPECT_EQ(skColorType, SkColorType::kRGB_565_SkColorType);
+    skColorType= skOHOSCodec->computeOutputColorType(SkColorType::kRGBA_F16_SkColorType);
+    EXPECT_EQ(skColorType, SkColorType::kRGBA_F16_SkColorType);
+    skColorType= skOHOSCodec->computeOutputColorType(static_cast<SkColorType>(INVALID_ENCODE_DYNAMIC_RANGE_VALUE));
+    EXPECT_EQ(skColorType, SkColorType::kN32_SkColorType);
+    close(fd);
+#endif
+    GTEST_LOG_(INFO) << "ExtDecoderTest: computeOutputColorTypeTest001 end";
+}
+
+/**
+ * @tc.name: computeOutputAlphaTypeTest001
+ * @tc.desc: Verify that computeOutputAlphaType correctly returns kOpaque_SkAlphaType when the input is true.
+ * @tc.type: FUNC
+ */
+HWTEST_F(ExtDecoderTest, computeOutputAlphaTypeTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ExtDecoderTest: computeOutputAlphaTypeTest001 start";
+#ifdef SK_ENABLE_OHOS_CODEC
+    const int fd = open(IMAGE_INPUT_JPEG_PATH.c_str(), O_RDWR | O_CREAT, S_IRUSR | S_IWUSR);
+    std::unique_ptr<FileSourceStream> streamPtr = FileSourceStream::CreateSourceStream(fd);
+    ASSERT_NE(streamPtr, nullptr);
+    auto codec = SkCodec::MakeFromStream(std::make_unique<ExtStream>(streamPtr.get()));
+    ASSERT_NE(codec, nullptr);
+    auto skOHOSCodec = SkOHOSCodec::MakeFromCodec(std::move(codec));
+    ASSERT_NE(skOHOSCodec, nullptr);
+    SkAlphaType skaType = skOHOSCodec->computeOutputAlphaType(true);
+    EXPECT_EQ(skaType, SkAlphaType::kOpaque_SkAlphaType);
+    close(fd);
+#endif
+    GTEST_LOG_(INFO) << "ExtDecoderTest: computeOutputAlphaTypeTest001 end";
+}
+
+/**
+ * @tc.name: computeOutputColorSpaceTest001
+ * @tc.desc: Verify that computeOutputColorSpace handles valid and invalid inputs correctly,
+ *           returning appropriate SkColorSpace or null.
+ * @tc.type: FUNC
+ */
+HWTEST_F(ExtDecoderTest, computeOutputColorSpaceTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ExtDecoderTest: computeOutputColorSpaceTest001 start";
+#ifdef SK_ENABLE_OHOS_CODEC
+    const int fd = open(IMAGE_INPUT_JPEG_PATH.c_str(), O_RDWR | O_CREAT, S_IRUSR | S_IWUSR);
+    std::unique_ptr<FileSourceStream> streamPtr = FileSourceStream::CreateSourceStream(fd);
+    ASSERT_NE(streamPtr, nullptr);
+    auto codec = SkCodec::MakeFromStream(std::make_unique<ExtStream>(streamPtr.get()));
+    ASSERT_NE(codec, nullptr);
+    auto skOHOSCodec = SkOHOSCodec::MakeFromCodec(std::move(codec));
+    ASSERT_NE(skOHOSCodec, nullptr);
+    sk_sp<SkColorSpace> colorSpace = SkColorSpace::MakeRGB(SkNamedTransferFn::kSRGB, SkNamedGamut::kSRGB);
+    ASSERT_NE(colorSpace, nullptr);
+
+    auto skColorSpace = skOHOSCodec->computeOutputColorSpace(SkColorType::kRGBA_F16_SkColorType, colorSpace);
+    EXPECT_NE(skColorSpace, nullptr);
+    skColorSpace = skOHOSCodec->computeOutputColorSpace(SkColorType::kRGBA_F16_SkColorType, nullptr);
+    EXPECT_NE(skColorSpace, nullptr);
+    skColorSpace = skOHOSCodec->computeOutputColorSpace(static_cast<SkColorType>(INVALID_COLOR_TYPE), nullptr);
+    EXPECT_EQ(skColorSpace, nullptr);
+    close(fd);
+#endif
+    GTEST_LOG_(INFO) << "ExtDecoderTest: computeOutputColorSpaceTest001 end";
+}
+
+/**
+ * @tc.name: getSampledSubsetDimensionsTest001
+ * @tc.desc: Verify the behavior of SkOHOSCodec with invalid inputs for size and subset queries.
+ * @tc.type: FUNC
+ */
+HWTEST_F(ExtDecoderTest, getSampledSubsetDimensionsTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ExtDecoderTest: getSampledSubsetDimensionsTest001 start";
+#ifdef SK_ENABLE_OHOS_CODEC
+    const int fd = open(IMAGE_INPUT_JPEG_PATH.c_str(), O_RDWR | O_CREAT, S_IRUSR | S_IWUSR);
+    std::unique_ptr<FileSourceStream> streamPtr = FileSourceStream::CreateSourceStream(fd);
+    ASSERT_NE(streamPtr, nullptr);
+    auto codec = SkCodec::MakeFromStream(std::make_unique<ExtStream>(streamPtr.get()));
+    ASSERT_NE(codec, nullptr);
+    auto skOHOSCodec = SkOHOSCodec::MakeFromCodec(std::move(codec));
+    ASSERT_NE(skOHOSCodec, nullptr);
+
+    SkISize skiSize = skOHOSCodec->getSampledDimensions(0);
+    EXPECT_EQ(skiSize.width(), 0);
+
+    bool isSupport = skOHOSCodec->getSupportedSubset(nullptr);
+    EXPECT_EQ(isSupport, false);
+
+    SkIRect subset;
+    skiSize = skOHOSCodec->getSampledSubsetDimensions(0, subset);
+    EXPECT_EQ(skiSize.width(), 0);
+    close(fd);
+#endif
+    GTEST_LOG_(INFO) << "ExtDecoderTest: getSampledSubsetDimensionsTest001 end";
+}
+
+/**
+ * @tc.name: getOHOSPixelsTest001
+ * @tc.desc: Verify that SkOHOSCodec::getOHOSPixels handles null PixelMap, invalid conversion,
+ *           and rewind failures correctly.
+ * @tc.type: FUNC
+ */
+HWTEST_F(ExtDecoderTest, getOHOSPixelsTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ExtDecoderTest: getOHOSPixelsTest001 start";
+#ifdef SK_ENABLE_OHOS_CODEC
+    const int fd = open(IMAGE_INPUT_JPEG_PATH.c_str(), O_RDWR | O_CREAT, S_IRUSR | S_IWUSR);
+    std::unique_ptr<FileSourceStream> streamPtr = FileSourceStream::CreateSourceStream(fd);
+    ASSERT_NE(streamPtr, nullptr);
+    auto codec = SkCodec::MakeFromStream(std::make_unique<ExtStream>(streamPtr.get()));
+    ASSERT_NE(codec, nullptr);
+    auto skOHOSCodec = SkOHOSCodec::MakeFromCodec(std::move(codec));
+    ASSERT_NE(skOHOSCodec, nullptr);
+    SkISize skiSize{OFFSET_2, OFFSET_2};
+    SkColorInfo colorInfo;
+    SkImageInfo decodeInfo(skiSize, colorInfo);
+
+    SkCodec::Result result = skOHOSCodec->getOHOSPixels(decodeInfo, nullptr, 0, nullptr);
+    EXPECT_EQ(result, SkCodec::kInvalidParameters);
+    PixelMap pixelMap;
+    result = skOHOSCodec->getOHOSPixels(decodeInfo, &pixelMap, 0, nullptr);
+    EXPECT_EQ(result, SkCodec::kInvalidConversion);
+    result = skOHOSCodec->getOHOSPixels(decodeInfo, &pixelMap, INVALID_COLOR_TYPE, nullptr);
+    EXPECT_EQ(result, SkCodec::kCouldNotRewind);
+    close(fd);
+#endif
+    GTEST_LOG_(INFO) << "ExtDecoderTest: getOHOSPixelsTest001 end";
+}
+
+/**
+ * @tc.name: accountForNativeScalingTest001
+ * @tc.desc: Verify that SkOHOSSampledCodec::accountForNativeScaling correctly calculates the scaled size
+ *           and returns a empty SkISize.
+ * @tc.type: FUNC
+ */
+HWTEST_F(ExtDecoderTest, accountForNativeScalingTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ExtDecoderTest: accountForNativeScalingTest001 start";
+#ifdef SK_ENABLE_OHOS_CODEC
+    const int fd = open(IMAGE_INPUT_JPEG_PATH.c_str(), O_RDWR | O_CREAT, S_IRUSR | S_IWUSR);
+    std::unique_ptr<FileSourceStream> streamPtr = FileSourceStream::CreateSourceStream(fd);
+    ASSERT_NE(streamPtr, nullptr);
+    auto codec = SkCodec::MakeFromStream(std::make_unique<ExtStream>(streamPtr.get()));
+    ASSERT_NE(codec, nullptr);
+    SkOHOSSampledCodec skOHOSSampledCodec(codec.release());
+    int sampleSize = DEFAULT_SAMPLE_SIZE;
+    int nativeSampleSize = 1;
+
+    SkISize size = skOHOSSampledCodec.accountForNativeScaling(&sampleSize, &nativeSampleSize);
+    EXPECT_FALSE(size.isEmpty());
+    close(fd);
+#endif
+    GTEST_LOG_(INFO) << "ExtDecoderTest: accountForNativeScalingTest001 end";
+}
+
+/**
+ * @tc.name: sampledDecodeTest001
+ * @tc.desc: Verify that SkOHOSSampledCodec::sampledDecode returns kInvalidConversion
+ *           when the input parameters are invalid.
+ * @tc.type: FUNC
+ */
+HWTEST_F(ExtDecoderTest, sampledDecodeTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ExtDecoderTest: sampledDecodeTest001 start";
+#ifdef SK_ENABLE_OHOS_CODEC
+    const int fd = open(IMAGE_INPUT_JPEG_PATH.c_str(), O_RDWR | O_CREAT, S_IRUSR | S_IWUSR);
+    std::unique_ptr<FileSourceStream> streamPtr = FileSourceStream::CreateSourceStream(fd);
+    ASSERT_NE(streamPtr, nullptr);
+    auto codec = SkCodec::MakeFromStream(std::make_unique<ExtStream>(streamPtr.get()));
+    ASSERT_NE(codec, nullptr);
+    SkOHOSSampledCodec skOHOSSampledCodec(codec.release());
+    SkISize skiSize{OFFSET_2, OFFSET_2};
+    SkColorInfo colorInfo;
+    SkImageInfo decodeInfo(skiSize, colorInfo);
+    PixelMap pixelMap;
+    SkOHOSCodec::OHOSOptions ohosOptions;
+
+    SkCodec::Result result = skOHOSSampledCodec.sampledDecode(decodeInfo, &pixelMap, 0, ohosOptions);
+    EXPECT_EQ(result, SkCodec::kInvalidConversion);
+    close(fd);
+#endif
+    GTEST_LOG_(INFO) << "ExtDecoderTest: sampledDecodeTest001 end";
+}
+#endif
 
 }
 }
