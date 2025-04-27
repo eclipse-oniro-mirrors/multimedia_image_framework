@@ -1621,6 +1621,12 @@ uint32_t ExtEncoder::EncodeEditScenePicture()
     sptr<SurfaceBuffer> baseSptr(reinterpret_cast<SurfaceBuffer*>(mainPixelMap->GetFd()));
     cond = !baseSptr;
     CHECK_ERROR_RETURN_RET_LOG(cond, IMAGE_RESULT_CREATE_SURFAC_FAILED, "creat main pixels surfaceBuffer error");
+    if (baseSptr->GetUsage() & BUFFER_USAGE_MEM_MMZ_CACHE) {
+        GSError err = baseSptr->FlushCache();
+        if (err != GSERROR_OK) {
+            IMAGE_LOGE("FlushCache failed, GSError=%{public}d", err);
+        }
+    }
     uint32_t errorCode = EncodeHeifPicture(baseSptr, baseInfo, sdrIsSRGB);
     RecycleResources();
     return errorCode;
