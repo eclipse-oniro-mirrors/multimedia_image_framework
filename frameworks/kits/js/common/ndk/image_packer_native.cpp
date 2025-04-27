@@ -392,7 +392,11 @@ Image_ErrorCode OH_PackingOptionsForSequence_GetDelayTimeList(OH_PackingOptionsF
     if (options == nullptr || delayTimeList == nullptr || delayTimeListLength == 0) {
         return IMAGE_BAD_PARAMETER;
     }
-    delayTimeList = options->delayTimeList;
+    size_t minDelayTimeListLength = std::min(delayTimeListLength, options->delayTimeListLength);
+    if (memcpy_s(delayTimeList, delayTimeListLength * sizeof(int32_t),
+        options->delayTimeList, minDelayTimeListLength * sizeof(int32_t)) != 0) {
+        return IMAGE_COPY_FAILED;
+    }
     return IMAGE_SUCCESS;
 }
 
@@ -415,7 +419,11 @@ Image_ErrorCode OH_PackingOptionsForSequence_GetDisposalTypes(OH_PackingOptionsF
     if (options == nullptr || disposalTypes == nullptr || disposalTypesLength == 0) {
         return IMAGE_BAD_PARAMETER;
     }
-    disposalTypes = options->disposalTypes;
+    size_t minDisposalTypesLength = std::min(disposalTypesLength, options->disposalTypesLength);
+    if (memcpy_s(disposalTypes, disposalTypesLength * sizeof(uint32_t),
+        options->disposalTypes, minDisposalTypesLength * sizeof(uint32_t)) != 0) {
+        return IMAGE_COPY_FAILED;
+    }
     return IMAGE_SUCCESS;
 }
 
