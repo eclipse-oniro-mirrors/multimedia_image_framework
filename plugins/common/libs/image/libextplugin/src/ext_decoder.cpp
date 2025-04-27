@@ -2621,9 +2621,6 @@ bool ExtDecoder::DecodeHeifAuxiliaryMap(DecodeContext& context, AuxiliaryPicture
     uint64_t byteCount = tempByteCount;
     context.info.size.width = width;
     context.info.size.height = height;
-    if (!SetOutPutFormat(context.info.pixelFormat, decoder)) {
-        return ERR_IMAGE_DATA_UNSUPPORT;
-    }
     if (IsYuv420Format(context.info.pixelFormat)) {
         uint32_t allocRet = AllocateHeifYuvAuxiliaryBuffer(context, width, height);
         if (allocRet != SUCCESS) {
