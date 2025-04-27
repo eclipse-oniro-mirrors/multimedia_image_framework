@@ -440,6 +440,7 @@ napi_value ImagePackerNapi::Init(napi_env env, napi_value exports)
     };
     napi_property_descriptor static_prop[] = {
         DECLARE_NAPI_STATIC_FUNCTION("createImagePacker", CreateImagePacker),
+        DECLARE_NAPI_STATIC_FUNCTION("getImagePackerSupportedFormats", GetImagePackerSupportedFormats),
         DECLARE_NAPI_PROPERTY("PackingDynamicRange",
             CreateEnumTypeObject(env, napi_number, &packingDynamicRangeRef_, sPackingDynamicRangeMap)),
     };
@@ -1202,6 +1203,24 @@ std::shared_ptr<ImagePacker> ImagePackerNapi::GetNative(ImagePackerNapi* napi)
         return napi->nativeImgPck;
     }
     return nullptr;
+}
+
+napi_value ImagePackerNapi::GetImagePackerSupportedFormats(napi_env env, napi_callback_info info)
+{
+    napi_value result = nullptr;
+    napi_get_undefined(env, &result);
+    std::set<std::string> formats;
+    uint32_t ret = ImagePacker::GetSupportedFormats(formats);
+    IMG_NAPI_CHECK_RET_D((ret == SUCCESS), result, IMAGE_LOGE("Fail to get encode supported formats"));
+    napi_create_array(env, &result);
+    size_t count = 0;
+    for (const std::string& formatStr: formats) {
+        napi_value format = nullptr;
+        napi_create_string_latin1(env, formatStr.c_str(), formatStr.length(), &format);
+        napi_set_element(env, result, count, format);
+        count++;
+    }
+    return result;
 }
 }  // namespace Media
 }  // namespace OHOS

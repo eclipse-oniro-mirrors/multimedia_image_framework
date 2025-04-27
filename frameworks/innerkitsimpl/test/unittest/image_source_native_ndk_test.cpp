@@ -2328,5 +2328,40 @@ HWTEST_F(ImagSourceNdk2Test, ImageRegionDecode016, TestSize.Level3)
     OH_DecodingOptions_Release(opts);
     OH_PixelmapNative_Release(resPixMap);
 }
+
+/**
+ * @tc.name: OH_ImageSourceNative_GetSupportedFormatTest001
+ * @tc.desc: Verify ImageSource can retrieve supported formats with valid data structure.
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImagSourceNdk2Test, OH_ImageSourceNative_GetSupportedFormatTest001, TestSize.Level3)
+{
+    Image_MimeType* supportedFormat = nullptr;
+    size_t length = 0;
+    Image_ErrorCode ret = OH_ImageSourceNative_GetSupportedFormats(&supportedFormat, &length);
+    EXPECT_EQ(ret, IMAGE_SUCCESS);
+    for (size_t i = 0; i < length; i++) {
+        EXPECT_NE(supportedFormat[i].data, nullptr);
+        EXPECT_NE(supportedFormat[i].size, 0);
+    }
+    EXPECT_NE(length, 0);
+}
+
+/**
+ * @tc.name: OH_ImageSourceNative_GetSupportedFormatTest002
+ * @tc.desc: Verify null parameter validation for GetSupportedFormat API.
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImagSourceNdk2Test, OH_ImageSourceNative_GetSupportedFormatTest002, TestSize.Level3)
+{
+    Image_MimeType* supportedFormat = nullptr;
+    size_t length = 0;
+    Image_ErrorCode ret = OH_ImageSourceNative_GetSupportedFormats(nullptr, &length);
+    EXPECT_EQ(ret, IMAGE_SOURCE_INVALID_PARAMETER);
+    ret = OH_ImageSourceNative_GetSupportedFormats(&supportedFormat, nullptr);
+    EXPECT_EQ(ret, IMAGE_SOURCE_INVALID_PARAMETER);
+    ret = OH_ImageSourceNative_GetSupportedFormats(nullptr, nullptr);
+    EXPECT_EQ(ret, IMAGE_SOURCE_INVALID_PARAMETER);
+}
 }
 }

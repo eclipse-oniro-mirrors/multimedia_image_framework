@@ -56,6 +56,7 @@ private:
     static napi_value PackToFile(napi_env env, napi_callback_info info);
     static napi_value Release(napi_env env, napi_callback_info info);
     static napi_value GetSupportedFormats(napi_env env, napi_callback_info info);
+    static napi_value GetImagePackerSupportedFormats(napi_env env, napi_callback_info info);
 
     void release();
     bool isRelease = false;

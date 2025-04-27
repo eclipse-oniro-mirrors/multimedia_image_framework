@@ -16,9 +16,11 @@
 #include "image_packer_native.h"
 
 #include "common_utils.h"
+#include "image_log.h"
 #include "image_packer.h"
 #include "image_packer_native_impl.h"
 #include "image_source_native_impl.h"
+#include "media_errors.h"
 #include "pixelmap_native_impl.h"
 #ifndef _WIN32
 #include "securec.h"
@@ -52,6 +54,8 @@ static constexpr int32_t IMAGE_BASE_9 = 9;
 static constexpr int32_t IMAGE_BASE_20 = 20;
 static constexpr int32_t IMAGE_BASE_22 = 22;
 static constexpr int32_t IMAGE_BASE_23 = 23;
+static Image_MimeType *IMAGE_PACKER_SUPPORTED_FORMATS = nullptr;
+static size_t SUPPORTED_FORMATS_SIZE = 0;
 
 struct OH_PackingOptions {
     Image_MimeType mimeType;
@@ -664,6 +668,33 @@ Image_ErrorCode OH_ImagePackerNative_Release(OH_ImagePackerNative *imagePacker)
         return IMAGE_BAD_PARAMETER;
     }
     delete imagePacker;
+    return IMAGE_SUCCESS;
+}
+
+MIDK_EXPORT
+Image_ErrorCode OH_ImagePackerNative_GetSupportedFormats(Image_MimeType** supportedFormat, size_t* length)
+{
+    if (supportedFormat == nullptr || length == nullptr) {
+        return IMAGE_PACKER_INVALID_PARAMETER;
+    }
+    if (IMAGE_PACKER_SUPPORTED_FORMATS != nullptr || SUPPORTED_FORMATS_SIZE != 0) {
+        *supportedFormat = IMAGE_PACKER_SUPPORTED_FORMATS;
+        *length = SUPPORTED_FORMATS_SIZE;
+        return IMAGE_SUCCESS;
+    }
+    std::set<std::string> formats;
+    ImagePacker::GetSupportedFormats(formats);
+
+    *length = formats.size();
+    *supportedFormat = new Image_MimeType[formats.size()];
+    size_t count = 0;
+    for (const auto& str : formats) {
+        (*supportedFormat)[count].data = strdup(str.c_str());
+        (*supportedFormat)[count].size = str.size();
+        count++;
+    }
+    IMAGE_PACKER_SUPPORTED_FORMATS = *supportedFormat;
+    SUPPORTED_FORMATS_SIZE = *length;
     return IMAGE_SUCCESS;
 }
 

@@ -924,6 +924,7 @@ napi_value ImageSourceNapi::Init(napi_env env, napi_value exports)
     napi_property_descriptor static_prop[] = {
         DECLARE_NAPI_STATIC_FUNCTION("createImageSource", CreateImageSource),
         DECLARE_NAPI_STATIC_FUNCTION("CreateIncrementalSource", CreateIncrementalSource),
+        DECLARE_NAPI_STATIC_FUNCTION("getImageSourceSupportedFormats", GetImageSourceSupportedFormats),
         DECLARE_NAPI_PROPERTY("PixelMapFormat",
             CreateEnumTypeObject(env, napi_number, &pixelMapFormatRef_, sPixelMapFormatMap)),
         DECLARE_NAPI_PROPERTY("PropertyKey", CreateEnumTypeObject(env, napi_string, &propertyKeyRef_, sPropertyKeyMap)),
@@ -1643,6 +1644,24 @@ napi_value ImageSourceNapi::CreateIncrementalSource(napi_env env, napi_callback_
     if (!IMG_IS_OK(status)) {
         IMAGE_LOGE("New instance could not be obtained");
         napi_get_undefined(env, &result);
+    }
+    return result;
+}
+
+napi_value ImageSourceNapi::GetImageSourceSupportedFormats(napi_env env, napi_callback_info info)
+{
+    napi_value result = nullptr;
+    napi_get_undefined(env, &result);
+    std::set<std::string> formats;
+    uint32_t ret = ImageSource::GetSupportedFormats(formats);
+    IMG_NAPI_CHECK_RET_D((ret == SUCCESS), result, IMAGE_LOGE("Fail to get decode supported formats"));
+    napi_create_array(env, &result);
+    size_t count = 0;
+    for (const std::string& formatStr: formats) {
+        napi_value format = nullptr;
+        napi_create_string_latin1(env, formatStr.c_str(), formatStr.length(), &format);
+        napi_set_element(env, result, count, format);
+        count++;
     }
     return result;
 }

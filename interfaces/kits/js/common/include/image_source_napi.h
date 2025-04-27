@@ -61,6 +61,7 @@ private:
     // static methods
     static napi_value CreateImageSource(napi_env env, napi_callback_info info);
     static napi_value CreateIncrementalSource(napi_env env, napi_callback_info info);
+    static napi_value GetImageSourceSupportedFormats(napi_env env, napi_callback_info info);
 
     static napi_value CreateImageSourceComplete(napi_env env, napi_status status, void *data);
     // methods
