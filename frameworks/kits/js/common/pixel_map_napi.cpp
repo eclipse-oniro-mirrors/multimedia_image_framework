@@ -942,9 +942,9 @@ napi_value PixelMapNapi::Constructor(napi_env env, napi_callback_info info)
         status = napi_wrap(env, thisVar, reinterpret_cast<void*>(pPixelMapNapi.get()), PixelMapNapi::Destructor,
             nullptr, nullptr);
     } else {
-        status = napi_wrap_with_size(env, thisVar, reinterpret_cast<void*>(pPixelMapNapi.get()),
-            PixelMapNapi::Destructor, nullptr, nullptr,
-            static_cast<size_t>(pPixelMapNapi->nativePixelMap_->GetByteCount()));
+        status = napi_wrap_enhance(env, thisVar, reinterpret_cast<void*>(pPixelMapNapi.get()),
+            PixelMapNapi::Destructor, true, nullptr,
+            static_cast<size_t>(pPixelMapNapi->nativePixelMap_->GetByteCount()), nullptr);
     }
     IMG_NAPI_CHECK_RET_D(IMG_IS_OK(status), undefineVar, IMAGE_LOGE("Failure wrapping js to native napi"));
 
