@@ -624,6 +624,7 @@ export namespace image {
   export interface ImagePacker {
     packing(source: PixelMap, option: PackingOption): ArrayBuffer;
     release(): void;
+    readonly supportedFormats: Array<string>;
   }
 
   class ImagePackerInner implements ImagePacker {
@@ -646,7 +647,7 @@ export namespace image {
     public packing(source: PixelMap, option: PackingOption): ArrayBuffer {
       return this.nativePackingWithPixelMap(source, option);
     }
-    supportedFormats: Array<string> = new Array<string>("");
+    supportedFormats: Array<string> = new Array<string>("jpg", "png");
   }
 
   export native function createImagePacker(): ImagePacker;

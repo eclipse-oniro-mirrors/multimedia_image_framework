@@ -33,10 +33,10 @@ function main() {
   }
 
   const retImageInfo: image.ImageInfo = pixelMap.getImageInfoSync();
-  console.log("Get image info: ", retImageInfo.size.width, retImageInfo.size.height, retImageInfo.pixelFormat, retImageInfo.alphaType);
+  console.log(`Get image info: ${retImageInfo.size.width}, ${retImageInfo.size.height}, ${retImageInfo.pixelFormat}, ${retImageInfo.alphaType}`);
   pixelMap.getImageInfo()
     .then((imageInfo: image.ImageInfo) => {
-      console.log("ASYNC Get image info: ", imageInfo.size.width, imageInfo.size.height, imageInfo.pixelFormat, imageInfo.alphaType);
+      console.log(`ASYNC Get image info: ${imageInfo.size.width}, ${imageInfo.size.height}, ${imageInfo.pixelFormat}, ${imageInfo.alphaType}`);
     });
   
   const rowBytes = pixelMap.getBytesNumberPerRow();
@@ -45,14 +45,14 @@ function main() {
   console.log("PixelMap total bytes: " + totalBytes);
 
   if (retImageInfo.isHdr) {
-      console.log("Test PixelMap hdr ");
+      console.log("Test PixelMap HDR");
   } else {
-      console.log("Test PixelMap not hdr ");
+      console.log("Test PixelMap not HDR");
   }
 
   pixelMap.scaleSync(2, 2);
   const scaledInfo = pixelMap.getImageInfoSync();
-  console.log("Scaled image info: ", scaledInfo.size.width, scaledInfo.size.height);
+  console.log(`Scaled image info: ${scaledInfo.size.width}, ${scaledInfo.size.height}`);
   const region: image.Region = {
     size: { width: 512, height: 512 },
     x: 0,
@@ -60,21 +60,21 @@ function main() {
   };
   pixelMap.cropSync(region);
   const croppedInfo = pixelMap.getImageInfoSync();
-  console.log("Cropped image info: ", croppedInfo.size.width, croppedInfo.size.height);
+  console.log(`Cropped image info: ${croppedInfo.size.width}, ${croppedInfo.size.height}`);
   pixelMap.flipSync(true, true);
   const flippedInfo = pixelMap.getImageInfoSync();
-  console.log("Flipped image info: ", flippedInfo.size.width, flippedInfo.size.height);
+  console.log(`Flipped image info: ${flippedInfo.size.width}, ${flippedInfo.size.height}`);
 
   const alphaPixelMap = pixelMap.createAlphaPixelmapSync();
   if (alphaPixelMap != undefined) {
     console.log("Create alpha PixelMap success");
   }
   const alphaImageInfo = alphaPixelMap.getImageInfoSync();
-  console.log("Alpha get image info: ", alphaImageInfo.size.width, alphaImageInfo.size.height, alphaImageInfo.pixelFormat, alphaImageInfo.alphaType);
+  console.log(`Alpha get image info: ${alphaImageInfo.size.width}, ${alphaImageInfo.size.height}, ${alphaImageInfo.pixelFormat}, ${alphaImageInfo.alphaType}`);
   pixelMap.createAlphaPixelmap()
     .then((alphaPixelMap: image.PixelMap) => {
       const alphaImageInfo = alphaPixelMap.getImageInfoSync();
-      console.log("ASYNC Alpha get image info: ", alphaImageInfo.size.width, alphaImageInfo.size.height, alphaImageInfo.pixelFormat, alphaImageInfo.alphaType);
+      console.log(`ASYNC Alpha get image info: ${alphaImageInfo.size.width}, ${alphaImageInfo.size.height}, ${alphaImageInfo.pixelFormat}, ${alphaImageInfo.alphaType}`);
     })
 
   let imageSource: image.ImageSource = image.createImageSource("/data/local/tmp/test.png");
@@ -87,10 +87,10 @@ function main() {
   }
   
   let imagesourceImageInfo: image.ImageInfo = imageSource.getImageInfoSync(0);
-  console.log("Image source image info: ", imagesourceImageInfo.size.width, imagesourceImageInfo.size.height, imagesourceImageInfo.pixelFormat, imagesourceImageInfo.density, imagesourceImageInfo.mimeType);
+  console.log(`Image source image info: ${imagesourceImageInfo.size.width}, ${imagesourceImageInfo.size.height}, ${imagesourceImageInfo.pixelFormat}, ${imagesourceImageInfo.density}, ${imagesourceImageInfo.mimeType}`);
   imageSource.getImageInfo(0)
     .then((imageInfo: image.ImageInfo) => {
-      console.log("ASYNC Image source image info:", imageInfo.size.width, imageInfo.size.height, imageInfo.pixelFormat, imageInfo.density, imageInfo.mimeType);
+      console.log(`ASYNC Image source image info: ${imageInfo.size.width}, ${imageInfo.size.height}, ${imageInfo.pixelFormat}, ${imageInfo.density}, ${imageInfo.mimeType}`);
     });
   
   const desiredSize: image.Size | undefined = { width: 60, height: 60 };
@@ -144,6 +144,7 @@ function main() {
 
   console.log("TEST ImagePacker begin");
   const imagePacker = image.createImagePacker();
+  console.log("ImagePacker supported formats: " + imagePacker.supportedFormats);
   let packOpts: image.PackingOption = new image.PackingOption(); 
   packOpts.format = "image/jpeg";
   packOpts.quality = 90;
@@ -165,7 +166,7 @@ function main() {
   }
   const picturePixelMap = picture.getMainPixelmap();
   const pictureInfo = picturePixelMap.getImageInfoSync();
-  console.log("Picture PixelMap image info: ", pictureInfo.size.width, pictureInfo.size.height, pictureInfo.pixelFormat, pictureInfo.alphaType);
+  console.log(`Picture PixelMap image info: ${pictureInfo.size.width}, ${pictureInfo.size.height}, ${pictureInfo.pixelFormat}, ${pictureInfo.alphaType}`);
   
   const regionAsync: image.Region = {
     size: { width: 1, height: 1 },
@@ -175,7 +176,7 @@ function main() {
   pixelMap.crop(regionAsync)
     .then((): void => {
       const croppedInfo = pixelMap.getImageInfoSync();
-      console.log("ASYNC Cropped image info: ", croppedInfo.size.width, croppedInfo.size.height);
+      console.log(`ASYNC Cropped image info: ${croppedInfo.size.width}, ${croppedInfo.size.height}`);
     });
 
   console.log("====== Sync methods completed ======")
