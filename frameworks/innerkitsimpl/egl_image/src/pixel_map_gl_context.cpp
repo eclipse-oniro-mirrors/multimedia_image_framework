@@ -142,9 +142,6 @@ bool PixelMapGlContext::MakeCurrentSimple(bool needCurrent)
         oldEglSurfaceDraw_ = oldSurface;
         oldEglSurfaceRead_ = eglGetCurrentSurface(EGL_READ);
         oldEglContext_ = oldContext;
-        IMAGE_LOGD(
-            "PixelGPU::MakeCurrent eglSurface %{public}p=>%{public}p eglContext %{public}p=>%{public}p",
-            oldEglSurfaceDraw_, currSurfaceDraw, oldEglContext_, currContext);
     }
  
     if (eglMakeCurrent(eglDisplay_, currSurfaceDraw, currSurfaceRead, currContext) != EGL_TRUE) {
