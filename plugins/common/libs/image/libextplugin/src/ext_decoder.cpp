@@ -64,6 +64,8 @@
 #include "include/core/SkBitmap.h"
 #include "include/core/SkCanvas.h"
 #include "include/core/SkImage.h"
+#include "third_party/externals/piex/src/binary_parse/range_checked_byte_ptr.h"
+#include "third_party/externals/piex/src/image_type_recognition/image_type_recognition_lite.h"
 
 #if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
 #define DMA_BUF_SET_TYPE _IOW(DMA_BUF_BASE, 2, const char *)
@@ -119,6 +121,9 @@ using namespace Media;
 using namespace OHOS::HDI::Base;
 #endif
 using namespace std;
+using piex::binary_parse::RangeCheckedBytePtr;
+using piex::image_type_recognition::RecognizeRawImageTypeLite;
+
 const static string DEFAULT_EXIF_VALUE = "default_exif_value";
 const static string CODEC_INITED_KEY = "CodecInited";
 const static string ENCODED_FORMAT_KEY = "EncodedFormat";
@@ -154,6 +159,7 @@ const static std::string DEFAULT_VERSION_ID = "1";
 const static std::string UNKNOWN_IMAGE = "unknown";
 constexpr static int NUM_ONE = 1;
 constexpr static uint64_t MALLOC_LIMIT = 300 * 1024 * 1024;
+constexpr static int RAW_MIN_BYTEREAD = 5000;
 #ifdef JPEG_HW_DECODE_ENABLE
 const static uint32_t PLANE_COUNT_TWO = 2;
 #endif
@@ -197,6 +203,19 @@ static const map<SkEncodedImageFormat, string> FORMAT_NAME = {
     { SkEncodedImageFormat::kASTC, "" },
     { SkEncodedImageFormat::kDNG, "image/raw" },
     { SkEncodedImageFormat::kHEIF, "image/heif" },
+};
+
+static const map<piex::image_type_recognition::RawImageTypes, string> RAW_FORMAT_NAME = {
+    { piex::image_type_recognition::kArwImage, "image/x-sony-arw" },
+    { piex::image_type_recognition::kCr2Image, "image/x-canon-cr2" },
+    { piex::image_type_recognition::kDngImage, "image/x-adobe-dng" },
+    { piex::image_type_recognition::kNefImage, "image/x-nikon-nef" },
+    { piex::image_type_recognition::kNrwImage, "image/x-nikon-nrw" },
+    { piex::image_type_recognition::kOrfImage, "image/x-plympus-orf" },
+    { piex::image_type_recognition::kPefImage, "image/x-pentax-pef" },
+    { piex::image_type_recognition::kRafImage, "image/x-fuji-raf" },
+    { piex::image_type_recognition::kRw2Image, "image/x-panasonic-rw2" },
+    { piex::image_type_recognition::kSrwImage, "image/x-samsung-srw" },
 };
 
 #if !defined(CROSS_PLATFORM)
@@ -1743,6 +1762,12 @@ static uint32_t GetFormatName(SkEncodedImageFormat format, std::string &name)
         if (name == IMAGE_HEIF_FORMAT && ImageUtils::GetAPIVersion() > APIVERSION_13) {
             name = IMAGE_HEIC_FORMAT;
         }
+        if (format == SkEncodedImageFormat::kWBMP && ImageUtils::GetAPIVersion() > APIVERSION_20) {
+            name = IMAGE_WBMP_FORMAT;
+        }
+        if (format == SkEncodedImageFormat::kICO && ImageUtils::GetAPIVersion() > APIVERSION_20) {
+            name = IMAGE_ICON_FORMAT;
+        }
         IMAGE_LOGD("GetFormatName: get encoded format name (%{public}d)=>[%{public}s].",
             format, name.c_str());
         return SUCCESS;
@@ -2124,6 +2149,29 @@ uint32_t ExtDecoder::GetImagePropertyInt(uint32_t index, const std::string &key,
     return Media::ERR_MEDIA_VALUE_INVALID;
 }
 
+bool ExtDecoder::IsRawFormat(std::string &name)
+{
+    CHECK_ERROR_RETURN_RET(stream_ == nullptr, false);
+    ImagePlugin::DataStreamBuffer outData;
+    uint32_t savedPosition = stream_->Tell();
+    stream_->Seek(0);
+    if (!stream_->Peek(RAW_MIN_BYTEREAD, outData)) {
+        IMAGE_LOGE("IsRawFormat peek data fail.");
+        stream_->Seek(savedPosition);
+        return false;
+    } else {
+        stream_->Seek(savedPosition);
+        piex::binary_parse::RangeCheckedBytePtr header_buffer(outData.inputStreamBuffer, outData.dataSize);
+        piex::image_type_recognition::RawImageTypes type = RecognizeRawImageTypeLite(header_buffer);
+        auto rawFormatNameIter = RAW_FORMAT_NAME.find(type);
+        if (rawFormatNameIter != RAW_FORMAT_NAME.end() && !rawFormatNameIter->second.empty()) {
+            name = rawFormatNameIter->second;
+            return true;
+        }
+    }
+    return false;
+}
+
 uint32_t ExtDecoder::GetImagePropertyString(uint32_t index, const std::string &key, std::string &value)
 {
     IMAGE_LOGD("[GetImagePropertyString] enter jpeg plugin, key:%{public}s", key.c_str());
@@ -2134,7 +2182,12 @@ uint32_t ExtDecoder::GetImagePropertyString(uint32_t index, const std::string &k
     // There can add some not need exif property
     if (ENCODED_FORMAT_KEY.compare(key) == ZERO) {
         SkEncodedImageFormat format = codec_->getEncodedFormat();
-        return GetFormatName(format, value);
+        if ((format == SkEncodedImageFormat::kJPEG || format == SkEncodedImageFormat::kDNG) &&
+            ImageUtils::GetAPIVersion() >= APIVERSION_20 && IsRawFormat(value)) {
+            return SUCCESS;
+        } else {
+            return GetFormatName(format, value);
+        }
     } else if (IMAGE_DELAY_TIME.compare(key) == ZERO) {
         int delayTime = ZERO;
         res = GetDelayTime(codec_.get(), index, delayTime);
