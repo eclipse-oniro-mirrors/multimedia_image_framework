@@ -723,5 +723,123 @@ HWTEST_F(JpgYuvDecoderTest, ConvertFrom4xx001, TestSize.Level3)
     GTEST_LOG_(INFO) << "JpgYuvDecoderTest: ConvertFrom4xx001 end";
 }
 
+/**
+ * @tc.name: JpegYuvDataTest001
+ * @tc.desc: Verify that the conversion functions return -1 when the input parameters are invalid.
+ * @tc.type: FUNC
+ */
+HWTEST_F(JpgYuvDecoderTest, JpegYuvDataTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "JpgYuvDecoderTest: JpegYuvDataTest001 start";
+    YuvPlaneInfo src;
+    YuvPlaneInfo dst;
+
+    int code = I444ToI420_wrapper(src, dst);
+    EXPECT_EQ(code, -1);
+    code = I444ToNV21_wrapper(src, dst);
+    EXPECT_EQ(code, -1);
+    code = I422ToI420_wrapper(src, dst);
+    EXPECT_EQ(code, -1);
+    code = I422ToNV21_wrapper(src, dst);
+    EXPECT_EQ(code, -1);
+    code = I420ToNV21_wrapper(src, dst);
+    EXPECT_EQ(code, -1);
+    GTEST_LOG_(INFO) << "JpgYuvDecoderTest: JpegYuvDataTest001 end";
+}
+
+/**
+ * @tc.name: JpegYuvDataTest002
+ * @tc.desc: Verify that the conversion functions return -1 when the input parameters are invalid.
+ * @tc.type: FUNC
+ */
+HWTEST_F(JpgYuvDecoderTest, JpegYuvDataTest002, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "JpgYuvDecoderTest: JpegYuvDataTest002 start";
+    JpegDecoderYuv jpegDecoderYuv;
+    jpegDecoderYuv.LoadLibYuv();
+    YuvPlaneInfo src;
+    YuvPlaneInfo dst;
+
+    int code = I444ToI420_wrapper(src, dst);
+    EXPECT_EQ(code, -1);
+    code = I444ToNV21_wrapper(src, dst);
+    EXPECT_EQ(code, -1);
+    code = I422ToI420_wrapper(src, dst);
+    EXPECT_EQ(code, -1);
+    code = I422ToNV21_wrapper(src, dst);
+    EXPECT_EQ(code, -1);
+    code = I420ToNV21_wrapper(src, dst);
+    EXPECT_EQ(code, -1);
+    code = I400ToI420_wrapper(src, dst);
+    EXPECT_EQ(code, -1);
+    GTEST_LOG_(INFO) << "JpgYuvDecoderTest: JpegYuvDataTest002 end";
+}
+
+/**
+ * @tc.name: JpegYuvDataTest003
+ * @tc.desc: Verify that the conversion functions return -1 when the input parameters are invalid.
+ *           Also ensure proper memory allocation and deallocation for YUV plane data.
+ * @tc.type: FUNC
+ */
+HWTEST_F(JpgYuvDecoderTest, JpegYuvDataTest003, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "JpgYuvDecoderTest: JpegYuvDataTest003 start";
+    JpegDecoderYuv jpegDecoderYuv;
+    jpegDecoderYuv.LoadLibYuv();
+
+    YuvPlaneInfo src;
+    for (int i = 0; i < YUVCOMPONENT_MAX; ++i) {
+        src.strides[i] = 1;
+        src.planes[i] = new unsigned char[1];
+    }
+    YuvPlaneInfo dst;
+
+    int code = I440ToNV21_wrapper(src, dst);
+    EXPECT_EQ(code, -1);
+    src.imageWidth = 1;
+    src.imageHeight = 1;
+    code = I440ToNV21_wrapper(src, dst);
+    EXPECT_EQ(code, -1);
+    code = I440ToI420_wrapper(src, dst);
+    EXPECT_EQ(code, -1);
+    for (int i = 0; i < YUVCOMPONENT_MAX; ++i) {
+        delete[] src.planes[i];
+        src.planes[i] = nullptr;
+    }
+    GTEST_LOG_(INFO) << "JpgYuvDecoderTest: JpegYuvDataTest003 end";
+}
+
+/**
+ * @tc.name: JpegYuvDataTest004
+ * @tc.desc: Verify that the I400ToI420_wrapper function returns 0 when the input parameters are valid.
+ * @tc.type: FUNC
+ */
+HWTEST_F(JpgYuvDecoderTest, JpegYuvDataTest004, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "JpgYuvDecoderTest: JpegYuvDataTest004 start";
+    JpegDecoderYuv jpegDecoderYuv;
+    jpegDecoderYuv.LoadLibYuv();
+    YuvPlaneInfo src;
+    YuvPlaneInfo dst;
+    src.imageHeight = 1;
+    src.imageWidth = 1;
+    for (int i = 0; i < YUVCOMPONENT_MAX; ++i) {
+        src.strides[i] = 1;
+        src.planes[i] = new unsigned char[1];
+        dst.strides[i] = 1;
+        dst.planes[i] = new unsigned char[1];
+    }
+
+    int code = I400ToI420_wrapper(src, dst);
+    EXPECT_EQ(code, 0);
+    for (int i = 0; i < YUVCOMPONENT_MAX; ++i) {
+        delete[] src.planes[i];
+        delete[] dst.planes[i];
+        src.planes[i] = nullptr;
+        dst.planes[i] = nullptr;
+    }
+    GTEST_LOG_(INFO) << "JpgYuvDecoderTest: JpegYuvDataTest004 end";
+}
+
 }
 }

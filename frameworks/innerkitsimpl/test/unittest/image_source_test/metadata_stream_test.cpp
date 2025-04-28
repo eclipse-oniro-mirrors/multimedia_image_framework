@@ -40,6 +40,8 @@
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
+#define private public
+#define protected public
 #include "metadata_stream.h"
 #include "buffer_metadata_stream.h"
 #include "file_metadata_stream.h"
@@ -1831,6 +1833,42 @@ HWTEST_F(MetadataStreamTest, FileMetadataStream_IsEof002, TestSize.Level3)
     bool ret = stream.IsEof();
     ASSERT_EQ(ret, true);
     GTEST_LOG_(INFO) << "MetadataStreamTest: FileMetadataStream_IsEof002 end";
+}
+
+/**
+ * @tc.name: HandleWriteFailureTest001
+ * @tc.desc: Test HandleWriteFailure when memoryMode is Dynamic or not and buffer is same as origionData or not.
+ * @tc.type: FUNC
+ */
+HWTEST_F(MetadataStreamTest, HandleWriteFailureTest001, TestSize.Level2)
+{
+    const long offSetOne = 1;
+    const long capacityOne = 1;
+
+    byte buffer[] = {0, 1, 2, 3, 4};
+    BufferMetadataStream stream;
+
+    stream.buffer_ = buffer;
+    stream.bufferSize_ = sizeof(buffer);
+    stream.currentOffset_ = offSetOne;
+    stream.capacity_ = capacityOne;
+    stream.memoryMode_ = stream.Fix;
+    stream.originData_ = nullptr;
+    stream.HandleWriteFailure();
+    EXPECT_EQ(stream.bufferSize_, 0);
+    EXPECT_EQ(stream.currentOffset_, 0);
+    EXPECT_EQ(stream.capacity_, capacityOne);
+    EXPECT_NE(stream.buffer_, nullptr);
+
+    stream.bufferSize_ = sizeof(buffer);
+    stream.currentOffset_ = offSetOne;
+    stream.memoryMode_ = stream.Dynamic;
+    stream.originData_ = buffer;
+    stream.HandleWriteFailure();
+    EXPECT_EQ(stream.bufferSize_, 0);
+    EXPECT_EQ(stream.currentOffset_, 0);
+    EXPECT_EQ(stream.capacity_, capacityOne);
+    EXPECT_NE(stream.buffer_, nullptr);
 }
 } // namespace Media
 } // namespace OHOS

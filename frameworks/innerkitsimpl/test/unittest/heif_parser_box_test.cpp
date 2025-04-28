@@ -16,18 +16,35 @@
 #define private public
 #define protected public
 #include <gtest/gtest.h>
-#include "item_data_box.h"
-#include "item_property_transform_box.h"
-#include "item_property_color_box.h"
-#include "item_property_box.h"
-#include "item_ref_box.h"
-#include "item_info_box.h"
 #include "heif_box.h"
+#include "item_data_box.h"
+#include "item_info_box.h"
+#include "item_property_basic_box.h"
+#include "item_property_box.h"
+#include "item_property_color_box.h"
 #include "item_property_hvcc_box.h"
+#include "item_property_transform_box.h"
+#include "item_ref_box.h"
 
 using namespace testing::ext;
 namespace OHOS {
 namespace ImagePlugin {
+static constexpr size_t ERR_LENGTH = -1;
+static constexpr size_t NORMAL_LENGTH = 1;
+static constexpr size_t SIZE_32BITS = 0xFFFFFFFF;
+static constexpr size_t UUID_TYPE_BYTE_NUM = 16;
+
+static std::vector<uint8_t> SetUint32ToUint8Vertor(uint32_t data)
+{
+    std::vector<uint8_t> res = {
+        static_cast<uint8_t>((data >> 24) & 0xFF),
+        static_cast<uint8_t>((data >> 16) & 0xFF),
+        static_cast<uint8_t>((data >> 8) & 0xFF),
+        static_cast<uint8_t>(data & 0xFF)
+    };
+    return res;
+}
+
 class HeifParserBoxTest : public testing::Test {
 public:
     HeifParserBoxTest() {}
@@ -439,6 +456,137 @@ HWTEST_F(HeifParserBoxTest, ReadDataTest001, TestSize.Level3)
     ASSERT_EQ(heifIdatBox.ReadData(stream, 16, 0, outData), heif_error_eof);
     ASSERT_EQ(heifIdatBox.ReadData(stream, 0, 16, outData), heif_error_eof);
     GTEST_LOG_(INFO) << "HeifParserBoxTest: ReadDataTest001 end";
+}
+
+/**
+ * @tc.name: ParseHeaderTest001
+ * @tc.desc: Test ParseHeader when boxType is BOX_TYPE_UUID and size is enough or not
+ * @tc.type: FUNC
+ */
+HWTEST_F(HeifParserBoxTest, ParseHeaderTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "HeifParserBoxTest: ParseHeaderTest001 start";
+    uint32_t boxSize = 1;
+    auto data = SetUint32ToUint8Vertor(boxSize);
+    auto type = SetUint32ToUint8Vertor(BOX_TYPE_UUID);
+    data.insert(data.end(), type.begin(), type.end());
+    auto stream = std::make_shared<HeifBufferInputStream>(data.data(), UINT64_BYTES_NUM, true);
+    ASSERT_NE(stream, nullptr);
+    HeifStreamReader reader1(stream, 0, UINT64_BYTES_NUM);
+
+    HeifBox heifBox;
+    heif_error error = heifBox.ParseContent(reader1);
+    EXPECT_EQ(error, heif_error_ok);
+
+    HeifStreamReader reader2(stream, 0, UUID_TYPE_BYTE_NUM);
+    error = heifBox.ParseContent(reader2);
+    EXPECT_EQ(error, heif_error_ok);
+    GTEST_LOG_(INFO) << "HeifParserBoxTest: ParseHeaderTest001 end";
+}
+
+/**
+ * @tc.name: ParseContentTest003
+ * @tc.desc: Test ParseContent of HeifPixiBox when CheckSize failed
+ * @tc.type: FUNC
+ */
+HWTEST_F(HeifParserBoxTest, ParseContentTest003, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "HeifParserBoxTest: ParseContentTest003 start";
+    HeifPixiBox heifPixBox;
+    auto stream = std::make_shared<HeifBufferInputStream>(nullptr, 0, true);
+    ASSERT_NE(stream, nullptr);
+    HeifStreamReader reader(stream, 0, ERR_LENGTH);
+
+    heif_error error = heifPixBox.ParseContent(reader);
+    EXPECT_EQ(error, heif_error_eof);
+    GTEST_LOG_(INFO) << "HeifParserBoxTest: ParseContentTest003 end";
+}
+
+/**
+ * @tc.name: WriteHeaderTest001
+ * @tc.desc: Test WriteHeader when boxSize over 32 bits
+ * @tc.type: FUNC
+ */
+HWTEST_F(HeifParserBoxTest, WriteHeaderTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "HeifParserBoxTest: WriteHeaderTest001 start";
+    HeifBox heifBox;
+    HeifStreamWriter writer;
+    size_t boxSize = SIZE_32BITS + 1;
+
+    heif_error error = heifBox.WriteHeader(writer, boxSize);
+    EXPECT_EQ(error, heif_error_ok);
+    GTEST_LOG_(INFO) << "HeifParserBoxTest: WriteHeaderTest001 end";
+}
+
+/**
+ * @tc.name: ParseContentTest004
+ * @tc.desc: Test ParseContent of HeifBox when CheckSize failed
+ * @tc.type: FUNC
+ */
+HWTEST_F(HeifParserBoxTest, ParseContentTest004, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "HeifParserBoxTest: ParseContentTest004 start";
+    auto stream = std::make_shared<HeifBufferInputStream>(nullptr, 0, true);
+    ASSERT_NE(stream, nullptr);
+    HeifStreamReader reader(stream, 0, ERR_LENGTH);
+    HeifBox heifBox;
+
+    heif_error error = heifBox.ParseContent(reader);
+    EXPECT_EQ(error, heif_error_ok);
+    GTEST_LOG_(INFO) << "HeifParserBoxTest: ParseContentTest004 end";
+}
+
+/**
+ * @tc.name: ParseContentChildrenTest001
+ * @tc.desc: Test ParseContentChildren when CheckSize succeed or failed
+ * @tc.type: FUNC
+ */
+HWTEST_F(HeifParserBoxTest, ParseContentChildrenTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "HeifParserBoxTest: ParseContentChildrenTest001 start";
+    auto stream1 = std::make_shared<HeifBufferInputStream>(nullptr, 0, true);
+    ASSERT_NE(stream1, nullptr);
+    HeifStreamReader reader1(stream1, 0, NORMAL_LENGTH);
+    HeifBox heifBox;
+    uint32_t recursionCount = 0;
+
+    heif_error error = heifBox.ParseContentChildren(reader1, recursionCount);
+    EXPECT_EQ(error, heif_error_ok);
+
+    recursionCount = 0;
+    auto stream2 = std::make_shared<HeifBufferInputStream>(nullptr, 0, true);
+    ASSERT_NE(stream2, nullptr);
+    HeifStreamReader reader2(stream2, 0, ERR_LENGTH);
+    error = heifBox.ParseContentChildren(reader2, recursionCount);
+    EXPECT_EQ(error, heif_error_ok);
+    GTEST_LOG_(INFO) << "HeifParserBoxTest: ParseContentChildrenTest001 end";
+}
+
+
+/**
+ * @tc.name: MakeFromReaderTest001
+ * @tc.desc: Test MakeFromReader when reader HasError is true or boxContentSize is error
+ * @tc.type: FUNC
+ */
+HWTEST_F(HeifParserBoxTest, MakeFromReaderTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "HeifParserBoxTest: MakeFromReaderTest001 start";
+    uint32_t recursionCount = 0;
+    uint32_t boxSize = 1;
+    auto data = SetUint32ToUint8Vertor(boxSize);
+    auto type = SetUint32ToUint8Vertor(BOX_TYPE_FTYP);
+    data.insert(data.end(), type.begin(), type.end());
+    auto stream = std::make_shared<HeifBufferInputStream>(data.data(), UINT64_BYTES_NUM, true);
+    ASSERT_NE(stream, nullptr);
+    HeifStreamReader reader(stream, 0, UINT64_BYTES_NUM);
+    reader.hasError_ = true;
+    std::shared_ptr<HeifBox> heifBoxSptr;
+
+    HeifBox heifBox;
+    heif_error error = heifBox.MakeFromReader(reader, &heifBoxSptr, recursionCount);
+    EXPECT_EQ(error, heif_error_eof);
+    GTEST_LOG_(INFO) << "HeifParserBoxTest: MakeFromReaderTest001 end";
 }
 }
 }

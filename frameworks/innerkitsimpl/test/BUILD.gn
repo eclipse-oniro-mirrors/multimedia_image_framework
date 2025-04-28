@@ -1291,6 +1291,10 @@ ohos_unittest("jpeg_hw_decoder_test") {
     "-Dprivate=public",
     "-Dprotected=public",
   ]
+
+  if (enable_picture) {
+    defines += [ "EXIF_INFO_ENABLE" ]
+  }
 }
 
 ohos_unittest("heif_hw_decoder_test") {

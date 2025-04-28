@@ -16,6 +16,7 @@
 #define private public
 #include <gtest/gtest.h>
 #include "image_codec.h"
+#include "image_decoder.h"
 
 using namespace testing::ext;
 using namespace OHOS::ImagePlugin;
@@ -23,6 +24,17 @@ namespace OHOS {
 namespace Multimedia {
 
 #define MSGWHAT_UNKNOW 30
+#define BUFFER_UNSUPPORTED 100
+
+class MockImageCodecCallback : public ImageCodecCallback {
+public:
+    ~MockImageCodecCallback() {}
+    void OnError(ImageCodecError err) override {};
+    void OnOutputFormatChanged(const Format &format) override {};
+    void OnInputBufferAvailable(uint32_t index, std::shared_ptr<ImageCodecBuffer> buffer) override {};
+    void OnOutputBufferAvailable(uint32_t index, std::shared_ptr<ImageCodecBuffer> buffer) override {};
+};
+
 class ImageCodecTest : public testing::Test {
 public:
     ImageCodecTest() {}
@@ -288,6 +300,111 @@ HWTEST_F(ImageCodecTest, OnMsgReceivedTest004, TestSize.Level1)
     stoppingState.OnMsgReceived(info);
     EXPECT_EQ(info.type, ImageCodec::MsgWhat::CHECK_IF_STUCK);
     GTEST_LOG_(INFO) << "ImageCodecTest: OnMsgReceivedTest004 end";
+}
+
+/**
+ * @tc.name: SetupPortTest001
+ * @tc.desc: Verify that SetupPort returns IC_ERR_INVALID_VAL when the width or height in the format is invalid.
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageCodecTest, SetupPortTest001, TestSize.Level1)
+{
+    GTEST_LOG_(INFO) << "ImageCodecTest: SetupPortTest001 start";
+    ImageDecoder imageDecoder;
+    Format format;
+    format.SetValue<uint32_t>(ImageCodecDescriptionKey::WIDTH, 0);
+    int32_t ret = imageDecoder.SetupPort(format);
+    EXPECT_EQ(ret, IC_ERR_INVALID_VAL);
+    format.SetValue<uint32_t>(ImageCodecDescriptionKey::WIDTH, 1);
+    format.SetValue<uint32_t>(ImageCodecDescriptionKey::HEIGHT, 0);
+    ret = imageDecoder.SetupPort(format);
+    EXPECT_EQ(ret, IC_ERR_INVALID_VAL);
+    format.SetValue<uint32_t>(ImageCodecDescriptionKey::HEIGHT, 1);
+    ret = imageDecoder.SetupPort(format);
+    EXPECT_EQ(ret, IC_ERR_INVALID_VAL);
+    GTEST_LOG_(INFO) << "ImageCodecTest: SetupPortTest001 end";
+}
+
+/**
+ * @tc.name: ReadyToStartTest001
+ * @tc.desc: Verify that ReadyToStart correctly determines readiness based on callback, formats, and buffer states.
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageCodecTest, ReadyToStartTest001, TestSize.Level1)
+{
+    GTEST_LOG_(INFO) << "ImageCodecTest: ReadyToStartTest001 start";
+    ImageDecoder imageDecoder;
+    imageDecoder.callback_ = nullptr;
+    bool isReady = imageDecoder.ReadyToStart();
+    EXPECT_FALSE(isReady);
+    imageDecoder.callback_ = std::make_shared<MockImageCodecCallback>();
+    imageDecoder.outputFormat_ = std::make_shared<Format>();
+    imageDecpder.inputFormat_ = std::make_shared<Format>();
+    imageDecoder.enableHeifGrid_ = true;
+    imageDecoder.outputBuffer_ = SurfaceBuffer::Create();
+    isReady = imageDecoder.ReadyToStart();
+    EXPECT_FALSE(isReady);
+    imageDecoder.enableHeifGrid_ = false;
+    imageDecoder.outputBuffer_ = nullptr;
+    isReady = imageDecoder.ReadyToStart();
+    EXPECT_FALSE(isReady);
+    GTEST_LOG_(INFO) << "ImageCodecTest: ReadyToStartTest001 end";
+}
+
+/**
+ * @tc.name: SubmitAllBuffersOwnedByUsTest001
+ * @tc.desc: Verify that SubmitAllBuffersOwnedByUs correctly submits all buffers owned
+ *           by the decoder and returns IC_ERR_OK.
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageCodecTest, SubmitAllBuffersOwnedByUsTest001, TestSize.Level1)
+{
+    GTEST_LOG_(INFO) << "ImageCodecTest: SubmitAllBuffersOwnedByUsTest001 start";
+    ImageDecoder imageDecoder;
+    imageDecoder.UpdateFormatFromSurfaceBuffer();
+    ImageCodec::BufferInfo bufferInfo;
+    bufferInfo.surfaceBuffer = nullptr;
+    imageDecoder.outputBufferPool_.emplace_back(bufferInfo);
+    imageDecoder.UpdateFormatFromSurfaceBuffer();
+    imageDecoder.EraseBufferFromPool(OMX_DirInput, 1);
+    imageDecoder.isBufferCirculating_ = true;
+    int32_t code = imageDecoder.SubmitAllBuffersOwnedByUs();
+    EXPECT_EQ(code, IC_ERR_OK);
+    GTEST_LOG_(INFO) << "ImageCodecTest: SubmitAllBuffersOwnedByUsTest001 end";
+}
+
+/**
+ * @tc.name: SubmitOutputBuffersToOmxNodeTest001
+ * @tc.desc: Verify that SubmitOutputBuffersToOmxNode correctly submits output buffers to the OMX node
+ *           and handles different buffer ownership states, returning appropriate error codes.
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageCodecTest, SubmitOutputBuffersToOmxNodeTest001, TestSize.Level1)
+{
+    GTEST_LOG_(INFO) << "ImageCodecTest: SubmitOutputBuffersToOmxNodeTest001 start";
+    ImageDecoder imageDecoder;
+    imageDecoder.OnOMXEmptyBufferDone(0, ImageCodec::BufferOperationMode::KEEP_BUFFER);
+    ImageCodec::BufferInfo info;
+    info.bufferId = 0;
+    info.owner = ImageCodec::BufferOwner::OWNED_BY_US;
+    imageDecoder.inputBufferPool_.emplace_back(info);
+    imageDecoder.OnOMXEmptyBufferDone(0, ImageCodec::BufferOperationMode::KEEP_BUFFER);
+    imageDecoder.inputBufferPool_.clear();
+    info.owner = ImageCodec::BufferOwner::OWNED_BY_OMX;
+    imageDecoder.inputBufferPool_.emplace_back(info);
+    imageDecoder.OnOMXEmptyBufferDone(0, ImageCodec::BufferOperationMode::KEEP_BUFFER);
+    imageDecoder.OnOMXEmptyBufferDone(0, static_cast<ImageCodec::BufferOperationMode>(BUFFER_UNSUPPORTED));
+
+    info.owner = ImageCodec::BufferOwner::OWNED_BY_OMX;
+    imageDecoder.outputBufferPool_.emplace_back(info);
+    int32_t code = imageDecoder.SubmitOutputBuffersToOmxNode();
+    EXPECT_EQ(code, IC_ERR_OK);
+    imageDecoder.outputBufferPool_.clear();
+    info.owner = static_cast<ImageCodec::BufferOwner>(BUFFER_UNSUPPORTED);
+    imageDecoder.outputBufferPool_.emplace_back(info);
+    code = imageDecoder.SubmitOutputBuffersToOmxNode();
+    EXPECT_EQ(code, IC_ERR_UNKNOWN);
+    GTEST_LOG_(INFO) << "ImageCodecTest: SubmitOutputBuffersToOmxNodeTest001 end";
 }
 
 } // namespace Media

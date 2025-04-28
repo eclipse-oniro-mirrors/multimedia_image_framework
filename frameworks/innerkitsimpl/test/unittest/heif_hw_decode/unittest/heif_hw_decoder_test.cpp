@@ -14,6 +14,7 @@
  */
 
 #include <gtest/gtest.h>
+#define private public
 #include "hardware/heif_hw_decoder.h"
 #include "image_system_properties.h"
 #include "mock_heif_hw_decode_flow.h"
@@ -202,5 +203,16 @@ HWTEST_F(HeifHwDecoderTest, DoDecodeOkWithGrid, TestSize.Level1)
         ret = testObj.Run(opt);
     }
     ASSERT_TRUE(ret);
+}
+
+HWTEST_F(HeifHwDecoderTest, GetOutputPixelFmtDescTest001, TestSize.Level1)
+{
+    HeifHardwareDecoder decoder;
+    decoder.output_ = SurfaceBuffer::Create();
+    ASSERT_NE(decoder.output_, nullptr);
+
+    std::string str = decoder.GetOutputPixelFmtDesc();
+    int32_t res = str.compare("unknown");
+    EXPECT_EQ(res, 0);
 }
 } // namespace OHOS::Media
