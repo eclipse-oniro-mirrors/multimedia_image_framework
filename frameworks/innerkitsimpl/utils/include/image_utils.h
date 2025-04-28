@@ -29,6 +29,7 @@ namespace Media {
 const std::string IMAGE_ENCODE_FORMAT = "encodeFormat";
 constexpr uint32_t MALLOC_MAX_LENTH = 0x40000000;
 constexpr int32_t APIVERSION_13 = 13;
+constexpr int32_t APIVERSION_20 = 20;
 class PixelMap;
 
 class ImageUtils {
