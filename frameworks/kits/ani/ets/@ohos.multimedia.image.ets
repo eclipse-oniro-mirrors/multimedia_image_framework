@@ -647,7 +647,7 @@ export namespace image {
     public packing(source: PixelMap, option: PackingOption): ArrayBuffer {
       return this.nativePackingWithPixelMap(source, option);
     }
-    supportedFormats: Array<string> = ["jpg", "png"];
+    supportedFormats: Array<string> = new Array<string>("jpg", "png");
   }
 
   export native function createImagePacker(): ImagePacker;
