@@ -1199,14 +1199,15 @@ unique_ptr<PixelMap> ImageSource::CreatePixelMapByInfos(ImagePlugin::PlImageInfo
         }
     }
     const static string SUPPORT_CROP_KEY = "SupportCrop";
-    if (!mainDecoder_->HasProperty(SUPPORT_CROP_KEY) && opts_.CropRect.width > INT_ZERO &&
-        opts_.CropRect.height > INT_ZERO) {
-        Rect crop;
-        GetValidCropRect(opts_.CropRect, {pixelMap->GetWidth(), pixelMap->GetHeight()}, crop);
-        errorCode = pixelMap->crop(crop);
-        if (errorCode != SUCCESS) {
-            IMAGE_LOGE("[ImageSource]CropRect pixelmap fail, ret:%{public}u.", errorCode);
-            return nullptr;
+    if (opts_.CropRect.width > INT_ZERO && opts_.CropRect.height > INT_ZERO) {
+        if (!mainDecoder_->HasProperty(SUPPORT_CROP_KEY)) {
+            Rect crop;
+            GetValidCropRect(opts_.CropRect, {pixelMap->GetWidth(), pixelMap->GetHeight()}, crop);
+            errorCode = pixelMap->crop(crop);
+            if (errorCode != SUCCESS) {
+                IMAGE_LOGE("[ImageSource]CropRect pixelmap fail, ret:%{public}u.", errorCode);
+                return nullptr;
+            }
         }
         if (!hasDesiredSizeOptions) {
             ResizeCropPixelmap(*pixelMap, sourceInfo_.baseDensity, opts_.fitDensity, opts_.desiredSize);
