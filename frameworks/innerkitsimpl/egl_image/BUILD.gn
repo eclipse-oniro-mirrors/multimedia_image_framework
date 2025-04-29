@@ -82,7 +82,9 @@ if (!use_clang_ios && !use_clang_android) {
       "src/pixel_map_gl_shader.cpp",
       "src/pixel_map_program_manager.cpp",
     ]
-
+    external_deps = [
+      "ipc:ipc_single",
+    ]
     public_external_deps = [
       "c_utils:utils",
       "drivers_peripheral_display:hdi_gralloc_client",
