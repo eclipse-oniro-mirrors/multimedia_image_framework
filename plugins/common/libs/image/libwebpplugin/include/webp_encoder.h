@@ -18,7 +18,11 @@
 #include "abs_image_encoder.h"
 #include "plugin_class_base.h"
 #include "webp/encode.h"
+#ifdef USE_M133_SKIA
+#include "src/encode/SkImageEncoderFns.h"
+#else
 #include "src/images/SkImageEncoderFns.h"
+#endif
 #include "include/core/SkStream.h"
 namespace OHOS {
 namespace ImagePlugin {

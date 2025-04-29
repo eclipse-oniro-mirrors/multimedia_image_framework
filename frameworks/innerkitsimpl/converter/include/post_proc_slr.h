@@ -17,7 +17,12 @@
 #define FRAMEWORKS_INNERKITSIMPL_CONVERTER_INCLUDE_POST_PROC_SLR_H
 
 #include "image_type.h"
+#ifdef USE_M133_SKIA
+#include "include/private/base/SkMutex.h"
+#include "src/base/SkFloatBits.h"
+#else
 #include "include/private/SkMutex.h"
+#endif
 #include "src/core/SkLRUCache.h"
 
 namespace OHOS {
@@ -62,7 +67,11 @@ public:
 
     int32_t relax(SkScalar a)
     {
+#ifdef USE_M133_SKIA
+        if (std::isfinite(a)) {
+#else
         if (SkScalarIsFinite(a)) {
+#endif
             auto threshold = SkIntToScalar(1 << 12);
             return SkFloat2Bits(SkScalarRoundToScalar(a * threshold) / threshold);
         } else {

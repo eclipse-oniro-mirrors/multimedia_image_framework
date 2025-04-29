@@ -12,6 +12,7 @@
 # limitations under the License.
 
 import("//build/ohos_var.gni")
+import("//build/ohos.gni")
 
 # source code for Windows.
 use_mingw_win = "${current_os}_${current_cpu}" == "mingw_x86_64"

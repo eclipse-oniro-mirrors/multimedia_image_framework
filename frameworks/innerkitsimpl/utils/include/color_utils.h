@@ -29,11 +29,19 @@ namespace Media {
 
 class ColorUtils {
 public:
+#ifdef USE_M133_SKIA
+    static ColorManager::ColorSpaceName CicpToColorSpace(uint8_t primaries, uint8_t transfer,
+        uint8_t matrix, uint8_t range);
+    static void ColorSpaceGetCicp(ColorManager::ColorSpaceName name, uint8_t& primaries, uint8_t& transfer,
+        uint8_t& matrix, uint8_t& range);
+    static uint8_t GetPrimaries(ColorManager::ColorSpaceName name);
+#else
     static ColorManager::ColorSpaceName CicpToColorSpace(uint16_t primaries, uint16_t transfer,
         uint16_t matrix, uint8_t range);
     static void ColorSpaceGetCicp(ColorManager::ColorSpaceName name, uint16_t& primaries, uint16_t& transfer,
         uint16_t& matrix, uint8_t& range);
     static uint16_t GetPrimaries(ColorManager::ColorSpaceName name);
+#endif
 #if !defined(_WIN32) && !defined(_APPLE) && !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
     static HDI::Display::Graphic::Common::V1_0::CM_ColorSpaceType ConvertToCMColor(ColorManager::ColorSpaceName name);
 #endif

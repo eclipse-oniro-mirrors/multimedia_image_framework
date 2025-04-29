@@ -19,7 +19,11 @@
 #include "include/core/SkPixmap.h"
 #include "src/codec/SkCodecPriv.h"
 #include "src/codec/SkSampledCodec.h"
+#ifdef USE_M133_SKIA
+#include "src/base/SkMathPriv.h"
+#else
 #include "src/core/SkMathPriv.h"
+#endif
  
 static bool is_valid_sample_size(int sampleSize)
 {
@@ -294,7 +298,11 @@ SkISize SkOHOSCodec::getSampledDimensions(int sampleSize) const
   
 bool SkOHOSCodec::getSupportedSubset(SkIRect* desiredSubset) const
 {
+#ifdef USE_M133_SKIA
+    if (!desiredSubset || !SkCodecPriv::IsValidSubset(*desiredSubset, fCodec->dimensions())) {
+#else
     if (!desiredSubset || !is_valid_subset(*desiredSubset, fCodec->dimensions())) {
+#endif
         return false;
     }
 
@@ -316,8 +324,13 @@ SkISize SkOHOSCodec::getSampledSubsetDimensions(int sampleSize, const SkIRect& s
         return this->getSampledDimensions(sampleSize);
     }
 
+#ifdef USE_M133_SKIA
+    return {SkCodecPriv::GetSampledDimension(subset.width(), sampleSize),
+            SkCodecPriv::GetSampledDimension(subset.height(), sampleSize)};
+#else
     return {get_scaled_dimension(subset.width(), sampleSize),
             get_scaled_dimension(subset.height(), sampleSize)};
+#endif
 }
 
 SkCodec::Result SkOHOSCodec::getOHOSPixels(const SkImageInfo& requestInfo,
@@ -335,7 +348,11 @@ SkCodec::Result SkOHOSCodec::getOHOSPixels(const SkImageInfo& requestInfo,
         options = &defaultOptions;
     } else {
         if (options->fSubset) {
+#ifdef USE_M133_SKIA
+            if (!SkCodecPriv::IsValidSubset(*options->fSubset, fCodec->dimensions())) {
+#else
             if (!is_valid_subset(*options->fSubset, fCodec->dimensions())) {
+#endif
                 return SkCodec::kInvalidParameters;
             }
 
@@ -375,7 +392,11 @@ SkOHOSCodecAdapter::SkOHOSCodecAdapter(SkCodec* codec)
 
 SkISize SkOHOSCodecAdapter::onGetSampledDimensions(int sampleSize) const
 {
+#ifdef USE_M133_SKIA
+    float scale = SkCodecPriv::GetScaleFromSampleSize(sampleSize);
+#else
     float scale = get_scale_from_sample_size(sampleSize);
+#endif
     return this->codec()->getScaledDimensions(scale);
 }
 
@@ -410,7 +431,11 @@ SkISize SkOHOSSampledCodec::accountForNativeScaling(int* sampleSizePtr, int* nat
             case SAMPLE_SIZE_FOUR:
             case SAMPLE_SIZE_EIGHT:
                 *sampleSizePtr = 1;
+#ifdef USE_M133_SKIA
+                return this->codec()->getScaledDimensions(SkCodecPriv::GetScaleFromSampleSize(sampleSize));
+#else
                 return this->codec()->getScaledDimensions(get_scale_from_sample_size(sampleSize));
+#endif
             default:
                 break;
         }
@@ -421,7 +446,11 @@ SkISize SkOHOSSampledCodec::accountForNativeScaling(int* sampleSizePtr, int* nat
             int ohosActualSampleSize;
             SkTDivMod(sampleSize, supportedSampleSize, &ohosActualSampleSize, &ohosRemainder);
             if (0 == ohosRemainder) {
+#ifdef USE_M133_SKIA
+                float scale = SkCodecPriv::GetScaleFromSampleSize(supportedSampleSize);
+#else
                 float scale = get_scale_from_sample_size(supportedSampleSize);
+#endif
 
                 preSampledSize = this->codec()->getScaledDimensions(scale);
 
@@ -440,8 +469,13 @@ SkISize SkOHOSSampledCodec::accountForNativeScaling(int* sampleSizePtr, int* nat
 SkISize SkOHOSSampledCodec::onGetSampledDimensions(int sampleSize) const
 {
     const SkISize size = this->accountForNativeScaling(&sampleSize);
+#ifdef USE_M133_SKIA
+    return SkISize::Make(SkCodecPriv::GetSampledDimension(size.width(), sampleSize),
+                         SkCodecPriv::GetSampledDimension(size.height(), sampleSize));
+#else
     return SkISize::Make(get_scaled_dimension(size.width(), sampleSize),
                          get_scaled_dimension(size.height(), sampleSize));
+#endif
 }
 
 SkCodec::Result SkOHOSSampledCodec::onGetOHOSPixels(const SkImageInfo& info, void* pixels,
@@ -535,8 +569,13 @@ SkCodec::Result SkOHOSSampledCodec::sampledDecode(const SkImageInfo& info, void*
         const int subsetX = subsetPtr->x() / nativeSampleSize;
         ohosSubsetY = subsetPtr->y() / nativeSampleSize;
 
+#ifdef USE_M133_SKIA
+        ohosSubsetWidth = SkCodecPriv::GetSampledDimension(subsetPtr->width(), nativeSampleSize);
+        ohosSubsetHeight = SkCodecPriv::GetSampledDimension(subsetPtr->height(), nativeSampleSize);
+#else
         ohosSubsetWidth = get_scaled_dimension(subsetPtr->width(), nativeSampleSize);
         ohosSubsetHeight = get_scaled_dimension(subsetPtr->height(), nativeSampleSize);
+#endif
 
         subset.setXYWH(subsetX, 0, ohosSubsetWidth, ohosNativeSize.height());
     }
@@ -544,7 +583,11 @@ SkCodec::Result SkOHOSSampledCodec::sampledDecode(const SkImageInfo& info, void*
     const int ohosSampleX = ohosSubsetWidth / info.width();
     const int ohosSampleY = ohosSubsetHeight / info.height();
 
+#ifdef USE_M133_SKIA
+    const int ohosSamplingOffsetY = SkCodecPriv::GetStartCoord(ohosSampleY);
+#else
     const int ohosSamplingOffsetY = get_start_coord(ohosSampleY);
+#endif
     const int ohosStartY = ohosSamplingOffsetY + ohosSubsetY;
     const int ohosDstHeight = info.height();
 
@@ -571,7 +614,11 @@ SkCodec::Result SkOHOSSampledCodec::sampledDecode(const SkImageInfo& info, void*
             if (ohosSampler->setSampleX(ohosSampleX) != info.width()) {
                 return SkCodec::kInvalidScale;
             }
+#ifdef USE_M133_SKIA
+            if (SkCodecPriv::GetSampledDimension(ohosSubsetHeight, ohosSampleY) != info.height()) {
+#else
             if (get_scaled_dimension(ohosSubsetHeight, ohosSampleY) != info.height()) {
+#endif
                 return SkCodec::kInvalidScale;
             }
 
@@ -616,7 +663,11 @@ SkCodec::Result SkOHOSSampledCodec::sampledDecode(const SkImageInfo& info, void*
     if (ohosSampler->setSampleX(ohosSampleX) != info.width()) {
         return SkCodec::kInvalidScale;
     }
+#ifdef USE_M133_SKIA
+    if (SkCodecPriv::GetSampledDimension(ohosSubsetHeight, ohosSampleY) != info.height()) {
+#else
     if (get_scaled_dimension(ohosSubsetHeight, ohosSampleY) != info.height()) {
+#endif
         return SkCodec::kInvalidScale;
     }
 
@@ -650,9 +701,15 @@ SkCodec::Result SkOHOSSampledCodec::sampledDecode(const SkImageInfo& info, void*
             int y;
             for (y = 0; y < ohosNativeSize.height(); y++) {
                 int srcY = this->codec()->nextScanline();
+#ifdef USE_M133_SKIA
+                if (SkCodecPriv::IsCoordNecessary(srcY, ohosSampleY, ohosDstHeight)) {
+                    void* pixelPtr = SkTAddOffset<void>(pixels,
+                        rowBytes * SkCodecPriv::GetDstCoord(srcY, ohosSampleY));
+#else
                 if (is_coord_necessary(srcY, ohosSampleY, ohosDstHeight)) {
                     void* pixelPtr = SkTAddOffset<void>(pixels,
                         rowBytes * get_dst_coord(srcY, ohosSampleY));
+#endif
                     if (1 != this->codec()->getScanlines(pixelPtr, 1, rowBytes)) {
                         break;
                     }
@@ -670,11 +727,19 @@ SkCodec::Result SkOHOSSampledCodec::sampledDecode(const SkImageInfo& info, void*
             const SkImageInfo ohosFillInfo = info.makeWH(info.width(), 1);
             for (; y < ohosNativeSize.height(); y++) {
                 int srcY = this->codec()->outputScanline(y);
+#ifdef USE_M133_SKIA
+                if (!SkCodecPriv::IsCoordNecessary(srcY, ohosSampleY, ohosDstHeight)) {
+#else
                 if (!is_coord_necessary(srcY, ohosSampleY, ohosDstHeight)) {
+#endif
                     continue;
                 }
 
+#ifdef USE_M133_SKIA
+                void* rowPtr = SkTAddOffset<void>(pixels, rowBytes * SkCodecPriv::GetDstCoord(srcY, ohosSampleY));
+#else
                 void* rowPtr = SkTAddOffset<void>(pixels, rowBytes * get_dst_coord(srcY, ohosSampleY));
+#endif
                 SkSampler::Fill(ohosFillInfo, rowPtr, rowBytes, options.fZeroInitialized);
             }
             return SkCodec::kIncompleteInput;
