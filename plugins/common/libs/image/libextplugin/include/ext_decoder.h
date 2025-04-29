@@ -137,7 +137,6 @@ private:
     uint32_t UpdateHardWareDecodeInfo(DecodeContext &context);
     bool IsRegionDecodeSupported(uint32_t index, const PixelDecodeOptions &opts, PlImageInfo &info);
     SkCodec::Result DoRegionDecode(DecodeContext &context);
-    bool IsRawFormat(std::string &name);
 
     ImagePlugin::InputDataStream *stream_ = nullptr;
     uint32_t streamOff_ = 0;

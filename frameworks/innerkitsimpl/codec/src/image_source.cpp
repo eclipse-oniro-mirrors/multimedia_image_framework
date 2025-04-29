@@ -119,6 +119,18 @@ const string ASTC_FORMAT = "image/astc";
 const string EXTENDED_FORMAT = "image/x-skia";
 const string IMAGE_EXTENDED_CODEC = "image/extended";
 const string SVG_FORMAT = "image/svg+xml";
+const string RAW_EXTENDED_FORMATS[] = {
+    "image/x-sony-arw",
+    "image/x-canon-cr2",
+    "image/x-adobe-dng",
+    "image/x-nikon-nef",
+    "image/x-nikon-nrw",
+    "image/x-olympus-orf",
+    "image/x-fuji-raf",
+    "image/x-panasonic-rw2",
+    "image/x-pentax-pef",
+    "image/x-samsung-srw",
+};
 } // namespace InnerFormat
 // BASE64 image prefix type data:image/<type>;base64,<data>
 static const std::string IMAGE_URL_PREFIX = "data:image/";
@@ -126,7 +138,6 @@ static const std::string BASE64_URL_PREFIX = ";base64,";
 static const std::string KEY_IMAGE_WIDTH = "ImageWidth";
 static const std::string KEY_IMAGE_HEIGHT = "ImageLength";
 static const std::string IMAGE_FORMAT_RAW = "image/raw";
-static const std::string DNG_FORMAT = "image/x-adobe-dng";
 static const uint32_t FIRST_FRAME = 0;
 static const int INT_ZERO = 0;
 static const size_t SIZE_ZERO = 0;
@@ -405,13 +416,9 @@ uint32_t ImageSource::GetSupportedFormats(set<string> &formats)
         }
 
         if (*format == InnerFormat::RAW_FORMAT) {
-            formats.insert(DNG_FORMAT);
+            formats.insert(std::begin(InnerFormat::RAW_EXTENDED_FORMATS), std::end(InnerFormat::RAW_EXTENDED_FORMATS));
         } else {
-            std::vector<std::string> splitedVector;
-            SplitStr(*format, ",", splitedVector);
-            for (std::string item : splitedVector) {
-                formats.insert(item);
-            }
+            formats.insert(*format);
         }
     }
 
