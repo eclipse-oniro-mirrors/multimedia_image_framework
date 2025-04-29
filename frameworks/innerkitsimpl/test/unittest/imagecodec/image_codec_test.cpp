@@ -339,7 +339,7 @@ HWTEST_F(ImageCodecTest, ReadyToStartTest001, TestSize.Level1)
     EXPECT_FALSE(isReady);
     imageDecoder.callback_ = std::make_shared<MockImageCodecCallback>();
     imageDecoder.outputFormat_ = std::make_shared<Format>();
-    imageDecpder.inputFormat_ = std::make_shared<Format>();
+    imageDecoder.inputFormat_ = std::make_shared<Format>();
     imageDecoder.enableHeifGrid_ = true;
     imageDecoder.outputBuffer_ = SurfaceBuffer::Create();
     isReady = imageDecoder.ReadyToStart();
