@@ -117,7 +117,7 @@ namespace InnerFormat {
 const string RAW_FORMAT = "image/x-raw";
 const string ASTC_FORMAT = "image/astc";
 const string EXTENDED_FORMAT = "image/x-skia";
-const string IMAGE_EXTENDED_CODEC = "image/extended";
+const string IMAGE_EXTENDED_CODEC = "image/jpeg,image/png,image/webp,image/x-icon,image/gif,image/bmp";
 const string SVG_FORMAT = "image/svg+xml";
 } // namespace InnerFormat
 // BASE64 image prefix type data:image/<type>;base64,<data>
