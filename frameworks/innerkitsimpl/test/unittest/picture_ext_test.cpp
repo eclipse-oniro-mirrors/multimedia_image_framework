@@ -52,58 +52,12 @@ static const std::string IMAGE_HEIC_64_64 = "/data/local/tmp/image/test_heic_64_
 static const std::string IMAGE_HEIC_128_128 = "/data/local/tmp/image/test_heic_128_128.heic";
 static const std::string IMAGE_JPEG_100_100 = "/data/local/tmp/image/test_jpeg_100_100.jpg";
 static const std::string IMAGE_JPEG_128_128 = "/data/local/tmp/image/test_jpeg_128_128.jpg";
-static const std::string IMAGE_PIXELMAP_ARGB_DEST = "/data/local/tmp/image/EncodeARGBPixelMap001.jpg";
-static const std::string IMAGE_JPEG_PICTURE_ARGB_DEST = "/data/local/tmp/image/test_argb_picture_out.jpg";
-static const std::string IMAGE_HEIC_PICTURE_ARGB_DEST = "/data/local/tmp/image/test_argb_picture_out.heic";
 
 class PictureExtTest : public testing::Test {
 public:
     PictureExtTest() {}
     ~PictureExtTest() {}
 };
-
-static std::shared_ptr<PixelMap> CreatePixelMapInner(std::string srcPathName, PixelFormat dstPixelFormat,
-    DecodeDynamicRange dstDynamicRange = DecodeDynamicRange::AUTO,
-    AllocatorType allocatorType = AllocatorType::DEFAULT)
-{
-    uint32_t errorCode = -1;
-    SourceOptions opts;
-    std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(srcPathName.c_str(), opts, errorCode);
-    EXPECT_EQ(errorCode, OHOS::Media::SUCCESS);
-    EXPECT_NE(imageSource, nullptr);
-    if (imageSource == nullptr || errorCode != OHOS::Media::SUCCESS) {
-        return nullptr;
-    }
-
-    DecodeOptions dstOpts;
-    dstOpts.desiredPixelFormat = dstPixelFormat;
-    dstOpts.desiredDynamicRange = dstDynamicRange;
-    dstOpts.allocatorType = allocatorType;
-    dstOpts.isAppUseAllocator = true;
-    std::shared_ptr<PixelMap> pixelMap = imageSource->CreatePixelMapEx(0, dstOpts, errorCode);
-    return pixelMap;
-}
-
-static void PackPixelMapInner(std::shared_ptr<PixelMap> PixelMap, std::string imagePath, bool isHdr = false)
-{
-    PackOption packOption;
-    packOption.format = "image/jpeg";
-    packOption.quality = DEFAULT_QUALITY;
-    packOption.needsPackProperties = true;
-    packOption.desiredDynamicRange = isHdr ? EncodeDynamicRange::AUTO : EncodeDynamicRange::SDR;
-    std::shared_ptr<OHOS::Media::ImagePacker> imagePacker = std::make_unique<OHOS::Media::ImagePacker>();
-    if (imagePacker == nullptr) {
-        return;
-    }
-    OHOS::Media::PixelMap *pixelmapPtr = PixelMap.get();
-    int64_t packedSize = 0;
-    int32_t fd = open(imagePath.c_str(), O_WRONLY | O_CREAT);
-    ASSERT_NE(fd, -1);
-    EXPECT_EQ(imagePacker->StartPacking(fd, packOption), IMAGE_SUCCESS);
-    EXPECT_EQ(imagePacker->AddImage(*pixelmapPtr), IMAGE_SUCCESS);
-    EXPECT_EQ(imagePacker->FinalizePacking(packedSize), IMAGE_SUCCESS);
-    close(fd);
-}
 
 static std::shared_ptr<Picture> CreatePictureByPixelMap(std::string srcFormat, std::string srcPathName)
 {
@@ -126,8 +80,7 @@ static std::shared_ptr<Picture> CreatePictureByPixelMap(std::string srcFormat, s
     return picture;
 }
 
-static std::shared_ptr<Picture> CreatePictureByImageSource(std::string srcFormat, std::string srcPathName,
-    PixelFormat dstPixelFormat = PixelFormat::RGBA_8888)
+static std::shared_ptr<Picture> CreatePictureByImageSource(std::string srcFormat, std::string srcPathName)
 {
     uint32_t errorCode = -1;
     SourceOptions opts;
@@ -138,10 +91,6 @@ static std::shared_ptr<Picture> CreatePictureByImageSource(std::string srcFormat
         return nullptr;
     }
     DecodingOptionsForPicture dstOpts;
-    if (dstPixelFormat == PixelFormat::ARGB_8888) {
-        dstOpts.allocatorType = AllocatorType::SHARE_MEM_ALLOC;
-    }
-    dstOpts.desiredPixelFormat = dstPixelFormat;
     std::unique_ptr<Picture> tmpPicture = imageSource->CreatePicture(dstOpts, errorCode);
     EXPECT_EQ(errorCode, OHOS::Media::SUCCESS);
     if (tmpPicture == nullptr) {
@@ -1114,172 +1063,6 @@ HWTEST_F(PictureExtTest, ConvertAutoAllocatorTypeTest004, TestSize.Level3)
     DecodeOptions dopts;
     AllocatorType allocatorType = imageSource->ConvertAutoAllocatorType(dopts);
     EXPECT_EQ(allocatorType, AllocatorType::DMA_ALLOC);
-}
-
-/**
- * @tc.name: DecodeARGBPixelMap001
- * @tc.desc: Test DecodeARGBPixelMap with ARGB_8888, SDR, SHARE_MEM_ALLOC.
- * @tc.type: FUNC
- */
-HWTEST_F(PictureExtTest, DecodeARGBPixelMap001, TestSize.Level1)
-{
-    auto pixelMap = CreatePixelMapInner(IMAGE_JPEG_SRC, PixelFormat::ARGB_8888,
-                                        DecodeDynamicRange::SDR, AllocatorType::SHARE_MEM_ALLOC);
-    ASSERT_NE(pixelMap, nullptr);
-    EXPECT_EQ(pixelMap->GetPixelFormat(), PixelFormat::ARGB_8888);
-}
-
-/**
- * @tc.name: DecodeARGBPixelMap002
- * @tc.desc: Test DecodeARGBPixelMap with ARGB_8888, SDR, DMA_ALLOC.
- * @tc.type: FUNC
- */
-HWTEST_F(PictureExtTest, DecodeARGBPixelMap002, TestSize.Level3)
-{
-    auto pixelMap = CreatePixelMapInner(IMAGE_JPEG_SRC, PixelFormat::ARGB_8888,
-                                        DecodeDynamicRange::SDR, AllocatorType::DMA_ALLOC);
-    ASSERT_EQ(pixelMap, nullptr);
-}
-
-/**
- * @tc.name: DecodeARGBPixelMap003
- * @tc.desc: Test DecodeARGBPixelMap with ARGB_8888, AUTO, SHARE_MEM_ALLOC.
- * @tc.type: FUNC
- */
-HWTEST_F(PictureExtTest, DecodeARGBPixelMap003, TestSize.Level3)
-{
-    auto pixelMap = CreatePixelMapInner(IMAGE_INPUT_JPEGHDR_PATH, PixelFormat::ARGB_8888,
-                                        DecodeDynamicRange::AUTO, AllocatorType::SHARE_MEM_ALLOC);
-    ASSERT_EQ(pixelMap, nullptr);
-}
-
-/**
- * @tc.name: DecodeARGBPixelMap004
- * @tc.desc: Test DecodeARGBPixelMap with ARGB_8888, AUTO, DMA_ALLOC.
- * @tc.type: FUNC
- */
-HWTEST_F(PictureExtTest, DecodeARGBPixelMap004, TestSize.Level1)
-{
-    auto pixelMap = CreatePixelMapInner(IMAGE_INPUT_JPEGHDR_PATH, PixelFormat::ARGB_8888,
-                                        DecodeDynamicRange::AUTO, AllocatorType::DMA_ALLOC);
-    ASSERT_NE(pixelMap, nullptr);
-    EXPECT_EQ(pixelMap->GetPixelFormat(), PixelFormat::RGBA_1010102);
-}
-
-/**
- * @tc.name: DecodeARGBPixelMap005
- * @tc.desc: Test DecodeARGBPixelMap with ARGB_8888, HDR, SHARE_MEM_ALLOC.
- * @tc.type: FUNC
- */
-HWTEST_F(PictureExtTest, DecodeARGBPixelMap005, TestSize.Level3)
-{
-    auto pixelMap = CreatePixelMapInner(IMAGE_INPUT_JPEGHDR_PATH, PixelFormat::ARGB_8888,
-                                        DecodeDynamicRange::HDR, AllocatorType::SHARE_MEM_ALLOC);
-    ASSERT_EQ(pixelMap, nullptr);
-}
-
-/**
- * @tc.name: DecodeARGBPixelMap006
- * @tc.desc: Test DecodeARGBPixelMap with ARGB_8888, HDR, DMA_ALLOC.
- * @tc.type: FUNC
- */
-HWTEST_F(PictureExtTest, DecodeARGBPixelMap006, TestSize.Level1)
-{
-    auto pixelMap = CreatePixelMapInner(IMAGE_INPUT_JPEGHDR_PATH, PixelFormat::ARGB_8888,
-                                        DecodeDynamicRange::HDR, AllocatorType::DMA_ALLOC);
-    ASSERT_NE(pixelMap, nullptr);
-    EXPECT_EQ(pixelMap->GetPixelFormat(), PixelFormat::RGBA_1010102);
-}
-
-/**
- * @tc.name: DecodeARGBPixelMap007
- * @tc.desc: Test DecodeARGBPixelMap with ARGB_8888, SDR, DEFAULT.
- * @tc.type: FUNC
- */
-HWTEST_F(PictureExtTest, DecodeARGBPixelMap007, TestSize.Level1)
-{
-    auto pixelMap = CreatePixelMapInner(IMAGE_JPEG_SRC, PixelFormat::ARGB_8888,
-                                        DecodeDynamicRange::SDR);
-    ASSERT_NE(pixelMap, nullptr);
-    EXPECT_EQ(pixelMap->GetPixelFormat(), PixelFormat::ARGB_8888);
-}
-
-/**
- * @tc.name: DecodeARGBPixelMap008
- * @tc.desc: Test DecodeARGBPixelMap with ARGB_8888, HDR, DEFAULT.
- * @tc.type: FUNC
- */
-HWTEST_F(PictureExtTest, DecodeARGBPixelMap008, TestSize.Level1)
-{
-    auto pixelMap = CreatePixelMapInner(IMAGE_INPUT_JPEGHDR_PATH, PixelFormat::ARGB_8888,
-                                        DecodeDynamicRange::HDR);
-    ASSERT_NE(pixelMap, nullptr);
-    EXPECT_EQ(pixelMap->GetPixelFormat(), PixelFormat::RGBA_1010102);
-}
-
-/**
- * @tc.name: EncodeARGBPixelMap001
- * @tc.desc: Test DecodeARGBPixelMap with ARGB_8888, SDR, SHARE_MEM_ALLOC.
- * @tc.type: FUNC
- */
-HWTEST_F(PictureExtTest, EncodeARGBPixelMap001, TestSize.Level1)
-{
-    auto pixelMap = CreatePixelMapInner(IMAGE_JPEG_SRC, PixelFormat::ARGB_8888,
-                                        DecodeDynamicRange::SDR, AllocatorType::SHARE_MEM_ALLOC);
-    ASSERT_NE(pixelMap, nullptr);
-    EXPECT_EQ(pixelMap->GetPixelFormat(), PixelFormat::ARGB_8888);
-    PackPixelMapInner(pixelMap, IMAGE_PIXELMAP_ARGB_DEST);
-}
-
-/**
- * @tc.name: EncodeARGBPicture001
- * @tc.desc: Test decode and encode jpeg picture using argb pixelformat.
- * @tc.type: FUNC
- */
-HWTEST_F(PictureExtTest, EncodeARGBPicture001, TestSize.Level1)
-{
-    auto picture = CreatePictureByImageSource("image/jpeg", IMAGE_JPEG_SRC, PixelFormat::ARGB_8888);
-    ASSERT_NE(picture, nullptr);
-    ASSERT_NE(picture->GetMainPixel(), nullptr);
-    EXPECT_EQ(picture->GetMainPixel()->GetPixelFormat(), PixelFormat::ARGB_8888);
-    EncodePictureMethodOne(picture, "image/jpeg", IMAGE_JPEG_PICTURE_ARGB_DEST);
-}
-
-/**
- * @tc.name: EncodeARGBPicture002
- * @tc.desc: Test decode and encode heic picture using argb pixelformat.
- * @tc.type: FUNC
- */
-HWTEST_F(PictureExtTest, EncodeARGBPicture002, TestSize.Level1)
-{
-    auto picture = CreatePictureByImageSource("image/heif", IMAGE_HEIF_SRC, PixelFormat::ARGB_8888);
-    ASSERT_NE(picture, nullptr);
-    ASSERT_NE(picture->GetMainPixel(), nullptr);
-    EXPECT_EQ(picture->GetMainPixel()->GetPixelFormat(), PixelFormat::ARGB_8888);
-    EncodePictureMethodOne(picture, "image/heif", IMAGE_HEIC_PICTURE_ARGB_DEST);
-}
-
-/**
- * @tc.name: EncodeARGBPicture003
- * @tc.desc: Test decode and encode jpeg picture and fragment map using argb pixelformat.
- * @tc.type: FUNC
- */
-HWTEST_F(PictureExtTest, EncodeARGBPicture003, TestSize.Level1)
-{
-    auto picture = CreatePictureByImageSource("image/jpeg", IMAGE_JPEG_SRC, PixelFormat::ARGB_8888);
-    ASSERT_NE(picture, nullptr);
-    ASSERT_NE(picture->GetMainPixel(), nullptr);
-    EXPECT_EQ(picture->GetMainPixel()->GetPixelFormat(), PixelFormat::ARGB_8888);
-    auto pixelMap = CreatePixelMapInner(IMAGE_JPEG_SRC, PixelFormat::ARGB_8888,
-                                        DecodeDynamicRange::SDR, AllocatorType::SHARE_MEM_ALLOC);
-    ASSERT_NE(pixelMap, nullptr);
-    ImageInfo info;
-    pixelMap->GetImageInfo(info);
-    std::shared_ptr<AuxiliaryPicture> auxPicture = AuxiliaryPicture::Create(pixelMap,
-        AuxiliaryPictureType::FRAGMENT_MAP, info.size);
-    ASSERT_NE(auxPicture, nullptr);
-    picture->SetAuxiliaryPicture(auxPicture);
-    EncodePictureMethodOne(picture, "image/jpeg", IMAGE_JPEG_PICTURE_ARGB_DEST);
 }
 
 /**
