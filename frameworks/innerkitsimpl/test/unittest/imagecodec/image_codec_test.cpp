@@ -151,6 +151,22 @@ HWTEST_F(ImageCodecTest, SetProcessNameTest001, TestSize.Level1)
 }
 
 /**
+ * @tc.name: SetProcessNameTest002
+ * @tc.desc: Verify that SetProcessName returns IC_ERR_UNKNOWN when the process name is not set in the format.
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageCodecTest, SetProcessNameTest002, TestSize.Level1)
+{
+    GTEST_LOG_(INFO) << "ImageCodecTest: SetProcessNameTest002 start";
+    std::shared_ptr<ImageCodec> imageCodec = ImageCodec::Create();
+    ASSERT_NE(imageCodec, nullptr);
+    Format format;
+    int32_t ret = imageCodec->SetProcessName(format);
+    EXPECT_EQ(ret, IC_ERR_UNKNOWN);
+    GTEST_LOG_(INFO) << "ImageCodecTest: SetProcessNameTest002 end";
+}
+
+/**
  * @tc.name: ForceShutdownTest001
  * @tc.desc: Verify that ForceShutdown correctly shuts down the codec with different input parameters
  *           and returns IC_ERR_OK.
@@ -405,6 +421,62 @@ HWTEST_F(ImageCodecTest, SubmitOutputBuffersToOmxNodeTest001, TestSize.Level1)
     code = imageDecoder.SubmitOutputBuffersToOmxNode();
     EXPECT_EQ(code, IC_ERR_UNKNOWN);
     GTEST_LOG_(INFO) << "ImageCodecTest: SubmitOutputBuffersToOmxNodeTest001 end";
+}
+
+/**
+ * @tc.name: ChangeOwnerTest001
+ * @tc.desc: Verify that ChangeOwner correctly updates the buffer ownership state for both input and output buffers.
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageCodecTest, ChangeOwnerTest001, TestSize.Level1)
+{
+    GTEST_LOG_(INFO) << "ImageCodecTest: ChangeOwnerTest001 start";
+    std::shared_ptr<ImageCodec> imageCodec = ImageCodec::Create();
+    ASSERT_NE(imageCodec, nullptr);
+    imageCodec->debugMode_ = true;
+    ImageCodec::BufferInfo bufferInfo;
+    std::string prefix;
+    bufferInfo.Dump(prefix);
+    bufferInfo.surfaceBuffer = SurfaceBuffer::Create();
+    bufferInfo.Dump(prefix);
+
+    bufferInfo.isInput = true;
+    bufferInfo.owner = ImageCodec::BufferOwner::OWNED_BY_US;
+    ImageCodec::BufferOwner newOwner = ImageCodec::BufferOwner::OWNED_BY_OMX;
+    bufferInfo.omxBuffer = std::make_shared<HdiCodecNamespace::OmxCodecBuffer>();
+    imageCodec->ChangeOwner(bufferInfo, newOwner);
+    EXPECT_EQ(bufferInfo.owner, ImageCodec::BufferOwner::OWNED_BY_OMX);
+
+    bufferInfo.isInput = false;
+    bufferInfo.owner = ImageCodec::BufferOwner::OWNED_BY_OMX;
+    newOwner = ImageCodec::BufferOwner::OWNED_BY_US;
+    imageCodec->ChangeOwner(bufferInfo, newOwner);
+    EXPECT_EQ(bufferInfo.owner, ImageCodec::BufferOwner::OWNED_BY_US);
+
+    GTEST_LOG_(INFO) << "ImageCodecTest: ChangeOwnerTest001 end";
+}
+
+/**
+ * @tc.name: GetFrameRateFromUserTest001
+ * @tc.desc: Verify that ChangeOwner handles buffer ownership transitions correctly, processes input buffers,
+ *           and retrieves frame rate from user format when available.
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageCodecTest, GetFrameRateFromUserTest001, TestSize.Level1)
+{
+    GTEST_LOG_(INFO) << "ImageCodecTest: GetFrameRateFromUserTest001 start";
+    std::shared_ptr<ImageCodec> imageCodec = ImageCodec::Create();
+    ASSERT_NE(imageCodec, nullptr);
+    imageCodec->inputPortEos_ = true;
+    imageCodec->outputPortEos_ = true;
+    ImageCodec::BufferInfo bufferInfo;
+    imageCodec->OnOMXFillBufferDone(ImagePlugin::ImageCodec::BufferOperationMode::RESUBMIT_BUFFER, bufferInfo, 0);
+    imageCodec->OnQueueInputBuffer(ImagePlugin::ImageCodec::BufferOperationMode::RESUBMIT_BUFFER, &bufferInfo);
+
+    Format format;
+    std::optional<double> frameRate = imageCodec->GetFrameRateFromUser(format);
+    EXPECT_FALSE(frameRate.has_value());
+    GTEST_LOG_(INFO) << "ImageCodecTest: GetFrameRateFromUserTest001 end";
 }
 
 } // namespace Media

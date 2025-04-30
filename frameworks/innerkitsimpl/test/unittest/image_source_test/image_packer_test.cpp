@@ -908,5 +908,34 @@ HWTEST_F(ImagePackerTest, Write001, TestSize.Level3)
     res = stream->Write(buffer, size);
     EXPECT_FALSE(res);
 }
+
+/**
+ * @tc.name: AddImage004
+ * @tc.desc: Verify that ImagePacker call AddImage when pixelMap_ is not nullptr.
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImagePackerTest, AddImage004, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImagePackerTest: AddImage004 start";
+    ImagePacker pack;
+    uint32_t errorCode = 0;
+    SourceOptions opts;
+    opts.formatHint = "image/jpeg";
+    std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(IMAGE_INPUT_JPEG_PATH, opts, errorCode);
+    ASSERT_NE(imageSource, nullptr);
+    uint32_t index = 0;
+    InitializationOptions initOpts;
+    initOpts.size = Size{.width = NUM_1, .height = NUM_1};
+    initOpts.pixelFormat = PixelFormat::RGBA_8888;
+
+    pack.pixelMap_ = PixelMap::Create(initOpts);
+    uint32_t ret = pack.AddImage(*imageSource, index);
+    ASSERT_NE(ret, OHOS::Media::SUCCESS);
+
+    pack.pixelMap_ = PixelMap::Create(initOpts);
+    ret = pack.AddImage(*imageSource);
+    ASSERT_NE(ret, OHOS::Media::SUCCESS);
+    GTEST_LOG_(INFO) << "ImagePackerTest: AddImage004 end";
+}
 } // namespace Multimedia
 } // namespace OHOS
