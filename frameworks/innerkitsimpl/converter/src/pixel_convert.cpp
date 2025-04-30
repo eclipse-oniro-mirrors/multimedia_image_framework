@@ -1683,6 +1683,10 @@ int32_t PixelConvert::PixelsConvert(const BufferInfo &src, BufferInfo &dst, int3
     }
 
     Position pos;
+    if (src.imageInfo.pixelFormat == PixelFormat::RGBA_8888) {
+        IMAGE_LOGI("%{public}s: colorLength = %{public}d, width = %{public}d, height = %{public}d,", __func__,
+            srcLength, src.imageInfo.size.width, src.imageInfo.size.height);
+    }
     if (!PixelConvertAdapter::WritePixelsConvert(src.pixels,
         src.rowStride == 0 ? PixelMap::GetRGBxRowDataSize(src.imageInfo) : src.rowStride, src.imageInfo,
         dst.pixels, pos, useDMA ? dst.rowStride : PixelMap::GetRGBxRowDataSize(dst.imageInfo), dst.imageInfo)) {
