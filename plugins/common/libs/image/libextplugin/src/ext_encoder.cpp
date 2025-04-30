@@ -306,7 +306,13 @@ static uint32_t YuvToRgbaSkInfo(ImageInfo info, SkImageInfo &skInfo, uint8_t * d
     DestConvertInfo dstDataInfo;
     dstDataInfo.format = PixelFormat::RGBA_8888;
     dstDataInfo.allocType = AllocatorType::HEAP_ALLOC;
+    IMAGE_LOGD("HDR-IMAGE yuvToRgba width : %{public}d, height : %{public}d",
+               srcDataInfo.imageSize.width, srcDataInfo.imageSize.height);
+    ImageUtils::DumpDataIfDumpEnabled(reinterpret_cast<const char*>(srcDataInfo.buffer), srcDataInfo.bufferSize,
+                                      "beforeConvert");
     bool cond = ImageFormatConvert::ConvertImageFormat(srcDataInfo, dstDataInfo) != SUCCESS;
+    ImageUtils::DumpDataIfDumpEnabled(reinterpret_cast<const char*>(dstDataInfo.buffer), dstDataInfo.bufferSize,
+                                      "afterConvert");
     CHECK_ERROR_RETURN_RET_LOG(cond, ERR_IMAGE_ENCODE_FAILED, "YuvToSkInfo Support YUV format RGB convert failed ");
     cond  = memcpy_s(dstData, info.size.width * info.size.height * RGBA8888_PIXEL_BYTES,
         dstDataInfo.buffer, dstDataInfo.bufferSize) != 0;
