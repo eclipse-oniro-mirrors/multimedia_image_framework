@@ -168,7 +168,7 @@ static bool I420ToRGB(I420Info &i420, DestConvertParam &destParam, [[maybe_unuse
     switch (destParam.format) {
         case PixelFormat::RGBA_8888:
             converter.I420ToARGBMatrix(i420.I420Y, i420.yStride, i420.I420V, i420.vStride, i420.I420U, i420.uStride,
-                destParam.slice[0], destParam.stride[0], OHOS::OpenSourceLibyuv::YuvConstants::YvuF709,
+                destParam.slice[0], destParam.stride[0], OHOS::OpenSourceLibyuv::YuvConstants::YvuJPEG,
                 destParam.width, destParam.height);
             break;
         case PixelFormat::RGB_565:
