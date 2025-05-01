@@ -1258,6 +1258,7 @@ ohos_unittest("jpeg_hw_decoder_test") {
     "${image_subsystem}/plugins/manager/include/",
     "${image_subsystem}/plugins/manager/include/pluginbase/",
     "${image_subsystem}/interfaces/innerkits/include/",
+    "${image_subsystem}/plugins/common/libs/image/libextplugin/include/heif_impl/",
   ]
 
   deps = [
@@ -1285,7 +1286,23 @@ ohos_unittest("jpeg_hw_decoder_test") {
     "skia:libjpeg",
     "skia:skia_canvaskit",
   ]
-
+  if (enable_heif_hw_decode) {
+    defines += [ "HEIF_HW_DECODE_ENABLE" ]
+    deps +=
+        [ "${image_subsystem}/plugins/common/libs/image/libextplugin:heifimpl" ]
+    external_deps += [
+      "drivers_interface_codec:libcodec_proxy_3.0",
+      "drivers_peripheral_codec:libcodec_hdi_omx_client",
+      "ffmpeg:libohosffmpeg",
+      "ffrt:libffrt",
+      "graphic_2d:color_manager",
+      "hitrace:hitrace_meter",
+      "init:libbegetutil",
+      "ipc:ipc_core",
+      "openmax:libopenmax_static",
+      "qos_manager:qos",
+    ]
+  }
   resource_config_file = "$image_subsystem/test/resource/image/ohos_test.xml"
   cflags = [
     "-Dprivate=public",
