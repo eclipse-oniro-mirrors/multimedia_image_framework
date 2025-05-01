@@ -16,6 +16,7 @@
 #define private public
 #define protected public
 #include <gtest/gtest.h>
+#include <fcntl.h>
 #include "ext_pixel_convert.h"
 #include "ext_wstream.h"
 #include "ext_decoder.h"

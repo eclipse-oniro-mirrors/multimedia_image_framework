@@ -16,7 +16,7 @@
 #ifndef JPEG_HW_DECODER_DEMO_H
 #define JPEG_HW_DECODER_DEMO_H
 
-#include "display_type.h"
+#include "display/composer/v1_2/display_composer_type.h"
 #include "command_parser.h"
 #include "hardware/jpeg_hw_decoder.h"
 
@@ -34,7 +34,7 @@ private:
     {
         return ((width + alignment - 1) & (~(alignment - 1)));
     };
-    std::optional<PixelFormat> UserColorFmtToPixelFmt(UserColorFormat usrColorFmt);
+    std::optional<OHOS::HDI::Display::Composer::V1_2::PixelFormat> UserColorFmtToPixelFmt(UserColorFormat usrColorFmt);
 private:
     static constexpr uint32_t ALIGN_8 = 8;
     static constexpr uint32_t ALIGN_16 = 16;
@@ -42,7 +42,7 @@ private:
     OHOS::Media::Size scaledImgSize_;
     OHOS::Media::Size outputBufferSize_;
     uint32_t sampleSize_;
-    PixelFormat outputColorFmt_;
+    OHOS::HDI::Display::Composer::V1_2::PixelFormat outputColorFmt_;
     std::string inputFile_;
     std::string outputPath_;
     OHOS::HDI::Display::Buffer::V1_0::IDisplayBuffer* bufferMgr_;

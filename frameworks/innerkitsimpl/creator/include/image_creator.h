@@ -26,7 +26,6 @@
 #include "image_type.h"
 #include "media_errors.h"
 #include "pixel_map.h"
-#include "display_type.h"
 #include "image_creator_context.h"
 #include "image_receiver.h"
 #include "native_image.h"

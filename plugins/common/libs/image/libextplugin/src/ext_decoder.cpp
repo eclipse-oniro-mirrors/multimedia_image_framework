@@ -121,6 +121,7 @@ using namespace Media;
 using namespace OHOS::HDI::Base;
 #endif
 using namespace std;
+using namespace OHOS::HDI::Display::Composer;
 using piex::binary_parse::RangeCheckedBytePtr;
 using piex::image_type_recognition::RecognizeRawImageTypeLite;
 
@@ -327,7 +328,7 @@ uint32_t ExtDecoder::JpegHwDmaMemAlloc(DecodeContext &context, uint64_t count, S
     return ERR_IMAGE_DATA_UNSUPPORT;
 #else
     BufferRequestConfig requestConfig = CreateDmaRequestConfig(dstInfo, count, context.info.pixelFormat);
-    if (outputColorFmt_ == PIXEL_FMT_YCRCB_420_SP) {
+    if (outputColorFmt_ == V1_2::PIXEL_FMT_YCRCB_420_SP) {
         requestConfig.format = GRAPHIC_PIXEL_FMT_YCRCB_420_SP;
         requestConfig.usage |= BUFFER_USAGE_VENDOR_PRI16; // height is 64-bytes aligned
         IMAGE_LOGD("ExtDecoder::DmaMemAlloc desiredFormat is NV21");
@@ -731,7 +732,7 @@ uint32_t ExtDecoder::SetDecodeOptions(uint32_t index, const PixelDecodeOptions &
 #if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
     outputColorFmt_ = (opts.desiredPixelFormat == PixelFormat::NV21 ||
                        opts.desiredPixelFormat == PixelFormat::YCBCR_P010) ?
-                       PIXEL_FMT_YCRCB_420_SP : PIXEL_FMT_RGBA_8888;
+                       V1_2::PIXEL_FMT_YCRCB_420_SP : V1_2::PIXEL_FMT_RGBA_8888;
 #endif
 
     if (codec_) {
@@ -1440,7 +1441,7 @@ uint32_t ExtDecoder::AllocOutputBuffer(DecodeContext &context,
         return ERR_IMAGE_DECODE_ABNORMAL;
     }
     BufferHandle *handle = (static_cast<SurfaceBuffer*>(context.pixelsBuffer.context))->GetBufferHandle();
-    if (outputColorFmt_ == PIXEL_FMT_RGBA_8888) {
+    if (outputColorFmt_ == V1_2::PIXEL_FMT_RGBA_8888) {
         outputBufferSize_.width = static_cast<uint32_t>(handle->stride) / NUM_4;
     } else {
         outputBufferSize_.width = static_cast<uint32_t>(handle->stride);
@@ -1454,7 +1455,7 @@ uint32_t ExtDecoder::AllocOutputBuffer(DecodeContext &context,
 bool ExtDecoder::CheckContext(const DecodeContext &context)
 {
     if (IsYuv420Format(context.info.pixelFormat)) {
-        if (outputColorFmt_ == PIXEL_FMT_YCRCB_420_SP) {
+        if (outputColorFmt_ == V1_2::PIXEL_FMT_YCRCB_420_SP) {
             return true;
         }
         IMAGE_LOGI("yuv hardware decode only support NV21 format");
@@ -1542,7 +1543,7 @@ uint32_t ExtDecoder::UpdateHardWareDecodeInfo(DecodeContext &context)
     }
     context.outInfo.size.width = static_cast<uint32_t>(hwDstInfo_.width());
     context.outInfo.size.height = static_cast<uint32_t>(hwDstInfo_.height());
-    if (outputColorFmt_ == PIXEL_FMT_YCRCB_420_SP) {
+    if (outputColorFmt_ == V1_2::PIXEL_FMT_YCRCB_420_SP) {
         context.yuvInfo.imageSize = {hwDstInfo_.width(), hwDstInfo_.height()};
     }
 #if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)

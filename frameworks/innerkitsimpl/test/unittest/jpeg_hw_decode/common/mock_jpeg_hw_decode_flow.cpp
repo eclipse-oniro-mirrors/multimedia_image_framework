@@ -24,8 +24,9 @@
 namespace OHOS::ImagePlugin {
 using namespace OHOS::HDI::Codec::Image::V2_0;
 using namespace OHOS::HDI::Display::Buffer::V1_0;
+using namespace OHOS::HDI::Display::Composer;
 
-JpegHwDecoderFlow::JpegHwDecoderFlow() : sampleSize_(1), outputColorFmt_(PIXEL_FMT_YCRCB_420_SP)
+JpegHwDecoderFlow::JpegHwDecoderFlow() : sampleSize_(1), outputColorFmt_(V1_2::PIXEL_FMT_YCRCB_420_SP)
 {
     bufferMgr_ = IDisplayBuffer::Get();
     outputBuffer_.id = 0;
@@ -45,7 +46,7 @@ bool JpegHwDecoderFlow::AllocOutputBuffer()
     AllocInfo alloc = {
         .width = scaledImgSize_.width,
         .height = scaledImgSize_.height,
-        .usage =  HBM_USE_CPU_READ | HBM_USE_CPU_WRITE | HBM_USE_MEM_DMA,
+        .usage =  V1_2::HBM_USE_CPU_READ | V1_2::HBM_USE_CPU_WRITE | V1_2::HBM_USE_MEM_DMA,
         .format = outputColorFmt_
     };
     BufferHandle *handle = nullptr;
@@ -54,10 +55,10 @@ bool JpegHwDecoderFlow::AllocOutputBuffer()
         JPEG_HW_LOGE("failed to alloc output buffer, err=%{public}d", ret);
         return false;
     }
-    if (outputColorFmt_ == PIXEL_FMT_RGBA_8888) {
+    if (outputColorFmt_ == V1_2::PIXEL_FMT_RGBA_8888) {
         static constexpr uint32_t bitDepthForRgba = 4;
         outputBufferSize_.width = static_cast<int32_t>((handle->stride) / bitDepthForRgba);
-    } else { // PIXEL_FMT_YCRCB_420_SP
+    } else { // V1_2::PIXEL_FMT_YCRCB_420_SP
         outputBufferSize_.width = static_cast<int32_t>(handle->stride);
     }
     outputBufferSize_.height = static_cast<int32_t>(handle->height);
@@ -83,9 +84,9 @@ bool JpegHwDecoderFlow::DumpDecodeResult()
 {
     JPEG_HW_LOGI("dump decode result");
     auto getColorDesc = [this]()->std::string {
-        if (outputColorFmt_ == PIXEL_FMT_YCRCB_420_SP) {
+        if (outputColorFmt_ == V1_2::PIXEL_FMT_YCRCB_420_SP) {
             return "YUV";
-        } else if (outputColorFmt_ == PIXEL_FMT_RGBA_8888) {
+        } else if (outputColorFmt_ == V1_2::PIXEL_FMT_RGBA_8888) {
             return "RGB";
         }
         return "UnknownColorFormat";
@@ -120,11 +121,11 @@ bool JpegHwDecoderFlow::DumpDecodeResult()
     return true;
 }
 
-std::optional<PixelFormat> JpegHwDecoderFlow::UserColorFmtToPixelFmt(UserColorFormat usrColorFmt)
+std::optional<V1_2::PixelFormat> JpegHwDecoderFlow::UserColorFmtToPixelFmt(UserColorFormat usrColorFmt)
 {
-    static const std::map<UserColorFormat, PixelFormat> colorMap = {
-        { UserColorFormat::YUV, PIXEL_FMT_YCRCB_420_SP },
-        { UserColorFormat::RGB, PIXEL_FMT_RGBA_8888 }
+    static const std::map<UserColorFormat, V1_2::PixelFormat> colorMap = {
+        { UserColorFormat::YUV, V1_2::PIXEL_FMT_YCRCB_420_SP },
+        { UserColorFormat::RGB, V1_2::PIXEL_FMT_RGBA_8888 }
     };
     auto iter = colorMap.find(usrColorFmt);
     if (iter == colorMap.end()) {
@@ -137,7 +138,7 @@ std::optional<PixelFormat> JpegHwDecoderFlow::UserColorFmtToPixelFmt(UserColorFo
 bool JpegHwDecoderFlow::Run(const CommandOpt& opt, bool needDumpOutput)
 {
     JPEG_HW_LOGI("jpeg hardware decode demo start");
-    std::optional<PixelFormat> colorFmt = UserColorFmtToPixelFmt(opt.colorFmt);
+    std::optional<V1_2::PixelFormat> colorFmt = UserColorFmtToPixelFmt(opt.colorFmt);
     if (!colorFmt.has_value()) {
         JPEG_HW_LOGE("jpeg hardware decode demo failed");
         return false;

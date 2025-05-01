@@ -70,7 +70,6 @@ ohos_shared_library("image_receiver") {
 
   external_deps = [
     "c_utils:utils",
-    "drivers_peripheral_display:hdi_gralloc_client",
     "graphic_surface:surface",
     "hilog:libhilog",
     "ipc:ipc_single",
