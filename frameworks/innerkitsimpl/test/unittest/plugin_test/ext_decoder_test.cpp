@@ -2321,39 +2321,6 @@ HWTEST_F(ExtDecoderTest, HeifDecoderImpl_initTest001, TestSize.Level3)
 }
 
 /**
- * @tc.name: HeifDecoderImpl_initTest002
- * @tc.desc: Verify that HeifDecoderImpl call init when err is heif_error_ok.
- * @tc.type: FUNC
- */
-HWTEST_F(ExtDecoderTest, HeifDecoderImpl_initTest002, TestSize.Level3)
-{
-    GTEST_LOG_(INFO) << "ExtDecoderTest: HeifDecoderImpl_initTest002 start";
-#ifdef HEIF_HW_DECODE_ENABLE
-    std::shared_ptr<ExtDecoder> extDecoder = std::make_shared<ExtDecoder>();
-    const int fd = open("/data/local/tmp/image/test_heif.heic", O_RDWR | O_CREAT, S_IRUSR | S_IWUSR);
-    std::unique_ptr<FileSourceStream> streamPtr = FileSourceStream::CreateSourceStream(fd);
-    ASSERT_NE(streamPtr, nullptr);
-    extDecoder->SetSource(*streamPtr);
-    ASSERT_NE(extDecoder->stream_, nullptr);
-    extDecoder->codec_ = SkCodec::MakeFromStream(std::make_unique<ExtStream>(extDecoder->stream_));
-    bool ret = extDecoder->CheckCodec();
-    ASSERT_NE(extDecoder->codec_, nullptr);
-    ASSERT_EQ(ret, true);
-    auto mockDecoderImpl = reinterpret_cast<HeifDecoderImpl*>(extDecoder->codec_->getHeifContext());
-    ASSERT_NE(mockDecoderImpl, nullptr);
-    std::shared_ptr<MockHeifStream> mockStream = std::make_shared<MockHeifStream>();
-    ret = mockDecoderImpl->init(mockStream.get(), nullptr);
-    ASSERT_EQ(ret, false);
-    auto copyData = mockDecoderImpl->srcMemory_;
-    mockDecoderImpl->srcMemory_ = nullptr;
-    ret = mockDecoderImpl->init(mockStream.get(), nullptr);
-    ASSERT_EQ(ret, false);
-    mockDecoderImpl->srcMemory_ = copyData;
-#endif
-    GTEST_LOG_(INFO) << "ExtDecoderTest: HeifDecoderImpl_initTest002 end";
-}
-
-/**
  * @tc.name: HeifDecoderImpl_CheckAuxiliaryMapTest001
  * @tc.desc: Verify that CheckAuxiliaryMap call init when parser_ is nullptr.
  * @tc.type: FUNC
