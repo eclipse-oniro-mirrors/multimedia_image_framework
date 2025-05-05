@@ -458,6 +458,7 @@
             <option name="push" value="images/test_jpeg_128_128.jpg -> /data/local/tmp/image" src="res"/>
             <option name="push" value="images/test.jpg -> /data/local/tmp/image" src="res"/>
             <option name="push" value="images/test_picture_png.png -> /data/local/tmp/image" src="res"/>
+            <option name="push" value="images/test.gif -> /data/local/tmp/image" src="res"/>
         </preparer>
     </target>
     <target name="ImagePictureFuzzTest">
@@ -482,6 +483,11 @@
     <target name="rawdecodertest">
         <preparer>
             <option name="push" value="images/test_raw_dng.dng -> /data/local/tmp/image" src="res"/>
+        </preparer>
+    </target>
+    <target name="pngtest">
+        <preparer>
+            <option name="push" value="images/test.svg -> /data/local/tmp/image" src="res"/>
         </preparer>
     </target>
 </configuration>

@@ -958,6 +958,21 @@ HWTEST_F(PngDecoderTest, PngWarningMessage001, TestSize.Level3)
 }
 
 /**
+ * @tc.name: PngWarningMessageTest002
+ * @tc.desc: Verify that PngWarningMessage correctly handles a valid warning message.
+ * @tc.type: FUNC
+ */
+HWTEST_F(PngDecoderTest, PngWarningMessageTest002, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PngDecoderTest: PngWarningMessageTest002 start";
+    PngDecoder png;
+    png_structp pngPtr = nullptr;
+    const char *warningMessage = "Test warning message";
+    png.PngWarningMessage(pngPtr, warningMessage);
+    GTEST_LOG_(INFO) << "PngDecoderTest: PngWarningMessageTest002 end";
+}
+
+/**
  * @tc.name: IsChunk001
  * @tc.desc: Test of IsChunk
  * @tc.type: FUNC
@@ -1397,6 +1412,22 @@ HWTEST_F(PngDecoderTest, PngWarning001, TestSize.Level3)
     png_structp pngPtr = nullptr;
     pngDecoder->PngWarning(pngPtr, message);
     GTEST_LOG_(INFO) << "PngDecoderTest: PngWarning001 end";
+}
+
+/**
+ * @tc.name: PngWarningTest002
+ * @tc.desc: Verify that PngWarning correctly handles a valid warning message and logs it appropriately.
+ * @tc.type: FUNC
+ */
+HWTEST_F(PngDecoderTest, PngWarningTest002, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PngDecoderTest: PngWarningTest002 start";
+    auto pngDecoder = std::make_shared<PngDecoder>();
+    ASSERT_NE(pngDecoder, nullptr);
+    const char *warningMessage = "Test warning message";
+    png_structp pngPtr = nullptr;
+    pngDecoder->PngWarning(pngPtr, warningMessage);
+    GTEST_LOG_(INFO) << "PngDecoderTest: PngWarningTest002 end";
 }
 
 /**

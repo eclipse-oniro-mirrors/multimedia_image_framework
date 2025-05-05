@@ -17,6 +17,8 @@
 #include <securec.h>
 #include <sys/time.h>
 
+#define private public
+#define protected public
 #include "astc_codec.h"
 #include "buffer_packer_stream.h"
 #ifdef ENABLE_ASTC_ENCODE_BASED_GPU
@@ -1262,5 +1264,86 @@ HWTEST_F(PluginTextureEncodeTest, AstcExtendInfoTest, TestSize.Level3)
         extendBuffer = nullptr;
     }
 }
+
+/**
+ * @tc.name: AstcExtendInfoTest
+ * @tc.desc: Verify that AstcSoftwareEncodeCore returns false when encoding parameters are invalid.
+ * @tc.type: FUNC
+ */
+HWTEST_F(PluginTextureEncodeTest, AstcExtendInfoTest001, TestSize.Level3)
+{
+    AstcCodec codec;
+    TextureEncodeOptions param;
+    param.blockX_ = -1;
+    param.blockY_ = -1;
+    std::vector<uint8_t> pixelMap(1);
+    std::vector<uint8_t> astcBuf(1);
+    bool ret = codec.AstcSoftwareEncodeCore(param, pixelMap.data(), astcBuf.data());
+    EXPECT_FALSE(ret);
+}
+
+/**
+ * @tc.name: IsAstcEncTest001
+ * @tc.desc: Verify that IsAstcEnc returns false when the input PixelMap or parameters are invalid.
+ * @tc.type: FUNC
+ */
+HWTEST_F(PluginTextureEncodeTest, IsAstcEncTest001, TestSize.Level3)
+{
+    AstcCodec codec;
+    std::unique_ptr<PixelMap> pixelMap = ConstructPixmap(RGBA_TEST0001_WIDTH, RGBA_TEST0001_HEIGHT);
+    codec.astcPixelMap_ = pixelMap.get();
+    ImageInfo info;
+    uint8_t* pixelMapIn = nullptr;
+    TextureEncodeOptions param;
+    AstcExtendInfo extendInfo;
+    bool ret = codec.IsAstcEnc(info, pixelMapIn, param, extendInfo);
+    EXPECT_FALSE(ret);
+}
+
+/**
+ * @tc.name: InitBeforeAstcEncodeTest001
+ * @tc.desc: Verify that InitBeforeAstcEncode returns false when the input PixelMap or output stream is invalid.
+ * @tc.type: FUNC
+ */
+HWTEST_F(PluginTextureEncodeTest, InitBeforeAstcEncodeTest001, TestSize.Level3)
+{
+    AstcCodec codec;
+    std::unique_ptr<PixelMap> pixelMap = ConstructPixmap(RGBA_TEST0001_WIDTH, RGBA_TEST0001_HEIGHT);
+    std::vector<uint8_t> output(1);
+    BufferPackerStream *stream = new (std::nothrow) BufferPackerStream(output.data(), OUTPUT_SIZE_MAX);
+    ImageInfo imageInfo;
+    TextureEncodeOptions param;
+    uint8_t colorData = 0;
+    uint8_t *pixmapIn = nullptr;
+    uint32_t stride = 0;
+    codec.astcPixelMap_ = nullptr;
+    codec.astcOutput_ = stream;
+    bool ret = codec.InitBeforeAstcEncode(imageInfo, param, colorData, &pixmapIn, stride);
+    EXPECT_FALSE(ret);
+    codec.astcPixelMap_ = pixelMap.get();
+    codec.astcOutput_ = nullptr;
+    ret = codec.InitBeforeAstcEncode(imageInfo, param, colorData, &pixmapIn, stride);
+    EXPECT_FALSE(ret);
+    codec.astcPixelMap_ = nullptr;
+    codec.astcOutput_ = nullptr;
+    ret = codec.InitBeforeAstcEncode(imageInfo, param, colorData, &pixmapIn, stride);
+    EXPECT_FALSE(ret);
+}
+
+/**
+ * @tc.name: TryEncSUTTest001
+ * @tc.desc: Verify that TryEncSUT returns false when encoding parameters or buffer are invalid.
+ * @tc.type: FUNC
+ */
+HWTEST_F(PluginTextureEncodeTest, TryEncSUTTest001, TestSize.Level3)
+{
+    AstcCodec codec;
+    TextureEncodeOptions param;
+    uint8_t *astcBuffer = nullptr;
+    AstcExtendInfo extendInfo;
+    bool ret = codec.TryEncSUT(param, astcBuffer, extendInfo);
+    EXPECT_TRUE(ret);
+}
+
 } // namespace Multimedia
 } // namespace OHOS

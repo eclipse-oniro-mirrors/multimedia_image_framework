@@ -17,6 +17,12 @@
 #include <fstream>
 #include <cstring>
 #include <surface.h>
+#define private public
+#define protected public
+#include "ext_stream.h"
+#include "ext_wstream.h"
+#include "hdr_helper.h"
+#include "buffer_source_stream.h"
 #include "picture.h"
 #include "picture_native_impl.h"
 #include "image_source.h"
@@ -55,6 +61,7 @@ static const std::string IMAGE_JPEG_128_128 = "/data/local/tmp/image/test_jpeg_1
 static const std::string IMAGE_PIXELMAP_ARGB_DEST = "/data/local/tmp/image/EncodeARGBPixelMap001.jpg";
 static const std::string IMAGE_JPEG_PICTURE_ARGB_DEST = "/data/local/tmp/image/test_argb_picture_out.jpg";
 static const std::string IMAGE_HEIC_PICTURE_ARGB_DEST = "/data/local/tmp/image/test_argb_picture_out.heic";
+static const std::string IMAGE_GIF_PATH = "/data/local/tmp/image/test.gif";
 
 class PictureExtTest : public testing::Test {
 public:
@@ -332,6 +339,25 @@ HWTEST_F(PictureExtTest, CreatePicture005, TestSize.Level3)
     auto mainPixelmap = picture->GetMainPixel();
     ASSERT_NE(mainPixelmap, nullptr);
     ASSERT_EQ(mainPixelmap->GetPixelFormat(), PixelFormat::NV12);
+}
+
+/**
+ * @tc.name: CreatePictureTest006
+ * @tc.desc: Verify Picture is successfully created with YCBCR_P010 pixel format and valid image source.
+ * @tc.type: FUNC
+ */
+HWTEST_F(PictureExtTest, CreatePicture006, TestSize.Level3)
+{
+    uint32_t errorCode = -1;
+    SourceOptions opts;
+    std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(IMAGE_JPEG_SRC, opts, errorCode);
+    ASSERT_EQ(errorCode, OHOS::Media::SUCCESS);
+    ASSERT_NE(imageSource, nullptr);
+    DecodingOptionsForPicture dstOpts;
+    dstOpts.desiredPixelFormat = PixelFormat::YCBCR_P010;
+    std::unique_ptr<Picture> picture = imageSource->CreatePicture(dstOpts, errorCode);
+    EXPECT_EQ(errorCode, OHOS::Media::SUCCESS);
+    EXPECT_NE(picture, nullptr);
 }
 
 bool EncodePictureMethodOne(std::shared_ptr<Picture> picture, std::string format, std::string IMAGE_DEST)
@@ -1365,6 +1391,77 @@ HWTEST_F(PictureExtTest, OH_DecodingOptions_SetGetDesiredColorSpaceTest003, Test
     ASSERT_NE(getColorSpaceNative, nullptr);
     ASSERT_EQ(ret, IMAGE_SUCCESS);
     EXPECT_EQ(OH_NativeColorSpaceManager_GetColorSpaceName(getColorSpaceNative), COLORSPACE_SRGB);
+}
+
+/**
+ * @tc.name: GetHdrComposedPixelMapTest001
+ * @tc.desc: Verify HdrComposedPixelMap returns null when [main/gainmap] PixelMap has allocator mismatch or
+ *           invalid context.
+ * @tc.type: FUNC
+ */
+HWTEST_F(PictureExtTest, GetHdrComposedPixelMapTest001, TestSize.Level3)
+{
+    auto picture = CreatePictureByImageSource("image/jpeg", IMAGE_JPEG_SRC);
+    ASSERT_NE(picture, nullptr);
+    ASSERT_TRUE(picture->HasAuxiliaryPicture(AuxiliaryPictureType::GAINMAP));
+    picture->mainPixelMap_->allocatorType_ = AllocatorType::SHARE_MEM_ALLOC;
+    auto pixelMap = picture->GetHdrComposedPixelMap();
+    EXPECT_EQ(pixelMap, nullptr);
+    picture->mainPixelMap_->allocatorType_ = AllocatorType::DMA_ALLOC;
+    picture->mainPixelMap_->context_ = nullptr;
+    pixelMap = picture->GetHdrComposedPixelMap();
+    EXPECT_EQ(pixelMap, nullptr);
+    picture->mainPixelMap_->context_ = picture->GetGainmapPixelMap()->context_;
+    picture->GetGainmapPixelMap()->allocatorType_ = AllocatorType::SHARE_MEM_ALLOC;
+    pixelMap = picture->GetHdrComposedPixelMap();
+    EXPECT_EQ(pixelMap, nullptr);
+    picture->GetGainmapPixelMap()->allocatorType_ = AllocatorType::DMA_ALLOC;
+    picture->mainPixelMap_->allocatorType_ = AllocatorType::SHARE_MEM_ALLOC;
+    picture->mainPixelMap_->context_ = nullptr;
+    pixelMap = picture->GetHdrComposedPixelMap();
+    EXPECT_EQ(pixelMap, nullptr);
+    picture->mainPixelMap_->context_ = picture->GetGainmapPixelMap()->context_;
+    picture->GetGainmapPixelMap()->allocatorType_ = AllocatorType::SHARE_MEM_ALLOC;
+    pixelMap = picture->GetHdrComposedPixelMap();
+    EXPECT_EQ(pixelMap, nullptr);
+    picture->GetGainmapPixelMap()->allocatorType_ = AllocatorType::DMA_ALLOC;
+    picture->GetGainmapPixelMap()->context_ = nullptr;
+    pixelMap = picture->GetHdrComposedPixelMap();
+    EXPECT_EQ(pixelMap, nullptr);
+    picture->GetGainmapPixelMap()->allocatorType_ = AllocatorType::DMA_ALLOC;
+    picture->GetGainmapPixelMap()->context_ = nullptr;
+    pixelMap = picture->GetHdrComposedPixelMap();
+    EXPECT_EQ(pixelMap, nullptr);
+    picture->mainPixelMap_->allocatorType_ = AllocatorType::SHARE_MEM_ALLOC;
+    picture->mainPixelMap_->context_ = nullptr;
+    picture->GetGainmapPixelMap()->allocatorType_ = AllocatorType::SHARE_MEM_ALLOC;
+    picture->GetGainmapPixelMap()->context_ = nullptr;
+    pixelMap = picture->GetHdrComposedPixelMap();
+    EXPECT_EQ(pixelMap, nullptr);
+}
+
+/**
+ * @tc.name: UnmarshallingTest001
+ * @tc.desc: Verify Picture::Unmarshalling returns nullptr when parcel data is invalid.
+ * @tc.type: FUNC
+ */
+HWTEST_F(PictureExtTest, UnmarshallingTest001, TestSize.Level3)
+{
+    Parcel data;
+    auto picture = Picture::Unmarshalling(data);
+    EXPECT_EQ(picture, nullptr);
+}
+
+/**
+ * @tc.name: AuxPictureUnmarshallingTest001
+ * @tc.desc: Verify AuxiliaryPicture::Unmarshalling returns null when parsing invalid parcel data.
+ * @tc.type: FUNC
+ */
+HWTEST_F(PictureExtTest, AuxPictureUnmarshallingTest001, TestSize.Level3)
+{
+    Parcel parcel;
+    auto auxPicture = AuxiliaryPicture::Unmarshalling(parcel);
+    EXPECT_EQ(auxPicture, nullptr);
 }
 } // namespace Multimedia
 } // namespace OHOS
