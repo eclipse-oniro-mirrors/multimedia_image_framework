@@ -364,6 +364,30 @@ Image_ErrorCode OH_DecodingOptions_SetDesiredDynamicRange(OH_DecodingOptions *op
     int32_t desiredDynamicRange);
 
 /**
+ * @brief Gets the crop region for the decoding options.
+ *
+ * @param options Pointer to the decoding options.
+ * @param cropRegion The target region will be cropped from the image.
+ * @return Returns one of the following result codes:
+ * {@link IMAGE_SUCCESS} if the execution is successful.
+ * {@link IMAGE_SOURCE_INVALID_PARAMETER} if options or cropRegion is null pointer.
+ * @since 19
+ */
+Image_ErrorCode OH_DecodingOptions_GetCropRegion(OH_DecodingOptions *options, Image_Region *cropRegion);
+
+/**
+ * @brief Sets the crop region for the decoding options.
+ *
+ * @param options Pointer to the decoding options.
+ * @param cropRegion The target region will be cropped from the image.
+ * @return Returns one of the following result codes:
+ * {@link IMAGE_SUCCESS} if the execution is successful.
+ * {@link IMAGE_SOURCE_INVALID_PARAMETER} if options or cropRegion is null pointer.
+ * @since 19
+ */
+Image_ErrorCode OH_DecodingOptions_SetCropRegion(OH_DecodingOptions *options, Image_Region *cropRegion);
+
+/**
  * @brief Gets desired color space for decoding options.
  *
  * @param options Pointer to the decoding options.
