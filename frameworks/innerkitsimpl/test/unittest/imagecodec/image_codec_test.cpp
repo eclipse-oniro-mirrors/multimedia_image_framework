@@ -25,6 +25,9 @@ namespace Multimedia {
 
 #define MSGWHAT_UNKNOW 30
 #define BUFFER_UNSUPPORTED 100
+#define SIZE_WIDTH 2
+#define SIZE_HEIGHT 3
+#define STRIDE_ALIGNMENT 8
 
 class MockImageCodecCallback : public ImageCodecCallback {
 public:
@@ -33,6 +36,36 @@ public:
     void OnOutputFormatChanged(const Format &format) override {};
     void OnInputBufferAvailable(uint32_t index, std::shared_ptr<ImageCodecBuffer> buffer) override {};
     void OnOutputBufferAvailable(uint32_t index, std::shared_ptr<ImageCodecBuffer> buffer) override {};
+};
+
+class MockImageCodecBuffer : public ImageCodecBuffer {
+public:
+    explicit MockImageCodecBuffer(bool isSetAddr)
+    {
+        fd_ = -1;
+        if (isSetAddr) {
+            addr_ = new uint8_t(1);
+        } else {
+            addr_ = nullptr;
+        }
+    }
+    ~MockImageCodecBuffer()
+    {
+        if (addr_ != nullptr) {
+            delete addr_;
+            addr_ = nullptr;
+        }
+    }
+    bool Init() override { return true; }
+    int32_t GetFileDescriptor() override { return fd_; }
+    sptr<SurfaceBuffer> GetSurfaceBuffer() override { return nullptr; }
+    uint8_t* GetAddr() override
+    {
+        return addr_;
+    }
+private:
+    int32_t fd_;
+    uint8_t* addr_;
 };
 
 class ImageCodecTest : public testing::Test {
@@ -477,6 +510,141 @@ HWTEST_F(ImageCodecTest, GetFrameRateFromUserTest001, TestSize.Level1)
     std::optional<double> frameRate = imageCodec->GetFrameRateFromUser(format);
     EXPECT_FALSE(frameRate.has_value());
     GTEST_LOG_(INFO) << "ImageCodecTest: GetFrameRateFromUserTest001 end";
+}
+
+/**
+ * @tc.name: UpdateInputRecordTest001
+ * @tc.desc: Verify that Dump and UpdateInputRecord correctly handle buffer information and update input records
+ *           when the buffer is valid and not an input buffer.
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageCodecTest, UpdateInputRecordTest001, TestSize.Level1)
+{
+    GTEST_LOG_(INFO) << "ImageCodecTest: UpdateInputRecordTest001 start";
+    std::shared_ptr<ImageCodec> imageCodec = ImageCodec::Create();
+    ASSERT_NE(imageCodec, nullptr);
+    ImageCodec::BufferInfo info;
+    std::string prefix = "testDump";
+    info.isInput = false;
+    info.Dump(prefix, true);
+
+    info.omxBuffer = std::make_shared<HdiCodecNamespace::OmxCodecBuffer>();
+    ASSERT_NE(info.omxBuffer, nullptr);
+    info.omxBuffer->flag = 0;
+    info.omxBuffer->filledLen = 1;
+    imageCodec->inTotalCnt_ = 0;
+    imageCodec->UpdateInputRecord(info, std::chrono::steady_clock::now());
+
+    GTEST_LOG_(INFO) << "ImageCodecTest: UpdateInputRecordTest001 end";
+}
+
+/**
+ * @tc.name: DumpSurfaceBufferTest001
+ * @tc.desc: Verify that DumpSurfaceBuffer correctly handles surface buffer allocation
+ *           and dumping with zero dimensions.
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageCodecTest, DumpSurfaceBufferTest001, TestSize.Level1)
+{
+    GTEST_LOG_(INFO) << "ImageCodecTest: DumpSurfaceBufferTest001 start";
+    ImageCodec::BufferInfo info;
+    info.surfaceBuffer = SurfaceBuffer::Create();
+    ASSERT_NE(info.surfaceBuffer, nullptr);
+    BufferRequestConfig requestConfig = {
+        .width = 0,
+        .height = 0,
+        .strideAlignment = STRIDE_ALIGNMENT,
+        .format = GraphicPixelFormat::GRAPHIC_PIXEL_FMT_BGRA_8888,
+        .usage = BUFFER_USAGE_CPU_READ | BUFFER_USAGE_CPU_WRITE | BUFFER_USAGE_MEM_DMA | BUFFER_USAGE_MEM_MMZ_CACHE,
+        .timeout = 0,
+    };
+    info.surfaceBuffer->Alloc(requestConfig);
+    info.omxBuffer = std::make_shared<HdiCodecNamespace::OmxCodecBuffer>();
+    ASSERT_NE(info.omxBuffer, nullptr);
+    info.omxBuffer->flag = 0;
+    info.omxBuffer->filledLen = 1;
+    std::string prefix = "testSurfaceBuffer";
+    info.DumpSurfaceBuffer(prefix);
+
+    GTEST_LOG_(INFO) << "ImageCodecTest: DumpSurfaceBufferTest001 end";
+}
+
+/**
+ * @tc.name: DumpSurfaceBufferTest002
+ * @tc.desc: Verify that DumpSurfaceBuffer correctly handles surface buffer allocation
+ *           and dumping with valid dimensions.
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageCodecTest, DumpSurfaceBufferTest002, TestSize.Level1)
+{
+    GTEST_LOG_(INFO) << "ImageCodecTest: DumpSurfaceBufferTest002 start";
+    ImageCodec::BufferInfo info;
+    info.surfaceBuffer = SurfaceBuffer::Create();
+    ASSERT_NE(info.surfaceBuffer, nullptr);
+    BufferRequestConfig requestConfig = {
+        .width = SIZE_WIDTH,
+        .height = SIZE_HEIGHT,
+        .strideAlignment = STRIDE_ALIGNMENT,
+        .format = GraphicPixelFormat::GRAPHIC_PIXEL_FMT_BGRA_8888,
+        .usage = BUFFER_USAGE_CPU_READ | BUFFER_USAGE_CPU_WRITE | BUFFER_USAGE_MEM_DMA | BUFFER_USAGE_MEM_MMZ_CACHE,
+        .timeout = 0,
+    };
+    info.surfaceBuffer->Alloc(requestConfig);
+    info.omxBuffer = std::make_shared<HdiCodecNamespace::OmxCodecBuffer>();
+    ASSERT_NE(info.omxBuffer, nullptr);
+    info.omxBuffer->flag = 0;
+    info.omxBuffer->filledLen = 1;
+    std::string prefix = "testSurfaceBuffer";
+    info.DumpSurfaceBuffer(prefix);
+
+    GTEST_LOG_(INFO) << "ImageCodecTest: DumpSurfaceBufferTest002 end";
+}
+
+/**
+ * @tc.name: DumpLinearBufferTest001
+ * @tc.desc: Verify that DumpLinearBuffer correctly handles linear buffer dumping when the buffer is empty.
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageCodecTest, DumpLinearBufferTest001, TestSize.Level1)
+{
+    GTEST_LOG_(INFO) << "ImageCodecTest: UpdateInputRecordTest001 start";
+    std::shared_ptr<ImageCodec> imageCodec = ImageCodec::Create();
+    ASSERT_NE(imageCodec, nullptr);
+    ImageCodec::BufferInfo info;
+    info.imgCodecBuffer = std::make_shared<MockImageCodecBuffer>(false);
+    ASSERT_NE(info.imgCodecBuffer, nullptr);
+
+    std::string prefix = "testLinearBuffer";
+    info.DumpLinearBuffer(prefix);
+    GTEST_LOG_(INFO) << "ImageCodecTest: UpdateInputRecordTest001 end";
+}
+
+/**
+ * @tc.name: DumpLinearBufferTest002
+ * @tc.desc: Verify that DumpLinearBuffer correctly handles linear buffer dumping with various buffer states.
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageCodecTest, DumpLinearBufferTest002, TestSize.Level1)
+{
+    GTEST_LOG_(INFO) << "ImageCodecTest: DumpLinearBufferTest002 start";
+    std::shared_ptr<ImageCodec> imageCodec = ImageCodec::Create();
+    ASSERT_NE(imageCodec, nullptr);
+    ImageCodec::BufferInfo info;
+    info.imgCodecBuffer = std::make_shared<MockImageCodecBuffer>(true);
+    ASSERT_NE(info.imgCodecBuffer, nullptr);
+    info.omxBuffer = std::make_shared<HdiCodecNamespace::OmxCodecBuffer>();
+    ASSERT_NE(info.omxBuffer, nullptr);
+    info.omxBuffer->flag = 1;
+    info.omxBuffer->filledLen = 1;
+
+    std::string prefix = "testLinearBuffer";
+    info.DumpLinearBuffer(prefix);
+
+    info.omxBuffer->flag = 0;
+    info.DumpLinearBuffer(prefix);
+    info.isInput = false;
+    info.DumpLinearBuffer(prefix);
+    GTEST_LOG_(INFO) << "ImageCodecTest: DumpLinearBufferTest002 end";
 }
 
 } // namespace Media

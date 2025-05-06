@@ -24,6 +24,9 @@ using namespace testing::ext;
 using namespace OHOS::Media;
 namespace OHOS {
 namespace ImagePlugin {
+
+constexpr static int32_t OPTS_DESIREDSIZE = 2;
+static const std::string IMAGE_SVG_SRC = "/data/local/tmp/image/test.svg";
 class SvgDecoderTest : public testing::Test {
 public:
     SvgDecoderTest() {}
@@ -448,6 +451,114 @@ HWTEST_F(SvgDecoderTest, DoSetDecodeOptions001, TestSize.Level3)
 }
 
 /**
+ * @tc.name: DoSetDecodeOptionsTest002
+ * @tc.desc: Verify that DoSetDecodeOptions returns Media::ERROR when the SVG DOM container size is empty.
+ * @tc.type: FUNC
+ */
+HWTEST_F(SvgDecoderTest, DoSetDecodeOptionsTest002, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "SvgDecoderTest: DoSetDecodeOptionsTest002 start";
+    auto svgDecoder = std::make_shared<SvgDecoder>();
+    ASSERT_NE(svgDecoder, nullptr);
+
+    PixelDecodeOptions opts;
+    PlImageInfo info;
+    auto streamPtr = SkStream::MakeFromFile(IMAGE_SVG_SRC.c_str());
+    ASSERT_NE(streamPtr, nullptr);
+    svgDecoder->svgDom_ = SkSVGDOM::MakeFromStream(*streamPtr);
+    ASSERT_NE(svgDecoder->svgDom_, nullptr);
+    svgDecoder->svgDom_->setContainerSize(SkSize::MakeEmpty());
+
+    uint32_t result = svgDecoder->DoSetDecodeOptions(0, opts, info);
+    EXPECT_EQ(result, Media::ERROR);
+    GTEST_LOG_(INFO) << "SvgDecoderTest: DoSetDecodeOptionsTest002 end";
+}
+
+/**
+ * @tc.name: DoSetDecodeOptionsTest003
+ * @tc.desc: Verify that DoSetDecodeOptions returns ERR_MEDIA_INVALID_OPERATION when the desired size is invalid
+ *           and the crop rectangle is set with SCALE_FIRST strategy.
+ * @tc.type: FUNC
+ */
+HWTEST_F(SvgDecoderTest, DoSetDecodeOptionsTest003, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "SvgDecoderTest: DoSetDecodeOptionsTest003 start";
+    auto svgDecoder = std::make_shared<SvgDecoder>();
+    ASSERT_NE(svgDecoder, nullptr);
+    PixelDecodeOptions opts;
+    PlImageInfo info;
+    auto streamPtr = SkStream::MakeFromFile(IMAGE_SVG_SRC.c_str());
+    ASSERT_NE(streamPtr, nullptr);
+    svgDecoder->svgDom_ = SkSVGDOM::MakeFromStream(*streamPtr);
+    ASSERT_NE(svgDecoder->svgDom_, nullptr);
+    svgDecoder->svgDom_->setContainerSize(SkSize::Make(1, 1));
+    opts.desiredSize.width = -1;
+    opts.desiredSize.height = -1;
+    opts.CropRect = {1, 1, 1, 1};
+    opts.cropAndScaleStrategy = CropAndScaleStrategy::SCALE_FIRST;
+
+    uint32_t result = svgDecoder->DoSetDecodeOptions(0, opts, info);
+    EXPECT_EQ(result, ERR_MEDIA_INVALID_OPERATION);
+    GTEST_LOG_(INFO) << "SvgDecoderTest: DoSetDecodeOptionsTest003 end";
+}
+
+/**
+ * @tc.name: DoSetDecodeOptionsTest004
+ * @tc.desc: Verify that DoSetDecodeOptions returns ERR_MEDIA_INVALID_OPERATION when the crop rectangle is invalid
+ *           and the SCALE_FIRST strategy is used.
+ * @tc.type: FUNC
+ */
+HWTEST_F(SvgDecoderTest, DoSetDecodeOptionsTest004, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "SvgDecoderTest: DoSetDecodeOptionsTest004 start";
+    auto svgDecoder = std::make_shared<SvgDecoder>();
+    ASSERT_NE(svgDecoder, nullptr);
+    PixelDecodeOptions opts;
+    PlImageInfo info;
+    auto streamPtr = SkStream::MakeFromFile(IMAGE_SVG_SRC.c_str());
+    ASSERT_NE(streamPtr, nullptr);
+    svgDecoder->svgDom_ = SkSVGDOM::MakeFromStream(*streamPtr);
+    ASSERT_NE(svgDecoder->svgDom_, nullptr);
+    svgDecoder->svgDom_->setContainerSize(SkSize::Make(1, 1));
+    opts.desiredSize.width = 1;
+    opts.desiredSize.height = 1;
+    opts.CropRect = {-1, -1, 0, 0};
+    opts.cropAndScaleStrategy = CropAndScaleStrategy::SCALE_FIRST;
+
+    uint32_t result = svgDecoder->DoSetDecodeOptions(0, opts, info);
+    EXPECT_EQ(result, ERR_MEDIA_INVALID_OPERATION);
+    GTEST_LOG_(INFO) << "SvgDecoderTest: DoSetDecodeOptionsTest004 end";
+}
+
+/**
+ * @tc.name: DoSetDecodeOptionsTest005
+ * @tc.desc: Verify that DoSetDecodeOptions returns Media::SUCCESS when the desired size and crop rectangle
+ *           are valid with the SCALE_FIRST strategy.
+ * @tc.type: FUNC
+ */
+HWTEST_F(SvgDecoderTest, DoSetDecodeOptionsTest005, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "SvgDecoderTest: DoSetDecodeOptionsTest005 start";
+    auto svgDecoder = std::make_shared<SvgDecoder>();
+    ASSERT_NE(svgDecoder, nullptr);
+    PixelDecodeOptions opts;
+    PlImageInfo info;
+    auto streamPtr = SkStream::MakeFromFile(IMAGE_SVG_SRC.c_str());
+    ASSERT_NE(streamPtr, nullptr);
+    svgDecoder->svgDom_ = SkSVGDOM::MakeFromStream(*streamPtr);
+    ASSERT_NE(svgDecoder->svgDom_, nullptr);
+    svgDecoder->svgDom_->setContainerSize(SkSize::Make(1, 1));
+    opts.desiredSize.width = OPTS_DESIREDSIZE;
+    opts.desiredSize.height = OPTS_DESIREDSIZE;
+    opts.CropRect = {1, 1, 1, 1};
+    opts.cropAndScaleStrategy = CropAndScaleStrategy::SCALE_FIRST;
+
+    uint32_t result = svgDecoder->DoSetDecodeOptions(0, opts, info);
+    EXPECT_EQ(result, Media::SUCCESS);
+    GTEST_LOG_(INFO) << "SvgDecoderTest: DoSetDecodeOptionsTest005 end";
+}
+
+/**
  * @tc.name: DoGetImageSize001
  * @tc.desc: Test of DoGetImageSize
  * @tc.type: FUNC
@@ -465,6 +576,28 @@ HWTEST_F(SvgDecoderTest, DoGetImageSize001, TestSize.Level3)
     uint32_t ret = svgDecoder->DoGetImageSize(index, size);
     ASSERT_EQ(ret, Media::ERROR);
     GTEST_LOG_(INFO) << "SvgDecoderTest: DoGetImageSize001 end";
+}
+
+/**
+ * @tc.name: DoGetImageSizeTest002
+ * @tc.desc: Verify that DoGetImageSize returns Media::ERROR when the SVG DOM container size is empty.
+ * @tc.type: FUNC
+ */
+HWTEST_F(SvgDecoderTest, DoGetImageSizeTest002, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "SvgDecoderTest: DoGetImageSizeTest002 start";
+    auto svgDecoder = std::make_shared<SvgDecoder>();
+    ASSERT_NE(svgDecoder, nullptr);
+    auto streamPtr = SkStream::MakeFromFile(IMAGE_SVG_SRC.c_str());
+    ASSERT_NE(streamPtr, nullptr);
+    svgDecoder->svgDom_ = SkSVGDOM::MakeFromStream(*streamPtr);
+    ASSERT_NE(svgDecoder->svgDom_, nullptr);
+    svgDecoder->svgDom_->setContainerSize(SkSize::MakeEmpty());
+
+    Size size;
+    uint32_t ret = svgDecoder->DoGetImageSize(0, size);
+    ASSERT_EQ(ret, Media::ERROR);
+    GTEST_LOG_(INFO) << "SvgDecoderTest: DoGetImageSizeTest002 end";
 }
 
 /**

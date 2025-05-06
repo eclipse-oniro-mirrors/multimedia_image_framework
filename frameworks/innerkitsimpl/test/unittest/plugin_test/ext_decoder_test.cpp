@@ -2692,5 +2692,25 @@ HWTEST_F(ExtDecoderTest, HeifDecoderImpl_getTmapInfoTest001, TestSize.Level3)
     GTEST_LOG_(INFO) << "ExtDecoderTest: HeifDecoderImpl_getTmapInfoTest001 end";
 }
 
+/**
+ * @tc.name: IsHeifValidCropTest001
+ * @tc.desc: Verify that IsHeifValidCrop returns false when the crop rectangle contains invalid values.
+ * @tc.type: FUNC
+ */
+HWTEST_F(ExtDecoderTest, IsHeifValidCropTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ExtDecoderTest: IsHeifValidCropTest001 start";
+    #ifdef EXIF_INFO_ENABLE
+    std::shared_ptr<ExtDecoder> extDecoder = std::make_shared<ExtDecoder>();
+    ASSERT_NE(extDecoder, nullptr);
+
+    OHOS::Media::Rect crop{-1, -1, -1, -1};
+    SkImageInfo info;
+    bool isHeifValidCrop = extDecoder->IsHeifValidCrop(crop, info, 0, 0);
+    EXPECT_FALSE(isHeifValidCrop);
+    #endif
+    GTEST_LOG_(INFO) << "ExtDecoderTest: IsHeifValidCropTest001 end";
+}
+
 }
 }
