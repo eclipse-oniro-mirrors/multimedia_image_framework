@@ -69,7 +69,7 @@ protected:
     heif_error Write(HeifStreamWriter &writer) const override;
 
 private:
-    ContentLightLevelInfo lightLevel_;
+    ContentLightLevelInfo lightLevel_{};
 };
 }
 }
