@@ -772,6 +772,46 @@ Image_ErrorCode OH_ImageSourceNative_GetImageProperty(OH_ImageSourceNative *sour
 }
 
 MIDK_EXPORT
+Image_ErrorCode OH_ImageSourceNative_GetImagePropertyWithNull(OH_ImageSourceNative *source, Image_String *key,
+    Image_String *value)
+{
+    if (source == nullptr || key == nullptr || key->data == nullptr || key->size == SIZE_ZERO || value == nullptr) {
+        return IMAGE_SOURCE_INVALID_PARAMETER;
+    }
+
+    std::string keyString(key->data, key->size);
+    if (keyString.empty()) {
+        return IMAGE_SOURCE_INVALID_PARAMETER;
+    }
+
+    std::string val;
+    uint32_t errorCode = source->GetInnerImageSource()->GetImagePropertyString(DEFAULT_INDEX, keyString, val);
+    if (errorCode != IMAGE_SUCCESS || val.empty()) {
+        return IMAGE_SOURCE_INVALID_PARAMETER;
+    }
+
+    if (value->size != SIZE_ZERO && value->size < val.size()) {
+        return IMAGE_SOURCE_INVALID_PARAMETER;
+    }
+
+    size_t allocSize = val.size() + 1;
+    char* buffer = static_cast<char*>(malloc(allocSize));
+    if (buffer == nullptr) {
+        return IMAGE_SOURCE_INVALID_PARAMETER;
+    }
+
+    if (EOK != memcpy_s(buffer, allocSize, val.c_str(), val.size())) {
+        free(buffer);
+        return IMAGE_SOURCE_INVALID_PARAMETER;
+    }
+    buffer[val.size()] = '\0';
+
+    value->data = buffer;
+    value->size = val.size();
+    return IMAGE_SUCCESS;
+}
+
+MIDK_EXPORT
 Image_ErrorCode OH_ImageSourceNative_ModifyImageProperty(OH_ImageSourceNative *source, Image_String *key,
     Image_String *value)
 {
