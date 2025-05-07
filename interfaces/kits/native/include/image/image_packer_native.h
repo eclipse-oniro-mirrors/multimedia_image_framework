@@ -110,17 +110,10 @@ Image_ErrorCode OH_PackingOptions_GetMimeType(OH_PackingOptions *options,
     Image_MimeType *format);
 
 /**
- * @brief Get mime type from PackingOptions with safe string handling.
+ * @brief Get MIME type from OH_PackingOptions. The output format.data is null-terminated.
  *
- * This function returns the mime type string from the PackingOptions structure.
- * The returned string will include a null-terminator (`\0`) and the `size` field
- * will represent the actual string length (excluding the null character).
- *
- * The user must free the memory pointed to by `format->data` after use.
- *
- * @param options The PackingOptions pointer to be queried.
- * @param format Output parameter. The caller should pass in a pointer with `size = 0`.
- *        The function will allocate memory and set `data` and `size` accordingly.
+ * @param options The OH_PackingOptions pointer to be queried.
+ * @param format MimeType set in the OH_PackingOptions.
  * @return Returns function result code.
  *         {@link IMAGE_SUCCESS} if the execution is successful.
  *         {@link IMAGE_PACKER_INVALID_PARAMETER} if options or format is nullptr.

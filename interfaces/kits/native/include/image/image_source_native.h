@@ -542,22 +542,15 @@ Image_ErrorCode OH_ImageSourceNative_GetImageProperty(OH_ImageSourceNative *sour
     Image_String *value);
 
 /**
- * @brief Obtains the value of an image property from an <b>ImageSource</b> object with safe string handling.
+ * @brief Obtains the value of an image property from an <b>ImageSource</b> object.
+ *        The output value.data is null-terminated.
  *
- * This function is a safer alternative to {@link OH_ImageSourceNative_GetImageProperty}.
- * The returned value string will include a null-terminator (`\0`) for safe use as a C string.
- * The `value->size` will indicate the actual string length (excluding the null-terminator).
- *
- * Memory for `value->data` will be allocated internally and must be freed by the caller after use.
- *
- * @param source Indicates a pointer to the ImageSource object.
- * @param key Indicates a pointer to the property key. For details, see {@link Image_String}.
- *            The key should be one of the predefined EXIF constants.
- * @param value Output value associated with the key. The user must ensure `value` is a valid pointer,
- *              and the function will allocate and populate the `data` field accordingly.
- * @return Returns {@link Image_ErrorCode}:
- *         - {@link IMAGE_SUCCESS} if the property is retrieved successfully.
- *         - {@link IMAGE_SOURCE_INVALID_PARAMETER} if the source, key or value is nullptr or invalid.
+ * @param source pointer to ImageSource.
+ * @param key Pointer to the property key.
+ * @param value Pointer to the property value. Output Parameter.
+ * @return Returns One of the following result codes:
+ *         {@link IMAGE_SUCCESS} if the property is retrieved successfully.
+ *         {@link IMAGE_SOURCE_INVALID_PARAMETER} if the source, key or value is nullptr or invalid.
  * @since 19
  */
 Image_ErrorCode OH_ImageSourceNative_GetImagePropertyWithNull(OH_ImageSourceNative *source,

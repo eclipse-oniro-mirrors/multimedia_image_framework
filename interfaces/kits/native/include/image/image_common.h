@@ -272,20 +272,15 @@ Image_ErrorCode OH_PictureMetadata_GetProperty(OH_PictureMetadata *metadata, Ima
 Image_ErrorCode OH_PictureMetadata_SetProperty(OH_PictureMetadata *metadata, Image_String *key, Image_String *value);
 
 /**
- * @brief Safely obtains a property from picture metadata with null-terminated result.
+ * @brief Obtains the property of picture metadata. The output value.data is null-terminated.
  *
- * The value string returned by this API will include a null-terminator (`\0`),
- * and the `value->size` will indicate the actual string length (excluding the null).
- *
- * Memory for `value->data` will be allocated internally, and the user must free it after use.
- *
- * @param metadata The PictureMetadata pointer to be queried.
- * @param key The metadata key to query.
- * @param value Output value for the queried key.
+ * @param metadata The PictureMetadata pointer will be operated.
+ * @param key The property's key.
+ * @param value The property's value.
  * @return Image functions result code:
- *         - {@link IMAGE_SUCCESS} if successful.
- *         - {@link IMAGE_INVALID_PARAMETER} metadata or key or value is nullptr.
- *         - {@link IMAGE_UNSUPPORTED_METADATA} unsupported metadata type, or the metadata type does not match the
+ *         {@link IMAGE_SUCCESS} if successful.
+ *         {@link IMAGE_INVALID_PARAMETER} metadata or key or value is nullptr.
+ *         {@link IMAGE_UNSUPPORTED_METADATA} unsupported metadata type, or the metadata type does not match the
  *         auxiliary picture type.
  * @since 19
  */
