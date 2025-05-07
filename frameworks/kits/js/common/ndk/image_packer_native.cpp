@@ -179,6 +179,36 @@ Image_ErrorCode OH_PackingOptions_GetMimeType(OH_PackingOptions *options,
 }
 
 MIDK_EXPORT
+Image_ErrorCode OH_PackingOptions_GetMimeTypeWithNull(OH_PackingOptions *options,
+    Image_MimeType *format)
+{
+    if (options == nullptr || format == nullptr) {
+        return IMAGE_PACKER_INVALID_PARAMETER;
+    }
+
+    if (format->size != SIZE_ZERO && format->size < options->mimeType.size) {
+        return IMAGE_PACKER_INVALID_PARAMETER;
+    }
+    
+    char* buffer = static_cast<char*>(malloc(options->mimeType.size + 1));
+    if (buffer == nullptr) {
+        return IMAGE_PACKER_INVALID_PARAMETER;
+    }
+
+    if (memcpy_s(buffer, options->mimeType.size + 1, options->mimeType.data, options->mimeType.size) != EOK) {
+        free(buffer);
+        return IMAGE_PACKER_INVALID_PARAMETER;
+    }
+
+    buffer[options->mimeType.size] = '\0';
+
+    format->data = buffer;
+    format->size = options->mimeType.size;
+
+    return IMAGE_SUCCESS;
+}
+
+MIDK_EXPORT
 Image_ErrorCode OH_PackingOptions_SetMimeType(OH_PackingOptions *options,
     Image_MimeType *format)
 {

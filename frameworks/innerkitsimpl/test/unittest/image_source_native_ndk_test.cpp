@@ -2363,5 +2363,46 @@ HWTEST_F(ImagSourceNdk2Test, OH_ImageSourceNative_GetSupportedFormatTest002, Tes
     ret = OH_ImageSourceNative_GetSupportedFormats(nullptr, nullptr);
     EXPECT_EQ(ret, IMAGE_SOURCE_INVALID_PARAMETER);
 }
+
+/**
+ * @tc.name: OH_ImageSourceNative_GetImagePropertyWithNullTest001
+ * @tc.desc: test OH_ImageSourceNative_GetImagePropertyWithNull with null pointer
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImagSourceNdk2Test, OH_ImageSourceNative_GetImagePropertyWithNullTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImagSourceNdk2Test: OH_ImageSourceNative_GetImagePropertyWithNullTest001 start";
+    OH_ImageSourceNative *imageSource = nullptr;
+    Image_String* key = nullptr;
+    Image_String* value = nullptr;
+    Image_ErrorCode ret = OH_ImageSourceNative_GetImagePropertyWithNull(imageSource, key, value);
+    ASSERT_NE(ret, IMAGE_SUCCESS);
+    GTEST_LOG_(INFO) << "ImagSourceNdk2Test: OH_ImageSourceNative_GetImagePropertyWithNullTest001 end";
+}
+
+/**
+ * @tc.name: OH_ImageSourceNative_GetImagePropertyWithNullTest002
+ * @tc.desc: test OH_ImageSourceNative_GetImagePropertyWithNull with right value
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImagSourceNdk2Test, OH_ImageSourceNative_GetImagePropertyWithNullTest002, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImagSourceNdk2Test: OH_ImageSourceNative_GetImagePropertyWithNullTest002 start";
+    OH_ImageSourceNative *imageSource = CreateImageSourceNative(IMAGE_JPEG_PATH);
+    ASSERT_NE(imageSource, nullptr);
+    Image_String key;
+    Image_String value;
+    key.data = const_cast<char*>(OHOS_IMAGE_PROPERTY_IMAGE_WIDTH);
+    key.size = strlen(OHOS_IMAGE_PROPERTY_IMAGE_WIDTH);
+    value.data = nullptr;
+    value.size = 100;
+    Image_ErrorCode ret = OH_ImageSourceNative_GetImagePropertyWithNull(imageSource, &key, &value);
+    ASSERT_EQ(ret, IMAGE_SUCCESS);
+    OH_ImageSourceNative_Release(imageSource);
+    if (ret == IMAGE_SUCCESS) {
+        free(value.data);
+    }
+    GTEST_LOG_(INFO) << "ImagSourceNdk2Test: OH_ImageSourceNative_GetImagePropertyWithNullTest002 end";
+}
 }
 }

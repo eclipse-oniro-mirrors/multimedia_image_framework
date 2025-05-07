@@ -206,6 +206,11 @@ typedef enum {
     IMAGE_PACKER_INVALID_PARAMETER = 7800202,
     /** encode failed */
     IMAGE_ENCODE_FAILED = 7800301,
+    /**
+     * @error Invalid parameter for picture.
+     * @since 19
+     */
+    IMAGE_INVALID_PARAMETER = 7800302,
 } Image_ErrorCode;
 
 /**
@@ -265,6 +270,22 @@ Image_ErrorCode OH_PictureMetadata_GetProperty(OH_PictureMetadata *metadata, Ima
  * @since 13
  */
 Image_ErrorCode OH_PictureMetadata_SetProperty(OH_PictureMetadata *metadata, Image_String *key, Image_String *value);
+
+/**
+ * @brief Obtains the property of picture metadata. The output value.data is null-terminated.
+ *
+ * @param metadata The PictureMetadata pointer will be operated.
+ * @param key The property's key.
+ * @param value The property's value.
+ * @return Image functions result code:
+ *         {@link IMAGE_SUCCESS} if successful.
+ *         {@link IMAGE_INVALID_PARAMETER} metadata or key or value is nullptr.
+ *         {@link IMAGE_UNSUPPORTED_METADATA} unsupported metadata type, or the metadata type does not match the
+ *         auxiliary picture type.
+ * @since 19
+ */
+Image_ErrorCode OH_PictureMetadata_GetPropertyWithNull(OH_PictureMetadata *metadata,
+                                                       Image_String *key, Image_String *value);
 
 /**
  * @brief Releases this PictureMetadata object.
