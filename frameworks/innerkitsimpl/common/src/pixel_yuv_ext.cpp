@@ -161,7 +161,7 @@ void PixelYuvExt::scale(float xAxis, float yAxis, const AntiAliasingOption &opti
     GetImageYUVInfo(yuvDataInfo);
     YuvImageInfo yuvInfo = {PixelYuvUtils::ConvertFormat(imageInfo.pixelFormat),
                             imageInfo.size.width, imageInfo.size.height,
-                            imageInfo.pixelFormat, yuvDataInfo};
+                            imageInfo.pixelFormat, yuvDataInfo, pixelsSize_};
 
     PixelYuvExtUtils::ScaleYuv420(xAxis, yAxis, option, yuvInfo, data_, dst, dstStrides);
     SetPixelsAddr(reinterpret_cast<void *>(dst), m->extend.data, m->data.size, m->GetType(), nullptr);
@@ -190,7 +190,7 @@ void PixelYuvExt::scale(int32_t dstW, int32_t dstH, const AntiAliasingOption &op
     GetImageYUVInfo(yuvDataInfo);
     YuvImageInfo yuvInfo = {PixelYuvUtils::ConvertFormat(imageInfo.pixelFormat),
                             imageInfo.size.width, imageInfo.size.height,
-                            imageInfo.pixelFormat, yuvDataInfo};
+                            imageInfo.pixelFormat, yuvDataInfo, pixelsSize_};
     PixelYuvExtUtils::ScaleYuv420(dstW, dstH, option, yuvInfo, data_, dst, dstStrides);
     SetPixelsAddr(reinterpret_cast<void *>(dst), m->extend.data, m->data.size, m->GetType(), nullptr);
     imageInfo.size.width = dstW;

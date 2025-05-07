@@ -326,13 +326,20 @@ static void ScaleUVPlane(const uint8_t *src, uint8_t*dst, OpenSourceLibyuv::Filt
 }
 
 static bool CopyP010Pixels(
-    uint16_t *src, YUVStrideInfo &srcStrides, uint16_t *dst, YUVStrideInfo &dstStrides, uint32_t yHeight)
+    uint16_t *src, YUVStrideInfo &srcStrides, uint16_t *dst, YUVStrideInfo &dstStrides, YuvCopyInfo &yuvCopyInfo)
 {
     uint16_t* srcY = src + srcStrides.yOffset;
     uint16_t* srcUV = srcY + srcStrides.uvOffset;
     uint16_t* dstY = dst + dstStrides.yOffset;
     uint16_t* dstUV = dstY + dstStrides.uvOffset;
     uint32_t stride = std::min(srcStrides.yStride, dstStrides.yStride);
+    uint32_t uvStride = std::min(srcStrides.uvStride, dstStrides.uvStride);
+    uint32_t yHeight = yuvCopyInfo.dstHeight;
+    if ((srcStrides.yOffset + srcStrides.uvOffset +
+        uvStride * static_cast<uint32_t>(GetUVHeight(yHeight))) * BYTE_PER_PIXEL > yuvCopyInfo.pixelsSize) {
+        IMAGE_LOGE("CopyP010Pixels src buffer size is invalid, pixelsSize:%{public}u", yuvCopyInfo.pixelsSize);
+        return false;
+    }
     for (uint32_t y = 0; y < yHeight; y++) {
         errno_t ret = memcpy_s(dstY, stride * BYTE_PER_PIXEL, srcY, stride * BYTE_PER_PIXEL);
         if (ret != EOK) {
@@ -342,7 +349,6 @@ static bool CopyP010Pixels(
         dstY += dstStrides.yStride;
         srcY += srcStrides.yStride;
     }
-    uint32_t uvStride = std::min(srcStrides.uvStride, dstStrides.uvStride);
     for (uint32_t y = 0; y < static_cast<uint32_t>(GetUVHeight(yHeight)); y++) {
         errno_t ret = memcpy_s(dstUV, uvStride * BYTE_PER_PIXEL, srcUV, uvStride * BYTE_PER_PIXEL);
         if (ret != EOK) {
@@ -369,12 +375,10 @@ static void ScaleP010(YuvPixels yuvPixels, OpenSourceLibyuv::ImageYuvConverter &
         yuvInfo.yuvDataInfo.yOffset, yuvInfo.yuvDataInfo.uvOffset};
     YUVStrideInfo dstStride = {yuvInfo.width, GetUVStride(yuvInfo.width), 0, GetYSize(yuvInfo.width, yuvInfo.height)};
     IMAGE_LOGI("%{public}s, YuvImageInfo:width:%{public}d, height:%{public}d\n"
-        "YUVDataInfo: yWidth:%{public}u, yHeight:%{public}u, yStride:%{public}u, yOffset:%{public}u, "
-        "uvWidth:%{public}u, uvHeight:%{public}u, uvStride:%{public}u, uvOffset:%{public}u",
-        __func__, yuvInfo.width, yuvInfo.height, yuvInfo.yuvDataInfo.yWidth, yuvInfo.yuvDataInfo.yHeight,
-        yuvInfo.yuvDataInfo.uvWidth, yuvInfo.yuvDataInfo.uvHeight, yuvInfo.yuvDataInfo.yStride,
-        yuvInfo.yuvDataInfo.uvStride, yuvInfo.yuvDataInfo.yOffset, yuvInfo.yuvDataInfo.uvOffset);
-    if (!CopyP010Pixels(srcBuffer, srcStrides, srcPixels.get(), dstStride, yuvInfo.yuvDataInfo.yHeight)) {
+        "YUVDataInfo: %{public}s, pixelsSize:%{public}u", __func__, yuvInfo.width,
+        yuvInfo.height, yuvInfo.yuvDataInfo.ToString().c_str(), yuvInfo.pixelsSize);
+    YuvCopyInfo yuvCopyInfo = {yuvInfo.yuvDataInfo.yHeight, yuvInfo.pixelsSize};
+    if (!CopyP010Pixels(srcBuffer, srcStrides, srcPixels.get(), dstStride, yuvCopyInfo)) {
         return;
     }
     uint16_t* srcY = srcPixels.get();
@@ -430,7 +434,9 @@ static void ScaleP010(YuvPixels yuvPixels, OpenSourceLibyuv::ImageYuvConverter &
         return;
     }
     YUVStrideInfo dstPixelStrides = {dstWidth, GetUVStride(dstWidth), 0, GetYSize(dstWidth, dstHeight)};
-    if (!CopyP010Pixels(dstPixelY, dstPixelStrides, dstBuffer, dstStrides, dstHeight)) {
+    yuvCopyInfo.dstHeight = dstHeight;
+    yuvCopyInfo.pixelsSize = GetImageSize(dstWidth, dstHeight) * BYTE_PER_PIXEL;
+    if (!CopyP010Pixels(dstPixelY, dstPixelStrides, dstBuffer, dstStrides, yuvCopyInfo)) {
         return;
     }
 }

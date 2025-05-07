@@ -58,6 +58,7 @@ struct YuvImageInfo {
     int32_t height;
     PixelFormat yuvFormat;
     YUVDataInfo yuvDataInfo;
+    uint32_t pixelsSize = 0;
 };
 
 struct YuvPixelsP010Translate {
