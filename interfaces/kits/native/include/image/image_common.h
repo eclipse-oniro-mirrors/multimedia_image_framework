@@ -289,7 +289,8 @@ Image_ErrorCode OH_PictureMetadata_SetProperty(OH_PictureMetadata *metadata, Ima
  *         auxiliary picture type.
  * @since 19
  */
-Image_ErrorCode OH_PictureMetadata_GetPropertyWithNull(OH_PictureMetadata *metadata, Image_String *key, Image_String *value);
+Image_ErrorCode OH_PictureMetadata_GetPropertyWithNull(OH_PictureMetadata *metadata,
+                                                       Image_String *key, Image_String *value);
 
 /**
  * @brief Releases this PictureMetadata object.

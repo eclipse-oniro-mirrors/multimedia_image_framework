@@ -157,7 +157,7 @@ HWTEST_F(ImageCommonNdkTest, OH_PictureMetadata_GetPropertyWithNullTest001, Test
     GTEST_LOG_(INFO) << "ImagSourceNdk2Test: OH_PictureMetadata_GetPropertyWithNull end";
 }
 
-/** 
+/**
  * @tc.name: OH_PictureMetadata_GetPropertyWithNullTest002
  * @tc.desc: test OH_PictureMetadata_GetPropertyWithNull with right value
  * @tc.type: FUNC

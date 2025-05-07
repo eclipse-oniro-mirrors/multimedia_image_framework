@@ -2389,15 +2389,19 @@ HWTEST_F(ImagSourceNdk2Test, OH_ImageSourceNative_GetImagePropertyWithNullTest00
 {
     GTEST_LOG_(INFO) << "ImagSourceNdk2Test: OH_ImageSourceNative_GetImagePropertyWithNullTest002 start";
     OH_ImageSourceNative *imageSource = CreateImageSourceNative(IMAGE_JPEG_PATH);
-    Image_String* key = nullptr;
-    Image_String* value = nullptr;
-    char keyStr[] = "ImageWidth";
-    key->data = keyStr;
-    key->size = 10;
-    value->data = nullptr;
-    value->size = 0;
-    Image_ErrorCode ret = OH_ImageSourceNative_GetImagePropertyWithNull(imageSource, key, value);
+    ASSERT_NE(imageSource, nullptr);
+    Image_String key;
+    Image_String value;
+    key.data = const_cast<char*>(OHOS_IMAGE_PROPERTY_IMAGE_WIDTH);
+    key.size = strlen(OHOS_IMAGE_PROPERTY_IMAGE_WIDTH);
+    value.data = nullptr;
+    value.size = 100;
+    Image_ErrorCode ret = OH_ImageSourceNative_GetImagePropertyWithNull(imageSource, &key, &value);
     ASSERT_EQ(ret, IMAGE_SUCCESS);
+    OH_ImageSourceNative_Release(imageSource);
+    if (ret == IMAGE_SUCCESS) {
+        free(value.data);
+    }
     GTEST_LOG_(INFO) << "ImagSourceNdk2Test: OH_ImageSourceNative_GetImagePropertyWithNullTest002 end";
 }
 }
