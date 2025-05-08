@@ -67,6 +67,8 @@ struct OH_DecodingOptions {
     int32_t desiredDynamicRange = IMAGE_DYNAMIC_RANGE_SDR;
     int32_t cropAndScaleStrategy;
     int32_t desiredColorSpace = 0;
+    struct Image_Region cropRegion;
+    bool isCropRegionSet = false;
 };
 
 struct OH_ImageSource_Info {
@@ -181,7 +183,7 @@ Image_ErrorCode OH_DecodingOptions_SetPixelFormat(OH_DecodingOptions *options,
     return IMAGE_SUCCESS;
 }
 
-static inline bool IsCropStrategyVaild(int32_t strategy)
+static inline bool IsCropStrategyValid(int32_t strategy)
 {
     return strategy >= static_cast<int32_t>(CropAndScaleStrategy::SCALE_FIRST) &&
         strategy <= static_cast<int32_t>(CropAndScaleStrategy::CROP_FIRST);
@@ -194,7 +196,7 @@ Image_ErrorCode OH_DecodingOptions_GetCropAndScaleStrategy(OH_DecodingOptions *o
         IMAGE_LOGE("options or cropAndScaleStrategy is nullptr");
         return IMAGE_BAD_PARAMETER;
     }
-    if (!IsCropStrategyVaild(options->cropAndScaleStrategy)) {
+    if (!IsCropStrategyValid(options->cropAndScaleStrategy)) {
         IMAGE_LOGE("SetCropAndScaleStrategy was not called or the method call failed");
         return IMAGE_BAD_PARAMETER;
     }
@@ -208,7 +210,7 @@ Image_ErrorCode OH_DecodingOptions_SetCropAndScaleStrategy(OH_DecodingOptions *o
     if (options == nullptr) {
         return IMAGE_BAD_PARAMETER;
     }
-    if (!IsCropStrategyVaild(cropAndScaleStrategy)) {
+    if (!IsCropStrategyValid(cropAndScaleStrategy)) {
         IMAGE_LOGE("cropAndScaleStrategy:%{public}d is invalid", cropAndScaleStrategy);
         return IMAGE_BAD_PARAMETER;
     }
@@ -305,6 +307,31 @@ Image_ErrorCode OH_DecodingOptions_SetDesiredRegion(OH_DecodingOptions *options,
     options->desiredRegion.y = desiredRegion->y;
     options->desiredRegion.width = desiredRegion->width;
     options->desiredRegion.height = desiredRegion->height;
+    return IMAGE_SUCCESS;
+}
+
+Image_ErrorCode OH_DecodingOptions_GetCropRegion(OH_DecodingOptions *options, Image_Region *cropRegion)
+{
+    if (options == nullptr || cropRegion == nullptr) {
+        return IMAGE_SOURCE_INVALID_PARAMETER;
+    }
+    cropRegion->x = options->cropRegion.x;
+    cropRegion->y = options->cropRegion.y;
+    cropRegion->width = options->cropRegion.width;
+    cropRegion->height = options->cropRegion.height;
+    return IMAGE_SUCCESS;
+}
+
+Image_ErrorCode OH_DecodingOptions_SetCropRegion(OH_DecodingOptions *options, Image_Region *cropRegion)
+{
+    if (options == nullptr || cropRegion == nullptr) {
+        return IMAGE_SOURCE_INVALID_PARAMETER;
+    }
+    options->cropRegion.x = cropRegion->x;
+    options->cropRegion.y = cropRegion->y;
+    options->cropRegion.width = cropRegion->width;
+    options->cropRegion.height = cropRegion->height;
+    options->isCropRegionSet = true;
     return IMAGE_SUCCESS;
 }
 
@@ -453,7 +480,12 @@ static void ParseDecodingOps(DecodeOptions &decOps, struct OH_DecodingOptions *o
     decOps.rotateNewDegrees = ops->rotate;
     decOps.desiredSize.width = static_cast<int32_t>(ops->desiredSize.width);
     decOps.desiredSize.height = static_cast<int32_t>(ops->desiredSize.height);
-    if (IsCropStrategyVaild(ops->cropAndScaleStrategy)) {
+    if (ops->isCropRegionSet) {
+        decOps.CropRect.left = static_cast<int32_t>(ops->cropRegion.x);
+        decOps.CropRect.top = static_cast<int32_t>(ops->cropRegion.y);
+        decOps.CropRect.width = static_cast<int32_t>(ops->cropRegion.width);
+        decOps.CropRect.height = static_cast<int32_t>(ops->cropRegion.height);
+    } else if (IsCropStrategyValid(ops->cropAndScaleStrategy)) {
         decOps.CropRect.left = static_cast<int32_t>(ops->desiredRegion.x);
         decOps.CropRect.top = static_cast<int32_t>(ops->desiredRegion.y);
         decOps.CropRect.width = static_cast<int32_t>(ops->desiredRegion.width);
@@ -481,7 +513,7 @@ static void ParseDecodingOps(DecodeOptions &decOps, struct OH_DecodingOptions *o
         default:
             decOps.desiredPixelFormat = PixelFormat::UNKNOWN;
     }
-    if (IsCropStrategyVaild(ops->cropAndScaleStrategy)) {
+    if (IsCropStrategyValid(ops->cropAndScaleStrategy)) {
         decOps.cropAndScaleStrategy = static_cast<OHOS::Media::CropAndScaleStrategy>(ops->cropAndScaleStrategy);
     }
     OH_NativeColorSpaceManager* colorSpaceNative =
