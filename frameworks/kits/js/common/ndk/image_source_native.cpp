@@ -410,10 +410,13 @@ MIDK_EXPORT
 Image_ErrorCode OH_ImageSourceInfo_GetMimeType(OH_ImageSource_Info *info, Image_MimeType *mimeType)
 {
     if (info == nullptr || mimeType == nullptr) {
-        return IMAGE_BAD_PARAMETER;
+        return IMAGE_SOURCE_INVALID_PARAMETER;
     }
     if (info->mimeType.data == nullptr || info->mimeType.size == 0) {
-        return IMAGE_UNKNOWN_MIME_TYPE;
+        std::string unknownStr = "unknown";
+        mimeType->data = strdup(unknownStr.c_str());
+        mimeType->size = unknownStr.size();
+        return IMAGE_SUCCESS;
     }
     *mimeType = info->mimeType;
     return IMAGE_SUCCESS;

@@ -1676,14 +1676,15 @@ HWTEST_F(ImagSourceNdk2Test, OH_ImageSourceInfo_GetMimeType001, TestSize.Level3)
 
     Image_MimeType mimeType1;
     Image_MimeType *mimeType2 = nullptr;
+    std::string unknownStr = "unknown";
     ret = OH_ImageSourceInfo_GetMimeType(info1, &mimeType1);
-    EXPECT_EQ(ret, IMAGE_UNKNOWN_MIME_TYPE);
+    EXPECT_EQ(mimeType1.data, unknownStr);
     ret = OH_ImageSourceInfo_GetMimeType(info2, &mimeType1);
-    EXPECT_EQ(ret, IMAGE_BAD_PARAMETER);
+    EXPECT_EQ(ret, IMAGE_SOURCE_INVALID_PARAMETER);
     ret = OH_ImageSourceInfo_GetMimeType(info1, mimeType2);
-    EXPECT_EQ(ret, IMAGE_BAD_PARAMETER);
+    EXPECT_EQ(ret, IMAGE_SOURCE_INVALID_PARAMETER);
     ret = OH_ImageSourceInfo_GetMimeType(info2, mimeType2);
-    EXPECT_EQ(ret, IMAGE_BAD_PARAMETER);
+    EXPECT_EQ(ret, IMAGE_SOURCE_INVALID_PARAMETER);
 
     ret = OH_ImageSourceInfo_Release(info1);
     EXPECT_EQ(ret, IMAGE_SUCCESS);
@@ -1701,14 +1702,12 @@ HWTEST_F(ImagSourceNdk2Test, OH_ImageSourceInfo_GetMimeType002, TestSize.Level3)
     OH_ImageSource_Info *info = nullptr;
     Image_ErrorCode ret = OH_ImageSourceInfo_Create(&info);
     ASSERT_EQ(ret, IMAGE_SUCCESS);
-
+    std::string unknownStr = "unknown";
     Image_MimeType mimeType;
     ret = OH_ImageSourceInfo_GetMimeType(info, &mimeType);
-    EXPECT_EQ(ret, IMAGE_UNKNOWN_MIME_TYPE);
-
-    info->mimeType.size = TestLength;
+    EXPECT_EQ(mimeType.data, unknownStr);
     ret = OH_ImageSourceInfo_GetMimeType(info, &mimeType);
-    EXPECT_EQ(ret, IMAGE_UNKNOWN_MIME_TYPE);
+    EXPECT_EQ(mimeType.size, unknownStr.size());
 
     ret = OH_ImageSourceInfo_Release(info);
     EXPECT_EQ(ret, IMAGE_SUCCESS);
@@ -1744,10 +1743,12 @@ HWTEST_F(ImagSourceNdk2Test, OH_ImageSourceInfo_GetMimeType003, TestSize.Level3)
     EXPECT_EQ(ret, IMAGE_SUCCESS);
     ASSERT_NE(mimeType.data, nullptr);
     EXPECT_EQ(strcmp(mimeType.data, IMAGE_JPEG_FORMAT.c_str()), 0);
-
+    std::string unknownStr = "unknown";
     info->mimeType.size = 0;
     ret = OH_ImageSourceInfo_GetMimeType(info, &mimeType);
-    EXPECT_EQ(ret, IMAGE_UNKNOWN_MIME_TYPE);
+    EXPECT_EQ(ret, IMAGE_SUCCESS);
+    EXPECT_EQ(mimeType.data, unknownStr);
+    EXPECT_EQ(mimeType.size, unknownStr.size());
 
     ret = OH_ImageSourceNative_Release(source);
     EXPECT_EQ(ret, IMAGE_SUCCESS);
