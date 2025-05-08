@@ -22,6 +22,8 @@ using namespace OHOS::Media;
 
 namespace OHOS {
 namespace Media {
+static const size_t MOCKOFFSET = 4;
+static const size_t MOCKSIZE = 4;
 class DataBufTest : public testing::Test {
 public:
     DataBufTest() {}
@@ -191,6 +193,48 @@ HWTEST_F(DataBufTest, CDataTest001, TestSize.Level3)
     const byte *ret = dataBuf.CData(offset);
     ASSERT_EQ(ret, nullptr);
     GTEST_LOG_(INFO) << "DataBufTest: CDataTest001 end";
+}
+
+/**
+ * @tc.name: ReadUInt8Test002
+ * @tc.desc: Verify that DataBuf call ReadUInt8 when offset larger than pData_.size().
+ * @tc.type: FUNC
+ */
+HWTEST_F(DataBufTest, ReadUInt8Test002, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "DataBufTest: ReadUInt8Test002 start";
+    DataBuf dataBuf;
+    auto ret = dataBuf.ReadUInt8(MOCKOFFSET);
+    ASSERT_EQ(ret, 0);
+    GTEST_LOG_(INFO) << "DataBufTest: ReadUInt8Test002 end";
+}
+
+/**
+ * @tc.name: ReadUInt32Test002
+ * @tc.desc: Verify that DataBuf call ReadUInt32 when pData_.size() less than UINT32_SIZE.
+ * @tc.type: FUNC
+ */
+HWTEST_F(DataBufTest, ReadUInt32Test002, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "DataBufTest: ReadUInt32Test002 start";
+    DataBuf dataBuf;
+    auto ret = dataBuf.ReadUInt32(MOCKOFFSET, ByteOrder::invalidByteOrder);
+    ASSERT_EQ(ret, 0);
+    GTEST_LOG_(INFO) << "DataBufTest: ReadUInt32Test002 end";
+}
+
+/**
+ * @tc.name: CmpBytesTest002
+ * @tc.desc: Verify that DataBuf call CmpBytes when offset larger than pData_.size().
+ * @tc.type: FUNC
+ */
+HWTEST_F(DataBufTest, CmpBytesTest002, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "DataBufTest: CmpBytesTest002 start";
+    DataBuf dataBuf;
+    auto ret = dataBuf.CmpBytes(MOCKOFFSET, nullptr, MOCKSIZE);
+    ASSERT_EQ(ret, -1);
+    GTEST_LOG_(INFO) << "DataBufTest: CmpBytesTest002 end";
 }
 } // namespace Media
 } // namespace OHOS

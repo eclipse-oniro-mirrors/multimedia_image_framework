@@ -43,6 +43,10 @@ namespace Multimedia {
 static constexpr uint32_t SUCCESS = 0;
 static constexpr uint16_t UINT16_ONE = 1;
 static const std::string OVER_UINT16_VALUE_STRING = "70000";
+static constexpr uint32_t MOCKRANGESIZE = 2;
+static constexpr uint32_t MOCKSIZE = 1;
+static constexpr uint32_t LOWERRANGE = 1;
+static constexpr uint32_t UPPERRANGE = 3;
 
 static void StopFunction() {}
 static bool StartFunction()
@@ -1950,6 +1954,173 @@ HWTEST_F(PluginsManagerSrcFrameWorkTest, DoCreateObjectTest011, TestSize.Level3)
     auto res = implClass.DoCreateObject(pluginSptr);
     EXPECT_EQ(res, nullptr);
     GTEST_LOG_(INFO) << "PluginsManagerSrcFrameWorkTest: DoCreateObjectTest011 end";
+}
+
+/**
+ * @tc.name: SetCapabilityTest002
+ * @tc.desc: Verify that SetCapability when caps_ is not empty.
+ * @tc.type: FUNC
+ */
+HWTEST_F(PluginsManagerSrcFrameWorkTest, SetCapabilityTest002, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PluginsManagerSrcFrameWorkTest: SetCapabilityTest002 start";
+    std::map<std::string, AttrData> mockCaps;
+    mockCaps["mockKey"] = AttrData{std::string("mockValue")};
+    Capability mockCapability{mockCaps};
+    std::array<char, 4> mockArr{'m', 'o', 'c', 'k'};
+    nlohmann::json mockJson{mockArr};
+    auto ret = mockCapability.SetCapability(mockJson);
+    ASSERT_EQ(ret, SUCCESS);
+    GTEST_LOG_(INFO) << "PluginsManagerSrcFrameWorkTest: SetCapabilityTest002 end";
+}
+
+/**
+ * @tc.name: IsCompatibleTest001
+ * @tc.desc: Verify that IsCompatible when the src does not contain a member of des.
+ * @tc.type: FUNC
+ */
+HWTEST_F(PluginsManagerSrcFrameWorkTest, IsCompatibleTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PluginsManagerSrcFrameWorkTest: IsCompatibleTest001 start";
+    std::map<std::string, AttrData> mockCaps, mockMap;
+    mockCaps["mockKey"] = AttrData{std::string("mockValue")};
+    mockMap["mapKey"] = AttrData{std::string("mapValue")};
+    Capability mockCapability{mockCaps};
+    auto ret = mockCapability.IsCompatible(mockMap);
+    ASSERT_EQ(ret, false);
+    GTEST_LOG_(INFO) << "PluginsManagerSrcFrameWorkTest: IsCompatibleTest001 end";
+}
+
+/**
+ * @tc.name: GetCapabilityTest001
+ * @tc.desc: Verify that GetCapability when input parameter is correct.
+ * @tc.type: FUNC
+ */
+HWTEST_F(PluginsManagerSrcFrameWorkTest, GetCapabilityTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PluginsManagerSrcFrameWorkTest: GetCapabilityTest001 start";
+    std::map<std::string, AttrData> mockCaps;
+    mockCaps["mockKey"] = AttrData{std::string("mockValue")};
+    Capability mockCapability{mockCaps};
+    auto ret = mockCapability.GetCapability(std::string("mockKey"));
+    ASSERT_NE(ret, nullptr);
+    GTEST_LOG_(INFO) << "PluginsManagerSrcFrameWorkTest: GetCapabilityTest001 end";
+}
+
+/**
+ * @tc.name: AnalyzeAttrDataTest001
+ * @tc.desc: Verify that AnalyzeAttrData when type is bool.
+ * @tc.type: FUNC
+ */
+HWTEST_F(PluginsManagerSrcFrameWorkTest, AnalyzeAttrDataTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PluginsManagerSrcFrameWorkTest: AnalyzeAttrDataTest001 start";
+    AttrData mockAttrData;
+    Capability mockCapability;
+    nlohmann::json mockJson;
+    mockJson["type"] = "bool";
+    mockJson["value"] = "true";
+    auto ret = mockCapability.AnalyzeAttrData(mockJson, mockAttrData);
+    ASSERT_EQ(ret, SUCCESS);
+    mockJson["value"] = "false";
+    ret = mockCapability.AnalyzeAttrData(mockJson, mockAttrData);
+    ASSERT_EQ(ret, SUCCESS);
+    mockJson["value"] = "mock";
+    ret = mockCapability.AnalyzeAttrData(mockJson, mockAttrData);
+    ASSERT_EQ(ret, ERR_INVALID_PARAMETER);
+    GTEST_LOG_(INFO) << "PluginsManagerSrcFrameWorkTest: AnalyzeAttrDataTest001 end";
+}
+
+/**
+ * @tc.name: AnalyzeAttrDataTest002
+ * @tc.desc: Verify that AnalyzeAttrData when type is mock.
+ * @tc.type: FUNC
+ */
+HWTEST_F(PluginsManagerSrcFrameWorkTest, AnalyzeAttrDataTest002, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PluginsManagerSrcFrameWorkTest: AnalyzeAttrDataTest002 start";
+    AttrData mockAttrData;
+    Capability mockCapability;
+    nlohmann::json mockJson;
+    mockJson["type"] = "mock";
+    auto ret = mockCapability.AnalyzeAttrData(mockJson, mockAttrData);
+    ASSERT_EQ(ret, ERR_INVALID_PARAMETER);
+    GTEST_LOG_(INFO) << "PluginsManagerSrcFrameWorkTest: AnalyzeAttrDataTest002 end";
+}
+
+/**
+ * @tc.name: AnalyzeAttrDataTest003
+ * @tc.desc: Verify that AnalyzeAttrData when type is uint32.
+ * @tc.type: FUNC
+ */
+HWTEST_F(PluginsManagerSrcFrameWorkTest, AnalyzeAttrDataTest003, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PluginsManagerSrcFrameWorkTest: AnalyzeAttrDataTest003 start";
+    AttrData mockAttrData;
+    Capability mockCapability;
+    nlohmann::json mockJson;
+    mockJson["type"] = "uint32";
+    mockJson["value"] = uint32_t(0);
+    auto ret = mockCapability.AnalyzeAttrData(mockJson, mockAttrData);
+    ASSERT_EQ(ret, SUCCESS);
+    GTEST_LOG_(INFO) << "PluginsManagerSrcFrameWorkTest: AnalyzeAttrDataTest003 end";
+}
+
+/**
+ * @tc.name: AnalyzeAttrDataTest004
+ * @tc.desc: Verify that AnalyzeAttrData when type is uint32Set.
+ * @tc.type: FUNC
+ */
+HWTEST_F(PluginsManagerSrcFrameWorkTest, AnalyzeAttrDataTest004, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PluginsManagerSrcFrameWorkTest: AnalyzeAttrDataTest004 start";
+    AttrData mockAttrData;
+    Capability mockCapability;
+    nlohmann::json mockJson;
+    mockJson["type"] = "uint32Set";
+    std::array<uint32_t, MOCKSIZE> mockArr{0};
+    mockJson["value"] = mockArr;
+    auto ret = mockCapability.AnalyzeAttrData(mockJson, mockAttrData);
+    ASSERT_EQ(ret, SUCCESS);
+    GTEST_LOG_(INFO) << "PluginsManagerSrcFrameWorkTest: AnalyzeAttrDataTest004 end";
+}
+
+/**
+ * @tc.name: AnalyzeAttrDataTest005
+ * @tc.desc: Verify that AnalyzeAttrData when type is stringSet.
+ * @tc.type: FUNC
+ */
+HWTEST_F(PluginsManagerSrcFrameWorkTest, AnalyzeAttrDataTest005, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PluginsManagerSrcFrameWorkTest: AnalyzeAttrDataTest005 start";
+    AttrData mockAttrData;
+    Capability mockCapability;
+    nlohmann::json mockJson;
+    mockJson["type"] = "stringSet";
+    std::array<std::string, MOCKSIZE> mockArr{"mock"};
+    mockJson["value"] = mockArr;
+    auto ret = mockCapability.AnalyzeAttrData(mockJson, mockAttrData);
+    ASSERT_EQ(ret, SUCCESS);
+    GTEST_LOG_(INFO) << "PluginsManagerSrcFrameWorkTest: AnalyzeAttrDataTest005 end";
+}
+
+/**
+ * @tc.name: AnalyzeAttrDataTest006
+ * @tc.desc: Verify that AnalyzeAttrData when type is uint32Range.
+ * @tc.type: FUNC
+ */
+HWTEST_F(PluginsManagerSrcFrameWorkTest, AnalyzeAttrDataTest006, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PluginsManagerSrcFrameWorkTest: AnalyzeAttrDataTest006 start";
+    AttrData mockAttrData;
+    Capability mockCapability;
+    nlohmann::json mockJson;
+    mockJson["type"] = "uint32Range";
+    std::array<uint32_t, MOCKRANGESIZE> mockArr{LOWERRANGE, UPPERRANGE};
+    mockJson["value"] = mockArr;
+    auto ret = mockCapability.AnalyzeAttrData(mockJson, mockAttrData);
+    ASSERT_EQ(ret, SUCCESS);
+    GTEST_LOG_(INFO) << "PluginsManagerSrcFrameWorkTest: AnalyzeAttrDataTest006 end";
 }
 }
 }

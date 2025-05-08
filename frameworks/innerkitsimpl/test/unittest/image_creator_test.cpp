@@ -475,5 +475,37 @@ HWTEST_F(ImageCreatorTest, OnBufferAvailable004, TestSize.Level3)
     ASSERT_EQ(available->cnt_, NUM_1);
     GTEST_LOG_(INFO) << "ImageCreatorTest: OnBufferAvailable004 end";
 }
+
+/**
+ * @tc.name: SaveSenderBufferAsImage004
+ * @tc.desc: Verify that ImageCreator call SaveSenderBufferAsImage when buffer is not nullptr.
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageCreatorTest, SaveSenderBufferAsImage004, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImageCreatorTest: SaveSenderBufferAsImage004 start";
+#ifdef HEIF_HW_DECODE_ENABLE
+    std::shared_ptr<ImageCreator> creator = ImageCreator::CreateImageCreator(NUM_1, NUM_1, NUM_1, NUM_1);
+    OHOS::sptr<OHOS::SurfaceBuffer> buffer = SurfaceBuffer::Create();
+    BufferRequestConfig requestConfig = {
+        .width = NUM_1,
+        .height = NUM_1,
+        .strideAlignment = 0x8,
+        .format = GRAPHIC_PIXEL_FMT_RGBA_8888,
+        .usage = BUFFER_USAGE_CPU_READ | BUFFER_USAGE_CPU_WRITE | BUFFER_USAGE_MEM_DMA | BUFFER_USAGE_MEM_MMZ_CACHE,
+        .timeout = 0,
+    };
+    GSError ret = buffer->Alloc(requestConfig);
+    ASSERT_EQ(ret, GSERROR_OK);
+    InitializationOptions initializationOpts;
+    initializationOpts.size.width = NUM_1;
+    initializationOpts.size.height = NUM_1;
+    initializationOpts.pixelFormat = OHOS::Media::PixelFormat::RGBA_8888;
+    int32_t savesend = creator->SaveSenderBufferAsImage(buffer, initializationOpts);
+    ASSERT_EQ(savesend, SUCCESS);
+#endif
+    GTEST_LOG_(INFO) << "ImageCreatorTest: SaveSenderBufferAsImage004 end";
+}
+
 } // namespace Multimedia
 } // namespace OHOS

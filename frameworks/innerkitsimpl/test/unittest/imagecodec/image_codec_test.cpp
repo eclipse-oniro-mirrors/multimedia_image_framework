@@ -28,7 +28,7 @@ namespace Multimedia {
 #define SIZE_WIDTH 2
 #define SIZE_HEIGHT 3
 #define STRIDE_ALIGNMENT 8
-
+constexpr static int MOCKFD = -1;
 class MockImageCodecCallback : public ImageCodecCallback {
 public:
     ~MockImageCodecCallback() {}
@@ -645,6 +645,21 @@ HWTEST_F(ImageCodecTest, DumpLinearBufferTest002, TestSize.Level1)
     info.isInput = false;
     info.DumpLinearBuffer(prefix);
     GTEST_LOG_(INFO) << "ImageCodecTest: DumpLinearBufferTest002 end";
+}
+
+/**
+ * @tc.name: CreateDmaBufferTest001
+ * @tc.desc: Verify that CreateDmaBuffer when fd less than 0.
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageCodecTest, CreateDmaBufferTest001, TestSize.Level1)
+{
+    GTEST_LOG_(INFO) << "ImageCodecTest: CreateDmaBufferTest001 start";
+    auto mockBuffer = ImageCodecBuffer::CreateDmaBuffer(MOCKFD, 0, 0);
+    ASSERT_EQ(mockBuffer, nullptr);
+    mockBuffer = ImageCodecBuffer::CreateDmaBuffer(0, 0, 0);
+    ASSERT_EQ(mockBuffer, nullptr);
+    GTEST_LOG_(INFO) << "ImageCodecTest: CreateDmaBufferTest001 end";
 }
 
 } // namespace Media
