@@ -44,6 +44,7 @@ ImageReceiver::~ImageReceiver()
     receiverProducerSurface_ = nullptr;
     iraContext_ = nullptr;
     surfaceBufferAvaliableListener_ = nullptr;
+    surfaceBufferAvaliableArriveListener_ = nullptr;
     bufferProcessor_ = nullptr;
 }
 
@@ -165,6 +166,9 @@ void ImageReceiverSurfaceListener ::OnBufferAvailable()
     auto ir = ir_.lock();
     if (ir && ir->surfaceBufferAvaliableListener_ != nullptr) {
         ir->surfaceBufferAvaliableListener_->OnSurfaceBufferAvaliable();
+    }
+    if (ir && ir->surfaceBufferAvaliableArriveListener_ != nullptr) {
+        ir->surfaceBufferAvaliableArriveListener_->OnSurfaceBufferAvaliable();
     }
 }
 

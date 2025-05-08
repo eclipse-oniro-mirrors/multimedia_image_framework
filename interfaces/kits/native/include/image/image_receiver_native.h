@@ -76,6 +76,13 @@ typedef struct OH_ImageReceiverOptions OH_ImageReceiverOptions;
 typedef void (*OH_ImageReceiver_OnCallback)(OH_ImageReceiverNative *receiver);
 
 /**
+ * @brief brief Callback for ImageArrive event.
+ *
+ * @since 20
+ */
+typedef void (*OH_ImageReceiver_ImageArriveCallback)(OH_ImageReceiverNative *receiver, void *userData);
+
+/**
  * @brief Creates an <b>OH_ImageReceiverOptions</b> object at the application layer.
  *
  * @param options Indicates the pointer to the <b>OH_ImageReceiverOptions</b> object obtained.
@@ -258,6 +265,32 @@ Image_ErrorCode OH_ImageReceiverNative_GetCapacity(OH_ImageReceiverNative* recei
  * @since 12
  */
 Image_ErrorCode OH_ImageReceiverNative_Release(OH_ImageReceiverNative* receiver);
+
+/**
+ * Registers an {@link OH_ImageReceiver_ImageArriveCallback} callback.
+ *
+ * @param receiver The OH_ImageReceiverNative object that handle the callback.
+ * @param callback A OH_ImageReceiver_ImageArriveCallback to register.
+ * @return Returns {@link Image_ErrorCode} IMAGE_SUCCESS - if the operation is successful.
+ * returns {@link Image_ErrorCode} IMAGE_RECEIVER_INVALID_PARAMETER - if receiver or callback is nullptr.
+ * @since 20
+*/
+Image_ErrorCode OH_ImageReceiverNative_OnImageArrive(OH_ImageReceiverNative *receiver,
+    OH_ImageReceiver_ImageArriveCallback callback, void *userData);
+
+/**
+ * Unregisters an {@link OH_ImageReceiver_ImageArriveCallback} callback.
+ *
+ * @param receiver The OH_ImageReceiverNative object that handle the callback.
+ * @param callback A OH_ImageReceiver_ImageArriveCallback to unregister. If callback is nullptr,
+ * all OH_ImageReceiver_ImageArriveCallback of receiver will be removed.
+ * @return Returns {@link Image_ErrorCode} IMAGE_SUCCESS - if the operation is successful.
+ * returns {@link Image_ErrorCode} IMAGE_RECEIVER_INVALID_PARAMETER - if receiver is nullptr,
+ * or callback is not registered.
+ * @since 20
+*/
+Image_ErrorCode OH_ImageReceiverNative_OffImageArrive(OH_ImageReceiverNative *receiver,
+    OH_ImageReceiver_ImageArriveCallback callback);
 
 #ifdef __cplusplus
 };
