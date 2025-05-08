@@ -139,5 +139,110 @@ HWTEST_F(VpeUtilsTest, DetailEnhancerDestoryTest001, TestSize.Level3)
     res = vpeUtils->DetailEnhancerCreate(nullptr, &vppErrOk);
     EXPECT_EQ(res, VPE_ERROR_FAILED);
 }
+
+/**
+ * @tc.name: ColorSpaceConverterImageProcessTest001
+ * @tc.desc: Verify that VpeUtils call ColorSpaceConverterImageProcess when dlHandler_ is nullptr.
+ * @tc.type: FUNC
+ */
+HWTEST_F(VpeUtilsTest, ColorSpaceConverterImageProcessTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "VpeUtilsTest: ColorSpaceConverterImageProcessTest001 start";
+    VpeUtils mockVpeUtils;
+    ASSERT_NE(mockVpeUtils.dlHandler_, nullptr);
+    void* storeP = mockVpeUtils.dlHandler_;
+    mockVpeUtils.dlHandler_ = nullptr;
+    sptr<SurfaceBuffer> src = SurfaceBuffer::Create();
+    sptr<SurfaceBuffer> des = SurfaceBuffer::Create();
+    auto ret = mockVpeUtils.ColorSpaceConverterImageProcess(src, des);
+    ASSERT_EQ(ret, VPE_ERROR_FAILED);
+    mockVpeUtils.dlHandler_ = storeP;
+    GTEST_LOG_(INFO) << "VpeUtilsTest: ColorSpaceConverterImageProcessTest001 end";
+}
+
+/**
+ * @tc.name: SetSbColorSpaceTypeTest001
+ * @tc.desc: Verify that VpeUtils call SetSbColorSpaceType when buffer is nullptr.
+ * @tc.type: FUNC
+ */
+HWTEST_F(VpeUtilsTest, SetSbColorSpaceTypeTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "VpeUtilsTest: SetSbColorSpaceTypeTest001 start";
+    VpeUtils mockVpeUtils;
+    sptr<SurfaceBuffer> mockBuffer;
+    auto ret = mockVpeUtils.SetSbColorSpaceType(mockBuffer, HDI::Display::Graphic::Common::V1_0::CM_SRGB_FULL);
+    ASSERT_EQ(ret, false);
+    GTEST_LOG_(INFO) << "VpeUtilsTest: SetSbColorSpaceTypeTest001 end";
+}
+
+/**
+ * @tc.name: SetSbMetadataTypeTest001
+ * @tc.desc: Verify that VpeUtils call SetSbMetadataType when buffer is nullptr.
+ * @tc.type: FUNC
+ */
+HWTEST_F(VpeUtilsTest, SetSbMetadataTypeTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "VpeUtilsTest: SetSbMetadataTypeTest001 start";
+    VpeUtils mockVpeUtils;
+    sptr<SurfaceBuffer> mockBuffer;
+    auto ret = mockVpeUtils.SetSbMetadataType(mockBuffer,
+        HDI::Display::Graphic::Common::V1_0::CM_HDR_Metadata_Type::CM_METADATA_NONE);
+    ASSERT_EQ(ret, false);
+    GTEST_LOG_(INFO) << "VpeUtilsTest: SetSbMetadataTypeTest001 end";
+}
+
+/**
+ * @tc.name: DetailEnhancerDestoryTest002
+ * @tc.desc: Verify that VpeUtils call DetailEnhancerDestory when condition is not correct.
+ * @tc.type: FUNC
+ */
+HWTEST_F(VpeUtilsTest, DetailEnhancerDestoryTest002, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "VpeUtilsTest: DetailEnhancerDestoryTest002 start";
+    VpeUtils mockVpeUtils;
+    sptr<SurfaceBuffer> mockBuffer;
+    int32_t mockInstanceId{VPE_ERROR_FAILED};
+    auto ret = mockVpeUtils.DetailEnhancerDestory(nullptr, &mockInstanceId);
+    ASSERT_EQ(ret, VPE_ERROR_FAILED);
+    mockInstanceId = 0;
+    ret = mockVpeUtils.DetailEnhancerDestory(nullptr, &mockInstanceId);
+    ASSERT_EQ(ret, VPE_ERROR_FAILED);
+    GTEST_LOG_(INFO) << "VpeUtilsTest: DetailEnhancerDestoryTest002 end";
+}
+
+/**
+ * @tc.name: DetailEnhancerImageProcessTest001
+ * @tc.desc: Verify that VpeUtils call DetailEnhancerImageProcess when dlHandle_ is nullptr.
+ * @tc.type: FUNC
+ */
+HWTEST_F(VpeUtilsTest, DetailEnhancerImageProcessTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "VpeUtilsTest: DetailEnhancerImageProcessTest001 start";
+    VpeUtils mockVpeUtils;
+    ASSERT_NE(mockVpeUtils.dlHandler_, nullptr);
+    void* storeP = mockVpeUtils.dlHandler_;
+    mockVpeUtils.dlHandler_ = nullptr;
+    sptr<SurfaceBuffer> src = SurfaceBuffer::Create();
+    sptr<SurfaceBuffer> des = SurfaceBuffer::Create();
+    auto ret = mockVpeUtils.DetailEnhancerImageProcess(src, des, 0);
+    ASSERT_EQ(ret, VPE_ERROR_FAILED);
+    mockVpeUtils.dlHandler_ = storeP;
+    GTEST_LOG_(INFO) << "VpeUtilsTest: DetailEnhancerImageProcessTest001 end";
+}
+
+/**
+ * @tc.name: SetSbColorSpaceDefaultTest001
+ * @tc.desc: Verify that VpeUtils call SetSbColorSpaceDefault when buffer is nullptr.
+ * @tc.type: FUNC
+ */
+HWTEST_F(VpeUtilsTest, SetSbColorSpaceDefaultTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "VpeUtilsTest: SetSbColorSpaceDefaultTest001 start";
+    VpeUtils mockVpeUtils;
+    sptr<SurfaceBuffer> mockBuffer;
+    auto ret = mockVpeUtils.SetSbColorSpaceDefault(mockBuffer);
+    ASSERT_EQ(ret, false);
+    GTEST_LOG_(INFO) << "VpeUtilsTest: SetSbColorSpaceDefaultTest001 end";
+}
 }
 }
