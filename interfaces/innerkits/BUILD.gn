@@ -244,6 +244,7 @@ if (use_clang_android) {
         "astc-encoder:astc_encoder_shared",
         "c_utils:utils",
         "drivers_interface_display:libdisplay_commontype_proxy_1.0",
+        "drivers_interface_display:libdisplay_composer_proxy_1.2",
         "ffmpeg:libohosffmpeg",
         "ffrt:libffrt",
         "hilog:libhilog",
@@ -255,7 +256,6 @@ if (use_clang_android) {
         "zlib:libz",
       ]
       public_external_deps = [
-        "drivers_peripheral_display:hdi_gralloc_client",
         "graphic_2d:color_manager",
         "graphic_surface:surface",
       ]
@@ -455,7 +455,7 @@ ohos_static_library("image_static") {
     external_deps = [
       "c_utils:utils",
       "drivers_interface_display:libdisplay_commontype_proxy_1.0",
-      "drivers_peripheral_display:hdi_gralloc_client",
+      "drivers_interface_display:libdisplay_composer_proxy_1.2",
       "ffmpeg:libohosffmpeg",
       "graphic_2d:color_manager",
       "graphic_surface:surface",

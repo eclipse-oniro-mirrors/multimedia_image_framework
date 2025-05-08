@@ -15,6 +15,7 @@
 
 #include "image_creator.h"
 
+#include "display/composer/v1_2/display_composer_type.h"
 #include "image_creator_buffer_processor.h"
 #include "image_creator_manager.h"
 #include "image_log.h"
@@ -252,7 +253,7 @@ OHOS::sptr<OHOS::SurfaceBuffer> ImageCreator::DequeueImage()
     BufferRequestConfig config;
     config.width = iraContext_->GetWidth();
     config.height = iraContext_->GetHeight();
-    config.format = PIXEL_FMT_RGBA_8888;
+    config.format = OHOS::HDI::Display::Composer::V1_2::PixelFormat::PIXEL_FMT_RGBA_8888;
     config.strideAlignment = 0x8;
     config.usage = BUFFER_USAGE_CPU_READ | BUFFER_USAGE_CPU_WRITE | BUFFER_USAGE_MEM_DMA;
     config.timeout = 0;

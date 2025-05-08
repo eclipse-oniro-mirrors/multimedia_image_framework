@@ -15,6 +15,7 @@
  
 #include <gtest/gtest.h>
 #define private public
+#include <fcntl.h>
 #include <fstream>
 #include "image_receiver.h"
 #include "image_packer.h"
