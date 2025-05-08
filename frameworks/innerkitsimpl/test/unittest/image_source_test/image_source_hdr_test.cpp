@@ -17,6 +17,7 @@
 #include <gtest/gtest.h>
 #include <fstream>
 #include <fcntl.h>
+#include <dlfcn.h>
 #include "abs_image_decoder.h"
 #include "hilog/log.h"
 #include "image_source.h"
@@ -32,6 +33,7 @@
 #include "ext_stream.h"
 #include "jpeg_mpf_parser.h"
 #include "image_packer.h"
+#include "jpeglib.h"
 
 using namespace testing::ext;
 using namespace OHOS::Media;
@@ -69,6 +71,44 @@ public:
     ImageSourceHdrTest() {}
     ~ImageSourceHdrTest() {}
 };
+
+typedef bool (*GetCuvaGainMapMetadataT)(jpeg_marker_struct* marker, std::vector<uint8_t>& metadata);
+
+static uint32_t GetCuvaGainMapMetadataTest(jpeg_marker_struct* marker, std::vector<uint8_t>& metadata)
+{
+    auto handle = dlopen("libimage_cuva_parser.z.so", RTLD_LAZY);
+    if (!handle) {
+        return ERROR;
+    }
+    GetCuvaGainMapMetadataT getMetadata = (GetCuvaGainMapMetadataT)dlsym(handle, "GetCuvaGainMapMetadata");
+    if (!getMetadata) {
+        dlclose(handle);
+        return ERROR;
+    }
+    if (getMetadata(marker, metadata)) {
+        dlclose(handle);
+        return SUCCESS;
+    }
+    dlclose(handle);
+    return ERR_IMAGE_DATA_ABNORMAL;
+}
+
+/**
+ * @tc.name: GetCuvaGainMapMetadataTest
+ * @tc.desc: test the GetCuvaGainMapMetadata
+ * @tc.type: when jpegMarker.marker != 0xE5, GetCuvaGainMapMetadata will fail,
+            return ERR_IMAGE_DATA_ABNORMAL
+ */
+HWTEST_F(ImageSourceHdrTest, GetCuvaGainMapMetadataTest, TestSize.Level1)
+{
+    GTEST_LOG_(INFO) << "ImageSourceHdrTest: GetCuvaGainMapMetadataTest start";
+    jpeg_marker_struct jpegMarker;
+    jpegMarker.marker = JPEG_MARKER_APP2;
+    std::vector<uint8_t> metadata;
+    uint32_t ret = GetCuvaGainMapMetadataTest(&jpegMarker, metadata);
+    ASSERT_EQ(ret, ERR_IMAGE_DATA_ABNORMAL);
+    GTEST_LOG_(INFO) << "ImageSourceHdrTest: GetCuvaGainMapMetadataTest end";
+}
 
 /**
  * @tc.name: CheckImageSourceHdr001
