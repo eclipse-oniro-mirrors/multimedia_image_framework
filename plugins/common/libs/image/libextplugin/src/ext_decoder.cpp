@@ -1964,6 +1964,7 @@ OHOS::ColorManager::ColorSpace ExtDecoder::GetSrcColorSpace()
                 profile->cicp.transfer_characteristics, profile->cicp.matrix_coefficients,
                 profile->cicp.full_range_flag);
             if (cName != ColorManager::NONE) {
+                IMAGE_LOGI("%{public}s profile has CICP, cName: %{public}u", __func__, static_cast<uint32_t>(cName));
                 return ColorManager::ColorSpace(cName);
             }
         }
@@ -1977,6 +1978,7 @@ OHOS::ColorManager::ColorSpace ExtDecoder::GetSrcColorSpace()
     // use info_ to make a custom graphic colorspace.
     if (name == OHOS::ColorManager::ColorSpaceName::CUSTOM ||
         name == OHOS::ColorManager::ColorSpaceName::NONE) {
+        IMAGE_LOGI("%{public}s Use info_ to make a custom graphic colorspace.", __func__);
         return OHOS::ColorManager::ColorSpace(skColorSpace, name);
     }
     return OHOS::ColorManager::ColorSpace(name);
