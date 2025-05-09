@@ -2393,8 +2393,8 @@ HWTEST_F(ImagSourceNdk2Test, OH_ImageSourceNative_GetImagePropertyWithNullTest00
     ASSERT_NE(imageSource, nullptr);
     Image_String key;
     Image_String value;
-    key.data = const_cast<char*>(OHOS_IMAGE_PROPERTY_IMAGE_WIDTH);
-    key.size = strlen(OHOS_IMAGE_PROPERTY_IMAGE_WIDTH);
+    key.data = const_cast<char*>(OHOS_IMAGE_PROPERTY_EXIF_VERSION);
+    key.size = strlen(OHOS_IMAGE_PROPERTY_EXIF_VERSION);
     value.data = nullptr;
     value.size = 100;
     Image_ErrorCode ret = OH_ImageSourceNative_GetImagePropertyWithNull(imageSource, &key, &value);
