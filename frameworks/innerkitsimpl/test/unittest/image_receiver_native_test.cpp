@@ -79,6 +79,14 @@ OH_ImageReceiverNative* ImageReceiverNativeTest::CreateReceiver()
     return pReceiver;
 }
 
+static void OH_ImageReceiver_ImageArriveCallback_Test(OH_ImageReceiverNative *receiver, void *userData) 
+{
+    if (userData != nullptr) {
+    int32_t *number = static_cast<int32_t *>(userData);
+    *number = 1;
+    }
+}
+
 /**
  * @tc.name: OH_ImageReceiverOptions_CreateTest
  * @tc.desc: OH_ImageReceiverOptions_Create
@@ -779,5 +787,83 @@ HWTEST_F(ImageReceiverNativeTest, OH_ImageReceiverNative_GetCapacityTest001, Tes
     delete receiver;
     GTEST_LOG_(INFO) << "ImageReceiverNativeTest: OH_ImageReceiverNative_GetCapacityTest001 end";
 }
+
+/*
+* @tc.name: OH_ImageReceiverNative_OnImageArriveTest001
+* @tc.desc: erify that OH_ImageReceiverNative_OnImageArrive correctly registers the callback, handles duplicate
+*           registrations, and triggers the callback when a surface buffer becomes available, updating the user data.
+* @tc.type: FUNC
+*/
+
+HWTEST_F(ImageReceiverNativeTest, OH_ImageReceiverNative_OnImageArriveTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImageReceiverNativeTest: OH_ImageReceiverNative_OnImageArriveTest001 start";
+    OH_ImageReceiverNative* pReceiver = ImageReceiverNativeTest::CreateReceiver();
+    ASSERT_NE(pReceiver, nullptr);
+    int32_t number = 0;
+    void* userData = &number;
+    Image_ErrorCode nRst = OH_ImageReceiverNative_OnImageArrive(pReceiver,
+    OH_ImageReceiver_ImageArriveCallback_Test, userData);
+    ASSERT_EQ(nRst, IMAGE_SUCCESS);
+    nRst = OH_ImageReceiverNative_OnImageArrive(pReceiver, OH_ImageReceiver_ImageArriveCallback_Test, userData);
+    ASSERT_EQ(nRst, IMAGE_RECEIVER_INVALID_PARAMETER);
+
+    ASSERT_NE(pReceiver->ptrImgRcv, nullptr);
+    std::shared_ptr<ImageReceiverArriveListener> receiverArriveListener =
+        std::make_shared<ImageReceiverArriveListener>(pReceiver);
+    receiverArriveListener->RegisterCallback(OH_ImageReceiver_ImageArriveCallback_Test, userData);
+    pReceiver->ptrImgRcv->surfaceBufferAvaliableListener_ = receiverArriveListener;
+    ASSERT_NE(pReceiver->ptrImgRcv->surfaceBufferAvaliableListener_, nullptr);
+
+    pReceiver->ptrImgRcv->surfaceBufferAvaliableListener_->OnSurfaceBufferAvaliable();
+    EXPECT_EQ(number, 1);
+    std::shared_ptr<OH_ImageReceiverNative> ptrReceiver(pReceiver, OH_ImageReceiverNative_Release);
+    GTEST_LOG_(INFO) << "ImageReceiverNativeTest: OH_ImageReceiverNative_OnImageArriveTest001 end";
+}
+
+/**
+* @tc.name: OH_ImageReceiverNative_OnImageArriveTest002
+* @tc.desc: Verify that OH_ImageReceiverNative_OnImageArrive returns IMAGE_RECEIVER_INVALID_PARAMETER when the receiver
+*           is null, the callback is null, or the receiver's internal pointer is null.
+* @tc.type: FUNC
+*/
+HWTEST_F(ImageReceiverNativeTest, OH_ImageReceiverNative_OnImageArriveTest002, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImageReceiverNativeTest: OH_ImageReceiverNative_OnImageArriveTest002 start";
+    OH_ImageReceiverNative* receiver = ImageReceiverNativeTest::CreateReceiver();
+    receiver->ptrImgRcv = nullptr;
+    Image_ErrorCode ret;
+    ret = OH_ImageReceiverNative_OnImageArrive(nullptr, OH_ImageReceiver_ImageArriveCallback_Test, nullptr);
+    ASSERT_EQ(ret, IMAGE_RECEIVER_INVALID_PARAMETER);
+    ret = OH_ImageReceiverNative_OnImageArrive(receiver, OH_ImageReceiver_ImageArriveCallback_Test, nullptr);
+    ASSERT_EQ(ret, IMAGE_RECEIVER_INVALID_PARAMETER);
+    ret = OH_ImageReceiverNative_OnImageArrive(receiver, nullptr, nullptr);
+    ASSERT_EQ(ret, IMAGE_RECEIVER_INVALID_PARAMETER);
+    std::shared_ptr<OH_ImageReceiverNative> ptrReceiver(receiver, OH_ImageReceiverNative_Release);
+    GTEST_LOG_(INFO) << "ImageReceiverNativeTest: OH_ImageReceiverNative_OnTest002 end";
+}
+
+/**
+* @tc.name: OH_ImageReceiverNative_OffImageArriveTest001
+* @tc.desc: Verify that OH_ImageReceiverNative_OffImageArrive correctly handles invalid parameters, including null
+*           receiver, null callback, and receiver with a null internal pointer, and returns appropriate error codes.
+* @tc.type: FUNC
+*/
+HWTEST_F(ImageReceiverNativeTest, OH_ImageReceiverNative_OffImageArriveTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImageReceiverNativeTest: OH_ImageReceiverNative_OffImageArriveTest001 start";
+    Image_ErrorCode nRst = OH_ImageReceiverNative_OffImageArrive(nullptr, OH_ImageReceiver_ImageArriveCallback_Test);
+    ASSERT_EQ(nRst, IMAGE_RECEIVER_INVALID_PARAMETER); 
+    OH_ImageReceiverNative* pReceiver = ImageReceiverNativeTest::CreateReceiver();
+    ASSERT_NE(pReceiver, nullptr);
+    nRst = OH_ImageReceiverNative_OffImageArrive(pReceiver, nullptr);
+    ASSERT_EQ(nRst, IMAGE_SUCCESS); 
+    pReceiver->ptrImgRcv = nullptr;
+    nRst = OH_ImageReceiverNative_OffImageArrive(pReceiver, OH_ImageReceiver_ImageArriveCallback_Test);
+    ASSERT_EQ(nRst, IMAGE_RECEIVER_INVALID_PARAMETER); 
+    std::shared_ptr<OH_ImageReceiverNative> ptrReceiver(pReceiver, OH_ImageReceiverNative_Release);
+    GTEST_LOG_(INFO) << "ImageReceiverNativeTest: OH_ImageReceiverNative_OffImageArriveTest001 end";
+}
+
 } // namespace Media
 } // namespace OHOS
