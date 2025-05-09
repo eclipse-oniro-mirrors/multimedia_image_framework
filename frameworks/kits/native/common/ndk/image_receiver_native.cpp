@@ -365,6 +365,56 @@ Image_ErrorCode OH_ImageReceiverNative_Release(OH_ImageReceiverNative* receiver)
     return IMAGE_SUCCESS;
 }
 
+MIDK_EXPORT
+Image_ErrorCode OH_ImageReceiverNative_OnImageArrive(OH_ImageReceiverNative* receiver,
+    OH_ImageReceiver_ImageArriveCallback callback, void* userdata)
+{
+    if (nullptr == receiver || nullptr == callback) {
+        IMAGE_LOGE("OH_ImageReceiverNative_OnImageArrive: Invalid parameter");
+        return IMAGE_RECEIVER_INVALID_PARAMETER;
+    }
+    if (nullptr == receiver->ptrImgRcv) {
+        IMAGE_LOGE("Bad parameter: receiver data empty.");
+        return IMAGE_RECEIVER_INVALID_PARAMETER;
+    }
+    if (receiver->ptrImgRcv->surfaceBufferAvaliableArriveListener_ == nullptr) {
+        receiver->ptrImgRcv->surfaceBufferAvaliableArriveListener_ =
+            std::make_shared<OHOS::Media::ImageReceiverArriveListener>(receiver);
+    }
+    bool ret = receiver->ptrImgRcv->surfaceBufferAvaliableArriveListener_->RegisterCallback(callback, userdata);
+    if (!ret) {
+        IMAGE_LOGE("callback has registered.");
+        return IMAGE_RECEIVER_INVALID_PARAMETER;
+    } 
+    return IMAGE_SUCCESS;
+}
+
+Image_ErrorCode OH_ImageReceiverNative_OffImageArrive(OH_ImageReceiverNative *receiver,
+    OH_ImageReceiver_ImageArriveCallback callback)
+{
+    if (nullptr == receiver) {
+        IMAGE_LOGE("Invalid parameter: receiver=null.");
+        return IMAGE_RECEIVER_INVALID_PARAMETER;
+    }
+    if (nullptr == receiver->ptrImgRcv) {
+        IMAGE_LOGE("Bad parameter: receiver data empty.");
+        return IMAGE_RECEIVER_INVALID_PARAMETER;
+    }
+    if (nullptr == callback) {
+        receiver->ptrImgRcv->surfaceBufferAvaliableArriveListener_.reset();
+        return IMAGE_SUCCESS;
+    }
+    if (receiver->ptrImgRcv->surfaceBufferAvaliableArriveListener_ == nullptr) {
+        IMAGE_LOGE("listener is nullptr. not registered.");
+        return IMAGE_RECEIVER_INVALID_PARAMETER;
+    }
+    if (!receiver->ptrImgRcv->surfaceBufferAvaliableArriveListener_->UnregisterCallback(callback)) {
+        IMAGE_LOGE("callback is not registered.");
+        return IMAGE_RECEIVER_INVALID_PARAMETER;
+    }
+    return IMAGE_SUCCESS;
+}
+
 #ifdef __cplusplus
 };
 #endif

@@ -27,6 +27,7 @@
 #include "media_errors.h"
 #include "pixel_map.h"
 #include "image_receiver_context.h"
+#include "image/image_receiver_native.h"
 #include "native_image.h"
 #include "surface_utils.h"
 
@@ -40,6 +41,74 @@ public:
     virtual ~SurfaceBufferAvaliableListener()= default;
     virtual void OnSurfaceBufferAvaliable() = 0;
 };
+
+class ImageReceiverArriveListener : public SurfaceBufferAvaliableListener {
+public:
+    explicit ImageReceiverArriveListener(OH_ImageReceiverNative* receiver) : receiver_(receiver) {}
+
+    ~ImageReceiverArriveListener() override
+    {
+        std::lock_guard<std::mutex> lock(mutex_);
+        callbacks_.clear();
+    }
+
+    bool HasCallback(OH_ImageReceiver_ImageArriveCallback callback) {
+        std::lock_guard<std::mutex> lock(mutex_);
+        return std::any_of(callbacks_.begin(), callbacks_.end(),
+                           [callback](const CallbackData &cbData) { return cbData.callback == callback; });
+    }
+
+    bool RegisterCallback(OH_ImageReceiver_ImageArriveCallback callback, void* userdata)
+    {
+        if (callback == nullptr) {
+            return false;
+        }
+        if (HasCallback(callback)) {
+            return false;
+        }
+        std::lock_guard<std::mutex> lock(mutex_);
+        callbacks_.emplace_back(callback, userdata);
+        return true;
+    }
+
+    bool UnregisterCallback(OH_ImageReceiver_ImageArriveCallback callback)
+    {
+        if (callback == nullptr) {
+            return false;
+        }
+        std::lock_guard<std::mutex> lock(mutex_);
+        auto it = std::remove_if(callbacks_.begin(), callbacks_.end(),
+            [callback](const CallbackData &cbData) { return cbData.callback == callback; });
+        if (it != callbacks_.end()) {
+            callbacks_.erase(it, callbacks_.end());
+            return true;
+        }
+        return false;
+    }
+
+    void OnSurfaceBufferAvaliable() __attribute__((no_sanitize("cfi"))) override
+    {
+        std::lock_guard<std::mutex> lock(mutex_);
+        for (const auto& cbData : callbacks_) {
+            if (cbData.callback != nullptr) {
+                cbData.callback(receiver_, cbData.data);
+            }
+        }
+    }
+
+private:
+    struct CallbackData {
+        OH_ImageReceiver_ImageArriveCallback callback;
+        void* data;
+
+        CallbackData(OH_ImageReceiver_ImageArriveCallback cb, void* d) : callback(cb), data(d) {}
+    };
+
+    OH_ImageReceiverNative* receiver_ = nullptr;
+    std::vector<CallbackData> callbacks_;
+    mutable std::mutex mutex_;
+};
+
 class ImageReceiver {
 public:
     std::shared_ptr<ImageReceiverContext> iraContext_ = nullptr;
@@ -47,6 +116,7 @@ public:
     sptr<Surface> receiverProducerSurface_ = nullptr;
     std::mutex imageReceiverMutex_;
     std::shared_ptr<SurfaceBufferAvaliableListener> surfaceBufferAvaliableListener_ = nullptr;
+    std::shared_ptr<ImageReceiverArriveListener> surfaceBufferAvaliableArriveListener_ = nullptr;
     ImageReceiver() {}
     ~ImageReceiver();
     static inline int32_t pipeFd[2] = {};
