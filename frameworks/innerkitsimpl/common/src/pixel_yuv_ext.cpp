@@ -155,6 +155,12 @@ void PixelYuvExt::scale(float xAxis, float yAxis, const AntiAliasingOption &opti
         IMAGE_LOGE("scale CreateMemory failed");
         return;
     }
+    int64_t dstBufferSizeOverflow = static_cast<int64_t>(dstW) * static_cast<int64_t>(dstH);
+    int64_t maxDstBufferSize = static_cast<int64_t>(INT32_MAX) / ImageUtils::GetPixelBytes(imageInfo.pixelFormat);
+    if (dstBufferSizeOverflow > maxDstBufferSize) {
+        IMAGE_LOGE("xAxis = %{public}.2f, yAxis = %{public}.2f, scale target size too large", xAxis, yAxis);
+        return;
+    }
 
     uint8_t *dst = reinterpret_cast<uint8_t *>(m->data.data);
     YUVDataInfo yuvDataInfo;
