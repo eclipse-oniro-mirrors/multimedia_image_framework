@@ -101,7 +101,6 @@ constexpr uint8_t BGRA_BYTES = 4;
 constexpr uint8_t RGBA_F16_BYTES = 8;
 constexpr uint8_t PER_PIXEL_LEN = 1;
 constexpr uint32_t MAX_READ_COUNT = 2048;
-
 constexpr uint8_t FILL_NUMBER = 3;
 constexpr uint8_t ALIGN_NUMBER = 4;
 
@@ -384,7 +383,7 @@ static void SetYUVDataInfoToPixelMap(unique_ptr<PixelMap> &dstPixelMap)
 }
 
 static int AllocPixelMapMemory(std::unique_ptr<AbsMemory> &dstMemory, int32_t &dstRowStride,
-    const ImageInfo &dstImageInfo, bool useDMA)
+    const ImageInfo &dstImageInfo, const InitializationOptions &opts)
 {
     int64_t rowDataSize = ImageUtils::GetRowDataSizeByPixelFormat(dstImageInfo.size.width, dstImageInfo.pixelFormat);
     if (rowDataSize <= 0) {
@@ -403,8 +402,10 @@ static int AllocPixelMapMemory(std::unique_ptr<AbsMemory> &dstMemory, int32_t &d
 
     MemoryData memoryData = {nullptr, static_cast<size_t>(bufferSize), "Create PixelMap", dstImageInfo.size,
         dstImageInfo.pixelFormat};
-    dstMemory = MemoryManager::CreateMemory(
-        ImageUtils::GetPixelMapAllocatorType(dstImageInfo.size, dstImageInfo.pixelFormat, useDMA), memoryData);
+    AllocatorType allocType = opts.allocatorType == AllocatorType::DEFAULT ?
+        ImageUtils::GetPixelMapAllocatorType(dstImageInfo.size, dstImageInfo.pixelFormat, opts.useDMA) :
+        opts.allocatorType;
+    dstMemory = MemoryManager::CreateMemory(allocType, memoryData);
     if (dstMemory == nullptr) {
         IMAGE_LOGE("[PixelMap]Create: allocate memory failed");
         return IMAGE_RESULT_MALLOC_ABNORMAL;
@@ -433,7 +434,6 @@ unique_ptr<PixelMap> PixelMap::Create(const uint32_t *colors, uint32_t colorLeng
         errorCode = IMAGE_RESULT_BAD_PARAMETER;
         return nullptr;
     }
-
     unique_ptr<PixelMap> dstPixelMap;
     if (!ChoosePixelmap(dstPixelMap, opts.pixelFormat, errorCode)) {
         return nullptr;
@@ -456,7 +456,7 @@ unique_ptr<PixelMap> PixelMap::Create(const uint32_t *colors, uint32_t colorLeng
 
     std::unique_ptr<AbsMemory> dstMemory = nullptr;
     int32_t dstRowStride = 0;
-    errorCode = AllocPixelMapMemory(dstMemory, dstRowStride, dstImageInfo, opts.useDMA);
+    errorCode = AllocPixelMapMemory(dstMemory, dstRowStride, dstImageInfo, opts);
     if (errorCode != IMAGE_RESULT_SUCCESS) {
         return nullptr;
     }
@@ -583,6 +583,12 @@ void *PixelMap::AllocSharedMemory(const uint64_t bufferSize, int &fd, uint32_t u
 bool PixelMap::CheckParams(const uint32_t *colors, uint32_t colorLength, int32_t offset, int32_t width,
     const InitializationOptions &opts)
 {
+    if (opts.allocatorType == AllocatorType::DMA_ALLOC) {
+        InitializationOptions opt = opts;
+        if (!ImageUtils::SetInitializationOptionDmaMem(opt)) {
+            return false;
+        }
+    }
     if (!ImageUtils::PixelMapCreateCheckFormat(opts.srcPixelFormat) ||
         !ImageUtils::PixelMapCreateCheckFormat(opts.pixelFormat)) {
         IMAGE_LOGE("[PixelMap] Check format failed. src format: %{public}d, dst format: %{public}d",
@@ -692,7 +698,7 @@ unique_ptr<PixelMap> PixelMap::Create(const InitializationOptions &opts)
 
     std::unique_ptr<AbsMemory> dstMemory = nullptr;
     int32_t dstRowStride = 0;
-    int errorCode = AllocPixelMapMemory(dstMemory, dstRowStride, dstImageInfo, opts.useDMA);
+    int errorCode = AllocPixelMapMemory(dstMemory, dstRowStride, dstImageInfo, opts);
     if (errorCode != IMAGE_RESULT_SUCCESS) {
         return nullptr;
     }

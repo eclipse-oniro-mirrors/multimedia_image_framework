@@ -30,6 +30,7 @@ const std::string IMAGE_ENCODE_FORMAT = "encodeFormat";
 constexpr uint32_t MALLOC_MAX_LENTH = 0x40000000;
 constexpr int32_t APIVERSION_13 = 13;
 class PixelMap;
+struct InitializationOptions;
 
 class ImageUtils {
 public:
@@ -65,6 +66,9 @@ public:
     static uint64_t GetNowTimeMilliSeconds();
     static uint64_t GetNowTimeMicroSeconds();
     static std::string GetCurrentProcessName();
+    static bool SetInitializationOptionAutoMem(InitializationOptions &option);
+    static bool SetInitializationOptionDmaMem(InitializationOptions &option);
+    static bool SetInitializationOptionAllocatorType(InitializationOptions &option, int32_t allocatorType);
     // BytesToXXX and xxxToBytes function will modify the offset value.
     static uint16_t BytesToUint16(uint8_t* bytes, uint32_t& offset, uint32_t size, bool isBigEndian = true);
     static uint32_t BytesToUint32(uint8_t* bytes, uint32_t& offset, uint32_t size, bool isBigEndian = true);

@@ -32,6 +32,7 @@ static constexpr int32_t PIXEL_MAP_RGB888_BYTE = 3;
 static constexpr int32_t PIXEL_MAP_ARGB8888_BYTE = 4;
 constexpr int32_t PIXEL_MAP_BIG_TEST_WIDTH = 4 * 1024;
 constexpr int32_t PIXEL_MAP_BIG_TEST_HEIGHT = 3 * 100;
+constexpr int32_t SIZE_HEIGHT = 512;
 
 class ImagePixelMapTest : public testing::Test {
 public:
@@ -1409,6 +1410,87 @@ HWTEST_F(ImagePixelMapTest, ImagePixelMap044, TestSize.Level3)
     pixelMap.GetImageInfo(info1);
     EXPECT_EQ(info1.encodedFormat.empty(), true);
     GTEST_LOG_(INFO) << "ImagePixelMapTest: ImagePixelMap044 getEncodedFormat end";
+}
+
+std::unique_ptr<PixelMap> CreateColorWithDma(int32_t size, OHOS::Media::PixelFormat format,
+    AllocatorType allocatorType)
+{
+    const uint32_t dataLength = size * size * 4;
+    uint32_t* data = new uint32_t[dataLength];
+    for (uint32_t i = 0; i < dataLength; i++) {
+        data[i] = 0xFFFF0000;
+    }
+    InitializationOptions opts;
+    opts.pixelFormat = format;
+    opts.alphaType = AlphaType::IMAGE_ALPHA_TYPE_OPAQUE;
+    opts.size.width = size;
+    opts.size.height = size;
+    opts.allocatorType = allocatorType;
+    std::unique_ptr<PixelMap> pixelMap = PixelMap::Create(data, dataLength, opts);
+    return pixelMap;
+}
+
+/**
+* @tc.name: ImagePixelMap045
+* @tc.desc: create test
+* @tc.type: FUNC
+* @tc.require: AR000FTAMO
+*/
+HWTEST_F(ImagePixelMapTest, ImagePixelMap045, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImagePixelMapTest: ImagePixelMap045 getEncodedFormat start";
+    const int maxFormat = 4;
+    for (int i = 0; i <= maxFormat; i++) {
+        std::unique_ptr<PixelMap> pixelmap = CreateColorWithDma(PIXEL_MAP_BIG_TEST_HEIGHT,
+            OHOS::Media::PixelFormat(i), AllocatorType::DEFAULT);
+    }
+    for (int i = 0; i <= maxFormat; i++) {
+        std::unique_ptr<PixelMap> pixelmap = CreateColorWithDma(PIXEL_MAP_BIG_TEST_HEIGHT,
+            OHOS::Media::PixelFormat(i), AllocatorType::HEAP_ALLOC);
+    }
+    for (int i = 0; i <= maxFormat; i++) {
+        std::unique_ptr<PixelMap> pixelmap = CreateColorWithDma(PIXEL_MAP_BIG_TEST_HEIGHT,
+            OHOS::Media::PixelFormat(i), AllocatorType::SHARE_MEM_ALLOC);
+    }
+    GTEST_LOG_(INFO) << "ImagePixelMapTest: ImagePixelMap045 getEncodedFormat end";
+}
+
+std::unique_ptr<PixelMap> CreateWithDma(int32_t size, OHOS::Media::PixelFormat format,
+    AllocatorType allocatorType)
+{
+    InitializationOptions opts;
+    opts.pixelFormat = format;
+    opts.alphaType = AlphaType::IMAGE_ALPHA_TYPE_OPAQUE;
+    opts.size.width = size;
+    opts.size.height = size;
+    opts.allocatorType = allocatorType;
+    std::unique_ptr<PixelMap> pixelMap = PixelMap::Create(opts);
+    return pixelMap;
+}
+
+/**
+* @tc.name: ImagePixelMap046
+* @tc.desc: create test
+* @tc.type: FUNC
+* @tc.require: AR000FTAMO
+*/
+HWTEST_F(ImagePixelMapTest, ImagePixelMap046, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImagePixelMapTest: ImagePixelMap046 getEncodedFormat start";
+    const int maxFormat = 4;
+    for (int i = 0; i <= maxFormat; i++) {
+        std::unique_ptr<PixelMap> pixelmap = CreateWithDma(SIZE_HEIGHT,
+            OHOS::Media::PixelFormat(i), AllocatorType::DEFAULT);
+    }
+    for (int i = 0; i <= maxFormat; i++) {
+        std::unique_ptr<PixelMap> pixelmap = CreateWithDma(SIZE_HEIGHT,
+            OHOS::Media::PixelFormat(i), AllocatorType::HEAP_ALLOC);
+    }
+    for (int i = 0; i <= maxFormat; i++) {
+        std::unique_ptr<PixelMap> pixelmap = CreateWithDma(SIZE_HEIGHT,
+            OHOS::Media::PixelFormat(i), AllocatorType::SHARE_MEM_ALLOC);
+    }
+    GTEST_LOG_(INFO) << "ImagePixelMapTest: ImagePixelMap046 getEncodedFormat end";
 }
 
 std::unique_ptr<PixelMap> CreatePixelMapCommon(int32_t width, int32_t height)
