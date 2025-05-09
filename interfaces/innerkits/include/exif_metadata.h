@@ -74,6 +74,7 @@ private:
     void FindRationalRanges(ExifContent *content,
         std::vector<std::pair<uint32_t, uint32_t>> &ranges, int index);
     void FindRanges(const ExifTag &tag, std::vector<std::pair<uint32_t, uint32_t>> &ranges);
+    int GetUserMakerNote(std::string& value) const;
     ExifData *exifData_;
 };
 } // namespace Media

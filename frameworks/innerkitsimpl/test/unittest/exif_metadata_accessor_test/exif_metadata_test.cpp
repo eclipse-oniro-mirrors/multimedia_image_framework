@@ -15,6 +15,7 @@
 
 #include <gtest/gtest.h>
 #include <memory>
+#define private public
 #include "libexif/exif-tag.h"
 #include "media_errors.h"
 #include "tiff_parser.h"
@@ -31,6 +32,8 @@ static const std::string IMAGE_INPUT_JPEG_PATH = "/data/local/tmp/image/test_met
 static const std::string IMAGE_INPUT_JPEG_BLANKEXIF_PATH = "/data/local/tmp/image/test_exif_blank.jpg";
 static const std::string IMAGE_INPUT_JPEG_HW_PATH = "/data/local/tmp/image/test_hwkey.jpg";
 static const std::string IMAGE_INPUT_JPEG_RM_ENTRY_PATH = "/data/local/tmp/image/test_entrys.jpg";
+static const char HUAWEI_HEADER[] = { 'H', 'U', 'A', 'W', 'E', 'I', '\0', '\0'};
+static const std::string MAKER_NOTE_TAG = "MakerNote";
 
 class ExifMetadataTest : public testing::Test {
 public:
@@ -1776,5 +1779,70 @@ HWTEST_F(ExifMetadataTest, ExifExtend64k, TestSize.Level3)
     }
 }
 
+/**
+ * @tc.name: SetMakerNoteValueTest001
+ * @tc.desc: Verify that ExifMetadata call SetMakerNoteValue when Head is HUAWEI_HEADER and duplicate calls.
+ * @tc.type: FUNC
+ */
+HWTEST_F(ExifMetadataTest, SetMakerNoteValueTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ExifMetadataTest: SetMakerNoteValueTest001 start";
+    auto exifData = exif_data_new_from_file(IMAGE_INPUT_JPEG_PATH.c_str());
+    ASSERT_NE(exifData, nullptr);
+    ExifMetadata mockExifMetadata{exifData};
+    ASSERT_NE(mockExifMetadata.exifData_, nullptr);
+    std::string value = std::string{HUAWEI_HEADER} + "MOCKVALUE";
+    auto ret = mockExifMetadata.SetValue(MAKER_NOTE_TAG, value);
+    ASSERT_EQ(ret, true);
+
+    ret = mockExifMetadata.SetValue(MAKER_NOTE_TAG, value);
+    ASSERT_EQ(ret, true);
+    GTEST_LOG_(INFO) << "ExifMetadataTest: SetMakerNoteValueTest001 end";
+}
+
+/**
+ * @tc.name: HandleMakerNoteTest001
+ * @tc.desc: Verify that ExifMetadata call HandleMakerNote when mnote data is huawei mnote data.
+ * @tc.type: FUNC
+ */
+HWTEST_F(ExifMetadataTest, HandleMakerNoteTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ExifMetadataTest: HandleMakerNoteTest001 start";
+    auto exifData = exif_data_new_from_file(IMAGE_INPUT_JPEG_PATH.c_str());
+    ASSERT_NE(exifData, nullptr);
+    ExifMetadata mockExifMetadata{exifData};
+    ASSERT_NE(mockExifMetadata.exifData_, nullptr);
+    std::string value = std::string{HUAWEI_HEADER} + "MOCKVALUE";
+    bool setRet = mockExifMetadata.SetValue(MAKER_NOTE_TAG, value);
+    ASSERT_EQ(setRet, true);
+
+    std::string handleData;
+    int ret = mockExifMetadata.HandleMakerNote(handleData);
+    ASSERT_EQ(ret, SUCCESS);
+    GTEST_LOG_(INFO) << "ExifMetadataTest: HandleMakerNoteTest001 end";
+}
+
+/**
+ * @tc.name: SetAndGetMakerNoteValueTest001
+ * @tc.desc: Verify that ExifMetadata GetValue and SetValue is same when key is MakerNote.
+ * @tc.type: FUNC
+ */
+HWTEST_F(ExifMetadataTest, SetAndGetMakerNoteValueTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ExifMetadataTest: SetAndGetMakerNoteValueTest001 start";
+    auto exifData = exif_data_new_from_file(IMAGE_INPUT_JPEG_PATH.c_str());
+    ASSERT_NE(exifData, nullptr);
+    ExifMetadata mockExifMetadata{exifData};
+    ASSERT_NE(mockExifMetadata.exifData_, nullptr);
+    std::string value = "TestMakerNoteValue";
+    bool ret = mockExifMetadata.SetValue(MAKER_NOTE_TAG, value);
+    ASSERT_EQ(ret, true);
+
+    std::string getValue;
+    auto getRet = mockExifMetadata.GetValue(MAKER_NOTE_TAG, getValue);
+    ASSERT_EQ(getRet, SUCCESS);
+    ASSERT_EQ(getValue, value);
+    GTEST_LOG_(INFO) << "ExifMetadataTest: SetAndGetMakerNoteValueTest001 end";
+}
 } // namespace Multimedia
 } // namespace OHOS

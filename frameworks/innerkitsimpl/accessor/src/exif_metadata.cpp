@@ -192,18 +192,7 @@ int ExifMetadata::HandleMakerNote(std::string &value) const
         IMAGE_LOGD("Exif data mnote data md is a nullptr.");
     }
     if (!is_huawei_md(md)) {
-        std::vector<char> userValueChar(MAX_TAG_VALUE_SIZE_FOR_STR, 0);
-        int count = exif_data_get_maker_note_entry_count(exifData_);
-        cond = count != GET_SUPPORT_MAKERNOTE_COUNT;
-        CHECK_ERROR_RETURN_RET(cond, ERR_IMAGE_DECODE_EXIF_UNSUPPORT);
-        ExifEntry *entry = exif_data_get_entry(exifData_, EXIF_TAG_MAKER_NOTE);
-        cond = entry == nullptr;
-        CHECK_ERROR_RETURN_RET(cond, ERR_IMAGE_DECODE_EXIF_UNSUPPORT);
-        cond = entry->size >= MAX_TAG_VALUE_SIZE_FOR_STR;
-        CHECK_ERROR_RETURN_RET(cond, ERR_IMAGE_DECODE_EXIF_UNSUPPORT);
-        exif_entry_get_value(entry, userValueChar.data(), userValueChar.size());
-        value.assign(userValueChar.data(), entry->size);
-        return SUCCESS;
+        return GetUserMakerNote(value);
     }
     MnoteHuaweiEntryCount *ec = nullptr;
     mnote_huawei_get_entry_count(reinterpret_cast<ExifMnoteDataHuawei *>(md), &ec);
@@ -966,6 +955,23 @@ bool ExifMetadata::RemoveExifThumbnail()
     CHECK_ERROR_RETURN_RET(cond, false);
     exifData_->remove_thumbnail = 1;
     return true;
+}
+
+int ExifMetadata::GetUserMakerNote(std::string& value) const
+{
+    bool cond{false};
+    std::vector<char> userValueChar(MAX_TAG_VALUE_SIZE_FOR_STR, 0);
+    int count = exif_data_get_maker_note_entry_count(exifData_);
+    cond = count != GET_SUPPORT_MAKERNOTE_COUNT;
+    CHECK_ERROR_RETURN_RET(cond, ERR_IMAGE_DECODE_EXIF_UNSUPPORT);
+    ExifEntry *entry = exif_data_get_entry(exifData_, EXIF_TAG_MAKER_NOTE);
+    cond = entry == nullptr;
+    CHECK_ERROR_RETURN_RET(cond, ERR_IMAGE_DECODE_EXIF_UNSUPPORT);
+    cond = entry->size >= MAX_TAG_VALUE_SIZE_FOR_STR;
+    CHECK_ERROR_RETURN_RET(cond, ERR_IMAGE_DECODE_EXIF_UNSUPPORT);
+    exif_entry_get_value(entry, userValueChar.data(), userValueChar.size());
+    value.assign(userValueChar.data(), entry->size);
+    return SUCCESS;
 }
 } // namespace Media
 } // namespace OHOS
