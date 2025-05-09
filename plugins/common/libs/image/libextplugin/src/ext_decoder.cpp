@@ -119,9 +119,9 @@ namespace ImagePlugin {
 using namespace Media;
 #if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
 using namespace OHOS::HDI::Base;
+using namespace OHOS::HDI::Display::Composer;
 #endif
 using namespace std;
-using namespace OHOS::HDI::Display::Composer;
 using piex::binary_parse::RangeCheckedBytePtr;
 using piex::image_type_recognition::RecognizeRawImageTypeLite;
 
