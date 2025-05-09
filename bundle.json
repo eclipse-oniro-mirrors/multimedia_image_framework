@@ -73,7 +73,8 @@
         "sub_component": [
           "//foundation/multimedia/image_framework:image_framework",
           "//foundation/multimedia/image_framework:plugins",
-          "//foundation/multimedia/image_framework/frameworks/kits/ani:image_framework_ani"
+          "//foundation/multimedia/image_framework/frameworks/kits/taihe:image_framework_taihe",
+          "//foundation/multimedia/image_framework/frameworks/kits/taihe:image_framework_taihe_gen_only"
         ],
         "inner_kits": [
           {
@@ -200,6 +201,9 @@
               ]
             },
             "name": "//foundation/multimedia/image_framework/frameworks/kits/ani:image_ani"
+          },
+          {
+            "name": "//foundation/multimedia/image_framework/frameworks/kits/taihe:copy_image_taihe"
           },
           {
             "header": {
