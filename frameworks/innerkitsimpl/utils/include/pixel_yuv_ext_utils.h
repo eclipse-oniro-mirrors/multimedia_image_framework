@@ -43,6 +43,11 @@ struct YuvPixels {
     YuvSizeType sizeType = YuvSizeType::FLOAT;
 };
 
+struct YuvCopyInfo {
+    uint32_t dstHeight;
+    uint32_t pixelsSize;
+};
+
 class PixelYuvExtUtils {
 public:
     static bool BGRAToYuv420(const uint8_t *src, uint8_t *dst, int srcW, int srcH,
