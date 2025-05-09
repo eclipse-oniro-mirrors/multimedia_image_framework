@@ -17,6 +17,7 @@
 
 #include "common_utils.h"
 #include "image_type.h"
+#include "image_utils.h"
 #include "image_pixel_map_napi_kits.h"
 #include "pixel_map_napi.h"
 #include "pixelmap_native_impl.h"
@@ -72,6 +73,7 @@ struct OH_Pixelmap_ImageInfo {
     uint32_t height;
     uint32_t rowStride;
     int32_t pixelFormat = PIXEL_FORMAT::PIXEL_FORMAT_UNKNOWN;
+    PIXELMAP_ALPHA_TYPE alphaMode = PIXELMAP_ALPHA_TYPE::PIXELMAP_ALPHA_TYPE_UNKNOWN;
     PIXELMAP_ALPHA_TYPE alphaType = PIXELMAP_ALPHA_TYPE::PIXELMAP_ALPHA_TYPE_UNKNOWN;
     bool isHdr = false;
     Image_MimeType mimeType;
@@ -383,6 +385,16 @@ Image_ErrorCode OH_PixelmapImageInfo_GetHeight(OH_Pixelmap_ImageInfo *info, uint
 }
 
 MIDK_EXPORT
+Image_ErrorCode OH_PixelmapImageInfo_GetAlphaMode(OH_Pixelmap_ImageInfo *info, int32_t *alphaMode)
+{
+    if (info == nullptr || alphaMode == nullptr) {
+        return IMAGE_BAD_PARAMETER;
+    }
+    *alphaMode = static_cast<int32_t>(info->alphaMode);
+    return IMAGE_SUCCESS;
+}
+
+MIDK_EXPORT
 Image_ErrorCode OH_PixelmapImageInfo_GetRowStride(OH_Pixelmap_ImageInfo *info, uint32_t *rowStride)
 {
     if (info == nullptr || rowStride == nullptr) {
@@ -475,6 +487,37 @@ Image_ErrorCode OH_PixelmapNative_CreatePixelmap(uint8_t *data, size_t dataLengt
 }
 
 MIDK_EXPORT
+Image_ErrorCode OH_PixelmapNative_CreatePixelmapUsingAllocator(uint8_t *data, size_t dataLength,
+    OH_Pixelmap_InitializationOptions *options, IMAGE_ALLOCATOR_MODE allocator, OH_PixelmapNative **pixelmap)
+{
+    if (data == nullptr || options == nullptr || pixelmap == nullptr) {
+        return IMAGE_BAD_PARAMETER;
+    }
+    InitializationOptions info;
+    info.editable = options->editable;
+    info.alphaType = static_cast<AlphaType>(options->alphaType);
+    info.srcPixelFormat = static_cast<PixelFormat>(options->srcPixelFormat);
+    info.pixelFormat = static_cast<PixelFormat>(options->pixelFormat);
+    info.srcRowStride = options->srcRowStride;
+    info.size.height = static_cast<int32_t>(options->height);
+    info.size.width = static_cast<int32_t>(options->width);
+    if (!ImageUtils::SetInitializationOptionAllocatorType(info, static_cast<int32_t>(allocator))) {
+        return IMAGE_ALLOCATOR_MODE_UNSUPPROTED;
+    }
+    IMAGE_LOGD("%{public}s allocator type is %{public}d,%{public}d.", __func__,
+        allocator, info.allocatorType);
+    auto pixelmap2 = new OH_PixelmapNative(reinterpret_cast<uint32_t*>(data), static_cast<uint32_t>(dataLength), info);
+    if (pixelmap2 == nullptr || pixelmap2->GetInnerPixelmap() == nullptr) {
+        if (pixelmap2) {
+            delete pixelmap2;
+        }
+        return IMAGE_BAD_PARAMETER;
+    }
+    *pixelmap = pixelmap2;
+    return IMAGE_SUCCESS;
+}
+
+MIDK_EXPORT
 Image_ErrorCode OH_PixelmapNative_CreateEmptyPixelmap(
     OH_Pixelmap_InitializationOptions *options, OH_PixelmapNative **pixelmap)
 {
@@ -489,6 +532,36 @@ Image_ErrorCode OH_PixelmapNative_CreateEmptyPixelmap(
     info.size.height = options->height;
     info.size.width = options->width;
 
+    auto pixelmap2 = new OH_PixelmapNative(info);
+    if (pixelmap2 == nullptr || pixelmap2->GetInnerPixelmap() == nullptr) {
+        if (pixelmap2) {
+            delete pixelmap2;
+        }
+        return IMAGE_BAD_PARAMETER;
+    }
+    *pixelmap = pixelmap2;
+    return IMAGE_SUCCESS;
+}
+
+MIDK_EXPORT
+Image_ErrorCode OH_PixelmapNative_CreateEmptyPixelmapUsingAllocator(
+    OH_Pixelmap_InitializationOptions *options, IMAGE_ALLOCATOR_MODE allocator, OH_PixelmapNative **pixelmap)
+{
+    if (options == nullptr || pixelmap == nullptr) {
+        return IMAGE_BAD_PARAMETER;
+    }
+    InitializationOptions info;
+    info.editable = options->editable;
+    info.alphaType = static_cast<AlphaType>(options->alphaType);
+    info.srcPixelFormat = static_cast<PixelFormat>(options->srcPixelFormat);
+    info.pixelFormat = static_cast<PixelFormat>(options->pixelFormat);
+    info.size.height = options->height;
+    info.size.width = options->width;
+    if (!ImageUtils::SetInitializationOptionAllocatorType(info, static_cast<int32_t>(allocator))) {
+        return IMAGE_ALLOCATOR_MODE_UNSUPPROTED;
+    }
+    IMAGE_LOGD("%{public}s allocator type is %{public}d,%{public}d.", __func__,
+        allocator, info.allocatorType);
     auto pixelmap2 = new OH_PixelmapNative(info);
     if (pixelmap2 == nullptr || pixelmap2->GetInnerPixelmap() == nullptr) {
         if (pixelmap2) {
@@ -580,6 +653,7 @@ Image_ErrorCode OH_PixelmapNative_GetImageInfo(OH_PixelmapNative *pixelmap, OH_P
     }
     ImageInfo srcInfo;
     pixelmap->GetInnerPixelmap()->GetImageInfo(srcInfo);
+    imageInfo->alphaMode = (PIXELMAP_ALPHA_TYPE)(pixelmap->GetInnerPixelmap()->GetAlphaType());
     imageInfo->width = static_cast<uint32_t>(srcInfo.size.width);
     imageInfo->height = static_cast<uint32_t>(srcInfo.size.height);
     imageInfo->rowStride = static_cast<uint32_t>(pixelmap->GetInnerPixelmap()->GetRowStride());

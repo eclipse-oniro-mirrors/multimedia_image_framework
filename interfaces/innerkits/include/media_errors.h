@@ -162,6 +162,10 @@ const int32_t ERR_MEMORY_COPY_FAILED = BASE_MEDIA_ERR_OFFSET + 206; // media unk
 const int32_t ERR_RESOURCE_UNAVAILABLE = 501; // Resource Unavailable
 const int32_t COMMON_ERR_INVALID_PARAMETER = 401; // Common error，Invalid parameter
 const int32_t ERR_MEDIA_NO_EXIF_DATA = 402; // no exif_data info
+
+const int32_t ERR_MEDIA_UNSUPPORT_OPERATION = 7600201; // Unsupported operation
+const int32_t ERR_MEDIA_MEMORY_ALLOC_FAILED = 7600301; // Memory alloc failed
+const int32_t ERR_MEDIA_MEMORY_COPY_FAILED = 7600302; // Memory copy failed
 }  // namespace Media
 }  // namespace OHOS
 #endif  // INTERFACES_INNERKITS_INCLUDE_MEDIA_ERRORS_H

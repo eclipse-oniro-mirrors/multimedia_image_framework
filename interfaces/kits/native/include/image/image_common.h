@@ -178,6 +178,12 @@ typedef enum {
      * @since 15
      */
     IMAGE_LOCK_UNLOCK_FAILED = 7600303,
+    /**
+     * @error unsupported allocator mode, e.g., use share memory to create a HDR image as only
+     * DMA supported hdr metadata.
+     * @since 20
+     */
+    IMAGE_ALLOCATOR_MODE_UNSUPPROTED = 7600501,
     /** unknown error */
     IMAGE_UNKNOWN_ERROR = 7600901,
     /** decode data source exception */
@@ -197,6 +203,32 @@ typedef enum {
     /** encode failed */
     IMAGE_ENCODE_FAILED = 7800301,
 } Image_ErrorCode;
+
+/**
+ * @brief Type of allocator used to allocate memory of a PixelMap.
+ *
+ * @since 20
+ */
+typedef enum {
+    /**
+     * The system determines which memory to use to create the PixelMap.
+     *
+     * @since 20
+     */
+    IMAGE_ALLOCATOR_MODE_AUTO = 0,
+    /**
+     * Use DMA buffer to create the PixelMap.
+     *
+     * @since 20
+     */
+    IMAGE_ALLOCATOR_MODE_DMA = 1,
+    /**
+     * Use share memory to create the PixelMap.
+     *
+     * @since 20
+     */
+    IMAGE_ALLOCATOR_MODE_SHARED_MEMORY = 2,
+} IMAGE_ALLOCATOR_MODE;
 
 /**
  * @brief Define the metadata type.

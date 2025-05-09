@@ -107,6 +107,8 @@ static const string FILE_DIR_IN_THE_SANDBOX = "/data/storage/el2/base/files/";
 static constexpr int32_t PLANE_Y = 0;
 static constexpr int32_t PLANE_U = 1;
 static constexpr int32_t PLANE_V = 2;
+constexpr int32_t MEM_DMA = 1;
+constexpr int32_t MEM_SHARE = 2;
 
 bool ImageUtils::GetFileSize(const string &pathName, size_t &size)
 {
@@ -647,6 +649,66 @@ std::string ImageUtils::GetCurrentProcessName()
         }
     }
     return processName;
+}
+
+bool ImageUtils::SetInitializationOptionAutoMem(InitializationOptions &option)
+{
+    if (option.size.width * option.size.height > DMA_SIZE) {
+        switch (option.pixelFormat) {
+            case PixelFormat::RGB_565:
+            case PixelFormat::RGBA_8888:
+            case PixelFormat::BGRA_8888:
+            case PixelFormat::RGB_888:
+            case PixelFormat::RGBA_F16:
+            case PixelFormat::RGBA_1010102:
+                option.allocatorType = AllocatorType::DMA_ALLOC;
+                option.useDMA = true;
+                return true;
+            default:
+                break;
+        }
+    }
+    option.allocatorType = AllocatorType::SHARE_MEM_ALLOC;
+    option.useDMA = false;
+    return true;
+}
+
+bool ImageUtils::SetInitializationOptionDmaMem(InitializationOptions &option)
+{
+    switch (option.pixelFormat) {
+        case PixelFormat::RGB_565:
+        case PixelFormat::RGBA_8888:
+        case PixelFormat::BGRA_8888:
+        case PixelFormat::RGB_888:
+        case PixelFormat::RGBA_F16:
+        case PixelFormat::RGBA_1010102:
+            option.allocatorType = AllocatorType::DMA_ALLOC;
+            option.useDMA = true;
+            return true;
+        default:
+            IMAGE_LOGE("pixelformat:%{public}d is not surport DMA.", option.pixelFormat);
+            return false;
+    }
+    return false;
+}
+
+bool ImageUtils::SetInitializationOptionAllocatorType(InitializationOptions &option, int32_t allocatorType)
+{
+    if (allocatorType > NUM_2 || allocatorType < 0) {
+        IMAGE_LOGE("allocatorType is invalided.");
+        return false;
+    }
+    switch (allocatorType) {
+        case MEM_DMA:
+            return SetInitializationOptionDmaMem(option);
+        case MEM_SHARE:
+            option.allocatorType = AllocatorType::SHARE_MEM_ALLOC;
+            option.useDMA = false;
+            return true;
+        default:
+            return SetInitializationOptionAutoMem(option);
+    }
+    return true;
 }
 
 uint32_t ImageUtils::SaveDataToFile(const std::string& fileName, const char* data, const size_t& totalSize)
