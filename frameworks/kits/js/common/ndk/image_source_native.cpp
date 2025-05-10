@@ -376,7 +376,8 @@ inline static bool IsColorSpaceInvalid(int32_t colorSpace)
 MIDK_EXPORT
 Image_ErrorCode OH_DecodingOptions_SetDesiredColorSpace(OH_DecodingOptions *options, int32_t colorSpace)
 {
-    if (options == nullptr || IsColorSpaceInvalid(colorSpace)) {
+    if (options == nullptr || IsColorSpaceInvalid(colorSpace) ||
+        colorSpace == static_cast<int32_t>(ColorSpaceName::CUSTOM)) {
         return IMAGE_SOURCE_INVALID_PARAMETER;
     }
     options->desiredColorSpace = colorSpace;
