@@ -1971,6 +1971,8 @@ OHOS::ColorManager::ColorSpace ExtDecoder::GetSrcColorSpace()
         if (codec_->getEncodedFormat() == SkEncodedImageFormat::kHEIF) {
             ColorManager::ColorSpaceName cName = GetHeifNclxColor(codec_.get());
             if (cName != ColorManager::NONE) {
+                IMAGE_LOGI("%{public}s profile has HEIF NCLX color, cName: %{public}u",
+                    __func__, static_cast<uint32_t>(cName));
                 return ColorManager::ColorSpace(cName);
             }
         }
@@ -1978,9 +1980,12 @@ OHOS::ColorManager::ColorSpace ExtDecoder::GetSrcColorSpace()
     // use info_ to make a custom graphic colorspace.
     if (name == OHOS::ColorManager::ColorSpaceName::CUSTOM ||
         name == OHOS::ColorManager::ColorSpaceName::NONE) {
-        IMAGE_LOGI("%{public}s Use info_ to make a custom graphic colorspace.", __func__);
+        IMAGE_LOGI("%{public}s Use info_ to make a custom graphic colorspace. name: %{public}u",
+            __func__, static_cast<uint32_t>(name));
         return OHOS::ColorManager::ColorSpace(skColorSpace, name);
     }
+    IMAGE_LOGI("%{public}s Use name to make a custom graphic colorspace. name: %{public}u",
+        __func__, static_cast<uint32_t>(name));
     return OHOS::ColorManager::ColorSpace(name);
 }
 
