@@ -1148,10 +1148,10 @@ uint32_t ExtDecoder::Decode(uint32_t index, DecodeContext &context)
         return 0;
 #else
         result = DecodeToYuv420(index, context);
-        if (result != JpegYuvDecodeError_SubSampleNotSupport) {
+        if (result == JpegYuvDecodeError_Success) {
             return result;
         }
-        IMAGE_LOGI("Decode sample not support, apply rgb decode");
+        IMAGE_LOGI("DecodeToYuv420 failed, decode rgba then convert");
         context.pixelsBuffer.buffer = nullptr;
 #endif
     }
@@ -1210,12 +1210,12 @@ uint32_t ExtDecoder::Decode(uint32_t index, DecodeContext &context)
         return res;
     }
     SkCodec::Result ret = codec_->getPixels(dstInfo_, dstBuffer, rowStride, &dstOptions_);
-    if (ret == SkCodec::kIncompleteInput) {
-        IMAGE_LOGI("Decode broken data success. Triggered kIncompleteInput feature of skia!");
+    if (ret == SkCodec::kIncompleteInput || ret == SkCodec::kErrorInInput) {
+        IMAGE_LOGI("Decode broken data success. Triggered kIncompleteInput feature of skia");
     } else if (ret != SkCodec::kSuccess && ResetCodec() && skEncodeFormat != SkEncodedImageFormat::kHEIF) {
         ret = codec_->getPixels(dstInfo_, dstBuffer, rowStride, &dstOptions_); // Try again
     }
-    if (ret != SkCodec::kSuccess && ret != SkCodec::kIncompleteInput) {
+    if (ret != SkCodec::kSuccess && ret != SkCodec::kIncompleteInput && ret != SkCodec::kErrorInInput) {
         IMAGE_LOGE("Decode failed, get pixels failed, ret=%{public}d", ret);
         SetHeifDecodeError(context);
         ResetCodec(); // release old jpeg codec
@@ -1229,7 +1229,7 @@ uint32_t ExtDecoder::Decode(uint32_t index, DecodeContext &context)
             return res;
         }
     }
-    if (result == JpegYuvDecodeError_SubSampleNotSupport) {
+    if (isOutputYuv420Format && skEncodeFormat == SkEncodedImageFormat::kJPEG && result != JpegYuvDecodeError_Success) {
         res = ConvertFormatToYUV(context, dstInfo_, byteCount, format);
         if (res != SUCCESS) {
             IMAGE_LOGE("Decode failed, ConvertFormatToYUV failed, res=%{public}d", res);
