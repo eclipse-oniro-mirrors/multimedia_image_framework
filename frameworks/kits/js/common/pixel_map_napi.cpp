@@ -1339,13 +1339,17 @@ static bool UsingAllocatorFormatCheck(napi_env env, napi_value value)
     if (!GET_UINT32_BY_NAME(value, "pixelFormat", tmpNumber)) {
         IMAGE_LOGD("no pixelFormat in initialization options");
     }
-    if (tmpNumber >= static_cast<uint32_t>(PixelFormat::EXTERNAL_MAX)) {
+    if (tmpNumber <= static_cast<uint32_t>(PixelFormat::UNKNOWN) ||
+        tmpNumber >= static_cast<uint32_t>(PixelFormat::EXTERNAL_MAX)) {
+        IMAGE_LOGE("pixelFormat:%{public}d not support", tmpNumber);
         return false;
     }
     if (!GET_UINT32_BY_NAME(value, "srcPixelFormat", tmpNumber)) {
         IMAGE_LOGD("no srcPixelFormat in initialization options");
     }
-    if (tmpNumber >= static_cast<uint32_t>(PixelFormat::EXTERNAL_MAX)) {
+    if (tmpNumber <= static_cast<uint32_t>(PixelFormat::UNKNOWN) ||
+        tmpNumber >= static_cast<uint32_t>(PixelFormat::EXTERNAL_MAX)) {
+        IMAGE_LOGE("srcPixelFormat:%{public}d not support", tmpNumber);
         return false;
     }
     return true;
@@ -1364,7 +1368,6 @@ napi_value PixelMapNapi::CreatePixelMapUsingAllocator(napi_env env, napi_callbac
     napi_value thisVar = nullptr;
     napi_value argValue[NUM_3] = {0};
     size_t argCount = NUM_3;
-    IMAGE_LOGD("CreatePixelMapUsingAllocator IN");
     IMG_JS_ARGS(env, info, status, argCount, argValue, thisVar);
     IMG_NAPI_CHECK_RET_D(IMG_IS_OK(status), nullptr, IMAGE_LOGE("fail to napi_get_cb_info"));
     std::unique_ptr<PixelMapAsyncContext> asyncContext = std::make_unique<PixelMapAsyncContext>();
@@ -1393,8 +1396,7 @@ napi_value PixelMapNapi::CreatePixelMapUsingAllocator(napi_env env, napi_callbac
         return ImageNapiUtils::ThrowExceptionError(env, ERR_MEDIA_UNSUPPORT_OPERATION,
             "Unsupported allocator type.");
     }
-    IMAGE_LOGD("%{public}s allocator type is %{public}d,%{public}d.", __func__,
-        allocatorType, asyncContext->opts.allocatorType);
+    IMAGE_LOGD("%{public}s %{public}d,%{public}d.", __func__, allocatorType, asyncContext->opts.allocatorType);
     napi_create_promise(env, &(asyncContext->deferred), &result);
     IMG_CREATE_CREATE_ASYNC_WORK(env, status, "CreatePixelMap", CreatePixelMapUsingAllocatorExec,
         CreatePixelMapUsingAllocatorComplete, asyncContext, asyncContext->work);
@@ -1405,29 +1407,49 @@ napi_value PixelMapNapi::CreatePixelMapUsingAllocator(napi_env env, napi_callbac
     return result;
 }
 
-static bool GetAllocatValue(napi_env env, napi_value argValue[],
+static bool GetAllocatValue(napi_env &env, napi_value argValue[], size_t argCount,
     std::unique_ptr<PixelMapAsyncContext> &asyncContext, int32_t &allocatorType)
 {
+    IMAGE_LOGD("GetAllocatValue argCount:%{public}zu", argCount);
+    if (argValue == nullptr) {
+        return false;
+    }
     napi_status status = napi_get_arraybuffer_info(env, argValue[NUM_0], &(asyncContext->colorsBuffer),
         &(asyncContext->colorsBufferSize));
-    napi_value allocatValue;
-    napi_value optionValue;
-    if (status) {
-        optionValue = argValue[NUM_1];
-        allocatValue = argValue[NUM_2];
+    if (IMG_IS_OK(status)) {
+        if (!UsingAllocatorFormatCheck(env, argValue[NUM_1])) {
+            return false;
+        }
+        if (!parseInitializationOptions(env, argValue[NUM_1], &(asyncContext->opts))) {
+            IMAGE_LOGE("parseInitializationOptions failed");
+            return false;
+        }
+        if (argCount == NUM_2) {
+            return true;
+        }
+        if (ImageNapiUtils::getType(env, argValue[NUM_2]) == napi_number) {
+            napi_get_value_int32(env, argValue[NUM_2], &allocatorType);
+        } else {
+            IMAGE_LOGE("get allocatorType failed");
+            return false;
+        }
     } else {
-        optionValue = argValue[0];
-        allocatValue = argValue[NUM_1];
-    }
-    IMG_NAPI_CHECK_RET_D(UsingAllocatorFormatCheck(env, argValue[1]) &&
-        parseInitializationOptions(env, optionValue, &(asyncContext->opts)),
-        ImageNapiUtils::ThrowExceptionError(env,
-        ERR_MEDIA_UNSUPPORT_OPERATION, "parseInitializationOptions failed."),
-        IMAGE_LOGE("InitializationOptions mismatch"));
-    if (ImageNapiUtils::getType(env, allocatValue) == napi_number) {
-        napi_get_value_int32(env, allocatValue, &allocatorType);
-    } else {
-        return false;
+        if (!UsingAllocatorFormatCheck(env, argValue[0])) {
+            return false;
+        }
+        if (!parseInitializationOptions(env, argValue[0], &(asyncContext->opts))) {
+            IMAGE_LOGE("parseInitializationOptions failed");
+            return false;
+        }
+        if (argCount == NUM_1) {
+            return true;
+        }
+        if (ImageNapiUtils::getType(env, argValue[NUM_1]) == napi_number) {
+            napi_get_value_int32(env, argValue[NUM_1], &allocatorType);
+        } else {
+            IMAGE_LOGE("get allocatorType failed");
+            return false;
+        }
     }
     return true;
 }
@@ -1454,12 +1476,11 @@ napi_value PixelMapNapi::CreatePixelMapUsingAllocatorSync(napi_env env, napi_cal
         IMAGE_LOGE("Invalid args count %{public}zu", argCount));
     std::unique_ptr<PixelMapAsyncContext> asyncContext = std::make_unique<PixelMapAsyncContext>();
     int32_t allocatorType = 0;
-    if (!GetAllocatValue(env, argValue, asyncContext, allocatorType)) {
+    if (!GetAllocatValue(env, argValue, argCount, asyncContext, allocatorType)) {
         return ImageNapiUtils::ThrowExceptionError(env,
             ERR_MEDIA_UNSUPPORT_OPERATION, "AllocatorType type does not match.");
     }
-    IMAGE_LOGD("%{public}s allocator type is %{public}d,%{public}d.", __func__,
-        allocatorType, asyncContext->opts.allocatorType);
+    IMAGE_LOGD("%{public}s %{public}d,%{public}d.", __func__, allocatorType, asyncContext->opts.allocatorType);
     if (!ImageUtils::SetInitializationOptionAllocatorType(asyncContext->opts, allocatorType)) {
         return ImageNapiUtils::ThrowExceptionError(env, ERR_MEDIA_UNSUPPORT_OPERATION,
             "Unsupported allocator type.");

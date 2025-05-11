@@ -13,7 +13,7 @@
  * limitations under the License.
  */
 #include "pixelmap_native_impl.h"
-
+#include "image_common.h"
 #include "pixel_map.h"
 
 using namespace OHOS::Media;
@@ -42,6 +42,15 @@ OH_PixelmapNative::OH_PixelmapNative(const uint32_t *colors, uint32_t colorLengt
     }
 }
 
+OH_PixelmapNative::OH_PixelmapNative(const uint32_t *colors, uint32_t colorLength,
+    const InitializationOptions &opts, int32_t alloctor)
+{
+    if (alloctor <= IMAGE_ALLOCATOR_MODE_SHARED_MEMORY) {
+        auto tmpPixelmap = PixelMap::Create(colors, colorLength, opts);
+        pixelmap_ = std::move(tmpPixelmap);
+    }
+}
+
 OH_PixelmapNative::OH_PixelmapNative(const InitializationOptions &opts)
 {
     if (opts.pixelFormat == PixelFormat::RGBA_1010102 ||
@@ -49,6 +58,14 @@ OH_PixelmapNative::OH_PixelmapNative(const InitializationOptions &opts)
         opts.pixelFormat == PixelFormat::YCRCB_P010) {
         pixelmap_ = nullptr;
     } else {
+        auto tmpPixelmap = PixelMap::Create(opts);
+        pixelmap_ = std::move(tmpPixelmap);
+    }
+}
+
+OH_PixelmapNative::OH_PixelmapNative(const InitializationOptions &opts, int32_t alloctor)
+{
+    if (alloctor <= IMAGE_ALLOCATOR_MODE_SHARED_MEMORY) {
         auto tmpPixelmap = PixelMap::Create(opts);
         pixelmap_ = std::move(tmpPixelmap);
     }
