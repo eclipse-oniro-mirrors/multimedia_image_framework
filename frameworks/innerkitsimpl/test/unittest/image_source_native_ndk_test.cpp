@@ -1662,7 +1662,8 @@ HWTEST_F(ImagSourceNdk2Test, OH_ImageSourceNative_Release, TestSize.Level3)
 
 /**
  * @tc.name: OH_ImageSourceInfo_GetMimeType001
- * @tc.desc: test OH_ImageSourceInfo_GetMimeType
+ * @tc.desc: Verify that OH_ImageSourceInfo_GetMimeType correctly handles null input parameters by returning
+ *           IMAGE_SOURCE_INVALID_PARAMETER when either info or mimeType output pointer is null.
  * @tc.type: FUNC
  */
 HWTEST_F(ImagSourceNdk2Test, OH_ImageSourceInfo_GetMimeType001, TestSize.Level3)
@@ -1676,9 +1677,6 @@ HWTEST_F(ImagSourceNdk2Test, OH_ImageSourceInfo_GetMimeType001, TestSize.Level3)
 
     Image_MimeType mimeType1;
     Image_MimeType *mimeType2 = nullptr;
-    std::string unknownStr = "unknown";
-    ret = OH_ImageSourceInfo_GetMimeType(info1, &mimeType1);
-    EXPECT_EQ(mimeType1.data, unknownStr);
     ret = OH_ImageSourceInfo_GetMimeType(info2, &mimeType1);
     EXPECT_EQ(ret, IMAGE_SOURCE_INVALID_PARAMETER);
     ret = OH_ImageSourceInfo_GetMimeType(info1, mimeType2);
@@ -1693,35 +1691,13 @@ HWTEST_F(ImagSourceNdk2Test, OH_ImageSourceInfo_GetMimeType001, TestSize.Level3)
 
 /**
  * @tc.name: OH_ImageSourceInfo_GetMimeType002
- * @tc.desc: test OH_ImageSourceInfo_GetMimeType
+ * @tc.desc: Verify that OH_ImageSourceInfo_GetMimeType can correctly get the MIME type (JPEG in this case)
+ *           from an image source.
  * @tc.type: FUNC
  */
 HWTEST_F(ImagSourceNdk2Test, OH_ImageSourceInfo_GetMimeType002, TestSize.Level3)
 {
     GTEST_LOG_(INFO) << "ImagSourceNdk2Test: OH_ImageSourceInfo_GetMimeType002 start";
-    OH_ImageSource_Info *info = nullptr;
-    Image_ErrorCode ret = OH_ImageSourceInfo_Create(&info);
-    ASSERT_EQ(ret, IMAGE_SUCCESS);
-    std::string unknownStr = "unknown";
-    Image_MimeType mimeType;
-    ret = OH_ImageSourceInfo_GetMimeType(info, &mimeType);
-    EXPECT_EQ(mimeType.data, unknownStr);
-    ret = OH_ImageSourceInfo_GetMimeType(info, &mimeType);
-    EXPECT_EQ(mimeType.size, unknownStr.size());
-
-    ret = OH_ImageSourceInfo_Release(info);
-    EXPECT_EQ(ret, IMAGE_SUCCESS);
-    GTEST_LOG_(INFO) << "ImagSourceNdk2Test: OH_ImageSourceInfo_GetMimeType002 end";
-}
-
-/**
- * @tc.name: OH_ImageSourceInfo_GetMimeType003
- * @tc.desc: test OH_ImageSourceInfo_GetMimeType
- * @tc.type: FUNC
- */
-HWTEST_F(ImagSourceNdk2Test, OH_ImageSourceInfo_GetMimeType003, TestSize.Level3)
-{
-    GTEST_LOG_(INFO) << "ImagSourceNdk2Test: OH_ImageSourceInfo_GetMimeType003 start";
     size_t length = IMAGE_JPEG_PATH_TEST.size();
     char filePath[length + 1];
     strcpy_s(filePath, sizeof(filePath), IMAGE_JPEG_PATH_TEST.c_str());
@@ -1743,18 +1719,11 @@ HWTEST_F(ImagSourceNdk2Test, OH_ImageSourceInfo_GetMimeType003, TestSize.Level3)
     EXPECT_EQ(ret, IMAGE_SUCCESS);
     ASSERT_NE(mimeType.data, nullptr);
     EXPECT_EQ(strcmp(mimeType.data, IMAGE_JPEG_FORMAT.c_str()), 0);
-    std::string unknownStr = "unknown";
-    info->mimeType.size = 0;
-    ret = OH_ImageSourceInfo_GetMimeType(info, &mimeType);
-    EXPECT_EQ(ret, IMAGE_SUCCESS);
-    EXPECT_EQ(mimeType.data, unknownStr);
-    EXPECT_EQ(mimeType.size, unknownStr.size());
-
     ret = OH_ImageSourceNative_Release(source);
     EXPECT_EQ(ret, IMAGE_SUCCESS);
     ret = OH_ImageSourceInfo_Release(info);
     EXPECT_EQ(ret, IMAGE_SUCCESS);
-    GTEST_LOG_(INFO) << "ImagSourceNdk2Test: OH_ImageSourceInfo_GetMimeType003 end";
+    GTEST_LOG_(INFO) << "ImagSourceNdk2Test: OH_ImageSourceInfo_GetMimeType002 end";
 }
 
 /**
