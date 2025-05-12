@@ -1241,6 +1241,27 @@ static bool ConvertForFFMPEG(const void *srcPixels, PixelFormat srcpixelmap, Ima
     return true;
 }
 
+static int64_t GetValidBufferSize(const ImageInfo &dstInfo)
+{
+    int64_t rowDataSize = ImageUtils::GetRowDataSizeByPixelFormat(dstInfo.size.width, dstInfo.pixelFormat);
+    if (rowDataSize <= 0) {
+        IMAGE_LOGE("[PixelMap] AllocPixelMapMemory: get row data size failed");
+        return -1;
+    }
+    int64_t bufferSize = rowDataSize * dstInfo.size.height;
+    if (bufferSize > UINT32_MAX) {
+        IMAGE_LOGE("[PixelMap]Create: Pixelmap size too large: width = %{public}d, height = %{public}d",
+            dstInfo.size.width, dstInfo.size.height);
+        return -1;
+    }
+    return bufferSize;
+}
+
+static bool IsRGBFormat(PixelFormat format)
+{
+    return (format == PixelFormat::RGB_888) || (format == PixelFormat::RGB_565);
+}
+
 // Convert and collapse pixels by removing line paddings if any
 static bool ConvertAndCollapseByFFMpeg(const void *srcPixels, const ImageInfo &srcInfo, void *dstPixels,
     const ImageInfo &dstInfo, bool useDMA)
@@ -1249,9 +1270,32 @@ static bool ConvertAndCollapseByFFMpeg(const void *srcPixels, const ImageInfo &s
         srcInfo.size.width, srcInfo.size.height, useDMA ? DMA_LINE_SIZE : 1};
     FFMPEG_CONVERT_INFO dstFFMpegInfo = {PixelFormatToAVPixelFormat(dstInfo.pixelFormat),
         dstInfo.size.width, dstInfo.size.height, 1};
-    if (!FFMpegConvert(srcPixels, srcFFMpegInfo, dstPixels, dstFFMpegInfo)) {
+
+    std::unique_ptr<uint8_t[]> tmpBuffer = nullptr;
+    bool needTmpBuffer = false;
+    int64_t bufferSize = 0;
+    if (IsRGBFormat(srcInfo.pixelFormat) && dstInfo.pixelFormat == PixelFormat::ARGB_8888) {
+        bufferSize = GetValidBufferSize(dstInfo);
+        if (bufferSize <= 0) {
+            return false;
+        }
+        tmpBuffer = std::make_unique<uint8_t[]>(bufferSize + 1); // avoid ffmpeg out-bounds-write
+        if (tmpBuffer == nullptr) {
+            IMAGE_LOGE("[PixelMap] ConvertAndCollapseByFFMpeg: alloc memory failed!");
+            return false;
+        }
+        needTmpBuffer = true;
+    }
+    void* conversionTarget = needTmpBuffer ? static_cast<void*>(tmpBuffer.get()) : dstPixels;
+    if (!FFMpegConvert(srcPixels, srcFFMpegInfo, conversionTarget, dstFFMpegInfo)) {
         IMAGE_LOGE("[PixelMap] ConvertAndCollapseByFFMpeg: FFMpeg convert failed!");
         return false;
+    }
+    if (needTmpBuffer) {
+        if (memcpy_s(dstPixels, bufferSize, conversionTarget, bufferSize) != 0) {
+            IMAGE_LOGE("[PixelMap] ConvertAndCollapseByFFMpeg: memcpy_s failed!");
+            return false;
+        }
     }
     return true;
 }
