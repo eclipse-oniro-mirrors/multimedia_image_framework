@@ -400,7 +400,6 @@ static int AllocPixelMapMemory(std::unique_ptr<AbsMemory> &dstMemory, int32_t &d
     if (IsYUV(dstImageInfo.pixelFormat)) {
         bufferSize = PixelMap::GetYUVByteCount(dstImageInfo);
     }
-
     MemoryData memoryData = {nullptr, static_cast<size_t>(bufferSize), "Create PixelMap", dstImageInfo.size,
         dstImageInfo.pixelFormat};
     dstMemory = MemoryManager::CreateMemory(

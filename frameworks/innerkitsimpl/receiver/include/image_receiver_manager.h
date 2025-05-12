@@ -20,7 +20,6 @@
 #include <cstdint>
 #include <string>
 #include <securec.h>
-#include "display_type.h"
 #include "image_receiver.h"
 #include "image_holder_manager.h"
 

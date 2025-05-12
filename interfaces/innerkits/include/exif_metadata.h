@@ -67,6 +67,7 @@ private:
     bool SetByte(ExifEntry *ptrEntry, const std::string &value);
     bool SetMem(ExifEntry *ptrEntry, const std::string &value, const size_t len);
     bool SetHwMoteValue(const std::string &key, const std::string &value);
+    bool SetMakerNoteValue(const std::string &value);
     bool RemoveHwEntry(const std::string &key);
     bool SetCommonValue(const std::string &key, const std::string &value);
     bool IsSpecialHwKey(const std::string &key) const;

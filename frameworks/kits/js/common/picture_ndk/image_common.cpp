@@ -79,6 +79,45 @@ Image_ErrorCode OH_PictureMetadata_GetProperty(OH_PictureMetadata *metadata, Ima
 }
 
 MIDK_EXPORT
+Image_ErrorCode OH_PictureMetadata_GetPropertyWithNull(OH_PictureMetadata *metadata,
+    Image_String *key, Image_String *value)
+{
+    if (metadata == nullptr || key == nullptr || key->data == nullptr || key->size == 0 || value == nullptr) {
+        return IMAGE_INVALID_PARAMETER;
+    }
+
+    if (!metadata->GetInnerAuxiliaryMetadata()) {
+        return IMAGE_INVALID_PARAMETER;
+    }
+
+    std::string keyString(key->data, key->size);
+    std::string val;
+    uint32_t errorCode = static_cast<uint32_t>(metadata->GetInnerAuxiliaryMetadata()->GetValue(keyString, val));
+    if (errorCode != IMAGE_SUCCESS || val.empty()) {
+        return IMAGE_UNSUPPORTED_METADATA;
+    }
+
+    if (value->size != 0 && value->size < val.size()) {
+        return IMAGE_INVALID_PARAMETER;
+    }
+
+    size_t allocSize = val.size() + 1;
+    auto uniptrTmp = std::make_unique<char[]>(allocSize);
+    if (uniptrTmp == nullptr) {
+        return IMAGE_INVALID_PARAMETER;
+    }
+
+    if (EOK != memcpy_s(uniptrTmp.get(), allocSize, val.c_str(), val.size())) {
+        return IMAGE_INVALID_PARAMETER;
+    }
+    uniptrTmp[val.size()] = '\0';
+
+    value->data = uniptrTmp.release();
+    value->size = val.size();
+    return IMAGE_SUCCESS;
+}
+
+MIDK_EXPORT
 Image_ErrorCode OH_PictureMetadata_SetProperty(OH_PictureMetadata *metadata, Image_String *key, Image_String *value)
 {
     if (metadata == nullptr || key == nullptr || key->data == nullptr || key->size == 0 ||

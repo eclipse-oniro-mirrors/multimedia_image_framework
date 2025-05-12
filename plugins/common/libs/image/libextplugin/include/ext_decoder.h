@@ -21,7 +21,7 @@
 
 #include "abs_image_decoder.h"
 #if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
-#include "display_type.h"
+#include "display/composer/v1_2/display_composer_type.h"
 #include "hardware/jpeg_hw_decoder.h"
 #endif
 #include "ext_stream.h"
@@ -165,7 +165,8 @@ private:
     SkImageInfo hwDstInfo_;
     OHOS::Media::Size orgImgSize_;
     OHOS::Media::Size outputBufferSize_;
-    PixelFormat outputColorFmt_ = PIXEL_FMT_RGBA_8888;
+    OHOS::HDI::Display::Composer::V1_2::PixelFormat outputColorFmt_ =
+        OHOS::HDI::Display::Composer::V1_2::PIXEL_FMT_RGBA_8888;
     uint32_t sampleSize_ = 1;
     static constexpr uint32_t ALIGN_8 = 8;
     static constexpr uint32_t ALIGN_16 = 16;

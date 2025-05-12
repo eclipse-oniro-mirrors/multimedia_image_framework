@@ -43,7 +43,6 @@
           "memory_utils",
           "drivers_interface_codec",
           "drivers_interface_display",
-          "drivers_peripheral_display",
           "hdf_core",
           "memmgr_override",
           "libjpeg-turbo",

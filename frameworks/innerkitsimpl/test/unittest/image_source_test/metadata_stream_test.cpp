@@ -59,6 +59,7 @@ const int SIZE_255 = 255;
 const int SIZE_20 = 20;
 const int SIZE_10 = 10;
 const int TEST_DIR_PERMISSIONS = 0777;
+const int SIZE_1 = 1;
 
 class MemoryCheck {
 public:
@@ -285,6 +286,14 @@ public:
             }
             return result;
         }));
+    }
+};
+
+class MockBufferMetaDataStream : public BufferMetadataStream {
+public:
+    bool IsOpen() override
+    {
+        return false;
     }
 };
 
@@ -1869,6 +1878,100 @@ HWTEST_F(MetadataStreamTest, HandleWriteFailureTest001, TestSize.Level2)
     EXPECT_EQ(stream.currentOffset_, 0);
     EXPECT_EQ(stream.capacity_, capacityOne);
     EXPECT_NE(stream.buffer_, nullptr);
+}
+
+/**
+ * @tc.name: ReadTest001
+ * @tc.desc: Verify that BufferMetadataStream call Read when currentOffset_ larger than bufferSize_.
+ * @tc.type: FUNC
+ */
+HWTEST_F(MetadataStreamTest, ReadTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "MetadataStreamTest: ReadTest001 start";
+    BufferMetadataStream mockBufferStream;
+    mockBufferStream.buffer_ = new uint8_t[SIZE_10];
+    mockBufferStream.currentOffset_ = SIZE_10;
+    auto ret = mockBufferStream.Read(nullptr, 0);
+    ASSERT_EQ(ret, -1);
+    GTEST_LOG_(INFO) << "MetadataStreamTest: ReadTest001 end";
+}
+
+/**
+ * @tc.name: ReadByteTest001
+ * @tc.desc: Verify that BufferMetadataStream call ReadByte when condition is not correct.
+ * @tc.type: FUNC
+ */
+HWTEST_F(MetadataStreamTest, ReadByteTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "MetadataStreamTest: ReadByteTest001 start";
+    BufferMetadataStream mockBufferStream;
+    auto ret = mockBufferStream.ReadByte();
+    ASSERT_EQ(ret, -1);
+    mockBufferStream.buffer_ = new uint8_t[SIZE_10];
+    mockBufferStream.currentOffset_ = SIZE_10;
+    ret = mockBufferStream.ReadByte();
+    ASSERT_EQ(ret, -1);
+    GTEST_LOG_(INFO) << "MetadataStreamTest: ReadByteTest001 end";
+}
+
+/**
+ * @tc.name: SeekTest001
+ * @tc.desc: Verify that BufferMetadataStream call Seek when condition is not correct.
+ * @tc.type: FUNC
+ */
+HWTEST_F(MetadataStreamTest, SeekTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "MetadataStreamTest: SeekTest001 start";
+    BufferMetadataStream mockBufferStream;
+    auto ret = mockBufferStream.Seek(SIZE_10, SeekPos::END);
+    ASSERT_EQ(ret, 0);
+    GTEST_LOG_(INFO) << "MetadataStreamTest: SeekTest001 end";
+}
+
+/**
+ * @tc.name: CopyFromTest001
+ * @tc.desc: Verify that BufferMetadataStream call CopyFrom when condition is not correct.
+ * @tc.type: FUNC
+ */
+HWTEST_F(MetadataStreamTest, CopyFromTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "MetadataStreamTest: CopyFromTest001 start";
+    BufferMetadataStream mockBufferStream;
+    MockBufferMetaDataStream mockChildBufferStream;
+    auto ret = mockBufferStream.CopyFrom(mockChildBufferStream);
+    ASSERT_EQ(ret, false);
+    BufferMetadataStream mockSrcBufferStream;
+    ret = mockBufferStream.CopyFrom(mockSrcBufferStream);
+    ASSERT_EQ(ret, true);
+    mockBufferStream.memoryMode_ = BufferMetadataStream::MemoryMode::Fix;
+    mockSrcBufferStream.bufferSize_ = SIZE_10;
+    ret = mockBufferStream.CopyFrom(mockSrcBufferStream);
+    ASSERT_EQ(ret, false);
+    mockSrcBufferStream.buffer_ = new uint8_t[SIZE_10];
+    mockBufferStream.buffer_ = new uint8_t[SIZE_10];
+    mockBufferStream.bufferSize_ = SIZE_10;
+    mockBufferStream.memoryMode_ = BufferMetadataStream::MemoryMode::Dynamic;
+    ret = mockBufferStream.CopyFrom(mockSrcBufferStream);
+    ASSERT_EQ(ret, true);
+    GTEST_LOG_(INFO) << "MetadataStreamTest: CopyFromTest001 end";
+}
+
+/**
+ * @tc.name: CalculateNewCapacityTest001
+ * @tc.desc: Verify that BufferMetadataStream call CalculateNewCapacity when expandCount_ is FIFTH_EXPANSION and other.
+ * @tc.type: FUNC
+ */
+HWTEST_F(MetadataStreamTest, CalculateNewCapacityTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "MetadataStreamTest: CalculateNewCapacityTest001 start";
+    BufferMetadataStream mockBufferStream;
+    mockBufferStream.expandCount_ = BufferMetadataStream::FIFTH_EXPANSION;
+    auto ret = mockBufferStream.CalculateNewCapacity(0, SIZE_1);
+    ASSERT_EQ(ret, BufferMetadataStream::METADATA_STREAM_CAPACITY_15MB);
+    mockBufferStream.expandCount_ = SIZE_10;
+    ret = mockBufferStream.CalculateNewCapacity(0, SIZE_1);
+    ASSERT_EQ(ret, BufferMetadataStream::METADATA_STREAM_CAPACITY_30MB);
+    GTEST_LOG_(INFO) << "MetadataStreamTest: CalculateNewCapacityTest001 end";
 }
 } // namespace Media
 } // namespace OHOS

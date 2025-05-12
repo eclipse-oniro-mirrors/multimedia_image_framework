@@ -14,6 +14,7 @@
  */
 
 #include "image_receiver_napi.h"
+#include "display/composer/v1_2/display_composer_type.h"
 #include <uv.h>
 #include "media_errors.h"
 #include "image_log.h"
@@ -42,6 +43,7 @@ static const std::string DEVICE_ERRCODE = "001";
 shared_ptr<ImageReceiver> ImageReceiverNapi::staticInstance_ = nullptr;
 thread_local napi_ref ImageReceiverNapi::sConstructor_ = nullptr;
 using SurfaceListener = SurfaceBufferAvaliableListener;
+using namespace OHOS::HDI::Display::Composer;
 
 const int ARGS0 = 0;
 const int ARGS1 = 1;
@@ -576,7 +578,7 @@ static void DoTest(std::shared_ptr<ImageReceiver> imageReceiver, int pixelFormat
         .height = 0x100,
         .strideAlignment = 0x8,
         .format = pixelFormat,
-        .usage = HBM_USE_CPU_READ | HBM_USE_CPU_WRITE | HBM_USE_MEM_DMA,
+        .usage = V1_2::HBM_USE_CPU_READ | V1_2::HBM_USE_CPU_WRITE | V1_2::HBM_USE_MEM_DMA,
         .timeout = 0,
     };
 
@@ -619,7 +621,7 @@ napi_value ImageReceiverNapi::JsTest(napi_env env, napi_callback_info info)
 
     args.nonAsyncBack = [](ImageReceiverCommonArgs &args, ImageReceiverInnerContext &ic) -> bool {
         ic.context->constructor_->isCallBackTest = true;
-        DoTest(ic.context->constructor_->imageReceiver_, PIXEL_FMT_RGBA_8888);
+        DoTest(ic.context->constructor_->imageReceiver_, V1_2::PIXEL_FMT_RGBA_8888);
         return true;
     };
 
@@ -642,7 +644,7 @@ napi_value ImageReceiverNapi::JsCheckDeviceTest(napi_env env, napi_callback_info
         napi_create_string_utf8(args.env, DEVICE_ERRCODE.c_str(), NAPI_AUTO_LENGTH, &mess);
         ic.result = mess;
         if (args.async != CallType::GETTER) {
-            DoTest(ic.context->constructor_->imageReceiver_, PIXEL_FMT_RGBA_8888);
+            DoTest(ic.context->constructor_->imageReceiver_, V1_2::PIXEL_FMT_RGBA_8888);
         }
         return true;
     };
@@ -661,7 +663,7 @@ napi_value ImageReceiverNapi::JsTestYUV(napi_env env, napi_callback_info info)
 
     args.nonAsyncBack = [](ImageReceiverCommonArgs &args, ImageReceiverInnerContext &ic) -> bool {
         ic.context->constructor_->isCallBackTest = true;
-        DoTest(ic.context->constructor_->imageReceiver_, PIXEL_FMT_YCBCR_422_SP);
+        DoTest(ic.context->constructor_->imageReceiver_, V1_2::PIXEL_FMT_YCBCR_422_SP);
         return true;
     };
 

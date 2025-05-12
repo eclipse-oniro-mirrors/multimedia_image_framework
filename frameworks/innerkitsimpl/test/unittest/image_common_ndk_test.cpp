@@ -142,6 +142,65 @@ HWTEST_F(ImageCommonNdkTest, OH_PictureMetadata_GetPropertyTest001, TestSize.Lev
 }
 
 /**
+ * @tc.name: OH_PictureMetadata_GetPropertyWithNull
+ * @tc.desc: test OH_PictureMetadata_GetPropertyWithNull with null pointer
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageCommonNdkTest, OH_PictureMetadata_GetPropertyWithNullTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImagSourceNdk2Test: OH_PictureMetadata_GetPropertyWithNull start";
+    OH_PictureMetadata *metadataPtr = nullptr;
+    Image_String* key = nullptr;
+    Image_String* value = nullptr;
+    Image_ErrorCode ret = OH_PictureMetadata_GetPropertyWithNull(metadataPtr, key, value);
+    ASSERT_NE(ret, IMAGE_SUCCESS);
+    GTEST_LOG_(INFO) << "ImagSourceNdk2Test: OH_PictureMetadata_GetPropertyWithNull end";
+}
+
+/**
+ * @tc.name: OH_PictureMetadata_GetPropertyWithNullTest002
+ * @tc.desc: test OH_PictureMetadata_GetPropertyWithNull with right value
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageCommonNdkTest, OH_PictureMetadata_GetPropertyWithNullTest002, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImagSourceNdk2Test: OH_PictureMetadata_GetPropertyWithNullTest002 start";
+    Image_MetadataType metadataType = EXIF_METADATA;
+    const std::string keyString = "ImageWidth";
+
+    OH_PictureMetadata *metadataPtr = nullptr;
+    Image_ErrorCode res = OH_PictureMetadata_Create(metadataType, &metadataPtr);
+    ASSERT_NE(metadataPtr, nullptr);
+
+    Image_String key;
+    key.data = strdup(keyString.c_str());
+    key.size = strlen(key.data);
+    Image_String srcValue;
+    char bufferValue[] = "666";
+    srcValue.data = bufferValue;
+    srcValue.size = strlen(bufferValue);
+    res = OH_PictureMetadata_SetProperty(metadataPtr, &key, &srcValue);
+    EXPECT_EQ(res, IMAGE_SUCCESS);
+
+    Image_String dstValue;
+    res = OH_PictureMetadata_GetPropertyWithNull(metadataPtr, &key, &dstValue);
+    EXPECT_EQ(res, IMAGE_SUCCESS);
+    ASSERT_NE(dstValue.data, nullptr);
+    EXPECT_EQ(srcValue.size, dstValue.size);
+    EXPECT_EQ(strncmp(srcValue.data, dstValue.data, srcValue.size), 0);
+    
+    res = OH_PictureMetadata_Release(metadataPtr);
+    EXPECT_EQ(res, IMAGE_SUCCESS);
+    free(key.data);
+    if (dstValue.data != nullptr) {
+        delete[] dstValue.data;
+        dstValue.data = nullptr;
+    }
+
+    GTEST_LOG_(INFO) << "ImagSourceNdk2Test: OH_PictureMetadata_GetPropertyWithNullTest002 end";
+}
+
+/**
  * @tc.name: OH_PictureMetadata_SetProperty001
  * @tc.desc: Test OH_PictureMetadata_SetProperty with null pointers.
  * @tc.type: FUNC

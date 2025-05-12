@@ -67,6 +67,8 @@ struct OH_DecodingOptions {
     int32_t desiredDynamicRange = IMAGE_DYNAMIC_RANGE_SDR;
     int32_t cropAndScaleStrategy;
     int32_t desiredColorSpace = 0;
+    struct Image_Region cropRegion;
+    bool isCropRegionSet = false;
 };
 
 struct OH_ImageSource_Info {
@@ -181,7 +183,7 @@ Image_ErrorCode OH_DecodingOptions_SetPixelFormat(OH_DecodingOptions *options,
     return IMAGE_SUCCESS;
 }
 
-static inline bool IsCropStrategyVaild(int32_t strategy)
+static inline bool IsCropStrategyValid(int32_t strategy)
 {
     return strategy >= static_cast<int32_t>(CropAndScaleStrategy::SCALE_FIRST) &&
         strategy <= static_cast<int32_t>(CropAndScaleStrategy::CROP_FIRST);
@@ -194,7 +196,7 @@ Image_ErrorCode OH_DecodingOptions_GetCropAndScaleStrategy(OH_DecodingOptions *o
         IMAGE_LOGE("options or cropAndScaleStrategy is nullptr");
         return IMAGE_BAD_PARAMETER;
     }
-    if (!IsCropStrategyVaild(options->cropAndScaleStrategy)) {
+    if (!IsCropStrategyValid(options->cropAndScaleStrategy)) {
         IMAGE_LOGE("SetCropAndScaleStrategy was not called or the method call failed");
         return IMAGE_BAD_PARAMETER;
     }
@@ -208,7 +210,7 @@ Image_ErrorCode OH_DecodingOptions_SetCropAndScaleStrategy(OH_DecodingOptions *o
     if (options == nullptr) {
         return IMAGE_BAD_PARAMETER;
     }
-    if (!IsCropStrategyVaild(cropAndScaleStrategy)) {
+    if (!IsCropStrategyValid(cropAndScaleStrategy)) {
         IMAGE_LOGE("cropAndScaleStrategy:%{public}d is invalid", cropAndScaleStrategy);
         return IMAGE_BAD_PARAMETER;
     }
@@ -308,6 +310,31 @@ Image_ErrorCode OH_DecodingOptions_SetDesiredRegion(OH_DecodingOptions *options,
     return IMAGE_SUCCESS;
 }
 
+Image_ErrorCode OH_DecodingOptions_GetCropRegion(OH_DecodingOptions *options, Image_Region *cropRegion)
+{
+    if (options == nullptr || cropRegion == nullptr) {
+        return IMAGE_SOURCE_INVALID_PARAMETER;
+    }
+    cropRegion->x = options->cropRegion.x;
+    cropRegion->y = options->cropRegion.y;
+    cropRegion->width = options->cropRegion.width;
+    cropRegion->height = options->cropRegion.height;
+    return IMAGE_SUCCESS;
+}
+
+Image_ErrorCode OH_DecodingOptions_SetCropRegion(OH_DecodingOptions *options, Image_Region *cropRegion)
+{
+    if (options == nullptr || cropRegion == nullptr) {
+        return IMAGE_SOURCE_INVALID_PARAMETER;
+    }
+    options->cropRegion.x = cropRegion->x;
+    options->cropRegion.y = cropRegion->y;
+    options->cropRegion.width = cropRegion->width;
+    options->cropRegion.height = cropRegion->height;
+    options->isCropRegionSet = true;
+    return IMAGE_SUCCESS;
+}
+
 MIDK_EXPORT
 Image_ErrorCode OH_DecodingOptions_GetDesiredDynamicRange(OH_DecodingOptions *options,
     int32_t *desiredDynamicRange)
@@ -349,7 +376,8 @@ inline static bool IsColorSpaceInvalid(int32_t colorSpace)
 MIDK_EXPORT
 Image_ErrorCode OH_DecodingOptions_SetDesiredColorSpace(OH_DecodingOptions *options, int32_t colorSpace)
 {
-    if (options == nullptr || IsColorSpaceInvalid(colorSpace)) {
+    if (options == nullptr || IsColorSpaceInvalid(colorSpace) ||
+        colorSpace == static_cast<int32_t>(ColorSpaceName::CUSTOM)) {
         return IMAGE_SOURCE_INVALID_PARAMETER;
     }
     options->desiredColorSpace = colorSpace;
@@ -410,10 +438,13 @@ MIDK_EXPORT
 Image_ErrorCode OH_ImageSourceInfo_GetMimeType(OH_ImageSource_Info *info, Image_MimeType *mimeType)
 {
     if (info == nullptr || mimeType == nullptr) {
-        return IMAGE_BAD_PARAMETER;
+        return IMAGE_SOURCE_INVALID_PARAMETER;
     }
     if (info->mimeType.data == nullptr || info->mimeType.size == 0) {
-        return IMAGE_UNKNOWN_MIME_TYPE;
+        std::string unknownStr = "unknown";
+        mimeType->data = strdup(unknownStr.c_str());
+        mimeType->size = unknownStr.size();
+        return IMAGE_SUCCESS;
     }
     *mimeType = info->mimeType;
     return IMAGE_SUCCESS;
@@ -450,7 +481,12 @@ static void ParseDecodingOps(DecodeOptions &decOps, struct OH_DecodingOptions *o
     decOps.rotateNewDegrees = ops->rotate;
     decOps.desiredSize.width = static_cast<int32_t>(ops->desiredSize.width);
     decOps.desiredSize.height = static_cast<int32_t>(ops->desiredSize.height);
-    if (IsCropStrategyVaild(ops->cropAndScaleStrategy)) {
+    if (ops->isCropRegionSet) {
+        decOps.CropRect.left = static_cast<int32_t>(ops->cropRegion.x);
+        decOps.CropRect.top = static_cast<int32_t>(ops->cropRegion.y);
+        decOps.CropRect.width = static_cast<int32_t>(ops->cropRegion.width);
+        decOps.CropRect.height = static_cast<int32_t>(ops->cropRegion.height);
+    } else if (IsCropStrategyValid(ops->cropAndScaleStrategy)) {
         decOps.CropRect.left = static_cast<int32_t>(ops->desiredRegion.x);
         decOps.CropRect.top = static_cast<int32_t>(ops->desiredRegion.y);
         decOps.CropRect.width = static_cast<int32_t>(ops->desiredRegion.width);
@@ -478,7 +514,7 @@ static void ParseDecodingOps(DecodeOptions &decOps, struct OH_DecodingOptions *o
         default:
             decOps.desiredPixelFormat = PixelFormat::UNKNOWN;
     }
-    if (IsCropStrategyVaild(ops->cropAndScaleStrategy)) {
+    if (IsCropStrategyValid(ops->cropAndScaleStrategy)) {
         decOps.cropAndScaleStrategy = static_cast<OHOS::Media::CropAndScaleStrategy>(ops->cropAndScaleStrategy);
     }
     OH_NativeColorSpaceManager* colorSpaceNative =
@@ -768,6 +804,46 @@ Image_ErrorCode OH_ImageSourceNative_GetImageProperty(OH_ImageSourceNative *sour
     if (EOK != memcpy_s(value->data, value->size, val.c_str(), val.size())) {
         return IMAGE_COPY_FAILED;
     }
+    return IMAGE_SUCCESS;
+}
+
+MIDK_EXPORT
+Image_ErrorCode OH_ImageSourceNative_GetImagePropertyWithNull(OH_ImageSourceNative *source, Image_String *key,
+    Image_String *value)
+{
+    if (source == nullptr || key == nullptr || key->data == nullptr || key->size == SIZE_ZERO || value == nullptr) {
+        return IMAGE_SOURCE_INVALID_PARAMETER;
+    }
+
+    std::string keyString(key->data, key->size);
+    if (keyString.empty()) {
+        return IMAGE_SOURCE_INVALID_PARAMETER;
+    }
+
+    std::string val;
+    uint32_t errorCode = source->GetInnerImageSource()->GetImagePropertyString(DEFAULT_INDEX, keyString, val);
+    if (errorCode != IMAGE_SUCCESS || val.empty()) {
+        return IMAGE_SOURCE_INVALID_PARAMETER;
+    }
+
+    if (value->size != SIZE_ZERO && value->size < val.size()) {
+        return IMAGE_SOURCE_INVALID_PARAMETER;
+    }
+
+    size_t allocSize = val.size() + 1;
+    char* buffer = static_cast<char*>(malloc(allocSize));
+    if (buffer == nullptr) {
+        return IMAGE_SOURCE_INVALID_PARAMETER;
+    }
+
+    if (EOK != memcpy_s(buffer, allocSize, val.c_str(), val.size())) {
+        free(buffer);
+        return IMAGE_SOURCE_INVALID_PARAMETER;
+    }
+    buffer[val.size()] = '\0';
+
+    value->data = buffer;
+    value->size = val.size();
     return IMAGE_SUCCESS;
 }
 

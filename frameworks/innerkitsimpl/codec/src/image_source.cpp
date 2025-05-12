@@ -4900,6 +4900,7 @@ bool ImageSource::CheckJpegSourceStream(StreamInfo &streamInfo)
         if (gainmapOffset >= streamInfo.size) {
             IMAGE_LOGW("%{public}s skip invalid gainmapOffset: %{public}u, streamSize: %{public}u",
                 __func__, gainmapOffset, streamInfo.size);
+            sourceHdrType_ = ImageHdrType::SDR;
             return true;
         }
         streamInfo.gainmapOffset = gainmapOffset;

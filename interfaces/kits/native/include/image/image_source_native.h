@@ -175,13 +175,13 @@ Image_ErrorCode OH_ImageSourceInfo_GetHeight(OH_ImageSource_Info *info, uint32_t
 Image_ErrorCode OH_ImageSourceInfo_GetDynamicRange(OH_ImageSource_Info *info, bool *isHdr);
 
 /**
- * @brief Get mime type from OH_ImageSource_Info struct.
+ * @brief Get mime type from OH_ImageSource_Info.
  *
- * @param info The OH_ImageSource_Info pointer will be operated.
- * @param mimeType The mime type of the image.
- * @return Returns {@link Image_ErrorCode} IMAGE_SUCCESS - if the operation is successful.
- * returns {@link Image_ErrorCode} IMAGE_BAD_PARAMETER - if invalid parameter, info or mimeType is nullptr.
- * returns {@link Image_ErrorCode} IMAGE_UNKNOWN_MIME_TYPE - if the mimeType data in OH_ImageSource_Info is nullptr.
+ * @param info A OH_ImageSource_Info pointer.
+ * @param mimeType Mime type of the Image Source.
+ * @return Returns one of the following result codes:
+ * {@link IMAGE_SUCCESS}: The execution is successful.
+ * {@link IMAGE_BAD_PARAMETER}: info or mimeType is a null pointer.
  * @since 16
  */
 Image_ErrorCode OH_ImageSourceInfo_GetMimeType(OH_ImageSource_Info *info, Image_MimeType *mimeType);
@@ -364,6 +364,30 @@ Image_ErrorCode OH_DecodingOptions_SetDesiredDynamicRange(OH_DecodingOptions *op
     int32_t desiredDynamicRange);
 
 /**
+ * @brief Gets the crop region for the decoding options.
+ *
+ * @param options Pointer to the decoding options.
+ * @param cropRegion The target region will be cropped from the image.
+ * @return Returns one of the following result codes:
+ * {@link IMAGE_SUCCESS} if the execution is successful.
+ * {@link IMAGE_SOURCE_INVALID_PARAMETER} if options or cropRegion is null pointer.
+ * @since 19
+ */
+Image_ErrorCode OH_DecodingOptions_GetCropRegion(OH_DecodingOptions *options, Image_Region *cropRegion);
+
+/**
+ * @brief Sets the crop region for the decoding options.
+ *
+ * @param options Pointer to the decoding options.
+ * @param cropRegion The target region will be cropped from the image.
+ * @return Returns one of the following result codes:
+ * {@link IMAGE_SUCCESS} if the execution is successful.
+ * {@link IMAGE_SOURCE_INVALID_PARAMETER} if options or cropRegion is null pointer.
+ * @since 19
+ */
+Image_ErrorCode OH_DecodingOptions_SetCropRegion(OH_DecodingOptions *options, Image_Region *cropRegion);
+
+/**
  * @brief Gets desired color space for decoding options.
  *
  * @param options Pointer to the decoding options.
@@ -540,6 +564,21 @@ Image_ErrorCode OH_ImageSourceNative_GetImageInfo(OH_ImageSourceNative *source, 
  */
 Image_ErrorCode OH_ImageSourceNative_GetImageProperty(OH_ImageSourceNative *source, Image_String *key,
     Image_String *value);
+
+/**
+ * @brief Obtains the value of an image property from an <b>ImageSource</b> object.
+ *        The output value.data is null-terminated.
+ *
+ * @param source pointer to ImageSource.
+ * @param key Pointer to the property key.
+ * @param value Pointer to the property value. Output Parameter.
+ * @return Returns One of the following result codes:
+ *         {@link IMAGE_SUCCESS} if the property is retrieved successfully.
+ *         {@link IMAGE_SOURCE_INVALID_PARAMETER} if the source, key or value is nullptr or invalid.
+ * @since 19
+ */
+Image_ErrorCode OH_ImageSourceNative_GetImagePropertyWithNull(OH_ImageSourceNative *source,
+    Image_String *key, Image_String *value);
 
 /**
  * @brief Modifies the value of an image property of an <b>ImageSource</b> object.

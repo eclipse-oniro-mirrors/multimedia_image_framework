@@ -48,6 +48,7 @@ static const std::string IMAGE_OUTPUT_ITXT_WITHCOMPRESS_PNG_PATH =
     "/data/local/tmp/image/test_out_chunk_itxt_withcompress.png";
 static const std::string IMAGE_INPUT1_JPEG_PATH = "/data/local/tmp/image/test_jpeg_readmetadata001.jpg";
 static const auto TIFF_IFH_LENGTH = 8;
+static const uint32_t MOCK_SIZE = 4;
 }
 class PngExifMetadataAccessorTest : public testing::Test {
 public:
@@ -1328,6 +1329,60 @@ HWTEST_F(PngExifMetadataAccessorTest, WriteExifDataTest001, TestSize.Level2)
 
     res = imageReadAccessor.WriteExifData(bufMdataStream, &dataBlob, 0, dataBuf, chunkType);
     EXPECT_FALSE(res);
+}
+
+/**
+ * @tc.name: FindTiffFromText001
+ * @tc.desc: Verify that PngExifMetadataAccessor call FindTiffFromText when chunkType is not correct.
+ * @tc.type: FUNC
+ */
+HWTEST_F(PngExifMetadataAccessorTest, FindTiffFromText001, TestSize.Level2)
+{
+    GTEST_LOG_(INFO) << "PngExifMetadataAccessorTest: FindTiffFromText001 start";
+    std::shared_ptr<MetadataStream> mockStream = std::make_shared<FileMetadataStream>(IMAGE_INPUT_EXIF_PNG_PATH);
+    PngExifMetadataAccessor accessor(mockStream);
+    DataBuf resBuf;
+    DataBuf srcBuf;
+    auto ret = accessor.FindTiffFromText(srcBuf, std::string("mock"), resBuf);
+    ASSERT_EQ(ret, false);
+    GTEST_LOG_(INFO) << "PngExifMetadataAccessorTest: FindTiffFromText001 end";
+}
+
+/**
+ * @tc.name: ProcessExifData001
+ * @tc.desc: Verify that PngExifMetadataAccessor call ProcessExifData when ReadChunk is not correct.
+ * @tc.type: FUNC
+ */
+HWTEST_F(PngExifMetadataAccessorTest, ProcessExifData001, TestSize.Level2)
+{
+    GTEST_LOG_(INFO) << "PngExifMetadataAccessorTest: ProcessExifData001 start";
+    std::shared_ptr<MetadataStream> mockStream = std::make_shared<FileMetadataStream>(IMAGE_INPUT_EXIF_PNG_PATH);
+    PngExifMetadataAccessor accessor(mockStream);
+    DataBuf mockBuf;
+    auto ret = accessor.ProcessExifData(mockBuf, std::string("mock"), MOCK_SIZE);
+    ASSERT_EQ(ret, false);
+    GTEST_LOG_(INFO) << "PngExifMetadataAccessorTest: ProcessExifData001 end";
+}
+
+/**
+ * @tc.name: GetExifEncodedBlob001
+ * @tc.desc: Verify that PngExifMetadataAccessor call GetExifEncodedBlob when dataBlob is nullptr.
+ * @tc.type: FUNC
+ */
+HWTEST_F(PngExifMetadataAccessorTest, GetExifEncodedBlob001, TestSize.Level2)
+{
+    GTEST_LOG_(INFO) << "PngExifMetadataAccessorTest: GetExifEncodedBlob001 start";
+    std::shared_ptr<MetadataStream> mockStream = std::make_shared<FileMetadataStream>(IMAGE_INPUT_EXIF_PNG_PATH);
+    PngExifMetadataAccessor accessor(mockStream);
+    accessor.exifMetadata_ = std::make_shared<ExifMetadata>();
+    uint32_t mockSize{0};
+    auto ret = accessor.GetExifEncodedBlob(nullptr, mockSize);
+    ASSERT_EQ(ret, false);
+    uint8_t* secondaryPointer{nullptr};
+    uint8_t** mockPointer = &secondaryPointer;
+    ret = accessor.GetExifEncodedBlob(mockPointer, mockSize);
+    ASSERT_EQ(ret, false);
+    GTEST_LOG_(INFO) << "PngExifMetadataAccessorTest: GetExifEncodedBlob001 end";
 }
 } // namespace Multimedia
 } // namespace OHOS

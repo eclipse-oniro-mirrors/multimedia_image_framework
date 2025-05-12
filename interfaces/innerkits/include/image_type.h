@@ -19,6 +19,7 @@
 #include <cinttypes>
 #include <set>
 #include <string>
+#include <sstream>
 #include "color_space.h"
 
 namespace OHOS {
@@ -230,6 +231,14 @@ struct YUVDataInfo {
     uint32_t uOffset = 0;
     uint32_t vOffset = 0;
     uint32_t uvOffset = 0;
+    std::string ToString() const {
+        std::stringstream message;
+        message << " yWidth: " << yWidth << ", yHeight: " << yHeight << ", uvWidth: " << uvWidth <<
+        ", uvHeight: " << uvHeight << ", yStride: " << yStride << ", uStride: " << uStride <<
+        ", vStride: " << vStride << ", uvStride: " << uvStride << ", yOffset: " << yOffset <<
+        ", uOffset: " << uOffset << ", vOffset: " << vOffset << ", uvOffset: " << uvOffset;
+        return message.str();
+    }
 };
 
 struct Convert10bitInfo {

@@ -78,6 +78,51 @@ HWTEST_F(ImagePackerNdk2Test, OH_PackingOptions_SetGetMimeType, TestSize.Level3)
 }
 
 /**
+ * @tc.name: OH_PackingOptions_GetMimeTypeWithNullTest001
+ * @tc.desc: test OH_PackingOptions_GetMimeTypeWithNull with null pointer
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImagePackerNdk2Test, OH_PackingOptions_GetMimeTypeWithNullTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImagePackerNdk2Test: OH_PackingOptions_GetMimeTypeWithNullTest001 start";
+    OH_PackingOptions *ops = nullptr;
+    Image_MimeType *mimeType = nullptr;
+    Image_ErrorCode ret = OH_PackingOptions_Create(&ops);
+    ASSERT_EQ(ret, IMAGE_SUCCESS);
+    ret = OH_PackingOptions_GetMimeTypeWithNull(ops, mimeType);
+    ASSERT_NE(ret, IMAGE_SUCCESS);
+    GTEST_LOG_(INFO) << "ImagePackerNdk2Test: OH_PackingOptions_GetMimeTypeWithNullTest001 end";
+}
+
+/**
+ * @tc.name: OH_PackingOptions_GetMimeTypeWithNullTest002
+ * @tc.desc: test OH_PackingOptions_GetMimeTypeWithNull with right value
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImagePackerNdk2Test, OH_PackingOptions_GetMimeTypeWithNullTest002, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImagePackerNdk2Test: OH_PackingOptions_GetMimeTypeWithNullTest002 start";
+    OH_PackingOptions *ops = nullptr;
+    char str[10] = "";
+    char str2[10] = "12";
+    Image_MimeType *mimeType = new Image_MimeType();
+    mimeType->data = str;
+    mimeType->size = 0;
+    Image_MimeType *mimeType2 = new Image_MimeType();
+    mimeType2->data = str2;
+    mimeType2->size = 2;
+    Image_ErrorCode ret = OH_PackingOptions_Create(&ops);
+    ASSERT_EQ(ret, IMAGE_SUCCESS);
+    OH_PackingOptions_SetMimeType(ops, mimeType2);
+    OH_PackingOptions_GetMimeTypeWithNull(ops, mimeType);
+    ASSERT_EQ(mimeType->size, 2);
+    string res(mimeType->data, mimeType->size);
+    ASSERT_EQ(res, "12");
+    OH_PackingOptions_Release(ops);
+    GTEST_LOG_(INFO) << "ImagePackerNdk2Test: OH_PackingOptions_GetMimeTypeWithNullTest002 end";
+}
+
+/**
  * @tc.name: OH_PackingOptions_Release
  * @tc.desc: test OH_PackingOptions_Release
  * @tc.type: FUNC
