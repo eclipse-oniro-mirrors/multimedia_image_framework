@@ -440,12 +440,6 @@ Image_ErrorCode OH_ImageSourceInfo_GetMimeType(OH_ImageSource_Info *info, Image_
     if (info == nullptr || mimeType == nullptr) {
         return IMAGE_SOURCE_INVALID_PARAMETER;
     }
-    if (info->mimeType.data == nullptr || info->mimeType.size == 0) {
-        std::string unknownStr = "unknown";
-        mimeType->data = strdup(unknownStr.c_str());
-        mimeType->size = unknownStr.size();
-        return IMAGE_SUCCESS;
-    }
     *mimeType = info->mimeType;
     return IMAGE_SUCCESS;
 }
@@ -535,14 +529,20 @@ static void ParseImageSourceInfo(struct OH_ImageSource_Info *source, const Image
     }
     source->width = info.size.width;
     source->height = info.size.height;
-
-    if (!info.encodedFormat.empty() && source->mimeType.data == nullptr) {
-        source->mimeType.size = info.encodedFormat.size();
-        source->mimeType.data = static_cast<char *>(malloc(source->mimeType.size));
-        if (memcpy_s(source->mimeType.data, source->mimeType.size, info.encodedFormat.c_str(),
-            info.encodedFormat.size()) != 0) {
-            releaseMimeType(&source->mimeType);
-        }
+    if (source->mimeType.data != nullptr) {
+        return;
+    }
+    if (info.encodedFormat.empty()) {
+        std::string unknownStr = "unknown";
+        source->mimeType.data = strdup(unknownStr.c_str());
+        source->mimeType.size = unknownStr.size();
+        return;
+    }
+    source->mimeType.size = info.encodedFormat.size();
+    source->mimeType.data = static_cast<char *>(malloc(source->mimeType.size));
+    if (memcpy_s(source->mimeType.data, source->mimeType.size, info.encodedFormat.c_str(),
+        info.encodedFormat.size()) != 0) {
+        releaseMimeType(&source->mimeType);
     }
 }
 

@@ -181,8 +181,8 @@ Image_ErrorCode OH_ImageSourceInfo_GetDynamicRange(OH_ImageSource_Info *info, bo
  * @param mimeType Mime type of the Image Source.
  * @return Returns one of the following result codes:
  * {@link IMAGE_SUCCESS}: The execution is successful.
- * {@link IMAGE_BAD_PARAMETER}: info or mimeType is a null pointer.
- * @since 16
+ * {@link IMAGE_SOURCE_INVALID_PARAMETER}: info or mimeType is a null pointer.
+ * @since 20
  */
 Image_ErrorCode OH_ImageSourceInfo_GetMimeType(OH_ImageSource_Info *info, Image_MimeType *mimeType);
 
