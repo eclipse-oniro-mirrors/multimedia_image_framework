@@ -203,16 +203,18 @@
             "name": "//foundation/multimedia/image_framework/frameworks/kits/ani:image_ani"
           },
           {
+            "name": "//foundation/multimedia/image_framework/frameworks/kits/taihe:copy_image_taihe"
+          },
+          {
             "header": {
               "header_base": "//foundation/multimedia/image_framework/frameworks/kits/taihe/include/",
               "header_files": [
+                "image_taihe.h",
+                "picture_taihe.h",
                 "pixel_map_taihe.h"
               ]
             },
             "name": "//foundation/multimedia/image_framework/frameworks/kits/taihe:image_taihe"
-          },
-          {
-            "name": "//foundation/multimedia/image_framework/frameworks/kits/taihe:copy_image_taihe"
           },
           {
             "header": {

@@ -196,6 +196,11 @@ std::shared_ptr<Media::PixelMap> PixelMapImpl::GetPixelMap(PixelMap etsPixelMap)
     return pixelMapImpl->GetNativePtr();
 }
 
+PixelMap PixelMapImpl::CreatePixelMap(std::shared_ptr<Media::PixelMap> pixelMap)
+{
+    return make_holder<PixelMapImpl, PixelMap>(pixelMap);
+}
+
 ImageInfo PixelMapImpl::GetImageInfoSync()
 {
     if (nativePixelMap_ == nullptr) {
@@ -448,6 +453,26 @@ bool PixelMapImpl::GetIsStrideAlignment()
     }
 
     return nativePixelMap_->IsStrideAlignment();
+}
+
+void PixelMapImpl::SetCaptureId(int32_t captureId)
+{
+    captureId_ = captureId;
+}
+
+int32_t PixelMapImpl::GetCaptureId()
+{
+    return captureId_;
+}
+
+void PixelMapImpl::SetTimestamp(int64_t timestamp)
+{
+    timestamp_ = timestamp;
+}
+
+int64_t PixelMapImpl::GetTimestamp()
+{
+    return timestamp_;
 }
 
 bool PixelMapImpl::Is10BitFormat(Media::PixelFormat format)
