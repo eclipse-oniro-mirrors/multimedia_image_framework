@@ -437,7 +437,7 @@ static PixelMap CreatePixelMapComplete(std::unique_ptr<ImageSourceTaiheContext> 
 {
     IMAGE_LOGD("CreatePixelMapComplete IN");
     if (taiheContext->status == OHOS::Media::SUCCESS && taiheContext->rPixelMap != nullptr) {
-        return make_holder<PixelMapImpl, PixelMap>(taiheContext->rPixelMap);
+        return PixelMapImpl::CreatePixelMap(taiheContext->rPixelMap);
     }
     IMAGE_LOGD("CreatePixelMapComplete OUT");
     ImageTaiheUtils::ThrowExceptionError(taiheContext->errMsg);
@@ -496,7 +496,7 @@ static void CreatePixelMapUsingAllocatorSyncExecute(std::unique_ptr<ImageSourceT
 static PixelMap CreatePixelMapUsingAllocatorSyncComplete(std::unique_ptr<ImageSourceTaiheContext> &taiheContext)
 {
     if (taiheContext->status == OHOS::Media::SUCCESS && taiheContext->rPixelMap != nullptr) {
-        return make_holder<PixelMapImpl, PixelMap>(taiheContext->rPixelMap);
+        return PixelMapImpl::CreatePixelMap(taiheContext->rPixelMap);
     }
     for (const auto &[errorCode, errMsg] : taiheContext->errMsgArray) {
         ImageTaiheUtils::ThrowExceptionError(errorCode, errMsg);
@@ -598,7 +598,7 @@ static array<PixelMap> CreatePixelMapListSyncWithOptionsComplete(std::unique_ptr
     if (taiheContext->status == OHOS::Media::SUCCESS && taiheContext->pixelMaps != nullptr) {
         IMAGE_LOGD("CreatePixelMapListSyncWithOptionsComplete array");
         for (auto &pixelMap : *taiheContext->pixelMaps.get()) {
-            result.emplace_back(make_holder<PixelMapImpl, PixelMap>(std::move(pixelMap)));
+            result.emplace_back(PixelMapImpl::CreatePixelMap(std::move(pixelMap)));
         }
     }
     return array<PixelMap>(result);
@@ -1143,24 +1143,24 @@ ImageSource CreateImageSourceByArrayBuffer(array_view<uint8_t> buf)
 
 ImageSource CreateImageSourceByRawFileDescriptorOption(uintptr_t rawfile, optional_view<SourceOptions> options)
 {
-    int32_t fd;
-    int32_t offset;
-    int32_t length;
+    double fd;
+    double offset;
+    double length;
     ani_env *env = ::taihe::get_env();
     ani_object rawfileObj = reinterpret_cast<ani_object>(rawfile);
-    if (!ImageTaiheUtils::GetPropertyInt(env, rawfileObj, "fd", fd) ||
-        !ImageTaiheUtils::GetPropertyInt(env, rawfileObj, "offset", offset) ||
-        !ImageTaiheUtils::GetPropertyInt(env, rawfileObj, "length", length)) {
-        ImageTaiheUtils::ThrowExceptionError(OHOS::Media::COMMON_ERR_INVALID_PARAMETER, "GetPropertyInt failed");
+    if (!ImageTaiheUtils::GetPropertyDouble(env, rawfileObj, "fd", fd) ||
+        !ImageTaiheUtils::GetPropertyDouble(env, rawfileObj, "offset", offset) ||
+        !ImageTaiheUtils::GetPropertyDouble(env, rawfileObj, "length", length)) {
+        ImageTaiheUtils::ThrowExceptionError(OHOS::Media::COMMON_ERR_INVALID_PARAMETER, "GetPropertyDouble failed");
         return make_holder<ImageSourceImpl, ImageSource>(nullptr);
     }
     SourceOptions etsOpts = options.value_or(SourceOptions {});
     OHOS::Media::SourceOptions opts = ImageTaiheUtils::ParseSourceOptions(etsOpts);
 
     uint32_t errorCode = OHOS::Media::ERR_MEDIA_INVALID_VALUE;
-    int32_t fileSize = offset + length;
-    std::shared_ptr<OHOS::Media::ImageSource> imageSource = OHOS::Media::ImageSource::CreateImageSource(fd,
-        offset, fileSize, opts, errorCode);
+    int32_t fileSize = static_cast<int32_t>(offset) + static_cast<int32_t>(length);
+    std::shared_ptr<OHOS::Media::ImageSource> imageSource = OHOS::Media::ImageSource::CreateImageSource(
+        static_cast<int32_t>(fd), static_cast<int32_t>(offset), fileSize, opts, errorCode);
     if (imageSource == nullptr) {
         ImageTaiheUtils::ThrowExceptionError("CreateImageSourceByRawFileDescriptorOption error");
         return make_holder<ImageSourceImpl, ImageSource>(nullptr);
@@ -1180,3 +1180,6 @@ TH_EXPORT_CPP_API_CreateImageSourceByUri(CreateImageSourceByUri);
 TH_EXPORT_CPP_API_CreateImageSourceByUriOption(CreateImageSourceByUriOption);
 TH_EXPORT_CPP_API_CreateImageSourceByFd(CreateImageSourceByFd);
 TH_EXPORT_CPP_API_CreateImageSourceByFdOption(CreateImageSourceByFdOption);
+TH_EXPORT_CPP_API_CreateImageSourceByArrayBuffer(CreateImageSourceByArrayBuffer);
+TH_EXPORT_CPP_API_CreateImageSourceByArrayBufferOption(CreateImageSourceByArrayBufferOption);
+TH_EXPORT_CPP_API_CreateImageSourceByRawFileDescriptorOption(CreateImageSourceByRawFileDescriptorOption);

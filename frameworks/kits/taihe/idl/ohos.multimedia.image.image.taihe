@@ -441,12 +441,33 @@ interface PixelMap {
   ReleaseSync(): void;
 
   @get GetIsStrideAlignment(): bool;
+
+  @set SetCaptureId(captureId: i32): void;
+  @get GetCaptureId(): i32;
+
+  @set SetTimestamp(timestamp: i64): void;
+  @get GetTimestamp(): i64;
 }
 
 interface Picture {
   GetImplPtr(): i64;
 
   GetMainPixelmap(): PixelMap;
+
+  Marshalling(sequence: @sts_type("rpc.MessageSequence") Opaque): void;
+
+  Release(): void;
+}
+
+interface AuxiliaryPicture {
+  @gen_promise("readPixelsToBuffer")
+  ReadPixelsToBufferSync(): @arraybuffer Array<u8>;
+
+  GetAuxiliaryPictureInfo(): AuxiliaryPictureInfo;
+
+  SetAuxiliaryPictureInfo(info: AuxiliaryPictureInfo): void;
+
+  Release(): void;
 }
 
 interface ImageSource {
@@ -507,6 +528,13 @@ interface ImageSource {
         }
   """)
 
+  @gen_promise("createPixelMapUsingAllocator")
+  CreatePixelMapUsingAllocatorSync(options: Optional<DecodingOptions>, allocatorType: Optional<AllocatorType>): PixelMap;
+
+  @gen_async("getDelayTimeList")
+  @gen_promise("getDelayTimeList")
+  GetDelayTimeListSync(): Array<i32>;
+
   @gen_promise("getImageProperty")
   GetImagePropertySync(key: PropertyKey, options: Optional<ImagePropertyOptions>): String;
 
@@ -522,12 +550,89 @@ interface ImageSource {
   @gen_async("release")
   @gen_promise("release")
   ReleaseSync(): void;
+
+  @get GetSupportedFormats(): Array<String>;
 }
 
 interface ImagePacker {
   @gen_async("packing")
   @gen_promise("packing")
   PackingPixelMapSync(source: PixelMap, option: PackingOption): @arraybuffer Array<u8>;
+
+  @gen_async("packToFile")
+  @gen_promise("packToFile")
+  PackImageSourceToFileSync(source: ImageSource, fd: i32, options: PackingOption): void;
+
+  @gen_async("packToFile")
+  @gen_promise("packToFile")
+  PackPixelMapToFileSync(source: PixelMap, fd: i32, options: PackingOption): void;
+
+  @gen_promise("packToFile")
+  PackPictureToFileSync(picture: Picture, fd: i32, options: PackingOption): void;
+
+  @gen_promise("packing")
+  PackingPictureSync(picture: Picture, options: PackingOption): @arraybuffer Array<u8>;
+
+  @gen_async("release")
+  @gen_promise("release")
+  ReleaseSync(): void;
+
+  @get GetSupportedFormats(): Array<String>;
+}
+
+interface Image {
+  @get("size") GetSize(): Size;
+  @get("format") GetFormat(): i32;
+
+  @gen_async("release")
+  @gen_promise("release")
+  ReleaseSync(): void;
+}
+
+interface ImageReceiver {
+  @get GetSize(): Size;
+  @get GetCapacity(): i32;
+  @get GetFormat(): ImageFormat;
+
+  @gen_async("getReceivingSurfaceId")
+  @gen_promise("getReceivingSurfaceId")
+  GetReceivingSurfaceIdSync(): String;
+
+  @gen_async("readLatestImage")
+  @gen_promise("readLatestImage")
+  ReadLatestImageSync(): Image;
+
+  @!sts_inject_into_interface("on(type: string, callback: (err: BusinessError<void>, data: undefined)=> void): void;")
+  @!sts_inject_into_class("""on(type: string, callback: (err: BusinessError<void>, data: undefined)=> void): void {
+          if (type === 'imageArrival') {
+            this.onImageArrival(callback);
+          } else {
+            throw new Error(`Unknown type: ${type}`);
+          }
+        }
+  """)
+
+  @!sts_inject_into_interface("off(type: string, callback?: (err: BusinessError<void>, data: undefined)=> void): void;")
+  @!sts_inject_into_class("""off(type: string, callback?: (err: BusinessError<void>, data: undefined)=> void): void {
+          if (type === 'imageArrival') {
+            this.offImageArrival(callback);
+          } else {
+            throw new Error(`Unknown type: ${type}`);
+          }
+        }
+  """)
+
+  OnImageArrival(callback: (err: @sts_type("BusinessError<void>") Opaque, data: @sts_type("undefined") Opaque)=> void): void;
+  OffImageArrival(callback: Optional<(err: @sts_type("BusinessError<void>") Opaque, data: @sts_type("undefined") Opaque)=> void>): void;
+
+  @gen_async("release")
+  @gen_promise("release")
+  ReleaseSync(): void;
+}
+
+interface ImageCreator {
+  @get("capacity") GetCapacity(): i32;
+  @get("format") GetFormat(): ImageFormat;
 
   @gen_async("release")
   @gen_promise("release")
@@ -561,7 +666,30 @@ function CreateImageSourceByFd(fd: i32): ImageSource;
 @overload("createImageSource")
 function CreateImageSourceByFdOption(fd: i32, options: SourceOptions): ImageSource;
 
+@overload("createImageSource")
+function CreateImageSourceByArrayBuffer(buf: @arraybuffer Array<u8>): ImageSource;
+
+@overload("createImageSource")
+function CreateImageSourceByArrayBufferOption(buf: @arraybuffer Array<u8>, options: SourceOptions): ImageSource;
+
+@overload("createImageSource")
+function CreateImageSourceByRawFileDescriptorOption(rawfile: @sts_type("resourceManager.RawFileDescriptor") Opaque, options: Optional<SourceOptions>): ImageSource;
+
 function CreateImagePacker(): ImagePacker;
+
+@overload("createImageCreator")
+function CreateImageCreator(width: i32, height: i32, format: i32, capacity: i32): ImageCreator;
+
+@overload("createImageCreator")
+function CreateImageCreatorBySize(size: Size, format: ImageFormat, capacity: i32): ImageCreator;
+
+@overload("createImageReceiver")
+function CreateImageReceiver(width: i32, height: i32, format: i32, capacity: i32): ImageReceiver;
+
+@overload("createImageReceiver")
+function CreateImageReceiverBySize(size: Size, format: ImageFormat, capacity: i32): ImageReceiver;
 
 @overload("createPicture")
 function CreatePictureByPixelMap(mainPixelmap : PixelMap): Picture;
+
+function CreateAuxiliaryPicture(buffer: @arraybuffer Array<u8>, size: Size, type: AuxiliaryPictureType): AuxiliaryPicture;

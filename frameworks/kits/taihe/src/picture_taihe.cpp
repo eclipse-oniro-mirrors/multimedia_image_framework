@@ -58,7 +58,7 @@ PixelMap PictureImpl::GetMainPixelmap()
         ImageTaiheUtils::ThrowExceptionError("Get main pixelmap failed, pixelmap is nullptr!");
         return make_holder<PixelMapImpl, PixelMap>(nullptr);
     }
-    return make_holder<PixelMapImpl, PixelMap>(pixelmap);
+    return PixelMapImpl::CreatePixelMap(pixelmap);
 }
 
 void PictureImpl::Marshalling(uintptr_t sequence)
