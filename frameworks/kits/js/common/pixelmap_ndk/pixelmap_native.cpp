@@ -486,6 +486,29 @@ Image_ErrorCode OH_PixelmapNative_CreatePixelmap(uint8_t *data, size_t dataLengt
     return IMAGE_SUCCESS;
 }
 
+static bool UsingAllocatorPixelFormatCheck(PixelFormat srcPixelFormat,
+    PixelFormat dstPixelFormat, bool isSupportYUV10Bit = false)
+{
+    if (dstPixelFormat >= PixelFormat::EXTERNAL_MAX ||
+        dstPixelFormat <= PixelFormat::UNKNOWN ||
+        srcPixelFormat >= PixelFormat::EXTERNAL_MAX ||
+        srcPixelFormat <= PixelFormat::UNKNOWN) {
+        IMAGE_LOGE("%{public}s PixelFormat type is unspport %{public}d,%{public}d.", __func__,
+            dstPixelFormat, srcPixelFormat);
+        return false;
+    }
+    if (!isSupportYUV10Bit &&
+        (srcPixelFormat == PixelFormat::YCBCR_P010 ||
+        srcPixelFormat == PixelFormat::YCRCB_P010 ||
+        dstPixelFormat == PixelFormat::YCBCR_P010 ||
+        dstPixelFormat == PixelFormat::YCRCB_P010)) {
+        IMAGE_LOGE("%{public}s PixelFormat type is unspport %{public}d,%{public}d.", __func__,
+            dstPixelFormat, srcPixelFormat);
+        return false;
+    }
+    return true;
+}
+
 MIDK_EXPORT
 Image_ErrorCode OH_PixelmapNative_CreatePixelmapUsingAllocator(uint8_t *data, size_t dataLength,
     OH_Pixelmap_InitializationOptions *options, IMAGE_ALLOCATOR_MODE allocator, OH_PixelmapNative **pixelmap)
@@ -501,12 +524,7 @@ Image_ErrorCode OH_PixelmapNative_CreatePixelmapUsingAllocator(uint8_t *data, si
     info.srcRowStride = options->srcRowStride;
     info.size.height = static_cast<int32_t>(options->height);
     info.size.width = static_cast<int32_t>(options->width);
-    if (info.pixelFormat >= PixelFormat::EXTERNAL_MAX ||
-        info.pixelFormat <= PixelFormat::UNKNOWN ||
-        info.srcPixelFormat >= PixelFormat::EXTERNAL_MAX ||
-        info.srcPixelFormat <= PixelFormat::UNKNOWN) {
-        IMAGE_LOGE("%{public}s PixelFormat type is unspport %{public}d,%{public}d.", __func__,
-            info.pixelFormat, info.srcPixelFormat);
+    if (!UsingAllocatorPixelFormatCheck(info.srcPixelFormat, info.pixelFormat)) {
         return IMAGE_UNSUPPORTED_OPERATION;
     }
     if (allocator < IMAGE_ALLOCATOR_MODE_AUTO ||
@@ -573,12 +591,7 @@ Image_ErrorCode OH_PixelmapNative_CreateEmptyPixelmapUsingAllocator(
     info.pixelFormat = static_cast<PixelFormat>(options->pixelFormat);
     info.size.height = options->height;
     info.size.width = options->width;
-    if (info.pixelFormat >= PixelFormat::EXTERNAL_MAX ||
-        info.pixelFormat <= PixelFormat::UNKNOWN ||
-        info.srcPixelFormat >= PixelFormat::EXTERNAL_MAX ||
-        info.srcPixelFormat <= PixelFormat::UNKNOWN) {
-        IMAGE_LOGE("%{public}s PixelFormat type is unspport %{public}d,%{public}d.", __func__,
-            info.pixelFormat, info.srcPixelFormat);
+    if (!UsingAllocatorPixelFormatCheck(info.srcPixelFormat, info.pixelFormat, true)) {
         return IMAGE_UNSUPPORTED_OPERATION;
     }
     if (allocator < IMAGE_ALLOCATOR_MODE_AUTO ||
