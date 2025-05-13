@@ -501,12 +501,28 @@ Image_ErrorCode OH_PixelmapNative_CreatePixelmapUsingAllocator(uint8_t *data, si
     info.srcRowStride = options->srcRowStride;
     info.size.height = static_cast<int32_t>(options->height);
     info.size.width = static_cast<int32_t>(options->width);
-    if (!ImageUtils::SetInitializationOptionAllocatorType(info, static_cast<int32_t>(allocator))) {
+    if (info.pixelFormat >= PixelFormat::EXTERNAL_MAX ||
+        info.pixelFormat <= PixelFormat::UNKNOWN ||
+        info.srcPixelFormat >= PixelFormat::EXTERNAL_MAX ||
+        info.srcPixelFormat <= PixelFormat::UNKNOWN) {
+        IMAGE_LOGE("%{public}s PixelFormat type is unspport %{public}d,%{public}d.", __func__,
+            info.pixelFormat, info.srcPixelFormat);
+        return IMAGE_UNSUPPORTED_OPERATION;
+    }
+    if (allocator < IMAGE_ALLOCATOR_MODE_AUTO ||
+        allocator > IMAGE_ALLOCATOR_MODE_SHARED_MEMORY) {
+        IMAGE_LOGE("%{public}s allocator type is unspport:%{public}d.", __func__, allocator);
         return IMAGE_ALLOCATOR_MODE_UNSUPPROTED;
+    }
+    if (!ImageUtils::SetInitializationOptionAllocatorType(info, static_cast<int32_t>(allocator))) {
+        IMAGE_LOGE("%{public}s allocator type failed %{public}d,%{public}d.", __func__,
+            allocator, info.allocatorType);
+        return IMAGE_UNSUPPORTED_OPERATION;
     }
     IMAGE_LOGD("%{public}s allocator type is %{public}d,%{public}d.", __func__,
         allocator, info.allocatorType);
-    auto pixelmap2 = new OH_PixelmapNative(reinterpret_cast<uint32_t*>(data), static_cast<uint32_t>(dataLength), info);
+    auto pixelmap2 =
+        new OH_PixelmapNative(reinterpret_cast<uint32_t*>(data), static_cast<uint32_t>(dataLength), info, allocator);
     if (pixelmap2 == nullptr || pixelmap2->GetInnerPixelmap() == nullptr) {
         if (pixelmap2) {
             delete pixelmap2;
@@ -557,12 +573,27 @@ Image_ErrorCode OH_PixelmapNative_CreateEmptyPixelmapUsingAllocator(
     info.pixelFormat = static_cast<PixelFormat>(options->pixelFormat);
     info.size.height = options->height;
     info.size.width = options->width;
-    if (!ImageUtils::SetInitializationOptionAllocatorType(info, static_cast<int32_t>(allocator))) {
+    if (info.pixelFormat >= PixelFormat::EXTERNAL_MAX ||
+        info.pixelFormat <= PixelFormat::UNKNOWN ||
+        info.srcPixelFormat >= PixelFormat::EXTERNAL_MAX ||
+        info.srcPixelFormat <= PixelFormat::UNKNOWN) {
+        IMAGE_LOGE("%{public}s PixelFormat type is unspport %{public}d,%{public}d.", __func__,
+            info.pixelFormat, info.srcPixelFormat);
+        return IMAGE_UNSUPPORTED_OPERATION;
+    }
+    if (allocator < IMAGE_ALLOCATOR_MODE_AUTO ||
+        allocator > IMAGE_ALLOCATOR_MODE_SHARED_MEMORY) {
+        IMAGE_LOGE("%{public}s allocator type is unspport:%{public}d.", __func__, allocator);
         return IMAGE_ALLOCATOR_MODE_UNSUPPROTED;
+    }
+    if (!ImageUtils::SetInitializationOptionAllocatorType(info, static_cast<int32_t>(allocator))) {
+        IMAGE_LOGE("%{public}s allocator type failed %{public}d,%{public}d.", __func__,
+            allocator, info.allocatorType);
+        return IMAGE_UNSUPPORTED_OPERATION;
     }
     IMAGE_LOGD("%{public}s allocator type is %{public}d,%{public}d.", __func__,
         allocator, info.allocatorType);
-    auto pixelmap2 = new OH_PixelmapNative(info);
+    auto pixelmap2 = new OH_PixelmapNative(info, allocator);
     if (pixelmap2 == nullptr || pixelmap2->GetInnerPixelmap() == nullptr) {
         if (pixelmap2) {
             delete pixelmap2;

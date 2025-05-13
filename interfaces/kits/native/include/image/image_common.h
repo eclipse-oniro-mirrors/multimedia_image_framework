@@ -212,20 +212,14 @@ typedef enum {
 typedef enum {
     /**
      * The system determines which memory to use to create the PixelMap.
-     *
-     * @since 20
      */
     IMAGE_ALLOCATOR_MODE_AUTO = 0,
     /**
      * Use DMA buffer to create the PixelMap.
-     *
-     * @since 20
      */
     IMAGE_ALLOCATOR_MODE_DMA = 1,
     /**
      * Use share memory to create the PixelMap.
-     *
-     * @since 20
      */
     IMAGE_ALLOCATOR_MODE_SHARED_MEMORY = 2,
 } IMAGE_ALLOCATOR_MODE;

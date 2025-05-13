@@ -653,7 +653,7 @@ std::string ImageUtils::GetCurrentProcessName()
 
 bool ImageUtils::SetInitializationOptionAutoMem(InitializationOptions &option)
 {
-    if (option.size.width * option.size.height > DMA_SIZE) {
+    if (option.size.width * option.size.height >= DMA_SIZE) {
         switch (option.pixelFormat) {
             case PixelFormat::RGB_565:
             case PixelFormat::RGBA_8888:
