@@ -269,7 +269,8 @@ static SkImageInfo ToSkInfo(Media::PixelMap *pixelMap)
 #ifdef IMAGE_COLORSPACE_FLAG
     if (pixelMap->InnerGetGrColorSpacePtr() != nullptr &&
         pixelMap->InnerGetGrColorSpace().GetColorSpaceName() != ColorManager::ColorSpaceName::NONE) {
-        colorSpace = pixelMap->InnerGetGrColorSpacePtr()->ToSkColorSpace();
+        auto gainMapColorSpace = OHOS::ColorManager::ColorSpace(OHOS::ColorManager::ColorSpaceName::DISPLAY_P3);
+        colorSpace = gainMapColorSpace.ToSkColorSpace();
     }
 #endif
     return SkImageInfo::Make(info.size.width, info.size.height, colorType, alphaType, colorSpace);
