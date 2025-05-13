@@ -1111,6 +1111,8 @@ HWTEST_F(PictureExtTest, OH_DecodingOptions_SetGetDesiredColorSpaceTest001, Test
     ASSERT_NE(colorSpaceNative, nullptr);
     EXPECT_EQ(ret, IMAGE_SUCCESS);
     EXPECT_EQ(OH_NativeColorSpaceManager_GetColorSpaceName(colorSpaceNative), COLORSPACE_SRGB);
+    OH_DecodingOptions_Release(opts);
+    OH_NativeColorSpaceManager_Destroy(colorSpaceNative);
 }
 
 /**
@@ -1139,6 +1141,7 @@ HWTEST_F(PictureExtTest, OH_DecodingOptions_SetGetDesiredColorSpaceTest002, Test
     EXPECT_EQ(ret, IMAGE_SOURCE_INVALID_PARAMETER);
     ret = OH_DecodingOptions_SetDesiredColorSpace(opts, INVALID_COLOR_SPACE_OVERFLOW);
     EXPECT_EQ(ret, IMAGE_SOURCE_INVALID_PARAMETER);
+    OH_DecodingOptions_Release(opts);
 }
 
 /**
@@ -1169,11 +1172,15 @@ HWTEST_F(PictureExtTest, OH_DecodingOptions_SetGetDesiredColorSpaceTest003, Test
     ret = OH_ImageSourceNative_CreatePixelmap(source, opts, &pixelmap);
     ASSERT_EQ(ret, IMAGE_SUCCESS);
     ASSERT_NE(pixelmap, nullptr);
-    OH_NativeColorSpaceManager *getColorSpaceNative = 0;
+    OH_NativeColorSpaceManager *getColorSpaceNative = nullptr;
     ret = OH_PixelmapNative_GetColorSpaceNative(pixelmap, &getColorSpaceNative);
     ASSERT_NE(getColorSpaceNative, nullptr);
     ASSERT_EQ(ret, IMAGE_SUCCESS);
     EXPECT_EQ(OH_NativeColorSpaceManager_GetColorSpaceName(getColorSpaceNative), COLORSPACE_SRGB);
+    OH_ImageSourceNative_Release(source);
+    OH_PixelmapNative_Release(pixelmap);
+    OH_DecodingOptions_Release(opts);
+    OH_NativeColorSpaceManager_Destroy(getColorSpaceNative);
 }
 
 /**

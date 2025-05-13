@@ -370,7 +370,8 @@ Image_ErrorCode OH_DecodingOptions_GetDesiredColorSpace(OH_DecodingOptions *opti
 inline static bool IsColorSpaceInvalid(int32_t colorSpace)
 {
     return colorSpace <= static_cast<int32_t>(ColorSpaceName::NONE) ||
-        colorSpace > static_cast<int32_t>(ColorSpaceName::LINEAR_BT2020);
+        colorSpace > static_cast<int32_t>(ColorSpaceName::LINEAR_BT2020) ||
+        colorSpace == static_cast<int32_t>(ColorSpaceName::CUSTOM);
 }
 
 MIDK_EXPORT
@@ -517,6 +518,7 @@ static void ParseDecodingOps(DecodeOptions &decOps, struct OH_DecodingOptions *o
         ColorManager::ColorSpace nativeColorspace =
             reinterpret_cast<NativeColorSpaceManager*>(colorSpaceNative)->GetInnerColorSpace();
         decOps.desiredColorSpaceInfo = std::make_shared<OHOS::ColorManager::ColorSpace>(nativeColorspace);
+        OH_NativeColorSpaceManager_Destroy(colorSpaceNative);
     } else {
         IMAGE_LOGD("no colorSpace");
     }
