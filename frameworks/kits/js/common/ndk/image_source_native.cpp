@@ -44,7 +44,6 @@ constexpr size_t SIZE_ZERO = 0;
 constexpr uint32_t INVALID_SAMPLE_SIZE = 0;
 const int32_t INVALID_FD = -1;
 static constexpr int32_t FORMAT_0 = 0;
-static constexpr int32_t FORMAT_1 = 1;
 static constexpr int32_t FORMAT_2 = 2;
 static constexpr int32_t FORMAT_3 = 3;
 static constexpr int32_t FORMAT_4 = 4;
@@ -495,7 +494,6 @@ static void ParseDecodingOps(DecodeOptions &decOps, struct OH_DecodingOptions *o
     decOps.desiredDynamicRange = ParseImageDynamicRange(ops->desiredDynamicRange);
     switch (static_cast<int32_t>(ops->pixelFormat)) {
         case FORMAT_0:
-        case FORMAT_1:
         case FORMAT_2:
         case FORMAT_3:
         case FORMAT_4:

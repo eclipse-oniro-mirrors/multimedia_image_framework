@@ -23,7 +23,6 @@
 #include "image_type.h"
 #include "log_tags.h"
 #include "memory_manager.h"
-#include "pixel_convert.h"
 #include "pixel_convert_adapter.h"
 #include "pixel_map.h"
 
@@ -227,56 +226,6 @@ static bool ShrinkRGBXToRGB(const std::unique_ptr<AbsMemory>& srcMemory, std::un
         return false;
     }
     return true;
-}
-
-static uint32_t ConvertArgbAndRgba(PixelMap *pixelMap, PixelFormat dstPixelFormat)
-{
-    bool cond = pixelMap == nullptr;
-    CHECK_ERROR_RETURN_RET_LOG(cond, ERR_IMAGE_INVALID_PARAMETER, "%{public}s pixelMap is nullptr", __func__);
-    PixelFormat srcPixelFormat = pixelMap->GetPixelFormat();
-    cond = !((srcPixelFormat == PixelFormat::RGBA_8888 && dstPixelFormat == PixelFormat::ARGB_8888) ||
-        (srcPixelFormat == PixelFormat::ARGB_8888 && dstPixelFormat == PixelFormat::RGBA_8888));
-    CHECK_ERROR_RETURN_RET_LOG(cond, ERR_MEDIA_INVALID_OPERATION,
-        "%{public}s unsupported convert: srcPixelFormat:%{public}d, dstPixelFormat:%{public}d",
-        __func__, srcPixelFormat, dstPixelFormat);
-
-    ImageInfo srcImageInfo;
-    pixelMap->GetImageInfo(srcImageInfo);
-    uint32_t byteCount = pixelMap->GetAllocationByteCount();
-    MemoryData memoryData = {
-        .data = nullptr,
-        .size = byteCount,
-        .tag = "ARGBConvert Data",
-        .desiredSize = srcImageInfo.size,
-        .format = dstPixelFormat
-    };
-    AllocatorType allocatorType = pixelMap->GetAllocatorType();
-    std::unique_ptr<AbsMemory> dstMemory = MemoryManager::CreateMemory(allocatorType, memoryData);
-    cond = dstMemory == nullptr;
-    CHECK_ERROR_RETURN_RET_LOG(cond, ERR_IMAGE_MALLOC_ABNORMAL, "%{public}s CreateMemory failed!", __func__);
-    ImageInfo dstImageInfo = MakeImageInfo(srcImageInfo.size.width, srcImageInfo.size.height, dstPixelFormat,
-        AlphaType::IMAGE_ALPHA_TYPE_UNPREMUL);
-    BufferInfo srcInfo = {
-        .pixels = pixelMap->GetWritablePixels(),
-        .rowStride = pixelMap->GetRowStride(),
-        .imageInfo = srcImageInfo
-    };
-    BufferInfo dstInfo = {
-        .pixels = dstMemory->data.data,
-        .rowStride = 0,
-        .imageInfo = dstImageInfo
-    };
-    int32_t dstLength = PixelConvert::PixelsConvert(srcInfo, dstInfo, byteCount, pixelMap->IsStrideAlignment());
-    if (dstLength < 0) {
-        IMAGE_LOGE("%{public}s Convert to %{public}d format failed!", __func__, dstPixelFormat);
-        dstMemory->Release();
-        return ERR_IMAGE_READ_PIXELMAP_FAILED;
-    }
-
-    pixelMap->SetPixelsAddr(static_cast<void *>(dstMemory->data.data), dstMemory->extend.data,
-        byteCount, allocatorType, nullptr);
-    dstMemory.release();
-    return pixelMap->SetImageInfo(dstImageInfo, true);
 }
 } // namespace Media
 } // namespace OHOS
