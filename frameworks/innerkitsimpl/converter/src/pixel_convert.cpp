@@ -1452,7 +1452,20 @@ static int32_t ConvertFromYUV(const BufferInfo &srcBufferInfo, const int32_t src
         return ConvertForFFMPEG(srcBufferInfo.pixels, PixelFormat::NV21, srcInfo, dstBufferInfo.pixels,
             PixelFormat::YCBCR_P010) == true ? PixelMap::GetYUVByteCount(dstInfo) : -1;
     }
-    return YUVConvertRGB(srcBufferInfo.pixels, srcInfo, dstBufferInfo.pixels, dstInfo, colorSpaceDetails);
+    ImageInfo copySrcInfo = srcInfo;
+    if (!ImageUtils::GetAlignedNumber(copySrcInfo.size.width, EVEN_ALIGNMENT) ||
+        !ImageUtils::GetAlignedNumber(copySrcInfo.size.height, EVEN_ALIGNMENT)) {
+        return -1;
+    }
+    int32_t copySrcLen = PixelMap::GetAllocatedByteCount(copySrcInfo);
+    CHECK_ERROR_RETURN_RET_LOG((copySrcLen <= 0), -1, "[PixelMap]Convert: Get copySrcLen pixels length failed!");
+    std::unique_ptr<uint8_t[]> copySrcBuffer = std::make_unique<uint8_t[]>(copySrcLen);
+    CHECK_ERROR_RETURN_RET_LOG((copySrcBuffer == nullptr), -1, "[PixelMap]Convert: alloc memory failed!");
+    uint8_t* copySrcPixels = copySrcBuffer.get();
+    memset_s(copySrcPixels, copySrcLen, 0, copySrcLen);
+    bool cond = memcpy_s(copySrcPixels, copySrcLen, srcBufferInfo.pixels, std::min(srcLength, copySrcLen)) != EOK;
+    CHECK_ERROR_RETURN_RET(cond, -1);
+    return YUVConvertRGB(copySrcPixels, srcInfo, dstBufferInfo.pixels, dstInfo, colorSpaceDetails);
 }
 
 static int32_t ConvertFromP010(const void *srcPixels, const int32_t srcLength, const ImageInfo &srcInfo,
