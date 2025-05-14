@@ -427,8 +427,7 @@ static const std::map<Image_ErrorCode, std::string> ERROR_CODE_MESSAGE_MAP = {
     {Image_ErrorCode::IMAGE_BAD_PARAMETER, "Parameter error. Possible causes:"
         "1.Mandatory parameters are left unspecified. 2.Incorrect parameter types. 3.Parameter verification failed."},
     {Image_ErrorCode::IMAGE_BAD_SOURCE, "Bad source. e.g.,1.Image has invalid width or height."
-        "2.Image source incomplete. 3.Read image data failed. 4. Codec create failed."
-        "5.The sourceOption specifies an odd width, causing the YUV420 PixelMap conversion to RGBA failed."},
+        "2.Image source incomplete. 3.Read image data failed. 4. Codec create failed."},
     {Image_ErrorCode::IMAGE_SOURCE_UNSUPPORTED_MIMETYPE, "Unsupported mimetype."},
     {Image_ErrorCode::IMAGE_SOURCE_TOO_LARGE, "Image too large."},
     {Image_ErrorCode::IMAGE_SOURCE_UNSUPPORTED_ALLOCATOR_TYPE, "Unsupported allocator type. e.g.,"

@@ -1085,10 +1085,10 @@ static void FinalizePacking(ImagePackerAsyncContext* context)
         context->status = SUCCESS;
     } else {
         context->status = ERROR;
-        BuildMsgOnError(context, packRes == SUCCESS, "PackedSize outside size", packRes);
+        BuildMsgOnError(context, packRes == SUCCESS, "Failed to encode image.", packRes);
         IMAGE_LOGE("Packing failed, packedSize outside size.");
         if (context->packType == TYPE_PICTURE) {
-            BuildMsgOnError(context, packRes == SUCCESS, "PackToFile picture failed",
+            BuildMsgOnError(context, packRes == SUCCESS, "Failed to encode image.",
                 packRes == ERR_IMAGE_INVALID_PARAMETER ? IMAGE_BAD_PARAMETER : IMAGE_ENCODE_FAILED);
         }
     }
