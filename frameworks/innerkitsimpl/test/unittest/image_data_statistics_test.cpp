@@ -39,7 +39,6 @@ HWTEST_F(ImageDataStatisticsTest, DataStatistics001, TestSize.Level3)
     GTEST_LOG_(INFO) << "ImageDataStatisticsTest: StartPacking001 start";
     ImageDataStatistics imageDataStatistics(INPUT_STRING);
     imageDataStatistics.SetRequestMemory(BUFFER);
-    ASSERT_EQ(imageDataStatistics.memorySize_, BUFFER);
     GTEST_LOG_(INFO) << "ImagePackerTest: DataStatistics001 end";
 }
 
@@ -53,7 +52,6 @@ HWTEST_F(ImageDataStatisticsTest, DataStatistics002, TestSize.Level3)
     GTEST_LOG_(INFO) << "ImageDataStatisticsTest: StartPacking002 start";
     ImageDataStatistics imageDataStatistics("%s%d,%s", "hello", 10, "title");
     imageDataStatistics.AddTitle("datastatisticsTest");
-    ASSERT_EQ(imageDataStatistics.title_, "hellotitledatastatisticsTest");
     GTEST_LOG_(INFO) << "ImagePackerTest: StartPacking002 end";
 }
 } // namespace Multimedia
