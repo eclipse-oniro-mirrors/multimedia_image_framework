@@ -15,6 +15,7 @@
 
 #include <charconv>
 #include <dlfcn.h>
+#include <unistd.h>
 
 #include "astc_codec.h"
 #ifdef ENABLE_ASTC_ENCODE_BASED_GPU
