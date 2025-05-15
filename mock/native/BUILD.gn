@@ -38,6 +38,9 @@ ohos_static_library("log_mock_static") {
   ]
   if (use_clang_ios || use_clang_android) {
     sources -= [ "$image_subsystem/mock/native/src/HiLog.cpp" ]
+    if (is_arkui_x) {
+      sources -= [ "$image_subsystem/mock/native/src/hitrace_meter.cpp" ]
+    }
     deps = [ "$graphic_subsystem/rosen/modules/platform:hilog" ]
   }
   subsystem_name = "multimedia"
