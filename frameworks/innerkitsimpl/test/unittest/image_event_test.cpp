@@ -38,6 +38,7 @@ HWTEST_F(ImageEventTest, ImageEvent001, TestSize.Level3)
     GTEST_LOG_(INFO) << "ImageEventTest: ImageEvent001 start";
     ImageEvent imageEvent;
     imageEvent.SetDecodeErrorMsg(ERROR_MESSAGE);
+    ASSERT_EQ(imageEvent.options_.errorMsg, ERROR_MESSAGE);
     GTEST_LOG_(INFO) << "ImageEventTest: ImageEvent001 end";
 }
 
@@ -51,6 +52,7 @@ HWTEST_F(ImageEventTest, ImageEvent002, TestSize.Level3)
     GTEST_LOG_(INFO) << "ImageEventTest: ImageEvent002 start";
     ImageEvent imageEvent;
     imageEvent.SetIncrementalDecode();
+    ASSERT_EQ(imageEvent.options_.isIncrementalDecode, true);
     GTEST_LOG_(INFO) << "ImageEventTest: ImageEvent002 end";
 }
 
