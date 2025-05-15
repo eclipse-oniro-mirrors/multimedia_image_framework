@@ -434,7 +434,7 @@ static void ScaleP010(YuvPixels yuvPixels, OpenSourceLibyuv::ImageYuvConverter &
         return;
     }
     YUVStrideInfo dstPixelStrides = {dstWidth, GetUVStride(dstWidth), 0, GetYSize(dstWidth, dstHeight)};
-    yuvCopyInfo.dstHeight = dstHeight;
+    yuvCopyInfo.dstHeight = static_cast<uint32_t>(dstHeight);
     yuvCopyInfo.pixelsSize = GetImageSize(dstWidth, dstHeight) * BYTE_PER_PIXEL;
     if (!CopyP010Pixels(dstPixelY, dstPixelStrides, dstBuffer, dstStrides, yuvCopyInfo)) {
         return;

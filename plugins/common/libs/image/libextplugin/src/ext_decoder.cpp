@@ -362,7 +362,7 @@ uint32_t ExtDecoder::DmaAlloc(DecodeContext &context, uint64_t count, const OHOS
 
     IMAGE_LOGD("ExtDecoder::DmaMemAlloc sb stride is %{public}d, height is %{public}d, size is %{public}d",
         sb->GetStride(), sb->GetHeight(), sb->GetSize());
-    SetDecodeContextBuffer(context, AllocatorType::DMA_ALLOC, static_cast<uint8_t*>(sb->GetVirAddr()), sb->GetSize(),
+    SetDecodeContextBuffer(context, AllocatorType::DMA_ALLOC, static_cast<uint8_t*>(sb->GetVirAddr()), count,
         nativeBuffer);
     return SUCCESS;
 #endif
