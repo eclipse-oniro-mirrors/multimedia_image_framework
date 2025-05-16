@@ -17,6 +17,7 @@ import("//foundation/multimedia/image_framework/ide/image_decode_config.gni")
 config("image_external_config") {
   include_dirs = [
     "./include",
+    "$image_subsystem/frameworks/innerkitsimpl/untils/include",
     "$image_subsystem/interfaces/innerkits/include",
   ]
 }
@@ -24,7 +25,10 @@ config("image_external_config") {
 ohos_fuzztest("ImagePixelmapmarshalling2FuzzTest") {
   public_configs = [ ":image_external_config" ]
   sources = [ "src/pixelmap_parcel.cpp" ]
-  deps = [ "$image_subsystem/interfaces/innerkits:image_native" ]
+  deps = [
+    "$image_subsystem/frameworks/innerkitsimpl/utils:image_utils",
+    "$image_subsystem/interfaces/innerkits:image_native",
+  ]
   external_deps = [
     "c_utils:utils",
     "hilog:libhilog",
