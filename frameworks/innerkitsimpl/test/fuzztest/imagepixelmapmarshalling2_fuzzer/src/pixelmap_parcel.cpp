@@ -68,7 +68,7 @@ std::unique_ptr<PixelMap> ConstructPixelMap(AllocatorType allocType)
 /*
  * test pixelmap IPC interface
  */
-bool PixelMapParcelTest(std::unique_ptr<Media::PixelMap> &pixelMap)
+bool PixelMapParcelMarshallTest(std::unique_ptr<Media::PixelMap> &pixelMap)
 {
     // test parcel pixelmap
     MessageParcel parcel;
@@ -81,7 +81,7 @@ bool PixelMapParcelTest(std::unique_ptr<Media::PixelMap> &pixelMap)
     return true;
 }
 
-bool PixelMapParceUnmarshallTest(const uint8_t* data, size_t size){
+bool PixelMapParcelUnmarshallTest(const uint8_t* data, size_t size){
     MessageParcel parcel;
     parcel.WriteBuffer(data, size);
     Media::PixelMap* unmarshallingPixelMap = Media::PixelMap::Unmarshalling(parcel);
