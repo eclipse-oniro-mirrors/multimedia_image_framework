@@ -1644,7 +1644,8 @@ static int32_t YUVConvert(const BufferInfo &src, const int32_t srcLength, Buffer
     if (srcInfo.pixelFormat == dstInfo.pixelFormat &&
         srcInfo.size.width == dstInfo.size.width && srcInfo.size.height == dstInfo.size.height) {
             IMAGE_LOGE("src pixel format is equal dst pixel format. no need to convert.");
-            int32_t minLength = dst.length < srcLength ? dst.length : srcLength;
+            int32_t minLength = static_cast<int32_t>(dst.length) < srcLength ?
+                static_cast<int32_t>(dst.length) : srcLength;
             auto result = memcpy_s(dstPixels, dst.length, srcPixels, minLength);
             return result == 0 ? minLength : -1;
     }
