@@ -47,6 +47,11 @@ public:
     uint32_t Decode(uint32_t index, DecodeContext &context) override;
     uint32_t PromoteIncrementalDecode(uint32_t index, ProgDecodeContext &context) override;
     uint32_t GetImageSize(uint32_t index, Size &size) override;
+    std::string GetPluginType() override
+    {
+        return "webp";
+    }
+
 #ifdef IMAGE_COLORSPACE_FLAG
     bool IsSupportICCProfile() override
     {

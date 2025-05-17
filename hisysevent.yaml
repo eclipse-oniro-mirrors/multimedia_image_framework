@@ -67,6 +67,9 @@ DECODE_FAULT:
   HARD_DECODE: {type: BOOL, desc: Whether to perform hard decoding 0 is no 1 is yes}
   HARD_DECODE_ERROR: {type: STRING, desc: hard decode error message}
   ERROR_MSG: {type: STRING, desc: error message}
+  PLUGIN_TYPE: {type: STRING, desc: The type of the plugin to decode the image}
+  HEIF_GRID_WIDTH: {type: INT32, desc: The width of each tile in a grid image}
+  HEIF_GRID_HEIGHT: {type: INT32, desc: The height of each tile in a grid image}
 
 DECODE_INFORMATION:
   __BASE: {type: BEHAVIOR, level: MINOR, desc: Image encoding and decoding information statistics. Each application reports data once a day in different formats, preserve: true}
@@ -97,3 +100,6 @@ DECODE_INFORMATION:
   HARD_DECODE: {type: BOOL, desc: Whether to perform hard decoding 0 is no 1 is yes}
   HARD_DECODE_ERROR: {type: STRING, desc: hard decode error message}
   COST_TIME: {type: UINT64, desc: decode cost time}
+  PLUGIN_TYPE: {type: STRING, desc: The type of the plugin to decode the image}
+  HEIF_GRID_WIDTH: {type: INT32, desc: The width of each tile in a grid image}
+  HEIF_GRID_HEIGHT: {type: INT32, desc: The height of each tile in a grid image}

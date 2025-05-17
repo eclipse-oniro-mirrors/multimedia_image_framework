@@ -35,6 +35,10 @@ public:
     virtual uint32_t PromoteIncrementalDecode(uint32_t index, ProgDecodeContext &context) override;
     virtual uint32_t GetTopLevelImageNum(uint32_t &num) override;
     virtual uint32_t GetImageSize(uint32_t index, Size &size) override;
+    std::string GetPluginType() override
+    {
+        return "heif";
+    }
 
 private:
     DISALLOW_COPY_AND_MOVE(HeifDecoder);

@@ -138,6 +138,11 @@ private:
     bool IsRegionDecodeSupported(uint32_t index, const PixelDecodeOptions &opts, PlImageInfo &info);
     SkCodec::Result DoRegionDecode(DecodeContext &context);
     bool IsRawFormat(std::string &name);
+    std::string GetPluginType() override
+    {
+        return "ext";
+    }
+    OHOS::Media::Size GetHeifGridTileSize() override;
 
     ImagePlugin::InputDataStream *stream_ = nullptr;
     uint32_t streamOff_ = 0;

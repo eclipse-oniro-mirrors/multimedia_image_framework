@@ -119,7 +119,10 @@ void ImageEvent::ReportDecodeFault()
                         "INCREMENTAL_DECODE", options.isIncrementalDecode,
                         "HARD_DECODE", options.isHardDecode,
                         "HARD_DECODE_ERROR", options.hardDecodeError,
-                        "ERROR_MSG", options.errorMsg);
+                        "ERROR_MSG", options.errorMsg,
+                        "PLUGIN_TYPE", options.pluginType,
+                        "HEIF_GRID_WIDTH", options.heifGridWidth,
+                        "HEIF_GRID_HEIGHT", options.heifGridHeight);
         }, {}, {});
 #endif
 }
@@ -181,6 +184,10 @@ void ImageEvent::ReportDecodeInfo()
             { .name = "HARD_DECODE_ERROR", .t = HISYSEVENT_STRING,
               .v = { .s = const_cast<char*>(options.hardDecodeError.c_str()) } },
             { .name = "COST_TIME", .t = HISYSEVENT_UINT64, .v = { .ui64 = costTime } },
+            { .name = "PLUGIN_TYPE", .t = HISYSEVENT_STRING,
+              .v = { .s = const_cast<char*>(options.pluginType.c_str()) } },
+            { .name = "HEIF_GRID_WIDTH", .t = HISYSEVENT_UINT32, .v = { .ui32 = options.heifGridWidth } },
+            { .name = "HEIF_GRID_HEIGHT", .t = HISYSEVENT_UINT32, .v = { .ui32 = options.heifGridHeight } },
         };
         OH_HiSysEvent_Write(IMAGE_FWK_UE, "DECODE_INFORMATION", HISYSEVENT_BEHAVIOR, params,
             sizeof(params) / sizeof(params[0]));
