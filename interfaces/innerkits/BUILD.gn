@@ -245,6 +245,7 @@ if (use_clang_android) {
         "c_utils:utils",
         "drivers_interface_display:libdisplay_commontype_proxy_1.0",
         "drivers_interface_display:libdisplay_composer_proxy_1.2",
+        "drivers_interface_display:libhdifd_parcelable",
         "ffmpeg:libohosffmpeg",
         "ffrt:libffrt",
         "hilog:libhilog",
