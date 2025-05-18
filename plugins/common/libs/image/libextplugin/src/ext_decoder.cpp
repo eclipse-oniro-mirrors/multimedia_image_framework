@@ -66,6 +66,7 @@
 #include "include/core/SkImage.h"
 #ifdef USE_M133_SKIA
 #include "include/codec/SkCodecAnimation.h"
+#include "modules/skcms/src/skcms_public.h"
 #endif
 
 #if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)

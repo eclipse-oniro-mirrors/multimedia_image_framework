@@ -60,12 +60,21 @@ config("plugins_includes") {
   ]
 }
 config("skia_includes") {
-  include_dirs = [
-    "${skia_root}/skia",
-    "${skia_root}/skia/include/codec",
-    "${skia_root}/skia/include/core",
-    "${skia_root}/skia/third_party/skcms",
-  ]
+  if (use_new_skia) {
+    include_dirs = [
+      "${skia_root}/skia/m133",
+      "${skia_root}/skia/m133/include/codec",
+      "${skia_root}/skia/m133/include/core",
+      "${skia_root}/skia/m133/third_party/skcms",
+    ]
+  } else {
+    include_dirs = [
+      "${skia_root}/skia",
+      "${skia_root}/skia/include/codec",
+      "${skia_root}/skia/include/core",
+      "${skia_root}/skia/third_party/skcms",
+    ]
+  }
 }
 config("third_part_includes") {
   include_dirs = [ "../libjpegplugin/include" ]
