@@ -30,6 +30,7 @@
 #include "purgeable_mem_base.h"
 #include "purgeable_mem_builder.h"
 #endif
+#include "pixel_map_parcel.h"
 
 namespace OHOS::Rosen {
 class PixelMapStorage;
@@ -121,6 +122,7 @@ class AbsMemory;
 
 class PixelMap : public Parcelable, public PIXEL_MAP_ERR {
 public:
+    friend class PixelMapRecordParcel;
     static std::atomic<uint32_t> currentId;
     PixelMap()
     {
@@ -413,6 +415,7 @@ public:
 
     NATIVEEXPORT uint32_t GetVersionId();
     NATIVEEXPORT void AddVersionId();
+
 protected:
     static constexpr uint8_t TLV_VARINT_BITS = 7;
     static constexpr uint8_t TLV_VARINT_MASK = 0x7F;
