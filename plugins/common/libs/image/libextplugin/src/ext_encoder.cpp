@@ -1163,7 +1163,11 @@ uint32_t ExtEncoder::AssembleSdrImageItem(
     bool cond = surfaceBuffer == nullptr;
     CHECK_INFO_RETURN_RET_LOG(cond, ERR_IMAGE_INVALID_PARAMETER, "%{public}s surfaceBuffer is nullptr", __func__);
     ImageItem item;
+#ifdef USE_M133_SKIA
+    sk_sp<SkData> iccProfile = icc_from_color_space(sdrInfo, nullptr, nullptr);
+#else
     sk_sp<SkData> iccProfile = icc_from_color_space(sdrInfo);
+#endif
     cond = !AssembleICCImageProperty(iccProfile, item.sharedProperties);
     CHECK_ERROR_RETURN_RET_LOG(cond, ERR_IMAGE_INVALID_PARAMETER,
         "%{public}s AssembleICCImageProperty failed", __func__);
@@ -1307,7 +1311,11 @@ uint32_t ExtEncoder::AssembleHeifUnrefocusMap(std::vector<ImageItem>& inputImgs)
     auto item = InitAuxiliaryImageItem(itemInfo.itemId, itemInfo.itemName);
     bool sdrIsSRGB = unrefocusMap->GetContentPixel()->GetToSdrColorSpaceIsSRGB();
     SkImageInfo unrefocusInfo = GetSkInfo(unrefocusMap->GetContentPixel().get(), false, sdrIsSRGB);
+#ifdef USE_M133_SKIA
+    sk_sp<SkData> iccProfile = icc_from_color_space(unrefocusInfo, nullptr, nullptr);
+#else
     sk_sp<SkData> iccProfile = icc_from_color_space(unrefocusInfo);
+#endif
     cond = !AssembleICCImageProperty(iccProfile, item.sharedProperties);
     CHECK_ERROR_RETURN_RET_LOG(cond, ERR_IMAGE_INVALID_PARAMETER,
         "%{public}s AssembleICCImageProperty failed", __func__);
@@ -1364,7 +1372,11 @@ uint32_t ExtEncoder::AssembleHeifFragmentMap(std::vector<ImageItem>& inputImgs)
     auto item = InitAuxiliaryImageItem(itemInfo.itemId, itemInfo.itemName);
     bool sdrIsSRGB = fragmentMap->GetContentPixel()->GetToSdrColorSpaceIsSRGB();
     SkImageInfo fragmentInfo = GetSkInfo(fragmentMap->GetContentPixel().get(), false, sdrIsSRGB);
+#ifdef USE_M133_SKIA
+    sk_sp<SkData> iccProfile = icc_from_color_space(fragmentInfo, nullptr, nullptr);
+#else
     sk_sp<SkData> iccProfile = icc_from_color_space(fragmentInfo);
+#endif
     cond = !AssembleICCImageProperty(iccProfile, item.sharedProperties);
     CHECK_ERROR_RETURN_RET_LOG(cond, ERR_IMAGE_INVALID_PARAMETER,
         "%{public}s AssembleICCImageProperty failed", __func__);
@@ -1526,7 +1538,11 @@ uint32_t ExtEncoder::EncodeHeifSdrImage(sptr<SurfaceBuffer>& sdr, SkImageInfo sd
     item.pixelSharedBuffer.fd = -1;
     ImageInfo info;
     pixelmap_->GetImageInfo(info);
+#ifdef USE_M133_SKIA
+    sk_sp<SkData> iccProfile = icc_from_color_space(sdrInfo, nullptr, nullptr);
+#else
     sk_sp<SkData> iccProfile = icc_from_color_space(sdrInfo);
+#endif
     bool tempRes = AssembleICCImageProperty(iccProfile, item.sharedProperties);
     cond = !tempRes;
     CHECK_ERROR_RETURN_RET_LOG(cond, ERR_IMAGE_INVALID_PARAMETER, "EncodeSdrImage AssembleICCImageProperty failed");
@@ -2304,7 +2320,11 @@ std::shared_ptr<ImageItem> ExtEncoder::AssemblePrimaryImageItem(sptr<SurfaceBuff
     item->quality = opts.quality;
     item->sharedProperties.fd = -1;
     item->pixelSharedBuffer.fd = -1;
+#ifdef USE_M133_SKIA
+    sk_sp<SkData> iccProfile = icc_from_color_space(ToSkInfo(pixelmap_), nullptr, nullptr);
+#else
     sk_sp<SkData> iccProfile = icc_from_color_space(ToSkInfo(pixelmap_));
+#endif
     bool tempRes = AssembleICCImageProperty(iccProfile, item->sharedProperties);
     CHECK_ERROR_RETURN_RET(!tempRes, nullptr);
     uint32_t litePropertiesSize = 0;

@@ -66,6 +66,12 @@ skia_skcms = [ "$skia_deps_root/skia:skcms" ]
 
 exif_root = "//third_party"
 
+if (use_new_skia) {
+  third_party_skia_root = "//third_party/skia/m133"
+} else {
+  third_party_skia_root = "//third_party/skia"
+}
+
 if (use_clang_android) {
   if (image_use_new_skia) {
     skia_platform = [ "$skia_deps_root/skia:skia_android" ]
