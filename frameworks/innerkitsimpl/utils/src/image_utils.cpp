@@ -653,19 +653,16 @@ std::string ImageUtils::GetCurrentProcessName()
 
 bool ImageUtils::SetInitializationOptionAutoMem(InitializationOptions &option)
 {
+    if (option.pixelFormat == PixelFormat::RGBA_1010102||
+        option.pixelFormat == PixelFormat::YCBCR_P010||
+        option.pixelFormat == PixelFormat::YCRCB_P010) {
+        option.allocatorType = AllocatorType::DMA_ALLOC;
+        option.useDMA = true;
+        return true;
+    }
     if (option.size.width * option.size.height >= DMA_SIZE) {
-        switch (option.pixelFormat) {
-            case PixelFormat::RGB_565:
-            case PixelFormat::RGBA_8888:
-            case PixelFormat::BGRA_8888:
-            case PixelFormat::RGB_888:
-            case PixelFormat::RGBA_F16:
-            case PixelFormat::RGBA_1010102:
-                option.allocatorType = AllocatorType::DMA_ALLOC;
-                option.useDMA = true;
-                return true;
-            default:
-                break;
+        if (SetInitializationOptionDmaMem(option)) {
+            return true;
         }
     }
     option.allocatorType = AllocatorType::SHARE_MEM_ALLOC;
@@ -679,9 +676,10 @@ bool ImageUtils::SetInitializationOptionDmaMem(InitializationOptions &option)
         case PixelFormat::RGB_565:
         case PixelFormat::RGBA_8888:
         case PixelFormat::BGRA_8888:
-        case PixelFormat::RGB_888:
         case PixelFormat::RGBA_F16:
         case PixelFormat::RGBA_1010102:
+        case PixelFormat::YCBCR_P010:
+        case PixelFormat::YCRCB_P010:
             option.allocatorType = AllocatorType::DMA_ALLOC;
             option.useDMA = true;
             return true;
@@ -702,6 +700,12 @@ bool ImageUtils::SetInitializationOptionAllocatorType(InitializationOptions &opt
         case MEM_DMA:
             return SetInitializationOptionDmaMem(option);
         case MEM_SHARE:
+            if (option.pixelFormat == PixelFormat::RGBA_1010102 ||
+                option.pixelFormat == PixelFormat::YCBCR_P010 ||
+                option.pixelFormat == PixelFormat::YCRCB_P010) {
+                IMAGE_LOGE("pixelFormat is unsupport:%{public}d.", option.pixelFormat);
+                return false;
+            }
             option.allocatorType = AllocatorType::SHARE_MEM_ALLOC;
             option.useDMA = false;
             return true;

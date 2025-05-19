@@ -1333,7 +1333,7 @@ void PixelMapNapi::CreatePixelMapUsingAllocatorComplete(napi_env env, napi_statu
     CommonCallbackRoutine(env, context, result);
 }
 
-static bool UsingAllocatorFormatCheck(napi_env env, napi_value value)
+static bool UsingAllocatorFormatCheck(napi_env env, napi_value value, bool isSupportYUV10Bit = false)
 {
     uint32_t tmpNumber = 0;
     if (!GET_UINT32_BY_NAME(value, "pixelFormat", tmpNumber)) {
@@ -1344,12 +1344,24 @@ static bool UsingAllocatorFormatCheck(napi_env env, napi_value value)
         IMAGE_LOGE("pixelFormat:%{public}d not support", tmpNumber);
         return false;
     }
+    if (!isSupportYUV10Bit &&
+        (tmpNumber == static_cast<uint32_t>(PixelFormat::YCBCR_P010) ||
+        tmpNumber == static_cast<uint32_t>(PixelFormat::YCRCB_P010))) {
+        IMAGE_LOGE("pixelFormat:%{public}d not support", tmpNumber);
+        return false;
+    }
     if (!GET_UINT32_BY_NAME(value, "srcPixelFormat", tmpNumber)) {
         IMAGE_LOGD("no srcPixelFormat in initialization options");
     }
     if (tmpNumber <= static_cast<uint32_t>(PixelFormat::UNKNOWN) ||
         tmpNumber >= static_cast<uint32_t>(PixelFormat::EXTERNAL_MAX)) {
         IMAGE_LOGE("srcPixelFormat:%{public}d not support", tmpNumber);
+        return false;
+    }
+    if (!isSupportYUV10Bit &&
+        (tmpNumber == static_cast<uint32_t>(PixelFormat::YCBCR_P010) ||
+        tmpNumber == static_cast<uint32_t>(PixelFormat::YCRCB_P010))) {
+        IMAGE_LOGE("pixelFormat:%{public}d not support", tmpNumber);
         return false;
     }
     return true;
@@ -1434,7 +1446,7 @@ static bool GetAllocatValue(napi_env &env, napi_value argValue[], size_t argCoun
             return false;
         }
     } else {
-        if (!UsingAllocatorFormatCheck(env, argValue[0])) {
+        if (!UsingAllocatorFormatCheck(env, argValue[0], true)) {
             return false;
         }
         if (!parseInitializationOptions(env, argValue[0], &(asyncContext->opts))) {
