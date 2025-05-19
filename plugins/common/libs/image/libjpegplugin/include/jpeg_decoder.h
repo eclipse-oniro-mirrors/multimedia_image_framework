@@ -64,6 +64,10 @@ public:
     uint32_t ModifyImageProperty(uint32_t index, const std::string &key, const std::string &value,
         uint8_t *data, uint32_t size) override;
     uint32_t GetFilterArea(const int &privacyType, std::vector<std::pair<uint32_t, uint32_t>> &ranges) override;
+    std::string GetPluginType() override
+    {
+        return "jpeg";
+    }
 
 #ifdef IMAGE_COLORSPACE_FLAG
     OHOS::ColorManager::ColorSpace GetPixelMapColorSpace() override;

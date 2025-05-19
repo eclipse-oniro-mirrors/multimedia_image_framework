@@ -2179,6 +2179,23 @@ bool ExtDecoder::IsRawFormat(std::string &name)
     return false;
 }
 
+OHOS::Media::Size ExtDecoder::GetHeifGridTileSize()
+{
+#ifdef HEIF_HW_DECODE_ENABLE
+    if (codec_ == nullptr || codec_->getEncodedFormat() != SkEncodedImageFormat::kHEIF) {
+        return {0, 0};
+    }
+    auto heifContext = reinterpret_cast<HeifDecoderImpl*>(codec_->getHeifContext());
+    if (heifContext == nullptr) {
+        return {0, 0};
+    }
+    GridInfo gridInfo = heifContext->GetGridInfo();
+    return {gridInfo.tileWidth, gridInfo.tileHeight};
+#else
+    return {0, 0};
+#endif
+}
+
 uint32_t ExtDecoder::GetImagePropertyString(uint32_t index, const std::string &key, std::string &value)
 {
     IMAGE_LOGD("[GetImagePropertyString] enter jpeg plugin, key:%{public}s", key.c_str());

@@ -44,6 +44,10 @@ public:
     uint32_t PromoteIncrementalDecode(uint32_t index, ProgDecodeContext &context) override;
     uint32_t GetTopLevelImageNum(uint32_t &num) override;
     uint32_t GetImageSize(uint32_t index, Size &size) override;
+    std::string GetPluginType() override
+    {
+        return "svg";
+    }
 
 private:
     DISALLOW_COPY_AND_MOVE(SvgDecoder);

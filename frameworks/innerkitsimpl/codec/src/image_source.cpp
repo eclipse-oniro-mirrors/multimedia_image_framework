@@ -964,6 +964,10 @@ unique_ptr<PixelMap> ImageSource::CreatePixelMapExtended(uint32_t index, const D
     }
 #endif
     SetDecodeInfoOptions(index, opts, info, imageEvent);
+    std::string pluginType = mainDecoder_->GetPluginType();
+    imageEvent.SetPluginType(pluginType);
+    Size heifGridTileSize = mainDecoder_->GetHeifGridTileSize();
+    imageEvent.SetHeifGridTileSize(heifGridTileSize.width, heifGridTileSize.height);
     ImageTrace imageTrace("CreatePixelMapExtended, info.size:(%d, %d)", info.size.width, info.size.height);
     if (errorCode != SUCCESS || !IsSizeVailed(info.size)) {
         IMAGE_LOGE("[ImageSource]get image info failed, ret:%{public}u.", errorCode);
@@ -1313,6 +1317,8 @@ unique_ptr<PixelMap> ImageSource::CreatePixelMap(uint32_t index, const DecodeOpt
     ImagePlugin::PlImageInfo plInfo;
     errorCode = SetDecodeOptions(mainDecoder_, index, opts_, plInfo);
     SetDecodeInfoOptions(index, opts, plInfo, imageEvent);
+    std::string pluginType = mainDecoder_->GetPluginType();
+    imageEvent.SetPluginType(pluginType);
     if (errorCode != SUCCESS) {
         IMAGE_LOGE("[ImageSource]set decode options error (index:%{public}u), ret:%{public}u.", index, errorCode);
         imageEvent.SetDecodeErrorMsg("set decode options error, ret:." + std::to_string(errorCode));
@@ -2677,6 +2683,8 @@ uint32_t ImageSource::DoIncrementalDecoding(uint32_t index, const DecodeOptions 
     IMAGE_LOGD("[ImageSource]do incremental decoding: begin.");
     ImageEvent imageEvent;
     imageEvent.SetIncrementalDecode();
+    std::string pluginType = recordContext.decoder->GetPluginType();
+    imageEvent.SetPluginType(pluginType);
     uint8_t *pixelAddr = static_cast<uint8_t *>(pixelMap.GetWritablePixels());
     ProgDecodeContext context;
     context.decodeContext.pixelsBuffer.buffer = pixelAddr;

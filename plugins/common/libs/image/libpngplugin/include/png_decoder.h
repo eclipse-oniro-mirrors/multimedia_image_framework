@@ -58,6 +58,10 @@ public:
     uint32_t PromoteIncrementalDecode(uint32_t index, ProgDecodeContext &context) override;
     uint32_t GetImageSize(uint32_t index, Size &size) override;
     bool HasProperty(std::string key) override;
+    std::string GetPluginType() override
+    {
+        return "png";
+    }
 #ifdef IMAGE_COLORSPACE_FLAG
     bool IsSupportICCProfile() override
     {

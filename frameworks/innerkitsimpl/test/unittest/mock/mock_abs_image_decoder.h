@@ -51,6 +51,11 @@ public:
         return Media::SUCCESS;
     }
 
+    std::string GetPluginType() override
+    {
+        return "mockabs";
+    }
+
 private:
     uint32_t returnValue_;
 };

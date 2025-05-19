@@ -50,6 +50,9 @@ struct DecodeInfoOptions {
     bool isHardDecode;
     std::string hardDecodeError;
     std::string errorMsg;
+    std::string pluginType;
+    int32_t heifGridWidth;
+    int32_t heifGridHeight;
 };
 
 class ImageEvent {
@@ -64,6 +67,15 @@ public:
     void SetIncrementalDecode()
     {
         options_.isIncrementalDecode = true;
+    }
+    void SetPluginType(std::string pluginType)
+    {
+        options_.pluginType = pluginType;
+    }
+    void SetHeifGridTileSize(int32_t heifGridWidth, int32_t heifGridHeight)
+    {
+        options_.heifGridWidth = heifGridWidth;
+        options_.heifGridHeight = heifGridHeight;
     }
     DecodeInfoOptions &GetDecodeInfoOptions();
 private:

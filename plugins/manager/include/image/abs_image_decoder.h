@@ -264,6 +264,13 @@ public:
         return false;
     }
 
+    virtual std::string GetPluginType() = 0;
+
+    virtual OHOS::Media::Size GetHeifGridTileSize()
+    {
+        return {0, 0};
+    }
+
     // define multiple subservices for this interface
     static constexpr uint16_t SERVICE_DEFAULT = 0;
 };

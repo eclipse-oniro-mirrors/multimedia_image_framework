@@ -47,6 +47,11 @@ public:
     uint32_t GetImageSize(uint32_t index, Size &size) override;
     uint32_t GetImagePropertyInt(uint32_t index, const std::string &key, int32_t &value) override;
     uint32_t GetImagePropertyString(uint32_t index, const std::string &key, std::string &value) override;
+    std::string GetPluginType() override
+    {
+        return "gif";
+    }
+
 #ifdef IMAGE_COLORSPACE_FLAG
     bool IsSupportICCProfile() override
     {
