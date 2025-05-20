@@ -1442,16 +1442,6 @@ static int32_t ConvertFromYUV(const BufferInfo &srcBufferInfo, const int32_t src
         IMAGE_LOGE("[PixelMap]Convert: src or dst pixel format invalid.");
         return -1;
     }
-    if ((srcInfo.pixelFormat == PixelFormat::NV12 && dstInfo.pixelFormat == PixelFormat::YCBCR_P010) ||
-        (srcInfo.pixelFormat == PixelFormat::NV21 && dstInfo.pixelFormat == PixelFormat::YCRCB_P010)) {
-        return ConvertForFFMPEG(srcBufferInfo.pixels, PixelFormat::NV12, srcInfo, dstBufferInfo.pixels,
-            PixelFormat::YCBCR_P010) == true ? PixelMap::GetYUVByteCount(dstInfo) : -1;
-    }
-    if ((srcInfo.pixelFormat == PixelFormat::NV12 && dstInfo.pixelFormat == PixelFormat::YCRCB_P010) ||
-        (srcInfo.pixelFormat == PixelFormat::NV21 && dstInfo.pixelFormat == PixelFormat::YCBCR_P010)) {
-        return ConvertForFFMPEG(srcBufferInfo.pixels, PixelFormat::NV21, srcInfo, dstBufferInfo.pixels,
-            PixelFormat::YCBCR_P010) == true ? PixelMap::GetYUVByteCount(dstInfo) : -1;
-    }
     ImageInfo copySrcInfo = srcInfo;
     if (!ImageUtils::GetAlignedNumber(copySrcInfo.size.width, EVEN_ALIGNMENT) ||
         !ImageUtils::GetAlignedNumber(copySrcInfo.size.height, EVEN_ALIGNMENT)) {
@@ -1465,6 +1455,17 @@ static int32_t ConvertFromYUV(const BufferInfo &srcBufferInfo, const int32_t src
     memset_s(copySrcPixels, copySrcLen, 0, copySrcLen);
     bool cond = memcpy_s(copySrcPixels, copySrcLen, srcBufferInfo.pixels, std::min(srcLength, copySrcLen)) != EOK;
     CHECK_ERROR_RETURN_RET(cond, -1);
+    if ((srcInfo.pixelFormat == PixelFormat::NV12 && dstInfo.pixelFormat == PixelFormat::YCBCR_P010) ||
+        (srcInfo.pixelFormat == PixelFormat::NV21 && dstInfo.pixelFormat == PixelFormat::YCRCB_P010)) {
+        return ConvertForFFMPEG(copySrcPixels, PixelFormat::NV12, srcInfo, dstBufferInfo.pixels,
+            PixelFormat::YCBCR_P010) == true ? PixelMap::GetYUVByteCount(dstInfo) : -1;
+    }
+    if ((srcInfo.pixelFormat == PixelFormat::NV12 && dstInfo.pixelFormat == PixelFormat::YCRCB_P010) ||
+        (srcInfo.pixelFormat == PixelFormat::NV21 && dstInfo.pixelFormat == PixelFormat::YCBCR_P010)) {
+        return ConvertForFFMPEG(copySrcPixels, PixelFormat::NV21, srcInfo, dstBufferInfo.pixels,
+            PixelFormat::YCBCR_P010) == true ? PixelMap::GetYUVByteCount(dstInfo) : -1;
+    }
+
     return YUVConvertRGB(copySrcPixels, srcInfo, dstBufferInfo.pixels, dstInfo, colorSpaceDetails);
 }
 
@@ -1567,17 +1568,30 @@ static int32_t ConvertToYUV(const void *srcPixels, const int32_t srcLength, cons
         IMAGE_LOGE("[PixelMap]Convert: src or dst pixel format invalid.");
         return -1;
     }
+    ImageInfo copySrcInfo = srcInfo;
+    if (!ImageUtils::GetAlignedNumber(copySrcInfo.size.width, EVEN_ALIGNMENT) ||
+        !ImageUtils::GetAlignedNumber(copySrcInfo.size.height, EVEN_ALIGNMENT)) {
+        return -1;
+    }
+    int32_t copySrcLen = PixelMap::GetAllocatedByteCount(copySrcInfo);
+    CHECK_ERROR_RETURN_RET_LOG((copySrcLen <= 0), -1, "[PixelMap]Convert: Get copySrcLen pixels length failed!");
+    std::unique_ptr<uint8_t[]> copySrcBuffer = std::make_unique<uint8_t[]>(copySrcLen);
+    CHECK_ERROR_RETURN_RET_LOG((copySrcBuffer == nullptr), -1, "[PixelMap]Convert: alloc memory failed!");
+    uint8_t* copySrcPixels = copySrcBuffer.get();
+    memset_s(copySrcPixels, copySrcLen, 0, copySrcLen);
+    bool cond = memcpy_s(copySrcPixels, copySrcLen, srcPixels, std::min(srcLength, copySrcLen)) != EOK;
+    CHECK_ERROR_RETURN_RET(cond, -1);
     if ((srcInfo.pixelFormat == PixelFormat::YCBCR_P010 && dstInfo.pixelFormat == PixelFormat::NV12) ||
         (srcInfo.pixelFormat == PixelFormat::YCRCB_P010 && dstInfo.pixelFormat == PixelFormat::NV21)) {
-        return ConvertForFFMPEG(srcPixels, PixelFormat::YCBCR_P010, srcInfo, dstPixels,
+        return ConvertForFFMPEG(copySrcPixels, PixelFormat::YCBCR_P010, srcInfo, dstPixels,
             PixelFormat::NV12) == true ? PixelMap::GetYUVByteCount(dstInfo) : -1;
     }
     if ((srcInfo.pixelFormat == PixelFormat::YCBCR_P010 && dstInfo.pixelFormat == PixelFormat::NV21) ||
         (srcInfo.pixelFormat == PixelFormat::YCRCB_P010 && dstInfo.pixelFormat == PixelFormat::NV12)) {
-        return ConvertForFFMPEG(srcPixels, PixelFormat::YCBCR_P010, srcInfo, dstPixels,
+        return ConvertForFFMPEG(copySrcPixels, PixelFormat::YCBCR_P010, srcInfo, dstPixels,
             PixelFormat::NV21) == true ? PixelMap::GetYUVByteCount(dstInfo) : -1;
     }
-    return RGBConvertYUV(srcPixels, srcInfo, dstPixels, dstInfo);
+    return RGBConvertYUV(copySrcPixels, srcInfo, dstPixels, dstInfo);
 }
 
 static int32_t ConvertToP010(const BufferInfo &src, BufferInfo &dst)
@@ -1718,13 +1732,7 @@ int32_t PixelConvert::PixelsConvert(const BufferInfo &src, BufferInfo &dst, int3
     }
 
     if (dst.imageInfo.pixelFormat == PixelFormat::ARGB_8888) {
-        if (useDMA || (src.imageInfo.size.width % EVEN_ALIGNMENT == 0 &&
-            src.imageInfo.size.height % EVEN_ALIGNMENT == 0)) {
-            return ConvertAndCollapseByFFMpeg(src.pixels, src.imageInfo, dst.pixels, dst.imageInfo, useDMA) ?
-                PixelMap::GetRGBxByteCount(dst.imageInfo) : CONVERT_ERROR;
-        } else {
-            return CopySrcBufferAndConvert(src, dst, srcLength, useDMA);
-        }
+        return CopySrcBufferAndConvert(src, dst, srcLength, useDMA);
     }
     if (IsInterYUVConvert(src.imageInfo.pixelFormat, dst.imageInfo.pixelFormat) ||
         (IsYUVP010Format(src.imageInfo.pixelFormat) && IsYUVP010Format(dst.imageInfo.pixelFormat))) {
