@@ -18,6 +18,9 @@
 
 #include "message_parcel.h"
 #include "image_type.h"
+#ifdef IMAGE_COLORSPACE_FLAG
+#include "color_space.h"
+#endif
 
 namespace OHOS {
 namespace Media {

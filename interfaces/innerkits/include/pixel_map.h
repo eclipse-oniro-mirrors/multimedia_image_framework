@@ -30,7 +30,9 @@
 #include "purgeable_mem_base.h"
 #include "purgeable_mem_builder.h"
 #endif
+#if !defined(_WIN32) && !defined(_APPLE) && !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
 #include "pixel_map_parcel.h"
+#endif
 
 namespace OHOS::Rosen {
 class PixelMapStorage;
@@ -122,7 +124,9 @@ class AbsMemory;
 
 class PixelMap : public Parcelable, public PIXEL_MAP_ERR {
 public:
+#if !defined(_WIN32) && !defined(_APPLE) && !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
     friend class PixelMapRecordParcel;
+#endif
     static std::atomic<uint32_t> currentId;
     PixelMap()
     {
