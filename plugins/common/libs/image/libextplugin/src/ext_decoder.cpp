@@ -1762,10 +1762,10 @@ static uint32_t GetFormatName(SkEncodedImageFormat format, std::string &name)
         if (name == IMAGE_HEIF_FORMAT && ImageUtils::GetAPIVersion() > APIVERSION_13) {
             name = IMAGE_HEIC_FORMAT;
         }
-        if (format == SkEncodedImageFormat::kWBMP && ImageUtils::GetAPIVersion() > APIVERSION_20) {
+        if (format == SkEncodedImageFormat::kWBMP && ImageUtils::GetAPIVersion() >= APIVERSION_20) {
             name = IMAGE_WBMP_FORMAT;
         }
-        if (format == SkEncodedImageFormat::kICO && ImageUtils::GetAPIVersion() > APIVERSION_20) {
+        if (format == SkEncodedImageFormat::kICO && ImageUtils::GetAPIVersion() >= APIVERSION_20) {
             name = IMAGE_ICON_FORMAT;
         }
         IMAGE_LOGD("GetFormatName: get encoded format name (%{public}d)=>[%{public}s].",
