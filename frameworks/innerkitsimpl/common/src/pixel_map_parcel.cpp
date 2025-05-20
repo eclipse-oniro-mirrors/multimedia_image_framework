@@ -23,11 +23,6 @@
 #include "pixel_astc.h"
 #include "image_system_properties.h"
 #include "image_trace.h"
-#include "ashmem.h"
-#include "buffer_handle_parcel.h"
-#include "ipc_file_descriptor.h"
-#include "surface_buffer.h"
-#include "vpe_utils.h"
 #include "image_utils.h"
 #ifndef _WIN32
 #include "securec.h"
@@ -38,6 +33,12 @@
 #if !defined(_WIN32) && !defined(_APPLE)
 #include <sys/mman.h>
 #include "ashmem.h"
+#endif
+
+#if !defined(_WIN32) && !defined(_APPLE) && !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
+#include "buffer_handle_parcel.h"
+#include "ipc_file_descriptor.h"
+#include "surface_buffer.h"
 #endif
 
 #undef LOG_DOMAIN
