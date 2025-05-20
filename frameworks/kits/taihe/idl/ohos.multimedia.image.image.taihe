@@ -389,8 +389,12 @@ union PropertyValue {
 interface PixelMap {
   GetImplPtr(): i64;
 
+  @gen_async("getImageInfo")
+  @gen_promise("getImageInfo")
   GetImageInfoSync(): ImageInfo;
 
+  @gen_async("readPixelsToBuffer")
+  @gen_promise("readPixelsToBuffer")
   ReadPixelsToBufferSync(dst: @arraybuffer Array<u8>): void;
 
   ReadPixelsSync(area: PositionArea): void;
