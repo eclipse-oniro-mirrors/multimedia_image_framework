@@ -2547,7 +2547,7 @@ napi_value ImageSourceNapi::GetImagePropertySync(napi_env env, napi_callback_inf
         }
         return result;
     }
-    return ImageNapiUtils::ThrowExceptionError(env, COMMON_ERR_INVALID_PARAMETER, "invalid argument");
+    return ImageNapiUtils::ThrowExceptionError(env, IMAGE_BAD_SOURCE, "invalid argument");
 }
 
 static void UpdateDataExecute(napi_env env, void *data)
