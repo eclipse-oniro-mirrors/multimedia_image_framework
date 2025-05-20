@@ -894,6 +894,7 @@ std::vector<napi_property_descriptor> ImageSourceNapi::RegisterNapi()
         DECLARE_NAPI_FUNCTION("modifyImageProperty", ModifyImageProperty),
         DECLARE_NAPI_FUNCTION("modifyImageProperties", ModifyImageProperty),
         DECLARE_NAPI_FUNCTION("getImageProperty", GetImageProperty),
+        DECLARE_NAPI_FUNCTION("getImagePropertySync", GetImagePropertySync),
         DECLARE_NAPI_FUNCTION("getImageProperties", GetImageProperty),
         DECLARE_NAPI_FUNCTION("getDelayTimeList", GetDelayTime),
         DECLARE_NAPI_FUNCTION("getDisposalTypeList", GetDisposalType),
@@ -2509,6 +2510,40 @@ napi_value ImageSourceNapi::GetImageProperty(napi_env env, napi_callback_info in
     IMG_NAPI_CHECK_RET_D(IMG_IS_OK(status),
         nullptr, IMAGE_LOGE("fail to create async work"));
     return result;
+}
+
+napi_value ImageSourceNapi::GetImagePropertySync(napi_env env, napi_callback_info info)
+{
+    ImageTrace imageTrace("ImageSourceNapi::GetImagePropertySync");
+    napi_status status;
+    napi_value thisVar = nullptr;
+    napi_value argValue[NUM_1] = {0};
+    size_t argCount = NUM_1;
+
+    IMAGE_LOGD("GetImagePropertySync IN");
+    IMG_JS_ARGS(env, info, status, argCount, argValue, thisVar);
+    IMAGE_LOGD("GetImagePropertySync argCount is [%{public}zu]", argCount);
+    IMG_NAPI_CHECK_RET_D(IMG_IS_OK(status), nullptr, IMAGE_LOGE("fail to napi_get_cb_info"));
+
+    // get imageSourceNapi and check nativeImgSrc
+    std::unique_ptr<ImageSourceNapi> imageSourceNapi = nullptr;
+    status = napi_unwrap(env, thisVar, reinterpret_cast<void**>(&imageSourceNapi));
+
+    IMG_NAPI_CHECK_RET_D(IMG_IS_READY(status, imageSourceNapi),
+        nullptr, IMAGE_LOGE("fail to unwrap context"));
+    IMG_NAPI_CHECK_RET_D(IMG_IS_READY(status, imageSourceNapi->nativeImgSrc),
+        nullptr, IMAGE_LOGE("empty native pixelmap"));
+
+    // if argCount is 1 and argValue[NUM_0] is string, get image property
+    if (argCount == NUM_1 && ImageNapiUtils::getType(env, argValue[NUM_0]) == napi_string) {
+        std::string key = GetStringArgument(env, argValue[NUM_0]);
+        std::string value = "";
+        napi_value result = nullptr;
+        imageSourceNapi->nativeImgSrc->GetImagePropertyString(NUM_0, key, value);
+        napi_create_string_utf8(env, value.c_str(), value.length(), &result);
+        return result;
+    }
+    return ImageNapiUtils::ThrowExceptionError(env, COMMON_ERR_INVALID_PARAMETER, "invalid argument");
 }
 
 static void UpdateDataExecute(napi_env env, void *data)
