@@ -66,6 +66,7 @@ public:
     bool DoDecodeAuxiliaryImage(std::shared_ptr<HeifImage> &auxiliaryImage, GridInfo &auxiliaryGridInfo,
                                 uint8_t *auxiliaryDstMemory, size_t auxiliaryDstRowStride);
     void getErrMsg(std::string& errMsg) override;
+    uint32_t getColorDepth() override;
     GridInfo GetGridInfo();
     bool ProcessThumbnailImage();
     bool CheckAuxiliaryMap(Media::AuxiliaryPictureType type);

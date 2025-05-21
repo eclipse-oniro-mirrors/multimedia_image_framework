@@ -1518,6 +1518,12 @@ void HeifDecoderImpl::SetHardwareDecodeErrMsg(const uint32_t width, const uint32
     sstream << height;
     errMsg_ = sstream.str();
 }
+
+uint32_t HeifDecoderImpl::getColorDepth()
+{
+    // no need to implement
+    return 0;
+}
 } // namespace ImagePlugin
 } // namespace OHOS
 #endif

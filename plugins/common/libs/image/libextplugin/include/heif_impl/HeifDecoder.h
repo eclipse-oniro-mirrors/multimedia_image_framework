@@ -107,6 +107,7 @@ struct HeifDecoder {
         std::vector<uint8_t>& lightInfo) = 0;
     virtual void getISOMetadata(std::vector<uint8_t>& isoMetadata) = 0;
     virtual void getErrMsg(std::string& errMsg) = 0;
+    virtual uint32_t getColorDepth() = 0;
 };
 
 #endif // PLUGINS_COMMON_LIBS_IMAGE_LIBEXTPLUGIN_INCLUDE_HEIF_DECODER_H
