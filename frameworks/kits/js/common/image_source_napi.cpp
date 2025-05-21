@@ -2544,10 +2544,20 @@ napi_value ImageSourceNapi::GetImagePropertySync(napi_env env, napi_callback_inf
         uint32_t ret = imageSourceNapi->nativeImgSrc->GetImagePropertyString(NUM_0, key, value);
         if (ret == SUCCESS) {
             napi_create_string_utf8(env, value.c_str(), value.length(), &result);
+            return result;
         }
-        return result;
+        if (ret == Media::ERR_IMAGE_SOURCE_DATA) {
+            IMAGE_LOGE("%{public}s: Bad source", __func__);
+            return ImageNapiUtils::ThrowExceptionError(env, IMAGE_BAD_SOURCE, "Bad source");
+        }
+        if (ret == Media::ERR_IMAGE_DECODE_EXIF_UNSUPPORT) {
+            IMAGE_LOGE("%{public}s: Unsupported MIME type", __func__);
+            return ImageNapiUtils::ThrowExceptionError(env, IMAGE_SOURCE_UNSUPPORTED_MIMETYPE, "Unsupported MIME type");
+        }
+        IMAGE_LOGE("%{public}s: Unsupported metadata", __func__);
+        return ImageNapiUtils::ThrowExceptionError(env, IMAGE_SOURCE_UNSUPPORTED_METADATA, "Unsupported metadata");
     }
-    return ImageNapiUtils::ThrowExceptionError(env, IMAGE_BAD_SOURCE, "invalid argument");
+    return ImageNapiUtils::ThrowExceptionError(env, IMAGE_SOURCE_UNSUPPORTED_METADATA, "Unsupported metadata");
 }
 
 static void UpdateDataExecute(napi_env env, void *data)
