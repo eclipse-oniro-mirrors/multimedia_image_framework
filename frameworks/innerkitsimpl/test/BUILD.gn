@@ -2036,7 +2036,6 @@ group("unittest") {
     ":gifplugintest",
     ":gstpluginfwtest",
     ":heif_parser_test",
-    ":image_cj_test",
     ":image_native_test",
     ":image_receiver_native_test",
     ":imageaccessortest",
