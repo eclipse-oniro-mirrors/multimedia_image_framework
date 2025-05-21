@@ -97,6 +97,7 @@ private:
     static napi_value CreatePixelMapFromSurface(napi_env env, napi_callback_info info);
     static napi_value CreatePixelMapFromSurfaceSync(napi_env env, napi_callback_info info);
     static void CreatePixelMapFromSurfaceComplete(napi_env env, napi_status status, void *data);
+    static void CreatePixelMapUsingAllocatorComplete(napi_env env, napi_status status, void *data);
     static napi_value ThrowExceptionError(napi_env env,
         const std::string &tag, const std::uint32_t &code, const std::string &info);
 
@@ -116,6 +117,8 @@ private:
     static napi_value getPixelBytesCount(napi_env env, napi_callback_info info);
     static napi_value IsSupportAlpha(napi_env env, napi_callback_info info);
     static napi_value SetAlphaAble(napi_env env, napi_callback_info info);
+    static napi_value CreatePixelMapUsingAllocator(napi_env env, napi_callback_info info);
+    static napi_value CreatePixelMapUsingAllocatorSync(napi_env env, napi_callback_info info);
     static napi_value CreateAlphaPixelmap(napi_env env, napi_callback_info info);
     static napi_value CreateAlphaPixelmapSync(napi_env env, napi_callback_info info);
     static napi_value GetDensity(napi_env env, napi_callback_info info);

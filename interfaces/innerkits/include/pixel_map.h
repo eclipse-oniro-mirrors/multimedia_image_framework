@@ -70,6 +70,7 @@ struct InitializationOptions {
     ScaleMode scaleMode = ScaleMode::FIT_TARGET_SIZE;
     YUVConvertColorSpaceDetails convertColorSpace;
     int32_t srcRowStride = 0;
+    AllocatorType allocatorType = AllocatorType::DEFAULT;
     bool editable = false;
     bool useSourceIfMatch = false;
     bool useDMA = false;
@@ -446,11 +447,11 @@ protected:
     static bool BGRA8888ToARGB(const uint8_t *in, uint32_t inCount, uint32_t *out, uint32_t outCount);
     static bool RGB888ToARGB(const uint8_t *in, uint32_t inCount, uint32_t *out, uint32_t outCount);
     static bool CheckParams(const uint32_t *colors, uint32_t colorLength, int32_t offset, int32_t stride,
-                            const InitializationOptions &opts);
+        const InitializationOptions &opts);
     static void UpdatePixelsAlpha(const AlphaType &alphaType, const PixelFormat &pixelFormat, uint8_t *dstPixels,
-                                  PixelMap &dstPixelMap);
+        PixelMap &dstPixelMap);
     static void InitDstImageInfo(const InitializationOptions &opts, const ImageInfo &srcImageInfo,
-                                 ImageInfo &dstImageInfo);
+        ImageInfo &dstImageInfo);
     static bool CopyPixMapToDst(PixelMap &source, void* &dstPixels, int &fd, uint32_t bufferSize);
     static bool CopyPixelMap(PixelMap &source, PixelMap &dstPixelMap, int32_t &error);
     static bool CopyPixelMap(PixelMap &source, PixelMap &dstPixelMap);
