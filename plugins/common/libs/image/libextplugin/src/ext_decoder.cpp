@@ -212,7 +212,7 @@ static const map<piex::image_type_recognition::RawImageTypes, string> RAW_FORMAT
     { piex::image_type_recognition::kDngImage, "image/x-adobe-dng" },
     { piex::image_type_recognition::kNefImage, "image/x-nikon-nef" },
     { piex::image_type_recognition::kNrwImage, "image/x-nikon-nrw" },
-    { piex::image_type_recognition::kOrfImage, "image/x-plympus-orf" },
+    { piex::image_type_recognition::kOrfImage, "image/x-olympus-orf" },
     { piex::image_type_recognition::kPefImage, "image/x-pentax-pef" },
     { piex::image_type_recognition::kRafImage, "image/x-fuji-raf" },
     { piex::image_type_recognition::kRw2Image, "image/x-panasonic-rw2" },
