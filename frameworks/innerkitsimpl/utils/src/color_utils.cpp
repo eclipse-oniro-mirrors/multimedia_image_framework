@@ -75,13 +75,10 @@ ColorManager::ColorSpaceName BT2020ToColorSpace(uint16_t transfer, uint8_t range
     }
     return ColorManager::NONE;
 }
-#ifdef USE_M133_SKIA
+
+template <>
 ColorManager::ColorSpaceName ColorUtils::CicpToColorSpace(uint8_t primaries, uint8_t transfer,
     uint8_t matrix, uint8_t range)
-#else
-ColorManager::ColorSpaceName ColorUtils::CicpToColorSpace(uint16_t primaries, uint16_t transfer,
-    uint16_t matrix, uint8_t range)
-#endif
 {
     switch (primaries) {
         case CICP_COLORPRIMARIES_SRGB:
@@ -101,11 +98,31 @@ ColorManager::ColorSpaceName ColorUtils::CicpToColorSpace(uint16_t primaries, ui
     }
     return ColorManager::NONE;
 }
-#ifdef USE_M133_SKIA
-uint8_t ColorUtils::GetPrimaries(ColorManager::ColorSpaceName name)
-#else
+
+template <>
+ColorManager::ColorSpaceName ColorUtils::CicpToColorSpace(uint16_t primaries, uint16_t transfer,
+    uint16_t matrix, uint8_t range)
+{
+    switch (primaries) {
+        case CICP_COLORPRIMARIES_SRGB:
+            return range == CICP_FULL_RANGE_LIMIT ? ColorManager::SRGB_LIMIT : ColorManager::SRGB;
+        case CICP_COLORPRIMARIES_P3_D65:
+            return P3ToColorSpace(transfer, range);
+        case CICP_COLORPRIMARIES_BT2020:
+            return BT2020ToColorSpace(transfer, range);
+        case CICP_COLORPRIMARIES_BT601_N:
+            return range == CICP_FULL_RANGE_LIMIT ? ColorManager::BT601_SMPTE_C_LIMIT : ColorManager::BT601_SMPTE_C;
+        case CICP_COLORPRIMARIES_BT601_P:
+            return range == CICP_FULL_RANGE_LIMIT ? ColorManager::BT601_EBU_LIMIT : ColorManager::BT601_EBU;
+        case CICP_COLORPRIMARIES_P3_DCI:
+            return ColorManager::DCI_P3;
+        default:
+            break;
+    }
+    return ColorManager::NONE;
+}
+
 uint16_t ColorUtils::GetPrimaries(ColorManager::ColorSpaceName name)
-#endif
 {
     switch (name) {
         case ColorManager::ColorSpaceName::SRGB:
@@ -187,13 +204,20 @@ uint16_t GetRangeFlag(ColorManager::ColorSpaceName name)
             return CICP_FULL_RANGE_FULL;
     }
 }
-#ifdef USE_M133_SKIA
+
+template <>
 void ColorUtils::ColorSpaceGetCicp(ColorManager::ColorSpaceName name, uint8_t& primaries, uint8_t& transfer,
     uint8_t& matrix, uint8_t& range)
-#else
+{
+    primaries = GetPrimaries(name);
+    transfer = GetTransfer(name);
+    matrix = GetMatrix(name);
+    range = GetRangeFlag(name);
+}
+
+template <>
 void ColorUtils::ColorSpaceGetCicp(ColorManager::ColorSpaceName name, uint16_t& primaries, uint16_t& transfer,
     uint16_t& matrix, uint8_t& range)
-#endif
 {
     primaries = GetPrimaries(name);
     transfer = GetTransfer(name);

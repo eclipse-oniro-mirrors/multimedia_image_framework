@@ -15,7 +15,9 @@
 
 #include <charconv>
 #include <dlfcn.h>
+#ifdef USE_M133_SKIA
 #include <unistd.h>
+#endif
 
 #include "astc_codec.h"
 #ifdef ENABLE_ASTC_ENCODE_BASED_GPU

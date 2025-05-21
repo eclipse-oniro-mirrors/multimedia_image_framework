@@ -38,7 +38,7 @@ image_native_android_sources = [
   "//foundation/multimedia/image_framework/plugins/manager/src/thirdpartyadp/gstreamer/gst_plugin_fw.cpp",
 
   # jpeg
-  "$skia_root/skia/third_party/externals/libjpeg-turbo/jdicc.c",
+  "$third_party_skia_root/third_party/externals/libjpeg-turbo/jdicc.c",
   "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/codec/src/image_packer.cpp",
   "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/codec/src/image_packer_ex.cpp",
   "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/codec/src/image_source.cpp",
@@ -160,10 +160,10 @@ image_native_android_include_dirs = [
   "//foundation/multimedia/image_framework/plugins/manager/include/pluginbase",
   "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/utils/include",
   "//foundation/graphic/graphic_2d/utils/color_manager/export",
-  "$skia_root/skia/include/codec",
-  "$skia_root/skia",
-  "$skia_root/skia/include/core",
-  "$skia_root/skia/third_party/skcms",
+  "$third_party_skia_root/include/codec",
+  "$third_party_skia_root",
+  "$third_party_skia_root/include/core",
+  "$third_party_skia_root/third_party/skcms",
   "//commonlibrary/c_utils/base/include",
 
   # image_native
@@ -189,13 +189,13 @@ image_native_android_include_dirs = [
   # webp
   "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/pixelconverter/include",
   "//foundation/multimedia/image_framework/plugins/common/libs/image/libwebpplugin/include",
-  "$skia_root/skia/third_party/externals/libwebp/src",
-  "$skia_root/skia/include/encode",
-  "$skia_root/skia/src/ports/skia_ohos",
-  "$skia_root/skia/src/ports",
-  "$skia_root/skia/src/images",
-  "$skia_root/skia/include/private",
-  "$skia_root/skia/third_party/externals/freetype/include/freetype",
+  "$third_party_skia_root/third_party/externals/libwebp/src",
+  "$third_party_skia_root/include/encode",
+  "$third_party_skia_root/src/ports/skia_ohos",
+  "$third_party_skia_root/src/ports",
+  "$third_party_skia_root/src/images",
+  "$third_party_skia_root/include/private",
+  "$third_party_skia_root/third_party/externals/freetype/include/freetype",
 
   # svg
   "$image_subsystem/plugins/common/libs/image/libsvgplugin/include",
@@ -215,8 +215,8 @@ image_native_android_include_dirs = [
   # jpeg
   "//foundation/multimedia/image_framework/plugins/common/libs/image/libjpegplugin/include",
   "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/converter/include",
-  "$skia_root/skia/third_party/libjpeg-turbo",
-  "$skia_root/skia/third_party/externals/libjpeg-turbo",
+  "$third_party_skia_root/third_party/libjpeg-turbo",
+  "$third_party_skia_root/third_party/externals/libjpeg-turbo",
   "//third_party/libexif",
 
   # gif
@@ -235,8 +235,8 @@ image_native_android_include_dirs = [
   "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/stream/include",
   "//foundation/multimedia/image_framework/plugins/common/libs/image/libjpegplugin",
   "//foundation/multimedia/image_framework/plugins/common/libs/image/librawplugin/include",
-  "//third_party/skia",
-  "//third_party/skia/third_party/externals/libjpeg-turbo",
+  "$third_party_skia_root",
+  "$third_party_skia_root/third_party/externals/libjpeg-turbo",
 
   # ext
   "//foundation/multimedia/image_framework/plugins/common/libs/image/libextplugin/include",
@@ -261,23 +261,33 @@ image_native_android_deps = [
   "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/utils:image_utils_static",
   "//foundation/multimedia/image_framework/mock/native:log_mock_static",
 
-  # jpeg
-  "//third_party/skia/third_party/libjpeg-turbo:libjpeg",
-
   # gif
   "//third_party/giflib:gif_static",
   "//third_party/libexif:exif_static",
-  "//third_party/skia/third_party/libpng:libpng",
 
   # heif
   "${image_subsystem}/plugins/common/libs/image/libextplugin:heifparser",
 
   # raw
-  "//third_party/skia/third_party/piex",
+  "$third_party_skia_root/third_party/piex",
 
   # formatagent
   # png
 ]
+
+if (use_new_skia) {
+  image_native_android_deps += [
+    "${third_party_skia_root}/third_party/libjpeg-turbo:libjpegm133",
+    "${third_party_skia_root}/third_party/libpng:libpngm133",
+    "${third_party_skia_root}/third_party/piex:piexm133",
+  ]
+} else {
+  image_native_android_deps += [
+    "${third_party_skia_root}/third_party/libjpeg-turbo:libjpeg",
+    "${third_party_skia_root}/third_party/libpng:libpng",
+    "${third_party_skia_root}/third_party/piex:piex",
+  ]
+}
 
 image_native_android_deps += skia_skcms
 image_native_android_deps += skia_platform
