@@ -5003,7 +5003,7 @@ unique_ptr<PixelMap> ImageSource::CreatePixelAstcFromImageFile(uint32_t index, c
         IMAGE_LOGE("CreatePixelAstcFromImageFile imageInfo size is too large");
         return nullptr;
     }
-    DecodeOptions& modifiableOpts = const_cast<DecodeOptions&>(opts);
+    DecodeOptions modifiableOpts = opts;
     modifiableOpts.desiredPixelFormat = PixelFormat::RGBA_8888;
     unique_ptr<PixelMap> rgbaPixelmap = CreatePixelMap(index, modifiableOpts, errorCode);
     if (rgbaPixelmap == nullptr) {
