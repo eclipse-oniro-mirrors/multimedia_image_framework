@@ -1300,8 +1300,8 @@ const uint32_t *PixelMap::GetPixel32(int32_t x, int32_t y)
 
 const uint8_t *PixelMap::GetPixel(int32_t x, int32_t y)
 {
-    if (isAstc_) {
-        IMAGE_LOGE("GetPixel does not support astc");
+    if (isAstc_ || IsYUV(imageInfo_.pixelFormat)) {
+        IMAGE_LOGE("GetPixel does not support astc and yuv pixel format.");
         return nullptr;
     }
     if (!CheckValidParam(x, y)) {
@@ -1317,6 +1317,10 @@ const uint8_t *PixelMap::GetPixel(int32_t x, int32_t y)
 
 bool PixelMap::GetARGB32Color(int32_t x, int32_t y, uint32_t &color)
 {
+    if (imageInfo_.pixelFormat != PixelFormat::ARGB_8888) {
+        IMAGE_LOGE("pixel format not support.");
+        return false;
+    }
     if (colorProc_ == nullptr) {
         IMAGE_LOGE("pixel format not supported.");
         return false;
@@ -2262,29 +2266,31 @@ uint8_t *PixelMap::ReadAshmemDataFromParcel(Parcel &parcel, int32_t bufferSize,
     auto readFdDefaultFunc = [](Parcel &parcel) -> int { return ReadFileDescriptor(parcel); };
     int fd = ((readSafeFdFunc != nullptr) ? readSafeFdFunc(parcel, readFdDefaultFunc) : readFdDefaultFunc(parcel));
     if (!CheckAshmemSize(fd, bufferSize)) {
+        ::close(fd);
         IMAGE_LOGE("ReadAshmemDataFromParcel check ashmem size failed, fd:[%{public}d].", fd);
         return nullptr;
     }
     if (bufferSize <= 0 || bufferSize > PIXEL_MAP_MAX_RAM_SIZE) {
+        ::close(fd);
         IMAGE_LOGE("malloc parameter bufferSize:[%{public}d] error.", bufferSize);
         return nullptr;
     }
 
     void *ptr = ::mmap(nullptr, bufferSize, PROT_READ, MAP_SHARED, fd, 0);
     if (ptr == MAP_FAILED) {
-        // do not close fd here. fd will be closed in FileDescriptor, ::close(fd)
+        ::close(fd);
         IMAGE_LOGE("ReadImageData map failed, errno:%{public}d", errno);
         return nullptr;
     }
 
     base = static_cast<uint8_t *>(malloc(bufferSize));
     if (base == nullptr) {
-        ::munmap(ptr, bufferSize);
+        ReleaseMemory(AllocatorType::SHARE_MEM_ALLOC, ptr, &fd, bufferSize);
         IMAGE_LOGE("alloc output pixel memory size:[%{public}d] error.", bufferSize);
         return nullptr;
     }
     if (memcpy_s(base, bufferSize, ptr, bufferSize) != 0) {
-        ::munmap(ptr, bufferSize);
+        ReleaseMemory(AllocatorType::SHARE_MEM_ALLOC, ptr, &fd, bufferSize);
         free(base);
         base = nullptr;
         IMAGE_LOGE("memcpy pixel data size:[%{public}d] error.", bufferSize);

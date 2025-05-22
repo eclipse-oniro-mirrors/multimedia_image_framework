@@ -599,6 +599,33 @@ Image_ErrorCode OH_PixelmapNative_GetImageInfo(OH_PixelmapNative *pixelmap, OH_P
 }
 
 MIDK_EXPORT
+Image_ErrorCode OH_PixelmapNative_GetPixelMapImageInfo(OH_PixelmapNative *pixelmap, OH_Pixelmap_ImageInfo *imageInfo)
+{
+    if (pixelmap == nullptr || imageInfo == nullptr || !pixelmap->GetInnerPixelmap()) {
+        return IMAGE_BAD_PARAMETER;
+    }
+    ImageInfo srcInfo;
+    pixelmap->GetInnerPixelmap()->GetImageInfo(srcInfo);
+    imageInfo->width = static_cast<uint32_t>(srcInfo.size.width);
+    imageInfo->height = static_cast<uint32_t>(srcInfo.size.height);
+    imageInfo->rowStride = static_cast<uint32_t>(pixelmap->GetInnerPixelmap()->GetRowStride());
+    imageInfo->pixelFormat = static_cast<int32_t>(srcInfo.pixelFormat);
+    imageInfo->isHdr = pixelmap->GetInnerPixelmap()->IsHdr();
+    imageInfo->alphaType = static_cast<PIXELMAP_ALPHA_TYPE>(srcInfo.alphaType);
+
+    if (!srcInfo.encodedFormat.empty() && imageInfo->mimeType.data == nullptr) {
+        imageInfo->mimeType.size = srcInfo.encodedFormat.size();
+        imageInfo->mimeType.data = static_cast<char *>(malloc(imageInfo->mimeType.size));
+        if (memcpy_s(imageInfo->mimeType.data, imageInfo->mimeType.size, srcInfo.encodedFormat.c_str(),
+            srcInfo.encodedFormat.size()) != 0) {
+            releaseMimeType(&imageInfo->mimeType);
+        }
+    }
+
+    return IMAGE_SUCCESS;
+}
+
+MIDK_EXPORT
 Image_ErrorCode OH_PixelmapNative_Opacity(OH_PixelmapNative *pixelmap, float rate)
 {
     if (pixelmap == nullptr || !pixelmap->GetInnerPixelmap()) {

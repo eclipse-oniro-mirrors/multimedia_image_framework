@@ -625,7 +625,7 @@ std::shared_ptr<PixelMap> PixelMapNapi::GetPixelMap(napi_env env, napi_value pix
 
     napi_status status = napi_unwrap(env, pixelmap, reinterpret_cast<void**>(&pixelMapNapi));
     if (!IMG_IS_OK(status)) {
-        IMAGE_LOGE("GetPixelMap napi unwrap failed");
+        IMAGE_LOGE("GetPixelMap napi unwrap failed, status is %{public}d", status);
         return nullptr;
     }
 
@@ -691,7 +691,11 @@ void PixelMapNapi::UnlockPixelMap()
 extern "C" __attribute__((visibility("default"))) void* OHOS_MEDIA_GetPixelMap(napi_env env, napi_value value)
 {
     PixelMapNapi *pixmapNapi = nullptr;
-    napi_unwrap(env, value, reinterpret_cast<void**>(&pixmapNapi));
+    napi_status status = napi_unwrap(env, value, reinterpret_cast<void**>(&pixmapNapi));
+    if (!IMG_IS_OK(status)) {
+        IMAGE_LOGE("OHOS_MEDIA_GetPixelMap unwrap failed, status is %{public}d", status);
+        return nullptr;
+    }
     if (pixmapNapi == nullptr) {
         IMAGE_LOGE("pixmapNapi unwrapped is nullptr");
         return nullptr;
@@ -710,7 +714,11 @@ extern "C" __attribute__((visibility("default"))) int32_t OHOS_MEDIA_GetImageInf
     }
 
     PixelMapNapi *pixmapNapi = nullptr;
-    napi_unwrap(env, value, reinterpret_cast<void**>(&pixmapNapi));
+    napi_status status = napi_unwrap(env, value, reinterpret_cast<void**>(&pixmapNapi));
+    if (!IMG_IS_OK(status)) {
+        IMAGE_LOGE("pixmapNapi unwrap failed, status is %{public}d", status);
+        return OHOS_IMAGE_RESULT_BAD_PARAMETER;
+    }
     if (pixmapNapi == nullptr) {
         IMAGE_LOGE("pixmapNapi unwrapped is nullptr");
         return OHOS_IMAGE_RESULT_BAD_PARAMETER;
@@ -748,7 +756,11 @@ extern "C" __attribute__((visibility("default"))) int32_t OHOS_MEDIA_AccessPixel
     IMAGE_LOGD("AccessPixels IN");
 
     PixelMapNapi *pixmapNapi = nullptr;
-    napi_unwrap(env, value, reinterpret_cast<void**>(&pixmapNapi));
+    napi_status status = napi_unwrap(env, value, reinterpret_cast<void**>(&pixmapNapi));
+    if (!IMG_IS_OK(status)) {
+        IMAGE_LOGE("OHOS_MEDIA_AccessPixels unwrap failed, status is %{public}d", status);
+        return OHOS_IMAGE_RESULT_BAD_PARAMETER;
+    }
     if (pixmapNapi == nullptr) {
         IMAGE_LOGE("pixmapNapi unwrapped is nullptr");
         return OHOS_IMAGE_RESULT_BAD_PARAMETER;
@@ -790,7 +802,11 @@ extern "C" __attribute__((visibility("default"))) int32_t OHOS_MEDIA_UnAccessPix
     IMAGE_LOGD("UnAccessPixels IN");
 
     PixelMapNapi *pixmapNapi = nullptr;
-    napi_unwrap(env, value, reinterpret_cast<void**>(&pixmapNapi));
+    napi_status status = napi_unwrap(env, value, reinterpret_cast<void**>(&pixmapNapi));
+    if (!IMG_IS_OK(status)) {
+        IMAGE_LOGE("OHOS_MEDIA_UnAccessPixels unwrap failed, status is %{public}d", status);
+        return OHOS_IMAGE_RESULT_BAD_PARAMETER;
+    }
     if (pixmapNapi == nullptr) {
         IMAGE_LOGE("pixmapNapi unwrapped is nullptr");
         return OHOS_IMAGE_RESULT_BAD_PARAMETER;
