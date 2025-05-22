@@ -194,6 +194,8 @@ typedef enum {
     IMAGE_SOURCE_TOO_LARGE = 7700103,
     /** unsupported allocator type */
     IMAGE_SOURCE_UNSUPPORTED_ALLOCATOR_TYPE = 7700201,
+    /** unsupported metadata */
+    IMAGE_SOURCE_UNSUPPORTED_METADATA = 7700202,
     /** unsupported options */
     IMAGE_SOURCE_UNSUPPORTED_OPTIONS = 7700203,
     /**
