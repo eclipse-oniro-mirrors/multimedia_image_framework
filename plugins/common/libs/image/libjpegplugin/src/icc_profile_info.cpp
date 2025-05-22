@@ -117,7 +117,7 @@ uint32_t ICCProfileInfo::PackingICCProfile(j_compress_ptr cinfo, const SkImageIn
         sk_sp<SkData> jpegMarkerData =
                 SkData::MakeUninitialized(ICC_MARKER_HEADER_SIZE + icc->size());
         uint8_t* ptrMaker = static_cast<uint8_t*>(jpegMarkerData->writable_data());
-        errno_t ret = memcpy_s(ptrMaker, jpegMarkerData.size(), ICC_SIGNATURE, sizeof(ICC_SIGNATURE));
+        errno_t ret = memcpy_s(ptrMaker, jpegMarkerData->size(), ICC_SIGNATURE, sizeof(ICC_SIGNATURE));
         if (EOK != ret) {
             IMAGE_LOGE("%{public}s failed, ICC_SIGNATURE memcpy error, ret = %{public}d", __func__, ret);
             return OHOS::Media::ERR_IMAGE_INVALID_PARAMETER;
@@ -127,7 +127,7 @@ uint32_t ICCProfileInfo::PackingICCProfile(j_compress_ptr cinfo, const SkImageIn
         *ptrMaker++ = 1;
          // total markers
         *ptrMaker++ = 1;
-        ret = memcpy_s(ptrMaker, jpegMarkerData.size() - ICC_MARKER_HEADER_SIZE, icc->data(), icc->size());
+        ret = memcpy_s(ptrMaker, jpegMarkerData->size() - ICC_MARKER_HEADER_SIZE, icc->data(), icc->size());
         if (EOK != ret) {
             IMAGE_LOGE("%{public}s failed, icc->data() memcpy error, ret = %{public}d", __func__, ret);
             return OHOS::Media::ERR_IMAGE_INVALID_PARAMETER;
