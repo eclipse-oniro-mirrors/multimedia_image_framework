@@ -81,6 +81,7 @@ constexpr uint32_t HDR_MULTI_PICTURE_APP_LENGTH = 90;
 constexpr uint32_t EXTEND_INFO_MAIN_SIZE = 60;
 constexpr uint32_t ISO_GAINMAP_METADATA_PAYLOAD_MIN_SIZE = 38;
 constexpr uint32_t DENOMINATOR = 1000000;
+constexpr uint16_t EMPTY_META_SIZE = 0;
 
 const float SM_COLOR_SCALE = 0.00002f;
 const float SM_LUM_SCALE = 0.0001f;
@@ -1159,11 +1160,14 @@ static bool PackVividMetadata(vector<uint8_t>& bytes, uint32_t& index, HdrMetada
         UINT16_BYTE_COUNT + VIVID_STATIC_METADATA_SIZE_IN_IMAGE + UINT16_BYTE_COUNT + dynamicMetadataSize;
     PackVividPreInfo(bytes, index, false, false);
     ImageUtils::Uint16ToBytes(metadataSize, bytes, index);
-    if (!PackVividStaticMetadata(bytes, index, metadata.staticMetadata)) {
+    if (metadata.staticMetadata.empty()) {
+        IMAGE_LOGI("HDR-IMAGE vivid staticMeta size is 0");
+        ImageUtils::Uint16ToBytes(EMPTY_META_SIZE, bytes, index);
+    } else if (!PackVividStaticMetadata(bytes, index, metadata.staticMetadata)) {
         return false;
     }
     ImageUtils::Uint16ToBytes(dynamicMetadataSize, bytes, index);
-    if (memcpy_s(bytes.data() + index, bytes.size() - index,
+    if (!metadata.dynamicMetadata.empty() && memcpy_s(bytes.data() + index, bytes.size() - index,
         metadata.dynamicMetadata.data(), metadata.dynamicMetadata.size()) != EOK) {
         return false;
     }
