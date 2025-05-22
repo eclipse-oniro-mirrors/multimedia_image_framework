@@ -31,13 +31,13 @@ void ImageTaiheUtils::HicheckerReport()
 
 void ImageTaiheUtils::ThrowExceptionError(const std::string errMsg)
 {
-    IMAGE_LOGE("errMsg: %{pubilc}s", errMsg.c_str());
+    IMAGE_LOGE("errMsg: %{public}s", errMsg.c_str());
     taihe::set_error(errMsg);
 }
 
 void ImageTaiheUtils::ThrowExceptionError(const int32_t errCode, const std::string errMsg)
 {
-    IMAGE_LOGE("errCode: %{pubilc}d, errMsg: %{pubilc}s", errCode, errMsg.c_str());
+    IMAGE_LOGE("errCode: %{public}d, errMsg: %{public}s", errCode, errMsg.c_str());
     taihe::set_business_error(errCode, errMsg);
 }
 

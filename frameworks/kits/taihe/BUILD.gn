@@ -85,6 +85,7 @@ taihe_shared_library("image_taihe") {
   external_deps = [
     "c_utils:utils",
     "eventhandler:libeventhandler",
+    "graphic_2d:ani_color_space_object_convertor",
     "graphic_2d:color_manager",
     "graphic_2d:EGL",
     "graphic_2d:librender_service_client",

@@ -328,7 +328,7 @@ struct DecodingOptions {
   index: Optional<i32>;
   sampleSize: Optional<i32>;
   rotate: Optional<i32>;
-  editable: Optional<i32>;
+  editable: Optional<bool>;
   desiredSize: Optional<Size>;
   desiredRegion: Optional<Region>;
   desiredPixelFormat: Optional<PixelMapFormat>;
@@ -530,6 +530,15 @@ interface ImageSource {
 
   @gen_promise("createPixelMapUsingAllocator")
   CreatePixelMapUsingAllocatorSync(options: Optional<DecodingOptions>, allocatorType: Optional<AllocatorType>): PixelMap;
+
+  @gen_async("createPixelMapList")
+  CreatePixelMapListSync(): Array<PixelMap>;
+
+  @gen_async("createPixelMapList")
+  CreatePixelMapListSyncWithOptions(options: DecodingOptions): Array<PixelMap>;
+
+  @gen_promise("createPixelMapList")
+  CreatePixelMapListSyncWithOptionalOptions(options: Optional<DecodingOptions>): Array<PixelMap>;
 
   @gen_async("getDelayTimeList")
   @gen_promise("getDelayTimeList")

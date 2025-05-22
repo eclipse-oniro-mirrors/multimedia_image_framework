@@ -228,13 +228,13 @@ static struct Image ReadLatestImageSyncProcess(ImageReceiverCommonArgs &args, Im
 {
     if (receiverImpl == nullptr) {
         ImageTaiheUtils::ThrowExceptionError("receiverImpl is nullptr");
-        return make_holder<ImageImpl, struct Image>(nullptr);
+        return make_holder<ImageImpl, struct Image>();
     }
 
     std::shared_ptr<ImageReceiverTaiheContext> context = std::make_shared<ImageReceiverTaiheContext>();
     if (context == nullptr) {
         ImageTaiheUtils::ThrowExceptionError("ImageReceiverTaiheContext is nullptr");
-        return make_holder<ImageImpl, struct Image>(nullptr);
+        return make_holder<ImageImpl, struct Image>();
     }
 
     context->name = args.name;
@@ -244,12 +244,12 @@ static struct Image ReadLatestImageSyncProcess(ImageReceiverCommonArgs &args, Im
     CommonProcessSendEvent(context);
     if (context->status != OHOS::Media::SUCCESS) {
         ImageTaiheUtils::ThrowExceptionError("CommonProcessSendEvent failed");
-        return make_holder<ImageImpl, struct Image>(nullptr);
+        return make_holder<ImageImpl, struct Image>();
     }
 
     if (std::holds_alternative<std::monostate>(context->result)) {
         ImageTaiheUtils::ThrowExceptionError("CommonProcessSendEvent result is empty");
-        return make_holder<ImageImpl, struct Image>(nullptr);
+        return make_holder<ImageImpl, struct Image>();
     }
 
     return std::get<struct Image>(context->result);
@@ -285,6 +285,11 @@ struct Image ImageReceiverImpl::ReadLatestImageSync()
         }
 #endif
         struct Image image = ImageImpl::Create(nativeImage);
+        if (::taihe::has_error()) {
+            IMAGE_LOGE("ImageImpl::Create failed!");
+            context->status = OHOS::Media::ERR_IMAGE_INIT_ABNORMAL;
+            return std::monostate{};
+        }
         context->status = OHOS::Media::SUCCESS;
         return image;
     };
@@ -396,8 +401,12 @@ void ImageReceiverImpl::OffImageArrival(optional_view<callback<void(uintptr_t, u
     };
 
     args.callBack = [](std::shared_ptr<ImageReceiverTaiheContext> &context) -> CallbackResult {
-        if (context == nullptr || context->receiverImpl_ == nullptr) {
-            IMAGE_LOGE("context or receiverImpl is nullptr");
+        if (context == nullptr) {
+            IMAGE_LOGE("context is nullptr");
+            return std::monostate{};
+        }
+        if (context->receiverImpl_ == nullptr) {
+            IMAGE_LOGE("receiverImpl is nullptr");
             context->status = OHOS::Media::ERR_IMAGE_INIT_ABNORMAL;
             return std::monostate{};
         }
@@ -441,8 +450,12 @@ void ImageReceiverImpl::ReleaseSync()
     };
 
     args.callBack = [](std::shared_ptr<ImageReceiverTaiheContext> &context) -> CallbackResult {
-        if (context == nullptr || context->receiverImpl_ == nullptr) {
-            IMAGE_LOGE("context or receiverImpl is nullptr");
+        if (context == nullptr) {
+            IMAGE_LOGE("context is nullptr");
+            return std::monostate{};
+        }
+        if (context->receiverImpl_ == nullptr) {
+            IMAGE_LOGE("receiverImpl is nullptr");
             context->status = OHOS::Media::ERR_IMAGE_INIT_ABNORMAL;
             return std::monostate{};
         }
@@ -460,14 +473,14 @@ ImageReceiver CreateImageReceiver(int32_t width, int32_t height, int32_t format,
 {
     if (!CheckFormat(format)) {
         ImageTaiheUtils::ThrowExceptionError(OHOS::Media::COMMON_ERR_INVALID_PARAMETER, "Invalid format");
-        return make_holder<ImageReceiverImpl, ImageReceiver>(nullptr);
+        return make_holder<ImageReceiverImpl, ImageReceiver>();
     }
 
     std::shared_ptr<OHOS::Media::ImageReceiver> imageReceiver = OHOS::Media::ImageReceiver::CreateImageReceiver(
         width, height, format, capacity);
     if (imageReceiver == nullptr) {
         ImageTaiheUtils::ThrowExceptionError("Create native image receiver failed");
-        return make_holder<ImageReceiverImpl, ImageReceiver>(nullptr);
+        return make_holder<ImageReceiverImpl, ImageReceiver>();
     }
     return make_holder<ImageReceiverImpl, ImageReceiver>(imageReceiver);
 }
