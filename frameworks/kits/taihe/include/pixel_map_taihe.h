@@ -37,6 +37,7 @@ public:
     int64_t GetImplPtr();
     std::shared_ptr<Media::PixelMap> GetNativePtr();
     static std::shared_ptr<Media::PixelMap> GetPixelMap(PixelMap etsPixelMap);
+    static PixelMap CreatePixelMap(std::shared_ptr<Media::PixelMap> pixelMap);
 
     ImageInfo GetImageInfoSync();
     void ReadPixelsToBufferSync(array_view<uint8_t> dst);
@@ -47,13 +48,17 @@ public:
     int32_t GetPixelBytesNumber();
     void ScaleSync(float x, float y);
     void ScaleWithAntiAliasingSync(float x, float y, AntiAliasingLevel level);
-    void CropSync(Region const& region);
+    void CropSync(ohos::multimedia::image::image::Region const& region);
     void RotateSync(float angle);
     void FlipSync(bool horizontal, bool vertical);
     void OpacitySync(float rate);
     void SetMemoryNameSync(string_view name);
     void ReleaseSync();
     bool GetIsStrideAlignment();
+    void SetCaptureId(int32_t captureId);
+    int32_t GetCaptureId();
+    void SetTimestamp(int64_t timestamp);
+    int64_t GetTimestamp();
 
 private:
     std::shared_ptr<Media::PixelMap> nativePixelMap_ = nullptr;
@@ -61,6 +66,8 @@ private:
     bool Is10BitFormat(Media::PixelFormat format);
     void ParseInitializationOptions(InitializationOptions const& etsOptions, Media::InitializationOptions &options);
     void Release();
+    int64_t timestamp_ = 0;
+    int32_t captureId_ = 0;
 };
 } // namespace ANI::Image
 

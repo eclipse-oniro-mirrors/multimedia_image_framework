@@ -41,12 +41,12 @@ void ImageTaiheUtils::ThrowExceptionError(const int32_t errCode, const std::stri
     taihe::set_business_error(errCode, errMsg);
 }
 
-bool ImageTaiheUtils::GetPropertyInt(ani_env *env, ani_object obj, const std::string &name, int32_t &value)
+bool ImageTaiheUtils::GetPropertyDouble(ani_env *env, ani_object obj, const std::string &name, double &value)
 {
     CHECK_ERROR_RETURN_RET_LOG(env == nullptr || obj == nullptr, false, "%{public}s param is nullptr", __func__);
-    ani_int result;
-    env->Object_GetPropertyByName_Int(obj, name.c_str(), &result);
-    value = static_cast<int32_t>(result);
+    ani_double result;
+    env->Object_GetPropertyByName_Double(obj, name.c_str(), &result);
+    value = static_cast<double>(result);
     return true;
 }
 
@@ -131,6 +131,14 @@ array<uint8_t> ImageTaiheUtils::CreateTaiheArrayBuffer(uint8_t* src, size_t srcL
     return array<uint8_t>(copy_data_t{}, src, srcLen);
 }
 
+uintptr_t ImageTaiheUtils::GetUndefinedPtr(ani_env *env)
+{
+    ani_ref undefinedRef {};
+    env->GetUndefined(&undefinedRef);
+    ani_object undefinedObj = static_cast<ani_object>(undefinedRef);
+    return reinterpret_cast<uintptr_t>(undefinedObj);
+}
+
 template <typename EnumType, typename ValueType>
 bool ImageTaiheUtils::GetEnumKeyByValue(ValueType value, typename EnumType::key_t &key)
 {
@@ -154,4 +162,8 @@ bool ImageTaiheUtils::GetEnumKeyByValue<AlphaType, int32_t>(int32_t value, typen
 
 template
 bool ImageTaiheUtils::GetEnumKeyByValue<PropertyKey, std::string>(std::string value, typename PropertyKey::key_t &key);
+
+template
+bool ImageTaiheUtils::GetEnumKeyByValue<AuxiliaryPictureType, int32_t>(int32_t value,
+    typename AuxiliaryPictureType::key_t &key);
 } // namespace ANI::Image
