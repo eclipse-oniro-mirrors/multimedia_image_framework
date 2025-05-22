@@ -130,7 +130,7 @@ ImageCreator CreateImageCreatorInner(int32_t width, int32_t height, int32_t form
         }
         ImageTaiheUtils::ThrowExceptionError("Create image creator failed.");
     }
-    return make_holder<ImageCreatorImpl, ImageCreator>(nullptr);
+    return make_holder<ImageCreatorImpl, ImageCreator>();
 }
 
 ImageCreator CreateImageCreator(int32_t width, int32_t height, int32_t format, int32_t capacity)

@@ -13,6 +13,7 @@
  * limitations under the License.
  */
 
+#include "ani_color_space_object_convertor.h"
 #include "image_common.h"
 #include "image_dfx.h"
 #include "image_log.h"
@@ -257,8 +258,12 @@ static bool ParsePixelFormat(optional<PixelMapFormat> val, OHOS::Media::PixelFor
 static void ParseDesiredColorSpace(DecodingOptions const& options, OHOS::Media::DecodeOptions &dst)
 {
     if (options.desiredColorSpace.has_value()) {
+        ani_object desiredColorSpaceObj = reinterpret_cast<ani_object>(options.desiredColorSpace.value());
+        dst.desiredColorSpaceInfo = OHOS::ColorManager::GetColorSpaceByAniObject(get_env(), desiredColorSpaceObj);
         IMAGE_LOGD("desiredColorSpace parse finished");
-        return;
+    }
+    if (dst.desiredColorSpaceInfo == nullptr) {
+        IMAGE_LOGD("no desiredColorSpace");
     }
 }
 
@@ -635,6 +640,11 @@ array<PixelMap> ImageSourceImpl::CreatePixelMapListSyncWithOptions(DecodingOptio
 array<PixelMap> ImageSourceImpl::CreatePixelMapListSync()
 {
     return CreatePixelMapListSyncWithOptions({});
+}
+
+array<PixelMap> ImageSourceImpl::CreatePixelMapListSyncWithOptionalOptions(optional_view<DecodingOptions> options)
+{
+    return CreatePixelMapListSyncWithOptions(options.value_or(DecodingOptions {}));
 }
 
 array<int32_t> ImageSourceImpl::GetDelayTimeListSync()
@@ -1069,7 +1079,7 @@ ImageSource CreateImageSourceByUriOption(string_view uri, SourceOptions const& o
         OHOS::Media::ImageSource::CreateImageSource(rawPath, opts, errorCode);
     if (imageSource == nullptr) {
         ImageTaiheUtils::ThrowExceptionError("CreateImageSourceByUriOption error");
-        return make_holder<ImageSourceImpl, ImageSource>(nullptr);
+        return make_holder<ImageSourceImpl, ImageSource>();
     }
     {
         std::lock_guard<std::mutex> lock(imageSourceCrossThreadMutex_);
@@ -1096,7 +1106,7 @@ ImageSource CreateImageSourceByFdOption(double fd, SourceOptions const& options)
         OHOS::Media::ImageSource::CreateImageSource(fdInt, opts, errorCode);
     if (imageSource == nullptr) {
         ImageTaiheUtils::ThrowExceptionError("CreateImageSourceByFdOption error");
-        return make_holder<ImageSourceImpl, ImageSource>(nullptr);
+        return make_holder<ImageSourceImpl, ImageSource>();
     }
     {
         std::lock_guard<std::mutex> lock(imageSourceCrossThreadMutex_);
@@ -1123,7 +1133,7 @@ ImageSource CreateImageSourceByArrayBufferOption(array_view<uint8_t> buf, Source
         OHOS::Media::ImageSource::CreateImageSource(bufPtr, buf.size(), opts, errorCode);
     if (imageSource == nullptr) {
         ImageTaiheUtils::ThrowExceptionError("CreateImageSourceByArrayBufferOption error");
-        return make_holder<ImageSourceImpl, ImageSource>(nullptr);
+        return make_holder<ImageSourceImpl, ImageSource>();
     }
     {
         std::lock_guard<std::mutex> lock(imageSourceCrossThreadMutex_);
@@ -1152,7 +1162,7 @@ ImageSource CreateImageSourceByRawFileDescriptorOption(uintptr_t rawfile, option
         !ImageTaiheUtils::GetPropertyDouble(env, rawfileObj, "offset", offset) ||
         !ImageTaiheUtils::GetPropertyDouble(env, rawfileObj, "length", length)) {
         ImageTaiheUtils::ThrowExceptionError(OHOS::Media::COMMON_ERR_INVALID_PARAMETER, "GetPropertyDouble failed");
-        return make_holder<ImageSourceImpl, ImageSource>(nullptr);
+        return make_holder<ImageSourceImpl, ImageSource>();
     }
     SourceOptions etsOpts = options.value_or(SourceOptions {});
     OHOS::Media::SourceOptions opts = ImageTaiheUtils::ParseSourceOptions(etsOpts);
@@ -1163,7 +1173,7 @@ ImageSource CreateImageSourceByRawFileDescriptorOption(uintptr_t rawfile, option
         static_cast<int32_t>(fd), static_cast<int32_t>(offset), fileSize, opts, errorCode);
     if (imageSource == nullptr) {
         ImageTaiheUtils::ThrowExceptionError("CreateImageSourceByRawFileDescriptorOption error");
-        return make_holder<ImageSourceImpl, ImageSource>(nullptr);
+        return make_holder<ImageSourceImpl, ImageSource>();
     }
     {
         std::lock_guard<std::mutex> lock(imageSourceCrossThreadMutex_);

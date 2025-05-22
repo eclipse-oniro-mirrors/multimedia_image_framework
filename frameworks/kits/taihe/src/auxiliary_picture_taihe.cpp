@@ -15,6 +15,7 @@
 
 #include <memory.h>
 
+#include "ani_color_space_object_convertor.h"
 #include "auxiliary_picture_taihe.h"
 #include "image_common.h"
 #include "image_log.h"
@@ -30,10 +31,13 @@ namespace ANI::Image {
 struct AuxiliaryPictureTaiheContext {
     uint32_t status;
     AuxiliaryPictureImpl *nConstructor;
+    std::shared_ptr<OHOS::Media::PixelMap> rPixelmap;
+    std::shared_ptr<OHOS::Media::AuxiliaryPicture> auxPicture;
     void *arrayBuffer;
     size_t arrayBufferSize;
     std::shared_ptr<OHOS::Media::AuxiliaryPicture> rAuxiliaryPicture;
     OHOS::Media::AuxiliaryPictureInfo auxiliaryPictureInfo;
+    std::shared_ptr<OHOS::ColorManager::ColorSpace> AuxColorSpace = nullptr;
 };
 
 AuxiliaryPictureImpl::AuxiliaryPictureImpl() {}
@@ -162,9 +166,21 @@ static OHOS::Media::PixelFormat ParsePixelFormat(int32_t val)
     return OHOS::Media::PixelFormat::UNKNOWN;
 }
 
-static OHOS::Media::ColorSpace ParseColorSpace(uintptr_t val)
+static bool ParseColorSpace(uintptr_t val, AuxiliaryPictureTaiheContext* taiheContext)
 {
-    return OHOS::Media::ColorSpace::UNKNOWN;
+#ifdef IMAGE_COLORSPACE_FLAG
+    ani_object obj = reinterpret_cast<ani_object>(val);
+    taiheContext->AuxColorSpace = OHOS::ColorManager::GetColorSpaceByAniObject(get_env(), obj);
+    if (taiheContext->AuxColorSpace == nullptr) {
+        ImageTaiheUtils::ThrowExceptionError(OHOS::Media::ERR_IMAGE_INVALID_PARAMETER, "ColorSpace mismatch");
+        return false;
+    }
+    taiheContext->rPixelmap->InnerSetColorSpace(*(taiheContext->AuxColorSpace));
+    return true;
+#else
+    ImageTaiheUtils::ThrowExceptionError(OHOS::Media::ERR_INVALID_OPERATION, "Unsupported operation");
+#endif
+    return false;
 }
 
 static bool ParseAuxiliaryPictureInfo(AuxiliaryPictureInfo const& info, AuxiliaryPictureTaiheContext* taiheContext)
@@ -182,7 +198,9 @@ static bool ParseAuxiliaryPictureInfo(AuxiliaryPictureInfo const& info, Auxiliar
     }
     taiheContext->auxiliaryPictureInfo.rowStride = info.rowStride;
     taiheContext->auxiliaryPictureInfo.pixelFormat = ParsePixelFormat(info.pixelFormat);
-    taiheContext->auxiliaryPictureInfo.colorSpace = ParseColorSpace(info.colorSpace);
+
+    taiheContext->rPixelmap = taiheContext->auxPicture->GetContentPixel();
+    ParseColorSpace(info.colorSpace, taiheContext);
     return true;
 }
 
@@ -193,13 +211,14 @@ void AuxiliaryPictureImpl::SetAuxiliaryPictureInfo(AuxiliaryPictureInfo const& i
         ImageTaiheUtils::ThrowExceptionError("Empty native auxiliarypicture");
         return;
     }
+    context->auxPicture = nativeAuxiliaryPicture_;
     if (!ParseAuxiliaryPictureInfo(info, context.get())) {
         ImageTaiheUtils::ThrowExceptionError(IMAGE_BAD_PARAMETER, "Parameter error.");
         IMAGE_LOGE("AuxiliaryPictureInfo mismatch");
         return;
     }
 
-    uint32_t res = nativeAuxiliaryPicture_->SetAuxiliaryPictureInfo(context->auxiliaryPictureInfo);
+    uint32_t res = context->auxPicture->SetAuxiliaryPictureInfo(context->auxiliaryPictureInfo);
     if (res != OHOS::Media::SUCCESS) {
         ImageTaiheUtils::ThrowExceptionError(IMAGE_BAD_PARAMETER, "Set auxiliary picture info failed.");
     }
@@ -236,22 +255,22 @@ AuxiliaryPicture CreateAuxiliaryPicture(array_view<uint8_t> buffer, const Size &
 {
     if (buffer.empty()) {
         ImageTaiheUtils::ThrowExceptionError(IMAGE_BAD_PARAMETER, "Invalid arraybuffer.");
-        return make_holder<AuxiliaryPictureImpl, AuxiliaryPicture>(nullptr);
+        return make_holder<AuxiliaryPictureImpl, AuxiliaryPicture>();
     }
     OHOS::Media::Size ohSize = {size.width, size.height};
     if (size.width <= 0 || size.height <= 0) {
         ImageTaiheUtils::ThrowExceptionError(IMAGE_BAD_PARAMETER, "Invalid size.");
-        return make_holder<AuxiliaryPictureImpl, AuxiliaryPicture>(nullptr);
+        return make_holder<AuxiliaryPictureImpl, AuxiliaryPicture>();
     }
     OHOS::Media::AuxiliaryPictureType ohType = ParseAuxiliaryPictureType(type.get_value());
     if (ohType == OHOS::Media::AuxiliaryPictureType::NONE) {
         ImageTaiheUtils::ThrowExceptionError(IMAGE_BAD_PARAMETER, "Invalid auxiliary picture type.");
-        return make_holder<AuxiliaryPictureImpl, AuxiliaryPicture>(nullptr);
+        return make_holder<AuxiliaryPictureImpl, AuxiliaryPicture>();
     }
     auto auxiliaryPicture = CreateAuxiliaryPictureExec(buffer, ohSize, ohType);
     if (auxiliaryPicture == nullptr) {
         IMAGE_LOGE("Fail to create auxiliary picture.");
-        return make_holder<AuxiliaryPictureImpl, AuxiliaryPicture>(nullptr);
+        return make_holder<AuxiliaryPictureImpl, AuxiliaryPicture>();
     }
     return make_holder<AuxiliaryPictureImpl, AuxiliaryPicture>(std::move(auxiliaryPicture));
 }
