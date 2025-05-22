@@ -260,6 +260,9 @@ heif_error HeifBox::MakeFromReader(HeifStreamReader &reader,
     if (!err) {
         *result = std::move(box);
     }
+    if (err && box->GetBoxType() == BOX_TYPE_CLLI) {
+        err = heif_error_ok;
+    }
     contentReader.SkipEnd();
     return err;
 }
