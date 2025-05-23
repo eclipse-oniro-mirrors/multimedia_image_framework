@@ -3774,6 +3774,7 @@ static void GenSrcTransInfo(SkTransInfo &srcInfo, ImageInfo &imageInfo, PixelMap
     if (pixelmap->GetAllocatorType() == AllocatorType::DMA_ALLOC) {
         if (pixelmap->GetFd() == nullptr) {
             IMAGE_LOGE("GenSrcTransInfo get surfacebuffer failed");
+            return;
         }
         SurfaceBuffer* sbBuffer = static_cast<SurfaceBuffer*>(pixelmap->GetFd());
         rowStride = static_cast<uint64_t>(sbBuffer->GetStride());
