@@ -137,6 +137,12 @@ static bool loadShaderFromFile(unsigned char*&shaderBinary, GLenum &binaryFormat
         return false;
     }
 
+    const size_t minSize = sizeof(GLenum) + sizeof(version);
+    if (fileStat.st_size < minSize) {
+        IMAGE_LOGE("slr_gpu shader cache file size failed! size:%{public}lld", fileStat.st_size);
+        return false;
+    }
+
     int binaryFd = open(filePath, O_RDONLY);
     if (binaryFd <= 0) {
         IMAGE_LOGE("slr_gpu shader cache open failed! error %{public}d", errno);
@@ -156,7 +162,7 @@ static bool loadShaderFromFile(unsigned char*&shaderBinary, GLenum &binaryFormat
             "%{public}d readnum %{public}d", errno, readLen);
         return false;
     }
-    binarySize = static_cast<uint32_t>(fileStat.st_size - sizeof(GLenum) - sizeof(version));
+    binarySize = static_cast<uint32_t>(fileStat.st_size - minSize);
     binaryFormat = *reinterpret_cast<int *>(binaryData + binarySize);
     int oldVersion = *reinterpret_cast<int *>(binaryData + fileStat.st_size - sizeof(version));
     if (oldVersion != version) {
