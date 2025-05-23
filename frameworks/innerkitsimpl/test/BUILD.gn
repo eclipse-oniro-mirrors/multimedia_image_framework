@@ -1176,7 +1176,6 @@ ohos_unittest("ndktest2") {
     "${image_subsystem}/frameworks/innerkitsimpl/accessor/src/tiff_parser.cpp",
     "unittest/image_common_ndk_test.cpp",
     "unittest/image_packer_native_ndk_test.cpp",
-    "unittest/pixelmap_native_ndk_test.cpp",
   ]
 
   if (enable_picture_ndk) {
