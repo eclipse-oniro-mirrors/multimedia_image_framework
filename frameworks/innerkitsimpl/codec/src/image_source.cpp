@@ -3777,12 +3777,14 @@ static uint32_t GetByteCount(const DecodeContext& context, uint32_t surfaceBuffe
     switch (context.info.pixelFormat) {
         case PixelFormat::RGBA_8888:
         case PixelFormat::BGRA_8888:
-        case PixelFormat::NV12:
-        case PixelFormat::NV21:
         case PixelFormat::RGBA_1010102:
-        case PixelFormat::YCBCR_P010:
             info.pixelFormat = context.info.pixelFormat;
             break;
+        case PixelFormat::NV12:
+        case PixelFormat::NV21:
+        case PixelFormat::YCBCR_P010:
+            info.pixelFormat = context.info.pixelFormat;
+            return byteCount;
         default:
             IMAGE_LOGE("[ImageSource] GetByteCount pixelFormat %{public}u error", context.info.pixelFormat);
             return byteCount;
