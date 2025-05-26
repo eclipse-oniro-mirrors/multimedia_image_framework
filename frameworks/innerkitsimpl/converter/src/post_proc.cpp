@@ -995,6 +995,7 @@ bool PostProc::RotateInRectangularSteps(PixelMap &pixelMap, float degrees, bool 
 #if !defined(_WIN32) && !defined(_APPLE) && !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
     float oldDegrees = degrees;
     if (useGpu && ImageSystemProperties::GetGenThumbWithGpu() &&
+        ImageSystemProperties::UseGPUScalingCapabilities() &&
         std::fabs(std::fmod(degrees, 90.f)) < 1e-6) { // degrees 90
         ImageTrace imageTrace("RotateInRectangularSteps:%f", degrees);
         IMAGE_LOGI("slr_gpu RotateInRectangularSteps in :%{public}f", degrees);
@@ -1036,6 +1037,7 @@ bool PostProc::ScalePixelMapWithGPU(PixelMap &pixelMap, const Size &desiredSize,
 {
 #if !defined(_WIN32) && !defined(_APPLE) && !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
     if (useGpu && ImageSystemProperties::GetGenThumbWithGpu() &&
+        ImageSystemProperties::UseGPUScalingCapabilities() &&
         option == AntiAliasingOption::HIGH) {
         ImageTrace imageTrace("ScalePixelMapWithGPU:wh(%d,%d)->(%d,%d)",
             pixelMap.GetWidth(), pixelMap.GetHeight(), desiredSize.width, desiredSize.height);

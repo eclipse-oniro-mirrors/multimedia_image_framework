@@ -52,6 +52,15 @@ std::string getCurrentProcessName()
 }
 #endif
 
+bool ImageSystemProperties::UseGPUScalingCapabilities()
+{
+#if !defined(IOS_PLATFORM) &&!defined(ANDROID_PLATFORM)
+    return system::GetBoolParameter("persist.multimedia.image.UseGPUscalingCapabilities.endabled", false);
+#else
+    return false;
+#endif
+}
+
 bool ImageSystemProperties::GetSkiaEnabled()
 {
 #if !defined(IOS_PLATFORM) &&!defined(ANDROID_PLATFORM)
