@@ -36,6 +36,7 @@ public:
     static bool GetMediaLibraryAstcEnabled();
     static bool GetGenThumbWithGpu();
     static bool GetSLRLaplacianEnabled();
+    static bool UseGPUScalingCapabilities();
 private:
     ImageSystemProperties() = default;
 };
