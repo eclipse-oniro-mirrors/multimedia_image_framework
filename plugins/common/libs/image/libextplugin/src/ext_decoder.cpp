@@ -1709,7 +1709,12 @@ bool ExtDecoder::CheckCodec()
         return false;
     }
     uint32_t src_offset = stream_->Tell();
+#ifdef USE_M133_SKIA
+    codec_ = SkCodec::MakeFromStream(make_unique<ExtStream>(stream_), nullptr, nullptr,
+        SkCodec::SelectionPolicy::kPreferAnimation);
+#else
     codec_ = SkCodec::MakeFromStream(make_unique<ExtStream>(stream_));
+#endif
     if (codec_ == nullptr) {
         stream_->Seek(src_offset);
         IMAGE_LOGD("create codec from stream failed");
