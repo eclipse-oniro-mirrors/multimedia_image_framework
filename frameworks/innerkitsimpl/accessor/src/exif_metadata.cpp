@@ -242,6 +242,9 @@ int ExifMetadata::HandleHwMnote(const std::string &key, std::string &value) cons
     CHECK_ERROR_RETURN_RET(cond, ERR_IMAGE_DECODE_EXIF_UNSUPPORT);
     for (unsigned int i = 0; i < ec->size; i++) {
         MnoteHuaweiEntry *entry = ec->entries[i];
+        if (entry == nullptr) {
+            continue;
+        }
         if (key == mnote_huawei_tag_get_name(entry->tag)) {
             mnote_huawei_entry_get_value(entry, tagValueChar, sizeof(tagValueChar));
             value = tagValueChar;
