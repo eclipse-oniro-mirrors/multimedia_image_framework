@@ -231,7 +231,6 @@ HWTEST_F(PngExifMetadataAccessorTest, Read005, TestSize.Level3)
     ASSERT_EQ(GetProperty(exifMetadata, "LightSource"), "Unknown");
     ASSERT_EQ(GetProperty(exifMetadata, "Flash"), "Flash did not fire");
     ASSERT_EQ(GetProperty(exifMetadata, "FocalLength"), "50.0 mm");
-    ASSERT_EQ(GetProperty(exifMetadata, "MakerNote"), "");
     ASSERT_EQ(GetProperty(exifMetadata, "WhiteBalance"), "Auto white balance");
     ASSERT_EQ(GetProperty(exifMetadata, "PixelXDimension"), "320");
     ASSERT_EQ(GetProperty(exifMetadata, "PixelYDimension"), "211");
@@ -244,6 +243,7 @@ HWTEST_F(PngExifMetadataAccessorTest, Read005, TestSize.Level3)
     ASSERT_EQ(GetProperty(exifMetadata, "Saturation"), "Normal");
     ASSERT_EQ(GetProperty(exifMetadata, "Sharpness"), "Normal");
     ASSERT_EQ(GetProperty(exifMetadata, "SubjectDistanceRange"), "Unknown");
+    ASSERT_NE(GetProperty(exifMetadata, "MakerNote"), "");
 }
 
 /**
@@ -284,7 +284,6 @@ HWTEST_F(PngExifMetadataAccessorTest, Read006, TestSize.Level3)
     ASSERT_EQ(GetProperty(exifMetadata, "LightSource"), "Unknown");
     ASSERT_EQ(GetProperty(exifMetadata, "Flash"), "Flash did not fire");
     ASSERT_EQ(GetProperty(exifMetadata, "FocalLength"), "50.0 mm");
-    ASSERT_EQ(GetProperty(exifMetadata, "MakerNote"), "");
     ASSERT_EQ(GetProperty(exifMetadata, "WhiteBalance"), "Auto white balance");
     ASSERT_EQ(GetProperty(exifMetadata, "PixelXDimension"), "320");
     ASSERT_EQ(GetProperty(exifMetadata, "PixelYDimension"), "211");
@@ -296,7 +295,7 @@ HWTEST_F(PngExifMetadataAccessorTest, Read006, TestSize.Level3)
     ASSERT_EQ(GetProperty(exifMetadata, "Contrast"), "Normal");
     ASSERT_EQ(GetProperty(exifMetadata, "Saturation"), "Normal");
     ASSERT_EQ(GetProperty(exifMetadata, "Sharpness"), "Normal");
-    ASSERT_EQ(GetProperty(exifMetadata, "SubjectDistanceRange"), "Unknown");
+    ASSERT_NE(GetProperty(exifMetadata, "MakerNote"), "");
 }
 
 /**

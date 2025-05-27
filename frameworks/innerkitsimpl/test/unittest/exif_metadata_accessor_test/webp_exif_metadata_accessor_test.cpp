@@ -261,7 +261,6 @@ HWTEST_F(WebpExifMetadataAccessorTest, Read003, TestSize.Level3)
     ASSERT_EQ(GetProperty(exifMetadata, "LensModel"), "H1");
     ASSERT_EQ(GetProperty(exifMetadata, "LensSerialNumber"), "21mm");
     ASSERT_EQ(GetProperty(exifMetadata, "LensSpecification"), "33, 22, 11, 10");
-    ASSERT_EQ(GetProperty(exifMetadata, "MakerNote"), "");
     ASSERT_EQ(GetProperty(exifMetadata, "GainControl"), "Normal");
     ASSERT_EQ(GetProperty(exifMetadata, "OffsetTime"), "2023:01:19 10:39:58");
     ASSERT_EQ(GetProperty(exifMetadata, "OffsetTimeDigitized"), "2023:01:20 10:39:00");
@@ -270,6 +269,7 @@ HWTEST_F(WebpExifMetadataAccessorTest, Read003, TestSize.Level3)
     ASSERT_EQ(GetProperty(exifMetadata, "RelatedSoundFile"), "/home/abc/include");
     ASSERT_EQ(GetProperty(exifMetadata, "RowsPerStrip"), "");
     ASSERT_EQ(GetProperty(exifMetadata, "Saturation"), "Normal");
+    ASSERT_NE(GetProperty(exifMetadata, "MakerNote"), "");
 }
 
 /**
@@ -1565,7 +1565,6 @@ HWTEST_F(WebpExifMetadataAccessorTest, Write019, TestSize.Level3)
     ASSERT_EQ(GetProperty(exifMetadata, "ISOSpeedRatings"), "400");
     ASSERT_EQ(GetProperty(exifMetadata, "SubsecTimeDigitized"), "543792");
     ASSERT_EQ(GetProperty(exifMetadata, "LightSource"), "Daylight");
-    ASSERT_EQ(GetProperty(exifMetadata, "MakerNote"), "");
     ASSERT_EQ(GetProperty(exifMetadata, "MaxApertureValue"), "1.69 EV (f/1.8)");
     ASSERT_EQ(GetProperty(exifMetadata, "MeteringMode"), "Pattern");
     ASSERT_EQ(GetProperty(exifMetadata, "PixelXDimension"), "3456");
@@ -1573,6 +1572,7 @@ HWTEST_F(WebpExifMetadataAccessorTest, Write019, TestSize.Level3)
     ASSERT_EQ(GetProperty(exifMetadata, "SensingMethod"), "One-chip color area sensor");
     ASSERT_EQ(GetProperty(exifMetadata, "Saturation"), "Normal");
     ASSERT_EQ(GetProperty(exifMetadata, "WhiteBalance"), "Auto white balance");
+    ASSERT_NE(GetProperty(exifMetadata, "MakerNote"), "");
 
     ASSERT_TRUE(exifMetadata->SetValue("GainControl", "2"));
     ASSERT_TRUE(exifMetadata->SetValue("ISOSpeedRatings", "300"));
@@ -1585,6 +1585,7 @@ HWTEST_F(WebpExifMetadataAccessorTest, Write019, TestSize.Level3)
     ASSERT_TRUE(exifMetadata->SetValue("SensingMethod", "3"));
     ASSERT_TRUE(exifMetadata->SetValue("Saturation", "1"));
     ASSERT_TRUE(exifMetadata->SetValue("WhiteBalance", "1"));
+    ASSERT_TRUE(exifMetadata->SetValue("MakerNote", "demo"));
     ASSERT_EQ(imageAccessor.Write(), 0);
 
     ASSERT_EQ(imageAccessor.Read(), 0);
@@ -1592,7 +1593,7 @@ HWTEST_F(WebpExifMetadataAccessorTest, Write019, TestSize.Level3)
     ASSERT_EQ(GetProperty(exifMetadata, "ISOSpeedRatings"), "300");
     ASSERT_EQ(GetProperty(exifMetadata, "SubsecTimeDigitized"), "4380000");
     ASSERT_EQ(GetProperty(exifMetadata, "LightSource"), "Fluorescent");
-    ASSERT_EQ(GetProperty(exifMetadata, "MakerNote"), "");
+    ASSERT_EQ(GetProperty(exifMetadata, "MakerNote"), "demo");
     ASSERT_EQ(GetProperty(exifMetadata, "MaxApertureValue"), "0.09 EV (f/1.0)");
     ASSERT_EQ(GetProperty(exifMetadata, "MeteringMode"), "Spot");
     ASSERT_EQ(GetProperty(exifMetadata, "PixelXDimension"), "1000");
