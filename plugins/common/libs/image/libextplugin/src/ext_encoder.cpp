@@ -324,8 +324,7 @@ static uint32_t pixelToSkInfo(ImageData &image, SkImageInfo &skInfo, Media::Pixe
 {
     skInfo = ToSkInfo(pixelMap);
     image.pixels = static_cast<uint8_t*>(pixelMap->GetWritablePixels());
-    if (format == SkEncodedImageFormat::kJPEG &&
-        skInfo.colorType() == SkColorType::kRGB_888x_SkColorType &&
+    if (skInfo.colorType() == SkColorType::kRGB_888x_SkColorType &&
         pixelMap->GetCapacity() < skInfo.computeMinByteSize()) {
         uint32_t res = RGBToRGBx(pixelMap, skInfo, holder);
         bool cond = res != SUCCESS;
