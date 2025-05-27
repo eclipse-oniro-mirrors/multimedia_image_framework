@@ -20,6 +20,7 @@
 #include "log_tags.h"
 #include "media_errors.h"
 #include "image_log.h"
+#include <ani_signature_builder.h>
 
 #undef LOG_DOMAIN
 #define LOG_DOMAIN LOG_TAG_DOMAIN_ID_IMAGE
@@ -30,6 +31,7 @@
 namespace OHOS {
 namespace Media {
 using namespace std;
+using namespace arkts::ani_signature;
 
 PixelMap* ImageAniUtils::GetPixelMapFromEnv([[maybe_unused]] ani_env* env, [[maybe_unused]] ani_object obj)
 {
@@ -114,20 +116,22 @@ static ani_object CreateAniImageInfo(ani_env* env)
 static bool SetImageInfoSize(ani_env* env, const ImageInfo& imgInfo, ani_object& imageInfoValue)
 {
     ani_ref sizeref;
-    if (ANI_OK != env->Object_CallMethodByName_Ref(imageInfoValue, "<get>size",
+    if (ANI_OK != env->Object_CallMethodByName_Ref(imageInfoValue, Builder::BuildGetterName("size").c_str(),
         ":C{@ohos.multimedia.image.image.Size}", &sizeref)) {
         IMAGE_LOGE("Object_CallMethodByName_Ref failed");
         return false;
     }
     ani_object sizeObj = reinterpret_cast<ani_object>(sizeref);
-    if (ANI_OK != env->Object_CallMethodByName_Void(sizeObj, "<set>width", "i:",
+    const char *methodName = Builder::BuildSetterName("width").c_str();
+    if (ANI_OK != env->Object_CallMethodByName_Void(sizeObj, methodName, "i:",
         static_cast<ani_int>(imgInfo.size.width))) {
-        IMAGE_LOGE("Object_CallMethodByName_Void <set>width failed");
+        IMAGE_LOGE("Object_CallMethodByName_Void %{public}s failed", methodName);
         return false;
     }
-    if (ANI_OK != env->Object_CallMethodByName_Void(sizeObj, "<set>height", "i:",
+    const char *setterName = Builder::BuildSetterName("height").c_str();
+    if (ANI_OK != env->Object_CallMethodByName_Void(sizeObj, setterName, "i:",
         static_cast<ani_int>(imgInfo.size.height))) {
-        IMAGE_LOGE("Object_CallMethodByName_Void <set>height failed");
+        IMAGE_LOGE("Object_CallMethodByName_Void %{public}s failed", setterName);
         return false;
     }
     return true;
@@ -229,36 +233,42 @@ ani_object ImageAniUtils::CreateImageInfoValueFromNative(ani_env* env, const Ima
     if (!SetImageInfoSize(env, imgInfo, imageInfoValue)) {
         return nullptr;
     }
-    if (ANI_OK != env->Object_CallMethodByName_Void(imageInfoValue, "<set>density", "i:",
+    const char *densitySetterName = Builder::BuildSetterName("density").c_str();
+    if (ANI_OK != env->Object_CallMethodByName_Void(imageInfoValue, densitySetterName, "i:",
         static_cast<ani_int>(imgInfo.baseDensity))) {
-        IMAGE_LOGE("Object_CallMethodByName_Void <set>density failed");
+        IMAGE_LOGE("Object_CallMethodByName_Void %{public}s failed", densitySetterName);
         return nullptr;
     }
-    if (ANI_OK != env->Object_CallMethodByName_Void(imageInfoValue, "<set>stride", "i:",
+    const char *strideSetterName = Builder::BuildSetterName("stride").c_str();
+    if (ANI_OK != env->Object_CallMethodByName_Void(imageInfoValue, strideSetterName, "i:",
         static_cast<ani_int>(imgInfo.size.height))) {
-        IMAGE_LOGE("Object_CallMethodByName_Void <set>stride failed");
+        IMAGE_LOGE("Object_CallMethodByName_Void %{public}s failed", strideSetterName);
         return nullptr;
     }
-    if (ANI_OK != env->Object_CallMethodByName_Void(imageInfoValue, "<set>pixelFormat",
+    const char *pixelFormatSetterName = Builder::BuildSetterName("pixelFormat").c_str();
+    if (ANI_OK != env->Object_CallMethodByName_Void(imageInfoValue, pixelFormatSetterName,
         "C{@ohos.multimedia.image.image.PixelMapFormat}:", findPixelFormatEnumItem(env, imgInfo.pixelFormat))) {
-        IMAGE_LOGE("Object_CallMethodByName_Void <set>pixelFormat failed");
+        IMAGE_LOGE("Object_CallMethodByName_Void %{public}s failed", pixelFormatSetterName);
         return nullptr;
     }
-    if (ANI_OK != env->Object_CallMethodByName_Void(imageInfoValue, "<set>alphaType",
+    const char *alphaTypeSetterName = Builder::BuildSetterName("alphaType").c_str();
+    if (ANI_OK != env->Object_CallMethodByName_Void(imageInfoValue, alphaTypeSetterName,
         "C{@ohos.multimedia.image.image.AlphaType}:", findAlphaTypeEnumItem(env, imgInfo.alphaType))) {
-        IMAGE_LOGE("Object_CallMethodByName_Void <set>alphaType failed");
+        IMAGE_LOGE("Object_CallMethodByName_Void %{public}s failed",  alphaTypeSetterName);
         return nullptr;
     }
+    const char *mimeTypeSetterName = Builder::BuildSetterName("mimeType").c_str();
     ani_string encodeStr = ImageAniUtils::GetAniString(env, imgInfo.encodedFormat);
-    if (ANI_OK != env->Object_CallMethodByName_Void(imageInfoValue, "<set>mimeType",
+    if (ANI_OK != env->Object_CallMethodByName_Void(imageInfoValue, mimeTypeSetterName,
         "C{std.core.String}:", encodeStr)) {
-        IMAGE_LOGE("Object_CallMethodByName_Void <set>encodedFormat failed ");
+        IMAGE_LOGE("Object_CallMethodByName_Void %{public}s failed", mimeTypeSetterName);
         return nullptr;
     }
 
     if (pixelmap != nullptr) {
-        if (ANI_OK != env->Object_CallMethodByName_Void(imageInfoValue, "<set>isHdr", "z:", pixelmap->IsHdr())) {
-            IMAGE_LOGE("Object_CallMethodByName_Void <set>isHdr failed ");
+        const char *isHdrSetterName = Builder::BuildSetterName("isHdr").c_str();
+        if (ANI_OK != env->Object_CallMethodByName_Void(imageInfoValue, isHdrSetterName, "z:", pixelmap->IsHdr())) {
+            IMAGE_LOGE("Object_CallMethodByName_Void %{public}s failed", isHdrSetterName);
             return nullptr;
         }
     }
