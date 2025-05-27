@@ -51,12 +51,12 @@ PixelMap PictureImpl::GetMainPixelmap()
 {
     if (nativePicture_ == nullptr) {
         ImageTaiheUtils::ThrowExceptionError("Native picture is nullptr!");
-        return make_holder<PixelMapImpl, PixelMap>(nullptr);
+        return make_holder<PixelMapImpl, PixelMap>();
     }
     auto pixelmap = nativePicture_->GetMainPixel();
     if (pixelmap == nullptr) {
         ImageTaiheUtils::ThrowExceptionError("Get main pixelmap failed, pixelmap is nullptr!");
-        return make_holder<PixelMapImpl, PixelMap>(nullptr);
+        return make_holder<PixelMapImpl, PixelMap>();
     }
     return PixelMapImpl::CreatePixelMap(pixelmap);
 }
@@ -103,17 +103,17 @@ Picture CreatePictureByPixelMap(weak::PixelMap mainPixelmap)
     PixelMapImpl* pixelMapImpl = reinterpret_cast<PixelMapImpl*>(mainPixelmap->GetImplPtr());
     if (pixelMapImpl == nullptr) {
         ImageTaiheUtils::ThrowExceptionError(IMAGE_BAD_PARAMETER, "Pixelmap instance is nullptr!");
-        return make_holder<PictureImpl, Picture>(nullptr);
+        return make_holder<PictureImpl, Picture>();
     }
     auto nativePixelMap = pixelMapImpl->GetNativePtr();
     if (nativePixelMap == nullptr) {
         ImageTaiheUtils::ThrowExceptionError(IMAGE_BAD_PARAMETER, "Get native pixelmap failed!");
-        return make_holder<PictureImpl, Picture>(nullptr);
+        return make_holder<PictureImpl, Picture>();
     }
     auto picture = OHOS::Media::Picture::Create(nativePixelMap);
     if (picture == nullptr) {
         ImageTaiheUtils::ThrowExceptionError(OHOS::Media::ERROR, "Create picture failed!");
-        return make_holder<PictureImpl, Picture>(nullptr);
+        return make_holder<PictureImpl, Picture>();
     }
     IMAGE_LOGI("CreatePicture OUT");
     return make_holder<PictureImpl, Picture>(std::move(picture));

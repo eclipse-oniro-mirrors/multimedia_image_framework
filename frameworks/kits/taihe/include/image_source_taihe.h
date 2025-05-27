@@ -39,8 +39,9 @@ public:
     PixelMap CreatePixelMapSync();
     PixelMap CreatePixelMapUsingAllocatorSync(optional_view<DecodingOptions> options,
         optional_view<AllocatorType> allocatorType);
-    array<PixelMap> CreatePixelMapListSyncWithOptions(DecodingOptions const& options);
     array<PixelMap> CreatePixelMapListSync();
+    array<PixelMap> CreatePixelMapListSyncWithOptions(DecodingOptions const& options);
+    array<PixelMap> CreatePixelMapListSyncWithOptionalOptions(optional_view<DecodingOptions> options);
     array<int32_t> GetDelayTimeListSync();
     string GetImagePropertySync(PropertyKey key, optional_view<ImagePropertyOptions> options);
     map<PropertyKey, PropertyValue> GetImagePropertiesSync(array_view<PropertyKey> key);
