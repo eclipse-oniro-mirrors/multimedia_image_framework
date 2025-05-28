@@ -426,7 +426,7 @@ HWTEST_F(ImageSourceHdrTest, ToSdr001, TestSize.Level3)
 
     DecodeOptions decopts;
     decopts.desiredDynamicRange = DecodeDynamicRange::AUTO;
-    uint32_t ret = SUCCESS;
+    uint32_t ret = 0;
     auto pixelMap = imageSource->CreatePixelMap(decopts, ret);
     ASSERT_EQ(ret, SUCCESS);
     uint32_t errCode = pixelMap->ToSdr();
@@ -453,7 +453,7 @@ HWTEST_F(ImageSourceHdrTest, ToSdr002, TestSize.Level3)
 
     DecodeOptions decopts;
     decopts.desiredDynamicRange = DecodeDynamicRange::AUTO;
-    uint32_t ret = SUCCESS;
+    uint32_t ret = 0;
     auto pixelMap = imageSource->CreatePixelMap(decopts, ret);
     ASSERT_EQ(ret, SUCCESS);
     uint32_t errCode = pixelMap->ToSdr();

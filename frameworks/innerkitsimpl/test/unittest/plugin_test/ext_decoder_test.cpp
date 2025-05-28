@@ -758,7 +758,6 @@ HWTEST_F(ExtDecoderTest, writeTest001, TestSize.Level3)
     size_t size = 128;
     extWStream.stream_ = nullptr;
     bool ret = extWStream.write(buffer, size);
-    ASSERT_EQ(extWStream.stream_, nullptr);
     ASSERT_EQ(ret, false);
     extWStream.stream_ = new MockOutputDataStream;
     ret = extWStream.write(buffer, size);
@@ -779,7 +778,6 @@ HWTEST_F(ExtDecoderTest, flushTest001, TestSize.Level3)
     ExtWStream extWStream;
     extWStream.stream_ = nullptr;
     extWStream.flush();
-    ASSERT_EQ(extWStream.stream_, nullptr);
     extWStream.stream_ = new MockOutputDataStream;
     extWStream.flush();
     ASSERT_NE(extWStream.stream_, nullptr);
@@ -798,7 +796,6 @@ HWTEST_F(ExtDecoderTest, bytesWrittenTest001, TestSize.Level3)
     ExtWStream extWStream;
     extWStream.stream_ = nullptr;
     size_t ret = extWStream.bytesWritten();
-    ASSERT_EQ(extWStream.stream_, nullptr);
     ASSERT_EQ(ret, SIZE_ZERO);
     extWStream.stream_ = new MockOutputDataStream;
     ret = extWStream.bytesWritten();

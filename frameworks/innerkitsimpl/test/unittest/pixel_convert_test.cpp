@@ -2109,7 +2109,7 @@ HWTEST_F(PixelConvertTest, PixelConvertTest0053, TestSize.Level3)
     uint32_t errorCode = 0;
     // correct
     auto result = PixelConvert::AstcToRgba(pixelMap.get(), errorCode, PixelFormat::RGBA_8888);
-    EXPECT_EQ(errorCode, 0);
+    EXPECT_EQ(errorCode, SUCCESS);
     // err dst format
     for (int i = 0; i < static_cast<int>(PixelFormat::EXTERNAL_MAX); i++) {
         if (i == 3) {

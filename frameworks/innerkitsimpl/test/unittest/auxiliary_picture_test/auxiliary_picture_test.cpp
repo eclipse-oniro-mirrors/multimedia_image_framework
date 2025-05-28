@@ -400,9 +400,7 @@ HWTEST_F(AuxiliaryPictureTest, ReadPixelsTest001, TestSize.Level1)
     std::unique_ptr<AuxiliaryPicture> auxiliaryPicture = CreateAuxiliaryPicture(AuxiliaryPictureType::GAINMAP);
     ASSERT_NE(auxiliaryPicture, nullptr);
     uint64_t bufferSize = auxiliaryPicture->GetContentPixel()->GetCapacity();
-    if (bufferSize == 0) {
-        return;
-    }
+    ASSERT_NE(bufferSize, 0);
     auto dst = new uint8_t[bufferSize];
     ASSERT_NE(dst, nullptr);
     uint32_t ret = auxiliaryPicture->ReadPixels(bufferSize, dst);
@@ -420,9 +418,7 @@ HWTEST_F(AuxiliaryPictureTest, ReadPixelsTest002, TestSize.Level2)
     std::unique_ptr<AuxiliaryPicture> auxiliaryPicture = CreateAuxiliaryPicture(AuxiliaryPictureType::GAINMAP);
     ASSERT_NE(auxiliaryPicture, nullptr);
     uint64_t bufferSize = auxiliaryPicture->GetContentPixel()->GetCapacity();
-    if (bufferSize == 0) {
-        return;
-    }
+    ASSERT_NE(bufferSize, 0);
     auto dst = new uint8_t[bufferSize];
     ASSERT_NE(dst, nullptr);
     bufferSize = 0;
@@ -456,9 +452,7 @@ HWTEST_F(AuxiliaryPictureTest, ReadPixelsTest004, TestSize.Level2)
     std::unique_ptr<AuxiliaryPicture> auxiliaryPicture = CreateAuxiliaryPicture(AuxiliaryPictureType::GAINMAP);
     ASSERT_NE(auxiliaryPicture, nullptr);
     uint64_t bufferSize = auxiliaryPicture->GetContentPixel()->GetCapacity();
-    if (bufferSize == 0) {
-        return;
-    }
+    ASSERT_NE(bufferSize, 0);
     std::shared_ptr<PixelMap> emptyPixelmap = nullptr;
     auxiliaryPicture->SetContentPixel(emptyPixelmap);
     auto dst = new uint8_t[bufferSize];
@@ -479,9 +473,7 @@ HWTEST_F(AuxiliaryPictureTest, WritePixelsTest001, TestSize.Level1)
     ASSERT_NE(auxiliaryPicture, nullptr);
     auxiliaryPicture->GetContentPixel()->SetEditable(true);
     uint64_t bufferSize = auxiliaryPicture->GetContentPixel()->GetCapacity();
-    if (bufferSize == 0) {
-        return;
-    }
+    ASSERT_NE(bufferSize, 0);
     auto buffer = new uint8_t[bufferSize];
     ASSERT_NE(buffer, nullptr);
     uint32_t ret = auxiliaryPicture->WritePixels(buffer, bufferSize);
@@ -523,9 +515,7 @@ HWTEST_F(AuxiliaryPictureTest, WritePixelsTest006, TestSize.Level2)
     pixelmap->SetImageInfo(info);
     pixelmap->SetEditable(true);
     uint64_t bufferSize = pixelmap->GetCapacity();
-    if (bufferSize == 0) {
-        return;
-    }
+    ASSERT_NE(bufferSize, 0);
     auto buffer = new uint8_t[bufferSize];
     ASSERT_NE(buffer, nullptr);
     uint32_t ret = auxiliaryPicture->WritePixels(buffer, bufferSize);
@@ -542,9 +532,8 @@ HWTEST_F(AuxiliaryPictureTest, SetMetadata001, TestSize.Level1)
 {
     const std::string srcValue = "9, 9, 8";
     std::string realPath;
-    if (!ImageUtils::PathToRealPath(IMAGE_INPUT_JPEG_PATH.c_str(), realPath)) {
-        return;
-    }
+    bool cond = ImageUtils::PathToRealPath(IMAGE_INPUT_JPEG_PATH.c_str(), realPath);
+    ASSERT_EQ(cond, true);
     auto exifData = exif_data_new_from_file(IMAGE_INPUT_JPEG_PATH.c_str());
     ASSERT_NE(exifData, nullptr);
     std::shared_ptr<ExifMetadata> srcExifMetadata = std::make_shared<ExifMetadata>(exifData);
@@ -611,9 +600,8 @@ HWTEST_F(AuxiliaryPictureTest, GetMetadata001, TestSize.Level1)
 {
     const std::string srcValue = "9, 9, 8";
     std::string realPath;
-    if (!ImageUtils::PathToRealPath(IMAGE_INPUT_JPEG_PATH.c_str(), realPath)) {
-        return;
-    }
+    bool cond = ImageUtils::PathToRealPath(IMAGE_INPUT_JPEG_PATH.c_str(), realPath);
+    ASSERT_EQ(cond, true);
     auto exifData = exif_data_new_from_file(IMAGE_INPUT_JPEG_PATH.c_str());
     ASSERT_NE(exifData, nullptr);
     std::shared_ptr<ExifMetadata> srcExifMetadata = std::make_shared<ExifMetadata>(exifData);
@@ -676,9 +664,8 @@ HWTEST_F(AuxiliaryPictureTest, GetMetadata004, TestSize.Level1)
 {
     const std::string srcValue = "9, 9, 8";
     std::string realPath;
-    if (!ImageUtils::PathToRealPath(IMAGE_INPUT_JPEG_PATH.c_str(), realPath)) {
-        return;
-    }
+    bool cond = ImageUtils::PathToRealPath(IMAGE_INPUT_JPEG_PATH.c_str(), realPath);
+    ASSERT_EQ(cond, true);
     auto exifData = exif_data_new_from_file(IMAGE_INPUT_JPEG_PATH.c_str());
     ASSERT_NE(exifData, nullptr);
     std::shared_ptr<ExifMetadata> srcExifMetadata = std::make_shared<ExifMetadata>(exifData);
