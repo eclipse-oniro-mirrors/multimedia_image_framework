@@ -116,6 +116,33 @@ struct PackingOption {
     uint8_t quality = 100;
 };
 
+static const std::map<uint32_t, std::string> ERROR_CODE_MESSAGE_MAP = {
+    {COMMON_ERR_INVALID_PARAMETER, "Parameter error.Possible causes: 1.Mandatory parameters are left unspecified."
+        "2.Incorrect parameter types;3.Parameter verification failed."},
+    {ERROR, "The operation failed. Possible cause: 1.Image upload exception. 2. Decoding process exception. 3. "
+        "Insufficient memory."},
+    {ERR_IMAGE_DATA_ABNORMAL, "The image data is abnormal."},
+    {ERR_IMAGE_TOO_LARGE, "The image data is too large. This status code is thrown when an error occurs during"
+        "the process of checking size."},
+    {ERR_IMAGE_UNKNOWN_FORMAT, "Unknown image format."},
+    {ERR_IMAGE_INVALID_PARAMETER, "Invalid input parameter. Possible causes: 1. Format paramter in PackingOption is"
+        "invalid; 2. Invalid fd; 3. Other parameter mismatch."},
+    {ERR_IMAGE_ENCODE_FAILED, "Failed to encode the image."},
+    {ERR_IMAGE_ADD_PIXEL_MAP_FAILED, "Add pixelmap out of range."},
+    {ERR_IMAGE_ENCODE_ICC_FAILED, "Failed to encode icc."},
+    {IMAGE_RESULT_CREATE_SURFAC_FAILED, "Failed to create surface."}
+};
+
+static std::string GetErrorCodeMsg(uint32_t errorCode)
+{
+    std::string errMsg = "Failed to encode image.";
+    auto iter = ERROR_CODE_MESSAGE_MAP.find(errorCode);
+    if (iter != ERROR_CODE_MESSAGE_MAP.end()) {
+        errMsg = iter->second;
+    }
+    return errMsg;
+}
+
 ImagePackerNapi::ImagePackerNapi():env_(nullptr)
 {}
 
@@ -1085,7 +1112,8 @@ static void FinalizePacking(ImagePackerAsyncContext* context)
         context->status = SUCCESS;
     } else {
         context->status = ERROR;
-        BuildMsgOnError(context, packRes == SUCCESS, "Failed to encode image.", packRes);
+        std::string errorMsg = GetErrorCodeMsg(packRes);
+        BuildMsgOnError(context, packRes == SUCCESS, errorMsg, packRes);
         IMAGE_LOGE("Packing failed, packedSize outside size.");
         if (context->packType == TYPE_PICTURE) {
             BuildMsgOnError(context, packRes == SUCCESS, "Failed to encode image.",
