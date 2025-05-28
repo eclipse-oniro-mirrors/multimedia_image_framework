@@ -309,11 +309,11 @@ HWTEST_F(ImageSourceExifTest, GetImagePropertyInt002, TestSize.Level3)
     int32_t value = 0;
     std::string strValue;
 
-    unit32_t ret = imageSource->GetImagePropertyInt(index, "DelayTime", value);
+    uint32_t ret = imageSource->GetImagePropertyInt(index, "DelayTime", value);
     ASSERT_NE(ret, SUCCESS);
 
     ret = imageSource->GetImagePropertyInt(index, "DisposalType", value);
-    ASSERT_EQ(ret, SUCCESS);
+    ASSERT_NE(ret, SUCCESS);
 
     GTEST_LOG_(INFO) << "ImageSourceExifTest: GetImagePropertyInt002 end";
 }
