@@ -299,7 +299,7 @@ heif_error HeifBox::WriteChildren(HeifStreamWriter &writer) const
 {
     for (const auto &child: children_) {
         if (child->GetBoxType() == BOX_TYPE_GRPL) {
-            return heif_error_ok;
+            continue;
         }
         heif_error err = child->Write(writer);
         if (err) {
