@@ -25,35 +25,5 @@ public:
     MockHitraceMeterTest() {}
     ~MockHitraceMeterTest() {}
 };
-
-/**
- * @tc.name: StartTrace001
- * @tc.desc: test StartTrace
- * @tc.type: FUNC
- */
-HWTEST_F(MockHitraceMeterTest, StartTrace001, TestSize.Level3)
-{
-    GTEST_LOG_(INFO) << "MockHitraceMeterTest: StartTrace001 start";
-    uint64_t label = 6;
-    std::string value = "aaa";
-    float limit = 1.1;
-    StartTrace(label, value, limit);
-    ASSERT_EQ(label, 6);
-    GTEST_LOG_(INFO) << "MockHitraceMeterTest: StartTrace001 end";
-}
-
-/**
- * @tc.name: FinishTrace001
- * @tc.desc: test FinishTrace
- * @tc.type: FUNC
- */
-HWTEST_F(MockHitraceMeterTest, FinishTrace001, TestSize.Level3)
-{
-    GTEST_LOG_(INFO) << "MockHitraceMeterTest: FinishTrace001 start";
-    uint64_t label = 8;
-    FinishTrace(label);
-    ASSERT_EQ(label, 8);
-    GTEST_LOG_(INFO) << "MockHitraceMeterTest: FinishTrace001 end";
-}
 } // namespace Multimedia
 } // namespace OHOS

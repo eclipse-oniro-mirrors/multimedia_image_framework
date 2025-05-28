@@ -538,10 +538,8 @@ HWTEST_F(MetadataStreamTest, FileMetadataStream_Open002, TestSize.Level3)
     // Get the username of the current user
     uid_t uid = getuid();
     struct passwd *passwordEntry = getpwuid(uid);
-    if (passwordEntry == nullptr) {
-        perror("getpwuid");
-        return;
-    }
+    bool cond = passwordEntry == nullptr;
+    ASSERT_EQ(cond, false);
     std::string username(passwordEntry->pw_name);
 
     // Test the case where the file path exists but is not writable

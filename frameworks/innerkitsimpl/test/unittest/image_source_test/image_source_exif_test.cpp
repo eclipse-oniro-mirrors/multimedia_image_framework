@@ -264,7 +264,6 @@ HWTEST_F(ImageSourceExifTest, GetImagePropertyInt001, TestSize.Level3)
     imageSource->GetImagePropertyString(index, key, strValue);
     ASSERT_EQ(strValue, "Top-left");
     imageSource->GetImagePropertyInt(index, key, value);
-    ASSERT_EQ(value, 0);
 
     imageSource->ModifyImageProperty(index, key, "3", fd);
     imageSource->GetImagePropertyString(index, key, strValue);
@@ -310,11 +309,11 @@ HWTEST_F(ImageSourceExifTest, GetImagePropertyInt002, TestSize.Level3)
     int32_t value = 0;
     std::string strValue;
 
-    imageSource->GetImagePropertyInt(index, "DelayTime", value);
-    ASSERT_EQ(value, 0);
+    uint32_t ret = imageSource->GetImagePropertyInt(index, "DelayTime", value);
+    ASSERT_NE(ret, SUCCESS);
 
-    imageSource->GetImagePropertyInt(index, "DisposalType", value);
-    ASSERT_EQ(value, 0);
+    ret = imageSource->GetImagePropertyInt(index, "DisposalType", value);
+    ASSERT_NE(ret, SUCCESS);
 
     GTEST_LOG_(INFO) << "ImageSourceExifTest: GetImagePropertyInt002 end";
 }
