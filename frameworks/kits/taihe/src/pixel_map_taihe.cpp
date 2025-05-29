@@ -16,6 +16,7 @@
 #include "image_log.h"
 #include "image_taihe_utils.h"
 #include "media_errors.h"
+#include "pixel_map_taihe_ani.h"
 #include "pixel_map_taihe.h"
 #if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
 #include <regex>
@@ -42,9 +43,14 @@ PixelMap CreatePixelMapByBufferAndOptionsSync(array_view<uint8_t> colors, Initia
     return make_holder<PixelMapImpl, PixelMap>(colors, options);
 }
 
-PixelMap CreatePixelMapByBufferSync(InitializationOptions const& options)
+PixelMap CreatePixelMapByOptionsSync(InitializationOptions const& options)
 {
     return make_holder<PixelMapImpl, PixelMap>(options);
+}
+
+PixelMap CreatePixelMapByPtr(int64_t ptr)
+{
+    return make_holder<PixelMapImpl, PixelMap>(ptr);
 }
 
 #if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
@@ -166,6 +172,15 @@ PixelMapImpl::PixelMapImpl(InitializationOptions const& etsOptions)
 PixelMapImpl::PixelMapImpl(std::shared_ptr<Media::PixelMap> pixelMap)
 {
     nativePixelMap_ = pixelMap;
+    if (nativePixelMap_ == nullptr) {
+        ImageTaiheUtils::ThrowExceptionError(Media::COMMON_ERR_INVALID_PARAMETER, "Create PixelMap failed");
+    }
+}
+
+PixelMapImpl::PixelMapImpl(int64_t aniPtr)
+{
+    Media::PixelMapTaiheAni* pixelMapAni = reinterpret_cast<Media::PixelMapTaiheAni*>(aniPtr);
+    nativePixelMap_ = pixelMapAni->nativePixelMap_;
     if (nativePixelMap_ == nullptr) {
         ImageTaiheUtils::ThrowExceptionError(Media::COMMON_ERR_INVALID_PARAMETER, "Create PixelMap failed");
     }
@@ -514,6 +529,7 @@ void PixelMapImpl::Release()
 TH_EXPORT_CPP_API_MakeEmptySize(ANI::Image::MakeEmptySize);
 TH_EXPORT_CPP_API_MakeEmptyImageInfo(ANI::Image::MakeEmptyImageInfo);
 TH_EXPORT_CPP_API_CreatePixelMapByBufferAndOptionsSync(ANI::Image::CreatePixelMapByBufferAndOptionsSync);
-TH_EXPORT_CPP_API_CreatePixelMapByBufferSync(ANI::Image::CreatePixelMapByBufferSync);
+TH_EXPORT_CPP_API_CreatePixelMapByOptionsSync(ANI::Image::CreatePixelMapByOptionsSync);
+TH_EXPORT_CPP_API_CreatePixelMapByPtr(ANI::Image::CreatePixelMapByPtr);
 TH_EXPORT_CPP_API_CreatePixelMapFromSurfaceByIdSync(ANI::Image::CreatePixelMapFromSurfaceByIdSync);
 TH_EXPORT_CPP_API_CreatePixelMapFromSurfaceByIdAndRegionSync(ANI::Image::CreatePixelMapFromSurfaceByIdAndRegionSync);

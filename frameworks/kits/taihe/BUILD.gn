@@ -66,6 +66,7 @@ taihe_shared_library("image_taihe") {
     "src/image_taihe.cpp",
     "src/image_taihe_utils.cpp",
     "src/picture_taihe.cpp",
+    "src/pixel_map_taihe_ani.cpp",
     "src/pixel_map_taihe.cpp",
     "${image_subsystem}/frameworks/innerkitsimpl/accessor/src/exif_metadata_formatter.cpp",
   ]
@@ -125,8 +126,8 @@ ohos_prebuilt_etc("image_framework_etc") {
 
 group("image_framework_taihe") {
   deps = [
-    ":image_taihe",
     ":image_framework_etc",
+    ":image_taihe",
   ]
 }
 
