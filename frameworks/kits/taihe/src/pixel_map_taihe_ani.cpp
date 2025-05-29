@@ -54,7 +54,7 @@ std::shared_ptr<PixelMap> PixelMapTaiheAni::GetNativePixelMap([[maybe_unused]] a
         return nullptr;
     }
     ani_long implPtr;
-    if ( env->Object_CallMethod_Long(obj, getMethod, &implPtr) != ANI_OK) {
+    if (env->Object_CallMethod_Long(obj, getMethod, &implPtr) != ANI_OK) {
         return nullptr;
     }
     
