@@ -655,7 +655,10 @@ function MakeEmptyImageInfo(): ImageInfo;
 function CreatePixelMapByBufferAndOptionsSync(colors: @arraybuffer Array<u8>, options: InitializationOptions): PixelMap;
 
 @overload("createPixelMapSync")
-function CreatePixelMapByBufferSync(options: InitializationOptions): PixelMap;
+function CreatePixelMapByOptionsSync(options: InitializationOptions): PixelMap;
+
+// For legacy ANI backward compatibility
+function CreatePixelMapByPtr(ptr: i64): PixelMap;
 
 @overload("createPixelMapFromSurfaceSync")
 function CreatePixelMapFromSurfaceByIdSync(surfaceId: String): PixelMap;
