@@ -82,8 +82,8 @@ OH_ImageReceiverNative* ImageReceiverNativeTest::CreateReceiver()
 static void OH_ImageReceiver_ImageArriveCallback_Test(OH_ImageReceiverNative *receiver, void *userData) 
 {
     if (userData != nullptr) {
-    int32_t *number = static_cast<int32_t *>(userData);
-    *number = 1;
+        int32_t *number = static_cast<int32_t *>(userData);
+        *number = 1;
     }
 }
 
@@ -803,7 +803,7 @@ HWTEST_F(ImageReceiverNativeTest, OH_ImageReceiverNative_OnImageArriveTest001, T
     int32_t number = 0;
     void* userData = &number;
     Image_ErrorCode nRst = OH_ImageReceiverNative_OnImageArrive(pReceiver,
-    OH_ImageReceiver_ImageArriveCallback_Test, userData);
+        OH_ImageReceiver_ImageArriveCallback_Test, userData);
     ASSERT_EQ(nRst, IMAGE_SUCCESS);
     nRst = OH_ImageReceiverNative_OnImageArrive(pReceiver, OH_ImageReceiver_ImageArriveCallback_Test, userData);
     ASSERT_EQ(nRst, IMAGE_RECEIVER_INVALID_PARAMETER);
@@ -863,6 +863,33 @@ HWTEST_F(ImageReceiverNativeTest, OH_ImageReceiverNative_OffImageArriveTest001, 
     ASSERT_EQ(nRst, IMAGE_RECEIVER_INVALID_PARAMETER); 
     std::shared_ptr<OH_ImageReceiverNative> ptrReceiver(pReceiver, OH_ImageReceiverNative_Release);
     GTEST_LOG_(INFO) << "ImageReceiverNativeTest: OH_ImageReceiverNative_OffImageArriveTest001 end";
+}
+
+/**
+* @tc.name: OH_ImageReceiverNative_OffImageArriveTest002
+* @tc.desc: Verify that OH_ImageReceiverNative_OffImageArrive correctly handles registering
+*           and unregistering the callback.
+* @tc.type: FUNC
+*/
+HWTEST_F(ImageReceiverNativeTest, OH_ImageReceiverNative_OffImageArriveTest002, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImageReceiverNativeTest: OH_ImageReceiverNative_OffImageArriveTest002 start";
+    OH_ImageReceiverNative* pReceiver = ImageReceiverNativeTest::CreateReceiver();
+    ASSERT_NE(pReceiver, nullptr);
+    int32_t number = 0;
+    void* userData = &number;
+    Image_ErrorCode nRst;
+    nRst = OH_ImageReceiverNative_OffImageArrive(pReceiver, OH_ImageReceiver_ImageArriveCallback_Test);
+    ASSERT_EQ(nRst, IMAGE_RECEIVER_INVALID_PARAMETER);
+    
+    nRst = OH_ImageReceiverNative_OnImageArrive(pReceiver, OH_ImageReceiver_ImageArriveCallback_Test, userData);
+    ASSERT_EQ(nRst, IMAGE_SUCCESS);
+
+    nRst = OH_ImageReceiverNative_OffImageArrive(pReceiver, OH_ImageReceiver_ImageArriveCallback_Test);
+    ASSERT_EQ(nRst, IMAGE_SUCCESS);
+    
+    nRst = OH_ImageReceiverNative_OffImageArrive(pReceiver, OH_ImageReceiver_ImageArriveCallback_Test);
+    ASSERT_EQ(nRst, IMAGE_RECEIVER_INVALID_PARAMETER);
 }
 
 } // namespace Media
