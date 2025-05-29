@@ -32,6 +32,7 @@ public:
     explicit PixelMapImpl(array_view<uint8_t> const& colors, InitializationOptions const& etsOptions);
     explicit PixelMapImpl(InitializationOptions const& etsOptions);
     explicit PixelMapImpl(std::shared_ptr<OHOS::Media::PixelMap> pixelMap);
+    explicit PixelMapImpl(int64_t aniPtr);
     ~PixelMapImpl();
 
     int64_t GetImplPtr();

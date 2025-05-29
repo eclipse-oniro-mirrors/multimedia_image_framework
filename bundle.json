@@ -211,6 +211,7 @@
               "header_files": [
                 "image_taihe.h",
                 "picture_taihe.h",
+                "pixel_map_taihe_ani.h",
                 "pixel_map_taihe.h"
               ]
             },
