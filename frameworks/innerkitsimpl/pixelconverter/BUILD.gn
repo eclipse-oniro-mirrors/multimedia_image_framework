@@ -160,6 +160,7 @@ if (use_clang_ios) {
   }
 }
 
+if (use_mingw_win || use_clang_mac || use_clang_ios || use_clang_android) {
 ohos_static_library("pixelconvertadapter_static") {
   sources = [ "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/pixelconverter/src/pixel_convert_adapter.cpp" ]
   public_configs = [ ":pixelconvertadapter_public_config" ]
@@ -223,4 +224,5 @@ ohos_static_library("pixelconvertadapter_static") {
   }
   subsystem_name = "multimedia"
   part_name = "image_framework"
+}
 }

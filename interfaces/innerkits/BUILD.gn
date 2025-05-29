@@ -308,6 +308,7 @@ if (use_clang_android) {
   }
 }
 
+if (use_mingw_win || use_clang_mac || use_clang_ios || use_clang_android) {
 ohos_static_library("image_static") {
   if (!is_arkui_x) {
     sanitize = {
@@ -486,4 +487,5 @@ ohos_static_library("image_static") {
   }
   subsystem_name = "multimedia"
   part_name = "image_framework"
+}
 }
