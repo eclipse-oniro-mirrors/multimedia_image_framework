@@ -61,12 +61,12 @@ OH_ImageSourceNative::OH_ImageSourceNative(int32_t fd, SourceOptions opts)
     innerImageSource_ = std::move(nativeImageSource);
 }
 
-OH_ImageSourceNative::OH_ImageSourceNative(uint8_t *data, size_t dataSize, SourceOptions opts)
+OH_ImageSourceNative::OH_ImageSourceNative(uint8_t *data, size_t dataSize, SourceOptions opts, bool isUserBuffer)
 {
     uint32_t errorCode = IMAGE_BAD_PARAMETER;
     std::unique_ptr<ImageSource> nativeImageSource = ImageSource::CreateImageSource(
-        data, dataSize, opts, errorCode);
-    if (nativeImageSource == nullptr) {
+        data, dataSize, opts, errorCode, isUserBuffer);
+    if (errorCode != IMAGE_SUCCESS || nativeImageSource == nullptr) {
         innerImageSource_ = nullptr;
         return;
     }

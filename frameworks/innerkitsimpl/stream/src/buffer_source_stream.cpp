@@ -35,24 +35,28 @@ namespace Media {
 using namespace std;
 using namespace ImagePlugin;
 
-BufferSourceStream::BufferSourceStream(uint8_t *data, uint32_t size, uint32_t offset)
-    : inputBuffer_(data), dataSize_(size), dataOffset_(offset)
+BufferSourceStream::BufferSourceStream(uint8_t *data, uint32_t size, uint32_t offset, bool isUserBuffer)
+    : inputBuffer_(data), dataSize_(size), dataOffset_(offset), isUserBuffer_(isUserBuffer)
 {}
 
 BufferSourceStream::~BufferSourceStream()
 {
     IMAGE_LOGD("[BufferSourceStream]destructor enter");
-    if (inputBuffer_ != nullptr) {
+    if (!isUserBuffer_ && inputBuffer_ != nullptr) {
         free(inputBuffer_);
         inputBuffer_ = nullptr;
     }
 }
 
-std::unique_ptr<BufferSourceStream> BufferSourceStream::CreateSourceStream(const uint8_t *data, uint32_t size)
+std::unique_ptr<BufferSourceStream> BufferSourceStream::CreateSourceStream(const uint8_t *data,
+                                                                           uint32_t size, bool isUserBuffer)
 {
     if ((data == nullptr) || (size == 0)) {
         IMAGE_LOGE("[BufferSourceStream]input the parameter exception.");
         return nullptr;
+    }
+    if (isUserBuffer) {
+        return make_unique<BufferSourceStream>(const_cast<uint8_t*> (data), size, 0, isUserBuffer);
     }
     uint8_t *dataCopy = static_cast<uint8_t *>(malloc(size));
     if (dataCopy == nullptr) {
@@ -66,7 +70,7 @@ std::unique_ptr<BufferSourceStream> BufferSourceStream::CreateSourceStream(const
         IMAGE_LOGE("[BufferSourceStream]copy the input data fail, ret:%{public}d.", ret);
         return nullptr;
     }
-    return make_unique<BufferSourceStream>(dataCopy, size, 0);
+    return make_unique<BufferSourceStream>(dataCopy, size, 0, isUserBuffer);
 }
 
 bool BufferSourceStream::Read(uint32_t desiredSize, DataStreamBuffer &outData)

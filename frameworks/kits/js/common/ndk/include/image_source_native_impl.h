@@ -27,7 +27,7 @@ public:
     OH_ImageSourceNative(std::shared_ptr<OHOS::Media::ImageSource> imageSource);
     OH_ImageSourceNative(char *uri, size_t size, OHOS::Media::SourceOptions ops);
     OH_ImageSourceNative(int32_t fd, OHOS::Media::SourceOptions ops);
-    OH_ImageSourceNative(uint8_t *data, size_t dataSize, OHOS::Media::SourceOptions ops);
+    OH_ImageSourceNative(uint8_t *data, size_t dataSize, OHOS::Media::SourceOptions ops, bool isUserBuffer = false);
     OH_ImageSourceNative(RawFileDescriptor rawFile, OHOS::Media::SourceOptions ops);
     ~OH_ImageSourceNative();
     std::shared_ptr<OHOS::Media::ImageSource> GetInnerImageSource();
