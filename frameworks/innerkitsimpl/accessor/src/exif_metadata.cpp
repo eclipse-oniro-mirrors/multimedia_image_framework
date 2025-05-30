@@ -248,6 +248,7 @@ int ExifMetadata::HandleHwMnote(const std::string &key, std::string &value) cons
         if (key == mnote_huawei_tag_get_name(entry->tag)) {
             mnote_huawei_entry_get_value(entry, tagValueChar, sizeof(tagValueChar));
             value = tagValueChar;
+            break;
         }
     }
     mnote_huawei_free_entry_count(ec);
