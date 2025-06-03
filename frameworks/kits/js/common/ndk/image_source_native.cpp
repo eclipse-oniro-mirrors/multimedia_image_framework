@@ -607,11 +607,13 @@ Image_ErrorCode CreateFromDataInternal(uint8_t *data, size_t dataSize, OH_ImageS
     *res = imageSource;
     return IMAGE_SUCCESS;
 }
+
 MIDK_EXPORT
 Image_ErrorCode OH_ImageSourceNative_CreateFromData(uint8_t *data, size_t dataSize, OH_ImageSourceNative **res)
 {
-    return CreateFromDataInternal(data, datalength, imageSource, false);
+    return CreateFromDataInternal(data, dataSize, res, false);
 }
+
 MIDK_EXPORT
 Image_ErrorCode OH_ImageSourceNative_CreateFromDataWithUserBuffer(uint8_t *data, size_t datalength,
                                                                   OH_ImageSourceNative **imageSource)
