@@ -67,9 +67,10 @@
 #include "buffer_handle_parcel.h"
 #include "ipc_file_descriptor.h"
 #include "surface_buffer.h"
-#include "vpe_utils.h"
 #include "v1_0/buffer_handle_meta_key_type.h"
 #include "v1_0/cm_color_space.h"
+#include "v1_0/hdr_static_metadata.h"
+#include "vpe_utils.h"
 #endif
 
 #ifdef __cplusplus
@@ -92,6 +93,9 @@ extern "C" {
 namespace OHOS {
 namespace Media {
 using namespace std;
+#if !defined(_WIN32) && !defined(_APPLE) && !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
+using namespace HDI::Display::Graphic::Common::V1_0;
+#endif
 constexpr int32_t MAX_DIMENSION = INT32_MAX >> 2;
 constexpr int8_t INVALID_ALPHA_INDEX = -1;
 constexpr uint8_t ARGB_ALPHA_INDEX = 0;
@@ -4345,15 +4349,12 @@ void PixelMap::InnerSetColorSpace(const OHOS::ColorManager::ColorSpace &grColorS
             grColorSpace.GetColorSpaceName());
     }
 #if !defined(_WIN32) && !defined(_APPLE) && !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
-    ColorManager::ColorSpaceName name = grColorSpace.GetColorSpaceName();
-    if (name == ColorManager::BT2020 || name == ColorManager::BT2020_HLG || name == ColorManager::BT2020_HLG_LIMIT ||
-        name == ColorManager::BT2020_PQ || name == ColorManager::BT2020_PQ_LIMIT) {
-        if (GetAllocatorType() == AllocatorType::DMA_ALLOC && GetFd() != nullptr) {
-            HDI::Display::Graphic::Common::V1_0::CM_ColorSpaceType colorspaceType = ColorUtils::ConvertToCMColor(name);
-            sptr<SurfaceBuffer> buffer = sptr<SurfaceBuffer>(reinterpret_cast<SurfaceBuffer*>(GetFd()));
-            IMAGE_LOGD("InnerSetColorSpace colorspaceType is %{public}d", colorspaceType);
-            VpeUtils::SetSbColorSpaceType(buffer, colorspaceType);
-        }
+    if (IsYUV(imageInfo_.pixelFormat) && allocatorType_ == AllocatorType::DMA_ALLOC && GetFd() != nullptr) {
+        ColorManager::ColorSpaceName name = grColorSpace.GetColorSpaceName();
+        HDI::Display::Graphic::Common::V1_0::CM_ColorSpaceType colorspaceType = ColorUtils::ConvertToCMColor(name);
+        sptr<SurfaceBuffer> buffer = sptr<SurfaceBuffer>(reinterpret_cast<SurfaceBuffer*>(GetFd()));
+        VpeUtils::SetSbColorSpaceType(buffer, colorspaceType);
+        IMAGE_LOGD("InnerSetColorSpace colorspaceType is %{public}d", colorspaceType);
     }
 #endif
 }
