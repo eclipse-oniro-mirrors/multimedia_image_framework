@@ -113,7 +113,7 @@ private:
     bool TryNormalInBuff(ImagePlugin::InputDataStream* srcStream);
     bool RecycleSpace();
     void ReleaseSpace(uint32_t& offset, uint32_t& usedSize);
-    uint16_t ReadTwoBytes(ImagePlugin::InputDataStream* srcStream, unsigned int pos, bool& flag)
+    uint16_t ReadTwoBytes(ImagePlugin::InputDataStream* srcStream, unsigned int pos, bool& flag);
     static void RunDmaPoolRecycle();
 private:
     static constexpr char JPEG_FORMAT_DESC[] = "image/jpeg";
