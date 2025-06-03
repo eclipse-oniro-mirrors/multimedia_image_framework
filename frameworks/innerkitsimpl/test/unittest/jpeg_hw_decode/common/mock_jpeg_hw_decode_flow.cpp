@@ -22,7 +22,7 @@
 #include "mock_jpeg_hw_decode_flow.h"
 
 namespace OHOS::ImagePlugin {
-using namespace OHOS::HDI::Codec::Image::V2_0;
+using namespace OHOS::HDI::Codec::Image::V2_1;
 using namespace OHOS::HDI::Display::Buffer::V1_0;
 using namespace OHOS::HDI::Display::Composer;
 
@@ -39,6 +39,15 @@ JpegHwDecoderFlow::JpegHwDecoderFlow() : sampleSize_(1), outputColorFmt_(V1_2::P
 JpegHwDecoderFlow::~JpegHwDecoderFlow()
 {
     bufferMgr_ = nullptr;
+}
+
+bool JpegHwDecoderFlow::InitDecoder()
+{
+    if (!hwDecoder_.InitDecoder()) {
+        JPEG_HW_LOGE("init jpeg hardware decoder failed");
+        return false;
+    }
+    return true;
 }
 
 bool JpegHwDecoderFlow::AllocOutputBuffer()
@@ -71,8 +80,7 @@ bool JpegHwDecoderFlow::DoDecode()
     std::unique_ptr<Media::SourceStream> stream = Media::FileSourceStream::CreateSourceStream(inputFile_);
     ImagePlugin::InputDataStream* inputStream = stream.get();
     std::unique_ptr<SkCodec> demoCodec = SkCodec::MakeFromStream(std::make_unique<ExtStream>(inputStream));
-    JpegHardwareDecoder hwDecoder;
-    auto ret = hwDecoder.Decode(demoCodec.get(), inputStream, orgImgSize_, sampleSize_, outputBuffer_);
+    auto ret = hwDecoder_.Decode(demoCodec.get(), inputStream, orgImgSize_, sampleSize_, outputBuffer_);
     if (ret != 0) {
         JPEG_HW_LOGE("failed to do jpeg hardware decode, err=%{public}u", ret);
         return false;
@@ -153,8 +161,8 @@ bool JpegHwDecoderFlow::Run(const CommandOpt& opt, bool needDumpOutput)
     scaledImgSize_.height = static_cast<int32_t>(AlignUp(opt.height / opt.sampleSize, ALIGN_8));
     JPEG_HW_LOGD("orgImgSize=[%{public}ux%{public}u], scaledImgSize=[%{public}ux%{public}u], sampleSize=%{public}u",
                  orgImgSize_.width, orgImgSize_.height, scaledImgSize_.width, scaledImgSize_.height, sampleSize_);
-
-    bool ret = AllocOutputBuffer();
+    bool ret = InitDecoder();
+    ret = ret && AllocOutputBuffer();
     ret = ret && DoDecode();
     if (needDumpOutput) {
         ret = ret && DumpDecodeResult();

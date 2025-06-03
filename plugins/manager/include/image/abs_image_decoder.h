@@ -152,6 +152,12 @@ public:
     // set decode options before decode and get target decoded image info.
     virtual uint32_t SetDecodeOptions(uint32_t index, const PixelDecodeOptions &opts, PlImageInfo &info) = 0;
 
+    // use to init jpeg hardware decoder and notify it to power on
+    virtual void InitJpegDecoder()
+    {
+        return;
+    }
+
     // One-time decoding.
     virtual uint32_t Decode(uint32_t index, DecodeContext &context) = 0;
 

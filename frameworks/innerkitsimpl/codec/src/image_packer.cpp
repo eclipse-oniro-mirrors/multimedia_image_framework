@@ -30,8 +30,8 @@
 #include "include/jpeg_encoder.h"
 #endif
 #ifdef HEIF_HW_ENCODE_ENABLE
-#include "image/v2_0/icodec_image.h"
-#include "image/v2_0/codec_image_type.h"
+#include "image/v2_1/icodec_image.h"
+#include "image/v2_1/codec_image_type.h"
 #include "v3_0/codec_types.h"
 #include "v3_0/icodec_component_manager.h"
 #endif
@@ -66,19 +66,19 @@ static bool IsEncodeSecureMode(const std::string &name)
 static bool IsSupportHeifEncode()
 {
 #ifdef HEIF_HW_ENCODE_ENABLE
-    sptr<HDI::Codec::Image::V2_0::ICodecImage> image =
-            HDI::Codec::Image::V2_0::ICodecImage::Get(false);
+    sptr<HDI::Codec::Image::V2_1::ICodecImage> image =
+            HDI::Codec::Image::V2_1::ICodecImage::Get(false);
     if (image == nullptr) {
         return false;
     }
-    std::vector<HDI::Codec::Image::V2_0::CodecImageCapability> capList;
+    std::vector<HDI::Codec::Image::V2_1::CodecImageCapability> capList;
     int32_t ret = image->GetImageCapability(capList);
     if (ret != HDF_SUCCESS || capList.empty()) {
         return false;
     }
     for (const auto& cap : capList) {
-        if (cap.role == HDI::Codec::Image::V2_0::CODEC_IMAGE_HEIF &&
-            cap.type == HDI::Codec::Image::V2_0::CODEC_IMAGE_TYPE_ENCODER && !IsEncodeSecureMode(cap.name)) {
+        if (cap.role == HDI::Codec::Image::V2_1::CODEC_IMAGE_HEIF &&
+            cap.type == HDI::Codec::Image::V2_1::CODEC_IMAGE_TYPE_ENCODER && !IsEncodeSecureMode(cap.name)) {
             return true;
         }
     }

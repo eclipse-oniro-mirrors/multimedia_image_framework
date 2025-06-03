@@ -45,7 +45,8 @@ public:
     uint32_t Decode(uint32_t index, DecodeContext &context) override;
     uint32_t DecodeToYuv420(uint32_t index, DecodeContext &context);
     #ifdef JPEG_HW_DECODE_ENABLE
-    uint32_t AllocOutputBuffer(DecodeContext &context, OHOS::HDI::Codec::Image::V2_0::CodecImageBuffer& outputBuffer);
+    void InitJpegDecoder() override;
+    uint32_t AllocOutputBuffer(DecodeContext &context, OHOS::HDI::Codec::Image::V2_1::CodecImageBuffer& outputBuffer);
     void ReleaseOutputBuffer(DecodeContext &context, Media::AllocatorType allocatorType);
     uint32_t HardWareDecode(DecodeContext &context);
     uint32_t DoHardWareDecode(DecodeContext &context);
@@ -185,6 +186,10 @@ private:
     // hdr
     Media::ImageHdrType hdrType_ = Media::ImageHdrType::UNKNOWN;
     uint32_t gainMapOffset_ = 0;
+#ifdef JPEG_HW_DECODE_ENABLE
+    std::shared_ptr<JpegHardwareDecoder> hwDecoderPtr_ = nullptr;
+    bool initJpegErr = true;
+#endif
 };
 } // namespace ImagePlugin
 } // namespace OHOS

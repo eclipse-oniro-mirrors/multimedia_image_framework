@@ -23,7 +23,7 @@
 namespace OHOS::Media {
 using namespace testing::ext;
 using namespace OHOS::ImagePlugin;
-using namespace OHOS::HDI::Codec::Image::V2_0;
+using namespace OHOS::HDI::Codec::Image::V2_1;
 
 class JpegHwDecoderTest : public testing::Test {
 public:
@@ -210,11 +210,11 @@ HWTEST_F(JpegHwDecoderTest, JumpOverCurrentJpegMarkerTest001, TestSize.Level3)
 {
     GTEST_LOG_(INFO) << "JpegHwDecoderTest: JumpOverCurrentJpegMarkerTest001 start";
     JpegHardwareDecoder jpegHardwareDecoder;
-    const uint8_t* data = nullptr;
+    ImagePlugin::InputDataStream* srcStream = nullptr;
     unsigned int curPos = 1;
     unsigned int totalLen = 1;
     uint16_t marker = 0;
-    bool ret = jpegHardwareDecoder.JumpOverCurrentJpegMarker(data, curPos, totalLen, marker);
+    bool ret = jpegHardwareDecoder.JumpOverCurrentJpegMarker(srcStream, curPos, totalLen, marker);
     ASSERT_EQ(ret, false);
     GTEST_LOG_(INFO) << "JpegHwDecoderTest: JumpOverCurrentJpegMarkerTest001 end";
 }

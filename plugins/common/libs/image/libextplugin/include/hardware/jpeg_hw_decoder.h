@@ -17,7 +17,8 @@
 #define JPEG_HARDWARE_DECODER_H
 
 #include <cinttypes>
-#include "v2_0/icodec_image.h"
+#include <chrono>
+#include "v2_1/icodec_image.h"
 #include "v1_0/include/idisplay_buffer.h"
 #include "image/image_plugin_type.h"
 #include "image/input_data_stream.h"
@@ -47,16 +48,34 @@
 #define JPEG_HW_LOGD(x, ...) \
     IMAGE_LOGD(LOG_FMT x, FILENAME, __FUNCTION__, __LINE__, ##__VA_ARGS__)
 
+#define KILO_BYTE 1024
+#define MAX_SIZE_USE_DMA_POOL 256     /* max size of jpeg bitstream to use DMA Pool */
+#define BUFFER_UNIT_SIZE 32           /* Input buffer alignment size */
+#define DMA_POOL_SIZE 1024            /* the size of DMA Pool is 1M */
+#define DMA_POOL_WAIT_SECONDS 10      /* Destroy the DMA pool if it is not used for more than 10s */
+
 namespace OHOS {
 namespace ImagePlugin {
+
+class DmaPool {
+public:
+    DmaPool();
+    ~DmaPool();
+public:
+    OHOS::HDI::Codec::Image::V2_1::CodecImageBuffer buffer;
+    BufferHandle *bufferHandle;
+    std::pair<uint32_t, uint32_t> remainSpace; /* <remainSpace, start> */
+    std::unordered_map<uint32_t, uint32_t> usedSpace; /* <end, size> */
+    std::unordered_map<uint32_t, uint32_t> releaseSpace; /* <end, size> */
+};
 class JpegHardwareDecoder {
 public:
     JpegHardwareDecoder();
     ~JpegHardwareDecoder();
-
+    bool InitDecoder();
     bool IsHardwareDecodeSupported(const std::string& srcImgFormat, OHOS::Media::Size srcImgSize);
-    uint32_t Decode(SkCodec *codec, ImagePlugin::InputDataStream *srcStream, OHOS::Media::Size srcImgSize, uint32_t sampleSize,
-                    OHOS::HDI::Codec::Image::V2_0::CodecImageBuffer& outputBuffer);
+    uint32_t Decode(SkCodec *codec, ImagePlugin::InputDataStream *srcStream, OHOS::Media::Size srcImgSize,
+                    uint32_t sampleSize, OHOS::HDI::Codec::Image::V2_1::CodecImageBuffer& outputBuffer);
 private:
     class LifeSpanTimer {
     public:
@@ -69,33 +88,70 @@ private:
         std::string desc_;
     };
 private:
-    inline uint16_t CombineTwoBytes(const uint8_t* data, unsigned int pos)
+    inline uint16_t ReadTwoBytes(ImagePlugin::InputDataStream* srcStream, unsigned int pos, bool& flag)
     {
+        static constexpr int ZERO = 0;
+        static constexpr int ONE = 1;
+        static constexpr int TWO = 2;
         static constexpr int BITS_OFFSET = 8;
-        static constexpr unsigned int BYTE_OFFSET = 1;
-        return static_cast<uint16_t>((data[pos] << BITS_OFFSET) + data[pos + BYTE_OFFSET]);
+        uint8_t* readBuffer = new (std::nothrow) uint8_t[TWO];
+        uint16_t result = 0xFFFF;
+        if (readBuffer == nullptr) {
+            JPEG_HW_LOGE("new readbuffer failed");
+            flag = false;
+        } else {
+            uint32_t readSize = 0;
+            srcStream->Seek(pos);
+            bool ret = srcStream->Read(TWO, readBuffer, TWO, readSize);
+            if (!ret) {
+                JPEG_HW_LOGE("read input stream failed.");
+                flag = false;
+            }
+            result = static_cast<uint16_t>((readBuffer[ZERO] << BITS_OFFSET) + readBuffer[ONE]);
+            delete[] readBuffer;
+        }
+        return result;
     }
-    bool InitDecoder();
+
     bool AssembleComponentInfo(jpeg_decompress_struct* jpegCompressInfo);
-    bool HuffmanTblTransform(JHUFF_TBL* huffTbl, OHOS::HDI::Codec::Image::V2_0::CodecJpegHuffTable& tbl);
+    bool HuffmanTblTransform(JHUFF_TBL* huffTbl, OHOS::HDI::Codec::Image::V2_1::CodecJpegHuffTable& tbl);
     void AssembleHuffmanTable(jpeg_decompress_struct* jpegCompressInfo);
     void AssembleQuantizationTable(jpeg_decompress_struct* jpegCompressInfo);
     bool AssembleJpegImgHeader(jpeg_decompress_struct* jpegCompressInfo);
     bool CopySrcImgToDecodeInputBuffer(ImagePlugin::InputDataStream *srcStream);
     bool IsStandAloneJpegMarker(uint16_t marker);
-    bool JumpOverCurrentJpegMarker(const uint8_t* data, unsigned int& curPos, unsigned int totalLen, uint16_t marker);
-    bool GetCompressedDataStart();
+    bool JumpOverCurrentJpegMarker(ImagePlugin::InputDataStream* srcStream, unsigned int& curPos, unsigned int totalLen, uint16_t marker);
     bool PrepareInputData(SkCodec *codec, ImagePlugin::InputDataStream *srcStream);
-    bool DoDecode(OHOS::HDI::Codec::Image::V2_0::CodecImageBuffer& outputBufferHandle);
+    bool DoDecode(OHOS::HDI::Codec::Image::V2_1::CodecImageBuffer& outputBufferHandle);
     void RecycleAllocatedResource();
     static OHOS::HDI::Display::Buffer::V1_0::IDisplayBuffer* GetBufferMgr();
     bool CheckInputColorFmt(SkCodec *codec);
+    bool GetCompressedDataStart(ImagePlugin::InputDataStream* srcStream);
+    bool CopySrcToInputBuff(ImagePlugin::InputDataStream* srcStream, BufferHandle* inputBufferHandle);
+    bool TryDmaPoolInBuff(ImagePlugin::InputDataStream* srcStream);
+    bool AllocDmaPool();
+    bool AllocSpace();
+    void UpdateSpaceInfo();
+    bool PackingInputBufferHandle(BufferHandle* inputBufferHandle);
+    bool TryNormalInBuff(ImagePlugin::InputDataStream* srcStream);
+    bool RecycleSpace();
+    void ReleaseSpace(uint32_t& offset, uint32_t& usedSize);
+    static void RunDmaPoolRecycle();
 private:
     static constexpr char JPEG_FORMAT_DESC[] = "image/jpeg";
-    OHOS::sptr<OHOS::HDI::Codec::Image::V2_0::ICodecImage> hwDecoder_;
+    static std::vector<OHOS::HDI::Codec::Image::V2_1::CodecImageCapability> capList_;
+    static std::mutex capListMtx_;
+    static std::pair<DmaPool*, std::chrono::steady_clock::time_point> dmaPool_;
+    static std::mutex dmaPoolMtx_;
+    OHOS::sptr<OHOS::HDI::Codec::Image::V2_1::ICodecImage> hwDecoder_;
     OHOS::HDI::Display::Buffer::V1_0::IDisplayBuffer* bufferMgr_;
-    OHOS::HDI::Codec::Image::V2_0::CodecImageBuffer inputBuffer_;
-    OHOS::HDI::Codec::Image::V2_0::CodecJpegDecInfo decodeInfo_;
+    OHOS::HDI::Codec::Image::V2_1::CodecImageBuffer inputBuffer_;
+    OHOS::HDI::Codec::Image::V2_1::CodecJpegDecInfo decodeInfo_;
+    uint32_t compressDataPos_;
+    uint32_t compressDataSize_;
+    bool useDmaPool_;
+    uint32_t usedSizeInPool_;
+    uint32_t usedOffsetInPool_;
 };
 } // namespace ImagePlugin
 } // namespace OHOS

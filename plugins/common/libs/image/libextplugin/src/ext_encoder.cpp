@@ -60,7 +60,7 @@
 #include "file_packer_stream.h"
 #include "memory_manager.h"
 #ifdef HEIF_HW_ENCODE_ENABLE
-#include "v2_0/icodec_image.h"
+#include "v2_1/icodec_image.h"
 #include "iremote_object.h"
 #include "iproxy_broker.h"
 #endif
@@ -165,7 +165,7 @@ static constexpr int32_t MIN_IMAGE_SIZE = 128;
 static constexpr int32_t MIN_RGBA_IMAGE_SIZE = 1024;
 
 #ifdef HEIF_HW_ENCODE_ENABLE
-using namespace OHOS::HDI::Codec::Image::V2_0;
+using namespace OHOS::HDI::Codec::Image::V2_1;
 static std::mutex g_codecMtx;
 static sptr<ICodecImage> g_codecMgr;
 class CodecHeifDeathRecipient : public IRemoteObject::DeathRecipient {
