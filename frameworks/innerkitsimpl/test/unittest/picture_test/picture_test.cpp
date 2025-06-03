@@ -480,9 +480,6 @@ HWTEST_F(PictureTest, MarshallingTest005, TestSize.Level1)
 {
     const std::string srcValue = "9, 9, 8";
     std::string realPath;
-    if (!ImageUtils::PathToRealPath(IMAGE_INPUT_JPEG_PATH.c_str(), realPath)) {
-        return;
-    }
     bool cond = ImageUtils::PathToRealPath(IMAGE_INPUT_JPEG_PATH.c_str(), realPath);
     ASSERT_EQ(cond, true);
     auto exifData = exif_data_new_from_file(IMAGE_INPUT_JPEG_PATH.c_str());
