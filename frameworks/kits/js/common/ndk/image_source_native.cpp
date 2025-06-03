@@ -590,7 +590,6 @@ Image_ErrorCode OH_ImageSourceNative_CreateFromFd(int32_t fd, OH_ImageSourceNati
 
 Image_ErrorCode CreateFromDataInternal(uint8_t *data, size_t dataSize, OH_ImageSourceNative **res, bool isUserBuffer)
 {
-    ImageFuncTimer imageFuncTimer("Time = %s", __func__);
     if (data == nullptr) {
         return IMAGE_BAD_PARAMETER;
     }
