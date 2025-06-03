@@ -314,7 +314,7 @@ HWTEST_F(ImagSourceNdk2Test, OH_ImageSourceNative_CreateFromDataWithUserBuffer00
  */
 HWTEST_F(ImagSourceNdk2Test, OH_ImageSourceNative_CreateFromDataWithUserBuffer002, TestSize.Level3)
 {
-   GTEST_LOG_(INFO) << "ImagSourceNdk2Test: OH_ImageSourceNative_CreateFromDataWithUserBuffer002 start";
+    GTEST_LOG_(INFO) << "ImagSourceNdk2Test: OH_ImageSourceNative_CreateFromDataWithUserBuffer002 start";
     void *data = malloc(100);
     size_t dataSize = 100;
     memset_s(data, dataSize, 0, dataSize);
