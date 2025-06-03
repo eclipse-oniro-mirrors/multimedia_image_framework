@@ -3762,23 +3762,23 @@ static uint32_t GetByteCount(const DecodeContext& context, uint32_t surfaceBuffe
 {
     uint32_t byteCount = surfaceBufferSize;
     ImageInfo info;
-    info.pixelFormat = context.info.pixelFormat;
-    info.size.width = context.info.size.width;
-    info.size.height = context.info.size.height;
     switch (context.info.pixelFormat) {
         case PixelFormat::RGBA_8888:
         case PixelFormat::BGRA_8888:
-        case PixelFormat::RGBA_1010102:
-            byteCount = static_cast<uint32_t>(PixelMap::GetAllocatedByteCount(info));
-            return byteCount;
         case PixelFormat::NV12:
         case PixelFormat::NV21:
+        case PixelFormat::RGBA_1010102:
         case PixelFormat::YCBCR_P010:
-            return byteCount;
+            info.pixelFormat = context.info.pixelFormat;
+            break;
         default:
             IMAGE_LOGE("[ImageSource] GetByteCount pixelFormat %{public}u error", context.info.pixelFormat);
             return byteCount;
     }
+    info.size.width = context.info.size.width;
+    info.size.height = context.info.size.height;
+    byteCount = static_cast<uint32_t>(PixelMap::GetAllocatedByteCount(info));
+    return byteCount;
 }
 
 #if !defined(_WIN32) && !defined(_APPLE) && !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
