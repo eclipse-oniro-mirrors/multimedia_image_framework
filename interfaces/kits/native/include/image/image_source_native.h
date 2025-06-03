@@ -465,7 +465,7 @@ Image_ErrorCode OH_ImageSourceNative_CreateFromData(uint8_t *data, size_t dataSi
  * @since 20
  */
 Image_ErrorCode OH_ImageSourceNative_CreateFromDataWithUserBuffer(uint8_t *data, size_t datalength,
-    OH_ImageSourceNative **imageSource)
+                                                                  OH_ImageSourceNative **imageSource)
 
 /**
  * @brief Creates an void pointer
