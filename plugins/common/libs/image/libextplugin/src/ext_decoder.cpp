@@ -1149,7 +1149,8 @@ uint32_t ExtDecoder::Decode(uint32_t index, DecodeContext &context)
     }
 #endif
 #ifdef JPEG_HW_DECODE_ENABLE
-    if (!initJpegErr_ && IsAllocatorTypeSupportHwDecode(context) && IsSupportHardwareDecode() && DoHardWareDecode(context) == SUCCESS) {
+    if (!initJpegErr_ && IsAllocatorTypeSupportHwDecode(context) && IsSupportHardwareDecode()
+        && DoHardWareDecode(context) == SUCCESS) {
         context.isHardDecode = true;
         return SUCCESS;
     }
@@ -1586,7 +1587,7 @@ uint32_t ExtDecoder::HardWareDecode(DecodeContext &context)
         context.hardDecodeError = "Decode failed, Alloc OutputBuffer failed, ret=" + std::to_string(ret);
         return ERR_IMAGE_DECODE_ABNORMAL;
     }
-	if (hwDecoderPtr_ != nullptr) {
+    if (hwDecoderPtr_ != nullptr) {
         ret = hwDecoderPtr_->Decode(codec_.get(), stream_, orgImgSize_, sampleSize_, outputBuffer);
     } else {
         IMAGE_LOGE("hwDecoderPtr_ is null");

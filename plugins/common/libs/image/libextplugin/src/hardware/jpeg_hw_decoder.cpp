@@ -18,9 +18,9 @@
 #include <vector>
 #include <algorithm>
 #include <chrono>
-#include<thread>
+#include <thread>
 #include <securec.h>
-#include <sys/mman.h> 
+#include <sys/mman.h>
 
 #include "hardware/jpeg_marker_define.h"
 #include "hdf_base.h"
@@ -379,8 +379,7 @@ bool JpegHardwareDecoder::CopySrcToInputBuff(ImagePlugin::InputDataStream* srcSt
     bool flag = srcStream->Read(compressDataSize_,
                                 static_cast<uint8_t *>(inputBufferHandle->virAddr) + usedOffsetInPool_,
                                 static_cast<uint32_t>(inputBufferHandle->size) - usedOffsetInPool_,
-                                readSize
-                                );
+                                readSize);
     srcStream->Seek(positionRecord);
     if (!flag || readSize != compressDataSize_) {
         JPEG_HW_LOGE("failed to read input data, readSize=%{public}u", readSize);
@@ -393,14 +392,14 @@ void JpegHardwareDecoder::RunDmaPoolRecycle()
     dmaPoolMtx_.lock();
     while (true) {
         std::chrono::steady_clock::time_point curTime = std::chrono::steady_clock::now();
-        std::chrono::duration<int> diffDuration = 
+        std::chrono::duration<int> diffDuration =
             std::chrono::duration_cast<std::chrono::duration<int>>(curTime - dmaPool_.second);
         if (diffDuration >= THRESHIOLD_DURATION) {
             break;
         } else {
             dmaPoolMtx_.unlock();
             JPEG_HW_LOGI("wait to recycle DMA pool");
-            std::this_thread::sleep_for(std::chrono::seconds(5));
+            std::this_thread::sleep_for(std::chrono::seconds(DMA_POOL_QUERY_INTERVAL));
             dmaPoolMtx_.lock();
         }
     }
@@ -427,13 +426,38 @@ bool JpegHardwareDecoder::AllocSpace()
     // step2. try to alloc space
     uint32_t uintNum = (compressDataSize_ + BUFFER_UNIT_SIZE * KILO_BYTE - 1) / (BUFFER_UNIT_SIZE * KILO_BYTE);
     usedSizeInPool_ = uintNum * (BUFFER_UNIT_SIZE * KILO_BYTE);
-    if(usedSizeInPool_ <= (dmaPool_.first->remainSpace).first) {
+    if (usedSizeInPool_ <= (dmaPool_.first->remainSpace).first) {
         UpdateSpaceInfo();
     } else {
         JPEG_HW_LOGI("The space left in DMA pool isn't enough");
         return false;
     }
     return true;
+}
+
+uint16_t JpegHardwareDecoder::ReadTwoBytes(ImagePlugin::InputDataStream* srcStream, unsigned int pos, bool& flag)
+{
+    static constexpr int ZERO = 0;
+    static constexpr int ONE = 1;
+    static constexpr int TWO = 2;
+    static constexpr int BITS_OFFSET = 8;
+    uint8_t* readBuffer = new (std::nothrow) uint8_t[TWO];
+    uint16_t result = 0xFFFF;
+    if (readBuffer == nullptr) {
+        JPEG_HW_LOGE("new readbuffer failed");
+        flag = false;
+    } else {
+        uint32_t readSize = 0;
+        srcStream->Seek(pos);
+        bool ret = srcStream->Read(TWO, readBuffer, TWO, readSize);
+        if (!ret) {
+            JPEG_HW_LOGE("read input stream failed.");
+            flag = false;
+        }
+        result = static_cast<uint16_t>((readBuffer[ZERO] << BITS_OFFSET) + readBuffer[ONE]);
+        delete[] readBuffer;
+    }
+    return result;
 }
 
 bool JpegHardwareDecoder::GetCompressedDataStart(ImagePlugin::InputDataStream* srcStream)
@@ -493,7 +517,7 @@ bool JpegHardwareDecoder::PackingInputBufferHandle(BufferHandle* inputBufferHand
     });
     inputBuffer_.bufferRole = CODEC_IMAGE_JPEG;
     JPEG_HW_LOGI("inputBuffer size:%{public}d  DMA pool size:%{public}d",
-                inputBuffer_.buffer->GetBufferHandle()->size, dmaPool_.first->bufferHandle->size);
+                 inputBuffer_.buffer->GetBufferHandle()->size, dmaPool_.first->bufferHandle->size);
     return true;
 }
 
@@ -664,7 +688,7 @@ bool JpegHardwareDecoder::RecycleSpace()
     std::lock_guard<std::mutex> lock(dmaPoolMtx_);
     auto it = (dmaPool_.first->releaseSpace).find((dmaPool_.first->remainSpace).second);
     if (it != (dmaPool_.first->releaseSpace).end()) {
-        uint32_t newStart = (dmaPool_.first->remainSpace).second - it->second; 
+        uint32_t newStart = (dmaPool_.first->remainSpace).second - it->second;
         uint32_t newSize = it->second + (dmaPool_.first->remainSpace).first;
         dmaPool_.first->remainSpace = std::make_pair(newSize, newStart);
         (dmaPool_.first->releaseSpace).erase(it);

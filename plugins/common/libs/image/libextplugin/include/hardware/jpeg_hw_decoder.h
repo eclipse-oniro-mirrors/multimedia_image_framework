@@ -53,6 +53,7 @@
 #define BUFFER_UNIT_SIZE 32           /* Input buffer alignment size */
 #define DMA_POOL_SIZE 1024            /* the size of DMA Pool is 1M */
 #define DMA_POOL_WAIT_SECONDS 10      /* Destroy the DMA pool if it is not used for more than 10s */
+#define DMA_POOL_QUERY_INTERVAL 5     /* Query the active time of the DMA pool every 5 seconds */
 
 namespace OHOS {
 namespace ImagePlugin {
@@ -88,31 +89,6 @@ private:
         std::string desc_;
     };
 private:
-    inline uint16_t ReadTwoBytes(ImagePlugin::InputDataStream* srcStream, unsigned int pos, bool& flag)
-    {
-        static constexpr int ZERO = 0;
-        static constexpr int ONE = 1;
-        static constexpr int TWO = 2;
-        static constexpr int BITS_OFFSET = 8;
-        uint8_t* readBuffer = new (std::nothrow) uint8_t[TWO];
-        uint16_t result = 0xFFFF;
-        if (readBuffer == nullptr) {
-            JPEG_HW_LOGE("new readbuffer failed");
-            flag = false;
-        } else {
-            uint32_t readSize = 0;
-            srcStream->Seek(pos);
-            bool ret = srcStream->Read(TWO, readBuffer, TWO, readSize);
-            if (!ret) {
-                JPEG_HW_LOGE("read input stream failed.");
-                flag = false;
-            }
-            result = static_cast<uint16_t>((readBuffer[ZERO] << BITS_OFFSET) + readBuffer[ONE]);
-            delete[] readBuffer;
-        }
-        return result;
-    }
-
     bool AssembleComponentInfo(jpeg_decompress_struct* jpegCompressInfo);
     bool HuffmanTblTransform(JHUFF_TBL* huffTbl, OHOS::HDI::Codec::Image::V2_1::CodecJpegHuffTable& tbl);
     void AssembleHuffmanTable(jpeg_decompress_struct* jpegCompressInfo);
@@ -120,7 +96,8 @@ private:
     bool AssembleJpegImgHeader(jpeg_decompress_struct* jpegCompressInfo);
     bool CopySrcImgToDecodeInputBuffer(ImagePlugin::InputDataStream *srcStream);
     bool IsStandAloneJpegMarker(uint16_t marker);
-    bool JumpOverCurrentJpegMarker(ImagePlugin::InputDataStream* srcStream, unsigned int& curPos, unsigned int totalLen, uint16_t marker);
+    bool JumpOverCurrentJpegMarker(ImagePlugin::InputDataStream* srcStream,
+                                   unsigned int& curPos, unsigned int totalLen, uint16_t marker);
     bool PrepareInputData(SkCodec *codec, ImagePlugin::InputDataStream *srcStream);
     bool DoDecode(OHOS::HDI::Codec::Image::V2_1::CodecImageBuffer& outputBufferHandle);
     void RecycleAllocatedResource();
@@ -136,6 +113,7 @@ private:
     bool TryNormalInBuff(ImagePlugin::InputDataStream* srcStream);
     bool RecycleSpace();
     void ReleaseSpace(uint32_t& offset, uint32_t& usedSize);
+    uint16_t ReadTwoBytes(ImagePlugin::InputDataStream* srcStream, unsigned int pos, bool& flag)
     static void RunDmaPoolRecycle();
 private:
     static constexpr char JPEG_FORMAT_DESC[] = "image/jpeg";

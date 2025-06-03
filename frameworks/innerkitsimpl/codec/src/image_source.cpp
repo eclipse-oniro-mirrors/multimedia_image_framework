@@ -397,7 +397,7 @@ void ImageSource::InitDecoderForJpeg()
         readBuffer = nullptr;
         return;
     }
-    if(std::memcmp(JPEG_SOI, readBuffer, sizeof(JPEG_SOI)) == 0){
+    if (std::memcmp(JPEG_SOI, readBuffer, sizeof(JPEG_SOI)) == 0) {
         IMAGE_LOGI("stream is jpeg stream.");
         delete[] readBuffer;
         mainDecoder_->InitJpegDecoder();
