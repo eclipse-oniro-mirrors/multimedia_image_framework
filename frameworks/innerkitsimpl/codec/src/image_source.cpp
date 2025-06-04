@@ -857,9 +857,12 @@ unique_ptr<PixelMap> ImageSource::CreatePixelMapExtended(uint32_t index, const D
             info.size.height, context.hdrType, static_cast<unsigned long>(GetNowTimeMicroSeconds() - decodeStartTime));
     }
 
-    if (CreatExifMetadataByImageSource() == SUCCESS) {
-        auto metadataPtr = exifMetadata_->Clone();
-        pixelMap->SetExifMetadata(metadataPtr);
+    {
+        std::unique_lock<std::mutex> guard(decodingMutex_);
+        if (CreatExifMetadataByImageSource() == SUCCESS) {
+            auto metadataPtr = exifMetadata_->Clone();
+            pixelMap->SetExifMetadata(metadataPtr);
+        }
     }
     if (NeedConvertToYuv(opts.desiredPixelFormat, pixelMap->GetPixelFormat())) {
         uint32_t convertRes = ImageFormatConvert::RGBConvertImageFormatOptionUnique(
@@ -2905,9 +2908,12 @@ unique_ptr<PixelMap> ImageSource::CreatePixelMapForYUV(uint32_t &errorCode)
 
     IMAGE_LOGD("CreatePixelMapForYUV operation completed.");
 
-    if (CreatExifMetadataByImageSource() == SUCCESS) {
-        auto metadataPtr = exifMetadata_->Clone();
-        pixelMap->SetExifMetadata(metadataPtr);
+    {
+        std::unique_lock<std::mutex> guard(decodingMutex_);
+        if (CreatExifMetadataByImageSource() == SUCCESS) {
+            auto metadataPtr = exifMetadata_->Clone();
+            pixelMap->SetExifMetadata(metadataPtr);
+        }
     }
 
     if (!ImageUtils::FloatCompareZero(opts_.rotateDegrees)) {
