@@ -118,6 +118,7 @@ char* ImageReceiverImpl::GetReceivingSurfaceId()
 sptr<ImageImpl> ImageReceiverImpl::ReadNextImage()
 {
     if (imageReceiver_ == nullptr) {
+        IMAGE_LOGE("Native instance is nullptr");
         return nullptr;
     }
     auto image = imageReceiver_->NextNativeImage();
@@ -136,6 +137,7 @@ sptr<ImageImpl> ImageReceiverImpl::ReadNextImage()
 sptr<ImageImpl> ImageReceiverImpl::ReadLatestImage()
 {
     if (imageReceiver_ == nullptr) {
+        IMAGE_LOGE("Native instance is nullptr");
         return nullptr;
     }
     auto image = imageReceiver_->LastNativeImage();
@@ -149,6 +151,22 @@ sptr<ImageImpl> ImageReceiverImpl::ReadLatestImage()
 void ImageReceiverImpl::Release()
 {
     imageReceiver_ = nullptr;
+}
+
+uint32_t ImageReceiverImpl::CjOn(std::string name, std::function<void()> callBack)
+{
+    if (imageReceiver_ == nullptr) {
+        IMAGE_LOGE("Native instance is nullptr");
+        return ERR_IMAGE_INIT_ABNORMAL;
+    }
+    shared_ptr<CjImageReceiverAvaliableListener> listener = make_shared<CjImageReceiverAvaliableListener>();
+    if (listener == nullptr) {
+        return ERR_IMAGE_INIT_ABNORMAL;
+    }
+    listener->name = name;
+    listener->callBack = callBack;
+    imageReceiver_->RegisterBufferAvaliableListener((std::shared_ptr<SurfaceBufferAvaliableListener>&)listener);
+    return 0;
 }
 } // namespace Media
 } // namespace OHOS

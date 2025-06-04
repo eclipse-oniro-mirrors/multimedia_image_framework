@@ -42,6 +42,9 @@ public:
     uint32_t SetColorSpace(std::shared_ptr<OHOS::ColorManager::ColorSpace> colorSpace);
     std::shared_ptr<OHOS::ColorManager::ColorSpace> GetColorSpace();
     uint32_t ApplyColorSpace(std::shared_ptr<OHOS::ColorManager::ColorSpace> colorSpace);
+    uint32_t Marshalling(int64_t rpcId);
+    std::shared_ptr<PixelMap> Unmarshalling(int64_t rpcId, uint32_t* errCode);
+    uint32_t ConvertPixelMapFormat(PixelFormat destFormat);
 
     void GetImageInfo(ImageInfo& imageInfo);
     void Scale(float xAxis, float yAxis);
@@ -74,6 +77,9 @@ public:
     static std::unique_ptr<PixelMap> CreateAlphaPixelMap(PixelMap& source, InitializationOptions& opts);
     static uint32_t CreatePremultipliedPixelMap(std::shared_ptr<PixelMap> src, std::shared_ptr<PixelMap> dst);
     static uint32_t CreateUnpremultipliedPixelMap(std::shared_ptr<PixelMap> src, std::shared_ptr<PixelMap> dst);
+    static std::shared_ptr<PixelMap> CreatePixelMapFromSurface(
+        char* surfaceId, Rect region, size_t argc, uint32_t* errCode);
+    static std::shared_ptr<PixelMap> CreatePixelMapFromParcel(int64_t rpcId, uint32_t* errCode);
 
 private:
     std::shared_ptr<PixelMap> real_;

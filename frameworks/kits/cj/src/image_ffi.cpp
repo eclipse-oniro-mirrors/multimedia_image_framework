@@ -17,34 +17,21 @@
 #include <cstdint>
 
 #include "cj_color_manager.h"
+#include "image_common.h"
 #include "image_creator_impl.h"
 #include "image_log.h"
 #include "image_packer_impl.h"
 #include "image_receiver_impl.h"
 #include "image_source_impl.h"
 #include "image_type.h"
-#include "js_native_api.h"
-#include "js_native_api_types.h"
 #include "media_errors.h"
-#include "pixel_map_impl.h"
-#include "pixel_map_napi.h"
+#include "metadata_impl.h"
 
 using namespace OHOS::FFI;
 
 namespace OHOS {
 namespace Media {
 extern "C" {
-static Rect ParseCRegion(CRegion region)
-{
-    Rect rt = {
-        .left = region.x,
-        .top = region.y,
-        .width = region.size.width,
-        .height = region.size.height,
-    };
-    return rt;
-}
-
 //--------------------- ImageSource ------------------------------------------------------------------------
 static const std::string FILE_URL_PREFIX = "file://";
 static std::string FileUrlToRawPath(const std::string& path)
@@ -99,7 +86,7 @@ int64_t FfiOHOSCreateImageSourceByPathWithOption(char* uri, CSourceOptions opts,
     }
     auto nativeImage = FFIData::Create<ImageSourceImpl>(move(ptr_));
     if (!nativeImage) {
-        IMAGE_LOGE("[ImageSource] FfiOHOSCreateImageSourceByPath failed");
+        IMAGE_LOGE("[ImageSource] FfiOHOSCreateImageSourceByPathWithOption failed");
         *errCode = ERR_IMAGE_INIT_ABNORMAL;
         return INIT_FAILED;
     }
@@ -118,7 +105,7 @@ int64_t FfiOHOSCreateImageSourceByFd(int fd, uint32_t* errCode)
     }
     auto nativeImage = FFIData::Create<ImageSourceImpl>(move(ptr_));
     if (!nativeImage) {
-        IMAGE_LOGE("[ImageSource] FfiOHOSCreateImageSourceByPath failed");
+        IMAGE_LOGE("[ImageSource] FfiOHOSCreateImageSourceByFd failed");
         *errCode = ERR_IMAGE_INIT_ABNORMAL;
         return INIT_FAILED;
     }
@@ -138,7 +125,7 @@ int64_t FfiOHOSCreateImageSourceByFdWithOption(int fd, CSourceOptions opts, uint
     }
     auto nativeImage = FFIData::Create<ImageSourceImpl>(move(ptr_));
     if (!nativeImage) {
-        IMAGE_LOGE("[ImageSource] FfiOHOSCreateImageSourceByPath failed");
+        IMAGE_LOGE("[ImageSource] FfiOHOSCreateImageSourceByFdWithOption failed");
         *errCode = ERR_IMAGE_INIT_ABNORMAL;
         return INIT_FAILED;
     }
@@ -157,7 +144,7 @@ int64_t FfiOHOSCreateImageSourceByBuffer(uint8_t* data, uint32_t size, uint32_t*
     }
     auto nativeImage = FFIData::Create<ImageSourceImpl>(move(ptr_));
     if (!nativeImage) {
-        IMAGE_LOGE("[ImageSource] FfiOHOSCreateImageSourceByPath failed");
+        IMAGE_LOGE("[ImageSource] FfiOHOSCreateImageSourceByBuffer failed");
         *errCode = ERR_IMAGE_INIT_ABNORMAL;
         return INIT_FAILED;
     }
@@ -177,7 +164,7 @@ int64_t FfiOHOSCreateImageSourceByBufferWithOption(uint8_t* data, uint32_t size,
     }
     auto nativeImage = FFIData::Create<ImageSourceImpl>(move(ptr_));
     if (!nativeImage) {
-        IMAGE_LOGE("[ImageSource] FfiOHOSCreateImageSourceByPath failed");
+        IMAGE_LOGE("[ImageSource] FfiOHOSCreateImageSourceByBufferWithOption failed");
         *errCode = ERR_IMAGE_INIT_ABNORMAL;
         return INIT_FAILED;
     }
@@ -198,7 +185,7 @@ int64_t FfiOHOSCreateImageSourceByRawFile(
     }
     auto nativeImage = FFIData::Create<ImageSourceImpl>(move(ptr_));
     if (!nativeImage) {
-        IMAGE_LOGE("[ImageSource] FfiOHOSCreateImageSourceByPath failed");
+        IMAGE_LOGE("[ImageSource] FfiOHOSCreateImageSourceByRawFile failed");
         *errCode = ERR_IMAGE_INIT_ABNORMAL;
         return INIT_FAILED;
     }
@@ -216,7 +203,7 @@ int64_t FfiOHOSCreateIncrementalSource(const uint8_t* data, uint32_t size, CSour
     }
     auto nativeImage = FFIData::Create<ImageSourceImpl>(move(std::get<0>(ptr)), move(std::get<1>(ptr)));
     if (!nativeImage) {
-        IMAGE_LOGE("[ImageSource] FfiOHOSCreateImageSourceByPath failed");
+        IMAGE_LOGE("[ImageSource] FfiOHOSCreateIncrementalSource failed");
         *errCode = ERR_IMAGE_INIT_ABNORMAL;
         return INIT_FAILED;
     }
@@ -262,7 +249,7 @@ static CImageInfoV2 ParseImageSourceImageInfo(ImageInfo info, ImageSource* image
 
 CImageInfoV2 FfiOHOSImageSourceGetImageInfoV2(int64_t id, uint32_t index, uint32_t* errCode)
 {
-    IMAGE_LOGD("[ImageSource] FfiOHOSImageSourceGetImageInfo start");
+    IMAGE_LOGD("[ImageSource] FfiOHOSImageSourceGetImageInfoV2 start");
     auto instance = FFIData::GetData<ImageSourceImpl>(id);
     CImageInfoV2 ret = {};
     if (!instance) {
@@ -276,7 +263,7 @@ CImageInfoV2 FfiOHOSImageSourceGetImageInfoV2(int64_t id, uint32_t index, uint32
         return ret;
     }
     ret = ParseImageSourceImageInfo(info, instance->nativeImgSrc.get());
-    IMAGE_LOGD("[ImageSource] FfiOHOSImageSourceGetImageInfo success");
+    IMAGE_LOGD("[ImageSource] FfiOHOSImageSourceGetImageInfoV2 success");
     return ret;
 }
 
@@ -503,7 +490,7 @@ CArrI64 FfiOHOSImageSourceCreatePixelMapList(int64_t id, uint32_t index, CDecodi
         auto size = data.size();
         if (size == 0) {
             *errorCode = ERR_IMAGE_MALLOC_ABNORMAL;
-            IMAGE_LOGE("[ImageSource] CreatePixelMapList size error.");
+            IMAGE_LOGE("[ImageSource] FfiOHOSImageSourceCreatePixelMapList size error.");
             return ret;
         }
 
@@ -519,13 +506,13 @@ CArrI64 FfiOHOSImageSourceCreatePixelMapList(int64_t id, uint32_t index, CDecodi
         ret.head = arr;
         ret.size = static_cast<int64_t>(data.size());
     }
-    IMAGE_LOGD("[ImageSource] CreatePixelMapList success");
+    IMAGE_LOGD("[ImageSource] FfiOHOSImageSourceCreatePixelMapList success");
     return ret;
 }
 
 CArrI64 FfiOHOSImageSourceCreatePixelMapListV2(int64_t id, uint32_t index, CDecodingOptionsV2 opts, uint32_t* errorCode)
 {
-    IMAGE_LOGD("[ImageSource] CreatePixelMapList start");
+    IMAGE_LOGD("[ImageSource] FfiOHOSImageSourceCreatePixelMapListV2 start");
     CArrI64 ret = { .head = nullptr, .size = 0 };
     auto instance = FFIData::GetData<ImageSourceImpl>(id);
     if (!instance) {
@@ -540,7 +527,7 @@ CArrI64 FfiOHOSImageSourceCreatePixelMapListV2(int64_t id, uint32_t index, CDeco
         if (size > 0) {
             auto arr = static_cast<int64_t*>(malloc(sizeof(int64_t) * size));
             if (!arr) {
-                IMAGE_LOGE("[ImageSource] FfiOHOSImageSourceCreatePixelMapList failed to malloc arr.");
+                IMAGE_LOGE("[ImageSource] FfiOHOSImageSourceCreatePixelMapListV2 failed to malloc arr.");
                 *errorCode = ERR_IMAGE_MALLOC_ABNORMAL;
                 return ret;
             }
@@ -551,17 +538,17 @@ CArrI64 FfiOHOSImageSourceCreatePixelMapListV2(int64_t id, uint32_t index, CDeco
             ret.size = static_cast<int64_t>(data.size());
         } else {
             *errorCode = ERR_IMAGE_MALLOC_ABNORMAL;
-            IMAGE_LOGE("[ImageSource] CreatePixelMapList size error.");
+            IMAGE_LOGE("[ImageSource] FfiOHOSImageSourceCreatePixelMapListV2 size error.");
             return ret;
         }
     }
-    IMAGE_LOGD("[ImageSource] CreatePixelMapList success");
+    IMAGE_LOGD("[ImageSource] FfiOHOSImageSourceCreatePixelMapListV2 success");
     return ret;
 }
 
 CArrI32 FfiOHOSImageSourceGetDelayTime(int64_t id, uint32_t* errorCode)
 {
-    IMAGE_LOGD("[ImageSource] GetDelayTime start");
+    IMAGE_LOGD("[ImageSource] FfiOHOSImageSourceGetDelayTime start");
     CArrI32 ret = { .head = nullptr, .size = 0 };
     auto instance = FFIData::GetData<ImageSourceImpl>(id);
     if (!instance) {
@@ -589,7 +576,7 @@ CArrI32 FfiOHOSImageSourceGetDelayTime(int64_t id, uint32_t* errorCode)
         ret.head = arr;
         ret.size = static_cast<int64_t>(data->size());
     }
-    IMAGE_LOGD("[ImageSource] GetDelayTime success");
+    IMAGE_LOGD("[ImageSource] FfiOHOSImageSourceGetDelayTime success");
     return ret;
 }
 
@@ -678,7 +665,7 @@ RetDataI64U32 FfiOHOSImageSourceCreatePixelMap(int64_t id, uint32_t index, CDeco
 
 RetDataI64U32 FfiOHOSImageSourceCreatePixelMapV2(int64_t id, uint32_t index, CDecodingOptionsV2 opts)
 {
-    IMAGE_LOGD("[ImageSource] FfiOHOSImageSourceCreatePixelMap start");
+    IMAGE_LOGD("[ImageSource] FfiOHOSImageSourceCreatePixelMapV2 start");
     RetDataI64U32 ret = { .code = ERR_IMAGE_INIT_ABNORMAL, .data = 0 };
     auto instance = FFIData::GetData<ImageSourceImpl>(id);
     if (!instance) {
@@ -687,525 +674,8 @@ RetDataI64U32 FfiOHOSImageSourceCreatePixelMapV2(int64_t id, uint32_t index, CDe
     }
     DecodeOptions decodeOpts = ParseCDecodingOptionsV2(opts);
     ret.data = instance->CreatePixelMap(index, decodeOpts, ret.code);
-    IMAGE_LOGD("[ImageSource] FfiOHOSImageSourceCreatePixelMap success");
+    IMAGE_LOGD("[ImageSource] FfiOHOSImageSourceCreatePixelMapV2 success");
     return ret;
-}
-
-//--------------------- PixelMap ---------------------------------------------------------------------------
-
-static InitializationOptions ParsePixelMapCInitializationOptions(CInitializationOptionsV2 opts)
-{
-    InitializationOptions option;
-    option.alphaType = AlphaType(opts.alphaType);
-    option.editable = opts.editable;
-    option.srcPixelFormat = PixelFormat(opts.srcPixelFormat);
-    option.pixelFormat = PixelFormat(opts.pixelFormat);
-    option.scaleMode = ScaleMode(opts.scaleMode);
-    option.size.height = opts.height;
-    option.size.width = opts.width;
-    return option;
-}
-
-int64_t FfiOHOSCreatePixelMap(uint8_t* colors, uint32_t colorLength, CInitializationOptions opts)
-{
-    IMAGE_LOGD("[PixelMap] FfiOHOSCreatePixelMap start");
-    InitializationOptions option;
-    option.alphaType = AlphaType(opts.alphaType);
-    option.editable = opts.editable;
-    option.pixelFormat = PixelFormat(opts.pixelFormat);
-    option.scaleMode = ScaleMode(opts.scaleMode);
-    option.size.height = opts.height;
-    option.size.width = opts.width;
-    std::unique_ptr<PixelMap> ptr_ =
-        PixelMapImpl::CreatePixelMap(reinterpret_cast<uint32_t*>(colors), colorLength, option);
-    if (!ptr_) {
-        return INIT_FAILED;
-    }
-    auto native = FFIData::Create<PixelMapImpl>(move(ptr_));
-    if (!native) {
-        IMAGE_LOGE("[ImageSource] FfiOHOSCreatePixelMap failed");
-        return INIT_FAILED;
-    }
-    IMAGE_LOGD("[PixelMap] FfiOHOSCreatePixelMap success");
-    return native->GetID();
-}
-
-int64_t FfiOHOSCreatePixelMapV2(uint8_t* colors, uint32_t colorLength, CInitializationOptionsV2 opts)
-{
-    IMAGE_LOGD("[PixelMap] FfiOHOSCreatePixelMap start");
-    InitializationOptions option = ParsePixelMapCInitializationOptions(opts);
-    std::unique_ptr<PixelMap> ptr_ =
-        PixelMapImpl::CreatePixelMap(reinterpret_cast<uint32_t*>(colors), colorLength, option);
-    if (!ptr_) {
-        return INIT_FAILED;
-    }
-    auto native = FFIData::Create<PixelMapImpl>(move(ptr_));
-    if (!native) {
-        IMAGE_LOGE("[ImageSource] FfiOHOSCreatePixelMap failed");
-        return INIT_FAILED;
-    }
-    IMAGE_LOGD("[PixelMap] FfiOHOSCreatePixelMap success");
-    return native->GetID();
-}
-
-int64_t FfiImagePixelMapImplCreatePixelMap(CInitializationOptionsV2 opts)
-{
-    IMAGE_LOGD("[PixelMap] FfiImagePixelMapImplCreatePixelMap start");
-    InitializationOptions option = ParsePixelMapCInitializationOptions(opts);
-    std::unique_ptr<PixelMap> ptr_ = PixelMapImpl::CreatePixelMap(option);
-    if (!ptr_) {
-        return INIT_FAILED;
-    }
-    auto native = FFIData::Create<PixelMapImpl>(move(ptr_));
-    if (!native) {
-        IMAGE_LOGE("[ImageSource] FfiImagePixelMapImplCreatePixelMap failed");
-        return INIT_FAILED;
-    }
-    IMAGE_LOGD("[PixelMap] FfiImagePixelMapImplCreatePixelMap success");
-    return native->GetID();
-}
-
-uint32_t FfiOHOSPixelMapRelease(int64_t id)
-{
-    IMAGE_LOGD("[PixelMap] FfiOHOSRelease start");
-    auto instance = FFIData::GetData<PixelMapImpl>(id);
-    if (!instance) {
-        IMAGE_LOGE("[PixelMap] instance not exist %{public}" PRId64, id);
-        return ERR_IMAGE_INIT_ABNORMAL;
-    }
-    std::shared_ptr<PixelMap> ptr_ = instance->GetRealPixelMap();
-    ptr_.reset();
-    IMAGE_LOGD("[PixelMap] FfiOHOSRelease success");
-    return SUCCESS_CODE;
-}
-
-int64_t FfiOHOSCreateAlphaPixelMap(int64_t id, uint32_t* errCode)
-{
-    IMAGE_LOGD("[PixelMap] FfiOHOSCreateAlphaPixelMap start");
-    auto instance = FFIData::GetData<PixelMapImpl>(id);
-    if (!instance) {
-        *errCode = ERR_IMAGE_INIT_ABNORMAL;
-        IMAGE_LOGE("[PixelMap] instance not exist %{public}" PRId64, id);
-        return 0;
-    }
-    std::shared_ptr<PixelMap> ptr_ = instance->GetRealPixelMap();
-    if (!ptr_) {
-        *errCode = ERR_IMAGE_INIT_ABNORMAL;
-        IMAGE_LOGE("[PixelMap] ptr is nullptr!");
-        return 0;
-    }
-    InitializationOptions opts;
-    opts.pixelFormat = PixelFormat::ALPHA_8;
-    auto tmpPixelMap = PixelMapImpl::CreateAlphaPixelMap(*ptr_, opts);
-    if (!tmpPixelMap) {
-        *errCode = ERR_IMAGE_INIT_ABNORMAL;
-        IMAGE_LOGE("[PixelMap] tmpPixelMap is nullptr!");
-        return 0;
-    }
-    auto native = FFIData::Create<PixelMapImpl>(move(tmpPixelMap));
-    if (!native) {
-        IMAGE_LOGE("[ImageSource] FfiOHOSCreateImageSourceByPath failed");
-        *errCode = ERR_IMAGE_INIT_ABNORMAL;
-        return INIT_FAILED;
-    }
-    IMAGE_LOGD("[PixelMap] FfiOHOSCreateAlphaPixelMap success");
-    *errCode = SUCCESS_CODE;
-    return native->GetID();
-}
-
-uint32_t FfiOHOSReadPixelsToBuffer(int64_t id, uint64_t bufferSize, uint8_t* dst)
-{
-    IMAGE_LOGD("[PixelMap] FfiOHOSReadPixelsToBuffer start");
-    auto instance = FFIData::GetData<PixelMapImpl>(id);
-    if (!instance || !instance->GetRealPixelMap()) {
-        IMAGE_LOGE("[PixelMap] instance not exist %{public}" PRId64, id);
-        return ERR_IMAGE_INIT_ABNORMAL;
-    }
-    uint32_t ret = instance->ReadPixelsToBuffer(bufferSize, dst);
-    IMAGE_LOGD("[PixelMap] FfiOHOSReadPixelsToBuffer success");
-    return ret;
-}
-
-uint32_t FfiOHOSWriteBufferToPixels(int64_t id, uint8_t* source, uint64_t bufferSize)
-{
-    IMAGE_LOGD("[PixelMap] FfiOHOSWriteBufferToPixels start");
-    auto instance = FFIData::GetData<PixelMapImpl>(id);
-    if (!instance || !instance->GetRealPixelMap()) {
-        IMAGE_LOGE("[PixelMap] instance not exist %{public}" PRId64, id);
-        return ERR_IMAGE_INIT_ABNORMAL;
-    }
-    uint32_t ret = instance->WriteBufferToPixels(source, bufferSize);
-    IMAGE_LOGD("[PixelMap] FfiOHOSWriteBufferToPixels success");
-    return ret;
-}
-
-int32_t FfiOHOSGetDensity(int64_t id, uint32_t* errCode)
-{
-    IMAGE_LOGD("[PixelMap] FfiOHOSGetDensity start");
-    auto instance = FFIData::GetData<PixelMapImpl>(id);
-    if (!instance || !instance->GetRealPixelMap()) {
-        IMAGE_LOGE("[PixelMap] instance not exist %{public}" PRId64, id);
-        *errCode = ERR_IMAGE_INIT_ABNORMAL;
-        return 0;
-    }
-    int32_t ret = instance->GetDensity();
-    *errCode = SUCCESS_CODE;
-    IMAGE_LOGD("[PixelMap] FfiOHOSGetDensity success");
-    return ret;
-}
-
-uint32_t FfiOHOSOpacity(int64_t id, float percent)
-{
-    IMAGE_LOGD("[PixelMap] FfiOHOSOpacity start");
-    auto instance = FFIData::GetData<PixelMapImpl>(id);
-    if (!instance || !instance->GetRealPixelMap()) {
-        IMAGE_LOGE("[PixelMap] instance not exist %{public}" PRId64, id);
-        return ERR_IMAGE_INIT_ABNORMAL;
-    }
-    uint32_t ret = instance->Opacity(percent);
-    IMAGE_LOGD("[PixelMap] FfiOHOSOpacity success");
-    return ret;
-}
-
-uint32_t FfiOHOSCrop(int64_t id, CRegion rect)
-{
-    IMAGE_LOGD("[PixelMap] FfiOHOSCrop start");
-    auto instance = FFIData::GetData<PixelMapImpl>(id);
-    if (!instance || !instance->GetRealPixelMap()) {
-        IMAGE_LOGE("[PixelMap] instance not exist %{public}" PRId64, id);
-        return ERR_IMAGE_INIT_ABNORMAL;
-    }
-    Rect rt;
-    rt.left = rect.x;
-    rt.top = rect.y;
-    rt.width = rect.size.width;
-    rt.height = rect.size.height;
-    uint32_t ret = instance->Crop(rt);
-    IMAGE_LOGD("[PixelMap] FfiOHOSCrop success");
-    return ret;
-}
-
-uint32_t FfiOHOSGetPixelBytesNumber(int64_t id, uint32_t* errCode)
-{
-    IMAGE_LOGD("[PixelMap] FfiOHOSGetPixelBytesNumber start");
-    auto instance = FFIData::GetData<PixelMapImpl>(id);
-    if (!instance || !instance->GetRealPixelMap()) {
-        IMAGE_LOGE("[PixelMap] instance not exist %{public}" PRId64, id);
-        *errCode = ERR_IMAGE_INIT_ABNORMAL;
-        return 0;
-    }
-    uint32_t ret = instance->GetPixelBytesNumber();
-    *errCode = SUCCESS_CODE;
-    IMAGE_LOGD("[PixelMap] FfiOHOSGetPixelBytesNumber success");
-    return ret;
-}
-
-uint32_t FfiOHOSGetBytesNumberPerRow(int64_t id, uint32_t* errCode)
-{
-    IMAGE_LOGD("[PixelMap] FfiOHOSGetBytesNumberPerRow start");
-    auto instance = FFIData::GetData<PixelMapImpl>(id);
-    if (!instance || !instance->GetRealPixelMap()) {
-        IMAGE_LOGE("[PixelMap] instance not exist %{public}" PRId64, id);
-        *errCode = ERR_IMAGE_INIT_ABNORMAL;
-        return 0;
-    }
-    uint32_t ret = instance->GetBytesNumberPerRow();
-    *errCode = SUCCESS_CODE;
-    IMAGE_LOGD("[PixelMap] FfiOHOSGetBytesNumberPerRow success");
-    return ret;
-}
-
-CImageInfo FfiOHOSGetImageInfo(int64_t id, uint32_t* errCode)
-{
-    IMAGE_LOGD("[PixelMap] FfiOHOSGetImageInfo start");
-    CImageInfo ret = {};
-    auto instance = FFIData::GetData<PixelMapImpl>(id);
-    if (!instance || !instance->GetRealPixelMap()) {
-        IMAGE_LOGE("[PixelMap] instance not exist %{public}" PRId64, id);
-        *errCode = ERR_IMAGE_INIT_ABNORMAL;
-        return ret;
-    }
-    ImageInfo info;
-    instance->GetImageInfo(info);
-    ret.height = info.size.height;
-    ret.width = info.size.width;
-    ret.density = info.baseDensity;
-    IMAGE_LOGD("[PixelMap] FfiOHOSGetImageInfo success");
-    return ret;
-}
-
-static CImageInfoV2 ParsePixelMapImageInfo(ImageInfo info, PixelMap* pixelMap)
-{
-    CImageInfoV2 ret = {};
-    ret.height = info.size.height;
-    ret.width = info.size.width;
-    ret.density = info.baseDensity;
-    ret.pixelFormat = static_cast<int32_t>(info.pixelFormat);
-    ret.alphaType = static_cast<int32_t>(info.alphaType);
-    ret.stride = static_cast<int32_t>(pixelMap->GetRowStride());
-    ret.mimeType = Utils::MallocCString(info.encodedFormat);
-    ret.isHdr = pixelMap->IsHdr();
-    return ret;
-}
-
-CImageInfoV2 FfiOHOSGetImageInfoV2(int64_t id, uint32_t* errCode)
-{
-    IMAGE_LOGD("[PixelMap] FfiOHOSGetImageInfo start");
-    CImageInfoV2 ret = {};
-    auto instance = FFIData::GetData<PixelMapImpl>(id);
-    if (!instance || !instance->GetRealPixelMap()) {
-        IMAGE_LOGE("[PixelMap] instance not exist %{public}" PRId64, id);
-        *errCode = ERR_IMAGE_INIT_ABNORMAL;
-        return ret;
-    }
-    ImageInfo info;
-    instance->GetImageInfo(info);
-    ret = ParsePixelMapImageInfo(info, instance->GetRealPixelMap().get());
-    IMAGE_LOGD("[PixelMap] FfiOHOSGetImageInfo success");
-    return ret;
-}
-
-uint32_t FfiOHOSScale(int64_t id, float xAxis, float yAxis)
-{
-    IMAGE_LOGD("[PixelMap] FfiOHOSScale start");
-    auto instance = FFIData::GetData<PixelMapImpl>(id);
-    if (!instance || !instance->GetRealPixelMap()) {
-        IMAGE_LOGE("[PixelMap] instance not exist %{public}" PRId64, id);
-        return ERR_IMAGE_INIT_ABNORMAL;
-    }
-    instance->Scale(xAxis, yAxis);
-    IMAGE_LOGD("[PixelMap] FfiOHOSScale success");
-    return SUCCESS_CODE;
-}
-
-static AntiAliasingOption ParseAntiAliasingOption(int32_t val)
-{
-    if (val <= static_cast<int32_t>(AntiAliasingOption::SPLINE)) {
-        return AntiAliasingOption(val);
-    }
-    return AntiAliasingOption::NONE;
-}
-
-uint32_t FfiImagePixelMapImplScale(int64_t id, float xAxis, float yAxis, int32_t antiAliasing)
-{
-    IMAGE_LOGD("[PixelMap] FfiImagePixelMapImplScale start");
-    auto instance = FFIData::GetData<PixelMapImpl>(id);
-    if (!instance || !instance->GetRealPixelMap()) {
-        IMAGE_LOGE("[PixelMap] instance not exist %{public}" PRId64, id);
-        return ERR_IMAGE_INIT_ABNORMAL;
-    }
-    instance->Scale(xAxis, yAxis, ParseAntiAliasingOption(antiAliasing));
-    IMAGE_LOGD("[PixelMap] FfiImagePixelMapImplScale success");
-    return SUCCESS_CODE;
-}
-
-uint32_t FfiOHOSFlip(int64_t id, bool xAxis, bool yAxis)
-{
-    IMAGE_LOGD("[PixelMap] FfiOHOSFlip start");
-    auto instance = FFIData::GetData<PixelMapImpl>(id);
-    if (!instance || !instance->GetRealPixelMap()) {
-        IMAGE_LOGE("[PixelMap] instance not exist %{public}" PRId64, id);
-        return ERR_IMAGE_INIT_ABNORMAL;
-    }
-    instance->Flip(xAxis, yAxis);
-    IMAGE_LOGD("[PixelMap] FfiOHOSFlip success");
-    return SUCCESS_CODE;
-}
-
-uint32_t FfiOHOSRotate(int64_t id, float degrees)
-{
-    IMAGE_LOGD("[PixelMap] FfiOHOSRotate start");
-    auto instance = FFIData::GetData<PixelMapImpl>(id);
-    if (!instance || !instance->GetRealPixelMap()) {
-        IMAGE_LOGE("[PixelMap] instance not exist %{public}" PRId64, id);
-        return ERR_IMAGE_INIT_ABNORMAL;
-    }
-    instance->Rotate(degrees);
-    IMAGE_LOGD("[PixelMap] FfiOHOSRotate success");
-    return SUCCESS_CODE;
-}
-
-uint32_t FfiOHOSTranslate(int64_t id, float xAxis, float yAxis)
-{
-    IMAGE_LOGD("[PixelMap] FfiOHOSTranslate start");
-    auto instance = FFIData::GetData<PixelMapImpl>(id);
-    if (!instance || !instance->GetRealPixelMap()) {
-        IMAGE_LOGE("[PixelMap] instance not exist %{public}" PRId64, id);
-        return ERR_IMAGE_INIT_ABNORMAL;
-    }
-    instance->Translate(xAxis, yAxis);
-    IMAGE_LOGD("[PixelMap] FfiOHOSTranslate success");
-    return SUCCESS_CODE;
-}
-
-uint32_t FfiOHOSReadPixels(int64_t id, CPositionArea area)
-{
-    IMAGE_LOGD("[PixelMap] FfiOHOSReadPixels start");
-    auto instance = FFIData::GetData<PixelMapImpl>(id);
-    if (!instance || !instance->GetRealPixelMap()) {
-        IMAGE_LOGE("[PixelMap] instance not exist %{public}" PRId64, id);
-        return ERR_IMAGE_INIT_ABNORMAL;
-    }
-    Rect rt = ParseCRegion(area.region);
-    uint32_t ret = instance->ReadPixels(area.bufferSize, area.offset, area.stride, rt, area.dst);
-    IMAGE_LOGD("[PixelMap] FfiOHOSReadPixels success");
-    return ret;
-}
-
-uint32_t FfiOHOSWritePixels(int64_t id, CPositionArea area)
-{
-    IMAGE_LOGD("[PixelMap] FfiOHOSWritePixels start");
-    auto instance = FFIData::GetData<PixelMapImpl>(id);
-    if (!instance || !instance->GetRealPixelMap()) {
-        IMAGE_LOGE("[PixelMap] instance not exist %{public}" PRId64, id);
-        return ERR_IMAGE_INIT_ABNORMAL;
-    }
-    Rect rt = ParseCRegion(area.region);
-    uint32_t ret = instance->WritePixels(area.dst, area.bufferSize, area.offset, area.stride, rt);
-    IMAGE_LOGD("[PixelMap] FfiOHOSWritePixels success");
-    return ret;
-}
-
-bool FfiOHOSGetIsEditable(int64_t id, uint32_t* errCode)
-{
-    IMAGE_LOGD("[PixelMap] FfiOHOSGetIsEditable start");
-    auto instance = FFIData::GetData<PixelMapImpl>(id);
-    bool ret = false;
-    if (!instance || !instance->GetRealPixelMap()) {
-        IMAGE_LOGE("[PixelMap] instance not exist %{public}" PRId64, id);
-        *errCode = ERR_IMAGE_INIT_ABNORMAL;
-        return ret;
-    }
-    ret = instance->GetIsEditable();
-    *errCode = SUCCESS_CODE;
-    IMAGE_LOGD("[PixelMap] FfiOHOSGetIsEditable success");
-    return ret;
-}
-
-bool FfiOHOSGetIsStrideAlignment(int64_t id, uint32_t* errCode)
-{
-    IMAGE_LOGD("[PixelMap] FfiOHOSGetIsStrideAlignment start");
-    auto instance = FFIData::GetData<PixelMapImpl>(id);
-    bool ret = false;
-    if (!instance || !instance->GetRealPixelMap()) {
-        IMAGE_LOGE("[PixelMap] instance not exist %{public}" PRId64, id);
-        *errCode = ERR_IMAGE_INIT_ABNORMAL;
-        return ret;
-    }
-    ret = instance->GetIsStrideAlignment();
-    *errCode = SUCCESS_CODE;
-    IMAGE_LOGD("[PixelMap] FfiOHOSGetIsStrideAlignment success");
-    return ret;
-}
-
-uint32_t FfiOHOSPixelMapSetColorSpace(int64_t id, int64_t colorSpaceId)
-{
-    IMAGE_LOGD("[PixelMap] FfiOHOSPixelMapSetColorSpace start");
-    auto instance = FFIData::GetData<PixelMapImpl>(id);
-    if (!instance || !instance->GetRealPixelMap()) {
-        IMAGE_LOGE("[PixelMap] PixelMapImpl instance not exist %{public}" PRId64, id);
-        return ERR_IMAGE_INIT_ABNORMAL;
-    }
-    auto colorSpace = FFIData::GetData<ColorManager::CjColorManager>(colorSpaceId);
-    if (!colorSpace) {
-        IMAGE_LOGE("[PixelMap] CjColorManager instance not exist %{public}" PRId64, colorSpaceId);
-        return ERR_IMAGE_INVALID_PARAMETER;
-    }
-    uint32_t ret = instance->SetColorSpace(colorSpace->GetColorSpaceToken());
-    IMAGE_LOGD("[PixelMap] FFfiOHOSPixelMapSetColorSpace success");
-    return ret;
-}
-
-int64_t FfiOHOSPixelMapGetColorSpace(int64_t id, int32_t* errCode)
-{
-    IMAGE_LOGD("[PixelMap] FfiOHOSPixelMapGetColorSpace start");
-    auto instance = FFIData::GetData<PixelMapImpl>(id);
-    if (!instance || !instance->GetRealPixelMap()) {
-        IMAGE_LOGE("[PixelMap] instance not exist %{public}" PRId64, id);
-        *errCode = ERR_IMAGE_DATA_ABNORMAL;
-        return 0;
-    }
-    auto colorSpace = instance->GetColorSpace();
-    if (!colorSpace) {
-        *errCode = ERR_IMAGE_DATA_UNSUPPORT;
-        return 0;
-    }
-    auto native = FFIData::Create<ColorManager::CjColorManager>(colorSpace);
-    if (!native) {
-        *errCode = ERR_IMAGE_INIT_ABNORMAL;
-        return 0;
-    }
-
-    IMAGE_LOGD("[PixelMap] FfiOHOSPixelMapGetColorSpace success");
-    *errCode = SUCCESS_CODE;
-    return native->GetID();
-}
-
-uint32_t FfiOHOSPixelMapApplyColorSpace(int64_t id, int64_t colorSpaceId)
-{
-    IMAGE_LOGD("[PixelMap] FfiOHOSPixelMapApplyColorSpace start");
-    auto instance = FFIData::GetData<PixelMapImpl>(id);
-    if (!instance || !instance->GetRealPixelMap()) {
-        IMAGE_LOGE("[PixelMap] instance not exist %{public}" PRId64, id);
-        return ERR_IMAGE_INIT_ABNORMAL;
-    }
-    auto colorSpace = FFIData::GetData<ColorManager::CjColorManager>(colorSpaceId);
-    if (!colorSpace) {
-        IMAGE_LOGE("[PixelMap] CjColorManager instance not exist %{public}" PRId64, colorSpaceId);
-        return ERR_IMAGE_INIT_ABNORMAL;
-    }
-    uint32_t ret = instance->ApplyColorSpace(colorSpace->GetColorSpaceToken());
-    IMAGE_LOGD("[PixelMap] FfiOHOSPixelMapApplyColorSpace success");
-    return ret;
-}
-
-uint32_t FfiImagePixelMapImplCreatePremultipliedPixelMap(int64_t srcId, int64_t dstId)
-{
-    IMAGE_LOGD("[PixelMap] FfiImagePixelMapImplCreatePremultipliedPixelMap start");
-    auto src = FFIData::GetData<PixelMapImpl>(srcId);
-    auto dst = FFIData::GetData<PixelMapImpl>(dstId);
-    if (!src || !dst) {
-        return ERR_IMAGE_GET_DATA_ABNORMAL;
-    }
-    IMAGE_LOGD("[PixelMap] FfiImagePixelMapImplCreatePremultipliedPixelMap success");
-    return PixelMapImpl::CreatePremultipliedPixelMap(src->GetRealPixelMap(), dst->GetRealPixelMap());
-}
-
-uint32_t FfiImagePixelMapImplCreateUnpremultipliedPixelMap(int64_t srcId, int64_t dstId)
-{
-    IMAGE_LOGD("[PixelMap] FfiImagePixelMapImplCreateUnpremultipliedPixelMap start");
-    auto src = FFIData::GetData<PixelMapImpl>(srcId);
-    auto dst = FFIData::GetData<PixelMapImpl>(dstId);
-    if (!src || !dst) {
-        return ERR_IMAGE_GET_DATA_ABNORMAL;
-    }
-    IMAGE_LOGD("[PixelMap] FfiImagePixelMapImplCreateUnpremultipliedPixelMap success");
-    return PixelMapImpl::CreateUnpremultipliedPixelMap(src->GetRealPixelMap(), dst->GetRealPixelMap());
-}
-
-uint32_t FfiImagePixelMapImplSetTransferDetached(int64_t id, bool detached)
-{
-    IMAGE_LOGD("[PixelMap] FfiImagePixelMapImplSetTransferDetached start");
-    auto instance = FFIData::GetData<PixelMapImpl>(id);
-    if (!instance) {
-        IMAGE_LOGE("[PixelMap] instance not exist %{public}" PRId64, id);
-        return ERR_IMAGE_INIT_ABNORMAL;
-    }
-    instance->SetTransferDetach(detached);
-    IMAGE_LOGD("[PixelMap] FfiImagePixelMapImplSetTransferDetached success");
-    return SUCCESS;
-}
-
-uint32_t FfiImagePixelMapImplToSdr(int64_t id)
-{
-    IMAGE_LOGD("[PixelMap] FfiImagePixelMapImplToSdr start");
-    auto instance = FFIData::GetData<PixelMapImpl>(id);
-    if (!instance) {
-        IMAGE_LOGE("[PixelMap] instance not exist %{public}" PRId64, id);
-        return ERR_IMAGE_INIT_ABNORMAL;
-    }
-    IMAGE_LOGD("[PixelMap] FfiImagePixelMapImplToSdr success");
-    return instance->ToSdr();
 }
 
 //--------------------- ImageReceiver ------------------------------------------------------------------------
@@ -1387,6 +857,19 @@ void FfiOHOSImageRelease(int64_t id)
     IMAGE_LOGD("FfiOHOSImageRelease success");
 }
 
+uint32_t FfiImageReceiverImplOn(int64_t id, char* name, int64_t callbackId)
+{
+    IMAGE_LOGD("FfiImageReceiverImplOn start");
+    auto instance = FFIData::GetData<ImageReceiverImpl>(id);
+    if (!instance) {
+        IMAGE_LOGE("[ImageReceiver] instance not exist %{public}" PRId64, id);
+        return ERR_IMAGE_INIT_ABNORMAL;
+    }
+    auto cFunc = reinterpret_cast<void (*)()>(callbackId);
+    std::function<void()> func = CJLambda::Create(cFunc);
+    return instance->CjOn(name, func);
+}
+
 //--------------------- ImagePacker ---------------------------------------------------------------------------
 int64_t FFiOHOSImagePackerConstructor()
 {
@@ -1424,7 +907,7 @@ RetDataCArrUI8 FfiOHOSImagePackerPackingPixelMap(int64_t id, int64_t source, CPa
         if (!pixelMap) {
             return ret;
         }
-        PackOption packOption = { .format = option.format, .quality = option.quality};
+        PackOption packOption = { .format = option.format, .quality = option.quality };
         auto [code, head, size] = imagePackerImpl->Packing(*pixelMap, packOption, option.bufferSize);
         if (code != SUCCESS_CODE) {
             IMAGE_LOGE("Packing failed, error code is %{public}d", code);
@@ -1456,7 +939,7 @@ RetDataCArrUI8 FfiOHOSImagePackerPackingPixelMapV2(int64_t id, int64_t source, C
         if (!pixelMap) {
             return ret;
         }
-        PackOption packOption = { .format = option.format, .quality = option.quality};
+        PackOption packOption = { .format = option.format, .quality = option.quality };
         auto [code, head, size] = imagePackerImpl->Packing(*pixelMap, packOption, option.bufferSize);
         if (code != SUCCESS_CODE) {
             IMAGE_LOGE("Packing failed, error code is %{public}d", code);
@@ -1484,7 +967,7 @@ RetDataCArrUI8 FfiOHOSImagePackerPackingImageSource(int64_t id, int64_t source, 
 
     auto imageSourceImpl = FFIData::GetData<ImageSourceImpl>(source);
     if (imageSourceImpl != nullptr) {
-        PackOption packOption = { .format = option.format, .quality = option.quality};
+        PackOption packOption = { .format = option.format, .quality = option.quality };
         auto imageSource = imageSourceImpl->nativeImgSrc;
         if (!imageSource) {
             return ret;
@@ -1533,6 +1016,110 @@ RetDataCArrUI8 FfiOHOSImagePackerPackingImageSourceV2(int64_t id, int64_t source
     }
 
     IMAGE_LOGE("Packing failed, invalid id of ImageSourceImpl");
+    return ret;
+}
+
+RetDataCArrUI8 FfiImageImagePackerImplPackToDataPixelMap(int64_t id, int64_t source, CPackingOptionV2 option)
+{
+    IMAGE_LOGD("[ImagePacker] FfiImageImagePackerImplPackToDataPixelMap in");
+    CArrUI8 data = { .head = nullptr, .size = 0 };
+    RetDataCArrUI8 ret = { .code = ERR_IMAGE_INIT_ABNORMAL, .data = data };
+    auto imagePackerImpl = FFIData::GetData<ImagePackerImpl>(id);
+    if (!imagePackerImpl) {
+        IMAGE_LOGE("Packing failed, invalid id of ImagePackerImpl");
+        return ret;
+    }
+
+    auto pixelMapImpl = FFIData::GetData<PixelMapImpl>(source);
+    if (pixelMapImpl != nullptr) {
+        PackOption packOption = ParseCPackOption(option);
+        auto pixelMap = pixelMapImpl->GetRealPixelMap();
+        if (!pixelMap) {
+            return ret;
+        }
+        auto [code, head, size] = imagePackerImpl->PackToData(pixelMap, packOption, option.bufferSize);
+        if (code != SUCCESS_CODE) {
+            IMAGE_LOGE("Packing failed, error code is %{public}d", code);
+        }
+        data.head = head;
+        data.size = size;
+        ret.code = code;
+        ret.data = data;
+        IMAGE_LOGD("[ImagePacker] FfiImageImagePackerImplPackToDataPixelMap in");
+        return ret;
+    }
+
+    IMAGE_LOGE("Packing failed, invalid id of pixelMapImpl");
+    return ret;
+}
+
+RetDataCArrUI8 FfiImageImagePackerImplPackToDataImageSource(int64_t id, int64_t source, CPackingOptionV2 option)
+{
+    {
+        IMAGE_LOGD("[ImagePacker] FfiImageImagePackerImplPackToDataImageSource in");
+        CArrUI8 data = { .head = nullptr, .size = 0 };
+        RetDataCArrUI8 ret = { .code = ERR_IMAGE_INIT_ABNORMAL, .data = data };
+        auto imagePackerImpl = FFIData::GetData<ImagePackerImpl>(id);
+        if (!imagePackerImpl) {
+            IMAGE_LOGE("Packing failed, invalid id of ImagePackerImpl");
+            return ret;
+        }
+
+        auto imageSourceImpl = FFIData::GetData<ImageSourceImpl>(source);
+        if (imageSourceImpl != nullptr) {
+            PackOption packOption = ParseCPackOption(option);
+            auto imageSource = imageSourceImpl->nativeImgSrc;
+            if (!imageSource) {
+                return ret;
+            }
+            auto [code, head, size] = imagePackerImpl->PackToData(imageSource, packOption, option.bufferSize);
+            if (code != SUCCESS_CODE) {
+                IMAGE_LOGE("Packing failed, error code is %{public}d", code);
+            }
+            data.head = head;
+            data.size = size;
+            ret.code = code;
+            ret.data = data;
+            IMAGE_LOGD("[ImagePacker] FfiImageImagePackerImplPackToDataImageSource in");
+            return ret;
+        }
+
+        IMAGE_LOGE("Packing failed, invalid id of imageSourceImpl");
+        return ret;
+    }
+}
+
+RetDataCArrUI8 FfiImageImagePackerImplPackingPicture(int64_t id, int64_t source, CPackingOptionV2 option)
+{
+    IMAGE_LOGD("[ImagePacker] FfiImageImagePackerImplPackingPicture in");
+    CArrUI8 data = { .head = nullptr, .size = 0 };
+    RetDataCArrUI8 ret = { .code = ERR_IMAGE_INIT_ABNORMAL, .data = data };
+    auto imagePackerImpl = FFIData::GetData<ImagePackerImpl>(id);
+    if (!imagePackerImpl) {
+        IMAGE_LOGE("Packing failed, invalid id of ImagePackerImpl");
+        return ret;
+    }
+
+    auto pictureImpl = FFIData::GetData<PictureImpl>(source);
+    if (pictureImpl != nullptr) {
+        PackOption packOption = ParseCPackOption(option);
+        auto picture = pictureImpl->GetPicture();
+        if (!picture) {
+            return ret;
+        }
+        auto [code, head, size] = imagePackerImpl->PackToData(picture, packOption, option.bufferSize);
+        if (code != SUCCESS_CODE) {
+            IMAGE_LOGE("Packing failed, error code is %{public}d", code);
+        }
+        data.head = head;
+        data.size = size;
+        ret.code = code;
+        ret.data = data;
+        IMAGE_LOGD("[ImagePacker] FfiImageImagePackerImplPackingPicture in");
+        return ret;
+    }
+
+    IMAGE_LOGE("Packing failed, invalid id of pictureImpl");
     return ret;
 }
 
@@ -1607,8 +1194,8 @@ uint32_t FfiOHOSImagePackerPackPixelMapToFile(int64_t id, int64_t source, int fd
             return ERR_IMAGE_INIT_ABNORMAL;
         }
 
-        PackOption packOption = { .format = option.format, .quality = option.quality};
-        uint32_t ret = imagePackerImpl->PackToFile(*pixelMap, fd, packOption);
+        PackOption packOption = { .format = option.format, .quality = option.quality };
+        uint32_t ret = imagePackerImpl->PackToFile(pixelMap, fd, packOption);
         return ret;
     }
     return ERR_IMAGE_INIT_ABNORMAL;
@@ -1630,7 +1217,7 @@ uint32_t FfiOHOSImagePackerPackPixelMapToFileV2(int64_t id, int64_t source, int 
         }
 
         PackOption packOption = ParseCPackOption(option);
-        uint32_t ret = imagePackerImpl->PackToFile(*pixelMap, fd, packOption);
+        uint32_t ret = imagePackerImpl->PackToFile(pixelMap, fd, packOption);
         return ret;
     }
     return ERR_IMAGE_INIT_ABNORMAL;
@@ -1646,13 +1233,13 @@ uint32_t FfiOHOSImagePackerImageSourcePackToFile(int64_t id, int64_t source, int
 
     auto imageSourceImpl = FFIData::GetData<ImageSourceImpl>(source);
     if (imageSourceImpl != nullptr) {
-        PackOption packOption = { .format = option.format, .quality = option.quality};
+        PackOption packOption = { .format = option.format, .quality = option.quality };
         auto imageSource = imageSourceImpl->nativeImgSrc;
         if (!imageSource) {
             return ERR_IMAGE_INIT_ABNORMAL;
         }
 
-        uint32_t ret = imagePackerImpl->PackToFile(*imageSource, fd, packOption);
+        uint32_t ret = imagePackerImpl->PackToFile(imageSource, fd, packOption);
         return ret;
     }
     return ERR_IMAGE_INIT_ABNORMAL;
@@ -1674,7 +1261,31 @@ uint32_t FfiOHOSImagePackerImageSourcePackToFileV2(int64_t id, int64_t source, i
             return ERR_IMAGE_INIT_ABNORMAL;
         }
 
-        uint32_t ret = imagePackerImpl->PackToFile(*imageSource, fd, packOption);
+        uint32_t ret = imagePackerImpl->PackToFile(imageSource, fd, packOption);
+        return ret;
+    }
+    return ERR_IMAGE_INIT_ABNORMAL;
+}
+
+uint32_t FfiImageImagePackerImplPackToFilePicture(int64_t id, int64_t source, int fd, CPackingOptionV2 option)
+{
+    IMAGE_LOGD("[ImagePacker] FfiImageImagePackerImplPackToFilePicture in");
+    auto imagePackerImpl = FFIData::GetData<ImagePackerImpl>(id);
+    if (!imagePackerImpl) {
+        IMAGE_LOGE("Packing failed, invalid id of ImagePackerImpl");
+        return ERR_IMAGE_INIT_ABNORMAL;
+    }
+
+    auto pictureImpl = FFIData::GetData<PictureImpl>(source);
+    if (pictureImpl != nullptr) {
+        PackOption packOption = ParseCPackOption(option);
+        auto picture = pictureImpl->GetPicture();
+        if (!picture) {
+            return ERR_IMAGE_INIT_ABNORMAL;
+        }
+
+        uint32_t ret = imagePackerImpl->PackToFile(picture, fd, packOption);
+        IMAGE_LOGD("[ImagePacker] FfiImageImagePackerImplPackToFilePicture in");
         return ret;
     }
     return ERR_IMAGE_INIT_ABNORMAL;
@@ -1837,66 +1448,151 @@ uint32_t FfiImageImageCreatorImplOn(int64_t id, char* name, int64_t callbackId)
     return instance->CjOn(name, func);
 }
 
-napi_value FfiConvertPixelMap2Napi(napi_env env, uint64_t id)
+//  Picture
+int64_t FfiImagePictureImplCreatePicture(int64_t id, uint32_t* errCode)
 {
-    napi_value undefined = nullptr;
-    napi_get_undefined(env, &undefined);
-    auto instance = FFIData::GetData<PixelMapImpl>(id);
-    if (instance == nullptr || instance->GetRealPixelMap() == nullptr) {
-        IMAGE_LOGE("[PixelMap]: instance not exist %{public}" PRId64, id);
-        return undefined;
+    IMAGE_LOGD("[Picture] FfiImagePictureImplCreatePicture in");
+    auto pixelMapImpl = FFIData::GetData<PixelMapImpl>(id);
+    if (!pixelMapImpl) {
+        IMAGE_LOGE("[Picture] pixelMapImpl not exist %{public}" PRId64, id);
+        return IMAGE_BAD_PARAMETER;
     }
-
-    napi_value result = PixelMapNapi::CreatePixelMap(env, instance->GetRealPixelMap());
-    napi_valuetype type = napi_undefined;
-    if (napi_typeof(env, result, &type) != napi_ok || type == napi_undefined) {
-        IMAGE_LOGE("[PixelMap]: create napiobj failed.");
-        return undefined;
+    auto pixelMap = pixelMapImpl->GetRealPixelMap();
+    if (!pixelMap) {
+        IMAGE_LOGE("[Picture] pixelMap is nullptr");
+        return IMAGE_BAD_PARAMETER;
     }
-    PixelMapNapi* pixelMapNapi = nullptr;
-    napi_status status = napi_unwrap(env, result, reinterpret_cast<void**>(&pixelMapNapi));
-    if (status != napi_ok || pixelMapNapi == nullptr) {
-        IMAGE_LOGE("[PixelMap]: unwrap failed");
-        return undefined;
+    auto picture = Picture::Create(pixelMap);
+    if (!picture) {
+        IMAGE_LOGE("[Picture] picture is nullptr");
+        return IMAGE_BAD_PARAMETER;
     }
-    pixelMapNapi->setPixelNapiEditable(instance->GetPixelMapImplEditable());
-    pixelMapNapi->SetTransferDetach(instance->GetTransferDetach());
-    return result;
+    auto native = FFIData::Create<PictureImpl>(move(picture));
+    if (!native) {
+        IMAGE_LOGE("[Picture] native is nullptr");
+        return IMAGE_BAD_PARAMETER;
+    }
+    IMAGE_LOGD("[Picture] FfiImagePictureImplCreatePicture out");
+    return native->GetID();
 }
 
-int64_t FfiCreatePixelMapFromNapi(napi_env env, napi_value pixelmap)
+uint32_t FfiImagePictureImplSetMetadata(int64_t id, int32_t metadataType, int64_t metadataId)
 {
-    if (env == nullptr || pixelmap == nullptr) {
-        IMAGE_LOGE("[PixelMap]: parameter nullptr!");
-        return ERR_IMAGE_INIT_ABNORMAL;
+    IMAGE_LOGD("[Picture] FfiImagePictureImplSetMetadata in");
+    if (metadataType != static_cast<uint32_t>(MetadataType::EXIF)) {
+        IMAGE_LOGE("Unsupport MetadataType");
+        return IMAGE_UNSUPPORTED_METADATA;
     }
-
-    napi_valuetype type = napi_undefined;
-    if (napi_typeof(env, pixelmap, &type) != napi_ok || type != napi_object) {
-        IMAGE_LOGE("[PixelMap]: parameter napi value type is not object!");
-        return ERR_IMAGE_INIT_ABNORMAL;
+    auto picture = FFIData::GetData<PictureImpl>(id);
+    if (!picture) {
+        IMAGE_LOGE("[Picture] picture not exist %{public}" PRId64, id);
+        return IMAGE_BAD_PARAMETER;
     }
-
-    PixelMapNapi* obj = nullptr;
-    napi_status status = napi_unwrap(env, pixelmap, reinterpret_cast<void**>(&obj));
-    if (status != napi_ok || obj == nullptr) {
-        IMAGE_LOGE("[PixelMap]: unwrap failed");
-        return ERR_IMAGE_INIT_ABNORMAL;
+    auto metadata = FFIData::GetData<MetadataImpl>(metadataId);
+    if (!metadata) {
+        IMAGE_LOGE("[Picture] metadata not exist %{public}" PRId64, metadataId);
+        return IMAGE_BAD_PARAMETER;
     }
+    IMAGE_LOGD("[Picture] FfiImagePictureImplSetMetadata out");
+    return picture->SetMetadata(MetadataType(metadataType), metadata->GetNativeMetadata());
+}
 
-    std::shared_ptr<PixelMap>* nativeObj = obj->GetPixelMap();
-    if (nativeObj == nullptr) {
-        IMAGE_LOGE("[PixelMap]: native pixelmap has released.");
-        return ERR_IMAGE_INIT_ABNORMAL;
+int64_t FfiImagePictureImplGetMetadata(int64_t id, int32_t metadataType, uint32_t* errCode)
+{
+    IMAGE_LOGD("[Picture] FfiImagePictureImplGetMetadata in");
+    if (metadataType != static_cast<uint32_t>(MetadataType::EXIF)) {
+        IMAGE_LOGE("Unsupport MetadataType");
+        *errCode = IMAGE_UNSUPPORTED_METADATA;
+        return 0;
     }
-
-    auto native = FFIData::Create<PixelMapImpl>(*nativeObj, obj->GetPixelNapiEditable(), obj->GetTransferDetach());
-    if (native == nullptr) {
-        IMAGE_LOGE("[PixelMap]: Create ffidata failed.");
-        return ERR_IMAGE_INIT_ABNORMAL;
+    auto picture = FFIData::GetData<PictureImpl>(id);
+    if (!picture) {
+        IMAGE_LOGE("[Picture] picture not exist %{public}" PRId64, id);
+        *errCode = IMAGE_BAD_PARAMETER;
+        return 0;
     }
-
+    auto metadata = picture->GetMetadata(MetadataType(metadataType), errCode);
+    if (!metadata) {
+        IMAGE_LOGE("[Picture] metadata is nullptr");
+        *errCode = IMAGE_BAD_PARAMETER;
+        return 0;
+    }
+    auto native = FFIData::Create<MetadataImpl>(metadata);
+    if (!native) {
+        IMAGE_LOGE("[Picture] native is nullptr");
+        *errCode = IMAGE_BAD_PARAMETER;
+        return 0;
+    }
+    IMAGE_LOGD("[Picture] FfiImagePictureImplGetMetadata out");
     return native->GetID();
+}
+
+// Metadata
+CjProperties FfiImageMetadataImplGetAllProperties(int64_t id, uint32_t* errCode)
+{
+    IMAGE_LOGD("[Metadata] FfiImageMetadataImplGetAllProperties in");
+    CjProperties res = { 0 };
+    auto metadata = FFIData::GetData<MetadataImpl>(id);
+    if (!metadata) {
+        IMAGE_LOGE("[Metadata] metadata is nullptr");
+        *errCode = IMAGE_BAD_PARAMETER;
+        return res;
+    }
+    std::vector<std::pair<std::string, std::string>> vec = metadata->GetAllProperties(errCode);
+    if (*errCode != SUCCESS) {
+        return res;
+    }
+    size_t size = vec.size();
+    if (size < 0) {
+        *errCode = IMAGE_BAD_PARAMETER;
+        return res;
+    }
+    if (size == 0) {
+        return res;
+    }
+    char** keyArr = static_cast<char**>(malloc(sizeof(char*) * size));
+    if (keyArr == nullptr) {
+        IMAGE_LOGE("[Metadata] keyArr is nullptr");
+        *errCode = IMAGE_BAD_PARAMETER;
+        return res;
+    }
+    char** valueArr = static_cast<char**>(malloc(sizeof(char*) * size));
+    if (valueArr == nullptr) {
+        IMAGE_LOGE("[Metadata] valueArr is nullptr");
+        free(keyArr);
+        *errCode = IMAGE_BAD_PARAMETER;
+        return res;
+    }
+    size_t index = 0;
+    for (const auto& p : vec) {
+        keyArr[index] = Utils::MallocCString(p.first);
+        valueArr[index] = Utils::MallocCString(p.second);
+        index++;
+    }
+    res.key = keyArr;
+    res.value = valueArr;
+    res.size = static_cast<int64_t>(size);
+    IMAGE_LOGD("[Metadata] FfiImageMetadataImplGetAllProperties out");
+    return res;
+}
+
+void FfiImageMetadataImplReleaseProperties(CjProperties* properties)
+{
+    if (properties != nullptr) {
+        if (properties->key != nullptr) {
+            for (int64_t i = 0; i < properties->size; i++) {
+                free(properties->key[i]);
+            }
+        }
+        free(properties->key);
+        if (properties->value != nullptr) {
+            for (int64_t i = 0; i < properties->size; i++) {
+                free(properties->value[i]);
+            }
+        }
+        free(properties->value);
+    }
+    properties = nullptr;
 }
 }
 } // namespace Media

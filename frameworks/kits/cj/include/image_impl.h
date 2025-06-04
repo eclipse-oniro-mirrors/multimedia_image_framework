@@ -15,9 +15,9 @@
 #ifndef IMAGE_IMPL_H
 #define IMAGE_IMPL_H
 
+#include "cj_image_utils.h"
 #include "ffi_remote_data.h"
 #include "image_holder_manager.h"
-#include "image_utils.h"
 #include "native_image.h"
 
 namespace OHOS {
