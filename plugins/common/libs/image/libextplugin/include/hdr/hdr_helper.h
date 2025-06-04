@@ -18,6 +18,9 @@
 
 #include "box/item_property_display_box.h"
 #include "include/codec/SkCodec.h"
+#ifdef USE_M133_SKIA
+#include "include/core/SkStream.h"
+#endif
 #include "hdr_type.h"
 
 namespace OHOS {

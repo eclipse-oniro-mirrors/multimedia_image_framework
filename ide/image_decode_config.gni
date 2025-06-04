@@ -12,6 +12,7 @@
 # limitations under the License.
 
 import("//build/ohos_var.gni")
+import("//build/ohos.gni")
 
 # source code for Windows.
 use_mingw_win = "${current_os}_${current_cpu}" == "mingw_x86_64"
@@ -54,6 +55,8 @@ base_ase = "ase"
 resource_management_subsystem =
     "/$base_sep_b$base_ase/global/resource_management"
 graphic_surface_root = "//foundation/graphic/graphic_surface"
+
+use_new_skia_temp = false
 
 skia_root = "//third_party"
 skia_deps_root = skia_root

@@ -46,9 +46,15 @@ struct HeifStream {
 };
 
 struct HeifNclxColor {
+#ifdef USE_M133_SKIA
+    uint8_t colorPrimaries = 0;
+    uint8_t transferCharacteristics = 0;;
+    uint8_t matrixCoefficients = 0;;
+#else
     uint16_t colorPrimaries = 0;
     uint16_t transferCharacteristics = 0;;
     uint16_t matrixCoefficients = 0;;
+#endif
     uint8_t fullRangeFlag = 0;;
 };
 

@@ -64,6 +64,9 @@
 #include "include/core/SkBitmap.h"
 #include "include/core/SkCanvas.h"
 #include "include/core/SkImage.h"
+#ifdef USE_M133_SKIA
+#include "include/codec/SkCodecAnimation.h"
+#endif
 #include "third_party/externals/piex/src/binary_parse/range_checked_byte_ptr.h"
 #include "third_party/externals/piex/src/image_type_recognition/image_type_recognition_lite.h"
 
@@ -1960,9 +1963,15 @@ OHOS::ColorManager::ColorSpace ExtDecoder::GetSrcColorSpace()
             GetColorSpaceName(profile, name);
         }
         if (profile != nullptr && profile->has_CICP) {
+#ifdef USE_M133_SKIA
+            ColorManager::ColorSpaceName cName = Media::ColorUtils::CicpToColorSpace(profile->CICP.color_primaries,
+                profile->CICP.transfer_characteristics, profile->CICP.matrix_coefficients,
+                profile->CICP.video_full_range_flag);
+#else
             ColorManager::ColorSpaceName cName = Media::ColorUtils::CicpToColorSpace(profile->cicp.colour_primaries,
                 profile->cicp.transfer_characteristics, profile->cicp.matrix_coefficients,
                 profile->cicp.full_range_flag);
+#endif
             if (cName != ColorManager::NONE) {
                 IMAGE_LOGI("%{public}s profile has CICP, cName: %{public}u", __func__, static_cast<uint32_t>(cName));
                 return ColorManager::ColorSpace(cName);

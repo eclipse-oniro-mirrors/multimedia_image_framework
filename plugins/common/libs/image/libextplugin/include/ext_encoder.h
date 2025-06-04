@@ -23,7 +23,11 @@
 #include "include/core/SkStream.h"
 #include "ext_wstream.h"
 #include "include/core/SkBitmap.h"
+#ifdef USE_M133_SKIA
+#include "include/codec/SkEncodedImageFormat.h"
+#else
 #include "include/core/SkEncodedImageFormat.h"
+#endif
 #if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
 #include "surface_buffer.h"
 #endif
@@ -66,6 +70,9 @@ private:
     uint32_t TryHardwareEncodePicture(SkWStream& skStream, std::string& errorMsg);
     uint32_t DoHardWareEncode(SkWStream* skStream);
     bool HardwareEncode(SkWStream &skStream, bool needExif);
+#ifdef USE_M133_SKIA
+    bool SkEncodeImage(SkWStream* dst, const SkBitmap& src, SkEncodedImageFormat format, int quality);
+#endif
     uint32_t DoEncode(SkWStream* skStream, const SkBitmap& src, const SkEncodedImageFormat& skFormat);
     uint32_t DoHdrEncode(ExtWStream& wStream);
 #if !defined(_WIN32) && !defined(_APPLE) && !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
