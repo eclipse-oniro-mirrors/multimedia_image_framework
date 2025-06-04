@@ -51,32 +51,40 @@ ohos_shared_library("jpegplugin") {
     defines = image_decode_windows_defines
     include_dirs += [
       "//foundation/multimedia/image_framework/mock/native/include",
-      "//third_party/skia/third_party/libjpeg-turbo",
-      "//third_party/skia/third_party/externals/libjpeg-turbo",
+      "$third_party_skia_root/third_party/libjpeg-turbo",
+      "$third_party_skia_root/third_party/externals/libjpeg-turbo",
     ]
     deps = [
       "//foundation/graphic/graphic_2d/utils/color_manager:color_manager",
       "//foundation/multimedia/image_framework/interfaces/innerkits:image_static",
       "//foundation/multimedia/image_framework/plugins/manager:pluginmanager_static",
       "//third_party/libexif:libexif",
-      "//third_party/skia/third_party/libjpeg-turbo:libjpeg",
     ]
+    if (use_new_skia_temp) {
+      deps += [ "${third_party_skia_root}/third_party/libjpeg-turbo:libjpegm133" ]
+    } else {
+      deps += [ "${third_party_skia_root}/third_party/libjpeg-turbo:libjpeg" ]
+    }
     deps += skia_skcms
     deps += skia_platform
   } else if (use_clang_mac) {
     defines = image_decode_mac_defines
     include_dirs += [
       "//foundation/multimedia/image_framework/mock/native/include",
-      "//third_party/skia/third_party/libjpeg-turbo",
-      "//third_party/skia/third_party/externals/libjpeg-turbo",
+      "$third_party_skia_root/third_party/libjpeg-turbo",
+      "$third_party_skia_root/third_party/externals/libjpeg-turbo",
     ]
     deps = [
       "//foundation/graphic/graphic_2d/utils/color_manager:color_manager",
       "//foundation/multimedia/image_framework/interfaces/innerkits:image_static",
       "//foundation/multimedia/image_framework/plugins/manager:pluginmanager_static",
       "//third_party/libexif:libexif",
-      "//third_party/skia/third_party/libjpeg-turbo:libjpeg",
     ]
+    if (use_new_skia_temp) {
+      deps += [ "${third_party_skia_root}/third_party/libjpeg-turbo:libjpegm133" ]
+    } else {
+      deps += [ "${third_party_skia_root}/third_party/libjpeg-turbo:libjpeg" ]
+    }
     deps += skia_skcms
     deps += skia_platform
   } else {
@@ -91,10 +99,14 @@ ohos_shared_library("jpegplugin") {
 
     if (DUAL_ADAPTER) {
     } else {
-      deps += [ "//third_party/skia/third_party/libjpeg-turbo:libjpeg" ]
+      if (use_new_skia_temp) {
+        deps += [ "${third_party_skia_root}/third_party/libjpeg-turbo:libjpegm133" ]
+      } else {
+        deps += [ "${third_party_skia_root}/third_party/libjpeg-turbo:libjpeg" ]
+      }
       include_dirs += [
-        "//third_party/skia/third_party/libjpeg-turbo",
-        "//third_party/skia/third_party/externals/libjpeg-turbo",
+        "$third_party_skia_root/third_party/libjpeg-turbo",
+        "$third_party_skia_root/third_party/externals/libjpeg-turbo",
       ]
     }
     if (use_new_skia_temp) {

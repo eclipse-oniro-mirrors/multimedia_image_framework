@@ -72,30 +72,42 @@ public:
 HWTEST_F(ColorUtilsTest, CicpToColorSpaceTest001, TestSize.Level3)
 {
     GTEST_LOG_(INFO) << "ColorUtilsTest: CicpToColorSpaceTest001 start";
-    ASSERT_EQ(ColorUtils::CicpToColorSpace(CICP_COLORPRIMARIES_SRGB, 0, 0, CICP_FULL_RANGE_LIMIT),
+    ASSERT_EQ(ColorUtils::CicpToColorSpace(
+        uint16_t(CICP_COLORPRIMARIES_SRGB), uint16_t(0), uint16_t(0), CICP_FULL_RANGE_LIMIT),
         ColorManager::SRGB_LIMIT);
-    ASSERT_EQ(ColorUtils::CicpToColorSpace(CICP_COLORPRIMARIES_P3_D65, CICP_TRANSFER_PQ, 0, CICP_FULL_RANGE_LIMIT),
+    ASSERT_EQ(ColorUtils::CicpToColorSpace(
+        uint16_t(CICP_COLORPRIMARIES_P3_D65), uint16_t(CICP_TRANSFER_PQ), uint16_t(0), CICP_FULL_RANGE_LIMIT),
         ColorManager::P3_PQ_LIMIT);
-    ASSERT_EQ(ColorUtils::CicpToColorSpace(CICP_COLORPRIMARIES_P3_D65, CICP_TRANSFER_HLG, 0, CICP_FULL_RANGE_LIMIT),
+    ASSERT_EQ(ColorUtils::CicpToColorSpace(
+        uint16_t(CICP_COLORPRIMARIES_P3_D65), uint16_t(CICP_TRANSFER_HLG), uint16_t(0), CICP_FULL_RANGE_LIMIT),
         ColorManager::P3_HLG_LIMIT);
-    ASSERT_EQ(ColorUtils::CicpToColorSpace(CICP_COLORPRIMARIES_P3_D65, CICP_TRANSFER_SRGB, 0, CICP_FULL_RANGE_LIMIT),
+    ASSERT_EQ(ColorUtils::CicpToColorSpace(
+        uint16_t(CICP_COLORPRIMARIES_P3_D65), uint16_t(CICP_TRANSFER_SRGB), uint16_t(0), CICP_FULL_RANGE_LIMIT),
         ColorManager::DISPLAY_P3_LIMIT);
-    ASSERT_EQ(ColorUtils::CicpToColorSpace(CICP_COLORPRIMARIES_P3_D65, CICP_TRANSFER_UNKNOWN, 0, 0),
+    ASSERT_EQ(ColorUtils::CicpToColorSpace(
+        uint16_t(CICP_COLORPRIMARIES_P3_D65), uint16_t(CICP_TRANSFER_UNKNOWN), uint16_t(0), uint16_t(0)),
         ColorManager::NONE);
 
-    ASSERT_EQ(ColorUtils::CicpToColorSpace(CICP_COLORPRIMARIES_BT2020, CICP_TRANSFER_PQ, 0, CICP_FULL_RANGE_LIMIT),
+    ASSERT_EQ(ColorUtils::CicpToColorSpace(
+        uint16_t(CICP_COLORPRIMARIES_BT2020), uint16_t(CICP_TRANSFER_PQ), uint16_t(0), CICP_FULL_RANGE_LIMIT),
         ColorManager::BT2020_PQ_LIMIT);
-    ASSERT_EQ(ColorUtils::CicpToColorSpace(CICP_COLORPRIMARIES_BT2020, CICP_TRANSFER_HLG, 0, CICP_FULL_RANGE_LIMIT),
+    ASSERT_EQ(ColorUtils::CicpToColorSpace(
+        uint16_t(CICP_COLORPRIMARIES_BT2020), uint16_t(CICP_TRANSFER_HLG), uint16_t(0), CICP_FULL_RANGE_LIMIT),
         ColorManager::BT2020_HLG_LIMIT);
-    ASSERT_EQ(ColorUtils::CicpToColorSpace(CICP_COLORPRIMARIES_BT2020, CICP_TRANSFER_UNKNOWN, 0, 0),
+    ASSERT_EQ(ColorUtils::CicpToColorSpace(
+        uint16_t(CICP_COLORPRIMARIES_BT2020), uint16_t(CICP_TRANSFER_UNKNOWN), uint16_t(0), uint16_t(0)),
         ColorManager::NONE);
 
-    ASSERT_EQ(ColorUtils::CicpToColorSpace(CICP_COLORPRIMARIES_BT601_N, 0, 0, CICP_FULL_RANGE_LIMIT),
+    ASSERT_EQ(ColorUtils::CicpToColorSpace(
+        uint16_t(CICP_COLORPRIMARIES_BT601_N), uint16_t(0), uint16_t(0), CICP_FULL_RANGE_LIMIT),
         ColorManager::BT601_SMPTE_C_LIMIT);
-    ASSERT_EQ(ColorUtils::CicpToColorSpace(CICP_COLORPRIMARIES_BT601_P, 0, 0, CICP_FULL_RANGE_LIMIT),
+    ASSERT_EQ(ColorUtils::CicpToColorSpace(
+        uint16_t(CICP_COLORPRIMARIES_BT601_P), uint16_t(0), uint16_t(0), CICP_FULL_RANGE_LIMIT),
         ColorManager::BT601_EBU_LIMIT);
-    ASSERT_EQ(ColorUtils::CicpToColorSpace(CICP_COLORPRIMARIES_P3_DCI, 0, 0, 0), ColorManager::DCI_P3);
-    ASSERT_EQ(ColorUtils::CicpToColorSpace(CICP_COLORPRIMARIES_UNKNOWN, 0, 0, 0), ColorManager::NONE);
+    ASSERT_EQ(ColorUtils::CicpToColorSpace(
+        uint16_t(CICP_COLORPRIMARIES_P3_DCI), uint16_t(0), uint16_t(0), uint16_t(0)), ColorManager::DCI_P3);
+    ASSERT_EQ(ColorUtils::CicpToColorSpace(
+        uint16_t(CICP_COLORPRIMARIES_UNKNOWN), uint16_t(0), uint16_t(0), uint16_t(0)), ColorManager::NONE);
     GTEST_LOG_(INFO) << "ColorUtilsTest: CicpToColorSpaceTest001 end";
 }
 

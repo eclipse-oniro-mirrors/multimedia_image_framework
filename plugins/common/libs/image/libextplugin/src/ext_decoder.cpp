@@ -66,6 +66,7 @@
 #include "include/core/SkImage.h"
 #ifdef USE_M133_SKIA
 #include "include/codec/SkCodecAnimation.h"
+#include "modules/skcms/src/skcms_public.h"
 #endif
 #include "third_party/externals/piex/src/binary_parse/range_checked_byte_ptr.h"
 #include "third_party/externals/piex/src/image_type_recognition/image_type_recognition_lite.h"
@@ -1727,7 +1728,12 @@ bool ExtDecoder::CheckCodec()
         return false;
     }
     uint32_t src_offset = stream_->Tell();
+#ifdef USE_M133_SKIA
+    codec_ = SkCodec::MakeFromStream(make_unique<ExtStream>(stream_), nullptr, nullptr,
+        SkCodec::SelectionPolicy::kPreferAnimation);
+#else
     codec_ = SkCodec::MakeFromStream(make_unique<ExtStream>(stream_));
+#endif
     if (codec_ == nullptr) {
         stream_->Seek(src_offset);
         IMAGE_LOGD("create codec from stream failed");
