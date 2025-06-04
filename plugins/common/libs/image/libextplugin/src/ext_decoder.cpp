@@ -1595,8 +1595,7 @@ uint32_t ExtDecoder::HardWareDecode(DecodeContext &context)
     }
 #else
     JpegHardwareDecoder hwDecoder;
-    bool initRet = hwDecoder.InitDecoder();
-    if (initRet) {
+    if (hwDecoder.InitDecoder()) {
         ret = hwDecoder.Decode(codec_.get(), stream_, orgImgSize_, sampleSize_, outputBuffer);
     } else {
         ret = ERR_IMAGE_DECODE_ABNORMAL;
