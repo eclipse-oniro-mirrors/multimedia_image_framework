@@ -188,7 +188,7 @@ private:
     uint32_t gainMapOffset_ = 0;
 #ifdef JPEG_HW_DECODE_ENABLE
     std::shared_ptr<JpegHardwareDecoder> hwDecoderPtr_ = nullptr;
-    bool initJpegErr_ = true;
+    bool initJpegErr_ = flase;
 #endif
 };
 } // namespace ImagePlugin
