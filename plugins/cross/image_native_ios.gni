@@ -38,7 +38,7 @@ image_native_ios_sources = [
   "//foundation/multimedia/image_framework/plugins/manager/src/thirdpartyadp/gstreamer/gst_plugin_fw.cpp",
 
   # webp
-  "$skia_root/skia/third_party/externals/libjpeg-turbo/jdicc.c",
+  "$third_party_skia_root/third_party/externals/libjpeg-turbo/jdicc.c",
 
   # image_native
   "${image_subsystem}/frameworks/innerkitsimpl/common/src/memory_manager.cpp",
@@ -167,26 +167,26 @@ image_native_ios_include_dirs = [
   "//foundation/multimedia/image_framework/plugins/common/libs/image/libjpegplugin/include",
   "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/utils/include",
   "//foundation/graphic/graphic_2d/utils/color_manager/export",
-  "$skia_root/skia/third_party/externals/libjpeg-turbo",
-  "$skia_root/skia/include/codec",
-  "$skia_root/skia",
-  "$skia_root/skia/include/core",
+  "$third_party_skia_root/third_party/externals/libjpeg-turbo",
+  "$third_party_skia_root/include/codec",
+  "$third_party_skia_root",
+  "$third_party_skia_root/include/core",
   "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/converter/include",
   "//foundation/multimedia/image_framework/mock/native/include/log",
   "//commonlibrary/c_utils/base/include",
   "//foundation/multimedia/image_framework/mock/native/include/secure",
   "//base/hiviewdfx/hilog/interfaces/native/innerkits/include",
-  "$skia_root/skia/third_party/skcms",
+  "$third_party_skia_root/third_party/skcms",
 
   # webp
   "//foundation/multimedia/image_framework/plugins/common/libs/image/libwebpplugin/include",
-  "$skia_root/skia/third_party/externals/libwebp/src",
-  "$skia_root/skia/include/encode",
-  "$skia_root/skia/src/ports/skia_ohos",
-  "$skia_root/skia/src/ports",
-  "$skia_root/skia/src/images",
-  "$skia_root/skia/include/private",
-  "$skia_root/skia/third_party/externals/freetype/include/freetype",
+  "$third_party_skia_root/third_party/externals/libwebp/src",
+  "$third_party_skia_root/include/encode",
+  "$third_party_skia_root/src/ports/skia_ohos",
+  "$third_party_skia_root/src/ports",
+  "$third_party_skia_root/src/images",
+  "$third_party_skia_root/include/private",
+  "$third_party_skia_root/third_party/externals/freetype/include/freetype",
 
   # bmp
   "//foundation/multimedia/image_framework/plugins/common/libs/image/libbmpplugin/include",
@@ -197,7 +197,7 @@ image_native_ios_include_dirs = [
   # raw
   "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/stream/include",
   "//foundation/multimedia/image_framework/plugins/common/libs/image/librawplugin/include",
-  "//third_party/skia",
+  "$third_party_skia_root",
 
   # png
   "//foundation/multimedia/image_framework/plugins/common/libs/image/libpngplugin/include",
@@ -213,7 +213,7 @@ image_native_ios_include_dirs = [
   "//third_party/giflib",
 
   # jpeg
-  "$skia_root/skia/third_party/libjpeg-turbo",
+  "$third_party_skia_root/third_party/libjpeg-turbo",
   "//third_party/libexif",
 
   # image_native
@@ -237,7 +237,7 @@ image_native_ios_include_dirs = [
   "//foundation/communication/ipc/interfaces/innerkits/ipc_core/include",
   "//drivers/peripheral/display/interfaces/include",
   "//drivers/peripheral/base",
-  "//third_party/skia/third_party/externals/libjpeg-turbo",
+  "$third_party_skia_root/third_party/externals/libjpeg-turbo",
 
   # ext
   "//foundation/multimedia/image_framework/plugins/common/libs/image/libextplugin/include",
@@ -253,22 +253,30 @@ image_native_ios_deps = [
   "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/utils:image_utils_static",
   "//foundation/multimedia/image_framework/mock/native:log_mock_static",
 
-  # jpeg
-  "//third_party/skia/third_party/libjpeg-turbo:libjpeg",
-
   #"//third_party/libpng:png_static",
   # gif
   # png
   "//third_party/giflib:gif_static",
   "//third_party/libexif:exif_static",
-  "//third_party/skia/third_party/libpng:libpng",
 
   # heif
   "${image_subsystem}/plugins/common/libs/image/libextplugin:heifparser",
 
-  # raw
-  "//third_party/skia/third_party/piex",
 ]
+
+if (use_new_skia_temp) {
+  image_native_ios_deps += [
+    "${third_party_skia_root}/third_party/libjpeg-turbo:libjpegm133",
+    "${third_party_skia_root}/third_party/libpng:libpngm133",
+    "${third_party_skia_root}/third_party/piex:piexm133",
+  ]
+} else {
+  image_native_ios_deps += [
+    "${third_party_skia_root}/third_party/libjpeg-turbo:libjpeg",
+    "${third_party_skia_root}/third_party/libpng:libpng",
+    "${third_party_skia_root}/third_party/piex:piex",
+  ]
+}
 
 image_native_ios_deps += skia_skcms
 image_native_ios_deps += skia_platform

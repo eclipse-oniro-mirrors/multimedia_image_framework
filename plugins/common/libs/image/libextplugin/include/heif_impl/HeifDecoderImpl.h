@@ -64,6 +64,7 @@ public:
         std::vector<uint8_t>& lightInfo) override;
     void getISOMetadata(std::vector<uint8_t>& isoMetadata) override;
     void getErrMsg(std::string& errMsg) override;
+    uint32_t getColorDepth() override;
     GridInfo GetGridInfo();
     bool CheckAuxiliaryMap(Media::AuxiliaryPictureType type);
     bool setAuxiliaryMap(Media::AuxiliaryPictureType type);
