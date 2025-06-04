@@ -36,7 +36,9 @@ ani_object PixelMapTaiheAni::CreateEtsPixelMap([[maybe_unused]] ani_env* env, st
         return nullptr;
     }
     ani_ref pixelMapObj;
-    if (env->Function_Call_Ref(createFunc, &pixelMapObj, reinterpret_cast<ani_long>(pixelMapAni.release())) != ANI_OK) {
+    if (env->Function_Call_Ref(createFunc, &pixelMapObj, reinterpret_cast<ani_long>(pixelMapAni.get())) == ANI_OK) {
+        pixelMapAni.release();
+    } else {
         return nullptr;
     }
 
