@@ -145,11 +145,19 @@ bool PixelMapFromSurface::DrawImage(const Rect &srcRect)
         colorType = kRGBA_1010102_SkColorType;
         glType = GL_RGB10_A2;
     }
+#ifdef USE_M133_SKIA
+    GrMockTextureInfo grExternalTextureInfo;
+    auto backendTexturePtr =
+        std::make_shared<GrBackendTexture>(bufferWidth, bufferHeight, skgpu::Mipmapped::kNo, grExternalTextureInfo);
+    auto image = SkImages::BorrowTextureFrom(renderContext_->GetGrContext().get(), *backendTexturePtr,
+        kTopLeft_GrSurfaceOrigin, colorType, kPremul_SkAlphaType, nullptr);
+#else
     GrGLTextureInfo grExternalTextureInfo = { GL_TEXTURE_EXTERNAL_OES, texId_, static_cast<GrGLenum>(glType) };
     auto backendTexturePtr =
         std::make_shared<GrBackendTexture>(bufferWidth, bufferHeight, GrMipMapped::kNo, grExternalTextureInfo);
     auto image = SkImage::MakeFromTexture(renderContext_->GetGrContext().get(), *backendTexturePtr,
         kTopLeft_GrSurfaceOrigin, colorType, kPremul_SkAlphaType, nullptr);
+#endif
     if (image == nullptr) {
         Clear();
         IMAGE_LOGE("%{public}s create SkImage failed.", __func__);
@@ -157,8 +165,13 @@ bool PixelMapFromSurface::DrawImage(const Rect &srcRect)
     }
 
     auto imageInfo = SkImageInfo::Make(srcRect.width, srcRect.height, kRGBA_8888_SkColorType, kPremul_SkAlphaType);
+#ifdef USE_M133_SKIA
+    targetSurface_ = SkSurfaces::RenderTarget(renderContext_->GetGrContext().get(), skgpu::Budgeted::kYes,
+        imageInfo, 0, kTopLeft_GrSurfaceOrigin, nullptr);
+#else
     targetSurface_ = SkSurface::MakeRenderTarget(renderContext_->GetGrContext().get(), SkBudgeted::kYes,
         imageInfo, 0, kTopLeft_GrSurfaceOrigin, nullptr);
+#endif
     if (targetSurface_ == nullptr) {
         Clear();
         IMAGE_LOGE("%{public}s SkSurface::MakeRenderTarget failed.", __func__);
@@ -173,7 +186,13 @@ bool PixelMapFromSurface::DrawImage(const Rect &srcRect)
         SkRect::MakeXYWH(srcRect.left, srcRect.top, srcRect.width, srcRect.height),
         SkRect::MakeWH(srcRect.width, srcRect.height),
         sampling, &paint, SkCanvas::kStrict_SrcRectConstraint);
+#ifdef USE_M133_SKIA
+    if (auto dContext = GrAsDirectContext(canvas->recordingContext())) {
+        dContext->flushAndSubmit();
+    }
+#else
     canvas->flush();
+#endif
     return true;
 }
 

@@ -16,6 +16,9 @@
 #include "file_packer_stream.h"
 
 #include <cerrno>
+#ifdef USE_M133_SKIA
+#include <unistd.h>
+#endif
 
 #include "directory_ex.h"
 #include "image_log.h"

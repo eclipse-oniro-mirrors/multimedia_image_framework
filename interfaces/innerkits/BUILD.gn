@@ -299,7 +299,9 @@ if (use_clang_android) {
         "${image_subsystem}/frameworks/innerkitsimpl/converter/src/image_format_convert_ext_utils.cpp",
       ]
     }
-
+    if (use_new_skia_temp) {
+      defines += [ "USE_M133_SKIA" ]
+    }
     #  relative_install_dir = "module/multimedia"
     subsystem_name = "multimedia"
     innerapi_tags = [ "platformsdk" ]

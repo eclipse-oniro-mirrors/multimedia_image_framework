@@ -17,7 +17,11 @@
 #define PLUGINS_COMMON_LIBS_IMAGE_LIBEXTPLUGIN_INCLUDE_EXT_OHOSCODEC_H
 
 #include "include/codec/SkCodec.h"
+#ifdef USE_M133_SKIA
+#include "include/codec/SkEncodedImageFormat.h"
+#else
 #include "include/core/SkEncodedImageFormat.h"
+#endif
 #include "include/core/SkStream.h"
 #include "include/core/SkTypes.h"
 

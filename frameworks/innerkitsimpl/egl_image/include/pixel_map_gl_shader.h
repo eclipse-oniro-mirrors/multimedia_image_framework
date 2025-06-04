@@ -17,7 +17,11 @@
 #define FRAMEWORKS_INNERKITSIMPL_EGL_IMAGE_INCLUDE_PIXEL_MAP_GL_SHADER_H
 
 #include <iostream>
+#ifdef USE_M133_SKIA
+#include "include/gpu/ganesh/GrTypes.h"
+#else
 #include "include/gpu/GrTypes.h"
+#endif
 #include "pixel_map_gl_context.h"
 
 namespace OHOS {

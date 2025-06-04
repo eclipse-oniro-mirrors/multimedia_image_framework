@@ -74,7 +74,11 @@
 #include "v1_0/hdr_static_metadata.h"
 #include "vpe_utils.h"
 #endif
+#ifdef USE_M133_SKIA
+#include "src/base/SkBase64.h"
+#else
 #include "include/utils/SkBase64.h"
+#endif
 #if defined(NEW_SKIA)
 #include "include/core/SkData.h"
 #endif

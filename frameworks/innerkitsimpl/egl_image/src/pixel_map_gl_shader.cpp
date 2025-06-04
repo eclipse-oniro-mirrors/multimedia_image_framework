@@ -22,6 +22,9 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <fcntl.h>
+#ifdef USE_M133_SKIA
+#include <unistd.h>
+#endif
 
 #undef LOG_DOMAIN
 #define LOG_DOMAIN LOG_TAG_DOMAIN_ID_IMAGE

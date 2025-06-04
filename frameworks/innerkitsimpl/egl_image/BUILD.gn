@@ -42,6 +42,9 @@ ohos_shared_library("egl_image") {
     "src/render_context.cpp",
   ]
 
+  if (use_new_skia_temp) {
+    defines = [ "USE_M133_SKIA" ]
+  }
   deps = [ "$image_subsystem/interfaces/innerkits:image_native" ]
 
   external_deps = [
@@ -82,6 +85,9 @@ if (!use_clang_ios && !use_clang_android) {
       "src/pixel_map_gl_shader.cpp",
       "src/pixel_map_program_manager.cpp",
     ]
+    if (use_new_skia_temp) {
+      defines = [ "USE_M133_SKIA" ]
+    }
     external_deps = [
       "ipc:ipc_single",
     ]
