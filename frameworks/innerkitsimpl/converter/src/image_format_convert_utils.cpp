@@ -252,7 +252,11 @@ static bool P010ToRGBA10101012SoftDecode(const YUVDataInfo &yDInfo, SrcConvertPa
     rgbInfo.width = yDInfo.yWidth;
     rgbInfo.height = yDInfo.yHeight;
     Convert10bitInfo convertInfo;
-    convertInfo.srcPixelFormat = PixelFormat::RGBA_U16;
+#ifdef USE_M133_SKIA
+    convertInfo.dstPixelFormat = PixelFormat::RGBA_F16;
+#else
+    convertInfo.dstPixelFormat = PixelFormat::RGBA_U16;
+#endif
     convertInfo.srcBytes = static_cast<uint32_t>(midParam.stride[0]);
     convertInfo.dstPixelFormat = PixelFormat::RGBA_1010102;
     convertInfo.dstBytes = static_cast<uint32_t>(destParam.stride[0]);
@@ -493,7 +497,11 @@ static bool RGBA1010102ToP010SoftDecode(const RGBDataInfo &rgbInfo, SrcConvertPa
     Convert10bitInfo convertInfo;
     convertInfo.srcPixelFormat = PixelFormat::RGBA_1010102;
     convertInfo.srcBytes = static_cast<uint32_t>(srcParam.stride[0]);
+#ifdef USE_M133_SKIA
+    convertInfo.dstPixelFormat = PixelFormat::RGBA_F16;
+#else
     convertInfo.dstPixelFormat = PixelFormat::RGBA_U16;
+#endif
     convertInfo.dstBytes = rgbInfo.width * STRIDES_PER_PLANE;
     if (!RGBAConvert(rgbInfo, srcParam.slice[0], midBuffer, convertInfo)) {
         IMAGE_LOGE("RGBA1010102ToRGB888: pixel convert in adapter failed.");
