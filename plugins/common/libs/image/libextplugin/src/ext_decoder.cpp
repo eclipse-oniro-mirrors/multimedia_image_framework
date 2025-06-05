@@ -2352,7 +2352,7 @@ bool ExtDecoder::IsSupportHardwareDecode() {
     int height = info_.height();
     if (width >= HARDWARE_MIN_DIM && width <= HARDWARE_MAX_DIM
         && height >= HARDWARE_MIN_DIM && height <= HARDWARE_MAX_DIM) {
-        if (width < HARDWARE_MID_DIM || height <HARDWARE_MID_DIM) {
+        if (width < HARDWARE_MID_DIM || height < HARDWARE_MID_DIM) {
             int remWidth = width % HARDWARE_ALIGN_SIZE;
             int remHeight = height % HARDWARE_ALIGN_SIZE;
             if (remWidth == 0 && remHeight == 0) {
