@@ -885,14 +885,14 @@ bool PixelMap::SourceCropAndConvert(PixelMap &source, const ImageInfo &srcImageI
             fd, uBufferSize, &dstPixels);
         return false;
     }
-#ifdef IMAGE_COLORSPACE_FLAG
-    OHOS::ColorManager::ColorSpace colorspace = source.InnerGetGrColorSpace();
-    dstPixelMap.InnerSetColorSpace(colorspace);
-#endif
     if (fd < 0) {
         dstPixelMap.SetPixelsAddr(dstPixels, nullptr, uBufferSize, AllocatorType::HEAP_ALLOC, nullptr);
         return true;
     }
+#ifdef IMAGE_COLORSPACE_FLAG
+    OHOS::ColorManager::ColorSpace colorspace = source.InnerGetGrColorSpace();
+    dstPixelMap.InnerSetColorSpace(colorspace);
+#endif
 #if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
     void *fdBuffer = new int32_t();
     *static_cast<int32_t *>(fdBuffer) = fd;

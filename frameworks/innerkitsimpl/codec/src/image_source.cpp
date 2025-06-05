@@ -1156,8 +1156,6 @@ unique_ptr<PixelMap> ImageSource::CreatePixelMapByInfos(ImagePlugin::PlImageInfo
     }
     PixelMapAddrInfos addrInfos;
     ContextToAddrInfos(context, addrInfos);
-    // add graphic colorspace object to pixelMap.
-    SetPixelMapColorSpace(context, pixelMap, mainDecoder_);
     pixelMap->SetPixelsAddr(addrInfos.addr, addrInfos.context, addrInfos.size, addrInfos.type, addrInfos.func);
     errorCode = UpdatePixelMapInfo(opts_, plInfo, *(pixelMap.get()), opts_.fitDensity, true);
     bool cond = errorCode != SUCCESS;
@@ -1203,6 +1201,8 @@ unique_ptr<PixelMap> ImageSource::CreatePixelMapByInfos(ImagePlugin::PlImageInfo
         return nullptr;
     }
     pixelMap->SetEditable(saveEditable);
+    // add graphic colorspace object to pixelMap.
+    SetPixelMapColorSpace(context, pixelMap, mainDecoder_);
     return pixelMap;
 }
 
@@ -1397,6 +1397,9 @@ unique_ptr<PixelMap> ImageSource::CreatePixelMap(uint32_t index, const DecodeOpt
         return nullptr;
     }
 
+    pixelMap->SetPixelsAddr(context.pixelsBuffer.buffer, context.pixelsBuffer.context, context.pixelsBuffer.bufferSize,
+        context.allocatorType, context.freeFunc);
+
 #ifdef IMAGE_COLORSPACE_FLAG
     // add graphic colorspace object to pixelMap.
     bool isSupportICCProfile = mainDecoder_->IsSupportICCProfile();
@@ -1406,8 +1409,6 @@ unique_ptr<PixelMap> ImageSource::CreatePixelMap(uint32_t index, const DecodeOpt
     }
 #endif
 
-    pixelMap->SetPixelsAddr(context.pixelsBuffer.buffer, context.pixelsBuffer.context, context.pixelsBuffer.bufferSize,
-        context.allocatorType, context.freeFunc);
     DecodeOptions procOpts;
     CopyOptionsToProcOpts(opts_.cropAndScaleStrategy == CropAndScaleStrategy::DEFAULT ? opts_ : opts, procOpts,
         *(pixelMap.get()));
