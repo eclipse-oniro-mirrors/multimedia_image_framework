@@ -164,6 +164,7 @@ constexpr int32_t DEFAULT_DMA_SIZE = 512 * 512;
 constexpr int32_t DMA_ALLOC = 1;
 constexpr int32_t SHARE_MEMORY_ALLOC = 2;
 constexpr int32_t AUTO_ALLOC = 0;
+static constexpr uint8_t JPEG_SOI[] = { 0xFF, 0xD8, 0xFF };
 
 struct AstcExtendInfo {
     uint32_t extendBufferSumBytes = 0;
@@ -380,6 +381,36 @@ static bool IsSupportHeif()
     }
 #endif
     return false;
+}
+
+void ImageSource::InitDecoderForJpeg()
+{
+#ifdef ENABLE_PRE_POWER_ON
+    uint8_t* readBuffer = new (std::nothrow) uint8_t[sizeof(JPEG_SOI)];
+    if (readBuffer == nullptr) {
+        return;
+    }
+    uint32_t readSize = 0;
+    uint32_t savedPosition = sourceStreamPtr_->Tell();
+    sourceStreamPtr_->Seek(0);
+    bool retRead = sourceStreamPtr_->Read(sizeof(JPEG_SOI), readBuffer, sizeof(JPEG_SOI), readSize);
+    sourceStreamPtr_->Seek(savedPosition);
+    if (!retRead) {
+        IMAGE_LOGE("Preread source stream failed.");
+        delete[] readBuffer;
+        readBuffer = nullptr;
+        return;
+    }
+    if (std::memcmp(JPEG_SOI, readBuffer, sizeof(JPEG_SOI)) == 0) {
+        IMAGE_LOGI("stream is jpeg stream.");
+        delete[] readBuffer;
+        mainDecoder_->InitJpegDecoder();
+        readBuffer = nullptr;
+        return;
+    }
+    delete[] readBuffer;
+    readBuffer = nullptr;
+#endif
 }
 
 uint32_t ImageSource::GetSupportedFormats(set<string> &formats)
@@ -1296,6 +1327,7 @@ unique_ptr<PixelMap> ImageSource::CreatePixelMap(uint32_t index, const DecodeOpt
     if (ImageSystemProperties::GetSkiaEnabled()) {
         if (IsExtendedCodec(mainDecoder_.get())) {
             guard.unlock();
+            InitDecoderForJpeg();
             return CreatePixelMapExtended(index, opts, errorCode);
         }
     }

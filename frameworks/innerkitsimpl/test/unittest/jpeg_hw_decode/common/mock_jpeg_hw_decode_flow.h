@@ -27,6 +27,7 @@ public:
     ~JpegHwDecoderFlow();
     bool Run(const CommandOpt& opt, bool needDumpOutput);
 private:
+    bool InitDecoder();
     bool AllocOutputBuffer();
     bool DoDecode();
     bool DumpDecodeResult();
@@ -46,7 +47,8 @@ private:
     std::string inputFile_;
     std::string outputPath_;
     OHOS::HDI::Display::Buffer::V1_0::IDisplayBuffer* bufferMgr_;
-    OHOS::HDI::Codec::Image::V2_0::CodecImageBuffer outputBuffer_;
+    OHOS::HDI::Codec::Image::V2_1::CodecImageBuffer outputBuffer_;
+    JpegHardwareDecoder hwDecoder_;
 };
 } // OHOS::ImagePlugin
 

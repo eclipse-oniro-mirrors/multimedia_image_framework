@@ -101,8 +101,10 @@ namespace {
     constexpr static uint32_t DESC_SIGNATURE = 0x64657363;
     constexpr static size_t SIZE_1 = 1;
     constexpr static size_t SIZE_4 = 4;
-    constexpr static int HARDWARE_MIN_DIM = 1024;
+    constexpr static int HARDWARE_MIN_DIM = 256;
+    constexpr static int HARDWARE_MID_DIM = 1024;
     constexpr static int HARDWARE_MAX_DIM = 8192;
+    constexpr static int HARDWARE_ALIGN_SIZE = 16;
     constexpr static int DEFAULT_SCALE_SIZE = 1;
     constexpr static int DOUBLE_SCALE_SIZE = 2;
     constexpr static int FOURTH_SCALE_SIZE = 4;
@@ -1123,6 +1125,19 @@ SkCodec::Result ExtDecoder::DoRegionDecode(DecodeContext &context)
 #endif
 }
 
+void ExtDecoder::InitJpegDecoder()
+{
+    IMAGE_LOGI("Init hardware jpeg decoder");
+    if (hwDecoderPtr_ == nullptr) {
+        hwDecoderPtr_ = std::make_shared<JpegHardwareDecoder>();
+    }
+    if (!hwDecoderPtr_->InitDecoder()) {
+        IMAGE_LOGE("Init jpeg hardware decoder failed");
+        initJpegErr_ = true;
+    }
+    return;
+}
+
 uint32_t ExtDecoder::Decode(uint32_t index, DecodeContext &context)
 {
 #ifdef SK_ENABLE_OHOS_CODEC
@@ -1139,7 +1154,8 @@ uint32_t ExtDecoder::Decode(uint32_t index, DecodeContext &context)
     }
 #endif
 #ifdef JPEG_HW_DECODE_ENABLE
-    if (IsAllocatorTypeSupportHwDecode(context) && IsSupportHardwareDecode() && DoHardWareDecode(context) == SUCCESS) {
+    if (!initJpegErr_ && IsAllocatorTypeSupportHwDecode(context) && IsSupportHardwareDecode()
+        && DoHardWareDecode(context) == SUCCESS) {
         context.isHardDecode = true;
         return SUCCESS;
     }
@@ -1418,7 +1434,7 @@ void ExtDecoder::ReportImageType(SkEncodedImageFormat skEncodeFormat)
 }
 #ifdef JPEG_HW_DECODE_ENABLE
 uint32_t ExtDecoder::AllocOutputBuffer(DecodeContext &context,
-    OHOS::HDI::Codec::Image::V2_0::CodecImageBuffer& outputBuffer)
+    OHOS::HDI::Codec::Image::V2_1::CodecImageBuffer& outputBuffer)
 {
     ImageTrace imageTrace("Ext AllocOutputBuffer");
     if (ImageUtils::CheckMulOverflow(hwDstInfo_.height(), hwDstInfo_.width(), hwDstInfo_.bytesPerPixel())) {
@@ -1563,21 +1579,34 @@ uint32_t ExtDecoder::UpdateHardWareDecodeInfo(DecodeContext &context)
 
 uint32_t ExtDecoder::HardWareDecode(DecodeContext &context)
 {
-    JpegHardwareDecoder hwDecoder;
     orgImgSize_.width = static_cast<uint32_t>(info_.width());
     orgImgSize_.height = static_cast<uint32_t>(info_.height());
     if (!CheckContext(context)) {
         return ERROR;
     }
     Media::AllocatorType tmpAllocatorType = context.allocatorType;
-    OHOS::HDI::Codec::Image::V2_0::CodecImageBuffer outputBuffer;
+    OHOS::HDI::Codec::Image::V2_1::CodecImageBuffer outputBuffer;
     uint32_t ret = AllocOutputBuffer(context, outputBuffer);
     if (ret != SUCCESS) {
         IMAGE_LOGE("Decode failed, Alloc OutputBuffer failed, ret=%{public}d", ret);
         context.hardDecodeError = "Decode failed, Alloc OutputBuffer failed, ret=" + std::to_string(ret);
         return ERR_IMAGE_DECODE_ABNORMAL;
     }
-    ret = hwDecoder.Decode(codec_.get(), stream_, orgImgSize_, sampleSize_, outputBuffer);
+#ifdef ENABLE_PRE_POWER_ON
+    if (hwDecoderPtr_ != nullptr) {
+        ret = hwDecoderPtr_->Decode(codec_.get(), stream_, orgImgSize_, sampleSize_, outputBuffer);
+    } else {
+        IMAGE_LOGE("hwDecoderPtr_ is null");
+        ret = ERR_IMAGE_DECODE_ABNORMAL;
+    }
+#else
+    JpegHardwareDecoder hwDecoder;
+    if (hwDecoder.InitDecoder()) {
+        ret = hwDecoder.Decode(codec_.get(), stream_, orgImgSize_, sampleSize_, outputBuffer);
+    } else {
+        ret = ERR_IMAGE_DECODE_ABNORMAL;
+    }
+#endif
     if (ret != SUCCESS) {
         IMAGE_LOGE("failed to do jpeg hardware decode, err=%{public}d", ret);
         context.hardDecodeError = "failed to do jpeg hardware decode, err=" + std::to_string(ret);
@@ -2336,8 +2365,19 @@ bool ExtDecoder::IsSupportHardwareDecode() {
     }
     int width = info_.width();
     int height = info_.height();
-    return width >= HARDWARE_MIN_DIM && width <= HARDWARE_MAX_DIM
-        && height >= HARDWARE_MIN_DIM && height <= HARDWARE_MAX_DIM;
+    if (width >= HARDWARE_MIN_DIM && width <= HARDWARE_MAX_DIM
+        && height >= HARDWARE_MIN_DIM && height <= HARDWARE_MAX_DIM) {
+        if (width < HARDWARE_MID_DIM || height < HARDWARE_MID_DIM) {
+            int remWidth = width % HARDWARE_ALIGN_SIZE;
+            int remHeight = height % HARDWARE_ALIGN_SIZE;
+            if (remWidth == 0 && remHeight == 0) {
+                return true;
+            }
+        } else {
+            return true;
+        }
+    }
+    return false;
 }
 
 bool ExtDecoder::IsYuv420Format(PixelFormat format) const

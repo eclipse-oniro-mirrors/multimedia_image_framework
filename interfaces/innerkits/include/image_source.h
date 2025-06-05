@@ -377,7 +377,7 @@ private:
     bool CheckDecodeOptions(const DecodeOptions &opts);
     bool CheckAllocatorTypeValid(const DecodeOptions &opts);
     bool CheckCropRectValid(const DecodeOptions &opts);
-
+    void InitDecoderForJpeg();
 #if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
     void SetHdrMetadataForPicture(std::unique_ptr<Picture> &picture);
     void DecodeHeifAuxiliaryPictures(const std::set<AuxiliaryPictureType> &auxTypes, std::unique_ptr<Picture> &picture,
