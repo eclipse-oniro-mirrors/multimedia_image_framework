@@ -529,9 +529,6 @@ static void ParseImageSourceInfo(struct OH_ImageSource_Info *source, const Image
     }
     source->width = info.size.width;
     source->height = info.size.height;
-    if (source->mimeType.data != nullptr) {
-        return;
-    }
     if (info.encodedFormat.empty()) {
         std::string unknownStr = "unknown";
         source->mimeType.data = strdup(unknownStr.c_str());
@@ -540,6 +537,9 @@ static void ParseImageSourceInfo(struct OH_ImageSource_Info *source, const Image
     }
     source->mimeType.size = info.encodedFormat.size();
     source->mimeType.data = static_cast<char *>(malloc(source->mimeType.size));
+    if (source->mimeType.data != nullptr) {
+        return;
+    }
     if (memcpy_s(source->mimeType.data, source->mimeType.size, info.encodedFormat.c_str(),
         info.encodedFormat.size()) != 0) {
         releaseMimeType(&source->mimeType);
@@ -995,6 +995,10 @@ Image_ErrorCode OH_ImageSourceNative_GetSupportedFormats(Image_MimeType** suppor
     size_t count = 0;
     for (const auto& str : formats) {
         (*supportedFormat)[count].data = strdup(str.c_str());
+        if ((*supportedFormat)[count].data == nullptr) {
+            IMAGE_LOGE("ImageSource strdup failed");
+            continue;
+        }
         (*supportedFormat)[count].size = str.size();
         count++;
     }
