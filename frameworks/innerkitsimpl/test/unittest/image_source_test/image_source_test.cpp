@@ -76,7 +76,7 @@ public:
     ImageSourceTest() {}
     ~ImageSourceTest() {}
     void InitDecodeContextTest(PixelFormat srcFormat, PixelFormat desiredFormat);
-    void CreatePixelMapExtendedUseInvalidOptsTest(uint32_t isAllocatorTypeValid, uint32_t isCropRectValid,
+    void CreatePixelMapUseInvalidOptsTest(uint32_t isAllocatorTypeValid, uint32_t isCropRectValid,
         uint32_t desiredErrorCode = ERR_MEDIA_INVALID_OPERATION);
     void SetAllocatorTypeByParam(uint32_t param, ImageSource* imageSource, DecodeOptions& decodeOpts);
     void SetCropRectByParam(uint32_t param, ImageSource* imageSource, DecodeOptions& decodeOpts);
@@ -199,7 +199,7 @@ void ImageSourceTest::SetCropRectByParam(uint32_t param, ImageSource* imageSourc
     };
 }
 
-void ImageSourceTest::CreatePixelMapExtendedUseInvalidOptsTest(uint32_t isAllocatorTypeValid,
+void ImageSourceTest::CreatePixelMapUseInvalidOptsTest(uint32_t isAllocatorTypeValid,
     uint32_t isCropRectValid, uint32_t desiredErrorCode)
 {
     uint32_t errorCode = 0;
@@ -213,7 +213,7 @@ void ImageSourceTest::CreatePixelMapExtendedUseInvalidOptsTest(uint32_t isAlloca
     SetAllocatorTypeByParam(isAllocatorTypeValid, imageSource.get(), decodeOpts);
     SetCropRectByParam(isCropRectValid, imageSource.get(), decodeOpts);
 
-    auto ret = imageSource->CreatePixelMapExtended(0, decodeOpts, errorCode);
+    auto ret = imageSource->CreatePixelMap(0, decodeOpts, errorCode);
     ASSERT_EQ(errorCode, desiredErrorCode);
     ASSERT_EQ(ret, nullptr);
 }
@@ -2655,63 +2655,63 @@ HWTEST_F(ImageSourceTest, InitDecodeContextTest003, TestSize.Level1)
 }
 
 /**
- * @tc.name: ImageSourceTest_CreatePixelMapExtendedTest001
- * @tc.desc: Verify that CreatePixelMapExtended when decode options is invalid data.
+ * @tc.name: ImageSourceTest_CreatePixelMapTest001
+ * @tc.desc: Verify that CreatePixelMap when decode options is invalid data.
  * @tc.type: FUNC
  */
-HWTEST_F(ImageSourceTest, CreatePixelMapExtendedTest001, TestSize.Level1)
+HWTEST_F(ImageSourceTest, CreatePixelMapTest001, TestSize.Level1)
 {
-    GTEST_LOG_(INFO) << "ImageSourceTest: CreatePixelMapExtendedTest001 start";
-    CreatePixelMapExtendedUseInvalidOptsTest(1, 0);
-    GTEST_LOG_(INFO) << "ImageSourceTest: CreatePixelMapExtendedTest001 end";
+    GTEST_LOG_(INFO) << "ImageSourceTest: CreatePixelMapTest001 start";
+    CreatePixelMapUseInvalidOptsTest(1, 0);
+    GTEST_LOG_(INFO) << "ImageSourceTest: CreatePixelMapTest001 end";
 }
 
 /**
- * @tc.name: ImageSourceTest_CreatePixelMapExtendedTest002
- * @tc.desc: Verify that CreatePixelMapExtended when decode options is invalid data.
+ * @tc.name: CreatePixelMapTest002
+ * @tc.desc: Verify that CreatePixelMap when decode options is invalid data.
  * @tc.type: FUNC
  */
-HWTEST_F(ImageSourceTest, CreatePixelMapExtendedTest002, TestSize.Level1)
+HWTEST_F(ImageSourceTest, CreatePixelMapTest002, TestSize.Level1)
 {
-    GTEST_LOG_(INFO) << "ImageSourceTest: CreatePixelMapExtendedTest002 start";
-    CreatePixelMapExtendedUseInvalidOptsTest(2, 0);
-    GTEST_LOG_(INFO) << "ImageSourceTest: CreatePixelMapExtendedTest002 end";
+    GTEST_LOG_(INFO) << "ImageSourceTest: CreatePixelMapTest002 start";
+    CreatePixelMapUseInvalidOptsTest(2, 0);
+    GTEST_LOG_(INFO) << "ImageSourceTest: CreatePixelMapTest002 end";
 }
 
 /**
- * @tc.name: ImageSourceTest_CreatePixelMapExtendedTest003
- * @tc.desc: Verify that CreatePixelMapExtended when decode options is invalid data.
+ * @tc.name: CreatePixelMapTest003
+ * @tc.desc: Verify that CreatePixelMap when decode options is invalid data.
  * @tc.type: FUNC
  */
-HWTEST_F(ImageSourceTest, CreatePixelMapExtendedTest003, TestSize.Level1)
+HWTEST_F(ImageSourceTest, CreatePixelMapTest003, TestSize.Level1)
 {
-    GTEST_LOG_(INFO) << "ImageSourceTest: CreatePixelMapExtendedTest003 start";
-    CreatePixelMapExtendedUseInvalidOptsTest(0, 1);
-    GTEST_LOG_(INFO) << "ImageSourceTest: CreatePixelMapExtendedTest003 end";
+    GTEST_LOG_(INFO) << "ImageSourceTest: CreatePixelMapTest003 start";
+    CreatePixelMapUseInvalidOptsTest(0, 1);
+    GTEST_LOG_(INFO) << "ImageSourceTest: CreatePixelMapTest003 end";
 }
 
 /**
- * @tc.name: ImageSourceTest_CreatePixelMapExtendedTest004
- * @tc.desc: Verify that CreatePixelMapExtended when decode options is invalid data.
+ * @tc.name: CreatePixelMapTest004
+ * @tc.desc: Verify that CreatePixelMap when decode options is invalid data.
  * @tc.type: FUNC
  */
-HWTEST_F(ImageSourceTest, CreatePixelMapExtendedTest004, TestSize.Level1)
+HWTEST_F(ImageSourceTest, CreatePixelMapTest004, TestSize.Level1)
 {
-    GTEST_LOG_(INFO) << "ImageSourceTest: CreatePixelMapExtendedTest004 start";
-    CreatePixelMapExtendedUseInvalidOptsTest(0, 2);
-    GTEST_LOG_(INFO) << "ImageSourceTest: CreatePixelMapExtendedTest004 end";
+    GTEST_LOG_(INFO) << "ImageSourceTest: CreatePixelMapTest004 start";
+    CreatePixelMapUseInvalidOptsTest(0, 2);
+    GTEST_LOG_(INFO) << "ImageSourceTest: CreatePixelMapTest004 end";
 }
 
 /**
- * @tc.name: ImageSourceTest_CreatePixelMapExtendedTest005
- * @tc.desc: Verify that CreatePixelMapExtended when decode options is invalid data.
+ * @tc.name: CreatePixelMapTest005
+ * @tc.desc: Verify that CreatePixelMap when decode options is invalid data.
  * @tc.type: FUNC
  */
-HWTEST_F(ImageSourceTest, CreatePixelMapExtendedTest005, TestSize.Level1)
+HWTEST_F(ImageSourceTest, CreatePixelMapTest005, TestSize.Level1)
 {
-    GTEST_LOG_(INFO) << "ImageSourceTest: CreatePixelMapExtendedTest005 start";
-    CreatePixelMapExtendedUseInvalidOptsTest(0, 3, ERR_IMAGE_DATA_ABNORMAL);
-    GTEST_LOG_(INFO) << "ImageSourceTest: CreatePixelMapExtendedTest005 end";
+    GTEST_LOG_(INFO) << "ImageSourceTest: CreatePixelMapTest005 start";
+    CreatePixelMapUseInvalidOptsTest(0, 3, ERROR);
+    GTEST_LOG_(INFO) << "ImageSourceTest: CreatePixelMapTest005 end";
 }
 
 /**
