@@ -134,85 +134,483 @@ public:
         uniqueId_ = currentId.fetch_add(1, std::memory_order_relaxed);
     }
     virtual ~PixelMap();
+
+    /**
+    * Create a PixelMap through pixel data.
+    *
+    * @param colors The pixel data.
+    * @param colorLength The length of the pixel data.
+    * @param opts Initialization Options.
+    * @return The PixelMap.
+    */
     NATIVEEXPORT static std::unique_ptr<PixelMap> Create(const uint32_t *colors, uint32_t colorLength,
                                                          const InitializationOptions &opts);
+
+    /**
+    * Create a PixelMap through pixel data.
+    *
+    * @param colors The pixel data.
+    * @param colorLength The length of the pixel data.
+    * @param offset The location of the pixel data.
+    * @param stride the stride.
+    * @param opts Initialization Options.
+    * @return The PixelMap.
+    */
     NATIVEEXPORT static std::unique_ptr<PixelMap> Create(const uint32_t *colors, uint32_t colorLength, int32_t offset,
                                                          int32_t stride, const InitializationOptions &opts);
+    /**
+    * Create a PixelMap through pixel data.
+    *
+    * @param colors The pixel data.
+    * @param colorLength The length of the pixel data.
+    * @param offset The location of the pixel data.
+    * @param stride the stride.
+    * @param opts Initialization Options.
+    * @param useCustomFormat Use default value.
+    * @return The PixelMap.
+    */
     NATIVEEXPORT static std::unique_ptr<PixelMap> Create(const uint32_t *colors, uint32_t colorLength, int32_t offset,
         int32_t stride, const InitializationOptions &opts, bool useCustomFormat);
+
+    /**
+    * Create a PixelMap through pixel data.
+    *
+    * @param colors The pixel data.
+    * @param colorLength The length of the pixel data.
+    * @param info params.
+    * @param opts Initialization Options.
+    * @param errorCode error code.
+    * @return The PixelMap.
+    */
     NATIVEEXPORT static std::unique_ptr<PixelMap> Create(const uint32_t *colors, uint32_t colorLength,
         BUILD_PARAM &info, const InitializationOptions &opts, int &errorCode);
+
+    /**
+    * Create a PixelMap through InitializationOptions.
+    *
+    * @param opts Initialization Options.
+    * @return The PixelMap.
+    */
     NATIVEEXPORT static std::unique_ptr<PixelMap> Create(const InitializationOptions &opts);
+
+    /**
+    * Create a new pixelmap using the pixelmap.
+    *
+    * @param source The source pixelmap.
+    * @param opts Initialization Options.
+    * @return The PixelMap.
+    */
     NATIVEEXPORT static std::unique_ptr<PixelMap> Create(PixelMap &source, const InitializationOptions &opts);
+
+    /**
+    * Create a new pixelmap using the pixelmap.
+    *
+    * @param source The source pixelmap.
+    * @param srcRect Pixel range.
+    * @param opts Initialization Options.
+    * @return The PixelMap.
+    */
     NATIVEEXPORT static std::unique_ptr<PixelMap> Create(PixelMap &source, const Rect &srcRect,
                                                          const InitializationOptions &opts);
+
+    /**
+    * Create a new pixelmap using the pixelmap.
+    *
+    * @param source The source pixelmap.
+    * @param srcRect Pixel range.
+    * @param opts Initialization Options.
+    * @param errorCode error code.
+    * @return The PixelMap.
+    */
     NATIVEEXPORT static std::unique_ptr<PixelMap> Create(PixelMap &source, const Rect &srcRect,
         const InitializationOptions &opts, int32_t &errorCode);
+
+    /**
+    * Create a new pixelmap using the astc.
+    *
+    * @param source The source pixelmap.
+    * @param errorCode error code.
+    * @param destFormat object format.
+    * @return The PixelMap.
+    */
     NATIVEEXPORT static std::unique_ptr<PixelMap> ConvertFromAstc(PixelMap *source, uint32_t &errorCode,
         PixelFormat destFormat);
 
+    /**
+    * Set image information.
+    *
+    * @param info The objects that need to be set up.
+    * @return Success returns 0, failure returns error code.
+    */
     NATIVEEXPORT virtual uint32_t SetImageInfo(ImageInfo &info);
+
+    /**
+    * Set image information.
+    *
+    * @param info The objects that need to be set up.
+    * @param isReused Memory needs to be released.
+    * @return Success returns 0, failure returns error code.
+    */
     NATIVEEXPORT virtual uint32_t SetImageInfo(ImageInfo &info, bool isReused);
+
+    /**
+    * Obtain the pixel address through byte coordinates.
+    *
+    * @param x x-coordinate.
+    * @param y y-coordinate.
+    * @return Return to the destination address.
+    */
     NATIVEEXPORT virtual const uint8_t *GetPixel(int32_t x, int32_t y);
+
+    /**
+    * Obtain the pixel address through coordinates
+    *
+    * @param x x-coordinate.
+    * @param y y-coordinate.
+    * @return Return to the destination address.
+    */
     NATIVEEXPORT virtual const uint8_t *GetPixel8(int32_t x, int32_t y);
+
+    /**
+    * Obtain the pixel address through two-byte coordinates.
+    *
+    * @param x x-coordinate.
+    * @param y y-coordinate.
+    * @return Return to the destination address.
+    */
     NATIVEEXPORT virtual const uint16_t *GetPixel16(int32_t x, int32_t y);
+
+    /**
+    * Obtain the pixel address through four-byte coordinates.
+    *
+    * @param x x-coordinate.
+    * @param y y-coordinate.
+    * @return Return to the destination address.
+    */
     NATIVEEXPORT virtual const uint32_t *GetPixel32(int32_t x, int32_t y);
+
+    /**
+    * Get ARGB pixel points based on the coordinates.
+    *
+    * @param x x-coordinate.
+    * @param y y-coordinate.
+    * @param color The pixels that need to be obtained.
+    */
     NATIVEEXPORT virtual bool GetARGB32Color(int32_t x, int32_t y, uint32_t &color);
+
+    /**
+    * Set pixel buffer information.
+    *
+    * @param addr Pixel address.
+    * @param context Buffer descriptor.
+    * @param size Pixel size.
+    * @param type Memory type.
+    * @param func Memory Reclaimer.
+    */
     NATIVEEXPORT virtual void SetPixelsAddr(void *addr, void *context, uint32_t size, AllocatorType type,
                                     CustomFreePixelMap func);
+
+    /**
+    * Get pixel step size.
+    */
     NATIVEEXPORT virtual int32_t GetPixelBytes();
+
+    /**
+    * Get step length.
+    */
     NATIVEEXPORT virtual int32_t GetRowBytes();
+
+    /**
+    * Get the pixel length.
+    */
     NATIVEEXPORT virtual int32_t GetByteCount();
+
+    /**
+    * Obtain the size of the pixel buffer.
+    */
     NATIVEEXPORT virtual uint32_t GetAllocationByteCount();
+
+    /**
+    * Get the width of the bitmap.
+    */
     NATIVEEXPORT virtual int32_t GetWidth();
+
+    /**
+    * Get the height of the bitmap.
+    */
     NATIVEEXPORT virtual int32_t GetHeight();
+
+    /**
+    * Get the actual size of ASTC.
+    */
     NATIVEEXPORT void GetAstcRealSize(Size &size)
     {
         size = astcrealSize_;
     }
+
+    /**
+    * set the actual size of ASTC.
+    */
     NATIVEEXPORT void SetAstcRealSize(Size size)
     {
         astcrealSize_ = size;
     }
+
+    /**
+    * Get the ASTC transform information.
+    */
     NATIVEEXPORT void GetTransformData(TransformData &transformData);
+
+    /**
+    * Set the ASTC transform information.
+    */
     NATIVEEXPORT void SetTransformData(TransformData transformData);
+
+    /**
+    * Get the baseDensity.
+    */
     NATIVEEXPORT virtual int32_t GetBaseDensity();
+
+    /**
+    * PixelMap zooming.
+    *
+    * @param xAxis X-axis scaling ratio.
+    * @param yAxis y-axis scaling ratio.
+    */
     NATIVEEXPORT virtual void scale(float xAxis, float yAxis);
+
+    /**
+    * PixelMap zooming.
+    *
+    * @param xAxis X-axis scaling ratio.
+    * @param yAxis y-axis scaling ratio.
+    * @param option Scaling algorithm type.
+    */
     NATIVEEXPORT virtual void scale(float xAxis, float yAxis, const AntiAliasingOption &option);
+
+    /**
+    * PixelMap zooming.
+    *
+    * @param xAxis X-axis scaling ratio.
+    * @param yAxis y-axis scaling ratio.
+    */
     NATIVEEXPORT virtual bool resize(float xAxis, float yAxis);
+
+    /**
+    * PixelMap traverse.
+    *
+    * @param xAxis X-axis scaling ratio.
+    * @param yAxis y-axis scaling ratio.
+    */
     NATIVEEXPORT virtual void translate(float xAxis, float yAxis);
+
+    /**
+    * PixelMap rotation.
+    *
+    * @param degrees rotation angle.
+    */
     NATIVEEXPORT virtual void rotate(float degrees);
+
+    /**
+    * PixelMap inversion.
+    *
+    * @param xAxis X-axis scaling ratio.
+    * @param yAxis y-axis scaling ratio.
+    */
     NATIVEEXPORT virtual void flip(bool xAxis, bool yAxis);
+
+    /**
+    * PixelMap crop.
+    *
+    * @param rect The area that has been cut off.
+    */
     NATIVEEXPORT virtual uint32_t crop(const Rect &rect);
+
+    /**
+    * Get pixelmap information.
+    */
     NATIVEEXPORT virtual void GetImageInfo(ImageInfo &imageInfo);
+
+    /**
+    * Get pixelmap format.
+    */
     NATIVEEXPORT virtual PixelFormat GetPixelFormat();
+
+    /**
+    * Get pixelmap colorspace.
+    */
     NATIVEEXPORT virtual ColorSpace GetColorSpace();
+
+    /**
+    * Get pixelmap alpha type.
+    */
     NATIVEEXPORT virtual AlphaType GetAlphaType();
+
+    /**
+    * Set pixelmap alpha.
+    */
     NATIVEEXPORT virtual uint32_t SetAlpha(const float percent);
+
+    /**
+    * Get the pixel address.
+    */
     NATIVEEXPORT virtual const uint8_t *GetPixels();
+
+    /**
+    * Obtain the A channel of the ARGB pixel point.
+    *
+    * @param color the pixel.
+    */
     NATIVEEXPORT virtual uint8_t GetARGB32ColorA(uint32_t color);
+
+    /**
+    * Obtain the R channel of the ARGB pixel point.
+    *
+    * @param color the pixel.
+    */
     NATIVEEXPORT virtual uint8_t GetARGB32ColorR(uint32_t color);
+
+    /**
+    * Obtain the G channel of the ARGB pixel point.
+    *
+    * @param color the pixel.
+    */
     NATIVEEXPORT virtual uint8_t GetARGB32ColorG(uint32_t color);
+
+    /**
+    * Obtain the B channel of the ARGB pixel point.
+    *
+    * @param color the pixel.
+    */
     NATIVEEXPORT virtual uint8_t GetARGB32ColorB(uint32_t color);
-    // Config the pixel map parameter
+
+    /**
+    * Pixelmap comparison function.
+    *
+    * @param other the pixel.
+    * @return Return true if they are the same, otherwise return false.
+    */
     NATIVEEXPORT virtual bool IsSameImage(const PixelMap &other);
+
+    /**
+    * Read the pixel buffer.
+    *
+    * @param opts RWPixelsOptions.
+    * @return Return 0 if successful, otherwise return errorcode.
+    */
     NATIVEEXPORT virtual uint32_t ReadPixels(const RWPixelsOptions &opts);
+
+    /**
+    * Read the pixel buffer.
+    *
+    * @param bufferSize buffer size.
+    * @param offset deviation position.
+    * @param stride stride.
+    * @param region region.
+    * @param dst To read the pixel buffer.
+    * @return Return 0 if successful, otherwise return errorcode.
+    */
     NATIVEEXPORT virtual uint32_t ReadPixels(const uint64_t &bufferSize, const uint32_t &offset, const uint32_t &stride,
-                                     const Rect &region, uint8_t *dst);
+        const Rect &region, uint8_t *dst);
+
+    /**
+    * Read the pixel buffer.
+    *
+    * @param bufferSize buffer size.
+    * @param dst To read the pixel buffer.
+    * @return Return 0 if successful, otherwise return errorcode.
+    */
     NATIVEEXPORT virtual uint32_t ReadPixels(const uint64_t &bufferSize, uint8_t *dst);
+
+    /**
+    * Read the pixel information in the ARGB format.
+    *
+    * @param bufferSize buffer size.
+    * @param dst To read the pixel buffer.
+    * @return Return 0 if successful, otherwise return errorcode.
+    */
     NATIVEEXPORT virtual uint32_t ReadARGBPixels(const uint64_t &bufferSize, uint8_t *dst);
+
+    /**
+    * Read the pixel address at the target position.
+    *
+    * @param pos impact point.
+    * @param dst To read the pixel buffer.
+    * @return Return 0 if successful, otherwise return errorcode.
+    */
     NATIVEEXPORT virtual uint32_t ReadPixel(const Position &pos, uint32_t &dst);
+
+    /**
+    * ResetConfig.
+    *
+    * @param size buffer size.
+    * @param format pixel format.
+    * @return Return 0 if successful, otherwise return errorcode.
+    */
     NATIVEEXPORT virtual uint32_t ResetConfig(const Size &size, const PixelFormat &format);
+
+    /**
+    * Set alpha type.
+    *
+    * @param alphaType alpha type.
+    * @return Return true if successful, otherwise return false.
+    */
     NATIVEEXPORT virtual bool SetAlphaType(const AlphaType &alphaType);
+
+    /**
+    * Write pixel points at the target position.
+    *
+    * @param pos target location.
+    * @param color pixel.
+    * @return Return 0 if successful, otherwise return errorcode.
+    */
     NATIVEEXPORT virtual uint32_t WritePixel(const Position &pos, const uint32_t &color);
+
+    /**
+    * Write pixels at the target position.
+    *
+    * @param opts RWPixelsOptions.
+    * @return Return 0 if successful, otherwise return errorcode.
+    */
     NATIVEEXPORT virtual uint32_t WritePixels(const RWPixelsOptions &opts);
+
+    /**
+    * Write pixels at the target regin.
+    *
+    * @param source pixels addr.
+    * @param bufferSize bufer size.
+    * @param offset Offset point.
+    * @param stride stride.
+    * @param region region.
+    * @return Return 0 if successful, otherwise return errorcode.
+    */
     NATIVEEXPORT virtual uint32_t WritePixels(const uint8_t *source, const uint64_t &bufferSize, const uint32_t &offset,
                          const uint32_t &stride, const Rect &region);
+
+    /**
+    * Write pixels.
+    *
+    * @param source pixels addr.
+    * @param bufferSize bufer size.
+    * @return Return 0 if successful, otherwise return errorcode.
+    */
     NATIVEEXPORT virtual uint32_t WritePixels(const uint8_t *source, const uint64_t &bufferSize);
     NATIVEEXPORT virtual bool WritePixels(const uint32_t &color);
+    /**
+    * Release the pixel buffer.
+    */
     NATIVEEXPORT virtual void FreePixelMap();
+    /**
+    * IsStrideAlignment.
+    */
     NATIVEEXPORT bool IsStrideAlignment();
+    /**
+    * Get memory type.
+    */
     NATIVEEXPORT virtual AllocatorType GetAllocatorType();
+    /**
+    * Get file descriptor.
+    */
     NATIVEEXPORT virtual void *GetFd() const;
     NATIVEEXPORT virtual void SetFreePixelMapProc(CustomFreePixelMap func);
     NATIVEEXPORT virtual void SetTransformered(bool isTransformered);
@@ -274,12 +672,24 @@ public:
         return uniqueId_;
     }
 
+    /**
+    * Serialize the pixelmap into a parcel.
+    */
     NATIVEEXPORT virtual bool Marshalling(Parcel &data) const override;
+    /**
+    * Deserialize the parcel to generate the pixelmap.
+    */
     NATIVEEXPORT static PixelMap *Unmarshalling(Parcel &data,
         std::function<int(Parcel &parcel, std::function<int(Parcel&)> readFdDefaultFunc)> readSafeFdFunc = nullptr);
     NATIVEEXPORT static PixelMap *Unmarshalling(Parcel &parcel, PIXEL_MAP_ERR &error,
         std::function<int(Parcel &parcel, std::function<int(Parcel&)> readFdDefaultFunc)> readSafeFdFunc = nullptr);
+    /**
+    * Serialize the pixelmap into a vector in TLV format.
+    */
     NATIVEEXPORT virtual bool EncodeTlv(std::vector<uint8_t> &buff) const;
+    /**
+    * Deserialize the vector data in the form of TLV to generate a pixelmap.
+    */
     NATIVEEXPORT static PixelMap *DecodeTlv(std::vector<uint8_t> &buff);
     NATIVEEXPORT virtual void SetImageYUVInfo(YUVDataInfo &yuvinfo)
     {
@@ -300,6 +710,9 @@ public:
     {
         return grColorSpace_;
     }
+    /**
+    * ApplyColorSpace.
+    */
     NATIVEEXPORT virtual uint32_t ApplyColorSpace(const OHOS::ColorManager::ColorSpace &grColorSpace);
     // -------[inner api for ImageSource/ImagePacker codec] it will get a colorspace object pointer----end-------
 #endif

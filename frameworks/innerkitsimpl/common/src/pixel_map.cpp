@@ -3976,6 +3976,7 @@ void PixelMap::scale(float xAxis, float yAxis)
     if (!DoTranslation(infos)) {
         IMAGE_LOGE("scale falied");
     }
+    ImageUtils::DumpPixelMapIfDumpEnabled(*this, __func__);
 }
 
 void PixelMap::scale(float xAxis, float yAxis, const AntiAliasingOption &option)
@@ -4026,6 +4027,7 @@ void PixelMap::scale(float xAxis, float yAxis, const AntiAliasingOption &option)
             imageInfo_.pixelFormat = PixelFormat::BGRA_8888;
         }
     }
+    ImageUtils::DumpPixelMapIfDumpEnabled(*this, __func__);
 }
 
 bool PixelMap::resize(float xAxis, float yAxis)
@@ -4041,6 +4043,7 @@ bool PixelMap::resize(float xAxis, float yAxis)
         IMAGE_LOGE("resize falied");
         return false;
     }
+    ImageUtils::DumpPixelMapIfDumpEnabled(*this, __func__);
     return true;
 }
 
@@ -4052,6 +4055,7 @@ void PixelMap::translate(float xAxis, float yAxis)
     if (!DoTranslation(infos)) {
         IMAGE_LOGE("translate falied");
     }
+    ImageUtils::DumpPixelMapIfDumpEnabled(*this, __func__);
 }
 
 void PixelMap::rotate(float degrees)
@@ -4062,6 +4066,7 @@ void PixelMap::rotate(float degrees)
     if (!DoTranslation(infos)) {
         IMAGE_LOGE("rotate falied");
     }
+    ImageUtils::DumpPixelMapIfDumpEnabled(*this, __func__);
 }
 
 void PixelMap::flip(bool xAxis, bool yAxis)
@@ -4071,6 +4076,7 @@ void PixelMap::flip(bool xAxis, bool yAxis)
         return;
     }
     scale(xAxis ? -1 : 1, yAxis ? -1 : 1);
+    ImageUtils::DumpPixelMapIfDumpEnabled(*this, __func__);
 }
 
 void PixelMap::CopySurfaceBufferInfo(void *data)
@@ -4171,6 +4177,7 @@ uint32_t PixelMap::crop(const Rect &rect)
     SetImageInfo(imageInfo, true);
     ImageUtils::FlushSurfaceBuffer(this);
     AddVersionId();
+    ImageUtils::DumpPixelMapIfDumpEnabled(*this, __func__);
     return SUCCESS;
 }
 

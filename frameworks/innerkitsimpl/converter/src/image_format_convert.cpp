@@ -34,6 +34,7 @@
 #include "surface_buffer.h"
 #endif
 #include "vpe_utils.h"
+#include "image_utils.h"
 
 namespace {
     constexpr uint8_t NUM_0 = 0;
@@ -394,6 +395,7 @@ uint32_t ImageFormatConvert::ConvertImageFormat(std::shared_ptr<PixelMap> &srcPi
         IMAGE_LOGE("convert rgb format failed!");
         return ret;
     }
+    ImageUtils::DumpPixelMapIfDumpEnabled(*(srcPiexlMap.get()), __func__);
     return SUCCESS;
 }
 
