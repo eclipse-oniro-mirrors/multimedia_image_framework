@@ -1593,7 +1593,7 @@ uint32_t ExtDecoder::HardWareDecode(DecodeContext &context)
         ret = hwDecoderPtr_->Decode(codec_.get(), stream_, orgImgSize_, sampleSize_, outputBuffer);
     } else {
         IMAGE_LOGE("hwDecoderPtr_ is null");
-        return ERROR;
+        ret = ERR_IMAGE_DECODE_ABNORMAL;
     }
 #else
     JpegHardwareDecoder hwDecoder;
