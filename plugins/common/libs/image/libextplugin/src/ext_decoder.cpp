@@ -98,7 +98,9 @@ namespace {
     constexpr static size_t SIZE_1 = 1;
     constexpr static size_t SIZE_4 = 4;
     constexpr static int HARDWARE_MIN_DIM = 256;
+    constexpr static int HARDWARE_MID_DIM = 1024;
     constexpr static int HARDWARE_MAX_DIM = 8192;
+    constexpr static int HARDWARE_ALIGN_SIZE = 16;
     constexpr static int DEFAULT_SCALE_SIZE = 1;
     constexpr static int DOUBLE_SCALE_SIZE = 2;
     constexpr static int FOURTH_SCALE_SIZE = 4;
@@ -2348,8 +2350,19 @@ bool ExtDecoder::IsSupportHardwareDecode() {
     }
     int width = info_.width();
     int height = info_.height();
-    return width >= HARDWARE_MIN_DIM && width <= HARDWARE_MAX_DIM
-        && height >= HARDWARE_MIN_DIM && height <= HARDWARE_MAX_DIM;
+    if (width >= HARDWARE_MIN_DIM && width <= HARDWARE_MAX_DIM
+        && height >= HARDWARE_MIN_DIM && height <= HARDWARE_MAX_DIM) {
+        if (width < HARDWARE_MID_DIM || height <HARDWARE_MID_DIM) {
+            int remWidth = width % HARDWARE_ALIGN_SIZE;
+            int remHeight = height % HARDWARE_ALIGN_SIZE;
+            if (remWidth == 0 && remHeight == 0) {
+                return true;
+            }
+        } else {
+            return true;
+        }
+    }
+    return false;
 }
 
 bool ExtDecoder::IsYuv420Format(PixelFormat format) const
