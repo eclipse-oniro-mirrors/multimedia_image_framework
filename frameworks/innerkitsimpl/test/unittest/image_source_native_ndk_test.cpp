@@ -298,12 +298,12 @@ HWTEST_F(ImagSourceNdk2Test, OH_ImageSourceNative_CreateFromData, TestSize.Level
  */
 HWTEST_F(ImagSourceNdk2Test, OH_ImageSourceNative_CreateFromDataWithUserBuffer001, TestSize.Level3)
 {
-    GTEST_LOG_(INFO) << "ImagSourceNdk2Test: OH_ImageSourceNative_CreateFromData001 start";
+    GTEST_LOG_(INFO) << "ImagSourceNdk2Test: OH_ImageSourceNative_CreateFromDataWithUserBuffer001 start";
     OH_ImageSourceNative *imageSource = nullptr;
     uint8_t* data = nullptr;
     size_t dataSize = 0;
-    Image_ErrorCode ret = OH_ImageSourceNative_CreateFromData(data, dataSize, &imageSource);
-    ASSERT_EQ(ret, IMAGE_BAD_PARAMETER);
+    Image_ErrorCode ret = OH_ImageSourceNative_CreateFromDataWithUserBuffer(data, dataSize, &imageSource);
+    ASSERT_EQ(ret, IMAGE_SOURCE_INVALID_PARAMETER);
     GTEST_LOG_(INFO) << "ImagSourceNdk2Test: OH_ImageSourceNative_CreateFromDataWithUserBuffer001 end";
 }
 
@@ -320,7 +320,7 @@ HWTEST_F(ImagSourceNdk2Test, OH_ImageSourceNative_CreateFromDataWithUserBuffer00
     memset_s(data, dataSize, 0, dataSize);
     OH_ImageSourceNative *imageSource = nullptr;
     Image_ErrorCode ret = OH_ImageSourceNative_CreateFromDataWithUserBuffer((uint8_t*)data, dataSize, &imageSource);
-    ASSERT_EQ(ret, IMAGE_BAD_PARAMETER);
+    ASSERT_EQ(ret, IMAGE_SUCCESS);
     ASSERT_NE(imageSource, nullptr);
     if (imageSource != nullptr) {
         ret = OH_ImageSourceNative_Release(imageSource);

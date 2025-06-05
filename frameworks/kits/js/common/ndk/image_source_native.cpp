@@ -591,7 +591,7 @@ Image_ErrorCode OH_ImageSourceNative_CreateFromFd(int32_t fd, OH_ImageSourceNati
 Image_ErrorCode CreateFromDataInternal(uint8_t *data, size_t dataSize, OH_ImageSourceNative **res, bool isUserBuffer)
 {
     if (data == nullptr) {
-        return IMAGE_BAD_PARAMETER;
+        return isUserBuffer ? IMAGE_SOURCE_INVALID_PARAMETER : IMAGE_BAD_PARAMETER;
     }
     SourceOptions options;
     auto imageSource = new OH_ImageSourceNative(data, dataSize, options, isUserBuffer);
@@ -600,7 +600,7 @@ Image_ErrorCode CreateFromDataInternal(uint8_t *data, size_t dataSize, OH_ImageS
             delete imageSource;
         }
         *res = nullptr;
-        return IMAGE_BAD_PARAMETER;
+        return isUserBuffer ? IMAGE_SOURCE_INVALID_PARAMETER : IMAGE_BAD_PARAMETER;
     }
     imageSource->fileBuffer_ = reinterpret_cast<void*>(data);
     imageSource->fileBufferSize_ = dataSize;
