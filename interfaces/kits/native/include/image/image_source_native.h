@@ -453,6 +453,21 @@ Image_ErrorCode OH_ImageSourceNative_CreateFromFd(int32_t fd, OH_ImageSourceNati
 Image_ErrorCode OH_ImageSourceNative_CreateFromData(uint8_t *data, size_t dataSize, OH_ImageSourceNative **res);
 
 /**
+ * @brief Create an image source from data buffer. The data buffer is directly accessed by the image source
+ * object, and therefore the data buffer must remain accessible within the lifecycle of the image source object.
+ *
+ * @param data Pointer to the data buffer.
+ * @param datalength Length of the data buffer.
+ * @param imageSource Double pointer to the image source.
+ * @return Result code.
+ * {@link IMAGE_SUCCESS} if the execution is successful.
+ * {@link IMAGE_SOURCE_INVALID_PARAMETER} if data or imageSource is a null pointer or if datalength is 0.
+ * @since 20
+ */
+Image_ErrorCode OH_ImageSourceNative_CreateFromDataWithUserBuffer(uint8_t *data, size_t datalength,
+                                                                  OH_ImageSourceNative **imageSource);
+
+/**
  * @brief Creates an void pointer
  *
  * @param rawFile Indicates the raw file's file descriptor.

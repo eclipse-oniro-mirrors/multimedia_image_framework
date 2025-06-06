@@ -166,7 +166,7 @@ public:
     NATIVEEXPORT static std::unique_ptr<ImageSource> CreateImageSource(std::unique_ptr<std::istream> is,
                                                                        const SourceOptions &opts, uint32_t &errorCode);
     NATIVEEXPORT static std::unique_ptr<ImageSource> CreateImageSource(const uint8_t *data, uint32_t size,
-                                                                       const SourceOptions &opts, uint32_t &errorCode);
+                                            const SourceOptions &opts, uint32_t &errorCode, bool isUserBuffer = false);
     NATIVEEXPORT static std::unique_ptr<ImageSource> CreateImageSource(const std::string &pathName,
                                                                        const SourceOptions &opts, uint32_t &errorCode);
     NATIVEEXPORT static std::unique_ptr<ImageSource> CreateImageSource(const int fd, const SourceOptions &opts,

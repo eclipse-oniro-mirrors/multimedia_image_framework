@@ -588,25 +588,37 @@ Image_ErrorCode OH_ImageSourceNative_CreateFromFd(int32_t fd, OH_ImageSourceNati
     return IMAGE_SUCCESS;
 }
 
-MIDK_EXPORT
-Image_ErrorCode OH_ImageSourceNative_CreateFromData(uint8_t *data, size_t dataSize, OH_ImageSourceNative **res)
+Image_ErrorCode CreateFromDataInternal(uint8_t *data, size_t dataSize, OH_ImageSourceNative **res, bool isUserBuffer)
 {
     if (data == nullptr) {
-        return IMAGE_BAD_PARAMETER;
+        return isUserBuffer ? IMAGE_SOURCE_INVALID_PARAMETER : IMAGE_BAD_PARAMETER;
     }
     SourceOptions options;
-    auto imageSource = new OH_ImageSourceNative(data, dataSize, options);
+    auto imageSource = new OH_ImageSourceNative(data, dataSize, options, isUserBuffer);
     if (imageSource == nullptr || imageSource->GetInnerImageSource() == nullptr) {
         if (imageSource) {
             delete imageSource;
         }
         *res = nullptr;
-        return IMAGE_BAD_PARAMETER;
+        return isUserBuffer ? IMAGE_SOURCE_INVALID_PARAMETER : IMAGE_BAD_PARAMETER;
     }
     imageSource->fileBuffer_ = reinterpret_cast<void*>(data);
     imageSource->fileBufferSize_ = dataSize;
     *res = imageSource;
     return IMAGE_SUCCESS;
+}
+
+MIDK_EXPORT
+Image_ErrorCode OH_ImageSourceNative_CreateFromData(uint8_t *data, size_t dataSize, OH_ImageSourceNative **res)
+{
+    return CreateFromDataInternal(data, dataSize, res, false);
+}
+
+MIDK_EXPORT
+Image_ErrorCode OH_ImageSourceNative_CreateFromDataWithUserBuffer(uint8_t *data, size_t datalength,
+                                                                  OH_ImageSourceNative **imageSource)
+{
+    return CreateFromDataInternal(data, datalength, imageSource, true);
 }
 
 MIDK_EXPORT

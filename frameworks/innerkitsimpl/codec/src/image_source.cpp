@@ -497,7 +497,7 @@ unique_ptr<ImageSource> ImageSource::CreateImageSource(unique_ptr<istream> is, c
 }
 
 unique_ptr<ImageSource> ImageSource::CreateImageSource(const uint8_t *data, uint32_t size, const SourceOptions &opts,
-    uint32_t &errorCode)
+    uint32_t &errorCode, bool isUserBuffer)
 {
     if (size > MAX_SOURCE_SIZE) {
         IMAGE_LOGE("%{public}s input size %{public}u is too large.", __func__, size);
@@ -512,10 +512,10 @@ unique_ptr<ImageSource> ImageSource::CreateImageSource(const uint8_t *data, uint
         return nullptr;
     }
     auto imageSource = DoImageSourceCreate(
-        [&data, &size]() {
+        [&data, &size, &isUserBuffer]() {
             auto streamPtr = DecodeBase64(data, size);
             if (streamPtr == nullptr) {
-                streamPtr = BufferSourceStream::CreateSourceStream(data, size);
+                streamPtr = BufferSourceStream::CreateSourceStream(data, size, isUserBuffer);
             }
             if (streamPtr == nullptr) {
                 IMAGE_LOGE("[ImageSource]failed to create buffer source stream.");
