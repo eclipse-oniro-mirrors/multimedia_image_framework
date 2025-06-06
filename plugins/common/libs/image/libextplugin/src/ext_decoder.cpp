@@ -428,8 +428,9 @@ uint32_t ExtDecoder::HeifYUVMemAlloc(OHOS::ImagePlugin::DecodeContext &context)
 
     IMAGE_LOGI("ExtDecoder::HeifYUVMemAlloc sb stride is %{public}d, height is %{public}d, size is %{public}d",
                hwBuffer->GetStride(), hwBuffer->GetHeight(), hwBuffer->GetSize());
+    uint64_t yuvBufferSize = JpegDecoderYuv::GetYuvOutSize(info_.width(), info_.height());
     SetDecodeContextBuffer(context, AllocatorType::DMA_ALLOC,
-                           static_cast<uint8_t*>(hwBuffer->GetVirAddr()), hwBuffer->GetSize(), nativeBuffer);
+                           static_cast<uint8_t*>(hwBuffer->GetVirAddr()), yuvBufferSize, nativeBuffer);
     OH_NativeBuffer_Planes *planes = nullptr;
     GSError retVal = hwBuffer->GetPlanesInfo(reinterpret_cast<void**>(&planes));
     if (retVal != OHOS::GSERROR_OK || planes == nullptr || planes->planeCount < NUM_2) {
@@ -2713,8 +2714,9 @@ uint32_t ExtDecoder::AllocateHeifYuvAuxiliaryBuffer(DecodeContext& context, uint
     }
     IMAGE_LOGI("Allocate HeifYUV AuxiBuffer sb stride is %{public}d, height is %{public}d, size is %{public}d",
         hwBuffer->GetStride(), hwBuffer->GetHeight(), hwBuffer->GetSize());
+    uint64_t yuvBufferSize = JpegDecoderYuv::GetYuvOutSize(width, height);
     SetDecodeContextBuffer(context, AllocatorType::DMA_ALLOC,
-        static_cast<uint8_t*>(hwBuffer->GetVirAddr()), hwBuffer->GetSize(), nativeBuffer);
+        static_cast<uint8_t*>(hwBuffer->GetVirAddr()), yuvBufferSize, nativeBuffer);
     decoder->setAuxiliaryDstBuffer(reinterpret_cast<uint8_t *>(context.pixelsBuffer.buffer),
         context.pixelsBuffer.bufferSize, hwBuffer->GetStride(), context.pixelsBuffer.context);
     return SUCCESS;

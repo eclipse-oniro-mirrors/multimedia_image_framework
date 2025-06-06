@@ -170,9 +170,20 @@ void PixelYuvExt::scale(float xAxis, float yAxis, const AntiAliasingOption &opti
     uint8_t *dst = reinterpret_cast<uint8_t *>(m->data.data);
     YUVDataInfo yuvDataInfo;
     GetImageYUVInfo(yuvDataInfo);
+    uint32_t pixelsSize = pixelsSize_;
+#if !defined(_WIN32) && !defined(_APPLE) && !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
+    if (allocatorType_ == AllocatorType::DMA_ALLOC) {
+        SurfaceBuffer* sbBuffer = static_cast<SurfaceBuffer*>(GetFd());
+        if (sbBuffer == nullptr) {
+            IMAGE_LOGE("PixelYuvExt scale get SurfaceBuffer failed");
+        } else {
+            pixelsSize = sbBuffer->GetSize();
+        }
+    }
+#endif
     YuvImageInfo yuvInfo = {PixelYuvUtils::ConvertFormat(imageInfo.pixelFormat),
                             imageInfo.size.width, imageInfo.size.height,
-                            imageInfo.pixelFormat, yuvDataInfo, pixelsSize_};
+                            imageInfo.pixelFormat, yuvDataInfo, pixelsSize};
 
     PixelYuvExtUtils::ScaleYuv420(xAxis, yAxis, option, yuvInfo, data_, dst, dstStrides);
     SetPixelsAddr(reinterpret_cast<void *>(dst), m->extend.data, m->data.size, m->GetType(), nullptr);
@@ -199,9 +210,20 @@ void PixelYuvExt::scale(int32_t dstW, int32_t dstH, const AntiAliasingOption &op
     uint8_t *dst = reinterpret_cast<uint8_t *>(m->data.data);
     YUVDataInfo yuvDataInfo;
     GetImageYUVInfo(yuvDataInfo);
+    uint32_t pixelsSize = pixelsSize_;
+#if !defined(_WIN32) && !defined(_APPLE) && !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
+    if (allocatorType_ == AllocatorType::DMA_ALLOC) {
+        SurfaceBuffer* sbBuffer = static_cast<SurfaceBuffer*>(GetFd());
+        if (sbBuffer == nullptr) {
+            IMAGE_LOGE("PixelYuvExt scale get SurfaceBuffer failed");
+        } else {
+            pixelsSize = sbBuffer->GetSize();
+        }
+    }
+#endif
     YuvImageInfo yuvInfo = {PixelYuvUtils::ConvertFormat(imageInfo.pixelFormat),
                             imageInfo.size.width, imageInfo.size.height,
-                            imageInfo.pixelFormat, yuvDataInfo, pixelsSize_};
+                            imageInfo.pixelFormat, yuvDataInfo, pixelsSize};
     PixelYuvExtUtils::ScaleYuv420(dstW, dstH, option, yuvInfo, data_, dst, dstStrides);
     SetPixelsAddr(reinterpret_cast<void *>(dst), m->extend.data, m->data.size, m->GetType(), nullptr);
     imageInfo.size.width = dstW;
