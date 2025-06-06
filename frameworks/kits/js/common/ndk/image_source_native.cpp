@@ -529,6 +529,9 @@ static void ParseImageSourceInfo(struct OH_ImageSource_Info *source, const Image
     }
     source->width = info.size.width;
     source->height = info.size.height;
+    if (source->mimeType.data != nullptr) {
+        return;
+    }
     if (info.encodedFormat.empty()) {
         std::string unknownStr = "unknown";
         source->mimeType.data = strdup(unknownStr.c_str());
@@ -537,7 +540,7 @@ static void ParseImageSourceInfo(struct OH_ImageSource_Info *source, const Image
     }
     source->mimeType.size = info.encodedFormat.size();
     source->mimeType.data = static_cast<char *>(malloc(source->mimeType.size));
-    if (source->mimeType.data != nullptr) {
+    if (source->mimeType.data == nullptr) {
         return;
     }
     if (memcpy_s(source->mimeType.data, source->mimeType.size, info.encodedFormat.c_str(),
