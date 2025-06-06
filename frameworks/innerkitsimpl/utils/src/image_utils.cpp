@@ -1332,6 +1332,28 @@ void ImageUtils::SetReuseContextBuffer(ImagePlugin::DecodeContext& context,
     context.pixelsBuffer.context = fd;
 }
 
+bool ImageUtils::CheckRowDataSizeIsVaild(int32_t &rowDataSize, ImageInfo &imgInfo)
+{
+    int32_t bytesPerPixel = ImageUtils::GetPixelBytes(imgInfo.pixelFormat);
+    if (bytesPerPixel == 0 || rowDataSize <=0 ||
+        rowDataSize != ImageUtils::GetRowDataSizeByPixelFormat(imgInfo.size.width, imgInfo.pixelFormat)) {
+        IMAGE_LOGE("[ImageUtils] RowDataSizeIsVaild: bytesPerPixel or rowDataSize:%{public}d", rowDataSize);
+        return false;
+    }
+    return true;
+}
+
+bool ImageUtils::CheckBufferSizeIsVaild(int32_t &bufferSize, uint64_t &expectedBufferSize, AllocatorType &allocatorType)
+{
+    if (bufferSize <= 0 ||
+        expectedBufferSize > (allocatorType == AllocatorType::HEAP_ALLOC ? PIXEL_MAP_MAX_RAM_SIZE : INT_MAX)) {
+        IMAGE_LOGE("[ImageUtils] BufferSizeIsVaild: bufferSize invalid, expect:%{public}llu, actual:%{public}d",
+            static_cast<unsigned long long>(expectedBufferSize), bufferSize);
+        return false;
+    }
+    return true;
+}
+
 bool ImageUtils::GetAlignedNumber(int32_t& number, int32_t align)
 {
     if (number < 0 || align <= 0) {

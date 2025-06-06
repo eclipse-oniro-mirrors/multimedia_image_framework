@@ -18,9 +18,11 @@
 
 #include "message_parcel.h"
 #include "image_type.h"
-#ifdef IMAGE_COLORSPACE_FLAG
-#include "color_space.h"
-#endif
+
+namespace OHOS::Rosen {
+    class PixelMapStorage;
+    class RSProfiler;
+};
 
 namespace OHOS {
 namespace Media {
@@ -81,6 +83,8 @@ public:
     }
 
 private:
+    friend class OHOS::Rosen::PixelMapStorage;
+    friend class OHOS::Rosen::RSProfiler;
     bool WriteMemInfoToParcel(Parcel &parcel, const int32_t &bufferSize);
     bool WritePropertiesToParcel(Parcel &parcel);
     bool WriteImageInfo(Parcel &parcel);
@@ -90,10 +94,11 @@ private:
     bool WriteFileDescriptor(Parcel &parcel, int fd);
     bool WriteTransformDataToParcel(Parcel &parcel) const;
     bool WriteYuvDataInfoToParcel(Parcel &parcel) const;
-    bool IsYuvFormat(PixelFormat format) const;
+    static bool IsYuvFormat(PixelFormat format);
     static PixelMap *Unmarshalling(Parcel &parcel, PIXEL_MAP_ERR &error,
         std::function<int(Parcel &parcel, std::function<int(Parcel&)> readFdDefaultFunc)> readSafeFdFunc);
-    static bool ReadPropertiesFromParcel(Parcel& parcel, PixelMap*& pixelMap, ImageInfo& imgInfo, PixelMemInfo& memInfo);
+    static bool ReadPropertiesFromParcel(Parcel& parcel, PixelMap*& pixelMap,
+        ImageInfo& imgInfo, PixelMemInfo& memInfo);
     static PixelMap *StartUnmarshalling(Parcel &parcel, ImageInfo &imgInfo,
         PixelMemInfo& pixelMemInfo, PIXEL_MAP_ERR &error);
     static PixelMap *FinishUnmarshalling(PixelMap *pixelMap, Parcel &parcel,
@@ -110,6 +115,8 @@ private:
     static uint8_t *ReadAshmemDataFromParcel(Parcel &parcel, int32_t bufferSize,
         std::function<int(Parcel &parcel, std::function<int(Parcel&)> readFdDefaultFunc)> readSafeFdFunc);
     static int ReadFileDescriptor(Parcel &parcel);
+    static bool ReadTransformData(Parcel &parcel, PixelMap *pixelMap);
+    static bool ReadYuvDataInfoFromParcel(Parcel &parcel, PixelMap *pixelMap);
 
     ParcelInfo parcelInfo_;
 };
