@@ -15,6 +15,7 @@
 
 #include "pixel_map_gl_shader.h"
 
+#include <inttypes.h>
 #include <fstream>
 #include <sstream>
 #include <string>
@@ -139,7 +140,7 @@ static bool loadShaderFromFile(unsigned char*&shaderBinary, GLenum &binaryFormat
 
     const size_t minSize = sizeof(GLenum) + sizeof(version);
     if (fileStat.st_size < minSize) {
-        IMAGE_LOGE("slr_gpu shader cache file size failed! size:%{public}lld", fileStat.st_size);
+        IMAGE_LOGE("slr_gpu shader cache file size failed! size:%{public}" PRId64, fileStat.st_size);
         return false;
     }
 
