@@ -60,6 +60,7 @@ public:
     static int32_t SurfaceBuffer_Unreference(void* buffer);
     static void DumpPixelMap(PixelMap* pixelMap, std::string customFileName, uint64_t imageId = 0);
     static void DumpPixelMapIfDumpEnabled(std::unique_ptr<PixelMap>& pixelMap, uint64_t imageId = 0);
+    static void DumpPixelMapIfDumpEnabled(PixelMap& pixelMap, std::string func);
     static void DumpPixelMapBeforeEncode(PixelMap& pixelMap);
     static void DumpDataIfDumpEnabled(const char* data, const size_t& totalSize, const std::string& fileSuffix = "dat",
         uint64_t imageId = 0);
