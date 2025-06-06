@@ -4600,6 +4600,8 @@ static void CopyOutInfoOfContext(const DecodeContext &srcCtx, DecodeContext &dst
     dstCtx.pixelFormat = srcCtx.pixelFormat;
     dstCtx.info.pixelFormat = srcCtx.info.pixelFormat;
     dstCtx.info.alphaType = srcCtx.info.alphaType;
+    dstCtx.info.size.width = srcCtx.info.size.width;
+    dstCtx.info.size.height = srcCtx.info.size.height;
     dstCtx.isAisr = srcCtx.isAisr;
     dstCtx.grColorSpaceName = srcCtx.grColorSpaceName;
     dstCtx.yuvInfo.imageSize.width = srcCtx.outInfo.size.width;
