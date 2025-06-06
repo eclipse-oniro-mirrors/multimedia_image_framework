@@ -2025,11 +2025,11 @@ OHOS::ColorManager::ColorSpace ExtDecoder::GetSrcColorSpace()
     // use info_ to make a custom graphic colorspace.
     if (name == OHOS::ColorManager::ColorSpaceName::CUSTOM ||
         name == OHOS::ColorManager::ColorSpaceName::NONE) {
-        IMAGE_LOGI("%{public}s Use info_ to make a custom graphic colorspace. name: %{public}u",
+        IMAGE_LOGD("%{public}s Use info_ to make a custom graphic colorspace. name: %{public}u",
             __func__, static_cast<uint32_t>(name));
         return OHOS::ColorManager::ColorSpace(skColorSpace, name);
     }
-    IMAGE_LOGI("%{public}s Use name to make a custom graphic colorspace. name: %{public}u",
+    IMAGE_LOGD("%{public}s Use name to make a custom graphic colorspace. name: %{public}u",
         __func__, static_cast<uint32_t>(name));
     return OHOS::ColorManager::ColorSpace(name);
 }
