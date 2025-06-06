@@ -45,6 +45,33 @@ public:
     ~ImageSourcePngTest() {}
 };
 
+void SampleDecodePngTest(int sampleSize)
+{
+    if (sampleSize == 0) {
+        IMAGE_LOGI("invalid sampleSize");
+        ASSERT_EQ(false, true);
+    }
+    uint32_t errorCode = 0;
+    SourceOptions opts;
+    opts.formatHint = "image/png";
+    std::unique_ptr<ImageSource> imageSource =
+        ImageSource::CreateImageSource("/data/local/tmp/image/test.png", opts, errorCode);
+    ASSERT_EQ(errorCode, SUCCESS);
+    ASSERT_NE(imageSource.get(), nullptr);
+
+    ImageInfo imageInfo;
+    errorCode = imageSource->GetImageInfo(imageInfo);
+    ASSERT_EQ(errorCode, SUCCESS);
+
+    DecodeOptions decodeOpts;
+    decodeOpts.desiredSize.width = imageInfo.size.width / sampleSize;
+    decodeOpts.desiredSize.height = imageInfo.size.height / sampleSize;
+    std::unique_ptr<PixelMap> pixelMap = imageSource->CreatePixelMap(decodeOpts, errorCode);
+    IMAGE_LOGD("create pixel map res=%{public}u.", errorCode);
+    ASSERT_EQ(errorCode, SUCCESS);
+    ASSERT_NE(pixelMap.get(), nullptr);
+}
+
 /**
  * @tc.name: PngImageDecode001
  * @tc.desc: Decode png image from file source stream
@@ -649,6 +676,46 @@ HWTEST_F(ImageSourcePngTest, PngGetEncodedFormat001, TestSize.Level3)
     pixelMap->GetImageInfo(imageinfo2);
     EXPECT_EQ(imageinfo2.encodedFormat.empty(), false);
     GTEST_LOG_(INFO) << "ImageSourcePngTest: PngGetEncodedFormat001 imageinfo2:" << imageinfo2.encodedFormat;
+}
+
+/**
+ * @tc.name: PngSampleDecodeTest001
+ * @tc.desc: test sample decode png
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageSourcePngTest, PngSampleDecodeTest001, TestSize.Level3)
+{
+    SampleDecodePngTest(1);
+}
+
+/**
+ * @tc.name: PngSampleDecodeTest002
+ * @tc.desc: test sample decode png
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageSourcePngTest, PngSampleDecodeTest002, TestSize.Level3)
+{
+    SampleDecodePngTest(2);
+}
+
+/**
+ * @tc.name: PngSampleDecodeTest003
+ * @tc.desc: test sample decode png
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageSourcePngTest, PngSampleDecodeTest003, TestSize.Level3)
+{
+    SampleDecodePngTest(4);
+}
+
+/**
+ * @tc.name: PngSampleDecodeTest004
+ * @tc.desc: test sample decode png
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageSourcePngTest, PngSampleDecodeTest004, TestSize.Level3)
+{
+    SampleDecodePngTest(8);
 }
 } // namespace Multimedia
 } // namespace OHOS
