@@ -720,6 +720,10 @@ Image_ErrorCode OH_ImagePackerNative_GetSupportedFormats(Image_MimeType** suppor
     size_t count = 0;
     for (const auto& str : formats) {
         (*supportedFormat)[count].data = strdup(str.c_str());
+        if ((*supportedFormat)[count].data == nullptr) {
+            IMAGE_LOGE("ImagePacker strdup failed");
+            continue;
+        }
         (*supportedFormat)[count].size = str.size();
         count++;
     }
