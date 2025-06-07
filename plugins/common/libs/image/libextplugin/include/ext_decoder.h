@@ -97,9 +97,11 @@ private:
     bool GetScaledSize(int &dWidth, int &dHeight, float &scale);
     bool GetHardwareScaledSize(int &dWidth, int &dHeight, float &scale);
     int GetSoftwareScaledSize(int dwidth, int dheight);
+    bool GetSampleSize(int dstWidth, int dstHeight);
     bool IsSupportCropOnDecode();
     bool IsSupportCropOnDecode(SkIRect &target);
     bool IsSupportHardwareDecode();
+    bool IsSupportSampleDecode(OHOS::Media::PixelFormat desiredFormat);
     bool IsYuv420Format(OHOS::Media::PixelFormat format) const;
     bool IsHeifToYuvDecode(const DecodeContext &context) const;
     uint32_t DoHeifToYuvDecode(DecodeContext &context);
@@ -138,6 +140,7 @@ private:
     uint32_t UpdateHardWareDecodeInfo(DecodeContext &context);
     bool IsRegionDecodeSupported(uint32_t index, const PixelDecodeOptions &opts, PlImageInfo &info);
     SkCodec::Result DoRegionDecode(DecodeContext &context);
+    SkCodec::Result DoSampleDecode(DecodeContext &context);
     bool IsRawFormat(std::string &name);
     std::string GetPluginType() override
     {
@@ -174,6 +177,7 @@ private:
     OHOS::HDI::Display::Composer::V1_2::PixelFormat outputColorFmt_ =
         OHOS::HDI::Display::Composer::V1_2::PIXEL_FMT_RGBA_8888;
     uint32_t sampleSize_ = 1;
+    uint32_t softSampleSize_ = 1;
     static constexpr uint32_t ALIGN_8 = 8;
     static constexpr uint32_t ALIGN_16 = 16;
 #endif
