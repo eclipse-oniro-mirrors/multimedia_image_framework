@@ -1732,7 +1732,13 @@ int32_t PixelConvert::PixelsConvert(const BufferInfo &src, BufferInfo &dst, int3
     }
 
     if (dst.imageInfo.pixelFormat == PixelFormat::ARGB_8888) {
-        return CopySrcBufferAndConvert(src, dst, srcLength, useDMA);
+        if (useDMA || (src.imageInfo.size.width % EVEN_ALIGNMENT == 0 &&
+            src.imageInfo.size.height % EVEN_ALIGNMENT == 0)) {
+            return ConvertAndCollapseByFFMpeg(src.pixels, src.imageInfo, dst.pixels, dst.imageInfo, useDMA) ?
+                PixelMap::GetRGBxByteCount(dst.imageInfo) : CONVERT_ERROR;
+        } else {
+            return CopySrcBufferAndConvert(src, dst, srcLength, useDMA);
+        }
     }
     if (IsInterYUVConvert(src.imageInfo.pixelFormat, dst.imageInfo.pixelFormat) ||
         (IsYUVP010Format(src.imageInfo.pixelFormat) && IsYUVP010Format(dst.imageInfo.pixelFormat))) {
