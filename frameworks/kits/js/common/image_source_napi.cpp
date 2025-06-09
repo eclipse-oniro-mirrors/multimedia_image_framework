@@ -2536,23 +2536,26 @@ napi_value ImageSourceNapi::GetImagePropertySync(napi_env env, napi_callback_inf
         napi_value result = nullptr;
         napi_get_undefined(env, &result);
 
-        uint32_t ret = imageSourceNapi->nativeImgSrc->GetImagePropertyString(NUM_0, key, value);
+        uint32_t ret = imageSourceNapi->nativeImgSrc->GetImagePropertyStringBySync(NUM_0, key, value);
         if (ret == SUCCESS) {
             napi_create_string_utf8(env, value.c_str(), value.length(), &result);
             return result;
         }
-        if (ret == Media::ERR_IMAGE_SOURCE_DATA) {
-            IMAGE_LOGE("%{public}s: Bad source", __func__);
-            return ImageNapiUtils::ThrowExceptionError(env, IMAGE_BAD_SOURCE, "Bad source");
+        if (ret == Media::ERR_IMAGE_PROPERTY_NOT_EXIST) {
+            IMAGE_LOGE("%{public}s: Unsupported metadata, errorCode=%{public}u", __func__, ret);
+            return ImageNapiUtils::ThrowExceptionError(env, IMAGE_SOURCE_UNSUPPORTED_METADATA, "Unsupported metadata");
         }
-        if (ret == Media::ERR_IMAGE_DECODE_EXIF_UNSUPPORT) {
-            IMAGE_LOGE("%{public}s: Unsupported MIME type", __func__);
+        if (ret == Media::ERR_IMAGE_SOURCE_DATA) {
+            IMAGE_LOGE("%{public}s: Unsupported MIME type, errorCode=%{public}u", __func__, ret);
             return ImageNapiUtils::ThrowExceptionError(env, IMAGE_SOURCE_UNSUPPORTED_MIMETYPE, "Unsupported MIME type");
         }
-        IMAGE_LOGE("%{public}s: Unsupported metadata", __func__);
-        return ImageNapiUtils::ThrowExceptionError(env, IMAGE_SOURCE_UNSUPPORTED_METADATA, "Unsupported metadata");
+        if (ret == Media::ERR_IMAGE_DECODE_EXIF_UNSUPPORT) {
+            IMAGE_LOGE("%{public}s: Bad source, errorCode=%{public}u", __func__, ret);
+            return ImageNapiUtils::ThrowExceptionError(env, IMAGE_BAD_SOURCE, "Bad source");
+        }
     }
-    return ImageNapiUtils::ThrowExceptionError(env, IMAGE_SOURCE_UNSUPPORTED_METADATA, "Unsupported metadata");
+    IMAGE_LOGE("%{public}s: Bad source", __func__);
+    return ImageNapiUtils::ThrowExceptionError(env, IMAGE_BAD_SOURCE, "Bad source");
 }
 
 static void UpdateDataExecute(napi_env env, void *data)
