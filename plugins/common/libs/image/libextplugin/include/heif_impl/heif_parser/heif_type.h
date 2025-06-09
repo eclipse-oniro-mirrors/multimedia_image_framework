@@ -54,6 +54,7 @@ static const uint32_t BOX_TYPE_MDCV = fourcc_to_code("mdcv");
 static const uint32_t BOX_TYPE_IT35 = fourcc_to_code("it35");
 
 static const uint32_t BOX_TYPE_RLOC = fourcc_to_code("rloc");
+static const uint32_t BOX_TYPE_GRPL = fourcc_to_code("grpl");
 
 static const uint32_t HANDLER_TYPE_PICT = fourcc_to_code("pict");
 

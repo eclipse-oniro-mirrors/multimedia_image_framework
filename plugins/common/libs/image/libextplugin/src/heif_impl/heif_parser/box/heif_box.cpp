@@ -24,6 +24,7 @@
 #include "box/item_property_hvcc_box.h"
 #include "box/item_property_transform_box.h"
 #include "box/item_ref_box.h"
+#include "box/item_property_display_box.h"
 
 #define MAKE_BOX_CASE(box_type, box_class_type)    \
 case fourcc_to_code(box_type):                     \
@@ -195,6 +196,7 @@ std::shared_ptr<HeifBox> HeifBox::MakeBox(uint32_t boxType)
         MAKE_BOX_CASE("idat", HeifIdatBox);
         MAKE_BOX_CASE("iloc", HeifIlocBox);
         MAKE_BOX_CASE("rloc", HeifRlocBox);
+        MAKE_BOX_CASE("clli", HeifClliBox);
         default:
             box = std::make_shared<HeifBox>();
             break;
@@ -237,6 +239,9 @@ heif_error HeifBox::MakeFromReader(HeifStreamReader &reader,
     if (!err) {
         *result = std::move(box);
     }
+    if (err && box->GetBoxType() == BOX_TYPE_CLLI) {
+        err = heif_error_ok;
+    }
     contentReader.SkipEnd();
     return err;
 }
@@ -272,6 +277,9 @@ heif_error HeifBox::ReadChildren(HeifStreamReader &reader, uint32_t &recursionCo
 heif_error HeifBox::WriteChildren(HeifStreamWriter &writer) const
 {
     for (const auto &child: children_) {
+        if (child->GetBoxType() == BOX_TYPE_GRPL) {
+            continue;
+        }
         heif_error err = child->Write(writer);
         if (err) {
             return err;
