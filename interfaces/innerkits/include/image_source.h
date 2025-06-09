@@ -323,7 +323,6 @@ private:
                                                     ImagePlugin::DecodeContext& context, uint32_t &errorCode);
     bool ApplyGainMap(ImageHdrType hdrType, ImagePlugin::DecodeContext& baseCtx,
                       ImagePlugin::DecodeContext& hdrCtx, float scale);
-    void ApplyMemoryForHdr(ImagePlugin::DecodeContext& hdrCtx, CM_ColorSpaceType hdrCmColor, ImageHdrType hdrType);
     bool ComposeHdrImage(ImageHdrType hdrType, ImagePlugin::DecodeContext& baseCtx,
         ImagePlugin::DecodeContext& gainMapCtx, ImagePlugin::DecodeContext& hdrCtx, HdrMetadata metadata);
     uint32_t SetGainMapDecodeOption(std::unique_ptr<ImagePlugin::AbsImageDecoder>& decoder,
@@ -332,6 +331,8 @@ private:
                                                         ImagePlugin::PlImageInfo& outInfo, uint32_t& errorCode);
     bool DecodeJpegGainMap(ImageHdrType hdrType, float scale,
         ImagePlugin::DecodeContext& gainMapCtx, HdrMetadata& metadata);
+    void SpecialSetComposeBuffer(sptr<SurfaceBuffer>& baseSptr, sptr<SurfaceBuffer>& gainmapSptr,
+        sptr<SurfaceBuffer>& hdrSptr, HdrMetadata& metadata);
     void DumpInputData(const std::string& fileSuffix = "dat");
     static uint64_t GetNowTimeMicroSeconds();
     uint32_t ModifyImageProperty(std::shared_ptr<MetadataAccessor> metadataAccessor,
