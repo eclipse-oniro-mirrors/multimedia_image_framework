@@ -1216,18 +1216,22 @@ SkCodec::Result ExtDecoder::DoSampleDecode(DecodeContext &context)
 #endif
 }
 
+#ifdef JPEG_HW_DECODE_ENABLE
 void ExtDecoder::InitJpegDecoder()
 {
-    IMAGE_LOGI("Init hardware jpeg decoder");
-    if (hwDecoderPtr_ == nullptr) {
-        hwDecoderPtr_ = std::make_shared<JpegHardwareDecoder>();
-    }
-    if (!hwDecoderPtr_->InitDecoder()) {
-        IMAGE_LOGE("Init jpeg hardware decoder failed");
-        initJpegErr_ = true;
+    if (ImageSystemProperties::GetHardWareDecodeEnabled()) {
+        IMAGE_LOGI("Init hardware jpeg decoder");
+        if (hwDecoderPtr_ == nullptr) {
+            hwDecoderPtr_ = std::make_shared<JpegHardwareDecoder>();
+        }
+        if (!hwDecoderPtr_->InitDecoder()) {
+            IMAGE_LOGE("Init jpeg hardware decoder failed");
+            initJpegErr_ = true;
+        }
     }
     return;
 }
+#endif
 
 uint32_t ExtDecoder::Decode(uint32_t index, DecodeContext &context)
 {
@@ -1694,21 +1698,12 @@ uint32_t ExtDecoder::HardWareDecode(DecodeContext &context)
         context.hardDecodeError = "Decode failed, Alloc OutputBuffer failed, ret=" + std::to_string(ret);
         return ERR_IMAGE_DECODE_ABNORMAL;
     }
-#ifdef ENABLE_PRE_POWER_ON
     if (hwDecoderPtr_ != nullptr) {
         ret = hwDecoderPtr_->Decode(codec_.get(), stream_, orgImgSize_, sampleSize_, outputBuffer);
     } else {
         IMAGE_LOGE("hwDecoderPtr_ is null");
         ret = ERR_IMAGE_DECODE_ABNORMAL;
     }
-#else
-    JpegHardwareDecoder hwDecoder;
-    if (hwDecoder.InitDecoder()) {
-        ret = hwDecoder.Decode(codec_.get(), stream_, orgImgSize_, sampleSize_, outputBuffer);
-    } else {
-        ret = ERR_IMAGE_DECODE_ABNORMAL;
-    }
-#endif
     if (ret != SUCCESS) {
         IMAGE_LOGE("failed to do jpeg hardware decode, err=%{public}d", ret);
         context.hardDecodeError = "failed to do jpeg hardware decode, err=" + std::to_string(ret);
