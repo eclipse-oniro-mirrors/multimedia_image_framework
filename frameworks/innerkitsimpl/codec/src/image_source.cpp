@@ -1935,6 +1935,54 @@ uint32_t ImageSource::GetImagePropertyString(uint32_t index, const std::string &
     return GetImagePropertyCommon(index, key, value);
 }
 
+uint32_t ImageSource::GetImagePropertyStringBySync(uint32_t index, const std::string &key, std::string &value)
+{
+    if (key.empty()) {
+        return Media::ERR_IMAGE_DECODE_EXIF_UNSUPPORT;
+    }
+
+    uint32_t ret = SUCCESS;
+    if (IMAGE_GIFLOOPCOUNT_TYPE.compare(key) == ZERO) {
+        IMAGE_LOGD("GetImagePropertyString special key: %{public}s", key.c_str());
+        (void)GetFrameCount(ret);
+        if (ret != SUCCESS || mainDecoder_ == nullptr) {
+            IMAGE_LOGE("[ImageSource]GetFrameCount get frame sum error.");
+            return ret;
+        } else {
+            ret = mainDecoder_->GetImagePropertyString(index, key, value);
+            if (ret != SUCCESS) {
+                IMAGE_LOGE("[ImageSource]GetLoopCount get loop count issue. errorCode=%{public}u", ret);
+                return ret;
+            }
+        }
+        return ret;
+    }
+
+    std::unique_lock<std::mutex> guard(decodingMutex_);
+    std::unique_lock<std::mutex> guardFile(fileMutex_);
+
+    if (isExifReadFailed_ && exifMetadata_ == nullptr) {
+        return exifReadStatus_;
+    }
+    ret = CreatExifMetadataByImageSource();
+    if (ret != SUCCESS) {
+        if (key.substr(0, KEY_SIZE) == "Hw") {
+            value = DEFAULT_EXIF_VALUE;
+            return SUCCESS;
+        }
+        IMAGE_LOGD("Failed to create Exif metadata "
+            "when attempting to get property.");
+        isExifReadFailed_ = true;
+        exifReadStatus_ = ret;
+        return ret;
+    }
+
+    if (exifMetadata_->GetValue(key, value) != SUCCESS) {
+        return ERR_IMAGE_PROPERTY_NOT_EXIST;
+    }
+    return SUCCESS;
+}
+
 const SourceInfo &ImageSource::GetSourceInfo(uint32_t &errorCode)
 {
     std::lock_guard<std::mutex> guard(decodingMutex_);
