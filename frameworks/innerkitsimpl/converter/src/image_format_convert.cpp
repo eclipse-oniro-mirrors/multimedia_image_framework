@@ -395,7 +395,7 @@ uint32_t ImageFormatConvert::ConvertImageFormat(std::shared_ptr<PixelMap> &srcPi
         IMAGE_LOGE("convert rgb format failed!");
         return ret;
     }
-    ImageUtils::DumpPixelMapIfDumpEnabled(*(srcPiexlMap.get()), __func__);
+    ImageUtils::DumpPixelMapIfDumpEnabled(*srcPiexlMap, __func__);
     return SUCCESS;
 }
 

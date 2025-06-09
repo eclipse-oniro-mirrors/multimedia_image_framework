@@ -589,7 +589,7 @@ void ImageUtils::DumpPixelMapIfDumpEnabled(PixelMap& pixelMap, std::string func)
     if (!ImageSystemProperties::GetDumpImageEnabled()) {
         return;
     }
-    DumpPixelMap(&pixelMap, "_imageId" + func);
+    DumpPixelMap(&pixelMap, "_imageId_" + func + "_");
 }
 
 void ImageUtils::DumpPixelMapBeforeEncode(PixelMap& pixelMap)
