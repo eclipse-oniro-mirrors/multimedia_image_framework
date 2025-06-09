@@ -356,6 +356,70 @@ static void TryFixGainmapHdrMetadata(sptr<SurfaceBuffer> &gainmapSptr)
     VpeUtils::SetSbDynamicMetadata(gainmapSptr, extendMetadataVec);
 }
 
+sptr<SurfaceBuffer> CreateGainmapByHdrAndSdr(std::shared_ptr<PixelMap> &hdrPixelMap,
+                                             std::shared_ptr<PixelMap> &sdrPixelMap)
+{
+    sptr<SurfaceBuffer> gainmapSptr = SurfaceBuffer::Create();
+    ImageInfo imageInfo;
+    sdrPixelMap->GetImageInfo(imageInfo);
+    BufferRequestConfig requestConfig = {
+        .width = imageInfo.size.width / 2,
+        .height = imageInfo.size.height / 2,
+        .strideAlignment = imageInfo.size.width / 2,
+        .format = GetHdrAllocFormat(imageInfo.pixelFormat),
+        .usage = BUFFER_USAGE_CPU_READ | BUFFER_USAGE_CPU_WRITE | BUFFER_USAGE_MEM_DMA | BUFFER_USAGE_MEM_MMZ_CACHE,
+        .timeout = 0,
+    };
+    GSError error = gainmapSptr->Alloc(requestConfig);
+    if (error != GSERROR_OK) {
+        IMAGE_LOGE("HDR-IMAGE SurfaceBuffer Alloc failed, error : %{public}s", GSErrorStr(error).c_str());
+        return nullptr;
+    }
+    sptr<SurfaceBuffer> hdrSptr(reinterpret_cast<SurfaceBuffer*>(hdrPixelMap->GetFd()));
+    sptr<SurfaceBuffer> sdrSptr(reinterpret_cast<SurfaceBuffer*>(sdrPixelMap->GetFd()));
+    VpeSurfaceBuffers buffers = {
+        .sdr = sdrSptr,
+        .gainmap = gainmapSptr,
+        .hdr = hdrSptr,
+    };
+    int32_t res = VpeUtils().ColorSpaceCalGainmap(buffers);
+    if (res != VPE_ERROR_OK) {
+        IMAGE_LOGE("HDR-IMAGE CalGainmap failed, res: %{public}d", res);
+        return nullptr;
+    }
+    return gainmapSptr;
+}
+
+std::unique_ptr<Picture> Picture::CreatePictureByHdrAndSdrPixelMap(std::shared_ptr<PixelMap> &hdrPixelMap,
+    std::shared_ptr<PixelMap> &sdrPixelMap)
+{
+    if (hdrPixelMap == nullptr || sdrPixelMap == nullptr) {
+        IMAGE_LOGE("HDR-IMAGE do calgainmap input null error");
+        return nullptr;
+    }
+    if ((hdrPixelMap->GetAllocatorType() != AllocatorType::DMA_ALLOC) ||
+        (sdrPixelMap->GetAllocatorType() != AllocatorType::DMA_ALLOC)) {
+        IMAGE_LOGE("HDR-IMAGE calgainmap input AllocatorType type error");
+        return nullptr;
+    }
+    std::unique_ptr<Picture> dstPicture = Create(sdrPixelMap);
+    sptr<SurfaceBuffer> gainmapSptr = CreateGainmapByHdrAndSdr(hdrPixelMap, sdrPixelMap);
+    if (gainmapSptr == nullptr) {
+        IMAGE_LOGE("HDR-IMAGE CreateGainmapByHdrAndSdr failed");
+        return nullptr;
+    }
+    Media::Size size = {gainmapSptr->GetWidth(), gainmapSptr->GetHeight()};
+    std::unique_ptr<AuxiliaryPicture> gainmap = AuxiliaryPicture::Create(gainmapSptr,
+        AuxiliaryPictureType::GAINMAP, size);
+    if (dstPicture == nullptr || gainmap == nullptr) {
+        IMAGE_LOGE("HDR-IMAGE calgainmap install output error");
+        return nullptr;
+    }
+    std::shared_ptr<AuxiliaryPicture> gainmapPtr = std::move(gainmap);
+    dstPicture->SetAuxiliaryPicture(gainmapPtr);
+    return dstPicture;
+}
+
 static bool ShouldComposeAsCuva(const sptr<SurfaceBuffer> &baseSptr, const sptr<SurfaceBuffer> &gainmapSptr)
 {
     std::vector<uint8_t> baseStaticMetadata;
@@ -403,7 +467,7 @@ static std::unique_ptr<PixelMap> ComposeHdrPixelMap(
         .hdr = hdrSptr,
     };
     bool isCuva = ShouldComposeAsCuva(baseSptr, gainmapSptr);
-    IMAGE_LOGD("HDR Compose image, isCuva: %{public}d", isCuva);
+    IMAGE_LOGD("HDR-IMAGE Compose image, isCuva: %{public}d", isCuva);
     int32_t res = VpeUtils().ColorSpaceConverterComposeImage(buffers, isCuva);
     if (res != VPE_ERROR_OK) {
         IMAGE_LOGE("Compose HDR image failed, res: %{public}d", res);

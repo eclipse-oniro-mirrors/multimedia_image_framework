@@ -51,6 +51,7 @@ private:
     /* static method */
     static napi_value CreatePicture(napi_env env, napi_callback_info info);
     static napi_value CreatePictureFromParcel(napi_env env, napi_callback_info info);
+    static napi_value CreatePictureByHdrAndSdrPixelMap(napi_env env, napi_callback_info info);
     static napi_value ThrowExceptionError(napi_env env,
         const std::string &tag, const std::uint32_t &code, const std::string &info);
     void release();

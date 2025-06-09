@@ -159,7 +159,10 @@ if (use_clang_ios) {
         "os_account:os_account_innerkits",
         "samgr:samgr_proxy",
       ]
-
+      if (defined(global_parts_info) &&
+        defined(global_parts_info.multimedia_video_processing_engine)) {
+        defines += [ "IMAGE_VPE_FLAG" ]
+      } 
       if (is_emulator) {
         defines += [ "IS_EMULATOR" ]
       }

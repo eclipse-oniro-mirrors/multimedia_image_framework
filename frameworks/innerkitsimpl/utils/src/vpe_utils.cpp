@@ -63,6 +63,8 @@ using HdrProcessImageT =
     int32_t (*)(int32_t, OHNativeWindowBuffer*, OHNativeWindowBuffer*);
 using SrProcessImageT =
     int32_t (*)(int32_t, OHNativeWindowBuffer*, OHNativeWindowBuffer*, int32_t);
+using CalGainmapImageT =
+    int32_t (*)(int32_t, OHNativeWindowBuffer*, OHNativeWindowBuffer*, OHNativeWindowBuffer*);
 #endif
 
 
@@ -208,6 +210,39 @@ int32_t VpeUtils::ColorSpaceConverterDecomposeImage(VpeSurfaceBuffers& sb)
     OH_NativeWindow_DestroyNativeWindowBuffer(gainmap);
     OH_NativeWindow_DestroyNativeWindowBuffer(hdr);
     ColorSpaceConverterDestory(dlHandler_, &instanceId);
+    return res;
+}
+
+int32_t VpeUtils::ColorSpaceCalGainmap(VpeSurfaceBuffers& sb)
+{
+    int32_t res = VPE_ERROR_OK;
+#ifdef IMAGE_VPE_FLAG
+    std::lock_guard<std::mutex> lock(vpeMtx_);
+    if (dlHandler_ == nullptr) {
+        return VPE_ERROR_FAILED;
+    }
+    int32_t instanceId = VPE_ERROR_FAILED;
+    res = ColorSpaceConverterCreate(dlHandler_, &instanceId);
+    if (instanceId == VPE_ERROR_FAILED || res != VPE_ERROR_OK) {
+        return VPE_ERROR_FAILED;
+    }
+    
+    CalGainmapImageT calGainmapImage = (CalGainmapImageT)dlsym(dlHandler_, "ColorSpaceConverterCalGainmap");
+    if (!calGainmapImage) {
+        return VPE_ERROR_FAILED;
+    }
+    if (sb.sdr == nullptr || sb.gainmap == nullptr || sb.hdr == nullptr) {
+        return VPE_ERROR_FAILED;
+    }
+    OHNativeWindowBuffer* sdr = OH_NativeWindow_CreateNativeWindowBufferFromSurfaceBuffer(&sb.sdr);
+    OHNativeWindowBuffer* gainmap = OH_NativeWindow_CreateNativeWindowBufferFromSurfaceBuffer(&sb.gainmap);
+    OHNativeWindowBuffer* hdr = OH_NativeWindow_CreateNativeWindowBufferFromSurfaceBuffer(&sb.hdr);
+    res = calGainmapImage(instanceId, hdr, sdr, gainmap);
+    OH_NativeWindow_DestroyNativeWindowBuffer(sdr);
+    OH_NativeWindow_DestroyNativeWindowBuffer(gainmap);
+    OH_NativeWindow_DestroyNativeWindowBuffer(hdr);
+    ColorSpaceConverterDestory(dlHandler_, &instanceId);
+#endif
     return res;
 }
 
