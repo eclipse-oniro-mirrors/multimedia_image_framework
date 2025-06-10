@@ -157,6 +157,7 @@ unique_ptr<FileSourceStream> FileSourceStream::CreateSourceStream(
     int ret = fseek(filePtr, offset, SEEK_SET);
     if (ret != 0) {
         IMAGE_LOGE("[FileSourceStream]Go to %{public}d position fail, ret:%{public}d.", offset, ret);
+        fclose(filePtr);
         return nullptr;
     }
     return make_unique<FileSourceStream>(filePtr, length, offset, offset, useMmap, dupFd);
