@@ -106,6 +106,9 @@ heif_error HeifParser::AssembleBoxes(HeifStreamReader &reader)
         if (error != heif_error_ok) {
             return error;
         }
+        if (box == nullptr) {
+            return heif_error_no_meta;
+        }
         topBoxes_.push_back(box);
         if (box->GetBoxType() == BOX_TYPE_META) {
             metaBox_ = std::dynamic_pointer_cast<HeifMetaBox>(box);
