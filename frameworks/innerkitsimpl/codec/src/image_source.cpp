@@ -385,7 +385,6 @@ static bool IsSupportHeif()
 
 void ImageSource::InitDecoderForJpeg()
 {
-#ifdef ENABLE_PRE_POWER_ON
     uint8_t* readBuffer = new (std::nothrow) uint8_t[sizeof(JPEG_SOI)];
     if (readBuffer == nullptr) {
         return;
@@ -410,7 +409,6 @@ void ImageSource::InitDecoderForJpeg()
     }
     delete[] readBuffer;
     readBuffer = nullptr;
-#endif
 }
 
 uint32_t ImageSource::GetSupportedFormats(set<string> &formats)
