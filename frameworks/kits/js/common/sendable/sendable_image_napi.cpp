@@ -264,7 +264,7 @@ NativeImage* SendableImageNapi::GetNative()
 }
 
 static std::unique_ptr<SendableImageAsyncContext> UnwrapContext(napi_env env, napi_callback_info info,
-    size_t* argc = nullptr, napi_value* argv = nullptr)
+    size_t* argc = nullptr, napi_value* argv = nullptr, bool needCreateRef = false)
 {
     napi_value thisVar = nullptr;
     size_t tmp = NUM0;
@@ -282,7 +282,9 @@ static std::unique_ptr<SendableImageAsyncContext> UnwrapContext(napi_env env, na
         return nullptr;
     }
     ctx->image = ctx->napi->GetNative();
-    napi_create_reference(env, thisVar, NUM1, &(ctx->thisRef));
+    if (needCreateRef) {
+        napi_create_reference(env, thisVar, NUM1, &(ctx->thisRef));
+    }
     return ctx;
 }
 
@@ -506,7 +508,7 @@ napi_value SendableImageNapi::JsRelease(napi_env env, napi_callback_info info)
     napi_value argv[NUM1] = {0};
 
     napi_get_undefined(env, &result);
-    auto context = UnwrapContext(env, info, &argc, argv);
+    auto context = UnwrapContext(env, info, &argc, argv, true);
     if (context == nullptr) {
         IMAGE_ERR("fail to unwrap ets image object, image maybe released");
         return result;
