@@ -26,6 +26,7 @@ enum class ImageHdrType : int32_t {
     HDR_VIVID_DUAL,
     HDR_VIVID_SINGLE,
     HDR_ISO_SINGLE,
+    HDR_LOG_DUAL,
 };
 
 typedef struct ISOMetadata {
@@ -90,6 +91,16 @@ struct HdrMetadata {
     bool extendMetaFlag = false;
     HDRVividExtendMetadata extendMeta;
     int32_t hdrMetadataType;
+};
+
+struct LogResMapMetadata {
+    uint16_t height;
+    uint16_t width;
+    uint16_t pixelFormat;
+    uint16_t primaries;
+    uint16_t transfunc;
+    uint16_t matrix;
+    uint16_t range;
 };
 } // namespace Media
 } // namespace OHOS

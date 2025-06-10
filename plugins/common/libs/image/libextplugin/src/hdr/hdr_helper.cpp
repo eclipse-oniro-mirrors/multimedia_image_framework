@@ -283,6 +283,20 @@ static bool GetISOJpegGainMapOffset(vector<jpeg_marker_struct*>& markerList,
     return false;
 }
 
+static bool IsVaildHdrMediaType(jpeg_marker_struct* marker)
+{
+    IMAGE_LOGI("HDR-IMAGE seek HdrMediaType");
+    if (marker == nullptr || JPEG_MARKER_APP11 != marker->marker) {
+        IMAGE_LOGI("HDR-IMAGE marker == nullptr");
+        return false;
+    }
+    if (marker->data_length <= HDR_MEDIA_TYPE_TAG_SIZE ||
+        memcmp(marker->data, HDR_MEDIA_TYPE_TAG, HDR_MEDIA_TYPE_TAG_SIZE) != 0) {
+        IMAGE_LOGE("HDR-IMAGE cmp media marker failed");
+        return false;
+    }
+    return true;
+}
 
 static ImageHdrType CheckJpegGainMapHdrType(SkJpegCodec* jpegCodec,
     uint32_t& offset) __attribute__((no_sanitize("cfi")))
@@ -293,6 +307,7 @@ static ImageHdrType CheckJpegGainMapHdrType(SkJpegCodec* jpegCodec,
     vector<jpeg_marker_struct*> isoMarkerList;
     vector<uint32_t> isoPreMarkerOffset;
     vector<uint32_t> vividPreMarkerOffset;
+    jpeg_marker_struct* mediaMarker;
     for (jpeg_marker_struct* marker = jpegCodec->decoderMgr()->dinfo()->marker_list; marker; marker = marker->next) {
         if (JPEG_MARKER_APP8 == marker->marker) {
             vividMarkerList.push_back(marker);
@@ -307,6 +322,10 @@ static ImageHdrType CheckJpegGainMapHdrType(SkJpegCodec* jpegCodec,
         }
         if (JPEG_MARKER_APP0 == (marker->marker & 0xF0)) {
             allAppSize += marker->data_length + JPEG_MARKER_TAG_SIZE + JPEG_MARKER_LENGTH_SIZE;
+        }
+        if (JPEG_MARKER_APP11 == marker->marker) {
+            IMAGE_LOGI("HDR-IMAGE find app11");
+            mediaMarker = marker;
         }
     }
     if (GetVividJpegGainMapOffset(vividMarkerList, vividPreMarkerOffset, offset)) {
@@ -324,6 +343,10 @@ static ImageHdrType CheckJpegGainMapHdrType(SkJpegCodec* jpegCodec,
     bool cond = GetISOJpegGainMapOffset(isoMarkerList, isoPreMarkerOffset, offset);
     auto ret = ImageHdrType::HDR_ISO_DUAL;
     CHECK_ERROR_RETURN_RET(cond, ret);
+    if (IsVaildHdrMediaType(mediaMarker)) {
+        IMAGE_LOGI("HDR-IMAGE SUCCESS");
+        return ImageHdrType::HDR_LOG_DUAL;
+    }
     return ImageHdrType::SDR;
 }
 
@@ -1002,6 +1025,12 @@ vector<uint8_t> HdrJpegPackerHelper::PackHdrMediaTypeMarker(HdrMetadata& hdrMeta
 
 static void PackExtendInfoMain(vector<uint8_t>& bytes, uint32_t& offset, HDRVividExtendMetadata& metadata)
 {
+    IMAGE_LOGI("HDR-IMAGE PackISO MinGainmap = %{public}f, MaxGainmap = %{public}f,"
+               "BaselineOffset = %{public}f, AlternateOffset = %{public}f",
+               metadata.metaISO.enhanceClippedThreholdMinGainmap[INDEX_ZERO],
+               metadata.metaISO.enhanceClippedThreholdMaxGainmap[INDEX_ZERO],
+               metadata.metaISO.enhanceMappingBaselineOffset[INDEX_ZERO],
+               metadata.metaISO.enhanceMappingAlternateOffset[INDEX_ZERO]);
     ImageUtils::FloatToBytes(metadata.metaISO.enhanceClippedThreholdMinGainmap[INDEX_ZERO], bytes, offset);
     ImageUtils::FloatToBytes(metadata.metaISO.enhanceClippedThreholdMaxGainmap[INDEX_ZERO], bytes, offset);
     ImageUtils::FloatToBytes(metadata.metaISO.enhanceMappingGamma[INDEX_ZERO], bytes, offset);
@@ -1286,6 +1315,24 @@ static bool WriteJpegPreApp(sk_sp<SkData>& imageData, SkWStream& outputStream, u
         index += (markerSize + JPEG_MARKER_TAG_SIZE);
     }
     return false;
+}
+
+uint32_t HdrJpegPackerHelper::SpliceLogHdrStream(sk_sp<SkData>& baseImage,
+    SkWStream& output, Media::HdrMetadata& metadata)
+{
+    if (baseImage == nullptr) {
+        return ERR_IMAGE_ENCODE_FAILED;
+    }
+    uint32_t offset = 0;
+    uint32_t jfifSize = 0;
+    if (!WriteJpegPreApp(baseImage, output, offset, jfifSize)) {
+        return ERR_IMAGE_ENCODE_FAILED;
+    }
+    std::vector<uint8_t> HdrMediaTypeInfo = PackHdrMediaTypeMarker(metadata);
+    output.write(HdrMediaTypeInfo.data(), HdrMediaTypeInfo.size());
+    const uint8_t* baseBytes = reinterpret_cast<const uint8_t*>(baseImage->data());
+    output.write(baseBytes + offset, baseImage->size() - offset);
+    return SUCCESS;
 }
 
 uint32_t HdrJpegPackerHelper::SpliceHdrStream(sk_sp<SkData>& baseImage, sk_sp<SkData>& gainmapImage,

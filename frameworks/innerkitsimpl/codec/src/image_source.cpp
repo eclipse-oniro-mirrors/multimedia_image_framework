@@ -72,6 +72,7 @@
 #include "v1_0/buffer_handle_meta_key_type.h"
 #include "v1_0/cm_color_space.h"
 #include "v1_0/hdr_static_metadata.h"
+#include "display/graphic/common/v2_1/cm_color_space.h"
 #include "vpe_utils.h"
 #endif
 #ifdef USE_M133_SKIA
@@ -106,6 +107,7 @@ using namespace ImagePlugin;
 using namespace MultimediaPlugin;
 #if !defined(_WIN32) && !defined(_APPLE) && !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
 using namespace HDI::Display::Graphic::Common::V1_0;
+using CM_ColorSpaceType_V2_1 = OHOS::HDI::Display::Graphic::Common::V2_1::CM_ColorSpaceType;
 
 static const map<PixelFormat, GraphicPixelFormat> SINGLE_HDR_CONVERT_FORMAT_MAP = {
     { PixelFormat::RGBA_8888, GRAPHIC_PIXEL_FMT_RGBA_8888 },
@@ -165,6 +167,7 @@ constexpr int32_t DMA_ALLOC = 1;
 constexpr int32_t SHARE_MEMORY_ALLOC = 2;
 constexpr int32_t AUTO_ALLOC = 0;
 static constexpr uint8_t JPEG_SOI[] = { 0xFF, 0xD8, 0xFF };
+constexpr uint8_t PIXEL_BYTES = 4;
 
 struct AstcExtendInfo {
     uint32_t extendBufferSumBytes = 0;
@@ -2094,7 +2097,8 @@ bool ImageSource::IsSingleHdrImage(ImageHdrType type)
 
 bool ImageSource::IsDualHdrImage(ImageHdrType type)
 {
-    return type == ImageHdrType::HDR_VIVID_DUAL || type == ImageHdrType::HDR_ISO_DUAL || type == ImageHdrType::HDR_CUVA;
+    return type == ImageHdrType::HDR_VIVID_DUAL || type == ImageHdrType::HDR_ISO_DUAL || type == ImageHdrType::HDR_CUVA
+        || type == ImageHdrType::HDR_LOG_DUAL;
 }
 
 NATIVEEXPORT std::shared_ptr<ExifMetadata> ImageSource::GetExifMetadata()
@@ -4231,7 +4235,7 @@ bool ImageSource::ApplyGainMap(ImageHdrType hdrType, DecodeContext& baseCtx, Dec
         IMAGE_LOGI("[ImageSource] jpeg get gainmap failed");
         return false;
     }
-    IMAGE_LOGD("get hdr metadata, extend flag is %{public}d, static size is %{public}zu,"
+    IMAGE_LOGD("HDR-IMAGE get hdr metadata, extend flag is %{public}d, static size is %{public}zu,"
         "dynamic metadata size is %{public}zu",
         metadata.extendMetaFlag, metadata.staticMetadata.size(), metadata.dynamicMetadata.size());
     bool result = ComposeHdrImage(hdrType, baseCtx, gainMapCtx, hdrCtx, metadata);
@@ -4263,12 +4267,35 @@ static CM_HDR_Metadata_Type GetHdrMediaType(HdrMetadata& metadata)
     return hdrMetadataType;
 }
 
-static uint32_t AllocHdrSurfaceBuffer(DecodeContext& context, ImageHdrType hdrType, CM_ColorSpaceType color)
+static void ApplyMemoryForHdr(DecodeContext& hdrCtx, CM_ColorSpaceType hdrCmColor,
+    ImageHdrType hdrType, const std::shared_ptr<PixelMap> &reusePixelmap)
+{
+#if !defined(CROSS_PLATFORM)
+    hdrCtx.grColorSpaceName = ConvertColorSpaceName(hdrCmColor, false);
+    CM_HDR_Metadata_Type type;
+    if (hdrType == ImageHdrType::HDR_VIVID_DUAL || hdrType == ImageHdrType::HDR_CUVA) {
+        type = CM_IMAGE_HDR_VIVID_SINGLE;
+    } else if (hdrType == ImageHdrType::HDR_ISO_DUAL) {
+        type = CM_IMAGE_HDR_ISO_SINGLE;
+    }
+    sptr<SurfaceBuffer> surfaceBuf(reinterpret_cast<SurfaceBuffer*>(reusePixelmap->GetFd()));
+    VpeUtils::SetSbMetadataType(surfaceBuf, type);
+    VpeUtils::SetSbColorSpaceType(surfaceBuf, hdrCmColor);
+#endif
+}
+
+static uint32_t AllocHdrSurfaceBuffer(DecodeContext& context, ImageHdrType hdrType, CM_ColorSpaceType color,
+                                      const std::shared_ptr<PixelMap> &reusePixelmap)
 {
 #if defined(_WIN32) || defined(_APPLE) || defined(ANDROID_PLATFORM) || defined(IOS_PLATFORM)
     IMAGE_LOGE("UnSupport dma mem alloc");
     return ERR_IMAGE_DATA_UNSUPPORT;
 #else
+    if (ImageUtils::IsHdrPixelMapReuseSuccess(context, context.info.size.width, context.info.size.height,
+        reusePixelmap)) {
+        ApplyMemoryForHdr(context, color, hdrType, reusePixelmap);
+        IMAGE_LOGI("HDR-IMAGE reusePixelmap success");
+    }
     sptr<SurfaceBuffer> sb = SurfaceBuffer::Create();
     auto hdrPixelFormat = GRAPHIC_PIXEL_FMT_RGBA_1010102;
     if (context.photoDesiredPixelFormat == PixelFormat::YCBCR_P010) {
@@ -4306,20 +4333,30 @@ static uint32_t AllocHdrSurfaceBuffer(DecodeContext& context, ImageHdrType hdrTy
 }
 #endif
 
-void ImageSource::ApplyMemoryForHdr(DecodeContext& hdrCtx, CM_ColorSpaceType hdrCmColor, ImageHdrType hdrType)
+static void SetResLog(sptr<SurfaceBuffer>& baseSptr, sptr<SurfaceBuffer>& gainmapSptr, sptr<SurfaceBuffer>& hdrSptr)
 {
-#if !defined(CROSS_PLATFORM)
-    hdrCtx.grColorSpaceName = ConvertColorSpaceName(hdrCmColor, false);
-    CM_HDR_Metadata_Type type;
-    if (hdrType == ImageHdrType::HDR_VIVID_DUAL || hdrType == ImageHdrType::HDR_CUVA) {
-        type = CM_IMAGE_HDR_VIVID_SINGLE;
-    } else if (hdrType == ImageHdrType::HDR_ISO_DUAL) {
-        type = CM_IMAGE_HDR_ISO_SINGLE;
+    VpeUtils::SetSurfaceBufferInfo(baseSptr, CM_BT709_LIMIT);
+    VpeUtils::SetSurfaceBufferInfo(gainmapSptr, CM_BT709_LIMIT);
+    VpeUtils::SetSurfaceBufferInfo(hdrSptr, CM_BT709_LIMIT);
+    VpeUtils::SetSbMetadataType(baseSptr, CM_IMAGE_HDR_VIVID_DUAL);
+    VpeUtils::SetSbMetadataType(gainmapSptr, CM_IMAGE_HDR_VIVID_DUAL);
+    VpeUtils::SetSbMetadataType(hdrSptr, CM_IMAGE_HDR_VIVID_SINGLE);
+}
+
+void ImageSource::SpecialSetComposeBuffer(sptr<SurfaceBuffer>& baseSptr, sptr<SurfaceBuffer>& gainmapSptr,
+                                          sptr<SurfaceBuffer>& hdrSptr, HdrMetadata& metadata)
+{
+    // videoHdrImage special process
+    CM_HDR_Metadata_Type videoToImageHdrType = GetHdrMediaType(metadata);
+    bool isVideoMetaDataType = videoToImageHdrType == CM_IMAGE_HDR_VIVID_SINGLE;
+    if (isVideoMetaDataType) {
+        IMAGE_LOGI("HDR-IMAGE set video hdr type");
+        VpeUtils::SetSbMetadataType(gainmapSptr, videoToImageHdrType);
     }
-    sptr<SurfaceBuffer> surfaceBuf(reinterpret_cast<SurfaceBuffer*>(opts_.reusePixelmap->GetFd()));
-    VpeUtils::SetSbMetadataType(surfaceBuf, type);
-    VpeUtils::SetSbColorSpaceType(surfaceBuf, hdrCmColor);
-#endif
+    // logHdrImage special process
+    if (sourceHdrType_ == ImageHdrType::HDR_LOG_DUAL) {
+        SetResLog(baseSptr, gainmapSptr, hdrSptr);
+    }
 }
 
 bool ImageSource::ComposeHdrImage(ImageHdrType hdrType, DecodeContext& baseCtx, DecodeContext& gainMapCtx,
@@ -4345,39 +4382,26 @@ bool ImageSource::ComposeHdrImage(ImageHdrType hdrType, DecodeContext& baseCtx, 
         metadata.extendMeta.metaISO.useBaseColorFlag, metadata.extendMeta.metaISO.gainmapChannelNum);
     SetVividMetaColor(metadata, baseCmColor, gainmapCmColor, hdrCmColor);
     VpeUtils::SetSurfaceBufferInfo(gainmapSptr, true, hdrType, gainmapCmColor, metadata);
-    // videoHdrImage special process
-    CM_HDR_Metadata_Type videoToimageHdrType = GetHdrMediaType(metadata);
-    bool isVideoMetaDataType = videoToimageHdrType == CM_IMAGE_HDR_VIVID_SINGLE;
-    if (isVideoMetaDataType) {
-        VpeUtils::SetSbMetadataType(gainmapSptr, videoToimageHdrType);
-    }
-    // hdr image
-
-    if (ImageUtils::IsHdrPixelMapReuseSuccess(hdrCtx, hdrCtx.info.size.width, hdrCtx.info.size.height,
-        opts_.reusePixelmap)) {
-        ApplyMemoryForHdr(hdrCtx, hdrCmColor, hdrType);
-        IMAGE_LOGI("HDR reusePixelmap success");
-    } else {
-        uint32_t errorCode = AllocHdrSurfaceBuffer(hdrCtx, hdrType, hdrCmColor);
-        bool cond = (errorCode != SUCCESS);
-        CHECK_ERROR_RETURN_RET_LOG(cond, false, "HDR SurfaceBuffer Alloc failed, %{public}d", errorCode);
-    }
+    // alloc hdr image
+    uint32_t errorCode = AllocHdrSurfaceBuffer(hdrCtx, hdrType, hdrCmColor, opts_.reusePixelmap);
+    bool cond = (errorCode != SUCCESS);
+    CHECK_ERROR_RETURN_RET_LOG(cond, false, "HDR SurfaceBuffer Alloc failed, %{public}d", errorCode);
     sptr<SurfaceBuffer> hdrSptr(reinterpret_cast<SurfaceBuffer*>(hdrCtx.pixelsBuffer.context));
+    SpecialSetComposeBuffer(baseSptr, gainmapSptr, hdrSptr, metadata);
     VpeSurfaceBuffers buffers = {
         .sdr = baseSptr,
         .gainmap = gainmapSptr,
         .hdr = hdrSptr,
     };
     std::unique_ptr<VpeUtils> utils = std::make_unique<VpeUtils>();
-    bool legacy = hdrType == ImageHdrType::HDR_CUVA;
-    int32_t res = utils->ColorSpaceConverterComposeImage(buffers, legacy);
+    int32_t res = utils->ColorSpaceConverterComposeImage(buffers, hdrType == ImageHdrType::HDR_CUVA);
     if (res != VPE_ERROR_OK) {
-        IMAGE_LOGI("[ImageSource] composeImage failed");
+        IMAGE_LOGE("[ImageSource] composeImage failed");
         FreeContextBuffer(hdrCtx.freeFunc, hdrCtx.allocatorType, hdrCtx.pixelsBuffer);
         return false;
     }
     SetDmaContextYuvInfo(hdrCtx);
-    if (isVideoMetaDataType) {
+    if (GetHdrMediaType(metadata) == CM_IMAGE_HDR_VIVID_SINGLE) {
         VpeUtils::SetSbMetadataType(hdrSptr, static_cast<CM_HDR_Metadata_Type>(metadata.hdrMetadataType));
     }
     return true;

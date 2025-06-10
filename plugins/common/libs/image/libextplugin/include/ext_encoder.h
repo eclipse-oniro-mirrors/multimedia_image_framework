@@ -91,6 +91,7 @@ private:
     uint32_t EncodeJpegPictureSdr(SkWStream& skStream);
     void EncodeJpegAuxiliaryPictures(SkWStream& skStream);
     uint32_t WriteJpegCodedData(std::shared_ptr<AuxiliaryPicture>& auxPicture, SkWStream& skStream);
+    void EncodeLogVideoDataToBlobMetadata(sptr<SurfaceBuffer>& surfaceBuffer, SkWStream& skStream);
     uint32_t SpliceFragmentStream(SkWStream& skStream, sk_sp<SkData>& skData);
     uint32_t WriteJpegUncodedData(std::shared_ptr<AuxiliaryPicture>& auxPicture, SkWStream& skStream);
     void WriteJpegAuxiliarySizeAndTag(uint32_t size, std::shared_ptr<AuxiliaryPicture>& auxPicture,

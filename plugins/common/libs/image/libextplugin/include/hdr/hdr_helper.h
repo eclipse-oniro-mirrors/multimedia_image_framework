@@ -35,6 +35,8 @@ class HdrJpegPackerHelper {
 public:
     static uint32_t SpliceHdrStream(sk_sp<SkData>& baseImage, sk_sp<SkData>& gainmapImage,
         SkWStream& output, Media::HdrMetadata& metadata);
+    uint32_t SpliceLogHdrStream(sk_sp<SkData>& baseImage,
+        SkWStream& output, Media::HdrMetadata& metadata);
 private:
     static std::vector<uint8_t> PackVividMetadataMarker(Media::HdrMetadata& metadata);
     static std::vector<uint8_t> PackISOMetadataMarker(Media::HdrMetadata& metadata);

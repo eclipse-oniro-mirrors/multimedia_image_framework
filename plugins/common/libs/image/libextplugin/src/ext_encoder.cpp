@@ -57,6 +57,7 @@
 #include "v1_0/buffer_handle_meta_key_type.h"
 #include "v1_0/cm_color_space.h"
 #include "v1_0/hdr_static_metadata.h"
+#include "v2_1/cm_color_space.h"
 #include "vpe_utils.h"
 #include "hdr_helper.h"
 #endif
@@ -83,6 +84,7 @@ namespace ImagePlugin {
 using namespace Media;
 #if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
 using namespace HDI::Display::Graphic::Common::V1_0;
+using CM_ColorSpaceType_V2_1 = OHOS::HDI::Display::Graphic::Common::V2_1::CM_ColorSpaceType;
 const std::map<PixelFormat, GraphicPixelFormat> SURFACE_FORMAT_MAP = {
     { PixelFormat::RGBA_8888, GRAPHIC_PIXEL_FMT_RGBA_8888 },
     { PixelFormat::NV21, GRAPHIC_PIXEL_FMT_YCRCB_420_SP },
@@ -132,6 +134,9 @@ namespace {
     constexpr uint32_t RGBA8888_PIXEL_BYTES = 4;
     constexpr uint32_t HIGHEST_QUALITY = 100;
     constexpr uint32_t DEFAULT_QUALITY = 75;
+    static constexpr uint32_t TRANSFUNC_OFFSET = 8;
+    static constexpr uint32_t MATRIX_OFFSET = 8;
+    static constexpr uint32_t RANGE_OFFSET = 8;
 
     // exif/0/0
     constexpr uint8_t EXIF_PRE_TAG[EXIF_PRE_SIZE] = {
@@ -1351,7 +1356,7 @@ uint32_t ExtEncoder::EncodeDualVivid(ExtWStream& outputStream)
         .hdr = hdrSurfaceBuffer,
     };
     if (!DecomposeImage(buffers, metadata, false, sdrIsSRGB)) {
-        IMAGE_LOGE("EncodeDualVivid decomposeImage failed");
+        IMAGE_LOGE("HDR-IMAGE EncodeDualVivid decomposeImage failed");
         FreeBaseAndGainMapSurfaceBuffer(baseSptr, gainMapSptr);
         return IMAGE_RESULT_CREATE_SURFAC_FAILED;
     }
@@ -1863,6 +1868,77 @@ void ExtEncoder::EncodeJpegAuxiliaryPictures(SkWStream& skStream)
             WriteJpegAuxiliarySizeAndTag(currentDataSize, auxPicture, skStream);
         }
     }
+}
+
+bool ConvertBufferToData(sptr<SurfaceBuffer>& surfaceBuffer, std::vector<uint8_t>& pixels)
+{
+    if (surfaceBuffer == nullptr) {
+        return false;
+    }
+    uint32_t width = static_cast<uint32_t>(surfaceBuffer->GetWidth());
+    uint32_t height = static_cast<uint32_t>(surfaceBuffer->GetHeight());
+    uint32_t stride = static_cast<uint32_t>(surfaceBuffer->GetStride());
+    uint32_t dstStride = width * RGBA8888_PIXEL_BYTES;
+    uint32_t bufferSize = height * dstStride;
+    uint8_t *srcBuf = static_cast<uint8_t *>(surfaceBuffer->GetVirAddr());
+    pixels.resize(bufferSize);
+    uint8_t *dstBuf = pixels.data();
+    for (uint32_t i = 0; i < height; ++i) {
+        if (memcpy_s(dstBuf + i * dstStride, dstStride, srcBuf + i * stride, dstStride) != EOK) {
+            IMAGE_LOGE("HDR-IMAGE ConvertBufferToData copy memory failed");
+            return false;
+        }
+    }
+    return true;
+}
+
+void SetLogResMapColorSpaceType(CM_ColorSpaceType& colorSpaceType, LogResMapMetadata& colorData)
+{
+    uint32_t colorSpace = static_cast<uint32_t>(colorSpaceType);
+    colorData.primaries = static_cast<CM_ColorPrimaries>(colorSpace & CM_PRIMARIES_MASK);
+    colorData.transfunc = static_cast<CM_TransFunc>((colorSpace & CM_TRANSFUNC_MASK) >> TRANSFUNC_OFFSET);
+    colorData.matrix = static_cast<CM_Matrix>((colorSpace & CM_MATRIX_MASK) >> MATRIX_OFFSET);
+    colorData.range = static_cast<CM_Range>((colorSpace & CM_RANGE_MASK) >> RANGE_OFFSET);
+}
+
+void ExtEncoder::EncodeLogVideoDataToBlobMetadata(sptr<SurfaceBuffer>& surfaceBuffer, SkWStream& skStream)
+{
+    // write version
+    const char version[] = RFIMAGE_ID;
+    std::string versionTag(version, sizeof(version) - 1);
+    std::vector<uint8_t> versionDataTag(versionTag.begin(), versionTag.end());
+    skStream.write(versionDataTag.data(), versionDataTag.size());
+    // write colors
+    LogResMapMetadata colorData;
+    CM_ColorSpaceType colorSpaceType;
+    VpeUtils::GetSbColorSpaceType(surfaceBuffer, colorSpaceType);
+    SetLogResMapColorSpaceType(colorSpaceType, colorData);
+    colorData.width = static_cast<uint16_t>(surfaceBuffer->GetWidth());
+    colorData.height = static_cast<uint16_t>(surfaceBuffer->GetHeight());
+    colorData.pixelFormat = static_cast<uint16_t>(surfaceBuffer->GetFormat());
+    if (surfaceBuffer->GetFormat() != GRAPHIC_PIXEL_FMT_RGBA_8888) {
+        IMAGE_LOGE("HDR-IMAGE encode res-map unsupported format");
+        return;
+    }
+    size_t colorDataSize = sizeof(colorData);
+    skStream.write(&colorData, colorDataSize);
+    // write pixels
+    std::vector<uint8_t> pixels;
+    if (!ConvertBufferToData(surfaceBuffer, pixels)) {
+        return;
+    }
+    size_t pixelSize = pixels.size();
+    skStream.write(pixels.data(), pixelSize);
+    // write size
+    size_t writeSize = versionDataTag.size() + colorDataSize + pixelSize;
+    IMAGE_LOGI("HDR-IMAGE try to encode Log-video metadata, datasize %{public}zu", writeSize);
+    std::vector<uint8_t> dataSize = JpegMpfPacker::PackDataSize(writeSize, false);
+    skStream.write(dataSize.data(), dataSize.size());
+    // write tag
+    const char rawTagName[] = "Res-Map\0";
+    std::string tagName(rawTagName, sizeof(rawTagName) - 1);
+    std::vector<uint8_t> dataTag(tagName.begin(), tagName.end());
+    skStream.write(dataTag.data(), dataTag.size());
 }
 
 uint32_t ExtEncoder::WriteJpegCodedData(std::shared_ptr<AuxiliaryPicture>& auxPicture, SkWStream& skStream)

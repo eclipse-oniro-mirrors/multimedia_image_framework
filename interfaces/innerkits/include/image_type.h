@@ -49,6 +49,9 @@ namespace Media {
 #define HEIF_AUXTTYPE_ID_LINEAR_MAP "urn:com:huawei:photo:5:0:0:aux:linearhmap"
 #define HEIF_AUXTTYPE_ID_FRAGMENT_MAP "urn:com:huawei:photo:5:0:0:aux:fragmentmap"
 
+#define RFIMAGE_ID "urn:com:huawei:photo:5:1:0:meta:Res-Map"
+#define METADATA_TAG_RESMAP "Res-Map\0"
+
 enum class AllocatorType : int32_t {
     // keep same with java AllocatorType
     DEFAULT = 0,
