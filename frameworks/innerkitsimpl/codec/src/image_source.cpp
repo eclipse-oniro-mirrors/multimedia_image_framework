@@ -4287,32 +4287,6 @@ static uint32_t AllocHdrSurfaceBuffer(DecodeContext& context, ImageHdrType hdrTy
 }
 #endif
 
-static void SetResLog(sptr<SurfaceBuffer>& baseSptr, sptr<SurfaceBuffer>& gainmapSptr, sptr<SurfaceBuffer>& hdrSptr)
-{
-    VpeUtils::SetSurfaceBufferInfo(baseSptr, CM_BT709_LIMIT);
-    VpeUtils::SetSurfaceBufferInfo(gainmapSptr, CM_BT709_LIMIT);
-    VpeUtils::SetSurfaceBufferInfo(hdrSptr, CM_BT709_LIMIT);
-    VpeUtils::SetSbMetadataType(baseSptr, CM_IMAGE_HDR_VIVID_DUAL);
-    VpeUtils::SetSbMetadataType(gainmapSptr, CM_IMAGE_HDR_VIVID_DUAL);
-    VpeUtils::SetSbMetadataType(hdrSptr, CM_IMAGE_HDR_VIVID_SINGLE);
-}
-
-void ImageSource::SpecialSetComposeBuffer(sptr<SurfaceBuffer>& baseSptr, sptr<SurfaceBuffer>& gainmapSptr,
-                                          sptr<SurfaceBuffer>& hdrSptr, HdrMetadata& metadata)
-{
-    // videoHdrImage special process
-    CM_HDR_Metadata_Type videoToImageHdrType = GetHdrMediaType(metadata);
-    bool isVideoMetaDataType = videoToImageHdrType == CM_IMAGE_HDR_VIVID_SINGLE;
-    if (isVideoMetaDataType) {
-        IMAGE_LOGI("HDR-IMAGE set video hdr type");
-        VpeUtils::SetSbMetadataType(gainmapSptr, videoToImageHdrType);
-    }
-    // logHdrImage special process
-    if (sourceHdrType_ == ImageHdrType::HDR_LOG_DUAL) {
-        SetResLog(baseSptr, gainmapSptr, hdrSptr);
-    }
-}
-
 bool ImageSource::ComposeHdrImage(ImageHdrType hdrType, DecodeContext& baseCtx, DecodeContext& gainMapCtx,
                                   DecodeContext& hdrCtx, HdrMetadata metadata)
 {
@@ -4444,6 +4418,33 @@ static bool CopyYUVToSurfaceBuffer(const DecodeContext& context, sptr<SurfaceBuf
         srcRow += yuvDataInfo.uvStride;
     }
     return true;
+}
+
+static void SetResLog(sptr<SurfaceBuffer>& baseSptr, sptr<SurfaceBuffer>& gainmapSptr, sptr<SurfaceBuffer>& hdrSptr)
+{
+    VpeUtils::SetSurfaceBufferInfo(baseSptr, CM_BT709_LIMIT);
+    VpeUtils::SetSurfaceBufferInfo(gainmapSptr, CM_BT709_LIMIT);
+    VpeUtils::SetSurfaceBufferInfo(hdrSptr, CM_BT709_LIMIT);
+    VpeUtils::SetSbMetadataType(baseSptr, CM_IMAGE_HDR_VIVID_DUAL);
+    VpeUtils::SetSbMetadataType(gainmapSptr, CM_IMAGE_HDR_VIVID_DUAL);
+    VpeUtils::SetSbMetadataType(hdrSptr, CM_IMAGE_HDR_VIVID_SINGLE);
+}
+
+
+void ImageSource::SpecialSetComposeBuffer(sptr<SurfaceBuffer>& baseSptr, sptr<SurfaceBuffer>& gainmapSptr,
+                                          sptr<SurfaceBuffer>& hdrSptr, HdrMetadata& metadata)
+{
+    // videoHdrImage special process
+    CM_HDR_Metadata_Type videoToImageHdrType = GetHdrMediaType(metadata);
+    bool isVideoMetaDataType = videoToImageHdrType == CM_IMAGE_HDR_VIVID_SINGLE;
+    if (isVideoMetaDataType) {
+        IMAGE_LOGI("HDR-IMAGE set video hdr type");
+        VpeUtils::SetSbMetadataType(gainmapSptr, videoToImageHdrType);
+    }
+    // logHdrImage special process
+    if (sourceHdrType_ == ImageHdrType::HDR_LOG_DUAL) {
+        SetResLog(baseSptr, gainmapSptr, hdrSptr);
+    }
 }
 
 static uint32_t CopyContextIntoSurfaceBuffer(Size dstSize, const DecodeContext &context, DecodeContext &dstCtx,
