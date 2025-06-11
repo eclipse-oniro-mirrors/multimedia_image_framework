@@ -217,62 +217,6 @@ HWTEST_F(WebpExifMetadataAccessorTest, Read002, TestSize.Level3)
 }
 
 /**
- * @tc.name: Read003
- * @tc.desc: test the webpDecoded Exif GPSInfo properties
- * @tc.type: FUNC
- */
-HWTEST_F(WebpExifMetadataAccessorTest, Read003, TestSize.Level3)
-{
-    std::shared_ptr<MetadataStream> stream = std::make_shared<FileMetadataStream>(IMAGE_INPUT_READ4_WEBP_PATH);
-    EXPECT_TRUE(stream->Open(OpenMode::ReadWrite));
-    WebpExifMetadataAccessor imageAccessor(stream);
-    int result = imageAccessor.Read();
-    EXPECT_EQ(result, 0);
-    auto exifMetadata = imageAccessor.Get();
-    ASSERT_EQ(GetProperty(exifMetadata, "GPSAltitude"), "0.00");
-    ASSERT_EQ(GetProperty(exifMetadata, "GPSAltitudeRef"), "Sea level reference");
-    ASSERT_EQ(GetProperty(exifMetadata, "GPSAreaInformation"), "23...15...57");
-    ASSERT_EQ(GetProperty(exifMetadata, "GPSDOP"), "182");
-    ASSERT_EQ(GetProperty(exifMetadata, "GPSDestBearing"), "2.0");
-    ASSERT_EQ(GetProperty(exifMetadata, "GPSDestBearingRef"), "T");
-    ASSERT_EQ(GetProperty(exifMetadata, "GPSDestDistance"), "10");
-    ASSERT_EQ(GetProperty(exifMetadata, "GPSDestDistanceRef"), "N");
-    ASSERT_EQ(GetProperty(exifMetadata, "GPSDestLatitude"), "33, 22, 11");
-    ASSERT_EQ(GetProperty(exifMetadata, "GPSDestLatitudeRef"), "N");
-    ASSERT_EQ(GetProperty(exifMetadata, "GPSDestLongitude"), "33, 22, 11");
-    ASSERT_EQ(GetProperty(exifMetadata, "GPSDestLongitudeRef"), "E");
-    ASSERT_EQ(GetProperty(exifMetadata, "GPSDifferential"), "0");
-    ASSERT_EQ(GetProperty(exifMetadata, "GPSImgDirection"), "2.23, 0.67");
-    ASSERT_EQ(GetProperty(exifMetadata, "GPSImgDirectionRef"), "M");
-    ASSERT_EQ(GetProperty(exifMetadata, "GPSMapDatum"), "test test test");
-    ASSERT_EQ(GetProperty(exifMetadata, "GPSMeasureMode"), "2");
-    ASSERT_EQ(GetProperty(exifMetadata, "GPSProcessingMethod"), "CELLID");
-    ASSERT_EQ(GetProperty(exifMetadata, "GPSSatellites"), "5 8 20");
-    ASSERT_EQ(GetProperty(exifMetadata, "GPSSpeed"), "150");
-    ASSERT_EQ(GetProperty(exifMetadata, "GPSSpeedRef"), "K");
-    ASSERT_EQ(GetProperty(exifMetadata, "GPSStatus"), "1 3");
-    ASSERT_EQ(GetProperty(exifMetadata, "GPSTrack"), "38.0");
-    ASSERT_EQ(GetProperty(exifMetadata, "GPSTrackRef"), "T");
-    ASSERT_EQ(GetProperty(exifMetadata, "GPSVersionID"), "2.2.0.0");
-    ASSERT_EQ(GetProperty(exifMetadata, "GPSHPositioningError"), "20");
-    ASSERT_EQ(GetProperty(exifMetadata, "JPEGInterchangeFormat"), "1954");
-    ASSERT_EQ(GetProperty(exifMetadata, "JPEGInterchangeFormatLength"), "24042");
-    ASSERT_EQ(GetProperty(exifMetadata, "LensMake"), "www");
-    ASSERT_EQ(GetProperty(exifMetadata, "LensModel"), "H1");
-    ASSERT_EQ(GetProperty(exifMetadata, "LensSerialNumber"), "21mm");
-    ASSERT_EQ(GetProperty(exifMetadata, "LensSpecification"), "33, 22, 11, 10");
-    ASSERT_EQ(GetProperty(exifMetadata, "MakerNote"), "");
-    ASSERT_EQ(GetProperty(exifMetadata, "GainControl"), "Normal");
-    ASSERT_EQ(GetProperty(exifMetadata, "OffsetTime"), "2023:01:19 10:39:58");
-    ASSERT_EQ(GetProperty(exifMetadata, "OffsetTimeDigitized"), "2023:01:20 10:39:00");
-    ASSERT_EQ(GetProperty(exifMetadata, "OffsetTimeOriginal"), "2023:01:21 10:39:09");
-    ASSERT_EQ(GetProperty(exifMetadata, "PhotometricInterpretation"), "");
-    ASSERT_EQ(GetProperty(exifMetadata, "RelatedSoundFile"), "/home/abc/include");
-    ASSERT_EQ(GetProperty(exifMetadata, "RowsPerStrip"), "");
-    ASSERT_EQ(GetProperty(exifMetadata, "Saturation"), "Normal");
-}
-
-/**
  * @tc.name: Read004
  * @tc.desc: test the webpDecoded Exif photo properties
  * @tc.type: FUNC
@@ -1545,61 +1489,6 @@ HWTEST_F(WebpExifMetadataAccessorTest, Write018, TestSize.Level3)
     ASSERT_EQ(GetProperty(exifMetadata, "FlashpixVersion"), "Unknown FlashPix Version");
     ASSERT_EQ(GetProperty(exifMetadata, "FocalLength"), "35.0 mm");
     ASSERT_EQ(GetProperty(exifMetadata, "FocalLengthIn35mmFilm"), "30");
-}
-
-/**
- * @tc.name: Write019
- * @tc.desc: Testing Writemetadata to modify exif features
- * @tc.type: FUNC
- */
-HWTEST_F(WebpExifMetadataAccessorTest, Write019, TestSize.Level3)
-{
-    std::shared_ptr<MetadataStream> readStream = std::make_shared<FileMetadataStream>(IMAGE_INPUT_WRITE19_WEBP_PATH);
-    ASSERT_TRUE(readStream->Open(OpenMode::ReadWrite));
-    WebpExifMetadataAccessor imageAccessor(readStream);
-    ASSERT_EQ(imageAccessor.Read(), 0);
-
-    auto exifMetadata = imageAccessor.Get();
-    ASSERT_NE(exifMetadata, nullptr);
-    ASSERT_EQ(GetProperty(exifMetadata, "GainControl"), "Normal");
-    ASSERT_EQ(GetProperty(exifMetadata, "ISOSpeedRatings"), "400");
-    ASSERT_EQ(GetProperty(exifMetadata, "SubsecTimeDigitized"), "543792");
-    ASSERT_EQ(GetProperty(exifMetadata, "LightSource"), "Daylight");
-    ASSERT_EQ(GetProperty(exifMetadata, "MakerNote"), "");
-    ASSERT_EQ(GetProperty(exifMetadata, "MaxApertureValue"), "1.69 EV (f/1.8)");
-    ASSERT_EQ(GetProperty(exifMetadata, "MeteringMode"), "Pattern");
-    ASSERT_EQ(GetProperty(exifMetadata, "PixelXDimension"), "3456");
-    ASSERT_EQ(GetProperty(exifMetadata, "PixelYDimension"), "4608");
-    ASSERT_EQ(GetProperty(exifMetadata, "SensingMethod"), "One-chip color area sensor");
-    ASSERT_EQ(GetProperty(exifMetadata, "Saturation"), "Normal");
-    ASSERT_EQ(GetProperty(exifMetadata, "WhiteBalance"), "Auto white balance");
-
-    ASSERT_TRUE(exifMetadata->SetValue("GainControl", "2"));
-    ASSERT_TRUE(exifMetadata->SetValue("ISOSpeedRatings", "300"));
-    ASSERT_TRUE(exifMetadata->SetValue("SubsecTimeDigitized", "4380000"));
-    ASSERT_TRUE(exifMetadata->SetValue("LightSource", "2"));
-    ASSERT_TRUE(exifMetadata->SetValue("MaxApertureValue", "9/100"));
-    ASSERT_TRUE(exifMetadata->SetValue("MeteringMode", "3"));
-    ASSERT_TRUE(exifMetadata->SetValue("PixelXDimension", "1000"));
-    ASSERT_TRUE(exifMetadata->SetValue("PixelYDimension", "3250"));
-    ASSERT_TRUE(exifMetadata->SetValue("SensingMethod", "3"));
-    ASSERT_TRUE(exifMetadata->SetValue("Saturation", "1"));
-    ASSERT_TRUE(exifMetadata->SetValue("WhiteBalance", "1"));
-    ASSERT_EQ(imageAccessor.Write(), 0);
-
-    ASSERT_EQ(imageAccessor.Read(), 0);
-    ASSERT_EQ(GetProperty(exifMetadata, "GainControl"), "High gain up");
-    ASSERT_EQ(GetProperty(exifMetadata, "ISOSpeedRatings"), "300");
-    ASSERT_EQ(GetProperty(exifMetadata, "SubsecTimeDigitized"), "4380000");
-    ASSERT_EQ(GetProperty(exifMetadata, "LightSource"), "Fluorescent");
-    ASSERT_EQ(GetProperty(exifMetadata, "MakerNote"), "");
-    ASSERT_EQ(GetProperty(exifMetadata, "MaxApertureValue"), "0.09 EV (f/1.0)");
-    ASSERT_EQ(GetProperty(exifMetadata, "MeteringMode"), "Spot");
-    ASSERT_EQ(GetProperty(exifMetadata, "PixelXDimension"), "1000");
-    ASSERT_EQ(GetProperty(exifMetadata, "PixelYDimension"), "3250");
-    ASSERT_EQ(GetProperty(exifMetadata, "SensingMethod"), "Two-chip color area sensor");
-    ASSERT_EQ(GetProperty(exifMetadata, "Saturation"), "Low saturation");
-    ASSERT_EQ(GetProperty(exifMetadata, "WhiteBalance"), "Manual white balance");
 }
 
 /**

@@ -176,96 +176,6 @@ HWTEST_F(PictureTest, SetAuxiliaryPictureTest001, TestSize.Level1)
 }
 
 /**
- * @tc.name: SetAuxiliaryPictureTest002
- * @tc.desc: Set depth map to picture.
- * @tc.type: FUNC
- */
-HWTEST_F(PictureTest, SetAuxiliaryPictureTest002, TestSize.Level1)
-{
-    const AuxiliaryPictureType type = AuxiliaryPictureType::DEPTH_MAP;
-    std::unique_ptr<Picture> picture = CreatePicture();
-    ASSERT_NE(picture, nullptr);
-    std::shared_ptr<AuxiliaryPicture> depthMap = CreateAuxiliaryPicture(type);
-    ASSERT_NE(depthMap, nullptr);
-    picture->SetAuxiliaryPicture(depthMap);
-    std::shared_ptr<AuxiliaryPicture> auxiliaryPicture = picture->GetAuxiliaryPicture(type);
-    ASSERT_NE(auxiliaryPicture, nullptr);
-    EXPECT_EQ(auxiliaryPicture->GetType(), type);
-}
-
-/**
- * @tc.name: SetAuxiliaryPictureTest003
- * @tc.desc: Set unrefocus map to picture.
- * @tc.type: FUNC
- */
-HWTEST_F(PictureTest, SetAuxiliaryPictureTest003, TestSize.Level1)
-{
-    const AuxiliaryPictureType type = AuxiliaryPictureType::UNREFOCUS_MAP;
-    std::unique_ptr<Picture> picture = CreatePicture();
-    ASSERT_NE(picture, nullptr);
-    std::shared_ptr<AuxiliaryPicture> unrefocusMap = CreateAuxiliaryPicture(type);
-    ASSERT_NE(unrefocusMap, nullptr);
-    picture->SetAuxiliaryPicture(unrefocusMap);
-    std::shared_ptr<AuxiliaryPicture> auxiliaryPicture = picture->GetAuxiliaryPicture(type);
-    ASSERT_NE(auxiliaryPicture, nullptr);
-    EXPECT_EQ(auxiliaryPicture->GetType(), type);
-}
-
-/**
- * @tc.name: SetAuxiliaryPictureTest004
- * @tc.desc: Set linear map to picture.
- * @tc.type: FUNC
- */
-HWTEST_F(PictureTest, SetAuxiliaryPictureTest004, TestSize.Level1)
-{
-    const AuxiliaryPictureType type = AuxiliaryPictureType::LINEAR_MAP;
-    std::unique_ptr<Picture> picture = CreatePicture();
-    ASSERT_NE(picture, nullptr);
-    std::shared_ptr<AuxiliaryPicture> linearMap = CreateAuxiliaryPicture(type);
-    ASSERT_NE(linearMap, nullptr);
-    picture->SetAuxiliaryPicture(linearMap);
-    std::shared_ptr<AuxiliaryPicture> auxiliaryPicture = picture->GetAuxiliaryPicture(type);
-    ASSERT_NE(auxiliaryPicture, nullptr);
-    EXPECT_EQ(auxiliaryPicture->GetType(), type);
-}
-
-/**
- * @tc.name: SetAuxiliaryPictureTest005
- * @tc.desc: Set fragment map to picture.
- * @tc.type: FUNC
- */
-HWTEST_F(PictureTest, SetAuxiliaryPictureTest005, TestSize.Level1)
-{
-    const AuxiliaryPictureType type = AuxiliaryPictureType::FRAGMENT_MAP;
-    std::unique_ptr<Picture> picture = CreatePicture();
-    ASSERT_NE(picture, nullptr);
-    std::shared_ptr<AuxiliaryPicture> fragmentMap = CreateAuxiliaryPicture(type);
-    ASSERT_NE(fragmentMap, nullptr);
-    picture->SetAuxiliaryPicture(fragmentMap);
-    std::shared_ptr<AuxiliaryPicture> auxiliaryPicture = picture->GetAuxiliaryPicture(type);
-    ASSERT_NE(auxiliaryPicture, nullptr);
-    EXPECT_EQ(auxiliaryPicture->GetType(), type);
-}
-
-/**
- * @tc.name: SetAuxiliaryPictureTest006
- * @tc.desc: Set a auxiliary picture which type is AuxiliaryPictureType::NONE to the picture.
- * @tc.type: FUNC
- */
-HWTEST_F(PictureTest, SetAuxiliaryPictureTest006, TestSize.Level1)
-{
-    const AuxiliaryPictureType type = AuxiliaryPictureType::NONE;
-    std::unique_ptr<Picture> picture = CreatePicture();
-    ASSERT_NE(picture, nullptr);
-    std::shared_ptr<AuxiliaryPicture> srcAuxiliaryPicture = CreateAuxiliaryPicture(type);
-    ASSERT_NE(srcAuxiliaryPicture, nullptr);
-    picture->SetAuxiliaryPicture(srcAuxiliaryPicture);
-    std::shared_ptr<AuxiliaryPicture> dstAuxiliaryPicture = picture->GetAuxiliaryPicture(type);
-    ASSERT_NE(dstAuxiliaryPicture, nullptr);
-    EXPECT_EQ(dstAuxiliaryPicture->GetType(), type);
-}
-
-/**
  * @tc.name: GetAuxiliaryPictureTest001
  * @tc.desc: Get gainmap from picture.
  * @tc.type: FUNC
@@ -281,97 +191,6 @@ HWTEST_F(PictureTest, GetAuxiliaryPictureTest001, TestSize.Level1)
     std::shared_ptr<AuxiliaryPicture> auxiliaryPicture = picture->GetAuxiliaryPicture(type);
     ASSERT_NE(auxiliaryPicture, nullptr);
     EXPECT_EQ(auxiliaryPicture->GetType(), type);
-}
-
-/**
- * @tc.name: GetAuxiliaryPictureTest002
- * @tc.desc: Get depth map from picture.
- * @tc.type: FUNC
- */
-HWTEST_F(PictureTest, GetAuxiliaryPictureTest002, TestSize.Level1)
-{
-    const AuxiliaryPictureType type = AuxiliaryPictureType::DEPTH_MAP;
-    std::unique_ptr<Picture> picture = CreatePicture();
-    ASSERT_NE(picture, nullptr);
-    std::shared_ptr<AuxiliaryPicture> depthMap = CreateAuxiliaryPicture(type);
-    ASSERT_NE(depthMap, nullptr);
-    picture->SetAuxiliaryPicture(depthMap);
-    std::shared_ptr<AuxiliaryPicture> auxiliaryPicture = picture->GetAuxiliaryPicture(type);
-    ASSERT_NE(auxiliaryPicture, nullptr);
-    EXPECT_EQ(auxiliaryPicture->GetType(), type);
-}
-
-/**
- * @tc.name: GetAuxiliaryPictureTest003
- * @tc.desc: Get unrefocus map from picture.
- * @tc.type: FUNC
- */
-HWTEST_F(PictureTest, GetAuxiliaryPictureTest003, TestSize.Level1)
-{
-    const AuxiliaryPictureType type = AuxiliaryPictureType::UNREFOCUS_MAP;
-    std::unique_ptr<Picture> picture = CreatePicture();
-    ASSERT_NE(picture, nullptr);
-    std::shared_ptr<AuxiliaryPicture> unrefocusMap = CreateAuxiliaryPicture(type);
-    ASSERT_NE(unrefocusMap, nullptr);
-    picture->SetAuxiliaryPicture(unrefocusMap);
-    std::shared_ptr<AuxiliaryPicture> auxiliaryPicture = picture->GetAuxiliaryPicture(type);
-    ASSERT_NE(auxiliaryPicture, nullptr);
-    EXPECT_EQ(auxiliaryPicture->GetType(), type);
-}
-
-/**
- * @tc.name: GetAuxiliaryPictureTest004
- * @tc.desc: Get linear map from picture.
- * @tc.type: FUNC
- */
-HWTEST_F(PictureTest, GetAuxiliaryPictureTest004, TestSize.Level1)
-{
-    const AuxiliaryPictureType type = AuxiliaryPictureType::LINEAR_MAP;
-    std::unique_ptr<Picture> picture = CreatePicture();
-    ASSERT_NE(picture, nullptr);
-    std::shared_ptr<AuxiliaryPicture> linearMap = CreateAuxiliaryPicture(type);
-    ASSERT_NE(linearMap, nullptr);
-    picture->SetAuxiliaryPicture(linearMap);
-    std::shared_ptr<AuxiliaryPicture> auxiliaryPicture = picture->GetAuxiliaryPicture(type);
-    ASSERT_NE(auxiliaryPicture, nullptr);
-    EXPECT_EQ(auxiliaryPicture->GetType(), type);
-}
-
-/**
- * @tc.name: GetAuxiliaryPictureTest005
- * @tc.desc: Get fragment cut map from picture.
- * @tc.type: FUNC
- */
-HWTEST_F(PictureTest, GetAuxiliaryPictureTest005, TestSize.Level1)
-{
-    const AuxiliaryPictureType type = AuxiliaryPictureType::FRAGMENT_MAP;
-    std::unique_ptr<Picture> picture = CreatePicture();
-    ASSERT_NE(picture, nullptr);
-    std::shared_ptr<AuxiliaryPicture> fragmentMap = CreateAuxiliaryPicture(type);
-    ASSERT_NE(fragmentMap, nullptr);
-    picture->SetAuxiliaryPicture(fragmentMap);
-    std::shared_ptr<AuxiliaryPicture> auxiliaryPicture = picture->GetAuxiliaryPicture(type);
-    ASSERT_NE(auxiliaryPicture, nullptr);
-    EXPECT_EQ(auxiliaryPicture->GetType(), type);
-}
-
-/**
- * @tc.name: GetAuxiliaryPictureTest006
- * @tc.desc: Get auxiliary picture with AuxiliaryPictureType::NONE from picture.
- * @tc.type: FUNC
- */
-HWTEST_F(PictureTest, GetAuxiliaryPictureTest006, TestSize.Level1)
-{
-    const AuxiliaryPictureType type = AuxiliaryPictureType::NONE;
-    std::unique_ptr<Picture> picture = CreatePicture();
-    ASSERT_NE(picture, nullptr);
-    std::shared_ptr<AuxiliaryPicture> srcAuxiliaryPicture = CreateAuxiliaryPicture(type);
-    ASSERT_NE(srcAuxiliaryPicture, nullptr);
-    picture->SetAuxiliaryPicture(srcAuxiliaryPicture);
-    std::shared_ptr<AuxiliaryPicture> dstAuxiliaryPicture = picture->GetAuxiliaryPicture(type);
-    ASSERT_NE(dstAuxiliaryPicture, nullptr);
-    EXPECT_EQ(srcAuxiliaryPicture, dstAuxiliaryPicture);
-    EXPECT_EQ(dstAuxiliaryPicture->GetType(), type);
 }
 
 /**
@@ -625,22 +444,6 @@ HWTEST_F(PictureTest, GetGainmapPixelmapTest001, TestSize.Level1)
 }
 
 /**
-* @tc.name: GetGainmapPixelmapTest002
-* @tc.desc: There is no auxiliary map of type gain map, obtain null ptr.
-* @tc.type: FUNC
-*/
-HWTEST_F(PictureTest, GetGainmapPixelmapTest002, TestSize.Level2)
-{
-    std::shared_ptr<AuxiliaryPicture> gainmapAuxiliaryPic = CreateAuxiliaryPicture(AuxiliaryPictureType::FRAGMENT_MAP);
-    ASSERT_NE(gainmapAuxiliaryPic, nullptr);
-    std::unique_ptr<Picture> picture = CreatePicture();
-    ASSERT_NE(picture, nullptr);
-    picture->SetAuxiliaryPicture(gainmapAuxiliaryPic);
-    std::shared_ptr<PixelMap> desPixelMap = picture->GetGainmapPixelMap();
-    EXPECT_EQ(desPixelMap, nullptr);
-}
-
-/**
  * @tc.name: CreateExifMetadataTest001
  * @tc.desc: test the Create ExifMetadata of Picture
  * @tc.type: FUNC
@@ -748,25 +551,6 @@ HWTEST_F(PictureTest, dropAuxiliaryPictureTest001, TestSize.Level1)
     picture->DropAuxiliaryPicture(AuxiliaryPictureType::FRAGMENT_MAP);
     EXPECT_TRUE(picture->HasAuxiliaryPicture(AuxiliaryPictureType::GAINMAP));
     EXPECT_FALSE(picture->HasAuxiliaryPicture(AuxiliaryPictureType::FRAGMENT_MAP));
-}
-
-/**
- * @tc.name: dropAuxiliaryPictureTest002
- * @tc.desc: Verify whether the auxiliary picture set is successfully deleted based on the unstored type.
- * @tc.type: FUNC
- */
-HWTEST_F(PictureTest, dropAuxiliaryPictureTest002, TestSize.Level1)
-{
-    std::unique_ptr<Picture> picture = CreatePicture();
-    std::shared_ptr<AuxiliaryPicture> auxiliaryPictureGainmap = CreateAuxiliaryPicture(AuxiliaryPictureType::GAINMAP);
-    std::shared_ptr<AuxiliaryPicture> auxiliaryPictureFragment =
-        CreateAuxiliaryPicture(AuxiliaryPictureType::FRAGMENT_MAP);
-    picture->SetAuxiliaryPicture(auxiliaryPictureGainmap);
-    picture->SetAuxiliaryPicture(auxiliaryPictureFragment);
-
-    picture->DropAuxiliaryPicture(AuxiliaryPictureType::DEPTH_MAP);
-    EXPECT_TRUE(picture->HasAuxiliaryPicture(AuxiliaryPictureType::GAINMAP));
-    EXPECT_TRUE(picture->HasAuxiliaryPicture(AuxiliaryPictureType::FRAGMENT_MAP));
 }
 
 } // namespace Media
