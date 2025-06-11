@@ -648,7 +648,7 @@ bool ExtDecoder::IsSupportSampleDecode(OHOS::Media::PixelFormat desiredFormat)
     if (static_cast<int32_t>(desiredFormat) > static_cast<int32_t>(PixelFormat::BGRA_8888)) {
         return false;
     }
-    if (dstSubset_.width() != 0 || dstSubset_.height() != 0) {
+    if (dstSubset_.left() != 0 || dstSubset_.top() != 0 || dstSubset_.right() != 0 || dstSubset_.bottom() != 0) {
         return false;
     }
     return codec_->getEncodedFormat() == SkEncodedImageFormat::kPNG;
