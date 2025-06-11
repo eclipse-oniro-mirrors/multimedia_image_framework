@@ -1315,10 +1315,6 @@ const uint8_t *PixelMap::GetPixel(int32_t x, int32_t y)
 
 bool PixelMap::GetARGB32Color(int32_t x, int32_t y, uint32_t &color)
 {
-    if (imageInfo_.pixelFormat != PixelFormat::ARGB_8888) {
-        IMAGE_LOGE("pixel format not support.");
-        return false;
-    }
     if (colorProc_ == nullptr) {
         IMAGE_LOGE("pixel format not supported.");
         return false;
