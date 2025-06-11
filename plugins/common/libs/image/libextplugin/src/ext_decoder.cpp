@@ -1216,6 +1216,7 @@ SkCodec::Result ExtDecoder::DoSampleDecode(DecodeContext &context)
 #endif
 }
 
+#ifdef JPEG_HW_DECODE_ENABLE
 void ExtDecoder::InitJpegDecoder()
 {
     IMAGE_LOGI("Init hardware jpeg decoder");
@@ -1228,6 +1229,7 @@ void ExtDecoder::InitJpegDecoder()
     }
     return;
 }
+#endif
 
 uint32_t ExtDecoder::Decode(uint32_t index, DecodeContext &context)
 {
