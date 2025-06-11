@@ -177,7 +177,6 @@ private:
     OHOS::HDI::Display::Composer::V1_2::PixelFormat outputColorFmt_ =
         OHOS::HDI::Display::Composer::V1_2::PIXEL_FMT_RGBA_8888;
     uint32_t sampleSize_ = 1;
-    uint32_t softSampleSize_ = 1;
     static constexpr uint32_t ALIGN_8 = 8;
     static constexpr uint32_t ALIGN_16 = 16;
 #endif
@@ -186,6 +185,7 @@ private:
     bool SupportRegionFlag_;
     //Yuv
     OHOS::Media::Size desiredSizeYuv_;
+    uint32_t softSampleSize_ = 1;
 
     // hdr
     Media::ImageHdrType hdrType_ = Media::ImageHdrType::UNKNOWN;
