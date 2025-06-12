@@ -20,6 +20,7 @@
 #include <fstream>
 #include <sstream>
 #include <string>
+#include <set>
 
 #include <parameter.h>
 #include <parameters.h>
@@ -215,6 +216,11 @@ bool ImageSystemProperties::GetSLRLaplacianEnabled()
 #else
     return false;
 #endif
+}
+
+bool ImageSystemProperties::IsSupportOpaqueOpt()
+{
+    return false;
 }
 } // namespace Media
 } // namespace OHOS
