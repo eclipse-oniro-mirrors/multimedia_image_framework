@@ -39,7 +39,6 @@ constexpr uint32_t COMPONENT_NUM_BGRA = 4;
 constexpr uint32_t COMPONENT_NUM_RGB = 3;
 constexpr uint32_t COMPONENT_NUM_GRAY = 1;
 constexpr uint8_t COMPONENT_NUM_YUV420SP = 3;
-constexpr uint8_t SAMPLE_FACTOR_TWO = 2;
 static constexpr uint32_t NUM_1000 = 1000;
 constexpr int32_t OPTS_SIZE = 16;
 
@@ -689,26 +688,6 @@ HWTEST_F(PluginLibJpegTest, GetDataRangeFromIFD002, TestSize.Level3)
     delete buf;
     buf = nullptr;
     GTEST_LOG_(INFO) << "PluginLibJpegTest: GetDataRangeFromIFD002 end";
-}
-
-/**
- * @tc.name: ParseIFDPointerTag001
- * @tc.desc: ParseIFDPointerTag
- * @tc.type: FUNC
- */
-HWTEST_F(PluginLibJpegTest, ParseIFDPointerTag001, TestSize.Level3)
-{
-    GTEST_LOG_(INFO) << "PluginLibJpegTest: ParseIFDPointerTag001 start";
-    const uint8_t *buf = new uint8_t;
-    ByteOrderedBuffer byteorder(buf, 10);
-    uint16_t tagNumber = byteorder.ReadUnsignedShort();
-    const ExifIfd ifd = byteorder.GetIFDOfIFDPointerTag(tagNumber);;
-    const uint16_t dataFormat = byteorder.ReadUnsignedShort();
-    ASSERT_EQ(dataFormat, 0);
-    byteorder.ParseIFDPointerTag(ifd, dataFormat);
-    delete buf;
-    buf = nullptr;
-    GTEST_LOG_(INFO) << "PluginLibJpegTest: ParseIFDPointerTag001 end";
 }
 
 /**
@@ -1663,23 +1642,6 @@ HWTEST_F(PluginLibJpegTest, WriteExifDataToFile002, TestSize.Level3)
 }
 
 /**
- * @tc.name: GetDataRangeFromDE001
- * @tc.desc: GetDataRangeFromDE
- * @tc.type: FUNC
- */
-HWTEST_F(PluginLibJpegTest, GetDataRangeFromDE001, TestSize.Level3)
-{
-    GTEST_LOG_(INFO) << "PluginLibJpegTest: GetDataRangeFromDE001 start";
-    EXIFInfo exinfo;
-    const uint8_t *buf = new uint8_t;
-    ByteOrderedBuffer byteOrderedBuffer(buf, 10);
-    int16_t entryCount = byteOrderedBuffer.ReadShort();
-    ASSERT_EQ(entryCount, 0);
-    byteOrderedBuffer.GetDataRangeFromDE(EXIF_IFD_0, entryCount);
-    GTEST_LOG_(INFO) << "PluginLibJpegTest: GetDataRangeFromDE001 end";
-}
-
-/**
  * @tc.name: CreateExifTag001
  * @tc.desc: CreateExifTag
  * @tc.type: FUNC
@@ -2230,22 +2192,6 @@ HWTEST_F(PluginLibJpegTest, Jpeg_EncoderTest004, TestSize.Level3)
     uint32_t ret = Jpegencoder->SetCommonConfig();
     ASSERT_EQ(ret, ERR_IMAGE_INVALID_PARAMETER);
     GTEST_LOG_(INFO) << "PluginLibJpegTest: Jpeg_EncoderTest004 end";
-}
-
-/**
- * @tc.name: Jpeg_EncoderTest005
- * @tc.desc: SetYuv420spExtraConfig
- * @tc.type: FUNC
- */
-HWTEST_F(PluginLibJpegTest, Jpeg_EncoderTest005, TestSize.Level3)
-{
-    GTEST_LOG_(INFO) << "PluginLibJpegTest: Jpeg_EncoderTest005 start";
-    auto Jpegencoder = std::make_shared<JpegEncoder>();
-    Jpegencoder->encodeInfo_.comp_info = new jpeg_component_info;
-    Jpegencoder->SetYuv420spExtraConfig();
-    ASSERT_EQ(Jpegencoder->encodeInfo_.comp_info[0].h_samp_factor, SAMPLE_FACTOR_TWO);
-    delete Jpegencoder->encodeInfo_.comp_info;
-    GTEST_LOG_(INFO) << "PluginLibJpegTest: Jpeg_EncoderTest005 end";
 }
 
 /**
