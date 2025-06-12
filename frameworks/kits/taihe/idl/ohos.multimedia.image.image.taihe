@@ -409,6 +409,8 @@ interface PixelMap {
 
   GetPixelBytesNumber(): i32;
 
+  GetDensity(): i32;
+
   @gen_async("scale")
   @gen_promise("scale")
   @overload("scaleSync")
@@ -436,9 +438,14 @@ interface PixelMap {
 
   SetMemoryNameSync(name: String): void;
 
+  @gen_promise("convertPixelFormat")
+  ConvertPixelFormatSync(targetPixelFormat: PixelMapFormat): void;
+
   @gen_async("release")
   @gen_promise("release")
   ReleaseSync(): void;
+
+  @get GetIsEditable(): bool;
 
   @get GetIsStrideAlignment(): bool;
 
