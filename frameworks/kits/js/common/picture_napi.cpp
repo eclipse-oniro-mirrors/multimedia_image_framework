@@ -62,6 +62,7 @@ struct PictureAsyncContext {
     std::shared_ptr<Picture> rPicture;
     PictureNapi *nConstructor;
     std::shared_ptr<PixelMap> rPixelMap;
+    std::shared_ptr<PixelMap> rHdrPixelMap;
     MetadataNapi *metadataNapi;
     std::shared_ptr<ImageMetadata> imageMetadata;
     MetadataType metadataType = MetadataType::EXIF;
@@ -255,6 +256,7 @@ napi_value PictureNapi::Init(napi_env env, napi_value exports)
     napi_property_descriptor static_prop[] = {
         DECLARE_NAPI_STATIC_FUNCTION("createPicture", CreatePicture),
         DECLARE_NAPI_STATIC_FUNCTION("createPictureFromParcel", CreatePictureFromParcel),
+        DECLARE_NAPI_STATIC_FUNCTION("createPictureByHdrAndSdrPixelMap", CreatePictureByHdrAndSdrPixelMap),
         DECLARE_NAPI_PROPERTY("AuxiliaryPictureType", CreateEnumTypeObject(env, napi_number,
             &auxiliaryPictureTypeRef_, auxiliaryPictureTypeMap)),
         DECLARE_NAPI_PROPERTY("MetadataType", CreateEnumTypeObject(env, napi_number,
@@ -512,21 +514,21 @@ napi_value PictureNapi::SetAuxiliaryPicture(napi_env env, napi_callback_info inf
 
 STATIC_EXEC_FUNC(CreatePicture)
 {
-    IMAGE_INFO("CreatePictureEX IN");
+    IMAGE_LOGD("CreatePictureEX IN");
     auto context = static_cast<PictureAsyncContext*>(data);
     auto picture = Picture::Create(context->rPixelMap);
     context->rPicture = std::move(picture);
-    IMAGE_INFO("CreatePictureEX OUT");
+    IMAGE_LOGD("CreatePictureEX OUT");
     if (IMG_NOT_NULL(context->rPicture)) {
         context->status = SUCCESS;
     } else {
-        context->status = ERROR;
+        context->status = ERR_MEDIA_UNSUPPORT_OPERATION;
     }
 }
 
 napi_value PictureNapi::CreatePicture(napi_env env, napi_callback_info info)
 {
-    IMAGE_INFO("CreatePicture IN");
+    IMAGE_LOGD("CreatePicture IN");
     if (sConstructor_ == nullptr) {
         napi_value exports = nullptr;
         napi_create_object(env, &exports);
@@ -561,7 +563,70 @@ napi_value PictureNapi::CreatePicture(napi_env env, napi_callback_info info)
         status = napi_new_instance(env, constructor, NUM_0, nullptr, &result);
     }
     IMG_NAPI_CHECK_RET_D(IMG_IS_OK(status), nullptr, IMAGE_LOGE("fail to create picture sync"));
-    IMAGE_INFO("CreatePicture OUT");
+    IMAGE_LOGD("CreatePicture OUT");
+    return result;
+}
+
+STATIC_EXEC_FUNC(CreatePictureByHdrAndSdrPixelMap)
+{
+    IMAGE_LOGD("CreatePictureByHdrAndSdrPixelMapEX IN");
+    auto context = static_cast<PictureAsyncContext*>(data);
+    auto picture = Picture::CreatePictureByHdrAndSdrPixelMap(context->rHdrPixelMap, context->rPixelMap);
+    context->rPicture = std::move(picture);
+    IMAGE_LOGD("CreatePictureByHdrAndSdrPixelMapEX OUT");
+    if (IMG_NOT_NULL(context->rPicture)) {
+        context->status = SUCCESS;
+    } else {
+        context->status = ERROR;
+    }
+}
+
+napi_value PictureNapi::CreatePictureByHdrAndSdrPixelMap(napi_env env, napi_callback_info info)
+{
+    IMAGE_LOGD("CreatePictureByHdrAndSdrPixelMap IN");
+    if (sConstructor_ == nullptr) {
+        napi_value exports = nullptr;
+        napi_create_object(env, &exports);
+        PictureNapi::Init(env, exports);
+    }
+    napi_value result = nullptr;
+    napi_get_undefined(env, &result);
+    napi_value constructor = nullptr;
+    napi_status status;
+    napi_value thisVar = nullptr;
+    napi_value argValue[NUM_2] = {0};
+    size_t argCount = NUM_2;
+    IMAGE_LOGD("CreatePictureByHdrAndSdrPixelMap IN");
+    IMG_JS_ARGS(env, info, status, argCount, argValue, thisVar);
+    IMG_NAPI_CHECK_RET_D(IMG_IS_OK(status), ImageNapiUtils::ThrowExceptionError(env, IMAGE_BAD_PARAMETER,
+        "Invalid args"), IMAGE_LOGE("fail to napi_get_cb_info"));
+    IMG_NAPI_CHECK_RET_D(argCount == NUM_2, ImageNapiUtils::ThrowExceptionError(env, IMAGE_BAD_PARAMETER,
+        "Invalid args count"), IMAGE_LOGE("Invalid args count %{public}zu", argCount));
+    std::unique_ptr<PictureAsyncContext> asyncContext = std::make_unique<PictureAsyncContext>();
+    if (ParserImageType(env, argValue[NUM_0]) == ImageType::TYPE_PIXEL_MAP) {
+        asyncContext->rHdrPixelMap = PixelMapNapi::GetPixelMap(env, argValue[NUM_0]);
+        if (asyncContext->rHdrPixelMap == nullptr) {
+            return ImageNapiUtils::ThrowExceptionError(env, IMAGE_BAD_PARAMETER, "Get arg hdr Pixelmap failed");
+        }
+    } else {
+        return ImageNapiUtils::ThrowExceptionError(env, IMAGE_BAD_PARAMETER, "Input hdr image type mismatch");
+    }
+    if (ParserImageType(env, argValue[NUM_1]) == ImageType::TYPE_PIXEL_MAP) {
+        asyncContext->rPixelMap = PixelMapNapi::GetPixelMap(env, argValue[NUM_1]);
+        if (asyncContext->rPixelMap == nullptr) {
+            return ImageNapiUtils::ThrowExceptionError(env, IMAGE_BAD_PARAMETER, "Get arg sdr Pixelmap failed");
+        }
+    } else {
+        return ImageNapiUtils::ThrowExceptionError(env, IMAGE_BAD_PARAMETER, "Input sdr image type mismatch");
+    }
+    CreatePictureByHdrAndSdrPixelMapExec(env, static_cast<void*>((asyncContext).get()));
+    status = napi_get_reference_value(env, sConstructor_, &constructor);
+    if (IMG_IS_OK(status)) {
+        sPicture_ = std::move(asyncContext->rPicture);
+        status = napi_new_instance(env, constructor, NUM_0, nullptr, &result);
+    }
+    IMG_NAPI_CHECK_RET_D(IMG_IS_OK(status), nullptr, IMAGE_LOGE("fail to create picture sync"));
+    IMAGE_LOGD("CreatePictureByHdrAndSdrPixelMap OUT");
     return result;
 }
 

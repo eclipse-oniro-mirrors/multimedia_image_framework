@@ -46,6 +46,7 @@ public:
 #if !defined(_WIN32) && !defined(_APPLE) && !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
     int32_t ColorSpaceConverterComposeImage(VpeSurfaceBuffers& sb, bool legacy);
     int32_t ColorSpaceConverterDecomposeImage(VpeSurfaceBuffers& sb);
+    int32_t ColorSpaceCalGainmap(VpeSurfaceBuffers& sb);
     int32_t ColorSpaceConverterImageProcess(sptr<SurfaceBuffer>& input, sptr<SurfaceBuffer>& output);
     int32_t DetailEnhancerImageProcess(sptr<SurfaceBuffer>& input, sptr<SurfaceBuffer>& output, int32_t level);
     static bool SetSbColorSpaceType(sptr<SurfaceBuffer>& buffer,

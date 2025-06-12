@@ -36,6 +36,8 @@ public:
 
     NATIVEEXPORT static std::unique_ptr<Picture> Create(std::shared_ptr<PixelMap> &PixelMap);
     NATIVEEXPORT static std::unique_ptr<Picture> Create(sptr<SurfaceBuffer> &surfaceBuffer);
+    NATIVEEXPORT static std::unique_ptr<Picture> CreatePictureByHdrAndSdrPixelMap(
+        std::shared_ptr<PixelMap> &hdrPixelMap, std::shared_ptr<PixelMap> &sdrPixelMap);
     NATIVEEXPORT static std::unique_ptr<PixelMap> SurfaceBuffer2PixelMap(sptr<SurfaceBuffer> &surfaceBuffer);
     NATIVEEXPORT std::shared_ptr<PixelMap> GetMainPixel();
     NATIVEEXPORT void SetMainPixel(std::shared_ptr<PixelMap> PixelMap);
