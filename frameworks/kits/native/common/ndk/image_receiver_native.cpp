@@ -383,9 +383,8 @@ Image_ErrorCode OH_ImageReceiverNative_OnImageArrive(OH_ImageReceiverNative* rec
     }
     bool ret = receiver->ptrImgRcv->surfaceBufferAvaliableArriveListener_->RegisterCallback(callback, userdata);
     if (!ret) {
-        IMAGE_LOGE("callback has registered.");
-        return IMAGE_RECEIVER_INVALID_PARAMETER;
-    } 
+        IMAGE_LOGD("callback has registered.");
+    }
     return IMAGE_SUCCESS;
 }
 
