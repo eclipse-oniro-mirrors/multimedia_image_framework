@@ -3581,5 +3581,76 @@ HWTEST_F(PixelMapTest, CloseFdPixelMapTest, TestSize.Level3)
     delete heapPixelMap;
     GTEST_LOG_(INFO) << "PixelMapTest: CloseFdPixelMapTest end";
 }
+
+/**
+ * @tc.name: GetRGBA1010102ColorTest001
+ * @tc.desc: GetRGBA1010102Color
+ * @tc.type: FUNC
+ */
+HWTEST_F(PixelMapTest, GetRGBA1010102ColorTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PixelMapTest: GetRGBA1010102ColorTest001 start";
+
+    const int32_t offset = 0;
+    InitializationOptions options;
+    options.size.width = 2; // 2 means width
+    options.size.height = 3; // 3 means width
+    options.srcPixelFormat = PixelFormat::RGBA_8888;
+    options.pixelFormat = PixelFormat::RGBA_1010102;
+    int32_t width = options.size.width;
+
+    uint32_t colorlength = 24;    // w:2 * h:3 * pixelByte:4
+    uint8_t buffer[24] = { 0 };    // w:2 * h:3 * pixelByte:4
+    for (int i = 0; i < colorlength; i += 4) {
+        buffer[i] = 0x52;
+        buffer[i + 1] = 0xDF;
+        buffer[i + 2] = 0x83;
+        buffer[i + 3] = 0x78;
+    }
+    uint32_t *color = reinterpret_cast<uint32_t *>(buffer);
+    std::unique_ptr<PixelMap> pixelMap = PixelMap::Create(color, colorlength, offset, width, options);
+    EXPECT_NE(pixelMap, nullptr);
+
+    uint32_t rgba1010102Color;
+    pixelMap->GetARGB32Color(0, 0, rgba1010102Color);
+    EXPECT_EQ(rgba1010102Color, 0x4F76949B);
+
+    uint16_t colorR = ImageUtils::GetRGBA1010102ColorR(rgba1010102Color);
+    EXPECT_EQ(colorR, 0x24F);
+    uint16_t colorG = ImageUtils::GetRGBA1010102ColorG(rgba1010102Color);
+    EXPECT_EQ(colorG, 0x11D);
+    uint16_t colorB = ImageUtils::GetRGBA1010102ColorB(rgba1010102Color);
+    EXPECT_EQ(colorB, 0x1B9);
+    uint16_t colorA = ImageUtils::GetRGBA1010102ColorA(rgba1010102Color);
+    EXPECT_EQ(colorA, 0x002);
+    GTEST_LOG_(INFO) << "PixelMapTest: GetRGBA1010102ColorTest001 end";
+}
+
+/**
+ * @tc.name: GetRGBA1010102ColorTest002
+ * @tc.desc: GetRGBA1010102Color
+ * @tc.type: FUNC
+ */
+HWTEST_F(PixelMapTest, GetRGBA1010102ColorTest002, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PixelMapTest: GetRGBA1010102ColorTest002 start";
+
+    // 1010 1010 1010 1011 1011 1010 0111 1011
+    // R 11 10101010 -> 0x3AA
+    // G 1010 101010 -> 0x2AA
+    // B 111011 1011 -> 0x3BB
+    // A 01 -> 0x001
+    uint32_t rgba1010102Color = 0xAAABBA7B;
+
+    uint16_t colorR = ImageUtils::GetRGBA1010102ColorR(rgba1010102Color);
+    EXPECT_EQ(colorR, 0x3AA);
+    uint16_t colorG = ImageUtils::GetRGBA1010102ColorG(rgba1010102Color);
+    EXPECT_EQ(colorG, 0x2AA);
+    uint16_t colorB = ImageUtils::GetRGBA1010102ColorB(rgba1010102Color);
+    EXPECT_EQ(colorB, 0x3BB);
+    uint16_t colorA = ImageUtils::GetRGBA1010102ColorA(rgba1010102Color);
+    EXPECT_EQ(colorA, 0x001);
+    GTEST_LOG_(INFO) << "PixelMapTest: GetRGBA1010102ColorTest002 end";
+}
 }
 }

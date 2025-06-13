@@ -1332,6 +1332,21 @@ bool PixelMap::GetARGB32Color(int32_t x, int32_t y, uint32_t &color)
     return colorProc_(src, ONE_PIXEL_SIZE * pixelBytes_, &color, ONE_PIXEL_SIZE);
 }
 
+bool PixelMap::GetRGBA1010102Color(int32_t x, int32_t y, uint32_t &color)
+{
+    if (imageInfo_.pixelFormat != PixelFormat::RGBA_1010102) {
+        IMAGE_LOGE("%{public}s pixel format not supported, format: %{public}d", __func__, imageInfo_.pixelFormat);
+        return false;
+    }
+    const uint8_t *src = GetPixel(x, y);
+    if (src == nullptr) {
+        IMAGE_LOGE("%{public}s get pixel color error.", __func__);
+        return false;
+    }
+    color = *reinterpret_cast<const uint32_t*>(src);
+    return true;
+}
+
 uint32_t PixelMap::ModifyImageProperty(const std::string &key, const std::string &value)
 {
     if (exifMetadata_ == nullptr) {

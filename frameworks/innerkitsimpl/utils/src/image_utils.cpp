@@ -108,7 +108,18 @@ static constexpr int32_t PLANE_U = 1;
 static constexpr int32_t PLANE_V = 2;
 constexpr int32_t MEM_DMA = 1;
 constexpr int32_t MEM_SHARE = 2;
+constexpr uint8_t MASK_NUM2 = 0x03;
+constexpr uint8_t MASK_NUM4 = 0x0F;
+constexpr uint8_t MASK_NUM6 = 0x3F;
+constexpr uint8_t MASK_NUM8 = 0xFF;
 
+constexpr uint8_t SHIFT_4_BIT = 4;
+constexpr uint8_t SHIFT_6_BIT = 6;
+constexpr uint8_t SHIFT_8_BIT = 8;
+constexpr uint8_t SHIFT_12_BIT = 12;
+constexpr uint8_t SHIFT_16_BIT = 16;
+constexpr uint8_t SHIFT_18_BIT = 18;
+constexpr uint8_t SHIFT_24_BIT = 24;
 bool ImageUtils::GetFileSize(const string &pathName, size_t &size)
 {
     if (pathName.empty()) {
@@ -1366,6 +1377,32 @@ bool ImageUtils::GetAlignedNumber(int32_t& number, int32_t align)
     }
     number = static_cast<int32_t>(res);
     return true;
+}
+
+uint16_t ImageUtils::GetRGBA1010102ColorR(uint32_t color)
+{
+    uint16_t rLow = (color >> SHIFT_24_BIT) & MASK_NUM8;
+    uint16_t rHigh = (color >> SHIFT_16_BIT) & MASK_NUM2;
+    return (rHigh << SHIFT_8_BIT) | rLow;
+}
+
+uint16_t ImageUtils::GetRGBA1010102ColorG(uint32_t color)
+{
+    uint16_t gLow = (color >> SHIFT_18_BIT) & MASK_NUM6;
+    uint16_t gHigh = (color >> SHIFT_8_BIT) & MASK_NUM4;
+    return (gHigh << SHIFT_6_BIT) | gLow;
+}
+
+uint16_t ImageUtils::GetRGBA1010102ColorB(uint32_t color)
+{
+    uint16_t bLow = (color >> SHIFT_12_BIT) & MASK_NUM4;
+    uint16_t bHigh = color & MASK_NUM6;
+    return (bHigh << SHIFT_4_BIT) | bLow;
+}
+
+uint16_t ImageUtils::GetRGBA1010102ColorA(uint32_t color)
+{
+    return (color >> SHIFT_6_BIT) & MASK_NUM2;
 }
 } // namespace Media
 } // namespace OHOS

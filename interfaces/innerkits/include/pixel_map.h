@@ -299,6 +299,15 @@ public:
     NATIVEEXPORT virtual bool GetARGB32Color(int32_t x, int32_t y, uint32_t &color);
 
     /**
+     * Get RGBA1010102 pixel points based on the coordinates.
+     *
+     * @param x x-coordinate.
+     * @param y y-coordinate.
+     * @param color The pixels that need to be obtained.
+     */
+    NATIVEEXPORT virtual bool GetRGBA1010102Color(int32_t x, int32_t y, uint32_t &color);
+
+    /**
      * Set pixel buffer information.
      *
      * @param addr Pixel address.
