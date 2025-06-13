@@ -162,7 +162,7 @@ bool ScalePixelMapWithGPU(PixelMap &pixelMap, const Size &desiredSize)
 {
     if (!ImageSystemProperties::GetGenThumbWithGpu()) {
         PostProc postProc;
-        return postProc.ScalePixelMapEx(desiredSize, pixelMap, option);
+        return postProc.ScalePixelMapEx(desiredSize, pixelMap, AntiAliasingOption::HIGH);
     }
 
     IMAGE_LOGI("slr_gpu ScalePixelMapWithGPU:wh(%{public}d,%{public}d)->(%{public}d,%{public}d)",
