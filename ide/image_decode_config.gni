@@ -56,7 +56,7 @@ resource_management_subsystem =
     "/$base_sep_b$base_ase/global/resource_management"
 graphic_surface_root = "//foundation/graphic/graphic_surface"
 
-use_new_skia_temp = false
+image_use_new_skia = use_new_skia
 
 skia_root = "//third_party"
 skia_deps_root = skia_root
@@ -65,7 +65,7 @@ skia_skcms = [ "$skia_deps_root/skia:skcms" ]
 
 exif_root = "//third_party"
 
-if (use_new_skia_temp) {
+if (image_use_new_skia) {
   third_party_skia_root = "//third_party/skia/m133"
 } else {
   third_party_skia_root = "//third_party/skia"
