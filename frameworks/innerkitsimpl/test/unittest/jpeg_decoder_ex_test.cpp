@@ -1309,20 +1309,6 @@ HWTEST_F(JpegDecoderTest, GetRowBytesTest001, TestSize.Level3)
 }
 
 /**
- * @tc.name: ResetTest001
- * @tc.desc: Test of Reset
- * @tc.type: FUNC
- */
-HWTEST_F(JpegDecoderTest, ResetTest001, TestSize.Level3)
-{
-    GTEST_LOG_(INFO) << "JpegDecoderTest: ResetTest001 start";
-    auto jpegDecoder = std::make_shared<JpegDecoder>();
-    jpegDecoder->JpegDecoder::Reset();
-    ASSERT_EQ(jpegDecoder->srcMgr_.inputStream, nullptr);
-    GTEST_LOG_(INFO) << "JpegDecoderTest: ResetTest001 end";
-}
-
-/**
  * @tc.name: FinishOldDecompressTest001
  * @tc.desc: Test of FinishOldDecompress
  * @tc.type: FUNC

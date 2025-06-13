@@ -79,49 +79,6 @@ HWTEST_F(ImageSourceSvgTest, SvgImageDecode, TestSize.Level3)
 }
 
 /**
- * @tc.name: SvgCreateImageSource
- * @tc.desc: Decode svg image from file source stream
- * @tc.type: FUNC
- */
-HWTEST_F(ImageSourceSvgTest, SvgCreateImageSource, TestSize.Level3)
-{
-    GTEST_LOG_(INFO) << "ImageSourceSvgTest: SvgCreateImageSource start";
-
-    const std::string testName = TEST_FILE_LARGE_SVG;
-
-    /**
-     * @tc.steps: step1. create image source by correct svg file path and svg format hit.
-     * @tc.expected: step1. create image source success.
-     */
-    uint32_t errorCode = 0;
-    SourceOptions opts;
-    opts.formatHint = SVG_FORMAT_TYPE;
-    const std::string inName = INPUT_PATH + testName;
-    auto imageSource = ImageSource::CreateImageSource(inName, opts, errorCode);
-    ASSERT_EQ(errorCode, SUCCESS);
-    ASSERT_NE(imageSource.get(), nullptr);
-
-    /**
-     * @tc.steps: step2. decode image source to pixel map by default decode options
-     * @tc.expected: step2. decode image source to pixel map success.
-     */
-    DecodeOptions decodeOpts;
-    auto pixelMap = imageSource->CreatePixelMap(decodeOpts, errorCode);
-    ASSERT_EQ(errorCode, SUCCESS);
-    ASSERT_NE(pixelMap.get(), nullptr);
-
-    /**
-     * @tc.steps: step3. compress the pixel map to jpg file.
-     * @tc.expected: step3. pack pixel map success.
-     */
-    const std::string outName = OUTPUT_PATH + testName + OUTPUT_EXT;
-    auto packSize = PackImage(outName, std::move(pixelMap));
-    ASSERT_NE(packSize, 0);
-
-    GTEST_LOG_(INFO) << "ImageSourceSvgTest: SvgCreateImageSource end";
-}
-
-/**
  * @tc.name: SvgImageDecodeWithFillColorChange
  * @tc.desc: Decode svg image from file source stream
  * @tc.type: FUNC

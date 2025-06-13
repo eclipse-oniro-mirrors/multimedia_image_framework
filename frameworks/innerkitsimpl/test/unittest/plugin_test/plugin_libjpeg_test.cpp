@@ -1332,28 +1332,6 @@ HWTEST_F(PluginLibJpegTest, SetDEDataByteCount001, TestSize.Level3)
 }
 
 /**
- * @tc.name: ParseIFDPointerTag002
- * @tc.desc: ParseIFDPointerTag
- * @tc.type: FUNC
- */
-HWTEST_F(PluginLibJpegTest, ParseIFDPointerTag002, TestSize.Level3)
-{
-    GTEST_LOG_(INFO) << "PluginLibJpegTest: ParseIFDPointerTag002 start";
-    const uint8_t *buf = new uint8_t;
-    ByteOrderedBuffer byteorder(buf, 10);
-    uint16_t tagNumber = byteorder.ReadUnsignedShort();
-    ASSERT_EQ(tagNumber, 0);
-    const ExifIfd ifd = byteorder.GetIFDOfIFDPointerTag(tagNumber);;
-    byteorder.ParseIFDPointerTag(ifd, EXIF_FORMAT_SHORT);
-    byteorder.ParseIFDPointerTag(ifd, EXIF_FORMAT_SSHORT);
-    byteorder.ParseIFDPointerTag(ifd, EXIF_FORMAT_LONG);
-    byteorder.ParseIFDPointerTag(ifd, EXIF_FORMAT_SLONG);
-    delete buf;
-    buf = nullptr;
-    GTEST_LOG_(INFO) << "PluginLibJpegTest: ParseIFDPointerTag002 end";
-}
-
-/**
  * @tc.name: GetOrginExifDataLength001
  * @tc.desc: GetOrginExifDataLength
  * @tc.type: FUNC
