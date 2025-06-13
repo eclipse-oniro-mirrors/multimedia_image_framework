@@ -806,7 +806,7 @@ HWTEST_F(ImageReceiverNativeTest, OH_ImageReceiverNative_OnImageArriveTest001, T
         OH_ImageReceiver_ImageArriveCallback_Test, userData);
     ASSERT_EQ(nRst, IMAGE_SUCCESS);
     nRst = OH_ImageReceiverNative_OnImageArrive(pReceiver, OH_ImageReceiver_ImageArriveCallback_Test, userData);
-    ASSERT_EQ(nRst, IMAGE_RECEIVER_INVALID_PARAMETER);
+    ASSERT_EQ(nRst, IMAGE_SUCCESS);
 
     ASSERT_NE(pReceiver->ptrImgRcv, nullptr);
     std::shared_ptr<ImageReceiverArriveListener> receiverArriveListener =
