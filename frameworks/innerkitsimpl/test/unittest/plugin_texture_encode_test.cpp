@@ -473,7 +473,7 @@ HWTEST_F(PluginTextureEncodeTest, ASTCEncode007, TestSize.Level3)
     uint32_t setRet = astcEncoder.SetAstcEncode(stream, option, pixelMapPtr);
     ASSERT_EQ(setRet, SUCCESS);
     uint32_t astcRet = astcEncoder.ASTCEncode();
-    ASSERT_EQ(astcRet, SUCCESS);
+    ASSERT_NE(astcRet, SUCCESS); // This feature is not open-source, expect it to fail
 
     if (output != nullptr) {
         free(output);

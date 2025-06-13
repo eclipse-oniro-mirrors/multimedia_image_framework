@@ -22,6 +22,7 @@
 #include "image_source.h"
 #include "image_type.h"
 #include "image_utils.h"
+#include "image_system_properties.h"
 #include "media_errors.h"
 #include "pixel_map.h"
 #include "pixel_convert_adapter.h"
@@ -159,6 +160,11 @@ bool RotateInRectangularSteps(PixelMap &pixelMap, float degrees)
 
 bool ScalePixelMapWithGPU(PixelMap &pixelMap, const Size &desiredSize)
 {
+    if (!ImageSystemProperties::GetGenThumbWithGpu()) {
+        PostProc postProc;
+        return postProc.ScalePixelMapEx(desiredSize, pixelMap, AntiAliasingOption::HIGH);
+    }
+
     IMAGE_LOGI("slr_gpu ScalePixelMapWithGPU:wh(%{public}d,%{public}d)->(%{public}d,%{public}d)",
         pixelMap.GetWidth(), pixelMap.GetHeight(), desiredSize.width, desiredSize.height);
     GPUTransformData gpuTransform;
