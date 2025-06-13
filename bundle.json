@@ -209,10 +209,12 @@
             "header": {
               "header_base": "//foundation/multimedia/image_framework/frameworks/kits/taihe/include/",
               "header_files": [
+                "image_source_taihe_ani.h",
                 "image_taihe.h",
                 "picture_taihe.h",
-                "pixel_map_taihe_ani.h",
-                "pixel_map_taihe.h"
+                "picture_taihe_ani.h",
+                "pixel_map_taihe.h",
+                "pixel_map_taihe_ani.h"
               ]
             },
             "name": "//foundation/multimedia/image_framework/frameworks/kits/taihe:image_taihe"

@@ -54,6 +54,8 @@ public:
     void FlipSync(bool horizontal, bool vertical);
     void OpacitySync(float rate);
     void SetMemoryNameSync(string_view name);
+    void ToSdrSync();
+    void ApplyColorSpaceSync(uintptr_t targetColorSpace);
     void ReleaseSync();
     bool GetIsStrideAlignment();
     void SetCaptureId(int32_t captureId);

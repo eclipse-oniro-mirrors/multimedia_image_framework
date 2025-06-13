@@ -30,6 +30,9 @@ class ImageSourceImpl {
 public:
     ImageSourceImpl();
     explicit ImageSourceImpl(std::shared_ptr<OHOS::Media::ImageSource> imageSource);
+    ImageSourceImpl(std::shared_ptr<OHOS::Media::ImageSource> imageSource,
+        std::shared_ptr<OHOS::Media::IncrementalPixelMap> incPixelMap);
+    ImageSourceImpl(int64_t aniPtr);
     ~ImageSourceImpl();
     int64_t GetImplPtr();
 
@@ -43,11 +46,17 @@ public:
     array<PixelMap> CreatePixelMapListSyncWithOptions(DecodingOptions const& options);
     array<PixelMap> CreatePixelMapListSyncWithOptionalOptions(optional_view<DecodingOptions> options);
     array<int32_t> GetDelayTimeListSync();
+    array<int32_t> GetDisposalTypeListSync();
+    int32_t GetFrameCountSync();
     string GetImagePropertySync(PropertyKey key, optional_view<ImagePropertyOptions> options);
     map<PropertyKey, PropertyValue> GetImagePropertiesSync(array_view<PropertyKey> key);
     void ModifyImagePropertySync(PropertyKey key, string_view value);
     void ModifyImagePropertiesSync(map_view<PropertyKey, PropertyValue> records);
+    void UpdateDataSync(array_view<uint8_t> buf, bool isFinished, int32_t offset, int32_t length);
     void ReleaseSync();
+#if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
+    Picture CreatePictureSync(optional_view<DecodingOptionsForPicture> options);
+#endif
 
     array<string> GetSupportedFormats();
 

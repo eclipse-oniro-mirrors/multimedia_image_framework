@@ -13,6 +13,7 @@
  * limitations under the License.
  */
 
+#include "ani_color_space_object_convertor.h"
 #include "image_log.h"
 #include "image_taihe_utils.h"
 #include "media_errors.h"
@@ -444,6 +445,76 @@ void PixelMapImpl::SetMemoryNameSync(string_view name)
         ImageTaiheUtils::ThrowExceptionError(Media::ERR_MEMORY_NOT_SUPPORT, "Set memory name not supported");
     } else if (status == Media::COMMON_ERR_INVALID_PARAMETER) {
         ImageTaiheUtils::ThrowExceptionError(Media::COMMON_ERR_INVALID_PARAMETER, "Memory name size out of range");
+    }
+}
+
+void PixelMapImpl::ToSdrSync()
+{
+    if (nativePixelMap_ == nullptr) {
+        ImageTaiheUtils::ThrowExceptionError(Media::ERR_MEDIA_INVALID_OPERATION, "Internal error.");
+        return;
+    }
+
+    if (!aniEditable_) {
+        ImageTaiheUtils::ThrowExceptionError(Media::ERR_MEDIA_INVALID_OPERATION, "Pixelmap is not editable");
+        return;
+    }
+
+    uint32_t status = nativePixelMap_->ToSdr();
+    if (status != Media::SUCCESS) {
+        if (status == Media::ERR_MEDIA_INVALID_OPERATION) {
+            ImageTaiheUtils::ThrowExceptionError(Media::ERR_MEDIA_INVALID_OPERATION, "The pixelmap is not hdr.");
+        } else if (status == Media::IMAGE_RESULT_GET_SURFAC_FAILED) {
+            ImageTaiheUtils::ThrowExceptionError(Media::ERR_MEDIA_INVALID_OPERATION, "Alloc new memory failed.");
+        } else if (status == Media::ERR_RESOURCE_UNAVAILABLE) {
+            ImageTaiheUtils::ThrowExceptionError(Media::ERR_MEDIA_INVALID_OPERATION, "Pixelmap is not editable");
+        } else {
+            ImageTaiheUtils::ThrowExceptionError(Media::ERR_MEDIA_INVALID_OPERATION, "Internal error.");
+        }
+    }
+}
+
+static uint32_t ParseColorSpace(std::shared_ptr<OHOS::ColorManager::ColorSpace> &colorSpace,
+    uintptr_t targetColorSpace)
+{
+#ifdef IMAGE_COLORSPACE_FLAG
+    ani_object obj = reinterpret_cast<ani_object>(targetColorSpace);
+    colorSpace = OHOS::ColorManager::GetColorSpaceByAniObject(get_env(), obj);
+    if (colorSpace == nullptr) {
+        return Media::ERR_IMAGE_INVALID_PARAMETER;
+    }
+    return Media::SUCCESS;
+#else
+    return Media::ERR_IMAGE_DATA_UNSUPPORT;
+#endif
+}
+
+void PixelMapImpl::ApplyColorSpaceSync(uintptr_t targetColorSpace)
+{
+    if (nativePixelMap_ == nullptr) {
+        ImageTaiheUtils::ThrowExceptionError(Media::ERR_IMAGE_INIT_ABNORMAL, "Internal error.");
+        return;
+    }
+
+    if (!aniEditable_) {
+        ImageTaiheUtils::ThrowExceptionError(Media::ERR_RESOURCE_UNAVAILABLE, "Pixelmap is not editable");
+        return;
+    }
+    std::shared_ptr<OHOS::ColorManager::ColorSpace> colorSpace;
+    uint32_t status = ParseColorSpace(colorSpace, targetColorSpace);
+    if (status != Media::SUCCESS) {
+        ImageTaiheUtils::ThrowExceptionError(status, "ParseColorSpace failed");
+        return;
+    }
+
+    if (colorSpace == nullptr) {
+        ImageTaiheUtils::ThrowExceptionError(Media::ERR_IMAGE_INIT_ABNORMAL, "ApplyColorSpace Null native ref");
+        return;
+    }
+    status = nativePixelMap_->ApplyColorSpace(*colorSpace);
+    if (status != Media::SUCCESS) {
+        ImageTaiheUtils::ThrowExceptionError(status, "ApplyColorSpace has failed!");
+        return;
     }
 }
 
