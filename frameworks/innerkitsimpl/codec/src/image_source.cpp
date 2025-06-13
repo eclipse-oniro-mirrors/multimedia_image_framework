@@ -90,8 +90,8 @@
 #include "qos.h"
 #endif
 #ifdef HEIF_HW_DECODE_ENABLE
-#include "v3_0/codec_types.h"
-#include "v3_0/icodec_component_manager.h"
+#include "v4_0/codec_types.h"
+#include "v4_0/icodec_component_manager.h"
 #endif
 
 #undef LOG_DOMAIN
@@ -364,21 +364,21 @@ static bool IsSecureMode(const std::string &name)
 static bool IsSupportHeif()
 {
 #ifdef HEIF_HW_DECODE_ENABLE
-    sptr<HDI::Codec::V3_0::ICodecComponentManager> manager =
-            HDI::Codec::V3_0::ICodecComponentManager::Get(false);
+    sptr<HDI::Codec::V4_0::ICodecComponentManager> manager =
+            HDI::Codec::V4_0::ICodecComponentManager::Get(false);
     bool cond = manager == nullptr;
     CHECK_ERROR_RETURN_RET(cond, false);
     int32_t compCnt = 0;
     int32_t ret = manager->GetComponentNum(compCnt);
     cond = (ret != HDF_SUCCESS || compCnt <= 0);
     CHECK_ERROR_RETURN_RET(cond, false);
-    std::vector<HDI::Codec::V3_0::CodecCompCapability> capList(compCnt);
+    std::vector<HDI::Codec::V4_0::CodecCompCapability> capList(compCnt);
     ret = manager->GetComponentCapabilityList(capList, compCnt);
     cond = (ret != HDF_SUCCESS || capList.empty());
     CHECK_ERROR_RETURN_RET(cond, false);
     for (const auto& cap : capList) {
-        if (cap.role == HDI::Codec::V3_0::MEDIA_ROLETYPE_VIDEO_HEVC &&
-            cap.type == HDI::Codec::V3_0::VIDEO_DECODER && !IsSecureMode(cap.compName)) {
+        if (cap.role == HDI::Codec::V4_0::MEDIA_ROLETYPE_VIDEO_HEVC &&
+            cap.type == HDI::Codec::V4_0::VIDEO_DECODER && !IsSecureMode(cap.compName)) {
             return true;
         }
     }
