@@ -3616,13 +3616,13 @@ HWTEST_F(PixelMapTest, GetRGBA1010102ColorTest001, TestSize.Level3)
     EXPECT_EQ(rgba1010102Color, 0x4F76949B);
 
     uint16_t colorR = ImageUtils::GetRGBA1010102ColorR(rgba1010102Color);
-    EXPECT_EQ(colorR, 0x24F);
+    EXPECT_EQ(colorR, 0x09B);
     uint16_t colorG = ImageUtils::GetRGBA1010102ColorG(rgba1010102Color);
-    EXPECT_EQ(colorG, 0x11D);
+    EXPECT_EQ(colorG, 0x1A5);
     uint16_t colorB = ImageUtils::GetRGBA1010102ColorB(rgba1010102Color);
-    EXPECT_EQ(colorB, 0x1B9);
+    EXPECT_EQ(colorB, 0x0F7);
     uint16_t colorA = ImageUtils::GetRGBA1010102ColorA(rgba1010102Color);
-    EXPECT_EQ(colorA, 0x002);
+    EXPECT_EQ(colorA, 0x001);
     GTEST_LOG_(INFO) << "PixelMapTest: GetRGBA1010102ColorTest001 end";
 }
 
@@ -3635,21 +3635,24 @@ HWTEST_F(PixelMapTest, GetRGBA1010102ColorTest002, TestSize.Level3)
 {
     GTEST_LOG_(INFO) << "PixelMapTest: GetRGBA1010102ColorTest002 start";
 
-    // 1010 1010 1010 1011 1011 1010 0111 1011
-    // R 11 10101010 -> 0x3AA
-    // G 1010 101010 -> 0x2AA
-    // B 111011 1011 -> 0x3BB
-    // A 01 -> 0x001
-    uint32_t rgba1010102Color = 0xAAABBA7B;
+    // HEX: 0x12345678
+    // BIN: 0001 0010 0011 0100 0101 0110 0111 1000
+    // MEMORY: 0111 1000 0101 0110 0011 0100 0001 0010
+    // R8(Low)_G6(low)_R2(high)_B4(low)_G4(high)_A2_B6(high)
+    // R 10 0111 1000 -> 0x278
+    // G 0100 0101 01 -> 0x115
+    // B 01 0010 0011 -> 0x123
+    // A 00 -> 0x00
+    uint32_t rgba1010102Color = 0x12345678;
 
     uint16_t colorR = ImageUtils::GetRGBA1010102ColorR(rgba1010102Color);
-    EXPECT_EQ(colorR, 0x3AA);
+    EXPECT_EQ(colorR, 0x278);
     uint16_t colorG = ImageUtils::GetRGBA1010102ColorG(rgba1010102Color);
-    EXPECT_EQ(colorG, 0x2AA);
+    EXPECT_EQ(colorG, 0x115);
     uint16_t colorB = ImageUtils::GetRGBA1010102ColorB(rgba1010102Color);
-    EXPECT_EQ(colorB, 0x3BB);
+    EXPECT_EQ(colorB, 0x123);
     uint16_t colorA = ImageUtils::GetRGBA1010102ColorA(rgba1010102Color);
-    EXPECT_EQ(colorA, 0x001);
+    EXPECT_EQ(colorA, 0x00);
     GTEST_LOG_(INFO) << "PixelMapTest: GetRGBA1010102ColorTest002 end";
 }
 }
