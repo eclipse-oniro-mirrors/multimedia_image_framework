@@ -151,6 +151,10 @@ public:
         }
         return false;
     }
+    static uint16_t GetRGBA1010102ColorR(uint32_t color);
+    static uint16_t GetRGBA1010102ColorG(uint32_t color);
+    static uint16_t GetRGBA1010102ColorB(uint32_t color);
+    static uint16_t GetRGBA1010102ColorA(uint32_t color);
 private:
     static uint32_t RegisterPluginServer();
     static uint32_t SaveDataToFile(const std::string& fileName, const char* data, const size_t& totalSize);
