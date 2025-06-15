@@ -488,12 +488,10 @@ static bool RGBA1010102ToP010SoftDecode(const RGBDataInfo &rgbInfo, SrcConvertPa
         IMAGE_LOGE("Invalid destination buffer size is 0!");
         return false;
     }
-    uint8_t *midBuffer = nullptr;
-    midBuffer = new(std::nothrow) uint8_t[midBufferSize]();
-    if (midBuffer == nullptr) {
-        IMAGE_LOGE("Apply space for dest buffer failed!");
-        return false;
-    }
+    std::unique_ptr<uint8_t[]> srcBuffer = std::make_unique<uint8_t[]>(midBufferSize);
+    uint8_t* midBuffer = srcBuffer.get();
+    CHECK_ERROR_RETURN_RET_LOG((midBuffer == nullptr), false, "Apply space for dest buffer failed!");
+
     Convert10bitInfo convertInfo;
     convertInfo.srcPixelFormat = PixelFormat::RGBA_1010102;
     convertInfo.srcBytes = static_cast<uint32_t>(srcParam.stride[0]);
@@ -505,27 +503,33 @@ static bool RGBA1010102ToP010SoftDecode(const RGBDataInfo &rgbInfo, SrcConvertPa
     convertInfo.dstBytes = rgbInfo.width * STRIDES_PER_PLANE;
     if (!RGBAConvert(rgbInfo, srcParam.slice[0], midBuffer, convertInfo)) {
         IMAGE_LOGE("RGBA1010102ToRGB888: pixel convert in adapter failed.");
-        delete[] midBuffer;
         return false;
     }
+    RGBDataInfo copyRgbInfo = rgbInfo;
+    if (!ImageUtils::GetAlignedNumber(copyRgbInfo.width, EVEN_ODD_DIVISOR) ||
+        !ImageUtils::GetAlignedNumber(copyRgbInfo.height, EVEN_ODD_DIVISOR)) {
+        return false;
+    }
+    int32_t copySrcLen = static_cast<size_t>(copyRgbInfo.width * copyRgbInfo.height * STRIDES_PER_PLANE);
+    std::unique_ptr<uint8_t[]> copySrcBuffer = std::make_unique<uint8_t[]>(copySrcLen);
+    CHECK_ERROR_RETURN_RET_LOG((copySrcBuffer == nullptr), -1, "[RGBAToP010]Convert: alloc memory failed!");
+    uint8_t* copySrcPixels = copySrcBuffer.get();
+    memset_s(copySrcPixels, copySrcLen, 0, copySrcLen);
+    bool cond = memcpy_s(copySrcPixels, copySrcLen, midBuffer, midBufferSize) != EOK;
+    CHECK_ERROR_RETURN_RET(cond, -1);
     SrcConvertParam midParam = {rgbInfo.width, rgbInfo.height};
     midParam.format = PixelFormat::RGBA_F16;
-    midParam.buffer = midBuffer;
+    midParam.buffer = copySrcPixels;
     midParam.slice[0] = midParam.buffer;
     midParam.stride[0] = static_cast<int>(rgbInfo.width * STRIDES_PER_PLANE);
     if (!SoftDecode(midParam, destParam)) {
         IMAGE_LOGE("RGB manual conversion to YUV failed!");
-        delete[] midBuffer;
         return false;
     }
-    if (destInfo.format == PixelFormat::YCRCB_P010) {
-        if (!SwapNV21P010(destInfo)) {
-            IMAGE_LOGE("SwapNV21P010 failed!");
-            delete[] midBuffer;
-            return false;
-        }
+    if ((destInfo.format == PixelFormat::YCRCB_P010) && (!SwapNV21P010(destInfo))) {
+        IMAGE_LOGE("SwapNV21P010 failed!");
+        return false;
     }
-    delete[] midBuffer;
     return true;
 }
 
