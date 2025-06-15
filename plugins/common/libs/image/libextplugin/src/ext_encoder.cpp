@@ -130,7 +130,7 @@ namespace {
     constexpr uint32_t DEPTH_MAP_BYTES = sizeof(float); // float16
     constexpr uint32_t LINEAR_MAP_BYTES = sizeof(short) * 3 / 2; // 16bit yuv420
     constexpr uint32_t PLACE_HOLDER_LENGTH = 1;
-    constexpr uint32_t LOW_QUALITY_BOUNDARY = 85;
+    constexpr uint32_t LOW_QUALITY_BOUNDARY = 50;
     constexpr uint32_t RGBA8888_PIXEL_BYTES = 4;
     constexpr uint32_t HIGHEST_QUALITY = 100;
     constexpr uint32_t DEFAULT_QUALITY = 75;
