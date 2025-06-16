@@ -441,6 +441,10 @@ interface PixelMap {
   @gen_promise("convertPixelFormat")
   ConvertPixelFormatSync(targetPixelFormat: PixelMapFormat): void;
 
+  GetColorSpace(): @sts_type("colorSpaceManager.ColorSpaceManager") Opaque;
+
+  SetColorSpace(colorSpace: @sts_type("colorSpaceManager.ColorSpaceManager") Opaque): void;
+
   @gen_async("release")
   @gen_promise("release")
   ReleaseSync(): void;

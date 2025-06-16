@@ -56,6 +56,8 @@ public:
     void OpacitySync(float rate);
     void SetMemoryNameSync(string_view name);
     void ConvertPixelFormatSync(PixelMapFormat targetPixelFormat);
+    uintptr_t GetColorSpace();
+    void SetColorSpace(uintptr_t colorSpace);
     void ReleaseSync();
     bool GetIsEditable();
     bool GetIsStrideAlignment();

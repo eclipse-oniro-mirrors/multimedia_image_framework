@@ -15,12 +15,14 @@
 
 #include "pixel_map_taihe.h"
 
+#include "ani_color_space_object_convertor.h"
 #include "image_format_convert.h"
 #include "image_log.h"
 #include "image_taihe_utils.h"
 #include "image_utils.h"
 #include "media_errors.h"
 #include "pixel_map_taihe_ani.h"
+#include "taihe/runtime.hpp"
 #if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
 #include <regex>
 #include "pixel_map_from_surface.h"
@@ -525,6 +527,53 @@ void PixelMapImpl::ConvertPixelFormatSync(PixelMapFormat targetPixelFormat)
     } else if (status == Media::ERR_IMAGE_PIXELMAP_CREATE_FAILED) {
         ImageTaiheUtils::ThrowExceptionError(Media::ERR_IMAGE_PIXELMAP_CREATE_FAILED, "Failed to create PixelMap");
     }
+}
+
+uintptr_t PixelMapImpl::GetColorSpace()
+{
+#ifdef IMAGE_COLORSPACE_FLAG
+    if (nativePixelMap_ == nullptr) {
+        ImageTaiheUtils::ThrowExceptionError(Media::ERR_IMAGE_DATA_ABNORMAL, "Invalid native PixelMap");
+        return 0;
+    }
+    if (!aniEditable_) {
+        ImageTaiheUtils::ThrowExceptionError(Media::ERR_RESOURCE_UNAVAILABLE, "PixelMap has crossed threads");
+        return 0;
+    }
+
+    auto grColorSpace = nativePixelMap_->InnerGetGrColorSpacePtr();
+    if (grColorSpace == nullptr) {
+        ImageTaiheUtils::ThrowExceptionError(Media::ERR_IMAGE_DATA_UNSUPPORT, "No color space in PixelMap");
+        return 0;
+    }
+    return reinterpret_cast<uintptr_t>(ColorManager::CreateAniColorSpaceObject(get_env(), grColorSpace));
+#else
+    ImageTaiheUtils::ThrowExceptionError(Media::ERR_INVALID_OPERATION, "Unsupported operation");
+    return 0;
+#endif
+}
+
+void PixelMapImpl::SetColorSpace(uintptr_t colorSpace)
+{
+#ifdef IMAGE_COLORSPACE_FLAG
+    if (nativePixelMap_ == nullptr) {
+        IMAGE_LOGE("[%{public}s] Native PixelMap is nullptr", __func__);
+        return;
+    }
+    if (!aniEditable_) {
+        ImageTaiheUtils::ThrowExceptionError(Media::ERR_RESOURCE_UNAVAILABLE, "PixelMap has crossed threads");
+        return;
+    }
+
+    auto grColorSpace = ColorManager::GetColorSpaceByAniObject(get_env(), reinterpret_cast<ani_object>(colorSpace));
+    if (grColorSpace == nullptr) {
+        ImageTaiheUtils::ThrowExceptionError(Media::ERR_IMAGE_INVALID_PARAMETER, "Color space mismatch");
+        return;
+    }
+    nativePixelMap_->InnerSetColorSpace(*grColorSpace);
+#else
+    ImageTaiheUtils::ThrowExceptionError(Media::ERR_INVALID_OPERATION, "Unsupported operation");
+#endif
 }
 
 void PixelMapImpl::ReleaseSync()
