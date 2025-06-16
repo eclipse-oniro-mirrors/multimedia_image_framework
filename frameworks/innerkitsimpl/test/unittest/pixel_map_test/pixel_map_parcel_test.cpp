@@ -80,40 +80,6 @@ HWTEST_F(PixelMapParcelTest, PixelMapParcelTest001, TestSize.Level3)
     GTEST_LOG_(INFO) << "PixelMapParcelTest: PixelMapParcelTest001 end";
 }
 
-std::unique_ptr<PixelMap> CreatePixelMap(int32_t width, int32_t height, PixelFormat format, AlphaType alphaType,
-    AllocatorType type)
-{
-    std::unique_ptr<PixelMap> pixelMap = std::make_unique<PixelMap>();
-    ImageInfo info;
-    info.size.width = width;
-    info.size.height = height;
-    info.pixelFormat = format;
-    info.colorSpace = ColorSpace::SRGB;
-    info.alphaType = alphaType;
-    pixelMap->SetImageInfo(info);
-
-    int32_t rowDataSize = ImageUtils::GetRowDataSizeByPixelFormat(width, format);
-    if (rowDataSize <= 0) {
-        return nullptr;
-    }
-    size_t bufferSize = rowDataSize * height;
-    void* buffer = malloc(bufferSize); // Buffer's lifecycle will be held by pixelMap
-    if (buffer == nullptr) {
-        return nullptr;
-    }
-    char* ch = static_cast<char*>(buffer);
-    for (unsigned int i = 0; i < bufferSize; i++) {
-        *(ch++) = (char)i;
-    }
-
-    pixelMap->SetPixelsAddr(buffer, nullptr, bufferSize, type, type != AllocatorType::CUSTOM_ALLOC ? nullptr :
-        [](void* addr, void* context, uint32_t size) {
-            free(addr);
-        });
-
-    return pixelMap;
-}
-
 std::unique_ptr<PixelMap> CreatePixelmapUsingOpt(int32_t size, PixelFormat format, bool useDma)
 {
     InitializationOptions opts;
