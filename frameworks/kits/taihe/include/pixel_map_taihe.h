@@ -31,14 +31,14 @@ public:
     PixelMapImpl();
     explicit PixelMapImpl(array_view<uint8_t> const& colors, InitializationOptions const& etsOptions);
     explicit PixelMapImpl(InitializationOptions const& etsOptions);
-    explicit PixelMapImpl(std::shared_ptr<Media::PixelMap> pixelMap);
+    explicit PixelMapImpl(std::shared_ptr<OHOS::Media::PixelMap> pixelMap);
     explicit PixelMapImpl(int64_t aniPtr);
     ~PixelMapImpl();
 
     int64_t GetImplPtr();
-    std::shared_ptr<Media::PixelMap> GetNativePtr();
-    static std::shared_ptr<Media::PixelMap> GetPixelMap(PixelMap etsPixelMap);
-    static PixelMap CreatePixelMap(std::shared_ptr<Media::PixelMap> pixelMap);
+    std::shared_ptr<OHOS::Media::PixelMap> GetNativePtr();
+    static std::shared_ptr<OHOS::Media::PixelMap> GetPixelMap(PixelMap etsPixelMap);
+    static PixelMap CreatePixelMap(std::shared_ptr<OHOS::Media::PixelMap> pixelMap);
 
     ImageInfo GetImageInfoSync();
     void ReadPixelsToBufferSync(array_view<uint8_t> dst);
@@ -67,10 +67,11 @@ public:
     int64_t GetTimestamp();
 
 private:
-    std::shared_ptr<Media::PixelMap> nativePixelMap_ = nullptr;
+    std::shared_ptr<OHOS::Media::PixelMap> nativePixelMap_ = nullptr;
     bool aniEditable_ = true;
-    bool Is10BitFormat(Media::PixelFormat format);
-    void ParseInitializationOptions(InitializationOptions const& etsOptions, Media::InitializationOptions &options);
+    bool Is10BitFormat(OHOS::Media::PixelFormat format);
+    void ParseInitializationOptions(InitializationOptions const& etsOptions,
+        OHOS::Media::InitializationOptions &options);
     void Release();
     int64_t timestamp_ = 0;
     int32_t captureId_ = 0;
