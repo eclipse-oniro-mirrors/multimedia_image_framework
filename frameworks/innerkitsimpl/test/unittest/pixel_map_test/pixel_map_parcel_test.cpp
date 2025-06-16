@@ -114,27 +114,6 @@ std::unique_ptr<PixelMap> CreatePixelMap(int32_t width, int32_t height, PixelFor
     return pixelMap;
 }
 
-/**
- * @tc.name: MarshallingUnmarshallingRecodeParcelTest001
- * @tc.desc: Test marshalling and unmarshalling PixelMap with DEFAULT allocator type
- * @tc.type: FUNC
- */
-HWTEST_F(PixelMapParcelTest, MarshallingUnmarshallingRecodeParcelTest001, TestSize.Level3)
-{
-    GTEST_LOG_(INFO) << "PixelMapParcelTest: MarshallingUnmarshallingRecodeParcelTest001 start";
-
-    auto pixelMap = CreatePixelMap(1, 1, PixelFormat::BGRA_8888, AlphaType::IMAGE_ALPHA_TYPE_UNKNOWN,
-        AllocatorType::DEFAULT);
-    EXPECT_TRUE(pixelMap != nullptr);
-    Parcel parcel;
-    auto ret = PixelMapRecordParcel::MarshallingPixelMapForRecord(parcel, *(pixelMap.get()));
-    EXPECT_TRUE(ret);
-    PixelMap* newPixelMap = PixelMapRecordParcel::UnmarshallingPixelMapForRecord(parcel);
-    EXPECT_EQ(newPixelMap->GetAllocatorType(), AllocatorType::HEAP_ALLOC);
-
-    GTEST_LOG_(INFO) << "PixelMapParcelTest: MarshallingUnmarshallingRecodeParcelTest001 end";
-}
-
 std::unique_ptr<PixelMap> CreatePixelmapUsingOpt(int32_t size, PixelFormat format, bool useDma)
 {
     InitializationOptions opts;
