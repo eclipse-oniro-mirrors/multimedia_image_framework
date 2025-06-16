@@ -3559,6 +3559,31 @@ HWTEST_F(PixelMapTest, pixelmapfd001, TestSize.Level3)
 }
 
 /**
+ * @tc.name: GetPixelTest
+ * @tc.desc: Test GetPixel PixelMap
+ * @tc.type: FUNC
+ */
+HWTEST_F(PixelMapTest, GetPixelTest, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PixelMapTest: GetPixelTest start";
+    std::unique_ptr<PixelMap> pixelMapNV21 =
+        ConstructPixmap(PixelFormat::NV21, AlphaType::IMAGE_ALPHA_TYPE_UNKNOWN);
+    EXPECT_NE(pixelMapNV21, nullptr);
+    pixelMapNV21->SetAstc(true);
+    EXPECT_EQ(nullptr, pixelMapNV21->GetPixel(1, 1));
+    pixelMapNV21->SetAstc(false);
+    EXPECT_EQ(nullptr, pixelMapNV21->GetPixel(1, 1));
+    std::unique_ptr<PixelMap> pixelMapRGBA =
+        ConstructPixmap(PixelFormat::RGBA_8888, AlphaType::IMAGE_ALPHA_TYPE_UNKNOWN);
+    EXPECT_NE(pixelMapRGBA, nullptr);
+    pixelMapRGBA->SetAstc(true);
+    EXPECT_EQ(nullptr, pixelMapRGBA->GetPixel(1, 1));
+    pixelMapRGBA->SetAstc(false);
+    EXPECT_NE(nullptr, pixelMapRGBA->GetPixel(1, 1));
+    GTEST_LOG_(INFO) << "PixelMapTest: GetPixelTest end";
+}
+
+/**
  * @tc.name: CloseFdPixelMapTest
  * @tc.desc: Test CloseFd PixelMap
  * @tc.type: FUNC
@@ -3612,7 +3637,7 @@ HWTEST_F(PixelMapTest, GetRGBA1010102ColorTest001, TestSize.Level3)
     EXPECT_NE(pixelMap, nullptr);
 
     uint32_t rgba1010102Color;
-    pixelMap->GetARGB32Color(0, 0, rgba1010102Color);
+    pixelMap->GetRGBA1010102Color(0, 0, rgba1010102Color);
     EXPECT_EQ(rgba1010102Color, 0x4F76949B);
 
     uint16_t colorR = ImageUtils::GetRGBA1010102ColorR(rgba1010102Color);
@@ -3652,7 +3677,7 @@ HWTEST_F(PixelMapTest, GetRGBA1010102ColorTest002, TestSize.Level3)
     uint16_t colorB = ImageUtils::GetRGBA1010102ColorB(rgba1010102Color);
     EXPECT_EQ(colorB, 0x123);
     uint16_t colorA = ImageUtils::GetRGBA1010102ColorA(rgba1010102Color);
-    EXPECT_EQ(colorA, 0x00);
+    EXPECT_EQ(colorA, 0x000);
     GTEST_LOG_(INFO) << "PixelMapTest: GetRGBA1010102ColorTest002 end";
 }
 }
