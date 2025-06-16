@@ -372,7 +372,7 @@ void JpegHardwareDecoder::UpdateSpaceInfo()
         dmaPool_.first->remainSpace = std::make_pair(newSize, newStart);
         (dmaPool_.first->usedSpace)[newStart] = usedSizeInPool_;
         JPEG_HW_LOGI("upadteSpaceInfo:  aligend size:%{public}u buffer offset:%{public}u refCnt:%{public}u",
-                    usedSizeInPool_, usedOffsetInPool_, dmaPoolRefCnt_);
+                     usedSizeInPool_, usedOffsetInPool_, dmaPoolRefCnt_);
     }
 }
 
