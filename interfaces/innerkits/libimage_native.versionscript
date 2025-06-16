@@ -39,6 +39,7 @@
     *Picture*;
     *AuxiliaryPicture*;
     *FragmentMetadata*;
+    *GifMetadata*;
     *MemoryManager*;
     *FilePackerStream*;
   local:

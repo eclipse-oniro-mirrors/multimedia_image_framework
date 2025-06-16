@@ -47,6 +47,11 @@ static const std::string IMAGE_JPEG_HDR_PATH = "/data/local/tmp/image/test_jpeg_
 static const std::string IMAGE_HEIF_PATH = "/data/local/tmp/image/test_allocator_heif.heic";
 static const std::string IMAGE_HEIF_HDR_PATH = "/data/local/tmp/image/test_heif_hdr.heic";
 static const std::string IMAGE_PNG_PATH = "/data/local/tmp/image/test_picture_png.png";
+static const std::string IMAGE_GIF_MOVING_PATH = "/data/local/tmp/image/moving_test.gif";
+static const std::string IMAGE_GIF_LARGE_PATH = "/data/local/tmp/image/fake_large_size_test.gif";  // 50000x50000
+static const std::string IMAGE_GIF_INCOMPLETE_PATH = "/data/local/tmp/image/incomplete_test.gif";
+static const size_t IMAGE_GIF_MOVING_FRAME_COUNT = 3;
+static const size_t IMAGE_GIF_INCOMPLETE_FRAME_INDEX = 16;
 static const int32_t MAX_BUFFER_SIZE = 256;
 static const int32_t INVALID_INDEX = 1000;
 
@@ -2256,6 +2261,160 @@ HWTEST_F(ImagSourceNdk2Test, OH_ImageSourceNative_GetImagePropertyWithNullTest00
         free(value.data);
     }
     GTEST_LOG_(INFO) << "ImagSourceNdk2Test: OH_ImageSourceNative_GetImagePropertyWithNullTest002 end";
+}
+
+/**
+ * @tc.name: OH_ImageSourceNative_CreatePictureAtIndex001
+ * @tc.desc: test OH_ImageSourceNative_CreatePictureAtIndex001
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImagSourceNdk2Test, OH_ImageSourceNative_CreatePictureAtIndex001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImagSourceNdk2Test: OH_ImageSourceNative_CreatePictureAtIndex001 start";
+    OH_ImageSourceNative *imageSource = CreateImageSourceNative(IMAGE_GIF_MOVING_PATH);
+    ASSERT_NE(imageSource, nullptr);
+    uint32_t frameCount = 0;
+    Image_ErrorCode ret = OH_ImageSourceNative_GetFrameCount(imageSource, &frameCount);
+    ASSERT_EQ(ret, IMAGE_SUCCESS);
+    ASSERT_EQ(frameCount, IMAGE_GIF_MOVING_FRAME_COUNT);
+    OH_PictureNative *picture = nullptr;
+
+    ret = OH_ImageSourceNative_CreatePictureAtIndex(imageSource, 0, &picture);
+    EXPECT_EQ(ret, IMAGE_SUCCESS);
+    OH_PictureMetadata *gifMetadata = nullptr;
+    ret = OH_PictureNative_GetMetadata(picture, GIF_METADATA, &gifMetadata);
+    EXPECT_EQ(ret, IMAGE_SUCCESS);
+
+    Image_String keyDelayTime;
+    keyDelayTime.data = strdup(IMAGE_PROPERTY_GIF_DELAY_TIME);
+    keyDelayTime.size = strlen(keyDelayTime.data);
+    Image_String valueDelayTime;
+    ret = OH_PictureMetadata_GetProperty(gifMetadata, &keyDelayTime, &valueDelayTime);
+    EXPECT_EQ(ret, IMAGE_SUCCESS);
+    EXPECT_EQ(strncmp(valueDelayTime.data, "70", valueDelayTime.size), 0);
+
+    Image_String keyDisposalType;
+    keyDisposalType.data = strdup(IMAGE_PROPERTY_GIF_DISPOSAL_TYPE);
+    keyDisposalType.size = strlen(keyDisposalType.data);
+    Image_String valueDisposalType;
+    ret = OH_PictureMetadata_GetProperty(gifMetadata, &keyDisposalType, &valueDisposalType);
+    EXPECT_EQ(ret, IMAGE_SUCCESS);
+    EXPECT_EQ(strncmp(valueDisposalType.data, "1", valueDisposalType.size), 0);
+
+    OH_ImageSourceNative_Release(imageSource);
+    OH_PictureNative_Release(picture);
+    OH_PictureMetadata_Release(gifMetadata);
+    free(keyDelayTime.data);
+    free(keyDisposalType.data);
+    delete[] valueDelayTime.data;
+    delete[] valueDisposalType.data;
+    GTEST_LOG_(INFO) << "ImagSourceNdk2Test: OH_ImageSourceNative_CreatePictureAtIndex001 end";
+}
+
+/**
+ * @tc.name: OH_ImageSourceNative_CreatePictureAtIndex002
+ * @tc.desc: test OH_ImageSourceNative_CreatePictureAtIndex002
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImagSourceNdk2Test, OH_ImageSourceNative_CreatePictureAtIndex002, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImagSourceNdk2Test: OH_ImageSourceNative_CreatePictureAtIndex002 start";
+    OH_ImageSourceNative *imageSource = nullptr;
+    OH_PictureNative *picture = nullptr;
+    Image_ErrorCode ret = OH_ImageSourceNative_CreatePictureAtIndex(imageSource, 0, &picture);
+    EXPECT_EQ(ret, IMAGE_BAD_SOURCE);
+    OH_ImageSourceNative_Release(imageSource);
+    GTEST_LOG_(INFO) << "ImagSourceNdk2Test: OH_ImageSourceNative_CreatePictureAtIndex002 end";
+}
+
+/**
+ * @tc.name: OH_ImageSourceNative_CreatePictureAtIndex003
+ * @tc.desc: test OH_ImageSourceNative_CreatePictureAtIndex003
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImagSourceNdk2Test, OH_ImageSourceNative_CreatePictureAtIndex003, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImagSourceNdk2Test: OH_ImageSourceNative_CreatePictureAtIndex003 start";
+    OH_ImageSourceNative *imageSource = CreateImageSourceNative(IMAGE_GIF_MOVING_PATH);
+    ASSERT_NE(imageSource, nullptr);
+    OH_PictureNative **picture = nullptr;
+    Image_ErrorCode ret = OH_ImageSourceNative_CreatePictureAtIndex(imageSource, 0, picture);
+    EXPECT_EQ(ret, IMAGE_SOURCE_UNSUPPORTED_OPTIONS);
+    OH_ImageSourceNative_Release(imageSource);
+    GTEST_LOG_(INFO) << "ImagSourceNdk2Test: OH_ImageSourceNative_CreatePictureAtIndex003 end";
+}
+
+/**
+ * @tc.name: OH_ImageSourceNative_CreatePictureAtIndex004
+ * @tc.desc: test OH_ImageSourceNative_CreatePictureAtIndex004
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImagSourceNdk2Test, OH_ImageSourceNative_CreatePictureAtIndex004, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImagSourceNdk2Test: OH_ImageSourceNative_CreatePictureAtIndex004 start";
+    OH_ImageSourceNative *imageSource = CreateImageSourceNative(IMAGE_JPEG_PATH_TEST);
+    ASSERT_NE(imageSource, nullptr);
+    OH_PictureNative *picture = nullptr;
+    Image_ErrorCode ret = OH_ImageSourceNative_CreatePictureAtIndex(imageSource, 0, &picture);
+    EXPECT_EQ(ret, IMAGE_SOURCE_UNSUPPORTED_MIMETYPE);
+    OH_ImageSourceNative_Release(imageSource);
+    GTEST_LOG_(INFO) << "ImagSourceNdk2Test: OH_ImageSourceNative_CreatePictureAtIndex004 end";
+}
+
+/**
+ * @tc.name: OH_ImageSourceNative_CreatePictureAtIndex005
+ * @tc.desc: test OH_ImageSourceNative_CreatePictureAtIndex005
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImagSourceNdk2Test, OH_ImageSourceNative_CreatePictureAtIndex005, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImagSourceNdk2Test: OH_ImageSourceNative_CreatePictureAtIndex005 start";
+    OH_ImageSourceNative *imageSource = CreateImageSourceNative(IMAGE_GIF_MOVING_PATH);
+    ASSERT_NE(imageSource, nullptr);
+    uint32_t frameCount = 0;
+    Image_ErrorCode ret = OH_ImageSourceNative_GetFrameCount(imageSource, &frameCount);
+    ASSERT_EQ(ret, IMAGE_SUCCESS);
+    ASSERT_EQ(frameCount, IMAGE_GIF_MOVING_FRAME_COUNT);
+    OH_PictureNative *picture = nullptr;
+    ret = OH_ImageSourceNative_CreatePictureAtIndex(imageSource, frameCount, &picture);
+    EXPECT_EQ(ret, IMAGE_SOURCE_UNSUPPORTED_OPTIONS);
+    OH_ImageSourceNative_Release(imageSource);
+    GTEST_LOG_(INFO) << "ImagSourceNdk2Test: OH_ImageSourceNative_CreatePictureAtIndex005 end";
+}
+
+/**
+ * @tc.name: OH_ImageSourceNative_CreatePictureAtIndex006
+ * @tc.desc: test OH_ImageSourceNative_CreatePictureAtIndex006
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImagSourceNdk2Test, OH_ImageSourceNative_CreatePictureAtIndex006, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImagSourceNdk2Test: OH_ImageSourceNative_CreatePictureAtIndex006 start";
+    OH_ImageSourceNative *imageSource = CreateImageSourceNative(IMAGE_GIF_LARGE_PATH);
+    ASSERT_NE(imageSource, nullptr);
+    OH_PictureNative *picture = nullptr;
+    Image_ErrorCode ret = OH_ImageSourceNative_CreatePictureAtIndex(imageSource, 0, &picture);
+    EXPECT_EQ(ret, IMAGE_SOURCE_TOO_LARGE);
+    OH_ImageSourceNative_Release(imageSource);
+    GTEST_LOG_(INFO) << "ImagSourceNdk2Test: OH_ImageSourceNative_CreatePictureAtIndex006 end";
+}
+
+/**
+ * @tc.name: OH_ImageSourceNative_CreatePictureAtIndex007
+ * @tc.desc: test OH_ImageSourceNative_CreatePictureAtIndex007
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImagSourceNdk2Test, OH_ImageSourceNative_CreatePictureAtIndex007, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImagSourceNdk2Test: OH_ImageSourceNative_CreatePictureAtIndex007 start";
+    OH_ImageSourceNative *imageSource = CreateImageSourceNative(IMAGE_GIF_INCOMPLETE_PATH);
+    ASSERT_NE(imageSource, nullptr);
+    OH_PictureNative *picture = nullptr;
+    Image_ErrorCode ret =
+        OH_ImageSourceNative_CreatePictureAtIndex(imageSource, IMAGE_GIF_INCOMPLETE_FRAME_INDEX, &picture);
+    EXPECT_EQ(ret, IMAGE_DECODE_FAILED);
+    OH_ImageSourceNative_Release(imageSource);
+    GTEST_LOG_(INFO) << "ImagSourceNdk2Test: OH_ImageSourceNative_CreatePictureAtIndex007 end";
 }
 }
 }

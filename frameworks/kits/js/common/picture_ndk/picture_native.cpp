@@ -160,9 +160,10 @@ Image_ErrorCode OH_PictureNative_GetMetadata(OH_PictureNative *picture, Image_Me
     if (picture == nullptr || metadata == nullptr || !picture->GetInnerPicture()) {
         return IMAGE_BAD_PARAMETER;
     }
+    auto metaTypeInner = MetaDataTypeNativeToInner(metadataType);
     std::shared_ptr<OHOS::Media::ImageMetadata> metadataTmp = nullptr;
-    if (metadataType == EXIF_METADATA) {
-        metadataTmp = picture->GetInnerPicture()->GetExifMetadata();
+    if (OHOS::Media::Picture::isValidPictureMetadataType(metaTypeInner)) {
+        metadataTmp = picture->GetInnerPicture()->GetMetadata(metaTypeInner);
     }
     if (metadataTmp == nullptr) {
         return IMAGE_UNSUPPORTED_METADATA;
@@ -182,14 +183,13 @@ Image_ErrorCode OH_PictureNative_SetMetadata(OH_PictureNative *picture, Image_Me
         !metadata->GetInnerAuxiliaryMetadata()) {
         return IMAGE_BAD_PARAMETER;
     }
-    if (metadataType == EXIF_METADATA) {
+    auto metaTypeInner = MetaDataTypeNativeToInner(metadataType);
+    uint32_t errorCode = OHOS::Media::ERROR;
+    if (OHOS::Media::Picture::isValidPictureMetadataType(metaTypeInner)) {
         auto metadataInner = metadata->GetInnerAuxiliaryMetadata();
-        auto exifMetadata = std::static_pointer_cast<OHOS::Media::ExifMetadata>(metadataInner);
-        auto errorCode = picture->GetInnerPicture()->SetExifMetadata(exifMetadata);
-        if (errorCode != OHOS::Media::SUCCESS) {
-            return IMAGE_UNSUPPORTED_METADATA;
-        }
-    } else {
+        errorCode = picture->GetInnerPicture()->SetMetadata(metaTypeInner, metadataInner);
+    }
+    if (errorCode != OHOS::Media::SUCCESS) {
         return IMAGE_UNSUPPORTED_METADATA;
     }
     return IMAGE_SUCCESS;

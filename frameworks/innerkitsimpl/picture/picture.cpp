@@ -119,6 +119,7 @@ namespace {
 #endif
 }
 const static uint64_t MAX_AUXILIARY_PICTURE_COUNT = 32;
+const static uint64_t MAX_PICTURE_META_TYPE_COUNT = 64;
 const static uint64_t MAX_EXIFMETADATA_SIZE = 1024 * 1024;
 static const uint8_t NUM_0 = 0;
 static const uint8_t NUM_1 = 1;
@@ -552,6 +553,42 @@ void Picture::DropAuxiliaryPicture(AuxiliaryPictureType type)
     }
 }
 
+bool Picture::MarshalMetadata(Parcel &data) const
+{
+    if (!data.WriteBool(maintenanceData_ != nullptr)) {
+        IMAGE_LOGE("Failed to write maintenance data existence value.");
+        return false;
+    }
+
+    if (maintenanceData_ != nullptr &&
+        (maintenanceData_->WriteToMessageParcel(reinterpret_cast<MessageParcel&>(data)) != GSError::GSERROR_OK)) {
+        IMAGE_LOGE("Failed to write maintenance data content.");
+        return false;
+    }
+
+    if (metadatas_.size() > MAX_PICTURE_META_TYPE_COUNT) {
+        IMAGE_LOGE("The number of metadatas exceeds the maximum limit.");
+        return false;
+    }
+    if (!data.WriteUint64(static_cast<uint64_t>(metadatas_.size()))) {
+        return false;
+    }
+
+    for (const auto &[type, metadata] : metadatas_) {
+        int32_t typeInt32 = static_cast<int32_t>(type);
+        if (metadata == nullptr) {
+            IMAGE_LOGE("Metadata %{public}d is nullptr.", typeInt32);
+            return false;
+        }
+        if (!(data.WriteInt32(typeInt32) && metadata->Marshalling(data))) {
+            IMAGE_LOGE("Failed to marshal metadata: %{public}d.", typeInt32);
+            return false;
+        }
+    }
+
+    return true;
+}
+
 bool Picture::Marshalling(Parcel &data) const
 {
     if (!mainPixelMap_) {
@@ -581,33 +618,12 @@ bool Picture::Marshalling(Parcel &data) const
         }
 
         if (!auxiliaryPicture.second || !auxiliaryPicture.second->Marshalling(data)) {
-            IMAGE_LOGE("Failed to marshal auxiliary picture of type %d.", static_cast<int>(type));
+            IMAGE_LOGE("Failed to marshal auxiliary picture of type %{public}d.", static_cast<int>(type));
             return false;
         }
     }
-
-    if (!data.WriteBool(maintenanceData_ != nullptr)) {
-        IMAGE_LOGE("Failed to write maintenance data existence value.");
+    if (!MarshalMetadata(data)) {
         return false;
-    }
-
-    if (maintenanceData_ != nullptr) {
-        if (maintenanceData_->WriteToMessageParcel(reinterpret_cast<MessageParcel&>(data)) != GSError::GSERROR_OK) {
-            IMAGE_LOGE("Failed to write maintenance data content.");
-            return false;
-        }
-    }
-
-    if (!data.WriteBool(exifMetadata_ != nullptr)) {
-        IMAGE_LOGE("Failed to write exif data existence value.");
-        return false;
-    }
-
-    if (exifMetadata_ != nullptr) {
-        if (!exifMetadata_->Marshalling(data)) {
-            IMAGE_LOGE("Failed to marshal exif metadata.");
-            return false;
-        }
     }
 
     return true;
@@ -622,6 +638,47 @@ Picture *Picture::Unmarshalling(Parcel &data)
             error.errorCode, error.errorInfo.c_str());
     }
     return dstPicture;
+}
+
+bool Picture::UnmarshalMetadata(Parcel &parcel, Picture &picture, PICTURE_ERR &error)
+{
+    bool hasMaintenanceData = parcel.ReadBool();
+    if (hasMaintenanceData) {
+        sptr<SurfaceBuffer> surfaceBuffer = SurfaceBuffer::Create();
+        if (surfaceBuffer == nullptr) {
+            IMAGE_LOGE("SurfaceBuffer failed to be created.");
+            return false;
+        }
+        if (surfaceBuffer->ReadFromMessageParcel(reinterpret_cast<MessageParcel&>(parcel)) != GSError::GSERROR_OK) {
+            IMAGE_LOGE("Failed to unmarshal maintenance data");
+            return false;
+        }
+        picture.maintenanceData_ = surfaceBuffer;
+    }
+
+    uint64_t size = parcel.ReadUint64();
+    if (size > MAX_PICTURE_META_TYPE_COUNT) {
+        return false;
+    }
+    for (size_t i = 0; i < size; ++i) {
+        MetadataType type = static_cast<MetadataType>(parcel.ReadInt32());
+        std::shared_ptr<ImageMetadata> imagedataPtr(nullptr);
+        if (type == MetadataType::EXIF) {
+            imagedataPtr.reset(ExifMetadata::Unmarshalling(parcel));
+        } else if (type == MetadataType::GIF) {
+            imagedataPtr.reset(GifMetadata::Unmarshalling(parcel));
+        } else {
+            IMAGE_LOGE("Unsupported metadata type: %{public}d in picture", static_cast<int32_t>(type));
+        }
+        if (imagedataPtr == nullptr) {
+            return false;
+        }
+        if (picture.SetMetadata(type, imagedataPtr) != SUCCESS) {
+            IMAGE_LOGE("SetMetadata %{public}d in picture failed", static_cast<int32_t>(type));
+            return false;
+        }
+    }
+    return true;
 }
 
 Picture *Picture::Unmarshalling(Parcel &parcel, PICTURE_ERR &error)
@@ -648,49 +705,29 @@ Picture *Picture::Unmarshalling(Parcel &parcel, PICTURE_ERR &error)
         }
         picture->SetAuxiliaryPicture(auxPtr);
     }
-
-    bool hasMaintenanceData = parcel.ReadBool();
-    if (hasMaintenanceData) {
-        sptr<SurfaceBuffer> surfaceBuffer = SurfaceBuffer::Create();
-        if (surfaceBuffer == nullptr) {
-            IMAGE_LOGE("SurfaceBuffer failed to be created.");
-            return nullptr;
-        }
-        if (surfaceBuffer->ReadFromMessageParcel(reinterpret_cast<MessageParcel&>(parcel)) != GSError::GSERROR_OK) {
-            IMAGE_LOGE("Failed to unmarshal maintenance data");
-            return nullptr;
-        }
-        picture->maintenanceData_ = surfaceBuffer;
+    if (!UnmarshalMetadata(parcel, *picture, error)) {
+        IMAGE_LOGE("Failed to unmarshal metadata.");
+        return nullptr;
     }
-
-    bool hasExifData = parcel.ReadBool();
-    if (hasExifData) {
-        picture->exifMetadata_ = std::shared_ptr<ExifMetadata>(ExifMetadata::Unmarshalling(parcel));
-        if (picture->GetMainPixel() != nullptr) {
-            picture->GetMainPixel()->SetExifMetadata(picture->exifMetadata_);
-        }
-    }
-
     return picture.release();
 }
 
 int32_t Picture::CreateExifMetadata()
 {
-    if (exifMetadata_ != nullptr) {
+    if (GetExifMetadata() != nullptr) {
         IMAGE_LOGE("exifMetadata is already created");
         return SUCCESS;
     }
-    exifMetadata_ = std::make_shared<OHOS::Media::ExifMetadata>();
-    if (exifMetadata_ == nullptr) {
+    auto exifMetadata = std::make_shared<OHOS::Media::ExifMetadata>();
+    if (exifMetadata == nullptr) {
         IMAGE_LOGE("Failed to create ExifMetadata object");
         return ERR_IMAGE_MALLOC_ABNORMAL;
     }
-    if (!exifMetadata_->CreateExifdata()) {
+    if (!exifMetadata->CreateExifdata()) {
         IMAGE_LOGE("Failed to create exif metadata data");
-        exifMetadata_ = nullptr;
         return ERR_IMAGE_INVALID_PARAMETER;
     }
-    return SUCCESS;
+    return SetExifMetadata(exifMetadata);
 }
 
 int32_t Picture::SetExifMetadata(sptr<SurfaceBuffer> &surfaceBuffer)
@@ -728,28 +765,22 @@ int32_t Picture::SetExifMetadata(sptr<SurfaceBuffer> &surfaceBuffer)
     cond = exifData == nullptr;
     CHECK_ERROR_RETURN_RET_LOG(cond, ERR_EXIF_DECODE_FAILED, "Failed to decode EXIF data from image stream.");
 
-    exifMetadata_ = std::make_shared<OHOS::Media::ExifMetadata>(exifData);
-    if (mainPixelMap_ != nullptr) {
-        mainPixelMap_->SetExifMetadata(exifMetadata_);
-    }
-    return SUCCESS;
+    auto exifMetadata = std::make_shared<OHOS::Media::ExifMetadata>(exifData);
+    return SetExifMetadata(exifMetadata);
 }
 
 int32_t Picture::SetExifMetadata(std::shared_ptr<ExifMetadata> exifMetadata)
 {
-    if (exifMetadata == nullptr) {
-        return ERR_IMAGE_INVALID_PARAMETER;
-    }
-    exifMetadata_ = exifMetadata;
-    if (mainPixelMap_ != nullptr) {
-        mainPixelMap_->SetExifMetadata(exifMetadata_);
-    }
-    return SUCCESS;
+    return SetMetadata(MetadataType::EXIF, exifMetadata);
 }
 
 std::shared_ptr<ExifMetadata> Picture::GetExifMetadata()
 {
-    return exifMetadata_;
+    auto exifMetadata = GetMetadata(MetadataType::EXIF);
+    if (exifMetadata == nullptr) {
+        return nullptr;
+    }
+    return std::reinterpret_pointer_cast<ExifMetadata>(exifMetadata);
 }
 
 bool Picture::SetMaintenanceData(sptr<SurfaceBuffer> &surfaceBuffer)
@@ -764,6 +795,43 @@ bool Picture::SetMaintenanceData(sptr<SurfaceBuffer> &surfaceBuffer)
 sptr<SurfaceBuffer> Picture::GetMaintenanceData() const
 {
     return maintenanceData_;
+}
+
+std::shared_ptr<ImageMetadata> Picture::GetMetadata(MetadataType type)
+{
+    if (metadatas_.find(type) == metadatas_.end()) {
+        IMAGE_LOGE("metadata type(%{public}d) not exist.", static_cast<int32_t>(type));
+        return nullptr;
+    }
+    return metadatas_[type];
+}
+
+uint32_t Picture::SetMetadata(MetadataType type, std::shared_ptr<ImageMetadata> pictureMetadata)
+{
+    if (pictureMetadata == nullptr) {
+        IMAGE_LOGE("pictureMetadata is null");
+        return ERR_MEDIA_NULL_POINTER;
+    }
+    if (type != pictureMetadata->GetType()) {
+        IMAGE_LOGE("pictureMetadata type dismatch, %{public}d vs %{public}d",
+            static_cast<int>(type), static_cast<int>(pictureMetadata->GetType()));
+        return ERR_IMAGE_INVALID_PARAMETER;
+    }
+    if (!Picture::isValidPictureMetadataType(type)) {
+        IMAGE_LOGE("Unsupported pictureMetadata type: %{public}d", static_cast<int32_t>(type));
+        return ERR_IMAGE_INVALID_PARAMETER;
+    }
+    if (metadatas_.size() >= MAX_PICTURE_META_TYPE_COUNT) {
+        IMAGE_LOGE("Failed to set metadata, the size of metadata exceeds the maximum limit %{public}llu.",
+            static_cast<unsigned long long>(MAX_PICTURE_META_TYPE_COUNT));
+        return ERR_IMAGE_INVALID_PARAMETER;
+    }
+    metadatas_[type] = pictureMetadata;
+    if (type == MetadataType::EXIF && mainPixelMap_ != nullptr) {
+        auto exifMetadata = std::reinterpret_pointer_cast<ExifMetadata>(pictureMetadata);
+        mainPixelMap_->SetExifMetadata(exifMetadata);
+    }
+    return SUCCESS;
 }
 
 void Picture::DumpPictureIfDumpEnabled(Picture& picture, std::string dumpType)
@@ -787,6 +855,15 @@ void Picture::DumpPictureIfDumpEnabled(Picture& picture, std::string dumpType)
             ImageUtils::DumpPixelMap(pixelMap.get(), dumpType + "_AuxiliaryType", static_cast<uint64_t>(auxType));
         }
     }
+}
+
+bool Picture::isValidPictureMetadataType(MetadataType metadataType)
+{
+    const static std::set<MetadataType> pictureMetadataTypes = {
+        MetadataType::EXIF,
+        MetadataType::GIF,
+    };
+    return pictureMetadataTypes.find(metadataType) != pictureMetadataTypes.end();
 }
 } // namespace Media
 } // namespace OHOS

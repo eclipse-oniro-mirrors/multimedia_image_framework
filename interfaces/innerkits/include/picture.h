@@ -18,6 +18,7 @@
 
 #include "pixel_map.h"
 #include "auxiliary_picture.h"
+#include "gif_metadata.h"
 #include "image_type.h"
 #include <map>
 
@@ -29,6 +30,7 @@ namespace OHOS {
 namespace Media {
 
 class ExifMetadata;
+class ImageMetadata;
 
 class Picture : public Parcelable {
 public:
@@ -56,13 +58,18 @@ public:
     NATIVEEXPORT std::shared_ptr<ExifMetadata> GetExifMetadata();
     NATIVEEXPORT bool SetMaintenanceData(sptr<SurfaceBuffer> &surfaceBuffer);
     NATIVEEXPORT sptr<SurfaceBuffer> GetMaintenanceData() const;
+    NATIVEEXPORT bool MarshalMetadata(Parcel &data) const;
+    NATIVEEXPORT static bool UnmarshalMetadata(Parcel &parcel, Picture &picture, PICTURE_ERR &error);
     NATIVEEXPORT static void DumpPictureIfDumpEnabled(Picture& picture, std::string dumpType);
+    NATIVEEXPORT std::shared_ptr<ImageMetadata> GetMetadata(MetadataType type);
+    NATIVEEXPORT uint32_t SetMetadata(MetadataType type, std::shared_ptr<ImageMetadata> metadata);
+    NATIVEEXPORT static bool isValidPictureMetadataType(MetadataType metadataType);
 
 private:
     std::shared_ptr<PixelMap> mainPixelMap_;
     std::map<AuxiliaryPictureType, std::shared_ptr<AuxiliaryPicture>> auxiliaryPictures_;
     sptr<SurfaceBuffer> maintenanceData_;
-    std::shared_ptr<ExifMetadata> exifMetadata_ = nullptr;
+    std::map<MetadataType, std::shared_ptr<ImageMetadata>> metadatas_;
 };
 }
 }

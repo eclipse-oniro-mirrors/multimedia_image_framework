@@ -195,6 +195,26 @@ ohos_unittest("fragmentmetadatatest") {
   ]
 }
 
+ohos_unittest("gifmetadatatest") {
+  module_out_path = module_output_path
+
+  sources = [
+    "${image_subsystem}/frameworks/innerkitsimpl/accessor/src/gif_metadata.cpp",
+    "${image_subsystem}/frameworks/innerkitsimpl/test/unittest/metadata_test/gif_metadata_test.cpp",
+  ]
+
+  deps = [
+    "${image_subsystem}/frameworks/innerkitsimpl/utils:image_utils",
+    "${image_subsystem}/interfaces/innerkits:image_native",
+  ]
+
+  external_deps = [
+    "c_utils:utils",
+    "googletest:gtest",
+    "hilog:libhilog",
+  ]
+}
+
 ohos_unittest("imagepixelmaptest") {
   module_out_path = module_output_path
 
@@ -1949,6 +1969,7 @@ ohos_unittest("picture_ext_test") {
     "${image_subsystem}/frameworks/innerkitsimpl/utils:image_utils",
     "${image_subsystem}/frameworks/kits/js/common/ndk:image_packer",
     "${image_subsystem}/frameworks/kits/js/common/ndk:image_source",
+    "${image_subsystem}/frameworks/kits/js/common/picture_ndk:image_common",
     "${image_subsystem}/frameworks/kits/js/common/picture_ndk:picture",
     "${image_subsystem}/frameworks/kits/js/common/pixelmap_ndk:pixelmap",
     "${image_subsystem}/interfaces/innerkits:image_native",
@@ -2032,6 +2053,7 @@ group("unittest") {
     ":format_agent_plugin_src_test",
     ":formatagentplugintest",
     ":fragmentmetadatatest",
+    ":gifmetadatatest",
     ":gifplugintest",
     ":gstpluginfwtest",
     ":heif_parser_test",
