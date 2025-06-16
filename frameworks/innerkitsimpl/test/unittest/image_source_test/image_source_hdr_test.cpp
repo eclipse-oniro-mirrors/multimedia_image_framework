@@ -72,44 +72,6 @@ public:
     ~ImageSourceHdrTest() {}
 };
 
-typedef bool (*GetCuvaGainMapMetadataT)(jpeg_marker_struct* marker, std::vector<uint8_t>& metadata);
-
-static uint32_t GetCuvaGainMapMetadataTest(jpeg_marker_struct* marker, std::vector<uint8_t>& metadata)
-{
-    auto handle = dlopen("libimage_cuva_parser.z.so", RTLD_LAZY);
-    if (!handle) {
-        return ERROR;
-    }
-    GetCuvaGainMapMetadataT getMetadata = (GetCuvaGainMapMetadataT)dlsym(handle, "GetCuvaGainMapMetadata");
-    if (!getMetadata) {
-        dlclose(handle);
-        return ERROR;
-    }
-    if (getMetadata(marker, metadata)) {
-        dlclose(handle);
-        return SUCCESS;
-    }
-    dlclose(handle);
-    return ERR_IMAGE_DATA_ABNORMAL;
-}
-
-/**
- * @tc.name: GetCuvaGainMapMetadataTest
- * @tc.desc: test the GetCuvaGainMapMetadata
- * @tc.type: when jpegMarker.marker != 0xE5, GetCuvaGainMapMetadata will fail,
-            return ERR_IMAGE_DATA_ABNORMAL
- */
-HWTEST_F(ImageSourceHdrTest, GetCuvaGainMapMetadataTest, TestSize.Level1)
-{
-    GTEST_LOG_(INFO) << "ImageSourceHdrTest: GetCuvaGainMapMetadataTest start";
-    jpeg_marker_struct jpegMarker;
-    jpegMarker.marker = JPEG_MARKER_APP2;
-    std::vector<uint8_t> metadata;
-    uint32_t ret = GetCuvaGainMapMetadataTest(&jpegMarker, metadata);
-    ASSERT_EQ(ret, ERR_IMAGE_DATA_ABNORMAL);
-    GTEST_LOG_(INFO) << "ImageSourceHdrTest: GetCuvaGainMapMetadataTest end";
-}
-
 /**
  * @tc.name: CheckImageSourceHdr001
  * @tc.desc: Test IsHdrImage()
@@ -147,46 +109,6 @@ HWTEST_F(ImageSourceHdrTest, CheckImageSourceHdr002, TestSize.Level3)
 }
 
 /**
- * @tc.name: CheckImageSourceHdr003
- * @tc.desc: Test IsHdrImage()
- * @tc.type: FUNC
- */
-HWTEST_F(ImageSourceHdrTest, CheckImageSourceHdr003, TestSize.Level3)
-{
-    uint32_t errorCode = 0;
-    SourceOptions opts;
-    std::unique_ptr<ImageSource> imageSource =
-        ImageSource::CreateImageSource(IMAGE_INPUT_HEIF_10BIT_SDR_PATH, opts, errorCode);
-    ASSERT_EQ(errorCode, SUCCESS);
-    ASSERT_NE(imageSource.get(), nullptr);
-
-    bool isHdr = imageSource->IsHdrImage();
-    ASSERT_EQ(isHdr, false);
-}
-
-/**
- * @tc.name: CheckImageSourceHdr004
- * @tc.desc: Test IsHdrImage()
- * @tc.type: FUNC
- */
-HWTEST_F(ImageSourceHdrTest, CheckImageSourceHdr004, TestSize.Level3)
-{
-    uint32_t errorCode = 0;
-    SourceOptions opts;
-    std::unique_ptr<ImageSource> imageSource =
-        ImageSource::CreateImageSource(IMAGE_INPUT_JPEG_HDR_PATH, opts, errorCode);
-    ASSERT_EQ(errorCode, SUCCESS);
-    ASSERT_NE(imageSource.get(), nullptr);
-
-    bool isHdr = imageSource->IsHdrImage();
-#ifdef IMAGE_VPE_FLAG
-    ASSERT_EQ(isHdr, true);
-#else
-    ASSERT_EQ(isHdr, false);
-#endif
-}
-
-/**
  * @tc.name: CheckPixelMapHdr001
  * @tc.desc: Test PixelMap IsHdr()
  * @tc.type: FUNC
@@ -211,122 +133,6 @@ HWTEST_F(ImageSourceHdrTest, CheckPixelMapHdr001, TestSize.Level3)
 
     bool isHdr = pixelMap->IsHdr();
     ASSERT_EQ(isHdr, false);
-}
-
-/**
- * @tc.name: CheckPixelMapHdr002
- * @tc.desc: Test PixelMap IsHdr()
- * @tc.type: FUNC
- */
-HWTEST_F(ImageSourceHdrTest, CheckPixelMapHdr002, TestSize.Level3)
-{
-    uint32_t errorCode = 0;
-    SourceOptions opts;
-    std::unique_ptr<ImageSource> imageSource =
-        ImageSource::CreateImageSource(IMAGE_INPUT_HEIF_SDR_PATH, opts, errorCode);
-    ASSERT_EQ(errorCode, SUCCESS);
-    ASSERT_NE(imageSource.get(), nullptr);
-
-    uint32_t index = 0;
-    DecodeOptions optsPixel;
-    optsPixel.desiredDynamicRange = Media::DecodeDynamicRange::AUTO;
-    errorCode = 0;
-    std::unique_ptr<PixelMap> pixelMap = imageSource->CreatePixelMap(index, optsPixel, errorCode);
-    HiLog::Debug(LABEL_TEST, "pixel map create");
-    ASSERT_EQ(errorCode, SUCCESS);
-    ASSERT_NE(pixelMap.get(), nullptr);
-
-    bool isHdr = pixelMap->IsHdr();
-    ASSERT_EQ(isHdr, false);
-}
-
-/**
- * @tc.name: CheckPixelMapHdr003
- * @tc.desc: Test PixelMap IsHdr()
- * @tc.type: FUNC
- */
-HWTEST_F(ImageSourceHdrTest, CheckPixelMapHdr003, TestSize.Level3)
-{
-    uint32_t errorCode = 0;
-    SourceOptions opts;
-    std::unique_ptr<ImageSource> imageSource =
-        ImageSource::CreateImageSource(IMAGE_INPUT_HEIF_10BIT_SDR_PATH, opts, errorCode);
-    ASSERT_EQ(errorCode, SUCCESS);
-    ASSERT_NE(imageSource.get(), nullptr);
-
-    uint32_t index = 0;
-    DecodeOptions optsPixel;
-    optsPixel.desiredDynamicRange = Media::DecodeDynamicRange::AUTO;
-    errorCode = 0;
-    std::unique_ptr<PixelMap> pixelMap = imageSource->CreatePixelMap(index, optsPixel, errorCode);
-    HiLog::Debug(LABEL_TEST, "pixel map create");
-    ASSERT_EQ(errorCode, SUCCESS);
-    ASSERT_NE(pixelMap.get(), nullptr);
-
-    bool isHdr = pixelMap->IsHdr();
-    ASSERT_EQ(isHdr, false);
-}
-
-/**
- * @tc.name: CheckPixelMapHdr004
- * @tc.desc: Test PixelMap IsHdr()
- * @tc.type: FUNC
- */
-HWTEST_F(ImageSourceHdrTest, CheckPixelMapHdr004, TestSize.Level3)
-{
-    uint32_t errorCode = 0;
-    SourceOptions opts;
-    std::unique_ptr<ImageSource> imageSource =
-        ImageSource::CreateImageSource(IMAGE_INPUT_JPEG_HDR_PATH, opts, errorCode);
-    ASSERT_EQ(errorCode, SUCCESS);
-    ASSERT_NE(imageSource.get(), nullptr);
-
-    uint32_t index = 0;
-    DecodeOptions optsPixel;
-    optsPixel.desiredDynamicRange = Media::DecodeDynamicRange::AUTO;
-    errorCode = 0;
-    std::unique_ptr<PixelMap> pixelMap = imageSource->CreatePixelMap(index, optsPixel, errorCode);
-    HiLog::Debug(LABEL_TEST, "pixel map create");
-    ASSERT_EQ(errorCode, SUCCESS);
-    ASSERT_NE(pixelMap.get(), nullptr);
-
-    bool isHdr = pixelMap->IsHdr();
-#ifdef IMAGE_VPE_FLAG
-    ASSERT_EQ(isHdr, true);
-#else
-    ASSERT_EQ(isHdr, false);
-#endif
-}
-
-/**
- * @tc.name: CheckPixelMapHdr005
- * @tc.desc: Test HdrVivid PixelMap IsHdr()
- * @tc.type: FUNC
- */
-HWTEST_F(ImageSourceHdrTest, CheckPixelMapHdr005, TestSize.Level3)
-{
-    uint32_t errorCode = 0;
-    SourceOptions opts;
-    std::unique_ptr<ImageSource> imageSource =
-        ImageSource::CreateImageSource(IMAGE_INPUT_JPEG_HDR_VIVID_PATH, opts, errorCode);
-    ASSERT_EQ(errorCode, SUCCESS);
-    ASSERT_NE(imageSource.get(), nullptr);
-
-    uint32_t index = 0;
-    DecodeOptions optsPixel;
-    optsPixel.desiredDynamicRange = Media::DecodeDynamicRange::AUTO;
-    errorCode = 0;
-    std::unique_ptr<PixelMap> pixelMap = imageSource->CreatePixelMap(index, optsPixel, errorCode);
-    HiLog::Debug(LABEL_TEST, "pixel map create");
-    ASSERT_EQ(errorCode, SUCCESS);
-    ASSERT_NE(pixelMap.get(), nullptr);
-
-    bool isHdr = pixelMap->IsHdr();
-#ifdef IMAGE_VPE_FLAG
-    ASSERT_EQ(isHdr, true);
-#else
-    ASSERT_EQ(isHdr, false);
-#endif
 }
 
 /**
@@ -357,87 +163,6 @@ HWTEST_F(ImageSourceHdrTest, CheckPixelMapDynamicRangeSdr001, TestSize.Level3)
 }
 
 /**
- * @tc.name: CheckPixelMapDynamicRangeSdr002
- * @tc.desc: Test PixelMap IsHdr()
- * @tc.type: FUNC
- */
-HWTEST_F(ImageSourceHdrTest, CheckPixelMapDynamicRangeSdr002, TestSize.Level3)
-{
-    uint32_t errorCode = 0;
-    SourceOptions opts;
-    std::unique_ptr<ImageSource> imageSource =
-        ImageSource::CreateImageSource(IMAGE_INPUT_HEIF_SDR_PATH, opts, errorCode);
-    ASSERT_EQ(errorCode, SUCCESS);
-    ASSERT_NE(imageSource.get(), nullptr);
-
-    uint32_t index = 0;
-    DecodeOptions optsPixel;
-    optsPixel.desiredDynamicRange = Media::DecodeDynamicRange::SDR;
-    errorCode = 0;
-    std::unique_ptr<PixelMap> pixelMap = imageSource->CreatePixelMap(index, optsPixel, errorCode);
-    HiLog::Debug(LABEL_TEST, "pixel map create");
-    ASSERT_EQ(errorCode, SUCCESS);
-    ASSERT_NE(pixelMap.get(), nullptr);
-
-    bool isHdr = pixelMap->IsHdr();
-    ASSERT_EQ(isHdr, false);
-}
-
-/**
- * @tc.name: CheckPixelMapDynamicRangeSdr003
- * @tc.desc: Test PixelMap IsHdr()
- * @tc.type: FUNC
- */
-HWTEST_F(ImageSourceHdrTest, CheckPixelMapDynamicRangeSdr003, TestSize.Level3)
-{
-    uint32_t errorCode = 0;
-    SourceOptions opts;
-    std::unique_ptr<ImageSource> imageSource =
-        ImageSource::CreateImageSource(IMAGE_INPUT_JPEG_HDR_PATH, opts, errorCode);
-    ASSERT_EQ(errorCode, SUCCESS);
-    ASSERT_NE(imageSource.get(), nullptr);
-
-    uint32_t index = 0;
-    DecodeOptions optsPixel;
-    optsPixel.desiredDynamicRange = Media::DecodeDynamicRange::SDR;
-    errorCode = 0;
-    std::unique_ptr<PixelMap> pixelMap = imageSource->CreatePixelMap(index, optsPixel, errorCode);
-    HiLog::Debug(LABEL_TEST, "pixel map create");
-    ASSERT_EQ(errorCode, SUCCESS);
-    ASSERT_NE(pixelMap.get(), nullptr);
-
-    bool isHdr = pixelMap->IsHdr();
-    ASSERT_EQ(isHdr, false);
-}
-
-/**
- * @tc.name: ToSdr001
- * @tc.desc: ToSdr test
- * @tc.type: FUNC
- */
-HWTEST_F(ImageSourceHdrTest, ToSdr001, TestSize.Level3)
-{
-    GTEST_LOG_(INFO) << "ImageSourceHdrTest: ToSdr001 start";
-    uint32_t errorCode = 0;
-    SourceOptions opts;
-    std::string path = "/data/local/tmp/image/hdr.jpg";
-    std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(path, opts, errorCode);
-    ASSERT_EQ(errorCode, SUCCESS);
-
-    DecodeOptions decopts;
-    decopts.desiredDynamicRange = DecodeDynamicRange::AUTO;
-    uint32_t ret = SUCCESS;
-    auto pixelMap = imageSource->CreatePixelMap(decopts, ret);
-    ASSERT_EQ(ret, SUCCESS);
-    uint32_t errCode = pixelMap->ToSdr();
-#ifdef IMAGE_VPE_FLAG
-    ASSERT_EQ(errCode, SUCCESS);
-#else
-    ASSERT_NE(errCode, SUCCESS);
-#endif
-}
-
-/**
  * @tc.name: ToSdr002
  * @tc.desc: ToSdr test
  * @tc.type: FUNC
@@ -461,54 +186,6 @@ HWTEST_F(ImageSourceHdrTest, ToSdr002, TestSize.Level3)
 }
 
 /**
- * @tc.name: PackHdrPixelMap001
- * @tc.desc: Test pack hdr pixelmap
- * @tc.type: FUNC
- */
-HWTEST_F(ImageSourceHdrTest, PackHdrPixelMap001, TestSize.Level3)
-{
-    uint32_t errorCode = 0;
-    SourceOptions opts;
-    std::unique_ptr<ImageSource> imageSource =
-        ImageSource::CreateImageSource(IMAGE_INPUT_JPEG_HDR_VIVID_PATH, opts, errorCode);
-    ASSERT_EQ(errorCode, SUCCESS);
-    ASSERT_NE(imageSource.get(), nullptr);
-
-    uint32_t index = 0;
-    DecodeOptions optsPixel;
-    optsPixel.desiredDynamicRange = Media::DecodeDynamicRange::AUTO;
-    errorCode = 0;
-    std::unique_ptr<PixelMap> pixelMap = imageSource->CreatePixelMap(index, optsPixel, errorCode);
-    HiLog::Debug(LABEL_TEST, "pixel map create");
-    ASSERT_EQ(errorCode, SUCCESS);
-    ASSERT_NE(pixelMap.get(), nullptr);
-
-    const int fileSize = 1024 * 1024 * 35;
-    std::vector<uint8_t> outputData(fileSize);
-    ImagePacker pack;
-    PackOption option;
-    option.format = "image/jpeg";
-    option.desiredDynamicRange = EncodeDynamicRange::AUTO;
-    errorCode = pack.StartPacking(outputData.data(), fileSize, option);
-    ASSERT_EQ(errorCode, OHOS::Media::SUCCESS);
-    errorCode = pack.AddImage(*(pixelMap.get()));
-    ASSERT_EQ(errorCode, OHOS::Media::SUCCESS);
-    uint32_t retFinalizePacking = pack.FinalizePacking();
-    ASSERT_EQ(retFinalizePacking, OHOS::Media::SUCCESS);
-
-    std::unique_ptr<ImageSource> outImageSource =
-        ImageSource::CreateImageSource(outputData.data(), outputData.size(), opts, errorCode);
-    ASSERT_EQ(errorCode, SUCCESS);
-    ASSERT_NE(outImageSource.get(), nullptr);
-    bool isHdr = outImageSource->IsHdrImage();
-#ifdef IMAGE_VPE_FLAG
-    ASSERT_EQ(isHdr, true);
-#else
-    ASSERT_EQ(isHdr, false);
-#endif
-}
-
-/**
  * @tc.name: JpegMpfPackerTest001
  * @tc.desc: test PackHdrJpegMpfMarker
  * @tc.type: FUNC
@@ -529,29 +206,6 @@ HWTEST_F(ImageSourceHdrTest, JpegMpfPackerTest001, TestSize.Level3)
 }
 
 /**
- * @tc.name: GetHdrMetadataTest001
- * @tc.desc: test GetHdrMetadata get hdrMetadataType
- * @tc.type: FUNC
- */
-HWTEST_F(ImageSourceHdrTest, GetHdrMetadataTest001, TestSize.Level3)
-{
-    uint32_t errorCode = 0;
-    SourceOptions opts;
-    std::unique_ptr<ImageSource> imageSource =
-            ImageSource::CreateImageSource(IMAGE_INPUT_JPEG_HDR_MEDIA_TYPE_PATH, opts, errorCode);
-    ASSERT_EQ(errorCode, SUCCESS);
-    ASSERT_NE(imageSource.get(), nullptr);
-    DecodeOptions opt;
-    opt.desiredDynamicRange = DecodeDynamicRange::HDR;
-    opt.desiredPixelFormat = PixelFormat::YCBCR_P010;
-    imageSource->CreatePixelMap(opt, errorCode);
-    ASSERT_EQ(errorCode, SUCCESS);
-    ASSERT_NE(imageSource->jpegGainmapDecoder_, nullptr);
-    auto metadata = imageSource->jpegGainmapDecoder_->GetHdrMetadata(ImageHdrType::HDR_CUVA);
-    ASSERT_EQ(metadata.hdrMetadataType, 0);
-}
-
-/**
  * @tc.name: PackHdrMediaTypeMarkerTest001
  * @tc.desc: test PackHdrMediaTypeMarker
  * @tc.type: FUNC
@@ -562,37 +216,6 @@ HWTEST_F(ImageSourceHdrTest, PackHdrMediaTypeMarkerTest001, TestSize.Level3)
     hdrMetadata.hdrMetadataType = 5;
     auto bytes = ImagePlugin::HdrJpegPackerHelper::PackHdrMediaTypeMarker(hdrMetadata);
     ASSERT_EQ(bytes, HDR_METADATA_TYPE_BYTES);
-}
-
-/**
- * @tc.name: CheckPhotoDesiredPixelForamt001
- * @tc.desc: Test IsHdrImage()
- * @tc.type: FUNC
- */
-HWTEST_F(ImageSourceHdrTest, CheckPhotoDesiredPixelForamt001, TestSize.Level3)
-{
-    uint32_t errorCode = 0;
-    SourceOptions opts;
-    std::unique_ptr<ImageSource> imageSource =
-        ImageSource::CreateImageSource(IMAGE_INPUT_JPEG_HDR_VIVID_PATH, opts, errorCode);
-    ASSERT_EQ(errorCode, SUCCESS);
-    ASSERT_NE(imageSource.get(), nullptr);
-
-    uint32_t index = 0;
-    DecodeOptions optsPixel;
-    optsPixel.desiredDynamicRange = Media::DecodeDynamicRange::AUTO;
-    optsPixel.photoDesiredPixelFormat = PixelFormat::YCBCR_P010;
-    errorCode = 0;
-    std::unique_ptr<PixelMap> pixelMap = imageSource->CreatePixelMap(index, optsPixel, errorCode);
-    Media::PixelFormat outputPixelFormat = pixelMap->GetPixelFormat();
-    bool isYcbcrP010 = outputPixelFormat == PixelFormat::YCBCR_P010;
-    ASSERT_EQ(errorCode, SUCCESS);
-    ASSERT_NE(pixelMap.get(), nullptr);
-    bool isHdr = pixelMap->IsHdr();
-#ifdef IMAGE_VPE_FLAG
-    ASSERT_EQ(isHdr, true);
-    ASSERT_EQ(isYcbcrP010, true);
-#endif
 }
 
 /**

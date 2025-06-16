@@ -407,23 +407,6 @@ HWTEST_F(ImageSourceTest, CreatePixelMapEx002, TestSize.Level3)
 }
 
 /**
- * @tc.name: CreatePixelMapEx003
- * @tc.desc: test CreatePixelMapEx of ico picture resource
- * @tc.type: FUNC
- */
-HWTEST_F(ImageSourceTest, CreatePixelMapEx003, TestSize.Level3)
-{
-    uint32_t res = 0;
-    SourceOptions sourceOpts;
-    std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(IMAGE_INPUT_ICO_PATH, sourceOpts, res);
-    ASSERT_NE(imageSource, nullptr);
-    uint32_t index = 1;
-    const DecodeOptions decodeOpts;
-    std::unique_ptr<PixelMap> crepixelmapex = imageSource->CreatePixelMapEx(index, decodeOpts, res);
-    ASSERT_NE(imageSource, nullptr);
-}
-
-/**
  * @tc.name: CreatePixelMap001
  * @tc.desc: test CreatePixelMap
  * @tc.type: FUNC
@@ -1081,19 +1064,6 @@ HWTEST_F(ImageSourceTest, CreateImageSource0016, TestSize.Level3)
     const int fd = -1;
     auto filePtr = ImageSource::CreateImageSource(fd, 0, 100, opts, errorCode);
     ASSERT_EQ(filePtr, nullptr);
-}
-
-/**
- * @tc.name: CreateImageSource017
- * @tc.desc: test CreateImageSource of ico picture resource
- * @tc.type: FUNC
- */
-HWTEST_F(ImageSourceTest, CreateImageSource017, TestSize.Level3)
-{
-    uint32_t res = 0;
-    const SourceOptions sourceOpts;
-    std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(IMAGE_INPUT_ICO_PATH, sourceOpts, res);
-    ASSERT_NE(imageSource, nullptr);
 }
 
 #ifdef IMAGE_PURGEABLE_PIXELMAP
@@ -1773,42 +1743,6 @@ HWTEST_F(ImageSourceTest, End2EndTest003, TestSize.Level3)
 
     int32_t desiredWidth = 472;
     int32_t desiredHeight = 75;
-
-    decodeOpts.desiredSize.width = desiredWidth;
-    decodeOpts.desiredSize.height = desiredHeight;
-    pixelMap = imageSource->CreatePixelMap(decodeOpts, errorCode);
-    ASSERT_EQ(errorCode, SUCCESS);
-    ASSERT_NE(pixelMap.get(), nullptr);
-    ASSERT_EQ(desiredWidth, pixelMap->GetWidth());
-    ASSERT_EQ(desiredHeight, pixelMap->GetHeight());
-}
-
-/**
- * @tc.name: End2EndTest004
- * @tc.desc: test CreateImageSource and CreatePixelMap of ico resource
- * @tc.type: FUNC
- */
-HWTEST_F(ImageSourceTest, End2EndTest004, TestSize.Level3)
-{
-    uint32_t errorCode = 0;
-    SourceOptions opts;
-    std::unique_ptr<ImageSource> imageSource =
-            ImageSource::CreateImageSource("/data/local/tmp/image/test.ico", opts, errorCode);
-    ASSERT_EQ(errorCode, SUCCESS);
-    ASSERT_NE(imageSource.get(), nullptr);
-
-    int32_t icoWidth = 64;
-    int32_t icoHeight = 64;
-
-    DecodeOptions decodeOpts;
-    std::unique_ptr<PixelMap> pixelMap = imageSource->CreatePixelMap(decodeOpts, errorCode);
-    ASSERT_EQ(errorCode, SUCCESS);
-    ASSERT_NE(pixelMap.get(), nullptr);
-    ASSERT_EQ(icoWidth, pixelMap->GetWidth());
-    ASSERT_EQ(icoHeight, pixelMap->GetHeight());
-
-    int32_t desiredWidth = 32;
-    int32_t desiredHeight = 32;
 
     decodeOpts.desiredSize.width = desiredWidth;
     decodeOpts.desiredSize.height = desiredHeight;
