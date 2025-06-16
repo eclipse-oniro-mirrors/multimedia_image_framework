@@ -47,6 +47,11 @@ static const int32_t TEST_FILE_MULTI_FRAME_GIF_LOOP_COUNT_1 = 1;
 static const int32_t TEST_FILE_MULTI_FRAME_GIF_LOOP_COUNT_5 = 5;
 static const int32_t TEST_FILE_MULTI_FRAME_GIF_LOOP_COUNT_INF = 0;
 static const std::string OUTPUT_PATH_REPACK = "/data/local/tmp/image/output_repack.gif";
+static const int32_t TEST_FILE_MULTI_FRAME_GIF_WIDTH = 198;
+static const int32_t TEST_FILE_MULTI_FRAME_GIF_HEIGHT = 202;
+static const std::string TEST_FILE_LARGE_GIF = "fake_large_size_test.gif";  // 50000x50000
+static const std::string TEST_FILE_INCOMPLETE_GIF = "incomplete_test.gif";
+static const size_t TEST_FILE_INCOMPLETE_GIF_FRAME_COUNT = 17;
 }
 
 class ImageSourceGifExTest : public testing::Test {
@@ -572,6 +577,155 @@ HWTEST_F(ImageSourceGifExTest, GetLoopCount005, TestSize.Level3)
     ASSERT_EQ(errorCode, ERR_MEDIA_INVALID_PARAM);
 
     GTEST_LOG_(INFO) << "ImageSourceGifExTest: GetLoopCount005 end";
+}
+
+/**
+ * @tc.name: CreatePictureAtIndex001
+ * @tc.desc: test CreatePictureAtIndex
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageSourceGifExTest, CreatePictureAtIndex001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImageSourceGifExTest: CreatePictureAtIndex001 start";
+
+    uint32_t errorCode = 0;
+    const SourceOptions opts;
+    const std::string inputName = INPUT_PATH + TEST_FILE_MULTI_FRAME_GIF;
+    auto imageSource = ImageSource::CreateImageSource(inputName, opts, errorCode);
+    ASSERT_NE(imageSource, nullptr);
+
+    uint32_t frameCount = imageSource->GetFrameCount(errorCode);
+    ASSERT_EQ(errorCode, SUCCESS);
+    ASSERT_EQ(frameCount, TEST_FILE_MULTI_FRAME_GIF_FRAME_COUNT);
+
+    const DecodeOptions decodeOpts;
+    int32_t gifMetadataRet = 0;
+    std::string metadataValue = "";
+    for (uint32_t index = 0; index < frameCount; index++) {
+        auto picture = imageSource->CreatePictureAtIndex(index, decodeOpts, errorCode);
+        ASSERT_EQ(errorCode, SUCCESS);
+        ASSERT_NE(picture, nullptr);
+
+        auto pixelmap = picture->GetMainPixel();
+        ASSERT_NE(pixelmap, nullptr);
+        ASSERT_EQ(pixelmap->GetWidth(), TEST_FILE_MULTI_FRAME_GIF_WIDTH);
+        ASSERT_EQ(pixelmap->GetHeight(), TEST_FILE_MULTI_FRAME_GIF_HEIGHT);
+
+        auto gifMetadata = picture->GetMetadata(MetadataType::GIF);
+        ASSERT_NE(gifMetadata, nullptr);
+
+        gifMetadataRet = gifMetadata->GetValue(GIF_METADATA_KEY_DELAY_TIME, metadataValue);
+        ASSERT_EQ(gifMetadataRet, SUCCESS);
+        ASSERT_FALSE(metadataValue.empty());
+        ASSERT_EQ(metadataValue, "70");
+
+        gifMetadataRet = gifMetadata->GetValue(GIF_METADATA_KEY_DISPOSAL_TYPE, metadataValue);
+        ASSERT_EQ(gifMetadataRet, SUCCESS);
+        ASSERT_FALSE(metadataValue.empty());
+        ASSERT_EQ(metadataValue, "1");
+    }
+
+    GTEST_LOG_(INFO) << "ImageSourceGifExTest: CreatePictureAtIndex001 end";
+}
+
+/**
+ * @tc.name: CreatePictureAtIndex002
+ * @tc.desc: test CreatePictureAtIndex
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageSourceGifExTest, CreatePictureAtIndex002, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImageSourceGifExTest: CreatePictureAtIndex002 start";
+
+    uint32_t errorCode = 0;
+    const SourceOptions opts;
+    const std::string inputName = INPUT_PATH + TEST_FILE_MULTI_FRAME_GIF;
+    auto imageSource = ImageSource::CreateImageSource(inputName, opts, errorCode);
+    ASSERT_NE(imageSource, nullptr);
+
+    uint32_t frameCount = imageSource->GetFrameCount(errorCode);
+    ASSERT_EQ(errorCode, SUCCESS);
+    ASSERT_EQ(frameCount, TEST_FILE_MULTI_FRAME_GIF_FRAME_COUNT);
+
+    uint32_t invalidFrameIndex = frameCount;
+    const DecodeOptions decodeOpts;
+    auto picture = imageSource->CreatePictureAtIndex(invalidFrameIndex, decodeOpts, errorCode);
+    ASSERT_EQ(errorCode, ERR_IMAGE_INVALID_PARAMETER);
+    ASSERT_EQ(picture, nullptr);
+
+    GTEST_LOG_(INFO) << "ImageSourceGifExTest: CreatePictureAtIndex002 end";
+}
+
+/**
+ * @tc.name: CreatePictureAtIndex003
+ * @tc.desc: test CreatePictureAtIndex
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageSourceGifExTest, CreatePictureAtIndex003, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImageSourceGifExTest: CreatePictureAtIndex003 start";
+
+    uint32_t errorCode = 0;
+    const SourceOptions opts;
+    const std::string inputName = INPUT_PATH + TEST_FILE_JPG;
+    auto imageSource = ImageSource::CreateImageSource(inputName, opts, errorCode);
+    ASSERT_NE(imageSource, nullptr);
+
+    const DecodeOptions decodeOpts;
+    auto picture = imageSource->CreatePictureAtIndex(0, decodeOpts, errorCode);
+    ASSERT_EQ(errorCode, ERR_IMAGE_MISMATCHED_FORMAT);
+    ASSERT_EQ(picture, nullptr);
+
+    GTEST_LOG_(INFO) << "ImageSourceGifExTest: CreatePictureAtIndex003 end";
+}
+
+/**
+ * @tc.name: CreatePictureAtIndex004
+ * @tc.desc: test CreatePictureAtIndex
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageSourceGifExTest, CreatePictureAtIndex004, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImageSourceGifExTest: CreatePictureAtIndex004 start";
+
+    uint32_t errorCode = 0;
+    const SourceOptions opts;
+    const std::string inputName = INPUT_PATH + TEST_FILE_LARGE_GIF;
+    auto imageSource = ImageSource::CreateImageSource(inputName, opts, errorCode);
+    ASSERT_NE(imageSource, nullptr);
+
+    const DecodeOptions decodeOpts;
+    auto picture = imageSource->CreatePictureAtIndex(0, decodeOpts, errorCode);
+    ASSERT_EQ(errorCode, ERR_IMAGE_TOO_LARGE);
+
+    GTEST_LOG_(INFO) << "ImageSourceGifExTest: CreatePictureAtIndex004 end";
+}
+
+/**
+ * @tc.name: CreatePictureAtIndex005
+ * @tc.desc: test CreatePictureAtIndex
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageSourceGifExTest, CreatePictureAtIndex005, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImageSourceGifExTest: CreatePictureAtIndex005 start";
+
+    uint32_t errorCode = 0;
+    const SourceOptions opts;
+    const std::string inputName = INPUT_PATH + TEST_FILE_INCOMPLETE_GIF;
+    auto imageSource = ImageSource::CreateImageSource(inputName, opts, errorCode);
+    ASSERT_NE(imageSource, nullptr);
+
+    uint32_t frameCount = imageSource->GetFrameCount(errorCode);
+    ASSERT_EQ(errorCode, SUCCESS);
+    ASSERT_EQ(frameCount, TEST_FILE_INCOMPLETE_GIF_FRAME_COUNT);
+
+    uint32_t incompleteFrameIndex = TEST_FILE_INCOMPLETE_GIF_FRAME_COUNT - 1;
+    const DecodeOptions decodeOpts;
+    auto picture = imageSource->CreatePictureAtIndex(incompleteFrameIndex, decodeOpts, errorCode);
+    ASSERT_EQ(errorCode, ERR_IMAGE_DECODE_ABNORMAL);
+
+    GTEST_LOG_(INFO) << "ImageSourceGifExTest: CreatePictureAtIndex005 end";
 }
 } // namespace Multimedia
 } // namespace OHOS

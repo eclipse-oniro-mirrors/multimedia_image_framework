@@ -541,6 +541,41 @@ HWTEST_F(PictureTest, MarshallingTest006, TestSize.Level1)
 }
 
 /**
+ * @tc.name: MarshallingTest009
+ * @tc.desc: Marshalling the picture with gif metadata.
+ * @tc.type: FUNC
+ */
+HWTEST_F(PictureTest, MarshallingTest009, TestSize.Level1)
+{
+    std::shared_ptr<ImageMetadata> srcGifMetadata = std::make_shared<GifMetadata>();
+    ASSERT_NE(srcGifMetadata, nullptr);
+    const std::string srcDelayTime = "20";
+    ASSERT_TRUE(srcGifMetadata->SetValue(GIF_METADATA_KEY_DELAY_TIME, srcDelayTime));
+    const std::string srcDisposalType = "1";
+    ASSERT_TRUE(srcGifMetadata->SetValue(GIF_METADATA_KEY_DISPOSAL_TYPE, srcDisposalType));
+
+    std::unique_ptr<Picture> srcPicture = CreatePicture();
+    ASSERT_NE(srcPicture, nullptr);
+    EXPECT_EQ(srcPicture->SetMetadata(MetadataType::GIF, srcGifMetadata), SUCCESS);
+    Parcel data;
+    bool ret = srcPicture->Marshalling(data);
+    ASSERT_TRUE(ret);
+
+    Picture *dstPicture = Picture::Unmarshalling(data);
+    ASSERT_NE(dstPicture, nullptr);
+    std::shared_ptr<ImageMetadata> dstGifMetadata = dstPicture->GetMetadata(MetadataType::GIF);
+    ASSERT_NE(dstGifMetadata, nullptr);
+
+    std::string dstDelayTime;
+    EXPECT_EQ(dstGifMetadata->GetValue(GIF_METADATA_KEY_DELAY_TIME, dstDelayTime), SUCCESS);
+    EXPECT_EQ(dstDelayTime, srcDelayTime);
+    std::string dstDisposalType;
+    EXPECT_EQ(dstGifMetadata->GetValue(GIF_METADATA_KEY_DISPOSAL_TYPE, dstDisposalType), SUCCESS);
+    EXPECT_EQ(dstDisposalType, srcDisposalType);
+    delete dstPicture;
+}
+
+/**
 * @tc.name: CreateTest001
 * @tc.desc: Create a Picture using the correct PixelMap.
 * @tc.type: FUNC

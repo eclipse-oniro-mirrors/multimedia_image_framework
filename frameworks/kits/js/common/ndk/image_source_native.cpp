@@ -748,6 +748,45 @@ Image_ErrorCode OH_ImageSourceNative_CreatePicture(OH_ImageSourceNative *source,
 }
 
 MIDK_EXPORT
+Image_ErrorCode OH_ImageSourceNative_CreatePictureAtIndex(OH_ImageSourceNative *source, uint32_t index,
+    OH_PictureNative **picture)
+{
+    if (source == nullptr || source->GetInnerImageSource() == nullptr) {
+        return Image_ErrorCode::IMAGE_BAD_SOURCE;
+    }
+    if (picture == nullptr) {
+        return Image_ErrorCode::IMAGE_SOURCE_UNSUPPORTED_OPTIONS;
+    }
+
+    uint32_t errorCode = ERR_MEDIA_INVALID_VALUE;
+    DecodeOptions decOps;
+    auto pictureTemp = source->GetInnerImageSource()->CreatePictureAtIndex(index, decOps, errorCode);
+    if (errorCode != SUCCESS) {
+        switch (errorCode) {
+            case ERR_IMAGE_SOURCE_DATA:
+            case ERR_IMAGE_SOURCE_DATA_INCOMPLETE:
+            case ERR_IMAGE_GET_DATA_ABNORMAL:
+            case ERR_IMAGE_DATA_ABNORMAL:
+                return Image_ErrorCode::IMAGE_BAD_SOURCE;
+            case ERR_IMAGE_MISMATCHED_FORMAT:
+            case ERR_IMAGE_UNKNOWN_FORMAT:
+            case ERR_IMAGE_DECODE_HEAD_ABNORMAL:
+                return Image_ErrorCode::IMAGE_SOURCE_UNSUPPORTED_MIMETYPE;
+            case ERR_IMAGE_TOO_LARGE:
+                return Image_ErrorCode::IMAGE_SOURCE_TOO_LARGE;
+            case ERR_IMAGE_INVALID_PARAMETER:
+                return Image_ErrorCode::IMAGE_SOURCE_UNSUPPORTED_OPTIONS;
+            default:
+                return Image_ErrorCode::IMAGE_DECODE_FAILED;
+        }
+    }
+
+    auto pictureNative  = new OH_PictureNative(std::move(pictureTemp));
+    *picture = pictureNative;
+    return Image_ErrorCode::IMAGE_SUCCESS;
+}
+
+MIDK_EXPORT
 Image_ErrorCode OH_ImageSourceNative_GetDelayTimeList(OH_ImageSourceNative *source, int32_t *delayTimeList, size_t size)
 {
     if (source == nullptr || delayTimeList == nullptr) {

@@ -18,6 +18,7 @@
 #include "image_type.h"
 #include "exif_metadata.h"
 #include "fragment_metadata.h"
+#include "gif_metadata.h"
 #include "securec.h"
 #include "common_utils.h"
 #ifdef __cplusplus
@@ -37,6 +38,8 @@ Image_ErrorCode OH_PictureMetadata_Create(Image_MetadataType metadataType, OH_Pi
         exifMetadata->CreateExifdata();
     } else if (metadataType == FRAGMENT_METADATA) {
         metadataPtr = std::make_shared<OHOS::Media::FragmentMetadata>();
+    } else if (metadataType == GIF_METADATA) {
+        metadataPtr = std::make_shared<OHOS::Media::GifMetadata>();
     } else {
         return IMAGE_BAD_PARAMETER;
     }
@@ -133,7 +136,8 @@ Image_ErrorCode OH_PictureMetadata_SetProperty(OH_PictureMetadata *metadata, Ima
         return IMAGE_BAD_PARAMETER;
     }
 
-    if (metadata->GetInnerAuxiliaryMetadata()->GetType() == OHOS::Media::MetadataType::FRAGMENT) {
+    OHOS::Media::MetadataType metadataType = metadata->GetInnerAuxiliaryMetadata()->GetType();
+    if (metadataType == OHOS::Media::MetadataType::FRAGMENT || metadataType == OHOS::Media::MetadataType::GIF) {
         uint32_t casted;
         if (!OHOS::Media::ImageUtils::StrToUint32(valueString, casted)) {
             return IMAGE_BAD_PARAMETER;

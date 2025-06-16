@@ -542,6 +542,24 @@ Image_ErrorCode OH_ImageSourceNative_CreatePicture(OH_ImageSourceNative *source,
     OH_PictureNative **picture);
 
 /**
+ * @brief Decodes an image at the specified index into a Picture object.
+ *
+ * @param source Pointer to the image source.
+ * @param index Image index.
+ * @param picture Double pointer to the Picture object obtained after decoding.
+ * @return Returns one of the following result codes:
+ *         {@link IMAGE_SUCCESS} if the execution is successful.
+ *         {@link IMAGE_BAD_SOURCE} if the data source is abnormal.
+ *         {@link IMAGE_SOURCE_UNSUPPORTED_MIME_TYPE} if the image format is unsupported.
+ *         {@link IMAGE_SOURCE_TOO_LARGE} if the image is too large.
+ *         {@link IMAGE_SOURCE_UNSUPPORTED_OPTIONS} if the operation is not supported, for example, invalid index.
+ *         {@link IMAGE_DECODE_FAILED} if decoding failed.
+ * @since 20
+ */
+Image_ErrorCode OH_ImageSourceNative_CreatePictureAtIndex(OH_ImageSourceNative *source, uint32_t index,
+    OH_PictureNative **picture);
+
+/**
  * @brief Obtains the delay time list from some <b>ImageSource</b> objects (such as GIF image sources).
  *
  * @param source Indicates a void pointer(from ImageSource pointer convert).

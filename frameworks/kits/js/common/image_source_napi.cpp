@@ -899,6 +899,7 @@ std::vector<napi_property_descriptor> ImageSourceNapi::RegisterNapi()
         DECLARE_NAPI_FUNCTION("getDisposalTypeList", GetDisposalType),
         DECLARE_NAPI_FUNCTION("getFrameCount", GetFrameCount),
         DECLARE_NAPI_FUNCTION("createPixelMapList", CreatePixelMapList),
+        DECLARE_NAPI_FUNCTION("createPictureAtIndex", CreatePictureAtIndex),
         DECLARE_NAPI_FUNCTION("createPixelMap", CreatePixelMap),
         DECLARE_NAPI_FUNCTION("createPixelMapSync", CreatePixelMapSync),
         DECLARE_NAPI_FUNCTION("createPixelMapUsingAllocator", CreatePixelMapUsingAllocator),
@@ -3201,6 +3202,114 @@ void ImageSourceNapi::SetImageResource(ImageResource resource)
 ImageResource ImageSourceNapi::GetImageResource()
 {
     return resource_;
+}
+
+static std::pair<int32_t, std::string> CreatePictureAtIndexMakeErrMsg(uint32_t errorCode)
+{
+    switch (errorCode) {
+        case ERR_IMAGE_SOURCE_DATA:
+        case ERR_IMAGE_SOURCE_DATA_INCOMPLETE:
+        case ERR_IMAGE_GET_DATA_ABNORMAL:
+        case ERR_IMAGE_DATA_ABNORMAL:
+            return std::make_pair<int32_t, std::string>(IMAGE_BAD_SOURCE, "Bad image source.");
+        case ERR_IMAGE_MISMATCHED_FORMAT:
+        case ERR_IMAGE_UNKNOWN_FORMAT:
+        case ERR_IMAGE_DECODE_HEAD_ABNORMAL:
+            return std::make_pair<int32_t, std::string>(IMAGE_SOURCE_UNSUPPORTED_MIMETYPE, "Unsupported mimetype.");
+        case ERR_IMAGE_TOO_LARGE:
+            return std::make_pair<int32_t, std::string>(IMAGE_SOURCE_TOO_LARGE, "Image too large.");
+        case ERR_IMAGE_INVALID_PARAMETER:
+            return std::make_pair<int32_t, std::string>(IMAGE_SOURCE_UNSUPPORTED_OPTIONS, "Unsupported options.");
+        default:
+            return std::make_pair<int32_t, std::string>(IMAGE_DECODE_FAILED, "Decode failed.");
+    }
+}
+
+static void CreatePictureAtIndexExecute(napi_env env, void *data)
+{
+    IMAGE_LOGD("CreatePictureAtIndexExecute IN");
+    CHECK_ERROR_RETURN_LOG(data == nullptr, "data is nullptr");
+
+    auto context = static_cast<ImageSourceAsyncContext*>(data);
+    CHECK_ERROR_RETURN_LOG(context == nullptr, "empty context");
+
+    if (context->errMsg.size() > 0) {
+        IMAGE_LOGE("mismatch args");
+        context->status = ERROR;
+        return;
+    }
+
+    uint32_t errorCode = ERR_MEDIA_INVALID_VALUE;
+    context->rPicture = context->rImageSource->CreatePictureAtIndex(context->index, context->decodeOpts, errorCode);
+    if (errorCode != SUCCESS || context->rPicture == nullptr) {
+        context->status = ERROR;
+        auto errMsg = CreatePictureAtIndexMakeErrMsg(errorCode);
+        context->errMsgArray.insert(errMsg);
+    } else {
+        context->status = SUCCESS;
+    }
+
+    IMAGE_LOGD("CreatePictureAtIndexExecute OUT");
+}
+
+static void CreatePictureAtIndexComplete(napi_env env, napi_status status, void *data)
+{
+    IMAGE_LOGD("CreatePictureAtIndexComplete IN");
+    napi_value result = nullptr;
+    auto context = static_cast<ImageSourceAsyncContext*>(data);
+    CHECK_ERROR_RETURN_LOG(context == nullptr, "empty context");
+
+    if (context->status == SUCCESS) {
+        result = PictureNapi::CreatePicture(env, context->rPicture);
+    } else {
+        napi_get_undefined(env, &result);
+    }
+    IMAGE_LOGD("CreatePictureAtIndexComplete OUT");
+    ImageSourceCallbackRoutine(env, context, result);
+}
+
+napi_value ImageSourceNapi::CreatePictureAtIndex(napi_env env, napi_callback_info info)
+{
+    napi_value result = nullptr;
+    napi_get_undefined(env, &result);
+
+    napi_status status;
+    napi_value thisVar = nullptr;
+    napi_value argValue[NUM_1] = {0};
+    size_t argCount = NUM_1;
+    IMG_JS_ARGS(env, info, status, argCount, argValue, thisVar);
+    IMG_NAPI_CHECK_RET_D(IMG_IS_READY(status, thisVar), nullptr, IMAGE_LOGE("fail to get thisVar"));
+    IMG_NAPI_CHECK_RET_D(IMG_IS_OK(status), nullptr, IMAGE_LOGE("fail to napi_get_cb_info"));
+
+    std::unique_ptr<ImageSourceAsyncContext> asyncContext = std::make_unique<ImageSourceAsyncContext>();
+
+    status = napi_unwrap(env, thisVar, reinterpret_cast<void**>(&asyncContext->constructor_));
+    IMG_NAPI_CHECK_RET_D(IMG_IS_READY(status, asyncContext->constructor_),
+        nullptr, IMAGE_LOGE("fail to unwrap context"));
+    IMG_NAPI_CHECK_RET_D(IMG_IS_READY(status, asyncContext->constructor_->nativeImgSrc),
+        nullptr, IMAGE_LOGE("fail to unwrap nativeImgSrc"));
+    asyncContext->rImageSource = asyncContext->constructor_->nativeImgSrc;
+    IMG_NAPI_CHECK_RET_D(IMG_IS_READY(status, asyncContext->rImageSource),
+        nullptr, IMAGE_LOGE("empty native rImageSource"));
+
+    if (argCount == NUM_1) {
+        if (ImageNapiUtils::getType(env, argValue[NUM_0]) != napi_number) {
+            return ImageNapiUtils::ThrowExceptionError(env, IMAGE_SOURCE_UNSUPPORTED_OPTIONS, "Invalid argument type");
+        }
+        napi_get_value_uint32(env, argValue[NUM_0], &asyncContext->index);
+    } else {
+        IMAGE_LOGE("argCount mismatch");
+        return result;
+    }
+
+    napi_create_promise(env, &(asyncContext->deferred), &result);
+
+    ImageNapiUtils::HicheckerReport();
+    IMG_CREATE_CREATE_ASYNC_WORK_WITH_QOS(env, status, "CreatePictureAtIndex", CreatePictureAtIndexExecute,
+        CreatePictureAtIndexComplete, asyncContext, asyncContext->work, napi_qos_user_initiated);
+
+    IMG_NAPI_CHECK_RET_D(IMG_IS_OK(status), nullptr, IMAGE_LOGE("fail to create async work"));
+    return result;
 }
 
 #if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)

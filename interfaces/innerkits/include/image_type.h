@@ -35,6 +35,9 @@ namespace Media {
 #define FRAGMENT_METADATA_KEY_WIDTH "FragmentImageWidth"
 #define FRAGMENT_METADATA_KEY_HEIGHT "FragmentImageHeight"
 
+#define GIF_METADATA_KEY_DELAY_TIME "GifDelayTime"
+#define GIF_METADATA_KEY_DISPOSAL_TYPE "GifDisposalType"
+
 // There is no definite tag name for gainmap
 #define AUXILIARY_TAG_GAINMAP ""
 #define AUXILIARY_TAG_DEPTH_MAP_BACK "DepthP"
@@ -406,6 +409,7 @@ struct AuxiliaryPictureInfo {
 enum class MetadataType {
     EXIF = 1,
     FRAGMENT = 2,
+    GIF = 5,
 };
 
 struct DecodingOptionsForPicture {

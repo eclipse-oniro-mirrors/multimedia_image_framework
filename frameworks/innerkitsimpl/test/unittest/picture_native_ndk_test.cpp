@@ -1298,5 +1298,34 @@ HWTEST_F(PictureNdkTest, OH_PictureNative_SetAndGetMetadataTest001, TestSize.Lev
     ret = OH_PictureMetadata_Release(metadata);
     EXPECT_EQ(ret, IMAGE_SUCCESS);
 }
+
+/**
+ * @tc.name: OH_PictureNative_SetAndGetMetadataTest003
+ * @tc.desc: Tests setting and getting gif metadata on a native picture.
+ *           The test checks if the metadata is set and get successfully on the picture.
+ * @tc.type: FUNC
+ */
+HWTEST_F(PictureNdkTest, OH_PictureNative_SetAndGetMetadataTest003, TestSize.Level1)
+{
+    std::vector<Image_AuxiliaryPictureType> auxTypeList = {};
+    OH_PictureNative *picture = CreateNativePicture(auxTypeList);
+    Image_MetadataType metadataType = GIF_METADATA;
+    OH_PictureMetadata *metadata = nullptr;
+    Image_ErrorCode ret = OH_PictureMetadata_Create(metadataType, &metadata);
+    EXPECT_EQ(ret, IMAGE_SUCCESS);
+
+    ret = OH_PictureNative_SetMetadata(picture, metadataType, metadata);
+    EXPECT_EQ(ret, IMAGE_SUCCESS);
+
+    OH_PictureMetadata *metadataGet = nullptr;
+    ret = OH_PictureNative_GetMetadata(picture, metadataType, &metadataGet);
+    EXPECT_EQ(ret, IMAGE_SUCCESS);
+    EXPECT_NE(metadataGet, nullptr);
+
+    ret = OH_PictureNative_Release(picture);
+    EXPECT_EQ(ret, IMAGE_SUCCESS);
+    ret = OH_PictureMetadata_Release(metadata);
+    EXPECT_EQ(ret, IMAGE_SUCCESS);
+}
 } // namespace Media
 } // namespace OHOS
