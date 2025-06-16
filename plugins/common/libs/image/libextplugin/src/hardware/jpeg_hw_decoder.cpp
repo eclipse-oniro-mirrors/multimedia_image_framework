@@ -43,6 +43,7 @@ static constexpr std::chrono::duration<int> THRESHIOLD_DURATION(DMA_POOL_WAIT_SE
 std::vector<CodecImageCapability> JpegHardwareDecoder::capList_ = {};
 std::pair<DmaPool*, std::chrono::steady_clock::time_point> JpegHardwareDecoder::dmaPool_ =
     std::make_pair(nullptr, std::chrono::steady_clock::now());
+uint32_t JpegHardwareDecoder::dmaPoolRefCnt_ = 0;
 std::mutex JpegHardwareDecoder::dmaPoolMtx_;
 std::mutex JpegHardwareDecoder::capListMtx_;
 
@@ -332,6 +333,7 @@ bool JpegHardwareDecoder::AssembleJpegImgHeader(jpeg_decompress_struct* jpegComp
 bool JpegHardwareDecoder::AllocDmaPool()
 {
     dmaPool_.first = new DmaPool();
+    dmaPoolRefCnt_ = 0;
     int32_t ret = hwDecoder_->AllocateInBuffer(dmaPool_.first->buffer, (DMA_POOL_SIZE * KILO_BYTE),
                                                CODEC_IMAGE_JPEG);
     if (ret != HDF_SUCCESS) {
@@ -362,13 +364,16 @@ bool JpegHardwareDecoder::AllocDmaPool()
 
 void JpegHardwareDecoder::UpdateSpaceInfo()
 {
-    usedOffsetInPool_ = (dmaPool_.first->remainSpace).second;
-    uint32_t newSize = (dmaPool_.first->remainSpace).first - usedSizeInPool_;
-    uint32_t newStart = (dmaPool_.first->remainSpace).second + usedSizeInPool_;
-    dmaPool_.first->remainSpace = std::make_pair(newSize, newStart);
-    (dmaPool_.first->usedSpace)[newStart] = usedSizeInPool_;
-    JPEG_HW_LOGI("upadteSpaceInfo:  aligend size:%{public}u buffer offset:%{public}u",
-                 usedSizeInPool_, usedOffsetInPool_);
+    if (dmaPool_.first != nullptr) {
+        dmaPoolRefCnt_++;
+        usedOffsetInPool_ = (dmaPool_.first->remainSpace).second;
+        uint32_t newSize = (dmaPool_.first->remainSpace).first - usedSizeInPool_;
+        uint32_t newStart = (dmaPool_.first->remainSpace).second + usedSizeInPool_;
+        dmaPool_.first->remainSpace = std::make_pair(newSize, newStart);
+        (dmaPool_.first->usedSpace)[newStart] = usedSizeInPool_;
+        JPEG_HW_LOGI("upadteSpaceInfo:  aligend size:%{public}u buffer offset:%{public}u refCnt:%{public}u",
+                    usedSizeInPool_, usedOffsetInPool_, dmaPoolRefCnt_);
+    }
 }
 
 bool JpegHardwareDecoder::CopySrcToInputBuff(ImagePlugin::InputDataStream* srcStream, BufferHandle* inputBufferHandle)
@@ -394,7 +399,7 @@ void JpegHardwareDecoder::RunDmaPoolRecycle()
         std::chrono::steady_clock::time_point curTime = std::chrono::steady_clock::now();
         std::chrono::duration<int> diffDuration =
             std::chrono::duration_cast<std::chrono::duration<int>>(curTime - dmaPool_.second);
-        if (diffDuration >= THRESHIOLD_DURATION) {
+        if ((dmaPoolRefCnt_ == 0) && (diffDuration >= THRESHIOLD_DURATION)) {
             break;
         } else {
             dmaPoolMtx_.unlock();
@@ -675,24 +680,29 @@ bool JpegHardwareDecoder::DoDecode(CodecImageBuffer& outputBuffer)
 void JpegHardwareDecoder::ReleaseSpace(uint32_t& offset, uint32_t& usedSize)
 {
     std::lock_guard<std::mutex> lock(dmaPoolMtx_);
-    dmaPool_.second = std::chrono::steady_clock::now();
-    auto it = (dmaPool_.first->usedSpace).find(offset);
-    if (it != (dmaPool_.first->usedSpace).end()) {
-        (dmaPool_.first->releaseSpace)[offset] = usedSize;
-        (dmaPool_.first->usedSpace).erase(it);
+    if (dmaPool_.first != nullptr) {
+        dmaPoolRefCnt_--;
+        dmaPool_.second = std::chrono::steady_clock::now();
+        auto it = (dmaPool_.first->usedSpace).find(offset);
+        if (it != (dmaPool_.first->usedSpace).end()) {
+            (dmaPool_.first->releaseSpace)[offset] = usedSize;
+            (dmaPool_.first->usedSpace).erase(it);
+        }
     }
 }
 
 bool JpegHardwareDecoder::RecycleSpace()
 {
     std::lock_guard<std::mutex> lock(dmaPoolMtx_);
-    auto it = (dmaPool_.first->releaseSpace).find((dmaPool_.first->remainSpace).second);
-    if (it != (dmaPool_.first->releaseSpace).end()) {
-        uint32_t newStart = (dmaPool_.first->remainSpace).second - it->second;
-        uint32_t newSize = it->second + (dmaPool_.first->remainSpace).first;
-        dmaPool_.first->remainSpace = std::make_pair(newSize, newStart);
-        (dmaPool_.first->releaseSpace).erase(it);
-        return true;
+    if (dmaPool_.first != nullptr) {
+        auto it = (dmaPool_.first->releaseSpace).find((dmaPool_.first->remainSpace).second);
+        if (it != (dmaPool_.first->releaseSpace).end()) {
+            uint32_t newStart = (dmaPool_.first->remainSpace).second - it->second;
+            uint32_t newSize = it->second + (dmaPool_.first->remainSpace).first;
+            dmaPool_.first->remainSpace = std::make_pair(newSize, newStart);
+            (dmaPool_.first->releaseSpace).erase(it);
+            return true;
+        }
     }
     return false;
 }
@@ -709,8 +719,8 @@ void JpegHardwareDecoder::RecycleAllocatedResource()
         while (findEnd) {
             findEnd = RecycleSpace();
         }
-        JPEG_HW_LOGI("remianSpace info: size=%{public}u start=%{public}u", (dmaPool_.first->remainSpace).first,
-                     (dmaPool_.first->remainSpace).second);
+        JPEG_HW_LOGI("remianSpace info: size:%{public}u start:%{public}u refCnt:%{public}u",
+                     (dmaPool_.first->remainSpace).first, (dmaPool_.first->remainSpace).second, dmaPoolRefCnt_);
     }
 }
 
