@@ -662,6 +662,8 @@ interface ImageCreator {
 function MakeEmptySize(): Size;
 function MakeEmptyImageInfo(): ImageInfo;
 
+@gen_async("createPixelMap")
+@gen_promise("createPixelMap")
 @overload("createPixelMapSync")
 function CreatePixelMapByBufferAndOptionsSync(colors: @arraybuffer Array<u8>, options: InitializationOptions): PixelMap;
 
