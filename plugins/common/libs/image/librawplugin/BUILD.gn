@@ -79,7 +79,7 @@ ohos_shared_library("rawplugin") {
       "skia:skia_canvaskit",
     ]
   }
-  if (use_new_skia_temp) {
+  if (image_use_new_skia) {
     defines += [ "USE_M133_SKIA" ]
   }
   innerapi_tags = [ "platformsdk" ]

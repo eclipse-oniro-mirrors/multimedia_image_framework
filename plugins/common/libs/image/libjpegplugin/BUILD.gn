@@ -60,7 +60,7 @@ ohos_shared_library("jpegplugin") {
       "//foundation/multimedia/image_framework/plugins/manager:pluginmanager_static",
       "//third_party/libexif:libexif",
     ]
-    if (use_new_skia_temp) {
+    if (image_use_new_skia) {
       deps += [ "${third_party_skia_root}/third_party/libjpeg-turbo:libjpegm133" ]
     } else {
       deps += [ "${third_party_skia_root}/third_party/libjpeg-turbo:libjpeg" ]
@@ -80,7 +80,7 @@ ohos_shared_library("jpegplugin") {
       "//foundation/multimedia/image_framework/plugins/manager:pluginmanager_static",
       "//third_party/libexif:libexif",
     ]
-    if (use_new_skia_temp) {
+    if (image_use_new_skia) {
       deps += [ "${third_party_skia_root}/third_party/libjpeg-turbo:libjpegm133" ]
     } else {
       deps += [ "${third_party_skia_root}/third_party/libjpeg-turbo:libjpeg" ]
@@ -99,7 +99,7 @@ ohos_shared_library("jpegplugin") {
 
     if (DUAL_ADAPTER) {
     } else {
-      if (use_new_skia_temp) {
+      if (image_use_new_skia) {
         deps += [ "${third_party_skia_root}/third_party/libjpeg-turbo:libjpegm133" ]
       } else {
         deps += [ "${third_party_skia_root}/third_party/libjpeg-turbo:libjpeg" ]
@@ -109,7 +109,7 @@ ohos_shared_library("jpegplugin") {
         "$third_party_skia_root/third_party/externals/libjpeg-turbo",
       ]
     }
-    if (use_new_skia_temp) {
+    if (image_use_new_skia) {
       defines += [ "USE_M133_SKIA" ]
     }
     external_deps = [

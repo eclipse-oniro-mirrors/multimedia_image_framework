@@ -296,7 +296,7 @@ ohos_shared_library("extplugin") {
     sources += [ "src/sk_ohoscodec.cpp" ]
     defines += [ "SK_ENABLE_OHOS_CODEC" ]
   }
-  if (use_new_skia_temp) {
+  if (image_use_new_skia) {
     defines += [ "USE_M133_SKIA" ]
   }
   cflags = [

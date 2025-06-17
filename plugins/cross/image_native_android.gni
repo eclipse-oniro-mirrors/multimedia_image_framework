@@ -275,7 +275,7 @@ image_native_android_deps = [
   # png
 ]
 
-if (use_new_skia_temp) {
+if (image_use_new_skia) {
   image_native_android_deps += [
     "${third_party_skia_root}/third_party/libjpeg-turbo:libjpegm133",
     "${third_party_skia_root}/third_party/libpng:libpngm133",
