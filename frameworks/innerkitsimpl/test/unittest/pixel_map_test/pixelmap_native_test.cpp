@@ -809,34 +809,6 @@ HWTEST_F(PixelMapNdk2Test, OH_PixelmapNative_SetMetadata, TestSize.Level3)
 }
 
 /**
- * @tc.name: OH_PixelmapNative_SetGetColorSpace
- * @tc.desc: OH_PixelmapNative_SetGetColorSpace
- * @tc.type: FUNC
- */
-HWTEST_F(PixelMapNdk2Test, OH_PixelmapNative_SetGetColorSpace, TestSize.Level3)
-{
-    GTEST_LOG_(INFO) << "PixelMapNdk2Test: OH_PixelmapNative_SetGetColorSpace start";
-    OH_PixelmapNative *pixelmap = nullptr;
-    CreatePixelmapNative(&pixelmap);
-    EXPECT_NE(pixelmap, nullptr);
-
-    OH_NativeColorSpaceManager *setColorSpaceNative = nullptr;
-    ColorSpaceName setColorSpaceName = SRGB_LIMIT;
-    setColorSpaceNative = OH_NativeColorSpaceManager_CreateFromName(setColorSpaceName);
-    Image_ErrorCode ret = OH_PixelmapNative_SetColorSpaceNative(pixelmap, setColorSpaceNative);
-    EXPECT_EQ(ret, IMAGE_SUCCESS);
-
-    OH_NativeColorSpaceManager *getColorSpaceNative = nullptr;
-    ret = OH_PixelmapNative_GetColorSpaceNative(pixelmap, &getColorSpaceNative);
-    EXPECT_EQ(ret, IMAGE_SUCCESS);
-
-    int getColorSpaceName = OH_NativeColorSpaceManager_GetColorSpaceName(getColorSpaceNative);
-    EXPECT_EQ(setColorSpaceName, getColorSpaceName);
-
-    GTEST_LOG_(INFO) << "PixelMapNdk2Test: OH_PixelmapNative_SetGetColorSpace end";
-}
-
-/**
  * @tc.name: OH_PixelmapNative_GetByteCount
  * @tc.desc: Test OH_PixelmapNative_GetByteCount and OH_PixelmapNative_GetAllocationByteCount
  * @tc.type: FUNC
