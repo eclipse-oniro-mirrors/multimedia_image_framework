@@ -287,7 +287,7 @@ HWTEST_F(ImageCodecTest, OnMsgReceivedTest002, TestSize.Level1)
     std::shared_ptr<ImageCodec> imageCodec = ImageCodec::Create();
     ASSERT_NE(imageCodec, nullptr);
     ImagePlugin::ImageCodec::RunningState runningState(imageCodec.get());
-    HDI::Codec::V3_0::CodecEventType event = HDI::Codec::V3_0::CodecEventType::CODEC_EVENT_PORT_SETTINGS_CHANGED;
+    HDI::Codec::V4_0::CodecEventType event = HDI::Codec::V4_0::CodecEventType::CODEC_EVENT_PORT_SETTINGS_CHANGED;
     runningState.OnCodecEvent(event, 0, 0);
     MsgInfo info;
     info.type = ImageCodec::MsgWhat::START;

@@ -32,8 +32,8 @@
 #ifdef HEIF_HW_ENCODE_ENABLE
 #include "image/v2_1/icodec_image.h"
 #include "image/v2_1/codec_image_type.h"
-#include "v3_0/codec_types.h"
-#include "v3_0/icodec_component_manager.h"
+#include "v4_0/codec_types.h"
+#include "v4_0/icodec_component_manager.h"
 #endif
 
 #undef LOG_DOMAIN

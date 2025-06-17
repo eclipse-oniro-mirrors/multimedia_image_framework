@@ -16,13 +16,13 @@
 #ifndef IMAGE_HDI_DEFINE_H
 #define IMAGE_HDI_DEFINE_H
 
-#include "v3_0/codec_types.h"
-#include "v3_0/icodec_callback.h"
-#include "v3_0/icodec_component.h"
-#include "v3_0/icodec_component_manager.h"
+#include "v4_0/codec_types.h"
+#include "v4_0/icodec_callback.h"
+#include "v4_0/icodec_component.h"
+#include "v4_0/icodec_component_manager.h"
 
 namespace OHOS::ImagePlugin {
-namespace HdiCodecNamespace = OHOS::HDI::Codec::V3_0;
+namespace HdiCodecNamespace = OHOS::HDI::Codec::V4_0;
 } // namespace OHOS::ImagePlugin
 
 #endif // IMAGE_HDI_DEFINE_H
