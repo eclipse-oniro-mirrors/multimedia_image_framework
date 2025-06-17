@@ -671,8 +671,6 @@ static sk_sp<SkColorSpace> getDesiredColorSpace(SkImageInfo &srcInfo, const Pixe
 uint32_t ExtDecoder::CheckDecodeOptions(uint32_t index, const PixelDecodeOptions &opts)
 {
     if (ImageUtils::CheckMulOverflow(dstInfo_.width(), dstInfo_.height(), dstInfo_.bytesPerPixel())) {
-        IMAGE_LOGE("SetDecodeOptions failed, width:%{public}d, height:%{public}d is too large",
-                     dstInfo_.width(), dstInfo_.height());
         return ERR_IMAGE_INVALID_PARAMETER;
     }
     IMAGE_LOGD("%{public}s IN, opts.CropRect: xy [%{public}d x %{public}d] wh [%{public}d x %{public}d]",
@@ -687,9 +685,6 @@ uint32_t ExtDecoder::CheckDecodeOptions(uint32_t index, const PixelDecodeOptions
     size_t tempSrcByteCount = info_.computeMinByteSize();
     size_t tempDstByteCount = dstInfo_.computeMinByteSize();
     if (SkImageInfo::ByteSizeOverflowed(tempSrcByteCount) || SkImageInfo::ByteSizeOverflowed(tempDstByteCount)) {
-        IMAGE_LOGE("Image too large, srcInfo_height: %{public}d, srcInfo_width: %{public}d, "
-                   "dstInfo_height: %{public}d, dstInfo_width: %{public}d",
-                   info_.height(), info_.width(), dstInfo_.height(), dstInfo_.width());
         return ERR_IMAGE_TOO_LARGE;
     }
 
