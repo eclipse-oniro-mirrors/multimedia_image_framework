@@ -242,32 +242,26 @@ uint32_t ImagePacker::AddImage(PixelMap &pixelMap)
 uint32_t ImagePacker::AddImage(ImageSource &source)
 {
     ImageTrace imageTrace("ImagePacker::AddImage by imageSource");
-    DecodeOptions decodeOpts;
-    decodeOpts.desiredDynamicRange = encodeToSdr_ ? DecodeDynamicRange::SDR : DecodeDynamicRange::AUTO;
-    uint32_t ret = SUCCESS;
-    if (pixelMap_ != nullptr) {
-        pixelMap_.reset();  // release old inner pixelmap
-    }
-    pixelMap_ = source.CreatePixelMap(decodeOpts, ret);
-    if (ret != SUCCESS) {
-        IMAGE_LOGE("image source create pixel map failed.");
-        return ret;
-    }
-
-    if (pixelMap_ == nullptr || pixelMap_.get() == nullptr) {
-        IMAGE_LOGE("create the pixel map unique_ptr fail.");
-        return ERR_IMAGE_MALLOC_ABNORMAL;
-    }
-
-    return AddImage(*pixelMap_.get());
+    return AddImage(source, 0);
 }
 
 uint32_t ImagePacker::AddImage(ImageSource &source, uint32_t index)
 {
     ImageTrace imageTrace("ImagePacker::AddImage by imageSource and index %{public}u", index);
+    uint32_t ret = SUCCESS;
+    if (picture_ != nullptr) {
+        picture_.reset();  // release old inner picture
+    }
+    DecodingOptionsForPicture decodeOptsForPicture;
+    decodeOptsForPicture.desiredPixelFormat = PixelFormat::NV12;
+    picture_ = source.CreatePicture(decodeOptsForPicture, ret);
+    if (ret == SUCCESS && picture_ != nullptr && picture_.get() != nullptr) {
+        IMAGE_LOGD("image source create picture success.");
+        return AddPicture(*picture_.get());
+    }
+
     DecodeOptions decodeOpts;
     decodeOpts.desiredDynamicRange = encodeToSdr_ ? DecodeDynamicRange::SDR : DecodeDynamicRange::AUTO;
-    uint32_t ret = SUCCESS;
     if (pixelMap_ != nullptr) {
         pixelMap_.reset();  // release old inner pixelmap
     }
