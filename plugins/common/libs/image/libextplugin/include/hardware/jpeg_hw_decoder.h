@@ -121,6 +121,7 @@ private:
     static std::mutex capListMtx_;
     static std::pair<DmaPool*, std::chrono::steady_clock::time_point> dmaPool_;
     static std::mutex dmaPoolMtx_;
+    static uint32_t dmaPoolRefCnt_;
     OHOS::sptr<OHOS::HDI::Codec::Image::V2_1::ICodecImage> hwDecoder_;
     OHOS::HDI::Display::Buffer::V1_0::IDisplayBuffer* bufferMgr_;
     OHOS::HDI::Codec::Image::V2_1::CodecImageBuffer inputBuffer_;
