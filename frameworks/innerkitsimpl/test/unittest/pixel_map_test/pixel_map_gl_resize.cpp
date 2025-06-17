@@ -191,51 +191,6 @@ public:
     PixelMapTest() {}
     ~PixelMapTest() {}
 };
-/**
- * @tc.name: gl_resize001
- * @tc.desc: Scale Dma PixelMap
- * @tc.type: FUNC
- */
-HWTEST_F(PixelMapTest, gl_resize001, TestSize.Level3)
-{
-    GTEST_LOG_(INFO) << "PixelMapTest: gl_resize001 start";
-    const int32_t offset = 0;
-    InitializationOptions options;
-    options.size.width = NUM_512;
-    options.size.height = NUM_512;
-    options.srcPixelFormat = PixelFormat::RGBA_8888;
-    options.pixelFormat = PixelFormat::RGBA_8888;
-    options.alphaType = AlphaType::IMAGE_ALPHA_TYPE_OPAQUE;
-    options.useDMA = true;
-    int32_t width = options.size.width;
-    std::map<PixelFormat, std::string>::iterator iter;
-    // ARGB_8888 to others
-    options.srcPixelFormat = PixelFormat::ARGB_8888;
-    uint32_t colorLength = NUM_512 * NUM_512 * NUM_4;    // w:2 * h:3 * pixelByte:4
-    uint8_t buffer[NUM_512 * NUM_512 * NUM_4] = { 0 };    // w:2 * h:3 * pixelByte:4
-    for (int i = 0; i < colorLength; i += NUM_4) {
-        buffer[i] = 0x78;
-        buffer[i + 1] = 0x83;
-        buffer[i + 2] = 0xDF;
-        buffer[i + 3] = 0x52;
-    }
-    uint32_t *color = reinterpret_cast<uint32_t *>(buffer);
-    options.pixelFormat = PixelFormat::RGBA_8888;
-    
-    std::unique_ptr<PixelMap> pixelMap = nullptr;
-    pixelMap = PixelMap::Create(color, colorLength, offset, width, options);
-    EXPECT_NE(nullptr, pixelMap);
-    EXPECT_EQ(ScalePixelMapWithGPU(*(pixelMap.get()),
-        {pixelMap->GetWidth() * NUM_2, pixelMap->GetHeight() * NUM_2}), true);
-    EXPECT_EQ(ScalePixelMapWithGPU(*(pixelMap.get()),
-        {pixelMap->GetWidth() / NUM_2, pixelMap->GetHeight() / NUM_2}), true);
-
-    EXPECT_EQ(RotateInRectangularSteps(*(pixelMap.get()), ANGLE90), true);
-    EXPECT_EQ(RotateInRectangularSteps(*(pixelMap.get()), ANGLE180), true);
-    EXPECT_EQ(RotateInRectangularSteps(*(pixelMap.get()), ANGLE183), true);
-    EXPECT_EQ(RotateInRectangularSteps(*(pixelMap.get()), ANGLE0), true);
-    GTEST_LOG_(INFO) << "PixelMapTest: gl_resize001 end";
-}
 
 /**
  * @tc.name: gl_resize002

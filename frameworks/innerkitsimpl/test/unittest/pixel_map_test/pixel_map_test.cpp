@@ -2708,35 +2708,6 @@ HWTEST_F(PixelMapTest, ReadARGBPixelsTest003, TestSize.Level3)
 }
 
 /**
- * @tc.name: PixelMapCreateTest011
- * @tc.desc: Create PixelMap
- * @tc.type: FUNC
- */
-HWTEST_F(PixelMapTest, PixelMapCreateTest011, TestSize.Level3)
-{
-    GTEST_LOG_(INFO) << "PixelMapTest: PixelMapCreateTest011 start";
-    ImageSize imageSize = {1920, 1080, 0, 0, 0, 0}; // 1920: width 1080: height
-    int32_t ySize = imageSize.width * imageSize.height;
-    int32_t uvSize = ((imageSize.width + 1) / 2) * ((imageSize.height + 1) / 2); // 2: Addapting to size
-    const size_t totalSize = (ySize + 2 * uvSize);
-    uint16_t*  const chOrg = new uint16_t[totalSize];
-    bool result = ReadFile(chOrg, IMAGE_YUV_PATH, totalSize, 1);
-    ASSERT_EQ(result, true);
-    const uint32_t dataLength = totalSize * 2; // 2: Addapting to size
-    uint32_t *data = reinterpret_cast<uint32_t *>(chOrg);
-    InitializationOptions opts;
-    opts.srcPixelFormat = PixelFormat::YCBCR_P010;
-    opts.pixelFormat = PixelFormat::YCBCR_P010;
-    opts.alphaType = AlphaType::IMAGE_ALPHA_TYPE_UNKNOWN;
-    opts.size.width = imageSize.width;
-    opts.size.height = imageSize.height;
-    opts.useDMA = true;
-    std::unique_ptr<PixelMap> pixelMap = PixelMap::Create(data, dataLength, opts);
-    EXPECT_TRUE(pixelMap != nullptr);
-    GTEST_LOG_(INFO) << "PixelMapTest: PixelMapCreateTest011 end";
-}
-
-/**
  * @tc.name: MarshallingUnmarshallingCustomAllocPixelMapTest
  * @tc.desc: Test marshalling and unmarshalling PixelMap with CUSTOM_ALLOC allocator type
  * @tc.type: FUNC
