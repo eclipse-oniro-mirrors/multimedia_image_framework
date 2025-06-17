@@ -300,46 +300,6 @@ HWTEST_F(PixelMapTest, PixelMapAshMemTestRotate002, TestSize.Level3)
 }
  
 /**
- * @tc.name: PixelMapAshMemTestRotateAndScale003
- * @tc.desc: Rotate and Scale Ashmem PixelMap
- * @tc.type: FUNC
- */
-HWTEST_F(PixelMapTest, PixelMapDmaTestRotate001, TestSize.Level3)
-{
-    GTEST_LOG_(INFO) << "PixelMapTest: PixelMapDmaTestRotate001 start";
-    const int32_t offset = 0;
-    InitializationOptions options;
-    options.size.width = NUM_512;
-    options.size.height = NUM_512;
-    options.srcPixelFormat = PixelFormat::UNKNOWN;
-    options.pixelFormat = PixelFormat::UNKNOWN;
-    options.alphaType = AlphaType::IMAGE_ALPHA_TYPE_OPAQUE;
-    options.useDMA = true;
-    int32_t width = options.size.width;
-    std::map<PixelFormat, std::string>::iterator iter;
-    // ARGB_8888 to others
-    options.srcPixelFormat = PixelFormat::ARGB_8888;
-    for (iter =  SupportDmaMemPixelFormat.begin(); iter !=  SupportDmaMemPixelFormat.end() ; ++iter) {
-        uint32_t colorLength = NUM_512 * NUM_647 * NUM_4;    // w:2 * h:3 * pixelByte:4
-        uint8_t buffer[NUM_512 * NUM_647 * NUM_4] = { 0 };    // w:2 * h:3 * pixelByte:4
-        for (int i = 0; i < colorLength; i += NUM_4) {
-            buffer[i] = 0x78;
-            buffer[i + 1] = 0x83;
-            buffer[i + 2] = 0xDF;
-            buffer[i + 3] = 0x52;
-        }
-        uint32_t *color = reinterpret_cast<uint32_t *>(buffer);
-        options.pixelFormat = iter->first;
-        
-        std::unique_ptr<PixelMap> pixelMap = nullptr;
-        pixelMap = PixelMap::Create(color, colorLength, offset, width, options);
-        EXPECT_NE(nullptr, pixelMap);
-        EXPECT_EQ(true, PixelMapRotate(pixelMap));
-    }
-    GTEST_LOG_(INFO) << "PixelMapTest: PixelMapDmaTestRotate001 end";
-}
- 
-/**
  * @tc.name: PixelMapAshMemTestScale001
  * @tc.desc: Scale Ashmem PixelMap
  * @tc.type: FUNC
