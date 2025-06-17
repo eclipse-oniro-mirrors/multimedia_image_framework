@@ -58,46 +58,6 @@ static const std::string IMAGE_JPEG_PATH = "/data/local/tmp/image/test_jpeg_writ
 static const std::string IMAGE_JPEG_PATH_TEST = "/data/local/tmp/image/test.jpg";
 static const std::string IMAGE_JPEG_PATH_TEST_PICTURE = "/data/local/tmp/image/test_picture.jpg";
 
-static bool CompareImageInfo(OH_Pixelmap_ImageInfo* srcImageInfo, OH_Pixelmap_ImageInfo* dstImageInfo)
-{
-    if (srcImageInfo == nullptr && dstImageInfo == nullptr) {
-        return true;
-    }
-
-    if ((srcImageInfo == nullptr) ^ (dstImageInfo == nullptr)) {
-        return false;
-    }
-
-    uint32_t srcWidth = 0;
-    uint32_t srcHeight = 0;
-    uint32_t srcRowStride = 0;
-    int32_t srcPixelFormat = 0;
-    int32_t srcAlphaType = 0;
-    bool srcIsHdr = false;
-    OH_PixelmapImageInfo_GetWidth(srcImageInfo, &srcWidth);
-    OH_PixelmapImageInfo_GetHeight(srcImageInfo, &srcHeight);
-    OH_PixelmapImageInfo_GetRowStride(srcImageInfo, &srcRowStride);
-    OH_PixelmapImageInfo_GetPixelFormat(srcImageInfo, &srcPixelFormat);
-    OH_PixelmapImageInfo_GetAlphaType(srcImageInfo, &srcAlphaType);
-    OH_PixelmapImageInfo_GetDynamicRange(srcImageInfo, &srcIsHdr);
-
-    uint32_t dstWidth = 0;
-    uint32_t dstHeight = 0;
-    uint32_t dstRowStride = 0;
-    int32_t dstPixelFormat = 0;
-    int32_t dstAlphaType = 0;
-    bool dstIsHdr = false;
-    OH_PixelmapImageInfo_GetWidth(dstImageInfo, &dstWidth);
-    OH_PixelmapImageInfo_GetHeight(dstImageInfo, &dstHeight);
-    OH_PixelmapImageInfo_GetRowStride(dstImageInfo, &dstRowStride);
-    OH_PixelmapImageInfo_GetPixelFormat(dstImageInfo, &dstPixelFormat);
-    OH_PixelmapImageInfo_GetAlphaType(dstImageInfo, &dstAlphaType);
-    OH_PixelmapImageInfo_GetDynamicRange(dstImageInfo, &dstIsHdr);
-
-    return srcWidth == dstWidth && srcHeight == dstHeight && srcRowStride == dstRowStride
-        && srcPixelFormat == dstPixelFormat && srcAlphaType == dstAlphaType && srcIsHdr == dstIsHdr;
-}
-
 static void CreatePixelmapNative(OH_PixelmapNative** pixelmapNative)
 {
     std::string realPath;

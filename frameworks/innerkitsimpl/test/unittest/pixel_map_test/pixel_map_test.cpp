@@ -349,29 +349,6 @@ void CreateBuffer(const uint32_t width, const uint32_t height, const uint32_t pi
     }
 }
 
-static bool ReadFile(void *chOrg, std::string path, int32_t totalSize, int32_t srcNum)
-{
-    FILE* const fileOrg = fopen(path.c_str(), "rb");
-    if (fileOrg == nullptr) {
-        GTEST_LOG_(INFO) << "Can not open" << path.c_str();
-        return false;
-    }
-    if (srcNum == 0) {
-        size_t bytesOrg = fread(chOrg, sizeof(uint8_t), static_cast<size_t>(totalSize), fileOrg);
-        if (bytesOrg < static_cast<size_t>(totalSize)) {
-            GTEST_LOG_(INFO) << "Read fail";
-            return false;
-        }
-    } else {
-        size_t bytesOrg = fread(chOrg, sizeof(uint16_t), static_cast<size_t>(totalSize), fileOrg);
-        if (bytesOrg < static_cast<size_t>(totalSize)) {
-            GTEST_LOG_(INFO) << "Read fail" << bytesOrg << "totalsize" << totalSize;
-            return false;
-        }
-    }
-    return true;
-}
-
 void InitOption(struct InitializationOptions& opts, const uint32_t width, const uint32_t height,
     PixelFormat format, AlphaType alphaType)
 {
