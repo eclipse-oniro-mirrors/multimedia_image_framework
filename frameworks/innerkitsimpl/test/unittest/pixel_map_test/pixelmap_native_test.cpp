@@ -58,30 +58,6 @@ static const std::string IMAGE_JPEG_PATH = "/data/local/tmp/image/test_jpeg_writ
 static const std::string IMAGE_JPEG_PATH_TEST = "/data/local/tmp/image/test.jpg";
 static const std::string IMAGE_JPEG_PATH_TEST_PICTURE = "/data/local/tmp/image/test_picture.jpg";
 
-static void CreatePixelmapNative(OH_PixelmapNative** pixelmapNative)
-{
-    std::string realPath;
-    if (!ImageUtils::PathToRealPath(IMAGE_JPEG_PATH_TEST_PICTURE.c_str(), realPath)) {
-        return;
-    }
-
-    char filePath[bufferSize];
-    if (strcpy_s(filePath, sizeof(filePath), realPath.c_str()) != EOK) {
-        return;
-    }
-
-    size_t length = realPath.size();
-    OH_ImageSourceNative *source = nullptr;
-    OH_ImageSourceNative_CreateFromUri(filePath, length, &source);
-
-    OH_DecodingOptions *opts = nullptr;
-    OH_DecodingOptions_Create(&opts);
-
-    OH_PixelmapNative *pixelmap = nullptr;
-    OH_ImageSourceNative_CreatePixelmap(source, opts, &pixelmap);
-    *pixelmapNative = pixelmap;
-}
-
 /**
  * @tc.name: OH_PixelmapInitializationOptions_Create
  * @tc.desc: OH_PixelmapInitializationOptions_Create
