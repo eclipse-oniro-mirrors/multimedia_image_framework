@@ -320,7 +320,7 @@ static bool GetSurfaceSize(size_t argc, Rect& region, std::string fd)
             IMAGE_LOGE("GetSurfaceSize invalid fd");
             return false;
         }
-        sptr<Surface> surface = SurfaceUtils::GetInstance()->GetSurface(std::stoull(fd));
+        sptr<Surface> surface = SurfaceUtils::GetInstance()->GetSurface(numberFd);
         if (surface == nullptr) {
             return false;
         }

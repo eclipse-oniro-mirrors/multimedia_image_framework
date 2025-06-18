@@ -1479,7 +1479,7 @@ int64_t FfiImagePictureImplCreatePicture(int64_t id, uint32_t* errCode)
 uint32_t FfiImagePictureImplSetMetadata(int64_t id, int32_t metadataType, int64_t metadataId)
 {
     IMAGE_LOGD("[Picture] FfiImagePictureImplSetMetadata in");
-    if (metadataType != static_cast<uint32_t>(MetadataType::EXIF)) {
+    if (metadataType != static_cast<int32_t>(MetadataType::EXIF)) {
         IMAGE_LOGE("Unsupport MetadataType");
         return IMAGE_UNSUPPORTED_METADATA;
     }
@@ -1500,7 +1500,7 @@ uint32_t FfiImagePictureImplSetMetadata(int64_t id, int32_t metadataType, int64_
 int64_t FfiImagePictureImplGetMetadata(int64_t id, int32_t metadataType, uint32_t* errCode)
 {
     IMAGE_LOGD("[Picture] FfiImagePictureImplGetMetadata in");
-    if (metadataType != static_cast<uint32_t>(MetadataType::EXIF)) {
+    if (metadataType != static_cast<int32_t>(MetadataType::EXIF)) {
         IMAGE_LOGE("Unsupport MetadataType");
         *errCode = IMAGE_UNSUPPORTED_METADATA;
         return 0;
@@ -1585,14 +1585,15 @@ void FfiImageMetadataImplReleaseProperties(CjProperties* properties)
             }
         }
         free(properties->key);
+        properties->key = nullptr;
         if (properties->value != nullptr) {
             for (int64_t i = 0; i < properties->size; i++) {
                 free(properties->value[i]);
             }
         }
         free(properties->value);
+        properties->value = nullptr;
     }
-    properties = nullptr;
 }
 }
 } // namespace Media

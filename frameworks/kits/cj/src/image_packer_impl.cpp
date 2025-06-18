@@ -145,8 +145,8 @@ static uint32_t CommonPackToDataExec(std::shared_ptr<ImagePackerContext> context
 static std::tuple<int32_t, uint8_t*, int64_t> CommonPackToData(
     std::shared_ptr<ImagePackerContext> context, const PackOption& option, uint64_t bufferSize)
 {
-    int32_t innerEncodeErrorCode =
-        static_cast<int32_t>(context->packType == TYPE_PICTURE ? IMAGE_ENCODE_FAILED : ERR_IMAGE_ENCODE_FAILED);
+    uint32_t innerEncodeErrorCode =
+        static_cast<uint32_t>(context->packType == TYPE_PICTURE ? IMAGE_ENCODE_FAILED : ERR_IMAGE_ENCODE_FAILED);
     if (context->rImagePacker == nullptr) {
         IMAGE_LOGE("Packing failed, real_ is nullptr");
         return std::make_tuple(innerEncodeErrorCode, nullptr, 0);
