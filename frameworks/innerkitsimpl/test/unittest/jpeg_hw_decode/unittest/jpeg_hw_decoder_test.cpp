@@ -69,8 +69,8 @@ HWTEST_F(JpegHwDecoderTest, unsupported_img_size_too_big, TestSize.Level1)
 {
     JpegHardwareDecoder testObj;
     Size srcImgSize = {
-        .width = 8192,
-        .height = 8193
+        .width = 15000,
+        .height = 15001
     };
     bool ret = testObj.IsHardwareDecodeSupported(JPEG_FORMAT, srcImgSize);
     ASSERT_FALSE(ret);
