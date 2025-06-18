@@ -1585,23 +1585,11 @@ STATIC_EXEC_FUNC(CreatePixelMapFromSurface)
     auto &rsClient = Rosen::RSInterfaces::GetInstance();
     OHOS::Rect r = {.x = context->area.region.left, .y = context->area.region.top,
         .w = context->area.region.width, .h = context->area.region.height, };
-    unsigned long surfaceId = 0;
-    auto res = std::from_chars(context->surfaceId.c_str(),
-        context->surfaceId.c_str() + context->surfaceId.size(), surfaceId);
-    if (res.ec != std::errc()) {
-        IMAGE_LOGE("CreatePixelMapFromSurface invalid surfaceId");
-        return;
-    }
-    std::shared_ptr<Media::PixelMap> pixelMap = rsClient.CreatePixelMapFromSurfaceId(surfaceId, r);
+    std::shared_ptr<Media::PixelMap> pixelMap =
+        rsClient.CreatePixelMapFromSurfaceId(std::stoull(context->surfaceId), r);
 #ifndef EXT_PIXEL
     if (pixelMap == nullptr) {
-        res = std::from_chars(context->surfaceId.c_str(),
-            context->surfaceId.c_str() + context->surfaceId.size(), surfaceId);
-        if (res.ec != std::errc()) {
-            IMAGE_LOGE("CreatePixelMapFromSurface invalid surfaceId");
-            return;
-        }
-        pixelMap = CreatePixelMapFromSurfaceId(surfaceId, context->area.region);
+        pixelMap = CreatePixelMapFromSurfaceId(std::stoull(context->surfaceId), context->area.region);
     }
 #endif
     context->rPixelMap = std::move(pixelMap);
