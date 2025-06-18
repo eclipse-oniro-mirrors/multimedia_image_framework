@@ -899,7 +899,6 @@ std::vector<napi_property_descriptor> ImageSourceNapi::RegisterNapi()
         DECLARE_NAPI_FUNCTION("getDisposalTypeList", GetDisposalType),
         DECLARE_NAPI_FUNCTION("getFrameCount", GetFrameCount),
         DECLARE_NAPI_FUNCTION("createPixelMapList", CreatePixelMapList),
-        DECLARE_NAPI_FUNCTION("createPictureAtIndex", CreatePictureAtIndex),
         DECLARE_NAPI_FUNCTION("createPixelMap", CreatePixelMap),
         DECLARE_NAPI_FUNCTION("createPixelMapSync", CreatePixelMapSync),
         DECLARE_NAPI_FUNCTION("createPixelMapUsingAllocator", CreatePixelMapUsingAllocator),
@@ -909,6 +908,7 @@ std::vector<napi_property_descriptor> ImageSourceNapi::RegisterNapi()
         DECLARE_NAPI_GETTER("supportedFormats", GetSupportedFormats),
 #if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
         DECLARE_NAPI_FUNCTION("createPicture", CreatePicture),
+        DECLARE_NAPI_FUNCTION("createPictureAtIndex", CreatePictureAtIndex),
 #endif
     };
 
@@ -3204,6 +3204,7 @@ ImageResource ImageSourceNapi::GetImageResource()
     return resource_;
 }
 
+#if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
 static std::pair<int32_t, std::string> CreatePictureAtIndexMakeErrMsg(uint32_t errorCode)
 {
     switch (errorCode) {
@@ -3312,7 +3313,6 @@ napi_value ImageSourceNapi::CreatePictureAtIndex(napi_env env, napi_callback_inf
     return result;
 }
 
-#if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
 static void CreatePictureExecute(napi_env env, void *data)
 {
     IMAGE_LOGD("CreatePictureExecute IN");

@@ -3774,91 +3774,6 @@ uint32_t ImageSource::GetFrameCount(uint32_t &errorCode)
     return frameCount;
 }
 
-std::unique_ptr<Picture> ImageSource::CreatePictureAtIndex(
-    uint32_t index, const DecodeOptions &opts, uint32_t &errorCode)
-{
-    ImageDataStatistics imageDataStatistics("[ImageSource]CreatePictureAtIndex");
-    DumpInputData();
-
-    ImageInfo info;
-    GetImageInfo(info);
-    errorCode = CreatePictureAtIndexPreCheck(index, opts, info);
-    CHECK_ERROR_RETURN_RET_LOG(errorCode != SUCCESS, nullptr,
-        "[%{public}s] PreCheck failed, index=%{public}u, errorCode=%{public}u", __func__, index, errorCode);
-
-    std::shared_ptr<PixelMap> pixelMap = CreatePixelMap(index, opts, errorCode);
-    CHECK_ERROR_RETURN_RET_LOG(errorCode != SUCCESS, nullptr,
-        "[%{public}s] create PixelMap error, index=%{public}u, errorCode=%{public}u", __func__, index, errorCode);
-
-    std::unique_ptr<Picture> picture = Picture::Create(pixelMap);
-    if (picture == nullptr) {
-        IMAGE_LOGE("[%{public}s] create picture error", __func__);
-        errorCode = ERR_IMAGE_PICTURE_CREATE_FAILED;
-        return nullptr;
-    }
-    if (info.encodedFormat == IMAGE_GIF_FORMAT) {
-        errorCode = SetGifMetadataForPicture(picture, index);
-        CHECK_ERROR_RETURN_RET_LOG(errorCode != SUCCESS, nullptr,
-            "[%{public}s] SetGifMetadataForPicture failed, index=%{public}u, errorCode=%{public}u",
-            __func__, index, errorCode);
-    }
-    return picture;
-}
-
-uint32_t ImageSource::CreatePictureAtIndexPreCheck(uint32_t index, const DecodeOptions &opts, const ImageInfo &info)
-{
-    if (sourceStreamPtr_ == nullptr) {
-        IMAGE_LOGE("[%{public}s] sourceStreamPtr_ is nullptr", __func__);
-        return ERR_IMAGE_SOURCE_DATA;
-    }
-
-    if (info.encodedFormat != IMAGE_GIF_FORMAT) {
-        IMAGE_LOGE("[%{public}s] unsupport format: %{public}s", __func__, info.encodedFormat.c_str());
-        return ERR_IMAGE_MISMATCHED_FORMAT;
-    }
-
-    uint32_t error = ERR_MEDIA_INVALID_VALUE;
-    uint32_t frameCount = GetFrameCount(error);
-    CHECK_ERROR_RETURN_RET_LOG(error != SUCCESS, error, "[%{public}s] get frame count error", __func__);
-    if (index >= frameCount) {
-        IMAGE_LOGE("[%{public}s] invalid index(%{public}u) for frameCount(%{public}u)", __func__, index, frameCount);
-        return ERR_IMAGE_INVALID_PARAMETER;
-    }
-    return SUCCESS;
-}
-
-uint32_t ImageSource::SetGifMetadataForPicture(std::unique_ptr<Picture> &picture, uint32_t index)
-{
-    CHECK_ERROR_RETURN_RET_LOG(picture == nullptr, ERR_IMAGE_PICTURE_CREATE_FAILED,
-        "[%{public}s] picture is nullptr", __func__);
-    CHECK_ERROR_RETURN_RET_LOG(mainDecoder_ == nullptr, ERR_IMAGE_DECODE_ABNORMAL,
-        "[%{public}s] mainDecoder_ is nullptr", __func__);
-
-    int32_t delayTime = 0;
-    uint32_t errorCode = mainDecoder_->GetImagePropertyInt(index, IMAGE_DELAY_TIME, delayTime);
-    CHECK_ERROR_RETURN_RET_LOG(errorCode != SUCCESS, errorCode,
-        "[%{public}s] get delay time failed", __func__);
-
-    int32_t disposalType = 0;
-    errorCode = mainDecoder_->GetImagePropertyInt(index, IMAGE_DISPOSAL_TYPE, disposalType);
-    CHECK_ERROR_RETURN_RET_LOG(errorCode != SUCCESS, errorCode,
-        "[%{public}s] get disposal type failed", __func__);
-
-    std::shared_ptr<ImageMetadata> gifMetadata = std::make_shared<GifMetadata>();
-    CHECK_ERROR_RETURN_RET_LOG(gifMetadata == nullptr, ERR_SHAMEM_NOT_EXIST,
-        "[%{public}s] make_shared gifMetadata failed", __func__);
-    bool result = gifMetadata->SetValue(GIF_METADATA_KEY_DELAY_TIME, std::to_string(delayTime));
-    CHECK_ERROR_RETURN_RET_LOG(!result, ERR_IMAGE_DECODE_METADATA_FAILED,
-        "[%{public}s] set delay time failed", __func__);
-    result = gifMetadata->SetValue(GIF_METADATA_KEY_DISPOSAL_TYPE, std::to_string(disposalType));
-    CHECK_ERROR_RETURN_RET_LOG(!result, ERR_IMAGE_DECODE_METADATA_FAILED,
-        "[%{public}s] set disposal type failed", __func__);
-    uint32_t ret = picture->SetMetadata(MetadataType::GIF, gifMetadata);
-    CHECK_ERROR_RETURN_RET_LOG(ret != SUCCESS, ERR_IMAGE_DECODE_METADATA_FAILED,
-        "[%{public}s] set gif metadata failed", __func__);
-    return SUCCESS;
-}
-
 void ImageSource::SetSource(const std::string &source)
 {
     source_ = source;
@@ -4895,6 +4810,91 @@ DecodeContext ImageSource::DecodeImageDataToContextExtended(uint32_t index, Imag
 }
 
 #if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
+std::unique_ptr<Picture> ImageSource::CreatePictureAtIndex(
+    uint32_t index, const DecodeOptions &opts, uint32_t &errorCode)
+{
+    ImageDataStatistics imageDataStatistics("[ImageSource]CreatePictureAtIndex");
+    DumpInputData();
+
+    ImageInfo info;
+    GetImageInfo(info);
+    errorCode = CreatePictureAtIndexPreCheck(index, opts, info);
+    CHECK_ERROR_RETURN_RET_LOG(errorCode != SUCCESS, nullptr,
+        "[%{public}s] PreCheck failed, index=%{public}u, errorCode=%{public}u", __func__, index, errorCode);
+
+    std::shared_ptr<PixelMap> pixelMap = CreatePixelMap(index, opts, errorCode);
+    CHECK_ERROR_RETURN_RET_LOG(errorCode != SUCCESS, nullptr,
+        "[%{public}s] create PixelMap error, index=%{public}u, errorCode=%{public}u", __func__, index, errorCode);
+
+    std::unique_ptr<Picture> picture = Picture::Create(pixelMap);
+    if (picture == nullptr) {
+        IMAGE_LOGE("[%{public}s] create picture error", __func__);
+        errorCode = ERR_IMAGE_PICTURE_CREATE_FAILED;
+        return nullptr;
+    }
+    if (info.encodedFormat == IMAGE_GIF_FORMAT) {
+        errorCode = SetGifMetadataForPicture(picture, index);
+        CHECK_ERROR_RETURN_RET_LOG(errorCode != SUCCESS, nullptr,
+            "[%{public}s] SetGifMetadataForPicture failed, index=%{public}u, errorCode=%{public}u",
+            __func__, index, errorCode);
+    }
+    return picture;
+}
+
+uint32_t ImageSource::CreatePictureAtIndexPreCheck(uint32_t index, const DecodeOptions &opts, const ImageInfo &info)
+{
+    if (sourceStreamPtr_ == nullptr) {
+        IMAGE_LOGE("[%{public}s] sourceStreamPtr_ is nullptr", __func__);
+        return ERR_IMAGE_SOURCE_DATA;
+    }
+
+    if (info.encodedFormat != IMAGE_GIF_FORMAT) {
+        IMAGE_LOGE("[%{public}s] unsupport format: %{public}s", __func__, info.encodedFormat.c_str());
+        return ERR_IMAGE_MISMATCHED_FORMAT;
+    }
+
+    uint32_t error = ERR_MEDIA_INVALID_VALUE;
+    uint32_t frameCount = GetFrameCount(error);
+    CHECK_ERROR_RETURN_RET_LOG(error != SUCCESS, error, "[%{public}s] get frame count error", __func__);
+    if (index >= frameCount) {
+        IMAGE_LOGE("[%{public}s] invalid index(%{public}u) for frameCount(%{public}u)", __func__, index, frameCount);
+        return ERR_IMAGE_INVALID_PARAMETER;
+    }
+    return SUCCESS;
+}
+
+uint32_t ImageSource::SetGifMetadataForPicture(std::unique_ptr<Picture> &picture, uint32_t index)
+{
+    CHECK_ERROR_RETURN_RET_LOG(picture == nullptr, ERR_IMAGE_PICTURE_CREATE_FAILED,
+        "[%{public}s] picture is nullptr", __func__);
+    CHECK_ERROR_RETURN_RET_LOG(mainDecoder_ == nullptr, ERR_IMAGE_DECODE_ABNORMAL,
+        "[%{public}s] mainDecoder_ is nullptr", __func__);
+
+    int32_t delayTime = 0;
+    uint32_t errorCode = mainDecoder_->GetImagePropertyInt(index, IMAGE_DELAY_TIME, delayTime);
+    CHECK_ERROR_RETURN_RET_LOG(errorCode != SUCCESS, errorCode,
+        "[%{public}s] get delay time failed", __func__);
+
+    int32_t disposalType = 0;
+    errorCode = mainDecoder_->GetImagePropertyInt(index, IMAGE_DISPOSAL_TYPE, disposalType);
+    CHECK_ERROR_RETURN_RET_LOG(errorCode != SUCCESS, errorCode,
+        "[%{public}s] get disposal type failed", __func__);
+
+    std::shared_ptr<ImageMetadata> gifMetadata = std::make_shared<GifMetadata>();
+    CHECK_ERROR_RETURN_RET_LOG(gifMetadata == nullptr, ERR_SHAMEM_NOT_EXIST,
+        "[%{public}s] make_shared gifMetadata failed", __func__);
+    bool result = gifMetadata->SetValue(GIF_METADATA_KEY_DELAY_TIME, std::to_string(delayTime));
+    CHECK_ERROR_RETURN_RET_LOG(!result, ERR_IMAGE_DECODE_METADATA_FAILED,
+        "[%{public}s] set delay time failed", __func__);
+    result = gifMetadata->SetValue(GIF_METADATA_KEY_DISPOSAL_TYPE, std::to_string(disposalType));
+    CHECK_ERROR_RETURN_RET_LOG(!result, ERR_IMAGE_DECODE_METADATA_FAILED,
+        "[%{public}s] set disposal type failed", __func__);
+    uint32_t ret = picture->SetMetadata(MetadataType::GIF, gifMetadata);
+    CHECK_ERROR_RETURN_RET_LOG(ret != SUCCESS, ERR_IMAGE_DECODE_METADATA_FAILED,
+        "[%{public}s] set gif metadata failed", __func__);
+    return SUCCESS;
+}
+
 std::unique_ptr<Picture> ImageSource::CreatePicture(const DecodingOptionsForPicture &opts, uint32_t &errorCode)
 {
     ImageInfo info;
