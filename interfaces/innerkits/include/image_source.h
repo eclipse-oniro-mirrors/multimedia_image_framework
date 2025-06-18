@@ -200,6 +200,8 @@ public:
                                                                                 uint32_t &errorCode);
 #if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
     NATIVEEXPORT std::unique_ptr<Picture> CreatePicture(const DecodingOptionsForPicture &opts, uint32_t &errorCode);
+    NATIVEEXPORT std::unique_ptr<Picture> CreatePictureAtIndex(
+        uint32_t index, const DecodeOptions &opts, uint32_t &errorCode);
 #endif
     // for incremental source.
     NATIVEEXPORT uint32_t UpdateData(const uint8_t *data, uint32_t size, bool isCompleted);
@@ -246,8 +248,6 @@ public:
     NATIVEEXPORT std::unique_ptr<std::vector<int32_t>> GetDisposalType(uint32_t &errorCode);
     NATIVEEXPORT int32_t GetLoopCount(uint32_t &errorCode);
     NATIVEEXPORT uint32_t GetFrameCount(uint32_t &errorCode);
-    NATIVEEXPORT std::unique_ptr<Picture> CreatePictureAtIndex(
-        uint32_t index, const DecodeOptions &opts, uint32_t &errorCode);
 #ifdef IMAGE_PURGEABLE_PIXELMAP
     NATIVEEXPORT size_t GetSourceSize() const;
 #endif
@@ -380,8 +380,6 @@ private:
     bool CheckAllocatorTypeValid(const DecodeOptions &opts);
     bool CheckCropRectValid(const DecodeOptions &opts);
     void InitDecoderForJpeg();
-    uint32_t CreatePictureAtIndexPreCheck(uint32_t index, const DecodeOptions &opts, const ImageInfo &info);
-    uint32_t SetGifMetadataForPicture(std::unique_ptr<Picture> &picture, uint32_t index);
 
 #if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
     void SpecialSetComposeBuffer(sptr<SurfaceBuffer>& baseSptr, sptr<SurfaceBuffer>& gainmapSptr,
@@ -392,6 +390,8 @@ private:
     void DecodeJpegAuxiliaryPicture(std::set<AuxiliaryPictureType> &auxTypes, std::unique_ptr<Picture> &picture,
                                     uint32_t &errorCode);
     bool CheckJpegSourceStream(StreamInfo &streamInfo);
+    uint32_t CreatePictureAtIndexPreCheck(uint32_t index, const DecodeOptions &opts, const ImageInfo &info);
+    uint32_t SetGifMetadataForPicture(std::unique_ptr<Picture> &picture, uint32_t index);
 #endif
 
     const std::string NINE_PATCH = "ninepatch";
