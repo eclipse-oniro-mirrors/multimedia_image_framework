@@ -397,6 +397,8 @@ interface PixelMap {
   @gen_promise("readPixelsToBuffer")
   ReadPixelsToBufferSync(dst: @arraybuffer Array<u8>): void;
 
+  @gen_async("readPixels")
+  @gen_promise("readPixels")
   ReadPixelsSync(area: PositionArea): void;
 
   WriteBufferToPixelsSync(src: @arraybuffer Array<u8>): void;
