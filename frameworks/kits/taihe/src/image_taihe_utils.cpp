@@ -29,13 +29,13 @@ void ImageTaiheUtils::HicheckerReport()
 #endif
 }
 
-void ImageTaiheUtils::ThrowExceptionError(const std::string errMsg)
+void ImageTaiheUtils::ThrowExceptionError(const std::string &errMsg)
 {
     IMAGE_LOGE("errMsg: %{public}s", errMsg.c_str());
     taihe::set_error(errMsg);
 }
 
-void ImageTaiheUtils::ThrowExceptionError(const int32_t errCode, const std::string errMsg)
+void ImageTaiheUtils::ThrowExceptionError(const int32_t errCode, const std::string &errMsg)
 {
     IMAGE_LOGE("errCode: %{public}d, errMsg: %{public}s", errCode, errMsg.c_str());
     taihe::set_business_error(errCode, errMsg);
@@ -151,6 +151,12 @@ bool ImageTaiheUtils::GetEnumKeyByValue(ValueType value, typename EnumType::key_
     return false;
 }
 
+template <typename T>
+bool ImageTaiheUtils::IsValidPtr(T data)
+{
+    return !data.is_error();
+}
+
 template
 bool ImageTaiheUtils::GetEnumKeyByValue<ImageFormat, int32_t>(int32_t value, typename ImageFormat::key_t &key);
 
@@ -166,4 +172,16 @@ bool ImageTaiheUtils::GetEnumKeyByValue<PropertyKey, std::string>(std::string va
 template
 bool ImageTaiheUtils::GetEnumKeyByValue<AuxiliaryPictureType, int32_t>(int32_t value,
     typename AuxiliaryPictureType::key_t &key);
+
+template
+bool ImageTaiheUtils::GetEnumKeyByValue<ComponentType, int32_t>(int32_t value, typename ComponentType::key_t &key);
+
+template
+bool ImageTaiheUtils::IsValidPtr<weak::PixelMap>(weak::PixelMap data);
+
+template
+bool ImageTaiheUtils::IsValidPtr<weak::ImageSource>(weak::ImageSource data);
+
+template
+bool ImageTaiheUtils::IsValidPtr<weak::Picture>(weak::Picture data);
 } // namespace ANI::Image

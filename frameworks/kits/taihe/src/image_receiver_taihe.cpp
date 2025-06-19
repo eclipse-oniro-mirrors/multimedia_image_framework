@@ -67,18 +67,26 @@ void ImageReceiverImpl::NativeRelease()
 bool ImageReceiverImpl::AniSendEvent(const std::function<void()> cb, std::string &name)
 {
     if (cb == nullptr) {
+        IMAGE_LOGE("%{public}s callback is nullptr", __func__);
         return false;
     }
 
     if (!mainHandler_) {
         std::shared_ptr<OHOS::AppExecFwk::EventRunner> runner = OHOS::AppExecFwk::EventRunner::GetMainEventRunner();
         if (!runner) {
+            IMAGE_LOGE("%{public}s EventRunner is nullptr", __func__);
             return false;
         }
         mainHandler_ = std::make_shared<OHOS::AppExecFwk::EventHandler>(runner);
     }
 
+    if (mainHandler_ == nullptr) {
+        IMAGE_LOGE("%{public}s mainHandler_ is still nullptr", __func__);
+        return false;
+    }
+
     if (!mainHandler_->PostTask(cb, name, 0, OHOS::AppExecFwk::EventQueue::Priority::IMMEDIATE, {})) {
+        IMAGE_LOGE("%{public}s PostTask failed", __func__);
         return false;
     }
     return true;
@@ -224,7 +232,7 @@ static void DoCallBackTest(OHOS::sptr<OHOS::SurfaceBuffer> surfaceBuffer1)
 }
 #endif
 
-static struct Image ReadLatestImageSyncProcess(ImageReceiverCommonArgs &args, ImageReceiverImpl *const receiverImpl)
+static struct Image ReadImageSyncProcess(ImageReceiverCommonArgs &args, ImageReceiverImpl *const receiverImpl)
 {
     if (receiverImpl == nullptr) {
         ImageTaiheUtils::ThrowExceptionError("receiverImpl is nullptr");
@@ -285,8 +293,44 @@ struct Image ImageReceiverImpl::ReadLatestImageSync()
         }
 #endif
         struct Image image = ImageImpl::Create(nativeImage);
+        context->status = OHOS::Media::SUCCESS;
+        return image;
+    };
+
+    return ReadImageSyncProcess(args, this);
+}
+
+struct Image ImageReceiverImpl::ReadNextImageSync()
+{
+    ImageReceiverCommonArgs args = {
+        .name = "ReadNextImageSync",
+        .callBack = nullptr,
+    };
+
+    args.callBack = [](std::shared_ptr<ImageReceiverTaiheContext> &context) -> CallbackResult {
+        auto native = context->receiverImpl_->imageReceiver_;
+        if (native == nullptr) {
+            IMAGE_LOGE("Native instance is nullptr");
+            context->status = OHOS::Media::ERR_IMAGE_INIT_ABNORMAL;
+            return std::monostate{};
+        }
+        std::shared_ptr<OHOS::Media::NativeImage> nativeImage = native->NextNativeImage();
+        if (nativeImage == nullptr) {
+            IMAGE_LOGE("NextNativeImage is nullptr");
+            context->status = OHOS::Media::ERR_IMAGE_INIT_ABNORMAL;
+            return std::monostate{};
+        }
+#ifdef IMAGE_DEBUG_FLAG
+        if (context->receiverImpl_->isCallBackTest) {
+            context->receiverImpl_->isCallBackTest = false;
+#ifdef IMAGE_SAVE_BUFFER_TO_PIC
+            DoCallBackTest(nativeImage->GetBuffer());
+#endif
+        }
+#endif
+        struct Image image = ImageImpl::Create(nativeImage);
         if (::taihe::has_error()) {
-            IMAGE_LOGE("ImageImpl::Create failed!");
+            IMAGE_LOGE("%{public}s ImageImpl::Create failed!", context->name.c_str());
             context->status = OHOS::Media::ERR_IMAGE_INIT_ABNORMAL;
             return std::monostate{};
         }
@@ -294,13 +338,13 @@ struct Image ImageReceiverImpl::ReadLatestImageSync()
         return image;
     };
 
-    return ReadLatestImageSyncProcess(args, this);
+    return ReadImageSyncProcess(args, this);
 }
 
 static void DoCallBack(std::shared_ptr<ImageReceiverTaiheContext> &context)
 {
     auto localContext = std::make_unique<std::shared_ptr<ImageReceiverTaiheContext>>(context);
-    if (context == nullptr || context->env == nullptr) {
+    if (context == nullptr) {
         IMAGE_LOGE("%{public}s, localContext is nullptr", __func__);
         localContext.release();
         return;
@@ -308,14 +352,14 @@ static void DoCallBack(std::shared_ptr<ImageReceiverTaiheContext> &context)
 
     std::shared_ptr<taihe::callback<void(uintptr_t, uintptr_t)>> cacheCallback =
         std::reinterpret_pointer_cast<taihe::callback<void(uintptr_t, uintptr_t)>>(context->taiheCallback);
-    ani_object err = ImageTaiheUtils::ToBusinessError(context->env, NUM_0, "Callback is OK");
-    (*cacheCallback)(reinterpret_cast<uintptr_t>(err), ImageTaiheUtils::GetUndefinedPtr(context->env));
+    ani_object err = ImageTaiheUtils::ToBusinessError(taihe::get_env(), NUM_0, "Callback is OK");
+    (*cacheCallback)(reinterpret_cast<uintptr_t>(err), ImageTaiheUtils::GetUndefinedPtr(taihe::get_env()));
     localContext.release();
 }
 
 void ImageReceiverImpl::OnProcessSendEvent(std::shared_ptr<ImageReceiverTaiheContext> &context)
 {
-    auto task = [context] () mutable {
+    auto task = [context]() mutable {
         DoCallBack(context);
     };
     ImageReceiverImpl::AniSendEvent(task, context->name);
@@ -335,7 +379,6 @@ static void OnImageArrivalProcess(ImageReceiverCommonArgs &args, ImageReceiverIm
         return;
     }
 
-    context->env = taihe::get_env();
     context->name = args.name;
     context->callBack = args.callBack;
     context->receiverImpl_ = receiverImpl;
@@ -469,27 +512,21 @@ void ImageReceiverImpl::ReleaseSync()
     ReleaseSyncProcess(args, this);
 }
 
-ImageReceiver CreateImageReceiver(int32_t width, int32_t height, int32_t format, int32_t capacity)
+ImageReceiver CreateImageReceiver(Size const& size, ImageFormat format, int32_t capacity)
 {
-    if (!CheckFormat(format)) {
+    if (!CheckFormat(format.get_value())) {
         ImageTaiheUtils::ThrowExceptionError(OHOS::Media::COMMON_ERR_INVALID_PARAMETER, "Invalid format");
         return make_holder<ImageReceiverImpl, ImageReceiver>();
     }
 
     std::shared_ptr<OHOS::Media::ImageReceiver> imageReceiver = OHOS::Media::ImageReceiver::CreateImageReceiver(
-        width, height, format, capacity);
+        size.width, size.height, format.get_value(), capacity);
     if (imageReceiver == nullptr) {
         ImageTaiheUtils::ThrowExceptionError("Create native image receiver failed");
         return make_holder<ImageReceiverImpl, ImageReceiver>();
     }
     return make_holder<ImageReceiverImpl, ImageReceiver>(imageReceiver);
 }
-
-ImageReceiver CreateImageReceiverBySize(Size const& size, ImageFormat format, int32_t capacity)
-{
-    return CreateImageReceiver(size.width, size.height, format.get_value(), capacity);
-}
 } // namespace ANI::Image
 
 TH_EXPORT_CPP_API_CreateImageReceiver(CreateImageReceiver);
-TH_EXPORT_CPP_API_CreateImageReceiverBySize(CreateImageReceiverBySize);

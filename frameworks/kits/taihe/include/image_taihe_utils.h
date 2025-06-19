@@ -29,8 +29,8 @@ using namespace ohos::multimedia::image::image;
 class ImageTaiheUtils {
 public:
     static void HicheckerReport();
-    static void ThrowExceptionError(const std::string errMsg);
-    static void ThrowExceptionError(const int32_t errCode, const std::string errMsg);
+    static void ThrowExceptionError(const std::string &errMsg);
+    static void ThrowExceptionError(const int32_t errCode, const std::string &errMsg);
     struct ImagePropertyOptions {
         uint32_t index = 0;
         std::string defaultValueStr;
@@ -47,6 +47,9 @@ public:
 
     template <typename EnumType, typename ValueType>
     static bool GetEnumKeyByValue(ValueType value, typename EnumType::key_t &key);
+
+    template <typename T>
+    static bool IsValidPtr(T data);
 };
 } // namespace ANI::Image
 
