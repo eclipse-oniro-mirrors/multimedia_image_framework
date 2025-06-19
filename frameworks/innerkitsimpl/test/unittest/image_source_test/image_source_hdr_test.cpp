@@ -566,7 +566,7 @@ HWTEST_F(ImageSourceHdrTest, PackHdrMediaTypeMarkerTest001, TestSize.Level3)
 
 /**
  * @tc.name: CheckPhotoDesiredPixelForamt001
- * @tc.desc: Test IsHdrImage()
+ * @tc.desc: Test PhotoDesiredPixelForamt
  * @tc.type: FUNC
  */
 HWTEST_F(ImageSourceHdrTest, CheckPhotoDesiredPixelForamt001, TestSize.Level3)
@@ -593,6 +593,135 @@ HWTEST_F(ImageSourceHdrTest, CheckPhotoDesiredPixelForamt001, TestSize.Level3)
     ASSERT_EQ(isHdr, true);
     ASSERT_EQ(isYcbcrP010, true);
 #endif
+}
+
+
+/**
+ * @tc.name: CheckPhotoDesiredPixelForamt002
+ * @tc.desc: Test PhotoDesiredPixelForamt
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageSourceHdrTest, CheckPhotoDesiredPixelForamt002, TestSize.Level3)
+{
+    uint32_t errorCode = 0;
+    SourceOptions opts;
+    std::unique_ptr<ImageSource> imageSource =
+        ImageSource::CreateImageSource(IMAGE_INPUT_JPEG_HDR_VIVID_PATH, opts, errorCode);
+    ASSERT_EQ(errorCode, SUCCESS);
+    ASSERT_NE(imageSource.get(), nullptr);
+
+    uint32_t index = 0;
+    DecodeOptions optsPixel;
+    optsPixel.desiredDynamicRange = Media::DecodeDynamicRange::SDR;
+    optsPixel.photoDesiredPixelFormat = Media::PixelFormat::YCBCR_P010;
+    errorCode = 0;
+    std::unique_ptr<PixelMap> pixelMap = imageSource->CreatePixelMap(index, optsPixel, errorCode);
+    ASSERT_NE(errorCode, SUCCESS);
+    ASSERT_EQ(pixelMap.get(), nullptr);
+}
+
+/**
+ * @tc.name: CheckPhotoDesiredPixelForamt003
+ * @tc.desc: Test PhotoDesiredPixelForamt
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageSourceHdrTest, CheckPhotoDesiredPixelForamt003, TestSize.Level3)
+{
+    uint32_t errorCode = 0;
+    SourceOptions opts;
+    std::unique_ptr<ImageSource> imageSource =
+        ImageSource::CreateImageSource(IMAGE_INPUT_JPEG_HDR_VIVID_PATH, opts, errorCode);
+    ASSERT_EQ(errorCode, SUCCESS);
+    ASSERT_NE(imageSource.get(), nullptr);
+
+    uint32_t index = 0;
+    DecodeOptions optsPixel;
+    optsPixel.desiredDynamicRange = Media::DecodeDynamicRange::HDR;
+    optsPixel.photoDesiredPixelFormat = Media::PixelFormat::YCBCR_P010;
+    errorCode = 0;
+    std::unique_ptr<PixelMap> pixelMap = imageSource->CreatePixelMap(index, optsPixel, errorCode);
+    bool isHdr = pixelMap->IsHdr();
+    ASSERT_EQ(isHdr, true);
+}
+
+/**
+ * @tc.name: CheckPhotoDesiredPixelForamt004
+ * @tc.desc: Test PhotoDesiredPixelForamt
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageSourceHdrTest, CheckPhotoDesiredPixelForamt004, TestSize.Level3)
+{
+    uint32_t errorCode = 0;
+    SourceOptions opts;
+    std::unique_ptr<ImageSource> imageSource =
+        ImageSource::CreateImageSource(IMAGE_INPUT_JPEG_SDR_PATH, opts, errorCode);
+    ASSERT_EQ(errorCode, SUCCESS);
+    ASSERT_NE(imageSource.get(), nullptr);
+
+    uint32_t index = 0;
+    DecodeOptions optsPixel;
+    optsPixel.desiredDynamicRange = Media::DecodeDynamicRange::SDR;
+    optsPixel.desiredPixelFormat = Media::PixelFormat::RGBA_8888;
+    optsPixel.photoDesiredPixelFormat = Media::PixelFormat::NV12;
+    errorCode = 0;
+    std::unique_ptr<PixelMap> pixelMap = imageSource->CreatePixelMap(index, optsPixel, errorCode);
+    Media::PixelFormat outputPixelFormat = pixelMap->GetPixelFormat();
+    bool isNv12Format = (outputPixelFormat == Media::PixelFormat::NV12);
+    ASSERT_EQ(errorCode, SUCCESS);
+    ASSERT_NE(pixelMap.get(), nullptr);
+    bool isHdr = pixelMap->IsHdr();
+#ifdef IMAGE_VPE_FLAG
+    ASSERT_NE(isHdr, true);
+    ASSERT_EQ(isNv12Format, true);
+#endif
+}
+
+/**
+ * @tc.name: CheckPhotoDesiredPixelForamt005
+ * @tc.desc: Test PhotoDesiredPixelForamt
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageSourceHdrTest, CheckPhotoDesiredPixelForamt005, TestSize.Level3)
+{
+    uint32_t errorCode = 0;
+    SourceOptions opts;
+    std::unique_ptr<ImageSource> imageSource =
+        ImageSource::CreateImageSource(IMAGE_INPUT_JPEG_SDR_PATH, opts, errorCode);
+    ASSERT_EQ(errorCode, SUCCESS);
+    ASSERT_NE(imageSource.get(), nullptr);
+
+    uint32_t index = 0;
+    DecodeOptions optsPixel;
+    optsPixel.desiredDynamicRange = Media::DecodeDynamicRange::SDR;
+    optsPixel.photoDesiredPixelFormat = Media::PixelFormat::YCBCR_P010;
+    errorCode = 0;
+    std::unique_ptr<PixelMap> pixelMap = imageSource->CreatePixelMap(index, optsPixel, errorCode);
+    ASSERT_NE(errorCode, SUCCESS);
+    ASSERT_EQ(pixelMap.get(), nullptr);
+}
+
+/**
+ * @tc.name: CheckPhotoDesiredPixelForamt006
+ * @tc.desc: Test PhotoDesiredPixelForamt
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageSourceHdrTest, CheckPhotoDesiredPixelForamt006, TestSize.Level3)
+{
+    uint32_t errorCode = 0;
+    SourceOptions opts;
+    std::unique_ptr<ImageSource> imageSource =
+        ImageSource::CreateImageSource(IMAGE_INPUT_JPEG_SDR_PATH, opts, errorCode);
+    ASSERT_EQ(errorCode, SUCCESS);
+    ASSERT_NE(imageSource.get(), nullptr);
+
+    uint32_t index = 0;
+    DecodeOptions optsPixel;
+    optsPixel.desiredDynamicRange = Media::DecodeDynamicRange::AUTO;
+    optsPixel.photoDesiredPixelFormat = Media::PixelFormat::YCBCR_P010;
+    errorCode = 0;
+    std::unique_ptr<PixelMap> pixelMap = imageSource->CreatePixelMap(index, optsPixel, errorCode);
+    ASSERT_NE(errorCode, SUCCESS);
+    ASSERT_EQ(pixelMap.get(), nullptr);
 }
 
 /**

@@ -332,8 +332,6 @@ private:
                                                         ImagePlugin::PlImageInfo& outInfo, uint32_t& errorCode);
     bool DecodeJpegGainMap(ImageHdrType hdrType, float scale,
         ImagePlugin::DecodeContext& gainMapCtx, HdrMetadata& metadata);
-    void SpecialSetComposeBuffer(sptr<SurfaceBuffer>& baseSptr, sptr<SurfaceBuffer>& gainmapSptr,
-        sptr<SurfaceBuffer>& hdrSptr, HdrMetadata& metadata);
     void DumpInputData(const std::string& fileSuffix = "dat");
     static uint64_t GetNowTimeMicroSeconds();
     uint32_t ModifyImageProperty(std::shared_ptr<MetadataAccessor> metadataAccessor,
@@ -381,6 +379,8 @@ private:
     bool CheckCropRectValid(const DecodeOptions &opts);
     void InitDecoderForJpeg();
 #if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
+    void SpecialSetComposeBuffer(sptr<SurfaceBuffer>& baseSptr, sptr<SurfaceBuffer>& gainmapSptr,
+        sptr<SurfaceBuffer>& hdrSptr, HdrMetadata& metadata);
     void SetHdrMetadataForPicture(std::unique_ptr<Picture> &picture);
     void DecodeHeifAuxiliaryPictures(const std::set<AuxiliaryPictureType> &auxTypes, std::unique_ptr<Picture> &picture,
                                      uint32_t &errorCode);
