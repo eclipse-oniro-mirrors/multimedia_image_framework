@@ -3396,7 +3396,7 @@ static bool GetExtInfoForPixelAstc(AstcExtendInfo &extInfo, unique_ptr<PixelAstc
 {
     uint8_t colorSpace = 0;
     uint8_t pixelFmt = 0;
-    AstcHdrMetaData astcMetadata;
+    AstcMetadata astcMetadata;
 
     for (uint8_t idx = 0; idx < extInfo.extendNums; idx++) {
         AstcExtendInfoType infoType = static_cast<AstcExtendInfoType>(extInfo.extendInfoType[idx]);
@@ -3434,16 +3434,16 @@ static bool GetExtInfoForPixelAstc(AstcExtendInfo &extInfo, unique_ptr<PixelAstc
     ColorManager::ColorSpace grColorspace (static_cast<ColorManager::ColorSpaceName>(colorSpace));
     pixelAstc->InnerSetColorSpace(grColorspace, true);
 #endif
-if (static_cast(pixelFmt) == PixelFormat::RGBA_1010102 &&
-    pixelAstc->GetAllocatorType() == AllocatorType::DMA_ALLOC) {
+    if (static_cast<PixelFormat>(pixelFmt) == PixelFormat::RGBA_1010102 &&
+        pixelAstc->GetAllocatorType() == AllocatorType::DMA_ALLOC) {
         pixelAstc->SetHdr(true);
     }
     if (pixelAstc->IsHdr() && pixelAstc->GetFd() != nullptr) {
         sptr<SurfaceBuffer> dstBuffer(reinterpret_cast<SurfaceBuffer *>(pixelAstc->GetFd()));
-        dstBuffer->SetMetaData(ATTRKEY_HDR_METADATA_TYPE, astcMetadata.hdrMetadataTypeVec);
-        dstBuffer->SetMetaData(ATTRKEY_COLORSPACE_INFO, astcMetadata.colorSpaceInfoVec);
-        VpeUtils::SetSbStaticMetaData(dstBuffer, astcMetadata.staticData);
-        VpeUtils::SetSbDynamicMetaData(dstBuffer, astcMetadata.dynamicData);
+        dstBuffer->SetMetadata(ATTRKEY_HDR_METADATA_TYPE, astcMetadata.hdrMetadataTypeVec);
+        dstBuffer->SetMetadata(ATTRKEY_COLORSPACE_INFO, astcMetadata.colorSpaceInfoVec);
+        VpeUtils::SetSbStaticMetadata(dstBuffer, astcMetadata.staticData);
+        VpeUtils::SetSbDynamicMetadata(dstBuffer, astcMetadata.dynamicData);
     }
     return true;
 }

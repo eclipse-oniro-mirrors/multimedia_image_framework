@@ -2615,10 +2615,10 @@ bool PixelMap::WriteAstcInfoToParcel(Parcel &parcel) const
             IMAGE_LOGE("write astcrealSize_.height:[%{public}d] to parcel failed.", astcrealSize_.height);
             return false;
         }
-    }
-    if (!parcel.WriteBool(static_cast<PixelAstc*>(const_cast<PixelMap*>(this))->IsHdr())) {
-        IMAGE_LOGE("write astc hdr flag to parcel failed.");
-        return false;
+        if (!parcel.WriteBool(static_cast<PixelAstc*>(const_cast<PixelMap*>(this))->IsHdr())) {
+            IMAGE_LOGE("write astc hdr flag to parcel failed.");
+            return false;
+        }
     }
     return true;
 }

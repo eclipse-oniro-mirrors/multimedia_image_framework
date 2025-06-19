@@ -50,7 +50,6 @@ public:
     NATIVEEXPORT uint8_t GetARGB32ColorR(uint32_t color) override;
     NATIVEEXPORT uint8_t GetARGB32ColorG(uint32_t color) override;
     NATIVEEXPORT uint8_t GetARGB32ColorB(uint32_t color) override;
-    NATIVEEXPORT int32_t GetRowStride() override;
     NATIVEEXPORT void *GetWritablePixels() const override;
     NATIVEEXPORT uint32_t GetUniqueId() const override
     {

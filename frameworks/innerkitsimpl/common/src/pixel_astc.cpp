@@ -245,12 +245,6 @@ bool PixelAstc::IsTransformered()
     return false;
 }
 
-int32_t PixelAstc::GetRowStride()
-{
-    IMAGE_LOGD("GetRowStride is not support on pixelastc");
-    return 0;
-}
-
 bool PixelAstc::IsSourceAsResponse()
 {
     IMAGE_LOGE("IsSourceAsResponse is not support on pixelastc");

@@ -957,8 +957,8 @@ bool AllocMemForExtInfo(AstcExtendInfo &extendInfo, uint8_t idx)
         case AstcExtendInfoType::PIXEL_FORMAT:
             // These types only require memory allocation and do not require data initialization
             return AllocAndCopy(ASTC_EXTEND_INFO_COLOR_SPACE_VALUE_LENGTH,
-                               nullptr,
-                               type == COLOR_SPACE ? "SetColorSpaceInfo" : "SetPixelFormatInfo");
+                               nullptr, type == AstcExtendInfoType::COLOR_SPACE ?
+                               "SetColorSpaceInfo" : "SetPixelFormatInfo");
         case AstcExtendInfoType::HDR_METADATA_TYPE:
             return AllocAndCopy(extendInfo.astcMetadata.hdrMetadataTypeVec.size(),
                                extendInfo.astcMetadata.hdrMetadataTypeVec.data(),
@@ -1098,7 +1098,7 @@ void AstcCodec::WriteAstcExtendInfo(uint8_t *buffer, uint32_t offset, AstcExtend
             case AstcExtendInfoType::HDR_COLORSPACE_INFO:
             case AstcExtendInfoType::HDR_STATIC_DATA:
             case AstcExtendInfoType::HDR_DYNAMIC_DATA:
-                if (extendInfo.extendInfoValue[idx] == nullptr||`
+                if (extendInfo.extendInfoValue[idx] == nullptr||
                     extendInfo.extendInfoLength[idx] <= 0 ||
                     memcpy_s(offsetBuffer, extendInfo.extendInfoLength[idx],
                     extendInfo.extendInfoValue[idx], extendInfo.extendInfoLength[idx]) != 0) {
