@@ -49,6 +49,8 @@ namespace Media {
 #define HEIF_AUXTTYPE_ID_LINEAR_MAP "urn:com:huawei:photo:5:0:0:aux:linearhmap"
 #define HEIF_AUXTTYPE_ID_FRAGMENT_MAP "urn:com:huawei:photo:5:0:0:aux:fragmentmap"
 
+constexpr uint8_t ASTC_EXTEND_INFO_TLV_NUM_6 = 6;
+
 #define RFIMAGE_ID "urn:com:huawei:photo:5:1:0:meta:Res-Map"
 #define METADATA_TAG_RESMAP "Res-Map\0"
 
@@ -440,6 +442,31 @@ struct YUVConvertColorSpaceDetails {
     uint8_t dstRange = 0;
     YuvConversion srcYuvConversion = YuvConversion::BT601;
     YuvConversion dstYuvConversion = YuvConversion::BT601;
+};
+
+struct AstcMetadata {
+    std::vector<uint8_t> hdrMetadataTypeVec;
+    std::vector<uint8_t> colorSpaceInfoVec;
+    std::vector<uint8_t> staticData;
+    std::vector<uint8_t> dynamicData;
+};
+
+struct AstcExtendInfo {
+    uint32_t extendBufferSumBytes = 0;
+    uint8_t extendNums = ASTC_EXTEND_INFO_TLV_NUM_6;
+    uint8_t extendInfoType[ASTC_EXTEND_INFO_TLV_NUM_6];
+    uint32_t extendInfoLength[ASTC_EXTEND_INFO_TLV_NUM_6];
+    uint8_t *extendInfoValue[ASTC_EXTEND_INFO_TLV_NUM_6];
+    AstcMetadata astcMetadata; // metadata for astc
+};
+
+enum class AstcExtendInfoType : uint8_t {
+    COLOR_SPACE = 0,
+    PIXEL_FORMAT = 1,
+    HDR_METADATA_TYPE = 2,
+    HDR_COLORSPACE_INFO = 3,
+    HDR_STATIC_DATA = 4,
+    HDR_DYNAMIC_DATA = 5,
 };
 } // namespace Media
 } // namespace OHOS

@@ -46,6 +46,7 @@ private:
         AstcExtendInfo &extendInfo);
     bool InitBeforeAstcEncode(ImageInfo &imageInfo, TextureEncodeOptions &param, uint8_t &colorData,
         uint8_t **pixmapIn, uint32_t &stride);
+    bool FillMetaData(AstcExtendInfo &extendInfo, PixelMap *astcPixelMap);
 private:
     DISALLOW_COPY_AND_MOVE(AstcCodec);
     OutputDataStream* astcOutput_ = nullptr;
