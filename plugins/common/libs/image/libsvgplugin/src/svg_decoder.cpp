@@ -63,10 +63,8 @@ bool AllocShareBufferInner(DecodeContext &context, uint64_t byteCount)
         '_' << std::to_string(id);
     std::string name = sstream.str();
     int fd = AshmemCreate(name.c_str(), byteCount);
-    if (fd < 0) {
-        IMAGE_LOGE("[AllocShareBuffer] create fail");
-        return false;
-    }
+    bool cond = (fd < 0);
+    CHECK_ERROR_RETURN_RET_LOG(cond, false, "[AllocShareBuffer] create fail");
 
     int result = AshmemSetProt(fd, PROT_READ | PROT_WRITE);
     if (result < 0) {
@@ -108,11 +106,9 @@ bool AllocShareBuffer(DecodeContext &context, uint64_t byteCount)
     IMAGE_LOGD("[AllocShareBuffer] IN byteCount=%{public}llu",
         static_cast<unsigned long long>(byteCount));
 
-    if (byteCount > PIXEL_MAP_MAX_RAM_SIZE) {
-        IMAGE_LOGE("[AllocShareBuffer] pixelmap buffer size %{public}llu out of max size",
-            static_cast<unsigned long long>(byteCount));
-        return false;
-    }
+    bool cond = (byteCount > PIXEL_MAP_MAX_RAM_SIZE);
+    CHECK_ERROR_RETURN_RET_LOG(cond, false, "[AllocShareBuffer] pixelmap buffer size %{public}llu out of max size",
+        static_cast<unsigned long long>(byteCount));
 #if !defined(_WIN32) && !defined(_APPLE) && !defined(ANDROID_PLATFORM) && !defined(IOS_PLATFORM)
     return AllocShareBufferInner(context, byteCount);
 #else
@@ -125,12 +121,9 @@ bool AllocDmaBuffer(DecodeContext &context, uint64_t byteCount, SkSize &svgSize)
 {
     IMAGE_LOGD("[AllocDmaBuffer] IN byteCount=%{public}llu",
         static_cast<unsigned long long>(byteCount));
-
-    if (byteCount > PIXEL_MAP_MAX_RAM_SIZE) {
-        IMAGE_LOGE("[AllocDmaBuffer] pixelmap buffer size %{public}llu out of max size",
-            static_cast<unsigned long long>(byteCount));
-        return false;
-    }
+    bool cond = (byteCount > PIXEL_MAP_MAX_RAM_SIZE);
+    CHECK_ERROR_RETURN_RET_LOG(cond, false, "[AllocDmaBuffer] pixelmap buffer size %{public}llu out of max size",
+        static_cast<unsigned long long>(byteCount));
 #if !defined(_WIN32) && !defined(_APPLE) && !defined(ANDROID_PLATFORM) && !defined(IOS_PLATFORM)
     sptr<SurfaceBuffer> sb = SurfaceBuffer::Create();
     BufferRequestConfig requestConfig = {
@@ -144,16 +137,12 @@ bool AllocDmaBuffer(DecodeContext &context, uint64_t byteCount, SkSize &svgSize)
         .transform = GraphicTransformType::GRAPHIC_ROTATE_NONE,
     };
     GSError ret = sb->Alloc(requestConfig);
-    if (ret != GSERROR_OK) {
-        IMAGE_LOGE("SurfaceBuffer Alloc failed, %{public}s", GSErrorStr(ret).c_str());
-        return false;
-    }
+    cond = (ret != GSERROR_OK);
+    CHECK_ERROR_RETURN_RET_LOG(cond, false, "SurfaceBuffer Alloc failed, %{public}s", GSErrorStr(ret).c_str());
     void* nativeBuffer = sb.GetRefPtr();
     int32_t err = ImageUtils::SurfaceBuffer_Reference(nativeBuffer);
-    if (err != OHOS::GSERROR_OK) {
-        IMAGE_LOGE("NativeBufferReference failed");
-        return false;
-    }
+    cond = (err != OHOS::GSERROR_OK);
+    CHECK_ERROR_RETURN_RET_LOG(cond, false, "NativeBufferReference failed");
 
     context.pixelsBuffer.buffer = sb->GetVirAddr();
     context.pixelsBuffer.context = nativeBuffer;
@@ -174,18 +163,14 @@ bool AllocHeapBuffer(DecodeContext &context, uint64_t byteCount)
     IMAGE_LOGD("[AllocHeapBuffer] IN byteCount=%{public}llu",
         static_cast<unsigned long long>(byteCount));
 
-    if (byteCount > PIXEL_MAP_MAX_RAM_SIZE) {
-        IMAGE_LOGE("[AllocHeapBuffer] pixelmap buffer size %{public}llu out of max size",
-            static_cast<unsigned long long>(byteCount));
-        return false;
-    }
+    bool cond = (byteCount > PIXEL_MAP_MAX_RAM_SIZE);
+    CHECK_ERROR_RETURN_RET_LOG(cond, false, "[AllocHeapBuffer] pixelmap buffer size %{public}llu out of max size",
+        static_cast<unsigned long long>(byteCount));
 
     auto outputBuffer = malloc(byteCount);
-    if (outputBuffer == nullptr) {
-        IMAGE_LOGE("[AllocHeapBuffer] alloc buffer size:[%{public}llu] failed.",
-            static_cast<unsigned long long>(byteCount));
-        return false;
-    }
+    cond = (outputBuffer == nullptr);
+    CHECK_ERROR_RETURN_RET_LOG(cond, false, "[AllocHeapBuffer] alloc buffer size:[%{public}llu] failed.",
+        static_cast<unsigned long long>(byteCount));
 
     if (memset_s(outputBuffer, byteCount, 0, byteCount) != EOK) {
         IMAGE_LOGE("[AllocHeapBuffer] memset buffer failed.");
@@ -266,21 +251,18 @@ void SvgDecoder::Reset()
 
 uint32_t SvgDecoder::SetDecodeOptions(uint32_t index, const PixelDecodeOptions &opts, PlImageInfo &info)
 {
-    if (index >= SVG_IMAGE_NUM) {
-        IMAGE_LOGE("[SetDecodeOptions] decode image index[%{public}u], out of range[%{public}u].",
-            index, SVG_IMAGE_NUM);
-        return Media::ERR_IMAGE_INVALID_PARAMETER;
-    }
+    bool cond = (index >= SVG_IMAGE_NUM);
+    CHECK_ERROR_RETURN_RET_LOG(cond, Media::ERR_IMAGE_INVALID_PARAMETER,
+        "[SetDecodeOptions] decode image index[%{public}u], out of range[%{public}u].", index, SVG_IMAGE_NUM);
 
     IMAGE_LOGD("[SetDecodeOptions] IN index=%{public}u, pixelFormat=%{public}d, alphaType=%{public}d, "
         "colorSpace=%{public}d, size=(%{public}u, %{public}u), state=%{public}d", index,
         static_cast<int32_t>(opts.desiredPixelFormat), static_cast<int32_t>(opts.desireAlphaType),
         static_cast<int32_t>(opts.desiredColorSpace), opts.desiredSize.width, opts.desiredSize.height, state_);
 
-    if (state_ < SvgDecodingState::SOURCE_INITED) {
-        IMAGE_LOGE("[SetDecodeOptions] set decode options failed for state %{public}d.", state_);
-        return Media::ERR_MEDIA_INVALID_OPERATION;
-    }
+    cond = (state_ < SvgDecodingState::SOURCE_INITED);
+    CHECK_ERROR_RETURN_RET_LOG(cond, Media::ERR_MEDIA_INVALID_OPERATION,
+        "[SetDecodeOptions] set decode options failed for state %{public}d.", state_);
 
     if (state_ >= SvgDecodingState::IMAGE_DECODING) {
         state_ = SvgDecodingState::SOURCE_INITED;
@@ -314,18 +296,15 @@ uint32_t SvgDecoder::SetDecodeOptions(uint32_t index, const PixelDecodeOptions &
 uint32_t SvgDecoder::Decode(uint32_t index, DecodeContext &context)
 {
     ImageTrace imageTrace("SvgDecoder::Decode, index:%u", index);
-    if (index >= SVG_IMAGE_NUM) {
-        IMAGE_LOGE("[Decode] decode image index[%{public}u], out of range[%{public}u].",
-            index, SVG_IMAGE_NUM);
-        return Media::ERR_IMAGE_INVALID_PARAMETER;
-    }
+    bool cond = (index >= SVG_IMAGE_NUM);
+    CHECK_ERROR_RETURN_RET_LOG(cond, Media::ERR_IMAGE_INVALID_PARAMETER,
+        "[Decode] decode image index[%{public}u], out of range[%{public}u].", index, SVG_IMAGE_NUM);
 
     IMAGE_LOGD("[Decode] IN index=%{public}u", index);
 
-    if (state_ < SvgDecodingState::IMAGE_DECODING) {
-        IMAGE_LOGE("[Decode] decode failed for state %{public}d.", state_);
-        return Media::ERR_MEDIA_INVALID_OPERATION;
-    }
+    cond = (state_ < SvgDecodingState::IMAGE_DECODING);
+    CHECK_ERROR_RETURN_RET_LOG(cond, Media::ERR_MEDIA_INVALID_OPERATION,
+        "[Decode] decode failed for state %{public}d.", state_);
 
     uint32_t ret = DoDecode(index, context);
     if (ret == Media::SUCCESS) {
@@ -356,18 +335,15 @@ uint32_t SvgDecoder::GetTopLevelImageNum(uint32_t &num)
 // return background size but not specific frame size, cause of frame drawing on background.
 uint32_t SvgDecoder::GetImageSize(uint32_t index, Size &size)
 {
-    if (index >= SVG_IMAGE_NUM) {
-        IMAGE_LOGE("[GetImageSize] decode image index[%{public}u], out of range[%{public}u].",
-            index, SVG_IMAGE_NUM);
-        return Media::ERR_IMAGE_INVALID_PARAMETER;
-    }
+    bool cond = (index >= SVG_IMAGE_NUM);
+    CHECK_ERROR_RETURN_RET_LOG(cond, Media::ERR_IMAGE_INVALID_PARAMETER,
+        "[GetImageSize] decode image index[%{public}u], out of range[%{public}u].", index, SVG_IMAGE_NUM);
 
     IMAGE_LOGD("[GetImageSize] IN index=%{public}u", index);
 
-    if (state_ < SvgDecodingState::SOURCE_INITED) {
-        IMAGE_LOGE("[GetImageSize] get image size failed for state %{public}d.", state_);
-        return ERR_MEDIA_INVALID_OPERATION;
-    }
+    cond = (state_ < SvgDecodingState::SOURCE_INITED);
+    CHECK_ERROR_RETURN_RET_LOG(cond, ERR_MEDIA_INVALID_OPERATION,
+        "[GetImageSize] get image size failed for state %{public}d.", state_);
 
     if (state_ >= SvgDecodingState::BASE_INFO_PARSED) {
         DoGetImageSize(index, size);
@@ -400,10 +376,8 @@ bool SvgDecoder::AllocBuffer(DecodeContext &context)
 {
     IMAGE_LOGD("[AllocBuffer] IN");
 
-    if (svgDom_ == nullptr) {
-        IMAGE_LOGE("[AllocBuffer] DOM is null.");
-        return false;
-    }
+    bool cond = (svgDom_ == nullptr);
+    CHECK_ERROR_RETURN_RET_LOG(cond, false, "[AllocBuffer] DOM is null.");
 
     bool ret = true;
     if (context.pixelsBuffer.buffer == nullptr) {
@@ -432,10 +406,8 @@ bool SvgDecoder::BuildStream()
 {
     IMAGE_LOGD("[BuildStream] IN");
 
-    if (inputStreamPtr_ == nullptr) {
-        IMAGE_LOGE("[BuildStream] Stream is null.");
-        return false;
-    }
+    bool cond = (inputStreamPtr_ == nullptr);
+    CHECK_ERROR_RETURN_RET_LOG(cond, false, "[BuildStream] Stream is null.");
 
     auto length = inputStreamPtr_->GetStreamSize();
     if (inputStreamPtr_->GetStreamType() == ImagePlugin::BUFFER_SOURCE_TYPE) {
@@ -481,22 +453,16 @@ bool SvgDecoder::BuildDom()
 {
     IMAGE_LOGD("[BuildDom] IN");
 
-    if (svgStream_ == nullptr) {
-        IMAGE_LOGE("[BuildDom] Stream is null.");
-        return false;
-    }
+    bool cond = (svgStream_ == nullptr);
+    CHECK_ERROR_RETURN_RET_LOG(cond, false, "[BuildDom] Stream is null.");
 
     svgDom_ = SkSVGDOM::MakeFromStream(*(svgStream_.get()));
-    if (svgDom_ == nullptr) {
-        IMAGE_LOGE("[BuildDom] DOM is null.");
-        return false;
-    }
+    cond = (svgDom_ == nullptr);
+    CHECK_ERROR_RETURN_RET_LOG(cond, false, "[BuildDom] DOM is null.");
 
     svgSize_ = svgDom_->containerSize();
-    if (svgSize_.isEmpty()) {
-        IMAGE_LOGE("[BuildDom] size is empty.");
-        return false;
-    }
+    cond = svgSize_.isEmpty();
+    CHECK_ERROR_RETURN_RET_LOG(cond, false, "[BuildDom] size is empty.");
 
     auto width = Float2UInt32(svgSize_.width());
     auto height = Float2UInt32(svgSize_.height());
@@ -508,16 +474,11 @@ bool SvgDecoder::BuildDom()
 uint32_t SvgDecoder::DoDecodeHeader()
 {
     IMAGE_LOGD("[DoDecodeHeader] IN");
+    bool cond = BuildStream();
+    CHECK_ERROR_RETURN_RET_LOG(!cond, Media::ERR_IMAGE_TOO_LARGE, "[DoDecodeHeader] Build Stream failed");
 
-    if (!BuildStream()) {
-        IMAGE_LOGE("[DoDecodeHeader] Build Stream failed");
-        return Media::ERR_IMAGE_TOO_LARGE;
-    }
-
-    if (!BuildDom()) {
-        IMAGE_LOGE("[DoDecodeHeader] Build DOM failed");
-        return Media::ERR_IMAGE_DATA_UNSUPPORT;
-    }
+    cond = BuildDom();
+    CHECK_ERROR_RETURN_RET_LOG(!cond, Media::ERR_IMAGE_DATA_UNSUPPORT, "[DoDecodeHeader] Build DOM failed");
 
     IMAGE_LOGD("[DoDecodeHeader] OUT");
     return Media::SUCCESS;
@@ -525,12 +486,10 @@ uint32_t SvgDecoder::DoDecodeHeader()
 
 bool IsSrcRectContainsDistRect(const OHOS::Media::Rect &srcRect, const OHOS::Media::Rect &distRect)
 {
-    if (srcRect.left < 0 || srcRect.top < 0 || srcRect.width <= 0 || srcRect.height <= 0) {
-        return false;
-    }
-    if (distRect.left < 0 || distRect.top < 0 || distRect.width <= 0 || distRect.height <= 0) {
-        return false;
-    }
+    bool cond = (srcRect.left < 0 || srcRect.top < 0 || srcRect.width <= 0 || srcRect.height <= 0);
+    CHECK_ERROR_RETURN_RET(cond, false);
+    cond = (distRect.left < 0 || distRect.top < 0 || distRect.width <= 0 || distRect.height <= 0);
+    CHECK_ERROR_RETURN_RET(cond, false);
     return srcRect.left <= distRect.left && srcRect.top <= distRect.top &&
         (srcRect.left + srcRect.width) >= (distRect.left + distRect.width) &&
         (srcRect.top + srcRect.height) >= (distRect.top + distRect.height);
@@ -555,23 +514,16 @@ bool CheckCropRectValid(const PixelDecodeOptions &opts, const SkSize &svgSize)
 uint32_t SvgDecoder::DoSetDecodeOptions(uint32_t index, const PixelDecodeOptions &opts, PlImageInfo &info)
 {
     IMAGE_LOGD("[DoSetDecodeOptions] IN index=%{public}u", index);
-
-    if (svgDom_ == nullptr) {
-        IMAGE_LOGE("[DoSetDecodeOptions] DOM is null.");
-        return Media::ERROR;
-    }
+    bool cond = (svgDom_ == nullptr);
+    CHECK_ERROR_RETURN_RET_LOG(cond, Media::ERROR, "[DoSetDecodeOptions] DOM is null.");
 
     opts_ = opts;
 
     auto svgSize = svgDom_->containerSize();
-    if (svgSize.isEmpty()) {
-        IMAGE_LOGE("[DoSetDecodeOptions] size is empty.");
-        return Media::ERROR;
-    }
-    if (!CheckCropRectValid(opts_, svgSize)) {
-        IMAGE_LOGI("crop rect is invalid.");
-        return ERR_MEDIA_INVALID_OPERATION;
-    }
+    cond = (svgSize.isEmpty());
+    CHECK_ERROR_RETURN_RET_LOG(cond, Media::ERROR, "[DoSetDecodeOptions] size is empty.");
+    cond = (CheckCropRectValid(opts_, svgSize));
+    CHECK_ERROR_RETURN_RET_LOG(!cond, ERR_MEDIA_INVALID_OPERATION, "crop rect is invalid.");
 
     float scaleFitDesired = 1.0;
     if (opts_.desiredSize.width && opts_.desiredSize.height &&
@@ -605,17 +557,12 @@ uint32_t SvgDecoder::DoSetDecodeOptions(uint32_t index, const PixelDecodeOptions
 uint32_t SvgDecoder::DoGetImageSize(uint32_t index, Size &size)
 {
     IMAGE_LOGD("[DoGetImageSize] IN index=%{public}u", index);
-
-    if (svgDom_ == nullptr) {
-        IMAGE_LOGE("[DoGetImageSize] DOM is null.");
-        return Media::ERROR;
-    }
+    bool cond = (svgDom_ == nullptr);
+    CHECK_ERROR_RETURN_RET_LOG(cond, Media::ERROR, "[DoGetImageSize] DOM is null.");
 
     auto svgSize = svgDom_->containerSize();
-    if (svgSize.isEmpty()) {
-        IMAGE_LOGE("[DoGetImageSize] size is empty.");
-        return Media::ERROR;
-    }
+    cond = (svgSize.isEmpty());
+    CHECK_ERROR_RETURN_RET_LOG(cond, Media::ERROR, "[DoGetImageSize] size is empty.");
 
     size.width = static_cast<int32_t>(Float2UInt32(svgSize.width()));
     size.height = static_cast<int32_t>(Float2UInt32(svgSize.height()));
@@ -628,10 +575,8 @@ uint32_t SvgDecoder::DoDecode(uint32_t index, DecodeContext &context)
 {
     IMAGE_LOGD("[DoDecode] IN index=%{public}u", index);
 
-    if (svgDom_ == nullptr) {
-        IMAGE_LOGE("[DoDecode] DOM is null.");
-        return Media::ERROR;
-    }
+    bool cond = (svgDom_ == nullptr);
+    CHECK_ERROR_RETURN_RET_LOG(cond, Media::ERROR, "[DoDecode] DOM is null.");
 
     if (opts_.plFillColor.isValidColor) {
         SetSVGColor(svgDom_->getRoot(), opts_.plFillColor.color, SVG_FILL_COLOR_ATTR);
@@ -641,34 +586,26 @@ uint32_t SvgDecoder::DoDecode(uint32_t index, DecodeContext &context)
         SetSVGColor(svgDom_->getRoot(), opts_.plStrokeColor.color, SVG_STROKE_COLOR_ATTR);
     }
 
-    if (!AllocBuffer(context)) {
-        IMAGE_LOGE("[DoDecode] alloc buffer failed.");
-        return Media::ERR_IMAGE_MALLOC_ABNORMAL;
-    }
+    cond = AllocBuffer(context);
+    CHECK_ERROR_RETURN_RET_LOG(!cond, Media::ERR_IMAGE_MALLOC_ABNORMAL, "[DoDecode] alloc buffer failed.");
 
     auto imageInfo = MakeImageInfo(opts_);
     auto rowBytes = static_cast<uint32_t>(opts_.desiredSize.width * SVG_BYTES_PER_PIXEL);
     auto pixels = context.pixelsBuffer.buffer;
 
     SkBitmap bitmap;
-    if (!bitmap.installPixels(imageInfo, pixels, rowBytes)) {
-        IMAGE_LOGE("[DoDecode] bitmap install pixels failed.");
-        return Media::ERROR;
-    }
+    cond = bitmap.installPixels(imageInfo, pixels, rowBytes);
+    CHECK_ERROR_RETURN_RET_LOG(!cond, Media::ERROR, "[DoDecode] bitmap install pixels failed.");
 
     auto canvas = SkCanvas::MakeRasterDirect(imageInfo, bitmap.getPixels(), bitmap.rowBytes());
-    if (canvas == nullptr) {
-        IMAGE_LOGE("[DoDecode] make canvas failed.");
-        return Media::ERROR;
-    }
+    cond = (canvas == nullptr);
+    CHECK_ERROR_RETURN_RET_LOG(cond, Media::ERROR, "[DoDecode] make canvas failed.");
+
     canvas->clear(SK_ColorTRANSPARENT);
     svgDom_->render(canvas.get());
 
     bool result = canvas->readPixels(imageInfo, pixels, rowBytes, 0, 0);
-    if (!result) {
-        IMAGE_LOGE("[DoDecode] read pixels failed.");
-        return Media::ERROR;
-    }
+    CHECK_ERROR_RETURN_RET_LOG(!result, Media::ERROR, "[DoDecode] read pixels failed.");
 
     IMAGE_LOGD("[DoDecode] OUT");
     ImageUtils::FlushContextSurfaceBuffer(context);

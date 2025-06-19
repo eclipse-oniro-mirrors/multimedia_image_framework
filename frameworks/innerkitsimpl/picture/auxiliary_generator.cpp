@@ -244,16 +244,12 @@ static std::shared_ptr<PixelMap> CreatePixelMapByContext(DecodeContext &context,
 static uint32_t DecodeHdrMetadata(ImageHdrType hdrType, std::unique_ptr<AbsImageDecoder> &extDecoder,
     std::unique_ptr<AuxiliaryPicture> &auxPicture)
 {
-    if (auxPicture == nullptr) {
-        IMAGE_LOGE("DecodeHdrMetadata: AuxiliaryPicture is null");
-        return ERR_IMAGE_GET_DATA_ABNORMAL;
-    }
+    bool cond = (auxPicture == nullptr);
+    CHECK_ERROR_RETURN_RET_LOG(cond, ERR_IMAGE_GET_DATA_ABNORMAL, "DecodeHdrMetadata: AuxiliaryPicture is null");
     std::shared_ptr<HdrMetadata> hdrMetadata = std::make_shared<HdrMetadata>(extDecoder->GetHdrMetadata(hdrType));
     std::shared_ptr<PixelMap> pixelMap = auxPicture->GetContentPixel();
-    if (pixelMap == nullptr) {
-        IMAGE_LOGE("Get invalid content pixel map for hdr metadata");
-        return ERR_IMAGE_GET_DATA_ABNORMAL;
-    }
+    cond = (pixelMap == nullptr);
+    CHECK_ERROR_RETURN_RET_LOG(cond, ERR_IMAGE_GET_DATA_ABNORMAL, "Get invalid content pixel map for hdr metadata");
     pixelMap->SetHdrMetadata(hdrMetadata);
     pixelMap->SetHdrType(hdrType);
     return SUCCESS;
@@ -263,10 +259,8 @@ static uint32_t DecodeHeifFragmentMetadata(std::unique_ptr<AbsImageDecoder> &ext
     std::unique_ptr<AuxiliaryPicture> &auxPicture)
 {
     Rect fragmentRect;
-    if (!extDecoder->GetHeifFragmentMetadata(fragmentRect)) {
-        IMAGE_LOGE("Heif parsing fragment metadata failed");
-        return ERR_IMAGE_GET_DATA_ABNORMAL;
-    }
+    bool cond = extDecoder->GetHeifFragmentMetadata(fragmentRect);
+    CHECK_ERROR_RETURN_RET_LOG(!cond, ERR_IMAGE_GET_DATA_ABNORMAL, "Heif parsing fragment metadata failed");
     std::shared_ptr<ImageMetadata> fragmentMetadata = std::make_shared<FragmentMetadata>();
     fragmentMetadata->SetValue(FRAGMENT_METADATA_KEY_X, std::to_string(fragmentRect.left));
     fragmentMetadata->SetValue(FRAGMENT_METADATA_KEY_Y, std::to_string(fragmentRect.top));
@@ -282,10 +276,8 @@ static uint32_t DecodeJpegFragmentMetadata(std::unique_ptr<InputDataStream> &aux
     uint8_t *data = auxStream->GetDataPtr();
     uint32_t size = auxStream->GetStreamSize();
     Rect fragmentRect;
-    if (!JpegMpfParser::ParsingFragmentMetadata(data, size, fragmentRect)) {
-        IMAGE_LOGE("Jpeg parsing fragment metadata failed");
-        return ERR_IMAGE_GET_DATA_ABNORMAL;
-    }
+    bool cond = JpegMpfParser::ParsingFragmentMetadata(data, size, fragmentRect);
+    CHECK_ERROR_RETURN_RET_LOG(!cond, ERR_IMAGE_GET_DATA_ABNORMAL, "Jpeg parsing fragment metadata failed");
     std::shared_ptr<ImageMetadata> fragmentMetadata = std::make_shared<FragmentMetadata>();
     fragmentMetadata->SetValue(FRAGMENT_METADATA_KEY_X, std::to_string(fragmentRect.left));
     fragmentMetadata->SetValue(FRAGMENT_METADATA_KEY_Y, std::to_string(fragmentRect.top));
@@ -324,15 +316,11 @@ static uint32_t CopyToSurfaceBuffer(std::unique_ptr<InputDataStream> &stream, sp
     uint32_t srcSize = stream->GetStreamSize();
     uint8_t *dst = static_cast<uint8_t *>(surfaceBuffer->GetVirAddr());
     uint32_t dstSize = surfaceBuffer->GetSize();
-    if (src == nullptr || dst == nullptr || srcSize == 0 || dstSize == 0) {
-        IMAGE_LOGE("%{public}s: invalid input data", __func__);
-        return ERR_IMAGE_INVALID_PARAMETER;
-    }
+    bool cond = (src == nullptr || dst == nullptr || srcSize == 0 || dstSize == 0);
+    CHECK_ERROR_RETURN_RET_LOG(cond, ERR_IMAGE_INVALID_PARAMETER, "%{public}s: invalid input data", __func__);
     IMAGE_LOGD("SurfaceBuffer size: %{public}u, stream size: %{public}u", dstSize, srcSize);
-    if (memcpy_s(dst, dstSize, src, srcSize) != EOK) {
-        IMAGE_LOGE("%{public}s: memcpy failed", __func__);
-        return ERR_MEMORY_COPY_FAILED;
-    }
+    cond = (memcpy_s(dst, dstSize, src, srcSize) != EOK);
+    CHECK_ERROR_RETURN_RET_LOG(cond, ERR_MEMORY_COPY_FAILED, "%{public}s: memcpy failed", __func__);
     return SUCCESS;
 }
 
@@ -407,19 +395,16 @@ std::shared_ptr<AuxiliaryPicture> AuxiliaryGenerator::GenerateHeifAuxiliaryPictu
     }
 
     auto auxPicture = GenerateAuxiliaryPicture(mainInfo, type, IMAGE_HEIF_FORMAT, extDecoder, errorCode);
-    if (errorCode != SUCCESS) {
-        IMAGE_LOGE("Generate heif auxiliary picture failed! errorCode: %{public}u", errorCode);
-        return nullptr;
-    }
+    bool cond = (errorCode != SUCCESS);
+    CHECK_ERROR_RETURN_RET_LOG(cond, nullptr,
+        "Generate heif auxiliary picture failed! errorCode: %{public}u", errorCode);
     if (type == AuxiliaryPictureType::GAINMAP) {
         errorCode = DecodeHdrMetadata(mainInfo.hdrType, extDecoder, auxPicture);
     } else if (type == AuxiliaryPictureType::FRAGMENT_MAP) {
         errorCode = DecodeHeifFragmentMetadata(extDecoder, auxPicture);
     }
-    if (errorCode != SUCCESS) {
-        IMAGE_LOGE("Decode heif metadata failed! errorCode: %{public}u", errorCode);
-        return nullptr;
-    }
+    cond = (errorCode != SUCCESS);
+    CHECK_ERROR_RETURN_RET_LOG(cond, nullptr, "Decode heif metadata failed! errorCode: %{public}u", errorCode);
     return std::move(auxPicture);
 }
 
@@ -456,15 +441,12 @@ std::shared_ptr<AuxiliaryPicture> AuxiliaryGenerator::GenerateJpegAuxiliaryPictu
     denominator = (denominator == 0) ? DEFAULT_SCALE_DENOMINATOR : denominator;
     Size size = {mainInfo.imageInfo.size.width / denominator, mainInfo.imageInfo.size.height / denominator};
     sptr<SurfaceBuffer> surfaceBuffer = AllocSurfaceBuffer(size, GRAPHIC_PIXEL_FMT_RGBA16_FLOAT, errorCode);
-    if (errorCode != SUCCESS || surfaceBuffer == nullptr) {
-        IMAGE_LOGE("Alloc surface buffer failed! errorCode: %{public}u", errorCode);
-        return nullptr;
-    }
+    bool cond = (errorCode != SUCCESS || surfaceBuffer == nullptr);
+    CHECK_ERROR_RETURN_RET_LOG(cond, nullptr, "Alloc surface buffer failed! errorCode: %{public}u", errorCode);
     errorCode = CopyToSurfaceBuffer(auxStream, surfaceBuffer);
-    if (errorCode != SUCCESS) {
-        IMAGE_LOGE("Convert stream to surface buffer failed! errorCode: %{public}u", errorCode);
-        return nullptr;
-    }
+    cond = (errorCode != SUCCESS);
+    CHECK_ERROR_RETURN_RET_LOG(cond, nullptr,
+        "Convert stream to surface buffer failed! errorCode: %{public}u", errorCode);
     auto auxPicture = AuxiliaryPicture::Create(surfaceBuffer, type, size);
     SetUncodedAuxilaryPictureInfo(auxPicture);
     return auxPicture;

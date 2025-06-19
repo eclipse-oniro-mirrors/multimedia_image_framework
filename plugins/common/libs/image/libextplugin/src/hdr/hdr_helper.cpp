@@ -243,15 +243,12 @@ static vector<uint32_t> ParseMpfOffset(jpeg_marker_struct* marker, uint32_t preO
 
 static bool ParseBaseISOTag(jpeg_marker_struct* marker)
 {
-    if (JPEG_MARKER_APP2 != marker->marker) {
-        return false;
-    }
-    if (marker->data_length <= ISO_GAINMAP_TAG_SIZE) {
-        return false;
-    }
-    if (memcmp(marker->data, ISO_GAINMAP_TAG, ISO_GAINMAP_TAG_SIZE) == EOK) {
-        return true;
-    }
+    bool cond = (JPEG_MARKER_APP2 != marker->marker);
+    CHECK_ERROR_RETURN_RET(cond, false);
+    cond = (marker->data_length <= ISO_GAINMAP_TAG_SIZE);
+    CHECK_ERROR_RETURN_RET(cond, false);
+    cond = (memcmp(marker->data, ISO_GAINMAP_TAG, ISO_GAINMAP_TAG_SIZE) == EOK);
+    CHECK_ERROR_RETURN_RET(cond, true);
     return false;
 }
 
@@ -361,9 +358,8 @@ static ImageHdrType CheckHeifHdrType(HeifDecoder* decoder)
         [heifHdrType](const map<HeifImageHdrType, ImageHdrType>::value_type item) {
         return item.first == heifHdrType;
     });
-    if (findItem == HEIF_HDR_TYPE_MAP.end()) {
-        return ImageHdrType::UNKNOWN;
-    }
+    cond = (findItem == HEIF_HDR_TYPE_MAP.end());
+    CHECK_ERROR_RETURN_RET(cond, ImageHdrType::UNKNOWN);
     return findItem->second;
 }
 #endif
@@ -806,9 +802,7 @@ static bool GetJpegGainMapMetadata(SkJpegCodec* codec, ImageHdrType type, HdrMet
     bool cond = codec == nullptr || codec->decoderMgr() == nullptr;
     CHECK_ERROR_RETURN_RET_LOG(cond, false, "GetJpegGainMapMetadata codec is nullptr");
     jpeg_marker_struct* markerList = codec->decoderMgr()->dinfo()->marker_list;
-    if (!markerList) {
-        return false;
-    }
+    CHECK_ERROR_RETURN_RET(!markerList, false);
     GetHdrMediaTypeInfo(markerList, metadata);
     switch (type) {
         case ImageHdrType::HDR_VIVID_DUAL: {
@@ -1161,10 +1155,9 @@ static bool PackVividMetadata(vector<uint8_t>& bytes, uint32_t& index, HdrMetada
         return false;
     }
     ImageUtils::Uint16ToBytes(dynamicMetadataSize, bytes, index);
-    if (!metadata.dynamicMetadata.empty() && memcpy_s(bytes.data() + index, bytes.size() - index,
-        metadata.dynamicMetadata.data(), metadata.dynamicMetadata.size()) != EOK) {
-        return false;
-    }
+    bool cond = (!metadata.dynamicMetadata.empty() && memcpy_s(bytes.data() + index, bytes.size() - index,
+        metadata.dynamicMetadata.data(), metadata.dynamicMetadata.size()) != EOK);
+    CHECK_ERROR_RETURN_RET(cond, false);
     index += metadata.dynamicMetadata.size();
     PackExtendMetadata(bytes, index, metadata.extendMeta);
     return true;
@@ -1338,14 +1331,12 @@ uint32_t HdrJpegPackerHelper::SpliceLogHdrStream(sk_sp<SkData>& baseImage,
 uint32_t HdrJpegPackerHelper::SpliceHdrStream(sk_sp<SkData>& baseImage, sk_sp<SkData>& gainmapImage,
     SkWStream& output, HdrMetadata& metadata)
 {
-    if (baseImage == nullptr || gainmapImage == nullptr) {
-        return ERR_IMAGE_ENCODE_FAILED;
-    }
+    bool cond = (baseImage == nullptr || gainmapImage == nullptr);
+    CHECK_ERROR_RETURN_RET(cond, ERR_IMAGE_ENCODE_FAILED);
     uint32_t offset = 0;
     uint32_t jfifSize = 0;
-    if (!WriteJpegPreApp(baseImage, output, offset, jfifSize)) {
-        return ERR_IMAGE_ENCODE_FAILED;
-    }
+    cond = WriteJpegPreApp(baseImage, output, offset, jfifSize);
+    CHECK_ERROR_RETURN_RET(!cond, ERR_IMAGE_ENCODE_FAILED);
     std::vector<uint8_t> gainmapMetadataPack = PackVividMetadataMarker(metadata);
     std::vector<uint8_t> gainmapISOMetadataPack = PackISOMetadataMarker(metadata);
     std::vector<uint8_t> gainmapHdrMediaTypeInfo = PackHdrMediaTypeMarker(metadata);
