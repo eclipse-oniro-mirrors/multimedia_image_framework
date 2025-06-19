@@ -41,7 +41,7 @@ public:
 private:
     static OHOS::Media::ImageHolderManager<OHOS::Media::NativeImage> sNativeImageHolder_;
     std::shared_ptr<OHOS::Media::NativeImage> nativeImage_;
-    bool isTestImage_;
+    bool isTestImage_ = false;
     bool isRelease = false;
 };
 } // namespace ANI::Image

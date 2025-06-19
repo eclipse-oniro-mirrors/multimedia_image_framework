@@ -31,7 +31,7 @@ namespace {
 namespace ANI::Image {
 OHOS::Media::ImageHolderManager<OHOS::Media::NativeImage> ImageImpl::sNativeImageHolder_;
 
-ImageImpl::ImageImpl() : nativeImage_(nullptr), isRelease(false) {}
+ImageImpl::ImageImpl() : nativeImage_(nullptr), isTestImage_(false), isRelease(false) {}
 
 ImageImpl::ImageImpl(std::shared_ptr<OHOS::Media::NativeImage> nativeImage)
 {
