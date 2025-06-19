@@ -249,6 +249,7 @@ uint32_t ImagePacker::AddImage(ImageSource &source, uint32_t index)
 {
     ImageTrace imageTrace("ImagePacker::AddImage by imageSource and index %{public}u", index);
     uint32_t ret = SUCCESS;
+#if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
     if (picture_ != nullptr) {
         picture_.reset();  // release old inner picture
     }
@@ -259,6 +260,7 @@ uint32_t ImagePacker::AddImage(ImageSource &source, uint32_t index)
         IMAGE_LOGD("image source create picture success.");
         return AddPicture(*picture_.get());
     }
+#endif
 
     DecodeOptions decodeOpts;
     decodeOpts.desiredDynamicRange = encodeToSdr_ ? DecodeDynamicRange::SDR : DecodeDynamicRange::AUTO;
