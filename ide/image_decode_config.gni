@@ -14,6 +14,10 @@
 import("//build/ohos_var.gni")
 import("//build/ohos.gni")
 
+declare_args() {
+  image_framework_feature_upgrade_skia = false
+}
+
 # source code for Windows.
 use_mingw_win = "${current_os}_${current_cpu}" == "mingw_x86_64"
 use_clang_mac = "${current_os}_${current_cpu}" == "mac_x64"
@@ -56,7 +60,7 @@ resource_management_subsystem =
     "/$base_sep_b$base_ase/global/resource_management"
 graphic_surface_root = "//foundation/graphic/graphic_surface"
 
-image_use_new_skia = use_new_skia
+image_use_new_skia = image_framework_feature_upgrade_skia
 
 skia_root = "//third_party"
 skia_deps_root = skia_root
