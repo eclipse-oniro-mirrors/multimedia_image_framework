@@ -146,7 +146,7 @@ ohos_shared_library("extplugin") {
       cfi_vcall_icall_only = true
       debug = false
       integer_overflow = true
-      ubsan = true
+      ubsan = false
     }
   }
   sources = [
