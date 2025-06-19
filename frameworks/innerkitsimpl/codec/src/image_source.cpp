@@ -292,15 +292,11 @@ bool SutDecSoManager::LoadSutDecSo()
 {
     std::lock_guard<std::mutex> lock(sutDecSoMutex_);
     if (!sutDecSoOpened_) {
-        if (!CheckClBinIsExist(g_textureSuperDecSo)) {
-            IMAGE_LOGE("[ImageSource] %{public}s! is not found", g_textureSuperDecSo.c_str());
-            return false;
-        }
+        bool cond = CheckClBinIsExist(g_textureSuperDecSo);
+        CHECK_ERROR_RETURN_RET_LOG(!cond, false, "[ImageSource] %{public}s! is not found", g_textureSuperDecSo.c_str());
         textureDecSoHandle_ = dlopen(g_textureSuperDecSo.c_str(), 1);
-        if (textureDecSoHandle_ == nullptr) {
-            IMAGE_LOGE("[ImageSource] astc libtextureSuperDecompress dlopen failed!");
-            return false;
-        }
+        cond = (textureDecSoHandle_ == nullptr);
+        CHECK_ERROR_RETURN_RET_LOG(cond, false, "[ImageSource] astc libtextureSuperDecompress dlopen failed!");
         sutDecSoGetSizeFunc_ =
             reinterpret_cast<GetSuperCompressAstcSize>(dlsym(textureDecSoHandle_, "GetSuperCompressAstcSize"));
         if (sutDecSoGetSizeFunc_ == nullptr) {
@@ -4526,19 +4522,15 @@ static uint32_t CopyContextIntoSurfaceBuffer(Size dstSize, const DecodeContext &
         .transform = GraphicTransformType::GRAPHIC_ROTATE_NONE,
     };
     GSError ret = sb->Alloc(requestConfig);
-    if (ret != GSERROR_OK) {
-        IMAGE_LOGE("SurfaceBuffer Alloc failed, %{public}s", GSErrorStr(ret).c_str());
-        return ERR_DMA_NOT_EXIST;
-    }
+    bool cond = (ret != GSERROR_OK);
+    CHECK_ERROR_RETURN_RET_LOG(cond, ERR_DMA_NOT_EXIST,
+        "SurfaceBuffer Alloc failed, %{public}s", GSErrorStr(ret).c_str());
     void* nativeBuffer = sb.GetRefPtr();
     int32_t err = ImageUtils::SurfaceBuffer_Reference(nativeBuffer);
-    if (err != OHOS::GSERROR_OK) {
-        IMAGE_LOGE("NativeBufferReference failed");
-        return ERR_DMA_DATA_ABNORMAL;
-    }
-    if ((!CopyRGBAToSurfaceBuffer(context, sb, plInfo)) && (!CopyYUVToSurfaceBuffer(context, sb, plInfo))) {
-        return ERR_IMAGE_DATA_UNSUPPORT;
-    }
+    cond = (err != OHOS::GSERROR_OK);
+    CHECK_ERROR_RETURN_RET_LOG(cond, ERR_DMA_DATA_ABNORMAL, "NativeBufferReference failed");
+    cond = ((!CopyRGBAToSurfaceBuffer(context, sb, plInfo)) && (!CopyYUVToSurfaceBuffer(context, sb, plInfo)));
+    CHECK_ERROR_RETURN_RET(cond, ERR_IMAGE_DATA_UNSUPPORT);
     SetContext(dstCtx, sb, nativeBuffer, format);
     return SUCCESS;
 #endif
@@ -4588,10 +4580,8 @@ static uint32_t DoAiHdrProcess(sptr<SurfaceBuffer> &input, DecodeContext &hdrCtx
 static uint32_t AiSrProcess(sptr<SurfaceBuffer> &input, DecodeContext &aisrCtx)
 {
     uint32_t res = AllocSurfaceBuffer(aisrCtx, input->GetFormat());
-    if (res != SUCCESS) {
-        IMAGE_LOGE("HDR SurfaceBuffer Alloc failed, %{public}d", res);
-        return res;
-    }
+    bool cond = (res != SUCCESS);
+    CHECK_ERROR_RETURN_RET_LOG(cond, res, "HDR SurfaceBuffer Alloc failed, %{public}d", res);
     sptr<SurfaceBuffer> output = reinterpret_cast<SurfaceBuffer*>(aisrCtx.pixelsBuffer.context);
     std::unique_ptr<VpeUtils> utils = std::make_unique<VpeUtils>();
     res = utils->DetailEnhancerImageProcess(input, output, static_cast<int32_t>(aisrCtx.resolutionQuality));
@@ -5046,10 +5036,9 @@ bool ImageSource::CheckJpegSourceStream(StreamInfo &streamInfo)
         return false;
     }
     streamInfo.size = sourceStreamPtr_->GetStreamSize();
-    if (streamInfo.size == 0) {
-        IMAGE_LOGE("%{public}s source stream size from sourceStreamPtr_ is invalid!", __func__);
-        return false;
-    }
+    bool cond = (streamInfo.size == 0);
+    CHECK_ERROR_RETURN_RET_LOG(cond, false,
+        "%{public}s source stream size from sourceStreamPtr_ is invalid!", __func__);
     streamInfo.buffer = sourceStreamPtr_->GetDataPtr();
     if (streamInfo.buffer == nullptr) {
         streamInfo.buffer = new (std::nothrow) uint8_t[streamInfo.size];
@@ -5059,10 +5048,9 @@ bool ImageSource::CheckJpegSourceStream(StreamInfo &streamInfo)
             return false;
         }
     }
-    if (streamInfo.buffer == nullptr) {
-        IMAGE_LOGE("%{public}s source stream is still nullptr!", __func__);
-        return false;
-    }
+    cond = (streamInfo.buffer == nullptr);
+    CHECK_ERROR_RETURN_RET_LOG(cond, false,
+        "%{public}s source stream is still nullptr!", __func__);
     if (sourceHdrType_ > ImageHdrType::SDR) {
         uint32_t gainmapOffset = mainDecoder_->GetGainMapOffset();
         if (gainmapOffset >= streamInfo.size) {
@@ -5146,27 +5134,19 @@ bool ImageSource::CompressToAstcFromPixelmap(const DecodeOptions &opts, unique_p
         (IsSupportAstcZeroCopy(rgbaInfo.size) ? AllocatorType::DMA_ALLOC : AllocatorType::SHARE_MEM_ALLOC) :
         opts.allocatorType;
     dstMemory = MemoryManager::CreateMemory(allocatorType, memoryData);
-    if (dstMemory == nullptr) {
-        IMAGE_LOGE("CompressToAstcFromPixelmap CreateMemory failed");
-        return false;
-    }
+    bool cond = (dstMemory == nullptr);
+    CHECK_ERROR_RETURN_RET_LOG(cond, false, "CompressToAstcFromPixelmap CreateMemory failed");
 
     uint32_t ret = imagePacker.StartPacking(reinterpret_cast<uint8_t *>(dstMemory->data.data), allocMemSize, option);
-    if (ret != 0) {
-        IMAGE_LOGE("CompressToAstcFromPixelmap failed to start packing");
-        return false;
-    }
+    cond = (ret != 0);
+    CHECK_ERROR_RETURN_RET_LOG(cond, false, "CompressToAstcFromPixelmap failed to start packing");
     ret = imagePacker.AddImage(*(rgbaPixelmap.get()));
-    if (ret != 0) {
-        IMAGE_LOGE("CompressToAstcFromPixelmap failed to add image");
-        return false;
-    }
+    cond = (ret != 0);
+    CHECK_ERROR_RETURN_RET_LOG(cond, false, "CompressToAstcFromPixelmap failed to add image");
     int64_t packedSize = 0;
     ret = imagePacker.FinalizePacking(packedSize);
-    if (ret != 0) {
-        IMAGE_LOGE("CompressToAstcFromPixelmap failed to finalize packing");
-        return false;
-    }
+    cond = (ret != 0);
+    CHECK_ERROR_RETURN_RET_LOG(cond, false, "CompressToAstcFromPixelmap failed to finalize packing");
     return true;
 #else
     return false;
@@ -5179,39 +5159,28 @@ unique_ptr<PixelMap> ImageSource::CreatePixelAstcFromImageFile(uint32_t index, c
 #if !defined(_WIN32) && !defined(_APPLE) && !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
     ImageInfo originInfo;
     uint32_t ret = GetImageInfo(originInfo);
-    if (ret != SUCCESS) {
-        IMAGE_LOGE("CreatePixelAstcFromImageFile GetImageInfo failed");
-        return nullptr;
-    }
-    if ((originInfo.size.width > ASTC_MAX_SIZE || originInfo.size.height > ASTC_MAX_SIZE) ||
-        (opts.desiredSize.width > ASTC_MAX_SIZE || opts.desiredSize.height > ASTC_MAX_SIZE)) {
-        IMAGE_LOGE("CreatePixelAstcFromImageFile imageInfo size is too large");
-        return nullptr;
-    }
+    bool cond = (ret != SUCCESS);
+    CHECK_ERROR_RETURN_RET_LOG(cond, nullptr, "CreatePixelAstcFromImageFile GetImageInfo failed");
+    cond = ((originInfo.size.width > ASTC_MAX_SIZE || originInfo.size.height > ASTC_MAX_SIZE) ||
+        (opts.desiredSize.width > ASTC_MAX_SIZE || opts.desiredSize.height > ASTC_MAX_SIZE));
+    CHECK_ERROR_RETURN_RET_LOG(cond, nullptr, "CreatePixelAstcFromImageFile imageInfo size is too large");
     DecodeOptions modifiableOpts = opts;
     modifiableOpts.desiredPixelFormat = PixelFormat::RGBA_8888;
     unique_ptr<PixelMap> rgbaPixelmap = CreatePixelMap(index, modifiableOpts, errorCode);
-    if (rgbaPixelmap == nullptr) {
-        IMAGE_LOGE("CreatePixelAstcFromImageFile pixelMap is nullptr");
-        return nullptr;
-    }
+    cond = (rgbaPixelmap == nullptr);
+    CHECK_ERROR_RETURN_RET_LOG(cond, nullptr, "CreatePixelAstcFromImageFile pixelMap is nullptr");
     unique_ptr<AbsMemory> dstMemory = nullptr;
-    if (!CompressToAstcFromPixelmap(opts, rgbaPixelmap, dstMemory)) {
-        IMAGE_LOGE("CreatePixelAstcFromImageFile CompressToAstcFromPixelmap failed");
-        return nullptr;
-    }
+    cond = CompressToAstcFromPixelmap(opts, rgbaPixelmap, dstMemory);
+    CHECK_ERROR_RETURN_RET_LOG(!cond, nullptr, "CreatePixelAstcFromImageFile CompressToAstcFromPixelmap failed");
     unique_ptr<PixelAstc> dstPixelAstc = make_unique<PixelAstc>();
     ImageInfo info;
-    if (!GetImageInfoForASTC(info, reinterpret_cast<uint8_t *>(dstMemory->data.data))) {
-        IMAGE_LOGE("CreatePixelAstcFromImageFile get astc image info failed.");
-        return nullptr;
-    }
+    cond = GetImageInfoForASTC(info, reinterpret_cast<uint8_t *>(dstMemory->data.data));
+    CHECK_ERROR_RETURN_RET_LOG(!cond, nullptr, "CreatePixelAstcFromImageFile get astc image info failed.");
     ret = dstPixelAstc->SetImageInfo(info);
     dstPixelAstc->SetAstcRealSize(info.size);
-    if (ret != SUCCESS) {
-        IMAGE_LOGE("CreatePixelAstcFromImageFile update pixelmap info error ret:%{public}u.", ret);
-        return nullptr;
-    }
+    cond = (ret != SUCCESS);
+    CHECK_ERROR_RETURN_RET_LOG(cond, nullptr,
+        "CreatePixelAstcFromImageFile update pixelmap info error ret:%{public}u.", ret);
     dstPixelAstc->SetPixelsAddr(dstMemory->data.data, dstMemory->extend.data, dstMemory->data.size,
         dstMemory->GetType(), nullptr);
     dstPixelAstc->SetAstc(true);

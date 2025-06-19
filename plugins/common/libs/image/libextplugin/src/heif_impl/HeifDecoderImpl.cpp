@@ -124,10 +124,8 @@ const std::map<AuxiliaryPictureType, std::string> HEIF_AUXTTYPE_ID_MAP = {
 static bool FillFrameInfoForPixelConvert(AVFrame *frame, PixelFormatConvertParam &param)
 {
     if (param.format == AV_PIX_FMT_NV12 || param.format == AV_PIX_FMT_NV21 || param.format == AV_PIX_FMT_P010) {
-        if (param.planesInfo == nullptr || param.planesInfo->planeCount < PLANE_COUNT_TWO) {
-            IMAGE_LOGE("planesInfo is invalid for yuv buffer");
-            return false;
-        }
+        bool cond = (param.planesInfo == nullptr || param.planesInfo->planeCount < PLANE_COUNT_TWO);
+        CHECK_ERROR_RETURN_RET_LOG(cond, false, "planesInfo is invalid for yuv buffer");
         const OH_NativeBuffer_Plane &planeY = param.planesInfo->planes[0];
         const OH_NativeBuffer_Plane &planeUV = param.planesInfo->planes[param.format == AV_PIX_FMT_NV21 ? 2 : 1];
         IMAGE_LOGI("planeY offset: %{public}llu, columnStride: %{public}u, rowStride: %{public}u,"
@@ -185,9 +183,8 @@ static bool LoadLibyuv()
 static bool ConvertNV12ToRGBA(PixelFormatConvertParam &srcParam, PixelFormatConvertParam &dstParam)
 {
     ImageTrace trace(__func__);
-    if (!LoadLibyuv()) {
-        return false;
-    }
+    bool cond = LoadLibyuv();
+    CHECK_ERROR_RETURN_RET(!cond, false);
     AVFrame *srcFrame = av_frame_alloc();
     AVFrame *dstFrame = av_frame_alloc();
     if (srcFrame == nullptr || dstFrame == nullptr) {
@@ -372,15 +369,11 @@ bool HeifDecoderImpl::init(HeifStream *stream, HeifFrameInfo *frameInfo)
     }
 
     heif_error err = HeifParser::MakeFromMemory(srcMemory_, fileLength, false, &parser_);
-    if (parser_ == nullptr || err != heif_error_ok) {
-        IMAGE_LOGE("make heif parser failed, err: %{public}d", err);
-        return false;
-    }
+    bool cond = (parser_ == nullptr || err != heif_error_ok);
+    CHECK_ERROR_RETURN_RET_LOG(cond, false, "make heif parser failed, err: %{public}d", err);
     primaryImage_ = parser_->GetPrimaryImage();
-    if (primaryImage_ == nullptr) {
-        IMAGE_LOGE("heif primary image is null");
-        return false;
-    }
+    cond = (primaryImage_ == nullptr);
+    CHECK_ERROR_RETURN_RET_LOG(cond, false, "heif primary image is null");
     gainmapImage_ = parser_->GetGainmapImage();
     std::shared_ptr<HeifImage> tmapImage = parser_->GetTmapImage();
     if (tmapImage != nullptr) {
@@ -742,14 +735,11 @@ bool HeifDecoderImpl::HwDecodeImage(HeifHardwareDecoder *hwDecoder,
                                     std::shared_ptr<HeifImage> &image, GridInfo &gridInfo,
                                     sptr<SurfaceBuffer> *outBuffer, bool isPrimary)
 {
-    if (outPixelFormat_ == PixelFormat::UNKNOWN) {
-        IMAGE_LOGE("unknown pixel type: %{public}d", outPixelFormat_);
-        return false;
-    }
+    bool cond = (outPixelFormat_ == PixelFormat::UNKNOWN);
+    CHECK_ERROR_RETURN_RET_LOG(cond, false, "unknown pixel type: %{public}d", outPixelFormat_);
 
-    if (image == nullptr || outBuffer == nullptr) {
-        return false;
-    }
+    cond = (image == nullptr || outBuffer == nullptr);
+    CHECK_ERROR_RETURN_RET(cond, false);
 
     bool isReuseHwDecoder = hwDecoder != nullptr;
     if (!isReuseHwDecoder) {

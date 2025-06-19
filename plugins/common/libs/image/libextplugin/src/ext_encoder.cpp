@@ -419,9 +419,8 @@ bool IsSuperFastEncode(const std::string &format)
 
 uint32_t ExtEncoder::FinalizeEncode()
 {
-    if ((picture_ == nullptr && pixelmap_ == nullptr) || output_ == nullptr) {
-        return ERR_IMAGE_INVALID_PARAMETER;
-    }
+    bool isParameterInvalid = (picture_ == nullptr && pixelmap_ == nullptr) || output_ == nullptr;
+    CHECK_ERROR_RETURN_RET(isParameterInvalid, ERR_IMAGE_INVALID_PARAMETER);
     ImageDataStatistics imageDataStatistics("[ExtEncoder]FinalizeEncode imageFormat = %s, quality = %d",
         opts_.format.c_str(), opts_.quality);
 #if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
@@ -453,14 +452,9 @@ uint32_t ExtEncoder::FinalizeEncode()
 
 bool ExtEncoder::IsHardwareEncodeSupported(const PlEncodeOptions &opts, Media::PixelMap* pixelMap)
 {
-    if (pixelMap == nullptr) {
-        IMAGE_LOGE("pixelMap is nullptr");
-        return false;
-    }
-    if (opts.quality < LOW_QUALITY_BOUNDARY) {
-        IMAGE_LOGE("%{public}s Low quality use software encode", __func__);
-        return false;
-    }
+    CHECK_ERROR_RETURN_RET_LOG(pixelMap == nullptr, false, "pixelMap is nullptr");
+    bool cond = opts.quality < LOW_QUALITY_BOUNDARY;
+    CHECK_ERROR_RETURN_RET_LOG(cond, false, "%{public}s Low quality use software encode", __func__);
     bool isSupportedWithRgba = ImageSystemProperties::GetGenThumbWithGpu() &&
         pixelMap->GetPixelFormat() == PixelFormat::RGBA_8888;
     bool isSupport = ImageSystemProperties::GetHardWareEncodeEnabled() && opts.format == "image/jpeg" &&
@@ -469,11 +463,10 @@ bool ExtEncoder::IsHardwareEncodeSupported(const PlEncodeOptions &opts, Media::P
         isSupportedWithRgba) &&
         pixelMap->GetWidth() <= MAX_IMAGE_SIZE && pixelMap->GetHeight() <= MAX_IMAGE_SIZE &&
         pixelMap->GetWidth() >= MIN_RGBA_IMAGE_SIZE && pixelMap->GetHeight() >= MIN_RGBA_IMAGE_SIZE;
-    if (!isSupport) {
-        IMAGE_LOGD("hardware encode is not support, dstEncodeFormat:%{public}s, pixelWidth:%{public}d, "
-            "pixelHeight:%{public}d, pixelFormat:%{public}d", opts.format.c_str(), pixelMap->GetWidth(),
-            pixelMap->GetHeight(), pixelMap->GetPixelFormat());
-    }
+    CHECK_DEBUG_PRINT_LOG(!isSupport,
+        "hardware encode is not support, dstEncodeFormat:%{public}s, pixelWidth:%{public}d, pixelHeight:%{public}d, "
+        "pixelFormat:%{public}d",
+        opts.format.c_str(), pixelMap->GetWidth(), pixelMap->GetHeight(), pixelMap->GetPixelFormat());
     return isSupport;
 }
 
@@ -482,10 +475,7 @@ uint32_t ExtEncoder::DoHardWareEncode(SkWStream* skStream)
     static ImageFwkExtManager imageFwkExtManager;
     if (imageFwkExtManager.doHardWareEncodeFunc_ != nullptr || imageFwkExtManager.LoadImageFwkExtNativeSo()) {
         int32_t retCode = imageFwkExtManager.doHardWareEncodeFunc_(skStream, opts_, pixelmap_);
-        if (retCode == SUCCESS) {
-            IMAGE_LOGD("DoHardWareEncode Success return");
-            return SUCCESS;
-        }
+        CHECK_DEBUG_RETURN_RET_LOG(retCode == SUCCESS, SUCCESS, "DoHardWareEncode Success return");
         IMAGE_LOGE("hardware encode failed, retCode is %{public}d", retCode);
         ImageInfo imageInfo;
         pixelmap_->GetImageInfo(imageInfo);
@@ -646,9 +636,7 @@ uint32_t ExtEncoder::EncodeImageByPixelMap(PixelMap* pixelMap, bool needExif, Sk
 
 uint32_t ExtEncoder::EncodeHeifByPixelmap(PixelMap* pixelmap, const PlEncodeOptions& opts)
 {
-    if (output_ == nullptr) {
-        return ERR_IMAGE_INVALID_PARAMETER;
-    }
+    CHECK_ERROR_RETURN_RET(output_ == nullptr, ERR_IMAGE_INVALID_PARAMETER);
     Media::PixelFormat format = pixelmap->GetPixelFormat();
     bool cond = format != PixelFormat::RGBA_8888 && format != PixelFormat::NV12 && format != PixelFormat::NV21;
     CHECK_ERROR_RETURN_RET_LOG(cond, ERR_IMAGE_INVALID_PARAMETER,
@@ -811,15 +799,11 @@ uint32_t ExtEncoder::EncodeImageBySurfaceBuffer(sptr<SurfaceBuffer>& surfaceBuff
     SkBitmap bitmap;
     ImageInfo imageInfo;
     uint64_t rowStride = 0;
-    if (surfaceBuffer == nullptr) {
-        IMAGE_LOGE("EncodeImageBySurfaceBuffer failed, surfaceBuffer is nullptr");
-        return ERR_IMAGE_INVALID_PARAMETER;
-    }
+    CHECK_ERROR_RETURN_RET_LOG(surfaceBuffer == nullptr, ERR_IMAGE_INVALID_PARAMETER,
+        "EncodeImageBySurfaceBuffer failed, surfaceBuffer is nullptr");
     auto pixels = surfaceBuffer->GetVirAddr();
-    if (pixels == nullptr) {
-        IMAGE_LOGE("EncodeImageBySurfaceBuffer failed, pixels is nullptr");
-        return ERR_IMAGE_INVALID_PARAMETER;
-    }
+    CHECK_ERROR_RETURN_RET_LOG(pixels == nullptr, ERR_IMAGE_INVALID_PARAMETER,
+        "EncodeImageBySurfaceBuffer failed, pixels is nullptr");
     /* do hardwareEncode first, if fail then soft encode*/
     bool cond = HardwareEncode(outputStream, needExif);
     CHECK_DEBUG_RETURN_RET_LOG(cond, SUCCESS, "HardwareEncode Success return");
@@ -1672,9 +1656,7 @@ uint32_t ExtEncoder::EncodeHeifPicture(sptr<SurfaceBuffer>& mainSptr, SkImageInf
 
 void ExtEncoder::CheckJpegAuxiliaryTagName()
 {
-    if (picture_ == nullptr) {
-        return;
-    }
+    CHECK_ERROR_RETURN(picture_ == nullptr);
     auto auxTypes = ImageUtils::GetAllAuxiliaryPictureType();
     for (AuxiliaryPictureType auxType : auxTypes) {
         auto auxPicture = picture_->GetAuxiliaryPicture(auxType);
@@ -1754,13 +1736,11 @@ uint32_t ExtEncoder::EncodeJpegPictureDualVividInner(SkWStream& skStream, std::s
 uint32_t ExtEncoder::EncodeJpegPictureDualVivid(SkWStream& skStream)
 {
     ImageFuncTimer imageFuncTimer("%s enter", __func__);
-    if (!picture_->HasAuxiliaryPicture(AuxiliaryPictureType::GAINMAP)) {
-        IMAGE_LOGE("%{public}s no gainmap in picture", __func__);
-        return ERR_IMAGE_INVALID_PARAMETER;
-    }
+    bool cond = picture_->HasAuxiliaryPicture(AuxiliaryPictureType::GAINMAP);
+    CHECK_ERROR_RETURN_RET_LOG(!cond, ERR_IMAGE_INVALID_PARAMETER, "%{public}s no gainmap in picture", __func__);
     auto mainPixelmap = picture_->GetMainPixel();
     auto gainmapPixelmap = picture_->GetGainmapPixelMap();
-    bool cond = !mainPixelmap || !gainmapPixelmap;
+    cond = !mainPixelmap || !gainmapPixelmap;
     CHECK_ERROR_RETURN_RET_LOG(cond, ERR_IMAGE_INVALID_PARAMETER,
         "%{public}s mainPixelmap or gainmapPixelmap is null", __func__);
     AllocatorType mainAllocType = mainPixelmap->GetAllocatorType();
@@ -2383,10 +2363,7 @@ bool ExtEncoder::AssembleExifMetaItem(std::vector<MetaItem>& metaItems)
     uint8_t* exifBlob = nullptr;
     uint32_t exifSize = 0;
     TiffParser::Encode(&exifBlob, exifSize, exifData);
-    if (exifBlob == nullptr) {
-        IMAGE_LOGE("Encode exif data failed");
-        return false;
-    }
+    CHECK_ERROR_RETURN_RET_LOG(exifBlob == nullptr, false, "Encode exif data failed");
     auto item = std::make_shared<MetaItem>();
     item->id = EXIF_META_ITEM_ID;
     item->itemName = "exif";
