@@ -126,7 +126,9 @@ private:
     std::unique_ptr<ImagePlugin::AbsImageEncoder> encoder_;
     std::unique_ptr<ImagePlugin::AbsImageEncoder> exEncoder_;
     std::unique_ptr<PixelMap> pixelMap_;  // inner imagesource create, our manage the lifecycle
+#if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
     std::unique_ptr<Picture> picture_;  // inner imagesource create, our manage the lifecycle
+#endif
     bool encodeToSdr_ = true;
 };
 } // namespace Media
