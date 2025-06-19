@@ -903,6 +903,7 @@ std::vector<napi_property_descriptor> ImageSourceNapi::RegisterNapi()
         DECLARE_NAPI_FUNCTION("createPixelMapSync", CreatePixelMapSync),
         DECLARE_NAPI_FUNCTION("createPixelMapUsingAllocator", CreatePixelMapUsingAllocator),
         DECLARE_NAPI_FUNCTION("createPixelMapUsingAllocatorSync", CreatePixelMapUsingAllocatorSync),
+        DECLARE_NAPI_FUNCTION("createWideGamutSdrPixelMap", CreateWideGamutSdrPixelMap),
         DECLARE_NAPI_FUNCTION("updateData", UpdateData),
         DECLARE_NAPI_FUNCTION("release", Release),
         DECLARE_NAPI_GETTER("supportedFormats", GetSupportedFormats),
@@ -1786,6 +1787,36 @@ static void CreatePixelMapExecute(napi_env env, void *data)
     IMAGE_LOGD("CreatePixelMapExecute OUT");
 }
 
+static void CreateWideGamutSdrPixelMapExecute(napi_env env, void *data)
+{
+    IMAGE_LOGD("CreateWideGamutSdrPixelMapExecute IN");
+    if (data == nullptr) {
+        IMAGE_LOGE("data is nullptr");
+        return;
+    }
+    auto context = static_cast<ImageSourceAsyncContext*>(data);
+    if (context == nullptr) {
+        IMAGE_LOGE("empty context");
+        return;
+    }
+    if (context->errMsg.size() > 0) {
+        IMAGE_LOGE("mismatch args");
+        context->status = ERROR;
+        return;
+    }
+    context->decodeOpts.isCreateWideGamutSdrPixelMap = true;
+    context->decodeOpts.desiredDynamicRange = DecodeDynamicRange::AUTO;
+    context->rPixelMap = CreatePixelMapInner(context->constructor_, context->rImageSource,
+        context->index, context->decodeOpts, context->status);
+    if (context->status != SUCCESS) {
+        Image_ErrorCode apiErrorCode = ConvertToErrorCode(context->status);
+        std::string apiErrorMsg = GetErrorCodeMsg(apiErrorCode);
+        context->errMsgArray.emplace(apiErrorCode, apiErrorMsg);
+        IMAGE_LOGE("CreateWideGamutSdrPixelMap error");
+    }
+    IMAGE_LOGD("CreateWideGamutSdrPixelMapExecute OUT");
+}
+
 static void CreatePixelMapUsingAllocatorExecute(napi_env env, void *data)
 {
     if (data == nullptr) {
@@ -1950,6 +1981,47 @@ napi_value ImageSourceNapi::CreatePixelMapSync(napi_env env, napi_callback_info 
 
     IMG_NAPI_CHECK_RET_D(IMG_IS_OK(status),
         nullptr, IMAGE_LOGE("fail to create PixelMap"));
+    return result;
+}
+
+napi_value ImageSourceNapi::CreateWideGamutSdrPixelMap(napi_env env, napi_callback_info info)
+{
+    napi_value result = nullptr;
+    napi_get_undefined(env, &result);
+    napi_status status;
+    napi_value thisVar = nullptr;
+    size_t argCount = NUM_0;
+    napi_value argValue[NUM_2] = {0};
+    IMG_JS_ARGS(env, info, status, argCount, argValue, thisVar);
+    IMG_NAPI_CHECK_RET_D(IMG_IS_READY(status, thisVar), nullptr, IMAGE_LOGE("fail to get thisVar"));
+    IMG_NAPI_CHECK_RET_D(IMG_IS_OK(status), nullptr, IMAGE_LOGE("fail to napi_get_cb_info"));
+    std::unique_ptr<ImageSourceAsyncContext> asyncContext = std::make_unique<ImageSourceAsyncContext>();
+    status = napi_unwrap(env, thisVar, reinterpret_cast<void**>(&asyncContext->constructor_));
+    IMG_NAPI_CHECK_RET_D(IMG_IS_READY(status, asyncContext->constructor_),
+        nullptr, IMAGE_LOGE("fail to unwrap context"));
+    IMG_NAPI_CHECK_RET_D(IMG_IS_READY(status, asyncContext->constructor_->nativeImgSrc),
+        nullptr, IMAGE_LOGE("fail to unwrap nativeImgSrc"));
+    asyncContext->rImageSource = asyncContext->constructor_->nativeImgSrc;
+    IMG_NAPI_CHECK_RET_D(IMG_IS_READY(status, asyncContext->rImageSource),
+        nullptr, IMAGE_LOGE("empty native rImageSource"));
+
+    if (argCount == 1 && ImageNapiUtils::getType(env, argValue[0]) == napi_function) {
+        napi_create_reference(env, argValue[0], 1, &asyncContext->callbackRef);
+    } else if (argCount > 1) {
+        IMAGE_LOGE("Too many arguments");
+        return result;
+    }
+    if (asyncContext->callbackRef == nullptr) {
+        napi_create_promise(env, &(asyncContext->deferred), &result);
+    } else {
+        napi_get_undefined(env, &result);
+    }
+    ImageNapiUtils::HicheckerReport();
+    IMG_CREATE_CREATE_ASYNC_WORK_WITH_QOS(env, status, "CreateWideGamutSdrPixelMap", CreateWideGamutSdrPixelMapExecute,
+        CreatePixelMapComplete, asyncContext, asyncContext->work, napi_qos_user_initiated);
+
+    IMG_NAPI_CHECK_RET_D(IMG_IS_OK(status),
+        nullptr, IMAGE_LOGE("fail to create async work"));
     return result;
 }
 
