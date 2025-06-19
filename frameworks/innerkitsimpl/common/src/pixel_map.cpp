@@ -429,6 +429,59 @@ static int AllocPixelMapMemory(std::unique_ptr<AbsMemory> &dstMemory, int32_t &d
     return IMAGE_RESULT_SUCCESS;
 }
 
+static constexpr uint16_t HEIGHT_MIN = 198;
+static constexpr uint16_t HEIGHT_MAX = 760;
+static constexpr uint16_t WIDTH_MIN = 345;
+static constexpr uint16_t WIDTH_MAX = 960;
+void PixelMap::UpdatePixelsAlphaType(std::unique_ptr<PixelMap>& pixelMap)
+{
+    if (!ImageSystemProperties::IsSupportOpaqueOpt()) {
+        return;
+    }
+    const uint8_t *dstPixels = pixelMap->GetPixels();
+    if (dstPixels == nullptr) {
+        IMAGE_LOGD("[PixelMap]UpdatePixelsAlphaType invalid input parameter: dstPixels is Null");
+        return;
+    }
+
+    int32_t height = pixelMap->GetHeight();
+    int32_t width = pixelMap->GetWidth();
+    if (height < HEIGHT_MIN || width < WIDTH_MIN || height > HEIGHT_MAX || width > WIDTH_MAX) {
+        return;
+    }
+
+    ImageInfo imageInfo;
+    pixelMap->GetImageInfo(imageInfo);
+
+    int8_t alphaIndex = -1;
+    if (imageInfo.pixelFormat == PixelFormat::RGBA_8888 ||
+        imageInfo.pixelFormat == PixelFormat::BGRA_8888) {
+        alphaIndex = BGRA_ALPHA_INDEX;
+    } else if (imageInfo.pixelFormat == PixelFormat::ARGB_8888) {
+        alphaIndex = 0;
+    }
+    if (alphaIndex == -1) {
+        IMAGE_LOGE("[PixelMap]Pixel format is not supported");
+        return;
+    }
+
+    uint8_t pixelBytes = pixelMap->GetPixelBytes();
+    int32_t stride = pixelMap->GetRowStride();
+    int32_t rowBytes = pixelMap->GetRowBytes();
+
+    for (int32_t i = 0; i < height; ++i) {
+        for (int32_t j = 0; j < rowBytes; j += pixelBytes) {
+            int32_t index = i * stride + j;
+            const uint8_t *rpixel = dstPixels + index;
+            if (rpixel[alphaIndex] != ALPHA_OPAQUE) {
+                return;
+            }
+        }
+    }
+
+    pixelMap->SetSupportOpaqueOpt(true);
+}
+
 unique_ptr<PixelMap> PixelMap::Create(const uint32_t *colors, uint32_t colorLength, BUILD_PARAM &info,
     const InitializationOptions &opts, int &errorCode)
 {
@@ -482,6 +535,7 @@ unique_ptr<PixelMap> PixelMap::Create(const uint32_t *colors, uint32_t colorLeng
     ImageUtils::DumpPixelMapIfDumpEnabled(dstPixelMap);
     SetYUVDataInfoToPixelMap(dstPixelMap);
     ImageUtils::FlushSurfaceBuffer(const_cast<PixelMap*>(dstPixelMap.get()));
+    dstPixelMap->UpdatePixelsAlphaType(dstPixelMap);
     return dstPixelMap;
 }
 
@@ -1091,6 +1145,7 @@ unique_ptr<PixelMap> PixelMap::Clone(int32_t &errorCode)
         return nullptr;
     }
     pixelMap->SetTransformered(isTransformered_);
+    pixelMap->SetSupportOpaqueOpt(supportOpaqueOpt_);
     TransformData transformData;
     GetTransformData(transformData);
     pixelMap->SetTransformData(transformData);
@@ -1940,6 +1995,16 @@ bool PixelMap::SetAlphaType(const AlphaType &alphaType)
     return true;
 }
 
+void PixelMap::SetSupportOpaqueOpt(bool supportOpaqueOpt)
+{
+    supportOpaqueOpt_ = supportOpaqueOpt;
+}
+
+bool PixelMap::GetSupportOpaqueOpt()
+{
+    return supportOpaqueOpt_;
+}
+
 uint32_t PixelMap::WritePixel(const Position &pos, const uint32_t &color)
 {
     if (pos.x < 0 || pos.y < 0 || pos.x >= GetWidth() || pos.y >= GetHeight()) {
@@ -2419,6 +2484,11 @@ bool PixelMap::WritePropertiesToParcel(Parcel &parcel) const
         return false;
     }
 
+    if (!parcel.WriteBool(supportOpaqueOpt_)) {
+        IMAGE_LOGE("write pixel map supportOpaqueOpt to parcel failed.");
+        return false;
+    }
+
     if (!parcel.WriteBool(isAstc_)) {
         IMAGE_LOGE("write pixel map isAstc_ to parcel failed.");
         return false;
@@ -2822,6 +2892,7 @@ bool PixelMap::ReadPropertiesFromParcel(Parcel& parcel, PixelMap*& pixelMap, Ima
 
     pixelMap->SetReadVersion(readVersion);
     pixelMap->SetEditable(parcel.ReadBool());
+    pixelMap->SetSupportOpaqueOpt(parcel.ReadBool());
     memInfo.isAstc = parcel.ReadBool();
     pixelMap->SetAstc(memInfo.isAstc);
     if (pixelMap->GetReadVersion() >= PIXELMAP_VERSION_DISPLAY_ONLY) {

@@ -1233,6 +1233,7 @@ unique_ptr<PixelMap> ImageSource::CreatePixelMapByInfos(ImagePlugin::PlImageInfo
         return nullptr;
     }
     pixelMap->SetEditable(saveEditable);
+    pixelMap->UpdatePixelsAlphaType(pixelMap);
     // add graphic colorspace object to pixelMap.
     SetPixelMapColorSpace(context, pixelMap, mainDecoder_);
     return pixelMap;

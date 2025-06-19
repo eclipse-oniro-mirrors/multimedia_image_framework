@@ -567,6 +567,20 @@ public:
     NATIVEEXPORT virtual bool SetAlphaType(const AlphaType &alphaType);
 
     /**
+     * Set whether to support opaque optimization.
+     *
+     * @param supportOpaqueOpt whether to support opaque optimization.
+     */
+    NATIVEEXPORT virtual void SetSupportOpaqueOpt(bool supportOpaqueOpt);
+
+    /**
+     * Get whether to support opaque optimization.
+     *
+     * @return Return true if support opaque optimization, otherwise return false.
+     */
+    NATIVEEXPORT virtual bool GetSupportOpaqueOpt();
+
+    /**
      * Write pixel points at the target position.
      *
      * @param pos target location.
@@ -842,6 +856,7 @@ public:
 
     NATIVEEXPORT uint32_t GetVersionId();
     NATIVEEXPORT void AddVersionId();
+    void UpdatePixelsAlphaType(std::unique_ptr<PixelMap>& pixelMap);
 
 protected:
     static constexpr uint8_t TLV_VARINT_BITS = 7;
@@ -1042,6 +1057,7 @@ private:
     bool displayOnly_ = false;
 
     friend class OHOS::Rosen::RSModifiersDraw;
+    bool supportOpaqueOpt_ = false;
 };
 } // namespace Media
 } // namespace OHOS
