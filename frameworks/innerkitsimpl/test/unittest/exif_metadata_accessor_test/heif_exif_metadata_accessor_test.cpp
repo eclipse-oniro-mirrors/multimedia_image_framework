@@ -325,5 +325,21 @@ HWTEST_F(HeifExifMetadataAccessorTest, WriteMetadata002, TestSize.Level3)
     res = imageAccessor.CheckTiffPos(buff, 0, byteOrderPos);
     EXPECT_FALSE(res);
 }
+
+/**
+ * @tc.name: Read012
+ * @tc.desc: test the Read method when fp_ is nullptr.
+ * @tc.type: FUNC
+ */
+HWTEST_F(HeifExifMetadataAccessorTest, Read012, TestSize.Level3)
+{
+    auto fileStream = std::make_shared<FileMetadataStream>(IMAGE_INPUT_HEIF_EXIF_PATH);
+    ASSERT_NE(fileStream, nullptr);
+    std::shared_ptr<MetadataStream> stream = fileStream;
+    ASSERT_NE(stream, nullptr);
+    HeifExifMetadataAccessor imageAccessor(stream);
+    uint32_t res = imageAccessor.Read();
+    EXPECT_EQ(res, ERR_IMAGE_SOURCE_DATA);
+}
 } // namespace Multimedia
 } // namespace OHOS

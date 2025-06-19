@@ -16,19 +16,22 @@
 #include <gtest/gtest.h>
 #include <fstream>
 #include <fcntl.h>
+#define private public
 #include "directory_ex.h"
+#include "graphic_common.h"
 #include "image_packer.h"
 #include "image_source.h"
 #include "image_type.h"
 #include "image_utils.h"
+#include "image_receiver.h"
+#include "image_receiver_manager.h"
+#include "image_source_util.h"
 #include "incremental_pixel_map.h"
+#include "incremental_source_stream.h"
 #include "media_errors.h"
 #include "pixel_map.h"
 #include "pixel_map_manager.h"
-#include "image_receiver.h"
-#include "image_source_util.h"
-#include "graphic_common.h"
-#include "image_receiver_manager.h"
+
 
 using namespace testing::ext;
 using namespace OHOS::Media;
@@ -257,6 +260,39 @@ HWTEST_F(InterfaceTest, InterfaceTest0012, TestSize.Level3)
     uint32_t tmp = imagePacker.StartPacking(buffer, bufferSize, option);
     ASSERT_EQ(tmp, SUCCESS);
     GTEST_LOG_(INFO) << "InterfaceTest: InterfaceTest0012 end";
+}
+
+/**
+ * @tc.name: PromoteDecodingTest001
+ * @tc.desc: Test PromoteDecoding when imageSource is nullptr and decodingState is
+ *           BASE_INFO_ERROR or IMAGE_ERROR or others.
+ * @tc.type: FUNC
+ */
+HWTEST_F(InterfaceTest, PromoteDecodingTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "InterfaceTest: PromoteDecodingTest001 start";
+    unique_ptr<IncrementalSourceStream> incrementalSourceStream =
+        std::make_unique<IncrementalSourceStream>(IncrementalMode::INCREMENTAL_DATA);
+    unique_ptr<SourceStream> sourceStream = std::move(incrementalSourceStream);
+    SourceOptions sourceOpts;
+    DecodeOptions decodeOpts;
+    ImageSource imageSource(std::move(sourceStream), sourceOpts);
+    IncrementalPixelMap incrementalPixelMap(0, decodeOpts, &imageSource);
+    incrementalPixelMap.imageSource_ = nullptr;
+    incrementalPixelMap.decodingStatus_.state = IncrementalDecodingState::UNRESOLVED;
+    uint8_t decodeProgress = 0;
+
+    uint32_t errCode = incrementalPixelMap.PromoteDecoding(decodeProgress);
+    EXPECT_EQ(errCode, ERR_IMAGE_SOURCE_DATA);
+
+    incrementalPixelMap.decodingStatus_.state = IncrementalDecodingState::BASE_INFO_ERROR;
+    errCode = incrementalPixelMap.PromoteDecoding(decodeProgress);
+    EXPECT_EQ(errCode, 0);
+
+    incrementalPixelMap.decodingStatus_.state = IncrementalDecodingState::IMAGE_ERROR;
+    errCode = incrementalPixelMap.PromoteDecoding(decodeProgress);
+    EXPECT_EQ(errCode, 0);
+    GTEST_LOG_(INFO) << "InterfaceTest: PromoteDecodingTest001 end";
 }
 }
 }

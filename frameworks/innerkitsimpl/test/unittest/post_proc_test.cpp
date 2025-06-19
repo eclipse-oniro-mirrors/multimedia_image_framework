@@ -16,14 +16,14 @@
 #define protected public
 #include <gtest/gtest.h>
 #include <fstream>
-#include "post_proc.h"
 #include "image_source.h"
+#include "image_source_util.h"
 #include "image_type.h"
 #include "image_utils.h"
 #include "media_errors.h"
-#include "pixel_map.h"
-#include "image_source_util.h"
 #include "memory_manager.h"
+#include "pixel_map.h"
+#include "post_proc.h"
 
 using namespace testing::ext;
 using namespace OHOS::Media;
@@ -34,7 +34,9 @@ static const std::string IMAGE_INPUT_JPEG_PATH = "/data/local/tmp/image/test.jpg
 static const std::string IMAGE_INPUT_JPG_PATH_EXACTSIZE = "/data/local/tmp/image/800-500.jpg";
 static constexpr int32_t IMAGE_INPUT_JPG_WIDTH = 800;
 static constexpr int32_t IMAGE_INPUT_JPG_HEIGHT = 500;
+static const int32_t NUM_1 = 1;
 static const int32_t NUM_2 = 2;
+static const int32_t NUM_NEGATIVE_1 = -1;
 
 class PostProcTest : public testing::Test {
 public:
@@ -1130,6 +1132,170 @@ HWTEST_F(PostProcTest, GetDstImageInfo001, TestSize.Level3)
     ASSERT_EQ(dstImageInfo.pixelFormat, PixelFormat::RGB_565);
     ASSERT_EQ(dstImageInfo.alphaType, AlphaType::IMAGE_ALPHA_TYPE_PREMUL);
     GTEST_LOG_(INFO) << "PostProcTest: GetDstImageInfo001 end";
+}
+
+/**
+ * @tc.name: CenterScaleTest001
+ * @tc.desc: Test CenterScale when targetWidth and targetHeight are valid or not.
+ * @tc.type: FUNC
+ */
+HWTEST_F(PostProcTest, CenterScaleTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PostProcTest: CenterScaleTest001 start";
+    Size size;
+    PixelMap pixelMap;
+    pixelMap.imageInfo_.size.height = NUM_1;
+    pixelMap.imageInfo_.size.width = NUM_1;
+    size.width = 0;
+    size.height = 0;
+    PostProc postProc;
+
+    bool ret = postProc.CenterScale(size, pixelMap);
+    EXPECT_FALSE(ret);
+
+    size.width = NUM_1;
+    size.height = 0;
+    ret = postProc.CenterScale(size, pixelMap);
+    EXPECT_FALSE(ret);
+    GTEST_LOG_(INFO) << "PostProcTest: CenterScaleTest001 end";
+}
+
+/**
+ * @tc.name: PixelConvertProcTest001
+ * @tc.desc: Test PixelConvertProc when pixelBytes is 0.
+ * @tc.type: FUNC
+ */
+HWTEST_F(PostProcTest, PixelConvertProcTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PostProcTest: PixelConvertProcTest001 start";
+    ImageInfo dstImageInfo;
+    dstImageInfo.pixelFormat = PixelFormat::ARGB_8888;
+    ImageInfo srcImageInfo;
+    srcImageInfo.size.height = NUM_1;
+    srcImageInfo.size.width = NUM_1;
+    srcImageInfo.pixelFormat = PixelFormat::UNKNOWN;
+    PixelMap pixelMap;
+    PostProc postProc;
+    postProc.decodeOpts_.allocatorType = AllocatorType::SHARE_MEM_ALLOC;
+
+    uint32_t ret = postProc.PixelConvertProc(dstImageInfo, pixelMap, srcImageInfo);
+    EXPECT_EQ(ret, ERR_IMAGE_CROP);
+    GTEST_LOG_(INFO) << "PostProcTest: PixelConvertProcTest001 end";
+}
+
+/**
+ * @tc.name: PixelConvertProcTest002
+ * @tc.desc: Test PixelConvertProc when pixelMap SetImageInfo failed.
+ * @tc.type: FUNC
+ */
+HWTEST_F(PostProcTest, PixelConvertProcTest002, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PostProcTest: PixelConvertProcTest002 start";
+    ImageInfo dstImageInfo;
+    dstImageInfo.pixelFormat = PixelFormat::ARGB_8888;
+    ImageInfo srcImageInfo;
+    srcImageInfo.size.height = NUM_1;
+    srcImageInfo.size.width = NUM_1;
+    srcImageInfo.pixelFormat = PixelFormat::ARGB_8888;
+    PixelMap pixelMap;
+    pixelMap.pixelBytes_ = 0;
+    PostProc postProc;
+    postProc.decodeOpts_.allocatorType = AllocatorType::SHARE_MEM_ALLOC;
+
+    uint32_t ret = postProc.PixelConvertProc(dstImageInfo, pixelMap, srcImageInfo);
+    EXPECT_EQ(ret, SUCCESS);
+    GTEST_LOG_(INFO) << "PostProcTest: PixelConvertProcTest002 end";
+}
+
+/**
+ * @tc.name: ValidCropValueTest001
+ * @tc.desc: Test ValidCropValue when reset the width and height of rect success or not.
+ * @tc.type: FUNC
+ */
+HWTEST_F(PostProcTest, ValidCropValueTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PostProcTest: ValidCropValueTest001 start";
+    Size size;
+    size.height = NUM_NEGATIVE_1;
+    size.width = NUM_NEGATIVE_1;
+    Rect rect;
+    rect.top = NUM_1;
+    rect.left = NUM_1;
+
+    PostProc postProc;
+    CropValue ret = postProc.ValidCropValue(rect, size);
+    EXPECT_EQ(ret, CropValue::INVALID);
+
+    size.height = NUM_1;
+    size.width = NUM_1;
+    rect.height = NUM_NEGATIVE_1;
+    rect.width = NUM_NEGATIVE_1;
+    ret = postProc.ValidCropValue(rect, size);
+    EXPECT_EQ(ret, CropValue::INVALID);
+    GTEST_LOG_(INFO) << "PostProcTest: ValidCropValueTest001 end";
+}
+
+/**
+ * @tc.name: GetScaleFormatTest001
+ * @tc.desc: Test GetScaleFormat when didn't find formatPair in PIXEL_FORMAT_MAP.
+ * @tc.type: FUNC
+ */
+HWTEST_F(PostProcTest, GetScaleFormatTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PostProcTest: GetScaleFormatTest001 start";
+    PostProc postProc;
+    Size desiredSize;
+    PixelMap pixelMap;
+    pixelMap.imageInfo_.size.height = NUM_1;
+    pixelMap.imageInfo_.size.width = NUM_1;
+    pixelMap.data_ = new uint8_t;
+    pixelMap.imageInfo_.pixelFormat = PixelFormat::EXTERNAL_MAX;
+    AntiAliasingOption option = AntiAliasingOption::NONE;
+    bool ret  = postProc.ScalePixelMapEx(desiredSize, pixelMap, option);
+    ASSERT_EQ(ret, false);
+    delete pixelMap.data_;
+    GTEST_LOG_(INFO) << "PostProcTest: GetScaleFormatTest001 end";
+}
+
+/**
+ * @tc.name: CheckPixelMapSLRTest001
+ * @tc.desc: Test CheckPixelMapSLR when pixelFormat is not RGBA_8888 or desiredSize is same as srcSize or not.
+ * @tc.type: FUNC
+ */
+HWTEST_F(PostProcTest, CheckPixelMapSLRTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PostProcTest: CheckPixelMapSLRTest001 start";
+    Size desiredSize;
+    PixelMap pixelMap;
+    pixelMap.imageInfo_.pixelFormat = PixelFormat::ALPHA_8;
+    pixelMap.pixelBytes_ = 0;
+    PostProc postProc;
+
+    bool ret = postProc.ScalePixelMapWithSLR(desiredSize, pixelMap, false);
+    EXPECT_FALSE(ret);
+
+    pixelMap.imageInfo_.size.width = NUM_1;
+    pixelMap.imageInfo_.size.height = NUM_1;
+    desiredSize.width = NUM_1;
+    desiredSize.height = NUM_1;
+    ret = postProc.ScalePixelMapWithSLR(desiredSize, pixelMap, false);
+    EXPECT_FALSE(ret);
+
+    desiredSize.width = NUM_2;
+    desiredSize.height = NUM_1;
+    ret = postProc.ScalePixelMapWithSLR(desiredSize, pixelMap, false);
+    EXPECT_FALSE(ret);
+
+    desiredSize.width = NUM_1;
+    desiredSize.height = NUM_2;
+    ret = postProc.ScalePixelMapWithSLR(desiredSize, pixelMap, false);
+    EXPECT_FALSE(ret);
+
+    desiredSize.width = NUM_2;
+    desiredSize.height = NUM_2;
+    ret = postProc.ScalePixelMapWithSLR(desiredSize, pixelMap, false);
+    EXPECT_FALSE(ret);
+    GTEST_LOG_(INFO) << "PostProcTest: CheckPixelMapSLRTest001 end";
 }
 }
 }

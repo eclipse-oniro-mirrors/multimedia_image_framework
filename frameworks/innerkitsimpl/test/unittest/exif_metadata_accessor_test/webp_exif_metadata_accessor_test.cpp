@@ -34,6 +34,7 @@ namespace {
 constexpr auto IMAGE_INPUT_READ1_WEBP_SIZE = 25294;
 constexpr auto IMAGE_INPUT_READ6_WEBP_SIZE = 570;
 constexpr auto IMAGE_INPUT_READ8_WEBP_SIZE = 4244;
+constexpr auto WEBP_HEAD_SIZE = 8;
 constexpr auto WEBP_CHUNK_HEADER_ANMF = "ANMF";
 constexpr auto WEBP_CHUNK_HEADER_VP8L = "VP8L";
 static const std::string IMAGE_INPUT_READ1_WEBP_PATH = "/data/local/tmp/image/test_webp_readexifblob001.webp";
@@ -1786,6 +1787,245 @@ HWTEST_F(WebpExifMetadataAccessorTest, ReadBlob011, TestSize.Level3)
     DataBuf blob;
     bool res = imageReadAccessor.ReadBlob(blob);
     EXPECT_TRUE(res);
+}
+
+/**
+ * @tc.name: ReadBlob003
+ * @tc.desc: test ReadExifBlob with not open.
+ * @tc.type: FUNC
+ */
+HWTEST_F(WebpExifMetadataAccessorTest, ReadBlob003, TestSize.Level3)
+{
+    std::shared_ptr<MetadataStream> readStream = std::make_shared<FileMetadataStream>(IMAGE_INPUT_READ1_WEBP_PATH);
+    WebpExifMetadataAccessor imageReadAccessor(readStream);
+    DataBuf exifBuf;
+    bool result = imageReadAccessor.ReadBlob(exifBuf);
+    EXPECT_TRUE(result);
+    EXPECT_EQ(exifBuf.Size(), IMAGE_INPUT_READ1_WEBP_SIZE);
+}
+
+/**
+ * @tc.name: GetImageWidthAndHeight001
+ * @tc.desc: Verify GetImageWidthAndHeight() returns (0, 0) when the stream is at EOF.
+ * @tc.type: FUNC
+ */
+HWTEST_F(WebpExifMetadataAccessorTest, GetImageWidthAndHeight001, TestSize.Level3)
+{
+    class MockStream : public FileMetadataStream {
+    public:
+        explicit MockStream(std::string path) : FileMetadataStream(path) {}
+        bool IsEof() override { return true; }
+    };
+    std::shared_ptr<MetadataStream> mockStream = std::make_shared<MockStream>(IMAGE_INPUT_READ1_WEBP_PATH);
+    WebpExifMetadataAccessor accessor(mockStream);
+    auto [width, height] = accessor.GetImageWidthAndHeight();
+    EXPECT_EQ(width, 0);
+    EXPECT_EQ(height, 0);
+}
+
+/**
+ * @tc.name: GetImageWidthAndHeight002
+ * @tc.desc: Verify GetImageWidthAndHeight() returns (0, 0) when the stream returns no data on read.
+ * @tc.type: FUNC
+ */
+HWTEST_F(WebpExifMetadataAccessorTest, GetImageWidthAndHeight002, TestSize.Level3)
+{
+    class MockStream : public FileMetadataStream {
+    public:
+        explicit MockStream(std::string path) : FileMetadataStream(path) {}
+        bool IsEof() override { return false; }
+        ssize_t Read(byte *buf, ssize_t size) override { return 0; }
+    };
+    std::shared_ptr<MetadataStream> mockStream = std::make_shared<MockStream>(IMAGE_INPUT_READ1_WEBP_PATH);
+    WebpExifMetadataAccessor accessor(mockStream);
+    auto [width, height] = accessor.GetImageWidthAndHeight();
+    EXPECT_EQ(width, 0);
+    EXPECT_EQ(height, 0);
+}
+
+/**
+ * @tc.name: GetImageWidthAndHeight003
+ * @tc.desc: Verify GetImageWidthAndHeight() returns (0, 0) when reading insufficient data (partial header).
+ * @tc.type: FUNC
+ */
+HWTEST_F(WebpExifMetadataAccessorTest, GetImageWidthAndHeight003, TestSize.Level3)
+{
+    class MockStream : public FileMetadataStream {
+    public:
+        explicit MockStream(std::string path) : FileMetadataStream(path) {}
+        bool IsEof() override { return false; }
+        ssize_t Read(byte *buf, ssize_t size) override { return WEBP_HEAD_SIZE; }
+    };
+    std::shared_ptr<MetadataStream> mockStream = std::make_shared<MockStream>(IMAGE_INPUT_READ1_WEBP_PATH);
+    WebpExifMetadataAccessor accessor(mockStream);
+    auto [width, height] = accessor.GetImageWidthAndHeight();
+    EXPECT_EQ(width, 0);
+    EXPECT_EQ(height, 0);
+}
+
+/**
+ * @tc.name: GetImageWidthAndHeight004
+ * @tc.desc: Verify GetImageWidthAndHeight() returns (0, 0) when reading corrupted/unsupported WebP data.
+ * @tc.type: FUNC
+ */
+HWTEST_F(WebpExifMetadataAccessorTest, GetImageWidthAndHeight004, TestSize.Level3)
+{
+    class MockStream : public FileMetadataStream {
+    public:
+        explicit MockStream(std::string path) : FileMetadataStream(path) {}
+        bool IsEof() override { return false; }
+        ssize_t Read(byte *buf, ssize_t size) override
+        {
+            if (buf == nullptr || size == 0) {
+                return 0;
+            }
+            buf[0] = 1;
+            buf[size - 1] = 1;
+            return size;
+        }
+        ssize_t GetSize() override { return 0; }
+        long Tell() override { return 0; }
+    };
+    std::shared_ptr<MetadataStream> mockStream = std::make_shared<MockStream>(IMAGE_INPUT_READ1_WEBP_PATH);
+    WebpExifMetadataAccessor accessor(mockStream);
+    auto [width, height] = accessor.GetImageWidthAndHeight();
+    EXPECT_EQ(width, 0);
+    EXPECT_EQ(height, 0);
+}
+
+/**
+ * @tc.name: CheckChunkVp8x001
+ * @tc.desc: Verify CheckChunkVp8x() returns false when invalid VP8X chunk data is read (zero-filled buffer).
+ * @tc.type: FUNC
+ */
+HWTEST_F(WebpExifMetadataAccessorTest, CheckChunkVp8x001, TestSize.Level3)
+{
+    class MockStream : public FileMetadataStream {
+    public:
+        explicit MockStream(std::string path) : FileMetadataStream(path) {}
+        bool IsEof() override { return false; }
+        ssize_t Read(byte *buf, ssize_t size) override
+        {
+            if (size != 0) {
+                buf[0] = 0;
+            }
+            return size;
+        }
+    };
+    std::shared_ptr<MetadataStream> mockStream = std::make_shared<MockStream>(IMAGE_INPUT_READ1_WEBP_PATH);
+    WebpExifMetadataAccessor accessor(mockStream);
+    Vp8xAndExifInfo exifFlag;
+    bool ret = accessor.CheckChunkVp8x(exifFlag);
+    EXPECT_FALSE(ret);
+}
+
+/**
+ * @tc.name: InsertExifMetadata001
+ * @tc.desc: Verify InsertExifMetadata() returns false when given invalid/null Exif data.
+ * @tc.type: FUNC
+ */
+HWTEST_F(WebpExifMetadataAccessorTest, InsertExifMetadata001, TestSize.Level3)
+{
+    class MockStream : public BufferMetadataStream {
+    public:
+        ssize_t Write(uint8_t *data, ssize_t size) override { return size + 1; }
+    };
+    class MockFileStream : public FileMetadataStream {
+    public:
+        explicit MockFileStream(std::string path) : FileMetadataStream(path) {}
+        ssize_t Read(byte *buf, ssize_t size) override { return 0; }
+    };
+    MockStream mockStream;
+    std::shared_ptr<MetadataStream> mockFileStream = std::make_shared<MockFileStream>(IMAGE_INPUT_READ1_WEBP_PATH);
+    WebpExifMetadataAccessor accessor(mockFileStream);
+    bool ret = accessor.InsertExifMetadata(mockStream, nullptr, 0);
+    EXPECT_FALSE(ret);
+}
+
+/**
+ * @tc.name: InsertExifMetadata002
+ * @tc.desc: Verify InsertExifMetadata() fails when writing Exif data begins with 'E' (0x45) but source is invalid.
+ * @tc.type: FUNC
+ */
+HWTEST_F(WebpExifMetadataAccessorTest, InsertExifMetadata002, TestSize.Level3)
+{
+    class MockStream : public BufferMetadataStream {
+    public:
+        ssize_t Write(uint8_t *data, ssize_t size) override
+        {
+            if (size != 0 && data[0] == 0x45) {
+                return size;
+            }
+            return size + 1;
+        }
+    };
+    class MockFileStream : public FileMetadataStream {
+    public:
+        explicit MockFileStream(std::string path) : FileMetadataStream(path) {}
+        ssize_t Read(byte *buf, ssize_t size) override { return 0; }
+    };
+    MockStream mockStream;
+    std::shared_ptr<MetadataStream> mockFileStream = std::make_shared<MockFileStream>(IMAGE_INPUT_READ1_WEBP_PATH);
+    WebpExifMetadataAccessor accessor(mockFileStream);
+    bool ret = accessor.InsertExifMetadata(mockStream, nullptr, 0);
+    EXPECT_FALSE(ret);
+}
+
+/**
+ * @tc.name: InsertExifMetadata003
+ * @tc.desc: Verify InsertExifMetadata() fails when writing Exif data of size 1 with starting byte 0x01 returns
+ *           incorrect write size.
+ * @tc.type: FUNC
+ */
+HWTEST_F(WebpExifMetadataAccessorTest, InsertExifMetadata003, TestSize.Level3)
+{
+    class MockStream : public BufferMetadataStream {
+    public:
+        ssize_t Write(uint8_t *data, ssize_t size) override
+        {
+            if (size != 0 && data[0] == 0x01) {
+                return size + 1;
+            }
+            return size;
+        }
+    };
+    class MockFileStream : public FileMetadataStream {
+    public:
+        explicit MockFileStream(std::string path) : FileMetadataStream(path) {}
+        ssize_t Read(byte *buf, ssize_t size) override { return 0; }
+    };
+    MockStream mockStream;
+    std::shared_ptr<MetadataStream> mockFileStream = std::make_shared<MockFileStream>(IMAGE_INPUT_READ1_WEBP_PATH);
+    WebpExifMetadataAccessor accessor(mockFileStream);
+    bool ret = accessor.InsertExifMetadata(mockStream, nullptr, 1);
+    EXPECT_FALSE(ret);
+}
+
+/**
+ * @tc.name: InsertExifMetadata004
+ * @tc.desc: Verify InsertExifMetadata() succeeds when writing valid 1-byte Exif data (0x01) with matching write size.
+ * @tc.type: FUNC
+ */
+HWTEST_F(WebpExifMetadataAccessorTest, InsertExifMetadata004, TestSize.Level3)
+{
+    class MockStream : public BufferMetadataStream {
+    public:
+        ssize_t Write(uint8_t *data, ssize_t size) override
+        {
+            return size;
+        }
+    };
+    class MockFileStream : public FileMetadataStream {
+    public:
+        explicit MockFileStream(std::string path) : FileMetadataStream(path) {}
+        ssize_t Read(byte *buf, ssize_t size) override { return 0; }
+    };
+    MockStream mockStream;
+    std::shared_ptr<MetadataStream> mockFileStream = std::make_shared<MockFileStream>(IMAGE_INPUT_READ1_WEBP_PATH);
+    WebpExifMetadataAccessor accessor(mockFileStream);
+    uint8_t data[] = {0x01};
+    bool ret = accessor.InsertExifMetadata(mockStream, data, 1);
+    EXPECT_TRUE(ret);
 }
 } // namespace Multimedia
 } // namespace OHOS

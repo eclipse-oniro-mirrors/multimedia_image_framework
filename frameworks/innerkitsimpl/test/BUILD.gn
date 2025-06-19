@@ -633,7 +633,10 @@ ohos_unittest("interfacetest") {
     "//foundation/multimedia/image_framework/plugins/manager/include",
   ]
 
-  sources = [ "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/test/unittest/interface_test.cpp" ]
+  sources = [
+    "$image_subsystem/frameworks/innerkitsimpl/stream/src/incremental_source_stream.cpp",
+    "$image_subsystem/frameworks/innerkitsimpl/test/unittest/interface_test.cpp"
+  ]
 
   deps = [
     "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/utils:image_utils",
@@ -737,7 +740,10 @@ ohos_unittest("convertertest") {
   ]
 
   sources = [
-    "$image_subsystem/frameworks/innerkitsimpl/test/unittest/basic_transformer_test.cpp",
+    "${image_subsystem}/frameworks/innerkitsimpl/converter/src/post_proc_slr.cpp",
+    "${image_subsystem}/frameworks/innerkitsimpl/test/unittest/basic_transformer_test.cpp",
+    "${image_subsystem}/frameworks/innerkitsimpl/converter/src/post_proc.cpp",
+    "${image_subsystem}/frameworks/innerkitsimpl/converter/src/scan_line_filter.cpp",
     "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/test/unittest/matrix_test.cpp",
     "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/test/unittest/pixel_convert_test.cpp",
     "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/test/unittest/post_proc_test.cpp",
@@ -745,12 +751,16 @@ ohos_unittest("convertertest") {
   ]
 
   deps = [
+    "${image_subsystem}/frameworks/innerkitsimpl/egl_image:post_proc_gl",
     "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/utils:image_utils",
     "//foundation/multimedia/image_framework/interfaces/innerkits:image_native",
   ]
   resource_config_file = "$image_subsystem/test/resource/image/ohos_test.xml"
   external_deps = [
     "c_utils:utils",
+    "drivers_interface_display:libdisplay_commontype_proxy_1.0",
+    "ffmpeg:libohosffmpeg",
+    "ffrt:libffrt",
     "googletest:gmock_main",
     "googletest:gtest_main",
     "graphic_2d:color_manager",
@@ -1283,6 +1293,7 @@ ohos_unittest("jpeg_hw_decoder_test") {
     "${image_subsystem}/frameworks/innerkitsimpl/utils:image_utils",
     "${image_subsystem}/interfaces/innerkits:image_native",
     "${image_subsystem}/plugins/common/libs/image/libextplugin:extplugin",
+    "${image_subsystem}/plugins/common/libs/image/libextplugin:heifparser",
     "${image_subsystem}/plugins/common/libs/image/libextplugin:textureEncoderCL",
   ]
 

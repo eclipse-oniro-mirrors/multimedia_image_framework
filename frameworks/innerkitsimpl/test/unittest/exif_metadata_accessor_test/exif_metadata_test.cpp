@@ -1844,5 +1844,79 @@ HWTEST_F(ExifMetadataTest, SetAndGetMakerNoteValueTest001, TestSize.Level3)
     ASSERT_EQ(getValue, value);
     GTEST_LOG_(INFO) << "ExifMetadataTest: SetAndGetMakerNoteValueTest001 end";
 }
+
+/**
+ * @tc.name: CreateExifdataTest001
+ * @tc.desc: Verify that ExifMetadata CreateExifdata is success when exifData_ is not nullptr.
+ * @tc.type: FUNC
+ */
+HWTEST_F(ExifMetadataTest, CreateExifdataTest001, TestSize.Level3)
+{
+    auto exifData = exif_data_new_from_file(IMAGE_INPUT_JPEG_PATH.c_str());
+    ASSERT_NE(exifData, nullptr);
+    ExifMetadata metadata(exifData);
+    EXPECT_TRUE(metadata.CreateExifdata());
+    ASSERT_NE(metadata.exifData_, nullptr);
+}
+
+
+/**
+ * @tc.name: SetMakerNoteValueTest002
+ * @tc.desc: Verify that ExifMetadata SetMakerNoteValue when head is HUAWEI_HEADER.
+ * @tc.type: FUNC
+ */
+HWTEST_F(ExifMetadataTest, SetMakerNoteValueTest002, TestSize.Level3)
+{
+    auto exifData = exif_data_new_from_file(IMAGE_INPUT_JPEG_PATH.c_str());
+    ASSERT_NE(exifData, nullptr);
+    ExifMetadata metadata(exifData);
+    std::string value1 = std::string{HUAWEI_HEADER} + "MOCKVALUE";
+    EXPECT_TRUE(metadata.SetMakerNoteValue(value1));
+    const unsigned char hwData[] = {
+        0x48, 0x55, 0x41, 0x57, 0x45, 0x49, 0x00,
+        0x00, 0x4D, 0x4D, 0x00, 0x2A, 0x00, 0x00, 0x00, 0x08, 0x00, 0x01, 0x02, 0x00,
+        0x00, 0x04, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+        0x00
+    };
+    std::string value2(reinterpret_cast<const char*>(hwData), sizeof(hwData));
+    EXPECT_TRUE(metadata.SetMakerNoteValue(value2));
+}
+
+/**
+ * @tc.name: SetHwMoteValueTest001
+ * @tc.desc: Verify that ExifMetadata SetHwMoteValue when key is "HwMnoteFocusModeExif".
+ * @tc.type: FUNC
+ */
+HWTEST_F(ExifMetadataTest, SetHwMoteValueTest001, TestSize.Level3)
+{
+    auto exifData = exif_data_new_from_file(IMAGE_INPUT_JPEG_PATH.c_str());
+    ASSERT_NE(exifData, nullptr);
+    ExifMetadata metadata(exifData);
+    EXPECT_FALSE(metadata.SetHwMoteValue("HwMnoteFocusModeExif", "0"));
+}
+
+/**
+ * @tc.name: GetFilterAreaTest001
+ * @tc.desc: Verify that ExifMetadata GetFilterArea.
+ * @tc.type: FUNC
+ */
+HWTEST_F(ExifMetadataTest, GetFilterAreaTest001, TestSize.Level3)
+{
+    std::vector<std::string> exifKeys = {};
+    std::vector<std::pair<uint32_t, uint32_t>> ranges = {};
+    ExifMetadata metadataNull;
+    metadataNull.GetFilterArea(exifKeys, ranges);
+    ASSERT_EQ(exifKeys.size(), 0);
+    ASSERT_EQ(ranges.size(), 0);
+
+    exifKeys.push_back("TestKey");
+    exifKeys.push_back("GPSDestLongitude");
+    auto exifData = exif_data_new_from_file(IMAGE_INPUT_JPEG_PATH.c_str());
+    ASSERT_NE(exifData, nullptr);
+    ExifMetadata metadata(exifData);
+    metadata.SetValue("GPSDestLongitude", "123/1 456/1 789/1");
+    metadata.GetFilterArea(exifKeys, ranges);
+    ASSERT_TRUE(ranges.size() > 0);
+}
 } // namespace Multimedia
 } // namespace OHOS

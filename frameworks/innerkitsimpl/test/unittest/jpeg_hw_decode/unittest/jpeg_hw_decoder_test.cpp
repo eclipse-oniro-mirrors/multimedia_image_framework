@@ -127,6 +127,25 @@ HWTEST_F(JpegHwDecoderTest, IsHardwareDecodeSupportedTest002, TestSize.Level3)
 }
 
 /**
+ * @tc.name: IsHardwareDecodeSupportedTest003
+ * @tc.desc: Verify hardware decode support check returns false for empty file path, zero size, and null decoder cases.
+ * @tc.type: FUNC
+ */
+HWTEST_F(JpegHwDecoderTest, IsHardwareDecodeSupportedTest003, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "JpegHwDecoderTest: IsHardwareDecodeSupportedTest003 start";
+    JpegHardwareDecoder jpegHardwareDecoder;
+    ASSERT_NE(jpegHardwareDecoder.hwDecoder_, nullptr);
+    Media::Size size = {0, 0};
+    bool ret = jpegHardwareDecoder.IsHardwareDecodeSupported("", size);
+    EXPECT_FALSE(ret);
+    jpegHardwareDecoder.hwDecoder_ = nullptr;
+    ret = jpegHardwareDecoder.IsHardwareDecodeSupported("", size);
+    EXPECT_FALSE(ret);
+    GTEST_LOG_(INFO) << "JpegHwDecoderTest: IsHardwareDecodeSupportedTest003 end";
+}
+
+/**
  * @tc.name: CheckInputColorFmtTest001
  * @tc.desc: test the CheckInputColorFmt
              when codec is nullptr,return false
