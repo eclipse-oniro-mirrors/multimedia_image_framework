@@ -56,7 +56,8 @@ static bool ReadPixelsToBufferSyncExecute(std::unique_ptr<AuxiliaryPictureTaiheC
 {
     OHOS::Media::AuxiliaryPictureInfo info = context->rAuxiliaryPicture->GetAuxiliaryPictureInfo();
     context->arrayBufferSize =
-        info.size.width * info.size.height * OHOS::Media::ImageUtils::GetPixelBytes(info.pixelFormat);
+        static_cast<size_t>(info.size.width * info.size.height *
+        OHOS::Media::ImageUtils::GetPixelBytes(info.pixelFormat));
     context->arrayBuffer = new uint8_t[context->arrayBufferSize];
     if (context->arrayBuffer != nullptr) {
         context->status = context->rAuxiliaryPicture->ReadPixels(
