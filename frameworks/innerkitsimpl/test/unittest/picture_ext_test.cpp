@@ -51,8 +51,8 @@ static const std::string IMAGE_JPEG_SRC = "/data/local/tmp/image/test_jpeg.jpg";
 static const std::string IMAGE_JPEG_DEST = "/data/local/tmp/image/test_jpeg_out.jpg";
 static const std::string IMAGE_HEIF_SRC = "/data/local/tmp/image/test_heif.heic";
 static const std::string IMAGE_HEIF_DEST = "/data/local/tmp/image/test_heif_out.heic";
-static const std::string IMAGE_INPUT_JPEGHDR_PATH = "/data/local/tmp/image/test_jpeg_hdr.jpg";
-static const std::string IMAGE_INPUT_HEIFHDR_PATH = "/data/local/tmp/image/test_heif_hdr.heic";
+static const std::string IMAGE_JPEGHDR_SRC = "/data/local/tmp/image/test_jpeg_hdr.jpg";
+static const std::string IMAGE_HEIFHDR_SRC = "/data/local/tmp/image/test_heif_hdr.heic";
 static const std::string IMAGE_JPEG_WRONG_SRC = "/data/local/tmp/image/test_picture_wrong.jpg";
 static const std::string IMAGE_HEIC_64_64 = "/data/local/tmp/image/test_heic_64_64.heic";
 static const std::string IMAGE_HEIC_128_128 = "/data/local/tmp/image/test_heic_128_128.heic";
@@ -147,7 +147,7 @@ static OH_PictureNative* CreatePictureNative()
 OH_PictureNative *CreateNativePicture(std::vector<Image_AuxiliaryPictureType>& ayxTypeList)
 {
     std::string realPath;
-    if (!ImageUtils::PathToRealPath(IMAGE_INPUT_JPEGHDR_PATH.c_str(), realPath)) {
+    if (!ImageUtils::PathToRealPath(IMAGE_JPEGHDR_SRC.c_str(), realPath)) {
         return nullptr;
     }
     if (realPath.c_str() == nullptr) {
@@ -307,6 +307,23 @@ HWTEST_F(PictureExtTest, CreatePicture006, TestSize.Level3)
     std::unique_ptr<Picture> picture = imageSource->CreatePicture(dstOpts, errorCode);
     EXPECT_EQ(errorCode, OHOS::Media::SUCCESS);
     EXPECT_NE(picture, nullptr);
+}
+
+/**
+ * @tc.name: CreatePictureTest007
+ * @tc.desc: Verify CreatePicture() fails as expected when creating picture from GIF format.
+ * @tc.type: FUNC
+ */
+HWTEST_F(PictureExtTest, CreatePicture007, TestSize.Level3)
+{
+    uint32_t errorCode = -1;
+    SourceOptions opts;
+    std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(IMAGE_GIF_PATH, opts, errorCode);
+    ASSERT_EQ(errorCode, OHOS::Media::SUCCESS);
+    ASSERT_NE(imageSource, nullptr);
+    DecodingOptionsForPicture dstOpts;
+    std::unique_ptr<Picture> picture = imageSource->CreatePicture(dstOpts, errorCode);
+    EXPECT_EQ(picture, nullptr);
 }
 
 bool EncodePictureMethodOne(std::shared_ptr<Picture> picture, std::string format, std::string IMAGE_DEST)
@@ -705,7 +722,7 @@ HWTEST_F(PictureExtTest, getHDRComposedPixelmapTest001, TestSize.Level1)
     uint32_t res = 0;
     SourceOptions sourceOpts;
     sourceOpts.formatHint = "image/jpeg";
-    std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(IMAGE_INPUT_JPEGHDR_PATH.c_str(),
+    std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(IMAGE_JPEGHDR_SRC.c_str(),
                                                                               sourceOpts, res);
     ASSERT_NE(imageSource, nullptr);
     DecodingOptionsForPicture opts;
@@ -730,7 +747,7 @@ HWTEST_F(PictureExtTest, getHDRComposedPixelmapTest002, TestSize.Level2)
 {
     uint32_t res = 0;
     SourceOptions sourceOpts;
-    std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(IMAGE_INPUT_JPEGHDR_PATH.c_str(),
+    std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(IMAGE_JPEGHDR_SRC.c_str(),
                                                                               sourceOpts, res);
     ASSERT_NE(imageSource, nullptr);
     DecodingOptionsForPicture opts;
@@ -753,7 +770,7 @@ HWTEST_F(PictureExtTest, getHDRComposedPixelmapTest003, TestSize.Level1)
     uint32_t res = 0;
     SourceOptions sourceOpts;
     sourceOpts.formatHint = "image/heif";
-    std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(IMAGE_INPUT_HEIFHDR_PATH.c_str(),
+    std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(IMAGE_HEIFHDR_SRC.c_str(),
                                                                               sourceOpts, res);
     ASSERT_NE(imageSource, nullptr);
     DecodingOptionsForPicture opts;
@@ -778,7 +795,7 @@ HWTEST_F(PictureExtTest, getHDRComposedPixelmapTest004, TestSize.Level2)
     uint32_t res = 0;
     SourceOptions sourceOpts;
     sourceOpts.formatHint = "image/heif";
-    std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(IMAGE_INPUT_HEIFHDR_PATH.c_str(),
+    std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(IMAGE_HEIFHDR_SRC.c_str(),
                                                                               sourceOpts, res);
     ASSERT_NE(imageSource, nullptr);
     DecodingOptionsForPicture opts;
@@ -789,6 +806,34 @@ HWTEST_F(PictureExtTest, getHDRComposedPixelmapTest004, TestSize.Level2)
 
     std::unique_ptr<PixelMap> pixelmap = picture->GetHdrComposedPixelMap();
     EXPECT_EQ(pixelmap, nullptr);
+}
+
+/**
+ * @tc.name: getHDRComposedPixelmapTest005
+ * @tc.desc: Verify GetHdrComposedPixelMap() succeeds for HDR HEIF images with different P010 pixel formats.
+ * @tc.type: FUNC
+ */
+HWTEST_F(PictureExtTest, getHDRComposedPixelmapTest005, TestSize.Level1)
+{
+    uint32_t errorCode = 0;
+    SourceOptions sourceOpts;
+    std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(IMAGE_HEIFHDR_SRC.c_str(),
+                                                                              sourceOpts, errorCode);
+    ASSERT_NE(imageSource, nullptr);
+    DecodingOptionsForPicture opts;
+    opts.desiredPixelFormat = PixelFormat::YCBCR_P010;
+    std::unique_ptr<Picture> picture = imageSource->CreatePicture(opts, errorCode);
+    ASSERT_EQ(errorCode, OHOS::Media::SUCCESS);
+    ASSERT_NE(picture, nullptr);
+    auto ret = picture->GetHdrComposedPixelMap();
+    EXPECT_NE(ret, nullptr);
+
+    opts.desiredPixelFormat = Media::PixelFormat::YCRCB_P010;
+    picture = imageSource->CreatePicture(opts, errorCode);
+    ASSERT_EQ(errorCode, OHOS::Media::SUCCESS);
+    ASSERT_NE(picture, nullptr);
+    ret = picture->GetHdrComposedPixelMap();
+    EXPECT_NE(ret, nullptr);
 }
 
 /**
@@ -1264,7 +1309,7 @@ HWTEST_F(PictureExtTest, CalGainmapTest001, TestSize.Level1)
     uint32_t res = 0;
     SourceOptions sourceOpts;
     sourceOpts.formatHint = "image/jpeg";
-    std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(IMAGE_INPUT_JPEGHDR_PATH.c_str(),
+    std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(IMAGE_JPEGHDR_SRC.c_str(),
                                                                               sourceOpts, res);
     ASSERT_NE(imageSource, nullptr);
     DecodingOptionsForPicture opts;

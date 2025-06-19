@@ -13,6 +13,7 @@
  * limitations under the License.
  */
 
+#define private public
 #include <gtest/gtest.h>
 #include <memory>
 #include "exif_metadata_formatter.h"
@@ -93,6 +94,62 @@ HWTEST_F(ExifMetadataFormatterTest, Validate002, TestSize.Level3)
     ASSERT_NE(ExifMetadatFormatter::Validate("GPSLatitudeRef", "C"), 0);
     ASSERT_NE(ExifMetadatFormatter::Validate("GPSLongitudeRef", "C"), 0);
     GTEST_LOG_(INFO) << "ExifMetadataFormatterTest: Validate002 end";
+}
+
+/**
+ * @tc.name: IsValidValueTest001
+ * @tc.desc: test the IsValidValue when array is nullptr
+ * @tc.type: FUNC
+ */
+HWTEST_F(ExifMetadataFormatterTest, IsValidValueTest001, TestSize.Level3)
+{
+    ASSERT_FALSE(ExifMetadatFormatter::IsValidValue(nullptr, 0, 0));
+}
+
+/**
+ * @tc.name: RationalFormat001
+ * @tc.desc: test the RationalFormat for nomatched value
+ * @tc.type: FUNC
+ */
+HWTEST_F(ExifMetadataFormatterTest, RationalFormat001, TestSize.Level3)
+{
+    std::string value = "12 abc";
+    ExifMetadatFormatter::RationalFormat(value);
+    EXPECT_EQ(value, "12/1");
+}
+
+/**
+ * @tc.name: GetFractionFromStrTest001
+ * @tc.desc: Test GetFractionFromStr when int part out of range
+ * @tc.type: FUNC
+ */
+HWTEST_F(ExifMetadataFormatterTest, GetFractionFromStrTest001, TestSize.Level3)
+{
+    bool isOutRange = false;
+    std::string result = ExifMetadatFormatter::GetFractionFromStr("abc.5", isOutRange);
+    EXPECT_EQ(result, "");
+    EXPECT_TRUE(isOutRange);
+}
+
+/**
+ * @tc.name: GetFractionFromStrTest002
+ * @tc.desc: Test GetFractionFromStr when the input is a valid decimal number
+ * @tc.type: FUNC
+ */
+HWTEST_F(ExifMetadataFormatterTest, GetFractionFromStrTest002, TestSize.Level3)
+{
+    bool isOutRange = false;
+    std::string result = ExifMetadatFormatter::GetFractionFromStr("2.5", isOutRange);
+    EXPECT_EQ(result, "5/2");
+    EXPECT_FALSE(isOutRange);
+
+    result = ExifMetadatFormatter::GetFractionFromStr("10.25", isOutRange);
+    EXPECT_EQ(result, "41/4");
+    EXPECT_FALSE(isOutRange);
+
+    result = ExifMetadatFormatter::GetFractionFromStr("7.0", isOutRange);
+    EXPECT_EQ(result, "7/1");
+    EXPECT_FALSE(isOutRange);
 }
 } // namespace Multimedia
 } // namespace OHOS

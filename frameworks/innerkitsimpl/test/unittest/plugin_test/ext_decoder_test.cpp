@@ -21,6 +21,7 @@
 #include "ext_wstream.h"
 #include "ext_decoder.h"
 #include "plugin_export.h"
+#include "image_packer.h"
 #include "ext_encoder.h"
 #include "ext_stream.h"
 #include "mock_data_stream.h"
@@ -60,6 +61,8 @@ const static string SUPPORT_SCALE_KEY = "SupportScale";
 const static string SUPPORT_CROP_KEY = "SupportCrop";
 const static string EXT_SHAREMEM_NAME = "EXT RawData";
 const static string IMAGE_INPUT_JPEG_PATH = "/data/local/tmp/image/test_hw1.jpg";
+static const std::string IMAGE_DEST = "/data/local/tmp/image/test_encode_out.dat";
+static const std::string IMAGE_HEIFHDR_SRC = "/data/local/tmp/image/test_heif_hdr.heic";
 class ExtDecoderTest : public testing::Test {
 public:
     ExtDecoderTest() {}
@@ -842,6 +845,22 @@ HWTEST_F(ExtDecoderTest, FinalizeEncodeTest001, TestSize.Level3)
 }
 
 /**
+ * @tc.name: FinalizeEncodeTest002
+ * @tc.desc: Verify FinalizePacking() returns expected error with invalid parameters.
+ * @tc.type: FUNC
+ */
+HWTEST_F(ExtDecoderTest, FinalizeEncodeTest002, TestSize.Level3)
+{
+    ImagePacker pack;
+    PackOption option;
+    option.format = "image/jpeg";
+    uint32_t ret = pack.StartPacking(IMAGE_DEST, option);
+    ASSERT_EQ(ret, OHOS::Media::SUCCESS);
+    ret = pack.FinalizePacking();
+    EXPECT_EQ(ret, ERR_IMAGE_INVALID_PARAMETER);
+}
+
+/**
  * @tc.name: readTest001
  * @tc.desc: Test of read
  * @tc.type: FUNC
@@ -1062,6 +1081,20 @@ HWTEST_F(ExtDecoderTest, IsHardwareEncodeSupportedTest001, TestSize.Level3)
     bool ret = extEncoder.IsHardwareEncodeSupported(opts, pixelMap);
     ASSERT_EQ(ret, false);
     GTEST_LOG_(INFO) << "ExtDecoderTest: IsHardwareEncodeSupportedTest001 end";
+}
+
+/**
+ * @tc.name: IsHardwareEncodeSupportedTest002
+ * @tc.desc: Verify hardware encoding is not supported with invalid PixelMap parameter.
+ * @tc.type: FUNC
+ */
+HWTEST_F(ExtDecoderTest, IsHardwareEncodeSupportedTest002, TestSize.Level3)
+{
+    ExtEncoder encoder;
+    PlEncodeOptions opts;
+    Media::PixelMap *pixelMap = nullptr;
+    bool res = encoder.IsHardwareEncodeSupported(opts, pixelMap);
+    EXPECT_FALSE(res);
 }
 
 /**
@@ -1831,6 +1864,21 @@ HWTEST_F(ExtDecoderTest, EncodeHeifByPixelmapTest001, TestSize.Level3)
 }
 
 /**
+ * @tc.name: EncodeHeifByPixelmapTest002
+ * @tc.desc: Verify HEIF encoding fails with invalid PixelMap and null output.
+ * @tc.type: FUNC
+ */
+HWTEST_F(ExtDecoderTest, EncodeHeifByPixelmapTest002, TestSize.Level3)
+{
+    ExtEncoder encoder;
+    PlEncodeOptions opts;
+    Media::PixelMap *pixelMap = nullptr;
+    encoder.output_ = nullptr;
+    uint32_t res = encoder.EncodeHeifByPixelmap(pixelMap, opts);
+    EXPECT_EQ(res, ERR_IMAGE_INVALID_PARAMETER);
+}
+
+/**
  * @tc.name: TryHardwareEncodePictureTest001
  * @tc.desc: test the function of TryHardwareEncodePicture
              when picture is nullptr, return ERR_IMAGE_DATA_ABNORMAL
@@ -2351,6 +2399,22 @@ HWTEST_F(ExtDecoderTest, HeifDecoderImpl_initTest002, TestSize.Level3)
 }
 
 /**
+ * @tc.name: HeifDecoderImpl_initTest003
+ * @tc.desc: Verify HEIF decoder initialization fails with null stream and frameInfo.
+ * @tc.type: FUNC
+ */
+HWTEST_F(ExtDecoderTest, HeifDecoderImpl_initTest003, TestSize.Level3)
+{
+#ifdef HEIF_HW_DECODE_ENABLE
+    HeifDecoderImpl decoder;
+    HeifStream *stream = nullptr;
+    HeifFrameInfo *frameInfo = nullptr;
+    bool ret = decoder.init(stream, frameInfo);
+    EXPECT_FALSE(ret);
+#endif
+}
+
+/**
  * @tc.name: HeifDecoderImpl_CheckAuxiliaryMapTest001
  * @tc.desc: Verify that CheckAuxiliaryMap call init when parser_ is nullptr.
  * @tc.type: FUNC
@@ -2406,6 +2470,22 @@ HWTEST_F(ExtDecoderTest, HeifDecoderImpl_CheckAuxiliaryMapTest002, TestSize.Leve
     ASSERT_EQ(ret, false);
 #endif
     GTEST_LOG_(INFO) << "ExtDecoderTest: HeifDecoderImpl_CheckAuxiliaryMapTest002 end";
+}
+
+/**
+ * @tc.name: HeifDecoderImpl_CheckAuxiliaryMapTest003
+ * @tc.desc: Verify CheckAuxiliaryMap returns false when parser is null.
+ * @tc.type: FUNC
+ */
+HWTEST_F(ExtDecoderTest, HeifDecoderImpl_CheckAuxiliaryMapTest003, TestSize.Level3)
+{
+#ifdef HEIF_HW_DECODE_ENABLE
+    HeifDecoderImpl decoder;
+    decoder.parser_ = nullptr;
+    AuxiliaryPictureType type = AuxiliaryPictureType::GAINMAP;
+    bool ret = decoder.CheckAuxiliaryMap(type);
+    EXPECT_FALSE(ret);
+#endif
 }
 
 /**
@@ -2709,5 +2789,36 @@ HWTEST_F(ExtDecoderTest, IsHeifValidCropTest001, TestSize.Level3)
     GTEST_LOG_(INFO) << "ExtDecoderTest: IsHeifValidCropTest001 end";
 }
 
+/**
+ * @tc.name: EncodePixelMapTest001
+ * @tc.desc: Test HEIF encoding from a YCRCB_P010 format PixelMap and verify output image.
+ * @tc.type: FUNC
+ */
+HWTEST_F(ExtDecoderTest, EncodePixelMapTest001, TestSize.Level3)
+{
+    uint32_t errorCode = 0;
+    SourceOptions sourceOpts;
+    std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(IMAGE_HEIFHDR_SRC.c_str(),
+                                                                              sourceOpts, errorCode);
+    ASSERT_NE(imageSource, nullptr);
+    DecodeOptions opts;
+    opts.desiredPixelFormat = PixelFormat::YCRCB_P010;
+    std::shared_ptr<PixelMap> pixelmap = imageSource->CreatePixelMap(opts, errorCode);
+    ASSERT_EQ(errorCode, OHOS::Media::SUCCESS);
+    ASSERT_NE(pixelmap, nullptr);
+    ImagePacker packer;
+    PackOption option;
+    option.format = "image/heif";
+    option.needsPackProperties = true;
+    uint32_t startpc = packer.StartPacking(IMAGE_DEST, option);
+    ASSERT_EQ(startpc, OHOS::Media::SUCCESS);
+    uint32_t retAddImage = packer.AddImage(*pixelmap);
+    ASSERT_EQ(retAddImage, OHOS::Media::SUCCESS);
+    uint32_t retFinalizePacking = packer.FinalizePacking();
+    ASSERT_EQ(retFinalizePacking, OHOS::Media::SUCCESS);
+    std::unique_ptr<ImageSource> imageSourceDest = ImageSource::CreateImageSource(IMAGE_DEST, sourceOpts, errorCode);
+    EXPECT_EQ(errorCode, OHOS::Media::SUCCESS);
+    EXPECT_NE(imageSourceDest, nullptr);
+}
 }
 }

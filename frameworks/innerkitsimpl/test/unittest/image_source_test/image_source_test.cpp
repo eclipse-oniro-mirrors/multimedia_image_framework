@@ -1599,6 +1599,22 @@ HWTEST_F(ImageSourceTest, GetFormatExtendedTest001, TestSize.Level3)
 }
 
 /**
+ * @tc.name: GetFormatExtendedTest002
+ * @tc.desc: Verify GetFormatExtended() returns SUCCESS when called with null decoder and empty format string.
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageSourceTest, GetFormatExtendedTest002, TestSize.Level1)
+{
+    uint32_t errorCode = 0;
+    SourceOptions opts;
+    std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(IMAGE_INPUT_JPEG_PATH, opts, errorCode);
+    imageSource->mainDecoder_ = nullptr;
+    std::string format = "";
+    uint32_t ret = imageSource->GetFormatExtended(format);
+    EXPECT_EQ(ret, SUCCESS);
+}
+
+/**
  * @tc.name: CheckFormatHintTest001
  * @tc.desc: test CheckFormatHint
  * @tc.type: FUNC
