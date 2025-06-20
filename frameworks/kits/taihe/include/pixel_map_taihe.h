@@ -58,6 +58,8 @@ public:
     void ConvertPixelFormatSync(PixelMapFormat targetPixelFormat);
     uintptr_t GetColorSpace();
     void SetColorSpace(uintptr_t colorSpace);
+    void ToSdrSync();
+    void ApplyColorSpaceSync(uintptr_t targetColorSpace);
     void ReleaseSync();
     bool GetIsEditable();
     bool GetIsStrideAlignment();
