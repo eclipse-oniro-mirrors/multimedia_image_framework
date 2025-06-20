@@ -382,8 +382,8 @@ private:
     void InitDecoderForJpeg();
 
 #if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
-    void SpecialSetComposeBuffer(sptr<SurfaceBuffer>& baseSptr, sptr<SurfaceBuffer>& gainmapSptr,
-        sptr<SurfaceBuffer>& hdrSptr, HdrMetadata& metadata);
+    void SpecialSetComposeBuffer(ImagePlugin::DecodeContext &baseCtx, sptr<SurfaceBuffer>& baseSptr,
+        sptr<SurfaceBuffer>& gainmapSptr, sptr<SurfaceBuffer>& hdrSptr, HdrMetadata& metadata);
     void SetHdrMetadataForPicture(std::unique_ptr<Picture> &picture);
     void DecodeHeifAuxiliaryPictures(const std::set<AuxiliaryPictureType> &auxTypes, std::unique_ptr<Picture> &picture,
                                      uint32_t &errorCode);

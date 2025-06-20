@@ -171,6 +171,7 @@ constexpr int32_t DEFAULT_DMA_SIZE = 512 * 512;
 constexpr int32_t DMA_ALLOC = 1;
 constexpr int32_t SHARE_MEMORY_ALLOC = 2;
 constexpr int32_t AUTO_ALLOC = 0;
+constexpr uint8_t GAINMAP_CHANNEL_NUM_ONE = 0x01;
 static constexpr uint8_t JPEG_SOI[] = { 0xFF, 0xD8, 0xFF };
 constexpr uint8_t PIXEL_BYTES = 4;
 
@@ -855,6 +856,7 @@ DecodeContext ImageSource::InitDecodeContext(const DecodeOptions &opts, const Im
 {
     DecodeContext context;
     context.photoDesiredPixelFormat = opts.photoDesiredPixelFormat;
+    context.isCreateWideGamutSdrPixelMap = opts.isCreateWideGamutSdrPixelMap;
     if (opts.allocatorType != AllocatorType::DEFAULT) {
         context.allocatorType = opts.allocatorType;
     } else {
@@ -4265,6 +4267,11 @@ bool ImageSource::ApplyGainMap(ImageHdrType hdrType, DecodeContext& baseCtx, Dec
         IMAGE_LOGI("[ImageSource] jpeg get gainmap failed");
         return false;
     }
+    if (baseCtx.isCreateWideGamutSdrPixelMap &&
+        metadata.extendMeta.metaISO.gainmapChannelNum == GAINMAP_CHANNEL_NUM_ONE) {
+        IMAGE_LOGI("HDR-IMAGE wideGamut get one channel gainmap");
+        return false;
+    }
     IMAGE_LOGD("HDR-IMAGE get hdr metadata, extend flag is %{public}d, static size is %{public}zu,"
         "dynamic metadata size is %{public}zu",
         metadata.extendMetaFlag, metadata.staticMetadata.size(), metadata.dynamicMetadata.size());
@@ -4391,7 +4398,7 @@ bool ImageSource::ComposeHdrImage(ImageHdrType hdrType, DecodeContext& baseCtx, 
     bool cond = (errorCode != SUCCESS);
     CHECK_ERROR_RETURN_RET_LOG(cond, false, "HDR SurfaceBuffer Alloc failed, %{public}d", errorCode);
     sptr<SurfaceBuffer> hdrSptr(reinterpret_cast<SurfaceBuffer*>(hdrCtx.pixelsBuffer.context));
-    SpecialSetComposeBuffer(baseSptr, gainmapSptr, hdrSptr, metadata);
+    SpecialSetComposeBuffer(baseCtx, baseSptr, gainmapSptr, hdrSptr, metadata);
     VpeSurfaceBuffers buffers = {
         .sdr = baseSptr,
         .gainmap = gainmapSptr,
@@ -4496,7 +4503,8 @@ static bool CopyYUVToSurfaceBuffer(const DecodeContext& context, sptr<SurfaceBuf
     return true;
 }
 
-static void SetResLog(sptr<SurfaceBuffer>& baseSptr, sptr<SurfaceBuffer>& gainmapSptr, sptr<SurfaceBuffer>& hdrSptr)
+static void SetResLogBuffer(sptr<SurfaceBuffer>& baseSptr, sptr<SurfaceBuffer>& gainmapSptr,
+    sptr<SurfaceBuffer>& hdrSptr)
 {
     VpeUtils::SetSurfaceBufferInfo(baseSptr, CM_BT709_LIMIT);
     VpeUtils::SetSurfaceBufferInfo(gainmapSptr, CM_BT709_LIMIT);
@@ -4506,9 +4514,16 @@ static void SetResLog(sptr<SurfaceBuffer>& baseSptr, sptr<SurfaceBuffer>& gainma
     VpeUtils::SetSbMetadataType(hdrSptr, CM_IMAGE_HDR_VIVID_SINGLE);
 }
 
+static void SetWideGamutBuffer(sptr<SurfaceBuffer>& baseSptr, sptr<SurfaceBuffer>& gainmapSptr,
+    sptr<SurfaceBuffer>& hdrSptr)
+{
+    VpeUtils::SetSbColorSpaceType(baseSptr, CM_SRGB_FULL);
+    VpeUtils::SetSbColorSpaceType(gainmapSptr, CM_SRGB_FULL);
+    VpeUtils::SetSbColorSpaceType(hdrSptr, CM_DISPLAY_BT2020_SRGB);
+}
 
-void ImageSource::SpecialSetComposeBuffer(sptr<SurfaceBuffer>& baseSptr, sptr<SurfaceBuffer>& gainmapSptr,
-                                          sptr<SurfaceBuffer>& hdrSptr, HdrMetadata& metadata)
+void ImageSource::SpecialSetComposeBuffer(DecodeContext &baseCtx, sptr<SurfaceBuffer>& baseSptr,
+    sptr<SurfaceBuffer>& gainmapSptr, sptr<SurfaceBuffer>& hdrSptr, HdrMetadata& metadata)
 {
     // videoHdrImage special process
     CM_HDR_Metadata_Type videoToImageHdrType = GetHdrMediaType(metadata);
@@ -4519,7 +4534,11 @@ void ImageSource::SpecialSetComposeBuffer(sptr<SurfaceBuffer>& baseSptr, sptr<Su
     }
     // logHdrImage special process
     if (sourceHdrType_ == ImageHdrType::HDR_LOG_DUAL) {
-        SetResLog(baseSptr, gainmapSptr, hdrSptr);
+        SetResLogBuffer(baseSptr, gainmapSptr, hdrSptr);
+    }
+    // wideGamutSdr special process
+    if (baseCtx.isCreateWideGamutSdrPixelMap) {
+        SetWideGamutBuffer(baseSptr, gainmapSptr, hdrSptr);
     }
 }
 

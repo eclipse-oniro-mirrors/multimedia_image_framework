@@ -89,6 +89,8 @@ struct DecodeContext {
     ColorManager::ColorSpaceName grColorSpaceName = ColorManager::NONE;
     // In: User set allocatorType.
     bool isAppUseAllocator = false;
+    // In : User set CreateWideGamutSdrPixelMap
+    bool  isCreateWideGamutSdrPixelMap = false;
 };
 
 struct ProgDecodeContext {
