@@ -24,7 +24,9 @@
 #include "image_type.h"
 #include "surface_buffer.h"
 
-#include "hardware/heif_hw_decoder.h"
+#ifdef IMAGE_COLORSPACE_FLAG
+#include "color_space.h"
+#endif
 
 namespace OHOS::Media {
     class ImageFwkExtManager;
@@ -56,7 +58,7 @@ public:
 
     bool getImageInfo(HeifFrameInfo *frameInfo) override;
     bool decodeGainmap() override;
-    void setGainmapDstBuffer(uint8_t* dstBuffer, size_t rowStride) override;
+    void setGainmapDstBuffer(uint8_t* dstBuffer, size_t rowStride, void *context);
     bool getGainmapInfo(HeifFrameInfo* frameInfo) override;
     bool getTmapInfo(HeifFrameInfo* frameInfo) override;
     HeifImageHdrType getHdrType() override;
@@ -73,6 +75,10 @@ public:
     void setAuxiliaryDstBuffer(uint8_t* dstBuffer, size_t dstSize, size_t rowStride, void *context);
     void getFragmentMetadata(Media::Rect& fragmentMetadata);
     bool SwDecode(bool isSharedMemory = false);
+    bool IsHeifGainmapNotYuv420();
+    bool IsHeifAlphaNotYuv420();
+    void SetSampleFormat(uint32_t sampleSize, ColorManager::ColorSpaceName colorSpaceName);
+    int32_t GetPrimaryLumaBitNum();
 private:
     bool Reinit(HeifFrameInfo *frameInfo);
 
@@ -88,32 +94,37 @@ private:
 
     bool ProcessChunkHead(uint8_t *data, size_t len);
 
-    void ReleaseHwDecoder(HeifHardwareDecoder *hwDecoder, bool isReuse);
+    bool copyToAshmem(std::vector<std::vector<uint8_t>> &inputs, std::vector<sptr<Ashmem>> &hwInputs);
 
-    bool HwDecodeImage(HeifHardwareDecoder *hwDecoder,
-                       std::shared_ptr<HeifImage> &image, GridInfo &gridInfo,
-                       sptr<SurfaceBuffer> *outBuffer, bool isPrimary);
+    void SetHwDecodeInfo(GridInfo &gridInfo,
+        OHOS::HDI::Codec::Image::V2_1::CodecHeifDecInfo &heifDecodeInfo);
 
-    void PreparePackedInput(HeifHardwareDecoder *hwDecoder, std::vector<std::shared_ptr<HeifImage>> tileImages,
+    GSError HwSetColorSpaceData(sptr<SurfaceBuffer> &buffer, GridInfo &gridInfo);
+
+    bool HwDecodeImage(std::shared_ptr<HeifImage> &image, GridInfo &gridInfo,
+        sptr<SurfaceBuffer> *outBuffer, bool isPrimary);
+
+    void PreparePackedInput(std::vector<std::shared_ptr<HeifImage>> tileImages,
         std::vector<std::vector<uint8_t>> &packedInput, size_t gridCount);
 
-    bool HwDecodeGrids(HeifHardwareDecoder *hwDecoder, std::shared_ptr<HeifImage> &image,
-                       GridInfo &gridInfo, sptr<SurfaceBuffer> &hwBuffer);
+    bool AllocateHwOutputBuffer(sptr<SurfaceBuffer> &hwBuffer, bool isPrimary);
 
-    bool HwDecodeIovls(HeifHardwareDecoder *hwDecoder, std::shared_ptr<HeifImage> &image,
-                       GridInfo &gridInfo, sptr<SurfaceBuffer> &hwBuffer);
+    bool HwDecodeGrids(std::shared_ptr<HeifImage> &image,
+        GridInfo &gridInfo, sptr<SurfaceBuffer> &hwBuffer);
 
-    bool HwDecodeIdenImage(HeifHardwareDecoder *hwDecoder,
-                           std::shared_ptr<HeifImage> &image, GridInfo &gridInfo,
-                           sptr<SurfaceBuffer> *outBuffer, bool isPrimary);
+    bool HwDecodeIovls(std::shared_ptr<HeifImage> &image,
+        GridInfo &gridInfo, sptr<SurfaceBuffer> &hwBuffer);
 
-    bool HwDecodeSingleImage(HeifHardwareDecoder *hwDecoder, std::shared_ptr<HeifImage> &image,
-                             GridInfo &gridInfo, sptr<SurfaceBuffer> &hwBuffer);
+    bool HwDecodeIdenImage(std::shared_ptr<HeifImage> &image, GridInfo &gridInfo,
+        sptr<SurfaceBuffer> *outBuffer, bool isPrimary);
+
+    bool HwDecodeSingleImage(std::shared_ptr<HeifImage> &image,
+        GridInfo &gridInfo, sptr<SurfaceBuffer> &hwBuffer);
 
     bool HwDecodeMimeImage(std::shared_ptr<HeifImage> &image);
 
-    bool HwDecodeMovieFirstFrameImage(HeifHardwareDecoder *hwDecoder, std::shared_ptr<HeifImage> &image,
-                                      GridInfo &gridInfo, sptr<SurfaceBuffer> &hwBuffer);
+    bool HwDecodeMovieFirstFrameImage(std::shared_ptr<HeifImage> &image,
+        GridInfo &gridInfo, sptr<SurfaceBuffer> &hwBuffer);
 
     bool SwDecodeImage(std::shared_ptr<HeifImage> &image, HevcSoftDecodeParam &param,
                        GridInfo &gridInfo, bool isPrimary);
@@ -150,6 +161,8 @@ private:
 
     void SetColorSpaceInfo(HeifFrameInfo* info, const std::shared_ptr<HeifImage>& image);
 
+    void GetGainmapColorSpace(ColorManager::ColorSpaceName &gainmapColor);
+
     void SetHardwareDecodeErrMsg(const uint32_t width, const uint32_t height);
 
     std::shared_ptr<HeifParser> parser_;
@@ -178,6 +191,9 @@ private:
     bool isAuxiliaryDecode_ = false;
     bool isGainmapDecode_ = false;
     SurfaceBuffer *auxiliaryDstHwBuffer_;
+    SurfaceBuffer *gainMapDstHwBuffer_;
+    uint32_t sampleSize_ = 1;
+    OHOS::ColorManager::ColorSpaceName colorSpaceName_ = ColorManager::colorSpaceName::NONE;
 
     HeifFrameInfo tmapInfo_{};
     std::string errMsg_;

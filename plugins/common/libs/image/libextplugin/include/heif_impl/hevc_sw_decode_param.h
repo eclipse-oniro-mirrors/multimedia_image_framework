@@ -23,12 +23,15 @@ namespace OHOS {
 namespace ImagePlugin {
 struct HevcSoftDecodeParam {
     GridInfo gridInfo {};
+    Media::PixelFormat srcpixFmt = Media::PixelFormat::UNKNOWN;
     Media::PixelFormat dstPixFmt = Media::PixelFormat::UNKNOWN;
     uint8_t *dstBuffer = nullptr;
     uint32_t bufferSize = 0;
     uint32_t dstStride = 0;
     void *hwBuffer = nullptr;
     bool isSharedMemory = false;
+    void *Yuv400Buffer = nullptr;
+    uint32_t gainmapRowStride = 0;
 };
 } // namespace ImagePlugin
 } // namespace OHOS
