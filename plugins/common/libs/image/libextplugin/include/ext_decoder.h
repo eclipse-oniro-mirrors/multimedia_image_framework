@@ -101,6 +101,7 @@ private:
     bool IsSupportCropOnDecode();
     bool IsSupportCropOnDecode(SkIRect &target);
     bool IsSupportHardwareDecode();
+    bool IsDivisibleBySampleSize();
     bool IsSupportSampleDecode(OHOS::Media::PixelFormat desiredFormat);
     bool IsYuv420Format(OHOS::Media::PixelFormat format) const;
     bool IsHeifToYuvDecode(const DecodeContext &context) const;
@@ -125,8 +126,13 @@ private:
     uint32_t DmaMemAlloc(DecodeContext &context, uint64_t count, SkImageInfo &dstInfo);
     uint32_t JpegHwDmaMemAlloc(DecodeContext &context, uint64_t count, SkImageInfo &dstInfo);
     uint32_t DmaAlloc(DecodeContext &context, uint64_t count, const OHOS::BufferRequestConfig &requestConfig);
-    uint32_t AllocateHeifYuvAuxiliaryBuffer(DecodeContext& context, uint32_t width, uint32_t height);
-    uint32_t HeifYUVMemAlloc(DecodeContext &context);
+    uint32_t HeifYUVMemAlloc(DecodeContext &context, SkImageInfo &heifInfo);
+    uint32_t DoHeifDecode(DecodeContext &context);
+    uint32_t DoHeifToRgbDecode(DecodeContext &context);
+    void SetHeifSampleSize(const PixelDecodeOptions &opts, int &dstWidth, int &dstHeight,
+        SkColorType desireColor, SkAlphaType desireAlpha);
+    bool IsSupportHeifHardwareDecode(const PixelDecodeOptions &opts);
+    bool DoHeifSwDecode(DecodeContext &context);
     void SetHeifDecodeError(DecodeContext &context);
     void SetHeifParseError();
     uint32_t ConvertFormatToYUV(DecodeContext &context, SkImageInfo &skInfo,
@@ -167,6 +173,7 @@ private:
     std::shared_ptr<OHOS::ColorManager::ColorSpace> srcColorSpace_ = nullptr;
     OHOS::ColorManager::ColorSpace GetSrcColorSpace();
     uint32_t ApplyDesiredColorSpace(DecodeContext &context);
+    OHOS::ColorManager::ColorSpaceName heifColorSpaceName_ = ColorManager::ColorSpaceName::NONE;
 #endif
 
 #if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)

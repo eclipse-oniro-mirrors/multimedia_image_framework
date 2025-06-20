@@ -453,29 +453,12 @@ ohos_shared_library("heifimpl") {
 
   sources = [ "src/heif_impl/HeifDecoderImpl.cpp" ]
 
-  if (enable_heif_hw_decode) {
-    sources += [
-      "src/hardware/heif_hw_decoder.cpp",
-      "src/hardware/imagecodec/codec_state.cpp",
-      "src/hardware/imagecodec/format.cpp",
-      "src/hardware/imagecodec/image_codec.cpp",
-      "src/hardware/imagecodec/image_codec_buffer.cpp",
-      "src/hardware/imagecodec/image_codec_dfx.cpp",
-      "src/hardware/imagecodec/image_codec_list.cpp",
-      "src/hardware/imagecodec/image_decoder.cpp",
-      "src/hardware/imagecodec/msg_handle_loop.cpp",
-      "src/hardware/imagecodec/state_machine.cpp",
-      "src/hardware/imagecodec/type_converter.cpp",
-    ]
-  }
-
   deps = [
     ":heifparser",
     "${image_subsystem}/frameworks/innerkitsimpl/utils:image_utils",
   ]
 
   external_deps = [
-    "ffrt:libffrt",
     "graphic_2d:color_manager",
     "graphic_surface:surface",
     "hilog:libhilog",
@@ -485,7 +468,8 @@ ohos_shared_library("heifimpl") {
     external_deps += [
       "c_utils:utils",
       "drivers_interface_codec:libcodec_proxy_4.0",
-      "ffmpeg:libohosffmpeg",
+      "drivers_interface_codec:libimage_proxy_2.1",
+      "drivers_interface_display:display_commontype_idl_headers",
       "hdf_core:libhdi",
       "hitrace:hitrace_meter",
       "init:libbegetutil",

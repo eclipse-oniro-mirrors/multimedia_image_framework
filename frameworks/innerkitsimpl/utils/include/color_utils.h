@@ -29,6 +29,8 @@ namespace Media {
 
 class ColorUtils {
 public:
+    static std::map<ColorManager::ColorSpaceName,
+        OHOS::HDI::Display::Graphic::Common::V1_0::CM_ColorSpaceInfo> COLORSPACE_NAME_TO_COLORINFO_MAP;
     template <typename T>
     static ColorManager::ColorSpaceName CicpToColorSpace(T primaries, T transfer,
         T matrix, uint8_t range);
