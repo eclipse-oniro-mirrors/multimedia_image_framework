@@ -41,7 +41,6 @@ public:
     NATIVEEXPORT uint32_t SetAlpha(const float percent) override;
     NATIVEEXPORT bool SetAlphaType(const AlphaType &alphaType) override;
     NATIVEEXPORT void SetTransformered(bool isTransformered) override;
-    NATIVEEXPORT void SetRowStride(uint32_t stride) override;
 
     NATIVEEXPORT const uint8_t *GetPixel8(int32_t x, int32_t y) override;
     NATIVEEXPORT const uint16_t *GetPixel16(int32_t x, int32_t y) override;
@@ -51,7 +50,6 @@ public:
     NATIVEEXPORT uint8_t GetARGB32ColorR(uint32_t color) override;
     NATIVEEXPORT uint8_t GetARGB32ColorG(uint32_t color) override;
     NATIVEEXPORT uint8_t GetARGB32ColorB(uint32_t color) override;
-    NATIVEEXPORT int32_t GetRowStride() override;
     NATIVEEXPORT void *GetWritablePixels() const override;
     NATIVEEXPORT uint32_t GetUniqueId() const override
     {
@@ -81,9 +79,11 @@ public:
                          const uint32_t &stride, const Rect &region) override;
     NATIVEEXPORT uint32_t WritePixels(const uint8_t *source, const uint64_t &bufferSize) override;
     NATIVEEXPORT bool WritePixels(const uint32_t &color) override;
-
+    NATIVEEXPORT bool IsHdr() override;
+    NATIVEEXPORT void SetHdr(bool hdrFlag);
 private:
     uint32_t astcId_ = 0;
+    bool isHdr_ = false;
 };
 } // namespace Media
 } // namespace OHOS

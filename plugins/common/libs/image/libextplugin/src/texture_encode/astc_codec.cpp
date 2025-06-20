@@ -29,6 +29,10 @@
 #include "image_trace.h"
 #include "securec.h"
 #include "media_errors.h"
+#if !defined(_WIN32) && !defined(_APPLE) && !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
+#include "v1_0/buffer_handle_meta_key_type.h"
+#include "vpe_utils.h"
+#endif
 
 #undef LOG_DOMAIN
 #define LOG_DOMAIN LOG_TAG_DOMAIN_ID_PLUGIN
@@ -39,6 +43,9 @@
 namespace OHOS {
 namespace ImagePlugin {
 using namespace Media;
+#if !defined(_WIN32) && !defined(_APPLE) && !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
+using namespace OHOS::HDI::Display::Graphic::Common::V1_0;
+#endif
 #ifdef ENABLE_ASTC_ENCODE_BASED_GPU
 using namespace AstcEncBasedCl;
 #endif
@@ -338,7 +345,11 @@ static bool InitMem(AstcEncoder *work, TextureEncodeOptions param)
     work->image_.dim_x = static_cast<unsigned int>(param.width_);
     work->image_.dim_y = static_cast<unsigned int>(param.height_);
     work->image_.dim_z = 1;
-    work->image_.data_type = ASTCENC_TYPE_U8;
+    if (param.privateProfile_ == HIGH_SPEED_PROFILE_HIGHBITS) {
+        work->image_.data_type = ASTCENC_TYPE_RGBA1010102;
+    } else {
+        work->image_.data_type = ASTCENC_TYPE_U8;
+    }
     work->image_.dim_stride = static_cast<unsigned int>(param.stride_);
     work->codec_context = nullptr;
     work->image_.data = nullptr;
@@ -529,6 +540,7 @@ bool AstcCodec::TryTextureSuperCompress(TextureEncodeOptions &param, uint8_t *as
         ((!param.hardwareFlag) && (param.privateProfile_ != HIGH_SPEED_PROFILE)) ||
         (param.blockX_ != DEFAULT_DIM && param.blockY_ != DEFAULT_DIM);
     switch (param.textureEncodeType) {
+        case TextureEncodeType::HDR_ASTC_4X4:
         case TextureEncodeType::SDR_ASTC_4X4:
             param.sutProfile = SutProfile::SKIP_SUT;
             IMAGE_LOGD("sdr_astc_4x4 is not suit to be compressed to sut!");
@@ -568,7 +580,7 @@ static bool GetSutSdrProfile(PlEncodeOptions &astcOpts,
     return false;
 }
 
-static bool GetAstcSdrProfile(PlEncodeOptions &astcOpts, QualityProfile &privateProfile)
+static bool GetAstcProfile(PlEncodeOptions &astcOpts, QualityProfile &privateProfile)
 {
     auto astcNode = ASTC_FORMAT_MAP.find(astcOpts.format);
     if (astcNode != ASTC_FORMAT_MAP.end()) {
@@ -578,7 +590,7 @@ static bool GetAstcSdrProfile(PlEncodeOptions &astcOpts, QualityProfile &private
             privateProfile = qualityNode->second;
             return true;
         }
-        IMAGE_LOGE("GetAstcSdrProfile failed %{public}d is invalid!", astcOpts.quality);
+        IMAGE_LOGE("GetAstcProfile failed %{public}d is invalid!", astcOpts.quality);
         return false;
     }
     return false;
@@ -618,12 +630,19 @@ static bool InitAstcEncPara(TextureEncodeOptions &param,
         }
         param.textureEncodeType = TextureEncodeType::SDR_SUT_SUPERFAST_4X4;
     } else if (astcOpts.format == "image/sdr_astc_4x4") { // astc sdr encode
-        if (!GetAstcSdrProfile(astcOpts, qualityProfile)) {
-            IMAGE_LOGE("InitAstcEncPara GetAstcSdrProfile failed");
+        if (!GetAstcProfile(astcOpts, qualityProfile)) {
+            IMAGE_LOGE("InitAstcEncPara GetAstcProfile failed");
             return false;
         }
         sutProfile = SutProfile::SKIP_SUT;
         param.textureEncodeType = TextureEncodeType::SDR_ASTC_4X4;
+    } else if (astcOpts.format == "image/hdr_astc_4x4") { // astc hdr encode
+        if (!GetAstcProfile(astcOpts, qualityProfile)) {
+            IMAGE_LOGE("InitAstcEncPara GetAstcProfile failed");
+            return false;
+        }
+        sutProfile = SutProfile::SKIP_SUT;
+        param.textureEncodeType = TextureEncodeType::HDR_ASTC_4X4;
     } else if (astcOpts.format.find("image/astc") == 0) { // old astc encode
         qualityProfile = GetAstcQuality(astcOpts.quality);
         sutProfile = SutProfile::SKIP_SUT;
@@ -638,7 +657,7 @@ static bool InitAstcEncPara(TextureEncodeOptions &param,
     param.width_ = width;
     param.height_ = height;
     param.stride_ = stride;
-    param.privateProfile_ = GetAstcQuality(astcOpts.quality);
+    param.privateProfile_ = qualityProfile;
     param.outIsSut = false;
     extractDimensions(astcOpts.format, param);
     if (!CheckParamBlockSize(param)) { // DEFAULT_DIM = 4
@@ -692,8 +711,11 @@ static bool CheckAstcEncInput(TextureEncodeOptions &param, AstcEncCheckInfo chec
         IMAGE_LOGE("CheckAstcEncInput block %{public}d x %{public}d > 12 x 12!", param.blockX_, param.blockY_);
         return false;
     }
-    if (checkInfo.pixmapFormat != PixelFormat::RGBA_8888) {
-        IMAGE_LOGE("CheckAstcEncInput pixmapFormat %{public}d must be RGBA!", checkInfo.pixmapFormat);
+    const bool isAstcHdr = (param.textureEncodeType == TextureEncodeType::HDR_ASTC_4X4);
+    const PixelFormat expectedFormat = isAstcHdr ? PixelFormat::RGBA_1010102 : PixelFormat::RGBA_8888;
+    if (checkInfo.pixmapFormat != expectedFormat) {
+        IMAGE_LOGE("CheckAstcEncInput textureEncodeType: %{public}d, pixelFormat %{public}d must be RGBA!",
+            param.textureEncodeType, checkInfo.pixmapFormat);
         return false;
     }
     uint32_t packSize = static_cast<uint32_t>(param.astcBytes) + checkInfo.extendInfoSize + checkInfo.extendBufferSize;
@@ -909,22 +931,97 @@ uint32_t AstcCodec::ASTCEncode() __attribute__((no_sanitize("cfi")))
 
 bool AllocMemForExtInfo(AstcExtendInfo &extendInfo, uint8_t idx)
 {
+    auto AllocAndCopy = [&](size_t dataSize, const void* srcData, const char* logTag) -> bool {
+        extendInfo.extendInfoLength[idx] = static_cast<uint32_t>(dataSize);
+        extendInfo.extendBufferSumBytes += ASTC_EXTEND_INFO_TYPE_LENGTH +
+                                          ASTC_EXTEND_INFO_LENGTH_LENGTH +
+                                          extendInfo.extendInfoLength[idx];
+        if (dataSize <= 0) {
+            return false;
+        }
+        extendInfo.extendInfoValue[idx] = static_cast<uint8_t*>(malloc(dataSize));
+        if (extendInfo.extendInfoValue[idx] == nullptr) {
+            IMAGE_LOGE("[AstcCodec] %s malloc failed!", logTag);
+            return false;
+        }
+        if (srcData && memcpy_s(extendInfo.extendInfoValue[idx], dataSize,
+                               srcData, dataSize) != 0) {
+            IMAGE_LOGE("[AstcCodec] %s memcpy failed!", logTag);
+            return false;
+        }
+        return true;
+    };
     AstcExtendInfoType type = static_cast<AstcExtendInfoType>(idx);
     switch (type) {
         case AstcExtendInfoType::COLOR_SPACE:
-            extendInfo.extendInfoLength[idx] = ASTC_EXTEND_INFO_COLOR_SPACE_VALUE_LENGTH;
-            extendInfo.extendBufferSumBytes += ASTC_EXTEND_INFO_TYPE_LENGTH +
-                ASTC_EXTEND_INFO_LENGTH_LENGTH + ASTC_EXTEND_INFO_COLOR_SPACE_VALUE_LENGTH;
-            extendInfo.extendInfoValue[idx] = static_cast<uint8_t*>(malloc(extendInfo.extendInfoLength[idx]));
-            if (extendInfo.extendInfoValue[idx] == nullptr) {
-                IMAGE_LOGE("[AstcCodec] SetColorSpaceInfo malloc failed!");
-                return false;
-            }
-            break;
+        case AstcExtendInfoType::PIXEL_FORMAT:
+            // These types only require memory allocation and do not require data initialization
+            return AllocAndCopy(ASTC_EXTEND_INFO_COLOR_SPACE_VALUE_LENGTH,
+                               nullptr, type == AstcExtendInfoType::COLOR_SPACE ?
+                               "SetColorSpaceInfo" : "SetPixelFormatInfo");
+        case AstcExtendInfoType::HDR_METADATA_TYPE:
+            return AllocAndCopy(extendInfo.astcMetadata.hdrMetadataTypeVec.size(),
+                               extendInfo.astcMetadata.hdrMetadataTypeVec.data(),
+                               "SetHdrMetadataType");
+        case AstcExtendInfoType::HDR_COLORSPACE_INFO:
+            return AllocAndCopy(extendInfo.astcMetadata.colorSpaceInfoVec.size(),
+                               extendInfo.astcMetadata.colorSpaceInfoVec.data(),
+                               "SetHdrColorSpaceInfo");
+        case AstcExtendInfoType::HDR_STATIC_DATA:
+            return AllocAndCopy(extendInfo.astcMetadata.staticData.size(),
+                               extendInfo.astcMetadata.staticData.data(),
+                               "SetHdrStaticData");
+        case AstcExtendInfoType::HDR_DYNAMIC_DATA:
+            return AllocAndCopy(extendInfo.astcMetadata.dynamicData.size(),
+                               extendInfo.astcMetadata.dynamicData.data(),
+                               "SetHdrDynamicData");
         default:
+            IMAGE_LOGE("[AstcCodec] Unknown extend info type: %d", static_cast<int>(type));
             return false;
     }
-    return true;
+}
+
+bool AstcCodec::FillMetaData(AstcExtendInfo &extendInfo, PixelMap *astcPixelMap)
+{
+    if (astcPixelMap == nullptr || astcPixelMap->GetFd() == nullptr) {
+        IMAGE_LOGE("[AstcCodec] astcPixelMap is nullptr!");
+        return false;
+    }
+    if (!astcPixelMap->IsHdr()) {
+        return false; // No need to fill metadata for SDR
+    }
+    sptr<SurfaceBuffer> source(reinterpret_cast<SurfaceBuffer *>(astcPixelMap->GetFd()));
+    bool success = true;
+
+    auto CheckResult = [&](GSError status, const char* metadataName) {
+        if (status != GSERROR_OK) {
+            IMAGE_LOGE("[AstcCodec] GetMetadata %s failed: %d", metadataName, status);
+            success = false;
+        }
+    };
+    CheckResult(source->GetMetadata(ATTRKEY_HDR_METADATA_TYPE,
+               extendInfo.astcMetadata.hdrMetadataTypeVec),
+               "ATTRKEY_HDR_METADATA_TYPE");
+    CheckResult(source->GetMetadata(ATTRKEY_COLORSPACE_INFO,
+               extendInfo.astcMetadata.colorSpaceInfoVec),
+               "ATTRKEY_COLORSPACE_INFO");
+
+    auto CheckVpeResult = [&](bool result, const char* metadataName, auto& dataVec) {
+        if (!result || dataVec.empty()) {
+            IMAGE_LOGE("[AstcCodec] %s failed or empty", metadataName);
+            success = false;
+        }
+    };
+    CheckVpeResult(VpeUtils::GetSbStaticMetadata(source, extendInfo.astcMetadata.staticData),
+                  "GetSbStaticMetadata", extendInfo.astcMetadata.staticData);
+    CheckVpeResult(VpeUtils::GetSbDynamicMetadata(source, extendInfo.astcMetadata.dynamicData),
+                  "GetSbDynamicMetadata", extendInfo.astcMetadata.dynamicData);
+
+    // Check if all required metadata is filled
+    if (!success) {
+        IMAGE_LOGE("[AstcCodec] FillMetaData incomplete, some metadata missing");
+    }
+    return success;
 }
 
 bool AstcCodec::InitAstcExtendInfo(AstcExtendInfo &extendInfo)
@@ -933,8 +1030,14 @@ bool AstcCodec::InitAstcExtendInfo(AstcExtendInfo &extendInfo)
         IMAGE_LOGE("[AstcCodec] memset extendInfo failed!");
         return false;
     }
-    extendInfo.extendNums = ASTC_EXTEND_INFO_TLV_NUM;
+    extendInfo.extendNums = astcPixelMap_->IsHdr() ? ASTC_EXTEND_INFO_TLV_NUM_6 : ASTC_EXTEND_INFO_TLV_NUM_2;
     extendInfo.extendBufferSumBytes = 0;
+    if (astcPixelMap_->IsHdr()) {
+        if (!FillMetaData(extendInfo, astcPixelMap_)) {
+            IMAGE_LOGE("[AstcCodec] FillMetaData failed!");
+            return false;
+        }
+    }
     for (uint8_t idx = 0; idx < extendInfo.extendNums; idx++) {
         if (!AllocMemForExtInfo(extendInfo, idx)) {
             ReleaseExtendInfoMemory(extendInfo);
@@ -972,6 +1075,7 @@ void AstcCodec::WriteAstcExtendInfo(uint8_t *buffer, uint32_t offset, AstcExtend
     ColorManager::ColorSpace colorspace = astcPixelMap_->InnerGetGrColorSpace();
     ColorManager::ColorSpaceName csName = colorspace.GetColorSpaceName();
 #endif
+    PixelFormat pixelFormat = astcPixelMap_->GetPixelFormat();
     for (uint8_t idx = 0; idx < extendInfo.extendNums; idx++) {
         *offsetBuffer++ = idx;
         FillDataSize(offsetBuffer, extendInfo.extendInfoLength[idx]);
@@ -984,6 +1088,24 @@ void AstcCodec::WriteAstcExtendInfo(uint8_t *buffer, uint32_t offset, AstcExtend
 #else
                 *offsetBuffer = 0;
 #endif
+                offsetBuffer += ASTC_EXTEND_INFO_COLOR_SPACE_VALUE_LENGTH;
+                break;
+            case AstcExtendInfoType::PIXEL_FORMAT:
+                *offsetBuffer = static_cast<uint8_t>(pixelFormat);
+                offsetBuffer += ASTC_EXTEND_INFO_PIXEL_FORMAT_VALUE_LENGTH;
+                break;
+            case AstcExtendInfoType::HDR_METADATA_TYPE:
+            case AstcExtendInfoType::HDR_COLORSPACE_INFO:
+            case AstcExtendInfoType::HDR_STATIC_DATA:
+            case AstcExtendInfoType::HDR_DYNAMIC_DATA:
+                if (extendInfo.extendInfoValue[idx] == nullptr||
+                    extendInfo.extendInfoLength[idx] <= 0 ||
+                    memcpy_s(offsetBuffer, extendInfo.extendInfoLength[idx],
+                    extendInfo.extendInfoValue[idx], extendInfo.extendInfoLength[idx]) != 0) {
+                    IMAGE_LOGE("[AstcCodec] WriteAstcExtendInfo memcpy failed!");
+                    return;
+                }
+                offsetBuffer += extendInfo.extendInfoLength[idx];
                 break;
             default:
                 return;

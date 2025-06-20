@@ -245,17 +245,6 @@ bool PixelAstc::IsTransformered()
     return false;
 }
 
-void PixelAstc::SetRowStride(uint32_t stride)
-{
-    IMAGE_LOGE("SetRowStride is not support on pixelastc");
-}
-
-int32_t PixelAstc::GetRowStride()
-{
-    IMAGE_LOGD("GetRowStride is not support on pixelastc");
-    return 0;
-}
-
 bool PixelAstc::IsSourceAsResponse()
 {
     IMAGE_LOGE("IsSourceAsResponse is not support on pixelastc");
@@ -266,6 +255,16 @@ void* PixelAstc::GetWritablePixels() const
 {
     IMAGE_LOGE("GetWritablePixels is not support on pixelastc");
     return nullptr;
+}
+
+bool PixelAstc::IsHdr()
+{
+    return isHdr_;
+}
+
+void PixelAstc::SetHdr(bool hdrFlag)
+{
+    isHdr_ = hdrFlag;
 }
 } // namespace Media
 } // namespace OHOS

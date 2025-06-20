@@ -30,15 +30,19 @@ enum class SutProfile {
 }; // the profile of superCompress for texture
 
 constexpr uint8_t ASTC_EXTEND_INFO_TLV_NUM = 1; // curren only one group TLV
+constexpr uint8_t ASTC_EXTEND_INFO_TLV_NUM_2 = 2;
+constexpr uint8_t ASTC_EXTEND_INFO_TLV_NUM_6 = 6;
 constexpr uint32_t ASTC_EXTEND_INFO_SIZE_DEFINITION_LENGTH = 4; // 4 bytes to discripte for extend info summary bytes
 constexpr uint8_t ASTC_EXTEND_INFO_TYPE_LENGTH = 1; // 1 byte to discripte the content type for every TLV group
 constexpr uint32_t ASTC_EXTEND_INFO_LENGTH_LENGTH = 4; // 4 bytes to discripte the content bytes for every TLV group
 constexpr uint8_t ASTC_EXTEND_INFO_COLOR_SPACE_VALUE_LENGTH = 1; // 1 bytes to discripte the content for color space
+constexpr uint8_t ASTC_EXTEND_INFO_PIXEL_FORMAT_VALUE_LENGTH = 1; // 1 bytes to discripte the content for pixel format
 
 enum class TextureEncodeType {
     ASTC = 0,
     SDR_SUT_SUPERFAST_4X4 = 1,
     SDR_ASTC_4X4 = 2,
+    HDR_ASTC_4X4 = 3,
 };
 
 struct TextureEncodeOptions {
@@ -75,18 +79,6 @@ struct AstcEncoder {
 #endif
 };
 
-struct AstcExtendInfo {
-    uint32_t extendBufferSumBytes = 0;
-    uint8_t extendNums = ASTC_EXTEND_INFO_TLV_NUM;
-    uint8_t extendInfoType[ASTC_EXTEND_INFO_TLV_NUM];
-    uint32_t extendInfoLength[ASTC_EXTEND_INFO_TLV_NUM];
-    uint8_t *extendInfoValue[ASTC_EXTEND_INFO_TLV_NUM];
-};
-
-enum class AstcExtendInfoType : uint8_t {
-    COLOR_SPACE = 0
-};
-
 using SutQulityProfile = std::tuple<uint8_t, SutProfile, QualityProfile>;
 
 static const std::map<std::string, SutQulityProfile> SUT_FORMAT_MAP = {
@@ -95,12 +87,19 @@ static const std::map<std::string, SutQulityProfile> SUT_FORMAT_MAP = {
 };
 
 static const std::map<std::string, std::map<uint8_t, QualityProfile>> ASTC_FORMAT_MAP = {
-    {"image/sdr_astc_4x4",
+    {
+        "image/sdr_astc_4x4",
         {
-            {92, QualityProfile::CUSTOMIZED_PROFILE},
-            {85, QualityProfile::HIGH_SPEED_PROFILE}
+            { 92, QualityProfile::CUSTOMIZED_PROFILE },
+            { 85, QualityProfile::HIGH_SPEED_PROFILE }
         }
     },
+    {
+        "image/hdr_astc_4x4",
+        {
+            { 85, QualityProfile::HIGH_SPEED_PROFILE_HIGHBITS }
+        }
+    }
 };
 } // namespace ImagePlugin
 } // namespace OHOS

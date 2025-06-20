@@ -783,7 +783,7 @@ public:
     NATIVEEXPORT uint32_t SetMemoryName(const std::string &pixelMapName);
     NATIVEEXPORT virtual std::unique_ptr<PixelMap> Clone(int32_t &errorCode);
 
-    NATIVEEXPORT bool IsHdr();
+    NATIVEEXPORT virtual bool IsHdr();
     NATIVEEXPORT uint32_t ToSdr();
     // format support rgba8888, nv12, nv21. The default value is rgba8888
     // If toSRGB is false, pixelmap will be converted to display_p3
@@ -915,8 +915,8 @@ protected:
         std::function<int(Parcel &parcel, std::function<int(Parcel&)> readFdDefaultFunc)> readSafeFdFunc = nullptr);
     bool WriteTransformDataToParcel(Parcel &parcel) const;
     bool ReadTransformData(Parcel &parcel, PixelMap *pixelMap);
-    bool WriteAstcRealSizeToParcel(Parcel &parcel) const;
-    bool ReadAstcRealSize(Parcel &parcel, PixelMap *pixelMap);
+    bool WriteAstcInfoToParcel(Parcel &parcel) const;
+    bool ReadAstcInfo(Parcel &parcel, PixelMap *pixelMap);
     bool WriteYuvDataInfoToParcel(Parcel &parcel) const;
     bool ReadYuvDataInfoFromParcel(Parcel &parcel, PixelMap *pixelMap);
     uint32_t SetRowDataSizeForImageInfo(ImageInfo info);

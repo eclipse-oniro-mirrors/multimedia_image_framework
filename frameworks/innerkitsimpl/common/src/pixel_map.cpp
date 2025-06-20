@@ -2515,7 +2515,7 @@ bool PixelMap::WritePropertiesToParcel(Parcel &parcel) const
         return false;
     }
 
-    if (!WriteAstcRealSizeToParcel(parcel)) {
+    if (!WriteAstcInfoToParcel(parcel)) {
         IMAGE_LOGE("write ASTC real size to parcel failed.");
         return false;
     }
@@ -2674,7 +2674,7 @@ bool PixelMap::WriteYuvDataInfoToParcel(Parcel &parcel) const
     return true;
 }
 
-bool PixelMap::WriteAstcRealSizeToParcel(Parcel &parcel) const
+bool PixelMap::WriteAstcInfoToParcel(Parcel &parcel) const
 {
     if (isAstc_) {
         if (!parcel.WriteInt32(static_cast<int32_t>(astcrealSize_.width))) {
@@ -2683,6 +2683,10 @@ bool PixelMap::WriteAstcRealSizeToParcel(Parcel &parcel) const
         }
         if (!parcel.WriteInt32(static_cast<int32_t>(astcrealSize_.height))) {
             IMAGE_LOGE("write astcrealSize_.height:[%{public}d] to parcel failed.", astcrealSize_.height);
+            return false;
+        }
+        if (!parcel.WriteBool(static_cast<PixelAstc*>(const_cast<PixelMap*>(this))->IsHdr())) {
+            IMAGE_LOGE("write astc hdr flag to parcel failed.");
             return false;
         }
     }
@@ -2830,10 +2834,10 @@ bool PixelMap::ReadYuvDataInfoFromParcel(Parcel &parcel, PixelMap *pixelMap)
     return true;
 }
 
-bool PixelMap::ReadAstcRealSize(Parcel &parcel, PixelMap *pixelMap)
+bool PixelMap::ReadAstcInfo(Parcel &parcel, PixelMap *pixelMap)
 {
     if (pixelMap == nullptr) {
-        IMAGE_LOGE("ReadAstcRealSize invalid input parameter: pixelMap is null");
+        IMAGE_LOGE("%{public}s invalid input parameter: pixelMap is null", __func__);
         return false;
     }
 
@@ -2842,6 +2846,8 @@ bool PixelMap::ReadAstcRealSize(Parcel &parcel, PixelMap *pixelMap)
         realSize.width = parcel.ReadInt32();
         realSize.height = parcel.ReadInt32();
         pixelMap->SetAstcRealSize(realSize);
+        bool isHdr = parcel.ReadBool();
+        static_cast<PixelAstc*>(pixelMap)->SetHdr(isHdr);
     }
     return true;
 }
@@ -2922,7 +2928,7 @@ bool PixelMap::ReadPropertiesFromParcel(Parcel& parcel, PixelMap*& pixelMap, Ima
 
     pixelMap->SetVersionId(parcel.ReadUint32());
 
-    if (!pixelMap->ReadAstcRealSize(parcel, pixelMap)) {
+    if (!pixelMap->ReadAstcInfo(parcel, pixelMap)) {
         IMAGE_LOGE("ReadPropertiesFromParcel: read ASTC real size failed");
         return false;
     }
