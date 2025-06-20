@@ -1153,11 +1153,8 @@ static bool FFMpegConvert(const void *srcPixels, const FFMPEG_CONVERT_INFO& srcI
     AVFrame *inputFrame = nullptr;
     AVFrame *outputFrame = nullptr;
 
-    if (srcInfo.format == AVPixelFormat::AV_PIX_FMT_NONE ||
-        dstInfo.format == AVPixelFormat::AV_PIX_FMT_NONE) {
-        IMAGE_LOGE("unsupport src/dst pixel format!");
-        return false;
-    }
+    CHECK_ERROR_RETURN_RET_LOG(srcInfo.format == AVPixelFormat::AV_PIX_FMT_NONE ||
+        dstInfo.format == AVPixelFormat::AV_PIX_FMT_NONE, false, "unsupport src/dst pixel format!");
     CHECK_ERROR_RETURN_RET_LOG((srcInfo.width <= 0 || srcInfo.height <= 0 ||
         dstInfo.width <= 0 || dstInfo.height <= 0 ||
         (SWS_CS_COEFFICIENT.find(colorSpaceDetails.srcYuvConversion) == SWS_CS_COEFFICIENT.end()) ||
@@ -1247,16 +1244,13 @@ static bool ConvertForFFMPEG(const void *srcPixels, PixelFormat srcpixelmap, Ima
 static int64_t GetValidBufferSize(const ImageInfo &dstInfo)
 {
     int64_t rowDataSize = ImageUtils::GetRowDataSizeByPixelFormat(dstInfo.size.width, dstInfo.pixelFormat);
-    if (rowDataSize <= 0) {
-        IMAGE_LOGE("[PixelMap] AllocPixelMapMemory: get row data size failed");
-        return -1;
-    }
+    CHECK_ERROR_RETURN_RET_LOG(rowDataSize <= 0, CONVERT_ERROR,
+        "[PixelMap] AllocPixelMapMemory: get row data size failed");
+
     int64_t bufferSize = rowDataSize * dstInfo.size.height;
-    if (bufferSize > UINT32_MAX) {
-        IMAGE_LOGE("[PixelMap]Create: Pixelmap size too large: width = %{public}d, height = %{public}d",
-            dstInfo.size.width, dstInfo.size.height);
-        return -1;
-    }
+    CHECK_ERROR_RETURN_RET_LOG(bufferSize > UINT32_MAX, CONVERT_ERROR,
+        "[PixelMap]Create: Pixelmap size too large: width = %{public}d, height = %{public}d",
+        dstInfo.size.width, dstInfo.size.height);
     return bufferSize;
 }
 
@@ -1279,26 +1273,19 @@ static bool ConvertAndCollapseByFFMpeg(const void *srcPixels, const ImageInfo &s
     int64_t bufferSize = 0;
     if (IsRGBFormat(srcInfo.pixelFormat) && dstInfo.pixelFormat == PixelFormat::ARGB_8888) {
         bufferSize = GetValidBufferSize(dstInfo);
-        if (bufferSize <= 0) {
-            return false;
-        }
+        CHECK_ERROR_RETURN_RET(bufferSize <= 0, false);
+
         tmpBuffer = std::make_unique<uint8_t[]>(bufferSize + 1); // avoid ffmpeg out-bounds-write
-        if (tmpBuffer == nullptr) {
-            IMAGE_LOGE("[PixelMap] ConvertAndCollapseByFFMpeg: alloc memory failed!");
-            return false;
-        }
+        CHECK_ERROR_RETURN_RET_LOG(tmpBuffer == nullptr, false,
+            "[PixelMap] ConvertAndCollapseByFFMpeg: alloc memory failed!");
         needTmpBuffer = true;
     }
     void* conversionTarget = needTmpBuffer ? static_cast<void*>(tmpBuffer.get()) : dstPixels;
-    if (!FFMpegConvert(srcPixels, srcFFMpegInfo, conversionTarget, dstFFMpegInfo)) {
-        IMAGE_LOGE("[PixelMap] ConvertAndCollapseByFFMpeg: FFMpeg convert failed!");
-        return false;
-    }
+    bool cond = FFMpegConvert(srcPixels, srcFFMpegInfo, conversionTarget, dstFFMpegInfo);
+    CHECK_ERROR_RETURN_RET_LOG(!cond, false, "[PixelMap] ConvertAndCollapseByFFMpeg: FFMpeg convert failed!");
     if (needTmpBuffer) {
-        if (memcpy_s(dstPixels, bufferSize, conversionTarget, bufferSize) != 0) {
-            IMAGE_LOGE("[PixelMap] ConvertAndCollapseByFFMpeg: memcpy_s failed!");
-            return false;
-        }
+        CHECK_ERROR_RETURN_RET_LOG(memcpy_s(dstPixels, bufferSize, conversionTarget, bufferSize) != 0, false,
+            "[PixelMap] ConvertAndCollapseByFFMpeg: memcpy_s failed!");
     }
     return true;
 }
@@ -1316,10 +1303,7 @@ static bool P010ConvertRGBA1010102(const void *srcPixels, ImageInfo srcInfo,
     CHECK_ERROR_RETURN_RET_LOG((tmpPixelsLen <= 0), false, "[PixelMap]Convert: Get tmp pixels length failed!");
 
     uint8_t* tmpPixels = new(std::nothrow) uint8_t[tmpPixelsLen];
-    if (tmpPixels == nullptr) {
-        IMAGE_LOGE("[PixelMap]Convert: alloc memory failed!");
-        return false;
-    }
+    CHECK_ERROR_RETURN_RET_LOG(tmpPixels == nullptr, false, "[PixelMap]Convert: alloc memory failed!");
     memset_s(tmpPixels, tmpPixelsLen, 0, tmpPixelsLen);
     if (!FFMpegConvert(srcPixels, srcFFmpegInfo, tmpPixels, tmpFFmpegInfo)) {
         IMAGE_LOGE("[PixelMap]Convert: ffmpeg convert failed!");
@@ -1348,35 +1332,28 @@ static bool ConvertRGBA1010102ToYUV(const void *srcPixels, ImageInfo srcInfo,
 {
     ImageInfo copySrcInfo = srcInfo;
     copySrcInfo.pixelFormat = PixelFormat::RGBA_U16;
-    if (!ImageUtils::GetAlignedNumber(copySrcInfo.size.width, EVEN_ALIGNMENT) ||
-        !ImageUtils::GetAlignedNumber(copySrcInfo.size.height, EVEN_ALIGNMENT)) {
-        return false;
-    }
+    bool cond = ImageUtils::GetAlignedNumber(copySrcInfo.size.width, EVEN_ALIGNMENT) &&
+        ImageUtils::GetAlignedNumber(copySrcInfo.size.height, EVEN_ALIGNMENT);
+    CHECK_ERROR_RETURN_RET(!cond, false);
+
     int copySrcLen = PixelMap::GetRGBxByteCount(copySrcInfo);
-    if (copySrcLen <= 0) {
-        IMAGE_LOGE("[PixelMap]Convert: Get copySrc pixels length failed!");
-        return false;
-    }
+    CHECK_ERROR_RETURN_RET_LOG(copySrcLen <= 0, false, "[PixelMap]Convert: Get copySrc pixels length failed!");
     std::unique_ptr<uint8_t[]> copySrcBuffer = std::make_unique<uint8_t[]>(copySrcLen);
     CHECK_ERROR_RETURN_RET_LOG(copySrcBuffer == nullptr, false, "[PixelMap]Convert: alloc memory failed!");
     uint8_t* copySrcPixels = copySrcBuffer.get();
     memset_s(copySrcPixels, copySrcLen, 0, copySrcLen);
 
     Position pos;
-    if (!PixelConvertAdapter::WritePixelsConvert(srcPixels, PixelMap::GetRGBxRowDataSize(srcInfo), srcInfo,
-        copySrcPixels, pos, PixelMap::GetRGBxRowDataSize(copySrcInfo), copySrcInfo)) {
-        IMAGE_LOGE("[PixelMap]Convert: ConvertToYUV: pixel convert in adapter failed.");
-        return false;
-    }
+    cond = PixelConvertAdapter::WritePixelsConvert(srcPixels, PixelMap::GetRGBxRowDataSize(srcInfo), srcInfo,
+        copySrcPixels, pos, PixelMap::GetRGBxRowDataSize(copySrcInfo), copySrcInfo);
+    CHECK_ERROR_RETURN_RET_LOG(!cond, false, "[PixelMap]Convert: ConvertToYUV: pixel convert in adapter failed.");
 
     FFMPEG_CONVERT_INFO srcFFmpegInfo = {PixelFormatToAVPixelFormat(PixelFormat::RGBA_F16),
         copySrcInfo.size.width, copySrcInfo.size.height, 1};
     FFMPEG_CONVERT_INFO dstFFmpegInfo = {PixelFormatToAVPixelFormat(dstInfo.pixelFormat),
         dstInfo.size.width, dstInfo.size.height, 1};
-    if (!FFMpegConvert(copySrcPixels, srcFFmpegInfo, dstPixels, dstFFmpegInfo)) {
-        IMAGE_LOGE("[PixelMap]Convert: ffmpeg convert failed!");
-        return false;
-    }
+    cond = FFMpegConvert(copySrcPixels, srcFFmpegInfo, dstPixels, dstFFmpegInfo);
+    CHECK_ERROR_RETURN_RET_LOG(!cond, false, "[PixelMap]Convert: ffmpeg convert failed!");
     return true;
 }
 
@@ -1393,10 +1370,8 @@ static int32_t YUVConvertRGB(const void *srcPixels, const ImageInfo &srcInfo,
     CHECK_ERROR_RETURN_RET_LOG((tmpPixelsLen <= 0), -1, "[PixelMap]Convert: Get tmp pixels length failed!");
 
     uint8_t* tmpPixels = new(std::nothrow) uint8_t[tmpPixelsLen];
-    if (tmpPixels == nullptr) {
-        IMAGE_LOGE("[PixelMap]Convert: alloc memory failed!");
-        return -1;
-    }
+    CHECK_ERROR_RETURN_RET_LOG(tmpPixels == nullptr, -1, "[PixelMap]Convert: alloc memory failed!");
+
     memset_s(tmpPixels, tmpPixelsLen, 0, tmpPixelsLen);
     if (!FFMpegConvert(srcPixels, srcFFmpegInfo, (void *)tmpPixels, tmpFFmpegInfo, colorSpaceDetails)) {
         IMAGE_LOGE("[PixelMap]Convert: ffmpeg convert failed!");
@@ -1423,10 +1398,9 @@ static int32_t YUVConvertRGB(const void *srcPixels, const ImageInfo &srcInfo,
 
 static int32_t ConvertFromYUV(const BufferInfo &srcBufferInfo, const int32_t srcLength, BufferInfo &dstBufferInfo)
 {
-    if (srcBufferInfo.pixels == nullptr || dstBufferInfo.pixels == nullptr || srcLength <= 0) {
-        IMAGE_LOGE("[PixelMap]Convert: src pixels or dst pixels or src pixels length invalid.");
-        return -1;
-    }
+    bool cond = srcBufferInfo.pixels == nullptr || dstBufferInfo.pixels == nullptr || srcLength <= 0;
+    CHECK_ERROR_RETURN_RET_LOG(cond, CONVERT_ERROR,
+        "[PixelMap]Convert: src pixels or dst pixels or src pixels length invalid.");
 
     const ImageInfo &srcInfo = srcBufferInfo.imageInfo;
     const ImageInfo &dstInfo = dstBufferInfo.imageInfo;
@@ -1437,23 +1411,22 @@ static int32_t ConvertFromYUV(const BufferInfo &srcBufferInfo, const int32_t src
         dstBufferInfo.yuvConversion
     };
 
-    if ((srcInfo.pixelFormat != PixelFormat::NV21 && srcInfo.pixelFormat != PixelFormat::NV12) ||
-        (dstInfo.pixelFormat == PixelFormat::NV21 || dstInfo.pixelFormat == PixelFormat::NV12)) {
-        IMAGE_LOGE("[PixelMap]Convert: src or dst pixel format invalid.");
-        return -1;
-    }
+    cond = (srcInfo.pixelFormat != PixelFormat::NV21 && srcInfo.pixelFormat != PixelFormat::NV12) ||
+        (dstInfo.pixelFormat == PixelFormat::NV21 || dstInfo.pixelFormat == PixelFormat::NV12);
+    CHECK_ERROR_RETURN_RET_LOG(cond, CONVERT_ERROR, "[PixelMap]Convert: src or dst pixel format invalid.");
+
     ImageInfo copySrcInfo = srcInfo;
-    if (!ImageUtils::GetAlignedNumber(copySrcInfo.size.width, EVEN_ALIGNMENT) ||
-        !ImageUtils::GetAlignedNumber(copySrcInfo.size.height, EVEN_ALIGNMENT)) {
-        return -1;
-    }
+    cond = ImageUtils::GetAlignedNumber(copySrcInfo.size.width, EVEN_ALIGNMENT) &&
+        ImageUtils::GetAlignedNumber(copySrcInfo.size.height, EVEN_ALIGNMENT);
+    CHECK_ERROR_RETURN_RET(!cond, CONVERT_ERROR);
+
     int32_t copySrcLen = PixelMap::GetAllocatedByteCount(copySrcInfo);
     CHECK_ERROR_RETURN_RET_LOG((copySrcLen <= 0), -1, "[PixelMap]Convert: Get copySrcLen pixels length failed!");
     std::unique_ptr<uint8_t[]> copySrcBuffer = std::make_unique<uint8_t[]>(copySrcLen);
     CHECK_ERROR_RETURN_RET_LOG((copySrcBuffer == nullptr), -1, "[PixelMap]Convert: alloc memory failed!");
     uint8_t* copySrcPixels = copySrcBuffer.get();
     memset_s(copySrcPixels, copySrcLen, 0, copySrcLen);
-    bool cond = memcpy_s(copySrcPixels, copySrcLen, srcBufferInfo.pixels, std::min(srcLength, copySrcLen)) != EOK;
+    cond = memcpy_s(copySrcPixels, copySrcLen, srcBufferInfo.pixels, std::min(srcLength, copySrcLen)) != EOK;
     CHECK_ERROR_RETURN_RET(cond, -1);
     if ((srcInfo.pixelFormat == PixelFormat::NV12 && dstInfo.pixelFormat == PixelFormat::YCBCR_P010) ||
         (srcInfo.pixelFormat == PixelFormat::NV21 && dstInfo.pixelFormat == PixelFormat::YCRCB_P010)) {
@@ -1472,34 +1445,29 @@ static int32_t ConvertFromYUV(const BufferInfo &srcBufferInfo, const int32_t src
 static int32_t ConvertFromP010(const void *srcPixels, const int32_t srcLength, const ImageInfo &srcInfo,
     void *dstPixels, const ImageInfo &dstInfo)
 {
-    if (srcPixels == nullptr || dstPixels == nullptr || srcLength <= 0) {
-        IMAGE_LOGE("[PixelMap]Convert: src pixels or dst pixels or src pixels length invalid.");
-        return -1;
-    }
-    if ((srcInfo.pixelFormat != PixelFormat::YCRCB_P010 && srcInfo.pixelFormat != PixelFormat::YCBCR_P010) ||
-        IsYUVP010Format(dstInfo.pixelFormat)) {
-        IMAGE_LOGE("[PixelMap]Convert: src or dst pixel format invalid.");
-        return -1;
-    }
+    bool cond = srcPixels == nullptr || dstPixels == nullptr || srcLength <= 0;
+    CHECK_ERROR_RETURN_RET_LOG(cond, CONVERT_ERROR,
+        "[PixelMap]Convert: src pixels or dst pixels or src pixels length invalid.");
+
+    cond = (srcInfo.pixelFormat != PixelFormat::YCRCB_P010 && srcInfo.pixelFormat != PixelFormat::YCBCR_P010) ||
+        IsYUVP010Format(dstInfo.pixelFormat);
+    CHECK_ERROR_RETURN_RET_LOG(cond, CONVERT_ERROR, "[PixelMap]Convert: src or dst pixel format invalid.");
+
     ImageInfo copySrcInfo = srcInfo;
-    if (!ImageUtils::GetAlignedNumber(copySrcInfo.size.width, EVEN_ALIGNMENT) ||
-        !ImageUtils::GetAlignedNumber(copySrcInfo.size.height, EVEN_ALIGNMENT)) {
-        return -1;
-    }
+    cond = ImageUtils::GetAlignedNumber(copySrcInfo.size.width, EVEN_ALIGNMENT) &&
+        ImageUtils::GetAlignedNumber(copySrcInfo.size.height, EVEN_ALIGNMENT);
+    CHECK_ERROR_RETURN_RET(!cond, CONVERT_ERROR);
+
     int32_t srcP010Length = PixelMap::GetAllocatedByteCount(copySrcInfo);
     std::unique_ptr<uint8_t[]> srcP010Buffer = std::make_unique<uint8_t[]>(srcP010Length);
-    if (srcP010Buffer == nullptr) {
-        IMAGE_LOGE("[PixelMap]Convert: alloc memory failed!");
-        return -1;
-    }
+    CHECK_ERROR_RETURN_RET_LOG(srcP010Buffer == nullptr, CONVERT_ERROR, "[PixelMap]Convert: alloc memory failed!");
+
     uint8_t* srcP010 = srcP010Buffer.get();
     memset_s(srcP010, srcP010Length, 0, srcP010Length);
     if (srcInfo.pixelFormat == PixelFormat::YCRCB_P010) {
         NV12P010ToNV21P010((uint16_t *)srcPixels, srcInfo, (uint16_t *)srcP010);
     } else {
-        if (memcpy_s(srcP010, srcP010Length, srcPixels, srcLength) != 0) {
-            return -1;
-        }
+        CHECK_ERROR_RETURN_RET(memcpy_s(srcP010, srcP010Length, srcPixels, srcLength) != 0, CONVERT_ERROR);
     }
     if (dstInfo.pixelFormat == PixelFormat::RGBA_1010102) {
         if (P010ConvertRGBA1010102(srcP010, srcInfo, dstPixels, dstInfo)) {
@@ -1523,10 +1491,8 @@ static int32_t RGBConvertYUV(const void *srcPixels, const ImageInfo &srcInfo,
         static_cast<uint32_t>(tmpInfo.size.width) + 1 : static_cast<uint32_t>(tmpInfo.size.width);
     size_t tmpPixelsLen = static_cast<size_t>(tmpWidth) * static_cast<size_t>(tmpInfo.size.height) *
         static_cast<size_t>(ImageUtils::GetPixelBytes(tmpInfo.pixelFormat));
-    if (tmpPixelsLen == 0 || tmpPixelsLen > INT32_MAX) {
-        IMAGE_LOGE("[PixelMap]Convert: Get tmp pixels length failed!");
-        return -1;
-    }
+    CHECK_ERROR_RETURN_RET_LOG(tmpPixelsLen == 0 || tmpPixelsLen > INT32_MAX, CONVERT_ERROR,
+        "[PixelMap]Convert: Get tmp pixels length failed!");
     uint8_t* tmpPixels = new(std::nothrow) uint8_t[tmpPixelsLen];
 
     CHECK_ERROR_RETURN_RET_LOG((tmpPixels == nullptr), -1, "[PixelMap]Convert: alloc memory failed!");
@@ -1559,27 +1525,26 @@ static int32_t RGBConvertYUV(const void *srcPixels, const ImageInfo &srcInfo,
 static int32_t ConvertToYUV(const void *srcPixels, const int32_t srcLength, const ImageInfo &srcInfo,
     void *dstPixels, const ImageInfo &dstInfo)
 {
-    if (srcPixels == nullptr || dstPixels == nullptr || srcLength <= 0) {
-        IMAGE_LOGE("[PixelMap]Convert: src pixels or dst pixels or src pixel length invalid");
-        return -1;
-    }
-    if ((srcInfo.pixelFormat == PixelFormat::NV21 || srcInfo.pixelFormat == PixelFormat::NV12) ||
-        (dstInfo.pixelFormat != PixelFormat::NV21 && dstInfo.pixelFormat != PixelFormat::NV12)) {
-        IMAGE_LOGE("[PixelMap]Convert: src or dst pixel format invalid.");
-        return -1;
-    }
+    bool cond = srcPixels == nullptr || dstPixels == nullptr || srcLength <= 0;
+    CHECK_ERROR_RETURN_RET_LOG(cond, CONVERT_ERROR,
+        "[PixelMap]Convert: src pixels or dst pixels or src pixel length invalid");
+
+    cond = (srcInfo.pixelFormat == PixelFormat::NV21 || srcInfo.pixelFormat == PixelFormat::NV12) ||
+        (dstInfo.pixelFormat != PixelFormat::NV21 && dstInfo.pixelFormat != PixelFormat::NV12);
+    CHECK_ERROR_RETURN_RET_LOG(cond, CONVERT_ERROR, "[PixelMap]Convert: src or dst pixel format invalid.");
+
     ImageInfo copySrcInfo = srcInfo;
-    if (!ImageUtils::GetAlignedNumber(copySrcInfo.size.width, EVEN_ALIGNMENT) ||
-        !ImageUtils::GetAlignedNumber(copySrcInfo.size.height, EVEN_ALIGNMENT)) {
-        return -1;
-    }
+    cond = ImageUtils::GetAlignedNumber(copySrcInfo.size.width, EVEN_ALIGNMENT) &&
+        ImageUtils::GetAlignedNumber(copySrcInfo.size.height, EVEN_ALIGNMENT);
+    CHECK_ERROR_RETURN_RET(!cond, CONVERT_ERROR);
+
     int32_t copySrcLen = PixelMap::GetAllocatedByteCount(copySrcInfo);
     CHECK_ERROR_RETURN_RET_LOG((copySrcLen <= 0), -1, "[PixelMap]Convert: Get copySrcLen pixels length failed!");
     std::unique_ptr<uint8_t[]> copySrcBuffer = std::make_unique<uint8_t[]>(copySrcLen);
     CHECK_ERROR_RETURN_RET_LOG((copySrcBuffer == nullptr), -1, "[PixelMap]Convert: alloc memory failed!");
     uint8_t* copySrcPixels = copySrcBuffer.get();
     memset_s(copySrcPixels, copySrcLen, 0, copySrcLen);
-    bool cond = memcpy_s(copySrcPixels, copySrcLen, srcPixels, std::min(srcLength, copySrcLen)) != EOK;
+    cond = memcpy_s(copySrcPixels, copySrcLen, srcPixels, std::min(srcLength, copySrcLen)) != EOK;
     CHECK_ERROR_RETURN_RET(cond, -1);
     if ((srcInfo.pixelFormat == PixelFormat::YCBCR_P010 && dstInfo.pixelFormat == PixelFormat::NV12) ||
         (srcInfo.pixelFormat == PixelFormat::YCRCB_P010 && dstInfo.pixelFormat == PixelFormat::NV21)) {
@@ -1612,39 +1577,30 @@ static int32_t ConvertToP010(const BufferInfo &src, BufferInfo &dst)
     CHECK_ERROR_RETURN_RET_LOG(dstLength <= 0, -1, "[PixelMap]Convert: Get dstP010 length failed!");
 
     std::unique_ptr<uint8_t[]> dstP010Buffer = std::make_unique<uint8_t[]>(dstLength);
-    if (dstP010Buffer == nullptr) {
-        IMAGE_LOGE("[PixelMap]Convert: alloc memory failed!");
-        return -1;
-    }
+    CHECK_ERROR_RETURN_RET_LOG(dstP010Buffer == nullptr, CONVERT_ERROR, "[PixelMap]Convert: alloc memory failed!");
     uint8_t* dstP010 = dstP010Buffer.get();
     memset_s(dstP010, dstLength, 0, dstLength);
 
+    bool cond = false;
     if (srcInfo.pixelFormat == PixelFormat::RGBA_1010102) {
-        if (!ConvertRGBA1010102ToYUV(srcPixels, srcInfo, dstP010, dstInfo)) {
-            return -1;
-        }
+        cond = ConvertRGBA1010102ToYUV(srcPixels, srcInfo, dstP010, dstInfo);
+        CHECK_ERROR_RETURN_RET(!cond, CONVERT_ERROR);
     } else {
         ImageInfo copySrcInfo = srcInfo;
-        if (!ImageUtils::GetAlignedNumber(copySrcInfo.size.width, EVEN_ALIGNMENT) ||
-            !ImageUtils::GetAlignedNumber(copySrcInfo.size.height, EVEN_ALIGNMENT)) {
-            return -1;
-        }
+        cond = ImageUtils::GetAlignedNumber(copySrcInfo.size.width, EVEN_ALIGNMENT) &&
+            ImageUtils::GetAlignedNumber(copySrcInfo.size.height, EVEN_ALIGNMENT);
+        CHECK_ERROR_RETURN_RET(!cond, CONVERT_ERROR);
         int32_t copySrcLength = PixelMap::GetAllocatedByteCount(copySrcInfo);
         std::unique_ptr<uint8_t[]> copySrcBuffer = std::make_unique<uint8_t[]>(copySrcLength);
-        if (copySrcBuffer == nullptr || EOK != memcpy_s(copySrcBuffer.get(), srcLength, srcPixels, srcLength)) {
-            IMAGE_LOGE("alloc memory or memcpy_s failed!");
-            return -1;
-        }
-        if (!ConvertForFFMPEG(copySrcBuffer.get(), srcInfo.pixelFormat, srcInfo, dstP010, dstInfo.pixelFormat)) {
-            return -1;
-        }
+        cond = copySrcBuffer == nullptr || EOK != memcpy_s(copySrcBuffer.get(), srcLength, srcPixels, srcLength);
+        CHECK_ERROR_RETURN_RET_LOG(cond, CONVERT_ERROR, "alloc memory or memcpy_s failed!");
+        cond = ConvertForFFMPEG(copySrcBuffer.get(), srcInfo.pixelFormat, srcInfo, dstP010, dstInfo.pixelFormat);
+        CHECK_ERROR_RETURN_RET(!cond, CONVERT_ERROR);
     }
     if (dstInfo.pixelFormat == PixelFormat::YCRCB_P010) {
         NV12P010ToNV21P010((uint16_t *)dstP010, dstInfo, (uint16_t *)dstPixels);
     } else {
-        if (memcpy_s(dstPixels, dst.length, dstP010, dstLength) != 0) {
-            return -1;
-        }
+        CHECK_ERROR_RETURN_RET(memcpy_s(dstPixels, dst.length, dstP010, dstLength) != 0, CONVERT_ERROR);
     }
     return dstLength;
 }
@@ -1670,17 +1626,17 @@ static int32_t YUVConvert(const BufferInfo &src, const int32_t srcLength, Buffer
         }
     }
     ImageInfo copySrcInfo = srcInfo;
-    if (!ImageUtils::GetAlignedNumber(copySrcInfo.size.width, EVEN_ALIGNMENT) ||
-        !ImageUtils::GetAlignedNumber(copySrcInfo.size.height, EVEN_ALIGNMENT)) {
-        return -1;
-    }
+    bool cond = ImageUtils::GetAlignedNumber(copySrcInfo.size.width, EVEN_ALIGNMENT) &&
+        ImageUtils::GetAlignedNumber(copySrcInfo.size.height, EVEN_ALIGNMENT);
+    CHECK_ERROR_RETURN_RET(!cond, CONVERT_ERROR);
+
     int32_t copySrcLen = PixelMap::GetAllocatedByteCount(copySrcInfo);
     CHECK_ERROR_RETURN_RET_LOG((copySrcLen <= 0), -1, "[PixelMap]Convert: Get copySrcLen pixels length failed!");
     std::unique_ptr<uint8_t[]> copySrcBuffer = std::make_unique<uint8_t[]>(copySrcLen);
     CHECK_ERROR_RETURN_RET_LOG((copySrcBuffer == nullptr), -1, "[PixelMap]Convert: alloc memory failed!");
     uint8_t* copySrcPixels = copySrcBuffer.get();
     memset_s(copySrcPixels, copySrcLen, 0, copySrcLen);
-    bool cond = memcpy_s(copySrcPixels, copySrcLen, srcPixels, std::min(srcLength, copySrcLen)) != EOK;
+    cond = memcpy_s(copySrcPixels, copySrcLen, srcPixels, std::min(srcLength, copySrcLen)) != EOK;
     CHECK_ERROR_RETURN_RET(cond, -1);
     FFMPEG_CONVERT_INFO srcFFmpegInfo = {PixelFormatToAVPixelFormat(srcInfo.pixelFormat), srcInfo.size.width,
         srcInfo.size.height, 1};
@@ -1702,47 +1658,38 @@ static bool IsInterYUVConvert(PixelFormat srcPixelFormat, PixelFormat dstPixelFo
 
 int32_t PixelConvert::PixelsConvert(const BufferInfo &src, BufferInfo &dst, bool useDMA)
 {
-    if (!IsValidBufferInfo(src) || !IsValidBufferInfo(dst)) {
-        IMAGE_LOGE("[PixelMap]Convert: pixels or image info or row stride or src pixels length invalid.");
-        return -1;
-    }
-
+    CHECK_ERROR_RETURN_RET_LOG(!(IsValidBufferInfo(src) && IsValidBufferInfo(dst)), CONVERT_ERROR,
+        "[PixelMap]Convert: pixels or image info or row stride or src pixels length invalid.");
     return ConvertAndCollapseByFFMpeg(src.pixels, src.imageInfo, dst.pixels, dst.imageInfo, useDMA) ?
         PixelMap::GetRGBxByteCount(dst.imageInfo) : -1;
 }
 
 int32_t PixelConvert::CopySrcBufferAndConvert(const BufferInfo &src, BufferInfo &dst, int32_t srcLength, bool useDMA)
 {
-    if (src.pixels == nullptr || dst.pixels == nullptr || srcLength <= 0) {
-        IMAGE_LOGE("[PixelMap]Convert: src pixels or dst pixels or src pixels length invalid.");
-        return CONVERT_ERROR;
-    }
+    bool cond = src.pixels == nullptr || dst.pixels == nullptr || srcLength <= 0;
+    CHECK_ERROR_RETURN_RET_LOG(cond, CONVERT_ERROR,
+        "[PixelMap]Convert: src pixels or dst pixels or src pixels length invalid.");
+
     ImageInfo copySrcInfo = src.imageInfo;
-    if (!ImageUtils::GetAlignedNumber(copySrcInfo.size.width, EVEN_ALIGNMENT) ||
-        !ImageUtils::GetAlignedNumber(copySrcInfo.size.height, EVEN_ALIGNMENT)) {
-        return CONVERT_ERROR;
-    }
+    cond = ImageUtils::GetAlignedNumber(copySrcInfo.size.width, EVEN_ALIGNMENT) &&
+        ImageUtils::GetAlignedNumber(copySrcInfo.size.height, EVEN_ALIGNMENT);
+    CHECK_ERROR_RETURN_RET(!cond, CONVERT_ERROR);
     int32_t copySrcLen = PixelMap::GetAllocatedByteCount(copySrcInfo);
     std::unique_ptr<uint8_t[]> copySrcBuffer = std::make_unique<uint8_t[]>(copySrcLen);
-    if (copySrcBuffer == nullptr) {
-        IMAGE_LOGE("[PixelMap]Convert: alloc memory failed!");
-        return CONVERT_ERROR;
-    }
+    CHECK_ERROR_RETURN_RET_LOG(copySrcBuffer == nullptr, CONVERT_ERROR, "[PixelMap]Convert: alloc memory failed!");
+
     uint8_t* copySrcPixels = copySrcBuffer.get();
     memset_s(copySrcPixels, copySrcLen, 0, copySrcLen);
-    if (memcpy_s(copySrcPixels, copySrcLen, src.pixels, srcLength) != 0) {
-        return CONVERT_ERROR;
-    }
+    CHECK_ERROR_RETURN_RET(memcpy_s(copySrcPixels, copySrcLen, src.pixels, srcLength) != 0, CONVERT_ERROR);
     return ConvertAndCollapseByFFMpeg(copySrcPixels, src.imageInfo, dst.pixels, dst.imageInfo, useDMA) ?
         PixelMap::GetRGBxByteCount(dst.imageInfo) : CONVERT_ERROR;
 }
 
 int32_t PixelConvert::PixelsConvert(const BufferInfo &src, BufferInfo &dst, int32_t srcLength, bool useDMA)
 {
-    if (!IsValidBufferInfo(src) || !IsValidBufferInfo(dst) || srcLength <= 0) {
-        IMAGE_LOGE("[PixelMap]Convert: pixels or image info or row stride or src pixels length invalid.");
-        return -1;
-    }
+    bool cond = IsValidBufferInfo(src) && IsValidBufferInfo(dst) && srcLength > 0;
+    CHECK_ERROR_RETURN_RET_LOG(!cond, CONVERT_ERROR,
+        "[PixelMap]Convert: pixels or image info or row stride or src pixels length invalid.");
 
     if (dst.imageInfo.pixelFormat == PixelFormat::ARGB_8888) {
         if (useDMA || (src.imageInfo.size.width % EVEN_ALIGNMENT == 0 &&
@@ -1770,12 +1717,11 @@ int32_t PixelConvert::PixelsConvert(const BufferInfo &src, BufferInfo &dst, int3
     Position pos;
     IMAGE_LOGI("%{public}s: colorLength = %{public}d, width = %{public}d, height = %{public}d,", __func__,
         srcLength, src.imageInfo.size.width, src.imageInfo.size.height);
-    if (!PixelConvertAdapter::WritePixelsConvert(src.pixels,
+    cond = PixelConvertAdapter::WritePixelsConvert(src.pixels,
         src.rowStride == 0 ? PixelMap::GetRGBxRowDataSize(src.imageInfo) : src.rowStride, src.imageInfo,
-        dst.pixels, pos, useDMA ? dst.rowStride : PixelMap::GetRGBxRowDataSize(dst.imageInfo), dst.imageInfo)) {
-        IMAGE_LOGE("[PixelMap]Convert: PixelsConvert: pixel convert in adapter failed.");
-        return -1;
-    }
+        dst.pixels, pos, useDMA ? dst.rowStride : PixelMap::GetRGBxRowDataSize(dst.imageInfo), dst.imageInfo);
+    CHECK_ERROR_RETURN_RET_LOG(!cond, CONVERT_ERROR,
+        "[PixelMap]Convert: PixelsConvert: pixel convert in adapter failed.");
 
     return PixelMap::GetRGBxByteCount(dst.imageInfo);
 }
@@ -1866,34 +1812,23 @@ static unsigned int UnpackBytes(uint8_t a, uint8_t b, uint8_t c, uint8_t d)
 
 static bool CheckAstcHead(uint8_t *astcBuf, unsigned int &blockX, unsigned int &blockY, uint32_t astcBufSize)
 {
-    if (astcBufSize < ASTC_UNIT_BYTES + ASTC_UNIT_BYTES) {
-        IMAGE_LOGE("DecAstc astcBufSize: %{public}d is invalid", astcBufSize);
-        return false;
-    }
+    CHECK_ERROR_RETURN_RET_LOG(astcBufSize < ASTC_UNIT_BYTES + ASTC_UNIT_BYTES, false,
+        "DecAstc astcBufSize: %{public}d is invalid", astcBufSize);
+
     unsigned int magicVal = UnpackBytes(astcBuf[BYTE_POS_0], astcBuf[BYTE_POS_1], astcBuf[BYTE_POS_2],
         astcBuf[BYTE_POS_3]);
-    if (magicVal != ASTC_MAGIC_ID) {
-        IMAGE_LOGE("DecAstc magicVal: %{public}d is invalid", magicVal);
-        return false;
-    }
+    CHECK_ERROR_RETURN_RET_LOG(magicVal != ASTC_MAGIC_ID, false, "DecAstc magicVal: %{public}d is invalid", magicVal);
     blockX = static_cast<unsigned int>(astcBuf[BYTE_POS_4]);
     blockY = static_cast<unsigned int>(astcBuf[BYTE_POS_5]);
-    if (blockX != ASTC_BLOCK_SIZE_4 || blockY != blockX) {
-        IMAGE_LOGE("DecAstc blockX: %{public}d blockY: %{public}d not 4x4 or w!=h", blockX, blockY);
-        return false;
-    }
-    if (astcBuf[BYTE_POS_6] != 1) {
-        IMAGE_LOGE("DecAstc astc buffer is not 1d");
-        return false;
-    }
+    CHECK_ERROR_RETURN_RET_LOG(blockX != ASTC_BLOCK_SIZE_4 || blockY != blockX, false,
+        "DecAstc blockX: %{public}d blockY: %{public}d not 4x4 or w!=h", blockX, blockY);
+    CHECK_ERROR_RETURN_RET_LOG(astcBuf[BYTE_POS_6] != 1, false, "DecAstc astc buffer is not 1d");
+
     // dimZ = 1
-    if (UnpackBytes(astcBuf[BYTE_POS_13], astcBuf[BYTE_POS_14], astcBuf[BYTE_POS_15], 0) != 1) {
-        IMAGE_LOGE("DecAstc astc buffer is not 1d");
-        return false;
-    }
-    if (blockX == 0 || blockY == 0) {
-        return false;
-    }
+    bool cond = UnpackBytes(astcBuf[BYTE_POS_13], astcBuf[BYTE_POS_14], astcBuf[BYTE_POS_15], 0) != 1;
+    CHECK_ERROR_RETURN_RET_LOG(cond, false, "DecAstc astc buffer is not 1d");
+
+    CHECK_ERROR_RETURN_RET(blockX == 0 || blockY == 0, false);
     return true;
 }
 
@@ -1905,10 +1840,7 @@ static bool InitAstcOutImage(astcenc_image &outImage, uint8_t *astcBuf, uint8_t 
     outImage.dim_stride = stride;
     outImage.data_type = ASTCENC_TYPE_U8;
     outImage.data = new void* [1];
-    if (outImage.data == nullptr) {
-        IMAGE_LOGE("DecAstc outImage.data is null");
-        return false;
-    }
+    CHECK_ERROR_RETURN_RET_LOG(outImage.data == nullptr, false, "DecAstc outImage.data is null");
     outImage.data[0] = recRgba;
     return true;
 }
@@ -1928,32 +1860,26 @@ static bool DecAstc(uint8_t *recRgba, uint32_t stride, AstcInfo astcInfo)
     unsigned int blockX = 0;
     unsigned int blockY = 0;
 
-    if (!CheckAstcHead(astcInfo.astcBuf, blockX, blockY, astcInfo.astcBufSize)) {
-        return false;
-    }
+    bool cond = CheckAstcHead(astcInfo.astcBuf, blockX, blockY, astcInfo.astcBufSize);
+    CHECK_ERROR_RETURN_RET(!cond, false);
 
     unsigned int xblocks = (astcInfo.dimX + blockX - 1) / blockX;
     unsigned int yblocks = (astcInfo.dimY + blockY - 1) / blockY;
     size_t dataSize = xblocks * yblocks * ASTC_UNIT_BYTES;
-    if (dataSize + ASTC_UNIT_BYTES > astcInfo.astcBufSize) {
-        IMAGE_LOGE("DecAstc astc buffer is invalid, dataSize: %{public}zu, astcBufSize: %{public}d",
-            dataSize, astcInfo.astcBufSize);
-        return false;
-    }
+    CHECK_ERROR_RETURN_RET_LOG(dataSize + ASTC_UNIT_BYTES > astcInfo.astcBufSize, false,
+        "DecAstc astc buffer is invalid, dataSize: %{public}zu, astcBufSize: %{public}d",
+        dataSize, astcInfo.astcBufSize);
 
     astcenc_config config = {};
     astcenc_error status = astcenc_config_init(ASTCENC_PRF_LDR_SRGB, blockX, blockY, 1, 0, 0x10, &config);
-    if (status != ASTCENC_SUCCESS) {
-        IMAGE_LOGE("DecAstc init config failed with %{public}s", astcenc_get_error_string(status));
-        return false;
-    }
+    CHECK_ERROR_RETURN_RET_LOG(status != ASTCENC_SUCCESS, false,
+        "DecAstc init config failed with %{public}s", astcenc_get_error_string(status));
     config.flags = 0x12;
     astcenc_context *codec_context = nullptr;
     status = astcenc_context_alloc(&config, 1, &codec_context);
-    if (status != ASTCENC_SUCCESS) {
-        IMAGE_LOGE("DecAstc codec context alloc failed: %{public}s", astcenc_get_error_string(status));
-        return false;
-    }
+
+    CHECK_ERROR_RETURN_RET_LOG(status != ASTCENC_SUCCESS, false,
+        "DecAstc codec context alloc failed: %{public}s", astcenc_get_error_string(status));
     astcenc_image outImage;
     if (!InitAstcOutImage(outImage, astcInfo.astcBuf, recRgba, stride)) {
         FreeAstcMem(outImage, codec_context);
@@ -1984,11 +1910,10 @@ static bool CheckInputValid(AstcInfo &astcInfo, PixelFormat destFormat)
         astcInfo.astcBuf[BYTE_POS_9], 0);
     unsigned int dimY = UnpackBytes(astcInfo.astcBuf[BYTE_POS_10], astcInfo.astcBuf[BYTE_POS_11],
         astcInfo.astcBuf[BYTE_POS_12], 0);
-    if (dimX > ASTC_DIM_MAX || dimY > ASTC_DIM_MAX || dimX != static_cast<unsigned int>(astcInfo.astcSize.width) ||
-        dimY != static_cast<unsigned int>(astcInfo.astcSize.height)) {
-        IMAGE_LOGE("DecAstc dimX: %{public}d dimY: %{public}d overflow", dimX, dimY);
-        return false;
-    }
+    bool cond = dimX > ASTC_DIM_MAX || dimY > ASTC_DIM_MAX ||
+        dimX != static_cast<unsigned int>(astcInfo.astcSize.width) ||
+        dimY != static_cast<unsigned int>(astcInfo.astcSize.height);
+    CHECK_ERROR_RETURN_RET_LOG(cond, false, "DecAstc dimX: %{public}d dimY: %{public}d overflow", dimX, dimY);
     astcInfo.dimX = dimX;
     astcInfo.dimY = dimY;
     return true;

@@ -53,9 +53,7 @@ float GetSLRFactor(float x, int a)
 
 SLRWeightMat SLRProc::GetWeights(float coeff, int n)
 {
-    if (std::fabs(coeff) < EPSILON || coeff < .0f || n <= 0) {
-        return nullptr;
-    }
+    CHECK_ERROR_RETURN_RET(std::fabs(coeff) < EPSILON || coeff < .0f || n <= 0, nullptr);
     float tao = 1.0f / coeff;
     int a = std::max(2, static_cast<int>(std::floor(tao))); // 2 max SLR box size
     SLRWeightMat weights = std::make_shared<SLRWeightVec>(n, std::vector<float>(2 * a, 0));
@@ -92,15 +90,9 @@ SLRWeightMat SLRProc::GetWeights(float coeff, int n)
 
 bool SLRCheck(const SLRMat &src, const SLRMat &dst, const SLRWeightMat &x, const SLRWeightMat &y)
 {
-    if (x == nullptr || y == nullptr) {
-        return false;
-    }
-    if (src.size_.width == 0 || src.size_.height == 0) {
-        return false;
-    }
-    if (dst.size_.width == 0 || dst.size_.height == 0) {
-        return false;
-    }
+    CHECK_ERROR_RETURN_RET(x == nullptr || y == nullptr, false);
+    CHECK_ERROR_RETURN_RET(src.size_.width == 0 || src.size_.height == 0, false);
+    CHECK_ERROR_RETURN_RET(dst.size_.width == 0 || dst.size_.height == 0, false);
     return true;
 }
 
@@ -125,15 +117,10 @@ bool SLRBoxCheck(const SLRSliceKey &key, const SLRMat &src, const SLRMat &dst, c
         return false;
     }
     uint32_t* srcArr = static_cast<uint32_t*>(src.data_);
-    if (srcArr == nullptr) {
-        IMAGE_LOGE("SLRBoxCheck srcArr null");
-        return false;
-    }
+    CHECK_ERROR_RETURN_RET_LOG(srcArr == nullptr, false, "SLRBoxCheck srcArr null");
     uint32_t* dstArr = static_cast<uint32_t*>(dst.data_);
-    if (dstArr == nullptr) {
-        IMAGE_LOGE("SLRBoxCheck dstArr null");
-        return false;
-    }
+    CHECK_ERROR_RETURN_RET_LOG(dstArr == nullptr, false, "SLRBoxCheck dstArr null");
+
     int srcM = src.size_.height;
     int srcN = src.size_.width;
     int dstM = dst.size_.height;
@@ -154,18 +141,14 @@ bool SLRBoxCheck(const SLRSliceKey &key, const SLRMat &src, const SLRMat &dst, c
     }
     int dstIndex = key.x * dst.rowStride_ + key.y;
     int maxDstSize = dstM * dst.rowStride_; // the rowStride_ here represents pixel
-    if (dstIndex >= maxDstSize) {
-        IMAGE_LOGE("SLRBoxCheck dst index error:%{public}d, %{public}d", dstIndex, maxDstSize);
-        return false;
-    }
+    CHECK_ERROR_RETURN_RET_LOG(dstIndex >= maxDstSize, false,
+        "SLRBoxCheck dst index error:%{public}d, %{public}d", dstIndex, maxDstSize);
     return true;
 }
 
 void SLRBox(const SLRSliceKey &key, const SLRMat &src, SLRMat &dst, const SLRWeightMat &x, const SLRWeightMat &y)
 {
-    if (!SLRBoxCheck(key, src, dst, x, y)) {
-        return;
-    }
+    CHECK_ERROR_RETURN(!SLRBoxCheck(key, src, dst, x, y));
     uint32_t* srcArr = static_cast<uint32_t*>(src.data_);
     uint32_t* dstArr = static_cast<uint32_t*>(dst.data_);
     int srcM = src.size_.height;
@@ -215,10 +198,7 @@ void SLRProc::Laplacian(SLRMat &srcMat, void* data, float alpha)
 {
     IMAGE_LOGD("Laplacian pixelMap SLR:width=%{public}d,height=%{public}d,alpha=%{public}f", srcMat.size_.width,
         srcMat.size_.height, alpha);
-    if (data == nullptr) {
-        IMAGE_LOGE("SLRProc::Laplacian create memory failed");
-        return;
-    }
+    CHECK_ERROR_RETURN_LOG(data == nullptr, "SLRProc::Laplacian create memory failed");
     const int m = srcMat.size_.height;
     const int n = srcMat.size_.width;
     const int stride = srcMat.rowStride_;
@@ -266,10 +246,7 @@ void SLRProc::Laplacian(SLRMat &srcMat, void* data, float alpha)
  
 void SLRProc::Serial(const SLRMat &src, SLRMat &dst, const SLRWeightMat &x, const SLRWeightMat &y)
 {
-    if (!SLRCheck(src, dst, x, y)) {
-        IMAGE_LOGE("SLRProc::Serial param error");
-        return;
-    }
+    CHECK_ERROR_RETURN_LOG(!SLRCheck(src, dst, x, y), "SLRProc::Serial param error");
 
     int m = dst.size_.height;
     int n = dst.size_.width;
@@ -298,10 +275,7 @@ inline void SLRSubtask(const SLRSliceKey &key, const SLRMat &src, SLRMat &dst,
 void SLRProc::Parallel(const SLRMat &src, SLRMat &dst, const SLRWeightMat &x, const SLRWeightMat &y)
 {
 #if !defined(_WIN32) && !defined(_APPLE) && !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
-    if (!SLRCheck(src, dst, x, y)) {
-        IMAGE_LOGE("SLRProc::Parallel param error");
-        return;
-    }
+    CHECK_ERROR_RETURN_LOG(!SLRCheck(src, dst, x, y), "SLRProc::Parallel param error");
     const int maxThread = 16; // 16 max thread size
     int m = dst.size_.height;
     int n = dst.size_.width;

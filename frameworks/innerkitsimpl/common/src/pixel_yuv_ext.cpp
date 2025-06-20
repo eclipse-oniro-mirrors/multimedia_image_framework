@@ -151,21 +151,14 @@ void PixelYuvExt::scale(float xAxis, float yAxis, const AntiAliasingOption &opti
     int32_t dstH = (imageInfo.size.height * yAxis + ROUND_FLOAT_NUMBER);
     YUVStrideInfo dstStrides;
     auto m = CreateMemory(imageInfo.pixelFormat, "Trans ImageData", dstW, dstH, dstStrides);
-    if (m == nullptr) {
-        IMAGE_LOGE("scale CreateMemory failed");
-        return;
-    }
+    CHECK_ERROR_RETURN_LOG(m == nullptr, "scale CreateMemory failed");
     int64_t dstBufferSizeOverflow = static_cast<int64_t>(dstW) * static_cast<int64_t>(dstH);
-    if (ImageUtils::GetPixelBytes(imageInfo.pixelFormat) == 0) {
-        IMAGE_LOGE("invalid pixelFormat:[%{public}d]", imageInfo.pixelFormat);
-        return;
-    }
+    bool cond = ImageUtils::GetPixelBytes(imageInfo.pixelFormat) == 0;
+    CHECK_ERROR_RETURN_LOG(cond, "invalid pixelFormat:[%{public}d]", imageInfo.pixelFormat);
     int64_t maxDstBufferSize = static_cast<int64_t>(INT32_MAX) / ImageUtils::GetPixelBytes(imageInfo.pixelFormat);
-    if (abs(dstBufferSizeOverflow) > maxDstBufferSize) {
-        IMAGE_LOGE("scale target size too large, srcWidth(%{public}d) * xAxis(%{public}.2f), "
+    cond = abs(dstBufferSizeOverflow) > maxDstBufferSize;
+    CHECK_ERROR_RETURN_LOG(cond, "scale target size too large, srcWidth(%{public}d) * xAxis(%{public}.2f), "
             "srcHeight(%{public}d) * yAxis(%{public}.2f)", imageInfo.size.width, xAxis, imageInfo.size.height, yAxis);
-        return;
-    }
 
     uint8_t *dst = reinterpret_cast<uint8_t *>(m->data.data);
     YUVDataInfo yuvDataInfo;
@@ -203,10 +196,7 @@ void PixelYuvExt::scale(int32_t dstW, int32_t dstH, const AntiAliasingOption &op
 
     YUVStrideInfo dstStrides;
     auto m = CreateMemory(imageInfo.pixelFormat, "Trans ImageData", dstW, dstH, dstStrides);
-    if (m == nullptr) {
-        IMAGE_LOGE("scale CreateMemory failed");
-        return;
-    }
+    CHECK_ERROR_RETURN_LOG(m == nullptr, "scale CreateMemory failed");
     uint8_t *dst = reinterpret_cast<uint8_t *>(m->data.data);
     YUVDataInfo yuvDataInfo;
     GetImageYUVInfo(yuvDataInfo);
@@ -235,9 +225,8 @@ void PixelYuvExt::scale(int32_t dstW, int32_t dstH, const AntiAliasingOption &op
 
 void PixelYuvExt::rotate(float degrees)
 {
-    if (!IsYuvFormat() || degrees == 0) {
-        return;
-    }
+    bool cond = !IsYuvFormat() || degrees == 0;
+    CHECK_ERROR_RETURN(cond);
     YUVDataInfo yuvDataInfo;
     GetImageYUVInfo(yuvDataInfo);
 
@@ -256,10 +245,7 @@ void PixelYuvExt::rotate(float degrees)
     IMAGE_LOGD("PixelYuvExt::rotate dstWidth=%{public}d dstHeight=%{public}d", dstWidth, dstHeight);
     YUVStrideInfo dstStrides;
     auto m = CreateMemory(imageInfo_.pixelFormat, "rotate ImageData", dstWidth, dstHeight, dstStrides);
-    if (m == nullptr) {
-        IMAGE_LOGE("rotate CreateMemory failed");
-        return;
-    }
+    CHECK_ERROR_RETURN_LOG(m == nullptr, "rotate CreateMemory failed");
     uint8_t *dst = reinterpret_cast<uint8_t *>(m->data.data);
 
     yuvDataInfo.imageSize = imageInfo_.size;
@@ -279,9 +265,8 @@ void PixelYuvExt::rotate(float degrees)
 
 void PixelYuvExt::flip(bool xAxis, bool yAxis)
 {
-    if (!IsYuvFormat() || (xAxis == false && yAxis == false)) {
-        return;
-    }
+    bool cond = !IsYuvFormat() || (xAxis == false && yAxis == false);
+    CHECK_ERROR_RETURN(cond);
     ImageInfo imageInfo;
     GetImageInfo(imageInfo);
 
@@ -302,10 +287,7 @@ void PixelYuvExt::flip(bool xAxis, bool yAxis)
     int32_t height = imageInfo.size.height;
     YUVStrideInfo dstStrides;
     auto m = CreateMemory(imageInfo.pixelFormat, "flip ImageData", width, height, dstStrides);
-    if (m == nullptr) {
-        IMAGE_LOGE("flip CreateMemory failed");
-        return;
-    }
+    CHECK_ERROR_RETURN_LOG(m == nullptr, "flip CreateMemory failed");
     uint8_t *dst = reinterpret_cast<uint8_t *>(m->data.data);
     bool bRet = false;
     if (xAxis && yAxis) {
@@ -363,10 +345,8 @@ int32_t PixelYuvExt::ColorSpaceBGRAToYuv(
     GetImageYUVInfo(yuvDataInfo);
     uint32_t pictureSize = GetImageSize(dstWidth, dstHeight, format);
     std::unique_ptr<uint8_t[]> yuvData = std::make_unique<uint8_t[]>(pictureSize);
-    if (!PixelYuvExtUtils::BGRAToYuv420(bgraData, data_, dstWidth, dstHeight, format, yuvDataInfo)) {
-        IMAGE_LOGE("BGRAToYuv420 failed");
-        return ERR_IMAGE_COLOR_CONVERT;
-    }
+    bool cond = !PixelYuvExtUtils::BGRAToYuv420(bgraData, data_, dstWidth, dstHeight, format, yuvDataInfo);
+    CHECK_ERROR_RETURN_RET_LOG(cond, ERR_IMAGE_COLOR_CONVERT, "BGRAToYuv420 failed");
     auto grName = grColorSpace.GetColorSpaceName();
     grColorSpace_ = std::make_shared<OHOS ::ColorManager::ColorSpace>(
         dst.info.refColorSpace(), grName);
@@ -376,12 +356,10 @@ int32_t PixelYuvExt::ColorSpaceBGRAToYuv(
 
 uint32_t PixelYuvExt::ApplyColorSpace(const OHOS::ColorManager::ColorSpace &grColorSpace)
 {
-    if (!IsYuvFormat()) {
-        return ERR_IMAGE_COLOR_CONVERT;
-    }
-    if (CheckColorSpace(grColorSpace)) {
-        return SUCCESS;
-    }
+    bool cond = !IsYuvFormat();
+    CHECK_ERROR_RETURN_RET(cond, ERR_IMAGE_COLOR_CONVERT);
+    cond = CheckColorSpace(grColorSpace);
+    CHECK_ERROR_RETURN_RET(cond, SUCCESS);
     /*convert yuV420 to·BRGA */
     PixelFormat format = imageInfo_.pixelFormat;
     YUVDataInfo yuvDataInfo;
@@ -389,10 +367,9 @@ uint32_t PixelYuvExt::ApplyColorSpace(const OHOS::ColorManager::ColorSpace &grCo
 
     int32_t width = imageInfo_.size.width;
     int32_t height = imageInfo_.size.height;
-    if (!PixelYuvUtils::CheckWidthAndHeightMult(width, height, RGBA_BIT_DEPTH)) {
-        IMAGE_LOGE("ApplyColorSpace size overflow width(%{public}d), height(%{public}d)", width, height);
-        return ERR_IMAGE_COLOR_CONVERT;
-    }
+    cond = !PixelYuvUtils::CheckWidthAndHeightMult(width, height, RGBA_BIT_DEPTH);
+    CHECK_ERROR_RETURN_RET_LOG(cond, ERR_IMAGE_COLOR_CONVERT,
+        "ApplyColorSpace size overflow width(%{public}d), height(%{public}d)", width, height);
     uint8_t *srcData = data_;
     std::unique_ptr<uint8_t[]> RGBAdata =
         std::make_unique<uint8_t[]>(width * height * NUM_4);
@@ -410,10 +387,7 @@ uint32_t PixelYuvExt::ApplyColorSpace(const OHOS::ColorManager::ColorSpace &grCo
     IMAGE_LOGI("applyColorSpace rowStride:%{public}ld sucess", rowStride);
 
     auto bret = src.bitmap.installPixels(src.info, RGBAdata.get(), rowStride);
-    if (bret == false) {
-        IMAGE_LOGE("src.bitmap.installPixels failed");
-        return -1;
-    }
+    CHECK_ERROR_RETURN_RET_LOG(bret == false, -1, "src.bitmap.installPixels failed");
     // Build sk target infomation
     SkTransYuvInfo dst;
 
@@ -421,15 +395,11 @@ uint32_t PixelYuvExt::ApplyColorSpace(const OHOS::ColorManager::ColorSpace &grCo
     std::unique_ptr<uint8_t[]> RGBAdataC =
         std::make_unique<uint8_t[]>(width * height * NUM_4);
     // Transfor pixels*by readPixels
-    if (!src.bitmap.readPixels(dst.info, RGBAdataC.get(), rowStride, 0, 0)) {
-        IMAGE_LOGE("ReadPixels failed");
-        return ERR_IMAGE_COLOR_CONVERT;
-    }
+    cond = !src.bitmap.readPixels(dst.info, RGBAdataC.get(), rowStride, 0, 0);
+    CHECK_ERROR_RETURN_RET_LOG(cond, ERR_IMAGE_COLOR_CONVERT, "ReadPixels failed");
     // convert bgra back to·yuv
-    if (ColorSpaceBGRAToYuv(RGBAdataC.get(), dst, imageInfo_, format, grColorSpace) != SUCCESS) {
-        IMAGE_LOGE("ColorSpaceBGRAToYuv failed");
-        return ERR_IMAGE_COLOR_CONVERT;
-    }
+    cond = ColorSpaceBGRAToYuv(RGBAdataC.get(), dst, imageInfo_, format, grColorSpace) != SUCCESS;
+    CHECK_ERROR_RETURN_RET_LOG(cond, ERR_IMAGE_COLOR_CONVERT, "ColorSpaceBGRAToYuv failed");
     return SUCCESS;
 }
 #endif

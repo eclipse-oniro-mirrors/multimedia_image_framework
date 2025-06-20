@@ -272,10 +272,8 @@ uint32_t ImageFormatConvert::YUVConvert(const OHOS::Media::ConvertDataInfo &srcD
                                         OHOS::Media::DestConvertInfo &destInfo)
 {
     YUVConvertFunction yuvConvertFunction = YUVGetConvertFuncByFormat(srcDataInfo.pixelFormat, destInfo.format);
-    if (yuvConvertFunction == nullptr) {
-        IMAGE_LOGE("YUVConvert get convert function by format failed!");
-        return ERR_IMAGE_INVALID_PARAMETER;
-    }
+    CHECK_ERROR_RETURN_RET_LOG(yuvConvertFunction == nullptr, ERR_IMAGE_INVALID_PARAMETER,
+        "YUVConvert get convert function by format failed!");
     YUVDataInfo yuvDataInfo = srcDataInfo.yuvDataInfo;
     int32_t width = srcDataInfo.imageSize.width;
     int32_t height = srcDataInfo.imageSize.height;
@@ -292,10 +290,7 @@ uint32_t ImageFormatConvert::YUVConvert(const OHOS::Media::ConvertDataInfo &srcD
     YUVStrideInfo dstStrides;
     auto m = CreateMemory(destInfo.format, destInfo.allocType, destInfo.width,
                           destInfo.height, dstStrides);
-    if (m == nullptr) {
-        IMAGE_LOGE("YUVConvert create memory failed!");
-        return ERR_IMAGE_INVALID_PARAMETER;
-    }
+    CHECK_ERROR_RETURN_RET_LOG(m == nullptr, ERR_IMAGE_INVALID_PARAMETER, "YUVConvert create memory failed!");
     destInfo.context = m->extend.data;
     destInfo.yStride = dstStrides.yStride;
     destInfo.uvStride = dstStrides.uvStride;
@@ -316,17 +311,12 @@ uint32_t ImageFormatConvert::RGBConvert(const OHOS::Media::ConvertDataInfo &srcD
                                         OHOS::Media::DestConvertInfo &destInfo)
 {
     ConvertFunction cvtFunc = GetConvertFuncByFormat(srcDataInfo.pixelFormat, destInfo.format);
-    if (cvtFunc == nullptr) {
-        IMAGE_LOGE("RGBConvert get convert function by format failed!");
-        return ERR_IMAGE_INVALID_PARAMETER;
-    }
+    CHECK_ERROR_RETURN_RET_LOG(cvtFunc == nullptr, ERR_IMAGE_INVALID_PARAMETER,
+        "RGBConvert get convert function by format failed!");
     YUVStrideInfo dstStrides;
     auto m = CreateMemory(destInfo.format, destInfo.allocType, destInfo.width,
                           destInfo.height, dstStrides);
-    if (m == nullptr) {
-        IMAGE_LOGE("RGBConvert create memory failed!");
-        return ERR_IMAGE_INVALID_PARAMETER;
-    }
+    CHECK_ERROR_RETURN_RET_LOG(m == nullptr, ERR_IMAGE_INVALID_PARAMETER, "RGBConvert create memory failed!");
     destInfo.context = m->extend.data;
     destInfo.yStride = dstStrides.yStride;
     destInfo.uvStride = dstStrides.uvStride;
@@ -553,18 +543,12 @@ std::unique_ptr<AbsMemory> ImageFormatConvert::CreateMemory(PixelFormat pixelFor
     }
     MemoryData memoryData = {nullptr, pictureSize, "PixelConvert", {width, height}, pixelFormat};
     auto m = MemoryManager::CreateMemory(allocatorType, memoryData);
-    if (m == nullptr) {
-        IMAGE_LOGE("CreateMemory failed");
-        return m;
-    }
+    CHECK_ERROR_RETURN_RET_LOG(m == nullptr, m, "CreateMemory failed");
 #if !defined(_WIN32) && !defined(_APPLE) && !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
     if (allocatorType != AllocatorType::DMA_ALLOC) {
         return m;
     }
-    if (m->extend.data == nullptr) {
-        IMAGE_LOGE("CreateMemory get surfacebuffer failed");
-        return m;
-    }
+    CHECK_ERROR_RETURN_RET_LOG(m->extend.data == nullptr, m, "CreateMemory get surfacebuffer failed");
     auto sb = reinterpret_cast<SurfaceBuffer*>(m->extend.data);
     OH_NativeBuffer_Planes *planes = nullptr;
     GSError retVal = sb->GetPlanesInfo(reinterpret_cast<void**>(&planes));
@@ -681,9 +665,7 @@ uint32_t ImageFormatConvert::RGBConvertImageFormatOptionUnique(
 bool ImageFormatConvert::SetConvertImageMetaData(std::unique_ptr<PixelMap> &srcPixelMap,
                                                  std::unique_ptr<PixelMap> &dstPixelMap)
 {
-    if (srcPixelMap == nullptr || dstPixelMap == nullptr) {
-        return false;
-    }
+    CHECK_ERROR_RETURN_RET(srcPixelMap == nullptr || dstPixelMap == nullptr, false);
     auto HdrMetadata = srcPixelMap->GetHdrMetadata();
     if (HdrMetadata != nullptr) {
         dstPixelMap->SetHdrMetadata(HdrMetadata);
@@ -809,9 +791,7 @@ uint32_t ImageFormatConvert::MakeDestPixelMap(std::shared_ptr<PixelMap> &destPix
 #else
         pixelMap = std::make_unique<PixelYuv>();
 #endif
-        if (pixelMap == nullptr) {
-            return ERR_IMAGE_PIXELMAP_CREATE_FAILED;
-        }
+        CHECK_ERROR_RETURN_RET(pixelMap == nullptr, ERR_IMAGE_PIXELMAP_CREATE_FAILED);
         if (allcatorType != AllocatorType::DMA_ALLOC) {
             pixelMap->AssignYuvDataOnType(info.pixelFormat, info.size.width, info.size.height);
         } else {
@@ -820,17 +800,12 @@ uint32_t ImageFormatConvert::MakeDestPixelMap(std::shared_ptr<PixelMap> &destPix
         }
     } else {
         pixelMap = std::make_unique<PixelMap>();
-        if (pixelMap == nullptr) {
-            return ERR_IMAGE_PIXELMAP_CREATE_FAILED;
-        }
+        CHECK_ERROR_RETURN_RET(pixelMap == nullptr, ERR_IMAGE_PIXELMAP_CREATE_FAILED);
     }
     pixelMap->SetPixelsAddr(destInfo.buffer, context, destInfo.bufferSize, allcatorType, nullptr);
     auto ret = pixelMap->SetImageInfo(info, true);
     bool isSetMetaData = SetConvertImageMetaData(destPixelMap, pixelMap);
-    if (ret != SUCCESS || isSetMetaData == false) {
-        IMAGE_LOGE("set imageInfo failed");
-        return ret;
-    }
+    CHECK_ERROR_RETURN_RET_LOG(ret != SUCCESS || isSetMetaData == false, ret, "set imageInfo failed");
 #ifdef IMAGE_COLORSPACE_FLAG
     if (NeedProtectionConversion(srcImageinfo.pixelFormat, info.pixelFormat)) {
         pixelMap->InnerSetColorSpace(OHOS::ColorManager::ColorSpace(ColorManager::ColorSpaceName::BT2020_HLG));
@@ -858,9 +833,7 @@ uint32_t ImageFormatConvert::MakeDestPixelMapUnique(std::unique_ptr<PixelMap> &d
 #else
         pixelMap = std::make_unique<PixelYuv>();
 #endif
-        if (pixelMap == nullptr) {
-            return ERR_IMAGE_PIXELMAP_CREATE_FAILED;
-        }
+        CHECK_ERROR_RETURN_RET(pixelMap == nullptr, ERR_IMAGE_PIXELMAP_CREATE_FAILED);
         if (allcatorType != AllocatorType::DMA_ALLOC) {
             pixelMap->AssignYuvDataOnType(info.pixelFormat, info.size.width, info.size.height);
         } else {
@@ -869,9 +842,7 @@ uint32_t ImageFormatConvert::MakeDestPixelMapUnique(std::unique_ptr<PixelMap> &d
         }
     } else {
         pixelMap = std::make_unique<PixelMap>();
-        if (pixelMap == nullptr) {
-            return ERR_IMAGE_PIXELMAP_CREATE_FAILED;
-        }
+        CHECK_ERROR_RETURN_RET(pixelMap == nullptr, ERR_IMAGE_PIXELMAP_CREATE_FAILED);
     }
     pixelMap->SetPixelsAddr(destInfo.buffer, context, destInfo.bufferSize, allcatorType, nullptr);
     auto ret = pixelMap->SetImageInfo(info, true);

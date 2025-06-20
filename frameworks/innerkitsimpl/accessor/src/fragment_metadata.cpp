@@ -51,10 +51,7 @@ int FragmentMetadata::GetValue(const std::string &key, std::string &value) const
         IMAGE_LOGE("%{public}s properties is nullptr.", __func__);
         return ERR_IMAGE_INVALID_PARAMETER;
     }
-    if (!IsValidKey(key)) {
-        IMAGE_LOGE("Key is not supported.");
-        return ERR_IMAGE_INVALID_PARAMETER;
-    }
+    CHECK_ERROR_RETURN_RET_LOG(!IsValidKey(key), ERR_IMAGE_INVALID_PARAMETER, "Key is not supported.");
     auto it = properties_->find(key);
     if (it != properties_->end()) {
         value = it->second;

@@ -1053,9 +1053,7 @@ unique_ptr<PixelMap> ImageSource::CreatePixelMapExtended(uint32_t index, const D
     if (NeedConvertToYuv(opts.desiredPixelFormat, pixelMap->GetPixelFormat())) {
         uint32_t convertRes = ImageFormatConvert::RGBConvertImageFormatOptionUnique(
             pixelMap, plInfo.pixelFormat, opts_.desiredPixelFormat);
-        if (convertRes != SUCCESS) {
-            IMAGE_LOGE("convert rgb to yuv failed, return origin rgb!");
-        }
+        CHECK_ERROR_PRINT_LOG(convertRes != SUCCESS, "convert rgb to yuv failed, return origin rgb!");
     }
     return pixelMap;
 }
@@ -1552,11 +1550,10 @@ uint32_t ImageSource::PromoteDecoding(uint32_t index, const DecodeOptions &opts,
     // IMAGE_ERROR or IMAGE_DECODED.
     state = incrementalRecordIter->second.IncrementalState;
     decodeProgress = incrementalRecordIter->second.decodingProgress;
-    if (incrementalRecordIter->second.IncrementalState == ImageDecodingState::IMAGE_ERROR) {
-        IMAGE_LOGE("[ImageSource]invalid imageState %{public}d on incremental decoding.",
-            incrementalRecordIter->second.IncrementalState);
-        return ERR_IMAGE_DECODE_ABNORMAL;
-    }
+    cond = incrementalRecordIter->second.IncrementalState == ImageDecodingState::IMAGE_ERROR;
+    CHECK_ERROR_RETURN_RET_LOG(cond, ERR_IMAGE_DECODE_ABNORMAL,
+        "[ImageSource]invalid imageState %{public}d on incremental decoding.",
+        incrementalRecordIter->second.IncrementalState);
     return SUCCESS;
 }
 
@@ -1932,9 +1929,7 @@ uint32_t ImageSource::GetImagePropertyString(uint32_t index, const std::string &
 
 uint32_t ImageSource::GetImagePropertyStringBySync(uint32_t index, const std::string &key, std::string &value)
 {
-    if (key.empty()) {
-        return Media::ERR_IMAGE_DECODE_EXIF_UNSUPPORT;
-    }
+    CHECK_ERROR_RETURN_RET(key.empty(), Media::ERR_IMAGE_DECODE_EXIF_UNSUPPORT);
 
     uint32_t ret = SUCCESS;
     if (IMAGE_GIFLOOPCOUNT_TYPE.compare(key) == ZERO) {
@@ -1945,20 +1940,16 @@ uint32_t ImageSource::GetImagePropertyStringBySync(uint32_t index, const std::st
             return ret;
         } else {
             ret = mainDecoder_->GetImagePropertyString(index, key, value);
-            if (ret != SUCCESS) {
-                IMAGE_LOGE("[ImageSource]GetLoopCount get loop count issue. errorCode=%{public}u", ret);
-                return ret;
-            }
+            CHECK_ERROR_RETURN_RET_LOG(ret != SUCCESS, ret,
+                "[ImageSource]GetLoopCount get loop count issue. errorCode=%{public}u", ret);
         }
         return ret;
     }
 
     std::unique_lock<std::mutex> guard(decodingMutex_);
     std::unique_lock<std::mutex> guardFile(fileMutex_);
-
-    if (isExifReadFailed_ && exifMetadata_ == nullptr) {
-        return exifReadStatus_;
-    }
+    bool cond = isExifReadFailed_ && exifMetadata_ == nullptr;
+    CHECK_ERROR_RETURN_RET(cond, exifReadStatus_);
     ret = CreatExifMetadataByImageSource();
     if (ret != SUCCESS) {
         if (key.substr(0, KEY_SIZE) == "Hw") {
@@ -1972,9 +1963,8 @@ uint32_t ImageSource::GetImagePropertyStringBySync(uint32_t index, const std::st
         return ret;
     }
 
-    if (exifMetadata_->GetValue(key, value) != SUCCESS) {
-        return ERR_IMAGE_PROPERTY_NOT_EXIST;
-    }
+    cond = exifMetadata_->GetValue(key, value) != SUCCESS;
+    CHECK_ERROR_RETURN_RET(cond, ERR_IMAGE_PROPERTY_NOT_EXIST);
     return SUCCESS;
 }
 
@@ -2605,11 +2595,10 @@ uint32_t ImageSource::SetDecodeOptions(std::unique_ptr<AbsImageDecoder> &decoder
     bool isVpeSupport10BitOutputFormat = (opts.photoDesiredPixelFormat == PixelFormat::YCBCR_P010 ||
                                           opts.photoDesiredPixelFormat == PixelFormat::RGBA_1010102);
     if (opts.photoDesiredPixelFormat != PixelFormat::UNKNOWN) {
-        if ((isDecodeHdrImage && !isVpeSupport10BitOutputFormat) ||
-        (!isDecodeHdrImage && isVpeSupport10BitOutputFormat)) {
-            IMAGE_LOGE("Photos provided a error parameter");
-            return COMMON_ERR_INVALID_PARAMETER;
-        }
+        bool cond = (isDecodeHdrImage && !isVpeSupport10BitOutputFormat) ||
+            (!isDecodeHdrImage && isVpeSupport10BitOutputFormat);
+        CHECK_ERROR_RETURN_RET_LOG(cond, COMMON_ERR_INVALID_PARAMETER,
+            "Photos provided a error parameter");
         plOptions.desiredPixelFormat = opts.photoDesiredPixelFormat;
         if (opts.photoDesiredPixelFormat == PixelFormat::YCBCR_P010) {
             // if need 10bit yuv, set plOptions to nv21
@@ -3815,10 +3804,7 @@ void ImageSource::DumpInputData(const std::string &fileSuffix)
         return;
     }
 
-    if (sourceStreamPtr_ == nullptr) {
-        IMAGE_LOGI("ImageSource::DumpInputData failed, streamPtr is null");
-        return;
-    }
+    CHECK_ERROR_RETURN_LOG(sourceStreamPtr_ == nullptr, "ImageSource::DumpInputData failed, streamPtr is null");
 
     uint8_t *data = sourceStreamPtr_->GetDataPtr();
     size_t size = sourceStreamPtr_->GetStreamSize();
@@ -4463,14 +4449,13 @@ static bool CopyRGBAToSurfaceBuffer(const DecodeContext& context, sptr<SurfaceBu
 
 static bool CopyYUVToSurfaceBuffer(const DecodeContext& context, sptr<SurfaceBuffer>& buffer, PlImageInfo plInfo)
 {
-    if (context.info.pixelFormat != PixelFormat::NV12 &&
-        context.info.pixelFormat != PixelFormat::NV21) {
-        return false;
-    }
+    bool cond = context.info.pixelFormat != PixelFormat::NV12 &&
+        context.info.pixelFormat != PixelFormat::NV21;
+    CHECK_ERROR_RETURN_RET(cond, false);
     uint8_t* srcRow = static_cast<uint8_t*>(context.pixelsBuffer.buffer);
     uint8_t* dstRow = static_cast<uint8_t*>(buffer->GetVirAddr());
     size_t dstSize = buffer->GetSize();
-    bool cond = (buffer->GetStride() < 0);
+    cond = (buffer->GetStride() < 0);
     CHECK_ERROR_RETURN_RET(cond, false);
     YUVDataInfo yuvDataInfo = context.yuvInfo;
     IMAGE_LOGD("[ImageSource] CopyYUVToSurfaceBuffer yHeight = %{public}d, uvHeight = %{public}d,"

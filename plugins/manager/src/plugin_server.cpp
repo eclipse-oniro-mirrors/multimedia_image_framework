@@ -79,10 +79,8 @@ uint32_t PluginServer::Register(vector<string> &&pluginPaths)
 
     if (!gstCanonicalPaths.empty()) {
         uint32_t result = gstPluginFw_.Register(gstCanonicalPaths);
-        if (result != SUCCESS) {
-            IMAGE_LOGE("failed to register gst plugin path, ERRNO: %{public}u.", result);
-            return result;
-        }
+        CHECK_ERROR_RETURN_RET_LOG(result != SUCCESS, result,
+            "failed to register gst plugin path, ERRNO: %{public}u.", result);
     }
 
     if (!canonicalPaths.empty()) {
@@ -128,9 +126,7 @@ PluginClassBase *PluginServer::CreateObject(uint16_t interfaceID, uint16_t servi
     if (GetInterfaceIDType(interfaceID) == IID_TYPE_PIPELINE) {
         IMAGE_LOGD("it is a pipeline interface type.");
         obj = gstPluginFw_.CreateObject(interfaceID, serviceType, capabilities, priorityScheme, errorCode);
-        if (obj != nullptr) {
-            return obj;
-        }
+        CHECK_ERROR_RETURN_RET(obj != nullptr, obj);
     }
 
     obj = pluginFw_.CreateObject(interfaceID, serviceType, capabilities, priorityScheme, errorCode);

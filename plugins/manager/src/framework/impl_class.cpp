@@ -65,10 +65,8 @@ uint32_t ImplClass::Register(const weak_ptr<Plugin> &plugin, const json &classIn
 
     uint32_t result = JsonHelper::GetUint16Value(classInfo, "priority", priority_);
     if (result != SUCCESS) {
-        if (result != ERR_NO_TARGET) {
-            IMAGE_LOGE("read priority failed, result: %{public}u.", result);
-            return ERR_INVALID_PARAMETER;
-        }
+        CHECK_ERROR_RETURN_RET_LOG(result != ERR_NO_TARGET, ERR_INVALID_PARAMETER,
+            "read priority failed, result: %{public}u.", result);
         // priority is optional, and default zero.
         priority_ = 0;
     }
@@ -276,10 +274,8 @@ bool ImplClass::AnalysisServices(const json &classInfo)
 
 #ifndef PLUGIN_FLAG_RTTI_ENABLE
         // check only one business interface class is allowed to inherit.
-        if (lastInterfaceID != UINT32_MAX_VALUE && lastInterfaceID != interfaceID) {
-            IMAGE_LOGE("more than one business interface base class.");
-            return false;
-        }
+        bool cond = lastInterfaceID != UINT32_MAX_VALUE && lastInterfaceID != interfaceID;
+        CHECK_ERROR_RETURN_RET_LOG(cond, false, "more than one business interface base class.");
         lastInterfaceID = interfaceID;
 #endif
         uint32_t result = JsonHelper::GetUint16Value(serviceInfo, "serviceType", serviceType);

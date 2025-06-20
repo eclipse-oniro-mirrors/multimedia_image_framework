@@ -1095,9 +1095,8 @@ static bool ConvertToDouble(const std::string& str, double& value)
     errno = 0;
     char* endPtr = nullptr;
     value = strtod(str.c_str(), &endPtr);
-    if (errno == ERANGE && *endPtr != '\0') {
-        return false;
-    }
+    bool cond = errno == ERANGE && *endPtr != '\0';
+    CHECK_ERROR_RETURN_RET(cond, false);
     return true;
 }
 

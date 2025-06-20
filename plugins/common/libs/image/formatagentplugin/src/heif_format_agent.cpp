@@ -92,10 +92,8 @@ bool HeifFormatAgent::CheckFormat(const void *headerData, uint32_t dataSize)
     int64_t chunkDataSize = static_cast<int64_t>(chunkSize) - offset;
     // It should at least have major brand (4-byte) and minor version (4-bytes).
     // The rest of the chunk (if any) is a list of (4-byte) compatible brands.
-    if (chunkDataSize < HEADER_LEAST_SIZE) {
-        IMAGE_LOGE("chunk data size [%{public}lld] less than eight.", static_cast<long long>(chunkDataSize));
-        return false;
-    }
+    CHECK_ERROR_RETURN_RET_LOG(chunkDataSize < HEADER_LEAST_SIZE, false,
+        "chunk data size [%{public}lld] less than eight.", static_cast<long long>(chunkDataSize));
     uint32_t numCompatibleBrands = (chunkDataSize - OFFSET_SIZE) / sizeof(uint32_t);
     if (numCompatibleBrands != 0 && numCompatibleBrands + TIMES_TWO < HEADER_SIZE) {
         for (size_t i = 0; i < numCompatibleBrands + 2; ++i) {  // need next 2 item
@@ -103,11 +101,9 @@ bool HeifFormatAgent::CheckFormat(const void *headerData, uint32_t dataSize)
                 // Skip this index, it refers to the minorVersion, not a brand.
                 continue;
             }
-            if (i == MAX_LOOP_SIZE) {
-                // When numCompatibleBrands is 4, i equals 5, and there is no heif brand, it will be read out of bounds.
-                IMAGE_LOGI("check heif format failed, the number of cycles exceeded expectations");
-                return false;
-            }
+            // When numCompatibleBrands is 4, i equals 5, and there is no heif brand, it will be read out of bounds.
+            CHECK_ERROR_RETURN_RET_LOG(i == MAX_LOOP_SIZE, false,
+                "check heif format failed, the number of cycles exceeded expectations");
             auto *brandPtr = static_cast<const uint32_t *>(tmpBuff) + (numCompatibleBrands + i);
             uint32_t brand = EndianSwap32(*brandPtr);
             cond = brand == Fourcc('m', 'i', 'f', '1') || brand == Fourcc('h', 'e', 'i', 'c') ||

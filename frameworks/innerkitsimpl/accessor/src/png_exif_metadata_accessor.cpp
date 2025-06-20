@@ -60,12 +60,8 @@ bool PngExifMetadataAccessor::IsPngType() const
     }
     const int32_t len = PNG_SIGN_SIZE;
     byte buf[len];
-    if (imageStream_->Read(buf, len) == -1) {
-        return false;
-    }
-    if (imageStream_->IsEof()) {
-        return false;
-    }
+    CHECK_ERROR_RETURN_RET(imageStream_->Read(buf, len) == -1, false);
+    CHECK_ERROR_RETURN_RET(imageStream_->IsEof(), false);
 
     return !memcmp(buf, pngSignature, PNG_SIGN_SIZE);
 }
@@ -131,15 +127,11 @@ bool PngExifMetadataAccessor::ReadBlob(DataBuf &blob)
     DataBuf chunkHead(PNG_CHUNK_HEAD_SIZE);
 
     while (!imageStream_->IsEof()) {
-        if (static_cast<size_t>(ReadChunk(chunkHead)) != chunkHead.Size()) {
-            IMAGE_LOGE("Failed to read chunk head. Expected size: %{public}zu", chunkHead.Size());
-            return false;
-        }
+        CHECK_ERROR_RETURN_RET_LOG(static_cast<size_t>(ReadChunk(chunkHead)) != chunkHead.Size(),
+            false, "Failed to read chunk head. Expected size: %{public}zu", chunkHead.Size());
         uint32_t chunkLength = chunkHead.ReadUInt32(0, bigEndian);
-        if (chunkLength > imgSize - imageStream_->Tell()) {
-            IMAGE_LOGE("Chunk length is larger than the remaining image size");
-            return false;
-        }
+        CHECK_ERROR_RETURN_RET_LOG(chunkLength > imgSize - imageStream_->Tell(),
+            false, "Chunk length is larger than the remaining image size");
         std::string chunkType(reinterpret_cast<const char *>(chunkHead.CData(PNG_CHUNK_LENGTH_SIZE)),
             PNG_CHUNK_TYPE_SIZE);
         if (chunkType == PNG_CHUNK_IEND) {
@@ -153,10 +145,7 @@ bool PngExifMetadataAccessor::ReadBlob(DataBuf &blob)
             chunkLength = 0;
         }
         imageStream_->Seek(chunkLength + PNG_CHUNK_CRC_SIZE, CURRENT);
-        if (imageStream_->IsEof()) {
-            IMAGE_LOGE("Failed to read the file");
-            return false;
-        }
+        CHECK_ERROR_RETURN_RET_LOG(imageStream_->IsEof(), false, "Failed to read the file");
     }
     tiffOffset_ = imageStream_->Tell() - static_cast<long>(blob.Size());
     return true;
@@ -171,15 +160,11 @@ uint32_t PngExifMetadataAccessor::Read()
     }
     ExifData *exifData;
     size_t byteOrderPos = TiffParser::FindTiffPos(tiffBuf);
-    if (byteOrderPos == std::numeric_limits<size_t>::max()) {
-        IMAGE_LOGE("Cannot find TIFF byte order in Exif metadata.");
-        return ERR_IMAGE_SOURCE_DATA;
-    }
+    CHECK_ERROR_RETURN_RET_LOG(byteOrderPos == std::numeric_limits<size_t>::max(),
+        ERR_IMAGE_SOURCE_DATA, "Cannot find TIFF byte order in Exif metadata.");
+
     TiffParser::Decode(tiffBuf.CData(), tiffBuf.Size(), &exifData);
-    if (exifData == nullptr) {
-        IMAGE_LOGE("Failed to decode TIFF buffer.");
-        return ERR_EXIF_DECODE_FAILED;
-    }
+    CHECK_ERROR_RETURN_RET_LOG(exifData == nullptr, ERR_EXIF_DECODE_FAILED, "Failed to decode TIFF buffer.");
 
     exifMetadata_ = std::make_shared<OHOS::Media::ExifMetadata>(exifData);
     return SUCCESS;
@@ -201,19 +186,15 @@ bool PngExifMetadataAccessor::GetExifEncodedBlob(uint8_t **dataBlob, uint32_t &s
     }
     DataBuf blobBuf(*dataBlob, size);
     size_t byteOrderPos = TiffParser::FindTiffPos(blobBuf);
-    if (byteOrderPos == std::numeric_limits<size_t>::max()) {
-        IMAGE_LOGE("Failed to Encode Exif metadata: cannot find tiff byte order");
-        return false;
-    }
+    CHECK_ERROR_RETURN_RET_LOG(byteOrderPos == std::numeric_limits<size_t>::max(),
+        false, "Failed to Encode Exif metadata: cannot find tiff byte order");
     return ((size > 0) && (size <= PNG_CHUNK_DATA_MAX));
 }
 
 bool PngExifMetadataAccessor::WriteData(BufferMetadataStream &bufStream, uint8_t *data, uint32_t size)
 {
-    if (bufStream.Write(data, size) != size) {
-        IMAGE_LOGE("Write the bufStream failed");
-        return false;
-    }
+    CHECK_ERROR_RETURN_RET_LOG(bufStream.Write(data, size) != size,
+        false, "Write the bufStream failed");
     return true;
 }
 
@@ -227,9 +208,7 @@ bool PngExifMetadataAccessor::WriteExifData(BufferMetadataStream &bufStream, uin
         return true;
     }
     if (chunkType == PNG_CHUNK_IHDR) {
-        if (!WriteData(bufStream, chunkBuf.Data(), chunkBuf.Size())) {
-            return false;
-        }
+        CHECK_ERROR_RETURN_RET(!WriteData(bufStream, chunkBuf.Data(), chunkBuf.Size()), false);
 
         byte length[PNG_CHUNK_LENGTH_SIZE];
         UL2Data(length, size, bigEndian);
@@ -239,16 +218,13 @@ bool PngExifMetadataAccessor::WriteExifData(BufferMetadataStream &bufStream, uin
         tmp = crc32(tmp, dataBlob, size);
         byte crc[PNG_CHUNK_CRC_SIZE];
         UL2Data(crc, tmp, bigEndian);
-        if (!(WriteData(bufStream, length, PNG_CHUNK_LENGTH_SIZE) &&
-            WriteData(bufStream, typeExif, PNG_CHUNK_TYPE_SIZE) &&
-            WriteData(bufStream, dataBlob, size) &&
-            WriteData(bufStream, crc, PNG_CHUNK_CRC_SIZE))) {
-            return false;
-        }
+        bool cond = !(WriteData(bufStream, length, PNG_CHUNK_LENGTH_SIZE) &&
+                    WriteData(bufStream, typeExif, PNG_CHUNK_TYPE_SIZE) &&
+                    WriteData(bufStream, dataBlob, size) &&
+                    WriteData(bufStream, crc, PNG_CHUNK_CRC_SIZE));
+        CHECK_ERROR_RETURN_RET(cond, false);
     } else if (chunkType == PNG_CHUNK_TEXT || chunkType == PNG_CHUNK_ZTXT || chunkType == PNG_CHUNK_ITXT) {
-        if (PngImageChunkUtils::FindExifFromTxt(chunkBuf)) {
-            return true;
-        }
+        CHECK_ERROR_RETURN_RET(PngImageChunkUtils::FindExifFromTxt(chunkBuf), true);
 
         return WriteData(bufStream, chunkBuf.Data(), chunkBuf.Size());
     }
@@ -260,30 +236,21 @@ bool PngExifMetadataAccessor::UpdateExifMetadata(BufferMetadataStream &bufStream
     const size_t imgSize = static_cast<size_t>(imageStream_->GetSize());
     DataBuf chunkHead(PNG_CHUNK_HEAD_SIZE);
 
-    if (!WriteData(bufStream, pngSignature, PNG_SIGN_SIZE)) {
-        return false;
-    }
+    CHECK_ERROR_RETURN_RET(!WriteData(bufStream, pngSignature, PNG_SIGN_SIZE), false);
 
     while (!imageStream_->IsEof()) {
-        if (static_cast<size_t>(ReadChunk(chunkHead)) != chunkHead.Size()) {
-            IMAGE_LOGE("Read chunk head error.");
-            return false;
-        }
+        CHECK_ERROR_RETURN_RET_LOG(static_cast<size_t>(ReadChunk(chunkHead)) != chunkHead.Size(),
+            false, "Read chunk head error.");
 
         uint32_t chunkLength = chunkHead.ReadUInt32(0, bigEndian);
-        if (chunkLength > imgSize - imageStream_->Tell()) {
-            IMAGE_LOGE("Read chunk length error.");
-            return false;
-        }
+        CHECK_ERROR_RETURN_RET_LOG(chunkLength > imgSize - imageStream_->Tell(), false, "Read chunk length error.");
 
         DataBuf chunkBuf(PNG_CHUNK_HEAD_SIZE + chunkLength + PNG_CHUNK_CRC_SIZE);
         std::copy_n(chunkHead.Begin(), PNG_CHUNK_HEAD_SIZE, chunkBuf.Begin());
 
         ssize_t bufLength = imageStream_->Read(chunkBuf.Data(PNG_CHUNK_HEAD_SIZE), chunkLength + PNG_CHUNK_CRC_SIZE);
-        if (bufLength != chunkLength + PNG_CHUNK_CRC_SIZE) {
-            IMAGE_LOGE("Read chunk head error.");
-            return false;
-        }
+        CHECK_ERROR_RETURN_RET_LOG(bufLength != chunkLength + PNG_CHUNK_CRC_SIZE, false, "Read chunk head error.");
+
         std::string chunkType(reinterpret_cast<const char*>(chunkHead.CData(PNG_CHUNK_LENGTH_SIZE)),
                               PNG_CHUNK_TYPE_SIZE);
         if (chunkType == PNG_CHUNK_IEND) {
@@ -291,13 +258,9 @@ bool PngExifMetadataAccessor::UpdateExifMetadata(BufferMetadataStream &bufStream
         }
         if (chunkType == PNG_CHUNK_EXIF || chunkType == PNG_CHUNK_IHDR || chunkType == PNG_CHUNK_TEXT ||
             chunkType == PNG_CHUNK_ZTXT || chunkType == PNG_CHUNK_ITXT) {
-            if (!WriteExifData(bufStream, dataBlob, size, chunkBuf, chunkType)) {
-                return false;
-            }
+            CHECK_ERROR_RETURN_RET(!WriteExifData(bufStream, dataBlob, size, chunkBuf, chunkType), false);
         } else {
-            if (!WriteData(bufStream, chunkBuf.Data(), chunkBuf.Size())) {
-                return false;
-            }
+            CHECK_ERROR_RETURN_RET(!WriteData(bufStream, chunkBuf.Data(), chunkBuf.Size()), false);
         }
     }
     return false;
@@ -306,21 +269,15 @@ bool PngExifMetadataAccessor::UpdateExifMetadata(BufferMetadataStream &bufStream
 uint32_t PngExifMetadataAccessor::UpdateData(uint8_t *dataBlob, uint32_t size)
 {
     BufferMetadataStream tmpBufStream;
-    if (!tmpBufStream.Open(OpenMode::ReadWrite)) {
-        IMAGE_LOGE("Image temp stream open failed");
-        return ERR_IMAGE_SOURCE_DATA;
-    }
+    CHECK_ERROR_RETURN_RET_LOG(!tmpBufStream.Open(OpenMode::ReadWrite),
+        ERR_IMAGE_SOURCE_DATA, "Image temp stream open failed");
 
-    if (!UpdateExifMetadata(tmpBufStream, dataBlob, size)) {
-        IMAGE_LOGE("Image temp stream write failed");
-        return ERROR;
-    }
+    CHECK_ERROR_RETURN_RET_LOG(!UpdateExifMetadata(tmpBufStream, dataBlob, size),
+        ERROR, "Image temp stream write failed");
 
     imageStream_->Seek(0, SeekPos::BEGIN);
-    if (!imageStream_->CopyFrom(tmpBufStream)) {
-        IMAGE_LOGE("Copy from temp stream failed");
-        return ERR_MEDIA_INVALID_OPERATION;
-    }
+    CHECK_ERROR_RETURN_RET_LOG(!imageStream_->CopyFrom(tmpBufStream),
+        ERR_MEDIA_INVALID_OPERATION, "Copy from temp stream failed");
     return SUCCESS;
 }
 
@@ -329,15 +286,9 @@ uint32_t PngExifMetadataAccessor::Write()
     uint8_t *dataBlob = nullptr;
     uint32_t size = 0;
 
-    if (!imageStream_->IsOpen()) {
-        IMAGE_LOGE("Output image stream not open");
-        return ERR_IMAGE_SOURCE_DATA;
-    }
+    CHECK_ERROR_RETURN_RET_LOG(!imageStream_->IsOpen(), ERR_IMAGE_SOURCE_DATA, "Output image stream not open");
     imageStream_->Seek(0, SeekPos::BEGIN);
-    if (!IsPngType()) {
-        IMAGE_LOGE("Is not a PNG file.");
-        return ERR_IMAGE_SOURCE_DATA;
-    }
+    CHECK_ERROR_RETURN_RET_LOG(!IsPngType(), ERR_IMAGE_SOURCE_DATA, "Is not a PNG file.");
 
     if (!GetExifEncodedBlob(&dataBlob, size)) {
         IMAGE_LOGE("Encode Metadata failed");
@@ -360,10 +311,7 @@ uint32_t PngExifMetadataAccessor::WriteBlob(DataBuf &blob)
     uint32_t size = 0;
 
     imageStream_->Seek(0, SeekPos::BEGIN);
-    if (!IsPngType()) {
-        IMAGE_LOGE("Is not a PNG file.");
-        return ERR_IMAGE_SOURCE_DATA;
-    }
+    CHECK_ERROR_RETURN_RET_LOG(!IsPngType(), ERR_IMAGE_SOURCE_DATA, "Is not a PNG file.");
 
     if (blob.Empty()) {
         IMAGE_LOGE("Image exif blob data empty");
