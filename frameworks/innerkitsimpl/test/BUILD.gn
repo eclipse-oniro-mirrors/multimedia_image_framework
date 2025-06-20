@@ -12,7 +12,7 @@
 # limitations under the License.
 
 import("//build/test.gni")
-import("//commonlibrary/memory_utils/purgeable_mem_config.gni")
+import("//build/config/components/memory_utils/purgeable_mem_config.gni")
 import("//foundation/multimedia/image_framework/ide/image_decode_config.gni")
 
 module_output_path = "image_framework/image_framework"
@@ -101,19 +101,20 @@ ohos_unittest("picturetest") {
   deps = [
     "$image_subsystem/frameworks/innerkitsimpl/utils:image_utils",
     "$image_subsystem/interfaces/innerkits:image_native",
-    "//third_party/googletest:gmock_main",
-    "//third_party/googletest:gtest_main",
   ]
-  if (enable_libexif) {
-    deps += [ "//third_party/libexif:libexif" ]
-  }
 
   external_deps = [
     "c_utils:utils",
+    "googletest:gmock_main",
     "googletest:gtest",
+    "googletest:gtest_main",
     "graphic_surface:surface",
     "hilog:libhilog",
   ]
+
+  if (enable_libexif) {
+    external_deps += [ "libexif:libexif" ]
+  }
   resource_config_file = "${image_subsystem}/test/resource/image/ohos_test.xml"
 }
 
@@ -133,19 +134,20 @@ ohos_unittest("auxiliarypicturetest") {
   deps = [
     "$image_subsystem/frameworks/innerkitsimpl/utils:image_utils",
     "$image_subsystem/interfaces/innerkits:image_native",
-    "//third_party/googletest:gmock_main",
-    "//third_party/googletest:gtest_main",
   ]
-  if (enable_libexif) {
-    deps += [ "//third_party/libexif:libexif" ]
-  }
 
   external_deps = [
     "c_utils:utils",
+    "googletest:gmock_main",
     "googletest:gtest",
+    "googletest:gtest_main",
     "graphic_surface:surface",
     "hilog:libhilog",
   ]
+
+  if (enable_libexif) {
+    external_deps += [ "libexif:libexif" ]
+  }
   resource_config_file = "${image_subsystem}/test/resource/image/ohos_test.xml"
 }
 
@@ -163,15 +165,15 @@ ohos_unittest("metadatatest") {
     "${image_subsystem}/frameworks/innerkitsimpl/utils:image_utils",
     "${image_subsystem}/interfaces/innerkits:image_native",
   ]
-  if (enable_libexif) {
-    deps += [ "//third_party/libexif:libexif" ]
-  }
 
   external_deps = [
     "c_utils:utils",
     "googletest:gtest",
     "hilog:libhilog",
   ]
+  if (enable_libexif) {
+    external_deps += [ "libexif:libexif" ]
+  }
   resource_config_file = "${image_subsystem}/test/resource/image/ohos_test.xml"
 }
 
@@ -1222,10 +1224,6 @@ ohos_unittest("ndktest2") {
     "$image_subsystem/frameworks/kits/js/common/pixelmap_ndk:pixelmap",
   ]
 
-  if (enable_libexif) {
-    deps += [ "//third_party/libexif:libexif" ]
-  }
-
   external_deps = [
     "c_utils:utils",
     "googletest:gmock_main",
@@ -1240,6 +1238,10 @@ ohos_unittest("ndktest2") {
     "napi:ark_interop",
     "resource_management:librawfile",
   ]
+
+  if (enable_libexif) {
+    external_deps += [ "libexif:libexif" ]
+  }
   resource_config_file = "${image_subsystem}/test/resource/image/ohos_test.xml"
 }
 
@@ -1985,13 +1987,7 @@ ohos_unittest("picture_ext_test") {
     "${image_subsystem}/frameworks/kits/js/common/pixelmap_ndk:pixelmap",
     "${image_subsystem}/interfaces/innerkits:image_native",
     "${image_subsystem}/plugins/common/libs/image/libextplugin:extplugin",
-    "//third_party/googletest:gmock_main",
-    "//third_party/googletest:gtest_main",
   ]
-
-  if (enable_libexif) {
-    deps += [ "//third_party/libexif:libexif" ]
-  }
 
   external_deps = [
     "c_utils:utils",
@@ -2003,6 +1999,9 @@ ohos_unittest("picture_ext_test") {
     "napi:ace_napi",
     "resource_management:librawfile",
   ]
+  if (enable_libexif) {
+    external_deps += [ "libexif:libexif" ]
+  }
   resource_config_file = "${image_subsystem}/test/resource/image/ohos_test.xml"
 }
 

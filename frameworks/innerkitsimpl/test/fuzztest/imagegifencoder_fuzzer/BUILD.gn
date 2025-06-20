@@ -35,13 +35,12 @@ ohos_fuzztest("ImageGifEnCoderFuzzTest") {
     "$image_subsystem/plugins/manager:pluginmanager_static",
   ]
 
-  if (enable_libexif) {
-    deps += [ "//third_party/libexif:libexif" ]
-  }
-
   external_deps = [
     "c_utils:utils",
     "graphic_2d:color_manager",
     "hilog:libhilog",
   ]
+  if (enable_libexif) {
+    external_deps += [ "libexif:libexif" ]
+  }
 }
