@@ -23,6 +23,7 @@
 #include "hevc_sw_decode_param.h"
 #include "image_type.h"
 #include "surface_buffer.h"
+#include "v2_1/icodec_image.h"
 
 #ifdef IMAGE_COLORSPACE_FLAG
 #include "color_space.h"
@@ -75,8 +76,8 @@ public:
     void setAuxiliaryDstBuffer(uint8_t* dstBuffer, size_t dstSize, size_t rowStride, void *context);
     void getFragmentMetadata(Media::Rect& fragmentMetadata);
     bool SwDecode(bool isSharedMemory = false);
-    bool IsHeifGainmapNotYuv420();
-    bool IsHeifAlphaNotYuv420();
+    bool IsHeifGainmapYuv400();
+    bool IsHeifAlphaYuv400();
     void SetSampleFormat(uint32_t sampleSize, ColorManager::ColorSpaceName colorSpaceName);
     int32_t GetPrimaryLumaBitNum();
 private:
@@ -193,7 +194,7 @@ private:
     SurfaceBuffer *auxiliaryDstHwBuffer_;
     SurfaceBuffer *gainMapDstHwBuffer_;
     uint32_t sampleSize_ = 1;
-    OHOS::ColorManager::ColorSpaceName colorSpaceName_ = ColorManager::colorSpaceName::NONE;
+    OHOS::ColorManager::ColorSpaceName colorSpaceName_ = ColorManager::ColorSpaceName::NONE;
 
     HeifFrameInfo tmapInfo_{};
     std::string errMsg_;

@@ -498,15 +498,13 @@ bool HeifDecoderImpl::decode(HeifFrameInfo *frameInfo)
     }
     sptr<SurfaceBuffer> hwBuffer;
     IMAGE_LOGD("decode sapmpleSize:%{public}d", sampleSize_);
-    bool decodeRes = HwDecodeImage(primaryImage_, gridInfo_, &hwBuffer, true);
-    if (decodeRes) {
+    bool decodeSuccess = HwDecodeImage(primaryImage_, gridInfo_, &hwBuffer, true);
+    if (decodeSuccess) {
         ImageUtils::DumpDataIfDumpEnabled(reinterpret_cast<const char *>(hwBuffer->GetVirAddr()),
             hwBuffer->GetSize(), "heif_hardware_decode", IMAGE_ID);
-    }
-    if (!decodeRes && sampleSize_ != DEFAULT_SCALE_SIZE) {
+    } else if (sampleSize_ != DEFAULT_SCALE_SIZE) {
         return false;
-    }
-    if (!decodeRes) {
+    } else {
         return SwDecode();
     }
 
@@ -1150,7 +1148,7 @@ bool HeifDecoderImpl::ProcessChunkHead(uint8_t *data, size_t len)
     return true;
 }
 
-bool HeifDecoderImpl::IsHeifAlphaNotYuv420()
+bool HeifDecoderImpl::IsHeifAlphaYuv400()
 {
     std::shared_ptr<HeifImage> alphaImage = primaryImage_->GetAlphaImage();
     if (alphaImage == nullptr) {
@@ -1163,7 +1161,7 @@ bool HeifDecoderImpl::IsHeifAlphaNotYuv420()
     return false;
 }
 
-bool HeifDecoderImpl::IsHeifGainmapNotYuv420()
+bool HeifDecoderImpl::IsHeifGainmapYuv400()
 {
     if (gainmapImage_ == nullptr) {
         return false;

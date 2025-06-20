@@ -139,7 +139,6 @@ private:
         uint64_t byteCount, OHOS::Media::PixelFormat format);
     bool IsHeifToSingleHdrDecode(const DecodeContext &context) const;
     uint32_t DoHeifToSingleHdrDecode(OHOS::ImagePlugin::DecodeContext &context);
-    uint32_t AllocHeifSingleHdrBuffer(DecodeContext &context);
     uint32_t HandleGifCache(uint8_t* src, uint8_t* dst, uint64_t rowStride, int dstHeight);
     uint32_t GetFramePixels(SkImageInfo& info, uint8_t* buffer, uint64_t rowStride, SkCodec::Options options);
     FrameCacheInfo InitFrameCacheInfo(const uint64_t rowStride, SkImageInfo info);

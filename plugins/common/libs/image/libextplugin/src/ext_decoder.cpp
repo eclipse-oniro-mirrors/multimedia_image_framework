@@ -83,6 +83,7 @@
 
 namespace {
     constexpr static int32_t ZERO = 0;
+    constexpr static int32_t NUM_1 = 1;
     constexpr static int32_t NUM_2 = 2;
     constexpr static int32_t NUM_3 = 3;
     constexpr static int32_t NUM_4 = 4;
@@ -419,17 +420,17 @@ uint32_t ExtDecoder::HeifYUVMemAlloc(OHOS::ImagePlugin::DecodeContext &context, 
     if (retVal != OHOS::GSERROR_OK || planes == nullptr || planes->planeCount < NUM_2) {
         IMAGE_LOGE("heif yuv decode, Get planesInfo failed, retVal:%{public}d", retVal);
     } else {
-        uint32_t uvPlaneOffset = (context.info.pixelFormat == PixelFormat::NV12 ||
-                context.info.pixelFormat == PixelFormat::YCBCR_P010) ? NUM_ONE : NUM_2;
+        uint32_t uvPlaneIndex = (context.info.pixelFormat == PixelFormat::NV12 ||
+                context.info.pixelFormat == PixelFormat::YCBCR_P010) ? NUM_1 : NUM_2;
         context.yuvInfo.imageSize = { heifInfo.width(), heifInfo.height() };
         context.yuvInfo.yWidth = heifInfo.width();
         context.yuvInfo.yHeight = heifInfo.height();
         context.yuvInfo.uvWidth = static_cast<uint32_t>((heifInfo.width() + 1) / NUM_2);
         context.yuvInfo.uvHeight = static_cast<uint32_t>((heifInfo.height() + 1) / NUM_2);
         context.yuvInfo.yStride = planes->planes[0].columnStride;
-        context.yuvInfo.uvStride = planes->planes[uvPlaneOffset].columnStride;
+        context.yuvInfo.uvStride = planes->planes[uvPlaneIndex].columnStride;
         context.yuvInfo.yOffset = planes->planes[0].offset;
-        context.yuvInfo.uvOffset = planes->planes[uvPlaneOffset].offset;
+        context.yuvInfo.uvOffset = planes->planes[uvPlaneIndex].offset;
     }
     return SUCCESS;
 #else
@@ -1164,7 +1165,7 @@ bool ExtDecoder::IsSupportHeifHardwareDecode(const PixelDecodeOptions &opts)
     if (!ImageSystemProperties::GetHeifHardwareDecodeEnabled()) {
         return false;
     }
-    if (decoder->IsHeifGainmapNotYuv420() || decoder->IsHeifAlphaNotYuv420()) {
+    if (decoder->IsHeifGainmapYuv400() || decoder->IsHeifAlphaYuv400()) {
         IMAGE_LOGD("The gainmap or alpha channel of the HEIF is not YUV420 format");
         return false;
     }

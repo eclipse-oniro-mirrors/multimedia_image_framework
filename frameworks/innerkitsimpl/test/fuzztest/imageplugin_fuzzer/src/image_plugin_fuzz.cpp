@@ -90,7 +90,8 @@ void ExtDecoderFuncTest001(const std::string& filename)
         return;
     }
     DecodeContext context;
-    extDecoder->HeifYUVMemAlloc(context);
+    SkImageInfo heifInfo;
+    extDecoder->HeifYUVMemAlloc(context, heifInfo);
     int dWidth;
     int dHeight;
     float scale;
@@ -185,7 +186,8 @@ void ExtDecoderRegionFuncTest001(const std::string& filename)
         return;
     }
     DecodeContext context;
-    extDecoder->HeifYUVMemAlloc(context);
+    SkImageInfo heifInfo;
+    extDecoder->HeifYUVMemAlloc(context, heifInfo);
     int dWidth;
     int dHeight;
     float scale;
