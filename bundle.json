@@ -19,7 +19,9 @@
         "SystemCapability.Multimedia.Image.ImageReceiver",
         "SystemCapability.Multimedia.Image.ImageCreator"
       ],
-      "features": [],
+      "features": [
+        "image_framework_feature_upgrade_skia"
+      ],
       "adapted_system_type": [ "standard" ],
       "rom": "10000KB",
       "ram": "10000KB",
