@@ -16,7 +16,7 @@
 #include "image_gif_encoder_fuzzer.h"
 
 #include <fcntl.h>
-
+#include <unistd.h>
 #include "image_packer.h"
 #include "abs_image_encoder.h"
 #include "gif_encoder.h"
