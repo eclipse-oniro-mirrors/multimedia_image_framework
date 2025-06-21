@@ -268,9 +268,6 @@ image_native_android_deps = [
   # heif
   "${image_subsystem}/plugins/common/libs/image/libextplugin:heifparser",
 
-  # raw
-  "$third_party_skia_root/third_party/piex",
-
   # formatagent
   # png
 ]
@@ -278,7 +275,7 @@ image_native_android_deps = [
 if (image_use_new_skia) {
   image_native_android_deps += [
     "${third_party_skia_root}/third_party/libjpeg-turbo:libjpegm133",
-    "${third_party_skia_root}/third_party/libpng:libpngm133",
+    "${third_party_skia_root}/third_party/libpng:libpng",
     "${third_party_skia_root}/third_party/piex:piexm133",
   ]
 } else {
