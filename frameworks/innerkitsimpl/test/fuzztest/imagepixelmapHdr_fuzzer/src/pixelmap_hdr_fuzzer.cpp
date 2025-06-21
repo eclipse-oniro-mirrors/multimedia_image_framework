@@ -20,6 +20,7 @@
 #include <cstdint>
 #include <fcntl.h>
 #include <securec.h>
+#include <unistd.h>
 #include "image_log.h"
 #include "image_source.h"
 #include "image_utils.h"
