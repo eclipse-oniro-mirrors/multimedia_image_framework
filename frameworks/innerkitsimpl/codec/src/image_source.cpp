@@ -3391,7 +3391,42 @@ bool HandleMetadataCopy(std::vector<uint8_t>& dest, const uint8_t *src, size_t l
     return true;
 }
 
-static bool GetExtInfoForPixelAstc(AstcExtendInfo &extInfo, unique_ptr<PixelAstc> &pixelAstc)
+bool ProcessAstcMetadata(PixelAstc* pixelAstc, size_t astcSize, const AstcMetadata& astcMetadata)
+{
+    if (pixelAstc != nullptr && pixelAstc->GetAllocatorType() != AllocatorType::DMA_ALLOC) {
+        Size desiredSize = { astcSize, 1 };
+        MemoryData memoryData = { nullptr, astcSize, "CreatePixelMapForASTC Data", desiredSize,
+                                  pixelAstc->GetPixelFormat() };
+        auto dstMemory = MemoryManager::CreateMemory(AllocatorType::DMA_ALLOC, memoryData);
+        if (!dstMemory || dstMemory->data.data == nullptr) {
+            IMAGE_LOGE("%{public}s CreateMemory failed", __func__);
+            return false;
+        }
+        if (memcpy_s(dstMemory->data.data, astcSize, pixelAstc->GetPixels(), astcSize) != 0) {
+            IMAGE_LOGE("%{public}s memcpy failed", __func__);
+            return false;
+        }
+        pixelAstc->SetPixelsAddr(dstMemory->data.data, dstMemory->extend.data,
+                                 dstMemory->data.size, dstMemory->GetType(), nullptr);
+    }
+    pixelAstc->SetHdr(true);
+
+    if (pixelAstc->IsHdr() && pixelAstc->GetFd() != nullptr) {
+        sptr<SurfaceBuffer> dstBuffer(reinterpret_cast<SurfaceBuffer*>(pixelAstc->GetFd()));
+        GSError ret = dstBuffer->SetMetadata(ATTRKEY_HDR_METADATA_TYPE, astcMetadata.hdrMetadataTypeVec);
+        CHECK_ERROR_RETURN_RET_LOG(ret != GSERROR_OK, false, "%{public}s METADATA_TYPE set failed", __func__);
+        ret = dstBuffer->SetMetadata(ATTRKEY_COLORSPACE_INFO, astcMetadata.colorSpaceInfoVec);
+        CHECK_ERROR_RETURN_RET_LOG(ret != GSERROR_OK, false, "%{public}s COLORSPACE_INFO set failed", __func__);
+        bool vpeRet = VpeUtils::SetSbStaticMetadata(dstBuffer, astcMetadata.staticData);
+        CHECK_ERROR_RETURN_RET_LOG(!vpeRet, false, "%{public}s staticData set failed", __func__);
+        vpeRet = VpeUtils::SetSbDynamicMetadata(dstBuffer, astcMetadata.dynamicData);
+        CHECK_ERROR_RETURN_RET_LOG(!vpeRet, false, "%{public}s dynamicData set failed", __func__);
+        return true;
+    }
+    return false;
+}
+
+static bool GetExtInfoForPixelAstc(AstcExtendInfo &extInfo, unique_ptr<PixelAstc> &pixelAstc, size_t astcSize)
 {
     uint8_t colorSpace = 0;
     uint8_t pixelFmt = 0;
@@ -3434,15 +3469,9 @@ static bool GetExtInfoForPixelAstc(AstcExtendInfo &extInfo, unique_ptr<PixelAstc
     pixelAstc->InnerSetColorSpace(grColorspace, true);
 #endif
     if (static_cast<PixelFormat>(pixelFmt) == PixelFormat::RGBA_1010102 &&
-        pixelAstc->GetAllocatorType() == AllocatorType::DMA_ALLOC) {
-        pixelAstc->SetHdr(true);
-    }
-    if (pixelAstc->IsHdr() && pixelAstc->GetFd() != nullptr) {
-        sptr<SurfaceBuffer> dstBuffer(reinterpret_cast<SurfaceBuffer *>(pixelAstc->GetFd()));
-        dstBuffer->SetMetadata(ATTRKEY_HDR_METADATA_TYPE, astcMetadata.hdrMetadataTypeVec);
-        dstBuffer->SetMetadata(ATTRKEY_COLORSPACE_INFO, astcMetadata.colorSpaceInfoVec);
-        VpeUtils::SetSbStaticMetadata(dstBuffer, astcMetadata.staticData);
-        VpeUtils::SetSbDynamicMetadata(dstBuffer, astcMetadata.dynamicData);
+        !ProcessAstcMetadata(pixelAstc.get(), astcSize, astcMetadata)) {
+        IMAGE_LOGE("GetExtInfoForPixelAstc ProcessAstcMetadata failed!");
+        return false;
     }
     return true;
 }
@@ -3514,7 +3543,7 @@ static bool ResolveExtInfo(const uint8_t *sourceFilePtr, size_t astcSize, size_t
         ReleaseExtendInfoMemory(extInfo);
         return false;
     }
-    if (!GetExtInfoForPixelAstc(extInfo, pixelAstc)) {
+    if (!GetExtInfoForPixelAstc(extInfo, pixelAstc, astcSize)) {
         IMAGE_LOGE("ResolveExtInfo Could not get ext info!");
     }
     ReleaseExtendInfoMemory(extInfo);
