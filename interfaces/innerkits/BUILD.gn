@@ -13,7 +13,7 @@
 
 import("//build/ohos.gni")
 import("//build/ohos/ace/ace.gni")
-import("//commonlibrary/memory_utils/purgeable_mem_config.gni")
+import("//build/config/components/memory_utils/purgeable_mem_config.gni")
 import("//foundation/multimedia/image_framework/ide/image_decode_config.gni")
 import("$image_subsystem/plugins/cross/image_native_android.gni")
 import("$image_subsystem/plugins/cross/image_native_ios.gni")
