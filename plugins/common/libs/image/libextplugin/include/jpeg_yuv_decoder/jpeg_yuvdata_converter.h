@@ -17,6 +17,8 @@
 #define PLUGINS_COMMON_LIBS_IMAGE_LIBEXTPLUGIN_INCLUDE_JPEG_YUVDATA_CONVERTER_H
 
 #include <cstdint>
+#include <string>
+#include <sstream>
 
 namespace OHOS {
 namespace ImagePlugin {
@@ -36,6 +38,18 @@ struct YuvPlaneInfo {
     uint32_t planeHeight[YUVCOMPONENT_MAX] = { 0 };
     uint32_t strides[YUVCOMPONENT_MAX] = { 0 };
     unsigned char *planes[YUVCOMPONENT_MAX] = { 0 };
+
+    std::string ToStrinng() const
+    {
+        std::stringstream message;
+        message << "imageWidth=" << imageWidth << ", imageHeight=" << imageHeight << "\n";
+        for (int i = 0; i < YUVCOMPONENT_MAX; ++i) {
+            message << "planeWidth[" << i << "]=" << planeWidth[i];
+            message << ", planeHeight[" << i << "]=" << planeHeight[i];
+            message << ", strides[" << i << "]=" << strides[i] << "\n";
+        }
+        return message.str();
+    }
 };
 
 int I444ToI420_wrapper(const YuvPlaneInfo &src, const YuvPlaneInfo &dest);
@@ -50,6 +64,7 @@ int I411ToI420_wrapper(const YuvPlaneInfo &src, const YuvPlaneInfo &dest);
 int I411ToNV21_wrapper(const YuvPlaneInfo &src, const YuvPlaneInfo &dest);
 
 int I400ToI420_wrapper(const YuvPlaneInfo &src, const YuvPlaneInfo &dest);
+int I400ToYUV420Sp(const YuvPlaneInfo &src, const YuvPlaneInfo &dest);
 }
 }
 #endif

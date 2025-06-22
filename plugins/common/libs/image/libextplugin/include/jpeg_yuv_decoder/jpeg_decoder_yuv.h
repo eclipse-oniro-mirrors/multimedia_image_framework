@@ -130,7 +130,7 @@ protected:
     int DecodeFrom420To420(DecodeContext &context, tjhandle dehandle, uint32_t width, uint32_t height);
     bool ValidateParameter(YuvPlaneInfo &srcPlaneInfo, ConverterPair &converter);
     int ConvertFrom4xx(YuvPlaneInfo &srcPlaneInfo, ConverterPair &converter, const DecodeContext &context = {});
-    int ConvertFromGray(YuvPlaneInfo &srcPlaneInfo);
+    int ConvertFromGray(YuvPlaneInfo &srcPlaneInfo, const DecodeContext &context = {});
 
 protected:
     JpegDecoderYuvParameter decodeParameter_;
