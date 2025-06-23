@@ -89,6 +89,7 @@ ohos_shared_library("image_source_ndk") {
 
   external_deps = [
     "c_utils:utils",
+    "ipc:ipc_single",
     "napi:ace_napi",
     "resource_management:librawfile",
   ]
@@ -112,6 +113,7 @@ ohos_shared_library("image_packer_ndk") {
 
   external_deps = [
     "c_utils:utils",
+    "ipc:ipc_single",
     "napi:ace_napi",
   ]
 
@@ -158,6 +160,7 @@ ohos_shared_library("image_source") {
     "graphic_2d:libnative_color_space_manager",
     "hilog:libhilog",
     "napi:ace_napi",
+    "libjpeg-turbo:turbojpeg",
     "resource_management:librawfile",
     "skia:libjpeg",
   ]

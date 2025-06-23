@@ -74,6 +74,7 @@ ohos_shared_library("rawplugin") {
       "graphic_2d:color_manager",
       "hilog:libhilog",
       "libexif:libexif",
+      "libjpeg-turbo:turbojpeg",
       "skia:libjpeg",
       "skia:piex",
       "skia:skia_canvaskit",

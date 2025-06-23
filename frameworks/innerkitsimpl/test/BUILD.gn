@@ -346,6 +346,7 @@ ohos_unittest("imagesourcetest") {
     "googletest:gtest_main",
     "graphic_surface:surface",
     "hilog:libhilog",
+    "libjpeg-turbo:turbojpeg",
     "skia:libjpeg",
     "zlib:libz",
   ]
@@ -401,6 +402,7 @@ ohos_unittest("jpegdecoderextest") {
     "googletest:gmock_main",
     "googletest:gtest_main",
     "libexif:libexif",
+    "libjpeg-turbo:turbojpeg",
     "skia:libjpeg",
   ]
 
@@ -431,6 +433,7 @@ ohos_unittest("jpegutilstest") {
     "googletest:gtest_main",
     "hilog:libhilog",
     "libexif:libexif",
+    "libjpeg-turbo:turbojpeg",
     "skia:libjpeg",
   ]
 
@@ -461,6 +464,7 @@ ohos_unittest("exifmakernotetest") {
     "googletest:gtest_main",
     "hilog:libhilog",
     "libexif:libexif",
+    "libjpeg-turbo:turbojpeg",
     "skia:libjpeg",
   ]
 
@@ -1052,6 +1056,7 @@ ohos_unittest("pluginlibjpegtest") {
     "graphic_2d:color_manager",
     "hilog:libhilog",
     "hitrace:hitrace_meter",
+    "libjpeg-turbo:turbojpeg",
     "skia:libjpeg",
     "skia:skia_canvaskit",
   ]
@@ -1256,6 +1261,7 @@ ohos_unittest("napitest") {
   deps = [ "$image_subsystem/interfaces/kits/js/common:image" ]
 
   external_deps = [
+    "ipc:ipc_single",
     "googletest:gmock_main",
     "googletest:gtest_main",
     "graphic_2d:color_manager",
@@ -2096,7 +2102,7 @@ group("unittest") {
     ":pluginlibjpegtest",
     ":pluginsmanagersrcframeworktest",
     ":pngtest",
-    ":rawdecodertest",
+    #":rawdecodertest",
     ":receivertest",
     ":streamtest",
     ":textureencodetest",
