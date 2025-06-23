@@ -1248,6 +1248,12 @@ static bool ParsePixelFormat(napi_env env, napi_value root, const char* name,
     return true;
 }
 
+static bool hasNamedProperty(napi_env env, napi_value object, std::string name)
+{
+    bool res = false;
+    return (napi_has_named_property(env, object, name.c_str(), &res) == napi_ok) && res;
+}
+
 static bool ParseDecodeOptions2(napi_env env, napi_value root, DecodeOptions* opts, std::string &error)
 {
     if (!ParsePixelFormat(env, root, "desiredPixelFormat", opts, error)
@@ -1290,10 +1296,12 @@ static bool ParseDecodeOptions2(napi_env env, napi_value root, DecodeOptions* op
     opts->resolutionQuality = ParseResolutionQuality(env, root);
 
     napi_value nPixelmap = nullptr;
-    if (napi_get_named_property(env, root, "reusePixelMap", &nPixelmap) == napi_ok) {
-        std::shared_ptr<PixelMap> rPixelmap = PixelMapNapi::GetPixelMap(env, nPixelmap);
-        opts->reusePixelmap = rPixelmap;
-        IMAGE_LOGD("reusePixelMap parse finished");
+    if (hasNamedProperty(env, root, "reusePixelMap")) {
+        if (napi_get_named_property(env, root, "reusePixelMap", &nPixelmap) == napi_ok) {
+            std::shared_ptr<PixelMap> rPixelmap = PixelMapNapi::GetPixelMap(env, nPixelmap);
+            opts->reusePixelmap = rPixelmap;
+            IMAGE_LOGD("reusePixelMap parse finished");
+        }
     }
     return true;
 }
@@ -1396,12 +1404,6 @@ static void PrepareNapiEnv(napi_env env)
     napi_value funcArgv[1] = { imageInfo };
     napi_value returnValue;
     napi_call_function(env, globalValue, func, 1, funcArgv, &returnValue);
-}
-
-static bool hasNamedProperty(napi_env env, napi_value object, std::string name)
-{
-    bool res = false;
-    return (napi_has_named_property(env, object, name.c_str(), &res) == napi_ok) && res;
 }
 
 static bool parseRawFileItem(napi_env env, napi_value argValue, std::string item, int32_t* value)

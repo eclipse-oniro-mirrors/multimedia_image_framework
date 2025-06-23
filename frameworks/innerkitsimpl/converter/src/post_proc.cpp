@@ -553,7 +553,7 @@ uint32_t PostProc::NeedScanlineFilter(const Rect &cropRect, const Size &srcSize,
 {
     CropValue value = GetCropValue(cropRect, srcSize);
     if (value == CropValue::NOCROP && !hasPixelConvert) {
-        IMAGE_LOGI("[PostProc]no need crop and pixel convert.");
+        IMAGE_LOGD("[PostProc]no need crop and pixel convert.");
         return SUCCESS;
     } else if (value == CropValue::INVALID) {
         IMAGE_LOGE("[PostProc]invalid corp region, top:%{public}d, left:%{public}d, "
