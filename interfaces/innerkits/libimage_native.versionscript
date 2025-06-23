@@ -40,6 +40,7 @@
     *AuxiliaryPicture*;
     *FragmentMetadata*;
     *GifMetadata*;
+    *ImageKvMetadata*;
     *MemoryManager*;
     *FilePackerStream*;
   local:

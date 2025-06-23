@@ -740,7 +740,7 @@ uint32_t Picture::SetMetadata(MetadataType type, std::shared_ptr<ImageMetadata> 
             static_cast<int>(type), static_cast<int>(pictureMetadata->GetType()));
         return ERR_IMAGE_INVALID_PARAMETER;
     }
-    if (!Picture::isValidPictureMetadataType(type)) {
+    if (!Picture::IsValidPictureMetadataType(type)) {
         IMAGE_LOGE("Unsupported pictureMetadata type: %{public}d", static_cast<int32_t>(type));
         return ERR_IMAGE_INVALID_PARAMETER;
     }
@@ -775,7 +775,7 @@ void Picture::DumpPictureIfDumpEnabled(Picture& picture, std::string dumpType)
     }
 }
 
-bool Picture::isValidPictureMetadataType(MetadataType metadataType)
+bool Picture::IsValidPictureMetadataType(MetadataType metadataType)
 {
     const static std::set<MetadataType> pictureMetadataTypes = {
         MetadataType::EXIF,

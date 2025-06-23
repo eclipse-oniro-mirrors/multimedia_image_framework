@@ -16,6 +16,7 @@
 #include "image_source_napi.h"
 #include <fcntl.h>
 #include "image_common.h"
+#include "image_error_convert.h"
 #include "image_log.h"
 #include "image_napi_utils.h"
 #include "jpeg_decoder_yuv.h"
@@ -3277,27 +3278,6 @@ ImageResource ImageSourceNapi::GetImageResource()
 }
 
 #if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
-static std::pair<int32_t, std::string> CreatePictureAtIndexMakeErrMsg(uint32_t errorCode)
-{
-    switch (errorCode) {
-        case ERR_IMAGE_SOURCE_DATA:
-        case ERR_IMAGE_SOURCE_DATA_INCOMPLETE:
-        case ERR_IMAGE_GET_DATA_ABNORMAL:
-        case ERR_IMAGE_DATA_ABNORMAL:
-            return std::make_pair<int32_t, std::string>(IMAGE_BAD_SOURCE, "Bad image source.");
-        case ERR_IMAGE_MISMATCHED_FORMAT:
-        case ERR_IMAGE_UNKNOWN_FORMAT:
-        case ERR_IMAGE_DECODE_HEAD_ABNORMAL:
-            return std::make_pair<int32_t, std::string>(IMAGE_SOURCE_UNSUPPORTED_MIMETYPE, "Unsupported mimetype.");
-        case ERR_IMAGE_TOO_LARGE:
-            return std::make_pair<int32_t, std::string>(IMAGE_SOURCE_TOO_LARGE, "Image too large.");
-        case ERR_IMAGE_INVALID_PARAMETER:
-            return std::make_pair<int32_t, std::string>(IMAGE_SOURCE_UNSUPPORTED_OPTIONS, "Unsupported options.");
-        default:
-            return std::make_pair<int32_t, std::string>(IMAGE_DECODE_FAILED, "Decode failed.");
-    }
-}
-
 static void CreatePictureAtIndexExecute(napi_env env, void *data)
 {
     IMAGE_LOGD("CreatePictureAtIndexExecute IN");
@@ -3313,10 +3293,10 @@ static void CreatePictureAtIndexExecute(napi_env env, void *data)
     }
 
     uint32_t errorCode = ERR_MEDIA_INVALID_VALUE;
-    context->rPicture = context->rImageSource->CreatePictureAtIndex(context->index, context->decodeOpts, errorCode);
+    context->rPicture = context->rImageSource->CreatePictureAtIndex(context->index, errorCode);
     if (errorCode != SUCCESS || context->rPicture == nullptr) {
         context->status = ERROR;
-        auto errMsg = CreatePictureAtIndexMakeErrMsg(errorCode);
+        auto errMsg = ImageErrorConvert::CreatePictureAtIndexMakeErrMsg(errorCode);
         context->errMsgArray.insert(errMsg);
     } else {
         context->status = SUCCESS;

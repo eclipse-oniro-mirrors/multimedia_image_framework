@@ -413,6 +413,7 @@ enum class MetadataType {
     EXIF = 1,
     FRAGMENT = 2,
     GIF = 5,
+    UNKNOWN = 0
 };
 
 struct DecodingOptionsForPicture {

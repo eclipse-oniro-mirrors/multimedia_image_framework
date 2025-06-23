@@ -93,7 +93,7 @@ ohos_unittest("picturetest") {
   ]
 
   sources = [
-    "$image_subsystem/frameworks/innerkitsimpl/accessor/src/fragment_metadata.cpp",
+    "$image_subsystem/frameworks/innerkitsimpl/accessor/src/kv_metadata.cpp",
     "$image_subsystem/frameworks/innerkitsimpl/accessor/src/tiff_parser.cpp",
     "$image_subsystem/frameworks/innerkitsimpl/test/unittest/picture_test/picture_test.cpp",
   ]
@@ -127,7 +127,7 @@ ohos_unittest("auxiliarypicturetest") {
   ]
 
   sources = [
-    "$image_subsystem/frameworks/innerkitsimpl/accessor/src/fragment_metadata.cpp",
+    "$image_subsystem/frameworks/innerkitsimpl/accessor/src/kv_metadata.cpp",
     "$image_subsystem/frameworks/innerkitsimpl/test/unittest/auxiliary_picture_test/auxiliary_picture_test.cpp",
   ]
 
@@ -181,7 +181,7 @@ ohos_unittest("fragmentmetadatatest") {
   module_out_path = module_output_path
 
   sources = [
-    "${image_subsystem}/frameworks/innerkitsimpl/accessor/src/fragment_metadata.cpp",
+    "${image_subsystem}/frameworks/innerkitsimpl/accessor/src/kv_metadata.cpp",
     "${image_subsystem}/frameworks/innerkitsimpl/test/unittest/metadata_test/fragment_metadata_test.cpp",
   ]
 
@@ -201,7 +201,7 @@ ohos_unittest("gifmetadatatest") {
   module_out_path = module_output_path
 
   sources = [
-    "${image_subsystem}/frameworks/innerkitsimpl/accessor/src/gif_metadata.cpp",
+    "${image_subsystem}/frameworks/innerkitsimpl/accessor/src/kv_metadata.cpp",
     "${image_subsystem}/frameworks/innerkitsimpl/test/unittest/metadata_test/gif_metadata_test.cpp",
   ]
 

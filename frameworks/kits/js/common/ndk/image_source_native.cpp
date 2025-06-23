@@ -17,6 +17,7 @@
 #include "jpeg_decoder_yuv.h"
 #include "picture_native_impl.h"
 #include "common_utils.h"
+#include "image_error_convert.h"
 #include "image_source.h"
 #include "image_source_native_impl.h"
 #include "image_utils.h"
@@ -759,26 +760,10 @@ Image_ErrorCode OH_ImageSourceNative_CreatePictureAtIndex(OH_ImageSourceNative *
     }
 
     uint32_t errorCode = ERR_MEDIA_INVALID_VALUE;
-    DecodeOptions decOps;
-    auto pictureTemp = source->GetInnerImageSource()->CreatePictureAtIndex(index, decOps, errorCode);
+    auto pictureTemp = source->GetInnerImageSource()->CreatePictureAtIndex(index, errorCode);
     if (errorCode != SUCCESS) {
-        switch (errorCode) {
-            case ERR_IMAGE_SOURCE_DATA:
-            case ERR_IMAGE_SOURCE_DATA_INCOMPLETE:
-            case ERR_IMAGE_GET_DATA_ABNORMAL:
-            case ERR_IMAGE_DATA_ABNORMAL:
-                return Image_ErrorCode::IMAGE_BAD_SOURCE;
-            case ERR_IMAGE_MISMATCHED_FORMAT:
-            case ERR_IMAGE_UNKNOWN_FORMAT:
-            case ERR_IMAGE_DECODE_HEAD_ABNORMAL:
-                return Image_ErrorCode::IMAGE_SOURCE_UNSUPPORTED_MIMETYPE;
-            case ERR_IMAGE_TOO_LARGE:
-                return Image_ErrorCode::IMAGE_SOURCE_TOO_LARGE;
-            case ERR_IMAGE_INVALID_PARAMETER:
-                return Image_ErrorCode::IMAGE_SOURCE_UNSUPPORTED_OPTIONS;
-            default:
-                return Image_ErrorCode::IMAGE_DECODE_FAILED;
-        }
+        auto errMsg = ImageErrorConvert::CreatePictureAtIndexMakeErrMsg(errorCode);
+        return static_cast<Image_ErrorCode>(errMsg.first);
     }
 
     auto pictureNative  = new OH_PictureNative(std::move(pictureTemp));

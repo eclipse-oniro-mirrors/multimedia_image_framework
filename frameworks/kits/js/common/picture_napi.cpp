@@ -913,7 +913,7 @@ napi_value PictureNapi::GetMetadata(napi_env env, napi_callback_info info)
     IMG_NAPI_CHECK_RET_D(IMG_IS_OK(status),
         ImageNapiUtils::ThrowExceptionError(env, IMAGE_BAD_PARAMETER,
         "Fail to get metadata type"), IMAGE_LOGE("Fail to get metadata type"));
-    if (!Picture::isValidPictureMetadataType(static_cast<MetadataType>(metadataType))) {
+    if (!Picture::IsValidPictureMetadataType(static_cast<MetadataType>(metadataType))) {
         return ImageNapiUtils::ThrowExceptionError(
             env, IMAGE_UNSUPPORTED_METADATA, "Unsupport MetadataType");
     }
@@ -975,7 +975,7 @@ napi_value PictureNapi::SetMetadata(napi_env env, napi_callback_info info)
     IMG_NAPI_CHECK_RET_D(IMG_IS_OK(status),
         ImageNapiUtils::ThrowExceptionError(env, IMAGE_BAD_PARAMETER,
         "Fail to get metadata type"), IMAGE_LOGE("Fail to get metadata type"));
-    if (Picture::isValidPictureMetadataType(static_cast<MetadataType>(metadataType))) {
+    if (Picture::IsValidPictureMetadataType(static_cast<MetadataType>(metadataType))) {
         asyncContext->metadataType = MetadataType(metadataType);
     } else {
         return ImageNapiUtils::ThrowExceptionError(

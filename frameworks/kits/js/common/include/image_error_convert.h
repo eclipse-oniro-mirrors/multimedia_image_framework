@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Huawei Device Co., Ltd.
+ * Copyright (C) 2025 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -13,21 +13,18 @@
  * limitations under the License.
  */
 
-#ifndef INTERFACES_INNERKITS_INCLUDE_FRAGMENT_METADATA_H
-#define INTERFACES_INNERKITS_INCLUDE_FRAGMENT_METADATA_H
+#ifndef FRAMEWORKS_KITS_JS_COMMON_INCLUDE_IMAGE_ERROR_CONVERT_H
+#define FRAMEWORKS_KITS_JS_COMMON_INCLUDE_IMAGE_ERROR_CONVERT_H
 
-#include "kv_metadata.h"
+#include <string>
 
 namespace OHOS {
 namespace Media {
-class FragmentMetadata : public ImageKvMetadata {
+class ImageErrorConvert {
 public:
-    FragmentMetadata()
-    {
-        metadataType_ = MetadataType::FRAGMENT;
-    }
+    static std::pair<int32_t, std::string> CreatePictureAtIndexMakeErrMsg(uint32_t errorCode);
 };
 } // namespace Media
 } // namespace OHOS
 
-#endif // INTERFACES_INNERKITS_INCLUDE_FRAGMENT_METADATA_H
+#endif // FRAMEWORKS_KITS_JS_COMMON_INCLUDE_IMAGE_ERROR_CONVERT_H
