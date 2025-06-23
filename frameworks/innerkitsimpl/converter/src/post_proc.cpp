@@ -186,11 +186,10 @@ bool PostProc::CenterScale(const Size &size, PixelMap &pixelMap)
     if (srcWidth == targetWidth && srcHeight == targetHeight) {
         return true;
     }
-    if (srcWidth < targetWidth || srcHeight < targetHeight) {
-        IMAGE_LOGE("[PostProc]src size [%{public}d, %{public}d] must less than dst size [%{public}d,"
-            "%{public}d]", srcWidth, srcHeight, targetWidth, targetHeight);
-        return false;
-    }
+    cond = srcWidth < targetWidth || srcHeight < targetHeight;
+    CHECK_ERROR_RETURN_RET_LOG(cond, false,
+        "[PostProc]src size [%{public}d, %{public}d] must less than dst size [%{public}d, %{public}d]",
+        srcWidth, srcHeight, targetWidth, targetHeight);
 
     return CenterDisplay(pixelMap, srcWidth, srcHeight, targetWidth, targetHeight);
 }
@@ -215,21 +214,18 @@ bool PostProc::CopyPixels(PixelMap& pixelMap, uint8_t* dstPixels, const Size& ds
         srcRowStride = srcRowBytes;
     }
     uint8_t *srcPixels = const_cast<uint8_t *>(pixelMap.GetPixels()) + top * srcRowStride + left * pixelBytes;
-    if (std::min(srcWidth, targetWidth) != 0 &&
-        ImageUtils::CheckMulOverflow(std::min(srcWidth, targetWidth), pixelBytes)) {
-        IMAGE_LOGE("[PostProc]invalid params, srcWidth:%{public}d, targetWidth:%{public}d, pixelBytes:%{public}d",
-                   srcWidth, targetWidth, pixelBytes);
-        return false;
-    }
+    bool cond = std::min(srcWidth, targetWidth) != 0 &&
+        ImageUtils::CheckMulOverflow(std::min(srcWidth, targetWidth), pixelBytes);
+    CHECK_ERROR_RETURN_RET_LOG(cond, false,
+        "[PostProc]invalid params, srcWidth:%{public}d, targetWidth:%{public}d, pixelBytes:%{public}d",
+        srcWidth, targetWidth, pixelBytes);
     uint32_t copyRowBytes = static_cast<uint32_t>(std::min(srcWidth, targetWidth) * pixelBytes);
     for (int32_t scanLine = 0; scanLine < std::min(srcHeight, targetHeight); scanLine++) {
         dstStartPixel = dstPixels + scanLine * targetRowStride;
         srcStartPixel = srcPixels + scanLine * srcRowStride;
         errno_t errRet = memcpy_s(dstStartPixel, static_cast<size_t>(targetRowBytes), srcStartPixel, copyRowBytes);
-        if (errRet != EOK) {
-            IMAGE_LOGE("[PostProc]memcpy scanline %{public}d fail, errorCode = %{public}d", scanLine, errRet);
-            return false;
-        }
+        CHECK_ERROR_RETURN_RET_LOG(errRet != EOK, false,
+            "[PostProc]memcpy scanline %{public}d fail, errorCode = %{public}d", scanLine, errRet);
     }
     return true;
 }
@@ -243,10 +239,7 @@ bool PostProc::CenterDisplay(PixelMap &pixelMap, int32_t srcWidth, int32_t srcHe
     dstImageInfo.size.width = targetWidth;
     dstImageInfo.size.height = targetHeight;
     bool cond = false;
-    if (pixelMap.SetImageInfo(dstImageInfo, true) != SUCCESS) {
-        IMAGE_LOGE("update ImageInfo failed");
-        return false;
-    }
+    CHECK_ERROR_RETURN_RET_LOG(pixelMap.SetImageInfo(dstImageInfo, true) != SUCCESS, false, "update ImageInfo failed");
     int32_t bufferSize = pixelMap.GetByteCount();
     uint8_t *dstPixels = nullptr;
     void *nativeBuffer = nullptr;
@@ -384,11 +377,10 @@ uint32_t PostProc::ConvertProc(const Rect &cropRect, ImageInfo &dstImageInfo, Pi
     if (pixelBytes == 0) {
         return ERR_IMAGE_CROP;
     }
-    if (ImageUtils::CheckMulOverflow(dstImageInfo.size.width, dstImageInfo.size.height, pixelBytes)) {
-        IMAGE_LOGE("[PostProc]size.width:%{public}d, size.height:%{public}d is too large",
-            dstImageInfo.size.width, dstImageInfo.size.height);
-        return ERR_IMAGE_CROP;
-    }
+    bool cond = ImageUtils::CheckMulOverflow(dstImageInfo.size.width, dstImageInfo.size.height, pixelBytes);
+    CHECK_ERROR_RETURN_RET_LOG(cond, ERR_IMAGE_CROP,
+        "[PostProc]size.width:%{public}d, size.height:%{public}d is too large",
+        dstImageInfo.size.width, dstImageInfo.size.height);
     return CheckScanlineFilter(cropRect, dstImageInfo, pixelMap, pixelBytes, scanlineFilter);
 }
 
@@ -463,11 +455,8 @@ bool PostProc::AllocHeapBuffer(uint64_t bufferSize, uint8_t **buffer)
     bool cond = bufferSize == 0 || bufferSize > MALLOC_MAX_LENTH;
     CHECK_ERROR_RETURN_RET_LOG(cond, false, "[PostProc]Invalid value of bufferSize");
     *buffer = static_cast<uint8_t *>(malloc(bufferSize));
-    if (*buffer == nullptr) {
-        IMAGE_LOGE("[PostProc]alloc covert color buffersize[%{public}llu] failed.",
-            static_cast<unsigned long long>(bufferSize));
-        return false;
-    }
+    CHECK_ERROR_RETURN_RET_LOG(*buffer == nullptr, false,
+        "[PostProc]alloc covert color buffersize[%{public}llu] failed.", static_cast<unsigned long long>(bufferSize));
 #ifdef _WIN32
     errno_t backRet = memset_s(*buffer, 0, bufferSize);
     if (backRet != EOK) {
@@ -494,11 +483,8 @@ uint8_t *PostProc::AllocSharedMemory(const Size &size, const uint64_t bufferSize
 #else
     std::string name = "Parcel RawData, uniqueId: " + std::to_string(getpid()) + '_' + std::to_string(uniqueId);
     fd = AshmemCreate(name.c_str(), bufferSize);
-    if (fd < 0) {
-        IMAGE_LOGE("[PostProc]AllocSharedMemory fd error, bufferSize %{public}lld",
-            static_cast<long long>(bufferSize));
-        return nullptr;
-    }
+    CHECK_ERROR_RETURN_RET_LOG(fd < 0, nullptr, "[PostProc]AllocSharedMemory fd error, bufferSize %{public}lld",
+        static_cast<long long>(bufferSize));
     int result = AshmemSetProt(fd, PROT_READ | PROT_WRITE);
     if (result < 0) {
         IMAGE_LOGE("[PostProc]AshmemSetProt error");
@@ -548,9 +534,7 @@ void PostProc::ReleaseBuffer(AllocatorType allocatorType, int fd,
     if (allocatorType == AllocatorType::DMA_ALLOC) {
         if (nativeBuffer != nullptr) {
             int32_t err = ImageUtils::SurfaceBuffer_Unreference(static_cast<SurfaceBuffer*>(nativeBuffer));
-            if (err != OHOS::GSERROR_OK) {
-                IMAGE_LOGE("PostProc NativeBufferReference failed");
-            }
+            CHECK_ERROR_PRINT_LOG(err != OHOS::GSERROR_OK, "PostProc NativeBufferReference failed");
         }
         return;
     }
@@ -606,10 +590,9 @@ bool PostProc::ScalePixelMap(const Size &size, PixelMap &pixelMap)
 {
     int32_t srcWidth = pixelMap.GetWidth();
     int32_t srcHeight = pixelMap.GetHeight();
-    if (srcWidth <= 0 || srcHeight <= 0) {
-        IMAGE_LOGE("[PostProc]src width:%{public}d, height:%{public}d is invalid.", srcWidth, srcHeight);
-        return false;
-    }
+    bool cond = srcWidth <= 0 || srcHeight <= 0;
+    CHECK_ERROR_RETURN_RET_LOG(cond, false,
+        "[PostProc]src width:%{public}d, height:%{public}d is invalid.", srcWidth, srcHeight);
     float scaleX = static_cast<float>(size.width) / static_cast<float>(srcWidth);
     float scaleY = static_cast<float>(size.height) / static_cast<float>(srcHeight);
     return ScalePixelMap(scaleX, scaleY, pixelMap);
@@ -772,11 +755,10 @@ static SkSLRCacheMgr GetNewSkSLRCacheMgr()
 
 std::shared_ptr<SLRWeightTuple> initSLRFactor(Size srcSize, Size dstSize)
 {
-    if (srcSize.width == 0 || srcSize.height == 0 || dstSize.width == 0 || dstSize.height == 0) {
-        IMAGE_LOGE("initSLRFactor invalid size, %{public}d, %{public}d, %{public}d, %{public}d",
-            srcSize.width, srcSize.height, dstSize.width, dstSize.height);
-        return nullptr;
-    }
+    bool cond = srcSize.width == 0 || srcSize.height == 0 || dstSize.width == 0 || dstSize.height == 0;
+    CHECK_ERROR_RETURN_RET_LOG(cond, nullptr,
+        "initSLRFactor invalid size, %{public}d, %{public}d, %{public}d, %{public}d",
+        srcSize.width, srcSize.height, dstSize.width, dstSize.height);
     SkSLRCacheMgr cacheMgr = GetNewSkSLRCacheMgr();
     SLRWeightKey key(srcSize, dstSize);
     std::shared_ptr<SLRWeightTuple> weightTuplePtr = cacheMgr.find(key.fKey);
@@ -798,43 +780,33 @@ bool CheckPixelMapSLR(const Size &desiredSize, PixelMap &pixelMap)
 {
     ImageInfo imgInfo;
     pixelMap.GetImageInfo(imgInfo);
-    if (imgInfo.pixelFormat != PixelFormat::RGBA_8888) {
-        IMAGE_LOGE("CheckPixelMapSLR only support RGBA_8888 format");
-        return false;
-    }
+    bool cond = imgInfo.pixelFormat != PixelFormat::RGBA_8888;
+    CHECK_ERROR_RETURN_RET_LOG(cond, false, "CheckPixelMapSLR only support RGBA_8888 format");
     int32_t srcWidth = pixelMap.GetWidth();
     int32_t srcHeight = pixelMap.GetHeight();
-    if (srcWidth <= 0 || srcHeight <= 0 || !pixelMap.GetWritablePixels()) {
-        IMAGE_LOGE("CheckPixelMapSLR invalid src size, %{public}d, %{public}d", srcWidth, srcHeight);
-        return false;
-    }
-    if (desiredSize.width <= 0 || desiredSize.height <= 0) {
-        IMAGE_LOGE("CheckPixelMapSLR invalid desired size, %{public}d, %{public}d",
-            desiredSize.width, desiredSize.height);
-        return false;
-    }
-    if (desiredSize.width == srcWidth && desiredSize.height == srcHeight) {
-        IMAGE_LOGE("CheckPixelMapSLR same source and desired size, %{public}d, %{public}d",
-            desiredSize.width, desiredSize.height);
-        return false;
-    }
-    if (static_cast<float>(desiredSize.width) / srcWidth < EPSILON ||
-        static_cast<float>(desiredSize.height) / srcHeight < EPSILON) {
-        IMAGE_LOGE("CheckPixelMapSLR scaling factor overflow");
-        return false;
-    }
+    cond = srcWidth <= 0 || srcHeight <= 0 || !pixelMap.GetWritablePixels();
+    CHECK_ERROR_RETURN_RET_LOG(cond, false,
+        "CheckPixelMapSLR invalid src size, %{public}d, %{public}d", srcWidth, srcHeight);
+
+    cond = desiredSize.width <= 0 || desiredSize.height <= 0;
+    CHECK_ERROR_RETURN_RET_LOG(cond, false, "CheckPixelMapSLR invalid desired size, %{public}d, %{public}d",
+        desiredSize.width, desiredSize.height);
+
+    cond = desiredSize.width == srcWidth && desiredSize.height == srcHeight;
+    CHECK_ERROR_RETURN_RET_LOG(cond, false, "CheckPixelMapSLR same source and desired size, %{public}d, %{public}d",
+        desiredSize.width, desiredSize.height);
+
+    cond = static_cast<float>(desiredSize.width) / srcWidth < EPSILON ||
+        static_cast<float>(desiredSize.height) / srcHeight < EPSILON;
+    CHECK_ERROR_RETURN_RET_LOG(cond, false, "CheckPixelMapSLR scaling factor overflow");
+
     int32_t pixelBytes = pixelMap.GetPixelBytes();
-    if (pixelBytes <= 0) {
-        IMAGE_LOGE("CheckPixelMapSLR invalid pixel bytes, %{public}d", pixelBytes);
-        return false;
-    }
+    CHECK_ERROR_RETURN_RET_LOG(pixelBytes <= 0, false, "CheckPixelMapSLR invalid pixel bytes, %{public}d", pixelBytes);
+
     uint64_t dstSizeOverflow =
         static_cast<uint64_t>(desiredSize.width) * static_cast<uint64_t>(desiredSize.height) *
         static_cast<uint64_t>(pixelBytes);
-    if (dstSizeOverflow > UINT_MAX) {
-        IMAGE_LOGE("ScalePixelMapWithSLR desired size overflow");
-        return false;
-    }
+    CHECK_ERROR_RETURN_RET_LOG(dstSizeOverflow > UINT_MAX, false, "ScalePixelMapWithSLR desired size overflow");
     return true;
 }
 
@@ -1076,10 +1048,7 @@ static std::unique_ptr<AbsMemory> CreateSLRMemory(PixelMap &pixelMap, uint32_t d
     MemoryData memoryData = {nullptr, dstBufferSize, "ScalePixelMapWithSLR ImageData", desiredSize,
         pixelMap.GetPixelFormat()};
     dstMemory = MemoryManager::CreateMemory(allocatorType, memoryData);
-    if (dstMemory == nullptr) {
-        IMAGE_LOGE("ScalePixelMapWithSLR create dstMemory failed");
-        return nullptr;
-    }
+    CHECK_ERROR_RETURN_RET_LOG(dstMemory == nullptr, nullptr, "ScalePixelMapWithSLR create dstMemory failed");
     std::unique_ptr<AbsMemory> lapMemory = nullptr;
     if (useLap) {
         MemoryData lapMemoryData = {nullptr, dstBufferSize, "ScalePixelMapWithSLR ImageData Lap", desiredSize,
@@ -1120,10 +1089,7 @@ bool ExecuteSLR(PixelMap& pixelMap, const Size& desiredSize, SLRMat &src, SLRMat
     ImageInfo imgInfo;
     pixelMap.GetImageInfo(imgInfo);
     std::shared_ptr<SLRWeightTuple> weightTuplePtr = initSLRFactor(imgInfo.size, desiredSize);
-    if (weightTuplePtr == nullptr) {
-        IMAGE_LOGE("PostProcExecuteSLR init failed");
-        return false;
-    }
+    CHECK_ERROR_RETURN_RET_LOG(weightTuplePtr == nullptr, false, "PostProcExecuteSLR init failed");
     SLRWeightMat slrWeightX = std::get<0>(*weightTuplePtr);
     SLRWeightMat slrWeightY = std::get<1>(*weightTuplePtr);
     if (ImageSystemProperties::GetSLRParallelEnabled()) {
@@ -1142,9 +1108,8 @@ bool PostProc::ScalePixelMapWithSLR(const Size &desiredSize, PixelMap &pixelMap,
 {
     ImageInfo imgInfo;
     pixelMap.GetImageInfo(imgInfo);
-    if (!CheckPixelMapSLR(desiredSize, pixelMap)) {
-        return false;
-    }
+    bool cond = !CheckPixelMapSLR(desiredSize, pixelMap);
+    CHECK_ERROR_RETURN_RET(cond, false);
     useLap = useLap && ImageSystemProperties::GetSLRLaplacianEnabled();
     ImageTrace imageTrace("ScalePixelMapWithSLR");
     int32_t pixelBytes = pixelMap.GetPixelBytes();
@@ -1152,10 +1117,8 @@ bool PostProc::ScalePixelMapWithSLR(const Size &desiredSize, PixelMap &pixelMap,
     uint32_t dstBufferSize = desiredSize.height * desiredSize.width * pixelBytes;
     std::unique_ptr<AbsMemory> m = nullptr;
     auto lapMemory = CreateSLRMemory(pixelMap, dstBufferSize, desiredSize, m, useLap);
-    if (m == nullptr || (useLap && (lapMemory == nullptr))) {
-        IMAGE_LOGE("pixelMap scale slr memory nullptr");
-        return false;
-    }
+    cond = m == nullptr || (useLap && (lapMemory == nullptr));
+    CHECK_ERROR_RETURN_RET_LOG(cond, false, "pixelMap scale slr memory nullptr");
     size_t rowStride;
     if (m->GetType() == AllocatorType::DMA_ALLOC) {
 #if !defined(_WIN32) && !defined(_APPLE) && !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
@@ -1197,31 +1160,22 @@ bool PostProc::ScalePixelMapEx(const Size &desiredSize, PixelMap &pixelMap, cons
     pixelMap.GetImageInfo(imgInfo);
     int32_t srcWidth = pixelMap.GetWidth();
     int32_t srcHeight = pixelMap.GetHeight();
-    if (srcWidth <= 0 || srcHeight <= 0 || !pixelMap.GetWritablePixels()) {
-        IMAGE_LOGE("pixelMap param is invalid, src width:%{public}d, height:%{public}d", srcWidth, srcHeight);
-        return false;
-    }
+    bool cond = srcWidth <= 0 || srcHeight <= 0 || !pixelMap.GetWritablePixels();
+    CHECK_ERROR_RETURN_RET_LOG(cond, false, "pixelMap param is invalid, src width:%{public}d, height:%{public}d",
+        srcWidth, srcHeight);
     AVPixelFormat pixelFormat;
-    if (!GetScaleFormat(imgInfo.pixelFormat, pixelFormat)) {
-        IMAGE_LOGE("pixelMap format is invalid, format: %{public}d", imgInfo.pixelFormat);
-        return false;
-    }
+    cond = !GetScaleFormat(imgInfo.pixelFormat, pixelFormat);
+    CHECK_ERROR_RETURN_RET_LOG(cond, false, "pixelMap format is invalid, format: %{public}d", imgInfo.pixelFormat);
     uint64_t dstBufferSizeOverflow =
         static_cast<uint64_t>(desiredSize.width) * static_cast<uint64_t>(desiredSize.height) *
         static_cast<uint64_t>(ImageUtils::GetPixelBytes(imgInfo.pixelFormat));
-    if (dstBufferSizeOverflow > UINT_MAX) {
-        IMAGE_LOGE("ScalePixelMapEx target size too large");
-        return false;
-    }
+    CHECK_ERROR_RETURN_RET_LOG(dstBufferSizeOverflow > UINT_MAX, false, "ScalePixelMapEx target size too large");
     uint32_t dstBufferSize = static_cast<uint32_t>(dstBufferSizeOverflow);
     MemoryData memoryData = {nullptr, dstBufferSize, "ScalePixelMapEx ImageData", desiredSize};
-    
+
     auto mem = MemoryManager::CreateMemory(pixelMap.GetAllocatorType() == AllocatorType::CUSTOM_ALLOC ?
         AllocatorType::DEFAULT : pixelMap.GetAllocatorType(), memoryData);
-    if (mem == nullptr) {
-        IMAGE_LOGE("ScalePixelMapEx CreateMemory failed");
-        return false;
-    }
+    CHECK_ERROR_RETURN_RET_LOG(mem == nullptr, false, "ScalePixelMapEx CreateMemory failed");
 
     const uint8_t *srcPixels[FFMPEG_NUM] = {};
     uint8_t *dstPixels[FFMPEG_NUM] = {};

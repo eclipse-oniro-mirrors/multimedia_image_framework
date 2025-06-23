@@ -107,9 +107,7 @@ PluginClassBase *ImplClassMgr::CreateObject(uint16_t interfaceID, const string &
     }
 
     for (; iter != endIter; ++iter) {
-        if (iter->second->IsSupport(interfaceID)) {
-            return iter->second->CreateObject(errorCode);
-        }
+        CHECK_ERROR_RETURN_RET(iter->second->IsSupport(interfaceID), iter->second->CreateObject(errorCode));
     }
 
     // no this class

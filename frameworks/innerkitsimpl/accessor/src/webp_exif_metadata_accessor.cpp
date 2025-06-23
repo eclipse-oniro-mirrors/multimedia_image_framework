@@ -151,10 +151,8 @@ bool WebpExifMetadataAccessor::CheckChunkVp8x(Vp8xAndExifInfo &exifFlag) const
     cond = size > WEBP_MAX_CHUNKDATA_SIZE;
     CHECK_ERROR_RETURN_RET_LOG(cond, false, "Image stream chunkdata size is too large.");
     DataBuf chunkData(size);
-    if (size == 0 || chunkData.Empty() || chunkData.Data() == nullptr) {
-        IMAGE_LOGE("Image stream does not find vp8x data.");
-        return false;
-    }
+    CHECK_ERROR_RETURN_RET_LOG(size == 0 || chunkData.Empty() || chunkData.Data() == nullptr,
+        false, "Image stream does not find vp8x data.");
 
     cond = static_cast<size_t>(imageStream_->Read(chunkData.Data(), chunkData.Size())) != chunkData.Size() ||
            imageStream_->IsEof();

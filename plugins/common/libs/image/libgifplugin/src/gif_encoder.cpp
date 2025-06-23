@@ -691,10 +691,7 @@ uint32_t GifEncoder::LZWEncode(uint8_t *buffer, int length)
         }
         curChar = Pixel;
         if (runningCode_ >= LZ_MAX_CODE) {
-            if (LZWWriteOut(clearCode_)) {
-                IMAGE_LOGE("Failed to write.");
-                return ERR_IMAGE_ENCODE_FAILED;
-            }
+            CHECK_ERROR_RETURN_RET_LOG(LZWWriteOut(clearCode_), ERR_IMAGE_ENCODE_FAILED, "Failed to write.");
             runningCode_ = eofCode_ + 1;
             runningBits_ = BITS_IN_BYTE + 1;
             maxCode_ = 1 << runningBits_;

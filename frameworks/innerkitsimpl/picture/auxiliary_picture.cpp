@@ -122,11 +122,9 @@ std::shared_ptr<ImageMetadata> AuxiliaryPicture::GetMetadata(MetadataType type)
 
 void AuxiliaryPicture::SetMetadata(MetadataType type, std::shared_ptr<ImageMetadata> metadata)
 {
-    if (metadatas_.size() >= MAX_PICTURE_META_TYPE_COUNT) {
-        IMAGE_LOGE("Failed to set metadata, the size of metadata exceeds the maximum limit %{public}llu.",
-            static_cast<unsigned long long>(MAX_PICTURE_META_TYPE_COUNT));
-        return;
-    }
+    CHECK_ERROR_RETURN_LOG(metadatas_.size() >= MAX_PICTURE_META_TYPE_COUNT,
+        "Failed to set metadata, the size of metadata exceeds the maximum limit %{public}llu.",
+        static_cast<unsigned long long>(MAX_PICTURE_META_TYPE_COUNT));
     if (metadata != nullptr) {
         metadatas_[type] = metadata;
     }
@@ -140,78 +138,51 @@ bool AuxiliaryPicture::HasMetadata(MetadataType type)
 
 bool AuxiliaryPicture::WriteAuxPictureInfoToParcel(Parcel &data) const
 {
-    if (!data.WriteInt32(static_cast<int32_t>(auxiliaryPictureInfo_.auxiliaryPictureType))) {
-        IMAGE_LOGE("Failed to write type of auxiliary pictures.");
-        return false;
-    }
+    CHECK_ERROR_RETURN_RET_LOG(!data.WriteInt32(static_cast<int32_t>(auxiliaryPictureInfo_.auxiliaryPictureType)),
+        false, "Failed to write type of auxiliary pictures.");
 
-    if (!data.WriteInt32(static_cast<int32_t>(auxiliaryPictureInfo_.colorSpace))) {
-        IMAGE_LOGE("Failed to write color space of auxiliary pictures.");
-        return false;
-    }
+    CHECK_ERROR_RETURN_RET_LOG(!data.WriteInt32(static_cast<int32_t>(auxiliaryPictureInfo_.colorSpace)),
+        false, "Failed to write color space of auxiliary pictures.");
 
-    if (!data.WriteInt32(static_cast<int32_t>(auxiliaryPictureInfo_.pixelFormat))) {
-        IMAGE_LOGE("Failed to write pixel format of auxiliary pictures.");
-        return false;
-    }
+    CHECK_ERROR_RETURN_RET_LOG(!data.WriteInt32(static_cast<int32_t>(auxiliaryPictureInfo_.pixelFormat)),
+        false, "Failed to write pixel format of auxiliary pictures.");
 
-    if (!data.WriteUint32(auxiliaryPictureInfo_.rowStride)) {
-        IMAGE_LOGE("Failed to write row stride of auxiliary pictures.");
-        return false;
-    }
+    CHECK_ERROR_RETURN_RET_LOG(!data.WriteUint32(auxiliaryPictureInfo_.rowStride),
+        false, "Failed to write row stride of auxiliary pictures.");
 
-    if (!data.WriteInt32(auxiliaryPictureInfo_.size.height) || !data.WriteInt32(auxiliaryPictureInfo_.size.width)) {
-        IMAGE_LOGE("Failed to write size of auxiliary pictures.");
-        return false;
-    }
+    CHECK_ERROR_RETURN_RET_LOG(
+        !data.WriteInt32(auxiliaryPictureInfo_.size.height) || !data.WriteInt32(auxiliaryPictureInfo_.size.width),
+        false, "Failed to write size of auxiliary pictures.");
 
-    if (auxiliaryPictureInfo_.jpegTagName.length() > MAX_JPEG_TAG_NAME_LENGTH) {
-        IMAGE_LOGE("The length of jpeg tag name exceeds the maximum limit.");
-        return false;
-    }
-    if (!data.WriteString(auxiliaryPictureInfo_.jpegTagName)) {
-        IMAGE_LOGE("Failed to write jpegTagName of auxiliary pictures.");
-        return false;
-    }
-    
+    CHECK_ERROR_RETURN_RET_LOG(auxiliaryPictureInfo_.jpegTagName.length() > MAX_JPEG_TAG_NAME_LENGTH,
+        false, "The length of jpeg tag name exceeds the maximum limit.");
+
+    CHECK_ERROR_RETURN_RET_LOG(!data.WriteString(auxiliaryPictureInfo_.jpegTagName),
+        false, "Failed to write jpegTagName of auxiliary pictures.");
+
     return true;
 }
 
 bool AuxiliaryPicture::Marshalling(Parcel &data) const
 {
-    if (content_ == nullptr) {
-        IMAGE_LOGE("Auxiliary picture is null.");
-        return false;
-    }
+    CHECK_ERROR_RETURN_RET_LOG(content_ == nullptr, false, "Auxiliary picture is null.");
 
-    if (!content_->Marshalling(data)) {
-        IMAGE_LOGE("Failed to marshal auxiliary picture.");
-        return false;
-    }
+    CHECK_ERROR_RETURN_RET_LOG(!content_->Marshalling(data), false, "Failed to marshal auxiliary picture.");
 
-    if (!WriteAuxPictureInfoToParcel(data)) {
-        IMAGE_LOGE("write auxiliary picture info to parcel failed.");
-        return false;
-    }
+    CHECK_ERROR_RETURN_RET_LOG(!WriteAuxPictureInfoToParcel(data), false,
+        "write auxiliary picture info to parcel failed.");
 
-    if (metadatas_.size() > MAX_PICTURE_META_TYPE_COUNT) {
-        IMAGE_LOGE("The number of metadatas exceeds the maximum limit.");
-        return false;
-    }
-    if (!data.WriteUint64(static_cast<uint64_t>(metadatas_.size()))) {
-        return false;
-    }
-    
+    CHECK_ERROR_RETURN_RET_LOG(metadatas_.size() > MAX_PICTURE_META_TYPE_COUNT, false,
+        "The number of metadatas exceeds the maximum limit.");
+
+    CHECK_ERROR_RETURN_RET(!data.WriteUint64(static_cast<uint64_t>(metadatas_.size())), false);
+
     for (const auto &[type, metadata] : metadatas_) {
         int32_t typeInt32 = static_cast<int32_t>(type);
-        if (metadata == nullptr) {
-            IMAGE_LOGE("Metadata %{public}d is nullptr.", typeInt32);
-            return false;
-        }
-        if (!(data.WriteInt32(typeInt32) && metadata->Marshalling(data))) {
-            IMAGE_LOGE("Failed to marshal metadatas.");
-            return false;
-        }
+        CHECK_ERROR_RETURN_RET_LOG(metadata == nullptr, false, "Metadata %{public}d is nullptr.", typeInt32);
+
+        CHECK_ERROR_RETURN_RET_LOG(!(data.WriteInt32(typeInt32) && metadata->Marshalling(data)),
+            false, "Failed to marshal metadatas.");
     }
 
     return true;
@@ -221,7 +192,8 @@ AuxiliaryPicture *AuxiliaryPicture::Unmarshalling(Parcel &data)
 {
     PICTURE_ERR error;
     AuxiliaryPicture* dstAuxiliaryPicture = AuxiliaryPicture::Unmarshalling(data, error);
-    if (dstAuxiliaryPicture == nullptr || error.errorCode != SUCCESS) {
+    bool cond = dstAuxiliaryPicture == nullptr || error.errorCode != SUCCESS;
+    if (cond) {
         IMAGE_LOGE("unmarshalling failed errorCode:%{public}d, errorInfo:%{public}s",
             error.errorCode, error.errorInfo.c_str());
     }
@@ -250,23 +222,17 @@ AuxiliaryPicture *AuxiliaryPicture::Unmarshalling(Parcel &parcel, PICTURE_ERR &e
     std::map<MetadataType, std::shared_ptr<ImageMetadata>> metadatas;
     
     uint64_t size = parcel.ReadUint64();
-    if (size > MAX_PICTURE_META_TYPE_COUNT) {
-        return nullptr;
-    }
+    CHECK_ERROR_RETURN_RET(size > MAX_PICTURE_META_TYPE_COUNT, nullptr);
     for (size_t i = 0; i < size; ++i) {
         MetadataType type = static_cast<MetadataType>(parcel.ReadInt32());
         std::shared_ptr<ImageMetadata> imagedataPtr(nullptr);
 
         if (type == MetadataType::EXIF) {
             imagedataPtr.reset(ExifMetadata::Unmarshalling(parcel));
-            if (!imagedataPtr) {
-                return nullptr;
-            }
+            CHECK_ERROR_RETURN_RET(!imagedataPtr, nullptr);
         } else if (type == MetadataType::FRAGMENT) {
             imagedataPtr.reset(FragmentMetadata::Unmarshalling(parcel));
-            if (!imagedataPtr) {
-                return nullptr;
-            }
+            CHECK_ERROR_RETURN_RET(!imagedataPtr, nullptr);
         } else {
             IMAGE_LOGE("Unsupported metadata type.");
             return nullptr;

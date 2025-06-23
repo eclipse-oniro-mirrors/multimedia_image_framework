@@ -68,31 +68,25 @@ ssize_t BufferMetadataStream::Write(uint8_t *data, ssize_t size)
 {
     // Check if the new data will fit into the current buffer
     if (currentOffset_ + static_cast<long>(size) > capacity_) {
-        if (memoryMode_ == Fix) {
-            IMAGE_LOGE("BufferMetadataStream::Write failed, data size exceeds buffer capacity, "
-                "currentOffset:%{public}ld, size:%{public}ld, capacity:%{public}ld",
-                currentOffset_, static_cast<long>(size), capacity_);
-            return -1;
-        }
+        CHECK_ERROR_RETURN_RET_LOG(memoryMode_ == Fix, -1,
+            "BufferMetadataStream::Write failed, data size exceeds buffer capacity, "
+            "currentOffset:%{public}ld, size:%{public}ld, capacity:%{public}ld",
+            currentOffset_, static_cast<long>(size), capacity_);
 
         // Calculate the new capacity, ensuring it is a multiple of
         // BUFFER_IMAGE_STREAM_PAGE_SIZE
         long newCapacity = CalculateNewCapacity(currentOffset_, size);
-        if (newCapacity > METADATA_STREAM_MAX_CAPACITY) {
-            IMAGE_LOGE("BufferMetadataStream::Write failed, new capacity exceeds maximum capacity, "
-                "newCapacity:%{public}ld, maxCapacity:%{public}d",
-                newCapacity, METADATA_STREAM_MAX_CAPACITY);
-            return -1;
-        }
+        CHECK_ERROR_RETURN_RET_LOG(newCapacity > METADATA_STREAM_MAX_CAPACITY, -1,
+            "BufferMetadataStream::Write failed, new capacity exceeds maximum capacity, "
+            "newCapacity:%{public}ld, maxCapacity:%{public}d",
+            newCapacity, METADATA_STREAM_MAX_CAPACITY);
 
         // Allocate the new buffer
         byte *newBuffer = new (std::nothrow) byte[newCapacity];
 
         // Check if the allocation was successful
-        if (newBuffer == nullptr) {
-            IMAGE_LOGE("BufferMetadataStream::Write failed, unable to allocate new buffer");
-            return -1;
-        }
+        CHECK_ERROR_RETURN_RET_LOG(newBuffer == nullptr,
+            -1, "BufferMetadataStream::Write failed, unable to allocate new buffer");
 
         // Removed std::fill_n for efficiency. If zero-initialization is needed,
         // consider doing it manually where necessary.
@@ -123,10 +117,8 @@ ssize_t BufferMetadataStream::Write(uint8_t *data, ssize_t size)
 
     // Copy the new data into the buffer
     if (data != nullptr) {
-        if (EOK != memcpy_s(buffer_ + currentOffset_, capacity_ - currentOffset_, data, size)) {
-            IMAGE_LOGE("BufferMetadataStream::Write failed, memcpy error");
-            return -1;
-        }
+        CHECK_ERROR_RETURN_RET_LOG(EOK != memcpy_s(buffer_ + currentOffset_, capacity_ - currentOffset_, data, size),
+            -1, "BufferMetadataStream::Write failed, memcpy error");
     }
 
     // Update the current offset and buffer size
@@ -142,17 +134,12 @@ ssize_t BufferMetadataStream::Read(uint8_t *buf, ssize_t size)
         return -1;
     }
 
-    if (currentOffset_ > bufferSize_) {
-        IMAGE_LOGE("BufferMetadataStream::Read failed, current offset exceeds buffer size, "
-            "currentOffset:%{public}ld, bufferSize:%{public}ld",
-            currentOffset_, bufferSize_);
-        return -1;
-    }
+    CHECK_ERROR_RETURN_RET_LOG(currentOffset_ > bufferSize_, -1,
+        "BufferMetadataStream::Read failed, current offset exceeds buffer size, "
+        "currentOffset:%{public}ld, bufferSize:%{public}ld", currentOffset_, bufferSize_);
 
     long bytesToRead = std::min(static_cast<long>(size), bufferSize_ - currentOffset_);
-    if (IsFileSizeChanged()) {
-        return -1;
-    }
+    CHECK_ERROR_RETURN_RET(IsFileSizeChanged(), -1);
     memcpy_s(buf, size, buffer_ + currentOffset_, bytesToRead);
     currentOffset_ += bytesToRead;
     return bytesToRead;
@@ -160,15 +147,12 @@ ssize_t BufferMetadataStream::Read(uint8_t *buf, ssize_t size)
 
 int BufferMetadataStream::ReadByte()
 {
-    if (buffer_ == nullptr) {
-        return -1;
-    }
-    if (currentOffset_ >= bufferSize_) {
-        IMAGE_LOGE("BufferMetadataStream::ReadByte failed, current offset exceeds buffer size, "
-            "currentOffset:%{public}ld, bufferSize:%{public}ld",
-            currentOffset_, bufferSize_);
-        return -1;
-    }
+    CHECK_ERROR_RETURN_RET(buffer_ == nullptr, -1);
+
+    CHECK_DEBUG_RETURN_RET_LOG(currentOffset_ >= bufferSize_, -1,
+        "BufferMetadataStream::ReadByte failed, current offset exceeds buffer size, "
+        "currentOffset:%{public}ld, bufferSize:%{public}ld",
+        currentOffset_, bufferSize_);
 
     if (currentOffset_ < bufferSize_) {
         return buffer_[currentOffset_++];
@@ -240,21 +224,17 @@ byte *BufferMetadataStream::GetAddr(bool isWriteable)
 
 bool BufferMetadataStream::CopyFrom(MetadataStream &src)
 {
-    if (!src.IsOpen()) {
-        IMAGE_LOGE("BufferMetadataStream::CopyFrom failed, source stream is not open");
-        return false;
-    }
-    if (src.GetSize() == 0) {
-        return true;
-    }
+    CHECK_ERROR_RETURN_RET_LOG(!src.IsOpen(),
+        false, "BufferMetadataStream::CopyFrom failed, source stream is not open");
+
+    CHECK_ERROR_RETURN_RET(src.GetSize() == 0, true);
+
     if (memoryMode_ == Fix) {
-        if (src.GetSize() > static_cast<ssize_t>(capacity_)) {
-            // If the memory is fixed and the source size is too large, do not copy the data
-            IMAGE_LOGE("BufferMetadataStream::CopyFrom failed, source size is larger than capacity, "
-                "source size:%{public}zu, capacity:%{public}ld",
-                src.GetSize(), capacity_);
-            return false;
-        }
+        // If the memory is fixed and the source size is too large, do not copy the data
+        CHECK_ERROR_RETURN_RET_LOG(src.GetSize() > static_cast<ssize_t>(capacity_),
+            false, "BufferMetadataStream::CopyFrom failed, source size is larger than capacity, "
+            "source size:%{public}zu, capacity:%{public}ld",
+            src.GetSize(), capacity_);
     }
 
     // Clear the current buffer
@@ -266,10 +246,8 @@ bool BufferMetadataStream::CopyFrom(MetadataStream &src)
         ssize_t estimatedSize = ((src.GetSize() + METADATA_STREAM_PAGE_SIZE - 1) / METADATA_STREAM_PAGE_SIZE) *
             METADATA_STREAM_PAGE_SIZE; // Ensure it is a multiple of 32k
         buffer_ = new (std::nothrow) byte[estimatedSize];
-        if (buffer_ == nullptr) {
-            IMAGE_LOGE("BufferMetadataStream::CopyFrom failed, insufficient memory for buffer allocation");
-            return false;
-        }
+        CHECK_ERROR_RETURN_RET_LOG(buffer_ == nullptr,
+            false, "BufferMetadataStream::CopyFrom failed, insufficient memory for buffer allocation");
         capacity_ = estimatedSize;
     }
 
@@ -277,9 +255,7 @@ bool BufferMetadataStream::CopyFrom(MetadataStream &src)
     bufferSize_ = 0;
 
     // Read data from the source ImageStream and write it to the current buffer
-    if (!ReadAndWriteData(src)) {
-        return false;
-    }
+    CHECK_ERROR_RETURN_RET(!ReadAndWriteData(src), false);
     return true;
 }
 
@@ -291,10 +267,9 @@ bool BufferMetadataStream::ReadAndWriteData(MetadataStream &src)
         return false;
     }
     byte *tempBuffer = new (std::nothrow) byte[buffer_size];
-    if (tempBuffer == nullptr) {
-        IMAGE_LOGE("BufferMetadataStream::ReadAndWriteData failed, insufficient memory for temporary buffer");
-        return false;
-    }
+    CHECK_ERROR_RETURN_RET_LOG(tempBuffer == nullptr,
+        false, "BufferMetadataStream::ReadAndWriteData failed, insufficient memory for temporary buffer");
+
     while (!src.IsEof()) {
         ssize_t bytesRead = src.Read(tempBuffer, buffer_size);
         if (bytesRead > 0) {

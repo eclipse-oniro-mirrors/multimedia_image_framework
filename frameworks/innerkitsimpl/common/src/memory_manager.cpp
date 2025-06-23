@@ -45,10 +45,7 @@ constexpr int32_t PIXEL_MAP_MAX_RAM_SIZE = 600 * 1024 * 1024;
 uint32_t HeapMemory::Create()
 {
     IMAGE_LOGD("HeapMemory::Create IN");
-    if (data.data != nullptr) {
-        IMAGE_LOGD("HeapMemory::Create has created");
-        return SUCCESS;
-    }
+    CHECK_DEBUG_RETURN_RET_LOG(data.data != nullptr, SUCCESS, "HeapMemory::Create has created");
     if (data.size == 0 || data.size > PIXEL_MAP_MAX_RAM_SIZE) {
         IMAGE_LOGE("HeapMemory::Create Invalid value of bufferSize");
         return ERR_IMAGE_DATA_ABNORMAL;
@@ -68,10 +65,7 @@ uint32_t HeapMemory::Release()
 {
 #if !defined(IOS_PLATFORM) &&!defined(ANDROID_PLATFORM)
     IMAGE_LOGD("HeapMemory::Release IN");
-    if (data.data == nullptr) {
-        IMAGE_LOGI("HeapMemory::Release nullptr data");
-        return ERR_IMAGE_DATA_ABNORMAL;
-    }
+    CHECK_INFO_RETURN_RET_LOG(data.data != nullptr, ERR_IMAGE_DATA_ABNORMAL, "HeapMemory::Release nullptr data");
     free(data.data);
     data.data = nullptr;
 #endif
