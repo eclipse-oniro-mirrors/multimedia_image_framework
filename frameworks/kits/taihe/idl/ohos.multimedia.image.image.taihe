@@ -470,6 +470,8 @@ interface PixelMap {
   @gen_promise("readPixelsToBuffer")
   ReadPixelsToBufferSync(dst: @arraybuffer Array<u8>): void;
 
+  @gen_async("readPixels")
+  @gen_promise("readPixels")
   ReadPixelsSync(area: PositionArea): void;
 
   @gen_async("writeBufferToPixels")
@@ -483,6 +485,8 @@ interface PixelMap {
   GetBytesNumberPerRow(): i32;
 
   GetPixelBytesNumber(): i32;
+
+  GetDensity(): i32;
 
   @gen_async("scale")
   @gen_promise("scale")
@@ -518,9 +522,18 @@ interface PixelMap {
 
   SetMemoryNameSync(name: String): void;
 
+  @gen_promise("convertPixelFormat")
+  ConvertPixelFormatSync(targetPixelFormat: PixelMapFormat): void;
+
+  GetColorSpace(): @sts_type("colorSpaceManager.ColorSpaceManager") Opaque;
+
+  SetColorSpace(colorSpace: @sts_type("colorSpaceManager.ColorSpaceManager") Opaque): void;
+
   @gen_async("release")
   @gen_promise("release")
   ReleaseSync(): void;
+
+  @get GetIsEditable(): bool;
 
   @get GetIsStrideAlignment(): bool;
 
@@ -852,6 +865,8 @@ interface ImageCreator {
 function MakeEmptySize(): Size;
 function MakeEmptyImageInfo(): ImageInfo;
 
+@gen_async("createPixelMap")
+@gen_promise("createPixelMap")
 @overload("createPixelMapSync")
 function CreatePixelMapByBufferAndOptionsSync(colors: @arraybuffer Array<u8>, options: InitializationOptions): PixelMap;
 

@@ -47,6 +47,7 @@ public:
     PixelMap CreateAlphaPixelmapSync();
     int32_t GetBytesNumberPerRow();
     int32_t GetPixelBytesNumber();
+    int32_t GetDensity();
     void ScaleSync(float x, float y);
     void ScaleWithAntiAliasingSync(float x, float y, AntiAliasingLevel level);
     void CropSync(ohos::multimedia::image::image::Region const& region);
@@ -54,9 +55,13 @@ public:
     void FlipSync(bool horizontal, bool vertical);
     void OpacitySync(float rate);
     void SetMemoryNameSync(string_view name);
+    void ConvertPixelFormatSync(PixelMapFormat targetPixelFormat);
+    uintptr_t GetColorSpace();
+    void SetColorSpace(uintptr_t colorSpace);
     void ToSdrSync();
     void ApplyColorSpaceSync(uintptr_t targetColorSpace);
     void ReleaseSync();
+    bool GetIsEditable();
     bool GetIsStrideAlignment();
     void SetCaptureId(int32_t captureId);
     int32_t GetCaptureId();
