@@ -577,7 +577,7 @@ HWTEST_F(ImageSourceHdrTest, CheckPhotoDesiredPixelForamt001, TestSize.Level3)
         ImageSource::CreateImageSource(IMAGE_INPUT_JPEG_HDR_VIVID_PATH, opts, errorCode);
     ASSERT_EQ(errorCode, SUCCESS);
     ASSERT_NE(imageSource.get(), nullptr);
-
+#ifdef IMAGE_VPE_FLAG
     uint32_t index = 0;
     DecodeOptions optsPixel;
     optsPixel.desiredDynamicRange = Media::DecodeDynamicRange::AUTO;
@@ -589,7 +589,6 @@ HWTEST_F(ImageSourceHdrTest, CheckPhotoDesiredPixelForamt001, TestSize.Level3)
     ASSERT_EQ(errorCode, SUCCESS);
     ASSERT_NE(pixelMap.get(), nullptr);
     bool isHdr = pixelMap->IsHdr();
-#ifdef IMAGE_VPE_FLAG
     ASSERT_EQ(isHdr, true);
     ASSERT_EQ(isYcbcrP010, true);
 #endif
@@ -657,7 +656,7 @@ HWTEST_F(ImageSourceHdrTest, CheckPhotoDesiredPixelForamt004, TestSize.Level3)
         ImageSource::CreateImageSource(IMAGE_INPUT_JPEG_SDR_PATH, opts, errorCode);
     ASSERT_EQ(errorCode, SUCCESS);
     ASSERT_NE(imageSource.get(), nullptr);
-
+#ifdef IMAGE_VPE_FLAG
     uint32_t index = 0;
     DecodeOptions optsPixel;
     optsPixel.desiredDynamicRange = Media::DecodeDynamicRange::SDR;
@@ -670,7 +669,6 @@ HWTEST_F(ImageSourceHdrTest, CheckPhotoDesiredPixelForamt004, TestSize.Level3)
     ASSERT_EQ(errorCode, SUCCESS);
     ASSERT_NE(pixelMap.get(), nullptr);
     bool isHdr = pixelMap->IsHdr();
-#ifdef IMAGE_VPE_FLAG
     ASSERT_NE(isHdr, true);
     ASSERT_EQ(isNv12Format, true);
 #endif

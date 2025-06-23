@@ -39,6 +39,7 @@ ohos_shared_library("pixelmap_ndk") {
   deps = [ "$SUBSYSTEM_DIR/interfaces/kits/js/common:image" ]
   external_deps = [
     "c_utils:utils",
+    "ipc:ipc_single",
     "graphic_2d:color_manager",
     "napi:ace_napi",
   ]

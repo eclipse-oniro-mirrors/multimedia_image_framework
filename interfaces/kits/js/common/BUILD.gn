@@ -240,7 +240,7 @@ if (use_clang_ios) {
       "-DIMAGE_DEBUG_FLAG",
       "-DIMAGE_COLORSPACE_FLAG",
     ]
-    external_deps = [ "skia:libjpeg" ]
+    external_deps = [ "skia:libjpeg", "libjpeg-turbo:turbojpeg"]
 
     if (use_clang_android) {
       defines = image_decode_android_defines
