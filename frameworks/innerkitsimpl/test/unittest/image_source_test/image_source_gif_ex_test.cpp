@@ -598,11 +598,10 @@ HWTEST_F(ImageSourceGifExTest, CreatePictureAtIndex001, TestSize.Level3)
     ASSERT_EQ(errorCode, SUCCESS);
     ASSERT_EQ(frameCount, TEST_FILE_MULTI_FRAME_GIF_FRAME_COUNT);
 
-    const DecodeOptions decodeOpts;
     int32_t gifMetadataRet = 0;
     std::string metadataValue = "";
     for (uint32_t index = 0; index < frameCount; index++) {
-        auto picture = imageSource->CreatePictureAtIndex(index, decodeOpts, errorCode);
+        auto picture = imageSource->CreatePictureAtIndex(index, errorCode);
         ASSERT_EQ(errorCode, SUCCESS);
         ASSERT_NE(picture, nullptr);
 
@@ -648,8 +647,7 @@ HWTEST_F(ImageSourceGifExTest, CreatePictureAtIndex002, TestSize.Level3)
     ASSERT_EQ(frameCount, TEST_FILE_MULTI_FRAME_GIF_FRAME_COUNT);
 
     uint32_t invalidFrameIndex = frameCount;
-    const DecodeOptions decodeOpts;
-    auto picture = imageSource->CreatePictureAtIndex(invalidFrameIndex, decodeOpts, errorCode);
+    auto picture = imageSource->CreatePictureAtIndex(invalidFrameIndex, errorCode);
     ASSERT_EQ(errorCode, ERR_IMAGE_INVALID_PARAMETER);
     ASSERT_EQ(picture, nullptr);
 
@@ -671,8 +669,7 @@ HWTEST_F(ImageSourceGifExTest, CreatePictureAtIndex003, TestSize.Level3)
     auto imageSource = ImageSource::CreateImageSource(inputName, opts, errorCode);
     ASSERT_NE(imageSource, nullptr);
 
-    const DecodeOptions decodeOpts;
-    auto picture = imageSource->CreatePictureAtIndex(0, decodeOpts, errorCode);
+    auto picture = imageSource->CreatePictureAtIndex(0, errorCode);
     ASSERT_EQ(errorCode, ERR_IMAGE_MISMATCHED_FORMAT);
     ASSERT_EQ(picture, nullptr);
 
@@ -694,8 +691,7 @@ HWTEST_F(ImageSourceGifExTest, CreatePictureAtIndex004, TestSize.Level3)
     auto imageSource = ImageSource::CreateImageSource(inputName, opts, errorCode);
     ASSERT_NE(imageSource, nullptr);
 
-    const DecodeOptions decodeOpts;
-    auto picture = imageSource->CreatePictureAtIndex(0, decodeOpts, errorCode);
+    auto picture = imageSource->CreatePictureAtIndex(0, errorCode);
     ASSERT_EQ(errorCode, ERR_IMAGE_TOO_LARGE);
 
     GTEST_LOG_(INFO) << "ImageSourceGifExTest: CreatePictureAtIndex004 end";
@@ -721,8 +717,7 @@ HWTEST_F(ImageSourceGifExTest, CreatePictureAtIndex005, TestSize.Level3)
     ASSERT_EQ(frameCount, TEST_FILE_INCOMPLETE_GIF_FRAME_COUNT);
 
     uint32_t incompleteFrameIndex = TEST_FILE_INCOMPLETE_GIF_FRAME_COUNT - 1;
-    const DecodeOptions decodeOpts;
-    auto picture = imageSource->CreatePictureAtIndex(incompleteFrameIndex, decodeOpts, errorCode);
+    auto picture = imageSource->CreatePictureAtIndex(incompleteFrameIndex, errorCode);
     ASSERT_EQ(errorCode, ERR_IMAGE_DECODE_ABNORMAL);
 
     GTEST_LOG_(INFO) << "ImageSourceGifExTest: CreatePictureAtIndex005 end";

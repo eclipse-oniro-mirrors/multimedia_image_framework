@@ -4867,18 +4867,18 @@ DecodeContext ImageSource::DecodeImageDataToContextExtended(uint32_t index, Imag
 }
 
 #if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
-std::unique_ptr<Picture> ImageSource::CreatePictureAtIndex(
-    uint32_t index, const DecodeOptions &opts, uint32_t &errorCode)
+std::unique_ptr<Picture> ImageSource::CreatePictureAtIndex(uint32_t index, uint32_t &errorCode)
 {
     ImageDataStatistics imageDataStatistics("[ImageSource]CreatePictureAtIndex");
     DumpInputData();
 
     ImageInfo info;
     GetImageInfo(info);
-    errorCode = CreatePictureAtIndexPreCheck(index, opts, info);
+    errorCode = CreatePictureAtIndexPreCheck(index, info);
     CHECK_ERROR_RETURN_RET_LOG(errorCode != SUCCESS, nullptr,
         "[%{public}s] PreCheck failed, index=%{public}u, errorCode=%{public}u", __func__, index, errorCode);
 
+    DecodeOptions opts;
     std::shared_ptr<PixelMap> pixelMap = CreatePixelMap(index, opts, errorCode);
     CHECK_ERROR_RETURN_RET_LOG(errorCode != SUCCESS, nullptr,
         "[%{public}s] create PixelMap error, index=%{public}u, errorCode=%{public}u", __func__, index, errorCode);
@@ -4898,7 +4898,7 @@ std::unique_ptr<Picture> ImageSource::CreatePictureAtIndex(
     return picture;
 }
 
-uint32_t ImageSource::CreatePictureAtIndexPreCheck(uint32_t index, const DecodeOptions &opts, const ImageInfo &info)
+uint32_t ImageSource::CreatePictureAtIndexPreCheck(uint32_t index, const ImageInfo &info)
 {
     if (sourceStreamPtr_ == nullptr) {
         IMAGE_LOGE("[%{public}s] sourceStreamPtr_ is nullptr", __func__);

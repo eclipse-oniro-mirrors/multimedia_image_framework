@@ -132,6 +132,7 @@ ohos_shared_library("image_source") {
   sources = [
     "image_source_native.cpp",
     "image_source_native_impl.cpp",
+    "$BASE_DIR/multimedia/image_framework/frameworks/kits/js/common/image_error_convert.cpp",
   ]
 
   include_dirs = [

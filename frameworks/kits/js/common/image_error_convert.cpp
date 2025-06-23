@@ -1,0 +1,44 @@
+/*
+ * Copyright (C) 2025 Huawei Device Co., Ltd.
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+#include "image_error_convert.h"
+
+#include "image_common.h"
+#include "media_errors.h"
+
+namespace OHOS {
+namespace Media {
+std::pair<int32_t, std::string> ImageErrorConvert::CreatePictureAtIndexMakeErrMsg(uint32_t errorCode)
+{
+    switch (errorCode) {
+        case ERR_IMAGE_SOURCE_DATA:
+        case ERR_IMAGE_SOURCE_DATA_INCOMPLETE:
+        case ERR_IMAGE_GET_DATA_ABNORMAL:
+        case ERR_IMAGE_DATA_ABNORMAL:
+            return std::make_pair<int32_t, std::string>(IMAGE_BAD_SOURCE, "Bad image source.");
+        case ERR_IMAGE_MISMATCHED_FORMAT:
+        case ERR_IMAGE_UNKNOWN_FORMAT:
+        case ERR_IMAGE_DECODE_HEAD_ABNORMAL:
+            return std::make_pair<int32_t, std::string>(IMAGE_SOURCE_UNSUPPORTED_MIMETYPE, "Unsupported mimetype.");
+        case ERR_IMAGE_TOO_LARGE:
+            return std::make_pair<int32_t, std::string>(IMAGE_SOURCE_TOO_LARGE, "Image too large.");
+        case ERR_IMAGE_INVALID_PARAMETER:
+            return std::make_pair<int32_t, std::string>(IMAGE_SOURCE_UNSUPPORTED_OPTIONS, "Unsupported options.");
+        default:
+            return std::make_pair<int32_t, std::string>(IMAGE_DECODE_FAILED, "Decode failed.");
+    }
+}
+}  // namespace Media
+}  // namespace OHOS

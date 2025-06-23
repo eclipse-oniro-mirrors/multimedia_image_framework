@@ -291,7 +291,7 @@ HWTEST_F(GifMetadataTest, UnmarshallingTest001, TestSize.Level1)
     ASSERT_TRUE(gifMetadata.SetValue(GIF_METADATA_KEY_DISPOSAL_TYPE, "1"));
 
     ASSERT_TRUE(gifMetadata.Marshalling(parcel));
-    GifMetadata* newGifMetadata = gifMetadata.Unmarshalling(parcel);
+    ImageKvMetadata* newGifMetadata = gifMetadata.Unmarshalling(parcel);
     ASSERT_NE(newGifMetadata, nullptr);
 
     std::map<std::string, std::string> KValueStr = *(newGifMetadata->GetAllProperties());
@@ -314,7 +314,7 @@ HWTEST_F(GifMetadataTest, UnmarshallingTest002, TestSize.Level2)
     ASSERT_TRUE(gifMetadata.SetValue(GIF_METADATA_KEY_DELAY_TIME, "33"));
     ASSERT_TRUE(gifMetadata.SetValue(GIF_METADATA_KEY_DISPOSAL_TYPE, "1"));
 
-    GifMetadata* newGifMetadata = gifMetadata.Unmarshalling(parcel);
+    ImageKvMetadata* newGifMetadata = gifMetadata.Unmarshalling(parcel);
     ASSERT_NE(newGifMetadata, nullptr);
 
     std::map<std::string, std::string> KValueStr = *(newGifMetadata->GetAllProperties());

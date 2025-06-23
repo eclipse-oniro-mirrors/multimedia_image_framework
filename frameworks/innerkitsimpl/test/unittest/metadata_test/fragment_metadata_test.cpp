@@ -28,7 +28,7 @@ using namespace testing::ext;
 namespace OHOS {
 namespace Multimedia {
 const static uint64_t MAX_FRAGMENT_MAP_META_COUNT = 10;
-const static uint64_t MAX_FRAGMENT_MAP_META_LENGTH = 100;
+const static uint64_t MAX_FRAGMENT_MAP_META_LENGTH = 128;
 
 class FragmentMetadataTest : public testing::Test {
 public:
@@ -281,7 +281,7 @@ HWTEST_F(FragmentMetadataTest, UnmarshallingTest001, TestSize.Level1)
     ASSERT_TRUE(fragmentMetadata.SetValue(FRAGMENT_METADATA_KEY_X, "300"));
     ASSERT_TRUE(fragmentMetadata.SetValue(FRAGMENT_METADATA_KEY_Y, "256"));
     ASSERT_TRUE(fragmentMetadata.Marshalling(parcel));
-    FragmentMetadata* newfragmentMetadata = fragmentMetadata.Unmarshalling(parcel);
+    ImageKvMetadata* newfragmentMetadata = fragmentMetadata.Unmarshalling(parcel);
     ASSERT_NE(newfragmentMetadata, nullptr);
     std::map<std::string, std::string> KValueStr = *(newfragmentMetadata->GetAllProperties());
     EXPECT_EQ(KValueStr.size(), 2);
@@ -302,7 +302,7 @@ HWTEST_F(FragmentMetadataTest, UnmarshallingTest002, TestSize.Level2)
     ASSERT_TRUE(fragmentMetadata.Marshalling(parcel));
     ASSERT_TRUE(fragmentMetadata.SetValue(FRAGMENT_METADATA_KEY_X, "300"));
     ASSERT_TRUE(fragmentMetadata.SetValue(FRAGMENT_METADATA_KEY_Y, "256"));
-    FragmentMetadata* newfragmentMetadata = fragmentMetadata.Unmarshalling(parcel);
+    ImageKvMetadata* newfragmentMetadata = fragmentMetadata.Unmarshalling(parcel);
     ASSERT_NE(newfragmentMetadata, nullptr);
     std::map<std::string, std::string> KValueStr = *(newfragmentMetadata->GetAllProperties());
     EXPECT_EQ(KValueStr.size(), 0);

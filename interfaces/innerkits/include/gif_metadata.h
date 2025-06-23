@@ -16,36 +16,16 @@
 #ifndef INTERFACES_INNERKITS_INCLUDE_GIF_METADATA_H
 #define INTERFACES_INNERKITS_INCLUDE_GIF_METADATA_H
 
-#include <map>
-#include "image_type.h"
-#include "metadata.h"
+#include "kv_metadata.h"
 
 namespace OHOS {
 namespace Media {
-class GifMetadata : public ImageMetadata {
+class GifMetadata : public ImageKvMetadata {
 public:
-    GifMetadata();
-    GifMetadata(const GifMetadata &gifMetadata);
-    virtual ~GifMetadata();
-    virtual int GetValue(const std::string &key, std::string &value) const override;
-    virtual bool SetValue(const std::string &key, const std::string &value) override;
-    virtual bool RemoveEntry(const std::string &key) override;
-    virtual const ImageMetadata::PropertyMapPtr GetAllProperties() override;
-    virtual std::shared_ptr<ImageMetadata> CloneMetadata() override;
-    bool Marshalling(Parcel &parcel) const override;
-    static GifMetadata *Unmarshalling(Parcel &parcel);
-    static GifMetadata *Unmarshalling(Parcel &parcel, PICTURE_ERR &error);
-    MetadataType GetType() const override
+    GifMetadata()
     {
-        return MetadataType::GIF;
+        metadataType_ = MetadataType::GIF;
     }
-    bool RemoveExifThumbnail() override
-    {
-        return false;
-    }
-
-protected:
-    ImageMetadata::PropertyMapPtr properties_ = std::make_shared<ImageMetadata::PropertyMap>();
 };
 } // namespace Media
 } // namespace OHOS

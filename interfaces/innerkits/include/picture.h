@@ -63,7 +63,7 @@ public:
     NATIVEEXPORT static void DumpPictureIfDumpEnabled(Picture& picture, std::string dumpType);
     NATIVEEXPORT std::shared_ptr<ImageMetadata> GetMetadata(MetadataType type);
     NATIVEEXPORT uint32_t SetMetadata(MetadataType type, std::shared_ptr<ImageMetadata> metadata);
-    NATIVEEXPORT static bool isValidPictureMetadataType(MetadataType metadataType);
+    NATIVEEXPORT static bool IsValidPictureMetadataType(MetadataType metadataType);
 
 private:
     std::shared_ptr<PixelMap> mainPixelMap_;

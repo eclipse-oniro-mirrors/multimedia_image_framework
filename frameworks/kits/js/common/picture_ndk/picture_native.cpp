@@ -162,7 +162,7 @@ Image_ErrorCode OH_PictureNative_GetMetadata(OH_PictureNative *picture, Image_Me
     }
     auto metaTypeInner = MetaDataTypeNativeToInner(metadataType);
     std::shared_ptr<OHOS::Media::ImageMetadata> metadataTmp = nullptr;
-    if (OHOS::Media::Picture::isValidPictureMetadataType(metaTypeInner)) {
+    if (OHOS::Media::Picture::IsValidPictureMetadataType(metaTypeInner)) {
         metadataTmp = picture->GetInnerPicture()->GetMetadata(metaTypeInner);
     }
     if (metadataTmp == nullptr) {
@@ -185,7 +185,7 @@ Image_ErrorCode OH_PictureNative_SetMetadata(OH_PictureNative *picture, Image_Me
     }
     auto metaTypeInner = MetaDataTypeNativeToInner(metadataType);
     uint32_t errorCode = OHOS::Media::ERROR;
-    if (OHOS::Media::Picture::isValidPictureMetadataType(metaTypeInner)) {
+    if (OHOS::Media::Picture::IsValidPictureMetadataType(metaTypeInner)) {
         auto metadataInner = metadata->GetInnerAuxiliaryMetadata();
         errorCode = picture->GetInnerPicture()->SetMetadata(metaTypeInner, metadataInner);
     }

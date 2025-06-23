@@ -200,8 +200,7 @@ public:
                                                                                 uint32_t &errorCode);
 #if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
     NATIVEEXPORT std::unique_ptr<Picture> CreatePicture(const DecodingOptionsForPicture &opts, uint32_t &errorCode);
-    NATIVEEXPORT std::unique_ptr<Picture> CreatePictureAtIndex(
-        uint32_t index, const DecodeOptions &opts, uint32_t &errorCode);
+    NATIVEEXPORT std::unique_ptr<Picture> CreatePictureAtIndex(uint32_t index, uint32_t &errorCode);
 #endif
     // for incremental source.
     NATIVEEXPORT uint32_t UpdateData(const uint8_t *data, uint32_t size, bool isCompleted);
@@ -390,7 +389,7 @@ private:
     void DecodeJpegAuxiliaryPicture(std::set<AuxiliaryPictureType> &auxTypes, std::unique_ptr<Picture> &picture,
                                     uint32_t &errorCode);
     bool CheckJpegSourceStream(StreamInfo &streamInfo);
-    uint32_t CreatePictureAtIndexPreCheck(uint32_t index, const DecodeOptions &opts, const ImageInfo &info);
+    uint32_t CreatePictureAtIndexPreCheck(uint32_t index, const ImageInfo &info);
     uint32_t SetGifMetadataForPicture(std::unique_ptr<Picture> &picture, uint32_t index);
 #endif
 

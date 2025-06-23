@@ -86,6 +86,7 @@ image_native_ios_sources = [
   "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/accessor/src/webp_exif_metadata_accessor.cpp",
 
   # image_napi
+  "//foundation/multimedia/image_framework/frameworks/kits/js/common/image_error_convert.cpp",
   "//foundation/multimedia/image_framework/frameworks/kits/js/common/image_napi_utils.cpp",
   "//foundation/multimedia/image_framework/frameworks/kits/js/common/image_packer_napi.cpp",
   "//foundation/multimedia/image_framework/frameworks/kits/js/common/image_source_napi.cpp",
