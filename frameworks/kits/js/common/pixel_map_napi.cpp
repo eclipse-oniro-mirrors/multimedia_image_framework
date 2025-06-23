@@ -974,7 +974,6 @@ napi_value PixelMapNapi::Constructor(napi_env env, napi_callback_info info)
 void PixelMapNapi::Destructor(napi_env env, void *nativeObject, void *finalize)
 {
     if (nativeObject != nullptr) {
-        std::lock_guard<std::mutex> lock(pixelMapCrossThreadMutex_);
         IMAGE_LOGD("Destructor pixelmapNapi");
         delete reinterpret_cast<PixelMapNapi*>(nativeObject);
         nativeObject = nullptr;
