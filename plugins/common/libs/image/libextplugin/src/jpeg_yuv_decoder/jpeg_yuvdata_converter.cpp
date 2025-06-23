@@ -351,5 +351,32 @@ int I400ToI420_wrapper(const YuvPlaneInfo &src, const YuvPlaneInfo &dest)
     }
 }
 
+int I400ToYUV420Sp(const YuvPlaneInfo &src, const YuvPlaneInfo &dest)
+{
+    uint32_t width = src.imageWidth;
+    uint32_t height = src.imageHeight;
+    if (!IsValidYuvGrayData(src) || !IsValidYuvData(dest) || !IsValidSize(width, height)) {
+        return -1;
+    }
+    const uint8_t* srcY = nullptr;
+    for (uint32_t k = 0; k < height; k++) {
+        srcY = src.planes[YCOM] + k * src.strides[YCOM];
+        uint8_t* outY = dest.planes[YCOM] + k * dest.strides[YCOM];
+        CopyLineData(outY, dest.strides[YCOM], srcY, std::min(src.strides[YCOM], dest.strides[YCOM]));
+    }
+    if (dest.planeHeight[YCOM] > height && srcY) {
+        uint8_t* outY = dest.planes[YCOM] + height * dest.strides[YCOM];
+        CopyLineData(outY, dest.strides[YCOM], srcY, src.strides[YCOM]);
+    }
+    const uint8_t chromaValueForGray = 0x80;
+    uint32_t UVCOMSize = dest.strides[UCOM] * dest.planeHeight[UCOM];
+    UVCOMSize += dest.strides[VCOM] * dest.planeHeight[VCOM];
+    errno_t ret = memset_s(dest.planes[UVCOM], UVCOMSize, chromaValueForGray, UVCOMSize);
+    if (ret != EOK) {
+        return -1;
+    }
+    return 0;
+}
+
 }
 }

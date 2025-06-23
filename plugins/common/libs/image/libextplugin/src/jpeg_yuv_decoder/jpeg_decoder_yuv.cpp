@@ -467,7 +467,7 @@ int JpegDecoderYuv::DoDecodeToYuvPlane(DecodeContext &context, tjhandle dehandle
         return JpegYuvDecodeError_DecodeFailed;
     }
     if (jpegSubsamp == TJSAMP_GRAY) {
-        return ConvertFromGray(jpegOutYuvInfo);
+        return ConvertFromGray(jpegOutYuvInfo, context);
     }
     ConverterPair convertFunc = { nullptr, nullptr};
     auto iter = CONVERTER_MAP.find(jpegSubsamp);
@@ -612,7 +612,7 @@ int JpegDecoderYuv::ConvertFrom4xx(YuvPlaneInfo &srcPlaneInfo, ConverterPair &co
     return ret == 0 ? JpegYuvDecodeError_Success : JpegYuvDecodeError_ConvertError;
 }
 
-int JpegDecoderYuv::ConvertFromGray(YuvPlaneInfo &srcPlaneInfo)
+int JpegDecoderYuv::ConvertFromGray(YuvPlaneInfo &srcPlaneInfo, const DecodeContext &context)
 {
     uint32_t width = srcPlaneInfo.imageWidth;
     uint32_t height = srcPlaneInfo.imageHeight;
@@ -639,7 +639,14 @@ int JpegDecoderYuv::ConvertFromGray(YuvPlaneInfo &srcPlaneInfo)
     dest.planes[YCOM] = outYData;
     dest.planes[UCOM] = outUData;
     dest.planes[VCOM] = outVData;
-    int ret = I400ToI420_wrapper(srcPlaneInfo, dest);
+    int ret = 0;
+    if (decodeParameter_.outfmt_ == JpegYuvFmt::OutFmt_NV12 || decodeParameter_.outfmt_ == JpegYuvFmt::OutFmt_NV21) {
+        UpdateDestStride(decodeParameter_, context, dest, height);
+        dest.planes[UVCOM] = outYData + dest.strides[YCOM] * dest.planeHeight[YCOM];
+        ret = I400ToYUV420Sp(srcPlaneInfo, dest);
+    } else {
+        ret = I400ToI420_wrapper(srcPlaneInfo, dest);
+    }
     return ret == 0 ? JpegYuvDecodeError_Success : JpegYuvDecodeError_ConvertError;
 }
 
