@@ -544,50 +544,276 @@ constexpr TagDetails exifSensitivityType[] = {
     {7, "Standard output sensitivity (SOS) and recommended exposure index (REI) and ISO speed"},
 };
 
+ExifMetadatFormatter &ExifMetadatFormatter::GetInstance()
+{
+    static ExifMetadatFormatter instance;
+    return instance;
+}
+
+ExifMetadatFormatter::ExifMetadatFormatter()
+{
+    InitDelegates();
+    InitValueRangeValidateConfig();
+    InitValueFormatConvertConfig();
+    InitValueTemplateConfig();
+}
+
 // configuratioin for value range validation. For example GPSLatitudeRef the value must be 'N' or 'S'.
-std::map<std::string, std::tuple<const TagDetails *, const size_t>> ExifMetadatFormatter::valueRangeValidateConfig = {
-    { "Orientation", std::make_tuple(exifOrientation, std::size(exifOrientation)) },
-    { "GPSLatitudeRef", std::make_tuple(exifGPSLatitudeRef, std::size(exifGPSLatitudeRef)) },
-    { "GPSDestLatitudeRef", std::make_tuple(exifGPSLatitudeRef, std::size(exifGPSLatitudeRef)) },
-    { "GPSLongitudeRef", std::make_tuple(exifGPSLongitudeRef, std::size(exifGPSLongitudeRef)) },
-    { "GPSDestLongitudeRef", std::make_tuple(exifGPSLongitudeRef, std::size(exifGPSLongitudeRef)) },
-    { "WhiteBalance", std::make_tuple(exifWhiteBalance, std::size(exifWhiteBalance)) },
-    { "Flash", std::make_tuple(exifFlash, std::size(exifFlash)) },
-    { "LightSource", std::make_tuple(exifLightSource, std::size(exifLightSource)) },
-    { "MeteringMode", std::make_tuple(exifMeteringMode, std::size(exifMeteringMode)) },
-    { "SceneType", std::make_tuple(exifSceneType, std::size(exifSceneType)) },
-    { "Compression", std::make_tuple(exifCompression, std::size(exifCompression)) },
-    { "PhotometricInterpretation",
-      std::make_tuple(exifPhotometricInterpretation, std::size(exifPhotometricInterpretation)) },
-    { "PlanarConfiguration", std::make_tuple(exifPlanarConfiguration, std::size(exifPlanarConfiguration)) },
-    { "ResolutionUnit", std::make_tuple(exifUnit, std::size(exifUnit)) },
-    { "YCbCrPositioning", std::make_tuple(exifYCbCrPositioning, std::size(exifYCbCrPositioning)) },
-    { "ExposureProgram", std::make_tuple(exifExposureProgram, std::size(exifExposureProgram)) },
-    { "ColorSpace", std::make_tuple(exifColorSpace, std::size(exifColorSpace)) },
-    { "FocalPlaneResolutionUnit", std::make_tuple(exifUnit, std::size(exifUnit)) },
-    { "SensingMethod", std::make_tuple(tiffSensingMethod, std::size(tiffSensingMethod)) },
-    { "CustomRendered", std::make_tuple(exifCustomRendered, std::size(exifCustomRendered)) },
-    { "ExposureMode", std::make_tuple(exifExposureMode, std::size(exifExposureMode)) },
-    { "SceneCaptureType", std::make_tuple(exifSceneCaptureType, std::size(exifSceneCaptureType)) },
-    { "GainControl", std::make_tuple(exifGainControl, std::size(exifGainControl)) },
-    { "Contrast", std::make_tuple(exifNormalSoftHard, std::size(exifNormalSoftHard)) },
-    { "Saturation", std::make_tuple(exifSaturation, std::size(exifSaturation)) },
-    { "Sharpness", std::make_tuple(exifNormalSoftHard, std::size(exifNormalSoftHard)) },
-    { "SubjectDistanceRange", std::make_tuple(exifSubjectDistanceRange, std::size(exifSubjectDistanceRange)) },
-    { "GPSAltitudeRef", std::make_tuple(exifGPSAltitudeRef, std::size(exifGPSAltitudeRef)) },
-    { "NewSubfileType", std::make_tuple(exifNewSubfileType, std::size(exifNewSubfileType)) },
-    { "SubfileType", std::make_tuple(exifSubfileType, std::size(exifSubfileType)) },
-    { "GPSStatus", std::make_tuple(exifGpsStatus, std::size(exifGpsStatus)) },
-    { "GPSMeasureMode", std::make_tuple(exifGPSMeasureMode, std::size(exifGPSMeasureMode)) },
-    { "GPSSpeedRef", std::make_tuple(exifGPSSpeedRef, std::size(exifGPSSpeedRef)) },
-    { "GPSImgDirectionRef", std::make_tuple(exifGPSDirRef, std::size(exifGPSDirRef)) },
-    { "GPSTrackRef", std::make_tuple(exifGPSDirRef, std::size(exifGPSDirRef)) },
-    { "GPSDestBearingRef", std::make_tuple(exifGPSDirRef, std::size(exifGPSDirRef)) },
-    { "GPSDestDistanceRef", std::make_tuple(exifGPSDestDistanceRef, std::size(exifGPSDestDistanceRef)) },
-    { "GPSDifferential", std::make_tuple(exifGPSDifferential, std::size(exifGPSDifferential)) },
-    { "CompositeImage", std::make_tuple(exifCompositeImage, std::size(exifCompositeImage)) },
-    { "SensitivityType", std::make_tuple(exifSensitivityType, std::size(exifSensitivityType)) },
-};
+void ExifMetadatFormatter::InitValueRangeValidateConfig()
+{
+    valueRangeValidateConfig_ = std::map<std::string, std::tuple<const TagDetails*, const size_t>>{
+        { "Orientation", std::make_tuple(exifOrientation, std::size(exifOrientation)) },
+        { "GPSLatitudeRef", std::make_tuple(exifGPSLatitudeRef, std::size(exifGPSLatitudeRef)) },
+        { "GPSDestLatitudeRef", std::make_tuple(exifGPSLatitudeRef, std::size(exifGPSLatitudeRef)) },
+        { "GPSLongitudeRef", std::make_tuple(exifGPSLongitudeRef, std::size(exifGPSLongitudeRef)) },
+        { "GPSDestLongitudeRef", std::make_tuple(exifGPSLongitudeRef, std::size(exifGPSLongitudeRef)) },
+        { "WhiteBalance", std::make_tuple(exifWhiteBalance, std::size(exifWhiteBalance)) },
+        { "Flash", std::make_tuple(exifFlash, std::size(exifFlash)) },
+        { "LightSource", std::make_tuple(exifLightSource, std::size(exifLightSource)) },
+        { "MeteringMode", std::make_tuple(exifMeteringMode, std::size(exifMeteringMode)) },
+        { "SceneType", std::make_tuple(exifSceneType, std::size(exifSceneType)) },
+        { "Compression", std::make_tuple(exifCompression, std::size(exifCompression)) },
+        { "PhotometricInterpretation",
+        std::make_tuple(exifPhotometricInterpretation, std::size(exifPhotometricInterpretation)) },
+        { "PlanarConfiguration", std::make_tuple(exifPlanarConfiguration, std::size(exifPlanarConfiguration)) },
+        { "ResolutionUnit", std::make_tuple(exifUnit, std::size(exifUnit)) },
+        { "YCbCrPositioning", std::make_tuple(exifYCbCrPositioning, std::size(exifYCbCrPositioning)) },
+        { "ExposureProgram", std::make_tuple(exifExposureProgram, std::size(exifExposureProgram)) },
+        { "ColorSpace", std::make_tuple(exifColorSpace, std::size(exifColorSpace)) },
+        { "FocalPlaneResolutionUnit", std::make_tuple(exifUnit, std::size(exifUnit)) },
+        { "SensingMethod", std::make_tuple(tiffSensingMethod, std::size(tiffSensingMethod)) },
+        { "CustomRendered", std::make_tuple(exifCustomRendered, std::size(exifCustomRendered)) },
+        { "ExposureMode", std::make_tuple(exifExposureMode, std::size(exifExposureMode)) },
+        { "SceneCaptureType", std::make_tuple(exifSceneCaptureType, std::size(exifSceneCaptureType)) },
+        { "GainControl", std::make_tuple(exifGainControl, std::size(exifGainControl)) },
+        { "Contrast", std::make_tuple(exifNormalSoftHard, std::size(exifNormalSoftHard)) },
+        { "Saturation", std::make_tuple(exifSaturation, std::size(exifSaturation)) },
+        { "Sharpness", std::make_tuple(exifNormalSoftHard, std::size(exifNormalSoftHard)) },
+        { "SubjectDistanceRange", std::make_tuple(exifSubjectDistanceRange, std::size(exifSubjectDistanceRange)) },
+        { "GPSAltitudeRef", std::make_tuple(exifGPSAltitudeRef, std::size(exifGPSAltitudeRef)) },
+        { "NewSubfileType", std::make_tuple(exifNewSubfileType, std::size(exifNewSubfileType)) },
+        { "SubfileType", std::make_tuple(exifSubfileType, std::size(exifSubfileType)) },
+        { "GPSStatus", std::make_tuple(exifGpsStatus, std::size(exifGpsStatus)) },
+        { "GPSMeasureMode", std::make_tuple(exifGPSMeasureMode, std::size(exifGPSMeasureMode)) },
+        { "GPSSpeedRef", std::make_tuple(exifGPSSpeedRef, std::size(exifGPSSpeedRef)) },
+        { "GPSImgDirectionRef", std::make_tuple(exifGPSDirRef, std::size(exifGPSDirRef)) },
+        { "GPSTrackRef", std::make_tuple(exifGPSDirRef, std::size(exifGPSDirRef)) },
+        { "GPSDestBearingRef", std::make_tuple(exifGPSDirRef, std::size(exifGPSDirRef)) },
+        { "GPSDestDistanceRef", std::make_tuple(exifGPSDestDistanceRef, std::size(exifGPSDestDistanceRef)) },
+        { "GPSDifferential", std::make_tuple(exifGPSDifferential, std::size(exifGPSDifferential)) },
+        { "CompositeImage", std::make_tuple(exifCompositeImage, std::size(exifCompositeImage)) },
+        { "SensitivityType", std::make_tuple(exifSensitivityType, std::size(exifSensitivityType)) },
+    };
+}
+
+// configuration for value format validation. For example BitPerSample the value format should be 9 9 9 or 9,9,9
+void ExifMetadatFormatter::InitValueFormatConvertConfig()
+{
+    valueFormatConvertConfig_ = {
+        {"BitsPerSample", tribleIntWithBlank_},
+        {"BitsPerSample", tribleIntWithComma_},
+        {"CompressedBitsPerPixel", singleRational_},
+        {"CompressedBitsPerPixel", singleIntToRational_},
+        {"CompressedBitsPerPixel", singleDecimalToRational_},
+        {"GPSLatitude", doubleIntToOneRationalWithComma_},
+        {"GPSLatitude", tribleRationalWithBlank_},
+        {"GPSLatitude", tribleIntToRationalWithBlank_},
+        {"GPSLatitude", tribleIntToRationalWithComma_},
+        {"GPSLatitude", tribleMixToRationalWithComma_},
+        {"GPSLongitude", doubleIntToOneRationalWithComma_},
+        {"GPSLongitude", tribleRationalWithBlank_},
+        {"GPSLongitude", tribleIntToRationalWithBlank_},
+        {"GPSLongitude", tribleIntToRationalWithComma_},
+        {"GPSLongitude", tribleMixToRationalWithComma_},
+        {"ApertureValue", singleRational_},
+        {"ApertureValue", singleIntToRational_},
+        {"ApertureValue", singleDecimalToRational_},
+        {"DateTimeOriginal", dateTimeValidation_},
+        {"DateTimeOriginal", dateValidation_},
+        {"DateTime", dateTimeValidation_},
+        {"DateTime", dateValidation_},
+        {"ExposureBiasValue", singleRational_},
+        {"ExposureBiasValue", singleIntToRational_},
+        {"ExposureBiasValue", singleDecimalToRational_},
+        {"ExposureTime", singleRational_},
+        {"ExposureTime", singleIntToRational_},
+        {"ExposureTime", singleDecimalToRational_},
+        {"FNumber", singleRational_},
+        {"FNumber", singleIntToRational_},
+        {"FNumber", singleDecimalToRational_},
+        {"FocalLength", singleRational_},
+        {"FocalLength", singleIntToRational_},
+        {"FocalLength", singleDecimalToRational_},
+        {"GPSTimeStamp", tribleRationalWithBlank_},
+        {"GPSTimeStamp", tribleIntToRationalWithBlank_},
+        {"GPSTimeStamp", tribleIntToRationalWithColon_},
+        {"GPSTimeStamp", timeStamp_},
+        {"GPSDateStamp", dateValidation_},
+        {"XResolution", singleRational_},
+        {"XResolution", singleIntToRational_},
+        {"XResolution", singleDecimalToRational_},
+        {"YResolution", singleRational_},
+        {"YResolution", singleIntToRational_},
+        {"YResolution", singleDecimalToRational_},
+        {"WhitePoint", singleRational_},
+        {"WhitePoint", singleIntToRational_},
+        {"WhitePoint", singleDecimalToRational_},
+        {"WhitePoint", doubleValueToRational_},
+        {"PrimaryChromaticities", singleRational_},
+        {"PrimaryChromaticities", singleIntToRational_},
+        {"PrimaryChromaticities", singleDecimalToRational_},
+        {"YCbCrCoefficients", tribleRationalWithBlank_},
+        {"YCbCrCoefficients", tribleIntToRationalWithBlank_},
+        {"YCbCrCoefficients", tribleIntToRationalWithComma_},
+        {"YCbCrCoefficients", tribleDecimalToRationalWithBlank_},
+        {"YCbCrCoefficients", tribleDecimalToRatiionalWithComma_},
+        {"ReferenceBlackWhite", singleRational_},
+        {"ReferenceBlackWhite", singleIntToRational_},
+        {"ReferenceBlackWhite", singleDecimalToRational_},
+        {"ReferenceBlackWhite", sixDecimalToRationalWithComma_},
+        {"ShutterSpeedValue", singleRational_},
+        {"ShutterSpeedValue", singleIntToRational_},
+        {"ShutterSpeedValue", singleDecimalToRational_},
+        {"BrightnessValue", singleRational_},
+        {"BrightnessValue", singleIntToRational_},
+        {"BrightnessValue", singleDecimalToRational_},
+        {"MaxApertureValue", singleRational_},
+        {"MaxApertureValue", singleIntToRational_},
+        {"MaxApertureValue", singleDecimalToRational_},
+        {"SubjectDistance", singleRational_},
+        {"SubjectDistance", singleIntToRational_},
+        {"SubjectDistance", singleDecimalToRational_},
+        {"FlashEnergy", singleRational_},
+        {"FlashEnergy", singleIntToRational_},
+        {"FlashEnergy", singleDecimalToRational_},
+        {"FocalPlaneXResolution", singleRational_},
+        {"FocalPlaneXResolution", singleIntToRational_},
+        {"FocalPlaneXResolution", singleDecimalToRational_},
+        {"FocalPlaneYResolution", singleRational_},
+        {"FocalPlaneYResolution", singleIntToRational_},
+        {"FocalPlaneYResolution", singleDecimalToRational_},
+        {"ExposureIndex", singleRational_},
+        {"ExposureIndex", singleIntToRational_},
+        {"ExposureIndex", singleDecimalToRational_},
+        {"DigitalZoomRatio", singleRational_},
+        {"DigitalZoomRatio", singleIntToRational_},
+        {"DigitalZoomRatio", singleDecimalToRational_},
+        {"GPSAltitude", singleRational_},
+        {"GPSAltitude", singleIntToRational_},
+        {"GPSAltitude", singleDecimalToRational_},
+        {"GPSDOP", singleRational_},
+        {"GPSDOP", singleIntToRational_},
+        {"GPSDOP", singleDecimalToRational_},
+        {"GPSSpeed", singleRational_},
+        {"GPSSpeed", singleIntToRational_},
+        {"GPSSpeed", singleDecimalToRational_},
+        {"GPSTrack", singleRational_},
+        {"GPSTrack", singleIntToRational_},
+        {"GPSTrack", singleDecimalToRational_},
+        {"GPSImgDirection", singleRational_},
+        {"GPSImgDirection", singleIntToRational_},
+        {"GPSImgDirection", singleDecimalToRational_},
+        {"GPSDestLatitude", tribleRationalWithBlank_},
+        {"GPSDestLatitude", tribleIntToRationalWithBlank_},
+        {"GPSDestLatitude", tribleIntToRationalWithComma_},
+        {"GPSDestLongitude", tribleRationalWithBlank_},
+        {"GPSDestLongitude", tribleIntToRationalWithBlank_},
+        {"GPSDestLongitude", tribleIntToRationalWithComma_},
+        {"GPSDestBearing", singleRational_},
+        {"GPSDestBearing", singleIntToRational_},
+        {"GPSDestBearing", singleDecimalToRational_},
+        {"GPSDestDistance", singleRational_},
+        {"GPSDestDistance", singleIntToRational_},
+        {"GPSDestDistance", singleDecimalToRational_},
+        {"GPSVersionID", fourIntWithDot_},
+        {"CompressedBitsPerPixel", singleRational_},
+        {"CompressedBitsPerPixel", singleIntToRational_},
+        {"CompressedBitsPerPixel", singleDecimalToRational_},
+        {"DNGVersion", fourIntWithBlank_},
+        {"DNGVersion", fourIntWithComma_},
+        {"DefaultCropSize", doubleIntWithBlank_},
+        {"DefaultCropSize", doubleIntWithComma_},
+        {"Gamma", singleRational_},
+        {"Gamma", singleIntToRational_},
+        {"Gamma", singleDecimalToRational_},
+        {"GPSHPositioningError", singleRational_},
+        {"GPSHPositioningError", singleIntToRational_},
+        {"GPSHPositioningError", singleDecimalToRational_},
+        {"LensSpecification", fourRationalWithBlank_},
+        {"LensSpecification", fourIntToRationalWithBlank_},
+        {"LensSpecification", fourIntToRationalWithComma_},
+        {"LensSpecification", fourDecimalToRationalWithBlank_},
+        {"LensSpecification", fourDecimalToRationalWithComma_},
+        {"ReferenceBlackWhite", sixDecimalToRationalWithBlank_},
+        {"SubjectLocation", doubleIntWithBlank_},
+        {"SubjectLocation", doubleIntWithComma_},
+        {"ImageLength", singleInt_},
+        {"ImageWidth", singleInt_},
+        {"ISOSpeedRatings", singleInt_},
+        {"StandardOutputSensitivity", singleInt_},
+        {"RecommendedExposureIndex", singleInt_},
+        {"ISOSpeed", singleInt_},
+        {"PixelXDimension", singleInt_},
+        {"PixelYDimension", singleInt_},
+        {"FocalLengthIn35mmFilm", singleInt_},
+        {"StripOffsets", singleInt_},
+        {"SamplesPerPixel", singleInt_},
+        {"RowsPerStrip", singleInt_},
+        {"StripByteCounts", singleInt_},
+        {"ExifVersion", singleInt_},
+        {"ExifVersion", version_},
+        {"ISOSpeedLatitudeyyy", singleInt_},
+        {"ISOSpeedLatitudezzz", singleInt_},
+        {"ComponentsConfiguration", singleInt_},
+        {"ComponentsConfiguration", channel_},
+        {"PhotographicSensitivity", singleInt_},
+        {"FlashpixVersion", singleInt_},
+        {"FlashpixVersion", version_},
+        {"PhotoMode", singleInt_},
+        {"JPEGProc", singleInt_},
+        {"HwMnoteCaptureMode", singleInt_},
+        {"HwMnoteIsXmageSupported", singleInt_},
+        {"HwMnoteXmageMode", singleInt_},
+        {"HwMnoteXmageLeft", singleInt_},
+        {"HwMnoteXmageTop", singleInt_},
+        {"HwMnoteXmageRight", singleInt_},
+        {"HwMnoteXmageBottom", singleInt_},
+        {"HwMnoteCloudEnhancementMode", singleInt_},
+        {"HwMnoteAiEdit", singleInt_},
+        {"DateTimeDigitized", dateTimeValidation_},
+        {"DateTimeDigitized", dateValidation_},
+        {"OffsetTime", dateTimeValidation_},
+        {"OffsetTime", dateValidation_},
+        {"SubjectArea", doubleIntWithBlank_},
+        {"SubjectArea", doubleIntWithComma_},
+        {"SourceImageNumberOfCompositeImage", doubleIntWithBlank_},
+        {"SourceImageNumberOfCompositeImage", doubleIntWithComma_},
+        {"YCbCrSubSampling", doubleIntWithBlank_},
+        {"YCbCrSubSampling", doubleIntWithComma_},
+        {"MovingPhotoVersion", singleInt_},
+        {"MicroVideoPresentationTimestampUS", singleInt_},
+    };
+}
+
+void ExifMetadatFormatter::InitValueTemplateConfig()
+{
+    valueTemplateConfig_ = {
+        {"ExposureTime", "(\\d+/\\d+) sec\\."},
+        {"ExposureTime", "(\\d+\\.\\d+|\\d+) sec\\."},
+        {"FNumber", "f/(\\d+\\.\\d+)"},
+        {"ApertureValue", "(\\d+\\.\\d+) EV \\(f/\\d+\\.\\d+\\)"},
+        {"ExposureBiasValue", "(\\d+\\.\\d+) EV"},
+        {"FocalLength", "(\\d+\\.\\d+) mm"},
+        {"ShutterSpeedValue", "(\\d+\\.\\d+) EV \\(\\d+/\\d+ sec\\.\\)"},
+        {"BrightnessValue", "(\\d+\\.\\d+) EV \\(\\d+\\.\\d+ cd/m\\^\\d+\\)"},
+        {"MaxApertureValue", "(\\d+\\.\\d+) EV \\(f/\\d+\\.\\d+\\)"},
+        {"SubjectDistance", "(\\d+\\.\\d+) m"},
+        {"SubjectArea", "\\(x,y\\) = \\((\\d+,\\d+)\\)"},
+        {"ExifVersion", "Exif Version ([0-9]{1,2}\\.[0-9]{1,2})"},
+        {"FlashpixVersion", "FlashPix Version ([0-9]{1,2}\\.[0-9]{1,2})"},
+        {"Copyright", "^(.*) \\(Photographer\\) \\- \\[None\\] \\(Editor\\)$"},
+    };
+}
 
 const size_t DECIMAL_BASE = 10;
 const std::string COMMA_REGEX("\\,"), COLON_REGEX("\\:"), DOT_REGEX("\\.");
@@ -964,6 +1190,102 @@ bool ExifMetadatFormatter::ValidRegexWithChannelFormat(std::string &value, const
     return true;
 }
 
+void ExifMetadatFormatter::InitDelegates()
+{
+    singleInt_ = std::make_pair(ValidRegex, SINGLE_INT_REGEX);
+
+    // regex validation for two integer like DefaultCropSize 9 9 the format is [0-9]+ [0-9]+
+    doubleIntWithBlank_ = std::make_pair(ValidRegex, DOUBLE_INT_WITH_BLANK_REGEX);
+
+    // regex validation for two integer with comma like BitPerSample 9,9 the format is [0-9]+,[0-9]+,[0-9]+
+    doubleIntWithComma_ = std::make_pair(ValidRegexWithComma, DOUBLE_INT_WITH_COMMA_REGEX);
+
+    // regex validation for three integer like BitPerSample 9 9 9 the format is [0-9]+ [0-9]+ [0-9]+
+    tribleIntWithBlank_ = std::make_pair(ValidRegex, TRIBLE_INT_WITH_BLANK_REGEX);
+
+    // regex validation for three integer with comma like BitPerSample 9,9,0 the format is [0-9]+,[0-9]+,[0-9]+,[0-9]+
+    tribleIntWithComma_ = std::make_pair(ValidRegexWithComma, TRIBLE_INT_WITH_COMMA_REGEX);
+
+    // regex validation for four integer like DNGVersion 9 9 9 9 the format is [0-9]+ [0-9]+ [0-9]+ [0-9]+
+    fourIntWithBlank_ = std::make_pair(ValidRegex, FOUR_INT_WITH_BLANK_REGEX);
+
+    // regex validation for four integer with comma like DNGVersion tag encodes the DNG four-tier version number
+    fourIntWithComma_ = std::make_pair(ValidRegexWithComma, FOUR_INT_WITH_COMMA_REGEX);
+
+    // regex validation for one rational like ApertureValue 4/1 the format is [0-9]+/[1-9][0-9]
+    singleRational_ = std::make_pair(ValidRegex, SINGLE_RATIONAL_REGEX);
+
+    // regex validation for integer and convert it to rational like ApertureValue 4 --> 4/1
+    singleIntToRational_ = std::make_pair(ValidRegexWithRationalFormat, SINGLE_INT_REGEX);
+
+    singleDecimalToRational_ = std::make_pair(ValidRegexWithDecimalRationalFormat, SINGLE_DECIMAL_REGEX);
+
+    doubleIntToOneRationalWithComma_ = std::make_pair(ValidRegexWithGpsOneRationalFormat, DOUBLE_INT_WITH_COMMA_REGEX);
+
+    doubleValueToRational_ = std::make_pair(ValidRegxAndConvertRationalFormat, DOUBLE_VALUE_REGEX);
+
+    // regex validation for three rational like GPSLatitude 39/1 54/1 20/1
+    tribleRationalWithBlank_ = std::make_pair(ValidRegex, TRIBLE_RATIONAL_WITH_BLANK_REGEX);
+
+    // regex validation for three integer and convert to three rational like GPSLatitude 39 54 20 --> 39/1 54/1 20/1
+    tribleIntToRationalWithBlank_ = std::make_pair(ValidRegexWithRationalFormat, TRIBLE_INT_WITH_BLANK_REGEX);
+
+    // regex validation for three integer with comma like GPSLatitude 39,54,20 --> 39/1 54/1 20/1
+    tribleIntToRationalWithComma_ = std::make_pair(ValidRegexWithCommaRationalFormat, TRIBLE_INT_WITH_COMMA_REGEX);
+
+    // regex validation for three decimal like YCbCrCoefficients 39.0 54 20.0 --> 39/1 54/1 20/1
+    tribleDecimalToRationalWithBlank_ =
+        std::make_pair(ValidRegexWithDecimalRationalFormat, TRIBLE_DECIMAL_WITH_BLANK_REGEX);
+
+    // regex validation for three decimal like YCbCrCoefficients 39.0,54,20.0 --> 39.0 54 20.0 --> 39/1 54/1 20/1
+    tribleDecimalToRatiionalWithComma_ =
+        std::make_pair(ValidRegxWithCommaDecimalRationalFormat, TRIBLE_DECIMAL_WITH_COMMA_REGEX);
+
+    // regex validation for three decimal like GPS 10, 20, 20.123 --> 10 20 20.123 --> 10/1 20/1 20.123/1
+    tribleMixToRationalWithComma_ =
+        std::make_pair(ValidRegxWithCommaDecimalRationalFormat, TRIBLE_MIX_WITH_COMMA_REGEX);
+
+    // regex validation for four rational like LensSpecification 1/1 3/2 1/1 2/1
+    fourRationalWithBlank_ = std::make_pair(ValidRegex, FOUR_RATIONAL_WITH_BLANK_REGEX);
+
+    // regex validation for four integer and convert to four rational like LensSpecification 1 3 1 2 --> 1/1 3/2 1/1 2/1
+    fourIntToRationalWithBlank_ = std::make_pair(ValidRegexWithRationalFormat, FOUR_INT_WITH_BLANK_REGEX);
+
+    // regex validation for four integer like LensSpecification 1,3,1,2 --> 1/1 3/2 1/1 2/1
+    fourIntToRationalWithComma_ = std::make_pair(ValidRegexWithCommaRationalFormat, FOUR_INT_WITH_COMMA_REGEX);
+
+    // regex validation for four decimal like LensSpecification 1.0 3.0 1.0 2.0 --> 1/1 3/1 2/1
+    fourDecimalToRationalWithBlank_ =
+        std::make_pair(ValidRegexWithDecimalRationalFormat, FOUR_DECIMAL_WITH_BLANK_REGEX);
+
+    // regex validation for four decimal like LensSpecification 1.0,3.0,1.0,2.0 --> 1/1 3/1 2/1
+    fourDecimalToRationalWithComma_ =
+        std::make_pair(ValidRegxWithCommaDecimalRationalFormat, FOUR_DECIMAL_WITH_COMMA_REGEX);
+
+    // regex validation for datetime format like DateTimeOriginal 2022:06:02 15:51:34
+    dateTimeValidation_ = std::make_pair(ValidRegex, DATETIME_REGEX);
+
+    // regex validation for datetime format like DateTimeOriginal 2022:06:02
+    dateValidation_ = std::make_pair(ValidRegex, DATE_REGEX);
+
+    // regex validation for three integer like GPSLatitude 39,54,21 --> 39/1 54/1 21/1
+    tribleIntToRationalWithColon_ =
+        std::make_pair(ValidRegexWithColonRationalFormat, TRIBLE_INT_WITH_COLON_REGEX);
+
+    timeStamp_ = std::make_pair(ValidRegexWithDecimalRationalFormat, TIMESTAMP_REGEX);
+
+    // regex validation for fou integer with pointer like GPSVersionID
+    fourIntWithDot_ = std::make_pair(ValidRegexWithDot, TRIBLE_INT_WITH_DOT_REGEX);
+
+    sixDecimalToRationalWithBlank_ = std::make_pair(ValidRegexWithDecimalRationalFormat, SIX_DECIMAL_WITH_BLANK_REGEX);
+
+    sixDecimalToRationalWithComma_ = std::make_pair(ValidRegexWithDecimalRationalFormat, SIX_DECIMAL_WITH_COMMA_REGEX);
+
+    version_ = std::make_pair(ValidRegexWithVersionFormat, VERSION_REGEX);
+
+    channel_ = std::make_pair(ValidRegexWithChannelFormat, CHANNEL_REGEX);
+}
+
 bool ExifMetadatFormatter::ValidRegexWithGpsOneRationalFormat(std::string &value, const std::string &regex)
 {
     IMAGE_LOGD("validate gps with one rational.");
@@ -980,316 +1302,12 @@ bool ExifMetadatFormatter::ValidRegexWithGpsOneRationalFormat(std::string &value
     return true;
 }
 
-ValueFormatDelegate ExifMetadatFormatter::singleInt =
-    std::make_pair(ExifMetadatFormatter::ValidRegex, SINGLE_INT_REGEX);
-
-// regex validation for two integer like DefaultCropSize 9 9 the format is [0-9]+ [0-9]+
-ValueFormatDelegate ExifMetadatFormatter::doubleIntWithBlank =
-    std::make_pair(ExifMetadatFormatter::ValidRegex, DOUBLE_INT_WITH_BLANK_REGEX);
-
-// regex validation for two integer with comma like BitPerSample 9,9 the format is [0-9]+,[0-9]+,[0-9]+
-ValueFormatDelegate ExifMetadatFormatter::doubleIntWithComma =
-    std::make_pair(ExifMetadatFormatter::ValidRegexWithComma, DOUBLE_INT_WITH_COMMA_REGEX);
-
-// regex validation for three integer like BitPerSample 9 9 9 the format is [0-9]+ [0-9]+ [0-9]+
-ValueFormatDelegate ExifMetadatFormatter::tribleIntWithBlank =
-    std::make_pair(ExifMetadatFormatter::ValidRegex, TRIBLE_INT_WITH_BLANK_REGEX);
-
-// regex validation for three integer with comma like BitPerSample 9,9,0 the format is [0-9]+,[0-9]+,[0-9]+,[0-9]+
-ValueFormatDelegate ExifMetadatFormatter::tribleIntWithComma =
-    std::make_pair(ExifMetadatFormatter::ValidRegexWithComma, TRIBLE_INT_WITH_COMMA_REGEX);
-
-// regex validation for four integer like DNGVersion 9 9 9 9 the format is [0-9]+ [0-9]+ [0-9]+ [0-9]+
-ValueFormatDelegate ExifMetadatFormatter::fourIntWithBlank =
-    std::make_pair(ExifMetadatFormatter::ValidRegex, FOUR_INT_WITH_BLANK_REGEX);
-
-// regex validation for four integer with comma like DNGVersion tag encodes the DNG four-tier version number
-ValueFormatDelegate ExifMetadatFormatter::fourIntWithComma =
-    std::make_pair(ExifMetadatFormatter::ValidRegexWithComma, FOUR_INT_WITH_COMMA_REGEX);
-
-// regex validation for one rational like ApertureValue 4/1 the format is [0-9]+/[1-9][0-9]
-ValueFormatDelegate ExifMetadatFormatter::singleRational =
-    std::make_pair(ExifMetadatFormatter::ValidRegex, SINGLE_RATIONAL_REGEX);
-
-// regex validation for integer and convert it to rational like ApertureValue 4 --> 4/1
-ValueFormatDelegate ExifMetadatFormatter::singleIntToRational =
-    std::make_pair(ExifMetadatFormatter::ValidRegexWithRationalFormat, SINGLE_INT_REGEX);
-
-ValueFormatDelegate ExifMetadatFormatter::singleDecimalToRational =
-    std::make_pair(ExifMetadatFormatter::ValidRegexWithDecimalRationalFormat, SINGLE_DECIMAL_REGEX);
-
-ValueFormatDelegate ExifMetadatFormatter::doubleIntToOneRationalWithComma =
-    std::make_pair(ExifMetadatFormatter::ValidRegexWithGpsOneRationalFormat, DOUBLE_INT_WITH_COMMA_REGEX);
-
-ValueFormatDelegate ExifMetadatFormatter::doubleValueToRational =
-    std::make_pair(ExifMetadatFormatter::ValidRegxAndConvertRationalFormat, DOUBLE_VALUE_REGEX);
-
-// regex validation for three rational like GPSLatitude 39/1 54/1 20/1
-ValueFormatDelegate ExifMetadatFormatter::tribleRationalWithBlank =
-    std::make_pair(ExifMetadatFormatter::ValidRegex, TRIBLE_RATIONAL_WITH_BLANK_REGEX);
-
-// regex validation for three integer and convert to three rational like GPSLatitude 39 54 20 --> 39/1 54/1 20/1
-ValueFormatDelegate ExifMetadatFormatter::tribleIntToRationalWithBlank =
-    std::make_pair(ExifMetadatFormatter::ValidRegexWithRationalFormat, TRIBLE_INT_WITH_BLANK_REGEX);
-
-// regex validation for three integer with comma like GPSLatitude 39,54,20 --> 39/1 54/1 20/1
-ValueFormatDelegate ExifMetadatFormatter::tribleIntToRationalWithComma =
-    std::make_pair(ExifMetadatFormatter::ValidRegexWithCommaRationalFormat, TRIBLE_INT_WITH_COMMA_REGEX);
-
-// regex validation for three decimal like YCbCrCoefficients 39.0 54 20.0 --> 39/1 54/1 20/1
-ValueFormatDelegate ExifMetadatFormatter::tribleDecimalToRationalWithBlank =
-    std::make_pair(ExifMetadatFormatter::ValidRegexWithDecimalRationalFormat, TRIBLE_DECIMAL_WITH_BLANK_REGEX);
-
-// regex validation for three decimal like YCbCrCoefficients 39.0,54,20.0 --> 39.0 54 20.0 --> 39/1 54/1 20/1
-ValueFormatDelegate ExifMetadatFormatter::tribleDecimalToRatiionalWithComma =
-    std::make_pair(ExifMetadatFormatter::ValidRegxWithCommaDecimalRationalFormat, TRIBLE_DECIMAL_WITH_COMMA_REGEX);
-
-// regex validation for three decimal like GPS 10, 20, 20.123 --> 10 20 20.123 --> 10/1 20/1 20.123/1
-ValueFormatDelegate ExifMetadatFormatter::tribleMixToRationalWithComma =
-    std::make_pair(ExifMetadatFormatter::ValidRegxWithCommaDecimalRationalFormat, TRIBLE_MIX_WITH_COMMA_REGEX);
-
-// regex validation for four rational like LensSpecification 1/1 3/2 1/1 2/1
-ValueFormatDelegate ExifMetadatFormatter::fourRationalWithBlank =
-    std::make_pair(ExifMetadatFormatter::ValidRegex, FOUR_RATIONAL_WITH_BLANK_REGEX);
-
-// regex validation for four integer and convert to four rational like LensSpecification 1 3 1 2 --> 1/1 3/2 1/1 2/1
-ValueFormatDelegate ExifMetadatFormatter::fourIntToRationalWithBlank =
-    std::make_pair(ExifMetadatFormatter::ValidRegexWithRationalFormat, FOUR_INT_WITH_BLANK_REGEX);
-
-// regex validation for four integer like LensSpecification 1,3,1,2 --> 1/1 3/2 1/1 2/1
-ValueFormatDelegate ExifMetadatFormatter::fourIntToRationalWithComma =
-    std::make_pair(ExifMetadatFormatter::ValidRegexWithCommaRationalFormat, FOUR_INT_WITH_COMMA_REGEX);
-
-// regex validation for four decimal like LensSpecification 1.0 3.0 1.0 2.0 --> 1/1 3/1 2/1
-ValueFormatDelegate ExifMetadatFormatter::fourDecimalToRationalWithBlank =
-    std::make_pair(ExifMetadatFormatter::ValidRegexWithDecimalRationalFormat, FOUR_DECIMAL_WITH_BLANK_REGEX);
-
-// regex validation for four decimal like LensSpecification 1.0,3.0,1.0,2.0 --> 1/1 3/1 2/1
-ValueFormatDelegate ExifMetadatFormatter::fourDecimalToRationalWithComma =
-    std::make_pair(ExifMetadatFormatter::ValidRegxWithCommaDecimalRationalFormat, FOUR_DECIMAL_WITH_COMMA_REGEX);
-
-// regex validation for datetime format like DateTimeOriginal 2022:06:02 15:51:34
-ValueFormatDelegate ExifMetadatFormatter::dateTimeValidation =
-    std::make_pair(ExifMetadatFormatter::ValidRegex, DATETIME_REGEX);
-
-// regex validation for datetime format like DateTimeOriginal 2022:06:02
-ValueFormatDelegate ExifMetadatFormatter::dateValidation = std::make_pair(ExifMetadatFormatter::ValidRegex, DATE_REGEX);
-
-// regex validation for three integer like GPSLatitude 39,54,21 --> 39/1 54/1 21/1
-ValueFormatDelegate ExifMetadatFormatter::tribleIntToRationalWithColon =
-    std::make_pair(ExifMetadatFormatter::ValidRegexWithColonRationalFormat, TRIBLE_INT_WITH_COLON_REGEX);
-
-ValueFormatDelegate ExifMetadatFormatter::timeStamp =
-    std::make_pair(ExifMetadatFormatter::ValidRegexWithDecimalRationalFormat, TIMESTAMP_REGEX);
-
-// regex validation for fou integer with pointer like GPSVersionID
-ValueFormatDelegate ExifMetadatFormatter::fourIntWithDot =
-    std::make_pair(ExifMetadatFormatter::ValidRegexWithDot, TRIBLE_INT_WITH_DOT_REGEX);
-
-ValueFormatDelegate ExifMetadatFormatter::sixDecimalToRationalWithBlank =
-    std::make_pair(ExifMetadatFormatter::ValidRegexWithDecimalRationalFormat, SIX_DECIMAL_WITH_BLANK_REGEX);
-
-ValueFormatDelegate ExifMetadatFormatter::sixDecimalToRationalWithComma =
-    std::make_pair(ExifMetadatFormatter::ValidRegexWithDecimalRationalFormat, SIX_DECIMAL_WITH_COMMA_REGEX);
-
-ValueFormatDelegate ExifMetadatFormatter::version =
-    std::make_pair(ExifMetadatFormatter::ValidRegexWithVersionFormat, VERSION_REGEX);
-
-ValueFormatDelegate ExifMetadatFormatter::channel =
-    std::make_pair(ExifMetadatFormatter::ValidRegexWithChannelFormat, CHANNEL_REGEX);
-
-// configuration for value format validation. For example BitPerSample the value format should be 9 9 9 or 9,9,9
-std::multimap<std::string, ValueFormatDelegate> ExifMetadatFormatter::valueFormatConvertConfig = {
-    {"BitsPerSample", tribleIntWithBlank},
-    {"BitsPerSample", tribleIntWithComma},
-    {"CompressedBitsPerPixel", singleRational},
-    {"CompressedBitsPerPixel", singleIntToRational},
-    {"CompressedBitsPerPixel", singleDecimalToRational},
-    {"GPSLatitude", doubleIntToOneRationalWithComma},
-    {"GPSLatitude", tribleRationalWithBlank},
-    {"GPSLatitude", tribleIntToRationalWithBlank},
-    {"GPSLatitude", tribleIntToRationalWithComma},
-    {"GPSLatitude", tribleMixToRationalWithComma},
-    {"GPSLongitude", doubleIntToOneRationalWithComma},
-    {"GPSLongitude", tribleRationalWithBlank},
-    {"GPSLongitude", tribleIntToRationalWithBlank},
-    {"GPSLongitude", tribleIntToRationalWithComma},
-    {"GPSLongitude", tribleMixToRationalWithComma},
-    {"ApertureValue", singleRational},
-    {"ApertureValue", singleIntToRational},
-    {"ApertureValue", singleDecimalToRational},
-    {"DateTimeOriginal", dateTimeValidation},
-    {"DateTimeOriginal", dateValidation},
-    {"DateTime", dateTimeValidation},
-    {"DateTime", dateValidation},
-    {"ExposureBiasValue", singleRational},
-    {"ExposureBiasValue", singleIntToRational},
-    {"ExposureBiasValue", singleDecimalToRational},
-    {"ExposureTime", singleRational},
-    {"ExposureTime", singleIntToRational},
-    {"ExposureTime", singleDecimalToRational},
-    {"FNumber", singleRational},
-    {"FNumber", singleIntToRational},
-    {"FNumber", singleDecimalToRational},
-    {"FocalLength", singleRational},
-    {"FocalLength", singleIntToRational},
-    {"FocalLength", singleDecimalToRational},
-    {"GPSTimeStamp", tribleRationalWithBlank},
-    {"GPSTimeStamp", tribleIntToRationalWithBlank},
-    {"GPSTimeStamp", tribleIntToRationalWithColon},
-    {"GPSTimeStamp", timeStamp},
-    {"GPSDateStamp", dateValidation},
-    {"XResolution", singleRational},
-    {"XResolution", singleIntToRational},
-    {"XResolution", singleDecimalToRational},
-    {"YResolution", singleRational},
-    {"YResolution", singleIntToRational},
-    {"YResolution", singleDecimalToRational},
-    {"WhitePoint", singleRational},
-    {"WhitePoint", singleIntToRational},
-    {"WhitePoint", singleDecimalToRational},
-    {"WhitePoint", doubleValueToRational},
-    {"PrimaryChromaticities", singleRational},
-    {"PrimaryChromaticities", singleIntToRational},
-    {"PrimaryChromaticities", singleDecimalToRational},
-    {"YCbCrCoefficients", tribleRationalWithBlank},
-    {"YCbCrCoefficients", tribleIntToRationalWithBlank},
-    {"YCbCrCoefficients", tribleIntToRationalWithComma},
-    {"YCbCrCoefficients", tribleDecimalToRationalWithBlank},
-    {"YCbCrCoefficients", tribleDecimalToRatiionalWithComma},
-    {"ReferenceBlackWhite", singleRational},
-    {"ReferenceBlackWhite", singleIntToRational},
-    {"ReferenceBlackWhite", singleDecimalToRational},
-    {"ReferenceBlackWhite", sixDecimalToRationalWithComma},
-    {"ShutterSpeedValue", singleRational},
-    {"ShutterSpeedValue", singleIntToRational},
-    {"ShutterSpeedValue", singleDecimalToRational},
-    {"BrightnessValue", singleRational},
-    {"BrightnessValue", singleIntToRational},
-    {"BrightnessValue", singleDecimalToRational},
-    {"MaxApertureValue", singleRational},
-    {"MaxApertureValue", singleIntToRational},
-    {"MaxApertureValue", singleDecimalToRational},
-    {"SubjectDistance", singleRational},
-    {"SubjectDistance", singleIntToRational},
-    {"SubjectDistance", singleDecimalToRational},
-    {"FlashEnergy", singleRational},
-    {"FlashEnergy", singleIntToRational},
-    {"FlashEnergy", singleDecimalToRational},
-    {"FocalPlaneXResolution", singleRational},
-    {"FocalPlaneXResolution", singleIntToRational},
-    {"FocalPlaneXResolution", singleDecimalToRational},
-    {"FocalPlaneYResolution", singleRational},
-    {"FocalPlaneYResolution", singleIntToRational},
-    {"FocalPlaneYResolution", singleDecimalToRational},
-    {"ExposureIndex", singleRational},
-    {"ExposureIndex", singleIntToRational},
-    {"ExposureIndex", singleDecimalToRational},
-    {"DigitalZoomRatio", singleRational},
-    {"DigitalZoomRatio", singleIntToRational},
-    {"DigitalZoomRatio", singleDecimalToRational},
-    {"GPSAltitude", singleRational},
-    {"GPSAltitude", singleIntToRational},
-    {"GPSAltitude", singleDecimalToRational},
-    {"GPSDOP", singleRational},
-    {"GPSDOP", singleIntToRational},
-    {"GPSDOP", singleDecimalToRational},
-    {"GPSSpeed", singleRational},
-    {"GPSSpeed", singleIntToRational},
-    {"GPSSpeed", singleDecimalToRational},
-    {"GPSTrack", singleRational},
-    {"GPSTrack", singleIntToRational},
-    {"GPSTrack", singleDecimalToRational},
-    {"GPSImgDirection", singleRational},
-    {"GPSImgDirection", singleIntToRational},
-    {"GPSImgDirection", singleDecimalToRational},
-    {"GPSDestLatitude", tribleRationalWithBlank},
-    {"GPSDestLatitude", tribleIntToRationalWithBlank},
-    {"GPSDestLatitude", tribleIntToRationalWithComma},
-    {"GPSDestLongitude", tribleRationalWithBlank},
-    {"GPSDestLongitude", tribleIntToRationalWithBlank},
-    {"GPSDestLongitude", tribleIntToRationalWithComma},
-    {"GPSDestBearing", singleRational},
-    {"GPSDestBearing", singleIntToRational},
-    {"GPSDestBearing", singleDecimalToRational},
-    {"GPSDestDistance", singleRational},
-    {"GPSDestDistance", singleIntToRational},
-    {"GPSDestDistance", singleDecimalToRational},
-    {"GPSVersionID", fourIntWithDot},
-    {"CompressedBitsPerPixel", singleRational},
-    {"CompressedBitsPerPixel", singleIntToRational},
-    {"CompressedBitsPerPixel", singleDecimalToRational},
-    {"DNGVersion", fourIntWithBlank},
-    {"DNGVersion", fourIntWithComma},
-    {"DefaultCropSize", doubleIntWithBlank},
-    {"DefaultCropSize", doubleIntWithComma},
-    {"Gamma", singleRational},
-    {"Gamma", singleIntToRational},
-    {"Gamma", singleDecimalToRational},
-    {"GPSHPositioningError", singleRational},
-    {"GPSHPositioningError", singleIntToRational},
-    {"GPSHPositioningError", singleDecimalToRational},
-    {"LensSpecification", fourRationalWithBlank},
-    {"LensSpecification", fourIntToRationalWithBlank},
-    {"LensSpecification", fourIntToRationalWithComma},
-    {"LensSpecification", fourDecimalToRationalWithBlank},
-    {"LensSpecification", fourDecimalToRationalWithComma},
-    {"ReferenceBlackWhite", sixDecimalToRationalWithBlank},
-    {"SubjectLocation", doubleIntWithBlank},
-    {"SubjectLocation", doubleIntWithComma},
-    {"ImageLength", singleInt},
-    {"ImageWidth", singleInt},
-    {"ISOSpeedRatings", singleInt},
-    {"StandardOutputSensitivity", singleInt},
-    {"RecommendedExposureIndex", singleInt},
-    {"ISOSpeed", singleInt},
-    {"PixelXDimension", singleInt},
-    {"PixelYDimension", singleInt},
-    {"FocalLengthIn35mmFilm", singleInt},
-    {"StripOffsets", singleInt},
-    {"SamplesPerPixel", singleInt},
-    {"RowsPerStrip", singleInt},
-    {"StripByteCounts", singleInt},
-    {"ExifVersion", singleInt},
-    {"ExifVersion", version},
-    {"ISOSpeedLatitudeyyy", singleInt},
-    {"ISOSpeedLatitudezzz", singleInt},
-    {"ComponentsConfiguration", singleInt},
-    {"ComponentsConfiguration", channel},
-    {"PhotographicSensitivity", singleInt},
-    {"FlashpixVersion", singleInt},
-    {"FlashpixVersion", version},
-    {"PhotoMode", singleInt},
-    {"JPEGProc", singleInt},
-    {"HwMnoteCaptureMode", singleInt},
-    {"HwMnoteIsXmageSupported", singleInt},
-    {"HwMnoteXmageMode", singleInt},
-    {"HwMnoteXmageLeft", singleInt},
-    {"HwMnoteXmageTop", singleInt},
-    {"HwMnoteXmageRight", singleInt},
-    {"HwMnoteXmageBottom", singleInt},
-    {"HwMnoteCloudEnhancementMode", singleInt},
-    {"HwMnoteAiEdit", singleInt},
-    {"DateTimeDigitized", dateTimeValidation},
-    {"DateTimeDigitized", dateValidation},
-    {"OffsetTime", dateTimeValidation},
-    {"OffsetTime", dateValidation},
-    {"SubjectArea", doubleIntWithBlank},
-    {"SubjectArea", doubleIntWithComma},
-    {"SourceImageNumberOfCompositeImage", doubleIntWithBlank},
-    {"SourceImageNumberOfCompositeImage", doubleIntWithComma},
-    {"YCbCrSubSampling", doubleIntWithBlank},
-    {"YCbCrSubSampling", doubleIntWithComma},
-    {"MovingPhotoVersion", singleInt},
-    {"MicroVideoPresentationTimestampUS", singleInt},
-};
-
 // validate the value range. For example GPSLatitudeRef the value must be 'N' or 'S'.
 int32_t ExifMetadatFormatter::ValidateValueRange(const std::string &keyName, const std::string &value)
 {
     // 1. to find if any value range validation configuratiion according to exif tag in std::map container
-    auto iter = valueRangeValidateConfig.find(keyName);
-    if (iter == valueRangeValidateConfig.end()) {
+    auto iter = ExifMetadatFormatter::GetInstance().valueRangeValidateConfig_.find(keyName);
+    if (iter == ExifMetadatFormatter::GetInstance().valueRangeValidateConfig_.end()) {
         // if no range validation for key default is success.
         return Media::SUCCESS;
     }
@@ -1338,8 +1356,8 @@ void ExifMetadatFormatter::ConvertRangeValue(const std::string &keyName, std::st
         value = "3";
         return;
     }
-    auto iter = valueRangeValidateConfig.find(keyName);
-    if (iter == valueRangeValidateConfig.end()) {
+    auto iter = ExifMetadatFormatter::GetInstance().valueRangeValidateConfig_.find(keyName);
+    if (iter == ExifMetadatFormatter::GetInstance().valueRangeValidateConfig_.end()) {
         return;
     }
 
@@ -1376,31 +1394,14 @@ bool ExifMetadatFormatter::IsForbiddenValue(const std::string &value)
     return false;
 }
 
-std::multimap<std::string, std::string> ExifMetadatFormatter::valueTemplateConfig = {
-    {"ExposureTime", "(\\d+/\\d+) sec\\."},
-    {"ExposureTime", "(\\d+\\.\\d+|\\d+) sec\\."},
-    {"FNumber", "f/(\\d+\\.\\d+)"},
-    {"ApertureValue", "(\\d+\\.\\d+) EV \\(f/\\d+\\.\\d+\\)"},
-    {"ExposureBiasValue", "(\\d+\\.\\d+) EV"},
-    {"FocalLength", "(\\d+\\.\\d+) mm"},
-    {"ShutterSpeedValue", "(\\d+\\.\\d+) EV \\(\\d+/\\d+ sec\\.\\)"},
-    {"BrightnessValue", "(\\d+\\.\\d+) EV \\(\\d+\\.\\d+ cd/m\\^\\d+\\)"},
-    {"MaxApertureValue", "(\\d+\\.\\d+) EV \\(f/\\d+\\.\\d+\\)"},
-    {"SubjectDistance", "(\\d+\\.\\d+) m"},
-    {"SubjectArea", "\\(x,y\\) = \\((\\d+,\\d+)\\)"},
-    {"ExifVersion", "Exif Version ([0-9]{1,2}\\.[0-9]{1,2})"},
-    {"FlashpixVersion", "FlashPix Version ([0-9]{1,2}\\.[0-9]{1,2})"},
-    {"Copyright", "^(.*) \\(Photographer\\) \\- \\[None\\] \\(Editor\\)$"},
-};
-
 void ExifMetadatFormatter::ExtractValue(const std::string &keyName, std::string &value)
 {
-    auto it = ExifMetadatFormatter::valueTemplateConfig.find(keyName);
-    if (it == ExifMetadatFormatter::valueTemplateConfig.end()) {
+    auto it = ExifMetadatFormatter::GetInstance().valueTemplateConfig_.find(keyName);
+    if (it == ExifMetadatFormatter::GetInstance().valueTemplateConfig_.end()) {
         return;
     }
-    for (; it != ExifMetadatFormatter::valueTemplateConfig.end() &&
-        it != ExifMetadatFormatter::valueTemplateConfig.upper_bound(keyName);
+    for (; it != ExifMetadatFormatter::GetInstance().valueTemplateConfig_.end() &&
+        it != ExifMetadatFormatter::GetInstance().valueTemplateConfig_.upper_bound(keyName);
         it++) {
         std::regex pattern(it->second);
         for (std::sregex_iterator i = std::sregex_iterator(value.begin(), value.end(), pattern);
@@ -1425,16 +1426,16 @@ int32_t ExifMetadatFormatter::ConvertValueFormat(const std::string &keyName, std
         IMAGE_LOGD("ConvertValueFormat keyName is [%{public}s] value is [%{public}s].", keyName.c_str(), value.c_str());
     }
 
-    auto it = ExifMetadatFormatter::valueFormatConvertConfig.find(keyName);
-    if (it == ExifMetadatFormatter::valueFormatConvertConfig.end()) {
+    auto it = ExifMetadatFormatter::GetInstance().valueFormatConvertConfig_.find(keyName);
+    if (it == ExifMetadatFormatter::GetInstance().valueFormatConvertConfig_.end()) {
         IMAGE_LOGD("No format validation needed. Defaulting to success.");
         return Media::SUCCESS;
     }
     IMAGE_LOGD("Validating value format. Key: %{public}s", keyName.c_str());
 
     // get first iterator according to keyName
-    for (; it != ExifMetadatFormatter::valueFormatConvertConfig.end() &&
-        it != ExifMetadatFormatter::valueFormatConvertConfig.upper_bound(keyName);
+    for (; it != ExifMetadatFormatter::GetInstance().valueFormatConvertConfig_.end() &&
+        it != ExifMetadatFormatter::GetInstance().valueFormatConvertConfig_.upper_bound(keyName);
         it++) {
         IMAGE_LOGD("Validating value format in loop. Key: %{public}s, Regex: %{public}s", (it->first).c_str(),
             (it->second).second.c_str());
