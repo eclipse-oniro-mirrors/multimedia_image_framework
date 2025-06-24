@@ -205,6 +205,7 @@
     <target name="textureencodetest">
         <preparer>
             <option name="push" value="images/test.jpg -> /data/local/tmp/image" src="res"/>
+            <option name="push" value="images/RGBA1010102.rgba -> /data/local/tmp/image" src="res"/>
         </preparer>
     </target>
     <target name="jpgyuvtest">
