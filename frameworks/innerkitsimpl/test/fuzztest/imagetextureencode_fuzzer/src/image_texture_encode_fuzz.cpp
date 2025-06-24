@@ -68,7 +68,7 @@ struct ParamRand {
     int32_t quality = 0;
     uint8_t blockX = 0;
     uint8_t blockY = 0;
-    string format = "";
+    std::string format = "";
 };
 
 std::string formatArray[4] = {"image/sdr_sut_superfast_4x4", "image/sdr_astc_4x4", "image/hdr_astc_4x4",
