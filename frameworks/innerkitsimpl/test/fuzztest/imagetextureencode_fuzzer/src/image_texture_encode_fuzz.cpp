@@ -46,7 +46,7 @@ constexpr uint8_t MAX_DIM = 12;
 constexpr int32_t MAX_LENGTH_MODULO = 8449;
 constexpr int32_t MAX_QUALITY_MODULO = 101;
 constexpr uint8_t MAX_BLOCK_MODULO = 14;
-constexpr int32_t MAX_RANDOM_BYTES = 7; // 2bytes width/height, 1 byte quality/blockX/blockY
+constexpr int32_t MAX_RANDOM_BYTES = 8; // 2bytes width/height, 1 byte quality/blockX/blockY
 constexpr uint8_t MOVE_ONE_BYTE = 8;
 constexpr uint8_t NUM_TWO_BYTES = 2;
 
@@ -68,7 +68,11 @@ struct ParamRand {
     int32_t quality = 0;
     uint8_t blockX = 0;
     uint8_t blockY = 0;
+    string format = "";
 };
+
+std::string formatArray[4] = {"image/sdr_sut_superfast_4x4", "image/sdr_astc_4x4", "image/hdr_astc_4x4",
+    "image/astc/4*4"}; 
 
 struct AstcEncCheckInfo {
     uint32_t pixmapInSize = 0;
@@ -119,6 +123,7 @@ static ParamRand GetParametersRandom(const uint8_t *data, size_t size)
         paramRand.quality = static_cast<int32_t>(*dataTmp++) % MAX_QUALITY_MODULO;
         paramRand.blockX = *dataTmp++ % MAX_BLOCK_MODULO;
         paramRand.blockY = *dataTmp++ % MAX_BLOCK_MODULO;
+        paramRand.format = formatArray[*dataTmp++ % 4];
     }
     IMAGE_LOGI("GetParametersRandom success, width %{public}d height %{public}d quality %{public}d \
         blockX %{public}d blockY %{public}d",
@@ -193,11 +198,10 @@ static QualityProfile GetAstcQuality(int32_t quality)
     return privateProfile;
 }
 
-static bool InitAstcEncPara(TextureEncodeOptions &param, ParamRand paramRand)
+static bool InitAstcEncPara(TextureEncodeOptions &param, ParamRand paramRand, PlEncodeOptions astcOpts)
 {
     SutProfile sutProfile;
     QualityProfile qualityProfile;
-    PlEncodeOptions astcOpts = { "image/astc/4*4", paramRand.quality, 1 };
 
     if (astcOpts.format == "image/sdr_sut_superfast_4x4") { // sut sdr encode
         if (!GetSutSdrProfile(astcOpts, sutProfile, qualityProfile)) {
@@ -391,7 +395,8 @@ bool TextureEncMainFuzzTest(const uint8_t *data, size_t size)
     uint8_t colorData;
     InitTextureEncodeOptions(param, colorData);
     param.extInfoBuf = &colorData;
-    if (!InitAstcEncPara(param, paramRand)) {
+    PlEncodeOptions astcOpts = { paramRand.format, paramRand.quality, 1 };
+    if (!InitAstcEncPara(param, paramRand, astcOpts)) {
         IMAGE_LOGE("TextureEncMainFuzzTest InitAstcEncPara failed!");
         free(pixmapIn);
         return ERROR;
