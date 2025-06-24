@@ -72,7 +72,7 @@ struct ParamRand {
 };
 
 std::string formatArray[4] = {"image/sdr_sut_superfast_4x4", "image/sdr_astc_4x4", "image/hdr_astc_4x4",
-    "image/astc/4*4"}; 
+    "image/astc/4*4"};
 
 struct AstcEncCheckInfo {
     uint32_t pixmapInSize = 0;
@@ -123,7 +123,7 @@ static ParamRand GetParametersRandom(const uint8_t *data, size_t size)
         paramRand.quality = static_cast<int32_t>(*dataTmp++) % MAX_QUALITY_MODULO;
         paramRand.blockX = *dataTmp++ % MAX_BLOCK_MODULO;
         paramRand.blockY = *dataTmp++ % MAX_BLOCK_MODULO;
-        paramRand.format = formatArray[*dataTmp++ % 4];
+        paramRand.format = formatArray[*dataTmp++ % ASTC_NUM_4];
     }
     IMAGE_LOGI("GetParametersRandom success, width %{public}d height %{public}d quality %{public}d \
         blockX %{public}d blockY %{public}d",
