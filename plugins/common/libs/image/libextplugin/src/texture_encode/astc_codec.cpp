@@ -1030,7 +1030,7 @@ bool AstcCodec::InitAstcExtendInfo(AstcExtendInfo &extendInfo)
         IMAGE_LOGE("[AstcCodec] memset extendInfo failed!");
         return false;
     }
-    extendInfo.extendNums = astcPixelMap_->IsHdr() ? ASTC_EXTEND_INFO_TLV_NUM_6 : ASTC_EXTEND_INFO_TLV_NUM_2;
+    extendInfo.extendNums = astcPixelMap_->IsHdr() ? ASTC_EXTEND_INFO_TLV_NUM_6 : ASTC_EXTEND_INFO_TLV_NUM;
     extendInfo.extendBufferSumBytes = 0;
     if (astcPixelMap_->IsHdr()) {
         if (!FillMetaData(extendInfo, astcPixelMap_)) {
