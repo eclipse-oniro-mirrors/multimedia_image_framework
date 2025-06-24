@@ -165,7 +165,7 @@ bool PixelYuvExtUtils::NV12Rotate(uint8_t *src, PixelSize &size, YUVDataInfo &in
     auto dstUV = dst + dstStrides.uvOffset;
     IMAGE_LOGI("Image params: srcSizeW=%{public}d, srcSizeH=%{public}d, "
         "dstSizeW=%{public}d, dstSizeH=%{public}d, RotationMode=%{public}d",
-        size.srcW, size.srcH, size.dstW, size.dstH, 
+        size.srcW, size.srcH, size.dstW, size.dstH,
         static_cast<int>(rotateNum));
     IMAGE_LOGI("Strides: srcYStride=%{public}d, srcUVStride=%{public}d, tmpYStride=%{public}d, "
         "tmpUStride=%{public}d, tmpVStride=%{public}d, dstYStride=%{public}d, dstUVStride=%{public}d",
