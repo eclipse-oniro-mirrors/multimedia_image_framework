@@ -65,7 +65,7 @@ uint32_t HeapMemory::Release()
 {
 #if !defined(IOS_PLATFORM) &&!defined(ANDROID_PLATFORM)
     IMAGE_LOGD("HeapMemory::Release IN");
-    CHECK_INFO_RETURN_RET_LOG(data.data != nullptr, ERR_IMAGE_DATA_ABNORMAL, "HeapMemory::Release nullptr data");
+    CHECK_INFO_RETURN_RET_LOG(data.data == nullptr, ERR_IMAGE_DATA_ABNORMAL, "HeapMemory::Release nullptr data");
     free(data.data);
     data.data = nullptr;
 #endif

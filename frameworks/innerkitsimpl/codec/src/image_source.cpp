@@ -3834,9 +3834,10 @@ void ImageSource::DumpInputData(const std::string &fileSuffix)
     if (!ImageSystemProperties::GetDumpImageEnabled()) {
         return;
     }
-
-    CHECK_ERROR_RETURN_LOG(sourceStreamPtr_ == nullptr, "ImageSource::DumpInputData failed, streamPtr is null");
-
+    if (sourceStreamPtr_ == nullptr) {
+        IMAGE_LOGI("ImageSource::DumpInputData failed, streamPtr is null");
+        return;
+    }
     uint8_t *data = sourceStreamPtr_->GetDataPtr();
     size_t size = sourceStreamPtr_->GetStreamSize();
 
