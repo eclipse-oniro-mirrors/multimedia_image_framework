@@ -21,6 +21,7 @@
 #include <string>
 #include <sstream>
 #include "color_space.h"
+#include <vector>
 
 namespace OHOS {
 namespace Media {

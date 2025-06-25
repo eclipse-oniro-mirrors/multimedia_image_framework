@@ -29,8 +29,6 @@ namespace Media {
 
 class ColorUtils {
 public:
-    static std::map<ColorManager::ColorSpaceName,
-        OHOS::HDI::Display::Graphic::Common::V1_0::CM_ColorSpaceInfo> COLORSPACE_NAME_TO_COLORINFO_MAP;
     template <typename T>
     static ColorManager::ColorSpaceName CicpToColorSpace(T primaries, T transfer,
         T matrix, uint8_t range);
@@ -40,6 +38,8 @@ public:
     static uint16_t GetPrimaries(ColorManager::ColorSpaceName name);
 #if !defined(_WIN32) && !defined(_APPLE) && !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
     static HDI::Display::Graphic::Common::V1_0::CM_ColorSpaceType ConvertToCMColor(ColorManager::ColorSpaceName name);
+    static std::map<ColorManager::ColorSpaceName,
+        OHOS::HDI::Display::Graphic::Common::V1_0::CM_ColorSpaceInfo> COLORSPACE_NAME_TO_COLORINFO_MAP;
 #endif
 };
 } // namespace Media

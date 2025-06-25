@@ -3410,7 +3410,7 @@ bool ProcessAstcMetadata(PixelAstc* pixelAstc, size_t astcSize, const AstcMetada
                                  dstMemory->data.size, dstMemory->GetType(), nullptr);
     }
     pixelAstc->SetHdr(true);
-
+#if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
     if (pixelAstc->IsHdr() && pixelAstc->GetFd() != nullptr) {
         sptr<SurfaceBuffer> dstBuffer(reinterpret_cast<SurfaceBuffer*>(pixelAstc->GetFd()));
         GSError ret = dstBuffer->SetMetadata(ATTRKEY_HDR_METADATA_TYPE, astcMetadata.hdrMetadataTypeVec);
@@ -3423,6 +3423,7 @@ bool ProcessAstcMetadata(PixelAstc* pixelAstc, size_t astcSize, const AstcMetada
         CHECK_ERROR_RETURN_RET_LOG(!vpeRet, false, "%{public}s dynamicData set failed", __func__);
         return true;
     }
+#endif
     return false;
 }
 

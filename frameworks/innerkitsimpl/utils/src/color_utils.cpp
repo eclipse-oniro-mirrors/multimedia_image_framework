@@ -13,7 +13,9 @@
  * limitations under the License.
  */
 #include "color_utils.h"
+#if !defined(_APPLE) && !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
 using namespace OHOS::HDI::Display::Graphic::Common::V1_0;
+#endif
 
 namespace OHOS {
 namespace Media {
@@ -55,6 +57,7 @@ enum CicpMatrix {
     CICP_MATRIX_BT2100_ICTCP = 14,
 };
 
+#if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
 std::map<ColorManager::ColorSpaceName, CM_ColorSpaceInfo> ColorUtils::COLORSPACE_NAME_TO_COLORINFO_MAP = {
     { ColorManager::BT601_EBU,
         CM_ColorSpaceInfo {COLORPRIMARIES_BT601_P, TRANSFUNC_BT709, MATRIX_BT601_P, RANGE_FULL} },
@@ -110,6 +113,7 @@ std::map<ColorManager::ColorSpaceName, CM_ColorSpaceInfo> ColorUtils::COLORSPACE
     { ColorManager::DISPLAY_BT2020_PQ,
         CM_ColorSpaceInfo {COLORPRIMARIES_BT2020, TRANSFUNC_PQ, MATRIX_BT2020, RANGE_FULL} },
 };
+#endif
 
 ColorManager::ColorSpaceName P3ToColorSpace(uint16_t transfer, uint8_t range)
 {
