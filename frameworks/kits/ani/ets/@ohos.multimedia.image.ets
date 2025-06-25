@@ -17,7 +17,7 @@ import type colorSpaceManager from '@ohos.graphics.colorSpaceManager';
 
 export namespace image {
 
-  loadLibrary("image_ani");
+  loadLibrary("image_ani_core");
 
   enum DecodingDynamicRange {
     AUTO = 0,
