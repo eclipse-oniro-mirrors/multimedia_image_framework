@@ -36,7 +36,7 @@ public:
     ~ImageSourceImpl();
     int64_t GetImplPtr();
 
-    ImageInfo GetImageInfoSyncWithIndex(uint32_t index);
+    ImageInfo GetImageInfoSyncWithIndex(int32_t index);
     ImageInfo GetImageInfoSync();
     PixelMap CreatePixelMapSyncWithOptions(DecodingOptions const& options);
     PixelMap CreatePixelMapSync();

@@ -180,7 +180,7 @@ int64_t ImageSourceImpl::GetImplPtr()
     return reinterpret_cast<uintptr_t>(this);
 }
 
-ImageInfo ImageSourceImpl::GetImageInfoSyncWithIndex(uint32_t index)
+ImageInfo ImageSourceImpl::GetImageInfoSyncWithIndex(int32_t index)
 {
     OHOS::Media::ImageInfo imageinfo;
     bool isHdr = false;
@@ -199,13 +199,17 @@ ImageInfo ImageSourceImpl::GetImageInfoSyncWithIndex(uint32_t index)
 
 ImageInfo ImageSourceImpl::GetImageInfoSync()
 {
-    uint32_t index = 0;
+    int32_t index = 0;
     return GetImageInfoSyncWithIndex(index);
 }
 
 static bool ParseRotate(DecodingOptions const& options, OHOS::Media::DecodeOptions &dst, std::string &errMsg)
 {
     if (options.rotate.has_value()) {
+        if (options.rotate.value() < 0) {
+            errMsg = "rotate is invalid value!";
+            return false;
+        }
         dst.rotateNewDegrees = options.rotate.value();
         if (dst.rotateNewDegrees >= 0 && dst.rotateNewDegrees <= 360) { // 360 is the maximum rotation angle.
             dst.rotateDegrees = static_cast<float>(dst.rotateNewDegrees);
