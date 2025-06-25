@@ -163,6 +163,13 @@ bool PixelYuvExtUtils::NV12Rotate(uint8_t *src, PixelSize &size, YUVDataInfo &in
     int dstHeight = size.dstH;
     auto dstY = dst + dstStrides.yOffset;
     auto dstUV = dst + dstStrides.uvOffset;
+    IMAGE_LOGI("Image params: srcSizeW=%{public}d, srcSizeH=%{public}d, "
+        "dstSizeW=%{public}d, dstSizeH=%{public}d, RotationMode=%{public}d",
+        size.srcW, size.srcH, size.dstW, size.dstH,
+        static_cast<int>(rotateNum));
+    IMAGE_LOGI("Strides: srcYStride=%{public}d, srcUVStride=%{public}d, tmpYStride=%{public}d, "
+        "tmpUStride=%{public}d, tmpVStride=%{public}d, dstYStride=%{public}d, dstUVStride=%{public}d",
+        srcYStride, srcUVStride, tmpYStride, tmpUStride, tmpVStride, dstYStride, dstUVStride);
     if (converter.I420ToNV12(tmpY, tmpYStride, tmpU, tmpUStride, tmpV, tmpVStride,
         dstY, dstYStride, dstUV, dstUVStride, dstWidth, dstHeight) == -1) {
         return false;
