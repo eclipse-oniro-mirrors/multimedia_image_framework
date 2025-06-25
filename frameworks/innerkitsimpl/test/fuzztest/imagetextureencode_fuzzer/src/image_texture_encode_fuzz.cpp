@@ -46,7 +46,7 @@ constexpr uint8_t MAX_DIM = 12;
 constexpr int32_t MAX_LENGTH_MODULO = 8449;
 constexpr int32_t MAX_QUALITY_MODULO = 101;
 constexpr uint8_t MAX_BLOCK_MODULO = 14;
-constexpr int32_t MAX_RANDOM_BYTES = 7; // 2bytes width/height, 1 byte quality/blockX/blockY
+constexpr int32_t MAX_RANDOM_BYTES = 8; // 2bytes width/height, 1 byte quality/blockX/blockY
 constexpr uint8_t MOVE_ONE_BYTE = 8;
 constexpr uint8_t NUM_TWO_BYTES = 2;
 
@@ -68,7 +68,11 @@ struct ParamRand {
     int32_t quality = 0;
     uint8_t blockX = 0;
     uint8_t blockY = 0;
+    std::string format = "";
 };
+
+std::string formatArray[4] = {"image/sdr_sut_superfast_4x4", "image/sdr_astc_4x4", "image/hdr_astc_4x4",
+    "image/astc/4*4"};
 
 struct AstcEncCheckInfo {
     uint32_t pixmapInSize = 0;
@@ -119,6 +123,7 @@ static ParamRand GetParametersRandom(const uint8_t *data, size_t size)
         paramRand.quality = static_cast<int32_t>(*dataTmp++) % MAX_QUALITY_MODULO;
         paramRand.blockX = *dataTmp++ % MAX_BLOCK_MODULO;
         paramRand.blockY = *dataTmp++ % MAX_BLOCK_MODULO;
+        paramRand.format = formatArray[*dataTmp++ % ASTC_NUM_4];
     }
     IMAGE_LOGI("GetParametersRandom success, width %{public}d height %{public}d quality %{public}d \
         blockX %{public}d blockY %{public}d",
@@ -163,7 +168,7 @@ static bool GetSutSdrProfile(PlEncodeOptions &astcOpts,
     return false;
 }
 
-static bool GetAstcSdrProfile(PlEncodeOptions &astcOpts, QualityProfile &privateProfile)
+static bool GetAstcProfile(PlEncodeOptions &astcOpts, QualityProfile &privateProfile)
 {
     auto astcNode = ASTC_FORMAT_MAP.find(astcOpts.format);
     if (astcNode != ASTC_FORMAT_MAP.end()) {
@@ -173,7 +178,7 @@ static bool GetAstcSdrProfile(PlEncodeOptions &astcOpts, QualityProfile &private
             privateProfile = qualityNode->second;
             return true;
         }
-        IMAGE_LOGE("GetAstcSdrProfile failed %{public}d is invalid!", astcOpts.quality);
+        IMAGE_LOGE("GetAstcProfile failed %{public}d is invalid!", astcOpts.quality);
         return false;
     }
     return false;
@@ -193,11 +198,10 @@ static QualityProfile GetAstcQuality(int32_t quality)
     return privateProfile;
 }
 
-static bool InitAstcEncPara(TextureEncodeOptions &param, ParamRand paramRand)
+static bool InitAstcEncPara(TextureEncodeOptions &param, ParamRand paramRand, PlEncodeOptions astcOpts)
 {
     SutProfile sutProfile;
     QualityProfile qualityProfile;
-    PlEncodeOptions astcOpts = { "image/astc/4*4", paramRand.quality, 1 };
 
     if (astcOpts.format == "image/sdr_sut_superfast_4x4") { // sut sdr encode
         if (!GetSutSdrProfile(astcOpts, sutProfile, qualityProfile)) {
@@ -206,12 +210,19 @@ static bool InitAstcEncPara(TextureEncodeOptions &param, ParamRand paramRand)
         }
         param.textureEncodeType = TextureEncodeType::SDR_SUT_SUPERFAST_4X4;
     } else if (astcOpts.format == "image/sdr_astc_4x4") { // astc sdr encode
-        if (!GetAstcSdrProfile(astcOpts, qualityProfile)) {
-            IMAGE_LOGE("InitAstcEncPara GetAstcSdrProfile failed");
+        if (!GetAstcProfile(astcOpts, qualityProfile)) {
+            IMAGE_LOGE("InitAstcEncPara GetAstcProfile failed");
             return false;
         }
         sutProfile = SutProfile::SKIP_SUT;
         param.textureEncodeType = TextureEncodeType::SDR_ASTC_4X4;
+    } else if (astcOpts.format == "image/hdr_astc_4x4") { // astc hdr encode
+        if (!GetAstcProfile(astcOpts, qualityProfile)) {
+            IMAGE_LOGE("InitAstcEncPara GetAstcProfile failed");
+            return false;
+        }
+        sutProfile = SutProfile::SKIP_SUT;
+        param.textureEncodeType = TextureEncodeType::HDR_ASTC_4X4;
     } else if (astcOpts.format.find("image/astc") == 0) { // old astc encode
         qualityProfile = GetAstcQuality(astcOpts.quality);
         sutProfile = SutProfile::SKIP_SUT;
@@ -226,7 +237,7 @@ static bool InitAstcEncPara(TextureEncodeOptions &param, ParamRand paramRand)
     param.width_ = paramRand.width;
     param.height_ = paramRand.height;
     param.stride_ = paramRand.width;
-    param.privateProfile_ = GetAstcQuality(astcOpts.quality);
+    param.privateProfile_ = qualityProfile;
     param.outIsSut = false;
     param.blockX_ = paramRand.blockX;
     param.blockY_ = paramRand.blockY;
@@ -292,7 +303,6 @@ static void FillAstcEncCheckInfo(AstcEncCheckInfo &checkInfo, uint32_t pixmapInS
                                  uint32_t extendInfoSize, uint32_t extendBufferSize)
 {
     checkInfo.pixmapInSize = pixmapInSize;
-    checkInfo.pixmapFormat = PixelFormat::RGBA_8888;
     checkInfo.astcBufferSize = astcBufferSize;
     checkInfo.extendInfoSize = extendInfoSize;
     checkInfo.extendBufferSize = extendBufferSize;
@@ -323,7 +333,9 @@ static bool CheckAstcEncInput(TextureEncodeOptions &param, AstcEncCheckInfo chec
         IMAGE_LOGE("CheckAstcEncInput block %{public}d x %{public}d > 12 x 12!", param.blockX_, param.blockY_);
         return false;
     }
-    if (checkInfo.pixmapFormat != PixelFormat::RGBA_8888) {
+    const bool isAstcHdr = (param.textureEncodeType == TextureEncodeType::HDR_ASTC_4X4);
+    const PixelFormat expectedFormat = isAstcHdr ? PixelFormat::RGBA_1010102 : PixelFormat::RGBA_8888;
+    if (checkInfo.pixmapFormat != expectedFormat) {
         IMAGE_LOGE("CheckAstcEncInput pixmapFormat %{public}d must be RGBA!", checkInfo.pixmapFormat);
         return false;
     }
@@ -383,7 +395,8 @@ bool TextureEncMainFuzzTest(const uint8_t *data, size_t size)
     uint8_t colorData;
     InitTextureEncodeOptions(param, colorData);
     param.extInfoBuf = &colorData;
-    if (!InitAstcEncPara(param, paramRand)) {
+    PlEncodeOptions astcOpts = { paramRand.format, paramRand.quality, 1 };
+    if (!InitAstcEncPara(param, paramRand, astcOpts)) {
         IMAGE_LOGE("TextureEncMainFuzzTest InitAstcEncPara failed!");
         free(pixmapIn);
         return ERROR;
@@ -406,6 +419,11 @@ bool TextureEncMainFuzzTest(const uint8_t *data, size_t size)
     // Fill checkInfo
     AstcEncCheckInfo checkInfo;
     FillAstcEncCheckInfo(checkInfo, pixelMapBytes, packSize, ASTC_NUM_4, extendInfo.extendBufferSumBytes);
+    if (param.privateProfile_ == HIGH_SPEED_PROFILE_HIGHBITS) {
+        checkInfo.pixmapFormat = PixelFormat::RGBA_1010102;
+    } else {
+        checkInfo.pixmapFormat = PixelFormat::RGBA_8888;
+    }
     // GPU & Software astc encode process
     AstcEncProcess(param, pixmapIn, astcBuffer, checkInfo);
 
