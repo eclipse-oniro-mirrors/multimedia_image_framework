@@ -2685,10 +2685,12 @@ bool PixelMap::WriteAstcInfoToParcel(Parcel &parcel) const
             IMAGE_LOGE("write astcrealSize_.height:[%{public}d] to parcel failed.", astcrealSize_.height);
             return false;
         }
+#if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
         if (!parcel.WriteBool(static_cast<PixelAstc*>(const_cast<PixelMap*>(this))->IsHdr())) {
             IMAGE_LOGE("write astc hdr flag to parcel failed.");
             return false;
         }
+#endif
     }
     return true;
 }
@@ -2847,7 +2849,9 @@ bool PixelMap::ReadAstcInfo(Parcel &parcel, PixelMap *pixelMap)
         realSize.height = parcel.ReadInt32();
         pixelMap->SetAstcRealSize(realSize);
         bool isHdr = parcel.ReadBool();
+#if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
         static_cast<PixelAstc*>(pixelMap)->SetHdr(isHdr);
+#endif
     }
     return true;
 }
