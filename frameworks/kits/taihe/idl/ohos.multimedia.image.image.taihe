@@ -43,8 +43,8 @@ enum ResolutionQuality: i32 {
 }
 
 struct Size {
-  width: i32;
-  height: i32;
+  width: f64;
+  height: f64;
 }
 
 enum PropertyKey: String {
@@ -280,8 +280,8 @@ enum AllocatorType: i32 {
 
 struct Region {
   size: Size;
-  x: i32;
-  y: i32;
+  x: f64;
+  y: f64;
 }
 
 // Can't use struct because struct is copied instead of referenced, so data changes to "pixels" in C++ will not be reflected in ArkTS
@@ -298,8 +298,8 @@ interface PositionArea {
 
 struct ImageInfo {
   size: Size;
-  density: i32;
-  stride: i32;
+  density: f64;
+  stride: f64;
   pixelFormat: PixelMapFormat;
   alphaType: AlphaType;
   mimeType: String;
@@ -313,34 +313,34 @@ enum CropAndScaleStrategy: i32 {
 
 struct PackingOption {
   format: String;
-  quality: i32;
-  bufferSize: Optional<i32>;
+  quality: f64;
+  bufferSize: Optional<f64>;
   desiredDynamicRange: Optional<PackingDynamicRange>;
   needsPackProperties: Optional<bool>;
 }
 
 struct PackingOptionsForSequence {
-  frameCount: i32;
-  delayTimeList: Array<i32>;
-  disposalTypes: Optional<Array<i32>>;
-  loopCount: Optional<i32>;
+  frameCount: f64;
+  delayTimeList: Array<f64>;
+  disposalTypes: Optional<Array<f64>>;
+  loopCount: Optional<f64>;
 }
 
 struct ImagePropertyOptions {
-  index: Optional<i32>;
+  index: Optional<f64>;
   defaultValue: Optional<String>;
 }
 
 struct DecodingOptions {
-  index: Optional<i32>;
-  sampleSize: Optional<i32>;
-  rotate: Optional<i32>;
+  index: Optional<f64>;
+  sampleSize: Optional<f64>;
+  rotate: Optional<f64>;
   editable: Optional<bool>;
   desiredSize: Optional<Size>;
   desiredRegion: Optional<Region>;
   desiredPixelFormat: Optional<PixelMapFormat>;
   photoDesiredPixelFormat: Optional<PixelMapFormat>; // not exposed to the user
-  fitDensity: Optional<i32>;
+  fitDensity: Optional<f64>;
   fillColor: Optional<i32>; // not exposed to the user
   SVGResize: Optional<i32>; // not exposed to the user
   desiredColorSpace: Optional<@sts_type("colorSpaceManager.ColorSpaceManager") Opaque>;
@@ -352,8 +352,8 @@ struct DecodingOptions {
 
 struct Component {
   @readonly componentType: ComponentType;
-  @readonly rowStride: i32;
-  @readonly pixelStride: i32;
+  @readonly rowStride: f64;
+  @readonly pixelStride: f64;
   @readonly byteBuffer: @arraybuffer Array<u8>;
 }
 
@@ -367,37 +367,37 @@ struct InitializationOptions {
 }
 
 struct SourceOptions {
-  sourceDensity: i32;
+  sourceDensity: f64;
   sourcePixelFormat: Optional<PixelMapFormat>;
   sourceSize: Optional<Size>;
 }
 
 struct HdrStaticMetadata {
-  displayPrimariesX: Array<f32>;
-  displayPrimariesY: Array<f32>;
-  whitePointX: f32;
-  whitePointY: f32;
-  maxLuminance: f32;
-  minLuminance: f32;
-  maxContentLightLevel: f32;
-  maxFrameAverageLightLevel: f32;
+  displayPrimariesX: Array<f64>;
+  displayPrimariesY: Array<f64>;
+  whitePointX: f64;
+  whitePointY: f64;
+  maxLuminance: f64;
+  minLuminance: f64;
+  maxContentLightLevel: f64;
+  maxFrameAverageLightLevel: f64;
 }
 
 struct GainmapChannel {
-  gainmapMax: f32;
-  gainmapMin: f32;
-  gamma: f32;
-  baseOffset: f32;
-  alternateOffset: f32;
+  gainmapMax: f64;
+  gainmapMin: f64;
+  gamma: f64;
+  baseOffset: f64;
+  alternateOffset: f64;
 }
 
 struct HdrGainmapMetadata {
-  writerVersion: i32;
-  miniVersion: i32;
-  gainmapChannelCount: i32;
+  writerVersion: f64;
+  miniVersion: f64;
+  gainmapChannelCount: f64;
   useBaseColorFlag: bool;
-  baseHeadroom: f32;
-  alternateHeadroom: f32;
+  baseHeadroom: f64;
+  alternateHeadroom: f64;
   channels: Array<GainmapChannel>;
 }
 
@@ -442,7 +442,7 @@ struct DecodingOptionsForPicture {
 struct AuxiliaryPictureInfo {
   auxiliaryPictureType: AuxiliaryPictureType;
   size: Size;
-  rowStride: i32;
+  rowStride: f64;
   pixelFormat: PixelMapFormat;
   colorSpace: @sts_type("colorSpaceManager.ColorSpaceManager") Opaque;
 }
@@ -623,14 +623,14 @@ interface ImageSource {
   GetImplPtr(): i64;
   @gen_async("getImageInfo")
   @gen_promise("getImageInfoPromiseWithIndex")
-  GetImageInfoSyncWithIndex(index: u32): ImageInfo;
+  GetImageInfoSyncWithIndex(index: f64): ImageInfo;
 
   @gen_async("getImageInfo")
   @gen_promise("getImageInfoPromise")
   GetImageInfoSync(): ImageInfo;
 
-  @!sts_inject_into_interface("getImageInfoSync(index: int | undefined): ImageInfo;")
-  @!sts_inject_into_class("""getImageInfoSync(index: int | undefined): ImageInfo {
+  @!sts_inject_into_interface("getImageInfoSync(index: double | undefined): ImageInfo;")
+  @!sts_inject_into_class("""getImageInfoSync(index: double | undefined): ImageInfo {
             if (index === undefined) {
                 return this.getImageInfoSync();
             } else {
@@ -639,8 +639,8 @@ interface ImageSource {
         }
   """)
 
-  @!sts_inject_into_interface("getImageInfo(index: int | undefined): Promise<ImageInfo>;")
-  @!sts_inject_into_class("""getImageInfo(index: int | undefined): Promise<ImageInfo> {
+  @!sts_inject_into_interface("getImageInfo(index: double | undefined): Promise<ImageInfo>;")
+  @!sts_inject_into_class("""getImageInfo(index: double | undefined): Promise<ImageInfo> {
             if (index === undefined) {
                 return this.getImageInfoPromise();
             } else {
@@ -691,14 +691,14 @@ interface ImageSource {
 
   @gen_async("getDelayTimeList")
   @gen_promise("getDelayTimeList")
-  GetDelayTimeListSync(): Array<i32>;
+  GetDelayTimeListSync(): Array<f64>;
 
   @gen_promise("getDisposalTypeList")
-  GetDisposalTypeListSync(): Array<i32>;
+  GetDisposalTypeListSync(): Array<f64>;
 
   @gen_async("getFrameCount")
   @gen_promise("getFrameCount")
-  GetFrameCountSync(): i32;
+  GetFrameCountSync(): f64;
 
   @gen_promise("getImageProperty")
   GetImagePropertySync(key: PropertyKey, options: Optional<ImagePropertyOptions>): String;
@@ -714,7 +714,7 @@ interface ImageSource {
 
   @gen_async("updateData")
   @gen_promise("updateData")
-  UpdateDataSync(buf: @arraybuffer Array<u8>, isFinished: bool, offset: i32, length: i32): void;
+  UpdateDataSync(buf: @arraybuffer Array<u8>, isFinished: bool, offset: f64, length: f64): void;
 
   @gen_async("release")
   @gen_promise("release")
@@ -738,17 +738,17 @@ interface ImagePacker {
 
   @gen_async("packToFile")
   @gen_promise("packToFile")
-  PackImageSourceToFileSync(source: ImageSource, fd: i32, options: PackingOption): void;
+  PackImageSourceToFileSync(source: ImageSource, fd: f64, options: PackingOption): void;
 
   @gen_async("packToFile")
   @gen_promise("packToFile")
-  PackPixelMapToFileSync(source: PixelMap, fd: i32, options: PackingOption): void;
+  PackPixelMapToFileSync(source: PixelMap, fd: f64, options: PackingOption): void;
 
   @gen_promise("packToFileFromPixelmapSequence")
-  PackToFileFromPixelmapSequenceSync(pixelmapSequence: Array<PixelMap>, fd: i32, options: PackingOptionsForSequence): void;
+  PackToFileFromPixelmapSequenceSync(pixelmapSequence: Array<PixelMap>, fd: f64, options: PackingOptionsForSequence): void;
 
   @gen_promise("packToFile")
-  PackPictureToFileSync(picture: Picture, fd: i32, options: PackingOption): void;
+  PackPictureToFileSync(picture: Picture, fd: f64, options: PackingOption): void;
 
   @gen_promise("packing")
   PackingPictureSync(picture: Picture, options: PackingOption): @arraybuffer Array<u8>;
@@ -765,8 +765,8 @@ interface Image {
   GetImplPtr(): i64;
 
   @get("size") GetSize(): Size;
-  @get("format") GetFormat(): i32;
-  @get("timestamp") GetTimestamp(): i64;
+  @get("format") GetFormat(): f64;
+  @get("timestamp") GetTimestamp(): f64;
 
   @gen_async("getComponent")
   @gen_promise("getComponent")
@@ -779,7 +779,7 @@ interface Image {
 
 interface ImageReceiver {
   @get GetSize(): Size;
-  @get GetCapacity(): i32;
+  @get GetCapacity(): f64;
   @get GetFormat(): ImageFormat;
 
   @gen_async("getReceivingSurfaceId")
@@ -823,7 +823,7 @@ interface ImageReceiver {
 }
 
 interface ImageCreator {
-  @get("capacity") GetCapacity(): i32;
+  @get("capacity") GetCapacity(): f64;
   @get("format") GetFormat(): ImageFormat;
 
   @gen_async("queueImage")
@@ -889,10 +889,10 @@ function CreateImageSourceByUri(uri: String): ImageSource;
 function CreateImageSourceByUriOption(uri: String, options: SourceOptions): ImageSource;
 
 @overload("createImageSource")
-function CreateImageSourceByFd(fd: i32): ImageSource;
+function CreateImageSourceByFd(fd: f64): ImageSource;
 
 @overload("createImageSource")
-function CreateImageSourceByFdOption(fd: i32, options: SourceOptions): ImageSource;
+function CreateImageSourceByFdOption(fd: f64, options: SourceOptions): ImageSource;
 
 @overload("createImageSource")
 function CreateImageSourceByArrayBuffer(buf: @arraybuffer Array<u8>): ImageSource;
@@ -914,9 +914,9 @@ function CreateImageSourceByPtr(ptr: i64): ImageSource;
 
 function CreateImagePacker(): ImagePacker;
 
-function CreateImageCreator(size: Size, format: ImageFormat, capacity: i32): ImageCreator;
+function CreateImageCreator(size: Size, format: ImageFormat, capacity: f64): ImageCreator;
 
-function CreateImageReceiver(size: Size, format: ImageFormat, capacity: i32): ImageReceiver;
+function CreateImageReceiver(size: Size, format: ImageFormat, capacity: f64): ImageReceiver;
 
 @overload("createPicture")
 function CreatePictureByPixelMap(mainPixelmap : PixelMap): Picture;

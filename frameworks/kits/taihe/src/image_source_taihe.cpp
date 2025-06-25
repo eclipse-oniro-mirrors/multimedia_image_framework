@@ -394,6 +394,10 @@ static bool ParseDecodeOptions(DecodingOptions const& options, OHOS::Media::Deco
     std::string &errMsg)
 {
     if (options.index.has_value()) {
+        if (options.index.value() < 0) {
+            errMsg = "index is invalid value!";
+            return false;
+        }
         index = options.index.value();
         IMAGE_LOGD("index: %{public}d", index);
     }
@@ -681,13 +685,13 @@ array<PixelMap> ImageSourceImpl::CreatePixelMapListSyncWithOptionalOptions(optio
     return CreatePixelMapListSyncWithOptions(options.value_or(DecodingOptions {}));
 }
 
-array<int32_t> ImageSourceImpl::GetDelayTimeListSync()
+array<double> ImageSourceImpl::GetDelayTimeListSync()
 {
     OHOS::Media::ImageTrace imageTrace("ImageSourceImpl::GetDelayTimeListSync");
 
     if (nativeImgSrc == nullptr) {
         ImageTaiheUtils::ThrowExceptionError(OHOS::Media::ERR_IMAGE_DATA_ABNORMAL, "nativeImgSrc is nullptr.");
-        return array<int32_t>(0);
+        return array<double>(0);
     }
 
     uint32_t errorCode = 0;
@@ -696,19 +700,19 @@ array<int32_t> ImageSourceImpl::GetDelayTimeListSync()
         IMAGE_LOGE("Get DelayTime error, error=%{public}u", errorCode);
         ImageTaiheUtils::ThrowExceptionError((errorCode != OHOS::Media::SUCCESS) ? errorCode : OHOS::Media::ERROR,
             "Get DelayTime error");
-        return array<int32_t>(0);
+        return array<double>(0);
     }
-
-    return array<int32_t>(taihe::copy_data_t{}, delayTimes->data(), delayTimes->size());
+    std::vector<double> result(delayTimes->begin(), delayTimes->end());
+    return array<double>(taihe::copy_data_t{}, result.begin(), result.size());
 }
 
-array<int32_t> ImageSourceImpl::GetDisposalTypeListSync()
+array<double> ImageSourceImpl::GetDisposalTypeListSync()
 {
     OHOS::Media::ImageTrace imageTrace("ImageSourceImpl::GetDisposalTypeListSync");
 
     if (nativeImgSrc == nullptr) {
         ImageTaiheUtils::ThrowExceptionError(OHOS::Media::ERR_IMAGE_DATA_ABNORMAL, "nativeImgSrc is nullptr.");
-        return array<int32_t>(0);
+        return array<double>(0);
     }
 
     uint32_t errorCode = 0;
@@ -717,10 +721,10 @@ array<int32_t> ImageSourceImpl::GetDisposalTypeListSync()
         IMAGE_LOGE("Get DisposalType error, error=%{public}u", errorCode);
         ImageTaiheUtils::ThrowExceptionError((errorCode != OHOS::Media::SUCCESS) ? errorCode : OHOS::Media::ERROR,
             "Get DisposalType error");
-        return array<int32_t>(0);
+        return array<double>(0);
     }
-
-    return array<int32_t>(taihe::copy_data_t{}, disposalTypeList->data(), disposalTypeList->size());
+    std::vector<double> result(disposalTypeList->begin(), disposalTypeList->end());
+    return array<double>(taihe::copy_data_t{}, result.begin(), result.size());
 }
 
 int32_t ImageSourceImpl::GetFrameCountSync()
