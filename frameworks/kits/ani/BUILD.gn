@@ -35,7 +35,6 @@ ohos_shared_library("image_ani_core") {
       debug = false
     }
   }
-  shlib_type = "ani"
   include_dirs = [ "native/include" ]
   sources = [
     "native/src/ani_image_module.cpp",
