@@ -79,11 +79,8 @@ public:
                          const uint32_t &stride, const Rect &region) override;
     NATIVEEXPORT uint32_t WritePixels(const uint8_t *source, const uint64_t &bufferSize) override;
     NATIVEEXPORT bool WritePixels(const uint32_t &color) override;
-    NATIVEEXPORT bool IsHdr() override;
-    NATIVEEXPORT void SetHdr(bool hdrFlag);
 private:
     uint32_t astcId_ = 0;
-    bool isHdr_ = false;
 };
 } // namespace Media
 } // namespace OHOS

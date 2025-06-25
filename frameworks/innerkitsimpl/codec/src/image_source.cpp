@@ -3398,9 +3398,10 @@ bool ProcessAstcMetadata(PixelAstc* pixelAstc, size_t astcSize, const AstcMetada
         pixelAstc->SetPixelsAddr(dstMemory->data.data, dstMemory->extend.data,
                                  dstMemory->data.size, dstMemory->GetType(), nullptr);
     }
-    pixelAstc->SetHdr(true);
+    pixelAstc->SetAstcHdr(true);
 
     if (pixelAstc->IsHdr() && pixelAstc->GetFd() != nullptr) {
+#if !defined(_WIN32) && !defined(_APPLE) && !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
         sptr<SurfaceBuffer> dstBuffer(reinterpret_cast<SurfaceBuffer*>(pixelAstc->GetFd()));
         GSError ret = dstBuffer->SetMetadata(ATTRKEY_HDR_METADATA_TYPE, astcMetadata.hdrMetadataTypeVec);
         CHECK_ERROR_RETURN_RET_LOG(ret != GSERROR_OK, false, "%{public}s METADATA_TYPE set failed", __func__);
@@ -3410,6 +3411,7 @@ bool ProcessAstcMetadata(PixelAstc* pixelAstc, size_t astcSize, const AstcMetada
         CHECK_ERROR_RETURN_RET_LOG(!vpeRet, false, "%{public}s staticData set failed", __func__);
         vpeRet = VpeUtils::SetSbDynamicMetadata(dstBuffer, astcMetadata.dynamicData);
         CHECK_ERROR_RETURN_RET_LOG(!vpeRet, false, "%{public}s dynamicData set failed", __func__);
+#endif
         return true;
     }
     return false;
@@ -3512,7 +3514,7 @@ static bool ResolveExtInfo(const uint8_t *sourceFilePtr, size_t astcSize, size_t
         leftBytes--;
         uint32_t expendInfoBytesUnSign = GetDataSize(extInfoBuf);
         extInfoBuf += sizeof(uint32_t);
-        leftBytes -= sizeof(int32_t);
+        leftBytes -= sizeof(uint32_t);
         if (expendInfoBytesUnSign > MAX_INT32 || static_cast<uint32_t>(leftBytes) < expendInfoBytesUnSign) {
             return false;
         }
