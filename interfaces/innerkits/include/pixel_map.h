@@ -783,7 +783,8 @@ public:
     NATIVEEXPORT uint32_t SetMemoryName(const std::string &pixelMapName);
     NATIVEEXPORT virtual std::unique_ptr<PixelMap> Clone(int32_t &errorCode);
 
-    NATIVEEXPORT virtual bool IsHdr();
+    NATIVEEXPORT bool IsHdr();
+    NATIVEEXPORT void SetAstcHdr(bool astcHdr);
     NATIVEEXPORT uint32_t ToSdr();
     // format support rgba8888, nv12, nv21. The default value is rgba8888
     // If toSRGB is false, pixelmap will be converted to display_p3
@@ -1055,6 +1056,7 @@ private:
     // pixelmap versioning added since 16th of April 2025
     int32_t readVersion_ = PIXELMAP_VERSION_LATEST;
     bool displayOnly_ = false;
+    bool astcHdr_ = false;
 
     friend class OHOS::Rosen::RSModifiersDraw;
     bool supportOpaqueOpt_ = false;
