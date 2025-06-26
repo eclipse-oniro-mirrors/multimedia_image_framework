@@ -116,11 +116,7 @@ ohos_shared_library("image_taihe") {
     "$taihe_generated_file_path/include",
   ]
 
-  sources = [
-    "src/image_source_taihe_ani.cpp",
-    "src/picture_taihe_ani.cpp",
-    "src/pixel_map_taihe_ani.cpp",
-  ]
+  sources = [ "src/pixel_map_taihe_ani.cpp" ]
 
   cflags = [
     "-DIMAGE_DEBUG_FLAG",
@@ -139,7 +135,6 @@ ohos_shared_library("image_taihe") {
     "hilog:libhilog",
     "hitrace:hitrace_meter",
     "runtime_core:ani",
-    "runtime_core:ani_helpers",
     "skia:libjpeg",
   ]
 
