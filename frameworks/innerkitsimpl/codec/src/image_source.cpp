@@ -1674,6 +1674,9 @@ uint32_t ImageSource::ModifyImageProperty(std::shared_ptr<MetadataAccessor> meta
     IMAGE_LOGI("ModifyImageProperty accesssor modify start");
     ret = metadataAccessor->Write();
     IMAGE_LOGI("ModifyImageProperty accesssor modify end");
+    if (!srcFilePath_.empty() && ret == SUCCESS) {
+        RefreshImageSourceByPathName();
+    }
     return ret;
 }
 
@@ -5275,6 +5278,15 @@ void ImageSource::SetSrcBuffer(const uint8_t* buffer, uint32_t size)
 {
     srcBuffer_ = const_cast<uint8_t*>(buffer);
     srcBufferSize_ = size;
+}
+
+void ImageSource::RefreshImageSourceByPathName()
+{
+    unique_ptr<SourceStream> refreshedSourceStreamPtr;
+    refreshedSourceStreamPtr = FileSourceStream::CreateSourceStream(srcFilePath_);
+    if (refreshedSourceStreamPtr != nullptr) {
+        sourceStreamPtr_ = std::move(refreshedSourceStreamPtr);
+    }
 }
 
 } // namespace Media
