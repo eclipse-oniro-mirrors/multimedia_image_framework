@@ -1655,8 +1655,16 @@ const uint8_t *PixelMap::GetPixels()
     return data_;
 }
 
+void PixelMap::SetAstcHdr(bool astcHdr)
+{
+    astcHdr_ = astcHdr;
+}
+
 bool PixelMap::IsHdr()
 {
+    if (imageInfo_.pixelFormat == PixelFormat::ASTC_4x4 && astcHdr_) {
+        return true;
+    }
     if (imageInfo_.pixelFormat != PixelFormat::RGBA_1010102 && imageInfo_.pixelFormat != PixelFormat::YCRCB_P010 &&
         imageInfo_.pixelFormat != PixelFormat::YCBCR_P010) {
         return false;
@@ -2685,7 +2693,7 @@ bool PixelMap::WriteAstcInfoToParcel(Parcel &parcel) const
             IMAGE_LOGE("write astcrealSize_.height:[%{public}d] to parcel failed.", astcrealSize_.height);
             return false;
         }
-        if (!parcel.WriteBool(static_cast<PixelAstc*>(const_cast<PixelMap*>(this))->IsHdr())) {
+        if (!parcel.WriteBool(astcHdr_)) {
             IMAGE_LOGE("write astc hdr flag to parcel failed.");
             return false;
         }
@@ -2847,7 +2855,7 @@ bool PixelMap::ReadAstcInfo(Parcel &parcel, PixelMap *pixelMap)
         realSize.height = parcel.ReadInt32();
         pixelMap->SetAstcRealSize(realSize);
         bool isHdr = parcel.ReadBool();
-        static_cast<PixelAstc*>(pixelMap)->SetHdr(isHdr);
+        pixelMap->SetAstcHdr(isHdr);
     }
     return true;
 }

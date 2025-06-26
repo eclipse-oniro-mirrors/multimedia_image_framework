@@ -256,15 +256,5 @@ void* PixelAstc::GetWritablePixels() const
     IMAGE_LOGE("GetWritablePixels is not support on pixelastc");
     return nullptr;
 }
-
-bool PixelAstc::IsHdr()
-{
-    return isHdr_;
-}
-
-void PixelAstc::SetHdr(bool hdrFlag)
-{
-    isHdr_ = hdrFlag;
-}
 } // namespace Media
 } // namespace OHOS

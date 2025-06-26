@@ -20,6 +20,7 @@
 #include <set>
 #include <string>
 #include <sstream>
+#include <vector>
 #include "color_space.h"
 
 namespace OHOS {
