@@ -21,49 +21,11 @@ config("ani_config") {
 
 group("image_framework_ani") {
   deps = [
-    ":image_ani_core",
+    ":image_ani",
     ":image_framework_abc_etc",
   ]
 }
 
-ohos_shared_library("image_ani_core") {
-  if (!use_clang_android) {
-    sanitize = {
-      cfi = true
-      cfi_cross_dso = true
-      cfi_vcall_icall_only = true
-      debug = false
-    }
-  }
-  include_dirs = [ "native/include" ]
-  sources = [
-    "native/src/ani_image_module.cpp",
-    "native/src/image_ani_utils.cpp",
-    "native/src/image_packer_ani.cpp",
-    "native/src/image_source_ani.cpp",
-    "native/src/picture_ani.cpp",
-    "native/src/pixel_map_ani.cpp",
-  ]
-  deps = [
-    "${image_subsystem}/frameworks/innerkitsimpl/utils:image_utils",
-    "${image_subsystem}/interfaces/innerkits:image_native",
-    "${image_subsystem}/interfaces/kits/js/common:image",
-  ]
-  external_deps = [
-    "ability_runtime:ability_runtime",
-    "c_utils:utils",
-    "hilog:libhilog",
-    "hitrace:hitrace_meter",
-    "ipc:ipc_core",
-    "runtime_core:ani",
-    "runtime_core:libarkruntime",
-  ]
-  subsystem_name = "multimedia"
-  part_name = "image_framework"
-  output_extension = "so"
-}
-
-# APIs exposed to external modules
 ohos_shared_library("image_ani") {
   public_configs = [ ":ani_config" ]
   if (!use_clang_android) {
@@ -84,7 +46,6 @@ ohos_shared_library("image_ani") {
     "native/src/pixel_map_ani.cpp",
   ]
   deps = [
-    ":image_ani_core",
     "${image_subsystem}/frameworks/innerkitsimpl/utils:image_utils",
     "${image_subsystem}/interfaces/innerkits:image_native",
     "${image_subsystem}/interfaces/kits/js/common:image",
