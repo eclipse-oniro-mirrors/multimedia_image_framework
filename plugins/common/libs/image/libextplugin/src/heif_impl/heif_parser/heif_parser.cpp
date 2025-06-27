@@ -33,6 +33,7 @@ const auto HEIF_AUXTTYPE_ID_FRAGMENT_MAP = "urn:com:huawei:photo:5:0:0:aux:fragm
 const std::set<std::string> INFE_ITEM_TYPE = {
     "hvc1", "grid", "tmap", "iden", "mime", "iovl"
 };
+const static uint32_t HEIF_MAX_EXIF_SIZE = 128 * 1024;
 
 HeifParser::HeifParser() = default;
 
@@ -913,6 +914,9 @@ uint32_t HeifParser::GetExifHeaderOffset(const uint8_t *data, uint32_t size)
 
 heif_error HeifParser::SetExifMetadata(const std::shared_ptr<HeifImage> &image, const uint8_t *data, uint32_t size)
 {
+    if (size > HEIF_MAX_EXIF_SIZE) {
+        return heif_invalid_exif_data;
+    }
     uint32_t offset = GetExifHeaderOffset(data, size);
     if (offset >= size) {
         return heif_invalid_exif_data;
@@ -933,6 +937,9 @@ heif_error HeifParser::SetExifMetadata(const std::shared_ptr<HeifImage> &image, 
 heif_error HeifParser::UpdateExifMetadata(const std::shared_ptr<HeifImage> &master_image, const uint8_t *data,
                                           uint32_t size, heif_item_id itemId)
 {
+    if (size > HEIF_MAX_EXIF_SIZE) {
+        return heif_invalid_exif_data;
+    }
     uint32_t offset = GetExifHeaderOffset(data, size);
     if (offset >= static_cast<unsigned int>(size)) {
         return heif_invalid_exif_data;
