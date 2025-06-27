@@ -2897,7 +2897,7 @@ bool PixelMap::ReadBufferSizeFromParcel(Parcel& parcel, const ImageInfo& imgInfo
 
 #if !defined(_WIN32) && !defined(_APPLE) && !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
 bool ReadDmaMemInfoFromParcel(Parcel &parcel, PixelMemInfo &pixelMemInfo,
-    std::function<int(Parcel &parcel, std::function<int(Parcel&)> readFdDefaultFunc)> readSafeFdFunc)
+    std::function<int(Parcel &parcel, std::function<int(Parcel&)> readFdDefaultFunc)> readSafeFdFunc, bool isDisplay)
 {
     sptr<SurfaceBuffer> surfaceBuffer = SurfaceBuffer::Create();
     if (surfaceBuffer == nullptr) {
@@ -2912,7 +2912,7 @@ bool ReadDmaMemInfoFromParcel(Parcel &parcel, PixelMemInfo &pixelMemInfo,
 
     void* nativeBuffer = surfaceBuffer.GetRefPtr();
     ImageUtils::SurfaceBuffer_Reference(nativeBuffer);
-    if (!pixelMemInfo.displayOnly) {
+    if (!pixelMemInfo.displayOnly || !isDisplay) {
         pixelMemInfo.base = static_cast<uint8_t*>(surfaceBuffer->GetVirAddr());
     }
     pixelMemInfo.context = nativeBuffer;
@@ -2921,7 +2921,7 @@ bool ReadDmaMemInfoFromParcel(Parcel &parcel, PixelMemInfo &pixelMemInfo,
 #endif
 
 bool PixelMap::ReadMemInfoFromParcel(Parcel &parcel, PixelMemInfo &pixelMemInfo, PIXEL_MAP_ERR &error,
-    std::function<int(Parcel &parcel, std::function<int(Parcel&)> readFdDefaultFunc)> readSafeFdFunc)
+    std::function<int(Parcel &parcel, std::function<int(Parcel&)> readFdDefaultFunc)> readSafeFdFunc, bool isDisplay)
 {
 #if !defined(_WIN32) && !defined(_APPLE) && !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
     if (pixelMemInfo.allocatorType == AllocatorType::SHARE_MEM_ALLOC) {
@@ -2951,7 +2951,7 @@ bool PixelMap::ReadMemInfoFromParcel(Parcel &parcel, PixelMemInfo &pixelMemInfo,
         *static_cast<int32_t *>(pixelMemInfo.context) = fd;
         pixelMemInfo.base = static_cast<uint8_t *>(ptr);
     } else if (pixelMemInfo.allocatorType == AllocatorType::DMA_ALLOC) {
-        if (!ReadDmaMemInfoFromParcel(parcel, pixelMemInfo, readSafeFdFunc)) {
+        if (!ReadDmaMemInfoFromParcel(parcel, pixelMemInfo, readSafeFdFunc, isDisplay)) {
             PixelMap::ConstructPixelMapError(error, ERR_IMAGE_GET_DATA_ABNORMAL, "ReadFromMessageParcel failed");
             return false;
         }
@@ -2997,11 +2997,23 @@ bool PixelMap::UpdatePixelMapMemInfo(PixelMap *pixelMap, ImageInfo &imgInfo, Pix
     return true;
 }
 
+PixelMap *PixelMap::UnmarshallingWithIsDisplay(Parcel &parcel,
+    std::function<int(Parcel &parcel, std::function<int(Parcel&)> readFdDefaultFunc)> readSafeFdFunc, bool isDisplay)
+{
+    PIXEL_MAP_ERR error;
+    PixelMap* dstPixelMap = PixelMap::Unmarshalling(parcel, error, readSafeFdFunc, isDisplay);
+    if (dstPixelMap == nullptr || error.errorCode != SUCCESS) {
+        IMAGE_LOGE("unmarshalling failed errorCode:%{public}d, errorInfo:%{public}s",
+            error.errorCode, error.errorInfo.c_str());
+    }
+    return dstPixelMap;
+}
+
 PixelMap *PixelMap::Unmarshalling(Parcel &parcel,
     std::function<int(Parcel &parcel, std::function<int(Parcel&)> readFdDefaultFunc)> readSafeFdFunc)
 {
     PIXEL_MAP_ERR error;
-    PixelMap* dstPixelMap = PixelMap::Unmarshalling(parcel, error, readSafeFdFunc);
+    PixelMap* dstPixelMap = PixelMap::Unmarshalling(parcel, error, readSafeFdFunc, false);
     if (dstPixelMap == nullptr || error.errorCode != SUCCESS) {
         IMAGE_LOGE("unmarshalling failed errorCode:%{public}d, errorInfo:%{public}s",
             error.errorCode, error.errorInfo.c_str());
@@ -3058,7 +3070,7 @@ PixelMap *PixelMap::FinishUnmarshalling(PixelMap *pixelMap, Parcel &parcel,
 }
 
 PixelMap *PixelMap::Unmarshalling(Parcel &parcel, PIXEL_MAP_ERR &error,
-    std::function<int(Parcel &parcel, std::function<int(Parcel&)> readFdDefaultFunc)> readSafeFdFunc)
+    std::function<int(Parcel &parcel, std::function<int(Parcel&)> readFdDefaultFunc)> readSafeFdFunc, bool isDisplay)
 {
     ImageInfo imgInfo;
     PixelMemInfo pixelMemInfo;
@@ -3067,7 +3079,7 @@ PixelMap *PixelMap::Unmarshalling(Parcel &parcel, PIXEL_MAP_ERR &error,
         IMAGE_LOGE("StartUnmarshalling: get pixelmap failed");
         return nullptr;
     }
-    if (!ReadMemInfoFromParcel(parcel, pixelMemInfo, error, readSafeFdFunc)) {
+    if (!ReadMemInfoFromParcel(parcel, pixelMemInfo, error, readSafeFdFunc, isDisplay)) {
         IMAGE_LOGE("Unmarshalling: read memInfo failed");
         delete pixelMap;
         return nullptr;

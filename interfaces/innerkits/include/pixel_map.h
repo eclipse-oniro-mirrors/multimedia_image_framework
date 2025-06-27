@@ -688,10 +688,14 @@ public:
     /**
      * Deserialize the parcel to generate the pixelmap.
      */
+    NATIVEEXPORT static PixelMap *UnmarshallingWithIsDisplay(Parcel &parcel,
+        std::function<int(Parcel &parcel, std::function<int(Parcel&)> readFdDefaultFunc)> readSafeFdFunc,
+        bool isDisplay = false);
     NATIVEEXPORT static PixelMap *Unmarshalling(Parcel &data,
         std::function<int(Parcel &parcel, std::function<int(Parcel&)> readFdDefaultFunc)> readSafeFdFunc = nullptr);
     NATIVEEXPORT static PixelMap *Unmarshalling(Parcel &parcel, PIXEL_MAP_ERR &error,
-        std::function<int(Parcel &parcel, std::function<int(Parcel&)> readFdDefaultFunc)> readSafeFdFunc = nullptr);
+        std::function<int(Parcel &parcel, std::function<int(Parcel&)> readFdDefaultFunc)> readSafeFdFunc = nullptr,
+        bool isDisplay = false);
     /**
      * Serialize the pixelmap into a vector in TLV format.
      */
@@ -897,7 +901,8 @@ protected:
         PIXEL_MAP_ERR& error);
     bool WriteMemInfoToParcel(Parcel &parcel, const int32_t &bufferSize) const;
     static bool ReadMemInfoFromParcel(Parcel &parcel, PixelMemInfo &pixelMemInfo, PIXEL_MAP_ERR &error,
-        std::function<int(Parcel &parcel, std::function<int(Parcel&)> readFdDefaultFunc)> readSafeFdFunc = nullptr);
+        std::function<int(Parcel &parcel, std::function<int(Parcel&)> readFdDefaultFunc)> readSafeFdFunc = nullptr,
+        bool isDisplay = false);
     bool WriteTransformDataToParcel(Parcel &parcel) const;
     bool ReadTransformData(Parcel &parcel, PixelMap *pixelMap);
     bool WriteAstcInfoToParcel(Parcel &parcel) const;
