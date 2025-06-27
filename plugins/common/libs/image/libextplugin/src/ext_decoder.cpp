@@ -1103,7 +1103,7 @@ SkCodec::Result ExtDecoder::DoSampleDecode(DecodeContext &context)
     SkOHOSCodec::OHOSOptions options;
     options.fSampleSize = softSampleSize_;
     if (SkOHOSCodec == nullptr) {
-        LOGE("%{public}s failed, SkOHOSCodec is nullptr", __func__);
+        IMAGE_LOGE("%{public}s failed, SkOHOSCodec is nullptr", __func__);
         return SkCodec::kErrorInInput;
     }
     SkCodec::Result result = SkOHOSCodec->getOHOSPixels(dstInfo_, dstBuffer, rowStride, &options);
