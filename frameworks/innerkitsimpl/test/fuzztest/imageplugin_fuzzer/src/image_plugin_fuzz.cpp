@@ -156,7 +156,7 @@ void SvgDecoderFuncTest001(const std::string& filename)
 
     DecodeOptions dstOpts;
     imageSource = ImageSource::CreateImageSource(filename, srcOpts, errorCode);
-    imageSource->CreatePixelMapExtended(0, dstOpts, errorCode);
+    imageSource->CreatePixelMap(0, dstOpts, errorCode);
     imageSource->Reset();
     IMAGE_LOGI("%{public}s SUCCESS", __func__);
 }
