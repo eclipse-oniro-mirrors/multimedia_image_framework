@@ -3512,7 +3512,7 @@ static bool ResolveExtInfo(const uint8_t *sourceFilePtr, size_t astcSize, size_t
         leftBytes--;
         uint32_t expendInfoBytesUnSign = GetDataSize(extInfoBuf);
         extInfoBuf += sizeof(uint32_t);
-        leftBytes -= sizeof(int32_t);
+        leftBytes -= sizeof(uint32_t);
         if (expendInfoBytesUnSign > MAX_INT32 || static_cast<uint32_t>(leftBytes) < expendInfoBytesUnSign) {
             return false;
         }
