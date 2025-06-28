@@ -56,8 +56,11 @@ config("image_external_config") {
     include_dirs += [
       "//foundation/graphic/graphic_2d/utils/color_manager/export",
       "//commonlibrary/c_utils/base/include",
-      "//third_party/skia",
+      "$third_party_skia_root",
     ]
+    if (image_use_new_skia) {
+      defines = [ "USE_M133_SKIA" ]
+    }
   }
 
   if (use_mingw_win) {
@@ -95,6 +98,9 @@ if (use_clang_android) {
     configs = [ ":image_postproc_config" ]
     defines = image_decode_android_defines
     defines += [ "CROSS_PLATFORM" ]
+    if (image_use_new_skia) {
+      defines += [ "USE_M133_SKIA" ]
+    }
     cflags = image_native_android_cflags
     sources = image_native_android_sources
     include_dirs = image_native_android_include_dirs
@@ -109,6 +115,9 @@ if (use_clang_android) {
     configs = [ ":image_postproc_config" ]
     defines = image_decode_ios_defines
     defines += [ "CROSS_PLATFORM" ]
+    if (image_use_new_skia) {
+      defines += [ "USE_M133_SKIA" ]
+    }
     cflags = image_native_ios_cflags
     include_dirs = image_native_ios_include_dirs
     sources = image_native_ios_sources
