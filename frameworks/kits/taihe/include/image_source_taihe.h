@@ -45,8 +45,8 @@ public:
     array<PixelMap> CreatePixelMapListSync();
     array<PixelMap> CreatePixelMapListSyncWithOptions(DecodingOptions const& options);
     array<PixelMap> CreatePixelMapListSyncWithOptionalOptions(optional_view<DecodingOptions> options);
-    array<double> GetDelayTimeListSync();
-    array<double> GetDisposalTypeListSync();
+    array<int32_t> GetDelayTimeListSync();
+    array<int32_t> GetDisposalTypeListSync();
     int32_t GetFrameCountSync();
     string GetImagePropertySync(PropertyKey key, optional_view<ImagePropertyOptions> options);
     map<PropertyKey, PropertyValue> GetImagePropertiesSync(array_view<PropertyKey> key);
