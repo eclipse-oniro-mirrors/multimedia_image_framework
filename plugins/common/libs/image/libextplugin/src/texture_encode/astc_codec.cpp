@@ -983,8 +983,9 @@ bool AllocMemForExtInfo(AstcExtendInfo &extendInfo, uint8_t idx)
 
 bool AstcCodec::FillMetaData(AstcExtendInfo &extendInfo, PixelMap *astcPixelMap)
 {
-    if (astcPixelMap == nullptr || astcPixelMap->GetFd() == nullptr) {
-        IMAGE_LOGE("[AstcCodec] astcPixelMap is nullptr!");
+    if (astcPixelMap == nullptr || astcPixelMap->GetFd() == nullptr ||
+        astcPixelMap->GetAllocatorType() != AllocatorType::DMA_ALLOC) {
+        IMAGE_LOGE("[AstcCodec] astcPixelMap is invalid!");
         return false;
     }
     if (!astcPixelMap->IsHdr()) {
