@@ -206,10 +206,6 @@ ImageInfo ImageSourceImpl::GetImageInfoSync()
 static bool ParseRotate(DecodingOptions const& options, OHOS::Media::DecodeOptions &dst, std::string &errMsg)
 {
     if (options.rotate.has_value()) {
-        if (options.rotate.value() < 0) {
-            errMsg = "rotate is invalid value!";
-            return false;
-        }
         dst.rotateNewDegrees = options.rotate.value();
         if (dst.rotateNewDegrees >= 0 && dst.rotateNewDegrees <= 360) { // 360 is the maximum rotation angle.
             dst.rotateDegrees = static_cast<float>(dst.rotateNewDegrees);
@@ -398,10 +394,6 @@ static bool ParseDecodeOptions(DecodingOptions const& options, OHOS::Media::Deco
     std::string &errMsg)
 {
     if (options.index.has_value()) {
-        if (options.index.value() < 0) {
-            errMsg = "index is invalid value!";
-            return false;
-        }
         index = options.index.value();
         IMAGE_LOGD("index: %{public}d", index);
     }
@@ -689,13 +681,13 @@ array<PixelMap> ImageSourceImpl::CreatePixelMapListSyncWithOptionalOptions(optio
     return CreatePixelMapListSyncWithOptions(options.value_or(DecodingOptions {}));
 }
 
-array<double> ImageSourceImpl::GetDelayTimeListSync()
+array<int32_t> ImageSourceImpl::GetDelayTimeListSync()
 {
     OHOS::Media::ImageTrace imageTrace("ImageSourceImpl::GetDelayTimeListSync");
 
     if (nativeImgSrc == nullptr) {
         ImageTaiheUtils::ThrowExceptionError(OHOS::Media::ERR_IMAGE_DATA_ABNORMAL, "nativeImgSrc is nullptr.");
-        return array<double>(0);
+        return array<int32_t>(0);
     }
 
     uint32_t errorCode = 0;
@@ -704,19 +696,19 @@ array<double> ImageSourceImpl::GetDelayTimeListSync()
         IMAGE_LOGE("Get DelayTime error, error=%{public}u", errorCode);
         ImageTaiheUtils::ThrowExceptionError((errorCode != OHOS::Media::SUCCESS) ? errorCode : OHOS::Media::ERROR,
             "Get DelayTime error");
-        return array<double>(0);
+        return array<int32_t>(0);
     }
-    std::vector<double> result(delayTimes->begin(), delayTimes->end());
-    return array<double>(taihe::copy_data_t{}, result.begin(), result.size());
+
+    return array<int32_t>(taihe::copy_data_t{}, delayTimes->data(), delayTimes->size());
 }
 
-array<double> ImageSourceImpl::GetDisposalTypeListSync()
+array<int32_t> ImageSourceImpl::GetDisposalTypeListSync()
 {
     OHOS::Media::ImageTrace imageTrace("ImageSourceImpl::GetDisposalTypeListSync");
 
     if (nativeImgSrc == nullptr) {
         ImageTaiheUtils::ThrowExceptionError(OHOS::Media::ERR_IMAGE_DATA_ABNORMAL, "nativeImgSrc is nullptr.");
-        return array<double>(0);
+        return array<int32_t>(0);
     }
 
     uint32_t errorCode = 0;
@@ -725,10 +717,10 @@ array<double> ImageSourceImpl::GetDisposalTypeListSync()
         IMAGE_LOGE("Get DisposalType error, error=%{public}u", errorCode);
         ImageTaiheUtils::ThrowExceptionError((errorCode != OHOS::Media::SUCCESS) ? errorCode : OHOS::Media::ERROR,
             "Get DisposalType error");
-        return array<double>(0);
+        return array<int32_t>(0);
     }
-    std::vector<double> result(disposalTypeList->begin(), disposalTypeList->end());
-    return array<double>(taihe::copy_data_t{}, result.begin(), result.size());
+
+    return array<int32_t>(taihe::copy_data_t{}, disposalTypeList->data(), disposalTypeList->size());
 }
 
 int32_t ImageSourceImpl::GetFrameCountSync()
