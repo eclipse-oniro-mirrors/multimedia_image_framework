@@ -1102,6 +1102,10 @@ SkCodec::Result ExtDecoder::DoSampleDecode(DecodeContext &context)
     auto SkOHOSCodec = SkOHOSCodec::MakeFromCodec(std::move(codec_));
     SkOHOSCodec::OHOSOptions options;
     options.fSampleSize = softSampleSize_;
+    if (SkOHOSCodec == nullptr) {
+        IMAGE_LOGE("%{public}s failed, SkOHOSCodec is nullptr", __func__);
+        return SkCodec::kErrorInInput;
+    }
     SkCodec::Result result = SkOHOSCodec->getOHOSPixels(dstInfo_, dstBuffer, rowStride, &options);
     switch (result) {
         case SkCodec::kSuccess:

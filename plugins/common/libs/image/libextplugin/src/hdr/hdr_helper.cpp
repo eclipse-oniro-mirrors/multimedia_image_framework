@@ -1053,6 +1053,9 @@ static void PackTransformInfo(vector<uint8_t>& bytes, uint32_t& offset, uint8_t 
     uint16_t transformSize = flag + UINT8_BYTE_COUNT;
     ImageUtils::Uint16ToBytes(transformSize, bytes, offset);
     bytes[offset++] = flag;
+    if (offset < 0 || offset + flag > bytes.size()) {
+        return;
+    }
     if (memcpy_s(bytes.data() + offset, flag, mapping.data(), flag) != 0) {
         offset -= (UINT8_BYTE_COUNT + UINT16_BYTE_COUNT);
         ImageUtils::Uint16ToBytes((uint16_t)EMPTY_SIZE, bytes, offset);
