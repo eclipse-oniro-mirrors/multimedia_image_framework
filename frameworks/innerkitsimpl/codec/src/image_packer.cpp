@@ -247,27 +247,30 @@ uint32_t ImagePacker::AddImage(ImageSource &source)
 
 uint32_t ImagePacker::AddImage(ImageSource &source, uint32_t index)
 {
-    ImageTrace imageTrace("ImagePacker::AddImage by imageSource and index %{public}u", index);
+    ImageTrace imageTrace("ImagePacker::AddImage by imageSource and index %u", index);
     uint32_t ret = SUCCESS;
-#if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
-    if (picture_ != nullptr) {
-        picture_.reset();  // release old inner picture
-    }
-    DecodingOptionsForPicture decodeOptsForPicture;
-    decodeOptsForPicture.desiredPixelFormat = PixelFormat::NV12;
-    picture_ = source.CreatePicture(decodeOptsForPicture, ret);
-    if (ret == SUCCESS && picture_ != nullptr && picture_.get() != nullptr) {
-        IMAGE_LOGD("image source create picture success.");
-        return AddPicture(*picture_.get());
-    }
-#endif
-
     DecodeOptions decodeOpts;
     decodeOpts.desiredDynamicRange = encodeToSdr_ ? DecodeDynamicRange::SDR : DecodeDynamicRange::AUTO;
+    bool isHDR = source.IsDecodeHdrImage(decodeOpts);
+#if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
+    if (isHDR) {
+        if (picture_ != nullptr) {
+            picture_.reset();  // release old inner picture
+        }
+        DecodingOptionsForPicture decodeOptsForPicture;
+        decodeOptsForPicture.desiredPixelFormat = PixelFormat::NV12;
+        decodeOptsForPicture.desireAuxiliaryPictures = { AuxiliaryPictureType::GAINMAP };
+        picture_ = source.CreatePicture(decodeOptsForPicture, ret);
+        if (ret == SUCCESS && picture_ != nullptr && picture_.get() != nullptr) {
+            IMAGE_LOGD("image source create picture success.");
+            return AddPicture(*picture_.get());
+        }
+    }
+#endif
     if (pixelMap_ != nullptr) {
         pixelMap_.reset();  // release old inner pixelmap
     }
-    pixelMap_ = source.CreatePixelMap(index, decodeOpts, ret);
+    pixelMap_ = source.CreatePixelMapEx(index, decodeOpts, ret);
     if (ret != SUCCESS) {
         IMAGE_LOGE("image source create pixel map failed.");
         return ret;
