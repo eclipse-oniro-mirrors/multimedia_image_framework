@@ -59,7 +59,7 @@ public:
 
     bool getImageInfo(HeifFrameInfo *frameInfo) override;
     bool decodeGainmap() override;
-    void setGainmapDstBuffer(uint8_t* dstBuffer, size_t rowStride, void *context);
+    void setGainmapDstBuffer(uint8_t* dstBuffer, size_t rowStride) override {}
     bool getGainmapInfo(HeifFrameInfo* frameInfo) override;
     bool getTmapInfo(HeifFrameInfo* frameInfo) override;
     HeifImageHdrType getHdrType() override;
@@ -80,6 +80,7 @@ public:
     bool IsHeifAlphaYuv400();
     void SetSampleFormat(uint32_t sampleSize, ColorManager::ColorSpaceName colorSpaceName);
     int32_t GetPrimaryLumaBitNum();
+    void setGainmapDstBuffer(uint8_t* dstBuffer, size_t rowStride, void *context);
 private:
     bool Reinit(HeifFrameInfo *frameInfo);
 
