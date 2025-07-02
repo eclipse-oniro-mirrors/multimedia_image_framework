@@ -792,6 +792,7 @@ PixelMap *PixelMapRecordParcel::StartUnmarshalling(Parcel &parcel, ImageInfo &im
         return nullptr;
     }
     pixelMemInfo.isAstc = pixelMap->IsAstc();
+    pixelMemInfo.displayOnly = pixelMap->IsDisplayOnly();
     return pixelMap;
 }
 
