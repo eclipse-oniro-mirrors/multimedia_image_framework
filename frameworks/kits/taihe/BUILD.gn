@@ -41,112 +41,91 @@ ohos_taihe("run_taihe") {
   ]
 }
 
-taihe_shared_library("image_taihe_core") {
-  taihe_generated_file_path = "$taihe_generated_file_path"
-  subsystem_name = "$subsystem_name"
-  part_name = "$part_name"
+template("image_taihe_shared_library") {
+  target_name = invoker.target_name
+  extra_sources = []
+  if (defined(invoker.extra_sources)) {
+    extra_sources = invoker.extra_sources
+  }
+  
+  taihe_shared_library(target_name) {
+    forward_variables_from(invoker, "*", 
+      [
+        "target_name",
+        "extra_sources",
+      ]
+    )
+    
+    taihe_generated_file_path = "$taihe_generated_file_path"
+    subsystem_name = "$subsystem_name"
+    part_name = "$part_name"
 
-  include_dirs = [
-    "include",
-    "${image_subsystem}/interfaces/innerkits/include",
-    "${image_subsystem}/interfaces/kits/native/include/image",
-    "${image_subsystem}/plugins/common/libs/image/libextplugin/include/jpeg_yuv_decoder",
-  ]
+    include_dirs = [
+      "include",
+      "${image_subsystem}/interfaces/innerkits/include",
+      "${image_subsystem}/interfaces/kits/native/include/image",
+      "${image_subsystem}/plugins/common/libs/image/libextplugin/include/jpeg_yuv_decoder",
+    ]
 
-  sources = get_target_outputs(":run_taihe")
-  sources += [
-    "src/ani_constructor.cpp",
-    "src/auxiliary_picture_taihe.cpp",
-    "src/image_creator_taihe.cpp",
-    "src/image_packer_taihe.cpp",
-    "src/image_receiver_taihe.cpp",
-    "src/image_source_taihe.cpp",
-    "src/image_taihe.cpp",
-    "src/image_taihe_utils.cpp",
-    "src/picture_taihe.cpp",
-    "src/pixel_map_taihe.cpp",
-    "${image_subsystem}/frameworks/innerkitsimpl/accessor/src/exif_metadata_formatter.cpp",
-  ]
+    sources = get_target_outputs(":run_taihe")
+    sources += [
+      "src/auxiliary_picture_taihe.cpp",
+      "src/image_creator_taihe.cpp",
+      "src/image_packer_taihe.cpp",
+      "src/image_receiver_taihe.cpp",
+      "src/image_source_taihe.cpp",
+      "src/image_taihe.cpp",
+      "src/image_taihe_utils.cpp",
+      "src/picture_taihe.cpp",
+      "src/pixel_map_taihe.cpp",
+      "${image_subsystem}/frameworks/innerkitsimpl/accessor/src/exif_metadata_formatter.cpp",
+    ] + extra_sources
 
-  cflags = [
-    "-DIMAGE_DEBUG_FLAG",
-    "-DIMAGE_COLORSPACE_FLAG",
-  ]
+    deps = [
+      ":run_taihe",
+      "${image_subsystem}/frameworks/innerkitsimpl/egl_image:egl_image",
+      "${image_subsystem}/frameworks/innerkitsimpl/utils:image_utils",
+      "${image_subsystem}/interfaces/innerkits:image_native",
+    ]
 
-  deps = [
-    ":run_taihe",
-    "${image_subsystem}/frameworks/innerkitsimpl/egl_image:egl_image",
-    "${image_subsystem}/frameworks/innerkitsimpl/utils:image_utils",
-    "${image_subsystem}/interfaces/innerkits:image_native",
-  ]
+    external_deps = [
+      "c_utils:utils",
+      "eventhandler:libeventhandler",
+      "graphic_2d:ani_color_space_object_convertor",
+      "graphic_2d:color_manager",
+      "graphic_2d:EGL",
+      "graphic_2d:librender_service_client",
+      "hilog:libhilog",
+      "hitrace:hitrace_meter",
+      "runtime_core:ani_helpers",
+      "skia:libjpeg",
+    ]
+    
+    cflags = [
+      "-DIMAGE_DEBUG_FLAG",
+      "-DIMAGE_COLORSPACE_FLAG",
+    ]
 
-  external_deps = [
-    "c_utils:utils",
-    "eventhandler:libeventhandler",
-    "graphic_2d:ani_color_space_object_convertor",
-    "graphic_2d:color_manager",
-    "graphic_2d:EGL",
-    "graphic_2d:librender_service_client",
-    "hilog:libhilog",
-    "hitrace:hitrace_meter",
-    "skia:libjpeg",
-  ]
-
-  if (!use_clang_android && !use_clang_ios) {
-    branch_protector_ret = "pac_ret"
-    sanitize = {
-      cfi = true
-      cfi_cross_dso = true
-      cfi_vcall_icall_only = true
-      debug = false
+    if (!use_clang_android && !use_clang_ios) {
+      branch_protector_ret = "pac_ret"
+      sanitize = {
+        cfi = true
+        cfi_cross_dso = true
+        cfi_vcall_icall_only = true
+        debug = false
+      }
     }
   }
 }
 
+image_taihe_shared_library("image_taihe_core") {
+  extra_sources = [ "src/ani_constructor.cpp" ]
+}
+
 # APIs exposed to external modules
-ohos_shared_library("image_taihe") {
-  output_name = "libimage_taihe"
-  subsystem_name = "$subsystem_name"
-  part_name = "$part_name"
-
+image_taihe_shared_library("image_taihe") {
+  extra_sources = [ "src/pixel_map_taihe_ani.cpp" ]
   public_configs = [ ":image_taihe_config" ]
-
-  include_dirs = [
-    "$taihe_toolchain_path/include",
-    "$taihe_generated_file_path/include",
-  ]
-
-  sources = [ "src/pixel_map_taihe_ani.cpp" ]
-
-  cflags = [
-    "-DIMAGE_DEBUG_FLAG",
-    "-DIMAGE_COLORSPACE_FLAG",
-  ]
-
-  deps = [ ":image_taihe_core" ]
-
-  external_deps = [
-    "c_utils:utils",
-    "eventhandler:libeventhandler",
-    "graphic_2d:ani_color_space_object_convertor",
-    "graphic_2d:color_manager",
-    "graphic_2d:EGL",
-    "graphic_2d:librender_service_client",
-    "hilog:libhilog",
-    "hitrace:hitrace_meter",
-    "runtime_core:ani",
-    "skia:libjpeg",
-  ]
-
-  if (!use_clang_android && !use_clang_ios) {
-    branch_protector_ret = "pac_ret"
-    sanitize = {
-      cfi = true
-      cfi_cross_dso = true
-      cfi_vcall_icall_only = true
-      debug = false
-    }
-  }
 }
 
 generate_static_abc("image_framework_taihe_abc") {
