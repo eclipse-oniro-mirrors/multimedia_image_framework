@@ -1652,6 +1652,10 @@ AlphaType PixelMap::GetAlphaType()
 
 const uint8_t *PixelMap::GetPixels()
 {
+    if (!AttachAddrBySurfaceBuffer()) {
+        IMAGE_LOGE("GetPixels failed: AttachAddrBySurfaceBuffer failed.");
+        return nullptr;
+    }
     return data_;
 }
 
@@ -3726,6 +3730,24 @@ uint32_t PixelMap::CheckAlphaFormatInput(PixelMap &wPixelMap, const bool isPremu
         return COMMON_ERR_INVALID_PARAMETER;
     }
     return SUCCESS;
+}
+
+bool PixelMap::AttachAddrBySurfaceBuffer()
+{
+    if (data_ == nullptr && displayOnly_ && context_ != nullptr &&
+        allocatorType_ == AllocatorType::DMA_ALLOC) {
+        SurfaceBuffer* sb = static_cast<SurfaceBuffer*>(context_);
+        if (sb == nullptr) {
+            IMAGE_LOGE("Get surface buffer failed");
+            return false;
+        }
+        data_ = static_cast<uint8_t*>(sb->GetVirAddr());
+        if (data_ == nullptr) {
+            IMAGE_LOGE("Get vir addr failed");
+            return false;
+        }
+    }
+    return true;
 }
 
 uint32_t PixelMap::ConvertAlphaFormat(PixelMap &wPixelMap, const bool isPremul)
