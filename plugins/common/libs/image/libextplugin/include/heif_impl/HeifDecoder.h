@@ -99,6 +99,7 @@ struct HeifDecoder {
     virtual size_t skipScanlines(int count) = 0;
     virtual bool getImageInfo(HeifFrameInfo *frameInfo) = 0;
     virtual bool decodeGainmap() = 0;
+    virtual void setGainmapDstBuffer(uint8_t* dstBuffer, size_t rowStride) = 0;
     virtual bool getGainmapInfo(HeifFrameInfo* frameInfo) = 0;
     virtual bool getTmapInfo(HeifFrameInfo* frameInfo) = 0;
     virtual HeifImageHdrType getHdrType() = 0;
