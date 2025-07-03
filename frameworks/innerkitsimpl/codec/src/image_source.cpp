@@ -995,6 +995,10 @@ unique_ptr<PixelMap> ImageSource::CreatePixelMapExtended(uint32_t index, const D
     }
 #endif
     SetDecodeInfoOptions(index, opts, info, imageEvent);
+    if (mainDecoder_ == nullptr) {
+        IMAGE_LOGE("Maindecoder is null.");
+        return nullptr;
+    }
     std::string pluginType = mainDecoder_->GetPluginType();
     imageEvent.SetPluginType(pluginType);
     Size heifGridTileSize = mainDecoder_->GetHeifGridTileSize();

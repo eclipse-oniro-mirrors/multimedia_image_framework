@@ -430,7 +430,9 @@ void InitForQuantize(ColorCoordinate *colorCoordinate, ColorSubdivMap* colorSubd
             }
         }
     }
-    coordinate->next = NULL;
+    if (coordinate != nullptr) {
+        coordinate->next = NULL;
+    }
 }
 
 void buildOutputColorMap(ColorSubdivMap *colorSubdivMap, uint32_t colorSubdivMapSize, ColorType *outputColorMap)
