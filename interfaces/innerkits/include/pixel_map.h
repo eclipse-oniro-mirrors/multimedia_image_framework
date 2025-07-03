@@ -624,6 +624,7 @@ public:
     NATIVEEXPORT virtual void SetFreePixelMapProc(CustomFreePixelMap func);
     NATIVEEXPORT virtual void SetTransformered(bool isTransformered);
     NATIVEEXPORT uint32_t ConvertAlphaFormat(PixelMap &wPixelMap, const bool isPremul);
+    NATIVEEXPORT bool AttachAddrBySurfaceBuffer();
     NATIVEEXPORT void SetPixelMapError(uint32_t code, const std::string &info)
     {
         errorCode = code;
@@ -673,6 +674,9 @@ public:
 
     NATIVEEXPORT virtual void *GetWritablePixels() const
     {
+        if (!const_cast<PixelMap*>(this)->AttachAddrBySurfaceBuffer()) {
+            return nullptr;
+        }
         return static_cast<void *>(data_);
     }
 
