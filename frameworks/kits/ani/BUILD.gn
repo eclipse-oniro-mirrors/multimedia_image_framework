@@ -76,7 +76,6 @@ ohos_shared_library("image_ani") {
   }
   include_dirs = [ "native/include" ]
   sources = [
-    "native/src/ani_image_module.cpp",
     "native/src/image_ani_utils.cpp",
     "native/src/image_packer_ani.cpp",
     "native/src/image_source_ani.cpp",
