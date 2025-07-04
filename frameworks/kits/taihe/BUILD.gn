@@ -101,6 +101,7 @@ template("image_taihe_shared_library") {
       "graphic_surface:sync_fence",
       "hilog:libhilog",
       "hitrace:hitrace_meter",
+      "ipc:rpc_ani",
       "runtime_core:ani_helpers",
       "skia:libjpeg",
     ]

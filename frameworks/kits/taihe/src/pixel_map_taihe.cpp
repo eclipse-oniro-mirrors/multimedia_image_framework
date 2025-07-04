@@ -16,11 +16,13 @@
 #include "pixel_map_taihe.h"
 
 #include "ani_color_space_object_convertor.h"
+#include "ani_utils.h" // ipc:rpc_ani
 #include "image_format_convert.h"
 #include "image_log.h"
 #include "image_taihe_utils.h"
 #include "image_utils.h"
 #include "media_errors.h"
+#include "message_parcel.h"
 #include "pixel_map_taihe_ani.h"
 #include "taihe/runtime.hpp"
 #if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
@@ -149,6 +151,34 @@ PixelMap CreatePixelMapFromSurfaceByIdAndRegionSync(string_view etsSurfaceId,
     }
     return CreatePixelMapFromSurface(surfaceId, region);
 #endif
+}
+
+static PixelMap Unmarshalling(uintptr_t sequence)
+{
+#if defined(IOS_PLATFORM) || defined(ANDROID_PLATFORM)
+    return make_holder<PixelMapImpl, PixelMap>();
+#else
+    MessageParcel* messageParcel = AniObjectUtils::Unwrap<MessageParcel>(get_env(),
+        reinterpret_cast<ani_object>(sequence));
+    if (messageParcel == nullptr) {
+        ImageTaiheUtils::ThrowExceptionError(Media::ERR_IPC, "Get parcel failed");
+        return make_holder<PixelMapImpl, PixelMap>();
+    }
+
+    Media::PIXEL_MAP_ERR error;
+    auto pixelMap = Media::PixelMap::Unmarshalling(*messageParcel, error);
+    if (pixelMap == nullptr) {
+        ImageTaiheUtils::ThrowExceptionError(error.errorCode, error.errorInfo);
+        return make_holder<PixelMapImpl, PixelMap>();
+    }
+    std::shared_ptr<Media::PixelMap> pixelMapPtr(pixelMap);
+    return make_holder<PixelMapImpl, PixelMap>(std::move(pixelMapPtr));
+#endif
+}
+
+PixelMap CreatePixelMapFromParcel(uintptr_t sequence)
+{
+    return Unmarshalling(sequence);
 }
 
 PixelMapImpl::PixelMapImpl() {}
@@ -300,6 +330,27 @@ void PixelMapImpl::WriteBufferToPixelsSync(array_view<uint8_t> src)
     uint32_t status = nativePixelMap_->WritePixels(src.data(), src.size());
     if (status != Media::SUCCESS) {
         IMAGE_LOGE("[PixelMap ANI] WritePixels failed");
+    }
+}
+
+void PixelMapImpl::WritePixelsSync(weak::PositionArea area)
+{
+    if (nativePixelMap_ == nullptr) {
+        IMAGE_LOGE("[%{public}s] Native PixelMap is nullptr", __func__);
+        return;
+    }
+    if (!aniEditable_) {
+        ImageTaiheUtils::ThrowExceptionError(Media::ERR_RESOURCE_UNAVAILABLE, "PixelMap has crossed threads");
+        return;
+    }
+
+    ohos::multimedia::image::image::Region etsRegion = area->GetRegion();
+    Media::Rect region = {etsRegion.x, etsRegion.y, etsRegion.size.width, etsRegion.size.height};
+    array<uint8_t> etsPixels = area->GetPixels();
+    uint32_t status = nativePixelMap_->WritePixels(etsPixels.data(), etsPixels.size(), area->GetOffset(),
+        area->GetStride(), region);
+    if (status != Media::SUCCESS) {
+        IMAGE_LOGE("[PixelMap ANI] WritePixels by region failed");
     }
 }
 
@@ -472,6 +523,11 @@ void PixelMapImpl::SetMemoryNameSync(string_view name)
     }
 }
 
+void PixelMapImpl::SetTransferDetached(bool detached)
+{
+    transferDetach_ = detached;
+}
+
 static FormatType FormatTypeOf(Media::PixelFormat pixelForamt)
 {
     switch (pixelForamt) {
@@ -573,6 +629,31 @@ void PixelMapImpl::SetColorSpace(uintptr_t colorSpace)
 #else
     ImageTaiheUtils::ThrowExceptionError(Media::ERR_INVALID_OPERATION, "Unsupported operation");
 #endif
+}
+
+void PixelMapImpl::Marshalling(uintptr_t sequence)
+{
+    if (nativePixelMap_ == nullptr) {
+        IMAGE_LOGE("[%{public}s] Native PixelMap is nullptr", __func__);
+        return;
+    }
+
+    MessageParcel* messageParcel = AniObjectUtils::Unwrap<MessageParcel>(get_env(),
+        reinterpret_cast<ani_object>(sequence));
+    if (messageParcel == nullptr) {
+        ImageTaiheUtils::ThrowExceptionError(Media::ERR_IPC,
+            "Marshalling PixelMap to parcel failed, parcel is nullptr");
+        return;
+    }
+    bool st = nativePixelMap_->Marshalling(*messageParcel);
+    if (!st) {
+        ImageTaiheUtils::ThrowExceptionError(Media::ERR_IPC, "Marshalling PixelMap to parcel failed");
+    }
+}
+
+PixelMap PixelMapImpl::UnmarshallingSync(uintptr_t sequence)
+{
+    return Unmarshalling(sequence);
 }
 
 void PixelMapImpl::ToSdrSync()
@@ -741,3 +822,4 @@ TH_EXPORT_CPP_API_CreatePixelMapByOptionsSync(ANI::Image::CreatePixelMapByOption
 TH_EXPORT_CPP_API_CreatePixelMapByPtr(ANI::Image::CreatePixelMapByPtr);
 TH_EXPORT_CPP_API_CreatePixelMapFromSurfaceByIdSync(ANI::Image::CreatePixelMapFromSurfaceByIdSync);
 TH_EXPORT_CPP_API_CreatePixelMapFromSurfaceByIdAndRegionSync(ANI::Image::CreatePixelMapFromSurfaceByIdAndRegionSync);
+TH_EXPORT_CPP_API_CreatePixelMapFromParcel(ANI::Image::CreatePixelMapFromParcel);

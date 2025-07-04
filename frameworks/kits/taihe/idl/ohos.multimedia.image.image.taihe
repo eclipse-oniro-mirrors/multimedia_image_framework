@@ -478,6 +478,10 @@ interface PixelMap {
   @gen_promise("writeBufferToPixels")
   WriteBufferToPixelsSync(src: @arraybuffer Array<u8>): void;
 
+  @gen_async("writePixels")
+  @gen_promise("writePixels")
+  WritePixelsSync(area: PositionArea): void;
+
   @gen_async("createAlphaPixelmap")
   @gen_promise("createAlphaPixelmap")
   CreateAlphaPixelmapSync(): PixelMap;
@@ -522,12 +526,19 @@ interface PixelMap {
 
   SetMemoryNameSync(name: String): void;
 
+  SetTransferDetached(detached: bool): void;
+
   @gen_promise("convertPixelFormat")
   ConvertPixelFormatSync(targetPixelFormat: PixelMapFormat): void;
 
   GetColorSpace(): @sts_type("colorSpaceManager.ColorSpaceManager") Opaque;
 
   SetColorSpace(colorSpace: @sts_type("colorSpaceManager.ColorSpaceManager") Opaque): void;
+
+  Marshalling(sequence: @sts_type("rpc.MessageSequence") Opaque): void;
+
+  @gen_promise("unmarshalling")
+  UnmarshallingSync(sequence: @sts_type("rpc.MessageSequence") Opaque): PixelMap;
 
   @gen_async("release")
   @gen_promise("release")
@@ -881,6 +892,8 @@ function CreatePixelMapFromSurfaceByIdSync(surfaceId: String): PixelMap;
 
 @overload("createPixelMapFromSurfaceSync")
 function CreatePixelMapFromSurfaceByIdAndRegionSync(surfaceId: String, region: Region): PixelMap;
+
+function CreatePixelMapFromParcel(sequence: @sts_type("rpc.MessageSequence") Opaque): PixelMap;
 
 @overload("createImageSource")
 function CreateImageSourceByUri(uri: String): ImageSource;
