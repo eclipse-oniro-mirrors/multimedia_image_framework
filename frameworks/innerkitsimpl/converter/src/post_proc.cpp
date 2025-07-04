@@ -1047,6 +1047,9 @@ static std::unique_ptr<AbsMemory> CreateSLRMemory(PixelMap &pixelMap, uint32_t d
     }
     MemoryData memoryData = {nullptr, dstBufferSize, "ScalePixelMapWithSLR ImageData", desiredSize,
         pixelMap.GetPixelFormat()};
+    if (ImageSystemProperties::GetNoPaddingEnabled()) {
+        memoryData.usage = BUFFER_USAGE_PREFER_NO_PADDING;
+    }
     dstMemory = MemoryManager::CreateMemory(allocatorType, memoryData);
     CHECK_ERROR_RETURN_RET_LOG(dstMemory == nullptr, nullptr, "ScalePixelMapWithSLR create dstMemory failed");
     std::unique_ptr<AbsMemory> lapMemory = nullptr;
