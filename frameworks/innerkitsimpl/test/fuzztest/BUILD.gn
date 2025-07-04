@@ -15,14 +15,18 @@ group("fuzztest") {
   testonly = true
   deps = [
     "imageaccessor_fuzzer:ImageAccessorFuzzTest",
+    "imageaccessor2_fuzzer:ImageAccessor2FuzzTest",
     "imagefwkconvertastc2rgb_fuzzer:ImageFwkConvertAstc2RgbFuzzTest",
     "imagefwkconvertp010yuv2rgbext_fuzzer:ImageFwkConvertP010Yuv2RgbExtFuzzTest",
+    "imagefwkconvertpixelfotmat_fuzzer:ImageFwkConvertPixelFormatFuzzTest",
     "imagefwkdecodepicture_fuzzer:ImageFwkDecodePictureFuzzTest",
     "imagefwkimagesource_fuzzer:ImageFwkImageSourceFuzzTest",
+    "imagefwkimagesource2_fuzzer:ImageFwkImageSource2FuzzTest",
     "imagegifencoder_fuzzer:ImageGifEnCoderFuzzTest",
     "imageheifimpl_fuzzer:ImageHeifImplFuzzTest",
     "imageinterfacepixelmap_fuzzer:ImageInterfacePixelmapFuzzTest",
     "imagepixelYuv_fuzzer:ImagePixelYuvFuzzTest",
+    "imagepixelYuv2_fuzzer:ImagePixelYuv2FuzzTest",
     "imagepixelmapBase_fuzzer:ImagePixelmapBaseFuzzTest",
     "imagepixelmapGetColorARGB_fuzzer:ImagePixelmapGetColorARGBFuzzTest",
     "imagepixelmapHdr_fuzzer:ImagePixelmapHdrFuzzTest",
@@ -35,6 +39,7 @@ group("fuzztest") {
     "imagepixelmapsetalpha_fuzzer:ImagePixelmapSetAlphaFuzzTest",
     "imagepixelmapsetalpha2_fuzzer:ImagePixelmapsetalpha2FuzzTest",
     "imageplugin_fuzzer:ImagePluginFuzzTest",
+    "imageplugin2_fuzzer:ImagePlugin2FuzzTest",
     "imagepngplugin_fuzzer:ImagePngPluginFuzzTest",
     "imagetextureencode_fuzzer:ImageTextureEncodeFuzzTest",
   ]

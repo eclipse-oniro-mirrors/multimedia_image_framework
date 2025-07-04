@@ -84,6 +84,8 @@ void PngDecoderFuncTest001(const std::string& filename)
     pngDecoder->HasProperty(NINE_PATCH);
     if (SUCCESS != pngDecoder->DecodeHeader()) {
         IMAGE_LOGI("%{public}s png DecodeHeader failed", __func__);
+        delete pngDecoder;
+        pngDecoder = nullptr;
         return;
     }
     PixelDecodeOptions plOpts;

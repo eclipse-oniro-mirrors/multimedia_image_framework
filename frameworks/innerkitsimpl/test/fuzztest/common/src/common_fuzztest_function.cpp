@@ -28,6 +28,8 @@
 #include "image_packer.h"
 #include "media_errors.h"
 #include "image_log.h"
+#include "abs_image_decoder.h"
+#include "image_type.h"
 
 #undef LOG_DOMAIN
 #define LOG_DOMAIN LOG_TAG_DOMAIN_ID_IMAGE
@@ -37,6 +39,11 @@
 
 static const int FOUR_BYTES_PER_PIXEL = 4;
 static const int NUM_TWO = 2;
+static constexpr uint32_t PIXELFORMAT_MODULO = 105;
+static constexpr uint32_t ALPHATYPE_MODULO = 4;
+static constexpr uint32_t COLORSPACE_MODULO = 17;
+static constexpr uint32_t DYNAMICRANGE_MODULO = 3;
+static constexpr uint32_t RESOLUTION_MODULO = 4;
 using namespace OHOS::Media;
 
 int ConvertDataToFd(const uint8_t* data, size_t size, std::string encodeFormat)
@@ -263,4 +270,54 @@ void PixelYuvTest002(PixelMap* pixelMap)
     pixelYuv->WritePixels(color);
     pixelYuv->WritePixel(pos, dstPixel);
     IMAGE_LOGI("%{public}s SUCCESS", __func__);
+}
+
+void SetFdpDecodeOptions(FuzzedDataProvider* fdp, OHOS::Media::DecodeOptions &decodeOpts)
+{
+    decodeOpts.fitDensity = fdp->ConsumeIntegral<int32_t>();
+    decodeOpts.CropRect.left = fdp->ConsumeIntegral<int32_t>();
+    decodeOpts.CropRect.top = fdp->ConsumeIntegral<int32_t>();
+    decodeOpts.CropRect.width = fdp->ConsumeIntegral<int32_t>();
+    decodeOpts.CropRect.height = fdp->ConsumeIntegral<int32_t>();
+    decodeOpts.desiredSize.width = fdp->ConsumeIntegralInRange<uint16_t>(0, 0xfff);
+    decodeOpts.desiredSize.height = fdp->ConsumeIntegralInRange<uint16_t>(0, 0xfff);
+    decodeOpts.desiredRegion.left = fdp->ConsumeIntegral<int32_t>();
+    decodeOpts.desiredRegion.top = fdp->ConsumeIntegral<int32_t>();
+    decodeOpts.desiredRegion.width = fdp->ConsumeIntegral<int32_t>();
+    decodeOpts.desiredRegion.height = fdp->ConsumeIntegral<int32_t>();
+    decodeOpts.rotateDegrees = fdp->ConsumeFloatingPoint<float>();
+    decodeOpts.rotateNewDegrees = fdp->ConsumeIntegral<uint32_t>();
+    decodeOpts.sampleSize = fdp->ConsumeIntegral<uint32_t>();
+    decodeOpts.desiredPixelFormat = static_cast<PixelFormat>(fdp->ConsumeIntegral<uint8_t>() % PIXELFORMAT_MODULO);
+    decodeOpts.photoDesiredPixelFormat = static_cast<PixelFormat>(fdp->ConsumeIntegral<uint8_t>() % PIXELFORMAT_MODULO);
+    decodeOpts.desiredColorSpace = static_cast<ColorSpace>(fdp->ConsumeIntegral<uint8_t>() % COLORSPACE_MODULO);
+    decodeOpts.allowPartialImage = fdp->ConsumeBool();
+    decodeOpts.editable = fdp->ConsumeBool();
+    decodeOpts.preference = static_cast<MemoryUsagePreference>(fdp->ConsumeBool());
+    decodeOpts.fastAstc = fdp->ConsumeBool();
+    decodeOpts.invokeType = fdp->ConsumeIntegral<uint16_t>();
+    decodeOpts.desiredDynamicRange =
+        static_cast<DecodeDynamicRange>(fdp->ConsumeIntegral<uint8_t>() % DYNAMICRANGE_MODULO);
+    decodeOpts.resolutionQuality = static_cast<ResolutionQuality>(fdp->ConsumeIntegral<uint8_t>() % RESOLUTION_MODULO);
+    decodeOpts.isAisr = fdp->ConsumeBool();
+    decodeOpts.isAppUseAllocator = fdp->ConsumeBool();
+}
+
+void SetFdpPixelDecodeOptions(FuzzedDataProvider* fdp, OHOS::ImagePlugin::PixelDecodeOptions &plOpts)
+{
+    plOpts.CropRect.left = fdp->ConsumeIntegral<int32_t>();
+    plOpts.CropRect.top = fdp->ConsumeIntegral<int32_t>();
+    plOpts.CropRect.width = fdp->ConsumeIntegral<int32_t>();
+    plOpts.CropRect.height = fdp->ConsumeIntegral<int32_t>();
+    plOpts.desiredSize.width = fdp->ConsumeIntegralInRange<uint16_t>(0, 0xfff);
+    plOpts.desiredSize.height = fdp->ConsumeIntegralInRange<uint16_t>(0, 0xfff);
+    plOpts.rotateDegrees = fdp->ConsumeFloatingPoint<float>();
+    plOpts.sampleSize = fdp->ConsumeIntegral<uint32_t>();
+    plOpts.desiredPixelFormat =
+        static_cast<OHOS::Media::PixelFormat>(fdp->ConsumeIntegral<uint8_t>() % PIXELFORMAT_MODULO);
+    plOpts.desiredColorSpace =
+        static_cast<OHOS::Media::ColorSpace>(fdp->ConsumeIntegral<uint8_t>() % COLORSPACE_MODULO);
+    plOpts.desireAlphaType = static_cast<OHOS::Media::AlphaType>(fdp->ConsumeIntegral<uint8_t>() % ALPHATYPE_MODULO);
+    plOpts.allowPartialImage = fdp->ConsumeBool();
+    plOpts.editable = fdp->ConsumeBool();
 }
