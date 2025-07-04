@@ -116,10 +116,7 @@ bool ExifMakerNote::ExifItem::GetValue(std::string &value, const ExifByteOrder &
     ExifMakerNote::ExifItem &item, bool mock)
 {
     auto *exifData = exif_data_new();
-    if (exifData == nullptr) {
-        IMAGE_LOGE("GetValue, data is null.");
-        return false;
-    }
+    CHECK_ERROR_RETURN_RET_LOG(exifData == nullptr, false, "GetValue, data is null.");
     exif_data_set_byte_order(exifData, order);
 
     auto ret = GetValue(value, exifData, item, mock);
@@ -133,10 +130,7 @@ bool ExifMakerNote::ExifItem::GetValue(std::string &value, ExifData *exifData,
     ExifMakerNote::ExifItem &item, bool mock)
 {
     auto *exifContent = exif_content_new();
-    if (exifContent == nullptr) {
-        IMAGE_LOGE("GetValue, content is null.");
-        return false;
-    }
+    CHECK_ERROR_RETURN_RET_LOG(exifContent == nullptr, false, "GetValue, content is null.");
 
     auto *keepParent = exifContent->parent;
 
@@ -155,10 +149,7 @@ bool ExifMakerNote::ExifItem::GetValue(std::string &value, ExifContent *exifCont
     ExifMakerNote::ExifItem &item, bool &mock)
 {
     auto *exifEntry = exif_entry_new();
-    if (exifEntry == nullptr) {
-        IMAGE_LOGE("GetValue, item is null.");
-        return false;
-    }
+    CHECK_ERROR_RETURN_RET_LOG(exifEntry == nullptr, false, "GetValue, item is null.");
 
     auto *keepParent = exifEntry->parent;
     auto keepTag = exifEntry->tag;
@@ -236,17 +227,13 @@ uint32_t ExifMakerNote::Parser(ExifData *exif, const unsigned char *data, uint32
         return Media::SUCCESS;
     }
 
-    if ((data == nullptr) || (size < sizeof(EXIF_HEADER))) {
-        IMAGE_LOGE("Parser leave. param invalid");
-        return Media::ERROR;
-    }
+    CHECK_ERROR_RETURN_RET_LOG((data == nullptr) || (size < sizeof(EXIF_HEADER)), Media::ERROR,
+        "Parser leave. param invalid");
 
     const unsigned char *newData = nullptr;
     uint32_t newSize = 0;
-    if (!FindExifLocation(data, size, newData, newSize)) {
-        IMAGE_LOGE("Parser leave. findExifLocation failed");
-        return Media::ERROR;
-    }
+    CHECK_ERROR_RETURN_RET_LOG(!FindExifLocation(data, size, newData, newSize), Media::ERROR,
+        "Parser leave. findExifLocation failed");
 
     data = newData - BACK_TO_EXIF_BEFORE;
     size = newSize + BACK_TO_EXIF_BEFORE;
@@ -263,10 +250,8 @@ uint32_t ExifMakerNote::Parser(ExifData *exif, const unsigned char *data, uint32
             "num=%{public}u, valueOffset=%{public}u, valueLength=%{public}u",
             de.ifd, de.tag, de.format, de.dataCounts, de.valueOffset, de.valueLength);
 
-        if (ParserMakerNote(data + de.valueOffset, de.valueLength) == Media::SUCCESS) {
-            IMAGE_LOGD("Parser leave");
-            return Media::SUCCESS;
-        }
+        CHECK_DEBUG_RETURN_RET_LOG(ParserMakerNote(data + de.valueOffset, de.valueLength) == Media::SUCCESS,
+            Media::SUCCESS, "Parser leave");
     }
 
     IMAGE_LOGD("Parser leave");

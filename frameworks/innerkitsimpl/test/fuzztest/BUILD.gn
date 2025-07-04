@@ -36,6 +36,7 @@ group("fuzztest") {
     "imagepixelmapsetalpha2_fuzzer:ImagePixelmapsetalpha2FuzzTest",
     "imageplugin_fuzzer:ImagePluginFuzzTest",
     "imagepngplugin_fuzzer:ImagePngPluginFuzzTest",
+    "imagepngplugin2_fuzzer:ImagePngPlugin2FuzzTest",
     "imagetextureencode_fuzzer:ImageTextureEncodeFuzzTest",
   ]
 }

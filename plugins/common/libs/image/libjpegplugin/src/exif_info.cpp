@@ -1104,17 +1104,13 @@ static bool GetFractionFromStr(const std::string &decimal, ExifRational &result)
 {
     int intPart = 0;
     std::string intPartStr = decimal.substr(0, decimal.find("."));
-    if (!ConvertToInt(intPartStr, intPart)) {
-        IMAGE_LOGE("%{public}s failed, value out of range", __func__);
-        return false;
-    }
+    CHECK_ERROR_RETURN_RET_LOG(!ConvertToInt(intPartStr, intPart), false,
+        "%{public}s failed, value out of range", __func__);
 
     double decPart = 0.0;
     std::string decPartStr = decimal.substr(decimal.find("."));
-    if (!ConvertToDouble(decPartStr, decPart)) {
-        IMAGE_LOGE("%{public}s failed, value out of range", __func__);
-        return false;
-    }
+    CHECK_ERROR_RETURN_RET_LOG(!ConvertToDouble(decPartStr, decPart), false,
+        "%{public}s failed, value out of range", __func__);
 
     int numerator = decPart * pow(10, decimal.length() - decimal.find(".") - 1);
     int denominator = pow(10, decimal.length() - decimal.find(".") - 1);
@@ -1229,10 +1225,7 @@ bool EXIFInfo::SetGpsRationals(ExifData *data, ExifEntry **ptrEntry, ExifByteOrd
 bool EXIFInfo::SetGpsDegreeRational(ExifData *data, ExifEntry **ptrEntry, ExifByteOrder order, const ExifTag &tag,
     const std::vector<std::string> &dataVec)
 {
-    if (dataVec.size() != SIZE_2) {
-        IMAGE_LOGD("Gps degree data size is invalid.");
-        return false;
-    }
+    CHECK_DEBUG_RETURN_RET_LOG(dataVec.size() != SIZE_2, false, "Gps degree data size is invalid.");
     ExifRational exifRational;
     exifRational.numerator = static_cast<ExifLong>(atoi(dataVec[CONSTANT_0].c_str()));
     exifRational.denominator = static_cast<ExifLong>(atoi(dataVec[CONSTANT_1].c_str()));
@@ -1251,10 +1244,8 @@ bool EXIFInfo::CreateExifEntryOfBitsPerSample(const ExifTag &tag, ExifData *data
     CHECK_DEBUG_RETURN_RET_LOG(cond, false, "Get exif entry failed.");
     std::vector<std::string> bitsVec;
     SplitStr(value, ",", bitsVec);
-    if (bitsVec.size() > CONSTANT_4) {
-        IMAGE_LOGD("BITS_PER_SAMPLE Invalid value %{public}s", value.c_str());
-        return false;
-    }
+    CHECK_DEBUG_RETURN_RET_LOG(bitsVec.size() > CONSTANT_4, false,
+        "BITS_PER_SAMPLE Invalid value %{public}s", value.c_str());
     if (bitsVec.size() != 0) {
         for (size_t i = 0; i < bitsVec.size(); i++) {
             exif_set_short((*ptrEntry)->data + i * CONSTANT_2, order, (ExifShort)atoi(bitsVec[i].c_str()));
@@ -1310,9 +1301,7 @@ ExifFormat EXIFInfo::GetExifFormatByExifTag(const ExifTag &tag)
 std::string EXIFInfo::GetExifNameByExifTag(const ExifTag &tag)
 {
     for (uint32_t i = 0; i < sizeof(EXIF_TAG_TABLE) / sizeof(EXIF_TAG_TABLE[0]); i++) {
-        if (EXIF_TAG_TABLE[i].tag != tag) {
-            return EXIF_TAG_TABLE[i].name;
-        }
+        CHECK_ERROR_RETURN_RET(EXIF_TAG_TABLE[i].tag != tag, EXIF_TAG_TABLE[i].name);
     }
     return "";
 }
@@ -1321,10 +1310,8 @@ bool EXIFInfo::CreateExifEntryOfRationalExif(const ExifTag &tag, ExifData *data,
 {
     std::vector<std::string> longVec;
     SplitStr(value, separator, longVec);
-    if (longVec.size() != sepSize) {
-        IMAGE_LOGD("%{public}s Invalid value %{public}s", GetExifNameByExifTag(tag).c_str(), value.c_str());
-        return false;
-    }
+    CHECK_DEBUG_RETURN_RET_LOG(longVec.size() != sepSize, false,
+        "%{public}s Invalid value %{public}s", GetExifNameByExifTag(tag).c_str(), value.c_str());
     ExifRational longRational;
     longRational.numerator = static_cast<ExifLong>(atoi(longVec[0].c_str()));
     longRational.denominator = static_cast<ExifLong>(atoi(longVec[1].c_str()));
@@ -1340,10 +1327,8 @@ bool EXIFInfo::CreateExifEntryOfGpsTimeStamp(const ExifTag &tag, ExifData *data,
 {
     std::vector<std::string> longVec;
     SplitStr(value, ":", longVec);
-    if (longVec.size() != CONSTANT_3) {
-        IMAGE_LOGD("GPS time stamp Invalid value %{public}s", value.c_str());
-        return false;
-    }
+    CHECK_DEBUG_RETURN_RET_LOG(longVec.size() != CONSTANT_3, false,
+        "GPS time stamp Invalid value %{public}s", value.c_str());
     *ptrEntry = CreateExifTag(data, EXIF_IFD_GPS, tag, MOVE_OFFSET_24, EXIF_FORMAT_SRATIONAL);
     bool cond = (*ptrEntry) == nullptr;
     CHECK_DEBUG_RETURN_RET_LOG(cond, false, "Get GPS time stamp exif entry failed.");
@@ -1418,15 +1403,15 @@ bool EXIFInfo::CreateExifEntry(const ExifTag &tag, ExifData *data, const std::st
             IMAGE_LOGD("%{public}s memcpy error", GetExifNameByExifTag(tag).c_str());
         }
         return true;
-    } else if (tag == EXIF_TAG_GPS_LATITUDE || tag == EXIF_TAG_GPS_LONGITUDE) {
-        return CreateExifEntryOfGpsLatitudeOrLongitude(tag, data, value, order, ptrEntry);
-    } else if (std::find(vector3.begin(), vector3.end(), tag) != vector3.end()) {
-        return CreateExifEntryOfRationalExif(tag, data, value, order, ptrEntry, "/", static_cast<size_t>(CONSTANT_2));
-    } else if (tag == EXIF_TAG_COMPRESSED_BITS_PER_PIXEL) {
-        return CreateExifEntryOfCompressedBitsPerPixel(tag, data, value, order, ptrEntry);
-    } else if (tag == EXIF_TAG_GPS_TIME_STAMP) {
-        return CreateExifEntryOfGpsTimeStamp(tag, data, value, order, ptrEntry);
     }
+    CHECK_ERROR_RETURN_RET(tag == EXIF_TAG_GPS_LATITUDE || tag == EXIF_TAG_GPS_LONGITUDE,
+        CreateExifEntryOfGpsLatitudeOrLongitude(tag, data, value, order, ptrEntry));
+    CHECK_ERROR_RETURN_RET(std::find(vector3.begin(), vector3.end(), tag) != vector3.end(),
+        CreateExifEntryOfRationalExif(tag, data, value, order, ptrEntry, "/", static_cast<size_t>(CONSTANT_2)));
+    CHECK_ERROR_RETURN_RET(tag == EXIF_TAG_COMPRESSED_BITS_PER_PIXEL,
+        CreateExifEntryOfCompressedBitsPerPixel(tag, data, value, order, ptrEntry));
+    CHECK_ERROR_RETURN_RET(tag == EXIF_TAG_GPS_TIME_STAMP,
+        CreateExifEntryOfGpsTimeStamp(tag, data, value, order, ptrEntry));
     return true;
 }
 
