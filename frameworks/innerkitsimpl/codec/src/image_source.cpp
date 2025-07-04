@@ -3985,6 +3985,8 @@ static uint32_t AllocSurfaceBuffer(DecodeContext &context, uint32_t format)
 CM_ColorSpaceType ImageSource::ConvertColorSpaceType(ColorManager::ColorSpaceName colorSpace, bool base)
 {
     switch (colorSpace) {
+        case ColorManager::ColorSpaceName::ADOBE_RGB :
+            return CM_ADOBERGB_FULL;
         case ColorManager::ColorSpaceName::SRGB :
             return CM_SRGB_FULL;
         case ColorManager::ColorSpaceName::SRGB_LIMIT :
