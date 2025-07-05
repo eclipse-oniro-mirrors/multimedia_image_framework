@@ -1311,8 +1311,16 @@ STATIC_EXEC_FUNC(CreatePixelMapUsingAllocator)
         auto pixelmap = PixelMap::Create(context->opts);
         context->rPixelMap = std::move(pixelmap);
     } else {
-        auto pixelmap = PixelMap::Create(colors, context->colorsBufferSize, context->opts);
-        context->rPixelMap = std::move(pixelmap);
+        Media::ImageInfo info;
+        info.size = context->opts.size;
+        info.pixelFormat = context->opts.srcPixelFormat;
+        int32_t bufferSize = Media::ImageUtils::GetByteCount(info);
+        if (context->colorsBufferSize < bufferSize || bufferSize <= 0) {
+            context->status = ERR_MEDIA_UNSUPPORT_OPERATION;
+        } else {
+            auto pixelmap = PixelMap::Create(colors, context->colorsBufferSize, context->opts);
+            context->rPixelMap = std::move(pixelmap);
+        }
     }
     if (IMG_NOT_NULL(context->rPixelMap)) {
         context->status = SUCCESS;

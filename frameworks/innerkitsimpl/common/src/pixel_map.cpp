@@ -3734,6 +3734,7 @@ uint32_t PixelMap::CheckAlphaFormatInput(PixelMap &wPixelMap, const bool isPremu
 
 bool PixelMap::AttachAddrBySurfaceBuffer()
 {
+#if !defined(_WIN32) && !defined(_APPLE) && !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
     if (data_ == nullptr && displayOnly_ && context_ != nullptr &&
         allocatorType_ == AllocatorType::DMA_ALLOC) {
         SurfaceBuffer* sb = static_cast<SurfaceBuffer*>(context_);
@@ -3747,6 +3748,7 @@ bool PixelMap::AttachAddrBySurfaceBuffer()
             return false;
         }
     }
+#endif
     return true;
 }
 

@@ -48,11 +48,23 @@ void PixelMapEncodeTest(){
     opts.scaleMode = static_cast<Media::ScaleMode>(FDP->ConsumeIntegral<uint8_t>() % SCALEMODE_MODULO);
     opts.editable = FDP->ConsumeBool();
     opts.useSourceIfMatch = FDP->ConsumeBool();
-    int32_t pixelbytes = Media::ImageUtils::GetPixelBytes(opts.srcPixelFormat);
-        size_t datalength = opts.size.width * opts.size.height * pixelbytes;
-        std::unique_ptr<uint8_t[]> colorData = std::make_unique<uint8_t[]>(datalength);
-        if(colorData == nullptr)
-                return;
+    size_t datalength = 0;
+    if (opts.srcPixelFormat == PixelFormat::NV12 || opts.srcPixelFormat == PixelFormat::NV21) {
+        Media::InitializationOptions optsTmp = opts;
+        optsTmp.pixelFormat = opts.srcPixelFormat;
+        optsTmp.srcPixelFormat = opts.srcPixelFormat;
+        std::unique_ptr<Media::PixelMap> tmpPixel = Media::PixelMap::Create(optsTmp);
+        if (tmpPixel == nullptr) {
+            return;
+        }
+        datalength = tmpPixel->GetByteCount();
+    } else {
+        int32_t pixelbytes = Media::ImageUtils::GetPixelBytes(opts.srcPixelFormat);
+        datalength = opts.size.width * opts.size.height * pixelbytes;
+    }
+    std::unique_ptr<uint8_t[]> colorData = std::make_unique<uint8_t[]>(datalength);
+    if(colorData == nullptr)
+            return;
     FDP->ConsumeData(colorData.get(), datalength);
     auto pixelmap = Media::PixelMap::Create(reinterpret_cast<uint32_t*>(colorData.get()), datalength, opts);
     if(pixelmap ==nullptr)
