@@ -741,5 +741,35 @@ HWTEST_F(PixelAstcTest, PixelAstcTest027, TestSize.Level3)
     }
     GTEST_LOG_(INFO) << "PixelAstcTest: PixelAstcTest027 end";
 }
+
+
+/**
+ * @tc.name: PixelAstcTest028
+ * @tc.desc: PixelAstc rotate
+ * @tc.type: FUNC
+ */
+HWTEST_F(PixelAstcTest, PixelAstcTest028, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PixelAstcTest: PixelAstcTest028 start";
+    std::unique_ptr<PixelMap> pixelAstc = std::unique_ptr<PixelMap>();
+    uint8_t* data = nullptr;
+    ConstructPixelAstc(pixelAstc, &data);
+    ASSERT_NE(pixelAstc.get(), nullptr);
+    float degrees = 45.0;     // 45.0 means rotate angle value
+    pixelAstc->rotate(degrees);
+    TransformData transformData;
+    pixelAstc->GetTransformData(transformData);
+    ASSERT_EQ(transformData.rotateD, 45.0); // 45.0 means rotate angle value
+    float xAxis = 20.0; // 20.0 means x_coordinate value
+    float yAxis = 20.0; // 20.0 means y_coordinate value
+    pixelAstc->translate(xAxis, yAxis);
+    pixelAstc->GetTransformData(transformData);
+    ASSERT_EQ(transformData.translateX, 20.0); // 20.0 means x_coordinate value
+    ASSERT_EQ(transformData.translateY, 20.0); // 20.0 means y_coordinate value
+    if (data != nullptr) {
+        free(data);
+    }
+    GTEST_LOG_(INFO) << "PixelAstcTest: PixelAstcTest028 end";
+}
 }
 }
