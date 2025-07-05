@@ -218,6 +218,16 @@ bool ImageSystemProperties::GetSLRLaplacianEnabled()
 #endif
 }
 
+bool ImageSystemProperties::GetNoPaddingEnabled()
+{
+#if !defined(CROSS_PLATFORM)
+    static bool ret = system::GetBoolParameter("persist.gralloc.nopadding.enabled", false);
+    return ret;
+#else
+    return false;
+#endif
+}
+
 bool ImageSystemProperties::IsSupportOpaqueOpt()
 {
     return false;

@@ -937,12 +937,15 @@ bool HeifDecoderImpl::SwDecodeAuxiliaryImage(std::shared_ptr<HeifImage> &gainmap
     uint32_t width = gainmapImage->GetOriginalWidth();
     uint32_t height = gainmapImage->GetOriginalHeight();
     sptr<SurfaceBuffer> output = SurfaceBuffer::Create();
-    BufferRequestConfig = {
+    BufferRequestConfig config = {
         .width = width,
         .height = height,
         .format = GRAPHIC_PIXEL_FMT_YCBCR_420_SP,
         .usage = BUFFER_USAGE_CPU_READ | BUFFER_USAGE_CPU_WRITE | BUFFER_USAGE_MEM_DMA | BUFFER_USAGE_MEM_MMZ_CACHE,
-        .timeout = 0;
+        .timeout = 0
+    };
+    if (ImageSystemProperties::GetNoPaddingEnabled()) {
+        requestConfig.usage |= BUFFER_USAGE_PREFER_NO_PADDING;
     }
     GSError ret = output->Alloc(config);
     bool cond = ret != GSERROR_OK;

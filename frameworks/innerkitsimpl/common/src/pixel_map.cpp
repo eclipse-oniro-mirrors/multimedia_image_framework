@@ -3945,6 +3945,9 @@ static bool GendstTransInfo(SkTransInfo &srcInfo, SkTransInfo &dstInfo, SkMatrix
 #if !defined(_WIN32) && !defined(_APPLE) && !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
     Size desiredSize = {dstInfo.info.width(), dstInfo.info.height()};
     MemoryData memoryData = {nullptr, dstInfo.info.computeMinByteSize(), "Trans ImageData", desiredSize, format};
+    if (ImageSystemProperties::GetNoPaddingEnabled()) {
+        memoryData.usage = BUFFER_USAGE_PREFER_NO_PADDING;
+    }
 #else
     MemoryData memoryData = {nullptr, dstInfo.info.computeMinByteSize(), "Trans ImageData"};
     memoryData.format = format;
