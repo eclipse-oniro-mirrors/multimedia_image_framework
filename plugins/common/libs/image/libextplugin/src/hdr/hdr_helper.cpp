@@ -535,7 +535,7 @@ static void ConvertExtendInfoMain(ExtendInfoMain info, HDRVividExtendMetadata& m
             metadata.metaISO.enhanceClippedThreholdMinGainmap[INDEX_ONE]) < eps) &&
         (fabs(metadata.metaISO.enhanceClippedThreholdMinGainmap[INDEX_ZERO] -
             metadata.metaISO.enhanceClippedThreholdMinGainmap[INDEX_TWO]) < eps)) {
-        metadata.metaISO.gainmapChannelNum = INDEX_ONE;
+        IMAGE_LOGI("HDR-IMAGE ParseISO enhanceClipped ThreholMaxGainmap has same num");
     }
 }
 
@@ -674,6 +674,11 @@ static void ParseISOExtendInfoMain(uint8_t* data, uint32_t& offset, uint32_t len
     uint32_t baseImageOffsetDenominator = ImageUtils::BytesToUint32(data, offset, length);
     int32_t altImageOffsetNumerator = ImageUtils::BytesToInt32(data, offset, length);
     uint32_t altImageOffsetDenominator = ImageUtils::BytesToUint32(data, offset, length);
+    IMAGE_LOGD("HDR-IMAGE ParseISO minGainmapNumerator %{publiuc}d", minGainmapNumerator);
+    IMAGE_LOGD("HDR-IMAGE ParseISO maxGainmapNumerator %{publiuc}d", maxGainmapNumerator);
+    IMAGE_LOGD("HDR-IMAGE ParseISO gammaNumerator %{publiuc}d", gammaNumerator);
+    IMAGE_LOGD("HDR-IMAGE ParseISO baseImageOffsetNumerator %{publiuc}d", baseImageOffsetNumerator);
+    IMAGE_LOGD("HDR-IMAGE ParseISO altImageOffsetNumerator %{publiuc}d", altImageOffsetNumerator);
     if (minGainmapDenominator == EMPTY_SIZE) {
         info.gainMapMin[index] = EMPTY_SIZE;
     } else {

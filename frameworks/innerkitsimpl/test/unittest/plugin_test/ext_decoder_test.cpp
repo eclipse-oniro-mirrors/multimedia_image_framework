@@ -2390,5 +2390,42 @@ HWTEST_F(ExtDecoderTest, EncodePixelMapTest001, TestSize.Level3)
     EXPECT_EQ(errorCode, OHOS::Media::SUCCESS);
     EXPECT_NE(imageSourceDest, nullptr);
 }
+
+/**
+ * @tc.name: EncodeGainmapPixelMapTest001
+ * @tc.desc: Test HEIF encoding from a YCRCB_P010 format PixelMap and decode to widegamut image.
+ * @tc.type: FUNC
+ */
+HWTEST_F(ExtDecoderTest, EncodeGainmapPixelMapTest001, TestSize.Level3)
+{
+    uint32_t errorCode = 0;
+    SourceOptions sourceOpts;
+    std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(IMAGE_HEIFHDR_SRC.c_str(),
+                                                                              sourceOpts, errorCode);
+    ASSERT_NE(imageSource, nullptr);
+    DecodeOptions opts;
+    opts.desiredPixelFormat = PixelFormat::YCRCB_P010;
+    std::shared_ptr<PixelMap> pixelmap = imageSource->CreatePixelMap(opts, errorCode);
+    ASSERT_EQ(errorCode, OHOS::Media::SUCCESS);
+    ASSERT_NE(pixelmap, nullptr);
+    ImagePacker packer;
+    PackOption option;
+    option.format = "image/heif";
+    option.needsPackProperties = true;
+    uint32_t startpc = packer.StartPacking(IMAGE_DEST, option);
+    ASSERT_EQ(startpc, OHOS::Media::SUCCESS);
+    uint32_t retAddImage = packer.AddImage(*pixelmap);
+    ASSERT_EQ(retAddImage, OHOS::Media::SUCCESS);
+    uint32_t retFinalizePacking = packer.FinalizePacking();
+    ASSERT_EQ(retFinalizePacking, OHOS::Media::SUCCESS);
+    std::unique_ptr<ImageSource> imageSourceDest = ImageSource::CreateImageSource(IMAGE_DEST, sourceOpts, errorCode);
+    EXPECT_EQ(errorCode, OHOS::Media::SUCCESS);
+    EXPECT_NE(imageSourceDest, nullptr);
+    DecodeOptions optsForDest;
+    optsForDest.desiredDynamicRange = DecodeDynamicRange::AUTO;
+    optsForDest.isCreateWideGamutSdrPixelMap = true;
+    std::shared_ptr<PixelMap> pixelmapAfterPacker = imageSourceDest->CreatePixelMap(optsForDest, errorCode);
+}
+
 }
 }

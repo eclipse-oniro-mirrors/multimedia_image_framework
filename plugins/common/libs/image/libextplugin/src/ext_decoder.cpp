@@ -2010,8 +2010,9 @@ static std::vector<ColorSpaceNameEnum> sColorSpaceNamedMap = {
     {"DCI-P3 D65 Gamut with sRGB Transfer", OHOS::ColorManager::ColorSpaceName::DISPLAY_P3},
     {"Adobe RGB (1998)", OHOS::ColorManager::ColorSpaceName::ADOBE_RGB},
     {"DCI P3", OHOS::ColorManager::ColorSpaceName::DCI_P3},
-    {"sRGB", OHOS::ColorManager::ColorSpaceName::SRGB}
-    /*{"BT.2020", OHOS::ColorManager::ColorSpaceName::BT2020}*/
+    {"sRGB", OHOS::ColorManager::ColorSpaceName::SRGB},
+    {"BT.2020", OHOS::ColorManager::ColorSpaceName::BT2020},
+    {"Rec2020 Gamut with HLG Transfer", OHOS::ColorManager::ColorSpaceName::BT2020_HLG}
 };
 
 static bool MatchColorSpaceName(const uint8_t* buf, uint32_t size, OHOS::ColorManager::ColorSpaceName &name)

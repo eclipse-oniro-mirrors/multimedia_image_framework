@@ -1809,6 +1809,7 @@ static void CreateWideGamutSdrPixelMapExecute(napi_env env, void *data)
     }
     context->decodeOpts.isCreateWideGamutSdrPixelMap = true;
     context->decodeOpts.desiredDynamicRange = DecodeDynamicRange::AUTO;
+    context->decodeOpts.allocatorType = AllocatorType::DMA_ALLOC;
     context->rPixelMap = CreatePixelMapInner(context->constructor_, context->rImageSource,
         context->index, context->decodeOpts, context->status);
     if (context->status != SUCCESS) {
