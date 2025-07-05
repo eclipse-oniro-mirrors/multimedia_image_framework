@@ -57,6 +57,17 @@
 #include "refbase.h"
 #endif
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+#include "libswscale/swscale.h"
+#include "libavutil/opt.h"
+#include "libavutil/imgutils.h"
+#include "libavcodec/avcodec.h"
+#ifdef __cplusplus
+}
+#endif
+
 #undef LOG_DOMAIN
 #define LOG_DOMAIN LOG_TAG_DOMAIN_ID_IMAGE
 
@@ -115,6 +126,19 @@ constexpr uint32_t RGBA1010102_R_SHIFT = 0;
 constexpr uint32_t RGBA1010102_G_SHIFT = 10;
 constexpr uint32_t RGBA1010102_B_SHIFT = 20;
 constexpr uint32_t RGBA1010102_A_SHIFT = 30;
+const std::map<PixelFormat, AVPixelFormat> FFMPEG_PIXEL_FORMAT_MAP = {
+    {PixelFormat::UNKNOWN, AV_PIX_FMT_NONE},
+    {PixelFormat::NV12, AV_PIX_FMT_NV12},
+    {PixelFormat::NV21, AV_PIX_FMT_NV21},
+    {PixelFormat::RGB_565, AV_PIX_FMT_RGB565},
+    {PixelFormat::RGBA_8888, AV_PIX_FMT_RGBA},
+    {PixelFormat::BGRA_8888, AV_PIX_FMT_BGRA},
+    {PixelFormat::ARGB_8888, AV_PIX_FMT_ARGB},
+    {PixelFormat::RGBA_F16, AV_PIX_FMT_RGBA64},
+    {PixelFormat::RGB_888, AV_PIX_FMT_RGB24},
+    {PixelFormat::YCRCB_P010, AV_PIX_FMT_P010LE},
+    {PixelFormat::YCBCR_P010, AV_PIX_FMT_P010LE},
+};
 bool ImageUtils::GetFileSize(const string &pathName, size_t &size)
 {
     if (pathName.empty()) {
@@ -204,6 +228,50 @@ int32_t ImageUtils::GetPixelBytes(const PixelFormat &pixelFormat)
             break;
     }
     return pixelBytes;
+}
+
+static AVPixelFormat PixelFormatToAVPixelFormat(const PixelFormat &pixelFormat)
+{
+    auto formatSearch = FFMPEG_PIXEL_FORMAT_MAP.find(pixelFormat);
+    return (formatSearch != FFMPEG_PIXEL_FORMAT_MAP.end()) ?
+        formatSearch->second : AVPixelFormat::AV_PIX_FMT_NONE;
+}
+
+int32_t ImageUtils::GetYUVByteCount(const ImageInfo& info)
+{
+    if (!IsYUV(info.pixelFormat)) {
+        IMAGE_LOGE("[ImageUtil]unsupported pixel format");
+        return -1;
+    }
+    if (info.size.width <= 0 || info.size.height <= 0) {
+        IMAGE_LOGE("[ImageUtil]image size error");
+        return -1;
+    }
+    AVPixelFormat avPixelFormat = PixelFormatToAVPixelFormat(info.pixelFormat);
+    if (avPixelFormat == AVPixelFormat::AV_PIX_FMT_NONE) {
+        IMAGE_LOGE("[ImageUtil]pixel format to ffmpeg pixel format failed");
+        return -1;
+    }
+    return av_image_get_buffer_size(avPixelFormat, info.size.width, info.size.height, 1);
+}
+
+int32_t ImageUtils::GetByteCount(ImageInfo imageInfo)
+{
+    if (ImageUtils::IsAstc(imageInfo.pixelFormat)) {
+        return static_cast<int32_t>(ImageUtils::GetAstcBytesCount(imageInfo));
+    }
+    if (IsYUV(imageInfo.pixelFormat)) {
+        return GetYUVByteCount(imageInfo);
+    }
+    int64_t rowDataSize =
+        ImageUtils::GetRowDataSizeByPixelFormat(imageInfo.size.width, imageInfo.pixelFormat);
+    int64_t height = imageInfo.size.height;
+    int64_t byteCount = rowDataSize * height;
+    if (rowDataSize <= 0 || byteCount > INT32_MAX) {
+        IMAGE_LOGE("[PixelMap] GetByteCount failed: invalid rowDataSize or byteCount overflowed");
+        return 0;
+    }
+    return static_cast<int32_t>(byteCount);
 }
 
 int32_t ImageUtils::GetRowDataSizeByPixelFormat(const int32_t &width, const PixelFormat &format)
