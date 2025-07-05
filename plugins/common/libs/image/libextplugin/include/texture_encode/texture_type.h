@@ -31,6 +31,7 @@ enum class SutProfile {
 
 constexpr uint8_t ASTC_EXTEND_INFO_TLV_NUM = 1; // curren only one group TLV
 constexpr uint8_t ASTC_EXTEND_INFO_TLV_NUM_2 = 2;
+constexpr uint8_t ASTC_EXTEND_INFO_TLV_NUM_4 = 4;
 constexpr uint8_t ASTC_EXTEND_INFO_TLV_NUM_6 = 6;
 constexpr uint32_t ASTC_EXTEND_INFO_SIZE_DEFINITION_LENGTH = 4; // 4 bytes to discripte for extend info summary bytes
 constexpr uint8_t ASTC_EXTEND_INFO_TYPE_LENGTH = 1; // 1 byte to discripte the content type for every TLV group
