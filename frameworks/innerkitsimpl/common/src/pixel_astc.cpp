@@ -96,17 +96,45 @@ void PixelAstc::translate(float xAxis, float yAxis)
 {
     TransformData transformData;
     GetTransformData(transformData);
-    transformData.translateX = xAxis;
-    transformData.translateY = yAxis;
+    transformData.translateX += xAxis;
+    transformData.translateY += yAxis;
+    ImageInfo imageInfo;
+    GetImageInfo(imageInfo);
+    imageInfo.size.width += static_cast<int32_t>(xAxis);
+    imageInfo.size.height += static_cast<int32_t>(yAxis);
+    if (imageInfo.size.width <= 0 || imageInfo.size.height <= 0) {
+        IMAGE_LOGE("PixelAstc translate failed");
+        return;
+    }
     SetTransformData(transformData);
+    SetImageInfo(imageInfo, true);
+}
+
+std::pair<float, float> calculateRotatedDimensions(float width, float height, float rotationDegrees)
+{
+    float radians = rotationDegrees * M_PI / 180.0f;
+    
+    float cosTheta = std::cos(radians);
+    float sinTheta = std::sin(radians);
+    
+    float newWidth = std::abs(width * cosTheta) + std::abs(height * sinTheta);
+    float newHeight = std::abs(width * sinTheta) + std::abs(height * cosTheta);
+    return {newWidth, newHeight};
 }
 
 void PixelAstc::rotate(float degrees)
 {
     TransformData transformData;
     GetTransformData(transformData);
-    transformData.rotateD = degrees;
+    transformData.rotateD += degrees;
+    transformData.rotateD = fmod(fmod(transformData.rotateD, 360.0f) + 360.0f, 360.0f); // Normalize to [0, 360)
     SetTransformData(transformData);
+    ImageInfo imageInfo;
+    GetImageInfo(imageInfo);
+    auto newDimensions = calculateRotatedDimensions(imageInfo.size.width, imageInfo.size.height, degrees);
+    imageInfo.size.width = static_cast<int32_t>(newDimensions.first);
+    imageInfo.size.height = static_cast<int32_t>(newDimensions.second);
+    SetImageInfo(imageInfo, true);
 }
 
 void PixelAstc::flip(bool xAxis, bool yAxis)
