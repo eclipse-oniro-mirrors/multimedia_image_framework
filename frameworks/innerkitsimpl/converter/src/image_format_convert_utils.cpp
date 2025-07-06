@@ -309,7 +309,7 @@ static bool YuvP010ToRGB10(const uint8_t *srcBuffer, const YUVDataInfo &yDInfo, 
     }
     if (srcParam.format == PixelFormat::YCRCB_P010) {
         size_t midBufferSize =
-            static_cast<size_t>((yDInfo.uvOffset + yDInfo.uvWidth * yDInfo.uvWidth * TWO_SLICES) * TWO_SLICES);
+            static_cast<size_t>((yDInfo.uvOffset + yDInfo.uvWidth * yDInfo.uvHeight * TWO_SLICES) * TWO_SLICES);
         if (midBufferSize == 0 || midBufferSize > PIXEL_MAP_MAX_RAM_SIZE) {
             IMAGE_LOGE("Invalid destination buffer size is 0!");
             return false;
@@ -726,7 +726,7 @@ static bool YuvP010ToYuv(const uint8_t *srcBuffer, const YUVDataInfo &yDInfo, Pi
     }
     if (srcParam.format == PixelFormat::YCRCB_P010) {
         size_t midBufferSize =
-            static_cast<size_t>((yDInfo.uvOffset + yDInfo.uvWidth * yDInfo.uvWidth * TWO_SLICES) * TWO_SLICES);
+            static_cast<size_t>((yDInfo.uvOffset + yDInfo.uvWidth * yDInfo.uvHeight * TWO_SLICES) * TWO_SLICES);
         if (midBufferSize == 0 || midBufferSize > PIXEL_MAP_MAX_RAM_SIZE) {
             IMAGE_LOGE("Invalid destination buffer size is 0!");
             return false;
@@ -834,7 +834,7 @@ static bool YuvP010ToRGB(const uint8_t *srcBuffer, const YUVDataInfo &yDInfo, Pi
     }
     if (srcParam.format == PixelFormat::YCRCB_P010) {
         size_t midBufferSize =
-            static_cast<size_t>((yDInfo.uvOffset + yDInfo.uvWidth * yDInfo.uvWidth * TWO_SLICES) * TWO_SLICES);
+            static_cast<size_t>((yDInfo.uvOffset + yDInfo.uvWidth * yDInfo.uvHeight * TWO_SLICES) * TWO_SLICES);
         if (midBufferSize == 0 || midBufferSize > PIXEL_MAP_MAX_RAM_SIZE) {
             IMAGE_LOGE("Invalid destination buffer size is 0!");
             return false;
