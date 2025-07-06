@@ -1254,6 +1254,7 @@ uint32_t ExtDecoder::DoHeifToRgbDecode(DecodeContext &context)
     decoder->SetSampleFormat(sampleSize_, heifColorSpaceName_);
     decoder->setDstBuffer(reinterpret_cast<uint8_t*>(context.pixelsBuffer.buffer),
         dstBuffer->GetStride(), context.pixelsBuffer.context);
+    SetOutPutFormat(context.info.pixelFormat, decoder);
     bool decodeRet = decoder->decode(nullptr);
     if (!decodeRet && sampleSize_ != DEFAULT_SAMPLE_SIZE) {
         IMAGE_LOGD("hwdecode failed, do heif sw decode");
