@@ -1061,6 +1061,7 @@ unique_ptr<PixelMap> ImageSource::CreatePixelMapExtended(uint32_t index, const D
             IMAGE_LOGE("convert rgb to yuv failed, return origin rgb!");
         }
     }
+    ImageUtils::FlushSurfaceBuffer(pixelMap.get());
     return pixelMap;
 }
 
