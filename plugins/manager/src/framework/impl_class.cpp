@@ -58,10 +58,8 @@ uint32_t ImplClass::Register(const weak_ptr<Plugin> &plugin, const json &classIn
     }
     IMAGE_LOGD("register class: %{public}s.", className_.c_str());
 
-    if (!AnalysisServices(classInfo)) {
-        IMAGE_LOGE("failed to analysis services for class %{public}s.", className_.c_str());
-        return ERR_INVALID_PARAMETER;
-    }
+    CHECK_ERROR_RETURN_RET_LOG(!AnalysisServices(classInfo), ERR_INVALID_PARAMETER,
+        "failed to analysis services for class %{public}s.", className_.c_str());
 
     uint32_t result = JsonHelper::GetUint16Value(classInfo, "priority", priority_);
     if (result != SUCCESS) {
@@ -72,10 +70,8 @@ uint32_t ImplClass::Register(const weak_ptr<Plugin> &plugin, const json &classIn
     }
     IMAGE_LOGD("get class priority: %{public}u.", priority_);
 
-    if (!AnalysisMaxInstance(classInfo)) {
-        IMAGE_LOGE("failed to analysis maxInstance for class %{public}s.", className_.c_str());
-        return ERR_INVALID_PARAMETER;
-    }
+    CHECK_ERROR_RETURN_RET_LOG(!AnalysisMaxInstance(classInfo), ERR_INVALID_PARAMETER,
+        "failed to analysis maxInstance for class %{public}s.", className_.c_str());
     IMAGE_LOGD("get class maxInstance: %{public}u.", maxInstance_);
 
     if (JsonHelper::CheckElementExistence(classInfo, "capabilities") == SUCCESS) {
@@ -334,10 +330,8 @@ PluginClassBase *ImplClass::DoCreateObject(shared_ptr<Plugin> &plugin) __attribu
     }
 
     PluginClassBase *pluginBaseObj = CfiFactory(factory, className_);
-    if (pluginBaseObj == nullptr) {
-        IMAGE_LOGE("create object result null, className: %{public}s.", className_.c_str());
-        return nullptr;
-    }
+    CHECK_ERROR_RETURN_RET_LOG(pluginBaseObj == nullptr, nullptr,
+        "create object result null, className: %{public}s.", className_.c_str());
 
 #ifndef PLUGIN_FLAG_RTTI_ENABLE
     // when -frtti is not enable, to ensure correct base class side-to-side conversion,

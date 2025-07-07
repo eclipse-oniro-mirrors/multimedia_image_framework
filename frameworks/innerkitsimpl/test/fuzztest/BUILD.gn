@@ -41,6 +41,7 @@ group("fuzztest") {
     "imageplugin_fuzzer:ImagePluginFuzzTest",
     "imageplugin2_fuzzer:ImagePlugin2FuzzTest",
     "imagepngplugin_fuzzer:ImagePngPluginFuzzTest",
+    "imagepngplugin2_fuzzer:ImagePngPlugin2FuzzTest",
     "imagetextureencode_fuzzer:ImageTextureEncodeFuzzTest",
   ]
 }
