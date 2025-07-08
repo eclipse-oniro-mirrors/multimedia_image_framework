@@ -168,7 +168,7 @@ const static std::string DEFAULT_VERSION_ID = "1";
 const static std::string UNKNOWN_IMAGE = "unknown";
 constexpr static int NUM_ONE = 1;
 constexpr static uint64_t MALLOC_LIMIT = 300 * 1024 * 1024;
-constexpr static int RAW_MIN_BYTEREAD = 5000;
+constexpr static int RAW_MIN_BYTEREAD = 10000;
 #ifdef JPEG_HW_DECODE_ENABLE
 const static uint32_t PLANE_COUNT_TWO = 2;
 #endif
