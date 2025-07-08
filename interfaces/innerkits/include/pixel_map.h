@@ -865,7 +865,7 @@ public:
 
     NATIVEEXPORT uint32_t GetVersionId();
     NATIVEEXPORT void AddVersionId();
-    void UpdatePixelsAlphaType(std::unique_ptr<PixelMap>& pixelMap);
+    void UpdatePixelsAlphaType();
 
 protected:
     static constexpr uint8_t TLV_VARINT_BITS = 7;
