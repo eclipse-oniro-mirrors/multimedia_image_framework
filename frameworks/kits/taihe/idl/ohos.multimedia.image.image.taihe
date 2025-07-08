@@ -491,11 +491,11 @@ interface PixelMap {
   @gen_async("scale")
   @gen_promise("scale")
   @overload("scaleSync")
-  ScaleSync(x: f32, y: f32): void;
+  ScaleSync(x: f64, y: f64): void;
 
   @gen_promise("scale")
   @overload("scaleSync")
-  ScaleWithAntiAliasingSync(x: f32, y: f32, level: AntiAliasingLevel): void;
+  ScaleWithAntiAliasingSync(x: f64, y: f64, level: AntiAliasingLevel): void;
 
   @gen_async("crop")
   @gen_promise("crop")
@@ -503,7 +503,7 @@ interface PixelMap {
 
   @gen_async("rotate")
   @gen_promise("rotate")
-  RotateSync(angle: f32): void;
+  RotateSync(angle: f64): void;
 
   @gen_async("flip")
   @gen_promise("flip")
@@ -511,7 +511,7 @@ interface PixelMap {
 
   @gen_async("opacity")
   @gen_promise("opacity")
-  OpacitySync(rate: f32): void;
+  OpacitySync(rate: f64): void;
 
   @gen_promise("toSdr")
   ToSdrSync(): void;

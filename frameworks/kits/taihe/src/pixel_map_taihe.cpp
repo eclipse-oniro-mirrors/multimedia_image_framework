@@ -363,7 +363,7 @@ int32_t PixelMapImpl::GetDensity()
     return nativePixelMap_->GetBaseDensity();
 }
 
-void PixelMapImpl::ScaleSync(float x, float y)
+void PixelMapImpl::ScaleSync(double x, double y)
 {
     if (nativePixelMap_ == nullptr) {
         IMAGE_LOGE("[%{public}s] Native PixelMap is nullptr", __func__);
@@ -374,10 +374,10 @@ void PixelMapImpl::ScaleSync(float x, float y)
         return;
     }
 
-    nativePixelMap_->scale(x, y);
+    nativePixelMap_->scale(static_cast<float>(x), static_cast<float>(y));
 }
 
-void PixelMapImpl::ScaleWithAntiAliasingSync(float x, float y, AntiAliasingLevel level)
+void PixelMapImpl::ScaleWithAntiAliasingSync(double x, double y, AntiAliasingLevel level)
 {
     if (nativePixelMap_ == nullptr) {
         IMAGE_LOGE("[%{public}s] Native PixelMap is nullptr", __func__);
@@ -388,7 +388,7 @@ void PixelMapImpl::ScaleWithAntiAliasingSync(float x, float y, AntiAliasingLevel
         return;
     }
 
-    nativePixelMap_->scale(x, y, Media::AntiAliasingOption(level.get_value()));
+    nativePixelMap_->scale(static_cast<float>(x), static_cast<float>(y), Media::AntiAliasingOption(level.get_value()));
 }
 
 void PixelMapImpl::CropSync(ohos::multimedia::image::image::Region const& region)
@@ -409,7 +409,7 @@ void PixelMapImpl::CropSync(ohos::multimedia::image::image::Region const& region
     }
 }
 
-void PixelMapImpl::RotateSync(float angle)
+void PixelMapImpl::RotateSync(double angle)
 {
     if (nativePixelMap_ == nullptr) {
         IMAGE_LOGE("[%{public}s] Native PixelMap is nullptr", __func__);
@@ -420,7 +420,7 @@ void PixelMapImpl::RotateSync(float angle)
         return;
     }
 
-    nativePixelMap_->rotate(angle);
+    nativePixelMap_->rotate(static_cast<float>(angle));
 }
 
 void PixelMapImpl::FlipSync(bool horizontal, bool vertical)
@@ -437,7 +437,7 @@ void PixelMapImpl::FlipSync(bool horizontal, bool vertical)
     nativePixelMap_->flip(horizontal, vertical);
 }
 
-void PixelMapImpl::OpacitySync(float rate)
+void PixelMapImpl::OpacitySync(double rate)
 {
     if (nativePixelMap_ == nullptr) {
         IMAGE_LOGE("[%{public}s] Native PixelMap is nullptr", __func__);
@@ -448,7 +448,7 @@ void PixelMapImpl::OpacitySync(float rate)
         return;
     }
 
-    uint32_t status = nativePixelMap_->SetAlpha(rate);
+    uint32_t status = nativePixelMap_->SetAlpha(static_cast<float>(rate));
     if (status != Media::SUCCESS) {
         IMAGE_LOGE("[PixelMap ANI] SetAlpha failed");
     }

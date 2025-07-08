@@ -48,12 +48,12 @@ public:
     int32_t GetBytesNumberPerRow();
     int32_t GetPixelBytesNumber();
     int32_t GetDensity();
-    void ScaleSync(float x, float y);
-    void ScaleWithAntiAliasingSync(float x, float y, AntiAliasingLevel level);
+    void ScaleSync(double x, double y);
+    void ScaleWithAntiAliasingSync(double x, double y, AntiAliasingLevel level);
     void CropSync(ohos::multimedia::image::image::Region const& region);
-    void RotateSync(float angle);
+    void RotateSync(double angle);
     void FlipSync(bool horizontal, bool vertical);
-    void OpacitySync(float rate);
+    void OpacitySync(double rate);
     void SetMemoryNameSync(string_view name);
     void ConvertPixelFormatSync(PixelMapFormat targetPixelFormat);
     uintptr_t GetColorSpace();
