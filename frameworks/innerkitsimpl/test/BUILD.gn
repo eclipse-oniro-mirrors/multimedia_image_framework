@@ -1557,6 +1557,29 @@ ohos_unittest("eglimagetest") {
   ]
 }
 
+ohos_unittest("eglimagetest2") {
+  module_out_path = module_output_path
+
+  include_dirs = [
+    "$image_subsystem/frameworks/innerkitsimpl/egl_image/include",
+    "$image_subsystem/interfaces/innerkits/include",
+  ]
+  sources = [ "unittest/egl_image_test2.cpp" ]
+
+  deps = [ "$image_subsystem/frameworks/innerkitsimpl/egl_image:egl_image" ]
+
+  external_deps = [
+    "c_utils:utils",
+    "googletest:gmock_main",
+    "googletest:gtest_main",
+    "graphic_2d:EGL",
+    "graphic_2d:GLESv3",
+    "graphic_2d:color_manager",
+    "graphic_surface:surface",
+    "hilog:libhilog",
+  ]
+}
+
 ohos_unittest("jpgyuvtest") {
   module_out_path = module_output_path
 
