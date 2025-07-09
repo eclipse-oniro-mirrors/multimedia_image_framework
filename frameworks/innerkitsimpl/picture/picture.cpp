@@ -679,6 +679,10 @@ int32_t Picture::SetExifMetadata(sptr<SurfaceBuffer> &surfaceBuffer)
     CHECK_ERROR_RETURN_RET_LOG(cond, ERR_IMAGE_INVALID_PARAMETER,
                                "The size of exif metadata exceeds the buffer size.");
 
+    cond = static_cast<uint32_t>(size) < tiffHeaderPos;
+    CHECK_ERROR_RETURN_RET_LOG(cond, ERR_IMAGE_INVALID_PARAMETER,
+                               "Tiff header position exceeds the size of exif metadata.");
+
     cond = static_cast<uint32_t>(size) - tiffHeaderPos > MAX_EXIFMETADATA_SIZE;
     CHECK_ERROR_RETURN_RET_LOG(cond, ERR_IMAGE_INVALID_PARAMETER,
                                "Failed to set exif metadata,"
