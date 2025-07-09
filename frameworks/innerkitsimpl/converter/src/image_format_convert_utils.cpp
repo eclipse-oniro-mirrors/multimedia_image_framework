@@ -1197,9 +1197,27 @@ static bool RGBToYuv(const uint8_t *srcBuffer, const RGBDataInfo &rgbInfo, Pixel
         destInfo.bufferSize == 0) {
         return false;
     }
-    SrcConvertParam srcParam = {rgbInfo.width, rgbInfo.height};
-    srcParam.format = srcFormat;
+    int32_t copyWidth = rgbInfo.width;
+    int32_t copyHeight = rgbInfo.height;
+    SrcConvertParam srcParam;
     srcParam.buffer = srcBuffer;
+    if (rgbInfo.width % EVEN_ALIGNMENT != 0 || rgbInfo.height % EVEN_ALIGNMENT != 0) {
+        if (!ImageUtils::GetAlignedNumber(copyWidth, EVEN_ALIGNMENT) ||
+            !ImageUtils::GetAlignedNumber(copyHeight, EVEN_ALIGNMENT)) {
+            return false;
+        }
+        int32_t copySrcLen = copyWidth * copyHeight * ImageUtils::GetPixelBytes(srcFormat);
+        int32_t rgbInfoLen = rgbInfo.width * rgbInfo.height * ImageUtils::GetPixelBytes(srcFormat);
+        std::unique_ptr<uint8_t[]> copySrcBuffer = std::make_unique<uint8_t[]>(copySrcLen);
+        if (copySrcBuffer == nullptr || EOK != memcpy_s(copySrcBuffer.get(), rgbInfoLen, srcBuffer, rgbInfoLen)) {
+            IMAGE_LOGE("alloc memory or memcpy_s failed!");
+            return false;
+        }
+        srcParam.buffer = copySrcBuffer.get();
+    }
+    srcParam.width = copyWidth;
+    srcParam.height = copyHeight;
+    srcParam.format = srcFormat;
 
     DestConvertParam destParam = {destInfo.width, destInfo.height};
     destParam.format = destFormat;
