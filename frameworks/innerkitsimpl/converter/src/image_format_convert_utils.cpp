@@ -46,6 +46,7 @@ namespace {
     constexpr uint32_t BYTES_PER_PIXEL_BGRA = 4;
     constexpr uint32_t STRIDES_PER_PLANE = 8;
     constexpr int32_t PIXEL_MAP_MAX_RAM_SIZE = 600 * 1024 * 1024;
+    constexpr uint32_t EVEN_ALIGNMENT = 2;
 }
 
 #undef LOG_TAG
