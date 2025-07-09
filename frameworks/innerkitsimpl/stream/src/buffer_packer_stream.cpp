@@ -42,8 +42,8 @@ bool BufferPackerStream::Write(const uint8_t *buffer, uint32_t size)
         return false;
     }
     if (maxSize_ < offset_) {
-        IMAGE_LOGE("offset:[%{public}u] out of max size:[%{public}u].",
-            offset_, maxSize_);
+        IMAGE_LOGE("offset:[%{public}lld] out of max size:[%{public}u].",
+            static_cast<long long>(offset_), maxSize_);
         return false;
     }
     uint32_t leftSize = maxSize_ - offset_;
