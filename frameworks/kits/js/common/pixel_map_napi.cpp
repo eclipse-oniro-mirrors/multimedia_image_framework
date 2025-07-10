@@ -1316,7 +1316,9 @@ STATIC_EXEC_FUNC(CreatePixelMapUsingAllocator)
         info.size = context->opts.size;
         info.pixelFormat = context->opts.srcPixelFormat;
         int32_t bufferSize = Media::ImageUtils::GetByteCount(info);
-        if (context->colorsBufferSize < bufferSize || bufferSize <= 0) {
+        if (bufferSize <= 0 || context->colorsBufferSize < static_cast<size_t>(bufferSize)) {
+            IMAGE_LOGE("invalid parameter: buffer size %{public}zu is less than required buffer size %{public}d",
+            context->colorsBufferSize, bufferSize);
             context->status = ERR_MEDIA_UNSUPPORT_OPERATION;
         } else {
             auto pixelmap = PixelMap::Create(colors, context->colorsBufferSize, context->opts);

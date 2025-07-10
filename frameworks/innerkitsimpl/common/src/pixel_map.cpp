@@ -3070,9 +3070,6 @@ PixelMap *PixelMap::FinishUnmarshalling(PixelMap *pixelMap, Parcel &parcel,
         delete pixelMap;
         return nullptr;
     }
-    if (pixelMap->IsDisplayOnly()) {
-        ImageUtils::FlushSurfaceBuffer(pixelMap);
-    }
     return pixelMap;
 }
 
