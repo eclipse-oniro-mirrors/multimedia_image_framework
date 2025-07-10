@@ -276,6 +276,7 @@ if (use_clang_ios) {
       "ability_runtime:runtime",
       "c_utils:utils",
       "drivers_interface_display:display_commontype_idl_headers",
+      "ets_runtime:libark_jsruntime",
       "eventhandler:libeventhandler",
       "graphic_2d:2d_graphics",
       "graphic_2d:EGL",
@@ -293,11 +294,6 @@ if (use_clang_ios) {
       "napi:ace_napi",
       "resource_management:librawfile",
     ]
-    if (defined(ark_hybrid) && ark_hybrid) {
-      external_deps += [ "runtime_core:libarkruntime" ]
-    } else {
-      external_deps += [ "ets_runtime:libark_jsruntime" ]
-    }
 
     public_external_deps = [ "graphic_2d:color_manager" ]
 
