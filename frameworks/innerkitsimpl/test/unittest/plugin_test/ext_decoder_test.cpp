@@ -2426,6 +2426,5 @@ HWTEST_F(ExtDecoderTest, EncodeGainmapPixelMapTest001, TestSize.Level3)
     optsForDest.isCreateWideGamutSdrPixelMap = true;
     std::shared_ptr<PixelMap> pixelmapAfterPacker = imageSourceDest->CreatePixelMap(optsForDest, errorCode);
 }
-
 }
 }
