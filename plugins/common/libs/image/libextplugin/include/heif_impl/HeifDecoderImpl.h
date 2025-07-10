@@ -114,9 +114,6 @@ private:
     bool HwDecodeGrids(std::shared_ptr<HeifImage> &image,
         GridInfo &gridInfo, sptr<SurfaceBuffer> &hwBuffer);
 
-    bool HwDecodeIovls(std::shared_ptr<HeifImage> &image,
-        GridInfo &gridInfo, sptr<SurfaceBuffer> &hwBuffer);
-
     bool HwDecodeIdenImage(std::shared_ptr<HeifImage> &image, GridInfo &gridInfo,
         sptr<SurfaceBuffer> *outBuffer, bool isPrimary);
 
@@ -136,9 +133,6 @@ private:
                                   sptr<SurfaceBuffer> &output, sptr<SurfaceBuffer> *outputBuf);
 
     bool SwDecodeGrids(Media::ImageFwkExtManager &extManager,
-                       std::shared_ptr<HeifImage> &image, HevcSoftDecodeParam &param);
-
-    bool SwDecodeIovls(Media::ImageFwkExtManager &extManager,
                        std::shared_ptr<HeifImage> &image, HevcSoftDecodeParam &param);
 
     bool SwDecodeIdenImage(std::shared_ptr<HeifImage> &image, HevcSoftDecodeParam &param,

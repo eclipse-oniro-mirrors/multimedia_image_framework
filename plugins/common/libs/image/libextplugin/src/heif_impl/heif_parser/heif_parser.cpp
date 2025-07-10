@@ -31,7 +31,7 @@ namespace ImagePlugin {
 const auto EXIF_ID = "Exif\0\0";
 const auto HEIF_AUXTTYPE_ID_FRAGMENT_MAP = "urn:com:huawei:photo:5:0:0:aux:fragmentmap";
 const std::set<std::string> INFE_ITEM_TYPE = {
-    "hvc1", "grid", "tmap", "iden", "mime", "iovl"
+    "hvc1", "grid", "tmap", "iden", "mime"
 };
 const static uint32_t HEIF_MAX_EXIF_SIZE = 128 * 1024;
 
@@ -299,24 +299,6 @@ void HeifParser::GetTileImages(heif_item_id gridItemId, std::vector<std::shared_
         return;
     }
     auto toItemIds = irefBox_->GetReferences(gridItemId, BOX_TYPE_DIMG);
-    for (heif_item_id toItemId: toItemIds) {
-        auto tileImage = GetImage(toItemId);
-        if (tileImage) {
-            out.push_back(tileImage);
-        }
-    }
-}
-
-void HeifParser::GetIovlImages(heif_item_id itemId, std::vector<std::shared_ptr<HeifImage>> &out)
-{
-    auto infe = GetInfeBox(itemId);
-    if (!infe || infe->GetItemType() != "iovl") {
-        return;
-    }
-    if (!irefBox_) {
-        return;
-    }
-    auto toItemIds = irefBox_->GetReferences(itemId, BOX_TYPE_DIMG);
     for (heif_item_id toItemId: toItemIds) {
         auto tileImage = GetImage(toItemId);
         if (tileImage) {
