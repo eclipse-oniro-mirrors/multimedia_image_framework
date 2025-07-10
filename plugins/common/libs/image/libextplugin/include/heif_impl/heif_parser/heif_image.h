@@ -117,13 +117,9 @@ public:
     std::vector<uint8_t> GetISOMetadata();
     HeifFragmentMetadata GetFragmentMetadata();
 
-    bool IsMovieImage() const;
-    void SetMovieImage(bool flag);
-
 private:
     heif_item_id itemId_ = 0;
     bool isPrimaryImage_ = false;
-    bool isMovieImage_ = false;
 
     uint32_t originalWidth_ = 0;
     uint32_t originalHeight_ = 0;
