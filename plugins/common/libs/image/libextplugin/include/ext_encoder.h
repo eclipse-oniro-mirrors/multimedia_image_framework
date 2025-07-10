@@ -77,6 +77,7 @@ private:
     uint32_t DoHdrEncode(ExtWStream& wStream);
 #if !defined(_WIN32) && !defined(_APPLE) && !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
     sptr<SurfaceBuffer> ConvertToSurfaceBuffer(Media::PixelMap* pixelmap);
+    sptr<SurfaceBuffer> ConvertPixelMapToDmaBuffer(std::shared_ptr<PixelMap> pixelmap);
     uint32_t EncodeSdrImage(ExtWStream& outputStream);
     uint32_t EncodeDualVivid(ExtWStream& outputStream);
     uint32_t EncodeSingleVivid(ExtWStream& outputStream);

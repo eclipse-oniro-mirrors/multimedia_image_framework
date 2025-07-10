@@ -833,6 +833,17 @@ sptr<SurfaceBuffer> ExtEncoder::ConvertToSurfaceBuffer(PixelMap* pixelmap)
     return surfaceBuffer;
 }
 
+sptr<SurfaceBuffer> ExtEncoder::ConvertPixelMapToDmaBuffer(std::shared_ptr<PixelMap> pixelmap)
+{
+    sptr<SurfaceBuffer> surfaceBuffer;
+    if (pixelmap->GetAllocatorType() != AllocatorType::DMA_ALLOC) {
+        surfaceBuffer = ConvertToSurfaceBuffer(pixelmap.get());
+    } else {
+        surfaceBuffer = sptr<SurfaceBuffer>(reinterpret_cast<SurfaceBuffer*>(pixelmap->GetFd()));
+    }
+    return surfaceBuffer;
+}
+
 static void FreeBaseAndGainMapSurfaceBuffer(sptr<SurfaceBuffer>& base, sptr<SurfaceBuffer>& gainMap)
 {
     ImageUtils::SurfaceBuffer_Unreference(base.GetRefPtr());
@@ -1272,7 +1283,7 @@ uint32_t ExtEncoder::AssembleHeifAuxiliaryNoncodingMap(std::vector<ImageItem>& i
         IMAGE_LOGE("%{public}s The auxMap is nullptr or allocator type is not DMA_ALLOC", __func__);
         return ERR_IMAGE_INVALID_PARAMETER;
     }
-    sptr<SurfaceBuffer> auxMapSptr(reinterpret_cast<SurfaceBuffer*>(auxMap->GetContentPixel()->GetFd()));
+    sptr<SurfaceBuffer> auxMapSptr(reinterpret_cast<SurfaceBuffer*>(auxMap->GetContentPixel()));
     bool cond = !auxMapSptr;
     CHECK_ERROR_RETURN_RET_LOG(cond, ERR_IMAGE_INVALID_PARAMETER, "%{public}s auxMapSptr is nullptr", __func__);
 
@@ -1304,10 +1315,8 @@ uint32_t ExtEncoder::AssembleHeifAuxiliaryNoncodingMap(std::vector<ImageItem>& i
 uint32_t ExtEncoder::AssembleHeifUnrefocusMap(std::vector<ImageItem>& inputImgs)
 {
     auto unrefocusMap = picture_->GetAuxiliaryPicture(AuxiliaryPictureType::UNREFOCUS_MAP);
-    bool cond = !unrefocusMap || !unrefocusMap->GetContentPixel() ||
-        unrefocusMap->GetContentPixel()->GetAllocatorType() != AllocatorType::DMA_ALLOC;
-    CHECK_ERROR_RETURN_RET_LOG(cond, ERR_IMAGE_INVALID_PARAMETER,
-        "%{public}s The unrefocusMap is nullptr or allocator type is not DMA_ALLOC", __func__);
+    bool cond = !unrefocusMap || !unrefocusMap->GetContentPixel();
+    CHECK_ERROR_RETURN_RET_LOG(cond, ERR_IMAGE_INVALID_PARAMETER, "%{public}s The unrefocusMap is nullptr", __func__);
     HeifEncodeItemInfo itemInfo = GetHeifEncodeItemInfo(AuxiliaryPictureType::UNREFOCUS_MAP);
     auto item = InitAuxiliaryImageItem(itemInfo.itemId, itemInfo.itemName);
     bool sdrIsSRGB = unrefocusMap->GetContentPixel()->GetToSdrColorSpaceIsSRGB();
@@ -1320,7 +1329,7 @@ uint32_t ExtEncoder::AssembleHeifUnrefocusMap(std::vector<ImageItem>& inputImgs)
     cond = !AssembleICCImageProperty(iccProfile, item.sharedProperties);
     CHECK_ERROR_RETURN_RET_LOG(cond, ERR_IMAGE_INVALID_PARAMETER,
         "%{public}s AssembleICCImageProperty failed", __func__);
-    sptr<SurfaceBuffer> unrefocusMapSptr(reinterpret_cast<SurfaceBuffer*>(unrefocusMap->GetContentPixel()->GetFd()));
+    sptr<SurfaceBuffer> unrefocusMapSptr = ConvertPixelMapToDmaBuffer(unrefocusMap->GetContentPixel());
     cond = !unrefocusMapSptr;
     CHECK_ERROR_RETURN_RET_LOG(cond, ERR_IMAGE_INVALID_PARAMETER, "%{public}s unrefocusMapSptr is nullptr", __func__);
     item.pixelBuffer = sptr<NativeBuffer>::MakeSptr(unrefocusMapSptr->GetBufferHandle());
@@ -1362,11 +1371,9 @@ RelativeLocation GetFragmentRelLocation(std::shared_ptr<AuxiliaryPicture> &fragm
 uint32_t ExtEncoder::AssembleHeifFragmentMap(std::vector<ImageItem>& inputImgs)
 {
     auto fragmentMap = picture_->GetAuxiliaryPicture(AuxiliaryPictureType::FRAGMENT_MAP);
-    bool cond = !fragmentMap || !fragmentMap->GetContentPixel() ||
-        fragmentMap->GetContentPixel()->GetAllocatorType() != AllocatorType::DMA_ALLOC;
-    CHECK_ERROR_RETURN_RET_LOG(cond, ERR_IMAGE_INVALID_PARAMETER,
-        "%{public}s The fragmentMap is nullptr or allocator type is not DMA_ALLOC", __func__);
-    sptr<SurfaceBuffer> fragmentMapSptr(reinterpret_cast<SurfaceBuffer*>(fragmentMap->GetContentPixel()->GetFd()));
+    bool cond = !fragmentMap || !fragmentMap->GetContentPixel();
+    CHECK_ERROR_RETURN_RET_LOG(cond, ERR_IMAGE_INVALID_PARAMETER, "%{public}s The fragmentMap is nullptr", __func__);
+    sptr<SurfaceBuffer> fragmentMapSptr = ConvertPixelMapToDmaBuffer(fragmentMap->GetContentPixel());
     cond = !fragmentMapSptr;
     CHECK_ERROR_RETURN_RET_LOG(cond, ERR_IMAGE_INVALID_PARAMETER, "%{public}s fragmentMapSptr is nullptr", __func__);
     HeifEncodeItemInfo itemInfo = GetHeifEncodeItemInfo(AuxiliaryPictureType::FRAGMENT_MAP);
