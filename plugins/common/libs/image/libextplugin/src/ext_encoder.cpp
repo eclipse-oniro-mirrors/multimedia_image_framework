@@ -1283,7 +1283,7 @@ uint32_t ExtEncoder::AssembleHeifAuxiliaryNoncodingMap(std::vector<ImageItem>& i
         IMAGE_LOGE("%{public}s The auxMap is nullptr or allocator type is not DMA_ALLOC", __func__);
         return ERR_IMAGE_INVALID_PARAMETER;
     }
-    sptr<SurfaceBuffer> auxMapSptr(reinterpret_cast<SurfaceBuffer*>(auxMap->GetContentPixel()));
+    sptr<SurfaceBuffer> auxMapSptr(reinterpret_cast<SurfaceBuffer*>(auxMap->GetContentPixel()->GetFd()));
     bool cond = !auxMapSptr;
     CHECK_ERROR_RETURN_RET_LOG(cond, ERR_IMAGE_INVALID_PARAMETER, "%{public}s auxMapSptr is nullptr", __func__);
 
