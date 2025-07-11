@@ -1139,6 +1139,7 @@ bool PixelMap::CopyPixelMap(PixelMap &source, PixelMap &dstPixelMap, int32_t &er
         ImageInfo dstImageInfo;
         dstPixelMap.GetImageInfo(dstImageInfo);
         MemoryData memoryData = {nullptr, uBufferSize, "Copy ImageData", dstImageInfo.size, dstImageInfo.pixelFormat};
+        memoryData.usage = source.GetNoPaddingUsage();
         memory = MemoryManager::CreateMemory(source.GetAllocatorType(), memoryData);
         if (memory == nullptr) {
             return false;
@@ -3999,7 +4000,7 @@ static void GenSrcTransInfo(SkTransInfo &srcInfo, ImageInfo &imageInfo, uint8_t*
 }
 
 static bool GendstTransInfo(SkTransInfo &srcInfo, SkTransInfo &dstInfo, SkMatrix &matrix,
-    TransMemoryInfo &memoryInfo)
+    TransMemoryInfo &memoryInfo, uint64_t usage)
 {
     dstInfo.r = matrix.mapRect(srcInfo.r);
     int width = FloatToInt(dstInfo.r.width());
@@ -4013,9 +4014,7 @@ static bool GendstTransInfo(SkTransInfo &srcInfo, SkTransInfo &dstInfo, SkMatrix
 #if !defined(_WIN32) && !defined(_APPLE) && !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
     Size desiredSize = {dstInfo.info.width(), dstInfo.info.height()};
     MemoryData memoryData = {nullptr, dstInfo.info.computeMinByteSize(), "Trans ImageData", desiredSize, format};
-    if (ImageSystemProperties::GetNoPaddingEnabled()) {
-        memoryData.usage = BUFFER_USAGE_PREFER_NO_PADDING;
-    }
+    memoryData.usage = usage;
 #else
     MemoryData memoryData = {nullptr, dstInfo.info.computeMinByteSize(), "Trans ImageData"};
     memoryData.format = format;
@@ -4113,7 +4112,7 @@ bool PixelMap::DoTranslation(TransInfos &infos, const AntiAliasingOption &option
     }
 
     SkTransInfo dst;
-    if (!GendstTransInfo(src, dst, infos.matrix, dstMemory)) {
+    if (!GendstTransInfo(src, dst, infos.matrix, dstMemory, GetNoPaddingUsage())) {
         IMAGE_LOGE("GendstTransInfo dstMemory falied");
         this->errorCode = IMAGE_RESULT_DECODE_FAILED;
         return false;
@@ -4341,6 +4340,7 @@ uint32_t PixelMap::crop(const Rect &rect)
     Size desiredSize = {dst.info.width(), dst.info.height()};
     MemoryData memoryData = {nullptr, dst.info.computeMinByteSize(), "Trans ImageData", desiredSize,
                              imageInfo.pixelFormat};
+    memoryData.usage = GetNoPaddingUsage();
     auto dstMemory = MemoryManager::CreateMemory(allocatorType_, memoryData);
     if (dstMemory == nullptr || dstMemory->data.data == nullptr) {
         return ERR_IMAGE_CROP;
@@ -4424,6 +4424,7 @@ std::unique_ptr<AbsMemory> PixelMap::CreateSdrMemory(ImageInfo &imageInfo, Pixel
         outFormat = PixelFormat::RGBA_8888;
     }
     sdrData.format = outFormat;
+    sdrData.usage = GetNoPaddingUsage();
     auto sdrMemory = MemoryManager::CreateMemory(dstType, sdrData);
     if (sdrMemory == nullptr) {
         IMAGE_LOGI("sdr memory alloc failed.");
@@ -4634,8 +4635,8 @@ uint32_t PixelMap::ApplyColorSpace(const OHOS::ColorManager::ColorSpace &grColor
     // Build sk target infomation
     SkTransInfo dst;
     dst.info = ToSkImageInfo(imageInfo, grColorSpace.ToSkColorSpace());
-    MemoryData memoryData = {nullptr, dst.info.computeMinByteSize(),
-        "Trans ImageData", {dst.info.width(), dst.info.height()}, imageInfo.pixelFormat};
+    MemoryData memoryData = {nullptr, dst.info.computeMinByteSize(), "Trans ImageData",
+        {dst.info.width(), dst.info.height()}, imageInfo.pixelFormat, GetNoPaddingUsage()};
     auto m = MemoryManager::CreateMemory(allocatorType_, memoryData);
     if (m == nullptr) {
         IMAGE_LOGE("applyColorSpace CreateMemory failed");
@@ -4705,6 +4706,18 @@ bool PixelMap::CloseFd()
 std::unique_ptr<PixelMap> PixelMap::ConvertFromAstc(PixelMap *source, uint32_t &errorCode, PixelFormat destFormat)
 {
     return PixelConvert::AstcToRgba(source, errorCode, destFormat);
+}
+
+uint64_t PixelMap::GetNoPaddingUsage()
+{
+    if (allocatorType_ != AllocatorType::DMA_ALLOC || GetFd() == nullptr) {
+        return 0;
+    }
+    SurfaceBuffer* sbBuffer = reinterpret_cast<SurfaceBuffer*>(GetFd());
+    if (sbBuffer->GetUsage() & BUFFER_USAGE_PREFER_NO_PADDING) {
+        return BUFFER_USAGE_PREFER_NO_PADDING;
+    }
+    return 0;
 }
 } // namespace Media
 } // namespace OHOS

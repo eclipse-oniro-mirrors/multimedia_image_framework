@@ -137,7 +137,7 @@ bool AllocDmaBuffer(DecodeContext &context, uint64_t byteCount, SkSize &svgSize)
         .colorGamut = GraphicColorGamut::GRAPHIC_COLOR_GAMUT_SRGB,
         .transform = GraphicTransformType::GRAPHIC_ROTATE_NONE,
     };
-    if (ImageSystemProperties::GetNoPaddingEnabled()) {
+    if (context.useNoPadding) {
         requestConfig.usage |= BUFFER_USAGE_PREFER_NO_PADDING;
     }
     GSError ret = sb->Alloc(requestConfig);

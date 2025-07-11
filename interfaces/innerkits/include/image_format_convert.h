@@ -65,8 +65,8 @@ private:
                                      DestConvertInfo &destInfo, void *context);
     static bool IsSupport(PixelFormat format);
     static std::unique_ptr<AbsMemory> CreateMemory(PixelFormat pixelFormat,
-                                                   AllocatorType allocatorType, int32_t width, int32_t height,
-                                                   YUVStrideInfo &strides);
+                                                   AllocatorType allocatorType, Size size,
+                                                   YUVStrideInfo &strides, uint64_t usage = 0);
     static uint32_t RGBConvertImageFormatOption(std::shared_ptr<PixelMap> &srcPiexlMap,
                                                 const PixelFormat &srcFormat, PixelFormat destFormat);
     static uint32_t YUVConvert(const ConvertDataInfo &srcDataInfo, DestConvertInfo &destInfo);

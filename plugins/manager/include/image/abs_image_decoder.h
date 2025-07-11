@@ -69,6 +69,7 @@ struct DecodeContext {
     bool ifPartialOutput = false;
     // Out: output allocator type.
     Media::AllocatorType allocatorType = Media::AllocatorType::SHARE_MEM_ALLOC;
+    bool useNoPadding = false;
     // Out: output allocator release function.
     Media::CustomFreePixelMap freeFunc = nullptr;
     // Out: png nine patch context;

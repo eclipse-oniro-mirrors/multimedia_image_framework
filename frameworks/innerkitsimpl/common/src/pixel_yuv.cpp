@@ -276,6 +276,7 @@ std::unique_ptr<AbsMemory> PixelYuv::CreateMemory(PixelFormat pixelFormat, std::
 
     dstStrides = {dst_yStride, dst_uvStride, dst_yOffset, dst_uvOffset};
     MemoryData memoryData = {nullptr, pictureSize, memoryTag.c_str(), {dstWidth, dstHeight}, pixelFormat};
+    memoryData.usage = GetNoPaddingUsage();
     auto m = MemoryManager::CreateMemory(allocatorType_, memoryData);
     if (m == nullptr) {
         IMAGE_LOGE("CreateMemory failed");
@@ -920,6 +921,7 @@ uint32_t PixelYuv::SetColorSpace(const OHOS::ColorManager::ColorSpace &grColorSp
     dst.info = ToSkImageInfo(imageInfo_, grColorSpace.ToSkColorSpace());
     MemoryData memoryData = {nullptr, width * height * NUM_4, "ApplyColorSpace ImageData",
         {dst.info.width(), dst.info.height()}};
+    memoryData.usage = GetNoPaddingUsage();
     auto dstMemory = MemoryManager::CreateMemory(allocatorType_, memoryData);
     if (dstMemory == nullptr) {
         IMAGE_LOGE("applyColorSpace CreateMemory failed");
@@ -972,6 +974,7 @@ int32_t PixelYuv::ColorSpaceBGRAToYuv(uint8_t *bgraData, SkTransYuvInfo &dst, Im
     int32_t dstHeight = dst.info.height();
     uint32_t pictureSize = GetImageSize(dstWidth, dstHeight, format);
     MemoryData memoryYuvData = {nullptr, pictureSize, "Trans ImageData", {dstWidth, dstHeight}};
+    memoryYuvData.usage = GetNoPaddingUsage();
     auto yuvMemory = MemoryManager::CreateMemory(allocatorType_, memoryYuvData);
     if (yuvMemory == nullptr) {
         IMAGE_LOGE("applyColorSpace CreateYuvMemory failed");

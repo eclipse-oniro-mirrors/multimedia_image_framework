@@ -871,6 +871,7 @@ public:
     NATIVEEXPORT uint32_t GetVersionId();
     NATIVEEXPORT void AddVersionId();
     void UpdatePixelsAlphaType();
+    uint64_t GetNoPaddingUsage();
 
 protected:
     static constexpr uint8_t TLV_VARINT_BITS = 7;

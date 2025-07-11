@@ -859,15 +859,17 @@ DecodeContext ImageSource::InitDecodeContext(const DecodeOptions &opts, const Im
     context.isCreateWideGamutSdrPixelMap = opts.isCreateWideGamutSdrPixelMap;
     if (opts.allocatorType != AllocatorType::DEFAULT) {
         context.allocatorType = opts.allocatorType;
-    } else if (ImageSystemProperties::GetNoPaddingEnabled()) {
-        context.allocatorType = AllocatorType::DMA_ALLOC;
     } else {
         if ((preference == MemoryUsagePreference::DEFAULT && IsSupportDma(opts, info, hasDesiredSizeOptions)) ||
             info.encodedFormat == IMAGE_HEIF_FORMAT || info.encodedFormat == IMAGE_HEIC_FORMAT ||
             ImageSystemProperties::GetDecodeDmaEnabled()) {
             IMAGE_LOGD("[ImageSource] allocatorType is DMA_ALLOC");
             context.allocatorType = AllocatorType::DMA_ALLOC;
-        } else {
+        } else if (ImageSystemProperties::GetNoPaddingEnabled()) {
+            IMAGE_LOGI("%{public}s no padding enabled", __func__);
+            context.allocatorType = AllocatorType::DMA_ALLOC;
+            context.useNoPadding = true;
+        }  else {
             context.allocatorType = AllocatorType::SHARE_MEM_ALLOC;
         }
     }
@@ -3392,6 +3394,7 @@ bool ProcessAstcMetadata(PixelAstc* pixelAstc, size_t astcSize, const AstcMetada
         Size desiredSize = { astcSize, 1 };
         MemoryData memoryData = { nullptr, astcSize, "CreatePixelMapForASTC Data", desiredSize,
                                   pixelAstc->GetPixelFormat() };
+        memoryData.usage = pixelAstc->GetNoPaddingUsage();
         auto dstMemory = MemoryManager::CreateMemory(AllocatorType::DMA_ALLOC, memoryData);
         if (!dstMemory || dstMemory->data.data == nullptr) {
             IMAGE_LOGE("%{public}s CreateMemory failed", __func__);
@@ -3966,9 +3969,6 @@ static uint32_t AllocSurfaceBuffer(DecodeContext &context, uint32_t format)
         .usage = BUFFER_USAGE_CPU_READ | BUFFER_USAGE_CPU_WRITE | BUFFER_USAGE_MEM_DMA | BUFFER_USAGE_MEM_MMZ_CACHE,
         .timeout = 0,
     };
-    if (ImageSystemProperties::GetNoPaddingEnabled()) {
-        requestConfig.usage |= BUFFER_USAGE_PREFER_NO_PADDING;
-    }
     GSError ret = sb->Alloc(requestConfig);
     if (ret != GSERROR_OK) {
         IMAGE_LOGE("SurfaceBuffer Alloc failed, %{public}s", GSErrorStr(ret).c_str());
@@ -4372,9 +4372,6 @@ static uint32_t AllocHdrSurfaceBuffer(DecodeContext& context, ImageHdrType hdrTy
         .usage = BUFFER_USAGE_CPU_READ | BUFFER_USAGE_CPU_WRITE | BUFFER_USAGE_MEM_DMA | BUFFER_USAGE_MEM_MMZ_CACHE,
         .timeout = 0,
     };
-    if (ImageSystemProperties::GetNoPaddingEnabled()) {
-        requestConfig.usage |= BUFFER_USAGE_PREFER_NO_PADDING;
-    }
     GSError ret = sb->Alloc(requestConfig);
     if (ret != GSERROR_OK) {
         return ERR_DMA_NOT_EXIST;
@@ -4601,9 +4598,6 @@ static uint32_t CopyContextIntoSurfaceBuffer(Size dstSize, const DecodeContext &
         .colorGamut = GraphicColorGamut::GRAPHIC_COLOR_GAMUT_SRGB,
         .transform = GraphicTransformType::GRAPHIC_ROTATE_NONE,
     };
-    if (ImageSystemProperties::GetNoPaddingEnabled()) {
-        requestConfig.usage |= BUFFER_USAGE_PREFER_NO_PADDING;
-    }
     GSError ret = sb->Alloc(requestConfig);
     bool cond = (ret != GSERROR_OK);
     CHECK_ERROR_RETURN_RET_LOG(cond, ERR_DMA_NOT_EXIST,
