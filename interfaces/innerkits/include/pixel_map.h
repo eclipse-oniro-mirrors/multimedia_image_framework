@@ -858,6 +858,11 @@ public:
         return isMemoryDirty_;
     }
 
+    NATIVEEXPORT void SetEditable(bool editable)
+    {
+        editable_ = editable;
+    }
+
     static int32_t GetRGBxRowDataSize(const ImageInfo& info);
     static int32_t GetRGBxByteCount(const ImageInfo& info);
     static int32_t GetYUVByteCount(const ImageInfo& info);
@@ -930,10 +935,6 @@ protected:
     bool WriteYuvDataInfoToParcel(Parcel &parcel) const;
     bool ReadYuvDataInfoFromParcel(Parcel &parcel, PixelMap *pixelMap);
     uint32_t SetRowDataSizeForImageInfo(ImageInfo info);
-    void SetEditable(bool editable)
-    {
-        editable_ = editable;
-    }
 
     void ResetPixelMap()
     {
