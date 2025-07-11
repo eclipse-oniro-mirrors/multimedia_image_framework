@@ -75,6 +75,7 @@ constexpr uint8_t INDEX_THREE = 3;
 constexpr uint8_t COLOR_INFO_BYTES = 3;
 constexpr uint8_t ONE_COMPONENT = 1;
 constexpr uint8_t THREE_COMPONENTS = 3;
+constexpr uint8_t THREE_GAINMAP_CHANNEL = 3;
 constexpr uint8_t VIVID_PRE_INFO_SIZE = 10;
 constexpr uint8_t VIVID_METADATA_PRE_INFO_SIZE = 10;
 constexpr uint32_t HDR_MULTI_PICTURE_APP_LENGTH = 90;
@@ -674,11 +675,11 @@ static void ParseISOExtendInfoMain(uint8_t* data, uint32_t& offset, uint32_t len
     uint32_t baseImageOffsetDenominator = ImageUtils::BytesToUint32(data, offset, length);
     int32_t altImageOffsetNumerator = ImageUtils::BytesToInt32(data, offset, length);
     uint32_t altImageOffsetDenominator = ImageUtils::BytesToUint32(data, offset, length);
-    IMAGE_LOGD("HDR-IMAGE ParseISO minGainmapNumerator %{publiuc}d", minGainmapNumerator);
-    IMAGE_LOGD("HDR-IMAGE ParseISO maxGainmapNumerator %{publiuc}d", maxGainmapNumerator);
-    IMAGE_LOGD("HDR-IMAGE ParseISO gammaNumerator %{publiuc}d", gammaNumerator);
-    IMAGE_LOGD("HDR-IMAGE ParseISO baseImageOffsetNumerator %{publiuc}d", baseImageOffsetNumerator);
-    IMAGE_LOGD("HDR-IMAGE ParseISO altImageOffsetNumerator %{publiuc}d", altImageOffsetNumerator);
+    IMAGE_LOGD("HDR-IMAGE ParseISO minGainmapNumerator %{public}d", minGainmapNumerator);
+    IMAGE_LOGD("HDR-IMAGE ParseISO maxGainmapNumerator %{public}d", maxGainmapNumerator);
+    IMAGE_LOGD("HDR-IMAGE ParseISO gammaNumerator %{public}d", gammaNumerator);
+    IMAGE_LOGD("HDR-IMAGE ParseISO baseImageOffsetNumerator %{public}d", baseImageOffsetNumerator);
+    IMAGE_LOGD("HDR-IMAGE ParseISO altImageOffsetNumerator %{public}d", altImageOffsetNumerator);
     if (minGainmapDenominator == EMPTY_SIZE) {
         info.gainMapMin[index] = EMPTY_SIZE;
     } else {
@@ -1269,7 +1270,7 @@ vector<uint8_t> HdrJpegPackerHelper::PackISOMetadataMarker(HdrMetadata& metadata
     if (extendMeta.metaISO.useBaseColorFlag) {
         bytes[index] |= 0x40;
     }
-    if (extendMeta.metaISO.gainmapChannelNum) {
+    if (extendMeta.metaISO.gainmapChannelNum == THREE_GAINMAP_CHANNEL) {
         bytes[index] |= 0x80;
     }
     index++;
@@ -1345,6 +1346,8 @@ uint32_t HdrJpegPackerHelper::SpliceHdrStream(sk_sp<SkData>& baseImage, sk_sp<Sk
     uint32_t jfifSize = 0;
     cond = WriteJpegPreApp(baseImage, output, offset, jfifSize);
     CHECK_ERROR_RETURN_RET(!cond, ERR_IMAGE_ENCODE_FAILED);
+    IMAGE_LOGI("HDR-IMAGE spliceHdr metadata size ,static %{public}zu, dynamic %{public}zu",
+        metadata.staticMetadata.size(), metadata.dynamicMetadata.size());
     std::vector<uint8_t> gainmapMetadataPack = PackVividMetadataMarker(metadata);
     std::vector<uint8_t> gainmapISOMetadataPack = PackISOMetadataMarker(metadata);
     std::vector<uint8_t> gainmapHdrMediaTypeInfo = PackHdrMediaTypeMarker(metadata);

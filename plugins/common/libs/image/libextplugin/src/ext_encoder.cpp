@@ -326,12 +326,14 @@ static sk_sp<SkColorSpace> ToHdrEncodeSkColorSpace(Media::PixelMap *pixelmap,
 #ifdef IMAGE_COLORSPACE_FLAG
     // get graphic colorspace
     ColorManager::ColorSpaceName graphicColorSpaceName = ColorManager::ColorSpaceName::SRGB;
+#if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
     CM_ColorSpaceType color;
     VpeUtils::GetSbColorSpaceType(buffer, color);
     auto iter = CM_COLORSPACE_NAME_MAP.find(color);
     if (iter != CM_COLORSPACE_NAME_MAP.end()) {
         graphicColorSpaceName = iter->second;
     }
+#endif
     skcms_CICP cicp;
     ColorUtils::ColorSpaceGetCicp(graphicColorSpaceName,
     #ifdef USE_M133_SKIA
