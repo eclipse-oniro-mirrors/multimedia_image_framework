@@ -1,0 +1,164 @@
+# Copyright (C) 2025 Huawei Device Co., Ltd.
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+import("//build/config/components/ets_frontend/ets2abc_config.gni")
+import("//build/ohos.gni")
+import("//build/ohos/taihe_idl/taihe.gni")
+import("//foundation/multimedia/image_framework/ide/image_decode_config.gni")
+
+subsystem_name = "multimedia"
+part_name = "image_framework"
+taihe_generated_file_path = "$taihe_file_path/out/$subsystem_name/$part_name"
+
+config("image_taihe_config") {
+  visibility = [ ":*" ]
+  include_dirs = [ "include" ]
+}
+
+copy_taihe_idl("copy_image_taihe") {
+  sources = [
+    "${image_subsystem}/frameworks/kits/taihe/idl/ohos.multimedia.image.image.taihe",
+    "${image_subsystem}/frameworks/kits/taihe/idl/ohos.multimedia.image.taihe",
+  ]
+}
+
+ohos_taihe("run_taihe") {
+  taihe_generated_file_path = "$taihe_generated_file_path"
+  deps = [ ":copy_image_taihe" ]
+  outputs = [
+    "$taihe_generated_file_path/src/ohos.multimedia.image.image.ani.cpp",
+    "$taihe_generated_file_path/src/ohos.multimedia.image.image.abi.c",
+  ]
+}
+
+template("image_taihe_shared_library") {
+  target_name = invoker.target_name
+  extra_sources = []
+  if (defined(invoker.extra_sources)) {
+    extra_sources = invoker.extra_sources
+  }
+  
+  taihe_shared_library(target_name) {
+    forward_variables_from(invoker, "*", 
+      [
+        "target_name",
+        "extra_sources",
+      ]
+    )
+    
+    taihe_generated_file_path = "$taihe_generated_file_path"
+    subsystem_name = "$subsystem_name"
+    part_name = "$part_name"
+
+    include_dirs = [
+      "include",
+      "${image_subsystem}/interfaces/innerkits/include",
+      "${image_subsystem}/interfaces/kits/native/include/image",
+      "${image_subsystem}/plugins/common/libs/image/libextplugin/include/jpeg_yuv_decoder",
+    ]
+
+    sources = get_target_outputs(":run_taihe")
+    sources += [
+      "src/auxiliary_picture_taihe.cpp",
+      "src/image_creator_taihe.cpp",
+      "src/image_packer_taihe.cpp",
+      "src/image_receiver_taihe.cpp",
+      "src/image_source_taihe.cpp",
+      "src/image_taihe.cpp",
+      "src/image_taihe_utils.cpp",
+      "src/metadata_taihe.cpp",
+      "src/picture_taihe.cpp",
+      "src/pixel_map_taihe.cpp",
+      "${image_subsystem}/frameworks/innerkitsimpl/accessor/src/exif_metadata_formatter.cpp",
+    ] + extra_sources
+
+    deps = [
+      ":run_taihe",
+      "${image_subsystem}/frameworks/innerkitsimpl/egl_image:egl_image",
+      "${image_subsystem}/frameworks/innerkitsimpl/utils:image_utils",
+      "${image_subsystem}/interfaces/innerkits:image_native",
+    ]
+
+    external_deps = [
+      "c_utils:utils",
+      "eventhandler:libeventhandler",
+      "graphic_2d:ani_color_space_object_convertor",
+      "graphic_2d:color_manager",
+      "graphic_2d:EGL",
+      "graphic_2d:librender_service_client",
+      "hilog:libhilog",
+      "hitrace:hitrace_meter",
+      "runtime_core:ani_helpers",
+      "skia:libjpeg",
+    ]
+    
+    cflags = [
+      "-DIMAGE_DEBUG_FLAG",
+      "-DIMAGE_COLORSPACE_FLAG",
+    ]
+
+    if (!use_clang_android && !use_clang_ios) {
+      branch_protector_ret = "pac_ret"
+      sanitize = {
+        cfi = true
+        cfi_cross_dso = true
+        cfi_vcall_icall_only = true
+        debug = false
+      }
+    }
+  }
+}
+
+image_taihe_shared_library("image_taihe_core") {
+  extra_sources = [ "src/ani_constructor.cpp" ]
+}
+
+# APIs exposed to external modules
+image_taihe_shared_library("image_taihe") {
+  extra_sources = [
+    "src/image_source_taihe_ani.cpp",
+    "src/picture_taihe_ani.cpp",
+    "src/pixel_map_taihe_ani.cpp",
+  ]
+
+  public_configs = [ ":image_taihe_config" ]
+}
+
+generate_static_abc("image_framework_taihe_abc") {
+  base_url = "$taihe_generated_file_path"
+  files = [ "$taihe_generated_file_path/@ohos.multimedia.image.ets" ]
+  is_boot_abc = "True"
+  device_dst_file = "/system/framework/image_framework_taihe_abc.abc"
+  dependencies = [ ":run_taihe" ]
+}
+
+ohos_prebuilt_etc("image_framework_etc") {
+  source = "$target_out_dir/image_framework_taihe_abc.abc"
+  module_install_dir = "framework"
+  part_name = "$part_name"
+  subsystem_name = "$subsystem_name"
+  deps = [
+    ":image_framework_taihe_abc"
+  ]
+}
+
+group("image_framework_taihe") {
+  deps = [
+    ":image_framework_etc",
+    ":image_taihe_core",
+  ]
+}
+
+group("image_framework_taihe_gen_only") {
+  deps = [ ":run_taihe" ]
+}
