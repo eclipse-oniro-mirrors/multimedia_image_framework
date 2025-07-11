@@ -3388,39 +3388,37 @@ bool HandleMetadataCopy(std::vector<uint8_t>& dest, const uint8_t *src, size_t l
 
 bool ProcessAstcMetadata(PixelAstc* pixelAstc, size_t astcSize, const AstcMetadata& astcMetadata)
 {
-    if (pixelAstc != nullptr) {
-        if (pixelAstc->GetAllocatorType() != AllocatorType::DMA_ALLOC) {
-            Size desiredSize = { astcSize, 1 };
-            MemoryData memoryData = { nullptr, astcSize, "CreatePixelMapForASTC Data", desiredSize,
-                                    pixelAstc->GetPixelFormat() };
-            auto dstMemory = MemoryManager::CreateMemory(AllocatorType::DMA_ALLOC, memoryData);
-            if (!dstMemory || dstMemory->data.data == nullptr) {
-                IMAGE_LOGE("%{public}s CreateMemory failed", __func__);
-                return false;
-            }
-            if (memcpy_s(dstMemory->data.data, astcSize, pixelAstc->GetPixels(), astcSize) != 0) {
-                IMAGE_LOGE("%{public}s memcpy failed", __func__);
-                return false;
-            }
-            pixelAstc->SetPixelsAddr(dstMemory->data.data, dstMemory->extend.data,
-                                    dstMemory->data.size, dstMemory->GetType(), nullptr);
+    if (pixelAstc != nullptr && pixelAstc->GetAllocatorType() != AllocatorType::DMA_ALLOC) {
+        Size desiredSize = { astcSize, 1 };
+        MemoryData memoryData = { nullptr, astcSize, "CreatePixelMapForASTC Data", desiredSize,
+                                  pixelAstc->GetPixelFormat() };
+        auto dstMemory = MemoryManager::CreateMemory(AllocatorType::DMA_ALLOC, memoryData);
+        if (!dstMemory || dstMemory->data.data == nullptr) {
+            IMAGE_LOGE("%{public}s CreateMemory failed", __func__);
+            return false;
         }
-        pixelAstc->SetAstcHdr(true);
-        if (pixelAstc->IsHdr() && pixelAstc->GetFd() != nullptr) {
-    #if !defined(_WIN32) && !defined(_APPLE) && !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
-            sptr<SurfaceBuffer> dstBuffer(reinterpret_cast<SurfaceBuffer*>(pixelAstc->GetFd()));
-            GSError ret = dstBuffer->SetMetadata(ATTRKEY_HDR_METADATA_TYPE, astcMetadata.hdrMetadataTypeVec);
-            CHECK_ERROR_RETURN_RET_LOG(ret != GSERROR_OK, false, "%{public}s METADATA_TYPE set failed", __func__);
-            ret = dstBuffer->SetMetadata(ATTRKEY_COLORSPACE_INFO, astcMetadata.colorSpaceInfoVec);
-            CHECK_ERROR_RETURN_RET_LOG(ret != GSERROR_OK, false, "%{public}s COLORSPACE_INFO set failed", __func__);
-            bool vpeRet = VpeUtils::SetSbStaticMetadata(dstBuffer, astcMetadata.staticData);
-            CHECK_ERROR_RETURN_RET_LOG(!vpeRet, false, "%{public}s staticData set failed", __func__);
-            vpeRet = VpeUtils::SetSbDynamicMetadata(dstBuffer, astcMetadata.dynamicData);
-            CHECK_ERROR_RETURN_RET_LOG(!vpeRet, false, "%{public}s dynamicData set failed", __func__);
-    #endif
-            return true;
+        if (memcpy_s(dstMemory->data.data, astcSize, pixelAstc->GetPixels(), astcSize) != 0) {
+            IMAGE_LOGE("%{public}s memcpy failed", __func__);
+            return false;
         }
-        return false;
+        pixelAstc->SetPixelsAddr(dstMemory->data.data, dstMemory->extend.data,
+                                 dstMemory->data.size, dstMemory->GetType(), nullptr);
+    }
+    pixelAstc->SetAstcHdr(true);
+
+    if (pixelAstc->IsHdr() && pixelAstc->GetFd() != nullptr) {
+#if !defined(_WIN32) && !defined(_APPLE) && !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
+        sptr<SurfaceBuffer> dstBuffer(reinterpret_cast<SurfaceBuffer*>(pixelAstc->GetFd()));
+        GSError ret = dstBuffer->SetMetadata(ATTRKEY_HDR_METADATA_TYPE, astcMetadata.hdrMetadataTypeVec);
+        CHECK_ERROR_RETURN_RET_LOG(ret != GSERROR_OK, false, "%{public}s METADATA_TYPE set failed", __func__);
+        ret = dstBuffer->SetMetadata(ATTRKEY_COLORSPACE_INFO, astcMetadata.colorSpaceInfoVec);
+        CHECK_ERROR_RETURN_RET_LOG(ret != GSERROR_OK, false, "%{public}s COLORSPACE_INFO set failed", __func__);
+        bool vpeRet = VpeUtils::SetSbStaticMetadata(dstBuffer, astcMetadata.staticData);
+        CHECK_ERROR_RETURN_RET_LOG(!vpeRet, false, "%{public}s staticData set failed", __func__);
+        vpeRet = VpeUtils::SetSbDynamicMetadata(dstBuffer, astcMetadata.dynamicData);
+        CHECK_ERROR_RETURN_RET_LOG(!vpeRet, false, "%{public}s dynamicData set failed", __func__);
+#endif
+        return true;
     }
     return false;
 }

@@ -1213,17 +1213,17 @@ static bool NV12P010ToNV21P010(const uint16_t *srcBuffer, const ImageInfo &info,
         IMAGE_LOGE("Invalid Pixelmap size: width = %{public}d, height = %{public}d", info.size.width, info.size.height);
         return false;
     }
-    uint32_t Width = static_cast<uint32_t>(info.size.width);
-    uint32_t Height = static_cast<uint32_t>(info.size.height);
-    if (Width > UINT32_MAX / Height) {
-        IMAGE_LOGE("Image size too large: width = %{public}u, height = %{public}u", Width, Height);
+    uint32_t width = static_cast<uint32_t>(info.size.width);
+    uint32_t height = static_cast<uint32_t>(info.size.height);
+    if (width > UINT32_MAX / height) {
+        IMAGE_LOGE("Image size too large: width = %{public}u, height = %{public}u", width, height);
         return false;
     }
-    uint32_t Ysize = Width * Height;
-    uint32_t sizeUV = Ysize / NUM_2;
-    const uint16_t *srcUV = srcBuffer + Ysize;
-    uint16_t *dstVU = destBuffer + Ysize;
-    for (uint32_t i = 0; i < Ysize; i++) {
+    uint32_t ysize = width * height;
+    uint32_t sizeUV = ysize / NUM_2;
+    const uint16_t *srcUV = srcBuffer + ysize;
+    uint16_t *dstVU = destBuffer + ysize;
+    for (uint32_t i = 0; i < ysize; i++) {
         destBuffer[i] = srcBuffer[i];
     }
     for (uint32_t i = 0; i < sizeUV / UV_PLANES_COUNT; i++) {
