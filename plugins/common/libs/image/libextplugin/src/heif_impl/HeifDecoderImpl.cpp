@@ -331,7 +331,7 @@ void HeifDecoderImpl::GetTileSize(const std::shared_ptr<HeifImage> &image, GridI
     }
 
     std::string imageType = parser_->GetItemType(image->GetItemId());
-    if (imageType == "hvc1" || image->IsMovieImage()) {
+    if (imageType == "hvc1") {
         gridInfo.tileWidth = image->GetOriginalWidth();
         gridInfo.tileHeight = image->GetOriginalHeight();
         return;
@@ -771,15 +771,12 @@ bool HeifDecoderImpl::SwDecodeImage(std::shared_ptr<HeifImage> &image, HevcSoftD
         return false;
     }
 
-    static ImageFwkExtManager imageFwkExtManager;
-    if (image->IsMovieImage()) {
-        return SwDecodeMovieFirstFrameImage(imageFwkExtManager, image, param);
-    }
     std::string imageType = parser_->GetItemType(image->GetItemId());
     if (imageType == "iden") {
         return SwDecodeIdenImage(image, param, gridInfo, isPrimary);
     }
 
+    static ImageFwkExtManager imageFwkExtManager;
     bool res = false;
     if (imageType == "grid") {
         param.gridInfo.enableGrid = true;
@@ -847,26 +844,6 @@ bool HeifDecoderImpl::SwDecodeSingleImage(ImageFwkExtManager &extManager,
     int32_t retCode = extManager.hevcSoftwareDecodeFunc_(inputs, param);
     if (retCode != 0) {
         IMAGE_LOGE("SwDecodeSingleImage decode failed: %{public}d", retCode);
-        return false;
-    }
-    return true;
-}
-
-bool HeifDecoderImpl::SwDecodeMovieFirstFrameImage(ImageFwkExtManager &extManager,
-    std::shared_ptr<HeifImage> &image, HevcSoftDecodeParam &param)
-{
-    if (extManager.hevcSoftwareDecodeFunc_ == nullptr && !extManager.LoadImageFwkExtNativeSo()) {
-        return false;
-    }
-    bool cond = (param.dstBuffer == nullptr || param.dstStride == 0);
-    CHECK_ERROR_RETURN_RET(cond, false);
-    std::vector<std::vector<uint8_t>> inputs(1);
-    parser_->GetMovieFrameData(0, &inputs[0], heif_header_data);
-    ProcessChunkHead(inputs[0].data(), inputs[0].size());
-
-    int32_t retCode = extManager.hevcSoftwareDecodeFunc_(inputs, param);
-    if (retCode != 0) {
-        IMAGE_LOGE("SwDecodeMovieFirstFrameImage decode failed: %{public}d", retCode);
         return false;
     }
     return true;
