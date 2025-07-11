@@ -398,7 +398,7 @@ void ImageSource::InitDecoderForJpeg()
         return;
     }
     if (std::memcmp(JPEG_SOI, readBuffer, sizeof(JPEG_SOI)) == 0) {
-        IMAGE_LOGI("stream is jpeg stream.");
+        IMAGE_LOGD("stream is jpeg stream.");
         delete[] readBuffer;
         mainDecoder_->InitJpegDecoder();
         readBuffer = nullptr;
@@ -2363,7 +2363,6 @@ uint32_t ImageSource::GetEncodedFormat(const string &formatHint, string &format)
 
     // default return raw image, ERR_IMAGE_MISMATCHED_FORMAT case
     format = InnerFormat::RAW_FORMAT;
-    IMAGE_LOGI("[ImageSource]image default to raw format.");
     return SUCCESS;
 }
 

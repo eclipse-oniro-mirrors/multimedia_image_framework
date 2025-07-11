@@ -1171,7 +1171,7 @@ int32_t ImageUtils::GetAPIVersion()
     }
     AppExecFwk::BundleInfo bundleInfo;
     if (bms->GetBundleInfoForSelf(0, bundleInfo) != ERR_OK) {
-        IMAGE_LOGE("Get bundle info for self failed");
+        IMAGE_LOGD("Get bundle info for self failed");
         return FAULT_API_VERSION;
     }
     targetVersion = bundleInfo.targetVersion;
