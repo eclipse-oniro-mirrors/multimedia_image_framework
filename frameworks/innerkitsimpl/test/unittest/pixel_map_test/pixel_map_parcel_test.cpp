@@ -165,6 +165,7 @@ HWTEST_F(PixelMapParcelTest, MarshallingUnmarshallingRecodeParcelTest002, TestSi
         EXPECT_TRUE(PixelMapRecordParcel::MarshallingPixelMapForRecord(dataRecord, *(pixelmap.get())));
         PixelMap *pixelMapRecord = PixelMapRecordParcel::UnmarshallingPixelMapForRecord(dataRecord);
         EXPECT_NE(pixelMapRecord, nullptr);
+        delete pixelMapRecord; // Clean up the unmarshalled PixelMap
     }
     for (int i = 0; i <= static_cast<int>(PixelFormat::EXTERNAL_MAX); i++) {
         auto pixelmap = CreatePixelmapUsingOpt(dmaSize, PixelFormat(i), false);
@@ -175,6 +176,7 @@ HWTEST_F(PixelMapParcelTest, MarshallingUnmarshallingRecodeParcelTest002, TestSi
         EXPECT_TRUE(PixelMapRecordParcel::MarshallingPixelMapForRecord(dataRecord, *(pixelmap.get())));
         PixelMap *pixelMapRecord = PixelMapRecordParcel::UnmarshallingPixelMapForRecord(dataRecord);
         EXPECT_NE(pixelMapRecord, nullptr);
+        delete pixelMapRecord; // Clean up the unmarshalled PixelMap
     }
     for (int i = 0; i <= static_cast<int>(PixelFormat::EXTERNAL_MAX); i++) {
         auto pixelmap = CreatePixelmapUsingOpt(size, PixelFormat(i), true);
@@ -185,6 +187,7 @@ HWTEST_F(PixelMapParcelTest, MarshallingUnmarshallingRecodeParcelTest002, TestSi
         EXPECT_TRUE(PixelMapRecordParcel::MarshallingPixelMapForRecord(dataRecord, *(pixelmap.get())));
         PixelMap *pixelMapRecord = PixelMapRecordParcel::UnmarshallingPixelMapForRecord(dataRecord);
         EXPECT_NE(pixelMapRecord, nullptr);
+        delete pixelMapRecord; // Clean up the unmarshalled PixelMap
     }
     for (int i = 0; i <= static_cast<int>(PixelFormat::EXTERNAL_MAX); i++) {
         auto pixelmap = CreatePixelmapUsingOpt(dmaSize, PixelFormat(i), true);
@@ -195,8 +198,48 @@ HWTEST_F(PixelMapParcelTest, MarshallingUnmarshallingRecodeParcelTest002, TestSi
         EXPECT_TRUE(PixelMapRecordParcel::MarshallingPixelMapForRecord(dataRecord, *(pixelmap.get())));
         PixelMap *pixelMapRecord = PixelMapRecordParcel::UnmarshallingPixelMapForRecord(dataRecord);
         EXPECT_NE(pixelMapRecord, nullptr);
+        delete pixelMapRecord; // Clean up the unmarshalled PixelMap
     }
     GTEST_LOG_(INFO) << "PixelMapParcelTest: MarshallingUnmarshallingRecodeParcelTest002 end";
+}
+
+static bool RecodeParcelTest(int32_t size, PixelFormat format, bool useDma)
+{
+    InitializationOptions opts;
+    opts.size.width = size;
+    opts.size.height = size;
+    opts.srcPixelFormat = format;
+    opts.pixelFormat = format;
+    opts.useDMA = useDma;
+    auto pixelMap = PixelMap::Create(opts);
+    if (pixelMap == nullptr) {
+        return true; // Skip if pixelMap creation fails
+    }
+    Parcel parcel;
+    PixelMapRecordParcel::MarshallingPixelMapForRecord(parcel, *(pixelMap.get()));
+    PixelMap* newPixelMap = PixelMapRecordParcel::UnmarshallingPixelMapForRecord(parcel);
+    if (newPixelMap == nullptr) {
+        return false; // Return false if unmarshalling fails
+    }
+    delete newPixelMap; // Clean up the unmarshalled PixelMap
+    return true;
+}
+
+/**
+ * @tc.name: MarshallingUnmarshallingRecodeParcelTest003
+ * @tc.desc: Test marshalling and unmarshalling PixelMap with DEFAULT allocator type
+ * @tc.type: FUNC
+ */
+HWTEST_F(PixelMapParcelTest, MarshallingUnmarshallingRecodeParcelTest003, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PixelMapParcelTest: MarshallingUnmarshallingRecodeParcelTest003 start";
+    for (int i = 0; i <= static_cast<int>(PixelFormat::EXTERNAL_MAX); i++) {
+        EXPECT_TRUE(RecodeParcelTest(10, PixelFormat(i), false)); // Test with smaller size 10
+        EXPECT_TRUE(RecodeParcelTest(10, PixelFormat(i), true)); // Test with smaller size 10
+        EXPECT_TRUE(RecodeParcelTest(512, PixelFormat(i), false)); // Test with larger size 512
+        EXPECT_TRUE(RecodeParcelTest(512, PixelFormat(i), true)); // Test with larger size 512
+    }
+    GTEST_LOG_(INFO) << "PixelMapParcelTest: MarshallingUnmarshallingRecodeParcelTest003 end";
 }
 }
 }
