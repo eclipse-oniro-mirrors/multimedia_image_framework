@@ -26,7 +26,6 @@
 #if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
 #include <regex>
 #include "pixel_map_from_surface.h"
-#include "sync_fence.h"
 #include "transaction/rs_interfaces.h"
 #endif
 
