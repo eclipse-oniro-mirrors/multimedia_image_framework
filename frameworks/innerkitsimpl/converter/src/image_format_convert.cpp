@@ -288,8 +288,7 @@ uint32_t ImageFormatConvert::YUVConvert(const OHOS::Media::ConvertDataInfo &srcD
         yuvDataInfo.uvHeight = static_cast<uint32_t>((height + 1) / NUM_2);
     }
     YUVStrideInfo dstStrides;
-    auto m = CreateMemory(destInfo.format, destInfo.allocType, destInfo.width,
-                          destInfo.height, dstStrides);
+    auto m = CreateMemory(destInfo.format, destInfo.allocType, {destInfo.width, destInfo.height}, dstStrides);
     CHECK_ERROR_RETURN_RET_LOG(m == nullptr, ERR_IMAGE_INVALID_PARAMETER, "YUVConvert create memory failed!");
     destInfo.context = m->extend.data;
     destInfo.yStride = dstStrides.yStride;
@@ -314,8 +313,7 @@ uint32_t ImageFormatConvert::RGBConvert(const OHOS::Media::ConvertDataInfo &srcD
     CHECK_ERROR_RETURN_RET_LOG(cvtFunc == nullptr, ERR_IMAGE_INVALID_PARAMETER,
         "RGBConvert get convert function by format failed!");
     YUVStrideInfo dstStrides;
-    auto m = CreateMemory(destInfo.format, destInfo.allocType, destInfo.width,
-                          destInfo.height, dstStrides);
+    auto m = CreateMemory(destInfo.format, destInfo.allocType, {destInfo.width, destInfo.height}, dstStrides);
     CHECK_ERROR_RETURN_RET_LOG(m == nullptr, ERR_IMAGE_INVALID_PARAMETER, "RGBConvert create memory failed!");
     destInfo.context = m->extend.data;
     destInfo.yStride = dstStrides.yStride;
@@ -527,21 +525,22 @@ static void GetYUVStrideInfo(int32_t pixelFmt, OH_NativeBuffer_Planes *planes, Y
 #endif
 
 std::unique_ptr<AbsMemory> ImageFormatConvert::CreateMemory(PixelFormat pixelFormat, AllocatorType allocatorType,
-                                                            int32_t width, int32_t height, YUVStrideInfo &strides)
+    Size size, YUVStrideInfo &strides, uint64_t usage)
 {
-    if (width == 0 || height == 0 || pixelFormat == PixelFormat::UNKNOWN) {
+    if (size.width == 0 || size.height == 0 || pixelFormat == PixelFormat::UNKNOWN) {
         IMAGE_LOGE("CreateMemory err ERR_IMAGE_INVALID_PARAMETER!");
         return nullptr;
     }
-    uint32_t pictureSize = GetBufferSizeByFormat(pixelFormat, {width, height});
+    uint32_t pictureSize = GetBufferSizeByFormat(pixelFormat, size);
     if (IsYUVConvert(pixelFormat)) {
-        strides = {width, (width + 1) / NUM_2 * NUM_2, 0, width * height};
+        strides = {size.width, (size.width + 1) / NUM_2 * NUM_2, 0, size.width * size.height};
     } else {
         uint32_t stride = 0;
-        CalcRGBStride(pixelFormat, width, stride);
+        CalcRGBStride(pixelFormat, size.width, stride);
         strides = {stride, 0, 0, 0};
     }
-    MemoryData memoryData = {nullptr, pictureSize, "PixelConvert", {width, height}, pixelFormat};
+    MemoryData memoryData = {nullptr, pictureSize, "PixelConvert", size, pixelFormat};
+    memoryData.usage = usage;
     auto m = MemoryManager::CreateMemory(allocatorType, memoryData);
     CHECK_ERROR_RETURN_RET_LOG(m == nullptr, m, "CreateMemory failed");
 #if !defined(_WIN32) && !defined(_APPLE) && !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
@@ -580,7 +579,7 @@ uint32_t ImageFormatConvert::RGBConvertImageFormatOption(std::shared_ptr<PixelMa
     int32_t height = imageInfo.size.height;
     YUVStrideInfo dstStrides;
     auto allocType = srcPiexlMap->GetAllocatorType();
-    auto m = CreateMemory(destFormat, allocType, width, height, dstStrides);
+    auto m = CreateMemory(destFormat, allocType, imageInfo.size, dstStrides, srcPiexlMap->GetNoPaddingUsage());
     if (m == nullptr) {
         IMAGE_LOGE("CreateMemory failed");
         return ERR_IMAGE_INVALID_PARAMETER;
@@ -629,7 +628,7 @@ uint32_t ImageFormatConvert::RGBConvertImageFormatOptionUnique(
     int32_t height = imageInfo.size.height;
     YUVStrideInfo dstStrides;
     auto allocType = srcPiexlMap->GetAllocatorType();
-    auto memory = CreateMemory(destFormat, allocType, width, height, dstStrides);
+    auto memory = CreateMemory(destFormat, allocType, imageInfo.size, dstStrides, srcPiexlMap->GetNoPaddingUsage());
     cond = memory == nullptr;
     CHECK_ERROR_RETURN_RET_LOG(cond, ERR_IMAGE_INVALID_PARAMETER, "CreateMemory failed");
     int32_t stride = srcPiexlMap->GetRowStride();
@@ -727,7 +726,8 @@ uint32_t ImageFormatConvert::YUVConvertImageFormatOption(std::shared_ptr<PixelMa
     YUVStrideInfo dstStrides;
     auto allocType = GetAllocatorType(srcPiexlMap, destFormat);
     DestConvertInfo destInfo = {imageInfo.size.width, imageInfo.size.height, destFormat, allocType};
-    auto m = CreateMemory(destFormat, allocType, destInfo.width, destInfo.height, dstStrides);
+    auto m = CreateMemory(destFormat, allocType, imageInfo.size, dstStrides,
+        srcPiexlMap->GetNoPaddingUsage());
     if (m == nullptr) {
         return ERR_IMAGE_INVALID_PARAMETER;
     }

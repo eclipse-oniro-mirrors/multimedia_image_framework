@@ -863,9 +863,6 @@ bool HeifDecoderImpl::SwDecodeAuxiliaryImage(std::shared_ptr<HeifImage> &gainmap
         .usage = BUFFER_USAGE_CPU_READ | BUFFER_USAGE_CPU_WRITE | BUFFER_USAGE_MEM_DMA | BUFFER_USAGE_MEM_MMZ_CACHE,
         .timeout = 0
     };
-    if (ImageSystemProperties::GetNoPaddingEnabled()) {
-        requestConfig.usage |= BUFFER_USAGE_PREFER_NO_PADDING;
-    }
     GSError ret = output->Alloc(config);
     bool cond = ret != GSERROR_OK;
     CHECK_ERROR_RETURN_RET_LOG(cond, false, "output->alloc(config)faild, GSError=%{public}d", ret);

@@ -290,9 +290,6 @@ static BufferRequestConfig CreateDmaRequestConfig(const SkImageInfo &dstInfo, ui
         .colorGamut = GraphicColorGamut::GRAPHIC_COLOR_GAMUT_SRGB,
         .transform = GraphicTransformType::GRAPHIC_ROTATE_NONE,
     };
-    if (ImageSystemProperties::GetNoPaddingEnabled()) {
-        requestConfig.usage |= BUFFER_USAGE_PREFER_NO_PADDING;
-    }
     auto formatSearch = PIXELFORMAT_TOGRAPHIC_MAP.find(pixelFormat);
     requestConfig.format = (formatSearch != PIXELFORMAT_TOGRAPHIC_MAP.end()) ?
         formatSearch->second : GRAPHIC_PIXEL_FMT_RGBA_8888;
@@ -313,6 +310,10 @@ uint32_t ExtDecoder::DmaMemAlloc(DecodeContext &context, uint64_t count, SkImage
     return ERR_IMAGE_DATA_UNSUPPORT;
 #else
     BufferRequestConfig requestConfig = CreateDmaRequestConfig(dstInfo, count, context.info.pixelFormat);
+    if (context.useNoPadding) {
+        IMAGE_LOGI("%{public}s no padding enabled", __func__);
+        requestConfig.usage |= BUFFER_USAGE_PREFER_NO_PADDING;
+    }
     return DmaAlloc(context, count, requestConfig);
 #endif
 }
@@ -329,9 +330,6 @@ uint32_t ExtDecoder::JpegHwDmaMemAlloc(DecodeContext &context, uint64_t count, S
         requestConfig.usage |= BUFFER_USAGE_VENDOR_PRI16; // height is 64-bytes aligned
         IMAGE_LOGD("ExtDecoder::DmaMemAlloc desiredFormat is NV21");
         count = JpegDecoderYuv::GetYuvOutSize(dstInfo.width(), dstInfo.height());
-    }
-    if (ImageSystemProperties::GetNoPaddingEnabled()) {
-        requestConfig.usage &= ~(BUFFER_USAGE_PREFER_NO_PADDING);
     }
     return DmaAlloc(context, count, requestConfig);
 #endif
@@ -1352,6 +1350,7 @@ uint32_t ExtDecoder::Decode(uint32_t index, DecodeContext &context)
         }
         IMAGE_LOGI("Decode sample not support, apply rgb decode");
         context.pixelsBuffer.buffer = nullptr;
+        context.info.pixelFormat = PixelFormat::RGBA_8888;
 #endif
     }
     uint64_t byteCount = dstInfo_.computeMinByteSize();

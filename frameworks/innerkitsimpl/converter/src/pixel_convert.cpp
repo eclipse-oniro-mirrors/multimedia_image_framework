@@ -1955,6 +1955,7 @@ std::unique_ptr<PixelMap> PixelConvert::AstcToRgba(PixelMap *source, uint32_t &e
     }
     uint32_t byteCount = static_cast<uint32_t>(astcInfo.astcSize.width * astcInfo.astcSize.height * BYTES_PER_PIXEL);
     MemoryData memoryData = {nullptr, byteCount, "Create PixelMap", astcInfo.astcSize, PixelFormat::RGBA_8888};
+    memoryData.usage = source->GetNoPaddingUsage();
     AllocatorType allocatorType = ImageUtils::GetPixelMapAllocatorType(astcInfo.astcSize, PixelFormat::RGBA_8888, true);
     std::unique_ptr<AbsMemory> dstMemory = MemoryManager::CreateMemory(allocatorType, memoryData);
     if (dstMemory == nullptr) {
