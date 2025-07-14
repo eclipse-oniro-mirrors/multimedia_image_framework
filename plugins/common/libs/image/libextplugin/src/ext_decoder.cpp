@@ -100,7 +100,7 @@ namespace {
     constexpr static uint32_t DESC_SIGNATURE = 0x64657363;
     constexpr static size_t SIZE_1 = 1;
     constexpr static size_t SIZE_4 = 4;
-    constexpr static int HARDWARE_MIN_DIM = 256;
+    constexpr static int HARDWARE_MIN_DIM = 512;
     constexpr static int HARDWARE_MID_DIM = 1024;
     constexpr static int HARDWARE_MAX_DIM = 8192;
     constexpr static int HARDWARE_ALIGN_SIZE = 16;
@@ -606,7 +606,8 @@ bool ExtDecoder::IsSupportSampleDecode(OHOS::Media::PixelFormat desiredFormat)
     CHECK_ERROR_RETURN_RET(cond, false);
     cond = dstSubset_.left() != 0 || dstSubset_.top() != 0 || dstSubset_.right() != 0 || dstSubset_.bottom() != 0;
     CHECK_ERROR_RETURN_RET(cond, false);
-    return codec_->getEncodedFormat() == SkEncodedImageFormat::kPNG;
+    return ImageSystemProperties::GetPngSampleDecodeEnabled() &&
+        codec_->getEncodedFormat() == SkEncodedImageFormat::kPNG;
 }
 
 bool ExtDecoder::HasProperty(string key)

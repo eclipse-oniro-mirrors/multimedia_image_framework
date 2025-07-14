@@ -37,6 +37,7 @@ public:
     static bool GetGenThumbWithGpu();
     static bool GetSLRLaplacianEnabled();
     static bool GetNoPaddingEnabled();
+    static bool GetPngSampleDecodeEnabled();
     static bool UseGPUScalingCapabilities();
     static bool IsSupportOpaqueOpt();
 private:
