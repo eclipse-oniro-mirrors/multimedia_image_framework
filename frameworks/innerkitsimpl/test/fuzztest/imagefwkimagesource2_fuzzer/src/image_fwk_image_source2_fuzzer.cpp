@@ -36,6 +36,7 @@ static const std::string GIF_FORMAT = "image/gif";
 static const std::string PNG_FORMAT = "image/png";
 static const std::string IMAGE_ENCODE_DEST = "/data/local/tmp/test_out.dat";
 constexpr uint32_t SOURCEOPTIONS_MIMETYPE_MODULO = 3;
+static constexpr uint32_t ALLOCATORTYPE_MODULO = 5;
 
 namespace OHOS {
 namespace Media {
@@ -48,6 +49,7 @@ void ImageSourceFuncTest002(std::unique_ptr<ImageSource> &imageSource, DecodeOpt
     ImageInfo imageInfo;
     imageSource->ImageConverChange(cropRect, imageInfo, imageInfo);
     imageSource->CreatePixelMapForYUV(errCode);
+    imageSource->CreatePixelMapForASTC(errCode, opts);
     imageSource->CreatePixelMapList(opts, errCode);
     imageSource->GetDelayTime(errCode);
     imageSource->GetDisposalType(errCode);
@@ -60,6 +62,9 @@ void ImageSourceFuncTest002(std::unique_ptr<ImageSource> &imageSource, DecodeOpt
     auto incrementalRecordIter = imageSource->incDecodingMap_.find(&pixelMap);
     imageSource->AddIncrementalContext(pixelMap, incrementalRecordIter);
     imageSource->GetImageInfoFromExif(0, imageInfo);
+    int32_t type = FDP->ConsumeIntegral<int32_t>() % ALLOCATORTYPE_MODULO;
+    imageSource->IsSupportAllocatorType(opts, type);
+    
     IMAGE_LOGI("%{public}s SUCCESS", __func__);
 }
 
@@ -81,6 +86,7 @@ void ImageSourceFuncTest001(std::unique_ptr<ImageSource> &imageSource)
     imageSource->GetImagePropertyCommon(0, key, value);
     imageSource->GetImagePropertyInt(0, key, valueInt);
     imageSource->GetImagePropertyString(0, key, value);
+    imageSource->GetImagePropertyStringBySync(0, key, value);
     imageSource->GetSourceInfo(errCode);
     imageSource->RegisterListener(nullptr);
     imageSource->UnRegisterListener(nullptr);
@@ -94,6 +100,7 @@ void ImageSourceFuncTest001(std::unique_ptr<ImageSource> &imageSource)
     imageSource->DecodeSourceInfo(true);
     imageSource->CreateDecoder(errCode);
     DecodeOptions opts;
+    SetFdpDecodeOptions(FDP, opts);
     DecodeOptions procOpts;
     PixelMap pixelMap;
     imageSource->CopyOptionsToProcOpts(opts, procOpts, pixelMap);
@@ -113,6 +120,7 @@ void CreateIncrementalPixelMapByDataFuzz(const uint8_t *data, size_t size)
     auto imageSource = Media::ImageSource::CreateIncrementalImageSource(incOpts, errorCode);
     if (imageSource != nullptr) {
         DecodeOptions decodeOpts;
+        SetFdpDecodeOptions(FDP, decodeOpts);
         std::unique_ptr<IncrementalPixelMap> incPixelMap =
             imageSource->CreateIncrementalPixelMap(0, decodeOpts, errorCode);
         uint32_t res = imageSource->UpdateData(data, size, true);
@@ -134,6 +142,7 @@ void CreateImageSourceByPathFuzz(const std::string &pathName)
         return;
     }
     ImageSourceFuncTest001(imageSource);
+    imageSource->RemoveImageProperties(0, {"ImageWidth", "ImageHeight"}, pathName);
     Media::DecodeOptions dopts;
     SetFdpDecodeOptions(FDP, dopts);
     imageSource->CreatePixelMap(dopts, errorCode);
@@ -160,6 +169,7 @@ void CreateImageSourceByFDEXFuzz(const std::string &pathName)
     if (imagesource != nullptr) {
         imagesource->CreatePixelMap(dopts, errorCode);
     }
+    imagesource->RemoveImageProperties(0, {"ImageWidth", "ImageHeight"}, fd);
     close(fd);
 }
 
@@ -223,8 +233,6 @@ void ImageSourceFuzzTest(const uint8_t *data, size_t size)
     }
     SourceOptions opts;
     uint32_t errorCode = 0;
-    std::string mimeType[] = {"image/jpeg", "image/heic", "image/heif"};
-    opts.formatHint = mimeType[FDP->ConsumeIntegral<uint8_t>() % SOURCEOPTIONS_MIMETYPE_MODULO];
     std::shared_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(data, size, opts, errorCode);
     if (imageSource == nullptr) {
         return;
@@ -239,6 +247,35 @@ void ImageSourceFuzzTest(const uint8_t *data, size_t size)
     bool isAddUV = false;
     std::vector<uint8_t> buffer;
     imageSource->ConvertYUV420ToRGBA(buffer.data(), size, isSupportOdd, isAddUV, errorCode);
+    DecodeOptions decOps;
+    SetFdpDecodeOptions(FDP, decOps);
+    int32_t allocatorType = FDP->ConsumeIntegral<int32_t>();
+    imageSource->IsSupportAllocatorType(decOps, allocatorType);
+    imageSource->IsSvgUseDma(decOps);
+    imageSource->GetImageId();
+    int filterType = FDP->ConsumeIntegral<int>();
+    std::vector<std::pair<uint32_t, uint32_t>> ranges;
+    imageSource->GetFilterArea(filterType, ranges);
+    imageSource->GetMemoryUsagePreference();
+    MemoryUsagePreference memoryUsagePreference =
+        static_cast<MemoryUsagePreference>(FDP->ConsumeIntegral<int32_t>() % 2);
+    imageSource->SetMemoryUsagePreference(memoryUsagePreference);
+    imageSource->GetNinePatchInfo();
+    std::set<std::string> keys = {"DateTimeOriginal", "ExposureTime", "SceneType", "GIFLoopCount"};
+    imageSource->RemoveImageProperties(0, keys, 0);
+    std::string value = "";
+    imageSource->GetImagePropertyStringBySync(0, key, value);
+    uint32_t frameCount = imageSource->GetFrameCount(errorCode);
+    std::string metadataValue = "";
+    for (uint32_t index = 0; index < frameCount; index++) {
+        auto picture = imageSource->CreatePictureAtIndex(index, errorCode);
+        if (picture == nullptr) {
+            return;
+        }
+        auto gifMetadata = picture->GetMetadata(MetadataType::GIF);
+        gifMetadata->GetValue(GIF_METADATA_KEY_DELAY_TIME, metadataValue);
+        gifMetadata->GetValue(GIF_METADATA_KEY_DISPOSAL_TYPE, metadataValue);
+    }
 }
 
 static std::string GetProperty(std::unique_ptr<ImageSource> &imageSource, const std::string &prop)
@@ -359,6 +396,8 @@ bool CreatePixelMapUseArgbByRandomImageSource(const uint8_t *data, size_t size)
             EncodePictureTest(picture, HEIF_FORMAT, IMAGE_ENCODE_DEST);
         }
     }
+    auto gifIndex = FDP->ConsumeIntegral<uint8_t>() % SOURCEOPTIONS_MIMETYPE_MODULO;
+    picture = imageSource->CreatePictureAtIndex(gifIndex, errorCode);
     return true;
 }
 

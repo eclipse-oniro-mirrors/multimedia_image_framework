@@ -42,4 +42,7 @@ ohos_fuzztest("ImagePngPlugin2FuzzTest") {
     "hilog:libhilog",
     "libpng:libpng",
   ]
+  if (enable_libexif) {
+    external_deps += [ "libexif:libexif" ]
+  }
 }
