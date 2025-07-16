@@ -431,11 +431,17 @@ OutputDataStream* FileSourceStream::ToOutputDataStream()
     if (filePtr_ == nullptr) {
         return nullptr;
     }
-    if (DupFd(filePtr_, dupFd)) {
+    if (!DupFd(filePtr_, dupFd)) {
         IMAGE_LOGE("[FileSourceStream] ToOutputDataStream fd failed");
         return nullptr;
     }
-    return new (std::nothrow) FilePackerStream(dupFd);
+    // return new (std::nothrow) FilePackerStream(dupFd);
+    OutputDataStream* stream = new (std::nothrow) FilePackerStream(dupFd);
+    if (!stream) {
+        close(dupFd);
+        return nullptr;
+    }
+    return stream;
 }
 
 int FileSourceStream::GetMMapFd()

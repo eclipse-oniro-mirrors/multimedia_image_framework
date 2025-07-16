@@ -267,7 +267,7 @@ bool JpegHardwareDecoder::HuffmanTblTransform(JHUFF_TBL* huffTbl, CodecJpegHuffT
         actualHuffValLen += huffTbl->bits[i];
     }
     JPEG_HW_LOGD("actualHuffValLen=%{public}d", actualHuffValLen);
-    if (actualHuffValLen > MAX_LIST_HUFFVAL_LEN) {
+    if (actualHuffValLen >= MAX_LIST_HUFFVAL_LEN) {
         JPEG_HW_LOGE("invalid huffVal len: %{public}d", actualHuffValLen);
         return false;
     }
