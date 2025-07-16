@@ -54,6 +54,7 @@ ani_object ImageTaiheUtils::ToBusinessError(ani_env *env, int32_t code, const st
 {
     ani_object err {};
     ani_class cls {};
+    CHECK_ERROR_RETURN_RET_LOG(env == nullptr, nullptr, "get_env failed");
     CHECK_ERROR_RETURN_RET_LOG(ANI_OK != env->FindClass(CLASS_NAME_BUSINESSERROR, &cls), err,
         "find class %{public}s failed", CLASS_NAME_BUSINESSERROR);
     ani_method ctor {};
