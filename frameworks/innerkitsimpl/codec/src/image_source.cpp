@@ -3389,7 +3389,10 @@ bool HandleMetadataCopy(std::vector<uint8_t>& dest, const uint8_t *src, size_t l
 
 bool ProcessAstcMetadata(PixelAstc* pixelAstc, size_t astcSize, const AstcMetadata& astcMetadata)
 {
-    if (pixelAstc != nullptr && pixelAstc->GetAllocatorType() != AllocatorType::DMA_ALLOC) {
+    if (pixelAstc == nullptr) {
+        return false;
+    }
+    if (pixelAstc->GetAllocatorType() != AllocatorType::DMA_ALLOC) {
         Size desiredSize = { astcSize, 1 };
         MemoryData memoryData = { nullptr, astcSize, "CreatePixelMapForASTC Data", desiredSize,
                                   pixelAstc->GetPixelFormat() };
