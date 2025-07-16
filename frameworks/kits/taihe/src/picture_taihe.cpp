@@ -245,30 +245,24 @@ Metadata PictureImpl::GetMetadataSync(MetadataType metadataType)
     return make_holder<MetadataImpl, Metadata>(imageMetadata);
 }
 
-static bool UnwarpMessageParcel(const uintptr_t& sequence, ani_long& nativePtr)
+static OHOS::MessageParcel* UnwarpMessageParcel(uintptr_t sequence)
 {
-    ani_env *env = ::taihe::get_env();
-    if (env == nullptr) {
-        IMAGE_LOGE("%{pubilc}s Get ani env failed.", __func__);
-        return false;
+    ani_env* env = taihe::get_env();
+    CHECK_ERROR_RETURN_RET_LOG(env == nullptr, nullptr, "get_env failed");
+    ani_long messageParcel {};
+    ani_status status = env->Object_CallMethodByName_Long(reinterpret_cast<ani_object>(sequence), "getNativePtr",
+        nullptr, &messageParcel);
+    if (status != ANI_OK) {
+        IMAGE_LOGE("UnwarpMessageParcel failed. status: %{public}d", status);
+        return nullptr;
     }
-    ani_object sequenceObj = reinterpret_cast<ani_object>(sequence);
-    if (ANI_OK != env->Object_GetFieldByName_Long(sequenceObj, "nativePtr", &nativePtr)) {
-        IMAGE_LOGE("%{pubilc}s Get messageParcel nativePtr failed.", __func__);
-        return false;
-    }
-    return true;
+    return reinterpret_cast<OHOS::MessageParcel*>(messageParcel);
 }
 
 void PictureImpl::Marshalling(uintptr_t sequence)
 {
 #if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
-    ani_long nativePtr;
-    if (!UnwarpMessageParcel(sequence, nativePtr)) {
-        ImageTaiheUtils::ThrowExceptionError(IMAGE_BAD_PARAMETER, "Marshalling picture unwrap failed.");
-        return;
-    }
-    OHOS::MessageParcel* messageParcel = reinterpret_cast<OHOS::MessageParcel*>(nativePtr);
+    OHOS::MessageParcel* messageParcel = UnwarpMessageParcel(sequence);
     if (messageParcel == nullptr) {
         ImageTaiheUtils::ThrowExceptionError(OHOS::Media::ERR_IPC, "Marshalling picture to parcel failed.");
         return;
@@ -316,12 +310,7 @@ Picture CreatePictureFromParcel(uintptr_t sequence)
 {
     IMAGE_LOGD("Call CreatePictureFromParcel");
 
-    ani_long nativePtr;
-    if (!UnwarpMessageParcel(sequence, nativePtr)) {
-        ImageTaiheUtils::ThrowExceptionError(IMAGE_BAD_PARAMETER, "Fail to unwrap messageSequence");
-        return make_holder<PictureImpl, Picture>();
-    }
-    OHOS::MessageParcel* messageParcel = reinterpret_cast<OHOS::MessageParcel*>(nativePtr);
+    OHOS::MessageParcel* messageParcel = UnwarpMessageParcel(sequence);
     if (messageParcel == nullptr) {
         ImageTaiheUtils::ThrowExceptionError(OHOS::Media::ERR_IPC, "Get parcel failed");
         return make_holder<PictureImpl, Picture>();
