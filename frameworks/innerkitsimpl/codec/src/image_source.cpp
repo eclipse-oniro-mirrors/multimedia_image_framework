@@ -5121,6 +5121,10 @@ bool ImageSource::CheckJpegSourceStream(StreamInfo &streamInfo)
         streamInfo.needDelete = true;
         if (!GetStreamData(sourceStreamPtr_, streamInfo.buffer, streamInfo.size)) {
             IMAGE_LOGE("%{public}s GetStreamData failed!", __func__);
+            if (streamInfo.needDelete && streamInfo.buffer) {
+                delete[] streamInfo.buffer;
+                streamInfo.buffer = nullptr;
+            }
             return false;
         }
     }
