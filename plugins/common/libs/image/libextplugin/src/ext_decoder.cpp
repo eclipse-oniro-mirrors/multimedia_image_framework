@@ -122,6 +122,8 @@ namespace {
     constexpr static uint32_t HEIF_HARDWARE_DISPLAY_MIN_DIM = 128;
     constexpr static int LUMA_8_BIT = 8;
     constexpr static int LUMA_10_BIT = 10;
+    constexpr static int JPEG_MARKER_LENGTH = 2;
+    static constexpr uint8_t JPEG_SOI_HEADER[] = { 0xFF, 0xD8 };
 }
 
 namespace OHOS {
@@ -2560,6 +2562,16 @@ ImageHdrType ExtDecoder::CheckHdrType()
         return hdrType_;
     }
     hdrType_ = HdrHelper::CheckHdrType(codec_.get(), gainMapOffset_);
+    if (format == SkEncodedImageFormat::kJPEG) {
+        if (stream_ == nullptr || (gainMapOffset_ + JPEG_MARKER_LENGTH) > stream_->GetStreamSize()) {
+            return Media::ImageHdrType::SDR;
+        }
+        uint8_t *outBuffer = stream_->GetDataPtr() + gainMapOffset_;
+        if (std::memcmp(JPEG_SOI_HEADER, outBuffer, JPEG_MARKER_LENGTH) != 0) {
+            IMAGE_LOGE("HDR-IMAGE CheckHdrType get gainmap header failed");
+            return Media::ImageHdrType::SDR;
+        }
+    }
     return hdrType_;
 #endif
 }

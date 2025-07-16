@@ -59,6 +59,7 @@ static const std::string IMAGE_INPUT_HEIF_10BIT_SDR_PATH = "/data/local/tmp/imag
 static const std::string IMAGE_INPUT_JPEG_HDR_PATH = "/data/local/tmp/image/hdr.jpg";
 static const std::string IMAGE_INPUT_JPEG_HDR_VIVID_PATH = "/data/local/tmp/image/HdrVivid.jpg";
 static const std::string IMAGE_INPUT_JPEG_HDR_MEDIA_TYPE_PATH = "/data/local/tmp/image/hdr_media_type_test.jpg";
+static const std::string IMAGE_INPUT_BAD_MPF_OFFSET_PATH = "/data/local/tmp/image/bad_mpf_offset.jpg";
 static const std::vector<uint8_t> HDR_METADATA_TYPE_BYTES = {
     0xFF, 0xEB, 0x00, 0x33, 0x75, 0x72, 0x6E, 0x3A, 0x68, 0x61, 0x72, 0x6D, 0x6F, 0x6E, 0x79, 0x6F,
     0x73, 0x3A, 0x6D, 0x75, 0x6C, 0x74, 0x69, 0x6D, 0x65, 0x64, 0x69, 0x61, 0x3A, 0x69, 0x6D, 0x61,
@@ -775,6 +776,33 @@ HWTEST_F(ImageSourceHdrTest, CheckMpfOffsetTest002, TestSize.Level3)
     res = jpegMpfParser->CheckMpfOffset(buf, size, offset);
     EXPECT_TRUE(res);
     EXPECT_EQ(offset, UINT32_BYTE_SIZE);
+}
+
+/**
+ * @tc.name: CheckMpfOffsetTest003
+ * @tc.desc: Test CheckJpegCuvaBadSourceImageDecodeToHdr
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageSourceHdrTest, CheckMpfOffsetTest003, TestSize.Level3)
+{
+    uint32_t errorCode = 0;
+    SourceOptions opts;
+    std::unique_ptr<ImageSource> imageSource =
+        ImageSource::CreateImageSource(IMAGE_INPUT_BAD_MPF_OFFSET_PATH, opts, errorCode);
+    ASSERT_EQ(errorCode, SUCCESS);
+    ASSERT_NE(imageSource.get(), nullptr);
+
+    uint32_t index = 0;
+    DecodeOptions optsPixel;
+    optsPixel.desiredDynamicRange = Media::DecodeDynamicRange::AUTO;
+    errorCode = 0;
+    std::unique_ptr<PixelMap> pixelMap = imageSource->CreatePixelMap(index, optsPixel, errorCode);
+    ASSERT_EQ(errorCode, SUCCESS);
+    ASSERT_NE(pixelMap.get(), nullptr);
+#ifdef IMAGE_VPE_FLAG
+    bool isHdr = pixelMap->IsHdr();
+    ASSERT_NE(isHdr, true);
+#endif
 }
 
 /**
