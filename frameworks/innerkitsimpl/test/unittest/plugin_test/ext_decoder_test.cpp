@@ -1837,7 +1837,7 @@ HWTEST_F(ExtDecoderTest, PixelmapEncodeTest001, TestSize.Level3)
     PixelMap pixelMap;
     extEncoder.AddImage(pixelMap);
     uint32_t ret = extEncoder.PixelmapEncode(wStream);
-    EXPECT_EQ(ret, ERR_IMAGE_INVALID_PARAMETER);
+    EXPECT_EQ(ret, IMAGE_RESULT_CREATE_SURFAC_FAILED);
     extEncoder.opts_.desiredDynamicRange = EncodeDynamicRange::HDR_VIVID_SINGLE;
     ret = extEncoder.PixelmapEncode(wStream);
     EXPECT_EQ(ret, ERR_IMAGE_INVALID_PARAMETER);
