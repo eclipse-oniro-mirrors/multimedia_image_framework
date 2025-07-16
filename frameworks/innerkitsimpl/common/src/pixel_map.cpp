@@ -4710,6 +4710,7 @@ std::unique_ptr<PixelMap> PixelMap::ConvertFromAstc(PixelMap *source, uint32_t &
 
 uint64_t PixelMap::GetNoPaddingUsage()
 {
+#if !defined(CROSS_PLATFORM)
     if (allocatorType_ != AllocatorType::DMA_ALLOC || GetFd() == nullptr) {
         return 0;
     }
@@ -4718,6 +4719,9 @@ uint64_t PixelMap::GetNoPaddingUsage()
         return BUFFER_USAGE_PREFER_NO_PADDING;
     }
     return 0;
+#else
+    return 0;
+#endif
 }
 } // namespace Media
 } // namespace OHOS
