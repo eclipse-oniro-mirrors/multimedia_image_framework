@@ -19,6 +19,7 @@
 #include "pixel_map.h"
 #include "color_space.h"
 #include "post_proc.h"
+#include "image_system_properties.h"
 
 using namespace testing::ext;
 using namespace OHOS::Media;
@@ -1647,6 +1648,12 @@ HWTEST_F(ImagePixelMapTest, ImagePixelMap048, TestSize.Level3)
 HWTEST_F(ImagePixelMapTest, ImagePixelMap049, TestSize.Level3)
 {
     GTEST_LOG_(INFO) << "ImagePixelMapTest: ImagePixelMap049 rotate start";
+    bool isSupportOpt = OHOS::Media::ImageSystemProperties::IsSupportOpaqueOpt();
+    if (!isSupportOpt) {
+        EXPECT_EQ(isSupportOpt, false);
+        GTEST_LOG_(INFO) << "ImagePixelMapTest: ImagePixelMap049 rotate end";
+        return;
+    }
     constexpr uint32_t ARGB8888_BYTES = 4;
 
     InitializationOptions opts;
@@ -1694,6 +1701,12 @@ HWTEST_F(ImagePixelMapTest, ImagePixelMap049, TestSize.Level3)
 HWTEST_F(ImagePixelMapTest, ImagePixelMap050, TestSize.Level3)
 {
     GTEST_LOG_(INFO) << "ImagePixelMapTest: ImagePixelMap050 rotate start";
+    bool isSupportOpt = OHOS::Media::ImageSystemProperties::IsSupportOpaqueOpt();
+    if (!isSupportOpt) {
+        EXPECT_EQ(isSupportOpt, false);
+        GTEST_LOG_(INFO) << "ImagePixelMapTest: ImagePixelMap050 rotate end";
+        return;
+    }
     constexpr uint32_t ARGB8888_BYTES = 4;
 
     InitializationOptions opts;
