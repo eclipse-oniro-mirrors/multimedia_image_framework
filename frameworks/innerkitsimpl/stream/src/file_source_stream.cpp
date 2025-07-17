@@ -435,7 +435,6 @@ OutputDataStream* FileSourceStream::ToOutputDataStream()
         IMAGE_LOGE("[FileSourceStream] ToOutputDataStream fd failed");
         return nullptr;
     }
-    // return new (std::nothrow) FilePackerStream(dupFd);
     OutputDataStream* stream = new (std::nothrow) FilePackerStream(dupFd);
     if (!stream) {
         close(dupFd);
