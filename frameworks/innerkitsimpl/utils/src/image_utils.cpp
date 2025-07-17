@@ -806,8 +806,8 @@ std::string ImageUtils::GetLocalTime()
     auto ms = std::chrono::duration_cast<std::chrono::milliseconds>(now.time_since_epoch()) % 1000;
     std::time_t t = std::chrono::system_clock::to_time_t(now);
     std::tm tm = *std::localtime(&t);
-    if (tm == nullptr) {
-        IMAGE_LOGE("ImageUtils::GetLocalTime error, returned nullptr");
+    if (tm == NULL) {
+        IMAGE_LOGE("ImageUtils::GetLocalTime error, returned NULL");
         return "";
     }
 
