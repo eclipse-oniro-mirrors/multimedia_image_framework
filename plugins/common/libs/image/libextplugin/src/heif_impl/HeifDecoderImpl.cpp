@@ -248,6 +248,9 @@ bool HeifDecoderImpl::setAuxiliaryMap(AuxiliaryPictureType type)
     bool cond = auxiliaryImage_ == nullptr && !CheckAuxiliaryMap(type);
     CHECK_ERROR_RETURN_RET_LOG(cond, false, "make heif parser failed");
 
+    if (type == AuxiliaryPictureType::FRAGMENT_MAP) {
+        colorSpaceName_ = ColorManager::ColorSpaceName::DISPLAY_P3_LIMIT;
+    }
     InitFrameInfo(&auxiliaryImageInfo_, auxiliaryImage_);
     InitGridInfo(auxiliaryImage_, auxiliaryGridInfo_);
     return true;
