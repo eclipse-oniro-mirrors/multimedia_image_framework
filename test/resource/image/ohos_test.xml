@@ -87,6 +87,7 @@
             <option name="push" value="images/hdr.jpg -> /data/local/tmp/image/" src="res"/>
             <option name="push" value="images/HdrVivid.jpg -> /data/local/tmp/image/" src="res"/>
             <option name="push" value="images/hdr_media_type_test.jpg -> /data/local/tmp/image/" src="res"/>
+            <option name="push" value="images/bad_mpf_offset.jpg -> /data/local/tmp/image/" src="res"/>
             <option name="push" value="images/non_hdr.jpg -> /data/local/tmp/image" src="res"/>
             <option name="push" value="images/hdr_1.jpg -> /data/local/tmp/image" src="res"/>
             <option name="push" value="images/test-10bit-1.heic -> /data/local/tmp/image" src="res"/>
