@@ -2614,6 +2614,7 @@ napi_value ImageSourceNapi::GetImagePropertySync(napi_env env, napi_callback_inf
         napi_get_undefined(env, &result);
 
         uint32_t ret = imageSourceNapi->nativeImgSrc->GetImagePropertyStringBySync(NUM_0, key, value);
+        imageSourceNapi.release();
         if (ret == SUCCESS) {
             napi_create_string_utf8(env, value.c_str(), value.length(), &result);
             return result;
