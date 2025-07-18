@@ -805,15 +805,15 @@ std::string ImageUtils::GetLocalTime()
     auto now = std::chrono::system_clock::now();
     auto ms = std::chrono::duration_cast<std::chrono::milliseconds>(now.time_since_epoch()) % 1000;
     std::time_t t = std::chrono::system_clock::to_time_t(now);
-    std::tm tm = *std::localtime(&t);
-    if (tm == NULL) {
-        IMAGE_LOGE("ImageUtils::GetLocalTime error, returned NULL");
+    std::tm* tm = std::localtime(&t);
+    if (tm == nullptr) {
+        IMAGE_LOGE("ImageUtils::GetLocalTime error, returned nullptr");
         return "";
     }
 
     std::stringstream ss;
     int millSecondWidth = 3;
-    ss << std::put_time(&tm, "%Y-%m-%d %H_%M_%S.") << std::setfill('0') << std::setw(millSecondWidth) << ms.count();
+    ss << std::put_time(tm, "%Y-%m-%d %H_%M_%S.") << std::setfill('0') << std::setw(millSecondWidth) << ms.count();
     return ss.str();
 }
 
