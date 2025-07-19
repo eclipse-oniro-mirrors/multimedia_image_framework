@@ -212,7 +212,7 @@ static const uint8_t NUM_3 = 3;
 static const uint8_t NUM_4 = 4;
 static const uint8_t RGBA_BIT_DEPTH = 4;
 
-static constexpr int32_t MAX_IMAGE_SIZE = 8196;
+static constexpr int32_t MAX_IMAGE_SIZE = 32768;
 static constexpr int32_t MIN_IMAGE_SIZE = 128;
 static constexpr int32_t MIN_RGBA_IMAGE_SIZE = 1024;
 
