@@ -830,6 +830,7 @@ ImageSourceNapi::ImageSourceNapi():env_(nullptr)
 
 ImageSourceNapi::~ImageSourceNapi()
 {
+    IMAGE_LOGD("%{public}s IN", __func__);
     release();
 }
 
@@ -2765,22 +2766,23 @@ napi_value ImageSourceNapi::UpdateData(napi_env env, napi_callback_info info)
     return result;
 }
 
-static bool ReleaseSendEvent(napi_env env, ImageSourceAsyncContext* context,
-                             napi_event_priority prio)
+STATIC_EXEC_FUNC(Release)
 {
-    auto task = [env, context]() {
-        napi_value result = nullptr;
-        napi_get_undefined(env, &result);
-
+    IMAGE_LOGD("%{public}s IN", __func__);
+    auto context = static_cast<ImageSourceAsyncContext*>(data);
+    if (context != nullptr && context->constructor_ != nullptr) {
         delete context->constructor_;
         context->constructor_ = nullptr;
-        ImageSourceCallbackRoutine(env, const_cast<ImageSourceAsyncContext *&>(context), result);
-    };
-	if (napi_status::napi_ok != napi_send_event(env, task, prio)) {
-        IMAGE_LOGE("ReleaseSendEvent: failed to SendEvent!");
-        return false;
     }
-    return true;
+}
+
+STATIC_COMPLETE_FUNC(Release)
+{
+    IMAGE_LOGD("%{public}s IN", __func__);
+    napi_value result = nullptr;
+    napi_get_undefined(env, &result);
+    auto context = static_cast<ImageSourceAsyncContext*>(data);
+    ImageSourceCallbackRoutine(env, const_cast<ImageSourceAsyncContext *&>(context), result);
 }
 
 napi_value ImageSourceNapi::Release(napi_env env, napi_callback_info info)
@@ -2814,9 +2816,8 @@ napi_value ImageSourceNapi::Release(napi_env env, napi_callback_info info)
         napi_create_promise(env, &(asyncContext->deferred), &result);
     }
 
-    if (ReleaseSendEvent(env, asyncContext.get(), napi_eprio_high)) {
-        asyncContext.release();
-    }
+    IMG_CREATE_CREATE_ASYNC_WORK(env, status, "Release", ReleaseExec, ReleaseComplete, asyncContext,
+        asyncContext->work);
     IMAGE_LOGD("Release exit");
     return result;
 }
