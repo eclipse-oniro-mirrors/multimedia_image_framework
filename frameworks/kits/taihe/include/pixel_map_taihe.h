@@ -75,7 +75,6 @@ public:
 private:
     std::shared_ptr<OHOS::Media::PixelMap> nativePixelMap_ = nullptr;
     bool aniEditable_ = true;
-    bool transferDetach_ = false;
     bool Is10BitFormat(OHOS::Media::PixelFormat format);
     void ParseInitializationOptions(InitializationOptions const& etsOptions,
         OHOS::Media::InitializationOptions &options);

@@ -525,7 +525,7 @@ void PixelMapImpl::SetMemoryNameSync(string_view name)
 
 void PixelMapImpl::SetTransferDetached(bool detached)
 {
-    transferDetach_ = detached;
+    IMAGE_LOGD("[%{public}s] This method is no longer useful or necessary", __func__);
 }
 
 static FormatType FormatTypeOf(Media::PixelFormat pixelForamt)
