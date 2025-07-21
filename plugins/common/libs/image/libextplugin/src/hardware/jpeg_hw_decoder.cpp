@@ -429,6 +429,13 @@ bool JpegHardwareDecoder::AllocSpace()
             dmaPoolRecycleThread.detach();
         } else {
             JPEG_HW_LOGE("failed to create dmaPoolRecycleThread");
+            dmaPoolMtx_.lock();
+            if (munmap(dmaPool_.first->bufferHandle->virAddr, (DMA_POOL_SIZE * KILO_BYTE)) != 0) {
+                JPEG_HW_LOGE("failed to unmap input buffer");
+            }
+            delete dmaPool_.first;
+            dmaPool_.first = nullptr;
+            dmaPoolMtx_.unlock();
             return false;
         }
     }
