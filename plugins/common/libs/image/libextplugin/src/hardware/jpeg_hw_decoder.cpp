@@ -425,7 +425,12 @@ bool JpegHardwareDecoder::AllocSpace()
             return false;
         }
         std::thread dmaPoolRecycleThread(RunDmaPoolRecycle);
-        dmaPoolRecycleThread.detach();
+        if (dmaPoolRecycleThread.joinable()) {
+            dmaPoolRecycleThread.detach();
+        } else {
+            JPEG_HW_LOGE("failed to create dmaPoolRecycleThread");
+            return false;
+        }
     }
     dmaPool_.second = std::chrono::steady_clock::now();
     // step2. try to alloc space
