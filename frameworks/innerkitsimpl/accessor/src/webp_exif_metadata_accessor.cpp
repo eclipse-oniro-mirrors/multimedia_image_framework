@@ -286,7 +286,7 @@ bool WebpExifMetadataAccessor::UpdateExifMetadata(BufferMetadataStream &bufStrea
             UL2Data(chunkHead.Data(WEBP_FILE_SIZE_BUFF_SIZE), size, littleEndian);
             bufStream.Write(chunkHead.Data(), chunkHead.Size());
             bufStream.Write(dataBlob, size);
-            if (chunkData.Size() % WEBP_BUF_SIZE) {
+            if (size % WEBP_BUF_SIZE) {
                 bufStream.Write(&WEBP_PAD_ODD, 1);
             }
             break;
