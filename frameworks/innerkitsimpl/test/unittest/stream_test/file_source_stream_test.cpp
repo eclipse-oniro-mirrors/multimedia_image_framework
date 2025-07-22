@@ -579,3 +579,5 @@ HWTEST_F(FileSourceStreamTest, FileSourceStreamTest0027, TestSize.Level3)
     fileSourceStream->fileData_ = nullptr;
     GTEST_LOG_(INFO) << "FileSourceStreamTest: FileSourceStreamTest0027 end";
 }
+}
+}
