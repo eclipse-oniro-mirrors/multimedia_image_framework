@@ -19,4 +19,5 @@
 import type colorSpaceManager from '@ohos.graphics.colorSpaceManager';
 import type resourceManager from '@ohos.resourceManager';
 import type rpc from '@ohos.rpc';
+import { BusinessError } from '@ohos.base';
 """)
