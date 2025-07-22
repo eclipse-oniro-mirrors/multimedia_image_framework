@@ -1654,7 +1654,7 @@ static int32_t YUVConvert(const BufferInfo &src, const int32_t srcLength, Buffer
     FFMPEG_CONVERT_INFO dstFFmpegInfo = {PixelFormatToAVPixelFormat(dstInfo.pixelFormat), dstInfo.size.width,
         dstInfo.size.height, 1};
 
-    CHECK_ERROR_RETURN_RET_LOG(!FFMpegConvert(srcPixels, srcFFmpegInfo, dstPixels, dstFFmpegInfo),
+    CHECK_ERROR_RETURN_RET_LOG(!FFMpegConvert(copySrcPixels, srcFFmpegInfo, dstPixels, dstFFmpegInfo),
         -1, "[PixelMap]Convert: ffmpeg convert failed!");
     
     return av_image_get_buffer_size(dstFFmpegInfo.format, dstFFmpegInfo.width, dstFFmpegInfo.height,
