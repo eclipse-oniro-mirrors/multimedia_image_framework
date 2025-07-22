@@ -84,6 +84,11 @@ void SvgDecoderFuncTest001(const std::string &filename)
     }
 
     imageSource->sourceInfo_.encodedFormat = "image/svg+xml";
+    Media::DecodeOptions dopts;
+    imageSource->CreatePixelMap(dopts, errorCode);
+    if (errorCode != SUCCESS) {
+        return;
+    }
     auto svgDecoder = static_cast<SvgDecoder *>(imageSource->CreateDecoder(errorCode));
     PixelDecodeOptions plOpts;
     SetFdpPixelDecodeOptions(FDP, plOpts);
@@ -232,6 +237,9 @@ void ExtDecoderRegionFuncTest001(const std::string &filename)
     dopts.cropAndScaleStrategy =
         static_cast<CropAndScaleStrategy>(FDP->ConsumeIntegral<uint8_t>() % CROPANDSCALESTRATEGY_MODULO);
     imageSource->CreatePixelMap(dopts, errorCode);
+    if (errorCode != SUCCESS) {
+        return;
+    }
     auto extDecoder = static_cast<ExtDecoder *>((imageSource->mainDecoder_).get());
     if (extDecoder == nullptr || !extDecoder->DecodeHeader()) {
         return;
