@@ -425,7 +425,19 @@ bool JpegHardwareDecoder::AllocSpace()
             return false;
         }
         std::thread dmaPoolRecycleThread(RunDmaPoolRecycle);
-        dmaPoolRecycleThread.detach();
+        if (dmaPoolRecycleThread.joinable()) {
+            dmaPoolRecycleThread.detach();
+        } else {
+            JPEG_HW_LOGE("failed to create dmaPoolRecycleThread");
+            dmaPoolMtx_.lock();
+            if (munmap(dmaPool_.first->bufferHandle->virAddr, (DMA_POOL_SIZE * KILO_BYTE)) != 0) {
+                JPEG_HW_LOGE("failed to unmap input buffer");
+            }
+            delete dmaPool_.first;
+            dmaPool_.first = nullptr;
+            dmaPoolMtx_.unlock();
+            return false;
+        }
     }
     dmaPool_.second = std::chrono::steady_clock::now();
     // step2. try to alloc space
