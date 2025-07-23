@@ -44,6 +44,7 @@ public:
     void ReadPixelsToBufferSync(array_view<uint8_t> dst);
     void ReadPixelsSync(weak::PositionArea area);
     void WriteBufferToPixelsSync(array_view<uint8_t> src);
+    void WritePixelsSync(weak::PositionArea area);
     PixelMap CreateAlphaPixelmapSync();
     int32_t GetBytesNumberPerRow();
     int32_t GetPixelBytesNumber();
@@ -55,9 +56,12 @@ public:
     void FlipSync(bool horizontal, bool vertical);
     void OpacitySync(double rate);
     void SetMemoryNameSync(string_view name);
+    void SetTransferDetached(bool detached);
     void ConvertPixelFormatSync(PixelMapFormat targetPixelFormat);
     uintptr_t GetColorSpace();
     void SetColorSpace(uintptr_t colorSpace);
+    void Marshalling(uintptr_t sequence);
+    PixelMap UnmarshallingSync(uintptr_t sequence);
     void ToSdrSync();
     void ApplyColorSpaceSync(uintptr_t targetColorSpace);
     void ReleaseSync();
