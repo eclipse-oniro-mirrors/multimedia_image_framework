@@ -26,6 +26,8 @@
 #include "png_decoder.h"
 #include "nine_patch_listener.h"
 #include "image_log.h"
+#include "data_buf.h"
+#include "png_image_chunk_utils.h"
 
 #undef LOG_DOMAIN
 #define LOG_DOMAIN LOG_TAG_DOMAIN_ID_IMAGE
@@ -34,6 +36,10 @@
 #define LOG_TAG "PNG_PLUGIN_FUZZ"
 
 constexpr uint32_t OPT_SIZE = 40;
+constexpr size_t OFFSET_ZERO = 0;
+constexpr uint8_t BYTE_ONE = 1;
+constexpr uint8_t TEXTCHUNKTYPE_MODULE = 3;
+
 namespace OHOS {
 namespace Media {
 FuzzedDataProvider *FDP;
@@ -141,6 +147,19 @@ void CreateImageSourceByNinePatchFuzz001(const uint8_t *data, size_t size)
     ninepath.Scale(scaleX, scaleY, scaledWidth, scaledHeight);
 }
 
+void PngImageChunkUtilsTest()
+{
+    size_t bufferSize = FDP->ConsumeIntegral<size_t>();
+    DataBuf chunkData(bufferSize);
+    DataBuf tiffData(bufferSize);
+    chunkData.WriteUInt8(OFFSET_ZERO, BYTE_ONE);
+    bool isCompressed = FDP->ConsumeBool();
+    PngImageChunkUtils::TextChunkType textChunkType =
+        static_cast<PngImageChunkUtils::TextChunkType>(FDP->ConsumeIntegral<uint8_t>() % TEXTCHUNKTYPE_MODULE);
+    PngImageChunkUtils::ParseTextChunk(chunkData, textChunkType, tiffData, isCompressed);
+    PngImageChunkUtils::FindExifFromTxt(chunkData);
+}
+
 }  // namespace Media
 }  // namespace OHOS
 
@@ -158,8 +177,11 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
         case 0:
             OHOS::Media::CreateImageSourceByFDFuzz001(data, size);
             break;
-        default:
+        case 1:
             OHOS::Media::CreateImageSourceByNinePatchFuzz001(data, size);
+            break;
+        default:
+            OHOS::Media::PngImageChunkUtilsTest();
             break;
     }
     return 0;
