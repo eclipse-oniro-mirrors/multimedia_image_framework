@@ -34,7 +34,7 @@ ani_status ANI_Constructor(ani_vm* vm, uint32_t* result)
         return ANI_ERROR;
     }
     ani_namespace imageNamespace;
-    if (ANI_OK != env->FindNamespace("L@ohos/multimedia/image/image;", &imageNamespace)) {
+    if (ANI_OK != env->FindNamespace("@ohos.multimedia.image.image", &imageNamespace)) {
         IMAGE_LOGE("[ANI_Constructor] FindNamespace failed");
         return ANI_ERROR;
     }
