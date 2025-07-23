@@ -377,6 +377,7 @@ HWTEST_F(HeifParserBoxTest, AppendNalDataTest002, TestSize.Level3)
         0X00, 0X03, 0X00, 0X00, 0X03, 0X00, 0X5a, 0Xa0, 0X04, 0X02, 0X00, 0X80, 0X59, 0X6e, 0Xa4, 0X92,
         0X9a, 0Xe6, 0Xc0, 0X80, 0X00, 0X00, 0X03, 0X00, 0X80, 0X00, 0X00, 0X03, 0X00, 0X84, 0x22, 0X00,
         0X01, 0x00, 0x07};
+    HeifHvccBox.ProcessBoxData(nalData);
     heifHvccBox.ParseNalUnitAnalysisSps(nalData);
     auto spsConfig = heifHvccBox.GetSpsConfig();
     ASSERT_EQ(spsConfig.nalUnitType, NAL_LAYER_ID);
