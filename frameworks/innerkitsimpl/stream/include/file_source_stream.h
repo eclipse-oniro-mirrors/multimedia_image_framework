@@ -47,7 +47,6 @@ public:
     uint8_t *GetDataPtr() override;
     uint8_t *GetDataPtr(bool populate) override;
     uint32_t GetStreamType() override;
-    ImagePlugin::OutputDataStream* ToOutputDataStream() override;
     int GetMMapFd();
 
 private:
