@@ -15,7 +15,7 @@ import("//build/ohos_var.gni")
 import("//build/ohos.gni")
 
 declare_args() {
-  image_framework_feature_upgrade_skia = false
+  image_framework_feature_upgrade_skia = true
 }
 
 # source code for Windows.
