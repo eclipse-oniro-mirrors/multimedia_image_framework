@@ -266,13 +266,16 @@ HWTEST_F(ImageCodecTest, OnMsgReceivedTest001, TestSize.Level1)
     std::shared_ptr<ParamBundle> bundle = std::make_shared<ParamBundle>();
     info.param = bundle;
     startingState.OnMsgReceived(info);
-    EXPECT_EQ(info.type, ImageCodec::MsgWhat::GET_INPUT_FORMAT);
+    bool result = startingState.codec_->deferredQueue_.size() != 0;
+    EXPECT_TRUE(result);
     info.type = ImageCodec::MsgWhat::START;
     startingState.OnMsgReceived(info);
-    EXPECT_EQ(info.type, ImageCodec::MsgWhat::START);
+    result = startingState.codec_->m_replies.find(info.id) == startingState.codec_->m_replies.end();
+    EXPECT_TRUE(result);
     info.type = ImageCodec::MsgWhat::CHECK_IF_STUCK;
     startingState.OnMsgReceived(info);
-    EXPECT_EQ(info.type, ImageCodec::MsgWhat::CHECK_IF_STUCK);
+    int32_t generation;
+    EXPECT_FALSE(info.param->GetValue("generation", generation));
     GTEST_LOG_(INFO) << "ImageCodecTest: OnMsgReceivedTest001 end";
 }
 
@@ -293,7 +296,8 @@ HWTEST_F(ImageCodecTest, OnMsgReceivedTest002, TestSize.Level1)
     info.type = ImageCodec::MsgWhat::START;
     info.id = 0;
     runningState.OnMsgReceived(info);
-    EXPECT_EQ(info.id, 0);
+    bool result = runningState.codec_->m_replies.find(info.id) == runningState.codec_->m_replies.end();
+    EXPECT_TRUE(result);
     GTEST_LOG_(INFO) << "ImageCodecTest: OnMsgReceivedTest002 end";
 }
 
@@ -315,19 +319,20 @@ HWTEST_F(ImageCodecTest, OnMsgReceivedTest003, TestSize.Level1)
     info.type = ImageCodec::MsgWhat::START;
     outputPortChangedState.OnShutDown(info);
     outputPortChangedState.OnMsgReceived(info);
-    EXPECT_EQ(info.type, ImageCodec::MsgWhat::START);
+    bool result = outputPortChangedState.codec_->deferredQueue_.size() != 0;
+    EXPECT_TRUE(result);
     info.type = ImageCodec::MsgWhat::QUEUE_INPUT_BUFFER;
     outputPortChangedState.OnMsgReceived(info);
-    EXPECT_EQ(info.type, ImageCodec::MsgWhat::QUEUE_INPUT_BUFFER);
     info.type = ImageCodec::MsgWhat::RELEASE_OUTPUT_BUFFER;
     outputPortChangedState.OnMsgReceived(info);
-    EXPECT_EQ(info.type, ImageCodec::MsgWhat::RELEASE_OUTPUT_BUFFER);
+    result = outputPortChangedState.codec_->m_replies.find(info.id) == outputPortChangedState.codec_->m_replies.end();
+    EXPECT_TRUE(result);
     info.type = ImageCodec::MsgWhat::FORCE_SHUTDOWN;
     outputPortChangedState.OnMsgReceived(info);
-    EXPECT_EQ(info.type, ImageCodec::MsgWhat::FORCE_SHUTDOWN);
+    EXPECT_TRUE(outputPortChangedState.codec_->isShutDownFromRunning_);
     info.type = ImageCodec::MsgWhat::CHECK_IF_STUCK;
     outputPortChangedState.OnMsgReceived(info);
-    EXPECT_EQ(info.type, ImageCodec::MsgWhat::CHECK_IF_STUCK);
+    EXPECT_TRUE(outputPortChangedState.codec_->hasFatalError_);
     GTEST_LOG_(INFO) << "ImageCodecTest: OnMsgReceivedTest003 end";
 }
 
@@ -347,7 +352,9 @@ HWTEST_F(ImageCodecTest, OnMsgReceivedTest004, TestSize.Level1)
     std::shared_ptr<ParamBundle> bundle = std::make_shared<ParamBundle>();
     info.param = bundle;
     stoppingState.OnMsgReceived(info);
-    EXPECT_EQ(info.type, ImageCodec::MsgWhat::CHECK_IF_STUCK);
+    int32_t generation;
+    (void)info.param->GetValue("generation", generation);
+    EXPECT_NE(generation, stoppingState.coded_->stateGeneration_);
     GTEST_LOG_(INFO) << "ImageCodecTest: OnMsgReceivedTest004 end";
 }
 
