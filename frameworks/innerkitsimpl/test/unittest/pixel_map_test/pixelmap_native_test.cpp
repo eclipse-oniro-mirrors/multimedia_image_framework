@@ -47,6 +47,11 @@ public:
     ~PixelMapNdk2Test() {}
 };
 
+constexpr int32_t bufferSize = 256;
+static const std::string IMAGE_JPEG_PATH = "/data/local/tmp/image/test_jpeg_writeexifblob001.jpg";
+static const std::string IMAGE_JPEG_PATH_TEST = "/data/local/tmp/image/test.jpg";
+static const std::string IMAGE_JPEG_PATH_TEST_PICTURE = "/data/local/tmp/image/test_picture.jpg";
+
 /**
  * @tc.name: OH_PixelmapInitializationOptions_Create
  * @tc.desc: OH_PixelmapInitializationOptions_Create
@@ -372,6 +377,313 @@ HWTEST_F(PixelMapNdk2Test, OH_PixelmapNative_WritePixels, TestSize.Level3)
     Image_ErrorCode ret = OH_PixelmapNative_WritePixels(pixelMap, source, bufferSize);
     ASSERT_EQ(ret, IMAGE_BAD_PARAMETER);
     GTEST_LOG_(INFO) << "PixelMapNdk2Test: OH_PixelmapNative_WritePixels end";
+}
+
+
+static int32_t GetPixelBytes(PIXEL_FORMAT &pixelFormat)
+{
+    int pixelBytes = 0;
+    switch (pixelFormat) {
+        case PIXEL_FORMAT_BGRA_8888:
+        case PIXEL_FORMAT_RGBA_8888:
+        case PIXEL_FORMAT_RGBA_1010102:
+            pixelBytes = 4;
+            break;
+        case PIXEL_FORMAT_ALPHA_8:
+            pixelBytes = 1;
+            break;
+        case PIXEL_FORMAT_RGB_888:
+            pixelBytes = 3;
+            break;
+        case PIXEL_FORMAT_RGB_565:
+            pixelBytes = 2;
+            break;
+        case PIXEL_FORMAT_RGBA_F16:
+            pixelBytes = 8;
+            break;
+        case PIXEL_FORMAT_NV21:
+        case PIXEL_FORMAT_NV12:
+            pixelBytes = 2;  // perl pixel 1.5 Bytes but return int so return 2
+            break;
+        case PIXEL_FORMAT_YCBCR_P010:
+        case PIXEL_FORMAT_YCRCB_P010:
+            pixelBytes = 3;
+            break;
+        default:
+            return 4;
+            break;
+    }
+    return pixelBytes;
+}
+
+static bool OH_PixelmapNative_CreatePixelmapUsingAllocator_others(uint32_t size,
+    PIXEL_FORMAT pixelFormat, IMAGE_ALLOCATOR_MODE type)
+{
+    size_t bufferSize = size * size * GetPixelBytes(pixelFormat);
+    uint8_t *destination = static_cast<uint8_t *>(malloc(bufferSize));
+    OH_Pixelmap_InitializationOptions *initOpts = nullptr;
+    OH_PixelmapInitializationOptions_Create(&initOpts);
+    OH_PixelmapInitializationOptions_SetSrcPixelFormat(initOpts, pixelFormat);
+    OH_PixelmapInitializationOptions_SetPixelFormat(initOpts, pixelFormat);
+    OH_PixelmapInitializationOptions_SetHeight(initOpts, size);
+    OH_PixelmapInitializationOptions_SetWidth(initOpts, size);
+    OH_PixelmapInitializationOptions_SetAlphaType(initOpts, PIXELMAP_ALPHA_TYPE_UNPREMULTIPLIED);
+    OH_PixelmapNative *resultPixelmap = nullptr;
+    Image_ErrorCode errCode = OH_PixelmapNative_CreatePixelmapUsingAllocator(destination,
+        bufferSize, initOpts, type, &resultPixelmap);
+    if (IMAGE_SUCCESS != errCode) {
+        return false;
+    }
+    OH_Pixelmap_ImageInfo *imageInfo = nullptr;
+    OH_PixelmapImageInfo_Create(&imageInfo);
+    OH_PixelmapNative_GetImageInfo(resultPixelmap, imageInfo);
+    uint32_t dstWidth = 0;
+    OH_PixelmapImageInfo_GetWidth(imageInfo, &dstWidth);
+    uint32_t dstHeight = 0;
+    OH_PixelmapImageInfo_GetHeight(imageInfo, &dstHeight);
+    uint32_t dstRowStride = 0;
+    OH_PixelmapImageInfo_GetRowStride(imageInfo, &dstRowStride);
+    int32_t dstFormat;
+    OH_PixelmapImageInfo_GetPixelFormat(imageInfo, &dstFormat);
+    int32_t alphaMode;
+    OH_PixelmapImageInfo_GetAlphaMode(imageInfo, &alphaMode);
+    free(destination);
+    OH_PixelmapInitializationOptions_Release(initOpts);
+    OH_PixelmapImageInfo_Release(imageInfo);
+    OH_PixelmapNative_Destroy(&resultPixelmap);
+    return true;
+}
+
+static OH_ImageSourceNative *CreateImageSourceNative(std::string IMAGE_PATH)
+{
+    std::string realPath;
+    if (!ImageUtils::PathToRealPath(IMAGE_PATH.c_str(), realPath) || realPath.empty()) {
+        return nullptr;
+    }
+    char filePath[bufferSize];
+    if (strcpy_s(filePath, sizeof(filePath), realPath.c_str()) != EOK) {
+        return nullptr;
+    }
+    size_t length = realPath.size();
+    OH_ImageSourceNative *source = nullptr;
+    Image_ErrorCode ret = OH_ImageSourceNative_CreateFromUri(filePath, length, &source);
+    if (ret != Image_ErrorCode::IMAGE_SUCCESS || source == nullptr) {
+        return nullptr;
+    }
+    return source;
+}
+
+static bool OH_PixelmapNative_CreatePixelmapUsingAllocator_Test(uint32_t size,
+    PIXEL_FORMAT pixelFormat, IMAGE_ALLOCATOR_MODE type, OH_ImageSourceNative *imageSource)
+{
+    OH_DecodingOptions *decodeOpts = nullptr;
+    Image_ErrorCode errCode = OH_DecodingOptions_Create(&decodeOpts);
+    if (IMAGE_SUCCESS != errCode || imageSource == nullptr) {
+        return false;
+    }
+    OH_DecodingOptions_SetPixelFormat(decodeOpts, pixelFormat);
+    Image_Size desiredSize = {size, size};
+    OH_DecodingOptions_SetDesiredSize(decodeOpts, &desiredSize);
+    OH_PixelmapNative *resPixMap = nullptr;
+    if (IMAGE_SUCCESS != OH_ImageSourceNative_CreatePixelmap(imageSource, decodeOpts, &resPixMap)) {
+        return false;
+    }
+    OH_Pixelmap_ImageInfo *imageInfo1 = nullptr;
+    OH_PixelmapImageInfo_Create(&imageInfo1);
+    OH_PixelmapNative_GetImageInfo(resPixMap, imageInfo1);
+    uint32_t srcHeight = 0;
+    OH_PixelmapImageInfo_GetHeight(imageInfo1, &srcHeight);
+    uint32_t srcRowStride = 0;
+    OH_PixelmapImageInfo_GetRowStride(imageInfo1, &srcRowStride);
+    size_t bufferSize = srcRowStride * srcHeight;
+    uint8_t *destination = static_cast<uint8_t *>(malloc(bufferSize));
+    OH_PixelmapNative_ReadPixels(resPixMap, destination, &bufferSize);
+    OH_Pixelmap_InitializationOptions *initOpts = nullptr;
+    OH_PixelmapInitializationOptions_Create(&initOpts);
+    OH_PixelmapInitializationOptions_SetSrcPixelFormat(initOpts, pixelFormat);
+    OH_PixelmapInitializationOptions_SetPixelFormat(initOpts, pixelFormat);
+    OH_PixelmapInitializationOptions_SetHeight(initOpts, size);
+    OH_PixelmapInitializationOptions_SetWidth(initOpts, size);
+    OH_PixelmapInitializationOptions_SetAlphaType(initOpts, PIXELMAP_ALPHA_TYPE_UNPREMULTIPLIED);
+    OH_PixelmapNative *resultPixelmap = nullptr;
+    errCode = OH_PixelmapNative_CreatePixelmapUsingAllocator(destination, bufferSize, initOpts, type, &resultPixelmap);
+    if (IMAGE_SUCCESS != errCode) {
+        return false;
+    }
+    OH_Pixelmap_ImageInfo *imageInfo = nullptr;
+    OH_PixelmapImageInfo_Create(&imageInfo);
+    OH_PixelmapNative_GetImageInfo(resultPixelmap, imageInfo);
+    int32_t alphaMode;
+    OH_PixelmapImageInfo_GetAlphaMode(imageInfo, &alphaMode);
+    free(destination);
+    OH_PixelmapInitializationOptions_Release(initOpts);
+    OH_PixelmapImageInfo_Release(imageInfo1);
+    OH_PixelmapImageInfo_Release(imageInfo);
+    OH_PixelmapNative_Destroy(&resPixMap);
+    OH_PixelmapNative_Destroy(&resultPixelmap);
+    return true;
+}
+
+static bool CreateUsingAlloc(uint32_t size,
+    PIXEL_FORMAT pixelFormat, IMAGE_ALLOCATOR_MODE type, OH_ImageSourceNative *imageSource)
+{
+    if (pixelFormat == PIXEL_FORMAT_RGBA_1010102 ||
+        pixelFormat == PIXEL_FORMAT_YCBCR_P010 ||
+        pixelFormat == PIXEL_FORMAT_YCRCB_P010 ||
+        pixelFormat == PIXEL_FORMAT_RGB_888 ||
+        pixelFormat == PIXEL_FORMAT_ALPHA_8) {
+        return OH_PixelmapNative_CreatePixelmapUsingAllocator_others(size, pixelFormat, type);
+    }
+    return OH_PixelmapNative_CreatePixelmapUsingAllocator_Test(size, pixelFormat, type, imageSource);
+}
+/**
+ * @tc.name: OH_PixelmapNative_CreatePixelmapUsingAllocator
+ * @tc.desc: Test OH_PixelmapNative_CreatePixelmapUsingAllocator with valid inputs
+ * @tc.type: FUNC
+ */
+HWTEST_F(PixelMapNdk2Test, OH_PixelmapNative_CreatePixelmapUsingAllocator, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PixelMapNdk2Test: OH_PixelmapNative_CreatePixelmapUsingAllocator start";
+    const int32_t size = 300;
+    const int32_t dmaSize = 512;
+    OH_ImageSourceNative *imageSource = CreateImageSourceNative(IMAGE_JPEG_PATH_TEST_PICTURE);
+    ASSERT_NE(imageSource, nullptr);
+    ASSERT_EQ(CreateUsingAlloc(dmaSize, PIXEL_FORMAT_RGB_565, IMAGE_ALLOCATOR_MODE_AUTO, imageSource), true);
+    ASSERT_EQ(CreateUsingAlloc(dmaSize, PIXEL_FORMAT_RGBA_8888, IMAGE_ALLOCATOR_MODE_AUTO, imageSource), true);
+    ASSERT_EQ(CreateUsingAlloc(dmaSize, PIXEL_FORMAT_BGRA_8888, IMAGE_ALLOCATOR_MODE_AUTO, imageSource), true);
+    ASSERT_EQ(CreateUsingAlloc(dmaSize, PIXEL_FORMAT_RGB_888, IMAGE_ALLOCATOR_MODE_AUTO, imageSource), true);
+    ASSERT_EQ(CreateUsingAlloc(dmaSize, PIXEL_FORMAT_ALPHA_8, IMAGE_ALLOCATOR_MODE_AUTO, imageSource), true);
+    ASSERT_EQ(CreateUsingAlloc(dmaSize, PIXEL_FORMAT_NV21, IMAGE_ALLOCATOR_MODE_AUTO, imageSource), true);
+    ASSERT_EQ(CreateUsingAlloc(dmaSize, PIXEL_FORMAT_NV12, IMAGE_ALLOCATOR_MODE_AUTO, imageSource), true);
+    ASSERT_EQ(CreateUsingAlloc(dmaSize, PIXEL_FORMAT_RGBA_1010102, IMAGE_ALLOCATOR_MODE_AUTO, imageSource), true);
+    ASSERT_EQ(CreateUsingAlloc(dmaSize, PIXEL_FORMAT_YCBCR_P010, IMAGE_ALLOCATOR_MODE_AUTO, imageSource), false);
+    ASSERT_EQ(CreateUsingAlloc(dmaSize, PIXEL_FORMAT_YCRCB_P010, IMAGE_ALLOCATOR_MODE_AUTO, imageSource), false);
+    ASSERT_EQ(CreateUsingAlloc(size, PIXEL_FORMAT_RGB_565, IMAGE_ALLOCATOR_MODE_DMA, imageSource), true);
+    ASSERT_EQ(CreateUsingAlloc(size, PIXEL_FORMAT_RGBA_8888, IMAGE_ALLOCATOR_MODE_DMA, imageSource), true);
+    ASSERT_EQ(CreateUsingAlloc(size, PIXEL_FORMAT_BGRA_8888, IMAGE_ALLOCATOR_MODE_DMA, imageSource), true);
+    ASSERT_EQ(CreateUsingAlloc(size, PIXEL_FORMAT_RGB_888, IMAGE_ALLOCATOR_MODE_DMA, imageSource), false);
+    ASSERT_EQ(CreateUsingAlloc(size, PIXEL_FORMAT_ALPHA_8, IMAGE_ALLOCATOR_MODE_DMA, imageSource), false);
+    ASSERT_EQ(CreateUsingAlloc(size, PIXEL_FORMAT_NV21, IMAGE_ALLOCATOR_MODE_DMA, imageSource), false);
+    ASSERT_EQ(CreateUsingAlloc(size, PIXEL_FORMAT_NV12, IMAGE_ALLOCATOR_MODE_DMA, imageSource), false);
+    ASSERT_EQ(CreateUsingAlloc(size, PIXEL_FORMAT_RGBA_1010102, IMAGE_ALLOCATOR_MODE_DMA, imageSource), true);
+    ASSERT_EQ(CreateUsingAlloc(size, PIXEL_FORMAT_YCBCR_P010, IMAGE_ALLOCATOR_MODE_DMA, imageSource), false);
+    ASSERT_EQ(CreateUsingAlloc(size, PIXEL_FORMAT_YCRCB_P010, IMAGE_ALLOCATOR_MODE_DMA, imageSource), false);
+    ASSERT_EQ(CreateUsingAlloc(size, PIXEL_FORMAT_RGB_565, IMAGE_ALLOCATOR_MODE_SHARED_MEMORY, imageSource), true);
+    ASSERT_EQ(CreateUsingAlloc(size, PIXEL_FORMAT_RGBA_8888, IMAGE_ALLOCATOR_MODE_SHARED_MEMORY, imageSource), true);
+    ASSERT_EQ(CreateUsingAlloc(size, PIXEL_FORMAT_BGRA_8888, IMAGE_ALLOCATOR_MODE_SHARED_MEMORY, imageSource), true);
+    ASSERT_EQ(CreateUsingAlloc(size, PIXEL_FORMAT_RGB_888, IMAGE_ALLOCATOR_MODE_SHARED_MEMORY, imageSource), true);
+    ASSERT_EQ(CreateUsingAlloc(size, PIXEL_FORMAT_ALPHA_8, IMAGE_ALLOCATOR_MODE_SHARED_MEMORY, imageSource), true);
+    ASSERT_EQ(CreateUsingAlloc(size, PIXEL_FORMAT_RGBA_F16, IMAGE_ALLOCATOR_MODE_SHARED_MEMORY, imageSource), true);
+    ASSERT_EQ(CreateUsingAlloc(size, PIXEL_FORMAT_NV21, IMAGE_ALLOCATOR_MODE_SHARED_MEMORY, imageSource), true);
+    ASSERT_EQ(CreateUsingAlloc(size, PIXEL_FORMAT_NV12, IMAGE_ALLOCATOR_MODE_SHARED_MEMORY, imageSource), true);
+    ASSERT_EQ(CreateUsingAlloc(size, PIXEL_FORMAT_RGBA_1010102,
+        IMAGE_ALLOCATOR_MODE_SHARED_MEMORY, imageSource), false);
+    ASSERT_EQ(CreateUsingAlloc(size, PIXEL_FORMAT_YCBCR_P010, IMAGE_ALLOCATOR_MODE_SHARED_MEMORY, imageSource), false);
+    ASSERT_EQ(CreateUsingAlloc(size, PIXEL_FORMAT_YCRCB_P010, IMAGE_ALLOCATOR_MODE_SHARED_MEMORY, imageSource), false);
+    GTEST_LOG_(INFO) << "PixelMapNdk2Test: OH_PixelmapNative_CreatePixelmapUsingAllocator end";
+}
+
+bool CreateEmptypixelmap(uint32_t size, int32_t pixelFormat, IMAGE_ALLOCATOR_MODE type)
+{
+    OH_Pixelmap_InitializationOptions *initOpts = nullptr;
+    OH_PixelmapInitializationOptions_Create(&initOpts);
+    OH_PixelmapInitializationOptions_SetSrcPixelFormat(initOpts, pixelFormat);
+    OH_PixelmapInitializationOptions_SetPixelFormat(initOpts, pixelFormat);
+    OH_PixelmapInitializationOptions_SetHeight(initOpts, size);
+    OH_PixelmapInitializationOptions_SetWidth(initOpts, size);
+    OH_PixelmapNative *resultPixelmap = nullptr;
+    Image_ErrorCode errCode = OH_PixelmapNative_CreateEmptyPixelmapUsingAllocator(initOpts, type, &resultPixelmap);
+    if (IMAGE_SUCCESS != errCode) {
+        return false;
+    }
+    OH_Pixelmap_ImageInfo *imageInfo = nullptr;
+    OH_PixelmapImageInfo_Create(&imageInfo);
+    OH_PixelmapNative_GetImageInfo(resultPixelmap, imageInfo);
+    uint32_t dstWidth = 0;
+    OH_PixelmapImageInfo_GetWidth(imageInfo, &dstWidth);
+    uint32_t dstHeight = 0;
+    OH_PixelmapImageInfo_GetHeight(imageInfo, &dstHeight);
+    uint32_t dstRowStride = 0;
+    OH_PixelmapImageInfo_GetRowStride(imageInfo, &dstRowStride);
+    int32_t dstFormat;
+    OH_PixelmapImageInfo_GetPixelFormat(imageInfo, &dstFormat);
+    int32_t alphaMode;
+    OH_PixelmapImageInfo_GetAlphaMode(imageInfo, &alphaMode);
+    OH_PixelmapInitializationOptions_Release(initOpts);
+    OH_PixelmapImageInfo_Release(imageInfo);
+    OH_PixelmapNative_Destroy(&resultPixelmap);
+    return true;
+}
+
+/**
+ * @tc.name: OH_PixelmapNative_CreateEmptyPixelmapUsingAllocator
+ * @tc.desc: OH_PixelmapNative_CreateEmptyPixelmapUsingAllocator For PIXEL_FORMAT_YCRCB_P010
+ * @tc.type: FUNC
+ */
+HWTEST_F(PixelMapNdk2Test, OH_PixelmapNative_CreateEmptyPixelmapUsingAllocator, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PixelMapNdk2Test: OH_PixelmapNative_CreateEmptyPixelmapUsingAllocator start";
+    const int32_t size = 300;
+    const int32_t dmaSize = 512;
+    bool ret = CreateEmptypixelmap(size, PIXEL_FORMAT_RGB_565, IMAGE_ALLOCATOR_MODE_AUTO);
+    ASSERT_EQ(ret, true);
+    ret = CreateEmptypixelmap(size, PIXEL_FORMAT_RGBA_8888, IMAGE_ALLOCATOR_MODE_AUTO);
+    ASSERT_EQ(ret, true);
+    ret = CreateEmptypixelmap(size, PIXEL_FORMAT_BGRA_8888, IMAGE_ALLOCATOR_MODE_AUTO);
+    ASSERT_EQ(ret, true);
+    ret = CreateEmptypixelmap(size, PIXEL_FORMAT_RGB_888, IMAGE_ALLOCATOR_MODE_AUTO);
+    ASSERT_EQ(ret, true);
+    ret = CreateEmptypixelmap(size, PIXEL_FORMAT_ALPHA_8, IMAGE_ALLOCATOR_MODE_AUTO);
+    ASSERT_EQ(ret, true);
+    ret = CreateEmptypixelmap(size, PIXEL_FORMAT_RGBA_F16, IMAGE_ALLOCATOR_MODE_AUTO);
+    ASSERT_EQ(ret, true);
+    ret = CreateEmptypixelmap(size, PIXEL_FORMAT_NV21, IMAGE_ALLOCATOR_MODE_AUTO);
+    ASSERT_EQ(ret, true);
+    ret = CreateEmptypixelmap(size, PIXEL_FORMAT_NV12, IMAGE_ALLOCATOR_MODE_AUTO);
+    ASSERT_EQ(ret, true);
+    ret = CreateEmptypixelmap(size, PIXEL_FORMAT_RGBA_1010102, IMAGE_ALLOCATOR_MODE_AUTO);
+    ASSERT_EQ(ret, true);
+    ret = CreateEmptypixelmap(size, PIXEL_FORMAT_YCBCR_P010, IMAGE_ALLOCATOR_MODE_AUTO);
+    ASSERT_EQ(ret, true);
+    ret = CreateEmptypixelmap(size, PIXEL_FORMAT_YCRCB_P010, IMAGE_ALLOCATOR_MODE_AUTO);
+    ASSERT_EQ(ret, true);
+    ret = CreateEmptypixelmap(dmaSize, PIXEL_FORMAT_RGB_565, IMAGE_ALLOCATOR_MODE_DMA);
+    ASSERT_EQ(ret, true);
+    ret = CreateEmptypixelmap(dmaSize, PIXEL_FORMAT_RGBA_8888, IMAGE_ALLOCATOR_MODE_DMA);
+    ASSERT_EQ(ret, true);
+    ret = CreateEmptypixelmap(dmaSize, PIXEL_FORMAT_BGRA_8888, IMAGE_ALLOCATOR_MODE_DMA);
+    ASSERT_EQ(ret, true);
+    ret = CreateEmptypixelmap(dmaSize, PIXEL_FORMAT_RGBA_F16, IMAGE_ALLOCATOR_MODE_DMA);
+    ASSERT_EQ(ret, true);
+    ret = CreateEmptypixelmap(dmaSize, PIXEL_FORMAT_RGBA_1010102, IMAGE_ALLOCATOR_MODE_DMA);
+    ASSERT_EQ(ret, true);
+    ret = CreateEmptypixelmap(dmaSize, PIXEL_FORMAT_YCBCR_P010, IMAGE_ALLOCATOR_MODE_DMA);
+    ASSERT_EQ(ret, true);
+    ret = CreateEmptypixelmap(dmaSize, PIXEL_FORMAT_YCRCB_P010, IMAGE_ALLOCATOR_MODE_DMA);
+    ASSERT_EQ(ret, true);
+    ret = CreateEmptypixelmap(size, PIXEL_FORMAT_RGB_565, IMAGE_ALLOCATOR_MODE_SHARED_MEMORY);
+    ASSERT_EQ(ret, true);
+    ret = CreateEmptypixelmap(size, PIXEL_FORMAT_RGBA_8888, IMAGE_ALLOCATOR_MODE_SHARED_MEMORY);
+    ASSERT_EQ(ret, true);
+    ret = CreateEmptypixelmap(size, PIXEL_FORMAT_BGRA_8888, IMAGE_ALLOCATOR_MODE_SHARED_MEMORY);
+    ASSERT_EQ(ret, true);
+    ret = CreateEmptypixelmap(size, PIXEL_FORMAT_RGB_888, IMAGE_ALLOCATOR_MODE_SHARED_MEMORY);
+    ASSERT_EQ(ret, true);
+    ret = CreateEmptypixelmap(size, PIXEL_FORMAT_ALPHA_8, IMAGE_ALLOCATOR_MODE_SHARED_MEMORY);
+    ASSERT_EQ(ret, true);
+    ret = CreateEmptypixelmap(size, PIXEL_FORMAT_RGBA_F16, IMAGE_ALLOCATOR_MODE_SHARED_MEMORY);
+    ASSERT_EQ(ret, true);
+    ret = CreateEmptypixelmap(size, PIXEL_FORMAT_NV21, IMAGE_ALLOCATOR_MODE_SHARED_MEMORY);
+    ASSERT_EQ(ret, true);
+    ret = CreateEmptypixelmap(size, PIXEL_FORMAT_NV12, IMAGE_ALLOCATOR_MODE_SHARED_MEMORY);
+    ASSERT_EQ(ret, true);
+    ret = CreateEmptypixelmap(size, PIXEL_FORMAT_RGBA_1010102, IMAGE_ALLOCATOR_MODE_SHARED_MEMORY);
+    ASSERT_EQ(ret, false);
+    ret = CreateEmptypixelmap(size, PIXEL_FORMAT_YCBCR_P010, IMAGE_ALLOCATOR_MODE_SHARED_MEMORY);
+    ASSERT_EQ(ret, false);
+    ret = CreateEmptypixelmap(size, PIXEL_FORMAT_YCRCB_P010, IMAGE_ALLOCATOR_MODE_SHARED_MEMORY);
+    ASSERT_EQ(ret, false);
+    GTEST_LOG_(INFO) << "PixelMapNdk2Test: OH_PixelmapNative_CreateEmptyPixelmapUsingAllocator end";
 }
 }
 }
