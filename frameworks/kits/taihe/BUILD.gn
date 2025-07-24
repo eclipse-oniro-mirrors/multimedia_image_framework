@@ -62,7 +62,9 @@ template("image_taihe_shared_library") {
 
     include_dirs = [
       "include",
+      "${image_subsystem}/frameworks/kits/js/common/include",
       "${image_subsystem}/interfaces/innerkits/include",
+      "${image_subsystem}/interfaces/kits/js/common/include",
       "${image_subsystem}/interfaces/kits/native/include/image",
       "${image_subsystem}/plugins/common/libs/image/libextplugin/include/jpeg_yuv_decoder",
     ]
@@ -80,6 +82,8 @@ template("image_taihe_shared_library") {
       "src/picture_taihe.cpp",
       "src/pixel_map_taihe.cpp",
       "${image_subsystem}/frameworks/innerkitsimpl/accessor/src/exif_metadata_formatter.cpp",
+      "${image_subsystem}/frameworks/kits/js/common/image_napi_utils.cpp",
+      "${image_subsystem}/frameworks/kits/js/common/pixel_map_napi.cpp",
     ] + extra_sources
 
     deps = [
@@ -91,9 +95,11 @@ template("image_taihe_shared_library") {
 
     external_deps = [
       "c_utils:utils",
+      "drivers_interface_display:libdisplay_commontype_proxy_1.0",
       "eventhandler:libeventhandler",
       "graphic_2d:ani_color_space_object_convertor",
       "graphic_2d:color_manager",
+      "graphic_2d:color_space_object_convertor",
       "graphic_2d:EGL",
       "graphic_2d:librender_service_base",
       "graphic_2d:librender_service_client",
@@ -101,7 +107,9 @@ template("image_taihe_shared_library") {
       "graphic_surface:sync_fence",
       "hilog:libhilog",
       "hitrace:hitrace_meter",
+      "ipc:ipc_napi",
       "ipc:rpc_ani",
+      "napi:ace_napi",
       "runtime_core:ani_helpers",
       "skia:libjpeg",
     ]
