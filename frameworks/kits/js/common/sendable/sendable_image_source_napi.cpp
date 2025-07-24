@@ -602,14 +602,14 @@ static void CreatePixelMapComplete(napi_env env, napi_status status, void *data)
     if (context->rImageSource != nullptr) {
         imageId = context->rImageSource->GetImageId();
     }
-    IMAGE_LOGI("CreatePixelMapComplete IN imageId:%{public}lu", static_cast<unsigned long>(imageId));
+    IMAGE_LOGD("CreatePixelMapComplete IN imageId:%{public}lu", static_cast<unsigned long>(imageId));
 
     if (context->status == SUCCESS) {
         result = SendablePixelMapNapi::CreateSendablePixelMap(env, context->rPixelMap);
     } else {
         napi_get_undefined(env, &result);
     }
-    IMAGE_LOGI("CreatePixelMapComplete OUT imageId:%{public}lu", static_cast<unsigned long>(imageId));
+    IMAGE_LOGD("CreatePixelMapComplete OUT imageId:%{public}lu", static_cast<unsigned long>(imageId));
     ImageSourceCallbackRoutine(env, context, result);
 }
 

@@ -1103,8 +1103,6 @@ SkCodec::Result ExtDecoder::DoSampleDecode(DecodeContext &context)
             "%{public}s: surface buffer is nullptr", __func__);
         rowStride = static_cast<uint64_t>(sbBuffer->GetStride());
     }
-    ImageFuncTimer imageFuncTimer("%s, dstInfo_: (%d, %d), sampleSize: %u", __func__, dstInfo_.width(),
-        dstInfo_.height(), softSampleSize_);
 
     auto SkOHOSCodec = SkOHOSCodec::MakeFromCodec(std::move(codec_));
     SkOHOSCodec::OHOSOptions options;
@@ -1134,7 +1132,7 @@ SkCodec::Result ExtDecoder::DoSampleDecode(DecodeContext &context)
 void ExtDecoder::InitJpegDecoder()
 {
     if (ImageSystemProperties::GetHardWareDecodeEnabled()) {
-        IMAGE_LOGI("Init hardware jpeg decoder");
+        IMAGE_LOGD("Init hardware jpeg decoder");
         if (hwDecoderPtr_ == nullptr) {
             hwDecoderPtr_ = std::make_shared<JpegHardwareDecoder>();
         }
