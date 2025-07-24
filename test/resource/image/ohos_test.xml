@@ -433,6 +433,14 @@
             <option name="push" value="images/test.gif -> /data/local/tmp/" src="res"/>
         </preparer>
     </target>
+	<target name="ImageFwkCreateAstcPixelmapFuzzTest">
+        <preparer>
+            <option name="push" value="images/hdr.jpg -> /data/local/tmp/image/" src="res"/>
+            <option name="push" value="images/non_hdr.jpg -> /data/local/tmp/image" src="res"/>
+            <option name="push" value="images/hdr.jpg -> /data/local/tmp/image/" src="res"/>
+            <option name="push" value="images/hdr/JPEGISOSingle.jpg -> /data/local/tmp/" src="res"/>
+        </preparer>
+    </target>
     <target name="auxiliarypicturetest">
         <preparer>
             <option name="push" value="images/test_metadata.jpg -> /data/local/tmp/image" src="res"/>
