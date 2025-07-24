@@ -895,6 +895,20 @@ function CreatePixelMapFromSurfaceByIdAndRegionSync(surfaceId: String, region: R
 
 function CreatePixelMapFromParcel(sequence: @sts_type("rpc.MessageSequence") Opaque): PixelMap;
 
+function PixelMapTransferStaticImpl(input: @sts_type("ESValue") Opaque): PixelMap;
+
+function PixelMapTransferDynamicImpl(input: PixelMap): @sts_type("Any") Opaque;
+
+@!sts_inject("""
+export function pixelMapTransferStatic(input: Any): Object {
+  return pixelMapTransferStaticImpl(ESValue.wrap(input));
+}
+
+export function pixelMapTransferDynamic(input: Object): Any {
+  return pixelMapTransferDynamicImpl(input as PixelMap);
+}
+""")
+
 @overload("createImageSource")
 function CreateImageSourceByUri(uri: String): ImageSource;
 
