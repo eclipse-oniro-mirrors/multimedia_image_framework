@@ -19,6 +19,7 @@ group("fuzztest") {
     "imagefwkconvertastc2rgb_fuzzer:ImageFwkConvertAstc2RgbFuzzTest",
     "imagefwkconvertp010yuv2rgbext_fuzzer:ImageFwkConvertP010Yuv2RgbExtFuzzTest",
     "imagefwkconvertpixelfotmat_fuzzer:ImageFwkConvertPixelFormatFuzzTest",
+    "imagefwkconvertrgb2yuv_fuzzer:ImageFwkConvertRgb2YuvFuzzTest",
     "imagefwkdecodepicture_fuzzer:ImageFwkDecodePictureFuzzTest",
     "imagefwkimagesource_fuzzer:ImageFwkImageSourceFuzzTest",
     "imagefwkimagesource2_fuzzer:ImageFwkImageSource2FuzzTest",
