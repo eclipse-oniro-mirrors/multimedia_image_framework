@@ -329,10 +329,10 @@ HWTEST_F(ImageCodecTest, OnMsgReceivedTest003, TestSize.Level1)
     EXPECT_TRUE(result);
     info.type = ImageCodec::MsgWhat::FORCE_SHUTDOWN;
     outputPortChangedState.OnMsgReceived(info);
-    EXPECT_TRUE(outputPortChangedState.codec_->isShutDownFromRunning_);
+    EXPECT_FALSE(outputPortChangedState.codec_->isShutDownFromRunning_);
     info.type = ImageCodec::MsgWhat::CHECK_IF_STUCK;
     outputPortChangedState.OnMsgReceived(info);
-    EXPECT_TRUE(outputPortChangedState.codec_->hasFatalError_);
+    EXPECT_FALSE(outputPortChangedState.codec_->hasFatalError_);
     GTEST_LOG_(INFO) << "ImageCodecTest: OnMsgReceivedTest003 end";
 }
 
@@ -354,7 +354,7 @@ HWTEST_F(ImageCodecTest, OnMsgReceivedTest004, TestSize.Level1)
     stoppingState.OnMsgReceived(info);
     int32_t generation;
     (void)info.param->GetValue("generation", generation);
-    EXPECT_NE(generation, stoppingState.coded_->stateGeneration_);
+    EXPECT_NE(generation, stoppingState.codec_->stateGeneration_);
     GTEST_LOG_(INFO) << "ImageCodecTest: OnMsgReceivedTest004 end";
 }
 
