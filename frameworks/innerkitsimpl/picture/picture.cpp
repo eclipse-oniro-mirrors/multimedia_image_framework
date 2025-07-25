@@ -195,6 +195,8 @@ static void SetYuvDataInfo(std::unique_ptr<PixelMap> &pixelMap, sptr<OHOS::Surfa
     cond = retVal != OHOS::GSERROR_OK || planes == nullptr || planes->planeCount <= NUM_1;
     CHECK_ERROR_RETURN_LOG(cond, "Get planesInfo failed, retVal:%{public}d", retVal);
     if (planes->planeCount >= NUM_2) {
+        info.yWidth = static_cast<uint32_t>(info.imageSize.width);
+        info.yHeight = static_cast<uint32_t>(info.imageSize.height);
         info.yStride = planes->planes[NUM_0].columnStride;
         info.uvStride = planes->planes[NUM_1].columnStride;
         info.yOffset = planes->planes[NUM_0].offset;
@@ -676,6 +678,10 @@ int32_t Picture::SetExifMetadata(sptr<SurfaceBuffer> &surfaceBuffer)
     cond = static_cast<uint32_t>(size) > surfaceBuffer->GetSize() || tiffHeaderPos > surfaceBuffer->GetSize();
     CHECK_ERROR_RETURN_RET_LOG(cond, ERR_IMAGE_INVALID_PARAMETER,
                                "The size of exif metadata exceeds the buffer size.");
+
+    cond = static_cast<uint32_t>(size) < tiffHeaderPos;
+    CHECK_ERROR_RETURN_RET_LOG(cond, ERR_IMAGE_INVALID_PARAMETER,
+                               "Tiff header position exceeds the size of exif metadata.");
 
     cond = static_cast<uint32_t>(size) - tiffHeaderPos > MAX_EXIFMETADATA_SIZE;
     CHECK_ERROR_RETURN_RET_LOG(cond, ERR_IMAGE_INVALID_PARAMETER,

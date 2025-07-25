@@ -213,6 +213,7 @@ static bool ShrinkRGBXToRGB(const std::unique_ptr<AbsMemory>& srcMemory, std::un
     int32_t dstBytes = static_cast<int32_t>(srcBytes) / ARGB_8888_BYTES * RGB_888_BYTES;
     MemoryData memoryData = {nullptr, dstBytes, "Shrink RGBX to RGB"};
     memoryData.format = PixelFormat::RGB_888;
+    memoryData.usage = srcMemory->data.usage;
     dstMemory = MemoryManager::CreateMemory(srcMemory->GetType(), memoryData);
     if (dstMemory == nullptr) {
         IMAGE_LOGE("[PixelMap] ShrinkRGBXToRGB failed: allocate memory failed");

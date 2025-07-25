@@ -85,6 +85,9 @@ void ExtDecoderFuncTest001(const std::string& filename)
     }
     Media::DecodeOptions dopts;
     imageSource->CreatePixelMap(dopts, errorCode);
+    if (errorCode != SUCCESS) {
+        return;
+    }
     auto extDecoder = static_cast<ExtDecoder*>((imageSource->mainDecoder_).get());
     if (extDecoder == nullptr || !extDecoder->DecodeHeader()) {
         return;
@@ -135,6 +138,11 @@ void SvgDecoderFuncTest001(const std::string& filename)
     }
 
     imageSource->sourceInfo_.encodedFormat = "image/svg+xml";
+    Media::DecodeOptions dopts;
+    imageSource->CreatePixelMap(dopts, errorCode);
+    if (errorCode != SUCCESS) {
+        return;
+    }
     auto svgDecoder = static_cast<SvgDecoder*>(imageSource->CreateDecoder(errorCode));
     PixelDecodeOptions plOpts;
     PlImageInfo plInfo;
@@ -156,7 +164,7 @@ void SvgDecoderFuncTest001(const std::string& filename)
 
     DecodeOptions dstOpts;
     imageSource = ImageSource::CreateImageSource(filename, srcOpts, errorCode);
-    imageSource->CreatePixelMapExtended(0, dstOpts, errorCode);
+    imageSource->CreatePixelMap(0, dstOpts, errorCode);
     imageSource->Reset();
     IMAGE_LOGI("%{public}s SUCCESS", __func__);
 }
@@ -181,6 +189,9 @@ void ExtDecoderRegionFuncTest001(const std::string& filename)
     dopts.desiredRegion.height = height;
     dopts.cropAndScaleStrategy = CropAndScaleStrategy::CROP_FIRST;
     imageSource->CreatePixelMap(dopts, errorCode);
+    if (errorCode != SUCCESS) {
+        return;
+    }
     auto extDecoder = static_cast<ExtDecoder*>((imageSource->mainDecoder_).get());
     if (extDecoder == nullptr || !extDecoder->DecodeHeader()) {
         return;

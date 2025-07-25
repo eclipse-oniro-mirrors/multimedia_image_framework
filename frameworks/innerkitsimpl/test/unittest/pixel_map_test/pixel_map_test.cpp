@@ -3680,5 +3680,43 @@ HWTEST_F(PixelMapTest, GetRGBA1010102ColorTest002, TestSize.Level3)
     EXPECT_EQ(colorA, 0x000);
     GTEST_LOG_(INFO) << "PixelMapTest: GetRGBA1010102ColorTest002 end";
 }
+
+/**
+ * @tc.name: MarshallingReadOnlyTest001
+ * @tc.desc: Test UnmarshallingReadOnly
+ * @tc.type: FUNC
+ */
+HWTEST_F(PixelMapTest, MarshallingReadOnlyTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PixelMapTest: MarshallingReadOnlyTest001 start";
+    InitializationOptions opts;
+    opts.size.width = 512;
+    opts.size.height = 512;
+    opts.pixelFormat = PixelFormat::RGBA_8888;
+    opts.useDMA = true;
+    std::unique_ptr<PixelMap> pixelMap = PixelMap::Create(opts);
+    EXPECT_NE(pixelMap, nullptr);
+    EXPECT_EQ(pixelMap->GetAllocatorType(), Media::AllocatorType::DMA_ALLOC);
+    Parcel parcel1, parcel2, parcel3, parcel4;
+
+    pixelMap->SetDisplayOnly(true);
+    EXPECT_EQ(pixelMap->Marshalling(parcel1), true);
+    EXPECT_NE(pixelMap->Unmarshalling(parcel1), nullptr);
+
+    pixelMap->SetDisplayOnly(false);
+    EXPECT_EQ(pixelMap->Marshalling(parcel2), true);
+    EXPECT_NE(pixelMap->Unmarshalling(parcel2), nullptr);
+
+    pixelMap->SetDisplayOnly(true);
+    EXPECT_EQ(pixelMap->Marshalling(parcel3), true);
+    auto displayOnlyPixelMap = pixelMap->UnmarshallingWithIsDisplay(parcel3, nullptr, true);
+    EXPECT_NE(displayOnlyPixelMap, nullptr);
+    EXPECT_EQ(displayOnlyPixelMap->GetPixels(), nullptr);
+
+    pixelMap->SetDisplayOnly(false);
+    EXPECT_EQ(pixelMap->Marshalling(parcel4), true);
+    EXPECT_NE(pixelMap->UnmarshallingWithIsDisplay(parcel4, nullptr, true), nullptr);
+    GTEST_LOG_(INFO) << "PixelMapTest: MarshallingReadOnlyTest001 end";
+}
 }
 }

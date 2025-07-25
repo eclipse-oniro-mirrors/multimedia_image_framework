@@ -919,6 +919,7 @@ static bool PixelMapPostProcWithGL(PixelMap &sourcePixelMap, GPUTransformData &t
     AllocatorType allocType = sourcePixelMap.GetAllocatorType();
     size_t buffersize = static_cast<size_t>(4 * desiredSize.width * desiredSize.height); // 4: 4 bytes per pixel
     MemoryData memoryData = {nullptr, buffersize, "PixelMapPostProcWithGL", desiredSize};
+    memoryData.usage = sourcePixelMap.GetNoPaddingUsage();
     std::unique_ptr<AbsMemory> dstMemory = MemoryManager::CreateMemory(allocType, memoryData);
     if (dstMemory == nullptr || dstMemory->data.data == nullptr) {
         IMAGE_LOGE("slr_gpu PixelMapPostProcWithGL dstMemory is null");
@@ -1047,12 +1048,14 @@ static std::unique_ptr<AbsMemory> CreateSLRMemory(PixelMap &pixelMap, uint32_t d
     }
     MemoryData memoryData = {nullptr, dstBufferSize, "ScalePixelMapWithSLR ImageData", desiredSize,
         pixelMap.GetPixelFormat()};
+    memoryData.usage = pixelMap.GetNoPaddingUsage();
     dstMemory = MemoryManager::CreateMemory(allocatorType, memoryData);
     CHECK_ERROR_RETURN_RET_LOG(dstMemory == nullptr, nullptr, "ScalePixelMapWithSLR create dstMemory failed");
     std::unique_ptr<AbsMemory> lapMemory = nullptr;
     if (useLap) {
         MemoryData lapMemoryData = {nullptr, dstBufferSize, "ScalePixelMapWithSLR ImageData Lap", desiredSize,
             pixelMap.GetPixelFormat()};
+        lapMemoryData.usage = pixelMap.GetNoPaddingUsage();
         lapMemory = MemoryManager::CreateMemory(pixelMap.GetAllocatorType(), lapMemoryData);
         if (lapMemory == nullptr) {
             IMAGE_LOGE("ScalePixelMapWithSLR create lapMemory failed");
@@ -1172,7 +1175,7 @@ bool PostProc::ScalePixelMapEx(const Size &desiredSize, PixelMap &pixelMap, cons
     CHECK_ERROR_RETURN_RET_LOG(dstBufferSizeOverflow > UINT_MAX, false, "ScalePixelMapEx target size too large");
     uint32_t dstBufferSize = static_cast<uint32_t>(dstBufferSizeOverflow);
     MemoryData memoryData = {nullptr, dstBufferSize, "ScalePixelMapEx ImageData", desiredSize};
-
+    memoryData.usage = pixelMap.GetNoPaddingUsage();
     auto mem = MemoryManager::CreateMemory(pixelMap.GetAllocatorType() == AllocatorType::CUSTOM_ALLOC ?
         AllocatorType::DEFAULT : pixelMap.GetAllocatorType(), memoryData);
     CHECK_ERROR_RETURN_RET_LOG(mem == nullptr, false, "ScalePixelMapEx CreateMemory failed");

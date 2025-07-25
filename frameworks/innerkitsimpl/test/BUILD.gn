@@ -1,4 +1,4 @@
-# Copyright (c) 2021-2023 Huawei Device Co., Ltd.
+# Copyright (c) 2021-2025 Huawei Device Co., Ltd.
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -225,6 +225,7 @@ ohos_unittest("imagepixelmaptest") {
     "//foundation/multimedia/image_framework/adapter/frameworks/bitmapconverter/native/include",
     "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/common/include",
     "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/stream/include",
+    "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/utils/include",
   ]
   cflags = [ "-DIMAGE_COLORSPACE_FLAG" ]
   sources = [
@@ -236,6 +237,7 @@ ohos_unittest("imagepixelmaptest") {
   deps = [
     #    "//foundation/multimedia/image_framework/adapter/frameworks/bitmapconverter/native:bitmapconverter",
     "//foundation/multimedia/image_framework/interfaces/innerkits:image_native",
+    "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/utils:image_utils",
   ]
 
   external_deps = [
@@ -517,6 +519,7 @@ ohos_unittest("imageutilstest") {
 
   deps = [
     "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/utils:image_utils",
+    "//foundation/multimedia/image_framework/interfaces/innerkits:image_native",
     "//foundation/multimedia/image_framework/plugins/manager:pluginmanager",
   ]
 
@@ -990,43 +993,6 @@ ohos_unittest("creatortest") {
   if (enable_heif_hw_decode) {
     defines = [ "HEIF_HW_DECODE_ENABLE" ]
   }
-}
-
-ohos_unittest("webpplugintest") {
-  module_out_path = module_output_path
-
-  include_dirs = [
-    "$image_subsystem/frameworks/innerkitsimpl/test/unittest/mock",
-    "//foundation/multimedia/image_framework/plugins/manager/test/unittest/common/plugin_example/interface/vision",
-    "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/utils/include",
-    "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/pixelconverter/include",
-    "//foundation/multimedia/image_framework/plugins/manager/include",
-    "//foundation/multimedia/image_framework/plugins/manager/include/image",
-    "//foundation/multimedia/image_framework/plugins/manager/include/pluginbase",
-    "//foundation/multimedia/image_framework/plugins/common/libs/image/libwebpplugin/include",
-    "//foundation/multimedia/image_framework/interfaces/innerkits/include",
-    "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/stream/include",
-    "//foundation/multimedia/image_framework/adapter/frameworks/bitmapconverter/native/include",
-  ]
-  sources = [
-    "$image_subsystem/frameworks/innerkitsimpl/test/unittest/plugin_test/plugin_server_test.cpp",
-    "$image_subsystem/frameworks/innerkitsimpl/test/unittest/plugin_test/webp_decoder_test.cpp",
-    "$image_subsystem/frameworks/innerkitsimpl/test/unittest/plugin_test/webp_encoder_test.cpp",
-    "$image_subsystem/frameworks/innerkitsimpl/test/unittest/plugin_test/webp_plugin_export_test.cpp",
-  ]
-
-  deps = [
-    "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/pixelconverter:pixelconvertadapter",
-    "//foundation/multimedia/image_framework/interfaces/innerkits:image_native",
-    "//foundation/multimedia/image_framework/plugins/common/libs/image/libwebpplugin:webpplugin",
-    "//foundation/multimedia/image_framework/plugins/manager:pluginmanager",
-  ]
-
-  external_deps = [
-    "c_utils:utils",
-    "googletest:gmock_main",
-    "googletest:gtest_main",
-  ]
 }
 
 ohos_unittest("pluginlibjpegtest") {
@@ -1594,6 +1560,29 @@ ohos_unittest("eglimagetest") {
   ]
 }
 
+ohos_unittest("eglimagetest2") {
+  module_out_path = module_output_path
+
+  include_dirs = [
+    "$image_subsystem/frameworks/innerkitsimpl/egl_image/include",
+    "$image_subsystem/interfaces/innerkits/include",
+  ]
+  sources = [ "unittest/egl_image_test2.cpp" ]
+
+  deps = [ "$image_subsystem/frameworks/innerkitsimpl/egl_image:egl_image" ]
+
+  external_deps = [
+    "c_utils:utils",
+    "googletest:gmock_main",
+    "googletest:gtest_main",
+    "graphic_2d:EGL",
+    "graphic_2d:GLESv3",
+    "graphic_2d:color_manager",
+    "graphic_surface:surface",
+    "hilog:libhilog",
+  ]
+}
+
 ohos_unittest("jpgyuvtest") {
   module_out_path = module_output_path
 
@@ -2131,7 +2120,6 @@ group("unittest") {
     ":textureencodetest",
     ":transformtest",
 
-    #":webpplugintest",
   ]
 
   if (enable_jpeg_hw_decode) {

@@ -246,7 +246,9 @@ void HeifHvccBox::ProfileTierLevel(std::vector<uint8_t> &nalUnits, uint32_t prof
     std::vector<uint32_t> subLayerProfileIdcs;
     std::vector<std::vector<uint32_t>> subLayerProfileCompatibilityFlags;
     if (profilePresentFlag) {
-        GetWord(nalUnits, READ_BIT_NUM_FLAG); // general_profile_idc
+        GetWord(nalUnits, TEMPORAL_ID_NESTED_SHIFT);
+        GetWord(nalUnits, READ_BIT_NUM_FLAG);
+        GetWord(nalUnits, SUB_LAYER_PROFILE_IDC_SIZE); // general_profile_idc
 
         for (uint32_t j = 0; j < READ_GENERAL_PROFILE_IDC_NUM; ++j) {
             uint32_t flag = GetWord(nalUnits, READ_BIT_NUM_FLAG);
@@ -294,8 +296,11 @@ bool HeifHvccBox::ParseNalUnitAnalysisSps(std::vector<uint8_t> &nalUnits)
 {
     boxBitLength_ = nalUnits.size() * BIT_DEPTH_DIFF;
     spsConfig_.forbiddenZeroBit = GetWord(nalUnits, READ_BIT_NUM_FLAG);
-    spsConfig_.nuhTemporalIdPlus1 = GetWord(nalUnits, NUM_TEMPORAL_ID_SIZE);
     spsConfig_.nalUnitType = GetWord(nalUnits, NALU_TYPE_ID_SIZE);
+    if (spsConfig_.nalUnitType != SPS_BOX_TYPE) {
+        return false;
+    }
+    spsConfig_.nuhLayerId = GetWord(nalUnits, NUM_TEMPORAL_ID_SIZE);
     GetWord(nalUnits, SUB_LAYER_MINUS);
     return ParseSpsSyntax(nalUnits);
 }

@@ -680,5 +680,21 @@ HWTEST_F(AuxiliaryPictureTest, GetMetadata004, TestSize.Level1)
     EXPECT_EQ(dstExifMetadata->GetValue("BitsPerSample", dstValue), SUCCESS);
     EXPECT_EQ(dstValue, srcValue);
 }
+
+/**
+ * @tc.name: GetSizeTest001
+ * @tc.desc: Test GetSize() returns correct dimensions for GAINMAP auxiliary picture
+ *           Verifies width/height match expected values (SIZE_WIDTH/SIZE_HEIGHT)
+ * @tc.type: FUNC
+ */
+HWTEST_F(AuxiliaryPictureTest, GetSizeTest001, TestSize.Level1)
+{
+    std::unique_ptr<AuxiliaryPicture> auxPicture = CreateAuxiliaryPicture(AuxiliaryPictureType::GAINMAP);
+    ASSERT_NE(auxPicture, nullptr);
+    
+    Size size = auxPicture->GetSize();
+    EXPECT_EQ(size.width, SIZE_WIDTH);
+    EXPECT_EQ(size.height, SIZE_HEIGHT);
+}
 } // namespace Media
 } // namespace OHOS

@@ -1638,5 +1638,68 @@ HWTEST_F(JpegDecoderTest, GetExifDataTest002, TestSize.Level3)
     ASSERT_EQ(errorCode, ERR_IMAGE_DECODE_EXIF_UNSUPPORT);
     GTEST_LOG_(INFO) << "JpegDecoderTest: GetExifDataTest002 end";
 }
+
+/**
+ * @tc.name: CheckInputDataValidTest001
+ * @tc.desc: Verify JPEG header validation logic. Test cases: null buffer, size=0, invalid magic bytes,
+ *           valid magic bytes.
+ * @tc.type: FUNC
+ */
+HWTEST_F(JpegDecoderTest, CheckInputDataValidTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "JpegDecoderTest: CheckInputDataValidTest001 start";
+    EXIFInfo exifInfo;
+    uint32_t result = exifInfo.CheckInputDataValid(nullptr, 10);
+    EXPECT_EQ(result, Media::ERR_IMAGE_SOURCE_DATA);
+    unsigned char dummy[2] = {0xFF, 0xD8};
+    result = exifInfo.CheckInputDataValid(dummy, 0);
+    EXPECT_EQ(result, Media::ERR_MEDIA_BUFFER_TOO_SMALL);
+    unsigned char notFFButD8[2] = {0x00, 0xD8};
+    result = exifInfo.CheckInputDataValid(notFFButD8, 2);
+    EXPECT_EQ(result, Media::ERR_IMAGE_MISMATCHED_FORMAT);
+    unsigned char ffButNotD8[2] = {0xFF, 0x00};
+    result = exifInfo.CheckInputDataValid(ffButNotD8, 2);
+    EXPECT_EQ(result, Media::ERR_IMAGE_MISMATCHED_FORMAT);
+    unsigned char notFFAndNotD8[2] = {0x00, 0x00};
+    result = exifInfo.CheckInputDataValid(notFFAndNotD8, 2);
+    EXPECT_EQ(result, Media::ERR_IMAGE_MISMATCHED_FORMAT);
+    unsigned char validJpeg[2] = {0xFF, 0xD8};
+    result = exifInfo.CheckInputDataValid(validJpeg, 2);
+    EXPECT_EQ(result, Media::SUCCESS);
+    GTEST_LOG_(INFO) << "JpegDecoderTest: CheckInputDataValidTest001 end";
+}
+
+/**
+ * @tc.name: CreateExifDataTest001
+ * @tc.desc: Verify EXIF data creation logic. Test cases: null input, buffer with "Exif" tag, buffer without "Exif" tag
+ *           (auto-create new EXIF data).
+ * @tc.type: FUNC
+ */
+HWTEST_F(JpegDecoderTest, CreateExifDataTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "JpegDecoderTest: CreateExifDataTest001 start";
+    EXIFInfo exifInfo;
+    ExifData* ptrData = nullptr;
+    bool isNewExifData = false;
+    bool ret = exifInfo.CreateExifData(nullptr, 10, &ptrData, isNewExifData);
+    EXPECT_FALSE(ret);
+    unsigned char bufExif[16] = {0};
+    bufExif[6] = 'E'; bufExif[7] = 'x'; bufExif[8] = 'i'; bufExif[9] = 'f';
+    ret = exifInfo.CreateExifData(bufExif, 16, &ptrData, isNewExifData);
+    EXPECT_TRUE(ret);
+    ptrData = nullptr;
+    ret = exifInfo.CreateExifData(bufExif, 16, &ptrData, isNewExifData);
+    EXPECT_TRUE(ret);
+    EXPECT_FALSE(isNewExifData);
+    unsigned char bufNoExif[16] = {0};
+    ptrData = nullptr;
+    ret = exifInfo.CreateExifData(bufNoExif, 16, &ptrData, isNewExifData);
+    EXPECT_TRUE(ret);
+    ptrData = nullptr;
+    ret = exifInfo.CreateExifData(bufNoExif, 16, &ptrData, isNewExifData);
+    EXPECT_TRUE(ret);
+    EXPECT_TRUE(isNewExifData);
+    GTEST_LOG_(INFO) << "JpegDecoderTest: CreateExifDataTest001 end";
+}
 }
 }

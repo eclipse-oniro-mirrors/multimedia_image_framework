@@ -24,6 +24,7 @@
 #include "image_type.h"
 #include "image_system_properties.h"
 #include "pixel_map.h"
+#include "image_source.h"
 
 static const uint8_t NUM_0 = 0;
 static const uint8_t NUM_2 = 2;
@@ -45,6 +46,7 @@ using namespace OHOS::MultimediaPlugin;
 namespace OHOS {
 namespace Multimedia {
 static const std::string IMAGE_INPUT_JPEG_PATH = "/data/local/tmp/image/test.jpg";
+static const std::string IMAGE_JPEG_PATH = "/data/local/tmp/image/test_jpeg.jpg";
 static constexpr int32_t LENGTH = 8;
 constexpr int32_t RGB_888_PIXEL_BYTES = 3;
 constexpr int32_t RGBA_F16_PIXEL_BYTES = 8;
@@ -746,6 +748,85 @@ HWTEST_F(ImageUtilsTest, CheckMulOverflowTest012, TestSize.Level3)
 
     res = ImageUtils::CheckMulOverflow(INT32_MAX, mockHeight, INT32_MAX);
     EXPECT_FALSE(res);
+}
+
+/**
+ * @tc.name: IsValidAuxiliaryInfoTest001
+ * @tc.desc: Test ImageUtils::IsValidAuxiliaryInfo() with JPEG image.
+ *           Verify auxiliary info validation against decoded PixelMap.
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageUtilsTest, IsValidAuxiliaryInfoTest001, TestSize.Level3)
+{
+    uint32_t errorCode = -1;
+    SourceOptions opts;
+    std::unique_ptr<ImageSource> imageSource =
+        ImageSource::CreateImageSource(IMAGE_JPEG_PATH.c_str(), opts, errorCode);
+    ASSERT_EQ(errorCode, OHOS::Media::SUCCESS);
+    ASSERT_NE(imageSource.get(), nullptr);
+
+    DecodeOptions dstOpts;
+    std::shared_ptr<PixelMap> pixelMap = imageSource->CreatePixelMapEx(0, dstOpts, errorCode);
+    ASSERT_EQ(errorCode, OHOS::Media::SUCCESS);
+    ASSERT_NE(pixelMap, nullptr);
+    AuxiliaryPictureInfo auxiliaryPictureInfo;
+    ImageInfo info;
+    pixelMap->GetImageInfo(info);
+    auxiliaryPictureInfo.size = info.size;
+    auxiliaryPictureInfo.pixelFormat = info.pixelFormat;
+    bool ret = ImageUtils::IsValidAuxiliaryInfo(pixelMap, auxiliaryPictureInfo);
+    EXPECT_TRUE(ret);
+}
+
+/**
+ * @tc.name: GetByteCountTest001
+ * @tc.desc: Test ImageUtils::GetByteCount() with default format.
+ *           Verify correct byte count after JPEG decoding.
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageUtilsTest, GetByteCountTest001, TestSize.Level3)
+{
+    uint32_t errorCode = -1;
+    SourceOptions opts;
+    std::unique_ptr<ImageSource> imageSource =
+        ImageSource::CreateImageSource(IMAGE_JPEG_PATH.c_str(), opts, errorCode);
+    ASSERT_EQ(errorCode, OHOS::Media::SUCCESS);
+    ASSERT_NE(imageSource.get(), nullptr);
+
+    DecodeOptions dstOpts;
+    std::shared_ptr<PixelMap> pixelMap = imageSource->CreatePixelMapEx(0, dstOpts, errorCode);
+    ASSERT_EQ(errorCode, OHOS::Media::SUCCESS);
+    ASSERT_NE(pixelMap, nullptr);
+    ImageInfo info;
+    pixelMap->GetImageInfo(info);
+    int32_t ret = ImageUtils::GetByteCount(info);
+    EXPECT_GT(ret, 0);
+}
+
+/**
+ * @tc.name: GetYUVByteCountTest001
+ * @tc.desc: Test ImageUtils::GetYUVByteCount() with NV21 format.
+ *           Verify correct YUV byte count after decoding JPEG to PixelMap.
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageUtilsTest, GetYUVByteCountTest001, TestSize.Level3)
+{
+    uint32_t errorCode = -1;
+    SourceOptions opts;
+    std::unique_ptr<ImageSource> imageSource =
+        ImageSource::CreateImageSource(IMAGE_JPEG_PATH.c_str(), opts, errorCode);
+    ASSERT_EQ(errorCode, OHOS::Media::SUCCESS);
+    ASSERT_NE(imageSource.get(), nullptr);
+
+    DecodeOptions dstOpts;
+    dstOpts.desiredPixelFormat = PixelFormat::NV21;
+    std::shared_ptr<PixelMap> pixelMap = imageSource->CreatePixelMapEx(0, dstOpts, errorCode);
+    ASSERT_EQ(errorCode, OHOS::Media::SUCCESS);
+    ASSERT_NE(pixelMap, nullptr);
+    ImageInfo info;
+    pixelMap->GetImageInfo(info);
+    int32_t ret = ImageUtils::GetYUVByteCount(info);
+    EXPECT_GT(ret, 0);
 }
 }
 }

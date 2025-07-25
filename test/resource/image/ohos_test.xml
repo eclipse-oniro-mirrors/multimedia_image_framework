@@ -87,6 +87,7 @@
             <option name="push" value="images/hdr.jpg -> /data/local/tmp/image/" src="res"/>
             <option name="push" value="images/HdrVivid.jpg -> /data/local/tmp/image/" src="res"/>
             <option name="push" value="images/hdr_media_type_test.jpg -> /data/local/tmp/image/" src="res"/>
+            <option name="push" value="images/bad_mpf_offset.jpg -> /data/local/tmp/image/" src="res"/>
             <option name="push" value="images/non_hdr.jpg -> /data/local/tmp/image" src="res"/>
             <option name="push" value="images/hdr_1.jpg -> /data/local/tmp/image" src="res"/>
             <option name="push" value="images/test-10bit-1.heic -> /data/local/tmp/image" src="res"/>
@@ -110,6 +111,7 @@
     <target name="imageutilstest">
         <preparer>
             <option name="push" value="images/test.jpg -> /data/local/tmp/image" src="res"/>
+            <option name="push" value="images/test_jpeg.jpg -> /data/local/tmp/image" src="res"/>
         </preparer>
     </target>
     <target name="jpeg_hw_decoder_test">
@@ -431,6 +433,14 @@
             <option name="push" value="images/test.gif -> /data/local/tmp/" src="res"/>
         </preparer>
     </target>
+	<target name="ImageFwkCreateAstcPixelmapFuzzTest">
+        <preparer>
+            <option name="push" value="images/hdr.jpg -> /data/local/tmp/image/" src="res"/>
+            <option name="push" value="images/non_hdr.jpg -> /data/local/tmp/image" src="res"/>
+            <option name="push" value="images/hdr.jpg -> /data/local/tmp/image/" src="res"/>
+            <option name="push" value="images/hdr/JPEGISOSingle.jpg -> /data/local/tmp/" src="res"/>
+        </preparer>
+    </target>
     <target name="auxiliarypicturetest">
         <preparer>
             <option name="push" value="images/test_metadata.jpg -> /data/local/tmp/image" src="res"/>
@@ -502,6 +512,31 @@
     <target name="heif_decode_impl_test">
         <preparer>
             <option name="push" value="images/test_heif.heic -> /data/local/tmp/image" src="res"/>
+        </preparer>
+    </target>
+    <target name="ImagePlugin2FuzzTest">
+        <preparer>
+            <option name="push" value="images/test_hw.jpg -> /data/local/tmp/" src="res"/>
+            <option name="push" value="images/test-tree-420.jpg -> /data/local/tmp/" src="res"/>
+            <option name="push" value="images/test_hw.heic -> /data/local/tmp/" src="res"/>
+            <option name="push" value="images/test.webp -> /data/local/tmp/" src="res"/>
+            <option name="push" value="images/test.gif -> /data/local/tmp/" src="res"/>
+            <option name="push" value="images/hdr/HDRVividSingleLayer.heic -> /data/local/tmp/" src="res"/>
+            <option name="push" value="images/hdr/JPEGISOSingle.jpg -> /data/local/tmp/" src="res"/>
+            <option name="push" value="images/hdr/JPEGVividSingle.jpg -> /data/local/tmp/" src="res"/>
+            <option name="push" value="images/hdr/siglechanel_yuv420_20240515V2.heic -> /data/local/tmp/" src="res"/>
+            <option name="push" value="images/exif/test_chunk_itxt_nocompress.png -> /data/local/tmp/" src="res"/>
+            <option name="push" value="images/exif/test_out_chunk_itxt_withcompress.png -> /data/local/tmp/" src="res"/>
+            <option name="push" value="images/exif/test_chunk_text.png -> /data/local/tmp/" src="res"/>
+            <option name="push" value="images/exif/test_exif.png -> /data/local/tmp/" src="res"/>
+            <option name="push" value="images/800-500.jpg -> /data/local/tmp/" src="res"/>
+            <option name="push" value="images/jpeg_include_icc_profile.jpg -> /data/local/tmp/" src="res"/>
+            <option name="push" value="images/test_raw_file.jpg -> /data/local/tmp/" src="res"/>
+            <option name="push" value="images/test_large.svg -> /data/local/tmp/" src="res"/>
+            <option name="push" value="images/test.svg -> /data/local/tmp/" src="res"/>
+            <option name="push" value="images/test.bmp -> /data/local/tmp/" src="res"/>
+            <option name="push" value="images/THM_ASTC.astc -> /data/local/tmp/" src="res"/>
+            <option name="push" value="images/HEIFISOMultiChannelBaseColor0512V12.heic -> /data/local/tmp/" src="res"/>
         </preparer>
     </target>
 </configuration>

@@ -75,10 +75,7 @@ JpegEncoder::JpegEncoder() : dstMgr_(nullptr)
     // set error output
     encodeInfo_.err = jpeg_std_error(&jerr_);
     jerr_.error_exit = ErrorExit;
-    if (encodeInfo_.err == nullptr) {
-        IMAGE_LOGE("create jpeg encoder failed.");
-        return;
-    }
+    CHECK_ERROR_RETURN_LOG(encodeInfo_.err == nullptr, "create jpeg encoder failed.");
     encodeInfo_.err->output_message = &OutputErrorMessage;
 }
 
@@ -147,10 +144,8 @@ J_COLOR_SPACE JpegEncoder::GetEncodeFormat(PixelFormat format, int32_t &componen
 uint32_t JpegEncoder::AddImage(Media::PixelMap &pixelMap)
 {
     ImageTrace imageTrace("JpegEncoder::AddImage");
-    if (pixelMaps_.size() >= JPEG_IMAGE_NUM) {
-        IMAGE_LOGE("add pixel map out of range:[%{public}u].", JPEG_IMAGE_NUM);
-        return ERR_IMAGE_ADD_PIXEL_MAP_FAILED;
-    }
+    CHECK_ERROR_RETURN_RET_LOG(pixelMaps_.size() >= JPEG_IMAGE_NUM, ERR_IMAGE_ADD_PIXEL_MAP_FAILED,
+        "add pixel map out of range:[%{public}u].", JPEG_IMAGE_NUM);
     pixelMaps_.push_back(&pixelMap);
     return SUCCESS;
 }
@@ -196,14 +191,10 @@ uint32_t JpegEncoder::SetCommonConfig()
         IMAGE_LOGE("encode image failed, no pixel map input.");
         return ERR_IMAGE_INVALID_PARAMETER;
     }
-    if (pixelMaps_[0] == nullptr) {
-        IMAGE_LOGE("encode image failed, pixel map is null.");
-        return ERR_IMAGE_INVALID_PARAMETER;
-    }
-    if (setjmp(jerr_.setjmp_buffer)) {
-        IMAGE_LOGE("encode image error, set config failed.");
-        return ERR_IMAGE_ENCODE_FAILED;
-    }
+    CHECK_ERROR_RETURN_RET_LOG(pixelMaps_[0] == nullptr, ERR_IMAGE_INVALID_PARAMETER,
+        "encode image failed, pixel map is null.");
+    CHECK_ERROR_RETURN_RET_LOG(setjmp(jerr_.setjmp_buffer), ERR_IMAGE_ENCODE_FAILED,
+        "encode image error, set config failed.");
     encodeInfo_.image_width = pixelMaps_[0]->GetWidth();
     encodeInfo_.image_height = pixelMaps_[0]->GetHeight();
     PixelFormat pixelFormat = pixelMaps_[0]->GetPixelFormat();
@@ -242,10 +233,8 @@ uint32_t JpegEncoder::SequenceEncoder(const uint8_t *data)
         SkAlphaType at = SkAlphaType::kUnknown_SkAlphaType;
         skImageInfo = SkImageInfo::Make(width, height, ct, at, skColorSpace);
         uint32_t iccPackedresult = iccProfileInfo_.PackingICCProfile(&encodeInfo_, skImageInfo);
-        if (iccPackedresult == OHOS::Media::ERR_IMAGE_ENCODE_ICC_FAILED) {
-            IMAGE_LOGE("encode image icc error.");
-            return iccPackedresult;
-        }
+        CHECK_ERROR_RETURN_RET_LOG(iccPackedresult == OHOS::Media::ERR_IMAGE_ENCODE_ICC_FAILED, iccPackedresult,
+            "encode image icc error.");
     }
 #endif
 
@@ -274,10 +263,7 @@ void JpegEncoder::SetYuv420spExtraConfig()
 
 uint32_t JpegEncoder::Yuv420spEncoder(const uint8_t *data)
 {
-    if (setjmp(jerr_.setjmp_buffer)) {
-        IMAGE_LOGE("encode image error.");
-        return ERR_IMAGE_ENCODE_FAILED;
-    }
+    CHECK_ERROR_RETURN_RET_LOG(setjmp(jerr_.setjmp_buffer), ERR_IMAGE_ENCODE_FAILED, "encode image error.");
     SetYuv420spExtraConfig();
     jpeg_start_compress(&encodeInfo_, TRUE);
     JSAMPROW y[Y_SAMPLE_ROW];
@@ -348,10 +334,7 @@ void JpegEncoder::Deinterweave(uint8_t *uvPlane, uint8_t *uPlane, uint8_t *vPlan
 
 uint32_t JpegEncoder::RGBAF16Encoder(const uint8_t *data)
 {
-    if (setjmp(jerr_.setjmp_buffer)) {
-        IMAGE_LOGE("encode image error.");
-        return ERR_IMAGE_ENCODE_FAILED;
-    }
+    CHECK_ERROR_RETURN_RET_LOG(setjmp(jerr_.setjmp_buffer), ERR_IMAGE_ENCODE_FAILED, "encode image error.");
     jpeg_start_compress(&encodeInfo_, TRUE);
     uint8_t *base = const_cast<uint8_t *>(data);
     uint32_t rowStride = encodeInfo_.image_width * encodeInfo_.input_components;
@@ -374,10 +357,7 @@ uint32_t JpegEncoder::RGBAF16Encoder(const uint8_t *data)
 uint32_t JpegEncoder::RGB565Encoder(const uint8_t *data)
 {
     IMAGE_LOGD("RGB565Encoder IN.");
-    if (setjmp(jerr_.setjmp_buffer)) {
-        IMAGE_LOGE("encode image error.");
-        return ERR_IMAGE_ENCODE_FAILED;
-    }
+    CHECK_ERROR_RETURN_RET_LOG(setjmp(jerr_.setjmp_buffer), ERR_IMAGE_ENCODE_FAILED, "encode image error.");
 
     jpeg_start_compress(&encodeInfo_, TRUE);
 

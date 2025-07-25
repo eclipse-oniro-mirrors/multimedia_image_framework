@@ -110,8 +110,7 @@ char* ImageReceiverImpl::GetReceivingSurfaceId()
         return nullptr;
     }
 
-    auto str = iraContext->GetReceiverKey().c_str();
-    char* newStr = Utils::MallocCString(str);
+    char* newStr = Utils::MallocCString(iraContext->GetReceiverKey());
     return newStr;
 }
 

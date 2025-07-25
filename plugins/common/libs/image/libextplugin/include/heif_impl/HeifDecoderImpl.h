@@ -59,7 +59,7 @@ public:
 
     bool getImageInfo(HeifFrameInfo *frameInfo) override;
     bool decodeGainmap() override;
-    void setGainmapDstBuffer(uint8_t* dstBuffer, size_t rowStride, void *context);
+    void setGainmapDstBuffer(uint8_t* dstBuffer, size_t rowStride) override {}
     bool getGainmapInfo(HeifFrameInfo* frameInfo) override;
     bool getTmapInfo(HeifFrameInfo* frameInfo) override;
     HeifImageHdrType getHdrType() override;
@@ -80,6 +80,7 @@ public:
     bool IsHeifAlphaYuv400();
     void SetSampleFormat(uint32_t sampleSize, ColorManager::ColorSpaceName colorSpaceName);
     int32_t GetPrimaryLumaBitNum();
+    void setGainmapDstBuffer(uint8_t* dstBuffer, size_t rowStride, void *context);
 private:
     bool Reinit(HeifFrameInfo *frameInfo);
 
@@ -113,9 +114,6 @@ private:
     bool HwDecodeGrids(std::shared_ptr<HeifImage> &image,
         GridInfo &gridInfo, sptr<SurfaceBuffer> &hwBuffer);
 
-    bool HwDecodeIovls(std::shared_ptr<HeifImage> &image,
-        GridInfo &gridInfo, sptr<SurfaceBuffer> &hwBuffer);
-
     bool HwDecodeIdenImage(std::shared_ptr<HeifImage> &image, GridInfo &gridInfo,
         sptr<SurfaceBuffer> *outBuffer, bool isPrimary);
 
@@ -123,9 +121,6 @@ private:
         GridInfo &gridInfo, sptr<SurfaceBuffer> &hwBuffer);
 
     bool HwDecodeMimeImage(std::shared_ptr<HeifImage> &image);
-
-    bool HwDecodeMovieFirstFrameImage(std::shared_ptr<HeifImage> &image,
-        GridInfo &gridInfo, sptr<SurfaceBuffer> &hwBuffer);
 
     bool SwDecodeImage(std::shared_ptr<HeifImage> &image, HevcSoftDecodeParam &param,
                        GridInfo &gridInfo, bool isPrimary);
@@ -137,17 +132,11 @@ private:
     bool SwDecodeGrids(Media::ImageFwkExtManager &extManager,
                        std::shared_ptr<HeifImage> &image, HevcSoftDecodeParam &param);
 
-    bool SwDecodeIovls(Media::ImageFwkExtManager &extManager,
-                       std::shared_ptr<HeifImage> &image, HevcSoftDecodeParam &param);
-
     bool SwDecodeIdenImage(std::shared_ptr<HeifImage> &image, HevcSoftDecodeParam &param,
                            GridInfo &gridInfo, bool isPrimary);
 
     bool SwDecodeSingleImage(Media::ImageFwkExtManager &extManager,
                              std::shared_ptr<HeifImage> &image, HevcSoftDecodeParam &param);
-
-    bool SwDecodeMovieFirstFrameImage(Media::ImageFwkExtManager &extManager,
-                                      std::shared_ptr<HeifImage> &image, HevcSoftDecodeParam &param);
 
     bool HwApplyAlphaImage(std::shared_ptr<HeifImage> &masterImage, uint8_t *dstMemory, size_t dstRowStride);
 

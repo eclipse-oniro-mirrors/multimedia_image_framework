@@ -303,7 +303,12 @@ int32_t ImageCodec::SetFrameRateAdaptiveMode(const Format &format)
         HLOGW("get working freq param failed");
         return IC_ERR_UNKNOWN;
     }
-    HLOGI("level cnt is %{public}d, set level to %{public}d", param.level, param.level - 1);
+    if (param.level == 0) {
+        HLOGE("Overflow risk: param.level is 0");
+        return IC_ERR_UNKNOWN;
+    }
+
+    HLOGI("level cnt is %{public}u, set level to %{public}u", param.level, param.level - 1);
     param.level = param.level - 1;
 
     if (!SetParameter(OMX_IndexParamWorkingFrequency, param)) {

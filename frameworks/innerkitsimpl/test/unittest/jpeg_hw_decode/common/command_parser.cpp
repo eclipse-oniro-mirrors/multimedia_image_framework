@@ -19,7 +19,7 @@
 
 namespace OHOS::ImagePlugin {
 using namespace std;
-enum class ShortOption {
+enum ShortOption {
     OPT_UNKONWN = 0,
     OPT_HELP,
     OPT_COLOR_FMT,
@@ -31,14 +31,14 @@ enum class ShortOption {
 };
 
 static struct option g_longOptions[] = {
-    {"help",       no_argument,       nullptr, static_cast<int>(ShortOption::OPT_HELP)},
-    {"in",         required_argument, nullptr, static_cast<int>(ShortOption::OPT_INPUT)},
-    {"out",        required_argument, nullptr, static_cast<int>(ShortOption::OPT_OUTPUT)},
-    {"width",      required_argument, nullptr, static_cast<int>(ShortOption::OPT_WIDTH)},
-    {"height",     required_argument, nullptr, static_cast<int>(ShortOption::OPT_HEIGHT)},
-    {"colorFmt",   required_argument, nullptr, static_cast<int>(ShortOption::OPT_COLOR_FMT)},
-    {"sampleSize", required_argument, nullptr, static_cast<int>(ShortOption::OPT_SAMPLE_SIZE)},
-    {nullptr,      no_argument,       nullptr, static_cast<int>(ShortOption::OPT_UNKONWN)},
+    {"help",            no_argument,        nullptr, static_cast<int>(ShortOption::OPT_HELP)},
+    {"in",              required_argument,  nullptr, static_cast<int>(ShortOption::OPT_INPUT)},
+    {"out",             required_argument,  nullptr, static_cast<int>(ShortOption::OPT_OUTPUT)},
+    {"width",           required_argument,  nullptr, static_cast<int>(ShortOption::OPT_WIDTH)},
+    {"height",          required_argument,  nullptr, static_cast<int>(ShortOption::OPT_HEIGHT)},
+    {"colorFmt",        required_argument,  nullptr, static_cast<int>(ShortOption::OPT_COLOR_FMT)},
+    {"sampleSize",      required_argument,  nullptr, static_cast<int>(ShortOption::OPT_SAMPLE_SIZE)},
+    {nullptr,           no_argument,        nullptr, static_cast<int>(ShortOption::OPT_UNKONWN)},
 };
 
 void ShowUsage()
@@ -98,4 +98,5 @@ void CommandOpt::Print() const
     std::cout << " sampleSize : " << sampleSize << endl;
     std::cout << "=================================================================" << endl;
 }
+
 } // OHOS::ImagePlugin

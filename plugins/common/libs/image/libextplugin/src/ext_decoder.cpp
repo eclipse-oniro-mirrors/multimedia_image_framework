@@ -100,7 +100,7 @@ namespace {
     constexpr static uint32_t DESC_SIGNATURE = 0x64657363;
     constexpr static size_t SIZE_1 = 1;
     constexpr static size_t SIZE_4 = 4;
-    constexpr static int HARDWARE_MIN_DIM = 256;
+    constexpr static int HARDWARE_MIN_DIM = 512;
     constexpr static int HARDWARE_MID_DIM = 1024;
     constexpr static int HARDWARE_MAX_DIM = 8192;
     constexpr static int HARDWARE_ALIGN_SIZE = 16;
@@ -122,6 +122,8 @@ namespace {
     constexpr static uint32_t HEIF_HARDWARE_DISPLAY_MIN_DIM = 128;
     constexpr static int LUMA_8_BIT = 8;
     constexpr static int LUMA_10_BIT = 10;
+    constexpr static int JPEG_MARKER_LENGTH = 2;
+    static constexpr uint8_t JPEG_SOI_HEADER[] = { 0xFF, 0xD8 };
 }
 
 namespace OHOS {
@@ -168,7 +170,7 @@ const static std::string DEFAULT_VERSION_ID = "1";
 const static std::string UNKNOWN_IMAGE = "unknown";
 constexpr static int NUM_ONE = 1;
 constexpr static uint64_t MALLOC_LIMIT = 300 * 1024 * 1024;
-constexpr static int RAW_MIN_BYTEREAD = 5000;
+constexpr static int RAW_MIN_BYTEREAD = 10000;
 #ifdef JPEG_HW_DECODE_ENABLE
 const static uint32_t PLANE_COUNT_TWO = 2;
 #endif
@@ -310,6 +312,10 @@ uint32_t ExtDecoder::DmaMemAlloc(DecodeContext &context, uint64_t count, SkImage
     return ERR_IMAGE_DATA_UNSUPPORT;
 #else
     BufferRequestConfig requestConfig = CreateDmaRequestConfig(dstInfo, count, context.info.pixelFormat);
+    if (context.useNoPadding) {
+        IMAGE_LOGI("%{public}s no padding enabled", __func__);
+        requestConfig.usage |= BUFFER_USAGE_PREFER_NO_PADDING;
+    }
     return DmaAlloc(context, count, requestConfig);
 #endif
 }
@@ -602,7 +608,8 @@ bool ExtDecoder::IsSupportSampleDecode(OHOS::Media::PixelFormat desiredFormat)
     CHECK_ERROR_RETURN_RET(cond, false);
     cond = dstSubset_.left() != 0 || dstSubset_.top() != 0 || dstSubset_.right() != 0 || dstSubset_.bottom() != 0;
     CHECK_ERROR_RETURN_RET(cond, false);
-    return codec_->getEncodedFormat() == SkEncodedImageFormat::kPNG;
+    return ImageSystemProperties::GetPngSampleDecodeEnabled() &&
+        codec_->getEncodedFormat() == SkEncodedImageFormat::kPNG;
 }
 
 bool ExtDecoder::HasProperty(string key)
@@ -1102,6 +1109,10 @@ SkCodec::Result ExtDecoder::DoSampleDecode(DecodeContext &context)
     auto SkOHOSCodec = SkOHOSCodec::MakeFromCodec(std::move(codec_));
     SkOHOSCodec::OHOSOptions options;
     options.fSampleSize = softSampleSize_;
+    if (SkOHOSCodec == nullptr) {
+        IMAGE_LOGE("%{public}s failed, SkOHOSCodec is nullptr", __func__);
+        return SkCodec::kErrorInInput;
+    }
     SkCodec::Result result = SkOHOSCodec->getOHOSPixels(dstInfo_, dstBuffer, rowStride, &options);
     switch (result) {
         case SkCodec::kSuccess:
@@ -1244,6 +1255,7 @@ uint32_t ExtDecoder::DoHeifToRgbDecode(DecodeContext &context)
     decoder->SetSampleFormat(sampleSize_, heifColorSpaceName_);
     decoder->setDstBuffer(reinterpret_cast<uint8_t*>(context.pixelsBuffer.buffer),
         dstBuffer->GetStride(), context.pixelsBuffer.context);
+    SetOutPutFormat(context.info.pixelFormat, decoder);
     bool decodeRet = decoder->decode(nullptr);
     if (!decodeRet && sampleSize_ != DEFAULT_SAMPLE_SIZE) {
         IMAGE_LOGD("hwdecode failed, do heif sw decode");
@@ -1341,6 +1353,7 @@ uint32_t ExtDecoder::Decode(uint32_t index, DecodeContext &context)
         }
         IMAGE_LOGI("Decode sample not support, apply rgb decode");
         context.pixelsBuffer.buffer = nullptr;
+        context.info.pixelFormat = PixelFormat::RGBA_8888;
 #endif
     }
     uint64_t byteCount = dstInfo_.computeMinByteSize();
@@ -2006,8 +2019,9 @@ static std::vector<ColorSpaceNameEnum> sColorSpaceNamedMap = {
     {"DCI-P3 D65 Gamut with sRGB Transfer", OHOS::ColorManager::ColorSpaceName::DISPLAY_P3},
     {"Adobe RGB (1998)", OHOS::ColorManager::ColorSpaceName::ADOBE_RGB},
     {"DCI P3", OHOS::ColorManager::ColorSpaceName::DCI_P3},
-    {"sRGB", OHOS::ColorManager::ColorSpaceName::SRGB}
-    /*{"BT.2020", OHOS::ColorManager::ColorSpaceName::BT2020}*/
+    {"sRGB", OHOS::ColorManager::ColorSpaceName::SRGB},
+    {"BT.2020", OHOS::ColorManager::ColorSpaceName::BT2020},
+    {"Rec2020 Gamut with HLG Transfer", OHOS::ColorManager::ColorSpaceName::BT2020_HLG}
 };
 
 static bool MatchColorSpaceName(const uint8_t* buf, uint32_t size, OHOS::ColorManager::ColorSpaceName &name)
@@ -2548,6 +2562,20 @@ ImageHdrType ExtDecoder::CheckHdrType()
         return hdrType_;
     }
     hdrType_ = HdrHelper::CheckHdrType(codec_.get(), gainMapOffset_);
+    if (hdrType_ > Media::ImageHdrType::SDR && format == SkEncodedImageFormat::kJPEG) {
+        if (hdrType_ == Media::ImageHdrType::HDR_LOG_DUAL) {
+            return Media::ImageHdrType::HDR_LOG_DUAL;
+        }
+        if (stream_ == nullptr || (gainMapOffset_ + JPEG_MARKER_LENGTH) > stream_->GetStreamSize()) {
+            IMAGE_LOGE("HDR-IMAGE CheckHdrType gainmap header offset failed : %{public}d", gainMapOffset_);
+            return Media::ImageHdrType::SDR;
+        }
+        uint8_t *outBuffer = stream_->GetDataPtr() + gainMapOffset_;
+        if (std::memcmp(JPEG_SOI_HEADER, outBuffer, JPEG_MARKER_LENGTH) != 0) {
+            IMAGE_LOGE("HDR-IMAGE CheckHdrType get gainmap header failed");
+            return Media::ImageHdrType::SDR;
+        }
+    }
     return hdrType_;
 #endif
 }

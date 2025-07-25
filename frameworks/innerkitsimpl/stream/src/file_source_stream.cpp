@@ -425,19 +425,6 @@ void FileSourceStream::ResetReadBuffer()
     fileData_ = nullptr;
 }
 
-OutputDataStream* FileSourceStream::ToOutputDataStream()
-{
-    int dupFd = -1;
-    if (filePtr_ == nullptr) {
-        return nullptr;
-    }
-    if (DupFd(filePtr_, dupFd)) {
-        IMAGE_LOGE("[FileSourceStream] ToOutputDataStream fd failed");
-        return nullptr;
-    }
-    return new (std::nothrow) FilePackerStream(dupFd);
-}
-
 int FileSourceStream::GetMMapFd()
 {
     mmapFdPassedOn_ = true;

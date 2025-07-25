@@ -1295,8 +1295,8 @@ HWTEST_F(JpgYuvTest, JpgYuvTest020, TestSize.Level3)
 {
     uint32_t errorCode = 0;
     SourceOptions opts;
-    std::string hw_jpg_path = "/data/local/tmp/image/test_hw.jpg";
-    std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(hw_jpg_path, opts, errorCode);
+    std::string hwJpgPath = "/data/local/tmp/image/test_hw.jpg";
+    std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(hwJpgPath, opts, errorCode);
     ASSERT_EQ(errorCode, SUCCESS);
     ASSERT_NE(imageSource.get(), nullptr);
     DecodeOptions decodeOpts;
@@ -1311,10 +1311,10 @@ HWTEST_F(JpgYuvTest, JpgYuvTest021, TestSize.Level3)
     PixelFormat outfmt[] = {PixelFormat::NV12, PixelFormat::NV21};
     std::string jpgpath = IMAGE_INPUT_JPG_PATH;
     jpgpath.append(srcjpg[0]);
-    float degrees[] = {90, 180, 270, 280};
+    float degrees[] = {90, 180, 270};
     int k = 0;
-    const char *outFileName[] = {"90-nv12.yuv", "180-nv12.yuv", "270-nv12.yuv", "280-nv12.yuv",
-                                    "90-nv21.yuv", "180-nv21.yuv", "270-nv21.yuv", "280-nv21.yuv"};
+    const char *outFileName[] = {"90-nv12.yuv", "180-nv12.yuv", "270-nv12.yuv",
+                                    "90-nv21.yuv", "180-nv21.yuv", "270-nv21.yuv"};
     for (int i = 0; i < sizeof(outfmt) / sizeof(PixelFormat); ++i) {
         for (int j = 0; j < sizeof(degrees) / sizeof(float); ++j) {
             std::string outname;

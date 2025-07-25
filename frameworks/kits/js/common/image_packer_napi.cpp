@@ -148,6 +148,7 @@ ImagePackerNapi::ImagePackerNapi():env_(nullptr)
 
 ImagePackerNapi::~ImagePackerNapi()
 {
+    IMAGE_LOGD("%{public}s IN", __func__);
     release();
 }
 
@@ -998,24 +999,23 @@ napi_value ImagePackerNapi::GetSupportedFormats(napi_env env, napi_callback_info
     return result;
 }
 
-static bool ReleaseSendEvent(napi_env env, ImagePackerAsyncContext* context,
-                             napi_event_priority prio)
+STATIC_EXEC_FUNC(Release)
 {
-    auto task = [env, context]() {
-        napi_value result = nullptr;
-        napi_get_undefined(env, &result);
-
-        if (context != nullptr && context->constructor_ != nullptr) {
-            delete context->constructor_;
-            context->constructor_ = nullptr;
-        }
-        CommonCallbackRoutine(env, const_cast<ImagePackerAsyncContext *&>(context), result);
-    };
-    if (napi_status::napi_ok != napi_send_event(env, task, prio)) {
-        IMAGE_LOGE("ReleaseSendEvent: failed to SendEvent!");
-        return false;
+    IMAGE_LOGD("%{public}s IN", __func__);
+    auto context = static_cast<ImagePackerAsyncContext*>(data);
+    if (context != nullptr && context->constructor_ != nullptr) {
+        delete context->constructor_;
+        context->constructor_ = nullptr;
     }
-    return true;
+}
+
+STATIC_COMPLETE_FUNC(Release)
+{
+    IMAGE_LOGD("%{public}s IN", __func__);
+    napi_value result = nullptr;
+    napi_get_undefined(env, &result);
+    auto context = static_cast<ImagePackerAsyncContext*>(data);
+    CommonCallbackRoutine(env, const_cast<ImagePackerAsyncContext *&>(context), result);
 }
 
 napi_value ImagePackerNapi::Release(napi_env env, napi_callback_info info)
@@ -1048,9 +1048,7 @@ napi_value ImagePackerNapi::Release(napi_env env, napi_callback_info info)
         napi_create_promise(env, &(context->deferred), &result);
     }
 
-    if (ReleaseSendEvent(env, context.get(), napi_eprio_high)) {
-        context.release();
-    }
+    IMG_CREATE_CREATE_ASYNC_WORK(env, status, "Release", ReleaseExec, ReleaseComplete, context, context->work);
     return result;
 }
 

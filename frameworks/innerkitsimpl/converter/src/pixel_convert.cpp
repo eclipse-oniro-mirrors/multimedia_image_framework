@@ -1209,10 +1209,21 @@ static bool FFMpegConvert(const void *srcPixels, const FFMPEG_CONVERT_INFO& srcI
 
 static bool NV12P010ToNV21P010(const uint16_t *srcBuffer, const ImageInfo &info, uint16_t *destBuffer)
 {
-    const uint16_t *srcUV = srcBuffer + info.size.width * info.size.height;
-    uint16_t *dstVU = destBuffer + info.size.width * info.size.height;
-    uint32_t sizeUV = info.size.width * info.size.height / NUM_2;
-    for (uint32_t i = 0; i < static_cast<uint32_t>(info.size.width) * static_cast<uint32_t>(info.size.height); i++) {
+    if (info.size.width <= 0 || info.size.height <= 0) {
+        IMAGE_LOGE("Invalid Pixelmap size: width = %{public}d, height = %{public}d", info.size.width, info.size.height);
+        return false;
+    }
+    uint32_t width = static_cast<uint32_t>(info.size.width);
+    uint32_t height = static_cast<uint32_t>(info.size.height);
+    if (width > UINT32_MAX / height) {
+        IMAGE_LOGE("Image size too large: width = %{public}u, height = %{public}u", width, height);
+        return false;
+    }
+    uint32_t ysize = width * height;
+    uint32_t sizeUV = ysize / NUM_2;
+    const uint16_t *srcUV = srcBuffer + ysize;
+    uint16_t *dstVU = destBuffer + ysize;
+    for (uint32_t i = 0; i < ysize; i++) {
         destBuffer[i] = srcBuffer[i];
     }
     for (uint32_t i = 0; i < sizeUV / UV_PLANES_COUNT; i++) {
@@ -1643,7 +1654,7 @@ static int32_t YUVConvert(const BufferInfo &src, const int32_t srcLength, Buffer
     FFMPEG_CONVERT_INFO dstFFmpegInfo = {PixelFormatToAVPixelFormat(dstInfo.pixelFormat), dstInfo.size.width,
         dstInfo.size.height, 1};
 
-    CHECK_ERROR_RETURN_RET_LOG(!FFMpegConvert(srcPixels, srcFFmpegInfo, dstPixels, dstFFmpegInfo),
+    CHECK_ERROR_RETURN_RET_LOG(!FFMpegConvert(copySrcPixels, srcFFmpegInfo, dstPixels, dstFFmpegInfo),
         -1, "[PixelMap]Convert: ffmpeg convert failed!");
     
     return av_image_get_buffer_size(dstFFmpegInfo.format, dstFFmpegInfo.width, dstFFmpegInfo.height,
@@ -1955,6 +1966,7 @@ std::unique_ptr<PixelMap> PixelConvert::AstcToRgba(PixelMap *source, uint32_t &e
     }
     uint32_t byteCount = static_cast<uint32_t>(astcInfo.astcSize.width * astcInfo.astcSize.height * BYTES_PER_PIXEL);
     MemoryData memoryData = {nullptr, byteCount, "Create PixelMap", astcInfo.astcSize, PixelFormat::RGBA_8888};
+    memoryData.usage = source->GetNoPaddingUsage();
     AllocatorType allocatorType = ImageUtils::GetPixelMapAllocatorType(astcInfo.astcSize, PixelFormat::RGBA_8888, true);
     std::unique_ptr<AbsMemory> dstMemory = MemoryManager::CreateMemory(allocatorType, memoryData);
     if (dstMemory == nullptr) {

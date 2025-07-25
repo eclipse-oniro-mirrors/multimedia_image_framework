@@ -46,6 +46,7 @@ constexpr uint8_t JPEG_MARKER_PREFIX = 0xFF;
 constexpr uint8_t JPEG_MARKER_APP2 = 0xE2;
 
 constexpr uint8_t MAX_IMAGE_NUM = 32;
+constexpr uint32_t JPEG_MARKER_SIZE = 2;
 
 static constexpr uint8_t MULTI_PICTURE_HEADER_FLAG[] = {
     'M', 'P', 'F', '\0'
@@ -83,11 +84,14 @@ static const std::map<std::string, AuxiliaryPictureType> AUXILIARY_TAG_TYPE_MAP 
 
 bool JpegMpfParser::CheckMpfOffset(uint8_t* data, uint32_t size, uint32_t& offset)
 {
-    if (data == nullptr) {
+    if (data == nullptr || size < JPEG_MARKER_SIZE) {
         return false;
     }
-    for (offset = 0; offset < size; offset++) {
+    for (offset = 0; offset < size - 1; offset++) {
         if (data[offset] == JPEG_MARKER_PREFIX && (data[offset + 1] == JPEG_MARKER_APP2)) {
+            if (offset + UINT32_BYTE_SIZE > size) {
+                return false;
+            }
             offset += UINT32_BYTE_SIZE;
             return true;
         }

@@ -1918,5 +1918,64 @@ HWTEST_F(ExifMetadataTest, GetFilterAreaTest001, TestSize.Level3)
     metadata.GetFilterArea(exifKeys, ranges);
     ASSERT_TRUE(ranges.size() > 0);
 }
+
+/**
+ * @tc.name: SetSShortTest001
+ * @tc.desc: Verify ExifMetadata::SetSShort covers all branches (normal, fail, multi-component, negative,
+ *           empty, invalid input)
+ * @tc.type: FUNC
+ */
+HWTEST_F(ExifMetadataTest, SetSShortTest001, TestSize.Level3)
+{
+    auto exifData = exif_data_new();
+    ASSERT_NE(exifData, nullptr);
+    ExifMetadata metadata(exifData);
+    ExifEntry* entry = exif_entry_new();
+    entry->format = EXIF_FORMAT_SSHORT;
+    entry->components = 2;
+    entry->size = 2 * sizeof(int16_t);
+    entry->data = (unsigned char*)calloc(2, sizeof(int16_t));
+    entry->tag = EXIF_TAG_SUBJECT_AREA;
+    exif_content_add_entry(exifData->ifd[EXIF_IFD_EXIF], entry);
+
+    ExifByteOrder order = exif_data_get_byte_order(exifData);
+    ASSERT_TRUE(metadata.SetSShort(entry, order, "10"));
+    ASSERT_TRUE(metadata.SetSShort(entry, order, "10 20 30"));
+    ASSERT_TRUE(metadata.SetSShort(entry, order, "-32768 32767"));
+    ASSERT_TRUE(metadata.SetSShort(entry, order, "0 0"));
+    ASSERT_FALSE(metadata.SetSShort(entry, order, ""));
+    ASSERT_FALSE(metadata.SetSShort(entry, order, "abc def"));
+    exif_content_remove_entry(entry->parent, entry);
+    exif_entry_unref(entry);
+    exif_data_unref(exifData);
+}
+
+/**
+ * @tc.name: RemoveEntryTest001
+ * @tc.desc: Verify ExifMetadata::RemoveEntry covers all branches (normal, fail, multi-component, negative, empty,
+ *           invalid input)
+ * @tc.type: FUNC
+ */
+HWTEST_F(ExifMetadataTest, RemoveEntryTest001, TestSize.Level3)
+{
+    ExifMetadata nullMeta(nullptr);
+    ASSERT_FALSE(nullMeta.RemoveEntry("ImageLength"));
+    auto exifData = exif_data_new();
+    ASSERT_NE(exifData, nullptr);
+    ExifMetadata metadata(exifData);
+    ASSERT_FALSE(metadata.RemoveEntry("DateTime"));
+    ASSERT_FALSE(metadata.RemoveEntry("HwMnoteFocusModeExif"));
+    ASSERT_FALSE(metadata.RemoveEntry("NotExistKey"));
+    ExifEntry* entry = exif_entry_new();
+    entry->format = EXIF_FORMAT_SHORT;
+    entry->components = 1;
+    entry->size = sizeof(uint16_t);
+    entry->data = (unsigned char*)calloc(1, sizeof(uint16_t));
+    entry->tag = EXIF_TAG_IMAGE_LENGTH;
+    exif_content_add_entry(exifData->ifd[EXIF_IFD_0], entry);
+    ASSERT_TRUE(metadata.RemoveEntry("ImageLength"));
+    exif_entry_unref(entry);
+    exif_data_unref(exifData);
+}
 } // namespace Multimedia
 } // namespace OHOS

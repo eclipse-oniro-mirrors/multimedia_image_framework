@@ -290,6 +290,8 @@ void ColorUtils::ColorSpaceGetCicp(ColorManager::ColorSpaceName name, uint16_t& 
 HDI::Display::Graphic::Common::V1_0::CM_ColorSpaceType ColorUtils::ConvertToCMColor(ColorManager::ColorSpaceName name)
 {
     switch (name) {
+        case ColorManager::ColorSpaceName::ADOBE_RGB :
+            return HDI::Display::Graphic::Common::V1_0::CM_ADOBERGB_FULL;
         case ColorManager::ColorSpaceName::SRGB :
             return HDI::Display::Graphic::Common::V1_0::CM_SRGB_FULL;
         case ColorManager::ColorSpaceName::SRGB_LIMIT :

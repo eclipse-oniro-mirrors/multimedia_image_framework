@@ -46,6 +46,7 @@ namespace {
     constexpr uint32_t BYTES_PER_PIXEL_BGRA = 4;
     constexpr uint32_t STRIDES_PER_PLANE = 8;
     constexpr int32_t PIXEL_MAP_MAX_RAM_SIZE = 600 * 1024 * 1024;
+    constexpr uint32_t EVEN_ALIGNMENT = 2;
 }
 
 #undef LOG_TAG
@@ -309,7 +310,7 @@ static bool YuvP010ToRGB10(const uint8_t *srcBuffer, const YUVDataInfo &yDInfo, 
     }
     if (srcParam.format == PixelFormat::YCRCB_P010) {
         size_t midBufferSize =
-            static_cast<size_t>((yDInfo.uvOffset + yDInfo.uvWidth * yDInfo.uvWidth * TWO_SLICES) * TWO_SLICES);
+            static_cast<size_t>((yDInfo.uvOffset + yDInfo.uvWidth * yDInfo.uvHeight * TWO_SLICES) * TWO_SLICES);
         if (midBufferSize == 0 || midBufferSize > PIXEL_MAP_MAX_RAM_SIZE) {
             IMAGE_LOGE("Invalid destination buffer size is 0!");
             return false;
@@ -510,7 +511,8 @@ static bool RGBA1010102ToP010SoftDecode(const RGBDataInfo &rgbInfo, SrcConvertPa
         !ImageUtils::GetAlignedNumber(copyRgbInfo.height, EVEN_ODD_DIVISOR)) {
         return false;
     }
-    int32_t copySrcLen = static_cast<size_t>(copyRgbInfo.width * copyRgbInfo.height * STRIDES_PER_PLANE);
+    int32_t copySrcLen = static_cast<int32_t>(copyRgbInfo.width) *
+        static_cast<int32_t>(copyRgbInfo.height) * STRIDES_PER_PLANE;
     std::unique_ptr<uint8_t[]> copySrcBuffer = std::make_unique<uint8_t[]>(copySrcLen);
     CHECK_ERROR_RETURN_RET_LOG((copySrcBuffer == nullptr), -1, "[RGBAToP010]Convert: alloc memory failed!");
     uint8_t* copySrcPixels = copySrcBuffer.get();
@@ -725,7 +727,7 @@ static bool YuvP010ToYuv(const uint8_t *srcBuffer, const YUVDataInfo &yDInfo, Pi
     }
     if (srcParam.format == PixelFormat::YCRCB_P010) {
         size_t midBufferSize =
-            static_cast<size_t>((yDInfo.uvOffset + yDInfo.uvWidth * yDInfo.uvWidth * TWO_SLICES) * TWO_SLICES);
+            static_cast<size_t>((yDInfo.uvOffset + yDInfo.uvWidth * yDInfo.uvHeight * TWO_SLICES) * TWO_SLICES);
         if (midBufferSize == 0 || midBufferSize > PIXEL_MAP_MAX_RAM_SIZE) {
             IMAGE_LOGE("Invalid destination buffer size is 0!");
             return false;
@@ -833,7 +835,7 @@ static bool YuvP010ToRGB(const uint8_t *srcBuffer, const YUVDataInfo &yDInfo, Pi
     }
     if (srcParam.format == PixelFormat::YCRCB_P010) {
         size_t midBufferSize =
-            static_cast<size_t>((yDInfo.uvOffset + yDInfo.uvWidth * yDInfo.uvWidth * TWO_SLICES) * TWO_SLICES);
+            static_cast<size_t>((yDInfo.uvOffset + yDInfo.uvWidth * yDInfo.uvHeight * TWO_SLICES) * TWO_SLICES);
         if (midBufferSize == 0 || midBufferSize > PIXEL_MAP_MAX_RAM_SIZE) {
             IMAGE_LOGE("Invalid destination buffer size is 0!");
             return false;
@@ -1196,9 +1198,28 @@ static bool RGBToYuv(const uint8_t *srcBuffer, const RGBDataInfo &rgbInfo, Pixel
         destInfo.bufferSize == 0) {
         return false;
     }
-    SrcConvertParam srcParam = {rgbInfo.width, rgbInfo.height};
-    srcParam.format = srcFormat;
+    int32_t copyWidth = rgbInfo.width;
+    int32_t copyHeight = rgbInfo.height;
+    SrcConvertParam srcParam;
     srcParam.buffer = srcBuffer;
+    std::unique_ptr<uint8_t[]> copySrcBuffer;
+    if (rgbInfo.width % EVEN_ALIGNMENT != 0 || rgbInfo.height % EVEN_ALIGNMENT != 0) {
+        if (!ImageUtils::GetAlignedNumber(copyWidth, EVEN_ALIGNMENT) ||
+            !ImageUtils::GetAlignedNumber(copyHeight, EVEN_ALIGNMENT)) {
+            return false;
+        }
+        int32_t copySrcLen = copyWidth * copyHeight * ImageUtils::GetPixelBytes(srcFormat);
+        int32_t rgbInfoLen = rgbInfo.width * rgbInfo.height * ImageUtils::GetPixelBytes(srcFormat);
+        copySrcBuffer = std::make_unique<uint8_t[]>(copySrcLen);
+        if (copySrcBuffer == nullptr || EOK != memcpy_s(copySrcBuffer.get(), rgbInfoLen, srcBuffer, rgbInfoLen)) {
+            IMAGE_LOGE("alloc memory or memcpy_s failed!");
+            return false;
+        }
+        srcParam.buffer = copySrcBuffer.get();
+    }
+    srcParam.width = copyWidth;
+    srcParam.height = copyHeight;
+    srcParam.format = srcFormat;
 
     DestConvertParam destParam = {destInfo.width, destInfo.height};
     destParam.format = destFormat;

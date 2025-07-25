@@ -248,6 +248,9 @@ bool HeifDecoderImpl::setAuxiliaryMap(AuxiliaryPictureType type)
     bool cond = auxiliaryImage_ == nullptr && !CheckAuxiliaryMap(type);
     CHECK_ERROR_RETURN_RET_LOG(cond, false, "make heif parser failed");
 
+    if (type == AuxiliaryPictureType::FRAGMENT_MAP) {
+        colorSpaceName_ = ColorManager::ColorSpaceName::DISPLAY_P3_LIMIT;
+    }
     InitFrameInfo(&auxiliaryImageInfo_, auxiliaryImage_);
     InitGridInfo(auxiliaryImage_, auxiliaryGridInfo_);
     return true;
@@ -273,20 +276,8 @@ void HeifDecoderImpl::InitFrameInfo(HeifFrameInfo *info, const std::shared_ptr<H
         IMAGE_LOGE("InitFrameInfo info or image is null");
         return;
     }
-    std::string imageType = parser_->GetItemType(image->GetItemId());
-    if (imageType == "iovl") {
-        std::vector<std::shared_ptr<HeifImage>> iovlImages;
-        parser_->GetIovlImages(image->GetItemId(), iovlImages);
-        if (iovlImages.empty() || iovlImages[0] == nullptr) {
-            IMAGE_LOGE("grid image has no tile image");
-            return;
-        }
-        info->mWidth = iovlImages[0]->GetOriginalWidth();
-        info->mHeight = iovlImages[0]->GetOriginalHeight();
-    } else {
-        info->mWidth = image->GetOriginalWidth();
-        info->mHeight = image->GetOriginalHeight();
-    }
+    info->mWidth = image->GetOriginalWidth();
+    info->mHeight = image->GetOriginalHeight();
     info->mRotationAngle = (DEGREE_360 - image->GetRotateDegrees()) % DEGREE_360;
     info->mBytesPerPixel = static_cast<uint32_t>(ImageUtils::GetPixelBytes(outPixelFormat_));
     info->mDurationUs = 0;
@@ -328,21 +319,8 @@ void HeifDecoderImpl::InitGridInfo(const std::shared_ptr<HeifImage> &image, Grid
         IMAGE_LOGE("InitGridInfo image is null");
         return;
     }
-    std::string imageType = parser_->GetItemType(image->GetItemId());
-    if (imageType == "iovl") {
-        std::vector<std::shared_ptr<HeifImage>> iovlImages;
-        parser_->GetIovlImages(image->GetItemId(), iovlImages);
-        if (iovlImages.empty() || iovlImages[0] == nullptr) {
-            IMAGE_LOGE("grid image has no tile image");
-            return;
-        }
-        gridInfo.displayWidth = iovlImages[0]->GetOriginalWidth();
-        gridInfo.displayHeight = iovlImages[0]->GetOriginalHeight();
-    } else {
-        gridInfo.displayWidth = image->GetOriginalWidth();
-        gridInfo.displayHeight = image->GetOriginalHeight();
-    }
-
+    gridInfo.displayWidth = image->GetOriginalWidth();
+    gridInfo.displayHeight = image->GetOriginalHeight();
     gridInfo.colorRangeFlag = image->GetColorRangeFlag();
     GetTileSize(image, gridInfo);
     GetRowColNum(gridInfo);
@@ -356,20 +334,10 @@ void HeifDecoderImpl::GetTileSize(const std::shared_ptr<HeifImage> &image, GridI
     }
 
     std::string imageType = parser_->GetItemType(image->GetItemId());
-    if (imageType == "hvc1" || image->IsMovieImage()) {
+    if (imageType == "hvc1") {
         gridInfo.tileWidth = image->GetOriginalWidth();
         gridInfo.tileHeight = image->GetOriginalHeight();
         return;
-    }
-    if (imageType == "iovl") {
-        std::vector<std::shared_ptr<HeifImage>> iovlImages;
-        parser_->GetIovlImages(image->GetItemId(), iovlImages);
-        if (iovlImages.empty() || iovlImages[0] == nullptr) {
-            IMAGE_LOGE("grid image has no tile image");
-            return;
-        }
-        gridInfo.tileWidth = iovlImages[0]->GetOriginalWidth();
-        gridInfo.tileHeight = iovlImages[0]->GetOriginalHeight();
     }
     if (imageType == "iden") {
         std::shared_ptr<HeifImage> idenImage;
@@ -806,15 +774,12 @@ bool HeifDecoderImpl::SwDecodeImage(std::shared_ptr<HeifImage> &image, HevcSoftD
         return false;
     }
 
-    static ImageFwkExtManager imageFwkExtManager;
-    if (image->IsMovieImage()) {
-        return SwDecodeMovieFirstFrameImage(imageFwkExtManager, image, param);
-    }
     std::string imageType = parser_->GetItemType(image->GetItemId());
     if (imageType == "iden") {
         return SwDecodeIdenImage(image, param, gridInfo, isPrimary);
     }
 
+    static ImageFwkExtManager imageFwkExtManager;
     bool res = false;
     if (imageType == "grid") {
         param.gridInfo.enableGrid = true;
@@ -824,10 +789,6 @@ bool HeifDecoderImpl::SwDecodeImage(std::shared_ptr<HeifImage> &image, HevcSoftD
         param.gridInfo.enableGrid = false;
         gridInfo.enableGrid = false;
         res = SwDecodeSingleImage(imageFwkExtManager, image, param);
-    } else if (imageType == "iovl") {
-        param.gridInfo.enableGrid = false;
-        gridInfo.enableGrid = false;
-        res = SwDecodeIovls(imageFwkExtManager, image, param);
     }
     return res;
 }
@@ -857,25 +818,6 @@ bool HeifDecoderImpl::SwDecodeGrids(ImageFwkExtManager &extManager,
     cond = retCode != 0;
     CHECK_ERROR_RETURN_RET_LOG(cond, false, "SwDecodeGrids decode failed: %{public}d", retCode);
     return true;
-}
-
-bool HeifDecoderImpl::SwDecodeIovls(ImageFwkExtManager &extManager,
-                                    std::shared_ptr<HeifImage> &image, HevcSoftDecodeParam &param)
-{
-    if (extManager.hevcSoftwareDecodeFunc_ == nullptr && !extManager.LoadImageFwkExtNativeSo()) {
-        return false;
-    }
-    if (param.dstBuffer == nullptr || param.dstStride == 0) {
-        return false;
-    }
-    std::vector<std::shared_ptr<HeifImage>> iovlImages;
-    parser_->GetIovlImages(image->GetItemId(), iovlImages);
-    if (iovlImages.empty()) {
-        IMAGE_LOGE("iovl image has no tile image");
-        return false;
-    }
-
-    return SwDecodeSingleImage(extManager, iovlImages[0], param);
 }
 
 bool HeifDecoderImpl::SwDecodeIdenImage(std::shared_ptr<HeifImage> &image,
@@ -910,26 +852,6 @@ bool HeifDecoderImpl::SwDecodeSingleImage(ImageFwkExtManager &extManager,
     return true;
 }
 
-bool HeifDecoderImpl::SwDecodeMovieFirstFrameImage(ImageFwkExtManager &extManager,
-    std::shared_ptr<HeifImage> &image, HevcSoftDecodeParam &param)
-{
-    if (extManager.hevcSoftwareDecodeFunc_ == nullptr && !extManager.LoadImageFwkExtNativeSo()) {
-        return false;
-    }
-    bool cond = (param.dstBuffer == nullptr || param.dstStride == 0);
-    CHECK_ERROR_RETURN_RET(cond, false);
-    std::vector<std::vector<uint8_t>> inputs(1);
-    parser_->GetMovieFrameData(0, &inputs[0], heif_header_data);
-    ProcessChunkHead(inputs[0].data(), inputs[0].size());
-
-    int32_t retCode = extManager.hevcSoftwareDecodeFunc_(inputs, param);
-    if (retCode != 0) {
-        IMAGE_LOGE("SwDecodeMovieFirstFrameImage decode failed: %{public}d", retCode);
-        return false;
-    }
-    return true;
-}
-
 bool HeifDecoderImpl::SwDecodeAuxiliaryImage(std::shared_ptr<HeifImage> &gainmapImage,
                                              GridInfo &gainmapGridInfo, sptr<SurfaceBuffer> *outputBuf)
 {
@@ -937,13 +859,13 @@ bool HeifDecoderImpl::SwDecodeAuxiliaryImage(std::shared_ptr<HeifImage> &gainmap
     uint32_t width = gainmapImage->GetOriginalWidth();
     uint32_t height = gainmapImage->GetOriginalHeight();
     sptr<SurfaceBuffer> output = SurfaceBuffer::Create();
-    BufferRequestConfig = {
+    BufferRequestConfig config = {
         .width = width,
         .height = height,
         .format = GRAPHIC_PIXEL_FMT_YCBCR_420_SP,
         .usage = BUFFER_USAGE_CPU_READ | BUFFER_USAGE_CPU_WRITE | BUFFER_USAGE_MEM_DMA | BUFFER_USAGE_MEM_MMZ_CACHE,
-        .timeout = 0;
-    }
+        .timeout = 0
+    };
     GSError ret = output->Alloc(config);
     bool cond = ret != GSERROR_OK;
     CHECK_ERROR_RETURN_RET_LOG(cond, false, "output->alloc(config)faild, GSError=%{public}d", ret);

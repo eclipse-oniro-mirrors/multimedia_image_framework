@@ -52,10 +52,7 @@ uint32_t ImplClassMgr::AddClass(weak_ptr<Plugin> &plugin, const json &classInfo)
     }
 
     const string &key = implClass->GetClassName();
-    if (key.empty()) {
-        IMAGE_LOGE("AddClass: empty className.");
-        return ERR_INTERNAL;
-    }
+    CHECK_ERROR_RETURN_RET_LOG(key.empty(), ERR_INTERNAL, "AddClass: empty className.");
 
     IMAGE_LOGD("AddClass: insert Class: %{public}s.", key.c_str());
     classMultimap_.insert(NameClassMultimap::value_type(&key, implClass));
@@ -178,11 +175,8 @@ uint32_t ImplClassMgr::ImplClassMgrGetClassInfo(uint16_t interfaceID, uint16_t s
         classesInfo.emplace_back(std::move(classInfo));
     }
 
-    if (classesInfo.empty()) {
-        IMAGE_LOGE("failed to get class by capabilities, iid: %{public}u, serviceType: %{public}u.", interfaceID,
-            serviceType);
-        return ERR_MATCHING_PLUGIN;
-    }
+    CHECK_ERROR_RETURN_RET_LOG(classesInfo.empty(), ERR_MATCHING_PLUGIN,
+        "failed to get class by capabilities, iid: %{public}u, serviceType: %{public}u.", interfaceID, serviceType);
 
     return SUCCESS;
 }
@@ -386,10 +380,8 @@ uint32_t ImplClassMgr::CompareUint32Priority(const AttrData &lhs, const AttrData
         return ERR_COMP_LOWER;
     }
 
-    if ((lhs.GetMaxValue(lhsValue) != SUCCESS) || (rhs.GetMaxValue(rhsValue) != SUCCESS)) {
-        IMAGE_LOGE("CompareUint32Priority: failed to get attribute max value.");
-        return ERR_COMP_ERROR;
-    }
+    bool cond = (lhs.GetMaxValue(lhsValue) != SUCCESS) || (rhs.GetMaxValue(rhsValue) != SUCCESS);
+    CHECK_ERROR_RETURN_RET_LOG(cond, ERR_COMP_ERROR, "CompareUint32Priority: failed to get attribute max value.");
 
     if (lhsValue < rhsValue) {
         return ERR_COMP_LOWER;

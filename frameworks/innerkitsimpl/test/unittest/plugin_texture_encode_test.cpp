@@ -1345,5 +1345,22 @@ HWTEST_F(PluginTextureEncodeTest, TryEncSUTTest001, TestSize.Level3)
     EXPECT_TRUE(ret);
 }
 
+/**
+ * @tc.name: FillMetaDataTest001
+ * @tc.desc: Verify that FillMetaData returns false when the input PixelMap or parameters are invalid.
+ * @tc.type: FUNC
+ */
+HWTEST_F(PluginTextureEncodeTest, FillMetaDataTest001, TestSize.Level3)
+{
+    AstcCodec codec;
+    AstcExtendInfo info = {0};
+    EXPECT_FALSE(codec.FillMetaData(info, nullptr));
+    std::unique_ptr<PixelMap> mapNoFd = ConstructPixmap(RGBA_TEST0001_WIDTH, RGBA_TEST0001_HEIGHT);
+    mapNoFd->imageInfo_.pixelFormat = PixelFormat::RGBA_1010102;
+    EXPECT_FALSE(codec.FillMetaData(info, mapNoFd.get()));
+    EXPECT_FALSE(codec.FillMetaData(info, mapNoFd.get()));
+    mapNoFd->imageInfo_.pixelFormat = PixelFormat::ASTC_4x4;
+    EXPECT_FALSE(codec.FillMetaData(info, mapNoFd.get()));
+}
 } // namespace Multimedia
 } // namespace OHOS

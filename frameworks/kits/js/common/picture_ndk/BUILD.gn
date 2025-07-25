@@ -91,7 +91,10 @@ ohos_shared_library("picture") {
     "${image_subsystem}/interfaces/innerkits:image_native",
   ]
 
-  external_deps = [ "c_utils:utils" ]
+  external_deps = [
+    "c_utils:utils",
+    "hilog:libhilog"
+  ]
   if (enable_libexif) {
     external_deps += [ "libexif:libexif" ]
   }

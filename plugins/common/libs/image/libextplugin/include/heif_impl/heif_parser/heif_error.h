@@ -45,23 +45,6 @@ enum heif_error {
     heif_error_too_many_item = 23,
     heif_error_too_many_recursion = 24,
     heif_error_no_data = 25,
-    heif_error_no_mvhd = 26,
-    heif_error_no_trak = 27,
-    heif_error_no_tkhd = 28,
-    heif_error_no_mdia = 29,
-    heif_error_no_mdhd = 30,
-    heif_error_no_hdlr = 31,
-    heif_error_no_minf = 32,
-    heif_error_no_vmhd = 33,
-    heif_error_no_dinf = 34,
-    heif_error_no_stbl = 35,
-    heif_error_no_dref = 36,
-    heif_error_no_stsd = 37,
-    heif_error_no_stts = 38,
-    heif_error_no_stsc = 39,
-    heif_error_no_stco = 40,
-    heif_error_no_stsz = 41,
-    heif_error_invalid_index = 42,
 };
 } // namespace ImagePlugin
 } // namespace OHOS

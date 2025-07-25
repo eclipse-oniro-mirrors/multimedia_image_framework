@@ -19,6 +19,7 @@
 #include "pixel_map.h"
 #include "color_space.h"
 #include "post_proc.h"
+#include "image_system_properties.h"
 
 using namespace testing::ext;
 using namespace OHOS::Media;
@@ -1497,6 +1498,357 @@ HWTEST_F(ImagePixelMapTest, ImagePixelMap046, TestSize.Level3)
         EXPECT_NE(pixelmap, nullptr);
     }
     GTEST_LOG_(INFO) << "ImagePixelMapTest: ImagePixelMap046 Create end";
+}
+
+/**
+* @tc.name: ImagePixelMap047
+* @tc.desc: HEIGHT_MIN test
+* @tc.type: FUNC
+* @tc.require: AR000FTAMO
+*/
+HWTEST_F(ImagePixelMapTest, ImagePixelMap047, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImagePixelMapTest: ImagePixelMap047 rotate start";
+    constexpr uint32_t ARGB8888_BYTES = 4;
+
+    InitializationOptions opts;
+    opts.pixelFormat = OHOS::Media::PixelFormat::ARGB_8888;
+    opts.alphaType = AlphaType::IMAGE_ALPHA_TYPE_OPAQUE;
+    opts.size.width = 3;
+    opts.size.height = 3;
+    uint32_t dataLength = opts.size.width * opts.size.height * ARGB8888_BYTES;
+    uint32_t* data = new uint32_t[dataLength];
+    for (uint32_t i = 0; i < dataLength; i++) {
+        data[i] = 0xFFFF0000;
+    }
+    std::unique_ptr<PixelMap> pixelMap = PixelMap::Create(data, dataLength, opts);
+    EXPECT_NE(pixelMap, nullptr);
+    pixelMap->UpdatePixelsAlphaType();
+    bool alphaType = pixelMap->GetSupportOpaqueOpt();
+    EXPECT_EQ(alphaType, false);
+    if (data != nullptr) {
+        delete[] data;
+    }
+
+    opts.size.width = 400;
+    opts.size.height = 3;
+    dataLength = opts.size.width * opts.size.height * ARGB8888_BYTES;
+    data = new uint32_t[dataLength];
+    for (uint32_t i = 0; i < dataLength; i++) {
+        data[i] = 0xFFFF0000;
+    }
+    pixelMap = PixelMap::Create(data, dataLength, opts);
+    EXPECT_NE(pixelMap, nullptr);
+    pixelMap->UpdatePixelsAlphaType();
+    alphaType = pixelMap->GetSupportOpaqueOpt();
+    EXPECT_EQ(alphaType, false);
+    if (data != nullptr) {
+        delete[] data;
+    }
+
+    opts.size.width = 3;
+    opts.size.height = 200;
+    dataLength = opts.size.width * opts.size.height * ARGB8888_BYTES;
+    data = new uint32_t[dataLength];
+    for (uint32_t i = 0; i < dataLength; i++) {
+        data[i] = 0xFFFF0000;
+    }
+    pixelMap = PixelMap::Create(data, dataLength, opts);
+    EXPECT_NE(pixelMap, nullptr);
+    pixelMap->UpdatePixelsAlphaType();
+    alphaType = pixelMap->GetSupportOpaqueOpt();
+    EXPECT_EQ(alphaType, false);
+    if (data != nullptr) {
+        delete[] data;
+    }
+
+    opts.size.width = 400;
+    opts.size.height = 800;
+    dataLength = opts.size.width * opts.size.height * ARGB8888_BYTES;
+    data = new uint32_t[dataLength];
+    for (uint32_t i = 0; i < dataLength; i++) {
+        data[i] = 0xFFFF0000;
+    }
+    pixelMap = PixelMap::Create(data, dataLength, opts);
+    EXPECT_NE(pixelMap, nullptr);
+    pixelMap->UpdatePixelsAlphaType();
+    alphaType = pixelMap->GetSupportOpaqueOpt();
+    EXPECT_EQ(alphaType, false);
+    if (data != nullptr) {
+        delete[] data;
+    }
+
+    opts.size.width = 1000;
+    opts.size.height = 200;
+    dataLength = opts.size.width * opts.size.height * ARGB8888_BYTES;
+    data = new uint32_t[dataLength];
+    for (uint32_t i = 0; i < dataLength; i++) {
+        data[i] = 0xFFFF0000;
+    }
+    pixelMap = PixelMap::Create(data, dataLength, opts);
+    EXPECT_NE(pixelMap, nullptr);
+    pixelMap->UpdatePixelsAlphaType();
+    alphaType = pixelMap->GetSupportOpaqueOpt();
+    EXPECT_EQ(alphaType, false);
+    if (data != nullptr) {
+        delete[] data;
+    }
+
+    opts.size.width = 1000;
+    opts.size.height = 800;
+    dataLength = opts.size.width * opts.size.height * ARGB8888_BYTES;
+    data = new uint32_t[dataLength];
+    for (uint32_t i = 0; i < dataLength; i++) {
+        data[i] = 0xFFFF0000;
+    }
+    pixelMap = PixelMap::Create(data, dataLength, opts);
+    EXPECT_NE(pixelMap, nullptr);
+    pixelMap->UpdatePixelsAlphaType();
+    alphaType = pixelMap->GetSupportOpaqueOpt();
+    EXPECT_EQ(alphaType, false);
+
+    if (data != nullptr) {
+        delete[] data;
+    }
+    GTEST_LOG_(INFO) << "ImagePixelMapTest: ImagePixelMap047 rotate end";
+}
+
+/**
+* @tc.name: ImagePixelMap048
+* @tc.desc: GetSupportOpaqueOpt test
+* @tc.type: FUNC
+* @tc.require: AR000FTAMO
+*/
+HWTEST_F(ImagePixelMapTest, ImagePixelMap048, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImagePixelMapTest: ImagePixelMap048 rotate start";
+    uint32_t* data = nullptr;
+    std::unique_ptr<PixelMap> pixelMap = ConstructPixelMap(&data);
+    EXPECT_NE(pixelMap, nullptr);
+    pixelMap->UpdatePixelsAlphaType();
+    bool alphaType = pixelMap->GetSupportOpaqueOpt();
+    EXPECT_EQ(alphaType, false);
+
+    pixelMap->SetSupportOpaqueOpt(true);
+    alphaType = pixelMap->GetSupportOpaqueOpt();
+    EXPECT_NE(alphaType, false);
+
+    if (data != nullptr) {
+        delete[] data;
+    }
+    GTEST_LOG_(INFO) << "ImagePixelMapTest: ImagePixelMap048 rotate end";
+}
+
+/**
+* @tc.name: ImagePixelMap049
+* @tc.desc: format test
+* @tc.type: FUNC
+* @tc.require: AR000FTAMO
+*/
+HWTEST_F(ImagePixelMapTest, ImagePixelMap049, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImagePixelMapTest: ImagePixelMap049 rotate start";
+    bool isSupportOpt = OHOS::Media::ImageSystemProperties::IsSupportOpaqueOpt();
+    if (!isSupportOpt) {
+        EXPECT_EQ(isSupportOpt, false);
+        GTEST_LOG_(INFO) << "ImagePixelMapTest: ImagePixelMap049 rotate end";
+        return;
+    }
+    constexpr uint32_t ARGB8888_BYTES = 4;
+
+    InitializationOptions opts;
+    opts.pixelFormat = OHOS::Media::PixelFormat::ARGB_8888;
+    opts.alphaType = AlphaType::IMAGE_ALPHA_TYPE_OPAQUE;
+    opts.size.width = 600;
+    opts.size.height = 600;
+    const uint32_t dataLength = opts.size.width * opts.size.height * ARGB8888_BYTES;
+    uint32_t* data = new uint32_t[dataLength];
+    for (uint32_t i = 0; i < dataLength; i++) {
+        data[i] = 0xFFFF00FF;
+    }
+    std::unique_ptr<PixelMap> pixelMap = PixelMap::Create(data, dataLength, opts);
+    EXPECT_NE(pixelMap, nullptr);
+    pixelMap->UpdatePixelsAlphaType();
+    bool alphaType = pixelMap->GetSupportOpaqueOpt();
+    EXPECT_EQ(alphaType, true);
+
+    opts.pixelFormat = OHOS::Media::PixelFormat::RGBA_8888;
+    pixelMap = PixelMap::Create(data, dataLength, opts);
+    EXPECT_NE(pixelMap, nullptr);
+    pixelMap->UpdatePixelsAlphaType();
+    alphaType = pixelMap->GetSupportOpaqueOpt();
+    EXPECT_EQ(alphaType, true);
+
+    opts.pixelFormat = OHOS::Media::PixelFormat::BGRA_8888;
+    pixelMap = PixelMap::Create(data, dataLength, opts);
+    EXPECT_NE(pixelMap, nullptr);
+    pixelMap->UpdatePixelsAlphaType();
+    alphaType = pixelMap->GetSupportOpaqueOpt();
+    EXPECT_EQ(alphaType, true);
+
+    if (data != nullptr) {
+        delete[] data;
+    }
+    GTEST_LOG_(INFO) << "ImagePixelMapTest: ImagePixelMap049 rotate end";
+}
+
+/**
+* @tc.name: ImagePixelMap050
+* @tc.desc: GetPixels test
+* @tc.type: FUNC
+* @tc.require: AR000FTAMO
+*/
+HWTEST_F(ImagePixelMapTest, ImagePixelMap050, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImagePixelMapTest: ImagePixelMap050 rotate start";
+    bool isSupportOpt = OHOS::Media::ImageSystemProperties::IsSupportOpaqueOpt();
+    if (!isSupportOpt) {
+        EXPECT_EQ(isSupportOpt, false);
+        GTEST_LOG_(INFO) << "ImagePixelMapTest: ImagePixelMap050 rotate end";
+        return;
+    }
+    constexpr uint32_t ARGB8888_BYTES = 4;
+
+    InitializationOptions opts;
+    opts.pixelFormat = OHOS::Media::PixelFormat::ARGB_8888;
+    opts.alphaType = AlphaType::IMAGE_ALPHA_TYPE_OPAQUE;
+    opts.size.width = 600;
+    opts.size.height = 600;
+    const uint32_t dataLength = opts.size.width * opts.size.height * ARGB8888_BYTES;
+    uint32_t* data = new uint32_t[dataLength];
+    for (uint32_t i = 0; i < dataLength; i++) {
+        data[i] = 0xFFFF00FF;
+    }
+    std::unique_ptr<PixelMap> pixelMap = PixelMap::Create(data, dataLength, opts);
+    EXPECT_NE(pixelMap, nullptr);
+    const uint8_t *dstPixels = pixelMap->GetPixels();
+    EXPECT_NE(dstPixels, nullptr);
+    pixelMap->UpdatePixelsAlphaType();
+    bool alphaType = pixelMap->GetSupportOpaqueOpt();
+    EXPECT_EQ(alphaType, true);
+    GTEST_LOG_(INFO) << "ImagePixelMapTest: ImagePixelMap050 rotate end";
+}
+
+/**
+* @tc.name: ImagePixelMap051
+* @tc.desc: GetPixels test
+* @tc.type: FUNC
+* @tc.require: AR000FTAMO
+*/
+HWTEST_F(ImagePixelMapTest, ImagePixelMap051, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImagePixelMapTest: ImagePixelMap051 rotate start";
+    InitializationOptions opts;
+    opts.pixelFormat = OHOS::Media::PixelFormat::ARGB_8888;
+    opts.alphaType = AlphaType::IMAGE_ALPHA_TYPE_OPAQUE;
+    opts.size.width = PIXEL_MAP_TEST_WIDTH;
+    opts.size.height = PIXEL_MAP_TEST_HEIGHT;
+    std::unique_ptr<PixelMap> pixelMap = std::make_unique<PixelMap>();
+    EXPECT_NE(pixelMap, nullptr);
+    const uint8_t *dstPixels = pixelMap->GetPixels();
+    EXPECT_EQ(dstPixels, nullptr);
+    pixelMap->UpdatePixelsAlphaType();
+    bool alphaType = pixelMap->GetSupportOpaqueOpt();
+    EXPECT_EQ(alphaType, false);
+    GTEST_LOG_(INFO) << "ImagePixelMapTest: ImagePixelMap051 rotate end";
+}
+
+/**
+* @tc.name: ImagePixelMap052
+* @tc.desc: alpha return test
+* @tc.type: FUNC
+* @tc.require: AR000FTAMO
+*/
+HWTEST_F(ImagePixelMapTest, ImagePixelMap052, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImagePixelMapTest: ImagePixelMap052 rotate start";
+    constexpr uint32_t ARGB8888_BYTES = 4;
+    const uint32_t dataLength = PIXEL_MAP_TEST_WIDTH * PIXEL_MAP_TEST_HEIGHT * ARGB8888_BYTES;
+    uint32_t* data = new uint32_t[dataLength];
+    for (uint32_t i = 0; i < dataLength; i++) {
+        data[i] = 0x00FF0000;
+    }
+    InitializationOptions opts;
+    opts.pixelFormat = OHOS::Media::PixelFormat::ARGB_8888;
+    opts.alphaType = AlphaType::IMAGE_ALPHA_TYPE_OPAQUE;
+    opts.size.width = PIXEL_MAP_TEST_WIDTH;
+    opts.size.height = PIXEL_MAP_TEST_HEIGHT;
+    std::unique_ptr<PixelMap> pixelMap = PixelMap::Create(data, dataLength, opts);
+    EXPECT_NE(pixelMap, nullptr);
+    pixelMap->UpdatePixelsAlphaType();
+    bool alphaType = pixelMap->GetSupportOpaqueOpt();
+    EXPECT_EQ(alphaType, false);
+
+    if (data != nullptr) {
+        delete[] data;
+    }
+    GTEST_LOG_(INFO) << "ImagePixelMapTest: ImagePixelMap052 rotate end";
+}
+
+/**
+* @tc.name: ImagePixelMap053
+* @tc.desc: alpha return test
+* @tc.type: FUNC
+* @tc.require: AR000FTAMO
+*/
+HWTEST_F(ImagePixelMapTest, ImagePixelMap053, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImagePixelMapTest: ImagePixelMap053 rotate start";
+    constexpr uint32_t ARGB8888_BYTES = 4;
+
+    InitializationOptions opts;
+    opts.pixelFormat = OHOS::Media::PixelFormat::ARGB_8888;
+    opts.alphaType = AlphaType::IMAGE_ALPHA_TYPE_OPAQUE;
+    opts.size.width = 519;
+    opts.size.height = 1;
+    const uint32_t dataLength = opts.size.width * opts.size.height * ARGB8888_BYTES;
+    uint32_t* data = new uint32_t[dataLength];
+    for (uint32_t i = 0; i < dataLength; i++) {
+        data[i] = 0x00FF0000;
+    }
+    std::unique_ptr<PixelMap> pixelMap = PixelMap::Create(data, dataLength, opts);
+    EXPECT_NE(pixelMap, nullptr);
+    pixelMap->UpdatePixelsAlphaType();
+    bool alphaType = pixelMap->GetSupportOpaqueOpt();
+    EXPECT_EQ(alphaType, false);
+
+    if (data != nullptr) {
+        delete[] data;
+    }
+    GTEST_LOG_(INFO) << "ImagePixelMapTest: ImagePixelMap053 rotate end";
+}
+
+/**
+* @tc.name: ImagePixelMap054
+* @tc.desc: GetSupportOpaqueOpt test
+* @tc.type: FUNC
+* @tc.require: AR000FTAMO
+*/
+HWTEST_F(ImagePixelMapTest, ImagePixelMap054, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImagePixelMapTest: ImagePixelMap054 rotate start";
+    std::unique_ptr<PixelMap> pixelMap = ConstructBigPixmap();
+    EXPECT_NE(pixelMap, nullptr);
+    bool alphaType = pixelMap->GetSupportOpaqueOpt();
+    EXPECT_EQ(alphaType, false);
+    GTEST_LOG_(INFO) << "ImagePixelMapTest: ImagePixelMap054 rotate end";
+}
+
+/**
+* @tc.name: ImagePixelMap055
+* @tc.desc: GetSupportOpaqueOpt test
+* @tc.type: FUNC
+* @tc.require: AR000FTAMO
+*/
+HWTEST_F(ImagePixelMapTest, ImagePixelMap055, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImagePixelMapTest: ImagePixelMap055 rotate start";
+    std::unique_ptr<PixelMap> pixelMap = ConstructBigPixmap();
+    EXPECT_NE(pixelMap, nullptr);
+    int32_t errorCode = 0;
+    std::unique_ptr<PixelMap> pixelMap1 = pixelMap->Clone(errorCode);
+    EXPECT_NE(pixelMap1, nullptr);
+    GTEST_LOG_(INFO) << "ImagePixelMapTest: ImagePixelMap055 rotate end";
 }
 
 std::unique_ptr<PixelMap> CreatePixelMapCommon(int32_t width, int32_t height)

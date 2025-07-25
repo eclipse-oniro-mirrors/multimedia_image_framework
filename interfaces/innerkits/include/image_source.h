@@ -379,6 +379,7 @@ private:
     bool CheckAllocatorTypeValid(const DecodeOptions &opts);
     bool CheckCropRectValid(const DecodeOptions &opts);
     void InitDecoderForJpeg();
+    void RefreshImageSourceByPathName();
 
 #if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
     void SpecialSetComposeBuffer(ImagePlugin::DecodeContext &baseCtx, sptr<SurfaceBuffer>& baseSptr,

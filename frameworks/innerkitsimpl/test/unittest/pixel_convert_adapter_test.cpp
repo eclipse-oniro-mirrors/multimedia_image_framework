@@ -23,6 +23,7 @@
 #include "media_errors.h"
 #include "pixel_convert_adapter.h"
 #include "pixel_map.h"
+#include "pixel_yuv_utils.h"
 
 using namespace testing::ext;
 using namespace OHOS::Media;
@@ -389,6 +390,24 @@ HWTEST_F(PixelConvertAdapterTest, PixelConvertAdapterTest0010, TestSize.Level3)
         srcRowBytes, info, dstPixels, dstPos, dstRowBytes, dstInfo);
     ASSERT_EQ(ret, false);
     GTEST_LOG_(INFO) << "PixelConvertAdapterTest: PixelConvertAdapterTest0010 end";
+}
+
+/**
+ * @tc.name: YUV420ToRGB888Test001
+ * @tc.desc: Verify YUV420ToRGB888 conversion fails with invalid input parameters
+ *           Tests empty/invalid source/destination buffers return false
+ * @tc.type: FUNC
+ */
+HWTEST_F(PixelConvertAdapterTest, YUV420ToRGB888Test001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PixelConvertAdapterTest: YUV420ToRGB888Test001 start";
+    uint8_t src[] = {0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07};
+    uint8_t dst[] = {0};
+    YuvImageInfo srcInfo;
+    YuvImageInfo dstInfo;
+    bool result = PixelConvertAdapter::YUV420ToRGB888(src, srcInfo, dst, dstInfo);
+    EXPECT_FALSE(result);
+    GTEST_LOG_(INFO) << "PixelConvertAdapterTest: YUV420ToRGB888Test001 end";
 }
 }
 }

@@ -579,21 +579,5 @@ HWTEST_F(FileSourceStreamTest, FileSourceStreamTest0027, TestSize.Level3)
     fileSourceStream->fileData_ = nullptr;
     GTEST_LOG_(INFO) << "FileSourceStreamTest: FileSourceStreamTest0027 end";
 }
-
-/**
- * @tc.name: FileSourceStreamTest0028
- * @tc.desc: ToOutputDataStream
- * @tc.type: FUNC
- */
-HWTEST_F(FileSourceStreamTest, FileSourceStreamTest0028, TestSize.Level3)
-{
-    GTEST_LOG_(INFO) << "FileSourceStreamTest: FileSourceStreamTest0028 start";
-    std::unique_ptr<FileSourceStream> fileSourceStream = FileSourceStream::CreateSourceStream(IMAGE_INPUT_JPG_PATH);
-    ASSERT_NE(fileSourceStream, nullptr);
-    fileSourceStream->filePtr_ = fopen("/data/local/tmp/image/test.jpg", "w+");
-    auto ret = fileSourceStream->ToOutputDataStream();
-    ASSERT_EQ(ret, nullptr);
-    GTEST_LOG_(INFO) << "FileSourceStreamTest: FileSourceStreamTest0028 end";
-}
 }
 }

@@ -33,6 +33,7 @@ static constexpr size_t ERR_LENGTH = -1;
 static constexpr size_t NORMAL_LENGTH = 1;
 static constexpr size_t SIZE_32BITS = 0xFFFFFFFF;
 static constexpr size_t UUID_TYPE_BYTE_NUM = 16;
+static constexpr uint32_t NAL_LAYER_ID = 33;
 
 static std::vector<uint8_t> SetUint32ToUint8Vertor(uint32_t data)
 {
@@ -361,6 +362,32 @@ HWTEST_F(HeifParserBoxTest, AppendNalDataTest001, TestSize.Level3)
     std::vector<uint8_t> nalData = {0x01, 0x02, 0x03, 0x04};
     heifHvccBox.AppendNalData(nalData);
     GTEST_LOG_(INFO) << "HeifParserBoxTest: AppendNalDataTest001 end";
+}
+
+/**
+ * @tc.name: AppendNalDataTest001
+ * @tc.desc: HeifHvccBox
+ * @tc.type: FUNC
+ */
+HWTEST_F(HeifParserBoxTest, AppendNalDataTest002, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "HeifParserBoxTest: AppendNalDataTest002 start";
+    HeifHvccBox heifHvccBox;
+    std::vector<uint8_t> nalData = {0X42, 0X01, 0X01, 0X03, 0X70, 0X00, 0X00, 0X03, 0X00, 0X90, 0X00,
+        0X00, 0X03, 0X00, 0X00, 0X03, 0X00, 0X5a, 0Xa0, 0X04, 0X02, 0X00, 0X80, 0X59, 0X6e, 0Xa4, 0X92,
+        0X9a, 0Xe6, 0Xc0, 0X80, 0X00, 0X00, 0X03, 0X00, 0X80, 0X00, 0X00, 0X03, 0X00, 0X84, 0x22, 0X00,
+        0X01, 0x00, 0x07};
+    heifHvccBox.ProcessBoxData(nalData);
+    heifHvccBox.ParseNalUnitAnalysisSps(nalData);
+    auto spsConfig = heifHvccBox.GetSpsConfig();
+    ASSERT_EQ(spsConfig.nalUnitType, NAL_LAYER_ID);
+    ASSERT_EQ(spsConfig.bitDepthLumaMinus8, 0);
+    ASSERT_EQ(spsConfig.bitDepthChromaMinus8, 0);
+    ASSERT_EQ(spsConfig.chromaFormatIdc, 1);
+    ASSERT_EQ(spsConfig.picWidthInLumaSamples, 512);
+    ASSERT_EQ(spsConfig.picHeightInLumaSamples, 512);
+    ASSERT_EQ(spsConfig.videoRangeFlag, 1);
+    GTEST_LOG_(INFO) << "HeifParserBoxTest: AppendNalDataTest002 end";
 }
 
 /**

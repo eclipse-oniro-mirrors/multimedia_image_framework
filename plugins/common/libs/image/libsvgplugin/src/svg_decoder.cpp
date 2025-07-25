@@ -22,6 +22,7 @@
 #include "include/core/SkImageInfo.h"
 #include "image_trace.h"
 #include "image_log.h"
+#include "image_system_properties.h"
 #include "image_utils.h"
 #include "media_errors.h"
 #include "securec.h"
@@ -136,6 +137,9 @@ bool AllocDmaBuffer(DecodeContext &context, uint64_t byteCount, SkSize &svgSize)
         .colorGamut = GraphicColorGamut::GRAPHIC_COLOR_GAMUT_SRGB,
         .transform = GraphicTransformType::GRAPHIC_ROTATE_NONE,
     };
+    if (context.useNoPadding) {
+        requestConfig.usage |= BUFFER_USAGE_PREFER_NO_PADDING;
+    }
     GSError ret = sb->Alloc(requestConfig);
     cond = (ret != GSERROR_OK);
     CHECK_ERROR_RETURN_RET_LOG(cond, false, "SurfaceBuffer Alloc failed, %{public}s", GSErrorStr(ret).c_str());

@@ -638,6 +638,7 @@ public:
     NATIVEEXPORT virtual void SetFreePixelMapProc(CustomFreePixelMap func);
     NATIVEEXPORT virtual void SetTransformered(bool isTransformered);
     NATIVEEXPORT uint32_t ConvertAlphaFormat(PixelMap &wPixelMap, const bool isPremul);
+    NATIVEEXPORT bool AttachAddrBySurfaceBuffer();
     NATIVEEXPORT void SetPixelMapError(uint32_t code, const std::string &info)
     {
         errorCode = code;
@@ -687,6 +688,9 @@ public:
 
     NATIVEEXPORT virtual void *GetWritablePixels() const
     {
+        if (!const_cast<PixelMap*>(this)->AttachAddrBySurfaceBuffer()) {
+            return nullptr;
+        }
         return static_cast<void *>(data_);
     }
 
@@ -702,10 +706,14 @@ public:
     /**
      * Deserialize the parcel to generate the pixelmap.
      */
+    NATIVEEXPORT static PixelMap *UnmarshallingWithIsDisplay(Parcel &parcel,
+        std::function<int(Parcel &parcel, std::function<int(Parcel&)> readFdDefaultFunc)> readSafeFdFunc,
+        bool isDisplay = false);
     NATIVEEXPORT static PixelMap *Unmarshalling(Parcel &data,
         std::function<int(Parcel &parcel, std::function<int(Parcel&)> readFdDefaultFunc)> readSafeFdFunc = nullptr);
     NATIVEEXPORT static PixelMap *Unmarshalling(Parcel &parcel, PIXEL_MAP_ERR &error,
-        std::function<int(Parcel &parcel, std::function<int(Parcel&)> readFdDefaultFunc)> readSafeFdFunc = nullptr);
+        std::function<int(Parcel &parcel, std::function<int(Parcel&)> readFdDefaultFunc)> readSafeFdFunc = nullptr,
+        bool isDisplay = false);
     /**
      * Serialize the pixelmap into a vector in TLV format.
      */
@@ -850,6 +858,11 @@ public:
         return isMemoryDirty_;
     }
 
+    NATIVEEXPORT void SetEditable(bool editable)
+    {
+        editable_ = editable;
+    }
+
     static int32_t GetRGBxRowDataSize(const ImageInfo& info);
     static int32_t GetRGBxByteCount(const ImageInfo& info);
     static int32_t GetYUVByteCount(const ImageInfo& info);
@@ -857,7 +870,8 @@ public:
 
     NATIVEEXPORT uint32_t GetVersionId();
     NATIVEEXPORT void AddVersionId();
-    void UpdatePixelsAlphaType(std::unique_ptr<PixelMap>& pixelMap);
+    void UpdatePixelsAlphaType();
+    uint64_t GetNoPaddingUsage();
 
 protected:
     static constexpr uint8_t TLV_VARINT_BITS = 7;
@@ -913,7 +927,8 @@ protected:
         PIXEL_MAP_ERR& error);
     bool WriteMemInfoToParcel(Parcel &parcel, const int32_t &bufferSize) const;
     static bool ReadMemInfoFromParcel(Parcel &parcel, PixelMemInfo &pixelMemInfo, PIXEL_MAP_ERR &error,
-        std::function<int(Parcel &parcel, std::function<int(Parcel&)> readFdDefaultFunc)> readSafeFdFunc = nullptr);
+        std::function<int(Parcel &parcel, std::function<int(Parcel&)> readFdDefaultFunc)> readSafeFdFunc = nullptr,
+        bool isDisplay = false);
     bool WriteTransformDataToParcel(Parcel &parcel) const;
     bool ReadTransformData(Parcel &parcel, PixelMap *pixelMap);
     bool WriteAstcInfoToParcel(Parcel &parcel) const;
@@ -921,10 +936,6 @@ protected:
     bool WriteYuvDataInfoToParcel(Parcel &parcel) const;
     bool ReadYuvDataInfoFromParcel(Parcel &parcel, PixelMap *pixelMap);
     uint32_t SetRowDataSizeForImageInfo(ImageInfo info);
-    void SetEditable(bool editable)
-    {
-        editable_ = editable;
-    }
 
     void ResetPixelMap()
     {

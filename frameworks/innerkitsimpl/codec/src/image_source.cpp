@@ -398,7 +398,7 @@ void ImageSource::InitDecoderForJpeg()
         return;
     }
     if (std::memcmp(JPEG_SOI, readBuffer, sizeof(JPEG_SOI)) == 0) {
-        IMAGE_LOGI("stream is jpeg stream.");
+        IMAGE_LOGD("stream is jpeg stream.");
         delete[] readBuffer;
         mainDecoder_->InitJpegDecoder();
         readBuffer = nullptr;
@@ -865,7 +865,11 @@ DecodeContext ImageSource::InitDecodeContext(const DecodeOptions &opts, const Im
             ImageSystemProperties::GetDecodeDmaEnabled()) {
             IMAGE_LOGD("[ImageSource] allocatorType is DMA_ALLOC");
             context.allocatorType = AllocatorType::DMA_ALLOC;
-        } else {
+        } else if (ImageSystemProperties::GetNoPaddingEnabled()) {
+            IMAGE_LOGI("%{public}s no padding enabled", __func__);
+            context.allocatorType = AllocatorType::DMA_ALLOC;
+            context.useNoPadding = true;
+        }  else {
             context.allocatorType = AllocatorType::SHARE_MEM_ALLOC;
         }
     }
@@ -1057,6 +1061,7 @@ unique_ptr<PixelMap> ImageSource::CreatePixelMapExtended(uint32_t index, const D
             pixelMap, plInfo.pixelFormat, opts_.desiredPixelFormat);
         CHECK_ERROR_PRINT_LOG(convertRes != SUCCESS, "convert rgb to yuv failed, return origin rgb!");
     }
+    ImageUtils::FlushSurfaceBuffer(pixelMap.get());
     return pixelMap;
 }
 
@@ -1226,7 +1231,7 @@ unique_ptr<PixelMap> ImageSource::CreatePixelMapByInfos(ImagePlugin::PlImageInfo
         return nullptr;
     }
     pixelMap->SetEditable(saveEditable);
-    pixelMap->UpdatePixelsAlphaType(pixelMap);
+    pixelMap->UpdatePixelsAlphaType();
     // add graphic colorspace object to pixelMap.
     SetPixelMapColorSpace(context, pixelMap, mainDecoder_);
     return pixelMap;
@@ -1674,6 +1679,9 @@ uint32_t ImageSource::ModifyImageProperty(std::shared_ptr<MetadataAccessor> meta
     IMAGE_LOGI("ModifyImageProperty accesssor modify start");
     ret = metadataAccessor->Write();
     IMAGE_LOGI("ModifyImageProperty accesssor modify end");
+    if (!srcFilePath_.empty() && ret == SUCCESS) {
+        RefreshImageSourceByPathName();
+    }
     return ret;
 }
 
@@ -2357,7 +2365,6 @@ uint32_t ImageSource::GetEncodedFormat(const string &formatHint, string &format)
 
     // default return raw image, ERR_IMAGE_MISMATCHED_FORMAT case
     format = InnerFormat::RAW_FORMAT;
-    IMAGE_LOGI("[ImageSource]image default to raw format.");
     return SUCCESS;
 }
 
@@ -3389,6 +3396,7 @@ bool ProcessAstcMetadata(PixelAstc* pixelAstc, size_t astcSize, const AstcMetada
         Size desiredSize = { astcSize, 1 };
         MemoryData memoryData = { nullptr, astcSize, "CreatePixelMapForASTC Data", desiredSize,
                                   pixelAstc->GetPixelFormat() };
+        memoryData.usage = pixelAstc->GetNoPaddingUsage();
         auto dstMemory = MemoryManager::CreateMemory(AllocatorType::DMA_ALLOC, memoryData);
         if (!dstMemory || dstMemory->data.data == nullptr) {
             IMAGE_LOGE("%{public}s CreateMemory failed", __func__);
@@ -3472,12 +3480,6 @@ static bool GetExtInfoForPixelAstc(AstcExtendInfo &extInfo, unique_ptr<PixelAstc
 
 static bool CheckAstcExtInfoBytes(AstcExtendInfo &extInfo, size_t astcSize, size_t fileSize)
 {
-    if (extInfo.extendBufferSumBytes != ASTC_EXTEND_INFO_TLV_SUM_BYTES_L1 &&
-        extInfo.extendBufferSumBytes != ASTC_EXTEND_INFO_TLV_SUM_BYTES_L2 &&
-        extInfo.extendBufferSumBytes < ASTC_EXTEND_INFO_TLV_NUM6_SUM_BYTES) {
-        IMAGE_LOGE("CheckAstcExtInfoBytes extendBufferSumBytes is invalid: %{public}d", extInfo.extendBufferSumBytes);
-        return false;
-    }
     if (extInfo.extendBufferSumBytes + astcSize + ASTC_EXTEND_INFO_SIZE_DEFINITION_LENGTH != fileSize) {
         IMAGE_LOGE("CheckAstcExtInfoBytes extendBufferSumBytes is large than filesize");
         return false;
@@ -3565,6 +3567,9 @@ static bool ReadFileAndResoveAstc(size_t fileSize, size_t astcSize, unique_ptr<P
 #if !(defined(ANDROID_PLATFORM) || defined(IOS_PLATFORM))
     Size desiredSize = {astcSize, 1};
     MemoryData memoryData = {nullptr, astcSize, "CreatePixelMapForASTC Data", desiredSize, pixelAstc->GetPixelFormat()};
+    if (ImageSystemProperties::GetNoPaddingEnabled()) {
+        memoryData.usage = BUFFER_USAGE_PREFER_NO_PADDING;
+    }
     ImageInfo pixelAstcInfo;
     pixelAstc->GetImageInfo(pixelAstcInfo);
     AllocatorType allocatorType = (opts.allocatorType == AllocatorType::DEFAULT) ?
@@ -3985,6 +3990,8 @@ static uint32_t AllocSurfaceBuffer(DecodeContext &context, uint32_t format)
 CM_ColorSpaceType ImageSource::ConvertColorSpaceType(ColorManager::ColorSpaceName colorSpace, bool base)
 {
     switch (colorSpace) {
+        case ColorManager::ColorSpaceName::ADOBE_RGB :
+            return CM_ADOBERGB_FULL;
         case ColorManager::ColorSpaceName::SRGB :
             return CM_SRGB_FULL;
         case ColorManager::ColorSpaceName::SRGB_LIMIT :
@@ -5117,6 +5124,10 @@ bool ImageSource::CheckJpegSourceStream(StreamInfo &streamInfo)
         streamInfo.needDelete = true;
         if (!GetStreamData(sourceStreamPtr_, streamInfo.buffer, streamInfo.size)) {
             IMAGE_LOGE("%{public}s GetStreamData failed!", __func__);
+            if (streamInfo.needDelete && streamInfo.buffer) {
+                delete[] streamInfo.buffer;
+                streamInfo.buffer = nullptr;
+            }
             return false;
         }
     }
@@ -5278,6 +5289,15 @@ void ImageSource::SetSrcBuffer(const uint8_t* buffer, uint32_t size)
 {
     srcBuffer_ = const_cast<uint8_t*>(buffer);
     srcBufferSize_ = size;
+}
+
+void ImageSource::RefreshImageSourceByPathName()
+{
+    unique_ptr<SourceStream> refreshedSourceStreamPtr;
+    refreshedSourceStreamPtr = FileSourceStream::CreateSourceStream(srcFilePath_);
+    if (refreshedSourceStreamPtr != nullptr) {
+        sourceStreamPtr_ = std::move(refreshedSourceStreamPtr);
+    }
 }
 
 } // namespace Media

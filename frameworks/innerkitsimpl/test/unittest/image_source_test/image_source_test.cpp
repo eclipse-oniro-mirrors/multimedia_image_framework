@@ -3192,7 +3192,7 @@ HWTEST_F(ImageSourceTest, WideGamutTest003, TestSize.Level3)
     std::unique_ptr<PixelMap> pixelMap = imageSource->CreatePixelMap(index, decodeOpts, errorCode);
     ASSERT_EQ(errorCode, SUCCESS);
     bool isHdr = pixelMap->IsHdr();
-    ASSERT_EQ(isHdr, false);
+    ASSERT_EQ(isHdr, true);
     Media::PixelFormat pixelFormat = pixelMap->GetPixelFormat();
     ASSERT_EQ(pixelFormat, Media::PixelFormat::RGBA_8888);
 }

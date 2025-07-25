@@ -90,6 +90,44 @@ const std::map<PixelFormat, GraphicPixelFormat> SURFACE_FORMAT_MAP = {
     { PixelFormat::NV21, GRAPHIC_PIXEL_FMT_YCRCB_420_SP },
     { PixelFormat::NV12, GRAPHIC_PIXEL_FMT_YCBCR_420_SP },
 };
+
+#ifdef IMAGE_COLORSPACE_FLAG
+    static const std::map<CM_ColorSpaceType, ColorManager::ColorSpaceName> CM_COLORSPACE_NAME_MAP = {
+        { CM_COLORSPACE_NONE, ColorManager::NONE },
+        { CM_BT601_EBU_FULL, ColorManager::BT601_EBU },
+        { CM_BT601_SMPTE_C_FULL, ColorManager::BT601_SMPTE_C },
+        { CM_BT709_FULL, ColorManager::BT709 },
+        { CM_BT2020_HLG_FULL, ColorManager::BT2020_HLG },
+        { CM_BT2020_PQ_FULL, ColorManager::BT2020_PQ },
+        { CM_BT601_EBU_LIMIT, ColorManager::BT601_EBU_LIMIT },
+        { CM_BT601_SMPTE_C_LIMIT, ColorManager::BT601_SMPTE_C_LIMIT },
+        { CM_BT709_LIMIT, ColorManager::BT709_LIMIT },
+        { CM_BT2020_HLG_LIMIT, ColorManager::BT2020_HLG_LIMIT },
+        { CM_BT2020_PQ_LIMIT, ColorManager::BT2020_PQ_LIMIT },
+        { CM_SRGB_FULL, ColorManager::SRGB },
+        { CM_P3_FULL, ColorManager::DISPLAY_P3 },
+        { CM_P3_HLG_FULL, ColorManager::P3_HLG },
+        { CM_P3_PQ_FULL, ColorManager::P3_PQ },
+        { CM_ADOBERGB_FULL, ColorManager::ADOBE_RGB },
+        { CM_SRGB_LIMIT, ColorManager::SRGB_LIMIT },
+        { CM_P3_LIMIT, ColorManager::DISPLAY_P3_LIMIT },
+        { CM_P3_HLG_LIMIT, ColorManager::P3_HLG_LIMIT },
+        { CM_P3_PQ_LIMIT, ColorManager::P3_PQ_LIMIT },
+        { CM_ADOBERGB_LIMIT, ColorManager::ADOBE_RGB_LIMIT },
+        { CM_LINEAR_SRGB, ColorManager::LINEAR_SRGB },
+        { CM_LINEAR_BT709, ColorManager::LINEAR_BT709 },
+        { CM_LINEAR_P3, ColorManager::LINEAR_P3 },
+        { CM_LINEAR_BT2020, ColorManager::LINEAR_BT2020 },
+        { CM_DISPLAY_SRGB, ColorManager::DISPLAY_SRGB },
+        { CM_DISPLAY_P3_SRGB, ColorManager::DISPLAY_P3_SRGB },
+        { CM_DISPLAY_P3_HLG, ColorManager::DISPLAY_P3_HLG },
+        { CM_DISPLAY_P3_PQ, ColorManager::DISPLAY_P3_PQ },
+        { CM_DISPLAY_BT2020_SRGB, ColorManager::DISPLAY_BT2020_SRGB },
+        { CM_DISPLAY_BT2020_HLG, ColorManager::DISPLAY_BT2020_HLG },
+        { CM_DISPLAY_BT2020_PQ, ColorManager::DISPLAY_BT2020_PQ },
+    };
+#endif
+
 #endif
 
 namespace {
@@ -174,7 +212,7 @@ static const uint8_t NUM_3 = 3;
 static const uint8_t NUM_4 = 4;
 static const uint8_t RGBA_BIT_DEPTH = 4;
 
-static constexpr int32_t MAX_IMAGE_SIZE = 8196;
+static constexpr int32_t MAX_IMAGE_SIZE = 32768;
 static constexpr int32_t MIN_IMAGE_SIZE = 128;
 static constexpr int32_t MIN_RGBA_IMAGE_SIZE = 1024;
 
@@ -280,6 +318,41 @@ static SkImageInfo ToSkInfo(Media::PixelMap *pixelMap)
     }
 #endif
     return SkImageInfo::Make(info.size.width, info.size.height, colorType, alphaType, colorSpace);
+}
+
+static sk_sp<SkColorSpace> ToHdrEncodeSkColorSpace(Media::PixelMap *pixelmap,
+    sptr<SurfaceBuffer>& buffer, bool sdrIsSRGB, bool isGainmap)
+{
+#ifdef IMAGE_COLORSPACE_FLAG
+    // get graphic colorspace
+    ColorManager::ColorSpaceName graphicColorSpaceName = ColorManager::ColorSpaceName::SRGB;
+#if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
+    CM_ColorSpaceType color;
+    VpeUtils::GetSbColorSpaceType(buffer, color);
+    auto iter = CM_COLORSPACE_NAME_MAP.find(color);
+    if (iter != CM_COLORSPACE_NAME_MAP.end()) {
+        graphicColorSpaceName = iter->second;
+    }
+#endif
+    skcms_CICP cicp;
+    ColorUtils::ColorSpaceGetCicp(graphicColorSpaceName,
+    #ifdef USE_M133_SKIA
+        cicp.color_primaries, cicp.transfer_characteristics, cicp.matrix_coefficients, cicp.video_full_range_flag);
+#else
+        cicp.colour_primaries, cicp.transfer_characteristics, cicp.matrix_coefficients, cicp.full_range_flag);
+#endif
+    sk_sp<SkColorSpace> colorSpace =
+        SkColorSpace::MakeRGB(SkNamedTransferFn::kSRGB, sdrIsSRGB? SkNamedGamut::kSRGB : SkNamedGamut::kDisplayP3);
+    if (isGainmap) {
+        colorSpace = SkColorSpace::MakeRGB(SkNamedTransferFn::kRec2020, SkNamedGamut::kRec2020);
+        if (pixelmap->InnerGetGrColorSpacePtr() != nullptr &&
+            pixelmap->InnerGetGrColorSpace().GetColorSpaceName() != ColorManager::ColorSpaceName::NONE) {
+            colorSpace = pixelmap->InnerGetGrColorSpacePtr()->ToSkColorSpace();
+        }
+    }
+    colorSpace->SetIccCicp(cicp);
+    return colorSpace;
+#endif
 }
 
 static uint32_t RGBToRGBx(PixelMap *pixelMap, SkImageInfo &skInfo, TmpBufferHolder &holder)
@@ -762,6 +835,17 @@ sptr<SurfaceBuffer> ExtEncoder::ConvertToSurfaceBuffer(PixelMap* pixelmap)
     return surfaceBuffer;
 }
 
+sptr<SurfaceBuffer> ExtEncoder::ConvertPixelMapToDmaBuffer(std::shared_ptr<PixelMap> pixelmap)
+{
+    sptr<SurfaceBuffer> surfaceBuffer;
+    if (pixelmap->GetAllocatorType() != AllocatorType::DMA_ALLOC) {
+        surfaceBuffer = ConvertToSurfaceBuffer(pixelmap.get());
+    } else {
+        surfaceBuffer = sptr<SurfaceBuffer>(reinterpret_cast<SurfaceBuffer*>(pixelmap->GetFd()));
+    }
+    return surfaceBuffer;
+}
+
 static void FreeBaseAndGainMapSurfaceBuffer(sptr<SurfaceBuffer>& base, sptr<SurfaceBuffer>& gainMap)
 {
     ImageUtils::SurfaceBuffer_Unreference(base.GetRefPtr());
@@ -903,8 +987,7 @@ static SkImageInfo GetSkInfo(PixelMap* pixelMap, bool isGainmap, bool isSRGB = f
 #ifdef IMAGE_COLORSPACE_FLAG
         if (pixelMap->InnerGetGrColorSpacePtr() != nullptr &&
             pixelMap->InnerGetGrColorSpace().GetColorSpaceName() != ColorManager::ColorSpaceName::NONE) {
-            auto gainMapColorSpace = OHOS::ColorManager::ColorSpace(OHOS::ColorManager::ColorSpaceName::DISPLAY_P3);
-            colorSpace = gainMapColorSpace.ToSkColorSpace();
+            colorSpace = pixelMap->InnerGetGrColorSpacePtr()->ToSkColorSpace();
         }
         skcms_CICP cicp;
         ColorUtils::ColorSpaceGetCicp(pixelMap->InnerGetGrColorSpace().GetColorSpaceName(),
@@ -915,6 +998,25 @@ static SkImageInfo GetSkInfo(PixelMap* pixelMap, bool isGainmap, bool isSRGB = f
 #endif
         colorSpace->SetIccCicp(cicp);
 #endif
+    }
+    return SkImageInfo::Make(width, height, colorType, alphaType, colorSpace);
+}
+
+static SkImageInfo GetSkInfo(PixelMap* pixelMap, bool isGainmap, sk_sp<SkColorSpace>& colorSpace)
+{
+    ImageInfo info;
+    pixelMap->GetImageInfo(info);
+    SkColorType colorType = kRGBA_8888_SkColorType;
+    SkAlphaType alphaType = ImageTypeConverter::ToSkAlphaType(info.alphaType);
+    if (alphaType == SkAlphaType::kUnknown_SkAlphaType) {
+        alphaType = SkAlphaType::kOpaque_SkAlphaType;
+    }
+    int32_t width = info.size.width;
+    int32_t height = info.size.height;
+    if (isGainmap) {
+        const int halfSizeDenominator = 2;
+        width = width / halfSizeDenominator;
+        height = height / halfSizeDenominator;
     }
     return SkImageInfo::Make(width, height, colorType, alphaType, colorSpace);
 }
@@ -1215,10 +1317,8 @@ uint32_t ExtEncoder::AssembleHeifAuxiliaryNoncodingMap(std::vector<ImageItem>& i
 uint32_t ExtEncoder::AssembleHeifUnrefocusMap(std::vector<ImageItem>& inputImgs)
 {
     auto unrefocusMap = picture_->GetAuxiliaryPicture(AuxiliaryPictureType::UNREFOCUS_MAP);
-    bool cond = !unrefocusMap || !unrefocusMap->GetContentPixel() ||
-        unrefocusMap->GetContentPixel()->GetAllocatorType() != AllocatorType::DMA_ALLOC;
-    CHECK_ERROR_RETURN_RET_LOG(cond, ERR_IMAGE_INVALID_PARAMETER,
-        "%{public}s The unrefocusMap is nullptr or allocator type is not DMA_ALLOC", __func__);
+    bool cond = !unrefocusMap || !unrefocusMap->GetContentPixel();
+    CHECK_ERROR_RETURN_RET_LOG(cond, ERR_IMAGE_INVALID_PARAMETER, "%{public}s The unrefocusMap is nullptr", __func__);
     HeifEncodeItemInfo itemInfo = GetHeifEncodeItemInfo(AuxiliaryPictureType::UNREFOCUS_MAP);
     auto item = InitAuxiliaryImageItem(itemInfo.itemId, itemInfo.itemName);
     bool sdrIsSRGB = unrefocusMap->GetContentPixel()->GetToSdrColorSpaceIsSRGB();
@@ -1231,7 +1331,7 @@ uint32_t ExtEncoder::AssembleHeifUnrefocusMap(std::vector<ImageItem>& inputImgs)
     cond = !AssembleICCImageProperty(iccProfile, item.sharedProperties);
     CHECK_ERROR_RETURN_RET_LOG(cond, ERR_IMAGE_INVALID_PARAMETER,
         "%{public}s AssembleICCImageProperty failed", __func__);
-    sptr<SurfaceBuffer> unrefocusMapSptr(reinterpret_cast<SurfaceBuffer*>(unrefocusMap->GetContentPixel()->GetFd()));
+    sptr<SurfaceBuffer> unrefocusMapSptr = ConvertPixelMapToDmaBuffer(unrefocusMap->GetContentPixel());
     cond = !unrefocusMapSptr;
     CHECK_ERROR_RETURN_RET_LOG(cond, ERR_IMAGE_INVALID_PARAMETER, "%{public}s unrefocusMapSptr is nullptr", __func__);
     item.pixelBuffer = sptr<NativeBuffer>::MakeSptr(unrefocusMapSptr->GetBufferHandle());
@@ -1273,11 +1373,9 @@ RelativeLocation GetFragmentRelLocation(std::shared_ptr<AuxiliaryPicture> &fragm
 uint32_t ExtEncoder::AssembleHeifFragmentMap(std::vector<ImageItem>& inputImgs)
 {
     auto fragmentMap = picture_->GetAuxiliaryPicture(AuxiliaryPictureType::FRAGMENT_MAP);
-    bool cond = !fragmentMap || !fragmentMap->GetContentPixel() ||
-        fragmentMap->GetContentPixel()->GetAllocatorType() != AllocatorType::DMA_ALLOC;
-    CHECK_ERROR_RETURN_RET_LOG(cond, ERR_IMAGE_INVALID_PARAMETER,
-        "%{public}s The fragmentMap is nullptr or allocator type is not DMA_ALLOC", __func__);
-    sptr<SurfaceBuffer> fragmentMapSptr(reinterpret_cast<SurfaceBuffer*>(fragmentMap->GetContentPixel()->GetFd()));
+    bool cond = !fragmentMap || !fragmentMap->GetContentPixel();
+    CHECK_ERROR_RETURN_RET_LOG(cond, ERR_IMAGE_INVALID_PARAMETER, "%{public}s The fragmentMap is nullptr", __func__);
+    sptr<SurfaceBuffer> fragmentMapSptr = ConvertPixelMapToDmaBuffer(fragmentMap->GetContentPixel());
     cond = !fragmentMapSptr;
     CHECK_ERROR_RETURN_RET_LOG(cond, ERR_IMAGE_INVALID_PARAMETER, "%{public}s fragmentMapSptr is nullptr", __func__);
     HeifEncodeItemInfo itemInfo = GetHeifEncodeItemInfo(AuxiliaryPictureType::FRAGMENT_MAP);
@@ -1313,49 +1411,76 @@ uint32_t ExtEncoder::AssembleHeifFragmentMap(std::vector<ImageItem>& inputImgs)
 }
 #endif
 
-uint32_t ExtEncoder::EncodeDualVivid(ExtWStream& outputStream)
+uint32_t DecomposeDualVivid(VpeSurfaceBuffers& buffers, Media::PixelMap *pixelmap,
+    SkEncodedImageFormat format, HdrMetadata& metadata)
 {
-    IMAGE_LOGD("ExtEncoder::EncodeDualVivid");
-    if (!pixelmap_->IsHdr() ||
-        pixelmap_->GetAllocatorType() != AllocatorType::DMA_ALLOC ||
-        (encodeFormat_ != SkEncodedImageFormat::kJPEG && encodeFormat_ != SkEncodedImageFormat::kHEIF)) {
+    if (pixelmap == nullptr) {
         return ERR_IMAGE_INVALID_PARAMETER;
     }
-    bool sdrIsSRGB = pixelmap_->GetToSdrColorSpaceIsSRGB();
-    SkImageInfo baseInfo = GetSkInfo(pixelmap_, false, sdrIsSRGB);
-    SkImageInfo gainmapInfo = GetSkInfo(pixelmap_, true, sdrIsSRGB);
-    sptr<SurfaceBuffer> baseSptr = AllocSurfaceBuffer(baseInfo.width(), baseInfo.height());
-    sptr<SurfaceBuffer> gainMapSptr = AllocSurfaceBuffer(gainmapInfo.width(), gainmapInfo.height());
-    bool cond = baseSptr == nullptr || gainMapSptr == nullptr;
+    if (!pixelmap->IsHdr() || pixelmap->GetAllocatorType() != AllocatorType::DMA_ALLOC ||
+        (format != SkEncodedImageFormat::kJPEG && format != SkEncodedImageFormat::kHEIF)) {
+        return ERR_IMAGE_INVALID_PARAMETER;
+    }
+    bool sdrIsSRGB = pixelmap->GetToSdrColorSpaceIsSRGB();
+    sptr<SurfaceBuffer> hdrSurfaceBuffer(reinterpret_cast<SurfaceBuffer*> (pixelmap->GetFd()));
+    sptr<SurfaceBuffer> baseSptr = AllocSurfaceBuffer(hdrSurfaceBuffer->GetWidth(),
+        hdrSurfaceBuffer->GetHeight());
+    const int halfSizeDenominator = 2;
+    sptr<SurfaceBuffer> gainmapSptr = AllocSurfaceBuffer(hdrSurfaceBuffer->GetWidth() / halfSizeDenominator,
+        hdrSurfaceBuffer->GetHeight() / halfSizeDenominator);
+    bool cond = baseSptr == nullptr || gainmapSptr == nullptr;
     CHECK_ERROR_RETURN_RET(cond, IMAGE_RESULT_CREATE_SURFAC_FAILED);
-    HdrMetadata metadata;
-    sptr<SurfaceBuffer> hdrSurfaceBuffer(reinterpret_cast<SurfaceBuffer*> (pixelmap_->GetFd()));
-    SetHdrColorSpaceType(hdrSurfaceBuffer);
+    CM_ColorSpaceType colorspaceType;
+    VpeUtils::GetSbColorSpaceType(hdrSurfaceBuffer, colorspaceType);
+    if ((colorspaceType & CM_PRIMARIES_MASK) != COLORPRIMARIES_BT2020) {
+#ifdef IMAGE_COLORSPACE_FLAG
+        ColorManager::ColorSpaceName colorspace = pixelmap->InnerGetGrColorSpace().GetColorSpaceName();
+        IMAGE_LOGI("ExtEncoder SetHdrColorSpaceType, color is %{public}d", colorspace);
+        colorspaceType = ColorUtils::ConvertToCMColor(colorspace);
+        VpeUtils::SetSbColorSpaceType(hdrSurfaceBuffer, colorspaceType);
+#endif
+    }
     CM_HDR_Metadata_Type hdrMetadataType;
     VpeUtils::GetSbMetadataType(hdrSurfaceBuffer, hdrMetadataType);
     VpeUtils::SetSbMetadataType(hdrSurfaceBuffer, CM_IMAGE_HDR_VIVID_SINGLE);
-    VpeSurfaceBuffers buffers = {
-        .sdr = baseSptr,
-        .gainmap = gainMapSptr,
-        .hdr = hdrSurfaceBuffer,
-    };
+    buffers.sdr = baseSptr;
+    buffers.gainmap = gainmapSptr;
+    buffers.hdr = hdrSurfaceBuffer;
     if (!DecomposeImage(buffers, metadata, false, sdrIsSRGB)) {
         IMAGE_LOGE("HDR-IMAGE EncodeDualVivid decomposeImage failed");
-        FreeBaseAndGainMapSurfaceBuffer(baseSptr, gainMapSptr);
+        FreeBaseAndGainMapSurfaceBuffer(baseSptr, gainmapSptr);
         return IMAGE_RESULT_CREATE_SURFAC_FAILED;
     }
     metadata.hdrMetadataType = static_cast<int32_t>(hdrMetadataType);
+    return SUCCESS;
+}
+
+uint32_t ExtEncoder::EncodeDualVivid(ExtWStream& outputStream)
+{
+    IMAGE_LOGD("ExtEncoder::EncodeDualVivid");
+    VpeSurfaceBuffers buffers;
+    HdrMetadata metadata;
+    if (DecomposeDualVivid(buffers, pixelmap_, encodeFormat_, metadata) != SUCCESS) {
+        return IMAGE_RESULT_CREATE_SURFAC_FAILED;
+    }
+    // get sdr baseInfo
+    bool sdrIsSRGB = pixelmap_->GetToSdrColorSpaceIsSRGB();
+    sk_sp<SkColorSpace> colorSpace = ToHdrEncodeSkColorSpace(pixelmap_, buffers.sdr, sdrIsSRGB, false);
+    SkImageInfo baseInfo = GetSkInfo(pixelmap_, false, colorSpace);
+    // get gainmap baseInfo
+    sk_sp<SkColorSpace> gainmapColorSpace = ToHdrEncodeSkColorSpace(pixelmap_, buffers.gainmap, sdrIsSRGB, true);
+    SkImageInfo gainmapInfo = GetSkInfo(pixelmap_, true, gainmapColorSpace);
     uint32_t error;
     if (encodeFormat_ == SkEncodedImageFormat::kJPEG) {
-        sk_sp<SkData> baseImageData = GetImageEncodeData(baseSptr, baseInfo, opts_.needsPackProperties);
-        sk_sp<SkData> gainMapImageData = GetImageEncodeData(gainMapSptr, gainmapInfo, false);
+        sk_sp<SkData> baseImageData = GetImageEncodeData(buffers.sdr, baseInfo, opts_.needsPackProperties);
+        sk_sp<SkData> gainMapImageData = GetImageEncodeData(buffers.gainmap, gainmapInfo, false);
         error = HdrJpegPackerHelper::SpliceHdrStream(baseImageData, gainMapImageData, outputStream, metadata);
     } else if (encodeFormat_ == SkEncodedImageFormat::kHEIF) {
-        error = EncodeHeifDualHdrImage(baseSptr, gainMapSptr, metadata);
+        error = EncodeHeifDualHdrImage(buffers.sdr, buffers.gainmap, metadata);
     } else {
         error = ERR_IMAGE_INVALID_PARAMETER;
     }
-    FreeBaseAndGainMapSurfaceBuffer(baseSptr, gainMapSptr);
+    FreeBaseAndGainMapSurfaceBuffer(buffers.sdr, buffers.gainmap);
     return error;
 }
 

@@ -983,45 +983,54 @@ bool AllocMemForExtInfo(AstcExtendInfo &extendInfo, uint8_t idx)
 
 bool AstcCodec::FillMetaData(AstcExtendInfo &extendInfo, PixelMap *astcPixelMap)
 {
-    if (astcPixelMap == nullptr || astcPixelMap->GetFd() == nullptr) {
-        IMAGE_LOGE("[AstcCodec] astcPixelMap is nullptr!");
+    if (astcPixelMap == nullptr || astcPixelMap->GetFd() == nullptr ||
+        astcPixelMap->GetAllocatorType() != AllocatorType::DMA_ALLOC) {
+        IMAGE_LOGE("[AstcCodec] astcPixelMap is invalid!");
         return false;
     }
     if (!astcPixelMap->IsHdr()) {
         return false; // No need to fill metadata for SDR
     }
     sptr<SurfaceBuffer> source(reinterpret_cast<SurfaceBuffer *>(astcPixelMap->GetFd()));
-    bool success = true;
+    bool baseMetadataSuccess = true;
+    bool vpeMetadataSuccess = true;  // Track static/dynamic metadata status separately
 
     auto CheckResult = [&](GSError status, const char* metadataName) {
         if (status != GSERROR_OK) {
-            IMAGE_LOGE("[AstcCodec] GetMetadata %s failed: %d", metadataName, status);
-            success = false;
+            IMAGE_LOGE("[AstcCodec] GetMetadata %{public}s failed: %{public}d", metadataName, status);
+            baseMetadataSuccess = false;
         }
     };
     CheckResult(source->GetMetadata(ATTRKEY_HDR_METADATA_TYPE,
-               extendInfo.astcMetadata.hdrMetadataTypeVec),
-               "ATTRKEY_HDR_METADATA_TYPE");
+               extendInfo.astcMetadata.hdrMetadataTypeVec), "ATTRKEY_HDR_METADATA_TYPE");
     CheckResult(source->GetMetadata(ATTRKEY_COLORSPACE_INFO,
-               extendInfo.astcMetadata.colorSpaceInfoVec),
-               "ATTRKEY_COLORSPACE_INFO");
+               extendInfo.astcMetadata.colorSpaceInfoVec), "ATTRKEY_COLORSPACE_INFO");
+    // Check if required metadata is filled
+    if (!baseMetadataSuccess) {
+        IMAGE_LOGE("[AstcCodec] Critical base metadata missing!");
+        return false;
+    }
 
     auto CheckVpeResult = [&](bool result, const char* metadataName, auto& dataVec) {
         if (!result || dataVec.empty()) {
-            IMAGE_LOGE("[AstcCodec] %s failed or empty", metadataName);
-            success = false;
+            IMAGE_LOGE("[AstcCodec] %{public}s failed or empty", metadataName);
+            vpeMetadataSuccess = false;  // Only marking failures does not affect the basic metadata status
         }
     };
+    // Check static/dynamic metadata (non critical)
     CheckVpeResult(VpeUtils::GetSbStaticMetadata(source, extendInfo.astcMetadata.staticData),
                   "GetSbStaticMetadata", extendInfo.astcMetadata.staticData);
     CheckVpeResult(VpeUtils::GetSbDynamicMetadata(source, extendInfo.astcMetadata.dynamicData),
                   "GetSbDynamicMetadata", extendInfo.astcMetadata.dynamicData);
 
-    // Check if all required metadata is filled
-    if (!success) {
-        IMAGE_LOGE("[AstcCodec] FillMetaData incomplete, some metadata missing");
-    }
-    return success;
+    // Dynamically set extendNums based on VP metadata results
+    extendInfo.extendNums = vpeMetadataSuccess ? ASTC_EXTEND_INFO_TLV_NUM_6 : ASTC_EXTEND_INFO_TLV_NUM_4;
+
+    IMAGE_LOGI("[AstcCodec] HDR metadata: base=%{public}s, VP=%{public}s, using extendNums=%{public}d",
+               baseMetadataSuccess ? "success" : "fail",
+               vpeMetadataSuccess ? "success" : "fail",
+               extendInfo.extendNums);
+    return true;
 }
 
 bool AstcCodec::InitAstcExtendInfo(AstcExtendInfo &extendInfo)
