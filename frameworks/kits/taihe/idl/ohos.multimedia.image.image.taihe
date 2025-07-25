@@ -14,7 +14,7 @@
  */
 
 @!namespace("@ohos.multimedia.image", "image")
-
+@!sts_export_default
 @!sts_inject("""
 static { loadLibrary("image_taihe_core.z"); }
 """)
