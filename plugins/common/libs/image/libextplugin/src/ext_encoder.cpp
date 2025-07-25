@@ -449,6 +449,16 @@ static uint32_t CreateAndWriteBlob(MetadataWStream &tStream, PixelMap *pixelmap,
     return SUCCESS;
 }
 
+bool IsWideGamutSdrPixelMap(Media::PixelMap *pixelmap)
+{
+#ifdef IMAGE_COLORSPACE_FLAG
+    return pixelmap->InnerGetGrColorSpace().GetColorSpaceName() ==
+        OHOS::ColorManager::ColorSpaceName::DISPLAY_BT2020_SRGB ? true : false;
+#else
+    return false;
+#endif
+}
+
 uint32_t ExtEncoder::PixelmapEncode(ExtWStream& wStream)
 {
     uint32_t error;
@@ -458,7 +468,7 @@ uint32_t ExtEncoder::PixelmapEncode(ExtWStream& wStream)
 #else
     switch (opts_.desiredDynamicRange) {
         case EncodeDynamicRange::AUTO:
-            if (pixelmap_->IsHdr() &&
+            if ((pixelmap_->IsHdr() || IsWideGamutSdrPixelMap(pixelmap_)) &&
                 (encodeFormat_ == SkEncodedImageFormat::kJPEG || encodeFormat_ == SkEncodedImageFormat::kHEIF)) {
                 error = EncodeDualVivid(wStream);
             } else {
@@ -1410,7 +1420,8 @@ uint32_t DecomposeDualVivid(VpeSurfaceBuffers& buffers, Media::PixelMap *pixelma
     if (pixelmap == nullptr) {
         return ERR_IMAGE_INVALID_PARAMETER;
     }
-    if (!pixelmap->IsHdr() || pixelmap->GetAllocatorType() != AllocatorType::DMA_ALLOC ||
+    if ((!pixelmap->IsHdr() && !IsWideGamutSdrPixelMap(pixelmap)) ||
+        pixelmap->GetAllocatorType() != AllocatorType::DMA_ALLOC ||
         (format != SkEncodedImageFormat::kJPEG && format != SkEncodedImageFormat::kHEIF)) {
         return ERR_IMAGE_INVALID_PARAMETER;
     }
@@ -1480,7 +1491,7 @@ uint32_t ExtEncoder::EncodeDualVivid(ExtWStream& outputStream)
 uint32_t ExtEncoder::EncodeSdrImage(ExtWStream& outputStream)
 {
     IMAGE_LOGD("ExtEncoder EncodeSdrImage");
-    if (!pixelmap_->IsHdr()) {
+    if (!pixelmap_->IsHdr() && !IsWideGamutSdrPixelMap(pixelmap_)) {
         return EncodeImageByPixelMap(pixelmap_, opts_.needsPackProperties, outputStream);
     }
     bool cond = pixelmap_->GetAllocatorType() != AllocatorType::DMA_ALLOC;
