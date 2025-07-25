@@ -627,18 +627,6 @@ Image_ErrorCode OH_PixelmapImageInfo_GetAlphaType(OH_Pixelmap_ImageInfo *info, i
 Image_ErrorCode OH_PixelmapImageInfo_GetDynamicRange(OH_Pixelmap_ImageInfo *info, bool *isHdr);
 
 /**
- * @brief Get mime type from imageinfo struct.
- *
- * @param info The imageinfo pointer will be operated.
- * @param mimeType The mime type of the image.
- * @return Returns {@link Image_ErrorCode} IMAGE_SUCCESS - if the operation is successful.
- * returns {@link Image_ErrorCode} IMAGE_BAD_PARAMETER - if invalid parameter, info or mimeType is nullptr.
- * returns {@link Image_ErrorCode} IMAGE_UNKNOWN_MIME_TYPE - if the mimeType data in imageinfo is nullptr.
- * @since 16
- */
-Image_ErrorCode OH_PixelmapImageInfo_GetMimeType(OH_Pixelmap_ImageInfo *info, Image_MimeType *mimeType);
-
-/**
  * @brief Delete imageinfo struct pointer.
  *
  * @param info The imageinfo pointer will be operated.

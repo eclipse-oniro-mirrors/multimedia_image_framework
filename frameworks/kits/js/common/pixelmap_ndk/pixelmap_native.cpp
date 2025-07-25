@@ -435,19 +435,6 @@ Image_ErrorCode OH_PixelmapImageInfo_GetDynamicRange(OH_Pixelmap_ImageInfo *info
 }
 
 MIDK_EXPORT
-Image_ErrorCode OH_PixelmapImageInfo_GetMimeType(OH_Pixelmap_ImageInfo *info, Image_MimeType *mimeType)
-{
-    if (info == nullptr || mimeType == nullptr) {
-        return IMAGE_BAD_PARAMETER;
-    }
-    if (info->mimeType.data == nullptr || info->mimeType.size == 0) {
-        return IMAGE_UNKNOWN_MIME_TYPE;
-    }
-    *mimeType = info->mimeType;
-    return IMAGE_SUCCESS;
-}
-
-MIDK_EXPORT
 Image_ErrorCode OH_PixelmapImageInfo_Release(OH_Pixelmap_ImageInfo *info)
 {
     if (info == nullptr) {
