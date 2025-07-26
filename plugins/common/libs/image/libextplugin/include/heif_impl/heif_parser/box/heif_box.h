@@ -62,6 +62,9 @@ public:
     std::shared_ptr<T> GetChild(uint32_t boxType) const
     {
         for (auto &box: children_) {
+            if (box == nullptr) {
+                return nullptr;
+            }
             if (box->GetBoxType() == boxType) {
                 return std::dynamic_pointer_cast<T>(box);
             }
