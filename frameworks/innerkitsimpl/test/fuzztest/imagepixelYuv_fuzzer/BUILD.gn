@@ -24,10 +24,17 @@ config("image_external_config") {
 ohos_fuzztest("ImagePixelYuvFuzzTest") {
   public_configs = [ ":image_external_config" ]
   sources = [ "src/image_pixelyuv_fuzzer.cpp" ]
-  deps = [ "$image_subsystem/interfaces/innerkits:image_native" ]
+  deps = [
+    "$image_subsystem/frameworks/innerkitsimpl/utils:image_utils",
+    "$image_subsystem/interfaces/innerkits:image_native",
+    ]
   external_deps = [
     "c_utils:utils",
     "hilog:libhilog",
+    "ipc:ipc_core",
+  ]
+  cflags = [
+    "-Dprotected=public",
   ]
   fuzz_config_file = "$image_subsystem/frameworks/innerkitsimpl/test/fuzztest/imagepixelYuv_fuzzer"
   module_out_path = "multimedia_image/image_framework"

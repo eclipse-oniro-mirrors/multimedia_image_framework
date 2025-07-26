@@ -12,9 +12,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 #ifndef IMAGE_FWK_CONVERT_P010YUV2RGB_EXT_FUZZER_H
 #define IMAGE_FWK_CONVERT_P010YUV2RGB_EXT_FUZZER_H
 
 #define FUZZ_PROJECT_NAME "image_fwk_convert_p010yuv2rgb_ext_fuzzer"
-#endif
+#endif
