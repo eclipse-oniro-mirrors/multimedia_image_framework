@@ -340,7 +340,7 @@ bool CreatePixelMapUseArgbByRandomImageSource(const uint8_t *data, size_t size)
         EncodePixelMapTest(pixelMap, formats[index], IMAGE_ENCODE_DEST);
     }
     ImageInfo info;
-    if (pixelMap == nullptr) {
+    if (pixelMap != nullptr) {
         pixelMap->GetImageInfo(info);
     }
     std::shared_ptr<AuxiliaryPicture> auxPicture =

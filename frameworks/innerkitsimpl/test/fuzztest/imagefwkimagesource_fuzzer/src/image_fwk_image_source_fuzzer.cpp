@@ -382,7 +382,7 @@ bool CreatePixelMapUseArgbByRandomImageSource(const uint8_t *data, size_t size)
     dopts.allocatorType = imageSource->ConvertAutoAllocatorType(dopts);
     pixelMap = imageSource->CreatePixelMap(0, dopts, errorCode);
     ImageInfo info;
-    if (pixelMap == nullptr) {
+    if (pixelMap != nullptr) {
         pixelMap->GetImageInfo(info);
     }
     std::shared_ptr<AuxiliaryPicture> auxPicture = AuxiliaryPicture::Create(pixelMap,
