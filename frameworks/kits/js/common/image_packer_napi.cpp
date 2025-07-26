@@ -76,6 +76,7 @@ const int32_t TYPE_IMAGE_SOURCE = 1;
 const int32_t TYPE_PIXEL_MAP = 2;
 const int32_t TYPE_PICTURE = 3;
 const int32_t TYPE_ARRAY = 4;
+const int32_t TYPE_INVALID = 5;
 const int64_t DEFAULT_BUFFER_SIZE = 25 * 1024 * 1024; // 25M is the maximum default packedSize
 const int MASK_3 = 0x3;
 const int MASK_16 = 0xffff;
@@ -839,7 +840,7 @@ static int32_t ParserPackingArgumentType(napi_env env, napi_value argv)
 #endif
 
     IMAGE_LOGE("Invalid type!");
-    return TYPE_IMAGE_SOURCE;
+    return TYPE_INVALID;
 }
 
 static std::shared_ptr<ImageSource> GetImageSourceFromNapi(napi_env env, napi_value value)
@@ -891,6 +892,8 @@ static void ParserPackingArguments(napi_env env,
         context->rPixelMaps = PixelMapNapi::GetPixelMaps(env, argv[PARAM0]);
         BuildMsgOnError(context, context->rPixelMaps != nullptr,
             "PixelMap mismatch", COMMON_ERR_INVALID_PARAMETER);
+    } else {
+        BuildMsgOnError(context, false, "Invalid Parameter", ERR_IMAGE_INVALID_PARAMETER);
     }
     if (argc > PARAM1 && ImageNapiUtils::getType(env, argv[PARAM1]) == napi_object) {
         if (context->packType == TYPE_ARRAY) {
@@ -1077,6 +1080,8 @@ static void ParserPackToFileArguments(napi_env env,
     } else if (context->packType == TYPE_ARRAY) {
         context->rPixelMaps = PixelMapNapi::GetPixelMaps(env, argv[PARAM0]);
         BuildMsgOnError(context, context->rPixelMaps != nullptr, "PixelMap mismatch", COMMON_ERR_INVALID_PARAMETER);
+    } else {
+        BuildMsgOnError(context, false, "Invalid Parameter", ERR_IMAGE_INVALID_PARAMETER);
     }
     if (argc > PARAM1 && ImageNapiUtils::getType(env, argv[PARAM1]) == napi_number) {
         uint32_t errorCode = ((context->packType == TYPE_PICTURE ||
