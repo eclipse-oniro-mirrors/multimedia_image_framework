@@ -2528,6 +2528,8 @@ uint32_t ExtDecoder::DoHeifToSingleHdrDecode(DecodeContext &context)
     }
 
     auto dstBuffer = reinterpret_cast<SurfaceBuffer*>(context.pixelsBuffer.context);
+    bool cond = dstBuffer == nullptr;
+    CHECK_ERROR_RETURN_RET_LOG(cond, ERR_IMAGE_DATA_UNSUPPORT, "SingleHdrDecode, dstBuffer is nullptr");
     SkHeifColorFormat heifFormat = kHeifColorFormat_RGBA_1010102;
     auto formatSearch = HEIF_FORMAT_MAP.find(context.info.pixelFormat);
     heifFormat = (formatSearch != HEIF_FORMAT_MAP.end()) ? formatSearch->second : kHeifColorFormat_RGBA_1010102;
