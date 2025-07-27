@@ -891,6 +891,8 @@ Media::PixelFormat GetDecodeHeifFormat(std::shared_ptr<HeifImage> &heifImage)
 bool HeifDecoderImpl::DoSwDecodeAuxiliaryImage(std::shared_ptr<HeifImage> &gainmapImage, GridInfo &gainmapgridInfo,
     sptr<SurfaceBuffer> &output, sptr<SurfaceBuffer> *outputBuf)
 {
+    bool cond = (output == nullptr || outputBuf == nullptr);
+    CHECK_ERROR_RETURN_RET(cond, false);
     PixelFormat gainmapSrcFmt = GetDecodeHeifFormat(gainmapImage);
     PixelFormat gainmapDstFmt = PixelFormat::UNKNOWN;
     if (gainmapSrcFmt == PixelFormat::UNKNOWN) {
@@ -910,7 +912,7 @@ bool HeifDecoderImpl::DoSwDecodeAuxiliaryImage(std::shared_ptr<HeifImage> &gainm
     }
     OH_NativeBuffer_Planes *dataPlanesInfo = nullptr;
     output->GetPlanesInfo((void **)&dataPlanesInfo);
-    bool cond = (dataPlanesInfo == nullptr);
+    cond = (dataPlanesInfo == nullptr);
     CHECK_ERROR_RETURN_RET_LOG(cond, false, "failed to get src buffer planes info.");
     void *nativeBuffer = output.GetRefPtr();
     int32_t err = ImageUtils::SurfaceBuffer_Reference(nativeBuffer);

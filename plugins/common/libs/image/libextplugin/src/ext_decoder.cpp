@@ -51,7 +51,6 @@
 #ifdef HEIF_HW_DECODE_ENABLE
 #include "heif_impl/HeifDecoder.h"
 #include "heif_impl/HeifDecoderImpl.h"
-#include "hardware/heif_hw_decoder.h"
 #endif
 #include "color_utils.h"
 #include "heif_parser.h"
@@ -412,8 +411,8 @@ uint32_t ExtDecoder::HeifYUVMemAlloc(OHOS::ImagePlugin::DecodeContext &context, 
         uint32_t uvPlaneIndex = (context.info.pixelFormat == PixelFormat::NV12 ||
                 context.info.pixelFormat == PixelFormat::YCBCR_P010) ? NUM_1 : NUM_2;
         context.yuvInfo.imageSize = { heifInfo.width(), heifInfo.height() };
-        context.yuvInfo.yWidth = heifInfo.width();
-        context.yuvInfo.yHeight = heifInfo.height();
+        context.yuvInfo.yWidth = static_cast<uint32_t>(heifInfo.width());
+        context.yuvInfo.yHeight = static_cast<uint32_t>(heifInfo.height());
         context.yuvInfo.uvWidth = static_cast<uint32_t>((heifInfo.width() + 1) / NUM_2);
         context.yuvInfo.uvHeight = static_cast<uint32_t>((heifInfo.height() + 1) / NUM_2);
         context.yuvInfo.yStride = planes->planes[0].columnStride;
@@ -1012,7 +1011,7 @@ uint32_t ExtDecoder::DoHeifSharedMemDecode(DecodeContext &context)
     uint64_t rowStride = dstInfo_.minRowBytes64();
     uint64_t byteCount = dstInfo_.computeMinByteSize();
     if (IsYuv420Format(context.info.pixelFormat)) {
-        rowStride = dstInfo_.width();
+        rowStride = static_cast<uint32_t>(dstInfo_.width());
         byteCount = JpegDecoderYuv::GetYuvOutSize(dstInfo_.width(), dstInfo_.height());
     }
     CHECK_ERROR_RETURN_RET(!SetOutPutFormat(context.info.pixelFormat, decoder), ERR_IMAGE_DATA_UNSUPPORT);
@@ -1182,7 +1181,8 @@ bool ExtDecoder::IsSupportHeifHardwareDecode(const PixelDecodeOptions &opts)
 
 bool ExtDecoder::IsDivisibleBySampleSize()
 {
-    return info_.width() % sampleSize_ == 0 && info_.height() % sampleSize_ == 0;
+    return info_.width() % static_cast<int32_t>(sampleSize_) == 0 &&
+        info_.height() % static_cast<int32_t>(sampleSize_) == 0;
 }
 
 void ExtDecoder::SetHeifSampleSize(const PixelDecodeOptions &opts, int &dstWidth, int &dstHeight,
@@ -2645,8 +2645,8 @@ bool ExtDecoder::DecodeHeifGainMap(DecodeContext& context)
     SkImageInfo dstInfo = SkImageInfo::Make(static_cast<int>(dstGainmapWidth), static_cast<int>(dstGianmapHeight),
         dstInfo_.colorType(), dstInfo_.alphaType(), dstInfo_.refColorSpace());
     uint64_t byteCount = static_cast<uint64_t>(dstInfo.computeMinByteSize());
-    context.info.size.width = dstGainmapWidth;
-    context.info.size.height = dstGainmapWidth;
+    context.info.size.width = static_cast<int32_t>(dstGainmapWidth);
+    context.info.size.height = static_cast<int32_t>(dstGainmapWidth);
     cond = DmaMemAlloc(context, byteCount, dstInfo) != SUCCESS;
     CHECK_ERROR_RETURN_RET(cond, false);
     auto* dstBuffer = static_cast<uint8_t*>(context.pixelsBuffer.buffer);
@@ -2803,11 +2803,11 @@ bool ExtDecoder::DecodeHeifAuxiliaryMap(DecodeContext& context, AuxiliaryPicture
     if (SkImageInfo::ByteSizeOverflowed(tempByteCount)) {
         IMAGE_LOGE("Image too large, dstInfo_height: %{public}d, dstInfo_width: %{public}d",
             dstInfo.height(), dstInfo.width());
-        return ERR_IMAGE_TOO_LARGE;
+        return false;
     }
     uint64_t byteCount = tempByteCount;
-    context.info.size.width = width;
-    context.info.size.height = height;
+    context.info.size.width = static_cast<int32_t>(width);
+    context.info.size.height = static_cast<int32_t>(height);
     cond = DmaMemAlloc(context, byteCount, dstInfo) != SUCCESS;
     CHECK_INFO_RETURN_RET_LOG(cond, false, "DmaMemAlloc execution failed.");
     auto* dstBuffer = static_cast<uint8_t*>(context.pixelsBuffer.buffer);
@@ -2822,8 +2822,8 @@ bool ExtDecoder::DecodeHeifAuxiliaryMap(DecodeContext& context, AuxiliaryPicture
     cond = !decoder->decodeAuxiliaryMap();
     CHECK_ERROR_RETURN_RET_LOG(cond, false,
         "Decoded auxiliary map type is not supported, or decoded failed. Type: %{public}d", type);
-    context.outInfo.size.width = width;
-    context.outInfo.size.height = height;
+    context.outInfo.size.width = static_cast<int32_t>(width);
+    context.outInfo.size.height = static_cast<int32_t>(height);
     return true;
 #endif
     return false;

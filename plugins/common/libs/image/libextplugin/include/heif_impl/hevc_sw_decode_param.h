@@ -16,11 +16,21 @@
 #ifndef PLUGINS_COMMON_LIBS_IMAGE_LIBEXTPLUGIN_INCLUDE_HEVC_SW_DECODE_PARAM_H
 #define PLUGINS_COMMON_LIBS_IMAGE_LIBEXTPLUGIN_INCLUDE_HEVC_SW_DECODE_PARAM_H
 
-#include "hardware/imagecodec/grid_info.h"
 #include "image_type.h"
 
 namespace OHOS {
 namespace ImagePlugin {
+struct GridInfo {
+    uint32_t displayWidth = 0;
+    uint32_t displayHeight = 0;
+    bool enableGrid = false;
+    uint32_t cols = 0;
+    uint32_t rows = 0;
+    uint32_t tileWidth = 0;
+    uint32_t tileHeight = 0;
+    uint8_t colorRangeflag = 1; // 0 -> limitRange:[16,235], 1 -> fullRange:[0, 255]
+};
+
 struct HevcSoftDecodeParam {
     GridInfo gridInfo {};
     Media::PixelFormat srcpixFmt = Media::PixelFormat::UNKNOWN;
