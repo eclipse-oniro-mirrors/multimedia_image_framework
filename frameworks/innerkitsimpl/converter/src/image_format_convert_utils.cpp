@@ -1217,8 +1217,8 @@ static bool RGBToYuv(const uint8_t *srcBuffer, const RGBDataInfo &rgbInfo, Pixel
         }
         srcParam.buffer = copySrcBuffer.get();
     }
-    srcParam.width = copyWidth;
-    srcParam.height = copyHeight;
+    srcParam.width = static_cast<uint32_t>(copyWidth);
+    srcParam.height = static_cast<uint32_t>(copyHeight);
     srcParam.format = srcFormat;
 
     DestConvertParam destParam = {destInfo.width, destInfo.height};
