@@ -239,7 +239,7 @@ uint32_t JpegEncoder::SequenceEncoder(const uint8_t *data)
 #endif
 
     uint8_t *base = const_cast<uint8_t *>(data);
-    uint32_t rowStride = encodeInfo_.image_width * encodeInfo_.input_components;
+    uint32_t rowStride = encodeInfo_.image_width * (uint32_t)encodeInfo_.input_components;
     uint8_t *buffer = nullptr;
     while (encodeInfo_.next_scanline < encodeInfo_.image_height) {
         buffer = base + encodeInfo_.next_scanline * rowStride;

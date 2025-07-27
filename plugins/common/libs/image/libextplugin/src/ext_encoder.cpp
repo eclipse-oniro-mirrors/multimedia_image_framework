@@ -2109,7 +2109,7 @@ uint32_t ExtEncoder::WriteJpegUncodedData(std::shared_ptr<AuxiliaryPicture>& aux
         imageSize.width = surfaceBuffer->GetWidth();
         imageSize.height = surfaceBuffer->GetHeight();
     }
-    uint32_t writeSize = imageSize.width * imageSize.height;
+    uint32_t writeSize = (uint32_t)imageSize.width * (uint32_t)imageSize.height;
     AuxiliaryPictureInfo auxInfo = auxPicture->GetAuxiliaryPictureInfo();
     if (auxInfo.auxiliaryPictureType == AuxiliaryPictureType::DEPTH_MAP) {
         writeSize *= DEPTH_MAP_BYTES;

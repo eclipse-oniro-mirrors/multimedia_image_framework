@@ -299,7 +299,8 @@ static BufferRequestConfig CreateDmaRequestConfig(const SkImageInfo &dstInfo, ui
         requestConfig.format == GRAPHIC_PIXEL_FMT_YCRCB_420_SP) {
         count = JpegDecoderYuv::GetYuvOutSize(dstInfo.width(), dstInfo.height());
     } else if (requestConfig.format == GRAPHIC_PIXEL_FMT_RGBA16_FLOAT) {
-        count = dstInfo.width() * dstInfo.height() * ImageUtils::GetPixelBytes(PixelFormat::RGBA_F16);
+        count = (uint32_t)dstInfo.width() * (uint32_t)dstInfo.height() *
+            (uint32_t)ImageUtils::GetPixelBytes(PixelFormat::RGBA_F16);
     }
     return requestConfig;
 }
@@ -371,6 +372,10 @@ static uint32_t HeapMemAlloc(DecodeContext &context, uint64_t count)
         return ERR_IMAGE_DATA_ABNORMAL;
     }
     auto out = static_cast<uint8_t *>(malloc(count));
+    if (out == nullptr) {
+        IMAGE_LOGE("HeapMemAlloc malloc memory failed");
+        return ERR_IMAGE_MALLOC_ABNORMAL;
+    }
 #ifdef _WIN32
     if (memset_s(out, ZERO, count) != EOK) {
 #else
@@ -514,8 +519,8 @@ bool ExtDecoder::GetHardwareScaledSize(int &dWidth, int &dHeight, float &scale) 
     } else {
         sampleSize_ = 8;
     }
-    dWidth = (oriWidth + sampleSize_ - NUM_ONE) / sampleSize_;
-    dHeight = (oriHeight + sampleSize_ - NUM_ONE) / sampleSize_;
+    dWidth = (oriWidth + (int)sampleSize_ - NUM_ONE) / (int)sampleSize_;
+    dHeight = (oriHeight + (int)sampleSize_ - NUM_ONE) / (int)sampleSize_;
     return true;
 }
 #endif
