@@ -1159,10 +1159,16 @@ void ImageSource::SetPixelMapColorSpace(ImagePlugin::DecodeContext& context, uni
     }
     // If the original image is a single-layer HDR, colorSpace needs to be obtained from the DecodeContext.
     if (context.hdrType > ImageHdrType::SDR || IsSingleHdrImage(sourceHdrType_)) {
+        if (context.isCreateWideGamutSdrPixelMap) {
+            pixelMap->InnerSetColorSpace(OHOS::ColorManager::ColorSpace(
+                OHOS::ColorManager::ColorSpaceName::DISPLAY_BT2020_SRGB));
+            IMAGE_LOGD("HDR-IMAGE set Pixelmap to wideGamut-SRGB colorSpace");
+            return;
+        }
         pixelMap->InnerSetColorSpace(OHOS::ColorManager::ColorSpace(context.grColorSpaceName));
         IMAGE_LOGD("hdr set pixelmap colorspace is %{public}d-%{public}d",
             context.grColorSpaceName, pixelMap->InnerGetGrColorSpace().GetColorSpaceName());
-        return ;
+        return;
     }
     if (isSupportICCProfile) {
         OHOS::ColorManager::ColorSpace grColorSpace = decoder->GetPixelMapColorSpace();
@@ -4139,6 +4145,8 @@ DecodeContext ImageSource::HandleDualHdrImage(ImageHdrType decodedHdrType, Image
     hdrContext.hdrType = decodedHdrType;
     hdrContext.info.size = plInfo.size;
     hdrContext.allocatorType = AllocatorType::DMA_ALLOC;
+    hdrContext.photoDesiredPixelFormat = context.photoDesiredPixelFormat;
+    hdrContext.isCreateWideGamutSdrPixelMap = context.isCreateWideGamutSdrPixelMap;
     float scale = GetScaleSize(info, opts_);
     if (decodedHdrType > ImageHdrType::SDR && ApplyGainMap(decodedHdrType, context, hdrContext, scale)) {
         FreeContextBuffer(context.freeFunc, context.allocatorType, context.pixelsBuffer);
@@ -4156,6 +4164,7 @@ DecodeContext ImageSource::DecodeImageDataToContext(uint32_t index, ImageInfo in
     DecodeContext context = InitDecodeContext(opts_, info, preference_, hasDesiredSizeOptions, plInfo);
     context.isAppUseAllocator = opts_.isAppUseAllocator;
     ImageHdrType decodedHdrType = context.hdrType;
+    context.isCreateWideGamutSdrPixelMap = opts_.isCreateWideGamutSdrPixelMap;
     context.grColorSpaceName = mainDecoder_->GetPixelMapColorSpace().GetColorSpaceName();
     errorCode = mainDecoder_->Decode(index, context);
     if (plInfo.size.width != context.outInfo.size.width || plInfo.size.height != context.outInfo.size.height) {
