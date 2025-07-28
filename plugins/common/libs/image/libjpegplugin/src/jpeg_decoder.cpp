@@ -347,7 +347,7 @@ uint32_t JpegDecoder::SetDecodeOptions(uint32_t index, const PixelDecodeOptions 
 uint32_t JpegDecoder::GetRowBytes()
 {
     uint32_t pixelBytes =
-        (decodeInfo_.out_color_space == JCS_RGB565) ? PIXEL_BYTES_RGB_565 : decodeInfo_.out_color_components;
+        (decodeInfo_.out_color_space == JCS_RGB565) ? PIXEL_BYTES_RGB_565 : (uint32_t)decodeInfo_.out_color_components;
     return decodeInfo_.output_width * pixelBytes;
 }
 

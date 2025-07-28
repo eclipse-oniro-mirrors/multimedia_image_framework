@@ -213,8 +213,11 @@ bool PostProc::CopyPixels(PixelMap& pixelMap, uint8_t* dstPixels, const Size& ds
     if (srcRowStride <= 0) {
         srcRowStride = srcRowBytes;
     }
-    uint8_t *srcPixels = const_cast<uint8_t *>(pixelMap.GetPixels()) + top * srcRowStride + left * pixelBytes;
-    bool cond = std::min(srcWidth, targetWidth) != 0 &&
+    uint8_t *srcPixels = const_cast<uint8_t *>(pixelMap.GetPixels());
+    bool cond = (srcPixels == nullptr);
+    CHECK_ERROR_RETURN_RET_LOG(cond, false, "[PostProc]pixelMap data_ is nullptr");
+    srcPixels = srcPixels + top * srcRowStride + left * pixelBytes;
+    cond = std::min(srcWidth, targetWidth) != 0 &&
         ImageUtils::CheckMulOverflow(std::min(srcWidth, targetWidth), pixelBytes);
     CHECK_ERROR_RETURN_RET_LOG(cond, false,
         "[PostProc]invalid params, srcWidth:%{public}d, targetWidth:%{public}d, pixelBytes:%{public}d",
