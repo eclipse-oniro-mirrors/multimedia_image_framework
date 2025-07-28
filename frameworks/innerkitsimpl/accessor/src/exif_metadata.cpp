@@ -746,6 +746,8 @@ bool ExifMetadata::SetCommonValue(const std::string &key, const std::string &val
     ExifEntry *ptrEntry = GetEntry(key, valueLen);
     bool cond = ptrEntry == nullptr;
     CHECK_ERROR_RETURN_RET(cond, false);
+    cond = ptrEntry->parent == nullptr;
+    CHECK_ERROR_RETURN_RET(cond, false);
     ExifByteOrder order = exif_data_get_byte_order(ptrEntry->parent->parent);
     bool isSetSuccess = false;
     switch (ptrEntry->format) {
