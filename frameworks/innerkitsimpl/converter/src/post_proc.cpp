@@ -277,6 +277,7 @@ bool PostProc::CenterDisplay(PixelMap &pixelMap, int32_t srcWidth, int32_t srcHe
         *static_cast<int32_t *>(fdBuffer) = fd;
         pixelMap.SetPixelsAddr(dstPixels, fdBuffer, bufferSize, AllocatorType::SHARE_MEM_ALLOC, nullptr);
     }
+    ImageUtils::FlushSurfaceBuffer(&pixelMap);
     return true;
 }
 
@@ -1239,6 +1240,7 @@ bool PostProc::ScalePixelMapEx(const Size &desiredSize, PixelMap &pixelMap, cons
     pixelMap.SetPixelsAddr(mem->data.data, mem->extend.data, dstBufferSize, mem->GetType(), nullptr);
     imgInfo.size = desiredSize;
     pixelMap.SetImageInfo(imgInfo, true);
+    ImageUtils::FlushSurfaceBuffer(&pixelMap);
     return true;
 }
 #endif
