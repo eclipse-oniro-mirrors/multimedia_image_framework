@@ -21,6 +21,7 @@
 #include "buffer_source_stream.h"
 #include "exif_info.h"
 #include "mock_data_stream.h"
+#include "attr_data.h"
 
 using namespace testing::ext;
 using namespace OHOS::Media;
@@ -1357,6 +1358,51 @@ HWTEST_F(JpegDecoderTest, DecodeTest004, TestSize.Level3)
     errorCode = jpegDecoder->Decode(0, decodeContext_double);
     ASSERT_EQ(errorCode, SUCCESS);
     GTEST_LOG_(INFO) << "JpegDecoderTest: DecodeTest004 end";
+}
+
+/**
+ * @tc.name: JpegDecoderTest_DecodeTest005
+ * @tc.desc: Verify that JpegDecoder decodes image double.
+ * @tc.type: FUNC
+ */
+HWTEST_F(JpegDecoderTest, DecodeTest005, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "JpegDecoderTest: DecodeTest005 start";
+    auto jpegDecoder = std::make_shared<JpegDecoder>();
+    ASSERT_NE(jpegDecoder, nullptr);
+    uint32_t errorCode = -1;
+    SourceOptions sourceOpts;
+    sourceOpts.formatHint = "image/jpeg";
+    std::unique_ptr<ImageSource> imageSource =
+        ImageSource::CreateImageSource(IMAGE_INPUT_JPG_PATH, sourceOpts, errorCode);
+    ASSERT_NE(imageSource, nullptr);
+    ASSERT_EQ(errorCode, SUCCESS);
+    jpegDecoder->SetSource(*(imageSource->sourceStreamPtr_.get()));
+
+    PixelDecodeOptions decodeOpts;
+    decodeOpts.desiredPixelFormat = PixelFormat::RGBA_8888;
+    decodeOpts.editable = true;
+    decodeOpts.desiredSize.width = IMAGE_INPUT_JPG_WIDTH;
+    decodeOpts.desiredSize.height = IMAGE_INPUT_JPG_HEIGHT;
+
+    PlImageInfo plInfo;
+    errorCode = jpegDecoder->SetDecodeOptions(0, decodeOpts, plInfo);
+    ASSERT_EQ(errorCode, SUCCESS);
+
+    DecodeContext decodeContext;
+    decodeContext.allocatorType = AllocatorType::HEAP_ALLOC;
+    std::map<std::string, MultimediaPlugin::AttrData> capabilites;
+    capabilites.insert(std::map<std::string, MultimediaPlugin::AttrData>::value_type("encodeFormat",
+        MultimediaPlugin::AttrData(sourceOpts, formatHint)));
+    jpegDecoder->hwJpegDecompress_ = JpegDecoder::pluginServer_.CreateObject<AbsImageDecompressComponent>(
+        AbsImageDecompressComponent::SERVICE_DEFAULT, capabilites);
+    errorCode = jpegDecoder->Decode(0, decodeContext);
+    ASSERT_EQ(errorCode, SUCCESS);
+
+    DecodeContext decodeContext_double;
+    errorCode = jpegDecoder->Decode(0, decodeContext_double);
+    ASSERT_EQ(errorCode, SUCCESS);
+    GTEST_LOG_(INFO) << "JpegDecoderTest: DecodeTest005 end";
 }
 
 /**
