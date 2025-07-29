@@ -380,6 +380,7 @@ private:
     bool CheckCropRectValid(const DecodeOptions &opts);
     void InitDecoderForJpeg();
     void RefreshImageSourceByPathName();
+    std::string GetPixelMapName(PixelMap* pixelMap);
 
 #if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
     void SpecialSetComposeBuffer(ImagePlugin::DecodeContext &baseCtx, sptr<SurfaceBuffer>& baseSptr,

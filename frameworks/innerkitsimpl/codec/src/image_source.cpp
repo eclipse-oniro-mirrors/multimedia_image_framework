@@ -1062,6 +1062,7 @@ unique_ptr<PixelMap> ImageSource::CreatePixelMapExtended(uint32_t index, const D
         CHECK_ERROR_PRINT_LOG(convertRes != SUCCESS, "convert rgb to yuv failed, return origin rgb!");
     }
     ImageUtils::FlushSurfaceBuffer(pixelMap.get());
+    pixelMap->SetMemoryName(GetPixelMapName(pixelMap.get()));
     return pixelMap;
 }
 
@@ -1465,6 +1466,7 @@ unique_ptr<PixelMap> ImageSource::CreatePixelMap(uint32_t index, const DecodeOpt
 
     // not ext decode, dump pixelMap while decoding svg here
     ImageUtils::DumpPixelMapIfDumpEnabled(pixelMap, imageId_);
+    pixelMap->SetMemoryName(GetPixelMapName(pixelMap.get()));
     return pixelMap;
 }
 
@@ -5298,6 +5300,20 @@ void ImageSource::RefreshImageSourceByPathName()
     if (refreshedSourceStreamPtr != nullptr) {
         sourceStreamPtr_ = std::move(refreshedSourceStreamPtr);
     }
+}
+
+std::string ImageSource::GetPixelMapName(PixelMap* pixelMap)
+{
+    if (pixelMap == nullptr) {
+        IMAGE_LOGE("%{public}s error, pixelMap is null", __func__);
+        return "undefined_";
+    }
+    std::string pixelMapStr = "w" + std::to_string(pixelMap->GetWidth()) +
+        "_h" + std::to_string(pixelMap->GetHeight()) +
+        "_streamSize" + std::to_string(sourceStreamPtr_->GetStreamSize()) +
+        "_mimeType" + sourceInfo_.encodedFormat;
+    IMAGE_LOGD("pixelMapStr is %{public}s", pixelMapStr.c_str());
+    return pixelMapStr;
 }
 
 } // namespace Media
