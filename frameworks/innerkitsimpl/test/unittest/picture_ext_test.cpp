@@ -34,6 +34,9 @@
 #include "securec.h"
 #include "native_color_space_manager.h"
 #include "ndk_color_space.h"
+#include "metadata_accessor_factory.h"
+#include "image_source_util.h"
+#include "webp_exif_metadata_accessor.h"
 using namespace OHOS::Media;
 using namespace testing::ext;
 namespace OHOS {
@@ -59,6 +62,8 @@ static const std::string IMAGE_HEIC_128_128 = "/data/local/tmp/image/test_heic_1
 static const std::string IMAGE_JPEG_100_100 = "/data/local/tmp/image/test_jpeg_100_100.jpg";
 static const std::string IMAGE_JPEG_128_128 = "/data/local/tmp/image/test_jpeg_128_128.jpg";
 static const std::string IMAGE_GIF_PATH = "/data/local/tmp/image/test.gif";
+static const std::string HEIF_POC_PATH = "/data/local/tmp/image/heif_poc";
+static const std::string WEBP_POC_PATH = "/data/local/tmp/image/webp_poc";
 
 class PictureExtTest : public testing::Test {
 public:
@@ -1330,6 +1335,48 @@ HWTEST_F(PictureExtTest, CalGainmapTest001, TestSize.Level1)
 #else
     ASSERT_EQ(newPicture, nullptr);
 #endif
+}
+
+/**
+ * @tc.name: HeifPocTest
+ * @tc.desc: Test Heif Exception POC
+ * @tc.type: FUNC
+ */
+HWTEST_F(PictureExtTest, HeifPocTest, TestSize.Level1)
+{
+    uint32_t errorCode = 0;
+    SourceOptions sourceOpts;
+    std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(HEIF_POC_TEST.c_str(),
+                                                                              sourceOpts, errorCode);
+    ASSERT_NE(imageSource, nullptr);
+    for (uint32_t index = 0; index < imageSource->GetFrameCount(errorCode); ++index) {
+        DecodeOptions decodeOpts;
+        auto pixelMap = imageSource->CreatePixelMapEx(index, decodeOpts, errorCode);
+        EXPECT_EQ(pixelMap, nullptr);
+        EXPECT_EQ(errorCode, ERR_IMAGE_DATA_UNSUPPORT);
+    }
+}
+
+/**
+ * @tc.name: WebpPocTest
+ * @tc.desc: Test WEBP Exception POC
+ * @tc.type: FUNC
+ */
+HWTEST_F(PictureExtTest, WebpPocTest, TestSize.Level1)
+{
+    uint32_t errorCode = 0;
+    SourceOptions sourceOpts;
+    std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(WEBP_POC_TEST.c_str(),
+                                                                              sourceOpts, errorCode);
+    ASSERT_NE(imageSource, nullptr);
+    BufferMetadataStream::MemoryMode mode = BufferMetadataStream::MemoryMode::Dynamic;
+    std::shared_ptr<MetadataAccessor> metadataAccessor2 = MetadataAccessorFactory::Create(
+        imageSource->sourceStreamPtr_->GetDataPtr(), imageSource->sourceStreamPtr_->GetStreamSize(), mode);
+    ASSERT_NE(metadataAccessor2, nullptr);
+    auto webpMetadataAccessor = reinterpret_cast<WebpExifMetadataAccessor*>(metadataAccessor2.get());
+    ASSERT_NE(webpMetadataAccessor, nullptr);
+    webpMetadataAccessor->Read();
+    EXPECT_EQ(webpMetadataAccessor->Write(), SUCCESS);
 }
 } // namespace Multimedia
 } // namespace OHOS
