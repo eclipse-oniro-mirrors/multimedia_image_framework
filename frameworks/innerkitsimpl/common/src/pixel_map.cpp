@@ -234,6 +234,7 @@ void PixelMap::SetPixelsAddr(void *addr, void *context, uint32_t size, Allocator
     if (type == AllocatorType::DMA_ALLOC && rowDataSize_ != 0) {
         UpdateImageInfo();
     }
+    ImageUtils::FlushSurfaceBuffer(this);
 }
 
 bool CheckPixelmap(std::unique_ptr<PixelMap> &pixelMap, ImageInfo &imageInfo)

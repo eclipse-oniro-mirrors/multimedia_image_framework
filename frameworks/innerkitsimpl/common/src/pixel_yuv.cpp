@@ -823,6 +823,7 @@ void PixelYuv::SetPixelsAddr(void *addr, void *context, uint32_t size, Allocator
     if (type == AllocatorType::DMA_ALLOC && rowDataSize_ != 0) {
         SetImageInfo(imageInfo_, true);
     }
+    ImageUtils::FlushSurfaceBuffer(this);
 }
 
 static bool IsYUVP010Format(PixelFormat format)
