@@ -1393,7 +1393,7 @@ HWTEST_F(JpegDecoderTest, DecodeTest005, TestSize.Level3)
     decodeContext.allocatorType = AllocatorType::HEAP_ALLOC;
     std::map<std::string, MultimediaPlugin::AttrData> capabilites;
     capabilites.insert(std::map<std::string, MultimediaPlugin::AttrData>::value_type("encodeFormat",
-        MultimediaPlugin::AttrData(sourceOpts, formatHint)));
+        MultimediaPlugin::AttrData(sourceOpts.formatHint)));
     jpegDecoder->hwJpegDecompress_ = JpegDecoder::pluginServer_.CreateObject<AbsImageDecompressComponent>(
         AbsImageDecompressComponent::SERVICE_DEFAULT, capabilites);
     errorCode = jpegDecoder->Decode(0, decodeContext);
