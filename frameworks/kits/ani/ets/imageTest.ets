@@ -17,7 +17,7 @@ import { image } from "./@ohos.multimedia.image.ets";
 
 function main() {
   // test createPixemap & getImageInfo
-  console.log("Test PixelMap START");
+  console.println("Test PixelMap START");
   const opts: image.InitializationOptions = {
     size: { width: 480, height: 360 },
     srcPixelFormat: image.PixelMapFormat.RGBA_8888,
@@ -29,30 +29,30 @@ function main() {
   let pixelMap:image.PixelMap = image.createPixelMapSync(opts);
 
   if (pixelMap != undefined) {
-    console.log("Create PixelMap success");
+    console.println("Create PixelMap success");
   }
 
   const retImageInfo: image.ImageInfo = pixelMap.getImageInfoSync();
-  console.log(`Get image info: ${retImageInfo.size.width}, ${retImageInfo.size.height}, ${retImageInfo.pixelFormat}, ${retImageInfo.alphaType}`);
+  console.println(`Get image info: ${retImageInfo.size.width}, ${retImageInfo.size.height}, ${retImageInfo.pixelFormat}, ${retImageInfo.alphaType}`);
   pixelMap.getImageInfo()
     .then((imageInfo: image.ImageInfo) => {
-      console.log(`ASYNC Get image info: ${imageInfo.size.width}, ${imageInfo.size.height}, ${imageInfo.pixelFormat}, ${imageInfo.alphaType}`);
+      console.println(`ASYNC Get image info: ${imageInfo.size.width}, ${imageInfo.size.height}, ${imageInfo.pixelFormat}, ${imageInfo.alphaType}`);
     });
   
   const rowBytes = pixelMap.getBytesNumberPerRow();
-  console.log("PixelMap bytes per row: " + rowBytes);
+  console.println("PixelMap bytes per row: " + rowBytes);
   const totalBytes = pixelMap.getPixelBytesNumber();
-  console.log("PixelMap total bytes: " + totalBytes);
+  console.println("PixelMap total bytes: " + totalBytes);
 
   if (retImageInfo.isHdr) {
-      console.log("Test PixelMap HDR");
+      console.println("Test PixelMap HDR");
   } else {
-      console.log("Test PixelMap not HDR");
+      console.println("Test PixelMap not HDR");
   }
 
   pixelMap.scaleSync(2, 2);
   const scaledInfo = pixelMap.getImageInfoSync();
-  console.log(`Scaled image info: ${scaledInfo.size.width}, ${scaledInfo.size.height}`);
+  console.println(`Scaled image info: ${scaledInfo.size.width}, ${scaledInfo.size.height}`);
   const region: image.Region = {
     size: { width: 512, height: 512 },
     x: 0,
@@ -60,37 +60,33 @@ function main() {
   };
   pixelMap.cropSync(region);
   const croppedInfo = pixelMap.getImageInfoSync();
-  console.log(`Cropped image info: ${croppedInfo.size.width}, ${croppedInfo.size.height}`);
+  console.println(`Cropped image info: ${croppedInfo.size.width}, ${croppedInfo.size.height}`);
   pixelMap.flipSync(true, true);
   const flippedInfo = pixelMap.getImageInfoSync();
-  console.log(`Flipped image info: ${flippedInfo.size.width}, ${flippedInfo.size.height}`);
+  console.println(`Flipped image info: ${flippedInfo.size.width}, ${flippedInfo.size.height}`);
 
   const alphaPixelMap = pixelMap.createAlphaPixelmapSync();
   if (alphaPixelMap != undefined) {
-    console.log("Create alpha PixelMap success");
+    console.println("Create alpha PixelMap success");
   }
   const alphaImageInfo = alphaPixelMap.getImageInfoSync();
-  console.log(`Alpha get image info: ${alphaImageInfo.size.width}, ${alphaImageInfo.size.height}, ${alphaImageInfo.pixelFormat}, ${alphaImageInfo.alphaType}`);
+  console.println(`Alpha get image info: ${alphaImageInfo.size.width}, ${alphaImageInfo.size.height}, ${alphaImageInfo.pixelFormat}, ${alphaImageInfo.alphaType}`);
   pixelMap.createAlphaPixelmap()
     .then((alphaPixelMap: image.PixelMap) => {
       const alphaImageInfo = alphaPixelMap.getImageInfoSync();
-      console.log(`ASYNC Alpha get image info: ${alphaImageInfo.size.width}, ${alphaImageInfo.size.height}, ${alphaImageInfo.pixelFormat}, ${alphaImageInfo.alphaType}`);
+      console.println(`ASYNC Alpha get image info: ${alphaImageInfo.size.width}, ${alphaImageInfo.size.height}, ${alphaImageInfo.pixelFormat}, ${alphaImageInfo.alphaType}`);
     })
 
   let imageSource: image.ImageSource = image.createImageSource("/data/local/tmp/test.png");
   if (imageSource != undefined) {
-    console.log("Create ImageSource by URI success");
-  }
-  let imageSource2: image.ImageSource = image.createImageSource(1);
-  if (imageSource2 != undefined) {
-    console.log("Create ImageSource by FD success");
+    console.println("Create ImageSource by URI success");
   }
   
   let imagesourceImageInfo: image.ImageInfo = imageSource.getImageInfoSync(0);
-  console.log(`Image source image info: ${imagesourceImageInfo.size.width}, ${imagesourceImageInfo.size.height}, ${imagesourceImageInfo.pixelFormat}, ${imagesourceImageInfo.density}, ${imagesourceImageInfo.mimeType}`);
+  console.println(`Image source image info: ${imagesourceImageInfo.size.width}, ${imagesourceImageInfo.size.height}, ${imagesourceImageInfo.pixelFormat}, ${imagesourceImageInfo.density}, ${imagesourceImageInfo.mimeType}`);
   imageSource.getImageInfo(0)
     .then((imageInfo: image.ImageInfo) => {
-      console.log(`ASYNC Image source image info: ${imageInfo.size.width}, ${imageInfo.size.height}, ${imageInfo.pixelFormat}, ${imageInfo.density}, ${imageInfo.mimeType}`);
+      console.println(`ASYNC Image source image info: ${imageInfo.size.width}, ${imageInfo.size.height}, ${imageInfo.pixelFormat}, ${imageInfo.density}, ${imageInfo.mimeType}`);
     });
   
   const desiredSize: image.Size | undefined = { width: 60, height: 60 };
@@ -111,16 +107,16 @@ function main() {
   };
   let pixelmap2: image.PixelMap = imageSource.createPixelMapSync(decodeOpt);
   if (pixelmap2 != undefined) {
-    console.log("Create imageSource.createPixelMapSync success");
+    console.println("Create imageSource.createPixelMapSync success");
   }
   imageSource.createPixelMap(decodeOpt)
     .then((pixelmap2: image.PixelMap) => {
       if (pixelmap2 != undefined) {
-        console.log("ASYNC Create imageSource PixelMap success")
+        console.println("ASYNC Create imageSource PixelMap success")
       }
     });
   pixelmap2.release()
-    .then((): void => console.log("ASYNC Release PixelMap success"));
+    .then((): void => console.println("ASYNC Release PixelMap success"));
 
   imageSource.modifyImageProperty("Orientation", "Right-top");
   const map: Record<string, string | null> = {
@@ -137,36 +133,35 @@ function main() {
       array[3] = "Gamma";
       imageSource.getImageProperties(array)
         .then((properties: Record<string, string | null>): void => {
-          console.log("ASYNC Get image properties: " + properties);
+          console.println("ASYNC Get image properties: " + properties);
         });
     })
-  // imageSource.release();
 
-  console.log("TEST ImagePacker begin");
+  console.println("TEST ImagePacker begin");
   const imagePacker = image.createImagePacker();
-  console.log("ImagePacker supported formats: " + imagePacker.supportedFormats);
+  console.println("ImagePacker supported formats: " + imagePacker.supportedFormats);
   let packOpts: image.PackingOption = new image.PackingOption(); 
   packOpts.format = "image/jpeg";
   packOpts.quality = 90;
   let packBuffer: ArrayBuffer = imagePacker.packing(pixelMap, packOpts);
-  console.log("TEST ImagePacker end, bufferSize: " + packBuffer.byteLength);
+  console.println("TEST ImagePacker end, bufferSize: " + packBuffer.byteLength);
   imagePacker.release();
 
-  console.log("TEST pixelMap readPixelsToBuffer begin");
+  console.println("TEST pixelMap readPixelsToBuffer begin");
   let arrayBuffer: ArrayBuffer = new ArrayBuffer(opts.size.width * opts.size.height * 4);
   pixelMap.readPixelsToBufferSync(arrayBuffer);
-  console.log("Read pixels to buffer success, size: " + arrayBuffer.byteLength); 
+  console.println("Read pixels to buffer success, size: " + arrayBuffer.byteLength); 
   pixelMap.readPixelsToBuffer(arrayBuffer)
-    .then((): void => console.log("ASYNC Read pixels to buffer success, size: " + arrayBuffer.byteLength));
+    .then((): void => console.println("ASYNC Read pixels to buffer success, size: " + arrayBuffer.byteLength));
 
-  console.log("TEST Picture begin");
+  console.println("TEST Picture begin");
   const picture = image.createPicture(pixelMap);
   if (picture != undefined) {
-    console.log("Create picture success");
+    console.println("Create picture success");
   }
   const picturePixelMap = picture.getMainPixelmap();
   const pictureInfo = picturePixelMap.getImageInfoSync();
-  console.log(`Picture PixelMap image info: ${pictureInfo.size.width}, ${pictureInfo.size.height}, ${pictureInfo.pixelFormat}, ${pictureInfo.alphaType}`);
+  console.println(`Picture PixelMap image info: ${pictureInfo.size.width}, ${pictureInfo.size.height}, ${pictureInfo.pixelFormat}, ${pictureInfo.alphaType}`);
   
   const regionAsync: image.Region = {
     size: { width: 1, height: 1 },
@@ -176,8 +171,8 @@ function main() {
   pixelMap.crop(regionAsync)
     .then((): void => {
       const croppedInfo = pixelMap.getImageInfoSync();
-      console.log(`ASYNC Cropped image info: ${croppedInfo.size.width}, ${croppedInfo.size.height}`);
+      console.println(`ASYNC Cropped image info: ${croppedInfo.size.width}, ${croppedInfo.size.height}`);
     });
 
-  console.log("====== Sync methods completed ======")
+  console.println("====== Sync methods completed ======")
 }

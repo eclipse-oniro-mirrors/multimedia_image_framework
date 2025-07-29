@@ -1,0 +1,707 @@
+/*
+ * Copyright (C) 2025 Huawei Device Co., Ltd.
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+@!namespace("@ohos.multimedia.image", "image")
+
+@!sts_inject("""
+static { loadLibrary("image_taihe_core.z"); }
+""")
+
+enum PixelMapFormat: i32 {
+  UNKNOWN = 0,
+  ARGB_8888 = 1,
+  RGB_565 = 2,
+  RGBA_8888 = 3,
+  BGRA_8888 = 4,
+  RGB_888 = 5,
+  ALPHA_8 = 6,
+  RGBA_F16 = 7,
+  NV21 = 8,
+  NV12 = 9,
+  RGBA_1010102 = 10,
+  YCBCR_P010 = 11,
+  YCRCB_P010 = 12,
+  ASTC_4x4 = 102
+}
+
+enum ResolutionQuality: i32 {
+  LOW = 1,
+  MEDIUM = 2,
+  HIGH = 3
+}
+
+struct Size {
+  width: i32;
+  height: i32;
+}
+
+enum PropertyKey: String {
+  BITS_PER_SAMPLE = "BitsPerSample",
+  ORIENTATION = "Orientation",
+  IMAGE_LENGTH = "ImageLength",
+  IMAGE_WIDTH = "ImageWidth",
+  GPS_LATITUDE = "GPSLatitude",
+  GPS_LONGITUDE = "GPSLongitude",
+  GPS_LATITUDE_REF = "GPSLatitudeRef",
+  GPS_LONGITUDE_REF = "GPSLongitudeRef",
+  DATE_TIME_ORIGINAL = "DateTimeOriginal",
+  EXPOSURE_TIME = "ExposureTime",
+  SCENE_TYPE = "SceneType",
+  ISO_SPEED_RATINGS = "ISOSpeedRatings",
+  F_NUMBER = "FNumber",
+  DATE_TIME = "DateTime",
+  GPS_TIME_STAMP = "GPSTimeStamp",
+  GPS_DATE_STAMP = "GPSDateStamp",
+  IMAGE_DESCRIPTION = "ImageDescription",
+  MAKE = "Make",
+  MODEL = "Model",
+  PHOTO_MODE = "PhotoMode",
+  SENSITIVITY_TYPE = "SensitivityType",
+  STANDARD_OUTPUT_SENSITIVITY = "StandardOutputSensitivity",
+  RECOMMENDED_EXPOSURE_INDEX = "RecommendedExposureIndex",
+  ISO_SPEED = "ISOSpeedRatings",
+  APERTURE_VALUE = "ApertureValue",
+  EXPOSURE_BIAS_VALUE = "ExposureBiasValue",
+  METERING_MODE = "MeteringMode",
+  LIGHT_SOURCE = "LightSource",
+  FLASH = "Flash",
+  FOCAL_LENGTH = "FocalLength",
+  USER_COMMENT = "UserComment",
+  PIXEL_X_DIMENSION = "PixelXDimension",
+  PIXEL_Y_DIMENSION = "PixelYDimension",
+  WHITE_BALANCE = "WhiteBalance",
+  FOCAL_LENGTH_IN_35_MM_FILM = "FocalLengthIn35mmFilm",
+  CAPTURE_MODE = "HwMnoteCaptureMode",
+  PHYSICAL_APERTURE = "HwMnotePhysicalAperture",
+  ROLL_ANGLE = "HwMnoteRollAngle",
+  PITCH_ANGLE = "HwMnotePitchAngle",
+  SCENE_FOOD_CONF = "HwMnoteSceneFoodConf",
+  SCENE_STAGE_CONF = "HwMnoteSceneStageConf",
+  SCENE_BLUE_SKY_CONF = "HwMnoteSceneBlueSkyConf",
+  SCENE_GREEN_PLANT_CONF = "HwMnoteSceneGreenPlantConf",
+  SCENE_BEACH_CONF = "HwMnoteSceneBeachConf",
+  SCENE_SNOW_CONF = "HwMnoteSceneSnowConf",
+  SCENE_SUNSET_CONF = "HwMnoteSceneSunsetConf",
+  SCENE_FLOWERS_CONF = "HwMnoteSceneFlowersConf",
+  SCENE_NIGHT_CONF = "HwMnoteSceneNightConf",
+  SCENE_TEXT_CONF = "HwMnoteSceneTextConf",
+  FACE_COUNT = "HwMnoteFaceCount",
+  FOCUS_MODE = "HwMnoteFocusMode",
+  COMPRESSION = "Compression",
+  PHOTOMETRIC_INTERPRETATION = "PhotometricInterpretation",
+  STRIP_OFFSETS = "StripOffsets",
+  SAMPLES_PER_PIXEL = "SamplesPerPixel",
+  ROWS_PER_STRIP = "RowsPerStrip",
+  STRIP_BYTE_COUNTS = "StripByteCounts",
+  X_RESOLUTION = "XResolution",
+  Y_RESOLUTION = "YResolution",
+  PLANAR_CONFIGURATION = "PlanarConfiguration",
+  RESOLUTION_UNIT = "ResolutionUnit",
+  TRANSFER_FUNCTION = "TransferFunction",
+  SOFTWARE = "Software",
+  ARTIST = "Artist",
+  WHITE_POINT = "WhitePoint",
+  PRIMARY_CHROMATICITIES = "PrimaryChromaticities",
+  YCBCR_COEFFICIENTS = "YCbCrCoefficients",
+  YCBCR_SUB_SAMPLING = "YCbCrSubSampling",
+  YCBCR_POSITIONING = "YCbCrPositioning",
+  REFERENCE_BLACK_WHITE = "ReferenceBlackWhite",
+  COPYRIGHT = "Copyright",
+  JPEG_INTERCHANGE_FORMAT = "JPEGInterchangeFormat",
+  JPEG_INTERCHANGE_FORMAT_LENGTH = "JPEGInterchangeFormatLength",
+  EXPOSURE_PROGRAM = "ExposureProgram",
+  SPECTRAL_SENSITIVITY = "SpectralSensitivity",
+  OECF = "OECF",
+  EXIF_VERSION = "ExifVersion",
+  DATE_TIME_DIGITIZED = "DateTimeDigitized",
+  COMPONENTS_CONFIGURATION = "ComponentsConfiguration",
+  SHUTTER_SPEED = "ShutterSpeedValue",
+  BRIGHTNESS_VALUE = "BrightnessValue",
+  MAX_APERTURE_VALUE = "MaxApertureValue",
+  SUBJECT_DISTANCE = "SubjectDistance",
+  SUBJECT_AREA = "SubjectArea",
+  MAKER_NOTE = "MakerNote",
+  SUBSEC_TIME = "SubsecTime",
+  SUBSEC_TIME_ORIGINAL = "SubsecTimeOriginal",
+  SUBSEC_TIME_DIGITIZED = "SubsecTimeDigitized",
+  FLASHPIX_VERSION = "FlashpixVersion",
+  COLOR_SPACE = "ColorSpace",
+  RELATED_SOUND_FILE = "RelatedSoundFile",
+  FLASH_ENERGY = "FlashEnergy",
+  SPATIAL_FREQUENCY_RESPONSE = "SpatialFrequencyResponse",
+  FOCAL_PLANE_X_RESOLUTION = "FocalPlaneXResolution",
+  FOCAL_PLANE_Y_RESOLUTION = "FocalPlaneYResolution",
+  FOCAL_PLANE_RESOLUTION_UNIT = "FocalPlaneResolutionUnit",
+  SUBJECT_LOCATION = "SubjectLocation",
+  EXPOSURE_INDEX = "ExposureIndex",
+  SENSING_METHOD = "SensingMethod",
+  FILE_SOURCE = "FileSource",
+  CFA_PATTERN = "CFAPattern",
+  CUSTOM_RENDERED = "CustomRendered",
+  EXPOSURE_MODE = "ExposureMode",
+  DIGITAL_ZOOM_RATIO = "DigitalZoomRatio",
+  SCENE_CAPTURE_TYPE = "SceneCaptureType",
+  GAIN_CONTROL = "GainControl",
+  CONTRAST = "Contrast",
+  SATURATION = "Saturation",
+  SHARPNESS = "Sharpness",
+  DEVICE_SETTING_DESCRIPTION = "DeviceSettingDescription",
+  SUBJECT_DISTANCE_RANGE = "SubjectDistanceRange",
+  IMAGE_UNIQUE_ID = "ImageUniqueID",
+  GPS_VERSION_ID = "GPSVersionID",
+  GPS_ALTITUDE_REF = "GPSAltitudeRef",
+  GPS_ALTITUDE = "GPSAltitude",
+  GPS_SATELLITES = "GPSSatellites",
+  GPS_STATUS = "GPSStatus",
+  GPS_MEASURE_MODE = "GPSMeasureMode",
+  GPS_DOP = "GPSDOP",
+  GPS_SPEED_REF = "GPSSpeedRef",
+  GPS_SPEED = "GPSSpeed",
+  GPS_TRACK_REF = "GPSTrackRef",
+  GPS_TRACK = "GPSTrack",
+  GPS_IMG_DIRECTION_REF = "GPSImgDirectionRef",
+  GPS_IMG_DIRECTION = "GPSImgDirection",
+  GPS_MAP_DATUM = "GPSMapDatum",
+  GPS_DEST_LATITUDE_REF = "GPSDestLatitudeRef",
+  GPS_DEST_LATITUDE = "GPSDestLatitude",
+  GPS_DEST_LONGITUDE_REF = "GPSDestLongitudeRef",
+  GPS_DEST_LONGITUDE = "GPSDestLongitude",
+  GPS_DEST_BEARING_REF = "GPSDestBearingRef",
+  GPS_DEST_BEARING = "GPSDestBearing",
+  GPS_DEST_DISTANCE_REF = "GPSDestDistanceRef",
+  GPS_DEST_DISTANCE = "GPSDestDistance",
+  GPS_PROCESSING_METHOD = "GPSProcessingMethod",
+  GPS_AREA_INFORMATION = "GPSAreaInformation",
+  GPS_DIFFERENTIAL = "GPSDifferential",
+  BODY_SERIAL_NUMBER = "BodySerialNumber",
+  CAMERA_OWNER_NAME = "CameraOwnerName",
+  COMPOSITE_IMAGE = "CompositeImage",
+  COMPRESSED_BITS_PER_PIXEL = "CompressedBitsPerPixel",
+  DNG_VERSION = "DNGVersion",
+  DEFAULT_CROP_SIZE = "DefaultCropSize",
+  GAMMA = "Gamma",
+  ISO_SPEED_LATITUDE_YYY = "ISOSpeedLatitudeyyy",
+  ISO_SPEED_LATITUDE_ZZZ = "ISOSpeedLatitudezzz",
+  LENS_MAKE = "LensMake",
+  LENS_MODEL = "LensModel",
+  LENS_SERIAL_NUMBER = "LensSerialNumber",
+  LENS_SPECIFICATION = "LensSpecification",
+  NEW_SUBFILE_TYPE = "NewSubfileType",
+  OFFSET_TIME = "OffsetTime",
+  OFFSET_TIME_DIGITIZED = "OffsetTimeDigitized",
+  OFFSET_TIME_ORIGINAL = "OffsetTimeOriginal",
+  SOURCE_EXPOSURE_TIMES_OF_COMPOSITE_IMAGE = "SourceExposureTimesOfCompositeImage",
+  SOURCE_IMAGE_NUMBER_OF_COMPOSITE_IMAGE = "SourceImageNumberOfCompositeImage",
+  SUBFILE_TYPE = "SubfileType",
+  GPS_H_POSITIONING_ERROR = "GPSHPositioningError",
+  PHOTOGRAPHIC_SENSITIVITY = "PhotographicSensitivity",
+  BURST_NUMBER = "HwMnoteBurstNumber",
+  FACE_CONF = "HwMnoteFaceConf",
+  FACE_LEYE_CENTER = "HwMnoteFaceLeyeCenter",
+  FACE_MOUTH_CENTER = "HwMnoteFaceMouthCenter",
+  FACE_POINTER = "HwMnoteFacePointer",
+  FACE_RECT = "HwMnoteFaceRect",
+  FACE_REYE_CENTER = "HwMnoteFaceReyeCenter",
+  FACE_SMILE_SCORE = "HwMnoteFaceSmileScore",
+  FACE_VERSION = "HwMnoteFaceVersion",
+  FRONT_CAMERA = "HwMnoteFrontCamera",
+  SCENE_POINTER = "HwMnoteScenePointer",
+  SCENE_VERSION = "HwMnoteSceneVersion",
+  IS_XMAGE_SUPPORTED = "HwMnoteIsXmageSupported",
+  XMAGE_MODE = "HwMnoteXmageMode",
+  XMAGE_LEFT = "HwMnoteXmageLeft",
+  XMAGE_TOP = "HwMnoteXmageTop",
+  XMAGE_RIGHT = "HwMnoteXmageRight",
+  XMAGE_BOTTOM = "HwMnoteXmageBottom",
+  CLOUD_ENHANCEMENT_MODE = "HwMnoteCloudEnhancementMode",
+  WIND_SNAPSHOT_MODE = "HwMnoteWindSnapshotMode",
+  GIF_LOOP_COUNT = "GIFLoopCount"
+}
+
+enum ImageFormat: i32 {
+  YCBCR_422_SP = 1000,
+  JPEG = 2000
+}
+
+enum AlphaType: i32 {
+  UNKNOWN = 0,
+  OPAQUE = 1,
+  PREMUL = 2,
+  UNPREMUL = 3
+}
+
+enum DecodingDynamicRange: i32 {
+  AUTO = 0,
+  SDR = 1,
+  HDR = 2
+}
+
+enum PackingDynamicRange: i32 {
+  AUTO = 0,
+  SDR = 1,
+}
+
+enum AntiAliasingLevel: i32 {
+  NONE = 0,
+  LOW = 1,
+  MEDIUM = 2,
+  HIGH = 3
+}
+
+enum ScaleMode: i32 {
+  FIT_TARGET_SIZE = 0,
+  CENTER_CROP = 1
+}
+
+enum ComponentType: i32 {
+  YUV_Y = 1,
+  YUV_U = 2,
+  YUV_V = 3,
+  JPEG = 4
+}
+
+enum AllocatorType: i32 {
+  AUTO = 0,
+  DMA = 1,
+  SHARE_MEMORY = 2,
+}
+
+struct Region {
+  size: Size;
+  x: i32;
+  y: i32;
+}
+
+// Can't use struct because struct is copied instead of referenced, so data changes to "pixels" in C++ will not be reflected in ArkTS
+interface PositionArea {
+  @get GetPixels(): @arraybuffer Array<u8>;
+  @set SetPixels(pixels: @arraybuffer Array<u8>): void;
+  @get GetOffset(): i32;
+  @set SetOffset(offset: i32): void;
+  @get GetStride(): i32;
+  @set SetStride(stride: i32): void;
+  @get GetRegion(): Region;
+  @set SetRegion(region: Region): void;
+}
+
+struct ImageInfo {
+  size: Size;
+  density: i32;
+  stride: i32;
+  pixelFormat: PixelMapFormat;
+  alphaType: AlphaType;
+  mimeType: String;
+  isHdr: bool;
+}
+
+enum CropAndScaleStrategy: i32 {
+  SCALE_FIRST = 1,
+  CROP_FIRST = 2
+}
+
+struct PackingOption {
+  format: String;
+  quality: i32;
+  bufferSize: Optional<i32>;
+  desiredDynamicRange: Optional<PackingDynamicRange>;
+  needsPackProperties: Optional<bool>;
+}
+
+struct ImagePropertyOptions {
+  index: Optional<i32>;
+  defaultValue: Optional<String>;
+}
+
+struct DecodingOptions {
+  index: Optional<i32>;
+  sampleSize: Optional<i32>;
+  rotate: Optional<i32>;
+  editable: Optional<bool>;
+  desiredSize: Optional<Size>;
+  desiredRegion: Optional<Region>;
+  desiredPixelFormat: Optional<PixelMapFormat>;
+  photoDesiredPixelFormat: Optional<PixelMapFormat>; // not exposed to the user
+  fitDensity: Optional<i32>;
+  fillColor: Optional<i32>; // not exposed to the user
+  SVGResize: Optional<i32>; // not exposed to the user
+  desiredColorSpace: Optional<@sts_type("colorSpaceManager.ColorSpaceManager") Opaque>;
+  desiredDynamicRange: Optional<DecodingDynamicRange>;
+  resolutionQuality: Optional<ResolutionQuality>;
+  cropAndScaleStrategy: Optional<CropAndScaleStrategy>;
+  reusePixelmap: Optional<PixelMap>; // not exposed to the user
+}
+
+struct Component {
+  @readonly componentType: ComponentType;
+  @readonly rowStride: i32;
+  @readonly pixelStride: i32;
+  @readonly byteBuffer: @arraybuffer Array<u8>;
+}
+
+struct InitializationOptions {
+  size: Size;
+  srcPixelFormat: Optional<PixelMapFormat>;
+  pixelFormat: Optional<PixelMapFormat>;
+  editable: Optional<bool>;
+  alphaType: Optional<AlphaType>;
+  scaleMode: Optional<ScaleMode>;
+}
+
+struct SourceOptions {
+  sourceDensity: i32;
+  sourcePixelFormat: Optional<PixelMapFormat>;
+  sourceSize: Optional<Size>;
+}
+
+enum AuxiliaryPictureType: i32 {
+  GAINMAP = 1,
+  DEPTH_MAP = 2,
+  UNREFOCUS_MAP = 3,
+  LINEAR_MAP = 4,
+  FRAGMENT_MAP = 5,
+}
+
+struct AuxiliaryPictureInfo {
+  auxiliaryPictureType: AuxiliaryPictureType;
+  size: Size;
+  rowStride: i32;
+  pixelFormat: PixelMapFormat;
+  colorSpace: @sts_type("colorSpaceManager.ColorSpaceManager") Opaque;
+}
+
+union PropertyValue {
+    type_string: String;
+    @null type_null;
+}
+
+interface PixelMap {
+  GetImplPtr(): i64;
+
+  @gen_async("getImageInfo")
+  @gen_promise("getImageInfo")
+  GetImageInfoSync(): ImageInfo;
+
+  @gen_async("readPixelsToBuffer")
+  @gen_promise("readPixelsToBuffer")
+  ReadPixelsToBufferSync(dst: @arraybuffer Array<u8>): void;
+
+  ReadPixelsSync(area: PositionArea): void;
+
+  WriteBufferToPixelsSync(src: @arraybuffer Array<u8>): void;
+
+  @gen_async("createAlphaPixelmap")
+  @gen_promise("createAlphaPixelmap")
+  CreateAlphaPixelmapSync(): PixelMap;
+
+  GetBytesNumberPerRow(): i32;
+
+  GetPixelBytesNumber(): i32;
+
+  @gen_async("scale")
+  @gen_promise("scale")
+  @overload("scaleSync")
+  ScaleSync(x: f64, y: f64): void;
+
+  @gen_promise("scale")
+  @overload("scaleSync")
+  ScaleWithAntiAliasingSync(x: f64, y: f64, level: AntiAliasingLevel): void;
+
+  @gen_async("crop")
+  @gen_promise("crop")
+  CropSync(region: Region): void;
+
+  @gen_async("rotate")
+  @gen_promise("rotate")
+  RotateSync(angle: f64): void;
+
+  @gen_async("flip")
+  @gen_promise("flip")
+  FlipSync(horizontal: bool, vertical: bool): void;
+
+  @gen_async("opacity")
+  @gen_promise("opacity")
+  OpacitySync(rate: f64): void;
+
+  SetMemoryNameSync(name: String): void;
+
+  @gen_async("release")
+  @gen_promise("release")
+  ReleaseSync(): void;
+
+  @get GetIsStrideAlignment(): bool;
+
+  @set SetCaptureId(captureId: i32): void;
+  @get GetCaptureId(): i32;
+
+  @set SetTimestamp(timestamp: i64): void;
+  @get GetTimestamp(): i64;
+}
+
+interface Picture {
+  GetImplPtr(): i64;
+
+  GetMainPixelmap(): PixelMap;
+
+  Marshalling(sequence: @sts_type("rpc.MessageSequence") Opaque): void;
+
+  Release(): void;
+}
+
+interface AuxiliaryPicture {
+  @gen_promise("readPixelsToBuffer")
+  ReadPixelsToBufferSync(): @arraybuffer Array<u8>;
+
+  GetAuxiliaryPictureInfo(): AuxiliaryPictureInfo;
+
+  SetAuxiliaryPictureInfo(info: AuxiliaryPictureInfo): void;
+
+  Release(): void;
+}
+
+interface ImageSource {
+  GetImplPtr(): i64;
+  @gen_async("getImageInfo")
+  @gen_promise("getImageInfoPromiseWithIndex")
+  GetImageInfoSyncWithIndex(index: u32): ImageInfo;
+
+  @gen_async("getImageInfo")
+  @gen_promise("getImageInfoPromise")
+  GetImageInfoSync(): ImageInfo;
+
+  @!sts_inject_into_interface("getImageInfoSync(index: int | undefined): ImageInfo;")
+  @!sts_inject_into_class("""getImageInfoSync(index: int | undefined): ImageInfo {
+            if (index === undefined) {
+                return this.getImageInfoSync();
+            } else {
+                return this.getImageInfoSyncWithIndex(index);
+            }
+        }
+  """)
+
+  @!sts_inject_into_interface("getImageInfo(index: int | undefined): Promise<ImageInfo>;")
+  @!sts_inject_into_class("""getImageInfo(index: int | undefined): Promise<ImageInfo> {
+            if (index === undefined) {
+                return this.getImageInfoPromise();
+            } else {
+                return this.getImageInfoPromiseWithIndex(index);
+            }
+        }
+  """)
+
+  @gen_async("createPixelMap")
+  @gen_promise("createPixelMapPromiseWithOptions")
+  CreatePixelMapSyncWithOptions(options: DecodingOptions): PixelMap;
+
+  @gen_async("createPixelMap")
+  @gen_promise("createPixelMapPromise")
+  CreatePixelMapSync(): PixelMap;
+
+  @!sts_inject_into_interface("createPixelMapSync(options: DecodingOptions | undefined): PixelMap;")
+  @!sts_inject_into_class("""createPixelMapSync(options: DecodingOptions | undefined): PixelMap {
+            if (options === undefined) {
+                return this.createPixelMapSync();
+            } else {
+                return this.createPixelMapSyncWithOptions(options);
+            }
+        }
+  """)
+
+  @!sts_inject_into_interface("createPixelMap(options: DecodingOptions | undefined): Promise<PixelMap>;")
+  @!sts_inject_into_class("""createPixelMap(options: DecodingOptions | undefined): Promise<PixelMap> {
+            if (options === undefined) {
+                return this.createPixelMapPromise();
+            } else {
+                return this.createPixelMapPromiseWithOptions(options);
+            }
+        }
+  """)
+
+  @gen_promise("createPixelMapUsingAllocator")
+  CreatePixelMapUsingAllocatorSync(options: Optional<DecodingOptions>, allocatorType: Optional<AllocatorType>): PixelMap;
+
+  @gen_async("createPixelMapList")
+  CreatePixelMapListSync(): Array<PixelMap>;
+
+  @gen_async("createPixelMapList")
+  CreatePixelMapListSyncWithOptions(options: DecodingOptions): Array<PixelMap>;
+
+  @gen_promise("createPixelMapList")
+  CreatePixelMapListSyncWithOptionalOptions(options: Optional<DecodingOptions>): Array<PixelMap>;
+
+  @gen_async("getDelayTimeList")
+  @gen_promise("getDelayTimeList")
+  GetDelayTimeListSync(): Array<i32>;
+
+  @gen_promise("getImageProperty")
+  GetImagePropertySync(key: PropertyKey, options: Optional<ImagePropertyOptions>): String;
+
+  @gen_promise("getImageProperties")
+  GetImagePropertiesSync(key: Array<PropertyKey>): @record Map<PropertyKey, PropertyValue>;
+
+  @gen_promise("modifyImageProperty")
+  ModifyImagePropertySync(key: PropertyKey, value: String): void;
+  
+  @gen_promise("modifyImageProperties")
+  ModifyImagePropertiesSync(records: @record Map<PropertyKey, PropertyValue>): void;
+
+  @gen_async("release")
+  @gen_promise("release")
+  ReleaseSync(): void;
+
+  @get GetSupportedFormats(): Array<String>;
+}
+
+interface ImagePacker {
+  @gen_async("packing")
+  @gen_promise("packing")
+  PackingPixelMapSync(source: PixelMap, option: PackingOption): @arraybuffer Array<u8>;
+
+  @gen_async("packToFile")
+  @gen_promise("packToFile")
+  PackImageSourceToFileSync(source: ImageSource, fd: i32, options: PackingOption): void;
+
+  @gen_async("packToFile")
+  @gen_promise("packToFile")
+  PackPixelMapToFileSync(source: PixelMap, fd: i32, options: PackingOption): void;
+
+  @gen_promise("packToFile")
+  PackPictureToFileSync(picture: Picture, fd: i32, options: PackingOption): void;
+
+  @gen_promise("packing")
+  PackingPictureSync(picture: Picture, options: PackingOption): @arraybuffer Array<u8>;
+
+  @gen_async("release")
+  @gen_promise("release")
+  ReleaseSync(): void;
+
+  @get GetSupportedFormats(): Array<String>;
+}
+
+interface Image {
+  @get("size") GetSize(): Size;
+  @get("format") GetFormat(): i32;
+
+  @gen_async("release")
+  @gen_promise("release")
+  ReleaseSync(): void;
+}
+
+interface ImageReceiver {
+  @get GetSize(): Size;
+  @get GetCapacity(): i32;
+  @get GetFormat(): ImageFormat;
+
+  @gen_async("getReceivingSurfaceId")
+  @gen_promise("getReceivingSurfaceId")
+  GetReceivingSurfaceIdSync(): String;
+
+  @gen_async("readLatestImage")
+  @gen_promise("readLatestImage")
+  ReadLatestImageSync(): Image;
+
+  @!sts_inject_into_interface("on(type: string, callback: (err: BusinessError<void>, data: undefined)=> void): void;")
+  @!sts_inject_into_class("""on(type: string, callback: (err: BusinessError<void>, data: undefined)=> void): void {
+          if (type === 'imageArrival') {
+            this.onImageArrival(callback);
+          } else {
+            throw new Error(`Unknown type: ${type}`);
+          }
+        }
+  """)
+
+  @!sts_inject_into_interface("off(type: string, callback?: (err: BusinessError<void>, data: undefined)=> void): void;")
+  @!sts_inject_into_class("""off(type: string, callback?: (err: BusinessError<void>, data: undefined)=> void): void {
+          if (type === 'imageArrival') {
+            this.offImageArrival(callback);
+          } else {
+            throw new Error(`Unknown type: ${type}`);
+          }
+        }
+  """)
+
+  OnImageArrival(callback: (err: @sts_type("BusinessError<void>") Opaque, data: @sts_type("undefined") Opaque)=> void): void;
+  OffImageArrival(callback: Optional<(err: @sts_type("BusinessError<void>") Opaque, data: @sts_type("undefined") Opaque)=> void>): void;
+
+  @gen_async("release")
+  @gen_promise("release")
+  ReleaseSync(): void;
+}
+
+interface ImageCreator {
+  @get("capacity") GetCapacity(): i32;
+  @get("format") GetFormat(): ImageFormat;
+
+  @gen_async("release")
+  @gen_promise("release")
+  ReleaseSync(): void;
+}
+
+function MakeEmptySize(): Size;
+function MakeEmptyImageInfo(): ImageInfo;
+
+@overload("createPixelMapSync")
+function CreatePixelMapByBufferAndOptionsSync(colors: @arraybuffer Array<u8>, options: InitializationOptions): PixelMap;
+
+@overload("createPixelMapSync")
+function CreatePixelMapByOptionsSync(options: InitializationOptions): PixelMap;
+
+// For legacy ANI backward compatibility
+function CreatePixelMapByPtr(ptr: i64): PixelMap;
+
+@overload("createPixelMapFromSurfaceSync")
+function CreatePixelMapFromSurfaceByIdSync(surfaceId: String): PixelMap;
+
+@overload("createPixelMapFromSurfaceSync")
+function CreatePixelMapFromSurfaceByIdAndRegionSync(surfaceId: String, region: Region): PixelMap;
+
+@overload("createImageSource")
+function CreateImageSourceByUri(uri: String): ImageSource;
+
+@overload("createImageSource")
+function CreateImageSourceByUriOption(uri: String, options: SourceOptions): ImageSource;
+
+@overload("createImageSource")
+function CreateImageSourceByFd(fd: i32): ImageSource;
+
+@overload("createImageSource")
+function CreateImageSourceByFdOption(fd: i32, options: SourceOptions): ImageSource;
+
+@overload("createImageSource")
+function CreateImageSourceByArrayBuffer(buf: @arraybuffer Array<u8>): ImageSource;
+
+@overload("createImageSource")
+function CreateImageSourceByArrayBufferOption(buf: @arraybuffer Array<u8>, options: SourceOptions): ImageSource;
+
+@overload("createImageSource")
+function CreateImageSourceByRawFileDescriptorOption(rawfile: @sts_type("resourceManager.RawFileDescriptor") Opaque, options: Optional<SourceOptions>): ImageSource;
+
+function CreateImagePacker(): ImagePacker;
+
+@overload("createImageCreator")
+function CreateImageCreator(width: i32, height: i32, format: i32, capacity: i32): ImageCreator;
+
+@overload("createImageCreator")
+function CreateImageCreatorBySize(size: Size, format: ImageFormat, capacity: i32): ImageCreator;
+
+@overload("createImageReceiver")
+function CreateImageReceiver(width: i32, height: i32, format: i32, capacity: i32): ImageReceiver;
+
+@overload("createImageReceiver")
+function CreateImageReceiverBySize(size: Size, format: ImageFormat, capacity: i32): ImageReceiver;
+
+@overload("createPicture")
+function CreatePictureByPixelMap(mainPixelmap : PixelMap): Picture;
+
+function CreateAuxiliaryPicture(buffer: @arraybuffer Array<u8>, size: Size, type: AuxiliaryPictureType): AuxiliaryPicture;
