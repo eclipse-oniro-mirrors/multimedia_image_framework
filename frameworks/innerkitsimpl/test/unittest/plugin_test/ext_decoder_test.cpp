@@ -65,6 +65,7 @@ static const std::string IMAGE_DEST = "/data/local/tmp/image/test_encode_out.dat
 static const std::string IMAGE_HEIFHDR_SRC = "/data/local/tmp/image/test_heif_hdr.heic";
 static const std::string IMAGE_JPG_THREE_GAINMAP_HDR_PATH = "/data/local/tmp/image/three_gainmap_hdr.jpg";
 static const std::string IMAGE_HEIC_THREE_GAINMAP_HDR_PATH = "/data/local/tmp/image/three_gainmap_hdr.heic";
+static const std::string IMAGE_INCOMPLETE_GIF_PATH = "/data/local/tmp/image/test_broken.gif";
 class ExtDecoderTest : public testing::Test {
 public:
     ExtDecoderTest() {}
@@ -2319,6 +2320,24 @@ HWTEST_F(ExtDecoderTest, EncodeWideGamutPixelMapAndDecodeTest004, TestSize.Level
     std::shared_ptr<PixelMap> pixelmap = imageSource->CreatePixelMap(opts, errorCode);
     ASSERT_NE(errorCode, OHOS::Media::SUCCESS);
     ASSERT_EQ(pixelmap, nullptr);
+}
+
+/**
+ * @tc.name: DecodeIncompleteGifImageTest001
+ * @tc.desc: Test decoding broken gif image.
+ * @tc.type: FUNC
+ */
+HWTEST_F(ExtDecoderTest, DecodeIncompleteGifImageTest001, TestSize.Level3)
+{
+    uint32_t errorCode = 0;
+    SourceOptions sourceOpts;
+    std::unique_ptr<ImageSource> imageSource =
+        ImageSource::CreateImageSource(IMAGE_INCOMPLETE_GIF_PATH.c_str(), sourceOpts, errorCode);
+    ASSERT_NE(imageSource, nullptr);
+    DecodeOptions opts;
+    std::shared_ptr<PixelMap> pixelmap = imageSource->CreatePixelMap(opts, errorCode);
+    EXPECT_EQ(errorCode, OHOS::Media::SUCCESS);
+    EXPECT_NE(pixelmap, nullptr);
 }
 
 }
