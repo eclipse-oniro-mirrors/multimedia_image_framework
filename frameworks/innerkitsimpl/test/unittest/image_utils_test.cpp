@@ -828,5 +828,31 @@ HWTEST_F(ImageUtilsTest, GetYUVByteCountTest001, TestSize.Level3)
     int32_t ret = ImageUtils::GetYUVByteCount(info);
     EXPECT_GT(ret, 0);
 }
+
+/**
+ * @tc.name: DumpPixelMapTest001
+ * @tc.desc: Test ImageUtils::DumpPixelMap().
+ *           Judge whether the input parameters of the function have changed
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageUtilsTest, DumpPixelMapTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImageUtilsTest: DumpPixelMapTest001 start";
+    uint32_t errorCode = -1;
+    SourceOptions opts;
+    std::unique_ptr<ImageSource> imageSource =
+        ImageSource::CreateImageSource(IMAGE_JPEG_PATH.c_str(), opts, errorCode);
+    ASSERT_EQ(errorCode, OHOS::Media::SUCCESS);
+    ASSERT_NE(imageSource.get(), nullptr);
+
+    DecodeOptions dstOpts;
+    std::shared_ptr<PixelMap> pixelMap = imageSource->CreatePixelMapEx(0, dstOpts, errorCode);
+    std::string customFileName = "test";
+    uint64_t imageId = 0;
+    Media::ImageUtils::DumpPixelMap(pixelMap.get(), customFileName, imageId);
+    EXPECT_EQ(customFileName, "test");
+    EXPECT_EQ(imageId, 0);
+    GTEST_LOG_(INFO) << "ImageUtilsTest: DumpPixelMapTest001 end";
+}
 }
 }
