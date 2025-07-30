@@ -1079,8 +1079,8 @@ SkCodec::Result ExtDecoder::DoRegionDecode(DecodeContext &context)
         case SkCodec::kSuccess:
         case SkCodec::kIncompleteInput:
         case SkCodec::kErrorInInput:
-            context.outInfo.size.width = static_cast<uint32_t>(decodeInfo.width());
-            context.outInfo.size.height = static_cast<uint32_t>(decodeInfo.height());
+            context.outInfo.size.width = decodeInfo.width();
+            context.outInfo.size.height = decodeInfo.height();
             return SkCodec::kSuccess;
         default:
             IMAGE_LOGE("Error: Could not get pixels with message %{public}s", SkCodec::ResultToString(result));
@@ -1120,8 +1120,8 @@ SkCodec::Result ExtDecoder::DoSampleDecode(DecodeContext &context)
         case SkCodec::kSuccess:
         case SkCodec::kIncompleteInput:
         case SkCodec::kErrorInInput:
-            context.outInfo.size.width = static_cast<uint32_t>(dstInfo_.width());
-            context.outInfo.size.height = static_cast<uint32_t>(dstInfo_.height());
+            context.outInfo.size.width = dstInfo_.width();
+            context.outInfo.size.height = dstInfo_.height();
             return SkCodec::kSuccess;
         default:
             IMAGE_LOGE("Error: Could not get pixels with message %{public}s", SkCodec::ResultToString(result));
@@ -1328,8 +1328,8 @@ uint32_t ExtDecoder::Decode(uint32_t index, DecodeContext &context)
 #endif
     uint32_t res = PreDecodeCheck(index);
     CHECK_ERROR_RETURN_RET(res != SUCCESS, res);
-    context.outInfo.size.width = static_cast<uint32_t>(dstInfo_.width());
-    context.outInfo.size.height = static_cast<uint32_t>(dstInfo_.height());
+    context.outInfo.size.width = dstInfo_.width();
+    context.outInfo.size.height = dstInfo_.height();
     SkEncodedImageFormat skEncodeFormat = codec_->getEncodedFormat();
 #if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
     int timerFd = timerfd_create(CLOCK_MONOTONIC, TFD_NONBLOCK | TFD_CLOEXEC);
@@ -1676,8 +1676,8 @@ uint32_t ExtDecoder::UpdateHardWareDecodeInfo(DecodeContext &context)
             context.yuvInfo.uvHeight = static_cast<uint32_t>((hwDstInfo_.height() + 1) / NUM_2);
         }
     }
-    context.outInfo.size.width = static_cast<uint32_t>(hwDstInfo_.width());
-    context.outInfo.size.height = static_cast<uint32_t>(hwDstInfo_.height());
+    context.outInfo.size.width = hwDstInfo_.width();
+    context.outInfo.size.height = hwDstInfo_.height();
     if (outputColorFmt_ == V1_2::PIXEL_FMT_YCRCB_420_SP) {
         context.yuvInfo.imageSize = {hwDstInfo_.width(), hwDstInfo_.height()};
     }
