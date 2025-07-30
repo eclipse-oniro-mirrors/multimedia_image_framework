@@ -1683,8 +1683,8 @@ uint32_t ExtDecoder::UpdateHardWareDecodeInfo(DecodeContext &context)
 
 uint32_t ExtDecoder::HardWareDecode(DecodeContext &context)
 {
-    orgImgSize_.width = static_cast<uint32_t>(info_.width());
-    orgImgSize_.height = static_cast<uint32_t>(info_.height());
+    orgImgSize_.width = info_.width();
+    orgImgSize_.height = info_.height();
     if (!CheckContext(context)) {
         return ERROR;
     }
