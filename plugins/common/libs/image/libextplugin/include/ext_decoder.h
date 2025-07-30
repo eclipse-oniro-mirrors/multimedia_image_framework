@@ -191,7 +191,7 @@ private:
     bool SupportRegionFlag_;
     //Yuv
     OHOS::Media::Size desiredSizeYuv_;
-    uint32_t softSampleSize_ = 1;
+    int softSampleSize_ = 1;
     uint32_t sampleSize_ = 1;
 
     // hdr

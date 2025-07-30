@@ -41,7 +41,7 @@ struct ErrorMgr : jpeg_error_mgr {
 #ifdef _WIN32
     jmp_buf setjmp_buffer = {{0}};  // for return to caller
 #else
-    jmp_buf setjmp_buffer;  // for return to caller
+    jmp_buf setjmp_buffer = {};  // for return to caller
 #endif
 };
 
