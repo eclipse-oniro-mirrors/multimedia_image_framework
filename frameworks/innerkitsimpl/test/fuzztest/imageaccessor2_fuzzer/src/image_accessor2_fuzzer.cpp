@@ -32,6 +32,7 @@
 #include "webp_exif_metadata_accessor.h"
 #include "file_metadata_stream.h"
 #include "image_log.h"
+#include "exif_metadata_formatter.h"
 
 #undef LOG_DOMAIN
 #define LOG_DOMAIN LOG_TAG_DOMAIN_ID_IMAGE
@@ -200,6 +201,18 @@ void AccessorTest002(const uint8_t *data, size_t size)
     std::shared_ptr<MetadataAccessor> metadataAccessor2 = MetadataAccessorFactory::Create(filename);
     MetadataAccessorFuncTest(metadataAccessor2);
 }
+
+void ExifMetadatFormatterTest()
+{
+    auto size = ExifMetadatFormatter::valueFormatConvertConfig.size();
+    uint8_t size_checked = (size == 0) ? 1 : size;
+    uint8_t index = FDP->ConsumeIntegral<uint8_t>() % size_checked;
+    auto it = ExifMetadatFormatter::valueFormatConvertConfig.begin();
+    std::advance(it, index);
+    auto func = (it->second).first;
+    std::string value = "";
+    func(value, (it->second).second);
+}
 }  // namespace Media
 }  // namespace OHOS
 
@@ -212,5 +225,6 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
 
     OHOS::Media::AccessorTest001(data, size);
     OHOS::Media::AccessorTest002(data, size);
+    OHOS::Media::ExifMetadatFormatterTest();
     return 0;
 }
