@@ -2557,6 +2557,15 @@ ImageHdrType ExtDecoder::CheckHdrType()
 #endif
 }
 
+void ExtDecoder::ValidateAndCorrectMetaData(HdrMetadata& metadata)
+{
+#if !defined(CROSS_PLATFORM)
+    HdrHelper::ValidateAndCorrectMetaData(metadata, hdrType_);
+#else
+    return;
+#endif
+}
+
 uint32_t ExtDecoder::GetGainMapOffset()
 {
 #if defined(_WIN32) || defined(_APPLE) || defined(IOS_PLATFORM) || defined(ANDROID_PLATFORM)

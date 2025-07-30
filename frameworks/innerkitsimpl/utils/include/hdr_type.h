@@ -18,6 +18,10 @@
 #include <vector>
 namespace OHOS {
 namespace Media {
+
+constexpr uint8_t GAINMAP_CHANNEL_NUM_ONE = 0x01;
+constexpr uint8_t GAINMAP_CHANNEL_NUM_THREE = 0x03;
+
 enum class ImageHdrType : int32_t {
     UNKNOWN = 0,
     SDR,
