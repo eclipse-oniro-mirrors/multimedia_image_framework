@@ -100,8 +100,8 @@ template("image_taihe_shared_library") {
       "graphic_surface:sync_fence",
       "hilog:libhilog",
       "hitrace:hitrace_meter",
+      "libjpeg-turbo:turbojpeg",
       "runtime_core:ani_helpers",
-      "skia:libjpeg",
     ]
 
     cflags = [
