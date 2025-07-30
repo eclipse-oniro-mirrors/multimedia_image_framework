@@ -44,6 +44,7 @@ static constexpr uint32_t ALPHATYPE_MODULO = 4;
 static constexpr uint32_t COLORSPACE_MODULO = 17;
 static constexpr uint32_t DYNAMICRANGE_MODULO = 3;
 static constexpr uint32_t RESOLUTION_MODULO = 4;
+static constexpr uint32_t ALLOCATORTYPE_MODULO = 5;
 using namespace OHOS::Media;
 
 int ConvertDataToFd(const uint8_t* data, size_t size, std::string encodeFormat)
@@ -301,6 +302,7 @@ void SetFdpDecodeOptions(FuzzedDataProvider* fdp, OHOS::Media::DecodeOptions &de
     decodeOpts.resolutionQuality = static_cast<ResolutionQuality>(fdp->ConsumeIntegral<uint8_t>() % RESOLUTION_MODULO);
     decodeOpts.isAisr = fdp->ConsumeBool();
     decodeOpts.isAppUseAllocator = fdp->ConsumeBool();
+    decodeOpts.allocatorType = static_cast<AllocatorType>(fdp->ConsumeIntegral<uint32_t>() % ALLOCATORTYPE_MODULO);
 }
 
 void SetFdpPixelDecodeOptions(FuzzedDataProvider* fdp, OHOS::ImagePlugin::PixelDecodeOptions &plOpts)

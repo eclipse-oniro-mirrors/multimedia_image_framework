@@ -37,6 +37,8 @@ static const std::string PNG_FORMAT = "image/png";
 static const std::string IMAGE_ENCODE_DEST = "/data/local/tmp/test_out.dat";
 constexpr uint32_t SOURCEOPTIONS_MIMETYPE_MODULO = 3;
 static constexpr uint32_t ALLOCATORTYPE_MODULO = 5;
+static constexpr uint32_t DYNAMICRANGE_MODULO = 4;
+static constexpr uint32_t QUALITY_MODULO = 101;
 
 namespace OHOS {
 namespace Media {
@@ -314,6 +316,9 @@ void EncodePictureTest(std::shared_ptr<Picture> picture, const std::string &form
     ImagePacker pack;
     PackOption packOption;
     packOption.format = format;
+    packOption.quality = FDP->ConsumeIntegral<uint8_t>() % DYNAMICRANGE_MODULO;
+    packOption.desiredDynamicRange = static_cast<EncodeDynamicRange>(FDP->ConsumeIntegral<int32_t>() % QUALITY_MODULO);
+    packOption.needsPackProperties = FDP->ConsumeBool();
     if (pack.StartPacking(outputPath, packOption) != SUCCESS) {
         IMAGE_LOGE("%{public}s StartPacking failed.", __func__);
         return;
@@ -339,6 +344,9 @@ void EncodePixelMapTest(std::shared_ptr<PixelMap> pixelmap, const std::string &f
     ImagePacker pack;
     PackOption packOption;
     packOption.format = format;
+    packOption.quality = FDP->ConsumeIntegral<uint8_t>() % DYNAMICRANGE_MODULO;
+    packOption.desiredDynamicRange = static_cast<EncodeDynamicRange>(FDP->ConsumeIntegral<int32_t>() % QUALITY_MODULO);
+    packOption.needsPackProperties = FDP->ConsumeBool();
     if (pack.StartPacking(outputPath, packOption) != SUCCESS) {
         IMAGE_LOGE("%{public}s StartPacking failed.", __func__);
         return;
