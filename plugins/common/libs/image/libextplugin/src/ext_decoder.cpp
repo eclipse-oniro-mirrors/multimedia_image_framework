@@ -777,6 +777,7 @@ uint32_t ExtDecoder::SetDecodeOptions(uint32_t index, const PixelDecodeOptions &
     auto resCode = CheckDecodeOptions(index, opts);
     CHECK_ERROR_RETURN_RET(resCode != SUCCESS, resCode);
     SupportRegionFlag_ = IsRegionDecodeSupported(index, opts, info);
+#ifdef SK_ENABLE_OHOS_CODEC
     if (IsSupportSampleDecode(opts.desiredPixelFormat) &&
         GetSampleSize(opts.desiredSize.width, opts.desiredSize.height)) {
         dstWidth = info_.width() / softSampleSize_;
@@ -784,7 +785,7 @@ uint32_t ExtDecoder::SetDecodeOptions(uint32_t index, const PixelDecodeOptions &
         dstInfo_ = SkImageInfo::Make(dstWidth, dstHeight, desireColor, desireAlpha,
             getDesiredColorSpace(info_, opts));
     }
-
+#endif
     info.size.width = static_cast<uint32_t>(dstInfo_.width());
     info.size.height = static_cast<uint32_t>(dstInfo_.height());
     reusePixelmap_ = opts.plReusePixelmap;
