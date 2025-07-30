@@ -36,6 +36,8 @@ public:
         std::string defaultValueStr;
     };
 
+    static bool GetPropertyInt(ani_env *env, ani_object obj, const std::string &name, int32_t &value);
+    static bool GetPropertyLong(ani_env *env, ani_object obj, const std::string &name, int64_t &value);
     static bool GetPropertyDouble(ani_env *env, ani_object obj, const std::string &name, double &value);
     static ani_object ToBusinessError(ani_env *env, int32_t code, const std::string &message);
 
