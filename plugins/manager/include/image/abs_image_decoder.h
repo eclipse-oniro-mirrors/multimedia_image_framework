@@ -233,6 +233,11 @@ public:
         return Media::ImageHdrType::SDR;
     }
 
+    virtual void ValidateAndCorrectMetaData(Media::HdrMetadata& metadata)
+    {
+        return;
+    }
+
     virtual uint32_t GetGainMapOffset()
     {
         return DEFAULT_GAINMAP_OFFSET;

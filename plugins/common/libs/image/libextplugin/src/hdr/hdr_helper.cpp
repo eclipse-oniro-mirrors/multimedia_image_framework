@@ -83,6 +83,7 @@ constexpr uint32_t EXTEND_INFO_MAIN_SIZE = 60;
 constexpr uint32_t ISO_GAINMAP_METADATA_PAYLOAD_MIN_SIZE = 38;
 constexpr uint32_t DENOMINATOR = 1000000;
 constexpr uint16_t EMPTY_META_SIZE = 0;
+constexpr uint8_t FIRST_CHANNEL_INDEX = 0;
 
 const float SM_COLOR_SCALE = 0.00002f;
 const float SM_LUM_SCALE = 0.0001f;
@@ -433,6 +434,42 @@ static bool ParseVividJpegStaticMetadata(uint8_t* data, uint32_t& offset, uint32
     }
     return true;
 #endif
+}
+
+static float ReplaceZeroData(float num, float replacement)
+{
+    return (num == 0.0f) ? replacement : num;
+}
+
+static void DuplicateSingleChannelMetadataToTriple(ISOMetadata& metaISO)
+{
+    for (size_t i = GAINMAP_CHANNEL_NUM_ONE; i < GAINMAP_CHANNEL_NUM_THREE; i++) {
+        metaISO.enhanceClippedThreholdMaxGainmap[i] = ReplaceZeroData(metaISO.enhanceClippedThreholdMaxGainmap[i],
+            metaISO.enhanceClippedThreholdMaxGainmap[FIRST_CHANNEL_INDEX]);
+        metaISO.enhanceMappingGamma[i] = ReplaceZeroData(metaISO.enhanceMappingGamma[i],
+            metaISO.enhanceMappingGamma[FIRST_CHANNEL_INDEX]);
+        metaISO.enhanceMappingBaselineOffset[i] = ReplaceZeroData(metaISO.enhanceMappingBaselineOffset[i],
+            metaISO.enhanceMappingBaselineOffset[FIRST_CHANNEL_INDEX]);
+        metaISO.enhanceMappingAlternateOffset[i] = ReplaceZeroData(metaISO.enhanceMappingAlternateOffset[i],
+            metaISO.enhanceMappingAlternateOffset[FIRST_CHANNEL_INDEX]);
+        IMAGE_LOGD("HDR-IMAGE fix MaxGainmap %{public}f", metaISO.enhanceClippedThreholdMaxGainmap[i]);
+        IMAGE_LOGD("HDR-IMAGE fix Gamma %{public}f", metaISO.enhanceMappingGamma[i]);
+        IMAGE_LOGD("HDR-IMAGE fix baseOffset %{public}f", metaISO.enhanceMappingBaselineOffset[i]);
+        IMAGE_LOGD("HDR-IMAGE fix alternateOffset %{public}f", metaISO.enhanceMappingAlternateOffset[i]);
+    }
+}
+
+static void ValidateAndCorrectISOMetadata(ISOMetadata& metaISO, Media::ImageHdrType type)
+{
+    if (type != ImageHdrType::HDR_VIVID_DUAL && type != ImageHdrType::HDR_VIVID_SINGLE) {
+        return;
+    }
+    DuplicateSingleChannelMetadataToTriple(metaISO);
+}
+
+void HdrHelper::ValidateAndCorrectMetaData(Media::HdrMetadata& metadata, Media::ImageHdrType type)
+{
+    ValidateAndCorrectISOMetadata(metadata.extendMeta.metaISO, type);
 }
 
 static ExtendInfoMain ParseExtendInfoMain(uint8_t* data, uint32_t& offset, uint32_t size, bool isThreeCom)

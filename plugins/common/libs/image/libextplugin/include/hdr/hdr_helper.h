@@ -28,6 +28,7 @@ namespace ImagePlugin {
 class HdrHelper {
 public:
     static Media::ImageHdrType CheckHdrType(SkCodec* codec, uint32_t& offset);
+    static void ValidateAndCorrectMetaData(Media::HdrMetadata& metadata, Media::ImageHdrType type);
     static bool GetMetadata(SkCodec* codec, Media::ImageHdrType type, Media::HdrMetadata& metadata);
 };
 

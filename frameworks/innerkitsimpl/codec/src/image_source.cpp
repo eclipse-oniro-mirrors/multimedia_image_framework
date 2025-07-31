@@ -171,7 +171,6 @@ constexpr int32_t DEFAULT_DMA_SIZE = 512 * 512;
 constexpr int32_t DMA_ALLOC = 1;
 constexpr int32_t SHARE_MEMORY_ALLOC = 2;
 constexpr int32_t AUTO_ALLOC = 0;
-constexpr uint8_t GAINMAP_CHANNEL_NUM_ONE = 0x01;
 static constexpr uint8_t JPEG_SOI[] = { 0xFF, 0xD8, 0xFF };
 constexpr uint8_t PIXEL_BYTES = 4;
 
@@ -4309,6 +4308,7 @@ bool ImageSource::ApplyGainMap(ImageHdrType hdrType, DecodeContext& baseCtx, Dec
         IMAGE_LOGI("HDR-IMAGE wideGamut get one channel gainmap");
         return false;
     }
+    mainDecoder_->ValidateAndCorrectMetaData(metadata);
     IMAGE_LOGD("HDR-IMAGE get hdr metadata, extend flag is %{public}d, static size is %{public}zu,"
         "dynamic metadata size is %{public}zu",
         metadata.extendMetaFlag, metadata.staticMetadata.size(), metadata.dynamicMetadata.size());
