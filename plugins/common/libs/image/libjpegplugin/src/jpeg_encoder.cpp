@@ -195,8 +195,8 @@ uint32_t JpegEncoder::SetCommonConfig()
         "encode image failed, pixel map is null.");
     CHECK_ERROR_RETURN_RET_LOG(setjmp(jerr_.setjmp_buffer), ERR_IMAGE_ENCODE_FAILED,
         "encode image error, set config failed.");
-    encodeInfo_.image_width = static_cast<JDIMENSION>(pixelMaps_[0]->GetWidth());
-    encodeInfo_.image_height = static_cast<JDIMENSION>(pixelMaps_[0]->GetHeight());
+    encodeInfo_.image_width = static_cast<uint32_t>(pixelMaps_[0]->GetWidth());
+    encodeInfo_.image_height = static_cast<uint32_t>(pixelMaps_[0]->GetHeight());
     PixelFormat pixelFormat = pixelMaps_[0]->GetPixelFormat();
     encodeInfo_.in_color_space = GetEncodeFormat(pixelFormat, encodeInfo_.input_components);
     if (encodeInfo_.in_color_space == JCS_UNKNOWN) {
