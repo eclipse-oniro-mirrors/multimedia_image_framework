@@ -193,8 +193,8 @@ uint32_t JpegDecoder::GetImageSize(uint32_t index, Size &size)
         return ERR_MEDIA_INVALID_OPERATION;
     }
     if (state_ >= JpegDecodingState::BASE_INFO_PARSED) {
-        size.width = decodeInfo_.image_width;
-        size.height = decodeInfo_.image_height;
+        size.width = static_cast<int32_t>(decodeInfo_.image_width);
+        size.height = static_cast<int32_t>(decodeInfo_.image_height);
         return Media::SUCCESS;
     }
     // only state JpegDecodingState::SOURCE_INITED and JpegDecodingState::BASE_INFO_PARSING can go here.
@@ -204,8 +204,8 @@ uint32_t JpegDecoder::GetImageSize(uint32_t index, Size &size)
         state_ = JpegDecodingState::BASE_INFO_PARSING;
         return ret;
     }
-    size.width = decodeInfo_.image_width;
-    size.height = decodeInfo_.image_height;
+    size.width = static_cast<int32_t>(decodeInfo_.image_width);
+    size.height = static_cast<int32_t>(decodeInfo_.image_height);
     state_ = JpegDecodingState::BASE_INFO_PARSED;
     return Media::SUCCESS;
 }
@@ -336,8 +336,8 @@ uint32_t JpegDecoder::SetDecodeOptions(uint32_t index, const PixelDecodeOptions 
         return ret;
     }
     info.pixelFormat = outputFormat_;
-    info.size.width = decodeInfo_.output_width;
-    info.size.height = decodeInfo_.output_height;
+    info.size.width = static_cast<int32_t>(decodeInfo_.output_width);
+    info.size.height = static_cast<int32_t>(decodeInfo_.output_height);
     info.alphaType = AlphaType::IMAGE_ALPHA_TYPE_OPAQUE;
     opts_ = opts;
     state_ = JpegDecodingState::IMAGE_DECODING;

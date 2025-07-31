@@ -919,7 +919,7 @@ uint32_t ExtEncoder::EncodeImageBySurfaceBuffer(sptr<SurfaceBuffer>& surfaceBuff
         pixels = dstData.get();
         rowStride = info.minRowBytes64();
     } else {
-        rowStride = surfaceBuffer->GetStride();
+        rowStride = static_cast<uint64_t>(surfaceBuffer->GetStride());
     }
     cond = !bitmap.installPixels(info, pixels, rowStride);
     CHECK_ERROR_RETURN_RET_LOG(cond, ERR_IMAGE_ENCODE_FAILED,

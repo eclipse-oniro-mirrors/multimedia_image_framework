@@ -978,14 +978,14 @@ void ExtDecoder::FillYuvInfo(DecodeContext &context, SkImageInfo &dstInfo)
 {
     if (context.allocatorType == AllocatorType::SHARE_MEM_ALLOC) {
         context.yuvInfo.imageSize = {dstInfo.width(), dstInfo.height()};
-        context.yuvInfo.yWidth = dstInfo.width();
-        context.yuvInfo.yHeight = dstInfo.height();
+        context.yuvInfo.yWidth = static_cast<uint32_t>(dstInfo.width());
+        context.yuvInfo.yHeight = static_cast<uint32_t>(dstInfo.height());
         context.yuvInfo.uvWidth = static_cast<uint32_t>((dstInfo.width() + 1) / BYTES_PER_YUV_SAMPLE);
         context.yuvInfo.uvHeight = static_cast<uint32_t>((dstInfo.height() + 1) / BYTES_PER_YUV_SAMPLE);
-        context.yuvInfo.yStride = dstInfo.width();
+        context.yuvInfo.yStride = static_cast<uint32_t>(dstInfo.width());
         context.yuvInfo.uvStride = context.yuvInfo.uvWidth + context.yuvInfo.uvWidth;
         context.yuvInfo.yOffset = 0;
-        context.yuvInfo.uvOffset = dstInfo.width() * dstInfo.height();
+        context.yuvInfo.uvOffset = static_cast<uint32_t>(dstInfo.width() * dstInfo.height());
     }
 }
 

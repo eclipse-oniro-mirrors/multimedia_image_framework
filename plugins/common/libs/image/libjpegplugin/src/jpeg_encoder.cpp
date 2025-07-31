@@ -195,8 +195,8 @@ uint32_t JpegEncoder::SetCommonConfig()
         "encode image failed, pixel map is null.");
     CHECK_ERROR_RETURN_RET_LOG(setjmp(jerr_.setjmp_buffer), ERR_IMAGE_ENCODE_FAILED,
         "encode image error, set config failed.");
-    encodeInfo_.image_width = pixelMaps_[0]->GetWidth();
-    encodeInfo_.image_height = pixelMaps_[0]->GetHeight();
+    encodeInfo_.image_width = static_cast<JDIMENSION>(pixelMaps_[0]->GetWidth());
+    encodeInfo_.image_height = static_cast<JDIMENSION>(pixelMaps_[0]->GetHeight());
     PixelFormat pixelFormat = pixelMaps_[0]->GetPixelFormat();
     encodeInfo_.in_color_space = GetEncodeFormat(pixelFormat, encodeInfo_.input_components);
     if (encodeInfo_.in_color_space == JCS_UNKNOWN) {
@@ -239,7 +239,7 @@ uint32_t JpegEncoder::SequenceEncoder(const uint8_t *data)
 #endif
 
     uint8_t *base = const_cast<uint8_t *>(data);
-    uint32_t rowStride = encodeInfo_.image_width * (uint32_t)encodeInfo_.input_components;
+    uint32_t rowStride = encodeInfo_.image_width * static_cast<uint32_t>(encodeInfo_.input_components);
     uint8_t *buffer = nullptr;
     while (encodeInfo_.next_scanline < encodeInfo_.image_height) {
         buffer = base + encodeInfo_.next_scanline * rowStride;
@@ -337,7 +337,7 @@ uint32_t JpegEncoder::RGBAF16Encoder(const uint8_t *data)
     CHECK_ERROR_RETURN_RET_LOG(setjmp(jerr_.setjmp_buffer), ERR_IMAGE_ENCODE_FAILED, "encode image error.");
     jpeg_start_compress(&encodeInfo_, TRUE);
     uint8_t *base = const_cast<uint8_t *>(data);
-    uint32_t rowStride = encodeInfo_.image_width * encodeInfo_.input_components;
+    uint32_t rowStride = encodeInfo_.image_width * static_cast<uint32_t>(encodeInfo_.input_components);
     uint32_t orgRowStride = encodeInfo_.image_width * PIXEL_SIZE_RGBA_F16;
     uint8_t *buffer = nullptr;
     auto rowBuffer = std::make_unique<uint8_t[]>(rowStride);
@@ -366,7 +366,7 @@ uint32_t JpegEncoder::RGB565Encoder(const uint8_t *data)
     uint32_t orgRowStride = encodeInfo_.image_width * PIXEL_SIZE_RGB565;
     uint8_t *orgRowBuffer = nullptr;
 
-    uint32_t outRowStride = encodeInfo_.image_width * encodeInfo_.input_components;
+    uint32_t outRowStride = encodeInfo_.image_width * static_cast<uint32_t>(encodeInfo_.input_components);
     auto outRowBuffer = std::make_unique<uint8_t[]>(outRowStride);
 
     while (encodeInfo_.next_scanline < encodeInfo_.image_height) {

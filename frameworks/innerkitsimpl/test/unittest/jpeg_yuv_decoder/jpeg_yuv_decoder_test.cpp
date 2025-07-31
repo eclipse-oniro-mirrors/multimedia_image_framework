@@ -56,27 +56,38 @@ bool JpgYuvDecoderTest::ReadImageData(std::string jpgpath, uint8_t*& jpegBuffer,
     }
     int ret = fseek(jpgFile, 0, SEEK_END);
     if (ret != 0) {
+        fclose(jpgFile);
         return false;
     }
     jpegBufferSize = static_cast<int>(ftell(jpgFile));
     ret = fseek(jpgFile, 0, SEEK_SET);
     if (ret != 0) {
+        fclose(jpgFile);
         return false;
     }
     if (jpegBufferSize == 0 || jpegBufferSize > PIXEL_MAP_MAX_RAM_SIZE) {
+        fclose(jpgFile);
         return false;
     } else {
         jpegBuffer = new uint8_t[jpegBufferSize];
     }
     if (jpegBuffer == nullptr) {
+        fclose(jpgFile);
         return false;
     }
-    jpegBufferSize = fread(jpegBuffer, 1, jpegBufferSize, jpgFile);
-    if (jpegBufferSize == 0) {
+    uint32_t readSize = fread(jpegBuffer, 1, jpegBufferSize, jpgFile);
+    if (readSize == 0) {
+        delete[] jpegBuffer;
+        jpegBuffer = nullptr;
+        fclose(jpgFile);
         return false;
     }
+    jpegBufferSize = readSize;
+
     ret = fclose(jpgFile);
     if (ret != 0) {
+        delete[] jpegBuffer;
+        jpegBuffer = nullptr;
         return false;
     }
     return true;
