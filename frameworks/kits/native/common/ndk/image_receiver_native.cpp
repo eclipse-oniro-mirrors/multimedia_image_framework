@@ -86,6 +86,10 @@ Image_ErrorCode OH_ImageReceiverOptions_Create(OH_ImageReceiverOptions** options
 MIDK_EXPORT
 Image_ErrorCode OH_ImageReceiverOptions_GetSize(OH_ImageReceiverOptions* options, Image_Size* size)
 {
+    if (nullptr == size) {
+        IMAGE_LOGE("Invalid parameter: size=null.");
+        return IMAGE_BAD_PARAMETER;
+    }
     if (nullptr == options) {
         IMAGE_LOGE("Invalid parameter: options=null.");
         return IMAGE_BAD_PARAMETER;
@@ -110,6 +114,10 @@ Image_ErrorCode OH_ImageReceiverOptions_SetSize(OH_ImageReceiverOptions* options
 MIDK_EXPORT
 Image_ErrorCode OH_ImageReceiverOptions_GetCapacity(OH_ImageReceiverOptions* options, int32_t* capacity)
 {
+    if (nullptr == capacity) {
+        IMAGE_LOGE("Invalid parameter: capacity=null.");
+        return IMAGE_BAD_PARAMETER;
+    }
     if (nullptr == options) {
         IMAGE_LOGE("Invalid parameter: options=null.");
         return IMAGE_BAD_PARAMETER;
@@ -176,6 +184,10 @@ static bool ConvertToUint64(const std::string& str, uint64_t& value)
 MIDK_EXPORT
 Image_ErrorCode OH_ImageReceiverNative_GetReceivingSurfaceId(OH_ImageReceiverNative* receiver, uint64_t* surfaceId)
 {
+    if (nullptr == surfaceId) {
+        IMAGE_LOGE("Invalid parameter: surfaceId=null.");
+        return IMAGE_BAD_PARAMETER;
+    }
     if (nullptr == receiver) {
         IMAGE_LOGE("Invalid parameter: receiver=null.");
         return IMAGE_BAD_PARAMETER;
@@ -202,6 +214,10 @@ Image_ErrorCode OH_ImageReceiverNative_GetReceivingSurfaceId(OH_ImageReceiverNat
 MIDK_EXPORT
 Image_ErrorCode OH_ImageReceiverNative_ReadLatestImage(OH_ImageReceiverNative* receiver, OH_ImageNative** image)
 {
+    if (nullptr == image) {
+        IMAGE_LOGE("Invalid parameter: image=null.");
+        return IMAGE_BAD_PARAMETER;
+    }
     if (nullptr == receiver) {
         IMAGE_LOGE("Invalid parameter: receiver=null.");
         return IMAGE_BAD_PARAMETER;
@@ -245,6 +261,10 @@ Image_ErrorCode OH_ImageReceiverNative_ReadLatestImage(OH_ImageReceiverNative* r
 MIDK_EXPORT
 Image_ErrorCode OH_ImageReceiverNative_ReadNextImage(OH_ImageReceiverNative* receiver, OH_ImageNative** image)
 {
+    if (nullptr == image) {
+        IMAGE_LOGE("Invalid parameter: image=null.");
+        return IMAGE_BAD_PARAMETER;
+    }
     if (nullptr == receiver) {
         IMAGE_LOGE("Invalid parameter: receiver=null.");
         return IMAGE_BAD_PARAMETER;

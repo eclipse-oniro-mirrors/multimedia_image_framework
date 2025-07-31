@@ -180,6 +180,19 @@ int32_t NativeImage::CombineYUVComponents()
         return SUCCESS;
     }
 
+    uint8_t* buffer = GetSurfaceBufferAddr();
+    if (buffer == nullptr) {
+        IMAGE_LOGE("SurfaceBuffer viraddr is nullptr");
+        return ERR_MEDIA_DATA_UNSUPPORT;
+    }
+
+    uint64_t bufferSize = NUM_0;
+    res = GetDataSize(bufferSize);
+    if (res != SUCCESS || bufferSize == NUM_0) {
+        IMAGE_LOGE("bufferSize is 0");
+        return ERR_MEDIA_DATA_UNSUPPORT;
+    }
+
     auto y = GetComponent(int32_t(ComponentType::YUV_Y));
     auto u = GetComponent(int32_t(ComponentType::YUV_U));
     auto v = GetComponent(int32_t(ComponentType::YUV_V));
@@ -192,10 +205,7 @@ int32_t NativeImage::CombineYUVComponents()
     data.u = u->raw;
     data.v = v->raw;
 
-    uint64_t bufferSize = NUM_0;
-    GetDataSize(bufferSize);
-
-    YUV422SPDataCopy(GetSurfaceBufferAddr(), bufferSize, data, true);
+    YUV422SPDataCopy(buffer, bufferSize, data, true);
     return SUCCESS;
 }
 
