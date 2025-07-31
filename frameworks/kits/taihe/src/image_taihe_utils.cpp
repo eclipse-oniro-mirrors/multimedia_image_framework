@@ -41,11 +41,32 @@ void ImageTaiheUtils::ThrowExceptionError(const int32_t errCode, const std::stri
     taihe::set_business_error(errCode, errMsg);
 }
 
+bool ImageTaiheUtils::GetPropertyInt(ani_env *env, ani_object obj, const std::string &name, int32_t &value)
+{
+    CHECK_ERROR_RETURN_RET_LOG(env == nullptr || obj == nullptr, false, "%{public}s param is nullptr", __func__);
+    ani_int result {};
+    CHECK_ERROR_RETURN_RET_LOG(ANI_OK != env->Object_GetPropertyByName_Int(obj, name.c_str(), &result), false,
+        "%{public}s Object_GetPropertyByName_Int failed.", __func__);
+    value = static_cast<int32_t>(result);
+    return true;
+}
+
+bool ImageTaiheUtils::GetPropertyLong(ani_env *env, ani_object obj, const std::string &name, int64_t &value)
+{
+    CHECK_ERROR_RETURN_RET_LOG(env == nullptr || obj == nullptr, false, "%{public}s param is nullptr", __func__);
+    ani_long result {};
+    CHECK_ERROR_RETURN_RET_LOG(ANI_OK != env->Object_GetPropertyByName_Long(obj, name.c_str(), &result), false,
+        "%{public}s Object_GetPropertyByName_Long failed.", __func__);
+    value = static_cast<int64_t>(result);
+    return true;
+}
+
 bool ImageTaiheUtils::GetPropertyDouble(ani_env *env, ani_object obj, const std::string &name, double &value)
 {
     CHECK_ERROR_RETURN_RET_LOG(env == nullptr || obj == nullptr, false, "%{public}s param is nullptr", __func__);
-    ani_double result;
-    env->Object_GetPropertyByName_Double(obj, name.c_str(), &result);
+    ani_double result {};
+    CHECK_ERROR_RETURN_RET_LOG(ANI_OK != env->Object_GetPropertyByName_Double(obj, name.c_str(), &result), false,
+        "%{public}s Object_GetPropertyByName_Long failed.", __func__);
     value = static_cast<double>(result);
     return true;
 }
