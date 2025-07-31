@@ -641,8 +641,8 @@ uint32_t ExtDecoder::GetImageSize(uint32_t index, Size &size)
     // Info has been get in check process, or empty on get failed.
     CHECK_ERROR_RETURN_RET_LOG(info_.isEmpty(), ERR_IMAGE_DECODE_HEAD_ABNORMAL,
         "GetImageSize failed, decode header failed.");
-    size.width = static_cast<uint32_t>(info_.width());
-    size.height = static_cast<uint32_t>(info_.height());
+    size.width = info_.width();
+    size.height = info_.height();
     return SUCCESS;
 }
 
@@ -786,8 +786,8 @@ uint32_t ExtDecoder::SetDecodeOptions(uint32_t index, const PixelDecodeOptions &
             getDesiredColorSpace(info_, opts));
     }
 #endif
-    info.size.width = static_cast<uint32_t>(dstInfo_.width());
-    info.size.height = static_cast<uint32_t>(dstInfo_.height());
+    info.size.width = dstInfo_.width();
+    info.size.height = dstInfo_.height();
     reusePixelmap_ = opts.plReusePixelmap;
     return SUCCESS;
 }
@@ -1555,7 +1555,8 @@ void ExtDecoder::ReportImageType(SkEncodedImageFormat skEncodeFormat)
             "PVERSIONID", DEFAULT_VERSION_ID,
             "IMAGE_TYPE", GetFormatStr(skEncodeFormat)
     );
-    CHECK_DEBUG_RETURN_LOG(SUCCESS != ret, "ExtDecoder::ReportImageType failed, ret = %{public}d", ret);
+    uint32_t tmpRet = static_cast<uint32_t>(ret);
+    CHECK_DEBUG_RETURN_LOG(SUCCESS != tmpRet, "ExtDecoder::ReportImageType failed, ret = %{public}d", ret);
 #endif
     IMAGE_LOGD("ExtDecoder::ReportImageType format %{public}d success", skEncodeFormat);
 }
@@ -1583,11 +1584,11 @@ uint32_t ExtDecoder::AllocOutputBuffer(DecodeContext &context,
         "Alloc OutputBuffer failed, context is null");
     BufferHandle *handle = (static_cast<SurfaceBuffer*>(context.pixelsBuffer.context))->GetBufferHandle();
     if (outputColorFmt_ == V1_2::PIXEL_FMT_RGBA_8888) {
-        outputBufferSize_.width = static_cast<uint32_t>(handle->stride) / NUM_4;
+        outputBufferSize_.width = handle->stride / NUM_4;
     } else {
-        outputBufferSize_.width = static_cast<uint32_t>(handle->stride);
+        outputBufferSize_.width = handle->stride;
     }
-    outputBufferSize_.height = static_cast<uint32_t>(handle->height);
+    outputBufferSize_.height = handle->height;
     outputBuffer.buffer = new NativeBuffer(handle);
     outputBuffer.fenceFd = -1;
     return SUCCESS;
