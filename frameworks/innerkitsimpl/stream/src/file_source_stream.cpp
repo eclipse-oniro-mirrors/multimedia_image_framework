@@ -115,6 +115,7 @@ unique_ptr<FileSourceStream> FileSourceStream::CreateSourceStream(const int fd)
     FILE *filePtr = fdopen(dupFd, "rb");
     if (filePtr == nullptr) {
         IMAGE_LOGE("[FileSourceStream]open file fail.");
+        close(dupFd);
         return nullptr;
     }
     bool useMmap = ShouldUseMmap(fd);
@@ -151,6 +152,7 @@ unique_ptr<FileSourceStream> FileSourceStream::CreateSourceStream(
     FILE *filePtr = fdopen(dupFd, "rb");
     if (filePtr == nullptr) {
         IMAGE_LOGE("[FileSourceStream]open file fail.");
+        close(dupFd);
         return nullptr;
     }
     bool useMmap = ShouldUseMmap(fd);

@@ -76,6 +76,8 @@ FilePackerStream::FilePackerStream(const int fd)
     file_ = fdopen(dupFd, "wb");
     if (file_ == nullptr) {
         IMAGE_LOGE("[FilePackerStream]open file fail. error:%{public}d", errno);
+        close(dupFd);
+        return;
     }
 }
 FilePackerStream::~FilePackerStream()
