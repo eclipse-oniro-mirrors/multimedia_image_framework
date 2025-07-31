@@ -29,12 +29,6 @@
 #include "image_utils.h"
 #include "media_errors.h"
 
-#undef LOG_DOMAIN
-#define LOG_DOMAIN LOG_TAG_DOMAIN_ID_IMAGE
-
-#undef LOG_TAG
-#define LOG_TAG "IMAGE_SOURCE_FUZZ"
-
 static const std::string JPEG_FORMAT = "image/jpeg";
 static const std::string HEIF_FORMAT = "image/heif";
 static const std::string WEBP_FORMAT = "image/webp";
@@ -116,9 +110,9 @@ void CreateIncrementalPixelMapByDataFuzz(const uint8_t* data, size_t size)
     incOpts.incrementalMode = IncrementalMode::INCREMENTAL_DATA;
     auto imageSource = Media::ImageSource::CreateIncrementalImageSource(incOpts, errorCode);
     if (imageSource != nullptr) {
-        DecodeOptions decoodeOpts;
+        DecodeOptions decodeOpts;
         std::unique_ptr<IncrementalPixelMap> incPixelMap =
-            imageSource->CreateIncrementalPixelMap(0, decoodeOpts, errorCode);
+            imageSource->CreateIncrementalPixelMap(0, decodeOpts, errorCode);
         uint32_t res = imageSource->UpdateData(data, size, true);
         uint8_t decodeProgress = 0;
         res = incPixelMap->PromoteDecoding(decodeProgress);
@@ -146,17 +140,17 @@ void CreateImageSourceByFDEXFuzz(const std::string& pathName)
 {
     int fd = open(pathName.c_str(), O_RDWR | O_CREAT, S_IRUSR | S_IWUSR);
     if (fd < 0) {
-        IMAGE_LOGE("open file failed, %{public}s", pathName.c_str());
+        IMAGE_LOGI("%{public}s fail, Invalid path:%{public}s", __func__, pathName.c_str());
         return;
     }
     Media::SourceOptions opts;
-    uint32_t errorCode;
-    uint32_t offset = 0;
-    uint32_t length = 1;
-    auto imageSource = Media::ImageSource::CreateImageSource(fd, offset, length, opts, errorCode);
-    Media ::DecodeOptions dopts;
-    if (imageSource != nullptr) {
-        imageSource->CreatePixelMap(dopts, errorCode);
+    uint32_t errorCode = 0;
+    int32_t offset = 0;
+    int32_t length = 1;
+    auto imagesource = Media::ImageSource::CreateImageSource(fd, offset, length, opts, errorCode);
+    Media::DecodeOptions dopts;
+    if (imagesource != nullptr) {
+        imagesource->CreatePixelMap(dopts, errorCode);
     }
     close(fd);
 }
@@ -166,7 +160,7 @@ void CreateImageSourceByIstreamFuzz(const std::string& pathName)
     std::unique_ptr<std::istream> is = std::make_unique<std::ifstream>(pathName.c_str());
     Media::SourceOptions opts;
     uint32_t errorCode;
-    Media ::DecodeOptions dopts;
+    Media::DecodeOptions dopts;
     auto imageSource = Media::ImageSource::CreateImageSource(std::move(is), opts, errorCode);
     if (imageSource != nullptr) {
         imageSource->CreatePixelMap(dopts, errorCode);
@@ -177,7 +171,7 @@ void CreateImageSourceByPathNameFuzz(const std::string& pathName)
 {
     Media::SourceOptions opts;
     uint32_t errorCode;
-    Media ::DecodeOptions dopts;
+    Media::DecodeOptions dopts;
     auto imageSource = Media::ImageSource::CreateImageSource(pathName, opts, errorCode);
     if (imageSource != nullptr) {
         imageSource->CreatePixelMap(dopts, errorCode);
@@ -189,7 +183,7 @@ void CreateIncrementalPixelMapFuzz(const std::string& pathName)
     Media::SourceOptions opts;
     uint32_t errorCode;
     auto imageSource = Media::ImageSource::CreateImageSource(pathName, opts, errorCode);
-    Media ::DecodeOptions dopts;
+    Media::DecodeOptions dopts;
     uint32_t index = 1;
     if (imageSource != nullptr) {
         imageSource->CreateIncrementalPixelMap(index, dopts, errorCode);
@@ -399,7 +393,7 @@ bool CreatePixelMapUseArgbByRandomImageSource(const uint8_t *data, size_t size)
     }
     return true;
 }
-    
+
 } // namespace Media
 } // namespace OHOS
 
