@@ -347,6 +347,7 @@ void PixelYuv::rotate(float degrees)
     SetPixelsAddr(dstMemory->data.data, dstMemory->extend.data, dstMemory->data.size, dstMemory->GetType(), nullptr);
     SetImageInfo(imageInfo_, true);
     UpdateYUVDataInfo(imageInfo_.pixelFormat, imageInfo_.size.width, imageInfo_.size.height, dstStrides);
+    ImageUtils::FlushSurfaceBuffer(this);
     AddVersionId();
 }
 
