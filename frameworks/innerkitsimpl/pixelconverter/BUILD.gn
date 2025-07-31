@@ -27,17 +27,44 @@ config("pixelconvertadapter_public_config") {
       "//foundation/multimedia/image_framework/mock/native/include",
       "//base/hiviewdfx/hilog/interfaces/native/innerkits/include",
       "//foundation/communication/ipc/utils/include",
+      "$third_party_skia_root/include/core",
+      "$third_party_skia_root/include/encode",
+      "$third_party_skia_root",
+      "$third_party_skia_root/src/ports/skia_ohos",
+      "$third_party_skia_root/src/ports",
+      "$third_party_skia_root/src/images",
+      "$third_party_skia_root/src/ports/skia_ohos",
+      "$third_party_skia_root/third_party/externals/freetype/include/freetype",
+      "//third_party/bounds_checking_function/include",
     ]
   } else if (use_clang_mac) {
     include_dirs += [
       "//foundation/multimedia/image_framework/mock/native/include",
       "//base/hiviewdfx/hilog/interfaces/native/innerkits/include",
+      "$third_party_skia_root/include/core",
+      "$third_party_skia_root/include/encode",
+      "$third_party_skia_root",
+      "$third_party_skia_root/src/ports/skia_ohos",
+      "$third_party_skia_root/src/ports",
+      "$third_party_skia_root/src/images",
+      "$third_party_skia_root/src/ports/skia_ohos",
+      "$third_party_skia_root/third_party/externals/freetype/include/freetype",
+      "//third_party/bounds_checking_function/include",
     ]
   } else if (use_clang_ios) {
     include_dirs += [
       "//commonlibrary/c_utils/base/include",
       "//foundation/communication/ipc/utils/include",
       "//base/hiviewdfx/hilog/interfaces/native/innerkits/include",
+      "$third_party_skia_root/include/core",
+      "$third_party_skia_root/include/encode",
+      "$third_party_skia_root",
+      "$third_party_skia_root/src/ports/skia_ohos",
+      "$third_party_skia_root/src/ports",
+      "$third_party_skia_root/src/images",
+      "$third_party_skia_root/include/private",
+      "$third_party_skia_root/third_party/externals/freetype/include/freetype",
+      "//third_party/bounds_checking_function/include",
       "$image_subsystem/mock/native/include/log",
     ]
   } else if (use_clang_android) {
@@ -45,6 +72,14 @@ config("pixelconvertadapter_public_config") {
       "//commonlibrary/c_utils/base/include",
       "//foundation/communication/ipc/utils/include",
       "//base/hiviewdfx/hilog/interfaces/native/innerkits/include",
+      "$third_party_skia_root/include/encode",
+      "$third_party_skia_root",
+      "$third_party_skia_root/src/ports/skia_ohos",
+      "$third_party_skia_root/src/ports",
+      "$third_party_skia_root/src/images",
+      "$third_party_skia_root/include/private",
+      "$third_party_skia_root/third_party/externals/freetype/include/freetype",
+      "//third_party/bounds_checking_function/include",
       "$image_subsystem/mock/native/include/log",
     ]
   }
@@ -61,6 +96,7 @@ if (use_clang_ios) {
       "../utils:image_utils",
       "//foundation/multimedia/image_framework/mock/native:log_mock_static",
     ]
+    deps += skia_platform
 
     #relative_install_dir = "module/multimedia"
     subsystem_name = "multimedia"
@@ -87,12 +123,14 @@ if (use_clang_ios) {
         "../utils:image_utils",
         "//foundation/multimedia/image_framework/mock/native:log_mock_static",
       ]
+      deps += skia_platform
     } else if (use_clang_mac) {
       defines = image_decode_mac_defines
       deps = [
         "../utils:image_utils",
         "//foundation/multimedia/image_framework/mock/native:log_mock_static",
       ]
+      deps += skia_platform
     } else if (use_clang_android) {
       deps = [
         "../utils:image_utils",
@@ -137,7 +175,7 @@ ohos_static_library("pixelconvertadapter_static") {
   }
 
   if (is_arkui_x) {
-    include_dirs = [ "//third_party/ffmpeg" ].
+    include_dirs = [ "//third_party/ffmpeg" ]
   }
 
   if (use_mingw_win) {
@@ -146,12 +184,14 @@ ohos_static_library("pixelconvertadapter_static") {
       "../utils:image_utils",
       "//foundation/multimedia/image_framework/mock/native:log_mock_static",
     ]
+    deps += skia_platform
   } else if (use_clang_mac) {
     defines = image_decode_mac_defines
     deps = [
       "../utils:image_utils",
       "//foundation/multimedia/image_framework/mock/native:log_mock_static",
     ]
+    deps += skia_platform
   } else if (use_clang_ios) {
     defines = image_decode_ios_defines
     deps = [
@@ -159,12 +199,14 @@ ohos_static_library("pixelconvertadapter_static") {
       "//foundation/graphic/graphic_2d/utils/color_manager:color_manager",
       "//foundation/multimedia/image_framework/mock/native:log_mock_static",
     ]
+    deps += skia_platform
   } else if (use_clang_android) {
     deps = [
       "../utils:image_utils_static",
       "//foundation/graphic/graphic_2d/utils/color_manager:color_manager",
       "//foundation/multimedia/image_framework/mock/native:log_mock_static",
     ]
+    deps += skia_platform
 
     libs = [ "nativewindow" ]
   } else {

@@ -59,14 +59,6 @@ config("plugins_includes") {
     "${image_subsystem}/plugins/manager/include/pluginbase",
   ]
 }
-config("skia_includes") {
-  include_dirs = [
-    "${third_party_skia_root}",
-    "${third_party_skia_root}/include/codec",
-    "${third_party_skia_root}/include/core",
-    "${third_party_skia_root}/third_party/skcms",
-  ]
-}
 config("third_part_includes") {
   include_dirs = [ "../libjpegplugin/include" ]
 }

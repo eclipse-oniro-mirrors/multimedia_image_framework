@@ -97,21 +97,6 @@ ohos_shared_library("jpegplugin") {
       "//foundation/multimedia/image_framework/plugins/manager:pluginmanager",
     ]
 
-    if (DUAL_ADAPTER) {
-    } else {
-      if (image_use_new_skia) {
-        deps += [ "${third_party_skia_root}/third_party/libjpeg-turbo:libjpegm133" ]
-      } else {
-        deps += [ "${third_party_skia_root}/third_party/libjpeg-turbo:libjpeg" ]
-      }
-      include_dirs += [
-        "$third_party_skia_root/third_party/libjpeg-turbo",
-        "$third_party_skia_root/third_party/externals/libjpeg-turbo",
-      ]
-    }
-    if (image_use_new_skia) {
-      defines += [ "USE_M133_SKIA" ]
-    }
     external_deps = [
       "c_utils:utils",
       "graphic_2d:color_manager",
@@ -122,6 +107,17 @@ ohos_shared_library("jpegplugin") {
       "libjpeg-turbo:turbojpeg",
       "skia:skia_canvaskit",
     ]
+    if (DUAL_ADAPTER) {
+    } else {
+      if (image_use_new_skia) {
+        external_deps += [ "skia:libjpegm133" ]
+      } else {
+        external_deps += [ "skia:libjpeg" ]
+      }
+    }
+    if (image_use_new_skia) {
+      defines += [ "USE_M133_SKIA" ]
+    }
   }
 
   innerapi_tags = [ "platformsdk" ]
