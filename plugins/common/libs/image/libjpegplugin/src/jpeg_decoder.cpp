@@ -328,6 +328,11 @@ uint32_t JpegDecoder::SetDecodeOptions(uint32_t index, const PixelDecodeOptions 
         state_ = JpegDecodingState::BASE_INFO_PARSED;
     }
     // only state JpegDecodingState::BASE_INFO_PARSED can go here.
+    if (decodeInfo_.image_width <= 0 || decodeInfo_.image_height <= 0) {
+        IMAGE_LOGE("check decodeInfo_ error: width = %{public}d, height = %{public}d",
+            decodeInfo_.image_width, decodeInfo_.image_height);
+        return ERR_IMAGE_INVALID_PARAMETER;
+    }
     int inSampleSize = CalculateInSampleSize(decodeInfo_, opts);
     GetScaledFraction(inSampleSize, decodeInfo_);
     uint32_t ret = StartDecompress(opts);
@@ -473,7 +478,7 @@ uint32_t JpegDecoder::DoSwDecode(DecodeContext &context) __attribute__((no_sanit
 #if !defined(ANDROID_PLATFORM) && !defined(IOS_PLATFORM)
     if (context.allocatorType == Media::AllocatorType::DMA_ALLOC) {
         SurfaceBuffer* sbBuffer = reinterpret_cast<SurfaceBuffer*> (context.pixelsBuffer.context);
-        rowStride = sbBuffer->GetStride();
+        rowStride = static_cast<uint32_t>(sbBuffer->GetStride());
     }
 #endif
     while (decodeInfo_.output_scanline < decodeInfo_.output_height) {
