@@ -1347,9 +1347,14 @@ static bool CheckCreateEmptypixelmap()
     ret = ret && CreateEmptypixelmap(size, PIXEL_FORMAT_RGBA_F16, IMAGE_ALLOCATOR_MODE_SHARED_MEMORY);
     ret = ret && CreateEmptypixelmap(size, PIXEL_FORMAT_NV21, IMAGE_ALLOCATOR_MODE_SHARED_MEMORY);
     ret = ret && CreateEmptypixelmap(size, PIXEL_FORMAT_NV12, IMAGE_ALLOCATOR_MODE_SHARED_MEMORY);
-    ret = ret && CreateEmptypixelmap(size, PIXEL_FORMAT_RGBA_1010102, IMAGE_ALLOCATOR_MODE_SHARED_MEMORY);
-    ret = ret && CreateEmptypixelmap(size, PIXEL_FORMAT_YCBCR_P010, IMAGE_ALLOCATOR_MODE_SHARED_MEMORY);
-    ret = ret && CreateEmptypixelmap(size, PIXEL_FORMAT_YCRCB_P010, IMAGE_ALLOCATOR_MODE_SHARED_MEMORY);
+    ret = ret && CreateEmptypixelmap(size, PIXEL_FORMAT_YCBCR_P010, IMAGE_ALLOCATOR_MODE_AUTO);
+    ret = ret && CreateEmptypixelmap(size, PIXEL_FORMAT_YCRCB_P010, IMAGE_ALLOCATOR_MODE_AUTO);
+    ret = ret && CreateEmptypixelmap(dmaSize, PIXEL_FORMAT_RGB_565, IMAGE_ALLOCATOR_MODE_DMA);
+    ret = ret && CreateEmptypixelmap(dmaSize, PIXEL_FORMAT_RGBA_8888, IMAGE_ALLOCATOR_MODE_DMA);
+    ret = ret && CreateEmptypixelmap(dmaSize, PIXEL_FORMAT_BGRA_8888, IMAGE_ALLOCATOR_MODE_DMA);
+    ret = ret && CreateEmptypixelmap(dmaSize, PIXEL_FORMAT_RGBA_F16, IMAGE_ALLOCATOR_MODE_DMA);
+    ret = ret && CreateEmptypixelmap(dmaSize, PIXEL_FORMAT_RGBA_1010102, IMAGE_ALLOCATOR_MODE_DMA);
+    ret = ret && CreateEmptypixelmap(dmaSize, PIXEL_FORMAT_YCBCR_P010, IMAGE_ALLOCATOR_MODE_DMA);
     return ret;
 }
 
@@ -1362,7 +1367,6 @@ HWTEST_F(PixelMapNdk2Test, OH_PixelmapNative_CreateEmptyPixelmapUsingAllocator, 
 {
     GTEST_LOG_(INFO) << "PixelMapNdk2Test: OH_PixelmapNative_CreateEmptyPixelmapUsingAllocator start";
     const int32_t size = 300;
-    const int32_t dmaSize = 512;
     bool ret = CreateEmptypixelmap(size, PIXEL_FORMAT_RGB_565, IMAGE_ALLOCATOR_MODE_AUTO);
     ASSERT_EQ(ret, true);
     ret = CreateEmptypixelmap(size, PIXEL_FORMAT_RGBA_8888, IMAGE_ALLOCATOR_MODE_AUTO);
@@ -1381,22 +1385,12 @@ HWTEST_F(PixelMapNdk2Test, OH_PixelmapNative_CreateEmptyPixelmapUsingAllocator, 
     ASSERT_EQ(ret, true);
     ret = CreateEmptypixelmap(size, PIXEL_FORMAT_RGBA_1010102, IMAGE_ALLOCATOR_MODE_AUTO);
     ASSERT_EQ(ret, true);
-    ret = CreateEmptypixelmap(size, PIXEL_FORMAT_YCBCR_P010, IMAGE_ALLOCATOR_MODE_AUTO);
-    ASSERT_EQ(ret, true);
-    ret = CreateEmptypixelmap(size, PIXEL_FORMAT_YCRCB_P010, IMAGE_ALLOCATOR_MODE_AUTO);
-    ASSERT_EQ(ret, true);
-    ret = CreateEmptypixelmap(dmaSize, PIXEL_FORMAT_RGB_565, IMAGE_ALLOCATOR_MODE_DMA);
-    ASSERT_EQ(ret, true);
-    ret = CreateEmptypixelmap(dmaSize, PIXEL_FORMAT_RGBA_8888, IMAGE_ALLOCATOR_MODE_DMA);
-    ASSERT_EQ(ret, true);
-    ret = CreateEmptypixelmap(dmaSize, PIXEL_FORMAT_BGRA_8888, IMAGE_ALLOCATOR_MODE_DMA);
-    ASSERT_EQ(ret, true);
-    ret = CreateEmptypixelmap(dmaSize, PIXEL_FORMAT_RGBA_F16, IMAGE_ALLOCATOR_MODE_DMA);
-    ASSERT_EQ(ret, true);
-    ret = CreateEmptypixelmap(dmaSize, PIXEL_FORMAT_RGBA_1010102, IMAGE_ALLOCATOR_MODE_DMA);
-    ASSERT_EQ(ret, true);
-    ret = CreateEmptypixelmap(dmaSize, PIXEL_FORMAT_YCBCR_P010, IMAGE_ALLOCATOR_MODE_DMA);
-    ASSERT_EQ(ret, true);
+    ret = CreateEmptypixelmap(size, PIXEL_FORMAT_RGBA_1010102, IMAGE_ALLOCATOR_MODE_SHARED_MEMORY);
+    ASSERT_EQ(ret, false);
+    ret = CreateEmptypixelmap(size, PIXEL_FORMAT_YCBCR_P010, IMAGE_ALLOCATOR_MODE_SHARED_MEMORY);
+    ASSERT_EQ(ret, false);
+    ret = CreateEmptypixelmap(size, PIXEL_FORMAT_YCRCB_P010, IMAGE_ALLOCATOR_MODE_SHARED_MEMORY);
+    ASSERT_EQ(ret, false);
     ASSERT_EQ(CheckCreateEmptypixelmap(), true);
     GTEST_LOG_(INFO) << "PixelMapNdk2Test: OH_PixelmapNative_CreateEmptyPixelmapUsingAllocator end";
 }
