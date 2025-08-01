@@ -347,6 +347,7 @@ void PixelYuv::rotate(float degrees)
     SetPixelsAddr(dstMemory->data.data, dstMemory->extend.data, dstMemory->data.size, dstMemory->GetType(), nullptr);
     SetImageInfo(imageInfo_, true);
     UpdateYUVDataInfo(imageInfo_.pixelFormat, imageInfo_.size.width, imageInfo_.size.height, dstStrides);
+    ImageUtils::FlushSurfaceBuffer(this);
     AddVersionId();
 }
 
@@ -446,6 +447,7 @@ void PixelYuv::scale(float xAxis, float yAxis, const AntiAliasingOption &option)
     SetPixelsAddr(dstMemory->data.data, dstMemory->extend.data, dstMemory->data.size, dstMemory->GetType(), nullptr);
     SetImageInfo(imageInfo, true);
     UpdateYUVDataInfo(imageInfo.pixelFormat, imageInfo.size.width, imageInfo.size.height, dstStrides);
+    ImageUtils::FlushSurfaceBuffer(this);
     AddVersionId();
 }
 
@@ -483,6 +485,7 @@ void PixelYuv::scale(int32_t dstW, int32_t dstH, const AntiAliasingOption &optio
     SetPixelsAddr(dstMemory->data.data, dstMemory->extend.data, dstMemory->data.size, dstMemory->GetType(), nullptr);
     SetImageInfo(imageInfo, true);
     UpdateYUVDataInfo(imageInfo.pixelFormat, imageInfo.size.width, imageInfo.size.height, dstStrides);
+    ImageUtils::FlushSurfaceBuffer(this);
     AddVersionId();
 }
 
