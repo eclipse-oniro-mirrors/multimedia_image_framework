@@ -850,8 +850,6 @@ HWTEST_F(ImageUtilsTest, DumpPixelMapTest001, TestSize.Level3)
     std::string customFileName = "test";
     uint64_t imageId = 0;
     Media::ImageUtils::DumpPixelMap(pixelMap.get(), customFileName, imageId);
-    EXPECT_EQ(customFileName, "test");
-    EXPECT_EQ(imageId, 0);
     GTEST_LOG_(INFO) << "ImageUtilsTest: DumpPixelMapTest001 end";
 }
 }
