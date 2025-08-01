@@ -3718,5 +3718,32 @@ HWTEST_F(PixelMapTest, MarshallingReadOnlyTest001, TestSize.Level3)
     EXPECT_NE(pixelMap->UnmarshallingWithIsDisplay(parcel4, nullptr, true), nullptr);
     GTEST_LOG_(INFO) << "PixelMapTest: MarshallingReadOnlyTest001 end";
 }
+
+/**
+ * @tc.name: SetInitializationOptionAboutAllocator
+ * @tc.desc: Test InitializationOption
+ * @tc.type: FUNC
+ */
+HWTEST_F(PixelMapTest, SetInitializationOptionAboutAllocator001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PixelMapTest: SetInitializationOptionAboutAllocator001 start";
+    InitializationOptions opts;
+    opts.size.width = 512; // 512:width
+    opts.size.height = 512; // 512:height
+    EXPECT_EQ(true, ImageUtils::SetInitializationOptionAutoMem(opts));
+    opts.pixelFormat = PixelFormat::RGBA_8888;
+    EXPECT_EQ(true, ImageUtils::SetInitializationOptionDmaMem(opts));
+    opts.pixelFormat = PixelFormat::NV12;
+    EXPECT_EQ(false, ImageUtils::SetInitializationOptionDmaMem(opts));
+    opts.allocatorType = AllocatorType::DMA_ALLOC;
+    EXPECT_EQ(false, ImageUtils::SetInitializationOptionAllocatorType(opts,
+        static_cast<int32_t>(AllocatorType::DMA_ALLOC)));
+    opts.pixelFormat = PixelFormat::RGBA_1010102;
+    EXPECT_EQ(false, ImageUtils::SetInitializationOptionAllocatorType(opts,
+        static_cast<int32_t>(AllocatorType::DMA_ALLOC)));
+    EXPECT_EQ(false, ImageUtils::SetInitializationOptionAllocatorType(opts,
+        static_cast<int32_t>(AllocatorType::SHARE_MEM_ALLOC)));
+    GTEST_LOG_(INFO) << "PixelMapTest: SetInitializationOptionAboutAllocator001 end";
+}
 }
 }

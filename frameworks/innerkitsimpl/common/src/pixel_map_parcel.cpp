@@ -87,6 +87,7 @@ uint8_t *PixelMapParcel::ReadAshmemDataFromParcel(OHOS::MessageParcel& data, int
     }
     if (!CheckAshmemSize(fd, bufferSize)) {
         IMAGE_LOGE("bufferSize does not match the fileDescriptor");
+        ::close(fd);
         return nullptr;
     }
     void* ptr = ::mmap(nullptr, bufferSize, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
