@@ -162,6 +162,7 @@ private:
     static uint32_t SaveDataToFile(const std::string& fileName, const char* data, const size_t& totalSize);
     static std::string GetLocalTime();
     static std::string GetPixelMapName(PixelMap* pixelMap);
+    static int32_t GetAPIVersionInner();
 };
 } // namespace Media
 } // namespace OHOS

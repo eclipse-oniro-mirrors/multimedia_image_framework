@@ -25,6 +25,7 @@
 #include <fstream>
 #include <sstream>
 #include <chrono>
+#include <atomic>
 
 #include "__config"
 #include "image_log.h"
@@ -1156,6 +1157,17 @@ std::string ImageUtils::GetEncodedHeifFormat()
 int32_t ImageUtils::GetAPIVersion()
 {
 #if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
+    static std::atomic<int32_t> apiVersion = GetAPIVersionInner();
+    if (apiVersion.load() <= 0) {
+        apiVersion.store(GetAPIVersionInner());
+    }
+    return apiVersion.load();
+#endif
+}
+
+int32_t ImageUtils::GetAPIVersionInner()
+{
+#if !defined(CROSS_PLATFORM)
     uint32_t targetVersion = 0;
     auto samgr = SystemAbilityManagerClient::GetInstance().GetSystemAbilityManager();
     if (samgr == nullptr) {
