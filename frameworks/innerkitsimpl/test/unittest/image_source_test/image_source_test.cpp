@@ -1727,6 +1727,8 @@ HWTEST_F(ImageSourceTest, End2EndTest001, TestSize.Level3)
     ASSERT_NE(pixelMap.get(), nullptr);
     ASSERT_EQ(desiredWidth, pixelMap->GetWidth());
     ASSERT_EQ(desiredHeight, pixelMap->GetHeight());
+    ASSERT_EQ("undefined_", imageSource->GetPixelMapName(nullptr));
+    ASSERT_EQ("w400_h200_streamSize27897_mimeTypeimage/jpeg", imageSource->GetPixelMapName(pixelMap.get()));
 }
 
 /**
