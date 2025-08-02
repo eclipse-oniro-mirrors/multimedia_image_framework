@@ -1424,7 +1424,8 @@ bool ImageUtils::CheckRowDataSizeIsVaild(int32_t &rowDataSize, ImageInfo &imgInf
 bool ImageUtils::CheckBufferSizeIsVaild(int32_t &bufferSize, uint64_t &expectedBufferSize, AllocatorType &allocatorType)
 {
     if (bufferSize <= 0 ||
-        expectedBufferSize > (allocatorType == AllocatorType::HEAP_ALLOC ? PIXEL_MAP_MAX_RAM_SIZE : INT_MAX)) {
+        expectedBufferSize > (allocatorType == AllocatorType::HEAP_ALLOC ? PIXEL_MAP_MAX_RAM_SIZE : INT_MAX) ||
+        expectedBufferSize != static_cast<uint64_t>(bufferSize)) {
         IMAGE_LOGE("[ImageUtils] BufferSizeIsVaild: bufferSize invalid, expect:%{public}llu, actual:%{public}d",
             static_cast<unsigned long long>(expectedBufferSize), bufferSize);
         return false;
