@@ -87,6 +87,9 @@ constexpr uint16_t EMPTY_META_SIZE = 0;
 const float SM_COLOR_SCALE = 0.00002f;
 const float SM_LUM_SCALE = 0.0001f;
 
+constexpr static int JPEG_MARKER_LENGTH = 2;
+static constexpr uint8_t JPEG_SOI_HEADER[] = { 0xFF, 0xD8 };
+
 static constexpr uint8_t ITUT35_TAG[ITUT35_TAG_SIZE] = {
     'I', 'T', 'U', 'T', '3', '5',
 };
@@ -395,6 +398,34 @@ ImageHdrType HdrHelper::CheckHdrType(SkCodec* codec, uint32_t& offset) __attribu
             break;
     }
     return type;
+}
+
+bool HdrHelper::CheckGainmapOffset(ImageHdrType type, InputDataStream* stream, uint32_t& offset)
+{
+    if (type == Media::ImageHdrType::HDR_LOG_DUAL) {
+        return true;
+    }
+    if (stream == nullptr) {
+        return false;
+    }
+
+    uint32_t streamSize = stream->GetStreamSize();
+    if (offset >= streamSize || JPEG_MARKER_LENGTH > (streamSize - offset)) {
+        IMAGE_LOGE("HDR-IMAGE CheckHdrType invalid offset %{public}d for stream size %{public}d", offset, streamSize);
+        return false;
+    }
+
+    uint8_t *outBuffer = stream->GetDataPtr();
+    if (outBuffer == nullptr) {
+        IMAGE_LOGE("HDR-IMAGE CheckHdrTYpe null data pointer");
+        return false;
+    }
+
+    if (std::memcmp(JPEG_SOI_HEADER, outBuffer + offset, JPEG_MARKER_LENGTH) != 0) {
+        IMAGE_LOGE("HDR-IMAGE CheckHdrType gainmap memcpy SOI error");
+        return false;
+    }
+    return true;
 }
 
 static bool ParseVividJpegStaticMetadata(uint8_t* data, uint32_t& offset, uint32_t size, vector<uint8_t>& staticMetaVec)
@@ -1058,8 +1089,14 @@ static void PackTransformInfo(vector<uint8_t>& bytes, uint32_t& offset, uint8_t 
     }
     uint16_t transformSize = flag + UINT8_BYTE_COUNT;
     ImageUtils::Uint16ToBytes(transformSize, bytes, offset);
+    if (offset + flag > bytes.size()) {
+        return;
+    }
     bytes[offset++] = flag;
-    if (offset < 0 || offset + flag > bytes.size()) {
+    size_t remainSpace = bytes.size() - offset;
+    if (remainSpace < flag) {
+        offset -= (UINT8_BYTE_COUNT + UINT16_BYTE_COUNT);
+        ImageUtils::Uint16ToBytes((uint16_t)EMPTY_SIZE, bytes, offset);
         return;
     }
     if (memcpy_s(bytes.data() + offset, flag, mapping.data(), flag) != 0) {
