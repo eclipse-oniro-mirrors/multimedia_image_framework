@@ -2582,19 +2582,12 @@ ImageHdrType ExtDecoder::CheckHdrType()
         return hdrType_;
     }
     hdrType_ = HdrHelper::CheckHdrType(codec_.get(), gainMapOffset_);
-    if (hdrType_ > Media::ImageHdrType::SDR && format == SkEncodedImageFormat::kJPEG) {
-        if (hdrType_ == Media::ImageHdrType::HDR_LOG_DUAL) {
-            return Media::ImageHdrType::HDR_LOG_DUAL;
-        }
-        if (stream_ == nullptr || (gainMapOffset_ + JPEG_MARKER_LENGTH) > stream_->GetStreamSize()) {
-            IMAGE_LOGE("HDR-IMAGE CheckHdrType gainmap header offset failed : %{public}d", gainMapOffset_);
-            return Media::ImageHdrType::SDR;
-        }
-        uint8_t *outBuffer = stream_->GetDataPtr() + gainMapOffset_;
-        if (std::memcmp(JPEG_SOI_HEADER, outBuffer, JPEG_MARKER_LENGTH) != 0) {
-            IMAGE_LOGE("HDR-IMAGE CheckHdrType get gainmap header failed");
-            return Media::ImageHdrType::SDR;
-        }
+    if (hdrType_ <= Media::ImageHdrType::SDR || format != SkEncodedImageFormat::kJPEG) {
+        return hdrType_;
+    }
+    // Verify the legitimacy of the offset.
+    if (!HdrHelper::CheckGainmapOffset(hdrType_, stream_, gainMapOffset_)) {
+        return Media::ImageHdrType::SDR;
     }
     return hdrType_;
 #endif

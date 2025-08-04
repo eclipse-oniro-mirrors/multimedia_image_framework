@@ -18,6 +18,7 @@
 
 #include "box/item_property_display_box.h"
 #include "include/codec/SkCodec.h"
+#include "ext_stream.h"
 #ifdef USE_M133_SKIA
 #include "include/core/SkStream.h"
 #endif
@@ -30,6 +31,7 @@ public:
     static Media::ImageHdrType CheckHdrType(SkCodec* codec, uint32_t& offset);
     static void ValidateAndCorrectMetaData(Media::HdrMetadata& metadata, Media::ImageHdrType type);
     static bool GetMetadata(SkCodec* codec, Media::ImageHdrType type, Media::HdrMetadata& metadata);
+    static bool CheckGainmapOffset(Media::ImageHdrType type, InputDataStream *stream, uint32_t& offset);
 };
 
 class HdrJpegPackerHelper {

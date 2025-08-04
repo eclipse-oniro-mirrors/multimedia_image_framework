@@ -863,7 +863,7 @@ std::string ImageUtils::GetPixelMapName(PixelMap* pixelMap)
 uint16_t ImageUtils::BytesToUint16(uint8_t* bytes, uint32_t& offset, uint32_t size, bool isBigEndian)
 {
     uint16_t data = 0;
-    if (bytes == nullptr || offset + NUM_2 >= size) {
+    if (bytes == nullptr || offset + NUM_2 > size) {
         return data;
     }
     if (isBigEndian) {
@@ -879,7 +879,7 @@ uint16_t ImageUtils::BytesToUint16(uint8_t* bytes, uint32_t& offset, uint32_t si
 uint32_t ImageUtils::BytesToUint32(uint8_t* bytes, uint32_t& offset, uint32_t size, bool isBigEndian)
 {
     uint32_t data = 0;
-    if (bytes == nullptr || offset + NUM_4 >= size) {
+    if (bytes == nullptr || offset + NUM_4 > size) {
         return data;
     }
     if (isBigEndian) {
@@ -897,7 +897,7 @@ uint32_t ImageUtils::BytesToUint32(uint8_t* bytes, uint32_t& offset, uint32_t si
 int32_t ImageUtils::BytesToInt32(uint8_t* bytes, uint32_t& offset, uint32_t size, bool isBigEndian)
 {
     int32_t data = 0;
-    if (bytes == nullptr || offset + NUM_4 >= size) {
+    if (bytes == nullptr || offset + NUM_4 > size) {
         return data;
     }
     if (isBigEndian) {
