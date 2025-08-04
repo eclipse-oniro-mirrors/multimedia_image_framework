@@ -388,6 +388,36 @@ static uint32_t HeapMemAlloc(DecodeContext &context, uint64_t count)
     return SUCCESS;
 }
 
+uint32_t ExtDecoder::UpdateHeifYuvDataInfo(DecodeContext &context, SkImageInfo &heifInfo)
+{
+#ifdef HEIF_HW_DECODE_ENABLE
+    SurfaceBuffer* sbBuffer = reinterpret_cast<SurfaceBuffer*> (context.pixelsBuffer.context);
+    if (sbBuffer == nullptr) {
+        return ERR_DMA_DATA_ABNORMAL;
+    }
+    OH_NativeBuffer_Planes *planes = nullptr;
+    GSError retVal = sbBuffer->GetPlanesInfo(reinterpret_cast<void**>(&planes));
+    if (retVal != OHOS::GSERROR_OK || planes == nullptr || planes->planeCount < NUM_2) {
+        IMAGE_LOGE("heif yuv decode, Get planesInfo failed, retVal:%{public}d", retVal);
+    } else {
+        uint32_t uvPlaneIndex = (context.info.pixelFormat == PixelFormat::NV12 ||
+                context.info.pixelFormat == PixelFormat::YCBCR_P010) ? NUM_1 : NUM_2;
+        context.yuvInfo.imageSize = { heifInfo.width(), heifInfo.height() };
+        context.yuvInfo.yWidth = static_cast<uint32_t>(heifInfo.width());
+        context.yuvInfo.yHeight = static_cast<uint32_t>(heifInfo.height());
+        context.yuvInfo.uvWidth = static_cast<uint32_t>((heifInfo.width() + 1) / NUM_2);
+        context.yuvInfo.uvHeight = static_cast<uint32_t>((heifInfo.height() + 1) / NUM_2);
+        context.yuvInfo.yStride = planes->planes[0].columnStride;
+        context.yuvInfo.uvStride = planes->planes[uvPlaneIndex].columnStride;
+        context.yuvInfo.yOffset = planes->planes[0].offset;
+        context.yuvInfo.uvOffset = planes->planes[uvPlaneIndex].offset;
+    }
+    return SUCCESS;
+#else
+    return ERR_IMAGE_DATA_UNSUPPORT;
+#endif
+}
+
 uint32_t ExtDecoder::HeifYUVMemAlloc(OHOS::ImagePlugin::DecodeContext &context, SkImageInfo &heifInfo)
 {
 #ifdef HEIF_HW_DECODE_ENABLE
@@ -408,24 +438,7 @@ uint32_t ExtDecoder::HeifYUVMemAlloc(OHOS::ImagePlugin::DecodeContext &context, 
     }
     IMAGE_LOGI("ExtDecoder::HeifYUVMemAlloc sb stride is %{public}d, height is %{public}d, size is %{public}d",
         sbBuffer->GetStride(), sbBuffer->GetHeight(), sbBuffer->GetSize());
-    OH_NativeBuffer_Planes *planes = nullptr;
-    GSError retVal = sbBuffer->GetPlanesInfo(reinterpret_cast<void**>(&planes));
-    if (retVal != OHOS::GSERROR_OK || planes == nullptr || planes->planeCount < NUM_2) {
-        IMAGE_LOGE("heif yuv decode, Get planesInfo failed, retVal:%{public}d", retVal);
-    } else {
-        uint32_t uvPlaneIndex = (context.info.pixelFormat == PixelFormat::NV12 ||
-                context.info.pixelFormat == PixelFormat::YCBCR_P010) ? NUM_1 : NUM_2;
-        context.yuvInfo.imageSize = { heifInfo.width(), heifInfo.height() };
-        context.yuvInfo.yWidth = static_cast<uint32_t>(heifInfo.width());
-        context.yuvInfo.yHeight = static_cast<uint32_t>(heifInfo.height());
-        context.yuvInfo.uvWidth = static_cast<uint32_t>((heifInfo.width() + 1) / NUM_2);
-        context.yuvInfo.uvHeight = static_cast<uint32_t>((heifInfo.height() + 1) / NUM_2);
-        context.yuvInfo.yStride = planes->planes[0].columnStride;
-        context.yuvInfo.uvStride = planes->planes[uvPlaneIndex].columnStride;
-        context.yuvInfo.yOffset = planes->planes[0].offset;
-        context.yuvInfo.uvOffset = planes->planes[uvPlaneIndex].offset;
-    }
-    return SUCCESS;
+    return UpdateHeifYuvDataInfo(context, heifInfo);
 #else
     return ERR_IMAGE_DATA_UNSUPPORT;
 #endif
