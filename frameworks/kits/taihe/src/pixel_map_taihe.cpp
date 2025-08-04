@@ -21,11 +21,8 @@
 #include "image_log.h"
 #include "image_taihe_utils.h"
 #include "image_utils.h"
-#include "interop_js/arkts_interop_js_api.h"
-#include "interop_js/arkts_esvalue.h"
 #include "media_errors.h"
 #include "message_parcel.h"
-#include "pixel_map_napi.h"
 #include "pixel_map_taihe_ani.h"
 #include "taihe/runtime.hpp"
 #if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
@@ -182,45 +179,6 @@ static PixelMap Unmarshalling(uintptr_t sequence)
 PixelMap CreatePixelMapFromParcel(uintptr_t sequence)
 {
     return Unmarshalling(sequence);
-}
-
-PixelMap PixelMapTransferStaticImpl(uintptr_t input) {
-    ani_object esValue = reinterpret_cast<ani_object>(input);
-    void* nativePtr = nullptr;
-    if (!arkts_esvalue_unwrap(get_env(), esValue, &nativePtr) || nativePtr == nullptr) {
-        ImageTaiheUtils::ThrowExceptionError(Media::COMMON_ERR_INVALID_PARAMETER, "Unwrap ESValue failed");
-        return make_holder<PixelMapImpl, PixelMap>();
-    }
-
-    auto pixelMapNapi = reinterpret_cast<std::weak_ptr<Media::PixelMapNapi>*>(nativePtr)->lock();
-    if (pixelMapNapi == nullptr) {
-        ImageTaiheUtils::ThrowExceptionError(Media::COMMON_ERR_INVALID_PARAMETER, "Transfer PixelMap failed");
-        return make_holder<PixelMapImpl, PixelMap>();
-    }
-
-    return make_holder<PixelMapImpl, PixelMap>(pixelMapNapi->GetPixelNapiInner());
-}
-
-uintptr_t PixelMapTransferDynamicImpl(weak::PixelMap input) {
-    PixelMapImpl* implPtr = reinterpret_cast<PixelMapImpl*>(input->GetImplPtr());
-    std::shared_ptr<Media::PixelMap> pixelMap = implPtr->GetNativePtr();
-    implPtr = nullptr;
-    napi_env jsEnv;
-    if (!arkts_napi_scope_open(get_env(), &jsEnv)) {
-        ImageTaiheUtils::ThrowExceptionError(Media::COMMON_ERR_INVALID_PARAMETER, "NAPI scope open failed");
-        return 0;
-    }
-
-    napi_value pixelMapJs = Media::PixelMapNapi::CreatePixelMap(jsEnv, pixelMap);
-    napi_valuetype type;
-    napi_typeof(jsEnv, pixelMapJs, &type);
-    if (type == napi_undefined) {
-        ImageTaiheUtils::ThrowExceptionError(Media::COMMON_ERR_INVALID_PARAMETER, "PixelMapNapi create failed");
-        arkts_napi_scope_close_n(jsEnv, 0, nullptr, nullptr);
-        return 0;
-    }
-
-    return reinterpret_cast<uintptr_t>(pixelMapJs);
 }
 
 PixelMapImpl::PixelMapImpl() {}
@@ -865,5 +823,3 @@ TH_EXPORT_CPP_API_CreatePixelMapByPtr(ANI::Image::CreatePixelMapByPtr);
 TH_EXPORT_CPP_API_CreatePixelMapFromSurfaceByIdSync(ANI::Image::CreatePixelMapFromSurfaceByIdSync);
 TH_EXPORT_CPP_API_CreatePixelMapFromSurfaceByIdAndRegionSync(ANI::Image::CreatePixelMapFromSurfaceByIdAndRegionSync);
 TH_EXPORT_CPP_API_CreatePixelMapFromParcel(ANI::Image::CreatePixelMapFromParcel);
-TH_EXPORT_CPP_API_PixelMapTransferStaticImpl(ANI::Image::PixelMapTransferStaticImpl);
-TH_EXPORT_CPP_API_PixelMapTransferDynamicImpl(ANI::Image::PixelMapTransferDynamicImpl);
