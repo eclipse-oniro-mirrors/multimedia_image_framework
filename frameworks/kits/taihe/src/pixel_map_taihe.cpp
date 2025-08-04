@@ -16,7 +16,6 @@
 #include "pixel_map_taihe.h"
 
 #include "ani_color_space_object_convertor.h"
-#include "ani_utils.h" // ipc:rpc_ani
 #include "image_format_convert.h"
 #include "image_log.h"
 #include "image_taihe_utils.h"
@@ -158,8 +157,7 @@ static PixelMap Unmarshalling(uintptr_t sequence)
 #if defined(IOS_PLATFORM) || defined(ANDROID_PLATFORM)
     return make_holder<PixelMapImpl, PixelMap>();
 #else
-    MessageParcel* messageParcel = AniObjectUtils::Unwrap<MessageParcel>(get_env(),
-        reinterpret_cast<ani_object>(sequence));
+    MessageParcel* messageParcel = ImageTaiheUtils::UnwrapMessageParcel(sequence);
     if (messageParcel == nullptr) {
         ImageTaiheUtils::ThrowExceptionError(Media::ERR_IPC, "Get parcel failed");
         return make_holder<PixelMapImpl, PixelMap>();
@@ -638,8 +636,7 @@ void PixelMapImpl::Marshalling(uintptr_t sequence)
         return;
     }
 
-    MessageParcel* messageParcel = AniObjectUtils::Unwrap<MessageParcel>(get_env(),
-        reinterpret_cast<ani_object>(sequence));
+    MessageParcel* messageParcel = ImageTaiheUtils::UnwrapMessageParcel(sequence);
     if (messageParcel == nullptr) {
         ImageTaiheUtils::ThrowExceptionError(Media::ERR_IPC,
             "Marshalling PixelMap to parcel failed, parcel is nullptr");
