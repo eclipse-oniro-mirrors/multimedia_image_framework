@@ -102,7 +102,6 @@ template("image_taihe_shared_library") {
       "hilog:libhilog",
       "hitrace:hitrace_meter",
       "ipc:ipc_single",
-      "ipc:rpc_ani",
       "libjpeg-turbo:turbojpeg",
       "runtime_core:ani_helpers",
     ]
