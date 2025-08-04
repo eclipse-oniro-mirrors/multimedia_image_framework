@@ -119,7 +119,6 @@
             <option name="push" value="images/test_hw1.jpg -> /data/local/tmp/image" src="res"/>
             <option name="push" value="images/test_heif.heic -> /data/local/tmp/image" src="res"/>
             <option name="push" value="images/test_heif_hdr.heic -> /data/local/tmp/image" src="res"/>
-            <option name="push" value="images/test_broken.gif -> /data/local/tmp/image" src="res"/>
         </preparer>
     </target>
     <target name="heif_hw_decoder_test">
