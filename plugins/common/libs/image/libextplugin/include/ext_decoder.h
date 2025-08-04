@@ -127,6 +127,7 @@ private:
     uint32_t DmaMemAlloc(DecodeContext &context, uint64_t count, SkImageInfo &dstInfo);
     uint32_t JpegHwDmaMemAlloc(DecodeContext &context, uint64_t count, SkImageInfo &dstInfo);
     uint32_t DmaAlloc(DecodeContext &context, uint64_t count, const OHOS::BufferRequestConfig &requestConfig);
+    uint32_t UpdateHeifYuvDataInfo(DecodeContext &context, SkImageInfo &heifInfo);
     uint32_t HeifYUVMemAlloc(DecodeContext &context, SkImageInfo &heifInfo);
     uint32_t DoHeifDecode(DecodeContext &context);
     uint32_t DoHeifToRgbDecode(DecodeContext &context);
