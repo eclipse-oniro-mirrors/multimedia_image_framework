@@ -161,6 +161,20 @@ uintptr_t ImageTaiheUtils::GetUndefinedPtr(ani_env *env)
     return reinterpret_cast<uintptr_t>(undefinedObj);
 }
 
+OHOS::MessageParcel* ImageTaiheUtils::UnwrapMessageParcel(uintptr_t sequence)
+{
+    ani_env* env = get_env();
+    CHECK_ERROR_RETURN_RET_LOG(env == nullptr, nullptr, "get_env failed");
+    ani_long messageParcel{};
+    ani_status status = env->Object_CallMethodByName_Long(reinterpret_cast<ani_object>(sequence), "getNativePtr",
+        nullptr, &messageParcel);
+    if (status != ANI_OK) {
+        IMAGE_LOGE("UnwrapMessageParcel failed, status: %{public}d", status);
+        return nullptr;
+    }
+    return reinterpret_cast<OHOS::MessageParcel*>(messageParcel);
+}
+
 template <typename EnumType, typename ValueType>
 bool ImageTaiheUtils::GetEnumKeyByValue(ValueType value, typename EnumType::key_t &key)
 {
