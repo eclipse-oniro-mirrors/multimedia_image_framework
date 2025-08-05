@@ -298,38 +298,38 @@ void HeifDecodeFuzzTest001(const std::string& pathName)
     if (imageSource == nullptr) {
         return ;
     }
-    DecodeOptions decodeOpts;
-    decodeOpts.fitDensity = FDP->ConsumeIntegral<int32_t>();
-    decodeOpts.CropRect.left = FDP->ConsumeIntegral<int32_t>();
-    decodeOpts.CropRect.top = FDP->ConsumeIntegral<int32_t>();
-    decodeOpts.CropRect.width = FDP->ConsumeIntegral<int32_t>();
-    decodeOpts.CropRect.height = FDP->ConsumeIntegral<int32_t>();
-    decodeOpts.desiredSize.width = FDP->ConsumeIntegralInRange<uint16_t>(0, 0xfff);
-    decodeOpts.desiredSize.height = FDP->ConsumeIntegralInRange<uint16_t>(0, 0xfff);
-    decodeOpts.desiredRegion.left = FDP->ConsumeIntegral<int32_t>();
-    decodeOpts.desiredRegion.top = FDP->ConsumeIntegral<int32_t>();
-    decodeOpts.desiredRegion.width = FDP->ConsumeIntegral<int32_t>();
-    decodeOpts.desiredRegion.height = FDP->ConsumeIntegral<int32_t>();
-    decodeOpts.rotateDegrees = FDP->ConsumeFloatingPoint<float>();
-    decodeOpts.rotateNewDegrees = FDP->ConsumeIntegral<uint32_t>();
-    decodeOpts.sampleSize = FDP->ConsumeIntegral<uint32_t>();
-    decodeOpts.desiredPixelFormat = static_cast<Media::PixelFormat>(FDP->ConsumeIntegral<uint8_t>() % PIXELFORMAT_MODULO);
-    decodeOpts.photoDesiredPixelFormat = static_cast<Media::PixelFormat>(FDP->ConsumeIntegral<uint8_t>() % PIXELFORMAT_MODULO);
-    decodeOpts.desiredColorSpace = static_cast<Media::ColorSpace>(FDP->ConsumeIntegral<uint8_t>() % COLORSPACE_MODULO);
-    decodeOpts.allowPartialImage = FDP->ConsumeBool();
-    decodeOpts.editable = FDP->ConsumeBool();
-    decodeOpts.preference = static_cast<Media::MemoryUsagePreference>(FDP->ConsumeBool());
-    decodeOpts.fastAstc = FDP->ConsumeBool();
-    decodeOpts.invokeType = FDP->ConsumeIntegral<uint16_t>();
-    decodeOpts.desiredDynamicRange = static_cast<Media::DecodeDynamicRange>(FDP->ConsumeIntegral<uint8_t>() % DYNAMICRANGE_MODULO);
-    decodeOpts.resolutionQuality = static_cast<Media::ResolutionQuality>(FDP->ConsumeIntegral<uint8_t>() % RESOLUTION_MODULO);
-    decodeOpts.isAisr = FDP->ConsumeBool();
-    decodeOpts.isAppUseAllocator = FDP->ConsumeBool();
+	DecodeOptions decodeOpts;
+	decodeOpts.fitDensity = FDP->ConsumeIntegral<int32_t>();
+	decodeOpts.CropRect.left = FDP->ConsumeIntegral<int32_t>();
+	decodeOpts.CropRect.top = FDP->ConsumeIntegral<int32_t>();
+	decodeOpts.CropRect.width = FDP->ConsumeIntegral<int32_t>();
+	decodeOpts.CropRect.height = FDP->ConsumeIntegral<int32_t>();
+	decodeOpts.desiredSize.width = FDP->ConsumeIntegralInRange<uint16_t>(0, 0xfff);
+	decodeOpts.desiredSize.height = FDP->ConsumeIntegralInRange<uint16_t>(0, 0xfff);
+	decodeOpts.desiredRegion.left = FDP->ConsumeIntegral<int32_t>();
+	decodeOpts.desiredRegion.top = FDP->ConsumeIntegral<int32_t>();
+	decodeOpts.desiredRegion.width = FDP->ConsumeIntegral<int32_t>();
+	decodeOpts.desiredRegion.height = FDP->ConsumeIntegral<int32_t>();
+	decodeOpts.rotateDegrees = FDP->ConsumeFloatingPoint<float>();
+	decodeOpts.rotateNewDegrees = FDP->ConsumeIntegral<uint32_t>();
+	decodeOpts.sampleSize = FDP->ConsumeIntegral<uint32_t>();
+	decodeOpts.desiredPixelFormat = static_cast<Media::PixelFormat>(FDP->ConsumeIntegral<uint8_t>() % PIXELFORMAT_MODULO);
+	decodeOpts.photoDesiredPixelFormat = static_cast<Media::PixelFormat>(FDP->ConsumeIntegral<uint8_t>() % PIXELFORMAT_MODULO);
+	decodeOpts.desiredColorSpace = static_cast<Media::ColorSpace>(FDP->ConsumeIntegral<uint8_t>() % COLORSPACE_MODULO);
+	decodeOpts.allowPartialImage = FDP->ConsumeBool();
+	decodeOpts.editable = FDP->ConsumeBool();
+	decodeOpts.preference = static_cast<Media::MemoryUsagePreference>(FDP->ConsumeBool());
+	decodeOpts.fastAstc = FDP->ConsumeBool();
+	decodeOpts.invokeType = FDP->ConsumeIntegral<uint16_t>();
+	decodeOpts.desiredDynamicRange = static_cast<Media::DecodeDynamicRange>(FDP->ConsumeIntegral<uint8_t>() % DYNAMICRANGE_MODULO);
+	decodeOpts.resolutionQuality = static_cast<Media::ResolutionQuality>(FDP->ConsumeIntegral<uint8_t>() % RESOLUTION_MODULO);
+	decodeOpts.isAisr = FDP->ConsumeBool();
+	decodeOpts.isAppUseAllocator = FDP->ConsumeBool();
     for (uint32_t index = 0; index < imageSource->GetFrameCount(errorCode); ++index) {
         auto pixelMap = imageSource->CreatePixelMapEx(index, decodeOpts, errorCode);
         IMAGE_LOGI("%{public}s heif decode SUCCESS", __func__);
     }
-    
+	
 }
 } // namespace Media
 } // namespace OHOS
@@ -338,13 +338,13 @@ void HeifDecodeFuzzTest001(const std::string& pathName)
 extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
 {
     /* Run your code on data */
-    if(size < OPT_SIZE) return -1;
-    FuzzedDataProvider fdp(data, OPT_SIZE);
+	if(size < OPT_SIZE) return -1;
+	FuzzedDataProvider fdp(data, OPT_SIZE);
     OHOS::Media::FDP = &fdp;
-    uint8_t action = fdp.ConsumeIntegral<uint8_t>();
-    switch(action){
+	uint8_t action = fdp.ConsumeIntegral<uint8_t>();
+	switch(action){
         case 0:
-            static const std::string PATHNAME = "/data/local/tmp/test1.heic";
+			static const std::string PATHNAME = "/data/local/tmp/test1.heic";
             WriteDataToFile(data, size - OPT_SIZE, PATHNAME);
             OHOS::Media::HeifDecodeFuzzTest001(PATHNAME);
             break;
