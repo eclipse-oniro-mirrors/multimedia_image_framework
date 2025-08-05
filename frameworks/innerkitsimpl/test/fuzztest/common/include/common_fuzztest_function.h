@@ -15,6 +15,7 @@
 #ifndef FRAMEWORKS_INNERKITSIMPL_TEST_FUZZTEST_COMMON_FUZZTEST_FUNCTION_H
 #define FRAMEWORKS_INNERKITSIMPL_TEST_FUZZTEST_COMMON_FUZZTEST_FUNCTION_H
 
+#include <fuzzer/FuzzedDataProvider.h>
 #include <cstdint>
 #include <stddef.h>
 #include <string>
