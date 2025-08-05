@@ -80,6 +80,16 @@ ImagePackerImpl::~ImagePackerImpl()
     ReleaseSync();
 }
 
+int64_t ImagePackerImpl::GetImplPtr()
+{
+    return static_cast<int64_t>(reinterpret_cast<uintptr_t>(this));
+}
+
+std::shared_ptr<OHOS::Media::ImagePacker> ImagePackerImpl::GetNativeImagePacker()
+{
+    return nativeImagePacker_;
+}
+
 static int64_t GetDefaultBufferSize(int32_t width, int32_t height)
 {
     if (width <= SIZE_256 && height <= SIZE_256) {

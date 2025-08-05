@@ -52,6 +52,16 @@ ImageReceiverImpl::~ImageReceiverImpl()
     }
 }
 
+int64_t ImageReceiverImpl::GetImplPtr()
+{
+    return static_cast<int64_t>(reinterpret_cast<uintptr_t>(this));
+}
+
+std::shared_ptr<OHOS::Media::ImageReceiver> ImageReceiverImpl::GetNativeImageReceiver()
+{
+    return imageReceiver_;
+}
+
 void ImageReceiverImpl::UnRegisterReceiverListener()
 {
     if (imageReceiver_ != nullptr) {

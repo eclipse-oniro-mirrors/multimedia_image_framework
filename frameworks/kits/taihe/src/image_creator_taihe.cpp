@@ -49,6 +49,16 @@ ImageCreatorImpl::~ImageCreatorImpl()
     }
 }
 
+int64_t ImageCreatorImpl::GetImplPtr()
+{
+    return static_cast<int64_t>(reinterpret_cast<uintptr_t>(this));
+}
+
+std::shared_ptr<OHOS::Media::ImageCreator> ImageCreatorImpl::GetNativeImageCreator()
+{
+    return imageCreator_;
+}
+
 int32_t ImageCreatorImpl::GetCapacity()
 {
     if (g_isCreatorTest) {
@@ -183,7 +193,7 @@ void ImageCreatorImpl::QueueImageSync(weak::Image image)
         .callBack = nullptr,
     };
 
-    args.callBack = [](std::shared_ptr<ImageCreatorTaiheContext> &context) -> CallbackResult {
+    args.callBack = [](std::shared_ptr<ImageCreatorTaiheContext> &context) -> CreatorCallbackResult {
         if (context->imageCreatorImpl_ == nullptr) {
             IMAGE_LOGE("imageCreatorImpl is nullptr");
             return std::monostate{};
@@ -255,7 +265,7 @@ struct Image ImageCreatorImpl::DequeueImageSync()
         .callBack = nullptr,
     };
 
-    args.callBack = [](std::shared_ptr<ImageCreatorTaiheContext> &context) -> CallbackResult {
+    args.callBack = [](std::shared_ptr<ImageCreatorTaiheContext> &context) -> CreatorCallbackResult {
         if (context->imageCreatorImpl_ == nullptr) {
             IMAGE_LOGE("imageCreatorImpl is nullptr");
             return std::monostate{};
@@ -312,7 +322,7 @@ void ImageCreatorImpl::OnImageRelease(::taihe::callback_view<void(uintptr_t, uin
         .callBack = nullptr,
     };
 
-    args.callBack = [](std::shared_ptr<ImageCreatorTaiheContext> &context) -> CallbackResult {
+    args.callBack = [](std::shared_ptr<ImageCreatorTaiheContext> &context) -> CreatorCallbackResult {
         auto native = context->imageCreatorImpl_->imageCreator_;
         if (native == nullptr) {
             IMAGE_LOGE("Native instance is nullptr");
@@ -358,7 +368,7 @@ void ImageCreatorImpl::OffImageRelease(::taihe::optional_view<::taihe::callback<
         .callBack = nullptr,
     };
 
-    args.callBack = [](std::shared_ptr<ImageCreatorTaiheContext> &context) -> CallbackResult {
+    args.callBack = [](std::shared_ptr<ImageCreatorTaiheContext> &context) -> CreatorCallbackResult {
         if (context->imageCreatorImpl_ == nullptr || context->imageCreatorImpl_->imageCreator_ == nullptr) {
             IMAGE_LOGE("imageCreatorImpl is nullptr");
             return std::monostate{};

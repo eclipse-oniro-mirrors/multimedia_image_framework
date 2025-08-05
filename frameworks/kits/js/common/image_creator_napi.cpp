@@ -59,6 +59,7 @@ const int PARAM0 = 0;
 const int PARAM1 = 1;
 const int PARAM2 = 2;
 const int PARAM3 = 3;
+const int NUM_0 = 0;
 
 ImageCreatorNapi::ImageCreatorNapi():env_(nullptr)
 {}
@@ -205,6 +206,56 @@ napi_value ImageCreatorNapi::Constructor(napi_env env, napi_callback_info info)
 
 void ImageCreatorNapi::Destructor(napi_env env, void *nativeObject, void *finalize)
 {
+}
+
+napi_value ImageCreatorNapi::CreateImageCreator(napi_env env, std::shared_ptr<ImageCreator> imageCreator)
+{
+    if (sConstructor_ == nullptr) {
+        napi_value exports = nullptr;
+        napi_create_object(env, &exports);
+        ImageCreatorNapi::Init(env, exports);
+    }
+
+    napi_value constructor = nullptr;
+    napi_value result = nullptr;
+    napi_status status = napi_get_reference_value(env, sConstructor_, &constructor);
+    if (IMG_IS_OK(status)) {
+        if (imageCreator != nullptr) {
+            staticInstance_ = std::move(imageCreator);
+            status = napi_new_instance(env, constructor, NUM_0, nullptr, &result);
+        } else {
+            status = napi_invalid_arg;
+            IMAGE_LOGE("New ImageCreatorNapi Instance imageCreator is nullptr");
+            napi_get_undefined(env, &result);
+        }
+    }
+    if (!IMG_IS_OK(status)) {
+        IMAGE_LOGE("CreateImageCreator | New instance could not be obtained");
+        napi_get_undefined(env, &result);
+    }
+    return result;
+}
+
+extern "C" {
+napi_value GetImageCreatorNapi(napi_env env, std::shared_ptr<ImageCreator> imageCreator)
+{
+    return ImageCreatorNapi::CreateImageCreator(env, imageCreator);
+}
+
+bool GetNativeImageCreator(void *creator, std::shared_ptr<ImageCreator> &native)
+{
+    if (creator == nullptr) {
+        IMAGE_LOGE("%{public}s creator is nullptr", __func__);
+        return false;
+    }
+    native = reinterpret_cast<ImageCreatorNapi*>(creator)->GetNativeImageCreator();
+    return true;
+}
+}
+
+std::shared_ptr<ImageCreator> ImageCreatorNapi::GetNativeImageCreator()
+{
+    return imageCreator_;
 }
 
 static bool isTest(const int32_t* args, const int32_t len)

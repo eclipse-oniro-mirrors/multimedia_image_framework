@@ -28,14 +28,16 @@ using namespace taihe;
 using namespace ohos::multimedia::image::image;
 
 struct ImageCreatorTaiheContext;
-using CallbackResult = std::variant<std::monostate, struct Image>;
-using CompleteCallback = CallbackResult (*)(std::shared_ptr<ImageCreatorTaiheContext> &);
+using CreatorCallbackResult = std::variant<std::monostate, struct Image>;
+using CompleteCreatorCallback = CreatorCallbackResult (*)(std::shared_ptr<ImageCreatorTaiheContext> &);
 
 class ImageCreatorImpl {
 public:
     ImageCreatorImpl();
     explicit ImageCreatorImpl(std::shared_ptr<OHOS::Media::ImageCreator> imageCreator);
     ~ImageCreatorImpl();
+    int64_t GetImplPtr();
+    std::shared_ptr<OHOS::Media::ImageCreator> GetNativeImageCreator();
 
     static bool AniSendEvent(const std::function<void()> cb, std::string &name);
     static void OnProcessSendEvent(std::shared_ptr<ImageCreatorTaiheContext> &context);
@@ -60,8 +62,8 @@ private:
 };
 
 struct ImageCreatorTaiheContext {
-    CompleteCallback callBack = nullptr;
-    CallbackResult result;
+    CompleteCreatorCallback callBack = nullptr;
+    CreatorCallbackResult result;
     std::shared_ptr<uintptr_t> taiheCallback = nullptr;
     std::string name;
     ImageCreatorImpl *imageCreatorImpl_ = nullptr;
@@ -71,7 +73,7 @@ struct ImageCreatorTaiheContext {
 
 struct ImageCreatorCommonArgs {
     const std::string name;
-    CompleteCallback callBack;
+    CompleteCreatorCallback callBack;
 };
 
 class ImageCreatorReleaseListener : public OHOS::Media::SurfaceBufferReleaseListener {
