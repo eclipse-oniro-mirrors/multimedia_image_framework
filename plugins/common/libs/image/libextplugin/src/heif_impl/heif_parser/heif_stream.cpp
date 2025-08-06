@@ -301,9 +301,9 @@ void HeifStreamWriter::Insert(size_t insertSize)
         return;
     }
     size_t sizeToMove = data_.size() - position_;
+    data_.resize(data_.size() + insertSize);
     void *pCurrent = data_.data() + position_;
     void *pAfterMove = reinterpret_cast<uint8_t*>(pCurrent) + insertSize;
-    data_.resize(data_.size() + insertSize);
     if (EOK != memmove_s(pAfterMove, sizeToMove, pCurrent, sizeToMove)) {
         return;
     }
