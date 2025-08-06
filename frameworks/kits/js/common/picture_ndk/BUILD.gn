@@ -93,7 +93,8 @@ ohos_shared_library("picture") {
 
   external_deps = [
     "c_utils:utils",
-    "hilog:libhilog"
+    "hilog:libhilog",
+    "ipc:ipc_single",
   ]
   if (enable_libexif) {
     external_deps += [ "libexif:libexif" ]
