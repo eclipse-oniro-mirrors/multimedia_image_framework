@@ -87,6 +87,9 @@ std::unique_ptr<PixelMap> CreateYuvPixelMap(std::string pathName)
 void PixelYuvUtilsFuzzTest(std::string pathName)
 {
     std::unique_ptr<PixelMap> pixelMap = CreateYuvPixelMap(pathName);
+    if (pixelMap == nullptr) {
+        return;
+    }
     PixelYuv* pixelYuv = reinterpret_cast<PixelYuv*>(pixelMap.get());
     Size srcSize;
     srcSize.width = FDP->ConsumeIntegral<uint32_t>();
