@@ -275,6 +275,13 @@ std::tuple<size_t, size_t> JpegExifMetadataAccessor::GetInsertPosAndMarkerAPP1()
             }
         }
 
+        if (HasLength(marker) && marker != JPEG_MARKER_APP1) {
+            const auto [sizeBuf, size] = ReadSegmentLength(marker);
+            if (size < SEGMENT_LENGTH_SIZE || imageStream_->Seek(size - SEGMENT_LENGTH_SIZE, SeekPos::CURRENT) == -1) {
+                break;
+            }
+        }
+
         int ret = FindNextMarker();
         if (ret == EOF) {
             break;
