@@ -1603,7 +1603,7 @@ static int32_t ConvertToP010(const BufferInfo &src, BufferInfo &dst)
         CHECK_ERROR_RETURN_RET(!cond, CONVERT_ERROR);
         int32_t copySrcLength = PixelMap::GetAllocatedByteCount(copySrcInfo);
         std::unique_ptr<uint8_t[]> copySrcBuffer = std::make_unique<uint8_t[]>(copySrcLength);
-        cond = copySrcBuffer == nullptr || EOK != memcpy_s(copySrcBuffer.get(), srcLength, srcPixels, srcLength);
+        cond = copySrcBuffer == nullptr || EOK != memcpy_s(copySrcBuffer.get(), copySrcLength, srcPixels, srcLength);
         CHECK_ERROR_RETURN_RET_LOG(cond, CONVERT_ERROR, "alloc memory or memcpy_s failed!");
         cond = ConvertForFFMPEG(copySrcBuffer.get(), srcInfo.pixelFormat, srcInfo, dstP010, dstInfo.pixelFormat);
         CHECK_ERROR_RETURN_RET(!cond, CONVERT_ERROR);
