@@ -138,7 +138,7 @@ bool AllocDmaBuffer(DecodeContext &context, uint64_t byteCount, SkSize &svgSize)
         .transform = GraphicTransformType::GRAPHIC_ROTATE_NONE,
     };
     if (context.useNoPadding) {
-        requestConfig.usage |= BUFFER_USAGE_PREFER_NO_PADDING;
+        requestConfig.usage |= BUFFER_USAGE_PREFER_NO_PADDING | BUFFER_USAGE_ALLOC_NO_IPC;
     }
     GSError ret = sb->Alloc(requestConfig);
     cond = (ret != GSERROR_OK);
