@@ -17,6 +17,16 @@
 
 #include "image_log.h"
 #include "sync_fence.h"
+#ifdef USE_M133_SKIA
+#include "include/gpu/ganesh/gl/GrGLBackendSurface.h"
+#include "include/gpu/ganesh/gl/GrGLInterface.h"
+#include "include/gpu/ganesh/GrBackendSurface.h"
+#include "include/gpu/ganesh/GrDirectContext.h"
+#include "include/gpu/ganesh/GrRecordingContext.h"
+#include "include/gpu/ganesh/SkImageGanesh.h"
+#include "include/gpu/ganesh/SkSurfaceGanesh.h"
+#include "include/gpu/GpuTypes.h"
+#endif
 
 #undef LOG_DOMAIN
 #define LOG_DOMAIN LOG_TAG_DOMAIN_ID_IMAGE
@@ -146,9 +156,9 @@ bool PixelMapFromSurface::DrawImage(const Rect &srcRect)
         glType = GL_RGB10_A2;
     }
 #ifdef USE_M133_SKIA
-    GrMockTextureInfo grExternalTextureInfo;
-    auto backendTexturePtr =
-        std::make_shared<GrBackendTexture>(bufferWidth, bufferHeight, skgpu::Mipmapped::kNo, grExternalTextureInfo);
+    GrGLTextureInfo grExternalTextureInfo = { GL_TEXTURE_EXTERNAL_OES, texId_, static_cast<GrGLenum>(glType) };
+    auto backendTexturePtr = std::make_shared<GrBackendTexture>(
+        GrBackendTextures::MakeGL(bufferWidth, bufferHeight, skgpu::Mipmapped::kNo, grExternalTextureInfo));
     auto image = SkImages::BorrowTextureFrom(renderContext_->GetGrContext().get(), *backendTexturePtr,
         kTopLeft_GrSurfaceOrigin, colorType, kPremul_SkAlphaType, nullptr);
 #else
