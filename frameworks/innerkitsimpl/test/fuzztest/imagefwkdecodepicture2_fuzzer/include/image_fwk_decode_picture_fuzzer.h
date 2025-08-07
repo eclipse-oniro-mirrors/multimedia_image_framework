@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2025 Huawei Device Co., Ltd.
+ * Copyright (c) 2024 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -12,8 +12,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef IMAGE_FWK_DECODE_PICTURE_FUZZ_H
-#define IMAGE_FWK_DECODE_PICTURE_FUZZ_H
+#ifndef IMAGE_FWK_DECODE_PICTURE_FUZZER_H
+#define IMAGE_FWK_DECODE_PICTURE_FUZZER_H
 
 #define FUZZ_PROJECT_NAME "image_fwk_decode_picture_fuzzer"
 #endif

@@ -12,8 +12,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef IMAGE_FWK_DECODE_PNG_FUZZ_H
-#define IMAGE_FWK_DECODE_PNG_FUZZ_H
+#ifndef IMAGE_FWK_DECODE_PNG_FUZZE_H
+#define IMAGE_FWK_DECODE_PNG_FUZZE_H
 
 #define FUZZ_PROJECT_NAME "image_fwk_decode_png_fuzzer"
 #endif
