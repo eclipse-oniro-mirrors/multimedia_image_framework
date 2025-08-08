@@ -508,6 +508,9 @@ static void DoTest(std::shared_ptr<ImageCreator> imageCreator)
     std::string creatorKey = imageCreator->iraContext_->GetCreatorKey();
     IMAGE_ERR("CreatorKey = %{public}s", creatorKey.c_str());
     OHOS::sptr<OHOS::IConsumerSurface> creatorSurface = ImageCreator::getSurfaceById(creatorKey);
+    if (creatorSurface == nullptr) {
+        return;
+    }
     IMAGE_ERR("getDefaultWidth = %{public}d", creatorSurface->GetDefaultWidth());
     IMAGE_ERR("getDefaultHeight = %{public}d", creatorSurface->GetDefaultHeight());
     int32_t flushFence = 0;
