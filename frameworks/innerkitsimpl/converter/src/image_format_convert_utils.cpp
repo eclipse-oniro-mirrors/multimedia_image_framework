@@ -1215,6 +1215,7 @@ static bool YuvToRGB(const uint8_t *srcBuffer, const YUVDataInfo &yDInfo, PixelF
     SrcConvertParam srcParam = {yDInfo.yWidth, yDInfo.yHeight};
     srcParam.format = srcFormat;
     srcParam.buffer = srcBuffer;
+
     std::unique_ptr<uint8_t[]> copySrcBuffer;
     if (!AlignSrcBuffer(yDInfo, srcFormat, srcBuffer, srcParam, copySrcBuffer)) {
         IMAGE_LOGE("Failed to prepare aligned src buffer for YuvToRGB");
