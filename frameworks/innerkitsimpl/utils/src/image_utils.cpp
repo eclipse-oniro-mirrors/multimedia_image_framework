@@ -1156,12 +1156,14 @@ std::string ImageUtils::GetEncodedHeifFormat()
 
 int32_t ImageUtils::GetAPIVersion()
 {
-#if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
+#if !defined(CROSS_PLATFORM)
     static std::atomic<int32_t> apiVersion = GetAPIVersionInner();
     if (apiVersion.load() <= 0) {
         apiVersion.store(GetAPIVersionInner());
     }
     return apiVersion.load();
+#else
+    return FAULT_API_VERSION;
 #endif
 }
 
