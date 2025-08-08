@@ -1137,7 +1137,7 @@ static bool AlignBufferCore(const ImageInfo& srcImageInfo, const uint8_t* buffer
 {
     if (srcImageInfo.size.width <= 0 || srcImageInfo.size.height <= 0) {
         IMAGE_LOGE("Invalid src width(%{public}d) or height(%{public}d)",
-                    srcImageInfo.size.width, srcImageInfo.size.height);
+                   srcImageInfo.size.width, srcImageInfo.size.height);
         return false;
     }
     int32_t copyWidth = srcImageInfo.size.width;
