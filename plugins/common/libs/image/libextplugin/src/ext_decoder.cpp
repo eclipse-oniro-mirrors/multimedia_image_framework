@@ -67,6 +67,8 @@
 #include "include/codec/SkCodecAnimation.h"
 #include "modules/skcms/src/skcms_public.h"
 #endif
+#include "src/binary_parse/range_checked_byte_ptr.h"
+#include "src/image_type_recognition/image_type_recognition_lite.h"
 
 #if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
 #define DMA_BUF_SET_TYPE _IOW(DMA_BUF_BASE, 2, const char *)
@@ -133,6 +135,8 @@ using namespace OHOS::HDI::Base;
 using namespace OHOS::HDI::Display::Composer;
 #endif
 using namespace std;
+using piex::binary_parse::RangeCheckedBytePtr;
+using piex::image_type_recognition::RecognizeRawImageTypeLite;
 
 const static string DEFAULT_EXIF_VALUE = "default_exif_value";
 const static string CODEC_INITED_KEY = "CodecInited";
@@ -213,6 +217,19 @@ static const map<SkEncodedImageFormat, string> FORMAT_NAME = {
     { SkEncodedImageFormat::kASTC, "" },
     { SkEncodedImageFormat::kDNG, "image/raw" },
     { SkEncodedImageFormat::kHEIF, "image/heif" },
+};
+
+static const map<piex::image_type_recognition::RawImageTypes, string> RAW_FORMAT_NAME = {
+    { piex::image_type_recognition::kArwImage, "image/x-sony-arw" },
+    { piex::image_type_recognition::kCr2Image, "image/x-canon-cr2" },
+    { piex::image_type_recognition::kDngImage, "image/x-adobe-dng" },
+    { piex::image_type_recognition::kNefImage, "image/x-nikon-nef" },
+    { piex::image_type_recognition::kNrwImage, "image/x-nikon-nrw" },
+    { piex::image_type_recognition::kOrfImage, "image/x-olympus-orf" },
+    { piex::image_type_recognition::kPefImage, "image/x-pentax-pef" },
+    { piex::image_type_recognition::kRafImage, "image/x-fuji-raf" },
+    { piex::image_type_recognition::kRw2Image, "image/x-panasonic-rw2" },
+    { piex::image_type_recognition::kSrwImage, "image/x-samsung-srw" },
 };
 
 #if !defined(CROSS_PLATFORM)
@@ -2321,6 +2338,29 @@ uint32_t ExtDecoder::GetImagePropertyInt(uint32_t index, const std::string &key,
     return Media::ERR_MEDIA_VALUE_INVALID;
 }
 
+bool ExtDecoder::IsRawFormat(std::string &name)
+{
+    CHECK_ERROR_RETURN_RET(stream_ == nullptr, false);
+    ImagePlugin::DataStreamBuffer outData;
+    uint32_t savedPosition = stream_->Tell();
+    stream_->Seek(0);
+    if (!stream_->Peek(RAW_MIN_BYTEREAD, outData)) {
+        IMAGE_LOGE("IsRawFormat peek data fail.");
+        stream_->Seek(savedPosition);
+        return false;
+    } else {
+        stream_->Seek(savedPosition);
+        piex::binary_parse::RangeCheckedBytePtr header_buffer(outData.inputStreamBuffer, outData.dataSize);
+        piex::image_type_recognition::RawImageTypes type = RecognizeRawImageTypeLite(header_buffer);
+        auto rawFormatNameIter = RAW_FORMAT_NAME.find(type);
+        if (rawFormatNameIter != RAW_FORMAT_NAME.end() && !rawFormatNameIter->second.empty()) {
+            name = rawFormatNameIter->second;
+            return true;
+        }
+    }
+    return false;
+}
+
 OHOS::Media::Size ExtDecoder::GetHeifGridTileSize()
 {
 #ifdef HEIF_HW_DECODE_ENABLE
@@ -2349,7 +2389,7 @@ uint32_t ExtDecoder::GetImagePropertyString(uint32_t index, const std::string &k
     if (ENCODED_FORMAT_KEY.compare(key) == ZERO) {
         SkEncodedImageFormat format = codec_->getEncodedFormat();
         if ((format == SkEncodedImageFormat::kJPEG || format == SkEncodedImageFormat::kDNG) &&
-            ImageUtils::GetAPIVersion() >= APIVERSION_20) {
+            ImageUtils::GetAPIVersion() >= APIVERSION_20 && IsRawFormat(value)) {
             return SUCCESS;
         } else {
             return GetFormatName(format, value);
