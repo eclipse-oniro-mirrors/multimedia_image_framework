@@ -1133,11 +1133,11 @@ static bool YuvToYuvParam(const YUVDataInfo &yDInfo, SrcConvertParam &srcParam, 
 }
 
 static bool AlignBufferCore(const ImageInfo& srcImageInfo, const uint8_t* buffer,
-                                SrcConvertParam& srcParam, std::unique_ptr<uint8_t[]>& copySrcBuffer)
+                            SrcConvertParam& srcParam, std::unique_ptr<uint8_t[]>& copySrcBuffer)
 {
     if (srcImageInfo.size.width <= 0 || srcImageInfo.size.height <= 0) {
-        IMAGE_LOGE("Invalid src width(%{public}d) or height(%{public}d)", 
-                    srcImageInfo.size.width, srcImageInfo.size.height);
+        IMAGE_LOGE("Invalid src width(%{public}d) or height(%{public}d)",
+                srcImageInfo.size.width, srcImageInfo.size.height);
         return false;
     }
     int32_t copyWidth = srcImageInfo.size.width;
@@ -1171,7 +1171,7 @@ static bool AlignBufferCore(const ImageInfo& srcImageInfo, const uint8_t* buffer
 }
 
 static bool AlignSrcBuffer(const YUVDataInfo& yDInfo, PixelFormat srcFormat, const uint8_t* srcBuffer,
-                            SrcConvertParam& srcParam, std::unique_ptr<uint8_t[]>& copySrcBuffer)
+                        SrcConvertParam& srcParam, std::unique_ptr<uint8_t[]>& copySrcBuffer)
 {
     ImageInfo srcImageInfo = {
         .size = {static_cast<int32_t>(yDInfo.yWidth), static_cast<int32_t>(yDInfo.yHeight)},
