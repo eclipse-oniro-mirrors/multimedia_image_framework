@@ -159,7 +159,7 @@ void ItemPropertyColorBoxTest001(const std::shared_ptr<const HeifRawColorProfile
 }
 
 void ItemPropertyDisplayBoxTest001(HeifMdcvBox *heifmdcvbox, HeifClliBox *heifcllibox,
-    HeifStreamReader &reader, HeifStreamWriter &writer)
+    HeifStreamReader &reader,  HeifStreamWriter &writer)
 {
     DisplayColourVolume colourVolume;
     ContentLightLevelInfo lightLevel;
@@ -186,7 +186,7 @@ void ItemPropertyHvccBoxTest001(HeifHvccBox *heifhvccbox, HeifStreamReader &read
 {
     std::vector<uint8_t> v1(1, 1);
     const HvccConfig config = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
-    const std::vector<uint8_t> v2(1,1);
+    const std::vector<uint8_t> v2(1, 1);
     std::vector<std::vector<uint8_t>> v3(1, v1);
 
     if (heifhvccbox == nullptr) {
