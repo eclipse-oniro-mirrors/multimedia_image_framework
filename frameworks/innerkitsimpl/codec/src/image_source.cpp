@@ -5317,10 +5317,20 @@ std::string ImageSource::GetPixelMapName(PixelMap* pixelMap)
         IMAGE_LOGE("%{public}s error, pixelMap is null", __func__);
         return "undefined_";
     }
-    std::string pixelMapStr = "w" + std::to_string(pixelMap->GetWidth()) +
-        "_h" + std::to_string(pixelMap->GetHeight()) +
-        "_streamSize" + std::to_string(sourceStreamPtr_->GetStreamSize()) +
-        "_mimeType" + sourceInfo_.encodedFormat;
+    std::string pixelMapStr = std::to_string(pixelMap->GetWidth()) +
+        "_x" + std::to_string(pixelMap->GetHeight()) +
+        "-streamsize-" + std::to_string(sourceStreamPtr_->GetStreamSize()) +
+        "-mimeType-";
+    std::string prefix = "image/";
+    size_t minFormatLength = 9;
+    size_t maxFormatLength = 20;
+    if ((!sourceInfo_.encodedFormat.empty()) && sourceInfo_.encodedFormat.size() >= minFormatLength &&
+        sourceInfo_.encodedFormat.size() <= maxFormatLength &&
+        sourceInfo_.encodedFormat.compare(0, prefix.size(), prefix) == 0) {
+        pixelMapStr += sourceInfo_.encodedFormat.substr(prefix.size());
+    } else {
+        pixelMapStr += "undefined";
+    }
     IMAGE_LOGD("pixelMapStr is %{public}s", pixelMapStr.c_str());
     return pixelMapStr;
 }
