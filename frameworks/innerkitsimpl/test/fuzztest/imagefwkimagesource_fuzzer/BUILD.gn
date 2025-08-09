@@ -21,7 +21,7 @@ ohos_fuzztest("ImageFwkImageSourceFuzzTest") {
 
   include_dirs = [
     "./include",
-    "$image_subsystem/interfaces/innerkits/include",
+    "$image_subsystem/frameworks/innerkitsimpl/utils/include",
     "$image_subsystem/frameworks/innerkitsimpl/test/fuzztest/common/include",
   ]
 

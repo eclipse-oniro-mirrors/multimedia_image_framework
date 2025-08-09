@@ -98,9 +98,9 @@ void PngDecoderFuncTest001(const std::string& filename)
         pngDecoder = nullptr;
         return;
     }
-    DoPrivateFun(pngDecoder);
     Size size;
     pngDecoder->GetImageSize(0, size);
+    DoPrivateFun(pngDecoder);
     ProgDecodeContext progContext;
     pngDecoder->PromoteIncrementalDecode(0, progContext);
     pngDecoder->SetSource(*(pngDecoder->inputStreamPtr_));
