@@ -2392,6 +2392,8 @@ static uint32_t CheckExifDataValue(const std::string &key, const std::string &va
 
 static void ModifyImagePropertiesExecute(napi_env env, void *data)
 {
+    IMAGE_LOGI("ModifyImageProperties start.");
+    auto start = std::chrono::high_resolution_clock::now();
     auto context = static_cast<ImageSourceAsyncContext*>(data);
     if (context == nullptr) {
         IMAGE_LOGE("empty context");
@@ -2414,6 +2416,9 @@ static void ModifyImagePropertiesExecute(napi_env env, void *data)
         }
     }
     context->status = context->errMsgArray.size() > 0 ? ERROR : SUCCESS;
+    auto end = std::chrono::high_resolution_clock::now();
+    auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
+    IMAGE_LOGI("ModifyImageProperties end, cost: %{public}llu ms", duration.count());
 }
 
 static void ModifyImagePropertyExecute(napi_env env, void *data)
