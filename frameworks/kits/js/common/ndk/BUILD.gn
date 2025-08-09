@@ -164,6 +164,7 @@ ohos_shared_library("image_source") {
     "libjpeg-turbo:turbojpeg",
     "resource_management:librawfile",
     "skia:libjpeg",
+    "ipc:ipc_single",
   ]
 
   innerapi_tags = [ "ndk" ]
@@ -207,6 +208,7 @@ ohos_shared_library("image_packer") {
     "hilog:libhilog",
     "napi:ace_napi",
     "resource_management:librawfile",
+    "ipc:ipc_single",
   ]
 
   innerapi_tags = [ "ndk" ]

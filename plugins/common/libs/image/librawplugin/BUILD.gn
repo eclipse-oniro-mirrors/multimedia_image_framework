@@ -78,6 +78,7 @@ ohos_shared_library("rawplugin") {
       "skia:libjpeg",
       "skia:piex",
       "skia:skia_canvaskit",
+      "ipc:ipc_single",
     ]
   }
   if (image_use_new_skia) {
