@@ -1683,9 +1683,9 @@ uint32_t ImageSource::ModifyImageProperty(std::shared_ptr<MetadataAccessor> meta
         }
     }
     metadataAccessor->Set(exifMetadata_);
-    IMAGE_LOGI("ModifyImageProperty accesssor modify start");
+    IMAGE_LOGD("ModifyImageProperty accesssor modify start");
     ret = metadataAccessor->Write();
-    IMAGE_LOGI("ModifyImageProperty accesssor modify end");
+    IMAGE_LOGD("ModifyImageProperty accesssor modify end");
     if (!srcFilePath_.empty() && ret == SUCCESS) {
         RefreshImageSourceByPathName();
     }
