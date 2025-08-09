@@ -35,6 +35,7 @@ constexpr uint32_t SETALPHAMINWIDTH = 50;
 constexpr uint32_t SETALPHAMINHEIGHT = 50;
 constexpr uint32_t NUM_15 = 15;
 constexpr uint32_t NUM_12 = 12;
+constexpr uint32_t NUM_4 = 4;
 
 namespace OHOS {
 namespace Media {
@@ -98,7 +99,7 @@ std::unique_ptr<Media::PixelMap> GetPixelMapFromOpts(const Media::Initialization
  */
 std::unique_ptr<Media::PixelMap> GetPixelMapFromOptsAndRandomData(const Media::InitializationOptions &opts)
 {
-    uint32_t size = opts.size.width * opts.size.height;
+    uint32_t size = opts.size.width * opts.size.height * NUM_4;
     std::unique_ptr<uint32_t[]> buffer = std::make_unique<uint32_t[]>(size);
     for (uint32_t i = 0; i < size; i++) {
         buffer[i] = GetData<uint32_t>();
