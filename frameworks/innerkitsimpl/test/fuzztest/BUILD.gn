@@ -26,6 +26,7 @@ group("fuzztest") {
     "imagegifencoder_fuzzer:ImageGifEnCoderFuzzTest",
     "imageheifimpl_fuzzer:ImageHeifImplFuzzTest",
     "imageheifimpl2_fuzzer:ImageHeifImpl2FuzzTest",
+    "imageheifparser_fuzzer:ImageHeifParserFuzzTest",
     "imageinterfacepixelmap_fuzzer:ImageInterfacePixelmapFuzzTest",
     "imagepixelYuv_fuzzer:ImagePixelYuvFuzzTest",
     "imagepixelYuv2_fuzzer:ImagePixelYuv2FuzzTest",
