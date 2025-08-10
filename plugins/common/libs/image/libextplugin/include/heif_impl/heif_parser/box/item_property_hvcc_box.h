@@ -70,6 +70,22 @@ struct HvccSpsConfig {
     uint8_t videoRangeFlag;
 };
 
+struct RefPicSet {
+    uint8_t interRefPicSetPredictionFlag;
+    uint8_t deltaIdxMinus1;
+    uint8_t deltaRpsSign;
+    uint8_t absDeltaRpsMinus1;
+    std::vector<uint8_t> usedByCurrPicFlag;
+    std::vector<uint8_t> usedDeltaFlag;
+    std::vector<uint8_t> deltaPoc;
+    uint32_t numNegativePics;
+    uint32_t numPositivePics;
+    std::vector<uint8_t> deltaPocS0Minus1;
+    std::vector<uint8_t> usedBycurrPicS0Flag;
+    std::vector<uint8_t> deltaPocS1Minus1;
+    std::vector<uint8_t> usedBycurrPicS1Flag;
+};
+
 struct HvccNalArray {
     uint8_t arrayCompleteness;
     uint8_t nalUnitType;
@@ -98,7 +114,7 @@ public:
 
     uint32_t GetNaluTypeId(std::vector<uint8_t>& nalu);
 
-    void ParserHvccColorRangeFlag(const std::vector<HvccNalArray> &nalArrays);
+    bool ParserHvccColorRangeFlag(const std::vector<HvccNalArray> &nalArrays);
 
     std::vector<HvccNalArray> GetNalArrays() const { return nalArrays_; };
 
@@ -119,6 +135,8 @@ public:
     bool ParseSpsVuiParameter(std::vector<uint8_t> &nalUnits);
 
     void ReadGolombCodesForSizeId(std::vector<uint8_t> &nalUnits, uint32_t sizeId);
+
+    void ParseStRefPicSet(std::vector<uint8_t> &nalUnits, uint32_t stRpsIdx, uint32_t numShortTermResPicSets);
 
 protected:
     heif_error ParseContent(HeifStreamReader& reader) override;

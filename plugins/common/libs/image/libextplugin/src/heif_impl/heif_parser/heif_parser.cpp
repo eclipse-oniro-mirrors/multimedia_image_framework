@@ -507,9 +507,11 @@ void HeifParser::ExtractImageProperties(std::shared_ptr<HeifImage> &image)
         image->SetDefaultPixelFormat((HeifPixelFormat) hvccConfig.chromaFormat);
 
         auto nalArrays = hvcc->GetNalArrays();
-        hvcc->ParserHvccColorRangeFlag(nalArrays);
-        auto spsConfig = hvcc->GetSpsConfig();
-        image->SetColorRangeFlag(static_cast<int>(spsConfig.videoRangeFlag));
+        bool isGetFlag = hvcc->ParserHvccColorRangeFlag(nalArrays);
+        if (isGetFlag) {
+            auto spsConfig = hvcc->GetSpsConfig();
+            image->SetColorRangeFlag(static_cast<int>(spsConfig.videoRangeFlag));
+        }
     }
     ExtractDisplayData(image, itemId);
 }

@@ -376,6 +376,7 @@ if (is_arkui_x) {
     include_dirs = [
       "include/heif_impl/heif_parser",
       "${image_subsystem}/frameworks/innerkitsimpl/utils/include",
+      "${image_subsystem}/interfaces/innerkits/include",
     ]
 
     sources = [
@@ -397,7 +398,10 @@ if (is_arkui_x) {
       "src/heif_impl/heif_parser/heif_utils.cpp",
     ]
 
-    external_deps = [ "c_utils:utils" ]
+    external_deps = [
+       "c_utils:utils",
+       "hilog:libhilog",
+    ]
 
     subsystem_name = "multimedia"
     innerapi_tags = [ "platformsdk_indirect" ]

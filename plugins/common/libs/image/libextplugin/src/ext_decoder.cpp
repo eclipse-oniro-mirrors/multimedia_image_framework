@@ -1243,7 +1243,7 @@ bool ExtDecoder::DoHeifSwDecode(DecodeContext &context)
     }
     CHECK_ERROR_RETURN_RET(cond, false);
     auto dstBuffer = reinterpret_cast<SurfaceBuffer*>(context.pixelsBuffer.context);
-    decoder->SetSampleFormat(DEFAULT_SAMPLE_SIZE, heifColorSpaceName_);
+    decoder->SetSampleFormat(DEFAULT_SAMPLE_SIZE, heifColorSpaceName_, heifIsColorSpaceFromCicp_);
     decoder->setDstBuffer(reinterpret_cast<uint8_t*>(context.pixelsBuffer.buffer),
         dstBuffer->GetStride(), context.pixelsBuffer.context);
     bool decodeRet = decoder->SwDecode(false);
@@ -1269,7 +1269,7 @@ uint32_t ExtDecoder::DoHeifToRgbDecode(DecodeContext &context)
         CHECK_ERROR_RETURN_RET(cond, ERR_IMAGE_DATA_UNSUPPORT);
     }
     auto dstBuffer = reinterpret_cast<SurfaceBuffer*>(context.pixelsBuffer.context);
-    decoder->SetSampleFormat(sampleSize_, heifColorSpaceName_);
+    decoder->SetSampleFormat(sampleSize_, heifColorSpaceName_, heifIsColorSpaceFromCicp_);
     decoder->setDstBuffer(reinterpret_cast<uint8_t*>(context.pixelsBuffer.buffer),
         dstBuffer->GetStride(), context.pixelsBuffer.context);
     SetOutPutFormat(context.info.pixelFormat, decoder);
@@ -2133,6 +2133,7 @@ OHOS::ColorManager::ColorSpace ExtDecoder::GetSrcColorSpace()
 #endif
             if (cName != ColorManager::NONE) {
                 heifColorSpaceName_ = cName;
+                heifIsColorSpaceFromCicp_ = true;
                 IMAGE_LOGI("%{public}s profile has CICP, cName: %{public}u", __func__, static_cast<uint32_t>(cName));
                 return ColorManager::ColorSpace(cName);
             }
@@ -2505,7 +2506,7 @@ uint32_t ExtDecoder::DoHeifToYuvDecode(OHOS::ImagePlugin::DecodeContext &context
     auto dstBuffer = reinterpret_cast<SurfaceBuffer*>(context.pixelsBuffer.context);
     decoder->setOutputColor(context.info.pixelFormat
         == PixelFormat::NV12 ? kHeifColorFormat_NV12 : kHeifColorFormat_NV21);
-    decoder->SetSampleFormat(sampleSize_, heifColorSpaceName_);
+    decoder->SetSampleFormat(sampleSize_, heifColorSpaceName_, heifIsColorSpaceFromCicp_);
     decoder->setDstBuffer(reinterpret_cast<uint8_t *>(context.pixelsBuffer.buffer),
         dstBuffer->GetStride(), context.pixelsBuffer.context);
     bool decodeRet = decoder->decode(nullptr);
@@ -2554,7 +2555,7 @@ uint32_t ExtDecoder::DoHeifToSingleHdrDecode(DecodeContext &context)
     auto formatSearch = HEIF_FORMAT_MAP.find(context.info.pixelFormat);
     heifFormat = (formatSearch != HEIF_FORMAT_MAP.end()) ? formatSearch->second : kHeifColorFormat_RGBA_1010102;
     decoder->setOutputColor(heifFormat);
-    decoder->SetSampleFormat(DEFAULT_SAMPLE_SIZE, heifColorSpaceName_);
+    decoder->SetSampleFormat(DEFAULT_SAMPLE_SIZE, heifColorSpaceName_, heifIsColorSpaceFromCicp_);
     decoder->setDstBuffer(reinterpret_cast<uint8_t*>(context.pixelsBuffer.buffer),
         dstBuffer->GetStride(), context.pixelsBuffer.context);
     bool decodeRet = decoder->decode(nullptr);

@@ -34,6 +34,7 @@ static constexpr size_t NORMAL_LENGTH = 1;
 static constexpr size_t SIZE_32BITS = 0xFFFFFFFF;
 static constexpr size_t UUID_TYPE_BYTE_NUM = 16;
 static constexpr uint32_t NAL_LAYER_ID = 33;
+static constexpr uint8_t SKIP_DOUBLE_DATA_PROCESS_BYTE = 2;
 
 static std::vector<uint8_t> SetUint32ToUint8Vertor(uint32_t data)
 {
@@ -44,6 +45,21 @@ static std::vector<uint8_t> SetUint32ToUint8Vertor(uint32_t data)
         static_cast<uint8_t>(data & 0xFF)
     };
     return res;
+}
+
+static void ProcessBoxData(std::vector<uint8_t> &nalu)
+{
+    uint32_t naluSize = nalu.size();
+    std::vector<uint32_t> indicesToDelete;
+    for (uint32_t i = UINT16_BYTES_NUM; i < naluSize; ++i) {
+        if (nalu[i - UINT8_BYTES_NUM] == 0x00 &&
+            nalu[i - SKIP_DOUBLE_DATA_PROCESS_BYTE] == 0x00 && nalu[i] == 0x03) {
+            indicesToDelete.push_back(i);
+        }
+    }
+    for (auto it = indicesToDelete.rbegin(); it != indicesToDelete.rend(); ++it) {
+        nalu.erase(nalu.begin() + *it);
+    }
 }
 
 class HeifParserBoxTest : public testing::Test {
@@ -366,7 +382,7 @@ HWTEST_F(HeifParserBoxTest, AppendNalDataTest001, TestSize.Level3)
 
 /**
  * @tc.name: AppendNalDataTest001
- * @tc.desc: HeifHvccBox
+ * @tc.desc: Decode HeifHvccBox to valid SPS
  * @tc.type: FUNC
  */
 HWTEST_F(HeifParserBoxTest, AppendNalDataTest002, TestSize.Level3)
@@ -388,6 +404,31 @@ HWTEST_F(HeifParserBoxTest, AppendNalDataTest002, TestSize.Level3)
     ASSERT_EQ(spsConfig.picHeightInLumaSamples, 512);
     ASSERT_EQ(spsConfig.videoRangeFlag, 1);
     GTEST_LOG_(INFO) << "HeifParserBoxTest: AppendNalDataTest002 end";
+}
+
+/**
+ * @tc.name: AppendNalDataTest003
+ * @tc.desc: Decode HeifHvccBox to valid SPS
+ * @tc.type: FUNC
+ */
+HWTEST_F(HeifParserBoxTest, AppendNalDataTest003, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "HeifParserBoxTest: AppendNalDataTest003 start";
+    HeifHvccBox heifHvccBox;
+    std::vector<uint8_t> nalData = {0x42, 0x01, 0x03, 0x01, 0x60, 0x00, 0x00, 0x03, 0x00, 0x00, 0x03, 0x00,
+        0x00, 0x03, 0x00, 0x00, 0x03, 0x00, 0x78, 0x00, 0x00, 0xa0, 0x01, 0x80, 0x20, 0x15, 0x96, 0x37, 0xfd,
+        0xc8, 0xb2, 0x6b, 0xb7, 0x35, 0x02, 0x02, 0x05, 0x00, 0x80, 0x22, 0x00, 0x01, 0x00, 0x07};
+    ProcessBoxData(nalData);
+    heifHvccBox.ParseNalUnitAnalysisSps(nalData);
+    auto spsConfig = heifHvccBox.GetSpsConfig();
+    ASSERT_EQ(spsConfig.nalUnitType, NAL_LAYER_ID);
+    ASSERT_EQ(spsConfig.bitDepthLumaMinus8, 0);
+    ASSERT_EQ(spsConfig.bitDepthChromaMinus8, 0);
+    ASSERT_EQ(spsConfig.chromaFormatIdc, 1);
+    ASSERT_EQ(spsConfig.picWidthInLumaSamples, 3072);
+    ASSERT_EQ(spsConfig.picHeightInLumaSamples, 344);
+    ASSERT_EQ(spsConfig.videoRangeFlag, 0);
+    GTEST_LOG_(INFO) << "HeifParserBoxTest: AppendNalDataTest003 end";
 }
 
 /**

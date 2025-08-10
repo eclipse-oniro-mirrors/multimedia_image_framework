@@ -78,7 +78,7 @@ public:
     bool SwDecode(bool isSharedMemory = false);
     bool IsHeifGainmapYuv400();
     bool IsHeifAlphaYuv400();
-    void SetSampleFormat(uint32_t sampleSize, ColorManager::ColorSpaceName colorSpaceName);
+    void SetSampleFormat(uint32_t sampleSize, ColorManager::ColorSpaceName colorSpaceName, bool isColorSpaceFromCicp);
     int32_t GetPrimaryLumaBitNum();
     void setGainmapDstBuffer(uint8_t* dstBuffer, size_t rowStride, void *context);
 private:
@@ -184,7 +184,7 @@ private:
     SurfaceBuffer *gainMapDstHwBuffer_;
     uint32_t sampleSize_ = 1;
     OHOS::ColorManager::ColorSpaceName colorSpaceName_ = ColorManager::ColorSpaceName::NONE;
-
+    bool isColorSpaceFromCicp_ = false;
     HeifFrameInfo tmapInfo_{};
     std::string errMsg_;
 
