@@ -439,7 +439,7 @@ void HeifHvccBox::ParseStRefPicSet(std::vector<uint8_t> &nalUnits, uint32_t stRp
         rps.usedByCurrPicFlag.resize(HEIF_NUM_DELTA_POCS);
         rps.usedDeltaFlag.resize(HEIF_NUM_DELTA_POCS);
 
-        for (uint32_t i = 0; i <= HEIF_NUM_DELTA_POCS; i++) {
+        for (uint32_t i = 0; i < HEIF_NUM_DELTA_POCS; i++) {
             rps.usedDeltaFlag[i] = GetWord(nalUnits, READ_BIT_NUM_FLAG);
             if (!rps.usedByCurrPicFlag[i]) {
                 rps.usedDeltaFlag[i] = GetWord(nalUnits, READ_BIT_NUM_FLAG);
