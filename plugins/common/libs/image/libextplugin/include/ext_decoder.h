@@ -176,6 +176,7 @@ private:
     OHOS::ColorManager::ColorSpace GetSrcColorSpace();
     uint32_t ApplyDesiredColorSpace(DecodeContext &context);
     OHOS::ColorManager::ColorSpaceName heifColorSpaceName_ = ColorManager::ColorSpaceName::NONE;
+    bool heifIsColorSpaceFromCicp_ = false;
 #endif
 
 #if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)

@@ -14,6 +14,7 @@
  */
 
 #include "box/item_property_hvcc_box.h"
+#include "image_log.h"
 
 static const uint8_t GENGERAL_PROFILE_SPACE_SHIFT = 6;
 static const uint8_t GENERAL_TIER_FLAG_SHIFT = 5;
@@ -40,6 +41,9 @@ static const uint8_t SUB_LAYER_PROFILE_IDC_SIZE = 5;
 static const uint8_t PCM_ENABLED_FLAG = 4;
 static const uint8_t NUM_TEMPORAL_ID_SIZE = 6;
 static const uint8_t MAX_COEF_NUM = 64;
+static uint32_t HEIF_MAX_IMAGE_DPB_SIZE = 32;
+static uint32_t HEIF_NUM_DELTA_POCS = 1;
+static uint32_t HEIF_BASE_DELTA_FlAG = 1;
 
 namespace OHOS {
 namespace ImagePlugin {
@@ -230,11 +234,18 @@ void HeifHvccBox::ProcessBoxData(std::vector<uint8_t> &nalu)
     }
 }
 
-void HeifHvccBox::ParserHvccColorRangeFlag(const std::vector<HvccNalArray> &nalArrays)
+bool HeifHvccBox::ParserHvccColorRangeFlag(const std::vector<HvccNalArray> &nalArrays)
 {
     auto spsBox = GetNaluData(nalArrays, SPS_BOX_TYPE);
+    if (spsBox.empty()) {
+        return false;
+    }
     ProcessBoxData(spsBox);
-    ParseNalUnitAnalysisSps(spsBox);
+    if (!ParseNalUnitAnalysisSps(spsBox)) {
+        IMAGE_LOGD("Sps does not return a range flag");
+        return false;
+    }
+    return true;
 }
 
 void HeifHvccBox::ProfileTierLevel(std::vector<uint8_t> &nalUnits, uint32_t profilePresentFlag,
@@ -319,11 +330,14 @@ bool HeifHvccBox::ParseSpsSyntax(std::vector<uint8_t> &nalUnits)
 
     spsConfig_.spsVideoParameterSetId = GetGolombCode(nalUnits);
     spsConfig_.chromaFormatIdc = GetGolombCode(nalUnits);
+    IMAGE_LOGD("HeifParser::SPS chromaFormatIdc is %{public}d", spsConfig_.chromaFormatIdc);
     if (spsConfig_.chromaFormatIdc == SUB_LAYER_MINUS) {
         spsConfig_.separateColourPlaneFlag = GetWord(nalUnits, READ_BIT_NUM_FLAG);
     }
     spsConfig_.picWidthInLumaSamples = GetGolombCode(nalUnits);
     spsConfig_.picHeightInLumaSamples = GetGolombCode(nalUnits);
+    IMAGE_LOGD("HeifParser::SPS picWidthInLumaSamples : %{public}d", spsConfig_.picWidthInLumaSamples);
+    IMAGE_LOGD("HeifParser::SPS picHeightInLumaSamples : %{public}d", spsConfig_.picHeightInLumaSamples);
     spsConfig_.conformanceWindowFlag = GetWord(nalUnits, READ_BIT_NUM_FLAG);
     if (spsConfig_.conformanceWindowFlag == READ_BIT_NUM_FLAG) {
         spsConfig_.confWinLefOffset = GetGolombCode(nalUnits);
@@ -333,6 +347,8 @@ bool HeifHvccBox::ParseSpsSyntax(std::vector<uint8_t> &nalUnits)
     }
     spsConfig_.bitDepthLumaMinus8 = GetGolombCode(nalUnits);
     spsConfig_.bitDepthChromaMinus8 = GetGolombCode(nalUnits);
+    IMAGE_LOGD("HeifParser::SPS bitDepthLumaMinus8 : %{public}d", spsConfig_.bitDepthLumaMinus8);
+    IMAGE_LOGD("HeifParser::SPS bitDepthChromaMinus8 : %{public}d", spsConfig_.bitDepthChromaMinus8);
     spsConfig_.log2MaxPicOrderCntLsbMinus4 = GetGolombCode(nalUnits);
     spsConfig_.spsSubLayerOrderingInfoPresentFlag = GetWord(nalUnits, READ_BIT_NUM_FLAG);
     uint32_t i = spsConfig_.spsSubLayerOrderingInfoPresentFlag ? 0 : spsConfig_.spsMaxSubLayersMinus1;
@@ -395,8 +411,66 @@ bool HeifHvccBox::ParseSpsVuiParameter(std::vector<uint8_t> &nalUnits)
     if (videoSignalTypePresentFlag) {
         GetWord(nalUnits, SUB_LAYER_MINUS);
         spsConfig_.videoRangeFlag = GetWord(nalUnits, READ_BIT_NUM_FLAG);
+        IMAGE_LOGD("HeifParser::SPS videoRangeFlag : %{public}d", spsConfig_.videoRangeFlag);
     }
     return true;
+}
+
+void HeifHvccBox::ParseStRefPicSet(std::vector<uint8_t> &nalUnits, uint32_t stRpsIdx, uint32_t numShortTermRefPicSets)
+{
+    RefPicSet rps;
+    if (stRpsIdx != 0) {
+        rps.interRefPicSetPredictionFlag = GetWord(nalUnits, READ_BIT_NUM_FLAG);
+    } else {
+        rps.interRefPicSetPredictionFlag = 0;
+    }
+    if (rps.interRefPicSetPredictionFlag) {
+        if (stRpsIdx == numShortTermRefPicSets) {
+            rps.deltaIdxMinus1 = GetGolombCode(nalUnits);
+        } else {
+            rps.deltaIdxMinus1 = 0;
+        }
+        rps.deltaRpsSign = GetWord(nalUnits, READ_BIT_NUM_FLAG);
+        rps.absDeltaRpsMinus1 = GetGolombCode(nalUnits);
+
+        uint32_t refRpsIdx = stRpsIdx - (rps.deltaIdxMinus1 + 1);
+        IMAGE_LOGD("HeifParser::SPS refRpsIdx : %{public}d", refRpsIdx);
+
+        rps.usedByCurrPicFlag.resize(HEIF_NUM_DELTA_POCS);
+        rps.usedDeltaFlag.resize(HEIF_NUM_DELTA_POCS);
+
+        for (uint32_t i = 0; i <= HEIF_NUM_DELTA_POCS; i++) {
+            rps.usedDeltaFlag[i] = GetWord(nalUnits, READ_BIT_NUM_FLAG);
+            if (!rps.usedByCurrPicFlag[i]) {
+                rps.usedDeltaFlag[i] = GetWord(nalUnits, READ_BIT_NUM_FLAG);
+            } else {
+                rps.usedDeltaFlag[i] = HEIF_BASE_DELTA_FlAG;
+            }
+        }
+    } else {
+        rps.numNegativePics = GetGolombCode(nalUnits);
+        rps.numPositivePics = GetGolombCode(nalUnits);
+
+        if (rps.numNegativePics > HEIF_MAX_IMAGE_DPB_SIZE || rps.numPositivePics > HEIF_MAX_IMAGE_DPB_SIZE) {
+            IMAGE_LOGE("HeifParser:: RPS pics-Buffering more than max");
+            return;
+        }
+        rps.deltaPocS0Minus1.resize(rps.numNegativePics);
+        rps.usedBycurrPicS0Flag.resize(rps.numNegativePics);
+
+        for (uint32_t i = 0; i < rps.numNegativePics; i++) {
+            rps.deltaPocS0Minus1[i] = GetGolombCode(nalUnits);
+            rps.usedBycurrPicS0Flag[i] = GetWord(nalUnits, READ_BIT_NUM_FLAG);
+        }
+
+        rps.deltaPocS1Minus1.resize(rps.numPositivePics);
+        rps.usedBycurrPicS1Flag.resize(rps.numPositivePics);
+        
+        for (uint32_t i = 0; i < rps.numPositivePics; i++) {
+            rps.deltaPocS1Minus1[i] = GetGolombCode(nalUnits);
+            rps.usedBycurrPicS1Flag[i] = GetWord(nalUnits, READ_BIT_NUM_FLAG);
+        }
+    }
 }
 
 bool HeifHvccBox::ParseSpsSyntaxScalingList(std::vector<uint8_t> &nalUnits)
@@ -419,6 +493,10 @@ bool HeifHvccBox::ParseSpsSyntaxScalingList(std::vector<uint8_t> &nalUnits)
         GetWord(nalUnits, READ_BIT_NUM_FLAG);
     }
     spsConfig_.numShortTermRefPicSets = GetGolombCode(nalUnits);
+    IMAGE_LOGD("HeifParser:: SPS numShortTermRefPicSets : %{public}d", spsConfig_.numShortTermRefPicSets);
+    for (uint32_t i = 0; i < spsConfig_.numShortTermRefPicSets; i++) {
+        ParseStRefPicSet(nalUnits, i, spsConfig_.numShortTermRefPicSets);
+    }
     spsConfig_.longTermRefPicsPresentFlag = GetWord(nalUnits, READ_BIT_NUM_FLAG);
     if (spsConfig_.longTermRefPicsPresentFlag == READ_BIT_NUM_FLAG) {
         uint32_t numLongTermRefPicSps = GetGolombCode(nalUnits);
