@@ -22,6 +22,7 @@
 #include <vector>
 #include <unistd.h>
 #include <fcntl.h>
+#include <fuzzer/FuzzedDataProvider.h>
 
 #include "common_fuzztest_function.h"
 #include "image_source.h"
@@ -39,6 +40,10 @@
 
 namespace OHOS {
 namespace Media {
+FuzzedDataProvider* FDP;
+constexpr uint32_t OPT_SIZE = 40;
+constexpr uint32_t PIXELFORMAT_MODULO = 3;
+
 using namespace OHOS::ImagePlugin;
 void JpegTest001(const std::string& pathName)
 {
@@ -47,26 +52,20 @@ void JpegTest001(const std::string& pathName)
     uint32_t errorCode;
     auto imageSource = ImageSource::CreateImageSource(pathName, srcOpts, errorCode);
     if (imageSource == nullptr) {
-        return ;
+        return;
     }
     DecodeOptions decodeOpts;
+    std::vector<PixelFormat> formats = {PixelFormat::NV21, PixelFormat::NV12, PixelFormat::RGBA_8888};
+    uint8_t index = FDP->ConsumeIntegral<uint8_t>() % PIXELFORMAT_MODULO;
+    decodeOpts.desiredPixelFormat = formats[index];
     auto pixelMap = imageSource->CreatePixelMapEx(0, decodeOpts, errorCode);
-    if (pixelMap) {
-        PixelMapTest001(pixelMap.get());
-        PixelMapTest002(pixelMap.get());
+    if (pixelMap == nullptr) {
+        return;
     }
-    decodeOpts.desiredPixelFormat = PixelFormat::NV21;
-    auto pixelYuv = imageSource->CreatePixelMapEx(0, decodeOpts, errorCode);
-    if (pixelYuv) {
-        PixelYuvTest001(pixelYuv.get());
-        PixelYuvTest002(pixelYuv.get());
-    }
-    decodeOpts.desiredPixelFormat = PixelFormat::NV12;
-    auto pixelYuv2 = imageSource->CreatePixelMapEx(0, decodeOpts, errorCode);
-    if (pixelYuv2) {
-        PixelYuvTest001(pixelYuv2.get());
-        PixelYuvTest002(pixelYuv2.get());
-    }
+    PixelMapTest001(pixelMap.get());
+    PixelMapTest002(pixelMap.get());
+    PixelYuvTest001(pixelMap.get());
+    PixelYuvTest002(pixelMap.get());
     IMAGE_LOGI("%{public}s SUCCESS", __func__);
 }
 } // namespace Media
@@ -76,8 +75,13 @@ void JpegTest001(const std::string& pathName)
 extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
 {
     /* Run your code on data */
+    if (size < OHOS::Media::OPT_SIZE) {
+        return -1;
+    }
+    FuzzedDataProvider fdp(data + size - OHOS::Media::OPT_SIZE, OHOS::Media::OPT_SIZE);
+    OHOS::Media::FDP = &fdp;
     static const std::string pathName = "/data/local/tmp/test_decode_jpg.jpg";
-    WriteDataToFile(data, size, pathName);
+    WriteDataToFile(data, size - OHOS::Media::OPT_SIZE, pathName);
     OHOS::Media::JpegTest001(pathName);
     return 0;
 }
