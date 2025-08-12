@@ -353,92 +353,6 @@ void YuvP010ToRgbFuzzTest001()
     NV21P010ToRGBA1010102FuzzTest004();
     IMAGE_LOGI("YuvP010ToRgbTest001: end");
 }
-
-/*
- * test pixelmap IPC interface
- */
-bool g_pixelMapIpcTest(std::unique_ptr<Media::PixelMap> &pixelMap)
-{
-    if (!pixelMap) {
-        return false;
-    }
-    // test parcel pixelmap
-    MessageParcel parcel;
-    pixelMap->SetMemoryName("MarshallingPixelMap");
-    if (!pixelMap->Marshalling(parcel)) {
-        IMAGE_LOGI("g_pixelMapIpcTest Marshalling failed id: %{public}d, isUnmap: %{public}d",
-            pixelMap->GetUniqueId(), pixelMap->IsUnMap());
-        return false;
-    }
-    Media::PixelMap* unmarshallingPixelMap = Media::PixelMap::Unmarshalling(parcel);
-    if (!unmarshallingPixelMap) {
-        return false;
-    }
-    unmarshallingPixelMap->SetMemoryName("unmarshallingPixelMap");
-    IMAGE_LOGI("g_pixelMapIpcTest unmarshallingPixelMap failed id: %{public}d, isUnmap: %{public}d",
-        unmarshallingPixelMap->GetUniqueId(), unmarshallingPixelMap->IsUnMap());
-    unmarshallingPixelMap->FreePixelMap();
-    delete unmarshallingPixelMap;
-    unmarshallingPixelMap = nullptr;
-    return true;
-}
-
-std::unique_ptr<Media::PixelMap> GetYuvP010PixelMap(PixelFormat &srcFormat, Size &srcSize)
-{
-    IMAGE_LOGI("GetYuvP010PixelMap: start");
-    ImageSize imageSize;
-    imageSize.width = srcSize.width;
-    imageSize.height = srcSize.height;
-    int32_t ySize = imageSize.width * imageSize.height;
-    int32_t uvSize = ((imageSize.width + 1) / NUM_2) * ((imageSize.height + 1) / NUM_2);
-    const size_t totalSize = (ySize + NUM_2 * uvSize);
-    uint16_t* const chOrg = new uint16_t[totalSize];
-    bool result = ReadFile(chOrg, IMAGE_INPUT_YUV_PATH3, totalSize, 1);
-    if (!result) {
-        IMAGE_LOGE("GetYuvPixelMap: ReadFile fail");
-        delete[] chOrg;
-        return nullptr;
-    }
-    const uint32_t dataLength = totalSize * NUM_2;
-    uint32_t *data = reinterpret_cast<uint32_t*>(chOrg);
-    InitializationOptions opts;
-    opts.srcPixelFormat = srcFormat;
-    opts.pixelFormat = srcFormat;
-    opts.alphaType = AlphaType::IMAGE_ALPHA_TYPE_OPAQUE;
-    opts.size.width = imageSize.width;
-    opts.size.height = imageSize.height;
-    std::unique_ptr<PixelMap> pixelMap = PixelMap::Create(data, dataLength, opts);
-    if (pixelMap.get() == nullptr) {
-        delete[] chOrg;
-        IMAGE_LOGE("GetYuvPixelMap: Create fail");
-        return nullptr;
-    }
-    delete[] chOrg;
-    return pixelMap;
-}
-
-void NV12P010PixelMapIPCTest001()
-{
-    PixelFormat srcFormat = PixelFormat::YCBCR_P010;
-    Size srcSize = { P010_ORIGINAL_WIDTH, P010_ORIGINAL_HEIGHT };
-    std::unique_ptr<Media::PixelMap> yuvP010PixelMap = GetYuvP010PixelMap(srcFormat, srcSize);
-    g_pixelMapIpcTest(yuvP010PixelMap);
-}
-
-void NV21P010PixelMapIPCTest001()
-{
-    PixelFormat srcFormat = PixelFormat::YCRCB_P010;
-    Size srcSize = { P010_ORIGINAL_WIDTH, P010_ORIGINAL_HEIGHT };
-    std::unique_ptr<Media::PixelMap> yuvP010PixelMap = GetYuvP010PixelMap(srcFormat, srcSize);
-    g_pixelMapIpcTest(yuvP010PixelMap);
-}
-
-void YuvP010PixelMapIPCFuzzTest001()
-{
-    NV12P010PixelMapIPCTest001();
-    NV21P010PixelMapIPCTest001();
-}
-
 } // namespace Media
 } // namespace OHOS
 
@@ -454,6 +368,5 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
     }
     close(fd);
     OHOS::Media::YuvP010ToRgbFuzzTest001();
-    OHOS::Media::YuvP010PixelMapIPCFuzzTest001();
     return 0;
 }

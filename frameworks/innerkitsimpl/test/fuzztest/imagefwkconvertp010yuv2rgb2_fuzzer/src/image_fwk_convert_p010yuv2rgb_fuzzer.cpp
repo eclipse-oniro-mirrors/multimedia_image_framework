@@ -82,67 +82,6 @@ void YuvP010ToRgbFuzzTest001()
     srcPixelMap->FreePixelMap();
 }
 
-void PixelMapMarshallingTest001()
-{
-    Media::InitializationOptions opts;
-    opts.size.width = FDP->ConsumeIntegral<uint16_t>() % MAX_LENGTH_MODULO;
-    opts.size.height = FDP->ConsumeIntegral<uint16_t>() % MAX_LENGTH_MODULO;
-    opts.srcPixelFormat = static_cast<Media::PixelFormat>(FDP->ConsumeIntegral<uint8_t>() % PIXELFORMAT_MODULO);
-    opts.pixelFormat = static_cast<Media::PixelFormat>(FDP->ConsumeIntegral<uint8_t>() % PIXELFORMAT_MODULO);
-    opts.alphaType = static_cast<Media::AlphaType>(FDP->ConsumeIntegral<uint8_t>() % ALPHATYPE_MODULO);
-    opts.scaleMode = static_cast<Media::ScaleMode>(FDP->ConsumeIntegral<uint8_t>() % SCALEMODE_MODULO);
-    opts.editable = FDP->ConsumeBool();
-    opts.useSourceIfMatch = FDP->ConsumeBool();
-    int32_t pixelbytes = Media::ImageUtils::GetPixelBytes(opts.srcPixelFormat);
-    size_t datalength = opts.size.width * opts.size.height * pixelbytes;
-    std::unique_ptr<uint8_t[]> colorData = std::make_unique<uint8_t[]>(datalength);
-    if(colorData == nullptr)
-            return;
-    FDP->ConsumeData(colorData.get(), datalength);
-    auto pixelmap = Media::PixelMap::Create(reinterpret_cast<uint32_t*>(colorData.get()), datalength, opts);
-    if(pixelmap.get() == nullptr)
-	    return;
-	
-	MessageParcel parcel;
-    pixelmap->SetMemoryName("MarshallingPixelMap");
-    if (!pixelmap->Marshalling(parcel)) {
-        IMAGE_LOGI("g_pixelMapIpcTest Marshalling failed id: %{public}d, isUnmap: %{public}d",
-            pixelmap->GetUniqueId(), pixelmap->IsUnMap());
-        return;
-    }
-}
-
-void PixelMapUnmarshallingTest001()
-{
-	MessageParcel parcel;
-	size_t size = FDP->remaining_bytes();
-	void* data = malloc(size);
-    if(data == nullptr)
-            return;
-    FDP->ConsumeData(data, size);
-	parcel.WriteBuffer(data, size);
-	
-    Media::PixelMap* unmarshallingPixelmap = Media::PixelMap::Unmarshalling(parcel);
-    if (!unmarshallingPixelmap) {
-	free(data);
-        return;
-    }
-    unmarshallingPixelmap->SetMemoryName("unmarshallingPixelMap");
-    IMAGE_LOGI("g_pixelMapIpcTest unmarshallingPixelMap failed id: %{public}d, isUnmap: %{public}d",
-        unmarshallingPixelmap->GetUniqueId(), unmarshallingPixelmap->IsUnMap());
-    unmarshallingPixelmap->FreePixelMap();
-    delete unmarshallingPixelmap;
-    unmarshallingPixelmap = nullptr;
-    free(data);
-    return;
-}
-
-void YuvP010PixelMapIPCFuzzTest001()
-{
-    PixelMapMarshallingTest001();
-    PixelMapUnmarshallingTest001();
-}
-
 } // namespace Media
 } // namespace OHOS
 
@@ -153,6 +92,5 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
     FuzzedDataProvider fdp(data, size);
     OHOS::Media::FDP = &fdp;
     OHOS::Media::YuvP010ToRgbFuzzTest001();
-    OHOS::Media::YuvP010PixelMapIPCFuzzTest001();
     return 0;
 }

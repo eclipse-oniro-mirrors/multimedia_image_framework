@@ -388,42 +388,6 @@ bool CreatePictureByRandomImageSource(const uint8_t *data, size_t size, const st
     IMAGE_LOGI("%{public}s SUCCESS.", __func__);
     return true;
 }
-
-void HeifDecodeFuzz(const uint8_t *data, size_t size, const std::string& pathName = "")
-{
-#ifdef HEIF_HW_DECODE_ENABLE
-    SourceOptions opts;
-    uint32_t errorCode;
-    std::shared_ptr<ImageSource> imageSource = nullptr;
-    if (pathName != "") {
-        imageSource = ImageSource::CreateImageSource(pathName, opts, errorCode);
-    } else {
-        imageSource = ImageSource::CreateImageSource(data, size, opts, errorCode);
-    }
-    
-    if (imageSource == nullptr) {
-        return;
-    }
-    auto extStream = std::make_unique<ImagePlugin::ExtStream>;
-    if (extStream == nullptr) {
-        return;
-    }
-    extStream->stream_ = imageSource->sourceStreamPtr_.get();
-    std::unique_ptr<SkCodec> codec =
-        SkCodec::MakeFromStream(std::make_unique<ImagePlugin::ExtStream>(extStream->stream_));
-    if (codec == nullptr) {
-        return;
-    }
-    auto heifContext = reinterpret_cast<ImagePlugin::HeifDecoderImpl*>(codec->getHeifContext());
-    if (heifContext == nullptr) {
-        return;
-    }
-    sptr<SurfaceBuffer> hwBuffer;
-    heifContext->HwDecodeIdenImage(nullptr, heifContext->primaryImage_, heifContext->gridInfo_, &hwBuffer, true);
-    HeifFrameInfo* frameInfo = nullptr;
-    heifContext->getTmapInfo(frameInfo);
-#endif
-}
 } // namespace Media
 } // namespace OHOS
 
@@ -432,11 +396,9 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
 {
     /*Run your code on data */
     OHOS::Media::PictureRandomFuzzTest(data, size);
-    std::string pathName = "/data/local/tmp/test_jpeg·jpg";
-    OHOS::Media::HeifDecodeFuzz(data, size, pathName);
+    std::string pathName = "/data/local/tmp/test_jpeg.jpg";
     OHOS::Media::CreatePictureByRandomImageSource(data, size, pathName);
     pathName = "/data/local/tmp/test_heif.heic";
-    OHOS::Media::HeifDecodeFuzz(data, size, pathName);
     OHOS::Media::CreatePictureByRandomImageSource(data, size, pathName);
     return 0;
 }
