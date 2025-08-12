@@ -143,7 +143,7 @@ void DmaPool::UpdateDmaPoolInfo(PureStreamInfo streamInfo, DmaBufferInfo bufferI
     remainOffset_ += bufferInfo.allocatedBufferSize;
     usedSpace_[remainOffset_] = bufferInfo.allocatedBufferSize;
     activeTime_ = std::chrono::steady_clock::now();
-    JPEG_HW_LOGI("upadteSpaceInfo: aligend size:%{public}u buffer usedOffset:%{public}u usedNum:%{public}lu",
+    JPEG_HW_LOGI("upadteSpaceInfo: aligend size:%{public}u buffer usedOffset:%{public}u usedNum:%{public}u",
                  bufferInfo.allocatedBufferSize, bufferInfo.allocatedBufferOffsetOfPool, usedSpace_.size());
 }
 
