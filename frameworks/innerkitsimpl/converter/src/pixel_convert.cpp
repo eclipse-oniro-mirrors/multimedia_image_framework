@@ -1343,7 +1343,6 @@ static bool P010ConvertRGB565(const uint8_t* srcP010, const ImageInfo& srcInfo,
     void* dstPixels, const ImageInfo& dstInfo)
 {
     int64_t bufferSize = GetValidBufferSize(dstInfo);
-IMAGE_LOGE("enter here P010ConvertRGB565, dst: format = %{public}d, bufferSize = %{public}u", dstInfo.pixelFormat, static_cast<uint32_t>(bufferSize));
     if (bufferSize <= 0) {
         return false;
     }
