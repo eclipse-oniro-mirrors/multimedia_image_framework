@@ -448,10 +448,10 @@ struct AuxiliaryPictureInfo {
 }
 
 union HdrMetadataValue {
-  metadataType: HdrMetadataType;
-  staticMetadataArrayBuffer: HdrStaticMetadata;
+  hdrMetadataType: HdrMetadataType;
+  hdrStaticMetadata: HdrStaticMetadata;
   arrayBuffer: @arraybuffer Array<u8>;
-  gainmapMetadata: HdrGainmapMetadata;
+  hdrGainmapMetadata: HdrGainmapMetadata;
 }
 
 union PropertyValue {
@@ -501,6 +501,16 @@ interface PixelMap {
   @overload("scaleSync")
   ScaleWithAntiAliasingSync(x: f64, y: f64, level: AntiAliasingLevel): void;
 
+  @gen_promise("createScaledPixelMap")
+  CreateScaledPixelMapSync(x: f64, y: f64, level: Optional<AntiAliasingLevel>): PixelMap;
+
+  @gen_promise("clone")
+  CloneSync(): PixelMap;
+
+  @gen_async("translate")
+  @gen_promise("translate")
+  TranslateSync(x: f64, y: f64): void;
+
   @gen_async("crop")
   @gen_promise("crop")
   CropSync(region: Region): void;
@@ -539,6 +549,11 @@ interface PixelMap {
 
   @gen_promise("unmarshalling")
   UnmarshallingSync(sequence: @sts_type("rpc.MessageSequence") Opaque): PixelMap;
+
+  GetMetadata(key: HdrMetadataKey): HdrMetadataValue;
+
+  @gen_promise("setMetadata")
+  SetMetadataSync(key: HdrMetadataKey, value: HdrMetadataValue): void;
 
   @gen_async("release")
   @gen_promise("release")
@@ -887,13 +902,23 @@ function CreatePixelMapByOptionsSync(options: InitializationOptions): PixelMap;
 // For legacy ANI backward compatibility
 function CreatePixelMapByPtr(ptr: i64): PixelMap;
 
+@gen_promise("createPixelMapFromSurface")
 @overload("createPixelMapFromSurfaceSync")
 function CreatePixelMapFromSurfaceByIdSync(surfaceId: String): PixelMap;
 
+@gen_promise("createPixelMapFromSurface")
 @overload("createPixelMapFromSurfaceSync")
 function CreatePixelMapFromSurfaceByIdAndRegionSync(surfaceId: String, region: Region): PixelMap;
 
 function CreatePixelMapFromParcel(sequence: @sts_type("rpc.MessageSequence") Opaque): PixelMap;
+
+@gen_async("createPremultipliedPixelMap")
+@gen_promise("createPremultipliedPixelMap")
+function CreatePremultipliedPixelMapSync(src: PixelMap, dst: PixelMap): void;
+
+@gen_async("createUnpremultipliedPixelMap")
+@gen_promise("createUnpremultipliedPixelMap")
+function CreateUnpremultipliedPixelMapSync(src: PixelMap, dst: PixelMap): void;
 
 @overload("createImageSource")
 function CreateImageSourceByUri(uri: String): ImageSource;
