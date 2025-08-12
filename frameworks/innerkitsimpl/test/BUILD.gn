@@ -1261,7 +1261,6 @@ ohos_unittest("jpeg_hw_decoder_test") {
   sources = [
     "${image_subsystem}/frameworks/innerkitsimpl/test/unittest/plugin_test/ext_decoder_test.cpp",
     "${image_subsystem}/plugins/common/libs/image/libextplugin/src/ext_stream.cpp",
-    "${image_subsystem}/plugins/common/libs/image/libextplugin/src/hardware/jpeg_hw_decoder.cpp",
     "unittest/jpeg_hw_decode/common/mock_jpeg_hw_decode_flow.cpp",
     "unittest/jpeg_hw_decode/unittest/jpeg_hw_decoder_test.cpp",
   ]
