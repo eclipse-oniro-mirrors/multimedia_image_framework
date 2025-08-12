@@ -874,7 +874,7 @@ void PixelMap::UpdatePixelsAlpha(const AlphaType &alphaType, const PixelFormat &
             alphaIndex = 0;
         }
         if (alphaIndex != -1) {
-            uint8_t pixelBytes = dstPixelMap.GetPixelBytes();
+            uint32_t pixelBytes = static_cast<uint32_t>(dstPixelMap.GetPixelBytes());
             int32_t bufferSize = dstPixelMap.GetByteCount();
             if (bufferSize <= 0) {
                 IMAGE_LOGE("UpdatePixelsAlpha invalid byte count: %{public}d", bufferSize);
