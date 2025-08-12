@@ -506,7 +506,7 @@ PixelMap PixelMapTransferStaticImpl(uintptr_t input) {
     return make_holder<PixelMapImpl, PixelMap>(nativePixelMap);
 }
 
-uintptr_t PixelMapTransferDynamicImpl(PixelMap input) {
+uintptr_t PixelMapTransferDynamicImpl(weak::PixelMap input) {
     IMAGE_LOGD("[%{public}s] IN", __func__);
     if (input.is_error()) {
         IMAGE_LOGE("%{public}s input is error", __func__);
