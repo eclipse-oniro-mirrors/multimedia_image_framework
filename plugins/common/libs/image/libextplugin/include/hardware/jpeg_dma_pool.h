@@ -42,7 +42,7 @@ public:
 private:
     DmaPool() = default;
     bool Init(sptr<ICodecImage> hwDecoder_);
-    bool CopySrcToDmaPool(ImagePlugin::InputDataStream* srcStream, PureStreamInfo streamInfo, 
+    bool CopySrcToDmaPool(ImagePlugin::InputDataStream* srcStream, PureStreamInfo streamInfo,
                           DmaBufferInfo bufferInfo);
     bool PackingBufferHandle(DmaBufferInfo bufferInfo, CodecImageBuffer& inBuffer);
     void UpdateDmaPoolInfo(PureStreamInfo streamInfo, DmaBufferInfo bufferInfo);
