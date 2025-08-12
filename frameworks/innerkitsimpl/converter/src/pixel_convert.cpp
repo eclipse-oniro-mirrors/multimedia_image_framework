@@ -93,6 +93,7 @@ constexpr uint32_t BIT_SHIFT_16BITS = 16;
 constexpr uint32_t EVEN_ALIGNMENT = 2;
 constexpr int32_t CONVERT_ERROR = -1;
 constexpr uint32_t UV_PLANES_COUNT = 2;
+constexpr uint8_t RGB565_EXTRA_BYTES = 2;
 
 static const std::map<YuvConversion, const int> SWS_CS_COEFFICIENT = {
     {YuvConversion::BT601, SWS_CS_DEFAULT},
@@ -1338,6 +1339,31 @@ static bool P010ConvertRGBA1010102(const void *srcPixels, ImageInfo srcInfo,
     return true;
 }
 
+static bool P010ConvertRGB565(const uint8_t* srcP010, const ImageInfo& srcInfo,
+    void* dstPixels, const ImageInfo& dstInfo)
+{
+    int64_t bufferSize = GetValidBufferSize(dstInfo);
+    if (bufferSize <= 0) {
+        return false;
+    }
+
+    std::unique_ptr<uint8_t[]> tmpBuffer =
+        std::make_unique<uint8_t[]>(bufferSize + RGB565_EXTRA_BYTES); // avoid ffmpeg out-bounds-write
+    if (tmpBuffer == nullptr) {
+        IMAGE_LOGE("P010ConvertRGB565: alloc temp buffer failed");
+        return false;
+    }
+    if (!ConvertForFFMPEG(srcP010, srcInfo.pixelFormat, srcInfo, tmpBuffer.get(), dstInfo.pixelFormat)) {
+        IMAGE_LOGE("P010ConvertRGB565: FFMpeg convert failed");
+        return false;
+    }
+    if (memcpy_s(dstPixels, bufferSize, tmpBuffer.get(), bufferSize) != 0) {
+        IMAGE_LOGE("P010ConvertRGB565: memcpy_s dstPixels failed!");
+        return false;
+    }
+    return true;
+}
+
 static bool ConvertRGBA1010102ToYUV(const void *srcPixels, ImageInfo srcInfo,
     void *dstPixels, ImageInfo dstInfo)
 {
@@ -1482,6 +1508,11 @@ static int32_t ConvertFromP010(const void *srcPixels, const int32_t srcLength, c
     }
     if (dstInfo.pixelFormat == PixelFormat::RGBA_1010102) {
         if (P010ConvertRGBA1010102(srcP010, srcInfo, dstPixels, dstInfo)) {
+            return PixelMap::GetRGBxByteCount(dstInfo);
+        }
+        return -1;
+    } else if (dstInfo.pixelFormat == PixelFormat::RGB_565) {
+        if (P010ConvertRGB565(srcP010, srcInfo, dstPixels, dstInfo)) {
             return PixelMap::GetRGBxByteCount(dstInfo);
         }
         return -1;

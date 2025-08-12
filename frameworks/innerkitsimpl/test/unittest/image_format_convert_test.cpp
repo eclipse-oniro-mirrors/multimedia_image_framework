@@ -2214,6 +2214,28 @@ HWTEST_F(ImageFormatConvertTest, PixelMapFormatConvert_032, TestSize.Level3)
     GTEST_LOG_(INFO) << "ImageFormatConvertTest.PixelMapFormatConvert_032: end";
 }
 
+HWTEST_F(ImageFormatConvertTest, PixelMapFormatConvert_033, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImageFormatConvertTest: PixelMapFormatConvert_033: start";
+    PixelFormat srcFormat = PixelFormat::YCRCB_P010;
+    PixelFormat destFormat = PixelFormat::RGB_565;
+    Size srcSize = { ODDTREE_ORIGINAL_WIDTH, ODDTREE_ORIGINAL_HEIGHT };
+    uint32_t destBuffersize = srcSize.width * srcSize.height * BYTES_PER_PIXEL_RGB565;
+    PixelMap10bitConvert(srcFormat, destFormat, srcSize, destBuffersize);
+    GTEST_LOG_(INFO) << "ImageFormatConvertTest: PixelMapFormatConvert_033: end";
+}
+
+HWTEST_F(ImageFormatConvertTest, PixelMapFormatConvert_034, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImageFormatConvertTest.PixelMapFormatConvert_034: start";
+    PixelFormat srcFormat = PixelFormat::YCBCR_P010;
+    PixelFormat destFormat = PixelFormat::RGB_565;
+    Size srcSize = { ODDTREE_ORIGINAL_WIDTH, ODDTREE_ORIGINAL_HEIGHT };
+    uint32_t destBuffersize = srcSize.width * srcSize.height * BYTES_PER_PIXEL_RGB565;
+    PixelMap10bitConvert(srcFormat, destFormat, srcSize, destBuffersize);
+    GTEST_LOG_(INFO) << "ImageFormatConvertTest.PixelMapFormatConvert_034: end";
+}
+
 /**
  * @tc.name: RGBConvertImageFormatOptionUnique_001
  * @tc.desc: Verify RGB convert image format option using RGBConvertImageFormatOptionUnique.
