@@ -13,9 +13,9 @@
  * limitations under the License.
  */
 
- #include "hardware/jpeg_dma_pool.h"
- #include <chrono>
- #include <sys/mman.h>
+#include "hardware/jpeg_dma_pool.h"
+#include <chrono>
+#include <sys/mman.h>
 namespace OHOS::ImagePlugin {
 using namespace OHOS::HDI::Codec::Image::V2_1;
 
@@ -75,12 +75,12 @@ bool DmaPool::Init(sptr<ICodecImage> hwDecoder_)
         return false;
     }
     bufferHandle_->virAddr = mmap(nullptr, DMA_POOL_SIZE, PROT_READ | PROT_WRITE,
-                                                 MAP_SHARED, bufferHandle_->fd, 0);
+                                  MAP_SHARED, bufferHandle_->fd, 0);
     if (bufferHandle_->virAddr == MAP_FAILED) {
         JPEG_HW_LOGE("failed to map dma pool");
         return false;
     }
-    std::thread lifeManageThread([this]{this->RunDmaPoolDestroy();});
+    std::thread lifeManageThread([this] {this->RunDmaPoolDestroy();});
     if (!lifeManageThread.joinable()) {
         if (munmap(bufferHandle_->virAddr, DMA_POOL_SIZE) != 0) {
             JPEG_HW_LOGE("failed to unmap dma pool");
@@ -144,7 +144,7 @@ void DmaPool::UpdateDmaPoolInfo(PureStreamInfo streamInfo, DmaBufferInfo bufferI
     usedSpace_[remainOffset_] = bufferInfo.allocatedBufferSize;
     activeTime_ = std::chrono::steady_clock::now();
     JPEG_HW_LOGI("upadteSpaceInfo: aligend size:%{public}u buffer usedOffset:%{public}u usedNum:%{public}lu",
-                    bufferInfo.allocatedBufferSize, bufferInfo.allocatedBufferOffsetOfPool, usedSpace_.size());
+                 bufferInfo.allocatedBufferSize, bufferInfo.allocatedBufferOffsetOfPool, usedSpace_.size());
 }
 
 void DmaPool::RunDmaPoolDestroy()
