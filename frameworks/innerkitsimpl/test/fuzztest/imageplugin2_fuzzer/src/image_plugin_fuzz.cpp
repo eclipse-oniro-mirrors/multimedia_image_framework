@@ -36,6 +36,7 @@
 #endif
 #include "ext_wstream.h"
 #include "hdr_helper.h"
+#include "file_source_stream.h"
 
 #undef LOG_DOMAIN
 #define LOG_DOMAIN LOG_TAG_DOMAIN_ID_IMAGE
@@ -72,6 +73,7 @@ static const std::string ASTC_PATH1 = "/data/local/tmp/THM_ASTC.astc";
 constexpr uint8_t ITUT35_TAG_SIZE = 6;
 static constexpr uint32_t ALLOCATORTYPE_MODULO = 5;
 static constexpr uint32_t CROPANDSCALESTRATEGY_MODULO = 3;
+static constexpr uint32_t HDRTYPE_MODULO = 8;
 
 void SvgDecoderFuncTest001(const std::string &filename)
 {
@@ -272,6 +274,24 @@ void ExtDecoderRegionFuncTest001(const std::string &filename)
     IMAGE_LOGI("%{public}s SUCCESS", __func__);
 }
 
+void HdrHelperFucTest2(const uint8_t *data, size_t size, const std::string &filename)
+{
+    HdrMetadata metadata;
+    Media::ImageHdrType hdrType = static_cast<Media::ImageHdrType>(FDP->ConsumeIntegral<uint8_t>() % HDRTYPE_MODULO);
+    ImagePlugin::HdrHelper::ValidateAndCorrectMetaData(metadata, hdrType);
+
+    std::shared_ptr<ExtDecoder> extDecoder = std::make_shared<ExtDecoder>();
+    std::unique_ptr<FileSourceStream> streamPtr = FileSourceStream::CreateSourceStream(filename);
+    extDecoder->SetSource(*streamPtr);
+    extDecoder->codec_ = SkCodec::MakeFromStream(std::make_unique<ExtStream>(extDecoder->stream_));
+    extDecoder->CheckCodec();
+    ImagePlugin::HdrHelper::GetMetadata(extDecoder->codec_.get(), hdrType, metadata);
+
+    sk_sp<SkData> imageData = SkData::MakeWithCopy(data, size);
+    ExtWStream extWStream(nullptr);
+    ImagePlugin::HdrJpegPackerHelper::SpliceHdrStream(imageData, imageData, extWStream, metadata);
+}
+
 void HdrHelperFucTest()
 {
     HdrMetadata metadataOne;
@@ -299,13 +319,8 @@ void HdrHelperFucTest()
     ImagePlugin::HdrHeifPackerHelper::PackIT35Info(metadataFour, it35Info);
 }
 
-void ImagePluginFuzzTest001(const uint8_t *data, size_t size)
+void ImagePluginFuzzTest001(const uint8_t *data, size_t size, const std::string &filename)
 {
-    std::string filename = "/data/local/tmp/test_decode_ext.jpg";
-    if (!WriteDataToFile(data, size, filename)) {
-        IMAGE_LOGE("WriteDataToFile failed");
-        return;
-    }
     std::vector<std::pair<FuzzTestFuction, std::vector<std::string>>> testFunctions = {
         {SvgDecoderFuncTest001, {SVG_PATH1, SVG_PATH2, filename}},
         {JpegHardwareTest001, {JPEG_HW_PATH, filename}},
@@ -330,7 +345,11 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
     FuzzedDataProvider fdp(data, size);
     OHOS::Media::FDP = &fdp;
 
-    OHOS::Media::ImagePluginFuzzTest001(data, size);
+    static const std::string filename = "/data/local/tmp/test_decode_ext.jpg";
+    WriteDataToFile(data, size, filename);
+
+    OHOS::Media::ImagePluginFuzzTest001(data, size, filename);
     OHOS::Media::HdrHelperFucTest();
+    OHOS::Media::HdrHelperFucTest2(data, size, filename);
     return 0;
 }
