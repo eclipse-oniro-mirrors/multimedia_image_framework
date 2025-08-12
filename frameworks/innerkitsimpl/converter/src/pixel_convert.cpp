@@ -1346,8 +1346,9 @@ static bool P010ConvertRGB565(const uint8_t* srcP010, const ImageInfo& srcInfo,
     if (bufferSize <= 0) {
         return false;
     }
-    std::unique_ptr<uint8_t[]> tmpBuffer = nullptr;
-    tmpBuffer = std::make_unique<uint8_t[]>(bufferSize + RGB565_EXTRA_BYTES); // avoid ffmpeg out-bounds-write
+
+    std::unique_ptr<uint8_t[]> tmpBuffer =
+        std::make_unique<uint8_t[]>(bufferSize + RGB565_EXTRA_BYTES); // avoid ffmpeg out-bounds-write
     if (tmpBuffer == nullptr) {
         IMAGE_LOGE("P010ConvertRGB565: alloc temp buffer failed");
         return false;
