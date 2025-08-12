@@ -172,7 +172,7 @@ ohos_shared_library("extplugin") {
     sources += [
       "src/hardware/jpeg_hw_decoder.cpp",
       "src/hardware/jpeg_dma_pool.cpp"
-      ]
+    ]
   }
   configs = [
     ":plugins_includes",
