@@ -30,6 +30,8 @@ public:
     ImagePackerImpl();
     explicit ImagePackerImpl(std::shared_ptr<OHOS::Media::ImagePacker> imagePacker);
     ~ImagePackerImpl();
+    int64_t GetImplPtr();
+    std::shared_ptr<OHOS::Media::ImagePacker> GetNativeImagePacker();
 
     array<uint8_t> Packing(int32_t packType, int64_t source, PackingOption const& options, bool needReturnError);
     void PackToFile(int32_t packType, int64_t source, int32_t fd, PackingOption const& options);

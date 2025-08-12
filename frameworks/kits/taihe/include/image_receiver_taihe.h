@@ -35,6 +35,8 @@ public:
     ImageReceiverImpl();
     explicit ImageReceiverImpl(std::shared_ptr<OHOS::Media::ImageReceiver> imageReceiver);
     ~ImageReceiverImpl();
+    int64_t GetImplPtr();
+    std::shared_ptr<OHOS::Media::ImageReceiver> GetNativeImageReceiver();
 
     static bool AniSendEvent(const std::function<void()> cb, std::string &name);
     static void OnProcessSendEvent(std::shared_ptr<ImageReceiverTaiheContext> &context);

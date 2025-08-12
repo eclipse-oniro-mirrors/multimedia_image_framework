@@ -44,6 +44,7 @@ public:
     ~ImagePackerNapi();
     static napi_value Init(napi_env env, napi_value exports);
     static napi_value CreateImagePacker(napi_env env, napi_callback_info info);
+    static napi_value CreateImagePackerNapi(napi_env env, std::shared_ptr<ImagePacker> imagePacker);
     static std::shared_ptr<ImagePacker> GetNative(ImagePackerNapi* napi);
 
 private:
@@ -66,6 +67,11 @@ private:
     napi_env env_ = nullptr;
     std::shared_ptr<ImagePacker> nativeImgPck = nullptr;
 };
+
+extern "C" {
+    napi_value GetImagePackerNapi(napi_env env, std::shared_ptr<ImagePacker> imagePacker);
+    bool GetNativeImagePacker(void *imagePackerNapi, std::shared_ptr<ImagePacker> &imagePacker);
+}
 } // namespace Media
 } // namespace OHOS
 #endif // INTERFACES_KITS_JS_COMMON_INCLUDE_IMAGE_PACKER_NAPI_H
