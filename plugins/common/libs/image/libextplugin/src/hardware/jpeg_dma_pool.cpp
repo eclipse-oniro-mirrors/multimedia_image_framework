@@ -202,7 +202,7 @@ void DmaPool::RecycleBufferInDmaPool(DmaBufferInfo bufferInfo)
         }
         break;
     }
-    JPEG_HW_LOGI("remainCapacity_: size:%{public}u remainOffset_:%{public}u unRecycleNum:%{public}lu + %{public}lu",
+    JPEG_HW_LOGI("remainCapacity_: size:%{public}u remainOffset_:%{public}u unRecycleNum:%{public}u + %{public}u",
                  remainCapacity_, remainOffset_, usedSpace_.size(), releaseSpace_.size());
 }
 }
