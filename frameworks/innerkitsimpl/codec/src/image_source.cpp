@@ -4494,7 +4494,7 @@ static bool CopyRGBAToSurfaceBuffer(const DecodeContext& context, sptr<SurfaceBu
     CHECK_ERROR_RETURN_RET(cond, false);
     cond = sb->GetStride() < 0;
     CHECK_ERROR_RETURN_RET(cond, false);
-    uint64_t dstStride = sb->GetStride();
+    uint64_t dstStride = static_cast<uint64_t>(sb->GetStride());
     uint64_t srcStride = static_cast<uint64_t>(plInfo.size.width * NUM_4);
     uint32_t dstHeight = static_cast<uint32_t>(plInfo.size.height);
     for (uint32_t i = 0; i < dstHeight; i++) {

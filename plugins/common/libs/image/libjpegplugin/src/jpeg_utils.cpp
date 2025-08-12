@@ -128,8 +128,8 @@ void SkipInputData(j_decompress_ptr dinfo, long numBytes)
         src->next_input_byte = src->streamData.inputStreamBuffer;
         src->bytes_in_buffer = 0;
     } else {
-        src->next_input_byte += numBytes;
-        src->bytes_in_buffer -= numBytes;
+        src->next_input_byte += static_cast<size_t>(numBytes);
+        src->bytes_in_buffer -= static_cast<size_t>(numBytes);
     }
 }
 
