@@ -28,6 +28,7 @@ group("fuzztest") {
     "imageheifimpl2_fuzzer:ImageHeifImpl2FuzzTest",
     "imageheifparser_fuzzer:ImageHeifParserFuzzTest",
     "imageinterfacepixelmap_fuzzer:ImageInterfacePixelmapFuzzTest",
+    "imagejpegyuvplugin_fuzzer:ImageJpegYuvPluginFuzzTest",
     "imagepixelYuv_fuzzer:ImagePixelYuvFuzzTest",
     "imagepixelYuv2_fuzzer:ImagePixelYuv2FuzzTest",
     "imagepixelmapBase_fuzzer:ImagePixelmapBaseFuzzTest",
@@ -45,6 +46,7 @@ group("fuzztest") {
     "imageplugin2_fuzzer:ImagePlugin2FuzzTest",
     "imagepngplugin_fuzzer:ImagePngPluginFuzzTest",
     "imagepngplugin2_fuzzer:ImagePngPlugin2FuzzTest",
+    "imagerawplugin_fuzzer:ImageRawPluginFuzzTest",
     "imagetextureencode_fuzzer:ImageTextureEncodeFuzzTest",
   ]
 }
