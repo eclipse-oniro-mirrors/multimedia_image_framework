@@ -28,12 +28,12 @@ DmaPool& DmaPool::GetInstance()
     return singleton;
 }
 
-bool DmaPool::AllocBufferInDmaPool(sptr<ICodecImage> hwDecoder_, ImagePlugin::InputDataStream* srcStream,
+bool DmaPool::AllocBufferInDmaPool(sptr<ICodecImage> hwDecoder, ImagePlugin::InputDataStream* srcStream,
                                    CodecImageBuffer& inBuffer, PureStreamInfo streamInfo, DmaBufferInfo& bufferInfo)
 {
     std::lock_guard<std::mutex> lock(dmaPoolMtx_);
     // step1. decide whether to alloc dma pool
-    if (!Init(hwDecoder_)) {
+    if (!Init(hwDecoder)) {
         JPEG_HW_LOGE("failed to init dma pool");
         return false;
     }
@@ -58,13 +58,13 @@ bool DmaPool::AllocBufferInDmaPool(sptr<ICodecImage> hwDecoder_, ImagePlugin::In
     return true;
 }
 
-bool DmaPool::Init(sptr<ICodecImage> hwDecoder_)
+bool DmaPool::Init(sptr<ICodecImage> hwDecoder)
 {
     if (inited_) {
         return true;
     }
     CodecImageBuffer tempPool{};
-    int32_t ret = hwDecoder_->AllocateInBuffer(tempPool, DMA_POOL_SIZE, CODEC_IMAGE_JPEG);
+    int32_t ret = hwDecoder->AllocateInBuffer(tempPool, DMA_POOL_SIZE, CODEC_IMAGE_JPEG);
     if (ret != HDF_SUCCESS || tempPool.buffer == nullptr) {
         JPEG_HW_LOGE("failed to allocate dma pool, err=%{public}d", ret);
         return false;
