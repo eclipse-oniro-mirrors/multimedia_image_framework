@@ -249,7 +249,7 @@ heif_error HeifParser::GetItemData(heif_item_id itemId, std::vector<uint8_t> *ou
     }
 
     std::string item_type = infe_box->GetItemType();
-    auto items = ilocBox_->GetItems();
+    const auto& items = ilocBox_->GetItems();
     const HeifIlocBox::Item *ilocItem = nullptr;
     for (const auto &item: items) {
         if (item.itemId == itemId) {
