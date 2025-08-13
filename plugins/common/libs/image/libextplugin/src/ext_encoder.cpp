@@ -737,6 +737,7 @@ uint32_t ExtEncoder::EncodeHeifByPixelmap(PixelMap* pixelmap, const PlEncodeOpti
         cond = pixelmap->GetFd() == nullptr;
         CHECK_ERROR_RETURN_RET_LOG(cond, ERR_IMAGE_INVALID_PARAMETER, "EncodeHeifByPixelmap pixelmap get fd failed");
         surfaceBuffer = sptr<SurfaceBuffer>(reinterpret_cast<SurfaceBuffer*>(pixelmap->GetFd()));
+        ImageUtils::FlushSurfaceBuffer(surfaceBuffer);
     }
     std::vector<ImageItem> inputImgs;
     std::shared_ptr<ImageItem> primaryItem = AssemblePrimaryImageItem(surfaceBuffer, opts);
@@ -836,12 +837,7 @@ sptr<SurfaceBuffer> ExtEncoder::ConvertToSurfaceBuffer(PixelMap* pixelmap)
         dstSize -= dstStride;
         src += srcStride;
     }
-    if (surfaceBuffer && (surfaceBuffer->GetUsage() & BUFFER_USAGE_MEM_MMZ_CACHE)) {
-        GSError err = surfaceBuffer->FlushCache();
-        if (err != GSERROR_OK) {
-            IMAGE_LOGE("FlushCache failed, GSError=%{public}d", err);
-        }
-    }
+    ImageUtils::FlushSurfaceBuffer(surfaceBuffer);
     return surfaceBuffer;
 }
 
@@ -852,6 +848,7 @@ sptr<SurfaceBuffer> ExtEncoder::ConvertPixelMapToDmaBuffer(std::shared_ptr<Pixel
         surfaceBuffer = ConvertToSurfaceBuffer(pixelmap.get());
     } else {
         surfaceBuffer = sptr<SurfaceBuffer>(reinterpret_cast<SurfaceBuffer*>(pixelmap->GetFd()));
+        ImageUtils::FlushSurfaceBuffer(surfaceBuffer);
     }
     return surfaceBuffer;
 }
@@ -1160,6 +1157,7 @@ uint32_t ExtEncoder::AssembleHeifHdrPicture(
     CHECK_ERROR_RETURN_RET_LOG(cond, ERR_IMAGE_INVALID_PARAMETER,
         "%{public}s, the gainPixelMap is nullptr or gainPixelMap is nonDMA", __func__);
     sptr<SurfaceBuffer> gainMapSptr(reinterpret_cast<SurfaceBuffer*>(gainPixelMap->GetFd()));
+    ImageUtils::FlushSurfaceBuffer(gainMapSptr);
     HdrMetadata metadata = GetHdrMetadata(mainSptr, gainMapSptr);
 
     ColorManager::ColorSpaceName colorspaceName =
@@ -1513,6 +1511,7 @@ uint32_t ExtEncoder::EncodeSdrImage(ExtWStream& outputStream)
     cond = baseSptr == nullptr;
     CHECK_ERROR_RETURN_RET_LOG(cond, IMAGE_RESULT_CREATE_SURFAC_FAILED, "EncodeSdrImage sdr buffer alloc failed");
     sptr<SurfaceBuffer> hdrSurfaceBuffer(reinterpret_cast<SurfaceBuffer*>(pixelmap_->GetFd()));
+    ImageUtils::FlushSurfaceBuffer(hdrSurfaceBuffer);
     VpeUtils::SetSbMetadataType(hdrSurfaceBuffer, CM_IMAGE_HDR_VIVID_SINGLE);
     SetHdrColorSpaceType(hdrSurfaceBuffer);
     VpeSurfaceBuffers buffers = {
@@ -1730,12 +1729,7 @@ uint32_t ExtEncoder::EncodeEditScenePicture()
     sptr<SurfaceBuffer> baseSptr(reinterpret_cast<SurfaceBuffer*>(mainPixelMap->GetFd()));
     cond = !baseSptr;
     CHECK_ERROR_RETURN_RET_LOG(cond, IMAGE_RESULT_CREATE_SURFAC_FAILED, "creat main pixels surfaceBuffer error");
-    if (baseSptr->GetUsage() & BUFFER_USAGE_MEM_MMZ_CACHE) {
-        GSError err = baseSptr->FlushCache();
-        if (err != GSERROR_OK) {
-            IMAGE_LOGE("FlushCache failed, GSError=%{public}d", err);
-        }
-    }
+    ImageUtils::FlushSurfaceBuffer(baseSptr);
     uint32_t errorCode = EncodeHeifPicture(baseSptr, baseInfo, sdrIsSRGB);
     RecycleResources();
     return errorCode;

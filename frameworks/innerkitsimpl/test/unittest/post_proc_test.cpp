@@ -30,6 +30,7 @@ using namespace OHOS::Media;
 
 namespace OHOS {
 namespace Multimedia {
+using Rect = OHOS::Media::Rect;
 static const std::string IMAGE_INPUT_JPEG_PATH = "/data/local/tmp/image/test.jpg";
 static const std::string IMAGE_INPUT_JPG_PATH_EXACTSIZE = "/data/local/tmp/image/800-500.jpg";
 static constexpr int32_t IMAGE_INPUT_JPG_WIDTH = 800;

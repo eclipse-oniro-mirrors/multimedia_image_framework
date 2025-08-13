@@ -47,8 +47,6 @@
 #include <sys/syscall.h>
 #endif
 #if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
-#include "surface_type.h"
-#include "surface_buffer.h"
 #include "bundle_mgr_interface.h"
 #include "iservice_registry.h"
 #include "ipc_skeleton.h"
@@ -981,6 +979,17 @@ void ImageUtils::ArrayToBytes(const uint8_t* data, uint32_t length, vector<uint8
         bytes[offset++] = data[i] & 0xFF;
     }
 }
+
+#if !defined(CROSS_PLATFORM)
+void ImageUtils::DoFlushSurfaceBuffer(sptr<SurfaceBuffer>& surfaceBuffer)
+{
+    if (surfaceBuffer && (surfaceBuffer->GetUsage() & BUFFER_USAGE_MEM_MMZ_CACHE)) {
+        GSError err = surfaceBuffer->FlushCache();
+        bool cond = err != GSERROR_OK;
+        CHECK_ERROR_PRINT_LOG(cond, "ImageUtils FlushCache failed, GSError=%{public}d", err);
+    }
+}
+#endif
 
 void ImageUtils::FlushSurfaceBuffer(PixelMap* pixelMap)
 {

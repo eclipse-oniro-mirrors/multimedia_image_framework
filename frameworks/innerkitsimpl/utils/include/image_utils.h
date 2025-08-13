@@ -21,6 +21,10 @@
 #include <string>
 #include "image_type.h"
 #include "iosfwd"
+#if !defined(CROSS_PLATFORM)
+#include "surface_type.h"
+#include "surface_buffer.h"
+#endif
 
 namespace OHOS { namespace MultimediaPlugin { class PluginServer; } }
 namespace OHOS { namespace ImagePlugin { struct DecodeContext; } }
@@ -157,6 +161,9 @@ public:
     static uint16_t GetRGBA1010102ColorG(uint32_t color);
     static uint16_t GetRGBA1010102ColorB(uint32_t color);
     static uint16_t GetRGBA1010102ColorA(uint32_t color);
+#if !defined(CROSS_PLATFORM)
+    static void FlushSurfaceBuffer(sptr<SurfaceBuffer>& surfaceBuffer);
+#endif
 private:
     static uint32_t RegisterPluginServer();
     static uint32_t SaveDataToFile(const std::string& fileName, const char* data, const size_t& totalSize);
