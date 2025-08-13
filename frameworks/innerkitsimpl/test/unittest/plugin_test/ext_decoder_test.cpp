@@ -1397,10 +1397,13 @@ HWTEST_F(ExtDecoderTest, WriteJpegCodedDataTest004, TestSize.Level3)
     opts.formatHint = "image/jpeg";
     std::unique_ptr<ImageSource> imageSource =
         ImageSource::CreateImageSource(IMAGE_INPUT_JPEG_PATH, opts, errorCode);
+    ASSERT_NE(imageSource, nullptr);
     DecodeOptions decodeOpts;
     decodeOpts.allocatorType = AllocatorType::DMA_ALLOC;
     std::unique_ptr<PixelMap> tmpPixelMap = imageSource->CreatePixelMap(decodeOpts, errorCode);
+    ASSERT_NE(tmpPixelMap, nullptr);
     std::shared_ptr<PixelMap> pixelMap = std::move(tmpPixelMap);
+    ASSERT_NE(pixelMap, nullptr);
     ASSERT_EQ(pixelMap->GetAllocatorType(), AllocatorType::DMA_ALLOC);
     ASSERT_NE(pixelMap->GetFd(), nullptr);
     AuxiliaryPictureType type = AuxiliaryPictureType::GAINMAP;
@@ -1429,10 +1432,13 @@ HWTEST_F(ExtDecoderTest, WriteJpegUncodedDataTest004, TestSize.Level3)
     opts.formatHint = "image/jpeg";
     std::unique_ptr<ImageSource> imageSource =
         ImageSource::CreateImageSource(IMAGE_INPUT_JPEG_PATH, opts, errorCode);
+    ASSERT_NE(imageSource, nullptr);
     DecodeOptions decodeOpts;
     decodeOpts.allocatorType = AllocatorType::DMA_ALLOC;
     std::unique_ptr<PixelMap> tmpPixelMap = imageSource->CreatePixelMap(decodeOpts, errorCode);
+    ASSERT_NE(tmpPixelMap, nullptr);
     std::shared_ptr<PixelMap> pixelMap = std::move(tmpPixelMap);
+    ASSERT_NE(pixelMap, nullptr);
     ASSERT_EQ(pixelMap->GetAllocatorType(), AllocatorType::DMA_ALLOC);
     ASSERT_NE(pixelMap->GetFd(), nullptr);
     AuxiliaryPictureType type = AuxiliaryPictureType::GAINMAP;
@@ -1462,10 +1468,13 @@ HWTEST_F(ExtDecoderTest, WriteJpegUncodedDataTest005, TestSize.Level3)
     opts.formatHint = "image/jpeg";
     std::unique_ptr<ImageSource> imageSource =
         ImageSource::CreateImageSource(IMAGE_INPUT_JPEG_PATH, opts, errorCode);
+    ASSERT_NE(imageSource, nullptr);
     DecodeOptions decodeOpts;
     decodeOpts.allocatorType = AllocatorType::DMA_ALLOC;
     std::unique_ptr<PixelMap> tmpPixelMap = imageSource->CreatePixelMap(decodeOpts, errorCode);
+    ASSERT_NE(tmpPixelMap, nullptr);
     std::shared_ptr<PixelMap> pixelMap = std::move(tmpPixelMap);
+    ASSERT_NE(pixelMap, nullptr);
     ASSERT_EQ(pixelMap->GetAllocatorType(), AllocatorType::DMA_ALLOC);
     ASSERT_NE(pixelMap->GetFd(), nullptr);
     AuxiliaryPictureType type = AuxiliaryPictureType::DEPTH_MAP;
@@ -1495,10 +1504,13 @@ HWTEST_F(ExtDecoderTest, WriteJpegUncodedDataTest006, TestSize.Level3)
     opts.formatHint = "image/jpeg";
     std::unique_ptr<ImageSource> imageSource =
         ImageSource::CreateImageSource(IMAGE_INPUT_JPEG_PATH, opts, errorCode);
+    ASSERT_NE(imageSource, nullptr);
     DecodeOptions decodeOpts;
     decodeOpts.allocatorType = AllocatorType::DMA_ALLOC;
     std::unique_ptr<PixelMap> tmpPixelMap = imageSource->CreatePixelMap(decodeOpts, errorCode);
+    ASSERT_NE(tmpPixelMap, nullptr);
     std::shared_ptr<PixelMap> pixelMap = std::move(tmpPixelMap);
+    ASSERT_NE(pixelMap, nullptr);
     ASSERT_EQ(pixelMap->GetAllocatorType(), AllocatorType::DMA_ALLOC);
     ASSERT_NE(pixelMap->GetFd(), nullptr);
     AuxiliaryPictureType type = AuxiliaryPictureType::LINEAR_MAP;
