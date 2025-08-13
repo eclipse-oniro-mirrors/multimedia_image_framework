@@ -28,6 +28,7 @@ using namespace testing::ext;
 using namespace OHOS::Media;
 namespace OHOS {
 namespace Multimedia {
+using Rect = OHOS::Media::Rect;
 constexpr uint8_t ASTC_MAGIC_0 = 0x13; // ASTC MAGIC ID 0x13
 constexpr uint8_t ASTC_MAGIC_1 = 0xAB; // ASTC MAGIC ID 0xAB
 constexpr uint8_t ASTC_MAGIC_2 = 0xA1; // ASTC MAGIC ID 0xA1
