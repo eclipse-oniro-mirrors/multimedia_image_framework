@@ -480,7 +480,8 @@ uintptr_t ImageCreatorTransferDynamicImpl(ImageCreator input)
     return ref;
 }
 
-PixelMap PixelMapTransferStaticImpl(uintptr_t input) {
+PixelMap PixelMapTransferStaticImpl(uintptr_t input)
+{
     IMAGE_LOGD("[%{public}s] IN", __func__);
     ani_object esValue = reinterpret_cast<ani_object>(input);
 
@@ -506,7 +507,8 @@ PixelMap PixelMapTransferStaticImpl(uintptr_t input) {
     return make_holder<PixelMapImpl, PixelMap>(nativePixelMap);
 }
 
-uintptr_t PixelMapTransferDynamicImpl(weak::PixelMap input) {
+uintptr_t PixelMapTransferDynamicImpl(weak::PixelMap input)
+{
     IMAGE_LOGD("[%{public}s] IN", __func__);
     if (input.is_error()) {
         IMAGE_LOGE("%{public}s input is error", __func__);
