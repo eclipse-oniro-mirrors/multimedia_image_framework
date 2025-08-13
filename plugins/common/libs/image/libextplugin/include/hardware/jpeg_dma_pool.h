@@ -36,12 +36,12 @@ class DmaPool {
 public:
     ~DmaPool() = default;
     static DmaPool& GetInstance();
-    bool AllocBufferInDmaPool(sptr<ICodecImage> hwDecoder_, ImagePlugin::InputDataStream* srcStream,
+    bool AllocBufferInDmaPool(sptr<ICodecImage> hwDecoder, ImagePlugin::InputDataStream* srcStream,
                               CodecImageBuffer& inBuffer, PureStreamInfo streamInfo, DmaBufferInfo& bufferInfo);
     void RecycleBufferInDmaPool(DmaBufferInfo bufferInfo);
 private:
     DmaPool() = default;
-    bool Init(sptr<ICodecImage> hwDecoder_);
+    bool Init(sptr<ICodecImage> hwDecoder);
     bool CopySrcToDmaPool(ImagePlugin::InputDataStream* srcStream, PureStreamInfo streamInfo,
                           DmaBufferInfo bufferInfo);
     bool PackingBufferHandle(DmaBufferInfo bufferInfo, CodecImageBuffer& inBuffer);
