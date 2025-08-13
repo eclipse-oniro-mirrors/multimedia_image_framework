@@ -57,6 +57,7 @@ ohos_shared_library("image_ani_core") {
     "ipc:ipc_core",
     "runtime_core:ani",
     "runtime_core:libarkruntime",
+    "runtime_core:ani_helpers",
   ]
   subsystem_name = "multimedia"
   part_name = "image_framework"
@@ -96,6 +97,7 @@ ohos_shared_library("image_ani") {
     "ipc:ipc_core",
     "runtime_core:ani",
     "runtime_core:libarkruntime",
+    "runtime_core:ani_helpers",
   ]
   subsystem_name = "multimedia"
   part_name = "image_framework"
