@@ -981,7 +981,7 @@ void ImageUtils::ArrayToBytes(const uint8_t* data, uint32_t length, vector<uint8
 }
 
 #if !defined(CROSS_PLATFORM)
-void ImageUtils::DoFlushSurfaceBuffer(sptr<SurfaceBuffer>& surfaceBuffer)
+void ImageUtils::FlushSurfaceBuffer(sptr<SurfaceBuffer>& surfaceBuffer)
 {
     if (surfaceBuffer && (surfaceBuffer->GetUsage() & BUFFER_USAGE_MEM_MMZ_CACHE)) {
         GSError err = surfaceBuffer->FlushCache();
