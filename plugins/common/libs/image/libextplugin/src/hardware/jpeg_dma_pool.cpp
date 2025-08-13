@@ -93,7 +93,7 @@ bool DmaPool::Init(sptr<ICodecImage> hwDecoder)
     inited_ = true;
     remainCapacity_ = DMA_POOL_SIZE;
     nativeBuf_ = tempPool.buffer;
-    JPEG_HW_LOGI("creta dma pool success!");
+    JPEG_HW_LOGI("create dma pool success!");
     return true;
 }
 
