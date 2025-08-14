@@ -86,6 +86,8 @@ private:
 
     void InitFrameInfo(HeifFrameInfo *frameInfo, const std::shared_ptr<HeifImage> &image);
 
+    bool SeekRefGridRangeInfo(const std::shared_ptr<HeifImage> &image);
+
     void InitGridInfo(const std::shared_ptr<HeifImage> &image, GridInfo &gridInfo);
 
     void GetTileSize(const std::shared_ptr<HeifImage> &image, GridInfo &gridInfo);
