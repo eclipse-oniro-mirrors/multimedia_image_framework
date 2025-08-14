@@ -43,6 +43,9 @@ uintptr_t ImageReceiverTransferDynamicImpl(ImageReceiver input);
 
 ImageCreator ImageCreatorTransferStaticImpl(uintptr_t input);
 uintptr_t ImageCreatorTransferDynamicImpl(ImageCreator input);
+
+PixelMap PixelMapTransferStaticImpl(uintptr_t input);
+uintptr_t PixelMapTransferDynamicImpl(weak::PixelMap input);
 } // namespace ANI::Image
 
 #endif // FRAMEWORKS_KITS_TAIHE_INCLUDE_TRANSFER_TAIHE_H

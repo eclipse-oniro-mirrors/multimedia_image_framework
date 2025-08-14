@@ -899,6 +899,9 @@ function ImageReceiverTransferDynamicImpl(input: ImageReceiver): @sts_type("Any"
 function ImageCreatorTransferStaticImpl(input: @sts_type("ESValue") Opaque): ImageCreator;
 function ImageCreatorTransferDynamicImpl(input: ImageCreator): @sts_type("Any") Opaque;
 
+function PixelMapTransferStaticImpl(input: @sts_type("ESValue") Opaque): PixelMap;
+function PixelMapTransferDynamicImpl(input: PixelMap): @sts_type("Any") Opaque;
+
 @!sts_inject("""
 export function imageSourceTransferStatic(input: Any): Object {
   return imageSourceTransferStaticImpl(ESValue.wrap(input));
@@ -940,6 +943,13 @@ export function imageCreatorTransferStatic(input: Any): Object {
 }
 export function imageCreatorTransferDynamic(input: Object): Any {
   return imageCreatorTransferDynamicImpl(input as ImageCreator);
+}
+
+export function pixelMapTransferStatic(input: Any): Object {
+  return pixelMapTransferStaticImpl(ESValue.wrap(input));
+}
+export function pixelMapTransferDynamic(input: Object): Any {
+  return pixelMapTransferDynamicImpl(input as PixelMap);
 }
 """)
 

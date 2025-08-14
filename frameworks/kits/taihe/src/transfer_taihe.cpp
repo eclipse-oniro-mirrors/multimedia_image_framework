@@ -24,6 +24,7 @@
 #include "interop_js/arkts_esvalue.h"
 #include "interop_js/arkts_interop_js_api.h"
 #include "picture_taihe.h"
+#include "pixel_map_taihe.h"
 #include "transfer_taihe.h"
 
 using namespace ANI::Image;
@@ -38,6 +39,7 @@ using GetPictureNapiFn = napi_value (*)(napi_env, std::shared_ptr<OHOS::Media::P
 using GetAuxiliaryPictureNapiFn = napi_value (*)(napi_env, std::shared_ptr<OHOS::Media::AuxiliaryPicture>);
 using GetImageReceiverNapiFn = napi_value (*)(napi_env, std::shared_ptr<OHOS::Media::ImageReceiver>);
 using GetImageCreatorNapiFn = napi_value (*)(napi_env, std::shared_ptr<OHOS::Media::ImageCreator>);
+using GetPixelMapNapiFn = napi_value (*)(napi_env, std::shared_ptr<OHOS::Media::PixelMap>);
 
 using GetNativeImageSourceFn = bool (*)(void*, std::shared_ptr<OHOS::Media::ImageSource>&);
 using GetNativeImagePackerFn = bool (*)(void*, std::shared_ptr<OHOS::Media::ImagePacker>&);
@@ -45,6 +47,7 @@ using GetNativePictureFn = bool (*)(void*, std::shared_ptr<OHOS::Media::Picture>
 using GetNativeAuxiliaryPictureFn = bool (*)(void*, std::shared_ptr<OHOS::Media::AuxiliaryPicture>&);
 using GetNativeImageReceiverFn = bool (*)(void*, std::shared_ptr<OHOS::Media::ImageReceiver>&);
 using GetNativeImageCreatorFn = bool (*)(void*, std::shared_ptr<OHOS::Media::ImageCreator>&);
+using GetNativePixelMapFn = bool (*)(void*, std::shared_ptr<OHOS::Media::PixelMap>&);
 
 // custom deleter for handle to auto dlclose
 struct DlHandleDeleter {
@@ -476,6 +479,71 @@ uintptr_t ImageCreatorTransferDynamicImpl(ImageCreator input)
     IMAGE_LOGD("[%{public}s] OUT", __func__);
     return ref;
 }
+
+PixelMap PixelMapTransferStaticImpl(uintptr_t input)
+{
+    IMAGE_LOGD("[%{public}s] IN", __func__);
+    ani_object esValue = reinterpret_cast<ani_object>(input);
+
+    void* nativePtr = nullptr;
+    if (!arkts_esvalue_unwrap(get_env(), esValue, &nativePtr) || nativePtr == nullptr) {
+        IMAGE_LOGE("%{public}s unwrap esValue failed", __func__);
+        return make_holder<PixelMapImpl, PixelMap>();
+    }
+
+    void* napiFunc = GetNapiFunction("GetNativePixelMap");
+    if (napiFunc == nullptr) {
+        IMAGE_LOGE("%{public}s GetNapiFunction failed", __func__);
+        return make_holder<PixelMapImpl, PixelMap>();
+    }
+
+    std::shared_ptr<OHOS::Media::PixelMap> nativePixelMap = nullptr;
+    bool ret = (*reinterpret_cast<GetNativePixelMapFn>(napiFunc))(nativePtr, nativePixelMap);
+    if (!ret || nativePixelMap == nullptr) {
+        IMAGE_LOGE("%{public}s GetNativePixelMap failed", __func__);
+        return make_holder<PixelMapImpl, PixelMap>();
+    }
+    IMAGE_LOGD("[%{public}s] OUT", __func__);
+    return make_holder<PixelMapImpl, PixelMap>(nativePixelMap);
+}
+
+uintptr_t PixelMapTransferDynamicImpl(weak::PixelMap input)
+{
+    IMAGE_LOGD("[%{public}s] IN", __func__);
+    if (input.is_error()) {
+        IMAGE_LOGE("%{public}s input is error", __func__);
+        return 0;
+    }
+    PixelMapImpl* thisPtr = reinterpret_cast<PixelMapImpl*>(input->GetImplPtr());
+    if (thisPtr == nullptr) {
+        IMAGE_LOGE("%{public}s thisPtr is nullptr", __func__);
+        return 0;
+    }
+
+    napi_env jsEnv;
+    if (!arkts_napi_scope_open(get_env(), &jsEnv)) {
+        IMAGE_LOGE("%{public}s arkts_napi_scope_open failed", __func__);
+        return 0;
+    }
+
+    void* napiFunc = GetNapiFunction("GetPixelMapNapi");
+    if (napiFunc == nullptr) {
+        IMAGE_LOGE("%{public}s GetNapiFunction failed", __func__);
+        arkts_napi_scope_close_n(jsEnv, 0, nullptr, nullptr);
+        return 0;
+    }
+    napi_value result = (*reinterpret_cast<GetPixelMapNapiFn>(napiFunc))(jsEnv, thisPtr->GetNativePtr());
+    if (result == nullptr) {
+        IMAGE_LOGE("%{public}s GetPixelMapNapi failed, result is nullptr", __func__);
+        arkts_napi_scope_close_n(jsEnv, 0, nullptr, nullptr);
+        return 0;
+    }
+
+    uintptr_t ref = 0;
+    arkts_napi_scope_close_n(jsEnv, 1, &result, reinterpret_cast<ani_ref*>(&ref));
+    IMAGE_LOGD("[%{public}s] OUT", __func__);
+    return ref;
+}
 } // namespace ANI::Image
 
 TH_EXPORT_CPP_API_ImageSourceTransferStaticImpl(ImageSourceTransferStaticImpl);
@@ -490,3 +558,5 @@ TH_EXPORT_CPP_API_ImageReceiverTransferStaticImpl(ImageReceiverTransferStaticImp
 TH_EXPORT_CPP_API_ImageReceiverTransferDynamicImpl(ImageReceiverTransferDynamicImpl);
 TH_EXPORT_CPP_API_ImageCreatorTransferStaticImpl(ImageCreatorTransferStaticImpl);
 TH_EXPORT_CPP_API_ImageCreatorTransferDynamicImpl(ImageCreatorTransferDynamicImpl);
+TH_EXPORT_CPP_API_PixelMapTransferStaticImpl(PixelMapTransferStaticImpl);
+TH_EXPORT_CPP_API_PixelMapTransferDynamicImpl(PixelMapTransferDynamicImpl);
