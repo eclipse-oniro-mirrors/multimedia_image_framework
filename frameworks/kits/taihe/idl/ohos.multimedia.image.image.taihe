@@ -647,6 +647,7 @@ interface Metadata {
 
 interface ImageSource {
   GetImplPtr(): i64;
+
   @gen_async("getImageInfo")
   @gen_promise("getImageInfoPromiseWithIndex")
   GetImageInfoSyncWithIndex(index: i32): ImageInfo;
@@ -753,6 +754,8 @@ interface ImageSource {
 }
 
 interface ImagePacker {
+  GetImplPtr(): i64;
+
   @gen_promise("packToData")
   PackImageSourceToDataSync(source: ImageSource, options: PackingOption): @arraybuffer Array<u8>;
 
@@ -804,6 +807,8 @@ interface Image {
 }
 
 interface ImageReceiver {
+  GetImplPtr(): i64;
+
   @get GetSize(): Size;
   @get GetCapacity(): i32;
   @get GetFormat(): ImageFormat;
@@ -849,6 +854,8 @@ interface ImageReceiver {
 }
 
 interface ImageCreator {
+  GetImplPtr(): i64;
+
   @get("capacity") GetCapacity(): i32;
   @get("format") GetFormat(): ImageFormat;
 
@@ -888,6 +895,80 @@ interface ImageCreator {
   ReleaseSync(): void;
 }
 
+// transfer functions
+function ImageSourceTransferStaticImpl(input: @sts_type("ESValue") Opaque): ImageSource;
+function ImageSourceTransferDynamicImpl(input: ImageSource): @sts_type("Any") Opaque;
+
+function ImagePackerTransferStaticImpl(input: @sts_type("ESValue") Opaque): ImagePacker;
+function ImagePackerTransferDynamicImpl(input: ImagePacker): @sts_type("Any") Opaque;
+
+function PictureTransferStaticImpl(input: @sts_type("ESValue") Opaque): Picture;
+function PictureTransferDynamicImpl(input: Picture): @sts_type("Any") Opaque;
+
+function AuxiliaryPictureTransferStaticImpl(input: @sts_type("ESValue") Opaque): AuxiliaryPicture;
+function AuxiliaryPictureTransferDynamicImpl(input: AuxiliaryPicture): @sts_type("Any") Opaque;
+
+function ImageReceiverTransferStaticImpl(input: @sts_type("ESValue") Opaque): ImageReceiver;
+function ImageReceiverTransferDynamicImpl(input: ImageReceiver): @sts_type("Any") Opaque;
+
+function ImageCreatorTransferStaticImpl(input: @sts_type("ESValue") Opaque): ImageCreator;
+function ImageCreatorTransferDynamicImpl(input: ImageCreator): @sts_type("Any") Opaque;
+
+function PixelMapTransferStaticImpl(input: @sts_type("ESValue") Opaque): PixelMap;
+function PixelMapTransferDynamicImpl(input: PixelMap): @sts_type("Any") Opaque;
+
+@!sts_inject("""
+export function imageSourceTransferStatic(input: Any): Object {
+  return imageSourceTransferStaticImpl(ESValue.wrap(input));
+}
+export function imageSourceTransferDynamic(input: Object): Any {
+  return imageSourceTransferDynamicImpl(input as ImageSource);
+}
+
+export function imagePackerTransferStatic(input: Any): Object {
+  return imagePackerTransferStaticImpl(ESValue.wrap(input));
+}
+export function imagePackerTransferDynamic(input: Object): Any {
+  return imagePackerTransferDynamicImpl(input as ImagePacker);
+}
+
+export function pictureTransferStatic(input: Any): Object {
+  return pictureTransferStaticImpl(ESValue.wrap(input));
+}
+export function pictureTransferDynamic(input: Object): Any {
+  return pictureTransferDynamicImpl(input as Picture);
+}
+
+export function auxiliaryPictureTransferStatic(input: Any): Object {
+  return auxiliaryPictureTransferStaticImpl(ESValue.wrap(input));
+}
+export function auxiliaryPictureTransferDynamic(input: Object): Any {
+  return auxiliaryPictureTransferDynamicImpl(input as AuxiliaryPicture);
+}
+
+export function imageReceiverTransferStatic(input: Any): Object {
+  return imageReceiverTransferStaticImpl(ESValue.wrap(input));
+}
+export function imageReceiverTransferDynamic(input: Object): Any {
+  return imageReceiverTransferDynamicImpl(input as ImageReceiver);
+}
+
+export function imageCreatorTransferStatic(input: Any): Object {
+  return imageCreatorTransferStaticImpl(ESValue.wrap(input));
+}
+export function imageCreatorTransferDynamic(input: Object): Any {
+  return imageCreatorTransferDynamicImpl(input as ImageCreator);
+}
+
+export function pixelMapTransferStatic(input: Any): Object {
+  return pixelMapTransferStaticImpl(ESValue.wrap(input));
+}
+export function pixelMapTransferDynamic(input: Object): Any {
+  return pixelMapTransferDynamicImpl(input as PixelMap);
+}
+""")
+
+// global functions
 function MakeEmptySize(): Size;
 function MakeEmptyImageInfo(): ImageInfo;
 

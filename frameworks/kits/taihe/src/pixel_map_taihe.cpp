@@ -267,7 +267,7 @@ PixelMapImpl::~PixelMapImpl()
 
 int64_t PixelMapImpl::GetImplPtr()
 {
-    return reinterpret_cast<uintptr_t>(this);
+    return static_cast<int64_t>(reinterpret_cast<uintptr_t>(this));
 }
 
 std::shared_ptr<Media::PixelMap> PixelMapImpl::GetNativePtr()

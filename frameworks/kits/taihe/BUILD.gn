@@ -80,6 +80,7 @@ template("image_taihe_shared_library") {
                  "src/metadata_taihe.cpp",
                  "src/picture_taihe.cpp",
                  "src/pixel_map_taihe.cpp",
+                 "src/transfer_taihe.cpp",
                ] + extra_sources
 
     deps = [
@@ -103,6 +104,7 @@ template("image_taihe_shared_library") {
       "hitrace:hitrace_meter",
       "ipc:ipc_single",
       "libjpeg-turbo:turbojpeg",
+      "napi:ace_napi",
       "runtime_core:ani_helpers",
     ]
 

@@ -48,7 +48,7 @@ MetadataImpl::~MetadataImpl()
 
 int64_t MetadataImpl::GetImplPtr()
 {
-    return reinterpret_cast<uintptr_t>(this);
+    return static_cast<int64_t>(reinterpret_cast<uintptr_t>(this));
 }
 
 std::shared_ptr<OHOS::Media::ImageMetadata> MetadataImpl::GetNativeMetadata()

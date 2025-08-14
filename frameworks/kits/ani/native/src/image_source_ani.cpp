@@ -23,6 +23,7 @@
 #include "media_errors.h"
 #include "image_log.h"
 #include "string_ex.h"
+#include <ani_signature_builder.h>
 
 #undef LOG_DOMAIN
 #define LOG_DOMAIN LOG_TAG_DOMAIN_ID_IMAGE
@@ -33,6 +34,7 @@
 namespace OHOS {
 namespace Media {
 using namespace std;
+using namespace arkts::ani_signature;
 
 static const string FILE_URL_PREFIX = "file://";
 
@@ -170,27 +172,27 @@ static bool ParseRegion([[maybe_unused]] ani_env* env, ani_object region, Rect& 
     }
 
     ani_ref size;
-    if (ANI_OK != env->Object_CallMethodByName_Ref(region, "<get>size", ":C{@ohos.multimedia.image.image.Size}",
-        &size)) {
+    if (ANI_OK != env->Object_CallMethodByName_Ref(region, Builder::BuildGetterName("size").c_str(),
+        ":C{@ohos.multimedia.image.image.Size}", &size)) {
         IMAGE_LOGE("Object_GetFieldByName_Ref Failed");
         return false;
     }
-    if (ANI_OK != env->Object_CallMethodByName_Int(reinterpret_cast<ani_object>(size), "<get>width", ":i",
-        &rect.width)) {
+    if (ANI_OK != env->Object_CallMethodByName_Int(reinterpret_cast<ani_object>(size),
+        Builder::BuildGetterName("width").c_str(), ":i", &rect.width)) {
         IMAGE_LOGE("Object_CallMethodByName_Int width Failed");
         return false;
     }
-    if (ANI_OK != env->Object_CallMethodByName_Int(reinterpret_cast<ani_object>(size), "<get>height", ":i",
-        &rect.height)) {
+    if (ANI_OK != env->Object_CallMethodByName_Int(reinterpret_cast<ani_object>(size),
+        Builder::BuildGetterName("height").c_str(), ":i", &rect.height)) {
         IMAGE_LOGE("Object_CallMethodByName_Int height Failed");
         return false;
     }
 
-    if (ANI_OK != env->Object_CallMethodByName_Int(region, "<get>x", ":i", &rect.left)) {
+    if (ANI_OK != env->Object_CallMethodByName_Int(region, Builder::BuildGetterName("x").c_str(), ":i", &rect.left)) {
         IMAGE_LOGE("Object_CallMethodByName_Int x Failed");
         return false;
     }
-    if (ANI_OK != env->Object_CallMethodByName_Int(region, "<get>y", ":i", &rect.top)) {
+    if (ANI_OK != env->Object_CallMethodByName_Int(region, Builder::BuildGetterName("y").c_str(), ":i", &rect.top)) {
         IMAGE_LOGE("Object_CallMethodByName_Int y Failed");
         return false;
     }
@@ -202,32 +204,32 @@ static bool ParseDecodingOptions2([[maybe_unused]] ani_env* env, ani_object &par
 {
     ani_status ret;
     ani_ref size;
-    if (ANI_OK != env->Object_CallMethodByName_Ref(param, "<get>desiredSize",
+    if (ANI_OK != env->Object_CallMethodByName_Ref(param, Builder::BuildGetterName("desiredSize").c_str(),
         ":C{@ohos.multimedia.image.image.Size}", &size)) {
         IMAGE_LOGE("Object_CallMethodByName_Ref size Faild");
     }
-    if (ANI_OK != env->Object_CallMethodByName_Int(reinterpret_cast<ani_object>(size), "<get>width", ":i",
-        &opts.desiredSize.width)) {
+    if (ANI_OK != env->Object_CallMethodByName_Int(reinterpret_cast<ani_object>(size),
+        Builder::BuildGetterName("width").c_str(), ":i", &opts.desiredSize.width)) {
         IMAGE_LOGE("Object_CallMethodByName_Int width Faild");
     }
-    if ((ret = env->Object_CallMethodByName_Int(reinterpret_cast<ani_object>(size), "<get>height", ":i",
-        &opts.desiredSize.height)) != ANI_OK) {
+    if ((ret = env->Object_CallMethodByName_Int(reinterpret_cast<ani_object>(size),
+        Builder::BuildGetterName("height").c_str(), ":i", &opts.desiredSize.height)) != ANI_OK) {
         IMAGE_LOGE("Object_CallMethodByName_Int height Faild :%{public}d", ret);
     }
 
     ani_ref regionRef;
-    if (ANI_OK != env->Object_CallMethodByName_Ref(param, "<get>desiredRegion",
+    if (ANI_OK != env->Object_CallMethodByName_Ref(param, Builder::BuildGetterName("desiredRegion").c_str(),
         ":C{@ohos.multimedia.image.image.Region}", &regionRef)) {
         IMAGE_LOGE("Object_CallMethodByName_Ref desiredRegion Faild");
     }
     if (!ParseRegion(env, static_cast<ani_object>(regionRef), opts.desiredRegion)) {
         IMAGE_LOGE("Parse desiredRegion Faild");
     }
-    opts.desiredPixelFormat = PixelFormat(parseEnumFromStruct(env, param, "<get>desiredPixelFormat",
-        ":C{@ohos.multimedia.image.image.PixelMapFormat}"));
+    opts.desiredPixelFormat = PixelFormat(parseEnumFromStruct(env, param,
+        Builder::BuildGetterName("desiredPixelFormat").c_str(), ":C{@ohos.multimedia.image.image.PixelMapFormat}"));
     ani_ref fitDensityRef;
-    if (ANI_OK != (ret = env->Object_CallMethodByName_Ref(param,
-        "<get>fitDensity", ":C{std.core.Int}", &fitDensityRef))) {
+    if (ANI_OK != (ret = env->Object_CallMethodByName_Ref(param, Builder::BuildGetterName("fitDensity").c_str(),
+        ":C{std.core.Int}", &fitDensityRef))) {
         IMAGE_LOGE("Object_CallMethodByName_Ref Faild fitDensityRef:%{public}d", ret);
     }
     ani_int fitDensity;
@@ -243,7 +245,8 @@ static bool ParseDecodingOptions([[maybe_unused]] ani_env* env, ani_object para,
     ani_boolean isUndefined;
     ani_status ret;
     ani_ref indexRef;
-    if (ANI_OK != (ret = env->Object_CallMethodByName_Ref(para, "<get>index", ":C{std.core.Int}", &indexRef))) {
+    if (ANI_OK != (ret = env->Object_CallMethodByName_Ref(para, Builder::BuildGetterName("index").c_str(),
+        ":C{std.core.Int}", &indexRef))) {
         IMAGE_LOGE("Object_CallMethodByName_Ref Faild indexRef:%{public}d", ret);
     }
     env->Reference_IsUndefined(indexRef, &isUndefined);
@@ -256,7 +259,8 @@ static bool ParseDecodingOptions([[maybe_unused]] ani_env* env, ani_object para,
     }
 
     ani_ref sampleRef;
-    if (ANI_OK != (ret = env->Object_CallMethodByName_Ref(para, "<get>sampleSize", ":C{std.core.Int}", &sampleRef))) {
+    if (ANI_OK != (ret = env->Object_CallMethodByName_Ref(para, Builder::BuildGetterName("sampleSize").c_str(),
+        ":C{std.core.Int}", &sampleRef))) {
         IMAGE_LOGE("Object_CallMethodByName_Ref Faild sampleRef:%{public}d", ret);
     }
     ani_int sample;
@@ -266,7 +270,8 @@ static bool ParseDecodingOptions([[maybe_unused]] ani_env* env, ani_object para,
     }
 
     ani_ref rotateRef;
-    if (ANI_OK != (ret = env->Object_CallMethodByName_Ref(para, "<get>rotate", ":C{std.core.Int}", &rotateRef))) {
+    if (ANI_OK != (ret = env->Object_CallMethodByName_Ref(para, Builder::BuildGetterName("rotate").c_str(),
+        ":C{std.core.Int}", &rotateRef))) {
         IMAGE_LOGE("Object_CallMethodByName_Ref Faild rotateRef:%{public}d", ret);
     }
     ani_int rotate;
@@ -276,8 +281,8 @@ static bool ParseDecodingOptions([[maybe_unused]] ani_env* env, ani_object para,
     }
 
     ani_ref editableRef;
-    if (ANI_OK != (ret = env->Object_CallMethodByName_Ref(para, "<get>editable", ":C{std.core.Boolean}",
-        &editableRef))) {
+    if (ANI_OK != (ret = env->Object_CallMethodByName_Ref(para, Builder::BuildGetterName("editable").c_str(),
+        ":C{std.core.Boolean}", &editableRef))) {
         IMAGE_LOGE("Object_CallMethodByName_Ref Faild editableRef:%{public}d", ret);
     }
     ani_boolean editable;
@@ -287,11 +292,7 @@ static bool ParseDecodingOptions([[maybe_unused]] ani_env* env, ani_object para,
     }
     opts.editable = static_cast<bool>(editable);
 
-    if (!ParseDecodingOptions2(env, para, opts)) {
-        return false;
-    }
-
-    return true;
+    return ParseDecodingOptions2(env, para, opts);
 }
 
 static ani_object CreatePixelMap([[maybe_unused]] ani_env* env,

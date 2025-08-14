@@ -51,6 +51,8 @@ public:
                            std::string name,
                            CompleteCreatorCallback callBack);
     void NativeRelease();
+    static napi_value CreateImageCreator(napi_env env, std::shared_ptr<ImageCreator> imageCreator);
+    std::shared_ptr<ImageCreator> GetNativeImageCreator();
 #ifdef IMAGE_DEBUG_FLAG
     bool isCallBackTest = false;
 #endif
@@ -150,6 +152,11 @@ class CreatorSurfaceListener : public SurfaceBufferAvaliableListener {
 public:
         void OnSurfaceBufferAvaliable() override;
     };
+
+extern "C" {
+    napi_value GetImageCreatorNapi(napi_env env, std::shared_ptr<ImageCreator> imageCreator);
+    bool GetNativeImageCreator(void *creator, std::shared_ptr<ImageCreator> &native);
+}
 } // namespace Media
 } // namespace OHOS
 #endif /* IMAGE_CREATOR_NAPI_H */
