@@ -169,7 +169,10 @@ ohos_shared_library("extplugin") {
     "src/texture_encode/astc_codec.cpp",
   ]
   if (enable_jpeg_hw_decode) {
-    sources += [ "src/hardware/jpeg_hw_decoder.cpp" ]
+    sources += [
+      "src/hardware/jpeg_hw_decoder.cpp",
+      "src/hardware/jpeg_dma_pool.cpp"
+    ]
   }
   configs = [
     ":plugins_includes",

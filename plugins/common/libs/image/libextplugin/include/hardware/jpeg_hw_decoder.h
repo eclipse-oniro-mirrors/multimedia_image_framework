@@ -17,7 +17,6 @@
 #define JPEG_HARDWARE_DECODER_H
 
 #include <cinttypes>
-#include <chrono>
 #include "v2_1/icodec_image.h"
 #include "v1_0/include/idisplay_buffer.h"
 #include "image/image_plugin_type.h"
@@ -48,27 +47,10 @@
 #define JPEG_HW_LOGD(x, ...) \
     IMAGE_LOGD(LOG_FMT x, FILENAME, __FUNCTION__, __LINE__, ##__VA_ARGS__)
 
-#define KILO_BYTE 1024
-#define MAX_SIZE_USE_DMA_POOL 256     /* max size of jpeg bitstream to use DMA Pool */
-#define BUFFER_UNIT_SIZE 32           /* Input buffer alignment size */
-#define DMA_POOL_SIZE 1024            /* the size of DMA Pool is 1M */
-#define DMA_POOL_WAIT_SECONDS 10      /* Destroy the DMA pool if it is not used for more than 10s */
-#define DMA_POOL_QUERY_INTERVAL 5     /* Query the active time of the DMA pool every 5 seconds */
-
 namespace OHOS {
 namespace ImagePlugin {
 
-class DmaPool {
-public:
-    DmaPool();
-    ~DmaPool();
-public:
-    OHOS::HDI::Codec::Image::V2_1::CodecImageBuffer buffer;
-    BufferHandle *bufferHandle;
-    std::pair<uint32_t, uint32_t> remainSpace; /* <remainSpace, start> */
-    std::unordered_map<uint32_t, uint32_t> usedSpace; /* <end, size> */
-    std::unordered_map<uint32_t, uint32_t> releaseSpace; /* <end, size> */
-};
+
 class JpegHardwareDecoder {
 public:
     JpegHardwareDecoder();
@@ -101,36 +83,24 @@ private:
     bool PrepareInputData(SkCodec *codec, ImagePlugin::InputDataStream *srcStream);
     bool DoDecode(OHOS::HDI::Codec::Image::V2_1::CodecImageBuffer& outputBufferHandle);
     void RecycleAllocatedResource();
-    static OHOS::HDI::Display::Buffer::V1_0::IDisplayBuffer* GetBufferMgr();
     bool CheckInputColorFmt(SkCodec *codec);
     bool GetCompressedDataStart(ImagePlugin::InputDataStream* srcStream);
     bool CopySrcToInputBuff(ImagePlugin::InputDataStream* srcStream, BufferHandle* inputBufferHandle);
     bool TryDmaPoolInBuff(ImagePlugin::InputDataStream* srcStream);
-    bool AllocDmaPool();
-    bool AllocSpace();
-    void UpdateSpaceInfo();
-    bool PackingInputBufferHandle(BufferHandle* inputBufferHandle);
     bool TryNormalInBuff(ImagePlugin::InputDataStream* srcStream);
-    bool RecycleSpace();
-    void ReleaseSpace(uint32_t& offset, uint32_t& usedSize);
     uint16_t ReadTwoBytes(ImagePlugin::InputDataStream* srcStream, unsigned int pos, bool& flag);
-    static void RunDmaPoolRecycle();
 private:
     static constexpr char JPEG_FORMAT_DESC[] = "image/jpeg";
-    static std::vector<OHOS::HDI::Codec::Image::V2_1::CodecImageCapability> capList_;
     static std::mutex capListMtx_;
-    static std::pair<DmaPool*, std::chrono::steady_clock::time_point> dmaPool_;
-    static std::mutex dmaPoolMtx_;
-    static uint32_t dmaPoolRefCnt_;
+    static std::vector<OHOS::HDI::Codec::Image::V2_1::CodecImageCapability> capList_;
     OHOS::sptr<OHOS::HDI::Codec::Image::V2_1::ICodecImage> hwDecoder_;
-    OHOS::HDI::Display::Buffer::V1_0::IDisplayBuffer* bufferMgr_;
     OHOS::HDI::Codec::Image::V2_1::CodecImageBuffer inputBuffer_;
     OHOS::HDI::Codec::Image::V2_1::CodecJpegDecInfo decodeInfo_;
-    uint32_t compressDataPos_;
-    uint32_t compressDataSize_;
-    bool useDmaPool_;
-    uint32_t usedSizeInPool_;
-    uint32_t usedOffsetInPool_;
+    uint32_t compressDataPos_ {0};
+    uint32_t compressDataSize_ {0};
+    bool useDmaPool_ {false};
+    uint32_t usedSizeInPool_ {0};
+    uint32_t usedOffsetInPool_ {0};
 };
 } // namespace ImagePlugin
 } // namespace OHOS
