@@ -94,9 +94,11 @@ HWTEST_F(JpegDecoderTest, JpegDecoderTest002, TestSize.Level3)
 {
     GTEST_LOG_(INFO) << "JpegDecoderTest: JpegDecoderTest002 start";
     auto jpegDecoder = std::make_shared<JpegDecoder>();
-    auto mock = std::make_shared<MockInputDataStream>();
-    mock->SetReturn(false);
-    jpegDecoder->SetSource(*mock.get());
+    int size = 1;
+    std::unique_ptr<uint8_t[]> data = std::make_unique<uint8_t[]>(size);
+    auto streamPtr = BufferSourceStream::CreateSourceStream(data.get(), size);
+    ASSERT_NE(streamPtr, nullptr);
+    jpegDecoder->SetSource(*streamPtr.release());
     PixelDecodeOptions opts;
     PlImageInfo info;
     jpegDecoder->state_ = JpegDecodingState::IMAGE_DECODING;
@@ -154,8 +156,11 @@ HWTEST_F(JpegDecoderTest, JpegDecoderTest005, TestSize.Level3)
 {
     GTEST_LOG_(INFO) << "JpegDecoderTest: JpegDecoderTest005 start";
     auto jpegDecoder = std::make_shared<JpegDecoder>();
-    auto mock = std::make_shared<MockInputDataStream>();
-    jpegDecoder->SetSource(*mock.get());
+    int size = 1;
+    std::unique_ptr<uint8_t[]> data = std::make_unique<uint8_t[]>(size);
+    auto streamPtr = BufferSourceStream::CreateSourceStream(data.get(), size);
+    ASSERT_NE(streamPtr, nullptr);
+    jpegDecoder->SetSource(*streamPtr.release());
     ImagePlugin::Size plSize;
     uint32_t result = jpegDecoder->GetImageSize(0, plSize);
     ASSERT_EQ(result, ERR_IMAGE_SOURCE_DATA_INCOMPLETE);
@@ -171,8 +176,11 @@ HWTEST_F(JpegDecoderTest, JpegDecoderTest006, TestSize.Level3)
 {
     GTEST_LOG_(INFO) << "JpegDecoderTest: JpegDecoderTest006 start";
     auto jpegDecoder = std::make_shared<JpegDecoder>();
-    auto mock = std::make_shared<MockInputDataStream>();
-    jpegDecoder->SetSource(*mock.get());
+    int size = 1;
+    std::unique_ptr<uint8_t[]> data = std::make_unique<uint8_t[]>(size);
+    auto streamPtr = BufferSourceStream::CreateSourceStream(data.get(), size);
+    ASSERT_NE(streamPtr, nullptr);
+    jpegDecoder->SetSource(*streamPtr.release());
     ImagePlugin::Size plSize;
     uint32_t result = jpegDecoder->GetImageSize(0, plSize);
     ASSERT_EQ(result, ERR_IMAGE_SOURCE_DATA_INCOMPLETE);
@@ -246,10 +254,11 @@ HWTEST_F(JpegDecoderTest, JpegDecoderTest0010, TestSize.Level3)
 {
     GTEST_LOG_(INFO) << "JpegDecoderTest: JpegDecoderTest0010 start";
     auto jpegDecoder = std::make_shared<JpegDecoder>();
-    auto mock = std::make_shared<MockInputDataStream>();
-    mock->SetStreamSize(1);
-    mock->SetReturn(false);
-    jpegDecoder->SetSource(*mock.get());
+    int size = 1;
+    std::unique_ptr<uint8_t[]> data = std::make_unique<uint8_t[]>(size);
+    auto streamPtr = BufferSourceStream::CreateSourceStream(data.get(), size);
+    ASSERT_NE(streamPtr, nullptr);
+    jpegDecoder->SetSource(*streamPtr.release());
     ImagePlugin::Size plSize;
     uint32_t result = jpegDecoder->GetImageSize(0, plSize);
     ASSERT_EQ(result, ERR_IMAGE_SOURCE_DATA_INCOMPLETE);
@@ -322,9 +331,11 @@ HWTEST_F(JpegDecoderTest, JpegDecoderTest0014, TestSize.Level3)
 {
     GTEST_LOG_(INFO) << "JpegDecoderTest: JpegDecoderTest0014 start";
     auto jpegDecoder = std::make_shared<JpegDecoder>();
-    auto mock = std::make_shared<MockInputDataStream>();
-    mock->SetReturn(false);
-    jpegDecoder->SetSource(*mock.get());
+    int size = 1;
+    std::unique_ptr<uint8_t[]> data = std::make_unique<uint8_t[]>(size);
+    auto streamPtr = BufferSourceStream::CreateSourceStream(data.get(), size);
+    ASSERT_NE(streamPtr, nullptr);
+    jpegDecoder->SetSource(*streamPtr.release());
     DecodeContext context;
     jpegDecoder->state_ = JpegDecodingState::IMAGE_ERROR;
     uint32_t ret = jpegDecoder->Decode(0, context);
@@ -378,9 +389,11 @@ HWTEST_F(JpegDecoderTest, JpegDecoderTest0017, TestSize.Level3)
 {
     GTEST_LOG_(INFO) << "JpegDecoderTest: JpegDecoderTest0017 start";
     auto jpegDecoder = std::make_shared<JpegDecoder>();
-    auto mock = std::make_shared<MockInputDataStream>();
-    mock->SetReturn(false);
-    jpegDecoder->SetSource(*mock.get());
+    int size = 1;
+    std::unique_ptr<uint8_t[]> data = std::make_unique<uint8_t[]>(size);
+    auto streamPtr = BufferSourceStream::CreateSourceStream(data.get(), size);
+    ASSERT_NE(streamPtr, nullptr);
+    jpegDecoder->SetSource(*streamPtr.release());
     ProgDecodeContext context;
     uint32_t result = jpegDecoder->PromoteIncrementalDecode(0, context);
     ASSERT_EQ(result, ERR_MEDIA_INVALID_OPERATION);
