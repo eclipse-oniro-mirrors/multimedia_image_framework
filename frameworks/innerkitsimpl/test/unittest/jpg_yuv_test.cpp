@@ -34,6 +34,7 @@ using namespace OHOS::ImageSourceUtil;
 
 namespace OHOS {
 namespace Multimedia {
+using Rect = OHOS::Media::Rect;
 static const std::string IMAGE_INPUT_JPG_PATH = "/data/local/tmp/image/";
 static const std::string IMAGE_OUTPUT_JPG_PATH = "/data/local/tmp/";
 static const std::string IMAGE_INPUT_YUV_PATH3 = "/data/local/tmp/image/P010.yuv";

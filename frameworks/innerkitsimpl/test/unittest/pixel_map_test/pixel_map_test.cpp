@@ -30,7 +30,7 @@ using namespace testing::ext;
 using namespace OHOS::Media;
 namespace OHOS {
 namespace Multimedia {
-
+using Rect = OHOS::Media::Rect;
 constexpr int8_t ARGB_8888_BYTES = 4;
 const uint8_t red = 0xFF;
 const uint8_t green = 0x8F;

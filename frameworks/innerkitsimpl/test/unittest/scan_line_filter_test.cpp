@@ -30,6 +30,7 @@ using namespace testing::ext;
 using namespace OHOS::Media;
 namespace OHOS {
 namespace Multimedia {
+using Rect = OHOS::Media::Rect;
 class ScanLineFilterTest : public testing::Test {
 public:
     ScanLineFilterTest() {}
