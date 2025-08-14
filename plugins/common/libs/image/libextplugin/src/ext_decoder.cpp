@@ -1823,11 +1823,16 @@ uint32_t ExtDecoder::GetFramePixels(SkImageInfo& info, uint8_t* buffer, uint64_t
     bool cond = buffer == nullptr;
     CHECK_ERROR_RETURN_RET_LOG(cond, ERR_IMAGE_DECODE_ABNORMAL, "get pixels failed, buffer is nullptr");
     SkCodec::Result ret = codec_->getPixels(info, buffer, rowStride, &options);
-    if (ret != SkCodec::kSuccess && ResetCodec()) {
-        // Try again
-        ret = codec_->getPixels(info, buffer, rowStride, &options);
+    if (ret == SkCodec::kIncompleteInput || ret == SkCodec::kErrorInInput) {
+        IMAGE_LOGI("Decode broken data success. Triggered kIncompleteInput feature of skia!");
+        return SUCCESS;
+    } else if (ret == SkCodec::kSuccess) {
+        return SUCCESS;
     }
-    cond = ret != SkCodec::kSuccess;
+    // Try again
+    ResetCodec();
+    ret = codec_->getPixels(info, buffer, rowStride, &options);
+    cond = (ret != SkCodec::kSuccess && ret != SkCodec::kIncompleteInput && ret != SkCodec::kErrorInInput);
     CHECK_ERROR_RETURN_RET_LOG(cond, ERR_IMAGE_DECODE_ABNORMAL,
                                "Gif decode failed, get pixels failed, ret=%{public}d", ret);
     return SUCCESS;

@@ -121,6 +121,7 @@
             <option name="push" value="images/test_heif_hdr.heic -> /data/local/tmp/image" src="res"/>
             <option name="push" value="images/three_gainmap_hdr_test.jpg -> /data/local/tmp/image" src="res"/>
             <option name="push" value="images/three_gainmap_hdr_test.heic -> /data/local/tmp/image" src="res"/>
+            <option name="push" value="images/test_broken.gif -> /data/local/tmp/image" src="res"/>
         </preparer>
     </target>
     <target name="test_imagesystemadapter_java_maple">
