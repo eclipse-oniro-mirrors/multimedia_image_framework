@@ -159,6 +159,7 @@ void CreateImageSourceByFDEXFuzz(const std::string &pathName)
     SetFdpDecodeOptions(FDP, dopts);
     if (imagesource != nullptr) {
         imagesource->CreatePixelMap(dopts, errorCode);
+        imagesource->RemoveImageProperties(0, {"ImageWidth", "ImageHeight"}, fd);
     }
     close(fd);
 }
