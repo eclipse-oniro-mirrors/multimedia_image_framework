@@ -16,6 +16,7 @@ group("fuzztest") {
   deps = [
     "imageaccessor_fuzzer:ImageAccessorFuzzTest",
     "imageaccessor2_fuzzer:ImageAccessor2FuzzTest",
+    "imageexifmetadataformatter_fuzzer:ImageExifMetadataFormatterFuzzTest",
     "imagefwkconvertastc2rgb_fuzzer:ImageFwkConvertAstc2RgbFuzzTest",
     "imagefwkconvertp010yuv2rgbext_fuzzer:ImageFwkConvertP010Yuv2RgbExtFuzzTest",
     "imagefwkconvertpixelfotmat_fuzzer:ImageFwkConvertPixelFormatFuzzTest",
