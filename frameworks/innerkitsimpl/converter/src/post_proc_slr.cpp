@@ -99,7 +99,7 @@ bool SLRCheck(const SLRMat &src, const SLRMat &dst, const SLRWeightMat &x, const
 inline uint32_t SLRCast(float v)
 {
     v = std::clamp(v, 0.0f, 255.0f); // 255.0f rgba max value
-    uint32_t uv = static_cast<uint32_t>(v);
+    uint32_t uv = static_cast<uint32_t>(v + 0.5f); // 0.5 : round
     return uv;
 }
 
