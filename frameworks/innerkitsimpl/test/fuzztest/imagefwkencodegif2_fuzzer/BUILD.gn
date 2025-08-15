@@ -59,6 +59,7 @@ ohos_fuzztest("Imagefwkencodegif2FuzzTest") {
     "drivers_interface_display:libdisplay_buffer_hdi_impl",
     "drivers_interface_display:libdisplay_composer_hdi_impl",
     "graphic_2d:color_manager",
+    "graphic_surface:surface",
     "hilog:libhilog",
     "libexif:libexif",
     "libjpeg-turbo:turbojpeg",

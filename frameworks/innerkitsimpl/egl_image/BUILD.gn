@@ -90,9 +90,9 @@ if (!use_clang_ios && !use_clang_android) {
     }
     external_deps = [
       "ipc:ipc_single",
+      "c_utils:utils",
     ]
     public_external_deps = [
-      "c_utils:utils",
       "graphic_2d:EGL",
       "graphic_2d:GLESv3",
       "graphic_2d:color_manager",
