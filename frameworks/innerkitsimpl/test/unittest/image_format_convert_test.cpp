@@ -249,20 +249,24 @@ bool ImageFormatConvertTest::ReadFile(void *chOrg, std::string path, int32_t tot
         GTEST_LOG_(INFO) << "fopen";
         return false;
     }
+
+    bool result = true;
     if (srcNum == 0) {
         size_t bytesOrg = fread(chOrg, sizeof(uint8_t), static_cast<size_t>(totalsize), fileOrg);
         if (bytesOrg < static_cast<size_t>(totalsize)) {
             GTEST_LOG_(INFO) << "Read fail";
-            return false;
+            result = false;
         }
     } else {
         size_t bytesOrg = fread(chOrg, sizeof(uint16_t), static_cast<size_t>(totalsize), fileOrg);
         if (bytesOrg < static_cast<size_t>(totalsize)) {
-            GTEST_LOG_(INFO) << "Read fail " << bytesOrg << " totalsize" << totalsize;
-            return false;
+            GTEST_LOG_(INFO) << "Read fail " << bytesOrg << " totalsize " << totalsize;
+            result = false;
         }
     }
-    return true;
+
+    fclose(fileOrg);
+    return result;
 }
 
 void ImageFormatConvertTest::YuvP010ConvertToRgb(PixelFormat &srcFormat, PixelFormat &destFormat, Size &srcSize,
