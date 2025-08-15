@@ -28,9 +28,9 @@ ohos_fuzztest("Imagefwkconvertp010yuv2rgb2FuzzTest") {
 
   defines = [ "EXT_PIXEL" ]
 
-  deps = [
+  deps = [ 
     "$image_subsystem/interfaces/innerkits:image_native",
-    "$image_subsystem/frameworks/innerkitsimpl/utils:image_utils",
+    "$image_subsystem/frameworks/innerkitsimpl/utils:image_utils"
   ]
 
   external_deps = [

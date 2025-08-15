@@ -41,8 +41,6 @@ ohos_fuzztest("ImagePngPlugin2FuzzTest") {
     "graphic_2d:color_manager",
     "hilog:libhilog",
     "libpng:libpng",
+    "libexif:libexif",
   ]
-  if (enable_libexif) {
-    external_deps += [ "libexif:libexif" ]
-  }
 }
