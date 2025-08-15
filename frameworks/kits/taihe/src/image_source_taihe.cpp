@@ -1394,15 +1394,15 @@ ImageSource CreateIncrementalSourceByArrayBuffer(array_view<uint8_t> buf)
 
 ImageSource CreateImageSourceByRawFileDescriptorOption(uintptr_t rawfile, optional_view<SourceOptions> options)
 {
-    double fd;
-    double offset;
-    double length;
+    int32_t fd;
+    int64_t offset;
+    int64_t length;
     ani_env *env = ::taihe::get_env();
     ani_object rawfileObj = reinterpret_cast<ani_object>(rawfile);
-    if (!ImageTaiheUtils::GetPropertyDouble(env, rawfileObj, "fd", fd) ||
-        !ImageTaiheUtils::GetPropertyDouble(env, rawfileObj, "offset", offset) ||
-        !ImageTaiheUtils::GetPropertyDouble(env, rawfileObj, "length", length)) {
-        ImageTaiheUtils::ThrowExceptionError(OHOS::Media::COMMON_ERR_INVALID_PARAMETER, "GetPropertyDouble failed");
+    if (!ImageTaiheUtils::GetPropertyInt(env, rawfileObj, "fd", fd) ||
+        !ImageTaiheUtils::GetPropertyLong(env, rawfileObj, "offset", offset) ||
+        !ImageTaiheUtils::GetPropertyLong(env, rawfileObj, "length", length)) {
+        ImageTaiheUtils::ThrowExceptionError(OHOS::Media::COMMON_ERR_INVALID_PARAMETER, "GetProperty failed");
         return make_holder<ImageSourceImpl, ImageSource>();
     }
     SourceOptions etsOpts = options.value_or(SourceOptions {});
@@ -1411,7 +1411,7 @@ ImageSource CreateImageSourceByRawFileDescriptorOption(uintptr_t rawfile, option
     uint32_t errorCode = OHOS::Media::ERR_MEDIA_INVALID_VALUE;
     int32_t fileSize = static_cast<int32_t>(offset) + static_cast<int32_t>(length);
     std::shared_ptr<OHOS::Media::ImageSource> imageSource = OHOS::Media::ImageSource::CreateImageSource(
-        static_cast<int32_t>(fd), static_cast<int32_t>(offset), fileSize, opts, errorCode);
+        fd, static_cast<int32_t>(offset), fileSize, opts, errorCode);
     if (imageSource == nullptr) {
         ImageTaiheUtils::ThrowExceptionError("CreateImageSourceByRawFileDescriptorOption error");
         return make_holder<ImageSourceImpl, ImageSource>();
