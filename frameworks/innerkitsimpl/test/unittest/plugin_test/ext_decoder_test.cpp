@@ -2179,14 +2179,17 @@ HWTEST_F(ExtDecoderTest, EncodePixelMapTest001, TestSize.Level3)
                                                                               sourceOpts, errorCode);
     ASSERT_NE(imageSource, nullptr);
     DecodeOptions opts;
-    opts.desiredPixelFormat = PixelFormat::YCRCB_P010;
+    opts.photoDesiredPixelFormat = PixelFormat::YCBCR_P010;
+    opts.desiredDynamicRange = DecodeDynamicRange::HDR;
     std::shared_ptr<PixelMap> pixelmap = imageSource->CreatePixelMap(opts, errorCode);
     ASSERT_EQ(errorCode, OHOS::Media::SUCCESS);
     ASSERT_NE(pixelmap, nullptr);
+    EXPECT_EQ(pixelmap->GetPixelFormat(), PixelFormat::YCBCR_P010);
     ImagePacker packer;
     PackOption option;
     option.format = "image/heif";
     option.needsPackProperties = true;
+    option.desiredDynamicRange = EncodeDynamicRange::AUTO;
     uint32_t startpc = packer.StartPacking(IMAGE_DEST, option);
     ASSERT_EQ(startpc, OHOS::Media::SUCCESS);
     uint32_t retAddImage = packer.AddImage(*pixelmap);
