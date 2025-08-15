@@ -47,11 +47,13 @@
 #include "ext_stream.h"
 #include "image_log.h"
 #include "image_source.h"
+#include "include/codec/SkCodec.h"
 
 constexpr uint32_t PIXELFORMAT_MODULO = 105;
 constexpr uint32_t COLORSPACE_MODULO = 17;
 constexpr uint32_t DYNAMICRANGE_MODULO = 3;
 constexpr uint32_t RESOLUTION_MODULO = 4;
+constexpr uint32_t METADATATYPE_MODULO = 8;
 constexpr uint32_t OPT_SIZE = 80;
 
 namespace OHOS {
@@ -331,6 +333,70 @@ void HeifDecodeFuzzTest001(const std::string& pathName)
     }
 	
 }
+
+std::unique_ptr<SkCodec> CreateCodec(const std::string& pathName)
+{
+#ifdef HEIF_HW_DECODE_ENABLE
+    SourceOptions opts;
+    uint32_t errorCode;
+    std::shared_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(pathName, opts, errorCode);
+    if (imageSource == nullptr) {
+        return nullptr;
+    }
+    std::unique_ptr<ImagePlugin::ExtStream> extStream = std::make_unique<ImagePlugin::ExtStream>();
+    if (extStream == nullptr) {
+        return nullptr;
+    }
+    extStream->stream_ = imageSource->sourceStreamPtr_.get();
+    return SkCodec::MakeFromStream(std::make_unique<ImagePlugin::ExtStream>(extStream->stream_));
+#endif
+}
+
+void HeifDecodeFuzzTest003(const std::string& pathName)
+{
+#ifdef HEIF_HW_DECODE_ENABLE
+    std::unique_ptr<SkCodec> codec = CreateCodec(pathName);
+    if (codec == nullptr) {
+        return;
+    }
+    auto heifContext = reinterpret_cast<ImagePlugin::HeifDecoderImpl*>(codec->getHeifContext());
+    if (heifContext == nullptr) {
+        return;
+    }
+    std::string errorMessage = "";
+    heifContext->getErrMsg(errorMessage);
+    HeifFrameInfo frameInfo;
+    heifContext->getImageInfo(&frameInfo);
+    heifContext->getTmapInfo(&frameInfo);
+    heifContext->getHdrType();
+    std::vector<uint8_t> uwaInfo;
+    std::vector<uint8_t> displayInfo;
+    std::vector<uint8_t> lightInfo;
+    heifContext->getVividMetadata(uwaInfo, displayInfo, lightInfo);
+    std::vector<uint8_t> isoMetadata;
+    heifContext->getISOMetadata(isoMetadata);
+    heifContext->getColorDepth();
+    heifContext->getAuxiliaryMapInfo(&frameInfo);
+    Media::Rect fragmentMetadata;
+    heifContext->getFragmentMetadata(fragmentMetadata);
+    std::vector<uint8_t> metadata;
+    Media::MetadataType type = static_cast<Media::MetadataType>(FDP->ConsumeIntegral<uint8_t>() % METADATATYPE_MODULO);
+    heifContext->GetMetadataBlob(metadata, type);
+    heifContext->IsHeifHasAlphaImage();
+    int32_t widthPadding = FDP->ConsumeIntegral<int32_t>();
+    int32_t heightPadding = FDP->ConsumeIntegral<int32_t>();
+    heifContext->SetPadding(widthPadding, heightPadding);
+    int32_t primaryDisplayWidth = FDP->ConsumeIntegral<int32_t>();
+    int32_t primaryDisplayHeight = FDP->ConsumeIntegral<int32_t>();
+    heifContext->IsHeifGainmapDivisibility(primaryDisplayWidth, primaryDisplayHeight);
+    heifContext->IsHeifGainmapYuv400();
+    heifContext->IsHeifAlphaYuv400();
+    uint32_t sampleSize = FDP->ConsumeIntegral<uint32_t>();
+    heifContext->SetSampleFormat(sampleSize, ColorManager::ColorSpaceName::SRGB);
+    heifContext->GetPrimaryLumaBitNum();
+    heifContext->IsGainmapDivisibleBySampleSize(sampleSize);
+#endif
+}
 } // namespace Media
 } // namespace OHOS
 
@@ -341,16 +407,17 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
 	if(size < OPT_SIZE) return -1;
 	FuzzedDataProvider fdp(data, OPT_SIZE);
     OHOS::Media::FDP = &fdp;
+    static const std::string pathName = "/data/local/tmp/test1.heic";
+    WriteDataToFile(data, size - OPT_SIZE, pathName);
 	uint8_t action = fdp.ConsumeIntegral<uint8_t>();
 	switch(action){
         case 0:
-			static const std::string PATHNAME = "/data/local/tmp/test1.heic";
-            WriteDataToFile(data, size - OPT_SIZE, PATHNAME);
-            OHOS::Media::HeifDecodeFuzzTest001(PATHNAME);
+            OHOS::Media::HeifDecodeFuzzTest001(pathName);
             break;
         default:
             OHOS::Media::HeifDecodeFuzzTest002(data, size);
             break;
     }
+    OHOS::Media::HeifDecodeFuzzTest003(pathName);
     return 0;
 }
