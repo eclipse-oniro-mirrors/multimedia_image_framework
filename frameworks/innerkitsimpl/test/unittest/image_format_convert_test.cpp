@@ -265,7 +265,10 @@ bool ImageFormatConvertTest::ReadFile(void *chOrg, std::string path, int32_t tot
         }
     }
 
-    fclose(fileOrg);
+    if (fclose(fileOrg) == EOF) {
+        GTEST_LOG_(INFO) << "fclose failed";
+        result = false;
+    }
     return result;
 }
 

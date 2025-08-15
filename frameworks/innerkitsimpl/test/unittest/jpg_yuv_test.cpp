@@ -618,7 +618,10 @@ bool JpgYuvTest::ReadFile(void *chOrg, std::string path, int32_t totalsize, int3
         }
     }
 
-    fclose(fileOrg);
+    if (fclose(fileOrg) == EOF) {
+        GTEST_LOG_(INFO) << "fclose failed";
+        result = false;
+    }
     return result;
 }
 
