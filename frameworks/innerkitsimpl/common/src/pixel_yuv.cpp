@@ -869,7 +869,7 @@ bool PixelYuv::CheckPixelsInput(const uint8_t *dst, const uint64_t &bufferSize, 
     }
 
     if (IsYUVP010Format(imageInfo_.pixelFormat)) {
-        if (static_cast<uint64_t>(offset) >= (bufferSize - YUV420P010_MIN_PIXEL_UINTBYTES)) {
+        if ((static_cast<uint64_t>(offset) + YUV420P010_MIN_PIXEL_UINTBYTES) >= bufferSize) {
             IMAGE_LOGE(
                 "CheckPixelsInput fail, height(%{public}d), width(%{public}d) "
                 "offset(%{public}u), bufferSize:%{public}llu.",
@@ -878,7 +878,7 @@ bool PixelYuv::CheckPixelsInput(const uint8_t *dst, const uint64_t &bufferSize, 
             return false;
         }
     } else {
-        if (static_cast<uint64_t>(offset) >= (bufferSize - YUV420_MIN_PIXEL_UINTBYTES)) {
+        if ((static_cast<uint64_t>(offset) + YUV420_MIN_PIXEL_UINTBYTES) >= bufferSize) {
             IMAGE_LOGE(
                 "CheckPixelsInput fail, height(%{public}d), width(%{public}d) "
                 "offset(%{public}u), bufferSize:%{public}llu.",
