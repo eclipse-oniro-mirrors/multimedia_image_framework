@@ -308,7 +308,8 @@ MIDK_EXPORT
 Image_ErrorCode OH_AuxiliaryPictureNative_SetInfo(OH_AuxiliaryPictureNative *auxiliaryPicture,
     OH_AuxiliaryPictureInfo *info)
 {
-    if (auxiliaryPicture == nullptr || !auxiliaryPicture->GetInnerAuxiliaryPicture() || info == nullptr) {
+    if (auxiliaryPicture == nullptr || !auxiliaryPicture->GetInnerAuxiliaryPicture() ||
+        info == nullptr || !info->GetInnerAuxiliaryPictureInfo()) {
         return IMAGE_BAD_PARAMETER;
     }
     auto tempInfo = *(info->GetInnerAuxiliaryPictureInfo().get());
