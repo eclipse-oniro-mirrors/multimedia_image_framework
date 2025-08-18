@@ -667,7 +667,8 @@ int32_t Picture::SetExifMetadata(sptr<SurfaceBuffer> &surfaceBuffer)
     CHECK_ERROR_RETURN_RET(extraData == nullptr, ERR_IMAGE_INVALID_PARAMETER);
 
     int32_t size = NUM_0;
-    extraData->ExtraGet(EXIF_DATA_SIZE_TAG, size);
+    GSError ret = extraData->ExtraGet(EXIF_DATA_SIZE_TAG, size);
+    CHECK_ERROR_RETURN_RET_LOG(ret != GSError::GSERROR_OK, ERR_IMAGE_SOURCE_DATA, "Failed to get exif data.");
     bool cond = size <= 0;
     CHECK_ERROR_RETURN_RET_LOG(cond, ERR_IMAGE_INVALID_PARAMETER, "Invalid buffer size: %d.", size);
 

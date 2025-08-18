@@ -713,6 +713,9 @@ std::shared_ptr<HeifImage> HeifParser::GetGainmapImage()
 
 std::shared_ptr<HeifImage> HeifParser::GetAuxiliaryMapImage(const std::string type)
 {
+    if (!primaryImage_) {
+        return nullptr;
+    }
     auto auxImages = primaryImage_->GetAuxImages();
     for (auto image : auxImages) {
         if (image->GetAuxImageType() == type) {
