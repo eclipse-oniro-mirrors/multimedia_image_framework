@@ -86,6 +86,7 @@ static std::vector<struct PictureEnum> auxiliaryPictureTypeMap = {
     {"UNREFOCUS_MAP", static_cast<uint32_t>(AuxiliaryPictureType::UNREFOCUS_MAP), ""},
     {"LINEAR_MAP", static_cast<uint32_t>(AuxiliaryPictureType::LINEAR_MAP), ""},
     {"FRAGMENT_MAP", static_cast<uint32_t>(AuxiliaryPictureType::FRAGMENT_MAP), ""},
+    {"THUMBNAIL", static_cast<uint32_t>(AuxiliaryPictureType::THUMBNAIL), ""},
 };
 
 static std::vector<struct PictureEnum> metadataTypeMap = {
@@ -372,7 +373,7 @@ napi_value PictureNapi::CreatePicture(napi_env env, std::shared_ptr<Picture> &pi
 static AuxiliaryPictureType ParseAuxiliaryPictureType(int32_t val)
 {
     if (val >= static_cast<int32_t>(AuxiliaryPictureType::GAINMAP)
-        && val<= static_cast<int32_t>(AuxiliaryPictureType::FRAGMENT_MAP)) {
+        && val < static_cast<int32_t>(AuxiliaryPictureType::MAX_AUXILIARY_PICTURE_TYPE)) {
         return AuxiliaryPictureType(val);
     }
 

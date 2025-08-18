@@ -158,6 +158,8 @@ struct HdrMetadata;
 class MetadataAccessor;
 class ExifMetadata;
 struct StreamInfo;
+struct SingleJpegImage;
+struct MainPictureInfo;
 
 class ImageSource {
 public:
@@ -201,6 +203,8 @@ public:
 #if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
     NATIVEEXPORT std::unique_ptr<Picture> CreatePicture(const DecodingOptionsForPicture &opts, uint32_t &errorCode);
     NATIVEEXPORT std::unique_ptr<Picture> CreatePictureAtIndex(uint32_t index, uint32_t &errorCode);
+    NATIVEEXPORT std::unique_ptr<PixelMap> CreateThumbnail(const DecodingOptionsForThumbnail &opts,
+                                                           uint32_t &errorCode);
 #endif
     // for incremental source.
     NATIVEEXPORT uint32_t UpdateData(const uint8_t *data, uint32_t size, bool isCompleted);
@@ -388,11 +392,19 @@ private:
     void SetHdrMetadataForPicture(std::unique_ptr<Picture> &picture);
     void DecodeHeifAuxiliaryPictures(const std::set<AuxiliaryPictureType> &auxTypes, std::unique_ptr<Picture> &picture,
                                      uint32_t &errorCode);
+    void DecodeSingleJpegAuxiliaryPicture(std::unique_ptr<Picture> &picture, MainPictureInfo &mainInfo,
+        const SingleJpegImage &auxInfo, StreamInfo &streamInfo);
     void DecodeJpegAuxiliaryPicture(std::set<AuxiliaryPictureType> &auxTypes, std::unique_ptr<Picture> &picture,
                                     uint32_t &errorCode);
     bool CheckJpegSourceStream(StreamInfo &streamInfo);
     uint32_t CreatePictureAtIndexPreCheck(uint32_t index, const ImageInfo &info);
     uint32_t SetGifMetadataForPicture(std::unique_ptr<Picture> &picture, uint32_t index);
+    std::unique_ptr<PixelMap> GenerateThumbnail(const DecodingOptionsForThumbnail &opts, uint32_t &errorCode);
+    std::unique_ptr<PixelMap> DecodeExifThumbnail(const DecodingOptionsForThumbnail &opts,
+        ImagePlugin::DecodeContext &context, const std::string &format, uint32_t &errorCode);
+    void SetThumbnailForPicture(std::unique_ptr<Picture> &picture, const std::string &mimeType);
+    std::unique_ptr<PixelMap> DecodeHeifParserThumbnail(const DecodingOptionsForThumbnail &opts,
+        ImagePlugin::DecodeContext &context, const std::string &format, uint32_t &errorCode);
 #endif
 
     const std::string NINE_PATCH = "ninepatch";
