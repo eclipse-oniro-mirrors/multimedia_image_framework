@@ -1169,8 +1169,8 @@ void ImageSourceImpl::UpdateDataSync(array_view<uint8_t> buf, bool isFinished, i
     taiheContext->updataBufferSize = buf.size();
 
     taiheContext->isCompleted = isFinished;
-    taiheContext->updataBufferOffset = offset;
-    taiheContext->updataLength = length;
+    taiheContext->updataBufferOffset = static_cast<uint32_t>(offset);
+    taiheContext->updataLength = static_cast<uint32_t>(length);
 
     UpdateDataExecute(taiheContext);
     if (!taiheContext->isSuccess) {

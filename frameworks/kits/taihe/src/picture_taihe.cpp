@@ -201,8 +201,8 @@ void PictureImpl::SetMetadataSync(MetadataType metadataType, weak::Metadata meta
     }
 
     OHOS::Media::MetadataType type;
-    uint32_t typeValue = metadataType.get_value();
-    if (typeValue == static_cast<uint32_t>(OHOS::Media::MetadataType::EXIF)) {
+    int32_t typeValue = metadataType.get_value();
+    if (typeValue == static_cast<int32_t>(OHOS::Media::MetadataType::EXIF)) {
         type = OHOS::Media::MetadataType(typeValue);
     } else {
         ImageTaiheUtils::ThrowExceptionError(IMAGE_UNSUPPORTED_METADATA, "Unsupport MetadataType");
@@ -231,8 +231,8 @@ Metadata PictureImpl::GetMetadataSync(MetadataType metadataType)
         return make_holder<MetadataImpl, Metadata>();
     }
 
-    uint32_t typeValue = metadataType.get_value();
-    if (typeValue != static_cast<uint32_t>(OHOS::Media::MetadataType::EXIF)) {
+    int32_t typeValue = metadataType.get_value();
+    if (typeValue != static_cast<int32_t>(OHOS::Media::MetadataType::EXIF)) {
         ImageTaiheUtils::ThrowExceptionError(IMAGE_UNSUPPORTED_METADATA, "Unsupport MetadataType");
         return make_holder<MetadataImpl, Metadata>();
     }

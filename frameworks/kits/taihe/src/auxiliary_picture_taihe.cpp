@@ -81,8 +81,8 @@ void AuxiliaryPictureImpl::WritePixelsFromBufferSync(array_view<uint8_t> data)
 static bool ReadPixelsToBufferSyncExecute(std::unique_ptr<AuxiliaryPictureTaiheContext> &context)
 {
     OHOS::Media::AuxiliaryPictureInfo info = context->rAuxiliaryPicture->GetAuxiliaryPictureInfo();
-    context->arrayBufferSize =
-        info.size.width * info.size.height * OHOS::Media::ImageUtils::GetPixelBytes(info.pixelFormat);
+    context->arrayBufferSize = static_cast<size_t>(info.size.width * info.size.height *
+        OHOS::Media::ImageUtils::GetPixelBytes(info.pixelFormat));
     context->arrayBuffer = new uint8_t[context->arrayBufferSize];
     if (context->arrayBuffer != nullptr) {
         context->status = context->rAuxiliaryPicture->ReadPixels(
