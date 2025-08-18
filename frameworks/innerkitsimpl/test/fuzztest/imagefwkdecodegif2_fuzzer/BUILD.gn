@@ -15,7 +15,7 @@ import("//build/test.gni")
 import("//foundation/multimedia/image_framework/ide/image_decode_config.gni")
 
 ohos_fuzztest("ImageFwkDecodeGif2FuzzTest") {
-  module_out_path = "multimedia_image/image_framework"
+  module_out_path = "image_framework/image_framework"
   fuzz_config_file = "$image_subsystem/frameworks/innerkitsimpl/test/fuzztest/imagefwkdecodegif2_fuzzer"
 
   cflags = [ "-DIMAGE_COLORSPACE_FLAG" ]
