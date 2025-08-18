@@ -18,6 +18,7 @@
 
 #include "image_source.h"
 #include "image_type.h"
+#include "message_parcel.h"
 #include "ohos.multimedia.image.image.proj.hpp"
 #include "ohos.multimedia.image.image.impl.hpp"
 #include "taihe/runtime.hpp"
@@ -46,6 +47,8 @@ public:
     static array<string> ToTaiheArrayString(const std::vector<std::string> &src);
     static array<uint8_t> CreateTaiheArrayBuffer(uint8_t* src, size_t srcLen);
     static uintptr_t GetUndefinedPtr(ani_env *env);
+
+    static OHOS::MessageParcel* UnwrapMessageParcel(uintptr_t sequence);
 
     template <typename EnumType, typename ValueType>
     static bool GetEnumKeyByValue(ValueType value, typename EnumType::key_t &key);
