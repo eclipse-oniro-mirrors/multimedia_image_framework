@@ -4552,14 +4552,6 @@ static void SetResLogBuffer(sptr<SurfaceBuffer>& baseSptr, sptr<SurfaceBuffer>& 
     VpeUtils::SetSbMetadataType(hdrSptr, CM_IMAGE_HDR_VIVID_SINGLE);
 }
 
-static void SetWideGamutBuffer(sptr<SurfaceBuffer>& baseSptr, sptr<SurfaceBuffer>& gainmapSptr,
-    sptr<SurfaceBuffer>& hdrSptr)
-{
-    VpeUtils::SetSbColorSpaceType(baseSptr, CM_SRGB_FULL);
-    VpeUtils::SetSbColorSpaceType(gainmapSptr, CM_SRGB_FULL);
-    VpeUtils::SetSbColorSpaceType(hdrSptr, CM_DISPLAY_BT2020_SRGB);
-}
-
 void ImageSource::SpecialSetComposeBuffer(DecodeContext &baseCtx, sptr<SurfaceBuffer>& baseSptr,
     sptr<SurfaceBuffer>& gainmapSptr, sptr<SurfaceBuffer>& hdrSptr, HdrMetadata& metadata)
 {
@@ -4576,7 +4568,7 @@ void ImageSource::SpecialSetComposeBuffer(DecodeContext &baseCtx, sptr<SurfaceBu
     }
     // wideGamutSdr special process
     if (baseCtx.isCreateWideGamutSdrPixelMap) {
-        SetWideGamutBuffer(baseSptr, gainmapSptr, hdrSptr);
+        VpeUtils::SetSbColorSpaceType(hdrSptr, CM_DISPLAY_BT2020_SRGB);
     }
 }
 
