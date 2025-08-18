@@ -34,9 +34,10 @@ namespace {
 namespace ANI::Image {
 OHOS::Media::ImageHolderManager<OHOS::Media::NativeImage> ImageImpl::sNativeImageHolder_;
 
-ImageImpl::ImageImpl() : nativeImage_(nullptr) {}
+ImageImpl::ImageImpl() : nativeImage_(nullptr), isTestImage_(false) {}
 
 ImageImpl::ImageImpl(std::shared_ptr<OHOS::Media::NativeImage> nativeImage)
+    : nativeImage_(nullptr), isTestImage_(false)
 {
     if (nativeImage == nullptr) {
         IMAGE_LOGE("nativeImage is nullptr");
@@ -47,7 +48,6 @@ ImageImpl::ImageImpl(std::shared_ptr<OHOS::Media::NativeImage> nativeImage)
     auto id = sNativeImageHolder_.save(nativeImage);
     nativeImage->SetId(id);
     nativeImage_ = sNativeImageHolder_.get(id);
-    isTestImage_ = false;
     if (nativeImage_ == nullptr) {
         if (MY_NAME.compare(id.c_str()) == 0) {
             isTestImage_ = true;
