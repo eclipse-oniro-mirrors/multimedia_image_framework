@@ -262,12 +262,12 @@ if (use_clang_android) {
         "ipc:ipc_core",
         "libjpeg-turbo:turbojpeg",
         "napi:ace_napi",
-        "skia:skia_canvaskit",
         "zlib:libz",
       ]
       public_external_deps = [
         "graphic_2d:color_manager",
         "graphic_surface:surface",
+        "skia:skia_canvaskit",
       ]
       if (enable_libexif) {
         external_deps += [ "libexif:libexif" ]
