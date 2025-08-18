@@ -510,7 +510,8 @@ static bool RGBA1010102ToP010SoftDecode(const RGBDataInfo &rgbInfo, SrcConvertPa
         !ImageUtils::GetAlignedNumber(copyRgbInfo.height, EVEN_ODD_DIVISOR)) {
         return false;
     }
-    int32_t copySrcLen = static_cast<size_t>(copyRgbInfo.width * copyRgbInfo.height * STRIDES_PER_PLANE);
+    int32_t copySrcLen = static_cast<int32_t>(copyRgbInfo.width) *
+        static_cast<int32_t>(copyRgbInfo.height) * STRIDES_PER_PLANE;
     std::unique_ptr<uint8_t[]> copySrcBuffer = std::make_unique<uint8_t[]>(copySrcLen);
     CHECK_ERROR_RETURN_RET_LOG((copySrcBuffer == nullptr), -1, "[RGBAToP010]Convert: alloc memory failed!");
     uint8_t* copySrcPixels = copySrcBuffer.get();

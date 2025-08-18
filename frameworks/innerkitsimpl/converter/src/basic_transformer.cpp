@@ -248,7 +248,7 @@ bool BasicTransformer::DrawPixelmap(const PixmapInfo &pixmapInfo, const int32_t 
             if (CheckOutOfRange(srcPoint, pixmapInfo.imageInfo.size)) {
                 continue;
             }
-            uint32_t shiftBytes = (y * size.width + x) * pixelBytes;
+            uint32_t shiftBytes = static_cast<uint32_t>((y * size.width + x) * pixelBytes);
             BilinearProc(srcPoint, pixmapInfo, rb, shiftBytes, data);
         }
     }
