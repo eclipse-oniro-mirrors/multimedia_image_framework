@@ -114,6 +114,10 @@ typedef enum {
     * Fragment map
     */
     AUXILIARY_PICTURE_TYPE_FRAGMENT_MAP = 5,
+    /*
+    * Thumbnail
+    */
+    AUXILIARY_PICTURE_TYPE_THUMBNAIL = 6,
 } Image_AuxiliaryPictureType;
 
 /**

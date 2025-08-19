@@ -39,6 +39,10 @@ public:
     static std::shared_ptr<AuxiliaryPicture> GenerateJpegAuxiliaryPicture(
         const MainPictureInfo &mainInfo, AuxiliaryPictureType type, std::unique_ptr<InputDataStream> &auxStream,
         std::unique_ptr<AbsImageDecoder> &extDecoder, uint32_t &errorCode);
+    static ImageInfo MakeImageInfo(const Size &size, PixelFormat format, AlphaType alphaType,
+        ColorSpace colorSpace, const std::string &encodedFormat);
+    static std::unique_ptr<PixelMap> CreatePixelMapByContext(DecodeContext &context,
+        std::unique_ptr<AbsImageDecoder> &decoder, const std::string &encodedFormat, uint32_t &errorCode);
 };
 } // namespace Media
 } // namespace OHOS

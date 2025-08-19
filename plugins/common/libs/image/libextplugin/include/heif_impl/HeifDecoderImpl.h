@@ -69,6 +69,7 @@ public:
     void getErrMsg(std::string& errMsg) override;
     uint32_t getColorDepth() override;
     GridInfo GetGridInfo();
+    bool ProcessThumbnailImage();
     bool CheckAuxiliaryMap(Media::AuxiliaryPictureType type);
     bool setAuxiliaryMap(Media::AuxiliaryPictureType type);
     bool getAuxiliaryMapInfo(HeifFrameInfo* frameInfo);

@@ -56,6 +56,10 @@ static constexpr int32_t FORMAT_9 = 9;
 using JpegYuvDecodeError = OHOS::ImagePlugin::JpegYuvDecodeError;
 static Image_MimeType *IMAGE_SOURCE_SUPPORTED_FORMATS = nullptr;
 static size_t SUPPORTED_FORMATS_SIZE = 0;
+struct OH_DecodingOptionsForThumbnail {
+    struct Image_Size desiredSize;
+    bool needGenerate = false;
+};
 
 struct OH_DecodingOptions {
     int32_t pixelFormat;
@@ -523,6 +527,14 @@ static void ParseDecodingOps(DecodeOptions &decOps, struct OH_DecodingOptions *o
     }
 }
 
+static void ParseDecodingOptsForThumbnail(DecodingOptionsForThumbnail &decOps,
+    struct OH_DecodingOptionsForThumbnail *ops)
+{
+    decOps.desiredSize.width = static_cast<int32_t>(ops->desiredSize.width);
+    decOps.desiredSize.height = static_cast<int32_t>(ops->desiredSize.height);
+    decOps.needGenerate = ops->needGenerate;
+}
+
 static void ParseImageSourceInfo(struct OH_ImageSource_Info *source, const ImageInfo &info)
 {
     if (source == nullptr) {
@@ -745,6 +757,100 @@ Image_ErrorCode OH_ImageSourceNative_CreatePicture(OH_ImageSourceNative *source,
     
     auto pictureNative  = new OH_PictureNative(std::move(pictureTemp));
     *picture = pictureNative;
+    return IMAGE_SUCCESS;
+}
+
+MIDK_EXPORT
+Image_ErrorCode OH_DecodingOptionsForThumbnail_Create(OH_DecodingOptionsForThumbnail **options)
+{
+    *options = new OH_DecodingOptionsForThumbnail();
+    if (*options == nullptr) {
+        return IMAGE_BAD_PARAMETER;
+    }
+    return IMAGE_SUCCESS;
+}
+
+MIDK_EXPORT
+Image_ErrorCode OH_DecodingOptionsForThumbnail_GetDesiredSize(OH_DecodingOptionsForThumbnail *options,
+    Image_Size *desiredSize)
+{
+    if (options == nullptr || desiredSize == nullptr) {
+        return IMAGE_BAD_PARAMETER;
+    }
+    desiredSize->width = options->desiredSize.width;
+    desiredSize->height = options->desiredSize.height;
+    return IMAGE_SUCCESS;
+}
+
+MIDK_EXPORT
+Image_ErrorCode OH_DecodingOptionsForThumbnail_SetDesiredSize(OH_DecodingOptionsForThumbnail *options,
+    Image_Size *desiredSize)
+{
+    if (options == nullptr || desiredSize == nullptr) {
+        return IMAGE_BAD_PARAMETER;
+    }
+    options->desiredSize.width = desiredSize->width;
+    options->desiredSize.height = desiredSize->height;
+    return IMAGE_SUCCESS;
+}
+
+Image_ErrorCode OH_DecodingOptionsForThumbnail_GetNeedGenerate(OH_DecodingOptionsForThumbnail *options,
+    bool *needGenerate)
+{
+    if (options == nullptr || needGenerate == nullptr) {
+        return IMAGE_BAD_PARAMETER;
+    }
+    *needGenerate = options->needGenerate;
+    return IMAGE_SUCCESS;
+}
+
+Image_ErrorCode OH_DecodingOptionsForThumbnail_SetNeedGenerate(OH_DecodingOptionsForThumbnail *options,
+    bool *needGenerate)
+{
+    if (options == nullptr || needGenerate == nullptr) {
+        return IMAGE_BAD_PARAMETER;
+    }
+    options->needGenerate = *needGenerate;
+    return IMAGE_SUCCESS;
+}
+
+MIDK_EXPORT
+Image_ErrorCode OH_DecodingOptionsForThumbnail_Release(OH_DecodingOptionsForThumbnail *options)
+{
+    if (options == nullptr) {
+        return IMAGE_BAD_PARAMETER;
+    }
+    delete options;
+    options = nullptr;
+    return IMAGE_SUCCESS;
+}
+
+static bool IsSizeInValid(const Size &size)
+{
+    return size.width < 0 || size.height < 0;
+}
+
+MIDK_EXPORT
+Image_ErrorCode OH_ImageSourceNative_CreateThumbnail(OH_ImageSourceNative *source, OH_DecodingOptionsForThumbnail *ops,
+    OH_PixelmapNative **pixelmap)
+{
+    if (source == nullptr || source->GetInnerImageSource() == nullptr || ops == nullptr || pixelmap == nullptr) {
+        return IMAGE_BAD_PARAMETER;
+    }
+
+    DecodingOptionsForThumbnail decOps;
+    uint32_t errorCode = IMAGE_BAD_PARAMETER;
+    ParseDecodingOptsForThumbnail(decOps, ops);
+    if (IsSizeInValid(decOps.desiredSize)) {
+        return IMAGE_BAD_PARAMETER;
+    }
+    std::unique_ptr<PixelMap> tmpPixelmap = source->GetInnerImageSource()->CreateThumbnail(decOps, errorCode);
+    if (tmpPixelmap == nullptr || errorCode != IMAGE_SUCCESS) {
+        return ConvertToErrorCode(errorCode);
+    }
+    std::shared_ptr<PixelMap> nativePixelmap = std::move(tmpPixelmap);
+    OH_PixelmapNative *stPixMap = new OH_PixelmapNative(nativePixelmap);
+    *pixelmap = stPixMap;
     return IMAGE_SUCCESS;
 }
 
