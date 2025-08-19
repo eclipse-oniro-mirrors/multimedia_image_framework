@@ -30,5 +30,5 @@ ohos_fuzztest("ImagePixelmapSetAlphaFuzzTest") {
     "hilog:libhilog",
   ]
   fuzz_config_file = "$image_subsystem/frameworks/innerkitsimpl/test/fuzztest/imagepixelmapsetalpha_fuzzer"
-  module_out_path = "multimedia_image/image_framework"
+  module_out_path = "image_framework/image_framework"
 }
