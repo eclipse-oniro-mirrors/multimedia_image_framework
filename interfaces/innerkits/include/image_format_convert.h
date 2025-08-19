@@ -40,6 +40,7 @@ struct ConvertDataInfo {
     PixelFormat pixelFormat = PixelFormat::UNKNOWN;
     ColorSpace colorSpace = ColorSpace::SRGB;
     YUVDataInfo yuvDataInfo;
+    uint32_t stride = 0;
 };
 
 class ImageFormatConvert {

@@ -323,7 +323,11 @@ uint32_t ImageFormatConvert::RGBConvert(const OHOS::Media::ConvertDataInfo &srcD
     destInfo.buffer = reinterpret_cast<uint8_t *>(m->data.data);
     destInfo.bufferSize = GetBufferSizeByFormat(destInfo.format, {destInfo.width, destInfo.height});
     uint32_t srcStride = 0;
-    CalcRGBStride(srcDataInfo.pixelFormat, srcDataInfo.imageSize.width, srcStride);
+    if (srcDataInfo.stride != 0) {
+        srcStride = srcDataInfo.stride;
+    } else {
+        CalcRGBStride(srcDataInfo.pixelFormat, srcDataInfo.imageSize.width, srcStride);
+    }
     RGBDataInfo rgbDataInfo = {srcDataInfo.imageSize.width, srcDataInfo.imageSize.height, srcStride};
     if (!cvtFunc(srcDataInfo.buffer, rgbDataInfo, destInfo, srcDataInfo.colorSpace)) {
         IMAGE_LOGE("RGBConvert format convert failed!");

@@ -909,6 +909,12 @@ uint32_t ExtDecoder::ConvertFormatToYUV(DecodeContext &context, SkImageInfo &skI
     srcDataInfo.imageSize = {skInfo.width(), skInfo.height()};
     srcDataInfo.pixelFormat = context.pixelFormat;
     srcDataInfo.colorSpace = static_cast<ColorSpace>(context.colorSpace);
+#if !defined(CROSS_PLATFORM)
+    if (context.allocatorType == AllocatorType::DMA_ALLOC && context.pixelsBuffer.context != nullptr) {
+        auto sb = reinterpret_cast<SurfaceBuffer*>(context.pixelsBuffer.context);
+        srcDataInfo.stride = static_cast<uint32_t>(sb->GetStride());
+    }
+#endif
 
     DestConvertInfo destInfo = {skInfo.width(), skInfo.height()};
     destInfo.format = format;
