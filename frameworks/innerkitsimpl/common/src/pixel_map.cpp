@@ -638,7 +638,6 @@ uint32_t PixelMap::SetMemoryName(const std::string &pixelMapName)
     AllocatorType allocatorType = GetAllocatorType();
 
     if (pixelMapName.empty() || pixelMapName.size() > DMA_BUF_NAME_LEN - 1) {
-        IMAGE_LOGE("name size not compare");
         return COMMON_ERR_INVALID_PARAMETER;
     }
 
@@ -650,7 +649,6 @@ uint32_t PixelMap::SetMemoryName(const std::string &pixelMapName)
         }
         int ret = TEMP_FAILURE_RETRY(ioctl(fd, DMA_BUF_SET_NAME_A, pixelMapName.c_str()));
         if (ret != 0) {
-            IMAGE_LOGE("set dma name failed");
             return ERR_MEMORY_NOT_SUPPORT;
         }
         return SUCCESS;
