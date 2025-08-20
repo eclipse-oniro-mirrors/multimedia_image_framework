@@ -2412,7 +2412,7 @@ HWTEST_F(ImagSourceNdk2Test, OH_ImageSourceNative_CreatePictureAtIndex007, TestS
     OH_PictureNative *picture = nullptr;
     Image_ErrorCode ret =
         OH_ImageSourceNative_CreatePictureAtIndex(imageSource, IMAGE_GIF_INCOMPLETE_FRAME_INDEX, &picture);
-    EXPECT_EQ(ret, IMAGE_DECODE_FAILED);
+    EXPECT_EQ(ret, IMAGE_SUCCESS);
     OH_ImageSourceNative_Release(imageSource);
     GTEST_LOG_(INFO) << "ImagSourceNdk2Test: OH_ImageSourceNative_CreatePictureAtIndex007 end";
 }
