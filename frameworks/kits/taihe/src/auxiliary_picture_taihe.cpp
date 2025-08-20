@@ -57,7 +57,7 @@ AuxiliaryPictureImpl::~AuxiliaryPictureImpl()
 
 int64_t AuxiliaryPictureImpl::GetImplPtr()
 {
-    return reinterpret_cast<uintptr_t>(this);
+    return static_cast<int64_t>(reinterpret_cast<uintptr_t>(this));
 }
 
 void AuxiliaryPictureImpl::WritePixelsFromBufferSync(array_view<uint8_t> data)

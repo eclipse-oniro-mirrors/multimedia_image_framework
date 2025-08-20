@@ -52,9 +52,12 @@ public:
                            std::string name,
                            CompleteCallback callBack);
     ImageReceiver* GetNative();
+    std::shared_ptr<ImageReceiver> GetNativeImageReceiver();
     static napi_value CreateImageReceiverJsObject(napi_env env, struct ImageReceiverCreateArgs args);
     void NativeRelease();
     void UnRegisterReceiverListener();
+
+    static napi_value CreateImageReceiver(napi_env env, std::shared_ptr<ImageReceiver> imageReceiver);
 #ifdef IMAGE_DEBUG_FLAG
     bool isCallBackTest = false;
 #endif
@@ -151,6 +154,11 @@ public:
     std::string name;
     CompleteCallback callBack = nullptr;
 };
+
+extern "C" {
+    napi_value GetImageReceiverNapi(napi_env env, std::shared_ptr<ImageReceiver> imageReceiver);
+    bool GetNativeImageReceiver(void *imageReceiverNapi, std::shared_ptr<ImageReceiver> &imageReceiver);
+}
 } // namespace Media
 } // namespace OHOS
 #endif // INTERFACES_KITS_JS_COMMON_INCLUDE_IMAGE_RECEIVER_NAPI_H

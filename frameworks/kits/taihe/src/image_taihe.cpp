@@ -124,7 +124,7 @@ static Component MakeComponent(int32_t type, OHOS::Media::NativeComponent *nativ
 
 int64_t ImageImpl::GetImplPtr()
 {
-    return reinterpret_cast<uintptr_t>(this);
+    return static_cast<int64_t>(reinterpret_cast<uintptr_t>(this));
 }
 
 struct Image ImageImpl::Create(std::shared_ptr<OHOS::Media::NativeImage> nativeImage)
