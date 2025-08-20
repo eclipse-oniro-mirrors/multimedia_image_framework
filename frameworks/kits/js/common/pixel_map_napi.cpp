@@ -699,7 +699,7 @@ extern "C" __attribute__((visibility("default"))) void* OHOS_MEDIA_GetPixelMap(n
         return nullptr;
     }
     if (pixmapNapi == nullptr) {
-        IMAGE_LOGE("pixmapNapi unwrapped is nullptr");
+        IMAGE_LOGD("%{public}s pixmapNapi unwrapped is nullptr", __func__);
         return nullptr;
     }
     return reinterpret_cast<void*>(pixmapNapi->GetPixelMap());
@@ -722,7 +722,7 @@ extern "C" __attribute__((visibility("default"))) int32_t OHOS_MEDIA_GetImageInf
         return OHOS_IMAGE_RESULT_BAD_PARAMETER;
     }
     if (pixmapNapi == nullptr) {
-        IMAGE_LOGE("pixmapNapi unwrapped is nullptr");
+        IMAGE_LOGD("%{public}s pixmapNapi unwrapped is nullptr", __func__);
         return OHOS_IMAGE_RESULT_BAD_PARAMETER;
     }
 
@@ -764,7 +764,7 @@ extern "C" __attribute__((visibility("default"))) int32_t OHOS_MEDIA_AccessPixel
         return OHOS_IMAGE_RESULT_BAD_PARAMETER;
     }
     if (pixmapNapi == nullptr) {
-        IMAGE_LOGE("pixmapNapi unwrapped is nullptr");
+        IMAGE_LOGD("%{public}s pixmapNapi unwrapped is nullptr", __func__);
         return OHOS_IMAGE_RESULT_BAD_PARAMETER;
     }
 
@@ -810,7 +810,7 @@ extern "C" __attribute__((visibility("default"))) int32_t OHOS_MEDIA_UnAccessPix
         return OHOS_IMAGE_RESULT_BAD_PARAMETER;
     }
     if (pixmapNapi == nullptr) {
-        IMAGE_LOGE("pixmapNapi unwrapped is nullptr");
+        IMAGE_LOGD("%{public}s pixmapNapi unwrapped is nullptr", __func__);
         return OHOS_IMAGE_RESULT_BAD_PARAMETER;
     }
 
