@@ -177,7 +177,7 @@ ImageSourceImpl::~ImageSourceImpl()
 
 int64_t ImageSourceImpl::GetImplPtr()
 {
-    return reinterpret_cast<uintptr_t>(this);
+    return static_cast<int64_t>(reinterpret_cast<uintptr_t>(this));
 }
 
 ImageInfo ImageSourceImpl::GetImageInfoSyncWithIndex(int32_t index)

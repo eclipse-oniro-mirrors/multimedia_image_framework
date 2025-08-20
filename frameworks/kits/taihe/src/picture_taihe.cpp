@@ -56,7 +56,7 @@ PictureImpl::~PictureImpl()
 
 int64_t PictureImpl::GetImplPtr()
 {
-    return reinterpret_cast<uintptr_t>(this);
+    return static_cast<int64_t>(reinterpret_cast<uintptr_t>(this));
 }
 
 std::shared_ptr<OHOS::Media::Picture> PictureImpl::GetNativePtr()
