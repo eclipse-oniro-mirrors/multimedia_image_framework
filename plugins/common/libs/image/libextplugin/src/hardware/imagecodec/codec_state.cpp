@@ -129,7 +129,7 @@ void ImageCodec::BaseState::OnGetFormat(const MsgInfo &info)
 
 void ImageCodec::BaseState::OnCheckIfStuck(const MsgInfo &info)
 {
-    int32_t generation;
+    int32_t generation = 0;
     (void)info.param->GetValue("generation", generation);
     if (generation == codec_->stateGeneration_) {
         SLOGE("stucked");
@@ -140,7 +140,7 @@ void ImageCodec::BaseState::OnCheckIfStuck(const MsgInfo &info)
 
 void ImageCodec::BaseState::OnForceShutDown(const MsgInfo &info)
 {
-    int32_t generation;
+    int32_t generation = 0;
     (void)info.param->GetValue("generation", generation);
     codec_->ForceShutdown(generation);
 }
@@ -389,7 +389,7 @@ void ImageCodec::StartingState::OnMsgReceived(const MsgInfo &info)
             return;
         }
         case MsgWhat::CHECK_IF_STUCK: {
-            int32_t generation;
+            int32_t generation = 0;
             if (info.param->GetValue("generation", generation) &&
                 generation == codec_->stateGeneration_) {
                 SLOGE("stucked, force state transition");
@@ -667,7 +667,7 @@ void ImageCodec::StoppingState::OnMsgReceived(const MsgInfo &info)
 {
     switch (info.type) {
         case MsgWhat::CHECK_IF_STUCK: {
-            int32_t generation;
+            int32_t generation = 0;
             (void)info.param->GetValue("generation", generation);
             if (generation == codec_->stateGeneration_) {
                 SLOGE("stucked, force state transition");
