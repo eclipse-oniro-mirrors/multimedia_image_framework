@@ -386,7 +386,7 @@ void InitOption(struct InitializationOptions& opts, const uint32_t width, const 
  * @tc.desc: Create PixelMap
  * @tc.type: FUNC
  */
-HWTEST_F(PixelMapTest, PixelMapCreateTest001, TestSize.Level3)
+HWTEST_F(PixelMapTest, PixelMapCreateTest001, TestSize.Level0)
 {
     GTEST_LOG_(INFO) << "PixelMapTest: PixelMapCreateTest001 start";
 
@@ -426,7 +426,7 @@ HWTEST_F(PixelMapTest, PixelMapCreateTest001, TestSize.Level3)
  * @tc.desc: Create PixelMap
  * @tc.type: FUNC
  */
-HWTEST_F(PixelMapTest, PixelMapCreateTest002, TestSize.Level3)
+HWTEST_F(PixelMapTest, PixelMapCreateTest002, TestSize.Level0)
 {
     GTEST_LOG_(INFO) << "PixelMapTest: PixelMapCreateTest002 start";
 
@@ -468,7 +468,7 @@ HWTEST_F(PixelMapTest, PixelMapCreateTest002, TestSize.Level3)
  * @tc.desc: Create PixelMap
  * @tc.type: FUNC
  */
-HWTEST_F(PixelMapTest, PixelMapCreateTest003, TestSize.Level3)
+HWTEST_F(PixelMapTest, PixelMapCreateTest003, TestSize.Level1)
 {
     GTEST_LOG_(INFO) << "PixelMapTest: PixelMapCreateTest003 start";
 
@@ -508,7 +508,7 @@ HWTEST_F(PixelMapTest, PixelMapCreateTest003, TestSize.Level3)
  * @tc.desc: Create PixelMap
  * @tc.type: FUNC
  */
-HWTEST_F(PixelMapTest, PixelMapCreateTest004, TestSize.Level3)
+HWTEST_F(PixelMapTest, PixelMapCreateTest004, TestSize.Level1)
 {
     GTEST_LOG_(INFO) << "PixelMapTest: PixelMapCreateTest004 start";
 
