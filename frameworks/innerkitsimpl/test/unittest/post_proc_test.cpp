@@ -957,24 +957,38 @@ HWTEST_F(PostProcTest, CenterDisplayTest001, TestSize.Level3)
 {
     GTEST_LOG_(INFO) << "PostProcTest: CenterDisplayTest001 start";
     PostProc postProc;
-    PixelMap pixelMap;
+    PixelMap tmpPixelMap;
     int32_t srcWidth = 0;
     int32_t srcHeight = 0;
     int32_t targetWidth = 0;
     int32_t targetHeight = 0;
-    bool ret = postProc.CenterDisplay(pixelMap, srcWidth, srcHeight, targetWidth, targetHeight);
+    bool ret = postProc.CenterDisplay(tmpPixelMap, srcWidth, srcHeight, targetWidth, targetHeight);
     ASSERT_EQ(ret, false);
-    targetWidth = 1;
-    targetHeight = 1;
-    pixelMap.imageInfo_.pixelFormat = PixelFormat::ALPHA_8;
-    pixelMap.allocatorType_ =  AllocatorType::HEAP_ALLOC;
-    ret = postProc.CenterDisplay(pixelMap, srcWidth, srcHeight, targetWidth, targetHeight);
+
+    srcWidth = 500;
+    srcHeight = 500;
+    targetWidth = 100;
+    targetHeight = 100;
+    InitializationOptions opts;
+    opts.size.width = width;
+    opts.size.height = height;
+    opts.pixelFormat = PixelFormat::ARGB_8888;
+    opts.allocatorType = AllocatorType::HEAP_ALLOC;
+    std::unique_ptr<PixelMap> pixelMap1 = PixelMap::Create(opts);
+    ASSERT_NE(pixelMap1.get(), nullptr);
+    ret = postProc.CenterDisplay(*(pixelMap1.get()), srcWidth, srcHeight, targetWidth, targetHeight);
     ASSERT_EQ(ret, true);
-    pixelMap.allocatorType_ =  AllocatorType::DMA_ALLOC;
-    ret = postProc.CenterDisplay(pixelMap, srcWidth, srcHeight, targetWidth, targetHeight);
+
+    opts.allocatorType = AllocatorType::DMA_ALLOC;
+    std::unique_ptr<PixelMap> pixelMap2 = PixelMap::Create(opts);
+    ASSERT_NE(pixelMap2.get(), nullptr);
+    ret = postProc.CenterDisplay(*(pixelMap2.get()), srcWidth, srcHeight, targetWidth, targetHeight);
     ASSERT_EQ(ret, true);
-    pixelMap.allocatorType_ =  AllocatorType::DEFAULT;
-    ret = postProc.CenterDisplay(pixelMap, srcWidth, srcHeight, targetWidth, targetHeight);
+
+    opts.allocatorType = AllocatorType::DEFAULT;
+    std::unique_ptr<PixelMap> pixelMap3 = PixelMap::Create(opts);
+    ASSERT_NE(pixelMap3.get(), nullptr);
+    ret = postProc.CenterDisplay(*(pixelMap3.get()), srcWidth, srcHeight, targetWidth, targetHeight);
     ASSERT_EQ(ret, true);
     GTEST_LOG_(INFO) << "PostProcTest: CenterDisplayTest001 end";
 }
