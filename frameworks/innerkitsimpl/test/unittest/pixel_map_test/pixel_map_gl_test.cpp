@@ -320,8 +320,8 @@ HWTEST_F(PixelMapTest, PixelMapDmaTestRotate001, TestSize.Level3)
     // ARGB_8888 to others
     options.srcPixelFormat = PixelFormat::ARGB_8888;
     for (iter =  SupportDmaMemPixelFormat.begin(); iter !=  SupportDmaMemPixelFormat.end() ; ++iter) {
-        uint32_t colorLength = NUM_512 * NUM_647 * NUM_4;    // w:2 * h:3 * pixelByte:4
-        uint8_t buffer[NUM_512 * NUM_647 * NUM_4] = { 0 };    // w:2 * h:3 * pixelByte:4
+        uint32_t colorLength = NUM_512 * NUM_512 * NUM_4;    // w:2 * h:3 * pixelByte:4
+        uint8_t buffer[NUM_512 * NUM_512 * NUM_4] = { 0 };    // w:2 * h:3 * pixelByte:4
         for (int i = 0; i < colorLength; i += NUM_4) {
             buffer[i] = 0x78;
             buffer[i + 1] = 0x83;
