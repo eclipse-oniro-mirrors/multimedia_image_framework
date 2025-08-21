@@ -216,8 +216,8 @@ void PictureImpl::SetMetadataSync(MetadataType metadataType, weak::Metadata meta
     }
     std::shared_ptr<OHOS::Media::ImageMetadata> imageMetadata = metadataImpl->GetNativeMetadata();
 
-    int32_t status = nativePicture_->SetExifMetadata(
-        std::reinterpret_pointer_cast<OHOS::Media::ExifMetadata>(imageMetadata));
+    int32_t status = static_cast<int32_t>(nativePicture_->SetExifMetadata(
+        std::reinterpret_pointer_cast<OHOS::Media::ExifMetadata>(imageMetadata)));
     if (status != OHOS::Media::SUCCESS) {
         ImageTaiheUtils::ThrowExceptionError(OHOS::Media::ERROR, "Set Metadata failed!");
     }
