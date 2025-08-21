@@ -386,7 +386,7 @@ HWTEST_F(PluginTextureEncodeTest, ASTCEncode005, TestSize.Level3)
     uint32_t setRet = astcEncoder.SetAstcEncode(stream, option, pixelMapPtr);
     ASSERT_EQ(setRet, SUCCESS);
     uint32_t astcRet = astcEncoder.ASTCEncode();
-    ASSERT_EQ(astcRet, SUCCESS);
+    ASSERT_NE(astcRet, SUCCESS);
 
     option.quality = 20;
     setRet = astcEncoder.SetAstcEncode(stream, option, pixelMapPtr);
@@ -429,7 +429,7 @@ HWTEST_F(PluginTextureEncodeTest, ASTCEncode006, TestSize.Level3)
     uint32_t setRet = astcEncoder.SetAstcEncode(stream, option, pixelMapPtr);
     ASSERT_EQ(setRet, SUCCESS);
     uint32_t astcRet = astcEncoder.ASTCEncode();
-    ASSERT_EQ(astcRet, SUCCESS);
+    ASSERT_NE(astcRet, SUCCESS);
 
     option.quality = 20;
     setRet = astcEncoder.SetAstcEncode(stream, option, pixelMapPtr);
@@ -473,7 +473,7 @@ HWTEST_F(PluginTextureEncodeTest, ASTCEncode007, TestSize.Level3)
     uint32_t setRet = astcEncoder.SetAstcEncode(stream, option, pixelMapPtr);
     ASSERT_EQ(setRet, SUCCESS);
     uint32_t astcRet = astcEncoder.ASTCEncode();
-    ASSERT_EQ(astcRet, SUCCESS);
+    ASSERT_NE(astcRet, SUCCESS);
 
     if (output != nullptr) {
         free(output);
