@@ -970,8 +970,8 @@ HWTEST_F(PostProcTest, CenterDisplayTest001, TestSize.Level3)
     targetWidth = 100;
     targetHeight = 100;
     InitializationOptions opts;
-    opts.size.width = width;
-    opts.size.height = height;
+    opts.size.width = srcWidth;
+    opts.size.height = srcHeight;
     opts.pixelFormat = PixelFormat::ARGB_8888;
     opts.allocatorType = AllocatorType::HEAP_ALLOC;
     std::unique_ptr<PixelMap> pixelMap1 = PixelMap::Create(opts);

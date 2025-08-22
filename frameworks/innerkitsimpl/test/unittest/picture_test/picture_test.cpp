@@ -44,7 +44,6 @@ static const std::string IMAGE_INPUT_JPEG_PATH = "/data/local/tmp/image/test_met
 static const std::string IMAGE_INPUT_EXIF_JPEG_PATH = "/data/local/tmp/image/test_exif.jpg";
 static const int32_t SIZE_WIDTH = 2;
 static const int32_t SIZE_HEIGHT = 3;
-static const int32_t SIZE_STRIDE = 8;
 static const int32_t BUFFER_LENGTH = 8;
 
 static std::shared_ptr<PixelMap> CreatePixelMap()
