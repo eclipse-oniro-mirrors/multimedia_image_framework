@@ -36,8 +36,8 @@ public:
 
     map<string, PropertyValue> GetPropertiesSync(array_view<string> key);
     void SetPropertiesSync(map_view<string, PropertyValue> records);
-    map<string, PropertyValue> GetAllPropertiesSync();
-    Metadata CloneSync();
+    optional<map<string, PropertyValue>> GetAllPropertiesSync();
+    optional<Metadata> CloneSync();
 
     void Release();
 

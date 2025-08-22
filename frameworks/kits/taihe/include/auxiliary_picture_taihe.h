@@ -36,11 +36,11 @@ public:
     }
     
     void WritePixelsFromBufferSync(array_view<uint8_t> data);
-    array<uint8_t> ReadPixelsToBufferSync();
-    AuxiliaryPictureType GetType();
+    optional<array<uint8_t>> ReadPixelsToBufferSync();
+    optional<AuxiliaryPictureType> GetType();
     void SetMetadataSync(MetadataType metadataType, weak::Metadata metadata);
-    Metadata GetMetadataSync(MetadataType metadataType);
-    AuxiliaryPictureInfo GetAuxiliaryPictureInfo();
+    optional<Metadata> GetMetadataSync(MetadataType metadataType);
+    optional<AuxiliaryPictureInfo> GetAuxiliaryPictureInfo();
     void SetAuxiliaryPictureInfo(AuxiliaryPictureInfo const& info);
     void Release();
     
