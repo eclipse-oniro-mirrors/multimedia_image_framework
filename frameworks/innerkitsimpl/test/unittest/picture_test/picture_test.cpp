@@ -44,18 +44,16 @@ static const std::string IMAGE_INPUT_JPEG_PATH = "/data/local/tmp/image/test_met
 static const std::string IMAGE_INPUT_EXIF_JPEG_PATH = "/data/local/tmp/image/test_exif.jpg";
 static const int32_t SIZE_WIDTH = 2;
 static const int32_t SIZE_HEIGHT = 3;
-static const int32_t SIZE_STRIDE = 8;
-static const int32_t BUFFER_LENGTH = 25;
+static const int32_t BUFFER_LENGTH = 8;
 
 static std::shared_ptr<PixelMap> CreatePixelMap()
 {
-    const uint32_t color[BUFFER_LENGTH] = { 0x80, 0x02, 0x04, 0x08, 0x40, 0x02, 0x04, 0x08,
-        0x80, 0x02, 0x04, 0x08, 0x40, 0x02, 0x04, 0x80, 0x02, 0x04, 0x08, 0x40, 0x02, 0x04, 0x08, 0x80, 0x02 };
+    const uint32_t color[BUFFER_LENGTH] = { 0x80, 0x02, 0x04, 0x08, 0x40, 0x02, 0x04, 0x08};
     InitializationOptions options;
     options.size.width = SIZE_WIDTH;
     options.size.height = SIZE_HEIGHT;
-    options.srcPixelFormat = PixelFormat::RGBA_8888;
-    options.pixelFormat = PixelFormat::RGBA_8888;
+    options.srcPixelFormat = PixelFormat::UNKNOWN;
+    options.pixelFormat = PixelFormat::UNKNOWN;
     options.alphaType = AlphaType::IMAGE_ALPHA_TYPE_OPAQUE;
     std::unique_ptr<PixelMap> tmpPixelMap = PixelMap::Create(color, BUFFER_LENGTH, options);
     std::shared_ptr<PixelMap> pixelmap = std::move(tmpPixelMap);
@@ -81,12 +79,6 @@ static std::shared_ptr<AuxiliaryPicture> CreateAuxiliaryPicture(AuxiliaryPicture
     }
     Size size = {SIZE_WIDTH, SIZE_HEIGHT};
     std::unique_ptr<AuxiliaryPicture> tmpAuxiliaryPicture = AuxiliaryPicture::Create(pixelmap, type, size);
-    AuxiliaryPictureInfo auxiliaryPictureInfo;
-    auxiliaryPictureInfo.size = size;
-    auxiliaryPictureInfo.pixelFormat = PixelFormat::RGBA_8888;
-    auxiliaryPictureInfo.rowStride = SIZE_STRIDE;
-    auxiliaryPictureInfo.auxiliaryPictureType = AuxiliaryPictureType::GAINMAP;
-    tmpAuxiliaryPicture->SetAuxiliaryPictureInfo(auxiliaryPictureInfo);
     EXPECT_NE(tmpAuxiliaryPicture, nullptr);
     if (tmpAuxiliaryPicture == nullptr) {
         return nullptr;
@@ -706,7 +698,7 @@ HWTEST_F(PictureTest, SetExifMetadataByExifMetadataTest001, TestSize.Level2)
 /**
  * @tc.name: SetExifMetadataTest001
  * @tc.desc: test the SetExifMetadata of Picture
- * @tc.type: FUNC
+ *           when surfaceBuffer is nullptr,return ERR_IMAGE_INVALID_PARAMETER
  */
 HWTEST_F(PictureTest, SetExifMetadataTest001, TestSize.Level3)
 {
@@ -721,7 +713,7 @@ HWTEST_F(PictureTest, SetExifMetadataTest001, TestSize.Level3)
 /**
  * @tc.name: SetExifMetadataTest002
  * @tc.desc: test the SetExifMetadata of Picture
- * @tc.type: FUNC
+ *           when surfaceBuffer->getExtraData() is nullptr,return ERR_IMAGE_INVALID_PARAMETER
  */
 HWTEST_F(PictureTest, SetExifMetadataTest002, TestSize.Level3)
 {
