@@ -132,17 +132,27 @@ uint32_t ImageImpl::GetComponent(int32_t componentType, CRetComponent* ret)
     ret->componentType = componentType;
     ret->rowStride = nativePtr->rowStride;
     ret->pixelStride = nativePtr->pixelStride;
-    int64_t len = static_cast<int64_t>(nativePtr->raw.size());
-    ret->byteBuffer = static_cast<uint8_t*>(malloc(len + 1));
+    uint8_t *buffer = nullptr;
+    if (nativePtr->virAddr != nullptr) {
+        buffer = nativePtr->virAddr;
+    } else {
+        buffer = nativePtr->raw.data();
+    }
+
+    if (buffer == nullptr || nativePtr->size == 0) {
+        IMAGE_LOGE("Invalid buffer");
+        return ERR_IMAGE_INIT_ABNORMAL;
+    }
+    int64_t len = static_cast<int64_t>(nativePtr->size);
+    ret->byteBuffer = static_cast<uint8_t*>(malloc(len));
     if (ret->byteBuffer == nullptr) {
         IMAGE_LOGE("[ImageImpl] GetComponent failed to malloc.");
         return ERR_IMAGE_INIT_ABNORMAL;
     }
     for (int i = 0; i < len; i++) {
-        ret->byteBuffer[i] = nativePtr->raw[i];
+        ret->byteBuffer[i] = buffer[i];
     }
-    ret->byteBuffer[len] = '\0';
-    ret->bufSize = len + 1;
+    ret->bufSize = len;
     return SUCCESS;
 }
 
