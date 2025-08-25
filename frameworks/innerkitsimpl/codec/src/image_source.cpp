@@ -173,8 +173,6 @@ constexpr int32_t SHARE_MEMORY_ALLOC = 2;
 constexpr int32_t AUTO_ALLOC = 0;
 static constexpr uint8_t JPEG_SOI[] = { 0xFF, 0xD8, 0xFF };
 constexpr uint8_t PIXEL_BYTES = 4;
-static constexpr int32_t THUMBNAIL_SHORT_SIDE_SIZE = 350;
-static constexpr int32_t THUMBNAIL_LONG_SIDE_MULTIPLIER = 3;
 
 struct StreamInfo {
     uint8_t* buffer = nullptr;
@@ -5063,11 +5061,6 @@ void ImageSource::DecodeHeifAuxiliaryPictures(
     mainInfo.hdrType = sourceHdrType_;
     picture->GetMainPixel()->GetImageInfo(mainInfo.imageInfo);
     for (auto& auxType : auxTypes) {
-        if (auxType == AuxiliaryPictureType::THUMBNAIL) {
-            IMAGE_LOGI("%{public}s: Set thumbnail for Picture", __func__);
-            SetThumbnailForPicture(picture, IMAGE_HEIF_FORMAT);
-            continue;
-        }
         if (!mainDecoder_->CheckAuxiliaryMap(auxType)) {
             IMAGE_LOGE("The auxiliary picture type does not exist! Type: %{public}d", auxType);
             continue;
@@ -5157,66 +5150,6 @@ bool ImageSource::CheckJpegSourceStream(StreamInfo &streamInfo)
     return true;
 }
 
-void ImageSource::SetThumbnailForPicture(std::unique_ptr<Picture> &picture, const std::string &mimeType)
-{
-    uint32_t auxErrorCode = ERROR;
-    if (picture == nullptr || picture->GetMainPixel() == nullptr) {
-        IMAGE_LOGE("%{public}s failed. picture or mainPixelMap is nullptr", __func__);
-        return;
-    }
-    DecodingOptionsForThumbnail opts;
-    std::shared_ptr<PixelMap> pixelMap = CreateThumbnail(opts, auxErrorCode);
-    std::shared_ptr<AuxiliaryPicture> auxPicture = AuxiliaryPicture::Create(pixelMap, AuxiliaryPictureType::THUMBNAIL);
-    if (auxPicture == nullptr || auxPicture->GetContentPixel() == nullptr) {
-        IMAGE_LOGE("%{public}s failed. Create thumbnail auxiliary picture failed", __func__);
-        return;
-    }
-    AuxiliaryPictureInfo auxPictureInfo = auxPicture->GetAuxiliaryPictureInfo();
-    if (mimeType == IMAGE_JPEG_FORMAT) {
-        IMAGE_LOGI("%{public}s set jpeg tag for auxiliary info", __func__);
-        auxPictureInfo.jpegTagName = AUXILIARY_TAG_THUMBNAIL;
-    }
-    auxPicture->SetAuxiliaryPictureInfo(auxPictureInfo);
-    auxPicture->GetContentPixel()->SetEditable(true);
-    picture->SetAuxiliaryPicture(auxPicture);
-}
-
-void ImageSource::DecodeSingleJpegAuxiliaryPicture(std::unique_ptr<Picture> &picture, MainPictureInfo &mainInfo,
-    const SingleJpegImage &auxInfo, StreamInfo &streamInfo)
-{
-    uint32_t auxErrorCode = ERROR;
-    if (picture == nullptr || streamInfo.buffer == nullptr || streamInfo.GetCurrentSize() == 0) {
-        IMAGE_LOGE("%{public}s failed. picture or streamBuffer is invalid", __func__);
-        return;
-    }
-    if (ImageUtils::HasOverflowed(auxInfo.offset, auxInfo.size) ||
-        auxInfo.offset + auxInfo.size > streamInfo.GetCurrentSize()) {
-        IMAGE_LOGW("Invalid auxType: %{public}d, offset: %{public}u, size: %{public}u, streamSize: %{public}u",
-            auxInfo.auxType, auxInfo.offset, auxInfo.size, streamInfo.GetCurrentSize());
-        return;
-    }
-    IMAGE_LOGI("Jpeg auxiliary picture has found. Type: %{public}d", auxInfo.auxType);
-    std::unique_ptr<InputDataStream> auxStream =
-        BufferSourceStream::CreateSourceStream((streamInfo.GetCurrentAddress() + auxInfo.offset), auxInfo.size);
-    if (auxStream == nullptr) {
-        IMAGE_LOGE("Create auxiliary stream fail, auxiliary offset is %{public}u", auxInfo.offset);
-        return;
-    }
-    auto auxDecoder = std::unique_ptr<AbsImageDecoder>(
-        DoCreateDecoder(InnerFormat::IMAGE_EXTENDED_CODEC, pluginServer_, *auxStream, auxErrorCode));
-    auto auxPicture = AuxiliaryGenerator::GenerateJpegAuxiliaryPicture(
-        mainInfo, auxInfo.auxType, auxStream, auxDecoder, auxErrorCode);
-    if (auxPicture != nullptr) {
-        AuxiliaryPictureInfo auxPictureInfo = auxPicture->GetAuxiliaryPictureInfo();
-        auxPictureInfo.jpegTagName = auxInfo.auxTagName;
-        auxPicture->SetAuxiliaryPictureInfo(auxPictureInfo);
-        auxPicture->GetContentPixel()->SetEditable(true);
-        picture->SetAuxiliaryPicture(auxPicture);
-    } else {
-        IMAGE_LOGE("Generate jpeg auxiliary picture failed!, error: %{public}d", auxErrorCode);
-    }
-}
-
 void ImageSource::DecodeJpegAuxiliaryPicture(
     std::set<AuxiliaryPictureType> &auxTypes, std::unique_ptr<Picture> &picture, uint32_t &errorCode)
 {
@@ -5235,235 +5168,34 @@ void ImageSource::DecodeJpegAuxiliaryPicture(
         if (auxTypes.find(auxInfo.auxType) == auxTypes.end()) {
             continue;
         }
-        DecodeSingleJpegAuxiliaryPicture(picture, mainInfo, auxInfo, streamInfo);
-    }
-    SetThumbnailForPicture(picture, IMAGE_JPEG_FORMAT);
-}
-
-static void SetThumbnailDecodeOptions(std::unique_ptr<AbsImageDecoder> &thumbDecoder,
-    const DecodingOptionsForThumbnail &opts, PlImageInfo &plInfo, uint32_t &errorCode)
-{
-    if (thumbDecoder == nullptr) {
-        IMAGE_LOGE("%{public}s: thumbDecoder is nullptr!", __func__);
-        errorCode = ERR_IMAGE_INVALID_PARAMETER;
-        return;
-    }
-    if (opts.desiredSize.width < 0 || opts.desiredSize.height < 0) {
-        IMAGE_LOGE("%{public}s: invalid opts.desiredSize: (%{public}d,%{public}d)",
-            __func__, opts.desiredSize.width, opts.desiredSize.height);
-        errorCode = ERR_IMAGE_INVALID_PARAMETER;
-        return;
-    }
-    Size imageSize{};
-    errorCode = thumbDecoder->GetImageSize(FIRST_FRAME, imageSize);
-    if (errorCode != SUCCESS || !IsSizeVailed(imageSize)) {
-        IMAGE_LOGE("%{public}s: Get image size failed!", __func__);
-        return;
-    }
-
-    PixelDecodeOptions plOptions;
-    plOptions.desiredSize = imageSize;
-    plOptions.desiredPixelFormat = PixelFormat::RGBA_8888;
-    errorCode = thumbDecoder->SetDecodeOptions(FIRST_FRAME, plOptions, plInfo);
-    if (errorCode != SUCCESS) {
-        IMAGE_LOGE("%{public}s: Set decode options failed!", __func__);
-        return;
-    }
-}
-
-static void CalculateDefaultScaleFactor(Size &size, const int32_t &shortSideSize,
-    const int32_t &longSideMultiplier)
-{
-    if (!IsSizeVailed(size)) {
-        IMAGE_LOGW("Default size is invalid: (%{public}d,%{public}d)", size.width, size.height);
-        return;
-    }
-    if (ImageUtils::CheckFloatMulOverflow(shortSideSize, longSideMultiplier)) {
-        IMAGE_LOGW("%{public}s: shortSideSize * longSideMultiplier overflow!", __func__);
-        return;
-    }
-    float longSideBoundary = static_cast<float>(shortSideSize) * longSideMultiplier;
-    float xScale = 1.0f;
-    float yScale = 1.0f;
-    if (size.width < size.height) {
-        xScale = static_cast<float>(shortSideSize) / size.width;
-        if (ImageUtils::CheckFloatMulOverflow(size.height, xScale)) {
-            IMAGE_LOGW("%{public}s: height * xScale overflow!", __func__);
-            return;
+        if (ImageUtils::HasOverflowed(auxInfo.offset, auxInfo.size)
+            || auxInfo.offset + auxInfo.size > streamInfo.GetCurrentSize()) {
+            IMAGE_LOGW("Invalid auxType: %{public}d, offset: %{public}u, size: %{public}u, streamSize: %{public}u",
+                auxInfo.auxType, auxInfo.offset, auxInfo.size, streamInfo.GetCurrentSize());
+            continue;
         }
-        yScale = (size.height * xScale > longSideBoundary) ? longSideBoundary / size.height : xScale;
-        size.width = shortSideSize;
-        size.height = (size.height * xScale > longSideBoundary) ? longSideBoundary : size.height * xScale;
-    } else {
-        yScale = static_cast<float>(shortSideSize) / size.height;
-        if (ImageUtils::CheckFloatMulOverflow(size.width, yScale)) {
-            IMAGE_LOGW("%{public}s: width * yScale overflow!", __func__);
-            return;
+        IMAGE_LOGI("Jpeg auxiliary picture has found. Type: %{public}d", auxInfo.auxType);
+        std::unique_ptr<InputDataStream> auxStream =
+            BufferSourceStream::CreateSourceStream((streamInfo.GetCurrentAddress() + auxInfo.offset), auxInfo.size);
+        if (auxStream == nullptr) {
+            IMAGE_LOGE("Create auxiliary stream fail, auxiliary offset is %{public}u", auxInfo.offset);
+            continue;
         }
-        xScale = (size.width * yScale > longSideBoundary) ? longSideBoundary / size.width : yScale;
-        size.width = (size.width * yScale > longSideBoundary) ? longSideBoundary : size.width * yScale;
-        size.height = shortSideSize;
-    }
-}
-
-static void ScaleThumbnail(std::unique_ptr<PixelMap> &pixelMap, const Size &desiredSize, bool useDefaultScale = false)
-{
-    if (pixelMap == nullptr) {
-        IMAGE_LOGW("%{public}s: pixelMap is nullptr!", __func__);
-        return;
-    }
-    ImageInfo imageInfo;
-    pixelMap->GetImageInfo(imageInfo);
-    Size &size = imageInfo.size;
-    if (!IsSizeVailed(size)) {
-        IMAGE_LOGW("%{public}s: pixelMap size is invalid, size: (%{public}d,%{public}d)",
-            __func__, size.width, size.height);
-        return;
-    }
-    PostProc postProc;
-    if (IsSizeVailed(desiredSize)) {
-        if (!postProc.ScalePixelMapWithGPU(*(pixelMap.get()), desiredSize, AntiAliasingOption::HIGH, true)) {
-            IMAGE_LOGE("Fail to scale thumbnail, ScalePixelMapWithGPU failed, desiredSize: %{public}d * %{public}d",
-                desiredSize.width, desiredSize.height);
-            return;
-        }
-        if (!postProc.CenterScale(desiredSize, *(pixelMap.get()))) {
-            IMAGE_LOGE("CenterScale failed");
-            return;
-        }
-    } else if (useDefaultScale) {
-        CalculateDefaultScaleFactor(size, THUMBNAIL_SHORT_SIDE_SIZE, THUMBNAIL_LONG_SIDE_MULTIPLIER);
-        if (!postProc.ScalePixelMapWithGPU(*(pixelMap.get()), size, AntiAliasingOption::HIGH, true)) {
-            IMAGE_LOGE("Fail to scale thumbnail, ScalePixelMapWithGPU failed, size: %{public}d * %{public}d",
-                size.width, size.height);
-            return;
-        }
-        if (!postProc.CenterScale(size, *(pixelMap.get()))) {
-            IMAGE_LOGE("CenterScale failed");
-            return;
+        auto auxDecoder = std::unique_ptr<AbsImageDecoder>(
+            DoCreateDecoder(InnerFormat::IMAGE_EXTENDED_CODEC, pluginServer_, *auxStream, errorCode));
+        uint32_t auxErrorCode = ERROR;
+        auto auxPicture = AuxiliaryGenerator::GenerateJpegAuxiliaryPicture(
+            mainInfo, auxInfo.auxType, auxStream, auxDecoder, auxErrorCode);
+        if (auxPicture != nullptr && auxPicture->GetContentPixel() != nullptr) {
+            AuxiliaryPictureInfo auxPictureInfo = auxPicture->GetAuxiliaryPictureInfo();
+            auxPictureInfo.jpegTagName = auxInfo.auxTagName;
+            auxPicture->SetAuxiliaryPictureInfo(auxPictureInfo);
+            auxPicture->GetContentPixel()->SetEditable(true);
+            picture->SetAuxiliaryPicture(auxPicture);
+        } else {
+            IMAGE_LOGE("Generate jpeg auxiliary picture failed!, error: %{public}d", auxErrorCode);
         }
     }
-    pixelMap->GetImageInfo(imageInfo);
-    IMAGE_LOGI("%{public}s: desiredSize: (%{public}d,%{public}d), scaledSize:(%{public}d,%{public}d)",
-        __func__, desiredSize.width, desiredSize.height, size.width, size.height);
-}
-
-std::unique_ptr<PixelMap> ImageSource::DecodeHeifParserThumbnail(const DecodingOptionsForThumbnail &opts,
-    DecodeContext &context, const std::string &format, uint32_t &errorCode)
-{
-    if (mainDecoder_ == nullptr) {
-        IMAGE_LOGE("%{public}s: mainDecoder_ is nullptr!", __func__);
-        return nullptr;
-    }
-    if (!mainDecoder_->CheckAuxiliaryMap(AuxiliaryPictureType::THUMBNAIL)) {
-        IMAGE_LOGE("%{public}s: heifParser has not thumbnail Images", __func__);
-        return nullptr;
-    }
-    SetThumbnailDecodeOptions(mainDecoder_, opts, context.info, errorCode);
-    if (errorCode != SUCCESS) {
-        IMAGE_LOGE("%{public}s: SetThumbnailDecodeOptions failed!, errorCode: %{public}u", __func__, errorCode);
-        return nullptr;
-    }
-    if (!mainDecoder_->DecodeHeifAuxiliaryMap(context, AuxiliaryPictureType::THUMBNAIL)) {
-        errorCode = ERR_IMAGE_DECODE_FAILED;
-        IMAGE_LOGE("%{public}s: SetDecodeOptions failed!", __func__);
-        return nullptr;
-    }
-
-    std::unique_ptr<PixelMap> pixelMap =
-        AuxiliaryGenerator::CreatePixelMapByContext(context, mainDecoder_, format, errorCode);
-    ScaleThumbnail(pixelMap, opts.desiredSize);
-    return pixelMap;
-}
-
-std::unique_ptr<PixelMap> ImageSource::GenerateThumbnail(const DecodingOptionsForThumbnail &opts, uint32_t &errorCode)
-{
-    DecodeOptions tmpOpts;
-    tmpOpts.desiredDynamicRange = DecodeDynamicRange::SDR;
-    std::unique_ptr<PixelMap> pixelMap = CreatePixelMap(tmpOpts, errorCode);
-    if (errorCode != SUCCESS || pixelMap == nullptr) {
-        IMAGE_LOGE("%{public}s: CreatePixelMap failed!", __func__);
-        return nullptr;
-    }
-    ScaleThumbnail(pixelMap, opts.desiredSize, true);
-    IMAGE_LOGI("%{public}s: desiredSize: (%{public}d, %{public}d), after scale size: (%{public}d, %{public}d)",
-        __func__, opts.desiredSize.width, opts.desiredSize.height, pixelMap->GetWidth(), pixelMap->GetHeight());
-    return pixelMap;
-}
-
-std::unique_ptr<PixelMap> ImageSource::DecodeExifThumbnail(const DecodingOptionsForThumbnail &opts,
-    DecodeContext &context, const std::string &format, uint32_t &errorCode)
-{
-    uint8_t *data = nullptr;
-    uint32_t dataSize = 0;
-    errorCode = CreatExifMetadataByImageSource();
-    if (errorCode != SUCCESS || exifMetadata_ == nullptr || !exifMetadata_->GetThumbnail(data, dataSize)) {
-        IMAGE_LOGW("%{public}s: Exif or exif-thumbnail does not exist!", __func__);
-        errorCode = ERR_MEDIA_NO_EXIF_DATA;
-        return nullptr;
-    }
-
-    std::unique_ptr<InputDataStream> thumbStream = BufferSourceStream::CreateSourceStream(data, dataSize);
-    if (thumbStream == nullptr) {
-        IMAGE_LOGE("Create thumbnail stream fail, thumbnail dataSize is %{public}u", dataSize);
-        return nullptr;
-    }
-    auto thumbDecoder = std::unique_ptr<AbsImageDecoder>(
-        DoCreateDecoder(InnerFormat::IMAGE_EXTENDED_CODEC, pluginServer_, *thumbStream, errorCode));
-    if (errorCode != SUCCESS || thumbDecoder == nullptr) {
-        IMAGE_LOGE("Create thumbnail decoder fail!");
-        return nullptr;
-    }
-    SetThumbnailDecodeOptions(thumbDecoder, opts, context.info, errorCode);
-    if (errorCode != SUCCESS) {
-        IMAGE_LOGE("%{public}s: SetThumbnailDecodeOptions failed!, errorCode: %{public}u", __func__, errorCode);
-        return nullptr;
-    }
-
-    ImageTrace imageTrace("%{public}s: size:(%d, %d)", __func__, context.info.size.width, context.info.size.height);
-    errorCode = thumbDecoder->Decode(FIRST_FRAME, context);
-    if (errorCode != SUCCESS) {
-        IMAGE_LOGE("Decode thumbnail failed!");
-        FreeContextBuffer(context.freeFunc, context.allocatorType, context.pixelsBuffer);
-        return nullptr;
-    }
-
-    std::unique_ptr<PixelMap> pixelMap =
-        AuxiliaryGenerator::CreatePixelMapByContext(context, thumbDecoder, format, errorCode);
-    ScaleThumbnail(pixelMap, opts.desiredSize);
-    return pixelMap;
-}
-
-std::unique_ptr<PixelMap> ImageSource::CreateThumbnail(const DecodingOptionsForThumbnail &opts, uint32_t &errorCode)
-{
-    if (!ParseHdrType()) {
-        IMAGE_LOGE("%{public}s: Init mainDecoder_ failed!", __func__);
-        errorCode = ERR_IMAGE_PLUGIN_CREATE_FAILED;
-        return nullptr;
-    }
-
-    DecodeContext context;
-    context.allocatorType = AllocatorType::DMA_ALLOC;
-    std::string format = GetExtendedCodecMimeType(mainDecoder_.get());
-    std::unique_ptr<PixelMap> pixelMap = nullptr;
-    if (format == IMAGE_HEIF_FORMAT || format == IMAGE_HEIC_FORMAT) {
-        pixelMap = DecodeHeifParserThumbnail(opts, context, format, errorCode);
-        if (errorCode == SUCCESS && pixelMap != nullptr) {
-            IMAGE_LOGI("%{public}s: DecodeHeifParserThumbnail success", __func__);
-            return pixelMap;
-        } else if (errorCode == ERR_IMAGE_INVALID_PARAMETER) {
-            IMAGE_LOGE("%{public}s: DecodeHeifParserThumbnail failed with parameter invaild", __func__);
-            return nullptr;
-        }
-        IMAGE_LOGW("%{public}s: DecodeHeifParserThumbnail failed, get thumbnail with other method", __func__);
-    }
-
-    pixelMap = DecodeExifThumbnail(opts, context, format, errorCode);
-    if (opts.needGenerate && (errorCode != SUCCESS || pixelMap == nullptr)) {
-        IMAGE_LOGW("%{public}s: DecodeExifThumbnail failed, generate thumbnail by primary image", __func__);
-        return GenerateThumbnail(opts, errorCode);
-    }
-    return pixelMap;
 }
 #endif
 

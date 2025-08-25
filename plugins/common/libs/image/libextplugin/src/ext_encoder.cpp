@@ -206,7 +206,6 @@ static const std::map<AuxiliaryPictureType, std::string> DEFAULT_AUXILIARY_TAG_M
     {AuxiliaryPictureType::UNREFOCUS_MAP, AUXILIARY_TAG_UNREFOCUS_MAP},
     {AuxiliaryPictureType::LINEAR_MAP, AUXILIARY_TAG_LINEAR_MAP},
     {AuxiliaryPictureType::FRAGMENT_MAP, AUXILIARY_TAG_FRAGMENT_MAP},
-    {AuxiliaryPictureType::THUMBNAIL, AUXILIARY_TAG_THUMBNAIL},
 };
 
 static const uint8_t NUM_3 = 3;
@@ -1960,8 +1959,7 @@ void ExtEncoder::EncodeJpegAuxiliaryPictures(SkWStream& skStream)
     for (AuxiliaryPictureType auxType : auxTypes) {
         auto auxPicture = picture_->GetAuxiliaryPicture(auxType);
         // Gainmap has been encoded before
-        if (auxPicture == nullptr || auxType == AuxiliaryPictureType::GAINMAP ||
-            auxType == AuxiliaryPictureType::THUMBNAIL) {
+        if (auxPicture == nullptr || auxType == AuxiliaryPictureType::GAINMAP) {
             continue;
         }
         IMAGE_LOGI("%{public}s try to encode auxiliary picture type: %{public}d", __func__, auxType);
