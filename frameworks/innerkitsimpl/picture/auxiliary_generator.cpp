@@ -117,7 +117,7 @@ static void FreeContextBuffer(const Media::CustomFreePixelMap &func, AllocatorTy
 #endif
 }
 
-ImageInfo AuxiliaryGenerator::MakeImageInfo(const Size &size, PixelFormat format, AlphaType alphaType,
+static ImageInfo MakeImageInfo(const Size &size, PixelFormat format, AlphaType alphaType,
     ColorSpace colorSpace, const std::string &encodedFormat)
 {
     ImageInfo info;
@@ -182,7 +182,7 @@ static void SetNonDmaYuvInfo(int32_t width, int32_t height, YUVDataInfo &yuvInfo
     yuvInfo.uvOffset = static_cast<uint32_t>(width) * static_cast<uint32_t>(height);
 }
 
-static void TrySetYUVDataInfo(std::unique_ptr<PixelMap> &pixelMap)
+static void TrySetYUVDataInfo(std::shared_ptr<PixelMap> &pixelMap)
 {
     if (pixelMap == nullptr) {
         IMAGE_LOGE("%{public}s pixelMap is nullptr", __func__);
@@ -204,26 +204,26 @@ static void TrySetYUVDataInfo(std::unique_ptr<PixelMap> &pixelMap)
     pixelMap->SetImageYUVInfo(info);
 }
 
-std::unique_ptr<PixelMap> AuxiliaryGenerator::CreatePixelMapByContext(DecodeContext &context,
+static std::shared_ptr<PixelMap> CreatePixelMapByContext(DecodeContext &context,
     std::unique_ptr<AbsImageDecoder> &decoder, const std::string &encodedFormat, uint32_t &errorCode)
 {
-    std::unique_ptr<PixelMap> pixelMap;
+    std::shared_ptr<PixelMap> pixelMap;
     if (ImageSource::IsYuvFormat(context.info.pixelFormat)) {
 #ifdef EXT_PIXEL
-        pixelMap = std::make_unique<PixelYuvExt>();
+        pixelMap = std::make_shared<PixelYuvExt>();
 #else
-        pixelMap = std::make_unique<PixelYuv>();
+        pixelMap = std::make_shared<PixelYuv>();
 #endif
     } else {
-        pixelMap = std::make_unique<PixelMap>();
+        pixelMap = std::make_shared<PixelMap>();
     }
     if (pixelMap == nullptr) {
         errorCode = ERR_IMAGE_ADD_PIXEL_MAP_FAILED;
         return nullptr;
     }
 
-    ImageInfo imageinfo = AuxiliaryGenerator::MakeImageInfo(context.outInfo.size, context.info.pixelFormat,
-        context.info.alphaType, context.colorSpace, encodedFormat);
+    ImageInfo imageinfo = MakeImageInfo(context.outInfo.size, context.info.pixelFormat,
+                                        context.info.alphaType, context.colorSpace, encodedFormat);
     pixelMap->SetImageInfo(imageinfo, true);
 
     PixelMapAddrInfos addrInfos;
@@ -375,8 +375,7 @@ static std::unique_ptr<AuxiliaryPicture> GenerateAuxiliaryPicture(const MainPict
     }
 
     std::string encodedFormat = ImageUtils::IsAuxiliaryPictureEncoded(type) ? format : "";
-    std::shared_ptr<PixelMap> pixelMap = AuxiliaryGenerator::CreatePixelMapByContext(
-        context, extDecoder, encodedFormat, errorCode);
+    std::shared_ptr<PixelMap> pixelMap = CreatePixelMapByContext(context, extDecoder, encodedFormat, errorCode);
     bool cond = pixelMap == nullptr || errorCode != SUCCESS;
     CHECK_ERROR_RETURN_RET_LOG(cond, nullptr, "%{public}s CreatePixelMapByContext failed!", __func__);
     auto auxPicture = AuxiliaryPicture::Create(pixelMap, type, context.outInfo.size);

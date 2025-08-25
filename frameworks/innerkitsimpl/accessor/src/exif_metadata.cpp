@@ -323,17 +323,6 @@ std::shared_ptr<ExifMetadata> ExifMetadata::Clone()
     return exifDataPtr;
 }
 
-bool ExifMetadata::GetThumbnail(uint8_t *&data, uint32_t &size)
-{
-    data = reinterpret_cast<uint8_t *>(exifData_->data);
-    size = static_cast<uint32_t>(exifData_->size);
-    IMAGE_LOGD("%{public}s: size: %{public}u", __func__, size);
-    if (data == nullptr || size == 0) {
-        return false;
-    }
-    return true;
-}
-
 ExifEntry *ExifMetadata::CreateEntry(const std::string &key, const ExifTag &tag, const size_t valueLen)
 {
     ExifEntry *entry = exif_entry_new();

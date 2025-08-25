@@ -101,7 +101,6 @@ constexpr int32_t FAULT_API_VERSION = -1;
 constexpr int32_t BUNDLE_MGR_SERVICE_SYS_ABILITY_ID = 401;
 constexpr int32_t BASE_EVEN_DIVISOR = 2;
 constexpr float EPSILON = 1e-6;
-constexpr float FLOAT_1 = 1.0f;
 constexpr int MAX_DIMENSION = INT32_MAX >> 2;
 static bool g_pluginRegistered = false;
 static const uint8_t NUM_0 = 0;
@@ -558,18 +557,6 @@ bool ImageUtils::CheckMulOverflow(int32_t width, int32_t height, int32_t bytesPe
     int32_t bufferSize = rectSize * bytesPerPixel;
     if ((bufferSize / bytesPerPixel) != rectSize) {
         IMAGE_LOGE("bytesPerPixel overflow!");
-        return true;
-    }
-    return false;
-}
-
-bool ImageUtils::CheckFloatMulOverflow(float num1, float num2)
-{
-    if (fabs(num1) <= FLOAT_1 || fabs(num2) <= FLOAT_1) {
-        return false;
-    }
-    if (fabs(num1) > std::numeric_limits<float>::max() / fabs(num2)) {
-        IMAGE_LOGE("num1 * num2 overflow! num1:%{public}f, num2:%{public}f", num1, num2);
         return true;
     }
     return false;
@@ -1087,16 +1074,14 @@ bool ImageUtils::IsMetadataTypeSupported(MetadataType metadataType)
     }
 }
 
-const std::set<AuxiliaryPictureType>& ImageUtils::GetAllAuxiliaryPictureType()
+const std::set<AuxiliaryPictureType> ImageUtils::GetAllAuxiliaryPictureType()
 {
-    static const std::set<AuxiliaryPictureType> auxTypes = [] {
-        std::set<AuxiliaryPictureType> set;
-        for (int32_t type = static_cast<int32_t>(AuxiliaryPictureType::GAINMAP);
-             type < static_cast<int32_t>(AuxiliaryPictureType::MAX_AUXILIARY_PICTURE_TYPE); ++type) {
-            set.insert(static_cast<AuxiliaryPictureType>(type));
-        }
-        return set;
-    }();
+    static const std::set<AuxiliaryPictureType> auxTypes = {
+        AuxiliaryPictureType::GAINMAP,
+        AuxiliaryPictureType::DEPTH_MAP,
+        AuxiliaryPictureType::UNREFOCUS_MAP,
+        AuxiliaryPictureType::LINEAR_MAP,
+        AuxiliaryPictureType::FRAGMENT_MAP};
     return auxTypes;
 }
 
