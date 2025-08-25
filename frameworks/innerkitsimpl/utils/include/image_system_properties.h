@@ -39,7 +39,6 @@ public:
     static bool GetNoPaddingEnabled();
     static bool GetPngSampleDecodeEnabled();
     static bool UseGPUScalingCapabilities();
-    static bool IsSupportOpaqueOpt();
 private:
     ImageSystemProperties() = default;
 };

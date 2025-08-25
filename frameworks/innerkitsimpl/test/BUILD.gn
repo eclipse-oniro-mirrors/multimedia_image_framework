@@ -226,7 +226,6 @@ ohos_unittest("imagepixelmaptest") {
     "//foundation/multimedia/image_framework/adapter/frameworks/bitmapconverter/native/include",
     "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/common/include",
     "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/stream/include",
-    "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/utils/include",
   ]
   cflags = [ "-DIMAGE_COLORSPACE_FLAG" ]
   sources = [
@@ -238,7 +237,6 @@ ohos_unittest("imagepixelmaptest") {
   deps = [
     #    "//foundation/multimedia/image_framework/adapter/frameworks/bitmapconverter/native:bitmapconverter",
     "//foundation/multimedia/image_framework/interfaces/innerkits:image_native",
-    "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/utils:image_utils",
   ]
 
   external_deps = [

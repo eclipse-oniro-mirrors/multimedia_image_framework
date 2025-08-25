@@ -20,7 +20,6 @@
 #include <fstream>
 #include <sstream>
 #include <string>
-#include <set>
 
 #include <parameter.h>
 #include <parameters.h>
@@ -238,9 +237,5 @@ bool ImageSystemProperties::GetPngSampleDecodeEnabled()
 #endif
 }
 
-bool ImageSystemProperties::IsSupportOpaqueOpt()
-{
-    return false;
-}
 } // namespace Media
 } // namespace OHOS
