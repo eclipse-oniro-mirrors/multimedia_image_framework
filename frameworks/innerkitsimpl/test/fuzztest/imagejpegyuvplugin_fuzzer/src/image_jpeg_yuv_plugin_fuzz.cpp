@@ -43,8 +43,9 @@ namespace {
     static constexpr uint32_t ALPHA_TYPE_MODULE = 4;
     static constexpr uint32_t RESOLUTION_QUALITY_MODULE = 4;
     static constexpr uint32_t PIXEL_FORMAT_MODULE = 105;
+    static constexpr uint32_t NUM_0 = 0;
+    static constexpr uint32_t MAX_IMAGE_SIZE = 8192;
 
-    std::vector<uint8_t> JPEG_BUFFER;
     std::vector<uint8_t> YUV_BUFFER;
 
     unsigned char g_mockPlanes[YUVCOMPONENT_SIZE] = { 0 };
@@ -141,30 +142,26 @@ DecodeContext ConstructDecodeContext()
     return context;
 }
 
-JpegDecoderYuvParameter ConstructJpegDecoderYuvParameter()
+JpegDecoderYuvParameter ConstructJpegDecoderYuvParameter(const uint8_t *data, size_t size)
 {
-    uint32_t jpegBufferSize = FDP->ConsumeIntegral<uint32_t>();
-    uint32_t yuvBufferSize = FDP->ConsumeIntegral<uint32_t>();
-    uint8_t *jpegBuffer { nullptr };
     uint8_t *yuvBuffer { nullptr };
-    if (jpegBufferSize != 0) {
-        JPEG_BUFFER = FDP->ConsumeBytes<uint8_t>(jpegBufferSize);
-        jpegBuffer = JPEG_BUFFER.data();
-    }
+    uint32_t yuvWidth = FDP->ConsumeIntegralInRange<uint32_t>(NUM_0, MAX_IMAGE_SIZE);
+    uint32_t yuvHeight = FDP->ConsumeIntegralInRange<uint32_t>(NUM_0, MAX_IMAGE_SIZE);
+    uint32_t yuvBufferSize = JpegDecoderYuv::GetYuvOutSize(yuvWidth, yuvHeight);
     if (yuvBufferSize != 0) {
         YUV_BUFFER = FDP->ConsumeBytes<uint8_t>(yuvBufferSize);
         yuvBuffer = YUV_BUFFER.data();
     }
     return JpegDecoderYuvParameter {
-        .jpgwidth_ = FDP->ConsumeIntegral<uint32_t>(),
-        .jpgheight_ = FDP->ConsumeIntegral<uint32_t>(),
-        .jpegBuffer_ = jpegBuffer,
-        .jpegBufferSize_ = jpegBufferSize,
+        .jpgwidth_ = 0,
+        .jpgheight_ = 0,
+        .jpegBuffer_ = data,
+        .jpegBufferSize_ = size,
         .yuvBuffer_ = yuvBuffer,
         .yuvBufferSize_ = yuvBufferSize,
         .outfmt_ = static_cast<JpegYuvFmt>(FDP->ConsumeIntegralInRange<uint32_t>(1, JPEG_YUV_FMT_MODULE)),
-        .outwidth_ = FDP->ConsumeIntegral<uint32_t>(),
-        .outheight_ = FDP->ConsumeIntegral<uint32_t>() };
+        .outwidth_ = yuvWidth,
+        .outheight_ = yuvHeight };
 }
 
 YuvPlaneInfo ConstructYuvPlaneInfo()
@@ -286,13 +283,13 @@ void IsYU12YV12FormatFuzzTest()
         static_cast<JpegYuvFmt>(FDP->ConsumeIntegralInRange<uint32_t>(1, JPEG_YUV_FMT_MODULE)));
 }
 
-void DoDecodeFuzzTest(std::shared_ptr<JpegDecoderYuv> jpegDecoderYuv)
+void DoDecodeFuzzTest(std::shared_ptr<JpegDecoderYuv> jpegDecoderYuv, const uint8_t *data, size_t size)
 {
     if (!jpegDecoderYuv) {
         return;
     }
     DecodeContext context = ConstructDecodeContext();
-    JpegDecoderYuvParameter jpegDecoderYuvParameter = ConstructJpegDecoderYuvParameter();
+    JpegDecoderYuvParameter jpegDecoderYuvParameter = ConstructJpegDecoderYuvParameter(data, size);
     jpegDecoderYuv->DoDecode(context, jpegDecoderYuvParameter);
 }
 
@@ -315,7 +312,7 @@ void JpegDecoderYuvFuzzTest001(const uint8_t *data, size_t size)
     InitPlaneOutInfoTo420FuzzTest();
     InitPlaneOutInfoTo420NVFuzzTest();
     IsYU12YV12FormatFuzzTest();
-    DoDecodeFuzzTest(jpegDecoderYuv);
+    DoDecodeFuzzTest(jpegDecoderYuv, data, size);
 }
 }  // namespace Media
 }  // namespace OHOS
