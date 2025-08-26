@@ -58,5 +58,6 @@ ohos_fuzztest("ImageFwkDecodeSvgFuzzTest") {
     "hilog:libhilog",
     "libexif:libexif",
     "libjpeg-turbo:turbojpeg",
+    "ipc:ipc_single",
   ]
 }

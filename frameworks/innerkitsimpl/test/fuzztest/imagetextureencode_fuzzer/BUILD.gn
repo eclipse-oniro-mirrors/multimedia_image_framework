@@ -57,5 +57,6 @@ ohos_fuzztest("ImageTextureEncodeFuzzTest") {
     "hisysevent:libhisysevent",
     "opencl-headers:libcl",
     "skia:skia_canvaskit",
+    "ipc:ipc_single",
   ]
 }

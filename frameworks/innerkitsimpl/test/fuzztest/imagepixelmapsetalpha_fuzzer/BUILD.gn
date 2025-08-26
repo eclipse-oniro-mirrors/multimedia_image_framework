@@ -28,6 +28,7 @@ ohos_fuzztest("ImagePixelmapSetAlphaFuzzTest") {
   external_deps = [
     "c_utils:utils",
     "hilog:libhilog",
+    "ipc:ipc_single",
   ]
   fuzz_config_file = "$image_subsystem/frameworks/innerkitsimpl/test/fuzztest/imagepixelmapsetalpha_fuzzer"
   module_out_path = "image_framework/image_framework"

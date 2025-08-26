@@ -45,6 +45,7 @@ ohos_fuzztest("ImageRawPluginFuzzTest") {
     "skia:libjpeg",
     "skia:piex",
     "skia:skia_canvaskit",
+    "ipc:ipc_single",
   ]
 
   cflags = [

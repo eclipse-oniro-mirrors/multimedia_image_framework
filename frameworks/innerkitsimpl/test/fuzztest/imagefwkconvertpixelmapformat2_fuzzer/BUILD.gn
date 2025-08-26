@@ -1,4 +1,4 @@
-# Copyright (c) 2024 Huawei Device Co., Ltd.
+# Copyright (c) 2025 Huawei Device Co., Ltd.
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -14,25 +14,25 @@
 import("//build/test.gni")
 import("//foundation/multimedia/image_framework/ide/image_decode_config.gni")
 
-config("image_external_config") {
+ohos_fuzztest("Imagefwkconvertpixelmapformat2FuzzTest") {
+  module_out_path = "multimedia_image/image_framework"
+  fuzz_config_file = "$image_subsystem/frameworks/innerkitsimpl/test/fuzztest/imagefwkconvertpixelmapformat2_fuzzer"
+  resource_config_file = "$image_subsystem/test/resource/image/ohos_test.xml"
+
   include_dirs = [
     "./include",
     "$image_subsystem/interfaces/innerkits/include",
+    "$image_subsystem/frameworks/innerkitsimpl/converter/include",
   ]
-}
 
-ohos_fuzztest("ImagePixelmapsetalpha2FuzzTest") {
-  public_configs = [ ":image_external_config" ]
-  sources = [ "src/pixelmap_setalpha.cpp" ]
-  deps = [
-    "$image_subsystem/interfaces/innerkits:image_native",
-    "$image_subsystem/frameworks/innerkitsimpl/utils:image_utils",
-  ]
+  sources = [ "src/image_fwk_convert_pixelmap_format_fuzzer.cpp" ]
+
+  defines = [ "EXT_PIXEL" ]
+
+  deps = [ "$image_subsystem/interfaces/innerkits:image_native" ]
+
   external_deps = [
-    "c_utils:utils",
     "hilog:libhilog",
     "ipc:ipc_single",
   ]
-  fuzz_config_file = "$image_subsystem/frameworks/innerkitsimpl/test/fuzztest/imagepixelmapsetalpha2_fuzzer"
-  module_out_path = "image_framework/image_framework"
 }
