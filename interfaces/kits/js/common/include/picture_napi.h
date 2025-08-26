@@ -61,9 +61,6 @@ private:
     std::shared_ptr<Picture> nativePicture_;
     bool isRelease = false;
     uint32_t uniqueId_ = 0;
-    static napi_ref auxiliaryPictureTypeRef_;
-    static napi_ref metadataTypeRef_;
-    static napi_ref gifPropertyKeyRef_;
 };
 } // namespace Media
 } // namespace OHOS

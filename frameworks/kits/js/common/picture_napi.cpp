@@ -70,10 +70,6 @@ struct PictureAsyncContext {
 
 using PictureAsyncContextPtr = std::unique_ptr<PictureAsyncContext>;
 
-napi_ref PictureNapi::auxiliaryPictureTypeRef_ = nullptr;
-napi_ref PictureNapi::metadataTypeRef_ = nullptr;
-napi_ref PictureNapi::gifPropertyKeyRef_ = nullptr;
-
 struct PictureEnum {
     std::string name;
     int32_t numVal;
@@ -110,12 +106,10 @@ struct NapiValues {
 };
 
 static napi_value CreateEnumTypeObject(napi_env env,
-    napi_valuetype type, napi_ref* ref, std::vector<struct PictureEnum> pictureEnumMap)
+    napi_valuetype type, std::vector<struct PictureEnum> pictureEnumMap)
 {
     napi_value result = nullptr;
-    napi_status status;
-    std::string propName;
-    status = napi_create_object(env, &result);
+    napi_status status = napi_create_object(env, &result);
     if (status == napi_ok) {
         for (auto imgEnum : pictureEnumMap) {
             napi_value enumNapiValue = nullptr;
@@ -136,14 +130,7 @@ static napi_value CreateEnumTypeObject(napi_env env,
                 break;
             }
         }
-
-        if (status == napi_ok) {
-            int32_t refCount = 1;
-            status = napi_create_reference(env, result, refCount, ref);
-            if (status == napi_ok) {
-                return result;
-            }
-        }
+        return result;
     }
     IMAGE_LOGE("CreateEnumTypeObject is Failed!");
     napi_get_undefined(env, &result);
@@ -264,12 +251,9 @@ napi_value PictureNapi::Init(napi_env env, napi_value exports)
         DECLARE_NAPI_STATIC_FUNCTION("createPicture", CreatePicture),
         DECLARE_NAPI_STATIC_FUNCTION("createPictureFromParcel", CreatePictureFromParcel),
         DECLARE_NAPI_STATIC_FUNCTION("createPictureByHdrAndSdrPixelMap", CreatePictureByHdrAndSdrPixelMap),
-        DECLARE_NAPI_PROPERTY("AuxiliaryPictureType", CreateEnumTypeObject(env, napi_number,
-            &auxiliaryPictureTypeRef_, auxiliaryPictureTypeMap)),
-        DECLARE_NAPI_PROPERTY("MetadataType", CreateEnumTypeObject(env, napi_number,
-            &metadataTypeRef_, metadataTypeMap)),
-        DECLARE_NAPI_PROPERTY("GifPropertyKey", CreateEnumTypeObject(env, napi_string,
-            &gifPropertyKeyRef_, gifPropertyKeyMap)),
+        DECLARE_NAPI_PROPERTY("AuxiliaryPictureType", CreateEnumTypeObject(env, napi_number, auxiliaryPictureTypeMap)),
+        DECLARE_NAPI_PROPERTY("MetadataType", CreateEnumTypeObject(env, napi_number, metadataTypeMap)),
+        DECLARE_NAPI_PROPERTY("GifPropertyKey", CreateEnumTypeObject(env, napi_string, gifPropertyKeyMap)),
     };
 
     napi_value constructor = nullptr;

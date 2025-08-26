@@ -92,16 +92,6 @@ private:
     static thread_local std::shared_ptr<ImageSource> sImgSrc_;
     static thread_local std::shared_ptr<IncrementalPixelMap> sIncPixelMap_;
     std::shared_ptr<IncrementalPixelMap> navIncPixelMap_ = nullptr;
-    static napi_ref pixelMapFormatRef_;
-    static napi_ref propertyKeyRef_;
-    static napi_ref imageFormatRef_;
-    static napi_ref alphaTypeRef_;
-    static napi_ref scaleModeRef_;
-    static napi_ref componentTypeRef_;
-    static napi_ref decodingDynamicRangeRef_;
-    static napi_ref decodingResolutionQualityRef_;
-    static napi_ref decodingAllocatorTypeRef_;
-    static napi_ref cropAndScaleStrategyRef_;
 
     napi_env env_ = nullptr;
     bool isRelease = false;
