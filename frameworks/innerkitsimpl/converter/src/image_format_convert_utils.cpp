@@ -1138,7 +1138,7 @@ static bool YuvToYuvParam(const YUVDataInfo &yDInfo, SrcConvertParam &srcParam, 
     return true;
 }
 
-static bool ImageFormatConvertUtils::AlignBufferCore(const ImageInfo& srcImageInfo, const uint8_t* buffer,
+bool ImageFormatConvertUtils::AlignBufferCore(const ImageInfo& srcImageInfo, const uint8_t* buffer,
                                                      SrcConvertParam& srcParam,
                                                      std::unique_ptr<uint8_t[]>& copySrcBuffer)
 {
@@ -1177,7 +1177,7 @@ static bool ImageFormatConvertUtils::AlignBufferCore(const ImageInfo& srcImageIn
     return true;
 }
 
-static bool ImageFormatConvertUtils::AlignSrcBuffer(const YUVDataInfo& yDInfo, PixelFormat srcFormat,
+bool ImageFormatConvertUtils::AlignSrcBuffer(const YUVDataInfo& yDInfo, PixelFormat srcFormat,
                                                     const uint8_t* srcBuffer, SrcConvertParam& srcParam,
                                                     std::unique_ptr<uint8_t[]>& copySrcBuffer)
 {
@@ -1188,7 +1188,7 @@ static bool ImageFormatConvertUtils::AlignSrcBuffer(const YUVDataInfo& yDInfo, P
     return ImageFormatConvertUtils::AlignBufferCore(srcImageInfo, srcBuffer, srcParam, copySrcBuffer);
 }
 
-static bool ImageFormatConvertUtils::AlignSrcBuffer(const RGBDataInfo &rgbInfo, PixelFormat srcFormat,
+bool ImageFormatConvertUtils::AlignSrcBuffer(const RGBDataInfo &rgbInfo, PixelFormat srcFormat,
                                                     const uint8_t* srcBuffer, SrcConvertParam& srcParam,
                                                     std::unique_ptr<uint8_t[]>& copySrcBuffer)
 {
