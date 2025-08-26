@@ -1139,8 +1139,8 @@ static bool YuvToYuvParam(const YUVDataInfo &yDInfo, SrcConvertParam &srcParam, 
 }
 
 bool ImageFormatConvertUtils::AlignBufferCore(const ImageInfo& srcImageInfo, const uint8_t* buffer,
-                                                     SrcConvertParam& srcParam,
-                                                     std::unique_ptr<uint8_t[]>& copySrcBuffer)
+                                              SrcConvertParam& srcParam,
+                                              std::unique_ptr<uint8_t[]>& copySrcBuffer)
 {
     if (srcImageInfo.size.width <= 0 || srcImageInfo.size.height <= 0) {
         IMAGE_LOGE("Invalid src width(%{public}d) or height(%{public}d)",
@@ -1178,8 +1178,8 @@ bool ImageFormatConvertUtils::AlignBufferCore(const ImageInfo& srcImageInfo, con
 }
 
 bool ImageFormatConvertUtils::AlignSrcBuffer(const YUVDataInfo& yDInfo, PixelFormat srcFormat,
-                                                    const uint8_t* srcBuffer, SrcConvertParam& srcParam,
-                                                    std::unique_ptr<uint8_t[]>& copySrcBuffer)
+                                             const uint8_t* srcBuffer, SrcConvertParam& srcParam,
+                                             std::unique_ptr<uint8_t[]>& copySrcBuffer)
 {
     ImageInfo srcImageInfo = {
         .size = {static_cast<int32_t>(yDInfo.yWidth), static_cast<int32_t>(yDInfo.yHeight)},
@@ -1189,8 +1189,8 @@ bool ImageFormatConvertUtils::AlignSrcBuffer(const YUVDataInfo& yDInfo, PixelFor
 }
 
 bool ImageFormatConvertUtils::AlignSrcBuffer(const RGBDataInfo &rgbInfo, PixelFormat srcFormat,
-                                                    const uint8_t* srcBuffer, SrcConvertParam& srcParam,
-                                                    std::unique_ptr<uint8_t[]>& copySrcBuffer)
+                                             const uint8_t* srcBuffer, SrcConvertParam& srcParam,
+                                             std::unique_ptr<uint8_t[]>& copySrcBuffer)
 {
     ImageInfo srcImageInfo = {
         .size = {rgbInfo.width, rgbInfo.height},
