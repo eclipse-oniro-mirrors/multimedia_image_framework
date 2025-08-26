@@ -145,6 +145,12 @@ public:
                            [[maybe_unused]]ColorSpace colorSpace);
     static bool NV12ToRGB(const uint8_t *srcBuffer, const YUVDataInfo &yDInfo, DestConvertInfo &destInfo,
                           [[maybe_unused]]ColorSpace colorSpace);
+    static bool AlignBufferCore(const ImageInfo& srcImageInfo, const uint8_t* buffer,
+                                SrcConvertParam& srcParam, std::unique_ptr<uint8_t[]>& copySrcBuffer);
+    static bool AlignSrcBuffer(const YUVDataInfo& yDInfo, PixelFormat srcFormat, const uint8_t* srcBuffer,
+                               SrcConvertParam& srcParam, std::unique_ptr<uint8_t[]>& copySrcBuffer);
+    static bool AlignSrcBuffer(const RGBDataInfo &rgbInfo, PixelFormat srcFormat, const uint8_t* srcBuffer,
+                               SrcConvertParam& srcParam, std::unique_ptr<uint8_t[]>& copySrcBuffer);
 };
 } // namespace Media
 } // namespace OHOS

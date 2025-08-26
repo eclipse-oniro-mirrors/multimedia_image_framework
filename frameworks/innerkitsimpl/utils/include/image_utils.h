@@ -127,12 +127,6 @@ public:
     static bool GetAlignedNumber(int32_t& number, int32_t align);
     static int32_t GetByteCount(ImageInfo imageInfo);
     static int32_t GetYUVByteCount(const ImageInfo& info);
-    static bool AlignBufferCore(const ImageInfo& srcImageInfo, const uint8_t* buffer,
-        SrcConvertParam& srcParam, std::unique_ptr<uint8_t[]>& copySrcBuffer);
-    static bool AlignSrcBuffer(const YUVDataInfo& yDInfo, PixelFormat srcFormat, const uint8_t* srcBuffer,
-        SrcConvertParam& srcParam, std::unique_ptr<uint8_t[]>& copySrcBuffer);
-    static bool AlignSrcBuffer(const RGBDataInfo &rgbInfo, PixelFormat srcFormat, const uint8_t* srcBuffer,
-        SrcConvertParam& srcParam, std::unique_ptr<uint8_t[]>& copySrcBuffer);
 
     template<typename T>
     static bool CheckMulOverflow(const T& num1, const T& num2)
