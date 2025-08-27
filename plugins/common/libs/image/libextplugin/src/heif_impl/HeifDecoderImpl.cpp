@@ -1182,6 +1182,7 @@ void HeifDecoderImpl::setGainmapDstBuffer(uint8_t* dstBuffer, size_t rowStride, 
     gainmapDstRowStride_ = rowStride;
     regionInfo_.isGainmapImage = true;
     isGainmapDecode_ = true;
+    isAuxiliaryDecode_ = false;
     gainMapDstHwbuffer_ = reinterpret_cast<SurfaceBuffer*>(context);
 }
 
@@ -1191,6 +1192,7 @@ void HeifDecoderImpl::setAuxiliaryDstBuffer(uint8_t* dstBuffer, size_t dstSize, 
     auxiliaryDstMemorySize_ = dstSize;
     auxiliaryDstRowStride_ = rowStride;
     isAuxiliaryDecode_ = true;
+    isGainmapDecode_ = false;
     auxiliaryDstHwBuffer_ = reinterpret_cast<SurfaceBuffer*>(context);
     sampleSize_ = DEFAULT_SCALE_SIZE;
 }

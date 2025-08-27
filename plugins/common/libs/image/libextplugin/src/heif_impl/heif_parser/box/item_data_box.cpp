@@ -20,13 +20,18 @@ namespace {
     const uint8_t CONSTRUCTION_METHOD_IDAT_OFFSET = 1;
     const uint32_t MAX_HEIF_IMAGE_GRID_SIZE = 128 * 1024 * 1024;
     const uint32_t MAX_HEIF_ITEM_COUNT = 2000;
+    const uint32_t MAX_HEIF_EXTENT_NUM = 1024;
 }
 
 namespace OHOS {
 namespace ImagePlugin {
-void HeifIlocBox::ParseExtents(Item& item, HeifStreamReader &reader, int indexSize, int offsetSize, int lengthSize)
+heif_error HeifIlocBox::ParseExtents(Item& item, HeifStreamReader &reader,
+    int indexSize, int offsetSize, int lengthSize)
 {
     uint16_t extentNum = reader.Read16();
+    if (extentNum > MAX_HEIF_EXTENT_NUM) {
+        return heif_error_extent_num_too_large;
+    }
     item.extents.resize(extentNum);
     for (int extentIndex = 0; extentIndex < extentNum; extentIndex++) {
         // indexSize is taken from the set {0, 4, 8} and indicates the length in bytes of 'index'
@@ -55,6 +60,7 @@ void HeifIlocBox::ParseExtents(Item& item, HeifStreamReader &reader, int indexSi
             item.extents[extentIndex].length = reader.Read64();
         }
     }
+    return heif_error_ok;
 }
 
 heif_error HeifIlocBox::ParseContent(HeifStreamReader &reader)
@@ -89,7 +95,9 @@ heif_error HeifIlocBox::ParseContent(HeifStreamReader &reader)
         } else if (baseOffsetSize == UINT64_BYTES_NUM) {
             item.baseOffset = reader.Read64();
         }
-        ParseExtents(item, reader, indexSize, offsetSize, lengthSize);
+        if (ParseExtents(item, reader, indexSize, offsetSize, lengthSize)) {
+            return heif_error_extent_num_too_large;
+        }
         if (!reader.HasError()) {
             items_.push_back(item);
         }

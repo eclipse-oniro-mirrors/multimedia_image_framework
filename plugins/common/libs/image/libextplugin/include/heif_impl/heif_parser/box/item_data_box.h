@@ -83,7 +83,7 @@ private:
     uint8_t lengthSize_ = 0;
     uint8_t baseOffsetSize_ = 0;
     uint8_t indexSize_ = 0;
-    void ParseExtents(Item& item, HeifStreamReader &reader, int indexSize, int offsetSize, int lengthSize);
+    heif_error ParseExtents(Item& item, HeifStreamReader &reader, int indexSize, int offsetSize, int lengthSize);
     void PackIlocHeader(HeifStreamWriter &writer) const;
 
     uint64_t idatOffset_ = 0;

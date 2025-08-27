@@ -45,6 +45,7 @@ enum heif_error {
     heif_error_too_many_item = 23,
     heif_error_too_many_recursion = 24,
     heif_error_no_data = 25,
+    heif_error_extent_num_too_large = 26,
 };
 } // namespace ImagePlugin
 } // namespace OHOS
