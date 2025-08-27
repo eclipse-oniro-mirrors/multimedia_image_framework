@@ -80,8 +80,8 @@ void PixelAstc::scale(float xAxis, float yAxis)
         SetTransformData(transformData);
         ImageInfo imageInfo;
         GetImageInfo(imageInfo);
-        imageInfo.size.width *= abs(xAxis);
-        imageInfo.size.height *= abs(yAxis);
+        imageInfo.size.width = static_cast<int32_t>(round(imageInfo.size.width * abs(xAxis)));
+        imageInfo.size.height = static_cast<int32_t>(round(imageInfo.size.height * abs(yAxis)));
         SetImageInfo(imageInfo, true);
     }
 }
