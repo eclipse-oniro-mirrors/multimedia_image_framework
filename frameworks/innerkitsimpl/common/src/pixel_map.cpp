@@ -512,7 +512,6 @@ uint32_t PixelMap::SetMemoryName(const std::string &pixelMapName)
 {
 #if !defined(_WIN32) && !defined(_APPLE) && !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
     if (GetFd() == nullptr) {
-        IMAGE_LOGE("PixelMap null, set name failed");
         return ERR_MEMORY_NOT_SUPPORT;
     }
 
