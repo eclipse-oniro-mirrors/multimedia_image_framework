@@ -83,8 +83,6 @@ struct NapiValues {
     std::unique_ptr<AuxiliaryPictureNapiAsyncContext> context;
 };
 
-napi_ref AuxiliaryPictureNapi::fragmentpropertyKeyRef_ = nullptr;
-
 struct AuxiliaryPictureEnum {
     std::string name;
     int32_t numVal;
@@ -110,13 +108,10 @@ AuxiliaryPictureNapi::~AuxiliaryPictureNapi()
 }
 
 static napi_value CreateEnumTypeObject(napi_env env, napi_valuetype type,
-    napi_ref* ref, std::vector<struct AuxiliaryPictureEnum> AuxiliaryPictureEnumMap)
+    std::vector<struct AuxiliaryPictureEnum> AuxiliaryPictureEnumMap)
 {
     napi_value result = nullptr;
-    napi_status status;
-    int32_t refCount = 1;
-    std::string propName;
-    status = napi_create_object(env, &result);
+    napi_status status = napi_create_object(env, &result);
     if (status == napi_ok) {
         for (auto imgEnum : AuxiliaryPictureEnumMap) {
             napi_value enumNapiValue = nullptr;
@@ -136,13 +131,7 @@ static napi_value CreateEnumTypeObject(napi_env env, napi_valuetype type,
                 break;
             }
         }
-
-        if (status == napi_ok) {
-            status = napi_create_reference(env, result, refCount, ref);
-            if (status == napi_ok) {
-                return result;
-            }
-        }
+        return result;
     }
     IMAGE_LOGE("CreateEnumTypeObject is Failed!");
     napi_get_undefined(env, &result);
@@ -163,8 +152,7 @@ napi_value AuxiliaryPictureNapi::Init(napi_env env, napi_value exports)
     };
     napi_property_descriptor static_prop[] = {
         DECLARE_NAPI_STATIC_FUNCTION("createAuxiliaryPicture", CreateAuxiliaryPicture),
-        DECLARE_NAPI_PROPERTY("FragmentMapPropertyKey", CreateEnumTypeObject(env, napi_string,
-            &fragmentpropertyKeyRef_, fragmentPropertyKeyMap)),
+        DECLARE_NAPI_PROPERTY("FragmentMapPropertyKey", CreateEnumTypeObject(env, napi_string, fragmentPropertyKeyMap)),
     };
 
     napi_value constructor = nullptr;

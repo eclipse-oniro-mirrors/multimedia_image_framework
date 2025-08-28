@@ -63,17 +63,6 @@ thread_local int ImageSourceNapi::fileDescriptor_ = -1;
 thread_local void* ImageSourceNapi::fileBuffer_ = nullptr;
 thread_local size_t ImageSourceNapi::fileBufferSize_ = 0;
 
-napi_ref ImageSourceNapi::pixelMapFormatRef_ = nullptr;
-napi_ref ImageSourceNapi::propertyKeyRef_ = nullptr;
-napi_ref ImageSourceNapi::imageFormatRef_ = nullptr;
-napi_ref ImageSourceNapi::alphaTypeRef_ = nullptr;
-napi_ref ImageSourceNapi::scaleModeRef_ = nullptr;
-napi_ref ImageSourceNapi::componentTypeRef_ = nullptr;
-napi_ref ImageSourceNapi::decodingDynamicRangeRef_ = nullptr;
-napi_ref ImageSourceNapi::decodingResolutionQualityRef_ = nullptr;
-napi_ref ImageSourceNapi::decodingAllocatorTypeRef_ = nullptr;
-napi_ref ImageSourceNapi::cropAndScaleStrategyRef_ = nullptr;
-
 static std::mutex imageSourceCrossThreadMutex_;
 
 using JpegYuvDecodeError = OHOS::ImagePlugin::JpegYuvDecodeError;
@@ -601,13 +590,10 @@ static void ImageSourceCallbackWithErrorObj(napi_env env,
 }
 
 static napi_value CreateEnumTypeObject(napi_env env,
-    napi_valuetype type, napi_ref* ref, std::vector<struct ImageEnum> imageEnumMap)
+    napi_valuetype type, std::vector<struct ImageEnum> imageEnumMap)
 {
     napi_value result = nullptr;
-    napi_status status;
-    int32_t refCount = 1;
-    std::string propName;
-    status = napi_create_object(env, &result);
+    napi_status status = napi_create_object(env, &result);
     if (status == napi_ok) {
         for (auto imgEnum : imageEnumMap) {
             napi_value enumNapiValue = nullptr;
@@ -627,13 +613,7 @@ static napi_value CreateEnumTypeObject(napi_env env,
                 break;
             }
         }
-
-        if (status == napi_ok) {
-            status = napi_create_reference(env, result, refCount, ref);
-            if (status == napi_ok) {
-                return result;
-            }
-        }
+        return result;
     }
     IMAGE_LOGE("CreateEnumTypeObject is Failed!");
     napi_get_undefined(env, &result);
@@ -926,21 +906,21 @@ napi_value ImageSourceNapi::Init(napi_env env, napi_value exports)
         DECLARE_NAPI_STATIC_FUNCTION("CreateIncrementalSource", CreateIncrementalSource),
         DECLARE_NAPI_STATIC_FUNCTION("getImageSourceSupportedFormats", GetImageSourceSupportedFormats),
         DECLARE_NAPI_PROPERTY("PixelMapFormat",
-            CreateEnumTypeObject(env, napi_number, &pixelMapFormatRef_, sPixelMapFormatMap)),
-        DECLARE_NAPI_PROPERTY("PropertyKey", CreateEnumTypeObject(env, napi_string, &propertyKeyRef_, sPropertyKeyMap)),
-        DECLARE_NAPI_PROPERTY("ImageFormat", CreateEnumTypeObject(env, napi_number, &imageFormatRef_, sImageFormatMap)),
-        DECLARE_NAPI_PROPERTY("AlphaType", CreateEnumTypeObject(env, napi_number, &alphaTypeRef_, sAlphaTypeMap)),
-        DECLARE_NAPI_PROPERTY("ScaleMode", CreateEnumTypeObject(env, napi_number, &scaleModeRef_, sScaleModeMap)),
+            CreateEnumTypeObject(env, napi_number, sPixelMapFormatMap)),
+        DECLARE_NAPI_PROPERTY("PropertyKey", CreateEnumTypeObject(env, napi_string, sPropertyKeyMap)),
+        DECLARE_NAPI_PROPERTY("ImageFormat", CreateEnumTypeObject(env, napi_number, sImageFormatMap)),
+        DECLARE_NAPI_PROPERTY("AlphaType", CreateEnumTypeObject(env, napi_number, sAlphaTypeMap)),
+        DECLARE_NAPI_PROPERTY("ScaleMode", CreateEnumTypeObject(env, napi_number, sScaleModeMap)),
         DECLARE_NAPI_PROPERTY("ComponentType",
-            CreateEnumTypeObject(env, napi_number, &componentTypeRef_, sComponentTypeMap)),
+            CreateEnumTypeObject(env, napi_number, sComponentTypeMap)),
         DECLARE_NAPI_PROPERTY("DecodingDynamicRange",
-            CreateEnumTypeObject(env, napi_number, &decodingDynamicRangeRef_, sDecodingDynamicRangeMap)),
+            CreateEnumTypeObject(env, napi_number, sDecodingDynamicRangeMap)),
         DECLARE_NAPI_PROPERTY("ResolutionQuality",
-            CreateEnumTypeObject(env, napi_number, &decodingResolutionQualityRef_, sDecodingResolutionQualityMap)),
+            CreateEnumTypeObject(env, napi_number, sDecodingResolutionQualityMap)),
         DECLARE_NAPI_PROPERTY("AllocatorType",
-            CreateEnumTypeObject(env, napi_number, &decodingAllocatorTypeRef_, sAllocatorType)),
+            CreateEnumTypeObject(env, napi_number, sAllocatorType)),
         DECLARE_NAPI_PROPERTY("CropAndScaleStrategy",
-            CreateEnumTypeObject(env, napi_number, &cropAndScaleStrategyRef_, sCropAndScaleStrategyMap)),
+            CreateEnumTypeObject(env, napi_number, sCropAndScaleStrategyMap)),
     };
 
     struct ImageConstructorInfo info = {

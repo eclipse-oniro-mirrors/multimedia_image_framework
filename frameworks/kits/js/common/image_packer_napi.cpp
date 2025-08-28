@@ -52,7 +52,6 @@ namespace Media {
 static const std::string CLASS_NAME_IMAGEPACKER = "ImagePacker";
 thread_local std::shared_ptr<ImagePacker> ImagePackerNapi::sImgPck_ = nullptr;
 thread_local napi_ref ImagePackerNapi::sConstructor_ = nullptr;
-napi_ref ImagePackerNapi::packingDynamicRangeRef_ = nullptr;
 struct ImageEnum {
     std::string name;
     int32_t numVal;
@@ -416,13 +415,10 @@ STATIC_COMPLETE_FUNC(Packing)
 }
 
 static napi_value CreateEnumTypeObject(napi_env env,
-    napi_valuetype type, napi_ref* ref, std::vector<struct ImageEnum> imageEnumMap)
+    napi_valuetype type, std::vector<struct ImageEnum> imageEnumMap)
 {
     napi_value result = nullptr;
-    napi_status status;
-    int32_t refCount = 1;
-    std::string propName;
-    status = napi_create_object(env, &result);
+    napi_status status = napi_create_object(env, &result);
     if (status == napi_ok) {
         for (auto imgEnum : imageEnumMap) {
             napi_value enumNapiValue = nullptr;
@@ -443,12 +439,7 @@ static napi_value CreateEnumTypeObject(napi_env env,
             }
         }
 
-        if (status == napi_ok) {
-            status = napi_create_reference(env, result, refCount, ref);
-            if (status == napi_ok) {
-                return result;
-            }
-        }
+        return result;
     }
     IMAGE_LOGE("CreateEnumTypeObject is Failed!");
     napi_get_undefined(env, &result);
@@ -471,7 +462,7 @@ napi_value ImagePackerNapi::Init(napi_env env, napi_value exports)
         DECLARE_NAPI_STATIC_FUNCTION("createImagePacker", CreateImagePacker),
         DECLARE_NAPI_STATIC_FUNCTION("getImagePackerSupportedFormats", GetImagePackerSupportedFormats),
         DECLARE_NAPI_PROPERTY("PackingDynamicRange",
-            CreateEnumTypeObject(env, napi_number, &packingDynamicRangeRef_, sPackingDynamicRangeMap)),
+            CreateEnumTypeObject(env, napi_number, sPackingDynamicRangeMap)),
     };
 
     napi_value constructor = nullptr;
