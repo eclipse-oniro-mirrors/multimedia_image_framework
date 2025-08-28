@@ -36,6 +36,7 @@ public:
     sptr<ImageImpl> ReadLatestImage();
     void Release();
     uint32_t CjOn(std::string name, std::function<void()> callBack);
+    uint32_t CjOff();
 
 private:
     std::shared_ptr<ImageReceiver> imageReceiver_;

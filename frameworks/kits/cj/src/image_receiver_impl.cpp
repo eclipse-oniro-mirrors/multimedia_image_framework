@@ -167,5 +167,15 @@ uint32_t ImageReceiverImpl::CjOn(std::string name, std::function<void()> callBac
     imageReceiver_->RegisterBufferAvaliableListener((std::shared_ptr<SurfaceBufferAvaliableListener>&)listener);
     return 0;
 }
+
+uint32_t ImageReceiverImpl::CjOff()
+{
+    if (imageReceiver_ == nullptr) {
+        IMAGE_LOGE("Native instance is nullptr");
+        return ERR_IMAGE_INIT_ABNORMAL;
+    }
+    imageReceiver_->UnRegisterBufferAvaliableListener();
+    return 0;
+}
 } // namespace Media
 } // namespace OHOS

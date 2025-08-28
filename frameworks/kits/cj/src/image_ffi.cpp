@@ -870,6 +870,18 @@ uint32_t FfiImageReceiverImplOn(int64_t id, char* name, int64_t callbackId)
     return instance->CjOn(name, func);
 }
 
+FFI_EXPORT uint32_t FfiImageReceiverImplOff(int64_t id, char* name)
+{
+    (void)name;
+    IMAGE_LOGD("FfiImageReceiverImplOff start");
+    auto instance = FFIData::GetData<ImageReceiverImpl>(id);
+    if (!instance) {
+        IMAGE_LOGE("[ImageReceiver] instance not exist %{public}" PRId64, id);
+        return ERR_IMAGE_INIT_ABNORMAL;
+    }
+    return instance->CjOff();
+}
+
 //--------------------- ImagePacker ---------------------------------------------------------------------------
 int64_t FFiOHOSImagePackerConstructor()
 {
