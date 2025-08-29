@@ -2613,7 +2613,7 @@ HWTEST_F(PixelMapTest, SetMemoryNameTest001, TestSize.Level3)
     EXPECT_TRUE(ret != ERR_MEMORY_NOT_SUPPORT);
     EXPECT_TRUE(ret == SUCCESS);
 
-    std::string longName(50, '1');
+    std::string longName(257, '1');
     ret = pixelMap->SetMemoryName(longName);
     EXPECT_TRUE(ret != ERR_MEMORY_NOT_SUPPORT);
     EXPECT_TRUE(ret == COMMON_ERR_INVALID_PARAMETER);
