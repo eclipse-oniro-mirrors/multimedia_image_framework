@@ -56,6 +56,12 @@ static const std::string IMAGE_INPUT_JPEG_BROKEN_TWO = "/data/local/tmp/image/te
 static const std::string IMAGE_URL_PREFIX = "data:image/";
 static const std::string IMAGE_INPUT_JPG_PATH_EXACTSIZE = "/data/local/tmp/image/800-500.jpg";
 static const std::string IMAGE_JPG_THREE_GAINMAP_HDR_PATH = "/data/local/tmp/image/three_gainmap_hdr.jpg";
+static const std::string IMAGE_GIF_LARGE_SIZE_PATH = "/data/local/tmp/image/fake_large_size_test.gif";  // 50000x50000
+static const std::string IMAGE_JPG_LARGE_SIZE_PATH = "/data/local/tmp/image/fake_large_size_test.jpg";  // 30000x30000
+static const int32_t DECODE_DESIRED_WIDTH = 7500;
+static const int32_t DECODE_DESIRED_HEIGHT = 7500;
+static const int32_t DESIRED_REGION_WIDTH = 4096;
+static const int32_t DESIRED_REGION_HEIGHT = 4096;
 static const int32_t DEFAULT_DMA_SIZE = 512 * 512;
 static const int32_t NUM_1_MINUS = -1;
 static const int32_t IMAGE_INPUT_JPG_WIDTH = 800;
@@ -3170,6 +3176,134 @@ HWTEST_F(ImageSourceTest, WideGamutTest002, TestSize.Level3)
     ASSERT_EQ(isHdr, false);
     Media::PixelFormat pixelFormat = pixelMap->GetPixelFormat();
     ASSERT_EQ(pixelFormat, Media::PixelFormat::RGBA_1010102);
+}
+
+/**
+ * @tc.name: LargeImageTest001
+ * @tc.desc: test decode supported large image(JPEG), using default decode options, expect decode fail
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageSourceTest, LargeImageTest001, TestSize.Level3)
+{
+    uint32_t errorCode = 0;
+    SourceOptions opts;
+    std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(IMAGE_JPG_LARGE_SIZE_PATH,
+        opts, errorCode);
+    ASSERT_EQ(errorCode, SUCCESS);
+    ASSERT_NE(imageSource, nullptr);
+
+    uint32_t index = 0;
+    DecodeOptions decodeOpts;
+    std::unique_ptr<PixelMap> pixelMap = imageSource->CreatePixelMap(index, decodeOpts, errorCode);
+    ASSERT_EQ(errorCode, ERR_IMAGE_TOO_LARGE);
+}
+
+/**
+ * @tc.name: LargeImageTest002
+ * @tc.desc: test decode supported large image(JPEG), using valid desiredSize decode options, expect decode success
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageSourceTest, LargeImageTest002, TestSize.Level3)
+{
+    uint32_t errorCode = 0;
+    SourceOptions opts;
+    std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(IMAGE_JPG_LARGE_SIZE_PATH,
+        opts, errorCode);
+    ASSERT_EQ(errorCode, SUCCESS);
+    ASSERT_NE(imageSource, nullptr);
+
+    uint32_t index = 0;
+    DecodeOptions decodeOpts;
+    decodeOpts.desiredSize = {DECODE_DESIRED_WIDTH, DECODE_DESIRED_HEIGHT};
+    std::unique_ptr<PixelMap> pixelMap = imageSource->CreatePixelMap(index, decodeOpts, errorCode);
+    ASSERT_EQ(errorCode, SUCCESS);
+    ASSERT_NE(pixelMap, nullptr);
+
+    ASSERT_EQ(pixelMap->GetWidth(), DECODE_DESIRED_WIDTH);
+    ASSERT_EQ(pixelMap->GetHeight(), DECODE_DESIRED_HEIGHT);
+}
+
+/**
+ * @tc.name: LargeImageTest003
+ * @tc.desc: test decode unsupported large image(GIF), using valid desiredSize decode options, expect decode fail
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageSourceTest, LargeImageTest003, TestSize.Level3)
+{
+    uint32_t errorCode = 0;
+    SourceOptions opts;
+    std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(IMAGE_GIF_LARGE_SIZE_PATH,
+        opts, errorCode);
+    ASSERT_EQ(errorCode, SUCCESS);
+    ASSERT_NE(imageSource, nullptr);
+
+    uint32_t index = 0;
+    DecodeOptions decodeOpts;
+    decodeOpts.desiredSize = {DECODE_DESIRED_WIDTH, DECODE_DESIRED_HEIGHT};
+    std::unique_ptr<PixelMap> pixelMap = imageSource->CreatePixelMap(index, decodeOpts, errorCode);
+    ASSERT_EQ(errorCode, ERR_IMAGE_TOO_LARGE);
+}
+
+/**
+ * @tc.name: LargeImageTest004
+ * @tc.desc: test decode supported large image(JPEG),
+ *           using valid desiredSize and valid desiredRegion(scale first) decode options,
+ *           expect decode success, output pixelmap size is equal to desiredRegion size.
+ *           process:
+ *           src size(30000x30000) -> sample decode size(7500x7500) -> crop size(4096x4096)
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageSourceTest, LargeImageTest004, TestSize.Level3)
+{
+    uint32_t errorCode = 0;
+    SourceOptions opts;
+    std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(IMAGE_JPG_LARGE_SIZE_PATH,
+        opts, errorCode);
+    ASSERT_EQ(errorCode, SUCCESS);
+    ASSERT_NE(imageSource, nullptr);
+
+    uint32_t index = 0;
+    DecodeOptions decodeOpts;
+    decodeOpts.desiredSize = {DECODE_DESIRED_WIDTH, DECODE_DESIRED_HEIGHT};
+    decodeOpts.CropRect = {0, 0, DESIRED_REGION_WIDTH, DESIRED_REGION_HEIGHT};
+    decodeOpts.cropAndScaleStrategy = CropAndScaleStrategy::SCALE_FIRST;
+    std::unique_ptr<PixelMap> pixelMap = imageSource->CreatePixelMap(index, decodeOpts, errorCode);
+    ASSERT_EQ(errorCode, SUCCESS);
+    ASSERT_NE(pixelMap, nullptr);
+
+    ASSERT_EQ(pixelMap->GetWidth(), DESIRED_REGION_WIDTH);
+    ASSERT_EQ(pixelMap->GetHeight(), DESIRED_REGION_HEIGHT);
+}
+
+/**
+ * @tc.name: LargeImageTest005
+ * @tc.desc: test decode supported large image(JPEG),
+ *           using valid desiredSize and valid desiredRegion(crop first) decode options,
+ *           expect decode success, output pixelmap size is equal to desiredSize size.
+ *           process:
+ *           src size(30000x30000) -> region decode size(4096x4096) -> scale size(7500x7500)
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageSourceTest, LargeImageTest005, TestSize.Level3)
+{
+    uint32_t errorCode = 0;
+    SourceOptions opts;
+    std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(IMAGE_JPG_LARGE_SIZE_PATH,
+        opts, errorCode);
+    ASSERT_EQ(errorCode, SUCCESS);
+    ASSERT_NE(imageSource, nullptr);
+
+    uint32_t index = 0;
+    DecodeOptions decodeOpts;
+    decodeOpts.desiredSize = {DECODE_DESIRED_WIDTH, DECODE_DESIRED_HEIGHT};
+    decodeOpts.CropRect = {0, 0, DESIRED_REGION_WIDTH, DESIRED_REGION_HEIGHT};
+    decodeOpts.cropAndScaleStrategy = CropAndScaleStrategy::CROP_FIRST;
+    std::unique_ptr<PixelMap> pixelMap = imageSource->CreatePixelMap(index, decodeOpts, errorCode);
+    ASSERT_EQ(errorCode, SUCCESS);
+    ASSERT_NE(pixelMap, nullptr);
+
+    ASSERT_EQ(pixelMap->GetWidth(), DECODE_DESIRED_WIDTH);
+    ASSERT_EQ(pixelMap->GetHeight(), DECODE_DESIRED_HEIGHT);
 }
 } // namespace Multimedia
 } // namespace OHOS
