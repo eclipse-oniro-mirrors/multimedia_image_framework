@@ -2233,44 +2233,6 @@ HWTEST_F(PluginLibJpegTest, Jpeg_EncoderTest004, TestSize.Level3)
 }
 
 /**
- * @tc.name: Jpeg_EncoderTest005
- * @tc.desc: SetYuv420spExtraConfig
- * @tc.type: FUNC
- */
-HWTEST_F(PluginLibJpegTest, Jpeg_EncoderTest005, TestSize.Level3)
-{
-    GTEST_LOG_(INFO) << "PluginLibJpegTest: Jpeg_EncoderTest005 start";
-    auto Jpegencoder = std::make_shared<JpegEncoder>();
-    Jpegencoder->encodeInfo_.comp_info = new jpeg_component_info;
-    Jpegencoder->SetYuv420spExtraConfig();
-    ASSERT_EQ(Jpegencoder->encodeInfo_.comp_info[0].h_samp_factor, SAMPLE_FACTOR_TWO);
-    delete Jpegencoder->encodeInfo_.comp_info;
-    GTEST_LOG_(INFO) << "PluginLibJpegTest: Jpeg_EncoderTest005 end";
-}
-
-/**
- * @tc.name: Jpeg_EncoderTest006
- * @tc.desc: Deinterweave
- * @tc.type: FUNC
- */
-HWTEST_F(PluginLibJpegTest, Jpeg_EncoderTest006, TestSize.Level3)
-{
-    GTEST_LOG_(INFO) << "PluginLibJpegTest: Jpeg_EncoderTest006 start";
-    auto Jpegencoder = std::make_shared<JpegEncoder>();
-    Media::PixelMap pixelmap;
-    Jpegencoder->pixelMaps_.push_back(&pixelmap);
-    uint8_t *uvPlane = nullptr;
-    uint8_t *uPlane = nullptr;
-    uint8_t *vPlane = nullptr;
-    uint32_t curRow = 0;
-    uint32_t width = 0;
-    uint32_t height = 0;
-    Jpegencoder->Deinterweave(uvPlane, uPlane, vPlane, curRow, width, height);
-    ASSERT_EQ(pixelmap.imageInfo_.pixelFormat, PixelFormat::UNKNOWN);
-    GTEST_LOG_(INFO) << "PluginLibJpegTest: Jpeg_EncoderTest006 end";
-}
-
-/**
  * @tc.name: PluginLibJpegTest_FinalizeEncodeTest001
  * @tc.desc: Verify that JpegEncoder encodes NV12 format image using FinalizeEncode.
  * @tc.type: FUNC

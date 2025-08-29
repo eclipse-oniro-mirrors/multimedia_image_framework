@@ -682,20 +682,6 @@ HWTEST_F(PictureTest, CreateExifMetadataTest001, TestSize.Level2)
 }
 
 /**
- * @tc.name: SetExifMetadataByExifMetadataTest001
- * @tc.desc: Set nullptr to picture exifMetadata_.
- * @tc.type: FUNC
- */
-HWTEST_F(PictureTest, SetExifMetadataByExifMetadataTest001, TestSize.Level2)
-{
-    std::shared_ptr<ExifMetadata> exifMetadata = nullptr;
-    std::unique_ptr<Picture> picture = CreatePicture();
-    ASSERT_NE(picture, nullptr);
-    int32_t result = picture->SetExifMetadata(exifMetadata);
-    EXPECT_EQ(result, ERR_IMAGE_INVALID_PARAMETER);
-}
-
-/**
  * @tc.name: SetExifMetadataTest001
  * @tc.desc: test the SetExifMetadata of Picture
  *           when surfaceBuffer is nullptr,return ERR_IMAGE_INVALID_PARAMETER

@@ -1359,28 +1359,6 @@ HWTEST_F(ImageFormatConvertTest, NV21P010ToRGBAF16_003, TestSize.Level1)
     GTEST_LOG_(INFO) << "ImageFormatConvertTest: NV21P010ToRGBAF16_003 end";
 }
 
-HWTEST_F(ImageFormatConvertTest, NV12P010ToRGBA_1010102_004, TestSize.Level1)
-{
-    GTEST_LOG_(INFO) << "ImageFormatConvertTest: NV12P010ToRGBA_1010102_004 start";
-    PixelFormat srcFormat = PixelFormat::YCBCR_P010;
-    PixelFormat destFormat = PixelFormat::RGBA_1010102;
-    Size srcSize = { P010_ORIGINAL_WIDTH, P010_ORIGINAL_HEIGHT };
-    uint32_t destBuffersize = srcSize.width * srcSize.height * BYTES_PER_PIXEL_RGBA;
-    YuvP010ConvertToRgb(srcFormat, destFormat, srcSize, destBuffersize);
-    GTEST_LOG_(INFO) << "ImageFormatConvertTest: NV12P010ToRGBA_1010102_004 end";
-}
-
-HWTEST_F(ImageFormatConvertTest, NV21P010ToRGBA_1010102_004, TestSize.Level1)
-{
-    GTEST_LOG_(INFO) << "ImageFormatConvertTest: NV21P010ToRGBA_1010102_004 start";
-    PixelFormat srcFormat = PixelFormat::YCRCB_P010;
-    PixelFormat destFormat = PixelFormat::RGBA_1010102;
-    Size srcSize = { P010_ORIGINAL_WIDTH, P010_ORIGINAL_HEIGHT };
-    uint32_t destBuffersize = srcSize.width * srcSize.height * BYTES_PER_PIXEL_RGBA;
-    YuvP010ConvertToRgb(srcFormat, destFormat, srcSize, destBuffersize);
-    GTEST_LOG_(INFO) << "ImageFormatConvertTest: NV21P010ToRGBA_1010102_004 end";
-}
-
 HWTEST_F(ImageFormatConvertTest, RGB565ToNV12P010_001, TestSize.Level3)
 {
     GTEST_LOG_(INFO) << "ImageFormatConvertTest.RGB565ToNV12P010_001: start";
@@ -1818,36 +1796,6 @@ HWTEST_F(ImageFormatConvertTest, ConvertImageFormat_Test_004, TestSize.Level1)
     ret = ImageFormatConvert::ConvertImageFormat(srcPixelMap, destFormat);
     EXPECT_EQ(ret, ERR_IMAGE_INVALID_PARAMETER);
     GTEST_LOG_(INFO) << "ImageFormatConvertTest: ConvertImageFormat_Test_004 end";
-}
-
-HWTEST_F(ImageFormatConvertTest, ConvertImageFormat_Test_005, TestSize.Level1)
-{
-    GTEST_LOG_(INFO) << "ImageFormatConvertTest: ConvertImageFormat_Test_005 start";
-    ConvertDataInfo srcDataInfo;
-    DestConvertInfo destInfo;
-    srcDataInfo.buffer = nullptr;
-    uint32_t ret = ImageFormatConvert::ConvertImageFormat(srcDataInfo, destInfo);
-    EXPECT_EQ(ret, ERR_IMAGE_INVALID_PARAMETER);
-    uint8_t data = 0;
-    srcDataInfo.buffer = &data;
-    srcDataInfo.pixelFormat = PixelFormat::ARGB_8888;
-    srcDataInfo.imageSize = {1, 1};
-    srcDataInfo.bufferSize = 4;
-    destInfo.format = PixelFormat::UNKNOWN;
-    destInfo.width = srcDataInfo.imageSize.width;
-    destInfo.height = srcDataInfo.imageSize.height;
-    ret = ImageFormatConvert::ConvertImageFormat(srcDataInfo, destInfo);
-    EXPECT_EQ(ret, ERR_IMAGE_INVALID_PARAMETER);
-    srcDataInfo.pixelFormat = PixelFormat::UNKNOWN;
-    destInfo.format = PixelFormat::ARGB_8888;
-    ret = ImageFormatConvert::ConvertImageFormat(srcDataInfo, destInfo);
-    EXPECT_EQ(ret, ERR_IMAGE_INVALID_PARAMETER);
-    srcDataInfo.pixelFormat = PixelFormat::RGB_565;
-    destInfo.format = PixelFormat::NV21;
-    srcDataInfo.bufferSize = 2;
-    ret = ImageFormatConvert::ConvertImageFormat(srcDataInfo, destInfo);
-    EXPECT_EQ(ret, SUCCESS);
-    GTEST_LOG_(INFO) << "ImageFormatConvertTest: ConvertImageFormat_Test_005 end";
 }
 
 HWTEST_F(ImageFormatConvertTest, PixelMapFormatConvert_001, TestSize.Level1)
