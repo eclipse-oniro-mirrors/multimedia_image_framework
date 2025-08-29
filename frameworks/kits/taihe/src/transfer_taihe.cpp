@@ -88,7 +88,7 @@ void* GetNapiFunction(const char* name)
         IMAGE_LOGE("%{public}s dlsym failed, name: %{public}s, error: %{public}s", __func__, name, dlerror());
         return nullptr;
     }
-    IMAGE_LOGI("%{public}s dlsym success, name: %{public}s, symbol: %{public}p", __func__, name, symbol);
+    IMAGE_LOGI("%{public}s dlsym success, name: %{public}s", __func__, name);
     return symbol;
 }
 
