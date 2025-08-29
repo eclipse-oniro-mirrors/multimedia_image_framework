@@ -91,6 +91,9 @@ extern "C" {
 #undef LOG_TAG
 #define LOG_TAG "PixelMap"
 
+#define BUF_NAME_LEN 255
+#define PREFIX_NAME_LEN 255
+
 namespace OHOS {
 namespace Media {
 using namespace std;
@@ -514,10 +517,10 @@ uint32_t PixelMap::SetMemoryName(const std::string &pixelMapName)
     if (GetFd() == nullptr) {
         return ERR_MEMORY_NOT_SUPPORT;
     }
-
     AllocatorType allocatorType = GetAllocatorType();
-
-    if (pixelMapName.empty() || pixelMapName.size() > DMA_BUF_NAME_LEN - 1) {
+    if (pixelMapName.empty() ||
+        (pixelMapName.size() > BUF_NAME_LEN && allocatorType == AllocatorType::DMA_ALLOC) ||
+        (pixelMapName.size() > BUF_NAME_LEN - PREFIX_NAME_LEN && allocatorType == AllocatorType::SHARE_MEM_ALLOC)) {
         return COMMON_ERR_INVALID_PARAMETER;
     }
 
