@@ -39,7 +39,6 @@ constexpr uint32_t COMPONENT_NUM_BGRA = 4;
 constexpr uint32_t COMPONENT_NUM_RGB = 3;
 constexpr uint32_t COMPONENT_NUM_GRAY = 1;
 constexpr uint8_t COMPONENT_NUM_YUV420SP = 3;
-constexpr uint8_t SAMPLE_FACTOR_TWO = 2;
 static constexpr uint32_t NUM_1000 = 1000;
 constexpr int32_t OPTS_SIZE = 16;
 
