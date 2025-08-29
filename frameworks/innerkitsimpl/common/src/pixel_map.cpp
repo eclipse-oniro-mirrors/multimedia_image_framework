@@ -2927,6 +2927,11 @@ bool ReadDmaMemInfoFromParcel(Parcel &parcel, PixelMemInfo &pixelMemInfo,
 
     void* nativeBuffer = surfaceBuffer.GetRefPtr();
     ImageUtils::SurfaceBuffer_Reference(nativeBuffer);
+    if (surfaceBuffer->GetSize() < static_cast<uint32_t>(pixelMemInfo.bufferSize)) {
+        IMAGE_LOGE("SurfaceBuffer size %{public}d is less than expected size %{public}d",
+            surfaceBuffer->GetSize(), pixelMemInfo.bufferSize);
+        return false;
+    }
     if (!pixelMemInfo.displayOnly || !isDisplay) {
         pixelMemInfo.base = static_cast<uint8_t*>(surfaceBuffer->GetVirAddr());
     }
