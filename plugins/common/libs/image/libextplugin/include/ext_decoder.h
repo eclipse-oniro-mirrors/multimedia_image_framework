@@ -122,6 +122,7 @@ private:
     uint32_t SetContextPixelsBuffer(uint64_t byteCount, DecodeContext &context);
     uint32_t GetMakerImagePropertyString(const std::string &key, std::string &value);
     uint32_t CheckDecodeOptions(uint32_t index, const PixelDecodeOptions &opts);
+    uint32_t CheckCropRect(const PixelDecodeOptions &opts);
     static void ReportImageType(SkEncodedImageFormat skEncodeFormat);
     bool CheckContext(const DecodeContext &context);
     uint32_t DmaMemAlloc(DecodeContext &context, uint64_t count, SkImageInfo &dstInfo);
@@ -147,7 +148,7 @@ private:
     bool FrameCacheInfoIsEqual(FrameCacheInfo& src, FrameCacheInfo& dst);
     uint32_t UpdateHardWareDecodeInfo(DecodeContext &context);
     bool IsRegionDecodeSupported(uint32_t index, const PixelDecodeOptions &opts, PlImageInfo &info);
-    SkCodec::Result DoRegionDecode(DecodeContext &context);
+    uint32_t DoRegionDecode(DecodeContext &context);
     SkCodec::Result DoSampleDecode(DecodeContext &context);
     bool IsRawFormat(std::string &name);
     std::string GetPluginType() override
@@ -190,8 +191,8 @@ private:
     static constexpr uint32_t ALIGN_16 = 16;
 #endif
     OHOS::Media::CropAndScaleStrategy cropAndScaleStrategy_ = OHOS::Media::CropAndScaleStrategy::DEFAULT;
-    OHOS::Media::Size RegiondesiredSize_;
-    bool SupportRegionFlag_;
+    OHOS::Media::Size regionDesiredSize_;
+    bool supportRegionFlag_;
     //Yuv
     OHOS::Media::Size desiredSizeYuv_;
     int softSampleSize_ = 1;

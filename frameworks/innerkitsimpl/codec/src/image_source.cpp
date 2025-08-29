@@ -4181,6 +4181,8 @@ DecodeContext ImageSource::DecodeImageDataToContext(uint32_t index, ImageInfo in
         FreeContextBuffer(context.freeFunc, context.allocatorType, context.pixelsBuffer);
         return context;
     }
+    IMAGE_LOGD("Decode success, context out size: (%{public}d, %{public}d), scale: %{public}f",
+        plInfo.size.width, plInfo.size.height, (static_cast<float>(plInfo.size.width) / info.size.width));
     if (IsSingleHdrImage(decodedHdrType)) {
         return HandleSingleHdrImage(decodedHdrType, context, plInfo);
     }
