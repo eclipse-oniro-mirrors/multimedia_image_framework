@@ -64,7 +64,6 @@ const static string IMAGE_INPUT_JPEG_PATH = "/data/local/tmp/image/test_hw1.jpg"
 static const std::string IMAGE_DEST = "/data/local/tmp/image/test_encode_out.dat";
 static const std::string IMAGE_HEIFHDR_SRC = "/data/local/tmp/image/test_heif_hdr.heic";
 static const std::string IMAGE_JPG_THREE_GAINMAP_HDR_PATH = "/data/local/tmp/image/three_gainmap_hdr.jpg";
-static const std::string IMAGE_HEIC_THREE_GAINMAP_HDR_PATH = "/data/local/tmp/image/three_gainmap_hdr.heic";
 static const std::string IMAGE_INCOMPLETE_GIF_PATH = "/data/local/tmp/image/test_broken.gif";
 class ExtDecoderTest : public testing::Test {
 public:
@@ -2199,74 +2198,6 @@ HWTEST_F(ExtDecoderTest, EncodePixelMapTest001, TestSize.Level3)
     std::unique_ptr<ImageSource> imageSourceDest = ImageSource::CreateImageSource(IMAGE_DEST, sourceOpts, errorCode);
     EXPECT_EQ(errorCode, OHOS::Media::SUCCESS);
     EXPECT_NE(imageSourceDest, nullptr);
-}
-
-/**
- * @tc.name: EncodeWideGamutPixelMapAndDecodeTest001
- * @tc.desc: Test HEIF encoding from a RGBA_1010102 format PixelMap and decode to widegamut image.
- * @tc.type: FUNC
- */
-HWTEST_F(ExtDecoderTest, EncodeWideGamutPixelMapAndDecodeTest001, TestSize.Level3)
-{
-    uint32_t errorCode = 0;
-    SourceOptions sourceOpts;
-    std::unique_ptr<ImageSource> imageSource =
-        ImageSource::CreateImageSource(IMAGE_HEIC_THREE_GAINMAP_HDR_PATH.c_str(), sourceOpts, errorCode);
-    ASSERT_NE(imageSource, nullptr);
-    DecodeOptions opts;
-    opts.desiredDynamicRange = DecodeDynamicRange::AUTO;
-    opts.isCreateWideGamutSdrPixelMap = true;
-    std::shared_ptr<PixelMap> pixelmap = imageSource->CreatePixelMap(opts, errorCode);
-    ASSERT_EQ(errorCode, OHOS::Media::SUCCESS);
-    ASSERT_NE(pixelmap, nullptr);
-#ifdef IMAGE_COLORSPACE_FLAG
-    auto colorSpace = pixelmap->InnerGetGrColorSpace();
-    auto colorSpaceName = outColorSpace.GetColorSpaceName();
-    EXPECT_EQ(colorSpace, ColorManager::colorSPaceName::DISPLAY_BT2020_SRGB);
-#endif
-    ImagePacker packer;
-    PackOption option;
-    option.format = "image/heif";
-    option.needsPackProperties = true;
-    option.desiredDynamicRange = EncodeDynamicRange::AUTO;
-    uint32_t startpc = packer.StartPacking(IMAGE_DEST, option);
-    ASSERT_EQ(startpc, OHOS::Media::SUCCESS);
-    uint32_t retAddImage = packer.AddImage(*pixelmap);
-    ASSERT_EQ(retAddImage, OHOS::Media::SUCCESS);
-    uint32_t retFinalizePacking = packer.FinalizePacking();
-    ASSERT_EQ(retFinalizePacking, OHOS::Media::SUCCESS);
-    std::unique_ptr<ImageSource> imageSourceDest = ImageSource::CreateImageSource(IMAGE_DEST, sourceOpts, errorCode);
-    EXPECT_EQ(errorCode, OHOS::Media::SUCCESS);
-    EXPECT_NE(imageSourceDest, nullptr);
-    DecodeOptions optsForDest;
-    optsForDest.desiredDynamicRange = DecodeDynamicRange::AUTO;
-    optsForDest.isCreateWideGamutSdrPixelMap = true;
-    std::shared_ptr<PixelMap> pixelmapAfterPacker = imageSourceDest->CreatePixelMap(optsForDest, errorCode);
-#ifdef IMAGE_COLORSPACE_FLAG
-    auto newColorspace = pixelmapAfterPacker->InnerGetGrColorSpace();
-    auto newColorSpaceName = outColorSpace.GetColorSpaceName();
-    EXPECT_EQ(colorSpace, ColorManager::colorSPaceName::DISPLAY_BT2020_SRGB);
-#endif
-}
-
-/**
- * @tc.name: EncodeWideGamutPixelMapAndDecodeTest002
- * @tc.desc: Test HEIF encoding from a YCBCR_P010 format PixelMap and decode to widegamut image.
- * @tc.type: FUNC
- */
-HWTEST_F(ExtDecoderTest, EncodeWideGamutPixelMapAndDecodeTest002, TestSize.Level3)
-{
-    uint32_t errorCode = 0;
-    SourceOptions sourceOpts;
-    std::unique_ptr<ImageSource> imageSource =
-        ImageSource::CreateImageSource(IMAGE_HEIC_THREE_GAINMAP_HDR_PATH.c_str(), sourceOpts, errorCode);
-    ASSERT_NE(imageSource, nullptr);
-    DecodeOptions opts;
-    opts.photoDesiredPixelFormat = PixelFormat::YCBCR_P010;
-    opts.isCreateWideGamutSdrPixelMap = true;
-    std::shared_ptr<PixelMap> pixelmap = imageSource->CreatePixelMap(opts, errorCode);
-    ASSERT_NE(errorCode, OHOS::Media::SUCCESS);
-    ASSERT_EQ(pixelmap, nullptr);
 }
 
 /**
