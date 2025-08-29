@@ -58,7 +58,6 @@
             <option name="push" value="images/test.bmp -> /data/local/tmp/image" src="res"/>
             <option name="push" value="images/test.9.png -> /data/local/tmp/image" src="res"/>
             <option name="push" value="images/test.dng -> /data/local/tmp/image" src="res"/>
-            <option name="push" value="images/dng_with_jpg.dng -> /data/local/tmp/image" src="res"/>
             <option name="push" value="images/test.arw -> /data/local/tmp/image" src="res"/>
             <option name="push" value="images/test.cr2 -> /data/local/tmp/image" src="res"/>
             <option name="push" value="images/test.nrw -> /data/local/tmp/image" src="res"/>
@@ -94,7 +93,6 @@
             <option name="push" value="images/test_jpeg_broken_one.jpg -> /data/local/tmp/image" src="res"/>
             <option name="push" value="images/test_jpeg_broken_two.jpg -> /data/local/tmp/image" src="res"/>
             <option name="push" value="images/focus_mode_exif_auto.jpg -> /data/local/tmp/image" src="res"/>
-            <option name="push" value="images/focus_mode_exif_af_s.jpg -> /data/local/tmp/image" src="res"/>
             <option name="push" value="images/focus_mode_exif_af_c.jpg -> /data/local/tmp/image" src="res"/>
             <option name="push" value="images/focus_mode_exif_af_mf.jpg -> /data/local/tmp/image" src="res"/>
             <option name="push" value="images/800-500.jpg -> /data/local/tmp/image" src="res"/>
@@ -119,8 +117,7 @@
             <option name="push" value="images/test_hw1.jpg -> /data/local/tmp/image" src="res"/>
             <option name="push" value="images/test_heif.heic -> /data/local/tmp/image" src="res"/>
             <option name="push" value="images/test_heif_hdr.heic -> /data/local/tmp/image" src="res"/>
-            <option name="push" value="images/three_gainmap_hdr_test.jpg -> /data/local/tmp/image" src="res"/>
-            <option name="push" value="images/three_gainmap_hdr_test.heic -> /data/local/tmp/image" src="res"/>
+            <option name="push" value="images/three_gainmap_hdr.jpg -> /data/local/tmp/image" src="res"/>
             <option name="push" value="images/test_broken.gif -> /data/local/tmp/image" src="res"/>
         </preparer>
     </target>
