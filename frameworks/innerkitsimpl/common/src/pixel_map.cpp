@@ -92,7 +92,7 @@ extern "C" {
 #define LOG_TAG "PixelMap"
 
 #define BUF_NAME_LEN 255
-#define PREFIX_NAME_LEN 255
+#define PREFIX_NAME_LEN 11
 
 namespace OHOS {
 namespace Media {
