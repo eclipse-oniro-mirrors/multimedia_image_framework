@@ -4518,6 +4518,7 @@ static bool CopyYUVToSurfaceBuffer(const DecodeContext& context, sptr<SurfaceBuf
     size_t dstSize = buffer->GetSize();
     cond = (buffer->GetStride() < 0);
     CHECK_ERROR_RETURN_RET(cond, false);
+    size_t dstStride = static_cast<size_t>(buffer->GetStride());
     YUVDataInfo yuvDataInfo = context.yuvInfo;
     IMAGE_LOGD("[ImageSource] CopyYUVToSurfaceBuffer yHeight = %{public}d, uvHeight = %{public}d,"
         "yStride = %{public}d, uvStride = %{public}d, dstSize = %{public}zu, dstStride = %{public}d",
@@ -4527,16 +4528,16 @@ static bool CopyYUVToSurfaceBuffer(const DecodeContext& context, sptr<SurfaceBuf
         if (memcpy_s(dstRow, dstSize, srcRow, yuvDataInfo.yStride) != EOK) {
             return false;
         }
-        dstRow += buffer->GetStride();
-        dstSize -= buffer->GetStride();
+        dstRow += dstStride;
+        dstSize -= dstStride;
         srcRow += yuvDataInfo.yStride;
     }
     for (uint32_t i = 0; i < yuvDataInfo.uvHeight; ++i) {
         if (memcpy_s(dstRow, dstSize, srcRow, yuvDataInfo.uvStride) != EOK) {
             return false;
         }
-        dstRow += buffer->GetStride();
-        dstSize -= buffer->GetStride();
+        dstRow += dstStride;
+        dstSize -= dstStride;
         srcRow += yuvDataInfo.uvStride;
     }
     return true;
