@@ -161,6 +161,15 @@ bool ImageSystemProperties::GetHeifHardwareDecodeEnabled()
 #endif
 }
 
+bool ImageSystemProperties::GetDumpHdrEnbaled()
+{
+#if !defined(CROSS_PLATFORM)
+    return system::GetBoolParameter("persist.multimedia.image.DumpHdrImage.enabled", false);
+#else
+    return false;
+#endif
+}
+
 bool ImageSystemProperties::GetAstcHardWareEncodeEnabled()
 {
 #if !defined(IOS_PLATFORM) &&!defined(ANDROID_PLATFORM)

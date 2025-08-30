@@ -80,6 +80,9 @@ private:
     sptr<SurfaceBuffer> ConvertPixelMapToDmaBuffer(std::shared_ptr<PixelMap> pixelmap);
     uint32_t EncodeSdrImage(ExtWStream& outputStream);
     uint32_t EncodeDualVivid(ExtWStream& outputStream);
+
+    uint32_t Encode10bitSdrPixelMap(Media::PixelMap* pixelmap, ExtWStream& outputStream);
+
     uint32_t EncodeSingleVivid(ExtWStream& outputStream);
     uint32_t EncodePicture();
     uint32_t EncodeCameraScenePicture(SkWStream& skStream);
@@ -107,7 +110,7 @@ private:
     void SetHdrColorSpaceType(sptr<SurfaceBuffer>& surfaceBuffer);
 #endif
     uint32_t EncodeImageByBitmap(SkBitmap& bitmap, bool needExif, SkWStream& outStream);
-    uint32_t EncodeImageByPixelMap(Media::PixelMap* pixelMap, bool needExif, SkWStream& outputStream);
+    uint32_t EncodeImageByPixelMap(Media::PixelMap* pixelmap, bool needExif, SkWStream& outputStream);
 #ifdef HEIF_HW_ENCODE_ENABLE
     std::shared_ptr<HDI::Codec::Image::V2_1::ImageItem> AssembleTmapImageItem(ColorManager::ColorSpaceName color,
         Media::HdrMetadata metadata, const PlEncodeOptions &opts);

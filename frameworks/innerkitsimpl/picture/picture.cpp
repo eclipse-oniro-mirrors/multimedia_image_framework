@@ -368,7 +368,10 @@ sptr<SurfaceBuffer> CreateGainmapByHdrAndSdr(std::shared_ptr<PixelMap> &hdrPixel
         .gainmap = gainmapSptr,
         .hdr = hdrSptr,
     };
+    ImageUtils::DumpHdrBufferEnabled(buffers.sdr, "Calgainmap-sdr");
+    ImageUtils::DumpHdrBufferEnabled(buffers.hdr, "Calgainmap-hdr");
     int32_t res = VpeUtils().ColorSpaceCalGainmap(buffers);
+    ImageUtils::DumpHdrBufferEnabled(buffers.gainmap, "Calgainmap-gainmap");
     if (res != VPE_ERROR_OK) {
         IMAGE_LOGE("HDR-IMAGE CalGainmap failed, res: %{public}d", res);
         return nullptr;
@@ -438,11 +441,14 @@ static std::unique_ptr<PixelMap> ComposeHdrPixelMap(
     };
     bool isCuva = ShouldComposeAsCuva(baseSptr, gainmapSptr);
     IMAGE_LOGD("HDR-IMAGE Compose image, isCuva: %{public}d", isCuva);
+    ImageUtils::DumpHdrBufferEnabled(baseSptr, "Picture-SDR-tobeComposed");
+    ImageUtils::DumpHdrBufferEnabled(gainmapSptr, "Picture-GAINMAP-tobeComposed");
     int32_t res = VpeUtils().ColorSpaceConverterComposeImage(buffers, isCuva);
     if (res != VPE_ERROR_OK) {
         IMAGE_LOGE("Compose HDR image failed, res: %{public}d", res);
         return nullptr;
     }
+    ImageUtils::DumpHdrBufferEnabled(hdrSptr, "Picture-HDR-Composed");
     return Picture::SurfaceBuffer2PixelMap(hdrSptr);
 }
 
