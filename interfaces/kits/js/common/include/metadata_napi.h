@@ -45,7 +45,9 @@ private:
     static napi_value SetProperties(napi_env env, napi_callback_info info);
     static napi_value GetAllProperties(napi_env env, napi_callback_info info);
     static napi_value Clone(napi_env env, napi_callback_info info);
-
+    static napi_value GetBlob(napi_env env, napi_callback_info info);
+    static napi_value SetBlob(napi_env env, napi_callback_info info);
+    
     void release();
     static thread_local napi_ref sConstructor_;
     static thread_local std::shared_ptr<ImageMetadata> sMetadata_;

@@ -343,7 +343,6 @@ Image_ErrorCode OH_AuxiliaryPictureNative_GetMetadata(OH_AuxiliaryPictureNative 
     } else {
         metadataPtr = auxiliaryPicture->GetInnerAuxiliaryPicture()->GetMetadata(metadataTypeInner);
     }
-
     if (metadataPtr == nullptr) {
         return IMAGE_BAD_PARAMETER;
     }
@@ -374,7 +373,6 @@ Image_ErrorCode OH_AuxiliaryPictureNative_SetMetadata(OH_AuxiliaryPictureNative 
     } else {
         auxiliaryPicture->GetInnerAuxiliaryPicture()->SetMetadata(metadataTypeInner, metadataPtr);
     }
-
     return IMAGE_SUCCESS;
 }
 

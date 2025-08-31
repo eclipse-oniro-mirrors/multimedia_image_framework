@@ -20,6 +20,7 @@
 #include "image_log.h"
 #include "image_utils.h"
 #include "media_errors.h"
+#include "picture.h"
 
 #undef LOG_DOMAIN
 #define LOG_DOMAIN LOG_TAG_DOMAIN_ID_IMAGE
@@ -41,12 +42,15 @@ constexpr uint16_t TAG_TYPE_LONG = 0x04;
 constexpr uint16_t HDR_MULTI_PICTURE_APP_LENGTH = 90;
 constexpr uint16_t FRAGMENT_METADATA_LENGTH = 20;
 constexpr uint16_t AUXILIARY_TAG_NAME_LENGTH = 8;
+constexpr uint32_t TAG_NAME_LENGTH = 8;
+const static uint32_t MAX_BLOB_METADATA_LENGTH = 20 * 1024 * 1024;
 
 constexpr uint8_t JPEG_MARKER_PREFIX = 0xFF;
 constexpr uint8_t JPEG_MARKER_APP2 = 0xE2;
 
 constexpr uint8_t MAX_IMAGE_NUM = 32;
 constexpr uint32_t JPEG_MARKER_SIZE = 2;
+
 
 static constexpr uint8_t MULTI_PICTURE_HEADER_FLAG[] = {
     'M', 'P', 'F', '\0'
@@ -295,6 +299,39 @@ bool JpegMpfParser::ParsingFragmentMetadata(uint8_t* data, uint32_t size, Rect& 
                 __func__, fragmentRect.left, fragmentRect.top, fragmentRect.width, fragmentRect.height);
             return true;
         }
+    }
+    return false;
+}
+
+// |<------------------ Blob Metadata structure ----------------->|
+// |<- Data ->|<- dataSize(4 Bytes) ->|<- Tag name(8 Bytes) ->|
+bool JpegMpfParser::ParsingBlobMetadata(uint8_t* data, uint32_t size, vector<uint8_t>& metadata,
+    MetadataType type)
+{
+    if (data == nullptr || size < TAG_NAME_LENGTH) {
+        return false;
+    }
+    auto it = BLOB_METADATA_TAG_MAP.find(type);
+    if (it == BLOB_METADATA_TAG_MAP.end()) {
+        IMAGE_LOGW("%{public}s unknown blobmetadata tag: %{public}d", __func__, type);
+        return false;
+    }
+    std::string tagName = it->second;
+    for (uint32_t offset = size - TAG_NAME_LENGTH; offset > 0; --offset) {
+        if (memcmp((data + offset), tagName.c_str(), TAG_NAME_LENGTH) != 0) {
+            continue;
+        }
+        if (offset < UINT32_BYTE_SIZE) {
+            return false;
+        }
+        offset -= UINT32_BYTE_SIZE;
+        uint32_t dataSize = static_cast<uint32_t>(ImageUtils::BytesToInt32(data, offset, size, false));
+        if (dataSize == 0 || dataSize > MAX_BLOB_METADATA_LENGTH || offset < (dataSize + UINT32_BYTE_SIZE)) {
+            return false;
+        }
+        offset -= (dataSize + UINT32_BYTE_SIZE);
+        metadata.assign(data + offset, data + offset + dataSize);
+        return true;
     }
     return false;
 }

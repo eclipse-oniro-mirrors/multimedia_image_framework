@@ -53,6 +53,8 @@ public:
 
     void SetItemName(const std::string &name) { itemName_ = name; }
 
+    const std::string &GetItemName() const { return itemName_; }
+
     const std::string &GetContentType() const { return contentType_; }
 
     const std::string &GetContentEncoding() const { return contentEncoding_; }

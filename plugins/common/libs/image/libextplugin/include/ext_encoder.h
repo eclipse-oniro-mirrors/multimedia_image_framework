@@ -91,12 +91,17 @@ private:
     uint32_t EncodeJpegPictureDualVivid(SkWStream& skStream);
     uint32_t EncodeJpegPictureSdr(SkWStream& skStream);
     void EncodeJpegAuxiliaryPictures(SkWStream& skStream);
+    void EncodeJpegAllBlobMetadata(SkWStream& skStream);
     uint32_t WriteJpegCodedData(std::shared_ptr<AuxiliaryPicture>& auxPicture, SkWStream& skStream);
     void EncodeLogVideoDataToBlobMetadata(sptr<SurfaceBuffer>& surfaceBuffer, SkWStream& skStream);
     uint32_t SpliceFragmentStream(SkWStream& skStream, sk_sp<SkData>& skData);
     uint32_t WriteJpegUncodedData(std::shared_ptr<AuxiliaryPicture>& auxPicture, SkWStream& skStream);
     void WriteJpegAuxiliarySizeAndTag(uint32_t size, std::shared_ptr<AuxiliaryPicture>& auxPicture,
         SkWStream& skStream);
+#ifdef HEIF_HW_ENCODE_ENABLE
+    void EncodeHeifMetadata(std::vector<HDI::Codec::Image::V2_1::ItemRef> &refs,
+                            std::vector<HDI::Codec::Image::V2_1::MetaItem> &inputMetas);
+#endif
     uint32_t EncodeHeifPicture(sptr<SurfaceBuffer>& mainSptr, SkImageInfo mainInfo, bool sdrIsSRGB);
     sk_sp<SkData> GetImageEncodeData(sptr<SurfaceBuffer>& surfaceBuffer, SkImageInfo info, bool needExif);
     uint32_t EncodeImageBySurfaceBuffer(sptr<SurfaceBuffer>& surfaceBuffer, SkImageInfo info,
@@ -153,6 +158,8 @@ private:
     bool AssembleExifMetaItem(std::vector<HDI::Codec::Image::V2_1::MetaItem>& metaItems);
     void AssembleExifRefItem(std::vector<HDI::Codec::Image::V2_1::ItemRef>& refs);
     void AssembleAuxiliaryRefItem(AuxiliaryPictureType type, std::vector<HDI::Codec::Image::V2_1::ItemRef>& refs);
+    bool AssembleBlobMetaItem(MetadataType type, std::vector<HDI::Codec::Image::V2_1::MetaItem>& metaItems);
+    void AssembleBlobRefItem(MetadataType type, std::vector<HDI::Codec::Image::V2_1::ItemRef>& refs);
 #endif
     uint32_t PixelmapEncode(ExtWStream& wStream);
     uint32_t EncodeHeifByPixelmap(Media::PixelMap* pixelmap, const PlEncodeOptions& opts);
@@ -162,8 +169,8 @@ private:
     OutputDataStream* output_ = nullptr;
     PlEncodeOptions opts_;
     Media::PixelMap* pixelmap_ = nullptr;
-    Media::Picture* picture_ = nullptr;
     std::vector<std::shared_ptr<Media::AbsMemory>> tmpMemoryList_;
+    Media::Picture* picture_ = nullptr;
 };
 } // namespace ImagePlugin
 } // namespace OHOS

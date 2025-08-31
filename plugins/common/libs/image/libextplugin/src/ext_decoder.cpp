@@ -2724,6 +2724,25 @@ bool ExtDecoder::GetHeifFragmentMetadata(Media::Rect &metadata)
     return false;
 }
 
+bool ExtDecoder::GetHeifMetadataBlob(vector<uint8_t>& metadata, MetadataType type)
+{
+#ifdef HEIF_HW_DECODE_ENABLE
+    if (codec_ == nullptr) {
+        IMAGE_LOGE("Check codec_ failed!");
+        return false;
+    }
+
+    auto decoder = reinterpret_cast<HeifDecoderImpl*>(codec_->getHeifContext());
+    if (decoder == nullptr) {
+        IMAGE_LOGE("Get heif decoder failed.");
+        return false;
+    }
+    decoder->GetMetadataBlob(metadata, type);
+    return true;
+#endif
+    return false;
+}
+
 bool ExtDecoder::DecodeHeifGainMap(DecodeContext& context)
 {
 #ifdef HEIF_HW_DECODE_ENABLE

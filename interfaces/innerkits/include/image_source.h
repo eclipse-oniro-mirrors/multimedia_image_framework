@@ -358,6 +358,8 @@ private:
                             ImagePlugin::DecodeContext &context, ImagePlugin::PlImageInfo &plInfo);
     ImagePlugin::DecodeContext DecodeImageDataToContextExtended(uint32_t index, ImageInfo &info,
         ImagePlugin::PlImageInfo &plInfo, ImageEvent &imageEvent, uint32_t &errorCode);
+    void DecodeBlobMetaData(std::unique_ptr<Picture> &picture, const std::set<MetadataType> &metadataTypes,
+        ImageInfo &info, uint32_t &errorCode);
     void SetPixelMapColorSpace(ImagePlugin::DecodeContext& context, std::unique_ptr<PixelMap>& pixelMap,
         std::unique_ptr<ImagePlugin::AbsImageDecoder>& decoder);
     bool IsSingleHdrImage(ImageHdrType type);

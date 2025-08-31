@@ -17,6 +17,7 @@
 #define INTERFACES_INNERKITS_INCLUDE_IMAGE_TYPE_H_
 
 #include <cinttypes>
+#include <map>
 #include <set>
 #include <string>
 #include <sstream>
@@ -52,6 +53,12 @@ namespace Media {
 #define HEIF_AUXTTYPE_ID_UNREFOCUS_MAP "urn:com:huawei:photo:5:0:0:aux:unrefocusmap"
 #define HEIF_AUXTTYPE_ID_LINEAR_MAP "urn:com:huawei:photo:5:0:0:aux:linearhmap"
 #define HEIF_AUXTTYPE_ID_FRAGMENT_MAP "urn:com:huawei:photo:5:0:0:aux:fragmentmap"
+#define HEIF_METADATA_ID_XTSTYLE "urn:com:huawei:photo:5:1:0:meta:xtstyle"
+
+#define METADATA_TAG_RFDATAB "RfDataB\0"
+#define METADATA_TAG_XTSTYLE "XtStyle\0"
+#define METADATA_TAG_STDATA "STData\0"
+
 
 constexpr uint8_t ASTC_EXTEND_INFO_TLV_NUM_6 = 6;
 
@@ -413,12 +420,24 @@ struct AuxiliaryPictureInfo {
 enum class MetadataType {
     EXIF = 1,
     FRAGMENT = 2,
+    XTSTYLE = 3,
+    RFDATAB = 4,
     GIF = 5,
-    UNKNOWN = 0
+    STDATA = 6,
+    RESMAP = 7,
+    UNKNOWN = 0,
+};
+
+static const std::map<MetadataType, std::string> BLOB_METADATA_TAG_MAP = {
+    {MetadataType::XTSTYLE, METADATA_TAG_XTSTYLE},
+    {MetadataType::RFDATAB, METADATA_TAG_RFDATAB},
+    {MetadataType::RESMAP, METADATA_TAG_RESMAP},
+    {MetadataType::STDATA, METADATA_TAG_STDATA},
 };
 
 struct DecodingOptionsForPicture {
     std::set<AuxiliaryPictureType> desireAuxiliaryPictures;
+    std::set<MetadataType> desiredMetadatas;
     PixelFormat desiredPixelFormat = PixelFormat::RGBA_8888;
     AllocatorType allocatorType = AllocatorType::DMA_ALLOC;
 };

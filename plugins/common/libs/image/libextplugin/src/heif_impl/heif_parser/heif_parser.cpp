@@ -30,6 +30,9 @@ namespace ImagePlugin {
 
 const auto EXIF_ID = "Exif\0\0";
 const auto HEIF_AUXTTYPE_ID_FRAGMENT_MAP = "urn:com:huawei:photo:5:0:0:aux:fragmentmap";
+const auto HEIF_METADATA_NAME_XTSTYLE = "urn:com:huawei:photo:5:1:0:meta:xtstyle";
+const auto HEIF_METADATA_NAME_RFDATAB = "RfDataB\0";
+const auto HEIF_METADATA_NAME_STDATA = "STData\0";
 const std::set<std::string> INFE_ITEM_TYPE = {
     "hvc1", "grid", "tmap", "iden", "mime"
 };
@@ -369,6 +372,9 @@ heif_error HeifParser::AssembleImages()
     ExtractDerivedImageProperties();
     ExtractNonMasterImages();
     ExtractMetadata(allItemIds);
+    ExtractXtStyleMetadata(allItemIds);
+    ExtractRfDataBMetadata(allItemIds);
+    ExtractSTDataMetadata(allItemIds);
     return heif_error_ok;
 }
 
@@ -459,6 +465,66 @@ void HeifParser::ExtractGainmap(const std::vector<heif_item_id>& allItemIds)
         if (itemType == "tmap") {
             ExtractISOMetadata(itemId);
             ExtractGainmapImage(itemId);
+        }
+    }
+}
+
+void HeifParser::ExtractXtStyleMetadata(const std::vector<heif_item_id>& allItemIds)
+{
+    for (heif_item_id itemId: allItemIds) {
+        auto infe = GetInfeBox(itemId);
+        if (!infe) {
+            continue;
+        }
+        const std::string& itemType = infe->GetItemType();
+        if (itemType == "mime" && infe->GetItemName() == HEIF_METADATA_NAME_XTSTYLE) {
+            std::vector<uint8_t> extendInfo;
+            heif_error err = GetItemData(itemId, &(extendInfo));
+            if (err != heif_error_ok || extendInfo.empty()) {
+                return;
+            }
+            primaryImage_->SetXtStyleData(extendInfo);
+            break;
+        }
+    }
+}
+
+void HeifParser::ExtractSTDataMetadata(const std::vector<heif_item_id>& allItemIds)
+{
+    for (heif_item_id itemId: allItemIds) {
+        auto infe = GetInfeBox(itemId);
+        if (!infe) {
+            continue;
+        }
+        const std::string& itemType = infe->GetItemType();
+        if (itemType == "mime" && infe->GetItemName() == HEIF_METADATA_NAME_STDATA) {
+            std::vector<uint8_t> extendInfo;
+            heif_error err = GetItemData(itemId, &(extendInfo));
+            if (err != heif_error_ok || extendInfo.empty()) {
+                return;
+            }
+            primaryImage_->SetSTDataMetaData(extendInfo);
+            break;
+        }
+    }
+}
+
+void HeifParser::ExtractRfDataBMetadata(const std::vector<heif_item_id>& allItemIds)
+{
+    for (heif_item_id itemId: allItemIds) {
+        auto infe = GetInfeBox(itemId);
+        if (!infe) {
+            continue;
+        }
+        const std::string& itemType = infe->GetItemType();
+        if (itemType == "mime" && infe->GetItemName() == HEIF_METADATA_NAME_RFDATAB) {
+            std::vector<uint8_t> extendInfo;
+            heif_error err = GetItemData(itemId, &(extendInfo));
+            if (err != heif_error_ok || extendInfo.empty()) {
+                return;
+            }
+            primaryImage_->SetRfDataBData(extendInfo);
+            break;
         }
     }
 }

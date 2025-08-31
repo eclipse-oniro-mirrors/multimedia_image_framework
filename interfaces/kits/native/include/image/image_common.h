@@ -169,6 +169,11 @@ typedef enum {
      *  @since 13
      */
     IMAGE_UNSUPPORTED_MEMORY_FORMAT = 7600205,
+    /**
+     * @error Invalid parameter.
+     * @since 19
+     */
+    IMAGE_INVALID_PARAMETER = 7600206,
     /** failed to allocate memory */
     IMAGE_ALLOC_FAILED = 7600301,
     /** memory copy failed */
@@ -209,16 +214,11 @@ typedef enum {
     IMAGE_SOURCE_ALLOC_FAILED = 7700302,
     /**
      * @error Invalid parameter for ImagePacker.
-     * @since 20
+     * @since 19
      */
     IMAGE_PACKER_INVALID_PARAMETER = 7800202,
     /** encode failed */
     IMAGE_ENCODE_FAILED = 7800301,
-    /**
-     * @error Invalid parameter for picture.
-     * @since 19
-     */
-    IMAGE_INVALID_PARAMETER = 7800302,
     /**
      * @error Invalid parameter for ImageReceiver
      * @since 20
@@ -261,6 +261,14 @@ typedef enum {
      * Fragment metadata.
      */
     FRAGMENT_METADATA = 2,
+    /*
+    * Xtstyle metadata.
+    */
+    XTSTYLE_METADATA = 3,
+    /*
+    * RfDataB metadata.
+    */
+    RFDATAB_METADATA = 4,
 
     /**
      * Metadata of a GIF image.
@@ -313,14 +321,55 @@ Image_ErrorCode OH_PictureMetadata_GetProperty(OH_PictureMetadata *metadata, Ima
 Image_ErrorCode OH_PictureMetadata_SetProperty(OH_PictureMetadata *metadata, Image_String *key, Image_String *value);
 
 /**
+ * @brief Sets the blob data in picture metadata.
+ *
+ * @param metadata The PictureMetadata pointer to be operated.
+ * @param blob The pointer to the blob data.
+ * @param blobSize The size of the blob data.
+ * @return Image functions result code.
+ *         {@link IMAGE_SUCCESS} if the execution is successful.
+ *         {@link IMAGE_BAD_PARAMETER} metadata is nullptr, or blob is nullptr, or SetBlob is failed.
+ *         {@link IMAGE_UNSUPPORTED_METADATA} unsupported metadata type.
+ * @since 16
+ */
+Image_ErrorCode OH_PictureMetadata_SetBlob(OH_PictureMetadata *metadata, uint8_t *blob, size_t *blobSize);
+
+/**
+ * @brief Gets the blob data from picture metadata.
+ *
+ * @param metadata The PictureMetadata pointer to be operated.
+ * @param blob The pointer to store the blob data.
+ * @param blobSize The size of the blob data.
+ * @return Image functions result code.
+ *         {@link IMAGE_SUCCESS} if the execution is successful.
+ *         {@link IMAGE_BAD_PARAMETER} metadata is nullptr, or blob is nullptr, or Getblob is failed.
+ *         {@link IMAGE_UNSUPPORTED_METADATA} unsupported metadata type.
+ * @since 16
+ */
+Image_ErrorCode OH_PictureMetadata_GetBlob(OH_PictureMetadata *metadata, uint8_t *blob, size_t blobSize);
+
+/**
+ * @brief Gets the size of the blob data in picture metadata.
+ *
+ * @param metadata The PictureMetadata pointer to be operated.
+ * @param blobSize The size of the blob data.
+ * @return Image functions result code.
+ *         {@link IMAGE_SUCCESS} if the execution is successful.
+ *         {@link IMAGE_BAD_PARAMETER} metadata is nullptr.
+ *         {@link IMAGE_UNSUPPORTED_METADATA} unsupported metadata type.
+ * @since 16
+ */
+Image_ErrorCode OH_PictureMetadata_GetBlobSize(OH_PictureMetadata *metadata, size_t *blobSize);
+
+/**
  * @brief Obtains the property of picture metadata. The output value.data is null-terminated.
  *
  * @param metadata The PictureMetadata pointer will be operated.
  * @param key The property's key.
  * @param value The property's value.
- * @return Image functions result code:
- *         {@link IMAGE_SUCCESS} if successful.
- *         {@link IMAGE_INVALID_PARAMETER} metadata or key or value is nullptr.
+ * @return Image functions result code.
+ *         {@link IMAGE_SUCCESS} if the execution is successful.
+ *         {@link IMAGE_INVALID_PARAMETER} metadata is nullptr, or key is nullptr, or value is nullptr.
  *         {@link IMAGE_UNSUPPORTED_METADATA} unsupported metadata type, or the metadata type does not match the
  *         auxiliary picture type.
  * @since 19

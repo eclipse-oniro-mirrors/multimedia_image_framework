@@ -278,6 +278,11 @@ public:
         return false;
     }
 
+    virtual bool GetHeifMetadataBlob(std::vector<uint8_t>& metadata, Media::MetadataType type)
+    {
+        return false;
+    }
+    
     virtual std::string GetPluginType() = 0;
 
     virtual OHOS::Media::Size GetHeifGridTileSize()

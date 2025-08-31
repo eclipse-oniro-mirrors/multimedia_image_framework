@@ -34,6 +34,10 @@ public:
     virtual std::shared_ptr<ImageMetadata> CloneMetadata() = 0;
     virtual MetadataType GetType() const = 0;
     virtual bool RemoveExifThumbnail() = 0;
+    virtual uint32_t GetBlob(uint32_t bufferSize, uint8_t *dst);
+    virtual uint32_t SetBlob(const uint8_t *source, const uint32_t bufferSize);
+    virtual uint32_t GetBlobSize();
+    virtual uint8_t* GetBlobPtr();
 };
 } // namespace Media
 } // namespace OHOS

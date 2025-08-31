@@ -15,9 +15,12 @@
 #include "image_common.h"
 #include "image_common_impl.h"
 #include "image_utils.h"
-#include "image_type.h"
 #include "exif_metadata.h"
+#include "image_type.h"
 #include "fragment_metadata.h"
+#include "xtstyle_metadata.h"
+#include "rfdatab_metadata.h"
+#include "image_log.h"
 #include "gif_metadata.h"
 #include "securec.h"
 #include "common_utils.h"
@@ -38,6 +41,10 @@ Image_ErrorCode OH_PictureMetadata_Create(Image_MetadataType metadataType, OH_Pi
         exifMetadata->CreateExifdata();
     } else if (metadataType == FRAGMENT_METADATA) {
         metadataPtr = std::make_shared<OHOS::Media::FragmentMetadata>();
+    } else if (metadataType == XTSTYLE_METADATA) {
+        metadataPtr = std::make_shared<OHOS::Media::XtStyleMetadata>();
+    } else if (metadataType == RFDATAB_METADATA) {
+        metadataPtr = std::make_shared<OHOS::Media::RfDataBMetadata>();
     } else if (metadataType == GIF_METADATA) {
         metadataPtr = std::make_shared<OHOS::Media::GifMetadata>();
     } else {
@@ -176,6 +183,54 @@ Image_ErrorCode OH_PictureMetadata_Clone(OH_PictureMetadata *oldMetadata, OH_Pic
         return IMAGE_ALLOC_FAILED;
     }
     *newMetadata = cloneMetadataNative.release();
+    return IMAGE_SUCCESS;
+}
+
+Image_ErrorCode OH_PictureMetadata_SetBlob(OH_PictureMetadata *metadata,  uint8_t *blob, size_t *blobSize)
+{
+    if (metadata == nullptr || blob == nullptr || blobSize == nullptr || *blobSize == 0) {
+        return IMAGE_BAD_PARAMETER;
+    }
+    if (!metadata->GetInnerAuxiliaryMetadata()) {
+        IMAGE_LOGE("blob metadata is null");
+        return IMAGE_UNSUPPORTED_METADATA;
+    }
+    uint32_t ret = static_cast<uint32_t>(metadata->GetInnerAuxiliaryMetadata()->SetBlob(blob, *blobSize));
+    if (ret != IMAGE_SUCCESS) {
+        IMAGE_LOGE("OH_PictureMetadata_SetBlob failed");
+        return IMAGE_BAD_PARAMETER;
+    }
+    return IMAGE_SUCCESS;
+}
+
+Image_ErrorCode OH_PictureMetadata_GetBlob(OH_PictureMetadata *metadata, uint8_t *blob, size_t blobSize)
+{
+    if (metadata == nullptr || blob == nullptr || blobSize == 0) {
+        return IMAGE_BAD_PARAMETER;
+    }
+    if (!metadata->GetInnerAuxiliaryMetadata()) {
+        IMAGE_LOGE("blob metadata is null");
+        return IMAGE_UNSUPPORTED_METADATA;
+    }
+    uint32_t ret = static_cast<uint32_t>(metadata->GetInnerAuxiliaryMetadata()->GetBlob(blobSize, blob));
+    if (ret != IMAGE_SUCCESS) {
+        IMAGE_LOGE("OH_PictureMetadata_GetBlob failed");
+        return IMAGE_BAD_PARAMETER;
+    }
+    return IMAGE_SUCCESS;
+}
+
+Image_ErrorCode OH_PictureMetadata_GetBlobSize(OH_PictureMetadata *metadata, size_t *blobSize)
+{
+    if (metadata == nullptr) {
+        IMAGE_LOGE("Invalid parameter: metadata is null");
+        return IMAGE_BAD_PARAMETER;
+    }
+    if (!metadata->GetInnerAuxiliaryMetadata()) {
+        IMAGE_LOGE("Auxiliary metadata is null");
+        return IMAGE_UNSUPPORTED_METADATA;
+    }
+    *blobSize = static_cast<uint32_t>(metadata->GetInnerAuxiliaryMetadata()->GetBlobSize());
     return IMAGE_SUCCESS;
 }
 

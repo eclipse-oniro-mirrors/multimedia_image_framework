@@ -83,6 +83,8 @@ public:
     bool IsSupportICCProfile() override;
 #endif
     static void FillYuvInfo(DecodeContext &context, SkImageInfo &dstInfo);
+    bool GetHeifMetadataBlob(std::vector<uint8_t>& metadata, Media::MetadataType type) override;
+
 private:
     typedef struct FrameCacheInfo {
         int width;

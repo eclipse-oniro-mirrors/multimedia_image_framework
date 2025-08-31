@@ -76,6 +76,8 @@ public:
     void setAuxiliaryDstBuffer(uint8_t* dstBuffer, size_t dstSize, size_t rowStride, void *context);
     void getFragmentMetadata(Media::Rect& fragmentMetadata);
     bool SwDecode(bool isSharedMemory = false);
+    void GetMetadataBlob(std::vector<uint8_t>& metadata, Media::MetadataType type);
+
     bool IsHeifGainmapYuv400();
     bool IsHeifAlphaYuv400();
     void SetSampleFormat(uint32_t sampleSize, ColorManager::ColorSpaceName colorSpaceName, bool isColorSpaceFromCicp);
