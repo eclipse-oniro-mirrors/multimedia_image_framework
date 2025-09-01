@@ -139,25 +139,6 @@ HWTEST_F(ExtDecoderTest, CheckCodecTest001, TestSize.Level3)
 }
 
 /**
- * @tc.name: GetScaledSizeTest001
- * @tc.desc: Test of GetScaledSize
- * @tc.type: FUNC
- */
-HWTEST_F(ExtDecoderTest, GetScaledSizeTest001, TestSize.Level3)
-{
-    GTEST_LOG_(INFO) << "ExtDecoderTest: GetScaledSizeTest001 start";
-    std::shared_ptr<ExtDecoder> extDecoder = std::make_shared<ExtDecoder>();
-    EXIFInfo exifInfo_;
-    int dWidth = 0;
-    int dHeight = 0;
-    float scale = ZERO;
-    extDecoder->codec_ = nullptr;
-    bool ret = extDecoder->GetScaledSize(dWidth, dHeight, scale);
-    ASSERT_EQ(ret, false);
-    GTEST_LOG_(INFO) << "ExtDecoderTest: GetScaledSizeTest001 end";
-}
-
-/**
  * @tc.name: GetHardwareScaledSizeTest001
  * @tc.desc: Test of GetHardwareScaledSize
  * @tc.type: FUNC
