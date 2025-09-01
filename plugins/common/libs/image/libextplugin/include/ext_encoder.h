@@ -158,7 +158,7 @@ private:
     uint32_t EncodeHeifByPixelmap(Media::PixelMap* pixelmap, const PlEncodeOptions& opts);
     void RecycleResources();
 
-    SkEncodedImageFormat encodeFormat_;
+    SkEncodedImageFormat encodeFormat_ = SkEncodedImageFormat::kJPEG;
     OutputDataStream* output_ = nullptr;
     PlEncodeOptions opts_;
     Media::PixelMap* pixelmap_ = nullptr;
