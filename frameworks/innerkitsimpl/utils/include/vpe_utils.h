@@ -17,6 +17,8 @@
 #define FRAMEWORKS_INNERKITSIMPL_UTILS_INCLUDE_VPE_UTILS_H
 
 #include <mutex>
+#include <string>
+#include <sstream>
 
 #if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
 #include "v1_0/cm_color_space.h"
@@ -39,6 +41,29 @@ struct VpeSurfaceBuffers {
 };
 #endif
 
+struct SurfaceBufferInfo {
+    int32_t width = 0;
+    int32_t height = 0;
+    int32_t stride = 0;
+    uint8_t *buffer = nullptr;
+    uint32_t bufferSize = 0;
+    // set param if buffer is yuv format
+    int32_t yStride = 0;
+    int32_t uvStride = 0;
+    int32_t yOffset = 0;
+    int32_t uvOffset = 0;
+
+    std::string Tostring() const
+    {
+        std::stringstream message;
+        message << " width: " << width << ", height: " << height << ", stride: " << stride <<
+        ", bufferSize: " << bufferSize << ", yStride: " << yStride << ", uvStride: " << uvStride <<
+        ", yOffset: " << yOffset << ", uvOffset: " << uvOffset;
+        return message.str();
+    }
+};
+
+
 class VpeUtils {
 public:
     VpeUtils();
@@ -49,6 +74,7 @@ public:
     int32_t ColorSpaceCalGainmap(VpeSurfaceBuffers& sb);
     int32_t ColorSpaceConverterImageProcess(sptr<SurfaceBuffer>& input, sptr<SurfaceBuffer>& output);
     int32_t DetailEnhancerImageProcess(sptr<SurfaceBuffer>& input, sptr<SurfaceBuffer>& output, int32_t level);
+    int32_t TruncateBuffer(VpeSurfaceBuffers& sb, bool shouldCalDiff = false);
     static bool SetSbColorSpaceType(sptr<SurfaceBuffer>& buffer,
         const HDI::Display::Graphic::Common::V1_0::CM_ColorSpaceType& colorSpaceType);
     static bool GetSbColorSpaceType(const sptr<SurfaceBuffer>& buffer,
