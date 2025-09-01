@@ -1347,5 +1347,31 @@ HWTEST_F(JpegExifMetadataAccessorTest, testGPSFormat001, TestSize.Level3)
     ASSERT_EQ(GetProperty(exifMetadata, "GPSLongitude"), "10, 20, 25.16513");
 }
 
+/**
+ * @tc.name: TestWriteAndReadFnumberWithTwoDecimal001
+ * @tc.desc: test write Fnumber with two decimal, and read with two decimal format.
+ * @tc.type: FUNC
+ */
+HWTEST_F(JpegExifMetadataAccessorTest, TestWriteAndReadFnumberWithTwoDecimal001, TestSize.Level3)
+{
+    std::shared_ptr<MetadataStream> readStream = std::make_shared<FileMetadataStream>(IMAGE_INPUT_WRITE21_JPEG_PATH);
+    ASSERT_TRUE(readStream->Open(OpenMode::ReadWrite));
+    JpegExifMetadataAccessor imageAccessor(readStream);
+    ASSERT_EQ(imageAccessor.Read(), 0);
+
+    auto exifMetadata = imageAccessor.Get();
+    ASSERT_NE(exifMetadata, nullptr);
+    ASSERT_TRUE(exifMetadata->SetValue("FNumber", "1.49"));
+    ASSERT_EQ(imageAccessor.Write(), 0);
+
+    ASSERT_EQ(imageAccessor.Read(), 0);
+    ASSERT_EQ(GetProperty(exifMetadata, "FNumber"), "f/1.49");
+
+    ASSERT_TRUE(exifMetadata->SetValue("FNumber", "1.80"));
+    ASSERT_EQ(imageAccessor.Write(), 0);
+
+    ASSERT_EQ(imageAccessor.Read(), 0);
+    ASSERT_EQ(GetProperty(exifMetadata, "FNumber"), "f/1.8");
+}
 } // namespace Multimedia
 } // namespace OHOS

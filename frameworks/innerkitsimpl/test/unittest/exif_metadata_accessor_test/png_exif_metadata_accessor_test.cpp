@@ -1383,5 +1383,36 @@ HWTEST_F(PngExifMetadataAccessorTest, GetExifEncodedBlob001, TestSize.Level2)
     ASSERT_EQ(ret, false);
     GTEST_LOG_(INFO) << "PngExifMetadataAccessorTest: GetExifEncodedBlob001 end";
 }
+
+/**
+ * @tc.name: TestWriteAndReadFnumberWithTwoDecimal001
+ * @tc.desc: test write Fnumber with two decimal, and read with two decimal format.
+ * @tc.type: FUNC
+ */
+HWTEST_F(PngExifMetadataAccessorTest, TestWriteAndReadFnumberWithTwoDecimal001, TestSize.Level3)
+{
+    std::shared_ptr<MetadataStream> stream = std::make_shared<FileMetadataStream>(IMAGE_OUTPUT_EXIF_PNG_PATH);
+    ASSERT_TRUE(stream->Open(OpenMode::ReadWrite));
+    PngExifMetadataAccessor imageAccessor(stream);
+    ASSERT_EQ(imageAccessor.Read(), 0);
+
+    auto exifMetadata = imageAccessor.Get();
+    ASSERT_NE(exifMetadata, nullptr);
+    ASSERT_TRUE(exifMetadata->SetValue("FNumber", "1.49"));
+    ASSERT_EQ(imageAccessor.Write(), 0);
+
+    ASSERT_EQ(imageAccessor.Read(), 0);
+    exifMetadata = imageAccessor.Get();
+    ASSERT_NE(exifMetadata, nullptr);
+    ASSERT_EQ(GetProperty(exifMetadata, "FNumber"), "f/1.49");
+
+    ASSERT_TRUE(exifMetadata->SetValue("FNumber", "1.80"));
+    ASSERT_EQ(imageAccessor.Write(), 0);
+
+    ASSERT_EQ(imageAccessor.Read(), 0);
+    exifMetadata = imageAccessor.Get();
+    ASSERT_NE(exifMetadata, nullptr);
+    ASSERT_EQ(GetProperty(exifMetadata, "FNumber"), "f/1.8");
+}
 } // namespace Multimedia
 } // namespace OHOS
