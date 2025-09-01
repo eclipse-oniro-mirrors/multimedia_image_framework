@@ -20,6 +20,7 @@
 #include <chrono>
 #include <thread>
 #include "image_source.h"
+#include "image_system_properties.h"
 #include "image_type.h"
 #include "image_utils.h"
 #include "media_errors.h"
@@ -173,9 +174,14 @@ bool ScalePixelMapWithGPU(PixelMap &pixelMap, const Size &desiredSize)
         .context = pixelMap.GetFd(),
     };
     gpuTransform.transformationType = TransformationType::SCALE;
-    if (PixelMapPostProcWithGL(pixelMap, gpuTransform)) {
-        IMAGE_LOGI("slr_gpu ScalePixelMapWithGPU success");
+    if (!ImageSystemProperties::GetGenThumbWithGpu()) {
+        pixelMap.scale(desiredSize.width / imageInfo.size.width, desiredSize.height / imageInfo.size.height);
         return true;
+    } else {
+        if (PixelMapPostProcWithGL(pixelMap, gpuTransform)) {
+            IMAGE_LOGI("slr_gpu ScalePixelMapWithGPU success");
+            return true;
+        }
     }
     return false;
 }
