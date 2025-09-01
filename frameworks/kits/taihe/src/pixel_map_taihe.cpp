@@ -1093,7 +1093,8 @@ void PixelMapImpl::ReleaseSync()
             ImageTaiheUtils::ThrowExceptionError(Media::ERR_RESOURCE_UNAVAILABLE, "Unable to release the PixelMap "
                 "because it's locked or unmodifiable");
         } else {
-            IMAGE_LOGD("[%{public}s] Release PixelMap with ID: %{public}d", __func__, nativePixelMap_->GetUniqueId());
+            IMAGE_LOGD("[%{public}s] Attempt to release PixelMap with ID: %{public}d",
+                __func__, nativePixelMap_->GetUniqueId());
             nativePixelMap_.reset();
         }
     }
@@ -1169,6 +1170,8 @@ void PixelMapImpl::ParseInitializationOptions(InitializationOptions const& etsOp
 void PixelMapImpl::Release()
 {
     if (nativePixelMap_ != nullptr) {
+        IMAGE_LOGD("[%{public}s] Attempt to release PixelMap with ID: %{public}d",
+            __func__, nativePixelMap_->GetUniqueId());
         nativePixelMap_.reset();
     }
 }
