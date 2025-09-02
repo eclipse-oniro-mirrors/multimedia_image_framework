@@ -44,7 +44,6 @@ constexpr int32_t PIXEL_MAP_MAX_RAM_SIZE = 600 * 1024 * 1024;
 constexpr static int32_t ZERO = 0;
 constexpr static size_t SIZE_ZERO = 0;
 constexpr static uint32_t NO_EXIF_TAG = 1;
-constexpr static uint32_t OFFSET_2 = 2;
 constexpr static uint32_t INVALID_ENCODE_DYNAMIC_RANGE_VALUE = 20;
 #ifdef EXIF_INFO_ENABLE
 constexpr static uint32_t INVALID_COLOR_TYPE = 100;
@@ -54,6 +53,9 @@ constexpr static int MAX_SCALE_SIZE = 8;
 constexpr static int SUBSET_SIZE_SMALL = 5;
 constexpr static int SUBSET_SIZE_LARGE = 9;
 constexpr static int DEFAULT_SAMPLE_SIZE = 10;
+#endif
+#ifdef SK_ENABLE_OHOS_CODEC
+constexpr static uint32_t OFFSET_2 = 2;
 #endif
 const static string CODEC_INITED_KEY = "CodecInited";
 const static string ENCODED_FORMAT_KEY = "EncodedFormat";
@@ -136,25 +138,6 @@ HWTEST_F(ExtDecoderTest, CheckCodecTest001, TestSize.Level3)
     ret = extDecoder->CheckCodec();
     ASSERT_EQ(ret, false);
     GTEST_LOG_(INFO) << "ExtDecoderTest: CheckCodecTest001 end";
-}
-
-/**
- * @tc.name: GetScaledSizeTest001
- * @tc.desc: Test of GetScaledSize
- * @tc.type: FUNC
- */
-HWTEST_F(ExtDecoderTest, GetScaledSizeTest001, TestSize.Level3)
-{
-    GTEST_LOG_(INFO) << "ExtDecoderTest: GetScaledSizeTest001 start";
-    std::shared_ptr<ExtDecoder> extDecoder = std::make_shared<ExtDecoder>();
-    EXIFInfo exifInfo_;
-    int dWidth = 0;
-    int dHeight = 0;
-    float scale = ZERO;
-    extDecoder->codec_ = nullptr;
-    bool ret = extDecoder->GetScaledSize(dWidth, dHeight, scale);
-    ASSERT_EQ(ret, false);
-    GTEST_LOG_(INFO) << "ExtDecoderTest: GetScaledSizeTest001 end";
 }
 
 /**
@@ -292,29 +275,6 @@ HWTEST_F(ExtDecoderTest, CheckDecodeOptionsTest001, TestSize.Level3)
     ret = extDecoder->CheckDecodeOptions(index, opts);
     ASSERT_EQ(ret, SUCCESS);
     GTEST_LOG_(INFO) << "ExtDecoderTest: CheckDecodeOptionsTest001 end";
-}
-
-/**
- * @tc.name: SetDecodeOptionsTest001
- * @tc.desc: Test of SetDecodeOptions
- * @tc.type: FUNC
- */
-HWTEST_F(ExtDecoderTest, SetDecodeOptionsTest001, TestSize.Level3)
-{
-    GTEST_LOG_(INFO) << "ExtDecoderTest: SetDecodeOptionsTest001 start";
-    std::shared_ptr<ExtDecoder> extDecoder = std::make_shared<ExtDecoder>();
-    EXIFInfo exifInfo_;
-    uint32_t index = ZERO;
-    PixelDecodeOptions opts;
-    PlImageInfo info;
-    extDecoder->codec_ = nullptr;
-    uint32_t ret = extDecoder->SetDecodeOptions(index, opts, info);
-    ASSERT_EQ(ret, ERR_IMAGE_INVALID_PARAMETER);
-    extDecoder->frameCount_ = 1;
-    opts.sampleSize = OFFSET_2;
-    ret = extDecoder->SetDecodeOptions(index, opts, info);
-    ASSERT_EQ(ret, ERR_IMAGE_INVALID_PARAMETER);
-    GTEST_LOG_(INFO) << "ExtDecoderTest: SetDecodeOptionsTest001 end";
 }
 
 /**

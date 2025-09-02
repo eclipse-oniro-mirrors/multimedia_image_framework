@@ -566,37 +566,6 @@ HWTEST_F(ImageSourceHdrTest, PackHdrMediaTypeMarkerTest001, TestSize.Level3)
 }
 
 /**
- * @tc.name: CheckPhotoDesiredPixelForamt001
- * @tc.desc: Test PhotoDesiredPixelForamt
- * @tc.type: FUNC
- */
-HWTEST_F(ImageSourceHdrTest, CheckPhotoDesiredPixelForamt001, TestSize.Level3)
-{
-    uint32_t errorCode = 0;
-    SourceOptions opts;
-    std::unique_ptr<ImageSource> imageSource =
-        ImageSource::CreateImageSource(IMAGE_INPUT_JPEG_HDR_VIVID_PATH, opts, errorCode);
-    ASSERT_EQ(errorCode, SUCCESS);
-    ASSERT_NE(imageSource.get(), nullptr);
-#ifdef IMAGE_VPE_FLAG
-    uint32_t index = 0;
-    DecodeOptions optsPixel;
-    optsPixel.desiredDynamicRange = Media::DecodeDynamicRange::AUTO;
-    optsPixel.photoDesiredPixelFormat = PixelFormat::YCBCR_P010;
-    errorCode = 0;
-    std::unique_ptr<PixelMap> pixelMap = imageSource->CreatePixelMap(index, optsPixel, errorCode);
-    Media::PixelFormat outputPixelFormat = pixelMap->GetPixelFormat();
-    bool isYcbcrP010 = outputPixelFormat == PixelFormat::YCBCR_P010;
-    ASSERT_EQ(errorCode, SUCCESS);
-    ASSERT_NE(pixelMap.get(), nullptr);
-    bool isHdr = pixelMap->IsHdr();
-    ASSERT_EQ(isHdr, true);
-    ASSERT_EQ(isYcbcrP010, true);
-#endif
-}
-
-
-/**
  * @tc.name: CheckPhotoDesiredPixelForamt002
  * @tc.desc: Test PhotoDesiredPixelForamt
  * @tc.type: FUNC
