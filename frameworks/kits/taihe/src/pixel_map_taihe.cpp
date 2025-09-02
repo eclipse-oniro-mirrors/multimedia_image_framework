@@ -197,7 +197,20 @@ static void ConvertPixelMapAlphaFormat(weak::PixelMap const& src, weak::PixelMap
     auto rPixelMap = rPixelMapImpl->GetNativePtr();
     auto wPixelMap = wPixelMapImpl->GetNativePtr();
     if (wPixelMap->IsEditable()) {
-        rPixelMap->ConvertAlphaFormat(*(wPixelMap.get()), isPremul);
+        uint32_t ret = rPixelMap->ConvertAlphaFormat(*(wPixelMap.get()), isPremul);
+        if (ret == Media::COMMON_ERR_INVALID_PARAMETER) {
+            ImageTaiheUtils::ThrowExceptionError(Media::COMMON_ERR_INVALID_PARAMETER,
+                "Invalid source or target PixelMap");
+        } else if (ret == Media::ERR_IMAGE_INVALID_PARAMETER) {
+            ImageTaiheUtils::ThrowExceptionError(Media::ERR_IMAGE_INVALID_PARAMETER,
+                "Unsupported PixelMap format");
+        } else if (ret == Media::ERR_IMAGE_READ_PIXELMAP_FAILED) {
+            ImageTaiheUtils::ThrowExceptionError(Media::ERR_IMAGE_READ_PIXELMAP_FAILED,
+                "Failed to read source or target PixelMap data");
+        } else if (ret == Media::ERR_IMAGE_DATA_UNSUPPORT) {
+            ImageTaiheUtils::ThrowExceptionError(Media::ERR_IMAGE_DATA_UNSUPPORT,
+                "Unsupported pixel format of source or target PixelMap");
+        }
     } else {
         ImageTaiheUtils::ThrowExceptionError(Media::ERR_IMAGE_PIXELMAP_NOT_ALLOW_MODIFY,
             "Target PixelMap is not editable");
