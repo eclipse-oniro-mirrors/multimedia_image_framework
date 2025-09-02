@@ -118,6 +118,7 @@ namespace {
     constexpr static int32_t SK_REPETITION_COUNT_INFINITE = -1;
     constexpr static int32_t SK_REPETITION_COUNT_ERROR_VALUE = -2;
     constexpr static int32_t BYTES_PER_YUV_SAMPLE = 2;
+    constexpr static int32_t RGBA8888_PIXEL_BYTE_SIZE = 4;
     constexpr static uint32_t HEIF_HARDWARE_TILE_MIN_DIM = 128;
     constexpr static uint32_t HEIF_HARDWARE_TILE_MAX_DIM = 4096;
     constexpr static uint32_t HEIF_HARDWARE_DISPLAY_MIN_DIM = 128;
@@ -405,10 +406,11 @@ static uint32_t HeapMemAlloc(DecodeContext &context, uint64_t count)
     return SUCCESS;
 }
 
-uint32_t ExtDecoder::UpdateHeifYuvDataInfo(DecodeContext &context, SkImageInfo &heifInfo)
+uint32_t ExtDecoder::UpdateHeifYuvDataInfo(DecodeContext &context, SkImageInfo &heifInfo,
+    uint32_t gridTileWidth, uint32_t gridTileHeight)
 {
 #ifdef HEIF_HW_DECODE_ENABLE
-    SurfaceBuffer* sbBuffer = reinterpret_cast<SurfaceBuffer*> (context.pixelsBuffer.context);
+    SurfaceBuffer* sbBuffer = static_cast<SurfaceBuffer*>(context.pixelsBuffer.context);
     if (sbBuffer == nullptr) {
         return ERR_DMA_DATA_ABNORMAL;
     }
@@ -419,7 +421,14 @@ uint32_t ExtDecoder::UpdateHeifYuvDataInfo(DecodeContext &context, SkImageInfo &
     } else {
         uint32_t uvPlaneIndex = (context.info.pixelFormat == PixelFormat::NV12 ||
                 context.info.pixelFormat == PixelFormat::YCBCR_P010) ? NUM_1 : NUM_2;
-        context.yuvInfo.imageSize = { heifInfo.width(), heifInfo.height() };
+        if (IsHeifRegionDecode()) {
+            context.yuvInfo.imageSize = { heifGridRegionInfo_.colCount * static_cast<int32_t>(gridTileWidth) -
+                heifGridRegionInfo_.widthPadding,
+                heifGridRegionInfo_.rowCount * static_cast<int32_t>(gridTileHeight) -
+                heifGridRegionInfo_.heightPadding };
+        } else {
+            context.yuvInfo.imageSize = { heifInfo.width(), heifInfo.height() };
+        }
         context.yuvInfo.yWidth = static_cast<uint32_t>(heifInfo.width());
         context.yuvInfo.yHeight = static_cast<uint32_t>(heifInfo.height());
         context.yuvInfo.uvWidth = static_cast<uint32_t>((heifInfo.width() + 1) / NUM_2);
@@ -443,19 +452,35 @@ uint32_t ExtDecoder::HeifYUVMemAlloc(OHOS::ImagePlugin::DecodeContext &context, 
         return ERR_IMAGE_INVALID_PARAMETER;
     }
     GridInfo gridInfo = heifContext->GetGridInfo();
-
-    uint64_t byteCount = static_cast<uint64_t>(heifInfo.computeMinByteSize());
-    bool cond = DmaMemAlloc(context, byteCount, heifInfo) != SUCCESS;
-    CHECK_INFO_RETURN_RET_LOG(cond, false, "DMA memalloc execution failed.");
-    uint8_t* dstBuffer = static_cast<uint8_t *>(context.pixelsBuffer.buffer);
-    SurfaceBuffer* sbBuffer = reinterpret_cast<SurfaceBuffer*> (context.pixelsBuffer.context);
+    if (IsHeifRegionDecode()) {
+        SetHeifDecodeRegion(context, static_cast<int32_t>(gridInfo.tileWidth),
+            static_cast<int32_t>(gridInfo.tileHeight));
+        SkImageInfo dstInfo = SkImageInfo::Make(static_cast<int>(heifGridRegionInfo_.colCount * gridInfo.tileWidth),
+            static_cast<int>(heifGridRegionInfo_.rowCount * gridInfo.tileHeight), dstInfo_.colorType(),
+            dstInfo_.alphaType(), dstInfo_.refColorSpace());
+        uint64_t byteCount = static_cast<uint64_t>(dstInfo.computeMinByteSize());
+        CHECK_ERROR_RETURN_RET_LOG(SkImageInfo::ByteSizeOverflowed(byteCount), ERR_IMAGE_TOO_LARGE,
+            "%{public}s too large byteCount: %{public}llu", __func__, static_cast<unsigned long long>(byteCount));
+        bool cond = DmaMemAlloc(context, byteCount, dstInfo) != SUCCESS;
+        CHECK_INFO_RETURN_RET_LOG(cond, ERR_DMA_NOT_EXIST, "DmaMemAlloc execution failed.");
+        IMAGE_LOGI("Do Heif YUV Type Region Decode, xy [%{public}d , %{public}d], wh [%{public}d x %{public}d]",
+            desiredRegion_.left, desiredRegion_.top, desiredRegion_.width, desiredRegion_.height);
+    } else {
+        uint64_t byteCount = static_cast<uint64_t>(heifInfo.computeMinByteSize());
+        CHECK_ERROR_RETURN_RET_LOG(SkImageInfo::ByteSizeOverflowed(byteCount), ERR_IMAGE_TOO_LARGE,
+            "%{public}s too large byteCount: %{public}llu", __func__, static_cast<unsigned long long>(byteCount));
+        bool cond = DmaMemAlloc(context, byteCount, heifInfo) != SUCCESS;
+        CHECK_INFO_RETURN_RET_LOG(cond, ERR_DMA_NOT_EXIST, "DmaMemAlloc execution failed.");
+    }
+    auto* dstBuffer = static_cast<uint8_t*>(context.pixelsBuffer.buffer);
+    auto* sbBuffer = reinterpret_cast<SurfaceBuffer*>(context.pixelsBuffer.context);
     int32_t rowStride = sbBuffer->GetStride();
     if (rowStride <= 0) {
-        return false;
+        return ERR_DMA_DATA_ABNORMAL;
     }
     IMAGE_LOGI("ExtDecoder::HeifYUVMemAlloc sb stride is %{public}d, height is %{public}d, size is %{public}d",
         sbBuffer->GetStride(), sbBuffer->GetHeight(), sbBuffer->GetSize());
-    return UpdateHeifYuvDataInfo(context, heifInfo);
+    return UpdateHeifYuvDataInfo(context, heifInfo, gridInfo.tileWidth, gridInfo.tileHeight);
 #else
     return ERR_IMAGE_DATA_UNSUPPORT;
 #endif
@@ -704,19 +729,80 @@ static sk_sp<SkColorSpace> getDesiredColorSpace(SkImageInfo &srcInfo, const Pixe
     return opts.plDesiredColorSpace->ToSkColorSpace();
 }
 
+bool ExtDecoder::IsHeifValidCrop(OHOS::Media::Rect &crop, SkImageInfo &info,
+    int32_t gridInfoCols, int32_t gridInfoRows)
+{
+    if (crop.height < ZERO || crop.width < ZERO || crop.left < ZERO || crop.top < ZERO) {
+        return false;
+    }
+    if (crop.height > info.height() - crop.top) {
+        heifGridRegionInfo_.heightPadding = gridInfoRows * heifGridRegionInfo_.tileHeight - info.height();
+        crop.height = info.height() - crop.top;
+    }
+    if (crop.width > info.width() - crop.left) {
+        heifGridRegionInfo_.widthPadding = gridInfoCols * heifGridRegionInfo_.tileWidth - info.width();
+        crop.width = info.width() - crop.left;
+    }
+    desiredRegion_.left = crop.left;
+    desiredRegion_.top = crop.top;
+    desiredRegion_.width = crop.width;
+    desiredRegion_.height = crop.height;
+    return true;
+}
+
+uint32_t ExtDecoder::ExtractHeifRegion(const PixelDecodeOptions &opts)
+{
+#ifdef HEIF_HW_DECODE_ENABLE
+    if (opts.CropRect.width <= ZERO || opts.CropRect.height <= ZERO) {
+        desiredRegion_ = {0, 0, 0, 0};
+        heifGridRegionInfo_ = {0, 0, 0, 0, 0, 0, false};
+        return SUCCESS;
+    }
+    bool cond = codec_ == nullptr;
+    CHECK_ERROR_RETURN_RET_LOG(cond, SUCCESS, "Decode failed, codec is null");
+    SkEncodedImageFormat skEncodeFormat = codec_->getEncodedFormat();
+    if (skEncodeFormat == SkEncodedImageFormat::kHEIF) {
+        auto heifContext = reinterpret_cast<HeifDecoderImpl*>(codec_->getHeifContext());
+        if (heifContext == nullptr) {
+            IMAGE_LOGE("Decode heifContext is nullptr");
+            return ERR_IMAGE_DECODE_FAILED;
+        }
+        GridInfo gridInfo = heifContext->GetGridInfo();
+        if (gridInfo.tileWidth != static_cast<uint32_t>(info_.width()) ||
+            gridInfo.tileHeight != static_cast<uint32_t>(info_.height())) {
+            heifGridRegionInfo_.isGridType = true;
+            heifGridRegionInfo_.tileWidth = static_cast<int32_t>(gridInfo.tileWidth);
+            heifGridRegionInfo_.tileHeight = static_cast<uint32_t>(gridInfo.tileHeight);
+        }
+        PixelDecodeOptions heifOpts = opts;
+        if (!IsHeifValidCrop(heifOpts.CropRect, info_, static_cast<int32_t>(gridInfo.cols),
+            static_cast<int32_t>(gridInfo.rows))) {
+            IMAGE_LOGE("Invalid heif crop rect xy [%{public}d x %{public}d], wh [%{public}d x %{public}d]",
+                opts.CropRect.left, opts.CropRect.top, opts.CropRect.width, opts.CropRect.height);
+            return ERR_IMAGE_INVALID_PARAMETER;
+        }
+    }
+    return SUCCESS;
+#else
+    return SUCCESS;
+#endif
+}
+
+static bool IsSampleDecodeFormat(SkEncodedImageFormat format)
+{
+    return format == SkEncodedImageFormat::kJPEG || format == SkEncodedImageFormat::kHEIF ||
+        format == SkEncodedImageFormat::kPNG;
+}
+
 uint32_t ExtDecoder::CheckDecodeOptions(uint32_t index, const PixelDecodeOptions &opts)
 {
     bool cond = ImageUtils::CheckMulOverflow(dstInfo_.width(), dstInfo_.height(), dstInfo_.bytesPerPixel());
     CHECK_ERROR_RETURN_RET_LOG(cond, ERR_IMAGE_INVALID_PARAMETER,
         "SetDecodeOptions failed, width:%{public}d, height:%{public}d is too large",
         dstInfo_.width(), dstInfo_.height());
-    IMAGE_LOGD("%{public}s IN, opts.CropRect: xy [%{public}d x %{public}d] wh [%{public}d x %{public}d]",
-        __func__, opts.CropRect.left, opts.CropRect.top, opts.CropRect.width, opts.CropRect.height);
-    cond = !IsValidCrop(opts.CropRect, info_, dstSubset_);
-    CHECK_ERROR_RETURN_RET_LOG(cond, ERR_IMAGE_INVALID_PARAMETER,
-        "Invalid crop rect top:%{public}d, bottom:%{public}d, left:%{public}d, right:%{public}d",
-        dstSubset_.top(), dstSubset_.bottom(), dstSubset_.left(), dstSubset_.right());
-    IMAGE_LOGI("%{public}s IN, dstSubset_: xy [%{public}d x %{public}d] right,bottom: [%{public}d x %{public}d]",
+    cond = ExtractHeifRegion(opts) != SUCCESS;
+    CHECK_ERROR_RETURN_RET(cond, ERR_IMAGE_INVALID_PARAMETER);
+    IMAGE_LOGD("%{public}s IN, dstSubset_: xy [%{public}d x %{public}d] right,bottom: [%{public}d x %{public}d]",
         __func__, dstSubset_.left(), dstSubset_.top(), dstSubset_.right(), dstSubset_.bottom());
     size_t tempSrcByteCount = info_.computeMinByteSize();
     size_t tempDstByteCount = dstInfo_.computeMinByteSize();
@@ -1008,6 +1094,14 @@ bool ExtDecoder::IsHeifSharedMemDecode(DecodeContext &context)
 void ExtDecoder::FillYuvInfo(DecodeContext &context, SkImageInfo &dstInfo)
 {
     if (context.allocatorType == AllocatorType::SHARE_MEM_ALLOC) {
+        if (IsHeifRegionDecode()) {
+            context.yuvInfo.imageSize = { heifGridRegionInfo_.colCount * heifGridRegionInfo_.tileWidth -
+                heifGridRegionInfo_.widthPadding,
+                heifGridRegionInfo_.rowCount * heifGridRegionInfo_.tileHeight -
+                heifGridRegionInfo_.heightPadding };
+        } else {
+            context.yuvInfo.imageSize = { dstInfo.width(), dstInfo.height() };
+        }
         context.yuvInfo.imageSize = {dstInfo.width(), dstInfo.height()};
         context.yuvInfo.yWidth = static_cast<uint32_t>(dstInfo.width());
         context.yuvInfo.yHeight = static_cast<uint32_t>(dstInfo.height());
@@ -1039,20 +1133,52 @@ bool SetOutPutFormat(OHOS::Media::PixelFormat pixelFormat, HeifDecoderImpl* deco
 }
 #endif
 
+void ExtDecoder::UpdateDstInfoAndOutInfo(DecodeContext &context)
+{
+    if (sampleSize_ != DEFAULT_SAMPLE_SIZE) {
+        sampleSize_ = DEFAULT_SAMPLE_SIZE;
+        dstInfo_ = SkImageInfo::Make(info_.width(), info_.height(), dstInfo_.colorType(),
+            dstInfo_.alphaType(), dstInfo_.refColorSpace());
+        context.outInfo.size.width = info_.width();
+        context.outInfo.size.height = info_.height();
+    }
+}
+
 uint32_t ExtDecoder::DoHeifSharedMemDecode(DecodeContext &context)
 {
 #ifdef HEIF_HW_DECODE_ENABLE
     auto decoder = reinterpret_cast<HeifDecoderImpl*>(codec_->getHeifContext());
     CHECK_ERROR_RETURN_RET_LOG(decoder == nullptr, ERR_IMAGE_DATA_UNSUPPORT, "Decode HeifDecoder is nullptr");
-    uint64_t rowStride = dstInfo_.minRowBytes64();
-    uint64_t byteCount = dstInfo_.computeMinByteSize();
-    if (IsYuv420Format(context.info.pixelFormat)) {
-        rowStride = static_cast<uint32_t>(dstInfo_.width());
-        byteCount = JpegDecoderYuv::GetYuvOutSize(dstInfo_.width(), dstInfo_.height());
+    uint64_t byteCount;
+    uint64_t rowStride;
+    if (IsHeifRegionDecode()) {
+        UpdateHeifRegionDstInfo(context);
     }
+    UpdateDstInfoAndOutInfo(context);
+    rowStride = dstInfo_.minRowBytes64();
+    byteCount = dstInfo_.computeMinByteSize();
+    GridInfo gridInfo = decoder->GetGridInfo();
+    if (IsYuv420Format(context.info.pixelFormat)) {
+        if (IsHeifRegionDecode()) {
+            UpdateHeifRegionDstInfo(context);
+            rowStride = gridInfo.tileWidth * static_cast<uint32_t>(heifGridRegionInfo_.colCount) -
+                static_cast<uint32_t>(heifGridRegionInfo_.widthPadding);
+            byteCount = JpegDecoderYuv::GetYuvOutSize(dstInfo_.width(), dstInfo_.height());
+        } else {
+            rowStride = static_cast<uint32_t>(dstInfo_.width());
+            byteCount = JpegDecoderYuv::GetYuvOutSize(dstInfo_.width(), dstInfo_.height());
+        }
+    }
+    CHECK_ERROR_RETURN_RET_LOG(SkImageInfo::ByteSizeOverflowed(byteCount), ERR_IMAGE_TOO_LARGE,
+        "%{public}s too large byteCount: %{public}llu", __func__, static_cast<unsigned long long>(byteCount));
     CHECK_ERROR_RETURN_RET(!SetOutPutFormat(context.info.pixelFormat, decoder), ERR_IMAGE_DATA_UNSUPPORT);
     uint32_t res = ShareMemAlloc(context, byteCount);
     CHECK_ERROR_RETURN_RET(res != SUCCESS, res);
+    if (IsHeifRegionDecode()) {
+        decoder->SetDecodeRegion(heifGridRegionInfo_.colCount, heifGridRegionInfo_.rowCount,
+            desiredRegion_.left, desiredRegion_.top, rowStride);
+        decoder->SetPadding(heifGridRegionInfo_.widthPadding, heifGridRegionInfo_.heightPadding);
+    }
     decoder->setDstBuffer(reinterpret_cast<uint8_t *>(context.pixelsBuffer.buffer), rowStride, nullptr);
     bool decodeRet = decoder->SwDecode(context.isAppUseAllocator);
     if (!decodeRet) {
@@ -1063,6 +1189,96 @@ uint32_t ExtDecoder::DoHeifSharedMemDecode(DecodeContext &context)
     return decodeRet ? SUCCESS : ERR_IMAGE_DATA_UNSUPPORT;
 #else
     return ERR_IMAGE_DATA_UNSUPPORT;
+#endif
+}
+
+OHOS::Media::Size ExtDecoder::GetHeifRegionGridSize()
+{
+    OHOS::Media::Size heifGridSize = {gridTileWidth_, gridTileHeight_};
+    return heifGridSize;
+}
+
+void ExtDecoder::SetHeifDecodeRegion(DecodeContext &context, int32_t gridTileWidth, int32_t gridTileHeight)
+{
+    if (gridTileWidth == ZERO || gridTileHeight == ZERO) {
+        return;
+    }
+    double tempRegionColCount = ((desiredRegion_.left % gridTileWidth) + desiredRegion_.width) /
+        static_cast<double>(gridTileWidth);
+    double tempRegionRowCount = ((desiredRegion_.top % gridTileHeight) + desiredRegion_.height) /
+        static_cast<double>(gridTileHeight);
+    heifGridRegionInfo_.colCount = ceil(tempRegionColCount);
+    heifGridRegionInfo_.rowCount = ceil(tempRegionRowCount);
+    gridTileWidth_ = gridTileWidth;
+    gridTileHeight_ = gridTileHeight;
+    context.outInfo.size.height = heifGridRegionInfo_.rowCount *
+        gridTileHeight - heifGridRegionInfo_.heightPadding;
+    context.outInfo.size.width = heifGridRegionInfo_.colCount *
+        gridTileWidth - heifGridRegionInfo_.widthPadding;
+}
+
+void ExtDecoder::UpdateHeifRegionDstInfo(DecodeContext &context)
+{
+#ifdef HEIF_HW_DECODE_ENABLE
+    auto heifContext = reinterpret_cast<HeifDecoderImpl*>(codec_->getHeifContext());
+    if (heifContext == nullptr) {
+        IMAGE_LOGE("Decode heifContext is nullptr");
+        return;
+    }
+    GridInfo gridInfo = heifContext->GetGridInfo();
+    SetHeifDecodeRegion(context, static_cast<int32_t>(gridInfo.tileWidth), static_cast<int32_t>(gridInfo.tileHeight));
+    if (context.allocatorType == Media::AllocatorType::SHARE_MEM_ALLOC) {
+        dstInfo_ = SkImageInfo::Make(heifGridRegionInfo_.colCount * gridInfo.tileWidth -
+            heifGridRegionInfo_.widthPadding, heifGridRegionInfo_.rowCount *
+            gridInfo.tileHeight - heifGridRegionInfo_.heightPadding,
+            dstInfo_.colorType(), dstInfo_.alphaType(), dstInfo_.refColorSpace());
+    } else {
+        dstInfo_ = SkImageInfo::Make(heifGridRegionInfo_.colCount * gridInfo.tileWidth,
+            heifGridRegionInfo_.rowCount * gridInfo.tileHeight,
+            dstInfo_.colorType(), dstInfo_.alphaType(), dstInfo_.refColorSpace());
+    }
+#else
+    return;
+#endif
+}
+
+void ExtDecoder::UpdateHeifSKInfo(DecodeContext &context, uint64_t &rowStride)
+{
+#ifdef HEIF_HW_DECODE_ENABLE
+    auto decoder = reinterpret_cast<HeifDecoderImpl*>(codec_->getHeifContext());
+    if (decoder == nullptr) {
+        IMAGE_LOGE("Decode HeifDecoder is nullptr");
+        return;
+    }
+    auto dstBuffer = reinterpret_cast<SurfaceBuffer*>(context.pixelsBuffer.context);
+    decoder->SetDecodeRegion(heifGridRegionInfo_.colCount, heifGridRegionInfo_.rowCount,
+        desiredRegion_.left, desiredRegion_.top, dstBuffer->GetStride());
+    dstInfo_ = SkImageInfo::Make(info_.width(), info_.height(), dstInfo_.colorType(),
+        dstInfo_.alphaType(), dstInfo_.refColorSpace());
+    rowStride = dstInfo_.minRowBytes64();
+#else
+    return;
+#endif
+}
+
+bool ExtDecoder::IsHeifRegionDecode()
+{
+#ifdef HEIF_HW_DECODE_ENABLE
+    if (desiredRegion_.width > ZERO && desiredRegion_.height > ZERO && heifGridRegionInfo_.isGridType &&
+        cropAndScaleStrategy_ != OHOS::Media::CropAndScaleStrategy::SCALE_FIRST) {
+        auto decoder = reinterpret_cast<HeifDecoderImpl*>(codec_->getHeifContext());
+        bool cond = decoder == nullptr;
+        CHECK_ERROR_RETURN_RET_LOG(cond, false, "Decode Heifdecoder is nullptr");
+        if (decoder->IsHeifHasAlphaImage() || !decoder->IsHeifGainmapDivisibility(info_.width(), info_.height()) ||
+            decoder->IsHeifGainmapYuv400()) {
+            IMAGE_LOGI("Heif image contains alpha channels, or the size not be an integer multiple of GainMap");
+            return false;
+        }
+        return true;
+    }
+    return false;
+#else
+    return false;
 #endif
 }
 
@@ -1217,8 +1433,27 @@ bool ExtDecoder::IsSupportHeifHardwareDecode(const PixelDecodeOptions &opts)
 
 bool ExtDecoder::IsDivisibleBySampleSize()
 {
-    return info_.width() % static_cast<int32_t>(sampleSize_) == 0 &&
-        info_.height() % static_cast<int32_t>(sampleSize_) == 0;
+#ifdef HEIF_HW_DECODE_ENABLE
+    auto decoder = reinterpret_cast<HeifDecoderImpl*>(codec_->getHeifContext());
+    bool cond = decoder == nullptr;
+    CHECK_ERROR_RETURN_RET_LOG(cond, false, "Decode Heifdecoder is nullptr");
+    GridInfo gridInfo = decoder->GetGridInfo();
+    if (gridInfo.tileWidth % sampleSize_ != 0 || gridInfo.tileHeight % sampleSize_ != 0) {
+        return false;
+    }
+    if (IsYuv420Format(heifPixelFormat_) &&
+        (info_.height() / static_cast<int32_t>(sampleSize_)) % NUM_2 != 0) {
+        return false;
+    }
+    if (decoder->IsGainmapDivisibleBySampleSize(sampleSize_) &&
+        info_.width() % static_cast<int32_t>(sampleSize_) == 0 &&
+        info_.height() % static_cast<int32_t>(sampleSize_) == 0) {
+        return true;
+    }
+    return false;
+#else
+    return false;
+#endif
 }
 
 void ExtDecoder::SetHeifSampleSize(const PixelDecodeOptions &opts, int &dstWidth, int &dstHeight,
@@ -1238,30 +1473,30 @@ void ExtDecoder::SetHeifSampleSize(const PixelDecodeOptions &opts, int &dstWidth
 #endif
 }
 
-bool ExtDecoder::DoHeifSwDecode(DecodeContext &context)
+bool ExtDecoder::DoHeifSwDecode(OHOS::ImagePlugin::DecodeContext &context)
 {
 #ifdef HEIF_HW_DECODE_ENABLE
-    sampleSize_ = 1;
-    context.outInfo.size.width = static_cast<uint32_t>(info_.width());
-    context.outInfo.size.height = static_cast<uint32_t>(info_.height());
     auto decoder = reinterpret_cast<HeifDecoderImpl*>(codec_->getHeifContext());
-    if (decoder == nullptr) {
-        IMAGE_LOGE("Decode HeifDecoder is nullptr");
-        return false;
-    }
+    bool cond = decoder == nullptr;
+    CHECK_ERROR_RETURN_RET_LOG(cond, false, "Decode Heifdecoder is nullptr");
     ReleaseOutputBuffer(context, context.allocatorType);
     uint64_t byteCount = info_.computeMinByteSize();
-    //If the HWdecode failed, software does not support samplesize, allocate memory based on original image.
-    bool cond = false;
+    //If the HWdecode failed, software does not support setting samplesize, allocate memory based on original image.
+    cond = false;
+    sampleSize_ = DEFAULT_SAMPLE_SIZE;
+    context.outInfo.size.width = info_.width();
+    context.outInfo.size.height = info_.height();
     if (IsHeifToYuvDecode(context)) {
         cond = HeifYUVMemAlloc(context, info_) != SUCCESS;
     } else {
+        CHECK_ERROR_RETURN_RET_LOG(SkImageInfo::ByteSizeOverflowed(byteCount), false,
+            "%{public}s too large byteCount: %{public}llu", __func__, static_cast<unsigned long long>(byteCount));
         cond = DmaMemAlloc(context, byteCount, info_) != SUCCESS;
     }
     CHECK_ERROR_RETURN_RET(cond, false);
     auto dstBuffer = reinterpret_cast<SurfaceBuffer*>(context.pixelsBuffer.context);
-    decoder->SetSampleFormat(DEFAULT_SAMPLE_SIZE, heifColorSpaceName_, heifIsColorSpaceFromCicp_);
-    decoder->setDstBuffer(reinterpret_cast<uint8_t*>(context.pixelsBuffer.buffer),
+    decoder->SetSampleFormat(DEFAULT_SCALE_SIZE, heifColorSpaceName_, heifIsColorSpaceFromCicp_);
+    decoder->setDstBuffer(reinterpret_cast<uint8_t *>(context.pixelsBuffer.buffer),
         dstBuffer->GetStride(), context.pixelsBuffer.context);
     bool decodeRet = decoder->SwDecode(false);
     return decodeRet;
@@ -1270,29 +1505,38 @@ bool ExtDecoder::DoHeifSwDecode(DecodeContext &context)
 #endif
 }
 
-uint32_t ExtDecoder::DoHeifToRgbDecode(DecodeContext &context)
+uint32_t ExtDecoder::DoHeifToRgbDecode(OHOS::ImagePlugin::DecodeContext &context)
 {
 #ifdef HEIF_HW_DECODE_ENABLE
     auto decoder = reinterpret_cast<HeifDecoderImpl*>(codec_->getHeifContext());
-    if (decoder == nullptr) {
-        IMAGE_LOGE("DoHeifToRgbDecode HeifDecoder is nullptr");
-        return ERR_IMAGE_DATA_UNSUPPORT;
+    bool cond = decoder == nullptr;
+    CHECK_ERROR_RETURN_RET_LOG(cond, false, "Decode Heifdecoder is nullptr");
+ 
+    if (IsHeifRegionDecode()) {
+        UpdateHeifRegionDstInfo(context);
     }
     uint64_t byteCount = dstInfo_.computeMinByteSize();
     if (ImageUtils::IsSdrPixelMapReuseSuccess(context, info_.width(), info_.height(), reusePixelmap_)) {
         IMAGE_LOGI("HEIF RGB Maindecode reusePixelmap success");
     } else {
+        CHECK_ERROR_RETURN_RET_LOG(SkImageInfo::ByteSizeOverflowed(byteCount), ERR_IMAGE_TOO_LARGE,
+            "%{public}s too large byteCount: %{public}llu", __func__, static_cast<unsigned long long>(byteCount));
         bool cond = DmaMemAlloc(context, byteCount, dstInfo_) != SUCCESS;
         CHECK_ERROR_RETURN_RET(cond, ERR_IMAGE_DATA_UNSUPPORT);
     }
     auto dstBuffer = reinterpret_cast<SurfaceBuffer*>(context.pixelsBuffer.context);
+    if (IsHeifRegionDecode()) {
+        decoder->SetDecodeRegion(heifGridRegionInfo_.colCount, heifGridRegionInfo_.rowCount,
+            desiredRegion_.left, desiredRegion_.top, dstBuffer->GetStride());
+        IMAGE_LOGI("Do Heif RGB Type Region Decode, xy [%{public}d , %{public}d], wh [%{public}d x %{public}d]",
+            desiredRegion_.left, desiredRegion_.top, desiredRegion_.width, desiredRegion_.height);
+    }
     decoder->SetSampleFormat(sampleSize_, heifColorSpaceName_, heifIsColorSpaceFromCicp_);
-    decoder->setDstBuffer(reinterpret_cast<uint8_t*>(context.pixelsBuffer.buffer),
+    decoder->setDstBuffer(reinterpret_cast<uint8_t *>(context.pixelsBuffer.buffer),
         dstBuffer->GetStride(), context.pixelsBuffer.context);
     SetOutPutFormat(context.info.pixelFormat, decoder);
     bool decodeRet = decoder->decode(nullptr);
     if (!decodeRet && sampleSize_ != DEFAULT_SAMPLE_SIZE) {
-        IMAGE_LOGD("hwdecode failed, do heif sw decode");
         decodeRet = DoHeifSwDecode(context);
     }
     if (!decodeRet) {
@@ -1362,7 +1606,7 @@ uint32_t ExtDecoder::Decode(uint32_t index, DecodeContext &context)
     context.outInfo.size.width = dstInfo_.width();
     context.outInfo.size.height = dstInfo_.height();
     SkEncodedImageFormat skEncodeFormat = codec_->getEncodedFormat();
-#if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
+#if !defined(CROSS_PLATFORM)
     int timerFd = timerfd_create(CLOCK_MONOTONIC, TFD_NONBLOCK | TFD_CLOEXEC);
     if (timerFd >= 0) {
         close(timerFd);
@@ -1385,7 +1629,7 @@ uint32_t ExtDecoder::Decode(uint32_t index, DecodeContext &context)
         if (result == JpegYuvDecodeError_Success) {
             return result;
         }
-        IMAGE_LOGI("Decode sample not support, apply rgb decode");
+        IMAGE_LOGI("DecodeToYuv420 failed, decode rgba then convert");
         context.pixelsBuffer.buffer = nullptr;
         context.info.pixelFormat = PixelFormat::RGBA_8888;
 #endif
@@ -1398,6 +1642,7 @@ uint32_t ExtDecoder::Decode(uint32_t index, DecodeContext &context)
         if (tmpBuffer == nullptr) {
             IMAGE_LOGE("Make unique pointer failed, byteCount: %{public}llu",
                 static_cast<unsigned long long>(byteCount));
+            return ERR_IMAGE_DECODE_FAILED;
         }
         dstBuffer = tmpBuffer.get();
         byteCount = byteCount / NUM_4 * NUM_3;
@@ -2551,6 +2796,10 @@ uint32_t ExtDecoder::DoHeifToYuvDecode(OHOS::ImagePlugin::DecodeContext &context
     auto dstBuffer = reinterpret_cast<SurfaceBuffer*>(context.pixelsBuffer.context);
     decoder->setOutputColor(context.info.pixelFormat
         == PixelFormat::NV12 ? kHeifColorFormat_NV12 : kHeifColorFormat_NV21);
+    if (IsHeifRegionDecode()) {
+        decoder->SetDecodeRegion(heifGridRegionInfo_.colCount, heifGridRegionInfo_.rowCount,
+            desiredRegion_.left, desiredRegion_.top, dstBuffer->GetStride());
+    }
     decoder->SetSampleFormat(sampleSize_, heifColorSpaceName_, heifIsColorSpaceFromCicp_);
     decoder->setDstBuffer(reinterpret_cast<uint8_t *>(context.pixelsBuffer.buffer),
         dstBuffer->GetStride(), context.pixelsBuffer.context);
@@ -2575,31 +2824,51 @@ bool ExtDecoder::IsHeifToSingleHdrDecode(const DecodeContext& context) const
          context.info.pixelFormat == PixelFormat::YCRCB_P010);
 }
 
+uint32_t ExtDecoder::AllocHeifSingleHdrBuffer(DecodeContext &context)
+{
+#ifdef HEIF_HW_DECODE_ENABLE
+    uint64_t byteCount = static_cast<uint64_t>(dstInfo_.computeMinByteSize());
+    if (context.info.pixelFormat == PixelFormat::YCBCR_P010 || context.info.pixelFormat == PixelFormat::YCRCB_P010) {
+        uint32_t allocRet = HeifYUVMemAlloc(context, dstInfo_);
+        bool cond = allocRet != SUCCESS;
+        CHECK_ERROR_RETURN_RET(cond, allocRet);
+    } else {
+        if (IsHeifRegionDecode()) {
+            UpdateHeifRegionDstInfo(context);
+            byteCount = dstInfo_.computeMinByteSize();
+            IMAGE_LOGI("Do Heif Single Hdr Region Decode, xy [%{public}d , %{public}d], wh [%{public}d x %{public}d]",
+                desiredRegion_.left, desiredRegion_.top, desiredRegion_.width, desiredRegion_.height);
+        }
+        CHECK_ERROR_RETURN_RET_LOG(SkImageInfo::ByteSizeOverflowed(byteCount), ERR_IMAGE_TOO_LARGE,
+            "%{public}s too large byteCount: %{public}llu", __func__, static_cast<unsigned long long>(byteCount));
+        bool cond = DmaMemAlloc(context, byteCount, dstInfo_) != SUCCESS;
+        CHECK_ERROR_RETURN_RET(cond, ERR_IMAGE_DATA_UNSUPPORT);
+    }
+    return SUCCESS;
+#else
+    return ERR_IMAGE_DATA_UNSUPPORT;
+#endif
+}
+
 uint32_t ExtDecoder::DoHeifToSingleHdrDecode(DecodeContext &context)
 {
 #ifdef HEIF_HW_DECODE_ENABLE
-    auto decoder = reinterpret_cast<HeifDecoder*>(codec_->getHeifContext());
+    auto decoder = reinterpret_cast<HeifDecoderImpl*>(codec_->getHeifContext());
     bool cond = decoder == nullptr;
     CHECK_ERROR_RETURN_RET_LOG(cond, ERR_IMAGE_DATA_UNSUPPORT, "SingleHdrDecode, HeifDecoder is nullptr");
-
-    uint64_t byteCount = static_cast<uint64_t>(info_.computeMinByteSize());
-    if (context.info.pixelFormat == PixelFormat::YCBCR_P010 || context.info.pixelFormat == PixelFormat::YCRCB_P010) {
-        uint32_t allocRet = HeifYUVMemAlloc(context, dstInfo_);
-        cond = allocRet != SUCCESS;
-        CHECK_ERROR_RETURN_RET(cond, allocRet);
-    } else {
-        if (DmaMemAlloc(context, byteCount, dstInfo_) != SUCCESS) {
-            return ERR_IMAGE_DATA_UNSUPPORT;
-        }
-    }
-
+    uint32_t ret = AllocHeifSingleHdrBuffer(context);
+    CHECK_ERROR_RETURN_RET_LOG(ret != SUCCESS, ret, "SingleHdrDecode, alloc dstBuffer failed");
     auto dstBuffer = reinterpret_cast<SurfaceBuffer*>(context.pixelsBuffer.context);
-    bool cond = dstBuffer == nullptr;
+    cond = dstBuffer == nullptr;
     CHECK_ERROR_RETURN_RET_LOG(cond, ERR_IMAGE_DATA_UNSUPPORT, "SingleHdrDecode, dstBuffer is nullptr");
     SkHeifColorFormat heifFormat = kHeifColorFormat_RGBA_1010102;
     auto formatSearch = HEIF_FORMAT_MAP.find(context.info.pixelFormat);
     heifFormat = (formatSearch != HEIF_FORMAT_MAP.end()) ? formatSearch->second : kHeifColorFormat_RGBA_1010102;
     decoder->setOutputColor(heifFormat);
+    if (IsHeifRegionDecode()) {
+        decoder->SetDecodeRegion(heifGridRegionInfo_.colCount, heifGridRegionInfo_.rowCount,
+            desiredRegion_.left, desiredRegion_.top, dstBuffer->GetStride());
+    }
     decoder->SetSampleFormat(DEFAULT_SAMPLE_SIZE, heifColorSpaceName_, heifIsColorSpaceFromCicp_);
     decoder->setDstBuffer(reinterpret_cast<uint8_t*>(context.pixelsBuffer.buffer),
         dstBuffer->GetStride(), context.pixelsBuffer.context);
@@ -2692,6 +2961,50 @@ bool ExtDecoder::GetHeifFragmentMetadata(Media::Rect &metadata)
     return false;
 }
 
+bool ExtDecoder::HeifGainMapRegionCrop(DecodeContext &gainmapRegionContext, int32_t rowStride, uint8_t* dstBuffer,
+    uint32_t gainmapWidth, uint32_t gainmapHeight)
+{
+#ifdef HEIF_HW_DECODE_ENABLE
+    bool cond = (gainmapWidth == ZERO || gainmapHeight == ZERO);
+    CHECK_ERROR_RETURN_RET_LOG(cond, false, "gainmap width or gainmap height is ZERO");
+    int32_t gainmapWidthRatio = info_.width() / static_cast<int32_t>(gainmapWidth);
+    int32_t gainmapHeightRatio = info_.height() / static_cast<int32_t>(gainmapHeight);
+    cond = (gainmapWidthRatio == ZERO || gainmapHeightRatio == ZERO);
+    CHECK_ERROR_RETURN_RET_LOG(cond, false, "gainmap widthRatio or gainmap heightRatio is ZERO");
+    SkImageInfo dstRegionInfo = SkImageInfo::Make(static_cast<int>(heifGridRegionInfo_.tileWidth *
+        heifGridRegionInfo_.colCount / gainmapWidthRatio),
+        static_cast<int>(heifGridRegionInfo_.tileHeight * heifGridRegionInfo_.rowCount /
+        gainmapHeightRatio), dstInfo_.colorType(), dstInfo_.alphaType(), dstInfo_.refColorSpace());
+    uint64_t byteCount = static_cast<uint64_t>(dstRegionInfo.computeMinByteSize());
+    gainmapRegionContext.info.size.width = heifGridRegionInfo_.tileWidth *
+        heifGridRegionInfo_.colCount / gainmapWidthRatio;
+    gainmapRegionContext.info.size.height = heifGridRegionInfo_.tileHeight *
+        heifGridRegionInfo_.rowCount / gainmapHeightRatio;
+    cond = DmaMemAlloc(gainmapRegionContext, byteCount, dstRegionInfo) != SUCCESS;
+    CHECK_ERROR_RETURN_RET(cond, false);
+    auto* sbBuffer = reinterpret_cast<SurfaceBuffer*>(gainmapRegionContext.pixelsBuffer.context);
+    int32_t rowRegionStride = sbBuffer->GetStride();
+    auto* dstRegionBuffer = static_cast<uint8_t*>(gainmapRegionContext.pixelsBuffer.buffer);
+    int32_t left = desiredRegion_.left / heifGridRegionInfo_.tileWidth *
+        heifGridRegionInfo_.tileWidth / gainmapWidthRatio;
+    int32_t top = desiredRegion_.top / heifGridRegionInfo_.tileHeight *
+        heifGridRegionInfo_.tileHeight / gainmapHeightRatio;
+    int32_t srcOffset = rowStride * top + left * RGBA8888_PIXEL_BYTE_SIZE;
+    for (int32_t index = 0; index < (heifGridRegionInfo_.tileHeight * heifGridRegionInfo_.rowCount -
+        heifGridRegionInfo_.heightPadding) / gainmapHeightRatio; index++) {
+        uint8_t* srcRow = dstBuffer + srcOffset + index * rowStride;
+        uint8_t* dstRow = dstRegionBuffer + index * rowRegionStride;
+        int32_t cropLength = (heifGridRegionInfo_.tileWidth * heifGridRegionInfo_.colCount -
+            heifGridRegionInfo_.widthPadding) / gainmapWidthRatio * RGBA8888_PIXEL_BYTE_SIZE;
+        errno_t err = memcpy_s(dstRow, cropLength, srcRow, cropLength);
+        cond = err != EOK;
+        CHECK_ERROR_RETURN_RET_LOG(cond, false, "handle heifgainmap memcpy failed.");
+    }
+    return true;
+#endif
+    return false;
+}
+
 bool ExtDecoder::DecodeHeifGainMap(DecodeContext& context)
 {
 #ifdef HEIF_HW_DECODE_ENABLE
@@ -2708,9 +3021,9 @@ bool ExtDecoder::DecodeHeifGainMap(DecodeContext& context)
     CHECK_INFO_RETURN_RET_LOG(cond, false, "DecodeHeifGainmap size exceeds the maximum value");
     IMAGE_LOGD("DecodeHeifGainmap size:%{public}d-%{public}d", width, height);
     uint32_t dstGainmapWidth = width / sampleSize_;
-    uint32_t dstGianmapHeight = height / sampleSize_;
-    IMAGE_LOGD("DecodeHeifGainmap dstsize:%{public}d-%{public}d", dstGainmapWidth, dstGianmapHeight);
-    SkImageInfo dstInfo = SkImageInfo::Make(static_cast<int>(dstGainmapWidth), static_cast<int>(dstGianmapHeight),
+    uint32_t dstGainmapHeight = height / sampleSize_;
+    IMAGE_LOGD("DecodeHeifGainmap sample size:%{public}d-%{public}d", dstGainmapWidth, dstGainmapHeight);
+    SkImageInfo dstInfo = SkImageInfo::Make(static_cast<int>(dstGainmapWidth), static_cast<int>(dstGainmapHeight),
         dstInfo_.colorType(), dstInfo_.alphaType(), dstInfo_.refColorSpace());
     uint64_t byteCount = static_cast<uint64_t>(dstInfo.computeMinByteSize());
     context.info.size.width = static_cast<int32_t>(dstGainmapWidth);
@@ -2728,6 +3041,19 @@ bool ExtDecoder::DecodeHeifGainMap(DecodeContext& context)
     if (!decoder->decodeGainmap()) {
         FreeContextBuffer(context.freeFunc, context.allocatorType, context.pixelsBuffer);
         return false;
+    }
+    if (IsHeifRegionDecode()) {
+        DecodeContext gainmapRegionContext;
+        if (HeifGainMapRegionCrop(gainmapRegionContext, rowStride, dstBuffer, width, height)) {
+            context = gainmapRegionContext;
+            IMAGE_LOGI("Do Heif GainMap Region Decode success");
+        } else {
+            FreeContextBuffer(context.freeFunc, context.allocatorType, context.pixelsBuffer);
+            FreeContextBuffer(gainmapRegionContext.freeFunc, gainmapRegionContext.allocatorType,
+                gainmapRegionContext.pixelsBuffer);
+            IMAGE_LOGE("Heif gainmap region decode failed.");
+            return false;
+        }
     }
     return true;
 #endif

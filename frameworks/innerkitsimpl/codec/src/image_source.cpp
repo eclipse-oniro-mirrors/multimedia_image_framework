@@ -905,14 +905,21 @@ uint64_t ImageSource::GetNowTimeMicroSeconds()
     return std::chrono::duration_cast<std::chrono::microseconds>(now.time_since_epoch()).count();
 }
 
-static void UpdatePlImageInfo(DecodeContext context, ImagePlugin::PlImageInfo &plInfo)
+static inline bool IsHeifRegionDecode(int32_t heifRegionGridWidth, int32_t heifRegionGridHeight)
+{
+    return (heifRegionGridWidth > 0 && heifRegionGridHeight > 0);
+}
+
+static void UpdatePlImageInfo(DecodeContext context, ImagePlugin::PlImageInfo &plInfo,
+    std::unique_ptr<ImagePlugin::AbsImageDecoder>& decoder)
 {
     if (context.hdrType > Media::ImageHdrType::SDR) {
         plInfo.colorSpace = context.colorSpace;
         plInfo.pixelFormat = context.pixelFormat;
     }
-
-    if (plInfo.size.width != context.outInfo.size.width || plInfo.size.height != context.outInfo.size.height) {
+    OHOS::Media::Size heifRegionGridSize = decoder->GetHeifRegionGridSize();
+    if ((plInfo.size.width != context.outInfo.size.width || plInfo.size.height != context.outInfo.size.height) &&
+        !IsHeifRegionDecode(heifRegionGridSize.width, heifRegionGridSize.height)) {
         plInfo.size = context.outInfo.size;
     }
     if ((plInfo.pixelFormat == PixelFormat::NV12 || plInfo.pixelFormat == PixelFormat::NV21 ||
@@ -1032,7 +1039,7 @@ unique_ptr<PixelMap> ImageSource::CreatePixelMapExtended(uint32_t index, const D
             opts_.desiredSize.height = opts.desiredSize.height;
         }
     }
-    UpdatePlImageInfo(context, plInfo);
+    UpdatePlImageInfo(context, plInfo, mainDecoder_);
 
     auto pixelMap = CreatePixelMapByInfos(plInfo, context, errorCode);
     if (pixelMap == nullptr) {
@@ -1214,6 +1221,11 @@ unique_ptr<PixelMap> ImageSource::CreatePixelMapByInfos(ImagePlugin::PlImageInfo
     if (opts_.CropRect.width > INT_ZERO && opts_.CropRect.height > INT_ZERO) {
         if (!mainDecoder_->HasProperty(SUPPORT_CROP_KEY)) {
             Rect crop;
+            OHOS::Media::Size heifRegionGridSize = mainDecoder_->GetHeifRegionGridSize();
+            if (IsHeifRegionDecode(heifRegionGridSize.width, heifRegionGridSize.height)) {
+                opts_.CropRect.left = opts_.CropRect.left % heifRegionGridSize.width;
+                opts_.CropRect.top = opts_.CropRect.top % heifRegionGridSize.height;
+            }
             GetValidCropRect(opts_.CropRect, {pixelMap->GetWidth(), pixelMap->GetHeight()}, crop);
             errorCode = pixelMap->crop(crop);
             if (errorCode != SUCCESS) {
