@@ -457,12 +457,16 @@ uint32_t ExtDecoder::HeifYUVMemAlloc(OHOS::ImagePlugin::DecodeContext &context, 
             static_cast<int>(heifGridRegionInfo_.rowCount * gridInfo.tileHeight), dstInfo_.colorType(),
             dstInfo_.alphaType(), dstInfo_.refColorSpace());
         uint64_t byteCount = static_cast<uint64_t>(dstInfo.computeMinByteSize());
+        CHECK_ERROR_RETURN_RET_LOG(SkImageInfo::ByteSizeOverflowed(byteCount), ERR_IMAGE_TOO_LARGE,
+            "%{public}s too large byteCount: %{public}llu", __func__, static_cast<unsigned long long>(byteCount));
         bool cond = DmaMemAlloc(context, byteCount, dstInfo) != SUCCESS;
         CHECK_INFO_RETURN_RET_LOG(cond, ERR_DMA_NOT_EXIST, "DmaMemAlloc execution failed.");
         IMAGE_LOGI("Do Heif YUV Type Region Decode, xy [%{public}d , %{public}d], wh [%{public}d x %{public}d]",
             desiredRegion_.left, desiredRegion_.top, desiredRegion_.width, desiredRegion_.height);
     } else {
         uint64_t byteCount = static_cast<uint64_t>(heifInfo.computeMinByteSize());
+        CHECK_ERROR_RETURN_RET_LOG(SkImageInfo::ByteSizeOverflowed(byteCount), ERR_IMAGE_TOO_LARGE,
+            "%{public}s too large byteCount: %{public}llu", __func__, static_cast<unsigned long long>(byteCount));
         bool cond = DmaMemAlloc(context, byteCount, heifInfo) != SUCCESS;
         CHECK_INFO_RETURN_RET_LOG(cond, ERR_DMA_NOT_EXIST, "DmaMemAlloc execution failed.");
     }
@@ -778,7 +782,7 @@ uint32_t ExtDecoder::ExtractHeifRegion(const PixelDecodeOptions &opts)
     }
     return SUCCESS;
 #else
-    return ERR_IMAGE_DATA_UNSUPPORT;
+    return SUCCESS;
 #endif
 }
 
@@ -794,6 +798,10 @@ uint32_t ExtDecoder::CheckDecodeOptions(uint32_t index, const PixelDecodeOptions
     CHECK_ERROR_RETURN_RET_LOG(cond, ERR_IMAGE_INVALID_PARAMETER,
         "SetDecodeOptions failed, width:%{public}d, height:%{public}d is too large",
         dstInfo_.width(), dstInfo_.height());
+    cond = ExtractHeifRegion(opts) != SUCCESS;
+    CHECK_ERROR_RETURN_RET(cond, ERR_IMAGE_INVALID_PARAMETER);
+    IMAGE_LOGD("%{public}s IN, dstSubset_: xy [%{public}d x %{public}d] right,bottom: [%{public}d x %{public}d]",
+        __func__, dstSubset_.left(), dstSubset_.top(), dstSubset_.right(), dstSubset_.bottom());
     size_t tempSrcByteCount = info_.computeMinByteSize();
     size_t tempDstByteCount = dstInfo_.computeMinByteSize();
     bool srcOverflowed = SkImageInfo::ByteSizeOverflowed(tempSrcByteCount);
