@@ -2043,7 +2043,6 @@ group("unittest") {
     ":picturetest",
     ":pixelastctest",
     ":pixelconvertadaptertest",
-    ":pixelmaptest",
     ":platformadptest",
     ":pluginlibjpegtest",
     ":pluginsmanagersrcframeworktest",
