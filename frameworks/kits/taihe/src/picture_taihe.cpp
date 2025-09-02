@@ -202,7 +202,7 @@ void PictureImpl::SetMetadataSync(MetadataType metadataType, weak::Metadata meta
 
     OHOS::Media::MetadataType type;
     int32_t typeValue = metadataType.get_value();
-    if (typeValue == static_cast<int32_t>(OHOS::Media::MetadataType::EXIF)) {
+    if (OHOS::Media::Picture::IsValidPictureMetadataType(static_cast<OHOS::Media::MetadataType>(typeValue))) {
         type = OHOS::Media::MetadataType(typeValue);
     } else {
         ImageTaiheUtils::ThrowExceptionError(IMAGE_UNSUPPORTED_METADATA, "Unsupport MetadataType");
@@ -216,8 +216,7 @@ void PictureImpl::SetMetadataSync(MetadataType metadataType, weak::Metadata meta
     }
     std::shared_ptr<OHOS::Media::ImageMetadata> imageMetadata = metadataImpl->GetNativeMetadata();
 
-    int32_t status = static_cast<int32_t>(nativePicture_->SetExifMetadata(
-        std::reinterpret_pointer_cast<OHOS::Media::ExifMetadata>(imageMetadata)));
+    int32_t status = static_cast<int32_t>(nativePicture_->SetMetadata(type, imageMetadata));
     if (status != OHOS::Media::SUCCESS) {
         ImageTaiheUtils::ThrowExceptionError(OHOS::Media::ERROR, "Set Metadata failed!");
     }
@@ -232,12 +231,12 @@ Metadata PictureImpl::GetMetadataSync(MetadataType metadataType)
     }
 
     int32_t typeValue = metadataType.get_value();
-    if (typeValue != static_cast<int32_t>(OHOS::Media::MetadataType::EXIF)) {
+    if (!OHOS::Media::Picture::IsValidPictureMetadataType(static_cast<OHOS::Media::MetadataType>(typeValue))) {
         ImageTaiheUtils::ThrowExceptionError(IMAGE_UNSUPPORTED_METADATA, "Unsupport MetadataType");
         return make_holder<MetadataImpl, Metadata>();
     }
 
-    auto imageMetadata = std::reinterpret_pointer_cast<OHOS::Media::ImageMetadata>(nativePicture_->GetExifMetadata());
+    auto imageMetadata = nativePicture_->GetMetadata(static_cast<OHOS::Media::MetadataType>(typeValue));
     if (imageMetadata == nullptr) {
         ImageTaiheUtils::ThrowExceptionError(OHOS::Media::ERROR, "Get Metadata failed!");
         return make_holder<MetadataImpl, Metadata>();
@@ -331,8 +330,42 @@ Picture CreatePictureByPtr(int64_t aniPtr)
     return make_holder<PictureImpl, Picture>(aniPtr);
 }
 
+Picture CreatePictureByHdrAndSdrPixelMapSync(weak::PixelMap hdrPixelMap, weak::PixelMap sdrPixelMap)
+{
+    IMAGE_LOGD("CreatePictureByHdrAndSdrPixelMap IN");
+    if (hdrPixelMap.is_error()) {
+        ImageTaiheUtils::ThrowExceptionError(IMAGE_BAD_PARAMETER, "Get arg hdr Pixelmap failed");
+        return make_holder<PictureImpl, Picture>();
+    }
+    if (sdrPixelMap.is_error()) {
+        ImageTaiheUtils::ThrowExceptionError(IMAGE_BAD_PARAMETER, "Get arg sdr Pixelmap failed");
+        return make_holder<PictureImpl, Picture>();
+    }
+
+    PixelMapImpl* hdrPixelMapImpl = reinterpret_cast<PixelMapImpl*>(hdrPixelMap->GetImplPtr());
+    PixelMapImpl* sdrPixelMapImpl = reinterpret_cast<PixelMapImpl*>(sdrPixelMap->GetImplPtr());
+    if (hdrPixelMapImpl == nullptr) {
+        ImageTaiheUtils::ThrowExceptionError(IMAGE_BAD_PARAMETER, "Get arg hdr Pixelmap failed");
+        return make_holder<PictureImpl, Picture>();
+    }
+    if (sdrPixelMapImpl == nullptr) {
+        ImageTaiheUtils::ThrowExceptionError(IMAGE_BAD_PARAMETER, "Get arg sdr Pixelmap failed");
+        return make_holder<PictureImpl, Picture>();
+    }
+
+    auto nativeHdrPixelMap = hdrPixelMapImpl->GetNativePtr();
+    auto nativeSdrPixelMap = sdrPixelMapImpl->GetNativePtr();
+    auto picture = OHOS::Media::Picture::CreatePictureByHdrAndSdrPixelMap(nativeHdrPixelMap, nativeSdrPixelMap);
+    if (picture == nullptr) {
+        IMAGE_LOGE("fail to create picture sync");
+        return make_holder<PictureImpl, Picture>();
+    }
+    IMAGE_LOGD("CreatePictureByHdrAndSdrPixelMap OUT");
+    return make_holder<PictureImpl, Picture>(std::move(picture));
+}
 } // namespace ANI::Image
 
 TH_EXPORT_CPP_API_CreatePictureByPixelMap(CreatePictureByPixelMap);
 TH_EXPORT_CPP_API_CreatePictureFromParcel(CreatePictureFromParcel);
 TH_EXPORT_CPP_API_CreatePictureByPtr(CreatePictureByPtr);
+TH_EXPORT_CPP_API_CreatePictureByHdrAndSdrPixelMapSync(CreatePictureByHdrAndSdrPixelMapSync);

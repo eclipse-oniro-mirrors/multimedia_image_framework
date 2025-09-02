@@ -577,6 +577,16 @@ PixelMap ImageSourceImpl::CreatePixelMapUsingAllocatorSync(optional_view<Decodin
     return CreatePixelMapUsingAllocatorSyncComplete(taiheContext);
 }
 
+PixelMap ImageSourceImpl::CreateWideGamutSdrPixelMapSync()
+{
+    ImageTaiheUtils::HicheckerReport();
+    std::unique_ptr<ImageSourceTaiheContext> context = std::make_unique<ImageSourceTaiheContext>();
+    context->decodeOpts.isCreateWideGamutSdrPixelMap = true;
+    context->decodeOpts.desiredDynamicRange = OHOS::Media::DecodeDynamicRange::AUTO;
+    context->rPixelMap = CreatePixelMapInner(this, nativeImgSrc, context->index, context->decodeOpts, context->status);
+    return CreatePixelMapComplete(context);
+}
+
 static bool CheckAsyncContext(std::unique_ptr<ImageSourceTaiheContext> &taiheContext, bool check)
 {
     if (taiheContext == nullptr) {
@@ -807,9 +817,9 @@ static void GenerateErrMsg(std::unique_ptr<ImageSourceTaiheContext> &context, st
     }
 }
 
-string ImageSourceImpl::GetImagePropertySync(PropertyKey key, optional_view<ImagePropertyOptions> options)
+string ImageSourceImpl::GetImagePropertyReturnsPromise(PropertyKey key, optional_view<ImagePropertyOptions> options)
 {
-    OHOS::Media::ImageTrace imageTrace("ImageSourceImpl::GetImagePropertySync");
+    OHOS::Media::ImageTrace imageTrace("ImageSourceImpl::GetImagePropertyReturnsPromise");
 
     std::unique_ptr<ImageSourceTaiheContext> context = std::make_unique<ImageSourceTaiheContext>();
     if (nativeImgSrc == nullptr) {
@@ -833,6 +843,34 @@ string ImageSourceImpl::GetImagePropertySync(PropertyKey key, optional_view<Imag
         ImageTaiheUtils::ThrowExceptionError(context->status, errMsg);
     }
     return context->valueStr;
+}
+
+string ImageSourceImpl::GetImagePropertySync(PropertyKey key)
+{
+    OHOS::Media::ImageTrace imageTrace("ImageSourceImpl::GetImagePropertySync");
+    IMAGE_LOGD("GetImagePropertySync IN");
+
+    std::string propertyKey = key.get_value();
+    std::string value = "";
+
+    if (nativeImgSrc != nullptr) {
+        uint32_t ret = nativeImgSrc->GetImagePropertyStringBySync(NUM_0, propertyKey, value);
+        if (ret == OHOS::Media::ERR_IMAGE_PROPERTY_NOT_EXIST) {
+            IMAGE_LOGE("%{public}s: Unsupported metadata, errorCode=%{public}u", __func__, ret);
+            ImageTaiheUtils::ThrowExceptionError(IMAGE_SOURCE_UNSUPPORTED_METADATA, "Unsupported metadata");
+        }
+        if (ret == OHOS::Media::ERR_IMAGE_SOURCE_DATA) {
+            IMAGE_LOGE("%{public}s: Unsupported MIME type, errorCode=%{public}u", __func__, ret);
+            ImageTaiheUtils::ThrowExceptionError(IMAGE_SOURCE_UNSUPPORTED_MIMETYPE, "Unsupported MIME type");
+        }
+        if (ret == OHOS::Media::ERR_IMAGE_DECODE_EXIF_UNSUPPORT) {
+            IMAGE_LOGE("%{public}s: Bad source, errorCode=%{public}u", __func__, ret);
+            ImageTaiheUtils::ThrowExceptionError(IMAGE_BAD_SOURCE, "Bad source");
+        }
+    } else {
+        ImageTaiheUtils::ThrowExceptionError("empty native image source");
+    }
+    return value;
 }
 
 static void GetImagePropertiesExecute(std::unique_ptr<ImageSourceTaiheContext> &context)
@@ -1312,6 +1350,24 @@ Picture ImageSourceImpl::CreatePictureSync(optional_view<DecodingOptionsForPictu
     CreatePictureExecute(taiheContext);
     return CreatePictureComplete(taiheContext);
 }
+
+optional<Picture> ImageSourceImpl::CreatePictureAtIndexSync(int32_t index)
+{
+    if (nativeImgSrc == nullptr) {
+        ImageTaiheUtils::ThrowExceptionError("empty native rImageSource");
+        return optional<Picture>(std::nullopt);
+    }
+
+    uint32_t errCode = OHOS::Media::ERR_MEDIA_INVALID_VALUE;
+    auto picture = nativeImgSrc->CreatePictureAtIndex(index, errCode);
+    if (errCode != OHOS::Media::SUCCESS || picture == nullptr) {
+        auto errMsg = OHOS::Media::ImageErrorConvert::CreatePictureAtIndexMakeErrMsg(errCode);
+        ImageTaiheUtils::ThrowExceptionError(errMsg.first, errMsg.second);
+        return optional<Picture>(std::nullopt);
+    }
+    auto res = make_holder<PictureImpl, Picture>(std::move(picture));
+    return optional<Picture>(std::in_place, res);
+}
 #endif
 
 array<string> ImageSourceImpl::GetSupportedFormats()
@@ -1484,6 +1540,16 @@ ImageSource CreateImageSourceByPtr(int64_t ptr)
 {
     return taihe::make_holder<ImageSourceImpl, ImageSource>(ptr);
 }
+
+array<string> GetImageSourceSupportedFormats()
+{
+    std::set<std::string> formats;
+    uint32_t ret = OHOS::Media::ImageSource::GetSupportedFormats(formats);
+    if (ret != OHOS::Media::SUCCESS) {
+        ImageTaiheUtils::ThrowExceptionError("Fail to get decode supported formats");
+    }
+    return ImageTaiheUtils::ToTaiheArrayString(std::vector(formats.begin(), formats.end()));
+}
 } // namespace ANI::Image
 
 TH_EXPORT_CPP_API_CreateImageSourceByUri(CreateImageSourceByUri);
@@ -1496,3 +1562,4 @@ TH_EXPORT_CPP_API_CreateImageSourceByRawFileDescriptorOption(CreateImageSourceBy
 TH_EXPORT_CPP_API_CreateIncrementalSourceByArrayBuffer(CreateIncrementalSourceByArrayBuffer);
 TH_EXPORT_CPP_API_CreateIncrementalSourceByArrayBufferOption(CreateIncrementalSourceByArrayBufferOption);
 TH_EXPORT_CPP_API_CreateImageSourceByPtr(CreateImageSourceByPtr);
+TH_EXPORT_CPP_API_GetImageSourceSupportedFormats(GetImageSourceSupportedFormats);

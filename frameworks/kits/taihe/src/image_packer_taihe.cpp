@@ -796,6 +796,17 @@ ImagePacker CreateImagePacker()
     std::shared_ptr<OHOS::Media::ImagePacker> imagePacker = std::make_shared<OHOS::Media::ImagePacker>();
     return make_holder<ImagePackerImpl, ImagePacker>(imagePacker);
 }
+
+array<string> GetImagePackerSupportedFormats()
+{
+    std::set<std::string> formats;
+    uint32_t ret = OHOS::Media::ImagePacker::GetSupportedFormats(formats);
+    if (ret != OHOS::Media::SUCCESS) {
+        ImageTaiheUtils::ThrowExceptionError("Fail to get decode supported formats");
+    }
+    return ImageTaiheUtils::ToTaiheArrayString(std::vector(formats.begin(), formats.end()));
+}
 } // namespace ANI::Image
 
 TH_EXPORT_CPP_API_CreateImagePacker(CreateImagePacker);
+TH_EXPORT_CPP_API_GetImagePackerSupportedFormats(GetImagePackerSupportedFormats);
