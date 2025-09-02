@@ -122,7 +122,8 @@ static sptr<OHOS::HDI::Codec::Image::V2_1::ICodecImage> GetCodecManager()
     return g_codecMgrDecode;
 }
 
-static void ReinitGridinfo(GridInfo &gridInfo, GridInfo tempGridInfo) {
+static void ReinitGridinfo(GridInfo &gridInfo, GridInfo tempGridInfo) 
+{
     gridInfo.displayWidth = tempGridInfo.displayWidth;
     gridInfo.displayHeight = tempGridInfo.displayHeight;
     gridInfo.cols = tempGridInfo.cols;
