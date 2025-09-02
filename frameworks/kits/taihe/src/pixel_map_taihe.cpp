@@ -461,7 +461,8 @@ PixelMap PixelMapImpl::CreateScaledPixelMapSync(double x, double y, optional_vie
     return make_holder<PixelMapImpl, PixelMap>(std::move(clonedPixelMap));
 }
 
-PixelMap PixelMapImpl::CloneSync() {
+PixelMap PixelMapImpl::CloneSync()
+{
     if (nativePixelMap_ == nullptr) {
         ImageTaiheUtils::ThrowExceptionError(Media::ERR_IMAGE_INIT_ABNORMAL, "Native PixelMap is nullptr");
         return make_holder<PixelMapImpl, PixelMap>();
@@ -482,12 +483,13 @@ PixelMap PixelMapImpl::CloneSync() {
         } else {
             ImageTaiheUtils::ThrowExceptionError(errorCode, "Clone PixelMap failed");
         }
-        return make_holder<PixelMapImpl, PixelMap>(); 
+        return make_holder<PixelMapImpl, PixelMap>();
     }
     return make_holder<PixelMapImpl, PixelMap>(std::move(clonedPixelMap));
 }
 
-void PixelMapImpl::TranslateSync(double x, double y) {
+void PixelMapImpl::TranslateSync(double x, double y)
+{
     if (nativePixelMap_ == nullptr) {
         ImageTaiheUtils::ThrowExceptionError(Media::ERR_IMAGE_INIT_ABNORMAL, "Native PixelMap is nullptr");
         return;
@@ -976,17 +978,17 @@ static bool SetGainmapMetadata(sptr<SurfaceBuffer> &surfaceBuffer, Media::PixelM
     Media::HDRVividExtendMetadata extendMetadata;
 #ifdef IMAGE_COLORSPACE_FLAG
     ColorManager::ColorSpace colorSpace = pixelMap.InnerGetGrColorSpace();
-    uint16_t SS = Media::ColorUtils::GetPrimaries(colorSpace.GetColorSpaceName());
+    uint16_t primary = Media::ColorUtils::GetPrimaries(colorSpace.GetColorSpaceName());
 #else
-    uint16_t SS = 0;
+    uint16_t primary = 0;
 #endif
-    extendMetadata.baseColorMeta.baseColorPrimary = SS;
+    extendMetadata.baseColorMeta.baseColorPrimary = primary;
 
     HdrGainmapMetadata gainmapMetadata = metadataValue.get_hdrGainmapMetadata_ref();
     extendMetadata.gainmapColorMeta.combineColorPrimary =
-        gainmapMetadata.useBaseColorFlag ? SS : static_cast<uint8_t>(Media::CM_BT2020_HLG_FULL);
+        gainmapMetadata.useBaseColorFlag ? primary : static_cast<uint8_t>(Media::CM_BT2020_HLG_FULL);
     extendMetadata.gainmapColorMeta.enhanceDataColorModel =
-        gainmapMetadata.useBaseColorFlag ? SS : static_cast<uint8_t>(Media::CM_BT2020_HLG_FULL);
+        gainmapMetadata.useBaseColorFlag ? primary : static_cast<uint8_t>(Media::CM_BT2020_HLG_FULL);
     extendMetadata.gainmapColorMeta.alternateColorPrimary = static_cast<uint8_t>(Media::CM_BT2020_HLG_FULL);
 
     ParseHdrGainmapMetadata(gainmapMetadata, extendMetadata);
