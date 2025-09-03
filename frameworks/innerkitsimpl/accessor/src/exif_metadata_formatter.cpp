@@ -206,6 +206,11 @@ const static std::set<std::string> READ_WRITE_KEYS = {
     "MovingPhotoVersion",
     "MicroVideoPresentationTimestampUS",
     "HwMnoteAiEdit",
+    "HwMnoteXtStyleTemplateName",
+    "HwMnoteXtStyleCustomLightAndShadow",
+    "HwMnoteXtStyleCustomSaturation",
+    "HwMnoteXtStyleCustomHue",
+    "HwMnoteXtStyleExposureParam",
     "MakerNote",
 };
 
@@ -1287,6 +1292,11 @@ std::multimap<std::string, ValueFormatDelegate> ExifMetadatFormatter::valueForma
     {"HwMnoteXmageBottom", singleInt},
     {"HwMnoteCloudEnhancementMode", singleInt},
     {"HwMnoteAiEdit", singleInt},
+    {"HwMnoteXtStyleTemplateName", singleInt},
+    {"HwMnoteXtStyleCustomLightAndShadow", singleRational},
+    {"HwMnoteXtStyleCustomSaturation", singleRational},
+    {"HwMnoteXtStyleCustomHue", singleRational},
+    {"HwMnoteXtStyleExposureParam", tribleIntWithBlank},
     {"DateTimeDigitized", dateTimeValidation},
     {"DateTimeDigitized", dateValidation},
     {"OffsetTime", dateTimeValidation},

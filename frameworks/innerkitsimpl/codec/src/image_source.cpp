@@ -5015,11 +5015,14 @@ std::unique_ptr<Picture> ImageSource::CreatePicture(const DecodingOptionsForPict
 
     std::set<AuxiliaryPictureType> auxTypes = (opts.desireAuxiliaryPictures.size() > 0) ?
             opts.desireAuxiliaryPictures : ImageUtils::GetAllAuxiliaryPictureType();
+    std::set<MetadataType> metadataTypes = (opts.desiredMetadatas.size() > 0) ?
+            opts.desiredMetadatas : ImageUtils::GetAllMetadataType();
     if (info.encodedFormat == IMAGE_HEIF_FORMAT || info.encodedFormat == IMAGE_HEIC_FORMAT) {
         DecodeHeifAuxiliaryPictures(auxTypes, picture, errorCode);
     } else if (info.encodedFormat == IMAGE_JPEG_FORMAT) {
         DecodeJpegAuxiliaryPicture(auxTypes, picture, errorCode);
     }
+    DecodeBlobMetaData(picture, metadataTypes, info, errorCode);
     SetHdrMetadataForPicture(picture);
     if (errorCode != SUCCESS) {
         IMAGE_LOGE("Decode auxiliary pictures failed, error code: %{public}u", errorCode);
@@ -5217,6 +5220,43 @@ void ImageSource::DecodeJpegAuxiliaryPicture(
     }
 }
 #endif
+
+void ImageSource::DecodeBlobMetaData(std::unique_ptr<Picture> &picture, const std::set<MetadataType> &metadataTypes,
+    ImageInfo &info, uint32_t &errorCode)
+{
+    if (mainDecoder_ == nullptr) {
+        IMAGE_LOGE("mainDecoder_ is nullptr");
+        errorCode = ERR_IMAGE_PLUGIN_CREATE_FAILED;
+        return;
+    }
+    if (picture == nullptr || picture->GetMainPixel() == nullptr) {
+        IMAGE_LOGE("%{public}s: picture or mainPixelMap is nullptr", __func__);
+        errorCode = ERR_IMAGE_DATA_ABNORMAL;
+        return;
+    }
+
+    std::map<MetadataType, std::vector<uint8_t>> metadataMap;
+    for (const auto& iter : BLOB_METADATA_TAG_MAP) {
+        if (metadataTypes.find(iter.first) == metadataTypes.end()) {
+            continue;
+        }
+        if (info.encodedFormat == IMAGE_JPEG_FORMAT) {
+            auto jpegMpfParser = std::make_unique<JpegMpfParser>();
+            jpegMpfParser->ParsingBlobMetadata(sourceStreamPtr_->GetDataPtr(), sourceStreamPtr_->GetStreamSize(),
+                metadataMap[iter.first], iter.first);
+        } else {
+            mainDecoder_->GetHeifMetadataBlob(metadataMap[iter.first], iter.first);
+        }
+    }
+
+    for (const auto& iter : metadataMap) {
+        if (iter.second.size()) {
+            IMAGE_LOGI("%{public}s: %{public}s size is: %{public}zu",
+                __func__, BLOB_METADATA_TAG_MAP.at(iter.first).c_str(), iter.second.size());
+            errorCode = picture->SetBlobMetadataByType(iter.second, iter.first);
+        }
+    }
+}
 
 bool ImageSource::CompressToAstcFromPixelmap(const DecodeOptions &opts, unique_ptr<PixelMap> &rgbaPixelmap,
     unique_ptr<AbsMemory> &dstMemory)

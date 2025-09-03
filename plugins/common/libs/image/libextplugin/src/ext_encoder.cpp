@@ -143,6 +143,9 @@ namespace {
     constexpr static uint32_t UNREFOCUS_MAP_ITEM_ID = 6;
     constexpr static uint32_t LINEAR_MAP_ITEM_ID = 7;
     constexpr static uint32_t FRAGMENT_MAP_ITEM_ID = 8;
+    constexpr static uint32_t XTSTYLE_META_ITEM_ID = 9;
+    constexpr static uint32_t RFDATAB_META_ITEM_ID = 10;
+    constexpr static uint32_t STDATA_META_ITEM_ID = 11;
     const static std::string COMPRESS_TYPE_TMAP = "tmap";
     const static std::string COMPRESS_TYPE_HEVC = "hevc";
     const static std::string COMPRESS_TYPE_NONE = "none";
@@ -153,17 +156,24 @@ namespace {
     const static std::string IMAGE_DATA_TAG = "Heif Encoder Image";
     const static std::string HDR_GAINMAP_TAG = "Heif Encoder Gainmap";
     const static std::string EXIF_ASHMEM_TAG = "Heif Encoder Exif";
+    const static std::string XTSTYLE_ASHMEM_TAG = "Heif Encoder XtStyle";
+    const static std::string RFDATAB_ASHMEM_TAG = "Heif Encoder RfDataB";
+    const static std::string STDATA_ASHMEM_TAG = "Heif Encoder STData";
     const static std::string GAINMAP_IMAGE_ITEM_NAME = "Gain map Image";
     const static std::string DEPTH_MAP_ITEM_NAME =  "Depth Map Image";
     const static std::string UNREFOCUS_MAP_ITEM_NAME = "Unrefocus Map Image";
     const static std::string LINEAR_MAP_ITEM_NAME = "Linear Map Image";
     const static std::string FRAGMENT_MAP_ITEM_NAME = "Fragment Map Image";
+    const static std::string XTSTYLE_METADATA_ITEM_NAME = "urn:com:huawei:photo:5:1:0:meta:xtstyle";
+    const static std::string RFDATAB_METADATA_ITEM_NAME = "RfDataB\0";
+    const static std::string STDATA_METADATA_ITEM_NAME = "STData\0";
     const static size_t DEFAULT_OUTPUT_SIZE = 35 * 1024 * 1024; // 35M
     const static uint16_t STATIC_METADATA_COLOR_SCALE = 50000;
     const static uint16_t STATIC_METADATA_LUM_SCALE = 10000;
     const static uint8_t INDEX_ZERO = 0;
     const static uint8_t INDEX_ONE = 1;
     const static uint8_t INDEX_TWO = 2;
+    const static int32_t INVALID_FD = -1;
     constexpr uint32_t DEFAULT_DENOMINATOR = 1000000;
     constexpr uint8_t GAINMAP_CHANNEL_MULTI = 3;
     constexpr uint8_t GAINMAP_CHANNEL_SINGLE = 1;
@@ -174,11 +184,18 @@ namespace {
     constexpr uint32_t PLACE_HOLDER_LENGTH = 1;
     constexpr uint32_t LOW_QUALITY_BOUNDARY = 50;
     constexpr uint32_t RGBA8888_PIXEL_BYTES = 4;
-    constexpr uint32_t HIGHEST_QUALITY = 100;
-    constexpr uint32_t DEFAULT_QUALITY = 75;
     static constexpr uint32_t TRANSFUNC_OFFSET = 8;
     static constexpr uint32_t MATRIX_OFFSET = 8;
     static constexpr uint32_t RANGE_OFFSET = 8;
+    constexpr uint32_t HIGHEST_QUALITY = 100;
+    constexpr uint32_t DEFAULT_QUALITY = 75;
+
+    const static std::map<MetadataType, std::tuple<uint32_t, std::string, std::string>>
+    HEIF_METADATA_MAPPING = {
+        {MetadataType::XTSTYLE, std::make_tuple(XTSTYLE_META_ITEM_ID, XTSTYLE_ASHMEM_TAG, XTSTYLE_METADATA_ITEM_NAME)},
+        {MetadataType::RFDATAB, std::make_tuple(RFDATAB_META_ITEM_ID, RFDATAB_ASHMEM_TAG, RFDATAB_METADATA_ITEM_NAME)},
+        {MetadataType::STDATA, std::make_tuple(STDATA_META_ITEM_ID, STDATA_ASHMEM_TAG, STDATA_METADATA_ITEM_NAME)}
+    };
 
     // exif/0/0
     constexpr uint8_t EXIF_PRE_TAG[EXIF_PRE_SIZE] = {
@@ -212,6 +229,7 @@ static const std::map<AuxiliaryPictureType, std::string> DEFAULT_AUXILIARY_TAG_M
     {AuxiliaryPictureType::FRAGMENT_MAP, AUXILIARY_TAG_FRAGMENT_MAP},
 };
 
+static const uint8_t NUM_2 = 2;
 static const uint8_t NUM_3 = 3;
 static const uint8_t NUM_4 = 4;
 static const uint8_t RGBA_BIT_DEPTH = 4;
@@ -1117,8 +1135,8 @@ std::shared_ptr<ImageItem> ExtEncoder::AssembleHdrBaseImageItem(sptr<SurfaceBuff
     item->compressType = COMPRESS_TYPE_HEVC;
     item->quality = opts.quality;
     item->pixelBuffer = sptr<NativeBuffer>::MakeSptr(surfaceBuffer->GetBufferHandle());
-    item->sharedProperties.fd = -1;
-    item->pixelSharedBuffer.fd = -1;
+    item->sharedProperties.fd = INVALID_FD;
+    item->pixelSharedBuffer.fd = INVALID_FD;
     ColourInfo colorInfo;
     GetColourInfo(color, colorInfo);
     ContentLightLevel light;
@@ -1154,8 +1172,8 @@ std::shared_ptr<ImageItem> ExtEncoder::AssembleGainmapImageItem(sptr<SurfaceBuff
     item->isHidden = true;
     item->compressType = COMPRESS_TYPE_HEVC;
     item->quality = opts.quality;
-    item->sharedProperties.fd = -1;
-    item->pixelSharedBuffer.fd = -1;
+    item->sharedProperties.fd = INVALID_FD;
+    item->pixelSharedBuffer.fd = INVALID_FD;
     item->pixelBuffer = sptr<NativeBuffer>::MakeSptr(surfaceBuffer->GetBufferHandle());
     ColourInfo colorInfo;
     GetColourInfo(color, colorInfo);
@@ -1260,8 +1278,8 @@ ImageItem ExtEncoder::InitAuxiliaryImageItem(uint32_t id, std::string itemName)
     item.isPrimary = false;
     item.isHidden = true;
     item.quality = opts_.quality;
-    item.sharedProperties.fd = -1;
-    item.pixelSharedBuffer.fd = -1;
+    item.sharedProperties.fd = INVALID_FD;
+    item.pixelSharedBuffer.fd = INVALID_FD;
     if (id == DEPTH_MAP_ITEM_ID || id == LINEAR_MAP_ITEM_ID) {
         item.compressType = COMPRESS_TYPE_NONE;
     } else {
@@ -1697,8 +1715,8 @@ uint32_t ExtEncoder::EncodeHeifSdrImage(sptr<SurfaceBuffer>& sdr, SkImageInfo sd
     item.isHidden = false;
     item.compressType = COMPRESS_TYPE_HEVC;
     item.quality = opts_.quality;
-    item.sharedProperties.fd = -1;
-    item.pixelSharedBuffer.fd = -1;
+    item.sharedProperties.fd = INVALID_FD;
+    item.pixelSharedBuffer.fd = INVALID_FD;
     ImageInfo info;
     pixelmap_->GetImageInfo(info);
 #ifdef USE_M133_SKIA
@@ -1851,6 +1869,20 @@ uint32_t ExtEncoder::EncodeEditScenePicture()
     return errorCode;
 }
 
+#ifdef HEIF_HW_ENCODE_ENABLE
+void ExtEncoder::EncodeHeifMetadata(std::vector<ItemRef> &refs, std::vector<MetaItem> &inputMetas)
+{
+    if (AssembleExifMetaItem(inputMetas)) {
+        AssembleExifRefItem(refs);
+    }
+    for (const auto& iter : HEIF_METADATA_MAPPING) {
+        if (AssembleBlobMetaItem(iter.first, inputMetas)) {
+            AssembleBlobRefItem(iter.first, refs);
+        }
+    }
+}
+#endif
+
 uint32_t ExtEncoder::EncodeHeifPicture(sptr<SurfaceBuffer>& mainSptr, SkImageInfo mainInfo, bool sdrIsSRGB)
 {
 #ifdef HEIF_HW_ENCODE_ENABLE
@@ -1888,9 +1920,7 @@ uint32_t ExtEncoder::EncodeHeifPicture(sptr<SurfaceBuffer>& mainSptr, SkImageInf
     }
     bool cond = error != SUCCESS;
     CHECK_ERROR_RETURN_RET(cond, error);
-    if (AssembleExifMetaItem(inputMetas)) {
-        AssembleExifRefItem(refs);
-    }
+    EncodeHeifMetadata(refs, inputMetas);
     error = AssembleHeifAuxiliaryPicture(inputImgs, refs);
     cond = error != SUCCESS;
     CHECK_ERROR_RETURN_RET(cond, error);
@@ -1974,6 +2004,7 @@ uint32_t ExtEncoder::EncodeJpegPictureDualVividInner(SkWStream& skStream, std::s
     if (error == SUCCESS) {
         sk_sp<SkData> hdrSkData = hdrStream.detachAsData();
         skStream.write(hdrSkData->data(), hdrSkData->size());
+        EncodeJpegAllBlobMetadata(skStream);
         EncodeJpegAuxiliaryPictures(skStream);
     }
     return error;
@@ -2021,6 +2052,7 @@ uint32_t ExtEncoder::EncodeJpegPictureSdr(SkWStream& skStream)
         IMAGE_LOGD("%{public}s encode hdr picture result is: %{public}u", __func__, error);
     }
     if (error == SUCCESS) {
+        EncodeJpegAllBlobMetadata(skStream);
         EncodeJpegAuxiliaryPictures(skStream);
     }
     return error;
@@ -2093,6 +2125,34 @@ void ExtEncoder::EncodeJpegAuxiliaryPictures(SkWStream& skStream)
             uint32_t currentDataSize = static_cast<uint32_t>(skStream.bytesWritten() - writtenSize);
             WriteJpegAuxiliarySizeAndTag(currentDataSize, auxPicture, skStream);
         }
+    }
+}
+
+void ExtEncoder::EncodeJpegAllBlobMetadata(SkWStream& skStream)
+{
+    ImageFuncTimer imageFuncTimer("%s enter", __func__);
+    if (picture_ == nullptr || opts_.needsPackProperties == false) {
+        return;
+    }
+    for (const auto& iter : BLOB_METADATA_TAG_MAP) {
+        auto metadataPtr = picture_->GetMetadata(iter.first);
+        if (metadataPtr == nullptr) {
+            continue;
+        }
+        uint8_t* bytes = metadataPtr->GetBlobPtr();
+        uint32_t writeSize = metadataPtr->GetBlobSize();
+        if (bytes == nullptr || writeSize == 0) {
+            continue;
+        }
+        IMAGE_LOGI("%{public}s try to encode blob metadata, type is: %{public}d, datasize : %{public}u",
+            __func__, iter.first, writeSize);
+        skStream.write(bytes, writeSize);
+        std::vector<uint8_t> dataSize = JpegMpfPacker::PackDataSize(writeSize, false);
+        skStream.write(dataSize.data(), dataSize.size());
+        std::string tagName = iter.second;
+        std::vector<uint8_t> dataTag(tagName.begin(), tagName.end());
+        dataTag.push_back(0);
+        skStream.write(dataTag.data(), dataTag.size());
     }
 }
 
@@ -2503,8 +2563,8 @@ std::shared_ptr<ImageItem> ExtEncoder::AssembleTmapImageItem(ColorManager::Color
     item->isHidden = false;
     item->compressType = COMPRESS_TYPE_TMAP;
     item->quality = opts.quality;
-    item->sharedProperties.fd = -1;
-    item->pixelSharedBuffer.fd = -1;
+    item->sharedProperties.fd = INVALID_FD;
+    item->pixelSharedBuffer.fd = INVALID_FD;
     ColourInfo colorInfo;
     GetColourInfo(color, colorInfo);
     ContentLightLevel light;
@@ -2550,8 +2610,8 @@ std::shared_ptr<ImageItem> ExtEncoder::AssemblePrimaryImageItem(sptr<SurfaceBuff
     item->isHidden = false;
     item->compressType = COMPRESS_TYPE_HEVC;
     item->quality = opts.quality;
-    item->sharedProperties.fd = -1;
-    item->pixelSharedBuffer.fd = -1;
+    item->sharedProperties.fd = INVALID_FD;
+    item->pixelSharedBuffer.fd = INVALID_FD;
 #ifdef USE_M133_SKIA
     sk_sp<SkData> iccProfile = icc_from_color_space(ToSkInfo(pixelmap_), nullptr, nullptr);
 #else
@@ -2581,11 +2641,11 @@ void ExtEncoder::AssembleExifRefItem(std::vector<ItemRef>& refs)
     refs.push_back(*item);
 }
 
-void inline FreeExifBlob(uint8_t** exifBlob)
+void inline FreeBlob(uint8_t** Blob)
 {
-    if (exifBlob != nullptr && *exifBlob != nullptr) {
-        free(*exifBlob);
-        *exifBlob = nullptr;
+    if (Blob != nullptr && *Blob != nullptr) {
+        free(*Blob);
+        *Blob = nullptr;
     }
 }
 
@@ -2613,10 +2673,10 @@ bool ExtEncoder::AssembleExifMetaItem(std::vector<MetaItem>& metaItems)
     auto item = std::make_shared<MetaItem>();
     item->id = EXIF_META_ITEM_ID;
     item->itemName = "exif";
-    item->data.fd = -1;
+    item->data.fd = INVALID_FD;
     std::shared_ptr<AbsMemory> propertyAshmem = AllocateNewSharedMem(exifSize + EXIF_PRE_SIZE, EXIF_ASHMEM_TAG);
     if (propertyAshmem == nullptr) {
-        FreeExifBlob(&exifBlob);
+        FreeBlob(&exifBlob);
         IMAGE_LOGE("AssembleExifMetaItem alloc propertyAshmem failed");
         return false;
     }
@@ -2631,7 +2691,7 @@ bool ExtEncoder::AssembleExifMetaItem(std::vector<MetaItem>& metaItems)
         item->data.filledLen = propertyAshmem->data.size;
         metaItems.push_back(*item);
     }
-    FreeExifBlob(&exifBlob);
+    FreeBlob(&exifBlob);
     return fillRes;
 }
 
@@ -2684,6 +2744,62 @@ void ExtEncoder::AssembleAuxiliaryRefItem(AuxiliaryPictureType type, std::vector
             break;
     }
     refs.push_back(*item);
+}
+
+void ExtEncoder::AssembleBlobRefItem(MetadataType type, std::vector<ItemRef>& refs)
+{
+    auto metadataTuple = HEIF_METADATA_MAPPING.at(type);
+    auto item = std::make_shared<ItemRef>();
+    item->type = ReferenceType::CDSC;
+    item->from = std::get<0>(metadataTuple);
+    item->to.resize(INDEX_ONE);
+    item->to[INDEX_ZERO] = PRIMARY_IMAGE_ITEM_ID;
+    refs.push_back(*item);
+}
+ 
+bool ExtEncoder::AssembleBlobMetaItem(MetadataType type, std::vector<MetaItem>& metaItems)
+{
+    auto metadataTuple = HEIF_METADATA_MAPPING.at(type);
+    if (!opts_.needsPackProperties) {
+        IMAGE_LOGD("no need encode blob: %{public}d", type);
+        return false;
+    }
+    if (picture_ == nullptr || picture_->GetMetadata(type) == nullptr) {
+        IMAGE_LOGE("fail to get picture or fail to get blob");
+        return false;
+    }
+    auto blobMetadata = picture_->GetMetadata(type);
+    uint32_t blobDataSize = blobMetadata->GetBlobSize();
+    if (blobDataSize == 0) {
+        IMAGE_LOGE("blob size is 0");
+        return false;
+    }
+    auto blobDataPtr = blobMetadata->GetBlobPtr();
+    if (blobDataPtr == nullptr) {
+        IMAGE_LOGE("AssembleBlobMetaItem getBlob is nullptr");
+        return false;
+    }
+ 
+    auto item = std::make_shared<MetaItem>();
+    item->id = std::get<0>(metadataTuple);
+    item->itemName = std::get<NUM_2>(metadataTuple);
+    item->data.fd = INVALID_FD;
+    std::shared_ptr<AbsMemory> propertyAshmem = AllocateNewSharedMem(blobDataSize, std::get<1>(metadataTuple));
+    if (propertyAshmem == nullptr) {
+        IMAGE_LOGE("AssembleBlobMetaItem alloc propertyAshmem failed");
+        return false;
+    }
+    tmpMemoryList_.push_back(propertyAshmem);
+    uint8_t* memData = reinterpret_cast<uint8_t*>(propertyAshmem->data.data);
+    size_t memSize = propertyAshmem->data.size;
+    bool fillRes = (memcpy_s(memData, memSize, blobDataPtr, blobDataSize) == EOK);
+    if (fillRes) {
+        item->data.fd = *static_cast<int *>(propertyAshmem->extend.data);
+        item->data.capacity = propertyAshmem->data.size;
+        item->data.filledLen = propertyAshmem->data.size;
+        metaItems.push_back(*item);
+    }
+    return fillRes;
 }
 #endif
 } // namespace ImagePlugin

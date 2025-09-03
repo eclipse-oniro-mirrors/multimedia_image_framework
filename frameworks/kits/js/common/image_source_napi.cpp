@@ -333,6 +333,11 @@ static std::vector<struct ImageEnum> sPropertyKeyMap = {
     {"CLOUD_ENHANCEMENT_MODE", 0, "HwMnoteCloudEnhancementMode"},
     {"WIND_SNAPSHOT_MODE", 0, "HwMnoteWindSnapshotMode"},
     {"GIF_LOOP_COUNT", 0, "GIFLoopCount"},
+    {"XTSTYLE_TEMPLATE_NAME", 0, "HwMnoteXtStyleTemplateName"},
+    {"XTSTYLE_CUSTOM_LIGHT_AND_SHADOW", 0, "HwMnoteXtStyleCustomLightAndShadow"},
+    {"XTSTYLE_CUSTOM_SATURATION", 0, "HwMnoteXtStyleCustomSaturation"},
+    {"XTSTYLE_CUSTOM_HUE", 0, "HwMnoteXtStyleCustomHue"},
+    {"XTSTYLE_EXPOSUREPARAM_NAME", 0, "HwMnoteXtStyleExposureParam"},
 };
 static std::vector<struct ImageEnum> sImageFormatMap = {
     {"YCBCR_422_SP", 1000, ""},

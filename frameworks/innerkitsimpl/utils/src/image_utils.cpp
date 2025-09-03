@@ -1245,7 +1245,8 @@ bool ImageUtils::IsAuxiliaryPictureEncoded(AuxiliaryPictureType type)
 
 bool ImageUtils::IsMetadataTypeSupported(MetadataType metadataType)
 {
-    if (metadataType == MetadataType::EXIF || metadataType == MetadataType::FRAGMENT) {
+    if (metadataType == MetadataType::EXIF || metadataType == MetadataType::FRAGMENT ||
+        metadataType == MetadataType::XTSTYLE || metadataType == MetadataType::RFDATAB) {
         return true;
     } else {
         return false;
@@ -1261,6 +1262,18 @@ const std::set<AuxiliaryPictureType> ImageUtils::GetAllAuxiliaryPictureType()
         AuxiliaryPictureType::LINEAR_MAP,
         AuxiliaryPictureType::FRAGMENT_MAP};
     return auxTypes;
+}
+
+const std::set<MetadataType> &ImageUtils::GetAllMetadataType()
+{
+    static const std::set<MetadataType> metadataTypes = {
+        MetadataType::EXIF,
+        MetadataType::FRAGMENT,
+        MetadataType::XTSTYLE,
+        MetadataType::RFDATAB,
+        MetadataType::STDATA
+    };
+    return metadataTypes;
 }
 
 size_t ImageUtils::GetAstcBytesCount(const ImageInfo& imageInfo)

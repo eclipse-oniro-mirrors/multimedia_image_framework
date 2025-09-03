@@ -208,6 +208,12 @@ private:
 
     void ExtractFragmentMetadata(const heif_item_id& itemId);
 
+    void ExtractXtStyleMetadata(const std::vector<heif_item_id>& allItemIds);
+
+    void ExtractRfDataBMetadata(const std::vector<heif_item_id>& allItemIds);
+
+    void ExtractSTDataMetadata(const std::vector<heif_item_id>& allItemIds);
+
     void SetTiffOffset();
 };
 } // namespace ImagePlugin

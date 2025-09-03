@@ -18,6 +18,8 @@
 
 #include "pixel_map.h"
 #include "auxiliary_picture.h"
+#include "xtstyle_metadata.h"
+#include "rfdatab_metadata.h"
 #include "gif_metadata.h"
 #include "image_type.h"
 #include <map>
@@ -52,17 +54,22 @@ public:
     NATIVEEXPORT virtual bool Marshalling(Parcel &data) const override;
     NATIVEEXPORT static Picture *Unmarshalling(Parcel &data);
     NATIVEEXPORT static Picture *Unmarshalling(Parcel &data, PICTURE_ERR &error);
-    NATIVEEXPORT int32_t CreateExifMetadata();
-    NATIVEEXPORT int32_t SetExifMetadata(sptr<SurfaceBuffer> &surfaceBuffer);
-    NATIVEEXPORT int32_t SetExifMetadata(std::shared_ptr<ExifMetadata> exifMetadata);
+    NATIVEEXPORT uint32_t CreateExifMetadata();
+    NATIVEEXPORT uint32_t SetExifMetadata(sptr<SurfaceBuffer> &surfaceBuffer);
+    NATIVEEXPORT uint32_t SetExifMetadata(std::shared_ptr<ExifMetadata> exifMetadata);
     NATIVEEXPORT std::shared_ptr<ExifMetadata> GetExifMetadata();
     NATIVEEXPORT bool SetMaintenanceData(sptr<SurfaceBuffer> &surfaceBuffer);
     NATIVEEXPORT sptr<SurfaceBuffer> GetMaintenanceData() const;
+    NATIVEEXPORT uint32_t SetXtStyleMetadata(std::shared_ptr<BlobMetadata> xtStyleMetadata);
+    NATIVEEXPORT std::shared_ptr<XtStyleMetadata> GetXtStyleMetadata();
+    NATIVEEXPORT uint32_t SetRfDataBMetadata(std::shared_ptr<BlobMetadata> RfDataBMetadata);
+    NATIVEEXPORT std::shared_ptr<RfDataBMetadata> GetRfDataBMetadata();
     NATIVEEXPORT bool MarshalMetadata(Parcel &data) const;
     NATIVEEXPORT static bool UnmarshalMetadata(Parcel &parcel, Picture &picture, PICTURE_ERR &error);
     NATIVEEXPORT static void DumpPictureIfDumpEnabled(Picture& picture, std::string dumpType);
     NATIVEEXPORT std::shared_ptr<ImageMetadata> GetMetadata(MetadataType type);
     NATIVEEXPORT uint32_t SetMetadata(MetadataType type, std::shared_ptr<ImageMetadata> metadata);
+    NATIVEEXPORT uint32_t SetBlobMetadataByType(const std::vector<uint8_t>& metadata, MetadataType type);
     NATIVEEXPORT static bool IsValidPictureMetadataType(MetadataType metadataType);
 
 private:

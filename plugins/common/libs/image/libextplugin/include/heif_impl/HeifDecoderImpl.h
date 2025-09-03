@@ -76,6 +76,8 @@ public:
     void setAuxiliaryDstBuffer(uint8_t* dstBuffer, size_t dstSize, size_t rowStride, void *context);
     void getFragmentMetadata(Media::Rect& fragmentMetadata);
     bool SwDecode(bool isSharedMemory = false);
+    void GetMetadataBlob(std::vector<uint8_t>& metadata, Media::MetadataType type);
+
     void SetDecodeRegion(int32_t colCount, int32_t rowCount, int32_t left, int32_t top, size_t rowStride);
     bool IsHeifHasAlphaImage();
     void SetPadding(int32_t widthPadding, int32_t heightPadding);

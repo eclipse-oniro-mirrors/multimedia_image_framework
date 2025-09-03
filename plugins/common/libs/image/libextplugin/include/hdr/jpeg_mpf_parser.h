@@ -38,6 +38,8 @@ public:
     bool ParsingAuxiliaryPictures(uint8_t* data, uint32_t dataSize, bool isBigEndian = true);
     std::vector<SingleJpegImage> images_;
     static bool ParsingFragmentMetadata(uint8_t* data, uint32_t size, Rect& fragmentRect, bool isBigEndian = true);
+    static bool ParsingBlobMetadata(uint8_t* data, uint32_t size,
+                                        std::vector<uint8_t> &metadata, MetadataType type);
 
 private:
     bool ParsingMpIndexIFD(uint8_t* data, uint32_t size, uint32_t dataOffset, bool isBigEndian);

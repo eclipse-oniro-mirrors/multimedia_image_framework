@@ -15,6 +15,8 @@
 
 #include <memory>
 #include "exif_metadata.h"
+#include "xtstyle_metadata.h"
+#include "rfdatab_metadata.h"
 #include "picture.h"
 #include "pixel_yuv.h"
 #include "pixel_yuv_ext.h"
@@ -120,6 +122,8 @@ namespace {
 }
 const static uint64_t MAX_AUXILIARY_PICTURE_COUNT = 32;
 const static uint64_t MAX_PICTURE_META_TYPE_COUNT = 64;
+
+// Define ExifData malloc max size 1MB
 const static uint64_t MAX_EXIFMETADATA_SIZE = 1024 * 1024;
 static const uint8_t NUM_0 = 0;
 static const uint8_t NUM_1 = 1;
@@ -558,9 +562,8 @@ bool Picture::MarshalMetadata(Parcel &data) const
 
 bool Picture::Marshalling(Parcel &data) const
 {
-    bool cond = false;
     CHECK_ERROR_RETURN_RET_LOG(!mainPixelMap_, false, "Main PixelMap is null.");
-    cond = !mainPixelMap_->Marshalling(data);
+    bool cond = !mainPixelMap_->Marshalling(data);
     CHECK_ERROR_RETURN_RET_LOG(cond, false, "Failed to marshal main PixelMap.");
 
     size_t numAuxiliaryPictures = auxiliaryPictures_.size();
@@ -577,8 +580,8 @@ bool Picture::Marshalling(Parcel &data) const
         CHECK_ERROR_RETURN_RET_LOG(cond, false,
             "Failed to marshal auxiliary picture of type %{public}d.", static_cast<int>(type));
     }
-    CHECK_ERROR_RETURN_RET(!MarshalMetadata(data), false);
-
+    cond = !MarshalMetadata(data);
+    CHECK_ERROR_RETURN_RET(cond, false);
     return true;
 }
 
@@ -615,6 +618,10 @@ bool Picture::UnmarshalMetadata(Parcel &parcel, Picture &picture, PICTURE_ERR &e
             imagedataPtr.reset(ExifMetadata::Unmarshalling(parcel));
         } else if (type == MetadataType::GIF) {
             imagedataPtr.reset(GifMetadata::Unmarshalling(parcel));
+        } else if (type == MetadataType::XTSTYLE) {
+            imagedataPtr.reset(XtStyleMetadata::Unmarshalling(parcel));
+        } else if (type == MetadataType::RFDATAB) {
+            imagedataPtr.reset(RfDataBMetadata::Unmarshalling(parcel));
         } else {
             IMAGE_LOGE("Unsupported metadata type: %{public}d in picture", static_cast<int32_t>(type));
         }
@@ -633,6 +640,7 @@ Picture *Picture::Unmarshalling(Parcel &parcel, PICTURE_ERR &error)
 {
     std::unique_ptr<Picture> picture = std::make_unique<Picture>();
     std::shared_ptr<PixelMap> pixelmapPtr(PixelMap::Unmarshalling(parcel));
+
     CHECK_ERROR_RETURN_RET_LOG(!pixelmapPtr, nullptr, "Failed to unmarshal main PixelMap.");
     picture->SetMainPixel(pixelmapPtr);
     uint64_t numAuxiliaryPictures = parcel.ReadUint64();
@@ -648,9 +656,12 @@ Picture *Picture::Unmarshalling(Parcel &parcel, PICTURE_ERR &error)
     return picture.release();
 }
 
-int32_t Picture::CreateExifMetadata()
+uint32_t Picture::CreateExifMetadata()
 {
-    CHECK_ERROR_RETURN_RET_LOG(GetExifMetadata() != nullptr, SUCCESS, "exifMetadata is already created");
+    if (GetExifMetadata() != nullptr) {
+        IMAGE_LOGE("exifMetadata is already created");
+        return SUCCESS;
+    }
     auto exifMetadata = std::make_shared<OHOS::Media::ExifMetadata>();
     if (exifMetadata == nullptr) {
         IMAGE_LOGE("Failed to create ExifMetadata object");
@@ -663,7 +674,7 @@ int32_t Picture::CreateExifMetadata()
     return SetExifMetadata(exifMetadata);
 }
 
-int32_t Picture::SetExifMetadata(sptr<SurfaceBuffer> &surfaceBuffer)
+uint32_t Picture::SetExifMetadata(sptr<SurfaceBuffer> &surfaceBuffer)
 {
     if (surfaceBuffer == nullptr) {
         return ERR_IMAGE_INVALID_PARAMETER;
@@ -705,7 +716,7 @@ int32_t Picture::SetExifMetadata(sptr<SurfaceBuffer> &surfaceBuffer)
     return SetExifMetadata(exifMetadata);
 }
 
-int32_t Picture::SetExifMetadata(std::shared_ptr<ExifMetadata> exifMetadata)
+uint32_t Picture::SetExifMetadata(std::shared_ptr<ExifMetadata> exifMetadata)
 {
     return SetMetadata(MetadataType::EXIF, exifMetadata);
 }
@@ -731,6 +742,34 @@ bool Picture::SetMaintenanceData(sptr<SurfaceBuffer> &surfaceBuffer)
 sptr<SurfaceBuffer> Picture::GetMaintenanceData() const
 {
     return maintenanceData_;
+}
+
+uint32_t Picture::SetXtStyleMetadata(std::shared_ptr<BlobMetadata> xtStyleMetadata)
+{
+    return SetMetadata(MetadataType::XTSTYLE, xtStyleMetadata);
+}
+
+std::shared_ptr<XtStyleMetadata> Picture::GetXtStyleMetadata()
+{
+    auto xtStyleMetadata = GetMetadata(MetadataType::XTSTYLE);
+    if (xtStyleMetadata == nullptr) {
+        return nullptr;
+    }
+    return std::reinterpret_pointer_cast<XtStyleMetadata>(xtStyleMetadata);
+}
+
+uint32_t Picture::SetRfDataBMetadata(std::shared_ptr<BlobMetadata> rfDataBMetadata)
+{
+    return SetMetadata(MetadataType::RFDATAB, rfDataBMetadata);
+}
+
+std::shared_ptr<RfDataBMetadata> Picture::GetRfDataBMetadata()
+{
+    auto rfDataBMetadata = GetMetadata(MetadataType::RFDATAB);
+    if (rfDataBMetadata == nullptr) {
+        return nullptr;
+    }
+    return std::reinterpret_pointer_cast<RfDataBMetadata>(rfDataBMetadata);
 }
 
 std::shared_ptr<ImageMetadata> Picture::GetMetadata(MetadataType type)
@@ -770,6 +809,13 @@ uint32_t Picture::SetMetadata(MetadataType type, std::shared_ptr<ImageMetadata> 
     return SUCCESS;
 }
 
+uint32_t Picture::SetBlobMetadataByType(const std::vector<uint8_t>& metadata, MetadataType type)
+{
+    std::shared_ptr<BlobMetadata> blobMetadata = std::make_shared<BlobMetadata>(type);
+    blobMetadata->SetBlob(metadata.data(), metadata.size());
+    return SetMetadata(type, blobMetadata);
+}
+
 void Picture::DumpPictureIfDumpEnabled(Picture& picture, std::string dumpType)
 {
     CHECK_ERROR_RETURN(!ImageSystemProperties::GetDumpPictureEnabled());
@@ -786,13 +832,21 @@ void Picture::DumpPictureIfDumpEnabled(Picture& picture, std::string dumpType)
             ImageUtils::DumpPixelMap(pixelMap.get(), dumpType + "_AuxiliaryType", static_cast<uint64_t>(auxType));
         }
     }
+    auto rfDataBMetadata = picture.GetRfDataBMetadata();
+    if (rfDataBMetadata != nullptr && rfDataBMetadata->GetBlobPtr() != nullptr) {
+        ImageUtils::DumpDataIfDumpEnabled(reinterpret_cast<char*>(rfDataBMetadata->GetBlobPtr()),
+            rfDataBMetadata->GetBlobSize(), dumpType + "_RfDataB", static_cast<uint64_t>(MetadataType::RFDATAB));
+    }
 }
 
 bool Picture::IsValidPictureMetadataType(MetadataType metadataType)
 {
     const static std::set<MetadataType> pictureMetadataTypes = {
         MetadataType::EXIF,
+        MetadataType::XTSTYLE,
+        MetadataType::RFDATAB,
         MetadataType::GIF,
+        MetadataType::STDATA,
     };
     return pictureMetadataTypes.find(metadataType) != pictureMetadataTypes.end();
 }

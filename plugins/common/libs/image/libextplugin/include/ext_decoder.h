@@ -82,6 +82,7 @@ public:
     OHOS::ColorManager::ColorSpace GetPixelMapColorSpace() override;
     bool IsSupportICCProfile() override;
 #endif
+    bool GetHeifMetadataBlob(std::vector<uint8_t>& metadata, Media::MetadataType type) override;
     void FillYuvInfo(DecodeContext &context, SkImageInfo &dstInfo);
     OHOS::Media::Size GetHeifRegionGridSize() override;
 private:

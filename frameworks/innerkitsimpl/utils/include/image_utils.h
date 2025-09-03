@@ -98,6 +98,7 @@ public:
     static bool IsAuxiliaryPictureEncoded(AuxiliaryPictureType type);
     static bool IsMetadataTypeSupported(MetadataType metadataType);
     static const std::set<AuxiliaryPictureType> GetAllAuxiliaryPictureType();
+    static const std::set<MetadataType> &GetAllMetadataType();
     static size_t GetAstcBytesCount(const ImageInfo& imageInfo);
     static bool StrToUint32(const std::string& str, uint32_t& value);
     static bool IsInRange(uint32_t value, uint32_t minValue, uint32_t maxValue);

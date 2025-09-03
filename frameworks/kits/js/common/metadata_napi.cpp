@@ -55,6 +55,8 @@ struct MetadataNapiAsyncContext {
     std::vector<std::string> keyStrArray;
     std::multimap<int32_t, std::string> errMsgArray;
     std::vector<std::pair<std::string, std::string>> KVSArray;
+    void *arrayBuffer;
+    size_t arrayBufferSize;
 };
 using MetadataNapiAsyncContextPtr = std::unique_ptr<MetadataNapiAsyncContext>;
 
@@ -164,6 +166,8 @@ napi_value MetadataNapi::Init(napi_env env, napi_value exports)
         DECLARE_NAPI_FUNCTION("getProperties", GetProperties),
         DECLARE_NAPI_FUNCTION("setProperties", SetProperties),
         DECLARE_NAPI_FUNCTION("getAllProperties", GetAllProperties),
+        DECLARE_NAPI_FUNCTION("getBlob", GetBlob),
+        DECLARE_NAPI_FUNCTION("setBlob", SetBlob),
         DECLARE_NAPI_FUNCTION("clone", Clone),
     };
     napi_property_descriptor static_prop[] = {};
@@ -695,5 +699,135 @@ void MetadataNapi::release()
         isRelease = true;
     }
 }
+
+static void GetBlobComplete(napi_env env, napi_status status, void *data)
+{
+    napi_value result = nullptr;
+    napi_get_undefined(env, &result);
+    auto context = static_cast<MetadataNapiAsyncContext*>(data);
+ 
+    if (context->status == SUCCESS &&
+        !ImageNapiUtils::CreateArrayBuffer(env, context->arrayBuffer, context->arrayBufferSize, &result)) {
+        context->status = ERROR;
+        IMAGE_LOGE("Fail to create napi arraybuffer!");
+        napi_get_undefined(env, &result);
+    }
+ 
+    delete[] static_cast<uint8_t*>(context->arrayBuffer);
+    context->arrayBuffer = nullptr;
+    context->arrayBufferSize = 0;
+    CommonCallbackRoutine(env, context, result);
+}
+
+napi_value MetadataNapi::GetBlob(napi_env env, napi_callback_info info)
+{
+    napi_value result = nullptr;
+    napi_get_undefined(env, &result);
+    napi_status status;
+    napi_value thisVar = nullptr;
+    size_t argCount = NUM_0;
+
+    IMG_JS_ARGS(env, info, status, argCount, nullptr, thisVar);
+    IMG_NAPI_CHECK_RET_D(IMG_IS_OK(status), nullptr, IMAGE_LOGE("Fail to get argments from info"));
+
+    std::unique_ptr<MetadataNapiAsyncContext> asyncContext = std::make_unique<MetadataNapiAsyncContext>();
+    status = napi_unwrap(env, thisVar, reinterpret_cast<void**>(&asyncContext->nConstructor));
+    IMG_NAPI_CHECK_RET_D(IMG_IS_READY(status, asyncContext->nConstructor),
+        nullptr, IMAGE_LOGE("Fail to unwrap context"));
+
+    asyncContext->rMetadata = asyncContext->nConstructor->GetNativeMetadata();
+
+    IMG_NAPI_CHECK_RET_D(IMG_IS_READY(status, asyncContext->rMetadata), nullptr, IMAGE_LOGE("Empty native rMetadata"));
+
+    napi_create_promise(env, &(asyncContext->deferred), &result);
+
+    IMG_CREATE_CREATE_ASYNC_WORK(env, status, "GetBlob",
+        [](napi_env env, void *data) {
+            auto context = static_cast<MetadataNapiAsyncContext*>(data);
+            context->arrayBufferSize = context->rMetadata->GetBlobSize();
+            context->arrayBuffer = new uint8_t[context->arrayBufferSize];
+            if (context->arrayBuffer != nullptr) {
+                context->status = context->rMetadata->GetBlob(
+                    context->arrayBufferSize, static_cast<uint8_t*>(context->arrayBuffer));
+            } else {
+                context->status = ERR_MEDIA_MALLOC_FAILED;
+            }
+        }, GetBlobComplete, asyncContext, asyncContext->work);
+
+    IMG_NAPI_CHECK_RET_D(IMG_IS_OK(status),
+        nullptr, IMAGE_LOGE("Fail to create async work"));
+    return result;
+}
+
+static void SetBlobComplete(napi_env env, napi_status status, void *data)
+{
+    napi_value valueParam = nullptr;
+    napi_get_undefined(env, &valueParam);
+    auto context = static_cast<MetadataNapiAsyncContext*>(data);
+    napi_value result[NUM_2] = {0};
+    napi_get_undefined(env, &result[NUM_0]);
+    napi_get_undefined(env, &result[NUM_1]);
+
+    if (context->status == SUCCESS) {
+        result[NUM_1] = valueParam;
+    } else {
+        ImageNapiUtils::CreateErrorObj(env, result[0], context->status,
+                                       "There is generic napi failure!");
+        napi_get_undefined(env, &result[1]);
+    }
+
+    if (context->deferred) {
+        if (context->status == SUCCESS) {
+            napi_resolve_deferred(env, context->deferred, result[NUM_1]);
+        } else {
+            napi_reject_deferred(env, context->deferred, result[NUM_0]);
+        }
+    }
+
+    napi_delete_async_work(env, context->work);
+    delete context;
+    context = nullptr;
+}
+
+napi_value MetadataNapi::SetBlob(napi_env env, napi_callback_info info)
+{
+    napi_value result = nullptr;
+    napi_get_undefined(env, &result);
+    napi_status status;
+    napi_value thisVar = nullptr;
+    size_t argCount = NUM_1;
+    napi_value argValue[NUM_1] = {0};
+
+    IMG_JS_ARGS(env, info, status, argCount, argValue, thisVar);
+    IMG_NAPI_CHECK_RET_D(IMG_IS_OK(status), nullptr, IMAGE_LOGE("Fail to napi_get_cb_info"));
+
+    std::unique_ptr<MetadataNapiAsyncContext> asyncContext = std::make_unique<MetadataNapiAsyncContext>();
+    status = napi_unwrap(env, thisVar, reinterpret_cast<void**>(&asyncContext->nConstructor));
+    IMG_NAPI_CHECK_RET_D(IMG_IS_READY(status, asyncContext->nConstructor),
+        nullptr, IMAGE_LOGE("Fail to unwrap context"));
+
+    asyncContext->rMetadata = asyncContext->nConstructor->GetNativeMetadata();
+    IMG_NAPI_CHECK_RET_D(IMG_IS_READY(status, asyncContext->rMetadata), nullptr, IMAGE_LOGE("Empty native rMetadata"));
+    status = napi_get_arraybuffer_info(env, argValue[NUM_0],
+        &(asyncContext->arrayBuffer), &(asyncContext->arrayBufferSize));
+    IMG_NAPI_CHECK_RET_D(IMG_IS_OK(status),
+        ImageNapiUtils::ThrowExceptionError(env, IMAGE_BAD_PARAMETER,
+            "Invalid args."), IMAGE_LOGE("Fail to get blob info"));
+    
+    napi_create_promise(env, &(asyncContext->deferred), &result);
+
+    IMG_CREATE_CREATE_ASYNC_WORK(env, status, "SetBlob",
+        [](napi_env env, void *data) {
+            auto context = static_cast<MetadataNapiAsyncContext*>(data);
+            context->status = context->rMetadata->SetBlob(
+                static_cast<uint8_t*>(context->arrayBuffer), static_cast<uint32_t>(context->arrayBufferSize));
+        }, SetBlobComplete, asyncContext, asyncContext->work);
+
+    IMG_NAPI_CHECK_RET_D(IMG_IS_OK(status),
+        nullptr, IMAGE_LOGE("Fail to create async work"));
+    return result;
+}
+
+
 } // namespace Media
 } // namespace OHOS

@@ -1476,6 +1476,17 @@ void HeifDecoderImpl::getVividMetadata(std::vector<uint8_t>& uwaInfo, std::vecto
     lightInfo = primaryImage_->GetLightInfo();
 }
 
+void HeifDecoderImpl::GetMetadataBlob(std::vector<uint8_t>& metadata, MetadataType type)
+{
+    if (type == MetadataType::XTSTYLE) {
+        metadata = primaryImage_->GetXtStyleData();
+    } else if (type == MetadataType::RFDATAB) {
+        metadata = primaryImage_->GetRfDataBData();
+    } else if (type == MetadataType::STDATA) {
+        metadata = primaryImage_->GetSTDataMetaData();
+    }
+}
+
 void HeifDecoderImpl::getISOMetadata(std::vector<uint8_t>& isoMetadata)
 {
     isoMetadata = primaryImage_->GetISOMetadata();
