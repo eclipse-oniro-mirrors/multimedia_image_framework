@@ -557,7 +557,7 @@ void UpdateDestStride(JpegDecoderYuvParameter decodeParameter, const DecodeConte
             OH_NativeBuffer_Planes *planes = nullptr;
             GSError retVal = surfaceBuffer->GetPlanesInfo(reinterpret_cast<void**>(&planes));
             CHECK_ERROR_RETURN_LOG(retVal != OHOS::GSERROR_OK || planes == nullptr,
-                                "%{public}s: GetPlanesInfo failed retVal: %{public}d", __func__, retVal);
+                                   "%{public}s: GetPlanesInfo failed retVal: %{public}d", __func__, retVal);
 
             uint32_t uvPlaneOffset = (decodeParameter.outfmt_ == JpegYuvFmt::OutFmt_NV12) ? NUM_1 : NUM_2;
             uint32_t uvOffset = planes->planes[uvPlaneOffset].offset;
