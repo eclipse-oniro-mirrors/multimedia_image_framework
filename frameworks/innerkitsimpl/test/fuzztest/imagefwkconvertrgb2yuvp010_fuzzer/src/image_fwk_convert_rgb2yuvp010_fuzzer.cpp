@@ -79,15 +79,6 @@ void RGB565ToNV12P010FuzzTest001()
     IMAGE_LOGI("RGB565ToNV12P010FuzzTest001: end");
 }
 
-void RGB565ToNV12P010FuzzTest002()
-{
-    IMAGE_LOGI("RGB565ToNV12P010FuzzTest002: start");
-    PixelFormat srcFormat = PixelFormat::RGB_565;
-    PixelFormat destFormat = PixelFormat::YCBCR_P010;
-    RgbConvertToYuvP010(srcFormat, destFormat);
-    IMAGE_LOGI("RGB565ToNV12P010FuzzTest002: end");
-}
-
 void RGB565ToNV21P010FuzzTest001()
 {
     IMAGE_LOGI("RGB565ToNV21P010FuzzTest001: start");
@@ -95,15 +86,6 @@ void RGB565ToNV21P010FuzzTest001()
     PixelFormat destFormat = PixelFormat::YCRCB_P010;
     RgbConvertToYuvP010(srcFormat, destFormat);
     IMAGE_LOGI("RGB565ToNV21P010FuzzTest001: end");
-}
-
-void RGB565ToNV21P010FuzzTest002()
-{
-    IMAGE_LOGI("RGB565ToNV21P010FuzzTest002: start");
-    PixelFormat srcFormat = PixelFormat::RGB_565;
-    PixelFormat destFormat = PixelFormat::YCRCB_P010;
-    RgbConvertToYuvP010(srcFormat, destFormat);
-    IMAGE_LOGI("RGB565ToNV21P010FuzzTest002: end");
 }
 
 void BGRAToNV12P010FuzzTest001()
@@ -115,15 +97,6 @@ void BGRAToNV12P010FuzzTest001()
     IMAGE_LOGI("BGRAToNV12P010FuzzTest001: end");
 }
 
-void BGRAToNV12P010FuzzTest002()
-{
-    IMAGE_LOGI("BGRAToNV12P010FuzzTest002: start");
-    PixelFormat srcFormat = PixelFormat::BGRA_8888;
-    PixelFormat destFormat = PixelFormat::YCBCR_P010;
-    RgbConvertToYuvP010(srcFormat, destFormat);
-    IMAGE_LOGI("BGRAToNV12P010FuzzTest002: end");
-}
-
 void BGRAToNV21P010FuzzTest001()
 {
     IMAGE_LOGI("BGRAToNV21P010FuzzTest001: start");
@@ -131,15 +104,6 @@ void BGRAToNV21P010FuzzTest001()
     PixelFormat destFormat = PixelFormat::YCRCB_P010;
     RgbConvertToYuvP010(srcFormat, destFormat);
     IMAGE_LOGI("BGRAToNV21P010FuzzTest001: end");
-}
-
-void BGRAToNV21P010FuzzTest002()
-{
-    IMAGE_LOGI("BGRAToNV21P010FuzzTest002: start");
-    PixelFormat srcFormat = PixelFormat::BGRA_8888;
-    PixelFormat destFormat = PixelFormat::YCRCB_P010;
-    RgbConvertToYuvP010(srcFormat, destFormat);
-    IMAGE_LOGI("BGRAToNV21P010FuzzTest002: end");
 }
 
 void RgbConvertToYuvP010ByPixelMap(PixelFormat &tempFormat, PixelFormat &srcFormat,
@@ -190,16 +154,6 @@ void RGBAToNV12P010FuzzTest001()
     IMAGE_LOGI("RGBAToNV12P010FuzzTest001: end");
 }
 
-void RGBAToNV12P010FuzzTest002()
-{
-    IMAGE_LOGI("RGBAToNV12P010FuzzTest002: start");
-    PixelFormat tempFormat = PixelFormat::NV12;
-    PixelFormat srcFormat = PixelFormat::RGBA_8888;
-    PixelFormat destFormat = PixelFormat::YCBCR_P010;
-    RgbConvertToYuvP010ByPixelMap(tempFormat, srcFormat, destFormat);
-    IMAGE_LOGI("RGBAToNV12P010FuzzTest002: end");
-}
-
 void RGBAToNV21P010FuzzTest001()
 {
     IMAGE_LOGI("RGBAToNV21P010FuzzTest001: start");
@@ -208,16 +162,6 @@ void RGBAToNV21P010FuzzTest001()
     PixelFormat destFormat = PixelFormat::YCRCB_P010;
     RgbConvertToYuvP010ByPixelMap(tempFormat, srcFormat, destFormat);
     IMAGE_LOGI("RGBAToNV21P010FuzzTest001: end");
-}
-
-void RGBAToNV21P010FuzzTest002()
-{
-    IMAGE_LOGI("RGBAToNV21P010FuzzTest002: start");
-    PixelFormat tempFormat = PixelFormat::NV21;
-    PixelFormat srcFormat = PixelFormat::RGBA_8888;
-    PixelFormat destFormat = PixelFormat::YCRCB_P010;
-    RgbConvertToYuvP010ByPixelMap(tempFormat, srcFormat, destFormat);
-    IMAGE_LOGI("RGBAToNV21P010FuzzTest002: end");
 }
 
 void RGBToNV12P010FuzzTest001()
@@ -230,16 +174,6 @@ void RGBToNV12P010FuzzTest001()
     IMAGE_LOGI("RGBToNV12P010FuzzTest001: end");
 }
 
-void RGBToNV12P010FuzzTest002()
-{
-    IMAGE_LOGI("RGBToNV12P010FuzzTest002: start");
-    PixelFormat tempFormat = PixelFormat::NV12;
-    PixelFormat srcFormat = PixelFormat::RGB_888;
-    PixelFormat destFormat = PixelFormat::YCBCR_P010;
-    RgbConvertToYuvP010ByPixelMap(tempFormat, srcFormat, destFormat);
-    IMAGE_LOGI("RGBToNV12P010FuzzTest002: end");
-}
-
 void RGBToNV21P010FuzzTest001()
 {
     IMAGE_LOGI("RGBToNV21P010FuzzTest001: start");
@@ -248,16 +182,6 @@ void RGBToNV21P010FuzzTest001()
     PixelFormat destFormat = PixelFormat::YCRCB_P010;
     RgbConvertToYuvP010ByPixelMap(tempFormat, srcFormat, destFormat);
     IMAGE_LOGI("RGBToNV21P010FuzzTest001: end");
-}
-
-void RGBToNV21P010FuzzTest002()
-{
-    IMAGE_LOGI("RGBToNV21P010FuzzTest002: start");
-    PixelFormat tempFormat = PixelFormat::NV21;
-    PixelFormat srcFormat = PixelFormat::RGB_888;
-    PixelFormat destFormat = PixelFormat::YCRCB_P010;
-    RgbConvertToYuvP010ByPixelMap(tempFormat, srcFormat, destFormat);
-    IMAGE_LOGI("RGBToNV21P010FuzzTest002: end");
 }
 
 void RGBAF16ToNV12P010FuzzTest001()
@@ -270,16 +194,6 @@ void RGBAF16ToNV12P010FuzzTest001()
     IMAGE_LOGI("RGBAF16ToNV12P010FuzzTest001: end");
 }
 
-void RGBAF16ToNV12P010FuzzTest002()
-{
-    IMAGE_LOGI("RGBAF16ToNV12P010FuzzTest002: start");
-    PixelFormat tempFormat = PixelFormat::NV12;
-    PixelFormat srcFormat = PixelFormat::RGBA_F16;
-    PixelFormat destFormat = PixelFormat::YCBCR_P010;
-    RgbConvertToYuvP010ByPixelMap(tempFormat, srcFormat, destFormat);
-    IMAGE_LOGI("RGBAF16ToNV12P010FuzzTest002: end");
-}
-
 void RGBAF16ToNV21P010FuzzTest001()
 {
     IMAGE_LOGI("RGBAF16ToNV21P010FuzzTest001: start");
@@ -290,28 +204,14 @@ void RGBAF16ToNV21P010FuzzTest001()
     IMAGE_LOGI("RGBAF16ToNV21P010FuzzTest001: end");
 }
 
-void RGBAF16ToNV21P010FuzzTest002()
-{
-    IMAGE_LOGI("RGBAF16ToNV21P010FuzzTest002: start");
-    PixelFormat tempFormat = PixelFormat::NV21;
-    PixelFormat srcFormat = PixelFormat::RGBA_F16;
-    PixelFormat destFormat = PixelFormat::YCRCB_P010;
-    RgbConvertToYuvP010ByPixelMap(tempFormat, srcFormat, destFormat);
-    IMAGE_LOGI("RGBAF16ToNV21P010FuzzTest002: end");
-}
-
 
 void RgbToYuvP010FuzzTest001()
 {
     IMAGE_LOGI("YuvP010ToRgbTest001: start");
     RGB565ToNV12P010FuzzTest001();
-    RGB565ToNV12P010FuzzTest002();
     RGB565ToNV21P010FuzzTest001();
-    RGB565ToNV21P010FuzzTest002();
     BGRAToNV12P010FuzzTest001();
-    BGRAToNV12P010FuzzTest002();
     BGRAToNV21P010FuzzTest001();
-    BGRAToNV21P010FuzzTest002();
     IMAGE_LOGI("YuvP010ToRgbTest001: end");
 }
 
@@ -319,17 +219,11 @@ void RgbToYuvP010ByPixelMapFuzzTest001()
 {
     IMAGE_LOGI("RgbToYuvP010ByPixelMapTest001: start");
     RGBAToNV12P010FuzzTest001();
-    RGBAToNV12P010FuzzTest002();
     RGBAToNV21P010FuzzTest001();
-    RGBAToNV21P010FuzzTest002();
     RGBToNV12P010FuzzTest001();
-    RGBToNV12P010FuzzTest002();
     RGBToNV21P010FuzzTest001();
-    RGBToNV21P010FuzzTest002();
     RGBAF16ToNV12P010FuzzTest001();
-    RGBAF16ToNV12P010FuzzTest002();
     RGBAF16ToNV21P010FuzzTest001();
-    RGBAF16ToNV21P010FuzzTest002();
     IMAGE_LOGI("RgbToYuvP010ByPixelMapTest001: end");
 }
 
