@@ -24,6 +24,7 @@
 #include "image_packer.h"
 #include "ext_encoder.h"
 #include "ext_stream.h"
+#include "image_format_convert.h"
 #include "mock_data_stream.h"
 #include "mock_skw_stream.h"
 #include "file_source_stream.h"
@@ -64,6 +65,7 @@ const static string IMAGE_INPUT_JPEG_PATH = "/data/local/tmp/image/test_hw1.jpg"
 static const std::string IMAGE_DEST = "/data/local/tmp/image/test_encode_out.dat";
 static const std::string IMAGE_HEIFHDR_SRC = "/data/local/tmp/image/test_heif_hdr.heic";
 static const std::string IMAGE_JPG_THREE_GAINMAP_HDR_PATH = "/data/local/tmp/image/three_gainmap_hdr.jpg";
+static const std::string IMAGE_HEIC_THREE_GAINMAP_HDR_PATH = "/data/local/tmp/image/three_gainmap_hdr.jpg";
 static const std::string IMAGE_INCOMPLETE_GIF_PATH = "/data/local/tmp/image/test_broken.gif";
 class ExtDecoderTest : public testing::Test {
 public:
@@ -136,25 +138,6 @@ HWTEST_F(ExtDecoderTest, CheckCodecTest001, TestSize.Level3)
     ret = extDecoder->CheckCodec();
     ASSERT_EQ(ret, false);
     GTEST_LOG_(INFO) << "ExtDecoderTest: CheckCodecTest001 end";
-}
-
-/**
- * @tc.name: GetScaledSizeTest001
- * @tc.desc: Test of GetScaledSize
- * @tc.type: FUNC
- */
-HWTEST_F(ExtDecoderTest, GetScaledSizeTest001, TestSize.Level3)
-{
-    GTEST_LOG_(INFO) << "ExtDecoderTest: GetScaledSizeTest001 start";
-    std::shared_ptr<ExtDecoder> extDecoder = std::make_shared<ExtDecoder>();
-    EXIFInfo exifInfo_;
-    int dWidth = 0;
-    int dHeight = 0;
-    float scale = ZERO;
-    extDecoder->codec_ = nullptr;
-    bool ret = extDecoder->GetScaledSize(dWidth, dHeight, scale);
-    ASSERT_EQ(ret, false);
-    GTEST_LOG_(INFO) << "ExtDecoderTest: GetScaledSizeTest001 end";
 }
 
 /**
@@ -2200,6 +2183,277 @@ HWTEST_F(ExtDecoderTest, EncodePixelMapTest001, TestSize.Level3)
     EXPECT_NE(imageSourceDest, nullptr);
 }
 
+/*
+ * @tc.name: Encode10bit709Test001
+ * @tc.desc: Test JPEG decode to YCBCR_P010 format PixelMap and set to BT709 then convert to RGBA_1010102
+ * and encode 8bit sdr decode to sdr pixelmap with BT601 colorspace.
+ * @tc.type: FUNC
+*/
+HWTEST_F(ExtDecoderTest, Encode10bit709Test001, TestSize.Level3)
+{
+    uint32_t errorCode = 0;
+    SourceOptions sourceOpts;
+    std::unique_ptr<ImageSource> imageSource =
+        ImageSource::CreateImageSource(IMAGE_JPG_THREE_GAINMAP_HDR_PATH.c_str(), sourceOpts, errorCode);
+    ASSERT_NE(imageSource, nullptr);
+    DecodeOptions opts;
+    opts.desiredDynamicRange = DecodeDynamicRange::AUTO;
+    opts.photoDesiredPixelFormat = PixelFormat::YCBCR_P010;
+    std::shared_ptr<PixelMap> pixelmap = imageSource->CreatePixelMap(opts, errorCode);
+    ASSERT_EQ(errorCode, OHOS::Media::SUCCESS);
+    ASSERT_NE(pixelmap, nullptr);
+    uint32_t ret = ImageFormatConvert::ConvertImageFormat(pixelmap, PixelFormat::RGBA_1010102);
+    ASSERT_EQ(ret, SUCCESS);
+    PixelFormat format = pixelmap->GetPixelFormat();
+    ASSERT_EQ(format, PixelFormat::RGBA_1010102);
+#ifdef IMAGE_COLORSPACE_FLAG
+    pixelmap->InnerSetColorSpace(OHOS::ColorManager::ColorSpace(OHOS::ColorManager::ColorSpaceName::BT709));
+#endif
+    ImagePacker packer;
+    PackOption option;
+    option.format = "image/jpeg";
+    option.needsPackProperties = true;
+    option.desiredDynamicRange = EncodeDynamicRange::AUTO;
+    uint32_t startpc = packer.StartPacking(IMAGE_DEST, option);
+    ASSERT_EQ(startpc, OHOS::Media::SUCCESS);
+    uint32_t retAddImage = packer.AddImage(*pixelmap);
+    ASSERT_EQ(retAddImage, OHOS::Media::SUCCESS);
+    uint32_t retFinalizePacking = packer.FinalizePacking();
+    ASSERT_EQ(retFinalizePacking, OHOS::Media::SUCCESS);
+    std::unique_ptr<ImageSource> imageSourceDest = ImageSource::CreateImageSource(IMAGE_DEST, sourceOpts, errorCode);
+    ASSERT_EQ(errorCode, OHOS::Media::SUCCESS);
+    ASSERT_NE(imageSourceDest, nullptr);
+    DecodeOptions optsForDest;
+    optsForDest.desiredDynamicRange = DecodeDynamicRange::AUTO;
+    std::shared_ptr<PixelMap> pixelmapAfterPacker = imageSourceDest->CreatePixelMap(optsForDest, errorCode);
+    ASSERT_NE(pixelmapAfterPacker, nullptr);
+    ASSERT_EQ(pixelmapAfterPacker->IsHdr(), false);
+#ifdef IMAGE_COLORSPACE_FLAG
+    PixelFormat encodeAndDecodeFormat = pixelmapAfterPacker->GetPixelFormat();
+    ASSERT_EQ(encodeAndDecodeFormat, PixelFormat::RGBA_8888);
+    auto newColorspace = pixelmapAfterPacker->InnerGetGrColorSpace();
+    auto newColorSpaceName = newColorspace.GetColorSpaceName();
+    EXPECT_EQ(newColorSpaceName, ColorManager::ColorSpaceName::SRGB);
+#endif
+}
+
+/**
+ * @tc.name: Encode10bit709Test002
+ * @tc.desc: Test JPEG decode to YCBCR_P010 format PixelMap and set to BT709
+ * and encode 8bit sdr decode to sdr pixelmap with BT601 colorspace.
+ * @tc.type: FUNC
+*/
+HWTEST_F(ExtDecoderTest, Encode10bit709Test002, TestSize.Level3)
+{
+    uint32_t errorCode = 0;
+    SourceOptions sourceOpts;
+    std::unique_ptr<ImageSource> imageSource =
+        ImageSource::CreateImageSource(IMAGE_JPG_THREE_GAINMAP_HDR_PATH.c_str(), sourceOpts, errorCode);
+    ASSERT_NE(imageSource, nullptr);
+    DecodeOptions opts;
+    opts.desiredDynamicRange = DecodeDynamicRange::AUTO;
+    opts.photoDesiredPixelFormat = PixelFormat::YCBCR_P010;
+    std::shared_ptr<PixelMap> pixelmap = imageSource->CreatePixelMap(opts, errorCode);
+    ASSERT_EQ(errorCode, OHOS::Media::SUCCESS);
+    ASSERT_NE(pixelmap, nullptr);
+    PixelFormat format = pixelmap->GetPixelFormat();
+    ASSERT_EQ(format, PixelFormat::YCBCR_P010);
+#ifdef IMAGE_COLORSPACE_FLAG
+    pixelmap->InnerSetColorSpace(OHOS::ColorManager::ColorSpace(
+        OHOS::ColorManager::ColorSpaceName::BT709_LIMIT));
+    ASSERT_EQ(pixelmap->IsHdr(), false);
+#endif
+    // init packer to packfile
+    ImagePacker packer;
+    PackOption option;
+    option.format = "image/jpeg";
+    option.needsPackProperties = true;
+    option.desiredDynamicRange = EncodeDynamicRange::AUTO;
+    uint32_t startpc = packer.StartPacking(IMAGE_DEST, option);
+    ASSERT_EQ(startpc, OHOS::Media::SUCCESS);
+    uint32_t retAddImage = packer.AddImage(*pixelmap);
+    ASSERT_EQ(retAddImage, OHOS::Media::SUCCESS);
+    uint32_t retFinalizePacking = packer.FinalizePacking();
+    ASSERT_EQ(retFinalizePacking, OHOS::Media::SUCCESS);
+    std::unique_ptr<ImageSource> imageSourceDest = ImageSource::CreateImageSource(IMAGE_DEST, sourceOpts, errorCode);
+    ASSERT_EQ(errorCode, OHOS::Media::SUCCESS);
+    ASSERT_NE(imageSourceDest, nullptr);
+    DecodeOptions optsForDest;
+    optsForDest.desiredDynamicRange = DecodeDynamicRange::AUTO;
+    std::shared_ptr<PixelMap> pixelmapAfterPacker = imageSourceDest->CreatePixelMap(optsForDest, errorCode);
+    ASSERT_NE(pixelmapAfterPacker, nullptr);
+    ASSERT_EQ(pixelmapAfterPacker->IsHdr(), false);
+    PixelFormat encodeAndDecodeFormat = pixelmapAfterPacker->GetPixelFormat();
+    ASSERT_EQ(encodeAndDecodeFormat, PixelFormat::RGBA_8888);
+#ifdef IMAGE_COLORSPACE_FLAG
+    auto newColorspace = pixelmapAfterPacker->InnerGetGrColorSpace();
+    auto newColorSpaceName = newColorspace.GetColorSpaceName();
+    EXPECT_EQ(newColorSpaceName, ColorManager::ColorSpaceName::SRGB);
+#endif
+}
+
+/**
+ * @tc.name: Encode10bit709Test003
+ * @tc.desc: Test JPEG decode to YCBCR_P010 format PixelMap and set to BT709
+ * and encode 8bit sdr decode to sdr pixelmap with BT601 colorspace.
+ * @tc.type: FUNC
+*/
+HWTEST_F(ExtDecoderTest, Encode10bit709Test003, TestSize.Level3)
+{
+    uint32_t errorCode = 0;
+    SourceOptions sourceOpts;
+    std::unique_ptr<ImageSource> imageSource =
+        ImageSource::CreateImageSource(IMAGE_JPG_THREE_GAINMAP_HDR_PATH.c_str(), sourceOpts, errorCode);
+    ASSERT_NE(imageSource, nullptr);
+    DecodeOptions opts;
+    opts.desiredDynamicRange = DecodeDynamicRange::AUTO;
+    std::shared_ptr<PixelMap> pixelmap = imageSource->CreatePixelMap(opts, errorCode);
+    ASSERT_EQ(errorCode, OHOS::Media::SUCCESS);
+    ASSERT_NE(pixelmap, nullptr);
+#ifdef IMAGE_COLORSPACE_FLAG
+    pixelmap->InnerSetColorSpace(OHOS::ColorManager::ColorSpace(
+        OHOS::ColorManager::ColorSpaceName::BT709));
+    ASSERT_EQ(pixelmap->IsHdr(), false);
+#endif
+    ImagePacker packer;
+    PackOption option;
+    option.format = "image/jpg";
+    option.needsPackProperties = true;
+    option.desiredDynamicRange = EncodeDynamicRange::AUTO;
+    uint32_t startpc = packer.StartPacking(IMAGE_DEST, option);
+    ASSERT_EQ(startpc, OHOS::Media::SUCCESS);
+    uint32_t retAddImage = packer.AddImage(*pixelmap);
+    ASSERT_EQ(retAddImage, OHOS::Media::SUCCESS);
+    uint32_t retFinalizePacking = packer.FinalizePacking();
+    ASSERT_EQ(retFinalizePacking, OHOS::Media::SUCCESS);
+    std::unique_ptr<ImageSource> imageSourceDest = ImageSource::CreateImageSource(IMAGE_DEST, sourceOpts, errorCode);
+    ASSERT_EQ(errorCode, OHOS::Media::SUCCESS);
+    ASSERT_NE(imageSourceDest, nullptr);
+    DecodeOptions optsForDest;
+    optsForDest.desiredDynamicRange = DecodeDynamicRange::AUTO;
+    std::shared_ptr<PixelMap> pixelmapAfterPacker = imageSourceDest->CreatePixelMap(optsForDest, errorCode);
+    ASSERT_NE(pixelmapAfterPacker, nullptr);
+    ASSERT_EQ(pixelmapAfterPacker->IsHdr(), false);
+    PixelFormat encodeAndDecodeFormat = pixelmapAfterPacker->GetPixelFormat();
+    ASSERT_EQ(encodeAndDecodeFormat, PixelFormat::RGBA_1010102);
+#ifdef IMAGE_COLORSPACE_FLAG
+    auto newColorspace = pixelmapAfterPacker->InnerGetGrColorSpace();
+    auto newColorSpaceName = newColorspace.GetColorSpaceName();
+    EXPECT_EQ(newColorSpaceName, ColorManager::ColorSpaceName::SRGB);
+#endif
+}
+
+/**
+ * @tc.name: Encode10bit709Test004
+ * @tc.desc: Test JPEG decode to YCBCR_P010 format PixelMap and set to BT709
+ * and encode 8bit sdr decode to sdr pixelmap with BT601 colorspace.
+ * @tc.type: FUNC
+*/
+HWTEST_F(ExtDecoderTest, Encode10bit709Test004, TestSize.Level3)
+{
+    uint32_t errorCode = 0;
+    SourceOptions sourceOpts;
+    std::unique_ptr<ImageSource> imageSource =
+        ImageSource::CreateImageSource(IMAGE_JPG_THREE_GAINMAP_HDR_PATH.c_str(), sourceOpts, errorCode);
+    ASSERT_NE(imageSource, nullptr);
+    DecodeOptions opts;
+    opts.desiredDynamicRange = DecodeDynamicRange::AUTO;
+    std::shared_ptr<PixelMap> pixelmap = imageSource->CreatePixelMap(opts, errorCode);
+    ASSERT_EQ(errorCode, OHOS::Media::SUCCESS);
+    ASSERT_NE(pixelmap, nullptr);
+#ifdef IMAGE_COLORSPACE_FLAG
+    pixelmap->InnerSetColorSpace(OHOS::ColorManager::ColorSpace(
+        OHOS::ColorManager::ColorSpaceName::BT709));
+    ASSERT_EQ(pixelmap->IsHdr(), false);
+#endif
+    uint32_t ret = ImageFormatConvert::ConvertImageFormat(pixelmap, PixelFormat::RGBA_8888);
+    ASSERT_EQ(ret, SUCCESS);
+    PixelFormat format = pixelmap->GetPixelFormat();
+    ASSERT_EQ(format, PixelFormat::RGBA_8888);
+    // init packer to packfile
+    ImagePacker packer;
+    PackOption option;
+    option.format = "image/jpeg";
+    option.needsPackProperties = true;
+    option.desiredDynamicRange = EncodeDynamicRange::AUTO;
+    uint32_t startpc = packer.StartPacking(IMAGE_DEST, option);
+    ASSERT_EQ(startpc, OHOS::Media::SUCCESS);
+    uint32_t retAddImage = packer.AddImage(*pixelmap);
+    ASSERT_EQ(retAddImage, OHOS::Media::SUCCESS);
+    uint32_t retFinalizePacking = packer.FinalizePacking();
+    ASSERT_EQ(retFinalizePacking, OHOS::Media::SUCCESS);
+    std::unique_ptr<ImageSource> imageSourceDest = ImageSource::CreateImageSource(IMAGE_DEST, sourceOpts, errorCode);
+    ASSERT_EQ(errorCode, OHOS::Media::SUCCESS);
+    ASSERT_NE(imageSourceDest, nullptr);
+    DecodeOptions optsForDest;
+    optsForDest.desiredDynamicRange = DecodeDynamicRange::AUTO;
+    std::shared_ptr<PixelMap> pixelmapAfterPacker = imageSourceDest->CreatePixelMap(optsForDest, errorCode);
+    ASSERT_NE(pixelmapAfterPacker, nullptr);
+    ASSERT_EQ(pixelmapAfterPacker->IsHdr(), false);
+#ifdef IMAGE_COLORSPACE_FLAG
+    PixelFormat encodeAndDecodeFormat = pixelmapAfterPacker->GetPixelFormat();
+    ASSERT_EQ(encodeAndDecodeFormat, PixelFormat::RGBA_8888);
+    auto newColorspace = pixelmapAfterPacker->InnerGetGrColorSpace();
+    auto newColorSpaceName = newColorspace.GetColorSpaceName();
+    ASSERT_EQ(newColorSpaceName, ColorManager::ColorSpaceName::SRGB);
+#endif
+}
+
+/**
+ * @tc.name: Encode10bit709Test005
+ * @tc.desc: Test heic decode to YCBCR_P010 format PixelMap and set to BT709
+ * and encode 8bit heic decode to sdr pixelmap with BT601 colorspace.
+ * @tc.type: FUNC
+*/
+HWTEST_F(ExtDecoderTest, Encode10bit709Test005, TestSize.Level3)
+{
+    uint32_t errorCode = 0;
+    SourceOptions sourceOpts;
+    std::unique_ptr<ImageSource> imageSource =
+        ImageSource::CreateImageSource(IMAGE_HEIC_THREE_GAINMAP_HDR_PATH.c_str(), sourceOpts, errorCode);
+    ASSERT_NE(imageSource, nullptr);
+    DecodeOptions opts;
+    opts.desiredDynamicRange = DecodeDynamicRange::AUTO;
+    opts.photoDesiredPixelFormat = PixelFormat::YCBCR_P010;
+    std::shared_ptr<PixelMap> pixelmap = imageSource->CreatePixelMap(opts, errorCode);
+    ASSERT_EQ(errorCode, OHOS::Media::SUCCESS);
+    ASSERT_NE(pixelmap, nullptr);
+    PixelFormat format = pixelmap->GetPixelFormat();
+    ASSERT_EQ(format, PixelFormat::YCBCR_P010);
+#ifdef IMAGE_COLORSPACE_FLAG
+    pixelmap->InnerSetColorSpace(OHOS::ColorManager::ColorSpace(
+        OHOS::ColorManager::ColorSpaceName::BT709));
+    ASSERT_EQ(pixelmap->IsHdr(), false);
+#endif
+    // init packer to packfile
+    ImagePacker packer;
+    PackOption option;
+    option.format = "image/heic";
+    option.needsPackProperties = true;
+    option.desiredDynamicRange = EncodeDynamicRange::SDR;
+    uint32_t startpc = packer.StartPacking(IMAGE_DEST, option);
+    ASSERT_EQ(startpc, OHOS::Media::SUCCESS);
+    uint32_t retAddImage = packer.AddImage(*pixelmap);
+    ASSERT_EQ(retAddImage, OHOS::Media::SUCCESS);
+    uint32_t retFinalizePacking = packer.FinalizePacking();
+    ASSERT_EQ(retFinalizePacking, OHOS::Media::SUCCESS);
+    std::unique_ptr<ImageSource> imageSourceDest = ImageSource::CreateImageSource(IMAGE_DEST, sourceOpts, errorCode);
+    ASSERT_EQ(errorCode, OHOS::Media::SUCCESS);
+    ASSERT_NE(imageSourceDest, nullptr);
+    DecodeOptions optsForDest;
+    optsForDest.desiredDynamicRange = DecodeDynamicRange::AUTO;
+    std::shared_ptr<PixelMap> pixelmapAfterPacker = imageSourceDest->CreatePixelMap(optsForDest, errorCode);
+    ASSERT_NE(pixelmapAfterPacker, nullptr);
+    ASSERT_EQ(pixelmapAfterPacker->IsHdr(), false);
+    PixelFormat encodeAndDecodeFormat = pixelmapAfterPacker->GetPixelFormat();
+    ASSERT_EQ(encodeAndDecodeFormat, PixelFormat::RGBA_8888);
+#ifdef IMAGE_COLORSPACE_FLAG
+    auto newColorspace = pixelmapAfterPacker->InnerGetGrColorSpace();
+    auto newColorSpaceName = newColorspace.GetColorSpaceName();
+    ASSERT_EQ(newColorSpaceName, ColorManager::ColorSpaceName::SRGB);
+#endif
+}
+
 /**
  * @tc.name: EncodeWideGamutPixelMapAndDecodeTest003
  * @tc.desc: Test JPEG encoding from a RGBA_1010102 format PixelMap and decode to widegamut image.
@@ -2221,7 +2475,7 @@ HWTEST_F(ExtDecoderTest, EncodeWideGamutPixelMapAndDecodeTest003, TestSize.Level
 #ifdef IMAGE_COLORSPACE_FLAG
     auto colorSpace = pixelmap->InnerGetGrColorSpace();
     auto colorSpaceName = colorSpace.GetColorSpaceName();
-    EXPECT_EQ(colorSpaceName, ColorManager::colorSPaceName::DISPLAY_BT2020_SRGB);
+    EXPECT_EQ(colorSpaceName, ColorManager::ColorSpaceName::DISPLAY_BT2020_SRGB);
 #endif
     ImagePacker packer;
     PackOption option;
@@ -2244,7 +2498,7 @@ HWTEST_F(ExtDecoderTest, EncodeWideGamutPixelMapAndDecodeTest003, TestSize.Level
 #ifdef IMAGE_COLORSPACE_FLAG
     auto newColorspace = pixelmapAfterPacker->InnerGetGrColorSpace();
     auto newColorSpaceName = newColorspace.GetColorSpaceName();
-    EXPECT_EQ(newColorSpaceName, ColorManager::colorSPaceName::DISPLAY_BT2020_SRGB);
+    EXPECT_EQ(newColorSpaceName, ColorManager::ColorSpaceName::DISPLAY_BT2020_SRGB);
 #endif
 }
 

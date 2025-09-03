@@ -78,10 +78,15 @@ public:
     bool SwDecode(bool isSharedMemory = false);
     void GetMetadataBlob(std::vector<uint8_t>& metadata, Media::MetadataType type);
 
+    void SetDecodeRegion(int32_t colCount, int32_t rowCount, int32_t left, int32_t top, size_t rowStride);
+    bool IsHeifHasAlphaImage();
+    void SetPadding(int32_t widthPadding, int32_t heightPadding);
+    bool IsHeifGainmapDivisibility(int32_t primaryDisplayWidth, int32_t primaryDisplayHeight);
     bool IsHeifGainmapYuv400();
     bool IsHeifAlphaYuv400();
     void SetSampleFormat(uint32_t sampleSize, ColorManager::ColorSpaceName colorSpaceName, bool isColorSpaceFromCicp);
     int32_t GetPrimaryLumaBitNum();
+    bool IsGainmapDivisibleBySampleSize(uint32_t sampleSize);
     void setGainmapDstBuffer(uint8_t* dstBuffer, size_t rowStride, void *context);
 private:
     bool Reinit(HeifFrameInfo *frameInfo);
@@ -110,8 +115,27 @@ private:
     bool HwDecodeImage(std::shared_ptr<HeifImage> &image, GridInfo &gridInfo,
         sptr<SurfaceBuffer> *outBuffer, bool isPrimary);
 
-    void PreparePackedInput(std::vector<std::shared_ptr<HeifImage>> tileImages,
-        std::vector<std::vector<uint8_t>> &packedInput, size_t gridCount);
+    void PrepareInput(std::vector<std::shared_ptr<HeifImage>> tileImages,
+        std::vector<std::vector<uint8_t>> &inputs, size_t gridCount);
+
+    bool IsRegionDecode();
+
+    void DoRegionDecodeForUnpacked(std::vector<std::shared_ptr<HeifImage>> tileImages, uint32_t decodeIndex,
+        std::vector<std::vector<uint8_t>> &unPackedInput, std::shared_ptr<HeifImage> &tileImage);
+
+    void HwRegionDecodeForUnPacked(std::vector<std::shared_ptr<HeifImage>> tileImages,
+        std::vector<std::vector<uint8_t>> &unPackedInput, size_t gridCount);
+
+    void HwPrepareUnPackedInput(std::vector<std::shared_ptr<HeifImage>> tileImages,
+        std::vector<std::vector<uint8_t>> &unPackedInput, size_t gridCount);
+
+    void DoSwRegionDecode(std::vector<std::shared_ptr<HeifImage>> tileImages,
+        std::vector<std::vector<uint8_t>> &inputs, std::shared_ptr<HeifImage> &tileImage, uint32_t decodeIndex);
+
+    void SwRegionDecode(std::vector<std::shared_ptr<HeifImage>> tileImages,
+        std::vector<std::vector<uint8_t>> &inputs, size_t numGrid);
+
+    bool IsGainmapGrid();
 
     bool AllocateHwOutputBuffer(sptr<SurfaceBuffer> &hwBuffer, bool isPrimary);
 
@@ -170,6 +194,17 @@ private:
     uint8_t *dstMemory_;
     size_t dstRowStride_;
     SurfaceBuffer *dstHwBuffer_;
+    typedef struct GridRegionInfo {
+        uint32_t colCount;
+        uint32_t rowCount;
+        uint32_t left;
+        uint32_t top;
+        uint32_t heightPadding;
+        uint32_t widthPadding;
+        size_t rowStride;
+        bool isGainmapImage;
+    } GridRegionInfo;
+    GridRegionInfo regionInfo_ = {0, 0, 0, 0, 0, 0, 0, false};
 
     std::shared_ptr<HeifImage> gainmapImage_ = nullptr;
     HeifFrameInfo gainmapImageInfo_{};
@@ -184,8 +219,8 @@ private:
     size_t auxiliaryDstMemorySize_;
     bool isAuxiliaryDecode_ = false;
     bool isGainmapDecode_ = false;
-    SurfaceBuffer *auxiliaryDstHwBuffer_;
-    SurfaceBuffer *gainMapDstHwBuffer_;
+    SurfaceBuffer *auxiliaryDstHwbuffer_;
+    SurfaceBuffer *gainMapDstHwbuffer_;
     uint32_t sampleSize_ = 1;
     OHOS::ColorManager::ColorSpaceName colorSpaceName_ = ColorManager::ColorSpaceName::NONE;
     bool isColorSpaceFromCicp_ = false;

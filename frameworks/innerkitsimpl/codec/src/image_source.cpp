@@ -905,14 +905,21 @@ uint64_t ImageSource::GetNowTimeMicroSeconds()
     return std::chrono::duration_cast<std::chrono::microseconds>(now.time_since_epoch()).count();
 }
 
-static void UpdatePlImageInfo(DecodeContext context, ImagePlugin::PlImageInfo &plInfo)
+static inline bool IsHeifRegionDecode(int32_t heifRegionGridWidth, int32_t heifRegionGridHeight)
+{
+    return (heifRegionGridWidth > 0 && heifRegionGridHeight > 0);
+}
+
+static void UpdatePlImageInfo(DecodeContext context, ImagePlugin::PlImageInfo &plInfo,
+    std::unique_ptr<ImagePlugin::AbsImageDecoder>& decoder)
 {
     if (context.hdrType > Media::ImageHdrType::SDR) {
         plInfo.colorSpace = context.colorSpace;
         plInfo.pixelFormat = context.pixelFormat;
     }
-
-    if (plInfo.size.width != context.outInfo.size.width || plInfo.size.height != context.outInfo.size.height) {
+    OHOS::Media::Size heifRegionGridSize = decoder->GetHeifRegionGridSize();
+    if ((plInfo.size.width != context.outInfo.size.width || plInfo.size.height != context.outInfo.size.height) &&
+        !IsHeifRegionDecode(heifRegionGridSize.width, heifRegionGridSize.height)) {
         plInfo.size = context.outInfo.size;
     }
     if ((plInfo.pixelFormat == PixelFormat::NV12 || plInfo.pixelFormat == PixelFormat::NV21 ||
@@ -1032,7 +1039,7 @@ unique_ptr<PixelMap> ImageSource::CreatePixelMapExtended(uint32_t index, const D
             opts_.desiredSize.height = opts.desiredSize.height;
         }
     }
-    UpdatePlImageInfo(context, plInfo);
+    UpdatePlImageInfo(context, plInfo, mainDecoder_);
 
     auto pixelMap = CreatePixelMapByInfos(plInfo, context, errorCode);
     if (pixelMap == nullptr) {
@@ -1214,6 +1221,11 @@ unique_ptr<PixelMap> ImageSource::CreatePixelMapByInfos(ImagePlugin::PlImageInfo
     if (opts_.CropRect.width > INT_ZERO && opts_.CropRect.height > INT_ZERO) {
         if (!mainDecoder_->HasProperty(SUPPORT_CROP_KEY)) {
             Rect crop;
+            OHOS::Media::Size heifRegionGridSize = mainDecoder_->GetHeifRegionGridSize();
+            if (IsHeifRegionDecode(heifRegionGridSize.width, heifRegionGridSize.height)) {
+                opts_.CropRect.left = opts_.CropRect.left % heifRegionGridSize.width;
+                opts_.CropRect.top = opts_.CropRect.top % heifRegionGridSize.height;
+            }
             GetValidCropRect(opts_.CropRect, {pixelMap->GetWidth(), pixelMap->GetHeight()}, crop);
             errorCode = pixelMap->crop(crop);
             if (errorCode != SUCCESS) {
@@ -4451,6 +4463,7 @@ bool ImageSource::ComposeHdrImage(ImageHdrType hdrType, DecodeContext& baseCtx, 
         FreeContextBuffer(hdrCtx.freeFunc, hdrCtx.allocatorType, hdrCtx.pixelsBuffer);
         return false;
     }
+    ImageUtils::DumpHdrBufferEnabled(buffers.hdr, "PixelMap-GAINMAP-Composed");
     SetDmaContextYuvInfo(hdrCtx);
     if (GetHdrMediaType(metadata) == CM_IMAGE_HDR_VIVID_SINGLE) {
         VpeUtils::SetSbMetadataType(hdrSptr, static_cast<CM_HDR_Metadata_Type>(metadata.hdrMetadataType));
@@ -4572,6 +4585,8 @@ void ImageSource::SpecialSetComposeBuffer(DecodeContext &baseCtx, sptr<SurfaceBu
     if (baseCtx.isCreateWideGamutSdrPixelMap) {
         VpeUtils::SetSbColorSpaceType(hdrSptr, CM_DISPLAY_BT2020_SRGB);
     }
+    ImageUtils::DumpHdrBufferEnabled(baseSptr, "PixelMap-SDR-tobeComposed");
+    ImageUtils::DumpHdrBufferEnabled(gainmapSptr, "PixelMap-GAINMAP-tobeComposed");
 }
 
 static uint32_t CopyContextIntoSurfaceBuffer(Size dstSize, const DecodeContext &context, DecodeContext &dstCtx,
@@ -4640,7 +4655,9 @@ static uint32_t DoAiHdrProcess(sptr<SurfaceBuffer> &input, DecodeContext &hdrCtx
     VpeUtils::SetSbColorSpaceDefault(output);
 
     std::unique_ptr<VpeUtils> utils = std::make_unique<VpeUtils>();
+    ImageUtils::DumpHdrBufferEnabled(input, "PixelMap-AIprocess-input");
     res = utils->ColorSpaceConverterImageProcess(input, output);
+    ImageUtils::DumpHdrBufferEnabled(output, "PixelMap-AIprocess-output");
     if (res != VPE_ERROR_OK) {
         IMAGE_LOGE("[ImageSource]DoAiHdrProcess ColorSpaceConverterImageProcess failed! %{public}d", res);
         FreeContextBuffer(hdrCtx.freeFunc, hdrCtx.allocatorType, hdrCtx.pixelsBuffer);

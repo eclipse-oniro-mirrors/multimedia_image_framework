@@ -23,6 +23,7 @@
 #include "hilog/log.h"
 #include "image_format_convert_ext_utils.h"
 #include "image_log.h"
+#include "image_trace.h"
 #include "image_source.h"
 #include "log_tags.h"
 #include "media_errors.h"
@@ -30,6 +31,7 @@
 #if !defined(_WIN32) && !defined(_APPLE) && !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
 #include "v1_0/buffer_handle_meta_key_type.h"
 #include "v1_0/cm_color_space.h"
+#include "v2_1/cm_color_space.h"
 #include "v1_0/hdr_static_metadata.h"
 #include "surface_buffer.h"
 #endif
@@ -63,6 +65,7 @@ namespace OHOS {
 namespace Media {
 #if !defined(_WIN32) && !defined(_APPLE) && !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
 using namespace HDI::Display::Graphic::Common::V1_0;
+using CM_ColorSpaceType_V2_1 = OHOS::HDI::Display::Graphic::Common::V2_1::CM_ColorSpaceType;
 #endif
 
 static const std::map<std::pair<PixelFormat, PixelFormat>, ConvertFunction> g_cvtFuncMap = []() {
@@ -353,41 +356,43 @@ uint32_t ImageFormatConvert::ConvertImageFormat(const ConvertDataInfo &srcDataIn
     return RGBConvert(srcDataInfo, destInfo);
 }
 
-uint32_t ImageFormatConvert::ConvertImageFormat(std::shared_ptr<PixelMap> &srcPiexlMap, PixelFormat destFormat)
+uint32_t ImageFormatConvert::ConvertImageFormat(std::shared_ptr<PixelMap> &srcPixelMap, PixelFormat destFormat)
 {
-    if (srcPiexlMap == nullptr) {
+    if (srcPixelMap == nullptr) {
         IMAGE_LOGE("source pixel map is null");
         return ERR_IMAGE_INVALID_PARAMETER;
     }
+    ImageTrace imageTrace("ImageFormatConvert::ConvertImageFormat srcFmt %u, dstFmt %u",
+        static_cast<uint32_t>(srcPixelMap->GetPixelFormat(), static_cast<uint32_t>(destFormat)));
     if (!IsSupport(destFormat)) {
         IMAGE_LOGE("destination format not support");
         return ERR_MEDIA_FORMAT_UNSUPPORT;
     }
-    PixelFormat srcFormat = srcPiexlMap->GetPixelFormat();
+    PixelFormat srcFormat = srcPixelMap->GetPixelFormat();
     if (IsYUVConvert(srcFormat)) {
         uint32_t ret = 0;
-        ret = YUVConvertImageFormatOption(srcPiexlMap, srcFormat, destFormat);
+        ret = YUVConvertImageFormatOption(srcPixelMap, srcFormat, destFormat);
         if (ret != SUCCESS) {
             IMAGE_LOGE("convert yuv format failed!");
         }
         return ret;
     }
-    if (srcPiexlMap->IsAstc()) {
+    if (srcPixelMap->IsAstc()) {
         uint32_t ret = 0;
-        std::unique_ptr<PixelMap> resultPixelMap = PixelMap::ConvertFromAstc(srcPiexlMap.get(), ret,
+        std::unique_ptr<PixelMap> resultPixelMap = PixelMap::ConvertFromAstc(srcPixelMap.get(), ret,
             destFormat);
-        srcPiexlMap = std::move(resultPixelMap);
+        srcPixelMap = std::move(resultPixelMap);
         if (ret != SUCCESS) {
             IMAGE_LOGE("convert astc format failed!");
         }
         return ret;
     }
-    uint32_t ret = RGBConvertImageFormatOption(srcPiexlMap, srcFormat, destFormat);
+    uint32_t ret = RGBConvertImageFormatOption(srcPixelMap, srcFormat, destFormat);
     if (ret != SUCCESS) {
         IMAGE_LOGE("convert rgb format failed!");
         return ret;
     }
-    ImageUtils::DumpPixelMapIfDumpEnabled(*srcPiexlMap, __func__);
+    ImageUtils::DumpPixelMapIfDumpEnabled(*srcPixelMap, __func__);
     return SUCCESS;
 }
 
@@ -567,31 +572,111 @@ std::unique_ptr<AbsMemory> ImageFormatConvert::CreateMemory(PixelFormat pixelFor
     return m;
 }
 
-uint32_t ImageFormatConvert::RGBConvertImageFormatOption(std::shared_ptr<PixelMap> &srcPiexlMap,
+bool IsRGBA1010102ToRGBA8888(std::shared_ptr<PixelMap> &srcPixelMap, PixelFormat destFormat)
+{
+    if (srcPixelMap == nullptr) {
+        IMAGE_LOGE("%{public}s srcPixelMap get null", __func__);
+        return false;
+    }
+    PixelFormat srcFormat = srcPixelMap->GetPixelFormat();
+    if (srcFormat != PixelFormat::RGBA_1010102 || destFormat != PixelFormat::RGBA_8888) {
+        return false;
+    }
+    return true;
+}
+
+std::unique_ptr<AbsMemory> Truncate10BitMemory(std::shared_ptr<PixelMap> &srcPixelmap,
+    ImageInfo &imageInfo, PixelFormat destFormat, AllocatorType dstType, uint32_t &errorCode)
+{
+#if !defined(CROSS_PLATFORM)
+    ImageTrace imageTrace("ImageFormatConvert::Truncate10BitMemory");
+    IMAGE_LOGD("%{public}s srcPixelMap get format %{public}d", __func__, destFormat);
+    bool cond = srcPixelmap == nullptr;
+    CHECK_ERROR_RETURN_RET_LOG(cond, nullptr, "Truncate function error by src null");
+
+    // hdr and sdr has same byte size.
+    size_t byteSize = srcPixelmap->GetByteCount();
+    MemoryData sdrData = {nullptr, byteSize, "Trans ImageData", imageInfo.size, destFormat};
+    auto sdrMemory = MemoryManager::CreateMemory(dstType, sdrData);
+    if (sdrMemory == nullptr) {
+        IMAGE_LOGE("sdr memory alloc failed.");
+        errorCode = IMAGE_RESULT_GET_SURFAC_FAILED;
+        return nullptr;
+    }
+
+    VpeSurfaceBuffers buffers;
+    buffers.sdr = sptr<SurfaceBuffer>(reinterpret_cast<SurfaceBuffer*>(sdrMemory->extend.data));
+    buffers.hdr = sptr<SurfaceBuffer>(reinterpret_cast<SurfaceBuffer*>(srcPixelmap->GetFd()));
+    std::unique_ptr<VpeUtils> utils = std::make_unique<VpeUtils>();
+    int32_t res = utils->TruncateBuffer(buffers, false);
+    if (res != SUCCESS) {
+        sdrMemory->Release();
+        IMAGE_LOGE("HDR-IMAGE Truncate10BitMemory failed");
+        errorCode = IMAGE_RESULT_GET_SURFAC_FAILED;
+        return nullptr;
+    }
+    errorCode = SUCCESS;
+    return sdrMemory;
+#else
+    errorCode = ERR_MEDIA_INVALID_OPERATION;
+    return nullptr;
+#endif
+}
+
+uint32_t CheckIfConvertRGB1010102ToRGBA8888(std::shared_ptr<PixelMap> &srcPixelMap, PixelFormat destFormat)
+{
+    IMAGE_LOGI("do %{public}s", __func__);
+    if (srcPixelMap == nullptr) {
+        return ERR_IMAGE_INVALID_PARAMETER;
+    }
+    PixelFormat srcFormat = srcPixelMap->GetPixelFormat();
+    if (srcFormat != PixelFormat::RGBA_1010102 || destFormat != PixelFormat::RGBA_8888) {
+        return ERR_IMAGE_INVALID_PARAMETER;
+    }
+    auto allocateType = srcPixelMap->GetAllocatorType();
+    if (allocateType != AllocatorType::DMA_ALLOC) {
+        IMAGE_LOGE("do %{public}s allocatorType error", __func__);
+        return ERR_IMAGE_INVALID_PARAMETER;
+    }
+    AllocatorType dstType = AllocatorType::DMA_ALLOC;
+    ImageInfo imageInfo;
+    srcPixelMap->GetImageInfo(imageInfo);
+    uint32_t ret = SUCCESS;
+    auto sdrMemory = Truncate10BitMemory(srcPixelMap, imageInfo, destFormat, dstType, ret);
+    if (sdrMemory == nullptr) {
+        return IMAGE_RESULT_FORMAT_CONVERT_FAILED;
+    }
+    srcPixelMap->SetPixelsAddr(sdrMemory->data.data, sdrMemory->extend.data, sdrMemory->data.size, dstType, nullptr);
+    imageInfo.pixelFormat = sdrMemory->data.format;
+    srcPixelMap->SetImageInfo(imageInfo, true);
+    return SUCCESS;
+}
+
+uint32_t ImageFormatConvert::RGBConvertImageFormatOption(std::shared_ptr<PixelMap> &srcPixelMap,
                                                          const PixelFormat &srcFormat, PixelFormat destFormat)
 {
     ConvertFunction cvtFunc = GetConvertFuncByFormat(srcFormat, destFormat);
     if (cvtFunc == nullptr) {
         IMAGE_LOGE("get convert function by format failed!");
-        return ERR_IMAGE_INVALID_PARAMETER;
+        return CheckIfConvertRGB1010102ToRGBA8888(srcPixelMap, destFormat);
     }
-    const_uint8_buffer_type srcBuffer = srcPiexlMap->GetPixels();
+    const_uint8_buffer_type srcBuffer = srcPixelMap->GetPixels();
     ImageInfo imageInfo;
-    srcPiexlMap->GetImageInfo(imageInfo);
+    srcPixelMap->GetImageInfo(imageInfo);
 
     int32_t width = imageInfo.size.width;
     int32_t height = imageInfo.size.height;
     YUVStrideInfo dstStrides;
-    auto allocType = srcPiexlMap->GetAllocatorType();
-    auto m = CreateMemory(destFormat, allocType, imageInfo.size, dstStrides, srcPiexlMap->GetNoPaddingUsage());
+    auto allocType = srcPixelMap->GetAllocatorType();
+    auto m = CreateMemory(destFormat, allocType, imageInfo.size, dstStrides, srcPixelMap->GetNoPaddingUsage());
     if (m == nullptr) {
         IMAGE_LOGE("CreateMemory failed");
         return ERR_IMAGE_INVALID_PARAMETER;
     }
-    int32_t stride = srcPiexlMap->GetRowStride();
+    int32_t stride = srcPixelMap->GetRowStride();
     #if !defined(_WIN32) && !defined(_APPLE) && !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
     if (allocType == AllocatorType::DMA_ALLOC) {
-        auto sb = reinterpret_cast<SurfaceBuffer*>(srcPiexlMap->GetFd());
+        auto sb = reinterpret_cast<SurfaceBuffer*>(srcPixelMap->GetFd());
         stride = sb->GetStride();
         sptr<SurfaceBuffer> sourceSurfaceBuffer(sb);
         sptr<SurfaceBuffer> dstSurfaceBuffer(reinterpret_cast<SurfaceBuffer*>(m->extend.data));
@@ -606,12 +691,12 @@ uint32_t ImageFormatConvert::RGBConvertImageFormatOption(std::shared_ptr<PixelMa
     destInfo.uvStride = dstStrides.uvStride;
     destInfo.yOffset = dstStrides.yOffset;
     destInfo.uvOffset = dstStrides.uvOffset;
-    if (!cvtFunc(srcBuffer, rgbDataInfo, destInfo, srcPiexlMap->GetColorSpace())) {
+    if (!cvtFunc(srcBuffer, rgbDataInfo, destInfo, srcPixelMap->GetColorSpace())) {
         IMAGE_LOGE("format convert failed!");
         m->Release();
         return IMAGE_RESULT_FORMAT_CONVERT_FAILED;
     }
-    auto ret = MakeDestPixelMap(srcPiexlMap, imageInfo, destInfo, m->extend.data);
+    auto ret = MakeDestPixelMap(srcPixelMap, imageInfo, destInfo, m->extend.data);
     if (ret == ERR_IMAGE_PIXELMAP_CREATE_FAILED) {
         m->Release();
     }
@@ -619,26 +704,26 @@ uint32_t ImageFormatConvert::RGBConvertImageFormatOption(std::shared_ptr<PixelMa
 }
 
 uint32_t ImageFormatConvert::RGBConvertImageFormatOptionUnique(
-    std::unique_ptr<PixelMap> &srcPiexlMap, const PixelFormat &srcFormat, PixelFormat destFormat)
+    std::unique_ptr<PixelMap> &srcPixelMap, const PixelFormat &srcFormat, PixelFormat destFormat)
 {
     ConvertFunction cvtFunc = GetConvertFuncByFormat(srcFormat, destFormat);
     bool cond = cvtFunc == nullptr;
     CHECK_ERROR_RETURN_RET_LOG(cond, ERR_IMAGE_INVALID_PARAMETER, "get convert function by format failed!");
-    const_uint8_buffer_type srcBuffer = srcPiexlMap->GetPixels();
+    const_uint8_buffer_type srcBuffer = srcPixelMap->GetPixels();
     ImageInfo imageInfo;
-    srcPiexlMap->GetImageInfo(imageInfo);
+    srcPixelMap->GetImageInfo(imageInfo);
 
     int32_t width = imageInfo.size.width;
     int32_t height = imageInfo.size.height;
     YUVStrideInfo dstStrides;
-    auto allocType = srcPiexlMap->GetAllocatorType();
-    auto memory = CreateMemory(destFormat, allocType, imageInfo.size, dstStrides, srcPiexlMap->GetNoPaddingUsage());
+    auto allocType = srcPixelMap->GetAllocatorType();
+    auto memory = CreateMemory(destFormat, allocType, imageInfo.size, dstStrides, srcPixelMap->GetNoPaddingUsage());
     cond = memory == nullptr;
     CHECK_ERROR_RETURN_RET_LOG(cond, ERR_IMAGE_INVALID_PARAMETER, "CreateMemory failed");
-    int32_t stride = srcPiexlMap->GetRowStride();
+    int32_t stride = srcPixelMap->GetRowStride();
     #if !defined(_WIN32) && !defined(_APPLE) && !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
     if (allocType == AllocatorType::DMA_ALLOC) {
-        auto sb = reinterpret_cast<SurfaceBuffer*>(srcPiexlMap->GetFd());
+        auto sb = reinterpret_cast<SurfaceBuffer*>(srcPixelMap->GetFd());
         stride = sb->GetStride();
         sptr<SurfaceBuffer> sourceSurfaceBuffer(sb);
         sptr<SurfaceBuffer> dstSurfaceBuffer(reinterpret_cast<SurfaceBuffer*>(memory->extend.data));
@@ -653,12 +738,12 @@ uint32_t ImageFormatConvert::RGBConvertImageFormatOptionUnique(
     destInfo.uvStride = dstStrides.uvStride;
     destInfo.yOffset = dstStrides.yOffset;
     destInfo.uvOffset = dstStrides.uvOffset;
-    if (!cvtFunc(srcBuffer, rgbDataInfo, destInfo, srcPiexlMap->GetColorSpace())) {
+    if (!cvtFunc(srcBuffer, rgbDataInfo, destInfo, srcPixelMap->GetColorSpace())) {
         IMAGE_LOGE("format convert failed!");
         memory->Release();
         return IMAGE_RESULT_FORMAT_CONVERT_FAILED;
     }
-    auto ret = MakeDestPixelMapUnique(srcPiexlMap, imageInfo, destInfo, memory->extend.data);
+    auto ret = MakeDestPixelMapUnique(srcPixelMap, imageInfo, destInfo, memory->extend.data);
     if (ret == ERR_IMAGE_PIXELMAP_CREATE_FAILED) {
         memory->Release();
     }
@@ -697,9 +782,9 @@ bool ImageFormatConvert::SetConvertImageMetaData(std::shared_ptr<PixelMap> &srcP
     return true;
 }
 
-static AllocatorType GetAllocatorType(std::shared_ptr<PixelMap> &srcPiexlMap, PixelFormat destFormat)
+static AllocatorType GetAllocatorType(std::shared_ptr<PixelMap> &srcPixelMap, PixelFormat destFormat)
 {
-    auto allocType = srcPiexlMap->GetAllocatorType();
+    auto allocType = srcPixelMap->GetAllocatorType();
     if (destFormat == PixelFormat::RGB_888 || destFormat == PixelFormat::RGB_565 ||
         destFormat == PixelFormat::RGBA_F16) {
         allocType = AllocatorType::SHARE_MEM_ALLOC;
@@ -707,18 +792,18 @@ static AllocatorType GetAllocatorType(std::shared_ptr<PixelMap> &srcPiexlMap, Pi
     return allocType;
 }
 
-uint32_t ImageFormatConvert::YUVConvertImageFormatOption(std::shared_ptr<PixelMap> &srcPiexlMap,
+uint32_t ImageFormatConvert::YUVConvertImageFormatOption(std::shared_ptr<PixelMap> &srcPixelMap,
                                                          const PixelFormat &srcFormat, PixelFormat destFormat)
 {
     YUVConvertFunction yuvCvtFunc = YUVGetConvertFuncByFormat(srcFormat, destFormat);
     if (yuvCvtFunc == nullptr) {
         return ERR_IMAGE_INVALID_PARAMETER;
     }
-    const_uint8_buffer_type data = srcPiexlMap->GetPixels();
+    const_uint8_buffer_type data = srcPixelMap->GetPixels();
     YUVDataInfo yDInfo;
-    srcPiexlMap->GetImageYUVInfo(yDInfo);
+    srcPixelMap->GetImageYUVInfo(yDInfo);
     ImageInfo imageInfo;
-    srcPiexlMap->GetImageInfo(imageInfo);
+    srcPixelMap->GetImageInfo(imageInfo);
     if ((srcFormat == PixelFormat::NV21 || srcFormat == PixelFormat::YCBCR_P010 ||
         srcFormat == PixelFormat::YCRCB_P010) &&
         (yDInfo.yWidth == 0 || yDInfo.yHeight == 0 || yDInfo.uvWidth == 0 || yDInfo.uvHeight == 0)) {
@@ -728,16 +813,16 @@ uint32_t ImageFormatConvert::YUVConvertImageFormatOption(std::shared_ptr<PixelMa
         yDInfo.uvHeight = static_cast<uint32_t>((imageInfo.size.height + 1) / NUM_2);
     }
     YUVStrideInfo dstStrides;
-    auto allocType = GetAllocatorType(srcPiexlMap, destFormat);
+    auto allocType = GetAllocatorType(srcPixelMap, destFormat);
     DestConvertInfo destInfo = {imageInfo.size.width, imageInfo.size.height, destFormat, allocType};
     auto m = CreateMemory(destFormat, allocType, imageInfo.size, dstStrides,
-        srcPiexlMap->GetNoPaddingUsage());
+        srcPixelMap->GetNoPaddingUsage());
     if (m == nullptr) {
         return ERR_IMAGE_INVALID_PARAMETER;
     }
 #if !defined(_WIN32) && !defined(_APPLE) && !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
     if (allocType == AllocatorType::DMA_ALLOC) {
-        sptr<SurfaceBuffer> sourceSurfaceBuffer(reinterpret_cast<SurfaceBuffer*>(srcPiexlMap->GetFd()));
+        sptr<SurfaceBuffer> sourceSurfaceBuffer(reinterpret_cast<SurfaceBuffer*>(srcPixelMap->GetFd()));
         sptr<SurfaceBuffer> dstSurfaceBuffer(reinterpret_cast<SurfaceBuffer*>(m->extend.data));
         VpeUtils::CopySurfaceBufferInfo(sourceSurfaceBuffer, dstSurfaceBuffer);
     }
@@ -748,11 +833,11 @@ uint32_t ImageFormatConvert::YUVConvertImageFormatOption(std::shared_ptr<PixelMa
     destInfo.uvStride = dstStrides.uvStride;
     destInfo.yOffset = dstStrides.yOffset;
     destInfo.uvOffset = dstStrides.uvOffset;
-    if (!yuvCvtFunc(data, yDInfo, destInfo, srcPiexlMap->GetColorSpace())) {
+    if (!yuvCvtFunc(data, yDInfo, destInfo, srcPixelMap->GetColorSpace())) {
         m->Release();
         return IMAGE_RESULT_FORMAT_CONVERT_FAILED;
     }
-    auto ret = MakeDestPixelMap(srcPiexlMap, imageInfo, destInfo, m->extend.data);
+    auto ret = MakeDestPixelMap(srcPixelMap, imageInfo, destInfo, m->extend.data);
     if (ret == ERR_IMAGE_PIXELMAP_CREATE_FAILED) {
         m->Release();
     }

@@ -68,6 +68,13 @@ public:
     static void DumpPixelMapBeforeEncode(PixelMap& pixelMap);
     static void DumpDataIfDumpEnabled(const char* data, const size_t& totalSize, const std::string& fileSuffix = "dat",
         uint64_t imageId = 0);
+    static void DumpData(const char* data, const size_t& totalSize,
+        const std::string& fileSuffix, uint64_t imageId);
+#if !defined(CROSS_PLATFORM)
+    static bool SurfaceBuffer2PixelMap(sptr<SurfaceBuffer> &surfaceBuffer, std::unique_ptr<PixelMap>& Pixelmap);
+    static void DumpHdrBufferEnabled(sptr<SurfaceBuffer>& buffer, const std::string& fileName);
+#endif
+    static PixelFormat SbFormat2PixelFormat(int32_t sbFormat);
     static uint64_t GetNowTimeMilliSeconds();
     static uint64_t GetNowTimeMicroSeconds();
     static std::string GetCurrentProcessName();
@@ -117,7 +124,7 @@ public:
         int height, const std::shared_ptr<PixelMap> &reusePixelmap);
     static bool IsReuseYUV(ImagePlugin::DecodeContext& context, const std::shared_ptr<PixelMap> &reusePixelmap);
     static bool IsReuseRGB(ImagePlugin::DecodeContext& context, const std::shared_ptr<PixelMap> &reusePixelmap);
-    static bool IsYUV(PixelFormat format);
+    static bool IsYuvFormat(PixelFormat format);
     static bool IsRGBX(PixelFormat format);
     static bool PixelMapCreateCheckFormat(PixelFormat format);
     static bool CheckTlvSupportedFormat(PixelFormat format);

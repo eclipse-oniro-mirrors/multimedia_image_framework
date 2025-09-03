@@ -253,6 +253,11 @@ public:
         return false;
     }
 
+    virtual OHOS::Media::Size GetHeifRegionGridSize()
+    {
+        return {0, 0};
+    }
+
     virtual bool GetHeifHdrColorSpace(ColorManager::ColorSpaceName &gainmap, ColorManager::ColorSpaceName &hdr)
     {
         return false;

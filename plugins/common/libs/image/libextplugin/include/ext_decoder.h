@@ -82,9 +82,9 @@ public:
     OHOS::ColorManager::ColorSpace GetPixelMapColorSpace() override;
     bool IsSupportICCProfile() override;
 #endif
-    static void FillYuvInfo(DecodeContext &context, SkImageInfo &dstInfo);
     bool GetHeifMetadataBlob(std::vector<uint8_t>& metadata, Media::MetadataType type) override;
-
+    void FillYuvInfo(DecodeContext &context, SkImageInfo &dstInfo);
+    OHOS::Media::Size GetHeifRegionGridSize() override;
 private:
     typedef struct FrameCacheInfo {
         int width;
@@ -109,6 +109,7 @@ private:
     bool IsYuv420Format(OHOS::Media::PixelFormat format) const;
     bool IsHeifToYuvDecode(const DecodeContext &context) const;
     uint32_t DoHeifToYuvDecode(DecodeContext &context);
+    void UpdateDstInfoAndOutInfo(DecodeContext &context);
     uint32_t DoHeifSharedMemDecode(DecodeContext &context);
     bool IsHeifSharedMemDecode(DecodeContext &context);
     bool ConvertInfoToAlphaType(SkAlphaType &alphaType, OHOS::Media::AlphaType &outputType);
@@ -130,7 +131,8 @@ private:
     uint32_t DmaMemAlloc(DecodeContext &context, uint64_t count, SkImageInfo &dstInfo);
     uint32_t JpegHwDmaMemAlloc(DecodeContext &context, uint64_t count, SkImageInfo &dstInfo);
     uint32_t DmaAlloc(DecodeContext &context, uint64_t count, const OHOS::BufferRequestConfig &requestConfig);
-    uint32_t UpdateHeifYuvDataInfo(DecodeContext &context, SkImageInfo &heifInfo);
+    uint32_t UpdateHeifYuvDataInfo(DecodeContext &context, SkImageInfo &heifInfo,
+        uint32_t gridTileWidth, uint32_t gridTileHeight);
     uint32_t HeifYUVMemAlloc(DecodeContext &context, SkImageInfo &heifInfo);
     uint32_t DoHeifDecode(DecodeContext &context);
     uint32_t DoHeifToRgbDecode(DecodeContext &context);
@@ -143,12 +145,21 @@ private:
     uint32_t ConvertFormatToYUV(DecodeContext &context, SkImageInfo &skInfo,
         uint64_t byteCount, OHOS::Media::PixelFormat format);
     bool IsHeifToSingleHdrDecode(const DecodeContext &context) const;
+    uint32_t AllocHeifSingleHdrBuffer(DecodeContext &context);
     uint32_t DoHeifToSingleHdrDecode(OHOS::ImagePlugin::DecodeContext &context);
     uint32_t HandleGifCache(uint8_t* src, uint8_t* dst, uint64_t rowStride, int dstHeight);
     uint32_t GetFramePixels(SkImageInfo& info, uint8_t* buffer, uint64_t rowStride, SkCodec::Options options);
     FrameCacheInfo InitFrameCacheInfo(const uint64_t rowStride, SkImageInfo info);
     bool FrameCacheInfoIsEqual(FrameCacheInfo& src, FrameCacheInfo& dst);
     uint32_t UpdateHardWareDecodeInfo(DecodeContext &context);
+    uint32_t ExtractHeifRegion(const PixelDecodeOptions &opts);
+    bool IsHeifValidCrop(OHOS::Media::Rect &crop, SkImageInfo &info, int32_t gridInfoCols, int32_t gridInfoRows);
+    void SetHeifDecodeRegion(DecodeContext &context, int32_t gridTileWidth, int32_t gridTileHeight);
+    void UpdateHeifRegionDstInfo(DecodeContext &context);
+    void UpdateHeifSKInfo(DecodeContext &context, uint64_t &rowStride);
+    bool IsHeifRegionDecode();
+    bool HeifGainMapRegionCrop(DecodeContext &gainmapRegionContext, int32_t rowStride, uint8_t* dstBuffer,
+        uint32_t gainmapWidth, uint32_t gainmapHeight);
     bool IsRegionDecodeSupported(uint32_t index, const PixelDecodeOptions &opts, PlImageInfo &info);
     uint32_t DoRegionDecode(DecodeContext &context);
     SkCodec::Result DoSampleDecode(DecodeContext &context);
@@ -173,6 +184,19 @@ private:
     FrameCacheInfo frameCacheInfo_ = {0, 0, 0, 0};
     uint32_t heifParseErr_ = 0;
     std::shared_ptr<Media::PixelMap> reusePixelmap_ = nullptr;
+    OHOS::Media::Rect desiredRegion_ = {0, 0, 0, 0};
+    typedef struct HeifGridRegionInfo {
+        int32_t colCount;
+        int32_t rowCount;
+        int32_t tileWidth;
+        int32_t tileHeight;
+        int32_t heightPadding;
+        int32_t widthPadding;
+        bool isGridType;
+    } HeifGridRegionInfo;
+    HeifGridRegionInfo heifGridRegionInfo_ = {0, 0, 0, 0, 0, 0, false};
+    int32_t gridTileWidth_ = 0;
+    int32_t gridTileHeight_ = 0;
 #ifdef IMAGE_COLORSPACE_FLAG
     std::shared_ptr<OHOS::ColorManager::ColorSpace> dstColorSpace_ = nullptr;
     std::shared_ptr<OHOS::ColorManager::ColorSpace> srcColorSpace_ = nullptr;
@@ -194,7 +218,7 @@ private:
 #endif
     OHOS::Media::CropAndScaleStrategy cropAndScaleStrategy_ = OHOS::Media::CropAndScaleStrategy::DEFAULT;
     OHOS::Media::Size regionDesiredSize_;
-    bool supportRegionFlag_;
+    bool supportRegionFlag_ = false;
     //Yuv
     OHOS::Media::Size desiredSizeYuv_;
     int softSampleSize_ = 1;

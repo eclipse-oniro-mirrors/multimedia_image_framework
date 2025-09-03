@@ -52,6 +52,9 @@
 #include "ipc_skeleton.h"
 #include "system_ability_definition.h"
 #include "os_account_manager.h"
+#include "v1_0/cm_color_space.h"
+#include "v1_0/buffer_handle_meta_key_type.h"
+#include "metadata_helper.h"
 #else
 #include "refbase.h"
 #endif
@@ -77,6 +80,7 @@ namespace OHOS {
 namespace Media {
 using namespace std;
 using namespace MultimediaPlugin;
+using namespace HDI::Display::Graphic::Common::V1_0;
 
 constexpr int32_t ALPHA8_BYTES = 1;
 constexpr int32_t RGB565_BYTES = 2;
@@ -138,6 +142,51 @@ const std::map<PixelFormat, AVPixelFormat> FFMPEG_PIXEL_FORMAT_MAP = {
     {PixelFormat::YCRCB_P010, AV_PIX_FMT_P010LE},
     {PixelFormat::YCBCR_P010, AV_PIX_FMT_P010LE},
 };
+
+static const std::map<int32_t, PixelFormat> PIXEL_FORMAT_MAP = {
+    { GRAPHIC_PIXEL_FMT_RGBA_8888, PixelFormat::RGBA_8888 },
+    { GRAPHIC_PIXEL_FMT_YCBCR_420_SP, PixelFormat::NV12 },
+    { GRAPHIC_PIXEL_FMT_YCRCB_420_SP, PixelFormat::NV21 },
+    { GRAPHIC_PIXEL_FMT_RGBA_1010102, PixelFormat::RGBA_1010102 },
+    { GRAPHIC_PIXEL_FMT_BGRA_8888, PixelFormat::BGRA_8888 },
+    { GRAPHIC_PIXEL_FMT_RGB_888, PixelFormat::RGB_888 },
+    { GRAPHIC_PIXEL_FMT_RGB_565, PixelFormat::RGB_565 },
+    { GRAPHIC_PIXEL_FMT_RGBA16_FLOAT, PixelFormat::RGBA_F16 },
+    { GRAPHIC_PIXEL_FMT_YCBCR_P010, PixelFormat::YCBCR_P010 },
+    { GRAPHIC_PIXEL_FMT_YCRCB_P010, PixelFormat::YCRCB_P010 },
+};
+
+static const std::map<CM_ColorSpaceType, ColorSpace> CM_COLORSPACE_MAP = {
+    { CM_COLORSPACE_NONE, ColorSpace::UNKNOWN },
+    { CM_BT709_FULL, ColorSpace::ITU_709 },
+    { CM_BT2020_HLG_FULL, ColorSpace::ITU_2020 },
+    { CM_BT2020_PQ_FULL, ColorSpace::ITU_2020 },
+    { CM_BT709_LIMIT, ColorSpace::ITU_709 },
+    { CM_BT2020_HLG_LIMIT, ColorSpace::ITU_2020 },
+    { CM_BT2020_PQ_LIMIT, ColorSpace::ITU_2020 },
+    { CM_SRGB_FULL, ColorSpace::SRGB },
+    { CM_P3_FULL, ColorSpace::DISPLAY_P3 },
+    { CM_P3_HLG_FULL, ColorSpace::DISPLAY_P3 },
+    { CM_P3_PQ_FULL, ColorSpace::DISPLAY_P3 },
+    { CM_ADOBERGB_FULL, ColorSpace::ADOBE_RGB_1998 },
+    { CM_SRGB_LIMIT, ColorSpace::SRGB },
+    { CM_P3_LIMIT, ColorSpace::DISPLAY_P3 },
+    { CM_P3_HLG_LIMIT, ColorSpace::DISPLAY_P3 },
+    { CM_P3_PQ_LIMIT, ColorSpace::DISPLAY_P3 },
+    { CM_ADOBERGB_LIMIT, ColorSpace::ADOBE_RGB_1998 },
+    { CM_LINEAR_SRGB, ColorSpace::LINEAR_SRGB },
+    { CM_LINEAR_BT709, ColorSpace::ITU_709 },
+    { CM_LINEAR_P3, ColorSpace::DISPLAY_P3 },
+    { CM_LINEAR_BT2020, ColorSpace::ITU_2020 },
+    { CM_DISPLAY_SRGB, ColorSpace::SRGB },
+    { CM_DISPLAY_P3_SRGB, ColorSpace::DISPLAY_P3 },
+    { CM_DISPLAY_P3_HLG, ColorSpace::DISPLAY_P3 },
+    { CM_DISPLAY_P3_PQ, ColorSpace::DISPLAY_P3 },
+    { CM_DISPLAY_BT2020_SRGB, ColorSpace::ITU_2020 },
+    { CM_DISPLAY_BT2020_HLG, ColorSpace::ITU_2020 },
+    { CM_DISPLAY_BT2020_PQ, ColorSpace::ITU_2020 },
+};
+
 bool ImageUtils::GetFileSize(const string &pathName, size_t &size)
 {
     if (pathName.empty()) {
@@ -238,7 +287,7 @@ static AVPixelFormat PixelFormatToAVPixelFormat(const PixelFormat &pixelFormat)
 
 int32_t ImageUtils::GetYUVByteCount(const ImageInfo& info)
 {
-    if (!IsYUV(info.pixelFormat)) {
+    if (!IsYuvFormat(info.pixelFormat)) {
         IMAGE_LOGE("[ImageUtil]unsupported pixel format");
         return -1;
     }
@@ -259,7 +308,7 @@ int32_t ImageUtils::GetByteCount(ImageInfo imageInfo)
     if (ImageUtils::IsAstc(imageInfo.pixelFormat)) {
         return static_cast<int32_t>(ImageUtils::GetAstcBytesCount(imageInfo));
     }
-    if (IsYUV(imageInfo.pixelFormat)) {
+    if (IsYuvFormat(imageInfo.pixelFormat)) {
         return GetYUVByteCount(imageInfo);
     }
     int64_t rowDataSize =
@@ -464,7 +513,7 @@ bool IsYUV10Bit(PixelFormat &format)
     return format == PixelFormat::YCBCR_P010 || format == PixelFormat::YCRCB_P010;
 }
 
-bool ImageUtils::IsYUV(PixelFormat format)
+bool ImageUtils::IsYuvFormat(PixelFormat format)
 {
     return IsYUV8Bit(format) || IsYUV10Bit(format);
 }
@@ -483,7 +532,7 @@ bool ImageUtils::PixelMapCreateCheckFormat(PixelFormat format)
     if (IsRGBX(format)) {
         return true;
     }
-    if (IsYUV(format)) {
+    if (IsYuvFormat(format)) {
         return true;
     }
     return false;
@@ -673,12 +722,9 @@ void ImageUtils::DumpPixelMapBeforeEncode(PixelMap& pixelMap)
     DumpPixelMap(&pixelMap, "_beforeEncode");
 }
 
-void ImageUtils::DumpDataIfDumpEnabled(const char* data, const size_t& totalSize,
+void ImageUtils::DumpData(const char* data, const size_t& totalSize,
     const std::string& fileSuffix, uint64_t imageId)
 {
-    if (!ImageSystemProperties::GetDumpImageEnabled()) {
-        return;
-    }
     std::string fileName = FILE_DIR_IN_THE_SANDBOX + GetLocalTime() + "_imageId" + std::to_string(imageId) +
         "_data_total" + std::to_string(totalSize) + "." + fileSuffix;
     if (SUCCESS != SaveDataToFile(fileName, data, totalSize)) {
@@ -687,6 +733,138 @@ void ImageUtils::DumpDataIfDumpEnabled(const char* data, const size_t& totalSize
     }
     IMAGE_LOGI("ImageUtils::DumpDataIfDumpEnabled success, path = %{public}s", fileName.c_str());
 }
+
+void ImageUtils::DumpDataIfDumpEnabled(const char* data, const size_t& totalSize,
+    const std::string& fileSuffix, uint64_t imageId)
+{
+    if (!ImageSystemProperties::GetDumpImageEnabled()) {
+        return;
+    }
+    DumpData(data, totalSize, fileSuffix, imageId);
+}
+
+#if !defined(CROSS_PLATFORM)
+void ImageUtils::DumpHdrBufferEnabled(sptr<SurfaceBuffer>& buffer, const std::string& fileName)
+{
+    bool cond = !ImageSystemProperties::GetDumpHdrEnbaled() || buffer == nullptr;
+    CHECK_ERROR_RETURN(cond);
+    uint32_t bufferSize = static_cast<int32_t>(buffer->GetSize());
+    std::string fileSuffix = fileName + "-format-" + std::to_string(buffer->GetFormat()) + "-Width-"
+        + std::to_string(buffer->GetWidth()) + "-Height-" + std::to_string(buffer->GetWidth()) + "-Stride-"
+        + std::to_string(buffer->GetStride()) + ".dat";
+    std::vector<uint8_t> staticMetadata;
+    std::vector<uint8_t> dynamicMetadata;
+    buffer->GetMetadata(HDI::Display::Graphic::Common::V1_0::ATTRKEY_HDR_STATIC_METADATA, staticMetadata);
+    buffer->GetMetadata(HDI::Display::Graphic::Common::V1_0::ATTRKEY_HDR_DYNAMIC_METADATA, dynamicMetadata);
+    DumpData(reinterpret_cast<const char*>(buffer->GetVirAddr()), bufferSize, fileSuffix, 0);
+    DumpData(reinterpret_cast<const char*>(staticMetadata.data()), staticMetadata.size(), fileSuffix, 0);
+    DumpData(reinterpret_cast<const char*>(dynamicMetadata.data()), dynamicMetadata.size(), fileSuffix, 0);
+}
+
+static bool IsAlphaFormat(PixelFormat format)
+{
+    return format == PixelFormat::RGBA_8888 || format == PixelFormat::BGRA_8888 ||
+        format == PixelFormat::RGBA_1010102 || format == PixelFormat::RGBA_F16;
+}
+
+PixelFormat ImageUtils::SbFormat2PixelFormat(int32_t sbFormat)
+{
+    auto iter = PIXEL_FORMAT_MAP.find(sbFormat);
+    if (iter == PIXEL_FORMAT_MAP.end()) {
+        return PixelFormat::UNKNOWN;
+    }
+    return iter->second;
+}
+
+static CM_ColorSpaceType GetCMColorSpaceType(sptr<SurfaceBuffer>& buffer)
+{
+    CHECK_ERROR_RETURN_RET(buffer == nullptr, CM_ColorSpaceType::CM_COLORSPACE_NONE);
+    CM_ColorSpaceType type;
+    MetadataHelper::GetColorSpaceType(buffer, type);
+    return type;
+}
+
+static ColorSpace CMColorSpaceType2ColorSpace(CM_ColorSpaceType type)
+{
+    auto iter = CM_COLORSPACE_MAP.find(type);
+    CHECK_ERROR_RETURN_RET(iter == CM_COLORSPACE_MAP.end(), ColorSpace::UNKNOWN);
+    return iter->second;
+}
+
+#ifdef IMAGE_COLORSPACE_FLAG
+static ColorManager::ColorSpaceName CMColorSpaceType2ColorSpaceName(CM_ColorSpaceType type)
+{
+    auto iter = CM_COLORSPACE_NAME_MAP.find(type);
+    CHECK_ERROR_RETURN_RET(iter == CM_COLORSPACE_NAME_MAP.end(), ColorManager::NONE);
+    return iter->second;
+}
+#endif
+
+static ImageInfo MakeImageInfo(int width, int height, PixelFormat pf, AlphaType at, ColorSpace cs)
+{
+    ImageInfo info;
+    info.size.width = width;
+    info.size.height = height;
+    info.pixelFormat = pf;
+    info.alphaType = at;
+    info.colorSpace = cs;
+    return info;
+}
+
+static void SetYuvDataInfo(std::unique_ptr<PixelMap> &pixelmap, sptr<OHOS::SurfaceBuffer>& sBuffer)
+{
+    bool cond = pixelmap == nullptr || sBuffer == nullptr;
+    CHECK_ERROR_RETURN(cond);
+    int32_t width = sBuffer->GetWidth();
+    int32_t height = sBuffer->GetHeight();
+    OH_NativeBuffer_Planes *planes = nullptr;
+    GSError retVal = sBuffer->GetPlanesInfo(reinterpret_cast<void**>(&planes));
+    YUVDataInfo info;
+    info.imageSize = { width, height };
+    cond = retVal != OHOS::GSERROR_OK || planes == nullptr || planes->planeCount <= NUM_1;
+    CHECK_ERROR_RETURN_LOG(cond, "Get planesInfo failed, retVal:%{public}d", retVal);
+    if (planes->planeCount >= NUM_2) {
+        info.yWidth = static_cast<uint32_t>(info.imageSize.width);
+        info.yHeight = static_cast<uint32_t>(info.imageSize.height);
+        info.yStride = planes->planes[NUM_0].columnStride;
+        info.uvStride = planes->planes[NUM_1].columnStride;
+        info.yOffset = planes->planes[NUM_0].offset;
+        info.uvOffset = planes->planes[NUM_1].offset - NUM_1;
+    }
+    pixelmap->SetImageYUVInfo(info);
+}
+
+bool ImageUtils::SurfaceBuffer2PixelMap(sptr<OHOS::SurfaceBuffer> &surfaceBuffer, std::unique_ptr<PixelMap> &Pixelmap)
+{
+    if (surfaceBuffer == nullptr || Pixelmap == nullptr) {
+        return false;
+    }
+    PixelFormat pixelFormat = ImageUtils::SbFormat2PixelFormat(surfaceBuffer->GetFormat());
+    ColorSpace colorSpace = CMColorSpaceType2ColorSpace(GetCMColorSpaceType(surfaceBuffer));
+    AlphaType alphaType = IsAlphaFormat(pixelFormat) ?
+        AlphaType::IMAGE_ALPHA_TYPE_PREMUL : AlphaType::IMAGE_ALPHA_TYPE_OPAQUE;
+    void* nativeBuffer = surfaceBuffer.GetRefPtr();
+    int32_t err = ImageUtils::SurfaceBuffer_Reference(nativeBuffer);
+    CHECK_ERROR_RETURN_RET_LOG(err != OHOS::GSERROR_OK, false, "NativeBufferReference failed");
+
+    ImageInfo imageInfo = MakeImageInfo(surfaceBuffer->GetWidth(),
+                                        surfaceBuffer->GetHeight(), pixelFormat, alphaType, colorSpace);
+    Pixelmap->SetImageInfo(imageInfo, true);
+    Pixelmap->SetPixelsAddr(surfaceBuffer->GetVirAddr(),
+                            nativeBuffer, Pixelmap->GetRowBytes() * Pixelmap->GetHeight(),
+                            AllocatorType::DMA_ALLOC, nullptr);
+#ifdef IMAGE_COLORSPACE_FLAG
+    ColorManager::ColorSpaceName colorSpaceName =
+        CMColorSpaceType2ColorSpaceName(GetCMColorSpaceType(surfaceBuffer));
+    Pixelmap->InnerSetColorSpace(ColorManager::ColorSpace(colorSpaceName));
+#endif
+    if (ImageUtils::IsYuvFormat(pixelFormat)) {
+        SetYuvDataInfo(Pixelmap, surfaceBuffer);
+    }
+    return true;
+}
+
+#endif
 
 uint64_t ImageUtils::GetNowTimeMilliSeconds()
 {

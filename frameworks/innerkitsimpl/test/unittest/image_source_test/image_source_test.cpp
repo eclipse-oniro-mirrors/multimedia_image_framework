@@ -3127,7 +3127,7 @@ HWTEST_F(ImageSourceTest, DecodeHeifAuxiliaryPicturesTest002, TestSize.Level1)
 }
 
 /**
- * @tc.name: WideGamutTest001
+ * @tc.name: WideGamutTest003
  * @tc.desc: test WideGamut one channel gainmap Jpeg HDR input
  * @tc.type: FUNC
  */

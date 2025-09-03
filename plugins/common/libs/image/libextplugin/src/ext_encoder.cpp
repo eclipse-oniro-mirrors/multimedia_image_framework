@@ -27,6 +27,8 @@
 #include "src/images/SkImageEncoderFns.h"
 #endif
 #include "include/core/SkBitmap.h"
+#include "pixel_yuv.h"
+#include "pixel_yuv_ext.h"
 #include "pixel_yuv_utils.h"
 #ifdef IMAGE_COLORSPACE_FLAG
 #include "color_space.h"
@@ -60,6 +62,7 @@
 #include "v2_1/cm_color_space.h"
 #include "vpe_utils.h"
 #include "hdr_helper.h"
+#include "metadata_helper.h"
 #endif
 #include "color_utils.h"
 #include "tiff_parser.h"
@@ -126,6 +129,7 @@ const std::map<PixelFormat, GraphicPixelFormat> SURFACE_FORMAT_MAP = {
         { CM_DISPLAY_BT2020_HLG, ColorManager::DISPLAY_BT2020_HLG },
         { CM_DISPLAY_BT2020_PQ, ColorManager::DISPLAY_BT2020_PQ },
     };
+
 #endif
 
 #endif
@@ -467,7 +471,7 @@ static uint32_t CreateAndWriteBlob(MetadataWStream &tStream, PixelMap *pixelmap,
     return SUCCESS;
 }
 
-bool IsWideGamutSdrPixelMap(Media::PixelMap *pixelmap)
+bool IsWideGamutSdrPixelMap(Media::PixelMap* pixelmap)
 {
 #ifdef IMAGE_COLORSPACE_FLAG
     return pixelmap->InnerGetGrColorSpace().GetColorSpaceName() ==
@@ -475,6 +479,21 @@ bool IsWideGamutSdrPixelMap(Media::PixelMap *pixelmap)
 #else
     return false;
 #endif
+}
+
+bool IsHdrColorSpace(Media::PixelMap* pixelmap)
+{
+#ifdef IMAGE_COLORSPACE_FLAG
+    OHOS::ColorManager::ColorSpace colorSpace = pixelmap->InnerGetGrColorSpace();
+    if (colorSpace.GetColorSpaceName() != ColorManager::BT2020 &&
+        colorSpace.GetColorSpaceName() != ColorManager::BT2020_HLG &&
+        colorSpace.GetColorSpaceName() != ColorManager::BT2020_PQ &&
+        colorSpace.GetColorSpaceName() != ColorManager::BT2020_HLG_LIMIT &&
+        colorSpace.GetColorSpaceName() != ColorManager::BT2020_PQ_LIMIT) {
+        return false;
+    }
+#endif
+    return true;
 }
 
 uint32_t ExtEncoder::PixelmapEncode(ExtWStream& wStream)
@@ -489,6 +508,9 @@ uint32_t ExtEncoder::PixelmapEncode(ExtWStream& wStream)
             if ((pixelmap_->IsHdr() || IsWideGamutSdrPixelMap(pixelmap_)) &&
                 (encodeFormat_ == SkEncodedImageFormat::kJPEG || encodeFormat_ == SkEncodedImageFormat::kHEIF)) {
                 error = EncodeDualVivid(wStream);
+            } else if (pixelmap_->GetAllocatorType() == AllocatorType::DMA_ALLOC &&
+                ImageUtils::Is10Bit(pixelmap_->GetPixelFormat()) && !IsHdrColorSpace(pixelmap_)) {
+                error = Encode10bitSdrPixelMap(pixelmap_, wStream);
             } else {
                 error = EncodeSdrImage(wStream);
             }
@@ -685,29 +707,27 @@ uint32_t ExtEncoder::EncodeImageByBitmap(SkBitmap& bitmap, bool needExif, SkWStr
     return CreateAndWriteBlob(tStream, pixelmap_, outStream, imageInfo, opts_);
 }
 
-uint32_t ExtEncoder::EncodeImageByPixelMap(PixelMap* pixelMap, bool needExif, SkWStream& outputStream)
+uint32_t ExtEncoder::EncodeImageByPixelMap(PixelMap* pixelmap, bool needExif, SkWStream& outputStream)
 {
     if (encodeFormat_ == SkEncodedImageFormat::kHEIF) {
-        return EncodeHeifByPixelmap(pixelMap, opts_);
+        return EncodeHeifByPixelmap(pixelmap, opts_);
     }
     SkBitmap bitmap;
     TmpBufferHolder holder;
     SkImageInfo skInfo;
     ImageData imageData;
-    pixelMap->GetImageInfo(imageData.info);
+    pixelmap->GetImageInfo(imageData.info);
     uint32_t width  = static_cast<uint32_t>(imageData.info.size.width);
     uint32_t height = static_cast<uint32_t>(imageData.info.size.height);
-
     bool cond = HardwareEncode(outputStream, needExif) == true;
     CHECK_DEBUG_RETURN_RET_LOG(cond, SUCCESS, "HardwareEncode Success return");
     IMAGE_LOGD("HardwareEncode failed or not Supported");
-
     std::unique_ptr<uint8_t[]> dstData;
     uint64_t rowStride = 0;
     if (IsYuvImage(imageData.info.pixelFormat)) {
         IMAGE_LOGD("YUV format, convert to RGB");
         dstData = std::make_unique<uint8_t[]>(width * height * NUM_4);
-        if (YuvToRgbaSkInfo(imageData.info, skInfo, dstData.get(), pixelMap) != SUCCESS) {
+        if (YuvToRgbaSkInfo(imageData.info, skInfo, dstData.get(), pixelmap) != SUCCESS) {
             IMAGE_LOGD("YUV format, convert to RGB fail");
             return ERR_IMAGE_ENCODE_FAILED;
         }
@@ -716,13 +736,13 @@ uint32_t ExtEncoder::EncodeImageByPixelMap(PixelMap* pixelMap, bool needExif, Sk
     } else {
         dstData = std::make_unique<uint8_t[]>(width * height * NUM_3);
         imageData.dst = dstData.get();
-        cond = pixelToSkInfo(imageData, skInfo, pixelMap, holder, encodeFormat_) != SUCCESS;
+        cond = pixelToSkInfo(imageData, skInfo, pixelmap, holder, encodeFormat_) != SUCCESS;
         CHECK_ERROR_RETURN_RET_LOG(cond, ERR_IMAGE_ENCODE_FAILED,
             "ExtEncoder::EncodeImageByPixelMap pixel convert failed");
         rowStride = skInfo.minRowBytes64();
 #if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
-        if (pixelMap->GetAllocatorType() == AllocatorType::DMA_ALLOC) {
-            SurfaceBuffer* sbBuffer = reinterpret_cast<SurfaceBuffer*> (pixelMap->GetFd());
+        if (pixelmap->GetAllocatorType() == AllocatorType::DMA_ALLOC) {
+            SurfaceBuffer* sbBuffer = reinterpret_cast<SurfaceBuffer*> (pixelmap->GetFd());
             rowStride = static_cast<uint64_t>(sbBuffer->GetStride());
             IMAGE_LOGD("rowStride DMA: %{public}llu", static_cast<unsigned long long>(rowStride));
         }
@@ -1437,7 +1457,7 @@ uint32_t ExtEncoder::AssembleHeifFragmentMap(std::vector<ImageItem>& inputImgs)
 }
 #endif
 
-uint32_t DecomposeDualVivid(VpeSurfaceBuffers& buffers, Media::PixelMap *pixelmap,
+uint32_t DecomposeDualVivid(VpeSurfaceBuffers& buffers, Media::PixelMap* pixelmap,
     SkEncodedImageFormat format, HdrMetadata& metadata)
 {
     if (pixelmap == nullptr) {
@@ -1480,6 +1500,102 @@ uint32_t DecomposeDualVivid(VpeSurfaceBuffers& buffers, Media::PixelMap *pixelma
     }
     metadata.hdrMetadataType = static_cast<int32_t>(hdrMetadataType);
     return SUCCESS;
+}
+
+static bool GetDstTruncatePixelFormat(GraphicPixelFormat srcFormat, GraphicPixelFormat& dstFormat)
+{
+    switch (srcFormat) {
+        case GRAPHIC_PIXEL_FMT_RGBA_1010102 : {
+            dstFormat = GRAPHIC_PIXEL_FMT_RGBA_8888;
+            break;
+        }
+        case GRAPHIC_PIXEL_FMT_YCBCR_P010 : {
+            dstFormat = GRAPHIC_PIXEL_FMT_YCBCR_420_SP;
+            break;
+        }
+        case GRAPHIC_PIXEL_FMT_YCRCB_P010 : {
+            dstFormat = GRAPHIC_PIXEL_FMT_YCRCB_420_SP;
+            break;
+        }
+        default: {
+            IMAGE_LOGE("pixel format: [%{public}d] not surpport.", srcFormat);
+            return false;
+        }
+    }
+    return true;
+}
+
+uint32_t Truncate10bBitTo8bit(VpeSurfaceBuffers& buffers, Media::PixelMap* pixelmap,
+    SkEncodedImageFormat format)
+{
+    IMAGE_LOGD("HDR-IMAGE Splice10bitTo8bit");
+    bool cond = pixelmap == nullptr;
+    CHECK_ERROR_RETURN_RET(cond, false);
+    if (!ImageUtils::Is10Bit(pixelmap->GetPixelFormat()) ||
+        pixelmap->GetAllocatorType() != AllocatorType::DMA_ALLOC) {
+        IMAGE_LOGE("HDR-IMAGE Splice10bBitSdrTo8bit condition error");
+        return ERR_IMAGE_INVALID_PARAMETER;
+    }
+    sptr<SurfaceBuffer> hdrSurfaceBuffer(reinterpret_cast<SurfaceBuffer*> (pixelmap->GetFd()));
+    GraphicPixelFormat srcPixelFormat = static_cast<GraphicPixelFormat>(hdrSurfaceBuffer->GetFormat());
+    GraphicPixelFormat dstPixelFormat;
+    cond = !GetDstTruncatePixelFormat(srcPixelFormat, dstPixelFormat);
+    CHECK_ERROR_RETURN_RET_LOG(cond, ERR_IMAGE_INVALID_PARAMETER, "HDR-IMAGE Splice10bitTo8bit"
+        "pixel format :[%{public}d] not support", format);
+    
+    sptr<SurfaceBuffer> baseSptr = AllocSurfaceBuffer(hdrSurfaceBuffer->GetWidth(),
+        hdrSurfaceBuffer->GetHeight(), dstPixelFormat);
+    cond = baseSptr == nullptr;
+    CHECK_ERROR_RETURN_RET(cond, IMAGE_RESULT_CREATE_SURFAC_FAILED);
+    buffers.sdr = baseSptr;
+    buffers.hdr = hdrSurfaceBuffer;
+    IMAGE_LOGD("src buffer alloc pixelFormat is : %{public}d", buffers.sdr->GetFormat());
+    std::unique_ptr<VpeUtils> utils = std::make_unique<VpeUtils>();
+    ImageUtils::DumpHdrBufferEnabled(hdrSurfaceBuffer, "SpliceInput-10-bit");
+    int32_t res = utils->TruncateBuffer(buffers, false);
+    if (res != SUCCESS) {
+        IMAGE_LOGE("HDR-IMAGE Convert10bBitSdrToDual decomposeImage failed");
+        ImageUtils::SurfaceBuffer_Unreference(baseSptr.GetRefPtr());
+        return IMAGE_RESULT_CREATE_SURFAC_FAILED;
+    }
+    ImageUtils::DumpHdrBufferEnabled(baseSptr, "SpliceInput-8-bit");
+    return SUCCESS;
+}
+
+uint32_t ExtEncoder::Encode10bitSdrPixelMap(Media::PixelMap* pixelmap, ExtWStream& outputStream)
+{
+    IMAGE_LOGD("HDR-IMAGE Encode10bitRGBAToSdr");
+    if (pixelmap == nullptr) {
+        return ERR_IMAGE_INVALID_PARAMETER;
+    }
+    VpeSurfaceBuffers buffers;
+    HdrMetadata metadata;
+    uint32_t error = Truncate10bBitTo8bit(buffers, pixelmap, encodeFormat_);
+    if (error != SUCCESS) {
+        IMAGE_LOGE("HDR-IMAGE EncodeRGBA1010102SdrPixelMap failed");
+        return ERR_IMAGE_ENCODE_FAILED;
+    }
+
+    PixelFormat pixelFormat = ImageUtils::SbFormat2PixelFormat(buffers.hdr->GetFormat());
+    std::unique_ptr<PixelMap> encodePixelmap;
+    if (ImageUtils::IsYuvFormat(pixelFormat)) {
+#ifdef EXT_PIXEL
+        encodePixelmap = std::make_unique<PixelYuvExt>();
+#else
+        encodePixelmap = std::make_unique<PixelYuv>();
+#endif
+    } else {
+        encodePixelmap = std::make_unique<PixelMap>();
+    }
+    CHECK_ERROR_RETURN_RET(encodePixelmap == nullptr, ERR_IMAGE_ENCODE_FAILED);
+    if (!ImageUtils::SurfaceBuffer2PixelMap(buffers.sdr, encodePixelmap)) {
+        return ERR_IMAGE_ENCODE_FAILED;
+    }
+    encodePixelmap->InnerSetColorSpace(OHOS::ColorManager::ColorSpace(
+        OHOS::ColorManager::ColorSpaceName::SRGB));
+    error = EncodeImageByPixelMap(encodePixelmap.get(), opts_.needsPackProperties, outputStream);
+    ImageUtils::SurfaceBuffer_Unreference(buffers.sdr);
+    return error;
 }
 
 uint32_t ExtEncoder::EncodeDualVivid(ExtWStream& outputStream)

@@ -153,7 +153,7 @@ private:
 
     heif_item_id gainmapMasterItemid_ = 0;
     std::shared_ptr<HeifImage> gainmapImage_;
-    heif_item_id tmapId_;
+    heif_item_id tmapId_ = 0;
     std::vector<uint8_t> lightInfo_;
     std::vector<uint8_t> displayInfo_;
     std::vector<uint8_t> uwaInfo_;

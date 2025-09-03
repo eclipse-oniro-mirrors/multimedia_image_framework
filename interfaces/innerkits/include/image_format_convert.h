@@ -47,17 +47,17 @@ class ImageFormatConvert {
     friend class ImageFormatConvertTest;
 public:
     static uint32_t ConvertImageFormat(const ConvertDataInfo &srcDataInfo, DestConvertInfo &destInfo);
-    static uint32_t ConvertImageFormat(std::shared_ptr<PixelMap> &srcPiexlMap, PixelFormat destFormat);
+    static uint32_t ConvertImageFormat(std::shared_ptr<PixelMap> &srcPixelMap, PixelFormat destFormat);
     static uint32_t MakeDestPixelMapUnique(std::unique_ptr<PixelMap> &destPixelMap,
         ImageInfo &srcImageinfo, DestConvertInfo &destInfo, void *context);
-    static uint32_t RGBConvertImageFormatOptionUnique(std::unique_ptr<PixelMap> &srcPiexlMap,
+    static uint32_t RGBConvertImageFormatOptionUnique(std::unique_ptr<PixelMap> &srcPixelMap,
         const PixelFormat &srcFormat, PixelFormat destFormat);
     static bool SetConvertImageMetaData(std::unique_ptr<PixelMap> &srcPixelMap, std::unique_ptr<PixelMap> &dstPixelMap);
     static bool SetConvertImageMetaData(std::shared_ptr<PixelMap> &srcPixelMap, std::unique_ptr<PixelMap> &dstPixelMap);
 private:
     static bool IsValidSize(const Size &size);
     static bool CheckConvertDataInfo(const ConvertDataInfo &convertDataInfo);
-    static uint32_t YUVConvertImageFormatOption(std::shared_ptr<PixelMap> &srcPiexlMap, const PixelFormat &srcFormat,
+    static uint32_t YUVConvertImageFormatOption(std::shared_ptr<PixelMap> &srcPixelMap, const PixelFormat &srcFormat,
                                                 PixelFormat destFormat);
     static size_t GetBufferSizeByFormat(PixelFormat format, const Size &size);
     static ConvertFunction GetConvertFuncByFormat(PixelFormat srcFormat, PixelFormat destFormat);
@@ -68,7 +68,7 @@ private:
     static std::unique_ptr<AbsMemory> CreateMemory(PixelFormat pixelFormat,
                                                    AllocatorType allocatorType, Size size,
                                                    YUVStrideInfo &strides, uint64_t usage = 0);
-    static uint32_t RGBConvertImageFormatOption(std::shared_ptr<PixelMap> &srcPiexlMap,
+    static uint32_t RGBConvertImageFormatOption(std::shared_ptr<PixelMap> &srcPixelMap,
                                                 const PixelFormat &srcFormat, PixelFormat destFormat);
     static uint32_t YUVConvert(const ConvertDataInfo &srcDataInfo, DestConvertInfo &destInfo);
     static uint32_t RGBConvert(const ConvertDataInfo &srcDataInfo, DestConvertInfo &destInfo);
