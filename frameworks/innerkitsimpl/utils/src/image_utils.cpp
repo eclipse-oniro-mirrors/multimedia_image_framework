@@ -80,7 +80,9 @@ namespace OHOS {
 namespace Media {
 using namespace std;
 using namespace MultimediaPlugin;
+#if !defined(CROSS_PLATFORM)
 using namespace HDI::Display::Graphic::Common::V1_0;
+#endif
 
 constexpr int32_t ALPHA8_BYTES = 1;
 constexpr int32_t RGB565_BYTES = 2;
@@ -143,6 +145,7 @@ const std::map<PixelFormat, AVPixelFormat> FFMPEG_PIXEL_FORMAT_MAP = {
     {PixelFormat::YCBCR_P010, AV_PIX_FMT_P010LE},
 };
 
+#if !defined(CROSS_PLATFORM)
 static const std::map<int32_t, PixelFormat> PIXEL_FORMAT_MAP = {
     { GRAPHIC_PIXEL_FMT_RGBA_8888, PixelFormat::RGBA_8888 },
     { GRAPHIC_PIXEL_FMT_YCBCR_420_SP, PixelFormat::NV12 },
@@ -186,6 +189,8 @@ static const std::map<CM_ColorSpaceType, ColorSpace> CM_COLORSPACE_MAP = {
     { CM_DISPLAY_BT2020_HLG, ColorSpace::ITU_2020 },
     { CM_DISPLAY_BT2020_PQ, ColorSpace::ITU_2020 },
 };
+#endif
+
 
 bool ImageUtils::GetFileSize(const string &pathName, size_t &size)
 {

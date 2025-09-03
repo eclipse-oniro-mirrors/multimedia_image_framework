@@ -72,6 +72,7 @@ constexpr uint8_t INDEX_ZERO = 0;
 constexpr uint8_t INDEX_ONE = 1;
 constexpr uint8_t INDEX_TWO = 2;
 constexpr uint8_t INDEX_THREE = 3;
+constexpr uint8_t JPEG_HEADRE_OFFSET = 3;
 constexpr uint8_t COLOR_INFO_BYTES = 3;
 constexpr uint8_t ONE_COMPONENT = 1;
 constexpr uint8_t THREE_COMPONENTS = 3;
@@ -1375,7 +1376,7 @@ static bool WriteJpegPreApp(sk_sp<SkData>& imageData, SkWStream& outputStream, u
     uint32_t dataSize = imageData->size();
     outputStream.write(imageBytes, JPEG_MARKER_TAG_SIZE);
     index += JPEG_MARKER_TAG_SIZE;
-    while (index < dataSize) {
+    while (index + JPEG_HEADRE_OFFSET < dataSize) {
         cond = imageBytes[index] != JPEG_MARKER_PREFIX;
         CHECK_ERROR_RETURN_RET(cond, false);
         if ((imageBytes[index + INDEX_ONE] & 0xF0) != JPEG_MARKER_APP0) {
