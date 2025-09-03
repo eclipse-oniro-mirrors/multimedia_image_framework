@@ -893,7 +893,7 @@ static void ParserPackingArguments(napi_env env,
         BuildMsgOnError(context, context->rPixelMaps != nullptr,
             "PixelMap mismatch", COMMON_ERR_INVALID_PARAMETER);
     } else {
-        BuildMsgOnError(context, false, "Invalid Parameter", ERR_IMAGE_INVALID_PARAMETER);
+        BuildMsgOnError(context, false, "Invalid Parameter", COMMON_ERR_INVALID_PARAMETER);
     }
     if (argc > PARAM1 && ImageNapiUtils::getType(env, argv[PARAM1]) == napi_object) {
         if (context->packType == TYPE_ARRAY) {
@@ -1081,7 +1081,7 @@ static void ParserPackToFileArguments(napi_env env,
         context->rPixelMaps = PixelMapNapi::GetPixelMaps(env, argv[PARAM0]);
         BuildMsgOnError(context, context->rPixelMaps != nullptr, "PixelMap mismatch", COMMON_ERR_INVALID_PARAMETER);
     } else {
-        BuildMsgOnError(context, false, "Invalid Parameter", ERR_IMAGE_INVALID_PARAMETER);
+        BuildMsgOnError(context, false, "Invalid Parameter", COMMON_ERR_INVALID_PARAMETER);
     }
     if (argc > PARAM1 && ImageNapiUtils::getType(env, argv[PARAM1]) == napi_number) {
         uint32_t errorCode = ((context->packType == TYPE_PICTURE ||
