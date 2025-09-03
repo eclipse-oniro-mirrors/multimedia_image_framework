@@ -31,6 +31,8 @@ using namespace OHOS::Media;
 
 const std::string YUV_LIB_PATH = "libyuv.z.so";
 static const uint32_t STRIDE_DIVISOR = 2;
+constexpr uint8_t NUM_1 = 1;
+constexpr uint8_t NUM_2 = 2;
 
 void* JpegDecoderYuv::dlHandler_ = nullptr;
 LibYuvConvertFuncs JpegDecoderYuv::libyuvFuncs_ = { nullptr };
@@ -552,7 +554,15 @@ void UpdateDestStride(JpegDecoderYuvParameter decodeParameter, const DecodeConte
         if (decodeParameter.outfmt_ == JpegYuvFmt::OutFmt_NV12 ||
             decodeParameter.outfmt_ == JpegYuvFmt::OutFmt_NV21) {
             uint32_t stride = static_cast<uint32_t>(surfaceBuffer->GetStride());
-            dest.planes[UVCOM] = outYData + stride * height;
+            OH_NativeBuffer_Planes *planes = nullptr;
+            GSError retVal = surfaceBuffer->GetPlanesInfo(reinterpret_cast<void**>(&planes));
+            CHECK_ERROR_RETURN_LOG(retVal != OHOS::GSERROR_OK || planes == nullptr,
+                                "%{public}s: GetPlanesInfo failed retVal: %{public}d", __func__, retVal);
+
+            uint32_t uvPlaneOffset = (decodeParameter.outfmt_ == JpegYuvFmt::OutFmt_NV12) ? NUM_1 : NUM_2;
+            uint32_t uvOffset = planes->planes[uvPlaneOffset].offset;
+
+            dest.planes[UVCOM] = outYData + uvOffset;
             dest.strides[YCOM] = stride;
             dest.strides[UCOM] = stride / STRIDE_DIVISOR;
             dest.strides[VCOM] = stride / STRIDE_DIVISOR;
