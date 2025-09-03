@@ -197,19 +197,20 @@ static void ConvertPixelMapAlphaFormat(weak::PixelMap const& src, weak::PixelMap
     auto rPixelMap = rPixelMapImpl->GetNativePtr();
     auto wPixelMap = wPixelMapImpl->GetNativePtr();
     if (wPixelMap->IsEditable()) {
-        uint32_t ret = rPixelMap->ConvertAlphaFormat(*(wPixelMap.get()), isPremul);
-        if (ret == Media::COMMON_ERR_INVALID_PARAMETER) {
+        uint32_t status = rPixelMap->ConvertAlphaFormat(*(wPixelMap.get()), isPremul);
+        if (status == Media::COMMON_ERR_INVALID_PARAMETER) {
             ImageTaiheUtils::ThrowExceptionError(Media::COMMON_ERR_INVALID_PARAMETER,
                 "Invalid source or target PixelMap");
-        } else if (ret == Media::ERR_IMAGE_INVALID_PARAMETER) {
-            ImageTaiheUtils::ThrowExceptionError(Media::ERR_IMAGE_INVALID_PARAMETER,
-                "Unsupported PixelMap format");
-        } else if (ret == Media::ERR_IMAGE_READ_PIXELMAP_FAILED) {
+        } else if (status == Media::ERR_IMAGE_INVALID_PARAMETER) {
+            ImageTaiheUtils::ThrowExceptionError(Media::ERR_IMAGE_INVALID_PARAMETER, "Unsupported PixelMap format");
+        } else if (status == Media::ERR_IMAGE_READ_PIXELMAP_FAILED) {
             ImageTaiheUtils::ThrowExceptionError(Media::ERR_IMAGE_READ_PIXELMAP_FAILED,
                 "Failed to read source or target PixelMap data");
-        } else if (ret == Media::ERR_IMAGE_DATA_UNSUPPORT) {
+        } else if (status == Media::ERR_IMAGE_DATA_UNSUPPORT) {
             ImageTaiheUtils::ThrowExceptionError(Media::ERR_IMAGE_DATA_UNSUPPORT,
                 "Unsupported pixel format of source or target PixelMap");
+        } else if (status != Media::SUCCESS) {
+            ImageTaiheUtils::ThrowExceptionError(status, "Convert alpha format failed");
         }
     } else {
         ImageTaiheUtils::ThrowExceptionError(Media::ERR_IMAGE_PIXELMAP_NOT_ALLOW_MODIFY,
@@ -570,6 +571,8 @@ void PixelMapImpl::SetMemoryNameSync(string_view name)
         ImageTaiheUtils::ThrowExceptionError(Media::ERR_MEMORY_NOT_SUPPORT, "Set memory name not supported");
     } else if (status == Media::COMMON_ERR_INVALID_PARAMETER) {
         ImageTaiheUtils::ThrowExceptionError(Media::COMMON_ERR_INVALID_PARAMETER, "Memory name size out of range");
+    } else if (status != Media::SUCCESS) {
+        ImageTaiheUtils::ThrowExceptionError(status, "Set memory name failed");
     }
 }
 
@@ -624,13 +627,21 @@ void PixelMapImpl::ConvertPixelFormatSync(PixelMapFormat targetPixelFormat)
     } else if (status == Media::ERR_IMAGE_SOURCE_DATA_INCOMPLETE) {
         ImageTaiheUtils::ThrowExceptionError(Media::ERR_IMAGE_SOURCE_DATA_INCOMPLETE,
             "Image source data is incomplete");
-    } else if (status == Media::IMAGE_RESULT_CREATE_FORMAT_CONVERT_FAILED) {
-        ImageTaiheUtils::ThrowExceptionError(Media::IMAGE_RESULT_CREATE_FORMAT_CONVERT_FAILED, "Conversion failed");
+    } else if (status == Media::IMAGE_RESULT_FORMAT_CONVERT_FAILED) {
+        ImageTaiheUtils::ThrowExceptionError(Media::IMAGE_RESULT_FORMAT_CONVERT_FAILED,
+            "Failed to convert pixel format");
     } else if (status == Media::ERR_MEDIA_FORMAT_UNSUPPORT) {
-        ImageTaiheUtils::ThrowExceptionError(Media::ERR_MEDIA_FORMAT_UNSUPPORT,
-            "The target pixel format to be converted is not supported");
+        ImageTaiheUtils::ThrowExceptionError(Media::ERR_MEDIA_FORMAT_UNSUPPORT, "Unsupported target pixel format");
     } else if (status == Media::ERR_IMAGE_PIXELMAP_CREATE_FAILED) {
         ImageTaiheUtils::ThrowExceptionError(Media::ERR_IMAGE_PIXELMAP_CREATE_FAILED, "Failed to create PixelMap");
+    } else if (status == Media::ERR_IMAGE_INIT_ABNORMAL) {
+        ImageTaiheUtils::ThrowExceptionError(Media::ERR_IMAGE_INIT_ABNORMAL, "Decode ASTC memset failed");
+    } else if (status == Media::ERR_IMAGE_MALLOC_ABNORMAL) {
+        ImageTaiheUtils::ThrowExceptionError(Media::ERR_IMAGE_MALLOC_ABNORMAL, "Decode ASTC malloc failed");
+    } else if (status == Media::ERR_IMAGE_DECODE_FAILED) {
+        ImageTaiheUtils::ThrowExceptionError(Media::ERR_IMAGE_DECODE_FAILED, "Decode ASTC failed");
+    } else {
+        ImageTaiheUtils::ThrowExceptionError(status, "Convert pixel format failed");
     }
 }
 
