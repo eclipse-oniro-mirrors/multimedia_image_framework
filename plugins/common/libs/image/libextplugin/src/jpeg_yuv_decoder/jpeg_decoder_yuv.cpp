@@ -31,8 +31,6 @@ using namespace OHOS::Media;
 
 const std::string YUV_LIB_PATH = "libyuv.z.so";
 static const uint32_t STRIDE_DIVISOR = 2;
-constexpr uint8_t NUM_1 = 1;
-constexpr uint8_t NUM_2 = 2;
 
 void* JpegDecoderYuv::dlHandler_ = nullptr;
 LibYuvConvertFuncs JpegDecoderYuv::libyuvFuncs_ = { nullptr };
