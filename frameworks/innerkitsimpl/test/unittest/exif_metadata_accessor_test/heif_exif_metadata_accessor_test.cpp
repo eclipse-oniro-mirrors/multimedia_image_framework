@@ -341,5 +341,37 @@ HWTEST_F(HeifExifMetadataAccessorTest, Read012, TestSize.Level3)
     uint32_t res = imageAccessor.Read();
     EXPECT_EQ(res, ERR_IMAGE_SOURCE_DATA);
 }
+
+/**
+ * @tc.name: TestWriteAndReadFnumberWithTwoDecimal001
+ * @tc.desc: test write Fnumber with two decimal, and read with two decimal format.
+ * @tc.type: FUNC
+ */
+HWTEST_F(HeifExifMetadataAccessorTest, TestWriteAndReadFnumberWithTwoDecimal001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "HeifExifMetadataAccessorTest: TestWriteAndReadFnumberWithTwoDecimal001 start";
+    std::shared_ptr<MetadataStream> stream = std::make_shared<FileMetadataStream>(IMAGE_INPUT_HEIF_EXIF_PATH);
+    ASSERT_TRUE(stream->Open(OpenMode::ReadWrite));
+    HeifExifMetadataAccessor imageAccessor(stream);
+    uint32_t result = imageAccessor.Read();
+    ASSERT_EQ(result, 0);
+
+    auto exifMetadata = imageAccessor.Get();
+    exifMetadata->SetValue("FNumber", "1.49");
+    uint32_t errcode = imageAccessor.Write();
+    ASSERT_EQ(errcode, SUCCESS);
+
+    exifMetadata = imageAccessor.Get();
+    ASSERT_EQ(GetProperty(exifMetadata, "FNumber"), "f/1.49");
+
+    exifMetadata->SetValue("FNumber", "1.80");
+    errcode = imageAccessor.Write();
+    ASSERT_EQ(errcode, SUCCESS);
+
+    exifMetadata = imageAccessor.Get();
+    ASSERT_EQ(GetProperty(exifMetadata, "FNumber"), "f/1.8");
+
+    GTEST_LOG_(INFO) << "HeifExifMetadataAccessorTest: TestWriteAndReadFnumberWithTwoDecimal001 end";
+}
 } // namespace Multimedia
 } // namespace OHOS
