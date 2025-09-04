@@ -5219,7 +5219,6 @@ void ImageSource::DecodeJpegAuxiliaryPicture(
         }
     }
 }
-#endif
 
 void ImageSource::DecodeBlobMetaData(std::unique_ptr<Picture> &picture, const std::set<MetadataType> &metadataTypes,
     ImageInfo &info, uint32_t &errorCode)
@@ -5257,6 +5256,7 @@ void ImageSource::DecodeBlobMetaData(std::unique_ptr<Picture> &picture, const st
         }
     }
 }
+#endif
 
 bool ImageSource::CompressToAstcFromPixelmap(const DecodeOptions &opts, unique_ptr<PixelMap> &rgbaPixelmap,
     unique_ptr<AbsMemory> &dstMemory)
