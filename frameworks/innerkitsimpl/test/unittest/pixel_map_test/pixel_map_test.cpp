@@ -1024,6 +1024,8 @@ HWTEST_F(PixelMapTest, PixelMapTest006, TestSize.Level3)
     void *fdBuffer = nullptr;
     uint32_t bufferSize = pixelMap1->GetByteCount();
     pixelMap1->SetPixelsAddr(dstPixels, fdBuffer, bufferSize, AllocatorType::HEAP_ALLOC, nullptr);
+    pixelMap1->SetPixelsAddr(dstPixels, fdBuffer, bufferSize, AllocatorType::HEAP_ALLOC, false);
+    pixelMap1->SetPixelsAddr(dstPixels, fdBuffer, bufferSize, AllocatorType::HEAP_ALLOC, true);
     ImageInfo info1;
     info1.size.width = INT32_MAX;
     // 300 means height

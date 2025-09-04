@@ -236,6 +236,33 @@ void PixelMap::SetPixelsAddr(void *addr, void *context, uint32_t size, Allocator
     ImageUtils::FlushSurfaceBuffer(this);
 }
 
+void PixelMap::SetPixelsAddr(void *addr, void *context, uint32_t size, AllocatorType type, bool displayOnly)
+{
+    if (type < AllocatorType::DEFAULT || type > AllocatorType::DMA_ALLOC) {
+        IMAGE_LOGE("Unmarshalling setPixelsAddr error invalid allocatorType");
+        return;
+    }
+    if (data_ != nullptr) {
+        IMAGE_LOGD("Unmarshalling setPixelsAddr release the existed data first");
+        FreePixelMap();
+    }
+    if (type == AllocatorType::SHARE_MEM_ALLOC && context == nullptr) {
+        IMAGE_LOGE("Unmarshalling setPixelsAddr error type %{public}d ", type);
+    }
+    data_ = static_cast<uint8_t *>(addr);
+    isUnMap_ = false;
+    context_ = context;
+    pixelsSize_ = size;
+    allocatorType_ = type;
+    custFreePixelMap_ = nullptr;
+    if (type == AllocatorType::DMA_ALLOC && rowDataSize_ != 0) {
+        UpdateImageInfo();
+    }
+    if (!displayOnly) {
+        ImageUtils::FlushSurfaceBuffer(this);
+    }
+}
+
 bool CheckPixelmap(std::unique_ptr<PixelMap> &pixelMap, ImageInfo &imageInfo)
 {
     if (pixelMap == nullptr) {
@@ -1886,7 +1913,7 @@ uint32_t PixelMap::ReadPixel(const Position &pos, uint32_t &dst)
         return ERR_IMAGE_INVALID_PARAMETER;
     }
     if (isUnMap_ || data_ == nullptr) {
-        IMAGE_LOGE("read pixel by pos source data is null, isUnMap %{public}d.", isUnMap_);
+        IMAGE_LOGE("%{public}d:read pixel by pos source data is null, isUnMap %{public}d.", uniqueId_, isUnMap_);
         return ERR_IMAGE_READ_PIXELMAP_FAILED;
     }
     ImageInfo dstImageInfo =
@@ -3008,7 +3035,7 @@ bool PixelMap::UpdatePixelMapMemInfo(PixelMap *pixelMap, ImageInfo &imgInfo, Pix
         return false;
     }
     pixelMap->SetPixelsAddr(pixelMemInfo.base, pixelMemInfo.context,
-        pixelMemInfo.bufferSize, pixelMemInfo.allocatorType, nullptr);
+        pixelMemInfo.bufferSize, pixelMemInfo.allocatorType, pixelMap->IsDisplayOnly());
     return true;
 }
 
