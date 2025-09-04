@@ -1182,7 +1182,7 @@ bool ImageFormatConvertUtils::AlignSrcBuffer(const YUVDataInfo& yDInfo, PixelFor
                                              std::unique_ptr<uint8_t[]>& copySrcBuffer)
 {
     ImageInfo srcImageInfo = {
-        .size = {static_cast<int32_t>(yDInfo.yWidth), static_cast<int32_t>(yDInfo.yHeight)},
+        .size = {static_cast<int32_t>(yDInfo.yStride), static_cast<int32_t>(yDInfo.yHeight)},
         .pixelFormat = srcFormat
     };
     return ImageFormatConvertUtils::AlignBufferCore(srcImageInfo, srcBuffer, srcParam, copySrcBuffer);
