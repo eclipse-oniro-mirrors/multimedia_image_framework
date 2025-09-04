@@ -552,7 +552,6 @@ void UpdateDestStride(JpegDecoderYuvParameter decodeParameter, const DecodeConte
         if (decodeParameter.outfmt_ == JpegYuvFmt::OutFmt_NV12 ||
             decodeParameter.outfmt_ == JpegYuvFmt::OutFmt_NV21) {
             uint32_t stride = static_cast<uint32_t>(surfaceBuffer->GetStride());
-
             dest.planes[UVCOM] = outYData + stride * height;
             dest.strides[YCOM] = stride;
             dest.strides[UCOM] = stride / STRIDE_DIVISOR;
