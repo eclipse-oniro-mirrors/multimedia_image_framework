@@ -552,15 +552,8 @@ void UpdateDestStride(JpegDecoderYuvParameter decodeParameter, const DecodeConte
         if (decodeParameter.outfmt_ == JpegYuvFmt::OutFmt_NV12 ||
             decodeParameter.outfmt_ == JpegYuvFmt::OutFmt_NV21) {
             uint32_t stride = static_cast<uint32_t>(surfaceBuffer->GetStride());
-            OH_NativeBuffer_Planes *planes = nullptr;
-            GSError retVal = surfaceBuffer->GetPlanesInfo(reinterpret_cast<void**>(&planes));
-            CHECK_ERROR_RETURN_LOG(retVal != OHOS::GSERROR_OK || planes == nullptr,
-                                   "%{public}s: GetPlanesInfo failed retVal: %{public}d", __func__, retVal);
 
-            uint32_t uvIndex = (decodeParameter.outfmt_ == JpegYuvFmt::OutFmt_NV12) ? UCOM : VCOM;
-            uint32_t uvOffset = planes->planes[uvIndex].offset;
-
-            dest.planes[UVCOM] = outYData + uvOffset;
+            dest.planes[UVCOM] = outYData + stride * height;
             dest.strides[YCOM] = stride;
             dest.strides[UCOM] = stride / STRIDE_DIVISOR;
             dest.strides[VCOM] = stride / STRIDE_DIVISOR;
