@@ -26,11 +26,18 @@
 #include "taihe/runtime.hpp"
 #if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
 #include <regex>
+#include "color_utils.h"
 #include "pixel_map_from_surface.h"
 #include "transaction/rs_interfaces.h"
+#include "vpe_utils.h"
 #endif
 
 namespace ANI::Image {
+
+constexpr uint32_t METADATA_RED_INDEX = 0;
+constexpr uint32_t METADATA_GREEN_INDEX = 1;
+constexpr uint32_t METADATA_BLUE_INDEX = 2;
+constexpr uint32_t METADATA_CHANNEL_COUNT = 3;
 
 enum class FormatType : int8_t {
     UNKNOWN,
@@ -71,7 +78,7 @@ static bool GetSurfaceSize(std::string const& surfaceId, Media::Rect& region)
     if (region.width <= 0 || region.height <= 0) {
         sptr<Surface> surface = SurfaceUtils::GetInstance()->GetSurface(std::stoull(surfaceId));
         if (surface == nullptr) {
-            IMAGE_LOGE("[PixelMap ANI] GetSurfaceSize: GetSurface failed");
+            IMAGE_LOGE("[%{public}s] GetSurfaceSize: GetSurface failed", __func__);
             return false;
         }
         sptr<SyncFence> fence = SyncFence::InvalidFence();
@@ -85,7 +92,7 @@ static bool GetSurfaceSize(std::string const& surfaceId, Media::Rect& region)
         sptr<SurfaceBuffer> surfaceBuffer = nullptr;
         GSError ret = surface->GetLastFlushedBuffer(surfaceBuffer, fence, matrix);
         if (ret != GSERROR_OK || surfaceBuffer == nullptr) {
-            IMAGE_LOGE("[PixelMap ANI] GetSurfaceSize: GetLastFlushedBuffer fail, ret = %{public}d", ret);
+            IMAGE_LOGE("[%{public}s] GetSurfaceSize: GetLastFlushedBuffer fail, ret = %{public}d", __func__, ret);
             return false;
         }
         region.width = surfaceBuffer->GetWidth();
@@ -97,11 +104,11 @@ static bool GetSurfaceSize(std::string const& surfaceId, Media::Rect& region)
 static PixelMap CreatePixelMapFromSurface(std::string const& surfaceId, Media::Rect& region)
 {
     if (!std::regex_match(surfaceId, std::regex("\\d+"))) {
-        ImageTaiheUtils::ThrowExceptionError(Media::COMMON_ERR_INVALID_PARAMETER, "Empty or invalid surfaceId");
+        ImageTaiheUtils::ThrowExceptionError(Media::COMMON_ERR_INVALID_PARAMETER, "Empty or invalid Surface ID");
         return make_holder<PixelMapImpl, PixelMap>();
     }
     if (!GetSurfaceSize(surfaceId, region)) {
-        ImageTaiheUtils::ThrowExceptionError(Media::COMMON_ERR_INVALID_PARAMETER, "Get surface size failed");
+        ImageTaiheUtils::ThrowExceptionError(Media::COMMON_ERR_INVALID_PARAMETER, "Get Surface size failed");
         return make_holder<PixelMapImpl, PixelMap>();
     }
 
@@ -129,7 +136,7 @@ PixelMap CreatePixelMapFromSurfaceByIdSync(string_view etsSurfaceId)
 #else
     std::string surfaceId(etsSurfaceId);
     Media::Rect region;
-    IMAGE_LOGD("[PixelMap ANI] createPixelMapFromSurfaceByIdSync: id=%{public}s", surfaceId.c_str());
+    IMAGE_LOGD("[%{public}s] surfaceId=%{public}s", __func__, surfaceId.c_str());
     return CreatePixelMapFromSurface(surfaceId, region);
 #endif
 }
@@ -142,8 +149,8 @@ PixelMap CreatePixelMapFromSurfaceByIdAndRegionSync(string_view etsSurfaceId,
 #else
     std::string surfaceId(etsSurfaceId);
     Media::Rect region = {etsRegion.x, etsRegion.y, etsRegion.size.width, etsRegion.size.height};
-    IMAGE_LOGD("[PixelMap ANI] createPixelMapFromSurfaceByIdAndRegionSync: id=%{public}s, area=%{public}d,%{public}d,"
-        "%{public}d,%{public}d", surfaceId.c_str(), region.left, region.top, region.width, region.height);
+    IMAGE_LOGD("[%{public}s] surfaceId=%{public}s, region=%{public}d,%{public}d,%{public}d,%{public}d",
+        __func__, surfaceId.c_str(), region.left, region.top, region.width, region.height);
     if (region.width <= 0 || region.height <= 0) {
         ImageTaiheUtils::ThrowExceptionError(Media::COMMON_ERR_INVALID_PARAMETER, "Invalid region");
         return make_holder<PixelMapImpl, PixelMap>();
@@ -179,6 +186,48 @@ PixelMap CreatePixelMapFromParcel(uintptr_t sequence)
     return Unmarshalling(sequence);
 }
 
+static void ConvertPixelMapAlphaFormat(weak::PixelMap const& src, weak::PixelMap const& dst, bool isPremul)
+{
+    PixelMapImpl* rPixelMapImpl = reinterpret_cast<PixelMapImpl*>(src->GetImplPtr());
+    PixelMapImpl* wPixelMapImpl = reinterpret_cast<PixelMapImpl*>(dst->GetImplPtr());
+    if (rPixelMapImpl == nullptr || wPixelMapImpl == nullptr) {
+        ImageTaiheUtils::ThrowExceptionError(Media::ERR_IMAGE_READ_PIXELMAP_FAILED, "Unwrap PixelMap failed");
+    }
+
+    auto rPixelMap = rPixelMapImpl->GetNativePtr();
+    auto wPixelMap = wPixelMapImpl->GetNativePtr();
+    if (wPixelMap->IsEditable()) {
+        uint32_t status = rPixelMap->ConvertAlphaFormat(*(wPixelMap.get()), isPremul);
+        if (status == Media::COMMON_ERR_INVALID_PARAMETER) {
+            ImageTaiheUtils::ThrowExceptionError(Media::COMMON_ERR_INVALID_PARAMETER,
+                "Invalid source or target PixelMap");
+        } else if (status == Media::ERR_IMAGE_INVALID_PARAMETER) {
+            ImageTaiheUtils::ThrowExceptionError(Media::ERR_IMAGE_INVALID_PARAMETER, "Unsupported PixelMap format");
+        } else if (status == Media::ERR_IMAGE_READ_PIXELMAP_FAILED) {
+            ImageTaiheUtils::ThrowExceptionError(Media::ERR_IMAGE_READ_PIXELMAP_FAILED,
+                "Failed to read source or target PixelMap data");
+        } else if (status == Media::ERR_IMAGE_DATA_UNSUPPORT) {
+            ImageTaiheUtils::ThrowExceptionError(Media::ERR_IMAGE_DATA_UNSUPPORT,
+                "Unsupported pixel format of source or target PixelMap");
+        } else if (status != Media::SUCCESS) {
+            ImageTaiheUtils::ThrowExceptionError(status, "Convert alpha format failed");
+        }
+    } else {
+        ImageTaiheUtils::ThrowExceptionError(Media::ERR_IMAGE_PIXELMAP_NOT_ALLOW_MODIFY,
+            "Target PixelMap is not editable");
+    }
+}
+
+void CreatePremultipliedPixelMapSync(weak::PixelMap src, weak::PixelMap dst)
+{
+    ConvertPixelMapAlphaFormat(src, dst, true);
+}
+
+void CreateUnpremultipliedPixelMapSync(weak::PixelMap src, weak::PixelMap dst)
+{
+    ConvertPixelMapAlphaFormat(src, dst, false);
+}
+
 PixelMapImpl::PixelMapImpl() {}
 
 PixelMapImpl::PixelMapImpl(array_view<uint8_t> const& colors, InitializationOptions const& etsOptions)
@@ -192,6 +241,8 @@ PixelMapImpl::PixelMapImpl(array_view<uint8_t> const& colors, InitializationOpti
     if (nativePixelMap_ == nullptr) {
         ImageTaiheUtils::ThrowExceptionError(Media::COMMON_ERR_INVALID_PARAMETER,
             "Create PixelMap by buffer and options failed");
+    } else {
+        IMAGE_LOGD("[%{public}s] Created PixelMap with ID: %{public}d", __func__, nativePixelMap_->GetUniqueId());
     }
 }
 
@@ -205,6 +256,8 @@ PixelMapImpl::PixelMapImpl(InitializationOptions const& etsOptions)
     nativePixelMap_ = Media::PixelMap::Create(options);
     if (nativePixelMap_ == nullptr) {
         ImageTaiheUtils::ThrowExceptionError(Media::COMMON_ERR_INVALID_PARAMETER, "Create PixelMap by options failed");
+    } else {
+        IMAGE_LOGD("[%{public}s] Created PixelMap with ID: %{public}d", __func__, nativePixelMap_->GetUniqueId());
     }
 }
 
@@ -213,6 +266,8 @@ PixelMapImpl::PixelMapImpl(std::shared_ptr<Media::PixelMap> pixelMap)
     nativePixelMap_ = pixelMap;
     if (nativePixelMap_ == nullptr) {
         ImageTaiheUtils::ThrowExceptionError(Media::COMMON_ERR_INVALID_PARAMETER, "Create PixelMap failed");
+    } else {
+        IMAGE_LOGD("[%{public}s] Transferred PixelMap with ID: %{public}d", __func__, nativePixelMap_->GetUniqueId());
     }
 }
 
@@ -222,6 +277,8 @@ PixelMapImpl::PixelMapImpl(int64_t aniPtr)
     nativePixelMap_ = pixelMapAni->nativePixelMap_;
     if (nativePixelMap_ == nullptr) {
         ImageTaiheUtils::ThrowExceptionError(Media::COMMON_ERR_INVALID_PARAMETER, "Create PixelMap failed");
+    } else {
+        IMAGE_LOGD("[%{public}s] Transferred PixelMap with ID: %{public}d", __func__, nativePixelMap_->GetUniqueId());
     }
 }
 
@@ -261,10 +318,6 @@ ImageInfo PixelMapImpl::GetImageInfoSync()
         IMAGE_LOGE("[%{public}s] Native PixelMap is nullptr", __func__);
         return MakeEmptyImageInfo();
     }
-    if (!aniEditable_) {
-        ImageTaiheUtils::ThrowExceptionError(Media::ERR_RESOURCE_UNAVAILABLE, "PixelMap has crossed threads");
-        return MakeEmptyImageInfo();
-    }
 
     Media::ImageInfo imageInfo;
     nativePixelMap_->GetImageInfo(imageInfo);
@@ -280,14 +333,10 @@ void PixelMapImpl::ReadPixelsToBufferSync(array_view<uint8_t> dst)
         IMAGE_LOGE("[%{public}s] Native PixelMap is nullptr", __func__);
         return;
     }
-    if (!aniEditable_) {
-        ImageTaiheUtils::ThrowExceptionError(Media::ERR_RESOURCE_UNAVAILABLE, "PixelMap has crossed threads");
-        return;
-    }
 
     uint32_t status = nativePixelMap_->ReadPixels(dst.size(), dst.data());
     if (status != Media::SUCCESS) {
-        IMAGE_LOGE("[PixelMap ANI] ReadPixels failed");
+        IMAGE_LOGE("[%{public}s] ReadPixels failed", __func__);
     }
 }
 
@@ -295,10 +344,6 @@ void PixelMapImpl::ReadPixelsSync(weak::PositionArea area)
 {
     if (nativePixelMap_ == nullptr) {
         IMAGE_LOGE("[%{public}s] Native PixelMap is nullptr", __func__);
-        return;
-    }
-    if (!aniEditable_) {
-        ImageTaiheUtils::ThrowExceptionError(Media::ERR_RESOURCE_UNAVAILABLE, "PixelMap has crossed threads");
         return;
     }
 
@@ -310,7 +355,7 @@ void PixelMapImpl::ReadPixelsSync(weak::PositionArea area)
     if (status == Media::SUCCESS) {
         area->SetPixels(etsPixels);
     } else {
-        IMAGE_LOGE("[PixelMap ANI] ReadPixels by region failed");
+        IMAGE_LOGE("[%{public}s] ReadPixels by region failed", __func__);
     }
 }
 
@@ -320,14 +365,10 @@ void PixelMapImpl::WriteBufferToPixelsSync(array_view<uint8_t> src)
         IMAGE_LOGE("[%{public}s] Native PixelMap is nullptr", __func__);
         return;
     }
-    if (!aniEditable_) {
-        ImageTaiheUtils::ThrowExceptionError(Media::ERR_RESOURCE_UNAVAILABLE, "PixelMap has crossed threads");
-        return;
-    }
 
     uint32_t status = nativePixelMap_->WritePixels(src.data(), src.size());
     if (status != Media::SUCCESS) {
-        IMAGE_LOGE("[PixelMap ANI] WritePixels failed");
+        IMAGE_LOGE("[%{public}s] WritePixels failed", __func__);
     }
 }
 
@@ -337,10 +378,6 @@ void PixelMapImpl::WritePixelsSync(weak::PositionArea area)
         IMAGE_LOGE("[%{public}s] Native PixelMap is nullptr", __func__);
         return;
     }
-    if (!aniEditable_) {
-        ImageTaiheUtils::ThrowExceptionError(Media::ERR_RESOURCE_UNAVAILABLE, "PixelMap has crossed threads");
-        return;
-    }
 
     ohos::multimedia::image::image::Region etsRegion = area->GetRegion();
     Media::Rect region = {etsRegion.x, etsRegion.y, etsRegion.size.width, etsRegion.size.height};
@@ -348,7 +385,7 @@ void PixelMapImpl::WritePixelsSync(weak::PositionArea area)
     uint32_t status = nativePixelMap_->WritePixels(etsPixels.data(), etsPixels.size(), area->GetOffset(),
         area->GetStride(), region);
     if (status != Media::SUCCESS) {
-        IMAGE_LOGE("[PixelMap ANI] WritePixels by region failed");
+        IMAGE_LOGE("[%{public}s] WritePixels by region failed", __func__);
     }
 }
 
@@ -356,10 +393,6 @@ PixelMap PixelMapImpl::CreateAlphaPixelmapSync()
 {
     if (nativePixelMap_ == nullptr) {
         IMAGE_LOGE("[%{public}s] Native PixelMap is nullptr", __func__);
-        return make_holder<PixelMapImpl, PixelMap>();
-    }
-    if (!aniEditable_) {
-        ImageTaiheUtils::ThrowExceptionError(Media::ERR_RESOURCE_UNAVAILABLE, "PixelMap has crossed threads");
         return make_holder<PixelMapImpl, PixelMap>();
     }
 
@@ -375,10 +408,6 @@ int32_t PixelMapImpl::GetBytesNumberPerRow()
         IMAGE_LOGE("[%{public}s] Native PixelMap is nullptr", __func__);
         return 0;
     }
-    if (!aniEditable_) {
-        ImageTaiheUtils::ThrowExceptionError(Media::ERR_RESOURCE_UNAVAILABLE, "PixelMap has crossed threads");
-        return 0;
-    }
 
     return nativePixelMap_->GetRowBytes();
 }
@@ -387,10 +416,6 @@ int32_t PixelMapImpl::GetPixelBytesNumber()
 {
     if (nativePixelMap_ == nullptr) {
         IMAGE_LOGE("[%{public}s] Native PixelMap is nullptr", __func__);
-        return 0;
-    }
-    if (!aniEditable_) {
-        ImageTaiheUtils::ThrowExceptionError(Media::ERR_RESOURCE_UNAVAILABLE, "PixelMap has crossed threads");
         return 0;
     }
 
@@ -403,10 +428,6 @@ int32_t PixelMapImpl::GetDensity()
         IMAGE_LOGE("[%{public}s] Native PixelMap is nullptr", __func__);
         return 0;
     }
-    if (!aniEditable_) {
-        ImageTaiheUtils::ThrowExceptionError(Media::ERR_RESOURCE_UNAVAILABLE, "PixelMap has crossed threads");
-        return 0;
-    }
 
     return nativePixelMap_->GetBaseDensity();
 }
@@ -415,10 +436,6 @@ void PixelMapImpl::ScaleSync(double x, double y)
 {
     if (nativePixelMap_ == nullptr) {
         IMAGE_LOGE("[%{public}s] Native PixelMap is nullptr", __func__);
-        return;
-    }
-    if (!aniEditable_) {
-        ImageTaiheUtils::ThrowExceptionError(Media::ERR_RESOURCE_UNAVAILABLE, "PixelMap has crossed threads");
         return;
     }
 
@@ -431,12 +448,68 @@ void PixelMapImpl::ScaleWithAntiAliasingSync(double x, double y, AntiAliasingLev
         IMAGE_LOGE("[%{public}s] Native PixelMap is nullptr", __func__);
         return;
     }
-    if (!aniEditable_) {
-        ImageTaiheUtils::ThrowExceptionError(Media::ERR_RESOURCE_UNAVAILABLE, "PixelMap has crossed threads");
+
+    nativePixelMap_->scale(static_cast<float>(x), static_cast<float>(y), Media::AntiAliasingOption(level.get_value()));
+}
+
+PixelMap PixelMapImpl::CreateScaledPixelMapSync(double x, double y, optional_view<AntiAliasingLevel> level)
+{
+    if (nativePixelMap_ == nullptr) {
+        ImageTaiheUtils::ThrowExceptionError(Media::COMMON_ERR_INVALID_PARAMETER, "Native PixelMap is nullptr");
+        return make_holder<PixelMapImpl, PixelMap>();
+    }
+
+    Media::InitializationOptions opts;
+    std::unique_ptr<Media::PixelMap> clonedPixelMap = Media::PixelMap::Create(*nativePixelMap_, opts);
+    if (clonedPixelMap == nullptr) {
+        ImageTaiheUtils::ThrowExceptionError(Media::COMMON_ERR_INVALID_PARAMETER, "Clone PixelMap failed");
+        return make_holder<PixelMapImpl, PixelMap>();
+    }
+
+    if (level.has_value()) {
+        clonedPixelMap->scale(static_cast<float>(x), static_cast<float>(y),
+            Media::AntiAliasingOption(level.value().get_value()));
+    } else {
+        clonedPixelMap->scale(static_cast<float>(x), static_cast<float>(y));
+    }
+    return make_holder<PixelMapImpl, PixelMap>(std::move(clonedPixelMap));
+}
+
+PixelMap PixelMapImpl::CloneSync()
+{
+    if (nativePixelMap_ == nullptr) {
+        ImageTaiheUtils::ThrowExceptionError(Media::ERR_IMAGE_INIT_ABNORMAL, "Native PixelMap is nullptr");
+        return make_holder<PixelMapImpl, PixelMap>();
+    }
+
+    int32_t errorCode = Media::SUCCESS;
+    auto clonedPixelMap = nativePixelMap_->Clone(errorCode);
+    if (clonedPixelMap == nullptr) {
+        if (errorCode == Media::ERR_IMAGE_INIT_ABNORMAL) {
+            ImageTaiheUtils::ThrowExceptionError(Media::ERR_IMAGE_INIT_ABNORMAL, "Initialize empty PixelMap failed");
+        } else if (errorCode == Media::ERR_IMAGE_MALLOC_ABNORMAL) {
+            ImageTaiheUtils::ThrowExceptionError(Media::ERR_IMAGE_MALLOC_ABNORMAL, "Copy PixelMap data failed");
+        } else if (errorCode == Media::ERR_IMAGE_DATA_UNSUPPORT) {
+            ImageTaiheUtils::ThrowExceptionError(Media::ERR_IMAGE_DATA_UNSUPPORT,
+                "PixelMap type does not support clone");
+        } else if (errorCode == Media::ERR_IMAGE_TOO_LARGE) {
+            ImageTaiheUtils::ThrowExceptionError(Media::ERR_IMAGE_TOO_LARGE, "PixelMap size (bytes) out of range");
+        } else {
+            ImageTaiheUtils::ThrowExceptionError(errorCode, "Clone PixelMap failed");
+        }
+        return make_holder<PixelMapImpl, PixelMap>();
+    }
+    return make_holder<PixelMapImpl, PixelMap>(std::move(clonedPixelMap));
+}
+
+void PixelMapImpl::TranslateSync(double x, double y)
+{
+    if (nativePixelMap_ == nullptr) {
+        ImageTaiheUtils::ThrowExceptionError(Media::ERR_IMAGE_INIT_ABNORMAL, "Native PixelMap is nullptr");
         return;
     }
 
-    nativePixelMap_->scale(static_cast<float>(x), static_cast<float>(y), Media::AntiAliasingOption(level.get_value()));
+    nativePixelMap_->translate(static_cast<float>(x), static_cast<float>(y));
 }
 
 void PixelMapImpl::CropSync(ohos::multimedia::image::image::Region const& region)
@@ -445,15 +518,11 @@ void PixelMapImpl::CropSync(ohos::multimedia::image::image::Region const& region
         IMAGE_LOGE("[%{public}s] Native PixelMap is nullptr", __func__);
         return;
     }
-    if (!aniEditable_) {
-        ImageTaiheUtils::ThrowExceptionError(Media::ERR_RESOURCE_UNAVAILABLE, "PixelMap has crossed threads");
-        return;
-    }
 
     Media::Rect rect = {region.x, region.y, region.size.width, region.size.height};
     uint32_t status = nativePixelMap_->crop(rect);
     if (status != Media::SUCCESS) {
-        IMAGE_LOGE("[PixelMap ANI] crop failed");
+        IMAGE_LOGE("[%{public}s] crop failed", __func__);
     }
 }
 
@@ -461,10 +530,6 @@ void PixelMapImpl::RotateSync(double angle)
 {
     if (nativePixelMap_ == nullptr) {
         IMAGE_LOGE("[%{public}s] Native PixelMap is nullptr", __func__);
-        return;
-    }
-    if (!aniEditable_) {
-        ImageTaiheUtils::ThrowExceptionError(Media::ERR_RESOURCE_UNAVAILABLE, "PixelMap has crossed threads");
         return;
     }
 
@@ -477,10 +542,6 @@ void PixelMapImpl::FlipSync(bool horizontal, bool vertical)
         IMAGE_LOGE("[%{public}s] Native PixelMap is nullptr", __func__);
         return;
     }
-    if (!aniEditable_) {
-        ImageTaiheUtils::ThrowExceptionError(Media::ERR_RESOURCE_UNAVAILABLE, "PixelMap has crossed threads");
-        return;
-    }
 
     nativePixelMap_->flip(horizontal, vertical);
 }
@@ -491,14 +552,10 @@ void PixelMapImpl::OpacitySync(double rate)
         IMAGE_LOGE("[%{public}s] Native PixelMap is nullptr", __func__);
         return;
     }
-    if (!aniEditable_) {
-        ImageTaiheUtils::ThrowExceptionError(Media::ERR_RESOURCE_UNAVAILABLE, "PixelMap has crossed threads");
-        return;
-    }
 
     uint32_t status = nativePixelMap_->SetAlpha(static_cast<float>(rate));
     if (status != Media::SUCCESS) {
-        IMAGE_LOGE("[PixelMap ANI] SetAlpha failed");
+        IMAGE_LOGE("[%{public}s] SetAlpha failed", __func__);
     }
 }
 
@@ -508,16 +565,14 @@ void PixelMapImpl::SetMemoryNameSync(string_view name)
         IMAGE_LOGE("[%{public}s] Native PixelMap is nullptr", __func__);
         return;
     }
-    if (!aniEditable_) {
-        ImageTaiheUtils::ThrowExceptionError(Media::ERR_RESOURCE_UNAVAILABLE, "PixelMap has crossed threads");
-        return;
-    }
 
     uint32_t status = nativePixelMap_->SetMemoryName(std::string(name));
     if (status == Media::ERR_MEMORY_NOT_SUPPORT) {
         ImageTaiheUtils::ThrowExceptionError(Media::ERR_MEMORY_NOT_SUPPORT, "Set memory name not supported");
     } else if (status == Media::COMMON_ERR_INVALID_PARAMETER) {
         ImageTaiheUtils::ThrowExceptionError(Media::COMMON_ERR_INVALID_PARAMETER, "Memory name size out of range");
+    } else if (status != Media::SUCCESS) {
+        ImageTaiheUtils::ThrowExceptionError(status, "Set memory name failed");
     }
 }
 
@@ -572,13 +627,21 @@ void PixelMapImpl::ConvertPixelFormatSync(PixelMapFormat targetPixelFormat)
     } else if (status == Media::ERR_IMAGE_SOURCE_DATA_INCOMPLETE) {
         ImageTaiheUtils::ThrowExceptionError(Media::ERR_IMAGE_SOURCE_DATA_INCOMPLETE,
             "Image source data is incomplete");
-    } else if (status == Media::IMAGE_RESULT_CREATE_FORMAT_CONVERT_FAILED) {
-        ImageTaiheUtils::ThrowExceptionError(Media::IMAGE_RESULT_CREATE_FORMAT_CONVERT_FAILED, "Conversion failed");
+    } else if (status == Media::IMAGE_RESULT_FORMAT_CONVERT_FAILED) {
+        ImageTaiheUtils::ThrowExceptionError(Media::IMAGE_RESULT_FORMAT_CONVERT_FAILED,
+            "Failed to convert pixel format");
     } else if (status == Media::ERR_MEDIA_FORMAT_UNSUPPORT) {
-        ImageTaiheUtils::ThrowExceptionError(Media::ERR_MEDIA_FORMAT_UNSUPPORT,
-            "The target pixel format to be converted is not supported");
+        ImageTaiheUtils::ThrowExceptionError(Media::ERR_MEDIA_FORMAT_UNSUPPORT, "Unsupported target pixel format");
     } else if (status == Media::ERR_IMAGE_PIXELMAP_CREATE_FAILED) {
         ImageTaiheUtils::ThrowExceptionError(Media::ERR_IMAGE_PIXELMAP_CREATE_FAILED, "Failed to create PixelMap");
+    } else if (status == Media::ERR_IMAGE_INIT_ABNORMAL) {
+        ImageTaiheUtils::ThrowExceptionError(Media::ERR_IMAGE_INIT_ABNORMAL, "Decode ASTC memset failed");
+    } else if (status == Media::ERR_IMAGE_MALLOC_ABNORMAL) {
+        ImageTaiheUtils::ThrowExceptionError(Media::ERR_IMAGE_MALLOC_ABNORMAL, "Decode ASTC malloc failed");
+    } else if (status == Media::ERR_IMAGE_DECODE_FAILED) {
+        ImageTaiheUtils::ThrowExceptionError(Media::ERR_IMAGE_DECODE_FAILED, "Decode ASTC failed");
+    } else {
+        ImageTaiheUtils::ThrowExceptionError(status, "Convert pixel format failed");
     }
 }
 
@@ -587,10 +650,6 @@ uintptr_t PixelMapImpl::GetColorSpace()
 #ifdef IMAGE_COLORSPACE_FLAG
     if (nativePixelMap_ == nullptr) {
         ImageTaiheUtils::ThrowExceptionError(Media::ERR_IMAGE_DATA_ABNORMAL, "Invalid native PixelMap");
-        return 0;
-    }
-    if (!aniEditable_) {
-        ImageTaiheUtils::ThrowExceptionError(Media::ERR_RESOURCE_UNAVAILABLE, "PixelMap has crossed threads");
         return 0;
     }
 
@@ -611,10 +670,6 @@ void PixelMapImpl::SetColorSpace(uintptr_t colorSpace)
 #ifdef IMAGE_COLORSPACE_FLAG
     if (nativePixelMap_ == nullptr) {
         IMAGE_LOGE("[%{public}s] Native PixelMap is nullptr", __func__);
-        return;
-    }
-    if (!aniEditable_) {
-        ImageTaiheUtils::ThrowExceptionError(Media::ERR_RESOURCE_UNAVAILABLE, "PixelMap has crossed threads");
         return;
     }
 
@@ -660,11 +715,6 @@ void PixelMapImpl::ToSdrSync()
         return;
     }
 
-    if (!aniEditable_) {
-        ImageTaiheUtils::ThrowExceptionError(Media::ERR_MEDIA_INVALID_OPERATION, "Pixelmap is not editable");
-        return;
-    }
-
     uint32_t status = nativePixelMap_->ToSdr();
     if (status != Media::SUCCESS) {
         if (status == Media::ERR_MEDIA_INVALID_OPERATION) {
@@ -701,10 +751,6 @@ void PixelMapImpl::ApplyColorSpaceSync(uintptr_t targetColorSpace)
         return;
     }
 
-    if (!aniEditable_) {
-        ImageTaiheUtils::ThrowExceptionError(Media::ERR_RESOURCE_UNAVAILABLE, "Pixelmap is not editable");
-        return;
-    }
     std::shared_ptr<OHOS::ColorManager::ColorSpace> colorSpace;
     uint32_t status = ParseColorSpace(colorSpace, targetColorSpace);
     if (status != Media::SUCCESS) {
@@ -723,6 +769,349 @@ void PixelMapImpl::ApplyColorSpaceSync(uintptr_t targetColorSpace)
     }
 }
 
+#if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
+static std::map<HdrMetadataType::key_t, HDI::Display::Graphic::Common::V1_0::CM_HDR_Metadata_Type> EtsMetadataMap = {
+    {HdrMetadataType::key_t::NONE, HDI::Display::Graphic::Common::V1_0::CM_METADATA_NONE},
+    {HdrMetadataType::key_t::BASE, HDI::Display::Graphic::Common::V1_0::CM_IMAGE_HDR_VIVID_DUAL},
+    {HdrMetadataType::key_t::GAINMAP, HDI::Display::Graphic::Common::V1_0::CM_METADATA_NONE},
+    {HdrMetadataType::key_t::ALTERNATE, HDI::Display::Graphic::Common::V1_0::CM_IMAGE_HDR_VIVID_SINGLE},
+};
+
+static std::map<HDI::Display::Graphic::Common::V1_0::CM_HDR_Metadata_Type, HdrMetadataType::key_t> MetadataEtsMap = {
+    {HDI::Display::Graphic::Common::V1_0::CM_METADATA_NONE, HdrMetadataType::key_t::NONE},
+    {HDI::Display::Graphic::Common::V1_0::CM_IMAGE_HDR_VIVID_DUAL, HdrMetadataType::key_t::BASE},
+    {HDI::Display::Graphic::Common::V1_0::CM_IMAGE_HDR_VIVID_SINGLE, HdrMetadataType::key_t::ALTERNATE},
+};
+
+static HdrStaticMetadata BuildHdrStaticMetadata(
+    HDI::Display::Graphic::Common::V1_0::HdrStaticMetadata const& srcStaticMetadata)
+{
+    HdrStaticMetadata dstMetadata{};
+    dstMetadata.displayPrimariesX = {
+        srcStaticMetadata.smpte2086.displayPrimaryRed.x,
+        srcStaticMetadata.smpte2086.displayPrimaryGreen.x,
+        srcStaticMetadata.smpte2086.displayPrimaryBlue.x
+    };
+    dstMetadata.displayPrimariesY = {
+        srcStaticMetadata.smpte2086.displayPrimaryRed.y,
+        srcStaticMetadata.smpte2086.displayPrimaryGreen.y,
+        srcStaticMetadata.smpte2086.displayPrimaryBlue.y
+    };
+    dstMetadata.whitePointX = srcStaticMetadata.smpte2086.whitePoint.x;
+    dstMetadata.whitePointY = srcStaticMetadata.smpte2086.whitePoint.y;
+    dstMetadata.maxLuminance = srcStaticMetadata.smpte2086.maxLuminance;
+    dstMetadata.minLuminance = srcStaticMetadata.smpte2086.minLuminance;
+    dstMetadata.maxContentLightLevel = srcStaticMetadata.cta861.maxContentLightLevel;
+    dstMetadata.maxFrameAverageLightLevel = srcStaticMetadata.cta861.maxFrameAverageLightLevel;
+    return dstMetadata;
+}
+
+static HDI::Display::Graphic::Common::V1_0::HdrStaticMetadata ParseHdrStaticMetadata(
+    HdrStaticMetadata const& srcStaticMetadata)
+{
+    HDI::Display::Graphic::Common::V1_0::HdrStaticMetadata dstMetadata{};
+    dstMetadata.smpte2086.displayPrimaryRed.x = srcStaticMetadata.displayPrimariesX[METADATA_RED_INDEX];
+    dstMetadata.smpte2086.displayPrimaryGreen.x = srcStaticMetadata.displayPrimariesX[METADATA_GREEN_INDEX];
+    dstMetadata.smpte2086.displayPrimaryBlue.x = srcStaticMetadata.displayPrimariesX[METADATA_BLUE_INDEX];
+    dstMetadata.smpte2086.displayPrimaryRed.y = srcStaticMetadata.displayPrimariesY[METADATA_RED_INDEX];
+    dstMetadata.smpte2086.displayPrimaryGreen.y = srcStaticMetadata.displayPrimariesY[METADATA_GREEN_INDEX];
+    dstMetadata.smpte2086.displayPrimaryBlue.y = srcStaticMetadata.displayPrimariesY[METADATA_BLUE_INDEX];
+    dstMetadata.smpte2086.whitePoint.x = srcStaticMetadata.whitePointX;
+    dstMetadata.smpte2086.whitePoint.y = srcStaticMetadata.whitePointY;
+    dstMetadata.smpte2086.maxLuminance = srcStaticMetadata.maxLuminance;
+    dstMetadata.smpte2086.minLuminance = srcStaticMetadata.minLuminance;
+    dstMetadata.cta861.maxContentLightLevel = srcStaticMetadata.maxContentLightLevel;
+    dstMetadata.cta861.maxFrameAverageLightLevel = srcStaticMetadata.maxFrameAverageLightLevel;
+    return dstMetadata;
+}
+
+static HdrGainmapMetadata BuildHdrGainmapMetadata(Media::HDRVividExtendMetadata const& srcGainmapMetadata)
+{
+    HdrGainmapMetadata dstMetadata{};
+    dstMetadata.writerVersion = static_cast<int32_t>(srcGainmapMetadata.metaISO.writeVersion);
+    dstMetadata.miniVersion = static_cast<int32_t>(srcGainmapMetadata.metaISO.miniVersion);
+    dstMetadata.gainmapChannelCount = static_cast<int32_t>(srcGainmapMetadata.metaISO.gainmapChannelNum);
+    dstMetadata.useBaseColorFlag = static_cast<bool>(srcGainmapMetadata.metaISO.useBaseColorFlag);
+    dstMetadata.baseHeadroom = srcGainmapMetadata.metaISO.baseHeadroom;
+    dstMetadata.alternateHeadroom = srcGainmapMetadata.metaISO.alternateHeadroom;
+    dstMetadata.channels = array<GainmapChannel>::make(METADATA_CHANNEL_COUNT);
+    for (uint32_t i = 0; i < METADATA_CHANNEL_COUNT; ++i) {
+        dstMetadata.channels[i] = {
+            srcGainmapMetadata.metaISO.enhanceClippedThreholdMaxGainmap[i],
+            srcGainmapMetadata.metaISO.enhanceClippedThreholdMinGainmap[i],
+            srcGainmapMetadata.metaISO.enhanceMappingGamma[i],
+            srcGainmapMetadata.metaISO.enhanceMappingBaselineOffset[i],
+            srcGainmapMetadata.metaISO.enhanceMappingAlternateOffset[i]
+        };
+    }
+    return dstMetadata;
+}
+
+static void ParseHdrGainmapMetadata(HdrGainmapMetadata const& srcGainmapMetadata,
+    Media::HDRVividExtendMetadata &dstMetadata)
+{
+    dstMetadata.metaISO.writeVersion = static_cast<unsigned short>(srcGainmapMetadata.writerVersion);
+    dstMetadata.metaISO.miniVersion = static_cast<unsigned short>(srcGainmapMetadata.miniVersion);
+    dstMetadata.metaISO.gainmapChannelNum = static_cast<unsigned char>(srcGainmapMetadata.gainmapChannelCount);
+    dstMetadata.metaISO.useBaseColorFlag = static_cast<unsigned char>(srcGainmapMetadata.useBaseColorFlag);
+    dstMetadata.metaISO.baseHeadroom = srcGainmapMetadata.baseHeadroom;
+    dstMetadata.metaISO.alternateHeadroom = srcGainmapMetadata.alternateHeadroom;
+    for (uint32_t i = 0; i < METADATA_CHANNEL_COUNT; ++i) {
+        dstMetadata.metaISO.enhanceClippedThreholdMaxGainmap[i] = srcGainmapMetadata.channels[i].gainmapMax;
+        dstMetadata.metaISO.enhanceClippedThreholdMinGainmap[i] = srcGainmapMetadata.channels[i].gainmapMin;
+        dstMetadata.metaISO.enhanceMappingGamma[i] = srcGainmapMetadata.channels[i].gamma;
+        dstMetadata.metaISO.enhanceMappingBaselineOffset[i] = srcGainmapMetadata.channels[i].baseOffset;
+        dstMetadata.metaISO.enhanceMappingAlternateOffset[i] = srcGainmapMetadata.channels[i].alternateOffset;
+    }
+}
+
+static bool GetMetadataType(sptr<SurfaceBuffer> const& surfaceBuffer, HdrMetadataValue &metadataValue)
+{
+    HDI::Display::Graphic::Common::V1_0::CM_HDR_Metadata_Type type;
+    Media::VpeUtils::GetSbMetadataType(surfaceBuffer, type);
+    if (MetadataEtsMap.find(type) != MetadataEtsMap.end()) {
+        std::vector<uint8_t> gainmapDataVec;
+        if (type == HDI::Display::Graphic::Common::V1_0::CM_HDR_Metadata_Type::CM_METADATA_NONE &&
+            Media::VpeUtils::GetSbDynamicMetadata(surfaceBuffer, gainmapDataVec) &&
+            gainmapDataVec.size() == sizeof(Media::HDRVividExtendMetadata)) {
+            metadataValue = HdrMetadataValue::make_hdrMetadataType(HdrMetadataType::key_t::GAINMAP);
+        } else {
+            metadataValue = HdrMetadataValue::make_hdrMetadataType(MetadataEtsMap[type]);
+        }
+        return true;
+    } else {
+        IMAGE_LOGE("[%{public}s] GetMetadataType failed", __func__);
+        return false;
+    }
+}
+
+static bool SetMetadataType(sptr<SurfaceBuffer> &surfaceBuffer, HdrMetadataValue const& metadataValue)
+{
+    if (!metadataValue.holds_hdrMetadataType()) {
+        IMAGE_LOGE("[%{public}s] Key and value types are inconsistent", __func__);
+        return false;
+    }
+
+    HdrMetadataType metadataType = metadataValue.get_hdrMetadataType_ref();
+    if (EtsMetadataMap.find(metadataType.get_key()) != EtsMetadataMap.end()) {
+        Media::VpeUtils::SetSbMetadataType(surfaceBuffer, EtsMetadataMap[metadataType.get_key()]);
+        return true;
+    } else {
+        IMAGE_LOGE("[%{public}s] SetMetadataType failed", __func__);
+        return false;
+    }
+}
+
+static bool GetStaticMetadata(sptr<SurfaceBuffer> const& surfaceBuffer, HdrMetadataValue &metadataValue)
+{
+    HDI::Display::Graphic::Common::V1_0::HdrStaticMetadata staticMetadata;
+    uint32_t vecSize = sizeof(HDI::Display::Graphic::Common::V1_0::HdrStaticMetadata);
+    std::vector<uint8_t> staticDataVec;
+    if (!Media::VpeUtils::GetSbStaticMetadata(surfaceBuffer, staticDataVec) || staticDataVec.size() != vecSize) {
+        IMAGE_LOGE("[%{public}s] GetSbStaticMetadata failed", __func__);
+        return false;
+    }
+    if (memcpy_s(&staticMetadata, vecSize, staticDataVec.data(), staticDataVec.size()) != EOK) {
+        IMAGE_LOGE("[%{public}s] memcpy failed", __func__);
+        return false;
+    }
+    metadataValue = HdrMetadataValue::make_hdrStaticMetadata(BuildHdrStaticMetadata(staticMetadata));
+    return true;
+}
+
+static bool SetStaticMetadata(sptr<SurfaceBuffer> &surfaceBuffer, HdrMetadataValue const& metadataValue)
+{
+    if (!metadataValue.holds_hdrStaticMetadata()) {
+        IMAGE_LOGE("[%{public}s] Key and value types are inconsistent", __func__);
+        return false;
+    }
+
+    auto staticMetadata = ParseHdrStaticMetadata(metadataValue.get_hdrStaticMetadata_ref());
+    uint32_t vecSize = sizeof(HDI::Display::Graphic::Common::V1_0::HdrStaticMetadata);
+    std::vector<uint8_t> staticDataVec(vecSize);
+    if (memcpy_s(staticDataVec.data(), vecSize, &staticMetadata, vecSize) != EOK) {
+        IMAGE_LOGE("[%{public}s] memcpy failed", __func__);
+        return false;
+    }
+    if (!Media::VpeUtils::SetSbStaticMetadata(surfaceBuffer, staticDataVec)) {
+        IMAGE_LOGE("[%{public}s] SetSbStaticMetadata failed", __func__);
+        return false;
+    }
+    return true;
+}
+
+static bool GetDynamicMetadata(sptr<SurfaceBuffer> const& surfaceBuffer, HdrMetadataValue &metadataValue)
+{
+    std::vector<uint8_t> dynamicDataVec;
+    if (Media::VpeUtils::GetSbDynamicMetadata(surfaceBuffer, dynamicDataVec) && dynamicDataVec.size() > 0) {
+        array<uint8_t> dataArr(dynamicDataVec);
+        metadataValue = HdrMetadataValue::make_arrayBuffer(dataArr);
+        return true;
+    } else {
+        IMAGE_LOGE("[%{public}s] GetSbDynamicMetadata failed", __func__);
+        return false;
+    }
+}
+
+static bool SetDynamicMetadata(sptr<SurfaceBuffer> &surfaceBuffer, HdrMetadataValue const& metadataValue)
+{
+    if (!metadataValue.holds_arrayBuffer()) {
+        IMAGE_LOGE("[%{public}s] Key and value types are inconsistent", __func__);
+        return false;
+    }
+
+    std::vector<uint8_t> dynamicDataVec;
+    array<uint8_t> metadataArr = metadataValue.get_arrayBuffer_ref();
+    dynamicDataVec.resize(metadataArr.size());
+    if (memcpy_s(dynamicDataVec.data(), dynamicDataVec.size(), metadataArr.data(), metadataArr.size()) != EOK) {
+        IMAGE_LOGE("[%{public}s] memcpy failed", __func__);
+        return false;
+    }
+    if (!Media::VpeUtils::SetSbDynamicMetadata(surfaceBuffer, dynamicDataVec)) {
+        IMAGE_LOGE("[%{public}s] SetSbDynamicMetadata failed", __func__);
+        return false;
+    }
+    return true;
+}
+
+static bool GetGainmapMetadata(sptr<SurfaceBuffer> const& surfaceBuffer, HdrMetadataValue &metadataValue)
+{
+    std::vector<uint8_t> gainmapDataVec;
+    if (Media::VpeUtils::GetSbDynamicMetadata(surfaceBuffer, gainmapDataVec) &&
+        gainmapDataVec.size() == sizeof(Media::HDRVividExtendMetadata)) {
+        Media::HDRVividExtendMetadata &gainmapMetadata =
+            *(reinterpret_cast<Media::HDRVividExtendMetadata*>(gainmapDataVec.data()));
+        metadataValue = HdrMetadataValue::make_hdrGainmapMetadata(BuildHdrGainmapMetadata(gainmapMetadata));
+        return true;
+    } else {
+        IMAGE_LOGE("[%{public}s] GetSbDynamicMetadata failed", __func__);
+        return false;
+    }
+}
+
+static bool SetGainmapMetadata(sptr<SurfaceBuffer> &surfaceBuffer, Media::PixelMap &pixelMap,
+    HdrMetadataValue const& metadataValue)
+{
+    if (!metadataValue.holds_hdrGainmapMetadata()) {
+        IMAGE_LOGE("[%{public}s] Key and value types are inconsistent", __func__);
+        return false;
+    }
+
+    uint32_t vecSize = sizeof(Media::HDRVividExtendMetadata);
+    std::vector<uint8_t> gainmapDataVec(vecSize);
+    Media::HDRVividExtendMetadata extendMetadata;
+#ifdef IMAGE_COLORSPACE_FLAG
+    ColorManager::ColorSpace colorSpace = pixelMap.InnerGetGrColorSpace();
+    uint16_t primary = Media::ColorUtils::GetPrimaries(colorSpace.GetColorSpaceName());
+#else
+    uint16_t primary = 0;
+#endif
+    extendMetadata.baseColorMeta.baseColorPrimary = primary;
+
+    HdrGainmapMetadata gainmapMetadata = metadataValue.get_hdrGainmapMetadata_ref();
+    extendMetadata.gainmapColorMeta.combineColorPrimary =
+        gainmapMetadata.useBaseColorFlag ? primary : static_cast<uint8_t>(Media::CM_BT2020_HLG_FULL);
+    extendMetadata.gainmapColorMeta.enhanceDataColorModel =
+        gainmapMetadata.useBaseColorFlag ? primary : static_cast<uint8_t>(Media::CM_BT2020_HLG_FULL);
+    extendMetadata.gainmapColorMeta.alternateColorPrimary = static_cast<uint8_t>(Media::CM_BT2020_HLG_FULL);
+
+    ParseHdrGainmapMetadata(gainmapMetadata, extendMetadata);
+    
+    if (memcpy_s(gainmapDataVec.data(), vecSize, &extendMetadata, vecSize) != EOK) {
+        IMAGE_LOGE("[%{public}s] memcpy failed", __func__);
+        return false;
+    }
+    if (!Media::VpeUtils::SetSbDynamicMetadata(surfaceBuffer, gainmapDataVec)) {
+        IMAGE_LOGE("[%{public}s] SetSbDynamicMetadata failed", __func__);
+        return false;
+    }
+    return true;
+}
+
+HdrMetadataValue PixelMapImpl::GetMetadata(HdrMetadataKey key)
+{
+    if (nativePixelMap_ == nullptr) {
+        ImageTaiheUtils::ThrowExceptionError(Media::COMMON_ERR_INVALID_PARAMETER, "Native PixelMap is nullptr");
+        return HdrMetadataValue::make_hdrMetadataType(HdrMetadataType::key_t::NONE);
+    }
+    if (nativePixelMap_->GetAllocatorType() != Media::AllocatorType::DMA_ALLOC) {
+        ImageTaiheUtils::ThrowExceptionError(Media::ERR_DMA_NOT_EXIST, "PixelMap memory type is not DMA memory");
+        return HdrMetadataValue::make_hdrMetadataType(HdrMetadataType::key_t::NONE);
+    }
+
+    bool success = false;
+    HdrMetadataValue metadataValue = HdrMetadataValue::make_hdrMetadataType(HdrMetadataType::key_t::NONE);
+    sptr<SurfaceBuffer> surfaceBuffer(reinterpret_cast<SurfaceBuffer*>(nativePixelMap_->GetFd()));
+    switch (key.get_key()) {
+        case HdrMetadataKey::key_t::HDR_METADATA_TYPE:
+            success = GetMetadataType(surfaceBuffer, metadataValue);
+            break;
+        case HdrMetadataKey::key_t::HDR_STATIC_METADATA:
+            success = GetStaticMetadata(surfaceBuffer, metadataValue);
+            break;
+        case HdrMetadataKey::key_t::HDR_DYNAMIC_METADATA:
+            success = GetDynamicMetadata(surfaceBuffer, metadataValue);
+            break;
+        case HdrMetadataKey::key_t::HDR_GAINMAP_METADATA:
+            success = GetGainmapMetadata(surfaceBuffer, metadataValue);
+            break;
+        default:
+            success = false;
+    }
+
+    if (!success) {
+        ImageTaiheUtils::ThrowExceptionError(Media::ERR_MEMORY_COPY_FAILED, "Get metadata failed");
+        return HdrMetadataValue::make_hdrMetadataType(HdrMetadataType::key_t::NONE);
+    }
+    return metadataValue;
+}
+
+void PixelMapImpl::SetMetadataSync(HdrMetadataKey key, HdrMetadataValue const& value)
+{
+    if (nativePixelMap_ == nullptr) {
+        ImageTaiheUtils::ThrowExceptionError(Media::ERR_IMAGE_INVALID_PARAMETER, "Native PixelMap is nullptr");
+        return;
+    }
+    if (nativePixelMap_->GetAllocatorType() != Media::AllocatorType::DMA_ALLOC) {
+        ImageTaiheUtils::ThrowExceptionError(Media::ERR_DMA_NOT_EXIST, "PixelMap memory type is not DMA memory");
+        return;
+    }
+
+    bool success = false;
+    sptr<SurfaceBuffer> surfaceBuffer(reinterpret_cast<SurfaceBuffer*>(nativePixelMap_->GetFd()));
+    switch (key.get_key()) {
+        case HdrMetadataKey::key_t::HDR_METADATA_TYPE:
+            success = SetMetadataType(surfaceBuffer, value);
+            break;
+        case HdrMetadataKey::key_t::HDR_STATIC_METADATA:
+            success = SetStaticMetadata(surfaceBuffer, value);
+            break;
+        case HdrMetadataKey::key_t::HDR_DYNAMIC_METADATA:
+            success = SetDynamicMetadata(surfaceBuffer, value);
+            break;
+        case HdrMetadataKey::key_t::HDR_GAINMAP_METADATA:
+            success = SetGainmapMetadata(surfaceBuffer, *(nativePixelMap_.get()), value);
+            break;
+        default:
+            success = false;
+    }
+
+    if (!success) {
+        ImageTaiheUtils::ThrowExceptionError(Media::ERR_MEMORY_COPY_FAILED, "Set metadata failed");
+    }
+}
+#else
+HdrMetadataValue PixelMapImpl::GetMetadata(HdrMetadataKey key)
+{
+    return HdrMetadataValue::make_hdrMetadataType(HdrMetadataType::key_t::NONE);
+}
+
+void PixelMapImpl::SetMetadataSync(HdrMetadataKey key, HdrMetadataValue const& value)
+{
+    return;
+}
+#endif
+
 void PixelMapImpl::ReleaseSync()
 {
     if (nativePixelMap_ != nullptr) {
@@ -730,7 +1119,8 @@ void PixelMapImpl::ReleaseSync()
             ImageTaiheUtils::ThrowExceptionError(Media::ERR_RESOURCE_UNAVAILABLE, "Unable to release the PixelMap "
                 "because it's locked or unmodifiable");
         } else {
-            IMAGE_LOGD("[PixelMap ANI] Releasing PixelMap with ID: %{public}d", nativePixelMap_->GetUniqueId());
+            IMAGE_LOGD("[%{public}s] Attempt to release PixelMap with ID: %{public}d",
+                __func__, nativePixelMap_->GetUniqueId());
             nativePixelMap_.reset();
         }
     }
@@ -806,6 +1196,8 @@ void PixelMapImpl::ParseInitializationOptions(InitializationOptions const& etsOp
 void PixelMapImpl::Release()
 {
     if (nativePixelMap_ != nullptr) {
+        IMAGE_LOGD("[%{public}s] Attempt to release PixelMap with ID: %{public}d",
+            __func__, nativePixelMap_->GetUniqueId());
         nativePixelMap_.reset();
     }
 }
@@ -820,3 +1212,5 @@ TH_EXPORT_CPP_API_CreatePixelMapByPtr(ANI::Image::CreatePixelMapByPtr);
 TH_EXPORT_CPP_API_CreatePixelMapFromSurfaceByIdSync(ANI::Image::CreatePixelMapFromSurfaceByIdSync);
 TH_EXPORT_CPP_API_CreatePixelMapFromSurfaceByIdAndRegionSync(ANI::Image::CreatePixelMapFromSurfaceByIdAndRegionSync);
 TH_EXPORT_CPP_API_CreatePixelMapFromParcel(ANI::Image::CreatePixelMapFromParcel);
+TH_EXPORT_CPP_API_CreatePremultipliedPixelMapSync(ANI::Image::CreatePremultipliedPixelMapSync);
+TH_EXPORT_CPP_API_CreateUnpremultipliedPixelMapSync(ANI::Image::CreateUnpremultipliedPixelMapSync);

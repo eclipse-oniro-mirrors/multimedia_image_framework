@@ -51,6 +51,9 @@ public:
     int32_t GetDensity();
     void ScaleSync(double x, double y);
     void ScaleWithAntiAliasingSync(double x, double y, AntiAliasingLevel level);
+    PixelMap CreateScaledPixelMapSync(double x, double y, optional_view<AntiAliasingLevel> level);
+    PixelMap CloneSync();
+    void TranslateSync(double x, double y);
     void CropSync(ohos::multimedia::image::image::Region const& region);
     void RotateSync(double angle);
     void FlipSync(bool horizontal, bool vertical);
@@ -64,6 +67,8 @@ public:
     PixelMap UnmarshallingSync(uintptr_t sequence);
     void ToSdrSync();
     void ApplyColorSpaceSync(uintptr_t targetColorSpace);
+    HdrMetadataValue GetMetadata(HdrMetadataKey key);
+    void SetMetadataSync(HdrMetadataKey key, HdrMetadataValue const& value);
     void ReleaseSync();
     bool GetIsEditable();
     bool GetIsStrideAlignment();
@@ -74,7 +79,6 @@ public:
 
 private:
     std::shared_ptr<OHOS::Media::PixelMap> nativePixelMap_ = nullptr;
-    bool aniEditable_ = true;
     bool Is10BitFormat(OHOS::Media::PixelFormat format);
     void ParseInitializationOptions(InitializationOptions const& etsOptions,
         OHOS::Media::InitializationOptions &options);
