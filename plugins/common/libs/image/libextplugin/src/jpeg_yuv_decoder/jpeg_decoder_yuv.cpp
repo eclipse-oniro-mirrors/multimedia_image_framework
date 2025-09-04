@@ -559,8 +559,8 @@ void UpdateDestStride(JpegDecoderYuvParameter decodeParameter, const DecodeConte
             CHECK_ERROR_RETURN_LOG(retVal != OHOS::GSERROR_OK || planes == nullptr,
                                    "%{public}s: GetPlanesInfo failed retVal: %{public}d", __func__, retVal);
 
-            uint32_t uvPlaneOffset = (decodeParameter.outfmt_ == JpegYuvFmt::OutFmt_NV12) ? NUM_1 : NUM_2;
-            uint32_t uvOffset = planes->planes[uvPlaneOffset].offset;
+            uint32_t uvIndex = (decodeParameter.outfmt_ == JpegYuvFmt::OutFmt_NV12) ? UCOM : VCOM;
+            uint32_t uvOffset = planes->planes[uvIndex].offset;
 
             dest.planes[UVCOM] = outYData + uvOffset;
             dest.strides[YCOM] = stride;
