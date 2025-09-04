@@ -111,8 +111,7 @@ static void CommonCallbackRoutine(napi_env env, Contextc &context, const napi_va
 void ImageCreatorNapi::NativeRelease()
 {
     if (imageCreator_ != nullptr) {
-        imageCreator_->~ImageCreator();
-        imageCreator_ = nullptr;
+        imageCreator_.reset();
     }
 }
 
