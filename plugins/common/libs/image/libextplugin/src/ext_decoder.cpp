@@ -788,12 +788,6 @@ uint32_t ExtDecoder::ExtractHeifRegion(const PixelDecodeOptions &opts)
 #endif
 }
 
-static bool IsSampleDecodeFormat(SkEncodedImageFormat format)
-{
-    return format == SkEncodedImageFormat::kJPEG || format == SkEncodedImageFormat::kHEIF ||
-        format == SkEncodedImageFormat::kPNG;
-}
-
 uint32_t ExtDecoder::CheckDecodeOptions(uint32_t index, const PixelDecodeOptions &opts)
 {
     bool cond = ImageUtils::CheckMulOverflow(dstInfo_.width(), dstInfo_.height(), dstInfo_.bytesPerPixel());
