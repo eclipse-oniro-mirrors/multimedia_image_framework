@@ -1049,10 +1049,11 @@ unique_ptr<PixelMap> ImageSource::CreatePixelMapExtended(uint32_t index, const D
         NotifyDecodeEvent(decodeListeners_, DecodeEvent::EVENT_COMPLETE_DECODE, nullptr);
     }
     if ("image/gif" != sourceInfo_.encodedFormat && "image/webp" != sourceInfo_.encodedFormat) {
-        IMAGE_LOGD("CreatePixelMapExtended success, imageId:%{public}lu, desiredSize: (%{public}d, %{public}d),"
-            "imageSize: (%{public}d, %{public}d), hdrType : %{public}d, cost %{public}lu us",
-            static_cast<unsigned long>(imageId_), opts.desiredSize.width, opts.desiredSize.height, info.size.width,
-            info.size.height, context.hdrType, static_cast<unsigned long>(GetNowTimeMicroSeconds() - decodeStartTime));
+        IMAGE_LOGI("CreatePixelmap success, id:%{public}lu, dstSize: (%{public}d, %{public}d), srcSize: "
+            "(%{public}d, %{public}d), dstHdr: %{public}d, srcHdr: %{public}d, memType: %{public}d, "
+            "cost %{public}lu us", static_cast<unsigned long>(imageId_), opts.desiredSize.width,
+            opts.desiredSize.height, info.size.width, info.size.height, opts.desiredDynamicRange, context.hdrType,
+            pixelMap->GetAllocatorType(), static_cast<unsigned long>(GetNowTimeMicroSeconds() - decodeStartTime));
     }
 
     {
