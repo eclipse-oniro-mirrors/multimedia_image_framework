@@ -56,6 +56,7 @@ static const std::string IMAGE_INPUT_JPEG_BROKEN_TWO = "/data/local/tmp/image/te
 static const std::string IMAGE_URL_PREFIX = "data:image/";
 static const std::string IMAGE_INPUT_JPG_PATH_EXACTSIZE = "/data/local/tmp/image/800-500.jpg";
 static const std::string IMAGE_JPG_THREE_GAINMAP_HDR_PATH = "/data/local/tmp/image/three_gainmap_hdr.jpg";
+static const std::string IMAGE_HEIC_THREE_GAINMAP_HDR_PATH = "/data/local/tmp/image/three_gainmap_hdr.heic";
 static const std::string IMAGE_GIF_LARGE_SIZE_PATH = "/data/local/tmp/image/fake_large_size_test.gif";  // 50000x50000
 static const std::string IMAGE_JPG_LARGE_SIZE_PATH = "/data/local/tmp/image/fake_large_size_test.jpg";  // 30000x30000
 static const int32_t DECODE_DESIRED_WIDTH = 7500;
@@ -3127,7 +3128,7 @@ HWTEST_F(ImageSourceTest, DecodeHeifAuxiliaryPicturesTest002, TestSize.Level1)
 }
 
 /**
- * @tc.name: WideGamutTest003
+ * @tc.name: WideGamutTest001
  * @tc.desc: test WideGamut one channel gainmap Jpeg HDR input
  * @tc.type: FUNC
  */
@@ -3163,6 +3164,32 @@ HWTEST_F(ImageSourceTest, WideGamutTest002, TestSize.Level3)
     SourceOptions opts;
     opts.formatHint = "image/jpeg";
     std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(IMAGE_JPG_THREE_GAINMAP_HDR_PATH,
+        opts, errorCode);
+    ASSERT_EQ(errorCode, SUCCESS);
+    ASSERT_NE(imageSource.get(), nullptr);
+    uint32_t index = 0;
+    DecodeOptions decodeOpts;
+    decodeOpts.isCreateWideGamutSdrPixelMap = true;
+    decodeOpts.desiredDynamicRange = Media::DecodeDynamicRange::AUTO;
+    std::unique_ptr<PixelMap> pixelMap = imageSource->CreatePixelMap(index, decodeOpts, errorCode);
+    ASSERT_EQ(errorCode, SUCCESS);
+    bool isHdr = pixelMap->IsHdr();
+    ASSERT_EQ(isHdr, false);
+    Media::PixelFormat pixelFormat = pixelMap->GetPixelFormat();
+    ASSERT_EQ(pixelFormat, Media::PixelFormat::RGBA_1010102);
+}
+
+/**
+ * @tc.name: WideGamutTest003
+ * @tc.desc: test WideGamut one channel gainmap Jpeg HDR input
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageSourceTest, WideGamutTest003, TestSize.Level3)
+{
+    uint32_t errorCode = 0;
+    SourceOptions opts;
+    opts.formatHint = "image/heif";
+    std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(IMAGE_HEIC_THREE_GAINMAP_HDR_PATH,
         opts, errorCode);
     ASSERT_EQ(errorCode, SUCCESS);
     ASSERT_NE(imageSource.get(), nullptr);
