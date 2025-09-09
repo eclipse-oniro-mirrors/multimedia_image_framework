@@ -794,6 +794,10 @@ uint32_t ExtDecoder::CheckDecodeOptions(uint32_t index, const PixelDecodeOptions
     CHECK_ERROR_RETURN_RET_LOG(cond, ERR_IMAGE_INVALID_PARAMETER,
         "SetDecodeOptions failed, width:%{public}d, height:%{public}d is too large",
         dstInfo_.width(), dstInfo_.height());
+    cond = !IsValidCrop(opts.CropRect, info_, dstSubset_);
+    CHECK_ERROR_RETURN_RET_LOG(cond, ERR_IMAGE_INVALID_PARAMETER,
+        "Invalid crop rect top:%{public}d, bottom:%{public}d, left:%{public}d, right:%{public}d",
+        dstSubset_.top(), dstSubset_.bottom(), dstSubset_.left(), dstSubset_.right());
     cond = ExtractHeifRegion(opts) != SUCCESS;
     CHECK_ERROR_RETURN_RET(cond, ERR_IMAGE_INVALID_PARAMETER);
     IMAGE_LOGD("%{public}s IN, dstSubset_: xy [%{public}d x %{public}d] right,bottom: [%{public}d x %{public}d]",
