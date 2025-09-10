@@ -1053,6 +1053,56 @@ HWTEST_F(PostProcTest, ScalePixelMapExTest001, TestSize.Level3)
 }
 
 /**
+ * @tc.name: ScalePixelMapExOddWidthTest001
+ * @tc.desc: Test ScalePixelMapEx with odd number PixelMap width
+ * @tc.type: FUNC
+ */
+HWTEST_F(PostProcTest, ScalePixelMapExOddWidthTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PostProcTest: ScalePixelMapExOddWidthTest001 start";
+
+    InitializationOptions opts;
+    opts.size = {1, 1};
+    opts.allocatorType = AllocatorType::SHARE_MEM_ALLOC;
+    std::unique_ptr<PixelMap> pixelMap = PixelMap::Create(opts);
+    if (!pixelMap) {
+        return;
+    }
+    PostProc postProc;
+    Size desiredSize = {10, 10};
+    bool ret = postProc.ScalePixelMapEx(desiredSize, *(pixelMap.get()));
+    ASSERT_EQ(ret, true);
+
+    GTEST_LOG_(INFO) << "PostProcTest: ScalePixelMapExOddWidthTest001 end";
+}
+
+/**
+ * @tc.name: ScalePixelMapExOddWidthTest002
+ * @tc.desc: Test ScalePixelMapEx with odd number PixelMap width
+ * @tc.type: FUNC
+ */
+HWTEST_F(PostProcTest, ScalePixelMapExOddWidthTest002, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PostProcTest: ScalePixelMapExOddWidthTest002 start";
+
+    InitializationOptions opts;
+    opts.size = {513, 512};
+    opts.pixelFormat = PixelFormat::RGBA_8888;
+    opts.allocatorType = AllocatorType::SHARE_MEM_ALLOC;
+    opts.useDMA = true;
+    std::unique_ptr<PixelMap> pixelMap = PixelMap::Create(opts);
+    if (!pixelMap) {
+        return;
+    }
+    PostProc postProc;
+    Size desiredSize = {11, 10};
+    bool ret = postProc.ScalePixelMapEx(desiredSize, *(pixelMap.get()));
+    ASSERT_EQ(ret, true);
+
+    GTEST_LOG_(INFO) << "PostProcTest: ScalePixelMapExOddWidthTest002 end";
+}
+
+/**
  * @tc.name: DecodePostProc001
  * @tc.desc: Vertify that DecodePostProc when cropAndScaleStrategy is scale first.
  * @tc.type: FUNC
