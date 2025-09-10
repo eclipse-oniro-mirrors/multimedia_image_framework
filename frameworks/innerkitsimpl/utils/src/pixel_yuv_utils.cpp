@@ -320,7 +320,7 @@ static bool CreateBufferSource(AVFilterGraph **filterGraph, AVFilterContext **bu
     YuvImageInfo &srcInfo)
 {
     const char *bufferSrcArgs = av_asprintf("video_size=%dx%d:pix_fmt=%d:time_base=1/1:pixel_aspect=1/1",
-        srcInfo.yuvDataInfo.yStride, srcInfo.height, srcInfo.format);
+        srcInfo.width, srcInfo.height, srcInfo.format);
     if (!bufferSrcArgs) {
         IMAGE_LOGE("bufferSrcArgs is null");
         return false;
@@ -600,9 +600,8 @@ static bool FlipUpDataDstdata(YuvImageInfo &srcInfo, uint8_t *dstData, AVFrame *
 {
     dstFrame->width = srcFrame->width;
     dstFrame->height = srcFrame->height;
-
     int32_t dstSize = av_image_get_buffer_size(static_cast<AVPixelFormat>(dstFrame->format),
-        dstFrame->width, dstFrame->height, 1);
+        dstFrame->width, dstFrame->height, align);
     if (dstSize < 0) {
         IMAGE_LOGE("FlipUpDataDstdata get size failed");
         return false;
@@ -610,7 +609,7 @@ static bool FlipUpDataDstdata(YuvImageInfo &srcInfo, uint8_t *dstData, AVFrame *
 
     // Copy the output frame data to the destination buffer
     if (av_image_copy_to_buffer(dstData, dstSize, dstFrame->data, dstFrame->linesize,
-        static_cast<AVPixelFormat>(dstFrame->format), dstFrame->width, dstFrame->height, 1) < 0) {
+        static_cast<AVPixelFormat>(dstFrame->format), dstFrame->width, dstFrame->height, align) < 0) {
         IMAGE_LOGE("FlipUpDataDstdata copy data failed");
         return false;
     }

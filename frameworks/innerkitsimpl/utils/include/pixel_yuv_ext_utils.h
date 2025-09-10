@@ -65,7 +65,7 @@ public:
         YuvImageInfo &yuvInfo, uint8_t *src, uint8_t *dst, YUVStrideInfo &dstStrides);
     static bool Mirror(uint8_t *src, uint8_t *dst, Size &size, PixelFormat format, YUVDataInfo &info,
         YUVStrideInfo &dstStrides, bool isReversed);
-    static bool FlipXaxis(uint8_t *src, uint8_t *dst, Size &size, PixelFormat format, YUVDataInfo &info,
+    static bool FlipYaxis(uint8_t *src, uint8_t *dst, Size &size, PixelFormat format, YUVDataInfo &info,
         YUVStrideInfo &dstStrides);
     static bool NV12Rotate(uint8_t *src, PixelSize &size, YUVDataInfo &info,
         OpenSourceLibyuv::RotationMode &rotateNum, uint8_t* dst, YUVStrideInfo &dstStrides);
