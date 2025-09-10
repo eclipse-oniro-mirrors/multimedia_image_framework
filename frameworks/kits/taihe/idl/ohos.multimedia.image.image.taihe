@@ -16,7 +16,7 @@
 @!namespace("@ohos.multimedia.image", "image")
 
 @!sts_inject("""
-static { loadLibrary("image_taihe_core.z"); }
+static { loadLibraryWithPermissionCheck("image_taihe_core.z", "@ohos.multimedia.image"); }
 """)
 
 enum PixelMapFormat: i32 {
