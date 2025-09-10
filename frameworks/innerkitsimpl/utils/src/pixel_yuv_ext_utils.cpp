@@ -505,10 +505,10 @@ void PixelYuvExtUtils::ScaleYuv420(int32_t dstWidth, int32_t dstHeight, const An
     }
 }
 
-bool PixelYuvExtUtils::FlipXaxis(uint8_t *src, uint8_t *dst, Size &size, PixelFormat format,
+bool PixelYuvExtUtils::FlipYaxis(uint8_t *src, uint8_t *dst, Size &size, PixelFormat format,
     YUVDataInfo &info, YUVStrideInfo &dstStrides)
 {
-    IMAGE_LOGE("PixelYuvExtUtils FlipXaxis");
+    IMAGE_LOGE("PixelYuvExtUtils FlipYaxis");
     uint8_t *srcY = src + info.yOffset;
     uint8_t *srcUV = src + info.uvOffset;
     int srcYStride = static_cast<int>(info.yStride);
@@ -522,7 +522,11 @@ bool PixelYuvExtUtils::FlipXaxis(uint8_t *src, uint8_t *dst, Size &size, PixelFo
     int dstUVStride = static_cast<int>(dstStrides.uvStride);
 
     auto converter = ConverterHandle::GetInstance().GetHandle();
-    converter.NV12Copy(srcY, srcYStride, srcUV, srcUVStride, dstY, dstYStride, dstUV, dstUVStride, width, -height);
+    int iret = converter.NV12Copy(srcY, srcYStride, srcUV, srcUVStride, dstY, dstYStride,
+        dstUV, dstUVStride, width, -height);
+    if (iret == -1) {
+        return false;
+    }
     return true;
 }
 

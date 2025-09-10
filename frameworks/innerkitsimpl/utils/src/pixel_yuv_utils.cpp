@@ -320,7 +320,7 @@ static bool CreateBufferSource(AVFilterGraph **filterGraph, AVFilterContext **bu
     YuvImageInfo &srcInfo)
 {
     const char *bufferSrcArgs = av_asprintf("video_size=%dx%d:pix_fmt=%d:time_base=1/1:pixel_aspect=1/1",
-        srcInfo.yuvDataInfo.yStride, srcInfo.height, srcInfo.format);
+        srcInfo.width, srcInfo.height, srcInfo.format);
     if (!bufferSrcArgs) {
         IMAGE_LOGE("bufferSrcArgs is null");
         return false;
