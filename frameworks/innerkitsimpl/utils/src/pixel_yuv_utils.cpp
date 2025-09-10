@@ -600,7 +600,7 @@ static bool FlipUpDataDstdata(YuvImageInfo &srcInfo, uint8_t *dstData, AVFrame *
 {
     dstFrame->width = srcFrame->width;
     dstFrame->height = srcFrame->height;
-    
+
     int32_t dstSize = av_image_get_buffer_size(static_cast<AVPixelFormat>(dstFrame->format),
         dstFrame->width, dstFrame->height, 1);
     if (dstSize < 0) {
