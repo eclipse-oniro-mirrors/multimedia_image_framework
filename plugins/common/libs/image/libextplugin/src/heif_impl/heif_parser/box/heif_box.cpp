@@ -269,7 +269,9 @@ heif_error HeifBox::ReadChildren(HeifStreamReader &reader, uint32_t &recursionCo
         if (error != heif_error_ok) {
             return error;
         }
-        children_.push_back(std::move(box));
+        if (box != nullptr) {
+            children_.push_back(std::move(box));
+        }
     }
     return reader.GetError();
 }
