@@ -600,8 +600,9 @@ static bool FlipUpDataDstdata(YuvImageInfo &srcInfo, uint8_t *dstData, AVFrame *
 {
     dstFrame->width = srcFrame->width;
     dstFrame->height = srcFrame->height;
+    
     int32_t dstSize = av_image_get_buffer_size(static_cast<AVPixelFormat>(dstFrame->format),
-        dstFrame->width, dstFrame->height, align);
+        dstFrame->width, dstFrame->height, 1);
     if (dstSize < 0) {
         IMAGE_LOGE("FlipUpDataDstdata get size failed");
         return false;
@@ -609,7 +610,7 @@ static bool FlipUpDataDstdata(YuvImageInfo &srcInfo, uint8_t *dstData, AVFrame *
 
     // Copy the output frame data to the destination buffer
     if (av_image_copy_to_buffer(dstData, dstSize, dstFrame->data, dstFrame->linesize,
-        static_cast<AVPixelFormat>(dstFrame->format), dstFrame->width, dstFrame->height, align) < 0) {
+        static_cast<AVPixelFormat>(dstFrame->format), dstFrame->width, dstFrame->height, 1) < 0) {
         IMAGE_LOGE("FlipUpDataDstdata copy data failed");
         return false;
     }
