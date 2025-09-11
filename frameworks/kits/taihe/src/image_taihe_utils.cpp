@@ -17,7 +17,7 @@
 #include "image_taihe_utils.h"
 
 namespace ANI::Image {
-constexpr char CLASS_NAME_BUSINESSERROR[] = "L@ohos/base/BusinessError;";
+constexpr char CLASS_NAME_BUSINESSERROR[] = "@ohos.base.BusinessError";
 
 void ImageTaiheUtils::HicheckerReport()
 {
@@ -79,7 +79,7 @@ ani_object ImageTaiheUtils::ToBusinessError(ani_env *env, int32_t code, const st
     CHECK_ERROR_RETURN_RET_LOG(ANI_OK != env->FindClass(CLASS_NAME_BUSINESSERROR, &cls), err,
         "find class %{public}s failed", CLASS_NAME_BUSINESSERROR);
     ani_method ctor {};
-    CHECK_ERROR_RETURN_RET_LOG(ANI_OK != env->Class_FindMethod(cls, "<ctor>", ":V", &ctor), err,
+    CHECK_ERROR_RETURN_RET_LOG(ANI_OK != env->Class_FindMethod(cls, "<ctor>", ":", &ctor), err,
         "find method BusinessError constructor failed");
     ani_object error {};
     CHECK_ERROR_RETURN_RET_LOG(ANI_OK != env->Object_New(cls, ctor, &error), err,
