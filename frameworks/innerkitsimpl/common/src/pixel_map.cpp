@@ -93,6 +93,7 @@ extern "C" {
 
 #define BUF_NAME_LEN 255
 #define PREFIX_NAME_LEN 11
+#define DMA_BUF_SET_LEAK_TYPE _IOW(DMA_BUF_BASE, 5, const char *)
 
 namespace OHOS {
 namespace Media {
@@ -560,6 +561,10 @@ uint32_t PixelMap::SetMemoryName(const std::string &pixelMapName)
         int ret = TEMP_FAILURE_RETRY(ioctl(fd, DMA_BUF_SET_NAME_A, pixelMapName.c_str()));
         if (ret != 0) {
             return ERR_MEMORY_NOT_SUPPORT;
+        }
+        ret = TEMP_FAILURE_RETRY(ioctl(fd, DMA_BUF_SET_LEAK_TYPE, "pixelmap"));
+        if (ret != 0) {
+            IMAGE_LOGD("[PixelMap] set dma buf leak type failed");
         }
         return SUCCESS;
     }
