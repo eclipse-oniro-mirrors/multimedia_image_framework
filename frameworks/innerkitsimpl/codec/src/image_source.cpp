@@ -5387,5 +5387,28 @@ std::string ImageSource::GetPixelMapName(PixelMap* pixelMap)
     return pixelMapStr;
 }
 
+ImageHdrType ImageSource::CheckHdrType()
+{
+    IMAGE_LOGD("start CheckHdrType()");
+    
+    if (checkHdrTypeHasSet) {
+        IMAGE_LOGD("already have checkHdrType_: %{public}d", checkHdrType_);
+        return checkHdrType_;
+    }
+
+    if (ImageSource::ParseHdrType()) {
+        IMAGE_LOGD("ParseHdrType checkHdrType_: %{public}d", sourceHdrType_);
+        checkHdrType_ = sourceHdrType_;
+        if (checkHdrType_ == ImageHdrType::HDR_LOG_DUAL) {
+            checkHdrType_ = ImageHdrType::SDR;
+        }
+        IMAGE_LOGD("final checkHdrType_: %{public}d", checkHdrType_);
+    } else {
+        checkHdrType_ = ImageHdrType::UNKNOWN;
+        IMAGE_LOGD("fail checkHdrType_: %{public}d", checkHdrType_);
+    }
+    checkHdrTypeHasSet = true;
+    return checkHdrType_;
+}
 } // namespace Media
 } // namespace OHOS
