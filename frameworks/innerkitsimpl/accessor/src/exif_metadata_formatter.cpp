@@ -212,6 +212,9 @@ const static std::set<std::string> READ_WRITE_KEYS = {
     "HwMnoteXtStyleCustomHue",
     "HwMnoteXtStyleExposureParam",
     "MakerNote",
+    "HwMnoteXtStyleAlgoVersion",
+    "HwMnoteXtStyleAlgoVideoEnable",
+    "HwMnoteIsApertureEditSupported",
 };
 
 const static std::set<std::string> READ_ONLY_KEYS = {
@@ -1309,6 +1312,9 @@ std::multimap<std::string, ValueFormatDelegate> ExifMetadatFormatter::valueForma
     {"YCbCrSubSampling", doubleIntWithComma},
     {"MovingPhotoVersion", singleInt},
     {"MicroVideoPresentationTimestampUS", singleInt},
+    {"HwMnoteXtStyleAlgoVersion", singleInt},
+    {"HwMnoteXtStyleAlgoVideoEnable", singleInt},
+    {"HwMnoteIsApertureEditSupported", singleInt},
 };
 
 // validate the value range. For example GPSLatitudeRef the value must be 'N' or 'S'.
