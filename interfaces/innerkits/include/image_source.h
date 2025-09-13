@@ -261,6 +261,7 @@ public:
     NATIVEEXPORT uint64_t GetImageId();
     NATIVEEXPORT bool IsSvgUseDma(const DecodeOptions &opts);
     NATIVEEXPORT bool IsSupportAllocatorType(DecodeOptions& decOps, int32_t allocatorType);
+    ImageHdrType CheckHdrType();
 
 private:
     DISALLOW_COPY_AND_MOVE(ImageSource);
@@ -427,6 +428,8 @@ private:
     std::optional<bool> isAstc_;
     uint64_t imageId_; // generated from the last six bits of the current timestamp
     ImageHdrType sourceHdrType_; // source image hdr type;
+    ImageHdrType checkHdrType_;
+    bool checkHdrTypeHasSet = false;
     std::shared_ptr<ExifMetadata> exifMetadata_ = nullptr;
     std::string source_; // Image source fd buffer etc
     bool isExifReadFailed_ = false;
