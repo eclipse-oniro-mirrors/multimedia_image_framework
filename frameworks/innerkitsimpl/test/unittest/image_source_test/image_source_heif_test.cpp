@@ -61,6 +61,7 @@ static const std::string IMAGE_OUTPUT_HEIF_MULTI_INC1_PATH = "/data/test/test_in
 static const std::string IMAGE_OUTPUT_HEIF_MULTI_ONETIME1_PATH = "/data/test/test_onetime1.heic";
 static const std::string IMAGE_OUTPUT_HEIF_MULTI_INC2_PATH = "/data/test/test_inc2.heic";
 static const std::string IMAGE_OUTPUT_HEIF_MULTI_ONETIME2_PATH = "/data/test/test_onetime2.heic";
+static const std::string IMAGE_INPUT_HEIF_10BIT_SDR_PATH = "/data/local/tmp/image/test-10bit-1.heic";
 
 const std::string ORIENTATION = "Orientation";
 const std::string IMAGE_HEIGHT = "ImageHeight";
@@ -987,6 +988,184 @@ HWTEST_F(ImageSourceHeifTest, HeifImageHdrDecode001, TestSize.Level3)
 }
 
 /**
+ * @tc.name: HeifImageRegionDecode001
+ * @tc.desc: Region decode heif image from file source stream
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageSourceHeifTest, HeifImageRegionDecode001, TestSize.Level3)
+{
+    /**
+     * @tc.steps: step1. create heif image source by istream source stream and default format hit
+     * @tc.expected: step1. create heif image source success.
+     */
+    uint32_t errorCode = 0;
+    SourceOptions opts;
+    opts.formatHint = "image/heif";
+    std::unique_ptr<ImageSource> imageSource =
+        ImageSource::CreateImageSource(IMAGE_INPUT_HW_HEIF_PATH, opts, errorCode);
+    ASSERT_EQ(errorCode, SUCCESS);
+    ASSERT_NE(imageSource.get(), nullptr);
+    /**
+     * @tc.steps: step2. crop heif image source to pixel map crop options
+     * @tc.expected: step2. crop heif image source to pixel map success.
+     */
+    DecodeOptions decodeOpts;
+    decodeOpts.CropRect.top = 1000;
+    decodeOpts.CropRect.width = 2000;
+    decodeOpts.CropRect.left = 1000;
+    decodeOpts.CropRect.height = 2000;
+    std::unique_ptr<PixelMap> pixelMap = imageSource->CreatePixelMap(decodeOpts, errorCode);
+    IMAGE_LOGD("create pixel map error code=%{public}u.", errorCode);
+    ASSERT_EQ(errorCode, SUCCESS);
+    ASSERT_NE(pixelMap.get(), nullptr);
+    EXPECT_EQ(2000, pixelMap->GetWidth());
+    EXPECT_EQ(2000, pixelMap->GetHeight());
+}
+ 
+/**
+ * @tc.name: HeifImageRegionDecode002
+ * @tc.desc: Region decode heif image from file source stream
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageSourceHeifTest, HeifImageRegionDecode002, TestSize.Level3)
+{
+    /**
+     * @tc.steps: step1. create heif image source by istream source stream and default format hit
+     * @tc.expected: step1. create heif image source success.
+     */
+    uint32_t errorCode = 0;
+    SourceOptions opts;
+    opts.formatHint = "image/heif";
+    std::unique_ptr<ImageSource> imageSource =
+        ImageSource::CreateImageSource(IMAGE_INPUT_HW_HEIF_PATH, opts, errorCode);
+    ASSERT_EQ(errorCode, SUCCESS);
+    ASSERT_NE(imageSource.get(), nullptr);
+    /**
+     * @tc.steps: step2. crop heif image source to pixel map crop options
+     * @tc.expected: step2. crop heif image source to pixel map success.
+     */
+    DecodeOptions decodeOpts;
+    decodeOpts.CropRect.top = 0;
+    decodeOpts.CropRect.width = 6000;
+    decodeOpts.CropRect.left = 0;
+    decodeOpts.CropRect.height = 6000;
+    decodeOpts.desiredPixelFormat = OHOS::Media::PixelFormat::NV12;
+    std::unique_ptr<PixelMap> pixelMap = imageSource->CreatePixelMap(decodeOpts, errorCode);
+    IMAGE_LOGD("create pixel map error code=%{public}u.", errorCode);
+    ASSERT_EQ(errorCode, SUCCESS);
+    ASSERT_NE(pixelMap.get(), nullptr);
+    EXPECT_EQ(4032, pixelMap->GetWidth());
+    EXPECT_EQ(3024, pixelMap->GetHeight());
+}
+ 
+/**
+ * @tc.name: HeifImageRegionDecode003
+ * @tc.desc: Region decode heif image from file source stream
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageSourceHeifTest, HeifImageRegionDecode003, TestSize.Level3)
+{
+    /**
+     * @tc.steps: step1. create heif image source by istream source stream and default format hit
+     * @tc.expected: step1. create heif image source success.
+     */
+    uint32_t errorCode = 0;
+    SourceOptions opts;
+    opts.formatHint = "image/heif";
+    std::unique_ptr<ImageSource> imageSource =
+        ImageSource::CreateImageSource(IMAGE_INPUT_HDR_HEIF_PATH, opts, errorCode);
+    ASSERT_EQ(errorCode, SUCCESS);
+    ASSERT_NE(imageSource.get(), nullptr);
+    /**
+     * @tc.steps: step2. crop heif image source to pixel map crop options
+     * @tc.expected: step2. crop heif image source to pixel map success.
+     */
+    DecodeOptions decodeOpts;
+    decodeOpts.desiredDynamicRange = DecodeDynamicRange::HDR;
+    decodeOpts.CropRect.top = 1000;
+    decodeOpts.CropRect.width = 2000;
+    decodeOpts.CropRect.left = 1000;
+    decodeOpts.CropRect.height = 2000;
+    std::unique_ptr<PixelMap> pixelMap = imageSource->CreatePixelMap(decodeOpts, errorCode);
+    IMAGE_LOGD("create pixel map error code=%{public}u.", errorCode);
+    ASSERT_EQ(errorCode, SUCCESS);
+    ASSERT_NE(pixelMap.get(), nullptr);
+    EXPECT_EQ(2000, pixelMap->GetWidth());
+    EXPECT_EQ(2000, pixelMap->GetHeight());
+}
+ 
+/**
+ * @tc.name: HeifImageRegionDecode004
+ * @tc.desc: Region decode heif image from file source stream
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageSourceHeifTest, HeifImageRegionDecode004, TestSize.Level3)
+{
+    /**
+     * @tc.steps: step1. create heif image source by istream source stream and default format hit
+     * @tc.expected: step1. create heif image source success.
+     */
+    uint32_t errorCode = 0;
+    SourceOptions opts;
+    opts.formatHint = "image/heif";
+    std::unique_ptr<ImageSource> imageSource =
+        ImageSource::CreateImageSource(IMAGE_INPUT_HDR_HEIF_PATH, opts, errorCode);
+    ASSERT_EQ(errorCode, SUCCESS);
+    ASSERT_NE(imageSource.get(), nullptr);
+    /**
+     * @tc.steps: step2. crop heif image source to pixel map crop options
+     * @tc.expected: step2. crop heif image source to pixel map success.
+     */
+    DecodeOptions decodeOpts;
+    decodeOpts.desiredDynamicRange = DecodeDynamicRange::HDR;
+    decodeOpts.CropRect.top = 0;
+    decodeOpts.CropRect.width = 7000;
+    decodeOpts.CropRect.left = 0;
+    decodeOpts.CropRect.height = 7000;
+    std::unique_ptr<PixelMap> pixelMap = imageSource->CreatePixelMap(decodeOpts, errorCode);
+    IMAGE_LOGD("create pixel map error code=%{public}u.", errorCode);
+    ASSERT_EQ(errorCode, SUCCESS);
+    ASSERT_NE(pixelMap.get(), nullptr);
+    EXPECT_EQ(5712, pixelMap->GetWidth());
+    EXPECT_EQ(4284, pixelMap->GetHeight());
+}
+ 
+/**
+ * @tc.name: HeifImageRegionDecode005
+ * @tc.desc: Region decode heif image from file source stream
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageSourceHeifTest, HeifImageRegionDecode005, TestSize.Level3)
+{
+    /**
+     * @tc.steps: step1. create heif image source by istream source stream and default format hit
+     * @tc.expected: step1. create heif image source success.
+     */
+    uint32_t errorCode = 0;
+    SourceOptions opts;
+    std::unique_ptr<ImageSource> imageSource =
+        ImageSource::CreateImageSource(IMAGE_INPUT_HEIF_10BIT_SDR_PATH, opts, errorCode);
+    ASSERT_EQ(errorCode, SUCCESS);
+    ASSERT_NE(imageSource.get(), nullptr);
+    /**
+     * @tc.steps: step2. crop heif image source to pixel map crop options
+     * @tc.expected: step2. crop heif image source to pixel map success.
+     */
+    DecodeOptions decodeOpts;
+    decodeOpts.desiredDynamicRange = DecodeDynamicRange::HDR;
+    decodeOpts.CropRect.top = 0;
+    decodeOpts.CropRect.width = 1000;
+    decodeOpts.CropRect.left = 0;
+    decodeOpts.CropRect.height = 1000;
+    std::unique_ptr<PixelMap> pixelMap = imageSource->CreatePixelMap(decodeOpts, errorCode);
+    IMAGE_LOGD("create pixel map error code=%{public}u.", errorCode);
+    ASSERT_EQ(errorCode, SUCCESS);
+    ASSERT_NE(pixelMap.get(), nullptr);
+    EXPECT_EQ(1000, pixelMap->GetWidth());
+    EXPECT_EQ(1000, pixelMap->GetHeight());
+}
+
+/**
  * @tc.name: GetAstcInfoTest001
  * @tc.desc: Test GetAstcInfoTest001(streamptr,streamsize,astcinfo)
  * @tc.type: FUNC
@@ -1149,6 +1328,207 @@ HWTEST_F(ImageSourceHeifTest, GetEncodedFormat003, TestSize.Level3)
     EXPECT_EQ(imageinfo2.encodedFormat.empty(), false);
     ASSERT_EQ(imageinfo2.encodedFormat, imageEncodedFormat);
     GTEST_LOG_(INFO) << "ImageSourceHeifTest: GetEncodedFormat003 imageinfo2: " << imageinfo2.encodedFormat;
+}
+
+/**
+ * @tc.name: HeifSampleSizeDecode001
+ * @tc.desc: heif RGBA hwdecode fail to swdecode, set samplesize
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageSourceHeifTest, HeifSampleSizeDecode001, TestSize.Level3)
+{
+    /**
+     * @tc.steps: step1. create image source by correct heif file path and heif format hit.
+     * @tc.expected: step1. create image source success.
+     */
+    uint32_t errorCode = 0;
+    SourceOptions opts;
+    opts.formatHint = "image/heif";
+    std::unique_ptr<ImageSource> imageSource =
+        ImageSource::CreateImageSource(IMAGE_INPUT_HW_HEIF_PATH, opts, errorCode);
+    ASSERT_EQ(errorCode, SUCCESS);
+    ASSERT_NE(imageSource.get(), nullptr);
+    /**
+     * @tc.steps: step2. decode image source to pixel map by default decode options
+     * @tc.expected: step2. decode image source to pixel map success.
+     */
+    DecodeOptions decodeOpts;
+    decodeOpts.desiredSize.width = 200;
+    decodeOpts.desiredSize.height = 400;
+    std::unique_ptr<PixelMap> pixelMap = imageSource->CreatePixelMap(decodeOpts, errorCode);
+    IMAGE_LOGD("create pixel map ret=%{public}u.", errorCode);
+    ASSERT_EQ(errorCode, SUCCESS);
+    ASSERT_NE(pixelMap.get(), nullptr);
+    EXPECT_EQ(200, pixelMap->GetWidth());
+    EXPECT_EQ(400, pixelMap->GetHeight());
+}
+ 
+/**
+ * @tc.name: HeifSampleSizeDecode002
+ * @tc.desc: heif YUV hwdecode fail to swdecode, set samplesize
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageSourceHeifTest, HeifSampleSizeDecode002, TestSize.Level3)
+{
+    /**
+     * @tc.steps: step1. create image source by correct heif file path and heif format hit.
+     * @tc.expected: step1. create image source success.
+     */
+    uint32_t errorCode = 0;
+    SourceOptions opts;
+    opts.formatHint = "image/heif";
+    std::unique_ptr<ImageSource> imageSource =
+        ImageSource::CreateImageSource(IMAGE_INPUT_HW_HEIF_PATH, opts, errorCode);
+    ASSERT_EQ(errorCode, SUCCESS);
+    ASSERT_NE(imageSource.get(), nullptr);
+    /**
+     * @tc.steps: step2. decode image source to pixel map by default decode options
+     * @tc.expected: step2. decode image source to pixel map success.
+     */
+    DecodeOptions decodeOpts;
+    decodeOpts.desiredPixelFormat = OHOS::Media::PixelFormat::NV12;
+    decodeOpts.desiredSize.width = 200;
+    decodeOpts.desiredSize.height = 400;
+    std::unique_ptr<PixelMap> pixelMap = imageSource->CreatePixelMap(decodeOpts, errorCode);
+    IMAGE_LOGD("create pixel map ret=%{public}u.", errorCode);
+    ASSERT_EQ(errorCode, SUCCESS);
+    ASSERT_NE(pixelMap.get(), nullptr);
+    EXPECT_EQ(200, pixelMap->GetWidth());
+    EXPECT_EQ(400, pixelMap->GetHeight());
+}
+ 
+/**
+ * @tc.name: HeifSampleSizeDecode003
+ * @tc.desc: heif odd size decode, set samplesize
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageSourceHeifTest, HeifSampleSizeDecode003, TestSize.Level3)
+{
+    /**
+     * @tc.steps: step1. create image source by correct heif file path and heif format hit.
+     * @tc.expected: step1. create image source success.
+     */
+    uint32_t errorCode = 0;
+    SourceOptions opts;
+    opts.formatHint = "image/heif";
+    std::unique_ptr<ImageSource> imageSource =
+        ImageSource::CreateImageSource(IMAGE_INPUT_HW_HEIF_PATH, opts, errorCode);
+    ASSERT_EQ(errorCode, SUCCESS);
+    ASSERT_NE(imageSource.get(), nullptr);
+    /**
+     * @tc.steps: step2. decode image source to pixel map by default decode options
+     * @tc.expected: step2. decode image source to pixel map success.
+     */
+    DecodeOptions decodeOpts;
+    decodeOpts.desiredSize.width = 200;
+    decodeOpts.desiredSize.height = 400;
+    std::unique_ptr<PixelMap> pixelMap = imageSource->CreatePixelMap(decodeOpts, errorCode);
+    IMAGE_LOGD("create pixel map ret=%{public}u.", errorCode);
+    ASSERT_EQ(errorCode, SUCCESS);
+    ASSERT_NE(pixelMap.get(), nullptr);
+    EXPECT_EQ(200, pixelMap->GetWidth());
+    EXPECT_EQ(400, pixelMap->GetHeight());
+}
+ 
+/**
+ * @tc.name: HeifSampleSizeDecode004
+ * @tc.desc: heif alpha image YUV400 decode, set samplesize
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageSourceHeifTest, HeifSampleSizeDecode004, TestSize.Level3)
+{
+    /**
+     * @tc.steps: step1. create image source by correct heif file path and heif format hit.
+     * @tc.expected: step1. create image source success.
+     */
+    uint32_t errorCode = 0;
+    SourceOptions opts;
+    opts.formatHint = "image/heif";
+    std::unique_ptr<ImageSource> imageSource =
+        ImageSource::CreateImageSource(IMAGE_INPUT_ALPHA_HEIF_PATH, opts, errorCode);
+    ASSERT_EQ(errorCode, SUCCESS);
+    ASSERT_NE(imageSource.get(), nullptr);
+    /**
+     * @tc.steps: step2. decode image source to pixel map by default decode options
+     * @tc.expected: step2. decode image source to pixel map success.
+     */
+    DecodeOptions decodeOpts;
+    decodeOpts.desiredSize.width = 200;
+    decodeOpts.desiredSize.height = 400;
+    std::unique_ptr<PixelMap> pixelMap = imageSource->CreatePixelMap(decodeOpts, errorCode);
+    IMAGE_LOGD("create pixel map ret=%{public}u.", errorCode);
+    ASSERT_EQ(errorCode, SUCCESS);
+    ASSERT_NE(pixelMap.get(), nullptr);
+    EXPECT_EQ(200, pixelMap->GetWidth());
+    EXPECT_EQ(400, pixelMap->GetHeight());
+}
+ 
+/**
+ * @tc.name: HeifSampleSizeDecode005
+ * @tc.desc: heif HDR image decode, set samplesize
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageSourceHeifTest, HeifSampleSizeDecode005, TestSize.Level3)
+{
+    /**
+     * @tc.steps: step1. create image source by correct heif file path and heif format hit.
+     * @tc.expected: step1. create image source success.
+     */
+    uint32_t errorCode = 0;
+    SourceOptions opts;
+    opts.formatHint = "image/heif";
+    std::unique_ptr<ImageSource> imageSource =
+        ImageSource::CreateImageSource(IMAGE_INPUT_HW_HEIF_PATH, opts, errorCode);
+    ASSERT_EQ(errorCode, SUCCESS);
+    ASSERT_NE(imageSource.get(), nullptr);
+    /**
+     * @tc.steps: step2. decode image source to pixel map by default decode options
+     * @tc.expected: step2. decode image source to pixel map success.
+     */
+    DecodeOptions decodeOpts;
+    decodeOpts.desiredSize.width = 1200;
+    decodeOpts.desiredSize.height = 1400;
+    decodeOpts.desiredDynamicRange = DecodeDynamicRange::HDR;
+    std::unique_ptr<PixelMap> pixelMap = imageSource->CreatePixelMap(decodeOpts, errorCode);
+    IMAGE_LOGD("create pixel map ret=%{public}u.", errorCode);
+    ASSERT_EQ(errorCode, SUCCESS);
+    ASSERT_NE(pixelMap.get(), nullptr);
+    EXPECT_EQ(1200, pixelMap->GetWidth());
+    EXPECT_EQ(1400, pixelMap->GetHeight());
+}
+ 
+/**
+ * @tc.name: HeifSampleSizeDecode006
+ * @tc.desc: heif HDR YUV400 image decode, set samplesize
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageSourceHeifTest, HeifSampleSizeDecode006, TestSize.Level3)
+{
+    /**
+     * @tc.steps: step1. create image source by correct heif file path and heif format hit.
+     * @tc.expected: step1. create image source success.
+     */
+    uint32_t errorCode = 0;
+    SourceOptions opts;
+    opts.formatHint = "image/heif";
+    std::unique_ptr<ImageSource> imageSource =
+        ImageSource::CreateImageSource(IMAGE_INPUT_HDR_HEIF_PATH, opts, errorCode);
+    ASSERT_EQ(errorCode, SUCCESS);
+    ASSERT_NE(imageSource.get(), nullptr);
+    /**
+     * @tc.steps: step2. decode image source to pixel map by default decode options
+     * @tc.expected: step2. decode image source to pixel map success.
+     */
+    DecodeOptions decodeOpts;
+    decodeOpts.desiredSize.width = 500;
+    decodeOpts.desiredSize.height = 1000;
+    decodeOpts.desiredDynamicRange = DecodeDynamicRange::HDR;
+    std::unique_ptr<PixelMap> pixelMap = imageSource->CreatePixelMap(decodeOpts, errorCode);
+    IMAGE_LOGD("create pixel map ret=%{public}u.", errorCode);
+    ASSERT_EQ(errorCode, SUCCESS);
+    ASSERT_NE(pixelMap.get(), nullptr);
+    EXPECT_EQ(500, pixelMap->GetWidth());
+    EXPECT_EQ(1000, pixelMap->GetHeight());
 }
 } // namespace Multimedia
 } // namespace OHOS
