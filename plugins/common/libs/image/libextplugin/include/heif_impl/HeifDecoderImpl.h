@@ -97,7 +97,7 @@ private:
 
     void InitGridInfo(const std::shared_ptr<HeifImage> &image, GridInfo &gridInfo);
 
-    void GetTileSize(const std::shared_ptr<HeifImage> &image, GridInfo &gridInfo);
+    void GetTileSize(const std::shared_ptr<HeifImage> &image, GridInfo &gridInfo, uint32_t &recursionCount);
 
     void GetRowColNum(GridInfo &gridInfo);
 
