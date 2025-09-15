@@ -49,7 +49,6 @@ public:
     static bool ScalePixelMapWithGPU(PixelMap &pixelMap, const Size &desiredSize,
         const AntiAliasingOption &option, bool useGpu = false);
 #endif
-
 private:
     static uint8_t *AllocSharedMemory(const Size &size, const uint64_t bufferSize, int &fd, uint32_t uniqueId);
     static uint8_t *AllocDmaMemory(ImageInfo info, const uint64_t bufferSize,
