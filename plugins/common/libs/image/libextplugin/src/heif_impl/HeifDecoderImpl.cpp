@@ -78,6 +78,7 @@ const static uint16_t BT2020_PRIMARIES = 9;
 const static std::string HEIF_SHAREMEM_NAME = "HeifRawData";
 const static uint32_t LIMIT_RANGE_FLAG = 0;
 const static int INVALID_GRID_FLAG = -1;
+const static uint32_t MAX_IDEN_RECURSION_COUNT = 300;
 
 const std::map<AuxiliaryPictureType, std::string> HEIF_AUXTTYPE_ID_MAP = {
     {AuxiliaryPictureType::GAINMAP, HEIF_AUXTTYPE_ID_GAINMAP},
@@ -359,14 +360,20 @@ void HeifDecoderImpl::InitGridInfo(const std::shared_ptr<HeifImage> &image, Grid
         }
     }
     gridInfo.colorRangeFlag = image->GetColorRangeFlag();
-    GetTileSize(image, gridInfo);
+    uint32_t recursionCount = 0;
+    GetTileSize(image, gridInfo, recursionCount);
     GetRowColNum(gridInfo);
 }
 
-void HeifDecoderImpl::GetTileSize(const std::shared_ptr<HeifImage> &image, GridInfo &gridInfo)
+void HeifDecoderImpl::GetTileSize(const std::shared_ptr<HeifImage> &image,
+    GridInfo &gridInfo, uint32_t &recursionCount)
 {
     if (!image) {
         IMAGE_LOGE("GetTileSize image is null");
+        return;
+    }
+    recursionCount++;
+    if (recursionCount > MAX_IDEN_RECURSION_COUNT) {
         return;
     }
 
@@ -380,7 +387,7 @@ void HeifDecoderImpl::GetTileSize(const std::shared_ptr<HeifImage> &image, GridI
         std::shared_ptr<HeifImage> idenImage;
         parser_->GetIdenImage(image->GetItemId(), idenImage);
         if (idenImage != nullptr && idenImage != image) {
-            GetTileSize(idenImage, gridInfo);
+            GetTileSize(idenImage, gridInfo, recursionCount);
         }
         return;
     }
