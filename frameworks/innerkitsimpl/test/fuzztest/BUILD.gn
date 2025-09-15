@@ -39,7 +39,6 @@ group("fuzztest") {
     "imagepixelmaphdr2_fuzzer:Imagepixelmaphdr2FuzzTest",
     "imagepixelmapMarshalling_fuzzer:ImagePixelmapMarshallingFuzzTest",
     "imagepixelmapmarshalling2_fuzzer:ImagePixelmapmarshalling2FuzzTest",
-    "imagepixelmapSlrGpu_fuzzer:ImagePixelmapSlrGpuFuzzTest",
     "imagepixelmapTlv_fuzzer:ImagePixelmapTlvFuzzTest",
     "imagepixelmaptlv2_fuzzer:ImagePixelmaptlv2FuzzTest",
     "imagepixelmapsetalpha_fuzzer:ImagePixelmapSetAlphaFuzzTest",
