@@ -1138,42 +1138,44 @@ static bool YuvToYuvParam(const YUVDataInfo &yDInfo, SrcConvertParam &srcParam, 
     return true;
 }
 
-bool ImageFormatConvertUtils::AlignBufferCore(const ImageInfo& srcImageInfo, const uint8_t* buffer,
-                                              SrcConvertParam& srcParam,
+bool ImageFormatConvertUtils::AlignBufferCore(const Size& srcBufferSize, PixelFormat srcFormat,
+                                              const uint8_t* srcBuffer, SrcConvertParam& srcParam,
                                               std::unique_ptr<uint8_t[]>& copySrcBuffer)
 {
-    if (srcImageInfo.size.width <= 0 || srcImageInfo.size.height <= 0) {
-        IMAGE_LOGE("Invalid src width(%{public}d) or height(%{public}d)",
-                   srcImageInfo.size.width, srcImageInfo.size.height);
+    if (srcBufferSize.width <= 0 || srcBufferSize.height <= 0) {
+        IMAGE_LOGE("Invalid src width(%{public}d) or height(%{public}d)", srcBufferSize.width, srcBufferSize.height);
         return false;
     }
-    int32_t copyWidth = srcImageInfo.size.width;
-    int32_t copyHeight = srcImageInfo.size.height;
-
-    if (srcImageInfo.size.width % EVEN_ALIGNMENT != 0 || srcImageInfo.size.height % EVEN_ALIGNMENT != 0) {
-        if (!ImageUtils::GetAlignedNumber(copyWidth, EVEN_ALIGNMENT) ||
-            !ImageUtils::GetAlignedNumber(copyHeight, EVEN_ALIGNMENT)) {
-            IMAGE_LOGE("Failed to get aligned width/height");
-            return false;
-        }
-
-        ImageInfo copyImageInfo = srcImageInfo;
-        copyImageInfo.size.width = copyWidth;
-        copyImageInfo.size.height = copyHeight;
-        int32_t copySrcLen = ImageUtils::GetByteCount(copyImageInfo);
-        int32_t srcDataLen = ImageUtils::GetByteCount(srcImageInfo);
-        if (srcDataLen <= 0 || copySrcLen <= 0) {
-            IMAGE_LOGE("Invalid data length: srcLen(%{public}d), copyLen(%{public}d)", srcDataLen, copySrcLen);
-            return false;
-        }
-        
-        copySrcBuffer = std::make_unique<uint8_t[]>(copySrcLen);
-        if (copySrcBuffer == nullptr || EOK != memcpy_s(copySrcBuffer.get(), copySrcLen, buffer, srcDataLen)) {
-            IMAGE_LOGE("alloc memory or memcpy_s failed!");
-            return false;
-        }
-        srcParam.buffer = copySrcBuffer.get();
+    if (srcBufferSize.width % EVEN_ALIGNMENT == 0 && srcBufferSize.height % EVEN_ALIGNMENT == 0) {
+        return true;
     }
+    int32_t copyWidth = srcBufferSize.width;
+    int32_t copyHeight = srcBufferSize.height;
+    if (!ImageUtils::GetAlignedNumber(copyWidth, EVEN_ALIGNMENT) ||
+        !ImageUtils::GetAlignedNumber(copyHeight, EVEN_ALIGNMENT)) {
+        IMAGE_LOGE("Failed to get aligned width/height");
+        return false;
+    }
+    ImageInfo srcBufferInfo = {
+        .size = srcBufferSize,
+        .pixelFormat = srcFormat
+    };
+    int32_t srcBufferLen = ImageUtils::GetByteCount(srcBufferInfo);
+
+    srcBufferInfo.size.width = copyWidth;
+    srcBufferInfo.size.height = copyHeight;
+    int32_t copyBufferLen = ImageUtils::GetByteCount(srcBufferInfo);
+    if (srcBufferLen <= 0 || copyBufferLen <= 0 || copyBufferLen < srcBufferLen) {
+        IMAGE_LOGE("Invalid buffer length: srcLen(%{public}d), copyLen(%{public}d)", srcBufferLen, copyBufferLen);
+        return false;
+    }
+
+    copySrcBuffer = std::make_unique<uint8_t[]>(copyBufferLen);
+    if (copySrcBuffer == nullptr || EOK != memcpy_s(copySrcBuffer.get(), copyBufferLen, srcBuffer, srcBufferLen)) {
+        IMAGE_LOGE("alloc memory or memcpy_s failed!");
+        return false;
+    }
+    srcParam.buffer = copySrcBuffer.get();
     return true;
 }
 
@@ -1181,22 +1183,16 @@ bool ImageFormatConvertUtils::AlignSrcBuffer(const YUVDataInfo& yDInfo, PixelFor
                                              const uint8_t* srcBuffer, SrcConvertParam& srcParam,
                                              std::unique_ptr<uint8_t[]>& copySrcBuffer)
 {
-    ImageInfo srcImageInfo = {
-        .size = {static_cast<int32_t>(yDInfo.yWidth), static_cast<int32_t>(yDInfo.yHeight)},
-        .pixelFormat = srcFormat
-    };
-    return ImageFormatConvertUtils::AlignBufferCore(srcImageInfo, srcBuffer, srcParam, copySrcBuffer);
+    Size srcBufferSize = {static_cast<int32_t>(yDInfo.yStride), static_cast<int32_t>(yDInfo.yHeight)};
+    return AlignBufferCore(srcBufferSize, srcFormat, srcBuffer, srcParam, copySrcBuffer);
 }
 
 bool ImageFormatConvertUtils::AlignSrcBuffer(const RGBDataInfo &rgbInfo, PixelFormat srcFormat,
                                              const uint8_t* srcBuffer, SrcConvertParam& srcParam,
                                              std::unique_ptr<uint8_t[]>& copySrcBuffer)
 {
-    ImageInfo srcImageInfo = {
-        .size = {rgbInfo.width, rgbInfo.height},
-        .pixelFormat = srcFormat
-    };
-    return ImageFormatConvertUtils::AlignBufferCore(srcImageInfo, srcBuffer, srcParam, copySrcBuffer);
+    Size srcBufferSize = {static_cast<int32_t>(rgbInfo.stride), rgbInfo.height};
+    return AlignBufferCore(srcBufferSize, srcFormat, srcBuffer, srcParam, copySrcBuffer);
 }
 
 static bool YuvToYuv(const uint8_t *srcBuffer, const YUVDataInfo &yDInfo, PixelFormat srcFormat,
