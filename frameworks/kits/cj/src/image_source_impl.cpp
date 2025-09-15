@@ -291,20 +291,26 @@ int64_t ImageSourceImpl::CreatePixelMap(uint32_t index, DecodeOptions& opts, uin
         return 0;
     }
     IMAGE_LOGD("[ImageSourceImpl] CreatePixelMap start.");
-    std::shared_ptr<PixelMap> incPixelMap;
-    incPixelMap = GetIncrementalPixelMap();
+    std::shared_ptr<PixelMap> incPixelMap = GetIncrementalPixelMap();
     if (incPixelMap != nullptr) {
-        errorCode = 0;
         IMAGE_LOGD("Get Incremental PixelMap!!!");
     } else {
         IMAGE_LOGD("Create PixelMap!!!");
         incPixelMap = nativeImgSrc->CreatePixelMapEx(index, opts, errorCode);
         if (incPixelMap == nullptr) {
             IMAGE_LOGE("[ImageSourceImpl] Create PixelMap error.");
+            errorCode = ERR_IMAGE_INIT_ABNORMAL;
+            return 0;
         }
     }
 
     auto nativeImage = FFIData::Create<PixelMapImpl>(move(incPixelMap));
+    if (nativeImage == nullptr) {
+        IMAGE_LOGE("nativeImage is nullptr.");
+        errorCode = ERR_IMAGE_INIT_ABNORMAL;
+        return 0;
+    }
+    errorCode = SUCCESS;
     IMAGE_LOGD("[ImageSourceImpl] CreatePixelMap success.");
     return nativeImage->GetID();
 }
