@@ -1070,6 +1070,7 @@ unique_ptr<PixelMap> ImageSource::CreatePixelMapExtended(uint32_t index, const D
     }
     ImageUtils::FlushSurfaceBuffer(pixelMap.get());
     pixelMap->SetMemoryName(GetPixelMapName(pixelMap.get()));
+    ImageTrace pixelMapId("CreatePixelMapExtended, pixelMapId:%u", pixelMap->GetUniqueId());
     return pixelMap;
 }
 
@@ -1350,6 +1351,8 @@ unique_ptr<PixelMap> ImageSource::CreatePixelMap(uint32_t index, const DecodeOpt
         }
     }
 
+    ImageTrace imageTrace("CreatePixelMapExtended svg, dstSize:(%d, %d)", opts.desiredSize.width,
+        opts.desiredSize.height);
     ImageEvent imageEvent;
     if (opts.desiredPixelFormat == PixelFormat::NV12 || opts.desiredPixelFormat == PixelFormat::NV21) {
         IMAGE_LOGE("[ImageSource] get YUV420 not support without going through CreatePixelMapExtended");
@@ -1484,6 +1487,7 @@ unique_ptr<PixelMap> ImageSource::CreatePixelMap(uint32_t index, const DecodeOpt
     // not ext decode, dump pixelMap while decoding svg here
     ImageUtils::DumpPixelMapIfDumpEnabled(pixelMap, imageId_);
     pixelMap->SetMemoryName(GetPixelMapName(pixelMap.get()));
+    ImageTrace pixelMapId("CreatePixelMapExtended svg, pixelMapId:%u", pixelMap->GetUniqueId());
     return pixelMap;
 }
 
@@ -5369,8 +5373,15 @@ std::string ImageSource::GetPixelMapName(PixelMap* pixelMap)
         IMAGE_LOGE("%{public}s error, pixelMap is null", __func__);
         return "undefined_";
     }
-    std::string pixelMapStr = std::to_string(pixelMap->GetWidth()) +
-        "_x" + std::to_string(pixelMap->GetHeight()) +
+    ImageInfo info;
+    if (GetImageInfo(info) != SUCCESS) {
+        IMAGE_LOGE("%{public}s error, GetImageInfo failed", __func__);
+        return "undefined_";
+    }
+
+    std::string pixelMapStr =
+        "srcImageSize-" + std::to_string(info.size.width) + "_x" + std::to_string(info.size.height) +
+        "-pixelMapSize-" + std::to_string(pixelMap->GetWidth()) + "_x" + std::to_string(pixelMap->GetHeight()) +
         "-streamsize-" + std::to_string(sourceStreamPtr_->GetStreamSize()) +
         "-mimeType-";
     std::string prefix = "image/";
