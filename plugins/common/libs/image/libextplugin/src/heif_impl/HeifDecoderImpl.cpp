@@ -78,6 +78,7 @@ const static uint16_t BT2020_PRIMARIES = 9;
 const static std::string HEIF_SHAREMEM_NAME = "HeifRawData";
 const static uint32_t FULL_RANGE_FLAG = 1;
 const static int INVALID_GRID_FLAG = -1;
+// The maximum recursion depth of heif iden type.
 const static uint32_t MAX_IDEN_RECURSION_COUNT = 300;
 
 const std::map<AuxiliaryPictureType, std::string> HEIF_AUXTTYPE_ID_MAP = {
@@ -375,9 +376,8 @@ void HeifDecoderImpl::GetTileSize(const std::shared_ptr<HeifImage> &image,
         return;
     }
     recursionCount++;
-    if (recursionCount > MAX_IDEN_RECURSION_COUNT) {
-        return;
-    }
+    bool cond = recursionCount > MAX_IDEN_RECURSION_COUNT;
+    CHECK_ERROR_RETURN(cond);
 
     std::string imageType = parser_->GetItemType(image->GetItemId());
     if (imageType == "hvc1") {

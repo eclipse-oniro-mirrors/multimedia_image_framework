@@ -197,7 +197,7 @@ HWTEST_F(HeifDecodeImplTest, HeifDecoderImpl_ReinitTest001, TestSize.Level3)
     auto mockDecoderImpl = reinterpret_cast<HeifDecoderImpl*>(extDecoder->codec_->getHeifContext());
     ASSERT_NE(mockDecoderImpl, nullptr);
     mockDecoderImpl->primaryImage_.reset();
-    mockDecoderImpl->GetTileSize(mockDecoderImpl->primaryImage_, mockDecoderImpl->gridInfo_);
+    mockDecoderImpl->GetTileSize(mockDecoderImpl->primaryImage_, mockDecoderImpl->gridInfo_, 0);
     ret = mockDecoderImpl->Reinit(nullptr);
     ASSERT_EQ(ret, true);
 #endif
