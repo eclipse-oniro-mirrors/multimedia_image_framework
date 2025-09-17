@@ -76,7 +76,7 @@ const static int IMAGE_ID = 123;
 
 const static uint16_t BT2020_PRIMARIES = 9;
 const static std::string HEIF_SHAREMEM_NAME = "HeifRawData";
-const static uint32_t LIMIT_RANGE_FLAG = 0;
+const static uint32_t FULL_RANGE_FLAG = 1;
 const static int INVALID_GRID_FLAG = -1;
 const static uint32_t MAX_IDEN_RECURSION_COUNT = 300;
 
@@ -343,7 +343,7 @@ bool HeifDecodeImpl::SeekRefGridRangeInfo(const std::shared_ptr<HeifImage> &imag
     int range = firstTileImage->GetColorRangeFlag();
     image->setColorRangeFlag(range);
     IMAGE_LOGD("set grid from ref grid is %{public}d", range);
-    return false;
+    return true;
 }
 
 void HeifDecoderImpl::InitGridInfo(const std::shared_ptr<HeifImage> &image, GridInfo &gridInfo)
@@ -354,15 +354,17 @@ void HeifDecoderImpl::InitGridInfo(const std::shared_ptr<HeifImage> &image, Grid
     }
     gridInfo.displayWidth = image->GetOriginalWidth();
     gridInfo.displayHeight = image->GetOriginalHeight();
-    if (image->GetColorRangeFlag() == INVALID_GRID_FLAG) {
-        if (!SeekRefGridRangeInfo(image)) {
-            IMAGE_LOGD("HeifDecoderImpl:: InitGridInfo Failed to get range value");
-        }
-    }
-    gridInfo.colorRangeFlag = image->GetColorRangeFlag();
     uint32_t recursionCount = 0;
     GetTileSize(image, gridInfo, recursionCount);
     GetRowColNum(gridInfo);
+    if (image->GetColorRangeFlag() == INVALID_GRID_FLAG) {
+        if (!SeekRefGridRangeInfo(image)) {
+            IMAGE_LOGD("HeifDecoderImpl:: InitGridInfo Failed to get range value");
+            return;
+        }
+    }
+    gridInfo.colorRangeFlag = image->GetColorRangeFlag();
+    IMAGE_LOGD("HeifDecoderImpl::InitGridInfo gridInfo.colorRangeFlag: %{public}d", gridInfo.colorRangeFlag);
 }
 
 void HeifDecoderImpl::GetTileSize(const std::shared_ptr<HeifImage> &image,
@@ -473,10 +475,10 @@ GSError HeifDecoderImpl::HwSetColorSpaceData(sptr<SurfaceBuffer>& buffer, GridIn
     auto colorSpaceSearch = ColorUtils::COLORSPACE_NAME_TO_COLORINFO_MAP.find(colorSpaceName_);
     CM_ColorSpaceInfo colorSpaceInfo =
         (colorSpaceSearch != ColorUtils::COLORSPACE_NAME_TO_COLORINFO_MAP.end()) ? colorSpaceSearch->second :
-        CM_ColorSpaceInfo {COLORPRIMARIES_BT601_P, TRANSFUNC_SRGB, MATRIX_BT601_P, RANGE_FULL};
-
-    if (!isColorSpaceFromCicp_) {
-        colorSpaceInfo.range = gridInfo.colorRangeFlag == LIMIT_RANGE_FLAG ? RANGE_LIMITED : RANGE_FULL;
+        CM_ColorSpaceInfo {COLORPRIMARIES_BT601_P, TRANSFUNC_BT709, MATRIX_BT601_P, RANGE_FULL};
+    // 1 : range -> RANGE_FULL, 0 : range -> RANGE_LIMITED
+    if (!isColorSpaceFromCicp_ && !isGainmapDecode_) {
+        colorSpaceInfo.range = gridInfo.colorRangeFlag == FULL_RANGE_FLAG ? RANGE_FULL : RANGE_LIMITED;
         IMAGE_LOGD("HwSetColorSpaceData gridInfo range : %{public}d", gridInfo.colorRangeFlag);
     }
     std::vector<uint8_t> colorSpaceInfoVec;
