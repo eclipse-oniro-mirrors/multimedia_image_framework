@@ -17,6 +17,7 @@
 #include <cstdint>
 
 #include "cj_color_manager.h"
+#include "cj_lambda.h"
 #include "image_common.h"
 #include "image_creator_impl.h"
 #include "image_log.h"
@@ -42,11 +43,11 @@ static std::string FileUrlToRawPath(const std::string& path)
     return path;
 }
 
-int64_t FfiOHOSCreateImageSourceByPath(char* uri, uint32_t* errCode)
+FFI_EXPORT int64_t FfiOHOSCreateImageSourceByPath(char* uri, uint32_t* errCode)
 {
     IMAGE_LOGD("[ImageSource] FfiOHOSCreateImageSourceByPath start");
     std::string path = FileUrlToRawPath(uri);
-    std::unique_ptr<ImageSource> ptr_ = ImageSourceImpl::CreateImageSource(path, errCode);
+    std::unique_ptr<ImageSource> ptr_ = ImageSourceImpl::CreateImageSource(path, *errCode);
     if (*errCode != SUCCESS_CODE) {
         IMAGE_LOGE("[ImageSource] FfiOHOSCreateImageSourceByPath failed");
         return INIT_FAILED;
@@ -74,12 +75,12 @@ static SourceOptions ParseCSourceOptions(CSourceOptions opts)
     return options;
 }
 
-int64_t FfiOHOSCreateImageSourceByPathWithOption(char* uri, CSourceOptions opts, uint32_t* errCode)
+FFI_EXPORT int64_t FfiOHOSCreateImageSourceByPathWithOption(char* uri, CSourceOptions opts, uint32_t* errCode)
 {
     IMAGE_LOGD("[ImageSource] FfiOHOSCreateImageSourceByPathWithOption start");
     std::string path = FileUrlToRawPath(uri);
     SourceOptions options = ParseCSourceOptions(opts);
-    std::unique_ptr<ImageSource> ptr_ = ImageSourceImpl::CreateImageSourceWithOption(path, options, errCode);
+    std::unique_ptr<ImageSource> ptr_ = ImageSourceImpl::CreateImageSourceWithOption(path, options, *errCode);
     if (*errCode != SUCCESS_CODE) {
         IMAGE_LOGE("[ImageSource] FfiOHOSCreateImageSourceByPathWithOption failed");
         return INIT_FAILED;
@@ -95,10 +96,10 @@ int64_t FfiOHOSCreateImageSourceByPathWithOption(char* uri, CSourceOptions opts,
     return nativeImage->GetID();
 }
 
-int64_t FfiOHOSCreateImageSourceByFd(int fd, uint32_t* errCode)
+FFI_EXPORT int64_t FfiOHOSCreateImageSourceByFd(int fd, uint32_t* errCode)
 {
     IMAGE_LOGD("[ImageSource] FfiOHOSCreateImageSourceByFd start");
-    std::unique_ptr<ImageSource> ptr_ = ImageSourceImpl::CreateImageSource(fd, errCode);
+    std::unique_ptr<ImageSource> ptr_ = ImageSourceImpl::CreateImageSource(fd, *errCode);
     if (*errCode != SUCCESS_CODE) {
         IMAGE_LOGE("[ImageSource] FfiOHOSCreateImageSourceByFd failed");
         return INIT_FAILED;
@@ -114,11 +115,11 @@ int64_t FfiOHOSCreateImageSourceByFd(int fd, uint32_t* errCode)
     return nativeImage->GetID();
 }
 
-int64_t FfiOHOSCreateImageSourceByFdWithOption(int fd, CSourceOptions opts, uint32_t* errCode)
+FFI_EXPORT int64_t FfiOHOSCreateImageSourceByFdWithOption(int fd, CSourceOptions opts, uint32_t* errCode)
 {
     IMAGE_LOGD("[ImageSource] FfiOHOSCreateImageSourceByFdWithOption start");
     SourceOptions options = ParseCSourceOptions(opts);
-    std::unique_ptr<ImageSource> ptr_ = ImageSourceImpl::CreateImageSourceWithOption(fd, options, errCode);
+    std::unique_ptr<ImageSource> ptr_ = ImageSourceImpl::CreateImageSourceWithOption(fd, options, *errCode);
     if (*errCode != SUCCESS_CODE) {
         IMAGE_LOGE("[ImageSource] FfiOHOSCreateImageSourceByFdWithOption failed");
         return INIT_FAILED;
@@ -134,10 +135,10 @@ int64_t FfiOHOSCreateImageSourceByFdWithOption(int fd, CSourceOptions opts, uint
     return nativeImage->GetID();
 }
 
-int64_t FfiOHOSCreateImageSourceByBuffer(uint8_t* data, uint32_t size, uint32_t* errCode)
+FFI_EXPORT int64_t FfiOHOSCreateImageSourceByBuffer(uint8_t* data, uint32_t size, uint32_t* errCode)
 {
     IMAGE_LOGD("[ImageSource] FfiOHOSCreateImageSourceByBuffer start");
-    std::unique_ptr<ImageSource> ptr_ = ImageSourceImpl::CreateImageSource(data, size, errCode);
+    std::unique_ptr<ImageSource> ptr_ = ImageSourceImpl::CreateImageSource(data, size, *errCode);
     if (*errCode != SUCCESS_CODE) {
         IMAGE_LOGE("[ImageSource] FfiOHOSCreateImageSourceByBuffer failed");
         return INIT_FAILED;
@@ -153,11 +154,12 @@ int64_t FfiOHOSCreateImageSourceByBuffer(uint8_t* data, uint32_t size, uint32_t*
     return nativeImage->GetID();
 }
 
-int64_t FfiOHOSCreateImageSourceByBufferWithOption(uint8_t* data, uint32_t size, CSourceOptions opts, uint32_t* errCode)
+FFI_EXPORT int64_t FfiOHOSCreateImageSourceByBufferWithOption(
+    uint8_t* data, uint32_t size, CSourceOptions opts, uint32_t* errCode)
 {
     IMAGE_LOGD("[ImageSource] FfiOHOSCreateImageSourceByBufferWithOption start");
     SourceOptions options = ParseCSourceOptions(opts);
-    std::unique_ptr<ImageSource> ptr_ = ImageSourceImpl::CreateImageSourceWithOption(data, size, options, errCode);
+    std::unique_ptr<ImageSource> ptr_ = ImageSourceImpl::CreateImageSourceWithOption(data, size, options, *errCode);
     if (*errCode != SUCCESS_CODE) {
         IMAGE_LOGE("[ImageSource] FfiOHOSCreateImageSourceByBufferWithOption failed");
         return INIT_FAILED;
@@ -173,7 +175,7 @@ int64_t FfiOHOSCreateImageSourceByBufferWithOption(uint8_t* data, uint32_t size,
     return nativeImage->GetID();
 }
 
-int64_t FfiOHOSCreateImageSourceByRawFile(
+FFI_EXPORT int64_t FfiOHOSCreateImageSourceByRawFile(
     int fd, int32_t offset, int32_t length, CSourceOptions opts, uint32_t* errCode)
 {
     IMAGE_LOGD("[ImageSource] FfiOHOSCreateImageSourceByRawFile start");
@@ -193,7 +195,8 @@ int64_t FfiOHOSCreateImageSourceByRawFile(
     return nativeImage->GetID();
 }
 
-int64_t FfiOHOSCreateIncrementalSource(const uint8_t* data, uint32_t size, CSourceOptions opts, uint32_t* errCode)
+FFI_EXPORT int64_t FfiOHOSCreateIncrementalSource(
+    const uint8_t* data, uint32_t size, CSourceOptions opts, uint32_t* errCode)
 {
     IMAGE_LOGD("[ImageSource] FfiOHOSCreateIncrementalSource start");
     SourceOptions options = ParseCSourceOptions(opts);
@@ -212,7 +215,7 @@ int64_t FfiOHOSCreateIncrementalSource(const uint8_t* data, uint32_t size, CSour
     return nativeImage->GetID();
 }
 
-CImageInfo FfiOHOSImageSourceGetImageInfo(int64_t id, uint32_t index, uint32_t* errCode)
+FFI_EXPORT CImageInfo FfiOHOSImageSourceGetImageInfo(int64_t id, uint32_t index, uint32_t* errCode)
 {
     IMAGE_LOGD("[ImageSource] FfiOHOSImageSourceGetImageInfo start");
     auto instance = FFIData::GetData<ImageSourceImpl>(id);
@@ -247,7 +250,7 @@ static CImageInfoV2 ParseImageSourceImageInfo(ImageInfo info, ImageSource* image
     return ret;
 }
 
-CImageInfoV2 FfiOHOSImageSourceGetImageInfoV2(int64_t id, uint32_t index, uint32_t* errCode)
+FFI_EXPORT CImageInfoV2 FfiOHOSImageSourceGetImageInfoV2(int64_t id, uint32_t index, uint32_t* errCode)
 {
     IMAGE_LOGD("[ImageSource] FfiOHOSImageSourceGetImageInfoV2 start");
     auto instance = FFIData::GetData<ImageSourceImpl>(id);
@@ -274,7 +277,7 @@ void FreeArrayPtr(char** ptr, int count)
     }
 }
 
-CArrString FfiOHOSGetSupportedFormats(int64_t id, uint32_t* errCode)
+FFI_EXPORT CArrString FfiOHOSGetSupportedFormats(int64_t id, uint32_t* errCode)
 {
     IMAGE_LOGD("[ImageSource] FfiOHOSGetSupportedFormats start");
     CArrString ret = { .head = nullptr, .size = 0 };
@@ -321,7 +324,7 @@ CArrString FfiOHOSGetSupportedFormats(int64_t id, uint32_t* errCode)
     return ret;
 }
 
-char* FfiOHOSGetImageProperty(int64_t id, char* key, uint32_t index, char* defaultValue, uint32_t* errCode)
+FFI_EXPORT char* FfiOHOSGetImageProperty(int64_t id, char* key, uint32_t index, char* defaultValue, uint32_t* errCode)
 {
     IMAGE_LOGD("[ImageSource] FfiOHOSGetImageProperty start");
     char* ret = nullptr;
@@ -342,7 +345,7 @@ char* FfiOHOSGetImageProperty(int64_t id, char* key, uint32_t index, char* defau
     return ret;
 }
 
-uint32_t FfiOHOSModifyImageProperty(int64_t id, char* key, char* value)
+FFI_EXPORT uint32_t FfiOHOSModifyImageProperty(int64_t id, char* key, char* value)
 {
     IMAGE_LOGD("[ImageSource] FfiOHOSModifyImageProperty start");
     auto instance = FFIData::GetData<ImageSourceImpl>(id);
@@ -355,7 +358,7 @@ uint32_t FfiOHOSModifyImageProperty(int64_t id, char* key, char* value)
     return ret;
 }
 
-RetDataUI32 FfiOHOSGetFrameCount(int64_t id)
+FFI_EXPORT RetDataUI32 FfiOHOSGetFrameCount(int64_t id)
 {
     IMAGE_LOGD("[ImageSource] FfiOHOSGetFrameCount start");
     RetDataUI32 ret = { .code = ERR_IMAGE_INIT_ABNORMAL, .data = 0 };
@@ -369,7 +372,7 @@ RetDataUI32 FfiOHOSGetFrameCount(int64_t id)
     return ret;
 }
 
-uint32_t FfiOHOSUpdateData(int64_t id, UpdateDataInfo info)
+FFI_EXPORT uint32_t FfiOHOSUpdateData(int64_t id, UpdateDataInfo info)
 {
     IMAGE_LOGD("[ImageSource] FfiOHOSUpdateData start");
     auto instance = FFIData::GetData<ImageSourceImpl>(id);
@@ -402,7 +405,7 @@ uint32_t FfiOHOSUpdateData(int64_t id, UpdateDataInfo info)
     return ret;
 }
 
-uint32_t FfiOHOSRelease(int64_t id)
+FFI_EXPORT uint32_t FfiOHOSRelease(int64_t id)
 {
     IMAGE_LOGD("[ImageSource] FfiOHOSRelease start");
     auto instance = FFIData::GetData<ImageSourceImpl>(id);
@@ -474,7 +477,8 @@ static DecodeOptions ParseCDecodingOptionsV2(CDecodingOptionsV2& opts)
     return decodeOpts;
 }
 
-CArrI64 FfiOHOSImageSourceCreatePixelMapList(int64_t id, uint32_t index, CDecodingOptions opts, uint32_t* errorCode)
+FFI_EXPORT CArrI64 FfiOHOSImageSourceCreatePixelMapList(
+    int64_t id, uint32_t index, CDecodingOptions opts, uint32_t* errorCode)
 {
     IMAGE_LOGD("[ImageSource] CreatePixelMapList start");
     CArrI64 ret = { .head = nullptr, .size = 0 };
@@ -485,7 +489,7 @@ CArrI64 FfiOHOSImageSourceCreatePixelMapList(int64_t id, uint32_t index, CDecodi
         return ret;
     }
     DecodeOptions decodeOpts = ParseCDecodingOptions(opts);
-    std::vector<int64_t> data = instance->CreatePixelMapList(index, decodeOpts, errorCode);
+    std::vector<int64_t> data = instance->CreatePixelMapList(index, decodeOpts, *errorCode);
     if (*errorCode == SUCCESS_CODE) {
         auto size = data.size();
         if (size == 0) {
@@ -510,7 +514,8 @@ CArrI64 FfiOHOSImageSourceCreatePixelMapList(int64_t id, uint32_t index, CDecodi
     return ret;
 }
 
-CArrI64 FfiOHOSImageSourceCreatePixelMapListV2(int64_t id, uint32_t index, CDecodingOptionsV2 opts, uint32_t* errorCode)
+FFI_EXPORT CArrI64 FfiOHOSImageSourceCreatePixelMapListV2(
+    int64_t id, uint32_t index, CDecodingOptionsV2 opts, uint32_t* errorCode)
 {
     IMAGE_LOGD("[ImageSource] FfiOHOSImageSourceCreatePixelMapListV2 start");
     CArrI64 ret = { .head = nullptr, .size = 0 };
@@ -521,7 +526,7 @@ CArrI64 FfiOHOSImageSourceCreatePixelMapListV2(int64_t id, uint32_t index, CDeco
         return ret;
     }
     DecodeOptions decodeOpts = ParseCDecodingOptionsV2(opts);
-    std::vector<int64_t> data = instance->CreatePixelMapList(index, decodeOpts, errorCode);
+    std::vector<int64_t> data = instance->CreatePixelMapList(index, decodeOpts, *errorCode);
     if (*errorCode == SUCCESS_CODE) {
         auto size = data.size();
         if (size > 0) {
@@ -546,7 +551,7 @@ CArrI64 FfiOHOSImageSourceCreatePixelMapListV2(int64_t id, uint32_t index, CDeco
     return ret;
 }
 
-CArrI32 FfiOHOSImageSourceGetDelayTime(int64_t id, uint32_t* errorCode)
+FFI_EXPORT CArrI32 FfiOHOSImageSourceGetDelayTime(int64_t id, uint32_t* errorCode)
 {
     IMAGE_LOGD("[ImageSource] FfiOHOSImageSourceGetDelayTime start");
     CArrI32 ret = { .head = nullptr, .size = 0 };
@@ -556,7 +561,7 @@ CArrI32 FfiOHOSImageSourceGetDelayTime(int64_t id, uint32_t* errorCode)
         *errorCode = ERR_IMAGE_INIT_ABNORMAL;
         return ret;
     }
-    auto data = instance->GetDelayTime(errorCode);
+    auto data = instance->GetDelayTime(*errorCode);
     if (*errorCode == SUCCESS_CODE) {
         auto size = data->size();
         if (size <= 0) {
@@ -580,7 +585,7 @@ CArrI32 FfiOHOSImageSourceGetDelayTime(int64_t id, uint32_t* errorCode)
     return ret;
 }
 
-CArrI32 FfiImageImageSourceImplGetDisposalTypeList(int64_t id, uint32_t* errorCode)
+FFI_EXPORT CArrI32 FfiImageImageSourceImplGetDisposalTypeList(int64_t id, uint32_t* errorCode)
 {
     IMAGE_LOGD("[ImageSource] FfiImageImageSourceImplGetDisposalTypeList start");
     CArrI32 ret = { .head = nullptr, .size = 0 };
@@ -590,7 +595,7 @@ CArrI32 FfiImageImageSourceImplGetDisposalTypeList(int64_t id, uint32_t* errorCo
         *errorCode = ERR_IMAGE_INIT_ABNORMAL;
         return ret;
     }
-    std::unique_ptr<std::vector<int32_t>> data = instance->GetDisposalTypeList(errorCode);
+    std::unique_ptr<std::vector<int32_t>> data = instance->GetDisposalTypeList(*errorCode);
     if (*errorCode == SUCCESS_CODE && data != nullptr) {
         auto size = data->size();
         if (size <= 0) {
@@ -612,7 +617,7 @@ CArrI32 FfiImageImageSourceImplGetDisposalTypeList(int64_t id, uint32_t* errorCo
     return ret;
 }
 
-uint32_t FfiImageImageSourceImplGetImageProperties(int64_t id, CArrString key, char** value)
+FFI_EXPORT uint32_t FfiImageImageSourceImplGetImageProperties(int64_t id, CArrString key, char** value)
 {
     IMAGE_LOGD("[ImageSource] FfiImageImageSourceImplGetImageProperties start");
     auto instance = FFIData::GetData<ImageSourceImpl>(id);
@@ -636,7 +641,7 @@ uint32_t FfiImageImageSourceImplGetImageProperties(int64_t id, CArrString key, c
     return errCode;
 }
 
-uint32_t FfiImageImageSourceImplModifyImageProperties(int64_t id, CArrString key, CArrString value)
+FFI_EXPORT uint32_t FfiImageImageSourceImplModifyImageProperties(int64_t id, CArrString key, CArrString value)
 {
     IMAGE_LOGD("[ImageSource] FfiImageImageSourceImplModifyImageProperties start");
     auto instance = FFIData::GetData<ImageSourceImpl>(id);
@@ -644,11 +649,19 @@ uint32_t FfiImageImageSourceImplModifyImageProperties(int64_t id, CArrString key
         IMAGE_LOGE("[ImageSource] instance not exist %{public}" PRId64, id);
         return ERR_IMAGE_INIT_ABNORMAL;
     }
+    std::vector<std::string> keyStrArray;
+    for (int64_t i = 0; i < key.size; i++) {
+        keyStrArray.push_back(key.head[i]);
+    }
+    std::vector<std::string> valueStrArray;
+    for (int64_t i = 0; i < value.size; i++) {
+        valueStrArray.push_back(value.head[i]);
+    }
     IMAGE_LOGD("[ImageSource] FfiImageImageSourceImplModifyImageProperties success");
-    return instance->ModifyImageProperties(key.head, value.head, key.size);
+    return instance->ModifyImageProperties(keyStrArray, valueStrArray);
 }
 
-RetDataI64U32 FfiOHOSImageSourceCreatePixelMap(int64_t id, uint32_t index, CDecodingOptions opts)
+FFI_EXPORT RetDataI64U32 FfiOHOSImageSourceCreatePixelMap(int64_t id, uint32_t index, CDecodingOptions opts)
 {
     IMAGE_LOGD("[ImageSource] FfiOHOSImageSourceCreatePixelMap start");
     RetDataI64U32 ret = { .code = ERR_IMAGE_INIT_ABNORMAL, .data = 0 };
@@ -663,7 +676,7 @@ RetDataI64U32 FfiOHOSImageSourceCreatePixelMap(int64_t id, uint32_t index, CDeco
     return ret;
 }
 
-RetDataI64U32 FfiOHOSImageSourceCreatePixelMapV2(int64_t id, uint32_t index, CDecodingOptionsV2 opts)
+FFI_EXPORT RetDataI64U32 FfiOHOSImageSourceCreatePixelMapV2(int64_t id, uint32_t index, CDecodingOptionsV2 opts)
 {
     IMAGE_LOGD("[ImageSource] FfiOHOSImageSourceCreatePixelMapV2 start");
     RetDataI64U32 ret = { .code = ERR_IMAGE_INIT_ABNORMAL, .data = 0 };
@@ -680,7 +693,7 @@ RetDataI64U32 FfiOHOSImageSourceCreatePixelMapV2(int64_t id, uint32_t index, CDe
 
 //--------------------- ImageReceiver ------------------------------------------------------------------------
 
-uint32_t FfiOHOSReceiverGetSize(int64_t id, CSize* retVal)
+FFI_EXPORT uint32_t FfiOHOSReceiverGetSize(int64_t id, CSize* retVal)
 {
     IMAGE_LOGD("FfiOHOSReceiverGetSize start");
     auto instance = FFIData::GetData<ImageReceiverImpl>(id);
@@ -692,7 +705,7 @@ uint32_t FfiOHOSReceiverGetSize(int64_t id, CSize* retVal)
     return retCode;
 }
 
-uint32_t FfiOHOSReceiverGetCapacity(int64_t id, int32_t* retVal)
+FFI_EXPORT uint32_t FfiOHOSReceiverGetCapacity(int64_t id, int32_t* retVal)
 {
     IMAGE_LOGD("FfiOHOSReceiverGetCapacity start");
     auto instance = FFIData::GetData<ImageReceiverImpl>(id);
@@ -704,7 +717,7 @@ uint32_t FfiOHOSReceiverGetCapacity(int64_t id, int32_t* retVal)
     return retCode;
 }
 
-uint32_t FfiOHOSReceiverGetFormat(int64_t id, int32_t* retVal)
+FFI_EXPORT uint32_t FfiOHOSReceiverGetFormat(int64_t id, int32_t* retVal)
 {
     IMAGE_LOGD("FfiOHOSReceiverGetFormat start");
     auto instance = FFIData::GetData<ImageReceiverImpl>(id);
@@ -716,7 +729,7 @@ uint32_t FfiOHOSReceiverGetFormat(int64_t id, int32_t* retVal)
     return retCode;
 }
 
-int64_t FfiOHOSCreateImageReceiver(int32_t width, int32_t height, int32_t format, int32_t capacity)
+FFI_EXPORT int64_t FfiOHOSCreateImageReceiver(int32_t width, int32_t height, int32_t format, int32_t capacity)
 {
     IMAGE_LOGD("FfiOHOSCreateImageReceiver start");
     auto id = ImageReceiverImpl::CreateImageReceiver(width, height, format, capacity);
@@ -724,7 +737,7 @@ int64_t FfiOHOSCreateImageReceiver(int32_t width, int32_t height, int32_t format
     return id;
 }
 
-char* FfiOHOSGetReceivingSurfaceId(int64_t id)
+FFI_EXPORT char* FfiOHOSGetReceivingSurfaceId(int64_t id)
 {
     IMAGE_LOGD("FfiOHOSGetReceivingSurfaceId start");
     auto instance = FFIData::GetData<ImageReceiverImpl>(id);
@@ -737,7 +750,7 @@ char* FfiOHOSGetReceivingSurfaceId(int64_t id)
     return ret;
 }
 
-int64_t FfiOHOSReadNextImage(int64_t id)
+FFI_EXPORT int64_t FfiOHOSReadNextImage(int64_t id)
 {
     IMAGE_LOGD("FfiOHOSReadNextImage start");
     auto instance = FFIData::GetData<ImageReceiverImpl>(id);
@@ -754,7 +767,7 @@ int64_t FfiOHOSReadNextImage(int64_t id)
     return image->GetID();
 }
 
-int64_t FfiOHOSReadLatestImage(int64_t id)
+FFI_EXPORT int64_t FfiOHOSReadLatestImage(int64_t id)
 {
     IMAGE_LOGD("FfiOHOSReadLatestImage start.");
     auto instance = FFIData::GetData<ImageReceiverImpl>(id);
@@ -772,7 +785,7 @@ int64_t FfiOHOSReadLatestImage(int64_t id)
     return image->GetID();
 }
 
-void FfiOHOSReceiverRelease(int64_t id)
+FFI_EXPORT void FfiOHOSReceiverRelease(int64_t id)
 {
     IMAGE_LOGD("FfiOHOSReceiverRelease start");
     auto instance = FFIData::GetData<ImageReceiverImpl>(id);
@@ -784,43 +797,43 @@ void FfiOHOSReceiverRelease(int64_t id)
     IMAGE_LOGD("FfiOHOSReceiverRelease success");
 }
 
-uint32_t FfiOHOSImageGetClipRect(int64_t id, CRegion* retVal)
+FFI_EXPORT uint32_t FfiOHOSImageGetClipRect(int64_t id, CRegion* retVal)
 {
     IMAGE_LOGD("FfiOHOSImageGetClipRect start");
     auto instance = FFIData::GetData<ImageImpl>(id);
     if (!instance) {
         return ERR_IMAGE_INIT_ABNORMAL;
     }
-    int64_t retCode = instance->GetClipRect(retVal);
+    int64_t retCode = instance->GetClipRect(*retVal);
     IMAGE_LOGD("FfiOHOSImageGetClipRect success");
     return retCode;
 }
 
-uint32_t FfiOHOSImageGetSize(int64_t id, CSize* retVal)
+FFI_EXPORT uint32_t FfiOHOSImageGetSize(int64_t id, CSize* retVal)
 {
     IMAGE_LOGD("FfiOHOSImageGetSize start");
     auto instance = FFIData::GetData<ImageImpl>(id);
     if (!instance) {
         return ERR_IMAGE_INIT_ABNORMAL;
     }
-    uint32_t retCode = instance->GetSize(retVal);
+    uint32_t retCode = instance->GetSize(*retVal);
     IMAGE_LOGD("FfiOHOSImageGetSize success");
     return retCode;
 }
 
-uint32_t FfiOHOSImageGetFormat(int64_t id, int32_t* retVal)
+FFI_EXPORT uint32_t FfiOHOSImageGetFormat(int64_t id, int32_t* retVal)
 {
     IMAGE_LOGD("FfiOHOSImageGetFormat start");
     auto instance = FFIData::GetData<ImageImpl>(id);
     if (!instance) {
         return ERR_IMAGE_INIT_ABNORMAL;
     }
-    uint32_t retCode = instance->GetFormat(retVal);
+    uint32_t retCode = instance->GetFormat(*retVal);
     IMAGE_LOGD("FfiOHOSImageGetFormat success");
     return retCode;
 }
 
-uint32_t FfiOHOSGetComponent(int64_t id, int32_t componentType, CRetComponent* ptr)
+FFI_EXPORT uint32_t FfiOHOSGetComponent(int64_t id, int32_t componentType, CRetComponent* ptr)
 {
     IMAGE_LOGD("FfiOHOSGetComponent start");
     auto instance = FFIData::GetData<ImageImpl>(id);
@@ -828,12 +841,12 @@ uint32_t FfiOHOSGetComponent(int64_t id, int32_t componentType, CRetComponent* p
         IMAGE_LOGE("ImageImpl instance not exist %{public}" PRId64, id);
         return ERR_IMAGE_INIT_ABNORMAL;
     }
-    uint32_t errCode = instance->GetComponent(componentType, ptr);
+    uint32_t errCode = instance->GetComponent(componentType, *ptr);
     IMAGE_LOGD("FfiOHOSGetComponent success");
     return errCode;
 }
 
-int64_t FfiImageImageImplGetTimestamp(int64_t id)
+FFI_EXPORT int64_t FfiImageImageImplGetTimestamp(int64_t id)
 {
     IMAGE_LOGD("FfiImageImageImplGetTimestamp start");
     auto instance = FFIData::GetData<ImageImpl>(id);
@@ -845,7 +858,7 @@ int64_t FfiImageImageImplGetTimestamp(int64_t id)
     return instance->GetTimestamp();
 }
 
-void FfiOHOSImageRelease(int64_t id)
+FFI_EXPORT void FfiOHOSImageRelease(int64_t id)
 {
     IMAGE_LOGD("FfiOHOSImageRelease start");
     auto instance = FFIData::GetData<ImageImpl>(id);
@@ -857,7 +870,7 @@ void FfiOHOSImageRelease(int64_t id)
     IMAGE_LOGD("FfiOHOSImageRelease success");
 }
 
-uint32_t FfiImageReceiverImplOn(int64_t id, char* name, int64_t callbackId)
+FFI_EXPORT uint32_t FfiImageReceiverImplOn(int64_t id, char* name, int64_t callbackId)
 {
     IMAGE_LOGD("FfiImageReceiverImplOn start");
     auto instance = FFIData::GetData<ImageReceiverImpl>(id);
@@ -883,7 +896,7 @@ FFI_EXPORT uint32_t FfiImageReceiverImplOff(int64_t id, char* name)
 }
 
 //--------------------- ImagePacker ---------------------------------------------------------------------------
-int64_t FFiOHOSImagePackerConstructor()
+FFI_EXPORT int64_t FFiOHOSImagePackerConstructor()
 {
     auto ret = FFIData::Create<ImagePackerImpl>();
     if (!ret) {
@@ -903,7 +916,7 @@ static PackOption ParseCPackOption(CPackingOptionV2 option)
     return packOption;
 }
 
-RetDataCArrUI8 FfiOHOSImagePackerPackingPixelMap(int64_t id, int64_t source, CPackingOption option)
+FFI_EXPORT RetDataCArrUI8 FfiOHOSImagePackerPackingPixelMap(int64_t id, int64_t source, CPackingOption option)
 {
     CArrUI8 data = { .head = nullptr, .size = 0 };
     RetDataCArrUI8 ret = { .code = ERR_IMAGE_INIT_ABNORMAL, .data = data };
@@ -935,7 +948,7 @@ RetDataCArrUI8 FfiOHOSImagePackerPackingPixelMap(int64_t id, int64_t source, CPa
     return ret;
 }
 
-RetDataCArrUI8 FfiOHOSImagePackerPackingPixelMapV2(int64_t id, int64_t source, CPackingOptionV2 option)
+FFI_EXPORT RetDataCArrUI8 FfiOHOSImagePackerPackingPixelMapV2(int64_t id, int64_t source, CPackingOptionV2 option)
 {
     CArrUI8 data = { .head = nullptr, .size = 0 };
     RetDataCArrUI8 ret = { .code = ERR_IMAGE_INIT_ABNORMAL, .data = data };
@@ -967,7 +980,7 @@ RetDataCArrUI8 FfiOHOSImagePackerPackingPixelMapV2(int64_t id, int64_t source, C
     return ret;
 }
 
-RetDataCArrUI8 FfiOHOSImagePackerPackingImageSource(int64_t id, int64_t source, CPackingOption option)
+FFI_EXPORT RetDataCArrUI8 FfiOHOSImagePackerPackingImageSource(int64_t id, int64_t source, CPackingOption option)
 {
     CArrUI8 data = { .head = nullptr, .size = 0 };
     RetDataCArrUI8 ret = { .code = ERR_IMAGE_INIT_ABNORMAL, .data = data };
@@ -999,7 +1012,7 @@ RetDataCArrUI8 FfiOHOSImagePackerPackingImageSource(int64_t id, int64_t source, 
     return ret;
 }
 
-RetDataCArrUI8 FfiOHOSImagePackerPackingImageSourceV2(int64_t id, int64_t source, CPackingOptionV2 option)
+FFI_EXPORT RetDataCArrUI8 FfiOHOSImagePackerPackingImageSourceV2(int64_t id, int64_t source, CPackingOptionV2 option)
 {
     CArrUI8 data = { .head = nullptr, .size = 0 };
     RetDataCArrUI8 ret = { .code = ERR_IMAGE_INIT_ABNORMAL, .data = data };
@@ -1031,7 +1044,7 @@ RetDataCArrUI8 FfiOHOSImagePackerPackingImageSourceV2(int64_t id, int64_t source
     return ret;
 }
 
-RetDataCArrUI8 FfiImageImagePackerImplPackToDataPixelMap(int64_t id, int64_t source, CPackingOptionV2 option)
+FFI_EXPORT RetDataCArrUI8 FfiImageImagePackerImplPackToDataPixelMap(int64_t id, int64_t source, CPackingOptionV2 option)
 {
     IMAGE_LOGD("[ImagePacker] FfiImageImagePackerImplPackToDataPixelMap in");
     CArrUI8 data = { .head = nullptr, .size = 0 };
@@ -1065,7 +1078,8 @@ RetDataCArrUI8 FfiImageImagePackerImplPackToDataPixelMap(int64_t id, int64_t sou
     return ret;
 }
 
-RetDataCArrUI8 FfiImageImagePackerImplPackToDataImageSource(int64_t id, int64_t source, CPackingOptionV2 option)
+FFI_EXPORT RetDataCArrUI8 FfiImageImagePackerImplPackToDataImageSource(
+    int64_t id, int64_t source, CPackingOptionV2 option)
 {
     {
         IMAGE_LOGD("[ImagePacker] FfiImageImagePackerImplPackToDataImageSource in");
@@ -1101,7 +1115,7 @@ RetDataCArrUI8 FfiImageImagePackerImplPackToDataImageSource(int64_t id, int64_t 
     }
 }
 
-RetDataCArrUI8 FfiImageImagePackerImplPackingPicture(int64_t id, int64_t source, CPackingOptionV2 option)
+FFI_EXPORT RetDataCArrUI8 FfiImageImagePackerImplPackingPicture(int64_t id, int64_t source, CPackingOptionV2 option)
 {
     IMAGE_LOGD("[ImagePacker] FfiImageImagePackerImplPackingPicture in");
     CArrUI8 data = { .head = nullptr, .size = 0 };
@@ -1135,7 +1149,7 @@ RetDataCArrUI8 FfiImageImagePackerImplPackingPicture(int64_t id, int64_t source,
     return ret;
 }
 
-RetDataCArrString FfiOHOSImagePackerGetSupportedFormats(int64_t id)
+FFI_EXPORT RetDataCArrString FfiOHOSImagePackerGetSupportedFormats(int64_t id)
 {
     RetDataCArrString ret = { .code = ERR_IMAGE_INIT_ABNORMAL, .data = { .head = nullptr, .size = 0 } };
     auto imagePackerImpl = FFIData::GetData<ImagePackerImpl>(id);
@@ -1191,7 +1205,7 @@ RetDataCArrString FfiOHOSImagePackerGetSupportedFormats(int64_t id)
     return ret;
 }
 
-uint32_t FfiOHOSImagePackerPackPixelMapToFile(int64_t id, int64_t source, int fd, CPackingOption option)
+FFI_EXPORT uint32_t FfiOHOSImagePackerPackPixelMapToFile(int64_t id, int64_t source, int fd, CPackingOption option)
 {
     auto imagePackerImpl = FFIData::GetData<ImagePackerImpl>(id);
     if (!imagePackerImpl) {
@@ -1213,7 +1227,7 @@ uint32_t FfiOHOSImagePackerPackPixelMapToFile(int64_t id, int64_t source, int fd
     return ERR_IMAGE_INIT_ABNORMAL;
 }
 
-uint32_t FfiOHOSImagePackerPackPixelMapToFileV2(int64_t id, int64_t source, int fd, CPackingOptionV2 option)
+FFI_EXPORT uint32_t FfiOHOSImagePackerPackPixelMapToFileV2(int64_t id, int64_t source, int fd, CPackingOptionV2 option)
 {
     auto imagePackerImpl = FFIData::GetData<ImagePackerImpl>(id);
     if (!imagePackerImpl) {
@@ -1235,7 +1249,7 @@ uint32_t FfiOHOSImagePackerPackPixelMapToFileV2(int64_t id, int64_t source, int 
     return ERR_IMAGE_INIT_ABNORMAL;
 }
 
-uint32_t FfiOHOSImagePackerImageSourcePackToFile(int64_t id, int64_t source, int fd, CPackingOption option)
+FFI_EXPORT uint32_t FfiOHOSImagePackerImageSourcePackToFile(int64_t id, int64_t source, int fd, CPackingOption option)
 {
     auto imagePackerImpl = FFIData::GetData<ImagePackerImpl>(id);
     if (!imagePackerImpl) {
@@ -1257,7 +1271,8 @@ uint32_t FfiOHOSImagePackerImageSourcePackToFile(int64_t id, int64_t source, int
     return ERR_IMAGE_INIT_ABNORMAL;
 }
 
-uint32_t FfiOHOSImagePackerImageSourcePackToFileV2(int64_t id, int64_t source, int fd, CPackingOptionV2 option)
+FFI_EXPORT uint32_t FfiOHOSImagePackerImageSourcePackToFileV2(
+    int64_t id, int64_t source, int fd, CPackingOptionV2 option)
 {
     auto imagePackerImpl = FFIData::GetData<ImagePackerImpl>(id);
     if (!imagePackerImpl) {
@@ -1279,7 +1294,8 @@ uint32_t FfiOHOSImagePackerImageSourcePackToFileV2(int64_t id, int64_t source, i
     return ERR_IMAGE_INIT_ABNORMAL;
 }
 
-uint32_t FfiImageImagePackerImplPackToFilePicture(int64_t id, int64_t source, int fd, CPackingOptionV2 option)
+FFI_EXPORT uint32_t FfiImageImagePackerImplPackToFilePicture(
+    int64_t id, int64_t source, int fd, CPackingOptionV2 option)
 {
     IMAGE_LOGD("[ImagePacker] FfiImageImagePackerImplPackToFilePicture in");
     auto imagePackerImpl = FFIData::GetData<ImagePackerImpl>(id);
@@ -1303,12 +1319,12 @@ uint32_t FfiImageImagePackerImplPackToFilePicture(int64_t id, int64_t source, in
     return ERR_IMAGE_INIT_ABNORMAL;
 }
 
-uint64_t FfiOHOSGetPackOptionSize()
+FFI_EXPORT uint64_t FfiOHOSGetPackOptionSize()
 {
     return sizeof(PackOption);
 }
 
-void FFiOHOSImagePackerRelease(int64_t id)
+FFI_EXPORT void FFiOHOSImagePackerRelease(int64_t id)
 {
     IMAGE_LOGD("FFiOHOSImagePackerRelease start");
     auto instance = FFIData::GetData<ImagePackerImpl>(id);
@@ -1320,7 +1336,7 @@ void FFiOHOSImagePackerRelease(int64_t id)
 }
 
 //--------------------- ImageCreator ---------------------------------------------------------------------------
-int64_t FFiOHOSImageCreatorConstructor(int32_t width, int32_t height, int32_t format, int32_t capacity)
+FFI_EXPORT int64_t FFiOHOSImageCreatorConstructor(int32_t width, int32_t height, int32_t format, int32_t capacity)
 {
     auto ret = FFIData::Create<ImageCreatorImpl>(width, height, format, capacity);
     if (!ret) {
@@ -1329,7 +1345,7 @@ int64_t FFiOHOSImageCreatorConstructor(int32_t width, int32_t height, int32_t fo
     return ret->GetID();
 }
 
-RetDataI32 FFiOHOSImageCreatorGetCapacity(int64_t id)
+FFI_EXPORT RetDataI32 FFiOHOSImageCreatorGetCapacity(int64_t id)
 {
     IMAGE_LOGD("FFiOHOSImageCreatorGetCapacity start");
     RetDataI32 ret = { .code = ERR_IMAGE_INIT_ABNORMAL, .data = 0 };
@@ -1357,7 +1373,7 @@ RetDataI32 FFiOHOSImageCreatorGetCapacity(int64_t id)
     return ret;
 }
 
-RetDataI32 FFiOHOSImageCreatorGetformat(int64_t id)
+FFI_EXPORT RetDataI32 FFiOHOSImageCreatorGetformat(int64_t id)
 {
     IMAGE_LOGD("FFiOHOSImageCreatorGetformat start");
     RetDataI32 ret = { .code = ERR_IMAGE_INIT_ABNORMAL, .data = 0 };
@@ -1385,7 +1401,7 @@ RetDataI32 FFiOHOSImageCreatorGetformat(int64_t id)
     return ret;
 }
 
-int64_t FFiOHOSImageCreatorDequeueImage(int64_t id, uint32_t* errCode)
+FFI_EXPORT int64_t FFiOHOSImageCreatorDequeueImage(int64_t id, uint32_t* errCode)
 {
     IMAGE_LOGD("FFiOHOSImageCreatorDequeueImage start");
     auto instance = FFIData::GetData<ImageCreatorImpl>(id);
@@ -1413,7 +1429,7 @@ int64_t FFiOHOSImageCreatorDequeueImage(int64_t id, uint32_t* errCode)
     return ret->GetID();
 }
 
-void FFiOHOSImageCreatorQueueImage(int64_t id, int64_t imageId)
+FFI_EXPORT void FFiOHOSImageCreatorQueueImage(int64_t id, int64_t imageId)
 {
     IMAGE_LOGD("FFiOHOSImageCreatorQueueImage start");
     auto instance = FFIData::GetData<ImageCreatorImpl>(id);
@@ -1435,7 +1451,7 @@ void FFiOHOSImageCreatorQueueImage(int64_t id, int64_t imageId)
     IMAGE_LOGD("FFiOHOSImageCreatorQueueImage success");
 }
 
-void FFiOHOSImageCreatorRelease(int64_t id)
+FFI_EXPORT void FFiOHOSImageCreatorRelease(int64_t id)
 {
     IMAGE_LOGD("FFiOHOSImageCreatorRelease start");
     auto instance = FFIData::GetData<ImageCreatorImpl>(id);
@@ -1447,7 +1463,7 @@ void FFiOHOSImageCreatorRelease(int64_t id)
     IMAGE_LOGD("FFiOHOSImageCreatorRelease success");
 }
 
-uint32_t FfiImageImageCreatorImplOn(int64_t id, char* name, int64_t callbackId)
+FFI_EXPORT uint32_t FfiImageImageCreatorImplOn(int64_t id, char* name, int64_t callbackId)
 {
     IMAGE_LOGD("FfiImageImageCreatorImplOn start");
     auto instance = FFIData::GetData<ImageCreatorImpl>(id);
@@ -1461,7 +1477,7 @@ uint32_t FfiImageImageCreatorImplOn(int64_t id, char* name, int64_t callbackId)
 }
 
 //  Picture
-int64_t FfiImagePictureImplCreatePicture(int64_t id, uint32_t* errCode)
+FFI_EXPORT int64_t FfiImagePictureImplCreatePicture(int64_t id, uint32_t* errCode)
 {
     IMAGE_LOGD("[Picture] FfiImagePictureImplCreatePicture in");
     auto pixelMapImpl = FFIData::GetData<PixelMapImpl>(id);
@@ -1488,7 +1504,7 @@ int64_t FfiImagePictureImplCreatePicture(int64_t id, uint32_t* errCode)
     return native->GetID();
 }
 
-uint32_t FfiImagePictureImplSetMetadata(int64_t id, int32_t metadataType, int64_t metadataId)
+FFI_EXPORT uint32_t FfiImagePictureImplSetMetadata(int64_t id, int32_t metadataType, int64_t metadataId)
 {
     IMAGE_LOGD("[Picture] FfiImagePictureImplSetMetadata in");
     if (metadataType != static_cast<int32_t>(MetadataType::EXIF)) {
@@ -1509,7 +1525,7 @@ uint32_t FfiImagePictureImplSetMetadata(int64_t id, int32_t metadataType, int64_
     return picture->SetMetadata(MetadataType(metadataType), metadata->GetNativeMetadata());
 }
 
-int64_t FfiImagePictureImplGetMetadata(int64_t id, int32_t metadataType, uint32_t* errCode)
+FFI_EXPORT int64_t FfiImagePictureImplGetMetadata(int64_t id, int32_t metadataType, uint32_t* errCode)
 {
     IMAGE_LOGD("[Picture] FfiImagePictureImplGetMetadata in");
     if (metadataType != static_cast<int32_t>(MetadataType::EXIF)) {
@@ -1540,7 +1556,7 @@ int64_t FfiImagePictureImplGetMetadata(int64_t id, int32_t metadataType, uint32_
 }
 
 // Metadata
-CjProperties FfiImageMetadataImplGetAllProperties(int64_t id, uint32_t* errCode)
+FFI_EXPORT CjProperties FfiImageMetadataImplGetAllProperties(int64_t id, uint32_t* errCode)
 {
     IMAGE_LOGD("[Metadata] FfiImageMetadataImplGetAllProperties in");
     CjProperties res = { 0 };
@@ -1588,7 +1604,7 @@ CjProperties FfiImageMetadataImplGetAllProperties(int64_t id, uint32_t* errCode)
     return res;
 }
 
-void FfiImageMetadataImplReleaseProperties(CjProperties* properties)
+FFI_EXPORT void FfiImageMetadataImplReleaseProperties(CjProperties* properties)
 {
     if (properties != nullptr) {
         if (properties->key != nullptr) {

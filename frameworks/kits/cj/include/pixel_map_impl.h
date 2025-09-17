@@ -30,7 +30,7 @@ public:
         : real_(ptr), isPixelMapImplEditable(isEditable), transferDetach_(transferDetach) {};
     std::shared_ptr<PixelMap> GetRealPixelMap();
     uint32_t ReadPixelsToBuffer(uint64_t& bufferSize, uint8_t* dst);
-    uint32_t WriteBufferToPixels(uint8_t* source, uint64_t& bufferSize);
+    uint32_t WriteBufferToPixels(const uint8_t* source, uint64_t& bufferSize);
     int32_t GetDensity();
     uint32_t Opacity(float percent);
     uint32_t Crop(Rect& rect);
@@ -38,17 +38,17 @@ public:
     uint32_t GetPixelBytesNumber();
     uint32_t GetBytesNumberPerRow();
     uint32_t ReadPixels(uint64_t& bufferSize, uint32_t& offset, uint32_t& stride, Rect& region, uint8_t* dst);
-    uint32_t WritePixels(uint8_t* source, uint64_t& bufferSize, uint32_t& offset, uint32_t& stride, Rect& region);
+    uint32_t WritePixels(const uint8_t* source, uint64_t& bufferSize, uint32_t& offset, uint32_t& stride, Rect& region);
     uint32_t SetColorSpace(std::shared_ptr<OHOS::ColorManager::ColorSpace> colorSpace);
     std::shared_ptr<OHOS::ColorManager::ColorSpace> GetColorSpace();
     uint32_t ApplyColorSpace(std::shared_ptr<OHOS::ColorManager::ColorSpace> colorSpace);
     uint32_t Marshalling(int64_t rpcId);
-    std::shared_ptr<PixelMap> Unmarshalling(int64_t rpcId, uint32_t* errCode);
-    uint32_t ConvertPixelMapFormat(PixelFormat destFormat);
+    std::shared_ptr<PixelMap> Unmarshalling(int64_t rpcId, uint32_t& errCode);
+    uint32_t ConvertPixelMapFormat(PixelFormat& destFormat);
 
     void GetImageInfo(ImageInfo& imageInfo);
     void Scale(float xAxis, float yAxis);
-    void Scale(float xAxis, float yAxis, AntiAliasingOption option);
+    void Scale(float xAxis, float yAxis, AntiAliasingOption& option);
     void Flip(bool xAxis, bool yAxis);
     void Rotate(float degrees);
     void Translate(float xAxis, float yAxis);
@@ -73,13 +73,13 @@ public:
 
     static std::unique_ptr<PixelMap> CreatePixelMap(const InitializationOptions& opts);
     static std::unique_ptr<PixelMap> CreatePixelMap(
-        uint32_t* colors, uint32_t colorLength, InitializationOptions& opts);
+        uint32_t* colors, uint32_t& colorLength, InitializationOptions& opts);
     static std::unique_ptr<PixelMap> CreateAlphaPixelMap(PixelMap& source, InitializationOptions& opts);
     static uint32_t CreatePremultipliedPixelMap(std::shared_ptr<PixelMap> src, std::shared_ptr<PixelMap> dst);
     static uint32_t CreateUnpremultipliedPixelMap(std::shared_ptr<PixelMap> src, std::shared_ptr<PixelMap> dst);
     static std::shared_ptr<PixelMap> CreatePixelMapFromSurface(
-        char* surfaceId, Rect region, size_t argc, uint32_t* errCode);
-    static std::shared_ptr<PixelMap> CreatePixelMapFromParcel(int64_t rpcId, uint32_t* errCode);
+        char* surfaceId, Rect region, size_t argc, uint32_t& errCode);
+    static std::shared_ptr<PixelMap> CreatePixelMapFromParcel(int64_t rpcId, uint32_t& errCode);
 
 private:
     std::shared_ptr<PixelMap> real_;
