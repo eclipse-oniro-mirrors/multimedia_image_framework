@@ -154,8 +154,10 @@ void PixelMap::FreePixelMap() __attribute__((no_sanitize("cfi")))
     
     switch (allocatorType_) {
         case AllocatorType::HEAP_ALLOC: {
-            free(data_);
-            data_ = nullptr;
+            if (data_ != nullptr) {
+                free(data_);
+                data_ = nullptr;
+            }
             break;
         }
         case AllocatorType::CUSTOM_ALLOC: {
