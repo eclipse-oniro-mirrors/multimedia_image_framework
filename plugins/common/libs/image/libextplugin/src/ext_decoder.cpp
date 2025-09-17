@@ -2328,6 +2328,7 @@ static std::vector<ColorSpaceNameEnum> sColorSpaceNamedMap = {
     {"DCI P3", OHOS::ColorManager::ColorSpaceName::DCI_P3},
     {"sRGB", OHOS::ColorManager::ColorSpaceName::SRGB},
     {"BT.2020", OHOS::ColorManager::ColorSpaceName::BT2020},
+    {"DCI-P3", OHOS::ColorManager::ColorSpaceName::DCI_P3},
     {"Rec2020 Gamut with HLG Transfer", OHOS::ColorManager::ColorSpaceName::BT2020_HLG}
 };
 
