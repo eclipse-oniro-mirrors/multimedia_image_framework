@@ -14,7 +14,6 @@
  */
 
 #include "image_source_native.h"
-#include "jpeg_decoder_yuv.h"
 #include "picture_native_impl.h"
 #include "common_utils.h"
 #include "image_error_convert.h"

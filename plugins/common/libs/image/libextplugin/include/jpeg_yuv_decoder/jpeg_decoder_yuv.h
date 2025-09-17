@@ -41,18 +41,6 @@ enum class JpegYuvFmt {
     OutFmt_NV21,
 };
 
-enum JpegYuvDecodeError {
-    JpegYuvDecodeError_Unknown = -1,
-    JpegYuvDecodeError_Success = 0,
-    JpegYuvDecodeError_InvalidParameter,
-    JpegYuvDecodeError_DecodeFailed,
-    JpegYuvDecodeError_BadImage,
-    JpegYuvDecodeError_SubSampleNotSupport,
-    JpegYuvDecodeError_MemoryMallocFailed,
-    JpegYuvDecodeError_MemoryNotEnoughToSaveResult,
-    JpegYuvDecodeError_ConvertError,
-};
-
 struct JpegDecoderYuvParameter {
     uint32_t jpgwidth_ = 0;
     uint32_t jpgheight_ = 0;

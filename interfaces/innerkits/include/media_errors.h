@@ -168,4 +168,20 @@ const int32_t ERR_MEDIA_MEMORY_ALLOC_FAILED = 7600301; // Memory alloc failed
 const int32_t ERR_MEDIA_MEMORY_COPY_FAILED = 7600302; // Memory copy failed
 }  // namespace Media
 }  // namespace OHOS
+
+namespace OHOS {
+namespace ImagePlugin {
+enum JpegYuvDecodeError {
+    JpegYuvDecodeError_Unknown = -1,
+    JpegYuvDecodeError_Success = 0,
+    JpegYuvDecodeError_InvalidParameter,
+    JpegYuvDecodeError_DecodeFailed,
+    JpegYuvDecodeError_BadImage,
+    JpegYuvDecodeError_SubSampleNotSupport,
+    JpegYuvDecodeError_MemoryMallocFailed,
+    JpegYuvDecodeError_MemoryNotEnoughToSaveResult,
+    JpegYuvDecodeError_ConvertError,
+};
+}  // namespace ImagePlugin
+}  // namespace OHOS
 #endif  // INTERFACES_INNERKITS_INCLUDE_MEDIA_ERRORS_H
