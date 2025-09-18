@@ -262,6 +262,10 @@ bool HeifDecoderImpl::setAuxiliaryMap(AuxiliaryPictureType type)
 {
     bool cond = auxiliaryImage_ == nullptr && !CheckAuxiliaryMap(type);
     CHECK_ERROR_RETURN_RET_LOG(cond, false, "make heif parser failed");
+    isPictureGainmap_ = false;
+    if (type == AuxiliaryPictureType::GAINMAP) {
+        isPictureGainmap_ = true;
+    }
     InitFrameInfo(&auxiliaryImageInfo_, auxiliaryImage_);
     InitGridInfo(auxiliaryImage_, auxiliaryGridInfo_);
     return true;
@@ -477,7 +481,7 @@ GSError HeifDecoderImpl::HwSetColorSpaceData(sptr<SurfaceBuffer>& buffer, GridIn
         (colorSpaceSearch != ColorUtils::COLORSPACE_NAME_TO_COLORINFO_MAP.end()) ? colorSpaceSearch->second :
         CM_ColorSpaceInfo {COLORPRIMARIES_BT601_P, TRANSFUNC_BT709, MATRIX_BT601_P, RANGE_FULL};
     // 1 : range -> RANGE_FULL, 0 : range -> RANGE_LIMITED
-    if (!isColorSpaceFromCicp_ && !isGainmapDecode_) {
+    if (!isColorSpaceFromCicp_ && !isGainmapDecode_ && !isPictureGainmap_) {
         colorSpaceInfo.range = gridInfo.colorRangeFlag == FULL_RANGE_FLAG ? RANGE_FULL : RANGE_LIMITED;
         IMAGE_LOGD("HwSetColorSpaceData gridInfo range : %{public}d", gridInfo.colorRangeFlag);
     }
