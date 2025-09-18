@@ -596,16 +596,18 @@ bool ExtEncoder::IsHardwareEncodeSupported(const PlEncodeOptions &opts, Media::P
 uint32_t ExtEncoder::DoHardWareEncode(SkWStream* skStream)
 {
     static ImageFwkExtManager imageFwkExtManager;
-    if (imageFwkExtManager.doHardWareEncodeFunc_ != nullptr || imageFwkExtManager.LoadImageFwkExtNativeSo()) {
-        int32_t retCode = imageFwkExtManager.doHardWareEncodeFunc_(skStream, opts_, pixelmap_);
-        CHECK_DEBUG_RETURN_RET_LOG(retCode == SUCCESS, SUCCESS, "DoHardWareEncode Success return");
-        IMAGE_LOGE("hardware encode failed, retCode is %{public}d", retCode);
-        ImageInfo imageInfo;
-        pixelmap_->GetImageInfo(imageInfo);
-        ReportEncodeFault(imageInfo.size.width, imageInfo.size.height, opts_.format, "hardware encode failed");
-    } else {
-        IMAGE_LOGE("hardware encode failed because of load native so failed");
+    if (imageFwkExtManager.doHardWareEncodeFunc_ == nullptr) {
+        if (!imageFwkExtManager.LoadImageFwkExtNativeSo()) {
+            IMAGE_LOGE("hardware encode failed because of load native so failed");
+            return ERR_IMAGE_ENCODE_FAILED;
+        }
     }
+    int32_t retCode = imageFwkExtManager.doHardWareEncodeFunc_(skStream, opts_, pixelmap_);
+    CHECK_DEBUG_RETURN_RET_LOG(retCode == SUCCESS, SUCCESS, "DoHardWareEncode Success return");
+    IMAGE_LOGE("hardware encode failed, retCode is %{public}d", retCode);
+    ImageInfo imageInfo;
+    pixelmap_->GetImageInfo(imageInfo);
+    ReportEncodeFault(imageInfo.size.width, imageInfo.size.height, opts_.format, "hardware encode failed");
     return ERR_IMAGE_ENCODE_FAILED;
 }
 

@@ -4575,13 +4575,12 @@ napi_value PixelMapNapi::ConvertPixelMapFormat(napi_env env, napi_callback_info 
     if (!prepareNapiEnv(env, info, &nVal)) {
         return nVal.result;
     }
+    if (!nVal.context) {
+        return nullptr;
+    }
     nVal.context->rPixelMap = nVal.context->nConstructor->nativePixelMap_;
     if (nVal.argc >= 1 && ImageNapiUtils::getType(env, nVal.argv[nVal.argc - 1]) == napi_function) {
         napi_create_reference(env, nVal.argv[nVal.argc - 1], nVal.refCount, &(nVal.context->callbackRef));
-    }
-
-    if (!nVal.context) {
-        return nullptr;
     }
     napi_get_undefined(env, &nVal.result);
     if (nVal.argc != NUM_1) {
