@@ -97,7 +97,7 @@ private:
 
     void InitGridInfo(const std::shared_ptr<HeifImage> &image, GridInfo &gridInfo);
 
-    void GetTileSize(const std::shared_ptr<HeifImage> &image, GridInfo &gridInfo);
+    void GetTileSize(const std::shared_ptr<HeifImage> &image, GridInfo &gridInfo, uint32_t &recursionCount);
 
     void GetRowColNum(GridInfo &gridInfo);
 
@@ -189,7 +189,7 @@ private:
     Media::PixelFormat gainmapOutPixelFormat_ = Media::PixelFormat::RGBA_8888;
     HeifFrameInfo imageInfo_{};
 
-    GridInfo gridInfo_ = {0, 0, false, 0, 0, 0, 0, 1};
+    GridInfo gridInfo_ = {0, 0, false, 0, 0, 0, 0, 0};
     uint8_t *srcMemory_ = nullptr;
     uint8_t *dstMemory_;
     size_t dstRowStride_;
@@ -213,12 +213,13 @@ private:
 
     std::shared_ptr<HeifImage> auxiliaryImage_ = nullptr;
     HeifFrameInfo auxiliaryImageInfo_{};
-    GridInfo auxiliaryGridInfo_ = {0, 0, false, 0, 0, 0, 0, 1};
+    GridInfo auxiliaryGridInfo_ = {0, 0, false, 0, 0, 0, 0, 0};
     uint8_t* auxiliaryDstMemory_;
     size_t auxiliaryDstRowStride_;
     size_t auxiliaryDstMemorySize_;
     bool isAuxiliaryDecode_ = false;
     bool isGainmapDecode_ = false;
+    bool isPictureGainmap_ = false;
     SurfaceBuffer *auxiliaryDstHwbuffer_;
     SurfaceBuffer *gainMapDstHwbuffer_;
     uint32_t sampleSize_ = 1;
@@ -227,7 +228,7 @@ private:
     HeifFrameInfo tmapInfo_{};
     std::string errMsg_;
 
-    GridInfo gainmapGridInfo_ = {0, 0, false, 0, 0, 0, 0, 1};
+    GridInfo gainmapGridInfo_ = {0, 0, false, 0, 0, 0, 0, 0};
 };
 } // namespace ImagePlugin
 } // namespace OHOS
