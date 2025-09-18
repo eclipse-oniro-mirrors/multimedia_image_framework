@@ -4661,10 +4661,11 @@ static uint32_t DoAiHdrProcess(sptr<SurfaceBuffer> &input, DecodeContext &hdrCtx
 
     std::unique_ptr<VpeUtils> utils = std::make_unique<VpeUtils>();
     ImageUtils::DumpHdrBufferEnabled(input, "PixelMap-AIprocess-input");
-    res = utils->ColorSpaceConverterImageProcess(input, output);
+    int32_t vpeProcessErrCode = utils->ColorSpaceConverterImageProcess(input, output);
     ImageUtils::DumpHdrBufferEnabled(output, "PixelMap-AIprocess-output");
-    if (res != VPE_ERROR_OK) {
-        IMAGE_LOGE("[ImageSource]DoAiHdrProcess ColorSpaceConverterImageProcess failed! %{public}d", res);
+    if (vpeProcessErrCode != VPE_ERROR_OK) {
+        IMAGE_LOGE("[ImageSource]DoAiHdrProcess ColorSpaceConverterImageProcess failed! %{public}d", vpeProcessErrCode);
+        res = ERR_IMAGE_AI_UNSUPPORTED;
         FreeContextBuffer(hdrCtx.freeFunc, hdrCtx.allocatorType, hdrCtx.pixelsBuffer);
     } else {
         IMAGE_LOGD("[ImageSource]DoAiHdrProcess ColorSpaceConverterImageProcess Succ!");
@@ -4690,9 +4691,11 @@ static uint32_t AiSrProcess(sptr<SurfaceBuffer> &input, DecodeContext &aisrCtx)
     CHECK_ERROR_RETURN_RET_LOG(cond, res, "HDR SurfaceBuffer Alloc failed, %{public}d", res);
     sptr<SurfaceBuffer> output = reinterpret_cast<SurfaceBuffer*>(aisrCtx.pixelsBuffer.context);
     std::unique_ptr<VpeUtils> utils = std::make_unique<VpeUtils>();
-    res = utils->DetailEnhancerImageProcess(input, output, static_cast<int32_t>(aisrCtx.resolutionQuality));
-    if (res != VPE_ERROR_OK) {
-        IMAGE_LOGE("[ImageSource]AiSrProcess DetailEnhancerImage Processed failed");
+    int32_t vpeProcessErrCode = utils->DetailEnhancerImageProcess(input, output,
+        static_cast<int32_t>(aisrCtx.resolutionQuality));
+    if (vpeProcessErrCode != VPE_ERROR_OK) {
+        IMAGE_LOGE("[ImageSource]AiSrProcess DetailEnhancerImage Processed failed! %{public}d", vpeProcessErrCode);
+        res = ERR_IMAGE_AI_UNSUPPORTED;
         FreeContextBuffer(aisrCtx.freeFunc, aisrCtx.allocatorType, aisrCtx.pixelsBuffer);
     } else {
         aisrCtx.outInfo.size.width = output->GetSurfaceBufferWidth();

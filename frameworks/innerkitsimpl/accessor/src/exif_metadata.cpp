@@ -702,7 +702,11 @@ bool ExifMetadata::SetHwMoteValue(const std::string &key, const std::string &val
     }
 
     const char *data = value.c_str();
-    int dataLen = value.length();
+    if (value.length() > static_cast<size_t>(std::numeric_limits<int>::max())) {
+        IMAGE_LOGE("Value length inavlid.length = %{public}d", static_cast<int>(value.length()));
+        return false;
+    }
+    int dataLen = static_cast<int>(value.length());
     int ret = mnote_huawei_entry_set_value(entry, data, dataLen);
     if (ret == 0 && isNewMaker && hwTag != MNOTE_HUAWEI_CAPTURE_MODE) {
         IMAGE_LOGD("Remve default initialized hw entry.");
