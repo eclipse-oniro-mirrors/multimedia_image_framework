@@ -217,6 +217,7 @@ private:
     size_t auxiliaryDstMemorySize_;
     bool isAuxiliaryDecode_ = false;
     bool isGainmapDecode_ = false;
+    bool isPictureGainmap_ = false;
     SurfaceBuffer *auxiliaryDstHwbuffer_;
     SurfaceBuffer *gainMapDstHwbuffer_;
     uint32_t sampleSize_ = 1;
