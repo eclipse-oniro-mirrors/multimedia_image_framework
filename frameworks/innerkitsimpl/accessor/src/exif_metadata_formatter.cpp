@@ -566,7 +566,7 @@ ExifMetadatFormatter::ExifMetadatFormatter()
     InitValueTemplateConfig();
 }
 
-// configuratioin for value range validation. For example GPSLatitudeRef the value must be 'N' or 'S'.
+// configuration for value range validation. For example GPSLatitudeRef the value must be 'N' or 'S'.
 void ExifMetadatFormatter::InitValueRangeValidateConfig()
 {
     valueRangeValidateConfig_ = std::map<std::string, std::tuple<const TagDetails*, const size_t>>{
@@ -1330,7 +1330,7 @@ bool ExifMetadatFormatter::ValidRegexWithGpsOneRationalFormat(std::string &value
 // validate the value range. For example GPSLatitudeRef the value must be 'N' or 'S'.
 int32_t ExifMetadatFormatter::ValidateValueRange(const std::string &keyName, const std::string &value)
 {
-    // 1. to find if any value range validation configuratiion according to exif tag in std::map container
+    // 1. to find if any value range validation configuration according to exif tag in std::map container
     auto iter = ExifMetadatFormatter::GetInstance().valueRangeValidateConfig_.find(keyName);
     if (iter == ExifMetadatFormatter::GetInstance().valueRangeValidateConfig_.end()) {
         // if no range validation for key default is success.
