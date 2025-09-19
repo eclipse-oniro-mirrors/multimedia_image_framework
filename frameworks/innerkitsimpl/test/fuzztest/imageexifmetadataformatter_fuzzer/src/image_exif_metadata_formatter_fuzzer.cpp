@@ -40,8 +40,8 @@ void ExifMetadataFormatterFuzzTest()
 {
     size_t maxStrSize = 20;
     std::string value = FDP->ConsumeRandomLengthString(maxStrSize);
-    for (auto it = ExifMetadatFormatter::valueFormatConvertConfig_.begin();
-        it != ExifMetadatFormatter::valueFormatConvertConfig_.end(); it++) {
+    for (auto it = ExifMetadatFormatter::GetInstance().valueFormatConvertConfig_.begin();
+        it != ExifMetadatFormatter::GetInstance().valueFormatConvertConfig_.end(); it++) {
         auto func = (it->second).first;
         func(value, (it->second).second);
     }
