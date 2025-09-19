@@ -20,6 +20,7 @@
 #include "image_source.h"
 #include "media_errors.h"
 #include "pixel_map_impl.h"
+#include "parameter.h"
 #include "string_ex.h"
 
 namespace OHOS {
@@ -28,46 +29,47 @@ const uint32_t NUM_2 = 2;
 const uint32_t NUM_3 = 3;
 const long int NUM_8 = 8;
 const int DECIMAL_BASE = 10;
+const int32_t API_VERSION_20 = 20;
 
-std::unique_ptr<ImageSource> ImageSourceImpl::CreateImageSource(std::string uri, uint32_t* errCode)
+std::unique_ptr<ImageSource> ImageSourceImpl::CreateImageSource(const std::string& uri, uint32_t& errCode)
 {
     SourceOptions opts;
-    std::unique_ptr<ImageSource> ptr_ = ImageSource::CreateImageSource(uri, opts, *errCode);
+    std::unique_ptr<ImageSource> ptr_ = ImageSource::CreateImageSource(uri, opts, errCode);
     return ptr_;
 }
 
 std::unique_ptr<ImageSource> ImageSourceImpl::CreateImageSourceWithOption(
-    std::string uri, SourceOptions& opts, uint32_t* errCode)
+    const std::string& uri, SourceOptions& opts, uint32_t& errCode)
 {
-    std::unique_ptr<ImageSource> ptr_ = ImageSource::CreateImageSource(uri, opts, *errCode);
+    std::unique_ptr<ImageSource> ptr_ = ImageSource::CreateImageSource(uri, opts, errCode);
     return ptr_;
 }
 
-std::unique_ptr<ImageSource> ImageSourceImpl::CreateImageSource(int fd, uint32_t* errCode)
+std::unique_ptr<ImageSource> ImageSourceImpl::CreateImageSource(const int fd, uint32_t& errCode)
 {
     SourceOptions opts;
-    std::unique_ptr<ImageSource> ptr_ = ImageSource::CreateImageSource(fd, opts, *errCode);
+    std::unique_ptr<ImageSource> ptr_ = ImageSource::CreateImageSource(fd, opts, errCode);
     return ptr_;
 }
 
 std::unique_ptr<ImageSource> ImageSourceImpl::CreateImageSourceWithOption(
-    int fd, SourceOptions& opts, uint32_t* errCode)
+    const int fd, SourceOptions& opts, uint32_t& errCode)
 {
-    std::unique_ptr<ImageSource> ptr_ = ImageSource::CreateImageSource(fd, opts, *errCode);
+    std::unique_ptr<ImageSource> ptr_ = ImageSource::CreateImageSource(fd, opts, errCode);
     return ptr_;
 }
 
-std::unique_ptr<ImageSource> ImageSourceImpl::CreateImageSource(uint8_t* data, uint32_t size, uint32_t* errCode)
+std::unique_ptr<ImageSource> ImageSourceImpl::CreateImageSource(const uint8_t* data, uint32_t size, uint32_t& errCode)
 {
     SourceOptions opts;
-    std::unique_ptr<ImageSource> ptr_ = ImageSource::CreateImageSource(data, size, opts, *errCode);
+    std::unique_ptr<ImageSource> ptr_ = ImageSource::CreateImageSource(data, size, opts, errCode);
     return ptr_;
 }
 
 std::unique_ptr<ImageSource> ImageSourceImpl::CreateImageSourceWithOption(
-    uint8_t* data, uint32_t size, SourceOptions& opts, uint32_t* errCode)
+    const uint8_t* data, uint32_t size, SourceOptions& opts, uint32_t& errCode)
 {
-    std::unique_ptr<ImageSource> ptr_ = ImageSource::CreateImageSource(data, size, opts, *errCode);
+    std::unique_ptr<ImageSource> ptr_ = ImageSource::CreateImageSource(data, size, opts, errCode);
     return ptr_;
 }
 
@@ -129,7 +131,7 @@ uint32_t ImageSourceImpl::GetSupportedFormats(std::set<std::string>& formats)
     return nativeImgSrc->GetSupportedFormats(formats);
 }
 
-uint32_t ImageSourceImpl::GetImageProperty(std::string key, uint32_t index, std::string& defaultValue)
+uint32_t ImageSourceImpl::GetImageProperty(const std::string& key, uint32_t index, std::string& defaultValue)
 {
     if (nativeImgSrc == nullptr) {
         return ERR_IMAGE_INIT_ABNORMAL;
@@ -140,7 +142,7 @@ uint32_t ImageSourceImpl::GetImageProperty(std::string key, uint32_t index, std:
 }
 
 uint32_t ImageSourceImpl::GetImageProperties(
-    std::vector<std::string> keyStrArray, std::vector<std::string>& valueStrArray)
+    const std::vector<std::string>& keyStrArray, std::vector<std::string>& valueStrArray)
 {
     if (nativeImgSrc == nullptr) {
         return ERR_IMAGE_INIT_ABNORMAL;
@@ -227,7 +229,7 @@ static bool CheckExifDataValue(const std::string& key, const std::string& value)
     return true;
 }
 
-uint32_t ImageSourceImpl::ModifyImageProperty(std::string key, std::string value)
+uint32_t ImageSourceImpl::ModifyImageProperty(const std::string& key, const std::string& value)
 {
     if (nativeImgSrc == nullptr) {
         return ERR_IMAGE_INIT_ABNORMAL;
@@ -251,12 +253,13 @@ uint32_t ImageSourceImpl::ModifyImageProperty(std::string key, std::string value
     return ret;
 }
 
-uint32_t ImageSourceImpl::ModifyImageProperties(char** keyStrArray, char** valueStrArray, int64_t arraySize)
+uint32_t ImageSourceImpl::ModifyImageProperties(
+    const std::vector<std::string>& keyStrArray, const std::vector<std::string>& valueStrArray)
 {
     if (nativeImgSrc == nullptr) {
         return ERR_IMAGE_INIT_ABNORMAL;
     }
-    for (int64_t i = 0; i < arraySize; i++) {
+    for (size_t i = 0; i < keyStrArray.size(); i++) {
         uint32_t ret = ModifyImageProperty(keyStrArray[i], valueStrArray[i]);
         if (ret != SUCCESS) {
             return ret;
@@ -275,7 +278,7 @@ uint32_t ImageSourceImpl::GetFrameCount(uint32_t& errorCode)
     return nativeImgSrc->GetFrameCount(errorCode);
 }
 
-uint32_t ImageSourceImpl::UpdateData(uint8_t* data, uint32_t size, bool isCompleted)
+uint32_t ImageSourceImpl::UpdateData(const uint8_t* data, uint32_t size, bool isCompleted)
 {
     if (nativeImgSrc == nullptr) {
         return ERR_IMAGE_INIT_ABNORMAL;
@@ -299,44 +302,48 @@ int64_t ImageSourceImpl::CreatePixelMap(uint32_t index, DecodeOptions& opts, uin
         incPixelMap = nativeImgSrc->CreatePixelMapEx(index, opts, errorCode);
         if (incPixelMap == nullptr) {
             IMAGE_LOGE("[ImageSourceImpl] Create PixelMap error.");
-            errorCode = ERR_IMAGE_INIT_ABNORMAL;
-            return 0;
+            if (GetSdkApiVersion() > API_VERSION_20) {
+                errorCode = ERR_IMAGE_INIT_ABNORMAL;
+                return 0;
+            }
         }
     }
 
     auto nativeImage = FFIData::Create<PixelMapImpl>(move(incPixelMap));
-    if (nativeImage == nullptr) {
-        IMAGE_LOGE("nativeImage is nullptr.");
-        errorCode = ERR_IMAGE_INIT_ABNORMAL;
-        return 0;
+    if (GetSdkApiVersion() > API_VERSION_20) {
+        if (nativeImage == nullptr) {
+            IMAGE_LOGE("nativeImage is nullptr.");
+            errorCode = ERR_IMAGE_INIT_ABNORMAL;
+            return 0;
+        }
     }
     errorCode = SUCCESS;
     IMAGE_LOGD("[ImageSourceImpl] CreatePixelMap success.");
     return nativeImage->GetID();
 }
 
-std::vector<int64_t> ImageSourceImpl::CreatePixelMapList(uint32_t index, DecodeOptions opts, uint32_t* errorCode)
+std::vector<int64_t> ImageSourceImpl::CreatePixelMapList(uint32_t index, DecodeOptions& opts, uint32_t& errorCode)
 {
     std::vector<int64_t> ret;
     if (nativeImgSrc == nullptr) {
-        *errorCode = ERR_IMAGE_INIT_ABNORMAL;
+        errorCode = ERR_IMAGE_INIT_ABNORMAL;
         return ret;
     }
     IMAGE_LOGD("[ImageSourceImpl] CreatePixelMapList start.");
-    uint32_t frameCount = nativeImgSrc->GetFrameCount(*errorCode);
+    uint32_t frameCount = nativeImgSrc->GetFrameCount(errorCode);
 
     std::unique_ptr<std::vector<std::unique_ptr<PixelMap>>> pixelMaps;
-    if ((*errorCode == SUCCESS) && (index >= 0) && (index < frameCount)) {
-        pixelMaps = nativeImgSrc->CreatePixelMapList(opts, *errorCode);
+    if ((errorCode == SUCCESS) && (index >= 0) && (index < frameCount)) {
+        pixelMaps = nativeImgSrc->CreatePixelMapList(opts, errorCode);
     }
-    if (*errorCode != SUCCESS || pixelMaps == nullptr) {
+    if (errorCode != SUCCESS || pixelMaps == nullptr) {
         return ret;
     }
     for (size_t i = 0; i < pixelMaps->size(); i++) {
         std::unique_ptr<PixelMap> pixelmap = move(pixelMaps->operator[](i));
         auto nativeImage = FFIData::Create<PixelMapImpl>(move(pixelmap));
         if (nativeImage == nullptr) {
-            *errorCode = ERR_IMAGE_INIT_ABNORMAL;
+            errorCode = ERR_IMAGE_INIT_ABNORMAL;
             return ret;
         }
         ret.push_back(nativeImage->GetID());
@@ -345,29 +352,29 @@ std::vector<int64_t> ImageSourceImpl::CreatePixelMapList(uint32_t index, DecodeO
     return ret;
 }
 
-std::unique_ptr<std::vector<int32_t>> ImageSourceImpl::GetDelayTime(uint32_t* errorCode)
+std::unique_ptr<std::vector<int32_t>> ImageSourceImpl::GetDelayTime(uint32_t& errorCode)
 {
     std::unique_ptr<std::vector<int32_t>> delayTimes;
     if (nativeImgSrc == nullptr) {
-        *errorCode = ERR_IMAGE_INIT_ABNORMAL;
+        errorCode = ERR_IMAGE_INIT_ABNORMAL;
         return delayTimes;
     }
     IMAGE_LOGD("[ImageSourceImpl] GetDelayTime start.");
-    delayTimes = nativeImgSrc->GetDelayTime(*errorCode);
+    delayTimes = nativeImgSrc->GetDelayTime(errorCode);
     IMAGE_LOGD("[ImageSourceImpl] GetDelayTime success.");
     return delayTimes;
 }
 
-std::unique_ptr<std::vector<int32_t>> ImageSourceImpl::GetDisposalTypeList(uint32_t* errorCode)
+std::unique_ptr<std::vector<int32_t>> ImageSourceImpl::GetDisposalTypeList(uint32_t& errorCode)
 {
     std::unique_ptr<std::vector<int32_t>> disposalType;
     if (nativeImgSrc == nullptr) {
-        *errorCode = ERR_IMAGE_INIT_ABNORMAL;
+        errorCode = ERR_IMAGE_INIT_ABNORMAL;
         return disposalType;
     }
-    disposalType = nativeImgSrc->GetDisposalType(*errorCode);
-    if ((*errorCode != SUCCESS) || disposalType == nullptr) {
-        *errorCode = ERROR;
+    disposalType = nativeImgSrc->GetDisposalType(errorCode);
+    if ((errorCode != SUCCESS) || disposalType == nullptr) {
+        errorCode = ERROR;
     }
     return disposalType;
 }
