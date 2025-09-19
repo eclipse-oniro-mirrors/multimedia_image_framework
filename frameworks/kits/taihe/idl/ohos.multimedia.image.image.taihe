@@ -776,26 +776,6 @@ interface ImageReceiver {
   @gen_promise("readNextImage")
   ReadNextImageSync(): Image;
 
-  @!sts_inject_into_interface("on(type: string, callback: (err: BusinessError<void>, data: undefined)=> void): void;")
-  @!sts_inject_into_class("""on(type: string, callback: (err: BusinessError<void>, data: undefined)=> void): void {
-          if (type === 'imageArrival') {
-            this.onImageArrival(callback);
-          } else {
-            throw new Error(`Unknown type: ${type}`);
-          }
-        }
-  """)
-
-  @!sts_inject_into_interface("off(type: string, callback?: (err: BusinessError<void>, data: undefined)=> void): void;")
-  @!sts_inject_into_class("""off(type: string, callback?: (err: BusinessError<void>, data: undefined)=> void): void {
-          if (type === 'imageArrival') {
-            this.offImageArrival(callback);
-          } else {
-            throw new Error(`Unknown type: ${type}`);
-          }
-        }
-  """)
-
   OnImageArrival(callback: (err: @sts_type("BusinessError<void>") Opaque, data: @sts_type("undefined") Opaque)=> void): void;
   OffImageArrival(callback: Optional<(err: @sts_type("BusinessError<void>") Opaque, data: @sts_type("undefined") Opaque)=> void>): void;
 
@@ -817,26 +797,6 @@ interface ImageCreator {
   @gen_async("dequeueImage")
   @gen_promise("dequeueImage")
   DequeueImageSync(): Image;
-
-  @!sts_inject_into_interface("on(type: string, callback: (err: BusinessError<void>, data: undefined)=> void): void;")
-  @!sts_inject_into_class("""on(type: string, callback: (err: BusinessError<void>, data: undefined)=> void): void {
-          if (type === 'imageRelease') {
-            this.onImageRelease(callback);
-          } else {
-            throw new Error(`Unknown type: ${type}`);
-          }
-        }
-  """)
-
-  @!sts_inject_into_interface("off(type: string, callback?: (err: BusinessError<void>, data: undefined)=> void): void;")
-  @!sts_inject_into_class("""off(type: string, callback?: (err: BusinessError<void>, data: undefined)=> void): void {
-          if (type === 'imageRelease') {
-            this.offImageRelease(callback);
-          } else {
-            throw new Error(`Unknown type: ${type}`);
-          }
-        }
-  """)
 
   OnImageRelease(callback: (err: @sts_type("BusinessError<void>") Opaque, data: @sts_type("undefined") Opaque)=> void): void;
   OffImageRelease(callback: Optional<(err: @sts_type("BusinessError<void>") Opaque, data: @sts_type("undefined") Opaque)=> void>): void;
