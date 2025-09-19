@@ -684,8 +684,9 @@ static inline bool IsDensityChange(int32_t srcDensity, int32_t wantDensity)
 
 static inline int32_t GetScalePropByDensity(int32_t prop, int32_t srcDensity, int32_t wantDensity)
 {
-    bool cond = srcDensity != 0;
-    CHECK_ERROR_RETURN_RET(cond, (prop * wantDensity + (srcDensity / NUM_2)) / srcDensity);
+    if (srcDensity != 0) {
+        return (prop * wantDensity + (srcDensity / NUM_2)) / srcDensity;
+    }
     return prop;
 }
 
