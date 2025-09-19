@@ -20,6 +20,7 @@
 #include "image_source.h"
 #include "media_errors.h"
 #include "pixel_map_impl.h"
+#include "parameter.h"
 #include "string_ex.h"
 
 namespace OHOS {
@@ -28,6 +29,7 @@ const uint32_t NUM_2 = 2;
 const uint32_t NUM_3 = 3;
 const long int NUM_8 = 8;
 const int DECIMAL_BASE = 10;
+const int32_t API_VERSION_20 = 20;
 
 std::unique_ptr<ImageSource> ImageSourceImpl::CreateImageSource(const std::string& uri, uint32_t& errCode)
 {
@@ -300,16 +302,20 @@ int64_t ImageSourceImpl::CreatePixelMap(uint32_t index, DecodeOptions& opts, uin
         incPixelMap = nativeImgSrc->CreatePixelMapEx(index, opts, errorCode);
         if (incPixelMap == nullptr) {
             IMAGE_LOGE("[ImageSourceImpl] Create PixelMap error.");
-            errorCode = ERR_IMAGE_INIT_ABNORMAL;
-            return 0;
+            if (GetSdkApiVersion() > API_VERSION_20) {
+                errorCode = ERR_IMAGE_INIT_ABNORMAL;
+                return 0;
+            }
         }
     }
 
     auto nativeImage = FFIData::Create<PixelMapImpl>(move(incPixelMap));
-    if (nativeImage == nullptr) {
-        IMAGE_LOGE("nativeImage is nullptr.");
-        errorCode = ERR_IMAGE_INIT_ABNORMAL;
-        return 0;
+    if (GetSdkApiVersion() > API_VERSION_20) {
+        if (nativeImage == nullptr) {
+            IMAGE_LOGE("nativeImage is nullptr.");
+            errorCode = ERR_IMAGE_INIT_ABNORMAL;
+            return 0;
+        }
     }
     errorCode = SUCCESS;
     IMAGE_LOGD("[ImageSourceImpl] CreatePixelMap success.");
