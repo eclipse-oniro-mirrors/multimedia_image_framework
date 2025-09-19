@@ -256,6 +256,23 @@ napi_value AuxiliaryPictureNapi::CreateAuxiliaryPicture(napi_env env, std::share
     return result;
 }
 
+extern "C" {
+napi_value GetAuxiliaryPictureNapi(napi_env env, std::shared_ptr<AuxiliaryPicture> auxiliaryPic)
+{
+    return AuxiliaryPictureNapi::CreateAuxiliaryPicture(env, auxiliaryPic);
+}
+
+bool GetNativeAuxiliaryPicture(void *auxiliaryPictureNapi, std::shared_ptr<AuxiliaryPicture> &nativeAuxiliaryPicture)
+{
+    if (auxiliaryPictureNapi == nullptr) {
+        IMAGE_LOGE("%{public}s auxiliaryPictureNapi is nullptr", __func__);
+        return false;
+    }
+    nativeAuxiliaryPicture = reinterpret_cast<AuxiliaryPictureNapi*>(auxiliaryPictureNapi)->GetNativeAuxiliaryPic();
+    return true;
+}
+}
+
 STATIC_EXEC_FUNC(CreateAuxiliaryPicture)
 {
     auto context = static_cast<AuxiliaryPictureNapiAsyncContext*>(data);

@@ -29,8 +29,17 @@ public:
     AuxiliaryPictureImpl();
     explicit AuxiliaryPictureImpl(std::shared_ptr<OHOS::Media::AuxiliaryPicture> auxiliaryPicture);
     ~AuxiliaryPictureImpl();
-
+    int64_t GetImplPtr();
+    std::shared_ptr<OHOS::Media::AuxiliaryPicture> GetNativeAuxiliaryPic()
+    {
+        return nativeAuxiliaryPicture_;
+    }
+    
+    void WritePixelsFromBufferSync(array_view<uint8_t> data);
     array<uint8_t> ReadPixelsToBufferSync();
+    AuxiliaryPictureType GetType();
+    void SetMetadataSync(MetadataType metadataType, weak::Metadata metadata);
+    Metadata GetMetadataSync(MetadataType metadataType);
     AuxiliaryPictureInfo GetAuxiliaryPictureInfo();
     void SetAuxiliaryPictureInfo(AuxiliaryPictureInfo const& info);
     void Release();

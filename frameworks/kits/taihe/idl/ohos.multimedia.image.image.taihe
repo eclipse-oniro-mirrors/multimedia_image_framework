@@ -14,7 +14,7 @@
  */
 
 @!namespace("@ohos.multimedia.image", "image")
-
+@!sts_export_default
 @!sts_inject("""
 static { loadLibraryWithPermissionCheck("image_taihe_core.z", "@ohos.multimedia.image"); }
 """)
@@ -319,6 +319,13 @@ struct PackingOption {
   needsPackProperties: Optional<bool>;
 }
 
+struct PackingOptionsForSequence {
+  frameCount: i32;
+  delayTimeList: Array<i32>;
+  disposalTypes: Optional<Array<i32>>;
+  loopCount: Optional<i32>;
+}
+
 struct ImagePropertyOptions {
   index: Optional<i32>;
   defaultValue: Optional<String>;
@@ -365,6 +372,49 @@ struct SourceOptions {
   sourceSize: Optional<Size>;
 }
 
+struct HdrStaticMetadata {
+  displayPrimariesX: Array<f64>;
+  displayPrimariesY: Array<f64>;
+  whitePointX: f64;
+  whitePointY: f64;
+  maxLuminance: f64;
+  minLuminance: f64;
+  maxContentLightLevel: f64;
+  maxFrameAverageLightLevel: f64;
+}
+
+struct GainmapChannel {
+  gainmapMax: f64;
+  gainmapMin: f64;
+  gamma: f64;
+  baseOffset: f64;
+  alternateOffset: f64;
+}
+
+struct HdrGainmapMetadata {
+  writerVersion: i32;
+  miniVersion: i32;
+  gainmapChannelCount: i32;
+  useBaseColorFlag: bool;
+  baseHeadroom: f64;
+  alternateHeadroom: f64;
+  channels: Array<GainmapChannel>;
+}
+
+enum HdrMetadataKey: i32 {
+  HDR_METADATA_TYPE = 0,
+  HDR_STATIC_METADATA = 1,
+  HDR_DYNAMIC_METADATA = 2,
+  HDR_GAINMAP_METADATA = 3,
+}
+
+enum HdrMetadataType: i32 {
+  NONE = 0,
+  BASE = 1,
+  GAINMAP = 2,
+  ALTERNATE = 3,
+}
+
 enum AuxiliaryPictureType: i32 {
   GAINMAP = 1,
   DEPTH_MAP = 2,
@@ -373,12 +423,35 @@ enum AuxiliaryPictureType: i32 {
   FRAGMENT_MAP = 5,
 }
 
+enum MetadataType: i32 {
+  EXIF_METADATA = 1,
+  FRAGMENT_METADATA = 2,
+}
+
+enum FragmentMapPropertyKey: String {
+  X_IN_ORIGINAL = "XInOriginal",
+  Y_IN_ORIGINAL = "YInOriginal",
+  WIDTH = "FragmentImageWidth",
+  HEIGHT = "FragmentImageHeight"
+}
+
+struct DecodingOptionsForPicture {
+  desiredAuxiliaryPictures: Array<AuxiliaryPictureType>;
+}
+
 struct AuxiliaryPictureInfo {
   auxiliaryPictureType: AuxiliaryPictureType;
   size: Size;
   rowStride: i32;
   pixelFormat: PixelMapFormat;
   colorSpace: @sts_type("colorSpaceManager.ColorSpaceManager") Opaque;
+}
+
+union HdrMetadataValue {
+  metadataType: HdrMetadataType;
+  staticMetadataArrayBuffer: HdrStaticMetadata;
+  arrayBuffer: @arraybuffer Array<u8>;
+  gainmapMetadata: HdrGainmapMetadata;
 }
 
 union PropertyValue {
@@ -397,9 +470,17 @@ interface PixelMap {
   @gen_promise("readPixelsToBuffer")
   ReadPixelsToBufferSync(dst: @arraybuffer Array<u8>): void;
 
+  @gen_async("readPixels")
+  @gen_promise("readPixels")
   ReadPixelsSync(area: PositionArea): void;
 
+  @gen_async("writeBufferToPixels")
+  @gen_promise("writeBufferToPixels")
   WriteBufferToPixelsSync(src: @arraybuffer Array<u8>): void;
+
+  @gen_async("writePixels")
+  @gen_promise("writePixels")
+  WritePixelsSync(area: PositionArea): void;
 
   @gen_async("createAlphaPixelmap")
   @gen_promise("createAlphaPixelmap")
@@ -408,6 +489,8 @@ interface PixelMap {
   GetBytesNumberPerRow(): i32;
 
   GetPixelBytesNumber(): i32;
+
+  GetDensity(): i32;
 
   @gen_async("scale")
   @gen_promise("scale")
@@ -434,11 +517,34 @@ interface PixelMap {
   @gen_promise("opacity")
   OpacitySync(rate: f64): void;
 
+  @gen_promise("toSdr")
+  ToSdrSync(): void;
+
+  @gen_async("applyColorSpace")
+  @gen_promise("applyColorSpace")
+  ApplyColorSpaceSync(targetColorSpace: @sts_type("colorSpaceManager.ColorSpaceManager") Opaque): void;
+
   SetMemoryNameSync(name: String): void;
+
+  SetTransferDetached(detached: bool): void;
+
+  @gen_promise("convertPixelFormat")
+  ConvertPixelFormatSync(targetPixelFormat: PixelMapFormat): void;
+
+  GetColorSpace(): @sts_type("colorSpaceManager.ColorSpaceManager") Opaque;
+
+  SetColorSpace(colorSpace: @sts_type("colorSpaceManager.ColorSpaceManager") Opaque): void;
+
+  Marshalling(sequence: @sts_type("rpc.MessageSequence") Opaque): void;
+
+  @gen_promise("unmarshalling")
+  UnmarshallingSync(sequence: @sts_type("rpc.MessageSequence") Opaque): PixelMap;
 
   @gen_async("release")
   @gen_promise("release")
   ReleaseSync(): void;
+
+  @get GetIsEditable(): bool;
 
   @get GetIsStrideAlignment(): bool;
 
@@ -449,10 +555,35 @@ interface PixelMap {
   @get GetTimestamp(): i64;
 }
 
+union GainMap {
+    type_gainMap: PixelMap;
+    @null type_null;
+}
+
+union AuxPicture {
+    type_auxPicture: AuxiliaryPicture;
+    @null type_null;
+}
+
 interface Picture {
   GetImplPtr(): i64;
 
   GetMainPixelmap(): PixelMap;
+
+  @gen_promise("getHdrComposedPixelmap")
+  GetHdrComposedPixelmapSync(): PixelMap;
+
+  GetGainmapPixelmap(): GainMap;
+
+  SetAuxiliaryPicture(type: AuxiliaryPictureType, auxiliaryPicture: AuxiliaryPicture): void;
+
+  GetAuxiliaryPicture(type: AuxiliaryPictureType): AuxPicture;
+
+  @gen_promise("setMetadata")
+  SetMetadataSync(metadataType: MetadataType, metadata: Metadata): void;
+
+  @gen_promise("getMetadata")
+  GetMetadataSync(metadataType: MetadataType): Metadata;
 
   Marshalling(sequence: @sts_type("rpc.MessageSequence") Opaque): void;
 
@@ -460,8 +591,21 @@ interface Picture {
 }
 
 interface AuxiliaryPicture {
+  GetImplPtr(): i64;
+
+  @gen_promise("writePixelsFromBuffer")
+  WritePixelsFromBufferSync(data: @arraybuffer Array<u8>): void;
+
   @gen_promise("readPixelsToBuffer")
   ReadPixelsToBufferSync(): @arraybuffer Array<u8>;
+
+  GetType(): AuxiliaryPictureType;
+
+  @gen_promise("setMetadata")
+  SetMetadataSync(metadataType: MetadataType, metadata: Metadata): void;
+
+  @gen_promise("getMetadata")
+  GetMetadataSync(metadataType: MetadataType): Metadata;
 
   GetAuxiliaryPictureInfo(): AuxiliaryPictureInfo;
 
@@ -470,11 +614,28 @@ interface AuxiliaryPicture {
   Release(): void;
 }
 
+interface Metadata {
+  GetImplPtr(): i64;
+
+  @gen_promise("getProperties")
+  GetPropertiesSync(key: Array<String>): @record Map<String, PropertyValue>;
+
+  @gen_promise("setProperties")
+  SetPropertiesSync(records: @record Map<String, PropertyValue>): void;
+
+  @gen_promise("getAllProperties")
+  GetAllPropertiesSync(): @record Map<String, PropertyValue>;
+  
+  @gen_promise("clone")
+  CloneSync(): Metadata;
+}
+
 interface ImageSource {
   GetImplPtr(): i64;
+
   @gen_async("getImageInfo")
   @gen_promise("getImageInfoPromiseWithIndex")
-  GetImageInfoSyncWithIndex(index: u32): ImageInfo;
+  GetImageInfoSyncWithIndex(index: i32): ImageInfo;
 
   @gen_async("getImageInfo")
   @gen_promise("getImageInfoPromise")
@@ -544,6 +705,13 @@ interface ImageSource {
   @gen_promise("getDelayTimeList")
   GetDelayTimeListSync(): Array<i32>;
 
+  @gen_promise("getDisposalTypeList")
+  GetDisposalTypeListSync(): Array<i32>;
+
+  @gen_async("getFrameCount")
+  @gen_promise("getFrameCount")
+  GetFrameCountSync(): i32;
+
   @gen_promise("getImageProperty")
   GetImagePropertySync(key: PropertyKey, options: Optional<ImagePropertyOptions>): String;
 
@@ -556,17 +724,31 @@ interface ImageSource {
   @gen_promise("modifyImageProperties")
   ModifyImagePropertiesSync(records: @record Map<PropertyKey, PropertyValue>): void;
 
+  @gen_async("updateData")
+  @gen_promise("updateData")
+  UpdateDataSync(buf: @arraybuffer Array<u8>, isFinished: bool, offset: i32, length: i32): void;
+
   @gen_async("release")
   @gen_promise("release")
   ReleaseSync(): void;
+
+  @gen_promise("createPicture")
+  CreatePictureSync(options: Optional<DecodingOptionsForPicture>): Picture;
 
   @get GetSupportedFormats(): Array<String>;
 }
 
 interface ImagePacker {
-  @gen_async("packing")
-  @gen_promise("packing")
-  PackingPixelMapSync(source: PixelMap, option: PackingOption): @arraybuffer Array<u8>;
+  GetImplPtr(): i64;
+
+  @gen_promise("packToData")
+  PackImageSourceToDataSync(source: ImageSource, options: PackingOption): @arraybuffer Array<u8>;
+
+  @gen_promise("packToData")
+  PackPixelMapToDataSync(source: PixelMap, options: PackingOption): @arraybuffer Array<u8>;
+
+  @gen_promise("packToDataFromPixelmapSequence")
+  PackToDataFromPixelmapSequenceSync(pixelmapSequence: Array<PixelMap>, options: PackingOptionsForSequence): @arraybuffer Array<u8>;
 
   @gen_async("packToFile")
   @gen_promise("packToFile")
@@ -575,6 +757,9 @@ interface ImagePacker {
   @gen_async("packToFile")
   @gen_promise("packToFile")
   PackPixelMapToFileSync(source: PixelMap, fd: i32, options: PackingOption): void;
+
+  @gen_promise("packToFileFromPixelmapSequence")
+  PackToFileFromPixelmapSequenceSync(pixelmapSequence: Array<PixelMap>, fd: i32, options: PackingOptionsForSequence): void;
 
   @gen_promise("packToFile")
   PackPictureToFileSync(picture: Picture, fd: i32, options: PackingOption): void;
@@ -590,8 +775,16 @@ interface ImagePacker {
 }
 
 interface Image {
+  @get("clipRect") GetClipRect(): Region;
+  GetImplPtr(): i64;
+
   @get("size") GetSize(): Size;
   @get("format") GetFormat(): i32;
+  @get("timestamp") GetTimestamp(): i64;
+
+  @gen_async("getComponent")
+  @gen_promise("getComponent")
+  GetComponentSync(componentType: ComponentType): Component;
 
   @gen_async("release")
   @gen_promise("release")
@@ -599,6 +792,8 @@ interface Image {
 }
 
 interface ImageReceiver {
+  GetImplPtr(): i64;
+
   @get GetSize(): Size;
   @get GetCapacity(): i32;
   @get GetFormat(): ImageFormat;
@@ -610,6 +805,10 @@ interface ImageReceiver {
   @gen_async("readLatestImage")
   @gen_promise("readLatestImage")
   ReadLatestImageSync(): Image;
+
+  @gen_async("readNextImage")
+  @gen_promise("readNextImage")
+  ReadNextImageSync(): Image;
 
   @!sts_inject_into_interface("on(type: string, callback: (err: BusinessError<void>, data: undefined)=> void): void;")
   @!sts_inject_into_class("""on(type: string, callback: (err: BusinessError<void>, data: undefined)=> void): void {
@@ -640,17 +839,126 @@ interface ImageReceiver {
 }
 
 interface ImageCreator {
+  GetImplPtr(): i64;
+
   @get("capacity") GetCapacity(): i32;
   @get("format") GetFormat(): ImageFormat;
+
+  @gen_async("queueImage")
+  @gen_promise("queueImage")
+  QueueImageSync(image: Image): void;
+
+  @gen_async("dequeueImage")
+  @gen_promise("dequeueImage")
+  DequeueImageSync(): Image;
+
+  @!sts_inject_into_interface("on(type: string, callback: (err: BusinessError<void>, data: undefined)=> void): void;")
+  @!sts_inject_into_class("""on(type: string, callback: (err: BusinessError<void>, data: undefined)=> void): void {
+          if (type === 'imageRelease') {
+            this.onImageRelease(callback);
+          } else {
+            throw new Error(`Unknown type: ${type}`);
+          }
+        }
+  """)
+
+  @!sts_inject_into_interface("off(type: string, callback?: (err: BusinessError<void>, data: undefined)=> void): void;")
+  @!sts_inject_into_class("""off(type: string, callback?: (err: BusinessError<void>, data: undefined)=> void): void {
+          if (type === 'imageRelease') {
+            this.offImageRelease(callback);
+          } else {
+            throw new Error(`Unknown type: ${type}`);
+          }
+        }
+  """)
+
+  OnImageRelease(callback: (err: @sts_type("BusinessError<void>") Opaque, data: @sts_type("undefined") Opaque)=> void): void;
+  OffImageRelease(callback: Optional<(err: @sts_type("BusinessError<void>") Opaque, data: @sts_type("undefined") Opaque)=> void>): void;
 
   @gen_async("release")
   @gen_promise("release")
   ReleaseSync(): void;
 }
 
+// transfer functions
+function ImageSourceTransferStaticImpl(input: @sts_type("ESValue") Opaque): ImageSource;
+function ImageSourceTransferDynamicImpl(input: ImageSource): @sts_type("Any") Opaque;
+
+function ImagePackerTransferStaticImpl(input: @sts_type("ESValue") Opaque): ImagePacker;
+function ImagePackerTransferDynamicImpl(input: ImagePacker): @sts_type("Any") Opaque;
+
+function PictureTransferStaticImpl(input: @sts_type("ESValue") Opaque): Picture;
+function PictureTransferDynamicImpl(input: Picture): @sts_type("Any") Opaque;
+
+function AuxiliaryPictureTransferStaticImpl(input: @sts_type("ESValue") Opaque): AuxiliaryPicture;
+function AuxiliaryPictureTransferDynamicImpl(input: AuxiliaryPicture): @sts_type("Any") Opaque;
+
+function ImageReceiverTransferStaticImpl(input: @sts_type("ESValue") Opaque): ImageReceiver;
+function ImageReceiverTransferDynamicImpl(input: ImageReceiver): @sts_type("Any") Opaque;
+
+function ImageCreatorTransferStaticImpl(input: @sts_type("ESValue") Opaque): ImageCreator;
+function ImageCreatorTransferDynamicImpl(input: ImageCreator): @sts_type("Any") Opaque;
+
+function PixelMapTransferStaticImpl(input: @sts_type("ESValue") Opaque): PixelMap;
+function PixelMapTransferDynamicImpl(input: PixelMap): @sts_type("Any") Opaque;
+
+@!sts_inject("""
+export function imageSourceTransferStatic(input: Any): Object {
+  return imageSourceTransferStaticImpl(ESValue.wrap(input));
+}
+export function imageSourceTransferDynamic(input: Object): Any {
+  return imageSourceTransferDynamicImpl(input as ImageSource);
+}
+
+export function imagePackerTransferStatic(input: Any): Object {
+  return imagePackerTransferStaticImpl(ESValue.wrap(input));
+}
+export function imagePackerTransferDynamic(input: Object): Any {
+  return imagePackerTransferDynamicImpl(input as ImagePacker);
+}
+
+export function pictureTransferStatic(input: Any): Object {
+  return pictureTransferStaticImpl(ESValue.wrap(input));
+}
+export function pictureTransferDynamic(input: Object): Any {
+  return pictureTransferDynamicImpl(input as Picture);
+}
+
+export function auxiliaryPictureTransferStatic(input: Any): Object {
+  return auxiliaryPictureTransferStaticImpl(ESValue.wrap(input));
+}
+export function auxiliaryPictureTransferDynamic(input: Object): Any {
+  return auxiliaryPictureTransferDynamicImpl(input as AuxiliaryPicture);
+}
+
+export function imageReceiverTransferStatic(input: Any): Object {
+  return imageReceiverTransferStaticImpl(ESValue.wrap(input));
+}
+export function imageReceiverTransferDynamic(input: Object): Any {
+  return imageReceiverTransferDynamicImpl(input as ImageReceiver);
+}
+
+export function imageCreatorTransferStatic(input: Any): Object {
+  return imageCreatorTransferStaticImpl(ESValue.wrap(input));
+}
+export function imageCreatorTransferDynamic(input: Object): Any {
+  return imageCreatorTransferDynamicImpl(input as ImageCreator);
+}
+
+export function pixelMapTransferStatic(input: Any): Object {
+  return pixelMapTransferStaticImpl(ESValue.wrap(input));
+}
+export function pixelMapTransferDynamic(input: Object): Any {
+  return pixelMapTransferDynamicImpl(input as PixelMap);
+}
+""")
+
+// global functions
 function MakeEmptySize(): Size;
 function MakeEmptyImageInfo(): ImageInfo;
 
+@gen_async("createPixelMap")
+@gen_promise("createPixelMap")
 @overload("createPixelMapSync")
 function CreatePixelMapByBufferAndOptionsSync(colors: @arraybuffer Array<u8>, options: InitializationOptions): PixelMap;
 
@@ -665,6 +973,8 @@ function CreatePixelMapFromSurfaceByIdSync(surfaceId: String): PixelMap;
 
 @overload("createPixelMapFromSurfaceSync")
 function CreatePixelMapFromSurfaceByIdAndRegionSync(surfaceId: String, region: Region): PixelMap;
+
+function CreatePixelMapFromParcel(sequence: @sts_type("rpc.MessageSequence") Opaque): PixelMap;
 
 @overload("createImageSource")
 function CreateImageSourceByUri(uri: String): ImageSource;
@@ -684,24 +994,30 @@ function CreateImageSourceByArrayBuffer(buf: @arraybuffer Array<u8>): ImageSourc
 @overload("createImageSource")
 function CreateImageSourceByArrayBufferOption(buf: @arraybuffer Array<u8>, options: SourceOptions): ImageSource;
 
+@overload("CreateIncrementalSource")
+function CreateIncrementalSourceByArrayBuffer(buf: @arraybuffer Array<u8>): ImageSource;
+
+@overload("CreateIncrementalSource")
+function CreateIncrementalSourceByArrayBufferOption(buf: @arraybuffer Array<u8>, options: Optional<SourceOptions>): ImageSource;
+
 @overload("createImageSource")
 function CreateImageSourceByRawFileDescriptorOption(rawfile: @sts_type("resourceManager.RawFileDescriptor") Opaque, options: Optional<SourceOptions>): ImageSource;
 
+// For legacy ANI backward compatibility
+function CreateImageSourceByPtr(ptr: i64): ImageSource;
+
 function CreateImagePacker(): ImagePacker;
 
-@overload("createImageCreator")
-function CreateImageCreator(width: i32, height: i32, format: i32, capacity: i32): ImageCreator;
+function CreateImageCreator(size: Size, format: ImageFormat, capacity: i32): ImageCreator;
 
-@overload("createImageCreator")
-function CreateImageCreatorBySize(size: Size, format: ImageFormat, capacity: i32): ImageCreator;
-
-@overload("createImageReceiver")
-function CreateImageReceiver(width: i32, height: i32, format: i32, capacity: i32): ImageReceiver;
-
-@overload("createImageReceiver")
-function CreateImageReceiverBySize(size: Size, format: ImageFormat, capacity: i32): ImageReceiver;
+function CreateImageReceiver(size: Size, format: ImageFormat, capacity: i32): ImageReceiver;
 
 @overload("createPicture")
 function CreatePictureByPixelMap(mainPixelmap : PixelMap): Picture;
+
+// For legacy ANI backward compatibility
+function CreatePictureByPtr(ptr: i64): Picture;
+
+function CreatePictureFromParcel(sequence: @sts_type("rpc.MessageSequence") Opaque): Picture;
 
 function CreateAuxiliaryPicture(buffer: @arraybuffer Array<u8>, size: Size, type: AuxiliaryPictureType): AuxiliaryPicture;

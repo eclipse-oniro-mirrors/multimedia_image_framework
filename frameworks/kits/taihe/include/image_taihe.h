@@ -32,17 +32,27 @@ public:
     explicit ImageImpl(std::shared_ptr<OHOS::Media::NativeImage> nativeImage);
     ~ImageImpl();
 
+    int64_t GetImplPtr();
+    std::shared_ptr<OHOS::Media::NativeImage> GetIncrementalImage() const
+    {
+        return nativeImage_;
+    }
+
+    Component GetComponentSync(ComponentType componentType);
+
     static struct Image Create(std::shared_ptr<OHOS::Media::NativeImage> nativeImage);
     void ReleaseSync();
+    void NativeRelease();
 
+    ohos::multimedia::image::image::Region GetClipRect();
     Size GetSize();
     int32_t GetFormat();
+    int64_t GetTimestamp();
 
 private:
     static OHOS::Media::ImageHolderManager<OHOS::Media::NativeImage> sNativeImageHolder_;
     std::shared_ptr<OHOS::Media::NativeImage> nativeImage_;
     bool isTestImage_ = false;
-    bool isRelease = false;
 };
 } // namespace ANI::Image
 
