@@ -18,6 +18,7 @@
 
 #include "image_source.h"
 #include "image_type.h"
+#include "message_parcel.h"
 #include "ohos.multimedia.image.image.proj.hpp"
 #include "ohos.multimedia.image.image.impl.hpp"
 #include "taihe/runtime.hpp"
@@ -29,13 +30,15 @@ using namespace ohos::multimedia::image::image;
 class ImageTaiheUtils {
 public:
     static void HicheckerReport();
-    static void ThrowExceptionError(const std::string errMsg);
-    static void ThrowExceptionError(const int32_t errCode, const std::string errMsg);
+    static void ThrowExceptionError(const std::string &errMsg);
+    static void ThrowExceptionError(const int32_t errCode, const std::string &errMsg);
     struct ImagePropertyOptions {
         uint32_t index = 0;
         std::string defaultValueStr;
     };
 
+    static bool GetPropertyInt(ani_env *env, ani_object obj, const std::string &name, int32_t &value);
+    static bool GetPropertyLong(ani_env *env, ani_object obj, const std::string &name, int64_t &value);
     static bool GetPropertyDouble(ani_env *env, ani_object obj, const std::string &name, double &value);
     static ani_object ToBusinessError(ani_env *env, int32_t code, const std::string &message);
 
@@ -45,8 +48,13 @@ public:
     static array<uint8_t> CreateTaiheArrayBuffer(uint8_t* src, size_t srcLen);
     static uintptr_t GetUndefinedPtr(ani_env *env);
 
+    static OHOS::MessageParcel* UnwrapMessageParcel(uintptr_t sequence);
+
     template <typename EnumType, typename ValueType>
     static bool GetEnumKeyByValue(ValueType value, typename EnumType::key_t &key);
+
+    template <typename T>
+    static bool IsValidPtr(T data);
 };
 } // namespace ANI::Image
 

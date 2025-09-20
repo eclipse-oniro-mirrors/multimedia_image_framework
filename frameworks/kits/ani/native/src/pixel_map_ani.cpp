@@ -65,42 +65,43 @@ static bool ParseInitializationOptions([[maybe_unused]] ani_env* env, ani_object
         return false;
     }
     ani_class dateCls;
-    const char *className = "L@ohos/multimedia/image/image/Size;";
+    const char *className = "@ohos.multimedia.image.image.Size";
     if (ANI_OK != env->FindClass(className, &dateCls)) {
         IMAGE_LOGE("Not found %{public}s", className);
         return false;
     }
     ani_ref size;
-    if (ANI_OK != env->Object_CallMethodByName_Ref(param, "<get>size", ":L@ohos/multimedia/image/image/Size;", &size)) {
+    if (ANI_OK != env->Object_CallMethodByName_Ref(param, "<get>size", ":C{@ohos.multimedia.image.image.Size}",
+                                                   &size)) {
         IMAGE_LOGE("Object_GetFieldByName_Ref Failed");
     }
     ani_status ret;
     if (ANI_OK != env->Object_CallMethodByName_Int(reinterpret_cast<ani_object>(size),
-        "<get>width", ":I", &opts.size.width)) {
+        "<get>width", ":i", &opts.size.width)) {
         IMAGE_LOGE("Object_CallMethodByName_Int width Failed");
     }
     if ((ret = env->Object_CallMethodByName_Int(reinterpret_cast<ani_object>(size),
-        "<get>height", ":I", &opts.size.height)) != ANI_OK) {
+        "<get>height", ":i", &opts.size.height)) != ANI_OK) {
         IMAGE_LOGE("Object_CallMethodByName_Int height Failed");
     }
     opts.srcPixelFormat = PixelFormat(parseEnumFromStruct(env, param, "<get>srcPixelFormat",
-        ":L@ohos/multimedia/image/image/PixelMapFormat;"));
+        ":C{@ohos.multimedia.image.image.PixelMapFormat}"));
     opts.pixelFormat = PixelFormat(parseEnumFromStruct(env, param, "<get>pixelFormat",
-        ":L@ohos/multimedia/image/image/PixelMapFormat;"));
+        ":C{@ohos.multimedia.image.image.PixelMapFormat}"));
     ani_ref editableRef;
     if (ANI_OK != (ret = env->Object_CallMethodByName_Ref(param,
-        "<get>editable", ":Lstd/core/Boolean;", &editableRef))) {
+        "<get>editable", ":C{std.core.Boolean}", &editableRef))) {
         IMAGE_LOGE("Object_CallMethodByName_Int Failed editableRef:%{public}d", ret);
     }
     ani_boolean editable;
     if ((ret = env->Object_CallMethodByName_Boolean(reinterpret_cast<ani_object>(editableRef),
-        "unboxed", ":Z", &editable)) != ANI_OK) {
+        "unboxed", ":z", &editable)) != ANI_OK) {
         IMAGE_LOGE("Object_CallMethodByName_Int Failed editable:%{public}d", ret);
     }
     opts.alphaType = AlphaType(parseEnumFromStruct(env, param, "<get>alphaType",
-        ":L@ohos/multimedia/image/image/AlphaType;"));
+        ":C{@ohos.multimedia.image.image.AlphaType}"));
     opts.scaleMode = ScaleMode(parseEnumFromStruct(env, param, "<get>scaleMode",
-        ":L@ohos/multimedia/image/image/ScaleMode;"));
+        ":C{@ohos.multimedia.image.image.ScaleMode}"));
     return true;
 }
 
@@ -114,27 +115,27 @@ static bool ParseRegion([[maybe_unused]] ani_env* env, ani_object region, Rect& 
     }
 
     ani_ref size;
-    if (ANI_OK != env->Object_CallMethodByName_Ref(region, "<get>size", ":L@ohos/multimedia/image/image/Size;",
+    if (ANI_OK != env->Object_CallMethodByName_Ref(region, "<get>size", ":C{@ohos.multimedia.image.image.Size}",
         &size)) {
         IMAGE_LOGE("Object_GetFieldByName_Ref Failed");
         return false;
     }
-    if (ANI_OK != env->Object_CallMethodByName_Int(reinterpret_cast<ani_object>(size), "<get>width", ":I",
+    if (ANI_OK != env->Object_CallMethodByName_Int(reinterpret_cast<ani_object>(size), "<get>width", ":i",
         &rect.width)) {
         IMAGE_LOGE("Object_CallMethodByName_Int width Failed");
         return false;
     }
-    if (ANI_OK != env->Object_CallMethodByName_Int(reinterpret_cast<ani_object>(size), "<get>height", ":I",
+    if (ANI_OK != env->Object_CallMethodByName_Int(reinterpret_cast<ani_object>(size), "<get>height", ":i",
         &rect.height)) {
         IMAGE_LOGE("Object_CallMethodByName_Int height Failed");
         return false;
     }
 
-    if (ANI_OK != env->Object_CallMethodByName_Int(region, "<get>x", ":I", &rect.left)) {
+    if (ANI_OK != env->Object_CallMethodByName_Int(region, "<get>x", ":i", &rect.left)) {
         IMAGE_LOGE("Object_CallMethodByName_Int x Failed");
         return false;
     }
-    if (ANI_OK != env->Object_CallMethodByName_Int(region, "<get>y", ":I", &rect.top)) {
+    if (ANI_OK != env->Object_CallMethodByName_Int(region, "<get>y", ":i", &rect.top)) {
         IMAGE_LOGE("Object_CallMethodByName_Int y Failed");
         return false;
     }
@@ -146,14 +147,14 @@ ani_object PixelMapAni::CreatePixelMap([[maybe_unused]] ani_env* env, std::share
 {
     unique_ptr<PixelMapAni> pPixelMapAni = make_unique<PixelMapAni>();
     pPixelMapAni->nativePixelMap_ = pixelMap;
-    static const char* className = "L@ohos/multimedia/image/image/PixelMapInner;";
+    static const char* className = "@ohos.multimedia.image.image.PixelMapInner";
     ani_class cls;
     if (ANI_OK != env->FindClass(className, &cls)) {
-        IMAGE_LOGE("Not found L@ohos/multimedia/image/image/PixelMapInner");
+        IMAGE_LOGE("Not found @ohos.multimedia.image.image.PixelMapInner");
         return nullptr;
     }
     ani_method ctor;
-    if (ANI_OK != env->Class_FindMethod(cls, "<ctor>", "J:V", &ctor)) {
+    if (ANI_OK != env->Class_FindMethod(cls, "<ctor>", "l:", &ctor)) {
         IMAGE_LOGE("Not found ani_method");
         return nullptr;
     }
@@ -266,7 +267,7 @@ static void Scale([[maybe_unused]] ani_env* env, [[maybe_unused]] ani_object obj
 
     ani_int levelIntValue = 0;
     ani_enum enumType;
-    if (ANI_OK != env->FindEnum("L@ohos/multimedia/image/image/AntiAliasingLevel;", &enumType)) {
+    if (ANI_OK != env->FindEnum("@ohos.multimedia.image.image.AntiAliasingLevel", &enumType)) {
         IMAGE_LOGI("Find Enum AntiAliasingLevel Failed");
     }
     ani_enum_item enumItem;
@@ -293,7 +294,7 @@ static void Crop([[maybe_unused]] ani_env* env, [[maybe_unused]] ani_object obj,
         IMAGE_LOGE("ParseRegion failed");
         return;
     }
-    
+
     pixelmap->crop(rect);
 }
 
@@ -311,27 +312,27 @@ static void Flip([[maybe_unused]] ani_env* env, [[maybe_unused]] ani_object obj,
 
 ani_status PixelMapAni::Init(ani_env* env)
 {
-    static const char *className = "L@ohos/multimedia/image/image/PixelMapInner;";
+    static const char *className = "@ohos.multimedia.image.image.PixelMapInner";
     ani_class cls;
     if (ANI_OK != env->FindClass(className, &cls)) {
-        IMAGE_LOGE("Not found L@ohos/multimedia/image/image/PixelMapInner;");
+        IMAGE_LOGE("Not found @ohos.multimedia.image.image.PixelMapInner");
         return ANI_ERROR;
     }
     std::array methods = {
-        ani_native_function {"nativeCreateAlphaPixelmap", ":L@ohos/multimedia/image/image/PixelMap;",
+        ani_native_function {"nativeCreateAlphaPixelmap", ":C{@ohos.multimedia.image.image.PixelMap}",
             reinterpret_cast<void*>(OHOS::Media::CreateAlphaPixelmap)},
-        ani_native_function {"nativeGetImageInfo", ":L@ohos/multimedia/image/image/ImageInfo;",
+        ani_native_function {"nativeGetImageInfo", ":C{@ohos.multimedia.image.image.ImageInfo}",
             reinterpret_cast<void*>(OHOS::Media::GetImageInfo)},
-        ani_native_function {"getBytesNumberPerRow", ":I", reinterpret_cast<void*>(OHOS::Media::GetBytesNumberPerRow)},
-        ani_native_function {"getPixelBytesNumber", ":I", reinterpret_cast<void*>(OHOS::Media::GetPixelBytesNumber)},
-        ani_native_function {"nativeRelease", ":V", reinterpret_cast<void*>(OHOS::Media::Release)},
-        ani_native_function {"nativeReadPixelsToBuffer", "Lescompat/ArrayBuffer;:V",
+        ani_native_function {"getBytesNumberPerRow", ":i", reinterpret_cast<void*>(OHOS::Media::GetBytesNumberPerRow)},
+        ani_native_function {"getPixelBytesNumber", ":i", reinterpret_cast<void*>(OHOS::Media::GetPixelBytesNumber)},
+        ani_native_function {"nativeRelease", ":", reinterpret_cast<void*>(OHOS::Media::Release)},
+        ani_native_function {"nativeReadPixelsToBuffer", "C{escompat.ArrayBuffer}:",
             reinterpret_cast<void*>(OHOS::Media::ReadPixelsToBuffer)},
-        ani_native_function {"nativeScale", "DDL@ohos/multimedia/image/image/AntiAliasingLevel;:V",
+        ani_native_function {"nativeScale", "ddC{@ohos.multimedia.image.image.AntiAliasingLevel}:",
             reinterpret_cast<void*>(OHOS::Media::Scale)},
-        ani_native_function {"nativeCrop", "L@ohos/multimedia/image/image/Region;:V",
+        ani_native_function {"nativeCrop", "C{@ohos.multimedia.image.image.Region}:",
             reinterpret_cast<void*>(OHOS::Media::Crop)},
-        ani_native_function {"nativeFlip", "ZZ:V", reinterpret_cast<void*>(OHOS::Media::Flip)},
+        ani_native_function {"nativeFlip", "zz:", reinterpret_cast<void*>(OHOS::Media::Flip)},
     };
     ani_status ret = env->Class_BindNativeMethods(cls, methods.data(), methods.size());
     if (ANI_OK != ret) {

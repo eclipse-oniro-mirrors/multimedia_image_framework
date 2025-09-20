@@ -31,6 +31,8 @@ using ValueFormatDelegate = std::pair<std::function<int32_t (std::string&, const
 
 class ExifMetadatFormatter {
 public:
+    static ExifMetadatFormatter &GetInstance();
+
     static std::pair<int32_t, std::string> Format(const std::string &keyName, const std::string &value);
     static int32_t Validate(const std::string &keyName, const std::string &value);
     static bool IsModifyAllowed(const std::string &keyName);
@@ -40,6 +42,12 @@ public:
     static bool IsSensitiveInfo(const std::string &keyName);
 
 private:
+    ExifMetadatFormatter();
+    void InitDelegates();
+    void InitValueRangeValidateConfig();
+    void InitValueFormatConvertConfig();
+    void InitValueTemplateConfig();
+
     static int32_t ValidateValueRange(const std::string &keyName, const std::string &value);
     static void ConvertRangeValue(const std::string &keyName, std::string &value);
     static void ExtractValue(const std::string &keyName, std::string &value);
@@ -73,43 +81,43 @@ private:
     static std::string GetFractionFromStr(const std::string &decimal, bool &isOutRange);
     static bool ValidDecimalRationalFormat(std::string &value);
     static bool ValidConvertRationalFormat(std::string &value);
-    static ValueFormatDelegate doubleIntToOneRationalWithComma;
-    static ValueFormatDelegate doubleIntWithBlank;
-    static ValueFormatDelegate doubleIntWithComma;
-    static ValueFormatDelegate doubleValueToRational;
-    static ValueFormatDelegate tribleIntWithBlank;
-    static ValueFormatDelegate tribleIntWithComma;
-    static ValueFormatDelegate fourIntWithBlank;
-    static ValueFormatDelegate fourIntWithComma;
-    static ValueFormatDelegate singleInt;
-    static ValueFormatDelegate singleRational;
-    static ValueFormatDelegate singleIntToRational;
-    static ValueFormatDelegate singleDecimalToRational;
-    static ValueFormatDelegate tribleRationalWithBlank;
-    static ValueFormatDelegate tribleIntToRationalWithBlank;
-    static ValueFormatDelegate tribleIntToRationalWithComma;
-    static ValueFormatDelegate tribleDecimalToRationalWithBlank;
-    static ValueFormatDelegate tribleDecimalToRatiionalWithComma;
-    static ValueFormatDelegate tribleMixToRationalWithComma;
-    static ValueFormatDelegate fourRationalWithBlank;
-    static ValueFormatDelegate fourIntToRationalWithBlank;
-    static ValueFormatDelegate fourIntToRationalWithComma;
-    static ValueFormatDelegate decimal4Ratiional4;
-    static ValueFormatDelegate fourDecimalToRationalWithComma;
-    static ValueFormatDelegate dateTimeValidation;
-    static ValueFormatDelegate dateValidation;
-    static ValueFormatDelegate tribleIntToRationalWithColon;
-    static ValueFormatDelegate fourIntWithDot;
-    static ValueFormatDelegate fourDecimalToRationalWithBlank;
-    static ValueFormatDelegate sixDecimalToRationalWithBlank;
-    static ValueFormatDelegate sixDecimalToRationalWithComma;
-    static ValueFormatDelegate timeStamp;
-    static ValueFormatDelegate version;
-    static ValueFormatDelegate channel;
-    static std::multimap<std::string, ValueFormatDelegate> valueFormatConvertConfig;
-    static std::multimap<std::string, std::string> valueFormatValidateConfig;
-    static std::multimap<std::string, std::string> valueTemplateConfig;
-    static std::map<std::string, std::tuple<const TagDetails*, const size_t>> valueRangeValidateConfig;
+    ValueFormatDelegate doubleIntToOneRationalWithComma_;
+    ValueFormatDelegate doubleIntWithBlank_;
+    ValueFormatDelegate doubleIntWithComma_;
+    ValueFormatDelegate doubleValueToRational_;
+    ValueFormatDelegate tribleIntWithBlank_;
+    ValueFormatDelegate tribleIntWithComma_;
+    ValueFormatDelegate fourIntWithBlank_;
+    ValueFormatDelegate fourIntWithComma_;
+    ValueFormatDelegate singleInt_;
+    ValueFormatDelegate singleRational_;
+    ValueFormatDelegate singleIntToRational_;
+    ValueFormatDelegate singleDecimalToRational_;
+    ValueFormatDelegate tribleRationalWithBlank_;
+    ValueFormatDelegate tribleIntToRationalWithBlank_;
+    ValueFormatDelegate tribleIntToRationalWithComma_;
+    ValueFormatDelegate tribleDecimalToRationalWithBlank_;
+    ValueFormatDelegate tribleDecimalToRatiionalWithComma_;
+    ValueFormatDelegate tribleMixToRationalWithComma_;
+    ValueFormatDelegate fourRationalWithBlank_;
+    ValueFormatDelegate fourIntToRationalWithBlank_;
+    ValueFormatDelegate fourIntToRationalWithComma_;
+    ValueFormatDelegate decimal4Ratiional4_;
+    ValueFormatDelegate fourDecimalToRationalWithComma_;
+    ValueFormatDelegate dateTimeValidation_;
+    ValueFormatDelegate dateValidation_;
+    ValueFormatDelegate tribleIntToRationalWithColon_;
+    ValueFormatDelegate fourIntWithDot_;
+    ValueFormatDelegate fourDecimalToRationalWithBlank_;
+    ValueFormatDelegate sixDecimalToRationalWithBlank_;
+    ValueFormatDelegate sixDecimalToRationalWithComma_;
+    ValueFormatDelegate timeStamp_;
+    ValueFormatDelegate version_;
+    ValueFormatDelegate channel_;
+    std::multimap<std::string, ValueFormatDelegate> valueFormatConvertConfig_;
+    std::multimap<std::string, std::string> valueFormatValidateConfig_;
+    std::multimap<std::string, std::string> valueTemplateConfig_;
+    std::map<std::string, std::tuple<const TagDetails*, const size_t>> valueRangeValidateConfig_;
 };
 } // namespace Media
 } // namespace OHOS

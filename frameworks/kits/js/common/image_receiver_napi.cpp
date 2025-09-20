@@ -54,6 +54,7 @@ const int PARAM0 = 0;
 const int PARAM1 = 1;
 const int PARAM2 = 2;
 const int PARAM3 = 3;
+const int NUM_0 = 0;
 
 struct ImageEnum {
     std::string name;
@@ -138,6 +139,12 @@ ImageReceiver* ImageReceiverNapi::GetNative()
     }
     return nullptr;
 }
+
+std::shared_ptr<ImageReceiver> ImageReceiverNapi::GetNativeImageReceiver()
+{
+    return imageReceiver_;
+}
+
 napi_value ImageReceiverNapi::Init(napi_env env, napi_value exports)
 {
     IMAGE_FUNCTION_IN();
@@ -229,15 +236,26 @@ napi_value ImageReceiverNapi::Constructor(napi_env env, napi_callback_info info)
     IMAGE_FUNCTION_IN();
     std::string errMsg;
     ImageReceiverInputArgs inputArgs;
-    inputArgs.argc = ARGS4;
-    if (!parseImageReceiverArgs(env, info, inputArgs, errMsg) || inputArgs.thisVar == nullptr) {
-        IMAGE_ERR("Failure. %{public}s", errMsg.c_str());
-        return undefineVar;
-    }
     auto reference = std::make_unique<ImageReceiverNapi>();
     reference->env_ = env;
-    reference->imageReceiver_ = ImageReceiver::CreateImageReceiver((inputArgs.args)[PARAM0],
-        (inputArgs.args)[PARAM1], (inputArgs.args)[PARAM2], (inputArgs.args)[PARAM3]);
+    if (staticInstance_) {
+        napi_status status = napi_get_cb_info(env, info, nullptr, nullptr, &inputArgs.thisVar, nullptr);
+        if (status != napi_ok) {
+            IMAGE_ERR("fail to napi_get_cb_info %{public}d", status);
+            errMsg = "Fail to napi_get_cb_info";
+            return undefineVar;
+        }
+        reference->imageReceiver_ = staticInstance_;
+    } else {
+        inputArgs.argc = ARGS4;
+        if (!parseImageReceiverArgs(env, info, inputArgs, errMsg) || inputArgs.thisVar == nullptr) {
+            IMAGE_ERR("Failure. %{public}s", errMsg.c_str());
+            return undefineVar;
+        }
+        reference->imageReceiver_ = ImageReceiver::CreateImageReceiver((inputArgs.args)[PARAM0],
+            (inputArgs.args)[PARAM1], (inputArgs.args)[PARAM2], (inputArgs.args)[PARAM3]);
+    }
+
     if (reference->imageReceiver_ == nullptr) {
         IMAGE_ERR("Create native image receiver failed");
         return undefineVar;
@@ -258,6 +276,51 @@ void ImageReceiverNapi::Destructor(napi_env env, void *nativeObject, void *final
         delete reinterpret_cast<ImageReceiverNapi*>(nativeObject);
         nativeObject = nullptr;
     }
+}
+
+napi_value ImageReceiverNapi::CreateImageReceiver(napi_env env, std::shared_ptr<ImageReceiver> imageReceiver)
+{
+    if (sConstructor_ == nullptr) {
+        napi_value exports = nullptr;
+        napi_create_object(env, &exports);
+        ImageReceiverNapi::Init(env, exports);
+    }
+
+    napi_value constructor = nullptr;
+    napi_value result = nullptr;
+    napi_status status = napi_get_reference_value(env, sConstructor_, &constructor);
+    if (IMG_IS_OK(status)) {
+        if (imageReceiver != nullptr) {
+            staticInstance_ = std::move(imageReceiver);
+            status = napi_new_instance(env, constructor, NUM_0, nullptr, &result);
+        } else {
+            status = napi_invalid_arg;
+            IMAGE_LOGE("New ImageReceiverNapi Instance imageReceiver is nullptr");
+            napi_get_undefined(env, &result);
+        }
+    }
+    if (!IMG_IS_OK(status)) {
+        IMAGE_LOGE("CreateImageReceiver | New instance could not be obtained");
+        napi_get_undefined(env, &result);
+    }
+    return result;
+}
+
+extern "C" {
+napi_value GetImageReceiverNapi(napi_env env, std::shared_ptr<ImageReceiver> imageReceiver)
+{
+    return ImageReceiverNapi::CreateImageReceiver(env, imageReceiver);
+}
+
+bool GetNativeImageReceiver(void *imageReceiverNapi, std::shared_ptr<ImageReceiver> &imageReceiver)
+{
+    if (imageReceiverNapi == nullptr) {
+        IMAGE_LOGE("%{public}s imageReceiverNapi is nullptr", __func__);
+        return false;
+    }
+    imageReceiver = reinterpret_cast<ImageReceiverNapi*>(imageReceiverNapi)->GetNativeImageReceiver();
+    return true;
+}
 }
 
 static bool checkFormat(int32_t format)

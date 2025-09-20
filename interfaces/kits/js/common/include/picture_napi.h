@@ -33,6 +33,7 @@ public:
     static napi_value CreatePicture(napi_env env, std::shared_ptr<Picture> &picture);
     static int32_t CreatePictureNapi(napi_env env, napi_value* result);
     void SetNativePicture(std::shared_ptr<Picture> picture);
+    std::shared_ptr<Picture> GetNativePicture();
     
 private:
     static napi_value Constructor(napi_env env, napi_callback_info info);
@@ -62,6 +63,11 @@ private:
     bool isRelease = false;
     uint32_t uniqueId_ = 0;
 };
+
+extern "C" {
+    napi_value GetPictureNapi(napi_env env, std::shared_ptr<Picture> picture);
+    bool GetNativePicture(void *pictureNapi, std::shared_ptr<Picture> &picture);
+}
 } // namespace Media
 } // namespace OHOS
 #endif // INTERFACES_KITS_JS_COMMON_INCLUDE_PICTURE_NAPI_H
