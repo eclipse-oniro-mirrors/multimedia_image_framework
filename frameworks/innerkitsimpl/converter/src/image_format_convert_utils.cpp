@@ -1191,7 +1191,8 @@ bool ImageFormatConvertUtils::AlignSrcBuffer(const RGBDataInfo &rgbInfo, PixelFo
                                              const uint8_t* srcBuffer, SrcConvertParam& srcParam,
                                              std::unique_ptr<uint8_t[]>& copySrcBuffer)
 {
-    Size srcBufferSize = {static_cast<int32_t>(rgbInfo.stride), rgbInfo.height};
+    int32_t rgbStride = static_cast<int32_t>(rgbInfo.stride) / ImageUtils::GetPixelBytes(srcFormat);
+    Size srcBufferSize = {rgbStride, rgbInfo.height};
     return AlignBufferCore(srcBufferSize, srcFormat, srcBuffer, srcParam, copySrcBuffer);
 }
 
