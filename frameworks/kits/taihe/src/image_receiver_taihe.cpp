@@ -522,20 +522,21 @@ void ImageReceiverImpl::ReleaseSync()
     ReleaseSyncProcess(args, this);
 }
 
-ImageReceiver CreateImageReceiver(Size const& size, ImageFormat format, int32_t capacity)
+optional<ImageReceiver> CreateImageReceiver(Size const& size, ImageFormat format, int32_t capacity)
 {
     if (!CheckFormat(format.get_value())) {
-        ImageTaiheUtils::ThrowExceptionError(OHOS::Media::COMMON_ERR_INVALID_PARAMETER, "Invalid format");
-        return make_holder<ImageReceiverImpl, ImageReceiver>();
+        ImageTaiheUtils::ThrowExceptionError(OHOS::Media::COMMON_ERR_INVALID_PARAMETER, "Invalid type");
+        return optional<ImageReceiver>(std::nullopt);
     }
 
     std::shared_ptr<OHOS::Media::ImageReceiver> imageReceiver = OHOS::Media::ImageReceiver::CreateImageReceiver(
         size.width, size.height, format.get_value(), capacity);
     if (imageReceiver == nullptr) {
-        ImageTaiheUtils::ThrowExceptionError("Create native image receiver failed");
-        return make_holder<ImageReceiverImpl, ImageReceiver>();
+        IMAGE_LOGE("Create native image receiver failed");
+        return optional<ImageReceiver>(std::nullopt);
     }
-    return make_holder<ImageReceiverImpl, ImageReceiver>(imageReceiver);
+    auto res = make_holder<ImageReceiverImpl, ImageReceiver>(imageReceiver);
+    return optional<ImageReceiver>(std::in_place, res);
 }
 } // namespace ANI::Image
 

@@ -95,15 +95,15 @@ static bool ReadPixelsToBufferSyncExecute(std::unique_ptr<AuxiliaryPictureTaiheC
     return true;
 }
 
-static array<uint8_t> ReadPixelsToBufferSyncComplete(std::unique_ptr<AuxiliaryPictureTaiheContext> &context)
+static optional<array<uint8_t>> ReadPixelsToBufferSyncComplete(std::unique_ptr<AuxiliaryPictureTaiheContext> &context)
 {
-    array<uint8_t> result = array<uint8_t>(nullptr, 0);
+    optional<array<uint8_t>> result = optional<array<uint8_t>>(std::nullopt);
     if (context->status == OHOS::Media::SUCCESS) {
-        result = ImageTaiheUtils::CreateTaiheArrayBuffer(static_cast<uint8_t *>(context->arrayBuffer),
+        array<uint8_t> array = ImageTaiheUtils::CreateTaiheArrayBuffer(static_cast<uint8_t *>(context->arrayBuffer),
             context->arrayBufferSize);
+        result = optional<taihe::array<uint8_t>>(std::in_place, array);
     } else {
         ImageTaiheUtils::ThrowExceptionError(OHOS::Media::ERROR, "Fail to create taihe arraybuffer!");
-        return array<uint8_t>(nullptr, 0);
     }
 
     delete[] static_cast<uint8_t *>(context->arrayBuffer);
@@ -112,22 +112,25 @@ static array<uint8_t> ReadPixelsToBufferSyncComplete(std::unique_ptr<AuxiliaryPi
     return result;
 }
 
-AuxiliaryPictureType AuxiliaryPictureImpl::GetType()
+optional<AuxiliaryPictureType> AuxiliaryPictureImpl::GetType()
 {
+    IMAGE_LOGD("Call GetType");
     if (nativeAuxiliaryPicture_ == nullptr) {
         IMAGE_LOGE("Native auxiliary picture is nullptr!");
-        return AuxiliaryPictureType(static_cast<AuxiliaryPictureType::key_t>(OHOS::Media::AuxiliaryPictureType::NONE));
+        return optional<AuxiliaryPictureType>(std::nullopt);
     }
     AuxiliaryPictureType::key_t auxPictureTypeKey;
     auto auxType = nativeAuxiliaryPicture_->GetType();
     IMAGE_LOGD("AuxiliaryPictureImpl::GetType %{public}d", auxType);
-    if (ImageTaiheUtils::GetEnumKeyByValue<AuxiliaryPictureType>(static_cast<int32_t>(auxType), auxPictureTypeKey)) {
-        return AuxiliaryPictureType(auxPictureTypeKey);
-    } else {
-        IMAGE_LOGE("Get auxiliary picture type failed");
-        return AuxiliaryPictureType(static_cast<AuxiliaryPictureType::key_t>(
-            OHOS::Media::AuxiliaryPictureType::NONE));
+    if (static_cast<int32_t>(auxType) >= 0 && auxType <= OHOS::Media::AuxiliaryPictureType::FRAGMENT_MAP) {
+        if (ImageTaiheUtils::GetEnumKeyByValue<AuxiliaryPictureType>(static_cast<int32_t>(auxType),
+            auxPictureTypeKey)) {
+            return optional<AuxiliaryPictureType>(std::in_place, AuxiliaryPictureType(auxPictureTypeKey));
+        } else {
+            IMAGE_LOGE("Get auxiliary picture type failed");
+        }
     }
+    return optional<AuxiliaryPictureType>(std::nullopt);
 }
 
 static bool CheckMetadataType(std::unique_ptr<AuxiliaryPictureTaiheContext> const& context)
@@ -172,40 +175,45 @@ void AuxiliaryPictureImpl::SetMetadataSync(MetadataType metadataType, weak::Meta
     IMAGE_LOGD("[AuxiliaryPicture]SetMetadata OUT");
 }
 
-Metadata AuxiliaryPictureImpl::GetMetadataSync(MetadataType metadataType)
+optional<Metadata> AuxiliaryPictureImpl::GetMetadataSync(MetadataType metadataType)
 {
     std::unique_ptr<AuxiliaryPictureTaiheContext> context = std::make_unique<AuxiliaryPictureTaiheContext>();
     context->rAuxiliaryPicture = nativeAuxiliaryPicture_;
     if (context->rAuxiliaryPicture == nullptr) {
         ImageTaiheUtils::ThrowExceptionError("Empty native auxiliary picture.");
-        return make_holder<MetadataImpl, Metadata>();
+        return optional<Metadata>(std::nullopt);
     }
     if (metadataType >= static_cast<int32_t>(OHOS::Media::MetadataType::EXIF)
         && metadataType <= static_cast<int32_t>(OHOS::Media::MetadataType::FRAGMENT)) {
         context->metadataType = OHOS::Media::MetadataType(metadataType.get_value());
     } else {
         ImageTaiheUtils::ThrowExceptionError(IMAGE_BAD_PARAMETER, "Invalid args metadata type.");
-        return make_holder<MetadataImpl, Metadata>();
+        return optional<Metadata>(std::nullopt);
     }
     if (!CheckMetadataType(context) || context->metadataType == OHOS::Media::MetadataType::EXIF) {
         ImageTaiheUtils::ThrowExceptionError(IMAGE_UNSUPPORTED_METADATA, "Unsupported metadata");
-        return make_holder<MetadataImpl, Metadata>();
+        return optional<Metadata>(std::nullopt);
     }
     context->imageMetadata = context->rAuxiliaryPicture->GetMetadata(context->metadataType);
+    if (context->imageMetadata == nullptr) {
+        ImageTaiheUtils::ThrowExceptionError("Get Metadata failed!");
+        return optional<Metadata>(std::nullopt);
+    }
     IMAGE_LOGD("[AuxiliaryPicture]GetMetadata OUT");
-    return make_holder<MetadataImpl, Metadata>(std::move(context->imageMetadata));
+    auto res = make_holder<MetadataImpl, Metadata>(std::move(context->imageMetadata));
+    return optional<Metadata>(std::in_place, res);
 }
 
-array<uint8_t> AuxiliaryPictureImpl::ReadPixelsToBufferSync()
+optional<array<uint8_t>> AuxiliaryPictureImpl::ReadPixelsToBufferSync()
 {
     std::unique_ptr<AuxiliaryPictureTaiheContext> taiheContext = std::make_unique<AuxiliaryPictureTaiheContext>();
     taiheContext->rAuxiliaryPicture = nativeAuxiliaryPicture_;
     if (taiheContext->rAuxiliaryPicture == nullptr) {
-        ImageTaiheUtils::ThrowExceptionError("Empty native auxiliary picture.");
-        return array<uint8_t>(nullptr, 0);
+        IMAGE_LOGE("Empty native auxiliary picture.");
+        return optional<array<uint8_t>>(std::nullopt);
     }
     if (!ReadPixelsToBufferSyncExecute(taiheContext)) {
-        return array<uint8_t>(nullptr, 0);
+        return optional<array<uint8_t>>(std::nullopt);
     }
     return ReadPixelsToBufferSyncComplete(taiheContext);
 }
@@ -216,7 +224,7 @@ AuxiliaryPictureInfo MakeEmptyAuxiliaryPictureInfo()
         {0, 0}, 0, PixelMapFormat(PixelMapFormat::key_t::UNKNOWN), 0};
 }
 
-static AuxiliaryPictureInfo ToTaiheAuxiliaryPictureInfo(const OHOS::Media::AuxiliaryPictureInfo &src,
+static optional<AuxiliaryPictureInfo> ToTaiheAuxiliaryPictureInfo(const OHOS::Media::AuxiliaryPictureInfo &src,
     std::shared_ptr<OHOS::Media::AuxiliaryPicture> &auxiliaryPicture)
 {
     AuxiliaryPictureInfo result = MakeEmptyAuxiliaryPictureInfo();
@@ -236,29 +244,29 @@ static AuxiliaryPictureInfo ToTaiheAuxiliaryPictureInfo(const OHOS::Media::Auxil
     ImageTaiheUtils::GetEnumKeyByValue<PixelMapFormat>(static_cast<int32_t>(src.pixelFormat), pixelFormatKey);
     result.pixelFormat = PixelMapFormat(pixelFormatKey);
 
-    if (auxiliaryPicture == nullptr) {
+    if (auxiliaryPicture->GetContentPixel() == nullptr) {
         ImageTaiheUtils::ThrowExceptionError(OHOS::Media::ERR_IMAGE_DATA_ABNORMAL, "Invalid pixelmap");
-        return result;
+        return optional<AuxiliaryPictureInfo>(std::nullopt);
     }
-    
+
     auto grCS = auxiliaryPicture->GetContentPixel()->InnerGetGrColorSpacePtr();
     if (grCS == nullptr) {
         ImageTaiheUtils::ThrowExceptionError(OHOS::Media::ERR_IMAGE_DATA_UNSUPPORT, "No colorspace in pixelmap");
-        return result;
+        return optional<AuxiliaryPictureInfo>(std::nullopt);
     }
     ani_object colorSpaceObj = OHOS::ColorManager::CreateAniColorSpaceObject(get_env(), grCS);
     result.colorSpace = reinterpret_cast<uintptr_t>(colorSpaceObj);
-    return result;
+    return optional<AuxiliaryPictureInfo>(std::in_place, result);
 }
 
-AuxiliaryPictureInfo AuxiliaryPictureImpl::GetAuxiliaryPictureInfo()
+optional<AuxiliaryPictureInfo> AuxiliaryPictureImpl::GetAuxiliaryPictureInfo()
 {
     if (nativeAuxiliaryPicture_ != nullptr) {
         return ToTaiheAuxiliaryPictureInfo(
             nativeAuxiliaryPicture_->GetAuxiliaryPictureInfo(), nativeAuxiliaryPicture_);
     } else {
-        ImageTaiheUtils::ThrowExceptionError("Native auxiliarypicture is nullptr!");
-        return MakeEmptyAuxiliaryPictureInfo();
+        IMAGE_LOGE("Native auxiliarypicture is nullptr!");
+        return optional<AuxiliaryPictureInfo>(std::nullopt);
     }
 }
 

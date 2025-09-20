@@ -583,10 +583,10 @@ union AuxPicture {
 interface Picture {
   GetImplPtr(): i64;
 
-  GetMainPixelmap(): PixelMap;
+  GetMainPixelmap(): Optional<PixelMap>;
 
   @gen_promise("getHdrComposedPixelmap")
-  GetHdrComposedPixelmapSync(): PixelMap;
+  GetHdrComposedPixelmapSync(): Optional<PixelMap>;
 
   GetGainmapPixelmap(): GainMap;
 
@@ -598,7 +598,7 @@ interface Picture {
   SetMetadataSync(metadataType: MetadataType, metadata: Metadata): void;
 
   @gen_promise("getMetadata")
-  GetMetadataSync(metadataType: MetadataType): Metadata;
+  GetMetadataSync(metadataType: MetadataType): Optional<Metadata>;
 
   Marshalling(sequence: @sts_type("rpc.MessageSequence") Opaque): void;
 
@@ -612,17 +612,17 @@ interface AuxiliaryPicture {
   WritePixelsFromBufferSync(data: @arraybuffer Array<u8>): void;
 
   @gen_promise("readPixelsToBuffer")
-  ReadPixelsToBufferSync(): @arraybuffer Array<u8>;
+  ReadPixelsToBufferSync(): Optional<@arraybuffer Array<u8>>;
 
-  GetType(): AuxiliaryPictureType;
+  GetType(): Optional<AuxiliaryPictureType>;
 
   @gen_promise("setMetadata")
   SetMetadataSync(metadataType: MetadataType, metadata: Metadata): void;
 
   @gen_promise("getMetadata")
-  GetMetadataSync(metadataType: MetadataType): Metadata;
+  GetMetadataSync(metadataType: MetadataType): Optional<Metadata>;
 
-  GetAuxiliaryPictureInfo(): AuxiliaryPictureInfo;
+  GetAuxiliaryPictureInfo(): Optional<AuxiliaryPictureInfo>;
 
   SetAuxiliaryPictureInfo(info: AuxiliaryPictureInfo): void;
 
@@ -639,73 +639,39 @@ interface Metadata {
   SetPropertiesSync(records: @record Map<String, PropertyValue>): void;
 
   @gen_promise("getAllProperties")
-  GetAllPropertiesSync(): @record Map<String, PropertyValue>;
+  GetAllPropertiesSync(): Optional<@record Map<String, PropertyValue>>;
   
   @gen_promise("clone")
-  CloneSync(): Metadata;
+  CloneSync(): Optional<Metadata>;
 }
 
 interface ImageSource {
   GetImplPtr(): i64;
 
   @gen_async("getImageInfo")
-  @gen_promise("getImageInfoPromiseWithIndex")
-  GetImageInfoSyncWithIndex(index: i32): ImageInfo;
+  GetImageInfoWithIndexCallback(index: i32): Optional<ImageInfo>;
 
   @gen_async("getImageInfo")
-  @gen_promise("getImageInfoPromise")
-  GetImageInfoSync(): ImageInfo;
+  GetImageInfoWithCallback(): Optional<ImageInfo>;
 
-  @!sts_inject_into_interface("getImageInfoSync(index: int | undefined): ImageInfo;")
-  @!sts_inject_into_class("""getImageInfoSync(index: int | undefined): ImageInfo {
-            if (index === undefined) {
-                return this.getImageInfoSync();
-            } else {
-                return this.getImageInfoSyncWithIndex(index);
-            }
-        }
-  """)
+  @gen_promise("getImageInfo")
+  GetImageInfoReturnsPromise(index: Optional<i32>): Optional<ImageInfo>;
 
-  @!sts_inject_into_interface("getImageInfo(index: int | undefined): Promise<ImageInfo>;")
-  @!sts_inject_into_class("""getImageInfo(index: int | undefined): Promise<ImageInfo> {
-            if (index === undefined) {
-                return this.getImageInfoPromise();
-            } else {
-                return this.getImageInfoPromiseWithIndex(index);
-            }
-        }
-  """)
+  GetImageInfoSync(index: Optional<i32>): Optional<ImageInfo>;
 
   @gen_async("createPixelMap")
-  @gen_promise("createPixelMapPromiseWithOptions")
-  CreatePixelMapSyncWithOptions(options: DecodingOptions): PixelMap;
-
+  CreatePixelMapWithOptionsCallback(options: DecodingOptions): Optional<PixelMap>;
+ 
   @gen_async("createPixelMap")
-  @gen_promise("createPixelMapPromise")
-  CreatePixelMapSync(): PixelMap;
-
-  @!sts_inject_into_interface("createPixelMapSync(options: DecodingOptions | undefined): PixelMap;")
-  @!sts_inject_into_class("""createPixelMapSync(options: DecodingOptions | undefined): PixelMap {
-            if (options === undefined) {
-                return this.createPixelMapSync();
-            } else {
-                return this.createPixelMapSyncWithOptions(options);
-            }
-        }
-  """)
-
-  @!sts_inject_into_interface("createPixelMap(options: DecodingOptions | undefined): Promise<PixelMap>;")
-  @!sts_inject_into_class("""createPixelMap(options: DecodingOptions | undefined): Promise<PixelMap> {
-            if (options === undefined) {
-                return this.createPixelMapPromise();
-            } else {
-                return this.createPixelMapPromiseWithOptions(options);
-            }
-        }
-  """)
+  CreatePixelMapWithCallback(): Optional<PixelMap>;
+ 
+  @gen_promise("createPixelMap")
+  CreatePixelMapReturnsPromise(options: Optional<DecodingOptions>): Optional<PixelMap>;
+ 
+  CreatePixelMapSync(options: Optional<DecodingOptions>): Optional<PixelMap>;
 
   @gen_promise("createPixelMapUsingAllocator")
-  CreatePixelMapUsingAllocatorSync(options: Optional<DecodingOptions>, allocatorType: Optional<AllocatorType>): PixelMap;
+  CreatePixelMapUsingAllocatorSync(options: Optional<DecodingOptions>, allocatorType: Optional<AllocatorType>): Optional<PixelMap>;
 
   @gen_async("createPixelMapList")
   CreatePixelMapListSync(): Array<PixelMap>;
@@ -748,7 +714,7 @@ interface ImageSource {
   ReleaseSync(): void;
 
   @gen_promise("createPicture")
-  CreatePictureSync(options: Optional<DecodingOptionsForPicture>): Picture;
+  CreatePictureSync(options: Optional<DecodingOptionsForPicture>): Optional<Picture>;
 
   @get GetSupportedFormats(): Array<String>;
 }
@@ -825,26 +791,6 @@ interface ImageReceiver {
   @gen_promise("readNextImage")
   ReadNextImageSync(): Image;
 
-  @!sts_inject_into_interface("on(type: string, callback: (err: BusinessError<void>, data: undefined)=> void): void;")
-  @!sts_inject_into_class("""on(type: string, callback: (err: BusinessError<void>, data: undefined)=> void): void {
-          if (type === 'imageArrival') {
-            this.onImageArrival(callback);
-          } else {
-            throw new Error(`Unknown type: ${type}`);
-          }
-        }
-  """)
-
-  @!sts_inject_into_interface("off(type: string, callback?: (err: BusinessError<void>, data: undefined)=> void): void;")
-  @!sts_inject_into_class("""off(type: string, callback?: (err: BusinessError<void>, data: undefined)=> void): void {
-          if (type === 'imageArrival') {
-            this.offImageArrival(callback);
-          } else {
-            throw new Error(`Unknown type: ${type}`);
-          }
-        }
-  """)
-
   OnImageArrival(callback: (err: @sts_type("BusinessError<void>") Opaque, data: @sts_type("undefined") Opaque)=> void): void;
   OffImageArrival(callback: Optional<(err: @sts_type("BusinessError<void>") Opaque, data: @sts_type("undefined") Opaque)=> void>): void;
 
@@ -866,26 +812,6 @@ interface ImageCreator {
   @gen_async("dequeueImage")
   @gen_promise("dequeueImage")
   DequeueImageSync(): Image;
-
-  @!sts_inject_into_interface("on(type: string, callback: (err: BusinessError<void>, data: undefined)=> void): void;")
-  @!sts_inject_into_class("""on(type: string, callback: (err: BusinessError<void>, data: undefined)=> void): void {
-          if (type === 'imageRelease') {
-            this.onImageRelease(callback);
-          } else {
-            throw new Error(`Unknown type: ${type}`);
-          }
-        }
-  """)
-
-  @!sts_inject_into_interface("off(type: string, callback?: (err: BusinessError<void>, data: undefined)=> void): void;")
-  @!sts_inject_into_class("""off(type: string, callback?: (err: BusinessError<void>, data: undefined)=> void): void {
-          if (type === 'imageRelease') {
-            this.offImageRelease(callback);
-          } else {
-            throw new Error(`Unknown type: ${type}`);
-          }
-        }
-  """)
 
   OnImageRelease(callback: (err: @sts_type("BusinessError<void>") Opaque, data: @sts_type("undefined") Opaque)=> void): void;
   OffImageRelease(callback: Optional<(err: @sts_type("BusinessError<void>") Opaque, data: @sts_type("undefined") Opaque)=> void>): void;
@@ -1002,31 +928,31 @@ function CreatePremultipliedPixelMapSync(src: PixelMap, dst: PixelMap): void;
 function CreateUnpremultipliedPixelMapSync(src: PixelMap, dst: PixelMap): void;
 
 @overload("createImageSource")
-function CreateImageSourceByUri(uri: String): ImageSource;
+function CreateImageSourceByUri(uri: String): Optional<ImageSource>;
 
 @overload("createImageSource")
-function CreateImageSourceByUriOption(uri: String, options: SourceOptions): ImageSource;
+function CreateImageSourceByUriOption(uri: String, options: SourceOptions): Optional<ImageSource>;
 
 @overload("createImageSource")
-function CreateImageSourceByFd(fd: i32): ImageSource;
+function CreateImageSourceByFd(fd: i32): Optional<ImageSource>;
 
 @overload("createImageSource")
-function CreateImageSourceByFdOption(fd: i32, options: SourceOptions): ImageSource;
+function CreateImageSourceByFdOption(fd: i32, options: SourceOptions): Optional<ImageSource>;
 
 @overload("createImageSource")
-function CreateImageSourceByArrayBuffer(buf: @arraybuffer Array<u8>): ImageSource;
+function CreateImageSourceByArrayBuffer(buf: @arraybuffer Array<u8>): Optional<ImageSource>;
 
 @overload("createImageSource")
-function CreateImageSourceByArrayBufferOption(buf: @arraybuffer Array<u8>, options: SourceOptions): ImageSource;
+function CreateImageSourceByArrayBufferOption(buf: @arraybuffer Array<u8>, options: SourceOptions): Optional<ImageSource>;
 
 @overload("CreateIncrementalSource")
-function CreateIncrementalSourceByArrayBuffer(buf: @arraybuffer Array<u8>): ImageSource;
+function CreateIncrementalSourceByArrayBuffer(buf: @arraybuffer Array<u8>): Optional<ImageSource>;
 
 @overload("CreateIncrementalSource")
-function CreateIncrementalSourceByArrayBufferOption(buf: @arraybuffer Array<u8>, options: Optional<SourceOptions>): ImageSource;
+function CreateIncrementalSourceByArrayBufferOption(buf: @arraybuffer Array<u8>, options: Optional<SourceOptions>): Optional<ImageSource>;
 
 @overload("createImageSource")
-function CreateImageSourceByRawFileDescriptorOption(rawfile: @sts_type("resourceManager.RawFileDescriptor") Opaque, options: Optional<SourceOptions>): ImageSource;
+function CreateImageSourceByRawFileDescriptorOption(rawfile: @sts_type("resourceManager.RawFileDescriptor") Opaque, options: Optional<SourceOptions>): Optional<ImageSource>;
 
 // For legacy ANI backward compatibility
 function CreateImageSourceByPtr(ptr: i64): ImageSource;
@@ -1035,7 +961,7 @@ function CreateImagePacker(): ImagePacker;
 
 function CreateImageCreator(size: Size, format: ImageFormat, capacity: i32): ImageCreator;
 
-function CreateImageReceiver(size: Size, format: ImageFormat, capacity: i32): ImageReceiver;
+function CreateImageReceiver(size: Size, format: ImageFormat, capacity: i32): Optional<ImageReceiver>;
 
 @overload("createPicture")
 function CreatePictureByPixelMap(mainPixelmap : PixelMap): Picture;
