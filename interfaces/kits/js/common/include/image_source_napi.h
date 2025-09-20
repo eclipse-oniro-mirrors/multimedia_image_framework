@@ -46,6 +46,7 @@ public:
     static thread_local void* fileBuffer_;
     static thread_local size_t fileBufferSize_;
     static int32_t CreateImageSourceNapi(napi_env env, napi_value* result);
+    static napi_value CreateImageSourceNapi(napi_env env, std::shared_ptr<ImageSource> imageSource);
     void SetIncrementalPixelMap(std::shared_ptr<IncrementalPixelMap> incrementalPixelMap);
     void SetNativeImageSource(std::shared_ptr<ImageSource> imageSource);
     void SetImageResource(ImageResource resource);
@@ -97,6 +98,11 @@ private:
     bool isRelease = false;
     ImageResource resource_;
 };
+
+extern "C" {
+    napi_value GetImageSourceNapi(napi_env env, std::shared_ptr<ImageSource> imageSource);
+    bool GetNativeImageSource(void *imageSourceNapi, std::shared_ptr<ImageSource> &imageSource);
+}
 } // namespace Media
 } // namespace OHOS
 #endif // INTERFACES_KITS_JS_COMMON_INCLUDE_IMAGE_SOURCE_NAPI_H

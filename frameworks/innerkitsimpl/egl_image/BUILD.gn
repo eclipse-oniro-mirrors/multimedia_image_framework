@@ -103,6 +103,7 @@ if (!use_clang_ios && !use_clang_android) {
       "skia:skia_canvaskit",
     ]
 
+    version_script = "post_proc.versionscript"
     innerapi_tags = [ "platformsdk" ]
     subsystem_name = "multimedia"
     part_name = "image_framework"

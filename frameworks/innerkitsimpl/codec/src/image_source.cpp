@@ -1049,10 +1049,11 @@ unique_ptr<PixelMap> ImageSource::CreatePixelMapExtended(uint32_t index, const D
         NotifyDecodeEvent(decodeListeners_, DecodeEvent::EVENT_COMPLETE_DECODE, nullptr);
     }
     if ("image/gif" != sourceInfo_.encodedFormat && "image/webp" != sourceInfo_.encodedFormat) {
-        IMAGE_LOGD("CreatePixelMapExtended success, imageId:%{public}lu, desiredSize: (%{public}d, %{public}d),"
-            "imageSize: (%{public}d, %{public}d), hdrType : %{public}d, cost %{public}lu us",
-            static_cast<unsigned long>(imageId_), opts.desiredSize.width, opts.desiredSize.height, info.size.width,
-            info.size.height, context.hdrType, static_cast<unsigned long>(GetNowTimeMicroSeconds() - decodeStartTime));
+        IMAGE_LOGI("CreatePixelMap success, id:%{public}lu, dstSize: (%{public}d, %{public}d), srcSize: "
+            "(%{public}d, %{public}d), dstHdr: %{public}d, srcHdr: %{public}d, memType: %{public}d, "
+            "cost %{public}lu us", static_cast<unsigned long>(imageId_), opts.desiredSize.width,
+            opts.desiredSize.height, info.size.width, info.size.height, opts.desiredDynamicRange, context.hdrType,
+            pixelMap->GetAllocatorType(), static_cast<unsigned long>(GetNowTimeMicroSeconds() - decodeStartTime));
     }
 
     {
@@ -1069,6 +1070,7 @@ unique_ptr<PixelMap> ImageSource::CreatePixelMapExtended(uint32_t index, const D
     }
     ImageUtils::FlushSurfaceBuffer(pixelMap.get());
     pixelMap->SetMemoryName(GetPixelMapName(pixelMap.get()));
+    ImageTrace pixelMapId("CreatePixelMapExtended, pixelMapId:%u", pixelMap->GetUniqueId());
     return pixelMap;
 }
 
@@ -1349,6 +1351,8 @@ unique_ptr<PixelMap> ImageSource::CreatePixelMap(uint32_t index, const DecodeOpt
         }
     }
 
+    ImageTrace imageTrace("CreatePixelMapExtended svg, dstSize:(%d, %d)", opts.desiredSize.width,
+        opts.desiredSize.height);
     ImageEvent imageEvent;
     if (opts.desiredPixelFormat == PixelFormat::NV12 || opts.desiredPixelFormat == PixelFormat::NV21) {
         IMAGE_LOGE("[ImageSource] get YUV420 not support without going through CreatePixelMapExtended");
@@ -1483,6 +1487,7 @@ unique_ptr<PixelMap> ImageSource::CreatePixelMap(uint32_t index, const DecodeOpt
     // not ext decode, dump pixelMap while decoding svg here
     ImageUtils::DumpPixelMapIfDumpEnabled(pixelMap, imageId_);
     pixelMap->SetMemoryName(GetPixelMapName(pixelMap.get()));
+    ImageTrace pixelMapId("CreatePixelMapExtended svg, pixelMapId:%u", pixelMap->GetUniqueId());
     return pixelMap;
 }
 
@@ -4656,10 +4661,11 @@ static uint32_t DoAiHdrProcess(sptr<SurfaceBuffer> &input, DecodeContext &hdrCtx
 
     std::unique_ptr<VpeUtils> utils = std::make_unique<VpeUtils>();
     ImageUtils::DumpHdrBufferEnabled(input, "PixelMap-AIprocess-input");
-    res = utils->ColorSpaceConverterImageProcess(input, output);
+    int32_t vpeProcessErrCode = utils->ColorSpaceConverterImageProcess(input, output);
     ImageUtils::DumpHdrBufferEnabled(output, "PixelMap-AIprocess-output");
-    if (res != VPE_ERROR_OK) {
-        IMAGE_LOGE("[ImageSource]DoAiHdrProcess ColorSpaceConverterImageProcess failed! %{public}d", res);
+    if (vpeProcessErrCode != VPE_ERROR_OK) {
+        IMAGE_LOGE("[ImageSource]DoAiHdrProcess ColorSpaceConverterImageProcess failed! %{public}d", vpeProcessErrCode);
+        res = ERR_IMAGE_AI_UNSUPPORTED;
         FreeContextBuffer(hdrCtx.freeFunc, hdrCtx.allocatorType, hdrCtx.pixelsBuffer);
     } else {
         IMAGE_LOGD("[ImageSource]DoAiHdrProcess ColorSpaceConverterImageProcess Succ!");
@@ -4685,9 +4691,11 @@ static uint32_t AiSrProcess(sptr<SurfaceBuffer> &input, DecodeContext &aisrCtx)
     CHECK_ERROR_RETURN_RET_LOG(cond, res, "HDR SurfaceBuffer Alloc failed, %{public}d", res);
     sptr<SurfaceBuffer> output = reinterpret_cast<SurfaceBuffer*>(aisrCtx.pixelsBuffer.context);
     std::unique_ptr<VpeUtils> utils = std::make_unique<VpeUtils>();
-    res = utils->DetailEnhancerImageProcess(input, output, static_cast<int32_t>(aisrCtx.resolutionQuality));
-    if (res != VPE_ERROR_OK) {
-        IMAGE_LOGE("[ImageSource]AiSrProcess DetailEnhancerImage Processed failed");
+    int32_t vpeProcessErrCode = utils->DetailEnhancerImageProcess(input, output,
+        static_cast<int32_t>(aisrCtx.resolutionQuality));
+    if (vpeProcessErrCode != VPE_ERROR_OK) {
+        IMAGE_LOGE("[ImageSource]AiSrProcess DetailEnhancerImage Processed failed! %{public}d", vpeProcessErrCode);
+        res = ERR_IMAGE_AI_UNSUPPORTED;
         FreeContextBuffer(aisrCtx.freeFunc, aisrCtx.allocatorType, aisrCtx.pixelsBuffer);
     } else {
         aisrCtx.outInfo.size.width = output->GetSurfaceBufferWidth();
@@ -5219,7 +5227,6 @@ void ImageSource::DecodeJpegAuxiliaryPicture(
         }
     }
 }
-#endif
 
 void ImageSource::DecodeBlobMetaData(std::unique_ptr<Picture> &picture, const std::set<MetadataType> &metadataTypes,
     ImageInfo &info, uint32_t &errorCode)
@@ -5257,6 +5264,7 @@ void ImageSource::DecodeBlobMetaData(std::unique_ptr<Picture> &picture, const st
         }
     }
 }
+#endif
 
 bool ImageSource::CompressToAstcFromPixelmap(const DecodeOptions &opts, unique_ptr<PixelMap> &rgbaPixelmap,
     unique_ptr<AbsMemory> &dstMemory)
@@ -5368,8 +5376,15 @@ std::string ImageSource::GetPixelMapName(PixelMap* pixelMap)
         IMAGE_LOGE("%{public}s error, pixelMap is null", __func__);
         return "undefined_";
     }
-    std::string pixelMapStr = std::to_string(pixelMap->GetWidth()) +
-        "_x" + std::to_string(pixelMap->GetHeight()) +
+    ImageInfo info;
+    if (GetImageInfo(info) != SUCCESS) {
+        IMAGE_LOGE("%{public}s error, GetImageInfo failed", __func__);
+        return "undefined_";
+    }
+
+    std::string pixelMapStr =
+        "srcImageSize-" + std::to_string(info.size.width) + "_x" + std::to_string(info.size.height) +
+        "-pixelMapSize-" + std::to_string(pixelMap->GetWidth()) + "_x" + std::to_string(pixelMap->GetHeight()) +
         "-streamsize-" + std::to_string(sourceStreamPtr_->GetStreamSize()) +
         "-mimeType-";
     std::string prefix = "image/";
@@ -5386,5 +5401,28 @@ std::string ImageSource::GetPixelMapName(PixelMap* pixelMap)
     return pixelMapStr;
 }
 
+ImageHdrType ImageSource::CheckHdrType()
+{
+    IMAGE_LOGD("start CheckHdrType()");
+    
+    if (checkHdrTypeHasSet) {
+        IMAGE_LOGD("already have checkHdrType_: %{public}d", checkHdrType_);
+        return checkHdrType_;
+    }
+
+    if (ImageSource::ParseHdrType()) {
+        IMAGE_LOGD("ParseHdrType checkHdrType_: %{public}d", sourceHdrType_);
+        checkHdrType_ = sourceHdrType_;
+        if (checkHdrType_ == ImageHdrType::HDR_LOG_DUAL) {
+            checkHdrType_ = ImageHdrType::SDR;
+        }
+        IMAGE_LOGD("final checkHdrType_: %{public}d", checkHdrType_);
+    } else {
+        checkHdrType_ = ImageHdrType::UNKNOWN;
+        IMAGE_LOGD("fail checkHdrType_: %{public}d", checkHdrType_);
+    }
+    checkHdrTypeHasSet = true;
+    return checkHdrType_;
+}
 } // namespace Media
 } // namespace OHOS

@@ -1630,6 +1630,11 @@ uint32_t ExtEncoder::EncodeDualVivid(ExtWStream& outputStream)
 uint32_t ExtEncoder::EncodeSdrImage(ExtWStream& outputStream)
 {
     IMAGE_LOGD("ExtEncoder EncodeSdrImage");
+    if (pixelmap_->GetAllocatorType() == AllocatorType::DMA_ALLOC && ImageUtils::Is10Bit(pixelmap_->GetPixelFormat())
+        && !IsHdrColorSpace(pixelmap_) && !IsWideGamutSdrPixelMap(pixelmap_)) {
+        IMAGE_LOGD("HDR-IMAGE do Encode10bitSdrPixelMap");
+        return Encode10bitSdrPixelMap(pixelmap_, outputStream);
+    }
     if (!pixelmap_->IsHdr() && !IsWideGamutSdrPixelMap(pixelmap_)) {
         return EncodeImageByPixelMap(pixelmap_, opts_.needsPackProperties, outputStream);
     }

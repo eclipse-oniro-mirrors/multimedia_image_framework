@@ -293,11 +293,11 @@ void PixelYuvExt::flip(bool xAxis, bool yAxis)
     if (xAxis && yAxis) {
         bRet = PixelYuvExtUtils::Mirror(data_, dst, imageInfo.size, imageInfo.pixelFormat,
                                         yuvDataInfo, dstStrides, true);
-    } else if (yAxis) {
+    } else if (xAxis) {
         bRet = PixelYuvExtUtils::Mirror(data_, dst, imageInfo.size, imageInfo.pixelFormat,
                                         yuvDataInfo, dstStrides, false);
-    } else if (xAxis) {
-        bRet = PixelYuvExtUtils::FlipXaxis(data_, dst, imageInfo.size, imageInfo.pixelFormat, yuvDataInfo,
+    } else if (yAxis) {
+        bRet = PixelYuvExtUtils::FlipYaxis(data_, dst, imageInfo.size, imageInfo.pixelFormat, yuvDataInfo,
                                            dstStrides);
     }
     if (!bRet) {

@@ -1744,6 +1744,55 @@ HWTEST_F(ImagSourceNdk2Test, OH_ImageSourceNative_CreatePictureTest002, TestSize
 }
 
 /**
+ * @tc.name: HeifImageRegionDecode006
+ * @tc.desc: Test create Pixelmap use SHARE_MEMORY.
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImagSourceNdk2Test, HeifImageRegionDecode006, TestSize.Level3)
+{
+    OH_ImageSourceNative *imageSource = CreateImageSourceNative(IMAGE_HEIF_PATH);
+    ASSERT_NE(imageSource, nullptr);
+    OH_DecodingOptions *opts = nullptr;
+    OH_DecodingOptions_Create(&opts);
+    ASSERT_NE(opts, nullptr);
+    OH_PixelmapNative* resPixMap = nullptr;
+    IMAGE_ALLOCATOR_TYPE allocator = IMAGE_ALLOCATOR_TYPE::IMAGE_ALLOCATOR_TYPE_SHARE_MEMORY;
+    Image_Region desiredRegion = {1000, 1000, 2000, 2000};
+    OH_DecodingOptions_GetDesiredRegion(opts, &desiredRegion);
+    Image_ErrorCode ret = OH_ImageSourceNative_CreatePixelmapUsingAllocator(imageSource, opts, allocator, &resPixMap);
+    EXPECT_EQ(ret, IMAGE_SUCCESS);
+    EXPECT_NE(resPixMap, nullptr);
+    OH_ImageSourceNative_Release(imageSource);
+    OH_DecodingOptions_Release(opts);
+    OH_PixelmapNative_Release(resPixMap);
+}
+ 
+/**
+ * @tc.name: HeifImageRegionDecode007
+ * @tc.desc: Test create Pixelmap use SHARE_MEMORY.
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImagSourceNdk2Test, HeifImageRegionDecode007, TestSize.Level3)
+{
+    OH_ImageSourceNative *imageSource = CreateImageSourceNative(IMAGE_HEIF_PATH);
+    ASSERT_NE(imageSource, nullptr);
+    OH_DecodingOptions *opts = nullptr;
+    OH_DecodingOptions_Create(&opts);
+    ASSERT_NE(opts, nullptr);
+    OH_PixelmapNative* resPixMap = nullptr;
+    IMAGE_ALLOCATOR_TYPE allocator = IMAGE_ALLOCATOR_TYPE::IMAGE_ALLOCATOR_TYPE_SHARE_MEMORY;
+    Image_Region desiredRegion = {0, 0, 6000, 6000};
+    OH_DecodingOptions_GetDesiredRegion(opts, &desiredRegion);
+    OH_DecodingOptions_SetPixelFormat(opts, 9);
+    Image_ErrorCode ret = OH_ImageSourceNative_CreatePixelmapUsingAllocator(imageSource, opts, allocator, &resPixMap);
+    EXPECT_EQ(ret, IMAGE_SUCCESS);
+    EXPECT_NE(resPixMap, nullptr);
+    OH_ImageSourceNative_Release(imageSource);
+    OH_DecodingOptions_Release(opts);
+    OH_PixelmapNative_Release(resPixMap);
+}
+
+/**
  * @tc.name: ImageRegionDecode001
  * @tc.desc: Test Region decode, CropAndScaleStrategy is DEFAULT, Showing the original image.
  * @tc.type: FUNC

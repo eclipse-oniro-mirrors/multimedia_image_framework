@@ -80,7 +80,9 @@ namespace OHOS {
 namespace Media {
 using namespace std;
 using namespace MultimediaPlugin;
+#if !defined(CROSS_PLATFORM)
 using namespace HDI::Display::Graphic::Common::V1_0;
+#endif
 
 constexpr int32_t ALPHA8_BYTES = 1;
 constexpr int32_t RGB565_BYTES = 2;
@@ -143,6 +145,7 @@ const std::map<PixelFormat, AVPixelFormat> FFMPEG_PIXEL_FORMAT_MAP = {
     {PixelFormat::YCBCR_P010, AV_PIX_FMT_P010LE},
 };
 
+#if !defined(CROSS_PLATFORM)
 static const std::map<int32_t, PixelFormat> PIXEL_FORMAT_MAP = {
     { GRAPHIC_PIXEL_FMT_RGBA_8888, PixelFormat::RGBA_8888 },
     { GRAPHIC_PIXEL_FMT_YCBCR_420_SP, PixelFormat::NV12 },
@@ -186,6 +189,8 @@ static const std::map<CM_ColorSpaceType, ColorSpace> CM_COLORSPACE_MAP = {
     { CM_DISPLAY_BT2020_HLG, ColorSpace::ITU_2020 },
     { CM_DISPLAY_BT2020_PQ, ColorSpace::ITU_2020 },
 };
+#endif
+
 
 bool ImageUtils::GetFileSize(const string &pathName, size_t &size)
 {
@@ -1511,35 +1516,12 @@ bool ImageUtils::CanReusePixelMapHdr(ImagePlugin::DecodeContext& context, int wi
         hdrPixelFormat = GRAPHIC_PIXEL_FMT_YCBCR_P010;
     }
     SetContextHdr(context, hdrPixelFormat);
-    bool cond = ((reusePixelmap->GetPixelFormat() != PixelFormat::RGBA_1010102) ||
-        (context.info.pixelFormat != PixelFormat::RGBA_1010102));
+    bool cond = (reusePixelmap->GetPixelFormat() != context.info.pixelFormat);
     CHECK_ERROR_RETURN_RET_LOG(cond, false, "PixelFormat of Hdrimage is not equal to reusePixelmap");
     return true;
 #else
     return false;
 #endif
-}
-
-bool IsReuseYUVFormat(PixelFormat format)
-{
-    return format == PixelFormat::NV12 || format == PixelFormat::NV21;
-}
-
-// Determine whether the reusePixelmap and decoding image are both YUV format.
-bool ImageUtils::IsReuseYUV(ImagePlugin::DecodeContext& context, const std::shared_ptr<PixelMap> &reusePixelmap)
-{
-    return IsReuseYUVFormat(reusePixelmap->GetPixelFormat()) && IsReuseYUVFormat(context.info.pixelFormat);
-}
-
-bool IsReuseRGBFormat(PixelFormat format)
-{
-    return format == PixelFormat::RGBA_8888 || format == PixelFormat::BGRA_8888;
-}
-
-// Determine whether the reusePixelmap and decoding image are both RGB format.
-bool ImageUtils::IsReuseRGB(ImagePlugin::DecodeContext& context, const std::shared_ptr<PixelMap> &reusePixelmap)
-{
-    return IsReuseRGBFormat(reusePixelmap->GetPixelFormat()) && IsReuseRGBFormat(context.info.pixelFormat);
 }
 
 bool ImageUtils::CanReusePixelMapSdr(ImagePlugin::DecodeContext& context, int width,
@@ -1551,7 +1533,7 @@ bool ImageUtils::CanReusePixelMapSdr(ImagePlugin::DecodeContext& context, int wi
     bool cond = ((reusePixelmap->GetPixelFormat() == PixelFormat::RGBA_1010102) ||
         (context.info.pixelFormat == PixelFormat::RGBA_1010102));
     CHECK_ERROR_RETURN_RET_LOG(cond, false, "Sdr image is not RGBA 10bit");
-    cond = (!IsReuseYUV(context, reusePixelmap) && !IsReuseRGB(context, reusePixelmap));
+    cond = (reusePixelmap->GetPixelFormat() != context.info.pixelFormat);
     CHECK_ERROR_RETURN_RET_LOG(cond, false, "PixelFormat of Sdrimage is not equal to reusePixelmap");
     return true;
 }

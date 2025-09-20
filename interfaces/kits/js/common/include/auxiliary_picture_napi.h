@@ -61,6 +61,12 @@ private:
     bool isRelease = false;
     uint32_t uniqueId_ = 0;
 };
+
+extern "C" {
+    napi_value GetAuxiliaryPictureNapi(napi_env env, std::shared_ptr<AuxiliaryPicture> auxiliaryPic);
+    bool GetNativeAuxiliaryPicture(void *auxiliaryPictureNapi,
+        std::shared_ptr<AuxiliaryPicture> &nativeAuxiliaryPicture);
+}
 } // namespace Media
 } // namespace OHOS
 #endif // INTERFACES_KITS_JS_COMMON_INCLUDE_AUXILIARY_PICTURE_NAPI_H

@@ -54,20 +54,20 @@ static ani_object GetMainPixelmap([[maybe_unused]] ani_env* env, [[maybe_unused]
         IMAGE_LOGE("[GetPictureFromEnv] picture nullptr");
         return nullptr;
     }
-    
+
     return PixelMapAni::CreatePixelMap(env, picture->GetMainPixel());
 }
 
 ani_status PictureAni::Init(ani_env* env)
 {
-    static const char* className = "L@ohos/multimedia/image/image/PictureInner;";
+    static const char* className = "@ohos.multimedia.image.image.PictureInner";
     ani_class cls;
     if (ANI_OK != env->FindClass(className, &cls)) {
-        IMAGE_LOGE("Not found L@ohos/multimedia/image/image/PictureInner;");
+        IMAGE_LOGE("Not found @ohos.multimedia.image.image.PictureInner");
         return ANI_ERROR;
     }
     std::array methods = {
-        ani_native_function {"getMainPixelmap", ":L@ohos/multimedia/image/image/PixelMap;",
+        ani_native_function {"getMainPixelmap", ":C{@ohos.multimedia.image.image.PixelMap}",
             reinterpret_cast<void*>(OHOS::Media::GetMainPixelmap)},
     };
     ani_status ret = env->Class_BindNativeMethods(cls, methods.data(), methods.size());

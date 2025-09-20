@@ -435,18 +435,18 @@ int FileSourceStream::GetMMapFd()
 
 bool FileSourceStream::ShouldUseMmap(int fd)
 {
-    int location = INVALID_POSITION;
+    int offset = INVALID_POSITION;
     bool useMmap = false;
-    int err = ioctl(fd, HMDFS_IOC_GET_LOCATION, &location);
+    int err = ioctl(fd, HMDFS_IOC_GET_LOCATION, &offset);
     if (err != IOCTL_SUCCESS) {
         IMAGE_LOGD("[FileSourceStream] ioctl failed, error: %{public}d, errno: %{public}d.", err, errno);
         return useMmap;
     }
 
-    if (location == LOCAL_FILE_POSITION) {
+    if (offset == LOCAL_FILE_POSITION) {
         useMmap = true;
     }
-    IMAGE_LOGD("[FileSourceStream] File position: %{public}d.", location);
+    IMAGE_LOGD("[FileSourceStream] File offset: %{public}d.", offset);
     return useMmap;
 }
 

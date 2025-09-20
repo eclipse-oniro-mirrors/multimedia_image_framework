@@ -25,6 +25,7 @@
 #include "image_system_properties.h"
 #include "pixel_map.h"
 #include "image_source.h"
+#include "abs_image_decoder.h"
 
 static const uint8_t NUM_0 = 0;
 static const uint8_t NUM_2 = 2;
@@ -43,6 +44,7 @@ constexpr int MAX_DIMENSION = INT32_MAX >> 2;
 using namespace testing::ext;
 using namespace OHOS::Media;
 using namespace OHOS::MultimediaPlugin;
+using namespace OHOS::ImagePlugin;
 namespace OHOS {
 namespace Multimedia {
 static const std::string IMAGE_INPUT_JPEG_PATH = "/data/local/tmp/image/test.jpg";
@@ -749,5 +751,20 @@ HWTEST_F(ImageUtilsTest, CheckMulOverflowTest012, TestSize.Level3)
     res = ImageUtils::CheckMulOverflow(INT32_MAX, mockHeight, INT32_MAX);
     EXPECT_FALSE(res);
 }
+
+/**
+ * @tc.name: InvalidateContextSurfaceBufferTest001
+ * @tc.desc: test ImageUtils::InvalidateContextSurfaceBufferTest001
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageUtilsTest, InvalidateContextSurfaceBufferTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImageUtilsTest: InvalidateContextSurfaceBufferTest001 start";
+    DecodeContext context;
+    ImageUtils::InvalidateContextSurfaceBuffer(context);
+    EXPECT_EQ(context.pixelsBuffer.context, nullptr);
+    GTEST_LOG_(INFO) << "ImageUtilsTest: InvalidateContextSurfaceBufferTest001 end";
+}
+
 }
 }

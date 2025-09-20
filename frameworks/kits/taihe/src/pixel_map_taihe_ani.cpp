@@ -14,6 +14,8 @@
  */
 
 #include "pixel_map_taihe_ani.h"
+
+#include <ani_signature_builder.h>
 #include "pixel_map_taihe.h"
 
 // This file is for legacy ANI backward compatibility
@@ -21,14 +23,16 @@
 namespace OHOS {
 namespace Media {
 using namespace ANI::Image;
+using namespace arkts;
 
 ani_object PixelMapTaiheAni::CreateEtsPixelMap([[maybe_unused]] ani_env* env, std::shared_ptr<PixelMap> pixelMap)
 {
     std::unique_ptr<PixelMapTaiheAni> pixelMapAni = std::make_unique<PixelMapTaiheAni>();
     pixelMapAni->nativePixelMap_ = pixelMap;
 
+    ani_signature::Namespace ns = ani_signature::Builder::BuildNamespace("@ohos.multimedia.image.image");
     ani_namespace imageNamespace;
-    if (env->FindNamespace("L@ohos/multimedia/image/image;", &imageNamespace) != ANI_OK) {
+    if (env->FindNamespace(ns.Descriptor().c_str(), &imageNamespace) != ANI_OK) {
         return nullptr;
     }
     ani_function createFunc;
@@ -36,7 +40,9 @@ ani_object PixelMapTaiheAni::CreateEtsPixelMap([[maybe_unused]] ani_env* env, st
         return nullptr;
     }
     ani_ref pixelMapObj;
-    if (env->Function_Call_Ref(createFunc, &pixelMapObj, reinterpret_cast<ani_long>(pixelMapAni.release())) != ANI_OK) {
+    if (env->Function_Call_Ref(createFunc, &pixelMapObj, reinterpret_cast<ani_long>(pixelMapAni.get())) == ANI_OK) {
+        pixelMapAni.release();
+    } else {
         return nullptr;
     }
 
@@ -45,12 +51,15 @@ ani_object PixelMapTaiheAni::CreateEtsPixelMap([[maybe_unused]] ani_env* env, st
 
 std::shared_ptr<PixelMap> PixelMapTaiheAni::GetNativePixelMap([[maybe_unused]] ani_env* env, ani_object obj)
 {
+    ani_signature::Type cls = ani_signature::Builder::BuildClass("@ohos.multimedia.image.image.PixelMap");
     ani_class pixelMapCls;
-    if (env->FindClass("L@ohos/multimedia/image/image/PixelMap;", &pixelMapCls) != ANI_OK) {
+    if (env->FindClass(cls.Descriptor().c_str(), &pixelMapCls) != ANI_OK) {
         return nullptr;
     }
+    ani_signature::SignatureBuilder sb{};
     ani_method getMethod;
-    if (env->Class_FindMethod(pixelMapCls, "getImplPtr", ":J", &getMethod) != ANI_OK) {
+    sb.SetReturnLong();
+    if (env->Class_FindMethod(pixelMapCls, "getImplPtr", sb.BuildSignatureDescriptor().c_str(), &getMethod) != ANI_OK) {
         return nullptr;
     }
     ani_long implPtr;

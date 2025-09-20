@@ -93,6 +93,7 @@ extern "C" {
 
 #define BUF_NAME_LEN 255
 #define PREFIX_NAME_LEN 11
+#define DMA_BUF_SET_LEAK_TYPE _IOW(DMA_BUF_BASE, 5, const char *)
 
 namespace OHOS {
 namespace Media {
@@ -153,8 +154,10 @@ void PixelMap::FreePixelMap() __attribute__((no_sanitize("cfi")))
     
     switch (allocatorType_) {
         case AllocatorType::HEAP_ALLOC: {
-            free(data_);
-            data_ = nullptr;
+            if (data_ != nullptr) {
+                free(data_);
+                data_ = nullptr;
+            }
             break;
         }
         case AllocatorType::CUSTOM_ALLOC: {
@@ -234,6 +237,33 @@ void PixelMap::SetPixelsAddr(void *addr, void *context, uint32_t size, Allocator
         UpdateImageInfo();
     }
     ImageUtils::FlushSurfaceBuffer(this);
+}
+
+void PixelMap::SetPixelsAddr(void *addr, void *context, uint32_t size, AllocatorType type, bool displayOnly)
+{
+    if (type < AllocatorType::DEFAULT || type > AllocatorType::DMA_ALLOC) {
+        IMAGE_LOGE("Unmarshalling setPixelsAddr error invalid allocatorType");
+        return;
+    }
+    if (data_ != nullptr) {
+        IMAGE_LOGD("Unmarshalling setPixelsAddr release the existed data first");
+        FreePixelMap();
+    }
+    if (type == AllocatorType::SHARE_MEM_ALLOC && context == nullptr) {
+        IMAGE_LOGE("Unmarshalling setPixelsAddr error type %{public}d ", type);
+    }
+    data_ = static_cast<uint8_t *>(addr);
+    isUnMap_ = false;
+    context_ = context;
+    pixelsSize_ = size;
+    allocatorType_ = type;
+    custFreePixelMap_ = nullptr;
+    if (type == AllocatorType::DMA_ALLOC && rowDataSize_ != 0) {
+        UpdateImageInfo();
+    }
+    if (!displayOnly) {
+        ImageUtils::FlushSurfaceBuffer(this);
+    }
 }
 
 bool CheckPixelmap(std::unique_ptr<PixelMap> &pixelMap, ImageInfo &imageInfo)
@@ -533,6 +563,10 @@ uint32_t PixelMap::SetMemoryName(const std::string &pixelMapName)
         int ret = TEMP_FAILURE_RETRY(ioctl(fd, DMA_BUF_SET_NAME_A, pixelMapName.c_str()));
         if (ret != 0) {
             return ERR_MEMORY_NOT_SUPPORT;
+        }
+        ret = TEMP_FAILURE_RETRY(ioctl(fd, DMA_BUF_SET_LEAK_TYPE, "pixelmap"));
+        if (ret != 0) {
+            IMAGE_LOGD("[PixelMap] set dma buf leak type failed");
         }
         return SUCCESS;
     }
@@ -1886,7 +1920,7 @@ uint32_t PixelMap::ReadPixel(const Position &pos, uint32_t &dst)
         return ERR_IMAGE_INVALID_PARAMETER;
     }
     if (isUnMap_ || data_ == nullptr) {
-        IMAGE_LOGE("read pixel by pos source data is null, isUnMap %{public}d.", isUnMap_);
+        IMAGE_LOGE("%{public}d:read pixel by pos source data is null, isUnMap %{public}d.", uniqueId_, isUnMap_);
         return ERR_IMAGE_READ_PIXELMAP_FAILED;
     }
     ImageInfo dstImageInfo =
@@ -3013,7 +3047,7 @@ bool PixelMap::UpdatePixelMapMemInfo(PixelMap *pixelMap, ImageInfo &imgInfo, Pix
         return false;
     }
     pixelMap->SetPixelsAddr(pixelMemInfo.base, pixelMemInfo.context,
-        pixelMemInfo.bufferSize, pixelMemInfo.allocatorType, nullptr);
+        pixelMemInfo.bufferSize, pixelMemInfo.allocatorType, pixelMap->IsDisplayOnly());
     return true;
 }
 

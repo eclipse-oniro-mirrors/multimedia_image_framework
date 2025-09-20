@@ -79,6 +79,7 @@ image_native_ios_sources = [
   "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/accessor/src/file_metadata_stream.cpp",
   "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/accessor/src/heif_exif_metadata_accessor.cpp",
   "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/accessor/src/jpeg_exif_metadata_accessor.cpp",
+  "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/accessor/src/metadata.cpp",
   "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/accessor/src/metadata_accessor_factory.cpp",
   "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/accessor/src/png_exif_metadata_accessor.cpp",
   "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/accessor/src/png_image_chunk_utils.cpp",
@@ -262,7 +263,6 @@ image_native_ios_deps = [
 
   # heif
   "${image_subsystem}/plugins/common/libs/image/libextplugin:heifparser",
-
 ]
 
 if (image_use_new_skia) {

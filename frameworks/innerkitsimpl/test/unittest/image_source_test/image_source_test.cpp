@@ -56,8 +56,19 @@ static const std::string IMAGE_INPUT_JPEG_BROKEN_TWO = "/data/local/tmp/image/te
 static const std::string IMAGE_URL_PREFIX = "data:image/";
 static const std::string IMAGE_INPUT_JPG_PATH_EXACTSIZE = "/data/local/tmp/image/800-500.jpg";
 static const std::string IMAGE_JPG_THREE_GAINMAP_HDR_PATH = "/data/local/tmp/image/three_gainmap_hdr.jpg";
+static const std::string IMAGE_HEIC_THREE_GAINMAP_HDR_PATH = "/data/local/tmp/image/three_gainmap_hdr.heic";
 static const std::string IMAGE_GIF_LARGE_SIZE_PATH = "/data/local/tmp/image/fake_large_size_test.gif";  // 50000x50000
 static const std::string IMAGE_JPG_LARGE_SIZE_PATH = "/data/local/tmp/image/fake_large_size_test.jpg";  // 30000x30000
+static const std::string IMAGE_HEIC_ISO_HDR_VIVID_SINGLE_PATH =
+    "/data/local/tmp/image/iso_hdr_vivid_single.heic";
+static const std::string IMAGE_JPG_JPEG_UWA_SINGLE_BASE_COLOR_PATH =
+    "/data/local/tmp/image/jpeg_uwa_single_base_color.jpg";
+static const std::string IMAGE_JPG_JPEG_UWA_SINGLE_ALTERNATE_COLOR_PATH =
+    "/data/local/tmp/image/jpeg_uwa_single_alternate_color.jpg";
+static const std::string IMAGE_JPG_JPEG_UWA_MULTI_BASE_COLOR_PATH =
+    "/data/local/tmp/image/jpeg_uwa_multi_base_color.jpg";
+static const std::string IMAGE_JPG_JPEG_UWA_MULTI_ALTERNATE_COLOR_PATH =
+    "/data/local/tmp/image/jpeg_uwa_multi_alternate_color.jpg";
 static const int32_t DECODE_DESIRED_WIDTH = 7500;
 static const int32_t DECODE_DESIRED_HEIGHT = 7500;
 static const int32_t DESIRED_REGION_WIDTH = 4096;
@@ -1733,7 +1744,8 @@ HWTEST_F(ImageSourceTest, End2EndTest001, TestSize.Level3)
     ASSERT_EQ(desiredWidth, pixelMap->GetWidth());
     ASSERT_EQ(desiredHeight, pixelMap->GetHeight());
     ASSERT_EQ("undefined_", imageSource->GetPixelMapName(nullptr));
-    ASSERT_EQ("400x200-streamsize-27897-mimetype-jpeg", imageSource->GetPixelMapName(pixelMap.get()));
+    ASSERT_EQ("srcImageSize-472x226-pixelMapSize-400x200-streamsize-27897-mimetype-jpeg",
+        imageSource->GetPixelMapName(pixelMap.get()));
 }
 
 /**
@@ -3127,7 +3139,7 @@ HWTEST_F(ImageSourceTest, DecodeHeifAuxiliaryPicturesTest002, TestSize.Level1)
 }
 
 /**
- * @tc.name: WideGamutTest003
+ * @tc.name: WideGamutTest001
  * @tc.desc: test WideGamut one channel gainmap Jpeg HDR input
  * @tc.type: FUNC
  */
@@ -3163,6 +3175,32 @@ HWTEST_F(ImageSourceTest, WideGamutTest002, TestSize.Level3)
     SourceOptions opts;
     opts.formatHint = "image/jpeg";
     std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(IMAGE_JPG_THREE_GAINMAP_HDR_PATH,
+        opts, errorCode);
+    ASSERT_EQ(errorCode, SUCCESS);
+    ASSERT_NE(imageSource.get(), nullptr);
+    uint32_t index = 0;
+    DecodeOptions decodeOpts;
+    decodeOpts.isCreateWideGamutSdrPixelMap = true;
+    decodeOpts.desiredDynamicRange = Media::DecodeDynamicRange::AUTO;
+    std::unique_ptr<PixelMap> pixelMap = imageSource->CreatePixelMap(index, decodeOpts, errorCode);
+    ASSERT_EQ(errorCode, SUCCESS);
+    bool isHdr = pixelMap->IsHdr();
+    ASSERT_EQ(isHdr, false);
+    Media::PixelFormat pixelFormat = pixelMap->GetPixelFormat();
+    ASSERT_EQ(pixelFormat, Media::PixelFormat::RGBA_1010102);
+}
+
+/**
+ * @tc.name: WideGamutTest003
+ * @tc.desc: test WideGamut one channel gainmap Jpeg HDR input
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageSourceTest, WideGamutTest003, TestSize.Level3)
+{
+    uint32_t errorCode = 0;
+    SourceOptions opts;
+    opts.formatHint = "image/heif";
+    std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(IMAGE_HEIC_THREE_GAINMAP_HDR_PATH,
         opts, errorCode);
     ASSERT_EQ(errorCode, SUCCESS);
     ASSERT_NE(imageSource.get(), nullptr);
@@ -3304,6 +3342,101 @@ HWTEST_F(ImageSourceTest, LargeImageTest005, TestSize.Level3)
 
     ASSERT_EQ(pixelMap->GetWidth(), DECODE_DESIRED_WIDTH);
     ASSERT_EQ(pixelMap->GetHeight(), DECODE_DESIRED_HEIGHT);
+}
+
+/**
+ * @tc.name: CheckHdrType001
+ * @tc.desc: test the HdrType ImageHdrType::UNKNOWN
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageSourceTest, CheckHdrType001, TestSize.Level3)
+{
+    uint32_t errorCode = 0;
+    SourceOptions opts;
+    std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(IMAGE_INPUT_HEIF_PATH, opts, errorCode);
+    ImageHdrType hdrType;
+    hdrType = imageSource->CheckHdrType();
+    ASSERT_EQ(hdrType, ImageHdrType::UNKNOWN);
+}
+
+/**
+ * @tc.name: CheckHdrType002
+ * @tc.desc: test the HdrType ImageHdrType::SDR
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageSourceTest, CheckHdrType002, TestSize.Level3)
+{
+    uint32_t errorCode = 0;
+    SourceOptions opts;
+    std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(IMAGE_INPUT_JPEG_PATH, opts, errorCode);
+    ImageHdrType hdrType;
+    hdrType = imageSource->CheckHdrType();
+    ASSERT_EQ(hdrType, ImageHdrType::SDR);
+}
+
+/**
+ * @tc.name: CheckHdrType003
+ * @tc.desc: test the HdrType ImageHdrType::SDR
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageSourceTest, CheckHdrType003, TestSize.Level3)
+{
+    uint32_t errorCode = 0;
+    SourceOptions opts;
+    std::unique_ptr<ImageSource> imageSource =
+        ImageSource::CreateImageSource(IMAGE_INPUT_EXIF_JPEG_PATH, opts, errorCode);
+    ImageHdrType hdrType;
+    hdrType = imageSource->CheckHdrType();
+    ASSERT_EQ(hdrType, ImageHdrType::SDR);
+}
+
+/**
+ * @tc.name: CheckHdrType005
+ * @tc.desc: test the HdrType ImageHdrType::HDR_CUVA
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageSourceTest, CheckHdrType005, TestSize.Level3)
+{
+    uint32_t errorCode = 0;
+    SourceOptions opts;
+    std::unique_ptr<ImageSource> imageSource =
+        ImageSource::CreateImageSource(IMAGE_INPUT_JPEG_HDR_PATH, opts, errorCode);
+    ImageHdrType hdrType;
+    hdrType = imageSource->CheckHdrType();
+    ASSERT_EQ(hdrType, ImageHdrType::HDR_CUVA);
+}
+
+
+/**
+ * @tc.name: CheckHdrType007
+ * @tc.desc: test the HdrType ImageHdrType::HDR_VIVID_DUAL
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageSourceTest, CheckHdrType007, TestSize.Level3)
+{
+    uint32_t errorCode = 0;
+    SourceOptions opts;
+    std::unique_ptr<ImageSource> imageSource =
+        ImageSource::CreateImageSource(IMAGE_JPG_THREE_GAINMAP_HDR_PATH, opts, errorCode);
+    ImageHdrType hdrType;
+    hdrType = imageSource->CheckHdrType();
+    ASSERT_EQ(hdrType, ImageHdrType::HDR_VIVID_DUAL);
+}
+
+/**
+ * @tc.name: CheckHdrType008
+ * @tc.desc: test the HdrType ImageHdrType::HDR_VIVID_DUAL
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageSourceTest, CheckHdrType008, TestSize.Level3)
+{
+    uint32_t errorCode = 0;
+    SourceOptions opts;
+    std::unique_ptr<ImageSource> imageSource =
+        ImageSource::CreateImageSource(IMAGE_HEIC_THREE_GAINMAP_HDR_PATH, opts, errorCode);
+    ImageHdrType hdrType;
+    hdrType = imageSource->CheckHdrType();
+    ASSERT_EQ(hdrType, ImageHdrType::HDR_VIVID_DUAL);
 }
 } // namespace Multimedia
 } // namespace OHOS

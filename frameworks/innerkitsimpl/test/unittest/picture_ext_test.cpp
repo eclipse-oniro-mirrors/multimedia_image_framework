@@ -1306,7 +1306,7 @@ HWTEST_F(PictureExtTest, AuxPictureUnmarshallingTest001, TestSize.Level3)
 
 /**
  * @tc.name: CalGainmapTest001
- * @tc.desc: CalGainmap with hdr image and sdr image
+ * @tc.desc: jpeg decode to pixelmap and CalGainmap with hdr image and sdr image
  * @tc.type: FUNC
  */
 HWTEST_F(PictureExtTest, CalGainmapTest001, TestSize.Level1)
@@ -1315,6 +1315,39 @@ HWTEST_F(PictureExtTest, CalGainmapTest001, TestSize.Level1)
     SourceOptions sourceOpts;
     sourceOpts.formatHint = "image/jpeg";
     std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(IMAGE_JPEGHDR_SRC.c_str(),
+                                                                              sourceOpts, res);
+    ASSERT_NE(imageSource, nullptr);
+    DecodingOptionsForPicture opts;
+    opts.desireAuxiliaryPictures.insert(AuxiliaryPictureType::GAINMAP);
+    uint32_t error_code;
+    std::unique_ptr<Picture> picture = imageSource->CreatePicture(opts, error_code);
+    ASSERT_NE(picture, nullptr);
+    std::unique_ptr<PixelMap> pixelmap = picture->GetHdrComposedPixelMap();
+    ASSERT_NE(pixelmap, nullptr);
+    EXPECT_TRUE(pixelmap->IsHdr());
+    PixelFormat format= pixelmap->GetPixelFormat();
+    EXPECT_EQ(format, PixelFormat::RGBA_1010102);
+    std::shared_ptr<PixelMap> hdrPixelmap = std::move(pixelmap);
+    auto sdrPixelmap = picture->GetMainPixel();
+    std::unique_ptr<Picture> newPicture = picture->CreatePictureByHdrAndSdrPixelMap(hdrPixelmap, sdrPixelmap);
+#ifdef IMAGE_VPE_FLAG
+    ASSERT_NE(newPicture, nullptr);
+#else
+    ASSERT_EQ(newPicture, nullptr);
+#endif
+}
+
+/**
+ * @tc.name: CalGainmapTest002
+ * @tc.desc: heic decode to pixelmap and CalGainmap with hdr image and sdr image
+ * @tc.type: FUNC
+ */
+HWTEST_F(PictureExtTest, CalGainmapTest002, TestSize.Level1)
+{
+    uint32_t res = 0;
+    SourceOptions sourceOpts;
+    sourceOpts.formatHint = "image/heif";
+    std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(IMAGE_HEIFHDR_SRC.c_str(),
                                                                               sourceOpts, res);
     ASSERT_NE(imageSource, nullptr);
     DecodingOptionsForPicture opts;

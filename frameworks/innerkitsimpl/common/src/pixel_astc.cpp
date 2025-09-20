@@ -209,13 +209,13 @@ bool PixelAstc::IsSameImage(const PixelMap &other)
 uint32_t PixelAstc::ReadPixels(const uint64_t &bufferSize, const uint32_t &offset, const uint32_t &stride,
                                const Rect &region, uint8_t *dst)
 {
-    IMAGE_LOGE("ReadPixels is not support on pixelastc");
+    IMAGE_LOGE("%{public}d:ReadPixels is not support on pixelastc", uniqueId_);
     return ERR_IMAGE_INVALID_PARAMETER;
 }
 
 uint32_t PixelAstc::ReadPixels(const uint64_t &bufferSize, uint8_t *dst)
 {
-    IMAGE_LOGE("ReadPixels is not support on pixelastc");
+    IMAGE_LOGE("%{public}d:ReadPixels is not support on pixelastc", uniqueId_);
     return ERR_IMAGE_INVALID_PARAMETER;
 }
 

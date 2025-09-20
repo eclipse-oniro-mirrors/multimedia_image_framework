@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Huawei Device Co., Ltd.
+ * Copyright (C) 2025 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -15,13 +15,15 @@
 
 #include "pixel_map_gl_shader.h"
 
-#include <fstream>
+#include <fcntl.h>
 #include <inttypes.h>
-#include <sstream>
-#include <string>
 #include <sys/stat.h>
 #include <sys/types.h>
-#include <fcntl.h>
+
+#include <fstream>
+#include <sstream>
+#include <string>
+
 #ifdef USE_M133_SKIA
 #include <unistd.h>
 #endif

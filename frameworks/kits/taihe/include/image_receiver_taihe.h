@@ -35,6 +35,8 @@ public:
     ImageReceiverImpl();
     explicit ImageReceiverImpl(std::shared_ptr<OHOS::Media::ImageReceiver> imageReceiver);
     ~ImageReceiverImpl();
+    int64_t GetImplPtr();
+    std::shared_ptr<OHOS::Media::ImageReceiver> GetNativeImageReceiver();
 
     static bool AniSendEvent(const std::function<void()> cb, std::string &name);
     static void OnProcessSendEvent(std::shared_ptr<ImageReceiverTaiheContext> &context);
@@ -45,6 +47,7 @@ public:
 
     string GetReceivingSurfaceIdSync();
     struct Image ReadLatestImageSync();
+    struct Image ReadNextImageSync();
     void OnImageArrival(callback_view<void(uintptr_t, uintptr_t)> callback);
     void OffImageArrival(optional_view<callback<void(uintptr_t, uintptr_t)>> callback);
     void ReleaseSync();
@@ -63,7 +66,6 @@ private:
 };
 
 struct ImageReceiverTaiheContext {
-    ani_env *env = nullptr;
     CompleteCallback callBack = nullptr;
     CallbackResult result;
     std::shared_ptr<uintptr_t> taiheCallback = nullptr;

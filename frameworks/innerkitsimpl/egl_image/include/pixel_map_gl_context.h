@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Huawei Device Co., Ltd.
+ * Copyright (C) 2025 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -21,14 +21,17 @@
 #endif // EGL_EGLEXT_PROTOTYPES
 
 #include "pixel_map_gl_common.h"
+
 #include "EGL/egl.h"
 #include "EGL/eglext.h"
 #include "GLES/glext.h"
 #include "GLES3/gl32.h"
+
 #include "include/core/SkCanvas.h"
 #include "include/core/SkColorSpace.h"
 #include "include/core/SkImageInfo.h"
 #include "include/core/SkSurface.h"
+
 #ifdef USE_M133_SKIA
 #include "include/gpu/ganesh/GrBackendSurface.h"
 #include "include/gpu/ganesh/GrContextOptions.h"

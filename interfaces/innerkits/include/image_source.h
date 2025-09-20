@@ -261,6 +261,7 @@ public:
     NATIVEEXPORT uint64_t GetImageId();
     NATIVEEXPORT bool IsSvgUseDma(const DecodeOptions &opts);
     NATIVEEXPORT bool IsSupportAllocatorType(DecodeOptions& decOps, int32_t allocatorType);
+    ImageHdrType CheckHdrType();
 
 private:
     DISALLOW_COPY_AND_MOVE(ImageSource);
@@ -358,8 +359,6 @@ private:
                             ImagePlugin::DecodeContext &context, ImagePlugin::PlImageInfo &plInfo);
     ImagePlugin::DecodeContext DecodeImageDataToContextExtended(uint32_t index, ImageInfo &info,
         ImagePlugin::PlImageInfo &plInfo, ImageEvent &imageEvent, uint32_t &errorCode);
-    void DecodeBlobMetaData(std::unique_ptr<Picture> &picture, const std::set<MetadataType> &metadataTypes,
-        ImageInfo &info, uint32_t &errorCode);
     void SetPixelMapColorSpace(ImagePlugin::DecodeContext& context, std::unique_ptr<PixelMap>& pixelMap,
         std::unique_ptr<ImagePlugin::AbsImageDecoder>& decoder);
     bool IsSingleHdrImage(ImageHdrType type);
@@ -395,6 +394,8 @@ private:
     bool CheckJpegSourceStream(StreamInfo &streamInfo);
     uint32_t CreatePictureAtIndexPreCheck(uint32_t index, const ImageInfo &info);
     uint32_t SetGifMetadataForPicture(std::unique_ptr<Picture> &picture, uint32_t index);
+    void DecodeBlobMetaData(std::unique_ptr<Picture> &picture, const std::set<MetadataType> &metadataTypes,
+        ImageInfo &info, uint32_t &errorCode);
 #endif
 
     const std::string NINE_PATCH = "ninepatch";
@@ -427,6 +428,8 @@ private:
     std::optional<bool> isAstc_;
     uint64_t imageId_; // generated from the last six bits of the current timestamp
     ImageHdrType sourceHdrType_; // source image hdr type;
+    ImageHdrType checkHdrType_;
+    bool checkHdrTypeHasSet = false;
     std::shared_ptr<ExifMetadata> exifMetadata_ = nullptr;
     std::string source_; // Image source fd buffer etc
     bool isExifReadFailed_ = false;

@@ -572,19 +572,6 @@ std::unique_ptr<AbsMemory> ImageFormatConvert::CreateMemory(PixelFormat pixelFor
     return m;
 }
 
-bool IsRGBA1010102ToRGBA8888(std::shared_ptr<PixelMap> &srcPixelMap, PixelFormat destFormat)
-{
-    if (srcPixelMap == nullptr) {
-        IMAGE_LOGE("%{public}s srcPixelMap get null", __func__);
-        return false;
-    }
-    PixelFormat srcFormat = srcPixelMap->GetPixelFormat();
-    if (srcFormat != PixelFormat::RGBA_1010102 || destFormat != PixelFormat::RGBA_8888) {
-        return false;
-    }
-    return true;
-}
-
 std::unique_ptr<AbsMemory> Truncate10BitMemory(std::shared_ptr<PixelMap> &srcPixelmap,
     ImageInfo &imageInfo, PixelFormat destFormat, AllocatorType dstType, uint32_t &errorCode)
 {

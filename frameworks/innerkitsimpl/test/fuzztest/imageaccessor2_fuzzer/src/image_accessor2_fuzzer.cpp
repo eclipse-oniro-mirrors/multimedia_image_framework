@@ -204,10 +204,10 @@ void AccessorTest002(const uint8_t *data, size_t size)
 
 void ExifMetadatFormatterTest()
 {
-    auto size = ExifMetadatFormatter::valueFormatConvertConfig.size();
+    auto size = ExifMetadatFormatter::GetInstance().valueFormatConvertConfig_.size();
     uint8_t size_checked = (size == 0) ? 1 : size;
     uint8_t index = FDP->ConsumeIntegral<uint8_t>() % size_checked;
-    auto it = ExifMetadatFormatter::valueFormatConvertConfig.begin();
+    auto it = ExifMetadatFormatter::GetInstance().valueFormatConvertConfig_.begin();
     std::advance(it, index);
     auto func = (it->second).first;
     std::string value = "";

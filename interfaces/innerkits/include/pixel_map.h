@@ -320,6 +320,18 @@ public:
                                     CustomFreePixelMap func);
 
     /**
+     * Set pixel buffer information.
+     *
+     * @param addr Pixel address.
+     * @param context Buffer descriptor.
+     * @param size Pixel size.
+     * @param type Memory type.
+     * @param displayOnly Whether to flush buffer.
+     */
+    NATIVEEXPORT virtual void SetPixelsAddr(void *addr, void *context, uint32_t size, AllocatorType type,
+                                    bool displayOnly);
+
+    /**
      * Get pixel step size.
      */
     NATIVEEXPORT virtual int32_t GetPixelBytes();

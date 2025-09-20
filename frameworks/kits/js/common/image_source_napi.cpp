@@ -3248,6 +3248,50 @@ int32_t ImageSourceNapi::CreateImageSourceNapi(napi_env env, napi_value* result)
     return SUCCESS;
 }
 
+napi_value ImageSourceNapi::CreateImageSourceNapi(napi_env env, std::shared_ptr<ImageSource> imageSource)
+{
+    if (sConstructor_ == nullptr) {
+        napi_value exports = nullptr;
+        napi_create_object(env, &exports);
+        ImageSourceNapi::Init(env, exports);
+    }
+    napi_value constructor = nullptr;
+    napi_value result = nullptr;
+    napi_status status = napi_get_reference_value(env, sConstructor_, &constructor);
+    if (IMG_IS_OK(status)) {
+        if (imageSource != nullptr) {
+            sImgSrc_ = std::move(imageSource);
+            status = napi_new_instance(env, constructor, NUM_0, nullptr, &result);
+        } else {
+            status = napi_invalid_arg;
+            IMAGE_LOGE("New ImageSourceNapi Instance imageSource is nullptr");
+            napi_get_undefined(env, &result);
+        }
+    }
+    if (!IMG_IS_OK(status)) {
+        IMAGE_LOGE("CreateImageSource | New instance could not be obtained");
+        napi_get_undefined(env, &result);
+    }
+    return result;
+}
+
+extern "C" {
+napi_value GetImageSourceNapi(napi_env env, std::shared_ptr<ImageSource> imageSource)
+{
+    return ImageSourceNapi::CreateImageSourceNapi(env, imageSource);
+}
+
+bool GetNativeImageSource(void *imageSourceNapi, std::shared_ptr<ImageSource> &imageSource)
+{
+    if (imageSourceNapi == nullptr) {
+        IMAGE_LOGE("%{public}s imageSourceNapi is nullptr", __func__);
+        return false;
+    }
+    imageSource = reinterpret_cast<ImageSourceNapi*>(imageSourceNapi)->nativeImgSrc;
+    return true;
+}
+}
+
 void ImageSourceNapi::SetIncrementalPixelMap(std::shared_ptr<IncrementalPixelMap> incrementalPixelMap)
 {
     navIncPixelMap_ = incrementalPixelMap;
