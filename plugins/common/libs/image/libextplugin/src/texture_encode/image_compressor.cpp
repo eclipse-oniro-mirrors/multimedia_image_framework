@@ -1400,9 +1400,14 @@ static CL_ASTC_STATUS SaveClBin(cl_program program, const std::string &clBinPath
         free(programBinaries);
         return CL_ASTC_ENC_FAILED;
     }
-    FILE *fp = fopen(clBinPath.c_str(), "wb");
+    char realLoadPath[PATH_MAX] = { 0 };
+    if (realpath(clBinPath.c_str(), realLoadPath) == nullptr) {
+        IMAGE_LOGE("realpath check failed");
+        return CL_ASTC_ENC_FAILED;
+    }
+    FILE *fp = fopen(realLoadPath, "wb");
     if (fp == nullptr) {
-        IMAGE_LOGE("astc create file: %{public}s failed!", clBinPath.c_str());
+        IMAGE_LOGE("astc create file: %{public}s failed!", realLoadPath);
         free(programBinaries);
         return CL_ASTC_ENC_FAILED;
     }
