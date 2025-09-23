@@ -40,5 +40,23 @@ std::pair<int32_t, std::string> ImageErrorConvert::CreatePictureAtIndexMakeErrMs
             return std::make_pair<int32_t, std::string>(IMAGE_DECODE_FAILED, "Decode failed.");
     }
 }
+
+std::pair<int32_t, std::string> ImageErrorConvert::ModifyImagePropertiesEnhancedMakeErrMsg(uint32_t errorCode,
+    std::string &exMessage)
+{
+    switch (errorCode) {
+        case ERR_MEDIA_VALUE_INVALID:
+        case ERR_IMAGE_DECODE_EXIF_UNSUPPORT:
+            return std::make_pair<int32_t, std::string>(IMAGE_SOURCE_UNSUPPORTED_METADATA,
+                "Unsupported metadata." + exMessage);
+        case ERR_IMAGE_SOURCE_DATA:
+            return std::make_pair<int32_t, std::string>(IMAGE_SOURCE_UNSUPPORTED_MIMETYPE,
+                "Unsupported MIME type.");
+        case ERR_MEDIA_WRITE_PARCEL_FAIL:
+        default:
+            return std::make_pair<int32_t, std::string>(IMAGE_SOURCE_WRITE_PROPERTY_FAILED,
+                "Failed to write image properties to the file.");
+    }
+}
 }  // namespace Media
 }  // namespace OHOS

@@ -724,6 +724,9 @@ interface ImageSource {
   @gen_promise("modifyImageProperties")
   ModifyImagePropertiesSync(records: @record Map<PropertyKey, PropertyValue>): void;
 
+  @gen_promise("modifyImagePropertiesEnhanced")
+  ModifyImagePropertiesEnhancedSync(records: @record Map<PropertyKey, PropertyValue>): void;
+
   @gen_async("updateData")
   @gen_promise("updateData")
   UpdateDataSync(buf: @arraybuffer Array<u8>, isFinished: bool, offset: i32, length: i32): void;

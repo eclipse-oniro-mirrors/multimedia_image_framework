@@ -229,6 +229,9 @@ public:
         uint8_t *data, uint32_t size);
     NATIVEEXPORT uint32_t ModifyImageProperty(uint32_t index, const std::string &key, const std::string &value);
     NATIVEEXPORT uint32_t ModifyImagePropertyEx(uint32_t index, const std::string &key, const std::string &value);
+    NATIVEEXPORT uint32_t ModifyImagePropertiesEx(uint32_t index,
+        const std::vector<std::pair<std::string, std::string>> &properties);
+    NATIVEEXPORT std::set<std::string> GetModifyExifUnsupportedKeys();
     NATIVEEXPORT uint32_t RemoveImageProperties(uint32_t index, const std::set<std::string> &keys,
         const std::string &path);
     NATIVEEXPORT uint32_t RemoveImageProperties(uint32_t index, const std::set<std::string> &keys,
@@ -338,9 +341,20 @@ private:
     static uint64_t GetNowTimeMicroSeconds();
     uint32_t ModifyImageProperty(std::shared_ptr<MetadataAccessor> metadataAccessor,
                                  const std::string &key, const std::string &value);
+    uint32_t ModifyImageProperties(std::shared_ptr<MetadataAccessor> metadataAccessor,
+                                 const std::vector<std::pair<std::string, std::string>> &properties, bool isEnhanced);
     uint32_t RemoveImageProperties(std::shared_ptr<MetadataAccessor> metadataAccessor,
                                     const std::set<std::string> &key);
     uint32_t ModifyImageProperty(const std::string &key, const std::string &value);
+    uint32_t ModifyImageProperties(const std::vector<std::pair<std::string, std::string>> &properties, bool isEnhanced);
+    uint32_t ModifyImageProperties(uint32_t index, const std::vector<std::pair<std::string, std::string>> &properties,
+        const std::string &path, bool isEnhanced);
+    uint32_t ModifyImageProperties(uint32_t index, const std::vector<std::pair<std::string, std::string>> &properties,
+        const int fd, bool isEnhanced);
+    uint32_t ModifyImageProperties(uint32_t index, const std::vector<std::pair<std::string, std::string>> &properties,
+        uint8_t *data, uint32_t size, bool isEnhanced);
+    uint32_t ModifyImageProperties(uint32_t index,
+        const std::vector<std::pair<std::string, std::string>> &properties, bool isEnhanced);
     uint32_t CreatExifMetadataByImageSource(bool addFlag = false);
     uint32_t CreateExifMetadata(uint8_t *buffer, const uint32_t size, bool addFlag, bool hasOriginalFd = false);
     void SetDecodeInfoOptions(uint32_t index, const DecodeOptions &opts, const ImageInfo &info, ImageEvent &imageEvent);
@@ -439,6 +453,7 @@ private:
     int srcFd_ = -1;
     uint8_t* srcBuffer_ = nullptr;
     uint32_t srcBufferSize_ = 0;
+    std::set<std::string> exifUnsupportKeys_;
 };
 } // namespace Media
 } // namespace OHOS

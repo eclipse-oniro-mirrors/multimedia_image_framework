@@ -16,6 +16,7 @@
 #include "ani_color_space_object_convertor.h"
 #include "image_common.h"
 #include "image_dfx.h"
+#include "image_error_convert.h"
 #include "image_log.h"
 #include "image_source_taihe.h"
 #include "image_source_taihe_ani.h"
@@ -1149,6 +1150,59 @@ static void UpdateDataExecute(std::unique_ptr<ImageSourceTaiheContext> &context)
                 incPixelMap->DetachFromDecoding();
             }
         }
+    }
+}
+
+static void ModifyImagePropertiesEnhancedExecute(std::unique_ptr<ImageSourceTaiheContext> &context)
+{
+    IMAGE_LOGI("ModifyImagePropertiesEnhanced start.");
+    auto start = std::chrono::high_resolution_clock::now();
+    if (context == nullptr || context->rImageSource == nullptr) {
+        IMAGE_LOGE("empty context");
+        return;
+    }
+
+    context->status = context->rImageSource->ModifyImagePropertiesEx(0, context->kVStrArray);
+    if (context->status != OHOS::Media::SUCCESS) {
+        auto unsupportedKeys = context->rImageSource->GetModifyExifUnsupportedKeys();
+        if (!unsupportedKeys.empty()) {
+            context->errMsg = "Failed to modify unsupported keys:";
+            for (auto &key : unsupportedKeys) {
+                context->errMsg.append(" ").append(key);
+            }
+        }
+    }
+
+    auto end = std::chrono::high_resolution_clock::now();
+    auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
+    IMAGE_LOGI("ModifyImagePropertiesEnhanced end, cost: %{public}llu ms", duration.count());
+}
+
+void ImageSourceImpl::ModifyImagePropertiesEnhancedSync(map_view<PropertyKey, PropertyValue> records)
+{
+    OHOS::Media::ImageTrace imageTrace("ImageSourceImpl::ModifyImagePropertiesEnhancedSync");
+
+    std::unique_ptr<ImageSourceTaiheContext> context = std::make_unique<ImageSourceTaiheContext>();
+    if (nativeImgSrc == nullptr) {
+        ImageTaiheUtils::ThrowExceptionError(IMAGE_SOURCE_WRITE_PROPERTY_FAILED, "empty native rImageSource");
+        return;
+    }
+    context->rImageSource = nativeImgSrc;
+
+    context->kVStrArray = GetRecordArgument(records);
+    if (context->kVStrArray.size() == 0) return;
+
+    context->pathName = ImageSourceImpl::filePath_;
+    context->fdIndex = ImageSourceImpl::fileDescriptor_;
+    context->sourceBuffer = ImageSourceImpl::fileBuffer_;
+    context->sourceBufferSize = ImageSourceImpl::fileBufferSize_;
+
+    ModifyImagePropertiesEnhancedExecute(context);
+
+    if (context->status != OHOS::Media::SUCCESS) {
+        const auto &[errCode, errMsg] = OHOS::Media::ImageErrorConvert::ModifyImagePropertiesEnhancedMakeErrMsg(
+            context->status, context->errMsg);
+        ImageTaiheUtils::ThrowExceptionError(errCode, errMsg);
     }
 }
 
