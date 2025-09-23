@@ -770,7 +770,12 @@ static bool AstcEncProcess(TextureEncodeOptions &param, uint8_t *pixmapIn, uint8
         if (!CheckClBinIsExistWithLock(clBinPath)) {
             clBinPath = "/data/storage/el1/base/AstcEncShader.bin";
         }
+        IMAGE_LOGI("AstcEncProcess size: %{public}d, %{public}d, block: %{public}d, %{public}d, stride: %{public}d,"\
+            "privateProfile: %{public}d, blocksNum: %{public}d, astcBytes: %{public}d",
+            param.width_, param.height_,  param.blockX_, param.blockY_, param.stride_, param.privateProfile_,
+            param.blocksNum, param.astcBytes);
         param.hardwareFlag = AstcCodec::TryAstcEncBasedOnCl(param, pixmapIn, astcBuffer, clBinPath);
+        IMAGE_LOGI("AstcEncProcess hardwareFlag: %{public}d", param.hardwareFlag);
     }
 #endif
     if (!param.hardwareFlag) {
