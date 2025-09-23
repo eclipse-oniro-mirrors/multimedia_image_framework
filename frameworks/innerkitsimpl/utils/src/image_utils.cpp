@@ -1174,6 +1174,28 @@ void ImageUtils::FlushSurfaceBuffer(sptr<SurfaceBuffer>& surfaceBuffer)
 }
 #endif
 
+bool ImageUtils::ValidateDmaBufferMinValue(const PixelMemInfo &pixelMemInfo, const ImageInfo &imgInfo)
+{
+#if !defined(CROSS_PLATFORM)
+    if (pixelMemInfo.allocatorType == AllocatorType::DMA_ALLOC) {
+        if (pixelMemInfo.context == nullptr || ImageUtils::GetByteCount(imgInfo) <= 0) {
+            IMAGE_LOGE("[ImageUtils] pixelMemInfo.context is null or imgInfo invalid");
+            return false;
+        }
+        SurfaceBuffer* surfaceBuffer = static_cast<SurfaceBuffer*>(pixelMemInfo.context);
+        if (surfaceBuffer->GetSize() < static_cast<uint32_t>(ImageUtils::GetByteCount(imgInfo))) {
+            IMAGE_LOGE("[ImageUtils] SurfaceBuffer size %{public}d is less than image size %{public}d",
+                surfaceBuffer->GetSize(), ImageUtils::GetByteCount(imgInfo));
+            return false;
+        }
+        return true;
+    }
+    return true;
+#else
+    return true;
+#endif
+}
+
 void ImageUtils::FlushSurfaceBuffer(PixelMap* pixelMap)
 {
 #if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)

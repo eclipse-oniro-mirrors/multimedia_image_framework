@@ -36,6 +36,7 @@ constexpr int32_t APIVERSION_13 = 13;
 constexpr int32_t APIVERSION_20 = 20;
 class PixelMap;
 struct InitializationOptions;
+struct PixelMemInfo;
 
 class ImageUtils {
 public:
@@ -170,6 +171,7 @@ public:
 #if !defined(CROSS_PLATFORM)
     static void FlushSurfaceBuffer(sptr<SurfaceBuffer>& surfaceBuffer);
 #endif
+    static bool ValidateDmaBufferMinValue(const PixelMemInfo &pixelMemInfo, const ImageInfo &imgInfo);
 private:
     static uint32_t RegisterPluginServer();
     static uint32_t SaveDataToFile(const std::string& fileName, const char* data, const size_t& totalSize);
