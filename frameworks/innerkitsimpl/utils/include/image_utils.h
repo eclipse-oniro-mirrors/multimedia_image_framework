@@ -114,8 +114,6 @@ public:
         AllocatorType type, uint8_t* ptr, uint64_t count, void* fd);
     static bool IsSdrPixelMapReuseSuccess(ImagePlugin::DecodeContext& context, int width,
         int height, const std::shared_ptr<PixelMap> &reusePixelmap);
-    static bool IsReuseYUV(ImagePlugin::DecodeContext& context, const std::shared_ptr<PixelMap> &reusePixelmap);
-    static bool IsReuseRGB(ImagePlugin::DecodeContext& context, const std::shared_ptr<PixelMap> &reusePixelmap);
     static bool IsYUV(PixelFormat format);
     static bool IsRGBX(PixelFormat format);
     static bool PixelMapCreateCheckFormat(PixelFormat format);

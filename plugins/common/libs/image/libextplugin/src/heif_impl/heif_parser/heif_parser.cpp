@@ -925,6 +925,9 @@ heif_error HeifParser::SetMetadata(const std::shared_ptr<HeifImage> &image, cons
                                    const char *item_type, const char *content_type)
 {
     auto metadataInfe = AddItem(item_type, true);
+    if (metadataInfe == nullptr) {
+        return heif_invalid_exif_data;
+    }
     if (content_type != nullptr) {
         metadataInfe->SetContentType(content_type);
     }
