@@ -945,10 +945,10 @@ function CreateImageSourceByArrayBuffer(buf: @arraybuffer Array<u8>): Optional<I
 @overload("createImageSource")
 function CreateImageSourceByArrayBufferOption(buf: @arraybuffer Array<u8>, options: SourceOptions): Optional<ImageSource>;
 
-@overload("CreateIncrementalSource")
+@overload("createIncrementalSource")
 function CreateIncrementalSourceByArrayBuffer(buf: @arraybuffer Array<u8>): Optional<ImageSource>;
 
-@overload("CreateIncrementalSource")
+@overload("createIncrementalSource")
 function CreateIncrementalSourceByArrayBufferOption(buf: @arraybuffer Array<u8>, options: Optional<SourceOptions>): Optional<ImageSource>;
 
 @overload("createImageSource")
