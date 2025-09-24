@@ -329,7 +329,6 @@ uint32_t ExtDecoder::DmaMemAlloc(DecodeContext &context, uint64_t count, SkImage
 #else
     BufferRequestConfig requestConfig = CreateDmaRequestConfig(dstInfo, count, context.info.pixelFormat);
     if (context.useNoPadding) {
-        IMAGE_LOGI("%{public}s no padding enabled", __func__);
         requestConfig.usage |= BUFFER_USAGE_PREFER_NO_PADDING | BUFFER_USAGE_ALLOC_NO_IPC;
     }
     return DmaAlloc(context, count, requestConfig);

@@ -865,7 +865,6 @@ DecodeContext ImageSource::InitDecodeContext(const DecodeOptions &opts, const Im
             IMAGE_LOGD("[ImageSource] allocatorType is DMA_ALLOC");
             context.allocatorType = AllocatorType::DMA_ALLOC;
         } else if (ImageSystemProperties::GetNoPaddingEnabled()) {
-            IMAGE_LOGI("%{public}s no padding enabled", __func__);
             context.allocatorType = AllocatorType::DMA_ALLOC;
             context.useNoPadding = true;
         }  else {
@@ -1049,8 +1048,8 @@ unique_ptr<PixelMap> ImageSource::CreatePixelMapExtended(uint32_t index, const D
         NotifyDecodeEvent(decodeListeners_, DecodeEvent::EVENT_COMPLETE_DECODE, nullptr);
     }
     if ("image/gif" != sourceInfo_.encodedFormat && "image/webp" != sourceInfo_.encodedFormat) {
-        IMAGE_LOGI("CreatePixelMap success, id:%{public}lu, dstSize: (%{public}d, %{public}d), srcSize: "
-            "(%{public}d, %{public}d), dstHdr: %{public}d, srcHdr: %{public}d, memType: %{public}d, "
+        IMAGE_LOGI("CreatePixelMap success, id:%{public}lu,dSize:(%{public}d,%{public}d),srcSize: "
+            "(%{public}d,%{public}d),dHdr:%{public}d,sHdr:%{public}d,memType: %{public}d,"
             "cost %{public}lu us", static_cast<unsigned long>(imageId_), opts.desiredSize.width,
             opts.desiredSize.height, info.size.width, info.size.height, opts.desiredDynamicRange, context.hdrType,
             pixelMap->GetAllocatorType(), static_cast<unsigned long>(GetNowTimeMicroSeconds() - decodeStartTime));
