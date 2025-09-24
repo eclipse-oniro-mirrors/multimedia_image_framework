@@ -87,7 +87,7 @@ ani_object ImageSourceAni::CreateImageSourceAni([[maybe_unused]] ani_env* env, a
     }
 
     ani_class arrayBufferClass;
-    env->FindClass("escompat.ArrayBuffer", &arrayBufferClass);
+    env->FindClass("std.core.ArrayBuffer", &arrayBufferClass);
     ani_boolean isArrayBuffer;
     env->Object_InstanceOf(obj, arrayBufferClass, &isArrayBuffer);
     if (isArrayBuffer) {
