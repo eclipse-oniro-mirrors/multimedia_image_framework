@@ -88,8 +88,10 @@ if (use_clang_ios) {
       "src/vpe_utils.cpp",
     ]
 
-    external_deps =
-        [ "drivers_interface_display:libdisplay_commontype_proxy_1.0" ]
+    external_deps = [ 
+      "drivers_interface_display:libdisplay_commontype_proxy_1.0",
+      "access_token:libaccesstoken_sdk",
+    ]
     if (use_mingw_win) {
       defines = image_decode_windows_defines
       include_dirs += [ "//third_party/ffmpeg" ]
