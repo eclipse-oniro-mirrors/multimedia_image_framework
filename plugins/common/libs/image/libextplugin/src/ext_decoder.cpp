@@ -52,7 +52,10 @@
 #include "heif_impl/HeifDecoder.h"
 #include "heif_impl/HeifDecoderImpl.h"
 #endif
+#include "buffer_source_stream.h"
 #include "color_utils.h"
+#include "cr3_format_agent.h"
+#include "cr3_parser.h"
 #include "heif_parser.h"
 #include "heif_format_agent.h"
 #include "image_trace.h"
@@ -508,6 +511,7 @@ void ExtDecoder::SetSource(InputDataStream &sourceStream)
 void ExtDecoder::Reset()
 {
     stream_ = nullptr;
+    previewStream_.reset();
     codec_ = nullptr;
     dstInfo_.reset();
     dstSubset_ = SkIRect::MakeEmpty();
@@ -2159,6 +2163,51 @@ uint32_t ExtDecoder::PromoteIncrementalDecode(uint32_t index, ProgDecodeContext 
     return ERR_IMAGE_DATA_UNSUPPORT;
 }
 
+bool ExtDecoder::IsCr3Format()
+{
+    int32_t apiVersion = ImageUtils::GetAPIVersion();
+    CHECK_ERROR_RETURN_RET_LOG(apiVersion < APIVERSION_20, false,
+        "%{public}s unsupport Cr3 format under API version: %{public}d", __func__, apiVersion);
+
+    CHECK_ERROR_RETURN_RET_LOG(stream_ == nullptr, false, "%{public}s invalid stream", __func__);
+    uint32_t originOffset = stream_->Tell();
+    stream_->Seek(0);
+    Cr3FormatAgent cr3Agent;
+    ImagePlugin::DataStreamBuffer buffer;
+    bool peekRet = stream_->Peek(cr3Agent.GetHeaderSize(), buffer);
+    stream_->Seek(originOffset);
+    CHECK_ERROR_RETURN_RET_LOG(!peekRet, false, "%{public}s peek header stream failed", __func__);
+
+    return cr3Agent.CheckFormat(buffer.inputStreamBuffer, buffer.dataSize);
+}
+
+bool ExtDecoder::MakeCr3Codec()
+{
+    CHECK_ERROR_RETURN_RET_LOG(stream_ == nullptr, false, "%{public}s invalid stream", __func__);
+
+    uint32_t originOffset = stream_->Tell();
+    stream_->Seek(0);
+    ImagePlugin::DataStreamBuffer buffer;
+    bool cond = stream_->Peek(stream_->GetStreamSize(), buffer);
+    stream_->Seek(originOffset);
+    CHECK_ERROR_RETURN_RET_LOG(!cond, false, "%{public}s peek whole stream failed", __func__);
+
+    std::shared_ptr<Cr3Parser> parser = nullptr;
+    heif_error parseRet = Cr3Parser::MakeFromMemory(buffer.inputStreamBuffer, buffer.dataSize, false, parser);
+    cond = (parseRet != heif_error_ok || parser == nullptr);
+    CHECK_ERROR_RETURN_RET_LOG(cond, false, "%{public}s make cr3 parser failed, ret: %{public}d", __func__, parseRet);
+
+    Cr3DataInfo previewInfo = parser->GetPreviewImageInfo();
+    uint32_t offset = static_cast<uint32_t>(previewInfo.fileOffset);
+    cond = ImageUtils::HasOverflowed(offset, previewInfo.size) || offset + previewInfo.size > buffer.dataSize;
+    CHECK_ERROR_RETURN_RET_LOG(cond, false, "%{public}s invalid preview image info", __func__);
+    previewStream_ = BufferSourceStream::CreateSourceStream((buffer.inputStreamBuffer + offset), previewInfo.size);
+
+    SkCodec::Result skResult;
+    codec_ = SkJpegCodec::MakeFromStream(make_unique<ExtStream>(previewStream_.get()), &skResult);
+    return codec_ != nullptr;
+}
+
 bool ExtDecoder::CheckCodec()
 {
     if (codec_ != nullptr) {
@@ -2179,6 +2228,9 @@ bool ExtDecoder::CheckCodec()
 #endif
     if (codec_ == nullptr) {
         stream_->Seek(src_offset);
+        if (IsCr3Format()) {
+            return MakeCr3Codec();
+        }
         IMAGE_LOGD("create codec from stream failed");
         SetHeifParseError();
         return false;
@@ -2631,6 +2683,9 @@ bool ExtDecoder::IsRawFormat(std::string &name)
         auto rawFormatNameIter = RAW_FORMAT_NAME.find(type);
         if (rawFormatNameIter != RAW_FORMAT_NAME.end() && !rawFormatNameIter->second.empty()) {
             name = rawFormatNameIter->second;
+            return true;
+        } else if (IsCr3Format()) {
+            name = IMAGE_CR3_FORMAT;
             return true;
         }
     }

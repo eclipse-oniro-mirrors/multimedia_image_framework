@@ -169,8 +169,11 @@ private:
         return "ext";
     }
     OHOS::Media::Size GetHeifGridTileSize() override;
+    bool IsCr3Format();
+    bool MakeCr3Codec();
 
     ImagePlugin::InputDataStream *stream_ = nullptr;
+    std::unique_ptr<InputDataStream> previewStream_ = nullptr;
     uint32_t streamOff_ = 0;
     std::unique_ptr<SkCodec> codec_;
     SkImageInfo info_;

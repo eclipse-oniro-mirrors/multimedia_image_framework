@@ -14,6 +14,7 @@
  */
 
 #include "buffer_metadata_stream.h"
+#include "cr3_parser.h"
 #include "heif_error.h"
 #include "heif_exif_metadata_accessor.h"
 #include "heif_image.h"
@@ -45,6 +46,9 @@ uint32_t HeifExifMetadataAccessor::Read()
     std::shared_ptr<HeifParser> parser;
     heif_error parseRet = HeifParser::MakeFromMemory(imageStream_->GetAddr(), imageStream_->GetSize(), false, &parser);
     if (parseRet != heif_error_ok) {
+        if (ReadCr3() == SUCCESS) {
+            return SUCCESS;
+        }
         IMAGE_LOGE("The image source data is incorrect.");
         return ERR_IMAGE_SOURCE_DATA;
     }
@@ -208,6 +212,32 @@ bool HeifExifMetadataAccessor::GetExifItemIdByHeifParser(std::shared_ptr<ImagePl
         }
     }
     return false;
+}
+
+uint32_t HeifExifMetadataAccessor::ReadCr3()
+{
+    if (imageStream_ == nullptr) {
+        return ERR_IMAGE_SOURCE_DATA;
+    }
+    std::shared_ptr<Cr3Parser> parser = nullptr;
+    heif_error parseRet = Cr3Parser::MakeFromMemory(imageStream_->GetAddr(), imageStream_->GetSize(), false, parser);
+    if (parseRet != heif_error_ok || parser == nullptr) {
+        return ERR_IMAGE_SOURCE_DATA;
+    }
+
+    std::vector<std::vector<uint8_t>> exifDataSet;
+    exifDataSet.emplace_back(parser->GetExifDataIfd0());
+    exifDataSet.emplace_back(parser->GetExifDataIfdExif());
+    exifDataSet.emplace_back(parser->GetExifDataIfdGps());
+
+    ExifData *exifData = nullptr;
+    TiffParser::Decode(exifDataSet, &exifData);
+    if (exifData == nullptr) {
+        IMAGE_LOGE("Decode mutiple tiffBuf for cr3 error.");
+        return ERR_EXIF_DECODE_FAILED;
+    }
+    exifMetadata_ = std::make_shared<ExifMetadata>(exifData);
+    return SUCCESS;
 }
 } // namespace Media
 } // namespace OHOS
