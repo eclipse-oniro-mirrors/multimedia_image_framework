@@ -61,12 +61,12 @@ struct OH_PackingOptions {
     Image_MimeType mimeType;
     int quality;
     int32_t desiredDynamicRange = IMAGE_PACKER_DYNAMIC_RANGE_SDR;
+    bool needsPackProperties = false;
     uint16_t loop;
     uint16_t* delayTimes;
     uint32_t delayTimesSize;
     uint16_t* disposalTypes;
     uint32_t disposalTypesSize;
-    bool needsPackProperties = false;
 };
 
 struct OH_PackingOptionsForSequence {
