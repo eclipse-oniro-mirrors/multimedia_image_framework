@@ -151,6 +151,7 @@ struct NapiContext {
     napi_env env_ = nullptr;
     napi_ref ref_ = nullptr;
 }
+
 class ImageNapiUtils {
 public:
     static bool GetBufferByName(napi_env env, napi_value root, const char* name, void **res, size_t* len);
