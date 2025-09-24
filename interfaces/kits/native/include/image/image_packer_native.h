@@ -110,11 +110,11 @@ Image_ErrorCode OH_PackingOptions_GetMimeType(OH_PackingOptions *options,
     Image_MimeType *format);
 
 /**
- * @brief Get MIME type from OH_PackingOptions. The output format.data is null-terminated.
+ * @brief Gets MIME type from OH_PackingOptions. The output format.data is null-terminated.
  *
- * @param options The OH_PackingOptions pointer to be queried.
+ * @param options The OH_PackingOptions pointer will be operated.
  * @param format MimeType set in the OH_PackingOptions.
- * @return Returns function result code.
+ * @return Returns functions result code.
  *         {@link IMAGE_SUCCESS} if the execution is successful.
  *         {@link IMAGE_PACKER_INVALID_PARAMETER} if options or format is nullptr.
  * @since 19
@@ -504,7 +504,7 @@ Image_ErrorCode OH_ImagePackerNative_PackToDataFromPicture(OH_ImagePackerNative 
  *         {@link IMAGE_SUCCESS} if the execution is successful.
  *         {@link IMAGE_BAD_PARAMETER} one of the pointer type parameters is nullptr, or size/length is invalid
  *         {@link IMAGE_ENCODE_FAILED} encode failed.
- * @since 13
+ * @since 12
  */
 Image_ErrorCode OH_ImagePackerNative_PackToDataFromPixelmapSequence(OH_ImagePackerNative *imagePacker,
     OH_PackingOptionsForSequence *options, OH_PixelmapNative **pixelmapSequence,

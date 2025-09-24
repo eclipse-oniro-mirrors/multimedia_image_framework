@@ -93,12 +93,12 @@
         }                                               \
     } while (0)
 
-#define CHECK_INFO_RETURN_RET_LOG(cond, ret, ...)      \
+#define CHECK_INFO_RETURN_RET_LOG(cond, ret, ...)       \
     do {                                                \
         if (cond) {                                     \
-            HILOG_INFO(LOG_CORE, __VA_ARGS__);         \
+            HILOG_INFO(LOG_CORE, __VA_ARGS__);          \
             return ret;                                 \
         }                                               \
-    } while (0)                                         \
+    } while (0)
 
-#endif
+#endif // FRAMEWORKS_INNERKITSIMPL_UTILS_INCLUDE_IMAGE_LOG_H

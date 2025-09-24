@@ -39,7 +39,7 @@ struct YuvPlaneInfo {
     uint32_t strides[YUVCOMPONENT_MAX] = { 0 };
     unsigned char *planes[YUVCOMPONENT_MAX] = { 0 };
 
-    std::string ToStrinng() const
+    std::string ToString() const
     {
         std::stringstream message;
         message << "imageWidth=" << imageWidth << ", imageHeight=" << imageHeight << "\n";

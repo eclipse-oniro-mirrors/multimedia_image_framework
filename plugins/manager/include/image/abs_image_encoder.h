@@ -31,11 +31,12 @@ struct PlEncodeOptions {
     uint8_t quality = 100;
     uint32_t numberHint = 1;
     EncodeDynamicRange desiredDynamicRange = EncodeDynamicRange::AUTO;
+    bool needsPackProperties = false;
+    // now default is edit scence
+    bool isEditScene = true;
     uint16_t loop = 0;
     std::vector<uint16_t> delayTimes;
     std::vector<uint8_t> disposalTypes;
-    bool needsPackProperties = false;
-    bool isEditScene = true;
 };
 
 class AbsImageEncoder {
