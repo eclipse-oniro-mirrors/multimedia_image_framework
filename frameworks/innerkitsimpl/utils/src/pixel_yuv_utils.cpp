@@ -220,8 +220,10 @@ static void FillSrcFrameInfo(AVFrame *frame, uint8_t *pixels, YuvImageInfo &info
         frame->linesize[0] = static_cast<int32_t>(info.yuvDataInfo.yStride);
         frame->linesize[1] = static_cast<int32_t>(info.yuvDataInfo.uvStride);
     } else if (info.format == AVPixelFormat::AV_PIX_FMT_P010LE) {
-        av_image_fill_arrays(frame->data, frame->linesize, pixels,
-            info.format, info.yuvDataInfo.yStride, info.height, 1);
+        frame->data[0] = pixels + info.yuvDataInfo.yOffset * NUM_2;
+        frame->data[1] = pixels + info.yuvDataInfo.uvOffset * NUM_2;
+        frame->linesize[0] = static_cast<int32_t>(info.yuvDataInfo.yStride) * NUM_2;
+        frame->linesize[1] = static_cast<int32_t>(info.yuvDataInfo.uvStride) * NUM_2;
     } else {
         av_image_fill_arrays(frame->data, frame->linesize, pixels,
             info.format, info.width, info.height, 1);
