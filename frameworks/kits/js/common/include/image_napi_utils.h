@@ -150,7 +150,7 @@ namespace Media {
 struct NapiContext {
     napi_env env_ = nullptr;
     napi_ref ref_ = nullptr;
-}
+};
 
 class ImageNapiUtils {
 public:
