@@ -1744,7 +1744,8 @@ HWTEST_F(ImageSourceTest, End2EndTest001, TestSize.Level3)
     ASSERT_EQ(desiredWidth, pixelMap->GetWidth());
     ASSERT_EQ(desiredHeight, pixelMap->GetHeight());
     ASSERT_EQ("undefined_", imageSource->GetPixelMapName(nullptr));
-    ASSERT_EQ("400x200-streamsize-27897-mimetype-jpeg", imageSource->GetPixelMapName(pixelMap.get()));
+    ASSERT_EQ("srcImageSize-472x226-pixelMapSize-400x200-streamsize-27897-mimetype-jpeg",
+        imageSource->GetPixelMapName(pixelMap.get()));
 }
 
 /**
@@ -3390,11 +3391,11 @@ HWTEST_F(ImageSourceTest, CheckHdrType003, TestSize.Level3)
 }
 
 /**
- * @tc.name: CheckHdrType005
+ * @tc.name: CheckHdrType004
  * @tc.desc: test the HdrType ImageHdrType::HDR_CUVA
  * @tc.type: FUNC
  */
-HWTEST_F(ImageSourceTest, CheckHdrType005, TestSize.Level3)
+HWTEST_F(ImageSourceTest, CheckHdrType004, TestSize.Level3)
 {
     uint32_t errorCode = 0;
     SourceOptions opts;
@@ -3405,13 +3406,12 @@ HWTEST_F(ImageSourceTest, CheckHdrType005, TestSize.Level3)
     ASSERT_EQ(hdrType, ImageHdrType::HDR_CUVA);
 }
 
-
 /**
- * @tc.name: CheckHdrType007
+ * @tc.name: CheckHdrType005
  * @tc.desc: test the HdrType ImageHdrType::HDR_VIVID_DUAL
  * @tc.type: FUNC
  */
-HWTEST_F(ImageSourceTest, CheckHdrType007, TestSize.Level3)
+HWTEST_F(ImageSourceTest, CheckHdrType005, TestSize.Level3)
 {
     uint32_t errorCode = 0;
     SourceOptions opts;
@@ -3423,17 +3423,34 @@ HWTEST_F(ImageSourceTest, CheckHdrType007, TestSize.Level3)
 }
 
 /**
- * @tc.name: CheckHdrType008
+ * @tc.name: CheckHdrType006
  * @tc.desc: test the HdrType ImageHdrType::HDR_VIVID_DUAL
  * @tc.type: FUNC
  */
-HWTEST_F(ImageSourceTest, CheckHdrType008, TestSize.Level3)
+HWTEST_F(ImageSourceTest, CheckHdrType006, TestSize.Level3)
 {
     uint32_t errorCode = 0;
     SourceOptions opts;
     std::unique_ptr<ImageSource> imageSource =
         ImageSource::CreateImageSource(IMAGE_HEIC_THREE_GAINMAP_HDR_PATH, opts, errorCode);
     ImageHdrType hdrType;
+    hdrType = imageSource->CheckHdrType();
+    ASSERT_EQ(hdrType, ImageHdrType::HDR_VIVID_DUAL);
+}
+
+/**
+ * @tc.name: CheckHdrType007
+ * @tc.desc: test CheckHdrType again use saved info
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageSourceTest, CheckHdrType007, TestSize.Level3)
+{
+    uint32_t errorCode = 0;
+    SourceOptions opts;
+    std::unique_ptr<ImageSource> imageSource =
+        ImageSource::CreateImageSource(IMAGE_HEIC_THREE_GAINMAP_HDR_PATH, opts, errorCode);
+    ImageHdrType hdrType;
+    hdrType = imageSource->CheckHdrType();
     hdrType = imageSource->CheckHdrType();
     ASSERT_EQ(hdrType, ImageHdrType::HDR_VIVID_DUAL);
 }

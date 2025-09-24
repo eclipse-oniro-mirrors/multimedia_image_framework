@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Huawei Device Co., Ltd.
+ * Copyright (C) 2025 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -14,25 +14,26 @@
  */
 #include "pixel_map_gl_post_proc_program.h"
 
-#include <atomic>
-#include <cstdint>
-#include <memory>
-#include <string>
-#include <sys/stat.h>
 #include <fcntl.h>
-#include <sys/types.h>
+#include <sys/mman.h>
 #include <sys/stat.h>
 #include <sys/time.h>
-#include <sys/mman.h>
-#include <iostream>
+#include <sys/types.h>
 
+#include <atomic>
+#include <cstdint>
+#include <fstream>
+#include <iostream>
+#include <memory>
+#include <sstream>
+#include <string>
+
+#include "image_utils.h"
 #include "native_buffer.h"
 #include "pixel_map_gl_shader.h"
 #include "securec.h"
 #include "sync_fence.h"
-#include "image_utils.h"
-#include <fstream>
-#include <sstream>
+
 #undef LOG_DOMAIN
 #define LOG_DOMAIN LOG_TAG_DOMAIN_ID_IMAGE
 

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Huawei Device Co., Ltd.
+ * Copyright (C) 2025 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -16,12 +16,13 @@
 #ifndef FRAMEWORKS_INNERKITSIMPL_EGL_IMAGE_INCLUDE_PIXELMAP_GL_POST_PROC_PROGRAM_H
 #define FRAMEWORKS_INNERKITSIMPL_EGL_IMAGE_INCLUDE_PIXELMAP_GL_POST_PROC_PROGRAM_H
 
-#include <iostream>
-#include <mutex>
 #include <array>
 #include <atomic>
 #include <condition_variable>
+#include <iostream>
+#include <mutex>
 #include <numeric>
+
 #include "pixel_map_gl_shader.h"
 #include "surface_buffer.h"
 #include "surface_utils.h"

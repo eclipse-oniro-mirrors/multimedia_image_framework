@@ -29,11 +29,19 @@ class PictureImpl {
 public:
     PictureImpl();
     explicit PictureImpl(std::shared_ptr<OHOS::Media::Picture> picture);
+    PictureImpl(int64_t aniPtr);
     ~PictureImpl();
     int64_t GetImplPtr();
     std::shared_ptr<OHOS::Media::Picture> GetNativePtr();
+    static Picture CreatePicture(std::shared_ptr<OHOS::Media::Picture> picture);
 
     PixelMap GetMainPixelmap();
+    PixelMap GetHdrComposedPixelmapSync();
+    GainMap GetGainmapPixelmap();
+    void SetAuxiliaryPicture(AuxiliaryPictureType type, weak::AuxiliaryPicture auxiliaryPicture);
+    AuxPicture GetAuxiliaryPicture(AuxiliaryPictureType type);
+    void SetMetadataSync(MetadataType metadataType, weak::Metadata metadata);
+    Metadata GetMetadataSync(MetadataType metadataType);
     void Marshalling(uintptr_t sequence);
     void Release();
 

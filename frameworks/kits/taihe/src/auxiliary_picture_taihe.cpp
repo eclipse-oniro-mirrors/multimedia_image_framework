@@ -23,6 +23,7 @@
 #include "image_type.h"
 #include "image_utils.h"
 #include "media_errors.h"
+#include "metadata_taihe.h"
 #include "pixel_map.h"
 using namespace ANI::Image;
 
@@ -37,6 +38,8 @@ struct AuxiliaryPictureTaiheContext {
     size_t arrayBufferSize;
     std::shared_ptr<OHOS::Media::AuxiliaryPicture> rAuxiliaryPicture;
     OHOS::Media::AuxiliaryPictureInfo auxiliaryPictureInfo;
+    std::shared_ptr<OHOS::Media::ImageMetadata> imageMetadata;
+    OHOS::Media::MetadataType metadataType = OHOS::Media::MetadataType::EXIF;
     std::shared_ptr<OHOS::ColorManager::ColorSpace> AuxColorSpace = nullptr;
 };
 
@@ -52,11 +55,33 @@ AuxiliaryPictureImpl::~AuxiliaryPictureImpl()
     Release();
 }
 
+int64_t AuxiliaryPictureImpl::GetImplPtr()
+{
+    return static_cast<int64_t>(reinterpret_cast<uintptr_t>(this));
+}
+
+void AuxiliaryPictureImpl::WritePixelsFromBufferSync(array_view<uint8_t> data)
+{
+    std::unique_ptr<AuxiliaryPictureTaiheContext> taiheContext = std::make_unique<AuxiliaryPictureTaiheContext>();
+    taiheContext->rAuxiliaryPicture = nativeAuxiliaryPicture_;
+    if (taiheContext->rAuxiliaryPicture == nullptr) {
+        ImageTaiheUtils::ThrowExceptionError("Empty native auxiliary picture.");
+        return;
+    }
+    taiheContext->arrayBuffer = static_cast<void *>(data.data());
+    taiheContext->arrayBufferSize = data.size();
+    if (taiheContext->arrayBuffer == nullptr || taiheContext->arrayBufferSize == 0) {
+        ImageTaiheUtils::ThrowExceptionError(IMAGE_BAD_PARAMETER, "Invalid args.");
+        IMAGE_LOGE("Fail to get buffer info");
+    }
+    taiheContext->rAuxiliaryPicture->WritePixels(
+        static_cast<uint8_t*>(taiheContext->arrayBuffer), taiheContext->arrayBufferSize);
+}
+
 static bool ReadPixelsToBufferSyncExecute(std::unique_ptr<AuxiliaryPictureTaiheContext> &context)
 {
     OHOS::Media::AuxiliaryPictureInfo info = context->rAuxiliaryPicture->GetAuxiliaryPictureInfo();
-    context->arrayBufferSize =
-        static_cast<size_t>(info.size.width * info.size.height *
+    context->arrayBufferSize = static_cast<size_t>(info.size.width * info.size.height *
         OHOS::Media::ImageUtils::GetPixelBytes(info.pixelFormat));
     context->arrayBuffer = new uint8_t[context->arrayBufferSize];
     if (context->arrayBuffer != nullptr) {
@@ -87,6 +112,90 @@ static array<uint8_t> ReadPixelsToBufferSyncComplete(std::unique_ptr<AuxiliaryPi
     return result;
 }
 
+AuxiliaryPictureType AuxiliaryPictureImpl::GetType()
+{
+    if (nativeAuxiliaryPicture_ == nullptr) {
+        IMAGE_LOGE("Native auxiliary picture is nullptr!");
+        return AuxiliaryPictureType(static_cast<AuxiliaryPictureType::key_t>(OHOS::Media::AuxiliaryPictureType::NONE));
+    }
+    AuxiliaryPictureType::key_t auxPictureTypeKey;
+    auto auxType = nativeAuxiliaryPicture_->GetType();
+    IMAGE_LOGD("AuxiliaryPictureImpl::GetType %{public}d", auxType);
+    if (ImageTaiheUtils::GetEnumKeyByValue<AuxiliaryPictureType>(static_cast<int32_t>(auxType), auxPictureTypeKey)) {
+        return AuxiliaryPictureType(auxPictureTypeKey);
+    } else {
+        IMAGE_LOGE("Get auxiliary picture type failed");
+        return AuxiliaryPictureType(static_cast<AuxiliaryPictureType::key_t>(
+            OHOS::Media::AuxiliaryPictureType::NONE));
+    }
+}
+
+static bool CheckMetadataType(std::unique_ptr<AuxiliaryPictureTaiheContext> const& context)
+{
+    if (context == nullptr || context->rAuxiliaryPicture == nullptr) {
+        IMAGE_LOGE("Auxiliary picture is null");
+        return false;
+    }
+    return !(context->rAuxiliaryPicture->GetType() != OHOS::Media::AuxiliaryPictureType::FRAGMENT_MAP &&
+        context->metadataType == OHOS::Media::MetadataType::FRAGMENT);
+}
+
+void AuxiliaryPictureImpl::SetMetadataSync(MetadataType metadataType, weak::Metadata metadata)
+{
+    std::unique_ptr<AuxiliaryPictureTaiheContext> context = std::make_unique<AuxiliaryPictureTaiheContext>();
+    context->rAuxiliaryPicture = nativeAuxiliaryPicture_;
+    if (context->rAuxiliaryPicture == nullptr) {
+        ImageTaiheUtils::ThrowExceptionError("Empty native auxiliary picture.");
+        return;
+    }
+    if (metadataType >= static_cast<int32_t>(OHOS::Media::MetadataType::EXIF)
+        && metadataType <= static_cast<int32_t>(OHOS::Media::MetadataType::FRAGMENT)) {
+        context->metadataType = OHOS::Media::MetadataType(metadataType.get_value());
+    } else {
+        ImageTaiheUtils::ThrowExceptionError(IMAGE_BAD_PARAMETER, "Invalid args metadata type.");
+        return;
+    }
+    if (!CheckMetadataType(context)) {
+        ImageTaiheUtils::ThrowExceptionError(IMAGE_UNSUPPORTED_METADATA, "Unsupported metadata");
+        return;
+    }
+    MetadataImpl* metadataImpl = reinterpret_cast<MetadataImpl*>(metadata->GetImplPtr());
+    if (metadataImpl == nullptr) {
+        ImageTaiheUtils::ThrowExceptionError(IMAGE_BAD_PARAMETER, "Failed to unwrap MetadataImpl");
+        return;
+    }
+    context->imageMetadata = metadataImpl->GetNativeMetadata();
+    if (context->imageMetadata == nullptr) {
+        IMAGE_LOGE("Empty native metadata");
+    }
+    context->rAuxiliaryPicture->SetMetadata(context->metadataType, context->imageMetadata);
+    IMAGE_LOGD("[AuxiliaryPicture]SetMetadata OUT");
+}
+
+Metadata AuxiliaryPictureImpl::GetMetadataSync(MetadataType metadataType)
+{
+    std::unique_ptr<AuxiliaryPictureTaiheContext> context = std::make_unique<AuxiliaryPictureTaiheContext>();
+    context->rAuxiliaryPicture = nativeAuxiliaryPicture_;
+    if (context->rAuxiliaryPicture == nullptr) {
+        ImageTaiheUtils::ThrowExceptionError("Empty native auxiliary picture.");
+        return make_holder<MetadataImpl, Metadata>();
+    }
+    if (metadataType >= static_cast<int32_t>(OHOS::Media::MetadataType::EXIF)
+        && metadataType <= static_cast<int32_t>(OHOS::Media::MetadataType::FRAGMENT)) {
+        context->metadataType = OHOS::Media::MetadataType(metadataType.get_value());
+    } else {
+        ImageTaiheUtils::ThrowExceptionError(IMAGE_BAD_PARAMETER, "Invalid args metadata type.");
+        return make_holder<MetadataImpl, Metadata>();
+    }
+    if (!CheckMetadataType(context) || context->metadataType == OHOS::Media::MetadataType::EXIF) {
+        ImageTaiheUtils::ThrowExceptionError(IMAGE_UNSUPPORTED_METADATA, "Unsupported metadata");
+        return make_holder<MetadataImpl, Metadata>();
+    }
+    context->imageMetadata = context->rAuxiliaryPicture->GetMetadata(context->metadataType);
+    IMAGE_LOGD("[AuxiliaryPicture]GetMetadata OUT");
+    return make_holder<MetadataImpl, Metadata>(std::move(context->imageMetadata));
+}
+
 array<uint8_t> AuxiliaryPictureImpl::ReadPixelsToBufferSync()
 {
     std::unique_ptr<AuxiliaryPictureTaiheContext> taiheContext = std::make_unique<AuxiliaryPictureTaiheContext>();
@@ -107,34 +216,46 @@ AuxiliaryPictureInfo MakeEmptyAuxiliaryPictureInfo()
         {0, 0}, 0, PixelMapFormat(PixelMapFormat::key_t::UNKNOWN), 0};
 }
 
-static AuxiliaryPictureInfo ToTaiheAuxiliaryPictureInfo(const OHOS::Media::AuxiliaryPictureInfo &src)
+static AuxiliaryPictureInfo ToTaiheAuxiliaryPictureInfo(const OHOS::Media::AuxiliaryPictureInfo &src,
+    std::shared_ptr<OHOS::Media::AuxiliaryPicture> &auxiliaryPicture)
 {
+    AuxiliaryPictureInfo result = MakeEmptyAuxiliaryPictureInfo();
     AuxiliaryPictureType::key_t auxiliaryPictureTypeKey;
     ImageTaiheUtils::GetEnumKeyByValue<AuxiliaryPictureType>(static_cast<int32_t>(src.auxiliaryPictureType),
         auxiliaryPictureTypeKey);
+    result.auxiliaryPictureType = AuxiliaryPictureType(auxiliaryPictureTypeKey);
 
     Size size {
         .width = src.size.width,
         .height = src.size.height,
     };
+    result.size = size;
+    result.rowStride = static_cast<int32_t>(src.rowStride);
 
     PixelMapFormat::key_t pixelFormatKey;
     ImageTaiheUtils::GetEnumKeyByValue<PixelMapFormat>(static_cast<int32_t>(src.pixelFormat), pixelFormatKey);
+    result.pixelFormat = PixelMapFormat(pixelFormatKey);
 
-    AuxiliaryPictureInfo result {
-        .auxiliaryPictureType = AuxiliaryPictureType(auxiliaryPictureTypeKey),
-        .size = size,
-        .rowStride = static_cast<int32_t>(src.rowStride),
-        .pixelFormat = PixelMapFormat(pixelFormatKey),
-    };
+    if (auxiliaryPicture == nullptr) {
+        ImageTaiheUtils::ThrowExceptionError(OHOS::Media::ERR_IMAGE_DATA_ABNORMAL, "Invalid pixelmap");
+        return result;
+    }
+    
+    auto grCS = auxiliaryPicture->GetContentPixel()->InnerGetGrColorSpacePtr();
+    if (grCS == nullptr) {
+        ImageTaiheUtils::ThrowExceptionError(OHOS::Media::ERR_IMAGE_DATA_UNSUPPORT, "No colorspace in pixelmap");
+        return result;
+    }
+    ani_object colorSpaceObj = OHOS::ColorManager::CreateAniColorSpaceObject(get_env(), grCS);
+    result.colorSpace = reinterpret_cast<uintptr_t>(colorSpaceObj);
     return result;
 }
 
 AuxiliaryPictureInfo AuxiliaryPictureImpl::GetAuxiliaryPictureInfo()
 {
     if (nativeAuxiliaryPicture_ != nullptr) {
-        AuxiliaryPictureInfo info = ToTaiheAuxiliaryPictureInfo(nativeAuxiliaryPicture_->GetAuxiliaryPictureInfo());
-        return info;
+        return ToTaiheAuxiliaryPictureInfo(
+            nativeAuxiliaryPicture_->GetAuxiliaryPictureInfo(), nativeAuxiliaryPicture_);
     } else {
         ImageTaiheUtils::ThrowExceptionError("Native auxiliarypicture is nullptr!");
         return MakeEmptyAuxiliaryPictureInfo();

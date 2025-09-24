@@ -13,6 +13,7 @@
  * limitations under the License.
  */
 #include "cj_color_manager.h"
+#include "cj_ffi/cj_common_ffi.h"
 #include "image_ffi.h"
 #include "image_log.h"
 #include "js_native_api.h"
@@ -50,7 +51,7 @@ static InitializationOptions ParsePixelMapCInitializationOptions(CInitialization
     return option;
 }
 
-int64_t FfiOHOSCreatePixelMap(uint8_t* colors, uint32_t colorLength, CInitializationOptions opts)
+FFI_EXPORT int64_t FfiOHOSCreatePixelMap(uint8_t* colors, uint32_t colorLength, CInitializationOptions opts)
 {
     IMAGE_LOGD("[PixelMap] FfiOHOSCreatePixelMap start");
     InitializationOptions option;
@@ -74,7 +75,7 @@ int64_t FfiOHOSCreatePixelMap(uint8_t* colors, uint32_t colorLength, CInitializa
     return native->GetID();
 }
 
-int64_t FfiOHOSCreatePixelMapV2(uint8_t* colors, uint32_t colorLength, CInitializationOptionsV2 opts)
+FFI_EXPORT int64_t FfiOHOSCreatePixelMapV2(uint8_t* colors, uint32_t colorLength, CInitializationOptionsV2 opts)
 {
     IMAGE_LOGD("[PixelMap] FfiOHOSCreatePixelMapV2 start");
     InitializationOptions option = ParsePixelMapCInitializationOptions(opts);
@@ -92,7 +93,7 @@ int64_t FfiOHOSCreatePixelMapV2(uint8_t* colors, uint32_t colorLength, CInitiali
     return native->GetID();
 }
 
-int64_t FfiImagePixelMapImplCreatePixelMap(CInitializationOptionsV2 opts)
+FFI_EXPORT int64_t FfiImagePixelMapImplCreatePixelMap(CInitializationOptionsV2 opts)
 {
     IMAGE_LOGD("[PixelMap] FfiImagePixelMapImplCreatePixelMap start");
     InitializationOptions option = ParsePixelMapCInitializationOptions(opts);
@@ -109,7 +110,7 @@ int64_t FfiImagePixelMapImplCreatePixelMap(CInitializationOptionsV2 opts)
     return native->GetID();
 }
 
-uint32_t FfiOHOSPixelMapRelease(int64_t id)
+FFI_EXPORT uint32_t FfiOHOSPixelMapRelease(int64_t id)
 {
     IMAGE_LOGD("[PixelMap] FfiOHOSPixelMapRelease start");
     auto instance = FFIData::GetData<PixelMapImpl>(id);
@@ -123,7 +124,7 @@ uint32_t FfiOHOSPixelMapRelease(int64_t id)
     return SUCCESS_CODE;
 }
 
-int64_t FfiOHOSCreateAlphaPixelMap(int64_t id, uint32_t* errCode)
+FFI_EXPORT int64_t FfiOHOSCreateAlphaPixelMap(int64_t id, uint32_t* errCode)
 {
     IMAGE_LOGD("[PixelMap] FfiOHOSCreateAlphaPixelMap start");
     auto instance = FFIData::GetData<PixelMapImpl>(id);
@@ -157,7 +158,7 @@ int64_t FfiOHOSCreateAlphaPixelMap(int64_t id, uint32_t* errCode)
     return native->GetID();
 }
 
-uint32_t FfiOHOSReadPixelsToBuffer(int64_t id, uint64_t bufferSize, uint8_t* dst)
+FFI_EXPORT uint32_t FfiOHOSReadPixelsToBuffer(int64_t id, uint64_t bufferSize, uint8_t* dst)
 {
     IMAGE_LOGD("[PixelMap] FfiOHOSReadPixelsToBuffer start");
     auto instance = FFIData::GetData<PixelMapImpl>(id);
@@ -170,7 +171,7 @@ uint32_t FfiOHOSReadPixelsToBuffer(int64_t id, uint64_t bufferSize, uint8_t* dst
     return ret;
 }
 
-uint32_t FfiOHOSWriteBufferToPixels(int64_t id, uint8_t* source, uint64_t bufferSize)
+FFI_EXPORT uint32_t FfiOHOSWriteBufferToPixels(int64_t id, uint8_t* source, uint64_t bufferSize)
 {
     IMAGE_LOGD("[PixelMap] FfiOHOSWriteBufferToPixels start");
     auto instance = FFIData::GetData<PixelMapImpl>(id);
@@ -183,7 +184,7 @@ uint32_t FfiOHOSWriteBufferToPixels(int64_t id, uint8_t* source, uint64_t buffer
     return ret;
 }
 
-int32_t FfiOHOSGetDensity(int64_t id, uint32_t* errCode)
+FFI_EXPORT int32_t FfiOHOSGetDensity(int64_t id, uint32_t* errCode)
 {
     IMAGE_LOGD("[PixelMap] FfiOHOSGetDensity start");
     auto instance = FFIData::GetData<PixelMapImpl>(id);
@@ -198,7 +199,7 @@ int32_t FfiOHOSGetDensity(int64_t id, uint32_t* errCode)
     return ret;
 }
 
-uint32_t FfiOHOSOpacity(int64_t id, float percent)
+FFI_EXPORT uint32_t FfiOHOSOpacity(int64_t id, float percent)
 {
     IMAGE_LOGD("[PixelMap] FfiOHOSOpacity start");
     auto instance = FFIData::GetData<PixelMapImpl>(id);
@@ -211,7 +212,7 @@ uint32_t FfiOHOSOpacity(int64_t id, float percent)
     return ret;
 }
 
-uint32_t FfiOHOSCrop(int64_t id, CRegion rect)
+FFI_EXPORT uint32_t FfiOHOSCrop(int64_t id, CRegion rect)
 {
     IMAGE_LOGD("[PixelMap] FfiOHOSCrop start");
     auto instance = FFIData::GetData<PixelMapImpl>(id);
@@ -225,7 +226,7 @@ uint32_t FfiOHOSCrop(int64_t id, CRegion rect)
     return ret;
 }
 
-uint32_t FfiOHOSGetPixelBytesNumber(int64_t id, uint32_t* errCode)
+FFI_EXPORT uint32_t FfiOHOSGetPixelBytesNumber(int64_t id, uint32_t* errCode)
 {
     IMAGE_LOGD("[PixelMap] FfiOHOSGetPixelBytesNumber start");
     auto instance = FFIData::GetData<PixelMapImpl>(id);
@@ -240,7 +241,7 @@ uint32_t FfiOHOSGetPixelBytesNumber(int64_t id, uint32_t* errCode)
     return ret;
 }
 
-uint32_t FfiOHOSGetBytesNumberPerRow(int64_t id, uint32_t* errCode)
+FFI_EXPORT uint32_t FfiOHOSGetBytesNumberPerRow(int64_t id, uint32_t* errCode)
 {
     IMAGE_LOGD("[PixelMap] FfiOHOSGetBytesNumberPerRow start");
     auto instance = FFIData::GetData<PixelMapImpl>(id);
@@ -255,7 +256,7 @@ uint32_t FfiOHOSGetBytesNumberPerRow(int64_t id, uint32_t* errCode)
     return ret;
 }
 
-CImageInfo FfiOHOSGetImageInfo(int64_t id, uint32_t* errCode)
+FFI_EXPORT CImageInfo FfiOHOSGetImageInfo(int64_t id, uint32_t* errCode)
 {
     IMAGE_LOGD("[PixelMap] FfiOHOSGetImageInfo start");
     CImageInfo ret = {};
@@ -288,7 +289,7 @@ static CImageInfoV2 ParsePixelMapImageInfo(ImageInfo info, PixelMap* pixelMap)
     return ret;
 }
 
-CImageInfoV2 FfiOHOSGetImageInfoV2(int64_t id, uint32_t* errCode)
+FFI_EXPORT CImageInfoV2 FfiOHOSGetImageInfoV2(int64_t id, uint32_t* errCode)
 {
     IMAGE_LOGD("[PixelMap] FfiOHOSGetImageInfoV2 start");
     CImageInfoV2 ret = {};
@@ -305,7 +306,7 @@ CImageInfoV2 FfiOHOSGetImageInfoV2(int64_t id, uint32_t* errCode)
     return ret;
 }
 
-uint32_t FfiOHOSScale(int64_t id, float xAxis, float yAxis)
+FFI_EXPORT uint32_t FfiOHOSScale(int64_t id, float xAxis, float yAxis)
 {
     IMAGE_LOGD("[PixelMap] FfiOHOSScale start");
     auto instance = FFIData::GetData<PixelMapImpl>(id);
@@ -326,7 +327,7 @@ static AntiAliasingOption ParseAntiAliasingOption(int32_t val)
     return AntiAliasingOption::NONE;
 }
 
-uint32_t FfiImagePixelMapImplScale(int64_t id, float xAxis, float yAxis, int32_t antiAliasing)
+FFI_EXPORT uint32_t FfiImagePixelMapImplScale(int64_t id, float xAxis, float yAxis, int32_t antiAliasing)
 {
     IMAGE_LOGD("[PixelMap] FfiImagePixelMapImplScale start");
     auto instance = FFIData::GetData<PixelMapImpl>(id);
@@ -334,12 +335,13 @@ uint32_t FfiImagePixelMapImplScale(int64_t id, float xAxis, float yAxis, int32_t
         IMAGE_LOGE("[PixelMap] instance not exist %{public}" PRId64, id);
         return ERR_IMAGE_INIT_ABNORMAL;
     }
-    instance->Scale(xAxis, yAxis, ParseAntiAliasingOption(antiAliasing));
+    AntiAliasingOption option = ParseAntiAliasingOption(antiAliasing);
+    instance->Scale(xAxis, yAxis, option);
     IMAGE_LOGD("[PixelMap] FfiImagePixelMapImplScale success");
     return SUCCESS_CODE;
 }
 
-uint32_t FfiOHOSFlip(int64_t id, bool xAxis, bool yAxis)
+FFI_EXPORT uint32_t FfiOHOSFlip(int64_t id, bool xAxis, bool yAxis)
 {
     IMAGE_LOGD("[PixelMap] FfiOHOSFlip start");
     auto instance = FFIData::GetData<PixelMapImpl>(id);
@@ -352,7 +354,7 @@ uint32_t FfiOHOSFlip(int64_t id, bool xAxis, bool yAxis)
     return SUCCESS_CODE;
 }
 
-uint32_t FfiOHOSRotate(int64_t id, float degrees)
+FFI_EXPORT uint32_t FfiOHOSRotate(int64_t id, float degrees)
 {
     IMAGE_LOGD("[PixelMap] FfiOHOSRotate start");
     auto instance = FFIData::GetData<PixelMapImpl>(id);
@@ -365,7 +367,7 @@ uint32_t FfiOHOSRotate(int64_t id, float degrees)
     return SUCCESS_CODE;
 }
 
-uint32_t FfiOHOSTranslate(int64_t id, float xAxis, float yAxis)
+FFI_EXPORT uint32_t FfiOHOSTranslate(int64_t id, float xAxis, float yAxis)
 {
     IMAGE_LOGD("[PixelMap] FfiOHOSTranslate start");
     auto instance = FFIData::GetData<PixelMapImpl>(id);
@@ -378,7 +380,7 @@ uint32_t FfiOHOSTranslate(int64_t id, float xAxis, float yAxis)
     return SUCCESS_CODE;
 }
 
-uint32_t FfiOHOSReadPixels(int64_t id, CPositionArea area)
+FFI_EXPORT uint32_t FfiOHOSReadPixels(int64_t id, CPositionArea area)
 {
     IMAGE_LOGD("[PixelMap] FfiOHOSReadPixels start");
     auto instance = FFIData::GetData<PixelMapImpl>(id);
@@ -392,7 +394,7 @@ uint32_t FfiOHOSReadPixels(int64_t id, CPositionArea area)
     return ret;
 }
 
-uint32_t FfiOHOSWritePixels(int64_t id, CPositionArea area)
+FFI_EXPORT uint32_t FfiOHOSWritePixels(int64_t id, CPositionArea area)
 {
     IMAGE_LOGD("[PixelMap] FfiOHOSWritePixels start");
     auto instance = FFIData::GetData<PixelMapImpl>(id);
@@ -406,7 +408,7 @@ uint32_t FfiOHOSWritePixels(int64_t id, CPositionArea area)
     return ret;
 }
 
-bool FfiOHOSGetIsEditable(int64_t id, uint32_t* errCode)
+FFI_EXPORT bool FfiOHOSGetIsEditable(int64_t id, uint32_t* errCode)
 {
     IMAGE_LOGD("[PixelMap] FfiOHOSGetIsEditable start");
     auto instance = FFIData::GetData<PixelMapImpl>(id);
@@ -422,7 +424,7 @@ bool FfiOHOSGetIsEditable(int64_t id, uint32_t* errCode)
     return ret;
 }
 
-bool FfiOHOSGetIsStrideAlignment(int64_t id, uint32_t* errCode)
+FFI_EXPORT bool FfiOHOSGetIsStrideAlignment(int64_t id, uint32_t* errCode)
 {
     IMAGE_LOGD("[PixelMap] FfiOHOSGetIsStrideAlignment start");
     auto instance = FFIData::GetData<PixelMapImpl>(id);
@@ -438,7 +440,7 @@ bool FfiOHOSGetIsStrideAlignment(int64_t id, uint32_t* errCode)
     return ret;
 }
 
-uint32_t FfiOHOSPixelMapSetColorSpace(int64_t id, int64_t colorSpaceId)
+FFI_EXPORT uint32_t FfiOHOSPixelMapSetColorSpace(int64_t id, int64_t colorSpaceId)
 {
     IMAGE_LOGD("[PixelMap] FfiOHOSPixelMapSetColorSpace start");
     auto instance = FFIData::GetData<PixelMapImpl>(id);
@@ -456,7 +458,7 @@ uint32_t FfiOHOSPixelMapSetColorSpace(int64_t id, int64_t colorSpaceId)
     return ret;
 }
 
-int64_t FfiOHOSPixelMapGetColorSpace(int64_t id, int32_t* errCode)
+FFI_EXPORT int64_t FfiOHOSPixelMapGetColorSpace(int64_t id, int32_t* errCode)
 {
     IMAGE_LOGD("[PixelMap] FfiOHOSPixelMapGetColorSpace start");
     auto instance = FFIData::GetData<PixelMapImpl>(id);
@@ -481,7 +483,7 @@ int64_t FfiOHOSPixelMapGetColorSpace(int64_t id, int32_t* errCode)
     return native->GetID();
 }
 
-uint32_t FfiOHOSPixelMapApplyColorSpace(int64_t id, int64_t colorSpaceId)
+FFI_EXPORT uint32_t FfiOHOSPixelMapApplyColorSpace(int64_t id, int64_t colorSpaceId)
 {
     IMAGE_LOGD("[PixelMap] FfiOHOSPixelMapApplyColorSpace start");
     auto instance = FFIData::GetData<PixelMapImpl>(id);
@@ -499,7 +501,7 @@ uint32_t FfiOHOSPixelMapApplyColorSpace(int64_t id, int64_t colorSpaceId)
     return ret;
 }
 
-uint32_t FfiImagePixelMapImplCreatePremultipliedPixelMap(int64_t srcId, int64_t dstId)
+FFI_EXPORT uint32_t FfiImagePixelMapImplCreatePremultipliedPixelMap(int64_t srcId, int64_t dstId)
 {
     IMAGE_LOGD("[PixelMap] FfiImagePixelMapImplCreatePremultipliedPixelMap start");
     auto src = FFIData::GetData<PixelMapImpl>(srcId);
@@ -511,7 +513,7 @@ uint32_t FfiImagePixelMapImplCreatePremultipliedPixelMap(int64_t srcId, int64_t 
     return PixelMapImpl::CreatePremultipliedPixelMap(src->GetRealPixelMap(), dst->GetRealPixelMap());
 }
 
-uint32_t FfiImagePixelMapImplCreateUnpremultipliedPixelMap(int64_t srcId, int64_t dstId)
+FFI_EXPORT uint32_t FfiImagePixelMapImplCreateUnpremultipliedPixelMap(int64_t srcId, int64_t dstId)
 {
     IMAGE_LOGD("[PixelMap] FfiImagePixelMapImplCreateUnpremultipliedPixelMap start");
     auto src = FFIData::GetData<PixelMapImpl>(srcId);
@@ -523,7 +525,7 @@ uint32_t FfiImagePixelMapImplCreateUnpremultipliedPixelMap(int64_t srcId, int64_
     return PixelMapImpl::CreateUnpremultipliedPixelMap(src->GetRealPixelMap(), dst->GetRealPixelMap());
 }
 
-uint32_t FfiImagePixelMapImplSetTransferDetached(int64_t id, bool detached)
+FFI_EXPORT uint32_t FfiImagePixelMapImplSetTransferDetached(int64_t id, bool detached)
 {
     IMAGE_LOGD("[PixelMap] FfiImagePixelMapImplSetTransferDetached start");
     auto instance = FFIData::GetData<PixelMapImpl>(id);
@@ -536,7 +538,7 @@ uint32_t FfiImagePixelMapImplSetTransferDetached(int64_t id, bool detached)
     return SUCCESS;
 }
 
-uint32_t FfiImagePixelMapImplToSdr(int64_t id)
+FFI_EXPORT uint32_t FfiImagePixelMapImplToSdr(int64_t id)
 {
     IMAGE_LOGD("[PixelMap] FfiImagePixelMapImplToSdr start");
     auto instance = FFIData::GetData<PixelMapImpl>(id);
@@ -548,7 +550,7 @@ uint32_t FfiImagePixelMapImplToSdr(int64_t id)
     return instance->ToSdr();
 }
 
-uint32_t FfiImagePixelMapImplMarshalling(int64_t id, int64_t rpcId)
+FFI_EXPORT uint32_t FfiImagePixelMapImplMarshalling(int64_t id, int64_t rpcId)
 {
     IMAGE_LOGD("[PixelMap] FfiImagePixelMapImplMarshalling in");
     auto pixelMap = FFIData::GetData<PixelMapImpl>(id);
@@ -560,7 +562,7 @@ uint32_t FfiImagePixelMapImplMarshalling(int64_t id, int64_t rpcId)
     return pixelMap->Marshalling(rpcId);
 }
 
-int64_t FfiImagePixelMapImplUnmarshalling(int64_t id, int64_t rpcId, uint32_t* errCode)
+FFI_EXPORT int64_t FfiImagePixelMapImplUnmarshalling(int64_t id, int64_t rpcId, uint32_t* errCode)
 {
     IMAGE_LOGD("[PixelMap] FfiImagePixelMapImplUnmarshalling in");
     auto pixelMap = FFIData::GetData<PixelMapImpl>(id);
@@ -569,7 +571,7 @@ int64_t FfiImagePixelMapImplUnmarshalling(int64_t id, int64_t rpcId, uint32_t* e
         *errCode = ERR_IMAGE_INVALID_PARAMETER;
         return 0;
     }
-    auto retPixelMap = pixelMap->Unmarshalling(rpcId, errCode);
+    auto retPixelMap = pixelMap->Unmarshalling(rpcId, *errCode);
     if (!retPixelMap) {
         IMAGE_LOGE("[PixelMap] retPixelMap is nullptr!");
         return 0;
@@ -584,7 +586,7 @@ int64_t FfiImagePixelMapImplUnmarshalling(int64_t id, int64_t rpcId, uint32_t* e
     return native->GetID();
 }
 
-uint32_t FfiImagePixelMapImplConvertPixelMapFormat(int64_t id, int32_t targetFormat)
+FFI_EXPORT uint32_t FfiImagePixelMapImplConvertPixelMapFormat(int64_t id, int32_t targetFormat)
 {
     IMAGE_LOGD("[PixelMap] FfiImagePixelMapImplConvertPixelMapFormat in");
     auto pixelMap = FFIData::GetData<PixelMapImpl>(id);
@@ -593,14 +595,16 @@ uint32_t FfiImagePixelMapImplConvertPixelMapFormat(int64_t id, int32_t targetFor
         return ERR_IMAGE_INVALID_PARAMETER;
     }
     IMAGE_LOGD("[PixelMap] FfiImagePixelMapImplConvertPixelMapFormat out");
-    return pixelMap->ConvertPixelMapFormat(PixelFormat(targetFormat));
+    PixelFormat format = PixelFormat(targetFormat);
+    return pixelMap->ConvertPixelMapFormat(format);
 }
 
-int64_t FfiImagePixelMapImplCreatePixelMapFromSurface(char* surfaceId, CRegion rect, size_t argc, uint32_t* errCode)
+FFI_EXPORT int64_t FfiImagePixelMapImplCreatePixelMapFromSurface(
+    char* surfaceId, CRegion rect, size_t argc, uint32_t* errCode)
 {
     IMAGE_LOGD("[PixelMap] FfiImagePixelMapImplCreatePixelMapFromSurface in");
     Rect rt = ParseCRegion(rect);
-    auto pixelMap = PixelMapImpl::CreatePixelMapFromSurface(surfaceId, rt, argc, errCode);
+    auto pixelMap = PixelMapImpl::CreatePixelMapFromSurface(surfaceId, rt, argc, *errCode);
     if (!pixelMap) {
         IMAGE_LOGE("[PixelMap] pixelMap is nullptr!");
         return 0;
@@ -615,10 +619,10 @@ int64_t FfiImagePixelMapImplCreatePixelMapFromSurface(char* surfaceId, CRegion r
     return native->GetID();
 }
 
-int64_t FfiImagePixelMapImplCreatePixelMapFromParcel(int64_t rpcId, uint32_t* errCode)
+FFI_EXPORT int64_t FfiImagePixelMapImplCreatePixelMapFromParcel(int64_t rpcId, uint32_t* errCode)
 {
     IMAGE_LOGD("[PixelMap] FfiImagePixelMapImplCreatePixelMapFromParcel in");
-    auto pixelMap = PixelMapImpl::CreatePixelMapFromParcel(rpcId, errCode);
+    auto pixelMap = PixelMapImpl::CreatePixelMapFromParcel(rpcId, *errCode);
     if (!pixelMap) {
         IMAGE_LOGE("[PixelMap] pixelMap is nullptr!");
         return 0;
@@ -633,7 +637,7 @@ int64_t FfiImagePixelMapImplCreatePixelMapFromParcel(int64_t rpcId, uint32_t* er
     return native->GetID();
 }
 
-napi_value FfiConvertPixelMap2Napi(napi_env env, uint64_t id)
+FFI_EXPORT napi_value FfiConvertPixelMap2Napi(napi_env env, uint64_t id)
 {
     napi_value undefined = nullptr;
     napi_get_undefined(env, &undefined);
@@ -660,7 +664,7 @@ napi_value FfiConvertPixelMap2Napi(napi_env env, uint64_t id)
     return result;
 }
 
-int64_t FfiCreatePixelMapFromNapi(napi_env env, napi_value pixelmap)
+FFI_EXPORT int64_t FfiCreatePixelMapFromNapi(napi_env env, napi_value pixelmap)
 {
     if (env == nullptr || pixelmap == nullptr) {
         IMAGE_LOGE("[PixelMap]: parameter nullptr!");

@@ -61,6 +61,7 @@ ohos_shared_library("cj_image_ffi") {
     "graphic_surface:surface",
     "graphic_surface:sync_fence",
     "hilog:libhilog",
+    "init:libbegetutil",
     "ipc:cj_ipc_ffi",
     "napi:ace_napi",
     "napi:cj_bind_ffi",

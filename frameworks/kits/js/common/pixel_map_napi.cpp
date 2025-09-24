@@ -1802,6 +1802,23 @@ napi_value PixelMapNapi::CreatePixelMap(napi_env env, std::shared_ptr<PixelMap> 
     return result;
 }
 
+extern "C" {
+napi_value GetPixelMapNapi(napi_env env, std::shared_ptr<PixelMap> pixelMap)
+{
+    return PixelMapNapi::CreatePixelMap(env, pixelMap);
+}
+
+bool GetNativePixelMap(void* pixelMapNapi, std::shared_ptr<PixelMap> &pixelMap)
+{
+    if (pixelMapNapi == nullptr) {
+        IMAGE_LOGE("%{public}s pixelMapNapi is nullptr", __func__);
+        return false;
+    }
+    pixelMap = reinterpret_cast<PixelMapNapi*>(pixelMapNapi)->GetPixelNapiInner();
+    return true;
+}
+}
+
 STATIC_EXEC_FUNC(Unmarshalling)
 {
 #if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
@@ -4575,13 +4592,12 @@ napi_value PixelMapNapi::ConvertPixelMapFormat(napi_env env, napi_callback_info 
     if (!prepareNapiEnv(env, info, &nVal)) {
         return nVal.result;
     }
+    if (!nVal.context) {
+        return nullptr;
+    }
     nVal.context->rPixelMap = nVal.context->nConstructor->nativePixelMap_;
     if (nVal.argc >= 1 && ImageNapiUtils::getType(env, nVal.argv[nVal.argc - 1]) == napi_function) {
         napi_create_reference(env, nVal.argv[nVal.argc - 1], nVal.refCount, &(nVal.context->callbackRef));
-    }
-
-    if (!nVal.context) {
-        return nullptr;
     }
     napi_get_undefined(env, &nVal.result);
     if (nVal.argc != NUM_1) {

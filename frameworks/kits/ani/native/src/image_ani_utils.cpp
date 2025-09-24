@@ -92,10 +92,10 @@ shared_ptr<Picture> ImageAniUtils::GetPictureFromEnv([[maybe_unused]] ani_env* e
 
 static ani_object CreateAniImageInfo(ani_env* env)
 {
-    static const char* imageInfoClassName = "L@ohos/multimedia/image/image/ImageInfoInner;";
+    static const char* imageInfoClassName = "@ohos.multimedia.image.image.ImageInfoInner";
     ani_class imageInfoCls;
     if (ANI_OK != env->FindClass(imageInfoClassName, &imageInfoCls)) {
-        IMAGE_LOGE("Not found L@ohos/multimedia/image/image/ImageInfoInner;");
+        IMAGE_LOGE("Not found @ohos.multimedia.image.image.ImageInfoInner");
         return nullptr;
     }
     ani_method imageInfoCtor;
@@ -115,17 +115,17 @@ static bool SetImageInfoSize(ani_env* env, const ImageInfo& imgInfo, ani_object&
 {
     ani_ref sizeref;
     if (ANI_OK != env->Object_CallMethodByName_Ref(imageInfoValue, "<get>size",
-        ":L@ohos/multimedia/image/image/Size;", &sizeref)) {
+        ":C{@ohos.multimedia.image.image.Size}", &sizeref)) {
         IMAGE_LOGE("Object_CallMethodByName_Ref failed");
         return false;
     }
     ani_object sizeObj = reinterpret_cast<ani_object>(sizeref);
-    if (ANI_OK != env->Object_CallMethodByName_Void(sizeObj, "<set>width", "I:V",
+    if (ANI_OK != env->Object_CallMethodByName_Void(sizeObj, "<set>width", "i:",
         static_cast<ani_int>(imgInfo.size.width))) {
         IMAGE_LOGE("Object_CallMethodByName_Void <set>width failed");
         return false;
     }
-    if (ANI_OK != env->Object_CallMethodByName_Void(sizeObj, "<set>height", "I:V",
+    if (ANI_OK != env->Object_CallMethodByName_Void(sizeObj, "<set>height", "i:",
         static_cast<ani_int>(imgInfo.size.height))) {
         IMAGE_LOGE("Object_CallMethodByName_Void <set>height failed");
         return false;
@@ -170,13 +170,13 @@ static string getPixelFormatItemName(PixelFormat format)
 static ani_enum_item findPixelFormatEnumItem([[maybe_unused]] ani_env* env, PixelFormat format)
 {
     ani_enum type;
-    if (ANI_OK != env->FindEnum("L@ohos/multimedia/image/image/PixelMapFormat;", &type)) {
+    if (ANI_OK != env->FindEnum("@ohos.multimedia.image.image.PixelMapFormat", &type)) {
         IMAGE_LOGE("FindEnum for PixelMapFormat Failed");
         return {};
     }
 
     string itemName = getPixelFormatItemName(format);
-    
+
     ani_enum_item enumItem;
     if (ANI_OK != env->Enum_GetEnumItemByName(type, itemName.c_str(), &enumItem)) {
         IMAGE_LOGE("Enum_GetEnumItemByName for PixelMapFormat Failed");
@@ -203,13 +203,13 @@ static string getAlphaTypeItemName(AlphaType alphaType)
 static ani_enum_item findAlphaTypeEnumItem([[maybe_unused]] ani_env* env, AlphaType alphaType)
 {
     ani_enum type;
-    if (ANI_OK != env->FindEnum("L@ohos/multimedia/image/image/AlphaType;", &type)) {
+    if (ANI_OK != env->FindEnum("@ohos.multimedia.image.image.AlphaType", &type)) {
         IMAGE_LOGE("FindEnum for AlphaType Failed");
         return {};
     }
 
     string itemName = getAlphaTypeItemName(alphaType);
-    
+
     ani_enum_item enumItem;
     if (ANI_OK != env->Enum_GetEnumItemByName(type, itemName.c_str(), &enumItem)) {
         IMAGE_LOGE("Enum_GetEnumItemByName for AlphaType Failed");
@@ -229,35 +229,35 @@ ani_object ImageAniUtils::CreateImageInfoValueFromNative(ani_env* env, const Ima
     if (!SetImageInfoSize(env, imgInfo, imageInfoValue)) {
         return nullptr;
     }
-    if (ANI_OK != env->Object_CallMethodByName_Void(imageInfoValue, "<set>density", "I:V",
+    if (ANI_OK != env->Object_CallMethodByName_Void(imageInfoValue, "<set>density", "i:",
         static_cast<ani_int>(imgInfo.baseDensity))) {
         IMAGE_LOGE("Object_CallMethodByName_Void <set>density failed");
         return nullptr;
     }
-    if (ANI_OK != env->Object_CallMethodByName_Void(imageInfoValue, "<set>stride", "I:V",
+    if (ANI_OK != env->Object_CallMethodByName_Void(imageInfoValue, "<set>stride", "i:",
         static_cast<ani_int>(imgInfo.size.height))) {
         IMAGE_LOGE("Object_CallMethodByName_Void <set>stride failed");
         return nullptr;
     }
     if (ANI_OK != env->Object_CallMethodByName_Void(imageInfoValue, "<set>pixelFormat",
-        "L@ohos/multimedia/image/image/PixelMapFormat;:V", findPixelFormatEnumItem(env, imgInfo.pixelFormat))) {
+        "C{@ohos.multimedia.image.image.PixelMapFormat}:", findPixelFormatEnumItem(env, imgInfo.pixelFormat))) {
         IMAGE_LOGE("Object_CallMethodByName_Void <set>pixelFormat failed");
         return nullptr;
     }
     if (ANI_OK != env->Object_CallMethodByName_Void(imageInfoValue, "<set>alphaType",
-        "L@ohos/multimedia/image/image/AlphaType;:V", findAlphaTypeEnumItem(env, imgInfo.alphaType))) {
+        "C{@ohos.multimedia.image.image.AlphaType}:", findAlphaTypeEnumItem(env, imgInfo.alphaType))) {
         IMAGE_LOGE("Object_CallMethodByName_Void <set>alphaType failed");
         return nullptr;
     }
     ani_string encodeStr = ImageAniUtils::GetAniString(env, imgInfo.encodedFormat);
     if (ANI_OK != env->Object_CallMethodByName_Void(imageInfoValue, "<set>mimeType",
-        "Lstd/core/String;:V", encodeStr)) {
+        "C{std.core.String}:", encodeStr)) {
         IMAGE_LOGE("Object_CallMethodByName_Void <set>encodedFormat failed ");
         return nullptr;
     }
 
     if (pixelmap != nullptr) {
-        if (ANI_OK != env->Object_CallMethodByName_Void(imageInfoValue, "<set>isHdr", "Z:V", pixelmap->IsHdr())) {
+        if (ANI_OK != env->Object_CallMethodByName_Void(imageInfoValue, "<set>isHdr", "z:", pixelmap->IsHdr())) {
             IMAGE_LOGE("Object_CallMethodByName_Void <set>isHdr failed ");
             return nullptr;
         }
@@ -267,14 +267,14 @@ ani_object ImageAniUtils::CreateImageInfoValueFromNative(ani_env* env, const Ima
 
 ani_object ImageAniUtils::CreateAniPixelMap(ani_env* env, std::unique_ptr<PixelMapAni>& pPixelMapAni)
 {
-    static const char* className = "L@ohos/multimedia/image/image/PixelMapInner;";
+    static const char* className = "@ohos.multimedia.image.image.PixelMapInner";
     ani_class cls;
     if (ANI_OK != env->FindClass(className, &cls)) {
-        IMAGE_LOGE("Not found L@ohos/multimedia/image/image/PixelMapInner;");
+        IMAGE_LOGE("Not found @ohos.multimedia.image.image.PixelMapInner");
         return nullptr;
     }
     ani_method ctor;
-    if (ANI_OK != env->Class_FindMethod(cls, "<ctor>", "J:V", &ctor)) {
+    if (ANI_OK != env->Class_FindMethod(cls, "<ctor>", "l:", &ctor)) {
         IMAGE_LOGE("Not found <ctor>");
         return nullptr;
     }
@@ -287,15 +287,15 @@ ani_object ImageAniUtils::CreateAniPixelMap(ani_env* env, std::unique_ptr<PixelM
 
 ani_object ImageAniUtils::CreateAniImageSource(ani_env* env, std::unique_ptr<ImageSourceAni>& pImageSourceAni)
 {
-    static const char* className = "L@ohos/multimedia/image/image/ImageSourceInner;";
+    static const char* className = "@ohos.multimedia.image.image.ImageSourceInner";
     ani_class cls;
     if (ANI_OK != env->FindClass(className, &cls)) {
-        IMAGE_LOGE("Not found L@ohos/multimedia/image/image/ImageSourceInner;");
+        IMAGE_LOGE("Not found @ohos.multimedia.image.image.ImageSourceInner");
         return nullptr;
     }
 
     ani_method ctor;
-    if (ANI_OK != env->Class_FindMethod(cls, "<ctor>", "J:V", &ctor)) {
+    if (ANI_OK != env->Class_FindMethod(cls, "<ctor>", "l:", &ctor)) {
         IMAGE_LOGE("Not found <ctor>");
         return nullptr;
     }
@@ -309,14 +309,14 @@ ani_object ImageAniUtils::CreateAniImageSource(ani_env* env, std::unique_ptr<Ima
 
 ani_object ImageAniUtils::CreateAniPicture(ani_env* env, std::unique_ptr<PictureAni>& pPictureAni)
 {
-    static const char* className = "L@ohos/multimedia/image/image/PictureInner;";
+    static const char* className = "@ohos.multimedia.image.image.PictureInner";
     ani_class cls;
     if (ANI_OK != env->FindClass(className, &cls)) {
-        IMAGE_LOGE("Not found L@ohos/multimedia/image/image/PictureInner;");
+        IMAGE_LOGE("Not found @ohos.multimedia.image.image.PictureInner");
         return nullptr;
     }
     ani_method ctor;
-    if (ANI_OK != env->Class_FindMethod(cls, "<ctor>", "J:V", &ctor)) {
+    if (ANI_OK != env->Class_FindMethod(cls, "<ctor>", "l:", &ctor)) {
         IMAGE_LOGE("Not found <ctor>");
         return nullptr;
     }
@@ -340,7 +340,7 @@ ani_method ImageAniUtils::GetRecordSetMethod(ani_env* env, ani_object &argumentO
 {
     ani_status status;
     ani_class recordCls;
-    status = env->FindClass("Lescompat/Record;", &recordCls);
+    status = env->FindClass("escompat.Record", &recordCls);
     if (status != ANI_OK) {
         IMAGE_LOGE("FindClass failed status :%{public}u", status);
         return nullptr;
@@ -357,7 +357,7 @@ ani_method ImageAniUtils::GetRecordSetMethod(ani_env* env, ani_object &argumentO
     }
     ani_method recordSetMethod;
     status = env->Class_FindMethod(recordCls, "$_set",
-        "Lstd/core/Object;Lstd/core/Object;:V", &recordSetMethod);
+        "C{std.core.Object}C{std.core.Object}:", &recordSetMethod);
     if (status != ANI_OK) {
         IMAGE_LOGE("Class_FindMethod recordSetMethod Failed");
         return nullptr;

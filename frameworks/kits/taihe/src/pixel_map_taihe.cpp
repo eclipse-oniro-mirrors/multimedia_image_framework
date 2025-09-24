@@ -13,19 +13,31 @@
  * limitations under the License.
  */
 
+#include "pixel_map_taihe.h"
+
+#include "ani_color_space_object_convertor.h"
+#include "image_format_convert.h"
 #include "image_log.h"
 #include "image_taihe_utils.h"
+#include "image_utils.h"
 #include "media_errors.h"
+#include "message_parcel.h"
 #include "pixel_map_taihe_ani.h"
-#include "pixel_map_taihe.h"
+#include "taihe/runtime.hpp"
 #if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
-#include <regex>
+#include <charconv>
 #include "pixel_map_from_surface.h"
-#include "sync_fence.h"
 #include "transaction/rs_interfaces.h"
 #endif
 
 namespace ANI::Image {
+
+enum class FormatType : int8_t {
+    UNKNOWN,
+    YUV,
+    RGB,
+    ASTC
+};
 
 Size MakeEmptySize()
 {
@@ -54,10 +66,10 @@ PixelMap CreatePixelMapByPtr(int64_t ptr)
 }
 
 #if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
-static bool GetSurfaceSize(std::string const& surfaceId, Media::Rect& region)
+static bool GetSurfaceSize(uint64_t surfaceId, Media::Rect& region)
 {
     if (region.width <= 0 || region.height <= 0) {
-        sptr<Surface> surface = SurfaceUtils::GetInstance()->GetSurface(std::stoull(surfaceId));
+        sptr<Surface> surface = SurfaceUtils::GetInstance()->GetSurface(surfaceId);
         if (surface == nullptr) {
             IMAGE_LOGE("[PixelMap ANI] GetSurfaceSize: GetSurface failed");
             return false;
@@ -84,11 +96,13 @@ static bool GetSurfaceSize(std::string const& surfaceId, Media::Rect& region)
 
 static PixelMap CreatePixelMapFromSurface(std::string const& surfaceId, Media::Rect& region)
 {
-    if (!std::regex_match(surfaceId, std::regex("\\d+"))) {
+    uint64_t surfaceIdInt = 0;
+    auto res = std::from_chars(surfaceId.data(), surfaceId.data() + surfaceId.size(), surfaceIdInt);
+    if (res.ec != std::errc()) {
         ImageTaiheUtils::ThrowExceptionError(Media::COMMON_ERR_INVALID_PARAMETER, "Empty or invalid surfaceId");
         return make_holder<PixelMapImpl, PixelMap>();
     }
-    if (!GetSurfaceSize(surfaceId, region)) {
+    if (!GetSurfaceSize(surfaceIdInt, region)) {
         ImageTaiheUtils::ThrowExceptionError(Media::COMMON_ERR_INVALID_PARAMETER, "Get surface size failed");
         return make_holder<PixelMapImpl, PixelMap>();
     }
@@ -100,12 +114,17 @@ static PixelMap CreatePixelMapFromSurface(std::string const& surfaceId, Media::R
         .w = region.width,
         .h = region.height,
     };
-    std::shared_ptr<Media::PixelMap> pixelMap = rsClient.CreatePixelMapFromSurfaceId(std::stoull(surfaceId), r);
+    std::shared_ptr<Media::PixelMap> pixelMap = rsClient.CreatePixelMapFromSurfaceId(surfaceIdInt, r);
 #ifndef EXT_PIXEL
     if (pixelMap == nullptr) {
-        pixelMap = CreatePixelMapFromSurfaceId(std::stoull(surfaceId), region);
+        pixelMap = CreatePixelMapFromSurfaceId(surfaceIdInt, region);
     }
 #endif
+    if (pixelMap == nullptr) {
+        ImageTaiheUtils::ThrowExceptionError(Media::ERR_IMAGE_PIXELMAP_CREATE_FAILED,
+            "Create PixelMap from Surface ID failed");
+        return make_holder<PixelMapImpl, PixelMap>();
+    }
     return make_holder<PixelMapImpl, PixelMap>(std::move(pixelMap));
 }
 #endif
@@ -138,6 +157,33 @@ PixelMap CreatePixelMapFromSurfaceByIdAndRegionSync(string_view etsSurfaceId,
     }
     return CreatePixelMapFromSurface(surfaceId, region);
 #endif
+}
+
+static PixelMap Unmarshalling(uintptr_t sequence)
+{
+#if defined(IOS_PLATFORM) || defined(ANDROID_PLATFORM)
+    return make_holder<PixelMapImpl, PixelMap>();
+#else
+    MessageParcel* messageParcel = ImageTaiheUtils::UnwrapMessageParcel(sequence);
+    if (messageParcel == nullptr) {
+        ImageTaiheUtils::ThrowExceptionError(Media::ERR_IPC, "Get parcel failed");
+        return make_holder<PixelMapImpl, PixelMap>();
+    }
+
+    Media::PIXEL_MAP_ERR error;
+    auto pixelMap = Media::PixelMap::Unmarshalling(*messageParcel, error);
+    if (pixelMap == nullptr) {
+        ImageTaiheUtils::ThrowExceptionError(error.errorCode, error.errorInfo);
+        return make_holder<PixelMapImpl, PixelMap>();
+    }
+    std::shared_ptr<Media::PixelMap> pixelMapPtr(pixelMap);
+    return make_holder<PixelMapImpl, PixelMap>(std::move(pixelMapPtr));
+#endif
+}
+
+PixelMap CreatePixelMapFromParcel(uintptr_t sequence)
+{
+    return Unmarshalling(sequence);
 }
 
 PixelMapImpl::PixelMapImpl() {}
@@ -193,7 +239,7 @@ PixelMapImpl::~PixelMapImpl()
 
 int64_t PixelMapImpl::GetImplPtr()
 {
-    return reinterpret_cast<uintptr_t>(this);
+    return static_cast<int64_t>(reinterpret_cast<uintptr_t>(this));
 }
 
 std::shared_ptr<Media::PixelMap> PixelMapImpl::GetNativePtr()
@@ -205,7 +251,7 @@ std::shared_ptr<Media::PixelMap> PixelMapImpl::GetPixelMap(PixelMap etsPixelMap)
 {
     PixelMapImpl *pixelMapImpl = reinterpret_cast<PixelMapImpl *>(etsPixelMap->GetImplPtr());
     if (pixelMapImpl == nullptr) {
-        IMAGE_LOGE("%{public}s etsPixelMap is nullptr", __func__);
+        IMAGE_LOGE("[%{public}s] etsPixelMap is nullptr", __func__);
         return nullptr;
     }
     return pixelMapImpl->GetNativePtr();
@@ -219,7 +265,7 @@ PixelMap PixelMapImpl::CreatePixelMap(std::shared_ptr<Media::PixelMap> pixelMap)
 ImageInfo PixelMapImpl::GetImageInfoSync()
 {
     if (nativePixelMap_ == nullptr) {
-        ImageTaiheUtils::ThrowExceptionError(Media::ERR_RESOURCE_UNAVAILABLE, "Native PixelMap is nullptr");
+        IMAGE_LOGE("[%{public}s] Native PixelMap is nullptr", __func__);
         return MakeEmptyImageInfo();
     }
     if (!aniEditable_) {
@@ -238,7 +284,7 @@ ImageInfo PixelMapImpl::GetImageInfoSync()
 void PixelMapImpl::ReadPixelsToBufferSync(array_view<uint8_t> dst)
 {
     if (nativePixelMap_ == nullptr) {
-        ImageTaiheUtils::ThrowExceptionError(Media::ERR_RESOURCE_UNAVAILABLE, "Native PixelMap is nullptr");
+        IMAGE_LOGE("[%{public}s] Native PixelMap is nullptr", __func__);
         return;
     }
     if (!aniEditable_) {
@@ -255,7 +301,7 @@ void PixelMapImpl::ReadPixelsToBufferSync(array_view<uint8_t> dst)
 void PixelMapImpl::ReadPixelsSync(weak::PositionArea area)
 {
     if (nativePixelMap_ == nullptr) {
-        ImageTaiheUtils::ThrowExceptionError(Media::ERR_RESOURCE_UNAVAILABLE, "Native PixelMap is nullptr");
+        IMAGE_LOGE("[%{public}s] Native PixelMap is nullptr", __func__);
         return;
     }
     if (!aniEditable_) {
@@ -278,7 +324,7 @@ void PixelMapImpl::ReadPixelsSync(weak::PositionArea area)
 void PixelMapImpl::WriteBufferToPixelsSync(array_view<uint8_t> src)
 {
     if (nativePixelMap_ == nullptr) {
-        ImageTaiheUtils::ThrowExceptionError(Media::ERR_RESOURCE_UNAVAILABLE, "Native PixelMap is nullptr");
+        IMAGE_LOGE("[%{public}s] Native PixelMap is nullptr", __func__);
         return;
     }
     if (!aniEditable_) {
@@ -292,10 +338,31 @@ void PixelMapImpl::WriteBufferToPixelsSync(array_view<uint8_t> src)
     }
 }
 
+void PixelMapImpl::WritePixelsSync(weak::PositionArea area)
+{
+    if (nativePixelMap_ == nullptr) {
+        IMAGE_LOGE("[%{public}s] Native PixelMap is nullptr", __func__);
+        return;
+    }
+    if (!aniEditable_) {
+        ImageTaiheUtils::ThrowExceptionError(Media::ERR_RESOURCE_UNAVAILABLE, "PixelMap has crossed threads");
+        return;
+    }
+
+    ohos::multimedia::image::image::Region etsRegion = area->GetRegion();
+    Media::Rect region = {etsRegion.x, etsRegion.y, etsRegion.size.width, etsRegion.size.height};
+    array<uint8_t> etsPixels = area->GetPixels();
+    uint32_t status = nativePixelMap_->WritePixels(etsPixels.data(), etsPixels.size(), area->GetOffset(),
+        area->GetStride(), region);
+    if (status != Media::SUCCESS) {
+        IMAGE_LOGE("[PixelMap ANI] WritePixels by region failed");
+    }
+}
+
 PixelMap PixelMapImpl::CreateAlphaPixelmapSync()
 {
     if (nativePixelMap_ == nullptr) {
-        ImageTaiheUtils::ThrowExceptionError(Media::ERR_RESOURCE_UNAVAILABLE, "Native PixelMap is nullptr");
+        IMAGE_LOGE("[%{public}s] Native PixelMap is nullptr", __func__);
         return make_holder<PixelMapImpl, PixelMap>();
     }
     if (!aniEditable_) {
@@ -312,7 +379,7 @@ PixelMap PixelMapImpl::CreateAlphaPixelmapSync()
 int32_t PixelMapImpl::GetBytesNumberPerRow()
 {
     if (nativePixelMap_ == nullptr) {
-        ImageTaiheUtils::ThrowExceptionError(Media::ERR_RESOURCE_UNAVAILABLE, "Native PixelMap is nullptr");
+        IMAGE_LOGE("[%{public}s] Native PixelMap is nullptr", __func__);
         return 0;
     }
     if (!aniEditable_) {
@@ -326,7 +393,7 @@ int32_t PixelMapImpl::GetBytesNumberPerRow()
 int32_t PixelMapImpl::GetPixelBytesNumber()
 {
     if (nativePixelMap_ == nullptr) {
-        ImageTaiheUtils::ThrowExceptionError(Media::ERR_RESOURCE_UNAVAILABLE, "Native PixelMap is nullptr");
+        IMAGE_LOGE("[%{public}s] Native PixelMap is nullptr", __func__);
         return 0;
     }
     if (!aniEditable_) {
@@ -337,10 +404,24 @@ int32_t PixelMapImpl::GetPixelBytesNumber()
     return nativePixelMap_->GetByteCount();
 }
 
+int32_t PixelMapImpl::GetDensity()
+{
+    if (nativePixelMap_ == nullptr) {
+        IMAGE_LOGE("[%{public}s] Native PixelMap is nullptr", __func__);
+        return 0;
+    }
+    if (!aniEditable_) {
+        ImageTaiheUtils::ThrowExceptionError(Media::ERR_RESOURCE_UNAVAILABLE, "PixelMap has crossed threads");
+        return 0;
+    }
+
+    return nativePixelMap_->GetBaseDensity();
+}
+
 void PixelMapImpl::ScaleSync(double x, double y)
 {
     if (nativePixelMap_ == nullptr) {
-        ImageTaiheUtils::ThrowExceptionError(Media::ERR_RESOURCE_UNAVAILABLE, "Native PixelMap is nullptr");
+        IMAGE_LOGE("[%{public}s] Native PixelMap is nullptr", __func__);
         return;
     }
     if (!aniEditable_) {
@@ -354,7 +435,7 @@ void PixelMapImpl::ScaleSync(double x, double y)
 void PixelMapImpl::ScaleWithAntiAliasingSync(double x, double y, AntiAliasingLevel level)
 {
     if (nativePixelMap_ == nullptr) {
-        ImageTaiheUtils::ThrowExceptionError(Media::ERR_RESOURCE_UNAVAILABLE, "Native PixelMap is nullptr");
+        IMAGE_LOGE("[%{public}s] Native PixelMap is nullptr", __func__);
         return;
     }
     if (!aniEditable_) {
@@ -368,7 +449,7 @@ void PixelMapImpl::ScaleWithAntiAliasingSync(double x, double y, AntiAliasingLev
 void PixelMapImpl::CropSync(ohos::multimedia::image::image::Region const& region)
 {
     if (nativePixelMap_ == nullptr) {
-        ImageTaiheUtils::ThrowExceptionError(Media::ERR_RESOURCE_UNAVAILABLE, "Native PixelMap is nullptr");
+        IMAGE_LOGE("[%{public}s] Native PixelMap is nullptr", __func__);
         return;
     }
     if (!aniEditable_) {
@@ -386,7 +467,7 @@ void PixelMapImpl::CropSync(ohos::multimedia::image::image::Region const& region
 void PixelMapImpl::RotateSync(double angle)
 {
     if (nativePixelMap_ == nullptr) {
-        ImageTaiheUtils::ThrowExceptionError(Media::ERR_RESOURCE_UNAVAILABLE, "Native PixelMap is nullptr");
+        IMAGE_LOGE("[%{public}s] Native PixelMap is nullptr", __func__);
         return;
     }
     if (!aniEditable_) {
@@ -400,7 +481,7 @@ void PixelMapImpl::RotateSync(double angle)
 void PixelMapImpl::FlipSync(bool horizontal, bool vertical)
 {
     if (nativePixelMap_ == nullptr) {
-        ImageTaiheUtils::ThrowExceptionError(Media::ERR_RESOURCE_UNAVAILABLE, "Native PixelMap is nullptr");
+        IMAGE_LOGE("[%{public}s] Native PixelMap is nullptr", __func__);
         return;
     }
     if (!aniEditable_) {
@@ -414,7 +495,7 @@ void PixelMapImpl::FlipSync(bool horizontal, bool vertical)
 void PixelMapImpl::OpacitySync(double rate)
 {
     if (nativePixelMap_ == nullptr) {
-        ImageTaiheUtils::ThrowExceptionError(Media::ERR_RESOURCE_UNAVAILABLE, "Native PixelMap is nullptr");
+        IMAGE_LOGE("[%{public}s] Native PixelMap is nullptr", __func__);
         return;
     }
     if (!aniEditable_) {
@@ -431,7 +512,7 @@ void PixelMapImpl::OpacitySync(double rate)
 void PixelMapImpl::SetMemoryNameSync(string_view name)
 {
     if (nativePixelMap_ == nullptr) {
-        ImageTaiheUtils::ThrowExceptionError(Media::ERR_RESOURCE_UNAVAILABLE, "Native PixelMap is nullptr");
+        IMAGE_LOGE("[%{public}s] Native PixelMap is nullptr", __func__);
         return;
     }
     if (!aniEditable_) {
@@ -444,6 +525,208 @@ void PixelMapImpl::SetMemoryNameSync(string_view name)
         ImageTaiheUtils::ThrowExceptionError(Media::ERR_MEMORY_NOT_SUPPORT, "Set memory name not supported");
     } else if (status == Media::COMMON_ERR_INVALID_PARAMETER) {
         ImageTaiheUtils::ThrowExceptionError(Media::COMMON_ERR_INVALID_PARAMETER, "Memory name size out of range");
+    }
+}
+
+void PixelMapImpl::SetTransferDetached(bool detached)
+{
+    IMAGE_LOGD("[%{public}s] This method is no longer useful or necessary", __func__);
+}
+
+static FormatType FormatTypeOf(Media::PixelFormat pixelForamt)
+{
+    switch (pixelForamt) {
+        case Media::PixelFormat::ARGB_8888:
+        case Media::PixelFormat::RGB_565:
+        case Media::PixelFormat::RGBA_8888:
+        case Media::PixelFormat::BGRA_8888:
+        case Media::PixelFormat::RGB_888:
+        case Media::PixelFormat::RGBA_F16:
+        case Media::PixelFormat::RGBA_1010102:
+            return FormatType::RGB;
+        case Media::PixelFormat::NV21:
+        case Media::PixelFormat::NV12:
+        case Media::PixelFormat::YCBCR_P010:
+        case Media::PixelFormat::YCRCB_P010:
+            return FormatType::YUV;
+        case Media::PixelFormat::ASTC_4x4:
+            return FormatType::ASTC;
+        default:
+            return FormatType::UNKNOWN;
+    }
+}
+
+void PixelMapImpl::ConvertPixelFormatSync(PixelMapFormat targetPixelFormat)
+{
+    if (nativePixelMap_ == nullptr) {
+        IMAGE_LOGE("[%{public}s] Native PixelMap is nullptr", __func__);
+        return;
+    }
+
+    Media::PixelFormat srcFormat = nativePixelMap_->GetPixelFormat();
+    Media::PixelFormat dstFormat = Media::PixelFormat(targetPixelFormat.get_value());
+    if (FormatTypeOf(srcFormat) == FormatType::UNKNOWN || FormatTypeOf(dstFormat) == FormatType::UNKNOWN) {
+        ImageTaiheUtils::ThrowExceptionError(Media::ERR_IMAGE_INVALID_PARAMETER,
+            "Source or target pixel format is not supported or invalid");
+        return;
+    }
+
+    uint32_t status = Media::ImageFormatConvert::ConvertImageFormat(nativePixelMap_, dstFormat);
+    if (status == Media::SUCCESS) {
+        Media::ImageUtils::FlushSurfaceBuffer(nativePixelMap_.get());
+    } else if (status == Media::ERR_IMAGE_INVALID_PARAMETER) {
+        ImageTaiheUtils::ThrowExceptionError(Media::ERR_IMAGE_INVALID_PARAMETER, "Invalid parameter");
+    } else if (status == Media::ERR_IMAGE_SOURCE_DATA_INCOMPLETE) {
+        ImageTaiheUtils::ThrowExceptionError(Media::ERR_IMAGE_SOURCE_DATA_INCOMPLETE,
+            "Image source data is incomplete");
+    } else if (status == Media::IMAGE_RESULT_CREATE_FORMAT_CONVERT_FAILED) {
+        ImageTaiheUtils::ThrowExceptionError(Media::IMAGE_RESULT_CREATE_FORMAT_CONVERT_FAILED, "Conversion failed");
+    } else if (status == Media::ERR_MEDIA_FORMAT_UNSUPPORT) {
+        ImageTaiheUtils::ThrowExceptionError(Media::ERR_MEDIA_FORMAT_UNSUPPORT,
+            "The target pixel format to be converted is not supported");
+    } else if (status == Media::ERR_IMAGE_PIXELMAP_CREATE_FAILED) {
+        ImageTaiheUtils::ThrowExceptionError(Media::ERR_IMAGE_PIXELMAP_CREATE_FAILED, "Failed to create PixelMap");
+    }
+}
+
+uintptr_t PixelMapImpl::GetColorSpace()
+{
+#ifdef IMAGE_COLORSPACE_FLAG
+    if (nativePixelMap_ == nullptr) {
+        ImageTaiheUtils::ThrowExceptionError(Media::ERR_IMAGE_DATA_ABNORMAL, "Invalid native PixelMap");
+        return 0;
+    }
+    if (!aniEditable_) {
+        ImageTaiheUtils::ThrowExceptionError(Media::ERR_RESOURCE_UNAVAILABLE, "PixelMap has crossed threads");
+        return 0;
+    }
+
+    auto grColorSpace = nativePixelMap_->InnerGetGrColorSpacePtr();
+    if (grColorSpace == nullptr) {
+        ImageTaiheUtils::ThrowExceptionError(Media::ERR_IMAGE_DATA_UNSUPPORT, "No color space in PixelMap");
+        return 0;
+    }
+    return reinterpret_cast<uintptr_t>(ColorManager::CreateAniColorSpaceObject(get_env(), grColorSpace));
+#else
+    ImageTaiheUtils::ThrowExceptionError(Media::ERR_INVALID_OPERATION, "Unsupported operation");
+    return 0;
+#endif
+}
+
+void PixelMapImpl::SetColorSpace(uintptr_t colorSpace)
+{
+#ifdef IMAGE_COLORSPACE_FLAG
+    if (nativePixelMap_ == nullptr) {
+        IMAGE_LOGE("[%{public}s] Native PixelMap is nullptr", __func__);
+        return;
+    }
+    if (!aniEditable_) {
+        ImageTaiheUtils::ThrowExceptionError(Media::ERR_RESOURCE_UNAVAILABLE, "PixelMap has crossed threads");
+        return;
+    }
+
+    auto grColorSpace = ColorManager::GetColorSpaceByAniObject(get_env(), reinterpret_cast<ani_object>(colorSpace));
+    if (grColorSpace == nullptr) {
+        ImageTaiheUtils::ThrowExceptionError(Media::ERR_IMAGE_INVALID_PARAMETER, "Color space mismatch");
+        return;
+    }
+    nativePixelMap_->InnerSetColorSpace(*grColorSpace);
+#else
+    ImageTaiheUtils::ThrowExceptionError(Media::ERR_INVALID_OPERATION, "Unsupported operation");
+#endif
+}
+
+void PixelMapImpl::Marshalling(uintptr_t sequence)
+{
+    if (nativePixelMap_ == nullptr) {
+        IMAGE_LOGE("[%{public}s] Native PixelMap is nullptr", __func__);
+        return;
+    }
+
+    MessageParcel* messageParcel = ImageTaiheUtils::UnwrapMessageParcel(sequence);
+    if (messageParcel == nullptr) {
+        ImageTaiheUtils::ThrowExceptionError(Media::ERR_IPC,
+            "Marshalling PixelMap to parcel failed, parcel is nullptr");
+        return;
+    }
+    bool st = nativePixelMap_->Marshalling(*messageParcel);
+    if (!st) {
+        ImageTaiheUtils::ThrowExceptionError(Media::ERR_IPC, "Marshalling PixelMap to parcel failed");
+    }
+}
+
+PixelMap PixelMapImpl::UnmarshallingSync(uintptr_t sequence)
+{
+    return Unmarshalling(sequence);
+}
+
+void PixelMapImpl::ToSdrSync()
+{
+    if (nativePixelMap_ == nullptr) {
+        ImageTaiheUtils::ThrowExceptionError(Media::ERR_MEDIA_INVALID_OPERATION, "Internal error.");
+        return;
+    }
+
+    if (!aniEditable_) {
+        ImageTaiheUtils::ThrowExceptionError(Media::ERR_MEDIA_INVALID_OPERATION, "Pixelmap is not editable");
+        return;
+    }
+
+    uint32_t status = nativePixelMap_->ToSdr();
+    if (status != Media::SUCCESS) {
+        if (status == Media::ERR_MEDIA_INVALID_OPERATION) {
+            ImageTaiheUtils::ThrowExceptionError(Media::ERR_MEDIA_INVALID_OPERATION, "The pixelmap is not hdr.");
+        } else if (status == Media::IMAGE_RESULT_GET_SURFAC_FAILED) {
+            ImageTaiheUtils::ThrowExceptionError(Media::ERR_MEDIA_INVALID_OPERATION, "Alloc new memory failed.");
+        } else if (status == Media::ERR_RESOURCE_UNAVAILABLE) {
+            ImageTaiheUtils::ThrowExceptionError(Media::ERR_MEDIA_INVALID_OPERATION, "Pixelmap is not editable");
+        } else {
+            ImageTaiheUtils::ThrowExceptionError(Media::ERR_MEDIA_INVALID_OPERATION, "Internal error.");
+        }
+    }
+}
+
+static uint32_t ParseColorSpace(std::shared_ptr<OHOS::ColorManager::ColorSpace> &colorSpace,
+    uintptr_t targetColorSpace)
+{
+#ifdef IMAGE_COLORSPACE_FLAG
+    ani_object obj = reinterpret_cast<ani_object>(targetColorSpace);
+    colorSpace = OHOS::ColorManager::GetColorSpaceByAniObject(get_env(), obj);
+    if (colorSpace == nullptr) {
+        return Media::ERR_IMAGE_INVALID_PARAMETER;
+    }
+    return Media::SUCCESS;
+#else
+    return Media::ERR_IMAGE_DATA_UNSUPPORT;
+#endif
+}
+
+void PixelMapImpl::ApplyColorSpaceSync(uintptr_t targetColorSpace)
+{
+    if (nativePixelMap_ == nullptr) {
+        ImageTaiheUtils::ThrowExceptionError(Media::ERR_IMAGE_INIT_ABNORMAL, "Internal error.");
+        return;
+    }
+
+    if (!aniEditable_) {
+        ImageTaiheUtils::ThrowExceptionError(Media::ERR_RESOURCE_UNAVAILABLE, "Pixelmap is not editable");
+        return;
+    }
+    std::shared_ptr<OHOS::ColorManager::ColorSpace> colorSpace;
+    uint32_t status = ParseColorSpace(colorSpace, targetColorSpace);
+    if (status != Media::SUCCESS) {
+        ImageTaiheUtils::ThrowExceptionError(status, "ParseColorSpace failed");
+        return;
+    }
+
+    if (colorSpace == nullptr) {
+        ImageTaiheUtils::ThrowExceptionError(Media::ERR_IMAGE_INIT_ABNORMAL, "ApplyColorSpace Null native ref");
+        return;
+    }
+    status = nativePixelMap_->ApplyColorSpace(*colorSpace);
+    if (status != Media::SUCCESS) {
+        ImageTaiheUtils::ThrowExceptionError(status, "ApplyColorSpace has failed!");
+        return;
     }
 }
 
@@ -460,10 +743,20 @@ void PixelMapImpl::ReleaseSync()
     }
 }
 
+bool PixelMapImpl::GetIsEditable()
+{
+    if (nativePixelMap_ == nullptr) {
+        IMAGE_LOGE("[%{public}s] Native PixelMap is nullptr", __func__);
+        return false;
+    }
+
+    return nativePixelMap_->IsEditable();
+}
+
 bool PixelMapImpl::GetIsStrideAlignment()
 {
     if (nativePixelMap_ == nullptr) {
-        ImageTaiheUtils::ThrowExceptionError(Media::ERR_RESOURCE_UNAVAILABLE, "Native PixelMap is nullptr");
+        IMAGE_LOGE("[%{public}s] Native PixelMap is nullptr", __func__);
         return false;
     }
 
@@ -533,3 +826,4 @@ TH_EXPORT_CPP_API_CreatePixelMapByOptionsSync(ANI::Image::CreatePixelMapByOption
 TH_EXPORT_CPP_API_CreatePixelMapByPtr(ANI::Image::CreatePixelMapByPtr);
 TH_EXPORT_CPP_API_CreatePixelMapFromSurfaceByIdSync(ANI::Image::CreatePixelMapFromSurfaceByIdSync);
 TH_EXPORT_CPP_API_CreatePixelMapFromSurfaceByIdAndRegionSync(ANI::Image::CreatePixelMapFromSurfaceByIdAndRegionSync);
+TH_EXPORT_CPP_API_CreatePixelMapFromParcel(ANI::Image::CreatePixelMapFromParcel);

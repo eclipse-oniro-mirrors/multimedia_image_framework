@@ -1697,6 +1697,7 @@ uint32_t ExtDecoder::Decode(uint32_t index, DecodeContext &context)
         ImageUtils::FlushContextSurfaceBuffer(context);
         return res;
     }
+    CHECK_ERROR_RETURN_RET_LOG(codec_ == nullptr, ERR_IMAGE_DECODE_FAILED, "codec_ is nullptr");
     SkCodec::Result ret = codec_->getPixels(dstInfo_, dstBuffer, rowStride, &dstOptions_);
     if (ret == SkCodec::kIncompleteInput || ret == SkCodec::kErrorInInput) {
         IMAGE_LOGI("Decode broken data success. Triggered kIncompleteInput feature of skia!");
@@ -2098,6 +2099,7 @@ uint32_t ExtDecoder::GetFramePixels(SkImageInfo& info, uint8_t* buffer, uint64_t
     }
     // Try again
     ResetCodec();
+    CHECK_ERROR_RETURN_RET_LOG(codec_ == nullptr, ERR_IMAGE_DECODE_FAILED, "codec_ is nullptr");
     ret = codec_->getPixels(info, buffer, rowStride, &options);
     cond = (ret != SkCodec::kSuccess && ret != SkCodec::kIncompleteInput && ret != SkCodec::kErrorInInput);
     CHECK_ERROR_RETURN_RET_LOG(cond, ERR_IMAGE_DECODE_ABNORMAL,
@@ -2328,6 +2330,7 @@ static std::vector<ColorSpaceNameEnum> sColorSpaceNamedMap = {
     {"DCI P3", OHOS::ColorManager::ColorSpaceName::DCI_P3},
     {"sRGB", OHOS::ColorManager::ColorSpaceName::SRGB},
     {"BT.2020", OHOS::ColorManager::ColorSpaceName::BT2020},
+    {"DCI-P3", OHOS::ColorManager::ColorSpaceName::DCI_P3},
     {"Rec2020 Gamut with HLG Transfer", OHOS::ColorManager::ColorSpaceName::BT2020_HLG}
 };
 

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Huawei Device Co., Ltd.
+ * Copyright (C) 2025 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -17,11 +17,13 @@
 #define FRAMEWORKS_INNERKITSIMPL_EGL_IMAGE_INCLUDE_PIXEL_MAP_GL_SHADER_H
 
 #include <iostream>
+
 #ifdef USE_M133_SKIA
 #include "include/gpu/ganesh/GrTypes.h"
 #else
 #include "include/gpu/GrTypes.h"
 #endif
+
 #include "pixel_map_gl_context.h"
 
 namespace OHOS {

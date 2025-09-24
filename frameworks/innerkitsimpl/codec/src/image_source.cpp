@@ -684,9 +684,9 @@ static inline bool IsDensityChange(int32_t srcDensity, int32_t wantDensity)
 
 static inline int32_t GetScalePropByDensity(int32_t prop, int32_t srcDensity, int32_t wantDensity)
 {
-    bool cond = srcDensity != 0;
-    int32_t ret = (prop * wantDensity + (srcDensity >> 1)) / srcDensity;
-    CHECK_ERROR_RETURN_RET(cond, ret);
+    if (srcDensity != 0) {
+        return (prop * wantDensity + (srcDensity / NUM_2)) / srcDensity;
+    }
     return prop;
 }
 
@@ -1070,6 +1070,7 @@ unique_ptr<PixelMap> ImageSource::CreatePixelMapExtended(uint32_t index, const D
     }
     ImageUtils::FlushSurfaceBuffer(pixelMap.get());
     pixelMap->SetMemoryName(GetPixelMapName(pixelMap.get()));
+    ImageTrace pixelMapId("CreatePixelMapExtended, pixelMapId:%u", pixelMap->GetUniqueId());
     return pixelMap;
 }
 
@@ -1350,6 +1351,8 @@ unique_ptr<PixelMap> ImageSource::CreatePixelMap(uint32_t index, const DecodeOpt
         }
     }
 
+    ImageTrace imageTrace("CreatePixelMapExtended svg, dstSize:(%d, %d)", opts.desiredSize.width,
+        opts.desiredSize.height);
     ImageEvent imageEvent;
     if (opts.desiredPixelFormat == PixelFormat::NV12 || opts.desiredPixelFormat == PixelFormat::NV21) {
         IMAGE_LOGE("[ImageSource] get YUV420 not support without going through CreatePixelMapExtended");
@@ -1484,6 +1487,7 @@ unique_ptr<PixelMap> ImageSource::CreatePixelMap(uint32_t index, const DecodeOpt
     // not ext decode, dump pixelMap while decoding svg here
     ImageUtils::DumpPixelMapIfDumpEnabled(pixelMap, imageId_);
     pixelMap->SetMemoryName(GetPixelMapName(pixelMap.get()));
+    ImageTrace pixelMapId("CreatePixelMapExtended svg, pixelMapId:%u", pixelMap->GetUniqueId());
     return pixelMap;
 }
 
@@ -4337,10 +4341,10 @@ bool ImageSource::ApplyGainMap(ImageHdrType hdrType, DecodeContext& baseCtx, Dec
 void ImageSource::SetVividMetaColor(HdrMetadata& metadata,
     CM_ColorSpaceType base, CM_ColorSpaceType gainmap, CM_ColorSpaceType hdr)
 {
-    metadata.extendMeta.baseColorMeta.baseColorPrimary = base & 0xFF;
-    metadata.extendMeta.gainmapColorMeta.enhanceDataColorPrimary = gainmap & 0xFF;
-    metadata.extendMeta.gainmapColorMeta.combineColorPrimary = gainmap & 0xFF;
-    metadata.extendMeta.gainmapColorMeta.alternateColorPrimary = hdr & 0xFF;
+    metadata.extendMeta.baseColorMeta.baseColorPrimary = static_cast<uint32_t>(base) & 0xFF;
+    metadata.extendMeta.gainmapColorMeta.enhanceDataColorPrimary = static_cast<uint32_t>(gainmap) & 0xFF;
+    metadata.extendMeta.gainmapColorMeta.combineColorPrimary = static_cast<uint32_t>(gainmap) & 0xFF;
+    metadata.extendMeta.gainmapColorMeta.alternateColorPrimary = static_cast<uint32_t>(hdr) & 0xFF;
 }
 
 static CM_HDR_Metadata_Type GetHdrMediaType(HdrMetadata& metadata)
@@ -4657,10 +4661,11 @@ static uint32_t DoAiHdrProcess(sptr<SurfaceBuffer> &input, DecodeContext &hdrCtx
 
     std::unique_ptr<VpeUtils> utils = std::make_unique<VpeUtils>();
     ImageUtils::DumpHdrBufferEnabled(input, "PixelMap-AIprocess-input");
-    res = utils->ColorSpaceConverterImageProcess(input, output);
+    int32_t vpeProcessErrCode = utils->ColorSpaceConverterImageProcess(input, output);
     ImageUtils::DumpHdrBufferEnabled(output, "PixelMap-AIprocess-output");
-    if (res != VPE_ERROR_OK) {
-        IMAGE_LOGE("[ImageSource]DoAiHdrProcess ColorSpaceConverterImageProcess failed! %{public}d", res);
+    if (vpeProcessErrCode != VPE_ERROR_OK) {
+        IMAGE_LOGE("[ImageSource]DoAiHdrProcess ColorSpaceConverterImageProcess failed! %{public}d", vpeProcessErrCode);
+        res = ERR_IMAGE_AI_UNSUPPORTED;
         FreeContextBuffer(hdrCtx.freeFunc, hdrCtx.allocatorType, hdrCtx.pixelsBuffer);
     } else {
         IMAGE_LOGD("[ImageSource]DoAiHdrProcess ColorSpaceConverterImageProcess Succ!");
@@ -4686,9 +4691,11 @@ static uint32_t AiSrProcess(sptr<SurfaceBuffer> &input, DecodeContext &aisrCtx)
     CHECK_ERROR_RETURN_RET_LOG(cond, res, "HDR SurfaceBuffer Alloc failed, %{public}d", res);
     sptr<SurfaceBuffer> output = reinterpret_cast<SurfaceBuffer*>(aisrCtx.pixelsBuffer.context);
     std::unique_ptr<VpeUtils> utils = std::make_unique<VpeUtils>();
-    res = utils->DetailEnhancerImageProcess(input, output, static_cast<int32_t>(aisrCtx.resolutionQuality));
-    if (res != VPE_ERROR_OK) {
-        IMAGE_LOGE("[ImageSource]AiSrProcess DetailEnhancerImage Processed failed");
+    int32_t vpeProcessErrCode = utils->DetailEnhancerImageProcess(input, output,
+        static_cast<int32_t>(aisrCtx.resolutionQuality));
+    if (vpeProcessErrCode != VPE_ERROR_OK) {
+        IMAGE_LOGE("[ImageSource]AiSrProcess DetailEnhancerImage Processed failed! %{public}d", vpeProcessErrCode);
+        res = ERR_IMAGE_AI_UNSUPPORTED;
         FreeContextBuffer(aisrCtx.freeFunc, aisrCtx.allocatorType, aisrCtx.pixelsBuffer);
     } else {
         aisrCtx.outInfo.size.width = output->GetSurfaceBufferWidth();
@@ -5369,8 +5376,15 @@ std::string ImageSource::GetPixelMapName(PixelMap* pixelMap)
         IMAGE_LOGE("%{public}s error, pixelMap is null", __func__);
         return "undefined_";
     }
-    std::string pixelMapStr = std::to_string(pixelMap->GetWidth()) +
-        "_x" + std::to_string(pixelMap->GetHeight()) +
+    ImageInfo info;
+    if (GetImageInfo(info) != SUCCESS) {
+        IMAGE_LOGE("%{public}s error, GetImageInfo failed", __func__);
+        return "undefined_";
+    }
+
+    std::string pixelMapStr =
+        "srcImageSize-" + std::to_string(info.size.width) + "_x" + std::to_string(info.size.height) +
+        "-pixelMapSize-" + std::to_string(pixelMap->GetWidth()) + "_x" + std::to_string(pixelMap->GetHeight()) +
         "-streamsize-" + std::to_string(sourceStreamPtr_->GetStreamSize()) +
         "-mimeType-";
     std::string prefix = "image/";
