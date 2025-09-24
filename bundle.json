@@ -74,7 +74,6 @@
           "//foundation/multimedia/image_framework:image_framework",
           "//foundation/multimedia/image_framework:plugins",
           "//foundation/multimedia/image_framework/frameworks/kits/taihe:image_framework_taihe",
-          "//foundation/multimedia/image_framework/frameworks/kits/taihe:image_framework_taihe_test",
           "//foundation/multimedia/image_framework/frameworks/kits/taihe:image_framework_taihe_gen_only"
         ],
         "inner_kits": [
