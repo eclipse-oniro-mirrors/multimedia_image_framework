@@ -268,6 +268,10 @@ napi_value PictureNapi::Init(napi_env env, napi_value exports)
     IMG_NAPI_CHECK_RET_D(IMG_IS_OK(napi_create_reference(env, constructor, 1, &sConstructor_)),
         nullptr, IMAGE_LOGE("create reference fail")
     );
+    auto ctorContext = new NapiConstructorContext();
+    ctorContext->env_ = env;
+    ctorContext->ref_ = sConstructor_;
+    napi_add_env_cleanup_hook(env, ImageNapiUtils::CleanUpConstructorContext, ctorContext);
 
     napi_value global = nullptr;
     IMG_NAPI_CHECK_RET_D(IMG_IS_OK(napi_get_global(env, &global)), nullptr, IMAGE_LOGE("Init:get global fail"));

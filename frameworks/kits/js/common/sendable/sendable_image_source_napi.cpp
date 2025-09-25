@@ -794,6 +794,10 @@ static napi_value DoInit(napi_env env, napi_value exports, struct ImageConstruct
         IMAGE_LOGE("create reference fail");
         return nullptr;
     }
+    auto ctorContext = new NapiConstructorContext();
+    ctorContext->env_ = env;
+    ctorContext->ref_ = *(info.classRef);
+    napi_add_env_cleanup_hook(env, ImageNapiUtils::CleanUpConstructorContext, ctorContext);
 
     napi_value global = nullptr;
     status = napi_get_global(env, &global);

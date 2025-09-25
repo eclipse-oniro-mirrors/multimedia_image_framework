@@ -184,6 +184,10 @@ napi_value ImageReceiverNapi::Init(napi_env env, napi_value exports)
         nullptr,
         IMAGE_ERR("create reference fail")
     );
+    auto ctorContext = new NapiConstructorContext();
+    ctorContext->env_ = env;
+    ctorContext->ref_ = sConstructor_;
+    napi_add_env_cleanup_hook(env, ImageNapiUtils::CleanUpConstructorContext, ctorContext);
 
     IMG_NAPI_CHECK_RET_D(IMG_IS_OK(
         napi_set_named_property(env, exports, CLASS_NAME.c_str(), constructor)),
