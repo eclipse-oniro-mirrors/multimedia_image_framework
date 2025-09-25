@@ -152,18 +152,6 @@ struct NapiConstructorContext {
     napi_ref ref_ = nullptr;
 };
 
-static void CleanUpConstructorContext(void* data)
-{
-    if (data == nullptr) {
-        return;
-    }
-    auto ctorContext = reinterpret_cast<NapiConstructorContext*>(data);
-    napi_delete_reference(ctorContext->env_, ctorContext->ref_);
-    ctorContext->env_ = nullptr;
-    ctorContext->ref_ = nullptr;
-    delete ctorContext;
-}
-
 class ImageNapiUtils {
 public:
     static bool GetBufferByName(napi_env env, napi_value root, const char* name, void **res, size_t* len);
@@ -183,6 +171,7 @@ public:
     static void CreateErrorObj(napi_env env, napi_value &errorObj,
         const int32_t errCode, const std::string errMsg);
     static napi_value ThrowExceptionError(napi_env env, const int32_t errCode, const std::string errMsg);
+    static void CleanUpConstructorContext(void* data);
 };
 } // namespace Media
 } // namespace OHOS
