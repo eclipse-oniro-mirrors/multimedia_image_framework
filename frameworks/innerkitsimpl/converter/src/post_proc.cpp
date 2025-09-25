@@ -1197,7 +1197,8 @@ bool PostProc::ScalePixelMapEx(const Size &desiredSize, PixelMap &pixelMap, cons
 
     void *inBuf = nullptr;
     if (srcWidth % HALF != 0 &&
-        (pixelMap.GetAllocatorType() == AllocatorType::SHARE_MEM_ALLOC || pixelMap.GetNoPaddingUsage())) {
+        (pixelMap.GetAllocatorType() == AllocatorType::SHARE_MEM_ALLOC ||
+        pixelMap.GetAllocatorType() == AllocatorType::HEAP_ALLOC || pixelMap.GetNoPaddingUsage())) {
         // Workaround for crash on odd number width, caused by FFmpeg 5.0 upgrade
         uint64_t byteCount = static_cast<uint64_t>(srcRowStride[0]) * static_cast<uint64_t>(srcHeight);
         uint64_t allocSize = static_cast<uint64_t>(srcWidth + 1) * static_cast<uint64_t>(srcHeight) *
