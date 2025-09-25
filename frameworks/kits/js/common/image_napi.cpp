@@ -94,6 +94,10 @@ napi_value ImageNapi::Init(napi_env env, napi_value exports)
         IMAGE_ERR("Create reference failed");
         return exports;
     }
+    auto ctorContext = new NapiConstructorContext();
+    ctorContext->env_ = env;
+    ctorContext->ref_ = sConstructor_;
+    napi_add_env_cleanup_hook(env, ImageNapiUtils::CleanUpConstructorContext, ctorContext);
 
     if (napi_set_named_property(env, exports, name, thisVar) != napi_ok) {
         IMAGE_ERR("Define class failed");
