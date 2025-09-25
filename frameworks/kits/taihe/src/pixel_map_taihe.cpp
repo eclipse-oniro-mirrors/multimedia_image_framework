@@ -19,7 +19,7 @@
 #include "pixel_map_taihe_ani.h"
 #include "pixel_map_taihe.h"
 #if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
-#include <regex>
+#include <charconv>
 #include "pixel_map_from_surface.h"
 #include "sync_fence.h"
 #include "transaction/rs_interfaces.h"
@@ -54,10 +54,10 @@ PixelMap CreatePixelMapByPtr(int64_t ptr)
 }
 
 #if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
-static bool GetSurfaceSize(std::string const& surfaceId, Media::Rect& region)
+static bool GetSurfaceSize(uint64_t surfaceId, Media::Rect& region)
 {
     if (region.width <= 0 || region.height <= 0) {
-        sptr<Surface> surface = SurfaceUtils::GetInstance()->GetSurface(std::stoull(surfaceId));
+        sptr<Surface> surface = SurfaceUtils::GetInstance()->GetSurface(surfaceId);
         if (surface == nullptr) {
             IMAGE_LOGE("[PixelMap ANI] GetSurfaceSize: GetSurface failed");
             return false;
@@ -84,11 +84,13 @@ static bool GetSurfaceSize(std::string const& surfaceId, Media::Rect& region)
 
 static PixelMap CreatePixelMapFromSurface(std::string const& surfaceId, Media::Rect& region)
 {
-    if (!std::regex_match(surfaceId, std::regex("\\d+"))) {
+    uint64_t surfaceIdInt = 0;
+    auto res = std::from_chars(surfaceId.data(), surfaceId.data() + surfaceId.size(), surfaceIdInt);
+    if (res.ec != std::errc()) {
         ImageTaiheUtils::ThrowExceptionError(Media::COMMON_ERR_INVALID_PARAMETER, "Empty or invalid surfaceId");
         return make_holder<PixelMapImpl, PixelMap>();
     }
-    if (!GetSurfaceSize(surfaceId, region)) {
+    if (!GetSurfaceSize(surfaceIdInt, region)) {
         ImageTaiheUtils::ThrowExceptionError(Media::COMMON_ERR_INVALID_PARAMETER, "Get surface size failed");
         return make_holder<PixelMapImpl, PixelMap>();
     }
@@ -100,10 +102,10 @@ static PixelMap CreatePixelMapFromSurface(std::string const& surfaceId, Media::R
         .w = region.width,
         .h = region.height,
     };
-    std::shared_ptr<Media::PixelMap> pixelMap = rsClient.CreatePixelMapFromSurfaceId(std::stoull(surfaceId), r);
+    std::shared_ptr<Media::PixelMap> pixelMap = rsClient.CreatePixelMapFromSurfaceId(surfaceIdInt, r);
 #ifndef EXT_PIXEL
     if (pixelMap == nullptr) {
-        pixelMap = CreatePixelMapFromSurfaceId(std::stoull(surfaceId), region);
+        pixelMap = CreatePixelMapFromSurfaceId(surfaceIdInt, region);
     }
 #endif
     return make_holder<PixelMapImpl, PixelMap>(std::move(pixelMap));
