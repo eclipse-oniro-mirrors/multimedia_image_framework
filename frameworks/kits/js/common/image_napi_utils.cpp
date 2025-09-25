@@ -247,5 +247,17 @@ napi_value ImageNapiUtils::ThrowExceptionError(napi_env env, const int32_t errCo
     }
     return result;
 }
+
+void ImageNapiUtils::CleanUpConstructorContext(void* data)
+{
+    if (data == nullptr) {
+        return;
+    }
+    auto ctorContext = reinterpret_cast<NapiConstructorContext*>(data);
+    napi_delete_reference(ctorContext->env_, ctorContext->ref_);
+    ctorContext->env_ = nullptr;
+    ctorContext->ref_ = nullptr;
+    delete ctorContext;
+}
 }  // namespace Media
 }  // namespace OHOS

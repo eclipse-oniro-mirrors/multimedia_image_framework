@@ -604,7 +604,7 @@ napi_value PixelMapNapi::Init(napi_env env, napi_value exports)
     auto ctorContext = new NapiConstructorContext();
     ctorContext->env_ = env;
     ctorContext->ref_ = sConstructor_;
-    napi_add_env_cleanup_hook(env, CleanUpConstructorContext, ctorContext);
+    napi_add_env_cleanup_hook(env, ImageNapiUtils::CleanUpConstructorContext, ctorContext);
 
     auto result = DoInitAfter(env, exports, constructor,
         IMG_ARRAY_SIZE(static_prop), static_prop);
