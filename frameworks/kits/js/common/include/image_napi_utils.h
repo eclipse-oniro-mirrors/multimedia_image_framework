@@ -147,10 +147,19 @@ do { \
 namespace OHOS {
 namespace Media {
 
-struct NapiContext {
+struct NapiConstructorContext {
     napi_env env_ = nullptr;
     napi_ref ref_ = nullptr;
 };
+
+void CleanUpConstructorContext(void* data)
+{
+    auto ctorContext = reinterpret_cast<NapiConstructorContext*>(data);
+    napi_delete_reference(ctorContext->env_, ctorContext->ref_);
+    ctorContext->env_ = nullptr;
+    ctorContext->ref_ = nullptr;
+    delete ctorContext; 
+}
 
 class ImageNapiUtils {
 public:

@@ -565,15 +565,6 @@ std::vector<napi_property_descriptor> PixelMapNapi::RegisterNapi()
     return props;
 }
 
-static void CleanUp(void* data)
-{
-    auto ctorContext = reinterpret_cast<NapiContext*>(data);
-    napi_delete_reference(ctorContext->env_, ctorContext->ref_);
-    ctorContext->env_ = nullptr;
-    ctorContext->ref_ = nullptr;
-    delete ctorContext;
-}
-
 napi_value PixelMapNapi::Init(napi_env env, napi_value exports)
 {
     std::vector<napi_property_descriptor> props = PixelMapNapi::RegisterNapi();
@@ -610,10 +601,10 @@ napi_value PixelMapNapi::Init(napi_env env, napi_value exports)
         nullptr, IMAGE_LOGE("create reference fail")
     );
 
-    auto ctorContext = new NapiContext();
+    auto ctorContext = new NapiConstructorContext();
     ctorContext->env_ = env;
     ctorContext->ref_ = sConstructor_;
-    napi_add_env_cleanup_hook(env, CleanUp, ctorContext);
+    napi_add_env_cleanup_hook(env, CleanUpConstructorContext, ctorContext);
 
     auto result = DoInitAfter(env, exports, constructor,
         IMG_ARRAY_SIZE(static_prop), static_prop);
