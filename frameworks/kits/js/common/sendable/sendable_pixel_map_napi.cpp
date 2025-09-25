@@ -452,6 +452,11 @@ napi_value SendablePixelMapNapi::Init(napi_env env, napi_value exports)
         nullptr, IMAGE_LOGE("create reference fail")
     );
 
+    auto ctorContext = new NapiConstructorContext();
+    ctorContext->env_ = env;
+    ctorContext->ref_ = sConstructor_;
+    napi_add_env_cleanup_hook(env, CleanUpConstructorContext, ctorContext);
+
     auto result = DoInitAfter(env, exports, constructor,
         IMG_ARRAY_SIZE(static_prop), static_prop);
 

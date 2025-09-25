@@ -154,7 +154,7 @@ struct NapiConstructorContext {
 
 static void CleanUpConstructorContext(void* data)
 {
-    if (!data) {
+    if (data == nullptr) {
         return;
     }
     auto ctorContext = reinterpret_cast<NapiConstructorContext*>(data);
