@@ -152,13 +152,13 @@ struct NapiConstructorContext {
     napi_ref ref_ = nullptr;
 };
 
-void CleanUpConstructorContext(void* data)
+static void CleanUpConstructorContext(void* data)
 {
     auto ctorContext = reinterpret_cast<NapiConstructorContext*>(data);
     napi_delete_reference(ctorContext->env_, ctorContext->ref_);
     ctorContext->env_ = nullptr;
     ctorContext->ref_ = nullptr;
-    delete ctorContext; 
+    delete ctorContext;
 }
 
 class ImageNapiUtils {
