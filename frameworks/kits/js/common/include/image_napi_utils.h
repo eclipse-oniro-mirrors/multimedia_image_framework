@@ -154,6 +154,9 @@ struct NapiConstructorContext {
 
 static void CleanUpConstructorContext(void* data)
 {
+    if (!data) {
+        return;
+    }
     auto ctorContext = reinterpret_cast<NapiConstructorContext*>(data);
     napi_delete_reference(ctorContext->env_, ctorContext->ref_);
     ctorContext->env_ = nullptr;
