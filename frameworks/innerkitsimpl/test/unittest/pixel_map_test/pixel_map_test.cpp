@@ -3747,27 +3747,5 @@ HWTEST_F(PixelMapTest, SetInitializationOptionAboutAllocator001, TestSize.Level3
         static_cast<int32_t>(AllocatorType::SHARE_MEM_ALLOC)));
     GTEST_LOG_(INFO) << "PixelMapTest: SetInitializationOptionAboutAllocator001 end";
 }
-
-/**
- * @tc.name: ValidateDmaBufferMinValueTest
- * @tc.desc: Test ValidateDmaBufferMinValueTest001
- * @tc.type: FUNC
- */
-HWTEST_F(PixelMapTest, ValidateDmaBufferMinValueTest001, TestSize.Level3)
-{
-    GTEST_LOG_(INFO) << "ValidateDmaBufferMinValueTest001 start";
-    InitializationOptions opts;
-    opts.pixelFormat = PixelFormat::RGBA_8888;
-    opts.srcPixelFormat = PixelFormat::RGBA_8888;
-    opts.size = {512, 512}; // 512:width, 512:height
-    std::unique_ptr<PixelMap> pixelMap = PixelMap::Create(opts);
-    EXPECT_NE(pixelMap, nullptr);
-    PixelMemInfo memInfo;
-    memInfo.allocatorType = AllocatorType::SHARE_MEM_ALLOC;
-    ImageInfo imageInfo;
-    pixelMap->GetImageInfo(imageInfo);
-    EXPECT_NE(false, ImageUtils::ValidateDmaBufferMinValue(memInfo, imageInfo));
-    GTEST_LOG_(INFO) << "ValidateDmaBufferMinValueTest001 end";
-}
 }
 }

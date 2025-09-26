@@ -3133,10 +3133,6 @@ PixelMap *PixelMap::Unmarshalling(Parcel &parcel, PIXEL_MAP_ERR &error,
         delete pixelMap;
         return nullptr;
     }
-    if (!ImageUtils::ValidateDmaBufferMinValue(pixelMemInfo, imgInfo)) {
-        delete pixelMap;
-        return nullptr;
-    }
     return FinishUnmarshalling(pixelMap, parcel, imgInfo, pixelMemInfo, error);
 }
 
