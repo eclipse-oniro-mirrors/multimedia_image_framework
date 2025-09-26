@@ -371,8 +371,6 @@ uint32_t ExifMakerNote::ParserMakerNote(ExifData* exif, bool &moreCheck)
         return Media::ERROR;
     }
 
-    IMAGE_LOGI("need parser mnote.");
-
     if (ParserMakerNote(ee->data, ee->size) == Media::SUCCESS) {
         IMAGE_LOGD("ParserMakerNote leave");
         return Media::SUCCESS;
