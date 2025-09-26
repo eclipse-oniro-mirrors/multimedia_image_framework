@@ -37,6 +37,7 @@ constexpr auto IMAGE_INPUT_READ8_WEBP_SIZE = 4244;
 constexpr auto WEBP_HEAD_SIZE = 8;
 constexpr auto WEBP_CHUNK_HEADER_ANMF = "ANMF";
 constexpr auto WEBP_CHUNK_HEADER_VP8L = "VP8L";
+constexpr auto WEBP_CHUNK_HEADER_VP8 = "VP8 ";
 static const std::string IMAGE_INPUT_READ1_WEBP_PATH = "/data/local/tmp/image/test_webp_readexifblob001.webp";
 static const std::string IMAGE_INPUT_READ2_WEBP_PATH = "/data/local/tmp/image/test_webp_readexifblob002.webp";
 static const std::string IMAGE_INPUT_READ3_WEBP_PATH = "/data/local/tmp/image/test_webp_readmetadata001.webp";
@@ -508,6 +509,42 @@ HWTEST_F(WebpExifMetadataAccessorTest, Read009, TestSize.Level3)
     ASSERT_EQ(exifBuf.Size(), 0);
 }
 
+/**
+ * @tc.name: Read0010
+ * @tc.desc: test Read from an invalid WebP image returns the error code ERR_IMAGE_SOURCE_DATA.
+ * @tc.type: FUNC
+ */
+HWTEST_F(WebpExifMetadataAccessorTest, Read0010, TestSize.Level3)
+{
+    std::shared_ptr<MetadataStream> stream = std::make_shared<FileMetadataStream>(IMAGE_INPUT_READ2_WEBP_PATH);
+    ASSERT_TRUE(stream->Open(OpenMode::ReadWrite));
+    WebpExifMetadataAccessor imageAccessor(stream);
+    int result = imageAccessor.Read();
+    ASSERT_EQ(result, ERR_IMAGE_SOURCE_DATA);
+}
+
+/**
+ * @tc.name: Read0011
+ * @tc.desc: test Read Hw related key.
+ * @tc.type: FUNC
+ */
+HWTEST_F(WebpExifMetadataAccessorTest, Read0011, TestSize.Level3)
+{
+    std::shared_ptr<MetadataStream> stream = std::make_shared<FileMetadataStream>(IMAGE_INPUT_READ6_WEBP_PATH);
+    ASSERT_TRUE(stream->Open(OpenMode::ReadWrite));
+    WebpExifMetadataAccessor imageAccessor(stream);
+
+    uint32_t result = imageAccessor.Read();
+    ASSERT_EQ(result, 0);
+
+    DataBuf exifBuf;
+    EXPECT_TRUE(imageAccessor.ReadBlob(exifBuf));
+
+    auto exifMetadata = imageAccessor.Get();
+    EXPECT_NE(exifMetadata, nullptr);
+    ASSERT_EQ(GetProperty(exifMetadata, "HwMnoteWindSnapshotMode"), "default_exif_value");
+    ASSERT_EQ(GetProperty(exifMetadata, "HwMnoteFocusModeExif"), "");
+}
 
 /**
  * @tc.name: WriteBlob001
@@ -1674,6 +1711,99 @@ HWTEST_F(WebpExifMetadataAccessorTest, Write021, TestSize.Level3)
 }
 
 /**
+ * @tc.name: Write022
+ * @tc.desc: Test writing metadata, then reading it back to verify if the written data is correct.
+ * @tc.type: FUNC
+ */
+HWTEST_F(WebpExifMetadataAccessorTest, Write022, TestSize.Level3)
+{
+    std::shared_ptr<MetadataStream> stream = std::make_shared<FileMetadataStream>(IMAGE_INPUT_WRITE19_WEBP_PATH);
+    ASSERT_TRUE(stream->Open(OpenMode::ReadWrite));
+    WebpExifMetadataAccessor imageAccessor(stream);
+    EXPECT_TRUE(imageAccessor.Create());
+    DataBuf exifBuf;
+    bool result = imageAccessor.ReadBlob(exifBuf);
+    ASSERT_TRUE(result);
+
+    auto exifMetadata = imageAccessor.Get();
+    ASSERT_NE(exifMetadata, nullptr);
+
+    ASSERT_TRUE(exifMetadata->SetValue("PhotoMode", "252"));
+    ASSERT_TRUE(exifMetadata->SetValue("StripOffsets", "11"));
+    ASSERT_TRUE(exifMetadata->SetValue("RowsPerStrip", "252"));
+    ASSERT_TRUE(exifMetadata->SetValue("StripByteCounts", "252"));
+    ASSERT_TRUE(exifMetadata->SetValue("SubjectDistance", "25/1"));
+    ASSERT_TRUE(exifMetadata->SetValue("PhotographicSensitivity", "252"));
+    ASSERT_TRUE(exifMetadata->SetValue("HwMnoteIsXmageSupported", "252"));
+    ASSERT_TRUE(exifMetadata->SetValue("HwMnoteXmageMode", "1"));
+    ASSERT_TRUE(exifMetadata->SetValue("HwMnoteXmageLeft", "11"));
+    ASSERT_TRUE(exifMetadata->SetValue("HwMnoteXmageTop", "11"));
+    ASSERT_TRUE(exifMetadata->SetValue("HwMnoteXmageRight", "50"));
+    ASSERT_TRUE(exifMetadata->SetValue("HwMnoteXmageBottom", "50"));
+    ASSERT_TRUE(exifMetadata->SetValue("HwMnoteCloudEnhancementMode", "1"));
+
+    ASSERT_EQ(imageAccessor.Write(), 0);
+    ASSERT_EQ(imageAccessor.Read(), 0);
+    ASSERT_EQ(GetProperty(exifMetadata, "PhotoMode"), "252");
+    ASSERT_EQ(GetProperty(exifMetadata, "StripOffsets"), "11");
+    ASSERT_EQ(GetProperty(exifMetadata, "RowsPerStrip"), "252");
+    ASSERT_EQ(GetProperty(exifMetadata, "StripByteCounts"), "252");
+    ASSERT_EQ(GetProperty(exifMetadata, "SubjectDistance"), "25.0 m");
+    ASSERT_EQ(GetProperty(exifMetadata, "PhotographicSensitivity"), "252");
+    ASSERT_EQ(GetProperty(exifMetadata, "HwMnoteIsXmageSupported"), "252");
+    ASSERT_EQ(GetProperty(exifMetadata, "HwMnoteXmageMode"), "1");
+    ASSERT_EQ(GetProperty(exifMetadata, "HwMnoteXmageLeft"), "11");
+    ASSERT_EQ(GetProperty(exifMetadata, "HwMnoteXmageTop"), "11");
+    ASSERT_EQ(GetProperty(exifMetadata, "HwMnoteXmageRight"), "50");
+    ASSERT_EQ(GetProperty(exifMetadata, "HwMnoteXmageBottom"), "50");
+    ASSERT_EQ(GetProperty(exifMetadata, "HwMnoteCloudEnhancementMode"), "1");
+}
+
+/**
+ * @tc.name: Write023
+ * @tc.desc: Test writing metadata, then reading it back to verify if the written data is correct.
+ * @tc.type: FUNC
+ */
+HWTEST_F(WebpExifMetadataAccessorTest, Write023, TestSize.Level3)
+{
+    std::shared_ptr<MetadataStream> stream = std::make_shared<FileMetadataStream>(IMAGE_INPUT_WRITE19_WEBP_PATH);
+    ASSERT_TRUE(stream->Open(OpenMode::ReadWrite));
+    WebpExifMetadataAccessor imageAccessor(stream);
+    EXPECT_TRUE(imageAccessor.Create());
+    DataBuf exifBuf;
+    bool result = imageAccessor.ReadBlob(exifBuf);
+    ASSERT_TRUE(result);
+
+    auto exifMetadata = imageAccessor.Get();
+    ASSERT_NE(exifMetadata, nullptr);
+    ASSERT_TRUE(exifMetadata->SetValue("MovingPhotoId", "110"));
+    ASSERT_TRUE(exifMetadata->SetValue("MovingPhotoVersion", "2"));
+    ASSERT_TRUE(exifMetadata->SetValue("MicroVideoPresentationTimestampUS", "123232"));
+    ASSERT_TRUE(exifMetadata->SetValue("HwMnoteAiEdit", "0"));
+    ASSERT_TRUE(exifMetadata->SetValue("HwMnoteXtStyleTemplateName", "123"));
+    ASSERT_TRUE(exifMetadata->SetValue("HwMnoteXtStyleCustomLightAndShadow", "4/1"));
+    ASSERT_TRUE(exifMetadata->SetValue("HwMnoteXtStyleCustomSaturation", "2/1"));
+    ASSERT_TRUE(exifMetadata->SetValue("HwMnoteXtStyleCustomHue", "5/1"));
+    ASSERT_TRUE(exifMetadata->SetValue("HwMnoteXtStyleExposureParam", "123 456 789"));
+    ASSERT_TRUE(exifMetadata->SetValue("HwMnoteXtStyleAlgoVersion", "10"));
+    ASSERT_TRUE(exifMetadata->SetValue("HwMnoteXtStyleAlgoVideoEnable", "10"));
+
+    ASSERT_EQ(imageAccessor.Write(), 0);
+    ASSERT_EQ(imageAccessor.Read(), 0);
+    ASSERT_EQ(GetProperty(exifMetadata, "MovingPhotoId"), "110");
+    ASSERT_EQ(GetProperty(exifMetadata, "MovingPhotoVersion"), "2");
+    ASSERT_EQ(GetProperty(exifMetadata, "MicroVideoPresentationTimestampUS"), "123232");
+    ASSERT_EQ(GetProperty(exifMetadata, "HwMnoteAiEdit"), "0");
+    ASSERT_EQ(GetProperty(exifMetadata, "HwMnoteXtStyleTemplateName"), "123");
+    ASSERT_EQ(GetProperty(exifMetadata, "HwMnoteXtStyleCustomLightAndShadow"), "4.00");
+    ASSERT_EQ(GetProperty(exifMetadata, "HwMnoteXtStyleCustomSaturation"), "2.00");
+    ASSERT_EQ(GetProperty(exifMetadata, "HwMnoteXtStyleCustomHue"), "5.00");
+    ASSERT_EQ(GetProperty(exifMetadata, "HwMnoteXtStyleExposureParam"), "123 456 789");
+    ASSERT_EQ(GetProperty(exifMetadata, "HwMnoteXtStyleAlgoVersion"), "10");
+    ASSERT_EQ(GetProperty(exifMetadata, "HwMnoteXtStyleAlgoVideoEnable"), "10");
+}
+
+/**
  * @tc.name: GetExifEncodeBlob001
  * @tc.desc: Testing GetExifEncodeBlob
  * @tc.type: FUNC
@@ -1722,6 +1852,22 @@ HWTEST_F(WebpExifMetadataAccessorTest, GetWidthAndHeightFormChunk001, TestSize.L
     ASSERT_EQ(std::get<0>(ret), 0);
     strChunkId = WEBP_CHUNK_HEADER_ANMF;
     ret = imageAccessor.GetWidthAndHeightFormChunk(strChunkId, chunkData);
+    ASSERT_EQ(std::get<0>(ret), 0);
+}
+
+/**
+ * @tc.name: GetWidthAndHeightFormChunk002
+ * @tc.desc: Test GetWidthAndHeightFormChunk with the VP8 chunkId.
+ * @tc.type: FUNC
+ */
+HWTEST_F(WebpExifMetadataAccessorTest, GetWidthAndHeightFormChunk002, TestSize.Level3)
+{
+    std::shared_ptr<MetadataStream> readStream = std::make_shared<FileMetadataStream>(IMAGE_INPUT_WRITE20_WEBP_PATH);
+    ASSERT_TRUE(readStream->Open(OpenMode::ReadWrite));
+    WebpExifMetadataAccessor imageAccessor(readStream);
+    std::string strChunkId = WEBP_CHUNK_HEADER_VP8;
+    DataBuf chunkData;
+    auto ret = imageAccessor.GetWidthAndHeightFormChunk(strChunkId, chunkData);
     ASSERT_EQ(std::get<0>(ret), 0);
 }
 
