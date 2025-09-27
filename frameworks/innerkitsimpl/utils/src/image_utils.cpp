@@ -43,6 +43,7 @@
 #include "image_system_properties.h"
 #include "image/abs_image_decoder.h"
 #include "pixel_map.h"
+#include "accesstoken_kit.h"
 #ifdef IOS_PLATFORM
 #include <sys/syscall.h>
 #endif
@@ -75,6 +76,8 @@ extern "C" {
 
 #undef LOG_TAG
 #define LOG_TAG "imageUtils"
+
+using namespace OHOS::Security::AccessToken;
 
 namespace OHOS {
 namespace Media {
@@ -1362,6 +1365,11 @@ std::string ImageUtils::GetEncodedHeifFormat()
 int32_t ImageUtils::GetAPIVersion()
 {
 #if !defined(CROSS_PLATFORM)
+    static AccessTokenID selfToken = IPCSkeleton::GetSelfTokenID();
+    static ATokenTypeEnum tokenType = AccessTokenKit::GetTokenTypeFlag(selfToken);
+    if (tokenType != ATokenTypeEnum::TOKEN_HAP) {
+        return FAULT_API_VERSION;
+    }
     static std::atomic<int32_t> apiVersion = GetAPIVersionInner();
     if (apiVersion.load() <= 0) {
         apiVersion.store(GetAPIVersionInner());
@@ -1394,7 +1402,7 @@ int32_t ImageUtils::GetAPIVersionInner()
     }
     AppExecFwk::BundleInfo bundleInfo;
     if (bms->GetBundleInfoForSelf(0, bundleInfo) != ERR_OK) {
-        IMAGE_LOGD("Get bundle info for self failed");
+        IMAGE_LOGE("Get bundle info for self failed");
         return FAULT_API_VERSION;
     }
     targetVersion = bundleInfo.targetVersion;
