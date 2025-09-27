@@ -40,6 +40,7 @@
 #include "image_data_statistics.h"
 #endif
 #include "exif_metadata.h"
+#include "exif_metadata_formatter.h"
 #include "file_source_stream.h"
 #include "image/abs_image_decoder.h"
 #include "image/abs_image_format_agent.h"
@@ -1653,14 +1654,33 @@ uint32_t ImageSource::GetImageInfoFromExif(uint32_t index, ImageInfo &imageInfo)
     return GetImageInfo(index, imageInfo);
 }
 
-
 uint32_t ImageSource::ModifyImageProperty(const std::string &key, const std::string &value)
+{
+    return ModifyImageProperties({{key, value}}, false);
+}
+
+uint32_t ImageSource::ModifyImageProperties(const vector<pair<string, string>> &properties, bool isEnhanced)
 {
     uint32_t ret = CreatExifMetadataByImageSource(true);
     bool cond = (ret != SUCCESS);
     CHECK_DEBUG_RETURN_RET_LOG(cond, ret, "Failed to create Exif metadata "
                            "when attempting to modify property.");
-    if (!exifMetadata_->SetValue(key, value)) {
+
+    exifUnsupportKeys_.clear();
+    for (const auto &[key, value] : properties) {
+        if (isEnhanced) {
+            auto status = static_cast<uint32_t>(ExifMetadatFormatter::Validate(key, value));
+            if (status != SUCCESS || !exifMetadata_->SetValue(key, value)) {
+                exifUnsupportKeys_.emplace(key);
+                IMAGE_LOGE("%{public}s unsupported key: %{public}s", __func__, key.c_str());
+            }
+        } else {
+            if (!exifMetadata_->SetValue(key, value)) {
+                return ERR_IMAGE_DECODE_EXIF_UNSUPPORT;
+            }
+        }
+    }
+    if (!exifUnsupportKeys_.empty() && isEnhanced) {
         return ERR_IMAGE_DECODE_EXIF_UNSUPPORT;
     }
 
@@ -1669,6 +1689,12 @@ uint32_t ImageSource::ModifyImageProperty(const std::string &key, const std::str
 
 uint32_t ImageSource::ModifyImageProperty(std::shared_ptr<MetadataAccessor> metadataAccessor,
     const std::string &key, const std::string &value)
+{
+    return ModifyImageProperties(metadataAccessor, {{key, value}}, false);
+}
+
+uint32_t ImageSource::ModifyImageProperties(std::shared_ptr<MetadataAccessor> metadataAccessor,
+    const vector<pair<string, string>> &properties, bool isEnhanced)
 {
     if (srcFd_ != -1) {
         size_t fileSize = 0;
@@ -1679,7 +1705,7 @@ uint32_t ImageSource::ModifyImageProperty(std::shared_ptr<MetadataAccessor> meta
                 static_cast<unsigned long long>(fileSize));
         }
     }
-    uint32_t ret = ModifyImageProperty(key, value);
+    uint32_t ret = ModifyImageProperties(properties, isEnhanced);
     bool cond = (ret != SUCCESS);
     CHECK_ERROR_RETURN_RET_LOG(cond, ret, "Failed to create ExifMetadata.");
 
@@ -1710,29 +1736,45 @@ uint32_t ImageSource::ModifyImageProperty(std::shared_ptr<MetadataAccessor> meta
 uint32_t ImageSource::ModifyImageProperty(uint32_t index, const std::string &key, const std::string &value)
 {
     std::unique_lock<std::mutex> guard(decodingMutex_);
-    return ModifyImageProperty(key, value);
+    return ModifyImageProperties({{key, value}}, false);
 }
 
-uint32_t ImageSource::ModifyImagePropertyEx(uint32_t index, const std::string &key, const std::string &value)
+uint32_t ImageSource::ModifyImageProperties(uint32_t index, const vector<pair<string, string>> &properties,
+    bool isEnhanced)
 {
     if (srcFd_ != -1) {
-        return ModifyImageProperty(index, key, value, srcFd_);
+        return ModifyImageProperties(index, properties, srcFd_, isEnhanced);
     }
 
     if (!srcFilePath_.empty()) {
-        return ModifyImageProperty(index, key, value, srcFilePath_);
+        return ModifyImageProperties(index, properties, srcFilePath_, isEnhanced);
     }
 
     if (srcBuffer_ != nullptr && srcBufferSize_ != 0) {
-        return ModifyImageProperty(index, key, value, srcBuffer_, srcBufferSize_);
+        return ModifyImageProperties(index, properties, srcBuffer_, srcBufferSize_, isEnhanced);
     }
     return ERROR;
 }
 
-uint32_t ImageSource::ModifyImageProperty(uint32_t index, const std::string &key, const std::string &value,
-    const std::string &path)
+uint32_t ImageSource::ModifyImagePropertyEx(uint32_t index, const std::string &key, const std::string &value)
 {
-    ImageDataStatistics imageDataStatistics("[ImageSource]ModifyImageProperty by path.");
+    return ModifyImageProperties(index, {{key, value}}, false);
+}
+
+uint32_t ImageSource::ModifyImagePropertiesEx(uint32_t index, const vector<pair<string, string>> &properties)
+{
+    return ModifyImageProperties(index, properties, true);
+}
+
+std::set<std::string> ImageSource::GetModifyExifUnsupportedKeys()
+{
+    return exifUnsupportKeys_;
+}
+
+uint32_t ImageSource::ModifyImageProperties(uint32_t index, const vector<pair<string, string>> &properties,
+    const std::string &path, bool isEnhanced)
+{
+    ImageDataStatistics imageDataStatistics("[ImageSource]ModifyImageProperties by path.");
 
 #if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
     std::error_code ec;
@@ -1745,34 +1787,52 @@ uint32_t ImageSource::ModifyImageProperty(uint32_t index, const std::string &key
 
     std::unique_lock<std::mutex> guard(decodingMutex_);
     auto metadataAccessor = MetadataAccessorFactory::Create(path);
-    return ModifyImageProperty(metadataAccessor, key, value);
+    return ModifyImageProperties(metadataAccessor, properties, isEnhanced);
 }
 
 uint32_t ImageSource::ModifyImageProperty(uint32_t index, const std::string &key, const std::string &value,
-    const int fd)
+    const std::string &path)
 {
-    ImageDataStatistics imageDataStatistics("[ImageSource]ModifyImageProperty by fd.");
+    return ModifyImageProperties(index, {{key, value}}, path, false);
+}
+
+uint32_t ImageSource::ModifyImageProperties(uint32_t index, const vector<pair<string, string>> &properties,
+    const int fd, bool isEnhanced)
+{
+    ImageDataStatistics imageDataStatistics("[ImageSource]ModifyImageProperties by fd.");
     bool cond = (fd <= STDERR_FILENO);
     CHECK_DEBUG_RETURN_RET_LOG(cond, ERR_IMAGE_SOURCE_DATA, "Invalid file descriptor.");
 
     std::unique_lock<std::mutex> guard(decodingMutex_);
     size_t fileSize = 0;
     if (!ImageUtils::GetFileSize(fd, fileSize)) {
-        IMAGE_LOGE("ModifyImageProperty get file size failed.");
+        IMAGE_LOGE("ModifyImageProperties get file size failed.");
     }
-    IMAGE_LOGI("ModifyImageProperty accesssor create start, fd file size:%{public}llu",
+    IMAGE_LOGI("ModifyImageProperties accesssor create start, fd file size:%{public}llu",
         static_cast<unsigned long long>(fileSize));
     auto metadataAccessor = MetadataAccessorFactory::Create(fd);
-    IMAGE_LOGI("ModifyImageProperty accesssor create end");
+    IMAGE_LOGI("ModifyImageProperties accesssor create end");
 
-    auto ret = ModifyImageProperty(metadataAccessor, key, value);
+    auto ret = ModifyImageProperties(metadataAccessor, properties, isEnhanced);
     return ret;
+}
+
+uint32_t ImageSource::ModifyImageProperty(uint32_t index, const std::string &key, const std::string &value,
+    const int fd)
+{
+    return ModifyImageProperties(index, {{key, value}}, fd, false);
+}
+
+uint32_t ImageSource::ModifyImageProperties(uint32_t index, const vector<pair<string, string>> &properties,
+    uint8_t *data, uint32_t size, bool isEnhanced)
+{
+    return ERR_MEDIA_WRITE_PARCEL_FAIL;
 }
 
 uint32_t ImageSource::ModifyImageProperty(uint32_t index, const std::string &key, const std::string &value,
     uint8_t *data, uint32_t size)
 {
-    return ERR_MEDIA_WRITE_PARCEL_FAIL;
+    return ModifyImageProperties(index, {{key, value}}, data, size, false);
 }
 
 bool ImageSource::PrereadSourceStream()
