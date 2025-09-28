@@ -795,6 +795,24 @@ static bool IsSampleDecodeFormat(SkEncodedImageFormat format)
         format == SkEncodedImageFormat::kPNG;
 }
 
+bool ExtDecoder::IsProgressiveJpeg()
+{
+    bool cond = CheckCodec();
+    CHECK_ERROR_RETURN_RET_LOG(!cond, false, "%{public}s check codec fail", __func__);
+
+    bool isProgressive = false;
+    if (codec_->getEncodedFormat() == SkEncodedImageFormat::kJPEG) {
+        SkJpegCodec* codec = static_cast<SkJpegCodec*>(codec_.get());
+        cond = (codec == nullptr || codec->decoderMgr() == nullptr|| codec->decoderMgr()->dinfo() == nullptr);
+        CHECK_ERROR_RETURN_RET_LOG(cond, false, "%{public}s invalid SkJpegCodec", __func__);
+
+        struct jpeg_decompress_struct* dInfo = codec->decoderMgr()->dinfo();
+        isProgressive = dInfo->progressive_mode;
+        CHECK_DEBUG_PRINT_LOG(isProgressive, "%{public}s image is progressive JPEG", __func__);
+    }
+    return isProgressive;
+}
+
 uint32_t ExtDecoder::CheckDecodeOptions(uint32_t index, const PixelDecodeOptions &opts)
 {
     bool cond = ImageUtils::CheckMulOverflow(dstInfo_.width(), dstInfo_.height(), dstInfo_.bytesPerPixel());
@@ -812,7 +830,7 @@ uint32_t ExtDecoder::CheckDecodeOptions(uint32_t index, const PixelDecodeOptions
     IMAGE_LOGD("%{public}s srcOverflowed: %{public}d, dstOverflowed: %{public}d, supportRegionFlag_: %{public}d",
         __func__, srcOverflowed, dstOverflowed, supportRegionFlag_);
     cond = dstOverflowed;
-    if (!IsSampleDecodeFormat(codec_->getEncodedFormat())) {
+    if (IsProgressiveJpeg() || !IsSampleDecodeFormat(codec_->getEncodedFormat())) {
         cond = cond || srcOverflowed;
     }
     CHECK_ERROR_RETURN_RET_LOG(cond, ERR_IMAGE_TOO_LARGE,
