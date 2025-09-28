@@ -55,6 +55,19 @@ void TiffParser::Encode(unsigned char **dataPtr, uint32_t &size, ExifData *exifD
     IMAGE_LOGD("Encode dataPtr size is: %{public}u", size);
 }
 
+void TiffParser::Decode(const std::vector<std::vector<uint8_t>> &dataSet, ExifData **exifData)
+{
+    *exifData = exif_data_new();
+    exif_data_unset_option(*exifData, EXIF_DATA_OPTION_IGNORE_UNKNOWN_TAGS);
+    for (auto const &data : dataSet) {
+        size_t byteOrderPos = FindTiffPos(const_cast<byte *>(data.data()), data.size());
+        if (byteOrderPos == std::numeric_limits<size_t>::max()) {
+            continue;
+        }
+        exif_data_load_data_general(*exifData, data.data() + byteOrderPos, data.size() - byteOrderPos);
+    }
+}
+
 void TiffParser::DecodeJpegExif(const unsigned char *dataPtr, const uint32_t &size, ExifData **exifData)
 {
     IMAGE_LOGD("Decoding Jpeg Exif data.");

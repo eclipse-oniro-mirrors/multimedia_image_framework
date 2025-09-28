@@ -40,6 +40,9 @@ public:
     // For tiff exif, encode ExifData struct to exif buffer
     static void Encode(unsigned char **dataPtr, uint32_t &size, ExifData *exifData);
 
+    // For mutiple tiff exif, decode exif buffer to ExifData struct.
+    static void Decode(const std::vector<std::vector<uint8_t>> &dataSet, ExifData **exifData);
+
     // For jpeg exif, decode exif buffer to ExifData struct
     static void DecodeJpegExif(const unsigned char *dataPtr, const uint32_t &size, ExifData **exifData);
     // For jpeg exif, encode ExifData struct to exif buffer
