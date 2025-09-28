@@ -596,7 +596,7 @@ bool ExtEncoder::IsHardwareEncodeSupported(const PlEncodeOptions &opts, Media::P
 uint32_t ExtEncoder::DoHardWareEncode(SkWStream* skStream)
 {
     static ImageFwkExtManager imageFwkExtManager;
-    if (imageFwkExtManager.doHardWareEncodeFunc_ != nullptr || imageFwkExtManager.LoadImageFwkExtNativeSo()) {	
+    if (imageFwkExtManager.doHardWareEncodeFunc_ != nullptr || imageFwkExtManager.LoadImageFwkExtNativeSo()) {
         int32_t retCode = imageFwkExtManager.doHardWareEncodeFunc_(skStream, opts_, pixelmap_);	
         CHECK_DEBUG_RETURN_RET_LOG(retCode == SUCCESS, SUCCESS, "DoHardWareEncode Success return");	
         IMAGE_LOGE("hardware encode failed, retCode is %{public}d", retCode);	
