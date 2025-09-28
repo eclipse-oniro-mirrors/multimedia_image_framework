@@ -43,11 +43,11 @@
 #include "image_system_properties.h"
 #include "image/abs_image_decoder.h"
 #include "pixel_map.h"
-#include "accesstoken_kit.h"
 #ifdef IOS_PLATFORM
 #include <sys/syscall.h>
 #endif
 #if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
+#include "accesstoken_kit.h"
 #include "bundle_mgr_interface.h"
 #include "iservice_registry.h"
 #include "ipc_skeleton.h"
@@ -77,7 +77,9 @@ extern "C" {
 #undef LOG_TAG
 #define LOG_TAG "imageUtils"
 
+#if !defined(CROSS_PLATFORM)
 using namespace OHOS::Security::AccessToken;
+#endif
 
 namespace OHOS {
 namespace Media {
