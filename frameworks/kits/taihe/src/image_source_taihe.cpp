@@ -1184,7 +1184,7 @@ void ImageSourceImpl::ModifyImagePropertiesEnhancedSync(map_view<PropertyKey, Pr
 
     std::unique_ptr<ImageSourceTaiheContext> context = std::make_unique<ImageSourceTaiheContext>();
     if (nativeImgSrc == nullptr) {
-        ImageTaiheUtils::ThrowExceptionError(IMAGE_SOURCE_WRITE_PROPERTY_FAILED, "empty native rImageSource");
+        ImageTaiheUtils::ThrowExceptionError(OHOS::Media::ERR_IMAGE_WRITE_PROPERTY_FAILED, "empty native rImageSource");
         return;
     }
     context->rImageSource = nativeImgSrc;

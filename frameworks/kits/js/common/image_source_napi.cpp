@@ -2597,7 +2597,7 @@ napi_value ImageSourceNapi::ModifyImagePropertiesEnhanced(napi_env env, napi_cal
     napi_status status;
     std::unique_ptr<ImageSourceAsyncContext> asyncContext = UnwrapContextForModify(env, info);
     if (asyncContext == nullptr) {
-        return ImageNapiUtils::ThrowExceptionError(env, IMAGE_SOURCE_WRITE_PROPERTY_FAILED,
+        return ImageNapiUtils::ThrowExceptionError(env, ERR_IMAGE_WRITE_PROPERTY_FAILED,
             "async context unwrap failed");
     }
 

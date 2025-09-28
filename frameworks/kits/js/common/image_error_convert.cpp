@@ -54,7 +54,7 @@ std::pair<int32_t, std::string> ImageErrorConvert::ModifyImagePropertiesEnhanced
                 "Unsupported MIME type.");
         case ERR_MEDIA_WRITE_PARCEL_FAIL:
         default:
-            return std::make_pair<int32_t, std::string>(IMAGE_SOURCE_WRITE_PROPERTY_FAILED,
+            return std::make_pair(ERR_IMAGE_WRITE_PROPERTY_FAILED,
                 "Failed to write image properties to the file.");
     }
 }
