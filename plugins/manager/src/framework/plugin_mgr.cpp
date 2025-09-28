@@ -132,13 +132,7 @@ bool PluginMgr::CheckPluginMetaFile(const string &candidateFile, string &library
         return false;
     }
 
-    char realLoadPath[PATH_MAX] = { 0 };
-    if (realpath(candidateFile.c_str(), realLoadPath) == nullptr) {
-        IMAGE_LOGE("realpath check failed");
-        return false;
-    }
-    std::string loadPath(realLoadPath);
-    ifstream metadata(loadPath);
+    ifstream metadata(candidateFile);
     if (!metadata.is_open()) {
         IMAGE_LOGE("failed to open metadata file.");
         return false;
@@ -192,13 +186,7 @@ uint32_t PluginMgr::RegisterPlugin(const string &metadataPath, string &&libraryP
         return ERR_GENERAL;
     }
 
-    char realLoadPath[PATH_MAX] = { 0 };
-    if (realpath(metadataPath.c_str(), realLoadPath) == nullptr) {
-        IMAGE_LOGE("realpath check failed");
-        return ERR_GENERAL;
-    }
-    std::string loadPath(realLoadPath);
-    ifstream metadata(loadPath);
+    ifstream metadata(metadataPath);
     if (!metadata.is_open()) {
         IMAGE_LOGE("failed to open metadata file.");
         return ERR_GENERAL;
