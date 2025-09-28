@@ -78,9 +78,6 @@ thread_local napi_ref PixelMapNapi::sConstructor_ = nullptr;
 #if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
 NAPI_MessageSequence* napi_messageSequence = nullptr;
 #endif
-napi_ref PixelMapNapi::AntiAliasingLevel_ = nullptr;
-napi_ref PixelMapNapi::HdrMetadataKey_ = nullptr;
-napi_ref PixelMapNapi::HdrMetadataType_ = nullptr;
 static std::mutex pixelMapCrossThreadMutex_;
 struct PositionArea {
     void* pixels;
@@ -343,14 +340,10 @@ static bool parsePositionArea(napi_env env, napi_value root, PositionArea* area)
     return true;
 }
 
-static napi_value CreateEnumTypeObject(napi_env env,
-    napi_valuetype type, napi_ref* ref, std::vector<struct ImageEnum> imageEnumMap)
+static napi_value CreateEnumTypeObject(napi_env env, napi_valuetype type, std::vector<struct ImageEnum> imageEnumMap)
 {
     napi_value result = nullptr;
-    napi_status status;
-    int32_t refCount = 1;
-    std::string propName;
-    status = napi_create_object(env, &result);
+    napi_status status = napi_create_object(env, &result);
     if (status == napi_ok) {
         for (auto imgEnum : imageEnumMap) {
             napi_value enumNapiValue = nullptr;
@@ -372,10 +365,7 @@ static napi_value CreateEnumTypeObject(napi_env env,
         }
 
         if (status == napi_ok) {
-            status = napi_create_reference(env, result, refCount, ref);
-            if (status == napi_ok) {
-                return result;
-            }
+            return result;
         }
     }
     IMAGE_LOGE("CreateEnumTypeObject is Failed!");
@@ -592,12 +582,9 @@ napi_value PixelMapNapi::Init(napi_env env, napi_value exports)
         DECLARE_NAPI_STATIC_FUNCTION("createPixelMapFromSurfaceSync", CreatePixelMapFromSurfaceSync),
         DECLARE_NAPI_STATIC_FUNCTION("convertPixelFormat", ConvertPixelMapFormat),
 #endif
-        DECLARE_NAPI_PROPERTY("AntiAliasingLevel",
-            CreateEnumTypeObject(env, napi_number, &AntiAliasingLevel_, AntiAliasingLevelMap)),
-        DECLARE_NAPI_PROPERTY("HdrMetadataKey",
-            CreateEnumTypeObject(env, napi_number, &HdrMetadataKey_, HdrMetadataKeyMap)),
-        DECLARE_NAPI_PROPERTY("HdrMetadataType",
-            CreateEnumTypeObject(env, napi_number, &HdrMetadataType_, HdrMetadataTypeMap)),
+        DECLARE_NAPI_PROPERTY("AntiAliasingLevel", CreateEnumTypeObject(env, napi_number, AntiAliasingLevelMap)),
+        DECLARE_NAPI_PROPERTY("HdrMetadataKey", CreateEnumTypeObject(env, napi_number, HdrMetadataKeyMap)),
+        DECLARE_NAPI_PROPERTY("HdrMetadataType", CreateEnumTypeObject(env, napi_number, HdrMetadataTypeMap)),
     };
 
     napi_value constructor = nullptr;
@@ -613,6 +600,11 @@ napi_value PixelMapNapi::Init(napi_env env, napi_value exports)
         napi_create_reference(env, constructor, 1, &sConstructor_)),
         nullptr, IMAGE_LOGE("create reference fail")
     );
+
+    auto ctorContext = new NapiConstructorContext();
+    ctorContext->env_ = env;
+    ctorContext->ref_ = sConstructor_;
+    napi_add_env_cleanup_hook(env, ImageNapiUtils::CleanUpConstructorContext, ctorContext);
 
     auto result = DoInitAfter(env, exports, constructor,
         IMG_ARRAY_SIZE(static_prop), static_prop);
