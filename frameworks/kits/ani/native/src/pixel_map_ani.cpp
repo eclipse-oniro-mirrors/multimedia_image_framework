@@ -97,7 +97,7 @@ static bool ParseInitializationOptions([[maybe_unused]] ani_env* env, ani_object
     }
     ani_boolean editable;
     if ((ret = env->Object_CallMethodByName_Boolean(reinterpret_cast<ani_object>(editableRef),
-        "unboxed", ":z", &editable)) != ANI_OK) {
+        "toBoolean", ":z", &editable)) != ANI_OK) {
         IMAGE_LOGE("Object_CallMethodByName_Int Failed editable:%{public}d", ret);
     }
     opts.alphaType = AlphaType(parseEnumFromStruct(env, param, Builder::BuildGetterName("alphaType").c_str(),

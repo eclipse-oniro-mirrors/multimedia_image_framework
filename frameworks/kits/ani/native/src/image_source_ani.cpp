@@ -102,7 +102,7 @@ ani_object ImageSourceAni::CreateImageSourceAni([[maybe_unused]] ani_env* env, a
     env->Object_InstanceOf(obj, intClass, &isInt);
     if (isInt) {
         ani_int fd;
-        env->Object_CallMethodByName_Int(obj, "unboxed", ":i", &fd);
+        env->Object_CallMethodByName_Int(obj, "toInt", ":i", &fd);
         IMAGE_LOGI("Image source fd: %{public}d", fd);
         SourceOptions opts;
         uint32_t errorCode;
@@ -234,7 +234,7 @@ static bool ParseDecodingOptions2([[maybe_unused]] ani_env* env, ani_object &par
     }
     ani_int fitDensity;
     if ((ret = env->Object_CallMethodByName_Int(reinterpret_cast<ani_object>(fitDensityRef),
-        "unboxed", ":i", &fitDensity)) != ANI_OK) {
+        "toInt", ":i", &fitDensity)) != ANI_OK) {
         IMAGE_LOGE("Object_CallMethodByName_Int Faild fitDensity:%{public}d", ret);
     }
     return true;
@@ -253,7 +253,7 @@ static bool ParseDecodingOptions([[maybe_unused]] ani_env* env, ani_object para,
     if (!isUndefined) {
         ani_int index;
         if (env->Object_CallMethodByName_Int(reinterpret_cast<ani_object>(indexRef),
-            "unboxed", ":i", &index) != ANI_OK) {
+            "toInt", ":i", &index) != ANI_OK) {
             IMAGE_LOGE("Object_CallMethodByName_Int Faild");
         }
     }
@@ -265,7 +265,7 @@ static bool ParseDecodingOptions([[maybe_unused]] ani_env* env, ani_object para,
     }
     ani_int sample;
     if ((ret = env->Object_CallMethodByName_Int(reinterpret_cast<ani_object>(sampleRef),
-        "unboxed", ":i", &sample)) != ANI_OK) {
+        "toInt", ":i", &sample)) != ANI_OK) {
         IMAGE_LOGE("Object_CallMethodByName_Int Faild sample:%{public}d", ret);
     }
 
@@ -276,7 +276,7 @@ static bool ParseDecodingOptions([[maybe_unused]] ani_env* env, ani_object para,
     }
     ani_int rotate;
     if ((ret = env->Object_CallMethodByName_Int(reinterpret_cast<ani_object>(rotateRef),
-        "unboxed", ":i", &rotate)) != ANI_OK) {
+        "toInt", ":i", &rotate)) != ANI_OK) {
         IMAGE_LOGE("Object_CallMethodByName_Int Faild rotate:%{public}d", ret);
     }
 
@@ -287,7 +287,7 @@ static bool ParseDecodingOptions([[maybe_unused]] ani_env* env, ani_object para,
     }
     ani_boolean editable;
     if ((ret = env->Object_CallMethodByName_Boolean(reinterpret_cast<ani_object>(editableRef),
-        "unboxed", ":z", &editable)) != ANI_OK) {
+        "toBoolean", ":z", &editable)) != ANI_OK) {
         IMAGE_LOGE("Object_CallMethodByName_Int Faild editable:%{public}d", ret);
     }
     opts.editable = static_cast<bool>(editable);
