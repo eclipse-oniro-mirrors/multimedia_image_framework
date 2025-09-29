@@ -212,8 +212,6 @@ typedef enum {
     IMAGE_DECODE_FAILED = 7700301,
     /** memory allocation failed */
     IMAGE_SOURCE_ALLOC_FAILED = 7700302,
-    /** failed to write image properties to the file */
-    IMAGE_SOURCE_WRITE_PROPERTY_FAILED = 7700304,
     /**
      * @error Invalid parameter for ImagePacker.
      * @since 19
