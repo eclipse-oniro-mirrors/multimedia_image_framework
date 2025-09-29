@@ -373,5 +373,32 @@ HWTEST_F(HeifExifMetadataAccessorTest, TestWriteAndReadFnumberWithTwoDecimal001,
 
     GTEST_LOG_(INFO) << "HeifExifMetadataAccessorTest: TestWriteAndReadFnumberWithTwoDecimal001 end";
 }
+
+/**
+ * @tc.name: TestWriteAndReadHwTagAnnotationEdit001
+ * @tc.desc: test write and read exif tag AnnotationEdit.
+ * @tc.type: FUNC
+ */
+HWTEST_F(HeifExifMetadataAccessorTest, TestWriteAndReadHwTagAnnotationEdit001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "HeifExifMetadataAccessorTest: TestWriteAndReadHwTagAnnotationEdit001 start";
+    std::shared_ptr<MetadataStream> stream = std::make_shared<FileMetadataStream>(IMAGE_INPUT_HEIF_EXIF_PATH);
+    ASSERT_TRUE(stream->Open(OpenMode::ReadWrite));
+    HeifExifMetadataAccessor imageAccessor(stream);
+    uint32_t result = imageAccessor.Read();
+    ASSERT_EQ(result, 0);
+    auto exifMetadata = imageAccessor.Get();
+    exifMetadata->SetValue("HwMnoteAnnotationEdit", "1");
+    uint32_t errcode = imageAccessor.Write();
+    ASSERT_EQ(errcode, SUCCESS);
+    exifMetadata = imageAccessor.Get();
+    ASSERT_EQ(GetProperty(exifMetadata, "HwMnoteAnnotationEdit"), "1");
+    exifMetadata->SetValue("HwMnoteAnnotationEdit", "2");
+    errcode = imageAccessor.Write();
+    ASSERT_EQ(errcode, SUCCESS);
+    exifMetadata = imageAccessor.Get();
+    ASSERT_EQ(GetProperty(exifMetadata, "HwMnoteAnnotationEdit"), "2");
+    GTEST_LOG_(INFO) << "HeifExifMetadataAccessorTest: TestWriteAndReadHwTagAnnotationEdit001 end";
+}
 } // namespace Multimedia
 } // namespace OHOS
