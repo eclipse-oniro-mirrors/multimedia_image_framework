@@ -314,7 +314,7 @@ HWTEST_F(HeifYuvTest, HeifYuvTest013, TestSize.Level3)
 {
     GTEST_LOG_(INFO) << "HeifYuvTest: HeifYuvTest013 start";
     float scalFactor = 2.5;
-    float minscale = 1;
+    float minscale = 0.05;
     float step = 0.01;
     for (; scalFactor >= minscale; scalFactor -= step) {
         std::string heifPath = IMAGE_INPUT_HEIF_PATH;
