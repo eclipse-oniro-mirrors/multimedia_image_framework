@@ -1678,6 +1678,7 @@ napi_value ImageSourceNapi::GetImageInfo(napi_env env, napi_callback_info info)
             auto context = static_cast<ImageSourceAsyncContext*>(data);
             int index = (context->index >= NUM_0) ? context->index : NUM_0;
             context->status = context->rImageSource->GetImageInfo(index, context->imageInfo);
+            context->rImageSource->IsHdrImage();
         }, GetImageInfoComplete, asyncContext, asyncContext->work);
 
     IMG_NAPI_CHECK_RET_D(IMG_IS_OK(status),
