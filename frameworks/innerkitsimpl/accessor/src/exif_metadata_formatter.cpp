@@ -788,6 +788,11 @@ void ExifMetadatFormatter::InitValueFormatConvertConfig()
         {"HwMnoteXmageBottom", singleInt_},
         {"HwMnoteCloudEnhancementMode", singleInt_},
         {"HwMnoteAiEdit", singleInt_},
+        {"HwMnoteXtStyleTemplateName", singleInt_},
+        {"HwMnoteXtStyleCustomLightAndShadow", singleRational_},
+        {"HwMnoteXtStyleCustomSaturation", singleRational_},
+        {"HwMnoteXtStyleCustomHue", singleRational_},
+        {"HwMnoteXtStyleExposureParam", tribleIntWithBlank_},
         {"DateTimeDigitized", dateTimeValidation_},
         {"DateTimeDigitized", dateValidation_},
         {"OffsetTime", dateTimeValidation_},
@@ -800,6 +805,9 @@ void ExifMetadatFormatter::InitValueFormatConvertConfig()
         {"YCbCrSubSampling", doubleIntWithComma_},
         {"MovingPhotoVersion", singleInt_},
         {"MicroVideoPresentationTimestampUS", singleInt_},
+        {"HwMnoteXtStyleAlgoVersion", singleInt_},
+        {"HwMnoteXtStyleAlgoVideoEnable", singleInt_},
+        {"HwMnoteIsApertureEditSupported", singleInt_},
     };
 }
 
