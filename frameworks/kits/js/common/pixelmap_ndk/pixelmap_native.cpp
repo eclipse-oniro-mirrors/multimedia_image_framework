@@ -15,14 +15,18 @@
 
 #include "pixelmap_native.h"
 
+#include <charconv>
 #include "common_utils.h"
 #include "image_type.h"
 #include "image_utils.h"
 #include "image_pixel_map_napi_kits.h"
+#include "pixel_map_from_surface.h"
 #include "pixel_map_napi.h"
 #include "pixelmap_native_impl.h"
 #include "image_format_convert.h"
 #include "surface_buffer.h"
+#include "sync_fence.h"
+#include "transaction/rs_interfaces.h"
 
 #include "vpe_utils.h"
 #include "refbase.h"
@@ -50,7 +54,6 @@ static constexpr int32_t IMAGE_BASE_152 = 152;
 static constexpr int32_t IMAGE_BASE_27 = 27;
 static constexpr int32_t IMAGE_BASE_12 = 12;
 static constexpr int32_t IMAGE_BASE_13 = 13;
-static constexpr int32_t IMAGE_BASE_6 = 6;
 static constexpr int32_t IMAGE_BASE_14 = 14;
 static constexpr int32_t IMAGE_BASE_4 = 4;
 static constexpr int32_t IMAGE_BASE_9 = 9;
@@ -118,7 +121,7 @@ static Image_ErrorCode ToNewErrorCode(int code)
             return IMAGE_UNSUPPORTED_CONVERSION;
         case IMAGE_BASE + IMAGE_BASE_13:
             return IMAGE_INVALID_REGION;
-        case IMAGE_BASE + IMAGE_BASE_6:
+        case ERR_IMAGE_MALLOC_ABNORMAL:
             return IMAGE_ALLOC_FAILED;
         case IMAGE_BASE + IMAGE_BASE_14:
             return IMAGE_BAD_SOURCE;
@@ -129,6 +132,12 @@ static Image_ErrorCode ToNewErrorCode(int code)
             return IMAGE_DECODE_FAILED;
         case IMAGE_BASE + IMAGE_BASE_23:
             return IMAGE_ENCODE_FAILED;
+        case ERR_IMAGE_INIT_ABNORMAL:
+            return IMAGE_INIT_FAILED;
+        case ERR_IMAGE_DATA_UNSUPPORT:
+            return IMAGE_UNSUPPORTED_DATA_FORMAT;
+        case ERR_IMAGE_TOO_LARGE:
+            return IMAGE_TOO_LARGE;
         default:
             return IMAGE_UNKNOWN_ERROR;
     }
@@ -604,6 +613,94 @@ Image_ErrorCode OH_PixelmapNative_CreateEmptyPixelmapUsingAllocator(
     return IMAGE_SUCCESS;
 }
 
+static bool GetSurfaceSize(uint64_t surfaceId, OHOS::Media::Rect &region)
+{
+    if (region.width <= 0 || region.height <= 0) {
+        sptr<Surface> surface = SurfaceUtils::GetInstance()->GetSurface(surfaceId);
+        if (surface == nullptr) {
+            IMAGE_LOGE("GetSurfaceSize: GetSurface failed");
+            return false;
+        }
+        sptr<SyncFence> fence = SyncFence::InvalidFence();
+        // 4 * 4 idetity matrix
+        float matrix[16] = {
+            1, 0, 0, 0,
+            0, 1, 0, 0,
+            0, 0, 1, 0,
+            0, 0, 0, 1
+        };
+        sptr<SurfaceBuffer> surfaceBuffer = nullptr;
+        GSError ret = surface->GetLastFlushedBuffer(surfaceBuffer, fence, matrix);
+        if (ret != GSERROR_OK || surfaceBuffer == nullptr) {
+            IMAGE_LOGE("GetSurfaceSize: GetLastFlushedBuffer failed, ret = %{public}d", ret);
+            return false;
+        }
+        region.width = surfaceBuffer->GetWidth();
+        region.height = surfaceBuffer->GetHeight();
+    }
+    return true;
+}
+
+static Image_ErrorCode CreatePixelMapFromSurface(const std::string &surfaceId, OHOS::Media::Rect &region,
+    OH_PixelmapNative **pixelmap)
+{
+    uint64_t surfaceIdInt = 0;
+    auto res = std::from_chars(surfaceId.data(), surfaceId.data() + surfaceId.size(), surfaceIdInt);
+    if (res.ec != std::errc()) {
+        return IMAGE_BAD_PARAMETER;
+    }
+    if (!GetSurfaceSize(surfaceIdInt, region)) {
+        return IMAGE_BAD_PARAMETER;
+    }
+
+    auto &rsClient = Rosen::RSInterfaces::GetInstance();
+    OHOS::Rect r = {
+        .x = region.left,
+        .y = region.top,
+        .w = region.width,
+        .h = region.height,
+    };
+    std::shared_ptr<PixelMap> pixelMapFromSurface = rsClient.CreatePixelMapFromSurfaceId(surfaceIdInt, r);
+#ifndef EXT_PIXEL
+    if (pixelMapFromSurface == nullptr) {
+        pixelMapFromSurface = CreatePixelMapFromSurfaceId(surfaceIdInt, region);
+    }
+#endif
+    if (pixelMapFromSurface == nullptr) {
+        return IMAGE_CREATE_PIXELMAP_FAILED;
+    }
+    *pixelmap = new(std::nothrow) OH_PixelmapNative(std::move(pixelMapFromSurface));
+    return IMAGE_SUCCESS;
+}
+
+MIDK_EXPORT
+Image_ErrorCode OH_PixelmapNative_CreatePixelmapFromSurface(std::string surfaceId, OH_PixelmapNative **pixelmap)
+{
+    if (pixelmap == nullptr) {
+        return IMAGE_BAD_PARAMETER;
+    }
+    OHOS::Media::Rect region;
+    return CreatePixelMapFromSurface(surfaceId, region, pixelmap);
+}
+
+MIDK_EXPORT
+Image_ErrorCode OH_PixelmapNative_CreatePixelmapFromNativeBuffer(OH_NativeBuffer *nativeBuffer,
+    OH_PixelmapNative **pixelmap)
+{
+    if (nativeBuffer == nullptr || pixelmap == nullptr) {
+        return IMAGE_BAD_PARAMETER;
+    }
+
+    OHOS::SurfaceBuffer* surfaceBuffer = OHOS::SurfaceBuffer::NativeBufferToSurfaceBuffer(nativeBuffer);
+    sptr<OHOS::SurfaceBuffer> source(surfaceBuffer);
+    std::unique_ptr<PixelMap> pixelMapFromSurface = Picture::SurfaceBuffer2PixelMap(source);
+    if (pixelMapFromSurface == nullptr) {
+        return IMAGE_CREATE_PIXELMAP_FAILED;
+    }
+    *pixelmap = new(std::nothrow) OH_PixelmapNative(std::move(PixelMapFromSurface));
+    return IMAGE_SUCCESS;
+}
+
 MIDK_EXPORT
 Image_ErrorCode OH_PixelmapNative_ConvertPixelmapNativeToNapi(napi_env env, OH_PixelmapNative *pixelmapNative,
     napi_value *pixelmapNapi)
@@ -653,6 +750,40 @@ Image_ErrorCode OH_PixelmapNative_WritePixels(OH_PixelmapNative *pixelmap, uint8
         return IMAGE_BAD_PARAMETER;
     }
     return ToNewErrorCode(pixelmap->GetInnerPixelmap()->WritePixels(source, bufferSize));
+}
+
+MIDK_EXPORT
+Image_ErrorCode OH_PixelmapNative_ReadPixelsFromArea(OH_PixelmapNative *pixelmap, Image_PositionArea *area)
+{
+    if (pixelmap == nullptr || !pixelmap->GetInnerPixelmap() || area == nullptr || area->pixels == nullptr) {
+        return IMAGE_BAD_PARAMETER;
+    }
+
+    OHOS::Media::Rect region = {
+        .left = static_cast<int32_t>(area->region.x),
+        .top = static_cast<int32_t>(area->region.y),
+        .width = static_cast<int32_t>(area->region.width),
+        .height = static_cast<int32_t>(area->region.height)
+    };
+    return ToNewErrorCode(pixelmap->GetInnerPixelmap()->ReadPixels(
+        area->pixelsSize, area->offset, area->stride, region, area->pixels));
+}
+
+MIDK_EXPORT
+Image_ErrorCode OH_PixelmapNative_WritePixelsToArea(OH_PixelmapNative *pixelmap, Image_PositionArea *area)
+{
+    if (pixelmap == nullptr || !pixelmap->GetInnerPixelmap() || area == nullptr || area->pixels == nullptr) {
+        return IMAGE_BAD_PARAMETER;
+    }
+
+    OHOS::Media::Rect region = {
+        .left = static_cast<int32_t>(area->region.x),
+        .top = static_cast<int32_t>(area->region.y),
+        .width = static_cast<int32_t>(area->region.width),
+        .height = static_cast<int32_t>(area->region.height)
+    };
+    return ToNewErrorCode(pixelmap->GetInnerPixelmap()->WritePixels(
+        area->pixels, area->pixelsSize, area->offset, area->stride, region));
 }
 
 MIDK_EXPORT
@@ -758,6 +889,65 @@ Image_ErrorCode OH_PixelmapNative_ScaleWithAntiAliasing(OH_PixelmapNative *pixel
         return IMAGE_BAD_PARAMETER;
     }
     pixelmap->GetInnerPixelmap()->scale(scaleX, scaleY, static_cast<AntiAliasingOption>(level));
+    return IMAGE_SUCCESS;
+}
+
+MIDK_EXPORT
+Image_ErrorCode OH_PixelmapNative_CreateAlphaPixelmap(OH_PixelmapNative *srcPixelmap, OH_PixelmapNative **dstPixelmap)
+{
+    if (srcPixelmap == nullptr || !srcPixelmap->GetInnerPixelmap() || dstPixelmap == nullptr) {
+        return IMAGE_BAD_PARAMETER;
+    }
+
+    InitializationOptions opts;
+    opts.pixelFormat = PixelFormat::ALPHA_8;
+    std::unique_ptr<PixelMap> alphaPixelmap = PixelMap::Create(*(srcPixelmap->GetInnerPixelmap()), opts);
+    if (alphaPixelmap == nullptr) {
+        return IMAGE_BAD_PARAMETER;
+    }
+    *dstPixelmap = new(std::nothrow) OH_PixelmapNative(std::move(alphaPixelmap));
+    return IMAGE_SUCCESS;
+}
+
+MIDK_EXPORT
+Image_ErrorCode OH_PixelmapNative_Clone(OH_PixelmapNative *srcPixelmap, OH_PixelmapNative **dstPixelmap)
+{
+    if (srcPixelmap == nullptr || !srcPixelmap->GetInnerPixelmap() || dstPixelmap == nullptr) {
+        return IMAGE_BAD_PARAMETER;
+    }
+
+    int32_t errorCode = 0;
+    std::unique_ptr<PixelMap> clonedPixelmap = srcPixelmap->GetInnerPixelmap()->Clone(errorCode);
+    if (clonedPixelmap == nullptr) {
+        return ToNewErrorCode(errorCode);
+    }
+    *dstPixelmap = new(std::nothrow) OH_PixelmapNative(std::move(clonedPixelmap));
+    return IMAGE_SUCCESS;
+}
+
+MIDK_EXPORT
+Image_ErrorCode OH_PixelmapNative_CreateCroppedAndScaledPixelMap(OH_PixelmapNative *srcPixelmap, Image_Region *region,
+    float scaleX, float scaleY, OH_PixelmapNative_AntiAliasingLevel level, OH_PixelmapNative **dstPixelmap)
+{
+    if (srcPixelmap == nullptr || !srcPixelmap->GetInnerPixelmap() || region == nullptr || dstPixelmap == nullptr) {
+        return IMAGE_BAD_PARAMETER;
+    }
+
+    int32_t errorCode = 0;
+    std::unique_ptr<PixelMap> clonedPixelmap = srcPixelmap->GetInnerPixelmap()->Clone(errorCode);
+    if (clonedPixelmap == nullptr) {
+        return ToNewErrorCode(errorCode);
+    }
+
+    OHOS::Media::Rect region = {
+        .left = static_cast<int32_t>(area->region.x),
+        .top = static_cast<int32_t>(area->region.y),
+        .width = static_cast<int32_t>(area->region.width),
+        .height = static_cast<int32_t>(area->region.height)
+    };
+    clonedPixelmap->crop(region);
+    clonedPixelmap->scale(scaleX, scaleY, static_cast<AntiAliasingOption>(level));
+    *dstPixelmap = new(std::nothrow) OH_PixelmapNative(std::move(clonedPixelmap));
     return IMAGE_SUCCESS;
 }
 
@@ -1366,6 +1556,26 @@ Image_ErrorCode OH_PixelmapNative_UnaccessPixels(OH_PixelmapNative *pixelmap)
         return IMAGE_BAD_PARAMETER;
     }
     pixelmap->GetInnerPixelmap()->SetModifiable(true);
+    return IMAGE_SUCCESS;
+}
+
+MIDK_EXPORT
+Image_ErrorCode OH_PixelmapNative_GetUniqueId(OH_PixelmapNative *pixelmap, uint32_t *uniqueId)
+{
+    if (pixelmap == nullptr || pixelmap->GetInnerPixelmap() == nullptr) {
+        return IMAGE_BAD_PARAMETER;
+    }
+    *uniqueId = pixelmap->GetInnerPixelmap()->GetUniqueId();
+    return IMAGE_SUCCESS;
+}
+
+MIDK_EXPORT
+Image_ErrorCode OH_PixelmapNative_IsReleased(OH_PixelmapNative *pixelmap, bool *released)
+{
+    if (pixelmap == nullptr) {
+        return IMAGE_BAD_PARAMETER;
+    }
+    *released = (pixelmap->GetInnerPixelmap() == nullptr || pixelmap->GetInnerPixelmap().use_count() == 0);
     return IMAGE_SUCCESS;
 }
 

@@ -83,6 +83,31 @@ struct Image_Region {
  */
 typedef struct Image_Region Image_Region;
 
+/**
+ * @brief Defines the area of the image pixels to read or write.
+ *
+ * @since 21
+ */
+struct Image_PositionArea {
+    /** Image pixels data that will be read or written. */
+    uint8_t *pixels;
+    /** Length of the image pixels data. */
+    size_t pixelsSize;
+    /** Offset for data reading or writing. */
+    uint32_t offset;
+    /** Number of bytes per row of the region. */
+    uint32_t stride;
+    /** Region to read or write. */
+    Image_Region region;
+};
+
+/**
+ * @brief Declares the image position area.
+ *
+ * @since 21
+ */
+typedef struct Image_PositionArea Image_PositionArea;
+
 #ifdef __cplusplus
 /**
  * @brief Defines the region of the image source to decode.
@@ -174,6 +199,11 @@ typedef enum {
      * @since 19
      */
     IMAGE_INVALID_PARAMETER = 7600206,
+    /**
+     * @error Unsupported data format
+     * @since 21
+     */
+    IMAGE_UNSUPPORTED_DATA_FORMAT = 7600207,
     /** failed to allocate memory */
     IMAGE_ALLOC_FAILED = 7600301,
     /** memory copy failed */
@@ -183,6 +213,16 @@ typedef enum {
      * @since 15
      */
     IMAGE_LOCK_UNLOCK_FAILED = 7600303,
+    /**
+     * @error Initialization failed
+     * @since 21
+     */
+    IMAGE_INIT_FAILED = 7600304,
+    /**
+     * @error Create PixelMap failed
+     * @since 21
+     */
+    IMAGE_CREATE_PIXELMAP_FAILED = 7600305,
     /**
      * @error unsupported allocator mode, e.g., use share memory to create a HDR image as only
      * DMA supported hdr metadata.
