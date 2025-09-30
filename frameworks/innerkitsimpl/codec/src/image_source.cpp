@@ -1016,6 +1016,15 @@ unique_ptr<PixelMap> ImageSource::CreatePixelMapExtended(uint32_t index, const D
         errorCode = ERR_IMAGE_DATA_ABNORMAL;
         return nullptr;
     }
+    hasValidXmageCoords_ = false;
+    if (CreatExifMetadataByImageSource() == SUCCESS) {
+        auto earlyExifMetadataPtr = exifMetadata_ ->Clone();
+        if (earlyExifMetadataPtr != nullptr) {
+            if(earlyExifMetadataPtr->ExtractXmageCoordinates(coordMetadata_)) {
+                hasValidXmageCoords_ = true;
+            }
+        }
+    }
     ImagePlugin::PlImageInfo plInfo;
     DecodeContext context = DecodeImageDataToContextExtended(index, info, plInfo, imageEvent, errorCode);
     imageDataStatistics.AddTitle("imageSize: [%d, %d], desireSize: [%d, %d], imageFormat: %s, desirePixelFormat: %d,"
@@ -4509,6 +4518,20 @@ bool ImageSource::ComposeHdrImage(ImageHdrType hdrType, DecodeContext& baseCtx, 
         metadata.extendMeta.metaISO.useBaseColorFlag, metadata.extendMeta.metaISO.gainmapChannelNum);
     SetVividMetaColor(metadata, baseCmColor, gainmapCmColor, hdrCmColor);
     VpeUtils::SetSurfaceBufferInfo(gainmapSptr, true, hdrType, gainmapCmColor, metadata);
+    if (hasValidXmageCoords_) {
+        std::vector<uint8_t> metaDataVec(sizeof(XmageCoordinateMetadata));
+        int32_t memCpyRes = memcpy_s(metaDataVec.data(), metaDataVec.size(),
+            &coordMetadata_, sizeof(XmageCoordinateMetadata));
+        if (memCpyRes != EOK) {
+            IMAGE_LOGE("ImageSource::ComposeHdrImage copy xmage coordinate metadata failed");
+        }
+        else {
+            bool setMetaRes = VpeUtils::SetSbStaticMetaData(gainmapSptr, metaDataVec);
+            if (!setMetaRes) {
+                IMAGE_LOGE("ImageSource::ComposeHdrImage set xmage coordinate metadata failed");
+            }
+        }
+    }
     // alloc hdr image
     uint32_t errorCode = AllocHdrSurfaceBuffer(hdrCtx, hdrType, hdrCmColor, opts_.reusePixelmap);
     bool cond = (errorCode != SUCCESS);
@@ -5131,6 +5154,20 @@ void ImageSource::SetHdrMetadataForPicture(std::unique_ptr<Picture> &picture)
         metadata.extendMeta.metaISO.useBaseColorFlag == ISO_USE_BASE_COLOR ? baseCmColor : hdrCmColor;
     SetVividMetaColor(metadata, baseCmColor, gainmapCmColor, hdrCmColor);
     VpeUtils::SetSurfaceBufferInfo(gainmapSptr, true, hdrType, gainmapCmColor, metadata);
+    if (hasValidXmageCoords_) {
+        std::vector<uint8_t> metaDataVec(sizeof(XmageCoordinateMetadata));
+        int32_t memCpyRes = memcpy_s(metaDataVec.data(), metaDataVec.size(),
+            &coordMetadata_, sizeof(XmageCoordinateMetadata));
+        if (memCpyRes != EOK) {
+            IMAGE_LOGE("ImageSource::ComposeHdrImage copy xmage coordinate metadata failed");
+        }
+        else {
+            bool setMetaRes = VpeUtils::SetSbStaticMetaData(gainmapSptr, metaDataVec);
+            if (!setMetaRes) {
+                IMAGE_LOGE("ImageSource::ComposeHdrImage set xmage coordinate metadata failed");
+            }
+        }
+    }
 }
 
 void ImageSource::DecodeHeifAuxiliaryPictures(

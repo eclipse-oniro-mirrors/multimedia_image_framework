@@ -48,6 +48,7 @@ public:
         return MetadataType::EXIF;
     }
     bool RemoveExifThumbnail() override;
+    bool ExtractXmageCoordinates(XmageCoordinateMetadata &coordMetadata) const;
 
 private:
     ExifEntry* CreateEntry(const std::string &key, const ExifTag &tag, const size_t len);
