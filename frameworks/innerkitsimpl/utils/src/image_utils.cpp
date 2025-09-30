@@ -47,7 +47,6 @@
 #include <sys/syscall.h>
 #endif
 #if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
-#include "accesstoken_kit.h"
 #include "bundle_mgr_interface.h"
 #include "iservice_registry.h"
 #include "ipc_skeleton.h"
@@ -76,10 +75,6 @@ extern "C" {
 
 #undef LOG_TAG
 #define LOG_TAG "imageUtils"
-
-#if !defined(CROSS_PLATFORM)
-using namespace OHOS::Security::AccessToken;
-#endif
 
 namespace OHOS {
 namespace Media {
@@ -1367,11 +1362,6 @@ std::string ImageUtils::GetEncodedHeifFormat()
 int32_t ImageUtils::GetAPIVersion()
 {
 #if !defined(CROSS_PLATFORM)
-    static AccessTokenID selfToken = IPCSkeleton::GetSelfTokenID();
-    static ATokenTypeEnum tokenType = AccessTokenKit::GetTokenTypeFlag(selfToken);
-    if (tokenType != ATokenTypeEnum::TOKEN_HAP) {
-        return FAULT_API_VERSION;
-    }
     static std::atomic<int32_t> apiVersion = GetAPIVersionInner();
     if (apiVersion.load() <= 0) {
         apiVersion.store(GetAPIVersionInner());

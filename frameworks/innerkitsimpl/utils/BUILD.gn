@@ -90,7 +90,6 @@ if (use_clang_ios) {
 
     external_deps = [ 
       "drivers_interface_display:libdisplay_commontype_proxy_1.0",
-      "access_token:libaccesstoken_sdk",
     ]
     if (use_mingw_win) {
       defines = image_decode_windows_defines
