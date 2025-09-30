@@ -1020,9 +1020,7 @@ unique_ptr<PixelMap> ImageSource::CreatePixelMapExtended(uint32_t index, const D
     if (CreatExifMetadataByImageSource() == SUCCESS) {
         auto earlyExifMetadataPtr = exifMetadata_ ->Clone();
         if (earlyExifMetadataPtr != nullptr) {
-            if(earlyExifMetadataPtr->ExtractXmageCoordinates(coordMetadata_)) {
-                hasValidXmageCoords_ = true;
-            }
+            if (earlyExifMetadataPtr->ExtractXmageCoordinates(coordMetadata_)) hasValidXmageCoords_ = true;
         }
     }
     ImagePlugin::PlImageInfo plInfo;
@@ -4524,8 +4522,7 @@ bool ImageSource::ComposeHdrImage(ImageHdrType hdrType, DecodeContext& baseCtx, 
             &coordMetadata_, sizeof(XmageCoordinateMetadata));
         if (memCpyRes != EOK) {
             IMAGE_LOGE("ImageSource::ComposeHdrImage copy xmage coordinate metadata failed");
-        }
-        else {
+        }else {
             bool setMetaRes = VpeUtils::SetSbStaticMetaData(gainmapSptr, metaDataVec);
             if (!setMetaRes) {
                 IMAGE_LOGE("ImageSource::ComposeHdrImage set xmage coordinate metadata failed");
@@ -5160,8 +5157,7 @@ void ImageSource::SetHdrMetadataForPicture(std::unique_ptr<Picture> &picture)
             &coordMetadata_, sizeof(XmageCoordinateMetadata));
         if (memCpyRes != EOK) {
             IMAGE_LOGE("ImageSource::ComposeHdrImage copy xmage coordinate metadata failed");
-        }
-        else {
+        }else {
             bool setMetaRes = VpeUtils::SetSbStaticMetaData(gainmapSptr, metaDataVec);
             if (!setMetaRes) {
                 IMAGE_LOGE("ImageSource::ComposeHdrImage set xmage coordinate metadata failed");

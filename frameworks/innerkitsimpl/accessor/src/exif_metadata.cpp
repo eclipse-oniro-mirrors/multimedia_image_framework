@@ -986,28 +986,32 @@ int ExifMetadata::GetUserMakerNote(std::string& value) const
 }
 
 // get exif xmage coordinates
-bool GetExifCoordinateValue(const std::string& fieldName, std::string& valueOutput) {
+bool GetExifCoordinateValue(const std::string& fieldName, std::string& valueOutput) 
+{
     int ret = GetValue(fieldName.c_str(), valueOutput);
     if (ret == SUCCESS) {
-        IMAGE_LOGI("Exif_metadata:ExtractXMageCoordinates HDR-IMAGE Exif %s: %{public}s", 
-                  fieldName.c_str(), valueOutput.c_str());
+        IMAGE_LOGI("Exif_metadata:ExtractXMageCoordinates HDR-IMAGE Exif %s: %{public}s",
+                   fieldName.c_str(), valueOutput.c_str());
         return true;
     }
     return false;
 }
 
 // check if the coordinate value is valid and parse it to int
-bool ParseCoordinateValue(const std::string& valueStr, const std::string& fieldName, int& outputValue) {
+bool ParseCoordinateValue(const std::string& valueStr, const std::string& fieldName, int& outputValue) 
+{
     // check for empty or default value
     if (valueStr.empty() || valueStr == "default_exif_value") {
-        IMAGE_LOGE("Exif_metadata:ExtractXMageCoordinates Failed to parse %s: value is empty or default", fieldName.c_str());
+        IMAGE_LOGE(
+            "Exif_metadata:ExtractXMageCoordinates Failed to parse %s: value is empty or default",
+            fieldName.c_str());
         return false;
     }
     // try to parse the integer value
     auto result = std::from_chars(valueStr.data(), valueStr.data() + valueStr.size(), outputValue);
     if (result.ec != std::errc()) {
-        IMAGE_LOGE("Exif_metadata:ExtractXMageCoordinates Failed to parse %s: %s (error code: %{public}d)", 
-                  fieldName.c_str(), valueStr.c_str(), static_cast<int>(result.ec));
+        IMAGE_LOGE("Exif_metadata:ExtractXMageCoordinates Failed to parse %s: %s (error code: %{public}d)",
+                   fieldName.c_str(), valueStr.c_str(), static_cast<int>(result.ec));
         return false;
     }
     return true;
@@ -1016,31 +1020,48 @@ bool ParseCoordinateValue(const std::string& valueStr, const std::string& fieldN
 bool ExifMetadata::ExtractXMageCoordinates(XmageCoordinateMetadata& coordMetadata) const
 {
     if (exifData_ == nullptr) {
-        IMAGE_LOGE("Exif_metadata:ExtractXMageCoordinates HDR-IMAGE Exif metadata is null, cannot read XMAGE coordinates");
+        IMAGE_LOGE(
+            "Exif_metadata:ExtractXMageCoordinates HDR-IMAGE Exif metadata is null, cannot read XMAGE coordinates");
         return false;
     }
-    std::string leftValue, topValue, rightValue, bottomValue, isXmageSupportedValue;
+    std::string leftValue;
+    std::string topValue;
+    std::string rightValue;
+    std::string bottomValue;
+    std::string isXmageSupportedValue;
     int ret = SUCCESS;
     bool allParsedSuccessfully = true;
 
     // 1. acquire all coordinate values from EXIF
-    allParsedSuccessfully = GetExifCoordinateValue("HwMnoteXmageLeft", leftValue) && allParsedSuccessfully;
-    allParsedSuccessfully = GetExifCoordinateValue("HwMnoteXmageTop", topValue) && allParsedSuccessfully;
-    allParsedSuccessfully = GetExifCoordinateValue("HwMnoteXmageRight", rightValue) && allParsedSuccessfully;
-    allParsedSuccessfully = GetExifCoordinateValue("HwMnoteXmageBottom", bottomValue) && allParsedSuccessfully;
+    allParsedSuccessfully = GetExifCoordinateValue("HwMnoteXmageLeft", leftValue) &&
+        allParsedSuccessfully;
+    allParsedSuccessfully = GetExifCoordinateValue("HwMnoteXmageTop", topValue) &&
+        allParsedSuccessfully;
+    allParsedSuccessfully = GetExifCoordinateValue("HwMnoteXmageRight", rightValue) &&
+        allParsedSuccessfully;
+    allParsedSuccessfully = GetExifCoordinateValue("HwMnoteXmageBottom", bottomValue) &&
+        allParsedSuccessfully;
 
     // 2. validate and parse each coordinate value
-    allParsedSuccessfully = ParseCoordinateValue(leftValue, "HwMnoteXmageLeft", coordMetadata.left) && allParsedSuccessfully;
-    allParsedSuccessfully = ParseCoordinateValue(topValue, "HwMnoteXmageTop", coordMetadata.top) && allParsedSuccessfully;
-    allParsedSuccessfully = ParseCoordinateValue(rightValue, "HwMnoteXmageRight", coordMetadata.right) && allParsedSuccessfully;
-    allParsedSuccessfully = ParseCoordinateValue(bottomValue, "HwMnoteXmageBottom", coordMetadata.bottom) && allParsedSuccessfully;
+    allParsedSuccessfully = ParseCoordinateValue(leftValue, "HwMnoteXmageLeft",
+        coordMetadata.left) && allParsedSuccessfully;
+    allParsedSuccessfully = ParseCoordinateValue(topValue, "HwMnoteXmageTop",
+        coordMetadata.top) && allParsedSuccessfully;
+    allParsedSuccessfully = ParseCoordinateValue(rightValue, "HwMnoteXmageRight",
+        coordMetadata.right) && allParsedSuccessfully;
+    allParsedSuccessfully = ParseCoordinateValue(bottomValue, "HwMnoteXmageBottom",
+        coordMetadata.bottom) && allParsedSuccessfully;
 
     if (allParsedSuccessfully) {
-        IMAGE_LOGI("Exif_metadata:ExtractXMageCoordinates Successfully extracted XMAGE coordinates: left=%{public}d, top=%{public}d, right=%{public}d, bottom=%{public}d", 
-                  coordMetadata.left, coordMetadata.top, coordMetadata.right, coordMetadata.bottom);
+        IMAGE_LOGI(
+            "Exif_metadata:ExtractXMageCoordinates Successfully extracted XMAGE coordinates: "
+            "left=%{public}d, top=%{public}d, right=%{public}d, bottom=%{public}d",
+            coordMetadata.left, coordMetadata.top, coordMetadata.right, coordMetadata.bottom);
         return true; // only return true if all fields were parsed successfully
     } else {
-        IMAGE_LOGE("Exif_metadata:ExtractXMageCoordinates Failed to extract valid XMAGE coordinates from EXIF data. Some fields are missing or invalid.");
+        IMAGE_LOGE(
+            "Exif_metadata:ExtractXMageCoordinates Failed to extract valid XMAGE coordinates from EXIF data. "
+            "Some fields are missing or invalid.");
         return false; // If any field is invalid, return false
     }
 }
