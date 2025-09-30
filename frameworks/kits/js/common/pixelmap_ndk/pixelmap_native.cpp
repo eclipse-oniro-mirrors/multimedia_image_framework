@@ -121,7 +121,7 @@ static Image_ErrorCode ToNewErrorCode(int code)
             return IMAGE_UNSUPPORTED_CONVERSION;
         case IMAGE_BASE + IMAGE_BASE_13:
             return IMAGE_INVALID_REGION;
-        case ERR_IMAGE_MALLOC_ABNORMAL:
+        case IMAGE_RESULT_MALLOC_ABNORMAL:
             return IMAGE_ALLOC_FAILED;
         case IMAGE_BASE + IMAGE_BASE_14:
             return IMAGE_BAD_SOURCE;
@@ -132,11 +132,11 @@ static Image_ErrorCode ToNewErrorCode(int code)
             return IMAGE_DECODE_FAILED;
         case IMAGE_BASE + IMAGE_BASE_23:
             return IMAGE_ENCODE_FAILED;
-        case ERR_IMAGE_INIT_ABNORMAL:
+        case IMAGE_RESULT_INIT_ABNORMAL:
             return IMAGE_INIT_FAILED;
-        case ERR_IMAGE_DATA_UNSUPPORT:
+        case IMAGE_RESULT_DATA_UNSUPPORT:
             return IMAGE_UNSUPPORTED_DATA_FORMAT;
-        case ERR_IMAGE_TOO_LARGE:
+        case IMAGE_RESULT_TOO_LARGE:
             return IMAGE_TOO_LARGE;
         default:
             return IMAGE_UNKNOWN_ERROR;
