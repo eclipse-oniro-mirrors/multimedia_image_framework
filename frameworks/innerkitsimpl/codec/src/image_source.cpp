@@ -1018,7 +1018,8 @@ unique_ptr<PixelMap> ImageSource::CreatePixelMapExtended(uint32_t index, const D
     }
     hasValidXmageCoords_ = false;
     std::shared_ptr<ExifMetadata> clonedExif;
-    if (auto ret = CreatExifMetadataByImageSource(); ret == SUCCESS && (clonedExif = exifMetadata_->Clone()) != nullptr) {
+    if (auto ret = CreatExifMetadataByImageSource(); ret == SUCCESS &&
+        (clonedExif = exifMetadata_->Clone()) != nullptr) {
         hasValidXmageCoords_ = clonedExif->ExtractXmageCoordinates(coordMetadata_);
     }
     ImagePlugin::PlImageInfo plInfo;
