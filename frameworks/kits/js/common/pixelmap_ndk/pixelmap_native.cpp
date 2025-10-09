@@ -698,7 +698,7 @@ Image_ErrorCode OH_PixelmapNative_CreatePixelmapFromNativeBuffer(OH_NativeBuffer
     if (pixelMapFromSurface == nullptr) {
         return IMAGE_CREATE_PIXELMAP_FAILED;
     }
-    *pixelmap = new(std::nothrow) OH_PixelmapNative(std::move(PixelMapFromSurface));
+    *pixelmap = new(std::nothrow) OH_PixelmapNative(std::move(pixelMapFromSurface));
     return IMAGE_SUCCESS;
 }
 
@@ -941,13 +941,13 @@ Image_ErrorCode OH_PixelmapNative_CreateCroppedAndScaledPixelMap(OH_PixelmapNati
         return ToNewErrorCode(errorCode);
     }
 
-    OHOS::Media::Rect region = {
-        .left = static_cast<int32_t>(area->region.x),
-        .top = static_cast<int32_t>(area->region.y),
-        .width = static_cast<int32_t>(area->region.width),
-        .height = static_cast<int32_t>(area->region.height)
+    OHOS::Media::Rect rect = {
+        .left = static_cast<int32_t>(region->x),
+        .top = static_cast<int32_t>(region->y),
+        .width = static_cast<int32_t>(region->width),
+        .height = static_cast<int32_t>(region->height)
     };
-    clonedPixelmap->crop(region);
+    clonedPixelmap->crop(rect);
     clonedPixelmap->scale(scale->x, scale->y, static_cast<AntiAliasingOption>(level));
     *dstPixelmap = new(std::nothrow) OH_PixelmapNative(std::move(clonedPixelmap));
     return IMAGE_SUCCESS;
