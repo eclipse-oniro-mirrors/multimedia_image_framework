@@ -1435,11 +1435,11 @@ HWTEST_F(PixelMapNdk2Test, OH_PixelmapNative_CreatePixelmapFromSurface, TestSize
 {
     GTEST_LOG_(INFO) << "PixelMapNdk2Test: OH_PixelmapNative_CreatePixelmapFromSurface start";
 
-    Image_ErrorCode ret = OH_PixelmapNative_CreatePixelmapFromSurface("", nullptr);
+    Image_ErrorCode ret = OH_PixelmapNative_CreatePixelmapFromSurface("", 0, nullptr);
     EXPECT_NE(ret, IMAGE_SUCCESS);
 
     OH_PixelmapNative* dstPixelmap = nullptr;
-    ret = OH_PixelmapNative_CreatePixelmapFromSurface("1", &dstPixelmap);
+    ret = OH_PixelmapNative_CreatePixelmapFromSurface("1", 1, &dstPixelmap);
     EXPECT_NE(ret, IMAGE_SUCCESS);
     EXPECT_EQ(dstPixelmap, nullptr);
 
@@ -1617,7 +1617,7 @@ HWTEST_F(PixelMapNdk2Test, OH_PixelmapNative_CreateCroppedAndScaledPixelMap, Tes
     GTEST_LOG_(INFO) << "PixelMapNdk2Test: OH_PixelmapNative_CreateCroppedAndScaledPixelMap start";
 
     Image_ErrorCode ret = OH_PixelmapNative_CreateCroppedAndScaledPixelMap(
-        nullptr, nullptr, 1, 1, OH_PixelmapNative_AntiAliasing_NONE, nullptr);
+        nullptr, nullptr, nullptr, OH_PixelmapNative_AntiAliasing_NONE, nullptr);
     EXPECT_NE(ret, IMAGE_SUCCESS);
 
     OH_PixelmapNative* srcPixelmap = nullptr;
@@ -1625,10 +1625,11 @@ HWTEST_F(PixelMapNdk2Test, OH_PixelmapNative_CreateCroppedAndScaledPixelMap, Tes
     EXPECT_NE(srcPixelmap, nullptr);
 
     Image_Region region = {0, 0, 1, 1};
+    Image_Scale scale = {2, 2};
 
     OH_PixelmapNative* dstPixelmap = nullptr;
     ret = OH_PixelmapNative_CreateCroppedAndScaledPixelMap(
-        srcPixelmap, &region, 2, 2, OH_PixelmapNative_AntiAliasing_HIGH, &dstPixelmap);
+        srcPixelmap, &region, &scale, OH_PixelmapNative_AntiAliasing_HIGH, &dstPixelmap);
     EXPECT_EQ(ret, IMAGE_SUCCESS);
     EXPECT_NE(dstPixelmap, nullptr);
 

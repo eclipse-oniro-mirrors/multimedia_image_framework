@@ -674,13 +674,14 @@ static Image_ErrorCode CreatePixelMapFromSurface(const std::string &surfaceId, O
 }
 
 MIDK_EXPORT
-Image_ErrorCode OH_PixelmapNative_CreatePixelmapFromSurface(std::string surfaceId, OH_PixelmapNative **pixelmap)
+Image_ErrorCode OH_PixelmapNative_CreatePixelmapFromSurface(char *surfaceId, size_t length,
+    OH_PixelmapNative **pixelmap)
 {
-    if (pixelmap == nullptr) {
+    if (pixelmap == nullptr || surfaceId == nullptr) {
         return IMAGE_BAD_PARAMETER;
     }
     OHOS::Media::Rect region;
-    return CreatePixelMapFromSurface(surfaceId, region, pixelmap);
+    return CreatePixelMapFromSurface(std::string(surfaceId, length), region, pixelmap);
 }
 
 MIDK_EXPORT
@@ -927,9 +928,10 @@ Image_ErrorCode OH_PixelmapNative_Clone(OH_PixelmapNative *srcPixelmap, OH_Pixel
 
 MIDK_EXPORT
 Image_ErrorCode OH_PixelmapNative_CreateCroppedAndScaledPixelMap(OH_PixelmapNative *srcPixelmap, Image_Region *region,
-    float scaleX, float scaleY, OH_PixelmapNative_AntiAliasingLevel level, OH_PixelmapNative **dstPixelmap)
+    Image_Scale *scale, OH_PixelmapNative_AntiAliasingLevel level, OH_PixelmapNative **dstPixelmap)
 {
-    if (srcPixelmap == nullptr || !srcPixelmap->GetInnerPixelmap() || region == nullptr || dstPixelmap == nullptr) {
+    if (srcPixelmap == nullptr || !srcPixelmap->GetInnerPixelmap() || region == nullptr || scale == nullptr ||
+        dstPixelmap == nullptr) {
         return IMAGE_BAD_PARAMETER;
     }
 
@@ -946,7 +948,7 @@ Image_ErrorCode OH_PixelmapNative_CreateCroppedAndScaledPixelMap(OH_PixelmapNati
         .height = static_cast<int32_t>(area->region.height)
     };
     clonedPixelmap->crop(region);
-    clonedPixelmap->scale(scaleX, scaleY, static_cast<AntiAliasingOption>(level));
+    clonedPixelmap->scale(scale->x, scale->y, static_cast<AntiAliasingOption>(level));
     *dstPixelmap = new(std::nothrow) OH_PixelmapNative(std::move(clonedPixelmap));
     return IMAGE_SUCCESS;
 }
