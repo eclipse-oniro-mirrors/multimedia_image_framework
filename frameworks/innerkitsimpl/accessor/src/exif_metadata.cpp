@@ -1028,8 +1028,6 @@ bool ExifMetadata::ExtractXmageCoordinates(XmageCoordinateMetadata& coordMetadat
     std::string topValue;
     std::string rightValue;
     std::string bottomValue;
-    std::string isXmageSupportedValue;
-    int ret = SUCCESS;
     bool allParsedSuccessfully = true;
 
     // 1. acquire all coordinate values from EXIF
@@ -1052,14 +1050,14 @@ bool ExifMetadata::ExtractXmageCoordinates(XmageCoordinateMetadata& coordMetadat
     allParsedSuccessfully = ParseCoordinateValue(bottomValue, "HwMnoteXmageBottom",
         coordMetadata.bottom) && allParsedSuccessfully;
     if (allParsedSuccessfully) {
-        IMAGE_LOGI(
-            "Exif_metadata:ExtractXMageCoordinates Successfully extracted XMAGE coordinates: "
+        IMAGE_LOGD(
+            "Exif_metadata::ExtractXMageCoordinates Successfully extracted XMAGE coordinates: "
             "left=%{public}d, top=%{public}d, right=%{public}d, bottom=%{public}d",
             coordMetadata.left, coordMetadata.top, coordMetadata.right, coordMetadata.bottom);
         return true; // only return true if all fields were parsed successfully
     } else {
         IMAGE_LOGE(
-            "Exif_metadata:ExtractXMageCoordinates Failed to extract valid XMAGE coordinates from EXIF data. "
+            "Exif_metadata::ExtractXMageCoordinates Failed to extract valid XMAGE coordinates from EXIF data. "
             "Some fields are missing or invalid.");
         return false; // If any field is invalid, return false
     }
