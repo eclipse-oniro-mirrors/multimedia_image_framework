@@ -986,9 +986,9 @@ int ExifMetadata::GetUserMakerNote(std::string& value) const
 }
 
 // get exif xmage coordinates
-bool GetExifCoordinateValue(const std::string& fieldName, std::string& valueOutput)
+bool ExifMetadata::GetExifCoordinateValue(const std::string& fieldName, std::string& valueOutput) const
 {
-    int ret = GetValue(fieldName.c_str(), valueOutput);
+    int ret = GetValue(fieldName, valueOutput);
     if (ret == SUCCESS) {
         IMAGE_LOGI("Exif_metadata:ExtractXMageCoordinates HDR-IMAGE Exif %s: %{public}s",
                    fieldName.c_str(), valueOutput.c_str());
@@ -1017,7 +1017,7 @@ bool ParseCoordinateValue(const std::string& valueStr, const std::string& fieldN
     return true;
 }
 
-bool ExifMetadata::ExtractXMageCoordinates(XmageCoordinateMetadata& coordMetadata) const
+bool ExifMetadata::ExtractXmageCoordinates(XmageCoordinateMetadata& coordMetadata) const
 {
     if (exifData_ == nullptr) {
         IMAGE_LOGE(

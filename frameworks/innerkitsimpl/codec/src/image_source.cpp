@@ -4649,7 +4649,7 @@ void ImageSource::SetXmageMetadataToGainmap(sptr<SurfaceBuffer>& gainmapSptr)
         IMAGE_LOGE("ImageSource::SetXmageMetadataToGainmap copy xmage coordinate metadata failed");
         return;
     }
-    bool setMetaRes = VpeUtils::SetSbStaticMetaData(gainmapSptr, metaDataVec);
+    bool setMetaRes = VpeUtils::SetSbStaticMetadata(gainmapSptr, metaDataVec);
     if (!setMetaRes) {
         IMAGE_LOGE("ImageSource::SetXmageMetadataToGainmap set xmage coordinate metadata failed");
     }
