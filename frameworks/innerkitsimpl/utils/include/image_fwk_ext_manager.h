@@ -47,8 +47,8 @@ public:
     ~ImageFwkExtManager();
     bool LoadImageFwkExtNativeSo();
     DoHardWareEncodeFunc doHardWareEncodeFunc_;
-    DoHardwareEncodePictureFunc doHardwareEncodePictureFunc_;
     HevcSoftwareDecodeFunc hevcSoftwareDecodeFunc_;
+    DoHardwareEncodePictureFunc doHardwareEncodePictureFunc_;
 private:
     bool isImageFwkExtNativeSoOpened_;
     void* extNativeSoHandle_;

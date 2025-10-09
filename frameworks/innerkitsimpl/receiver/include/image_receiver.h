@@ -52,7 +52,8 @@ public:
         callbacks_.clear();
     }
 
-    bool HasCallback(OH_ImageReceiver_ImageArriveCallback callback) {
+    bool HasCallback(OH_ImageReceiver_ImageArriveCallback callback)
+    {
         std::lock_guard<std::mutex> lock(mutex_);
         return std::any_of(callbacks_.begin(), callbacks_.end(),
                            [callback](const CallbackData &cbData) { return cbData.callback == callback; });
