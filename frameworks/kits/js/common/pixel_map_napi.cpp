@@ -54,7 +54,6 @@ namespace {
     constexpr uint32_t NUM_2 = 2;
     constexpr uint32_t NUM_3 = 3;
     constexpr uint32_t NUM_4 = 4;
-    constexpr uint32_t NUM_5 = 5;
 }
 
 enum class FormatType:int8_t {
@@ -521,6 +520,8 @@ void PixelMapNapi::ExtraAddNapiFunction(std::vector<napi_property_descriptor> &p
         DECLARE_NAPI_FUNCTION("clone", Clone),
         DECLARE_NAPI_FUNCTION("isReleased", IsReleased),
         DECLARE_NAPI_FUNCTION("getUniqueId", GetNativeUniqueId),
+        DECLARE_NAPI_FUNCTION("createCroppedAndScaledPixelMapSync", CreateCroppedAndScaledPixelMapSync),
+        DECLARE_NAPI_FUNCTION("createCroppedAndScaledPixelMap", CreateCroppedAndScaledPixelMap),
         });
 }
 
@@ -590,8 +591,6 @@ napi_value PixelMapNapi::Init(napi_env env, napi_value exports)
         DECLARE_NAPI_STATIC_FUNCTION("createPixelMapSync", CreatePixelMapSync),
         DECLARE_NAPI_STATIC_FUNCTION("unmarshalling", Unmarshalling),
         DECLARE_NAPI_STATIC_FUNCTION(CREATE_PIXEL_MAP_FROM_PARCEL.c_str(), CreatePixelMapFromParcel),
-        DECLARE_NAPI_STATIC_FUNCTION("createCroppedAndScaledPixelMapSync", CreateCroppedAndScaledPixelMapSync),
-        DECLARE_NAPI_STATIC_FUNCTION("createCroppedAndScaledPixelMap", CreateCroppedAndScaledPixelMap),
 #if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
         DECLARE_NAPI_STATIC_FUNCTION("createPixelMapFromSurface", CreatePixelMapFromSurface),
         DECLARE_NAPI_STATIC_FUNCTION("createPixelMapFromSurfaceSync", CreatePixelMapFromSurfaceSync),
@@ -2035,10 +2034,11 @@ napi_value PixelMapNapi::GetNativeUniqueId(napi_env env, napi_callback_info info
     status = napi_unwrap(env, thisVar, reinterpret_cast<void**>(&pixelMapNapi));
 
     IMG_NAPI_CHECK_RET_D(IMG_IS_READY(status, pixelMapNapi), result, IMAGE_LOGE("fail to unwrap context"));
-
+    IMG_NAPI_CHECK_RET_D(pixelMapNapi->GetPixelNapiEditable(),
+        ImageNapiUtils::ThrowExceptionError(env, ERR_MEDIA_UNSUPPORT_OPERATION,
+        "Pixelmap has crossed threads. GetUniqueId failed"), {});
     if (pixelMapNapi->nativePixelMap_ == nullptr) {
-        IMAGE_LOGE("GetUniqueId nativePixelMap_ is null");
-        return result;
+        return ImageNapiUtils::ThrowExceptionError(env, ERR_MEDIA_UNSUPPORT_OPERATION, "native pixelmap is nullptr");
     }
     int32_t id = static_cast<int32_t>(pixelMapNapi->nativePixelMap_->GetUniqueId());
 
@@ -2072,6 +2072,27 @@ napi_value PixelMapNapi::IsReleased(napi_env env, napi_callback_info info)
     return result;
 }
 
+static napi_value BuildClonePixelMapError(napi_env& env, int32_t errorCode)
+{
+    if (errorCode == ERR_IMAGE_INIT_ABNORMAL) {
+        return ImageNapiUtils::ThrowExceptionError(env, ERR_MEDIA_MEMORY_ALLOC_FAILED,
+            "Initial a empty pixelmap failed");
+    }
+    if (errorCode == ERR_IMAGE_MALLOC_ABNORMAL) {
+        return ImageNapiUtils::ThrowExceptionError(env, ERR_MEDIA_MEMORY_ALLOC_FAILED,
+            "Clone pixelmap data failed");
+    }
+    if (errorCode == ERR_IMAGE_DATA_UNSUPPORT) {
+        return ImageNapiUtils::ThrowExceptionError(env, ERR_MEDIA_MEMORY_ALLOC_FAILED,
+            "PixelMap type does not support clone");
+    }
+    if (errorCode == ERR_IMAGE_TOO_LARGE) {
+        return ImageNapiUtils::ThrowExceptionError(env, ERR_MEDIA_MEMORY_ALLOC_FAILED,
+            "PixelMap Size (byte count) out of range");
+    }
+    return ImageNapiUtils::ThrowExceptionError(env, ERR_MEDIA_MEMORY_ALLOC_FAILED, "Clone PixelMap failed");
+}
+
 napi_value PixelMapNapi::CreateCroppedAndScaledPixelMapSync(napi_env env, napi_callback_info info)
 {
     napi_value result = nullptr;
@@ -2079,38 +2100,53 @@ napi_value PixelMapNapi::CreateCroppedAndScaledPixelMapSync(napi_env env, napi_c
 
     napi_status status;
     napi_value thisVar = nullptr;
-    size_t argCount = NUM_5;
-    napi_value argValue[NUM_5] = {0};
+    size_t argCount = NUM_4;
+    napi_value argValue[NUM_4] = {0};
     IMAGE_LOGD("CreateCroppedAndScaledPixelMapSync IN");
     IMG_JS_ARGS(env, info, status, argCount, argValue, thisVar);
     IMG_NAPI_CHECK_RET_D(IMG_IS_OK(status), result, IMAGE_LOGE("fail to napi_get_cb_info"));
-    IMG_NAPI_CHECK_RET_D((argCount == NUM_5 || argCount == NUM_4),
-        ImageNapiUtils::ThrowExceptionError(env, COMMON_ERR_INVALID_PARAMETER, "Invalid argument count"),
+
+    PixelMapNapi* pixelMapNapi = nullptr;
+    status = napi_unwrap(env, thisVar, reinterpret_cast<void**>(&pixelMapNapi));
+
+    IMG_NAPI_CHECK_RET_D(IMG_IS_READY(status, pixelMapNapi), result, IMAGE_LOGE("fail to unwrap context"));
+
+    IMG_NAPI_CHECK_RET_D(pixelMapNapi->GetPixelNapiEditable(),
+        ImageNapiUtils::ThrowExceptionError(env, ERR_MEDIA_UNSUPPORT_OPERATION,
+        "Pixelmap has crossed threads. CreateCroppedAndScaledPixelMapSync failed"), {});
+
+    IMG_NAPI_CHECK_RET_D((argCount == NUM_3 || argCount == NUM_4),
+        ImageNapiUtils::ThrowExceptionError(env, ERR_MEDIA_UNSUPPORT_OPERATION, "Invalid argument count"),
         IMAGE_LOGE("%{public}s Invalid argument count", __func__));
 
     Rect region;
     double xArg = 0;
     double yArg = 0;
     int32_t antiAliasing = 0;
-    IMG_NAPI_CHECK_RET_D(ParserImageType(env, argValue[NUM_0]) == ImageType::TYPE_PIXEL_MAP,
-        ImageNapiUtils::ThrowExceptionError(env, COMMON_ERR_INVALID_PARAMETER, "Invalid argument pixelMap type"), {});
-    IMG_NAPI_CHECK_RET_D(parseRegion(env, argValue[NUM_1], &region),
-        ImageNapiUtils::ThrowExceptionError(env, COMMON_ERR_INVALID_PARAMETER, "Invalid argument region type"), {});
-    IMG_NAPI_CHECK_RET_D(IMG_IS_OK(napi_get_value_double(env, argValue[NUM_2], &xArg)),
-        ImageNapiUtils::ThrowExceptionError(env, COMMON_ERR_INVALID_PARAMETER, "Invalid argument x"), {});
-    IMG_NAPI_CHECK_RET_D(IMG_IS_OK(napi_get_value_double(env, argValue[NUM_3], &yArg)),
-        ImageNapiUtils::ThrowExceptionError(env, COMMON_ERR_INVALID_PARAMETER, "Invalid argument y"), {});
-    if (argCount == NUM_5) {
-        IMG_NAPI_CHECK_RET_D(IMG_IS_OK(napi_get_value_int32(env, argValue[NUM_4], &antiAliasing)),
-            ImageNapiUtils::ThrowExceptionError(env, COMMON_ERR_INVALID_PARAMETER, "Invalid antiAliasing"), {});
-        IMG_NAPI_CHECK_RET_D(antiAliasing >= NUM_0 && antiAliasing <= NUM_3,
-            ImageNapiUtils::ThrowExceptionError(env, COMMON_ERR_INVALID_PARAMETER, "Not support antiAliasing"), {});
+    IMG_NAPI_CHECK_RET_D(parseRegion(env, argValue[NUM_0], &region),
+        ImageNapiUtils::ThrowExceptionError(env, ERR_MEDIA_UNSUPPORT_OPERATION, "Invalid argument region type"), {});
+    IMG_NAPI_CHECK_RET_D(IMG_IS_OK(napi_get_value_double(env, argValue[NUM_1], &xArg)),
+        ImageNapiUtils::ThrowExceptionError(env, ERR_MEDIA_UNSUPPORT_OPERATION, "Invalid argument x"), {});
+    IMG_NAPI_CHECK_RET_D(IMG_IS_OK(napi_get_value_double(env, argValue[NUM_2], &yArg)),
+        ImageNapiUtils::ThrowExceptionError(env, ERR_MEDIA_UNSUPPORT_OPERATION, "Invalid argument y"), {});
+    if (argCount == NUM_4) {
+        IMG_NAPI_CHECK_RET_D(IMG_IS_OK(napi_get_value_int32(env, argValue[NUM_3], &antiAliasing)),
+            ImageNapiUtils::ThrowExceptionError(env, ERR_MEDIA_UNSUPPORT_OPERATION, "Invalid antiAliasing"), {});
+        IMG_NAPI_CHECK_RET_D(antiAliasing >= static_cast<int32_t>(NUM_0) && antiAliasing <= static_cast<int32_t>(NUM_3),
+            ImageNapiUtils::ThrowExceptionError(env, ERR_MEDIA_UNSUPPORT_OPERATION, "Not support antiAliasing"), {});
     }
-    std::shared_ptr<PixelMap> pixelMap = GetPixelMap(env, argValue[NUM_0]);
-    IMG_NAPI_CHECK_RET_D(pixelMap != nullptr, result, {});
-    uint32_t ret = pixelMap->crop(region);
-    IMG_NAPI_CHECK_RET_D(ret == SUCCESS, ImageNapiUtils::ThrowExceptionError(env, ret, "Crop failed"), {});
-    pixelMap->scale(xArg, yArg, ParseAntiAliasingOption(antiAliasing));
+    if (pixelMapNapi->nativePixelMap_ != nullptr) {
+        int32_t errorCode = 0;
+        auto clonePixelMap = pixelMapNapi->nativePixelMap_->Clone(errorCode);
+        if (clonePixelMap == nullptr) {
+            return BuildClonePixelMapError(env, errorCode);
+        }
+        uint32_t ret = clonePixelMap->crop(region);
+        IMG_NAPI_CHECK_RET_D(ret == SUCCESS, ImageNapiUtils::ThrowExceptionError(env,
+            ERR_MEDIA_MEMORY_ALLOC_FAILED, "Crop failed"), {});
+        clonePixelMap->scale(xArg, yArg, ParseAntiAliasingOption(antiAliasing));
+        result = PixelMapNapi::CreatePixelMap(env, std::move(clonePixelMap));
+    }
     return result;
 }
 
@@ -2121,13 +2157,23 @@ STATIC_EXEC_FUNC(CreateCropAndScalePixelMap)
         return;
     }
     auto context = static_cast<PixelMapAsyncContext*>(data);
-    if (context->rPixelMap != nullptr) {
-        uint32_t ret = context->rPixelMap->crop(context->area.region);
-        if (ret != SUCCESS) {
-            context->status = ret;
+    std::shared_ptr<PixelMap> pixelMap = context->wPixelMap;
+    if (pixelMap != nullptr) {
+        int32_t errorCode = SUCCESS;
+        auto clonePixelMap = pixelMap->Clone(errorCode);
+        if (clonePixelMap == nullptr || errorCode != SUCCESS) {
+            context->status = static_cast<uint32_t>(errorCode);
+            context->resultUint32 = NUM_1;
             return;
         }
-        context->rPixelMap->scale(context->xArg, context->yArg, context->antiAliasing);
+        uint32_t ret = clonePixelMap->crop(context->area.region);
+        if (ret != SUCCESS) {
+            context->status = ret;
+            context->resultUint32 = NUM_2;
+            return;
+        }
+        clonePixelMap->scale(context->xArg, context->yArg, context->antiAliasing);
+        context->rPixelMap = std::move(clonePixelMap);
     }
 }
 
@@ -2135,7 +2181,7 @@ STATIC_COMPLETE_FUNC(CreateCropAndScalePixelMap)
 {
     auto context = static_cast<PixelMapAsyncContext*>(data);
     if (context == nullptr) {
-        IMAGE_LOGE("CreateCropAndScalePixelMapComplete context is nullptr");
+        IMAGE_LOGE("CreateCropAndScalePixelMap context is nullptr");
         return;
     }
     napi_value result[NUM_2] = {0};
@@ -2153,9 +2199,19 @@ STATIC_COMPLETE_FUNC(CreateCropAndScalePixelMap)
     if (context->status == SUCCESS) {
         napi_value value = nullptr;
         napi_get_undefined(env, &value);
+        value = PixelMapNapi::CreatePixelMap(env, context->rPixelMap);
+        if (value == nullptr) {
+            context->status = ERR_MEDIA_UNSUPPORT_OPERATION;
+            ImageNapiUtils::CreateErrorObj(env, result[NUM_0], context->status, "napi pixelmap create failed");
+        }
         result[NUM_1] = value;
     } else {
-        ImageNapiUtils::CreateErrorObj(env, result[NUM_0], context->status, "pixelmap crop failed");
+        context->status = ERR_MEDIA_MEMORY_ALLOC_FAILED;
+        if (context->resultUint32 == NUM_1) {
+            ImageNapiUtils::CreateErrorObj(env, result[NUM_0], context->status, "pixelMap clone failed");
+        } else {
+            ImageNapiUtils::CreateErrorObj(env, result[NUM_0], context->status, "pixelMap crop failed");
+        }
     }
     if (context->deferred) {
         if (context->status == SUCCESS) {
@@ -2185,38 +2241,41 @@ napi_value PixelMapNapi::CreateCroppedAndScaledPixelMap(napi_env env, napi_callb
     napi_get_undefined(env, &result);
     napi_status status;
     napi_value thisVar = nullptr;
-    size_t argCount = NUM_5;
-    napi_value argValue[NUM_5] = {0};
+    size_t argCount = NUM_4;
+    napi_value argValue[NUM_4] = {0};
     std::unique_ptr<PixelMapAsyncContext> asyncContext = std::make_unique<PixelMapAsyncContext>();
-    IMAGE_LOGD("CreateCroppedAndScaledPixelMap IN");
-
     IMG_JS_ARGS(env, info, status, argCount, argValue, thisVar);
     IMG_NAPI_CHECK_RET_D(IMG_IS_OK(status), result, IMAGE_LOGE("fail to napi_get_cb_info"));
-    IMG_NAPI_CHECK_RET_D((argCount == NUM_5 || argCount == NUM_4),
-        ImageNapiUtils::ThrowExceptionError(env, COMMON_ERR_INVALID_PARAMETER, "Invalid argument count"),
+
+    status = napi_unwrap(env, thisVar, reinterpret_cast<void**>(&asyncContext->nConstructor));
+    IMG_NAPI_CHECK_RET_D(IMG_IS_READY(status, asyncContext->nConstructor),
+        nullptr, IMAGE_LOGE("fail to unwrap context"));
+    IMG_NAPI_CHECK_RET_D(asyncContext->nConstructor->nativePixelMap_ != nullptr, result, {});
+    asyncContext->wPixelMap = asyncContext->nConstructor->nativePixelMap_;
+    IMG_NAPI_CHECK_RET_D(asyncContext->nConstructor->GetPixelNapiEditable(),
+        ImageNapiUtils::ThrowExceptionError(env, ERR_MEDIA_UNSUPPORT_OPERATION,
+        "Pixelmap has crossed threads. CreateCroppedAndScaledPixelMap failed"), {});
+
+    IMG_NAPI_CHECK_RET_D((argCount == NUM_3 || argCount == NUM_4),
+        ImageNapiUtils::ThrowExceptionError(env, ERR_MEDIA_UNSUPPORT_OPERATION, "Invalid argument count"),
         IMAGE_LOGE("%{public}s Invalid argument count", __func__));
     int32_t antiAliasing = 0;
     asyncContext->antiAliasing = AntiAliasingOption::NONE;
-    IMG_NAPI_CHECK_RET_D(ParserImageType(env, argValue[NUM_0]) == ImageType::TYPE_PIXEL_MAP,
-        ImageNapiUtils::ThrowExceptionError(env, COMMON_ERR_INVALID_PARAMETER, "Invalid argument pixelMap type"), {});
+    IMG_NAPI_CHECK_RET_D(parseRegion(env, argValue[NUM_0], &(asyncContext->area.region)),
+        ImageNapiUtils::ThrowExceptionError(env, ERR_MEDIA_UNSUPPORT_OPERATION, "Invalid argument region type"), {});
 
-    IMG_NAPI_CHECK_RET_D(parseRegion(env, argValue[NUM_1], &(asyncContext->area.region)),
-        ImageNapiUtils::ThrowExceptionError(env, COMMON_ERR_INVALID_PARAMETER, "Invalid argument region type"), {});
+    IMG_NAPI_CHECK_RET_D(IMG_IS_OK(napi_get_value_double(env, argValue[NUM_1], &(asyncContext->xArg))),
+        ImageNapiUtils::ThrowExceptionError(env, ERR_MEDIA_UNSUPPORT_OPERATION, "Invalid argument x"), {});
 
-    IMG_NAPI_CHECK_RET_D(IMG_IS_OK(napi_get_value_double(env, argValue[NUM_2], &(asyncContext->xArg))),
-        ImageNapiUtils::ThrowExceptionError(env, COMMON_ERR_INVALID_PARAMETER, "Invalid argument x"), {});
-
-    IMG_NAPI_CHECK_RET_D(IMG_IS_OK(napi_get_value_double(env, argValue[NUM_3], &(asyncContext->yArg))),
-        ImageNapiUtils::ThrowExceptionError(env, COMMON_ERR_INVALID_PARAMETER, "Invalid argument y"), {});
-    if (argCount == NUM_5) {
-        IMG_NAPI_CHECK_RET_D(IMG_IS_OK(napi_get_value_int32(env, argValue[NUM_4], &antiAliasing)),
-            ImageNapiUtils::ThrowExceptionError(env, COMMON_ERR_INVALID_PARAMETER, "Invalid antiAliasing"), {});
-        IMG_NAPI_CHECK_RET_D(antiAliasing >= NUM_0 && antiAliasing <= NUM_3,
-            ImageNapiUtils::ThrowExceptionError(env, COMMON_ERR_INVALID_PARAMETER, "Not support antiAliasing"), {});
+    IMG_NAPI_CHECK_RET_D(IMG_IS_OK(napi_get_value_double(env, argValue[NUM_2], &(asyncContext->yArg))),
+        ImageNapiUtils::ThrowExceptionError(env, ERR_MEDIA_UNSUPPORT_OPERATION, "Invalid argument y"), {});
+    if (argCount == NUM_4) {
+        IMG_NAPI_CHECK_RET_D(IMG_IS_OK(napi_get_value_int32(env, argValue[NUM_3], &antiAliasing)),
+            ImageNapiUtils::ThrowExceptionError(env, ERR_MEDIA_UNSUPPORT_OPERATION, "Invalid antiAliasing"), {});
+        IMG_NAPI_CHECK_RET_D(antiAliasing >= static_cast<int32_t>(NUM_0) && antiAliasing <= static_cast<int32_t>(NUM_3),
+            ImageNapiUtils::ThrowExceptionError(env, ERR_MEDIA_UNSUPPORT_OPERATION, "Not support antiAliasing"), {});
         asyncContext->antiAliasing = ParseAntiAliasingOption(antiAliasing);
     }
-    asyncContext->rPixelMap = GetPixelMap(env, argValue[NUM_0]);
-    IMG_NAPI_CHECK_RET_D(asyncContext->rPixelMap != nullptr, result, {});
 
     napi_create_promise(env, &(asyncContext->deferred), &result);
     IMG_CREATE_CREATE_ASYNC_WORK(env, status, "CreateCropAndScalePixelMap", CreateCropAndScalePixelMapExec,
