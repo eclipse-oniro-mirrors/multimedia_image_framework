@@ -986,7 +986,7 @@ int ExifMetadata::GetUserMakerNote(std::string& value) const
 }
 
 // get exif xmage coordinates
-bool GetExifCoordinateValue(const std::string& fieldName, std::string& valueOutput) 
+bool GetExifCoordinateValue(const std::string& fieldName, std::string& valueOutput)
 {
     int ret = GetValue(fieldName.c_str(), valueOutput);
     if (ret == SUCCESS) {
@@ -998,7 +998,7 @@ bool GetExifCoordinateValue(const std::string& fieldName, std::string& valueOutp
 }
 
 // check if the coordinate value is valid and parse it to int
-bool ParseCoordinateValue(const std::string& valueStr, const std::string& fieldName, int& outputValue) 
+bool ParseCoordinateValue(const std::string& valueStr, const std::string& fieldName, int& outputValue)
 {
     // check for empty or default value
     if (valueStr.empty() || valueStr == "default_exif_value") {
@@ -1051,7 +1051,6 @@ bool ExifMetadata::ExtractXMageCoordinates(XmageCoordinateMetadata& coordMetadat
         coordMetadata.right) && allParsedSuccessfully;
     allParsedSuccessfully = ParseCoordinateValue(bottomValue, "HwMnoteXmageBottom",
         coordMetadata.bottom) && allParsedSuccessfully;
-
     if (allParsedSuccessfully) {
         IMAGE_LOGI(
             "Exif_metadata:ExtractXMageCoordinates Successfully extracted XMAGE coordinates: "
