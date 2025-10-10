@@ -51,7 +51,7 @@ public:
     bool ExtractXmageCoordinates(XmageCoordinateMetadata &coordMetadata) const;
 
 private:
-    bool GetExifCoordinateValue(const std::string &fieldName, std::string &valueOutput) const;
+    bool ParseExifCoordinate(const std::string& fieldName, int& outputValue) const;
     ExifEntry* CreateEntry(const std::string &key, const ExifTag &tag, const size_t len);
     MnoteHuaweiEntry* CreateHwEntry(const std::string &key);
     ExifEntry* GetEntry(const std::string &key, const size_t len);

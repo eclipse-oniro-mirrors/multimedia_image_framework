@@ -1016,11 +1016,14 @@ unique_ptr<PixelMap> ImageSource::CreatePixelMapExtended(uint32_t index, const D
         errorCode = ERR_IMAGE_DATA_ABNORMAL;
         return nullptr;
     }
+    //Extract Exif Metadata，hasValidXmageCoords_ is used for judgeing
+    //whether the image contains valid xmage coordinates.
     hasValidXmageCoords_ = false;
-    std::shared_ptr<ExifMetadata> clonedExif;
-    if (auto ret = CreatExifMetadataByImageSource(); ret == SUCCESS &&
-        (clonedExif = exifMetadata_->Clone()) != nullptr) {
-        hasValidXmageCoords_ = clonedExif->ExtractXmageCoordinates(coordMetadata_);
+    if (CreatExifMetadataByImageSource() == SUCCESS) {
+        auto metadataPtr = exifMetadata_->Clone();
+        if (metadataPtr != nullptr) {
+            hasValidXmageCoords_ = metadataPtr->ExtractXmageCoordinates(coordMetadata_);
+        }
     }
     ImagePlugin::PlImageInfo plInfo;
     DecodeContext context = DecodeImageDataToContextExtended(index, info, plInfo, imageEvent, errorCode);
@@ -1064,8 +1067,9 @@ unique_ptr<PixelMap> ImageSource::CreatePixelMapExtended(uint32_t index, const D
 
     {
         std::unique_lock<std::mutex> guard(decodingMutex_);
-        if (clonedExif != nullptr) {
-            pixelMap->SetExifMetadata(clonedExif);
+        if (CreatExifMetadataByImageSource() == SUCCESS) {
+            auto metadataPtr = exifMetadata_->Clone();
+            pixelMap->SetExifMetadata(metadataPtr);
         }
     }
     if (NeedConvertToYuv(opts.desiredPixelFormat, pixelMap->GetPixelFormat())) {
