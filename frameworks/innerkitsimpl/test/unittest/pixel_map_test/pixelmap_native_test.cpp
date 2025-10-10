@@ -1683,7 +1683,7 @@ HWTEST_F(PixelMapNdk2Test, OH_PixelmapNative_IsReleased, TestSize.Level3)
     GTEST_LOG_(INFO) << "PixelMapNdk2Test: OH_PixelmapNative_IsReleased start";
 
     bool released = false;
-    Image_ErrorCode ret = OH_PixelmapNative_IsReleased(nullptr, &uniqueId);
+    Image_ErrorCode ret = OH_PixelmapNative_IsReleased(nullptr, &released);
     EXPECT_NE(ret, IMAGE_SUCCESS);
 
     OH_PixelmapNative* pixelmap = nullptr;
