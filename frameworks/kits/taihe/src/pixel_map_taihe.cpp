@@ -446,6 +446,47 @@ void PixelMapImpl::ScaleWithAntiAliasingSync(double x, double y, AntiAliasingLev
     nativePixelMap_->scale(static_cast<float>(x), static_cast<float>(y), Media::AntiAliasingOption(level.get_value()));
 }
 
+PixelMap PixelMapImpl::CreateCroppedAndScaledPixelMapSync(ohos::multimedia::image::image::Region const& region,
+    double x, double y, optional_view<AntiAliasingLevel> level)
+{
+    if (nativePixelMap_ == nullptr) {
+        ImageTaiheUtils::ThrowExceptionError(Media::COMMON_ERR_INVALID_PARAMETER, "Native PixelMap is nullptr");
+        return make_holder<PixelMapImpl, PixelMap>();
+    }
+
+    int32_t errorCode = Media::SUCCESS;
+    auto clonedPixelMap = nativePixelMap_->Clone(errorCode);
+    if (clonedPixelMap == nullptr) {
+        if (errorCode == Media::ERR_IMAGE_INIT_ABNORMAL) {
+            ImageTaiheUtils::ThrowExceptionError(Media::ERR_IMAGE_INIT_ABNORMAL, "Initialize empty PixelMap failed");
+        } else if (errorCode == Media::ERR_IMAGE_MALLOC_ABNORMAL) {
+            ImageTaiheUtils::ThrowExceptionError(Media::ERR_IMAGE_MALLOC_ABNORMAL, "Copy PixelMap data failed");
+        } else if (errorCode == Media::ERR_IMAGE_DATA_UNSUPPORT) {
+            ImageTaiheUtils::ThrowExceptionError(Media::ERR_IMAGE_DATA_UNSUPPORT,
+                "PixelMap type does not support clone");
+        } else if (errorCode == Media::ERR_IMAGE_TOO_LARGE) {
+            ImageTaiheUtils::ThrowExceptionError(Media::ERR_IMAGE_TOO_LARGE, "PixelMap size (bytes) out of range");
+        } else {
+            ImageTaiheUtils::ThrowExceptionError(errorCode, "Clone PixelMap failed");
+        }
+        return make_holder<PixelMapImpl, PixelMap>();
+    }
+
+    Media::Rect rect = {region.x, region.y, region.size.width, region.size.height};
+    uint32_t status = nativePixelMap_->crop(rect);
+    if (status != Media::SUCCESS) {
+        IMAGE_LOGE("[%{public}s] crop failed", __func__);
+    }
+
+    if (level.has_value()) {
+        clonedPixelMap->scale(static_cast<float>(x), static_cast<float>(y),
+            Media::AntiAliasingOption(level.value().get_value()));
+    } else {
+        clonedPixelMap->scale(static_cast<float>(x), static_cast<float>(y));
+    }
+    return make_holder<PixelMapImpl, PixelMap>(std::move(clonedPixelMap));
+}
+
 void PixelMapImpl::CropSync(ohos::multimedia::image::image::Region const& region)
 {
     if (nativePixelMap_ == nullptr) {
@@ -741,6 +782,21 @@ void PixelMapImpl::ReleaseSync()
             nativePixelMap_.reset();
         }
     }
+}
+
+bool PixelMapImpl::IsReleased()
+{
+    return nativePixelMap_ == nullptr;
+}
+
+int32_t PixelMapImpl::GetUniqueId()
+{
+    if (nativePixelMap_ == nullptr) {
+        ImageTaiheUtils::ThrowExceptionError(Media::COMMON_ERR_INVALID_PARAMETER, "Native PixelMap is nullptr");
+        return 0;
+    }
+
+    return static_cast<int32_t>(nativePixelMap_->GetUniqueId());
 }
 
 bool PixelMapImpl::GetIsEditable()
