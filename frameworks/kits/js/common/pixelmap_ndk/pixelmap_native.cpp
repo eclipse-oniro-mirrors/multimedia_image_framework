@@ -1577,7 +1577,7 @@ Image_ErrorCode OH_PixelmapNative_IsReleased(OH_PixelmapNative *pixelmap, bool *
     if (pixelmap == nullptr) {
         return IMAGE_BAD_PARAMETER;
     }
-    *released = (pixelmap->GetInnerPixelmap() == nullptr || pixelmap->GetInnerPixelmap().use_count() == 0);
+    *released = pixelmap->GetInnerPixelmap() == nullptr;
     return IMAGE_SUCCESS;
 }
 
