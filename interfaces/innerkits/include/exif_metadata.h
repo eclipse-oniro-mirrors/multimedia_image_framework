@@ -48,8 +48,10 @@ public:
         return MetadataType::EXIF;
     }
     bool RemoveExifThumbnail() override;
+    bool ExtractXmageCoordinates(XmageCoordinateMetadata &coordMetadata) const;
 
 private:
+    bool ParseExifCoordinate(const std::string& fieldName, uint32_t& outputValue) const;
     ExifEntry* CreateEntry(const std::string &key, const ExifTag &tag, const size_t len);
     MnoteHuaweiEntry* CreateHwEntry(const std::string &key);
     ExifEntry* GetEntry(const std::string &key, const size_t len);

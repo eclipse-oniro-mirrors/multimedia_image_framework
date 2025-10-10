@@ -400,6 +400,7 @@ private:
 #if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
     void SpecialSetComposeBuffer(ImagePlugin::DecodeContext &baseCtx, sptr<SurfaceBuffer>& baseSptr,
         sptr<SurfaceBuffer>& gainmapSptr, sptr<SurfaceBuffer>& hdrSptr, HdrMetadata& metadata);
+    void SetXmageMetadataToGainmap(sptr<SurfaceBuffer>& gainmapSptr);
     void SetHdrMetadataForPicture(std::unique_ptr<Picture> &picture);
     void DecodeHeifAuxiliaryPictures(const std::set<AuxiliaryPictureType> &auxTypes, std::unique_ptr<Picture> &picture,
                                      uint32_t &errorCode);
@@ -454,6 +455,8 @@ private:
     uint8_t* srcBuffer_ = nullptr;
     uint32_t srcBufferSize_ = 0;
     std::set<std::string> exifUnsupportKeys_;
+    XmageCoordinateMetadata coordMetadata_;
+    bool hasValidXmageCoords_ = false;
 };
 } // namespace Media
 } // namespace OHOS
