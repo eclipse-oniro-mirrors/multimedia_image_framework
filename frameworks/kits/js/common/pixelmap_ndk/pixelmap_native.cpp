@@ -674,7 +674,7 @@ static Image_ErrorCode CreatePixelMapFromSurface(const std::string &surfaceId, O
 }
 
 MIDK_EXPORT
-Image_ErrorCode OH_PixelmapNative_CreatePixelmapFromSurface(char *surfaceId, size_t length,
+Image_ErrorCode OH_PixelmapNative_CreatePixelmapFromSurface(const char *surfaceId, size_t length,
     OH_PixelmapNative **pixelmap)
 {
     if (pixelmap == nullptr || surfaceId == nullptr) {

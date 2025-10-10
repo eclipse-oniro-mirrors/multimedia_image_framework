@@ -1046,7 +1046,7 @@ Image_ErrorCode OH_PixelmapNative_CreateEmptyPixelmapUsingAllocator(
  * @see OH_PixelmapNative
  * @since 22
  */
-Image_ErrorCode OH_PixelmapNative_CreatePixelmapFromSurface(char *surfaceId, size_t length,
+Image_ErrorCode OH_PixelmapNative_CreatePixelmapFromSurface(const char *surfaceId, size_t length,
     OH_PixelmapNative **pixelmap);
 
 /**
