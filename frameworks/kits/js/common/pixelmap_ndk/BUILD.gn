@@ -86,8 +86,11 @@ ohos_shared_library("pixelmap") {
   external_deps = [
     "c_utils:utils",
     "drivers_interface_display:display_commontype_idl_headers",
+    "graphic_2d:EGL",
     "graphic_2d:color_manager",
     "graphic_2d:color_space_object_convertor",
+    "graphic_2d:librender_service_base",
+    "graphic_2d:librender_service_client",
     "graphic_2d:libnative_color_space_manager",
     "graphic_surface:surface",
     "hilog:libhilog",

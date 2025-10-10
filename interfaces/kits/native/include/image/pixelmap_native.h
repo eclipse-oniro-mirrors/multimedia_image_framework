@@ -726,6 +726,35 @@ Image_ErrorCode OH_PixelmapNative_ReadPixels(OH_PixelmapNative *pixelmap, uint8_
 Image_ErrorCode OH_PixelmapNative_WritePixels(OH_PixelmapNative *pixelmap, uint8_t *source, size_t bufferSize);
 
 /**
+ * @brief Reads data from a certain area of the PixelMap to a buffer. The resulting data will be in BGRA_8888 format.
+ *
+ * @param pixelmap The PixelMap to be read.
+ * @param area Area of the PixelMap to read the data. Data will be read and copied into area->pixels.
+ * @return Function result code:
+ *         {@link IMAGE_SUCCESS} If the operation is successful.
+ *         {@link IMAGE_BAD_PARAMETER} If any parameter is invalid, e.g. pixelmap or area is incorrect.
+ *         {@link IMAGE_UNKNOWN_ERROR} Internal unknown error, e.g. unsupported pixel format.
+ * @see OH_PixelmapNative
+ * @since 22
+ */
+Image_ErrorCode OH_PixelmapNative_ReadPixelsFromArea(OH_PixelmapNative *pixelmap, Image_PositionArea *area);
+
+/**
+ * @brief Writes data from a buffer to a certain area of the PixelMap. The source data should be in BGRA_8888 format.
+ *
+ * @param pixelmap The PixelMap to be written.
+ * @param area Area of the PixelMap to write the data.
+ * @return Function result code:
+ *         {@link IMAGE_SUCCESS} If the operation is successful.
+ *         {@link IMAGE_BAD_PARAMETER} If any parameter is invalid, e.g. pixelmap or area is incorrect.
+ *         {@link IMAGE_UNSUPPORTED_OPERATION} If the PixelMap is not editable.
+ *         {@link IMAGE_UNKNOWN_ERROR} Internal unknown error, e.g. unsupported pixel format.
+ * @see OH_PixelmapNative
+ * @since 22
+ */
+Image_ErrorCode OH_PixelmapNative_WritePixelsToArea(OH_PixelmapNative *pixelmap, Image_PositionArea *area);
+
+/**
  * @brief Get argb pixel buffer from pixelmap.
  *
  * @param pixelmap The Pixelmap pointer to be operated.
@@ -816,6 +845,58 @@ Image_ErrorCode OH_PixelmapNative_ScaleWithAntiAliasing(OH_PixelmapNative *pixel
  * @since 12
  */
 Image_ErrorCode OH_PixelmapNative_Translate(OH_PixelmapNative *pixelmap, float x, float y);
+
+/**
+ * @brief Creates a PixelMap with only alpha channel from the source PixelMap.
+ *
+ * @param srcPixelmap The source PixelMap.
+ * @param dstPixelmap The target PixelMap to be created.
+ * @return Function result code:
+ *         {@link IMAGE_SUCCESS} If the operation is successful.
+ *         {@link IMAGE_BAD_PARAMETER} If any parameter is invalid, e.g. srcPixelmap or dstPixelmap is incorrect.
+ * @see OH_PixelmapNative
+ * @since 22
+ */
+Image_ErrorCode OH_PixelmapNative_CreateAlphaPixelmap(OH_PixelmapNative *srcPixelmap, OH_PixelmapNative **dstPixelmap);
+
+/**
+ * @brief Clones a PixelMap from the source PixelMap.
+ *
+ * @param srcPixelmap The source PixelMap to be cloned.
+ * @param dstPixelmap The target PixelMap to be created.
+ * @return Function result code:
+ *         {@link IMAGE_SUCCESS} If the operation is successful.
+ *         {@link IMAGE_BAD_PARAMETER} If any parameter is invalid, e.g. srcPixelmap or dstPixelmap is incorrect.
+ *         {@link IMAGE_UNSUPPORTED_DATA_FORMAT} If the pixel format is unsupported.
+ *         {@link IMAGE_TOO_LARGE} If the PixelMap size is too large.
+ *         {@link IMAGE_INIT_FAILED} If the PixelMap initialization failed.
+ *         {@link IMAGE_ALLOC_FAILED} If the copying of PixelMap data failed.
+ * @see OH_PixelmapNative
+ * @since 22
+ */
+Image_ErrorCode OH_PixelmapNative_Clone(OH_PixelmapNative *srcPixelmap, OH_PixelmapNative **dstPixelmap);
+
+/**
+ * @brief Creates a cropped and then scaled PixelMap based on the source PixelMap.
+ *
+ * @param srcPixelmap The source PixelMap.
+ * @param region The crop region.
+ * @param scale The scale ratio of width and height.
+ * @param level The anti-aliasing algorithm to be used.
+ * @param dstPixelmap The target PixelMap to be created.
+ * @return Function result code:
+ *         {@link IMAGE_SUCCESS} If the operation is successful.
+ *         {@link IMAGE_BAD_PARAMETER} If any parameter is invalid, e.g. srcPixelmap, region, scale, or dstPixelmap is
+ *                                     incorrect.
+ *         {@link IMAGE_UNSUPPORTED_DATA_FORMAT} If the pixel format is unsupported.
+ *         {@link IMAGE_TOO_LARGE} If the PixelMap size is too large.
+ *         {@link IMAGE_INIT_FAILED} If the PixelMap initialization failed.
+ *         {@link IMAGE_ALLOC_FAILED} If the copying of PixelMap data failed.
+ * @see OH_PixelmapNative
+ * @since 22
+ */
+Image_ErrorCode OH_PixelmapNative_CreateCroppedAndScaledPixelMap(OH_PixelmapNative *srcPixelmap, Image_Region *region,
+    Image_Scale *scale, OH_PixelmapNative_AntiAliasingLevel level, OH_PixelmapNative **dstPixelmap);
 
 /**
  * @brief Create a scaled pixelmap based on the source pixelmap and the input width and height.
@@ -951,6 +1032,37 @@ Image_ErrorCode OH_PixelmapNative_CreateEmptyPixelmap(OH_Pixelmap_Initialization
  */
 Image_ErrorCode OH_PixelmapNative_CreateEmptyPixelmapUsingAllocator(
     OH_Pixelmap_InitializationOptions *options, IMAGE_ALLOCATOR_MODE allocator, OH_PixelmapNative **pixelmap);
+
+/**
+ * @brief Creates a PixelMap from a Surface with the Surface ID.
+ *
+ * @param surfaceId The Surface ID.
+ * @param length Length of the Surface ID.
+ * @param pixelmap The PixelMap to be created.
+ * @return Function result code:
+ *         {@link IMAGE_SUCCESS} If the operation is successful.
+ *         {@link IMAGE_BAD_PARAMETER} If any parameter is invalid, e.g. surfaceId or pixelmap is incorrect.
+ *         {@link IMAGE_CREATE_PIXELMAP_FAILED} If the PixelMap creation failed.
+ * @see OH_PixelmapNative
+ * @since 22
+ */
+Image_ErrorCode OH_PixelmapNative_CreatePixelmapFromSurface(const char *surfaceId, size_t length,
+    OH_PixelmapNative **pixelmap);
+
+/**
+ * @brief Creates a PixelMap from a native buffer.
+ *
+ * @param nativeBuffer The native buffer.
+ * @param pixelmap The PixelMap to be created.
+ * @return Function result code:
+ *         {@link IMAGE_SUCCESS} If the operation is successful.
+ *         {@link IMAGE_BAD_PARAMETER} If any parameter is invalid, e.g. nativeBuffer or pixelmap is incorrect.
+ *         {@link IMAGE_CREATE_PIXELMAP_FAILED} If the PixelMap creation failed.
+ * @see OH_PixelmapNative
+ * @since 22
+ */
+Image_ErrorCode OH_PixelmapNative_CreatePixelmapFromNativeBuffer(OH_NativeBuffer *nativeBuffer,
+    OH_PixelmapNative **pixelmap);
 
 /**
  * @brief Convert the image format based on the input target pixel format.
@@ -1108,6 +1220,32 @@ Image_ErrorCode OH_PixelmapNative_AccessPixels(OH_PixelmapNative *pixelmap, void
  * @since 15
  */
 Image_ErrorCode OH_PixelmapNative_UnaccessPixels(OH_PixelmapNative *pixelmap);
+
+/**
+ * @brief Gets the unique ID of a PixelMap.
+ *
+ * @param pixelmap The PixelMap to retrieve the unique ID.
+ * @param uniqueId The resulting unique ID.
+ * @return Function result code:
+ *         {@link IMAGE_SUCCESS} If the operation is successful.
+ *         {@link IMAGE_BAD_PARAMETER} If any parameter is invalid, e.g. pixelmap or uniqueId is incorrect.
+ * @see OH_PixelmapNative
+ * @since 22
+ */
+Image_ErrorCode OH_PixelmapNative_GetUniqueId(OH_PixelmapNative *pixelmap, uint32_t *uniqueId);
+
+/**
+ * @brief Checks whether the PixelMap has been released.
+ *
+ * @param pixelmap The PixelMap to check.
+ * @param released The resulting release status.
+ * @return Function result code:
+ *         {@link IMAGE_SUCCESS} If the operation is successful.
+ *         {@link IMAGE_BAD_PARAMETER} If any parameter is invalid, e.g. pixelmap or released is incorrect.
+ * @see OH_PixelmapNative
+ * @since 22
+ */
+Image_ErrorCode OH_PixelmapNative_IsReleased(OH_PixelmapNative *pixelmap, bool *released);
 
 #ifdef __cplusplus
 };
