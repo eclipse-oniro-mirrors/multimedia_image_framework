@@ -1028,7 +1028,7 @@ bool ExifMetadata::ExtractXmageCoordinates(XmageCoordinateMetadata& coordMetadat
         ParseExifCoordinate("HwMnoteXmageRight", coordMetadata.right) &&
         ParseExifCoordinate("HwMnoteXmageBottom", coordMetadata.bottom);
     if (allParsedSuccessfully) {
-        IMAGE_LOGE(
+        IMAGE_LOGI(
             "Exif_metadata:ExtractXMageCoordinates Successfully extracted XMAGE coordinates: "
             "left=%{public}d, top=%{public}d, right=%{public}d, bottom=%{public}d",
             coordMetadata.left, coordMetadata.top, coordMetadata.right, coordMetadata.bottom);
