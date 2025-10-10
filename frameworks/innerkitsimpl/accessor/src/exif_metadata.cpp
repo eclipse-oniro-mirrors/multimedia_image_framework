@@ -985,8 +985,8 @@ int ExifMetadata::GetUserMakerNote(std::string& value) const
     return SUCCESS;
 }
 
-bool ExifMetadata::ParseExifCoordinate(const std::string& fieldName, int& outputValue) const
-{   
+bool ExifMetadata::ParseExifCoordinate(const std::string& fieldName, uint32_t& outputValue) const
+{
     // Use GetValue to read the field as a string
     std::string valueStr;
     int ret = GetValue(fieldName, valueStr);
@@ -1009,7 +1009,7 @@ bool ExifMetadata::ParseExifCoordinate(const std::string& fieldName, int& output
     auto result = std::from_chars(valueStr.data(), valueStr.data() + valueStr.size(), outputValue);
     if (result.ec != std::errc()) {
         IMAGE_LOGE("Exif_metadata:ExtractXMageCoordinates Failed to parse %s: %s (error code: %{public}d)",
-            fieldName.c_str(), valueStr.c_str(), static_cast<int>(result.ec));
+            fieldName.c_str(), valueStr.c_str(), static_cast<uint32_t>(result.ec));
         return false;
     }
 
@@ -1027,7 +1027,6 @@ bool ExifMetadata::ExtractXmageCoordinates(XmageCoordinateMetadata& coordMetadat
         ParseExifCoordinate("HwMnoteXmageTop", coordMetadata.top) &&
         ParseExifCoordinate("HwMnoteXmageRight", coordMetadata.right) &&
         ParseExifCoordinate("HwMnoteXmageBottom", coordMetadata.bottom);
-
     if (allParsedSuccessfully) {
         IMAGE_LOGE(
             "Exif_metadata:ExtractXMageCoordinates Successfully extracted XMAGE coordinates: "

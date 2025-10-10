@@ -83,14 +83,14 @@ static const std::vector<std::string> modifyValues = {
 
 static const std::vector<std::string> XMAGE_COORDINATE_KEYS = {
     "HwMnoteXmageLeft",
-    "HwMnoteXmageTop", 
+    "HwMnoteXmageTop",
     "HwMnoteXmageRight",
     "HwMnoteXmageBottom"
 };
 
 static const std::vector<std::string> VALID_COORDINATE_VALUES = {
     "100",    // left
-    "200",    // top  
+    "200",    // top
     "500",    // right
     "300"     // bottom
 };
@@ -611,7 +611,7 @@ HWTEST_F(ImageSourceExifTest, HwXmageTest005, TestSize.Level3)
 
 /**
  • @tc.name: ExtractXMageCoordinatesTest001
- • @tc.desc: Test the ExtractXMageCoordinates function with valid XMAGE coordinate values 
+ • @tc.desc: Test the ExtractXMageCoordinates function with valid XMAGE coordinate values
  •           to ensure coordinates are successfully extracted and parsed.
  • @tc.type: FUNC
  */
