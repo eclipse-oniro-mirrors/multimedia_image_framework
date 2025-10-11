@@ -2083,7 +2083,7 @@ static napi_value BuildClonePixelMapError(napi_env& env, int32_t errorCode)
             "Clone pixelmap data failed");
     }
     if (errorCode == ERR_IMAGE_DATA_UNSUPPORT) {
-        return ImageNapiUtils::ThrowExceptionError(env, ERR_MEDIA_MEMORY_ALLOC_FAILED,
+        return ImageNapiUtils::ThrowExceptionError(env, ERR_MEDIA_UNSUPPORTED_MEMORY_FORMAT,
             "PixelMap type does not support clone");
     }
     if (errorCode == ERR_IMAGE_TOO_LARGE) {
@@ -2102,14 +2102,16 @@ napi_value PixelMapNapi::CreateCroppedAndScaledPixelMapSync(napi_env env, napi_c
     napi_value thisVar = nullptr;
     size_t argCount = NUM_4;
     napi_value argValue[NUM_4] = {0};
-    IMAGE_LOGD("CreateCroppedAndScaledPixelMapSync IN");
     IMG_JS_ARGS(env, info, status, argCount, argValue, thisVar);
     IMG_NAPI_CHECK_RET_D(IMG_IS_OK(status), result, IMAGE_LOGE("fail to napi_get_cb_info"));
 
     PixelMapNapi* pixelMapNapi = nullptr;
     status = napi_unwrap(env, thisVar, reinterpret_cast<void**>(&pixelMapNapi));
+    IMG_NAPI_CHECK_RET_D(IMG_IS_READY(status, pixelMapNapi),
+        nullptr, IMAGE_LOGE("fail to unwrap context %{public}d", status));
 
-    IMG_NAPI_CHECK_RET_D(IMG_IS_READY(status, pixelMapNapi), result, IMAGE_LOGE("fail to unwrap context"));
+    IMG_NAPI_CHECK_RET_D(pixelMapNapi->nativePixelMap_ != nullptr,
+        ImageNapiUtils::ThrowExceptionError(env, ERR_MEDIA_UNSUPPORT_OPERATION, "native pixelmap has released"), {});
 
     IMG_NAPI_CHECK_RET_D(pixelMapNapi->GetPixelNapiEditable(),
         ImageNapiUtils::ThrowExceptionError(env, ERR_MEDIA_UNSUPPORT_OPERATION,
@@ -2124,7 +2126,7 @@ napi_value PixelMapNapi::CreateCroppedAndScaledPixelMapSync(napi_env env, napi_c
     double yArg = 0;
     int32_t antiAliasing = 0;
     IMG_NAPI_CHECK_RET_D(parseRegion(env, argValue[NUM_0], &region),
-        ImageNapiUtils::ThrowExceptionError(env, ERR_MEDIA_UNSUPPORT_OPERATION, "Invalid argument region type"), {});
+        ImageNapiUtils::ThrowExceptionError(env, ERR_MEDIA_INVALID_REGION, "Invalid argument region type"), {});
     IMG_NAPI_CHECK_RET_D(IMG_IS_OK(napi_get_value_double(env, argValue[NUM_1], &xArg)),
         ImageNapiUtils::ThrowExceptionError(env, ERR_MEDIA_UNSUPPORT_OPERATION, "Invalid argument x"), {});
     IMG_NAPI_CHECK_RET_D(IMG_IS_OK(napi_get_value_double(env, argValue[NUM_2], &yArg)),
@@ -2141,9 +2143,8 @@ napi_value PixelMapNapi::CreateCroppedAndScaledPixelMapSync(napi_env env, napi_c
         if (clonePixelMap == nullptr) {
             return BuildClonePixelMapError(env, errorCode);
         }
-        uint32_t ret = clonePixelMap->crop(region);
-        IMG_NAPI_CHECK_RET_D(ret == SUCCESS, ImageNapiUtils::ThrowExceptionError(env,
-            ERR_MEDIA_MEMORY_ALLOC_FAILED, "Crop failed"), {});
+        IMG_NAPI_CHECK_RET_D(SUCCESS == clonePixelMap->crop(region), ImageNapiUtils::ThrowExceptionError(env,
+            ERR_MEDIA_INVALID_REGION, "Crop failed, region or properties invalid"), {});
         clonePixelMap->scale(xArg, yArg, ParseAntiAliasingOption(antiAliasing));
         result = PixelMapNapi::CreatePixelMap(env, std::move(clonePixelMap));
     }
@@ -2181,7 +2182,6 @@ STATIC_COMPLETE_FUNC(CreateCropAndScalePixelMap)
 {
     auto context = static_cast<PixelMapAsyncContext*>(data);
     if (context == nullptr) {
-        IMAGE_LOGE("CreateCropAndScalePixelMap context is nullptr");
         return;
     }
     napi_value result[NUM_2] = {0};
@@ -2193,7 +2193,6 @@ STATIC_COMPLETE_FUNC(CreateCropAndScalePixelMap)
     napi_handle_scope scope = nullptr;
     napi_open_handle_scope(env, &scope);
     if (scope == nullptr) {
-        IMAGE_LOGE("CreateCropAndScalePixelMap scope is nullptr");
         return;
     }
     if (context->status == SUCCESS) {
@@ -2206,11 +2205,13 @@ STATIC_COMPLETE_FUNC(CreateCropAndScalePixelMap)
         }
         result[NUM_1] = value;
     } else {
-        context->status = ERR_MEDIA_MEMORY_ALLOC_FAILED;
         if (context->resultUint32 == NUM_1) {
+            context->status = context->status == ERR_IMAGE_DATA_UNSUPPORT ?
+                ERR_MEDIA_UNSUPPORTED_MEMORY_FORMAT : ERR_MEDIA_MEMORY_ALLOC_FAILED;
             ImageNapiUtils::CreateErrorObj(env, result[NUM_0], context->status, "pixelMap clone failed");
         } else {
-            ImageNapiUtils::CreateErrorObj(env, result[NUM_0], context->status, "pixelMap crop failed");
+            ImageNapiUtils::CreateErrorObj(env, result[NUM_0], ERR_MEDIA_INVALID_REGION,
+                "Crop failed, region or properties invalid");
         }
     }
     if (context->deferred) {
@@ -2249,8 +2250,9 @@ napi_value PixelMapNapi::CreateCroppedAndScaledPixelMap(napi_env env, napi_callb
 
     status = napi_unwrap(env, thisVar, reinterpret_cast<void**>(&asyncContext->nConstructor));
     IMG_NAPI_CHECK_RET_D(IMG_IS_READY(status, asyncContext->nConstructor),
-        nullptr, IMAGE_LOGE("fail to unwrap context"));
-    IMG_NAPI_CHECK_RET_D(asyncContext->nConstructor->nativePixelMap_ != nullptr, result, {});
+        nullptr, IMAGE_LOGE("fail to unwrap context %{public}d", status));
+    IMG_NAPI_CHECK_RET_D(asyncContext->nConstructor->nativePixelMap_ != nullptr,
+        ImageNapiUtils::ThrowExceptionError(env, ERR_MEDIA_UNSUPPORT_OPERATION, "native pixelmap has released"), {});
     asyncContext->wPixelMap = asyncContext->nConstructor->nativePixelMap_;
     IMG_NAPI_CHECK_RET_D(asyncContext->nConstructor->GetPixelNapiEditable(),
         ImageNapiUtils::ThrowExceptionError(env, ERR_MEDIA_UNSUPPORT_OPERATION,
@@ -2262,7 +2264,7 @@ napi_value PixelMapNapi::CreateCroppedAndScaledPixelMap(napi_env env, napi_callb
     int32_t antiAliasing = 0;
     asyncContext->antiAliasing = AntiAliasingOption::NONE;
     IMG_NAPI_CHECK_RET_D(parseRegion(env, argValue[NUM_0], &(asyncContext->area.region)),
-        ImageNapiUtils::ThrowExceptionError(env, ERR_MEDIA_UNSUPPORT_OPERATION, "Invalid argument region type"), {});
+        ImageNapiUtils::ThrowExceptionError(env, ERR_MEDIA_INVALID_REGION, "Invalid argument region type"), {});
 
     IMG_NAPI_CHECK_RET_D(IMG_IS_OK(napi_get_value_double(env, argValue[NUM_1], &(asyncContext->xArg))),
         ImageNapiUtils::ThrowExceptionError(env, ERR_MEDIA_UNSUPPORT_OPERATION, "Invalid argument x"), {});
@@ -2281,7 +2283,6 @@ napi_value PixelMapNapi::CreateCroppedAndScaledPixelMap(napi_env env, napi_callb
     IMG_CREATE_CREATE_ASYNC_WORK(env, status, "CreateCropAndScalePixelMap", CreateCropAndScalePixelMapExec,
         CreateCropAndScalePixelMapComplete, asyncContext, asyncContext->work);
     IMG_NAPI_CHECK_RET_D(IMG_IS_OK(status), nullptr, {
-        IMAGE_LOGE("fail to create async work");
         NAPI_CHECK_AND_DELETE_REF(env, asyncContext->callbackRef);
     });
     return result;
