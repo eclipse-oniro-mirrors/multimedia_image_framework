@@ -52,7 +52,7 @@ public:
     void ScaleSync(double x, double y);
     void ScaleWithAntiAliasingSync(double x, double y, AntiAliasingLevel level);
     PixelMap CreateCroppedAndScaledPixelMapSync(ohos::multimedia::image::image::Region const& region,
-        double x, double y, optional_view<AntiAliasingLevel> level)
+        double x, double y, optional_view<AntiAliasingLevel> level);
     void CropSync(ohos::multimedia::image::image::Region const& region);
     void RotateSync(double angle);
     void FlipSync(bool horizontal, bool vertical);
