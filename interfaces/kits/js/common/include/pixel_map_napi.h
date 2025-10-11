@@ -156,6 +156,10 @@ private:
     static napi_value Clone(napi_env env, napi_callback_info info);
     static void ExtraAddNapiFunction(std::vector<napi_property_descriptor> &props);
     static std::vector<napi_property_descriptor> RegisterNapi();
+    static napi_value IsReleased(napi_env env, napi_callback_info info);
+    static napi_value GetNativeUniqueId(napi_env env, napi_callback_info info);
+    static napi_value CreateCroppedAndScaledPixelMapSync(napi_env env, napi_callback_info info);
+    static napi_value CreateCroppedAndScaledPixelMap(napi_env env, napi_callback_info info);
 
     void release();
     static thread_local napi_ref sConstructor_;
