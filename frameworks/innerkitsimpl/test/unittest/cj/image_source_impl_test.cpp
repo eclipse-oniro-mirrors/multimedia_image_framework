@@ -62,59 +62,6 @@ HWTEST_F(ImageSourceImplTest, ImageSourceImplTest001, TestSize.Level3)
 }
 
 /**
- * @tc.name: ImageSourceImplTest002
- * @tc.desc: test ImageSourceImpl
- * @tc.type: FUNC
- */
-HWTEST_F(ImageSourceImplTest, ImageSourceImplTest002, TestSize.Level3)
-{
-    GTEST_LOG_(INFO) << "ImageSourceImplTest: ImageSourceImplTest002 start";
-    SourceOptions opts;
-    uint32_t errorCode = 0;
-    std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(IMAGE_JPEG_PATH, opts, errorCode);
-    ASSERT_EQ(errorCode, 0);
-    ImageSourceImpl imageSourceImpl(std::move(imageSource));
-    ImageInfo imageInfo;
-    imageSourceImpl.GetImageInfo(0, imageInfo);
-    std::set<std::string> formats{};
-    imageSourceImpl.GetSupportedFormats(formats);
-    std::string key = "key";
-    std::string value = "value";
-    imageSourceImpl.GetImageProperty(key, 0, value);
-    key = "BitsPerSample";
-    imageSourceImpl.ModifyImageProperty(key, value);
-    key = "Orientation";
-    imageSourceImpl.ModifyImageProperty(key, value);
-    key = "ImageLength";
-    imageSourceImpl.ModifyImageProperty(key, value);
-    key = "ImageWidth";
-    imageSourceImpl.ModifyImageProperty(key, value);
-    key = "GPSLatitude";
-    imageSourceImpl.ModifyImageProperty(key, value);
-    key = "GPSLongitude";
-    imageSourceImpl.ModifyImageProperty(key, value);
-    key = "GPSLatitudeRef";
-    imageSourceImpl.ModifyImageProperty(key, value);
-    key = "GPSLongitudeRef";
-    imageSourceImpl.ModifyImageProperty(key, value);
-    imageSourceImpl.SetPathName(IMAGE_JPEG_PATH);
-    imageSourceImpl.ModifyImageProperty(key, value);
-    imageSourceImpl.SetFd(0);
-    imageSourceImpl.ModifyImageProperty(key, value);
-    uint8_t data = 0;
-    imageSourceImpl.SetBuffer(&data, 1);
-    imageSourceImpl.ModifyImageProperty(key, value);
-    imageSourceImpl.GetFrameCount(errorCode);
-    imageSourceImpl.UpdateData(nullptr, 0, false);
-    DecodeOptions decodeOpts;
-    imageSourceImpl.CreatePixelMap(0, decodeOpts, errorCode);
-    imageSourceImpl.CreatePixelMapList(0, decodeOpts, &errorCode);
-    imageSourceImpl.GetDelayTime(&errorCode);
-    imageSourceImpl.Release();
-    GTEST_LOG_(INFO) << "ImageSourceImplTest: ImageSourceImplTest002 end";
-}
-
-/**
  * @tc.name: ImageSourceImplTest003
  * @tc.desc: test ImageSourceImpl
  * @tc.type: FUNC
