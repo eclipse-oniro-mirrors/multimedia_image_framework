@@ -872,8 +872,10 @@ void EncodeColorNormal(short quantLevel, float4 e0, float4 e1, short* endpointQu
     }
     int4 e0q = (int4)((int)(round(e0.x)), (int)(round(e0.y)),
         (int)(round(e0.z)), (int)(round(e0.w)));
+    e0q = clamp(e0q, 0, 255);
     int4 e1q = (int4)((int)(round(e1.x)), (int)(round(e1.y)),
         (int)(round(e1.z)), (int)(round(e1.w)));
+    e1q = clamp(e1q, 0, 255);
     endpointQuantized[EP0_R_INDEX] = g_colorQuantTables[quantLevel * COLOR_NUM + e0q.x];
     endpointQuantized[EP1_R_INDEX] = g_colorQuantTables[quantLevel * COLOR_NUM + e1q.x];
     endpointQuantized[EP0_G_INDEX] = g_colorQuantTables[quantLevel * COLOR_NUM + e0q.y];
@@ -1008,8 +1010,9 @@ void EncodeTrits(uint bitcount, uint tritInput[TRIT_BLOCK_SIZE], uint4* outputs,
     SplitHighLow(tritInput[ISE_2], bitcount, &t2, &m2);
     SplitHighLow(tritInput[ISE_3], bitcount, &t3, &m3);
     SplitHighLow(tritInput[ISE_4], bitcount, &t4, &m4);
-    ushort packhigh = (ushort)(
-        g_integerFromTrits[t4 * 81 + t3 * 27 + t2 * 9 + t1 * 3 + t0]); // trits for 3 9 27 81
+    short index = t4 * 81 + t3 * 27 + t2 * 9 + t1 * 3 + t0;
+    index = clamp(index, 0, 242);
+    ushort packhigh = (ushort)(g_integerFromTrits[index]); // trits for 3 9 27 81
     Orbits8Ptr(outputs, outpos, m0, bitcount);
     Orbits8Ptr(outputs, outpos, packhigh & 3u, 2u); // low 2bits (mask 3u) offset 2u
 
@@ -1440,6 +1443,7 @@ static CL_ASTC_STATUS AstcClBuildProgram(ClAstcHandle *clAstcHandle, const std::
     cl_int clRet;
     cl_program program = nullptr;
     if (!CheckClBinIsExist(clBinPath)) {
+        IMAGE_LOGI("astc clBinPathIsExist false");
         size_t sourceSize = strlen(g_programSource) + 1; // '\0' occupies 1 bytes
         program = clCreateProgramWithSource(clAstcHandle->context, 1, &g_programSource, &sourceSize, &clRet);
         if (clRet != CL_SUCCESS) {
@@ -1455,6 +1459,7 @@ static CL_ASTC_STATUS AstcClBuildProgram(ClAstcHandle *clAstcHandle, const std::
             IMAGE_LOGI("astc SaveClBin failed!");
         }
     } else {
+        IMAGE_LOGI("astc clBinPathIsExist");
         std::ifstream contents{clBinPath};
         std::string binaryContent{std::istreambuf_iterator<char>{contents}, {}};
         size_t binSize = binaryContent.length();
