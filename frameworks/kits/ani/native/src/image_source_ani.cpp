@@ -351,7 +351,7 @@ template <typename F>
 static bool forEachMapEntry(ani_env *env, ani_object map_object, F &&callback)
 {
     ani_ref keys;
-    if (ANI_OK != env->Object_CallMethodByName_Ref(map_object, "keys", ":C{escompat.IterableIterator}", &keys)) {
+    if (ANI_OK != env->Object_CallMethodByName_Ref(map_object, "keys", ":C{std.core.IterableIterator}", &keys)) {
         IMAGE_LOGE("Failed to get keys iterator");
         return false;
     }
