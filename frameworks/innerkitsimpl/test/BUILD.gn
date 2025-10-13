@@ -2000,6 +2000,44 @@ ohos_unittest("picture_ext_test") {
   resource_config_file = "${image_subsystem}/test/resource/image/ohos_test.xml"
 }
 
+ohos_unittest("cr3_parser_test"){
+  module_out_path = module_output_path
+
+  include_dirs = [
+    "${image_subsystem}/frameworks/innerkitsimpl/utils/include/",
+    "${image_subsystem}/interfaces/innerkits/include/",
+    "${image_subsystem}/plugins/common/libs/image/libextplugin/include/",
+    "${image_subsystem}/plugins/common/libs/image/libextplugin/include/heif_impl/heif_parser/",
+    "${image_subsystem}/plugins/common/libs/image/libextplugin/include/heif_impl/heif_parser/box/",
+    "${image_subsystem}/frameworks/innerkitsimpl/accessor/include/",
+  ]
+
+  sources = [
+    "${image_subsystem}/frameworks/innerkitsimpl/test/unittest/cr3_box_test.cpp",
+    "${image_subsystem}/frameworks/innerkitsimpl/test/unittest/cr3_parser_test.cpp",
+    "${image_subsystem}/frameworks/innerkitsimpl/test/unittest/heif_exif_metadata_accessor_test.cpp",
+    "${image_subsystem}/frameworks/innerkitsimpl/accessor/src/buffer_metadata_stream.cpp",
+  ]
+
+  deps = [
+    "${image_subsystem}/frameworks/innerkitsimpl/utils:image_utils",
+    "${image_subsystem}/plugins/common/libs/image/libextplugin:heifparser",
+    "${image_subsystem}/interfaces/innerkits:image_native",
+  ]
+
+  cflags = [
+    "-fno-access-control",
+  ]
+
+  external_deps = [
+    "c_utils:utils",
+    "drivers_interface_codec:libcodec_proxy_4.0",
+    "googletest:gtest_main",
+    "hilog:libhilog",
+    "libexif:libexif",
+  ]
+}
+
 ################################################
 group("unittest") {
   testonly = true
@@ -2054,6 +2092,7 @@ group("unittest") {
     ":textureencodetest",
     ":transformtest",
 
+    ":cr3_parser_test",
   ]
 
   if (enable_jpeg_hw_decode) {
