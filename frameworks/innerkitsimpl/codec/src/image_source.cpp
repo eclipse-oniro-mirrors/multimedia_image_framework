@@ -1216,7 +1216,6 @@ unique_ptr<PixelMap> ImageSource::CreatePixelMapByInfos(ImagePlugin::PlImageInfo
     CHECK_ERROR_RETURN_RET_LOG(cond, nullptr, "[ImageSource]update pixelmap info error ret:%{public}u.", errorCode);
     auto saveEditable = pixelMap->IsEditable();
     pixelMap->SetEditable(true);
-    pixelMap->SetImageYUVInfo(context.yuvInfo);
     // Need check pixel change:
     // 1. pixel size
     // 2. crop
