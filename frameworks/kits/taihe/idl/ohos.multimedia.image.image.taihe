@@ -501,6 +501,9 @@ interface PixelMap {
   @overload("scaleSync")
   ScaleWithAntiAliasingSync(x: f64, y: f64, level: AntiAliasingLevel): void;
 
+  @gen_promise("createCroppedAndScaledPixelMap")
+  CreateCroppedAndScaledPixelMapSync(region: Region, x: f64, y: f64, level: Optional<AntiAliasingLevel>): PixelMap;
+
   @gen_async("crop")
   @gen_promise("crop")
   CropSync(region: Region): void;
@@ -543,6 +546,10 @@ interface PixelMap {
   @gen_async("release")
   @gen_promise("release")
   ReleaseSync(): void;
+
+  IsReleased(): bool;
+
+  GetUniqueId(): i32;
 
   @get GetIsEditable(): bool;
 

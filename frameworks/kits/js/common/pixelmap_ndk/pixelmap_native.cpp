@@ -947,7 +947,10 @@ Image_ErrorCode OH_PixelmapNative_CreateCroppedAndScaledPixelMap(OH_PixelmapNati
         .width = static_cast<int32_t>(region->width),
         .height = static_cast<int32_t>(region->height)
     };
-    clonedPixelmap->crop(rect);
+    uint32_t status = clonedPixelmap->crop(rect);
+    if (status != SUCCESS) {
+        return IMAGE_BAD_PARAMETER;
+    }
     clonedPixelmap->scale(scale->x, scale->y, static_cast<AntiAliasingOption>(level));
     *dstPixelmap = new(std::nothrow) OH_PixelmapNative(std::move(clonedPixelmap));
     return IMAGE_SUCCESS;

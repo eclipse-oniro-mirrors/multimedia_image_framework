@@ -51,6 +51,8 @@ public:
     int32_t GetDensity();
     void ScaleSync(double x, double y);
     void ScaleWithAntiAliasingSync(double x, double y, AntiAliasingLevel level);
+    PixelMap CreateCroppedAndScaledPixelMapSync(ohos::multimedia::image::image::Region const& region,
+        double x, double y, optional_view<AntiAliasingLevel> level);
     void CropSync(ohos::multimedia::image::image::Region const& region);
     void RotateSync(double angle);
     void FlipSync(bool horizontal, bool vertical);
@@ -65,6 +67,8 @@ public:
     void ToSdrSync();
     void ApplyColorSpaceSync(uintptr_t targetColorSpace);
     void ReleaseSync();
+    bool IsReleased();
+    int32_t GetUniqueId();
     bool GetIsEditable();
     bool GetIsStrideAlignment();
     void SetCaptureId(int32_t captureId);
