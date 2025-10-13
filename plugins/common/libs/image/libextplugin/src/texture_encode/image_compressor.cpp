@@ -45,6 +45,7 @@ constexpr uint8_t GLOBAL_WH_NUM_CL = 2;
 constexpr size_t MAX_MALLOC_BYTES = 10000000; // max 10MB
 constexpr size_t WORK_GROUP_SIZE = 8;
 
+
 const char *g_programSource = R"(
 // Notice: the code from line 42 to line 1266 is openCL language
 // openCL cound only support C language style and could not support constexpr and static_cast in same platform
