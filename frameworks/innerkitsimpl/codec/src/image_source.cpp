@@ -1689,9 +1689,6 @@ uint32_t ImageSource::ModifyImageProperties(const vector<pair<string, string>> &
             }
         }
     }
-    if (!exifUnsupportKeys_.empty() && isEnhanced) {
-        return ERR_IMAGE_DECODE_EXIF_UNSUPPORT;
-    }
 
     return SUCCESS;
 }
@@ -1738,6 +1735,10 @@ uint32_t ImageSource::ModifyImageProperties(std::shared_ptr<MetadataAccessor> me
     IMAGE_LOGD("ModifyImageProperty accesssor modify end");
     if (!srcFilePath_.empty() && ret == SUCCESS) {
         RefreshImageSourceByPathName();
+    }
+
+    if (!exifUnsupportKeys_.empty() && isEnhanced) {
+        return ERR_IMAGE_DECODE_EXIF_UNSUPPORT;
     }
     return ret;
 }
