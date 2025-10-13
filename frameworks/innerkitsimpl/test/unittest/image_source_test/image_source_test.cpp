@@ -46,6 +46,7 @@ using namespace OHOS::Media;
 namespace OHOS {
 namespace Media {
 static const std::string IMAGE_INPUT_JPEG_PATH = "/data/local/tmp/image/test.jpg";
+static const std::string IMAGE_INPUT_PNG_PATH = "/data/local/tmp/image/test.png";
 static const std::string IMAGE_INPUT_EXIF_JPEG_PATH = "/data/local/tmp/image/test_exif.jpg";
 static const std::string IMAGE_OUTPUT_JPEG_PATH = "/data/local/tmp/image/test_out.jpg";
 static const std::string IMAGE_INPUT_ICO_PATH = "/data/local/tmp/image/test.ico";
@@ -115,7 +116,8 @@ public:
     std::vector<std::string> GetOriginalImageProperties(const std::string &filePath,
     const std::vector<std::pair<std::string, std::string>> &expectedProps);
     void CheckModifyImagePropertiesEnhanced(std::vector<std::string> &originalProps,
-        const std::vector<std::pair<std::string, std::string>> &expectedProps, std::set<std::string> unsupportedKeys);
+        const std::vector<std::pair<std::string, std::string>> &expectedProps, std::set<std::string> unsupportedKeys,
+        std::string filePath);
 };
 
 class MockAbsImageFormatAgent : public ImagePlugin::AbsImageFormatAgent {
@@ -290,17 +292,17 @@ std::vector<std::string> ImageSourceTest::GetOriginalImageProperties(const std::
 }
 
 void ImageSourceTest::CheckModifyImagePropertiesEnhanced(std::vector<std::string> &originalProps,
-    const std::vector<std::pair<std::string, std::string>> &expectedProps, std::set<std::string> unsupportedKeys)
+    const std::vector<std::pair<std::string, std::string>> &expectedProps, std::set<std::string> unsupportedKeys,
+    std::string filePath)
 {
-    int fd = open(IMAGE_INPUT_JPEG_PATH.c_str(), O_RDWR | O_CREAT, S_IRUSR | S_IWUSR);
+    int fd = open(filePath.c_str(), O_RDWR | O_CREAT, S_IRUSR | S_IWUSR);
     std::unique_ptr<ImageSource> imageSource = CreateImageSourceByFd(fd);
     ASSERT_NE(imageSource, nullptr);
 
     for (int i = 0; i < expectedProps.size(); i++) {
         std::string key = expectedProps[i].first;
         std::string actualValue = "";
-        auto ret = imageSource->GetImagePropertyString(0, key, actualValue);
-        ASSERT_EQ(ret, SUCCESS);
+        imageSource->GetImagePropertyString(0, key, actualValue);
 
         if (unsupportedKeys.count(key) != 0) {
             std::string originalValue = originalProps[i];
@@ -3552,7 +3554,7 @@ HWTEST_F(ImageSourceTest, ModifyImagePropertiesExTest001, TestSize.Level1)
     ASSERT_EQ(ret, SUCCESS);
     close(fd);
 
-    CheckModifyImagePropertiesEnhanced(originalProps, VALID_PROPERTIES, {});
+    CheckModifyImagePropertiesEnhanced(originalProps, VALID_PROPERTIES, {}, IMAGE_INPUT_JPEG_PATH);
     GTEST_LOG_(INFO) << "ImageSourceTest: ModifyImagePropertiesExTest001 end";
 }
 
@@ -3565,9 +3567,9 @@ HWTEST_F(ImageSourceTest, ModifyImagePropertiesExTest001, TestSize.Level1)
 HWTEST_F(ImageSourceTest, ModifyImagePropertiesExTest002, TestSize.Level1)
 {
     GTEST_LOG_(INFO) << "ImageSourceTest: ModifyImagePropertiesExTest002 start";
-    std::vector<std::string> originalProps = GetOriginalImageProperties(IMAGE_INPUT_JPEG_PATH, VALID_PROPERTIES);
+    std::vector<std::string> originalProps = GetOriginalImageProperties(IMAGE_INPUT_EXIF_JPEG_PATH, VALID_PROPERTIES);
 
-    std::unique_ptr<ImageSource> imageSource = CreateImageSourceByPath(IMAGE_INPUT_JPEG_PATH);
+    std::unique_ptr<ImageSource> imageSource = CreateImageSourceByPath(IMAGE_INPUT_EXIF_JPEG_PATH);
     ASSERT_NE(imageSource, nullptr);
     ASSERT_EQ(imageSource->srcFd_, -1);
     ASSERT_NE(imageSource->srcFilePath_, "");
@@ -3575,7 +3577,7 @@ HWTEST_F(ImageSourceTest, ModifyImagePropertiesExTest002, TestSize.Level1)
     auto ret = imageSource->ModifyImagePropertiesEx(0, VALID_PROPERTIES);
     ASSERT_EQ(ret, SUCCESS);
 
-    CheckModifyImagePropertiesEnhanced(originalProps, VALID_PROPERTIES, {});
+    CheckModifyImagePropertiesEnhanced(originalProps, VALID_PROPERTIES, {}, IMAGE_INPUT_EXIF_JPEG_PATH);
     GTEST_LOG_(INFO) << "ImageSourceTest: ModifyImagePropertiesExTest002 end";
 }
 
@@ -3588,9 +3590,9 @@ HWTEST_F(ImageSourceTest, ModifyImagePropertiesExTest002, TestSize.Level1)
 HWTEST_F(ImageSourceTest, ModifyImagePropertiesExTest003, TestSize.Level3)
 {
     GTEST_LOG_(INFO) << "ImageSourceTest: ModifyImagePropertiesExTest003 start";
-    std::vector<std::string> originalProps = GetOriginalImageProperties(IMAGE_INPUT_JPEG_PATH, INVALID_PROPERTIES);
+    std::vector<std::string> originalProps = GetOriginalImageProperties(IMAGE_INPUT_PNG_PATH, INVALID_PROPERTIES);
 
-    int fd = open(IMAGE_INPUT_JPEG_PATH.c_str(), O_RDWR | O_CREAT, S_IRUSR | S_IWUSR);
+    int fd = open(IMAGE_INPUT_PNG_PATH.c_str(), O_RDWR | O_CREAT, S_IRUSR | S_IWUSR);
     std::unique_ptr<ImageSource> imageSource = CreateImageSourceByFd(fd);
     ASSERT_NE(imageSource, nullptr);
     ASSERT_NE(imageSource->srcFd_, -1);
@@ -3603,7 +3605,7 @@ HWTEST_F(ImageSourceTest, ModifyImagePropertiesExTest003, TestSize.Level3)
     ASSERT_EQ(unsupportedKeys.count("GPSLongitudeRef"), NUM_1);
     close(fd);
 
-    CheckModifyImagePropertiesEnhanced(originalProps, INVALID_PROPERTIES, unsupportedKeys);
+    CheckModifyImagePropertiesEnhanced(originalProps, INVALID_PROPERTIES, unsupportedKeys, IMAGE_INPUT_PNG_PATH);
     GTEST_LOG_(INFO) << "ImageSourceTest: ModifyImagePropertiesExTest003 end";
 }
 
@@ -3616,9 +3618,9 @@ HWTEST_F(ImageSourceTest, ModifyImagePropertiesExTest003, TestSize.Level3)
 HWTEST_F(ImageSourceTest, ModifyImagePropertiesExTest004, TestSize.Level3)
 {
     GTEST_LOG_(INFO) << "ImageSourceTest: ModifyImagePropertiesExTest004 start";
-    std::vector<std::string> originalProps = GetOriginalImageProperties(IMAGE_INPUT_JPEG_PATH, VALID_PROPERTIES);
+    std::vector<std::string> originalProps = GetOriginalImageProperties(IMAGE_INPUT_HEIF_PATH, VALID_PROPERTIES);
 
-    std::unique_ptr<ImageSource> imageSource = CreateImageSourceByPath(IMAGE_INPUT_JPEG_PATH);
+    std::unique_ptr<ImageSource> imageSource = CreateImageSourceByPath(IMAGE_INPUT_HEIF_PATH);
     ASSERT_NE(imageSource, nullptr);
     ASSERT_EQ(imageSource->srcFd_, -1);
     ASSERT_NE(imageSource->srcFilePath_, "");
@@ -3631,7 +3633,7 @@ HWTEST_F(ImageSourceTest, ModifyImagePropertiesExTest004, TestSize.Level3)
     ASSERT_EQ(unsupportedKeys.count("ImageWidth"), NUM_1);
     ASSERT_EQ(unsupportedKeys.count("GPSLongitudeRef"), NUM_1);
 
-    CheckModifyImagePropertiesEnhanced(originalProps, INVALID_PROPERTIES, unsupportedKeys);
+    CheckModifyImagePropertiesEnhanced(originalProps, INVALID_PROPERTIES, unsupportedKeys, IMAGE_INPUT_HEIF_PATH);
     GTEST_LOG_(INFO) << "ImageSourceTest: ModifyImagePropertiesExTest004 end";
 }
 

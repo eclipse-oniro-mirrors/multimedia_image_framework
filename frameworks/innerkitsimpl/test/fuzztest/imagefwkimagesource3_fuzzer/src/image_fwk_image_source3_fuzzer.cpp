@@ -283,6 +283,29 @@ void ModifyImagePropertyExFuzzTest(const uint8_t *data, size_t size)
     }
 }
 
+void ModifyImagePropertiesExFuzzTest(const uint8_t *data, size_t size)
+{
+    std::vector<std::unique_ptr<ImageSource>> imageSources;
+    imageSources.emplace_back(ConstructImageSourceByBuffer(data, size));
+    imageSources.emplace_back(ConstructImageSourceByFd(data, size));
+    imageSources.emplace_back(ConstructImageSourceByPath(data, size));
+
+    std::vector<std::pair<std::string, std::string>> properties;
+    int32_t propertiesNum = FDP->ConsumeIntegralInRange<int32_t>(NUM_1, NUM_10);
+    while (propertiesNum) {
+        std::string key = FDP->ConsumeRandomLengthString();
+        std::string value = FDP->ConsumeRandomLengthString();
+        properties.emplace_back(key, value);
+        propertiesNum--;
+    }
+
+    for (const auto& imageSource : imageSources) {
+        if (imageSource) {
+            imageSource->ModifyImagePropertiesEx(NUM_0, properties);
+        }
+    }
+}
+
 void GetImagePropertyFuzzTest(const uint8_t *data, size_t size)
 {
     auto imageSource = ConstructImageSourceByBuffer(data, size);
@@ -359,6 +382,7 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
     OHOS::Media::SetImageEventHeifParserErrFuzzTest(data, size);
     OHOS::Media::PromoteDecodingFuzzTest(data, size);
     OHOS::Media::ModifyImagePropertyExFuzzTest(data, size);
+    OHOS::Media::ModifyImagePropertiesExFuzzTest(data, size);
     OHOS::Media::GetImagePropertyFuzzTest(data, size);
     OHOS::Media::DecodeSourceInfoFuzzTest(data, size);
     OHOS::Media::CreatePictureFuzzTest(data, size);
