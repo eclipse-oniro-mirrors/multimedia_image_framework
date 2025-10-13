@@ -66,8 +66,8 @@ ohos_shared_library("image_receiver_ndk") {
     "c_utils:utils",
     "graphic_2d:color_manager",
     "graphic_surface:surface",
-    "ipc:ipc_single",
     "napi:ace_napi",
+    "ipc:ipc_single",
   ]
 
   innerapi_tags = [ "ndk" ]
@@ -113,8 +113,8 @@ ohos_shared_library("image_packer_ndk") {
 
   external_deps = [
     "c_utils:utils",
-    "ipc:ipc_single",
     "napi:ace_napi",
+    "ipc:ipc_single",
   ]
 
   innerapi_tags = [ "ndk" ]
