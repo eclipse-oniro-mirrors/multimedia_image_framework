@@ -515,6 +515,7 @@ void ExtDecoder::Reset()
     dstInfo_.reset();
     dstSubset_ = SkIRect::MakeEmpty();
     info_.reset();
+    rawEncodedFormat_.clear();
 }
 
 static inline float Max(float a, float b)
@@ -2686,6 +2687,10 @@ uint32_t ExtDecoder::GetImagePropertyInt(uint32_t index, const std::string &key,
 
 bool ExtDecoder::IsRawFormat(std::string &name)
 {
+    if (rawEncodedFormat_.size() > 0) {
+        name = rawEncodedFormat_;
+        return true;
+    }
     CHECK_ERROR_RETURN_RET(stream_ == nullptr, false);
     ImagePlugin::DataStreamBuffer outData;
     uint32_t savedPosition = stream_->Tell();
@@ -2700,10 +2705,12 @@ bool ExtDecoder::IsRawFormat(std::string &name)
         piex::image_type_recognition::RawImageTypes type = RecognizeRawImageTypeLite(header_buffer);
         auto rawFormatNameIter = RAW_FORMAT_NAME.find(type);
         if (rawFormatNameIter != RAW_FORMAT_NAME.end() && !rawFormatNameIter->second.empty()) {
-            name = rawFormatNameIter->second;
-            return true;
+            rawEncodedFormat_ = rawFormatNameIter->second;
         } else if (IsCr3Format()) {
-            name = IMAGE_CR3_FORMAT;
+            rawEncodedFormat_ = IMAGE_CR3_FORMAT;
+        }
+        if (rawEncodedFormat_.size() > 0) {
+            name = rawEncodedFormat_;
             return true;
         }
     }
@@ -2858,6 +2865,11 @@ bool ExtDecoder::IsSupportHardwareDecode() {
     int width = info_.width();
     int height = info_.height();
     if (hwDecoderPtr_->IsHardwareDecodeSupported(IMAGE_JPEG_FORMAT, {width, height})) {
+        std::string encodedFormat;
+        if (IsRawFormat(encodedFormat)) {
+            IMAGE_LOGD("Raw format: %{public}s, turn to software decode", encodedFormat.c_str());
+            return false;
+        }
         if (width < HARDWARE_MID_DIM || height < HARDWARE_MID_DIM) {
             int remWidth = width % HARDWARE_ALIGN_SIZE;
             int remHeight = height % HARDWARE_ALIGN_SIZE;
