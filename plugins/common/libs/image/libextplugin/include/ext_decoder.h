@@ -227,6 +227,7 @@ private:
     OHOS::Media::Size desiredSizeYuv_;
     int softSampleSize_ = 1;
     uint32_t sampleSize_ = 1;
+    std::string rawEncodedFormat_ = "";
 
     // hdr
     Media::ImageHdrType hdrType_ = Media::ImageHdrType::UNKNOWN;
