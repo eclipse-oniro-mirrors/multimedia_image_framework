@@ -1065,9 +1065,7 @@ HWTEST_F(PostProcTest, ScalePixelMapExOddWidthTest001, TestSize.Level3)
     opts.size = {1, 1};
     opts.allocatorType = AllocatorType::SHARE_MEM_ALLOC;
     std::unique_ptr<PixelMap> pixelMap = PixelMap::Create(opts);
-    if (!pixelMap) {
-        return;
-    }
+    ASSERT_NE(pixelMap, nullptr);
     PostProc postProc;
     Size desiredSize = {10, 10};
     bool ret = postProc.ScalePixelMapEx(desiredSize, *(pixelMap.get()));
@@ -1091,9 +1089,7 @@ HWTEST_F(PostProcTest, ScalePixelMapExOddWidthTest002, TestSize.Level3)
     opts.allocatorType = AllocatorType::SHARE_MEM_ALLOC;
     opts.useDMA = true;
     std::unique_ptr<PixelMap> pixelMap = PixelMap::Create(opts);
-    if (!pixelMap) {
-        return;
-    }
+    ASSERT_NE(pixelMap, nullptr);
     PostProc postProc;
     Size desiredSize = {11, 10};
     bool ret = postProc.ScalePixelMapEx(desiredSize, *(pixelMap.get()));
