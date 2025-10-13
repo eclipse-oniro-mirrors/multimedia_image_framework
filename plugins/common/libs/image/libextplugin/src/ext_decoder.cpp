@@ -981,8 +981,10 @@ static uint64_t GetByteSize(int32_t width, int32_t height)
 
 static void UpdateContextYuvInfo(DecodeContext &context, DestConvertInfo &destInfo)
 {
-    context.yuvInfo.yWidth = static_cast<uint32_t>(destInfo.width);
-    context.yuvInfo.yHeight = static_cast<uint32_t>(destInfo.height);
+    context.yuvInfo.imageSize.width = static_cast<int32_t>(destInfo.width);
+    context.yuvInfo.imageSize.height = static_cast<int32_t>(destInfo.height);
+    context.yuvInfo.yWidth = destInfo.width;
+    context.yuvInfo.yHeight = destInfo.height;
     context.yuvInfo.yStride = destInfo.yStride;
     context.yuvInfo.uvWidth = static_cast<uint32_t>((destInfo.width + 1) / NUM_2);
     context.yuvInfo.uvHeight = static_cast<uint32_t>((destInfo.height + 1) / NUM_2);
