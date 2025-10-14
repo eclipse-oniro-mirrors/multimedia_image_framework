@@ -38,7 +38,8 @@ ohos_fuzztest("ImagePixelYuv2FuzzTest") {
     "c_utils:utils",
     "hilog:libhilog",
     "ffmpeg:libohosffmpeg",
-    "bundle_framework:appexecfwk_core"
+    "bundle_framework:appexecfwk_core",
+    "ipc:ipc_single",
   ]
   fuzz_config_file = "$image_subsystem/frameworks/innerkitsimpl/test/fuzztest/imagepixelYuv2_fuzzer"
   module_out_path = "multimedia_image/image_framework"

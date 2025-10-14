@@ -31,6 +31,7 @@ ohos_fuzztest("ImagePixelmaptlv2FuzzTest") {
   external_deps = [
     "c_utils:utils",
     "hilog:libhilog",
+    "ipc:ipc_single",
   ]
   fuzz_config_file = "$image_subsystem/frameworks/innerkitsimpl/test/fuzztest/imagepixelmaptlv2_fuzzer"
   module_out_path = "multimedia_image/image_framework"
