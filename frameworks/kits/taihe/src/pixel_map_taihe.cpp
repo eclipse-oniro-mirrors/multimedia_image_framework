@@ -529,7 +529,7 @@ void PixelMapImpl::CropSync(ohos::multimedia::image::image::Region const& region
     Media::Rect rect = {region.x, region.y, region.size.width, region.size.height};
     uint32_t status = nativePixelMap_->crop(rect);
     if (status != Media::SUCCESS) {
-        ImageTaiheUtils::ThrowExceptionError(status, "Crop failed");
+        ImageTaiheUtils::ThrowExceptionError(status, "Crop failed (" + std::to_string(status) + ")");
     }
 }
 
