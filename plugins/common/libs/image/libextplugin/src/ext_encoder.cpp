@@ -50,7 +50,6 @@
 #include "image_utils.h"
 #include "jpeg_mpf_parser.h"
 #include "media_errors.h"
-#include "metadata_convertor.h"
 #include "metadata_accessor.h"
 #include "metadata_accessor_factory.h"
 #include "pixel_convert_adapter.h"
@@ -64,6 +63,7 @@
 #include "vpe_utils.h"
 #include "hdr_helper.h"
 #include "metadata_helper.h"
+#include "metadata_convertor.h"
 #endif
 #include "color_utils.h"
 #include "tiff_parser.h"
