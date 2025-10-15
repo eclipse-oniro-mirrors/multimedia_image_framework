@@ -2401,7 +2401,8 @@ static std::vector<ColorSpaceNameEnum> sColorSpaceNamedMap = {
     {"sRGB", OHOS::ColorManager::ColorSpaceName::SRGB},
     {"BT.2020", OHOS::ColorManager::ColorSpaceName::BT2020},
     {"DCI-P3", OHOS::ColorManager::ColorSpaceName::DCI_P3},
-    {"Rec2020 Gamut with HLG Transfer", OHOS::ColorManager::ColorSpaceName::BT2020_HLG}
+    {"Rec2020 Gamut with HLG Transfer", OHOS::ColorManager::ColorSpaceName::BT2020_HLG},
+    {"REC. 2020", OHOS::ColorManager::ColorSpaceName::BT2020_HLG}
 };
 
 static bool MatchColorSpaceName(const uint8_t* buf, uint32_t size, OHOS::ColorManager::ColorSpaceName &name)
@@ -2999,6 +3000,20 @@ ImageHdrType ExtDecoder::CheckHdrType()
         gainMapOffset_ = 0;
         return hdrType_;
     }
+
+    #ifdef HEIF_HW_DECODE_ENABLE
+         if (format == SkEncodedImageFormat::kHEIF) {
+             auto decoder = reinterpret_cast<HeifDecoderImpl*>(codec_->getHeifContext());
+             if (decoder) {
+                // get and set color space before decode
+                auto cs = GetSrcColorSpace();
+                decoder->SetColorSpaceInfoLight(heifColorSpaceName_, heifIsColorSpaceFromCicp_);
+                IMAGE_LOGD("ExtDecoder::CheckHdrType pre-set color space: name=%{public}u fromCicp=%{public}d",
+                     static_cast<unsigned int>(heifColorSpaceName_), heifIsColorSpaceFromCicp_);
+             }
+         }
+     #endif
+
     hdrType_ = HdrHelper::CheckHdrType(codec_.get(), gainMapOffset_);
     if (hdrType_ <= Media::ImageHdrType::SDR || format != SkEncodedImageFormat::kJPEG) {
         return hdrType_;

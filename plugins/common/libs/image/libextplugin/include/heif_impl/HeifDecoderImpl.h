@@ -88,6 +88,7 @@ public:
     int32_t GetPrimaryLumaBitNum();
     bool IsGainmapDivisibleBySampleSize(uint32_t sampleSize);
     void setGainmapDstBuffer(uint8_t* dstBuffer, size_t rowStride, void *context);
+    void SetColorSpaceInfoLight(ColorManager::ColorSpaceName colorSpaceName, bool isColorSpaceFromCicp);
 private:
     bool Reinit(HeifFrameInfo *frameInfo);
 

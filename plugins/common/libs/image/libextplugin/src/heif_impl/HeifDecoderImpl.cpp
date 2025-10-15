@@ -328,6 +328,12 @@ void HeifDecoderImpl::SetColorSpaceInfo(HeifFrameInfo* info, const std::shared_p
     }
 }
 
+void HeifDecoderImpl::SetColorSpaceInfoLight(ColorManager::ColorSpaceName colorSpaceName, bool isColorSpaceFromCicp)
+{
+    colorSpaceName_ = colorSpaceName;
+    isColorSpaceFromCicp_ = isColorSpaceFromCicp;
+}
+
 bool HeifDecodeImpl::SeekRefGridRangeInfo(const std::shared_ptr<HeifImage> &image)
 {
     if (parser_ == nullptr || image == nullptr) {
@@ -1373,6 +1379,9 @@ void HeifDecoderImpl::SetPadding(int32_t widthPadding, int32_t heightPadding)
     regionInfo_.heightPadding = static_cast<uint32_t>(heightPadding);
 }
 
+// Note: Avoid string mapping of ColorSpaceName to prevent coverage gaps.
+// Treat NONE/CUSTOM as unknown; everything else is considered known/supported here.
+
 void HeifDecoderImpl::SetSampleFormat(uint32_t sampleSize, ColorManager::ColorSpaceName colorSpaceName,
     bool isColorSpaceFromCicp)
 {
@@ -1468,11 +1477,26 @@ bool HeifDecoderImpl::getTmapInfo(HeifFrameInfo* frameInfo)
     return true;
 }
 
+static inline bool IsSupportedColorSpaceName(OHOS::ColorManager::ColorSpaceName name)
+{
+    if (name == OHOS::ColorManager::ColorSpaceName::NONE ||
+        name == OHOS::ColorManager::ColorSpaceName::CUSTOM) {
+        return false;
+    }
+    return ColorUtils::COLORSPACE_NAME_TO_COLORINFO_MAP.count(name) > 0;
+}
+
 HeifImageHdrType HeifDecoderImpl::getHdrType()
 {
     std::vector<uint8_t> uwaInfo = primaryImage_->GetUWAInfo();
-    if (primaryImage_->GetLumaBitNum() == LUMA_10_BIT && imageInfo_.hasNclxColor &&
-        imageInfo_.nclxColor.colorPrimaries == BT2020_PRIMARIES) {
+    IMAGE_LOGD("HeifDecoderImpl::getHdrType ColorSpaceName enum: %{public}d", colorSpaceName_);
+    // Consider NONE and CUSTOM as unknown; others as matched/known
+    colorSpaceMatched_ = IsSupportedColorSpaceName(colorSpaceName_);
+    IMAGE_LOGD("HeifDecoderImpl::getHdrType SetSampleFormat - colorSpaceMatched_: %{public}s", 
+               colorSpaceMatched_ ? "true" : "false");
+
+    if (primaryImage_->GetLumaBitNum() == LUMA_10_BIT && (colorSpaceMatched_ ||
+          (imageInfo_.hasNclxColor && imageInfo_.nclxColor.colorPrimaries == BT2020_PRIMARIES))) {
         return uwaInfo.empty() ? HeifImageHdrType::ISO_SINGLE : HeifImageHdrType::VIVID_SINGLE;
     }
     if (gainmapImage_ != nullptr) {
