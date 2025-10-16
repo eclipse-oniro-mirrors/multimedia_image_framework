@@ -2409,7 +2409,11 @@ static std::vector<ColorSpaceNameEnum> sColorSpaceNamedMap = {
 static bool IsFrameworkSupportedColorSpace(OHOS::ColorManager::ColorSpaceName name)
 {
     for (const auto &item : sColorSpaceNamedMap) {
-        if (item.name == name) {
+        if (item.name != name) {
+            continue;
+        }
+        // Consider any description mentioning "2020" as BT.2020-related (e.g., "BT.2020", "Rec2020", "REC. 2020").
+        if (item.desc.find("2020") != std::string::npos) {
             return true;
         }
     }
