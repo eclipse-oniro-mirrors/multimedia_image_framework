@@ -228,7 +228,6 @@ private:
     uint32_t sampleSize_ = 1;
     OHOS::ColorManager::ColorSpaceName colorSpaceName_ = ColorManager::ColorSpaceName::NONE;
     bool isColorSpaceFromCicp_ = false;
-    // Whether the current colorSpaceName_ is supported by framework (decided by ext_decoder)
     bool colorSpaceFrameworkSupported_ = false;
     HeifFrameInfo tmapInfo_{};
     std::string errMsg_;

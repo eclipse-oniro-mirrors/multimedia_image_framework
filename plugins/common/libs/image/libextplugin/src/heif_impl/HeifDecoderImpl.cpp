@@ -1379,9 +1379,6 @@ void HeifDecoderImpl::SetPadding(int32_t widthPadding, int32_t heightPadding)
     regionInfo_.heightPadding = static_cast<uint32_t>(heightPadding);
 }
 
-// Note: Avoid string mapping of ColorSpaceName to prevent coverage gaps.
-// Framework passes whether the color space is supported via SetColorSpaceSupportFlag.
-
 void HeifDecoderImpl::SetSampleFormat(uint32_t sampleSize, ColorManager::ColorSpaceName colorSpaceName,
     bool isColorSpaceFromCicp)
 {
@@ -1494,12 +1491,10 @@ void HeifDecoderImpl::SetColorSpaceSupportFlag(bool supported)
 HeifImageHdrType HeifDecoderImpl::getHdrType()
 {
     std::vector<uint8_t> uwaInfo = primaryImage_->GetUWAInfo();
-    IMAGE_LOGD("HeifDecoderImpl::getHdrType ColorSpaceName enum: %{public}d", colorSpaceName_);
-    // Use framework-provided support flag to decide matching
     colorSpaceMatched_ = colorSpaceFrameworkSupported_;
+    IMAGE_LOGD("HeifDecoderImpl::getHdrType ColorSpaceName enum: %{public}d", colorSpaceName_);
     IMAGE_LOGD("HeifDecoderImpl::getHdrType SetSampleFormat - colorSpaceMatched_: %{public}s",
                colorSpaceMatched_ ? "true" : "false");
-
     if (primaryImage_->GetLumaBitNum() == LUMA_10_BIT && (colorSpaceMatched_ ||
           (imageInfo_.hasNclxColor && imageInfo_.nclxColor.colorPrimaries == BT2020_PRIMARIES))) {
         return uwaInfo.empty() ? HeifImageHdrType::ISO_SINGLE : HeifImageHdrType::VIVID_SINGLE;
