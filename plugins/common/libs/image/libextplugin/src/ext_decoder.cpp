@@ -3003,14 +3003,13 @@ ImageHdrType ExtDecoder::CheckHdrType()
 
     #ifdef HEIF_HW_DECODE_ENABLE
         if (format == SkEncodedImageFormat::kHEIF) {
-             auto decoder = reinterpret_cast<HeifDecoderImpl*>(codec_->getHeifContext());
-             if (decoder) {
+            auto decoder = reinterpret_cast<HeifDecoderImpl*>(codec_->getHeifContext());
+            if (decoder) {
                 // get and set color space before decode
                 auto cs = GetSrcColorSpace();
                 decoder->SetColorSpaceInfoLight(heifColorSpaceName_, heifIsColorSpaceFromCicp_);
                 IMAGE_LOGD("ExtDecoder::CheckHdrType pre-set color space: name=%{public}u fromCicp=%{public}",
-           static_cast<unsigned int>(heifColorSpaceName_),
-           heifIsColorSpaceFromCicp_);
+                            static_cast<unsigned int>(heifColorSpaceName_),heifIsColorSpaceFromCicp_);
             }
         }
     #endif
