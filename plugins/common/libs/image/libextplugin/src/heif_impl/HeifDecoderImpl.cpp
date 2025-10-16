@@ -1492,7 +1492,7 @@ HeifImageHdrType HeifDecoderImpl::getHdrType()
     IMAGE_LOGD("HeifDecoderImpl::getHdrType ColorSpaceName enum: %{public}d", colorSpaceName_);
     // Consider NONE and CUSTOM as unknown; others as matched/known
     colorSpaceMatched_ = IsSupportedColorSpaceName(colorSpaceName_);
-    IMAGE_LOGD("HeifDecoderImpl::getHdrType SetSampleFormat - colorSpaceMatched_: %{public}s", 
+    IMAGE_LOGD("HeifDecoderImpl::getHdrType SetSampleFormat - colorSpaceMatched_: %{public}s",
                colorSpaceMatched_ ? "true" : "false");
 
     if (primaryImage_->GetLumaBitNum() == LUMA_10_BIT && (colorSpaceMatched_ ||

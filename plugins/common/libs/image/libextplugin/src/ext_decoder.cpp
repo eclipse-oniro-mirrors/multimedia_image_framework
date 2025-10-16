@@ -3002,17 +3002,18 @@ ImageHdrType ExtDecoder::CheckHdrType()
     }
 
     #ifdef HEIF_HW_DECODE_ENABLE
-         if (format == SkEncodedImageFormat::kHEIF) {
+        if (format == SkEncodedImageFormat::kHEIF) {
              auto decoder = reinterpret_cast<HeifDecoderImpl*>(codec_->getHeifContext());
              if (decoder) {
                 // get and set color space before decode
                 auto cs = GetSrcColorSpace();
                 decoder->SetColorSpaceInfoLight(heifColorSpaceName_, heifIsColorSpaceFromCicp_);
-                IMAGE_LOGD("ExtDecoder::CheckHdrType pre-set color space: name=%{public}u fromCicp=%{public}d",
-                     static_cast<unsigned int>(heifColorSpaceName_), heifIsColorSpaceFromCicp_);
-             }
-         }
-     #endif
+                IMAGE_LOGD("ExtDecoder::CheckHdrType pre-set color space: name=%{public}u fromCicp=%{public}",
+           static_cast<unsigned int>(heifColorSpaceName_),
+           heifIsColorSpaceFromCicp_);
+            }
+        }
+    #endif
 
     hdrType_ = HdrHelper::CheckHdrType(codec_.get(), gainMapOffset_);
     if (hdrType_ <= Media::ImageHdrType::SDR || format != SkEncodedImageFormat::kJPEG) {
