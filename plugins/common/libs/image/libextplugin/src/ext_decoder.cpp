@@ -2405,6 +2405,17 @@ static std::vector<ColorSpaceNameEnum> sColorSpaceNamedMap = {
     {"REC. 2020", OHOS::ColorManager::ColorSpaceName::BT2020_HLG}
 };
 
+// Determine if a ColorSpaceName is supported by current framework mapping
+static bool IsFrameworkSupportedColorSpace(OHOS::ColorManager::ColorSpaceName name)
+{
+    for (const auto &item : sColorSpaceNamedMap) {
+        if (item.name == name) {
+            return true;
+        }
+    }
+    return false;
+}
+
 static bool MatchColorSpaceName(const uint8_t* buf, uint32_t size, OHOS::ColorManager::ColorSpaceName &name)
 {
     bool cond = buf == nullptr || size <= OFFSET_5;
@@ -3008,8 +3019,10 @@ ImageHdrType ExtDecoder::CheckHdrType()
                 // get and set color space before decode
                 auto cs = GetSrcColorSpace();
                 decoder->SetColorSpaceInfoLight(heifColorSpaceName_, heifIsColorSpaceFromCicp_);
-                IMAGE_LOGD("ExtDecoder::CheckHdrType pre-set color space: name=%{public}u fromCicp=%{public}",
-                    static_cast<unsigned int>(heifColorSpaceName_), heifIsColorSpaceFromCicp_);
+                decoder->SetColorSpaceSupportFlag(IsFrameworkSupportedColorSpace(heifColorSpaceName_));
+                IMAGE_LOGD("ExtDecoder::CheckHdrType pre-set color space: name=%{public}u fromCicp=%{public}d supported=%{public}d",
+                            static_cast<unsigned int>(heifColorSpaceName_), heifIsColorSpaceFromCicp_,
+                            IsFrameworkSupportedColorSpace(heifColorSpaceName_));
             }
         }
     #endif

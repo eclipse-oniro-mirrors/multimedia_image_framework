@@ -1380,7 +1380,7 @@ void HeifDecoderImpl::SetPadding(int32_t widthPadding, int32_t heightPadding)
 }
 
 // Note: Avoid string mapping of ColorSpaceName to prevent coverage gaps.
-// Treat NONE/CUSTOM as unknown; everything else is considered known/supported here.
+// Framework passes whether the color space is supported via SetColorSpaceSupportFlag.
 
 void HeifDecoderImpl::SetSampleFormat(uint32_t sampleSize, ColorManager::ColorSpaceName colorSpaceName,
     bool isColorSpaceFromCicp)
@@ -1486,12 +1486,17 @@ static inline bool IsSupportedColorSpaceName(OHOS::ColorManager::ColorSpaceName 
     return ColorUtils::COLORSPACE_NAME_TO_COLORINFO_MAP.count(name) > 0;
 }
 
+void HeifDecoderImpl::SetColorSpaceSupportFlag(bool supported)
+{
+    colorSpaceFrameworkSupported_ = supported;
+}
+
 HeifImageHdrType HeifDecoderImpl::getHdrType()
 {
     std::vector<uint8_t> uwaInfo = primaryImage_->GetUWAInfo();
     IMAGE_LOGD("HeifDecoderImpl::getHdrType ColorSpaceName enum: %{public}d", colorSpaceName_);
-    // Consider NONE and CUSTOM as unknown; others as matched/known
-    colorSpaceMatched_ = IsSupportedColorSpaceName(colorSpaceName_);
+    // Use framework-provided support flag to decide matching
+    colorSpaceMatched_ = colorSpaceFrameworkSupported_;
     IMAGE_LOGD("HeifDecoderImpl::getHdrType SetSampleFormat - colorSpaceMatched_: %{public}s",
                colorSpaceMatched_ ? "true" : "false");
 
