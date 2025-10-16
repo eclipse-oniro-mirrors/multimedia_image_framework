@@ -328,6 +328,7 @@ void HeifDecoderImpl::SetColorSpaceInfo(HeifFrameInfo* info, const std::shared_p
     }
 }
 
+// Assign colorSpaceName earlier.
 void HeifDecoderImpl::SetColorSpaceInfoLight(ColorManager::ColorSpaceName colorSpaceName, bool isColorSpaceFromCicp)
 {
     colorSpaceName_ = colorSpaceName;
@@ -1483,6 +1484,7 @@ static inline bool IsSupportedColorSpaceName(OHOS::ColorManager::ColorSpaceName 
     return ColorUtils::COLORSPACE_NAME_TO_COLORINFO_MAP.count(name) > 0;
 }
 
+// Sets whether the color space is supported by the framework; called by ExtDecoder::CheckHdrType().
 void HeifDecoderImpl::SetColorSpaceSupportFlag(bool supported)
 {
     colorSpaceFrameworkSupported_ = supported;

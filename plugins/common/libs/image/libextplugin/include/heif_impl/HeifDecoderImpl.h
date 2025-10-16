@@ -89,7 +89,6 @@ public:
     bool IsGainmapDivisibleBySampleSize(uint32_t sampleSize);
     void setGainmapDstBuffer(uint8_t* dstBuffer, size_t rowStride, void *context);
     void SetColorSpaceInfoLight(ColorManager::ColorSpaceName colorSpaceName, bool isColorSpaceFromCicp);
-    // Receive framework support judgement to avoid maintaining a local support table
     void SetColorSpaceSupportFlag(bool supported);
 private:
     bool Reinit(HeifFrameInfo *frameInfo);
