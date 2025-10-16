@@ -3009,7 +3009,7 @@ ImageHdrType ExtDecoder::CheckHdrType()
                 auto cs = GetSrcColorSpace();
                 decoder->SetColorSpaceInfoLight(heifColorSpaceName_, heifIsColorSpaceFromCicp_);
                 IMAGE_LOGD("ExtDecoder::CheckHdrType pre-set color space: name=%{public}u fromCicp=%{public}",
-                            static_cast<unsigned int>(heifColorSpaceName_),heifIsColorSpaceFromCicp_);
+                    static_cast<unsigned int>(heifColorSpaceName_), heifIsColorSpaceFromCicp_);
             }
         }
     #endif
