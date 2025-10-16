@@ -167,7 +167,7 @@ HWTEST_F(ExtDecoderTest, HeifHdrType_NoneOrCustom, TestSize.Level3)
     GTEST_LOG_(INFO) << "ExtDecoderTest: HeifHdrType_NoneOrCustom start";
     auto dec = std::make_shared<HeifDecoderImpl>();
     // Prepare minimal primary image
-    auto prim = std::make_shared<HeifImage>(/*itemId*/1);
+    auto prim = std::make_shared<HeifImage>(1);
     prim->SetLumaBitNum(8); // not 10-bit, avoid HDR branch
     dec->primaryImage_ = prim;
 
@@ -194,7 +194,7 @@ HWTEST_F(ExtDecoderTest, HeifHdrType_SupportedBT2020_10bit, TestSize.Level3)
 {
     GTEST_LOG_(INFO) << "ExtDecoderTest: HeifHdrType_SupportedBT2020_10bit start";
     auto dec = std::make_shared<HeifDecoderImpl>();
-    auto prim = std::make_shared<HeifImage>(/*itemId*/2);
+    auto prim = std::make_shared<HeifImage>(2);
     prim->SetLumaBitNum(10);
     dec->primaryImage_ = prim;
 
