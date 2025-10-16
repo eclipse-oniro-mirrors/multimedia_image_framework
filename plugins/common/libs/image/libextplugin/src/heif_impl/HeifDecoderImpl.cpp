@@ -1475,15 +1475,6 @@ bool HeifDecoderImpl::getTmapInfo(HeifFrameInfo* frameInfo)
     return true;
 }
 
-static inline bool IsSupportedColorSpaceName(OHOS::ColorManager::ColorSpaceName name)
-{
-    if (name == OHOS::ColorManager::ColorSpaceName::NONE ||
-        name == OHOS::ColorManager::ColorSpaceName::CUSTOM) {
-        return false;
-    }
-    return ColorUtils::COLORSPACE_NAME_TO_COLORINFO_MAP.count(name) > 0;
-}
-
 // Sets whether the color space is supported by the framework; called by ExtDecoder::CheckHdrType().
 void HeifDecoderImpl::SetColorSpaceSupportFlag(bool supported)
 {
