@@ -802,7 +802,7 @@ array<string> GetImagePackerSupportedFormats()
     std::set<std::string> formats;
     uint32_t ret = OHOS::Media::ImagePacker::GetSupportedFormats(formats);
     if (ret != OHOS::Media::SUCCESS) {
-        ImageTaiheUtils::ThrowExceptionError("Fail to get decode supported formats");
+        IMAGE_LOGE("Fail to get decode supported formats");
     }
     return ImageTaiheUtils::ToTaiheArrayString(std::vector(formats.begin(), formats.end()));
 }

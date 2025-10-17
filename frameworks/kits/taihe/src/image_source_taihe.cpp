@@ -482,6 +482,20 @@ static PixelMap CreatePixelMapComplete(std::unique_ptr<ImageSourceTaiheContext> 
     return make_holder<PixelMapImpl, PixelMap>();
 }
 
+static optional<PixelMap> CreatePixelMapComplete(std::unique_ptr<ImageSourceTaiheContext> &taiheContext, bool isSync)
+{
+    IMAGE_LOGD("CreatePixelMapComplete IN");
+    if (taiheContext->status == OHOS::Media::SUCCESS && taiheContext->rPixelMap != nullptr) {
+        auto pixelMap = PixelMapImpl::CreatePixelMap(taiheContext->rPixelMap);
+        return optional<PixelMap>(std::in_place, pixelMap);
+    }
+    if (!isSync) {
+        ImageTaiheUtils::ThrowExceptionError(taiheContext->errMsg);
+    }
+    IMAGE_LOGD("CreatePixelMapComplete OUT");
+    return optional<PixelMap>(std::nullopt);
+}
+
 PixelMap ImageSourceImpl::CreatePixelMapSyncWithOptions(DecodingOptions const& options)
 {
     std::unique_ptr<ImageSourceTaiheContext> taiheContext = std::make_unique<ImageSourceTaiheContext>();
@@ -577,14 +591,14 @@ PixelMap ImageSourceImpl::CreatePixelMapUsingAllocatorSync(optional_view<Decodin
     return CreatePixelMapUsingAllocatorSyncComplete(taiheContext);
 }
 
-PixelMap ImageSourceImpl::CreateWideGamutSdrPixelMapSync()
+optional<PixelMap> ImageSourceImpl::CreateWideGamutSdrPixelMapSync()
 {
     ImageTaiheUtils::HicheckerReport();
     std::unique_ptr<ImageSourceTaiheContext> context = std::make_unique<ImageSourceTaiheContext>();
     context->decodeOpts.isCreateWideGamutSdrPixelMap = true;
     context->decodeOpts.desiredDynamicRange = OHOS::Media::DecodeDynamicRange::AUTO;
     context->rPixelMap = CreatePixelMapInner(this, nativeImgSrc, context->index, context->decodeOpts, context->status);
-    return CreatePixelMapComplete(context);
+    return CreatePixelMapComplete(context, false);
 }
 
 static bool CheckAsyncContext(std::unique_ptr<ImageSourceTaiheContext> &taiheContext, bool check)
@@ -845,7 +859,7 @@ string ImageSourceImpl::GetImagePropertyReturnsPromise(PropertyKey key, optional
     return context->valueStr;
 }
 
-string ImageSourceImpl::GetImagePropertySync(PropertyKey key)
+optional<string> ImageSourceImpl::GetImagePropertySync(PropertyKey key)
 {
     OHOS::Media::ImageTrace imageTrace("ImageSourceImpl::GetImagePropertySync");
     IMAGE_LOGD("GetImagePropertySync IN");
@@ -867,10 +881,11 @@ string ImageSourceImpl::GetImagePropertySync(PropertyKey key)
             IMAGE_LOGE("%{public}s: Bad source, errorCode=%{public}u", __func__, ret);
             ImageTaiheUtils::ThrowExceptionError(IMAGE_BAD_SOURCE, "Bad source");
         }
+        return optional<string>(std::in_place, value);
     } else {
         ImageTaiheUtils::ThrowExceptionError("empty native image source");
+        return optional<string>(std::nullopt);
     }
-    return value;
 }
 
 static void GetImagePropertiesExecute(std::unique_ptr<ImageSourceTaiheContext> &context)
@@ -1546,7 +1561,7 @@ array<string> GetImageSourceSupportedFormats()
     std::set<std::string> formats;
     uint32_t ret = OHOS::Media::ImageSource::GetSupportedFormats(formats);
     if (ret != OHOS::Media::SUCCESS) {
-        ImageTaiheUtils::ThrowExceptionError("Fail to get decode supported formats");
+        IMAGE_LOGE("Fail to get decode supported formats");
     }
     return ImageTaiheUtils::ToTaiheArrayString(std::vector(formats.begin(), formats.end()));
 }

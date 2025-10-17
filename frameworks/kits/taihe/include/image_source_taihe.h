@@ -42,7 +42,7 @@ public:
     PixelMap CreatePixelMapSync();
     PixelMap CreatePixelMapUsingAllocatorSync(optional_view<DecodingOptions> options,
         optional_view<AllocatorType> allocatorType);
-    PixelMap CreateWideGamutSdrPixelMapSync();
+    optional<PixelMap> CreateWideGamutSdrPixelMapSync();
     array<PixelMap> CreatePixelMapListSync();
     array<PixelMap> CreatePixelMapListSyncWithOptions(DecodingOptions const& options);
     array<PixelMap> CreatePixelMapListSyncWithOptionalOptions(optional_view<DecodingOptions> options);
@@ -51,7 +51,7 @@ public:
     int32_t GetFrameCountSync();
     string GetImagePropertyReturnsPromise(PropertyKey key, optional_view<ImagePropertyOptions> options);
     map<PropertyKey, PropertyValue> GetImagePropertiesSync(array_view<PropertyKey> key);
-    string GetImagePropertySync(PropertyKey key);
+    optional<string> GetImagePropertySync(PropertyKey key);
     void ModifyImagePropertySync(PropertyKey key, string_view value);
     void ModifyImagePropertiesSync(map_view<PropertyKey, PropertyValue> records);
     void ModifyImagePropertiesEnhancedSync(map_view<PropertyKey, PropertyValue> records);

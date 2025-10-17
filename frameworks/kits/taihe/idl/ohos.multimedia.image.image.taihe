@@ -731,7 +731,7 @@ interface ImageSource {
   @gen_promise("getImageProperties")
   GetImagePropertiesSync(key: Array<PropertyKey>): @record Map<PropertyKey, PropertyValue>;
 
-  GetImagePropertySync(key: PropertyKey): String;
+  GetImagePropertySync(key: PropertyKey): Optional<String>;
 
   @gen_promise("modifyImageProperty")
   ModifyImagePropertySync(key: PropertyKey, value: String): void;
@@ -757,7 +757,7 @@ interface ImageSource {
   CreatePictureAtIndexSync(index: i32): Optional<Picture>;
 
   @gen_promise("createWideGamutSdrPixelMap")
-  CreateWideGamutSdrPixelMapSync(): PixelMap;
+  CreateWideGamutSdrPixelMapSync(): Optional<PixelMap>;
 
   @get GetSupportedFormats(): Array<String>;
 }
