@@ -2551,11 +2551,12 @@ HWTEST_F(ExtDecoderTest, HeifColorSpaceSetter_None, TestSize.Level3)
 {
     GTEST_LOG_(INFO) << "ExtDecoderTest: HeifColorSpaceSetter_None start";
     auto dec = std::make_shared<HeifDecoderImpl>();
-    dec->SetColorSpaceInfoLight(OHOS::ColorManager::ColorSpaceName::NONE, true);
+    dec->colorSpaceName_ = OHOS::ColorManager::ColorSpaceName::NONE;
+    dec->isColorSpaceFromCicp_ = true;
     dec->SetColorSpaceSupportFlag(false);
     ASSERT_EQ(dec->colorSpaceName_, OHOS::ColorManager::ColorSpaceName::NONE);
     ASSERT_TRUE(dec->isColorSpaceFromCicp_);
-    ASSERT_FALSE(dec->colorSpaceFrameworkSupported_);
+    ASSERT_FALSE(dec->colorSpaceMatched_);
     GTEST_LOG_(INFO) << "ExtDecoderTest: HeifColorSpaceSetter_None end";
 }
 
@@ -2568,11 +2569,12 @@ HWTEST_F(ExtDecoderTest, HeifColorSpaceSetter_Custom, TestSize.Level3)
 {
     GTEST_LOG_(INFO) << "ExtDecoderTest: HeifColorSpaceSetter_Custom start";
     auto dec = std::make_shared<HeifDecoderImpl>();
-    dec->SetColorSpaceInfoLight(OHOS::ColorManager::ColorSpaceName::CUSTOM, false);
+    dec->colorSpaceName_ = OHOS::ColorManager::ColorSpaceName::CUSTOM;
+    dec->isColorSpaceFromCicp_ = false;
     dec->SetColorSpaceSupportFlag(false);
     ASSERT_EQ(dec->colorSpaceName_, OHOS::ColorManager::ColorSpaceName::CUSTOM);
     ASSERT_FALSE(dec->isColorSpaceFromCicp_);
-    ASSERT_FALSE(dec->colorSpaceFrameworkSupported_);
+    ASSERT_FALSE(dec->colorSpaceMatched_);
     GTEST_LOG_(INFO) << "ExtDecoderTest: HeifColorSpaceSetter_Custom end";
 }
 
@@ -2585,11 +2587,12 @@ HWTEST_F(ExtDecoderTest, HeifColorSpaceSetter_SupportedEnum, TestSize.Level3)
 {
     GTEST_LOG_(INFO) << "ExtDecoderTest: HeifColorSpaceSetter_SupportedEnum start";
     auto dec = std::make_shared<HeifDecoderImpl>();
-    dec->SetColorSpaceInfoLight(OHOS::ColorManager::ColorSpaceName::BT2020, true);
+    dec->colorSpaceName_ = OHOS::ColorManager::ColorSpaceName::BT2020;
+    dec->isColorSpaceFromCicp_ = true;
     dec->SetColorSpaceSupportFlag(true);
     ASSERT_EQ(dec->colorSpaceName_, OHOS::ColorManager::ColorSpaceName::BT2020);
     ASSERT_TRUE(dec->isColorSpaceFromCicp_);
-    ASSERT_TRUE(dec->colorSpaceFrameworkSupported_);
+    ASSERT_TRUE(dec->colorSpaceMatched_);
     GTEST_LOG_(INFO) << "ExtDecoderTest: HeifColorSpaceSetter_SupportedEnum end";
 }
 
@@ -2602,19 +2605,20 @@ HWTEST_F(ExtDecoderTest, HeifHdrType_NoneOrCustom, TestSize.Level3)
 {
     GTEST_LOG_(INFO) << "ExtDecoderTest: HeifHdrType_NoneOrCustom start";
     auto dec = std::make_shared<HeifDecoderImpl>();
-    // Prepare minimal primary image
     auto prim = std::make_shared<HeifImage>(1);
     prim->SetLumaBitNum(8); // not 10-bit, avoid HDR branch
     dec->primaryImage_ = prim;
 
     // Case NONE
-    dec->SetColorSpaceInfoLight(OHOS::ColorManager::ColorSpaceName::NONE, false);
+    dec->colorSpaceName_ = OHOS::ColorManager::ColorSpaceName::NONE;
+    dec->isColorSpaceFromCicp_ = false;
     dec->SetColorSpaceSupportFlag(false);
     auto typeNone = dec->getHdrType();
     ASSERT_EQ(typeNone, HeifImageHdrType::UNKNOWN);
 
     // Case CUSTOM
-    dec->SetColorSpaceInfoLight(OHOS::ColorManager::ColorSpaceName::CUSTOM, true);
+    dec->colorSpaceName_ = OHOS::ColorManager::ColorSpaceName::CUSTOM;
+    dec->isColorSpaceFromCicp_ = true;
     dec->SetColorSpaceSupportFlag(false);
     auto typeCustom = dec->getHdrType();
     ASSERT_EQ(typeCustom, HeifImageHdrType::UNKNOWN);
@@ -2634,7 +2638,8 @@ HWTEST_F(ExtDecoderTest, HeifHdrType_SupportedBT2020_10bit, TestSize.Level3)
     prim->SetLumaBitNum(10);
     dec->primaryImage_ = prim;
 
-    dec->SetColorSpaceInfoLight(OHOS::ColorManager::ColorSpaceName::BT2020, true);
+    dec->colorSpaceName_ = OHOS::ColorManager::ColorSpaceName::BT2020;
+    dec->isColorSpaceFromCicp_ = true;
     dec->SetColorSpaceSupportFlag(true);
     auto type = dec->getHdrType();
     ASSERT_EQ(type, HeifImageHdrType::ISO_SINGLE);

@@ -328,13 +328,6 @@ void HeifDecoderImpl::SetColorSpaceInfo(HeifFrameInfo* info, const std::shared_p
     }
 }
 
-// Assign colorSpaceName earlier.
-void HeifDecoderImpl::SetColorSpaceInfoLight(ColorManager::ColorSpaceName colorSpaceName, bool isColorSpaceFromCicp)
-{
-    colorSpaceName_ = colorSpaceName;
-    isColorSpaceFromCicp_ = isColorSpaceFromCicp;
-}
-
 bool HeifDecodeImpl::SeekRefGridRangeInfo(const std::shared_ptr<HeifImage> &image)
 {
     if (parser_ == nullptr || image == nullptr) {
@@ -1478,16 +1471,14 @@ bool HeifDecoderImpl::getTmapInfo(HeifFrameInfo* frameInfo)
 // Sets whether the color space is supported by the framework; called by ExtDecoder::CheckHdrType().
 void HeifDecoderImpl::SetColorSpaceSupportFlag(bool supported)
 {
-    colorSpaceFrameworkSupported_ = supported;
+    colorSpaceMatched_ = supported;
 }
 
 HeifImageHdrType HeifDecoderImpl::getHdrType()
 {
     std::vector<uint8_t> uwaInfo = primaryImage_->GetUWAInfo();
-    colorSpaceMatched_ = colorSpaceFrameworkSupported_;
-    IMAGE_LOGD("HeifDecoderImpl::getHdrType ColorSpaceName enum: %{public}d", colorSpaceName_);
-    IMAGE_LOGD("HeifDecoderImpl::getHdrType SetSampleFormat - colorSpaceMatched_: %{public}s",
-               colorSpaceMatched_ ? "true" : "false");
+    IMAGE_LOGD("HeifDecoderImpl::getHdrType ColorSpaceName enum: %{public}d, colorSpaceMatched_: %{public}s",
+               colorSpaceName_, colorSpaceMatched_ ? "true" : "false");
     if (primaryImage_->GetLumaBitNum() == LUMA_10_BIT && (colorSpaceMatched_ ||
           (imageInfo_.hasNclxColor && imageInfo_.nclxColor.colorPrimaries == BT2020_PRIMARIES))) {
         return uwaInfo.empty() ? HeifImageHdrType::ISO_SINGLE : HeifImageHdrType::VIVID_SINGLE;

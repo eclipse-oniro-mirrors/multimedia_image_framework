@@ -2408,16 +2408,11 @@ static std::vector<ColorSpaceNameEnum> sColorSpaceNamedMap = {
 // Determine if a ColorSpaceName is supported by current framework mapping
 static bool IsFrameworkSupportedColorSpace(OHOS::ColorManager::ColorSpaceName name)
 {
-    for (const auto &item : sColorSpaceNamedMap) {
-        if (item.name != name) {
-            continue;
-        }
-        // Consider any description mentioning "2020" as BT.2020-related (e.g., "BT.2020", "Rec2020", "REC. 2020").
-        if (item.desc.find("2020") != std::string::npos) {
-            return true;
-        }
-    }
-    return false;
+    return std::any_of(sColorSpaceNamedMap.begin(), sColorSpaceNamedMap.end(),
+        [&name](const ColorSpaceNameEnum& colorSpaceName) {
+            return colorSpaceName.name == name &&
+                   colorSpaceName.desc.find("2020") != std::string::npos;
+        });
 }
 
 static bool MatchColorSpaceName(const uint8_t* buf, uint32_t size, OHOS::ColorManager::ColorSpaceName &name)
@@ -3016,13 +3011,12 @@ ImageHdrType ExtDecoder::CheckHdrType()
         return hdrType_;
     }
 
+    // For HEIF, set color space support flag before checking HDR type.
     #ifdef HEIF_HW_DECODE_ENABLE
         if (format == SkEncodedImageFormat::kHEIF) {
             auto decoder = reinterpret_cast<HeifDecoderImpl*>(codec_->getHeifContext());
             if (decoder) {
-                // get and set color space before decode
                 auto cs = GetSrcColorSpace();
-                decoder->SetColorSpaceInfoLight(heifColorSpaceName_, heifIsColorSpaceFromCicp_);
                 decoder->SetColorSpaceSupportFlag(IsFrameworkSupportedColorSpace(heifColorSpaceName_));
                 IMAGE_LOGD("ExtDecoder::CheckHdrTypepreset cs: n=%{public}u cicp=%{public}d sup=%{public}d",
                     static_cast<unsigned int>(heifColorSpaceName_),
