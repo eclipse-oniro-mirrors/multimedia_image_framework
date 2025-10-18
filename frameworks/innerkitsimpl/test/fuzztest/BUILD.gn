@@ -50,5 +50,7 @@ group("fuzztest") {
     "imagepngplugin2_fuzzer:ImagePngPlugin2FuzzTest",
     "imagerawplugin_fuzzer:ImageRawPluginFuzzTest",
     "imagetextureencode_fuzzer:ImageTextureEncodeFuzzTest",
+    "imagecr3parser_fuzzer:ImageCr3ParserFuzzTest",
+    "imagecr3box_fuzzer:ImageCr3BoxFuzzTest",
   ]
 }
