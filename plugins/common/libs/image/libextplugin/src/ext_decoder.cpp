@@ -3011,19 +3011,19 @@ ImageHdrType ExtDecoder::CheckHdrType()
         return hdrType_;
     }
 
-    // For HEIF, set color space support flag before checking HDR type.
-    #ifdef HEIF_HW_DECODE_ENABLE
-        if (format == SkEncodedImageFormat::kHEIF) {
-            auto decoder = reinterpret_cast<HeifDecoderImpl*>(codec_->getHeifContext());
-            if (decoder) {
-                auto cs = GetSrcColorSpace();
-                decoder->SetColorSpaceSupportFlag(IsFrameworkSupportedColorSpace(heifColorSpaceName_));
-                IMAGE_LOGD("ExtDecoder::CheckHdrTypepreset cs: n=%{public}u cicp=%{public}d sup=%{public}d",
-                    static_cast<unsigned int>(heifColorSpaceName_),
-                    heifIsColorSpaceFromCicp_, IsFrameworkSupportedColorSpace(heifColorSpaceName_));
-            }
+// For HEIF, set color space support flag before checking HDR type.
+#ifdef HEIF_HW_DECODE_ENABLE
+    if (format == SkEncodedImageFormat::kHEIF) {
+        auto decoder = reinterpret_cast<HeifDecoderImpl*>(codec_->getHeifContext());
+        if (decoder) {
+            auto cs = GetSrcColorSpace();
+            decoder->SetColorSpaceSupportFlag(IsFrameworkSupportedColorSpace(heifColorSpaceName_));
+            IMAGE_LOGD("ExtDecoder::CheckHdrTypepreset cs: n=%{public}u cicp=%{public}d sup=%{public}d",
+                static_cast<unsigned int>(heifColorSpaceName_),
+                heifIsColorSpaceFromCicp_, IsFrameworkSupportedColorSpace(heifColorSpaceName_));
         }
-    #endif
+    }
+#endif
 
     hdrType_ = HdrHelper::CheckHdrType(codec_.get(), gainMapOffset_);
     if (hdrType_ <= Media::ImageHdrType::SDR || format != SkEncodedImageFormat::kJPEG) {
