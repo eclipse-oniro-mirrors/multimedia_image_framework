@@ -1468,11 +1468,19 @@ bool HeifDecoderImpl::getTmapInfo(HeifFrameInfo* frameInfo)
     return true;
 }
 
+// Sets whether the color space is supported by the framework; called by ExtDecoder::CheckHdrType().
+void HeifDecoderImpl::SetColorSpaceSupportFlag(bool supported)
+{
+    colorSpaceMatched_ = supported;
+}
+
 HeifImageHdrType HeifDecoderImpl::getHdrType()
 {
     std::vector<uint8_t> uwaInfo = primaryImage_->GetUWAInfo();
-    if (primaryImage_->GetLumaBitNum() == LUMA_10_BIT && imageInfo_.hasNclxColor &&
-        imageInfo_.nclxColor.colorPrimaries == BT2020_PRIMARIES) {
+    IMAGE_LOGD("HeifDecoderImpl::getHdrType ColorSpaceName enum: %{public}d, colorSpaceMatched_: %{public}s",
+               colorSpaceName_, colorSpaceMatched_ ? "true" : "false");
+    if (primaryImage_->GetLumaBitNum() == LUMA_10_BIT && (colorSpaceMatched_ ||
+          (imageInfo_.hasNclxColor && imageInfo_.nclxColor.colorPrimaries == BT2020_PRIMARIES))) {
         return uwaInfo.empty() ? HeifImageHdrType::ISO_SINGLE : HeifImageHdrType::VIVID_SINGLE;
     }
     if (gainmapImage_ != nullptr) {

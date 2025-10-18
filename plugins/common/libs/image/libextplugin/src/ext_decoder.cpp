@@ -2404,8 +2404,19 @@ static std::vector<ColorSpaceNameEnum> sColorSpaceNamedMap = {
     {"sRGB", OHOS::ColorManager::ColorSpaceName::SRGB},
     {"BT.2020", OHOS::ColorManager::ColorSpaceName::BT2020},
     {"DCI-P3", OHOS::ColorManager::ColorSpaceName::DCI_P3},
-    {"Rec2020 Gamut with HLG Transfer", OHOS::ColorManager::ColorSpaceName::BT2020_HLG}
+    {"Rec2020 Gamut with HLG Transfer", OHOS::ColorManager::ColorSpaceName::BT2020_HLG},
+    {"REC. 2020", OHOS::ColorManager::ColorSpaceName::BT2020_HLG}
 };
+
+// Determine if a ColorSpaceName is supported by current framework mapping
+static bool IsFrameworkSupportedColorSpace(OHOS::ColorManager::ColorSpaceName name)
+{
+    return std::any_of(sColorSpaceNamedMap.begin(), sColorSpaceNamedMap.end(),
+        [&name](const ColorSpaceNameEnum& colorSpaceName) {
+            return colorSpaceName.name == name &&
+                   colorSpaceName.desc.find("2020") != std::string::npos;
+        });
+}
 
 static bool MatchColorSpaceName(const uint8_t* buf, uint32_t size, OHOS::ColorManager::ColorSpaceName &name)
 {
@@ -3013,6 +3024,21 @@ ImageHdrType ExtDecoder::CheckHdrType()
         gainMapOffset_ = 0;
         return hdrType_;
     }
+
+// For HEIF, set color space support flag before checking HDR type.
+#ifdef HEIF_HW_DECODE_ENABLE
+    if (format == SkEncodedImageFormat::kHEIF) {
+        auto decoder = reinterpret_cast<HeifDecoderImpl*>(codec_->getHeifContext());
+        if (decoder) {
+            auto cs = GetSrcColorSpace();
+            decoder->SetColorSpaceSupportFlag(IsFrameworkSupportedColorSpace(heifColorSpaceName_));
+            IMAGE_LOGD("ExtDecoder::CheckHdrTypepreset cs: n=%{public}u cicp=%{public}d sup=%{public}d",
+                static_cast<unsigned int>(heifColorSpaceName_),
+                heifIsColorSpaceFromCicp_, IsFrameworkSupportedColorSpace(heifColorSpaceName_));
+        }
+    }
+#endif
+
     hdrType_ = HdrHelper::CheckHdrType(codec_.get(), gainMapOffset_);
     if (hdrType_ <= Media::ImageHdrType::SDR || format != SkEncodedImageFormat::kJPEG) {
         return hdrType_;

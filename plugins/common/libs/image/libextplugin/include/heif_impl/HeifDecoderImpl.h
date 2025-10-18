@@ -88,6 +88,7 @@ public:
     int32_t GetPrimaryLumaBitNum();
     bool IsGainmapDivisibleBySampleSize(uint32_t sampleSize);
     void setGainmapDstBuffer(uint8_t* dstBuffer, size_t rowStride, void *context);
+    void SetColorSpaceSupportFlag(bool supported);
 private:
     bool Reinit(HeifFrameInfo *frameInfo);
 
@@ -225,6 +226,7 @@ private:
     uint32_t sampleSize_ = 1;
     OHOS::ColorManager::ColorSpaceName colorSpaceName_ = ColorManager::ColorSpaceName::NONE;
     bool isColorSpaceFromCicp_ = false;
+    bool colorSpaceMatched_ = false;
     HeifFrameInfo tmapInfo_{};
     std::string errMsg_;
 

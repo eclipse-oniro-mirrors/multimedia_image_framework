@@ -31,6 +31,7 @@
 #include "image_data_statistics.h"
 #include "image_source.h"
 #include "HeifDecoderImpl.h"
+#include "heif_impl/heif_parser/heif_image.h"
 #ifdef SK_ENABLE_OHOS_CODEC
 #include "sk_ohoscodec.h"
 #endif
@@ -2539,6 +2540,112 @@ HWTEST_F(ExtDecoderTest, DecodeIncompleteGifImageTest001, TestSize.Level3)
     EXPECT_EQ(errorCode, OHOS::Media::SUCCESS);
     EXPECT_NE(pixelmap, nullptr);
 }
+
+#ifdef HEIF_HW_DECODE_ENABLE
+/**
+ * @tc.name: HeifColorSpaceSetter_None
+ * @tc.desc: Set NONE colorspace and unsupported flag, verify fields
+ * @tc.type: FUNC
+ */
+HWTEST_F(ExtDecoderTest, HeifColorSpaceSetter_None, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ExtDecoderTest: HeifColorSpaceSetter_None start";
+    auto dec = std::make_shared<HeifDecoderImpl>();
+    dec->colorSpaceName_ = OHOS::ColorManager::ColorSpaceName::NONE;
+    dec->isColorSpaceFromCicp_ = true;
+    dec->SetColorSpaceSupportFlag(false);
+    ASSERT_EQ(dec->colorSpaceName_, OHOS::ColorManager::ColorSpaceName::NONE);
+    ASSERT_TRUE(dec->isColorSpaceFromCicp_);
+    ASSERT_FALSE(dec->colorSpaceMatched_);
+    GTEST_LOG_(INFO) << "ExtDecoderTest: HeifColorSpaceSetter_None end";
+}
+
+/**
+ * @tc.name: HeifColorSpaceSetter_Custom
+ * @tc.desc: Set CUSTOM colorspace and unsupported flag, verify fields
+ * @tc.type: FUNC
+ */
+HWTEST_F(ExtDecoderTest, HeifColorSpaceSetter_Custom, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ExtDecoderTest: HeifColorSpaceSetter_Custom start";
+    auto dec = std::make_shared<HeifDecoderImpl>();
+    dec->colorSpaceName_ = OHOS::ColorManager::ColorSpaceName::CUSTOM;
+    dec->isColorSpaceFromCicp_ = false;
+    dec->SetColorSpaceSupportFlag(false);
+    ASSERT_EQ(dec->colorSpaceName_, OHOS::ColorManager::ColorSpaceName::CUSTOM);
+    ASSERT_FALSE(dec->isColorSpaceFromCicp_);
+    ASSERT_FALSE(dec->colorSpaceMatched_);
+    GTEST_LOG_(INFO) << "ExtDecoderTest: HeifColorSpaceSetter_Custom end";
+}
+
+/**
+ * @tc.name: HeifColorSpaceSetter_SupportedEnum
+ * @tc.desc: Set a supported colorspace (e.g., BT2020) and supported flag true, verify fields
+ * @tc.type: FUNC
+ */
+HWTEST_F(ExtDecoderTest, HeifColorSpaceSetter_SupportedEnum, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ExtDecoderTest: HeifColorSpaceSetter_SupportedEnum start";
+    auto dec = std::make_shared<HeifDecoderImpl>();
+    dec->colorSpaceName_ = OHOS::ColorManager::ColorSpaceName::BT2020;
+    dec->isColorSpaceFromCicp_ = true;
+    dec->SetColorSpaceSupportFlag(true);
+    ASSERT_EQ(dec->colorSpaceName_, OHOS::ColorManager::ColorSpaceName::BT2020);
+    ASSERT_TRUE(dec->isColorSpaceFromCicp_);
+    ASSERT_TRUE(dec->colorSpaceMatched_);
+    GTEST_LOG_(INFO) << "ExtDecoderTest: HeifColorSpaceSetter_SupportedEnum end";
+}
+
+/**
+ * @tc.name: HeifHdrType_NoneOrCustom
+ * @tc.desc: NONE/CUSTOM with unsupported flag should not match HDR path (returns UNKNOWN when no 10-bit or gainmap)
+ * @tc.type: FUNC
+ */
+HWTEST_F(ExtDecoderTest, HeifHdrType_NoneOrCustom, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ExtDecoderTest: HeifHdrType_NoneOrCustom start";
+    auto dec = std::make_shared<HeifDecoderImpl>();
+    auto prim = std::make_shared<HeifImage>(1);
+    prim->SetLumaBitNum(8); // not 10-bit, avoid HDR branch
+    dec->primaryImage_ = prim;
+
+    // Case NONE
+    dec->colorSpaceName_ = OHOS::ColorManager::ColorSpaceName::NONE;
+    dec->isColorSpaceFromCicp_ = false;
+    dec->SetColorSpaceSupportFlag(false);
+    auto typeNone = dec->getHdrType();
+    ASSERT_EQ(typeNone, HeifImageHdrType::UNKNOWN);
+
+    // Case CUSTOM
+    dec->colorSpaceName_ = OHOS::ColorManager::ColorSpaceName::CUSTOM;
+    dec->isColorSpaceFromCicp_ = true;
+    dec->SetColorSpaceSupportFlag(false);
+    auto typeCustom = dec->getHdrType();
+    ASSERT_EQ(typeCustom, HeifImageHdrType::UNKNOWN);
+    GTEST_LOG_(INFO) << "ExtDecoderTest: HeifHdrType_NoneOrCustom end";
+}
+
+/**
+ * @tc.name: HeifHdrType_SupportedBT2020_10bit
+ * @tc.desc: Supported mapping with 10-bit should enter SINGLE path; empty UWA -> ISO_SINGLE
+ * @tc.type: FUNC
+ */
+HWTEST_F(ExtDecoderTest, HeifHdrType_SupportedBT2020_10bit, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ExtDecoderTest: HeifHdrType_SupportedBT2020_10bit start";
+    auto dec = std::make_shared<HeifDecoderImpl>();
+    auto prim = std::make_shared<HeifImage>(2);
+    prim->SetLumaBitNum(10);
+    dec->primaryImage_ = prim;
+
+    dec->colorSpaceName_ = OHOS::ColorManager::ColorSpaceName::BT2020;
+    dec->isColorSpaceFromCicp_ = true;
+    dec->SetColorSpaceSupportFlag(true);
+    auto type = dec->getHdrType();
+    ASSERT_EQ(type, HeifImageHdrType::ISO_SINGLE);
+    GTEST_LOG_(INFO) << "ExtDecoderTest: HeifHdrType_SupportedBT2020_10bit end";
+}
+#endif // HEIF_HW_DECODE_ENABLE
 
 }
 }
