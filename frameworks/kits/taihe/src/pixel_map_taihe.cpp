@@ -120,11 +120,6 @@ static PixelMap CreatePixelMapFromSurface(std::string const& surfaceId, Media::R
         pixelMap = CreatePixelMapFromSurfaceId(surfaceIdInt, region);
     }
 #endif
-    if (pixelMap == nullptr) {
-        ImageTaiheUtils::ThrowExceptionError(Media::ERR_IMAGE_PIXELMAP_CREATE_FAILED,
-            "Create PixelMap from Surface ID failed");
-        return make_holder<PixelMapImpl, PixelMap>();
-    }
     return make_holder<PixelMapImpl, PixelMap>(std::move(pixelMap));
 }
 #endif
