@@ -42,6 +42,7 @@ static const uint8_t PCM_ENABLED_FLAG = 4;
 static const uint8_t NUM_TEMPORAL_ID_SIZE = 6;
 static const uint8_t MAX_COEF_NUM = 64;
 static uint32_t HEIF_MAX_IMAGE_DPB_SIZE = 32;
+static uint32_t HEIF_MAX_LONG_TERM_REF_PRESENT_FLAG_SIZE = 32;
 static uint32_t HEIF_NUM_DELTA_POCS = 1;
 static uint32_t HEIF_BASE_DELTA_FlAG = 1;
 
@@ -500,7 +501,7 @@ bool HeifHvccBox::ParseSpsSyntaxScalingList(std::vector<uint8_t> &nalUnits)
     spsConfig_.longTermRefPicsPresentFlag = GetWord(nalUnits, READ_BIT_NUM_FLAG);
     if (spsConfig_.longTermRefPicsPresentFlag == READ_BIT_NUM_FLAG) {
         uint32_t numLongTermRefPicSps = GetGolombCode(nalUnits);
-        for (uint32_t i = 0; i < numLongTermRefPicSps; i++) {
+        for (uint32_t i = 0; i < HEIF_MAX_LONG_TERM_REF_PRESENT_FLAG_SIZE && i < numLongTermRefPicSps; i++) {
             // itRefPicPocLsbSps[i] == log2MaxPicOrderCntLsbMinus4 + 4
             GetWord(nalUnits, spsConfig_.log2MaxPicOrderCntLsbMinus4 + GENERAL_PROFILE_SIZE);
             GetWord(nalUnits, READ_BIT_NUM_FLAG);
