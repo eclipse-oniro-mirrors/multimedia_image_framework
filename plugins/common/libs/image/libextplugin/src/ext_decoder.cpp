@@ -1565,8 +1565,8 @@ uint32_t ExtDecoder::DoHeifToRgbDecode(OHOS::ImagePlugin::DecodeContext &context
     if (IsHeifRegionDecode()) {
         UpdateHeifRegionDstInfo(context);
     }
-    uint64_t byteCount = dstInfo_.computeMinByteSize();
     CHECK_ERROR_RETURN_RET(!SetOutPutFormat(context.info.pixelFormat, decoder), ERR_IMAGE_DATA_UNSUPPORT);
+    uint64_t byteCount = dstInfo_.computeMinByteSize();
     if (ImageUtils::IsSdrPixelMapReuseSuccess(context, info_.width(), info_.height(), reusePixelmap_)) {
         IMAGE_LOGI("HEIF RGB Maindecode reusePixelmap success");
     } else {
