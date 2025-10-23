@@ -511,11 +511,11 @@ static bool RGBA1010102ToP010SoftDecode(const RGBDataInfo &rgbInfo, SrcConvertPa
     int32_t copySrcLen = static_cast<int32_t>(copyRgbInfo.width) *
         static_cast<int32_t>(copyRgbInfo.height) * STRIDES_PER_PLANE;
     std::unique_ptr<uint8_t[]> copySrcBuffer = std::make_unique<uint8_t[]>(copySrcLen);
-    CHECK_ERROR_RETURN_RET_LOG((copySrcBuffer == nullptr), -1, "[RGBAToP010]Convert: alloc memory failed!");
+    CHECK_ERROR_RETURN_RET_LOG((copySrcBuffer == nullptr), false, "[RGBAToP010]Convert: alloc memory failed!");
     uint8_t* copySrcPixels = copySrcBuffer.get();
     memset_s(copySrcPixels, copySrcLen, 0, copySrcLen);
     bool cond = memcpy_s(copySrcPixels, copySrcLen, midBuffer, midBufferSize) != EOK;
-    CHECK_ERROR_RETURN_RET(cond, -1);
+    CHECK_ERROR_RETURN_RET(cond, false);
     SrcConvertParam midParam = {rgbInfo.width, rgbInfo.height};
     midParam.format = PixelFormat::RGBA_F16;
     midParam.buffer = copySrcPixels;
