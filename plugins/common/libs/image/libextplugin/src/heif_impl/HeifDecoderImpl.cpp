@@ -518,7 +518,7 @@ bool HeifDecoderImpl::decode(HeifFrameInfo *frameInfo)
     sptr<SurfaceBuffer> hwBuffer;
     IMAGE_LOGD("decode sapmpleSize:%{public}d", sampleSize_);
     bool decodeSuccess = HwDecodeImage(primaryImage_, gridInfo_, &hwBuffer, true);
-    if (decodeSuccess) {
+    if (hwBuffer && decodeSuccess) {
         ImageUtils::DumpDataIfDumpEnabled(reinterpret_cast<const char *>(hwBuffer->GetVirAddr()),
             hwBuffer->GetSize(), "heif_hardware_decode", IMAGE_ID);
     } else if (sampleSize_ != DEFAULT_SCALE_SIZE) {

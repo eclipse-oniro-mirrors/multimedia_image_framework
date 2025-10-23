@@ -753,7 +753,7 @@ void ImageUtils::DumpHdrBufferEnabled(sptr<SurfaceBuffer>& buffer, const std::st
 {
     bool cond = !ImageSystemProperties::GetDumpHdrEnbaled() || buffer == nullptr;
     CHECK_ERROR_RETURN(cond);
-    uint32_t bufferSize = static_cast<int32_t>(buffer->GetSize());
+    uint32_t bufferSize = buffer->GetSize();
     std::string fileSuffix = fileName + "-format-" + std::to_string(buffer->GetFormat()) + "-Width-"
         + std::to_string(buffer->GetWidth()) + "-Height-" + std::to_string(buffer->GetWidth()) + "-Stride-"
         + std::to_string(buffer->GetStride()) + ".dat";
