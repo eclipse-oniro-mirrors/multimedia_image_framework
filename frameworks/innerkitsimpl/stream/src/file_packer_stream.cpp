@@ -69,7 +69,7 @@ FilePackerStream::FilePackerStream(const int fd)
 {
     int dupFd = dup(fd);
     if (dupFd < 0) {
-        IMAGE_LOGE("[FilePackerStream]Fail to dup fd.");
+        IMAGE_LOGE("[FilePackerStream]Fail to dup fd, dupFd:[%{public}d].", dupFd);
         return;
     }
 
