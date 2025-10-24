@@ -101,7 +101,8 @@ void PngAccessorTest001(const uint8_t* data, size_t size)
     close(fd);
 
     BufferMetadataStream::MemoryMode mode = static_cast<BufferMetadataStream::MemoryMode>(FDP->ConsumeIntegral<uint8_t>() % MEMORYMODE_MODULO);
-    std::shared_ptr<MetadataAccessor> metadataAccessor2 = MetadataAccessorFactory::Create(const_cast<uint8_t*>(data),
+    std::vector<uint8_t> buffer(data, data + size);
+    std::shared_ptr<MetadataAccessor> metadataAccessor2 = MetadataAccessorFactory::Create(buffer.data(),
         size, mode);
     if (metadataAccessor2 == nullptr) {
         IMAGE_LOGE("Create metadata accessor failed");
