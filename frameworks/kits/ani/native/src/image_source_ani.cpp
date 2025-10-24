@@ -628,7 +628,7 @@ ani_status ImageSourceAni::Init(ani_env* env)
             reinterpret_cast<void*>(OHOS::Media::ModifyImageProperty)},
         ani_native_function {"nativeModifyImageProperties", "C{std.core.Record}:",
             reinterpret_cast<void*>(OHOS::Media::ModifyImageProperties)},
-        ani_native_function {"nativeGetImageProperties", "C{escompat.Array}:C{std.core.Record}",
+        ani_native_function {"nativeGetImageProperties", "C{std.core.Array}:C{escompat.Record}",
             reinterpret_cast<void*>(OHOS::Media::GetImageProperties)},
         ani_native_function {"release", ":", reinterpret_cast<void *>(OHOS::Media::Release)},
     };
