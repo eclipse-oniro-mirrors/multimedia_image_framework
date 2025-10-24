@@ -219,7 +219,7 @@ ani_status ImagePackerAni::Init(ani_env* env)
     std::array methods = {
         ani_native_function {"nativePackingWithPixelMap",
             "C{@ohos.multimedia.image.image.PixelMap}C{@ohos.multimedia.image.image.PackingOption}"
-            ":C{escompat.ArrayBuffer}",
+            ":C{std.core.ArrayBuffer}",
             reinterpret_cast<void*>(OHOS::Media::nativePackingWithPixelMap)},
         ani_native_function {"nativeRelease", ":", reinterpret_cast<void*>(OHOS::Media::Release)},
     };

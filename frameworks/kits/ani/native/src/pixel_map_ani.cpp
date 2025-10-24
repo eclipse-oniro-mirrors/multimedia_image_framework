@@ -328,7 +328,7 @@ ani_status PixelMapAni::Init(ani_env* env)
         ani_native_function {"getBytesNumberPerRow", ":i", reinterpret_cast<void*>(OHOS::Media::GetBytesNumberPerRow)},
         ani_native_function {"getPixelBytesNumber", ":i", reinterpret_cast<void*>(OHOS::Media::GetPixelBytesNumber)},
         ani_native_function {"nativeRelease", ":", reinterpret_cast<void*>(OHOS::Media::Release)},
-        ani_native_function {"nativeReadPixelsToBuffer", "C{escompat.ArrayBuffer}:",
+        ani_native_function {"nativeReadPixelsToBuffer", "C{std.core.ArrayBuffer}:",
             reinterpret_cast<void*>(OHOS::Media::ReadPixelsToBuffer)},
         ani_native_function {"nativeScale", "ddC{@ohos.multimedia.image.image.AntiAliasingLevel}:",
             reinterpret_cast<void*>(OHOS::Media::Scale)},
