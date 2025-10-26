@@ -124,6 +124,7 @@ HWTEST_F(ImageSourceHdrTest, CheckImageSourceHdr001, TestSize.Level3)
         ImageSource::CreateImageSource(IMAGE_INPUT_JPEG_SDR_PATH, opts, errorCode);
     ASSERT_EQ(errorCode, SUCCESS);
     ASSERT_NE(imageSource.get(), nullptr);
+    ASSERT_EQ(imageSource->GetiTxtLength(), 0);
 
     bool isHdr = imageSource->IsHdrImage();
     ASSERT_EQ(isHdr, false);
@@ -142,6 +143,7 @@ HWTEST_F(ImageSourceHdrTest, CheckImageSourceHdr002, TestSize.Level3)
         ImageSource::CreateImageSource(IMAGE_INPUT_HEIF_SDR_PATH, opts, errorCode);
     ASSERT_EQ(errorCode, SUCCESS);
     ASSERT_NE(imageSource.get(), nullptr);
+    ASSERT_EQ(imageSource->GetiTxtLength(), 0);
 
     bool isHdr = imageSource->IsHdrImage();
     ASSERT_EQ(isHdr, false);
@@ -160,6 +162,7 @@ HWTEST_F(ImageSourceHdrTest, CheckImageSourceHdr003, TestSize.Level3)
         ImageSource::CreateImageSource(IMAGE_INPUT_HEIF_10BIT_SDR_PATH, opts, errorCode);
     ASSERT_EQ(errorCode, SUCCESS);
     ASSERT_NE(imageSource.get(), nullptr);
+    ASSERT_EQ(imageSource->GetiTxtLength(), 0);
 
     bool isHdr = imageSource->IsHdrImage();
     ASSERT_EQ(isHdr, false);
@@ -178,6 +181,7 @@ HWTEST_F(ImageSourceHdrTest, CheckImageSourceHdr004, TestSize.Level3)
         ImageSource::CreateImageSource(IMAGE_INPUT_JPEG_HDR_PATH, opts, errorCode);
     ASSERT_EQ(errorCode, SUCCESS);
     ASSERT_NE(imageSource.get(), nullptr);
+    ASSERT_EQ(imageSource->GetiTxtLength(), 0);
 
     bool isHdr = imageSource->IsHdrImage();
 #ifdef IMAGE_VPE_FLAG
@@ -200,6 +204,7 @@ HWTEST_F(ImageSourceHdrTest, CheckPixelMapHdr001, TestSize.Level3)
         ImageSource::CreateImageSource(IMAGE_INPUT_JPEG_SDR_PATH, opts, errorCode);
     ASSERT_EQ(errorCode, SUCCESS);
     ASSERT_NE(imageSource.get(), nullptr);
+    ASSERT_EQ(imageSource->GetiTxtLength(), 0);
 
     uint32_t index = 0;
     DecodeOptions optsPixel;
@@ -227,6 +232,7 @@ HWTEST_F(ImageSourceHdrTest, CheckPixelMapHdr002, TestSize.Level3)
         ImageSource::CreateImageSource(IMAGE_INPUT_HEIF_SDR_PATH, opts, errorCode);
     ASSERT_EQ(errorCode, SUCCESS);
     ASSERT_NE(imageSource.get(), nullptr);
+    ASSERT_EQ(imageSource->GetiTxtLength(), 0);
 
     uint32_t index = 0;
     DecodeOptions optsPixel;
@@ -254,6 +260,7 @@ HWTEST_F(ImageSourceHdrTest, CheckPixelMapHdr003, TestSize.Level3)
         ImageSource::CreateImageSource(IMAGE_INPUT_HEIF_10BIT_SDR_PATH, opts, errorCode);
     ASSERT_EQ(errorCode, SUCCESS);
     ASSERT_NE(imageSource.get(), nullptr);
+    ASSERT_EQ(imageSource->GetiTxtLength(), 0);
 
     uint32_t index = 0;
     DecodeOptions optsPixel;
@@ -281,6 +288,7 @@ HWTEST_F(ImageSourceHdrTest, CheckPixelMapHdr004, TestSize.Level3)
         ImageSource::CreateImageSource(IMAGE_INPUT_JPEG_HDR_PATH, opts, errorCode);
     ASSERT_EQ(errorCode, SUCCESS);
     ASSERT_NE(imageSource.get(), nullptr);
+    ASSERT_EQ(imageSource->GetiTxtLength(), 0);
 
     uint32_t index = 0;
     DecodeOptions optsPixel;
@@ -312,6 +320,7 @@ HWTEST_F(ImageSourceHdrTest, CheckPixelMapHdr005, TestSize.Level3)
         ImageSource::CreateImageSource(IMAGE_INPUT_JPEG_HDR_VIVID_PATH, opts, errorCode);
     ASSERT_EQ(errorCode, SUCCESS);
     ASSERT_NE(imageSource.get(), nullptr);
+    ASSERT_EQ(imageSource->GetiTxtLength(), 0);
 
     uint32_t index = 0;
     DecodeOptions optsPixel;
@@ -343,6 +352,7 @@ HWTEST_F(ImageSourceHdrTest, CheckPixelMapDynamicRangeSdr001, TestSize.Level3)
         ImageSource::CreateImageSource(IMAGE_INPUT_JPEG_SDR_PATH, opts, errorCode);
     ASSERT_EQ(errorCode, SUCCESS);
     ASSERT_NE(imageSource.get(), nullptr);
+    ASSERT_EQ(imageSource->GetiTxtLength(), 0);
 
     uint32_t index = 0;
     DecodeOptions optsPixel;
@@ -370,6 +380,7 @@ HWTEST_F(ImageSourceHdrTest, CheckPixelMapDynamicRangeSdr002, TestSize.Level3)
         ImageSource::CreateImageSource(IMAGE_INPUT_HEIF_SDR_PATH, opts, errorCode);
     ASSERT_EQ(errorCode, SUCCESS);
     ASSERT_NE(imageSource.get(), nullptr);
+    ASSERT_EQ(imageSource->GetiTxtLength(), 0);
 
     uint32_t index = 0;
     DecodeOptions optsPixel;
@@ -397,6 +408,7 @@ HWTEST_F(ImageSourceHdrTest, CheckPixelMapDynamicRangeSdr003, TestSize.Level3)
         ImageSource::CreateImageSource(IMAGE_INPUT_JPEG_HDR_PATH, opts, errorCode);
     ASSERT_EQ(errorCode, SUCCESS);
     ASSERT_NE(imageSource.get(), nullptr);
+    ASSERT_EQ(imageSource->GetiTxtLength(), 0);
 
     uint32_t index = 0;
     DecodeOptions optsPixel;
@@ -424,6 +436,7 @@ HWTEST_F(ImageSourceHdrTest, ToSdr001, TestSize.Level3)
     std::string path = "/data/local/tmp/image/hdr.jpg";
     std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(path, opts, errorCode);
     ASSERT_EQ(errorCode, SUCCESS);
+    ASSERT_EQ(imageSource->GetiTxtLength(), 0);
 
     DecodeOptions decopts;
     decopts.desiredDynamicRange = DecodeDynamicRange::AUTO;
@@ -451,6 +464,7 @@ HWTEST_F(ImageSourceHdrTest, ToSdr002, TestSize.Level3)
     std::string path = "/data/local/tmp/image/test.jpg";
     std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(path, opts, errorCode);
     ASSERT_EQ(errorCode, SUCCESS);
+    ASSERT_EQ(imageSource->GetiTxtLength(), 0);
 
     DecodeOptions decopts;
     decopts.desiredDynamicRange = DecodeDynamicRange::AUTO;
@@ -474,6 +488,7 @@ HWTEST_F(ImageSourceHdrTest, PackHdrPixelMap001, TestSize.Level3)
         ImageSource::CreateImageSource(IMAGE_INPUT_JPEG_HDR_VIVID_PATH, opts, errorCode);
     ASSERT_EQ(errorCode, SUCCESS);
     ASSERT_NE(imageSource.get(), nullptr);
+    ASSERT_EQ(imageSource->GetiTxtLength(), 0);
 
     uint32_t index = 0;
     DecodeOptions optsPixel;
@@ -542,6 +557,7 @@ HWTEST_F(ImageSourceHdrTest, GetHdrMetadataTest001, TestSize.Level3)
             ImageSource::CreateImageSource(IMAGE_INPUT_JPEG_HDR_MEDIA_TYPE_PATH, opts, errorCode);
     ASSERT_EQ(errorCode, SUCCESS);
     ASSERT_NE(imageSource.get(), nullptr);
+    ASSERT_EQ(imageSource->GetiTxtLength(), 0);
     DecodeOptions opt;
     opt.desiredDynamicRange = DecodeDynamicRange::HDR;
     opt.desiredPixelFormat = PixelFormat::YCBCR_P010;
@@ -578,6 +594,7 @@ HWTEST_F(ImageSourceHdrTest, CheckPhotoDesiredPixelForamt001, TestSize.Level3)
         ImageSource::CreateImageSource(IMAGE_INPUT_JPEG_HDR_VIVID_PATH, opts, errorCode);
     ASSERT_EQ(errorCode, SUCCESS);
     ASSERT_NE(imageSource.get(), nullptr);
+    ASSERT_EQ(imageSource->GetiTxtLength(), 0);
 #ifdef IMAGE_VPE_FLAG
     uint32_t index = 0;
     DecodeOptions optsPixel;
@@ -609,6 +626,7 @@ HWTEST_F(ImageSourceHdrTest, CheckPhotoDesiredPixelForamt002, TestSize.Level3)
         ImageSource::CreateImageSource(IMAGE_INPUT_JPEG_HDR_VIVID_PATH, opts, errorCode);
     ASSERT_EQ(errorCode, SUCCESS);
     ASSERT_NE(imageSource.get(), nullptr);
+    ASSERT_EQ(imageSource->GetiTxtLength(), 0);
 
     uint32_t index = 0;
     DecodeOptions optsPixel;
@@ -633,6 +651,7 @@ HWTEST_F(ImageSourceHdrTest, CheckPhotoDesiredPixelForamt003, TestSize.Level3)
         ImageSource::CreateImageSource(IMAGE_INPUT_JPEG_HDR_VIVID_PATH, opts, errorCode);
     ASSERT_EQ(errorCode, SUCCESS);
     ASSERT_NE(imageSource.get(), nullptr);
+    ASSERT_EQ(imageSource->GetiTxtLength(), 0);
 
     uint32_t index = 0;
     DecodeOptions optsPixel;
@@ -657,6 +676,7 @@ HWTEST_F(ImageSourceHdrTest, CheckPhotoDesiredPixelForamt004, TestSize.Level3)
         ImageSource::CreateImageSource(IMAGE_INPUT_JPEG_SDR_PATH, opts, errorCode);
     ASSERT_EQ(errorCode, SUCCESS);
     ASSERT_NE(imageSource.get(), nullptr);
+    ASSERT_EQ(imageSource->GetiTxtLength(), 0);
 #ifdef IMAGE_VPE_FLAG
     uint32_t index = 0;
     DecodeOptions optsPixel;
@@ -688,6 +708,7 @@ HWTEST_F(ImageSourceHdrTest, CheckPhotoDesiredPixelForamt005, TestSize.Level3)
         ImageSource::CreateImageSource(IMAGE_INPUT_JPEG_SDR_PATH, opts, errorCode);
     ASSERT_EQ(errorCode, SUCCESS);
     ASSERT_NE(imageSource.get(), nullptr);
+    ASSERT_EQ(imageSource->GetiTxtLength(), 0);
 
     uint32_t index = 0;
     DecodeOptions optsPixel;
@@ -712,6 +733,7 @@ HWTEST_F(ImageSourceHdrTest, CheckPhotoDesiredPixelForamt006, TestSize.Level3)
         ImageSource::CreateImageSource(IMAGE_INPUT_JPEG_SDR_PATH, opts, errorCode);
     ASSERT_EQ(errorCode, SUCCESS);
     ASSERT_NE(imageSource.get(), nullptr);
+    ASSERT_EQ(imageSource->GetiTxtLength(), 0);
 
     uint32_t index = 0;
     DecodeOptions optsPixel;
@@ -791,6 +813,7 @@ HWTEST_F(ImageSourceHdrTest, CheckMpfOffsetTest003, TestSize.Level3)
         ImageSource::CreateImageSource(IMAGE_INPUT_BAD_MPF_OFFSET_PATH, opts, errorCode);
     ASSERT_EQ(errorCode, SUCCESS);
     ASSERT_NE(imageSource.get(), nullptr);
+    ASSERT_EQ(imageSource->GetiTxtLength(), 0);
 
     uint32_t index = 0;
     DecodeOptions optsPixel;

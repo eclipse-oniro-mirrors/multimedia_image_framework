@@ -49,6 +49,7 @@ void SvgDecoderFuncTest001(const std::string& pathName)
         IMAGE_LOGE("%{public}s CreateImageSource failed", __func__);
         return;
     }
+    imageSource->GetiTxtLength();
     std::shared_ptr<SvgDecoder> svgDecoder = std::make_shared<SvgDecoder>();
     SourceStream* sourceStreamPtr = (imageSource->sourceStreamPtr_).get();
     svgDecoder->SetSource(*sourceStreamPtr);

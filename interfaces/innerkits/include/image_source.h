@@ -265,6 +265,7 @@ public:
     NATIVEEXPORT bool IsSvgUseDma(const DecodeOptions &opts);
     NATIVEEXPORT bool IsSupportAllocatorType(DecodeOptions& decOps, int32_t allocatorType);
     ImageHdrType CheckHdrType();
+    NATIVEEXPORT uint32_t GetiTxtLength();
 
 private:
     DISALLOW_COPY_AND_MOVE(ImageSource);

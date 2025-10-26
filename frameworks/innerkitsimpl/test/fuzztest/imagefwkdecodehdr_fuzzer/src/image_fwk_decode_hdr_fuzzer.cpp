@@ -49,6 +49,7 @@ void HdrTest001(const std::string& pathName)
     if (imageSource == nullptr) {
         return;
     }
+    imageSource->GetiTxtLength();
     ImageInfo imageInfo;
     imageSource->GetImageInfo(0, imageInfo);
     if (!imageSource->IsHdrImage()) {

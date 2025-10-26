@@ -98,6 +98,7 @@ HWTEST_F(ImageSourceHeifTest, TC028, TestSize.Level3)
     std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(std::move(fs), opts, errorCode);
     ASSERT_EQ(errorCode, SUCCESS);
     ASSERT_NE(imageSource.get(), nullptr);
+    ASSERT_EQ(imageSource->GetiTxtLength(), 0);
 }
 
 /**
@@ -118,6 +119,7 @@ HWTEST_F(ImageSourceHeifTest, TC029, TestSize.Level3)
         ImageSource::CreateImageSource(IMAGE_INPUT_HW_HEIF_PATH, opts, errorCode);
     ASSERT_EQ(errorCode, SUCCESS);
     ASSERT_NE(imageSource.get(), nullptr);
+    ASSERT_EQ(imageSource->GetiTxtLength(), 0);
 }
 
 /**
@@ -143,6 +145,7 @@ HWTEST_F(ImageSourceHeifTest, TC030, TestSize.Level3)
     std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(buffer, bufferSize, opts, errorCode);
     ASSERT_EQ(errorCode, SUCCESS);
     ASSERT_NE(imageSource.get(), nullptr);
+    ASSERT_EQ(imageSource->GetiTxtLength(), 0);
 }
 
 /**
@@ -161,6 +164,7 @@ HWTEST_F(ImageSourceHeifTest, TC032, TestSize.Level3)
     std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(IMAGE_INPUT_HEIF_PATH, opts, errorCode);
     ASSERT_EQ(errorCode, SUCCESS);
     ASSERT_NE(imageSource.get(), nullptr);
+    ASSERT_EQ(imageSource->GetiTxtLength(), 0);
 
     ImageInfo imageInfo;
     uint32_t index = 0;
@@ -186,6 +190,7 @@ HWTEST_F(ImageSourceHeifTest, TC033, TestSize.Level3)
     std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(IMAGE_INPUT_HEIF_PATH, opts, errorCode);
     ASSERT_EQ(errorCode, SUCCESS);
     ASSERT_NE(imageSource.get(), nullptr);
+    ASSERT_EQ(imageSource->GetiTxtLength(), 0);
 
     uint32_t index = 0;
     int32_t value = 0;
@@ -209,6 +214,7 @@ HWTEST_F(ImageSourceHeifTest, TC035, TestSize.Level3)
     std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(IMAGE_INPUT_HEIF_PATH, opts, errorCode);
     ASSERT_EQ(errorCode, SUCCESS);
     ASSERT_NE(imageSource.get(), nullptr);
+    ASSERT_EQ(imageSource->GetiTxtLength(), 0);
 
     uint32_t index = 0;
     DecodeOptions optsPixel;
@@ -240,6 +246,7 @@ HWTEST_F(ImageSourceHeifTest, TC036, TestSize.Level3)
     std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(std::move(fs), opts, errorCode);
     ASSERT_EQ(errorCode, SUCCESS);
     ASSERT_NE(imageSource.get(), nullptr);
+    ASSERT_EQ(imageSource->GetiTxtLength(), 0);
     /**
      * @tc.steps: step2. crop heif image source to pixel map crop options
      * @tc.expected: step2. crop heif image source to pixel map success.
@@ -276,6 +283,7 @@ HWTEST_F(ImageSourceHeifTest, TC037, TestSize.Level3)
     std::unique_ptr<ImageSource> imageSource = ImageSource::CreateIncrementalImageSource(opts, errorCode);
     ASSERT_EQ(errorCode, SUCCESS);
     ASSERT_NE(imageSource.get(), nullptr);
+    ASSERT_EQ(imageSource->GetiTxtLength(), 0);
 }
 
 /**
@@ -295,6 +303,7 @@ HWTEST_F(ImageSourceHeifTest, TC038, TestSize.Level3)
     std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(IMAGE_INPUT_HEIF_PATH, opts, errorCode);
     ASSERT_EQ(errorCode, SUCCESS);
     ASSERT_NE(imageSource.get(), nullptr);
+    ASSERT_EQ(imageSource->GetiTxtLength(), 0);
 
     /**
      * @tc.steps: step2. decode image source to pixel map by default decode options.
@@ -331,6 +340,7 @@ GTEST_LOG_(INFO) << "ImageSourceHeifTest: TC055 start";
     std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(buffer, bufferSize, opts, errorCode);
     ASSERT_EQ(errorCode, SUCCESS);
     ASSERT_NE(imageSource.get(), nullptr);
+    ASSERT_EQ(imageSource->GetiTxtLength(), 0);
     /**
      * @tc.steps: step2. decode image source to pixel map by default decode options
      * @tc.expected: step2. decode image source to pixel map success.
@@ -380,6 +390,7 @@ HWTEST_F(ImageSourceHeifTest, TC056, TestSize.Level3)
     std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(IMAGE_INPUT_HEIF_PATH, opts, errorCode);
     ASSERT_EQ(errorCode, SUCCESS);
     ASSERT_NE(imageSource.get(), nullptr);
+    ASSERT_EQ(imageSource->GetiTxtLength(), 0);
     /**
      * @tc.steps: step2. get support decode image format.
      * @tc.expected: step2. get support format info success.
@@ -434,6 +445,7 @@ HWTEST_F(ImageSourceHeifTest, TC057, TestSize.Level3)
     std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(std::move(fs), opts, errorCode);
     ASSERT_EQ(errorCode, SUCCESS);
     ASSERT_NE(imageSource.get(), nullptr);
+    ASSERT_EQ(imageSource->GetiTxtLength(), 0);
     /**
      * @tc.steps: step2. decode image source to pixel map by default decode options
      * @tc.expected: step2. decode image source to pixel map success.
@@ -471,6 +483,7 @@ HWTEST_F(ImageSourceHeifTest, TC059, TestSize.Level3)
     std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(IMAGE_INPUT_HEIF_PATH, opts, errorCode);
     ASSERT_EQ(errorCode, SUCCESS);
     ASSERT_NE(imageSource.get(), nullptr);
+    ASSERT_EQ(imageSource->GetiTxtLength(), 0);
 
     uint32_t index = 0;
     DecodeOptions optsPixel;
@@ -500,6 +513,7 @@ HWTEST_F(ImageSourceHeifTest, TC061, TestSize.Level3)
     std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(IMAGE_INPUT_HEIF_PATH, opts, errorCode);
     ASSERT_EQ(errorCode, SUCCESS);
     ASSERT_NE(imageSource.get(), nullptr);
+    ASSERT_EQ(imageSource->GetiTxtLength(), 0);
     std::set<std::string> formats;
     uint32_t ret = imageSource->GetSupportedFormats(formats);
     ASSERT_EQ(ret, SUCCESS);
@@ -523,6 +537,7 @@ HWTEST_F(ImageSourceHeifTest, HeifImageDecode001, TestSize.Level3)
     std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(IMAGE_INPUT_HEIF_PATH, opts, errorCode);
     ASSERT_EQ(errorCode, SUCCESS);
     ASSERT_NE(imageSource.get(), nullptr);
+    ASSERT_EQ(imageSource->GetiTxtLength(), 0);
     /**
      * @tc.steps: step2. get support decode image format.
      * @tc.expected: step2. get support format info success.
@@ -571,6 +586,7 @@ HWTEST_F(ImageSourceHeifTest, HeifImageDecode002, TestSize.Level3)
     std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(IMAGE_INPUT_HEIF_PATH, opts, errorCode);
     ASSERT_EQ(errorCode, SUCCESS);
     ASSERT_NE(imageSource.get(), nullptr);
+    ASSERT_EQ(imageSource->GetiTxtLength(), 0);
     /**
      * @tc.steps: step2. get image info from input image.
      * @tc.expected: step2. get image info success.
@@ -599,6 +615,7 @@ HWTEST_F(ImageSourceHeifTest, HeifImageDecode003, TestSize.Level3)
     std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(IMAGE_INPUT_HEIF_PATH, opts, errorCode);
     ASSERT_EQ(errorCode, SUCCESS);
     ASSERT_NE(imageSource.get(), nullptr);
+    ASSERT_EQ(imageSource->GetiTxtLength(), 0);
 }
 
 /**
@@ -642,6 +659,7 @@ HWTEST_F(ImageSourceHeifTest, HeifImageDecode005, TestSize.Level3)
     std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(buffer, bufferSize, opts, errorCode);
     ASSERT_EQ(errorCode, SUCCESS);
     ASSERT_NE(imageSource.get(), nullptr);
+    ASSERT_EQ(imageSource->GetiTxtLength(), 0);
     /**
      * @tc.steps: step2. decode image source to pixel map by default decode options
      * @tc.expected: step2. decode image source to pixel map success.
@@ -690,6 +708,7 @@ HWTEST_F(ImageSourceHeifTest, HeifImageDecode006, TestSize.Level3)
     std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(std::move(fs), opts, errorCode);
     ASSERT_EQ(errorCode, SUCCESS);
     ASSERT_NE(imageSource.get(), nullptr);
+    ASSERT_EQ(imageSource->GetiTxtLength(), 0);
     /**
      * @tc.steps: step2. decode image source to pixel map by default decode options
      * @tc.expected: step2. decode image source to pixel map success.
@@ -723,6 +742,7 @@ HWTEST_F(ImageSourceHeifTest, HeifImageDecode008, TestSize.Level3)
     std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(IMAGE_INPUT_HEIF_PATH, opts, errorCode);
     ASSERT_EQ(errorCode, SUCCESS);
     ASSERT_NE(imageSource.get(), nullptr);
+    ASSERT_EQ(imageSource->GetiTxtLength(), 0);
     /**
      * @tc.steps: step2. decode image source to pixel map by default decode options.
      * @tc.expected: step2. decode image source to pixel map success.
@@ -768,6 +788,7 @@ HWTEST_F(ImageSourceHeifTest, HeifImageDecode011, TestSize.Level3)
         ImageSource::CreateImageSource(IMAGE_INPUT_HW_HEIF_PATH, opts, status);
     ASSERT_EQ(status, SUCCESS);
     ASSERT_NE(imageSource.get(), nullptr);
+    ASSERT_EQ(imageSource->GetiTxtLength(), 0);
 
     /**
      * @tc.steps: step2. decode created image source to pixel map by default decode options
@@ -817,6 +838,7 @@ HWTEST_F(ImageSourceHeifTest, HeifImageCrop001, TestSize.Level3)
     std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(std::move(fs), opts, errorCode);
     ASSERT_EQ(errorCode, SUCCESS);
     ASSERT_NE(imageSource.get(), nullptr);
+    ASSERT_EQ(imageSource->GetiTxtLength(), 0);
     /**
      * @tc.steps: step2. crop heif image source to pixel map crop options
      * @tc.expected: step2. crop heif image source to pixel map success.
@@ -855,6 +877,7 @@ HWTEST_F(ImageSourceHeifTest, HeifImageHwDecode001, TestSize.Level3)
         ImageSource::CreateImageSource(IMAGE_INPUT_HW_HEIF_PATH, opts, errorCode);
     ASSERT_EQ(errorCode, SUCCESS);
     ASSERT_NE(imageSource.get(), nullptr);
+    ASSERT_EQ(imageSource->GetiTxtLength(), 0);
     /**
      * @tc.steps: step2. decode image source to pixel map by default decode options
      * @tc.expected: step2. decode image source to pixel map success.
@@ -890,6 +913,7 @@ HWTEST_F(ImageSourceHeifTest, HeifImageIdenDecode001, TestSize.Level3)
         ImageSource::CreateImageSource(IMAGE_INPUT_IDEN_HEIF_PATH, opts, errorCode);
     ASSERT_EQ(errorCode, SUCCESS);
     ASSERT_NE(imageSource.get(), nullptr);
+    ASSERT_EQ(imageSource->GetiTxtLength(), 0);
     /**
      * @tc.steps: step2. decode image source to pixel map by default decode options
      * @tc.expected: step2. decode image source to pixel map success.
@@ -919,6 +943,7 @@ HWTEST_F(ImageSourceHeifTest, HeifImageNoRefDecode001, TestSize.Level3)
         ImageSource::CreateImageSource(IMAGE_INPUT_NOREF_HEIF_PATH, opts, errorCode);
     ASSERT_EQ(errorCode, SUCCESS);
     ASSERT_NE(imageSource.get(), nullptr);
+    ASSERT_EQ(imageSource->GetiTxtLength(), 0);
     /**
      * @tc.steps: step2. decode image source to pixel map by default decode options
      * @tc.expected: step2. decode image source to pixel map success.
@@ -947,6 +972,7 @@ HWTEST_F(ImageSourceHeifTest, HeifImageAlphaDecode001, TestSize.Level3)
         ImageSource::CreateImageSource(IMAGE_INPUT_ALPHA_HEIF_PATH, opts, errorCode);
     ASSERT_EQ(errorCode, SUCCESS);
     ASSERT_NE(imageSource.get(), nullptr);
+    ASSERT_EQ(imageSource->GetiTxtLength(), 0);
     /**
      * @tc.steps: step2. decode image source to pixel map by default decode options
      * @tc.expected: step2. decode image source to pixel map success.
@@ -976,6 +1002,7 @@ HWTEST_F(ImageSourceHeifTest, HeifImageHdrDecode001, TestSize.Level3)
         ImageSource::CreateImageSource(IMAGE_INPUT_HDR_HEIF_PATH, opts, errorCode);
     ASSERT_EQ(errorCode, SUCCESS);
     ASSERT_NE(imageSource.get(), nullptr);
+    ASSERT_EQ(imageSource->GetiTxtLength(), 0);
     /**
      * @tc.steps: step2. decode image source to pixel map by default decode options
      * @tc.expected: step2. decode image source to pixel map success.
@@ -1005,6 +1032,7 @@ HWTEST_F(ImageSourceHeifTest, HeifImageRegionDecode001, TestSize.Level3)
         ImageSource::CreateImageSource(IMAGE_INPUT_HW_HEIF_PATH, opts, errorCode);
     ASSERT_EQ(errorCode, SUCCESS);
     ASSERT_NE(imageSource.get(), nullptr);
+    ASSERT_EQ(imageSource->GetiTxtLength(), 0);
     /**
      * @tc.steps: step2. crop heif image source to pixel map crop options
      * @tc.expected: step2. crop heif image source to pixel map success.
@@ -1040,6 +1068,7 @@ HWTEST_F(ImageSourceHeifTest, HeifImageRegionDecode002, TestSize.Level3)
         ImageSource::CreateImageSource(IMAGE_INPUT_HW_HEIF_PATH, opts, errorCode);
     ASSERT_EQ(errorCode, SUCCESS);
     ASSERT_NE(imageSource.get(), nullptr);
+    ASSERT_EQ(imageSource->GetiTxtLength(), 0);
     /**
      * @tc.steps: step2. crop heif image source to pixel map crop options
      * @tc.expected: step2. crop heif image source to pixel map success.
@@ -1076,6 +1105,7 @@ HWTEST_F(ImageSourceHeifTest, HeifImageRegionDecode003, TestSize.Level3)
         ImageSource::CreateImageSource(IMAGE_INPUT_HDR_HEIF_PATH, opts, errorCode);
     ASSERT_EQ(errorCode, SUCCESS);
     ASSERT_NE(imageSource.get(), nullptr);
+    ASSERT_EQ(imageSource->GetiTxtLength(), 0);
     /**
      * @tc.steps: step2. crop heif image source to pixel map crop options
      * @tc.expected: step2. crop heif image source to pixel map success.
@@ -1112,6 +1142,7 @@ HWTEST_F(ImageSourceHeifTest, HeifImageRegionDecode004, TestSize.Level3)
         ImageSource::CreateImageSource(IMAGE_INPUT_HDR_HEIF_PATH, opts, errorCode);
     ASSERT_EQ(errorCode, SUCCESS);
     ASSERT_NE(imageSource.get(), nullptr);
+    ASSERT_EQ(imageSource->GetiTxtLength(), 0);
     /**
      * @tc.steps: step2. crop heif image source to pixel map crop options
      * @tc.expected: step2. crop heif image source to pixel map success.
@@ -1147,6 +1178,7 @@ HWTEST_F(ImageSourceHeifTest, HeifImageRegionDecode005, TestSize.Level3)
         ImageSource::CreateImageSource(IMAGE_INPUT_HEIF_10BIT_SDR_PATH, opts, errorCode);
     ASSERT_EQ(errorCode, SUCCESS);
     ASSERT_NE(imageSource.get(), nullptr);
+    ASSERT_EQ(imageSource->GetiTxtLength(), 0);
     /**
      * @tc.steps: step2. crop heif image source to pixel map crop options
      * @tc.expected: step2. crop heif image source to pixel map success.
@@ -1183,6 +1215,7 @@ HWTEST_F(ImageSourceHeifTest, GetAstcInfoTest001, TestSize.Level3)
         ImageSource::CreateImageSource(IMAGE_INPUT_EXIF_HEIF_PATH, opts, errorCode);
     ASSERT_EQ(errorCode, SUCCESS);
     ASSERT_NE(imageSource.get(), nullptr);
+    ASSERT_EQ(imageSource->GetiTxtLength(), 0);
     const int fd = open(IMAGE_INPUT_HEIF_PATH.c_str(), O_RDWR | O_CREAT, S_IRUSR | S_IWUSR);
     std::unique_ptr<FileSourceStream> fileSourceStream = FileSourceStream::CreateSourceStream(fd, SIZE_T, FILE_SIZE);
     ASSERT_NE(fileSourceStream, nullptr);
@@ -1209,6 +1242,7 @@ HWTEST_F(ImageSourceHeifTest, GetEncodedFormat001, TestSize.Level3)
     std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(IMAGE_INPUT_HEIF_PATH, opts, errorCode);
     ASSERT_EQ(errorCode, SUCCESS);
     ASSERT_NE(imageSource.get(), nullptr);
+    ASSERT_EQ(imageSource->GetiTxtLength(), 0);
     /**
      * @tc.steps: step2. decode image source to pixel map by default decode options(RGBA_8888).
      * @tc.expected: step2. decode image source to pixel map success.
@@ -1256,6 +1290,7 @@ HWTEST_F(ImageSourceHeifTest, GetEncodedFormat002, TestSize.Level3)
         opts, errorCode);
     ASSERT_EQ(errorCode, SUCCESS);
     ASSERT_NE(imageSource.get(), nullptr);
+    ASSERT_EQ(imageSource->GetiTxtLength(), 0);
     /**
      * @tc.steps: step2. decode image source to pixel map by default decode options(RGBA_8888).
      * @tc.expected: step2. decode image source to pixel map success.
@@ -1302,6 +1337,7 @@ HWTEST_F(ImageSourceHeifTest, GetEncodedFormat003, TestSize.Level3)
         opts, errorCode);
     ASSERT_EQ(errorCode, SUCCESS);
     ASSERT_NE(imageSource.get(), nullptr);
+    ASSERT_EQ(imageSource->GetiTxtLength(), 0);
     /**
      * @tc.steps: step2. get imageInfo encodedformat from imageSource.
      * @tc.expected: step2. imageInfo encodedformat is the same as image.
@@ -1348,6 +1384,7 @@ HWTEST_F(ImageSourceHeifTest, HeifSampleSizeDecode001, TestSize.Level3)
         ImageSource::CreateImageSource(IMAGE_INPUT_HW_HEIF_PATH, opts, errorCode);
     ASSERT_EQ(errorCode, SUCCESS);
     ASSERT_NE(imageSource.get(), nullptr);
+    ASSERT_EQ(imageSource->GetiTxtLength(), 0);
     /**
      * @tc.steps: step2. decode image source to pixel map by default decode options
      * @tc.expected: step2. decode image source to pixel map success.
@@ -1381,6 +1418,7 @@ HWTEST_F(ImageSourceHeifTest, HeifSampleSizeDecode002, TestSize.Level3)
         ImageSource::CreateImageSource(IMAGE_INPUT_HW_HEIF_PATH, opts, errorCode);
     ASSERT_EQ(errorCode, SUCCESS);
     ASSERT_NE(imageSource.get(), nullptr);
+    ASSERT_EQ(imageSource->GetiTxtLength(), 0);
     /**
      * @tc.steps: step2. decode image source to pixel map by default decode options
      * @tc.expected: step2. decode image source to pixel map success.
@@ -1415,6 +1453,7 @@ HWTEST_F(ImageSourceHeifTest, HeifSampleSizeDecode003, TestSize.Level3)
         ImageSource::CreateImageSource(IMAGE_INPUT_HW_HEIF_PATH, opts, errorCode);
     ASSERT_EQ(errorCode, SUCCESS);
     ASSERT_NE(imageSource.get(), nullptr);
+    ASSERT_EQ(imageSource->GetiTxtLength(), 0);
     /**
      * @tc.steps: step2. decode image source to pixel map by default decode options
      * @tc.expected: step2. decode image source to pixel map success.
@@ -1448,6 +1487,7 @@ HWTEST_F(ImageSourceHeifTest, HeifSampleSizeDecode004, TestSize.Level3)
         ImageSource::CreateImageSource(IMAGE_INPUT_ALPHA_HEIF_PATH, opts, errorCode);
     ASSERT_EQ(errorCode, SUCCESS);
     ASSERT_NE(imageSource.get(), nullptr);
+    ASSERT_EQ(imageSource->GetiTxtLength(), 0);
     /**
      * @tc.steps: step2. decode image source to pixel map by default decode options
      * @tc.expected: step2. decode image source to pixel map success.
@@ -1481,6 +1521,7 @@ HWTEST_F(ImageSourceHeifTest, HeifSampleSizeDecode005, TestSize.Level3)
         ImageSource::CreateImageSource(IMAGE_INPUT_HW_HEIF_PATH, opts, errorCode);
     ASSERT_EQ(errorCode, SUCCESS);
     ASSERT_NE(imageSource.get(), nullptr);
+    ASSERT_EQ(imageSource->GetiTxtLength(), 0);
     /**
      * @tc.steps: step2. decode image source to pixel map by default decode options
      * @tc.expected: step2. decode image source to pixel map success.
@@ -1515,6 +1556,7 @@ HWTEST_F(ImageSourceHeifTest, HeifSampleSizeDecode006, TestSize.Level3)
         ImageSource::CreateImageSource(IMAGE_INPUT_HDR_HEIF_PATH, opts, errorCode);
     ASSERT_EQ(errorCode, SUCCESS);
     ASSERT_NE(imageSource.get(), nullptr);
+    ASSERT_EQ(imageSource->GetiTxtLength(), 0);
     /**
      * @tc.steps: step2. decode image source to pixel map by default decode options
      * @tc.expected: step2. decode image source to pixel map success.

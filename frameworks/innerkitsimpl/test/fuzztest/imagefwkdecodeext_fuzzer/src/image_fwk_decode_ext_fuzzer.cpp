@@ -56,6 +56,7 @@ void ExtDecoderFuncTest001(const std::string& pathName)
         close(fd);
         return;
     }
+    imageSource->GetiTxtLength();
     std::shared_ptr<ExtDecoder> extDecoder = std::make_shared<ExtDecoder>();
     SourceStream* sourceStreamPtr = (imageSource->sourceStreamPtr_).get();
     extDecoder->SetSource(*sourceStreamPtr);

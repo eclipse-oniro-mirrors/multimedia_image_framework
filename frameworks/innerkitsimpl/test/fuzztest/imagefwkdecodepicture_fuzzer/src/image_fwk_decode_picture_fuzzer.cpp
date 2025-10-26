@@ -375,6 +375,7 @@ bool CreatePictureByRandomImageSource(const uint8_t *data, size_t size, const st
         IMAGE_LOGE("%{public}s failed, imageSource is nullptr.", __func__);
         return false;
     }
+    imageSource->GetiTxtLength();
     DecodingOptionsForPicture pictureOpts;
     std::shared_ptr<Picture> picture = imageSource->CreatePicture(pictureOpts, errorCode);
     PictureFuncTest(picture);
