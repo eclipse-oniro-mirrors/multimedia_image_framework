@@ -919,6 +919,8 @@ uint32_t ExtDecoder::SetDecodeOptions(uint32_t index, const PixelDecodeOptions &
         dstHeight = opts.desiredSize.height;
     }
 #endif
+    cond = codec_ == nullptr;
+    CHECK_ERROR_RETURN_RET_LOG(cond, ERR_IMAGE_INVALID_PARAMETER, "codec_ is nullptr");
     if (codec_->getEncodedFormat() != SkEncodedImageFormat::kHEIF) {
         if (IsLowDownScale(opts.desiredSize, info_) && GetScaledSize(dstWidth, dstHeight, scale)) {
             dstInfo_ = SkImageInfo::Make(dstWidth, dstHeight, desireColor, desireAlpha,

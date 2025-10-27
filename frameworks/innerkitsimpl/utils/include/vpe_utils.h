@@ -48,10 +48,10 @@ struct SurfaceBufferInfo {
     uint8_t *buffer = nullptr;
     uint32_t bufferSize = 0;
     // set param if buffer is yuv format
-    int32_t yStride = 0;
-    int32_t uvStride = 0;
-    int32_t yOffset = 0;
-    int32_t uvOffset = 0;
+    uint32_t yStride = 0;
+    uint32_t uvStride = 0;
+    uint32_t yOffset = 0;
+    uint32_t uvOffset = 0;
 
     std::string Tostring() const
     {

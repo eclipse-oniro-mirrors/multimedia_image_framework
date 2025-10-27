@@ -582,7 +582,7 @@ std::unique_ptr<AbsMemory> Truncate10BitMemory(std::shared_ptr<PixelMap> &srcPix
     CHECK_ERROR_RETURN_RET_LOG(cond, nullptr, "Truncate function error by src null");
 
     // hdr and sdr has same byte size.
-    size_t byteSize = srcPixelmap->GetByteCount();
+    size_t byteSize = static_cast<size_t>(srcPixelmap->GetByteCount());
     MemoryData sdrData = {nullptr, byteSize, "Trans ImageData", imageInfo.size, destFormat};
     auto sdrMemory = MemoryManager::CreateMemory(dstType, sdrData);
     if (sdrMemory == nullptr) {

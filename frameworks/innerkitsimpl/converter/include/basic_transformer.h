@@ -40,7 +40,6 @@ static constexpr int32_t RGB888_BYTE = 3;
 namespace OHOS {
 namespace Media {
 struct BilinearPixelProcArgs;
-using BilinearPixelProcArgs = struct BilinearPixelProcArgs;
 
 static inline bool CheckOutOfRange(const Point &pt, const Size &size)
 {
