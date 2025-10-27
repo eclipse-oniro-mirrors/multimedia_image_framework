@@ -2565,7 +2565,6 @@ HWTEST_F(ExtDecoderTest, SetColorSpaceSupportFlag_Supported, TestSize.Level3)
     dec->SetColorSpaceSupportFlag(true);
     ASSERT_TRUE(dec->colorSpaceMatched_);
 }
-#endif
 
 /**
  * @tc.name: HeifHdrType_NoneOrCustom
