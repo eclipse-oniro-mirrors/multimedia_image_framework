@@ -407,8 +407,8 @@ public:
             IMAGE_LOGE("FindClass std.core.String failed");
             return false;
         }
-        if (ANI_OK != env->FindClass("escompat.Record", &recordType)) {
-            IMAGE_LOGE("FindClass escompat.Record failed");
+        if (ANI_OK != env->FindClass("std.core.Record", &recordType)) {
+            IMAGE_LOGE("FindClass std.core.Record failed");
             return false;
         }
         if (ANI_OK != env->FindClass("std.core.Numeric", &numberType)) {
@@ -626,9 +626,9 @@ ani_status ImageSourceAni::Init(ani_env* env)
             reinterpret_cast<void*>(OHOS::Media::CreatePixelMap)},
         ani_native_function {"modifyImageProperty", "lC{std.core.String}C{std.core.String}:",
             reinterpret_cast<void*>(OHOS::Media::ModifyImageProperty)},
-        ani_native_function {"nativeModifyImageProperties", "C{escompat.Record}:",
+        ani_native_function {"nativeModifyImageProperties", "C{std.core.Record}:",
             reinterpret_cast<void*>(OHOS::Media::ModifyImageProperties)},
-        ani_native_function {"nativeGetImageProperties", "C{escompat.Array}:C{escompat.Record}",
+        ani_native_function {"nativeGetImageProperties", "C{escompat.Array}:C{std.core.Record}",
             reinterpret_cast<void*>(OHOS::Media::GetImageProperties)},
         ani_native_function {"release", ":", reinterpret_cast<void *>(OHOS::Media::Release)},
     };
