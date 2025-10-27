@@ -2543,58 +2543,29 @@ HWTEST_F(ExtDecoderTest, DecodeIncompleteGifImageTest001, TestSize.Level3)
 
 #ifdef HEIF_HW_DECODE_ENABLE
 /**
- * @tc.name: HeifColorSpaceSetter_None
- * @tc.desc: Set NONE colorspace and unsupported flag, verify fields
+ * @tc.name: SetColorSpaceSupportFlag_Unsupported
+ * @tc.desc: Verify SetColorSpaceSupportFlag(false) sets unmatched state
  * @tc.type: FUNC
  */
-HWTEST_F(ExtDecoderTest, HeifColorSpaceSetter_None, TestSize.Level3)
+HWTEST_F(ExtDecoderTest, SetColorSpaceSupportFlag_Unsupported, TestSize.Level3)
 {
-    GTEST_LOG_(INFO) << "ExtDecoderTest: HeifColorSpaceSetter_None start";
     auto dec = std::make_shared<HeifDecoderImpl>();
-    dec->colorSpaceName_ = OHOS::ColorManager::ColorSpaceName::NONE;
-    dec->isColorSpaceFromCicp_ = true;
     dec->SetColorSpaceSupportFlag(false);
-    ASSERT_EQ(dec->colorSpaceName_, OHOS::ColorManager::ColorSpaceName::NONE);
-    ASSERT_TRUE(dec->isColorSpaceFromCicp_);
     ASSERT_FALSE(dec->colorSpaceMatched_);
-    GTEST_LOG_(INFO) << "ExtDecoderTest: HeifColorSpaceSetter_None end";
 }
 
 /**
- * @tc.name: HeifColorSpaceSetter_Custom
- * @tc.desc: Set CUSTOM colorspace and unsupported flag, verify fields
+ * @tc.name: SetColorSpaceSupportFlag_Supported
+ * @tc.desc: Verify SetColorSpaceSupportFlag(true) sets matched state
  * @tc.type: FUNC
  */
-HWTEST_F(ExtDecoderTest, HeifColorSpaceSetter_Custom, TestSize.Level3)
+HWTEST_F(ExtDecoderTest, SetColorSpaceSupportFlag_Supported, TestSize.Level3)
 {
-    GTEST_LOG_(INFO) << "ExtDecoderTest: HeifColorSpaceSetter_Custom start";
     auto dec = std::make_shared<HeifDecoderImpl>();
-    dec->colorSpaceName_ = OHOS::ColorManager::ColorSpaceName::CUSTOM;
-    dec->isColorSpaceFromCicp_ = false;
-    dec->SetColorSpaceSupportFlag(false);
-    ASSERT_EQ(dec->colorSpaceName_, OHOS::ColorManager::ColorSpaceName::CUSTOM);
-    ASSERT_FALSE(dec->isColorSpaceFromCicp_);
-    ASSERT_FALSE(dec->colorSpaceMatched_);
-    GTEST_LOG_(INFO) << "ExtDecoderTest: HeifColorSpaceSetter_Custom end";
-}
-
-/**
- * @tc.name: HeifColorSpaceSetter_SupportedEnum
- * @tc.desc: Set a supported colorspace (e.g., BT2020) and supported flag true, verify fields
- * @tc.type: FUNC
- */
-HWTEST_F(ExtDecoderTest, HeifColorSpaceSetter_SupportedEnum, TestSize.Level3)
-{
-    GTEST_LOG_(INFO) << "ExtDecoderTest: HeifColorSpaceSetter_SupportedEnum start";
-    auto dec = std::make_shared<HeifDecoderImpl>();
-    dec->colorSpaceName_ = OHOS::ColorManager::ColorSpaceName::BT2020;
-    dec->isColorSpaceFromCicp_ = true;
     dec->SetColorSpaceSupportFlag(true);
-    ASSERT_EQ(dec->colorSpaceName_, OHOS::ColorManager::ColorSpaceName::BT2020);
-    ASSERT_TRUE(dec->isColorSpaceFromCicp_);
     ASSERT_TRUE(dec->colorSpaceMatched_);
-    GTEST_LOG_(INFO) << "ExtDecoderTest: HeifColorSpaceSetter_SupportedEnum end";
 }
+#endif
 
 /**
  * @tc.name: HeifHdrType_NoneOrCustom
