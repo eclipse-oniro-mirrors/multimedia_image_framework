@@ -740,7 +740,7 @@ interface ImageSource {
   ModifyImagePropertiesSync(records: @record Map<PropertyKey, PropertyValue>): void;
 
   @gen_promise("modifyImagePropertiesEnhanced")
-  ModifyImagePropertiesEnhancedSync(records: @record Map<PropertyKey, PropertyValue>): void;
+  ModifyImagePropertiesEnhancedSync(records: @record Map<String, PropertyValue>): void;
 
   @gen_async("updateData")
   @gen_promise("updateData")

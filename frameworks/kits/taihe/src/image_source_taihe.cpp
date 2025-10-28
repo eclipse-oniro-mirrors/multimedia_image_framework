@@ -1147,6 +1147,24 @@ std::vector<std::pair<std::string, std::string>> GetRecordArgument(map_view<Prop
     return kVStrArray;
 }
 
+std::vector<std::pair<std::string, std::string>> GetRecordArgument(map_view<string, PropertyValue> records)
+{
+    std::vector<std::pair<std::string, std::string>> kVStrArray;
+
+    for (const auto& [key, value] : records) {
+        std::string valueStr;
+        if (value.holds_type_string()) {
+            valueStr = std::string(value.get_type_string_ref());
+        } else if (value.holds_type_null()) {
+            valueStr = "";
+        }
+        kVStrArray.push_back(std::make_pair(std::string(key), valueStr));
+    }
+
+    IMAGE_LOGD("Get record argument success.");
+    return kVStrArray;
+}
+
 void ImageSourceImpl::ModifyImagePropertiesSync(map_view<PropertyKey, PropertyValue> records)
 {
     OHOS::Media::ImageTrace imageTrace("ImageSourceImpl::ModifyImagePropertiesSync");
@@ -1231,7 +1249,7 @@ static void ModifyImagePropertiesEnhancedExecute(std::unique_ptr<ImageSourceTaih
     IMAGE_LOGI("ModifyImagePropertiesEnhanced end, cost: %{public}llu ms", duration.count());
 }
 
-void ImageSourceImpl::ModifyImagePropertiesEnhancedSync(map_view<PropertyKey, PropertyValue> records)
+void ImageSourceImpl::ModifyImagePropertiesEnhancedSync(map_view<string, PropertyValue> records)
 {
     OHOS::Media::ImageTrace imageTrace("ImageSourceImpl::ModifyImagePropertiesEnhancedSync");
 
