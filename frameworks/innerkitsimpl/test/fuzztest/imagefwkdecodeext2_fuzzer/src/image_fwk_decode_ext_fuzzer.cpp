@@ -85,8 +85,6 @@ void ExtDecoderFuncTest001(const std::string& pathName)
     if (ret != SUCCESS) return;
 	extDecoder->Decode(0, context);
 	
-    extDecoder->DoHardWareDecode(context);
-	
 	context.info.pixelFormat = static_cast<Media::PixelFormat>(FDP->ConsumeIntegral<uint8_t>() % PIXELFORMAT_MODULO);
     extDecoder->DecodeToYuv420(0, context);
     extDecoder->CheckContext(context);
