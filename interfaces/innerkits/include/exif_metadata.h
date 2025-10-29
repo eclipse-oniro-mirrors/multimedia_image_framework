@@ -39,17 +39,19 @@ public:
     ExifData* GetExifData();
     bool CreateExifdata();
     NATIVEEXPORT std::shared_ptr<ExifMetadata> Clone();
-    void GetFilterArea(const std::vector<std::string> &exifKeys, std::vector<std::pair<uint32_t, uint32_t>> &ranges);
     bool Marshalling(Parcel &parcel) const override;
     static ExifMetadata *Unmarshalling(Parcel &parcel);
     static ExifMetadata *Unmarshalling(Parcel &parcel, PICTURE_ERR &error);
+    void GetFilterArea(const std::vector<std::string> &exifKeys, std::vector<std::pair<uint32_t, uint32_t>> &ranges);
     MetadataType GetType() const override
     {
         return MetadataType::EXIF;
     }
     bool RemoveExifThumbnail() override;
+    bool ExtractXmageCoordinates(XmageCoordinateMetadata &coordMetadata) const;
 
 private:
+    bool ParseExifCoordinate(const std::string& fieldName, uint32_t& outputValue) const;
     ExifEntry* CreateEntry(const std::string &key, const ExifTag &tag, const size_t len);
     MnoteHuaweiEntry* CreateHwEntry(const std::string &key);
     ExifEntry* GetEntry(const std::string &key, const size_t len);

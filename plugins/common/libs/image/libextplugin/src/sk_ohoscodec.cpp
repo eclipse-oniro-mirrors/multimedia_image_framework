@@ -503,13 +503,13 @@ SkCodec::Result SkOHOSSampledCodec::onGetOHOSPixels(const SkImageInfo& info, voi
 
     const SkImageInfo scaledInfo = info.makeDimensions(scaledSize);
 
-    OHOSOptions subsetOptions = options;
     {
         SkIRect incrementalSubset = SkIRect::MakeXYWH(scaledSubsetX, scaledSubsetY,
                                                       scaledSubsetWidth, subsetScaledHeight);
-        subsetOptions.fSubset = &incrementalSubset;
+        OHOSOptions incrementalOptions = options;
+        incrementalOptions.fSubset = &incrementalSubset;
         const SkCodec::Result startIncrementalResult = this->codec()->startIncrementalDecode(
-            scaledInfo, pixels, rowBytes, &subsetOptions);
+            scaledInfo, pixels, rowBytes, &incrementalOptions);
         if (SkCodec::kSuccess == startIncrementalResult) {
             int decodedRows = 0;
             const SkCodec::Result incrementalResult = this->codec()->incrementalDecode(&decodedRows);
@@ -525,7 +525,7 @@ SkCodec::Result SkOHOSSampledCodec::onGetOHOSPixels(const SkImageInfo& info, voi
             return startIncrementalResult;
         }
     }
-
+    OHOSOptions subsetOptions = options;
     SkIRect scanlineSubset = SkIRect::MakeXYWH(scaledSubsetX, 0, scaledSubsetWidth,
         scaledSize.height());
     subsetOptions.fSubset = &scanlineSubset;

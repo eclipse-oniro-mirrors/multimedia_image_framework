@@ -20,6 +20,8 @@
 #include "image_source.h"
 #include "source_stream.h"
 
+#include "exif_metadata.h"
+
 using namespace testing::ext;
 using namespace OHOS::Media;
 
@@ -77,6 +79,20 @@ static const std::vector<std::string> modifyValues = {
     "12",
     "999",
     "100",
+};
+
+static const std::vector<std::string> XMAGE_COORDINATE_KEYS = {
+    "HwMnoteXmageLeft",
+    "HwMnoteXmageTop",
+    "HwMnoteXmageRight",
+    "HwMnoteXmageBottom"
+};
+
+static const std::vector<std::string> VALID_COORDINATE_VALUES = {
+    "100",    // left
+    "200",    // top
+    "500",    // right
+    "300"     // bottom
 };
 
 class ImageSourceExifTest : public testing::Test {
@@ -593,5 +609,182 @@ HWTEST_F(ImageSourceExifTest, HwXmageTest005, TestSize.Level3)
     GTEST_LOG_(INFO) << "ImageSourceExifTest: HwXmageTest005 end";
 }
 
+/**
+ • @tc.name: ExtractXMageCoordinatesTest001
+ • @tc.desc: Test the ExtractXMageCoordinates function with valid XMAGE coordinate values
+ •           to ensure coordinates are successfully extracted and parsed.
+ • @tc.type: FUNC
+ */
+HWTEST_F(ImageSourceExifTest, ExtractXMageCoordinatesTest001, TestSize.Level3)
+{
+    std::shared_ptr<ExifMetadata> metadata = std::make_shared<ExifMetadata>();
+    ASSERT_NE(metadata, nullptr);
+    ASSERT_TRUE(metadata->CreateExifdata());
+    
+    for (size_t i = 0; i < XMAGE_COORDINATE_KEYS.size(); ++i) {
+        ASSERT_TRUE(metadata->SetValue(XMAGE_COORDINATE_KEYS[i], VALID_COORDINATE_VALUES[i]));
+    }
+    XmageCoordinateMetadata coordMetadata;
+    bool result = metadata->ExtractXmageCoordinates(coordMetadata);
+    
+    ASSERT_TRUE(result);
+    ASSERT_EQ(coordMetadata.left, 100);
+    ASSERT_EQ(coordMetadata.top, 200);
+    ASSERT_EQ(coordMetadata.right, 500);
+    ASSERT_EQ(coordMetadata.bottom, 300);
+}
+/**
+ • @tc.name: ExtractXMageCoordinatesTest002
+ • @tc.desc: Test the GetValue function for XMAGE coordinates when no custom values are set,
+ •           verifying that the system returns the expected default values successfully.
+ • @tc.type: FUNC
+ */
+HWTEST_F(ImageSourceExifTest, ExtractXMageCoordinatesTest002, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImageSourceExifTest: ExtractXMageCoordinatesTest002 start";
+
+    std::shared_ptr<ExifMetadata> metadata = std::make_shared<ExifMetadata>();
+    ASSERT_NE(metadata, nullptr);
+    ASSERT_TRUE(metadata->CreateExifdata());
+    
+    std::string leftValue, topValue, rightValue, bottomValue;
+    
+    int ret = metadata->GetValue("HwMnoteXmageLeft", leftValue);
+    ASSERT_EQ(ret, SUCCESS);
+    ASSERT_EQ(leftValue, DEFAULT_EXIF_VALUE);
+    
+    ret = metadata->GetValue("HwMnoteXmageTop", topValue);
+    ASSERT_EQ(ret, SUCCESS);
+    ASSERT_EQ(topValue, DEFAULT_EXIF_VALUE);
+    
+    ret = metadata->GetValue("HwMnoteXmageRight", rightValue);
+    ASSERT_EQ(ret, SUCCESS);
+    ASSERT_EQ(rightValue, DEFAULT_EXIF_VALUE);
+    
+    ret = metadata->GetValue("HwMnoteXmageBottom", bottomValue);
+    ASSERT_EQ(ret, SUCCESS);
+    ASSERT_EQ(bottomValue, DEFAULT_EXIF_VALUE);
+
+    GTEST_LOG_(INFO) << "ImageSourceExifTest: ExtractXMageCoordinatesTest002 end";
+}
+/**
+ • @tc.name: ExtractXMageCoordinatesTest003
+ • @tc.desc: Test ExtractXMageCoordinates when all XMAGE coordinate values are default values.
+ • @tc.type: FUNC
+ */
+HWTEST_F(ImageSourceExifTest, ExtractXMageCoordinatesTest003, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImageSourceExifTest: ExtractXMageCoordinatesTest003 start";
+
+    std::shared_ptr<ExifMetadata> metadata = std::make_shared<ExifMetadata>();
+    ASSERT_NE(metadata, nullptr);
+    ASSERT_TRUE(metadata->CreateExifdata());
+    for (const auto& key : XMAGE_COORDINATE_KEYS) {
+        int ret = metadata->SetValue(key, DEFAULT_EXIF_VALUE);
+        ASSERT_EQ(ret, SUCCESS) << "Failed to set default value for key: " << key;
+    }
+    XmageCoordinateMetadata coordMetadata;
+    bool result = metadata->ExtractXmageCoordinates(coordMetadata);
+    ASSERT_FALSE(result);
+    GTEST_LOG_(INFO) << "ImageSourceExifTest: ExtractXMageCoordinatesTest003 end";
+}
+
+/**
+ • @tc.name: ExtractXMageCoordinatesTest004
+ • @tc.desc: Test ExtractXMageCoordinates when three XMAGE coordinate values are not set and one is valid.
+ • @tc.type: FUNC
+
+ */
+HWTEST_F(ImageSourceExifTest, ExtractXMageCoordinatesTest004, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImageSourceExifTest: ExtractXMageCoordinatesTest004 start";
+
+    std::shared_ptr<ExifMetadata> metadata = std::make_shared<ExifMetadata>();
+    ASSERT_NE(metadata, nullptr);
+    ASSERT_TRUE(metadata->CreateExifdata());
+    
+    for (const auto& key : XMAGE_COORDINATE_KEYS) {
+        int ret = metadata->SetValue(key, DEFAULT_EXIF_VALUE);
+        ASSERT_EQ(ret, SUCCESS) << "Failed to set default value for key: " << key;
+    }
+    
+    ASSERT_TRUE(metadata->SetValue(XMAGE_COORDINATE_KEYS[0], VALID_COORDINATE_VALUES[0]));
+    
+    XmageCoordinateMetadata coordMetadata;
+    bool result = metadata->ExtractXmageCoordinates(coordMetadata);
+
+    ASSERT_FALSE(result);
+
+    GTEST_LOG_(INFO) << "ImageSourceExifTest: ExtractXMageCoordinatesTest004 end";
+}
+
+/**
+ • @tc.name: ExtractXMageCoordinatesTest005
+ • @tc.desc: Test ExtractXMageCoordinates when two XMAGE coordinate values are not set and two are valid.
+ • @tc.type: FUNC
+ */
+HWTEST_F(ImageSourceExifTest, ExtractXMageCoordinatesTest005, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImageSourceExifTest: ExtractXMageCoordinatesTest005 start";
+
+    std::shared_ptr<ExifMetadata> metadata = std::make_shared<ExifMetadata>();
+    ASSERT_NE(metadata, nullptr);
+    ASSERT_TRUE(metadata->CreateExifdata());
+    
+    ASSERT_TRUE(metadata->SetValue(XMAGE_COORDINATE_KEYS[0], VALID_COORDINATE_VALUES[0]));
+    ASSERT_TRUE(metadata->SetValue(XMAGE_COORDINATE_KEYS[1], VALID_COORDINATE_VALUES[1]));
+    
+    XmageCoordinateMetadata coordMetadata;
+    bool result = metadata->ExtractXmageCoordinates(coordMetadata);
+    
+    ASSERT_FALSE(result);
+
+    GTEST_LOG_(INFO) << "ImageSourceExifTest: ExtractXMageCoordinatesTest005 end";
+}
+
+/**
+ • @tc.name: ExtractXMageCoordinatesTest006
+ • @tc.desc: Test ExtractXMageCoordinates when one XMAGE coordinate value is not set and three are valid.
+ • @tc.type: FUNC
+ */
+HWTEST_F(ImageSourceExifTest, ExtractXMageCoordinatesTest006, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImageSourceExifTest: ExtractXMageCoordinatesTest006 start";
+
+    std::shared_ptr<ExifMetadata> metadata = std::make_shared<ExifMetadata>();
+    ASSERT_NE(metadata, nullptr);
+    ASSERT_TRUE(metadata->CreateExifdata());
+    
+    ASSERT_TRUE(metadata->SetValue(XMAGE_COORDINATE_KEYS[0], VALID_COORDINATE_VALUES[0]));
+    ASSERT_TRUE(metadata->SetValue(XMAGE_COORDINATE_KEYS[1], VALID_COORDINATE_VALUES[1]));
+    ASSERT_TRUE(metadata->SetValue(XMAGE_COORDINATE_KEYS[2], VALID_COORDINATE_VALUES[2]));
+
+    XmageCoordinateMetadata coordMetadata;
+    bool result = metadata->ExtractXmageCoordinates(coordMetadata);
+    
+    ASSERT_FALSE(result);
+
+    GTEST_LOG_(INFO) << "ImageSourceExifTest: ExtractXMageCoordinatesTest006 end";
+}
+
+/**
+ • @tc.name: ExtractXMageCoordinatesTest007
+ • @tc.desc: Test ExtractXMageCoordinates when no XMAGE coordinate values are set (all should be default).
+ • @tc.type: FUNC
+ */
+HWTEST_F(ImageSourceExifTest, ExtractXMageCoordinatesTest007, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImageSourceExifTest: ExtractXMageCoordinatesTest007 start";
+
+    std::shared_ptr<ExifMetadata> metadata = std::make_shared<ExifMetadata>();
+    ASSERT_NE(metadata, nullptr);
+    ASSERT_TRUE(metadata->CreateExifdata());
+    
+    XmageCoordinateMetadata coordMetadata;
+    bool result = metadata->ExtractXmageCoordinates(coordMetadata);
+    ASSERT_FALSE(result);
+
+    GTEST_LOG_(INFO) << "ImageSourceExifTest: ExtractXMageCoordinatesTest007 end";
+}
 } // namespace Multimedia
 } // namespace OHOS

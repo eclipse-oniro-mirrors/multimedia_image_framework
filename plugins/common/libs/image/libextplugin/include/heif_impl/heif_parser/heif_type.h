@@ -64,6 +64,15 @@ static const uint32_t ITEM_TYPE_URI = fourcc_to_code("uri ");
 static const uint32_t COLOR_TYPE_PROF = fourcc_to_code("prof");
 static const uint32_t COLOR_TYPE_RICC = fourcc_to_code("rICC");
 
+// For Cr3 raw format
+static const uint32_t CR3_FILE_TYPE_CRX = fourcc_to_code("crx ");  // Cr3 major brand
+static const uint32_t CR3_BOX_TYPE_PRVW = fourcc_to_code("PRVW");  // Preview in JPEG format
+static const uint32_t CR3_BOX_TYPE_MOOV = fourcc_to_code("moov");  // Movie box
+static const uint32_t CR3_BOX_TYPE_CMT1 = fourcc_to_code("CMT1");  // Exif IFD0 in TIFF format
+static const uint32_t CR3_BOX_TYPE_CMT2 = fourcc_to_code("CMT2");  // Exif ExifIFD in TIFF format
+static const uint32_t CR3_BOX_TYPE_CMT3 = fourcc_to_code("CMT3");  // Canon Maker notes in TIFF format
+static const uint32_t CR3_BOX_TYPE_CMT4 = fourcc_to_code("CMT4");  // Exif GPS IFD in TIFF format
+
 typedef uint32_t heif_item_id;
 
 typedef uint32_t heif_brand;

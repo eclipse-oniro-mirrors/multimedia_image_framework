@@ -41,18 +41,6 @@ enum class JpegYuvFmt {
     OutFmt_NV21,
 };
 
-enum JpegYuvDecodeError {
-    JpegYuvDecodeError_Unknown = -1,
-    JpegYuvDecodeError_Success = 0,
-    JpegYuvDecodeError_InvalidParameter,
-    JpegYuvDecodeError_DecodeFailed,
-    JpegYuvDecodeError_BadImage,
-    JpegYuvDecodeError_SubSampleNotSupport,
-    JpegYuvDecodeError_MemoryMallocFailed,
-    JpegYuvDecodeError_MemoryNotEnoughToSaveResult,
-    JpegYuvDecodeError_ConvertError,
-};
-
 struct JpegDecoderYuvParameter {
     uint32_t jpgwidth_ = 0;
     uint32_t jpgheight_ = 0;
@@ -115,7 +103,8 @@ protected:
     static uint32_t Get420OutPlaneHeight(YuvComponentIndex com, int imageHeight);
     static uint32_t Get420OutPlaneSize(YuvComponentIndex com, int imageWidth, int imageHeight);
     static uint32_t GetJpegDecompressedYuvSize(uint32_t width, uint32_t height, int subsample);
-    static void InitYuvDataOutInfoTo420(uint32_t width, uint32_t height, OHOS::Media::YUVDataInfo &info, JpegYuvFmt fmt);
+    static void InitYuvDataOutInfoTo420(uint32_t width, uint32_t height, OHOS::Media::YUVDataInfo &info,
+        JpegYuvFmt fmt);
     static void InitYuvDataOutInfoTo420NV(uint32_t width, uint32_t height, OHOS::Media::YUVDataInfo &info,
         const DecodeContext &context = {});
     static void InitYuvDataOutInfo(uint32_t width, uint32_t height, OHOS::Media::YUVDataInfo &info);

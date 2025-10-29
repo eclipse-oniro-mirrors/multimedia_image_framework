@@ -478,6 +478,10 @@ napi_value ImagePackerNapi::Init(napi_env env, napi_value exports)
         nullptr,
         IMAGE_LOGE("create reference fail")
     );
+    auto ctorContext = new NapiConstructorContext();
+    ctorContext->env_ = env;
+    ctorContext->ref_ = sConstructor_;
+    napi_add_env_cleanup_hook(env, ImageNapiUtils::CleanUpConstructorContext, ctorContext);
 
     IMG_NAPI_CHECK_RET_D(IMG_IS_OK(
         napi_set_named_property(env, exports, CLASS_NAME_IMAGEPACKER.c_str(), constructor)),
@@ -542,6 +546,50 @@ napi_value ImagePackerNapi::CreateImagePacker(napi_env env, napi_callback_info i
         }
     }
     return result;
+}
+
+napi_value ImagePackerNapi::CreateImagePackerNapi(napi_env env, std::shared_ptr<ImagePacker> imagePacker)
+{
+    if (sConstructor_ == nullptr) {
+        napi_value exports = nullptr;
+        napi_create_object(env, &exports);
+        ImagePackerNapi::Init(env, exports);
+    }
+    napi_value constructor = nullptr;
+    napi_value result = nullptr;
+    napi_status status = napi_get_reference_value(env, sConstructor_, &constructor);
+    if (IMG_IS_OK(status)) {
+        if (imagePacker != nullptr) {
+            sImgPck_ = std::move(imagePacker);
+            status = napi_new_instance(env, constructor, NUM_0, nullptr, &result);
+        } else {
+            status = napi_invalid_arg;
+            IMAGE_LOGE("New ImagePackerNapi Instance imagePacker is nullptr");
+            napi_get_undefined(env, &result);
+        }
+    }
+    if (!IMG_IS_OK(status)) {
+        IMAGE_LOGE("CreateImagePacker | New instance could not be obtained");
+        napi_get_undefined(env, &result);
+    }
+    return result;
+}
+
+extern "C" {
+napi_value GetImagePackerNapi(napi_env env, std::shared_ptr<ImagePacker> imagePacker)
+{
+    return ImagePackerNapi::CreateImagePackerNapi(env, imagePacker);
+}
+
+bool GetNativeImagePacker(void *imagePackerNapi, std::shared_ptr<ImagePacker> &imagePacker)
+{
+    if (imagePackerNapi == nullptr) {
+        IMAGE_LOGE("%{public}s imagePackerNapi is nullptr", __func__);
+        return false;
+    }
+    imagePacker = ImagePackerNapi::GetNative(reinterpret_cast<ImagePackerNapi*>(imagePackerNapi));
+    return true;
+}
 }
 
 void ImagePackerNapi::Destructor(napi_env env, void *nativeObject, void *finalize)

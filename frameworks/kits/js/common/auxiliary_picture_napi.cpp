@@ -168,6 +168,10 @@ napi_value AuxiliaryPictureNapi::Init(napi_env env, napi_value exports)
         napi_create_reference(env, constructor, 1, &sConstructor_)),
         nullptr, IMAGE_LOGE("create reference fail")
     );
+    auto ctorContext = new NapiConstructorContext();
+    ctorContext->env_ = env;
+    ctorContext->ref_ = sConstructor_;
+    napi_add_env_cleanup_hook(env, ImageNapiUtils::CleanUpConstructorContext, ctorContext);
 
     napi_value global = nullptr;
     IMG_NAPI_CHECK_RET_D(IMG_IS_OK(
@@ -254,6 +258,23 @@ napi_value AuxiliaryPictureNapi::CreateAuxiliaryPicture(napi_env env, std::share
     }
 
     return result;
+}
+
+extern "C" {
+napi_value GetAuxiliaryPictureNapi(napi_env env, std::shared_ptr<AuxiliaryPicture> auxiliaryPic)
+{
+    return AuxiliaryPictureNapi::CreateAuxiliaryPicture(env, auxiliaryPic);
+}
+
+bool GetNativeAuxiliaryPicture(void *auxiliaryPictureNapi, std::shared_ptr<AuxiliaryPicture> &nativeAuxiliaryPicture)
+{
+    if (auxiliaryPictureNapi == nullptr) {
+        IMAGE_LOGE("%{public}s auxiliaryPictureNapi is nullptr", __func__);
+        return false;
+    }
+    nativeAuxiliaryPicture = reinterpret_cast<AuxiliaryPictureNapi*>(auxiliaryPictureNapi)->GetNativeAuxiliaryPic();
+    return true;
+}
 }
 
 STATIC_EXEC_FUNC(CreateAuxiliaryPicture)

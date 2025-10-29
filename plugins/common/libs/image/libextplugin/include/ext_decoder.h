@@ -126,6 +126,7 @@ private:
     uint32_t GetMakerImagePropertyString(const std::string &key, std::string &value);
     uint32_t CheckDecodeOptions(uint32_t index, const PixelDecodeOptions &opts);
     uint32_t CheckCropRect(const PixelDecodeOptions &opts);
+    bool IsProgressiveJpeg();
     static void ReportImageType(SkEncodedImageFormat skEncodeFormat);
     bool CheckContext(const DecodeContext &context);
     uint32_t DmaMemAlloc(DecodeContext &context, uint64_t count, SkImageInfo &dstInfo);
@@ -169,8 +170,11 @@ private:
         return "ext";
     }
     OHOS::Media::Size GetHeifGridTileSize() override;
+    bool IsCr3Format();
+    bool MakeCr3Codec();
 
     ImagePlugin::InputDataStream *stream_ = nullptr;
+    std::unique_ptr<InputDataStream> previewStream_ = nullptr;
     uint32_t streamOff_ = 0;
     std::unique_ptr<SkCodec> codec_;
     SkImageInfo info_;
@@ -223,6 +227,7 @@ private:
     OHOS::Media::Size desiredSizeYuv_;
     int softSampleSize_ = 1;
     uint32_t sampleSize_ = 1;
+    std::string rawEncodedFormat_ = "";
 
     // hdr
     Media::ImageHdrType hdrType_ = Media::ImageHdrType::UNKNOWN;

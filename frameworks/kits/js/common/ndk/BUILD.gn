@@ -163,7 +163,6 @@ ohos_shared_library("image_source") {
     "napi:ace_napi",
     "libjpeg-turbo:turbojpeg",
     "resource_management:librawfile",
-    "skia:libjpeg",
     "ipc:ipc_single",
   ]
 

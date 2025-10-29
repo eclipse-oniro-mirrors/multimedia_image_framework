@@ -68,7 +68,7 @@ ani_object ImageSourceAni::CreateImageSourceAni([[maybe_unused]] ani_env* env, a
 {
     std::unique_ptr<ImageSourceAni> pImageSourceAni = std::make_unique<ImageSourceAni>();
     ani_class stringClass;
-    env->FindClass("Lstd/core/String;", &stringClass);
+    env->FindClass("std.core.String", &stringClass);
     ani_boolean isString;
     env->Object_InstanceOf(obj, stringClass, &isString);
     if (isString) {
@@ -85,7 +85,7 @@ ani_object ImageSourceAni::CreateImageSourceAni([[maybe_unused]] ani_env* env, a
     }
 
     ani_class arrayBufferClass;
-    env->FindClass("Lescompat/ArrayBuffer;", &arrayBufferClass);
+    env->FindClass("escompat.ArrayBuffer", &arrayBufferClass);
     ani_boolean isArrayBuffer;
     env->Object_InstanceOf(obj, arrayBufferClass, &isArrayBuffer);
     if (isArrayBuffer) {
@@ -95,12 +95,12 @@ ani_object ImageSourceAni::CreateImageSourceAni([[maybe_unused]] ani_env* env, a
     }
 
     ani_class intClass;
-    env->FindClass("Lstd/core/Int;", &intClass);
+    env->FindClass("std.core.Int", &intClass);
     ani_boolean isInt;
     env->Object_InstanceOf(obj, intClass, &isInt);
     if (isInt) {
         ani_int fd;
-        env->Object_CallMethodByName_Int(obj, "unboxed", ":I", &fd);
+        env->Object_CallMethodByName_Int(obj, "unboxed", ":i", &fd);
         IMAGE_LOGI("Image source fd: %{public}d", fd);
         SourceOptions opts;
         uint32_t errorCode;
@@ -170,27 +170,27 @@ static bool ParseRegion([[maybe_unused]] ani_env* env, ani_object region, Rect& 
     }
 
     ani_ref size;
-    if (ANI_OK != env->Object_CallMethodByName_Ref(region, "<get>size", ":L@ohos/multimedia/image/image/Size;",
+    if (ANI_OK != env->Object_CallMethodByName_Ref(region, "<get>size", ":C{@ohos.multimedia.image.image.Size}",
         &size)) {
         IMAGE_LOGE("Object_GetFieldByName_Ref Failed");
         return false;
     }
-    if (ANI_OK != env->Object_CallMethodByName_Int(reinterpret_cast<ani_object>(size), "<get>width", ":I",
+    if (ANI_OK != env->Object_CallMethodByName_Int(reinterpret_cast<ani_object>(size), "<get>width", ":i",
         &rect.width)) {
         IMAGE_LOGE("Object_CallMethodByName_Int width Failed");
         return false;
     }
-    if (ANI_OK != env->Object_CallMethodByName_Int(reinterpret_cast<ani_object>(size), "<get>height", ":I",
+    if (ANI_OK != env->Object_CallMethodByName_Int(reinterpret_cast<ani_object>(size), "<get>height", ":i",
         &rect.height)) {
         IMAGE_LOGE("Object_CallMethodByName_Int height Failed");
         return false;
     }
 
-    if (ANI_OK != env->Object_CallMethodByName_Int(region, "<get>x", ":I", &rect.left)) {
+    if (ANI_OK != env->Object_CallMethodByName_Int(region, "<get>x", ":i", &rect.left)) {
         IMAGE_LOGE("Object_CallMethodByName_Int x Failed");
         return false;
     }
-    if (ANI_OK != env->Object_CallMethodByName_Int(region, "<get>y", ":I", &rect.top)) {
+    if (ANI_OK != env->Object_CallMethodByName_Int(region, "<get>y", ":i", &rect.top)) {
         IMAGE_LOGE("Object_CallMethodByName_Int y Failed");
         return false;
     }
@@ -203,36 +203,36 @@ static bool ParseDecodingOptions2([[maybe_unused]] ani_env* env, ani_object &par
     ani_status ret;
     ani_ref size;
     if (ANI_OK != env->Object_CallMethodByName_Ref(param, "<get>desiredSize",
-        ":L@ohos/multimedia/image/image/Size;", &size)) {
+        ":C{@ohos.multimedia.image.image.Size}", &size)) {
         IMAGE_LOGE("Object_CallMethodByName_Ref size Faild");
     }
-    if (ANI_OK != env->Object_CallMethodByName_Int(reinterpret_cast<ani_object>(size), "<get>width", ":I",
+    if (ANI_OK != env->Object_CallMethodByName_Int(reinterpret_cast<ani_object>(size), "<get>width", ":i",
         &opts.desiredSize.width)) {
         IMAGE_LOGE("Object_CallMethodByName_Int width Faild");
     }
-    if ((ret = env->Object_CallMethodByName_Int(reinterpret_cast<ani_object>(size), "<get>height", ":I",
+    if ((ret = env->Object_CallMethodByName_Int(reinterpret_cast<ani_object>(size), "<get>height", ":i",
         &opts.desiredSize.height)) != ANI_OK) {
         IMAGE_LOGE("Object_CallMethodByName_Int height Faild :%{public}d", ret);
     }
 
     ani_ref regionRef;
     if (ANI_OK != env->Object_CallMethodByName_Ref(param, "<get>desiredRegion",
-        ":L@ohos/multimedia/image/image/Region;", &regionRef)) {
+        ":C{@ohos.multimedia.image.image.Region}", &regionRef)) {
         IMAGE_LOGE("Object_CallMethodByName_Ref desiredRegion Faild");
     }
     if (!ParseRegion(env, static_cast<ani_object>(regionRef), opts.desiredRegion)) {
         IMAGE_LOGE("Parse desiredRegion Faild");
     }
     opts.desiredPixelFormat = PixelFormat(parseEnumFromStruct(env, param, "<get>desiredPixelFormat",
-        ":L@ohos/multimedia/image/image/PixelMapFormat;"));
+        ":C{@ohos.multimedia.image.image.PixelMapFormat}"));
     ani_ref fitDensityRef;
     if (ANI_OK != (ret = env->Object_CallMethodByName_Ref(param,
-        "<get>fitDensity", ":Lstd/core/Int;", &fitDensityRef))) {
+        "<get>fitDensity", ":C{std.core.Int}", &fitDensityRef))) {
         IMAGE_LOGE("Object_CallMethodByName_Ref Faild fitDensityRef:%{public}d", ret);
     }
     ani_int fitDensity;
     if ((ret = env->Object_CallMethodByName_Int(reinterpret_cast<ani_object>(fitDensityRef),
-        "unboxed", ":I", &fitDensity)) != ANI_OK) {
+        "unboxed", ":i", &fitDensity)) != ANI_OK) {
         IMAGE_LOGE("Object_CallMethodByName_Int Faild fitDensity:%{public}d", ret);
     }
     return true;
@@ -243,46 +243,46 @@ static bool ParseDecodingOptions([[maybe_unused]] ani_env* env, ani_object para,
     ani_boolean isUndefined;
     ani_status ret;
     ani_ref indexRef;
-    if (ANI_OK != (ret = env->Object_CallMethodByName_Ref(para, "<get>index", ":Lstd/core/Int;", &indexRef))) {
+    if (ANI_OK != (ret = env->Object_CallMethodByName_Ref(para, "<get>index", ":C{std.core.Int}", &indexRef))) {
         IMAGE_LOGE("Object_CallMethodByName_Ref Faild indexRef:%{public}d", ret);
     }
     env->Reference_IsUndefined(indexRef, &isUndefined);
     if (!isUndefined) {
         ani_int index;
         if (env->Object_CallMethodByName_Int(reinterpret_cast<ani_object>(indexRef),
-            "unboxed", ":I", &index) != ANI_OK) {
+            "unboxed", ":i", &index) != ANI_OK) {
             IMAGE_LOGE("Object_CallMethodByName_Int Faild");
         }
     }
 
     ani_ref sampleRef;
-    if (ANI_OK != (ret = env->Object_CallMethodByName_Ref(para, "<get>sampleSize", ":Lstd/core/Int;", &sampleRef))) {
+    if (ANI_OK != (ret = env->Object_CallMethodByName_Ref(para, "<get>sampleSize", ":C{std.core.Int}", &sampleRef))) {
         IMAGE_LOGE("Object_CallMethodByName_Ref Faild sampleRef:%{public}d", ret);
     }
     ani_int sample;
     if ((ret = env->Object_CallMethodByName_Int(reinterpret_cast<ani_object>(sampleRef),
-        "unboxed", ":I", &sample)) != ANI_OK) {
+        "unboxed", ":i", &sample)) != ANI_OK) {
         IMAGE_LOGE("Object_CallMethodByName_Int Faild sample:%{public}d", ret);
     }
 
     ani_ref rotateRef;
-    if (ANI_OK != (ret = env->Object_CallMethodByName_Ref(para, "<get>rotate", ":Lstd/core/Int;", &rotateRef))) {
+    if (ANI_OK != (ret = env->Object_CallMethodByName_Ref(para, "<get>rotate", ":C{std.core.Int}", &rotateRef))) {
         IMAGE_LOGE("Object_CallMethodByName_Ref Faild rotateRef:%{public}d", ret);
     }
     ani_int rotate;
     if ((ret = env->Object_CallMethodByName_Int(reinterpret_cast<ani_object>(rotateRef),
-        "unboxed", ":I", &rotate)) != ANI_OK) {
+        "unboxed", ":i", &rotate)) != ANI_OK) {
         IMAGE_LOGE("Object_CallMethodByName_Int Faild rotate:%{public}d", ret);
     }
 
     ani_ref editableRef;
-    if (ANI_OK != (ret = env->Object_CallMethodByName_Ref(para, "<get>editable", ":Lstd/core/Boolean;",
+    if (ANI_OK != (ret = env->Object_CallMethodByName_Ref(para, "<get>editable", ":C{std.core.Boolean}",
         &editableRef))) {
         IMAGE_LOGE("Object_CallMethodByName_Ref Faild editableRef:%{public}d", ret);
     }
     ani_boolean editable;
     if ((ret = env->Object_CallMethodByName_Boolean(reinterpret_cast<ani_object>(editableRef),
-        "unboxed", ":Z", &editable)) != ANI_OK) {
+        "unboxed", ":z", &editable)) != ANI_OK) {
         IMAGE_LOGE("Object_CallMethodByName_Int Faild editable:%{public}d", ret);
     }
     opts.editable = static_cast<bool>(editable);
@@ -334,7 +334,7 @@ static void ModifyImageProperty([[maybe_unused]] ani_env* env, [[maybe_unused]] 
     IMAGE_LOGE("[ModifyImageProperty] get imageSourceAni success");
 
     ani_class stringClass;
-    env->FindClass("Lstd/core/String;", &stringClass);
+    env->FindClass("std.core.String", &stringClass);
     ani_boolean isString;
     env->Object_InstanceOf(key, stringClass, &isString);
     std::string keyS = "";
@@ -350,7 +350,7 @@ template <typename F>
 static bool forEachMapEntry(ani_env *env, ani_object map_object, F &&callback)
 {
     ani_ref keys;
-    if (ANI_OK != env->Object_CallMethodByName_Ref(map_object, "keys", ":Lescompat/IterableIterator;", &keys)) {
+    if (ANI_OK != env->Object_CallMethodByName_Ref(map_object, "keys", ":C{std.core.IterableIterator}", &keys)) {
         IMAGE_LOGE("Failed to get keys iterator");
         return false;
     }
@@ -402,16 +402,16 @@ public:
     explicit ANIIntanceHelper(ani_env *aniEnv) { env = aniEnv; };
     bool Init()
     {
-        if (ANI_OK != env->FindClass("Lstd/core/String;", &stringType)) {
-            IMAGE_LOGE("FindClass std/core/String failed");
+        if (ANI_OK != env->FindClass("std.core.String", &stringType)) {
+            IMAGE_LOGE("FindClass std.core.String failed");
             return false;
         }
-        if (ANI_OK != env->FindClass("Lescompat/Record;", &recordType)) {
-            IMAGE_LOGE("FindClass Lescompat/Record; failed");
+        if (ANI_OK != env->FindClass("escompat.Record", &recordType)) {
+            IMAGE_LOGE("FindClass escompat.Record failed");
             return false;
         }
-        if (ANI_OK != env->FindClass("Lstd/core/Numeric;", &numberType)) {
-            IMAGE_LOGE("Lstd/core/Numeric; failed");
+        if (ANI_OK != env->FindClass("std.core.Numeric", &numberType)) {
+            IMAGE_LOGE("std.core.Numeric failed");
             return false;
         }
         inited = true;
@@ -509,7 +509,7 @@ static void ModifyImageProperties([[maybe_unused]] ani_env* env, [[maybe_unused]
         IMAGE_LOGE("[GetImageSourceFromEnv] imageSource nullptr");
         return;
     }
-    
+
     ANIIntanceHelper ih(env);
     if (!ih.Init()) {
         IMAGE_LOGE("[ModifyImageProperties] ih init fail");
@@ -532,7 +532,7 @@ bool ParseArrayString([[maybe_unused]] ani_env* env, ani_object arrayObj, std::v
     for (int i = 0; i < int(length); i++) {
         ani_ref stringEntryRef;
         if (ANI_OK != env->Object_CallMethodByName_Ref(arrayObj, "$_get",
-            "I:Lstd/core/Object;", &stringEntryRef, (ani_int)i)) {
+            "i:C{std.core.Object}", &stringEntryRef, (ani_int)i)) {
             IMAGE_LOGE("Object_GetPropertyByName_Double length Failed");
             return false;
         }
@@ -611,25 +611,25 @@ static void Release([[maybe_unused]] ani_env* env, [[maybe_unused]] ani_object o
 
 ani_status ImageSourceAni::Init(ani_env* env)
 {
-    static const char *className = "L@ohos/multimedia/image/image/ImageSourceInner;";
+    static const char *className = "@ohos.multimedia.image.image.ImageSourceInner";
     ani_class cls;
     if (ANI_OK != env->FindClass(className, &cls)) {
         IMAGE_LOGE("Not found ");
         return ANI_ERROR;
     }
     std::array methods = {
-        ani_native_function {"nativeGetImageInfo", "I:L@ohos/multimedia/image/image/ImageInfo;",
+        ani_native_function {"nativeGetImageInfo", "i:C{@ohos.multimedia.image.image.ImageInfo}",
             reinterpret_cast<void*>(OHOS::Media::GetImageInfo)},
         ani_native_function {"nativeCreatePixelMap",
-            "L@ohos/multimedia/image/image/DecodingOptions;:L@ohos/multimedia/image/image/PixelMap;",
+            "C{@ohos.multimedia.image.image.DecodingOptions}:C{@ohos.multimedia.image.image.PixelMap}",
             reinterpret_cast<void*>(OHOS::Media::CreatePixelMap)},
-        ani_native_function {"modifyImageProperty", "JLstd/core/String;Lstd/core/String;:V",
+        ani_native_function {"modifyImageProperty", "lC{std.core.String}C{std.core.String}:",
             reinterpret_cast<void*>(OHOS::Media::ModifyImageProperty)},
-        ani_native_function {"nativeModifyImageProperties", "Lescompat/Record;:V",
+        ani_native_function {"nativeModifyImageProperties", "C{escompat.Record}:",
             reinterpret_cast<void*>(OHOS::Media::ModifyImageProperties)},
-        ani_native_function {"nativeGetImageProperties", "Lescompat/Array;:Lescompat/Record;",
+        ani_native_function {"nativeGetImageProperties", "C{escompat.Array}:C{escompat.Record}",
             reinterpret_cast<void*>(OHOS::Media::GetImageProperties)},
-        ani_native_function {"release", ":V", reinterpret_cast<void *>(OHOS::Media::Release)},
+        ani_native_function {"release", ":", reinterpret_cast<void *>(OHOS::Media::Release)},
     };
     ani_status ret = env->Class_BindNativeMethods(cls, methods.data(), methods.size());
     if (ANI_OK != ret) {

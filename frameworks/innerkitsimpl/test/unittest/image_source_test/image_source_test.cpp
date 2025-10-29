@@ -46,6 +46,7 @@ using namespace OHOS::Media;
 namespace OHOS {
 namespace Media {
 static const std::string IMAGE_INPUT_JPEG_PATH = "/data/local/tmp/image/test.jpg";
+static const std::string IMAGE_INPUT_PNG_PATH = "/data/local/tmp/image/test.png";
 static const std::string IMAGE_INPUT_EXIF_JPEG_PATH = "/data/local/tmp/image/test_exif.jpg";
 static const std::string IMAGE_OUTPUT_JPEG_PATH = "/data/local/tmp/image/test_out.jpg";
 static const std::string IMAGE_INPUT_ICO_PATH = "/data/local/tmp/image/test.ico";
@@ -88,6 +89,18 @@ static const uint32_t SDR_SET_ARGB8888_DMA = 2;
 static const uint32_t SCALE_FIRST_SETTING = 1;
 static const uint32_t CROP_FIRST_SETTING = 2;
 static const uint32_t ASTC_SETTING = 3;
+static const std::vector<std::pair<std::string, std::string>> VALID_PROPERTIES = {
+    {"ImageLength", "1000"},
+    {"ImageWidth", "1001"},
+    {"GPSLatitudeRef", "N"},
+    {"GPSLongitudeRef", "E"},
+};
+static const std::vector<std::pair<std::string, std::string>> INVALID_PROPERTIES = {
+    {"ImageLength", "1000"},
+    {"ImageWidth", "-1"},
+    {"GPSLatitudeRef", "N"},
+    {"GPSLongitudeRef", "EEE"},
+};
 
 class ImageSourceTest : public testing::Test {
 public:
@@ -98,6 +111,13 @@ public:
         uint32_t desiredErrorCode = ERR_MEDIA_INVALID_OPERATION);
     void SetAllocatorTypeByParam(uint32_t param, ImageSource* imageSource, DecodeOptions& decodeOpts);
     void SetCropRectByParam(uint32_t param, ImageSource* imageSource, DecodeOptions& decodeOpts);
+    std::unique_ptr<ImageSource> CreateImageSourceByPath(const std::string path);
+    std::unique_ptr<ImageSource> CreateImageSourceByFd(const int fd);
+    std::vector<std::string> GetOriginalImageProperties(const std::string &filePath,
+    const std::vector<std::pair<std::string, std::string>> &expectedProps);
+    void CheckModifyImagePropertiesEnhanced(std::vector<std::string> &originalProps,
+        const std::vector<std::pair<std::string, std::string>> &expectedProps, std::set<std::string> unsupportedKeys,
+        std::string filePath);
 };
 
 class MockAbsImageFormatAgent : public ImagePlugin::AbsImageFormatAgent {
@@ -234,6 +254,65 @@ void ImageSourceTest::CreatePixelMapUseInvalidOptsTest(uint32_t isAllocatorTypeV
     auto ret = imageSource->CreatePixelMap(0, decodeOpts, errorCode);
     ASSERT_EQ(errorCode, desiredErrorCode);
     ASSERT_EQ(ret, nullptr);
+}
+
+std::unique_ptr<ImageSource> ImageSourceTest::CreateImageSourceByPath(const std::string path)
+{
+    uint32_t errorCode = 0;
+    SourceOptions opts;
+    opts.formatHint = "image/jpeg";
+    std::unique_ptr<ImageSource> imageSource =
+        ImageSource::CreateImageSource(path, opts, errorCode);
+    return imageSource;
+}
+
+std::unique_ptr<ImageSource> ImageSourceTest::CreateImageSourceByFd(const int fd)
+{
+    uint32_t errorCode = 0;
+    SourceOptions opts;
+    opts.formatHint = "image/jpeg";
+    std::unique_ptr<ImageSource> imageSource =
+        ImageSource::CreateImageSource(fd, opts, errorCode);
+    return imageSource;
+}
+
+std::vector<std::string> ImageSourceTest::GetOriginalImageProperties(const std::string &filePath,
+    const std::vector<std::pair<std::string, std::string>> &expectedProps)
+{
+    std::unique_ptr<ImageSource> imageSource = CreateImageSourceByPath(filePath);
+
+    std::vector<std::string> result;
+    for (auto &pair : expectedProps) {
+        std::string key = pair.first;
+        std::string value = "";
+        imageSource->GetImagePropertyString(0, key, value);
+        result.emplace_back(value);
+    }
+    return result;
+}
+
+void ImageSourceTest::CheckModifyImagePropertiesEnhanced(std::vector<std::string> &originalProps,
+    const std::vector<std::pair<std::string, std::string>> &expectedProps, std::set<std::string> unsupportedKeys,
+    std::string filePath)
+{
+    int fd = open(filePath.c_str(), O_RDWR | O_CREAT, S_IRUSR | S_IWUSR);
+    std::unique_ptr<ImageSource> imageSource = CreateImageSourceByFd(fd);
+    ASSERT_NE(imageSource, nullptr);
+
+    for (int i = 0; i < expectedProps.size(); i++) {
+        std::string key = expectedProps[i].first;
+        std::string actualValue = "";
+        imageSource->GetImagePropertyString(0, key, actualValue);
+
+        if (unsupportedKeys.count(key) != 0) {
+            std::string originalValue = originalProps[i];
+            ASSERT_EQ(actualValue, originalValue);
+        } else {
+            std::string expectedValue = expectedProps[i].second;
+            ASSERT_EQ(actualValue, expectedValue);
+        }
+    }
+    close(fd);
 }
 
 /**
@@ -1744,7 +1823,8 @@ HWTEST_F(ImageSourceTest, End2EndTest001, TestSize.Level3)
     ASSERT_EQ(desiredWidth, pixelMap->GetWidth());
     ASSERT_EQ(desiredHeight, pixelMap->GetHeight());
     ASSERT_EQ("undefined_", imageSource->GetPixelMapName(nullptr));
-    ASSERT_EQ("400x200-streamsize-27897-mimetype-jpeg", imageSource->GetPixelMapName(pixelMap.get()));
+    ASSERT_EQ("srcImageSize-472x226-pixelMapSize-400x200-streamsize-27897-mimetype-jpeg",
+        imageSource->GetPixelMapName(pixelMap.get()));
 }
 
 /**
@@ -3390,11 +3470,11 @@ HWTEST_F(ImageSourceTest, CheckHdrType003, TestSize.Level3)
 }
 
 /**
- * @tc.name: CheckHdrType005
+ * @tc.name: CheckHdrType004
  * @tc.desc: test the HdrType ImageHdrType::HDR_CUVA
  * @tc.type: FUNC
  */
-HWTEST_F(ImageSourceTest, CheckHdrType005, TestSize.Level3)
+HWTEST_F(ImageSourceTest, CheckHdrType004, TestSize.Level3)
 {
     uint32_t errorCode = 0;
     SourceOptions opts;
@@ -3405,13 +3485,12 @@ HWTEST_F(ImageSourceTest, CheckHdrType005, TestSize.Level3)
     ASSERT_EQ(hdrType, ImageHdrType::HDR_CUVA);
 }
 
-
 /**
- * @tc.name: CheckHdrType007
+ * @tc.name: CheckHdrType005
  * @tc.desc: test the HdrType ImageHdrType::HDR_VIVID_DUAL
  * @tc.type: FUNC
  */
-HWTEST_F(ImageSourceTest, CheckHdrType007, TestSize.Level3)
+HWTEST_F(ImageSourceTest, CheckHdrType005, TestSize.Level3)
 {
     uint32_t errorCode = 0;
     SourceOptions opts;
@@ -3423,11 +3502,11 @@ HWTEST_F(ImageSourceTest, CheckHdrType007, TestSize.Level3)
 }
 
 /**
- * @tc.name: CheckHdrType008
+ * @tc.name: CheckHdrType006
  * @tc.desc: test the HdrType ImageHdrType::HDR_VIVID_DUAL
  * @tc.type: FUNC
  */
-HWTEST_F(ImageSourceTest, CheckHdrType008, TestSize.Level3)
+HWTEST_F(ImageSourceTest, CheckHdrType006, TestSize.Level3)
 {
     uint32_t errorCode = 0;
     SourceOptions opts;
@@ -3436,6 +3515,164 @@ HWTEST_F(ImageSourceTest, CheckHdrType008, TestSize.Level3)
     ImageHdrType hdrType;
     hdrType = imageSource->CheckHdrType();
     ASSERT_EQ(hdrType, ImageHdrType::HDR_VIVID_DUAL);
+}
+
+/**
+ * @tc.name: CheckHdrType007
+ * @tc.desc: test CheckHdrType again use saved info
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageSourceTest, CheckHdrType007, TestSize.Level3)
+{
+    uint32_t errorCode = 0;
+    SourceOptions opts;
+    std::unique_ptr<ImageSource> imageSource =
+        ImageSource::CreateImageSource(IMAGE_HEIC_THREE_GAINMAP_HDR_PATH, opts, errorCode);
+    ImageHdrType hdrType;
+    hdrType = imageSource->CheckHdrType();
+    hdrType = imageSource->CheckHdrType();
+    ASSERT_EQ(hdrType, ImageHdrType::HDR_VIVID_DUAL);
+}
+
+/**
+ * @tc.name: ModifyImagePropertiesExTest001
+ * @tc.desc: Verify that ModifyImagePropertiesEx works correctly when srcFd_ is not -1 with
+ *           right properties.
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageSourceTest, ModifyImagePropertiesExTest001, TestSize.Level1)
+{
+    GTEST_LOG_(INFO) << "ImageSourceTest: ModifyImagePropertiesExTest001 start";
+    std::vector<std::string> originalProps = GetOriginalImageProperties(IMAGE_INPUT_JPEG_PATH, VALID_PROPERTIES);
+
+    int fd = open(IMAGE_INPUT_JPEG_PATH.c_str(), O_RDWR | O_CREAT, S_IRUSR | S_IWUSR);
+    std::unique_ptr<ImageSource> imageSource = CreateImageSourceByFd(fd);
+    ASSERT_NE(imageSource, nullptr);
+    ASSERT_NE(imageSource->srcFd_, -1);
+
+    auto ret = imageSource->ModifyImagePropertiesEx(0, VALID_PROPERTIES);
+    ASSERT_EQ(ret, SUCCESS);
+    close(fd);
+
+    CheckModifyImagePropertiesEnhanced(originalProps, VALID_PROPERTIES, {}, IMAGE_INPUT_JPEG_PATH);
+    GTEST_LOG_(INFO) << "ImageSourceTest: ModifyImagePropertiesExTest001 end";
+}
+
+/**
+ * @tc.name: ModifyImagePropertiesExTest002
+ * @tc.desc: Verify that ModifyImagePropertiesEx works correctly when srcFilePath_ is not empty with
+ *           right properties.
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageSourceTest, ModifyImagePropertiesExTest002, TestSize.Level1)
+{
+    GTEST_LOG_(INFO) << "ImageSourceTest: ModifyImagePropertiesExTest002 start";
+    std::vector<std::string> originalProps = GetOriginalImageProperties(IMAGE_INPUT_EXIF_JPEG_PATH, VALID_PROPERTIES);
+
+    std::unique_ptr<ImageSource> imageSource = CreateImageSourceByPath(IMAGE_INPUT_EXIF_JPEG_PATH);
+    ASSERT_NE(imageSource, nullptr);
+    ASSERT_EQ(imageSource->srcFd_, -1);
+    ASSERT_NE(imageSource->srcFilePath_, "");
+
+    auto ret = imageSource->ModifyImagePropertiesEx(0, VALID_PROPERTIES);
+    ASSERT_EQ(ret, SUCCESS);
+
+    CheckModifyImagePropertiesEnhanced(originalProps, VALID_PROPERTIES, {}, IMAGE_INPUT_EXIF_JPEG_PATH);
+    GTEST_LOG_(INFO) << "ImageSourceTest: ModifyImagePropertiesExTest002 end";
+}
+
+/**
+ * @tc.name: ModifyImagePropertiesExTest003
+ * @tc.desc: Verify that ModifyImagePropertiesEx works correctly when srcFd_ is not -1 with
+ *           wrong properties.
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageSourceTest, ModifyImagePropertiesExTest003, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImageSourceTest: ModifyImagePropertiesExTest003 start";
+    std::vector<std::string> originalProps = GetOriginalImageProperties(IMAGE_INPUT_PNG_PATH, INVALID_PROPERTIES);
+
+    int fd = open(IMAGE_INPUT_PNG_PATH.c_str(), O_RDWR | O_CREAT, S_IRUSR | S_IWUSR);
+    std::unique_ptr<ImageSource> imageSource = CreateImageSourceByFd(fd);
+    ASSERT_NE(imageSource, nullptr);
+    ASSERT_NE(imageSource->srcFd_, -1);
+
+    auto ret = imageSource->ModifyImagePropertiesEx(0, INVALID_PROPERTIES);
+    ASSERT_EQ(ret, ERR_IMAGE_DECODE_EXIF_UNSUPPORT);
+    auto unsupportedKeys = imageSource->GetModifyExifUnsupportedKeys();
+    ASSERT_EQ(unsupportedKeys.size(), NUM_2);
+    ASSERT_EQ(unsupportedKeys.count("ImageWidth"), NUM_1);
+    ASSERT_EQ(unsupportedKeys.count("GPSLongitudeRef"), NUM_1);
+    close(fd);
+
+    CheckModifyImagePropertiesEnhanced(originalProps, INVALID_PROPERTIES, unsupportedKeys, IMAGE_INPUT_PNG_PATH);
+    GTEST_LOG_(INFO) << "ImageSourceTest: ModifyImagePropertiesExTest003 end";
+}
+
+/**
+ * @tc.name: ModifyImagePropertiesExTest004
+ * @tc.desc: Verify that ModifyImagePropertiesEx works correctly when srcFilePath_ is not empty with
+ *           wrong properties.
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageSourceTest, ModifyImagePropertiesExTest004, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImageSourceTest: ModifyImagePropertiesExTest004 start";
+    std::vector<std::string> originalProps = GetOriginalImageProperties(IMAGE_INPUT_HEIF_PATH, VALID_PROPERTIES);
+
+    std::unique_ptr<ImageSource> imageSource = CreateImageSourceByPath(IMAGE_INPUT_HEIF_PATH);
+    ASSERT_NE(imageSource, nullptr);
+    ASSERT_EQ(imageSource->srcFd_, -1);
+    ASSERT_NE(imageSource->srcFilePath_, "");
+
+    auto ret = imageSource->ModifyImagePropertiesEx(0, INVALID_PROPERTIES);
+    ASSERT_EQ(ret, ERR_IMAGE_DECODE_EXIF_UNSUPPORT);
+
+    auto unsupportedKeys = imageSource->GetModifyExifUnsupportedKeys();
+    ASSERT_EQ(unsupportedKeys.size(), NUM_2);
+    ASSERT_EQ(unsupportedKeys.count("ImageWidth"), NUM_1);
+    ASSERT_EQ(unsupportedKeys.count("GPSLongitudeRef"), NUM_1);
+
+    CheckModifyImagePropertiesEnhanced(originalProps, INVALID_PROPERTIES, unsupportedKeys, IMAGE_INPUT_HEIF_PATH);
+    GTEST_LOG_(INFO) << "ImageSourceTest: ModifyImagePropertiesExTest004 end";
+}
+
+/**
+ * @tc.name: ModifyImagePropertiesExTest005
+ * @tc.desc: Verify that ModifyImagePropertiesEx works correctly when srcFd_ is not exist.
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageSourceTest, ModifyImagePropertiesExTest005, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImageSourceTest: ModifyImagePropertiesExTest005 start";
+    std::unique_ptr<ImageSource> imageSource = CreateImageSourceByPath(IMAGE_INPUT_JPEG_PATH);
+    ASSERT_NE(imageSource, nullptr);
+
+    imageSource->srcFd_ = NUM_1;
+    imageSource->srcFilePath_ = "";
+
+    auto ret = imageSource->ModifyImagePropertiesEx(0, VALID_PROPERTIES);
+    ASSERT_EQ(ret, ERR_IMAGE_SOURCE_DATA);
+    GTEST_LOG_(INFO) << "ImageSourceTest: ModifyImagePropertiesExTest005 end";
+}
+
+/**
+ * @tc.name: ModifyImagePropertiesExTest006
+ * @tc.desc: Verify that ModifyImagePropertiesEx works correctly when srcFilePath_ is not exist.
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageSourceTest, ModifyImagePropertiesExTest006, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImageSourceTest: ModifyImagePropertiesExTest006 start";
+    std::unique_ptr<ImageSource> imageSource = CreateImageSourceByPath(IMAGE_INPUT_JPEG_PATH);
+    ASSERT_NE(imageSource, nullptr);
+
+    imageSource->srcFd_ = -1;
+    imageSource->srcFilePath_ = std::string{"/data/local/tmp/image/mock.notexist"};
+
+    auto ret = imageSource->ModifyImagePropertiesEx(0, VALID_PROPERTIES);
+    ASSERT_EQ(ret, ERR_IMAGE_SOURCE_DATA);
+    GTEST_LOG_(INFO) << "ImageSourceTest: ModifyImagePropertiesExTest006 end";
 }
 } // namespace Multimedia
 } // namespace OHOS

@@ -80,11 +80,8 @@
           {
             "header":{
               "header_files":[
-                "image_receiver_impl.h",
                 "image_impl.h",
-                "image_creator_impl.h",
                 "image_ffi.h",
-                "image_packer_impl.h",
                 "image_source_impl.h",
                 "pixel_map_impl.h"
               ],
@@ -209,10 +206,12 @@
             "header": {
               "header_base": "//foundation/multimedia/image_framework/frameworks/kits/taihe/include/",
               "header_files": [
+                "image_source_taihe_ani.h",
                 "image_taihe.h",
                 "picture_taihe.h",
-                "pixel_map_taihe_ani.h",
-                "pixel_map_taihe.h"
+                "picture_taihe_ani.h",
+                "pixel_map_taihe.h",
+                "pixel_map_taihe_ani.h"
               ]
             },
             "name": "//foundation/multimedia/image_framework/frameworks/kits/taihe:image_taihe"

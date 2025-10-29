@@ -338,6 +338,7 @@ if (is_arkui_x) {
 
     sources = [
       "src/heif_impl/heif_parser/box/basic_box.cpp",
+      "src/heif_impl/heif_parser/box/cr3_box.cpp",
       "src/heif_impl/heif_parser/box/heif_box.cpp",
       "src/heif_impl/heif_parser/box/item_data_box.cpp",
       "src/heif_impl/heif_parser/box/item_info_box.cpp",
@@ -349,6 +350,7 @@ if (is_arkui_x) {
       "src/heif_impl/heif_parser/box/item_property_hvcc_box.cpp",
       "src/heif_impl/heif_parser/box/item_property_transform_box.cpp",
       "src/heif_impl/heif_parser/box/item_ref_box.cpp",
+      "src/heif_impl/heif_parser/cr3_parser.cpp",
       "src/heif_impl/heif_parser/heif_image.cpp",
       "src/heif_impl/heif_parser/heif_parser.cpp",
       "src/heif_impl/heif_parser/heif_stream.cpp",
@@ -388,6 +390,7 @@ if (is_arkui_x) {
 
     sources = [
       "src/heif_impl/heif_parser/box/basic_box.cpp",
+      "src/heif_impl/heif_parser/box/cr3_box.cpp",
       "src/heif_impl/heif_parser/box/heif_box.cpp",
       "src/heif_impl/heif_parser/box/item_data_box.cpp",
       "src/heif_impl/heif_parser/box/item_info_box.cpp",
@@ -399,6 +402,7 @@ if (is_arkui_x) {
       "src/heif_impl/heif_parser/box/item_property_hvcc_box.cpp",
       "src/heif_impl/heif_parser/box/item_property_transform_box.cpp",
       "src/heif_impl/heif_parser/box/item_ref_box.cpp",
+      "src/heif_impl/heif_parser/cr3_parser.cpp",
       "src/heif_impl/heif_parser/heif_image.cpp",
       "src/heif_impl/heif_parser/heif_parser.cpp",
       "src/heif_impl/heif_parser/heif_stream.cpp",

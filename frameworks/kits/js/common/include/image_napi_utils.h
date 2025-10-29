@@ -146,6 +146,12 @@ do { \
 
 namespace OHOS {
 namespace Media {
+
+struct NapiConstructorContext {
+    napi_env env_ = nullptr;
+    napi_ref ref_ = nullptr;
+};
+
 class ImageNapiUtils {
 public:
     static bool GetBufferByName(napi_env env, napi_value root, const char* name, void **res, size_t* len);
@@ -165,6 +171,7 @@ public:
     static void CreateErrorObj(napi_env env, napi_value &errorObj,
         const int32_t errCode, const std::string errMsg);
     static napi_value ThrowExceptionError(napi_env env, const int32_t errCode, const std::string errMsg);
+    static void CleanUpConstructorContext(void* data);
 };
 } // namespace Media
 } // namespace OHOS

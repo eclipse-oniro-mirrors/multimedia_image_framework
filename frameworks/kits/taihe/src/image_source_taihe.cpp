@@ -16,13 +16,16 @@
 #include "ani_color_space_object_convertor.h"
 #include "image_common.h"
 #include "image_dfx.h"
+#include "image_error_convert.h"
 #include "image_log.h"
 #include "image_source_taihe.h"
+#include "image_source_taihe_ani.h"
 #include "image_taihe_utils.h"
 #include "image_trace.h"
 #include "image_type.h"
 #include "jpeg_decoder_yuv.h"
 #include "media_errors.h"
+#include "picture_taihe.h"
 #include "pixel_map_taihe.h"
 #include "exif_metadata_formatter.h"
 
@@ -55,6 +58,12 @@ struct ImageSourceTaiheContext {
     std::vector<std::string> keyStrArray;
     std::vector<std::pair<std::string, std::string>> kVStrArray;
     std::string defaultValueStr;
+    void *updataBuffer = nullptr;
+    size_t updataBufferSize = NUM_0;
+    uint32_t updataBufferOffset = NUM_0;
+    uint32_t updataLength = NUM_0;
+    bool isCompleted = false;
+    bool isSuccess = false;
     uint32_t index = 0;
     bool isBatch = false;
     OHOS::Media::DecodeOptions decodeOpts;
@@ -64,6 +73,10 @@ struct ImageSourceTaiheContext {
     std::multimap<std::int32_t, std::string> errMsgArray;
     std::unique_ptr<std::vector<std::unique_ptr<OHOS::Media::PixelMap>>> pixelMaps;
     std::unique_ptr<std::vector<int32_t>> delayTimes;
+#if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
+    OHOS::Media::DecodingOptionsForPicture decodingOptsForPicture;
+    std::shared_ptr<OHOS::Media::Picture> rPicture;
+#endif
 };
 
 static const std::map<int32_t, Image_ErrorCode> ERROR_CODE_MAP = {
@@ -141,6 +154,23 @@ ImageSourceImpl::ImageSourceImpl(std::shared_ptr<OHOS::Media::ImageSource> image
     nativeImgSrc = imageSource;
 }
 
+ImageSourceImpl::ImageSourceImpl(std::shared_ptr<OHOS::Media::ImageSource> imageSource,
+    std::shared_ptr<OHOS::Media::IncrementalPixelMap> incPixelMap)
+{
+    nativeImgSrc = imageSource;
+    navIncPixelMap_ = incPixelMap;
+}
+
+ImageSourceImpl::ImageSourceImpl(int64_t aniPtr)
+{
+    OHOS::Media::ImageSourceTaiheAni *imageSourceAni = reinterpret_cast<OHOS::Media::ImageSourceTaiheAni *>(aniPtr);
+    if (imageSourceAni != nullptr && imageSourceAni->nativeImgSrc != nullptr) {
+        nativeImgSrc = imageSourceAni->nativeImgSrc;
+    } else {
+        ImageTaiheUtils::ThrowExceptionError("aniPtr is invalid or nativeImgSrc is nullptr");
+    }
+}
+
 ImageSourceImpl::~ImageSourceImpl()
 {
     ReleaseSync();
@@ -148,16 +178,19 @@ ImageSourceImpl::~ImageSourceImpl()
 
 int64_t ImageSourceImpl::GetImplPtr()
 {
-    return reinterpret_cast<uintptr_t>(this);
+    return static_cast<int64_t>(reinterpret_cast<uintptr_t>(this));
 }
 
-ImageInfo ImageSourceImpl::GetImageInfoSyncWithIndex(uint32_t index)
+ImageInfo ImageSourceImpl::GetImageInfoSyncWithIndex(int32_t index)
 {
     OHOS::Media::ImageInfo imageinfo;
     bool isHdr = false;
     if (nativeImgSrc != nullptr) {
         index = index >= NUM_0 ? index : NUM_0;
-        nativeImgSrc->GetImageInfo(index, imageinfo);
+        uint32_t ret = nativeImgSrc->GetImageInfo(index, imageinfo);
+        if (ret != OHOS::Media::SUCCESS) {
+            ImageTaiheUtils::ThrowExceptionError("Inner GetImageInfo failed");
+        }
         isHdr = nativeImgSrc->IsHdrImage();
     } else {
         ImageTaiheUtils::ThrowExceptionError("nativeImgSrc is nullptr");
@@ -167,7 +200,7 @@ ImageInfo ImageSourceImpl::GetImageInfoSyncWithIndex(uint32_t index)
 
 ImageInfo ImageSourceImpl::GetImageInfoSync()
 {
-    uint32_t index = 0;
+    int32_t index = 0;
     return GetImageInfoSyncWithIndex(index);
 }
 
@@ -384,7 +417,7 @@ static bool ParseDecodeOptions(DecodingOptions const& options, OHOS::Media::Deco
         IMAGE_LOGD("desiredSize: %{public}d, %{public}d", dst.desiredSize.width, dst.desiredSize.height);
     }
 
-    dst.desiredRegion = ParseDesiredRegion(options);
+    dst.CropRect = ParseDesiredRegion(options);
     return ParseDecodeOptions2(options, dst, errMsg);
 }
 
@@ -447,6 +480,20 @@ static PixelMap CreatePixelMapComplete(std::unique_ptr<ImageSourceTaiheContext> 
     IMAGE_LOGD("CreatePixelMapComplete OUT");
     ImageTaiheUtils::ThrowExceptionError(taiheContext->errMsg);
     return make_holder<PixelMapImpl, PixelMap>();
+}
+
+static optional<PixelMap> CreatePixelMapComplete(std::unique_ptr<ImageSourceTaiheContext> &taiheContext, bool isSync)
+{
+    IMAGE_LOGD("CreatePixelMapComplete IN");
+    if (taiheContext->status == OHOS::Media::SUCCESS && taiheContext->rPixelMap != nullptr) {
+        auto pixelMap = PixelMapImpl::CreatePixelMap(taiheContext->rPixelMap);
+        return optional<PixelMap>(std::in_place, pixelMap);
+    }
+    if (!isSync) {
+        ImageTaiheUtils::ThrowExceptionError(taiheContext->errMsg);
+    }
+    IMAGE_LOGD("CreatePixelMapComplete OUT");
+    return optional<PixelMap>(std::nullopt);
 }
 
 PixelMap ImageSourceImpl::CreatePixelMapSyncWithOptions(DecodingOptions const& options)
@@ -544,6 +591,16 @@ PixelMap ImageSourceImpl::CreatePixelMapUsingAllocatorSync(optional_view<Decodin
     return CreatePixelMapUsingAllocatorSyncComplete(taiheContext);
 }
 
+optional<PixelMap> ImageSourceImpl::CreateWideGamutSdrPixelMapSync()
+{
+    ImageTaiheUtils::HicheckerReport();
+    std::unique_ptr<ImageSourceTaiheContext> context = std::make_unique<ImageSourceTaiheContext>();
+    context->decodeOpts.isCreateWideGamutSdrPixelMap = true;
+    context->decodeOpts.desiredDynamicRange = OHOS::Media::DecodeDynamicRange::AUTO;
+    context->rPixelMap = CreatePixelMapInner(this, nativeImgSrc, context->index, context->decodeOpts, context->status);
+    return CreatePixelMapComplete(context, false);
+}
+
 static bool CheckAsyncContext(std::unique_ptr<ImageSourceTaiheContext> &taiheContext, bool check)
 {
     if (taiheContext == nullptr) {
@@ -605,6 +662,10 @@ static array<PixelMap> CreatePixelMapListSyncWithOptionsComplete(std::unique_ptr
         for (auto &pixelMap : *taiheContext->pixelMaps.get()) {
             result.emplace_back(PixelMapImpl::CreatePixelMap(std::move(pixelMap)));
         }
+    } else {
+        std::string errMsg = (taiheContext->errMsg.size() > 0) ? taiheContext->errMsg : "error status, no message";
+        IMAGE_LOGD("Operation failed code:%{public}d, msg:%{public}s", taiheContext->status, errMsg.c_str());
+        ImageTaiheUtils::ThrowExceptionError(taiheContext->status, errMsg);
     }
     return array<PixelMap>(result);
 }
@@ -621,15 +682,13 @@ array<PixelMap> ImageSourceImpl::CreatePixelMapListSyncWithOptions(DecodingOptio
     
     taiheContext->thisPtr = this;
     if (taiheContext->thisPtr == nullptr) {
-        ImageTaiheUtils::ThrowExceptionError(OHOS::Media::ERR_IMAGE_DATA_ABNORMAL, "thisPtr is nullptr");
-        return array<PixelMap>(nullptr, 0);
+        taiheContext->errMsg = "thisPtr is nullptr";
+        IMAGE_LOGE("%{public}s thisPtr is nullptr", __func__);
     }
 
     if (!ParseDecodeOptions(options, taiheContext->decodeOpts, taiheContext->index,
         taiheContext->errMsg)) {
-        IMAGE_LOGE("DecodeOptions mismatch.");
-        ImageTaiheUtils::ThrowExceptionError(OHOS::Media::ERR_IMAGE_DATA_ABNORMAL, "DecodeOptions mismatch.");
-        return array<PixelMap>(nullptr, 0);
+        IMAGE_LOGE("%{public}s DecodeOptions mismatch.", __func__);
     }
 
     ImageTaiheUtils::HicheckerReport();
@@ -663,9 +722,50 @@ array<int32_t> ImageSourceImpl::GetDelayTimeListSync()
         ImageTaiheUtils::ThrowExceptionError((errorCode != OHOS::Media::SUCCESS) ? errorCode : OHOS::Media::ERROR,
             "Get DelayTime error");
         return array<int32_t>(0);
-    } else {
-        return array<int32_t>(taihe::copy_data_t{}, delayTimes->data(), delayTimes->size());
     }
+
+    return array<int32_t>(taihe::copy_data_t{}, delayTimes->data(), delayTimes->size());
+}
+
+array<int32_t> ImageSourceImpl::GetDisposalTypeListSync()
+{
+    OHOS::Media::ImageTrace imageTrace("ImageSourceImpl::GetDisposalTypeListSync");
+
+    if (nativeImgSrc == nullptr) {
+        ImageTaiheUtils::ThrowExceptionError(OHOS::Media::ERR_IMAGE_DATA_ABNORMAL, "nativeImgSrc is nullptr.");
+        return array<int32_t>(0);
+    }
+
+    uint32_t errorCode = 0;
+    auto disposalTypeList = nativeImgSrc->GetDisposalType(errorCode);
+    if ((errorCode != OHOS::Media::SUCCESS) || (disposalTypeList == nullptr)) {
+        IMAGE_LOGE("Get DisposalType error, error=%{public}u", errorCode);
+        ImageTaiheUtils::ThrowExceptionError((errorCode != OHOS::Media::SUCCESS) ? errorCode : OHOS::Media::ERROR,
+            "Get DisposalType error");
+        return array<int32_t>(0);
+    }
+
+    return array<int32_t>(taihe::copy_data_t{}, disposalTypeList->data(), disposalTypeList->size());
+}
+
+int32_t ImageSourceImpl::GetFrameCountSync()
+{
+    OHOS::Media::ImageTrace imageTrace("ImageSourceImpl::GetFrameCountSync");
+
+    if (nativeImgSrc == nullptr) {
+        ImageTaiheUtils::ThrowExceptionError(OHOS::Media::ERR_IMAGE_DATA_ABNORMAL, "nativeImgSrc is nullptr.");
+        return 0;
+    }
+
+    uint32_t errorCode = 0;
+    auto frameCount = nativeImgSrc->GetFrameCount(errorCode);
+    if (errorCode != OHOS::Media::SUCCESS) {
+        IMAGE_LOGE("Get FrameCount error, error=%{public}u", errorCode);
+        ImageTaiheUtils::ThrowExceptionError(errorCode, "Get FrameCount error");
+        return 0;
+    }
+
+    return frameCount;
 }
 
 static bool ParsePropertyOptions(std::unique_ptr<ImageSourceTaiheContext> &context,
@@ -731,9 +831,9 @@ static void GenerateErrMsg(std::unique_ptr<ImageSourceTaiheContext> &context, st
     }
 }
 
-string ImageSourceImpl::GetImagePropertySync(PropertyKey key, optional_view<ImagePropertyOptions> options)
+string ImageSourceImpl::GetImagePropertyReturnsPromise(PropertyKey key, optional_view<ImagePropertyOptions> options)
 {
-    OHOS::Media::ImageTrace imageTrace("ImageSourceImpl::GetImagePropertySync");
+    OHOS::Media::ImageTrace imageTrace("ImageSourceImpl::GetImagePropertyReturnsPromise");
 
     std::unique_ptr<ImageSourceTaiheContext> context = std::make_unique<ImageSourceTaiheContext>();
     if (nativeImgSrc == nullptr) {
@@ -757,6 +857,35 @@ string ImageSourceImpl::GetImagePropertySync(PropertyKey key, optional_view<Imag
         ImageTaiheUtils::ThrowExceptionError(context->status, errMsg);
     }
     return context->valueStr;
+}
+
+optional<string> ImageSourceImpl::GetImagePropertySync(PropertyKey key)
+{
+    OHOS::Media::ImageTrace imageTrace("ImageSourceImpl::GetImagePropertySync");
+    IMAGE_LOGD("GetImagePropertySync IN");
+
+    std::string propertyKey = key.get_value();
+    std::string value = "";
+
+    if (nativeImgSrc != nullptr) {
+        uint32_t ret = nativeImgSrc->GetImagePropertyStringBySync(NUM_0, propertyKey, value);
+        if (ret == OHOS::Media::ERR_IMAGE_PROPERTY_NOT_EXIST) {
+            IMAGE_LOGE("%{public}s: Unsupported metadata, errorCode=%{public}u", __func__, ret);
+            ImageTaiheUtils::ThrowExceptionError(IMAGE_SOURCE_UNSUPPORTED_METADATA, "Unsupported metadata");
+        }
+        if (ret == OHOS::Media::ERR_IMAGE_SOURCE_DATA) {
+            IMAGE_LOGE("%{public}s: Unsupported MIME type, errorCode=%{public}u", __func__, ret);
+            ImageTaiheUtils::ThrowExceptionError(IMAGE_SOURCE_UNSUPPORTED_MIMETYPE, "Unsupported MIME type");
+        }
+        if (ret == OHOS::Media::ERR_IMAGE_DECODE_EXIF_UNSUPPORT) {
+            IMAGE_LOGE("%{public}s: Bad source, errorCode=%{public}u", __func__, ret);
+            ImageTaiheUtils::ThrowExceptionError(IMAGE_BAD_SOURCE, "Bad source");
+        }
+        return optional<string>(std::in_place, value);
+    } else {
+        ImageTaiheUtils::ThrowExceptionError("empty native image source");
+        return optional<string>(std::nullopt);
+    }
 }
 
 static void GetImagePropertiesExecute(std::unique_ptr<ImageSourceTaiheContext> &context)
@@ -867,7 +996,7 @@ map<PropertyKey, PropertyValue> ImageSourceImpl::GetImagePropertiesSync(array_vi
 
 void CreateModifyErrorArray(std::multimap<std::int32_t, std::string> errMsgArray)
 {
-    for (auto it = errMsgArray.begin(); it != errMsgArray.end(); ++it) {
+    for (auto it = errMsgArray.rbegin(); it != errMsgArray.rend(); ++it) {
         if (it->first == OHOS::Media::ERR_MEDIA_WRITE_PARCEL_FAIL) {
             ImageTaiheUtils::ThrowExceptionError(it->first,
                 "Create Fd without write permission! exif key: " + it->second);
@@ -1018,6 +1147,24 @@ std::vector<std::pair<std::string, std::string>> GetRecordArgument(map_view<Prop
     return kVStrArray;
 }
 
+std::vector<std::pair<std::string, std::string>> GetRecordArgument(map_view<string, PropertyValue> records)
+{
+    std::vector<std::pair<std::string, std::string>> kVStrArray;
+
+    for (const auto& [key, value] : records) {
+        std::string valueStr;
+        if (value.holds_type_string()) {
+            valueStr = std::string(value.get_type_string_ref());
+        } else if (value.holds_type_null()) {
+            valueStr = "";
+        }
+        kVStrArray.push_back(std::make_pair(std::string(key), valueStr));
+    }
+
+    IMAGE_LOGD("Get record argument success.");
+    return kVStrArray;
+}
+
 void ImageSourceImpl::ModifyImagePropertiesSync(map_view<PropertyKey, PropertyValue> records)
 {
     OHOS::Media::ImageTrace imageTrace("ImageSourceImpl::ModifyImagePropertiesSync");
@@ -1042,6 +1189,120 @@ void ImageSourceImpl::ModifyImagePropertiesSync(map_view<PropertyKey, PropertyVa
     ModifyImagePropertyComplete(context);
 }
 
+static void UpdateDataExecute(std::unique_ptr<ImageSourceTaiheContext> &context)
+{
+    if (context == nullptr) {
+        IMAGE_LOGE("empty context");
+        return;
+    }
+
+    uint8_t *buffer = static_cast<uint8_t*>(context->updataBuffer);
+    if (context->updataBufferOffset < context->updataBufferSize) {
+        buffer = buffer + context->updataBufferOffset;
+    }
+
+    uint32_t lastSize = context->updataBufferSize - context->updataBufferOffset;
+    uint32_t size = context->updataLength < lastSize ? context->updataLength : lastSize;
+
+    uint32_t res = context->rImageSource->UpdateData(buffer, size,
+                                                     context->isCompleted);
+    context->isSuccess = res == 0;
+    if (context->isSuccess && context->thisPtr != nullptr) {
+        auto incPixelMap = context->thisPtr->GetIncrementalPixelMap();
+        if (incPixelMap != nullptr) {
+            uint8_t decodeProgress = 0;
+            uint32_t err = incPixelMap->PromoteDecoding(decodeProgress);
+            if (!(err == OHOS::Media::SUCCESS ||
+                (err == OHOS::Media::ERR_IMAGE_SOURCE_DATA_INCOMPLETE && !context->isCompleted))) {
+                IMAGE_LOGE("UpdateData PromoteDecoding error");
+                context->isSuccess = false;
+            }
+            if (context->isCompleted) {
+                incPixelMap->DetachFromDecoding();
+            }
+        }
+    }
+}
+
+static void ModifyImagePropertiesEnhancedExecute(std::unique_ptr<ImageSourceTaiheContext> &context)
+{
+    IMAGE_LOGI("ModifyImagePropertiesEnhanced start.");
+    auto start = std::chrono::high_resolution_clock::now();
+    if (context == nullptr || context->rImageSource == nullptr) {
+        IMAGE_LOGE("empty context");
+        return;
+    }
+
+    context->status = context->rImageSource->ModifyImagePropertiesEx(0, context->kVStrArray);
+    if (context->status != OHOS::Media::SUCCESS) {
+        auto unsupportedKeys = context->rImageSource->GetModifyExifUnsupportedKeys();
+        if (!unsupportedKeys.empty()) {
+            context->errMsg = "Failed to modify unsupported keys:";
+            for (auto &key : unsupportedKeys) {
+                context->errMsg.append(" ").append(key);
+            }
+        }
+    }
+
+    auto end = std::chrono::high_resolution_clock::now();
+    auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
+    IMAGE_LOGI("ModifyImagePropertiesEnhanced end, cost: %{public}llu ms", duration.count());
+}
+
+void ImageSourceImpl::ModifyImagePropertiesEnhancedSync(map_view<string, PropertyValue> records)
+{
+    OHOS::Media::ImageTrace imageTrace("ImageSourceImpl::ModifyImagePropertiesEnhancedSync");
+
+    std::unique_ptr<ImageSourceTaiheContext> context = std::make_unique<ImageSourceTaiheContext>();
+    if (nativeImgSrc == nullptr) {
+        ImageTaiheUtils::ThrowExceptionError(OHOS::Media::ERR_IMAGE_WRITE_PROPERTY_FAILED, "empty native rImageSource");
+        return;
+    }
+    context->rImageSource = nativeImgSrc;
+
+    context->kVStrArray = GetRecordArgument(records);
+    if (context->kVStrArray.size() == 0) return;
+
+    context->pathName = ImageSourceImpl::filePath_;
+    context->fdIndex = ImageSourceImpl::fileDescriptor_;
+    context->sourceBuffer = ImageSourceImpl::fileBuffer_;
+    context->sourceBufferSize = ImageSourceImpl::fileBufferSize_;
+
+    ModifyImagePropertiesEnhancedExecute(context);
+
+    if (context->status != OHOS::Media::SUCCESS) {
+        const auto &[errCode, errMsg] = OHOS::Media::ImageErrorConvert::ModifyImagePropertiesEnhancedMakeErrMsg(
+            context->status, context->errMsg);
+        ImageTaiheUtils::ThrowExceptionError(errCode, errMsg);
+    }
+}
+
+void ImageSourceImpl::UpdateDataSync(array_view<uint8_t> buf, bool isFinished, int32_t offset, int32_t length)
+{
+    std::unique_ptr<ImageSourceTaiheContext> taiheContext = std::make_unique<ImageSourceTaiheContext>();
+    taiheContext->thisPtr = this;
+    if (nativeImgSrc == nullptr) {
+        ImageTaiheUtils::ThrowExceptionError("empty native rImageSource");
+        return;
+    }
+    taiheContext->rImageSource = nativeImgSrc;
+    if (buf.empty()) {
+        ImageTaiheUtils::ThrowExceptionError("empty buf");
+        return;
+    }
+    taiheContext->updataBuffer = buf.data();
+    taiheContext->updataBufferSize = buf.size();
+
+    taiheContext->isCompleted = isFinished;
+    taiheContext->updataBufferOffset = static_cast<uint32_t>(offset);
+    taiheContext->updataLength = static_cast<uint32_t>(length);
+
+    UpdateDataExecute(taiheContext);
+    if (!taiheContext->isSuccess) {
+        ImageTaiheUtils::ThrowExceptionError("UpdateDataExecute error");
+    }
+}
+
 void ImageSourceImpl::ReleaseSync()
 {
     if (!isRelease) {
@@ -1051,6 +1312,96 @@ void ImageSourceImpl::ReleaseSync()
         isRelease = true;
     }
 }
+
+#if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
+static bool ParseDecodingOptionsForPicture(DecodingOptionsForPicture const& options,
+    OHOS::Media::DecodingOptionsForPicture &dst)
+{
+    for (size_t i = 0; i < options.desiredAuxiliaryPictures.size(); i++) {
+        int32_t type = options.desiredAuxiliaryPictures[i];
+        if (type <= static_cast<int32_t>(OHOS::Media::AuxiliaryPictureType::FRAGMENT_MAP)) {
+            dst.desireAuxiliaryPictures.insert(static_cast<OHOS::Media::AuxiliaryPictureType>(type));
+            IMAGE_LOGD("desireAuxiliaryPictures[%{public}zu]: %{public}d", i, type);
+        } else {
+            IMAGE_LOGE("unknown auxiliary picture type: %{public}d", type);
+            return false;
+        }
+    }
+    return true;
+}
+
+static void CreatePictureExecute(std::unique_ptr<ImageSourceTaiheContext> &context)
+{
+    IMAGE_LOGD("CreatePictureExecute IN");
+    uint32_t errorCode;
+    context->rPicture = context->rImageSource->CreatePicture(context->decodingOptsForPicture, errorCode);
+    if (context->rPicture != nullptr) {
+        context->status = OHOS::Media::SUCCESS;
+    } else {
+        context->status = errorCode;
+    }
+    IMAGE_LOGD("CreatePictureExecute OUT");
+}
+
+static Picture CreatePictureComplete(std::unique_ptr<ImageSourceTaiheContext> &context)
+{
+    IMAGE_LOGD("CreatePictureComplete IN");
+    if (context->status != OHOS::Media::SUCCESS) {
+        std::pair<int32_t, std::string> errorMsg(static_cast<int32_t>(IMAGE_DECODE_FAILED), "Create Picture error");
+        context->errMsgArray.insert(errorMsg);
+        for (const auto &[errorCode, errMsg] : context->errMsgArray) {
+            ImageTaiheUtils::ThrowExceptionError(errorCode, errMsg);
+        }
+    }
+    IMAGE_LOGD("CreatePictureComplete OUT");
+    return PictureImpl::CreatePicture(context->rPicture);
+}
+
+Picture ImageSourceImpl::CreatePictureSync(optional_view<DecodingOptionsForPicture> options)
+{
+    std::unique_ptr<ImageSourceTaiheContext> taiheContext = std::make_unique<ImageSourceTaiheContext>();
+    taiheContext->thisPtr = this;
+    if (nativeImgSrc == nullptr) {
+        ImageTaiheUtils::ThrowExceptionError("empty native rImageSource");
+        return make_holder<PictureImpl, Picture>();
+    }
+    taiheContext->rImageSource = nativeImgSrc;
+
+    if (!options.has_value()) {
+        for (int32_t type = static_cast<int32_t>(OHOS::Media::AuxiliaryPictureType::GAINMAP);
+            type <= static_cast<int32_t>(OHOS::Media::AuxiliaryPictureType::FRAGMENT_MAP); type++) {
+            taiheContext->decodingOptsForPicture.desireAuxiliaryPictures.insert(
+                OHOS::Media::AuxiliaryPictureType(type));
+        }
+    } else {
+        if (!ParseDecodingOptionsForPicture(options.value(), taiheContext->decodingOptsForPicture)) {
+            ImageTaiheUtils::ThrowExceptionError(IMAGE_BAD_PARAMETER, "DecodingOptionsForPicture mismatch");
+            return make_holder<PictureImpl, Picture>();
+        }
+    }
+
+    CreatePictureExecute(taiheContext);
+    return CreatePictureComplete(taiheContext);
+}
+
+optional<Picture> ImageSourceImpl::CreatePictureAtIndexSync(int32_t index)
+{
+    if (nativeImgSrc == nullptr) {
+        ImageTaiheUtils::ThrowExceptionError("empty native rImageSource");
+        return optional<Picture>(std::nullopt);
+    }
+
+    uint32_t errCode = OHOS::Media::ERR_MEDIA_INVALID_VALUE;
+    auto picture = nativeImgSrc->CreatePictureAtIndex(index, errCode);
+    if (errCode != OHOS::Media::SUCCESS || picture == nullptr) {
+        auto errMsg = OHOS::Media::ImageErrorConvert::CreatePictureAtIndexMakeErrMsg(errCode);
+        ImageTaiheUtils::ThrowExceptionError(errMsg.first, errMsg.second);
+        return optional<Picture>(std::nullopt);
+    }
+    auto res = make_holder<PictureImpl, Picture>(std::move(picture));
+    return optional<Picture>(std::in_place, res);
+}
+#endif
 
 array<string> ImageSourceImpl::GetSupportedFormats()
 {
@@ -1151,17 +1502,50 @@ ImageSource CreateImageSourceByArrayBuffer(array_view<uint8_t> buf)
     return CreateImageSourceByArrayBufferOption(buf, opts);
 }
 
+ImageSource CreateIncrementalSourceByArrayBufferOption(array_view<uint8_t> buf, optional_view<SourceOptions> options)
+{
+    OHOS::Media::IncrementalSourceOptions incOpts;
+    SourceOptions etsOpts = options.value_or(SourceOptions {});
+    incOpts.sourceOptions = ImageTaiheUtils::ParseSourceOptions(etsOpts);
+    
+    incOpts.incrementalMode = OHOS::Media::IncrementalMode::INCREMENTAL_DATA;
+    uint32_t errorCode = 0;
+    std::shared_ptr<OHOS::Media::ImageSource> imageSource =
+        OHOS::Media::ImageSource::CreateIncrementalImageSource(incOpts, errorCode);
+    if (imageSource == nullptr) {
+        ImageTaiheUtils::ThrowExceptionError("CreateImageSourceByArrayBufferOption error");
+        return make_holder<ImageSourceImpl, ImageSource>();
+    }
+
+    OHOS::Media::DecodeOptions decodeOpts;
+    std::shared_ptr<OHOS::Media::IncrementalPixelMap> navIncPixelMap =
+        imageSource->CreateIncrementalPixelMap(0, decodeOpts, errorCode);
+
+    if (errorCode != OHOS::Media::SUCCESS) {
+        ImageTaiheUtils::ThrowExceptionError("CreateIncrementalPixelMap error");
+        return make_holder<ImageSourceImpl, ImageSource>();
+    }
+
+    return make_holder<ImageSourceImpl, ImageSource>(imageSource, navIncPixelMap);
+}
+
+ImageSource CreateIncrementalSourceByArrayBuffer(array_view<uint8_t> buf)
+{
+    optional_view<SourceOptions> optionalView;
+    return CreateIncrementalSourceByArrayBufferOption(buf, optionalView);
+}
+
 ImageSource CreateImageSourceByRawFileDescriptorOption(uintptr_t rawfile, optional_view<SourceOptions> options)
 {
-    double fd;
-    double offset;
-    double length;
+    int32_t fd;
+    int64_t offset;
+    int64_t length;
     ani_env *env = ::taihe::get_env();
     ani_object rawfileObj = reinterpret_cast<ani_object>(rawfile);
-    if (!ImageTaiheUtils::GetPropertyDouble(env, rawfileObj, "fd", fd) ||
-        !ImageTaiheUtils::GetPropertyDouble(env, rawfileObj, "offset", offset) ||
-        !ImageTaiheUtils::GetPropertyDouble(env, rawfileObj, "length", length)) {
-        ImageTaiheUtils::ThrowExceptionError(OHOS::Media::COMMON_ERR_INVALID_PARAMETER, "GetPropertyDouble failed");
+    if (!ImageTaiheUtils::GetPropertyInt(env, rawfileObj, "fd", fd) ||
+        !ImageTaiheUtils::GetPropertyLong(env, rawfileObj, "offset", offset) ||
+        !ImageTaiheUtils::GetPropertyLong(env, rawfileObj, "length", length)) {
+        ImageTaiheUtils::ThrowExceptionError(OHOS::Media::COMMON_ERR_INVALID_PARAMETER, "GetProperty failed");
         return make_holder<ImageSourceImpl, ImageSource>();
     }
     SourceOptions etsOpts = options.value_or(SourceOptions {});
@@ -1170,7 +1554,7 @@ ImageSource CreateImageSourceByRawFileDescriptorOption(uintptr_t rawfile, option
     uint32_t errorCode = OHOS::Media::ERR_MEDIA_INVALID_VALUE;
     int32_t fileSize = static_cast<int32_t>(offset) + static_cast<int32_t>(length);
     std::shared_ptr<OHOS::Media::ImageSource> imageSource = OHOS::Media::ImageSource::CreateImageSource(
-        static_cast<int32_t>(fd), static_cast<int32_t>(offset), fileSize, opts, errorCode);
+        fd, static_cast<int32_t>(offset), fileSize, opts, errorCode);
     if (imageSource == nullptr) {
         ImageTaiheUtils::ThrowExceptionError("CreateImageSourceByRawFileDescriptorOption error");
         return make_holder<ImageSourceImpl, ImageSource>();
@@ -1184,6 +1568,21 @@ ImageSource CreateImageSourceByRawFileDescriptorOption(uintptr_t rawfile, option
     }
     return make_holder<ImageSourceImpl, ImageSource>(imageSource);
 }
+
+ImageSource CreateImageSourceByPtr(int64_t ptr)
+{
+    return taihe::make_holder<ImageSourceImpl, ImageSource>(ptr);
+}
+
+array<string> GetImageSourceSupportedFormats()
+{
+    std::set<std::string> formats;
+    uint32_t ret = OHOS::Media::ImageSource::GetSupportedFormats(formats);
+    if (ret != OHOS::Media::SUCCESS) {
+        IMAGE_LOGE("Fail to get decode supported formats");
+    }
+    return ImageTaiheUtils::ToTaiheArrayString(std::vector(formats.begin(), formats.end()));
+}
 } // namespace ANI::Image
 
 TH_EXPORT_CPP_API_CreateImageSourceByUri(CreateImageSourceByUri);
@@ -1193,3 +1592,7 @@ TH_EXPORT_CPP_API_CreateImageSourceByFdOption(CreateImageSourceByFdOption);
 TH_EXPORT_CPP_API_CreateImageSourceByArrayBuffer(CreateImageSourceByArrayBuffer);
 TH_EXPORT_CPP_API_CreateImageSourceByArrayBufferOption(CreateImageSourceByArrayBufferOption);
 TH_EXPORT_CPP_API_CreateImageSourceByRawFileDescriptorOption(CreateImageSourceByRawFileDescriptorOption);
+TH_EXPORT_CPP_API_CreateIncrementalSourceByArrayBuffer(CreateIncrementalSourceByArrayBuffer);
+TH_EXPORT_CPP_API_CreateIncrementalSourceByArrayBufferOption(CreateIncrementalSourceByArrayBufferOption);
+TH_EXPORT_CPP_API_CreateImageSourceByPtr(CreateImageSourceByPtr);
+TH_EXPORT_CPP_API_GetImageSourceSupportedFormats(GetImageSourceSupportedFormats);

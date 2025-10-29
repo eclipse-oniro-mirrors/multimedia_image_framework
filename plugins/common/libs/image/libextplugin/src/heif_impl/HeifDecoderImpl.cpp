@@ -76,8 +76,10 @@ const static int IMAGE_ID = 123;
 
 const static uint16_t BT2020_PRIMARIES = 9;
 const static std::string HEIF_SHAREMEM_NAME = "HeifRawData";
-const static uint32_t LIMIT_RANGE_FLAG = 0;
+const static uint32_t FULL_RANGE_FLAG = 1;
 const static int INVALID_GRID_FLAG = -1;
+// The maximum recursion depth of heif iden type.
+const static uint32_t MAX_IDEN_RECURSION_COUNT = 300;
 
 const std::map<AuxiliaryPictureType, std::string> HEIF_AUXTTYPE_ID_MAP = {
     {AuxiliaryPictureType::GAINMAP, HEIF_AUXTTYPE_ID_GAINMAP},
@@ -260,6 +262,10 @@ bool HeifDecoderImpl::setAuxiliaryMap(AuxiliaryPictureType type)
 {
     bool cond = auxiliaryImage_ == nullptr && !CheckAuxiliaryMap(type);
     CHECK_ERROR_RETURN_RET_LOG(cond, false, "make heif parser failed");
+    isPictureGainmap_ = false;
+    if (type == AuxiliaryPictureType::GAINMAP) {
+        isPictureGainmap_ = true;
+    }
     InitFrameInfo(&auxiliaryImageInfo_, auxiliaryImage_);
     InitGridInfo(auxiliaryImage_, auxiliaryGridInfo_);
     return true;
@@ -342,7 +348,7 @@ bool HeifDecodeImpl::SeekRefGridRangeInfo(const std::shared_ptr<HeifImage> &imag
     int range = firstTileImage->GetColorRangeFlag();
     image->setColorRangeFlag(range);
     IMAGE_LOGD("set grid from ref grid is %{public}d", range);
-    return false;
+    return true;
 }
 
 void HeifDecoderImpl::InitGridInfo(const std::shared_ptr<HeifImage> &image, GridInfo &gridInfo)
@@ -353,22 +359,29 @@ void HeifDecoderImpl::InitGridInfo(const std::shared_ptr<HeifImage> &image, Grid
     }
     gridInfo.displayWidth = image->GetOriginalWidth();
     gridInfo.displayHeight = image->GetOriginalHeight();
+    uint32_t recursionCount = 0;
+    GetTileSize(image, gridInfo, recursionCount);
+    GetRowColNum(gridInfo);
     if (image->GetColorRangeFlag() == INVALID_GRID_FLAG) {
         if (!SeekRefGridRangeInfo(image)) {
             IMAGE_LOGD("HeifDecoderImpl:: InitGridInfo Failed to get range value");
+            return;
         }
     }
     gridInfo.colorRangeFlag = image->GetColorRangeFlag();
-    GetTileSize(image, gridInfo);
-    GetRowColNum(gridInfo);
+    IMAGE_LOGD("HeifDecoderImpl::InitGridInfo gridInfo.colorRangeFlag: %{public}d", gridInfo.colorRangeFlag);
 }
 
-void HeifDecoderImpl::GetTileSize(const std::shared_ptr<HeifImage> &image, GridInfo &gridInfo)
+void HeifDecoderImpl::GetTileSize(const std::shared_ptr<HeifImage> &image,
+    GridInfo &gridInfo, uint32_t &recursionCount)
 {
     if (!image) {
         IMAGE_LOGE("GetTileSize image is null");
         return;
     }
+    recursionCount++;
+    bool cond = recursionCount > MAX_IDEN_RECURSION_COUNT;
+    CHECK_ERROR_RETURN(cond);
 
     std::string imageType = parser_->GetItemType(image->GetItemId());
     if (imageType == "hvc1") {
@@ -380,7 +393,7 @@ void HeifDecoderImpl::GetTileSize(const std::shared_ptr<HeifImage> &image, GridI
         std::shared_ptr<HeifImage> idenImage;
         parser_->GetIdenImage(image->GetItemId(), idenImage);
         if (idenImage != nullptr && idenImage != image) {
-            GetTileSize(idenImage, gridInfo);
+            GetTileSize(idenImage, gridInfo, recursionCount);
         }
         return;
     }
@@ -466,10 +479,10 @@ GSError HeifDecoderImpl::HwSetColorSpaceData(sptr<SurfaceBuffer>& buffer, GridIn
     auto colorSpaceSearch = ColorUtils::COLORSPACE_NAME_TO_COLORINFO_MAP.find(colorSpaceName_);
     CM_ColorSpaceInfo colorSpaceInfo =
         (colorSpaceSearch != ColorUtils::COLORSPACE_NAME_TO_COLORINFO_MAP.end()) ? colorSpaceSearch->second :
-        CM_ColorSpaceInfo {COLORPRIMARIES_BT601_P, TRANSFUNC_SRGB, MATRIX_BT601_P, RANGE_FULL};
-
-    if (!isColorSpaceFromCicp_) {
-        colorSpaceInfo.range = gridInfo.colorRangeFlag == LIMIT_RANGE_FLAG ? RANGE_LIMITED : RANGE_FULL;
+        CM_ColorSpaceInfo {COLORPRIMARIES_BT601_P, TRANSFUNC_BT709, MATRIX_BT601_P, RANGE_FULL};
+    // 1 : range -> RANGE_FULL, 0 : range -> RANGE_LIMITED
+    if (!isColorSpaceFromCicp_ && !isGainmapDecode_ && !isPictureGainmap_) {
+        colorSpaceInfo.range = gridInfo.colorRangeFlag == FULL_RANGE_FLAG ? RANGE_FULL : RANGE_LIMITED;
         IMAGE_LOGD("HwSetColorSpaceData gridInfo range : %{public}d", gridInfo.colorRangeFlag);
     }
     std::vector<uint8_t> colorSpaceInfoVec;
@@ -505,7 +518,7 @@ bool HeifDecoderImpl::decode(HeifFrameInfo *frameInfo)
     sptr<SurfaceBuffer> hwBuffer;
     IMAGE_LOGD("decode sapmpleSize:%{public}d", sampleSize_);
     bool decodeSuccess = HwDecodeImage(primaryImage_, gridInfo_, &hwBuffer, true);
-    if (decodeSuccess) {
+    if (hwBuffer && decodeSuccess) {
         ImageUtils::DumpDataIfDumpEnabled(reinterpret_cast<const char *>(hwBuffer->GetVirAddr()),
             hwBuffer->GetSize(), "heif_hardware_decode", IMAGE_ID);
     } else if (sampleSize_ != DEFAULT_SCALE_SIZE) {
@@ -1455,11 +1468,19 @@ bool HeifDecoderImpl::getTmapInfo(HeifFrameInfo* frameInfo)
     return true;
 }
 
+// Sets whether the color space is supported by the framework; called by ExtDecoder::CheckHdrType().
+void HeifDecoderImpl::SetColorSpaceSupportFlag(bool supported)
+{
+    colorSpaceMatched_ = supported;
+}
+
 HeifImageHdrType HeifDecoderImpl::getHdrType()
 {
     std::vector<uint8_t> uwaInfo = primaryImage_->GetUWAInfo();
-    if (primaryImage_->GetLumaBitNum() == LUMA_10_BIT && imageInfo_.hasNclxColor &&
-        imageInfo_.nclxColor.colorPrimaries == BT2020_PRIMARIES) {
+    IMAGE_LOGD("HeifDecoderImpl::getHdrType ColorSpaceName enum: %{public}d, colorSpaceMatched_: %{public}s",
+               colorSpaceName_, colorSpaceMatched_ ? "true" : "false");
+    if (primaryImage_->GetLumaBitNum() == LUMA_10_BIT && (colorSpaceMatched_ ||
+          (imageInfo_.hasNclxColor && imageInfo_.nclxColor.colorPrimaries == BT2020_PRIMARIES))) {
         return uwaInfo.empty() ? HeifImageHdrType::ISO_SINGLE : HeifImageHdrType::VIVID_SINGLE;
     }
     if (gainmapImage_ != nullptr) {

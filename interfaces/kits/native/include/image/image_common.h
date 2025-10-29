@@ -83,6 +83,36 @@ struct Image_Region {
  */
 typedef struct Image_Region Image_Region;
 
+/**
+ * @brief Defines the area of the image pixels to read or write.
+ *
+ * @since 22
+ */
+typedef struct Image_PositionArea {
+    /** Image pixels data that will be read or written. */
+    uint8_t *pixels;
+    /** Length of the image pixels data. */
+    size_t pixelsSize;
+    /** Offset for data reading or writing. */
+    uint32_t offset;
+    /** Number of bytes per row of the region. */
+    uint32_t stride;
+    /** Region to read or write. */
+    Image_Region region;
+} Image_PositionArea;
+
+/**
+ * @brief Defines the image scale ratio.
+ *
+ * @since 22
+ */
+typedef struct Image_Scale {
+    /** Scale ratio on the x-axis. */
+    float x;
+    /** Scale ratio on the y-axis. */
+    float y;
+} Image_Scale;
+
 #ifdef __cplusplus
 /**
  * @brief Defines the region of the image source to decode.
@@ -174,6 +204,11 @@ typedef enum {
      * @since 19
      */
     IMAGE_INVALID_PARAMETER = 7600206,
+    /**
+     * @error Unsupported data format
+     * @since 22
+     */
+    IMAGE_UNSUPPORTED_DATA_FORMAT = 7600207,
     /** failed to allocate memory */
     IMAGE_ALLOC_FAILED = 7600301,
     /** memory copy failed */
@@ -183,6 +218,16 @@ typedef enum {
      * @since 15
      */
     IMAGE_LOCK_UNLOCK_FAILED = 7600303,
+    /**
+     * @error Initialization failed
+     * @since 22
+     */
+    IMAGE_INIT_FAILED = 7600304,
+    /**
+     * @error Create PixelMap failed
+     * @since 22
+     */
+    IMAGE_CREATE_PIXELMAP_FAILED = 7600305,
     /**
      * @error unsupported allocator mode, e.g., use share memory to create a HDR image as only
      * DMA supported hdr metadata.

@@ -39,6 +39,7 @@ private:
     bool GetExifItemIdByHeifParser(std::shared_ptr<ImagePlugin::HeifParser> &parser,
         ImagePlugin::heif_item_id &exifItemId);
     uint32_t WriteMetadata(DataBuf &dataBuf);
+    uint32_t ReadCr3();
 };
 } // namespace Media
 } // namespace OHOS

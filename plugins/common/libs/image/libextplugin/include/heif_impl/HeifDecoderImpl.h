@@ -88,6 +88,7 @@ public:
     int32_t GetPrimaryLumaBitNum();
     bool IsGainmapDivisibleBySampleSize(uint32_t sampleSize);
     void setGainmapDstBuffer(uint8_t* dstBuffer, size_t rowStride, void *context);
+    void SetColorSpaceSupportFlag(bool supported);
 private:
     bool Reinit(HeifFrameInfo *frameInfo);
 
@@ -97,7 +98,7 @@ private:
 
     void InitGridInfo(const std::shared_ptr<HeifImage> &image, GridInfo &gridInfo);
 
-    void GetTileSize(const std::shared_ptr<HeifImage> &image, GridInfo &gridInfo);
+    void GetTileSize(const std::shared_ptr<HeifImage> &image, GridInfo &gridInfo, uint32_t &recursionCount);
 
     void GetRowColNum(GridInfo &gridInfo);
 
@@ -189,7 +190,7 @@ private:
     Media::PixelFormat gainmapOutPixelFormat_ = Media::PixelFormat::RGBA_8888;
     HeifFrameInfo imageInfo_{};
 
-    GridInfo gridInfo_ = {0, 0, false, 0, 0, 0, 0, 1};
+    GridInfo gridInfo_ = {0, 0, false, 0, 0, 0, 0, 0};
     uint8_t *srcMemory_ = nullptr;
     uint8_t *dstMemory_;
     size_t dstRowStride_;
@@ -213,21 +214,23 @@ private:
 
     std::shared_ptr<HeifImage> auxiliaryImage_ = nullptr;
     HeifFrameInfo auxiliaryImageInfo_{};
-    GridInfo auxiliaryGridInfo_ = {0, 0, false, 0, 0, 0, 0, 1};
+    GridInfo auxiliaryGridInfo_ = {0, 0, false, 0, 0, 0, 0, 0};
     uint8_t* auxiliaryDstMemory_;
     size_t auxiliaryDstRowStride_;
     size_t auxiliaryDstMemorySize_;
     bool isAuxiliaryDecode_ = false;
     bool isGainmapDecode_ = false;
+    bool isPictureGainmap_ = false;
     SurfaceBuffer *auxiliaryDstHwbuffer_;
     SurfaceBuffer *gainMapDstHwbuffer_;
     uint32_t sampleSize_ = 1;
     OHOS::ColorManager::ColorSpaceName colorSpaceName_ = ColorManager::ColorSpaceName::NONE;
     bool isColorSpaceFromCicp_ = false;
+    bool colorSpaceMatched_ = false;
     HeifFrameInfo tmapInfo_{};
     std::string errMsg_;
 
-    GridInfo gainmapGridInfo_ = {0, 0, false, 0, 0, 0, 0, 1};
+    GridInfo gainmapGridInfo_ = {0, 0, false, 0, 0, 0, 0, 0};
 };
 } // namespace ImagePlugin
 } // namespace OHOS

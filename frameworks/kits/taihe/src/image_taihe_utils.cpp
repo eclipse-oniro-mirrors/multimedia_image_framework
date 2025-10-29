@@ -29,23 +29,44 @@ void ImageTaiheUtils::HicheckerReport()
 #endif
 }
 
-void ImageTaiheUtils::ThrowExceptionError(const std::string errMsg)
+void ImageTaiheUtils::ThrowExceptionError(const std::string &errMsg)
 {
     IMAGE_LOGE("errMsg: %{public}s", errMsg.c_str());
     taihe::set_error(errMsg);
 }
 
-void ImageTaiheUtils::ThrowExceptionError(const int32_t errCode, const std::string errMsg)
+void ImageTaiheUtils::ThrowExceptionError(const int32_t errCode, const std::string &errMsg)
 {
     IMAGE_LOGE("errCode: %{public}d, errMsg: %{public}s", errCode, errMsg.c_str());
     taihe::set_business_error(errCode, errMsg);
 }
 
+bool ImageTaiheUtils::GetPropertyInt(ani_env *env, ani_object obj, const std::string &name, int32_t &value)
+{
+    CHECK_ERROR_RETURN_RET_LOG(env == nullptr || obj == nullptr, false, "%{public}s param is nullptr", __func__);
+    ani_int result {};
+    CHECK_ERROR_RETURN_RET_LOG(ANI_OK != env->Object_GetPropertyByName_Int(obj, name.c_str(), &result), false,
+        "%{public}s Object_GetPropertyByName_Int failed.", __func__);
+    value = static_cast<int32_t>(result);
+    return true;
+}
+
+bool ImageTaiheUtils::GetPropertyLong(ani_env *env, ani_object obj, const std::string &name, int64_t &value)
+{
+    CHECK_ERROR_RETURN_RET_LOG(env == nullptr || obj == nullptr, false, "%{public}s param is nullptr", __func__);
+    ani_long result {};
+    CHECK_ERROR_RETURN_RET_LOG(ANI_OK != env->Object_GetPropertyByName_Long(obj, name.c_str(), &result), false,
+        "%{public}s Object_GetPropertyByName_Long failed.", __func__);
+    value = static_cast<int64_t>(result);
+    return true;
+}
+
 bool ImageTaiheUtils::GetPropertyDouble(ani_env *env, ani_object obj, const std::string &name, double &value)
 {
     CHECK_ERROR_RETURN_RET_LOG(env == nullptr || obj == nullptr, false, "%{public}s param is nullptr", __func__);
-    ani_double result;
-    env->Object_GetPropertyByName_Double(obj, name.c_str(), &result);
+    ani_double result {};
+    CHECK_ERROR_RETURN_RET_LOG(ANI_OK != env->Object_GetPropertyByName_Double(obj, name.c_str(), &result), false,
+        "%{public}s Object_GetPropertyByName_Long failed.", __func__);
     value = static_cast<double>(result);
     return true;
 }
@@ -54,6 +75,7 @@ ani_object ImageTaiheUtils::ToBusinessError(ani_env *env, int32_t code, const st
 {
     ani_object err {};
     ani_class cls {};
+    CHECK_ERROR_RETURN_RET_LOG(env == nullptr, nullptr, "get_env failed");
     CHECK_ERROR_RETURN_RET_LOG(ANI_OK != env->FindClass(CLASS_NAME_BUSINESSERROR, &cls), err,
         "find class %{public}s failed", CLASS_NAME_BUSINESSERROR);
     ani_method ctor {};
@@ -63,7 +85,7 @@ ani_object ImageTaiheUtils::ToBusinessError(ani_env *env, int32_t code, const st
     CHECK_ERROR_RETURN_RET_LOG(ANI_OK != env->Object_New(cls, ctor, &error), err,
         "new object %{public}s failed", CLASS_NAME_BUSINESSERROR);
     CHECK_ERROR_RETURN_RET_LOG(
-        ANI_OK != env->Object_SetPropertyByName_Double(error, "code", static_cast<ani_double>(code)), err,
+        ANI_OK != env->Object_SetPropertyByName_Int(error, "code", static_cast<ani_int>(code)), err,
         "set property BusinessError.code failed");
     ani_string messageRef {};
     CHECK_ERROR_RETURN_RET_LOG(ANI_OK != env->String_NewUTF8(message.c_str(), message.size(), &messageRef), err,
@@ -139,6 +161,20 @@ uintptr_t ImageTaiheUtils::GetUndefinedPtr(ani_env *env)
     return reinterpret_cast<uintptr_t>(undefinedObj);
 }
 
+OHOS::MessageParcel* ImageTaiheUtils::UnwrapMessageParcel(uintptr_t sequence)
+{
+    ani_env* env = get_env();
+    CHECK_ERROR_RETURN_RET_LOG(env == nullptr, nullptr, "get_env failed");
+    ani_long messageParcel{};
+    ani_status status = env->Object_CallMethodByName_Long(reinterpret_cast<ani_object>(sequence), "getNativePtr",
+        nullptr, &messageParcel);
+    if (status != ANI_OK) {
+        IMAGE_LOGE("UnwrapMessageParcel failed, status: %{public}d", status);
+        return nullptr;
+    }
+    return reinterpret_cast<OHOS::MessageParcel*>(messageParcel);
+}
+
 template <typename EnumType, typename ValueType>
 bool ImageTaiheUtils::GetEnumKeyByValue(ValueType value, typename EnumType::key_t &key)
 {
@@ -149,6 +185,12 @@ bool ImageTaiheUtils::GetEnumKeyByValue(ValueType value, typename EnumType::key_
         }
     }
     return false;
+}
+
+template <typename T>
+bool ImageTaiheUtils::IsValidPtr(T data)
+{
+    return !data.is_error();
 }
 
 template
@@ -166,4 +208,16 @@ bool ImageTaiheUtils::GetEnumKeyByValue<PropertyKey, std::string>(std::string va
 template
 bool ImageTaiheUtils::GetEnumKeyByValue<AuxiliaryPictureType, int32_t>(int32_t value,
     typename AuxiliaryPictureType::key_t &key);
+
+template
+bool ImageTaiheUtils::GetEnumKeyByValue<ComponentType, int32_t>(int32_t value, typename ComponentType::key_t &key);
+
+template
+bool ImageTaiheUtils::IsValidPtr<weak::PixelMap>(weak::PixelMap data);
+
+template
+bool ImageTaiheUtils::IsValidPtr<weak::ImageSource>(weak::ImageSource data);
+
+template
+bool ImageTaiheUtils::IsValidPtr<weak::Picture>(weak::Picture data);
 } // namespace ANI::Image

@@ -1373,5 +1373,28 @@ HWTEST_F(JpegExifMetadataAccessorTest, TestWriteAndReadFnumberWithTwoDecimal001,
     ASSERT_EQ(imageAccessor.Read(), 0);
     ASSERT_EQ(GetProperty(exifMetadata, "FNumber"), "f/1.8");
 }
+
+/**
+ * @tc.name: TestWriteAndReadHwTagAnnotationEdit001
+ * @tc.desc: test write and read exif tag AnnotationEdit.
+ * @tc.type: FUNC
+ */
+HWTEST_F(JpegExifMetadataAccessorTest, TestWriteAndReadHwTagAnnotationEdit001, TestSize.Level3)
+{
+    std::shared_ptr<MetadataStream> readStream = std::make_shared<FileMetadataStream>(IMAGE_INPUT_WRITE21_JPEG_PATH);
+    ASSERT_TRUE(readStream->Open(OpenMode::ReadWrite));
+    JpegExifMetadataAccessor imageAccessor(readStream);
+    ASSERT_EQ(imageAccessor.Read(), 0);
+    auto exifMetadata = imageAccessor.Get();
+    ASSERT_NE(exifMetadata, nullptr);
+    ASSERT_TRUE(exifMetadata->SetValue("HwMnoteAnnotationEdit", "1"));
+    ASSERT_EQ(imageAccessor.Write(), 0);
+    ASSERT_EQ(imageAccessor.Read(), 0);
+    ASSERT_EQ(GetProperty(exifMetadata, "HwMnoteAnnotationEdit"), "1");
+    ASSERT_TRUE(exifMetadata->SetValue("HwMnoteAnnotationEdit", "2"));
+    ASSERT_EQ(imageAccessor.Write(), 0);
+    ASSERT_EQ(imageAccessor.Read(), 0);
+    ASSERT_EQ(GetProperty(exifMetadata, "HwMnoteAnnotationEdit"), "2");
+}
 } // namespace Multimedia
 } // namespace OHOS

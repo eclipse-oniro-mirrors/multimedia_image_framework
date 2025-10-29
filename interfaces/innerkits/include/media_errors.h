@@ -168,6 +168,23 @@ const int32_t ERR_MEDIA_INVALID_REGION = 7600204; // Invalid Region
 const int32_t ERR_MEDIA_UNSUPPORTED_MEMORY_FORMAT = 7600205; // Unsupported memory format
 const int32_t ERR_MEDIA_MEMORY_ALLOC_FAILED = 7600301; // Memory alloc failed
 const int32_t ERR_MEDIA_MEMORY_COPY_FAILED = 7600302; // Memory copy failed
+const int32_t ERR_IMAGE_WRITE_PROPERTY_FAILED = 7700304; // Failed to write image properties to the file
 }  // namespace Media
+}  // namespace OHOS
+
+namespace OHOS {
+namespace ImagePlugin {
+enum JpegYuvDecodeError {
+    JpegYuvDecodeError_Unknown = -1,
+    JpegYuvDecodeError_Success = 0,
+    JpegYuvDecodeError_InvalidParameter,
+    JpegYuvDecodeError_DecodeFailed,
+    JpegYuvDecodeError_BadImage,
+    JpegYuvDecodeError_SubSampleNotSupport,
+    JpegYuvDecodeError_MemoryMallocFailed,
+    JpegYuvDecodeError_MemoryNotEnoughToSaveResult,
+    JpegYuvDecodeError_ConvertError,
+};
+}  // namespace ImagePlugin
 }  // namespace OHOS
 #endif  // INTERFACES_INNERKITS_INCLUDE_MEDIA_ERRORS_H

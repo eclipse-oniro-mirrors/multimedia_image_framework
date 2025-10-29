@@ -128,6 +128,7 @@ private:
     std::shared_ptr<HDI::Codec::Image::V2_1::ImageItem> AssembleGainmapImageItem(sptr<SurfaceBuffer>& surfaceBuffer,
         ColorManager::ColorSpaceName color, const PlEncodeOptions& opts);
 
+    GSError HwSetColorSpaceData(Media::PixelMap* pixelmap, sptr<SurfaceBuffer>& buffer);
     uint32_t AssembleSdrImageItem(sptr<SurfaceBuffer>& surfaceBuffer, SkImageInfo sdrInfo,
         std::vector<HDI::Codec::Image::V2_1::ImageItem>& inputImgs);
     uint32_t AssembleHeifHdrPicture(
@@ -168,7 +169,7 @@ private:
     uint32_t EncodeHeifByPixelmap(Media::PixelMap* pixelmap, const PlEncodeOptions& opts);
     void RecycleResources();
 
-    SkEncodedImageFormat encodeFormat_ = SkEncodedImageFormat::kJPEG;
+    SkEncodedImageFormat encodeFormat_ = SkEncodedImageFormat::kBMP;
     OutputDataStream* output_ = nullptr;
     PlEncodeOptions opts_;
     Media::PixelMap* pixelmap_ = nullptr;

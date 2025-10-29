@@ -131,7 +131,7 @@ heif_error HeifParser::AssembleBoxes(HeifStreamReader &reader)
     }
 
     hdlrBox_ = metaBox_->GetChild<HeifHdlrBox>(BOX_TYPE_HDLR);
-    if (!hdlrBox_ || (hdlrBox_ && hdlrBox_->GetHandlerType() != HANDLER_TYPE_PICT)) {
+    if (!hdlrBox_ || hdlrBox_->GetHandlerType() != HANDLER_TYPE_PICT) {
         return heif_error_invalid_handler;
     }
 

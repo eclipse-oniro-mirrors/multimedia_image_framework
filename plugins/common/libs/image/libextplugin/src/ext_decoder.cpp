@@ -52,7 +52,10 @@
 #include "heif_impl/HeifDecoder.h"
 #include "heif_impl/HeifDecoderImpl.h"
 #endif
+#include "buffer_source_stream.h"
 #include "color_utils.h"
+#include "cr3_format_agent.h"
+#include "cr3_parser.h"
 #include "heif_parser.h"
 #include "heif_format_agent.h"
 #include "image_trace.h"
@@ -329,7 +332,6 @@ uint32_t ExtDecoder::DmaMemAlloc(DecodeContext &context, uint64_t count, SkImage
 #else
     BufferRequestConfig requestConfig = CreateDmaRequestConfig(dstInfo, count, context.info.pixelFormat);
     if (context.useNoPadding) {
-        IMAGE_LOGI("%{public}s no padding enabled", __func__);
         requestConfig.usage |= BUFFER_USAGE_PREFER_NO_PADDING | BUFFER_USAGE_ALLOC_NO_IPC;
     }
     return DmaAlloc(context, count, requestConfig);
@@ -508,10 +510,12 @@ void ExtDecoder::SetSource(InputDataStream &sourceStream)
 void ExtDecoder::Reset()
 {
     stream_ = nullptr;
+    previewStream_.reset();
     codec_ = nullptr;
     dstInfo_.reset();
     dstSubset_ = SkIRect::MakeEmpty();
     info_.reset();
+    rawEncodedFormat_.clear();
 }
 
 static inline float Max(float a, float b)
@@ -792,6 +796,24 @@ static bool IsSampleDecodeFormat(SkEncodedImageFormat format)
         format == SkEncodedImageFormat::kPNG;
 }
 
+bool ExtDecoder::IsProgressiveJpeg()
+{
+    bool cond = CheckCodec();
+    CHECK_ERROR_RETURN_RET_LOG(!cond, false, "%{public}s check codec fail", __func__);
+
+    bool isProgressive = false;
+    if (codec_->getEncodedFormat() == SkEncodedImageFormat::kJPEG) {
+        SkJpegCodec* codec = static_cast<SkJpegCodec*>(codec_.get());
+        cond = (codec == nullptr || codec->decoderMgr() == nullptr|| codec->decoderMgr()->dinfo() == nullptr);
+        CHECK_ERROR_RETURN_RET_LOG(cond, false, "%{public}s invalid SkJpegCodec", __func__);
+
+        struct jpeg_decompress_struct* dInfo = codec->decoderMgr()->dinfo();
+        isProgressive = dInfo->progressive_mode;
+        CHECK_DEBUG_PRINT_LOG(isProgressive, "%{public}s image is progressive JPEG", __func__);
+    }
+    return isProgressive;
+}
+
 uint32_t ExtDecoder::CheckDecodeOptions(uint32_t index, const PixelDecodeOptions &opts)
 {
     bool cond = ImageUtils::CheckMulOverflow(dstInfo_.width(), dstInfo_.height(), dstInfo_.bytesPerPixel());
@@ -809,7 +831,7 @@ uint32_t ExtDecoder::CheckDecodeOptions(uint32_t index, const PixelDecodeOptions
     IMAGE_LOGD("%{public}s srcOverflowed: %{public}d, dstOverflowed: %{public}d, supportRegionFlag_: %{public}d",
         __func__, srcOverflowed, dstOverflowed, supportRegionFlag_);
     cond = dstOverflowed;
-    if (!IsSampleDecodeFormat(codec_->getEncodedFormat())) {
+    if (IsProgressiveJpeg() || !IsSampleDecodeFormat(codec_->getEncodedFormat())) {
         cond = cond || srcOverflowed;
     }
     CHECK_ERROR_RETURN_RET_LOG(cond, ERR_IMAGE_TOO_LARGE,
@@ -897,6 +919,8 @@ uint32_t ExtDecoder::SetDecodeOptions(uint32_t index, const PixelDecodeOptions &
         dstHeight = opts.desiredSize.height;
     }
 #endif
+    cond = codec_ == nullptr;
+    CHECK_ERROR_RETURN_RET_LOG(cond, ERR_IMAGE_INVALID_PARAMETER, "codec_ is nullptr");
     if (codec_->getEncodedFormat() != SkEncodedImageFormat::kHEIF) {
         if (IsLowDownScale(opts.desiredSize, info_) && GetScaledSize(dstWidth, dstHeight, scale)) {
             dstInfo_ = SkImageInfo::Make(dstWidth, dstHeight, desireColor, desireAlpha,
@@ -960,8 +984,10 @@ static uint64_t GetByteSize(int32_t width, int32_t height)
 
 static void UpdateContextYuvInfo(DecodeContext &context, DestConvertInfo &destInfo)
 {
-    context.yuvInfo.yWidth = static_cast<uint32_t>(destInfo.width);
-    context.yuvInfo.yHeight = static_cast<uint32_t>(destInfo.height);
+    context.yuvInfo.imageSize.width = static_cast<int32_t>(destInfo.width);
+    context.yuvInfo.imageSize.height = static_cast<int32_t>(destInfo.height);
+    context.yuvInfo.yWidth = destInfo.width;
+    context.yuvInfo.yHeight = destInfo.height;
     context.yuvInfo.yStride = destInfo.yStride;
     context.yuvInfo.uvWidth = static_cast<uint32_t>((destInfo.width + 1) / NUM_2);
     context.yuvInfo.uvHeight = static_cast<uint32_t>((destInfo.height + 1) / NUM_2);
@@ -1143,7 +1169,7 @@ void ExtDecoder::FillYuvInfo(DecodeContext &context, SkImageInfo &dstInfo)
 #ifdef HEIF_HW_DECODE_ENABLE
 bool SetOutPutFormat(OHOS::Media::PixelFormat pixelFormat, HeifDecoderImpl* decoder)
 {
-    bool ret = true;
+    bool ret = false;
     if (pixelFormat == PixelFormat::RGB_565) {
         ret = decoder->setOutputColor(kHeifColorFormat_RGB565);
     } else if (pixelFormat == PixelFormat::RGBA_8888) {
@@ -1541,6 +1567,7 @@ uint32_t ExtDecoder::DoHeifToRgbDecode(OHOS::ImagePlugin::DecodeContext &context
     if (IsHeifRegionDecode()) {
         UpdateHeifRegionDstInfo(context);
     }
+    CHECK_ERROR_RETURN_RET(!SetOutPutFormat(context.info.pixelFormat, decoder), ERR_IMAGE_DECODE_ABNORMAL);
     uint64_t byteCount = dstInfo_.computeMinByteSize();
     if (ImageUtils::IsSdrPixelMapReuseSuccess(context, info_.width(), info_.height(), reusePixelmap_)) {
         IMAGE_LOGI("HEIF RGB Maindecode reusePixelmap success");
@@ -1560,7 +1587,6 @@ uint32_t ExtDecoder::DoHeifToRgbDecode(OHOS::ImagePlugin::DecodeContext &context
     decoder->SetSampleFormat(sampleSize_, heifColorSpaceName_, heifIsColorSpaceFromCicp_);
     decoder->setDstBuffer(reinterpret_cast<uint8_t *>(context.pixelsBuffer.buffer),
         dstBuffer->GetStride(), context.pixelsBuffer.context);
-    SetOutPutFormat(context.info.pixelFormat, decoder);
     bool decodeRet = decoder->decode(nullptr);
     if (!decodeRet && sampleSize_ != DEFAULT_SAMPLE_SIZE) {
         decodeRet = DoHeifSwDecode(context);
@@ -1697,6 +1723,7 @@ uint32_t ExtDecoder::Decode(uint32_t index, DecodeContext &context)
         ImageUtils::FlushContextSurfaceBuffer(context);
         return res;
     }
+    CHECK_ERROR_RETURN_RET_LOG(codec_ == nullptr, ERR_IMAGE_DECODE_FAILED, "codec_ is nullptr");
     SkCodec::Result ret = codec_->getPixels(dstInfo_, dstBuffer, rowStride, &dstOptions_);
     if (ret == SkCodec::kIncompleteInput || ret == SkCodec::kErrorInInput) {
         IMAGE_LOGI("Decode broken data success. Triggered kIncompleteInput feature of skia!");
@@ -1798,6 +1825,7 @@ uint32_t ExtDecoder::DecodeToYuv420(uint32_t index, DecodeContext &context)
     int retDecode = jpegYuvDecoder_->DoDecode(context, para);
     if (retDecode != JpegYuvDecodeError_Success) {
         IMAGE_LOGE("DecodeToYuv420 DoDecode return %{public}d", retDecode);
+        FreeContextBuffer(context.freeFunc, context.allocatorType, context.pixelsBuffer);
     } else {
         // update yuv outInfo if decode success, same as jpeg hardware decode
         context.outInfo.size = desiredSize;
@@ -2098,6 +2126,7 @@ uint32_t ExtDecoder::GetFramePixels(SkImageInfo& info, uint8_t* buffer, uint64_t
     }
     // Try again
     ResetCodec();
+    CHECK_ERROR_RETURN_RET_LOG(codec_ == nullptr, ERR_IMAGE_DECODE_FAILED, "codec_ is nullptr");
     ret = codec_->getPixels(info, buffer, rowStride, &options);
     cond = (ret != SkCodec::kSuccess && ret != SkCodec::kIncompleteInput && ret != SkCodec::kErrorInInput);
     CHECK_ERROR_RETURN_RET_LOG(cond, ERR_IMAGE_DECODE_ABNORMAL,
@@ -2157,6 +2186,51 @@ uint32_t ExtDecoder::PromoteIncrementalDecode(uint32_t index, ProgDecodeContext 
     return ERR_IMAGE_DATA_UNSUPPORT;
 }
 
+bool ExtDecoder::IsCr3Format()
+{
+    int32_t apiVersion = ImageUtils::GetAPIVersion();
+    CHECK_ERROR_RETURN_RET_LOG(apiVersion < APIVERSION_20, false,
+        "%{public}s unsupport Cr3 format under API version: %{public}d", __func__, apiVersion);
+
+    CHECK_ERROR_RETURN_RET_LOG(stream_ == nullptr, false, "%{public}s invalid stream", __func__);
+    uint32_t originOffset = stream_->Tell();
+    stream_->Seek(0);
+    Cr3FormatAgent cr3Agent;
+    ImagePlugin::DataStreamBuffer buffer;
+    bool peekRet = stream_->Peek(cr3Agent.GetHeaderSize(), buffer);
+    stream_->Seek(originOffset);
+    CHECK_ERROR_RETURN_RET_LOG(!peekRet, false, "%{public}s peek header stream failed", __func__);
+
+    return cr3Agent.CheckFormat(buffer.inputStreamBuffer, buffer.dataSize);
+}
+
+bool ExtDecoder::MakeCr3Codec()
+{
+    CHECK_ERROR_RETURN_RET_LOG(stream_ == nullptr, false, "%{public}s invalid stream", __func__);
+
+    uint32_t originOffset = stream_->Tell();
+    stream_->Seek(0);
+    ImagePlugin::DataStreamBuffer buffer;
+    bool cond = stream_->Peek(stream_->GetStreamSize(), buffer);
+    stream_->Seek(originOffset);
+    CHECK_ERROR_RETURN_RET_LOG(!cond, false, "%{public}s peek whole stream failed", __func__);
+
+    std::shared_ptr<Cr3Parser> parser = nullptr;
+    heif_error parseRet = Cr3Parser::MakeFromMemory(buffer.inputStreamBuffer, buffer.dataSize, false, parser);
+    cond = (parseRet != heif_error_ok || parser == nullptr);
+    CHECK_ERROR_RETURN_RET_LOG(cond, false, "%{public}s make cr3 parser failed, ret: %{public}d", __func__, parseRet);
+
+    Cr3DataInfo previewInfo = parser->GetPreviewImageInfo();
+    uint32_t offset = static_cast<uint32_t>(previewInfo.fileOffset);
+    cond = ImageUtils::HasOverflowed(offset, previewInfo.size) || offset + previewInfo.size > buffer.dataSize;
+    CHECK_ERROR_RETURN_RET_LOG(cond, false, "%{public}s invalid preview image info", __func__);
+    previewStream_ = BufferSourceStream::CreateSourceStream((buffer.inputStreamBuffer + offset), previewInfo.size);
+
+    SkCodec::Result skResult;
+    codec_ = SkJpegCodec::MakeFromStream(make_unique<ExtStream>(previewStream_.get()), &skResult);
+    return codec_ != nullptr;
+}
+
 bool ExtDecoder::CheckCodec()
 {
     if (codec_ != nullptr) {
@@ -2177,6 +2251,9 @@ bool ExtDecoder::CheckCodec()
 #endif
     if (codec_ == nullptr) {
         stream_->Seek(src_offset);
+        if (IsCr3Format()) {
+            return MakeCr3Codec();
+        }
         IMAGE_LOGD("create codec from stream failed");
         SetHeifParseError();
         return false;
@@ -2328,8 +2405,20 @@ static std::vector<ColorSpaceNameEnum> sColorSpaceNamedMap = {
     {"DCI P3", OHOS::ColorManager::ColorSpaceName::DCI_P3},
     {"sRGB", OHOS::ColorManager::ColorSpaceName::SRGB},
     {"BT.2020", OHOS::ColorManager::ColorSpaceName::BT2020},
-    {"Rec2020 Gamut with HLG Transfer", OHOS::ColorManager::ColorSpaceName::BT2020_HLG}
+    {"DCI-P3", OHOS::ColorManager::ColorSpaceName::DCI_P3},
+    {"Rec2020 Gamut with HLG Transfer", OHOS::ColorManager::ColorSpaceName::BT2020_HLG},
+    {"REC. 2020", OHOS::ColorManager::ColorSpaceName::BT2020_HLG}
 };
+
+// Determine if a ColorSpaceName is supported by current framework mapping
+static bool IsFrameworkSupportedColorSpace(OHOS::ColorManager::ColorSpaceName name)
+{
+    return std::any_of(sColorSpaceNamedMap.begin(), sColorSpaceNamedMap.end(),
+        [&name](const ColorSpaceNameEnum& colorSpaceName) {
+            return colorSpaceName.name == name &&
+                   colorSpaceName.desc.find("2020") != std::string::npos;
+        });
+}
 
 static bool MatchColorSpaceName(const uint8_t* buf, uint32_t size, OHOS::ColorManager::ColorSpaceName &name)
 {
@@ -2613,6 +2702,10 @@ uint32_t ExtDecoder::GetImagePropertyInt(uint32_t index, const std::string &key,
 
 bool ExtDecoder::IsRawFormat(std::string &name)
 {
+    if (rawEncodedFormat_.size() > 0) {
+        name = rawEncodedFormat_;
+        return true;
+    }
     CHECK_ERROR_RETURN_RET(stream_ == nullptr, false);
     ImagePlugin::DataStreamBuffer outData;
     uint32_t savedPosition = stream_->Tell();
@@ -2627,7 +2720,12 @@ bool ExtDecoder::IsRawFormat(std::string &name)
         piex::image_type_recognition::RawImageTypes type = RecognizeRawImageTypeLite(header_buffer);
         auto rawFormatNameIter = RAW_FORMAT_NAME.find(type);
         if (rawFormatNameIter != RAW_FORMAT_NAME.end() && !rawFormatNameIter->second.empty()) {
-            name = rawFormatNameIter->second;
+            rawEncodedFormat_ = rawFormatNameIter->second;
+        } else if (IsCr3Format()) {
+            rawEncodedFormat_ = IMAGE_CR3_FORMAT;
+        }
+        if (rawEncodedFormat_.size() > 0) {
+            name = rawEncodedFormat_;
             return true;
         }
     }
@@ -2782,6 +2880,11 @@ bool ExtDecoder::IsSupportHardwareDecode() {
     int width = info_.width();
     int height = info_.height();
     if (hwDecoderPtr_->IsHardwareDecodeSupported(IMAGE_JPEG_FORMAT, {width, height})) {
+        std::string encodedFormat;
+        if (IsRawFormat(encodedFormat)) {
+            IMAGE_LOGD("Raw format: %{public}s, turn to software decode", encodedFormat.c_str());
+            return false;
+        }
         if (width < HARDWARE_MID_DIM || height < HARDWARE_MID_DIM) {
             int remWidth = width % HARDWARE_ALIGN_SIZE;
             int remHeight = height % HARDWARE_ALIGN_SIZE;
@@ -2923,6 +3026,21 @@ ImageHdrType ExtDecoder::CheckHdrType()
         gainMapOffset_ = 0;
         return hdrType_;
     }
+
+// For HEIF, set color space support flag before checking HDR type.
+#ifdef HEIF_HW_DECODE_ENABLE
+    if (format == SkEncodedImageFormat::kHEIF) {
+        auto decoder = reinterpret_cast<HeifDecoderImpl*>(codec_->getHeifContext());
+        if (decoder) {
+            auto cs = GetSrcColorSpace();
+            decoder->SetColorSpaceSupportFlag(IsFrameworkSupportedColorSpace(heifColorSpaceName_));
+            IMAGE_LOGD("ExtDecoder::CheckHdrTypepreset cs: n=%{public}u cicp=%{public}d sup=%{public}d",
+                static_cast<unsigned int>(heifColorSpaceName_),
+                heifIsColorSpaceFromCicp_, IsFrameworkSupportedColorSpace(heifColorSpaceName_));
+        }
+    }
+#endif
+
     hdrType_ = HdrHelper::CheckHdrType(codec_.get(), gainMapOffset_);
     if (hdrType_ <= Media::ImageHdrType::SDR || format != SkEncodedImageFormat::kJPEG) {
         return hdrType_;

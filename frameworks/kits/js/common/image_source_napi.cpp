@@ -844,6 +844,10 @@ static napi_value DoInit(napi_env env, napi_value exports, struct ImageConstruct
         IMAGE_LOGE("create reference fail");
         return nullptr;
     }
+    auto ctorContext = new NapiConstructorContext();
+    ctorContext->env_ = env;
+    ctorContext->ref_ = *(info.classRef);
+    napi_add_env_cleanup_hook(env, ImageNapiUtils::CleanUpConstructorContext, ctorContext);
 
     napi_value global = nullptr;
     status = napi_get_global(env, &global);
@@ -879,6 +883,7 @@ std::vector<napi_property_descriptor> ImageSourceNapi::RegisterNapi()
         DECLARE_NAPI_FUNCTION("getImageInfoSync", GetImageInfoSync),
         DECLARE_NAPI_FUNCTION("modifyImageProperty", ModifyImageProperty),
         DECLARE_NAPI_FUNCTION("modifyImageProperties", ModifyImageProperty),
+        DECLARE_NAPI_FUNCTION("modifyImagePropertiesEnhanced", ModifyImagePropertiesEnhanced),
         DECLARE_NAPI_FUNCTION("getImageProperty", GetImageProperty),
         DECLARE_NAPI_FUNCTION("getImagePropertySync", GetImagePropertySync),
         DECLARE_NAPI_FUNCTION("getImageProperties", GetImageProperty),
@@ -1673,6 +1678,7 @@ napi_value ImageSourceNapi::GetImageInfo(napi_env env, napi_callback_info info)
             auto context = static_cast<ImageSourceAsyncContext*>(data);
             int index = (context->index >= NUM_0) ? context->index : NUM_0;
             context->status = context->rImageSource->GetImageInfo(index, context->imageInfo);
+            context->rImageSource->IsHdrImage();
         }, GetImageInfoComplete, asyncContext, asyncContext->work);
 
     IMG_NAPI_CHECK_RET_D(IMG_IS_OK(status),
@@ -2533,6 +2539,81 @@ napi_value ImageSourceNapi::ModifyImageProperty(napi_env env, napi_callback_info
     return result;
 }
 
+static void ModifyImagePropertiesEnhancedExecute(napi_env env, void *data)
+{
+    IMAGE_LOGI("ModifyImagePropertiesEnhanced start.");
+    auto start = std::chrono::high_resolution_clock::now();
+    auto context = static_cast<ImageSourceAsyncContext*>(data);
+    if (context == nullptr || context->rImageSource == nullptr) {
+        IMAGE_LOGE("empty context");
+        return;
+    }
+
+    context->status = context->rImageSource->ModifyImagePropertiesEx(0, context->kVStrArray);
+    if (context->status != SUCCESS) {
+        auto unsupportedKeys = context->rImageSource->GetModifyExifUnsupportedKeys();
+        if (!unsupportedKeys.empty()) {
+            context->errMsg = "Failed to modify unsupported keys:";
+            for (auto &key : unsupportedKeys) {
+                context->errMsg.append(" ").append(key);
+            }
+        }
+    }
+    auto end = std::chrono::high_resolution_clock::now();
+    auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
+    IMAGE_LOGI("ModifyImagePropertiesEnhanced end, cost: %{public}llu ms", duration.count());
+}
+
+static void ModifyImagePropertiesEnhancedComplete(napi_env env, napi_status status, ImageSourceAsyncContext *context)
+{
+    if (context == nullptr) {
+        IMAGE_LOGE("context is nullptr");
+        return;
+    }
+
+    napi_value result[NUM_2] = {0};
+    napi_get_undefined(env, &result[NUM_0]);
+    napi_get_undefined(env, &result[NUM_1]);
+
+    if (context->status == SUCCESS) {
+        napi_resolve_deferred(env, context->deferred, result[NUM_1]);
+    } else {
+        const auto &[errCode, errMsg] = ImageErrorConvert::ModifyImagePropertiesEnhancedMakeErrMsg(context->status,
+            context->errMsg);
+        ImageNapiUtils::CreateErrorObj(env, result[NUM_0], errCode, errMsg);
+        napi_reject_deferred(env, context->deferred, result[NUM_0]);
+    }
+
+    napi_delete_async_work(env, context->work);
+    delete context;
+    context = nullptr;
+    IMAGE_LOGI("ModifyImagePropertiesEnhancedComplete end.");
+}
+
+napi_value ImageSourceNapi::ModifyImagePropertiesEnhanced(napi_env env, napi_callback_info info)
+{
+    napi_value result = nullptr;
+    napi_get_undefined(env, &result);
+
+    napi_status status;
+    std::unique_ptr<ImageSourceAsyncContext> asyncContext = UnwrapContextForModify(env, info);
+    if (asyncContext == nullptr) {
+        return ImageNapiUtils::ThrowExceptionError(env, ERR_IMAGE_WRITE_PROPERTY_FAILED,
+            "async context unwrap failed");
+    }
+
+    napi_create_promise(env, &(asyncContext->deferred), &result);
+    IMG_CREATE_CREATE_ASYNC_WORK(env, status, "ModifyImagePropertiesEnhanced",
+        ModifyImagePropertiesEnhancedExecute,
+        reinterpret_cast<napi_async_complete_callback>(ModifyImagePropertiesEnhancedComplete),
+        asyncContext,
+        asyncContext->work);
+
+    IMG_NAPI_CHECK_RET_D(IMG_IS_OK(status),
+        nullptr, IMAGE_LOGE("fail to create async work"));
+    return result;
+}
+
 napi_value ImageSourceNapi::GetImageProperty(napi_env env, napi_callback_info info)
 {
     ImageTrace imageTrace("ImageSourceNapi::GetImageProperty");
@@ -3246,6 +3327,50 @@ int32_t ImageSourceNapi::CreateImageSourceNapi(napi_env env, napi_value* result)
         return ERR_IMAGE_DATA_ABNORMAL;
     }
     return SUCCESS;
+}
+
+napi_value ImageSourceNapi::CreateImageSourceNapi(napi_env env, std::shared_ptr<ImageSource> imageSource)
+{
+    if (sConstructor_ == nullptr) {
+        napi_value exports = nullptr;
+        napi_create_object(env, &exports);
+        ImageSourceNapi::Init(env, exports);
+    }
+    napi_value constructor = nullptr;
+    napi_value result = nullptr;
+    napi_status status = napi_get_reference_value(env, sConstructor_, &constructor);
+    if (IMG_IS_OK(status)) {
+        if (imageSource != nullptr) {
+            sImgSrc_ = std::move(imageSource);
+            status = napi_new_instance(env, constructor, NUM_0, nullptr, &result);
+        } else {
+            status = napi_invalid_arg;
+            IMAGE_LOGE("New ImageSourceNapi Instance imageSource is nullptr");
+            napi_get_undefined(env, &result);
+        }
+    }
+    if (!IMG_IS_OK(status)) {
+        IMAGE_LOGE("CreateImageSource | New instance could not be obtained");
+        napi_get_undefined(env, &result);
+    }
+    return result;
+}
+
+extern "C" {
+napi_value GetImageSourceNapi(napi_env env, std::shared_ptr<ImageSource> imageSource)
+{
+    return ImageSourceNapi::CreateImageSourceNapi(env, imageSource);
+}
+
+bool GetNativeImageSource(void *imageSourceNapi, std::shared_ptr<ImageSource> &imageSource)
+{
+    if (imageSourceNapi == nullptr) {
+        IMAGE_LOGE("%{public}s imageSourceNapi is nullptr", __func__);
+        return false;
+    }
+    imageSource = reinterpret_cast<ImageSourceNapi*>(imageSourceNapi)->nativeImgSrc;
+    return true;
+}
 }
 
 void ImageSourceNapi::SetIncrementalPixelMap(std::shared_ptr<IncrementalPixelMap> incrementalPixelMap)

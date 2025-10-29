@@ -268,6 +268,10 @@ napi_value PictureNapi::Init(napi_env env, napi_value exports)
     IMG_NAPI_CHECK_RET_D(IMG_IS_OK(napi_create_reference(env, constructor, 1, &sConstructor_)),
         nullptr, IMAGE_LOGE("create reference fail")
     );
+    auto ctorContext = new NapiConstructorContext();
+    ctorContext->env_ = env;
+    ctorContext->ref_ = sConstructor_;
+    napi_add_env_cleanup_hook(env, ImageNapiUtils::CleanUpConstructorContext, ctorContext);
 
     napi_value global = nullptr;
     IMG_NAPI_CHECK_RET_D(IMG_IS_OK(napi_get_global(env, &global)), nullptr, IMAGE_LOGE("Init:get global fail"));
@@ -355,6 +359,23 @@ napi_value PictureNapi::CreatePicture(napi_env env, std::shared_ptr<Picture> &pi
     return result;
 }
 
+extern "C" {
+napi_value GetPictureNapi(napi_env env, std::shared_ptr<Picture> picture)
+{
+    return PictureNapi::CreatePicture(env, picture);
+}
+
+bool GetNativePicture(void *pictureNapi, std::shared_ptr<Picture> &picture)
+{
+    if (pictureNapi == nullptr) {
+        IMAGE_LOGE("%{public}s pictureNapi is nullptr", __func__);
+        return false;
+    }
+    picture = reinterpret_cast<PictureNapi*>(pictureNapi)->GetNativePicture();
+    return true;
+}
+}
+
 static AuxiliaryPictureType ParseAuxiliaryPictureType(int32_t val)
 {
     if (val >= static_cast<int32_t>(AuxiliaryPictureType::GAINMAP)
@@ -401,6 +422,11 @@ int32_t PictureNapi::CreatePictureNapi(napi_env env, napi_value* result)
 void PictureNapi::SetNativePicture(std::shared_ptr<Picture> picture)
 {
     nativePicture_ = picture;
+}
+
+std::shared_ptr<Picture> PictureNapi::GetNativePicture()
+{
+    return nativePicture_;
 }
 
 napi_value PictureNapi::GetAuxiliaryPicture(napi_env env, napi_callback_info info)

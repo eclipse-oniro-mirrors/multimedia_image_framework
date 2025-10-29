@@ -63,6 +63,7 @@
 #include "vpe_utils.h"
 #include "hdr_helper.h"
 #include "metadata_helper.h"
+#include "metadata_convertor.h"
 #endif
 #include "color_utils.h"
 #include "tiff_parser.h"
@@ -1217,6 +1218,26 @@ uint32_t ExtEncoder::AssembleHeifHdrPicture(
     return SUCCESS;
 }
 
+GSError ExtEncoder::HwSetColorSpaceData(Media::PixelMap* pixelmap, sptr<SurfaceBuffer>& buffer)
+{
+    bool cond = (buffer == nullptr || pixelmap == nullptr);
+    CHECK_ERROR_RETURN_RET_LOG(cond, GSERROR_NO_BUFFER, "HwSetColorSpaceData buffer or pixelmap is nullptr");
+    auto colorSpacename = pixelmap->InnerGetGrColorSpacePtr()->GetColorSpaceName();
+    auto colorSpaceSearch = ColorUtils::COLORSPACE_NAME_TO_COLORINFO_MAP.find(colorSpacename);
+    CM_ColorSpaceInfo colorSpaceInfo =
+        (colorSpaceSearch != ColorUtils::COLORSPACE_NAME_TO_COLORINFO_MAP.end()) ? colorSpaceSearch->second :
+        CM_ColorSpaceInfo {COLORPRIMARIES_BT601_P, TRANSFUNC_BT709, MATRIX_BT601_P, RANGE_FULL};
+    std::vector<uint8_t> colorSpaceInfoVec;
+    auto ret = MetadataManager::ConvertMetadataToVec(colorSpaceInfo, colorSpaceInfoVec);
+    cond = ret != GSERROR_OK;
+    CHECK_ERROR_RETURN_RET(cond, ret);
+
+    IMAGE_LOGI("Encode colorspace, Primaries:%{public}d, TransFunc:%{public}d, Matrix:%{public}d, Range:%{public}d",
+        colorSpaceInfo.primaries, colorSpaceInfo.transfunc,
+        colorSpaceInfo.matrix, colorSpaceInfo.range);
+    return buffer->SetMetadata(ATTRKEY_COLORSPACE_INFO, colorSpaceInfoVec);
+}
+
 uint32_t ExtEncoder::AssembleSdrImageItem(
     sptr<SurfaceBuffer>& surfaceBuffer, SkImageInfo sdrInfo, std::vector<ImageItem>& inputImgs)
 {
@@ -1232,6 +1253,12 @@ uint32_t ExtEncoder::AssembleSdrImageItem(
     CHECK_ERROR_RETURN_RET_LOG(cond, ERR_IMAGE_INVALID_PARAMETER,
         "%{public}s AssembleICCImageProperty failed", __func__);
     item.id = PRIMARY_IMAGE_ITEM_ID;
+    auto mainPixelMap = picture_->GetMainPixel();
+    cond = !mainPixelMap;
+    CHECK_ERROR_RETURN_RET_LOG(cond, ERR_IMAGE_DATA_ABNORMAL, "MainPixelMap is nullptr");
+    auto ret = HwSetColorSpaceData(mainPixelMap.get(), surfaceBuffer);
+    cond = (ret != GSERROR_OK);
+    CHECK_ERROR_RETURN_RET_LOG(cond, ERR_IMAGE_INVALID_PARAMETER, "HwSetColorSpaceInfo GetMetadata failed");
     item.pixelBuffer = sptr<NativeBuffer>::MakeSptr(surfaceBuffer->GetBufferHandle());
     item.isPrimary = true;
     item.isHidden = false;
@@ -2610,6 +2637,9 @@ std::shared_ptr<ImageItem> ExtEncoder::AssemblePrimaryImageItem(sptr<SurfaceBuff
     CHECK_ERROR_RETURN_RET_LOG(cond, nullptr, "AssemblePrimaryImageItem surfaceBuffer is nullptr");
     auto item = std::make_shared<ImageItem>();
     item->id = PRIMARY_IMAGE_ITEM_ID;
+    auto ret = HwSetColorSpaceData(pixelmap_, surfaceBuffer);
+    cond = (ret != GSERROR_OK);
+    CHECK_ERROR_RETURN_RET_LOG(cond, nullptr, "HwSetColorSpaceInfo GetMetadata failed");
     item->pixelBuffer = sptr<NativeBuffer>::MakeSptr(surfaceBuffer->GetBufferHandle());
     item->isPrimary = true;
     item->isHidden = false;

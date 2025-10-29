@@ -40,6 +40,7 @@
 #include "image_data_statistics.h"
 #endif
 #include "exif_metadata.h"
+#include "exif_metadata_formatter.h"
 #include "file_source_stream.h"
 #include "image/abs_image_decoder.h"
 #include "image/abs_image_format_agent.h"
@@ -684,9 +685,9 @@ static inline bool IsDensityChange(int32_t srcDensity, int32_t wantDensity)
 
 static inline int32_t GetScalePropByDensity(int32_t prop, int32_t srcDensity, int32_t wantDensity)
 {
-    bool cond = srcDensity != 0;
-    int32_t ret = (prop * wantDensity + (srcDensity >> 1)) / srcDensity;
-    CHECK_ERROR_RETURN_RET(cond, ret);
+    if (srcDensity != 0) {
+        return (prop * wantDensity + (srcDensity / NUM_2)) / srcDensity;
+    }
     return prop;
 }
 
@@ -865,7 +866,6 @@ DecodeContext ImageSource::InitDecodeContext(const DecodeOptions &opts, const Im
             IMAGE_LOGD("[ImageSource] allocatorType is DMA_ALLOC");
             context.allocatorType = AllocatorType::DMA_ALLOC;
         } else if (ImageSystemProperties::GetNoPaddingEnabled()) {
-            IMAGE_LOGI("%{public}s no padding enabled", __func__);
             context.allocatorType = AllocatorType::DMA_ALLOC;
             context.useNoPadding = true;
         }  else {
@@ -1016,6 +1016,15 @@ unique_ptr<PixelMap> ImageSource::CreatePixelMapExtended(uint32_t index, const D
         errorCode = ERR_IMAGE_DATA_ABNORMAL;
         return nullptr;
     }
+    //Extract Exif Metadata，hasValidXmageCoords_ is used for judgeing
+    //whether the image contains valid xmage coordinates.
+    hasValidXmageCoords_ = false;
+    if (CreatExifMetadataByImageSource() == SUCCESS) {
+        auto metadataPtr = exifMetadata_->Clone();
+        if (metadataPtr != nullptr) {
+            hasValidXmageCoords_ = metadataPtr->ExtractXmageCoordinates(coordMetadata_);
+        }
+    }
     ImagePlugin::PlImageInfo plInfo;
     DecodeContext context = DecodeImageDataToContextExtended(index, info, plInfo, imageEvent, errorCode);
     imageDataStatistics.AddTitle("imageSize: [%d, %d], desireSize: [%d, %d], imageFormat: %s, desirePixelFormat: %d,"
@@ -1049,8 +1058,8 @@ unique_ptr<PixelMap> ImageSource::CreatePixelMapExtended(uint32_t index, const D
         NotifyDecodeEvent(decodeListeners_, DecodeEvent::EVENT_COMPLETE_DECODE, nullptr);
     }
     if ("image/gif" != sourceInfo_.encodedFormat && "image/webp" != sourceInfo_.encodedFormat) {
-        IMAGE_LOGI("CreatePixelMap success, id:%{public}lu, dstSize: (%{public}d, %{public}d), srcSize: "
-            "(%{public}d, %{public}d), dstHdr: %{public}d, srcHdr: %{public}d, memType: %{public}d, "
+        IMAGE_LOGI("CreatePixelMap success, id:%{public}lu,dSize:(%{public}d,%{public}d),srcSize: "
+            "(%{public}d,%{public}d),dHdr:%{public}d,sHdr:%{public}d,memType: %{public}d,"
             "cost %{public}lu us", static_cast<unsigned long>(imageId_), opts.desiredSize.width,
             opts.desiredSize.height, info.size.width, info.size.height, opts.desiredDynamicRange, context.hdrType,
             pixelMap->GetAllocatorType(), static_cast<unsigned long>(GetNowTimeMicroSeconds() - decodeStartTime));
@@ -1070,6 +1079,7 @@ unique_ptr<PixelMap> ImageSource::CreatePixelMapExtended(uint32_t index, const D
     }
     ImageUtils::FlushSurfaceBuffer(pixelMap.get());
     pixelMap->SetMemoryName(GetPixelMapName(pixelMap.get()));
+    ImageTrace pixelMapId("CreatePixelMapExtended, pixelMapId:%u", pixelMap->GetUniqueId());
     return pixelMap;
 }
 
@@ -1350,6 +1360,8 @@ unique_ptr<PixelMap> ImageSource::CreatePixelMap(uint32_t index, const DecodeOpt
         }
     }
 
+    ImageTrace imageTrace("CreatePixelMapExtended svg, dstSize:(%d, %d)", opts.desiredSize.width,
+        opts.desiredSize.height);
     ImageEvent imageEvent;
     if (opts.desiredPixelFormat == PixelFormat::NV12 || opts.desiredPixelFormat == PixelFormat::NV21) {
         IMAGE_LOGE("[ImageSource] get YUV420 not support without going through CreatePixelMapExtended");
@@ -1484,6 +1496,7 @@ unique_ptr<PixelMap> ImageSource::CreatePixelMap(uint32_t index, const DecodeOpt
     // not ext decode, dump pixelMap while decoding svg here
     ImageUtils::DumpPixelMapIfDumpEnabled(pixelMap, imageId_);
     pixelMap->SetMemoryName(GetPixelMapName(pixelMap.get()));
+    ImageTrace pixelMapId("CreatePixelMapExtended svg, pixelMapId:%u", pixelMap->GetUniqueId());
     return pixelMap;
 }
 
@@ -1650,15 +1663,31 @@ uint32_t ImageSource::GetImageInfoFromExif(uint32_t index, ImageInfo &imageInfo)
     return GetImageInfo(index, imageInfo);
 }
 
-
 uint32_t ImageSource::ModifyImageProperty(const std::string &key, const std::string &value)
+{
+    return ModifyImageProperties({{key, value}}, false);
+}
+
+uint32_t ImageSource::ModifyImageProperties(const vector<pair<string, string>> &properties, bool isEnhanced)
 {
     uint32_t ret = CreatExifMetadataByImageSource(true);
     bool cond = (ret != SUCCESS);
     CHECK_DEBUG_RETURN_RET_LOG(cond, ret, "Failed to create Exif metadata "
                            "when attempting to modify property.");
-    if (!exifMetadata_->SetValue(key, value)) {
-        return ERR_IMAGE_DECODE_EXIF_UNSUPPORT;
+
+    exifUnsupportKeys_.clear();
+    for (const auto &[key, value] : properties) {
+        if (isEnhanced) {
+            auto status = static_cast<uint32_t>(ExifMetadatFormatter::Validate(key, value));
+            if (status != SUCCESS || !exifMetadata_->SetValue(key, value)) {
+                exifUnsupportKeys_.emplace(key);
+                IMAGE_LOGE("%{public}s unsupported key: %{public}s", __func__, key.c_str());
+            }
+        } else {
+            if (!exifMetadata_->SetValue(key, value)) {
+                return ERR_IMAGE_DECODE_EXIF_UNSUPPORT;
+            }
+        }
     }
 
     return SUCCESS;
@@ -1666,6 +1695,12 @@ uint32_t ImageSource::ModifyImageProperty(const std::string &key, const std::str
 
 uint32_t ImageSource::ModifyImageProperty(std::shared_ptr<MetadataAccessor> metadataAccessor,
     const std::string &key, const std::string &value)
+{
+    return ModifyImageProperties(metadataAccessor, {{key, value}}, false);
+}
+
+uint32_t ImageSource::ModifyImageProperties(std::shared_ptr<MetadataAccessor> metadataAccessor,
+    const vector<pair<string, string>> &properties, bool isEnhanced)
 {
     if (srcFd_ != -1) {
         size_t fileSize = 0;
@@ -1676,7 +1711,7 @@ uint32_t ImageSource::ModifyImageProperty(std::shared_ptr<MetadataAccessor> meta
                 static_cast<unsigned long long>(fileSize));
         }
     }
-    uint32_t ret = ModifyImageProperty(key, value);
+    uint32_t ret = ModifyImageProperties(properties, isEnhanced);
     bool cond = (ret != SUCCESS);
     CHECK_ERROR_RETURN_RET_LOG(cond, ret, "Failed to create ExifMetadata.");
 
@@ -1701,35 +1736,55 @@ uint32_t ImageSource::ModifyImageProperty(std::shared_ptr<MetadataAccessor> meta
     if (!srcFilePath_.empty() && ret == SUCCESS) {
         RefreshImageSourceByPathName();
     }
+
+    if (!exifUnsupportKeys_.empty() && isEnhanced) {
+        return ERR_IMAGE_DECODE_EXIF_UNSUPPORT;
+    }
     return ret;
 }
 
 uint32_t ImageSource::ModifyImageProperty(uint32_t index, const std::string &key, const std::string &value)
 {
     std::unique_lock<std::mutex> guard(decodingMutex_);
-    return ModifyImageProperty(key, value);
+    return ModifyImageProperties({{key, value}}, false);
 }
 
-uint32_t ImageSource::ModifyImagePropertyEx(uint32_t index, const std::string &key, const std::string &value)
+uint32_t ImageSource::ModifyImageProperties(uint32_t index, const vector<pair<string, string>> &properties,
+    bool isEnhanced)
 {
     if (srcFd_ != -1) {
-        return ModifyImageProperty(index, key, value, srcFd_);
+        return ModifyImageProperties(index, properties, srcFd_, isEnhanced);
     }
 
     if (!srcFilePath_.empty()) {
-        return ModifyImageProperty(index, key, value, srcFilePath_);
+        return ModifyImageProperties(index, properties, srcFilePath_, isEnhanced);
     }
 
     if (srcBuffer_ != nullptr && srcBufferSize_ != 0) {
-        return ModifyImageProperty(index, key, value, srcBuffer_, srcBufferSize_);
+        return ModifyImageProperties(index, properties, srcBuffer_, srcBufferSize_, isEnhanced);
     }
     return ERROR;
 }
 
-uint32_t ImageSource::ModifyImageProperty(uint32_t index, const std::string &key, const std::string &value,
-    const std::string &path)
+uint32_t ImageSource::ModifyImagePropertyEx(uint32_t index, const std::string &key, const std::string &value)
 {
-    ImageDataStatistics imageDataStatistics("[ImageSource]ModifyImageProperty by path.");
+    return ModifyImageProperties(index, {{key, value}}, false);
+}
+
+uint32_t ImageSource::ModifyImagePropertiesEx(uint32_t index, const vector<pair<string, string>> &properties)
+{
+    return ModifyImageProperties(index, properties, true);
+}
+
+std::set<std::string> ImageSource::GetModifyExifUnsupportedKeys()
+{
+    return exifUnsupportKeys_;
+}
+
+uint32_t ImageSource::ModifyImageProperties(uint32_t index, const vector<pair<string, string>> &properties,
+    const std::string &path, bool isEnhanced)
+{
+    ImageDataStatistics imageDataStatistics("[ImageSource]ModifyImageProperties by path.");
 
 #if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
     std::error_code ec;
@@ -1742,34 +1797,52 @@ uint32_t ImageSource::ModifyImageProperty(uint32_t index, const std::string &key
 
     std::unique_lock<std::mutex> guard(decodingMutex_);
     auto metadataAccessor = MetadataAccessorFactory::Create(path);
-    return ModifyImageProperty(metadataAccessor, key, value);
+    return ModifyImageProperties(metadataAccessor, properties, isEnhanced);
 }
 
 uint32_t ImageSource::ModifyImageProperty(uint32_t index, const std::string &key, const std::string &value,
-    const int fd)
+    const std::string &path)
 {
-    ImageDataStatistics imageDataStatistics("[ImageSource]ModifyImageProperty by fd.");
+    return ModifyImageProperties(index, {{key, value}}, path, false);
+}
+
+uint32_t ImageSource::ModifyImageProperties(uint32_t index, const vector<pair<string, string>> &properties,
+    const int fd, bool isEnhanced)
+{
+    ImageDataStatistics imageDataStatistics("[ImageSource]ModifyImageProperties by fd.");
     bool cond = (fd <= STDERR_FILENO);
     CHECK_DEBUG_RETURN_RET_LOG(cond, ERR_IMAGE_SOURCE_DATA, "Invalid file descriptor.");
 
     std::unique_lock<std::mutex> guard(decodingMutex_);
     size_t fileSize = 0;
     if (!ImageUtils::GetFileSize(fd, fileSize)) {
-        IMAGE_LOGE("ModifyImageProperty get file size failed.");
+        IMAGE_LOGE("ModifyImageProperties get file size failed.");
     }
-    IMAGE_LOGI("ModifyImageProperty accesssor create start, fd file size:%{public}llu",
+    IMAGE_LOGI("ModifyImageProperties accesssor create start, fd file size:%{public}llu",
         static_cast<unsigned long long>(fileSize));
     auto metadataAccessor = MetadataAccessorFactory::Create(fd);
-    IMAGE_LOGI("ModifyImageProperty accesssor create end");
+    IMAGE_LOGI("ModifyImageProperties accesssor create end");
 
-    auto ret = ModifyImageProperty(metadataAccessor, key, value);
+    auto ret = ModifyImageProperties(metadataAccessor, properties, isEnhanced);
     return ret;
+}
+
+uint32_t ImageSource::ModifyImageProperty(uint32_t index, const std::string &key, const std::string &value,
+    const int fd)
+{
+    return ModifyImageProperties(index, {{key, value}}, fd, false);
+}
+
+uint32_t ImageSource::ModifyImageProperties(uint32_t index, const vector<pair<string, string>> &properties,
+    uint8_t *data, uint32_t size, bool isEnhanced)
+{
+    return ERR_MEDIA_WRITE_PARCEL_FAIL;
 }
 
 uint32_t ImageSource::ModifyImageProperty(uint32_t index, const std::string &key, const std::string &value,
     uint8_t *data, uint32_t size)
 {
-    return ERR_MEDIA_WRITE_PARCEL_FAIL;
+    return ModifyImageProperties(index, {{key, value}}, data, size, false);
 }
 
 bool ImageSource::PrereadSourceStream()
@@ -4337,10 +4410,10 @@ bool ImageSource::ApplyGainMap(ImageHdrType hdrType, DecodeContext& baseCtx, Dec
 void ImageSource::SetVividMetaColor(HdrMetadata& metadata,
     CM_ColorSpaceType base, CM_ColorSpaceType gainmap, CM_ColorSpaceType hdr)
 {
-    metadata.extendMeta.baseColorMeta.baseColorPrimary = base & 0xFF;
-    metadata.extendMeta.gainmapColorMeta.enhanceDataColorPrimary = gainmap & 0xFF;
-    metadata.extendMeta.gainmapColorMeta.combineColorPrimary = gainmap & 0xFF;
-    metadata.extendMeta.gainmapColorMeta.alternateColorPrimary = hdr & 0xFF;
+    metadata.extendMeta.baseColorMeta.baseColorPrimary = static_cast<uint32_t>(base) & 0xFF;
+    metadata.extendMeta.gainmapColorMeta.enhanceDataColorPrimary = static_cast<uint32_t>(gainmap) & 0xFF;
+    metadata.extendMeta.gainmapColorMeta.combineColorPrimary = static_cast<uint32_t>(gainmap) & 0xFF;
+    metadata.extendMeta.gainmapColorMeta.alternateColorPrimary = static_cast<uint32_t>(hdr) & 0xFF;
 }
 
 static CM_HDR_Metadata_Type GetHdrMediaType(HdrMetadata& metadata)
@@ -4446,6 +4519,7 @@ bool ImageSource::ComposeHdrImage(ImageHdrType hdrType, DecodeContext& baseCtx, 
         metadata.extendMeta.metaISO.useBaseColorFlag, metadata.extendMeta.metaISO.gainmapChannelNum);
     SetVividMetaColor(metadata, baseCmColor, gainmapCmColor, hdrCmColor);
     VpeUtils::SetSurfaceBufferInfo(gainmapSptr, true, hdrType, gainmapCmColor, metadata);
+    SetXmageMetadataToGainmap(gainmapSptr);
     // alloc hdr image
     uint32_t errorCode = AllocHdrSurfaceBuffer(hdrCtx, hdrType, hdrCmColor, opts_.reusePixelmap);
     bool cond = (errorCode != SUCCESS);
@@ -4568,6 +4642,26 @@ static void SetResLogBuffer(sptr<SurfaceBuffer>& baseSptr, sptr<SurfaceBuffer>& 
     VpeUtils::SetSbMetadataType(hdrSptr, CM_IMAGE_HDR_VIVID_SINGLE);
 }
 
+void ImageSource::SetXmageMetadataToGainmap(sptr<SurfaceBuffer>& gainmapSptr)
+{
+    if (!hasValidXmageCoords_) {
+        return;
+    }
+    std::vector<uint8_t> metaDataVec(sizeof(XmageCoordinateMetadata));
+    int32_t memCpyRes = memcpy_s(metaDataVec.data(), metaDataVec.size(),
+        &coordMetadata_, sizeof(XmageCoordinateMetadata));
+    if (memCpyRes != EOK) {
+        IMAGE_LOGE("ImageSource::SetXmageMetadataToGainmap copy xmage coordinate metadata failed");
+        return;
+    }
+    bool setMetaRes = VpeUtils::SetSbStaticMetadata(gainmapSptr, metaDataVec);
+    if (!setMetaRes) {
+        IMAGE_LOGE("ImageSource::SetXmageMetadataToGainmap set xmage coordinate metadata failed");
+    } else {
+        IMAGE_LOGD("ImageSource::SetXmageMetadataToGainmap set xmage coordinate metadata success");
+    }
+}
+
 void ImageSource::SpecialSetComposeBuffer(DecodeContext &baseCtx, sptr<SurfaceBuffer>& baseSptr,
     sptr<SurfaceBuffer>& gainmapSptr, sptr<SurfaceBuffer>& hdrSptr, HdrMetadata& metadata)
 {
@@ -4657,10 +4751,11 @@ static uint32_t DoAiHdrProcess(sptr<SurfaceBuffer> &input, DecodeContext &hdrCtx
 
     std::unique_ptr<VpeUtils> utils = std::make_unique<VpeUtils>();
     ImageUtils::DumpHdrBufferEnabled(input, "PixelMap-AIprocess-input");
-    res = utils->ColorSpaceConverterImageProcess(input, output);
+    int32_t vpeProcessErrCode = utils->ColorSpaceConverterImageProcess(input, output);
     ImageUtils::DumpHdrBufferEnabled(output, "PixelMap-AIprocess-output");
-    if (res != VPE_ERROR_OK) {
-        IMAGE_LOGE("[ImageSource]DoAiHdrProcess ColorSpaceConverterImageProcess failed! %{public}d", res);
+    if (vpeProcessErrCode != VPE_ERROR_OK) {
+        IMAGE_LOGE("[ImageSource]DoAiHdrProcess ColorSpaceConverterImageProcess failed! %{public}d", vpeProcessErrCode);
+        res = ERR_IMAGE_AI_UNSUPPORTED;
         FreeContextBuffer(hdrCtx.freeFunc, hdrCtx.allocatorType, hdrCtx.pixelsBuffer);
     } else {
         IMAGE_LOGD("[ImageSource]DoAiHdrProcess ColorSpaceConverterImageProcess Succ!");
@@ -4686,9 +4781,11 @@ static uint32_t AiSrProcess(sptr<SurfaceBuffer> &input, DecodeContext &aisrCtx)
     CHECK_ERROR_RETURN_RET_LOG(cond, res, "HDR SurfaceBuffer Alloc failed, %{public}d", res);
     sptr<SurfaceBuffer> output = reinterpret_cast<SurfaceBuffer*>(aisrCtx.pixelsBuffer.context);
     std::unique_ptr<VpeUtils> utils = std::make_unique<VpeUtils>();
-    res = utils->DetailEnhancerImageProcess(input, output, static_cast<int32_t>(aisrCtx.resolutionQuality));
-    if (res != VPE_ERROR_OK) {
-        IMAGE_LOGE("[ImageSource]AiSrProcess DetailEnhancerImage Processed failed");
+    int32_t vpeProcessErrCode = utils->DetailEnhancerImageProcess(input, output,
+        static_cast<int32_t>(aisrCtx.resolutionQuality));
+    if (vpeProcessErrCode != VPE_ERROR_OK) {
+        IMAGE_LOGE("[ImageSource]AiSrProcess DetailEnhancerImage Processed failed! %{public}d", vpeProcessErrCode);
+        res = ERR_IMAGE_AI_UNSUPPORTED;
         FreeContextBuffer(aisrCtx.freeFunc, aisrCtx.allocatorType, aisrCtx.pixelsBuffer);
     } else {
         aisrCtx.outInfo.size.width = output->GetSurfaceBufferWidth();
@@ -5065,6 +5162,7 @@ void ImageSource::SetHdrMetadataForPicture(std::unique_ptr<Picture> &picture)
         metadata.extendMeta.metaISO.useBaseColorFlag == ISO_USE_BASE_COLOR ? baseCmColor : hdrCmColor;
     SetVividMetaColor(metadata, baseCmColor, gainmapCmColor, hdrCmColor);
     VpeUtils::SetSurfaceBufferInfo(gainmapSptr, true, hdrType, gainmapCmColor, metadata);
+    SetXmageMetadataToGainmap(gainmapSptr);
 }
 
 void ImageSource::DecodeHeifAuxiliaryPictures(
@@ -5369,8 +5467,15 @@ std::string ImageSource::GetPixelMapName(PixelMap* pixelMap)
         IMAGE_LOGE("%{public}s error, pixelMap is null", __func__);
         return "undefined_";
     }
-    std::string pixelMapStr = std::to_string(pixelMap->GetWidth()) +
-        "_x" + std::to_string(pixelMap->GetHeight()) +
+    ImageInfo info;
+    if (GetImageInfo(info) != SUCCESS) {
+        IMAGE_LOGE("%{public}s error, GetImageInfo failed", __func__);
+        return "undefined_";
+    }
+
+    std::string pixelMapStr =
+        "srcImageSize-" + std::to_string(info.size.width) + "_x" + std::to_string(info.size.height) +
+        "-pixelMapSize-" + std::to_string(pixelMap->GetWidth()) + "_x" + std::to_string(pixelMap->GetHeight()) +
         "-streamsize-" + std::to_string(sourceStreamPtr_->GetStreamSize()) +
         "-mimeType-";
     std::string prefix = "image/";

@@ -753,7 +753,7 @@ void ImageUtils::DumpHdrBufferEnabled(sptr<SurfaceBuffer>& buffer, const std::st
 {
     bool cond = !ImageSystemProperties::GetDumpHdrEnbaled() || buffer == nullptr;
     CHECK_ERROR_RETURN(cond);
-    uint32_t bufferSize = static_cast<int32_t>(buffer->GetSize());
+    uint32_t bufferSize = buffer->GetSize();
     std::string fileSuffix = fileName + "-format-" + std::to_string(buffer->GetFormat()) + "-Width-"
         + std::to_string(buffer->GetWidth()) + "-Height-" + std::to_string(buffer->GetWidth()) + "-Stride-"
         + std::to_string(buffer->GetStride()) + ".dat";
@@ -1394,7 +1394,7 @@ int32_t ImageUtils::GetAPIVersionInner()
     }
     AppExecFwk::BundleInfo bundleInfo;
     if (bms->GetBundleInfoForSelf(0, bundleInfo) != ERR_OK) {
-        IMAGE_LOGD("Get bundle info for self failed");
+        IMAGE_LOGE("Get bundle info for self failed");
         return FAULT_API_VERSION;
     }
     targetVersion = bundleInfo.targetVersion;

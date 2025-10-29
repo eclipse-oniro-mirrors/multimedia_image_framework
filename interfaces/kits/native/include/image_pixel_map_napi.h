@@ -28,6 +28,7 @@
  * @file image_pixel_map_napi.h
  *
  * @brief Declares the APIs that can lock, access, and unlock a pixel map.
+ * Need link <b>libpixelmap_ndk.z.so</b>
  *
  * @since 8
  * @version 1.0

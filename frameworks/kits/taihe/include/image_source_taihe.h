@@ -30,24 +30,37 @@ class ImageSourceImpl {
 public:
     ImageSourceImpl();
     explicit ImageSourceImpl(std::shared_ptr<OHOS::Media::ImageSource> imageSource);
+    ImageSourceImpl(std::shared_ptr<OHOS::Media::ImageSource> imageSource,
+        std::shared_ptr<OHOS::Media::IncrementalPixelMap> incPixelMap);
+    ImageSourceImpl(int64_t aniPtr);
     ~ImageSourceImpl();
     int64_t GetImplPtr();
 
-    ImageInfo GetImageInfoSyncWithIndex(uint32_t index);
+    ImageInfo GetImageInfoSyncWithIndex(int32_t index);
     ImageInfo GetImageInfoSync();
     PixelMap CreatePixelMapSyncWithOptions(DecodingOptions const& options);
     PixelMap CreatePixelMapSync();
     PixelMap CreatePixelMapUsingAllocatorSync(optional_view<DecodingOptions> options,
         optional_view<AllocatorType> allocatorType);
+    optional<PixelMap> CreateWideGamutSdrPixelMapSync();
     array<PixelMap> CreatePixelMapListSync();
     array<PixelMap> CreatePixelMapListSyncWithOptions(DecodingOptions const& options);
     array<PixelMap> CreatePixelMapListSyncWithOptionalOptions(optional_view<DecodingOptions> options);
     array<int32_t> GetDelayTimeListSync();
-    string GetImagePropertySync(PropertyKey key, optional_view<ImagePropertyOptions> options);
+    array<int32_t> GetDisposalTypeListSync();
+    int32_t GetFrameCountSync();
+    string GetImagePropertyReturnsPromise(PropertyKey key, optional_view<ImagePropertyOptions> options);
     map<PropertyKey, PropertyValue> GetImagePropertiesSync(array_view<PropertyKey> key);
+    optional<string> GetImagePropertySync(PropertyKey key);
     void ModifyImagePropertySync(PropertyKey key, string_view value);
     void ModifyImagePropertiesSync(map_view<PropertyKey, PropertyValue> records);
+    void ModifyImagePropertiesEnhancedSync(map_view<string, PropertyValue> records);
+    void UpdateDataSync(array_view<uint8_t> buf, bool isFinished, int32_t offset, int32_t length);
     void ReleaseSync();
+#if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
+    Picture CreatePictureSync(optional_view<DecodingOptionsForPicture> options);
+    optional<Picture> CreatePictureAtIndexSync(int32_t index);
+#endif
 
     array<string> GetSupportedFormats();
 

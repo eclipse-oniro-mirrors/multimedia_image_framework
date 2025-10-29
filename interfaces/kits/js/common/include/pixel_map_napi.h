@@ -233,6 +233,11 @@ private:
     std::shared_mutex mutex_;
     std::map<uint64_t, std::shared_ptr<PixelMap>> map_;
 };
+
+extern "C" {
+    napi_value GetPixelMapNapi(napi_env env, std::shared_ptr<PixelMap> pixelMap);
+    bool GetNativePixelMap(void* pixelMapNapi, std::shared_ptr<PixelMap> &pixelMap);
+}
 } // namespace Media
 } // namespace OHOS
 #endif // INTERFACES_KITS_JS_COMMON_INCLUDE_PIXEL_MAP_NAPI_H

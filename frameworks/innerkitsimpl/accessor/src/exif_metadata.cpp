@@ -21,6 +21,7 @@
 #include <sstream>
 #include <vector>
 #include <string_view>
+#include <charconv>
 
 #include "exif_metadata.h"
 #include "exif_metadata_formatter.h"
@@ -702,7 +703,11 @@ bool ExifMetadata::SetHwMoteValue(const std::string &key, const std::string &val
     }
 
     const char *data = value.c_str();
-    int dataLen = value.length();
+    if (value.length() > static_cast<size_t>(std::numeric_limits<int>::max())) {
+        IMAGE_LOGE("Value length inavlid.length = %{public}d", static_cast<int>(value.length()));
+        return false;
+    }
+    int dataLen = static_cast<int>(value.length());
     int ret = mnote_huawei_entry_set_value(entry, data, dataLen);
     if (ret == 0 && isNewMaker && hwTag != MNOTE_HUAWEI_CAPTURE_MODE) {
         IMAGE_LOGD("Remve default initialized hw entry.");
@@ -978,6 +983,62 @@ int ExifMetadata::GetUserMakerNote(std::string& value) const
     exif_entry_get_value(entry, userValueChar.data(), userValueChar.size());
     value.assign(userValueChar.data(), entry->size);
     return SUCCESS;
+}
+
+bool ExifMetadata::ParseExifCoordinate(const std::string& fieldName, uint32_t& outputValue) const
+{
+    // Use GetValue to read the field as a string
+    std::string valueStr;
+    int ret = GetValue(fieldName, valueStr);
+    if (ret != SUCCESS) {
+        IMAGE_LOGE("Exif_metadata:ExtractXMageCoordinates Failed to read %s from EXIF metadata",
+            fieldName.c_str());
+        return false;
+    }
+    // Log the retrieved value for debugging
+    IMAGE_LOGI("Exif_metadata:ExtractXMageCoordinates HDR-IMAGE Exif %s: %{public}s",
+        fieldName.c_str(), valueStr.c_str());
+    // Check if the value is empty or a known default placeholder
+    if (valueStr.empty() || valueStr == "default_exif_value") {
+        IMAGE_LOGE(
+            "Exif_metadata:ExtractXMageCoordinates Failed to parse %s: value is empty or default",
+            fieldName.c_str());
+        return false;
+    }
+    // Convert the string to an integer using std::from_chars for robust parsing
+    auto result = std::from_chars(valueStr.data(), valueStr.data() + valueStr.size(), outputValue);
+    if (result.ec != std::errc()) {
+        IMAGE_LOGE("Exif_metadata:ExtractXMageCoordinates Failed to parse %s: %s (error code: %{public}d)",
+            fieldName.c_str(), valueStr.c_str(), static_cast<uint32_t>(result.ec));
+        return false;
+    }
+
+    return true;
+}
+
+bool ExifMetadata::ExtractXmageCoordinates(XmageCoordinateMetadata& coordMetadata) const
+{
+    if (exifData_ == nullptr) {
+        IMAGE_LOGE(
+            "Exif_metadata:ExtractXMageCoordinates HDR-IMAGE Exif metadata is null, cannot read XMAGE coordinates");
+        return false;
+    }
+    bool allParsedSuccessfully = ParseExifCoordinate("HwMnoteXmageLeft", coordMetadata.left) &&
+        ParseExifCoordinate("HwMnoteXmageTop", coordMetadata.top) &&
+        ParseExifCoordinate("HwMnoteXmageRight", coordMetadata.right) &&
+        ParseExifCoordinate("HwMnoteXmageBottom", coordMetadata.bottom);
+    if (allParsedSuccessfully) {
+        IMAGE_LOGI(
+            "Exif_metadata:ExtractXMageCoordinates Successfully extracted XMAGE coordinates: "
+            "left=%{public}d, top=%{public}d, right=%{public}d, bottom=%{public}d",
+            coordMetadata.left, coordMetadata.top, coordMetadata.right, coordMetadata.bottom);
+        return true; // only return true if all fields were parsed successfully
+    } else {
+        IMAGE_LOGE(
+            "Exif_metadata:ExtractXMageCoordinates Failed to extract valid XMAGE coordinates from EXIF data. "
+            "Some fields are missing or invalid.");
+        return false; // If any field is invalid, return false
+    }
 }
 } // namespace Media
 } // namespace OHOS

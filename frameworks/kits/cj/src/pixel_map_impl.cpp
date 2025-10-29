@@ -55,7 +55,7 @@ std::unique_ptr<PixelMap> PixelMapImpl::CreatePixelMap(const InitializationOptio
 }
 
 std::unique_ptr<PixelMap> PixelMapImpl::CreatePixelMap(
-    uint32_t* colors, uint32_t colorLength, InitializationOptions& opts)
+    uint32_t* colors, uint32_t& colorLength, InitializationOptions& opts)
 {
     if (opts.pixelFormat == PixelFormat::RGBA_1010102 || opts.pixelFormat == PixelFormat::YCBCR_P010 ||
         opts.pixelFormat == PixelFormat::YCRCB_P010) {
@@ -120,13 +120,13 @@ uint32_t PixelMapImpl::ReadPixelsToBuffer(uint64_t& bufferSize, uint8_t* dst)
 
 uint32_t PixelMapImpl::ReadPixels(uint64_t& bufferSize, uint32_t& offset, uint32_t& stride, Rect& region, uint8_t* dst)
 {
-    if (real_ == nullptr) {
+    if (real_ == nullptr || dst == nullptr) {
         return ERR_IMAGE_READ_PIXELMAP_FAILED;
     }
     return real_->ReadPixels(bufferSize, offset, stride, region, dst);
 }
 
-uint32_t PixelMapImpl::WriteBufferToPixels(uint8_t* source, uint64_t& bufferSize)
+uint32_t PixelMapImpl::WriteBufferToPixels(const uint8_t* source, uint64_t& bufferSize)
 {
     if (real_ == nullptr) {
         return ERR_IMAGE_READ_PIXELMAP_FAILED;
@@ -135,9 +135,9 @@ uint32_t PixelMapImpl::WriteBufferToPixels(uint8_t* source, uint64_t& bufferSize
 }
 
 uint32_t PixelMapImpl::WritePixels(
-    uint8_t* source, uint64_t& bufferSize, uint32_t& offset, uint32_t& stride, Rect& region)
+    const uint8_t* source, uint64_t& bufferSize, uint32_t& offset, uint32_t& stride, Rect& region)
 {
-    if (real_ == nullptr) {
+    if (real_ == nullptr || source == nullptr) {
         return ERR_IMAGE_READ_PIXELMAP_FAILED;
     }
     return real_->WritePixels(source, bufferSize, offset, stride, region);
@@ -178,7 +178,7 @@ void PixelMapImpl::Scale(float xAxis, float yAxis)
     real_->scale(xAxis, yAxis);
 }
 
-void PixelMapImpl::Scale(float xAxis, float yAxis, AntiAliasingOption option)
+void PixelMapImpl::Scale(float xAxis, float yAxis, AntiAliasingOption& option)
 {
     if (real_ == nullptr) {
         IMAGE_LOGE("[PixelMapImpl] real_ is nullptr!");
@@ -341,13 +341,13 @@ static bool GetSurfaceSize(size_t argc, Rect& region, std::string fd)
 #endif
 
 std::shared_ptr<PixelMap> PixelMapImpl::CreatePixelMapFromSurface(
-    char* surfaceId, Rect region, size_t argc, uint32_t* errCode)
+    char* surfaceId, Rect region, size_t argc, uint32_t& errCode)
 {
 #if defined(IOS_PLATFORM) || defined(ANDROID_PLATFORM)
-    *errCode = ERR_IMAGE_PIXELMAP_CREATE_FAILED;
+    errCode = ERR_IMAGE_PIXELMAP_CREATE_FAILED;
     return nullptr;
 #else
-    *errCode = argc == NUM_2 ? ERR_IMAGE_INVALID_PARAMETER : COMMON_ERR_INVALID_PARAMETER;
+    errCode = argc == NUM_2 ? ERR_IMAGE_INVALID_PARAMETER : COMMON_ERR_INVALID_PARAMETER;
     if (surfaceId == nullptr) {
         IMAGE_LOGE("surfaceId is nullptr!");
         return nullptr;
@@ -373,7 +373,7 @@ std::shared_ptr<PixelMap> PixelMapImpl::CreatePixelMapFromSurface(
     auto res = std::from_chars(surfaceId, surfaceId + std::string(surfaceId).size(), newSurfaceId);
     if (res.ec != std::errc()) {
         IMAGE_LOGE("CreatePixelMapFromSurface invalid surfaceId");
-        *errCode = ERR_IMAGE_PIXELMAP_CREATE_FAILED;
+        errCode = ERR_IMAGE_PIXELMAP_CREATE_FAILED;
         return nullptr;
     }
     std::shared_ptr<PixelMap> pixelMap = rsClient.CreatePixelMapFromSurfaceId(newSurfaceId, r);
@@ -382,13 +382,13 @@ std::shared_ptr<PixelMap> PixelMapImpl::CreatePixelMapFromSurface(
         res = std::from_chars(surfaceId, surfaceId + std::string(surfaceId).size(), newSurfaceId);
         if (res.ec != std::errc()) {
             IMAGE_LOGE("CreatePixelMapFromSurface invalid surfaceId");
-            *errCode = ERR_IMAGE_PIXELMAP_CREATE_FAILED;
+            errCode = ERR_IMAGE_PIXELMAP_CREATE_FAILED;
             return nullptr;
         }
         pixelMap = CreatePixelMapFromSurfaceId(newSurfaceId, region);
     }
 #endif
-    *errCode = SUCCESS;
+    errCode = SUCCESS;
     return pixelMap;
 #endif
 }
@@ -422,29 +422,29 @@ uint32_t PixelMapImpl::Marshalling(int64_t rpcId)
 #endif
 }
 
-std::shared_ptr<PixelMap> PixelMapImpl::Unmarshalling(int64_t rpcId, uint32_t* errCode)
+std::shared_ptr<PixelMap> PixelMapImpl::Unmarshalling(int64_t rpcId, uint32_t& errCode)
 {
 #if defined(IOS_PLATFORM) || defined(ANDROID_PLATFORM)
-    *errCode = ERR_IMAGE_INVALID_PARAMETER;
+    errCode = ERR_IMAGE_INVALID_PARAMETER;
     return nullptr;
 #else
     IMAGE_LOGD("Unmarshalling IN");
     auto messageSequence = FFIData::GetData<MessageSequenceImpl>(rpcId);
     if (!messageSequence) {
         IMAGE_LOGE("[PixelMap] rpc not exist %{public}" PRId64, rpcId);
-        *errCode = ERR_IMAGE_INVALID_PARAMETER;
+        errCode = ERR_IMAGE_INVALID_PARAMETER;
         return nullptr;
     }
     auto messageParcel = messageSequence->GetMessageParcel();
     if (messageParcel == nullptr) {
         IMAGE_LOGE("UnmarshallingExec invalid parameter: messageParcel is null");
-        *errCode = ERR_IPC;
+        errCode = ERR_IPC;
         return nullptr;
     }
     PIXEL_MAP_ERR error;
     auto pixelmap = PixelMap::Unmarshalling(*messageParcel, error);
     if (pixelmap == nullptr) {
-        *errCode = error.errorCode;
+        errCode = error.errorCode;
         return nullptr;
     }
     std::shared_ptr<PixelMap> pixelPtr(pixelmap);
@@ -452,29 +452,29 @@ std::shared_ptr<PixelMap> PixelMapImpl::Unmarshalling(int64_t rpcId, uint32_t* e
 #endif
 }
 
-std::shared_ptr<PixelMap> PixelMapImpl::CreatePixelMapFromParcel(int64_t rpcId, uint32_t* errCode)
+std::shared_ptr<PixelMap> PixelMapImpl::CreatePixelMapFromParcel(int64_t rpcId, uint32_t& errCode)
 {
 #if defined(IOS_PLATFORM) || defined(ANDROID_PLATFORM)
-    *errCode = ERR_IMAGE_PIXELMAP_CREATE_FAILED;
+    errCode = ERR_IMAGE_PIXELMAP_CREATE_FAILED;
     return nullptr;
 #else
     IMAGE_LOGD("CreatePixelMapFromParcel IN");
     auto messageSequence = FFIData::GetData<MessageSequenceImpl>(rpcId);
     if (!messageSequence) {
         IMAGE_LOGE("[PixelMap] rpc not exist %{public}" PRId64, rpcId);
-        *errCode = ERR_IMAGE_INVALID_PARAMETER;
+        errCode = ERR_IMAGE_INVALID_PARAMETER;
         return nullptr;
     }
     auto messageParcel = messageSequence->GetMessageParcel();
     if (messageParcel == nullptr) {
         IMAGE_LOGE("get pacel failed");
-        *errCode = ERR_IPC;
+        errCode = ERR_IPC;
         return nullptr;
     }
     PIXEL_MAP_ERR error;
     auto pixelmap = PixelMap::Unmarshalling(*messageParcel, error);
     if (pixelmap == nullptr) {
-        *errCode = error.errorCode;
+        errCode = error.errorCode;
         return nullptr;
     }
     std::shared_ptr<PixelMap> pixelPtr(pixelmap);
@@ -508,7 +508,7 @@ static FormatType TypeFormat(PixelFormat& pixelForamt)
     }
 }
 
-uint32_t PixelMapImpl::ConvertPixelMapFormat(PixelFormat destFormat)
+uint32_t PixelMapImpl::ConvertPixelMapFormat(PixelFormat& destFormat)
 {
     if (real_ == nullptr) {
         IMAGE_LOGE("pixelmap is nullptr");
