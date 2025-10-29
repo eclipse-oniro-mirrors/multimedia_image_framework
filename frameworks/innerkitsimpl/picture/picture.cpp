@@ -775,7 +775,7 @@ std::shared_ptr<RfDataBMetadata> Picture::GetRfDataBMetadata()
 std::shared_ptr<ImageMetadata> Picture::GetMetadata(MetadataType type)
 {
     if (metadatas_.find(type) == metadatas_.end()) {
-        IMAGE_LOGE("metadata type(%{public}d) not exist.", static_cast<int32_t>(type));
+        IMAGE_LOGD("metadata type(%{public}d) not exist.", static_cast<int32_t>(type));
         return nullptr;
     }
     return metadatas_[type];
