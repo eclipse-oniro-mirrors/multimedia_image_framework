@@ -1115,7 +1115,7 @@ void ExtDecoder::FillYuvInfo(DecodeContext &context, SkImageInfo &dstInfo)
 #ifdef HEIF_HW_DECODE_ENABLE
 bool SetOutPutFormat(OHOS::Media::PixelFormat pixelFormat, HeifDecoderImpl* decoder)
 {
-    bool ret = true;
+    bool ret = false;
     if (pixelFormat == PixelFormat::RGB_565) {
         ret = decoder->setOutputColor(kHeifColorFormat_RGB565);
     } else if (pixelFormat == PixelFormat::RGBA_8888) {
@@ -1513,6 +1513,7 @@ uint32_t ExtDecoder::DoHeifToRgbDecode(OHOS::ImagePlugin::DecodeContext &context
     if (IsHeifRegionDecode()) {
         UpdateHeifRegionDstInfo(context);
     }
+    CHECK_ERROR_RETURN_RET(!SetOutPutFormat(context.info.pixelFormat, decoder), ERR_IMAGE_DECODE_ABNORMAL);
     uint64_t byteCount = dstInfo_.computeMinByteSize();
     if (ImageUtils::IsSdrPixelMapReuseSuccess(context, info_.width(), info_.height(), reusePixelmap_)) {
         IMAGE_LOGI("HEIF RGB Maindecode reusePixelmap success");
@@ -1532,7 +1533,6 @@ uint32_t ExtDecoder::DoHeifToRgbDecode(OHOS::ImagePlugin::DecodeContext &context
     decoder->SetSampleFormat(sampleSize_, heifColorSpaceName_, heifIsColorSpaceFromCicp_);
     decoder->setDstBuffer(reinterpret_cast<uint8_t *>(context.pixelsBuffer.buffer),
         dstBuffer->GetStride(), context.pixelsBuffer.context);
-    SetOutPutFormat(context.info.pixelFormat, decoder);
     bool decodeRet = decoder->decode(nullptr);
     if (!decodeRet && sampleSize_ != DEFAULT_SAMPLE_SIZE) {
         decodeRet = DoHeifSwDecode(context);
