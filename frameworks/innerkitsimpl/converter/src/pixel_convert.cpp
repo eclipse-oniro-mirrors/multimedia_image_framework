@@ -1759,10 +1759,10 @@ int32_t PixelConvert::PixelsConvert(const BufferInfo &src, BufferInfo &dst, int3
     Position pos;
     cond = srcLength < src.imageInfo.size.width * src.imageInfo.size.height *
         ImageUtils::GetPixelBytes(src.imageInfo.pixelFormat);
-    CHECK_ERROR_PRINT_LOG(cond, "%{public}s: colorLength = %{public}d, width = %{public}d, height = %{public}d,",
-        __func__, srcLength, src.imageInfo.size.width, src.imageInfo.size.height);
-    IMAGE_LOGD("%{public}s: colorLength = %{public}d, width = %{public}d, height = %{public}d,", __func__,
-        srcLength, src.imageInfo.size.width, src.imageInfo.size.height);
+    CHECK_ERROR_PRINT_LOG(cond, "srcLength = %{public}d, size:(%{public}d, %{public}d)", srcLength,
+        src.imageInfo.size.width, src.imageInfo.size.height);
+    IMAGE_LOGD("srcLength = %{public}d, size:(%{public}d, %{public}d)", srcLength,
+        src.imageInfo.size.width, src.imageInfo.size.height);
 
     cond = PixelConvertAdapter::WritePixelsConvert(src.pixels,
         src.rowStride == 0 ? PixelMap::GetRGBxRowDataSize(src.imageInfo) : src.rowStride, src.imageInfo,

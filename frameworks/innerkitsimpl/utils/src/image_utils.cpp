@@ -649,7 +649,7 @@ void ImageUtils::ARGBToBGRA(uint8_t* srcPixels, uint8_t* dstPixels, uint32_t byt
 int32_t ImageUtils::SurfaceBuffer_Reference(void* buffer)
 {
     if (buffer == nullptr) {
-        IMAGE_LOGE("parameter error, please check input parameter");
+        IMAGE_LOGE("input parameter error");
         return ERR_SURFACEBUFFER_REFERENCE_FAILED;
     }
     OHOS::RefBase *ref = reinterpret_cast<OHOS::RefBase *>(buffer);
@@ -660,7 +660,7 @@ int32_t ImageUtils::SurfaceBuffer_Reference(void* buffer)
 int32_t ImageUtils::SurfaceBuffer_Unreference(void* buffer)
 {
     if (buffer == nullptr) {
-        IMAGE_LOGE("parameter error, please check input parameter");
+        IMAGE_LOGE("input parameter error");
         return ERR_SURFACEBUFFER_UNREFERENCE_FAILED;
     }
     OHOS::RefBase *ref = reinterpret_cast<OHOS::RefBase *>(buffer);
