@@ -254,6 +254,35 @@ HWTEST_F(PictureNdkTest, OH_AuxiliaryPictureNative_CreateTest004, TestSize.Level
 }
 
 /**
+ * @tc.name: OH_AuxiliaryPictureNative_GetPixelmapTest001
+ * @tc.desc: OH_AuxiliaryPictureNative_GetPixelmap returns success for normal AuxiliaryPicture.
+ * @tc.type: FUNC
+ */
+HWTEST_F(PictureNdkTest, OH_AuxiliaryPictureNative_GetPixelmapTest001, TestSize.Level1)
+{
+    OH_AuxiliaryPictureNative *picture = CreateAuxiliaryPictureNative();
+    ASSERT_NE(picture, nullptr);
+
+    OH_PixelmapNative *pixelmap = nullptr;
+    Image_ErrorCode ret = OH_AuxiliaryPictureNative_GetPixelmap(picture, &pixelmap);
+    EXPECT_EQ(ret, IMAGE_SUCCESS);
+    OH_AuxiliaryPictureNative_Release(picture);
+}
+
+/**
+ * @tc.name: OH_AuxiliaryPictureNative_GetPixelmapTest002
+ * @tc.desc: OH_AuxiliaryPictureNative_GetPixelmap returns success for null AuxiliaryPicture.
+ * @tc.type: FUNC
+ */
+HWTEST_F(PictureNdkTest, OH_AuxiliaryPictureNative_GetPixelmapTest003, TestSize.Level3)
+{
+    OH_AuxiliaryPictureNative *picture = nullptr;
+    OH_PixelmapNative *pixelmap = nullptr;
+    Image_ErrorCode ret = OH_AuxiliaryPictureNative_GetPixelmap(picture, &pixelmap);
+    EXPECT_EQ(ret, IMAGE_BAD_PARAMETER);
+}
+
+/**
  * @tc.name: OH_AuxiliaryPictureNative_WritePixelsTest001
  * @tc.desc: Pass in the correct parameters to WritePixels and return success.
  * @tc.type: FUNC

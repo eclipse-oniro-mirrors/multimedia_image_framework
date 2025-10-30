@@ -377,6 +377,29 @@ Image_ErrorCode OH_AuxiliaryPictureNative_SetMetadata(OH_AuxiliaryPictureNative 
 }
 
 MIDK_EXPORT
+Image_ErrorCode OH_AuxiliaryPictureNative_GetPixelmap(OH_AuxiliaryPictureNative *auxiliaryPicture,
+    OH_PixelmapNative **pixelmap)
+{
+    if (!pixelmap || !auxiliaryPicture || !auxiliaryPicture->GetInnerAuxiliaryPicture()) {
+        return IMAGE_BAD_PARAMETER;
+    }
+
+    auto innerAuxiliaryPicture = auxiliaryPicture->GetInnerAuxiliaryPicture();
+    auto contentPixel = innerAuxiliaryPicture->GetContentPixel();
+    if (!contentPixel) {
+        return IMAGE_BAD_PARAMETER;
+    }
+
+    auto pixelmapTmp = std::make_unique<OH_PixelmapNative>(contentPixel);
+    if (!pixelmapTmp || !pixelmapTmp->GetInnerPixelmap()) {
+        return IMAGE_ALLOC_FAILED;
+    }
+
+    *pixelmap = pixelmapTmp.release();
+    return IMAGE_SUCCESS;
+}
+
+MIDK_EXPORT
 Image_ErrorCode OH_AuxiliaryPictureNative_Release(OH_AuxiliaryPictureNative *picture)
 {
     if (picture == nullptr) {
