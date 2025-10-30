@@ -76,7 +76,7 @@ std::unique_ptr<BufferSourceStream> BufferSourceStream::CreateSourceStream(const
 bool BufferSourceStream::Read(uint32_t desiredSize, DataStreamBuffer &outData)
 {
     if (!Peek(desiredSize, outData)) {
-        IMAGE_LOGE("[BufferSourceStream]read fail.");
+        IMAGE_LOGE("buffer read fail.");
         return false;
     }
     dataOffset_.fetch_add(outData.dataSize);
@@ -91,7 +91,7 @@ bool BufferSourceStream::Peek(uint32_t desiredSize, DataStreamBuffer &outData)
     }
     size_t offset = dataOffset_.load();
     if (dataSize_ == offset) {
-        IMAGE_LOGE("[BufferSourceStream]buffer read finish, offset:%{public}zu ,dataSize%{public}zu.",
+        IMAGE_LOGE("buffer read finish, offset:%{public}zu ,dataSize%{public}zu.",
             offset, dataSize_);
         return false;
     }
@@ -110,7 +110,7 @@ bool BufferSourceStream::Read(uint32_t desiredSize, uint8_t *outBuffer, uint32_t
     uint32_t &readSize) __attribute__((no_sanitize("cfi")))
 {
     if (!Peek(desiredSize, outBuffer, bufferSize, readSize)) {
-        IMAGE_LOGE("[BufferSourceStream]read fail.");
+        IMAGE_LOGE("buffer read fail.");
         return false;
     }
     dataOffset_.fetch_add(readSize);
@@ -127,7 +127,7 @@ bool BufferSourceStream::Peek(uint32_t desiredSize, uint8_t *outBuffer, uint32_t
     }
     size_t offset = dataOffset_.load();
     if (dataSize_ == offset) {
-        IMAGE_LOGE("[BufferSourceStream]buffer read finish, offset:%{public}zu ,dataSize%{public}zu.",
+        IMAGE_LOGE("buffer read finish, offset:%{public}zu ,dataSize%{public}zu.",
             offset, dataSize_);
         return false;
     }
