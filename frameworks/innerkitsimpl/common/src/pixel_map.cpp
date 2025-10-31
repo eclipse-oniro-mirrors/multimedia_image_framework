@@ -1795,7 +1795,8 @@ uint32_t PixelMap::ReadARGBPixels(const uint64_t &bufferSize, uint8_t *dst)
         AlphaType::IMAGE_ALPHA_TYPE_UNPREMUL);
     BufferInfo srcInfo = {data_, GetRowStride(), imageInfo_};
     BufferInfo dstInfo = {dst, 0, dstImageInfo};
-    int32_t dstLength = PixelConvert::PixelsConvert(srcInfo, dstInfo, bufferSize, IsStrideAlignment());
+    int32_t dstLength = PixelConvert::PixelsConvert(srcInfo, dstInfo, bufferSize, IsStrideAlignment() &&
+        !GetNoPaddingUsage());
     if (dstLength < 0) {
         IMAGE_LOGE("ReadARGBPixels pixel convert to ARGB failed.");
         return ERR_IMAGE_READ_PIXELMAP_FAILED;
