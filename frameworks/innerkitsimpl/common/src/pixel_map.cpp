@@ -2174,8 +2174,8 @@ bool PixelMap::WritePixels(const uint32_t &color)
 
 bool PixelMap::IsStrideAlignment()
 {
-    if (allocatorType_ == AllocatorType::DMA_ALLOC) {
-        IMAGE_LOGD("IsStrideAlignment allocatorType_ is DMA_ALLOC");
+    if (allocatorType_ == AllocatorType::DMA_ALLOC && !GetNoPaddingUsage()) {
+        IMAGE_LOGD("IsStrideAlignment allocatorType_ is DMA_ALLOC and not no-padding");
         return true;
     }
     return false;
