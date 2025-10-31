@@ -120,6 +120,7 @@ private:
     std::shared_ptr<HDI::Codec::Image::V2_1::ImageItem> AssembleGainmapImageItem(sptr<SurfaceBuffer>& surfaceBuffer,
         ColorManager::ColorSpaceName color, const PlEncodeOptions& opts);
 
+    GSError HwSetColorSpaceData(Media::PixelMap* pixelmap, sptr<SurfaceBuffer>& buffer);
     uint32_t AssembleSdrImageItem(sptr<SurfaceBuffer>& surfaceBuffer, SkImageInfo sdrInfo,
         std::vector<HDI::Codec::Image::V2_1::ImageItem>& inputImgs);
     uint32_t AssembleHeifHdrPicture(
