@@ -533,7 +533,7 @@ bool ParseArrayString([[maybe_unused]] ani_env* env, ani_object arrayObj, std::v
     for (int i = 0; i < int(length); i++) {
         ani_ref stringEntryRef;
         if (ANI_OK != env->Object_CallMethodByName_Ref(arrayObj, "$_get",
-            "i:C{std.core.Object}", &stringEntryRef, (ani_int)i)) {
+            "i:Y", &stringEntryRef, (ani_int)i)) {
             IMAGE_LOGE("Object_GetPropertyByName_Double length Failed");
             return false;
         }

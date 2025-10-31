@@ -367,7 +367,7 @@ ani_method ImageAniUtils::GetRecordSetMethod(ani_env* env, ani_object &argumentO
     }
     ani_method recordSetMethod;
     status = env->Class_FindMethod(recordCls, "$_set",
-        "C{std.core.Object}C{std.core.Object}:", &recordSetMethod);
+        "YY:", &recordSetMethod);
     if (status != ANI_OK) {
         IMAGE_LOGE("Class_FindMethod recordSetMethod Failed");
         return nullptr;
