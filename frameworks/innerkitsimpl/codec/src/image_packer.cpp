@@ -258,7 +258,7 @@ uint32_t ImagePacker::AddImage(ImageSource &source, uint32_t index)
             picture_.reset();  // release old inner picture
         }
         DecodingOptionsForPicture decodeOptsForPicture;
-        decodeOptsForPicture.desiredPixelFormat = PixelFormat::NV12;
+        decodeOptsForPicture.desiredPixelFormat = PixelFormat::RGBA_8888;
         decodeOptsForPicture.desireAuxiliaryPictures = { AuxiliaryPictureType::GAINMAP };
         picture_ = source.CreatePicture(decodeOptsForPicture, ret);
         if (ret == SUCCESS && picture_ != nullptr && picture_.get() != nullptr) {

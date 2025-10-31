@@ -5085,6 +5085,28 @@ uint32_t ImageSource::SetGifMetadataForPicture(std::unique_ptr<Picture> &picture
     return SUCCESS;
 }
 
+static void FixCuvaPicture(std::unique_ptr<Picture> &picture)
+{
+    auto hdrPixelMapTmp = picture->GetHdrComposedPixelMap();
+    std::shared_ptr<PixelMap> hdrPixelMap = std::move(hdrPixelMapTmp);
+    auto sdrPixelMap = picture->GetMainPixel();
+    if (!hdrPixelMap || !sdrPixelMap) {
+        IMAGE_LOGE("FixCuvaPicture: Invalid PixelMap, hdr or sdr is null");
+        return;
+    }
+    IMAGE_LOGD("FixCuvaPicture: hdrPixelMap format: %{public}d, sdrPixelMap format: %{public}d",
+        hdrPixelMap->GetPixelFormat(), sdrPixelMap->GetPixelFormat());
+
+    auto newPicture = picture->CreatePictureByHdrAndSdrPixelMap(hdrPixelMap, sdrPixelMap);
+    if (newPicture == nullptr) {
+        IMAGE_LOGE("FixCuvaPicture: Fail to create new picture.");
+        return;
+    }
+    auto isoGainMap = newPicture->GetAuxiliaryPicture(AuxiliaryPictureType::GAINMAP);
+    picture->SetAuxiliaryPicture(isoGainMap);
+    IMAGE_LOGI("FixCuvaPicture: Finish set isoGainMap");
+}
+
 std::unique_ptr<Picture> ImageSource::CreatePicture(const DecodingOptionsForPicture &opts, uint32_t &errorCode)
 {
     ImageInfo info;
@@ -5124,6 +5146,9 @@ std::unique_ptr<Picture> ImageSource::CreatePicture(const DecodingOptionsForPict
     SetHdrMetadataForPicture(picture);
     if (errorCode != SUCCESS) {
         IMAGE_LOGE("Decode auxiliary pictures failed, error code: %{public}u", errorCode);
+    }
+    if (CheckHdrType() == ImageHdrType::HDR_CUVA && dopts.desiredPixelFormat == PixelFormat::RGBA_8888) {
+        FixCuvaPicture(picture);
     }
     Picture::DumpPictureIfDumpEnabled(*picture, "picture_decode_after");
     return picture;
