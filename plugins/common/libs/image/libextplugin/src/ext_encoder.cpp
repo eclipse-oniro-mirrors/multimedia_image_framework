@@ -1034,15 +1034,15 @@ static SkImageInfo GetSkInfo(PixelMap* pixelMap, bool isGainmap, bool isSRGB = f
         if (pixelMap->InnerGetGrColorSpacePtr() != nullptr &&
             pixelMap->InnerGetGrColorSpace().GetColorSpaceName() != ColorManager::ColorSpaceName::NONE) {
             colorSpace = pixelMap->InnerGetGrColorSpacePtr()->ToSkColorSpace();
-        }
-        skcms_CICP cicp;
-        ColorUtils::ColorSpaceGetCicp(pixelMap->InnerGetGrColorSpace().GetColorSpaceName(),
+            skcms_CICP cicp;
+            ColorUtils::ColorSpaceGetCicp(pixelMap->InnerGetGrColorSpace().GetColorSpaceName(),
 #ifdef USE_M133_SKIA
             cicp.color_primaries, cicp.transfer_characteristics, cicp.matrix_coefficients, cicp.video_full_range_flag);
 #else
             cicp.colour_primaries, cicp.transfer_characteristics, cicp.matrix_coefficients, cicp.full_range_flag);
 #endif
-        colorSpace->SetIccCicp(cicp);
+            colorSpace->SetIccCicp(cicp);
+        }
 #endif
     }
     return SkImageInfo::Make(width, height, colorType, alphaType, colorSpace);
