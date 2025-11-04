@@ -684,11 +684,27 @@ Image_ErrorCode OH_PixelmapNative_CreatePixelmapFromSurface(const char *surfaceI
     return CreatePixelMapFromSurface(std::string(surfaceId, length), region, pixelmap);
 }
 
+static bool IsNativeBufferFormatSupported(int32_t format)
+{
+    return format == NATIVEBUFFER_PIXEL_FMT_RGBA_8888 ||
+        format == NATIVEBUFFER_PIXEL_FMT_YCRCB_420_SP || format == NATIVEBUFFER_PIXEL_FMT_YCBCR_420_SP ||
+        format == NATIVEBUFFER_PIXEL_FMT_YCBCR_P010 || format == NATIVEBUFFER_PIXEL_FMT_YCRCB_P010;
+}
+
 MIDK_EXPORT
 Image_ErrorCode OH_PixelmapNative_CreatePixelmapFromNativeBuffer(OH_NativeBuffer *nativeBuffer,
     OH_PixelmapNative **pixelmap)
 {
     if (nativeBuffer == nullptr || pixelmap == nullptr) {
+        return IMAGE_BAD_PARAMETER;
+    }
+
+    OH_NativeBuffer_Config config;
+    OH_NativeBuffer_GetConfig(nativeBuffer, &config);
+    if (!IsNativeBufferFormatSupported(config.format)) {
+        return IMAGE_BAD_PARAMETER;
+    }
+    if (!((config.usage & NATIVEBUFFER_USAGE_CPU_READ) && (config.usage & NATIVEBUFFER_USAGE_CPU_WRITE))) {
         return IMAGE_BAD_PARAMETER;
     }
 

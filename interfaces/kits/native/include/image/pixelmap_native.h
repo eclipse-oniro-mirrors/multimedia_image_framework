@@ -849,7 +849,7 @@ Image_ErrorCode OH_PixelmapNative_Translate(OH_PixelmapNative *pixelmap, float x
 /**
  * @brief Creates a PixelMap with only alpha channel from the source PixelMap.
  *
- * @param srcPixelmap The source PixelMap.
+ * @param srcPixelmap The source PixelMap that provides alpha channel data.
  * @param dstPixelmap The target PixelMap to be created.
  * @return Function result code:
  *         {@link IMAGE_SUCCESS} If the operation is successful.
@@ -882,7 +882,7 @@ Image_ErrorCode OH_PixelmapNative_Clone(OH_PixelmapNative *srcPixelmap, OH_Pixel
  * @param srcPixelmap The source PixelMap.
  * @param region The crop region.
  * @param scale The scale ratio of width and height.
- * @param level The anti-aliasing algorithm to be used.
+ * @param level The scaling interpolation algorithm to be used.
  * @param dstPixelmap The target PixelMap to be created.
  * @return Function result code:
  *         {@link IMAGE_SUCCESS} If the operation is successful.
@@ -1050,13 +1050,16 @@ Image_ErrorCode OH_PixelmapNative_CreatePixelmapFromSurface(const char *surfaceI
     OH_PixelmapNative **pixelmap);
 
 /**
- * @brief Creates a PixelMap from a native buffer.
+ * @brief Creates a PixelMap from a native buffer. If the native buffer usage is not configured with CPU access
+ * permissions, then the creation is not supported.
+ * Supports creation with pixel format RGBA_8888, NV21, NV12, YCBCR_P010, YCRCB_P010.
  *
- * @param nativeBuffer The native buffer.
+ * @param nativeBuffer The native buffer that contains PixelMap data.
  * @param pixelmap The PixelMap to be created.
  * @return Function result code:
  *         {@link IMAGE_SUCCESS} If the operation is successful.
- *         {@link IMAGE_BAD_PARAMETER} If any parameter is invalid, e.g. nativeBuffer or pixelmap is incorrect.
+ *         {@link IMAGE_BAD_PARAMETER} If any parameter is invalid, e.g. nativeBuffer or pixelmap is incorrect,
+ *                                     unsupported pixel format, or unconfigured CPU access permissions.
  *         {@link IMAGE_CREATE_PIXELMAP_FAILED} If the PixelMap creation failed.
  * @see OH_PixelmapNative
  * @since 22
@@ -1235,10 +1238,11 @@ Image_ErrorCode OH_PixelmapNative_UnaccessPixels(OH_PixelmapNative *pixelmap);
 Image_ErrorCode OH_PixelmapNative_GetUniqueId(OH_PixelmapNative *pixelmap, uint32_t *uniqueId);
 
 /**
- * @brief Checks whether the PixelMap has been released.
+ * @brief Checks whether the PixelMap has been released. If so, then any method call that accesses the object's internal
+ * data will fail.
  *
  * @param pixelmap The PixelMap to check.
- * @param released The resulting release status.
+ * @param released Whether the PixelMap has been released.
  * @return Function result code:
  *         {@link IMAGE_SUCCESS} If the operation is successful.
  *         {@link IMAGE_BAD_PARAMETER} If any parameter is invalid, e.g. pixelmap or released is incorrect.
