@@ -1662,5 +1662,58 @@ uint16_t ImageUtils::GetRGBA1010102ColorA(uint32_t color)
 {
     return (color >> RGBA1010102_A_SHIFT) & RGBA1010102_ALPHA_MASK;
 }
+
+bool ImageUtils::CheckPixelsInput(PixelMap* pixelMap, const RWPixelsOptions &opts)
+{
+    const Rect& rect = opts.region;
+    if (opts.bufferSize == 0 || opts.pixels == nullptr) {
+        IMAGE_LOGE("checkPixelsInput bufferSize or dst address invalid, bufferSize: %{public}" PRIu64, opts.bufferSize);
+        return false;
+    }
+    if (rect.left < 0 || rect.top < 0 || opts.stride > numeric_limits<int32_t>::max() ||
+        static_cast<uint64_t>(opts.offset) > opts.bufferSize) {
+        IMAGE_LOGE(
+            "checkPixelsInput left(%{public}d) or top(%{public}d) or stride(%{public}u) or offset(%{public}u) < 0.",
+            rect.left, rect.top, opts.stride, opts.offset);
+        return false;
+    }
+    if (rect.width <= 0 || rect.height <= 0 || rect.width > MAX_DIMENSION || rect.height > MAX_DIMENSION) {
+        IMAGE_LOGE("checkPixelsInput width(%{public}d) or height(%{public}d) is < 0.", rect.width, rect.height);
+        return false;
+    }
+    if (rect.left > pixelMap->GetWidth() - rect.width) {
+        IMAGE_LOGE("checkPixelsInput left(%{public}d) + width(%{public}d) is > pixelmap width(%{public}d).",
+            rect.left, rect.width, pixelMap->GetWidth());
+        return false;
+    }
+    if (rect.top > pixelMap->GetHeight() - rect.height) {
+        IMAGE_LOGE("checkPixelsInput top(%{public}d) + height(%{public}d) is > pixelmap height(%{public}d).",
+            rect.top, rect.height, pixelMap->GetHeight());
+        return false;
+    }
+    uint32_t regionStride = static_cast<uint32_t>(rect.width) * NUM_4;  // bytes count, need multiply by 4
+    if (opts.pixelFormat == PixelFormat::RGB_888) {
+        regionStride = static_cast<uint32_t>(rect.width) * NUM_3;  // bytes count, need multiply by 3
+    }
+    if (opts.stride < regionStride) {
+        IMAGE_LOGE("checkPixelsInput stride(%{public}d) < width*4 (%{public}d).", opts.stride, regionStride);
+        return false;
+    }
+    if (opts.bufferSize < regionStride) {
+        IMAGE_LOGE("checkPixelsInput input buffer size is < width * 4.");
+        return false;
+    }
+    // "1" is except the last line.
+    uint64_t lastLinePos = opts.offset + static_cast<uint64_t>(rect.height - NUM_1) * opts.stride;
+    if (static_cast<uint64_t>(opts.offset) > (opts.bufferSize - regionStride) ||
+        lastLinePos > (opts.bufferSize - regionStride)) {
+            IMAGE_LOGE(
+                "checkPixelsInput fail, height(%{public}d), width(%{public}d), lastLine(%{public}" PRIu64 "), "
+                "offset(%{public}u), bufferSize:%{public}" PRIu64 ".", rect.height, rect.width,
+                static_cast<uint64_t>(lastLinePos), opts.offset, static_cast<uint64_t>(opts.bufferSize));
+            return false;
+    }
+    return true;
+}
 } // namespace Media
 } // namespace OHOS

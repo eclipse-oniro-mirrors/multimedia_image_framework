@@ -35,6 +35,7 @@ constexpr uint32_t MALLOC_MAX_LENTH = 0x40000000;
 constexpr int32_t APIVERSION_13 = 13;
 constexpr int32_t APIVERSION_20 = 20;
 class PixelMap;
+struct RWPixelsOptions;
 struct InitializationOptions;
 
 class ImageUtils {
@@ -167,6 +168,7 @@ public:
     static uint16_t GetRGBA1010102ColorG(uint32_t color);
     static uint16_t GetRGBA1010102ColorB(uint32_t color);
     static uint16_t GetRGBA1010102ColorA(uint32_t color);
+    static bool CheckPixelsInput(PixelMap* pixelMap, const RWPixelsOptions &opts);
 #if !defined(CROSS_PLATFORM)
     static void FlushSurfaceBuffer(sptr<SurfaceBuffer>& surfaceBuffer);
 #endif
