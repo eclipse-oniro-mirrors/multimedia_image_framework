@@ -3747,5 +3747,6 @@ HWTEST_F(PixelMapTest, SetInitializationOptionAboutAllocator001, TestSize.Level3
         static_cast<int32_t>(AllocatorType::SHARE_MEM_ALLOC)));
     GTEST_LOG_(INFO) << "PixelMapTest: SetInitializationOptionAboutAllocator001 end";
 }
+
 }
 }
