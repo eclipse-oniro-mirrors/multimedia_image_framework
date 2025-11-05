@@ -2448,7 +2448,8 @@ bool ExtEncoder::GetToneMapMetadata(HdrMetadata& metadata, ToneMapMetadata& tone
 {
     ISOMetadata isoMeta = metadata.extendMeta.metaISO;
     toneMapMetadata.useBaseColorSpace = (isoMeta.useBaseColorFlag == 1) ? true : false;
-    toneMapMetadata.channelCnt = (isoMeta.gainmapChannelNum == 0) ? GAINMAP_CHANNEL_SINGLE : GAINMAP_CHANNEL_MULTI;
+    toneMapMetadata.channelCnt = (isoMeta.gainmapChannelNum == GAINMAP_CHANNEL_MULTI) ?
+        GAINMAP_CHANNEL_MULTI : GAINMAP_CHANNEL_SINGLE;
     toneMapMetadata.baseHdrHeadroom.denominator = DEFAULT_DENOMINATOR;
     if (isoMeta.baseHeadroom > 0.0f) {
         toneMapMetadata.baseHdrHeadroom.numerator = (uint32_t)(isoMeta.baseHeadroom * DEFAULT_DENOMINATOR);
