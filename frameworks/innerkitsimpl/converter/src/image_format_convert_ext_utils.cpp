@@ -167,24 +167,24 @@ static OHOS::OpenSourceLibyuv::YuvConstants GetYuvConstantFromParam(const DestCo
     bool isFullRange = destParam.yuvConvertCSDetails.srcRange != 0; // 0: limit range, 1: full range
     switch (destParam.yuvConvertCSDetails.srcYuvConversion) {
         case YuvConversion::BT601:
-            return isFullRange ? 
+            return isFullRange ?
                 OpenSourceLibyuv::YuvConstants::YvuJPEG  // BT.601 full
                 : OpenSourceLibyuv::YuvConstants::YvuI601; // BT.601 limit
         case YuvConversion::BT709:
-            return isFullRange ? 
+            return isFullRange ?
                 OpenSourceLibyuv::YuvConstants::YvuF709  // BT.709 full
                 : OpenSourceLibyuv::YuvConstants::YvuH709; // BT.709 limit
         case YuvConversion::BT2020:
-            return isFullRange ? 
+            return isFullRange ?
                 OpenSourceLibyuv::YuvConstants::YvuV2020  // BT.2020 full
                 : OpenSourceLibyuv::YuvConstants::Yvu2020; // BT.2020 limit
         default:
             if (destParam.format == PixelFormat::RGBA_1010102) {
-                return isFullRange ? 
+                return isFullRange ?
                     OpenSourceLibyuv::YuvConstants::YvuV2020  // BT.2020 full
                     : OpenSourceLibyuv::YuvConstants::Yvu2020; // BT.2020 limit
             } else {
-                return isFullRange ? 
+                return isFullRange ?
                     OpenSourceLibyuv::YuvConstants::YvuJPEG  // BT.601 full
                     : OpenSourceLibyuv::YuvConstants::YvuI601; // BT.601 limit
             }
