@@ -33,13 +33,23 @@ namespace {
     static const std::string IMAGE_INPUT3_DNG_PATH = "/data/local/tmp/image/test_dng_readmetadata003.dng";
     static const std::string IMAGE_INPUT4_DNG_PATH = "/data/local/tmp/image/test_notiff.dng";
     static const std::string IMAGE_INPUT5_DNG_PATH = "/data/local/tmp/image/test_dng_readmetadata004.dng";
+    static const std::string IMAGE_INPUT6_DNG_PATH = "/data/local/tmp/image/test_dng_writemetadata001.dng";
 }
 
 class DngExifMetadataAccessorTest : public testing::Test {
 public:
     DngExifMetadataAccessorTest() {}
     ~DngExifMetadataAccessorTest() {}
+    std::string GetProperty(const std::shared_ptr<ExifMetadata>& metadata, const std::string& prop);
 };
+
+std::string DngExifMetadataAccessorTest::GetProperty(const std::shared_ptr<ExifMetadata>& metadata,
+    const std::string& prop)
+{
+    std::string value;
+    metadata->GetValue(prop, value);
+    return value;
+}
 
 /**
  * @tc.name: Read001
@@ -646,6 +656,666 @@ HWTEST_F(DngExifMetadataAccessorTest, Read014, TestSize.Level3)
         "HwMnoteSceneBlueSkyConf:4,HwMnoteSceneGreenPlantConf:5,HwMnoteSceneBeachConf:6,"
         "HwMnoteSceneSnowConf:7,HwMnoteSceneSunsetConf:8,HwMnoteSceneFlowersConf:9,"
         "HwMnoteSceneNightConf:10,HwMnoteSceneTextConf:11");
+}
+
+/**
+ * @tc.name: Write001
+ * @tc.desc: Test writing fields to a DNG image, then reading them back and comparing with expected values.
+ * @tc.type: FUNC
+ */
+HWTEST_F(DngExifMetadataAccessorTest, Write001, TestSize.Level3)
+{
+    std::shared_ptr<MetadataStream> stream = std::make_shared<FileMetadataStream>(IMAGE_INPUT6_DNG_PATH);
+    ASSERT_NE(stream, nullptr);
+    ASSERT_TRUE(stream->Open(OpenMode::ReadWrite));
+    DngExifMetadataAccessor imageAccessor(stream);
+    uint32_t result = imageAccessor.Read();
+    ASSERT_EQ(result, SUCCESS);
+
+    std::shared_ptr<ExifMetadata> exifMetadata = imageAccessor.Get();
+    ASSERT_NE(exifMetadata, nullptr);
+    ASSERT_TRUE(exifMetadata->SetValue("NewSubfileType", "1"));
+    ASSERT_TRUE(exifMetadata->SetValue("SubfileType", "2"));
+    ASSERT_TRUE(exifMetadata->SetValue("ImageWidth", "3456"));
+    ASSERT_TRUE(exifMetadata->SetValue("ImageLength", "4608"));
+    ASSERT_TRUE(exifMetadata->SetValue("BitsPerSample", "8,8,8"));
+    ASSERT_TRUE(exifMetadata->SetValue("Compression", "1"));
+    ASSERT_TRUE(exifMetadata->SetValue("ImageDescription", "cuva"));
+    ASSERT_TRUE(exifMetadata->SetValue("Make", "HUA"));
+    ASSERT_TRUE(exifMetadata->SetValue("Model", "TNY-AL00"));
+    ASSERT_TRUE(exifMetadata->SetValue("Orientation", "2"));
+    ASSERT_TRUE(exifMetadata->SetValue("SamplesPerPixel", "23"));
+    ASSERT_TRUE(exifMetadata->SetValue("XResolution", "72"));
+    ASSERT_TRUE(exifMetadata->SetValue("YResolution", "72"));
+    ASSERT_TRUE(exifMetadata->SetValue("PlanarConfiguration", "1"));
+
+    ASSERT_EQ(imageAccessor.Write(), SUCCESS);
+    ASSERT_EQ(imageAccessor.Read(), SUCCESS);
+
+    exifMetadata = imageAccessor.Get();
+    ASSERT_NE(exifMetadata, nullptr);
+    ASSERT_EQ(GetProperty(exifMetadata, "NewSubfileType"), "1");
+    ASSERT_EQ(GetProperty(exifMetadata, "SubfileType"), "2");
+    ASSERT_EQ(GetProperty(exifMetadata, "ImageWidth"), "3456");
+    ASSERT_EQ(GetProperty(exifMetadata, "ImageLength"), "4608");
+    ASSERT_EQ(GetProperty(exifMetadata, "BitsPerSample"), "8, 8, 8");
+    ASSERT_EQ(GetProperty(exifMetadata, "Compression"), "Uncompressed");
+    ASSERT_EQ(GetProperty(exifMetadata, "ImageDescription"), "cuva");
+    ASSERT_EQ(GetProperty(exifMetadata, "Make"), "HUA");
+    ASSERT_EQ(GetProperty(exifMetadata, "Model"), "TNY-AL00");
+    ASSERT_EQ(GetProperty(exifMetadata, "Orientation"), "Top-right");
+    ASSERT_EQ(GetProperty(exifMetadata, "SamplesPerPixel"), "23");
+    ASSERT_EQ(GetProperty(exifMetadata, "XResolution"), "72");
+    ASSERT_EQ(GetProperty(exifMetadata, "YResolution"), "72");
+    ASSERT_EQ(GetProperty(exifMetadata, "PlanarConfiguration"), "Chunky format");
+}
+
+/**
+ * @tc.name: Write002
+ * @tc.desc: Test writing fields to a DNG image, then reading them back and comparing with expected values.
+ * @tc.type: FUNC
+ */
+HWTEST_F(DngExifMetadataAccessorTest, Write002, TestSize.Level3)
+{
+    std::shared_ptr<MetadataStream> stream = std::make_shared<FileMetadataStream>(IMAGE_INPUT6_DNG_PATH);
+    ASSERT_NE(stream, nullptr);
+    ASSERT_TRUE(stream->Open(OpenMode::ReadWrite));
+    DngExifMetadataAccessor imageAccessor(stream);
+    uint32_t result = imageAccessor.Read();
+    ASSERT_EQ(result, SUCCESS);
+
+    std::shared_ptr<ExifMetadata> exifMetadata = imageAccessor.Get();
+    ASSERT_NE(exifMetadata, nullptr);
+    ASSERT_TRUE(exifMetadata->SetValue("ResolutionUnit", "2"));
+    ASSERT_TRUE(exifMetadata->SetValue("TransferFunction", "2"));
+    ASSERT_TRUE(exifMetadata->SetValue("Software", "TNY-AL00 2.0.0.232(C00E230R2P4)"));
+    ASSERT_TRUE(exifMetadata->SetValue("DateTime", "2022:06:02 15:51:35"));
+    ASSERT_TRUE(exifMetadata->SetValue("Artist", "AllWebp"));
+    ASSERT_TRUE(exifMetadata->SetValue("WhitePoint", "124/1"));
+    ASSERT_TRUE(exifMetadata->SetValue("PrimaryChromaticities", "124/1"));
+    ASSERT_TRUE(exifMetadata->SetValue("JPEGProc", "252"));
+    ASSERT_TRUE(exifMetadata->SetValue("YCbCrCoefficients", "299/1000 587/1000 114/1000"));
+    ASSERT_TRUE(exifMetadata->SetValue("YCbCrSubSampling", "4 2"));
+    ASSERT_TRUE(exifMetadata->SetValue("YCbCrPositioning", "1"));
+    ASSERT_TRUE(exifMetadata->SetValue("ReferenceBlackWhite", "221/1"));
+    ASSERT_TRUE(exifMetadata->SetValue("Copyright", "Hua"));
+    ASSERT_TRUE(exifMetadata->SetValue("ExposureTime", "1/44"));
+
+    ASSERT_EQ(imageAccessor.Write(), SUCCESS);
+    ASSERT_EQ(imageAccessor.Read(), SUCCESS);
+
+    exifMetadata = imageAccessor.Get();
+    ASSERT_NE(exifMetadata, nullptr);
+    ASSERT_EQ(GetProperty(exifMetadata, "ResolutionUnit"), "Inch");
+    ASSERT_EQ(GetProperty(exifMetadata, "TransferFunction"), "2");
+    ASSERT_EQ(GetProperty(exifMetadata, "Software"), "TNY-AL00 2.0.0.232(C00E230R2P4)");
+    ASSERT_EQ(GetProperty(exifMetadata, "DateTime"), "2022:06:02 15:51:35");
+    ASSERT_EQ(GetProperty(exifMetadata, "Artist"), "AllWebp");
+    ASSERT_EQ(GetProperty(exifMetadata, "WhitePoint"), "124");
+    ASSERT_EQ(GetProperty(exifMetadata, "PrimaryChromaticities"), "124");
+    ASSERT_EQ(GetProperty(exifMetadata, "JPEGProc"), "252");
+    ASSERT_EQ(GetProperty(exifMetadata, "YCbCrCoefficients"), "0.299, 0.587, 0.114");
+    ASSERT_EQ(GetProperty(exifMetadata, "YCbCrSubSampling"), "4, 2");
+    ASSERT_EQ(GetProperty(exifMetadata, "YCbCrPositioning"), "Centered");
+    ASSERT_EQ(GetProperty(exifMetadata, "ReferenceBlackWhite"), "221");
+    ASSERT_EQ(GetProperty(exifMetadata, "Copyright"), "Hua (Photographer) - [None] (Editor)");
+    ASSERT_EQ(GetProperty(exifMetadata, "ExposureTime"), "1/44 sec.");
+}
+
+/**
+ * @tc.name: Write003
+ * @tc.desc: Test writing fields to a DNG image, then reading them back and comparing with expected values.
+ * @tc.type: FUNC
+ */
+HWTEST_F(DngExifMetadataAccessorTest, Write003, TestSize.Level3)
+{
+    std::shared_ptr<MetadataStream> stream = std::make_shared<FileMetadataStream>(IMAGE_INPUT6_DNG_PATH);
+    ASSERT_NE(stream, nullptr);
+    ASSERT_TRUE(stream->Open(OpenMode::ReadWrite));
+    DngExifMetadataAccessor imageAccessor(stream);
+    uint32_t result = imageAccessor.Read();
+    ASSERT_EQ(result, SUCCESS);
+
+    std::shared_ptr<ExifMetadata> exifMetadata = imageAccessor.Get();
+    ASSERT_NE(exifMetadata, nullptr);
+    ASSERT_TRUE(exifMetadata->SetValue("FNumber", "4/1"));
+    ASSERT_TRUE(exifMetadata->SetValue("ExposureProgram", "2"));
+    ASSERT_TRUE(exifMetadata->SetValue("ISOSpeedRatings", "400"));
+    ASSERT_TRUE(exifMetadata->SetValue("SensitivityType", "5"));
+    ASSERT_TRUE(exifMetadata->SetValue("StandardOutputSensitivity", "5"));
+    ASSERT_TRUE(exifMetadata->SetValue("RecommendedExposureIndex", "241"));
+    ASSERT_TRUE(exifMetadata->SetValue("ISOSpeed", "200"));
+    ASSERT_TRUE(exifMetadata->SetValue("ISOSpeedLatitudeyyy", "200"));
+    ASSERT_TRUE(exifMetadata->SetValue("ISOSpeedLatitudezzz", "200"));
+    ASSERT_TRUE(exifMetadata->SetValue("ExifVersion", "0210"));
+    ASSERT_TRUE(exifMetadata->SetValue("DateTimeOriginal", "2022:06:02 15:51:35"));
+    ASSERT_TRUE(exifMetadata->SetValue("DateTimeDigitized", "2022:06:02 15:51:35"));
+    ASSERT_TRUE(exifMetadata->SetValue("OffsetTime", "2024:04:11"));
+    ASSERT_TRUE(exifMetadata->SetValue("OffsetTimeOriginal", "00xx"));
+
+    ASSERT_EQ(imageAccessor.Write(), SUCCESS);
+    ASSERT_EQ(imageAccessor.Read(), SUCCESS);
+
+    exifMetadata = imageAccessor.Get();
+    ASSERT_NE(exifMetadata, nullptr);
+    ASSERT_EQ(GetProperty(exifMetadata, "FNumber"), "f/4.0");
+    ASSERT_EQ(GetProperty(exifMetadata, "ExposureProgram"), "Normal program");
+    ASSERT_EQ(GetProperty(exifMetadata, "ISOSpeedRatings"), "400");
+    ASSERT_EQ(GetProperty(exifMetadata, "SensitivityType"), "Standard output sensitivity (SOS) and ISO speed");
+    ASSERT_EQ(GetProperty(exifMetadata, "StandardOutputSensitivity"), "5");
+    ASSERT_EQ(GetProperty(exifMetadata, "RecommendedExposureIndex"), "241");
+    ASSERT_EQ(GetProperty(exifMetadata, "ISOSpeed"), "200");
+    ASSERT_EQ(GetProperty(exifMetadata, "ISOSpeedLatitudeyyy"), "200");
+    ASSERT_EQ(GetProperty(exifMetadata, "ISOSpeedLatitudezzz"), "200");
+    ASSERT_EQ(GetProperty(exifMetadata, "ExifVersion"), "Exif Version 2.1");
+    ASSERT_EQ(GetProperty(exifMetadata, "DateTimeOriginal"), "2022:06:02 15:51:35");
+    ASSERT_EQ(GetProperty(exifMetadata, "DateTimeDigitized"), "2022:06:02 15:51:35");
+    ASSERT_EQ(GetProperty(exifMetadata, "OffsetTime"), "2024:04:11");
+    ASSERT_EQ(GetProperty(exifMetadata, "OffsetTimeOriginal"), "00xx");
+}
+
+/**
+ * @tc.name: Write004
+ * @tc.desc: Test writing fields to a DNG image, then reading them back and comparing with expected values.
+ * @tc.type: FUNC
+ */
+HWTEST_F(DngExifMetadataAccessorTest, Write004, TestSize.Level3)
+{
+    std::shared_ptr<MetadataStream> stream = std::make_shared<FileMetadataStream>(IMAGE_INPUT6_DNG_PATH);
+    ASSERT_NE(stream, nullptr);
+    ASSERT_TRUE(stream->Open(OpenMode::ReadWrite));
+    DngExifMetadataAccessor imageAccessor(stream);
+    uint32_t result = imageAccessor.Read();
+    ASSERT_EQ(result, SUCCESS);
+
+    std::shared_ptr<ExifMetadata> exifMetadata = imageAccessor.Get();
+    ASSERT_NE(exifMetadata, nullptr);
+    ASSERT_TRUE(exifMetadata->SetValue("OffsetTimeDigitized", "abs"));
+    ASSERT_TRUE(exifMetadata->SetValue("ComponentsConfiguration", "1456"));
+    ASSERT_TRUE(exifMetadata->SetValue("CompressedBitsPerPixel", "95/100"));
+    ASSERT_TRUE(exifMetadata->SetValue("ShutterSpeedValue", "14/1"));
+    ASSERT_TRUE(exifMetadata->SetValue("ApertureValue", "5/1"));
+    ASSERT_TRUE(exifMetadata->SetValue("BrightnessValue", "5"));
+    ASSERT_TRUE(exifMetadata->SetValue("ExposureBiasValue", "27/10"));
+    ASSERT_TRUE(exifMetadata->SetValue("MaxApertureValue", "9/100"));
+    ASSERT_TRUE(exifMetadata->SetValue("MeteringMode", "5"));
+    ASSERT_TRUE(exifMetadata->SetValue("LightSource", "1"));
+    ASSERT_TRUE(exifMetadata->SetValue("Flash", "24"));
+    ASSERT_TRUE(exifMetadata->SetValue("FocalLength", "35/1"));
+    ASSERT_TRUE(exifMetadata->SetValue("SubjectArea", "10 20"));
+    ASSERT_TRUE(exifMetadata->SetValue("MakerNote", "demo"));
+    ASSERT_TRUE(exifMetadata->SetValue("UserComment", "place for user comments."));
+
+    ASSERT_EQ(imageAccessor.Write(), SUCCESS);
+    ASSERT_EQ(imageAccessor.Read(), SUCCESS);
+
+    exifMetadata = imageAccessor.Get();
+    ASSERT_NE(exifMetadata, nullptr);
+    ASSERT_EQ(GetProperty(exifMetadata, "OffsetTimeDigitized"), "abs");
+    ASSERT_EQ(GetProperty(exifMetadata, "ComponentsConfiguration"), "Y R G B");
+    ASSERT_EQ(GetProperty(exifMetadata, "CompressedBitsPerPixel"), "0.95");
+    ASSERT_EQ(GetProperty(exifMetadata, "ShutterSpeedValue"), "14.00 EV (1/16384 sec.)");
+    ASSERT_EQ(GetProperty(exifMetadata, "ApertureValue"), "5.00 EV (f/5.7)");
+    ASSERT_EQ(GetProperty(exifMetadata, "BrightnessValue"), "5.00 EV (109.64 cd/m^2)");
+    ASSERT_EQ(GetProperty(exifMetadata, "ExposureBiasValue"), "2.70 EV");
+    ASSERT_EQ(GetProperty(exifMetadata, "MaxApertureValue"), "0.09 EV (f/1.0)");
+    ASSERT_EQ(GetProperty(exifMetadata, "MeteringMode"), "Pattern");
+    ASSERT_EQ(GetProperty(exifMetadata, "LightSource"), "Daylight");
+    ASSERT_EQ(GetProperty(exifMetadata, "Flash"), "Flash did not fire, auto mode");
+    ASSERT_EQ(GetProperty(exifMetadata, "FocalLength"), "35.0 mm");
+    ASSERT_EQ(GetProperty(exifMetadata, "SubjectArea"),
+        "Within rectangle (width 2318, height 1390) around (x,y) = (10,20)");
+    ASSERT_EQ(GetProperty(exifMetadata, "MakerNote"), "demo");
+    ASSERT_EQ(GetProperty(exifMetadata, "UserComment"), "place for user comments.");
+}
+
+/**
+ * @tc.name: Write005
+ * @tc.desc: Test writing fields to a DNG image, then reading them back and comparing with expected values.
+ * @tc.type: FUNC
+ */
+HWTEST_F(DngExifMetadataAccessorTest, Write005, TestSize.Level3)
+{
+    std::shared_ptr<MetadataStream> stream = std::make_shared<FileMetadataStream>(IMAGE_INPUT6_DNG_PATH);
+    ASSERT_NE(stream, nullptr);
+    ASSERT_TRUE(stream->Open(OpenMode::ReadWrite));
+    DngExifMetadataAccessor imageAccessor(stream);
+    uint32_t result = imageAccessor.Read();
+    ASSERT_EQ(result, SUCCESS);
+
+    std::shared_ptr<ExifMetadata> exifMetadata = imageAccessor.Get();
+    ASSERT_NE(exifMetadata, nullptr);
+    ASSERT_TRUE(exifMetadata->SetValue("SubsecTime", "543792"));
+    ASSERT_TRUE(exifMetadata->SetValue("SubsecTimeOriginal", "543792"));
+    ASSERT_TRUE(exifMetadata->SetValue("SubsecTimeDigitized", "543792"));
+    ASSERT_TRUE(exifMetadata->SetValue("FlashpixVersion", "0200"));
+    ASSERT_TRUE(exifMetadata->SetValue("ColorSpace", "1"));
+    ASSERT_TRUE(exifMetadata->SetValue("PixelXDimension", "3456"));
+    ASSERT_TRUE(exifMetadata->SetValue("PixelYDimension", "4608"));
+    ASSERT_TRUE(exifMetadata->SetValue("RelatedSoundFile", "abb"));
+    ASSERT_TRUE(exifMetadata->SetValue("FlashEnergy", "832/1"));
+    ASSERT_TRUE(exifMetadata->SetValue("SpatialFrequencyResponse", "13"));
+    ASSERT_TRUE(exifMetadata->SetValue("FocalPlaneXResolution", "1081/1"));
+    ASSERT_TRUE(exifMetadata->SetValue("FocalPlaneYResolution", "880/1"));
+    ASSERT_TRUE(exifMetadata->SetValue("FocalPlaneResolutionUnit", "3"));
+    ASSERT_TRUE(exifMetadata->SetValue("ExposureIndex", "4/2"));
+
+    ASSERT_EQ(imageAccessor.Write(), SUCCESS);
+    ASSERT_EQ(imageAccessor.Read(), SUCCESS);
+
+    exifMetadata = imageAccessor.Get();
+    ASSERT_NE(exifMetadata, nullptr);
+    ASSERT_EQ(GetProperty(exifMetadata, "SubsecTime"), "543792");
+    ASSERT_EQ(GetProperty(exifMetadata, "SubsecTimeOriginal"), "543792");
+    ASSERT_EQ(GetProperty(exifMetadata, "SubsecTimeDigitized"), "543792");
+    ASSERT_EQ(GetProperty(exifMetadata, "FlashpixVersion"), "Unknown FlashPix Version");
+    ASSERT_EQ(GetProperty(exifMetadata, "ColorSpace"), "sRGB");
+    ASSERT_EQ(GetProperty(exifMetadata, "PixelXDimension"), "3456");
+    ASSERT_EQ(GetProperty(exifMetadata, "PixelYDimension"), "4608");
+    ASSERT_EQ(GetProperty(exifMetadata, "RelatedSoundFile"), "abb");
+    ASSERT_EQ(GetProperty(exifMetadata, "FlashEnergy"), "832");
+    ASSERT_EQ(GetProperty(exifMetadata, "SpatialFrequencyResponse"), "13");
+    ASSERT_EQ(GetProperty(exifMetadata, "FocalPlaneXResolution"), "1081");
+    ASSERT_EQ(GetProperty(exifMetadata, "FocalPlaneYResolution"), "880");
+    ASSERT_EQ(GetProperty(exifMetadata, "FocalPlaneResolutionUnit"), "Centimeter");
+    ASSERT_EQ(GetProperty(exifMetadata, "ExposureIndex"), "2.0");
+}
+
+/**
+ * @tc.name: Write006
+ * @tc.desc: Test writing fields to a DNG image, then reading them back and comparing with expected values.
+ * @tc.type: FUNC
+ */
+HWTEST_F(DngExifMetadataAccessorTest, Write006, TestSize.Level3)
+{
+    std::shared_ptr<MetadataStream> stream = std::make_shared<FileMetadataStream>(IMAGE_INPUT6_DNG_PATH);
+    ASSERT_NE(stream, nullptr);
+    ASSERT_TRUE(stream->Open(OpenMode::ReadWrite));
+    DngExifMetadataAccessor imageAccessor(stream);
+    uint32_t result = imageAccessor.Read();
+    ASSERT_EQ(result, SUCCESS);
+
+    std::shared_ptr<ExifMetadata> exifMetadata = imageAccessor.Get();
+    ASSERT_NE(exifMetadata, nullptr);
+    ASSERT_TRUE(exifMetadata->SetValue("SensingMethod", "2"));
+    ASSERT_TRUE(exifMetadata->SetValue("FileSource", "3"));
+    ASSERT_TRUE(exifMetadata->SetValue("SceneType", "1"));
+    ASSERT_TRUE(exifMetadata->SetValue("CFAPattern", "3"));
+    ASSERT_TRUE(exifMetadata->SetValue("CustomRendered", "1"));
+    ASSERT_TRUE(exifMetadata->SetValue("ExposureMode", "1"));
+    ASSERT_TRUE(exifMetadata->SetValue("WhiteBalance", "0"));
+    ASSERT_TRUE(exifMetadata->SetValue("DigitalZoomRatio", "100/100"));
+    ASSERT_TRUE(exifMetadata->SetValue("FocalLengthIn35mmFilm", "27"));
+    ASSERT_TRUE(exifMetadata->SetValue("SceneCaptureType", "2"));
+    ASSERT_TRUE(exifMetadata->SetValue("GainControl", "1"));
+    ASSERT_TRUE(exifMetadata->SetValue("Contrast", "1"));
+    ASSERT_TRUE(exifMetadata->SetValue("Saturation", "1"));
+    ASSERT_TRUE(exifMetadata->SetValue("Sharpness", "2"));
+
+    ASSERT_EQ(imageAccessor.Write(), SUCCESS);
+    ASSERT_EQ(imageAccessor.Read(), SUCCESS);
+
+    exifMetadata = imageAccessor.Get();
+    ASSERT_NE(exifMetadata, nullptr);
+    ASSERT_EQ(GetProperty(exifMetadata, "SensingMethod"), "One-chip color area sensor");
+    ASSERT_EQ(GetProperty(exifMetadata, "FileSource"), "DSC");
+    ASSERT_EQ(GetProperty(exifMetadata, "SceneType"), "Directly photographed");
+    ASSERT_EQ(GetProperty(exifMetadata, "CFAPattern"), "1 bytes undefined data");
+    ASSERT_EQ(GetProperty(exifMetadata, "CustomRendered"), "Custom process");
+    ASSERT_EQ(GetProperty(exifMetadata, "ExposureMode"), "Manual exposure");
+    ASSERT_EQ(GetProperty(exifMetadata, "WhiteBalance"), "Auto white balance");
+    ASSERT_EQ(GetProperty(exifMetadata, "DigitalZoomRatio"), "1.00");
+    ASSERT_EQ(GetProperty(exifMetadata, "FocalLengthIn35mmFilm"), "27");
+    ASSERT_EQ(GetProperty(exifMetadata, "SceneCaptureType"), "Portrait");
+    ASSERT_EQ(GetProperty(exifMetadata, "GainControl"), "Low gain up");
+    ASSERT_EQ(GetProperty(exifMetadata, "Contrast"), "Soft");
+    ASSERT_EQ(GetProperty(exifMetadata, "Saturation"), "Low saturation");
+    ASSERT_EQ(GetProperty(exifMetadata, "Sharpness"), "Hard");
+}
+
+/**
+ * @tc.name: Write007
+ * @tc.desc: Test writing fields to a DNG image, then reading them back and comparing with expected values.
+ * @tc.type: FUNC
+ */
+HWTEST_F(DngExifMetadataAccessorTest, Write007, TestSize.Level3)
+{
+    std::shared_ptr<MetadataStream> stream = std::make_shared<FileMetadataStream>(IMAGE_INPUT6_DNG_PATH);
+    ASSERT_NE(stream, nullptr);
+    ASSERT_TRUE(stream->Open(OpenMode::ReadWrite));
+    DngExifMetadataAccessor imageAccessor(stream);
+    uint32_t result = imageAccessor.Read();
+    ASSERT_EQ(result, SUCCESS);
+
+    std::shared_ptr<ExifMetadata> exifMetadata = imageAccessor.Get();
+    ASSERT_NE(exifMetadata, nullptr);
+    ASSERT_TRUE(exifMetadata->SetValue("DeviceSettingDescription", "2"));
+    ASSERT_TRUE(exifMetadata->SetValue("SubjectDistanceRange", "1"));
+    ASSERT_TRUE(exifMetadata->SetValue("ImageUniqueID", "FXIC012"));
+    ASSERT_TRUE(exifMetadata->SetValue("CameraOwnerName", "2a"));
+    ASSERT_TRUE(exifMetadata->SetValue("BodySerialNumber", "x1"));
+    ASSERT_TRUE(exifMetadata->SetValue("LensSpecification", "1/1 5/2 3/1 2/1"));
+    ASSERT_TRUE(exifMetadata->SetValue("LensMake", "aaa"));
+    ASSERT_TRUE(exifMetadata->SetValue("LensModel", "xxx"));
+    ASSERT_TRUE(exifMetadata->SetValue("LensSerialNumber", "111a"));
+    ASSERT_TRUE(exifMetadata->SetValue("CompositeImage", "2"));
+    ASSERT_TRUE(exifMetadata->SetValue("SourceImageNumberOfCompositeImage", "34 56"));
+    ASSERT_TRUE(exifMetadata->SetValue("SourceExposureTimesOfCompositeImage", "byte"));
+    ASSERT_TRUE(exifMetadata->SetValue("Gamma", "3/2"));
+    ASSERT_TRUE(exifMetadata->SetValue("SpectralSensitivity", "Sensitivity"));
+
+    ASSERT_EQ(imageAccessor.Write(), SUCCESS);
+    ASSERT_EQ(imageAccessor.Read(), SUCCESS);
+
+    exifMetadata = imageAccessor.Get();
+    ASSERT_NE(exifMetadata, nullptr);
+    ASSERT_EQ(GetProperty(exifMetadata, "DeviceSettingDescription"), "2");
+    ASSERT_EQ(GetProperty(exifMetadata, "SubjectDistanceRange"), "Macro");
+    ASSERT_EQ(GetProperty(exifMetadata, "ImageUniqueID"), "FXIC012");
+    ASSERT_EQ(GetProperty(exifMetadata, "CameraOwnerName"), "2a");
+    ASSERT_EQ(GetProperty(exifMetadata, "BodySerialNumber"), "x1");
+    ASSERT_EQ(GetProperty(exifMetadata, "LensSpecification"), " 1, 2.5,  3,  2");
+    ASSERT_EQ(GetProperty(exifMetadata, "LensMake"), "aaa");
+    ASSERT_EQ(GetProperty(exifMetadata, "LensModel"), "xxx");
+    ASSERT_EQ(GetProperty(exifMetadata, "LensSerialNumber"), "111a");
+    ASSERT_EQ(GetProperty(exifMetadata, "CompositeImage"), "2");
+    ASSERT_EQ(GetProperty(exifMetadata, "SourceImageNumberOfCompositeImage"), "34");
+    ASSERT_EQ(GetProperty(exifMetadata, "SourceExposureTimesOfCompositeImage"), "byte");
+    ASSERT_EQ(GetProperty(exifMetadata, "Gamma"), "1.5");
+    ASSERT_EQ(GetProperty(exifMetadata, "SpectralSensitivity"), "Sensitivity");
+}
+
+/**
+ * @tc.name: Write008
+ * @tc.desc: Test writing fields to a DNG image, then reading them back and comparing with expected values.
+ * @tc.type: FUNC
+ */
+HWTEST_F(DngExifMetadataAccessorTest, Write008, TestSize.Level3)
+{
+    std::shared_ptr<MetadataStream> stream = std::make_shared<FileMetadataStream>(IMAGE_INPUT6_DNG_PATH);
+    ASSERT_NE(stream, nullptr);
+    ASSERT_TRUE(stream->Open(OpenMode::ReadWrite));
+    DngExifMetadataAccessor imageAccessor(stream);
+    uint32_t result = imageAccessor.Read();
+    ASSERT_EQ(result, SUCCESS);
+
+    std::shared_ptr<ExifMetadata> exifMetadata = imageAccessor.Get();
+    ASSERT_NE(exifMetadata, nullptr);
+    ASSERT_TRUE(exifMetadata->SetValue("GPSVersionID", "2.2.0.0"));
+    ASSERT_TRUE(exifMetadata->SetValue("GPSLatitudeRef", "N"));
+    ASSERT_TRUE(exifMetadata->SetValue("GPSLatitude", "39/1 54/1 20/1"));
+    ASSERT_TRUE(exifMetadata->SetValue("GPSLongitudeRef", "E"));
+    ASSERT_TRUE(exifMetadata->SetValue("GPSLongitude", "120/1 52/1 26/1"));
+    ASSERT_TRUE(exifMetadata->SetValue("GPSAltitudeRef", "1"));
+    ASSERT_TRUE(exifMetadata->SetValue("GPSAltitude", "1/100"));
+    ASSERT_TRUE(exifMetadata->SetValue("GPSTimeStamp", "11/1 37/1 58/1"));
+    ASSERT_TRUE(exifMetadata->SetValue("GPSSatellites", "BBA"));
+    ASSERT_TRUE(exifMetadata->SetValue("GPSStatus", "A"));
+    ASSERT_TRUE(exifMetadata->SetValue("GPSMeasureMode", "2"));
+    ASSERT_TRUE(exifMetadata->SetValue("GPSDOP", "182/1"));
+    ASSERT_TRUE(exifMetadata->SetValue("GPSSpeedRef", "M"));
+    ASSERT_TRUE(exifMetadata->SetValue("GPSSpeed", "150/1"));
+
+    ASSERT_EQ(imageAccessor.Write(), SUCCESS);
+    ASSERT_EQ(imageAccessor.Read(), SUCCESS);
+
+    exifMetadata = imageAccessor.Get();
+    ASSERT_NE(exifMetadata, nullptr);
+    ASSERT_EQ(GetProperty(exifMetadata, "GPSVersionID"), "2.2.0.0");
+    ASSERT_EQ(GetProperty(exifMetadata, "GPSLatitudeRef"), "N");
+    ASSERT_EQ(GetProperty(exifMetadata, "GPSLatitude"), "39, 54, 20");
+    ASSERT_EQ(GetProperty(exifMetadata, "GPSLongitudeRef"), "E");
+    ASSERT_EQ(GetProperty(exifMetadata, "GPSLongitude"), "120, 52, 26");
+    ASSERT_EQ(GetProperty(exifMetadata, "GPSAltitudeRef"), "Sea level reference");
+    ASSERT_EQ(GetProperty(exifMetadata, "GPSAltitude"), "0.01");
+    ASSERT_EQ(GetProperty(exifMetadata, "GPSTimeStamp"), "11:37:58.00");
+    ASSERT_EQ(GetProperty(exifMetadata, "GPSSatellites"), "BBA");
+    ASSERT_EQ(GetProperty(exifMetadata, "GPSStatus"), "A");
+    ASSERT_EQ(GetProperty(exifMetadata, "GPSMeasureMode"), "2");
+    ASSERT_EQ(GetProperty(exifMetadata, "GPSDOP"), "182");
+    ASSERT_EQ(GetProperty(exifMetadata, "GPSSpeedRef"), "M");
+    ASSERT_EQ(GetProperty(exifMetadata, "GPSSpeed"), "150");
+}
+
+/**
+ * @tc.name: Write009
+ * @tc.desc: Test writing fields to a DNG image, then reading them back and comparing with expected values.
+ * @tc.type: FUNC
+ */
+HWTEST_F(DngExifMetadataAccessorTest, Write009, TestSize.Level3)
+{
+    std::shared_ptr<MetadataStream> stream = std::make_shared<FileMetadataStream>(IMAGE_INPUT6_DNG_PATH);
+    ASSERT_NE(stream, nullptr);
+    ASSERT_TRUE(stream->Open(OpenMode::ReadWrite));
+    DngExifMetadataAccessor imageAccessor(stream);
+    uint32_t result = imageAccessor.Read();
+    ASSERT_EQ(result, SUCCESS);
+
+    std::shared_ptr<ExifMetadata> exifMetadata = imageAccessor.Get();
+    ASSERT_NE(exifMetadata, nullptr);
+    ASSERT_TRUE(exifMetadata->SetValue("GPSTrackRef", "M"));
+    ASSERT_TRUE(exifMetadata->SetValue("GPSTrack", "111/1"));
+    ASSERT_TRUE(exifMetadata->SetValue("GPSImgDirectionRef", "T"));
+    ASSERT_TRUE(exifMetadata->SetValue("GPSImgDirection", "225218/100000"));
+    ASSERT_TRUE(exifMetadata->SetValue("GPSMapDatum", "TEST"));
+    ASSERT_TRUE(exifMetadata->SetValue("GPSDestLatitudeRef", "N"));
+    ASSERT_TRUE(exifMetadata->SetValue("GPSDestLatitude", "33/1 22/1 11/1"));
+    ASSERT_TRUE(exifMetadata->SetValue("GPSDestLongitudeRef", "W"));
+    ASSERT_TRUE(exifMetadata->SetValue("GPSDestLongitude", "33/1 22/1 11/1"));
+    ASSERT_TRUE(exifMetadata->SetValue("GPSDestBearingRef", "M"));
+    ASSERT_TRUE(exifMetadata->SetValue("GPSDestBearing", "22/11"));
+    ASSERT_TRUE(exifMetadata->SetValue("GPSMeasureMode", "3"));
+    ASSERT_TRUE(exifMetadata->SetValue("GPSDestDistanceRef", "K"));
+    ASSERT_TRUE(exifMetadata->SetValue("GPSDestDistance", "2/10"));
+    ASSERT_TRUE(exifMetadata->SetValue("GPSProcessingMethod", "bytes"));
+    ASSERT_TRUE(exifMetadata->SetValue("HwMnoteXmageMode", "1"));
+
+    ASSERT_EQ(imageAccessor.Write(), SUCCESS);
+    ASSERT_EQ(imageAccessor.Read(), SUCCESS);
+
+    exifMetadata = imageAccessor.Get();
+    ASSERT_NE(exifMetadata, nullptr);
+    ASSERT_EQ(GetProperty(exifMetadata, "GPSTrackRef"), "M");
+    ASSERT_EQ(GetProperty(exifMetadata, "GPSTrack"), "111");
+    ASSERT_EQ(GetProperty(exifMetadata, "GPSImgDirectionRef"), "T");
+    ASSERT_EQ(GetProperty(exifMetadata, "GPSImgDirection"), "2.25218");
+    ASSERT_EQ(GetProperty(exifMetadata, "GPSMapDatum"), "TEST");
+    ASSERT_EQ(GetProperty(exifMetadata, "GPSDestLatitudeRef"), "N");
+    ASSERT_EQ(GetProperty(exifMetadata, "GPSDestLatitude"), "33, 22, 11");
+    ASSERT_EQ(GetProperty(exifMetadata, "GPSDestLongitudeRef"), "W");
+    ASSERT_EQ(GetProperty(exifMetadata, "GPSDestLongitude"), "33, 22, 11");
+    ASSERT_EQ(GetProperty(exifMetadata, "GPSDestBearingRef"), "M");
+    ASSERT_EQ(GetProperty(exifMetadata, "GPSDestBearing"), "2.0");
+    ASSERT_EQ(GetProperty(exifMetadata, "GPSMeasureMode"), "3");
+    ASSERT_EQ(GetProperty(exifMetadata, "GPSDestDistanceRef"), "K");
+    ASSERT_EQ(GetProperty(exifMetadata, "GPSDestDistance"), "0.2");
+    ASSERT_EQ(GetProperty(exifMetadata, "GPSProcessingMethod"), "bytes");
+    ASSERT_EQ(GetProperty(exifMetadata, "HwMnoteXmageMode"), "1");
+}
+
+/**
+ * @tc.name: Write0010
+ * @tc.desc: Test writing fields to a DNG image, then reading them back and comparing with expected values.
+ * @tc.type: FUNC
+ */
+HWTEST_F(DngExifMetadataAccessorTest, Write0010, TestSize.Level3)
+{
+    std::shared_ptr<MetadataStream> stream = std::make_shared<FileMetadataStream>(IMAGE_INPUT6_DNG_PATH);
+    ASSERT_NE(stream, nullptr);
+    ASSERT_TRUE(stream->Open(OpenMode::ReadWrite));
+    DngExifMetadataAccessor imageAccessor(stream);
+    uint32_t result = imageAccessor.Read();
+    ASSERT_EQ(result, SUCCESS);
+
+    std::shared_ptr<ExifMetadata> exifMetadata = imageAccessor.Get();
+    ASSERT_NE(exifMetadata, nullptr);
+    ASSERT_TRUE(exifMetadata->SetValue("GPSAreaInformation", "A bytes"));
+    ASSERT_TRUE(exifMetadata->SetValue("GPSDateStamp", "2022:01:11"));
+    ASSERT_TRUE(exifMetadata->SetValue("GPSDifferential", "1"));
+    ASSERT_TRUE(exifMetadata->SetValue("GPSHPositioningError", "2/1"));
+    ASSERT_TRUE(exifMetadata->SetValue("OECF", "abbs"));
+    ASSERT_TRUE(exifMetadata->SetValue("SubjectLocation", "5 6"));
+    ASSERT_TRUE(exifMetadata->SetValue("DNGVersion", "3 3 0 0"));
+    ASSERT_TRUE(exifMetadata->SetValue("DefaultCropSize", "2 2"));
+    ASSERT_TRUE(exifMetadata->SetValue("PhotoMode", "252"));
+    ASSERT_TRUE(exifMetadata->SetValue("StripOffsets", "11"));
+    ASSERT_TRUE(exifMetadata->SetValue("RowsPerStrip", "252"));
+    ASSERT_TRUE(exifMetadata->SetValue("StripByteCounts", "252"));
+    ASSERT_TRUE(exifMetadata->SetValue("SubjectDistance", "25/1"));
+    ASSERT_TRUE(exifMetadata->SetValue("PhotographicSensitivity", "252"));
+    ASSERT_TRUE(exifMetadata->SetValue("HwMnoteIsXmageSupported", "252"));
+
+    ASSERT_EQ(imageAccessor.Write(), SUCCESS);
+    ASSERT_EQ(imageAccessor.Read(), SUCCESS);
+
+    exifMetadata = imageAccessor.Get();
+    ASSERT_NE(exifMetadata, nullptr);
+    ASSERT_EQ(GetProperty(exifMetadata, "GPSAreaInformation"), "A bytes");
+    ASSERT_EQ(GetProperty(exifMetadata, "GPSDateStamp"), "2022:01:11");
+    ASSERT_EQ(GetProperty(exifMetadata, "GPSDifferential"), "1");
+    ASSERT_EQ(GetProperty(exifMetadata, "GPSHPositioningError"), " 2");
+    ASSERT_EQ(GetProperty(exifMetadata, "OECF"), "4 bytes undefined data");
+    ASSERT_EQ(GetProperty(exifMetadata, "SubjectLocation"), "5");
+    ASSERT_EQ(GetProperty(exifMetadata, "DNGVersion"), "0x03, 0x03, 0x00, 0x00");
+    ASSERT_EQ(GetProperty(exifMetadata, "DefaultCropSize"), "2");
+    ASSERT_EQ(GetProperty(exifMetadata, "PhotoMode"), "252");
+    ASSERT_EQ(GetProperty(exifMetadata, "StripOffsets"), "11");
+    ASSERT_EQ(GetProperty(exifMetadata, "RowsPerStrip"), "252");
+    ASSERT_EQ(GetProperty(exifMetadata, "StripByteCounts"), "252");
+    ASSERT_EQ(GetProperty(exifMetadata, "SubjectDistance"), "25.0 m");
+    ASSERT_EQ(GetProperty(exifMetadata, "PhotographicSensitivity"), "252");
+    ASSERT_EQ(GetProperty(exifMetadata, "HwMnoteIsXmageSupported"), "252");
+}
+
+/**
+ * @tc.name: Write0011
+ * @tc.desc: Test writing fields to a DNG image, then reading them back and comparing with expected values.
+ * @tc.type: FUNC
+ */
+HWTEST_F(DngExifMetadataAccessorTest, Write0011, TestSize.Level3)
+{
+    std::shared_ptr<MetadataStream> stream = std::make_shared<FileMetadataStream>(IMAGE_INPUT6_DNG_PATH);
+    ASSERT_NE(stream, nullptr);
+    ASSERT_TRUE(stream->Open(OpenMode::ReadWrite));
+    DngExifMetadataAccessor imageAccessor(stream);
+    uint32_t result = imageAccessor.Read();
+    ASSERT_EQ(result, SUCCESS);
+
+    std::shared_ptr<ExifMetadata> exifMetadata = imageAccessor.Get();
+    ASSERT_NE(exifMetadata, nullptr);
+    ASSERT_TRUE(exifMetadata->SetValue("HwMnoteXmageLeft", "11"));
+    ASSERT_TRUE(exifMetadata->SetValue("HwMnoteXmageTop", "11"));
+    ASSERT_TRUE(exifMetadata->SetValue("HwMnoteXmageRight", "50"));
+    ASSERT_TRUE(exifMetadata->SetValue("HwMnoteXmageBottom", "50"));
+    ASSERT_TRUE(exifMetadata->SetValue("HwMnoteCloudEnhancementMode", "1"));
+    ASSERT_TRUE(exifMetadata->SetValue("MovingPhotoId", "110"));
+    ASSERT_TRUE(exifMetadata->SetValue("MovingPhotoVersion", "2"));
+    ASSERT_TRUE(exifMetadata->SetValue("MicroVideoPresentationTimestampUS", "123232"));
+    ASSERT_TRUE(exifMetadata->SetValue("HwMnoteAiEdit", "0"));
+    ASSERT_TRUE(exifMetadata->SetValue("HwMnoteXtStyleTemplateName", "123"));
+    ASSERT_TRUE(exifMetadata->SetValue("HwMnoteXtStyleCustomLightAndShadow", "4/1"));
+    ASSERT_TRUE(exifMetadata->SetValue("HwMnoteXtStyleCustomSaturation", "2/1"));
+    ASSERT_TRUE(exifMetadata->SetValue("HwMnoteXtStyleCustomHue", "5/1"));
+    ASSERT_TRUE(exifMetadata->SetValue("HwMnoteXtStyleExposureParam", "123 456 789"));
+    ASSERT_TRUE(exifMetadata->SetValue("HwMnoteXtStyleAlgoVersion", "10"));
+    ASSERT_TRUE(exifMetadata->SetValue("HwMnoteXtStyleAlgoVideoEnable", "10"));
+
+    ASSERT_EQ(imageAccessor.Write(), SUCCESS);
+    ASSERT_EQ(imageAccessor.Read(), SUCCESS);
+
+    exifMetadata = imageAccessor.Get();
+    ASSERT_NE(exifMetadata, nullptr);
+    ASSERT_EQ(GetProperty(exifMetadata, "HwMnoteXmageLeft"), "11");
+    ASSERT_EQ(GetProperty(exifMetadata, "HwMnoteXmageTop"), "11");
+    ASSERT_EQ(GetProperty(exifMetadata, "HwMnoteXmageRight"), "50");
+    ASSERT_EQ(GetProperty(exifMetadata, "HwMnoteXmageBottom"), "50");
+    ASSERT_EQ(GetProperty(exifMetadata, "HwMnoteCloudEnhancementMode"), "1");
+    ASSERT_EQ(GetProperty(exifMetadata, "MovingPhotoId"), "110");
+    ASSERT_EQ(GetProperty(exifMetadata, "MovingPhotoVersion"), "2");
+    ASSERT_EQ(GetProperty(exifMetadata, "MicroVideoPresentationTimestampUS"), "123232");
+    ASSERT_EQ(GetProperty(exifMetadata, "HwMnoteAiEdit"), "0");
+    ASSERT_EQ(GetProperty(exifMetadata, "HwMnoteXtStyleTemplateName"), "123");
+    ASSERT_EQ(GetProperty(exifMetadata, "HwMnoteXtStyleCustomLightAndShadow"), "4.00");
+    ASSERT_EQ(GetProperty(exifMetadata, "HwMnoteXtStyleCustomSaturation"), "2.00");
+    ASSERT_EQ(GetProperty(exifMetadata, "HwMnoteXtStyleCustomHue"), "5.00");
+    ASSERT_EQ(GetProperty(exifMetadata, "HwMnoteXtStyleExposureParam"), "123 456 789");
+    ASSERT_EQ(GetProperty(exifMetadata, "HwMnoteXtStyleAlgoVersion"), "10");
+    ASSERT_EQ(GetProperty(exifMetadata, "HwMnoteXtStyleAlgoVideoEnable"), "10");
+}
+
+/**
+ * @tc.name: Write0012
+ * @tc.desc: Test Write when exifMetadata is null.
+ * @tc.type: FUNC
+ */
+HWTEST_F(DngExifMetadataAccessorTest, Write0012, TestSize.Level3)
+{
+    std::shared_ptr<MetadataStream> stream = std::make_shared<FileMetadataStream>(IMAGE_INPUT6_DNG_PATH);
+    ASSERT_NE(stream, nullptr);
+    ASSERT_TRUE(stream->Open(OpenMode::ReadWrite));
+    DngExifMetadataAccessor imageAccessor(stream);
+    ASSERT_EQ(imageAccessor.Write(), ERR_MEDIA_VALUE_INVALID);
+}
+
+/**
+ * @tc.name: GetTiffHeaderPos001
+ * @tc.desc: Test GetTiffHeaderPos when the file is empty.
+ * @tc.type: FUNC
+ */
+HWTEST_F(DngExifMetadataAccessorTest, GetTiffHeaderPos001, TestSize.Level3)
+{
+    std::shared_ptr<MetadataStream> stream = std::make_shared<FileMetadataStream>(IMAGE_INPUT3_DNG_PATH);
+    ASSERT_NE(stream, nullptr);
+    ASSERT_TRUE(stream->Open(OpenMode::ReadWrite));
+    DngExifMetadataAccessor imageAccessor(stream);
+    size_t tiffHeaderPos = 0;
+    ASSERT_EQ(imageAccessor.GetTiffHeaderPos(tiffHeaderPos), ERR_IMAGE_SOURCE_DATA);
+}
+
+/**
+ * @tc.name: GetTiffHeaderPos002
+ * @tc.desc: Test GetTiffHeaderPos when the image file does not contain a TIFF header.
+ * @tc.type: FUNC
+ */
+HWTEST_F(DngExifMetadataAccessorTest, GetTiffHeaderPos002, TestSize.Level3)
+{
+    std::shared_ptr<MetadataStream> stream = std::make_shared<FileMetadataStream>(IMAGE_INPUT4_DNG_PATH);
+    ASSERT_NE(stream, nullptr);
+    ASSERT_TRUE(stream->Open(OpenMode::ReadWrite));
+    DngExifMetadataAccessor imageAccessor(stream);
+    size_t tiffHeaderPos = 0;
+    ASSERT_EQ(imageAccessor.GetTiffHeaderPos(tiffHeaderPos), ERR_IMAGE_SOURCE_DATA);
+}
+
+/**
+ * @tc.name: GetExifEncodedBlob001
+ * @tc.desc: Test GetExifEncodedBlob when exifMetadata is null.
+ * @tc.type: FUNC
+ */
+HWTEST_F(DngExifMetadataAccessorTest, GetExifEncodedBlob001, TestSize.Level3)
+{
+    std::shared_ptr<MetadataStream> stream = std::make_shared<FileMetadataStream>(IMAGE_INPUT4_DNG_PATH);
+    ASSERT_NE(stream, nullptr);
+    ASSERT_TRUE(stream->Open(OpenMode::ReadWrite));
+    DngExifMetadataAccessor imageAccessor(stream);
+    uint8_t *dataBlob = nullptr;
+    uint32_t size = 0;
+    ASSERT_EQ(imageAccessor.GetExifEncodedBlob(&dataBlob, size), ERR_MEDIA_VALUE_INVALID);
+}
+
+/**
+ * @tc.name: GetExifEncodedBlob002
+ * @tc.desc: test GetExifEncodedBlob when dataBlob is null.
+ * @tc.type: FUNC
+ */
+HWTEST_F(DngExifMetadataAccessorTest, GetExifEncodedBlob002, TestSize.Level3)
+{
+    std::shared_ptr<MetadataStream> stream = std::make_shared<FileMetadataStream>(IMAGE_INPUT4_DNG_PATH);
+    ASSERT_NE(stream, nullptr);
+    ASSERT_TRUE(stream->Open(OpenMode::ReadWrite));
+    DngExifMetadataAccessor imageAccessor(stream);
+    uint32_t size = 0;
+    ASSERT_EQ(imageAccessor.GetExifEncodedBlob(nullptr, size), ERROR);
 }
 } // namespace Multimedia
 } // namespace OHOS

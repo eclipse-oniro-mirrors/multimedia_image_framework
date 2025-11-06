@@ -31,6 +31,13 @@ public:
     bool ReadBlob(DataBuf &blob) override;
     virtual uint32_t Write() override;
     uint32_t WriteBlob(DataBuf &blob) override;
+
+private:
+    uint32_t GetTiffHeaderPos(size_t &tiffHeaderPos);
+    uint32_t GetExifEncodedBlob(uint8_t **dataBlob, uint32_t &size);
+    uint32_t UpdateExifMetadata(BufferMetadataStream &bufStream, uint8_t *dataBlob, uint32_t size);
+    bool WriteData(BufferMetadataStream &bufStream, uint8_t *data, uint32_t size);
+    void FreeDatablob(uint8_t *dataBlob);
 };
 } // namespace Media
 } // namespace OHOS
