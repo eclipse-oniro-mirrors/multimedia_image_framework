@@ -162,6 +162,35 @@ static bool YuvToI420(SrcConvertParam &srcParam, I420Info &i420)
     return true;
 }
 
+static OHOS::OpenSourceLibyuv::YuvConstants GetYuvConstantFromParam(const DestConvertParam &destParam)
+{
+    bool isFullRange = destParam.yuvConvertCSDetails.srcRange != 0; // 0: limit range, 1: full range
+    switch (destParam.yuvConvertCSDetails.srcYuvConversion) {
+        case YuvConversion::BT601:
+            return isFullRange ? 
+                OpenSourceLibyuv::YuvConstants::YvuJPEG  // BT.601 full
+                : OpenSourceLibyuv::YuvConstants::YvuI601; // BT.601 limit
+        case YuvConversion::BT709:
+            return isFullRange ? 
+                OpenSourceLibyuv::YuvConstants::YvuF709  // BT.709 full
+                : OpenSourceLibyuv::YuvConstants::YvuH709; // BT.709 limit
+        case YuvConversion::BT2020:
+            return isFullRange ? 
+                OpenSourceLibyuv::YuvConstants::YvuV2020  // BT.2020 full
+                : OpenSourceLibyuv::YuvConstants::Yvu2020; // BT.2020 limit
+        default:
+            if (destParam.format == PixelFormat::RGBA_1010102) {
+                return isFullRange ? 
+                    OpenSourceLibyuv::YuvConstants::YvuV2020  // BT.2020 full
+                    : OpenSourceLibyuv::YuvConstants::Yvu2020; // BT.2020 limit
+            } else {
+                return isFullRange ? 
+                    OpenSourceLibyuv::YuvConstants::YvuJPEG  // BT.601 full
+                    : OpenSourceLibyuv::YuvConstants::YvuI601; // BT.601 limit
+            }
+    }
+}
+
 static bool I420ToRGB(I420Info &i420, DestConvertParam &destParam, [[maybe_unused]]ColorSpace colorSpace)
 {
     auto &converter = ConverterHandle::GetInstance().GetHandle();
@@ -234,6 +263,7 @@ static void YuvToRGBParam(const YUVDataInfo &yuvInfo, SrcConvertParam &srcParam,
         destParam.slice[0] = destInfo.buffer;
     }
     destParam.stride[0] = dstStride;
+    destParam.yuvConvertCSDetails = destInfo.yuvConvertCSDetails;
 }
 
 static bool I420Param(uint32_t width, uint32_t height, I420Info &i420Info)
@@ -545,8 +575,9 @@ static bool RGB10ToRGBToI420ToYuv(const uint8_t *srcBuffer, const RGBDataInfo &r
 static bool I010ToRGB10(I010Info &i010, DestConvertParam &destParam)
 {
     auto &converter = ConverterHandle::GetInstance().GetHandle();
+    OHOS::OpenSourceLibyuv::YuvConstants yuvConstants = GetYuvConstantFromParam(destParam);
     bool ret = converter.U010VUToAB30(i010.I010Y, i010.yStride, i010.I010U, i010.uStride, i010.I010V, i010.vStride,
-                                    destParam.slice[0], destParam.stride[0], destParam.width, destParam.height);
+        destParam.slice[0], destParam.stride[0], yuvConstants, destParam.width, destParam.height);
     CHECK_ERROR_RETURN_RET_LOG(ret != 0, false, "I010ToAB30 failed, ret = %{public}d!", ret);
     return true;
 }
@@ -934,6 +965,7 @@ static bool P010ToI010ToRGB10Param(const YUVDataInfo &yuvInfo, SrcConvertParam &
     i010Info.I010Y = i010Buffer;
     i010Info.I010U = i010Info.I010Y + yuvInfo.yHeight * i010Info.yStride;
     i010Info.I010V = i010Info.I010U + i010Info.uStride * ((yuvInfo.yHeight + NUM_1) / NUM_2);
+    destParam.yuvConvertCSDetails = destInfo.yuvConvertCSDetails;
     return true;
 }
 

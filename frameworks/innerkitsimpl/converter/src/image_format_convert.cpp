@@ -779,6 +779,33 @@ static AllocatorType GetAllocatorType(std::shared_ptr<PixelMap> &srcPixelMap, Pi
     return allocType;
 }
 
+bool GetYuvSbConvertDetails(sptr<SurfaceBuffer> sourceSurfaceBuffer, DestConvertInfo &destInfo)
+{
+    if (sourceSurfaceBuffer == nullptr) {
+        return false;
+    }
+    CM_ColorSpaceInfo colorSpaceInfo;
+    if (!VpeUtils::GetColorSpaceInfo(sourceSurfaceBuffer, colorSpaceInfo)) {
+        return false;
+    }
+    uint32_t primaries = static_cast<uint32_t>(colorSpaceInfo.primaries);
+    uint32_t transfunc = static_cast<uint32_t>(colorSpaceInfo.transfunc);
+    uint32_t matrix = static_cast<uint32_t>(colorSpaceInfo.matrix);
+    uint32_t range = static_cast<uint32_t>(colorSpaceInfo.range);
+    auto type = ((static_cast<unsigned int>(colorSpaceInfo.primaries) << 0) +
+                 (static_cast<unsigned int>(colorSpaceInfo.transfunc) << 8) +
+                 (static_cast<unsigned int>(colorSpaceInfo.matrix) << 16) +
+                 (static_cast<unsigned int>(colorSpaceInfo.range) << 21));
+    destInfo.yuvConvertCSDetails.srcYuvConversion =
+        colorSpaceInfo.primaries == CM_ColorPrimaries::COLORPRIMARIES_BT709 ? YuvConversion::BT709 :
+        colorSpaceInfo.primaries == CM_ColorPrimaries::COLORPRIMARIES_BT2020 ?
+        YuvConversion::BT2020 : YuvConversion::BT601;
+    destInfo.yuvConvertCSDetails.srcRange = colorSpaceInfo.range == CM_Range::RANGE_FULL ? 1 : 0;
+    IMAGE_LOGD("GetYuvSbConvertDetails srcYuvConversion: %{public}d, srcRange: %{public}d",
+        destInfo.yuvConvertCSDetails.srcYuvConversion, destInfo.yuvConvertCSDetails.srcRange);
+    return true;
+}
+
 uint32_t ImageFormatConvert::YUVConvertImageFormatOption(std::shared_ptr<PixelMap> &srcPixelMap,
                                                          const PixelFormat &srcFormat, PixelFormat destFormat)
 {
@@ -812,6 +839,7 @@ uint32_t ImageFormatConvert::YUVConvertImageFormatOption(std::shared_ptr<PixelMa
         sptr<SurfaceBuffer> sourceSurfaceBuffer(reinterpret_cast<SurfaceBuffer*>(srcPixelMap->GetFd()));
         sptr<SurfaceBuffer> dstSurfaceBuffer(reinterpret_cast<SurfaceBuffer*>(m->extend.data));
         VpeUtils::CopySurfaceBufferInfo(sourceSurfaceBuffer, dstSurfaceBuffer);
+        GetYuvSbConvertDetails(sourceSurfaceBuffer, destInfo);
     }
 #endif
     destInfo.buffer = reinterpret_cast<uint8_t *>(m->data.data);
