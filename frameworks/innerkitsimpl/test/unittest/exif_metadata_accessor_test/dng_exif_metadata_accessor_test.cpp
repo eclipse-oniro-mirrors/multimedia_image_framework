@@ -659,6 +659,27 @@ HWTEST_F(DngExifMetadataAccessorTest, Read014, TestSize.Level3)
 }
 
 /**
+ * @tc.name: Read015
+ * @tc.desc: Test reading hw fields from a DNG image.
+ * @tc.type: FUNC
+ */
+HWTEST_F(DngExifMetadataAccessorTest, Read015, TestSize.Level3)
+{
+    std::shared_ptr<MetadataStream> stream = std::make_shared<FileMetadataStream>(IMAGE_INPUT5_DNG_PATH);
+    ASSERT_NE(stream, nullptr);
+    ASSERT_TRUE(stream->Open(OpenMode::ReadWrite));
+    DngExifMetadataAccessor imageAccessor(stream);
+    uint32_t result = imageAccessor.Read();
+    ASSERT_EQ(result, SUCCESS);
+
+    std::shared_ptr<ExifMetadata> exifMetadata = imageAccessor.Get();
+    ASSERT_NE(exifMetadata, nullptr);
+
+    ASSERT_EQ(GetProperty(exifMetadata, "HwMnoteWindSnapshotMode"), "default_exif_value");
+    ASSERT_EQ(GetProperty(exifMetadata, "HwMnoteFocusModeExif"), "");
+}
+
+/**
  * @tc.name: Write001
  * @tc.desc: Test writing fields to a DNG image, then reading them back and comparing with expected values.
  * @tc.type: FUNC

@@ -41,24 +41,15 @@ DngExifMetadataAccessor::~DngExifMetadataAccessor() {}
 
 uint32_t DngExifMetadataAccessor::Read()
 {
-    if (!imageStream_->IsOpen()) {
-        IMAGE_LOGE("Input image stream is not open.");
-        return ERR_IMAGE_SOURCE_DATA;
-    }
+    size_t tiffHeaderPos;
+    int32_t errCode = GetTiffHeaderPos(tiffHeaderPos);
+    CHECK_ERROR_RETURN_RET(errCode != SUCCESS, errCode);
 
-    imageStream_->Seek(0, SeekPos::BEGIN);
+    CHECK_ERROR_RETURN_RET_LOG(imageStream_ == nullptr, ERR_IMAGE_SOURCE_DATA, "ImageStream is nullptr");
     ssize_t size = imageStream_->GetSize();
     byte *byteStream = imageStream_->GetAddr();
-    if ((size == 0) || (byteStream == nullptr)) {
-        IMAGE_LOGE("Input image stream is empty.");
-        return ERR_IMAGE_SOURCE_DATA;
-    }
-
-    size_t tiffHeaderPos = TiffParser::FindTiffPos(byteStream, size);
-    if (tiffHeaderPos == std::numeric_limits<size_t>::max()) {
-        IMAGE_LOGE("Input image stream is not tiff type.");
-        return ERR_IMAGE_SOURCE_DATA;
-    }
+    CHECK_ERROR_RETURN_RET_LOG(size == 0 || byteStream == nullptr, ERR_IMAGE_SOURCE_DATA,
+        "Input image stream is empty.");
 
     ExifData *exifData;
     TiffParser::Decode(reinterpret_cast<const unsigned char *>(byteStream + tiffHeaderPos),
