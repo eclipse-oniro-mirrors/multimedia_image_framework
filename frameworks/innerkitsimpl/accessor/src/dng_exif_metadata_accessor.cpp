@@ -80,12 +80,105 @@ bool DngExifMetadataAccessor::ReadBlob(DataBuf &blob)
 
 uint32_t DngExifMetadataAccessor::Write()
 {
-    return ERROR;
+    uint8_t *dataBlob = nullptr;
+    uint32_t size = 0;
+
+    BufferMetadataStream tmpBufStream;
+    CHECK_ERROR_RETURN_RET_LOG(!tmpBufStream.Open(OpenMode::ReadWrite), ERR_IMAGE_SOURCE_DATA,
+        "Image temp stream open failed");
+
+    uint32_t errCode = GetExifEncodedBlob(&dataBlob, size);
+    if (errCode == SUCCESS) {
+        errCode = UpdateExifMetadata(tmpBufStream, dataBlob, size);
+    }
+    FreeDatablob(dataBlob);
+    CHECK_ERROR_RETURN_RET_LOG(errCode != SUCCESS, errCode, "Image temp stream write failed");
+
+    imageStream_->Seek(0, SeekPos::BEGIN);
+    CHECK_ERROR_RETURN_RET_LOG(!imageStream_->CopyFrom(tmpBufStream), ERR_MEDIA_INVALID_OPERATION,
+        "Copy from temp stream failed");
+
+    return errCode;
 }
 
 uint32_t DngExifMetadataAccessor::WriteBlob(DataBuf &blob)
 {
     return ERROR;
+}
+
+uint32_t DngExifMetadataAccessor::GetTiffHeaderPos(size_t &tiffHeaderPos)
+{
+    CHECK_ERROR_RETURN_RET_LOG(imageStream_ == nullptr, ERR_IMAGE_SOURCE_DATA, "ImageStream is nullptr");
+    CHECK_ERROR_RETURN_RET_LOG(!imageStream_->IsOpen(), ERR_IMAGE_SOURCE_DATA, "Output image stream not open");
+
+    imageStream_->Seek(0, SeekPos::BEGIN);
+    ssize_t size = imageStream_->GetSize();
+    byte *byteStream = imageStream_->GetAddr();
+    CHECK_ERROR_RETURN_RET_LOG(size == 0 || byteStream == nullptr, ERR_IMAGE_SOURCE_DATA,
+        "Input image stream is empty.");
+
+    tiffHeaderPos = TiffParser::FindTiffPos(byteStream, size);
+    CHECK_ERROR_RETURN_RET_LOG(tiffHeaderPos == std::numeric_limits<size_t>::max(), ERR_IMAGE_SOURCE_DATA,
+        "Input image stream is not tiff type.");
+
+    return SUCCESS;
+}
+
+uint32_t DngExifMetadataAccessor::GetExifEncodedBlob(uint8_t **dataBlob, uint32_t &size)
+{
+    CHECK_ERROR_RETURN_RET_LOG(dataBlob == nullptr, ERROR, "GetExifEncodedBlob dataBlob is empty");
+
+    std::shared_ptr<ExifMetadata> exifMetadata = this->Get();
+    CHECK_ERROR_RETURN_RET_LOG(exifMetadata == nullptr, ERR_MEDIA_VALUE_INVALID, "Exif metadata empty");
+
+    ExifData *exifData = exifMetadata->GetExifData();
+    TiffParser::Encode(dataBlob, size, exifData);
+    CHECK_ERROR_RETURN_RET_LOG(dataBlob == nullptr || *dataBlob == nullptr, ERR_MEDIA_VALUE_INVALID,
+        "Encode Dng data failed");
+
+    DataBuf blobBuf(*dataBlob, size);
+    size_t byteOrderPos = TiffParser::FindTiffPos(blobBuf);
+    CHECK_ERROR_RETURN_RET_LOG(byteOrderPos == std::numeric_limits<size_t>::max(),
+        ERR_MEDIA_VALUE_INVALID, "Failed to Encode Exif metadata: cannot find tiff byte order");
+
+    return SUCCESS;
+}
+
+uint32_t DngExifMetadataAccessor::UpdateExifMetadata(BufferMetadataStream &bufStream, uint8_t *dataBlob, uint32_t size)
+{
+    CHECK_ERROR_RETURN_RET_LOG(dataBlob == nullptr, ERROR, "UpdateExifMetadata dataBlob is empty");
+    size_t tiffHeaderPos = 0;
+    uint32_t errCode = GetTiffHeaderPos(tiffHeaderPos);
+    CHECK_ERROR_RETURN_RET(errCode != SUCCESS, errCode);
+
+    DataBuf dataBuf(tiffHeaderPos);
+    ssize_t bufLength = imageStream_->Read(dataBuf.Data(), tiffHeaderPos);
+    CHECK_ERROR_RETURN_RET_LOG(bufLength != tiffHeaderPos, ERROR, "Read chunk head error.");
+
+    bool cond = true;
+    if (tiffHeaderPos != 0) {
+        cond = WriteData(bufStream, dataBuf.Data(), dataBuf.Size());
+        CHECK_ERROR_RETURN_RET(!cond, ERROR);
+    }
+
+    cond = WriteData(bufStream, dataBlob, size);
+    CHECK_ERROR_RETURN_RET(!cond, ERROR);
+
+    return SUCCESS;
+}
+
+bool DngExifMetadataAccessor::WriteData(BufferMetadataStream &bufStream, uint8_t *data, uint32_t size)
+{
+    CHECK_ERROR_RETURN_RET_LOG(bufStream.Write(data, size) != size, false, "Write the bufStream failed");
+    return true;
+}
+
+void DngExifMetadataAccessor::FreeDatablob(uint8_t *dataBlob)
+{
+    if (dataBlob != nullptr) {
+        free(dataBlob);
+        dataBlob = nullptr;
+    }
 }
 } // namespace Media
 } // namespace OHOS
