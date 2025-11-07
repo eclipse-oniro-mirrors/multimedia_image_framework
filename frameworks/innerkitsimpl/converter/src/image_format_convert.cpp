@@ -788,18 +788,13 @@ bool GetYuvSbConvertDetails(sptr<SurfaceBuffer> sourceSurfaceBuffer, DestConvert
     if (!VpeUtils::GetColorSpaceInfo(sourceSurfaceBuffer, colorSpaceInfo)) {
         return false;
     }
-    uint32_t primaries = static_cast<uint32_t>(colorSpaceInfo.primaries);
-    uint32_t transfunc = static_cast<uint32_t>(colorSpaceInfo.transfunc);
-    uint32_t matrix = static_cast<uint32_t>(colorSpaceInfo.matrix);
-    uint32_t range = static_cast<uint32_t>(colorSpaceInfo.range);
-    auto type = ((static_cast<unsigned int>(colorSpaceInfo.primaries) << 0) +
-                 (static_cast<unsigned int>(colorSpaceInfo.transfunc) << 8) +
-                 (static_cast<unsigned int>(colorSpaceInfo.matrix) << 16) +
-                 (static_cast<unsigned int>(colorSpaceInfo.range) << 21));
-    destInfo.yuvConvertCSDetails.srcYuvConversion =
-        colorSpaceInfo.primaries == CM_ColorPrimaries::COLORPRIMARIES_BT709 ? YuvConversion::BT709 :
-        colorSpaceInfo.primaries == CM_ColorPrimaries::COLORPRIMARIES_BT2020 ?
-        YuvConversion::BT2020 : YuvConversion::BT601;
+    if (colorSpaceInfo.primaries == CM_ColorPrimaries::COLORPRIMARIES_BT709) {
+        destInfo.yuvConvertCSDetails.srcYuvConversion = YuvConversion::BT709;
+    } else if (colorSpaceInfo.primaries == CM_ColorPrimaries::COLORPRIMARIES_BT2020) {
+        destInfo.yuvConvertCSDetails.srcYuvConversion = YuvConversion::BT2020;
+    } else {
+        destInfo.yuvConvertCSDetails.srcYuvConversion = YuvConversion::BT601;
+    }
     destInfo.yuvConvertCSDetails.srcRange = colorSpaceInfo.range == CM_Range::RANGE_FULL ? 1 : 0;
     IMAGE_LOGD("GetYuvSbConvertDetails srcYuvConversion: %{public}d, srcRange: %{public}d",
         destInfo.yuvConvertCSDetails.srcYuvConversion, destInfo.yuvConvertCSDetails.srcRange);
@@ -810,9 +805,8 @@ uint32_t ImageFormatConvert::YUVConvertImageFormatOption(std::shared_ptr<PixelMa
                                                          const PixelFormat &srcFormat, PixelFormat destFormat)
 {
     YUVConvertFunction yuvCvtFunc = YUVGetConvertFuncByFormat(srcFormat, destFormat);
-    if (yuvCvtFunc == nullptr) {
-        return ERR_IMAGE_INVALID_PARAMETER;
-    }
+    bool cond = yuvCvtFunc == nullptr;
+    CHECK_ERROR_RETURN_RET_LOG(cond, ERR_IMAGE_INVALID_PARAMETER, "get convert function by format failed!");
     const_uint8_buffer_type data = srcPixelMap->GetPixels();
     YUVDataInfo yDInfo;
     srcPixelMap->GetImageYUVInfo(yDInfo);
@@ -831,15 +825,14 @@ uint32_t ImageFormatConvert::YUVConvertImageFormatOption(std::shared_ptr<PixelMa
     DestConvertInfo destInfo = {imageInfo.size.width, imageInfo.size.height, destFormat, allocType};
     auto m = CreateMemory(destFormat, allocType, imageInfo.size, dstStrides,
         srcPixelMap->GetNoPaddingUsage());
-    if (m == nullptr) {
-        return ERR_IMAGE_INVALID_PARAMETER;
-    }
+    cond = m == nullptr;
+    CHECK_ERROR_RETURN_RET_LOG(cond, ERR_IMAGE_INVALID_PARAMETER, "CreateMemory failed");
 #if !defined(_WIN32) && !defined(_APPLE) && !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
     if (allocType == AllocatorType::DMA_ALLOC) {
         sptr<SurfaceBuffer> sourceSurfaceBuffer(reinterpret_cast<SurfaceBuffer*>(srcPixelMap->GetFd()));
         sptr<SurfaceBuffer> dstSurfaceBuffer(reinterpret_cast<SurfaceBuffer*>(m->extend.data));
         VpeUtils::CopySurfaceBufferInfo(sourceSurfaceBuffer, dstSurfaceBuffer);
-        bool cond = !GetYuvSbConvertDetails(sourceSurfaceBuffer, destInfo);
+        cond = !GetYuvSbConvertDetails(sourceSurfaceBuffer, destInfo);
         CHECK_ERROR_RETURN_RET_LOG(cond, ERR_IMAGE_INVALID_PARAMETER, "GetYuvSbConvertDetails failed");
     }
 #endif
