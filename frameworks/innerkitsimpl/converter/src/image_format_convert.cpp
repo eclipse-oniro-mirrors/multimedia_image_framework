@@ -840,6 +840,10 @@ uint32_t ImageFormatConvert::YUVConvertImageFormatOption(std::shared_ptr<PixelMa
         sptr<SurfaceBuffer> dstSurfaceBuffer(reinterpret_cast<SurfaceBuffer*>(m->extend.data));
         VpeUtils::CopySurfaceBufferInfo(sourceSurfaceBuffer, dstSurfaceBuffer);
         GetYuvSbConvertDetails(sourceSurfaceBuffer, destInfo);
+        if (!GetYuvSbConvertDetails(sourceSurfaceBuffer, destInfo)) {
+            IMAGE_LOGE("GetYuvSbConvertDetails failed");
+            return ERR_IMAGE_INVALID_PARAMETER;
+        }
     }
 #endif
     destInfo.buffer = reinterpret_cast<uint8_t *>(m->data.data);
