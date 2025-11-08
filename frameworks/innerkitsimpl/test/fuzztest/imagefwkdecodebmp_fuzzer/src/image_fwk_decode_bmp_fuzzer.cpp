@@ -51,6 +51,7 @@ void BmpDecoderFuncTest001(const std::string& pathName)
         IMAGE_LOGE("%{public}s CreateImageSource failed", __func__);
         return;
     }
+    imageSource->GetiTxtLength();
     DecodeOptions dstOpts;
     auto pixelMap = imageSource->CreatePixelMap(0, dstOpts, errorCode);
     imageSource->Reset();

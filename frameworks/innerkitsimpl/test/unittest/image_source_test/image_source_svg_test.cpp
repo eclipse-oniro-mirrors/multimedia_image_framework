@@ -57,6 +57,7 @@ HWTEST_F(ImageSourceSvgTest, SvgImageDecode, TestSize.Level3)
     auto imageSource = ImageSource::CreateImageSource(inName, opts, errorCode);
     ASSERT_EQ(errorCode, SUCCESS);
     ASSERT_NE(imageSource.get(), nullptr);
+    ASSERT_EQ(imageSource->GetiTxtLength(), 0);
 
     /**
      * @tc.steps: step2. decode image source to pixel map by default decode options
@@ -100,6 +101,7 @@ HWTEST_F(ImageSourceSvgTest, SvgCreateImageSource, TestSize.Level3)
     auto imageSource = ImageSource::CreateImageSource(inName, opts, errorCode);
     ASSERT_EQ(errorCode, SUCCESS);
     ASSERT_NE(imageSource.get(), nullptr);
+    ASSERT_EQ(imageSource->GetiTxtLength(), 0);
 
     /**
      * @tc.steps: step2. decode image source to pixel map by default decode options
@@ -143,6 +145,7 @@ HWTEST_F(ImageSourceSvgTest, SvgImageDecodeWithFillColorChange, TestSize.Level3)
     auto imageSource = ImageSource::CreateImageSource(inName, opts, errorCode);
     ASSERT_EQ(errorCode, SUCCESS);
     ASSERT_NE(imageSource.get(), nullptr);
+    ASSERT_EQ(imageSource->GetiTxtLength(), 0);
 
     /**
      * @tc.steps: step2. decode image source to pixel map by default decode options which sets fillColor 0xff00ff
@@ -188,6 +191,7 @@ HWTEST_F(ImageSourceSvgTest, SvgImageDecodeWithStrokeColorChange, TestSize.Level
     auto imageSource = ImageSource::CreateImageSource(inName, opts, errorCode);
     ASSERT_EQ(errorCode, SUCCESS);
     ASSERT_NE(imageSource.get(), nullptr);
+    ASSERT_EQ(imageSource->GetiTxtLength(), 0);
 
     /**
      * @tc.steps: step2. decode image source to pixel map by default decode options which sets strokeColor 0xff00ff
@@ -233,6 +237,7 @@ HWTEST_F(ImageSourceSvgTest, SvgImageDecodeWithResizePercentage, TestSize.Level3
     auto imageSource = ImageSource::CreateImageSource(inName, opts, errorCode);
     ASSERT_EQ(errorCode, SUCCESS);
     ASSERT_NE(imageSource.get(), nullptr);
+    ASSERT_EQ(imageSource->GetiTxtLength(), 0);
 
     /**
      * @tc.steps: step2. decode image source to pixel map by default decode options  which sets resizePercentage 200
@@ -277,6 +282,7 @@ HWTEST_F(ImageSourceSvgTest, SvgGetEncodedFormat001, TestSize.Level3)
     auto imageSource = ImageSource::CreateImageSource(inName, opts, errorCode);
     ASSERT_EQ(errorCode, SUCCESS);
     ASSERT_NE(imageSource.get(), nullptr);
+    ASSERT_EQ(imageSource->GetiTxtLength(), 0);
 
     /**
      * @tc.steps: step2. decode image source to pixel map by default decode options  which sets resizePercentage 200
@@ -330,6 +336,7 @@ HWTEST_F(ImageSourceSvgTest, SvgGetEncodedFormat002, TestSize.Level3)
     auto imageSource = ImageSource::CreateImageSource(inName, opts, errorCode);
     ASSERT_EQ(errorCode, SUCCESS);
     ASSERT_NE(imageSource.get(), nullptr);
+    ASSERT_EQ(imageSource->GetiTxtLength(), 0);
 
     /**
      * @tc.steps: step2. decode image source to pixel map by default decode options  which sets resizePercentage 200

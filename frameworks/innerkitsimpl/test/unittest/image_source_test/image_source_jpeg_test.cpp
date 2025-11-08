@@ -88,6 +88,7 @@ static void CreateImageSourceFromFilePath(std::unique_ptr<ImageSource>& imageSou
     imageSource.reset(ImageSource::CreateImageSource(IMAGE_INPUT_EXIF_JPEG_PATH, opts, errorCode).release());
     ASSERT_EQ(errorCode, 0);
     ASSERT_NE(imageSource.get(), nullptr);
+    ASSERT_EQ(imageSource->GetiTxtLength(), 0);
 }
 
 static void CreateImageSourceFromHWPath(std::unique_ptr<ImageSource>& imageSource)
@@ -97,6 +98,7 @@ static void CreateImageSourceFromHWPath(std::unique_ptr<ImageSource>& imageSourc
     imageSource.reset(ImageSource::CreateImageSource(IMAGE_HW_EXIF_PATH, opts, errorCode).release());
     ASSERT_EQ(errorCode, 0);
     ASSERT_NE(imageSource.get(), nullptr);
+    ASSERT_EQ(imageSource->GetiTxtLength(), 0);
 }
 
 /**
@@ -117,6 +119,7 @@ HWTEST_F(ImageSourceJpegTest, TC028, TestSize.Level3)
     std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(std::move(fs), opts, errorCode);
     ASSERT_EQ(errorCode, SUCCESS);
     ASSERT_NE(imageSource.get(), nullptr);
+    ASSERT_EQ(imageSource->GetiTxtLength(), 0);
 }
 
 /**
@@ -137,6 +140,7 @@ HWTEST_F(ImageSourceJpegTest, TC029, TestSize.Level3)
         ImageSource::CreateImageSource(IMAGE_INPUT_HW_JPEG_PATH, opts, errorCode);
     ASSERT_EQ(errorCode, SUCCESS);
     ASSERT_NE(imageSource.get(), nullptr);
+    ASSERT_EQ(imageSource->GetiTxtLength(), 0);
 }
 
 /**
@@ -162,6 +166,7 @@ HWTEST_F(ImageSourceJpegTest, TC030, TestSize.Level3)
     std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(buffer, bufferSize, opts, errorCode);
     ASSERT_EQ(errorCode, SUCCESS);
     ASSERT_NE(imageSource.get(), nullptr);
+    ASSERT_EQ(imageSource->GetiTxtLength(), 0);
 }
 
 /**
@@ -180,6 +185,7 @@ HWTEST_F(ImageSourceJpegTest, TC032, TestSize.Level3)
     std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(IMAGE_INPUT_JPEG_PATH, opts, errorCode);
     ASSERT_EQ(errorCode, SUCCESS);
     ASSERT_NE(imageSource.get(), nullptr);
+    ASSERT_EQ(imageSource->GetiTxtLength(), 0);
 
     ImageInfo imageInfo;
     uint32_t index = 0;
@@ -205,6 +211,7 @@ HWTEST_F(ImageSourceJpegTest, TC033, TestSize.Level3)
     std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(IMAGE_INPUT_JPEG_PATH, opts, errorCode);
     ASSERT_EQ(errorCode, SUCCESS);
     ASSERT_NE(imageSource.get(), nullptr);
+    ASSERT_EQ(imageSource->GetiTxtLength(), 0);
 
     uint32_t index = 0;
     int32_t value = 0;
@@ -228,6 +235,7 @@ HWTEST_F(ImageSourceJpegTest, TC035, TestSize.Level3)
     std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(IMAGE_INPUT_JPEG_PATH, opts, errorCode);
     ASSERT_EQ(errorCode, SUCCESS);
     ASSERT_NE(imageSource.get(), nullptr);
+    ASSERT_EQ(imageSource->GetiTxtLength(), 0);
 
     uint32_t index = 0;
     DecodeOptions optsPixel;
@@ -259,6 +267,7 @@ HWTEST_F(ImageSourceJpegTest, TC036, TestSize.Level3)
     std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(std::move(fs), opts, errorCode);
     ASSERT_EQ(errorCode, SUCCESS);
     ASSERT_NE(imageSource.get(), nullptr);
+    ASSERT_EQ(imageSource->GetiTxtLength(), 0);
     /**
      * @tc.steps: step2. crop jpg image source to pixel map crop options
      * @tc.expected: step2. crop jpg image source to pixel map success.
@@ -295,6 +304,7 @@ HWTEST_F(ImageSourceJpegTest, TC037, TestSize.Level3)
     std::unique_ptr<ImageSource> imageSource = ImageSource::CreateIncrementalImageSource(opts, errorCode);
     ASSERT_EQ(errorCode, SUCCESS);
     ASSERT_NE(imageSource.get(), nullptr);
+    ASSERT_EQ(imageSource->GetiTxtLength(), 0);
 }
 
 /**
@@ -314,6 +324,7 @@ HWTEST_F(ImageSourceJpegTest, TC038, TestSize.Level3)
     std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(IMAGE_INPUT_JPEG_PATH, opts, errorCode);
     ASSERT_EQ(errorCode, SUCCESS);
     ASSERT_NE(imageSource.get(), nullptr);
+    ASSERT_EQ(imageSource->GetiTxtLength(), 0);
 
     /**
      * @tc.steps: step2. decode image source to pixel map by default decode options.
@@ -349,6 +360,7 @@ HWTEST_F(ImageSourceJpegTest, TC055, TestSize.Level3)
     std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(buffer, bufferSize, opts, errorCode);
     ASSERT_EQ(errorCode, SUCCESS);
     ASSERT_NE(imageSource.get(), nullptr);
+    ASSERT_EQ(imageSource->GetiTxtLength(), 0);
     /**
      * @tc.steps: step2. decode image source to pixel map by default decode options
      * @tc.expected: step2. decode image source to pixel map success.
@@ -395,6 +407,7 @@ HWTEST_F(ImageSourceJpegTest, TC056, TestSize.Level3)
     std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(IMAGE_INPUT_JPEG_PATH, opts, errorCode);
     ASSERT_EQ(errorCode, SUCCESS);
     ASSERT_NE(imageSource.get(), nullptr);
+    ASSERT_EQ(imageSource->GetiTxtLength(), 0);
     /**
      * @tc.steps: step2. get support decode image format.
      * @tc.expected: step2. get support format info success.
@@ -447,6 +460,7 @@ HWTEST_F(ImageSourceJpegTest, TC057, TestSize.Level3)
     std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(std::move(fs), opts, errorCode);
     ASSERT_EQ(errorCode, SUCCESS);
     ASSERT_NE(imageSource.get(), nullptr);
+    ASSERT_EQ(imageSource->GetiTxtLength(), 0);
     /**
      * @tc.steps: step2. decode image source to pixel map by default decode options
      * @tc.expected: step2. decode image source to pixel map success.
@@ -481,6 +495,7 @@ HWTEST_F(ImageSourceJpegTest, TC059, TestSize.Level3)
     std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(IMAGE_INPUT_JPEG_PATH, opts, errorCode);
     ASSERT_EQ(errorCode, SUCCESS);
     ASSERT_NE(imageSource.get(), nullptr);
+    ASSERT_EQ(imageSource->GetiTxtLength(), 0);
 
     uint32_t index = 0;
     DecodeOptions optsPixel;
@@ -508,6 +523,7 @@ HWTEST_F(ImageSourceJpegTest, TC061, TestSize.Level3)
     std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(IMAGE_INPUT_JPEG_PATH, opts, errorCode);
     ASSERT_EQ(errorCode, SUCCESS);
     ASSERT_NE(imageSource.get(), nullptr);
+    ASSERT_EQ(imageSource->GetiTxtLength(), 0);
     std::set<std::string> formats;
     uint32_t ret = imageSource->GetSupportedFormats(formats);
     ASSERT_EQ(ret, SUCCESS);
@@ -530,6 +546,7 @@ HWTEST_F(ImageSourceJpegTest, JpegImageDecode001, TestSize.Level3)
     std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(IMAGE_INPUT_JPEG_PATH, opts, errorCode);
     ASSERT_EQ(errorCode, SUCCESS);
     ASSERT_NE(imageSource.get(), nullptr);
+    ASSERT_EQ(imageSource->GetiTxtLength(), 0);
     /**
      * @tc.steps: step2. get support decode image format.
      * @tc.expected: step2. get support format info success.
@@ -578,6 +595,7 @@ HWTEST_F(ImageSourceJpegTest, JpegImageDecode002, TestSize.Level3)
     std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(IMAGE_INPUT_JPEG_PATH, opts, errorCode);
     ASSERT_EQ(errorCode, SUCCESS);
     ASSERT_NE(imageSource.get(), nullptr);
+    ASSERT_EQ(imageSource->GetiTxtLength(), 0);
     /**
      * @tc.steps: step2. get image info from input image.
      * @tc.expected: step2. get image info success.
@@ -606,6 +624,7 @@ HWTEST_F(ImageSourceJpegTest, JpegImageDecode003, TestSize.Level3)
     std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(IMAGE_INPUT_JPEG_PATH, opts, errorCode);
     ASSERT_EQ(errorCode, SUCCESS);
     ASSERT_NE(imageSource.get(), nullptr);
+    ASSERT_EQ(imageSource->GetiTxtLength(), 0);
 }
 
 /**
@@ -649,6 +668,7 @@ HWTEST_F(ImageSourceJpegTest, JpegImageDecode005, TestSize.Level3)
     std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(buffer, bufferSize, opts, errorCode);
     ASSERT_EQ(errorCode, SUCCESS);
     ASSERT_NE(imageSource.get(), nullptr);
+    ASSERT_EQ(imageSource->GetiTxtLength(), 0);
     /**
      * @tc.steps: step2. decode image source to pixel map by default decode options
      * @tc.expected: step2. decode image source to pixel map success.
@@ -697,6 +717,7 @@ HWTEST_F(ImageSourceJpegTest, JpegImageDecode006, TestSize.Level3)
     std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(std::move(fs), opts, errorCode);
     ASSERT_EQ(errorCode, SUCCESS);
     ASSERT_NE(imageSource.get(), nullptr);
+    ASSERT_EQ(imageSource->GetiTxtLength(), 0);
     /**
      * @tc.steps: step2. decode image source to pixel map by default decode options
      * @tc.expected: step2. decode image source to pixel map success.
@@ -738,6 +759,7 @@ HWTEST_F(ImageSourceJpegTest, JpegImageDecode007, TestSize.Level3)
     std::unique_ptr<ImageSource> imageSource = ImageSource::CreateIncrementalImageSource(incOpts, errorCode);
     ASSERT_EQ(errorCode, SUCCESS);
     ASSERT_NE(imageSource.get(), nullptr);
+    ASSERT_EQ(imageSource->GetiTxtLength(), 0);
     /**
      * @tc.steps: step2. update incremental stream every 10 ms with random data size and promote decode
      * image to pixel map by default decode options
@@ -791,6 +813,7 @@ HWTEST_F(ImageSourceJpegTest, JpegImageDecode008, TestSize.Level3)
     std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(IMAGE_INPUT_JPEG_PATH, opts, errorCode);
     ASSERT_EQ(errorCode, SUCCESS);
     ASSERT_NE(imageSource.get(), nullptr);
+    ASSERT_EQ(imageSource->GetiTxtLength(), 0);
     /**
      * @tc.steps: step2. decode image source to pixel map by default decode options.
      * @tc.expected: step2. decode image source to pixel map success.
@@ -842,6 +865,7 @@ HWTEST_F(ImageSourceJpegTest, JpegImageDecode009, TestSize.Level3)
     std::unique_ptr<ImageSource> imageSource = ImageSource::CreateIncrementalImageSource(incOpts, errorCode);
     ASSERT_EQ(errorCode, SUCCESS);
     ASSERT_NE(imageSource.get(), nullptr);
+    ASSERT_EQ(imageSource->GetiTxtLength(), 0);
     /**
      * @tc.steps: step2. update incremental stream every 10 ms with random data size and promote decode
      * image to pixel map by default decode options
@@ -913,6 +937,7 @@ HWTEST_F(ImageSourceJpegTest, JpegImageDecode010, TestSize.Level3)
     std::unique_ptr<ImageSource> imageSource = ImageSource::CreateIncrementalImageSource(incOpts, errorCode);
     ASSERT_EQ(errorCode, SUCCESS);
     ASSERT_NE(imageSource.get(), nullptr);
+    ASSERT_EQ(imageSource->GetiTxtLength(), 0);
     /**
      * @tc.steps: step2. update incremental stream every 10 ms with random data size.
      * @tc.expected: step2. update success.
@@ -983,6 +1008,7 @@ HWTEST_F(ImageSourceJpegTest, JpegImageDecode011, TestSize.Level3)
         ImageSource::CreateImageSource(IMAGE_INPUT_HW_JPEG_PATH, opts, status);
     ASSERT_EQ(status, SUCCESS);
     ASSERT_NE(imageSource.get(), nullptr);
+    ASSERT_EQ(imageSource->GetiTxtLength(), 0);
 
     /**
      * @tc.steps: step2. decode created image source to pixel map by default decode options
@@ -1032,6 +1058,7 @@ HWTEST_F(ImageSourceJpegTest, JpgImageCrop001, TestSize.Level3)
     std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(std::move(fs), opts, errorCode);
     ASSERT_EQ(errorCode, SUCCESS);
     ASSERT_NE(imageSource.get(), nullptr);
+    ASSERT_EQ(imageSource->GetiTxtLength(), 0);
     /**
      * @tc.steps: step2. crop jpg image source to pixel map crop options
      * @tc.expected: step2. crop jpg image source to pixel map success.
@@ -1070,6 +1097,7 @@ HWTEST_F(ImageSourceJpegTest, JpegImageHwDecode001, TestSize.Level3)
         ImageSource::CreateImageSource(IMAGE_INPUT_HW_JPEG_PATH, opts, errorCode);
     ASSERT_EQ(errorCode, SUCCESS);
     ASSERT_NE(imageSource.get(), nullptr);
+    ASSERT_EQ(imageSource->GetiTxtLength(), 0);
     /**
      * @tc.steps: step2. decode image source to pixel map by default decode options
      * @tc.expected: step2. decode image source to pixel map success.
