@@ -779,6 +779,7 @@ static AllocatorType GetAllocatorType(std::shared_ptr<PixelMap> &srcPixelMap, Pi
     return allocType;
 }
 
+#ifndef CROSS_PLATFORM
 bool GetYuvSbConvertDetails(sptr<SurfaceBuffer> sourceSurfaceBuffer, DestConvertInfo &destInfo)
 {
     if (sourceSurfaceBuffer == nullptr) {
@@ -800,6 +801,7 @@ bool GetYuvSbConvertDetails(sptr<SurfaceBuffer> sourceSurfaceBuffer, DestConvert
         destInfo.yuvConvertCSDetails.srcYuvConversion, destInfo.yuvConvertCSDetails.srcRange);
     return true;
 }
+#endif
 
 uint32_t ImageFormatConvert::YUVConvertImageFormatOption(std::shared_ptr<PixelMap> &srcPixelMap,
                                                          const PixelFormat &srcFormat, PixelFormat destFormat)
