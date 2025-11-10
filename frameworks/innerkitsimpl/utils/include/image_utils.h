@@ -73,6 +73,8 @@ public:
 #if !defined(CROSS_PLATFORM)
     static bool SurfaceBuffer2PixelMap(sptr<SurfaceBuffer> &surfaceBuffer, std::unique_ptr<PixelMap>& Pixelmap);
     static void DumpHdrBufferEnabled(sptr<SurfaceBuffer>& buffer, const std::string& fileName);
+    static void DumpHdrExtendMetadataEnabled(sptr<SurfaceBuffer>& buffer, const std::string& fileName);
+    static void DumpSurfaceBufferAllKeysEnabled(sptr<SurfaceBuffer>& buffer, const std::string& fileName);
 #endif
     static PixelFormat SbFormat2PixelFormat(int32_t sbFormat);
     static uint64_t GetNowTimeMilliSeconds();

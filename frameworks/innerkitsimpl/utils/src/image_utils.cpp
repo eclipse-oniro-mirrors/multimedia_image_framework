@@ -81,6 +81,7 @@ namespace Media {
 using namespace std;
 using namespace MultimediaPlugin;
 #if !defined(CROSS_PLATFORM)
+#define GET_VAR_NAME(var) #var
 using namespace HDI::Display::Graphic::Common::V1_0;
 #endif
 
@@ -751,19 +752,165 @@ void ImageUtils::DumpDataIfDumpEnabled(const char* data, const size_t& totalSize
 #if !defined(CROSS_PLATFORM)
 void ImageUtils::DumpHdrBufferEnabled(sptr<SurfaceBuffer>& buffer, const std::string& fileName)
 {
-    bool cond = !ImageSystemProperties::GetDumpHdrEnbaled() || buffer == nullptr;
+    bool cond = !ImageSystemProperties::GetDumpHdrEnabled() || buffer == nullptr;
     CHECK_ERROR_RETURN(cond);
     uint32_t bufferSize = buffer->GetSize();
     std::string fileSuffix = fileName + "-format-" + std::to_string(buffer->GetFormat()) + "-Width-"
-        + std::to_string(buffer->GetWidth()) + "-Height-" + std::to_string(buffer->GetWidth()) + "-Stride-"
+        + std::to_string(buffer->GetWidth()) + "-Height-" + std::to_string(buffer->GetHeight()) + "-Stride-"
         + std::to_string(buffer->GetStride()) + ".dat";
     std::vector<uint8_t> staticMetadata;
     std::vector<uint8_t> dynamicMetadata;
     buffer->GetMetadata(HDI::Display::Graphic::Common::V1_0::ATTRKEY_HDR_STATIC_METADATA, staticMetadata);
     buffer->GetMetadata(HDI::Display::Graphic::Common::V1_0::ATTRKEY_HDR_DYNAMIC_METADATA, dynamicMetadata);
-    DumpData(reinterpret_cast<const char*>(buffer->GetVirAddr()), bufferSize, fileSuffix, 0);
-    DumpData(reinterpret_cast<const char*>(staticMetadata.data()), staticMetadata.size(), fileSuffix, 0);
-    DumpData(reinterpret_cast<const char*>(dynamicMetadata.data()), dynamicMetadata.size(), fileSuffix, 0);
+    uint64_t bufferId = buffer->GetBufferId();
+    DumpData(reinterpret_cast<const char*>(buffer->GetVirAddr()), bufferSize, fileSuffix, bufferId);
+    DumpData(reinterpret_cast<const char*>(staticMetadata.data()), staticMetadata.size(), fileSuffix, bufferId);
+    DumpData(reinterpret_cast<const char*>(dynamicMetadata.data()), dynamicMetadata.size(), fileSuffix, bufferId);
+}
+
+template <typename T>
+static void AppendStringifyPropToStream(int intend, std::stringstream& ss, std::string varName, T arr,
+    size_t length)
+{
+    ss << std::string(intend, ' ') << varName << "[" << length << "]:";
+    for (size_t i = 0; i < length; ++i) {
+        ss << " " << static_cast<double>(arr[i]);
+    }
+    ss << "\n";
+}
+
+template <typename T>
+static void AppendStringifyPropToStream(int intend, std::stringstream& ss, std::string varName, T value)
+{
+    ss << std::string(intend, ' ') << varName << ": " << static_cast<double>(value) << "\n";
+}
+
+static void AppendISOMetadataToStream(int intend, std::stringstream& ss, const ISOMetadata& iso)
+{
+    ss << std::string(intend, ' ') << "ISOMetadata" << " {\n";
+    int nextIntend = intend + 1;
+    AppendStringifyPropToStream(nextIntend, ss, GET_VAR_NAME(iso.writeVersion), iso.writeVersion);
+    AppendStringifyPropToStream(nextIntend, ss, GET_VAR_NAME(iso.miniVersion), iso.miniVersion);
+    AppendStringifyPropToStream(nextIntend, ss, GET_VAR_NAME(iso.gainmapChannelNum), iso.gainmapChannelNum);
+    AppendStringifyPropToStream(nextIntend, ss, GET_VAR_NAME(iso.useBaseColorFlag), iso.useBaseColorFlag);
+    AppendStringifyPropToStream(nextIntend, ss, GET_VAR_NAME(iso.baseHeadroom), iso.baseHeadroom);
+    AppendStringifyPropToStream(nextIntend, ss, GET_VAR_NAME(iso.alternateHeadroom), iso.alternateHeadroom);
+    AppendStringifyPropToStream(nextIntend, ss, GET_VAR_NAME(iso.enhanceClippedThreholdMaxGainmap),
+        iso.enhanceClippedThreholdMaxGainmap, std::size(iso.enhanceClippedThreholdMaxGainmap));
+    AppendStringifyPropToStream(nextIntend, ss, GET_VAR_NAME(iso.enhanceClippedThreholdMinGainmap),
+        iso.enhanceClippedThreholdMinGainmap, std::size(iso.enhanceClippedThreholdMaxGainmap));
+    AppendStringifyPropToStream(nextIntend, ss, GET_VAR_NAME(iso.enhanceMappingGamma),
+        iso.enhanceMappingGamma, std::size(iso.enhanceClippedThreholdMaxGainmap));
+    AppendStringifyPropToStream(nextIntend, ss, GET_VAR_NAME(iso.enhanceMappingBaselineOffset),
+        iso.enhanceMappingBaselineOffset, std::size(iso.enhanceClippedThreholdMaxGainmap));
+    AppendStringifyPropToStream(nextIntend, ss, GET_VAR_NAME(iso.enhanceMappingAlternateOffset),
+        iso.enhanceMappingAlternateOffset, std::size(iso.enhanceClippedThreholdMaxGainmap));
+    ss << std::string(intend, ' ') << "}\n";
+}
+
+static void AppendGainmapColorMetadataToStream(int intend, std::stringstream& ss, const GainmapColorMetadata& gcm)
+{
+    ss << std::string(intend, ' ') << "GainmapColorMetadata" << " {\n";
+    int nextIntend = intend + 1;
+    AppendStringifyPropToStream(nextIntend, ss, GET_VAR_NAME(gcm.enhanceDataColorPrimary), gcm.enhanceDataColorPrimary);
+    AppendStringifyPropToStream(nextIntend, ss, GET_VAR_NAME(gcm.enhanceDataTransFunction),
+        gcm.enhanceDataTransFunction);
+    AppendStringifyPropToStream(nextIntend, ss, GET_VAR_NAME(gcm.enhanceDataColorModel), gcm.enhanceDataColorModel);
+    AppendStringifyPropToStream(nextIntend, ss, GET_VAR_NAME(gcm.combineColorPrimary), gcm.combineColorPrimary);
+    AppendStringifyPropToStream(nextIntend, ss, GET_VAR_NAME(gcm.combineTransFunction), gcm.combineTransFunction);
+    AppendStringifyPropToStream(nextIntend, ss, GET_VAR_NAME(gcm.combineColorModel), gcm.combineColorModel);
+    AppendStringifyPropToStream(nextIntend, ss, GET_VAR_NAME(gcm.alternateColorPrimary), gcm.alternateColorPrimary);
+    AppendStringifyPropToStream(nextIntend, ss, GET_VAR_NAME(gcm.alternateTransFunction), gcm.alternateTransFunction);
+    AppendStringifyPropToStream(nextIntend, ss, GET_VAR_NAME(gcm.alternateColorModel), gcm.alternateColorModel);
+    AppendStringifyPropToStream(nextIntend, ss, GET_VAR_NAME(gcm.enhanceICCSize), gcm.enhanceICCSize);
+    AppendStringifyPropToStream(nextIntend, ss, GET_VAR_NAME(gcm.enhanceICC), gcm.enhanceICC, gcm.enhanceICC.size());
+    AppendStringifyPropToStream(nextIntend, ss, GET_VAR_NAME(gcm.combineMappingFlag), gcm.combineMappingFlag);
+    AppendStringifyPropToStream(nextIntend, ss, GET_VAR_NAME(gcm.combineMappingSize), gcm.combineMappingSize);
+    AppendStringifyPropToStream(nextIntend, ss, GET_VAR_NAME(gcm.combineMappingMatrix), gcm.combineMappingMatrix,
+        std::size(gcm.combineMappingMatrix));
+    AppendStringifyPropToStream(nextIntend, ss, GET_VAR_NAME(gcm.combineMapping), gcm.combineMapping,
+        gcm.combineMapping.size());
+    ss << std::string(intend, ' ') << "}\n";
+}
+
+static void AppendBaseColorMetadataToStream(int intend, std::stringstream& ss, const BaseColorMetadata& bcm)
+{
+    ss << std::string(intend, ' ') << "BaseColorMetadata" << " {\n";
+    int nextIntend = intend + 1;
+    AppendStringifyPropToStream(nextIntend, ss, GET_VAR_NAME(bcm.baseColorPrimary), bcm.baseColorPrimary);
+    AppendStringifyPropToStream(nextIntend, ss, GET_VAR_NAME(bcm.baseTransFunction), bcm.baseTransFunction);
+    AppendStringifyPropToStream(nextIntend, ss, GET_VAR_NAME(bcm.baseColorModel), bcm.baseColorModel);
+    AppendStringifyPropToStream(nextIntend, ss, GET_VAR_NAME(bcm.baseIccSize), bcm.baseIccSize);
+    AppendStringifyPropToStream(nextIntend, ss, GET_VAR_NAME(bcm.baseICC), bcm.baseICC, bcm.baseICC.size());
+    AppendStringifyPropToStream(nextIntend, ss, GET_VAR_NAME(bcm.baseMappingFlag), bcm.baseMappingFlag);
+    AppendStringifyPropToStream(nextIntend, ss, GET_VAR_NAME(bcm.baseMappingSize), bcm.baseMappingSize);
+    AppendStringifyPropToStream(nextIntend, ss, GET_VAR_NAME(bcm.baseMappingMatrix), bcm.baseMappingMatrix,
+        std::size(bcm.baseMappingMatrix));
+    AppendStringifyPropToStream(nextIntend, ss, GET_VAR_NAME(bcm.baseMapping), bcm.baseMapping, bcm.baseMapping.size());
+    ss << std::string(intend, ' ') << "}\n";
+}
+
+static std::string StringifyHDRVividExtendMetadata(const HDRVividExtendMetadata& meta)
+{
+    std::stringstream ss;
+    int intend = 0;
+
+    ss << "HDRVividExtendMetadata {\n";
+    AppendISOMetadataToStream(intend + 1, ss, meta.metaISO);
+    AppendGainmapColorMetadataToStream(intend + 1, ss, meta.gainmapColorMeta);
+    AppendBaseColorMetadataToStream(intend + 1, ss, meta.baseColorMeta);
+    ss << "}\n";
+
+    std::string hdrExtendMetadataStr = ss.str();
+    return hdrExtendMetadataStr;
+}
+
+void ImageUtils::DumpHdrExtendMetadataEnabled(sptr<SurfaceBuffer>& buffer, const std::string& fileName)
+{
+    bool cond = !ImageSystemProperties::GetDumpHdrEnabled() || buffer == nullptr;
+    CHECK_ERROR_RETURN(cond);
+    std::string fileSuffix = fileName + "-format-" + std::to_string(buffer->GetFormat()) + "-Width-"
+        + std::to_string(buffer->GetWidth()) + "-Height-" + std::to_string(buffer->GetHeight()) + "-Stride-"
+        + std::to_string(buffer->GetStride()) + ".dat";
+
+    std::vector<uint8_t> dynamicMetadata;
+    buffer->GetMetadata(HDI::Display::Graphic::Common::V1_0::ATTRKEY_HDR_DYNAMIC_METADATA, dynamicMetadata);
+    HDRVividExtendMetadata extendMetadata = {};
+
+    size_t copySize = std::min(sizeof(HDRVividExtendMetadata), dynamicMetadata.size());
+    int32_t memCpyRes = memcpy_s(&extendMetadata, sizeof(HDRVividExtendMetadata),
+        dynamicMetadata.data(), copySize);
+    if (memCpyRes != EOK) {
+        IMAGE_LOGE("%{public}s memcpy_s extendMetadata fail, error: %{public}d", __func__, memCpyRes);
+        return;
+    }
+
+    std::string hdrExtendMetadataStr = StringifyHDRVividExtendMetadata(extendMetadata);
+    DumpData(reinterpret_cast<const char*>(hdrExtendMetadataStr.data()), hdrExtendMetadataStr.size(), fileSuffix,
+        buffer->GetBufferId());
+}
+
+void ImageUtils::DumpSurfaceBufferAllKeysEnabled(sptr<SurfaceBuffer>& buffer, const std::string& fileName)
+{
+    bool cond = !ImageSystemProperties::GetDumpHdrEnabled() || buffer == nullptr;
+    CHECK_ERROR_RETURN(cond);
+    std::string filePrefix = fileName + "-format-" + std::to_string(buffer->GetFormat()) + "-Width-"
+        + std::to_string(buffer->GetWidth()) + "-Height-" + std::to_string(buffer->GetHeight()) + "-Stride-"
+        + std::to_string(buffer->GetStride());
+
+    uint64_t bufferId = buffer->GetBufferId();
+    std::vector<uint8_t> attrInfo{};
+    std::vector<uint32_t> keys{};
+    if (buffer->ListMetadataKeys(keys) == GSERROR_OK && !keys.empty()) {
+        for (size_t i = 0; i < keys.size(); i++) {
+            if (buffer->GetMetadata(keys[i], attrInfo) == GSERROR_OK && !attrInfo.empty()) {
+                IMAGE_LOGD("%{public}s dump SurfaceBufferInfo metadata key:%{public}d", __func__, keys[i]);
+                std::string fileSuffix = filePrefix + "-key-" + std::to_string(keys[i]) + ".dat";
+                DumpData(reinterpret_cast<const char*>(attrInfo.data()), attrInfo.size(), fileSuffix, bufferId);
+            }
+            attrInfo.clear();
+        }
+    }
 }
 
 static bool IsAlphaFormat(PixelFormat format)
