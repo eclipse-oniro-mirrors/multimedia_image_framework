@@ -350,7 +350,7 @@ ani_method ImageAniUtils::GetRecordSetMethod(ani_env* env, ani_object &argumentO
 {
     ani_status status;
     ani_class recordCls;
-    status = env->FindClass("escompat.Record", &recordCls);
+    status = env->FindClass("std.core.Record", &recordCls);
     if (status != ANI_OK) {
         IMAGE_LOGE("FindClass failed status :%{public}u", status);
         return nullptr;
