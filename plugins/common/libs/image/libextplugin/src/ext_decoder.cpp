@@ -1774,6 +1774,7 @@ uint32_t ExtDecoder::DecodeToYuv420(uint32_t index, DecodeContext &context)
     int retDecode = jpegYuvDecoder_->DoDecode(context, para);
     if (retDecode != JpegYuvDecodeError_Success) {
         IMAGE_LOGE("DecodeToYuv420 DoDecode return %{public}d", retDecode);
+        FreeContextBuffer(context.freeFunc, context.allocatorType, context.pixelsBuffer);
     } else {
         // update yuv outInfo if decode success, same as jpeg hardware decode
         context.outInfo.size = desiredSize;
