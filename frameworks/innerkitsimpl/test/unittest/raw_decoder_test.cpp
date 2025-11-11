@@ -21,6 +21,7 @@
 #include "mock_data_stream.h"
 #include "mock_abs_image_decoder.h"
 #include "image_source.h"
+#include "plugin_export.h"
 
 using namespace testing::ext;
 using namespace OHOS::Media;
@@ -850,6 +851,23 @@ HWTEST_F(RawDecoderTest, DecodeTest004, TestSize.Level3)
     uint32_t result = rawDecoder->Decode(index, context);
     ASSERT_EQ(result, Media::ERR_IMAGE_DATA_UNSUPPORT);
     GTEST_LOG_(INFO) << "RawStreamTest: DecodeTest004 end";
+}
+
+/**
+ * @tc.name: PluginExternalCreateTest001
+ * @tc.desc: Test of PluginExternalCreate when not find class or creator is nullptr
+ * @tc.type: FUNC
+ */
+HWTEST_F(RawDecoderTest, PluginExternalCreateTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "RawDecoderTest: PluginExternalCreateTest001 start";
+    std::string className = "";
+    auto result = PluginExternalCreate(className);
+    ASSERT_EQ(result, nullptr);
+    className = "#ImplClassType";
+    result = PluginExternalCreate(className);
+    ASSERT_EQ(result, nullptr);
+    GTEST_LOG_(INFO) << "RawDecoderTest: PluginExternalCreateTest001 end";
 }
 }
 }

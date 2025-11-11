@@ -34,10 +34,13 @@ namespace {
 constexpr auto IMAGE_INPUT_READ1_WEBP_SIZE = 25294;
 constexpr auto IMAGE_INPUT_READ6_WEBP_SIZE = 570;
 constexpr auto IMAGE_INPUT_READ8_WEBP_SIZE = 4244;
+constexpr auto WEBP_BUF_SIZE = 2;
 constexpr auto WEBP_HEAD_SIZE = 8;
 constexpr auto WEBP_CHUNK_HEADER_ANMF = "ANMF";
 constexpr auto WEBP_CHUNK_HEADER_VP8L = "VP8L";
 constexpr auto WEBP_CHUNK_HEADER_VP8 = "VP8 ";
+constexpr auto WEBP_CHUNK_WIDTH_OFFSET = 6;
+constexpr auto WEBP_WIDTH_PADDING = 1;
 static const std::string IMAGE_INPUT_READ1_WEBP_PATH = "/data/local/tmp/image/test_webp_readexifblob001.webp";
 static const std::string IMAGE_INPUT_READ2_WEBP_PATH = "/data/local/tmp/image/test_webp_readexifblob002.webp";
 static const std::string IMAGE_INPUT_READ3_WEBP_PATH = "/data/local/tmp/image/test_webp_readmetadata001.webp";
@@ -1869,6 +1872,59 @@ HWTEST_F(WebpExifMetadataAccessorTest, GetWidthAndHeightFormChunk002, TestSize.L
     DataBuf chunkData;
     auto ret = imageAccessor.GetWidthAndHeightFormChunk(strChunkId, chunkData);
     ASSERT_EQ(std::get<0>(ret), 0);
+}
+
+/**
+ * @tc.name: GetWidthAndHeightFormChunk003
+ * @tc.desc: Test GetWidthAndHeightFormChunk with the VP8L chunkId.
+ * @tc.type: FUNC
+ */
+HWTEST_F(WebpExifMetadataAccessorTest, GetWidthAndHeightFormChunk003, TestSize.Level3)
+{
+    std::shared_ptr<MetadataStream> readStream = std::make_shared<FileMetadataStream>(IMAGE_INPUT_WRITE20_WEBP_PATH);
+    ASSERT_TRUE(readStream->Open(OpenMode::ReadWrite));
+    WebpExifMetadataAccessor imageAccessor(readStream);
+    std::string strChunkId = WEBP_CHUNK_HEADER_VP8L;
+    DataBuf chunkData;
+    chunkData.Resize(WEBP_BUF_SIZE + WEBP_BUF_SIZE + 1);
+    auto ret = imageAccessor.GetWidthAndHeightFormChunk(strChunkId, chunkData);
+    ASSERT_EQ(std::get<0>(ret), WEBP_WIDTH_PADDING);
+}
+
+/**
+ * @tc.name: GetWidthAndHeightFormChunk004
+ * @tc.desc: Test GetWidthAndHeightFormChunk with the ANMF chunkId.
+ * @tc.type: FUNC
+ */
+HWTEST_F(WebpExifMetadataAccessorTest, GetWidthAndHeightFormChunk004, TestSize.Level3)
+{
+    static const byte offset3 = 3;
+    std::shared_ptr<MetadataStream> readStream = std::make_shared<FileMetadataStream>(IMAGE_INPUT_WRITE20_WEBP_PATH);
+    ASSERT_TRUE(readStream->Open(OpenMode::ReadWrite));
+    WebpExifMetadataAccessor imageAccessor(readStream);
+    std::string strChunkId = WEBP_CHUNK_HEADER_ANMF;
+    DataBuf chunkData;
+    chunkData.Resize(WEBP_CHUNK_WIDTH_OFFSET + offset3 + offset3);
+    auto ret = imageAccessor.GetWidthAndHeightFormChunk(strChunkId, chunkData);
+    ASSERT_EQ(std::get<0>(ret), WEBP_WIDTH_PADDING);
+}
+
+/**
+ * @tc.name: WriteHeader001
+ * @tc.desc: Testing WriteHeader
+ * @tc.type: FUNC
+ */
+HWTEST_F(WebpExifMetadataAccessorTest, WriteHeader001, TestSize.Level3)
+{
+    std::shared_ptr<MetadataStream> readStream = std::make_shared<FileMetadataStream>(IMAGE_INPUT_WRITE20_WEBP_PATH);
+    ASSERT_TRUE(readStream->Open(OpenMode::ReadWrite));
+    WebpExifMetadataAccessor imageAccessor(readStream);
+    BufferMetadataStream tmpBufStream;
+    DataBuf blob;
+    uint32_t tempSize = WEBP_BUF_SIZE + 1;
+    Vp8xAndExifInfo exifFlag = Vp8xAndExifInfo::VP8X_NOT_EXIST;
+    bool ret = imageAccessor.WriteHeader(tmpBufStream, tempSize, exifFlag);
+    ASSERT_EQ(ret, true);
 }
 
 /**

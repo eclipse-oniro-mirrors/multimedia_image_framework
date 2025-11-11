@@ -22,6 +22,7 @@
 #include "png_decoder.h"
 #include "securec.h"
 #include "mock_data_stream.h"
+#include "plugin_export.h"
 
 using namespace testing::ext;
 using namespace OHOS::Media;
@@ -1884,6 +1885,23 @@ HWTEST_F(PngDecoderTest, SetDecodeOptionsTest014, TestSize.Level3)
     uint32_t result = pngDecoder->SetDecodeOptions(index, opts, info);
     ASSERT_EQ(result, ERR_IMAGE_INIT_ABNORMAL);
     GTEST_LOG_(INFO) << "PngDecoderTest: SetDecodeOptionsTest014 end";
+}
+
+/**
+ * @tc.name: PluginExternalCreateTest001
+ * @tc.desc: Test of PluginExternalCreate when not find class or creator is nullptr
+ * @tc.type: FUNC
+ */
+HWTEST_F(PngDecoderTest, PluginExternalCreateTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PngDecoderTest: PluginExternalCreateTest001 start";
+    std::string className = "";
+    auto result = PluginExternalCreate(className);
+    ASSERT_EQ(result, nullptr);
+    className = "#ImplClassType";
+    result = PluginExternalCreate(className);
+    ASSERT_EQ(result, nullptr);
+    GTEST_LOG_(INFO) << "PngDecoderTest: PluginExternalCreateTest001 end";
 }
 } // namespace Multimedia
 } // namespace OHOS
