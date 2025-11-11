@@ -5609,7 +5609,7 @@ uint32_t ImageSource::GetiTxtLength()
             break;
         }
         std::string chunk_type(reinterpret_cast<char*>(typebuf), TRUNK_TYPE_FIELD_BYTES);
-        if (chunk_type == "iTxt") {
+        if (chunk_type == "iTXt") {
             sourceStreamPtr_->Seek(savedPosition);
             return length;
         }
