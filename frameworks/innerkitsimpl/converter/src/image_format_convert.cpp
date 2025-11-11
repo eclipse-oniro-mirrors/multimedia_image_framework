@@ -871,6 +871,7 @@ ImageInfo SetImageInfo(ImageInfo &srcImageinfo, DestConvertInfo &destInfo)
     info.colorSpace = srcImageinfo.colorSpace;
     info.pixelFormat = destInfo.format;
     info.size = {destInfo.width, destInfo.height};
+    info.encodedFormat = srcImageinfo.encodedFormat;
     return info;
 }
 
