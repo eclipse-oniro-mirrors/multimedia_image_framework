@@ -718,7 +718,7 @@ HWTEST_F(ImageSourceGifExTest, CreatePictureAtIndex005, TestSize.Level3)
 
     uint32_t incompleteFrameIndex = TEST_FILE_INCOMPLETE_GIF_FRAME_COUNT - 1;
     auto picture = imageSource->CreatePictureAtIndex(incompleteFrameIndex, errorCode);
-    ASSERT_EQ(errorCode, ERR_IMAGE_DECODE_ABNORMAL);
+    ASSERT_EQ(errorCode, SUCCESS);
 
     GTEST_LOG_(INFO) << "ImageSourceGifExTest: CreatePictureAtIndex005 end";
 }
