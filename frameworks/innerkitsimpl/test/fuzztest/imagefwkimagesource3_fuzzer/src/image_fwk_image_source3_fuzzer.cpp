@@ -89,16 +89,21 @@ std::unique_ptr<ImageSource> ConstructImageSourceByFd(const uint8_t *data, size_
     size_t power = FDP->ConsumeIntegralInRange<size_t>(NUM_0, NUM_10);
     int32_t height = std::pow(NUM_2, power);
     if (static_cast<size_t>(height) > size) {
+        close(fd);
         return nullptr;
     }
     int32_t width = static_cast<int32_t>(size / static_cast<size_t>(height));
     if (static_cast<size_t>(width * height) != size) {
+        close(fd);
         return nullptr;
     }
     opts.size.height = height;
     opts.size.width = width;
     uint32_t errorCode { NUM_0 };
-    return ImageSource::CreateImageSource(fd, opts, errorCode);
+
+    std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(fd, opts, errorCode);
+    close(fd);
+    return imageSource;
 }
 
 std::unique_ptr<ImageSource> ConstructImageSourceByPath(const uint8_t *data, size_t size)
