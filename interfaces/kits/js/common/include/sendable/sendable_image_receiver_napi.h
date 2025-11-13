@@ -125,6 +125,7 @@ struct SendableImageReceiverCommonArgs {
     CommonFunc queryArgs;
     CommonFunc nonAsyncBack;
     bool asyncLater = false;
+    const char* taskName;
 };
 
 class SendableImageReceiverAvaliableListener : public SurfaceBufferAvaliableListener {

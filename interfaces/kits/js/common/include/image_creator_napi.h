@@ -74,7 +74,7 @@ private:
     static bool GetNativeFromEnv(napi_env env, napi_callback_info info, std::shared_ptr<ImageCreator> &native);
     static napi_value JSCommonProcess(ImageCreatorCommonArgs &args);
     static void JsQueueImageSendEvent(napi_env env, ImageCreatorAsyncContext* context,
-                                      napi_event_priority prio);
+                                      napi_event_priority prio, const char* taskName);
     static napi_value JsOffOneArg(napi_env env, napi_callback_info info);
     static napi_value JsOffTwoArgs(napi_env env, napi_callback_info info);
 #ifdef IMAGE_DEBUG_FLAG
@@ -130,6 +130,7 @@ struct ImageCreatorCommonArgs {
     CreatorCommonFunc queryArgs;
     CreatorCommonFunc nonAsyncBack;
     bool asyncLater = false;
+    const char* taskName;
 };
 
 class ImageCreatorReleaseListener : public SurfaceBufferReleaseListener {

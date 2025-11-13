@@ -384,7 +384,7 @@ static void JSCommonProcessSendEvent(SendableImageReceiverCommonArgs &args, napi
     auto task = [args, status, context]() {
         (void)args.callBack(args.env, status, context);
     };
-    if (napi_status::napi_ok != napi_send_event(args.env, task, prio)) {
+    if (napi_status::napi_ok != napi_send_event(args.env, task, prio, args.taskName)) {
         IMAGE_LOGE("JSCommonProcessSendEvent: failed to SendEvent!");
     }
 }
@@ -683,6 +683,7 @@ napi_value SendableImageReceiverNapi::JsGetReceivingSurfaceId(napi_env env, napi
         .callBack = nullptr,
         .argc = ARGS1,
         .queryArgs = PrepareOneArg,
+        .taskName = "SendableImage.ImageReceiver.getReceivingSurfaceId",
     };
 
     args.callBack = [](napi_env env, napi_status status, Context context) {
@@ -757,6 +758,7 @@ napi_value SendableImageReceiverNapi::JsReadLatestImage(napi_env env, napi_callb
         .callBack = nullptr,
         .argc = ARGS1,
         .queryArgs = PrepareOneArg,
+        .taskName = "SendableImage.ImageReceiver.readLatestImage",
     };
 
     args.callBack = [](napi_env env, napi_status status, Context context) {
@@ -805,6 +807,7 @@ napi_value SendableImageReceiverNapi::JsReadNextImage(napi_env env, napi_callbac
         .callBack = nullptr,
         .argc = ARGS1,
         .queryArgs = PrepareOneArg,
+        .taskName = "SendableImage.ImageReceiver.readNextImage",
     };
 
     args.callBack = [](napi_env env, napi_status status, Context context) {
@@ -973,6 +976,7 @@ napi_value SendableImageReceiverNapi::JsOn(napi_env env, napi_callback_info info
         .env = env, .info = info,
         .async = CallType::ASYNC,
         .name = "JsOn",
+        .taskName = "SendableImage.ImageReceiver.on",
     };
     args.argc = ARGS2;
     args.asyncLater = true;
@@ -1012,6 +1016,7 @@ napi_value SendableImageReceiverNapi::JsRelease(napi_env env, napi_callback_info
         .callBack = nullptr,
         .argc = ARGS1,
         .queryArgs = PrepareOneArg,
+        .taskName = "SendableImage.ImageReceiver.release",
     };
 
     args.callBack = [](napi_env env, napi_status status, Context context) {
