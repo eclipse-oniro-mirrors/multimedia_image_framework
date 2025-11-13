@@ -14,6 +14,9 @@
  */
 #define private public
 #include <gtest/gtest.h>
+#include <fstream>
+#include <ctime>
+#include <sys/stat.h>
 #include "attr_data.h"
 #include "capability.h"
 #include "impl_class_key.h"
@@ -25,6 +28,7 @@
 #include "plugin_info_lock.h"
 #include "plugin_mgr.h"
 #include "plugin.h"
+#include "plugin_metadata.h"
 #include "priority_scheme.h"
 
 using namespace testing::ext;
@@ -2121,6 +2125,146 @@ HWTEST_F(PluginsManagerSrcFrameWorkTest, AnalyzeAttrDataTest006, TestSize.Level3
     auto ret = mockCapability.AnalyzeAttrData(mockJson, mockAttrData);
     ASSERT_EQ(ret, SUCCESS);
     GTEST_LOG_(INFO) << "PluginsManagerSrcFrameWorkTest: AnalyzeAttrDataTest006 end";
+}
+
+/**
+ * @tc.name: RegisterPluginErrorBranch001
+ * @tc.desc: Test RegisterPlugin when plugin->Register fails
+ * @tc.type: FUNC
+ */
+HWTEST_F(PluginsManagerSrcFrameWorkTest, RegisterPluginErrorBranch001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PluginsManagerSrcFrameWorkTest: RegisterPluginErrorBranch001 start";
+    
+    PluginMgr &pluginMgr = DelayedRefSingleton<PluginMgr>::GetInstance();
+    
+    std::string tempMetaFile = "/tmp/test_invalid_register.pluginmeta";
+    std::string tempLibPath = "/tmp/test_lib.so";
+    
+    std::ofstream metaFile(tempMetaFile);
+    if (metaFile.is_open()) {
+        metaFile << R"({
+            "version":"1.0.0.0",
+            "targetVersion":"1.0.0.0",
+            "classes": []
+        })";
+        metaFile.close();
+    }
+    
+    std::ofstream libFile(tempLibPath);
+    if (libFile.is_open()) {
+        libFile << "";
+        libFile.close();
+    }
+    
+    std::string libPath = tempLibPath;
+    uint32_t ret = pluginMgr.RegisterPlugin(tempMetaFile, std::move(libPath));
+    EXPECT_NE(ret, SUCCESS);
+    
+    std::remove(tempMetaFile.c_str());
+    std::remove(tempLibPath.c_str());
+    
+    GTEST_LOG_(INFO) << "PluginsManagerSrcFrameWorkTest: RegisterPluginErrorBranch001 end";
+}
+
+/**
+ * @tc.name: RegisterPluginJsonRegisterFailTest001
+ * @tc.desc: Test RegisterPlugin(metadataJson) with Plugin::Register failure
+ * @tc.type: FUNC
+ */
+HWTEST_F(PluginsManagerSrcFrameWorkTest, RegisterPluginJsonRegisterFailTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PluginsManagerSrcFrameWorkTest: RegisterPluginJsonRegisterFailTest001 start";
+    PluginMgr pluginMgr;
+    std::string invalidJson = R"({
+        "libraryPath": "/system/lib/libtest_plugin2.so",
+        "pluginClass": "TestPlugin2"
+    })";
+    uint32_t ret = pluginMgr.RegisterPlugin(invalidJson);
+    EXPECT_NE(ret, SUCCESS);
+    EXPECT_NE(ret, ERR_GENERAL);
+    GTEST_LOG_(INFO) << "PluginsManagerSrcFrameWorkTest: RegisterPluginJsonRegisterFailTest001 end";
+}
+
+/**
+ * @tc.name: RegisterPluginJsonInvalidParameterTest001
+ * @tc.desc: Test RegisterPlugin(metadataJson) with invalid parameters
+ * @tc.type: FUNC
+ */
+HWTEST_F(PluginsManagerSrcFrameWorkTest, RegisterPluginJsonInvalidParameterTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PluginsManagerSrcFrameWorkTest: RegisterPluginJsonInvalidParameterTest001 start";
+    PluginMgr pluginMgr;
+    uint32_t ret1 = pluginMgr.RegisterPlugin("");
+    EXPECT_EQ(ret1, ERR_INVALID_PARAMETER);
+    uint32_t ret2 = pluginMgr.RegisterPlugin("not a json");
+    EXPECT_EQ(ret2, ERR_INVALID_PARAMETER);
+    std::string noLibPathJson = R"({
+        "pluginClass": "TestPlugin",
+        "packageName": "com.test.plugin"
+    })";
+    uint32_t ret3 = pluginMgr.RegisterPlugin(noLibPathJson);
+    EXPECT_EQ(ret3, ERR_INVALID_PARAMETER);
+    GTEST_LOG_(INFO) << "PluginsManagerSrcFrameWorkTest: RegisterPluginJsonInvalidParameterTest001 end";
+}
+
+/**
+ * @tc.name: TraverseFilesCheckPluginMetaFileContinueTest001
+ * @tc.desc: Test TraverseFiles when CheckPluginMetaFile returns false and continues
+ * @tc.type: FUNC
+ */
+HWTEST_F(PluginsManagerSrcFrameWorkTest, TraverseFilesCheckPluginMetaFileContinueTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PluginsManagerSrcFrameWorkTest: TraverseFilesCheckPluginMetaFileContinueTest001 start";
+    PluginMgr pluginMgr;
+    std::string tempDir = "/data/local/tmp/test_traverse_files_" + std::to_string(time(nullptr));
+    mkdir(tempDir.c_str(), 0755);
+    std::string txtFile = tempDir + "/normal_file.txt";
+    std::ofstream txt(txtFile);
+    txt << "This is a normal text file";
+    txt.close();
+    std::string invalidMeta = tempDir + "/invalid.pluginmeta";
+    std::ofstream invalid(invalidMeta);
+    invalid << "invalid json content {{{";
+    invalid.close();
+    std::string noLibPathMeta = tempDir + "/no_libpath.pluginmeta";
+    std::ofstream noLib(noLibPathMeta);
+    noLib << R"({"pluginClass": "TestPlugin"})";
+    noLib.close();
+    std::string wrongSuffixMeta = tempDir + "/wrong_suffix.pluginmeta";
+    std::ofstream wrongSuffix(wrongSuffixMeta);
+    wrongSuffix << R"({"libraryPath": "libtest.dll"})";
+    wrongSuffix.close();
+    uint32_t ret = pluginMgr.TraverseFiles(tempDir);
+    EXPECT_EQ(ret, ERR_NO_TARGET);
+    remove(txtFile.c_str());
+    remove(invalidMeta.c_str());
+    remove(noLibPathMeta.c_str());
+    remove(wrongSuffixMeta.c_str());
+    rmdir(tempDir.c_str());
+    GTEST_LOG_(INFO) << "PluginsManagerSrcFrameWorkTest: TraverseFilesCheckPluginMetaFileContinueTest001 end";
+}
+
+/**
+ * @tc.name: RegisterPluginJsonAlreadyRegisteredRealTest001
+ * @tc.desc: Test RegisterPlugin(metadataJson) with actually registered plugin (using built-in metadata)
+ * @tc.type: FUNC
+ */
+HWTEST_F(PluginsManagerSrcFrameWorkTest, RegisterPluginJsonAlreadyRegisteredRealTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PluginsManagerSrcFrameWorkTest: RegisterPluginJsonAlreadyRegisteredRealTest001 start";
+    PluginMgr pluginMgr;
+    std::vector<std::string> emptyPaths;
+    uint32_t ret1 = pluginMgr.Register(emptyPaths);
+    if (ret1 == SUCCESS && !OHOS::MultimediaPlugin::META_DATA.empty()) {
+        std::string firstMetadata = OHOS::MultimediaPlugin::META_DATA[0];
+        uint32_t ret2 = pluginMgr.RegisterPlugin(firstMetadata);
+        EXPECT_EQ(ret2, ERR_GENERAL);
+        GTEST_LOG_(INFO) << "Successfully hit already registered branch, ret2=" << ret2;
+    } else {
+        GTEST_LOG_(INFO) << "META_DATA is empty or registration failed, skip this test";
+    }
+    GTEST_LOG_(INFO) << "PluginsManagerSrcFrameWorkTest: RegisterPluginJsonAlreadyRegisteredRealTest001 end";
 }
 }
 }

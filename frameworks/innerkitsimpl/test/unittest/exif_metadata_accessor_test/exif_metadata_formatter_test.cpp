@@ -18,6 +18,7 @@
 #include <memory>
 #include "exif_metadata_formatter.h"
 #include "image_log.h"
+#include "media_errors.h"
 
 using namespace OHOS::Media;
 using namespace testing::ext;
@@ -97,6 +98,111 @@ HWTEST_F(ExifMetadataFormatterTest, Validate002, TestSize.Level3)
 }
 
 /**
+ * @tc.name: Validate003
+ * @tc.desc: test the Validate when GPSLatitude value has double spaces between fractions
+ * @tc.type: FUNC
+ */
+HWTEST_F(ExifMetadataFormatterTest, Validate003, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ExifMetadataFormatterTest: Validate003 start";
+    std::string keyName = "GPSLatitude";
+    std::string value1 = "123/1  456/1 789/1";
+    int32_t result = ExifMetadatFormatter::Validate(keyName, value1);
+    ASSERT_NE(result, Media::SUCCESS);
+    GTEST_LOG_(INFO) << "ExifMetadataFormatterTest: Validate003 end";
+}
+
+/**
+ * @tc.name: Validate004
+ * @tc.desc: test the Validate when GPSLatitude value has no fraction format
+ * @tc.type: FUNC
+ */
+HWTEST_F(ExifMetadataFormatterTest, Validate004, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ExifMetadataFormatterTest: Validate004 start";
+    std::string keyName = "GPSLatitude";
+    std::string value1 = "123 456 789";
+    int32_t result = ExifMetadatFormatter::Validate(keyName, value1);
+    ASSERT_NE(result, Media::SUCCESS);
+    GTEST_LOG_(INFO) << "ExifMetadataFormatterTest: Validate004 end";
+}
+
+/**
+ * @tc.name: Validate005
+ * @tc.desc: test the Validate when GPSLatitude value has invalid numerator
+ * @tc.type: FUNC
+ */
+HWTEST_F(ExifMetadataFormatterTest, Validate005, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ExifMetadataFormatterTest: Validate005 start";
+    std::string keyName = "GPSLatitude";
+    std::string value1 = "abc/1 456/1 789/1";
+    int32_t result = ExifMetadatFormatter::Validate(keyName, value1);
+    ASSERT_NE(result, Media::SUCCESS);
+    GTEST_LOG_(INFO) << "ExifMetadataFormatterTest: Validate005 end";
+}
+
+/**
+ * @tc.name: Validate006
+ * @tc.desc: test the Validate when GPSLatitude value has invalid denominator
+ * @tc.type: FUNC
+ */
+HWTEST_F(ExifMetadataFormatterTest, Validate006, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ExifMetadataFormatterTest: Validate006 start";
+    std::string keyName = "GPSLatitude";
+    std::string value1 = "123/abc 456/1 789/1";
+    int32_t result = ExifMetadatFormatter::Validate(keyName, value1);
+    ASSERT_NE(result, Media::SUCCESS);
+    GTEST_LOG_(INFO) << "ExifMetadataFormatterTest: Validate006 end";
+}
+
+/**
+ * @tc.name: Validate007
+ * @tc.desc: test the Validate when GPSLatitude value has zero denominators
+ * @tc.type: FUNC
+ */
+HWTEST_F(ExifMetadataFormatterTest, Validate007, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ExifMetadataFormatterTest: Validate007 start";
+    std::string keyName = "GPSLatitude";
+    std::string value1 = "123/0 456/0 789/1";
+    int32_t result = ExifMetadatFormatter::Validate(keyName, value1);
+    ASSERT_NE(result, Media::SUCCESS);
+    GTEST_LOG_(INFO) << "ExifMetadataFormatterTest: Validate007 end";
+}
+
+/**
+ * @tc.name: Validate008
+ * @tc.desc: test the Validate when GPSLatitude value has insufficient components
+ * @tc.type: FUNC
+ */
+HWTEST_F(ExifMetadataFormatterTest, Validate008, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ExifMetadataFormatterTest: Validate008 start";
+    std::string keyName = "GPSLatitude";
+    std::string value1 = "123/1";
+    int32_t result = ExifMetadatFormatter::Validate(keyName, value1);
+    ASSERT_EQ(result, ERR_MEDIA_VALUE_INVALID);
+    GTEST_LOG_(INFO) << "ExifMetadataFormatterTest: Validate008 end";
+}
+
+/**
+ * @tc.name: Validate009
+ * @tc.desc: test the Validate when GPSLatitude value has zero denominator in last component
+ * @tc.type: FUNC
+ */
+HWTEST_F(ExifMetadataFormatterTest, Validate009, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ExifMetadataFormatterTest: Validate009 start";
+    std::string keyName = "GPSLatitude";
+    std::string value1 = "123/1 456/1 789/0";
+    int32_t result = ExifMetadatFormatter::Validate(keyName, value1);
+    ASSERT_EQ(result, ERR_MEDIA_VALUE_INVALID);
+    GTEST_LOG_(INFO) << "ExifMetadataFormatterTest: Validate009 end";
+}
+
+/**
  * @tc.name: IsValidValueTest001
  * @tc.desc: test the IsValidValue when array is nullptr
  * @tc.type: FUNC
@@ -150,6 +256,155 @@ HWTEST_F(ExifMetadataFormatterTest, GetFractionFromStrTest002, TestSize.Level3)
     result = ExifMetadatFormatter::GetFractionFromStr("7.0", isOutRange);
     EXPECT_EQ(result, "7/1");
     EXPECT_FALSE(isOutRange);
+}
+
+/**
+ * @tc.name: GetFractionFromStrTest003
+ * @tc.desc: test the GetFractionFromStr when decimal part is extremely long
+ * @tc.type: FUNC
+ */
+HWTEST_F(ExifMetadataFormatterTest, GetFractionFromStrTest003, TestSize.Level3)
+{
+    bool isOutRange = false;
+    std::string testValue = "111111111111111111.1111111111111111111111";
+    std::string result = ExifMetadatFormatter::GetFractionFromStr(testValue, isOutRange);
+    EXPECT_EQ(result, "");
+    EXPECT_TRUE(isOutRange);
+}
+
+/**
+ * @tc.name: GetFractionFromStrTest004
+ * @tc.desc: test the GetFractionFromStr when decimal value contains non-numeric suffix
+ * @tc.type: FUNC
+ */
+HWTEST_F(ExifMetadataFormatterTest, GetFractionFromStrTest004, TestSize.Level3)
+{
+    bool isOutRange = false;
+    std::string testValue = "1.17976abc";
+    std::string result = ExifMetadatFormatter::GetFractionFromStr(testValue, isOutRange);
+    EXPECT_EQ(result, "14747/12500");
+    EXPECT_FALSE(isOutRange);
+}
+
+/**
+ * @tc.name: GetFractionFromStrTest005
+ * @tc.desc: test the GetFractionFromStr when input is integer decimal value
+ * @tc.type: FUNC
+ */
+HWTEST_F(ExifMetadataFormatterTest, GetFractionFromStrTest005, TestSize.Level3)
+{
+    bool isOutRange = false;
+    std::string testValue = "3.0";
+    std::string result = ExifMetadatFormatter::GetFractionFromStr(testValue, isOutRange);
+    EXPECT_EQ(result, "3/1");
+    EXPECT_FALSE(isOutRange);
+}
+
+/**
+ * @tc.name: ValidDecimalRationalFormatTest001
+ * @tc.desc: test the ValidDecimalRationalFormat when value is very small scientific notation
+ * @tc.type: FUNC
+ */
+HWTEST_F(ExifMetadataFormatterTest, ValidDecimalRationalFormatTest001, TestSize.Level3)
+{
+    bool res = false;
+    std::string testValue = "1.1e-400";
+    res = ExifMetadatFormatter::ValidDecimalRationalFormat(testValue);
+    EXPECT_EQ(res, true);
+}
+
+/**
+ * @tc.name: ValidDecimalRationalFormatTest002
+ * @tc.desc: test the ValidDecimalRationalFormat when value is very large scientific notation
+ * @tc.type: FUNC
+ */
+HWTEST_F(ExifMetadataFormatterTest, ValidDecimalRationalFormatTest002, TestSize.Level3)
+{
+    bool res = false;
+    std::string testValue = "1.1e400";
+    res = ExifMetadatFormatter::ValidDecimalRationalFormat(testValue);
+    EXPECT_EQ(res, true);
+}
+
+/**
+ * @tc.name: ValidConvertRationalFormatTest001
+ * @tc.desc: test the ValidConvertRationalFormat when value is extremely large scientific notation
+ * @tc.type: FUNC
+ */
+HWTEST_F(ExifMetadataFormatterTest, ValidConvertRationalFormatTest001, TestSize.Level3)
+{
+    bool res = false;
+    std::string testValue = "2.5e400";
+    res = ExifMetadatFormatter::ValidConvertRationalFormat(testValue);
+    EXPECT_EQ(res, true);
+}
+
+/**
+ * @tc.name: ValidRegexWithChannelFormatTest001
+ * @tc.desc: test the ValidRegexWithChannelFormat when testValue is valid single dash
+ * @tc.type: FUNC
+ */
+HWTEST_F(ExifMetadataFormatterTest, ValidRegexWithChannelFormatTest001, TestSize.Level3)
+{
+    bool res = false;
+    std::string testValue = "-";
+    std::string regex = "[-YCbCrRGB]+";
+    res = ExifMetadatFormatter::ValidRegexWithChannelFormat(testValue, regex);
+    EXPECT_EQ(res, true);
+}
+
+/**
+ * @tc.name: ValidRegexWithChannelFormatTest002
+ * @tc.desc: test the ValidRegexWithChannelFormat when testValue does not match regex pattern
+ * @tc.type: FUNC
+ */
+HWTEST_F(ExifMetadataFormatterTest, ValidRegexWithChannelFormatTest002, TestSize.Level3)
+{
+    bool res = false;
+    std::string testValue = "InvalidString";
+    std::string regex = "[-YCbCrRGB]+";
+    res = ExifMetadatFormatter::ValidRegexWithChannelFormat(testValue, regex);
+    EXPECT_EQ(res, false);
+}
+
+/**
+ * @tc.name: ValidRegexWithGpsOneRationalFormatTest001
+ * @tc.desc: test the ValidRegexWithGpsOneRationalFormat when testValue is numeric string
+ * @tc.type: FUNC
+ */
+HWTEST_F(ExifMetadataFormatterTest, ValidRegexWithGpsOneRationalFormatTest001, TestSize.Level3)
+{
+    bool res = false;
+    std::string testValue = "123";
+    std::string regex = "\\d+";
+    res = ExifMetadatFormatter::ValidRegexWithGpsOneRationalFormat(testValue, regex);
+    EXPECT_EQ(res, false);
+}
+
+/**
+ * @tc.name: ValidRegexWithGpsOneRationalFormatTest002
+ * @tc.desc: test the ValidateValueRange when value is extremely large for Orientation
+ * @tc.type: FUNC
+ */
+HWTEST_F(ExifMetadataFormatterTest, ValidRegexWithGpsOneRationalFormatTest002, TestSize.Level3)
+{
+    std::string keyName = "Orientation";
+    std::string largeValue = "9999999999999999999";
+    int32_t res = ExifMetadatFormatter::ValidateValueRange(keyName, largeValue);
+    EXPECT_EQ(res, Media::ERR_MEDIA_OUT_OF_RANGE);
+}
+
+/**
+ * @tc.name: ValidRegexWithGpsOneRationalFormatTest003
+ * @tc.desc: test the ValidateValueRange when value is large for Orientation
+ * @tc.type: FUNC
+ */
+HWTEST_F(ExifMetadataFormatterTest, ValidRegexWithGpsOneRationalFormatTest003, TestSize.Level3)
+{
+    std::string keyName = "Orientation";
+    std::string largeValue = "9999999999999999999";
+    int32_t res = ExifMetadatFormatter::ValidateValueRange(keyName, largeValue);
+    EXPECT_EQ(res, Media::ERR_MEDIA_OUT_OF_RANGE);
 }
 } // namespace Multimedia
 } // namespace OHOS

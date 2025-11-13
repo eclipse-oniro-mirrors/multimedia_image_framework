@@ -283,5 +283,22 @@ HWTEST_F(GifDecoderTest, GetTopLevelImageNum002, TestSize.Level3)
     ASSERT_EQ(res, ERR_IMAGE_SOURCE_DATA_INCOMPLETE);
     GTEST_LOG_(INFO) << "GifDecoderTest: GetTopLevelImageNum002 end";
 }
+
+/**
+ * @tc.name: PluginExternalCreateTest001
+ * @tc.desc: Test of PluginExternalCreate when not find class or creator is nullptr
+ * @tc.type: FUNC
+ */
+HWTEST_F(PngDecoderTest, PluginExternalCreateTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PngDecoderTest: PluginExternalCreateTest001 start";
+    std::string className = "";
+    auto result = PluginExternalCreate(className);
+    ASSERT_EQ(result, nullptr);
+    className = "#ImplClassType";
+    result = PluginExternalCreate(className);
+    ASSERT_EQ(result, nullptr);
+    GTEST_LOG_(INFO) << "PngDecoderTest: PluginExternalCreateTest001 end";
+}
 }
 }

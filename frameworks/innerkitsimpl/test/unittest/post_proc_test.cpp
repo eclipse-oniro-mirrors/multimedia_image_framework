@@ -24,6 +24,7 @@
 #include "memory_manager.h"
 #include "pixel_map.h"
 #include "post_proc.h"
+#include "basic_transformer.h"
 
 using namespace testing::ext;
 using namespace OHOS::Media;
@@ -38,6 +39,14 @@ static constexpr int32_t IMAGE_INPUT_JPG_HEIGHT = 500;
 static const int32_t NUM_1 = 1;
 static const int32_t NUM_2 = 2;
 static const int32_t NUM_NEGATIVE_1 = -1;
+static const int32_t INFO_OVER_SIZE = 2048;
+static const int32_t BYTES_OVER_SIZE = 1024;
+static const int32_t INFO_SIZE = 32;
+static const int32_t BYTES_SIZE = 4;
+static const int32_t INVALID_RECT_SIZE = -100;
+static const int32_t RECT_WIDTH = 100;
+static const int32_t RECT_HEIGHT = 200;
+static constexpr uint32_t MATRIX_OPER_TYPE = 0x02;
 
 class PostProcTest : public testing::Test {
 public:
@@ -1357,6 +1366,160 @@ HWTEST_F(PostProcTest, CheckPixelMapSLRTest001, TestSize.Level3)
     ret = postProc.ScalePixelMapWithSLR(desiredSize, pixelMap, false);
     EXPECT_FALSE(ret);
     GTEST_LOG_(INFO) << "PostProcTest: CheckPixelMapSLRTest001 end";
+}
+
+/**
+ * @tc.name: CenterDisplayTest002
+ * @tc.desc: Test CenterDisplay returns false when source/target dimensions are non-positive (negative width case).
+ * @tc.type: FUNC
+ */
+HWTEST_F(PostProcTest, CenterDisplayTest002, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PostProcTest: CenterDisplayTest002 start";
+    PostProc postProc;
+    PixelMap pixelMap;
+    int32_t srcWidth = NUM_NEGATIVE_1;
+    int32_t srcHeight = 0;
+    int32_t targetWidth = 0;
+    int32_t targetHeight = 0;
+    bool ret = postProc.CenterDisplay(pixelMap, srcWidth, srcHeight, targetWidth, targetHeight);
+    ASSERT_EQ(ret, false);
+    GTEST_LOG_(INFO) << "PostProcTest: CenterDisplayTest002 end";
+}
+
+/**
+ * @tc.name: CheckScanlineFilterTest001
+ * @tc.desc: Test CheckScanlineFilter error paths for oversize targets, unsupported pixel format, then success path.
+ * @tc.type: FUNC
+ */
+HWTEST_F(PostProcTest, CheckScanlineFilterTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PostProcTest: CheckScanlineFilterTest001 start";
+    Rect cropRect;
+    ImageInfo dstImageInfo;
+    dstImageInfo.size.width = INFO_OVER_SIZE;
+    dstImageInfo.size.height = INFO_OVER_SIZE;
+    PixelMap pixelMap;
+    int32_t pixelBytes = BYTES_OVER_SIZE;
+    ScanlineFilter scanlineFilter;
+    PostProc postProc;
+    postProc.decodeOpts_.allocatorType = AllocatorType::HEAP_ALLOC;
+    uint32_t ret = postProc.CheckScanlineFilter(cropRect, dstImageInfo, pixelMap, pixelBytes, scanlineFilter);
+    ASSERT_EQ(ret, ERR_IMAGE_CROP);
+
+    dstImageInfo.size.width = INFO_SIZE;
+    dstImageInfo.size.height = INFO_SIZE;
+    pixelBytes = BYTES_SIZE;
+    dstImageInfo.pixelFormat = PixelFormat::UNKNOWN;
+    ret = postProc.CheckScanlineFilter(cropRect, dstImageInfo, pixelMap, pixelBytes, scanlineFilter);
+    ASSERT_EQ(ret, ERR_IMAGE_DATA_UNSUPPORT);
+
+    dstImageInfo.pixelFormat = PixelFormat::RGBA_8888;
+    ret = postProc.CheckScanlineFilter(cropRect, dstImageInfo, pixelMap, pixelBytes, scanlineFilter);
+    ASSERT_EQ(ret, 0);
+    GTEST_LOG_(INFO) << "PostProcTest: CheckScanlineFilterTest001 end";
+}
+
+/**
+ * @tc.name: PixelConvertProcTest003
+ * @tc.desc: Test PixelConvertProc succeeds when src/dst info and allocator are valid RGBA_8888.
+ * @tc.type: FUNC
+ */
+HWTEST_F(PostProcTest, PixelConvertProcTest003, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PostProcTest: PixelConvertProcTest003 start";
+    ImageInfo dstImageInfo;
+    dstImageInfo.size.width = INFO_SIZE;
+    dstImageInfo.size.height = INFO_SIZE;
+    dstImageInfo.pixelFormat = PixelFormat::RGBA_8888;
+    PixelMap pixelMap;
+    ImageInfo srcImageInfo;
+    srcImageInfo.size.width = INFO_SIZE;
+    srcImageInfo.size.height = INFO_SIZE;
+    srcImageInfo.pixelFormat = PixelFormat::RGBA_8888;
+    PostProc postProc;
+    postProc.decodeOpts_.allocatorType = AllocatorType::HEAP_ALLOC;
+    uint32_t ret = postProc.PixelConvertProc(dstImageInfo, pixelMap, srcImageInfo);
+    ASSERT_EQ(ret, 0);
+    GTEST_LOG_(INFO) << "PostProcTest: PixelConvertProcTest003 end";
+}
+
+/**
+ * @tc.name: ReleaseBufferTest001
+ * @tc.desc: Test ReleaseBuffer frees DMA buffers, handles null native buffer, and clears heap allocations.
+ * @tc.type: FUNC
+ */
+HWTEST_F(PostProcTest, ReleaseBufferTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PostProcTest: ReleaseBufferTest001 start";
+    PostProc postProc;
+    AllocatorType allocatorType = AllocatorType::DMA_ALLOC;
+    int fd = NUM_NEGATIVE_1;
+    uint64_t dataSize = 0;
+    uint8_t* buffer = new uint8_t[dataSize];
+    uint8_t** bufferPtr = &buffer;
+    sptr<SurfaceBuffer> surfaceBuffer = SurfaceBuffer::Create();
+    ASSERT_NE(surfaceBuffer, nullptr);
+    void* nativeBuffer = surfaceBuffer.GetRefPtr();
+    ImageUtils::SurfaceBuffer_Reference(nativeBuffer);
+    postProc.ReleaseBuffer(allocatorType, fd, dataSize, bufferPtr, nativeBuffer);
+    nativeBuffer = nullptr;
+    postProc.ReleaseBuffer(allocatorType, fd, dataSize, bufferPtr, nativeBuffer);
+    ASSERT_EQ(nativeBuffer, nullptr);
+
+    allocatorType = AllocatorType::HEAP_ALLOC;
+    postProc.ReleaseBuffer(allocatorType, fd, dataSize, bufferPtr, nativeBuffer);
+    ASSERT_EQ(*bufferPtr, nullptr);
+    GTEST_LOG_(INFO) << "PostProcTest: ReleaseBufferTest001 end";
+}
+
+/**
+ * @tc.name: NeedScanlineFilterTest001
+ * @tc.desc: Test NeedScanlineFilter flags invalid crop rectangle with negative top.
+ * @tc.type: FUNC
+ */
+HWTEST_F(PostProcTest, NeedScanlineFilterTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PostProcTest: NeedScanlineFilterTest001 start";
+    PostProc postProc;
+    Rect cropRect;
+    cropRect.top = INVALID_RECT_SIZE;
+    cropRect.width = RECT_WIDTH;
+    cropRect.left = 0;
+    cropRect.height = RECT_HEIGHT;
+    Size srcSize;
+    srcSize.width = RECT_WIDTH;
+    srcSize.height = RECT_HEIGHT;
+    bool hasPixelConvert = false;
+    uint32_t ret = postProc.NeedScanlineFilter(cropRect, srcSize, hasPixelConvert);
+    ASSERT_EQ(ret, ERR_IMAGE_CROP);
+    GTEST_LOG_(INFO) << "PostProcTest: NeedScanlineFilterTest001 end";
+}
+
+/**
+ * @tc.name: TransformTest002
+ * @tc.desc: Test Transform returns false for zero-sized pixmap even when transformer matrix is set.
+ * @tc.type: FUNC
+ */
+HWTEST_F(PostProcTest, TransformTest002, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PostProcTest: TransformTest002 start";
+    PostProc postProc;
+    BasicTransformer basicTransformer;
+    basicTransformer.matrix_.operType_ = MATRIX_OPER_TYPE;
+    basicTransformer.matrix_.fMat_[IMAGE_SCALEX] = NUM_1;
+    basicTransformer.matrix_.fMat_[IMAGE_SCALEY] = NUM_1;
+    PixmapInfo inPixmap;
+    inPixmap.data = new uint8_t;
+    inPixmap.imageInfo.pixelFormat = PixelFormat::ARGB_8888;
+    inPixmap.imageInfo.size.width = 0;
+    inPixmap.imageInfo.size.height = 0;
+    PixelMap pixelMap;
+    pixelMap.isTransformered_ = false;
+    postProc.decodeOpts_.allocatorType = AllocatorType::HEAP_ALLOC;
+    bool ret = postProc.Transform(basicTransformer, inPixmap, pixelMap);
+    ASSERT_EQ(ret, false);
+    GTEST_LOG_(INFO) << "PostProcTest: TransformTest002 end";
 }
 }
 }

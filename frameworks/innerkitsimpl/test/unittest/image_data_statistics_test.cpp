@@ -54,5 +54,43 @@ HWTEST_F(ImageDataStatisticsTest, DataStatistics002, TestSize.Level3)
     imageDataStatistics.AddTitle("datastatisticsTest");
     GTEST_LOG_(INFO) << "ImagePackerTest: StartPacking002 end";
 }
+
+/**
+ * @tc.name: DataStatistics003
+ * @tc.desc: Test ImageDataStatistics constructor format error
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageDataStatisticsTest, DataStatistics003, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImageDataStatisticsTest: DataStatistics003 start";
+    ImageDataStatistics imageDataStatistics("%s %d %d", "only_one_string");
+    GTEST_LOG_(INFO) << "ImageDataStatisticsTest: DataStatistics003 end";
+}
+
+/**
+ * @tc.name: DataStatistics004
+ * @tc.desc: Test AddTitle format error
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageDataStatisticsTest, DataStatistics004, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImageDataStatisticsTest: DataStatistics004 start";
+    ImageDataStatistics imageDataStatistics("test");
+    imageDataStatistics.AddTitle("%d %d", 1);
+    GTEST_LOG_(INFO) << "ImageDataStatisticsTest: DataStatistics004 end";
+}
+
+/**
+ * @tc.name: DataStatistics005
+ * @tc.desc: Test AddTitle nullptr param
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageDataStatisticsTest, DataStatistics005, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImageDataStatisticsTest: DataStatistics005 start";
+    ImageDataStatistics imageDataStatistics("test");
+    imageDataStatistics.AddTitle(nullptr);
+    GTEST_LOG_(INFO) << "ImageDataStatisticsTest: DataStatistics005 end";
+}
 } // namespace Multimedia
 } // namespace OHOS

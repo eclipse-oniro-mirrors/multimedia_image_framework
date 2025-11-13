@@ -150,6 +150,88 @@ HWTEST_F(PictureTest, SurfaceBuffer2PixelMapTest003, TestSize.Level1)
 }
 
 /**
+ * @tc.name: CreatePictureByHdrAndSdrPixelMapTest001
+ * @tc.desc: Obtain pixelmap through an empty surfaceBuffer.
+ * @tc.type: FUNC
+ */
+HWTEST_F(PictureTest, CreatePictureByHdrAndSdrPixelMapTest001, TestSize.Level3)
+{
+    const uint32_t color[BUFFER_LENGTH] = { 0x80, 0x02, 0x04, 0x08, 0x40, 0x02, 0x04, 0x08};
+    InitializationOptions options;
+    options.size.width = SIZE_WIDTH;
+    options.size.height = SIZE_HEIGHT;
+    options.srcPixelFormat = PixelFormat::UNKNOWN;
+    options.pixelFormat = PixelFormat::RGBA_8888;
+    options.alphaType = AlphaType::IMAGE_ALPHA_TYPE_OPAQUE;
+    options.allocatorType = AllocatorType::DMA_ALLOC;
+    options.useDMA = true;
+    std::unique_ptr<PixelMap> tmphdrPixelMap = PixelMap::Create(color, BUFFER_LENGTH, options);
+    options.allocatorType = AllocatorType::SHARE_MEM_ALLOC;
+    options.useDMA = false;
+    std::unique_ptr<PixelMap> tmpsdrPixelMap = PixelMap::Create(color, BUFFER_LENGTH, options);
+    ASSERT_NE(tmphdrPixelMap, nullptr);
+    ASSERT_NE(tmpsdrPixelMap, nullptr);
+    std::shared_ptr<PixelMap> hdrPixelMap = std::move(tmphdrPixelMap);
+    std::shared_ptr<PixelMap> sdrPixelMap = std::move(tmpsdrPixelMap);
+    std::unique_ptr<Picture> picture = Picture::CreatePictureByHdrAndSdrPixelMap(hdrPixelMap, sdrPixelMap);
+    ASSERT_EQ(picture, nullptr);
+}
+
+/**
+ * @tc.name: CreatePictureByHdrAndSdrPixelMapTest002
+ * @tc.desc: Obtain pixelmap through an empty surfaceBuffer.
+ * @tc.type: FUNC
+ */
+HWTEST_F(PictureTest, CreatePictureByHdrAndSdrPixelMapTest002, TestSize.Level3)
+{
+    const uint32_t color[BUFFER_LENGTH] = { 0x80, 0x02, 0x04, 0x08, 0x40, 0x02, 0x04, 0x08};
+    InitializationOptions options;
+    options.size.width = SIZE_WIDTH;
+    options.size.height = SIZE_HEIGHT;
+    options.srcPixelFormat = PixelFormat::UNKNOWN;
+    options.pixelFormat = PixelFormat::RGBA_8888;
+    options.alphaType = AlphaType::IMAGE_ALPHA_TYPE_OPAQUE;
+    options.allocatorType = AllocatorType::DMA_ALLOC;
+    options.useDMA = true;
+    std::unique_ptr<PixelMap> tmphdrPixelMap = PixelMap::Create(color, BUFFER_LENGTH, options);
+    std::unique_ptr<PixelMap> tmpsdrPixelMap = PixelMap::Create(color, BUFFER_LENGTH, options);
+    ASSERT_NE(tmphdrPixelMap, nullptr);
+    ASSERT_NE(tmpsdrPixelMap, nullptr);
+    std::shared_ptr<PixelMap> hdrPixelMap = std::move(tmphdrPixelMap);
+    std::shared_ptr<PixelMap> sdrPixelMap = std::move(tmpsdrPixelMap);
+    std::unique_ptr<Picture> picture = Picture::CreatePictureByHdrAndSdrPixelMap(hdrPixelMap, sdrPixelMap);
+    ASSERT_EQ(picture, nullptr);
+}
+
+/**
+ * @tc.name: CreatePictureByHdrAndSdrPixelMapTest003
+ * @tc.desc: Test CreatePictureByHdrAndSdrPixelMap with HEAP_ALLOC and DMA_ALLOC.
+ * @tc.type: FUNC
+ */
+HWTEST_F(PictureTest, CreatePictureByHdrAndSdrPixelMapTest003, TestSize.Level3)
+{
+    const uint32_t color[BUFFER_LENGTH] = { 0x80, 0x02, 0x04, 0x08, 0x40, 0x02, 0x04, 0x08};
+    InitializationOptions options;
+    options.size.width = SIZE_WIDTH;
+    options.size.height = SIZE_HEIGHT;
+    options.srcPixelFormat = PixelFormat::UNKNOWN;
+    options.pixelFormat = PixelFormat::RGBA_8888;
+    options.alphaType = AlphaType::IMAGE_ALPHA_TYPE_OPAQUE;
+    options.allocatorType = AllocatorType::DMA_ALLOC;
+    options.useDMA = true;
+    std::unique_ptr<PixelMap> tmpsdrPixelMap = PixelMap::Create(color, BUFFER_LENGTH, options);
+    options.allocatorType = AllocatorType::SHARE_MEM_ALLOC;
+    options.useDMA = false;
+    std::unique_ptr<PixelMap> tmphdrPixelMap = PixelMap::Create(color, BUFFER_LENGTH, options);
+    ASSERT_NE(tmphdrPixelMap, nullptr);
+    ASSERT_NE(tmpsdrPixelMap, nullptr);
+    std::shared_ptr<PixelMap> hdrPixelMap = std::move(tmphdrPixelMap);
+    std::shared_ptr<PixelMap> sdrPixelMap = std::move(tmpsdrPixelMap);
+    std::unique_ptr<Picture> picture = Picture::CreatePictureByHdrAndSdrPixelMap(hdrPixelMap, sdrPixelMap);
+    ASSERT_EQ(picture, nullptr);
+}
+
+/**
  * @tc.name: SetAuxiliaryPictureTest001
  * @tc.desc: Set gainmap to picture.
  * @tc.type: FUNC

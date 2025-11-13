@@ -105,5 +105,35 @@ HWTEST_F(ImageReceiverManagerTest, ImageReceiverManager004, TestSize.Level3)
     ASSERT_EQ(result, true);
     GTEST_LOG_(INFO) << "ImageReceiverManagerTest: ImageReceiverManager004 end";
 }
+
+/**
+ * @tc.name: ImageReceiverManager005
+ * @tc.desc: test SaveImageReceiver with nullptr
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageReceiverManagerTest, ImageReceiverManager005, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImageReceiverManagerTest: ImageReceiverManager005 start";
+    std::shared_ptr<ImageReceiver> iva = nullptr;
+    ImageReceiverManager& imageReceiverManager = ImageReceiverManager::getInstance();
+    std::string receiverKey = imageReceiverManager.SaveImageReceiver(iva);
+    ASSERT_FALSE(receiverKey.empty());
+    GTEST_LOG_(INFO) << "ImageReceiverManagerTest: ImageReceiverManager005 end";
+}
+
+/**
+ * @tc.name: ImageReceiverManager006
+ * @tc.desc: test SaveImageReceiver with imageReceiver that has null surface
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageReceiverManagerTest, ImageReceiverManager006, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImageReceiverManagerTest: ImageReceiverManager006 start";
+    std::shared_ptr<ImageReceiver> iva = std::make_shared<ImageReceiver>();
+    ImageReceiverManager& imageReceiverManager = ImageReceiverManager::getInstance();
+    std::string receiverKey = imageReceiverManager.SaveImageReceiver(iva);
+    ASSERT_FALSE(receiverKey.empty());
+    GTEST_LOG_(INFO) << "ImageReceiverManagerTest: ImageReceiverManager006 end";
+}
 }
 }
