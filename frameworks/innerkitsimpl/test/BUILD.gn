@@ -1690,10 +1690,6 @@ ohos_unittest("imageaccessortest") {
     "${image_subsystem}/interfaces/innerkits/include",
   ]
 
-  cflags = [
-    "-fno-access-control",
-  ]
-
   sources = [
     "${image_subsystem}/frameworks/innerkitsimpl/accessor/src/abstract_exif_metadata_accessor.cpp",
     "${image_subsystem}/frameworks/innerkitsimpl/accessor/src/buffer_metadata_stream.cpp",
