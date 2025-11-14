@@ -366,13 +366,6 @@ static sk_sp<SkColorSpace> ToHdrEncodeSkColorSpace(Media::PixelMap *pixelmap,
 #endif
     sk_sp<SkColorSpace> colorSpace =
         SkColorSpace::MakeRGB(SkNamedTransferFn::kSRGB, sdrIsSRGB? SkNamedGamut::kSRGB : SkNamedGamut::kDisplayP3);
-    if (isGainmap) {
-        colorSpace = SkColorSpace::MakeRGB(SkNamedTransferFn::kRec2020, SkNamedGamut::kRec2020);
-        if (pixelmap->InnerGetGrColorSpacePtr() != nullptr &&
-            pixelmap->InnerGetGrColorSpace().GetColorSpaceName() != ColorManager::ColorSpaceName::NONE) {
-            colorSpace = pixelmap->InnerGetGrColorSpacePtr()->ToSkColorSpace();
-        }
-    }
     colorSpace->SetIccCicp(cicp);
     return colorSpace;
 #endif
