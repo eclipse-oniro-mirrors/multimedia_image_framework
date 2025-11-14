@@ -5502,7 +5502,7 @@ std::string ImageSource::GetPixelMapName(PixelMap* pixelMap)
         "srcImageSize-" + std::to_string(info.size.width) + "x" + std::to_string(info.size.height) +
         "-pixelMapSize-" + std::to_string(pixelMap->GetWidth()) + "x" + std::to_string(pixelMap->GetHeight()) +
         "-streamsize-" + std::to_string(sourceStreamPtr_->GetStreamSize()) +
-        "-mimeType-";
+        "-mimetype-";
     std::string prefix = "image/";
     size_t minFormatLength = 9;
     size_t maxFormatLength = 20;
