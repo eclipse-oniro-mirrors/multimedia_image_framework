@@ -449,7 +449,7 @@ static void JSCommonProcessSendEvent(ImageReceiverCommonArgs &args, napi_status 
     auto task = [args, status, context]() {
         (void)args.callBack(args.env, status, context);
     };
-    if (napi_status::napi_ok != napi_send_event(args.env, task, prio)) {
+    if (napi_status::napi_ok != napi_send_event(args.env, task, prio, args.taskName)) {
         IMAGE_LOGE("JSCommonProcessSendEvent: failed to SendEvent!");
     }
 }
@@ -748,6 +748,7 @@ napi_value ImageReceiverNapi::JsGetReceivingSurfaceId(napi_env env, napi_callbac
         .callBack = nullptr,
         .argc = ARGS1,
         .queryArgs = PrepareOneArg,
+        .taskName = "ImageReceiver.getReceivingSurfaceId"
     };
 
     args.callBack = [](napi_env env, napi_status status, Context context) {
@@ -822,6 +823,7 @@ napi_value ImageReceiverNapi::JsReadLatestImage(napi_env env, napi_callback_info
         .callBack = nullptr,
         .argc = ARGS1,
         .queryArgs = PrepareOneArg,
+        .taskName = "ImageReceiver.readLatestImage"
     };
 
     args.callBack = [](napi_env env, napi_status status, Context context) {
@@ -870,6 +872,7 @@ napi_value ImageReceiverNapi::JsReadNextImage(napi_env env, napi_callback_info i
         .callBack = nullptr,
         .argc = ARGS1,
         .queryArgs = PrepareOneArg,
+        .taskName = "ImageReceiver.readNextImage",
     };
 
     args.callBack = [](napi_env env, napi_status status, Context context) {
@@ -1038,6 +1041,7 @@ napi_value ImageReceiverNapi::JsOn(napi_env env, napi_callback_info info)
         .env = env, .info = info,
         .async = CallType::ASYNC,
         .name = "JsOn",
+        .taskName = "ImageReceiver.on",
     };
     args.argc = ARGS2;
     args.asyncLater = true;
@@ -1071,6 +1075,7 @@ napi_value ImageReceiverNapi::JsOffOneArg(napi_env env, napi_callback_info info)
     ImageReceiverCommonArgs args = {
         .env = env, .info = info, .async = CallType::ASYNC,
         .name = "JsOff", .argc = ARGS1, .asyncLater = true,
+        .taskName = "ImageReceiver.off",
     };
 
     args.queryArgs = [](ImageReceiverCommonArgs &args, ImageReceiverInnerContext &ic) -> bool {
@@ -1122,6 +1127,7 @@ napi_value ImageReceiverNapi::JsOffTwoArgs(napi_env env, napi_callback_info info
     ImageReceiverCommonArgs args = {
         .env = env, .info = info, .async = CallType::ASYNC,
         .name = "JsOff", .argc = ARGS2, .queryArgs = JsOnQueryArgs,
+        .taskName = "ImageReceiver.off",
     };
 
     args.callBack = [](napi_env env, napi_status status, Context context) {
@@ -1169,6 +1175,7 @@ napi_value ImageReceiverNapi::JsRelease(napi_env env, napi_callback_info info)
         .callBack = nullptr,
         .argc = ARGS1,
         .queryArgs = PrepareOneArg,
+        .taskName = "ImageReceiver.release",
     };
 
     args.callBack = [](napi_env env, napi_status status, Context context) {
