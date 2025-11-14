@@ -1840,6 +1840,32 @@ HWTEST_F(ImageSourceTest, End2EndTest004, TestSize.Level3)
 }
 
 /**
+ * @tc.name: End2EndTest005
+ * @tc.desc: test CreateImageSource and CreatePixelMap of svg resource
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageSourceTest, End2EndTest005, TestSize.Level3)
+{
+    uint32_t errorCode = 0;
+    SourceOptions opts;
+    std::unique_ptr<ImageSource> imageSource =
+            ImageSource::CreateImageSource("/data/local/tmp/image/test.svg", opts, errorCode);
+    ASSERT_EQ(errorCode, SUCCESS);
+    ASSERT_NE(imageSource.get(), nullptr);
+
+    int32_t desiredWidth = 56;
+    int32_t desiredHeight = 56;
+    DecodeOptions decodeOpts;
+    decodeOpts.desiredSize.width = desiredWidth;
+    decodeOpts.desiredSize.height = desiredHeight;
+    std::unique_ptr<PixelMap> pixelMap = imageSource->CreatePixelMap(decodeOpts, errorCode);
+    ASSERT_EQ(errorCode, SUCCESS);
+    ASSERT_NE(pixelMap.get(), nullptr);
+    ASSERT_EQ(desiredWidth, pixelMap->GetWidth());
+    ASSERT_EQ(desiredHeight, pixelMap->GetHeight());
+}
+
+/**
  * @tc.name: End2EndTest006
  * @tc.desc: test CreateImageSource and CreatePixelMap of gif resource
  * @tc.type: FUNC
