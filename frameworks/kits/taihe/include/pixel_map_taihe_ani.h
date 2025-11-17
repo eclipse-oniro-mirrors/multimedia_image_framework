@@ -29,6 +29,16 @@ public:
     static ani_object CreateEtsPixelMap([[maybe_unused]] ani_env* env, std::shared_ptr<PixelMap> pixelMap);
     static std::shared_ptr<PixelMap> GetNativePixelMap([[maybe_unused]] ani_env* env, ani_object obj);
     std::shared_ptr<PixelMap> nativePixelMap_;
+
+private:
+    static ani_ref gImageNamespace;
+    static ani_ref gPixelMapClass;
+    static ani_function gCreatePixelMapByPtr;
+    static ani_method gGetImplPtr;
+    static bool createPixelMapByPtrInited;
+    static bool getImplPtrInited;
+    static bool InitCreatePixelMapByPtr(ani_env* env);
+    static bool InitGetImplPtr(ani_env* env);
 };
 
 } // namespace Media

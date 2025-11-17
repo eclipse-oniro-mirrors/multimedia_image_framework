@@ -36,11 +36,17 @@ public:
     ~ImageSourceImpl();
     int64_t GetImplPtr();
 
-    ImageInfo GetImageInfoSyncWithIndex(int32_t index);
-    ImageInfo GetImageInfoSync();
-    PixelMap CreatePixelMapSyncWithOptions(DecodingOptions const& options);
-    PixelMap CreatePixelMapSync();
-    PixelMap CreatePixelMapUsingAllocatorSync(optional_view<DecodingOptions> options,
+    optional<ImageInfo> GetImageInfoWithIndexCallback(int32_t index);
+    optional<ImageInfo> GetImageInfoWithCallback();
+    optional<ImageInfo> GetImageInfoReturnsPromise(optional_view<int32_t> index);
+    optional<ImageInfo> GetImageInfoSync(optional_view<int32_t> index);
+    optional<ImageInfo> GetImageInfoInner(optional_view<int32_t> index, bool isSync);
+    optional<PixelMap> CreatePixelMapSyncWithOptions(optional_view<DecodingOptions> options, bool isSync);
+    optional<PixelMap> CreatePixelMapWithOptionsCallback(DecodingOptions const& options);
+    optional<PixelMap> CreatePixelMapWithCallback();
+    optional<PixelMap> CreatePixelMapReturnsPromise(optional_view<DecodingOptions> options);
+    optional<PixelMap> CreatePixelMapSync(optional_view<DecodingOptions> options);
+    optional<PixelMap> CreatePixelMapUsingAllocatorSync(optional_view<DecodingOptions> options,
         optional_view<AllocatorType> allocatorType);
     optional<PixelMap> CreateWideGamutSdrPixelMapSync();
     array<PixelMap> CreatePixelMapListSync();
@@ -58,7 +64,7 @@ public:
     void UpdateDataSync(array_view<uint8_t> buf, bool isFinished, int32_t offset, int32_t length);
     void ReleaseSync();
 #if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
-    Picture CreatePictureSync(optional_view<DecodingOptionsForPicture> options);
+    optional<Picture> CreatePictureSync(optional_view<DecodingOptionsForPicture> options);
     optional<Picture> CreatePictureAtIndexSync(int32_t index);
 #endif
 

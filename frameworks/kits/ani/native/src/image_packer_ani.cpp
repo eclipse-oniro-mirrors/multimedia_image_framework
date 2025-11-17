@@ -24,6 +24,7 @@
 #include "media_errors.h"
 #include "pixel_map_ani.h"
 #include "securec.h"
+#include <ani_signature_builder.h>
 
 #undef LOG_DOMAIN
 #define LOG_DOMAIN LOG_TAG_DOMAIN_ID_IMAGE
@@ -34,6 +35,7 @@
 namespace OHOS {
 namespace Media {
 using namespace std;
+using namespace arkts::ani_signature;
 
 ani_object ImagePackerAni::CreateImagePackerAni([[maybe_unused]] ani_env* env, ani_object obj)
 {
@@ -96,45 +98,46 @@ std::string ANIUtils_ANIStringToStdString(ani_env *env, ani_string ani_str)
 bool ParsePackingOptions([[maybe_unused]] ani_env* env, ani_object para, PackOption &packOpts, uint32_t &outBufferSize)
 {
     ani_ref tmptest;
-    if (ANI_OK != env->Object_CallMethodByName_Ref(para, "<get>format", ":C{std.core.String}", &tmptest)) {
-        IMAGE_LOGE("Object_CallMethodByName_Ref <get>format failed");
+    const char *formatGetterName = Builder::BuildGetterName("format").c_str();
+    if (ANI_OK != env->Object_CallMethodByName_Ref(para, formatGetterName, ":C{std.core.String}", &tmptest)) {
+        IMAGE_LOGE("Object_CallMethodByName_Ref %{public}s failed", formatGetterName);
         return false;
     }
     std::string retStr = ANIUtils_ANIStringToStdString(env, static_cast<ani_string>(tmptest));
     ani_status ret;
     ani_int quality;
-    if ((ret = env->Object_CallMethodByName_Int(para, "<get>quality", ":i",
+    if ((ret = env->Object_CallMethodByName_Int(para, Builder::BuildGetterName("quality").c_str(), ":i",
         &quality)) != ANI_OK) {
         IMAGE_LOGE("Object_CallMethodByName_Int Failed quality:%{public}d", ret);
     }
     ani_ref bufferSizeRef;
-    if (ANI_OK != (ret = env->Object_CallMethodByName_Ref(para, "<get>bufferSize", ":C{std.core.Int}",
-        &bufferSizeRef))) {
+    if (ANI_OK != (ret = env->Object_CallMethodByName_Ref(para, Builder::BuildGetterName("bufferSize").c_str(),
+        ":C{std.core.Int}", &bufferSizeRef))) {
         IMAGE_LOGE("Object_CallMethodByName_Int Failed bufferSizeRef:%{public}d", ret);
     }
     ani_int bufferSize;
     if ((ret = env->Object_CallMethodByName_Int(reinterpret_cast<ani_object>(bufferSizeRef),
-        "unboxed", ":i", &bufferSize)) != ANI_OK || bufferSize <= 0) {
+        "toInt", ":i", &bufferSize)) != ANI_OK || bufferSize <= 0) {
         IMAGE_LOGE("Object_CallMethodByName_Int Failed bufferSize or invalid bufferSize:%{public}d", ret);
     }
     ani_ref desiredDynamicRangeRef;
-    if (ANI_OK != (ret = env->Object_CallMethodByName_Ref(para, "<get>desiredDynamicRange",
+    if (ANI_OK != (ret = env->Object_CallMethodByName_Ref(para, Builder::BuildGetterName("desiredDynamicRange").c_str(),
         ":C{std.core.Int}", &desiredDynamicRangeRef))) {
         IMAGE_LOGE("Object_CallMethodByName_Int Failed desiredDynamicRangeRef:%{public}d", ret);
     }
     ani_int desiredDynamicRange;
     if ((ret = env->Object_CallMethodByName_Int(reinterpret_cast<ani_object>(desiredDynamicRangeRef),
-        "unboxed", ":i", &desiredDynamicRange)) != ANI_OK) {
+        "toInt", ":i", &desiredDynamicRange)) != ANI_OK) {
         IMAGE_LOGE("Object_CallMethodByName_Int Failed desiredDynamicRange:%{public}d", ret);
     }
     ani_ref needsPackPropertiesRef;
-    if (ANI_OK != (ret = env->Object_CallMethodByName_Ref(para, "<get>needsPackProperties",
+    if (ANI_OK != (ret = env->Object_CallMethodByName_Ref(para, Builder::BuildGetterName("needsPackProperties").c_str(),
         ":C{std.core.Boolean}", &needsPackPropertiesRef))) {
         IMAGE_LOGE("Object_CallMethodByName_Int Failed needsPackPropertiesRef:%{public}d", ret);
     }
     ani_boolean needsPackProperties;
     if ((ret = env->Object_CallMethodByName_Boolean(reinterpret_cast<ani_object>(needsPackPropertiesRef),
-        "unboxed", ":z", &needsPackProperties)) != ANI_OK) {
+        "toBoolean", ":z", &needsPackProperties)) != ANI_OK) {
         IMAGE_LOGE("Object_CallMethodByName_Int Failed needsPackProperties:%{public}d", ret);
     }
 
@@ -216,7 +219,7 @@ ani_status ImagePackerAni::Init(ani_env* env)
     std::array methods = {
         ani_native_function {"nativePackingWithPixelMap",
             "C{@ohos.multimedia.image.image.PixelMap}C{@ohos.multimedia.image.image.PackingOption}"
-            ":C{escompat.ArrayBuffer}",
+            ":C{std.core.ArrayBuffer}",
             reinterpret_cast<void*>(OHOS::Media::nativePackingWithPixelMap)},
         ani_native_function {"nativeRelease", ":", reinterpret_cast<void*>(OHOS::Media::Release)},
     };
