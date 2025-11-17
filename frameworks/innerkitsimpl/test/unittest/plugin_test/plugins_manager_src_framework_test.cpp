@@ -46,6 +46,9 @@ namespace OHOS {
 namespace Multimedia {
 static constexpr uint32_t SUCCESS = 0;
 static constexpr uint16_t UINT16_ONE = 1;
+static constexpr uint16_t UINT16_TEN = 10;
+static constexpr uint16_t UINT16_TWENTY = 20;
+static constexpr uint32_t UINT32_ONE_HUNDRED = 100;
 static const std::string OVER_UINT16_VALUE_STRING = "70000";
 static constexpr uint32_t MOCKRANGESIZE = 2;
 static constexpr uint32_t MOCKSIZE = 1;
@@ -136,6 +139,49 @@ HWTEST_F(PluginsManagerSrcFrameWorkTest, CapabilityTest005, TestSize.Level3)
     std::map<std::string, AttrData> ret = capability.GetCapability();
     ASSERT_NE(&ret, nullptr);
     GTEST_LOG_(INFO) << "PluginsManagerSrcFrameWorkTest: CapabilityTest005 end";
+}
+
+/**
+ * @tc.name: CapabilityTest006
+ * @tc.desc: Make normal Capability object， expect IsCompatible returns true
+ * @tc.type: FUNC
+ */
+HWTEST_F(PluginsManagerSrcFrameWorkTest, CapabilityTest006, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PluginsManagerSrcFrameWorkTest: CapabilityTest006 start";
+    Capability capability;
+    nlohmann::json capabilityInfo = nlohmann::json::array({
+        {
+            {"name", "format"},
+            {"type", "string"},
+            {"value", "jpeg"}
+        },
+        {
+            {"name", "width"},
+            {"type", "uint32Range"},
+            {"value", nlohmann::json::array({100, 2000})}
+        },
+        {
+            {"name", "quality"},
+            {"type", "uint32"},
+            {"value", 80}
+        }
+    });
+    uint32_t ret = capability.SetCapability(capabilityInfo);
+    ASSERT_EQ(ret, SUCCESS);
+    std::map<string, AttrData> inputCaps;
+    AttrData formatAttr;
+    formatAttr.SetData(string("jpeg"));
+    inputCaps["format"] = formatAttr;
+    AttrData widthAttr;
+    widthAttr.SetData(static_cast<uint32_t>(1920));
+    inputCaps["width"] = widthAttr;
+    AttrData qualityAttr;
+    qualityAttr.SetData(static_cast<uint32_t>(80));
+    inputCaps["quality"] = qualityAttr;
+    bool compatible = capability.IsCompatible(inputCaps);
+    ASSERT_TRUE(compatible);
+    GTEST_LOG_(INFO) << "PluginsManagerSrcFrameWorkTest: CapabilityTest006 end";
 }
 
 /**
@@ -802,6 +848,110 @@ HWTEST_F(PluginsManagerSrcFrameWorkTest, SearchByPriority001, TestSize.Level3)
 }
 
 /**
+ * @tc.name: SearchByPriority002
+ * @tc.desc: Test SearchByPriority with PRIORITY_ORDER_BY_ATTR_ASCENDING and two candidates
+ * @tc.type: FUNC
+ */
+HWTEST_F(PluginsManagerSrcFrameWorkTest, SearchByPriority002, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PluginsManagerSrcFrameWorkTest: SearchByPriority002 start";
+    ImplClassMgr &implClassMgr = DelayedRefSingleton<ImplClassMgr>::GetInstance();
+    std::list<std::shared_ptr<ImplClass>> candidates;
+    PriorityScheme priorityScheme;
+    priorityScheme.type_ = PriorityType::PRIORITY_ORDER_BY_ATTR_ASCENDING;
+    auto ptr = std::make_shared<ImplClass>();
+    candidates.push_back(ptr);
+    auto ptr2 = std::make_shared<ImplClass>();
+    candidates.push_back(ptr2);
+    std::shared_ptr<ImplClass> implClass = implClassMgr.SearchByPriority(candidates, priorityScheme);
+    ASSERT_NE(implClass, nullptr);
+    GTEST_LOG_(INFO) << "PluginsManagerSrcFrameWorkTest: SearchByPriority002 end";
+}
+
+/**
+ * @tc.name: SearchByPriority003
+ * @tc.desc: Test SearchByPriority with mixed class states (UNREGISTER and REGISTERED), should return valid result
+ * @tc.type: FUNC
+ */
+HWTEST_F(PluginsManagerSrcFrameWorkTest, SearchByPriority003, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PluginsManagerSrcFrameWorkTest: SearchByPriority003 start";
+    ImplClassMgr &implClassMgr = DelayedRefSingleton<ImplClassMgr>::GetInstance();
+    std::list<std::shared_ptr<ImplClass>> candidates;
+    PriorityScheme priorityScheme;
+    priorityScheme.type_ = PriorityType::PRIORITY_ORDER_BY_ATTR_ASCENDING;
+    auto ptr = std::make_shared<ImplClass>();
+    ptr->state_ = ClassState::CLASS_STATE_UNREGISTER;
+    candidates.push_back(ptr);
+    auto ptr2 = std::make_shared<ImplClass>();
+    ptr2->state_ = ClassState::CLASS_STATE_REGISTERED;
+    candidates.push_back(ptr2);
+    std::shared_ptr<ImplClass> implClass = implClassMgr.SearchByPriority(candidates, priorityScheme);
+    ASSERT_NE(implClass, nullptr);
+    GTEST_LOG_(INFO) << "PluginsManagerSrcFrameWorkTest: SearchByPriority003 end";
+}
+
+/**
+ * @tc.name: SearchByPriority004
+ * @tc.desc: Test SearchByPriority with reversed class states (REGISTERED first, then UNREGISTER).
+ * @tc.type: FUNC
+ */
+HWTEST_F(PluginsManagerSrcFrameWorkTest, SearchByPriority004, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PluginsManagerSrcFrameWorkTest: SearchByPriority004 start";
+    ImplClassMgr &implClassMgr = DelayedRefSingleton<ImplClassMgr>::GetInstance();
+    std::list<std::shared_ptr<ImplClass>> candidates;
+    PriorityScheme priorityScheme;
+    priorityScheme.type_ = PriorityType::PRIORITY_ORDER_BY_ATTR_ASCENDING;
+    auto ptr = std::make_shared<ImplClass>();
+    ptr->state_ = ClassState::CLASS_STATE_REGISTERED;
+    candidates.push_back(ptr);
+    auto ptr2 = std::make_shared<ImplClass>();
+    ptr2->state_ = ClassState::CLASS_STATE_UNREGISTER;
+    candidates.push_back(ptr2);
+    std::shared_ptr<ImplClass> implClass = implClassMgr.SearchByPriority(candidates, priorityScheme);
+    ASSERT_NE(implClass, nullptr);
+    GTEST_LOG_(INFO) << "PluginsManagerSrcFrameWorkTest: SearchByPriority004 end";
+}
+
+/**
+ * @tc.name: SearchByPriority005
+ * @tc.desc: Test SearchByPriority with attribute-based ascending order
+ * @tc.type: FUNC
+ */
+HWTEST_F(PluginsManagerSrcFrameWorkTest, SearchByPriority005, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PluginsManagerSrcFrameWorkTest: SearchByPriority005 start";
+    ImplClassMgr &implClassMgr = DelayedRefSingleton<ImplClassMgr>::GetInstance();
+    std::list<std::shared_ptr<ImplClass>> candidates;
+    auto implClass1 = std::make_shared<ImplClass>();
+    implClass1->state_ = ClassState::CLASS_STATE_REGISTERED;
+    implClass1->priority_ = UINT16_TEN;
+    std::map<string, AttrData> caps1;
+    AttrData attr1;
+    attr1.SetData(static_cast<uint32_t>(UINT32_ONE_HUNDRED));
+    caps1["quality"] = attr1;
+    implClass1->capability_ = Capability(caps1);
+    candidates.push_back(implClass1);
+    auto implClass2 = std::make_shared<ImplClass>();
+    implClass2->state_ = ClassState::CLASS_STATE_REGISTERED;
+    implClass2->priority_ = UINT16_TWENTY;
+    std::map<string, AttrData> caps2;
+    AttrData attr2;
+    attr2.SetData(static_cast<uint32_t>(UINT32_ONE_HUNDRED));
+    caps2["quality"] = attr2;
+    implClass2->capability_ = Capability(caps2);
+    candidates.push_back(implClass2);
+    PriorityScheme priorityScheme;
+    priorityScheme.type_ = PriorityType::PRIORITY_ORDER_BY_ATTR_ASCENDING;
+    priorityScheme.attrKey_ = "quality";
+    std::shared_ptr<ImplClass> result = implClassMgr.SearchByPriority(candidates, priorityScheme);
+    ASSERT_NE(result, nullptr);
+    ASSERT_EQ(result->GetPriority(), UINT16_TWENTY);
+    GTEST_LOG_(INFO) << "PluginsManagerSrcFrameWorkTest: SearchByPriority005 end";
+}
+
+/**
  * @tc.name: SearchSimplePriority001
  * @tc.desc: SearchSimplePriority
  * @tc.type: FUNC
@@ -818,6 +968,39 @@ HWTEST_F(PluginsManagerSrcFrameWorkTest, SearchSimplePriority001, TestSize.Level
     implClass = implClassMgr.SearchSimplePriority(candidates);
     ASSERT_NE(implClass, nullptr);
     GTEST_LOG_(INFO) << "PluginsManagerSrcFrameWorkTest: SearchSimplePriority001 end";
+}
+
+/**
+ * @tc.name: SearchSimplePriority002
+ * @tc.desc: Test SearchSimplePriority with multiple candidates having different priorities
+ * @tc.type: FUNC
+ */
+HWTEST_F(PluginsManagerSrcFrameWorkTest, SearchSimplePriority002, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PluginsManagerSrcFrameWorkTest: SearchSimplePriority002 start";
+    ImplClassMgr &implClassMgr = DelayedRefSingleton<ImplClassMgr>::GetInstance();
+    std::list<std::shared_ptr<ImplClass>> candidates;
+    auto implClass1 = std::make_shared<ImplClass>();
+    implClass1->state_ = ClassState::CLASS_STATE_REGISTERED;
+    implClass1->priority_ = UINT16_TEN;
+    std::map<string, AttrData> caps1;
+    AttrData attr1;
+    attr1.SetData(static_cast<uint32_t>(UINT32_ONE_HUNDRED));
+    caps1["quality"] = attr1;
+    implClass1->capability_ = Capability(caps1);
+    candidates.push_back(implClass1);
+    auto implClass2 = std::make_shared<ImplClass>();
+    implClass2->state_ = ClassState::CLASS_STATE_REGISTERED;
+    implClass2->priority_ = UINT16_TWENTY;
+    std::map<string, AttrData> caps2;
+    AttrData attr2;
+    attr2.SetData(static_cast<uint32_t>(UINT32_ONE_HUNDRED));
+    caps2["quality"] = attr2;
+    implClass2->capability_ = Capability(caps2);
+    candidates.push_back(implClass2);
+    std::shared_ptr<ImplClass> implClass = implClassMgr.SearchSimplePriority(candidates);
+    ASSERT_NE(implClass, nullptr);
+    GTEST_LOG_(INFO) << "PluginsManagerSrcFrameWorkTest: SearchSimplePriority002 end";
 }
 
 /**
@@ -907,6 +1090,59 @@ HWTEST_F(PluginsManagerSrcFrameWorkTest, CompareStringPriority001, TestSize.Leve
     ret = implClassMgr.CompareStringPriority(lhs, rhs, type);
     ASSERT_NE(ret, ERR_COMP_ERROR);
     GTEST_LOG_(INFO) << "PluginsManagerSrcFrameWorkTest: CompareStringPriority001 end";
+}
+
+/**
+ * @tc.name: CompareStringPriority002
+ * @tc.desc: Test CompareStringPriority with different strings in ascending order and various comparison scenarios
+ * @tc.type: FUNC
+ */
+HWTEST_F(PluginsManagerSrcFrameWorkTest, CompareStringPriority002, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PluginsManagerSrcFrameWorkTest: CompareStringPriority002 start";
+    ImplClassMgr &implClassMgr = DelayedRefSingleton<ImplClassMgr>::GetInstance();
+    AttrData lhs;
+    AttrData rhs;
+    PriorityType type = PriorityType::PRIORITY_ORDER_BY_ATTR_ASCENDING;
+    uint32_t ret;
+    lhs.type_ = AttrDataType::ATTR_DATA_STRING;
+    rhs.type_ = AttrDataType::ATTR_DATA_STRING;
+    string *str1 = new std::string("aaa");
+    string *str2 = new std::string("bbb");
+    lhs.value_.stringValue = str1;
+    rhs.value_.stringValue = str2;
+    ret = implClassMgr.CompareStringPriority(lhs, rhs, type);
+    ASSERT_NE(ret, ERR_COMP_ERROR);
+    lhs.value_.stringValue = str2;
+    rhs.value_.stringValue = str1;
+    ret = implClassMgr.CompareStringPriority(lhs, rhs, type);
+    ASSERT_EQ(ret, ERR_COMP_LOWER);
+    lhs.value_.stringValue = str1;
+    rhs.value_.stringValue = str2;
+    ret = implClassMgr.CompareStringPriority(lhs, rhs, type);
+    ASSERT_EQ(ret, ERR_COMP_HIGHER);
+    type = PriorityType::PRIORITY_TYPE_NULL;
+    AttrData lhs2;
+    AttrData rhs2;
+    ret = implClassMgr.CompareStringPriority(lhs2, rhs2, type);
+    ASSERT_EQ(ret, ERR_COMP_ERROR);
+    lhs2.type_ = AttrDataType::ATTR_DATA_STRING;
+    rhs2.type_ = AttrDataType::ATTR_DATA_STRING;
+    string *str3 = new std::string("aaa");
+    string *str4 = new std::string("bbb");
+    lhs2.value_.stringValue = str3;
+    rhs2.value_.stringValue = str4;
+    ret = implClassMgr.CompareStringPriority(lhs, rhs, type);
+    ASSERT_NE(ret, ERR_COMP_HIGHER);
+    lhs2.value_.stringValue = str4;
+    rhs2.value_.stringValue = str3;
+    ret = implClassMgr.CompareStringPriority(lhs, rhs, type);
+    ASSERT_EQ(ret, ERR_COMP_LOWER);
+    delete str1;
+    delete str2;
+    delete str3;
+    delete str4;
+    GTEST_LOG_(INFO) << "PluginsManagerSrcFrameWorkTest: CompareStringPriority002 end";
 }
 
 /**

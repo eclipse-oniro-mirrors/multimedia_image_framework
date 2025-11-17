@@ -965,5 +965,169 @@ HWTEST_F(ImageSourceHdrTest, ParsingFragmentMetadataTest002, TestSize.Level3)
     bool res = jpegMpfParser->ParsingFragmentMetadata(buf, dataSize, fragmentRect, true);
     EXPECT_FALSE(res);
 }
+
+/**
+ * @tc.name: CheckMpfOffsetSizeCheckTest001
+ * @tc.desc: Test CheckMpfOffset when offset + UINT32_BYTE_SIZE > size
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageSourceHdrTest, CheckMpfOffsetSizeCheckTest001, TestSize.Level3)
+{
+    auto jpegMpfParser = std::make_shared<JpegMpfParser>();
+    ASSERT_NE(jpegMpfParser, nullptr);
+
+    uint8_t buf[] = {JPEG_MARKER_PREFIX, JPEG_MARKER_APP2, 0x00};
+    uint32_t size = sizeof(buf);
+    uint32_t offset = 0;
+
+    bool res = jpegMpfParser->CheckMpfOffset(buf, size, offset);
+    EXPECT_FALSE(res);
+}
+
+/**
+ * @tc.name: ParsingLittleEndianTest001
+ * @tc.desc: Test Parsing with LITTLE_ENDIAN_FLAG
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageSourceHdrTest, ParsingLittleEndianTest001, TestSize.Level3)
+{
+    auto jpegMpfParser = std::make_shared<JpegMpfParser>();
+    ASSERT_NE(jpegMpfParser, nullptr);
+
+    uint8_t buf[] = {
+        'M', 'P', 'F', '\0',
+        0x49, 0x49, 0x2A, 0x00,
+        0xFF, 0xFF, 0xFF, 0xFF
+    };
+    uint32_t size = sizeof(buf);
+
+    bool res = jpegMpfParser->Parsing(buf, size);
+    EXPECT_FALSE(res);
+}
+
+/**
+ * @tc.name: ParsingInvalidIfdOffsetTest001
+ * @tc.desc: Test Parsing when ifdOffset < dataOffset
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageSourceHdrTest, ParsingInvalidIfdOffsetTest001, TestSize.Level3)
+{
+    auto jpegMpfParser = std::make_shared<JpegMpfParser>();
+    ASSERT_NE(jpegMpfParser, nullptr);
+
+    uint8_t buf[] = {
+        'M', 'P', 'F', '\0',
+        0x4D, 0x4D, 0x00, 0x2A,
+        0x00, 0x00, 0x00, 0x02
+    };
+    uint32_t size = sizeof(buf);
+
+    bool res = jpegMpfParser->Parsing(buf, size);
+    EXPECT_FALSE(res);
+}
+
+/**
+ * @tc.name: ParsingInvalidIfdOffsetTest002
+ * @tc.desc: Test Parsing when ifdOffset > size
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageSourceHdrTest, ParsingInvalidIfdOffsetTest002, TestSize.Level3)
+{
+    auto jpegMpfParser = std::make_shared<JpegMpfParser>();
+    ASSERT_NE(jpegMpfParser, nullptr);
+
+    uint8_t buf[] = {
+        'M', 'P', 'F', '\0',
+        0x4D, 0x4D, 0x00, 0x2A,
+        0x00, 0x00, 0xFF, 0xFF
+    };
+    uint32_t size = sizeof(buf);
+
+    bool res = jpegMpfParser->Parsing(buf, size);
+    EXPECT_FALSE(res);
+}
+
+/**
+ * @tc.name: ParsingMpIndexIFDTagOrderTest001
+ * @tc.desc: Test ParsingMpIndexIFD when tag <= previousTag
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageSourceHdrTest, ParsingMpIndexIFDTagOrderTest001, TestSize.Level3)
+{
+    auto jpegMpfParser = std::make_shared<JpegMpfParser>();
+    ASSERT_NE(jpegMpfParser, nullptr);
+
+    uint8_t buf[] = {
+        'M', 'P', 'F', '\0',
+        0x4D, 0x4D, 0x00, 0x2A,
+        0x00, 0x00, 0x00, 0x08,
+        0x00, 0x02,
+        0xB0, 0x00,
+        0x00, 0x07,
+        0x00, 0x00, 0x00, 0x04,
+        '0', '1', '0', '0',
+        0xB0, 0x00,
+        0x00, 0x04,
+        0x00, 0x00, 0x00, 0x01,
+        0x00, 0x00, 0x00, 0x02
+    };
+    uint32_t size = sizeof(buf);
+
+    bool res = jpegMpfParser->Parsing(buf, size);
+    EXPECT_FALSE(res);
+}
+
+/**
+ * @tc.name: ParsingMpfVersionInvalidTest001
+ * @tc.desc: Test ParsingMpIndexIFD with invalid MPF version
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageSourceHdrTest, ParsingMpfVersionInvalidTest001, TestSize.Level3)
+{
+    auto jpegMpfParser = std::make_shared<JpegMpfParser>();
+    ASSERT_NE(jpegMpfParser, nullptr);
+
+    uint8_t buf[] = {
+        'M', 'P', 'F', '\0',
+        0x4D, 0x4D, 0x00, 0x2A,
+        0x00, 0x00, 0x00, 0x08,
+        0x00, 0x01,
+        0xB0, 0x00,
+        0x00, 0x07,
+        0x00, 0x00, 0x00, 0x04,
+        '9', '9', '9', '9'
+    };
+    uint32_t size = sizeof(buf);
+
+    bool res = jpegMpfParser->Parsing(buf, size);
+    EXPECT_FALSE(res);
+}
+
+/**
+ * @tc.name: ParsingMpAttrIFDOffsetInvalidTest001
+ * @tc.desc: Test ParsingMpIndexIFD when mpAttrIFDOffset > 0 && dataOffset > mpAttrIFDOffset
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageSourceHdrTest, ParsingMpAttrIFDOffsetInvalidTest001, TestSize.Level3)
+{
+    auto jpegMpfParser = std::make_shared<JpegMpfParser>();
+    ASSERT_NE(jpegMpfParser, nullptr);
+
+    uint8_t buf[] = {
+        'M', 'P', 'F', '\0',
+        0x4D, 0x4D, 0x00, 0x2A,
+        0x00, 0x00, 0x00, 0x08,
+        0x00, 0x01,
+        0xB0, 0x00,
+        0x00, 0x07,
+        0x00, 0x00, 0x00, 0x04,
+        '0', '1', '0', '0',
+        0x00, 0x00, 0x00, 0x08
+    };
+    uint32_t size = sizeof(buf);
+
+    bool res = jpegMpfParser->Parsing(buf, size);
+    EXPECT_FALSE(res);
+}
 }
 }

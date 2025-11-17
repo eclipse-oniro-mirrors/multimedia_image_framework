@@ -17,6 +17,7 @@
 #include <gtest/gtest.h>
 #include <fcntl.h>
 #include <fstream>
+#include <unistd.h>
 #include "image_utils.h"
 #include "image_trace.h"
 #include "source_stream.h"
@@ -37,6 +38,8 @@ constexpr int32_t ARGB8888_BYTES = 4;
 constexpr int32_t RGBA_F16_BYTES = 8;
 constexpr int32_t NV21_BYTES = 2;  // Each pixel is sorted on 3/2 bytes.
 constexpr int32_t ASTC_4X4_BYTES = 1;
+constexpr int32_t TEST_HEIGHT_MEDIUM = 15000;
+constexpr int32_t TEST_BYTE_COUNT_LARGE = 200000;
 constexpr uint32_t MAX_BYTE_NUM = 8;
 constexpr int MAX_DIMENSION = INT32_MAX >> 2;
 
@@ -49,6 +52,7 @@ namespace OHOS {
 namespace Multimedia {
 static const std::string IMAGE_INPUT_JPEG_PATH = "/data/local/tmp/image/test.jpg";
 static const std::string IMAGE_JPEG_PATH = "/data/local/tmp/image/test_jpeg.jpg";
+static const std::string SANDBOX_PATH = "/data/local/tmp/";
 static constexpr int32_t LENGTH = 8;
 constexpr int32_t RGB_888_PIXEL_BYTES = 3;
 constexpr int32_t RGBA_F16_PIXEL_BYTES = 8;
@@ -470,6 +474,31 @@ HWTEST_F(ImageUtilsTest, GetPixelMapName001, TestSize.Level3)
 }
 
 /**
+ * @tc.name: GetPixelMapName002
+ * @tc.desc: test GetPixelMapName when pixelformat is NV12 or NV21.
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageUtilsTest, GetPixelMapName002, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImageUtilsTest: GetPixelMapName002 start";
+    InitializationOptions opts;
+    opts.size.width = NUM_4;
+    opts.size.height = NUM_4;
+    opts.pixelFormat = PixelFormat::NV12;
+    std::unique_ptr<PixelMap> pixelMap = PixelMap::Create(opts);
+    ASSERT_NE(pixelMap, nullptr);
+    auto res = ImageUtils::GetPixelMapName(pixelMap.get());
+    ASSERT_NE(res, "");
+
+    opts.pixelFormat = PixelFormat::NV21;
+    pixelMap = PixelMap::Create(opts);
+    ASSERT_NE(pixelMap, nullptr);
+    res = ImageUtils::GetPixelMapName(pixelMap.get());
+    ASSERT_NE(res, "");
+    GTEST_LOG_(INFO) << "ImageUtilsTest: GetPixelMapName002 end";
+}
+
+/**
  * @tc.name: CheckMulOverflowTest002
  * @tc.desc: CheckMulOverflow
  * @tc.type: FUNC
@@ -720,6 +749,22 @@ HWTEST_F(ImageUtilsTest, IsSizeSupportDmaTest001, TestSize.Level3)
 }
 
 /**
+ * @tc.name: IsSizeSupportDmaTest002
+ * @tc.desc: test IsSizeSupportDma method when the width is more than zero and height is too large.
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageUtilsTest, IsSizeSupportDmaTest002, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImageUtilsTest: IsSizeSupportDmaTest002 start";
+    Size size;
+    size.width = TEST_HEIGHT_MEDIUM;
+    size.height = TEST_BYTE_COUNT_LARGE;
+    bool res = ImageUtils::IsSizeSupportDma(size);
+    EXPECT_FALSE(res);
+    GTEST_LOG_(INFO) << "ImageUtilsTest: IsSizeSupportDmaTest002 end";
+}
+
+/**
  * @tc.name: CheckMulOverflowTest011
  * @tc.desc: test CheckMulOverflow witdh only method when size overflow
  * @tc.type: FUNC
@@ -750,6 +795,125 @@ HWTEST_F(ImageUtilsTest, CheckMulOverflowTest012, TestSize.Level3)
 
     res = ImageUtils::CheckMulOverflow(INT32_MAX, mockHeight, INT32_MAX);
     EXPECT_FALSE(res);
+}
+
+/**
+ * @tc.name: DumpPixelMapTest002
+ * @tc.desc: test DumpPixelMap with a YUV pixel format.
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageUtilsTest, DumpPixelMapTest002, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImageUtilsTest: DumpPixelMapTest002 start";
+    InitializationOptions opts;
+    opts.size.width = NUM_4;
+    opts.size.height = NUM_4;
+    opts.pixelFormat = PixelFormat::NV12;
+    std::unique_ptr<PixelMap> pixelMap = PixelMap::Create(opts);
+    ASSERT_NE(pixelMap, nullptr);
+    std::string dumpFile = SANDBOX_PATH + "_test_yuv_dump_0_NV12.yuv";
+    ImageUtils::DumpPixelMap(pixelMap.get(), (SANDBOX_PATH + "_test_yuv_dump").c_str(), 0);
+    ASSERT_NE(access(dumpFile.c_str(), F_OK), 0);
+    remove(dumpFile.c_str());
+
+    opts.pixelFormat = PixelFormat::NV21;
+    pixelMap = PixelMap::Create(opts);
+    ASSERT_NE(pixelMap, nullptr);
+    dumpFile = SANDBOX_PATH + "_test_yuv_dump_0_NV21.yuv";
+    ImageUtils::DumpPixelMap(pixelMap.get(), (SANDBOX_PATH + "_test_yuv_dump").c_str(), 0);
+    ASSERT_NE(access(dumpFile.c_str(), F_OK), 0);
+    remove(dumpFile.c_str());
+
+    opts.pixelFormat = PixelFormat::YCBCR_P010;
+    pixelMap = PixelMap::Create(opts);
+    ASSERT_NE(pixelMap, nullptr);
+    dumpFile = SANDBOX_PATH + "_test_yuv_dump_0_YCBCR_P010.yuv";
+    ImageUtils::DumpPixelMap(pixelMap.get(), (SANDBOX_PATH + "_test_yuv_dump").c_str(), 0);
+    ASSERT_NE(access(dumpFile.c_str(), F_OK), 0);
+    remove(dumpFile.c_str());
+
+    opts.pixelFormat = PixelFormat::YCRCB_P010;
+    pixelMap = PixelMap::Create(opts);
+    ASSERT_NE(pixelMap, nullptr);
+    dumpFile = SANDBOX_PATH + "_test_yuv_dump_0_YCRCB_P010.yuv";
+    ImageUtils::DumpPixelMap(pixelMap.get(), (SANDBOX_PATH + "_test_yuv_dump").c_str(), 0);
+    ASSERT_NE(access(dumpFile.c_str(), F_OK), 0);
+    remove(dumpFile.c_str());
+    GTEST_LOG_(INFO) << "ImageUtilsTest: DumpPixelMapTest002 end";
+}
+
+/**
+ * @tc.name: DumpPixelMapTest003
+ * @tc.desc: test DumpPixelMap when allocatorType is not DMA_ALLOC.
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageUtilsTest, DumpPixelMapTest003, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImageUtilsTest: DumpPixelMapTest003 start";
+    InitializationOptions opts;
+    opts.size.width = NUM_4;
+    opts.size.height = NUM_4;
+    opts.pixelFormat = PixelFormat::NV12;
+    opts.allocatorType = AllocatorType::SHARE_MEM_ALLOC;
+    std::unique_ptr<PixelMap> pixelMap = PixelMap::Create(opts);
+    ASSERT_NE(pixelMap, nullptr);
+    std::string dumpFile = SANDBOX_PATH + "_test_yuv_dump_0_NV12.yuv";
+    ImageUtils::DumpPixelMap(pixelMap.get(), (SANDBOX_PATH + "_test_yuv_dump").c_str(), 0);
+    ASSERT_NE(access(dumpFile.c_str(), F_OK), 0);
+    remove(dumpFile.c_str());
+    GTEST_LOG_(INFO) << "ImageUtilsTest: DumpPixelMapTest003 end";
+}
+
+/**
+ * @tc.name: DumpPixelMapTest004
+ * @tc.desc: test DumpPixelMap when pixelMap is nullptr.
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageUtilsTest, DumpPixelMapTest004, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImageUtilsTest: DumpPixelMapTest004 start";
+    std::string dumpFile = "/data/_test_yuv_dump_0_NV12.yuv";
+    InitializationOptions opts;
+    opts.size.width = NUM_4;
+    opts.size.height = NUM_4;
+    opts.pixelFormat = PixelFormat::NV12;
+    std::unique_ptr<PixelMap> pixelMap = PixelMap::Create(opts);
+    ASSERT_NE(pixelMap, nullptr);
+    ImageUtils::DumpPixelMap(pixelMap.get(), "/data/", 0);
+    ASSERT_NE(access(dumpFile.c_str(), F_OK), 0);
+    GTEST_LOG_(INFO) << "ImageUtilsTest: DumpPixelMapTest004 end";
+}
+
+/**
+ * @tc.name: SbFormat2PixelFormatTest001
+ * @tc.desc: test DumpPixelMap when sbFormat is not equal.
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageUtilsTest, SbFormat2PixelFormatTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImageUtilsTest: SbFormat2PixelFormatTest001 start";
+    auto res = ImageUtils::SbFormat2PixelFormat(0);
+    ASSERT_EQ(res, PixelFormat::UNKNOWN);
+    GTEST_LOG_(INFO) << "ImageUtilsTest: SbFormat2PixelFormatTest001 end";
+}
+
+/**
+ * @tc.name: SurfaceBuffer2PixelMapTest001
+ * @tc.desc: test DumpPixelMap when surfaceBuffer is nullptr.
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageUtilsTest, SurfaceBuffer2PixelMapTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImageUtilsTest: SurfaceBuffer2PixelMapTest001 start";
+    sptr<OHOS::SurfaceBuffer> surfaceBuffer = nullptr;
+    InitializationOptions opts;
+    opts.size.width = NUM_4;
+    opts.size.height = NUM_4;
+    opts.pixelFormat = PixelFormat::RGBA_8888;
+    std::unique_ptr<PixelMap> pixelMap = PixelMap::Create(opts);
+    bool res = ImageUtils::SurfaceBuffer2PixelMap(surfaceBuffer, pixelMap);
+    ASSERT_FALSE(res);
+    GTEST_LOG_(INFO) << "ImageUtilsTest: SurfaceBuffer2PixelMapTest001 end";
 }
 
 /**

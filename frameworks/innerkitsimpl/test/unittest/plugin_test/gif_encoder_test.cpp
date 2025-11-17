@@ -27,6 +27,9 @@ constexpr uint32_t MAX_SIZE = 10;
 constexpr int32_t OUTPUT_DATA_LENGTH = 1000;
 constexpr int32_t WIDTH = 10;
 constexpr int32_t HEIGHT = 10;
+constexpr int32_t LARGE_WIDTH = 100;
+constexpr int32_t LARGE_HEIGHT = 100;
+constexpr uint32_t SMALL_BUFFER_SIZE = 10;
 class GifEncoderTest : public testing::Test {
 public:
     GifEncoderTest() {}
@@ -158,5 +161,81 @@ HWTEST_F(GifEncoderTest, Write001, TestSize.Level3)
     GTEST_LOG_(INFO) << "GifEncoderTest: Write001 end";
 }
 
+/**
+ * @tc.name: FinalizeEncodeWithTransparentPixelTest001
+ * @tc.desc: Test FinalizeEncode with transparent pixels
+ * @tc.type: FUNC
+ */
+HWTEST_F(GifEncoderTest, FinalizeEncodeWithTransparentPixelTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "GifEncoderTest: FinalizeEncodeWithTransparentPixelTest001 start";
+    auto gifEncoder = std::make_shared<GifEncoder>();
+    ASSERT_NE(gifEncoder, nullptr);
+    
+    PlEncodeOptions plOpts;
+    auto outputData = std::make_unique<uint8_t[]>(OUTPUT_DATA_LENGTH);
+    auto stream = std::make_shared<BufferPackerStream>(outputData.get(), OUTPUT_DATA_LENGTH);
+    auto ret = gifEncoder->StartEncode(*stream.get(), plOpts);
+    ASSERT_EQ(ret, SUCCESS);
+    
+    Media::InitializationOptions opts;
+    opts.size.width = WIDTH;
+    opts.size.height = HEIGHT;
+    opts.pixelFormat = PixelFormat::RGBA_8888;
+    opts.alphaType = AlphaType::IMAGE_ALPHA_TYPE_PREMUL;
+    opts.editable = true;
+    auto pixelMap = Media::PixelMap::Create(opts);
+    ASSERT_NE(pixelMap, nullptr);
+    
+    uint32_t* pixels = static_cast<uint32_t*>(pixelMap->GetWritablePixels());
+    if (pixels != nullptr) {
+        for (int i = 0; i < (WIDTH * HEIGHT / 2); i++) {
+            pixels[i] = 0x00FF0000;
+        }
+        for (int i = (WIDTH * HEIGHT / 2); i < WIDTH * HEIGHT; i++) {
+            pixels[i] = 0xFF00FF00;
+        }
+    }
+    
+    ret = gifEncoder->AddImage(*pixelMap.get());
+    ASSERT_EQ(ret, SUCCESS);
+    
+    ret = gifEncoder->FinalizeEncode();
+    ASSERT_EQ(ret, SUCCESS);
+    GTEST_LOG_(INFO) << "GifEncoderTest: FinalizeEncodeWithTransparentPixelTest001 end";
+}
+
+/**
+ * @tc.name: FinalizeEncodeErrorTest001
+ * @tc.desc: Test FinalizeEncode error path when errorCode != SUCCESS
+ *           This test ensures the error logging branch is covered
+ * @tc.type: FUNC
+ */
+HWTEST_F(GifEncoderTest, FinalizeEncodeErrorTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "GifEncoderTest: FinalizeEncodeErrorTest001 start";
+    auto gifEncoder = std::make_shared<GifEncoder>();
+    ASSERT_NE(gifEncoder, nullptr);
+    
+    PlEncodeOptions plOpts;
+    auto outputData = std::make_unique<uint8_t[]>(SMALL_BUFFER_SIZE);
+    auto stream = std::make_shared<BufferPackerStream>(outputData.get(), SMALL_BUFFER_SIZE);
+    auto ret = gifEncoder->StartEncode(*stream.get(), plOpts);
+    ASSERT_EQ(ret, SUCCESS);
+    
+    Media::InitializationOptions opts;
+    opts.size.width = LARGE_WIDTH;
+    opts.size.height = LARGE_HEIGHT;
+    opts.pixelFormat = PixelFormat::RGBA_8888;
+    opts.editable = true;
+    auto pixelMap = Media::PixelMap::Create(opts);
+    ASSERT_NE(pixelMap, nullptr);
+    
+    ret = gifEncoder->AddImage(*pixelMap.get());
+    ASSERT_EQ(ret, SUCCESS);
+    
+    gifEncoder->FinalizeEncode();
+    GTEST_LOG_(INFO) << "GifEncoderTest: FinalizeEncodeErrorTest001 end";
+}
 }
 }
