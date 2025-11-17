@@ -24,6 +24,7 @@ using namespace testing::ext;
 namespace OHOS {
 namespace Multimedia {
 static const std::string IMAGE_INPUT_JPEG_PATH = "/data/local/tmp/image/test_exif.jpg";
+constexpr uint32_t TEST_BUFFER_SIZE = 100;
 
 class TiffParserTest : public testing::Test {
 public:
@@ -103,6 +104,90 @@ HWTEST_F(TiffParserTest, Encode001, TestSize.Level3)
     uint32_t size;
     parser.Encode(&dataPtr, size, exifData_);
     ASSERT_NE(dataPtr, nullptr);
+}
+
+/**
+ * @tc.name: DecodeNullptrTest001
+ * @tc.desc: Test Decode with nullptr input buffer
+ * @tc.type: FUNC
+ */
+HWTEST_F(TiffParserTest, DecodeNullptrTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "TiffParserTest: DecodeNullptrTest001 start";
+    TiffParser parser;
+    ExifData *exifData_ = nullptr;
+    parser.Decode(nullptr, TEST_BUFFER_SIZE, &exifData_);
+    EXPECT_EQ(exifData_, nullptr);
+    GTEST_LOG_(INFO) << "TiffParserTest: DecodeNullptrTest001 end";
+}
+
+/**
+ * @tc.name: EncodeNullptrTest001
+ * @tc.desc: Test Encode with nullptr ExifData input
+ * @tc.type: FUNC
+ */
+HWTEST_F(TiffParserTest, EncodeNullptrTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "TiffParserTest: EncodeNullptrTest001 start";
+    TiffParser parser;
+    unsigned char *dataPtr = nullptr;
+    uint32_t size = 0;
+    parser.Encode(&dataPtr, size, nullptr);
+    EXPECT_EQ(dataPtr, nullptr);
+    EXPECT_EQ(size, 0);
+    GTEST_LOG_(INFO) << "TiffParserTest: EncodeNullptrTest001 end";
+}
+
+/**
+ * @tc.name: DecodeJpegExifNullptrTest001
+ * @tc.desc: Test DecodeJpegExif with nullptr input buffer
+ * @tc.type: FUNC
+ */
+HWTEST_F(TiffParserTest, DecodeJpegExifNullptrTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "TiffParserTest: DecodeJpegExifNullptrTest001 start";
+    TiffParser parser;
+    ExifData *exifData_ = nullptr;
+    parser.DecodeJpegExif(nullptr, TEST_BUFFER_SIZE, &exifData_);
+    EXPECT_EQ(exifData_, nullptr);
+    GTEST_LOG_(INFO) << "TiffParserTest: DecodeJpegExifNullptrTest001 end";
+}
+
+/**
+ * @tc.name: EncodeJpegExifNullptrTest001
+ * @tc.desc: Test EncodeJpegExif with nullptr ExifData input
+ * @tc.type: FUNC
+ */
+HWTEST_F(TiffParserTest, EncodeJpegExifNullptrTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "TiffParserTest: EncodeJpegExifNullptrTest001 start";
+    TiffParser parser;
+    unsigned char *dataPtr = nullptr;
+    uint32_t size = 0;
+    parser.EncodeJpegExif(&dataPtr, size, nullptr);
+    EXPECT_EQ(dataPtr, nullptr);
+    EXPECT_EQ(size, 0);
+    GTEST_LOG_(INFO) << "TiffParserTest: EncodeJpegExifNullptrTest001 end";
+}
+
+/**
+ * @tc.name: DecodeDataSetInvalidTest001
+ * @tc.desc: Test Decode with invalid dataSet to cover byteOrderPos not found branch
+ * @tc.type: FUNC
+ */
+HWTEST_F(TiffParserTest, DecodeDataSetInvalidTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "TiffParserTest: DecodeDataSetInvalidTest001 start";
+    TiffParser parser;
+
+    std::vector<std::vector<uint8_t>> dataSet;
+    std::vector<uint8_t> invalidData = {0x00, 0x01, 0x02, 0x03, 0x04, 0x05};
+    dataSet.push_back(invalidData);
+
+    ExifData *exifData_ = nullptr;
+    parser.Decode(dataSet, &exifData_);
+    ASSERT_NE(exifData_, nullptr);
+    GTEST_LOG_(INFO) << "TiffParserTest: DecodeDataSetInvalidTest001 end";
 }
 } // namespace Multimedia
 } // namespace OHOS

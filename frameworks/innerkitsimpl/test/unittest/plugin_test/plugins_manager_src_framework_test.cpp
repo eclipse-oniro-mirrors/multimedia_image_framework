@@ -304,6 +304,164 @@ HWTEST_F(PluginsManagerSrcFrameWorkTest, ImplClassMgrTest006, TestSize.Level3)
 }
 
 /**
+ * @tc.name: ImplClassMgrTest007
+ * @tc.desc: test GetImplClass with invalid plugin after AddClass
+ * @tc.type: FUNC
+ */
+HWTEST_F(PluginsManagerSrcFrameWorkTest, ImplClassMgrTest007, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PluginsManagerSrcFrameWorkTest: ImplClassMgrTest007 start";
+    ImplClassMgr &implClassMgr = DelayedRefSingleton<ImplClassMgr>::GetInstance();
+    std::weak_ptr<Plugin> plugin;
+    nlohmann::json classInfo = {
+        {"className", "TestClass"},
+        {"packageName", "TestPackage"},
+        {"services", nlohmann::json::array({
+            {{"IID", 1}, {"serviceType", 1}}
+        })}
+    };
+    implClassMgr.AddClass(plugin, classInfo);
+    const string packageName = "TestPackage";
+    const string className = "TestClass";
+    std::shared_ptr<ImplClass> implClass = implClassMgr.GetImplClass(packageName, className);
+    ASSERT_EQ(implClass, nullptr);
+    GTEST_LOG_(INFO) << "PluginsManagerSrcFrameWorkTest: ImplClassMgrTest007 end";
+}
+
+/**
+ * @tc.name: ImplClassMgrTest008
+ * @tc.desc: test CreateObject failure with invalid plugin and missing packageName
+ * @tc.type: FUNC
+ */
+HWTEST_F(PluginsManagerSrcFrameWorkTest, ImplClassMgrTest008, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PluginsManagerSrcFrameWorkTest: ImplClassMgrTest008 start";
+    ImplClassMgr &implClassMgr = DelayedRefSingleton<ImplClassMgr>::GetInstance();
+    std::weak_ptr<Plugin> plugin;
+    nlohmann::json classInfo = {
+        {"className", "TestClass"},
+        {"services", nlohmann::json::array({
+            {{"IID", 1}, {"serviceType", 1}}
+        })}
+    };
+    implClassMgr.AddClass(plugin, classInfo);
+    const string implClassName = "TestClass";
+    uint16_t id = 1;
+    uint32_t errorCode;
+    PluginClassBase *obj = implClassMgr.CreateObject(id, implClassName, errorCode);
+    EXPECT_NE(errorCode, SUCCESS);
+    ASSERT_EQ(obj, nullptr);
+    GTEST_LOG_(INFO) << "PluginsManagerSrcFrameWorkTest: ImplClassMgrTest008 end";
+}
+
+/**
+ * @tc.name: ImplClassMgrTest009
+ * @tc.desc: test GetImplClass with mismatched package name
+ * @tc.type: FUNC
+ */
+HWTEST_F(PluginsManagerSrcFrameWorkTest, ImplClassMgrTest009, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PluginsManagerSrcFrameWorkTest: ImplClassMgrTest009 start";
+    ImplClassMgr &implClassMgr = DelayedRefSingleton<ImplClassMgr>::GetInstance();
+    std::weak_ptr<Plugin> plugin;
+    nlohmann::json classInfo = {
+        {"className", "TestClass"},
+        {"packageName", "TestPackage"},
+        {"services", nlohmann::json::array({
+            {{"IID", 1}, {"serviceType", 1}}
+        })}
+    };
+    implClassMgr.AddClass(plugin, classInfo);
+    const string packageName = "DifferentPackage";
+    const string className = "TestClass";
+    std::shared_ptr<ImplClass> implClass = implClassMgr.GetImplClass(packageName, className);
+    ASSERT_EQ(implClass, nullptr);
+    GTEST_LOG_(INFO) << "PluginsManagerSrcFrameWorkTest: ImplClassMgrTest009 end";
+}
+
+/**
+ * @tc.name: ImplClassMgrTest010
+ * @tc.desc: Test DeleteClass functionality by adding two classes and deleting one, verifying it's removed
+ * @tc.type: FUNC
+ */
+HWTEST_F(PluginsManagerSrcFrameWorkTest, ImplClassMgrTest010, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PluginsManagerSrcFrameWorkTest: ImplClassMgrTest010 start";
+    ImplClassMgr &implClassMgr = DelayedRefSingleton<ImplClassMgr>::GetInstance();
+    std::shared_ptr<Plugin> plugin1 = std::make_shared<Plugin>();
+    std::weak_ptr<Plugin> weakPlugin1 = plugin1;
+    nlohmann::json classInfo1 = {
+        {"className", "TestClass1"},
+        {"packageName", "TestPackage1"},
+        {"services", nlohmann::json::array({
+            {{"IID", 1}, {"serviceType", 1}}
+        })}
+    };
+    implClassMgr.AddClass(weakPlugin1, classInfo1);
+    std::shared_ptr<Plugin> plugin2 = std::make_shared<Plugin>();
+    std::weak_ptr<Plugin> weakPlugin2 = plugin2;
+    nlohmann::json classInfo2 = {
+        {"className", "TestClass2"},
+        {"packageName", "TestPackage2"},
+        {"services", nlohmann::json::array({
+            {{"IID", 2}, {"serviceType", 2}}
+        })}
+    };
+    implClassMgr.AddClass(weakPlugin2, classInfo2);
+    implClassMgr.DeleteClass(weakPlugin2);
+    std::shared_ptr<ImplClass> implClass2 = implClassMgr.GetImplClass("TestPackage2", "TestClass2");
+    ASSERT_EQ(implClass2, nullptr);
+    GTEST_LOG_(INFO) << "PluginsManagerSrcFrameWorkTest: ImplClassMgrTest010 end";
+}
+
+/**
+ * @tc.name: ImplClassMgrTest011
+ * @tc.desc: Test ImplClassMgrGetClassInfo with incompatible capabilities, should return ERR_MATCHING_PLUGIN
+ * @tc.type: FUNC
+ */
+HWTEST_F(PluginsManagerSrcFrameWorkTest, ImplClassMgrTest011, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PluginsManagerSrcFrameWorkTest: ImplClassMgrTest011 start";
+    ImplClassMgr &implClassMgr = DelayedRefSingleton<ImplClassMgr>::GetInstance();
+    std::shared_ptr<Plugin> plugin = std::make_shared<Plugin>();
+    std::weak_ptr<Plugin> weakPlugin = plugin;
+    nlohmann::json classInfo = {
+        {"className", "TestClass"},
+        {"packageName", "TestPackage"},
+        {"services", nlohmann::json::array({
+            {{"IID", 1}, {"serviceType", 1}}
+        })},
+        {"capabilities", nlohmann::json::array({
+            {
+                {"name", "format"},
+                {"type", "string"},
+                {"value", "jpeg"}
+            },
+            {
+                {"name", "width"},
+                {"type", "uint32"},
+                {"value", 1920}
+            }
+        })}
+    };
+    implClassMgr.AddClass(weakPlugin, classInfo);
+    std::map<string, AttrData> incompatibleCaps;
+    AttrData formatAttr;
+    formatAttr.SetData(string("png"));
+    incompatibleCaps["format"] = formatAttr;
+    AttrData widthAttr;
+    widthAttr.SetData(static_cast<uint32_t>(3840));
+    incompatibleCaps["width"] = widthAttr;
+    std::vector<ClassInfo> classesInfo;
+    uint16_t interfaceID = 1;
+    uint16_t serviceType = 1;
+    uint32_t result = implClassMgr.ImplClassMgrGetClassInfo(interfaceID, serviceType, incompatibleCaps, classesInfo);
+    ASSERT_EQ(result, ERR_MATCHING_PLUGIN);
+    ASSERT_TRUE(classesInfo.empty());
+    GTEST_LOG_(INFO) << "PluginsManagerSrcFrameWorkTest: ImplClassMgrTest011 end";
+}
+
+/**
  * @tc.name: ImplClassTest001
  * @tc.desc: MakeServiceFlag
  * @tc.type: FUNC
