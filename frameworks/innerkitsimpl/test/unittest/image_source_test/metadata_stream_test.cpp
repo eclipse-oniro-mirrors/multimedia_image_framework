@@ -60,6 +60,11 @@ const int SIZE_20 = 20;
 const int SIZE_10 = 10;
 const int TEST_DIR_PERMISSIONS = 0777;
 const int SIZE_1 = 1;
+const int INVALID_ENUM_VALUE = 999;
+const int SEEK_SIZE = -1;
+const int MOCK_FILE_SIZE = 100;
+const int MOCK_TRUNCATE_SIZE = 5;
+const int DATA_HELLO_SIZE = 5;
 
 class MemoryCheck {
 public:
@@ -1970,6 +1975,164 @@ HWTEST_F(MetadataStreamTest, FileMetadataStream_IsEof002, TestSize.Level3)
     bool ret = stream.IsEof();
     ASSERT_EQ(ret, true);
     GTEST_LOG_(INFO) << "MetadataStreamTest: FileMetadataStream_IsEof002 end";
+}
+
+/**
+ * @tc.name: FileMetadataStream_SeekDefaultBranchTest001
+ * @tc.desc: Test the Seek function of FileMetadataStream with default branch, returning -1
+ * @tc.type: FUNC
+ */
+HWTEST_F(MetadataStreamTest, FileMetadataStream_SeekDefaultBranchTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "MetadataStreamTest: FileMetadataStream_SeekDefaultBranchTest001 start";
+    FileMetadataStream stream(CreateIfNotExit(filePath));
+    ASSERT_TRUE(stream.Open(OpenMode::ReadWrite));
+    
+    SeekPos invalidPos = static_cast<SeekPos>(INVALID_ENUM_VALUE);
+    long ret = stream.Seek(0, invalidPos);
+    
+    ASSERT_EQ(ret, SEEK_SIZE);
+    GTEST_LOG_(INFO) << "MetadataStreamTest: FileMetadataStream_SeekDefaultBranchTest001 end";
+}
+
+/**
+ * @tc.name: FileMetadataStream_IsEofFerrorTest001
+ * @tc.desc: Test the IsEof function of FileMetadataStream when ferror check returns true
+ * @tc.type: FUNC
+ */
+HWTEST_F(MetadataStreamTest, FileMetadataStream_IsEofFerrorTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "MetadataStreamTest: FileMetadataStream_IsEofFerrorTest001 start";
+    
+    FileMetadataStream stream(CreateIfNotExit(filePath));
+    ASSERT_TRUE(stream.Open(OpenMode::Read));
+    
+    byte data[SIZE_10] = {0};
+    stream.Write(data, sizeof(data));
+    
+    bool isEof = stream.IsEof();
+    ASSERT_TRUE(isEof);
+    GTEST_LOG_(INFO) << "MetadataStreamTest: FileMetadataStream_IsEofFerrorTest001 end";
+}
+
+/**
+ * @tc.name: FileMetadataStream_OpenDefaultBranchTest001
+ * @tc.desc: Test the Open function of FileMetadataStream with default branch, returning false
+ * @tc.type: FUNC
+ */
+HWTEST_F(MetadataStreamTest, FileMetadataStream_OpenDefaultBranchTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "MetadataStreamTest: FileMetadataStream_OpenDefaultBranchTest001 start";
+    
+    FileMetadataStream stream(CreateIfNotExit(filePath));
+    
+    OpenMode invalidMode = static_cast<OpenMode>(INVALID_ENUM_VALUE);
+    bool ret = stream.Open(invalidMode);
+    
+    ASSERT_FALSE(ret);
+    GTEST_LOG_(INFO) << "MetadataStreamTest: FileMetadataStream_OpenDefaultBranchTest001 end";
+}
+
+/**
+ * @tc.name: FileMetadataStream_ReleaseAddrFileSizeZeroTest001
+ * @tc.desc: Test ReleaseAddr when fileSize_ <= 0
+ * @tc.type: FUNC
+ */
+HWTEST_F(MetadataStreamTest, FileMetadataStream_ReleaseAddrFileSizeZeroTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "MetadataStreamTest: FileMetadataStream_ReleaseAddrFileSizeZeroTest001 start";
+
+    RemoveFile(filePath.c_str());
+    FileMetadataStream stream(CreateIfNotExit(filePath));
+    ASSERT_TRUE(stream.Open(OpenMode::ReadWrite));
+
+    int tempVar = 0;
+    stream.mappedMemory_ = reinterpret_cast<void*>(&tempVar);
+    ASSERT_NE(stream.mappedMemory_, nullptr);
+
+    stream.fileSize_ = 0;
+
+    bool ret = stream.ReleaseAddr();
+
+    ASSERT_TRUE(ret);
+    ASSERT_EQ(stream.mappedMemory_, nullptr);
+    GTEST_LOG_(INFO) << "MetadataStreamTest: FileMetadataStream_ReleaseAddrFileSizeZeroTest001 end";
+}
+
+/**
+ * @tc.name: FileMetadataStream_ReleaseAddrMunmapFailTest001
+ * @tc.desc: Test ReleaseAddr when munmap fails
+ * @tc.type: FUNC
+ */
+HWTEST_F(MetadataStreamTest, FileMetadataStream_ReleaseAddrMunmapFailTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "MetadataStreamTest: FileMetadataStream_ReleaseAddrMunmapFailTest001 start";
+
+    FileMetadataStream stream(CreateIfNotExit(filePath));
+    ASSERT_TRUE(stream.Open(OpenMode::ReadWrite));
+
+    std::string data = "Hello, world!";
+    stream.Write((byte *)data.c_str(), data.size());
+    stream.Flush();
+
+    int tempVar = 0;
+    stream.mappedMemory_ = reinterpret_cast<void*>(&tempVar);
+    ASSERT_NE(stream.mappedMemory_, nullptr);
+
+    stream.fileSize_ = MOCK_FILE_SIZE;
+
+    bool ret = stream.ReleaseAddr();
+
+    ASSERT_FALSE(ret);
+    GTEST_LOG_(INFO) << "MetadataStreamTest: FileMetadataStream_ReleaseAddrMunmapFailTest001 end";
+}
+
+/**
+ * @tc.name: FileMetadataStream_TruncateFileFailTest001
+ * @tc.desc: Test TruncateFile when ftruncate fails
+ * @tc.type: FUNC
+ */
+HWTEST_F(MetadataStreamTest, FileMetadataStream_TruncateFileFailTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "MetadataStreamTest: FileMetadataStream_TruncateFileFailTest001 start";
+    
+    RemoveFile(filePath.c_str());
+    std::ofstream ofs(filePath);
+    ofs << "Hello, world!";
+    ofs.close();
+    
+    FileMetadataStream stream(filePath);
+    ASSERT_TRUE(stream.Open(OpenMode::Read));
+    
+    BufferMetadataStream src;
+    src.Open();
+    src.Write((byte *)"Test", SIZE_1);
+    
+    ssize_t srcCur = 0;
+    bool ret = stream.TruncateFile(MOCK_TRUNCATE_SIZE, src, srcCur);
+    
+    ASSERT_FALSE(ret);
+    GTEST_LOG_(INFO) << "MetadataStreamTest: FileMetadataStream_TruncateFileFailTest001 end";
+}
+
+/**
+ * @tc.name: FileMetadataStream_CopyFromDestNotOpenTest001
+ * @tc.desc: Test CopyFrom when destination is not open
+ * @tc.type: FUNC
+ */
+HWTEST_F(MetadataStreamTest, FileMetadataStream_CopyFromDestNotOpenTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "MetadataStreamTest: FileMetadataStream_CopyFromDestNotOpenTest001 start";
+    
+    BufferMetadataStream src;
+    ASSERT_TRUE(src.Open());
+    src.Write((byte *)"Hello", DATA_HELLO_SIZE);
+    
+    FileMetadataStream dest(filePath);
+    bool ret = dest.CopyFrom(src);
+    
+    ASSERT_FALSE(ret);
+    GTEST_LOG_(INFO) << "MetadataStreamTest: FileMetadataStream_CopyFromDestNotOpenTest001 end";
 }
 } // namespace Media
 } // namespace OHOS

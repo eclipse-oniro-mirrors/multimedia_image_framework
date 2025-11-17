@@ -36,6 +36,13 @@ static const std::string IMAGE_INPUT_JPEG_PATH = "/data/local/tmp/image/test.jpg
 static const std::string IMAGE_INPUT_JPG_PATH_EXACTSIZE = "/data/local/tmp/image/800-500.jpg";
 static constexpr int32_t IMAGE_INPUT_JPG_WIDTH = 800;
 static constexpr int32_t IMAGE_INPUT_JPG_HEIGHT = 500;
+static constexpr int32_t INIT_SIZE = 500;
+static constexpr int32_t LARGE_SIZE = 800;
+static constexpr int32_t VALID_SIZE = 256;
+static constexpr int32_t INVALID_SIZE = 100000;
+static constexpr int32_t LARGE_IMAGEINFO_SIZE = 10000;
+static constexpr float VALID_DEGREE = 90.f;
+static constexpr float INVALID_DEGREE = 100.f;
 static const int32_t NUM_1 = 1;
 static const int32_t NUM_2 = 2;
 static const int32_t NUM_NEGATIVE_1 = -1;
@@ -1165,6 +1172,243 @@ HWTEST_F(PostProcTest, DecodePostProc002, TestSize.Level3)
     errorCode = postProc.DecodePostProc(decodeOpts, *(pixelMap.get()), FinalOutputStep::DENSITY_CHANGE);
     ASSERT_EQ(errorCode, ERR_IMAGE_TRANSFORM);
     GTEST_LOG_(INFO) << "PostProcTest: DecodePostProc002 end";
+}
+
+/**
+ * @tc.name: ScalePixelMapWithGPUTest001
+ * @tc.desc: Test CheckPixelMapSLR when the source pixel format is UNKNOWN and desired size remains zero.
+ * @tc.type: FUNC
+ */
+HWTEST_F(PostProcTest, ScalePixelMapWithGPUTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PostProcTest: ScalePixelMapWithGPUTest001 start";
+    PostProc postProc;
+    PixelMap pixelMap;
+    pixelMap.imageInfo_.pixelFormat = PixelFormat::UNKNOWN;
+    Size desiredSize;
+    AntiAliasingOption option = AntiAliasingOption::HIGH;
+    bool useGpu = true;
+    bool ret = postProc.ScalePixelMapWithGPU(pixelMap, desiredSize, option, useGpu);
+    ASSERT_EQ(ret, false);
+
+    option = AntiAliasingOption::NONE;
+    ret = postProc.ScalePixelMapWithGPU(pixelMap, desiredSize, option, useGpu);
+    ASSERT_EQ(ret, false);
+    GTEST_LOG_(INFO) << "PostProcTest: ScalePixelMapWithGPUTest001 end";
+}
+
+/**
+ * @tc.name: CheckPixelMapSLRTest002
+ * @tc.desc: Test CheckPixelMapSLR verify GPU scaling succeeds for several typical downscale targets.
+ * @tc.type: FUNC
+ */
+HWTEST_F(PostProcTest, CheckPixelMapSLRTest002, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PostProcTest: CheckPixelMapSLRTest002 start";
+    PostProc postProc;
+    InitializationOptions initOpts;
+    initOpts.size = {INIT_SIZE, INIT_SIZE};
+    initOpts.pixelFormat = PixelFormat::RGBA_8888;
+    initOpts.allocatorType = AllocatorType::HEAP_ALLOC;
+    auto pixelMapPtr = PixelMap::Create(initOpts);
+    ASSERT_NE(pixelMapPtr, nullptr);
+    pixelMapPtr->GetPixelFormatDetail(initOpts.pixelFormat);
+    AntiAliasingOption option = AntiAliasingOption::HIGH;
+    bool useGpu = true;
+
+    Size desiredSize {VALID_SIZE, VALID_SIZE};
+    bool ret = postProc.ScalePixelMapWithGPU(*pixelMapPtr, desiredSize, option, useGpu);
+    ASSERT_EQ(ret, true);
+
+    desiredSize = {LARGE_SIZE, VALID_SIZE};
+    ret = postProc.ScalePixelMapWithGPU(*pixelMapPtr, desiredSize, option, useGpu);
+    ASSERT_EQ(ret, true);
+
+    desiredSize = {VALID_SIZE, LARGE_SIZE};
+    ret = postProc.ScalePixelMapWithGPU(*pixelMapPtr, desiredSize, option, useGpu);
+    ASSERT_EQ(ret, true);
+
+    desiredSize = {LARGE_SIZE, LARGE_SIZE};
+    ret = postProc.ScalePixelMapWithGPU(*pixelMapPtr, desiredSize, option, useGpu);
+    ASSERT_EQ(ret, true);
+
+    desiredSize = {INVALID_SIZE, INVALID_SIZE};
+    ret = postProc.ScalePixelMapWithGPU(*pixelMapPtr, desiredSize, option, useGpu);
+    ASSERT_EQ(ret, false);
+    GTEST_LOG_(INFO) << "PostProcTest: CheckPixelMapSLRTest002 end";
+}
+
+/**
+ * @tc.name: CheckPixelMapSLRTest003
+ * @tc.desc: Test CheckPixelMapSLR when GPU scaling handles a 10000×500 source and downsamples it to 256×256.
+ * @tc.type: FUNC
+ */
+HWTEST_F(PostProcTest, CheckPixelMapSLRTest003, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PostProcTest: CheckPixelMapSLRTest003 start";
+    PostProc postProc;
+    InitializationOptions initOpts;
+    initOpts.size = {LARGE_IMAGEINFO_SIZE, INIT_SIZE};
+    initOpts.pixelFormat = PixelFormat::RGBA_8888;
+    initOpts.allocatorType = AllocatorType::HEAP_ALLOC;
+    auto pixelMapPtr = PixelMap::Create(initOpts);
+    ASSERT_NE(pixelMapPtr, nullptr);
+    pixelMapPtr->GetPixelFormatDetail(initOpts.pixelFormat);
+    AntiAliasingOption option = AntiAliasingOption::HIGH;
+    bool useGpu = true;
+    Size desiredSize {VALID_SIZE, VALID_SIZE};
+
+    bool ret = postProc.ScalePixelMapWithGPU(*pixelMapPtr, desiredSize, option, useGpu);
+    ASSERT_EQ(ret, true);
+    GTEST_LOG_(INFO) << "PostProcTest: CheckPixelMapSLRTest003 end";
+}
+
+/**
+ * @tc.name: CheckPixelMapSLRTest006
+ * @tc.desc: Test CheckPixelMapSLR when GPU scaling processes a very large 10000×10000 square image down to 256×256.
+ * @tc.type: FUNC
+ */
+HWTEST_F(PostProcTest, CheckPixelMapSLRTest006, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PostProcTest: CheckPixelMapSLRTest006 start";
+    PostProc postProc;
+    InitializationOptions initOpts;
+    initOpts.size = {LARGE_IMAGEINFO_SIZE, LARGE_IMAGEINFO_SIZE};
+    initOpts.pixelFormat = PixelFormat::RGBA_8888;
+    initOpts.allocatorType = AllocatorType::HEAP_ALLOC;
+    auto pixelMapPtr = PixelMap::Create(initOpts);
+    ASSERT_NE(pixelMapPtr, nullptr);
+    pixelMapPtr->GetPixelFormatDetail(initOpts.pixelFormat);
+    AntiAliasingOption option = AntiAliasingOption::HIGH;
+    bool useGpu = true;
+    Size desiredSize {VALID_SIZE, VALID_SIZE};
+
+    bool ret = postProc.ScalePixelMapWithGPU(*pixelMapPtr, desiredSize, option, useGpu);
+    ASSERT_EQ(ret, true);
+    GTEST_LOG_(INFO) << "PostProcTest: CheckPixelMapSLRTest006 end";
+}
+
+/**
+ * @tc.name: CheckPixelMapSLRTest007
+ * @tc.desc: Test CheckPixelMapSLR when GPU scaling succeeds for a 500×10000 source and fails once width or height is 0.
+ * @tc.type: FUNC
+ */
+HWTEST_F(PostProcTest, CheckPixelMapSLRTest007, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PostProcTest: CheckPixelMapSLRTest007 start";
+    PostProc postProc;
+    InitializationOptions initOpts;
+    initOpts.size = {INIT_SIZE, LARGE_IMAGEINFO_SIZE};
+    initOpts.pixelFormat = PixelFormat::RGBA_8888;
+    initOpts.allocatorType = AllocatorType::HEAP_ALLOC;
+    auto pixelMapPtr = PixelMap::Create(initOpts);
+    ASSERT_NE(pixelMapPtr, nullptr);
+    pixelMapPtr->GetPixelFormatDetail(initOpts.pixelFormat);
+    AntiAliasingOption option = AntiAliasingOption::HIGH;
+    bool useGpu = true;
+    Size desiredSize {VALID_SIZE, VALID_SIZE};
+
+    bool ret = postProc.ScalePixelMapWithGPU(*pixelMapPtr, desiredSize, option, useGpu);
+    ASSERT_EQ(ret, true);
+
+    pixelMapPtr->imageInfo_.size.width = 0;
+    ret = postProc.ScalePixelMapWithGPU(*pixelMapPtr, desiredSize, option, useGpu);
+    ASSERT_EQ(ret, false);
+
+    pixelMapPtr->imageInfo_.size.height = 0;
+    ret = postProc.ScalePixelMapWithGPU(*pixelMapPtr, desiredSize, option, useGpu);
+    ASSERT_EQ(ret, false);
+
+    pixelMapPtr->imageInfo_.size.width = INIT_SIZE;
+    ret = postProc.ScalePixelMapWithGPU(*pixelMapPtr, desiredSize, option, useGpu);
+    ASSERT_EQ(ret, false);
+    GTEST_LOG_(INFO) << "PostProcTest: CheckPixelMapSLRTest007 end";
+}
+
+/**
+ * @tc.name: CheckPixelMapSLRTest004
+ * @tc.desc: Test CheckPixelMapSLR when GPU scaling can still succeed when pixelBytes is cleared but metadata remains.
+ * @tc.type: FUNC
+ */
+HWTEST_F(PostProcTest, CheckPixelMapSLRTest004, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PostProcTest: CheckPixelMapSLRTest004 start";
+    PostProc postProc;
+    InitializationOptions initOpts;
+    initOpts.size = {LARGE_IMAGEINFO_SIZE, INIT_SIZE};
+    initOpts.pixelFormat = PixelFormat::RGBA_8888;
+    initOpts.allocatorType = AllocatorType::HEAP_ALLOC;
+    auto pixelMapPtr = PixelMap::Create(initOpts);
+    ASSERT_NE(pixelMapPtr, nullptr);
+    pixelMapPtr->pixelBytes_ = 0;
+    AntiAliasingOption option = AntiAliasingOption::HIGH;
+    bool useGpu = true;
+    Size desiredSize {VALID_SIZE, VALID_SIZE};
+    bool ret = postProc.ScalePixelMapWithGPU(*pixelMapPtr, desiredSize, option, useGpu);
+    ASSERT_EQ(ret, true);
+    GTEST_LOG_(INFO) << "PostProcTest: CheckPixelMapSLRTest004 end";
+}
+
+/**
+ * @tc.name: CheckPixelMapSLRTest005
+ * @tc.desc: Test CheckPixelMapSLR when GPU scaling gracefully rejects targets whose width or height is 0.
+ * @tc.type: FUNC
+ */
+HWTEST_F(PostProcTest, CheckPixelMapSLRTest005, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PostProcTest: CheckPixelMapSLRTest005 start";
+    PostProc postProc;
+    InitializationOptions initOpts;
+    initOpts.size = {INIT_SIZE, INIT_SIZE};
+    initOpts.pixelFormat = PixelFormat::RGBA_8888;
+    initOpts.allocatorType = AllocatorType::HEAP_ALLOC;
+    auto pixelMapPtr = PixelMap::Create(initOpts);
+    ASSERT_NE(pixelMapPtr, nullptr);
+    pixelMapPtr->GetPixelFormatDetail(initOpts.pixelFormat);
+    AntiAliasingOption option = AntiAliasingOption::HIGH;
+    bool useGpu = true;
+
+    Size desiredSize {0, VALID_SIZE};
+    bool ret = postProc.ScalePixelMapWithGPU(*pixelMapPtr, desiredSize, option, useGpu);
+    ASSERT_EQ(ret, false);
+
+    desiredSize = {VALID_SIZE, 0};
+    ret = postProc.ScalePixelMapWithGPU(*pixelMapPtr, desiredSize, option, useGpu);
+    ASSERT_EQ(ret, false);
+
+    desiredSize = {0, 0};
+    ret = postProc.ScalePixelMapWithGPU(*pixelMapPtr, desiredSize, option, useGpu);
+    ASSERT_EQ(ret, false);
+    GTEST_LOG_(INFO) << "PostProcTest: CheckPixelMapSLRTest005 end";
+}
+
+/**
+ * @tc.name: RotateInRectangularStepsTest001
+ * @tc.desc: Test RotateInRectangularSteps fallback CPU rotation still reports success for non-right-angle input.
+ * @tc.type: FUNC
+ */
+HWTEST_F(PostProcTest, RotateInRectangularStepsTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PostProcTest: RotateInRectangularStepsTest001 start";
+    PostProc postProc;
+    InitializationOptions initOpts;
+    initOpts.size = {INIT_SIZE, INIT_SIZE};
+    initOpts.pixelFormat = PixelFormat::UNKNOWN;
+    initOpts.allocatorType = AllocatorType::HEAP_ALLOC;
+    auto pixelMapPtr = PixelMap::Create(initOpts);
+    ASSERT_NE(pixelMapPtr, nullptr);
+    pixelMapPtr->GetPixelFormatDetail(initOpts.pixelFormat);
+    bool useGpu = true;
+    float rotateDegrees = VALID_DEGREE;
+    Size desiredSize {VALID_SIZE, VALID_SIZE};
+
+    bool ret = postProc.RotateInRectangularSteps(*pixelMapPtr, rotateDegrees, useGpu);
+    ASSERT_EQ(ret, true);
+
+    rotateDegrees = INVALID_DEGREE;
+    ret = postProc.RotateInRectangularSteps(*pixelMapPtr, rotateDegrees, useGpu);
+    ASSERT_EQ(ret, true);
+    GTEST_LOG_(INFO) << "PostProcTest: RotateInRectangularStepsTest001 end";
 }
 
 /**
