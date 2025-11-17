@@ -186,7 +186,11 @@ bool PixelConvertAdapter::WritePixelsConvert(const void *srcPixels, uint32_t src
     dstPixels = (dstInfo.pixelFormat == PixelFormat::RGB_888) ? &dstRGBxPixels[0] : dstPixels;
     dstRowBytes = (dstInfo.pixelFormat == PixelFormat::RGB_888) ?
         static_cast<uint32_t>(GetRGBxRowBytes(dstInfo)) : dstRowBytes;
-
+    if (dstInfo.pixelFormat == PixelFormat::RGB_888 && srcInfo.pixelFormat == PixelFormat::RGB_888 &&
+        (srcInfo.size.width != dstInfo.size.width || srcInfo.size.height != dstInfo.size.height)) {
+            RGBToRGBx(reinterpret_cast<uint8_t*>(keepDstPixels), reinterpret_cast<uint8_t*>(dstPixels),
+                dstInfo.size.width * dstInfo.size.height * NUM_3);
+    }
     int32_t srcRGBxSize = (srcInfo.pixelFormat == PixelFormat::RGB_888) ? GetRGBxSize(srcInfo) : NUM_1;
     auto srcRGBxPixels = std::make_unique<uint8_t[]>(srcRGBxSize);
     if (srcInfo.pixelFormat == PixelFormat::RGB_888) {

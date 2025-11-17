@@ -2047,7 +2047,7 @@ uint32_t PixelMap::CheckPixelMapForWritePixels()
 
 uint32_t PixelMap::WritePixels(const RWPixelsOptions &opts)
 {
-    if (!CheckPixelsInput(opts.pixels, opts.bufferSize, opts.offset, opts.stride, opts.region)) {
+    if (!ImageUtils::CheckPixelsInput(this, opts)) {
         IMAGE_LOGE("write pixel by rect input parameter fail.");
         return ERR_IMAGE_INVALID_PARAMETER;
     }
