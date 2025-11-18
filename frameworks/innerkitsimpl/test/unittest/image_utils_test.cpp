@@ -37,6 +37,8 @@ constexpr int32_t ASTC_4X4_BLOCK_SIZE = 13;
 constexpr int32_t ASTC_4X4_BYTE_COUNT = 272;
 constexpr int32_t TEST_HEIGHT_LARGE = 30000;
 constexpr int32_t TEST_WIDTH_LARGE = 10000;
+constexpr int32_t INVALID_PARAM_RESULT = -2;
+constexpr int32_t TEST_BYTE_COUNT_MEDIUM = 200;
 constexpr int32_t ALPHA8_BYTES = 1;
 constexpr int32_t RGB565_BYTES = 2;
 constexpr int32_t RGB888_BYTES = 3;
@@ -613,6 +615,181 @@ HWTEST_F(ImageUtilsTest, ImageUtilsTest001, TestSize.Level3)
     ImageUtils::Uint32ToBytes(1, byte, offset, isBigEndian);
     ASSERT_NE(byte_uint32[0], 1);
     GTEST_LOG_(INFO) << "ImageUtilsTest: ImageUtilsTest001 end";
+}
+
+/**
+ * @tc.name: UpdateSdrYuvStridesTest001
+ * @tc.desc: test UpdateSdrYuvStrides when context is nullptr.
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageUtilsTest, UpdateSdrYuvStridesTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImageUtilsTest: UpdateSdrYuvStridesTest001 start";
+    ImageInfo imageInfo = {};
+    imageInfo.size.width = NUM_4;
+    imageInfo.size.height = NUM_4;
+    YUVStrideInfo dstStrides = {};
+    void* context = nullptr;
+    AllocatorType dstType = AllocatorType::HEAP_ALLOC;
+    ImageUtils::UpdateSdrYuvStrides(imageInfo, dstStrides, context, dstType);
+    ASSERT_EQ(dstStrides.yStride, NUM_4);
+    ASSERT_EQ(dstStrides.uvStride, NUM_4);
+    GTEST_LOG_(INFO) << "ImageUtilsTest: UpdateSdrYuvStridesTest001 end";
+}
+
+/**
+ * @tc.name: GetReusePixelRefCountTest001
+ * @tc.desc: test GetReusePixelRefCount when allocatortype is not DMA_ALLOC.
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageUtilsTest, GetReusePixelRefCountTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImageUtilsTest: GetReusePixelRefCountTest001 start";
+    InitializationOptions opts;
+    opts.size.width = NUM_4;
+    opts.size.height = NUM_4;
+    opts.pixelFormat = PixelFormat::NV12;
+    opts.allocatorType = AllocatorType::SHARE_MEM_ALLOC;
+    std::shared_ptr<PixelMap> pixelMap = PixelMap::Create(opts);
+    ASSERT_NE(pixelMap, nullptr);
+    uint16_t res = ImageUtils::GetReusePixelRefCount(pixelMap);
+    ASSERT_EQ(res, 0);
+    GTEST_LOG_(INFO) << "ImageUtilsTest: GetReusePixelRefCountTest001 end";
+}
+
+/**
+ * @tc.name: SetContextHdrTest001
+ * @tc.desc: test SetContextHdr when format is GRAPHIC_PIXEL_FMT_YCBCR_P010.
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageUtilsTest, SetContextHdrTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImageUtilsTest: SetContextHdrTest001 start";
+    DecodeContext context;
+    uint32_t format = GRAPHIC_PIXEL_FMT_YCBCR_P010;
+    ImageUtils::SetContextHdr(context, format);
+    ASSERT_EQ(context.pixelFormat, PixelFormat::YCBCR_P010);
+    GTEST_LOG_(INFO) << "ImageUtilsTest: SetContextHdrTest001 end";
+}
+
+/**
+ * @tc.name: SetContextHdrTest002
+ * @tc.desc: test SetContextHdr when format is GRAPHIC_PIXEL_FMT_YCRCB_P010.
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageUtilsTest, SetContextHdrTest002, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImageUtilsTest: SetContextHdrTest002 start";
+    DecodeContext context;
+    context.pixelFormat = PixelFormat::UNKNOWN;
+    uint32_t format = GRAPHIC_PIXEL_FMT_YCRCB_P010;
+    ImageUtils::SetContextHdr(context, format);
+    ASSERT_EQ(context.pixelFormat, PixelFormat::UNKNOWN);
+    GTEST_LOG_(INFO) << "ImageUtilsTest: SetContextHdrTest002 end";
+}
+
+/**
+ * @tc.name: CheckRowDataSizeIsVaildTest001
+ * @tc.desc: test CheckRowDataSizeIsVaild when PixelFormat is UNKNOWN.
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageUtilsTest, CheckRowDataSizeIsVaildTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImageUtilsTest: CheckRowDataSizeIsVaildTest001 start";
+    ImageInfo imgInfo;
+    imgInfo.size.width = NUM_4;
+    imgInfo.size.height = NUM_4;
+    imgInfo.pixelFormat = PixelFormat::UNKNOWN;
+    int32_t rowDataSize = NUM_4;
+    bool res = ImageUtils::CheckRowDataSizeIsVaild(rowDataSize, imgInfo);
+    ASSERT_EQ(res, false);
+    GTEST_LOG_(INFO) << "ImageUtilsTest: CheckRowDataSizeIsVaildTest001 end";
+}
+
+/**
+ * @tc.name: CheckRowDataSizeIsVaildTest002
+ * @tc.desc: test CheckRowDataSizeIsVaild when rowDataSize is zero.
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageUtilsTest, CheckRowDataSizeIsVaildTest002, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImageUtilsTest: CheckRowDataSizeIsVaildTest002 start";
+    ImageInfo imgInfo;
+    imgInfo.size.width = 0;
+    imgInfo.size.height = NUM_4;
+    imgInfo.pixelFormat = PixelFormat::ARGB_8888;
+    int32_t rowDataSize = 0;
+    bool res = ImageUtils::CheckRowDataSizeIsVaild(rowDataSize, imgInfo);
+    ASSERT_EQ(res, false);
+    GTEST_LOG_(INFO) << "ImageUtilsTest: CheckRowDataSizeIsVaildTest002 end";
+}
+
+/**
+ * @tc.name: CheckRowDataSizeIsVaildTest003
+ * @tc.desc: test CheckRowDataSizeIsVaild when rowDataSize is not equal.
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageUtilsTest, CheckRowDataSizeIsVaildTest003, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImageUtilsTest: CheckRowDataSizeIsVaildTest003 start";
+    ImageInfo imgInfo;
+    imgInfo.size.width = NUM_4;
+    imgInfo.size.height = NUM_4;
+    imgInfo.pixelFormat = PixelFormat::RGB_565;
+    int32_t rowDataSize = NUM_4;
+    bool res = ImageUtils::CheckRowDataSizeIsVaild(rowDataSize, imgInfo);
+    ASSERT_EQ(res, false);
+    GTEST_LOG_(INFO) << "ImageUtilsTest: CheckRowDataSizeIsVaildTest003 end";
+}
+
+/**
+ * @tc.name: GetAlignedNumberTest001
+ * @tc.desc: test GetAlignedNumber when number or align is less than zero.
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageUtilsTest, GetAlignedNumberTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImageUtilsTest: GetAlignedNumberTest001 start";
+    int32_t number = INVALID_PARAM_RESULT;
+    int32_t align = NUM_4;
+    bool res = ImageUtils::GetAlignedNumber(number, align);
+    ASSERT_EQ(res, false);
+
+    number = NUM_4;
+    align = INVALID_PARAM_RESULT;
+    res = ImageUtils::GetAlignedNumber(number, align);
+    ASSERT_EQ(res, false);
+    GTEST_LOG_(INFO) << "ImageUtilsTest: GetAlignedNumberTest001 end";
+}
+
+/**
+ * @tc.name: GetAlignedNumberTest002
+ * @tc.desc: test GetAlignedNumber when res is more than INT32_MAX.
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageUtilsTest, GetAlignedNumberTest002, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImageUtilsTest: GetAlignedNumberTest002 start";
+    int32_t number = INT32_MAX - NUM_4;
+    int32_t align = TEST_BYTE_COUNT_MEDIUM;
+    bool res = ImageUtils::GetAlignedNumber(number, align);
+    ASSERT_EQ(res, false);
+    GTEST_LOG_(INFO) << "ImageUtilsTest: GetAlignedNumberTest002 end";
+}
+
+/**
+ * @tc.name: SurfaceBuffer2PixelMapTest002
+ * @tc.desc: test DumpPixelMap when pixelMap is nullptr.
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageUtilsTest, SurfaceBuffer2PixelMapTest002, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImageUtilsTest: SurfaceBuffer2PixelMapTest002 start";
+    sptr<OHOS::SurfaceBuffer> surfaceBuffer = SurfaceBuffer::Create();
+    std::unique_ptr<PixelMap> pixelMap = nullptr;
+    bool res = ImageUtils::SurfaceBuffer2PixelMap(surfaceBuffer, pixelMap);
+    ASSERT_FALSE(res);
+    GTEST_LOG_(INFO) << "ImageUtilsTest: SurfaceBuffer2PixelMapTest002 end";
 }
 
 /**

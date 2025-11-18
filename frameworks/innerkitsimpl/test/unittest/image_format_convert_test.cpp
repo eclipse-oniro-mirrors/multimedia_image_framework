@@ -2204,5 +2204,126 @@ HWTEST_F(ImageFormatConvertTest, RGBConvertImageFormatOptionUnique_001, TestSize
     RGBConvertToYUVByUnique(srcFormat, destFormat);
     GTEST_LOG_(INFO) << "ImageFormatConvertTest.RGBConvertImageFormatOptionUnique_001: end";
 }
+
+/**
+ * @tc.name: YUVConvert_001
+ * @tc.desc: Verify YUVConvert auto-fill YUVDataInfo fields when they are zero.
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageFormatConvertTest, YUVConvert_001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImageFormatConvertTest.YUVConvert_001: start";
+    ConvertDataInfo srcDataInfo{};
+    DestConvertInfo destInfo{};
+    srcDataInfo.pixelFormat = PixelFormat::NV12;
+    destInfo.format = PixelFormat::NV21;
+    srcDataInfo.imageSize.width = TREE_ORIGINAL_WIDTH;
+    srcDataInfo.imageSize.height = TREE_ORIGINAL_HEIGHT;
+    srcDataInfo.yuvDataInfo = YUVDataInfo{};
+    uint32_t bufSize = ImageFormatConvert::GetBufferSizeByFormat(PixelFormat::NV12, srcDataInfo.imageSize);
+    std::vector<uint8_t> buf(bufSize, 0);
+    srcDataInfo.buffer = buf.data();
+    srcDataInfo.yuvDataInfo.yStride = TREE_ORIGINAL_WIDTH;
+    srcDataInfo.yuvDataInfo.uvStride = TREE_ORIGINAL_WIDTH;
+    srcDataInfo.yuvDataInfo.yOffset = 0;
+    srcDataInfo.yuvDataInfo.uvOffset = TREE_ORIGINAL_WIDTH * TREE_ORIGINAL_HEIGHT;
+    uint32_t ret = ImageFormatConvert::YUVConvert(srcDataInfo, destInfo);
+    ASSERT_EQ(ret, SUCCESS);
+    GTEST_LOG_(INFO) << "ImageFormatConvertTest.YUVConvert_001: end";
+}
+
+/**
+ * @tc.name: YUVConvert_002
+ * @tc.desc: Verify YUVConvert returns IMAGE_RESULT_FORMAT_CONVERT_FAILED when conversion function returns false.
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageFormatConvertTest, YUVConvert_002, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImageFormatConvertTest.YUVConvert_002: start";
+    ConvertDataInfo srcDataInfo{};
+    DestConvertInfo destInfo{};
+    srcDataInfo.pixelFormat = PixelFormat::NV21;
+    destInfo.format = PixelFormat::RGB_888;
+    srcDataInfo.imageSize.width = TREE_ORIGINAL_WIDTH;
+    srcDataInfo.imageSize.height = TREE_ORIGINAL_HEIGHT;
+    srcDataInfo.yuvDataInfo = YUVDataInfo{};
+    srcDataInfo.buffer = nullptr;
+    uint32_t ret = ImageFormatConvert::YUVConvert(srcDataInfo, destInfo);
+    ASSERT_EQ(ret, IMAGE_RESULT_FORMAT_CONVERT_FAILED);
+    GTEST_LOG_(INFO) << "ImageFormatConvertTest.YUVConvert_002: end";
+}
+
+/**
+ * @tc.name: RGBConvert_001
+ * @tc.desc: Verify RGBConvert uses srcDataInfo.stride directly when stride is non-zero.
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageFormatConvertTest, RGBConvert_001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImageFormatConvertTest.RGBConvert_001: start";
+    ConvertDataInfo srcDataInfo{};
+    DestConvertInfo destInfo{};
+    srcDataInfo.pixelFormat = PixelFormat::RGB_888;
+    srcDataInfo.imageSize.width = TREE_ORIGINAL_WIDTH;
+    srcDataInfo.imageSize.height = TREE_ORIGINAL_HEIGHT;
+    destInfo.format = PixelFormat::NV21;
+    destInfo.allocType = AllocatorType::HEAP_ALLOC;
+    destInfo.width = TREE_ORIGINAL_WIDTH;
+    destInfo.height = TREE_ORIGINAL_HEIGHT;
+    uint32_t bufSize = ImageFormatConvert::GetBufferSizeByFormat(PixelFormat::NV21, srcDataInfo.imageSize);
+    std::vector<uint8_t> buf(bufSize, 128);
+    srcDataInfo.buffer = buf.data();
+    srcDataInfo.bufferSize = bufSize;
+    srcDataInfo.stride = TREE_ORIGINAL_WIDTH;
+    uint32_t ret = ImageFormatConvert::RGBConvert(srcDataInfo, destInfo);
+    ASSERT_EQ(ret, SUCCESS);
+    GTEST_LOG_(INFO) << "ImageFormatConvertTest.RGBConvert_001: end";
+}
+
+/**
+ * @tc.name: CheckIfConvertRGB1010102ToRGBA8888_001
+ * @tc.desc: Verify CheckIfConvertRGB1010102ToRGBA8888 returns ERR_IMAGE_INVALID_PARAMETER when srcPixelMap is nullptr.
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageFormatConvertTest, CheckIfConvertRGB1010102ToRGBA8888_001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImageFormatConvertTest.CheckIfConvertRGB1010102ToRGBA8888_001: start";
+    std::shared_ptr<PixelMap> srcPixelMap = nullptr;
+    PixelFormat srcFormat = PixelFormat::NV21;
+    PixelFormat destFormat = PixelFormat::NV12;
+    uint32_t ret = ImageFormatConvert::RGBConvertImageFormatOption(srcPixelMap, srcFormat, destFormat);
+    ASSERT_EQ(ret, ERR_IMAGE_INVALID_PARAMETER);
+    GTEST_LOG_(INFO) << "ImageFormatConvertTest.CheckIfConvertRGB1010102ToRGBA8888_001: end";
+}
+
+/**
+ * @tc.name: ConvertImageFormat_001
+ * @tc.desc: Verify ConvertImageFormat processes ASTC pixel maps via ConvertFromAstc.
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageFormatConvertTest, ConvertImageFormat_001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImageFormatConvertTest: ConvertImageFormat_Test_002 start";
+    PixelFormat srcFormat = PixelFormat::RGB_565;
+    PixelFormat destFormat = PixelFormat::NV12;
+    Size srcSize = { TREE_ORIGINAL_WIDTH, TREE_ORIGINAL_HEIGHT };
+    uint32_t errorCode = 0;
+    SourceOptions opts;
+    opts.formatHint = "image/jpeg";
+    std::string jpgPath = IMAGE_INPUT_JPG_PATH1;
+    std::shared_ptr<ImageSource> rImageSource = ImageSource::CreateImageSource(jpgPath, opts, errorCode);
+    DecodeOptions decodeOpts;
+    decodeOpts.desiredPixelFormat = srcFormat;
+    decodeOpts.desiredSize.width = srcSize.width;
+    decodeOpts.desiredSize.height = srcSize.height;
+    std::shared_ptr<PixelMap> srcPixelMap = rImageSource->CreatePixelMap(decodeOpts, errorCode);
+    auto imageInfoTemp = srcPixelMap->imageInfo_;
+    srcPixelMap->yuvDataInfo_.yWidth = 0;
+    srcPixelMap->imageInfo_.size.width = 0;
+    srcPixelMap->isAstc_ = true;
+    uint32_t ret = ImageFormatConvert::ConvertImageFormat(srcPixelMap, destFormat);
+    ASSERT_NE(ret, SUCCESS);
+    GTEST_LOG_(INFO) << "ImageFormatConvertTest: ConvertImageFormat_Test_002 end";
+}
 } // namespace Media
 } // namespace OHOS
