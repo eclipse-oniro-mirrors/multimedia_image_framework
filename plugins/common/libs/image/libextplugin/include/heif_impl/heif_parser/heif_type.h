@@ -49,6 +49,25 @@ static const uint32_t BOX_TYPE_THMB = fourcc_to_code("thmb");
 static const uint32_t BOX_TYPE_DIMG = fourcc_to_code("dimg");
 static const uint32_t BOX_TYPE_CDSC = fourcc_to_code("cdsc");
 
+static const uint32_t BOX_TYPE_MOOV = fourcc_to_code("moov");
+static const uint32_t BOX_TYPE_MVHD = fourcc_to_code("mvhd");
+static const uint32_t BOX_TYPE_TRAK = fourcc_to_code("trak");
+static const uint32_t BOX_TYPE_TKHD = fourcc_to_code("tkhd");
+static const uint32_t BOX_TYPE_MDIA = fourcc_to_code("mdia");
+static const uint32_t BOX_TYPE_MDHD = fourcc_to_code("mdhd");
+static const uint32_t BOX_TYPE_MINF = fourcc_to_code("minf");
+static const uint32_t BOX_TYPE_VMHD = fourcc_to_code("vmhd");
+static const uint32_t BOX_TYPE_DINF = fourcc_to_code("dinf");
+static const uint32_t BOX_TYPE_DREF = fourcc_to_code("dref");
+static const uint32_t BOX_TYPE_STBL = fourcc_to_code("stbl");
+static const uint32_t BOX_TYPE_STSD = fourcc_to_code("stsd");
+static const uint32_t BOX_TYPE_HVC1 = fourcc_to_code("hvc1");
+static const uint32_t BOX_TYPE_STTS = fourcc_to_code("stts");
+static const uint32_t BOX_TYPE_STSC = fourcc_to_code("stsc");
+static const uint32_t BOX_TYPE_STCO = fourcc_to_code("stco");
+static const uint32_t BOX_TYPE_STSZ = fourcc_to_code("stsz");
+static const uint32_t BOX_TYPE_STSS = fourcc_to_code("stss");
+
 static const uint32_t BOX_TYPE_CLLI = fourcc_to_code("clli");
 static const uint32_t BOX_TYPE_MDCV = fourcc_to_code("mdcv");
 static const uint32_t BOX_TYPE_IT35 = fourcc_to_code("it35");
@@ -63,6 +82,8 @@ static const uint32_t ITEM_TYPE_URI = fourcc_to_code("uri ");
 
 static const uint32_t COLOR_TYPE_PROF = fourcc_to_code("prof");
 static const uint32_t COLOR_TYPE_RICC = fourcc_to_code("rICC");
+
+static const uint32_t HEIF_BRAND_TYPE_MSF1 = fourcc_to_code("msf1");
 
 // For Cr3 raw format
 static const uint32_t CR3_FILE_TYPE_CRX = fourcc_to_code("crx ");  // Cr3 major brand

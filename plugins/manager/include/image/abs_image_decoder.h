@@ -92,6 +92,8 @@ struct DecodeContext {
     bool isAppUseAllocator = false;
     // In : User set CreateWideGamutSdrPixelMap
     bool  isCreateWideGamutSdrPixelMap = false;
+    // In : set heifs frame index
+    uint32_t index = 0;
 };
 
 struct ProgDecodeContext {

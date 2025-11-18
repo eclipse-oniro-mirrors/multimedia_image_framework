@@ -108,6 +108,7 @@ public:
     static bool HasOverflowed(uint32_t num1, uint32_t num2);
     static int32_t GetAPIVersion();
     static std::string GetEncodedHeifFormat();
+    static std::string GetEncodedHeifsFormat();
     static void UpdateSdrYuvStrides(const ImageInfo &imageInfo, YUVStrideInfo &dstStrides,
         void *context, AllocatorType dstType);
     static bool CanReusePixelMap(ImagePlugin::DecodeContext& context, int width,

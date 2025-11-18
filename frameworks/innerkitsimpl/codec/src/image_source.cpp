@@ -447,6 +447,7 @@ uint32_t ImageSource::GetSupportedFormats(set<string> &formats)
     static bool isSupportHeif = IsSupportHeif();
     if (isSupportHeif) {
         formats.insert(ImageUtils::GetEncodedHeifFormat());
+        formats.insert(ImageUtils::GetEncodedHeifsFormat());
     }
     return SUCCESS;
 }
@@ -862,7 +863,7 @@ DecodeContext ImageSource::InitDecodeContext(const DecodeOptions &opts, const Im
     } else {
         if ((preference == MemoryUsagePreference::DEFAULT && IsSupportDma(opts, info, hasDesiredSizeOptions)) ||
             info.encodedFormat == IMAGE_HEIF_FORMAT || info.encodedFormat == IMAGE_HEIC_FORMAT ||
-            ImageSystemProperties::GetDecodeDmaEnabled()) {
+            info.encodedFormat == IMAGE_HEIFS_FORMAT || ImageSystemProperties::GetDecodeDmaEnabled()) {
             IMAGE_LOGD("[ImageSource] allocatorType is DMA_ALLOC");
             context.allocatorType = AllocatorType::DMA_ALLOC;
         } else if (ImageSystemProperties::GetNoPaddingEnabled()) {
@@ -3926,6 +3927,30 @@ uint32_t ImageSource::GetFrameCount(uint32_t &errorCode)
     return frameCount;
 }
 
+uint32_t ImageSource::SetHeifsMetadataForPicture(std::unique_ptr<Picture> &picture, uint32_t index)
+{
+    CHECK_ERROR_RETURN_RET_LOG(picture == nullptr, ERR_IMAGE_PICTURE_CREATE_FAILED,
+        "[%{public}s] picture is nullptr", __func__);
+    CHECK_ERROR_RETURN_RET_LOG(mainDecoder_ == nullptr, ERR_IMAGE_DECODE_ABNORMAL,
+        "[%{public}s] mainDecoder_ is nullptr", __func__);
+
+    int32_t delayTime = 0;
+    uint32_t errorCode = mainDecoder_->GetImagePropertyInt(index, IMAGE_DELAY_TIME, delayTime);
+    CHECK_ERROR_RETURN_RET_LOG(errorCode != SUCCESS, errorCode,
+        "[%{public}s] get delay time failed", __func__);
+
+    std::shared_ptr<ImageMetadata> heifsMetadata = std::make_shared<HeifsMetadata>();
+    CHECK_ERROR_RETURN_RET_LOG(heifsMetadata == nullptr, ERR_SHAMEM_NOT_EXIST,
+        "[%{public}s] make_shared heifsMetadata failed", __func__);
+    bool result = heifsMetadata->SetValue(HEIFS_METADATA_KEY_DELAY_TIME, std::to_string(delayTime));
+    CHECK_ERROR_RETURN_RET_LOG(!result, ERR_IMAGE_DECODE_METADATA_FAILED,
+        "[%{public}s] set delay time failed", __func__);
+    uint32_t ret = picture->SetMetadata(MetadataType::HEIFS, heifsMetadata);
+    CHECK_ERROR_RETURN_RET_LOG(ret != SUCCESS, ERR_IMAGE_DECODE_METADATA_FAILED,
+        "[%{public}s] set heifs metadata failed", __func__);
+    return SUCCESS;
+}
+
 void ImageSource::SetSource(const std::string &source)
 {
     source_ = source;
@@ -5028,6 +5053,12 @@ std::unique_ptr<Picture> ImageSource::CreatePictureAtIndex(uint32_t index, uint3
             "[%{public}s] SetGifMetadataForPicture failed, index=%{public}u, errorCode=%{public}u",
             __func__, index, errorCode);
     }
+    if (info.encodedFormat == IMAGE_HEIFS_FORMAT) {
+        errorCode = SetHeifsMetadataForPicture(picture, index);
+        CHECK_ERROR_RETURN_RET_LOG(errorCode != SUCCESS, nullptr,
+            "[%{public}s] SetHeifsMetadataForPicture failed, index=%{public}u, errorCode=%{public}u",
+            __func__, index, errorCode);
+    }
     return picture;
 }
 
@@ -5038,7 +5069,7 @@ uint32_t ImageSource::CreatePictureAtIndexPreCheck(uint32_t index, const ImageIn
         return ERR_IMAGE_SOURCE_DATA;
     }
 
-    if (info.encodedFormat != IMAGE_GIF_FORMAT) {
+    if (info.encodedFormat != IMAGE_GIF_FORMAT && info.encodedFormat != IMAGE_HEIFS_FORMAT) {
         IMAGE_LOGE("[%{public}s] unsupport format: %{public}s", __func__, info.encodedFormat.c_str());
         return ERR_IMAGE_MISMATCHED_FORMAT;
     }

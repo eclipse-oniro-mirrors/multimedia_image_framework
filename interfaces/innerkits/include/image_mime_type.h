@@ -33,6 +33,7 @@ static const std::string IMAGE_ICO_FORMAT = "image/x-ico";
 static const std::string IMAGE_ICON_FORMAT = "image/x-icon";
 static const std::string IMAGE_SVG_FORMAT = "image/svg+xml";
 static const std::string IMAGE_CR3_FORMAT = "image/x-canon-cr3";
+static const std::string IMAGE_HEIFS_FORMAT = "image/heif-sequence";
 
 } // namespace Media
 } // namespace OHOS

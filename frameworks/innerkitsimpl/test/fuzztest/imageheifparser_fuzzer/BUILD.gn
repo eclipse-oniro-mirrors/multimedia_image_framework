@@ -39,6 +39,7 @@ ohos_fuzztest("ImageHeifParserFuzzTest") {
     "${image_subsystem}/plugins/common/libs/image/libextplugin:extplugin",
     "${image_subsystem}/plugins/common/libs/image/libextplugin:heifimpl",
     "${image_subsystem}/plugins/common/libs/image/libextplugin:heifparser",
+    "${image_subsystem}/frameworks/innerkitsimpl/utils:image_utils",
   ]
 
   external_deps = [

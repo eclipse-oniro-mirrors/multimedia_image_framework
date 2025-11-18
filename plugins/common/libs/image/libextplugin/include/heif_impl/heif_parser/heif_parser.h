@@ -20,6 +20,7 @@
 #include "box/basic_box.h"
 #include "box/item_data_box.h"
 #include "box/item_info_box.h"
+#include "box/item_movie_box.h"
 #include "box/item_property_box.h"
 #include "box/item_property_color_box.h"
 #include "box/item_property_hvcc_box.h"
@@ -34,6 +35,11 @@ enum heif_header_option {
     heif_header_data,
     heif_no_header,
     heif_only_header
+};
+
+struct HeifsFrameGroup {
+    uint32_t beginFrameIndex = 0;
+    uint32_t endFrameIndex = 0;
 };
 
 class HeifParser {
@@ -84,6 +90,18 @@ public:
         return tiffOffset_;
     }
 
+    heif_error IsHeifsImage(bool &isHeifs) const;
+
+    heif_error GetHeifsFrameCount(uint32_t &sampleCount) const;
+
+    heif_error GetHeifsMovieFrameData(uint32_t index, std::vector<uint8_t> &dest);
+
+    heif_error GetHeifsFrameData(uint32_t index, std::vector<uint8_t> &dest);
+
+    heif_error GetHeifsDelayTime(uint32_t index, int32_t &value) const;
+
+    heif_error GetHeifsGroupFrameInfo(uint32_t index, HeifsFrameGroup &frameGroup);
+
 private:
     // stream
     std::shared_ptr<HeifInputStream> inputStream_;
@@ -105,13 +123,35 @@ private:
     std::shared_ptr<HeifIlocBox> ilocBox_;
     std::vector<std::shared_ptr<HeifBox> > topBoxes_;
 
+    std::shared_ptr<HeifMoovBox> moovBox_;
+    std::shared_ptr<HeifMvhdBox> mvhdBox_;
+    std::shared_ptr<HeifTrakBox> trakBox_;
+    std::shared_ptr<HeifTkhdBox> tkhdBox_;
+    std::shared_ptr<HeifMdiaBox> mdiaBox_;
+    std::shared_ptr<HeifMdhdBox> mdhdBox_;
+    std::shared_ptr<HeifMinfBox> minfBox_;
+    std::shared_ptr<HeifVmhdBox> vmhdBox_;
+    std::shared_ptr<HeifDinfBox> dinfBox_;
+    std::shared_ptr<HeifDrefBox> drefBox_;
+    std::shared_ptr<HeifStblBox> stblBox_;
+    std::shared_ptr<HeifStsdBox> stsdBox_;
+    std::shared_ptr<HeifSttsBox> sttsBox_;
+    std::shared_ptr<HeifStscBox> stscBox_;
+    std::shared_ptr<HeifStcoBox> stcoBox_;
+    std::shared_ptr<HeifStszBox> stszBox_;
+    std::shared_ptr<HeifStssBox> stssBox_;
+
     // images
     std::map<heif_item_id, std::shared_ptr<HeifImage>> images_;
     std::shared_ptr<HeifImage> primaryImage_; // shortcut to primary image
     std::shared_ptr<HeifImage> tmapImage_;
 
+    heif_error GetPreSampleSize(uint32_t index, uint32_t &preSampleSize);
+
     // reading functions for boxes
     heif_error AssembleBoxes(HeifStreamReader &reader);
+
+    heif_error AssembleMovieBoxes();
 
     heif_item_id GetPrimaryItemId() const;
 
@@ -146,6 +186,8 @@ private:
     heif_error AssembleImages();
 
     void ExtractImageProperties(std::shared_ptr<HeifImage> &image);
+
+    void ExtractMovieImageProperties(std::shared_ptr<HeifImage> &image);
 
     void ExtractDerivedImageProperties();
 

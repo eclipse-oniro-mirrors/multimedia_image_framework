@@ -90,11 +90,16 @@ static std::vector<struct PictureEnum> metadataTypeMap = {
     {"XTSTYLE_METADATA", static_cast<uint32_t>(MetadataType::XTSTYLE), ""},
     {"RFDATAB_METADATA", static_cast<uint32_t>(MetadataType::RFDATAB), ""},
     {"GIF_METADATA", static_cast<uint32_t>(MetadataType::GIF), ""},
+    {"HEIFS_METADATA", static_cast<uint32_t>(MetadataType::HEIFS), ""},
 };
 
 static std::vector<struct PictureEnum> gifPropertyKeyMap = {
     {"GIF_DELAY_TIME", 0, "GifDelayTime"},
     {"GIF_DISPOSAL_TYPE", 0, "GifDisposalType"},
+};
+
+static std::vector<struct PictureEnum> heifsPropertyKeyMap = {
+    {"HEIFS_DELAY_TIME", 0, "HeifsDelayTime"},
 };
 
 struct NapiValues {
@@ -256,6 +261,7 @@ napi_value PictureNapi::Init(napi_env env, napi_value exports)
         DECLARE_NAPI_PROPERTY("AuxiliaryPictureType", CreateEnumTypeObject(env, napi_number, auxiliaryPictureTypeMap)),
         DECLARE_NAPI_PROPERTY("MetadataType", CreateEnumTypeObject(env, napi_number, metadataTypeMap)),
         DECLARE_NAPI_PROPERTY("GifPropertyKey", CreateEnumTypeObject(env, napi_string, gifPropertyKeyMap)),
+        DECLARE_NAPI_PROPERTY("HeifsPropertyKey", CreateEnumTypeObject(env, napi_string, heifsPropertyKeyMap)),
     };
 
     napi_value constructor = nullptr;

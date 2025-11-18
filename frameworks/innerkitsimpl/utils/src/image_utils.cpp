@@ -1276,7 +1276,8 @@ const std::set<MetadataType> &ImageUtils::GetAllMetadataType()
         MetadataType::FRAGMENT,
         MetadataType::XTSTYLE,
         MetadataType::RFDATAB,
-        MetadataType::STDATA
+        MetadataType::STDATA,
+        MetadataType::HEIFS,
     };
     return metadataTypes;
 }
@@ -1357,6 +1358,11 @@ std::string ImageUtils::GetEncodedHeifFormat()
     } else {
         return "image/heif";
     }
+}
+
+std::string ImageUtils::GetEncodedHeifsFormat()
+{
+    return "image/heif-sequence";
 }
 
 int32_t ImageUtils::GetAPIVersion()
