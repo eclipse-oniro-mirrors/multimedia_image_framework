@@ -4327,9 +4327,9 @@ bool ImageSource::DecodeJpegGainMap(ImageHdrType hdrType, float scale, DecodeCon
     ImageTrace imageTrace("ImageSource::DecodeJpegGainMap hdrType:%d, scale:%d", hdrType, scale);
     uint32_t gainMapOffset = mainDecoder_->GetGainMapOffset();
     uint32_t streamSize = sourceStreamPtr_->GetStreamSize();
-    if (gainMapOffset == 0 || gainMapOffset > streamSize || streamSize == 0) {
-        return false;
-    }
+    bool cond = gainMapOffset == 0 || gainMapOffset > streamSize || streamSize == 0;
+    CHECK_ERROR_RETURN_RET_LOG(cond, false, "[ImageSource] decode jpeg gainmap failed, gainmap offset is %{public}d"
+        " stream size is %{public}d", gainMapOffset, streamSize);
     uint8_t* streamBuffer = sourceStreamPtr_->GetDataPtr();
     if (sourceStreamPtr_->GetStreamType() != ImagePlugin::BUFFER_SOURCE_TYPE) {
         streamBuffer = new (std::nothrow) uint8_t[streamSize];
@@ -4343,10 +4343,8 @@ bool ImageSource::DecodeJpegGainMap(ImageHdrType hdrType, float scale, DecodeCon
     if (sourceStreamPtr_->GetStreamType() != ImagePlugin::BUFFER_SOURCE_TYPE) {
         delete[] streamBuffer;
     }
-    if (gainMapStream == nullptr) {
-        IMAGE_LOGE("[ImageSource] create gainmap stream fail, gainmap offset is %{public}d", gainMapOffset);
-        return false;
-    }
+    CHECK_ERROR_RETURN_RET_LOG(gainMapStream == nullptr, false, "[ImageSource] create gainmap stream fail, gainmap"
+        " offset is %{public}d", gainMapOffset);
     uint32_t errorCode;
     jpegGainmapDecoder_ = std::unique_ptr<AbsImageDecoder>(
         DoCreateDecoder(InnerFormat::IMAGE_EXTENDED_CODEC, pluginServer_, *gainMapStream, errorCode));
@@ -4368,6 +4366,7 @@ bool ImageSource::DecodeJpegGainMap(ImageHdrType hdrType, float scale, DecodeCon
     }
     gainMapCtx.info = gainMapInfo;
     if (errorCode != SUCCESS) {
+        IMAGE_LOGE("[ImageSource] decode gainmap fail, error code is %{public}d", errorCode);
         FreeContextBuffer(gainMapCtx.freeFunc, gainMapCtx.allocatorType, gainMapCtx.pixelsBuffer);
         return false;
     }
@@ -4534,11 +4533,11 @@ bool ImageSource::ComposeHdrImage(ImageHdrType hdrType, DecodeContext& baseCtx, 
     std::unique_ptr<VpeUtils> utils = std::make_unique<VpeUtils>();
     int32_t res = utils->ColorSpaceConverterComposeImage(buffers, hdrType == ImageHdrType::HDR_CUVA);
     if (res != VPE_ERROR_OK) {
-        IMAGE_LOGE("[ImageSource] composeImage failed");
+        IMAGE_LOGE("[ImageSource] composeImage failed, res: %{public}d", res);
         FreeContextBuffer(hdrCtx.freeFunc, hdrCtx.allocatorType, hdrCtx.pixelsBuffer);
         return false;
     }
-    ImageUtils::DumpHdrBufferEnabled(buffers.hdr, "PixelMap-GAINMAP-Composed");
+    ImageUtils::DumpHdrBufferEnabled(buffers.hdr, "PixelMap-HDR-Composed");
     SetDmaContextYuvInfo(hdrCtx);
     if (GetHdrMediaType(metadata) == CM_IMAGE_HDR_VIVID_SINGLE) {
         VpeUtils::SetSbMetadataType(hdrSptr, static_cast<CM_HDR_Metadata_Type>(metadata.hdrMetadataType));
@@ -4682,6 +4681,8 @@ void ImageSource::SpecialSetComposeBuffer(DecodeContext &baseCtx, sptr<SurfaceBu
     }
     ImageUtils::DumpHdrBufferEnabled(baseSptr, "PixelMap-SDR-tobeComposed");
     ImageUtils::DumpHdrBufferEnabled(gainmapSptr, "PixelMap-GAINMAP-tobeComposed");
+    ImageUtils::DumpHdrExtendMetadataEnabled(gainmapSptr, "PixelMap-GAINMAP-ExtendMetadata-tobeComposed");
+    ImageUtils::DumpSurfaceBufferAllKeysEnabled(gainmapSptr, "PixelMap-GAINMAP-AllKeys-tobeComposed");
 }
 
 static uint32_t CopyContextIntoSurfaceBuffer(Size dstSize, const DecodeContext &context, DecodeContext &dstCtx,
