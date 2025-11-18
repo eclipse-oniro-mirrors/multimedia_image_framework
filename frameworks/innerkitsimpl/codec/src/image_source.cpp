@@ -69,6 +69,7 @@
 #include "source_stream.h"
 #include "image_dfx.h"
 #include "image_handle.h"
+#include "xmp_metadata_accessor.h"
 #if defined(ANDROID_PLATFORM) || defined(IOS_PLATFORM)
 #include "include/jpeg_decoder.h"
 #else
@@ -3050,7 +3051,7 @@ uint32_t ImageSource::SetDecodeOptions(std::unique_ptr<AbsImageDecoder> &decoder
         IMAGE_LOGE("decoder is nullptr");
         return ERROR;
     }
-    
+
     bool isDecodeHdrImage = (opts.desiredDynamicRange == DecodeDynamicRange::AUTO &&
                             (sourceHdrType_ > ImageHdrType::SDR)) ||
                             opts.desiredDynamicRange == DecodeDynamicRange::HDR;
@@ -3067,7 +3068,7 @@ uint32_t ImageSource::SetDecodeOptions(std::unique_ptr<AbsImageDecoder> &decoder
             plOptions.desiredPixelFormat = PixelFormat::NV21;
         }
     }
-    
+
     uint32_t ret = decoder->SetDecodeOptions(index, plOptions, plInfo);
     if (ret != SUCCESS) {
         IMAGE_LOGE("[ImageSource]decoder plugin set decode options fail (image index:%{public}u),"
@@ -6160,7 +6161,7 @@ std::string ImageSource::GetPixelMapName(PixelMap* pixelMap)
 ImageHdrType ImageSource::CheckHdrType()
 {
     IMAGE_LOGD("start CheckHdrType()");
-    
+
     if (checkHdrTypeHasSet) {
         IMAGE_LOGD("already have checkHdrType_: %{public}d", checkHdrType_);
         return checkHdrType_;
@@ -6636,5 +6637,52 @@ bool ImageSource::IsJpegProgressive(uint32_t &errorCode)
     }
     return mainDecoder_->IsProgressiveJpeg();
 }
+
+std::shared_ptr<XMPMetadata> ImageSource::ReadXMPMetadata(uint32_t &errorCode)
+{
+    IMAGE_LOGD("%{public}s enter", __func__);
+    if (xmpMetadata_ != nullptr) {
+        IMAGE_LOGD("%{public}s already read xmp metadata", __func__);
+        errorCode = SUCCESS;
+        return xmpMetadata_;
+    }
+
+    if (sourceStreamPtr_ == nullptr) {
+        IMAGE_LOGE("%{public}s sourceStreamPtr is nullptr", __func__);
+        errorCode = ERR_IMAGE_SOURCE_DATA;
+        return nullptr;
+    }
+
+    if (!PrereadSourceStream()) {
+        IMAGE_LOGE("%{public}s preread source stream failed", __func__);
+        errorCode = ERR_IMAGE_SOURCE_DATA;
+        return nullptr;
+    }
+
+    uint32_t bufferSize = sourceStreamPtr_->GetStreamSize();
+    if (bufferSize == 0 || bufferSize > MAX_SOURCE_SIZE) {
+        errorCode = ERR_IMAGE_SOURCE_DATA;
+        IMAGE_LOGE("%{public}s source stream size is %{public}u, max size is %{public}u", __func__, bufferSize,
+            MAX_SOURCE_SIZE);
+        return nullptr;
+    }
+
+    auto bufferPtr = sourceStreamPtr_->GetDataPtr();
+    uint8_t *data = nullptr;
+    std::unique_ptr<uint8_t[]> tmpGuard;
+    if (bufferPtr != nullptr) {
+        data = bufferPtr;
+    } else {
+        uint8_t *tmpBuffer = ReadSourceBuffer(bufferSize, errorCode);
+        CHECK_ERROR_RETURN_RET_LOG(tmpBuffer == nullptr, nullptr, "%{public}s ReadSourceBuffer failed", __func__);
+        tmpGuard.reset(tmpBuffer);
+        data = tmpBuffer;
+    }
+
+    std::unique_ptr<XMPMetadataAccessor> accessor = std::make_unique<XMPMetadataAccessor>(
+        data, bufferSize, XMPAccessMode::READ_ONLY_XMP);
+    return accessor->Get();
+}
+
 } // namespace Media
 } // namespace OHOS

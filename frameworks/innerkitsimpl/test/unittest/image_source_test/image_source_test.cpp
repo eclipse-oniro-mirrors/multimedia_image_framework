@@ -81,6 +81,7 @@ static const std::string IMAGE_JPG_JPEG_UWA_MULTI_ALTERNATE_COLOR_PATH =
 static const std::string IMAGE_EXIF_PATH =
     "/data/local/tmp/image/exif.jpg";
 static const std::string IMAGE_INPUT1_DNG_PATH = "/data/local/tmp/image/test_dng_readmetadata001.dng";
+static const std::string IMAGE_JPEG_XMP_PATH = "/data/local/tmp/image/jpeg_xmp.jpg";
 static const int32_t DECODE_DESIRED_WIDTH = 7500;
 static const int32_t DECODE_DESIRED_HEIGHT = 7500;
 static const int32_t DESIRED_REGION_WIDTH = 4096;
@@ -3850,7 +3851,7 @@ HWTEST_F(ImageSourceTest, GetImagePropertyByTypeTest003, TestSize.Level3)
     uint32_t errorCode = 0;
     auto imageSource = ImageSource::CreateImageSource(IMAGE_INPUT_GIF_PATH, SourceOptions(), errorCode);
     ASSERT_NE(imageSource, nullptr);
-    
+
     MetadataValue value;
     uint32_t ret = imageSource->GetImagePropertyByType(0, "GIFLoopCount", value);
     EXPECT_EQ(ret, SUCCESS);
@@ -3866,9 +3867,9 @@ HWTEST_F(ImageSourceTest, GetImagePropertyByTypeTest004, TestSize.Level3)
 {
     auto imageSource = CreateImageSourceByPath(IMAGE_INPUT_GIF_PATH);
     ASSERT_NE(imageSource, nullptr);
-    
+
     imageSource->mainDecoder_.reset();
-    
+
     MetadataValue value;
     EXPECT_EQ(imageSource->GetImagePropertyByType(0, "GIFLoopCount", value), Media::SUCCESS);
 }
@@ -3907,10 +3908,10 @@ HWTEST_F(ImageSourceTest, WriteImageMetadataTest001, TestSize.Level3)
     auto imageSource = ImageSource::CreateImageSource(
         imageBuffer, bufferSize, SourceOptions(), errorCode, true);
     ASSERT_NE(imageSource, nullptr);
-    
+
     std::vector<MetadataValue> properties;
     EXPECT_EQ(imageSource->WriteImageMetadataBlob(properties), ERR_MEDIA_WRITE_PARCEL_FAIL);
-    
+
     delete[] imageBuffer;
 }
 
@@ -3925,19 +3926,19 @@ HWTEST_F(ImageSourceTest, WriteImageMetadataBlobTest002, TestSize.Level3)
     uint8_t* imageBuffer = LoadFileToBuffer(IMAGE_INPUT_EXIF_JPEG_PATH, bufferSize);
     ASSERT_NE(imageBuffer, nullptr);
     uint32_t errorCode = 0;
-    
+
     auto imageSource = ImageSource::CreateImageSource(
         imageBuffer, bufferSize, SourceOptions(), errorCode, false);\
     ASSERT_NE(imageSource, nullptr);
     imageSource->srcBuffer_ = imageBuffer;
-    
+
     MetadataValue property;
     property.key = "ExifVersion";
     property.bufferValue = {0x00, 0x02, 0x01, 0x00};
     vector<MetadataValue> properties = {property};
-    
+
     EXPECT_EQ(imageSource->WriteImageMetadataBlob(properties), ERR_MEDIA_WRITE_PARCEL_FAIL);
-    
+
     imageSource->srcBuffer_ = nullptr;
     delete[] imageBuffer;
 }
@@ -3961,9 +3962,9 @@ HWTEST_F(ImageSourceTest, ModifyImagePropertyBlobTest001, TestSize.Level3)
     MetadataValue invalidProp;
     invalidProp.key = "InvalidKey";
     invalidProp.stringValue = "test";
-    
+
     std::vector<MetadataValue> properties = {validProp, invalidProp};
-    
+
     EXPECT_EQ(imageSource->WriteImageMetadataBlob(properties), ERR_IMAGE_DECODE_EXIF_UNSUPPORT);
 }
 
@@ -3978,7 +3979,7 @@ HWTEST_F(ImageSourceTest, ModifyImagePropertyBlobTest002, TestSize.Level3)
     auto imageSource = ImageSource::CreateImageSource(
         IMAGE_INPUT_EXIF_JPEG_PATH, SourceOptions(), errorCode);
     ASSERT_NE(imageSource, nullptr);
-    
+
     std::shared_ptr<MetadataAccessor> nullAccessor;
     std::vector<MetadataValue> properties;
     EXPECT_EQ(imageSource->ModifyImagePropertyBlob(nullAccessor, properties), ERR_IMAGE_SOURCE_DATA);
@@ -3997,7 +3998,7 @@ HWTEST_F(ImageSourceTest, GetAllPropertiesWithTypeTest001, TestSize.Level3)
     ASSERT_NE(imageSource, nullptr);
     imageSource->exifMetadata_ = nullptr;
     imageSource->isExifReadFailed_ = true;
-    
+
     auto properties = imageSource->GetAllPropertiesWithType();
     EXPECT_TRUE(properties.empty());
 }
@@ -4011,10 +4012,10 @@ HWTEST_F(ImageSourceTest, GetAllPropertiesWithTypeTest002, TestSize.Level3)
 {
     auto imageSource = CreateImageSourceByPath(IMAGE_EXIF_PATH);
     ASSERT_NE(imageSource, nullptr);
-    
+
     auto properties = imageSource->GetAllPropertiesWithType();
     EXPECT_FALSE(properties.empty());
-    
+
     bool hasWidth = false;
     for (const auto& prop : properties) {
         if (prop.key == "ImageWidth") hasWidth = true;
@@ -4031,13 +4032,13 @@ HWTEST_F(ImageSourceTest, RemovePropertiesTest001, TestSize.Level3)
 {
     auto imageSource = CreateImageSourceByPath(IMAGE_EXIF_PATH);
     ASSERT_NE(imageSource, nullptr);
-    
+
     MetadataValue value;
     ASSERT_EQ(imageSource->GetImagePropertyByType(0, "GPSLatitude", value), SUCCESS);
-    
+
     std::set<std::string> keysToRemove{"GPSLatitude", "InvalidKey"};
     EXPECT_EQ(imageSource->RemoveImageProperties(0, keysToRemove), SUCCESS);
-    
+
     EXPECT_NE(imageSource->GetImagePropertyCommonByType("GPSLatitude", value), SUCCESS);
 }
 /**
@@ -4049,11 +4050,11 @@ HWTEST_F(ImageSourceTest, RemoveAllPropertiesTest001, TestSize.Level3)
 {
     auto imageSource = CreateImageSourceByPath(IMAGE_EXIF_PATH);
     ASSERT_NE(imageSource, nullptr);
-    
+
     auto initialProps = imageSource->GetAllPropertiesWithType();
     ASSERT_GT(initialProps.size(), 0);
     EXPECT_EQ(imageSource->RemoveAllProperties(), SUCCESS);
-    
+
     auto finalProps = imageSource->GetAllPropertiesWithType();
     EXPECT_LT(finalProps.size(), initialProps.size());
 }
@@ -4919,6 +4920,24 @@ HWTEST_F(ImageSourceTest, DecodeBlobMetaDataTest003, TestSize.Level3)
     DecodeBlobMetaDataTest(IMAGE_INPUT_JPEG_RFDATAB_DEPTHEN_PATH, metadataTypes);
 
     GTEST_LOG_(INFO) << "ImageSourceTest: DecodeBlobMetaDataTest003 end";
+}
+
+/**
+ * @tc.name: ReadXMPMetadataTest001
+ * @tc.desc: Verify that ReadXMPMetadata works correctly.
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageSourceTest, ReadXMPMetadataTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImageSourceTest: ReadXMPMetadataTest001 start";
+    std::unique_ptr<ImageSource> imageSource = CreateImageSourceByPath(IMAGE_JPEG_XMP_PATH);
+    ASSERT_NE(imageSource, nullptr);
+
+    uint32_t errorCode = 0;
+    std::shared_ptr<XMPMetadata> xmpMetadata = imageSource->ReadXMPMetadata(errorCode);
+    ASSERT_NE(xmpMetadata, nullptr);
+    ASSERT_EQ(errorCode, SUCCESS);
+    GTEST_LOG_(INFO) << "ImageSourceTest: ReadXMPMetadataTest001 end";
 }
 } // namespace Multimedia
 } // namespace OHOS

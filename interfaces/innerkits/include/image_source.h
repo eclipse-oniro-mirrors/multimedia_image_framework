@@ -162,6 +162,7 @@ class DngExifMetadata;
 struct StreamInfo;
 struct SingleJpegImage;
 struct MainPictureInfo;
+class XMPMetadata;
 
 class ImageSource {
 public:
@@ -186,10 +187,10 @@ public:
     NATIVEEXPORT static bool IsSupportGenAstc();
 
     NATIVEEXPORT static CM_ColorSpaceType ConvertColorSpaceType(ColorManager::ColorSpaceName colorSpace, bool base);
-    
+
     NATIVEEXPORT static void SetVividMetaColor(HdrMetadata& metadata, CM_ColorSpaceType base,
                                                 CM_ColorSpaceType gainmap, CM_ColorSpaceType hdr);
-    
+
     NATIVEEXPORT std::unique_ptr<PixelMap> CreatePixelMap(const DecodeOptions &opts, uint32_t &errorCode)
     {
         return CreatePixelMapEx(0, opts, errorCode);
@@ -438,6 +439,7 @@ private:
     void RefreshImageSourceByPathName();
     std::string GetPixelMapName(PixelMap* pixelMap);
     bool IsDngImage();
+    std::shared_ptr<XMPMetadata> ReadXMPMetadata(uint32_t &errorCode);
 
 #if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
     void SpecialSetComposeBuffer(ImagePlugin::DecodeContext &baseCtx, sptr<SurfaceBuffer>& baseSptr,
@@ -508,6 +510,7 @@ private:
     std::set<std::string> exifUnsupportKeys_;
     XmageCoordinateMetadata coordMetadata_;
     bool hasValidXmageCoords_ = false;
+    std::shared_ptr<XMPMetadata> xmpMetadata_ = nullptr;
 };
 } // namespace Media
 } // namespace OHOS

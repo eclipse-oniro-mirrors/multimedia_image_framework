@@ -158,6 +158,9 @@ if (use_clang_android) {
       "${image_subsystem}/frameworks/innerkitsimpl/accessor/src/blob_metadata.cpp",
       "${image_subsystem}/frameworks/innerkitsimpl/accessor/src/file_metadata_stream.cpp",
       "${image_subsystem}/frameworks/innerkitsimpl/accessor/src/kv_metadata.cpp",
+      "${image_subsystem}/frameworks/innerkitsimpl/accessor/src/xmp_metadata.cpp",
+      "${image_subsystem}/frameworks/innerkitsimpl/accessor/src/xmp_metadata_accessor.cpp",
+      "${image_subsystem}/frameworks/innerkitsimpl/accessor/src/xmp_buffer_IO.cpp",
       "${image_subsystem}/frameworks/innerkitsimpl/common/src/memory_manager.cpp",
       "${image_subsystem}/frameworks/innerkitsimpl/common/src/native_image.cpp",
       "${image_subsystem}/frameworks/innerkitsimpl/common/src/pixel_astc.cpp",
@@ -260,6 +263,7 @@ if (use_clang_android) {
         "ipc:ipc_core",
         "libjpeg-turbo:turbojpeg",
         "napi:ace_napi",
+        "xmpsdk:xmpsdk",
         "zlib:libz",
       ]
       public_external_deps = [
@@ -309,6 +313,14 @@ if (use_clang_android) {
     if (image_use_new_skia) {
       defines += [ "USE_M133_SKIA" ]
     }
+
+    defines += [
+      "UNIX_ENV=1",
+      "XMP_StaticBuild=1",
+      "XMP_INCLUDE_XMPFILES=1",
+      "TXMP_STRING_TYPE=std::string"
+    ]
+
     #  relative_install_dir = "module/multimedia"
     subsystem_name = "multimedia"
     innerapi_tags = [ "platformsdk" ]
@@ -350,6 +362,9 @@ if (use_mingw_win || use_clang_mac || use_clang_ios || use_clang_android) {
       "${image_subsystem}/frameworks/innerkitsimpl/accessor/src/png_image_chunk_utils.cpp",
       "${image_subsystem}/frameworks/innerkitsimpl/accessor/src/tiff_parser.cpp",
       "${image_subsystem}/frameworks/innerkitsimpl/accessor/src/webp_exif_metadata_accessor.cpp",
+      "${image_subsystem}/frameworks/innerkitsimpl/accessor/src/xmp_metadata.cpp",
+      "${image_subsystem}/frameworks/innerkitsimpl/accessor/src/xmp_metadata_accessor.cpp",
+      "${image_subsystem}/frameworks/innerkitsimpl/accessor/src/xmp_buffer_IO.cpp",
       "${image_subsystem}/frameworks/innerkitsimpl/common/src/pixel_astc.cpp",
       "${image_subsystem}/frameworks/innerkitsimpl/common/src/pixel_yuv.cpp",
       "${image_subsystem}/frameworks/innerkitsimpl/converter/src/image_format_convert.cpp",
@@ -477,6 +492,7 @@ if (use_mingw_win || use_clang_mac || use_clang_ios || use_clang_android) {
         "graphic_surface:surface",
         "hilog:libhilog",
         "napi:ace_napi",
+        "xmpsdk:xmpsdk",
       ]
       if (enable_libexif) {
         external_deps += [ "libexif:libexif" ]
@@ -487,6 +503,13 @@ if (use_mingw_win || use_clang_mac || use_clang_ios || use_clang_android) {
     } else {
       external_deps += [ "zlib:libz" ]
     }
+
+    defines += [
+      "UNIX_ENV=1",
+      "XMP_StaticBuild=1",
+      "XMP_INCLUDE_XMPFILES=1",
+      "TXMP_STRING_TYPE=std::string"
+    ]
 
     if (defined(global_parts_info) &&
         defined(global_parts_info.open_source_libyuv)) {

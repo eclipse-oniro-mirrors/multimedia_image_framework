@@ -64,7 +64,8 @@
           "qos_manager",
           "eventhandler",
           "ets_runtime",
-          "libtiff"
+          "libtiff",
+          "xmpsdk"
         ],
         "third_party": [
           "bounds_checking_function"
@@ -224,7 +225,7 @@
                 "image_source_mdk.h"
               ]
             },
-            "name": "//foundation/multimedia/image_framework/frameworks/kits/js/common/ndk:image_source_ndk"          
+            "name": "//foundation/multimedia/image_framework/frameworks/kits/js/common/ndk:image_source_ndk"
           },
           {
             "header": {

@@ -224,6 +224,34 @@ ohos_unittest("gifmetadatatest") {
   ]
 }
 
+ohos_unittest("xmpmetadatatest") {
+  module_out_path = module_output_path
+
+  defines = [
+    "UNIX_ENV=1",
+    "XMP_StaticBuild=1",
+    "XMP_INCLUDE_XMPFILES=1",
+    "TXMP_STRING_TYPE=std::string"
+  ]
+
+  sources = [
+    "${image_subsystem}/frameworks/innerkitsimpl/accessor/src/xmp_metadata.cpp",
+    "${image_subsystem}/frameworks/innerkitsimpl/test/unittest/metadata_test/xmp_metadata_test.cpp",
+  ]
+
+  deps = [
+    "${image_subsystem}/frameworks/innerkitsimpl/utils:image_utils",
+    "${image_subsystem}/interfaces/innerkits:image_native",
+  ]
+
+  external_deps = [
+    "c_utils:utils",
+    "googletest:gtest",
+    "hilog:libhilog",
+    "xmpsdk:xmpsdk"
+  ]
+}
+
 ohos_unittest("imagepixelmaptest") {
   module_out_path = module_output_path
 
@@ -2496,6 +2524,7 @@ group("unittest") {
     ":itempropertybasicboxtest",
     ":imagedfxtest",
     ":heifsmetadatatest",
+    ":xmpmetadatatest"
   ]
   if (has_libtiff) {
     deps += [ ":tiffplugintest" ]
