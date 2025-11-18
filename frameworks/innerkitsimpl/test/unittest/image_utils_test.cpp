@@ -31,6 +31,12 @@
 static const uint8_t NUM_0 = 0;
 static const uint8_t NUM_2 = 2;
 static const uint8_t NUM_4 = 4;
+constexpr int32_t INVALID_RESULT = -1;
+constexpr int32_t VALID_DIMENSION = 1;
+constexpr int32_t ASTC_4X4_BLOCK_SIZE = 13;
+constexpr int32_t ASTC_4X4_BYTE_COUNT = 272;
+constexpr int32_t TEST_HEIGHT_LARGE = 30000;
+constexpr int32_t TEST_WIDTH_LARGE = 10000;
 constexpr int32_t ALPHA8_BYTES = 1;
 constexpr int32_t RGB565_BYTES = 2;
 constexpr int32_t RGB888_BYTES = 3;
@@ -928,6 +934,93 @@ HWTEST_F(ImageUtilsTest, InvalidateContextSurfaceBufferTest001, TestSize.Level3)
     ImageUtils::InvalidateContextSurfaceBuffer(context);
     EXPECT_EQ(context.pixelsBuffer.context, nullptr);
     GTEST_LOG_(INFO) << "ImageUtilsTest: InvalidateContextSurfaceBufferTest001 end";
+}
+
+/**
+ * @tc.name: GetYUVByteCountTest001
+ * @tc.desc: test GetYUVByteCount when pixelFormat is not YUV format.
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageUtilsTest, GetYUVByteCountTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImageUtilsTest: GetYUVByteCountTest001 start";
+    ImageInfo info;
+    info.pixelFormat = PixelFormat::ARGB_8888;
+    int32_t res = ImageUtils::GetYUVByteCount(info);
+    EXPECT_EQ(res, INVALID_RESULT);
+    GTEST_LOG_(INFO) << "ImageUtilsTest: GetYUVByteCountTest001 end";
+}
+
+/**
+ * @tc.name: GetYUVByteCountTest002
+ * @tc.desc: test GetYUVByteCount when width or height is zero.
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageUtilsTest, GetYUVByteCountTest002, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImageUtilsTest: GetYUVByteCountTest002 start";
+    ImageInfo info;
+    info.pixelFormat = PixelFormat::NV12;
+    info.size.width = NUM_0;
+    info.size.height = VALID_DIMENSION;
+    int32_t res = ImageUtils::GetYUVByteCount(info);
+    EXPECT_EQ(res, INVALID_RESULT);
+
+    info.size.width = VALID_DIMENSION;
+    info.size.height = NUM_0;
+    res = ImageUtils::GetYUVByteCount(info);
+    EXPECT_EQ(res, INVALID_RESULT);
+    GTEST_LOG_(INFO) << "ImageUtilsTest: GetYUVByteCountTest002 end";
+}
+
+/**
+ * @tc.name: GetByteCountTest001
+ * @tc.desc: test GetByteCount when pixelFormat is ASTC_4x4.
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageUtilsTest, GetByteCountTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImageUtilsTest: GetByteCountTest001 start";
+    ImageInfo info;
+    info.pixelFormat = PixelFormat::ASTC_4x4;
+    info.size.width = ASTC_4X4_BLOCK_SIZE;
+    info.size.height = ASTC_4X4_BLOCK_SIZE;
+    int32_t res = ImageUtils::GetByteCount(info);
+    EXPECT_EQ(res, ASTC_4X4_BYTE_COUNT);
+    GTEST_LOG_(INFO) << "ImageUtilsTest: GetByteCountTest001 end";
+}
+
+/**
+ * @tc.name: GetByteCountTest002
+ * @tc.desc: test GetByteCount when rowDataSize is zero.
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageUtilsTest, GetByteCountTest002, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImageUtilsTest: GetByteCountTest002 start";
+    ImageInfo info;
+    info.pixelFormat = PixelFormat::ARGB_8888;
+    info.size.width = NUM_0;
+    int32_t res = ImageUtils::GetByteCount(info);
+    EXPECT_EQ(res, NUM_0);
+    GTEST_LOG_(INFO) << "ImageUtilsTest: GetByteCountTest002 end";
+}
+
+/**
+ * @tc.name: GetByteCountTest003
+ * @tc.desc: test GetByteCount when byteCount is more than INT32_MAX.
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageUtilsTest, GetByteCountTest003, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImageUtilsTest: GetByteCountTest003 start";
+    ImageInfo info;
+    info.pixelFormat = PixelFormat::RGBA_F16;
+    info.size.width = TEST_HEIGHT_LARGE;
+    info.size.height = TEST_WIDTH_LARGE;
+    int32_t res = ImageUtils::GetByteCount(info);
+    EXPECT_EQ(res, NUM_0);
+    GTEST_LOG_(INFO) << "ImageUtilsTest: GetByteCountTest003 end";
 }
 
 }

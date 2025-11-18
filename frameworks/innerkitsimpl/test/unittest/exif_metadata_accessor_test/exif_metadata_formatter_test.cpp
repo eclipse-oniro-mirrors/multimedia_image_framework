@@ -301,6 +301,20 @@ HWTEST_F(ExifMetadataFormatterTest, GetFractionFromStrTest005, TestSize.Level3)
 }
 
 /**
+ * @tc.name: GetFractionFromStrTest006
+ * @tc.desc: test the GetFractionFromStr when decimal value contains non-numeric suffix
+ * @tc.type: FUNC
+ */
+HWTEST_F(ExifMetadataFormatterTest, GetFractionFromStrTest006, TestSize.Level3)
+{
+    bool isOutRange = false;
+    std::string testValue = "a1.abcabc";
+    std::string result = ExifMetadatFormatter::GetFractionFromStr(testValue, isOutRange);
+    EXPECT_EQ(result, "");
+    EXPECT_TRUE(isOutRange);
+}
+
+/**
  * @tc.name: ValidDecimalRationalFormatTest001
  * @tc.desc: test the ValidDecimalRationalFormat when value is very small scientific notation
  * @tc.type: FUNC

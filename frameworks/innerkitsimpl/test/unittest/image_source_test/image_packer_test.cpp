@@ -689,6 +689,22 @@ HWTEST_F(ImagePackerTest, StartPackingImplTest001, TestSize.Level3)
 }
 
 /**
+ * @tc.name: StartPackingImplTest002
+ * @tc.desc: Test StartPackingImpl when packerStream_ is nullptr
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImagePackerTest, StartPackingImplTest002, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImagePackerTest: StartPackingImplTest002 start";
+    ImagePacker packer;
+    const PackOption option;
+    packer.packerStream_ = std::unique_ptr<PackerStream>(static_cast<PackerStream*>(nullptr));
+    uint32_t ret = packer.StartPackingImpl(option);
+    ASSERT_EQ(ret, ERR_IMAGE_DATA_ABNORMAL);
+    GTEST_LOG_(INFO) << "ImagePackerTest: StartPackingImplTest002 end";
+}
+
+/**
  * @tc.name: GetEncoderPluginTest001
  * @tc.desc: test GetEncoderPlugin
  * @tc.type: FUNC

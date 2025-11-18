@@ -2087,6 +2087,35 @@ ohos_unittest("itempropertybasicboxtest"){
   resource_config_file = "${image_subsystem}/test/resource/image/ohos_test.xml"
 }
 
+ohos_unittest("memorymanagertest") {
+  module_out_path = module_output_path
+
+  include_dirs = [
+    "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/common/include",
+    "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/utils/include",
+    "//foundation/multimedia/image_framework/interfaces/innerkits/include",
+  ]
+
+  sources = [
+    "$image_subsystem/frameworks/innerkitsimpl/common/src/memory_manager.cpp",
+    "$image_subsystem/frameworks/innerkitsimpl/test/unittest/memory_manager_test.cpp",
+  ]
+
+  deps = [
+    "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/utils:image_utils",
+    "//foundation/multimedia/image_framework/interfaces/innerkits:image_native",
+  ]
+
+  external_deps = [
+    "c_utils:utils",
+    "googletest:gtest_main",
+    "graphic_surface:surface",
+    "hilog:libhilog",
+  ]
+
+  resource_config_file = "$image_subsystem/test/resource/image/ohos_test.xml"
+}
+
 ohos_unittest("imagedfxtest"){
   module_out_path = module_output_path
 
@@ -2151,6 +2180,7 @@ group("unittest") {
     ":jpegdecoderextest",
     ":jpegutilstest",
     ":jpgyuvtest",
+    ":memorymanagertest",
     ":metadatatest",
     ":napitest",
     ":ndktest2",
