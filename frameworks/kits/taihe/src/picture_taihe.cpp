@@ -69,42 +69,44 @@ Picture PictureImpl::CreatePicture(std::shared_ptr<OHOS::Media::Picture> picture
     return make_holder<PictureImpl, Picture>(picture);
 }
 
-PixelMap PictureImpl::GetMainPixelmap()
+optional<PixelMap> PictureImpl::GetMainPixelmap()
 {
     if (nativePicture_ == nullptr) {
-        ImageTaiheUtils::ThrowExceptionError("Native picture is nullptr!");
-        return make_holder<PixelMapImpl, PixelMap>();
+        IMAGE_LOGE("Native picture is nullptr!");
+        return optional<PixelMap>(std::nullopt);
     }
     auto pixelmap = nativePicture_->GetMainPixel();
     if (pixelmap == nullptr) {
         ImageTaiheUtils::ThrowExceptionError("Get main pixelmap failed, pixelmap is nullptr!");
-        return make_holder<PixelMapImpl, PixelMap>();
+        return optional<PixelMap>(std::nullopt);
     }
-    return PixelMapImpl::CreatePixelMap(pixelmap);
+    auto res = PixelMapImpl::CreatePixelMap(pixelmap);
+    return optional<PixelMap>(std::in_place, res);
 }
 
-PixelMap PictureImpl::GetHdrComposedPixelmapSync()
+optional<PixelMap> PictureImpl::GetHdrComposedPixelmapSync()
 {
     IMAGE_LOGD("GetHdrComposedPixelMap IN");
     if (nativePicture_ == nullptr) {
-        ImageTaiheUtils::ThrowExceptionError("Empty native pixelmap");
-        return make_holder<PixelMapImpl, PixelMap>();
+        IMAGE_LOGE("Empty native pixelmap");
+        return optional<PixelMap>(std::nullopt);
     }
     if (nativePicture_->GetAuxiliaryPicture(OHOS::Media::AuxiliaryPictureType::GAINMAP) == nullptr) {
         ImageTaiheUtils::ThrowExceptionError(IMAGE_UNSUPPORTED_OPERATION, "There is no GAINMAP");
-        return make_holder<PixelMapImpl, PixelMap>();
+        return optional<PixelMap>(std::nullopt);
     }
     if (nativePicture_->GetMainPixel()->GetAllocatorType() != OHOS::Media::AllocatorType::DMA_ALLOC) {
         ImageTaiheUtils::ThrowExceptionError(IMAGE_UNSUPPORTED_OPERATION, "Unsupported operations");
-        return make_holder<PixelMapImpl, PixelMap>();
+        return optional<PixelMap>(std::nullopt);
     }
 
     auto tmpixel = nativePicture_->GetHdrComposedPixelMap();
     if (tmpixel == nullptr) {
         ImageTaiheUtils::ThrowExceptionError(OHOS::Media::ERROR, "Get hdr composed pixelMap failed");
-        return make_holder<PixelMapImpl, PixelMap>();
+        return optional<PixelMap>(std::nullopt);
     }
-    return PixelMapImpl::CreatePixelMap(std::move(tmpixel));
+    auto res = PixelMapImpl::CreatePixelMap(std::move(tmpixel));
+    return optional<PixelMap>(std::in_place, res);
 }
 
 GainMap PictureImpl::GetGainmapPixelmap()
@@ -113,7 +115,11 @@ GainMap PictureImpl::GetGainmapPixelmap()
 
     if (nativePicture_ != nullptr) {
         auto gainpixelmap = nativePicture_->GetGainmapPixelMap();
-        return GainMap::make_type_gainMap(PixelMapImpl::CreatePixelMap(gainpixelmap));
+        if (gainpixelmap != nullptr) {
+            return GainMap::make_type_gainMap(PixelMapImpl::CreatePixelMap(gainpixelmap));
+        } else {
+            return GainMap::make_type_null();
+        }
     } else {
         ImageTaiheUtils::ThrowExceptionError(OHOS::Media::ERR_MEDIA_UNKNOWN, "Picture is a null pointer");
         return GainMap::make_type_null();
@@ -175,6 +181,7 @@ AuxPicture PictureImpl::GetAuxiliaryPicture(AuxiliaryPictureType type)
     if (auxType == OHOS::Media::AuxiliaryPictureType::NONE) {
         ImageTaiheUtils::ThrowExceptionError(IMAGE_BAD_PARAMETER,
             "The type does not match the auxiliary picture type!");
+        return result;
     }
 
     if (nativePicture_ != nullptr) {
@@ -183,10 +190,10 @@ AuxPicture PictureImpl::GetAuxiliaryPicture(AuxiliaryPictureType type)
             result = AuxPicture::make_type_auxPicture(
                 make_holder<AuxiliaryPictureImpl, AuxiliaryPicture>(std::move(auxiliaryPic)));
         } else {
-            ImageTaiheUtils::ThrowExceptionError("native auxiliary picture is nullptr!");
+            IMAGE_LOGE("native auxiliary picture is nullptr!");
         }
     } else {
-        ImageTaiheUtils::ThrowExceptionError("native picture is nullptr!");
+        IMAGE_LOGE("native picture is nullptr!");
     }
 
     return result;
@@ -222,26 +229,27 @@ void PictureImpl::SetMetadataSync(MetadataType metadataType, weak::Metadata meta
     }
 }
 
-Metadata PictureImpl::GetMetadataSync(MetadataType metadataType)
+optional<Metadata> PictureImpl::GetMetadataSync(MetadataType metadataType)
 {
     IMAGE_LOGD("GetMetadata IN");
     if (nativePicture_ == nullptr) {
-        ImageTaiheUtils::ThrowExceptionError("Empty native picture");
-        return make_holder<MetadataImpl, Metadata>();
+        IMAGE_LOGE("Empty native picture");
+        return optional<Metadata>(std::nullopt);
     }
 
     int32_t typeValue = metadataType.get_value();
     if (!OHOS::Media::Picture::IsValidPictureMetadataType(static_cast<OHOS::Media::MetadataType>(typeValue))) {
         ImageTaiheUtils::ThrowExceptionError(IMAGE_UNSUPPORTED_METADATA, "Unsupport MetadataType");
-        return make_holder<MetadataImpl, Metadata>();
+        return optional<Metadata>(std::nullopt);
     }
 
     auto imageMetadata = nativePicture_->GetMetadata(static_cast<OHOS::Media::MetadataType>(typeValue));
     if (imageMetadata == nullptr) {
         ImageTaiheUtils::ThrowExceptionError(OHOS::Media::ERROR, "Get Metadata failed!");
-        return make_holder<MetadataImpl, Metadata>();
+        return optional<Metadata>(std::nullopt);
     }
-    return make_holder<MetadataImpl, Metadata>(imageMetadata);
+    auto res = make_holder<MetadataImpl, Metadata>(imageMetadata);
+    return optional<Metadata>(std::in_place, res);
 }
 
 static OHOS::MessageParcel* UnwarpMessageParcel(uintptr_t sequence)

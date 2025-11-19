@@ -35,13 +35,13 @@ public:
     std::shared_ptr<OHOS::Media::Picture> GetNativePtr();
     static Picture CreatePicture(std::shared_ptr<OHOS::Media::Picture> picture);
 
-    PixelMap GetMainPixelmap();
-    PixelMap GetHdrComposedPixelmapSync();
+    optional<PixelMap> GetMainPixelmap();
+    optional<PixelMap> GetHdrComposedPixelmapSync();
     GainMap GetGainmapPixelmap();
     void SetAuxiliaryPicture(AuxiliaryPictureType type, weak::AuxiliaryPicture auxiliaryPicture);
     AuxPicture GetAuxiliaryPicture(AuxiliaryPictureType type);
     void SetMetadataSync(MetadataType metadataType, weak::Metadata metadata);
-    Metadata GetMetadataSync(MetadataType metadataType);
+    optional<Metadata> GetMetadataSync(MetadataType metadataType);
     void Marshalling(uintptr_t sequence);
     void Release();
 

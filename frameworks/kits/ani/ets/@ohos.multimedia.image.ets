@@ -379,7 +379,7 @@ export namespace image {
           return this.nativeCreateAlphaPixelmap();
         };
         taskpool.execute(cb)
-          .then((e: NullishType) => resolve(e as PixelMap));
+          .then((e: Any) => resolve(e as PixelMap));
       });
     }
 
@@ -397,7 +397,7 @@ export namespace image {
           return this.nativeGetImageInfo();
         };
         taskpool.execute(cb)
-          .then((e: NullishType) => resolve(e as ImageInfo));
+          .then((e: Any) => resolve(e as ImageInfo));
       });
     }
 
@@ -546,7 +546,7 @@ export namespace image {
           return this.nativeGetImageProperties(key);
         };
         taskpool.execute(cb)
-          .then((e: NullishType) => resolve(e as Record<string, string | null>));
+          .then((e: Any) => resolve(e as Record<string, string | null>));
       });
     }
 
@@ -562,7 +562,7 @@ export namespace image {
           return this.nativeCreatePixelMap(options);
         };
         taskpool.execute(cb)
-          .then((e: NullishType) => resolve(e as PixelMap));
+          .then((e: Any) => resolve(e as PixelMap));
       });
     }
 
@@ -581,7 +581,7 @@ export namespace image {
           return this.nativeGetImageInfo(index);
         };
         taskpool.execute(cb)
-          .then((e: NullishType) => resolve(e as ImageInfo));
+          .then((e: Any) => resolve(e as ImageInfo));
       });
     }
   }
