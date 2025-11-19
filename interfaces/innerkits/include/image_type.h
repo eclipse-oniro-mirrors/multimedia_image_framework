@@ -502,6 +502,8 @@ struct XmageCoordinateMetadata {
     uint32_t top;
     uint32_t right;
     uint32_t bottom;
+    uint32_t imageWidth;
+    uint32_t imageLength;
 };
 } // namespace Media
 } // namespace OHOS
