@@ -86,13 +86,43 @@ HWTEST_F(XmpMetadataTest, RegisterNamespacePrefixTest001, TestSize.Level3)
 {
     GTEST_LOG_(INFO) << "XmpMetadataTest: RegisterNamespacePrefixTest001 start";
     XMPMetadata xmpMetadata;
-    std::string namespaceURI = "http://ns.adobe.com/xap/1.0/";
-    std::string preferredPrefix = "xap";
-    std::string registeredPrefix;
-    bool ret = xmpMetadata.RegisterNamespacePrefix(namespaceURI, preferredPrefix, registeredPrefix);
+    std::string namespaceURI = "http://example.com/custom/1.0/";
+    std::string preferredPrefix = "custom";
+    bool ret = xmpMetadata.RegisterNamespacePrefix(namespaceURI, preferredPrefix);
     EXPECT_TRUE(ret);
-    EXPECT_EQ(registeredPrefix, preferredPrefix);
     GTEST_LOG_(INFO) << "XmpMetadataTest: RegisterNamespacePrefixTest001 end";
+}
+
+/**
+ *@tc.name: RegisterNamespacePrefixTest002
+ *@tc.desc: test the RegisterNamespacePrefix when try to register a namespace that is already registered.
+ *@tc.type: FUNC
+ */
+HWTEST_F(XmpMetadataTest, RegisterNamespacePrefixTest002, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "XmpMetadataTest: RegisterNamespacePrefixTest002 start";
+    XMPMetadata xmpMetadata;
+    std::string namespaceURI = "http://ns.adobe.com/xap/1.0/";
+    std::string preferredPrefix = "xmp";
+    bool ret = xmpMetadata.RegisterNamespacePrefix(namespaceURI, preferredPrefix);
+    EXPECT_FALSE(ret);
+    GTEST_LOG_(INFO) << "XmpMetadataTest: RegisterNamespacePrefixTest002 end";
+}
+
+/**
+ *@tc.name: RegisterNamespacePrefixTest003
+ *@tc.desc: test the RegisterNamespacePrefix when try to register a prefix that is already registered.
+ *@tc.type: FUNC
+ */
+HWTEST_F(XmpMetadataTest, RegisterNamespacePrefixTest003, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "XmpMetadataTest: RegisterNamespacePrefixTest003 start";
+    XMPMetadata xmpMetadata;
+    std::string namespaceURI = "http://example.com/custom/1.0/";
+    std::string preferredPrefix = "xmp";
+    bool ret = xmpMetadata.RegisterNamespacePrefix(namespaceURI, preferredPrefix);
+    EXPECT_FALSE(ret);
+    GTEST_LOG_(INFO) << "XmpMetadataTest: RegisterNamespacePrefixTest003 end";
 }
 
 } // namespace Multimedia

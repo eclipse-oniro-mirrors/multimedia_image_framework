@@ -40,8 +40,7 @@ public:
     static bool Initialize();
     static void Terminate();
 
-    bool RegisterNamespacePrefix(const std::string& namespaceURI, const std::string& preferredPrefix,
-        std::string& registeredPrefix);
+    bool RegisterNamespacePrefix(const std::string& uri, const std::string& prefix);
 
     // 获取内部SXMPMeta对象的访问方法
     std::shared_ptr<SXMPMeta> GetSXMPMeta() const { return xmpMeta_; }

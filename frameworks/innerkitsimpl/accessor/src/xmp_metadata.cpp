@@ -64,17 +64,21 @@ void XMPMetadata::Terminate()
     }
 }
 
-bool XMPMetadata::RegisterNamespacePrefix(const std::string& namespaceURI, const std::string& preferredPrefix,
-    std::string& registeredPrefix)
+bool XMPMetadata::RegisterNamespacePrefix(const std::string& uri, const std::string& prefix)
 {
-    std::string actualPrefix;
-    if (!SXMPMeta::RegisterNamespace(namespaceURI.c_str(), preferredPrefix.c_str(), &actualPrefix)) {
-        IMAGE_LOGE("%{public}s failed! namespaceURI: %{public}s, preferredPrefix: %{public}s", __func__,
-            namespaceURI.c_str(), preferredPrefix.c_str());
+    std::string placeholder;
+    bool isURIRegistered = SXMPMeta::GetNamespacePrefix(uri.c_str(), &placeholder);
+    if (isURIRegistered) {
+        IMAGE_LOGI("%{public}s namespace already registered", __func__);
         return false;
     }
-    registeredPrefix = actualPrefix;
-    return true;
+
+    bool isPrefixRegistered = SXMPMeta::GetNamespaceURI(prefix.c_str(), &placeholder);
+    if (isPrefixRegistered) {
+        IMAGE_LOGI("%{public}s prefix already registered", __func__);
+        return false;
+    }
+    return SXMPMeta::RegisterNamespace(uri.c_str(), prefix.c_str(), &placeholder);
 }
 
 } // namespace Media
