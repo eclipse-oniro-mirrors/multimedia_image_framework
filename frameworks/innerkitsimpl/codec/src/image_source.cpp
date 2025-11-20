@@ -5455,6 +5455,21 @@ unique_ptr<PixelMap> ImageSource::CreatePixelAstcFromImageFile(uint32_t index, c
         dstMemory->GetType(), nullptr);
     dstPixelAstc->SetAstc(true);
     dstPixelAstc->SetEditable(false);
+
+    size_t realSize = ImageUtils::GetAstcBytesCount(info);
+    Size desiredSize = {realSize, 1};
+    MemoryData memoryData = {nullptr, realSize, "CompressToAstcFromPixelmap Data", desiredSize,
+        dstPixelAstc->GetPixelFormat()};
+    dstMemory = MemoryManager::CreateMemory(dstMemory->GetType(), memoryData);
+    CHECK_ERROR_RETURN_RET_LOG(dstMemory == nullptr, nullptr, "CompressToAstcFromPixelmap Dst Memory Create failed");
+    if (memcpy_s(dstMemory->data.data, realSize, dstPixelAstc->GetPixels(), realSize) != 0) {
+        IMAGE_LOGE("CreatePixelAstcFromImageFile copy memory fail, size %{public}zu", realSize);
+        dstMemory->Release();
+        return nullptr;
+    }
+    dstPixelAstc->SetPixelsAddr(dstMemory->data.data, dstMemory->extend.data, dstMemory->data.size,
+        dstMemory->GetType(), nullptr);
+
     ImageUtils::FlushSurfaceBuffer(dstPixelAstc.get());
     return dstPixelAstc;
 #else
