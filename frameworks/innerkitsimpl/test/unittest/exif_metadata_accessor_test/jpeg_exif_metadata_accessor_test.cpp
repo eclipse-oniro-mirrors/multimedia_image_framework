@@ -67,6 +67,92 @@ public:
     std::string GetProperty(const std::shared_ptr<ExifMetadata> &metadata, const std::string &prop);
 };
 
+class MockFailingMetadataStream : public MetadataStream {
+private:
+    bool isOpen_ = false;
+    size_t position_ = 0;
+    std::vector<uint8_t> mockData_ = {
+        0xFF, 0xD8,
+        0xFF, 0xE1,
+        0x00, 0x10,
+    };
+
+public:
+    bool Open(OpenMode mode) override
+    {
+        isOpen_ = true;
+        position_ = 0;
+        return true;
+    }
+
+    bool IsOpen() override
+    {
+        return isOpen_;
+    }
+
+    void Close() override
+    {
+        isOpen_ = false;
+    }
+
+    int ReadByte() override
+    {
+        if (!isOpen_ || position_ >= mockData_.size()) {
+            return EOF;
+        }
+        return mockData_[position_++];
+    }
+
+    ssize_t Read(byte *buf, ssize_t size) override
+    {
+        return -1;
+    }
+
+    ssize_t Write(byte *data, ssize_t size) override
+    {
+        return -1;
+    }
+
+    long Seek(long offset, SeekPos pos) override
+    {
+        if (pos == SeekPos::BEGIN) {
+            position_ = offset;
+            return offset;
+        }
+        return -1;
+    }
+
+    long Tell() override
+    {
+        return position_;
+    }
+
+    bool Flush() override
+    {
+        return true;
+    }
+
+    ssize_t GetSize() override
+    {
+        return mockData_.size();
+    }
+
+    bool CopyFrom(MetadataStream &other) override
+    {
+        return false;
+    }
+
+    bool IsEof() override
+    {
+        return position_ >= mockData_.size();
+    }
+
+    byte *GetAddr(bool isWriteable = false) override
+    {
+        return nullptr;
+    }
+};
+
 /**
  * @tc.name: Read001
  * @tc.desc: test the jpegDecoded Exif properties
@@ -455,6 +541,36 @@ HWTEST_F(JpegExifMetadataAccessorTest, ReadBlob003, TestSize.Level3)
     DataBuf exifBuf;
     ASSERT_TRUE(imageAccessor.ReadBlob(exifBuf));
     ASSERT_EQ(exifBuf.Size(), 0x0930);
+}
+
+/**
+ * @tc.name: ReadBlob004
+ * @tc.desc: test ReadBlob interface to cover imageStream is not open branch
+ * @tc.type: FUNC
+ */
+HWTEST_F(JpegExifMetadataAccessorTest, ReadBlob004, TestSize.Level3)
+{
+    std::shared_ptr<MetadataStream> stream = std::make_shared<FileMetadataStream>(IMAGE_INPUT1_JPEG_PATH);
+    JpegExifMetadataAccessor imageAccessor(stream);
+    DataBuf exifBuf;
+    bool result = imageAccessor.ReadBlob(exifBuf);
+    ASSERT_FALSE(result);
+    ASSERT_TRUE(exifBuf.Empty());
+}
+
+/**
+ * @tc.name: ReadBlob005
+ * @tc.desc: test ReadBlob interface to cover imageStream Read failure branch
+ * @tc.type: FUNC
+ */
+HWTEST_F(JpegExifMetadataAccessorTest, ReadBlob005, TestSize.Level3)
+{
+    std::shared_ptr<MetadataStream> stream = std::make_shared<MockFailingMetadataStream>();
+    ASSERT_TRUE(stream->Open(OpenMode::ReadWrite));
+    JpegExifMetadataAccessor imageAccessor(stream);
+    DataBuf exifBuf;
+    bool result = imageAccessor.ReadBlob(exifBuf);
+    ASSERT_FALSE(result);
 }
 
 /**
