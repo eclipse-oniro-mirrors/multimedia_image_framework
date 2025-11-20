@@ -13,6 +13,7 @@
  * limitations under the License.
  */
 #define private public
+#define WBMP_TEST_DATA_SIZE 10
 #include <gtest/gtest.h>
 #include <fstream>
 #include "bmp_format_agent.h"
@@ -208,6 +209,53 @@ HWTEST_F(FormatAgentPluginSrcTest, CheckFormatTest005, TestSize.Level3)
     res = heifFormatAgent.CheckFormat(headerData, dataSize);
     ASSERT_EQ(res, false);
     GTEST_LOG_(INFO) << "FormatAgentPluginSrcTest: HeifFormatAgent::CheckFormatTest005 end";
+}
+
+/**
+ * @tc.name: WbmpReadHeaderFixedHeaderFailTest001
+ * @tc.desc: Test read_header when fixed header check fails
+ * @tc.type: FUNC
+ */
+HWTEST_F(FormatAgentPluginSrcTest, WbmpReadHeaderFixedHeaderFailTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "FormatAgentPluginSrcTest: WbmpReadHeaderFixedHeaderFailTest001 start";
+    WbmpFormatAgent wbmpAgent;
+    
+    uint8_t data[WBMP_TEST_DATA_SIZE];
+    data[0] = 0x00;
+    data[1] = 0x01;
+    data[2] = 0x01;
+    data[3] = 0x01;
+    
+    bool result = wbmpAgent.read_header(data, WBMP_TEST_DATA_SIZE);
+    
+    ASSERT_FALSE(result);
+    GTEST_LOG_(INFO) << "FormatAgentPluginSrcTest: WbmpReadHeaderFixedHeaderFailTest001 end";
+}
+
+/**
+ * @tc.name: WbmpReadHeaderSuccessTest001
+ * @tc.desc: Test read_header success path when CheckFormat succeeds
+ * @tc.type: FUNC
+ */
+HWTEST_F(FormatAgentPluginSrcTest, WbmpReadHeaderSuccessTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "FormatAgentPluginSrcTest: WbmpReadHeaderSuccessTest001 start";
+    WbmpFormatAgent wbmpAgent;
+    
+    uint8_t data[WBMP_TEST_DATA_SIZE];
+    data[0] = 0x00;
+    data[1] = 0x00;
+    data[2] = 0x0A;
+    data[3] = 0x0A;
+    
+    bool headerResult = wbmpAgent.read_header(data, WBMP_TEST_DATA_SIZE);
+    ASSERT_TRUE(headerResult);
+    
+    bool checkResult = wbmpAgent.CheckFormat(data, WBMP_TEST_DATA_SIZE);
+    ASSERT_TRUE(checkResult);
+    
+    GTEST_LOG_(INFO) << "FormatAgentPluginSrcTest: WbmpReadHeaderSuccessTest001 end";
 }
 }
 }

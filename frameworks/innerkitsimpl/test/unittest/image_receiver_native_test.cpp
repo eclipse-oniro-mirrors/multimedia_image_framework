@@ -892,5 +892,89 @@ HWTEST_F(ImageReceiverNativeTest, OH_ImageReceiverNative_OffImageArriveTest002, 
     ASSERT_EQ(nRst, IMAGE_RECEIVER_INVALID_PARAMETER);
 }
 
+/**
+ * @tc.name: OH_ImageReceiverOptions_GetSizeTest001
+ * @tc.desc: test OH_ImageReceiverOptions_GetSize when size is nullptr.
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageReceiverNativeTest, OH_ImageReceiverOptions_GetSizeTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImageReceiverNativeTest: OH_ImageReceiverOptions_GetSizeTest001 start";
+    OH_ImageReceiverOptions* options = nullptr;
+    Image_ErrorCode nRst = IMAGE_SUCCESS;
+    nRst = OH_ImageReceiverOptions_Create(&options);
+    ASSERT_EQ(nRst, IMAGE_SUCCESS);
+    ASSERT_NE(options, nullptr);
+    std::shared_ptr<OH_ImageReceiverOptions> ptrOptions(options, OH_ImageReceiverOptions_Release);
+
+    Image_Size* size = nullptr;
+    nRst = OH_ImageReceiverOptions_GetSize(options, size);
+    ASSERT_EQ(nRst, IMAGE_BAD_PARAMETER);
+    GTEST_LOG_(INFO) << "ImageReceiverNativeTest: OH_ImageReceiverOptions_GetSizeTest001 end";
+}
+
+/**
+@tc.name: OH_ImageReceiverOptions_GetCapacityTest001
+@tc.desc: test OH_ImageReceiverOptions_GetCapacity when capacity is nullptr.
+@tc.type: FUNC
+*/
+HWTEST_F(ImageReceiverNativeTest, OH_ImageReceiverOptions_GetCapacityTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImageReceiverNativeTest: OH_ImageReceiverOptions_GetCapacityTest001 start";
+    OH_ImageReceiverOptions** options = nullptr;
+    Image_ErrorCode nRst = OH_ImageReceiverOptions_Create(options);
+    ASSERT_EQ(nRst, IMAGE_BAD_PARAMETER);
+    OH_ImageReceiverOptions* opt = nullptr;
+    int32_t* capacity = nullptr;
+    nRst = OH_ImageReceiverOptions_GetCapacity(opt, capacity);
+    ASSERT_EQ(nRst, IMAGE_BAD_PARAMETER);
+    GTEST_LOG_(INFO) << "ImageReceiverNativeTest: OH_ImageReceiverOptions_GetCapacityTest001 end";
+}
+
+/**
+ * @tc.name: OH_ImageReceiverNative_GetReceivingSurfaceIdTest006
+ * @tc.desc: test OH_ImageReceiverNative_GetReceivingSurfaceId when recevier is nullptr.
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageReceiverNativeTest, OH_ImageReceiverNative_GetReceivingSurfaceIdTest006, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImageReceiverNativeTest: OH_ImageReceiverNative_GetReceivingSurfaceIdTest006 start";
+    OH_ImageReceiverNative* pReceiver = nullptr;
+    uint64_t nSurfaceId = 0;
+    Image_ErrorCode nRst = OH_ImageReceiverNative_GetReceivingSurfaceId(pReceiver, &nSurfaceId);
+    ASSERT_EQ(nRst, IMAGE_BAD_PARAMETER);
+    GTEST_LOG_(INFO) << "ImageReceiverNativeTest: OH_ImageReceiverNative_GetReceivingSurfaceIdTest006 end";
+}
+
+/**
+ * @tc.name: OH_ImageReceiverNative_ReadLatestImageTest001
+ * @tc.desc: test OH_ImageReceiverNative_ReadLatestImage when recevier is nullptr;
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageReceiverNativeTest, OH_ImageReceiverNative_ReadLatestImageTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImageReceiverNativeTest: OH_ImageReceiverNative_ReadLatestImageTest001 start";
+    OH_ImageReceiverNative* pReceiver = nullptr;
+    OH_ImageNative* pImg = nullptr;
+    Image_ErrorCode nRst = OH_ImageReceiverNative_ReadLatestImage(pReceiver, &pImg);
+    ASSERT_EQ(nRst, IMAGE_BAD_PARAMETER);
+    GTEST_LOG_(INFO) << "ImageReceiverNativeTest: OH_ImageReceiverNative_ReadLatestImageTest001 end";
+}
+
+/**
+ * @tc.name: OH_ImageReceiverNative_ReadNextImageTest001
+ * @tc.desc: test OH_ImageReceiverNative_ReadNextImage when recevier is nullptr;
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageReceiverNativeTest, OH_ImageReceiverNative_ReadNextImageTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImageReceiverNativeTest: OH_ImageReceiverNative_ReadNextImageTest001 start";
+    OH_ImageReceiverNative* pReceiver = nullptr;
+    OH_ImageNative* pImg = nullptr;
+    Image_ErrorCode nRst = OH_ImageReceiverNative_ReadNextImage(pReceiver, &pImg);
+    ASSERT_EQ(nRst, IMAGE_BAD_PARAMETER);
+    GTEST_LOG_(INFO) << "ImageReceiverNativeTest: OH_ImageReceiverNative_ReadNextImageTest001 end";
+}
+
 } // namespace Media
 } // namespace OHOS

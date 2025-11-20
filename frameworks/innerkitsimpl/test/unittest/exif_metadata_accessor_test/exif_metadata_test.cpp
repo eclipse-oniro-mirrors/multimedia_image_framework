@@ -26,6 +26,17 @@
 using namespace OHOS::Media;
 using namespace testing::ext;
 
+#define SSHORT_COMPONENTS_COUNT 2
+#define SSHORT_FIRST_VALUE (-100)
+#define SSHORT_SECOND_VALUE 200
+#define SSHORT_MAX_VALUE 32767
+#define SSHORT_MIN_VALUE (-32768)
+#define UNSUPPORTED_FORMAT_CODE 99
+#define TEST_IMAGE_WIDTH_VALUE 1920
+#define ENTRY_SIZE_BYTES 4
+#define MEMORY_ALLOC_UNIT 1
+#define SSHORT_COMPONENTS_COUNT_1 1
+
 namespace OHOS {
 namespace Multimedia {
 static const std::string IMAGE_INPUT_JPEG_PATH = "/data/local/tmp/image/test_metadata.jpg";
@@ -1975,6 +1986,86 @@ HWTEST_F(ExifMetadataTest, RemoveEntryTest001, TestSize.Level3)
     exif_content_add_entry(exifData->ifd[EXIF_IFD_0], entry);
     ASSERT_TRUE(metadata.RemoveEntry("ImageLength"));
     exif_entry_unref(entry);
+    exif_data_unref(exifData);
+}
+
+/**
+ * @tc.name: SetCommonValueSSHORTTest001
+ * @tc.desc: Test SetCommonValue with EXIF_FORMAT_SSHORT format
+ * @tc.type: FUNC
+ */
+HWTEST_F(ExifMetadataTest, SetCommonValueSSHORTTest001, TestSize.Level3)
+{
+    auto exifData = exif_data_new();
+    ASSERT_NE(exifData, nullptr);
+    exif_data_set_option(exifData, EXIF_DATA_OPTION_FOLLOW_SPECIFICATION);
+    exif_data_fix(exifData);
+    
+    ExifMetadata metadata(exifData);
+    
+    ExifEntry* entry = exif_entry_new();
+    ASSERT_NE(entry, nullptr);
+    entry->tag = EXIF_TAG_SUBJECT_AREA;
+    entry->format = EXIF_FORMAT_SSHORT;
+    entry->components = SSHORT_COMPONENTS_COUNT;
+    entry->size = SSHORT_COMPONENTS_COUNT * sizeof(int16_t);
+    entry->data = (unsigned char*)calloc(entry->size, MEMORY_ALLOC_UNIT);
+    ASSERT_NE(entry->data, nullptr);
+    
+    exif_content_add_entry(exifData->ifd[EXIF_IFD_EXIF], entry);
+    exif_entry_unref(entry);
+    
+    bool result = metadata.SetCommonValue("SubjectArea",
+        std::to_string(SSHORT_FIRST_VALUE) + " " + std::to_string(SSHORT_SECOND_VALUE));
+    ASSERT_TRUE(result);
+    
+    ExifEntry* verifyEntry = exif_content_get_entry(exifData->ifd[EXIF_IFD_EXIF], EXIF_TAG_SUBJECT_AREA);
+    ASSERT_NE(verifyEntry, nullptr);
+    ASSERT_EQ(verifyEntry->format, EXIF_FORMAT_SSHORT);
+    
+    ExifByteOrder order = exif_data_get_byte_order(exifData);
+    ExifSShort val1 = exif_get_sshort(verifyEntry->data, order);
+    ExifSShort val2 = exif_get_sshort(verifyEntry->data + sizeof(int16_t), order);
+    ASSERT_EQ(val1, SSHORT_FIRST_VALUE);
+    ASSERT_EQ(val2, SSHORT_SECOND_VALUE);
+    
+    result = metadata.SetCommonValue("SubjectArea",
+        std::to_string(SSHORT_MAX_VALUE) + " " + std::to_string(SSHORT_MIN_VALUE));
+    
+    val1 = exif_get_sshort(verifyEntry->data, order);
+    val2 = exif_get_sshort(verifyEntry->data + sizeof(int16_t), order);
+    ASSERT_EQ(val1, SSHORT_MAX_VALUE);
+    ASSERT_EQ(val2, SSHORT_MIN_VALUE);
+    exif_data_unref(exifData);
+}
+
+/**
+ * @tc.name: SetCommonValueUnsupportedFormatTest001
+ * @tc.desc: Test SetCommonValue with unsupported format
+ * @tc.type: FUNC
+ */
+HWTEST_F(ExifMetadataTest, SetCommonValueUnsupportedFormatTest001, TestSize.Level3)
+{
+    auto exifData = exif_data_new();
+    ASSERT_NE(exifData, nullptr);
+    exif_data_set_option(exifData, EXIF_DATA_OPTION_FOLLOW_SPECIFICATION);
+    exif_data_fix(exifData);
+    
+    ExifMetadata metadata(exifData);
+    ExifEntry* entry = exif_entry_new();
+    ASSERT_NE(entry, nullptr);
+    entry->tag = EXIF_TAG_IMAGE_WIDTH;
+    entry->format = static_cast<ExifFormat>(UNSUPPORTED_FORMAT_CODE);
+    entry->components = SSHORT_COMPONENTS_COUNT_1;
+    entry->size = ENTRY_SIZE_BYTES;
+    entry->data = (unsigned char*)calloc(entry->size, MEMORY_ALLOC_UNIT);
+    ASSERT_NE(entry->data, nullptr);
+    
+    exif_content_add_entry(exifData->ifd[EXIF_IFD_0], entry);
+    exif_entry_unref(entry);
+    
+    bool result = metadata.SetCommonValue("ImageWidth", std::to_string(TEST_IMAGE_WIDTH_VALUE));
+    ASSERT_FALSE(result);
     exif_data_unref(exifData);
 }
 } // namespace Multimedia
