@@ -1026,7 +1026,9 @@ bool ExifMetadata::ExtractXmageCoordinates(XmageCoordinateMetadata& coordMetadat
     bool allParsedSuccessfully = ParseExifCoordinate("HwMnoteXmageLeft", coordMetadata.left) &&
         ParseExifCoordinate("HwMnoteXmageTop", coordMetadata.top) &&
         ParseExifCoordinate("HwMnoteXmageRight", coordMetadata.right) &&
-        ParseExifCoordinate("HwMnoteXmageBottom", coordMetadata.bottom);
+        ParseExifCoordinate("HwMnoteXmageBottom", coordMetadata.bottom) &&
+        ParseExifCoordinate("ImageWidth", coordMetadata.imageWidth) &&
+        ParseExifCoordinate("ImageLength", coordMetadata.imageLength);
     if (allParsedSuccessfully) {
         IMAGE_LOGI(
             "Exif_metadata:ExtractXMageCoordinates Successfully extracted XMAGE coordinates: "
