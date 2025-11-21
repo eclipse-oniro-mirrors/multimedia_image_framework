@@ -46,6 +46,7 @@ public:
     NATIVEEXPORT std::shared_ptr<PixelMap> GetMainPixel();
     NATIVEEXPORT void SetMainPixel(std::shared_ptr<PixelMap> PixelMap);
     NATIVEEXPORT std::unique_ptr<PixelMap> GetHdrComposedPixelMap();
+    NATIVEEXPORT std::unique_ptr<PixelMap> GetHdrComposedPixelMap(PixelFormat format);
     NATIVEEXPORT std::shared_ptr<PixelMap> GetGainmapPixelMap();
     NATIVEEXPORT std::shared_ptr<AuxiliaryPicture> GetAuxiliaryPicture(AuxiliaryPictureType type);
     NATIVEEXPORT void SetAuxiliaryPicture(std::shared_ptr<AuxiliaryPicture> &picture);
@@ -77,6 +78,7 @@ private:
     std::map<AuxiliaryPictureType, std::shared_ptr<AuxiliaryPicture>> auxiliaryPictures_;
     sptr<SurfaceBuffer> maintenanceData_;
     std::map<MetadataType, std::shared_ptr<ImageMetadata>> metadatas_;
+    bool needConvertColorSpace_ = true;
 };
 }
 }
