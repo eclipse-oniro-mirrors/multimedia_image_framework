@@ -100,10 +100,10 @@ public:
 private:
     OHOS::sptr<IConsumerSurface> receiverConsumerSurface_;
     OHOS::sptr<Surface> receiverProducerSurface_;
-    int32_t width_;
-    int32_t height_;
-    int32_t format_;
-    int32_t capicity_;
+    int32_t width_ = 0;
+    int32_t height_ = 0;
+    int32_t format_ = 0;
+    int32_t capicity_ = 0;
     std::string receiverKey_;
 };
 } // namespace Media

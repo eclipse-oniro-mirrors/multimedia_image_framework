@@ -195,7 +195,7 @@ static int32_t ImageSourceNapiCreate(struct ImageSourceArgs* args)
         IMAGE_LOGE("ImageSourceNapiCreate native create failed");
         return IMAGE_RESULT_BAD_PARAMETER;
     }
-    if (ImageSourceCreateNapi(args->inEnv, args->outVal, imageSource, nullptr, &resource) != SUCCESS) {
+    if (ImageSourceCreateNapi(args->inEnv, args->outVal, imageSource, nullptr, &resource) != IMAGE_RESULT_SUCCESS) {
         IMAGE_LOGE("ImageSourceNapiCreate napi create failed");
         args->outVal = nullptr;
         return IMAGE_RESULT_BAD_PARAMETER;
@@ -229,7 +229,7 @@ static int32_t ImageSourceNapiCreateFromUri(struct ImageSourceArgs* args)
         IMAGE_LOGE("ImageSourceNapiCreateFromUri native create failed");
         return IMAGE_RESULT_BAD_PARAMETER;
     }
-    if (ImageSourceCreateNapi(args->inEnv, args->outVal, imageSource, nullptr, &resource) != SUCCESS) {
+    if (ImageSourceCreateNapi(args->inEnv, args->outVal, imageSource, nullptr, &resource) != IMAGE_RESULT_SUCCESS) {
         IMAGE_LOGE("ImageSourceNapiCreateFromUri napi create failed");
         args->outVal = nullptr;
         return IMAGE_RESULT_BAD_PARAMETER;
@@ -262,7 +262,7 @@ static int32_t ImageSourceNapiCreateFromFd(struct ImageSourceArgs* args)
         IMAGE_LOGE("ImageSourceNapiCreateFromFd native create failed");
         return IMAGE_RESULT_BAD_PARAMETER;
     }
-    if (ImageSourceCreateNapi(args->inEnv, args->outVal, imageSource, nullptr, &resource) != SUCCESS) {
+    if (ImageSourceCreateNapi(args->inEnv, args->outVal, imageSource, nullptr, &resource) != IMAGE_RESULT_SUCCESS) {
         IMAGE_LOGE("ImageSourceNapiCreateFromFd napi create failed");
         args->outVal = nullptr;
         return IMAGE_RESULT_BAD_PARAMETER;
@@ -298,7 +298,7 @@ static int32_t ImageSourceNapiCreateFromData(struct ImageSourceArgs* args)
         IMAGE_LOGE("ImageSourceNapiCreateFromData native create failed");
         return IMAGE_RESULT_BAD_PARAMETER;
     }
-    if (ImageSourceCreateNapi(args->inEnv, args->outVal, imageSource, nullptr, &resource) != SUCCESS) {
+    if (ImageSourceCreateNapi(args->inEnv, args->outVal, imageSource, nullptr, &resource) != IMAGE_RESULT_SUCCESS) {
         IMAGE_LOGE("ImageSourceNapiCreateFromData napi create failed");
         args->outVal = nullptr;
         return IMAGE_RESULT_BAD_PARAMETER;
@@ -342,7 +342,7 @@ static int32_t ImageSourceNapiCreateFromRawFile(struct ImageSourceArgs* args)
         IMAGE_LOGE("ImageSourceNapiCreateFromRawFile native create failed");
         return IMAGE_RESULT_BAD_PARAMETER;
     }
-    if (ImageSourceCreateNapi(args->inEnv, args->outVal, imageSource, nullptr, &resource) != SUCCESS) {
+    if (ImageSourceCreateNapi(args->inEnv, args->outVal, imageSource, nullptr, &resource) != IMAGE_RESULT_SUCCESS) {
         IMAGE_LOGE("ImageSourceNapiCreateFromRawFile napi create failed");
         args->outVal = nullptr;
         return IMAGE_RESULT_BAD_PARAMETER;
@@ -386,7 +386,7 @@ static int32_t ImageSourceNapiCreateIncremental(struct ImageSourceArgs* args)
         return IMAGE_RESULT_BAD_PARAMETER;
     }
     if (ImageSourceCreateNapi(args->inEnv, args->outVal,
-        std::move(imageSource), std::move(incPixelMap), nullptr) != SUCCESS) {
+        std::move(imageSource), std::move(incPixelMap), nullptr) != IMAGE_RESULT_SUCCESS) {
         IMAGE_LOGE("ImageSourceNapiCreateIncremental napi create failed");
         args->outVal = nullptr;
         return IMAGE_RESULT_BAD_PARAMETER;

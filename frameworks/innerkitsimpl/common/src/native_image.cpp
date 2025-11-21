@@ -295,7 +295,7 @@ int32_t NativeImage::GetDataSize(uint64_t &size)
             extraDataSize, size);
     } else {
         IMAGE_LOGD("S ExtraGet dataSize %{public}d", extraDataSize);
-        size = extraDataSize;
+        size = static_cast<uint64_t>(extraDataSize);
     }
     return SUCCESS;
 }

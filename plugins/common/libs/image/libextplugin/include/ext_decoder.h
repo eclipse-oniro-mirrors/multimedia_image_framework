@@ -216,7 +216,7 @@ private:
 #endif
     OHOS::Media::CropAndScaleStrategy cropAndScaleStrategy_ = OHOS::Media::CropAndScaleStrategy::DEFAULT;
     OHOS::Media::Size RegiondesiredSize_;
-    bool SupportRegionFlag_;
+    bool SupportRegionFlag_ = false;
     //Yuv
     OHOS::Media::Size desiredSizeYuv_;
     int softSampleSize_ = 1;
