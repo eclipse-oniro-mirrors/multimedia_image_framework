@@ -70,6 +70,7 @@ private:
     static napi_value CreatePixelMap(napi_env env, napi_callback_info info);
     static napi_value CreatePixelMapSync(napi_env env, napi_callback_info info);
     static napi_value ModifyImageProperty(napi_env env, napi_callback_info info);
+    static napi_value ModifyImagePropertiesEnhanced(napi_env env, napi_callback_info info);
     static napi_value GetImageProperty(napi_env env, napi_callback_info info);
     static napi_value GetImagePropertySync(napi_env env, napi_callback_info info);
     static napi_value UpdateData(napi_env env, napi_callback_info info);
