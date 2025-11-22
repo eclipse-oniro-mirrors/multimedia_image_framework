@@ -27,6 +27,12 @@
 
 using namespace testing::ext;
 using namespace OHOS::Media;
+
+#define VALID_RGBX_BUFFER_SIZE 12
+#define VALID_RGB_BUFFER_SIZE 9
+#define INVALID_BYTE_COUNT 11
+#define VALID_BYTE_COUNT 12
+
 namespace OHOS {
 namespace Multimedia {
 class PixelConvertAdapterTest : public testing::Test {
@@ -408,6 +414,27 @@ HWTEST_F(PixelConvertAdapterTest, YUV420ToRGB888Test001, TestSize.Level3)
     bool result = PixelConvertAdapter::YUV420ToRGB888(src, srcInfo, dst, dstInfo);
     EXPECT_FALSE(result);
     GTEST_LOG_(INFO) << "PixelConvertAdapterTest: YUV420ToRGB888Test001 end";
+}
+
+/**
+ * @tc.name: RGBxToRGBInvalidByteCountTest001
+ * @tc.desc: Test RGBxToRGB with byteCount not multiple of 4
+ * @tc.type: FUNC
+ */
+HWTEST_F(PixelConvertAdapterTest, RGBxToRGBInvalidByteCountTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PixelConvertAdapterTest: RGBxToRGBInvalidByteCountTest001 start";
+    uint8_t srcPixels[VALID_RGBX_BUFFER_SIZE] = {0xFF, 0x00, 0x00, 0x00,
+                                                  0x00, 0xFF, 0x00, 0x00,
+                                                  0x00, 0x00, 0xFF, 0x00};
+    uint8_t dstPixels[VALID_RGB_BUFFER_SIZE];
+    
+    bool result = PixelConvertAdapter::RGBxToRGB(srcPixels, dstPixels, INVALID_BYTE_COUNT);
+    ASSERT_FALSE(result);
+    
+    result = PixelConvertAdapter::RGBxToRGB(srcPixels, dstPixels, VALID_BYTE_COUNT);
+    ASSERT_TRUE(result);
+    GTEST_LOG_(INFO) << "PixelConvertAdapterTest: RGBxToRGBInvalidByteCountTest001 end";
 }
 }
 }

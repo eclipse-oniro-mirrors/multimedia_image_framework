@@ -50,6 +50,15 @@ constexpr uint32_t ASTC_BLOCK_NUM = 256;
 constexpr uint8_t ASTC_BLOCK4X4_FIT_ASTC_EXAMPLE0[ASTC_PER_BLOCK_BYTES] = {
     0x43, 0x80, 0xE9, 0xE8, 0xFA, 0xFC, 0x14, 0x17, 0xFF, 0xFF, 0x81, 0x42, 0x12, 0x5A, 0xD4, 0xE9
 };
+constexpr int32_t CONVERT_FAIL = -1;
+constexpr int32_t BUFFER_SIZE = 12;
+constexpr int32_t ARRAY_SIZE = 6;
+constexpr int32_t WIDTH = 2;
+constexpr int32_t HEIGHT = 2;
+constexpr int32_t MISMATCHED_SIZE = 1;
+constexpr int32_t LARGE_SIZE = 512;
+std::array<uint16_t, ARRAY_SIZE> SRC_DATA = {0x0010, 0x0020, 0x0030, 0x0040, 0x0100, 0x0200};
+std::array<uint16_t, ARRAY_SIZE> DST_DATA = {0};
 class PixelConvertTest : public testing::Test {
 public:
     PixelConvertTest() {}
@@ -2128,6 +2137,349 @@ HWTEST_F(PixelConvertTest, PixelConvertTest0053, TestSize.Level3)
     result = PixelConvert::AstcToRgba(pixelMap3.get(), errorCode, PixelFormat::RGBA_8888);
     EXPECT_NE(errorCode, 0);
     GTEST_LOG_(INFO) << "PixelConvertTest: PixelConvertTest0053 end";
+}
+
+/**
+ * @tc.name: NV12P010ToNV21P010Test001
+ * @tc.desc: Test NV12P010ToNV21P010 with invalid height.
+ * @tc.type: FUNC
+ */
+HWTEST_F(PixelConvertTest, NV12P010ToNV21P010Test001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PixelConvertTest: NV12P010ToNV21P010Test001 start";
+    ImageInfo srcInfo;
+    srcInfo.size = {WIDTH, 0};
+    srcInfo.pixelFormat = PixelFormat::YCBCR_P010;
+
+    ImageInfo dstInfo;
+    dstInfo.size = {WIDTH, 0};
+    dstInfo.pixelFormat = PixelFormat::YCRCB_P010;
+
+    BufferInfo srcBuffer;
+    srcBuffer.pixels = reinterpret_cast<uint8_t *>(SRC_DATA.data());
+    srcBuffer.rowStride = 0;
+    srcBuffer.imageInfo = srcInfo;
+    srcBuffer.length = static_cast<int32_t>(SRC_DATA.size() * sizeof(uint16_t));
+    srcBuffer.range = 0;
+    srcBuffer.yuvConversion = YuvConversion::BT601;
+
+    BufferInfo dstBuffer;
+    dstBuffer.pixels = reinterpret_cast<uint8_t *>(DST_DATA.data());
+    dstBuffer.rowStride = 0;
+    dstBuffer.imageInfo = dstInfo;
+    dstBuffer.length = static_cast<int32_t>(DST_DATA.size() * sizeof(uint16_t));
+    dstBuffer.range = 0;
+    dstBuffer.yuvConversion = YuvConversion::BT601;
+
+    int32_t ret = PixelConvert::PixelsConvert(srcBuffer, dstBuffer, srcBuffer.length, false);
+    ASSERT_EQ(ret, CONVERT_FAIL);
+    GTEST_LOG_(INFO) << "PixelConvertTest: NV12P010ToNV21P010Test001 end";
+}
+
+/**
+ * @tc.name: NV12P010ToNV21P010Test002
+ * @tc.desc: Test NV12P010ToNV21P010 with invalid width.
+ * @tc.type: FUNC
+ */
+HWTEST_F(PixelConvertTest, NV12P010ToNV21P010Test002, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PixelConvertTest: NV12P010ToNV21P010Test002 start";
+    ImageInfo srcInfo;
+    srcInfo.size = {0, HEIGHT};
+    srcInfo.pixelFormat = PixelFormat::YCBCR_P010;
+
+    ImageInfo dstInfo;
+    dstInfo.size = {0, HEIGHT};
+    dstInfo.pixelFormat = PixelFormat::YCRCB_P010;
+
+    BufferInfo srcBuffer;
+    srcBuffer.pixels = reinterpret_cast<uint8_t *>(SRC_DATA.data());
+    srcBuffer.rowStride = 0;
+    srcBuffer.imageInfo = srcInfo;
+    srcBuffer.length = static_cast<int32_t>(SRC_DATA.size() * sizeof(uint16_t));
+    srcBuffer.range = 0;
+    srcBuffer.yuvConversion = YuvConversion::BT601;
+
+    BufferInfo dstBuffer;
+    dstBuffer.pixels = reinterpret_cast<uint8_t *>(DST_DATA.data());
+    dstBuffer.rowStride = 0;
+    dstBuffer.imageInfo = dstInfo;
+    dstBuffer.length = static_cast<int32_t>(DST_DATA.size() * sizeof(uint16_t));
+    dstBuffer.range = 0;
+    dstBuffer.yuvConversion = YuvConversion::BT601;
+
+    int32_t ret = PixelConvert::PixelsConvert(srcBuffer, dstBuffer, srcBuffer.length, false);
+    ASSERT_EQ(ret, CONVERT_FAIL);
+    GTEST_LOG_(INFO) << "PixelConvertTest: NV12P010ToNV21P010Test002 end";
+}
+
+/**
+ * @tc.name: P010ConvertRGBA1010102Test001
+ * @tc.desc: Test P010ConvertRGBA1010102 with invalid parameters.
+ * @tc.type: FUNC
+ */
+HWTEST_F(PixelConvertTest, P010ConvertRGBA1010102Test001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PixelConvertTest: P010ConvertRGBA1010102Test001 start";
+
+    ImageInfo srcInfo;
+    srcInfo.size = {WIDTH, HEIGHT};
+    srcInfo.pixelFormat = PixelFormat::YCRCB_P010;
+
+    ImageInfo dstInfo;
+    dstInfo.size = {WIDTH, HEIGHT};
+    dstInfo.pixelFormat = PixelFormat::RGBA_1010102;
+
+    BufferInfo srcBuffer;
+    srcBuffer.pixels = reinterpret_cast<uint8_t *>(SRC_DATA.data());
+    srcBuffer.rowStride = 0;
+    srcBuffer.imageInfo = srcInfo;
+    srcBuffer.length = static_cast<int32_t>(SRC_DATA.size() * sizeof(uint16_t));
+    srcBuffer.range = 0;
+    srcBuffer.yuvConversion = YuvConversion::BT601;
+
+    BufferInfo dstBuffer;
+    dstBuffer.pixels = reinterpret_cast<uint8_t *>(DST_DATA.data());
+    dstBuffer.rowStride = 0;
+    dstBuffer.imageInfo = dstInfo;
+    dstBuffer.length = static_cast<int32_t>(DST_DATA.size() * sizeof(uint16_t));
+    dstBuffer.range = 0;
+    dstBuffer.yuvConversion = YuvConversion::BT601;
+
+    int32_t ret = PixelConvert::PixelsConvert(srcBuffer, dstBuffer, srcBuffer.length, false);
+    ASSERT_EQ(ret, CONVERT_FAIL);
+    GTEST_LOG_(INFO) << "PixelConvertTest: P010ConvertRGBA1010102Test001 end";
+}
+
+/**
+ * @tc.name: P010ConvertRGB565Test001
+ * @tc.desc: Test P010ConvertRGB565 with invalid height.
+ * @tc.type: FUNC
+ */
+HWTEST_F(PixelConvertTest, P010ConvertRGB565Test001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PixelConvertTest: P010ConvertRGB565Test001 start";
+    ImageInfo srcInfo;
+    srcInfo.size = {WIDTH, HEIGHT};
+    srcInfo.pixelFormat = PixelFormat::YCRCB_P010;
+
+    ImageInfo dstInfo;
+    dstInfo.size = {WIDTH, 0};
+    dstInfo.pixelFormat = PixelFormat::RGB_565;
+
+    BufferInfo srcBuffer;
+    srcBuffer.pixels = reinterpret_cast<uint8_t *>(SRC_DATA.data());
+    srcBuffer.rowStride = 0;
+    srcBuffer.imageInfo = srcInfo;
+    srcBuffer.length = static_cast<int32_t>(SRC_DATA.size() * sizeof(uint16_t));
+    srcBuffer.range = 0;
+    srcBuffer.yuvConversion = YuvConversion::BT601;
+
+    BufferInfo dstBuffer;
+    dstBuffer.pixels = reinterpret_cast<uint8_t *>(DST_DATA.data());
+    dstBuffer.rowStride = 0;
+    dstBuffer.imageInfo = dstInfo;
+    dstBuffer.length = static_cast<int32_t>(DST_DATA.size() * sizeof(uint16_t));
+    dstBuffer.range = 0;
+    dstBuffer.yuvConversion = YuvConversion::BT601;
+
+    int32_t ret = PixelConvert::PixelsConvert(srcBuffer, dstBuffer, srcBuffer.length, false);
+    ASSERT_EQ(ret, CONVERT_FAIL);
+    GTEST_LOG_(INFO) << "PixelConvertTest: P010ConvertRGB565Test001 end";
+}
+
+/**
+ * @tc.name: ConvertFromP010Test001
+ * @tc.desc: Test ConvertFromP010 with invalid height.
+ * @tc.type: FUNC
+ */
+HWTEST_F(PixelConvertTest, ConvertFromP010Test001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PixelConvertTest: ConvertFromP010Test001 start";
+    ImageInfo srcInfo;
+    srcInfo.size = {WIDTH, HEIGHT};
+    srcInfo.pixelFormat = PixelFormat::YCRCB_P010;
+
+    ImageInfo dstInfo;
+    dstInfo.size = {WIDTH, 0};
+    dstInfo.pixelFormat = PixelFormat::ALPHA_8;
+
+    BufferInfo srcBuffer;
+    srcBuffer.pixels = reinterpret_cast<uint8_t *>(SRC_DATA.data());
+    srcBuffer.rowStride = 0;
+    srcBuffer.imageInfo = srcInfo;
+    srcBuffer.length = static_cast<int32_t>(SRC_DATA.size() * sizeof(uint16_t));
+    srcBuffer.range = 0;
+    srcBuffer.yuvConversion = YuvConversion::BT601;
+
+    BufferInfo dstBuffer;
+    dstBuffer.pixels = reinterpret_cast<uint8_t *>(DST_DATA.data());
+    dstBuffer.rowStride = 0;
+    dstBuffer.imageInfo = dstInfo;
+    dstBuffer.length = static_cast<int32_t>(DST_DATA.size() * sizeof(uint16_t));
+    dstBuffer.range = 0;
+    dstBuffer.yuvConversion = YuvConversion::BT601;
+
+    int32_t ret = PixelConvert::PixelsConvert(srcBuffer, dstBuffer, srcBuffer.length, false);
+    ASSERT_EQ(ret, CONVERT_FAIL);
+    GTEST_LOG_(INFO) << "PixelConvertTest: ConvertFromP010Test001 end";
+}
+
+/**
+ * @tc.name: ConvertToYUVTest001
+ * @tc.desc: Test ConvertToYUV with invalid height.
+ * @tc.type: FUNC
+ */
+HWTEST_F(PixelConvertTest, ConvertToYUVTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PixelConvertTest: ConvertToYUVTest001 start";
+    ImageInfo srcInfo;
+    srcInfo.size = {WIDTH, HEIGHT};
+    srcInfo.pixelFormat = PixelFormat::YUV_400;
+
+    ImageInfo dstInfo;
+    dstInfo.size = {WIDTH, 0};
+    dstInfo.pixelFormat = PixelFormat::NV21;
+
+    BufferInfo srcBuffer;
+    srcBuffer.pixels = reinterpret_cast<uint8_t *>(SRC_DATA.data());
+    srcBuffer.rowStride = 0;
+    srcBuffer.imageInfo = srcInfo;
+    srcBuffer.length = static_cast<int32_t>(SRC_DATA.size() * sizeof(uint16_t));
+    srcBuffer.range = 0;
+    srcBuffer.yuvConversion = YuvConversion::BT601;
+
+    BufferInfo dstBuffer;
+    dstBuffer.pixels = reinterpret_cast<uint8_t *>(DST_DATA.data());
+    dstBuffer.rowStride = 0;
+    dstBuffer.imageInfo = dstInfo;
+    dstBuffer.length = static_cast<int32_t>(DST_DATA.size() * sizeof(uint16_t));
+    dstBuffer.range = 0;
+    dstBuffer.yuvConversion = YuvConversion::BT601;
+
+    int32_t ret = PixelConvert::PixelsConvert(srcBuffer, dstBuffer, srcBuffer.length, false);
+    ASSERT_EQ(ret, CONVERT_FAIL);
+    GTEST_LOG_(INFO) << "PixelConvertTest: ConvertToYUVTest001 end";
+}
+
+/**
+ * @tc.name: YUVConvertTest001
+ * @tc.desc: Test YUVConvert with mismatched height and width.
+ * @tc.type: FUNC
+ */
+HWTEST_F(PixelConvertTest, YUVConvertTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PixelConvertTest: YUVConvertTest001 start";
+    ImageInfo srcInfo;
+    srcInfo.size = {WIDTH, MISMATCHED_SIZE};
+    srcInfo.pixelFormat = PixelFormat::YCBCR_P010;
+
+    ImageInfo dstInfo;
+    dstInfo.size = {WIDTH, HEIGHT};
+    dstInfo.pixelFormat = PixelFormat::YCRCB_P010;
+
+    BufferInfo srcBuffer;
+    srcBuffer.pixels = reinterpret_cast<uint8_t *>(SRC_DATA.data());
+    srcBuffer.rowStride = 0;
+    srcBuffer.imageInfo = srcInfo;
+    srcBuffer.length = static_cast<int32_t>(SRC_DATA.size() * sizeof(uint16_t));
+    srcBuffer.range = 0;
+    srcBuffer.yuvConversion = YuvConversion::BT601;
+
+    BufferInfo dstBuffer;
+    dstBuffer.pixels = reinterpret_cast<uint8_t *>(DST_DATA.data());
+    dstBuffer.rowStride = 0;
+    dstBuffer.imageInfo = dstInfo;
+    dstBuffer.length = static_cast<int32_t>(DST_DATA.size() * sizeof(uint16_t));
+    dstBuffer.range = 0;
+    dstBuffer.yuvConversion = YuvConversion::BT601;
+
+    int32_t ret = PixelConvert::PixelsConvert(srcBuffer, dstBuffer, srcBuffer.length, false);
+    ASSERT_EQ(ret, BUFFER_SIZE);
+
+    srcBuffer.imageInfo.size.width = MISMATCHED_SIZE;
+    ret = PixelConvert::PixelsConvert(srcBuffer, dstBuffer, srcBuffer.length, false);
+    ASSERT_EQ(ret, BUFFER_SIZE);
+    GTEST_LOG_(INFO) << "PixelConvertTest: YUVConvertTest001 end";
+}
+
+/**
+ * @tc.name: PixelsConvertTest001
+ * @tc.desc: Test PixelsConvert from YUV to RGB.
+ * @tc.type: FUNC
+ */
+HWTEST_F(PixelConvertTest, PixelsConvertTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PixelConvertTest: PixelsConvertTest001 start";
+    ImageInfo srcInfo;
+    srcInfo.size = {WIDTH, HEIGHT};
+    srcInfo.pixelFormat = PixelFormat::YCBCR_P010;
+
+    ImageInfo dstInfo;
+    dstInfo.size = {WIDTH, HEIGHT};
+    dstInfo.pixelFormat = PixelFormat::ARGB_8888;
+
+    BufferInfo srcBuffer;
+    srcBuffer.pixels = reinterpret_cast<uint8_t *>(SRC_DATA.data());
+    srcBuffer.rowStride = 0;
+    srcBuffer.imageInfo = srcInfo;
+    srcBuffer.length = static_cast<int32_t>(SRC_DATA.size() * sizeof(uint16_t));
+    srcBuffer.range = 0;
+    srcBuffer.yuvConversion = YuvConversion::BT601;
+
+    BufferInfo dstBuffer;
+    dstBuffer.pixels = reinterpret_cast<uint8_t *>(DST_DATA.data());
+    dstBuffer.rowStride = 0;
+    dstBuffer.imageInfo = dstInfo;
+    dstBuffer.length = static_cast<int32_t>(DST_DATA.size() * sizeof(uint16_t));
+    dstBuffer.range = 0;
+    dstBuffer.yuvConversion = YuvConversion::BT601;
+
+    int32_t result = ImageUtils::GetPixelBytes(dstBuffer.imageInfo.pixelFormat) *
+        dstBuffer.imageInfo.size.width * dstBuffer.imageInfo.size.height;
+    int32_t ret = PixelConvert::PixelsConvert(srcBuffer, dstBuffer, srcBuffer.length, true);
+    ASSERT_EQ(ret, result);
+
+    ret = PixelConvert::PixelsConvert(srcBuffer, dstBuffer, srcBuffer.length, false);
+    ASSERT_EQ(ret, result);
+    GTEST_LOG_(INFO) << "PixelConvertTest: PixelsConvertTest001 end";
+}
+
+/**
+ * @tc.name: CreateTest001
+ * @tc.desc: Test Create with unknown alpha type.
+ * @tc.type: FUNC
+ */
+HWTEST_F(PixelConvertTest, CreateTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PixelConvertTest: CreateTest001 start";
+    ImageInfo srcImageInfo;
+    srcImageInfo.alphaType = AlphaType::IMAGE_ALPHA_TYPE_UNKNOWN;
+    srcImageInfo.pixelFormat = PixelFormat::ARGB_8888;
+
+    ImageInfo dstImageInfo;
+    dstImageInfo.alphaType = AlphaType::IMAGE_ALPHA_TYPE_UNKNOWN;
+    dstImageInfo.pixelFormat = PixelFormat::ARGB_8888;
+
+    std::unique_ptr<PixelConvert> pixelConvert = PixelConvert::Create(srcImageInfo, dstImageInfo);
+    ASSERT_NE(pixelConvert, nullptr);
+    GTEST_LOG_(INFO) << "PixelConvertTest: CreateTest001 end";
+}
+
+/**
+ * @tc.name: GetStrideTest001
+ * @tc.desc: Test GetStride with DMA allocator.
+ * @tc.type: FUNC
+ */
+HWTEST_F(PixelConvertTest, GetStrideTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PixelConvertTest: GetStrideTest001 start";
+    auto pixelMap = ConstructPixmap(LARGE_SIZE, LARGE_SIZE, PixelFormat::ASTC_4x4, AlphaType::IMAGE_ALPHA_TYPE_PREMUL,
+        AllocatorType::DMA_ALLOC);
+    uint32_t errorCode = 0;
+    PixelConvert::AstcToRgba(pixelMap.get(), errorCode, PixelFormat::RGBA_8888);
+    EXPECT_EQ(errorCode, SUCCESS);
+    GTEST_LOG_(INFO) << "PixelConvertTest: GetStrideTest001 end";
 }
 }
 }

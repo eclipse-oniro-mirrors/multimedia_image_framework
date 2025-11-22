@@ -2134,5 +2134,63 @@ HWTEST_F(MetadataStreamTest, FileMetadataStream_CopyFromDestNotOpenTest001, Test
     ASSERT_FALSE(ret);
     GTEST_LOG_(INFO) << "MetadataStreamTest: FileMetadataStream_CopyFromDestNotOpenTest001 end";
 }
+
+/**
+ * @tc.name: BufferMetadataStream_SeekInvalidPosTest001
+ * @tc.desc: Test Seek with invalid SeekPos
+ * @tc.type: FUNC
+ */
+HWTEST_F(MetadataStreamTest, BufferMetadataStream_SeekInvalidPosTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "MetadataStreamTest: BufferMetadataStream_SeekInvalidPosTest001 start";
+
+    BufferMetadataStream stream;
+    ASSERT_TRUE(stream.Open());
+
+    byte data[] = {0x01, 0x02, 0x03};
+    stream.Write(data, sizeof(data));
+
+    long result = stream.Seek(0, static_cast<SeekPos>(INVALID_ENUM_VALUE));
+
+    ASSERT_EQ(result, SEEK_SIZE);
+    GTEST_LOG_(INFO) << "MetadataStreamTest: BufferMetadataStream_SeekInvalidPosTest001 end";
+}
+
+/**
+ * @tc.name: BufferMetadataStream_HandleWriteFailureDynamicTest001
+ * @tc.desc: Test HandleWriteFailure with Dynamic mode and buffer != originData
+ * @tc.type: FUNC
+ */
+HWTEST_F(MetadataStreamTest, BufferMetadataStream_HandleWriteFailureDynamicTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "MetadataStreamTest: BufferMetadataStream_HandleWriteFailureDynamicTest001 start";
+
+    BufferMetadataStream stream;
+    ASSERT_TRUE(stream.Open());
+
+    byte data[SIZE_10];
+    for (int i = 0; i < SIZE_10; i++) {
+        data[i] = static_cast<byte>(i);
+    }
+    stream.Write(data, SIZE_10);
+
+    byte moreData[SIZE_1024];
+    for (int i = 0; i < SIZE_1024; i++) {
+        moreData[i] = static_cast<byte>(i);
+    }
+    stream.Write(moreData, SIZE_1024);
+
+    ASSERT_NE(stream.buffer_, stream.originData_);
+    ASSERT_EQ(stream.memoryMode_, BufferMetadataStream::MemoryMode::Dynamic);
+
+    stream.HandleWriteFailure();
+
+    ASSERT_EQ(stream.buffer_, nullptr);
+    ASSERT_EQ(stream.capacity_, 0);
+    ASSERT_EQ(stream.bufferSize_, 0);
+    ASSERT_EQ(stream.currentOffset_, 0);
+
+    GTEST_LOG_(INFO) << "MetadataStreamTest: BufferMetadataStream_HandleWriteFailureDynamicTest001 end";
+}
 } // namespace Media
 } // namespace OHOS
