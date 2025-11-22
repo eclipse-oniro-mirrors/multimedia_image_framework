@@ -40,6 +40,8 @@ public:
     static HDI::Display::Graphic::Common::V1_0::CM_ColorSpaceType ConvertToCMColor(ColorManager::ColorSpaceName name);
     static std::map<ColorManager::ColorSpaceName,
         OHOS::HDI::Display::Graphic::Common::V1_0::CM_ColorSpaceInfo> COLORSPACE_NAME_TO_COLORINFO_MAP;
+    static HDI::Display::Graphic::Common::V1_0::CM_ColorPrimaries ConvertCicpToCMColor(uint16_t name);
+    static uint16_t ConvertCMColorToCicp(uint16_t name);
 #endif
 };
 } // namespace Media
