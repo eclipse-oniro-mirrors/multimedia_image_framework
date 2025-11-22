@@ -1715,5 +1715,10 @@ bool ImageUtils::CheckPixelsInput(PixelMap* pixelMap, const RWPixelsOptions &opt
     }
     return true;
 }
+
+bool ImageUtils::FloatEqual(float a, float b)
+{
+    return std::fabs(a - b) < EPSILON;
+}
 } // namespace Media
 } // namespace OHOS

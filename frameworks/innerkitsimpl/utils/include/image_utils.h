@@ -16,6 +16,7 @@
 #ifndef FRAMEWORKS_INNERKITSIMPL_UTILS_INCLUDE_IMAGE_UTILS_H
 #define FRAMEWORKS_INNERKITSIMPL_UTILS_INCLUDE_IMAGE_UTILS_H
 
+#include <cmath>
 #include <cstdlib>
 #include <cstdio>
 #include <string>
@@ -169,6 +170,7 @@ public:
     static uint16_t GetRGBA1010102ColorB(uint32_t color);
     static uint16_t GetRGBA1010102ColorA(uint32_t color);
     static bool CheckPixelsInput(PixelMap* pixelMap, const RWPixelsOptions &opts);
+    static bool FloatEqual(float a, float b);
 #if !defined(CROSS_PLATFORM)
     static void FlushSurfaceBuffer(sptr<SurfaceBuffer>& surfaceBuffer);
 #endif
