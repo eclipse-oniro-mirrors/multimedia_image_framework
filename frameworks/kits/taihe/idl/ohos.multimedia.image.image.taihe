@@ -556,6 +556,9 @@ interface ImageSource {
   @gen_promise("modifyImageProperties")
   ModifyImagePropertiesSync(records: @record Map<PropertyKey, PropertyValue>): void;
 
+  @gen_promise("modifyImagePropertiesEnhanced")
+  ModifyImagePropertiesEnhancedSync(records: @record Map<String, PropertyValue>): void;
+
   @gen_async("release")
   @gen_promise("release")
   ReleaseSync(): void;

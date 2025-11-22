@@ -47,6 +47,7 @@ public:
     map<PropertyKey, PropertyValue> GetImagePropertiesSync(array_view<PropertyKey> key);
     void ModifyImagePropertySync(PropertyKey key, string_view value);
     void ModifyImagePropertiesSync(map_view<PropertyKey, PropertyValue> records);
+    void ModifyImagePropertiesEnhancedSync(map_view<string, PropertyValue> records);
     void ReleaseSync();
 
     array<string> GetSupportedFormats();

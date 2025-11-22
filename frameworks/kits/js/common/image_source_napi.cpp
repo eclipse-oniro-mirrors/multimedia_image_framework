@@ -894,6 +894,7 @@ std::vector<napi_property_descriptor> ImageSourceNapi::RegisterNapi()
         DECLARE_NAPI_FUNCTION("getImageInfoSync", GetImageInfoSync),
         DECLARE_NAPI_FUNCTION("modifyImageProperty", ModifyImageProperty),
         DECLARE_NAPI_FUNCTION("modifyImageProperties", ModifyImageProperty),
+        DECLARE_NAPI_FUNCTION("modifyImagePropertiesEnhanced", ModifyImagePropertiesEnhanced),
         DECLARE_NAPI_FUNCTION("getImageProperty", GetImageProperty),
         DECLARE_NAPI_FUNCTION("getImagePropertySync", GetImagePropertySync),
         DECLARE_NAPI_FUNCTION("getImageProperties", GetImageProperty),
@@ -2542,6 +2543,81 @@ napi_value ImageSourceNapi::ModifyImageProperty(napi_env env, napi_callback_info
             asyncContext,
             asyncContext->work);
     }
+
+    IMG_NAPI_CHECK_RET_D(IMG_IS_OK(status),
+        nullptr, IMAGE_LOGE("fail to create async work"));
+    return result;
+}
+
+static void ModifyImagePropertiesEnhancedExecute(napi_env env, void *data)
+{
+    IMAGE_LOGI("ModifyImagePropertiesEnhanced start.");
+    auto start = std::chrono::high_resolution_clock::now();
+    auto context = static_cast<ImageSourceAsyncContext*>(data);
+    if (context == nullptr || context->rImageSource == nullptr) {
+        IMAGE_LOGE("empty context");
+        return;
+    }
+
+    context->status = context->rImageSource->ModifyImagePropertiesEx(0, context->kVStrArray);
+    if (context->status != SUCCESS) {
+        auto unsupportedKeys = context->rImageSource->GetModifyExifUnsupportedKeys();
+        if (!unsupportedKeys.empty()) {
+            context->errMsg = "Failed to modify unsupported keys:";
+            for (auto &key : unsupportedKeys) {
+                context->errMsg.append(" ").append(key);
+            }
+        }
+    }
+    auto end = std::chrono::high_resolution_clock::now();
+    auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
+    IMAGE_LOGI("ModifyImagePropertiesEnhanced end, cost: %{public}llu ms", duration.count());
+}
+
+static void ModifyImagePropertiesEnhancedComplete(napi_env env, napi_status status, ImageSourceAsyncContext *context)
+{
+    if (context == nullptr) {
+        IMAGE_LOGE("context is nullptr");
+        return;
+    }
+
+    napi_value result[NUM_2] = {0};
+    napi_get_undefined(env, &result[NUM_0]);
+    napi_get_undefined(env, &result[NUM_1]);
+
+    if (context->status == SUCCESS) {
+        napi_resolve_deferred(env, context->deferred, result[NUM_1]);
+    } else {
+        const auto &[errCode, errMsg] = ImageErrorConvert::ModifyImagePropertiesEnhancedMakeErrMsg(context->status,
+            context->errMsg);
+        ImageNapiUtils::CreateErrorObj(env, result[NUM_0], errCode, errMsg);
+        napi_reject_deferred(env, context->deferred, result[NUM_0]);
+    }
+
+    napi_delete_async_work(env, context->work);
+    delete context;
+    context = nullptr;
+    IMAGE_LOGI("ModifyImagePropertiesEnhancedComplete end.");
+}
+
+napi_value ImageSourceNapi::ModifyImagePropertiesEnhanced(napi_env env, napi_callback_info info)
+{
+    napi_value result = nullptr;
+    napi_get_undefined(env, &result);
+
+    napi_status status;
+    std::unique_ptr<ImageSourceAsyncContext> asyncContext = UnwrapContextForModify(env, info);
+    if (asyncContext == nullptr) {
+        return ImageNapiUtils::ThrowExceptionError(env, ERR_IMAGE_WRITE_PROPERTY_FAILED,
+            "async context unwrap failed");
+    }
+
+    napi_create_promise(env, &(asyncContext->deferred), &result);
+    IMG_CREATE_CREATE_ASYNC_WORK(env, status, "ModifyImagePropertiesEnhanced",
+        ModifyImagePropertiesEnhancedExecute,
+        reinterpret_cast<napi_async_complete_callback>(ModifyImagePropertiesEnhancedComplete),
+        asyncContext,
+        asyncContext->work);
 
     IMG_NAPI_CHECK_RET_D(IMG_IS_OK(status),
         nullptr, IMAGE_LOGE("fail to create async work"));
