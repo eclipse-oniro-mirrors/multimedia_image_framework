@@ -4071,6 +4071,9 @@ bool PixelMap::DoTranslation(TransInfos &infos, const AntiAliasingOption &option
 void PixelMap::scale(float xAxis, float yAxis)
 {
     ImageTrace imageTrace("PixelMap scale xAxis = %f, yAxis = %f", xAxis, yAxis);
+    if (ImageUtils::FloatEqual(xAxis, 1.0f) && ImageUtils::FloatEqual(yAxis, 1.0f)) {
+        return;
+    }
     TransInfos infos;
     infos.matrix.setScale(xAxis, yAxis);
     if (!DoTranslation(infos)) {
@@ -4081,6 +4084,9 @@ void PixelMap::scale(float xAxis, float yAxis)
 
 void PixelMap::scale(float xAxis, float yAxis, const AntiAliasingOption &option)
 {
+    if (ImageUtils::FloatEqual(xAxis, 1.0f) && ImageUtils::FloatEqual(yAxis, 1.0f)) {
+        return;
+    }
     if (isAstc_) {
         IMAGE_LOGE("GetPixel does not support astc");
         return;
