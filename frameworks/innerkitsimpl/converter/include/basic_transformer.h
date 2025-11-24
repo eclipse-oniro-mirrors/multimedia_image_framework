@@ -58,7 +58,7 @@ static inline int32_t ClampMax(int value, int max)
     return (value > 0) ? value : 0;
 }
 
-static inline uint32_t GetSubValue(int32_t value)
+static inline uint32_t GetSubValue(uint32_t value)
 {
     // In order to speed up the calculation, use offset
     return ((value >> SUB_VALUE_SHIFT) & 0xF);

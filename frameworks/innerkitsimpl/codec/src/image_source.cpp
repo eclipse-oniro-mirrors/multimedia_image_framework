@@ -3778,10 +3778,10 @@ bool ImageSource::GetASTCInfo(const uint8_t *fileData, size_t fileSize, ASTCInfo
     uint32_t height;
     if (g_sutDecSoManager.getTextureInfoFunc_(fileData, fileSize,
         width, height, blockXY)) {
-        astcInfo.size.width = width;
-        astcInfo.size.height = height;
-        astcInfo.blockFootprint.width = blockXY;
-        astcInfo.blockFootprint.height = blockXY;
+        astcInfo.size.width = static_cast<int32_t>(width);
+        astcInfo.size.height = static_cast<int32_t>(height);
+        astcInfo.blockFootprint.width = static_cast<int32_t>(blockXY);
+        astcInfo.blockFootprint.height = static_cast<int32_t>(blockXY);
         return true;
     }
 #endif
@@ -4723,9 +4723,11 @@ static uint32_t DoAiHdrProcess(sptr<SurfaceBuffer> &input, DecodeContext &hdrCtx
     VpeUtils::SetSbColorSpaceDefault(output);
 
     std::unique_ptr<VpeUtils> utils = std::make_unique<VpeUtils>();
-    res = utils->ColorSpaceConverterImageProcess(input, output);
-    if (res != VPE_ERROR_OK) {
-        IMAGE_LOGE("[ImageSource]DoAiHdrProcess ColorSpaceConverterImageProcess failed! %{public}d", res);
+    int32_t vpeProcessErrCode = utils->ColorSpaceConverterImageProcess(input, output);
+    if (vpeProcessErrCode != VPE_ERROR_OK) {
+        IMAGE_LOGE("[ImageSource]DoAiHdrProcess ColorSpaceConverterImageProcess failed! %{public}d",
+            vpeProcessErrCode);
+        res = ERR_IMAGE_AI_UNSUPPORTED;
         FreeContextBuffer(hdrCtx.freeFunc, hdrCtx.allocatorType, hdrCtx.pixelsBuffer);
     } else {
         IMAGE_LOGD("[ImageSource]DoAiHdrProcess ColorSpaceConverterImageProcess Succ!");
@@ -4751,9 +4753,12 @@ static uint32_t AiSrProcess(sptr<SurfaceBuffer> &input, DecodeContext &aisrCtx)
     CHECK_ERROR_RETURN_RET_LOG(cond, res, "HDR SurfaceBuffer Alloc failed, %{public}d", res);
     sptr<SurfaceBuffer> output = reinterpret_cast<SurfaceBuffer*>(aisrCtx.pixelsBuffer.context);
     std::unique_ptr<VpeUtils> utils = std::make_unique<VpeUtils>();
-    res = utils->DetailEnhancerImageProcess(input, output, static_cast<int32_t>(aisrCtx.resolutionQuality));
-    if (res != VPE_ERROR_OK) {
-        IMAGE_LOGE("[ImageSource]AiSrProcess DetailEnhancerImage Processed failed");
+    int32_t vpeProcessErrCode = utils->DetailEnhancerImageProcess(input, output,
+        static_cast<int32_t>(aisrCtx.resolutionQuality));
+    if (vpeProcessErrCode != VPE_ERROR_OK) {
+        IMAGE_LOGE("[ImageSource]AiSrProcess DetailEnhancerImage Processed failed! %{public}d",
+            vpeProcessErrCode);
+        res = ERR_IMAGE_AI_UNSUPPORTED;
         FreeContextBuffer(aisrCtx.freeFunc, aisrCtx.allocatorType, aisrCtx.pixelsBuffer);
     } else {
         aisrCtx.outInfo.size.width = output->GetSurfaceBufferWidth();
