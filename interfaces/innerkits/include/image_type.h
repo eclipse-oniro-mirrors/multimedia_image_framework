@@ -548,6 +548,25 @@ enum class NapiMetadataType {
     FRAGMENT_METADATA = 4,
     GIF_METADATA = 5,
 };
+
+enum class XMPTagType: int32_t {
+    UNKNOWN = 0,
+    SIMPLE = 1,
+    UNORDERED_ARRAY = 2,
+    ORDERED_ARRAY = 3,
+    ALTERNATE_ARRAY = 4,
+    ALTERNATE_TEXT = 5,
+    STRUCTURE = 6,
+    QUALITY = 7,
+};
+
+struct XMPTag {
+    std::string xmlns;
+    std::string prefix;
+    std::string name;
+    XMPTagType type;
+    std::string value;
+};
 } // namespace Media
 } // namespace OHOS
 

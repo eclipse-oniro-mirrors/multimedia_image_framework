@@ -88,6 +88,7 @@ if (use_clang_ios) {
       "src/image_type_converter.cpp",
       "src/pixel_yuv_utils.cpp",
       "src/vpe_utils.cpp",
+      "src/xmp_helper.cpp",
     ]
 
     external_deps = [ 
