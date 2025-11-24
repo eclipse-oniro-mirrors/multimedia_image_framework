@@ -531,7 +531,7 @@ std::unique_ptr<PixelMap> Picture::GetHdrComposedPixelMap(PixelFormat pixelForma
                     &coordMetadata, sizeof(XmageCoordinateMetadata));
                 CHECK_ERROR_RETURN_RET_LOG(memCpyRes != EOK, nullptr, "copy xmage coordinate metadata failed");
                 bool setMetaRes = VpeUtils::SetSbStaticMetadata(gainmapSptr, metaDataVec);
-                CHECK_ERROR_RETURN_RET_LOG(setMetaRes, nullptr, "Set xmage coordinate metadata failed");
+                CHECK_ERROR_RETURN_RET_LOG(!setMetaRes, nullptr, "Set xmage coordinate metadata failed");
             }
         }
         ConvertGainmapHdrMetadata(gainmapSptr, true);
