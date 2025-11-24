@@ -22,6 +22,7 @@
 #include <memory>
 
 #include "image_type.h"
+#include "nocopyable.h"
 #include "XMP.hpp"
 #include "XMP.incl_cpp"
 
@@ -33,11 +34,6 @@ public:
     XMPMetadata(std::shared_ptr<SXMPMeta> &xmpMeta);
     ~XMPMetadata();
 
-    XMPMetadata(const XMPMetadata&) = delete;
-    XMPMetadata& operator=(const XMPMetadata&) = delete;
-    XMPMetadata(XMPMetadata&&) noexcept;
-    XMPMetadata& operator=(XMPMetadata&&) noexcept;
-
     static bool Initialize();
     static void Terminate();
 
@@ -46,21 +42,14 @@ public:
     bool GetTag(const std::string &path, XMPTag &tag);
     bool RemoveTag(const std::string &path);
 
-    // 获取内部SXMPMeta对象的访问方法
-    std::shared_ptr<SXMPMeta> GetSXMPMeta() const { return xmpMeta_; }
-
     static constexpr const char* NS_XMP = "http://ns.adobe.com/xap/1.0/";
     static constexpr const char* NS_XMP_RIGHTS = "http://ns.adobe.com/xap/1.0/rights/";
     static constexpr const char* NS_DC = "http://purl.org/dc/elements/1.1/";
     static constexpr const char* NS_EXIF = "http://ns.adobe.com/exif/1.0/";
     static constexpr const char* NS_TIFF = "http://ns.adobe.com/tiff/1.0/";
-    
+
 private:
-
-    // static std::pair<std::string, std::string> SplitUriPath(const std::string &path);
-    // static XMPTagType ConvertOptionsToTagType(XMP_OptionBits options);
-    // static XMP_OptionBits ConvertTagTypeToOptions(XMPTagType tagType);
-
+    DISALLOW_COPY_AND_MOVE(XMPMetadata);
     static bool xmpInitialized_;
     std::shared_ptr<SXMPMeta> xmpMeta_ = nullptr;
 };

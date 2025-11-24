@@ -40,12 +40,12 @@ std::pair<std::string, std::string> XMPHelper::SplitPrefixPath(const std::string
     return result;
 }
 
-std::string XMPHelper::Trim(const std::string &str, const std::string &whiteSpaceString)
+std::string XMPHelper::Trim(const std::string &str, const std::string &trimString)
 {
-    size_t start = str.find_first_not_of(whiteSpaceString);
+    size_t start = str.find_first_not_of(trimString);
     if (start == std::string::npos) return "";
     
-    size_t end = str.find_last_not_of(whiteSpaceString);
+    size_t end = str.find_last_not_of(trimString);
     return str.substr(start, end - start + 1);
 }
 

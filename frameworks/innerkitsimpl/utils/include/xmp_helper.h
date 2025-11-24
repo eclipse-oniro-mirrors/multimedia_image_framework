@@ -30,7 +30,7 @@ public:
     static std::pair<std::string, std::string> SplitPrefixPath(const std::string &path);
     static std::string ExtractPropertyKey(const std::string &path);
 
-    static std::string Trim(const std::string &str, const std::string &whiteSpaceString = WHITE_SPACE_STRING);
+    static std::string Trim(const std::string &str, const std::string &trimString = WHITE_SPACE_STRING);
 
 private:
     static std::string ExtractLocalName(const std::string &name);

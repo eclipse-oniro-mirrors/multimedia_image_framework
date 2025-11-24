@@ -117,6 +117,13 @@ static constexpr XMP_OptionBits ConvertTagTypeToOptions(XMPTagType tagType)
     }
 }
 
+static bool IsContainerTagType(XMPTagType tagType)
+{
+    return tagType == XMPTagType::STRUCTURE || tagType == XMPTagType::UNORDERED_ARRAY ||
+        tagType == XMPTagType::ORDERED_ARRAY || tagType == XMPTagType::ALTERNATE_ARRAY ||
+        tagType == XMPTagType::ALTERNATE_TEXT;
+}
+
 static XMPTag BuildXMPTag(const std::string &uri, const std::string &prefix, const std::string &propName,
     const XMP_OptionBits &options, const std::string &value)
 {
@@ -152,17 +159,15 @@ bool XMPMetadata::SetTag(const std::string &path, const XMPTag &tag)
         __func__, path.c_str());
 
     const auto &[prefix, propName] = XMPHelper::SplitPrefixPath(path);
-
     std::string namespaceUri;
     CHECK_ERROR_RETURN_RET_LOG(!SXMPMeta::GetNamespaceURI(prefix.c_str(), &namespaceUri), false,
         "%{public}s failed to get namespace URI for prefix: %{public}s", __func__, prefix.c_str());
 
     XMP_OptionBits options = ConvertTagTypeToOptions(tag.type);
-    // TODO: 针对容器节点，需要设置为 nullptr
-    if (tag.type != XMPTagType::SIMPLE) {
+    if (IsContainerTagType(tag.type)) {
         xmpMeta_->SetProperty(namespaceUri.c_str(), propName.c_str(), nullptr, options);
     } else {
-        xmpMeta_->SetProperty(namespaceUri.c_str(), propName.c_str(), tag.value.c_str(), options);
+        xmpMeta_->SetProperty(namespaceUri.c_str(), propName.c_str(), tag.value, options);
     }
     return true;
 }
