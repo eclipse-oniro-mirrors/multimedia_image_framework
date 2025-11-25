@@ -24,245 +24,152 @@
 namespace OHOS {
 namespace Media {
 
-// =================================================================================================
-// XMPBuffer_IO::XMPBuffer_IO (read-only constructor)
-// ==================================================
-
-XMPBuffer_IO::XMPBuffer_IO(const void* buffer, XMP_Uns32 size)
-    : position(0)
-    , readOnly(true)
-    , derivedTemp(nullptr)
+XMPBuffer_IO::XMPBuffer_IO(const void* buffer, XMP_Uns32 size) : position_(0), readOnly_(true), derivedTemp_(nullptr)
 {
     CHECK_ERROR_RETURN_LOG(buffer == nullptr || size == 0, "%{public}s invalid buffer or size", __func__);
 
-    data.resize(size);
-    memcpy_s(data.data(), size, buffer, size);
+    data_.resize(size);
+    memcpy_s(data_.data(), size, buffer, size);
 }
 
-// =================================================================================================
-// XMPBuffer_IO::XMPBuffer_IO (writable constructor)
-// ================================================
-
-XMPBuffer_IO::XMPBuffer_IO()
-    : position(0)
-    , readOnly(false)
-    , derivedTemp(nullptr)
+XMPBuffer_IO::XMPBuffer_IO() : position_(0), readOnly_(false), derivedTemp_(nullptr)
 {
-    // Initialize with empty data
-    data.clear();
+    data_.clear();
 }
-
-// =================================================================================================
-// XMPBuffer_IO::~XMPBuffer_IO
-// ===========================
 
 XMPBuffer_IO::~XMPBuffer_IO()
 {
-    try {
-        if (derivedTemp != nullptr) {
-            delete derivedTemp;
-            derivedTemp = nullptr;
-        }
-    } catch (...) {
-        // All of the above is fail-safe cleanup, ignore problems.
+    if (derivedTemp_ != nullptr) {
+        delete derivedTemp_;
+        derivedTemp_ = nullptr;
     }
 }
-
-// =================================================================================================
-// XMPBuffer_IO::Read
-// ==================
 
 XMP_Uns32 XMPBuffer_IO::Read(void* buffer, XMP_Uns32 count, bool readAll)
 {
-    if (buffer == nullptr) {
-        throw std::invalid_argument("XMPBuffer_IO::Read: null buffer");
-    }
-    
-    if (position >= static_cast<XMP_Int64>(data.size())) {
-        if (readAll) {
-            throw std::runtime_error("XMPBuffer_IO::Read: not enough data");
-        }
-        return 0;
+    CHECK_ERROR_RETURN_RET_LOG(buffer == nullptr, XMP_UNS32_ERROR, "XMPBuffer_IO Read buffer is null");
+
+    if (position_ >= static_cast<XMP_Int64>(data_.size())) {
+        CHECK_ERROR_RETURN_RET_LOG(readAll, XMP_UNS32_ERROR, "XMPBuffer_IO Read data is not enough");
+        return XMP_UNS32_ERROR;
     }
 
-    XMP_Uns32 available = static_cast<XMP_Uns32>(data.size() - position);
+    XMP_Uns32 available = static_cast<XMP_Uns32>(data_.size() - position_);
     XMP_Uns32 toRead = (count > available) ? available : count;
 
     if (toRead == 0) {
-        if (readAll) {
-            throw std::runtime_error("XMPBuffer_IO::Read: not enough data");
-        }
-        return 0;
+        CHECK_ERROR_RETURN_RET_LOG(readAll, XMP_UNS32_ERROR, "XMPBuffer_IO Read data is not enough");
+        return XMP_UNS32_ERROR;
     }
 
-    memcpy_s(buffer, toRead, &data[position], toRead);
-    position += toRead;
+    memcpy_s(buffer, toRead, &data_[position_], toRead);
+    position_ += toRead;
     return toRead;
 }
 
-// =================================================================================================
-// XMPBuffer_IO::Write
-// ===================
-
 void XMPBuffer_IO::Write(const void* buffer, XMP_Uns32 count)
 {
-    if (readOnly) {
-        throw std::runtime_error("XMPBuffer_IO::Write: write not permitted on read-only stream");
-    }
-    
-    if (buffer == nullptr) {
-        throw std::invalid_argument("XMPBuffer_IO::Write: null buffer");
+    CHECK_ERROR_RETURN_LOG(readOnly_, "XMPBuffer_IO Write on read-only stream is not permitted");
+    CHECK_ERROR_RETURN_LOG(buffer == nullptr, "XMPBuffer_IO Write buffer is null ");
+
+    XMP_Int64 newSize = position_ + count;
+    if (newSize > static_cast<XMP_Int64>(data_.size())) {
+        data_.resize(static_cast<size_t>(newSize));
     }
 
-    // If current position + write length exceeds current data size, extend data
-    XMP_Int64 newSize = position + count;
-    if (newSize > static_cast<XMP_Int64>(data.size())) {
-        data.resize(static_cast<size_t>(newSize));
-    }
-
-    memcpy_s(&data[position], count, buffer, count);
-    position += count;
+    memcpy_s(&data_[position_], count, buffer, count);
+    position_ += count;
 }
-
-// =================================================================================================
-// XMPBuffer_IO::Seek
-// ==================
 
 XMP_Int64 XMPBuffer_IO::Seek(XMP_Int64 offset, SeekMode mode)
 {
-    XMP_Int64 newPosition = position;
+    XMP_Int64 newPosition = position_;
 
     switch (mode) {
         case kXMP_SeekFromStart:
             newPosition = offset;
             break;
         case kXMP_SeekFromCurrent:
-            newPosition = position + offset;
+            newPosition = position_ + offset;
             break;
         case kXMP_SeekFromEnd:
-            newPosition = static_cast<XMP_Int64>(data.size()) + offset;
+            newPosition = static_cast<XMP_Int64>(data_.size()) + offset;
             break;
         default:
-            throw std::invalid_argument("XMPBuffer_IO::Seek: invalid seek mode");
+            IMAGE_LOGE("XMPBuffer_IO Seek mode is invalid");
+            return XMP_INT64_ERROR;
     }
 
-    if (newPosition < 0) {
-        throw std::runtime_error("XMPBuffer_IO::Seek: negative position");
-    }
+    CHECK_ERROR_RETURN_RET_LOG(newPosition < 0, XMP_INT64_ERROR, "XMPBuffer_IO Seek position is negative");
+    CHECK_ERROR_RETURN_RET_LOG(readOnly_ && newPosition > static_cast<XMP_Int64>(data_.size()), XMP_INT64_ERROR,
+        "XMPBuffer_IO Seek beyond EOF is read-only");
 
-    if (readOnly && newPosition > static_cast<XMP_Int64>(data.size())) {
-        throw std::runtime_error("XMPBuffer_IO::Seek: read-only seek beyond EOF");
-    }
-
-    position = newPosition;
-    return position;
+    position_ = newPosition;
+    return position_;
 }
-
-// =================================================================================================
-// XMPBuffer_IO::Length
-// ====================
 
 XMP_Int64 XMPBuffer_IO::Length()
 {
-    return static_cast<XMP_Int64>(data.size());
+    return static_cast<XMP_Int64>(data_.size());
 }
-
-// =================================================================================================
-// XMPBuffer_IO::Truncate
-// ======================
 
 void XMPBuffer_IO::Truncate(XMP_Int64 length)
 {
-    if (readOnly) {
-        throw std::runtime_error("XMPBuffer_IO::Truncate: truncate not permitted on read-only stream");
-    }
+    CHECK_ERROR_RETURN_LOG(readOnly_, "XMPBuffer_IO::Truncate not permitted on read-only stream");
+    CHECK_ERROR_RETURN_LOG(length < 0 || length > static_cast<XMP_Int64>(data_.size()),
+        "XMPBuffer_IO Truncate length is invalid");
 
-    if (length < 0 || length > static_cast<XMP_Int64>(data.size())) {
-        throw std::invalid_argument("XMPBuffer_IO::Truncate: invalid length");
-    }
-
-    data.resize(static_cast<size_t>(length));
-    if (position > length) {
-        position = length;
+    data_.resize(static_cast<size_t>(length));
+    if (position_ > length) {
+        position_ = length;
     }
 }
-
-// =================================================================================================
-// XMPBuffer_IO::DeriveTemp
-// ========================
 
 XMP_IO* XMPBuffer_IO::DeriveTemp()
 {
-    if (readOnly) {
-        throw std::runtime_error("XMPBuffer_IO::DeriveTemp: can't derive from read-only stream");
-    }
-    
-    if (derivedTemp != nullptr) {
-        return derivedTemp;
+    CHECK_ERROR_RETURN_RET_LOG(readOnly_, nullptr, "XMPBuffer_IO DeriveTemp can't derive from read-only stream");
+
+    if (derivedTemp_ != nullptr) {
+        return derivedTemp_;
     }
 
-    // Create a new temporary memory stream
-    derivedTemp = new XMPBuffer_IO();
-    return derivedTemp;
+    derivedTemp_ = new XMPBuffer_IO();
+    return derivedTemp_;
 }
-
-// =================================================================================================
-// XMPBuffer_IO::AbsorbTemp
-// ========================
 
 void XMPBuffer_IO::AbsorbTemp()
 {
-    XMPBuffer_IO* temp = static_cast<XMPBuffer_IO*>(derivedTemp);
-    if (temp == nullptr) {
-        throw std::runtime_error("XMPBuffer_IO::AbsorbTemp: no temp to absorb");
-    }
+    XMPBuffer_IO* temp = static_cast<XMPBuffer_IO*>(derivedTemp_);
+    CHECK_ERROR_RETURN_LOG(temp == nullptr, "XMPBuffer_IO AbsorbTemp no temp to absorb")  ;
 
-    // Replace current data with temp data
-    data = temp->data;
-    position = temp->position;
+    data_ = temp->data_;
+    position_ = temp->position_;
 
-    // Clean up temp
     delete temp;
-    derivedTemp = nullptr;
+    derivedTemp_ = nullptr;
 }
-
-// =================================================================================================
-// XMPBuffer_IO::DeleteTemp
-// ========================
 
 void XMPBuffer_IO::DeleteTemp()
 {
-    if (derivedTemp != nullptr) {
-        delete derivedTemp;
-        derivedTemp = nullptr;
+    if (derivedTemp_ != nullptr) {
+        delete derivedTemp_;
+        derivedTemp_ = nullptr;
     }
 }
 
-// =================================================================================================
-// XMPBuffer_IO::GetData
-// =====================
-
 std::vector<XMP_Uns8> XMPBuffer_IO::GetData() const
 {
-    return data;
+    return data_;
 }
-
-// =================================================================================================
-// XMPBuffer_IO::GetDataPtr
-// ========================
 
 const void* XMPBuffer_IO::GetDataPtr() const
 {
-    return data.data();
+    return data_.data();
 }
-
-// =================================================================================================
-// XMPBuffer_IO::GetDataSize
-// =========================
 
 XMP_Uns32 XMPBuffer_IO::GetDataSize() const
 {
-    return static_cast<XMP_Uns32>(data.size());
+    return static_cast<XMP_Uns32>(data_.size());
 }
 
 } // namespace Media
