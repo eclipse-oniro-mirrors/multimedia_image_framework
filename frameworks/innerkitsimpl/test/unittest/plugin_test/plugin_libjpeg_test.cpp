@@ -40,7 +40,18 @@ constexpr uint32_t COMPONENT_NUM_RGB = 3;
 constexpr uint32_t COMPONENT_NUM_GRAY = 1;
 constexpr uint8_t COMPONENT_NUM_YUV420SP = 3;
 static constexpr uint32_t NUM_1000 = 1000;
+constexpr unsigned long LONG_FILELENGTH = 100;
+constexpr int VALID_SIZE = 50;
 constexpr int32_t OPTS_SIZE = 16;
+static constexpr uint32_t TEST_IMAGE_WIDTH_SMALL = 16;
+static constexpr uint32_t TEST_IMAGE_HEIGHT_SMALL = 16;
+static constexpr uint32_t TEST_IMAGE_WIDTH_UNALIGNED = 15;
+static constexpr uint32_t TEST_IMAGE_HEIGHT_UNALIGNED = 15;
+static constexpr uint32_t TEST_IMAGE_WIDTH_LARGE = 32;
+static constexpr uint32_t TEST_IMAGE_HEIGHT_LARGE = 32;
+static constexpr uint32_t TEST_BUFFER_SIZE_SMALL = NUM_1000;
+static constexpr uint32_t TEST_BUFFER_SIZE_LARGE = NUM_1000 * 10;
+static constexpr uint32_t ARRAY_INDEX = 3;
 
 class PluginLibJpegTest : public testing::Test {
 public:
@@ -147,6 +158,22 @@ HWTEST_F(PluginLibJpegTest, exif_info001_4, TestSize.Level3)
     int ret = exinfo.ParseExifData(data);
     ASSERT_EQ(ret, 0);
     GTEST_LOG_(INFO) << "PluginLibJpegTest: exif_info001_4 end";
+}
+
+/**
+ * @tc.name: exif_info001_5
+ * @tc.desc: Test ParseExifData when exifData_ is nullptr and input data is non-empty
+ * @tc.type: FUNC
+ */
+HWTEST_F(PluginLibJpegTest, exif_info001_5, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PluginLibJpegTest: exif_info001_5 start";
+    EXIFInfo exinfo;
+    exinfo.exifData_ = nullptr;
+    string data = "aaaaaaa";
+    int ret = exinfo.ParseExifData(data);
+    ASSERT_EQ(ret, SUCCESS);
+    GTEST_LOG_(INFO) << "PluginLibJpegTest: exif_info001_5 end";
 }
 
 /**
@@ -2026,6 +2053,94 @@ HWTEST_F(PluginLibJpegTest, exif_info020, TestSize.Level3)
 }
 
 /**
+ * @tc.name: exif_info021
+ * @tc.desc: Test ModifyExifData with null buffer and corrupted EXIF data
+ * @tc.type: FUNC
+ */
+HWTEST_F(PluginLibJpegTest, exif_info021, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PluginLibJpegTest: exif_info021 start";
+    EXIFInfo exinfo;
+    ExifTag tag = EXIF_TAG_GPS_LATITUDE;
+    std::string value = "111";
+    uint32_t ret = exinfo.ModifyExifData(tag, value, nullptr, 0);
+    ASSERT_EQ(ret, Media::ERR_IMAGE_SOURCE_DATA);
+    unsigned char corruptedExifData[] = {
+        0xFF, 0xD8, 0xFF, 0xE1,
+        0x00, 0x10,
+        'E', 'x', 'i', 'f', 0x00, 0x00,
+        0x00, 0x00, 0x00, 0x00
+    };
+    ret = exinfo.ModifyExifData(tag, value, corruptedExifData, sizeof(corruptedExifData));
+    ASSERT_EQ(ret, Media::ERR_IMAGE_DECODE_EXIF_UNSUPPORT);
+    
+    GTEST_LOG_(INFO) << "PluginLibJpegTest: exif_info021 end";
+}
+
+/**
+ * @tc.name: exif_info022
+ * @tc.desc: Test CreateExifEntryOfBitsPerSample with GPS_LATITUDE tag and empty value
+ * @tc.type: FUNC
+ */
+HWTEST_F(PluginLibJpegTest, exif_info022, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PluginLibJpegTest: exif_info022 start";
+    EXIFInfo exinfo;
+    ExifTag tag = EXIF_TAG_GPS_LATITUDE;
+    ExifData *data = exif_data_new();
+    std::string value = "";
+    unsigned char *buf = new unsigned char;
+    ExifByteOrder order = exinfo.GetExifByteOrder(true, buf);
+    ASSERT_EQ(order, EXIF_BYTE_ORDER_INTEL);
+    ExifEntry *entry = exinfo.InitExifTag(data, EXIF_IFD_0, EXIF_TAG_ORIENTATION);
+    bool ret = exinfo.CreateExifEntryOfBitsPerSample(tag, data, value, order, &entry);
+    ASSERT_EQ(ret, true);
+    exif_data_unref(data);
+    delete buf;
+    GTEST_LOG_(INFO) << "PluginLibJpegTest: exif_info022 end";
+}
+
+/**
+ * @tc.name: exif_info023
+ * @tc.desc: Test ModifyExifData with zero buffer size parameter
+ * @tc.type: FUNC
+ */
+HWTEST_F(PluginLibJpegTest, exif_info023, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PluginLibJpegTest: exif_info023 start";
+    EXIFInfo exinfo;
+    ExifTag tag = EXIF_TAG_GPS_LATITUDE;
+    std::string value = "111";
+    unsigned char data[ARRAY_INDEX] = {0xFF, 0xD8, 0x12};
+    uint32_t size = 0;
+    uint32_t ret = exinfo.ModifyExifData(tag, value, data, size);
+    ASSERT_EQ(ret, ERR_MEDIA_BUFFER_TOO_SMALL);
+    GTEST_LOG_(INFO) << "PluginLibJpegTest: exif_info023 end";
+}
+
+/**
+ * @tc.name: exif_info024
+ * @tc.desc: Test CreateExifEntryOfBitsPerSample with empty value
+ * @tc.type: FUNC
+ */
+HWTEST_F(PluginLibJpegTest, exif_info024, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PluginLibJpegTest: exif_info024 start";
+    EXIFInfo exinfo;
+    ExifData *data = exif_data_new();
+    ASSERT_NE(data, nullptr);
+    ExifTag tag = EXIF_TAG_BITS_PER_SAMPLE;
+    std::string value = "";
+    ExifByteOrder order = EXIF_BYTE_ORDER_INTEL;
+    ExifEntry *ptrEntry = nullptr;
+    bool ret = exinfo.CreateExifEntryOfBitsPerSample(tag, data, value, order, &ptrEntry);
+    ASSERT_EQ(ret, true);
+    ASSERT_NE(ptrEntry, nullptr);
+    exif_data_unref(data);
+    GTEST_LOG_(INFO) << "PluginLibJpegTest: exif_info024 end";
+}
+
+/**
  * @tc.name: Jpeg_EncoderTest001
  * @tc.desc: GetEncodeFormat
  * @tc.type: FUNC
@@ -2265,6 +2380,200 @@ HWTEST_F(PluginLibJpegTest, FinalizeEncodeTest003, TestSize.Level3)
     GTEST_LOG_(INFO) << "PluginLibJpegTest:PluginLibJpegTest_FinalizeEncodeTest003 start";
     FinalizeEncodeTest(PixelFormat::RGB_565);
     GTEST_LOG_(INFO) << "PluginLibJpegTest:PluginLibJpegTest_FinalizeEncodeTest003 end";
+}
+
+/**
+ * @tc.name: CreateExifEntry0014
+ * @tc.desc: Test CreateExifEntry with EXIF_TAG_ORIENTATION using SSHORT format and negative value "-100"
+ * @tc.type: FUNC
+ */
+HWTEST_F(PluginLibJpegTest, CreateExifEntry0014, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PluginLibJpegTest: CreateExifEntry0014 start";
+    EXIFInfo exinfo;
+    ExifData *ptrExifData;
+    bool isNewExifData = false;
+    unsigned long fileLength = LONG_FILELENGTH;
+    unsigned char *fileBuf = static_cast<unsigned char *>(malloc(fileLength));
+    exinfo.CreateExifData(fileBuf, fileLength, &ptrExifData, isNewExifData);
+    ExifByteOrder order = exinfo.GetExifByteOrder(isNewExifData, fileBuf);
+    ExifEntry *entry = exinfo.InitExifTag(ptrExifData, EXIF_IFD_0, EXIF_TAG_ORIENTATION);
+    ASSERT_NE(entry, nullptr);
+    entry->format = EXIF_FORMAT_SSHORT;
+    entry->components = COMPONENT_NUM_GRAY;
+    entry->size = exif_format_get_size(entry->format) * entry->components;
+    if (entry->data) {
+        free(entry->data);
+    }
+    entry->data = static_cast<unsigned char*>(malloc(entry->size));
+    exif_content_add_entry(ptrExifData->ifd[EXIF_IFD_0], entry);
+    ExifEntry *ptrEntry = entry;
+    const std::string value = "-100";
+    bool ret = exinfo.CreateExifEntry(EXIF_TAG_ORIENTATION, ptrExifData, value, order, &ptrEntry);
+    ASSERT_EQ(ret, true);
+    exif_content_remove_entry(ptrExifData->ifd[EXIF_IFD_0], entry);
+    exif_entry_unref(entry);
+    free(fileBuf);
+    fileBuf = nullptr;
+    GTEST_LOG_(INFO) << "PluginLibJpegTest: CreateExifEntry0014 end";
+}
+
+/**
+ * @tc.name: ReleaseExifDataTest001
+ * @tc.desc: Test ReleaseExifData with nullptr tempBuf
+ * @tc.type: FUNC
+ */
+HWTEST_F(PluginLibJpegTest, ReleaseExifDataTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PluginLibJpegTest: ReleaseExifDataTest001 start";
+    
+    EXIFInfo exinfo;
+    ExifData *ptrExifData = nullptr;
+    bool isNewExifData = false;
+    unsigned long fileLength = LONG_FILELENGTH;
+    unsigned char *fileBuf = static_cast<unsigned char *>(malloc(fileLength));
+    exinfo.CreateExifData(fileBuf, fileLength, &ptrExifData, isNewExifData);
+    ASSERT_NE(ptrExifData, nullptr);
+    unsigned char *exifDataBuf = static_cast<unsigned char *>(malloc(VALID_SIZE));
+    ASSERT_NE(exifDataBuf, nullptr);
+    unsigned char *tempBuf = nullptr;
+    exinfo.ReleaseExifData(tempBuf, ptrExifData, exifDataBuf);
+    ASSERT_EQ(tempBuf, nullptr);
+    free(fileBuf);
+    fileBuf = nullptr;
+    GTEST_LOG_(INFO) << "PluginLibJpegTest: ReleaseExifDataTest001 end";
+}
+
+/**
+ * @tc.name: PluginLibJpegTest_BranchCoverage001
+ * @tc.desc: Test encoding NV21 format image
+ * @tc.type: FUNC
+ */
+HWTEST_F(PluginLibJpegTest, BranchCoverage001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PluginLibJpegTest: BranchCoverage001 start";
+    uint32_t errorCode = 0;
+    auto jpegEncoder = std::make_shared<JpegEncoder>();
+    ASSERT_NE(jpegEncoder, nullptr);
+
+    PlEncodeOptions plOpts;
+    auto outputData = std::make_unique<uint8_t[]>(TEST_BUFFER_SIZE_SMALL);
+    auto maxSize = TEST_BUFFER_SIZE_SMALL;
+    auto stream = std::make_shared<BufferPackerStream>(outputData.get(), maxSize);
+    jpegEncoder->StartEncode(*(stream.get()), plOpts);
+
+    Media::InitializationOptions opts;
+    opts.pixelFormat = PixelFormat::NV21;
+    opts.size.width = TEST_IMAGE_WIDTH_SMALL;
+    opts.size.height = TEST_IMAGE_HEIGHT_SMALL;
+    opts.editable = true;
+    auto pixelMap = Media::PixelMap::Create(opts);
+    ASSERT_NE(pixelMap.get(), nullptr);
+
+    errorCode = jpegEncoder->AddImage(*(pixelMap.get()));
+    ASSERT_EQ(errorCode, SUCCESS);
+    errorCode = jpegEncoder->FinalizeEncode();
+    ASSERT_EQ(errorCode, SUCCESS);
+    GTEST_LOG_(INFO) << "PluginLibJpegTest: BranchCoverage001 end";
+}
+
+/**
+ * @tc.name: PluginLibJpegTest_BranchCoverage002
+ * @tc.desc: Test encoding when scanline processing exceeds image height
+ * @tc.type: FUNC
+ */
+HWTEST_F(PluginLibJpegTest, BranchCoverage002, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PluginLibJpegTest: BranchCoverage002 start";
+    uint32_t errorCode = 0;
+    auto jpegEncoder = std::make_shared<JpegEncoder>();
+    ASSERT_NE(jpegEncoder, nullptr);
+
+    PlEncodeOptions plOpts;
+    auto outputData = std::make_unique<uint8_t[]>(TEST_BUFFER_SIZE_LARGE);
+    auto maxSize = TEST_BUFFER_SIZE_LARGE;
+    auto stream = std::make_shared<BufferPackerStream>(outputData.get(), maxSize);
+    jpegEncoder->StartEncode(*(stream.get()), plOpts);
+
+    Media::InitializationOptions opts;
+    opts.pixelFormat = PixelFormat::RGBA_8888;
+    opts.size.width = TEST_IMAGE_WIDTH_SMALL;
+    opts.size.height = TEST_IMAGE_HEIGHT_SMALL;
+    opts.editable = true;
+    auto pixelMap = Media::PixelMap::Create(opts);
+    ASSERT_NE(pixelMap.get(), nullptr);
+
+    errorCode = jpegEncoder->AddImage(*(pixelMap.get()));
+    ASSERT_EQ(errorCode, SUCCESS);
+    errorCode = jpegEncoder->FinalizeEncode();
+    ASSERT_EQ(errorCode, SUCCESS);
+    GTEST_LOG_(INFO) << "PluginLibJpegTest: BranchCoverage002 end";
+}
+
+/**
+ * @tc.name: PluginLibJpegTest_BranchCoverage003
+ * @tc.desc: Test encoding NV12 image with non-block-aligned dimensions
+ * @tc.type: FUNC
+ */
+HWTEST_F(PluginLibJpegTest, BranchCoverage003, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PluginLibJpegTest: BranchCoverage003 start";
+    uint32_t errorCode = 0;
+    auto jpegEncoder = std::make_shared<JpegEncoder>();
+    ASSERT_NE(jpegEncoder, nullptr);
+
+    PlEncodeOptions plOpts;
+    auto outputData = std::make_unique<uint8_t[]>(TEST_BUFFER_SIZE_SMALL);
+    auto maxSize = TEST_BUFFER_SIZE_SMALL;
+    auto stream = std::make_shared<BufferPackerStream>(outputData.get(), maxSize);
+    jpegEncoder->StartEncode(*(stream.get()), plOpts);
+
+    Media::InitializationOptions opts;
+    opts.pixelFormat = PixelFormat::NV12;
+    opts.size.width = TEST_IMAGE_WIDTH_UNALIGNED;
+    opts.size.height = TEST_IMAGE_HEIGHT_UNALIGNED;
+    opts.editable = true;
+    auto pixelMap = Media::PixelMap::Create(opts);
+    ASSERT_NE(pixelMap.get(), nullptr);
+
+    errorCode = jpegEncoder->AddImage(*(pixelMap.get()));
+    ASSERT_EQ(errorCode, SUCCESS);
+    errorCode = jpegEncoder->FinalizeEncode();
+    ASSERT_EQ(errorCode, ERR_IMAGE_DATA_ABNORMAL);
+    GTEST_LOG_(INFO) << "PluginLibJpegTest: BranchCoverage003 end";
+}
+
+/**
+ * @tc.name: PluginLibJpegTest_BranchCoverage004
+ * @tc.desc: Test encoding with UV sampling row count exceeding threshold
+ * @tc.type: FUNC
+ */
+HWTEST_F(PluginLibJpegTest, BranchCoverage004, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PluginLibJpegTest: BranchCoverage004 start";
+    uint32_t errorCode = 0;
+    auto jpegEncoder = std::make_shared<JpegEncoder>();
+    ASSERT_NE(jpegEncoder, nullptr);
+
+    PlEncodeOptions plOpts;
+    auto outputData = std::make_unique<uint8_t[]>(TEST_BUFFER_SIZE_LARGE);
+    auto maxSize = TEST_BUFFER_SIZE_LARGE;
+    auto stream = std::make_shared<BufferPackerStream>(outputData.get(), maxSize);
+    jpegEncoder->StartEncode(*(stream.get()), plOpts);
+
+    Media::InitializationOptions opts;
+    opts.pixelFormat = PixelFormat::NV12;
+    opts.size.width = TEST_IMAGE_WIDTH_LARGE;
+    opts.size.height = TEST_IMAGE_HEIGHT_LARGE;
+    opts.editable = true;
+    auto pixelMap = Media::PixelMap::Create(opts);
+    ASSERT_NE(pixelMap.get(), nullptr);
+
+    errorCode = jpegEncoder->AddImage(*(pixelMap.get()));
+    ASSERT_EQ(errorCode, SUCCESS);
+    errorCode = jpegEncoder->FinalizeEncode();
+    ASSERT_EQ(errorCode, SUCCESS);
+    GTEST_LOG_(INFO) << "PluginLibJpegTest: BranchCoverage004 end";
 }
 } // namespace Multimedia
 } // namespace OHOS

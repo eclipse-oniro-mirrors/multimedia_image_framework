@@ -21,6 +21,7 @@
 #define protected public
 #include "abs_image_decoder.h"
 #include "jpeg_decoder_yuv.h"
+#include "jpeg_yuvdata_converter.h"
 #include "media_errors.h"
 
 using namespace testing::ext;
@@ -39,6 +40,18 @@ static const std::string IMAGE_INPUT_JPG_PATH = "/data/local/tmp/image/";
 #define OUT_WIDTH 1024
 #define OUT_HEIGHT 768
 #define PLANE_SIZE 240000
+#define TEST_BUFFER_SIZE_100 100
+#define TEST_BUFFER_SIZE_200 200
+#define TEST_BUFFER_SIZE_400 400
+#define TEST_IMAGE_WIDTH_10 10
+#define TEST_IMAGE_HEIGHT_10 10
+#define TEST_STRIDE_10 10
+#define TEST_STRIDE_5 5
+#define TEST_DATA_OFFSET_50 50
+#define TEST_DATA_OFFSET_80 80
+#define TEST_DATA_OFFSET_100 100
+#define TEST_STRIDE_1 1
+
 class JpgYuvDecoderTest : public testing::Test {
 public:
     JpgYuvDecoderTest() {}
@@ -852,5 +865,134 @@ HWTEST_F(JpgYuvDecoderTest, JpegYuvDataTest004, TestSize.Level3)
     GTEST_LOG_(INFO) << "JpgYuvDecoderTest: JpegYuvDataTest004 end";
 }
 
+/**
+ * @tc.name: UpdateDestStrideSurfaceBufferNullTest001
+ * @tc.desc: Test UpdateDestStride with null surfaceBuffer
+ * @tc.type: FUNC
+ */
+HWTEST_F(JpgYuvDecoderTest, UpdateDestStrideSurfaceBufferNullTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "JpgYuvDecoderTest: UpdateDestStrideSurfaceBufferNullTest001 start";
+    
+    JpegDecoderYuv jpegDecoderYuv;
+    YuvPlaneInfo srcPlaneInfo;
+    uint8_t testData[TEST_BUFFER_SIZE_200];
+    uint8_t yuvBuffer[TEST_BUFFER_SIZE_400];
+    
+    srcPlaneInfo.planes[YCOM] = testData;
+    srcPlaneInfo.planes[UCOM] = testData + TEST_DATA_OFFSET_80;
+    srcPlaneInfo.planes[VCOM] = testData + TEST_DATA_OFFSET_100;
+    srcPlaneInfo.strides[YCOM] = TEST_STRIDE_10;
+    srcPlaneInfo.strides[UCOM] = TEST_STRIDE_5;
+    srcPlaneInfo.strides[VCOM] = TEST_STRIDE_5;
+    srcPlaneInfo.imageWidth = TEST_IMAGE_WIDTH_10;
+    srcPlaneInfo.imageHeight = TEST_IMAGE_HEIGHT_10;
+    srcPlaneInfo.planeWidth[YCOM] = TEST_IMAGE_WIDTH_10;
+    srcPlaneInfo.planeWidth[UCOM] = TEST_STRIDE_5;
+    srcPlaneInfo.planeWidth[VCOM] = TEST_STRIDE_5;
+    srcPlaneInfo.planeHeight[YCOM] = TEST_IMAGE_HEIGHT_10;
+    srcPlaneInfo.planeHeight[UCOM] = TEST_STRIDE_5;
+    srcPlaneInfo.planeHeight[VCOM] = TEST_STRIDE_5;
+    
+    ConverterPair converter;
+    converter.to420Func = &I420ToI420_wrapper;
+    converter.toNV21Func = &I420ToNV21_wrapper;
+    
+    DecodeContext context;
+    context.allocatorType = OHOS::Media::AllocatorType::DMA_ALLOC;
+    context.pixelsBuffer.context = nullptr;
+    
+    JpegDecoderYuvParameter para = { 0, 0, testData, TEST_BUFFER_SIZE_200, yuvBuffer, TEST_BUFFER_SIZE_400,
+        JpegYuvFmt::OutFmt_NV21, TEST_IMAGE_WIDTH_10, TEST_IMAGE_HEIGHT_10 };
+    jpegDecoderYuv.decodeParameter_ = para;
+    
+    int ret = jpegDecoderYuv.ConvertFrom4xx(srcPlaneInfo, converter, context);
+    
+    EXPECT_EQ(ret, JpegYuvDecodeError_Success);
+    
+    GTEST_LOG_(INFO) << "JpgYuvDecoderTest: UpdateDestStrideSurfaceBufferNullTest001 end";
+}
+
+/**
+ * @tc.name: ValidateParameterPlaneWidthZeroTest001
+ * @tc.desc: Test ValidateParameter with planeWidth == 0
+ * @tc.type: FUNC
+ */
+HWTEST_F(JpgYuvDecoderTest, ValidateParameterPlaneWidthZeroTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "JpgYuvDecoderTest: ValidateParameterPlaneWidthZeroTest001 start";
+    
+    JpegDecoderYuv jpegDecoderYuv;
+    YuvPlaneInfo srcPlaneInfo;
+    uint8_t testData[TEST_BUFFER_SIZE_100];
+    uint8_t yuvBuffer[TEST_BUFFER_SIZE_200];
+    
+    srcPlaneInfo.planes[YCOM] = testData;
+    srcPlaneInfo.planes[UCOM] = testData + TEST_DATA_OFFSET_50;
+    srcPlaneInfo.planes[VCOM] = testData + TEST_DATA_OFFSET_80;
+    srcPlaneInfo.imageWidth = TEST_IMAGE_WIDTH_10;
+    srcPlaneInfo.imageHeight = TEST_IMAGE_HEIGHT_10;
+    
+    srcPlaneInfo.planeWidth[YCOM] = 0;
+    srcPlaneInfo.planeWidth[UCOM] = TEST_STRIDE_5;
+    srcPlaneInfo.planeWidth[VCOM] = TEST_STRIDE_5;
+    srcPlaneInfo.planeHeight[YCOM] = TEST_IMAGE_HEIGHT_10;
+    srcPlaneInfo.planeHeight[UCOM] = TEST_STRIDE_5;
+    srcPlaneInfo.planeHeight[VCOM] = TEST_STRIDE_5;
+    
+    ConverterPair converter;
+    converter.to420Func = &I420ToI420_wrapper;
+    converter.toNV21Func = &I420ToNV21_wrapper;
+    
+    JpegDecoderYuvParameter para = { 0, 0, testData, TEST_BUFFER_SIZE_100, yuvBuffer, TEST_BUFFER_SIZE_200,
+        JpegYuvFmt::OutFmt_YU12, TEST_IMAGE_WIDTH_10, TEST_IMAGE_HEIGHT_10 };
+    jpegDecoderYuv.decodeParameter_ = para;
+    
+    bool ret = jpegDecoderYuv.ValidateParameter(srcPlaneInfo, converter);
+    EXPECT_EQ(ret, false);
+    
+    GTEST_LOG_(INFO) << "JpgYuvDecoderTest: ValidateParameterPlaneWidthZeroTest001 end";
+}
+
+/**
+ * @tc.name: ValidateParameterPlaneHeightZeroTest001
+ * @tc.desc: Test ValidateParameter with planeHeight == 0
+ * @tc.type: FUNC
+ */
+HWTEST_F(JpgYuvDecoderTest, ValidateParameterPlaneHeightZeroTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "JpgYuvDecoderTest: ValidateParameterPlaneHeightZeroTest001 start";
+    
+    JpegDecoderYuv jpegDecoderYuv;
+    YuvPlaneInfo srcPlaneInfo;
+    uint8_t testData[TEST_BUFFER_SIZE_100];
+    uint8_t yuvBuffer[TEST_BUFFER_SIZE_200];
+    
+    srcPlaneInfo.planes[YCOM] = testData;
+    srcPlaneInfo.planes[UCOM] = testData + TEST_DATA_OFFSET_50;
+    srcPlaneInfo.planes[VCOM] = testData + TEST_DATA_OFFSET_80;
+    srcPlaneInfo.imageWidth = TEST_IMAGE_WIDTH_10;
+    srcPlaneInfo.imageHeight = TEST_IMAGE_HEIGHT_10;
+    
+    srcPlaneInfo.planeWidth[YCOM] = TEST_IMAGE_WIDTH_10;
+    srcPlaneInfo.planeWidth[UCOM] = TEST_STRIDE_5;
+    srcPlaneInfo.planeWidth[VCOM] = TEST_STRIDE_5;
+    srcPlaneInfo.planeHeight[YCOM] = 0;
+    srcPlaneInfo.planeHeight[UCOM] = TEST_STRIDE_5;
+    srcPlaneInfo.planeHeight[VCOM] = TEST_STRIDE_5;
+    
+    ConverterPair converter;
+    converter.to420Func = &I420ToI420_wrapper;
+    converter.toNV21Func = &I420ToNV21_wrapper;
+    
+    JpegDecoderYuvParameter para = { 0, 0, testData, TEST_BUFFER_SIZE_100, yuvBuffer, TEST_BUFFER_SIZE_200,
+        JpegYuvFmt::OutFmt_YU12, TEST_IMAGE_WIDTH_10, TEST_IMAGE_HEIGHT_10 };
+    jpegDecoderYuv.decodeParameter_ = para;
+    
+    bool ret = jpegDecoderYuv.ValidateParameter(srcPlaneInfo, converter);
+    EXPECT_EQ(ret, false);
+    
+    GTEST_LOG_(INFO) << "JpgYuvDecoderTest: ValidateParameterPlaneHeightZeroTest001 end";
+}
 }
 }
