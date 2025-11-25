@@ -45,6 +45,8 @@ static const std::string IMAGE_INPUT_EXIF_JPEG_PATH = "/data/local/tmp/image/tes
 static const int32_t SIZE_WIDTH = 2;
 static const int32_t SIZE_HEIGHT = 3;
 static const int32_t BUFFER_LENGTH = 8;
+static const uint64_t INVALID_PICTURE_META_TYPE_COUNT = 65;
+static const uint64_t TEST_PICTURE_META_TYPE_COUNT = 1;
 
 static std::shared_ptr<PixelMap> CreatePixelMap()
 {
@@ -861,6 +863,121 @@ HWTEST_F(PictureTest, dropAuxiliaryPictureTest002, TestSize.Level1)
     picture->DropAuxiliaryPicture(AuxiliaryPictureType::DEPTH_MAP);
     EXPECT_TRUE(picture->HasAuxiliaryPicture(AuxiliaryPictureType::GAINMAP));
     EXPECT_TRUE(picture->HasAuxiliaryPicture(AuxiliaryPictureType::FRAGMENT_MAP));
+}
+
+/**
+ * @tc.name: MarshalMetadataTest001
+ * @tc.desc: Test MarshalMetadata when metadatas_ contains more than MAX_PICTURE_META_TYPE_COUNT
+ * @tc.type: FUNC
+ */
+HWTEST_F(PictureTest, MarshalMetadataTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PictureTest: MarshalMetadataTest001 start";
+    std::unique_ptr<Picture> picture = CreatePicture();
+    std::shared_ptr<ExifMetadata> exifMeta = std::make_shared<ExifMetadata>();
+    ASSERT_NE(exifMeta, nullptr);
+    for (int i = 0; i <= static_cast<int>(INVALID_PICTURE_META_TYPE_COUNT); ++i) {
+        picture->metadatas_.insert({ static_cast<MetadataType>(i), exifMeta });
+    }
+    ASSERT_GT(picture->metadatas_.size(), INVALID_PICTURE_META_TYPE_COUNT);
+    Parcel data;
+    bool ret = picture->MarshalMetadata(data);
+    ASSERT_FALSE(ret);
+    GTEST_LOG_(INFO) << "PictureTest: MarshalMetadataTest001 end";
+}
+
+/**
+ * @tc.name: MarshalMetadataTest002
+ * @tc.desc: Test MarshalMetadata when metadata is nullptr
+ * @tc.type: FUNC
+ */
+HWTEST_F(PictureTest, MarshalMetadataTest002, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PictureTest: MarshalMetadataTest002 start";
+    std::unique_ptr<Picture> picture = CreatePicture();
+    ASSERT_TRUE(picture->metadatas_.empty());
+    const MetadataType fakeType = static_cast<MetadataType>(0);
+    picture->metadatas_[fakeType] = nullptr;
+    ASSERT_NE(picture->metadatas_.size(), 0);
+    Parcel data;
+    bool ret = picture->MarshalMetadata(data);
+    ASSERT_FALSE(ret);
+    GTEST_LOG_(INFO) << "PictureTest: MarshalMetadataTest002 end";
+}
+
+/**
+ * @tc.name: UnmarshalMetadataTest001
+ * @tc.desc: Test UnmarshalMetadata with unsupported MetadataType
+ * @tc.type: FUNC
+ */
+HWTEST_F(PictureTest, UnmarshalMetadataTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PictureTest: UnmarshalMetadataTest001 start";
+    Parcel parcel;
+    ASSERT_TRUE(parcel.WriteBool(false));
+    ASSERT_TRUE(parcel.WriteUint64(TEST_PICTURE_META_TYPE_COUNT));
+    int32_t unsupported = static_cast<int32_t>(MetadataType::STDATA);
+    ASSERT_TRUE(parcel.WriteInt32(unsupported));
+    PICTURE_ERR errorInfo;
+    Picture picture;
+    bool ret = Picture::UnmarshalMetadata(parcel, picture, errorInfo);
+    ASSERT_FALSE(ret);
+    GTEST_LOG_(INFO) << "PictureTest: UnmarshalMetadataTest001 end";
+}
+
+/**
+ * @tc.name: GetRfDataBMetadataTest001
+ * @tc.desc: Test GetRfDataBMetadata when rfDataBMetadata is nullptr
+ * @tc.type: FUNC
+ */
+HWTEST_F(PictureTest, GetRfDataBMetadataTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PictureTest: GetRfDataBMetadataTest001 start";
+    std::unique_ptr<Picture> picture = CreatePicture();
+    ASSERT_NE(picture, nullptr);
+    auto rfMeta = picture->GetRfDataBMetadata();
+    EXPECT_EQ(rfMeta, nullptr);
+    GTEST_LOG_(INFO) << "PictureTest: GetRfDataBMetadataTest001 end";
+}
+
+/**
+ * @tc.name: SetMetadataTest001
+ * @tc.desc: Test SetMetadata when MetadataType is FRAGMENT
+ * @tc.type: FUNC
+ */
+HWTEST_F(PictureTest, SetMetadataTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PictureTest: SetMetadataTest001 start";
+    std::unique_ptr<Picture> picture = CreatePicture();
+    ASSERT_NE(picture, nullptr);
+    std::shared_ptr<FragmentMetadata> fragment = std::make_shared<FragmentMetadata>();
+    ASSERT_NE(fragment, nullptr);
+    ASSERT_EQ(fragment->GetType(), MetadataType::FRAGMENT);
+    uint32_t ret = picture->SetMetadata(MetadataType::FRAGMENT, fragment);
+    ASSERT_EQ(ret, ERR_IMAGE_INVALID_PARAMETER);
+    GTEST_LOG_(INFO) << "PictureTest: SetMetadataTest001 end";
+}
+
+/**
+ * @tc.name: SetMetadataTest002
+ * @tc.desc: Test SetMetadata when metadatas_ size exceeds MAX_PICTURE_META_TYPE_COUNT
+ * @tc.type: FUNC
+ */
+HWTEST_F(PictureTest, SetMetadataTest002, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PictureTest: SetMetadataTest002 start";
+    std::unique_ptr<Picture> picture = CreatePicture();
+    ASSERT_NE(picture, nullptr);
+    std::shared_ptr<ExifMetadata> exif = std::make_shared<ExifMetadata>();
+    ASSERT_NE(exif, nullptr);
+    ASSERT_EQ(exif->GetType(), MetadataType::EXIF);
+    for (int i = 0; i <= static_cast<int>(INVALID_PICTURE_META_TYPE_COUNT); ++i) {
+        picture->metadatas_.insert({ static_cast<MetadataType>(i), exif });
+    }
+    ASSERT_GT(picture->metadatas_.size(), INVALID_PICTURE_META_TYPE_COUNT);
+    uint32_t ret = picture->SetMetadata(MetadataType::EXIF, exif);
+    ASSERT_EQ(ret, ERR_IMAGE_INVALID_PARAMETER);
+    GTEST_LOG_(INFO) << "PictureTest: SetMetadataTest002 end";
 }
 
 } // namespace Media

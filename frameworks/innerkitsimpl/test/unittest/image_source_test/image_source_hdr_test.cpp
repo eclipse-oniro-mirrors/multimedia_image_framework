@@ -1129,5 +1129,127 @@ HWTEST_F(ImageSourceHdrTest, ParsingMpAttrIFDOffsetInvalidTest001, TestSize.Leve
     bool res = jpegMpfParser->Parsing(buf, size);
     EXPECT_FALSE(res);
 }
+
+/**
+ * @tc.name: ParsingInvalidEndianFlagTest001
+ * @tc.desc: test Parsing when endian flag is neither BIG_ENDIAN nor LITTLE_ENDIAN
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageSourceHdrTest, ParsingInvalidEndianFlagTest001, TestSize.Level3)
+{
+    auto jpegMpfParser = std::make_shared<JpegMpfParser>();
+    ASSERT_NE(jpegMpfParser, nullptr);
+
+    uint8_t buf[] = {
+        'M', 'P', 'F', '\0',
+        0x00, 0x00, 0x00, 0x00,
+        0x08, 0x00, 0x00, 0x00
+    };
+    uint32_t size = sizeof(buf);
+
+    bool res = jpegMpfParser->Parsing(buf, size);
+    EXPECT_FALSE(res);
+}
+
+/**
+ * @tc.name: ParsingMpEntryInvalidCountTest001
+ * @tc.desc: test ParsingMpIndexIFD when MP_ENTRY_TAG count is invalid
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageSourceHdrTest, ParsingMpEntryInvalidCountTest001, TestSize.Level3)
+{
+    auto jpegMpfParser = std::make_shared<JpegMpfParser>();
+    ASSERT_NE(jpegMpfParser, nullptr);
+
+    uint8_t buf[] = {
+        'M', 'P', 'F', '\0',
+        0x4D, 0x4D, 0x00, 0x2A,
+        0x00, 0x00, 0x00, 0x08,
+        0x00, 0x03,
+        0xB0, 0x00, 0x00, 0x07, 0x00, 0x00, 0x00, 0x04, '0', '1', '0', '0',
+        0xB0, 0x01, 0x00, 0x04, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x02,
+        0xB0, 0x02, 0x00, 0x07, 0x00, 0x00, 0x00, 0x10, 0x00, 0x00, 0x00, 0x40,
+        0x00, 0x00, 0x00, 0x00
+    };
+    uint32_t size = sizeof(buf);
+
+    bool res = jpegMpfParser->Parsing(buf, size);
+    EXPECT_FALSE(res);
+}
+
+/**
+ * @tc.name: ParsingMpEntryFailureTest001
+ * @tc.desc: test ParsingMpIndexIFD when ParsingMpEntry fails
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageSourceHdrTest, ParsingMpEntryFailureTest001, TestSize.Level3)
+{
+    auto jpegMpfParser = std::make_shared<JpegMpfParser>();
+    ASSERT_NE(jpegMpfParser, nullptr);
+
+    uint8_t buf[] = {
+        'M', 'P', 'F', '\0',
+        0x4D, 0x4D, 0x00, 0x2A,
+        0x00, 0x00, 0x00, 0x08,
+        0x00, 0x03,
+        0xB0, 0x00, 0x00, 0x07, 0x00, 0x00, 0x00, 0x04, '0', '1', '0', '0',
+        0xB0, 0x01, 0x00, 0x04, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x02,
+        0xB0, 0x02, 0x00, 0x07, 0x00, 0x00, 0x00, 0x20, 0x00, 0x00, 0x00, 0x38,
+        0x00, 0x00, 0x00, 0x00,
+        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
+    };
+    uint32_t size = sizeof(buf);
+
+    bool res = jpegMpfParser->Parsing(buf, size);
+    EXPECT_FALSE(res);
+}
+
+/**
+ * @tc.name: ParsingDefaultTagBranchTest001
+ * @tc.desc: Test ParsingMpIndexIFD with unrecognized tag values
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageSourceHdrTest, ParsingDefaultTagBranchTest001, TestSize.Level3)
+{
+    auto jpegMpfParser = std::make_shared<JpegMpfParser>();
+    ASSERT_NE(jpegMpfParser, nullptr);
+
+    uint8_t buf[] = {
+        'M', 'P', 'F', '\0',
+        0x4D, 0x4D, 0x00, 0x2A,
+        0x00, 0x00, 0x00, 0x08,
+        0x00, 0x01,
+        0xFF, 0xFF, 0x00, 0x04, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x01,
+        0x00, 0x00, 0x00, 0x00
+    };
+    uint32_t size = sizeof(buf);
+
+    bool res = jpegMpfParser->Parsing(buf, size);
+    EXPECT_TRUE(res);
+}
+
+/**
+ * @tc.name: ParsingBigEndianFlagTest001
+ * @tc.desc: test Parsing with BIG_ENDIAN_FLAG
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageSourceHdrTest, ParsingBigEndianFlagTest001, TestSize.Level3)
+{
+    auto jpegMpfParser = std::make_shared<JpegMpfParser>();
+    ASSERT_NE(jpegMpfParser, nullptr);
+
+    uint8_t buf[] = {
+        'M', 'P', 'F', '\0',
+        0x4D, 0x4D, 0x00, 0x2A,
+        0x00, 0x00, 0x00, 0x08,
+        0x00, 0x01,
+        0xB0, 0x01, 0x00, 0x04, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x02,
+        0x00, 0x00, 0x00, 0x00
+    };
+    uint32_t size = sizeof(buf);
+
+    bool res = jpegMpfParser->Parsing(buf, size);
+    EXPECT_TRUE(res);
+}
 }
 }

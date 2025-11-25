@@ -1990,6 +1990,71 @@ HWTEST_F(ExifMetadataTest, RemoveEntryTest001, TestSize.Level3)
 }
 
 /**
+ * @tc.name: UnmarshallingErrorTest001
+ * @tc.desc: Test Unmarshalling when error occurs
+ * @tc.type: FUNC
+ */
+HWTEST_F(ExifMetadataTest, UnmarshallingErrorTest001, TestSize.Level3)
+{
+    Parcel parcel;
+    parcel.WriteBool(false);
+
+    ExifMetadata* result = ExifMetadata::Unmarshalling(parcel);
+    ASSERT_EQ(result, nullptr);
+}
+
+/**
+ * @tc.name: UnmarshallingNoExifDataBufferTest001
+ * @tc.desc: Test Unmarshalling when hasExifDataBuffer is false
+ * @tc.type: FUNC
+ */
+HWTEST_F(ExifMetadataTest, UnmarshallingNoExifDataBufferTest001, TestSize.Level3)
+{
+    Parcel parcel;
+    parcel.WriteBool(false);
+
+    PICTURE_ERR error;
+    ExifMetadata* result = ExifMetadata::Unmarshalling(parcel, error);
+    ASSERT_EQ(result, nullptr);
+}
+
+/**
+ * @tc.name: HandleMakerNoteWithSpecialKeysTest001
+ * @tc.desc: Test HandleMakerNote with HW_SPECIAL_KEYS entries
+ * @tc.type: FUNC
+ */
+HWTEST_F(ExifMetadataTest, HandleMakerNoteWithSpecialKeysTest001, TestSize.Level3)
+{
+    auto exifData = exif_data_new_from_file(IMAGE_INPUT_JPEG_HW_PATH.c_str());
+    ASSERT_NE(exifData, nullptr);
+
+    ExifMetadata metadata(exifData);
+    exif_data_get_mnote_data(exifData);
+    metadata.SetValue("HwMnoteCaptureMode", "0");
+    metadata.SetValue("MovingPhotoId", "test123");
+
+    std::string value;
+    int result = metadata.GetValue("MakerNote", value);
+
+    EXPECT_EQ(result, SUCCESS);
+}
+
+/**
+ * @tc.name: ExtractXmageCoordinatesNullExifDataTest001
+ * @tc.desc: Test ExtractXmageCoordinates when exifData is null
+ * @tc.type: FUNC
+ */
+HWTEST_F(ExifMetadataTest, ExtractXmageCoordinatesNullExifDataTest001, TestSize.Level3)
+{
+    ExifMetadata metadata;
+
+    XmageCoordinateMetadata coordMetadata;
+    bool result = metadata.ExtractXmageCoordinates(coordMetadata);
+
+    ASSERT_FALSE(result);
+}
+
+/**
  * @tc.name: SetCommonValueSSHORTTest001
  * @tc.desc: Test SetCommonValue with EXIF_FORMAT_SSHORT format
  * @tc.type: FUNC
