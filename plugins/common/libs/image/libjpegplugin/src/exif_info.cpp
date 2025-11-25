@@ -586,7 +586,13 @@ void EXIFInfo::SetExifTagValuesEx(const ExifTag &tag, const std::string &value)
 uint32_t EXIFInfo::GetFileInfoByPath(const std::string &path, FILE **file, unsigned long &fileLength,
     unsigned char **fileBuf)
 {
-    *file = fopen(path.c_str(), "rb");
+    char realLoadPath[PATH_MAX] = { 0 };
+    if (realpath(path.c_str(), realLoadPath) == nullptr) {
+        IMAGE_LOGD("Error creating file %{public}s", path.c_str());
+        return Media::ERR_MEDIA_IO_ABNORMAL;
+    }
+
+    *file = fopen(realLoadPath, "rb");
     if (*file == nullptr) {
         IMAGE_LOGD("Error creating file %{public}s", path.c_str());
         return Media::ERR_MEDIA_IO_ABNORMAL;

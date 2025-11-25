@@ -559,6 +559,8 @@ void PngDecoder::PngErrorExit(png_structp pngPtr, png_const_charp message)
         IMAGE_LOGE("ErrorExit png_structp or error message is null.");
         return;
     }
+    bool cond = png_set_longjmp_fn((pngPtr), longjmp, (sizeof(jmp_buf))) == nullptr;
+    CHECK_ERROR_RETURN_LOG(cond, "png_set_longjmp_fn() is nullptr");
     if (png_jmpbuf(pngPtr) == nullptr) {
         return;
     }
@@ -735,6 +737,10 @@ uint32_t PngDecoder::ReadIncrementalHead(InputDataStream *stream, PngImageInfo &
     }
     stream->Seek(pos);
     // set the exception handle
+    bool cond = pngStructPtr_ == nullptr;
+    CHECK_ERROR_RETURN_RET_LOG(cond, ERR_IMAGE_DECODE_HEAD_ABNORMAL, "pngStructPtr_ is nullptr");
+    cond = png_set_longjmp_fn((pngStructPtr_), longjmp, (sizeof(jmp_buf))) == nullptr;
+    CHECK_ERROR_RETURN_RET_LOG(cond, ERR_IMAGE_DECODE_HEAD_ABNORMAL, "png_set_longjmp_fn() is nullptr");
     if (png_jmpbuf(pngStructPtr_) == nullptr) {
         return ERR_IMAGE_DECODE_HEAD_ABNORMAL;
     }
@@ -928,6 +934,10 @@ uint32_t PngDecoder::IncrementalReadRows(InputDataStream *stream)
         return ERR_IMAGE_INVALID_PARAMETER;
     }
     // set the exception handle
+    bool cond = pngStructPtr_ == nullptr;
+    CHECK_ERROR_RETURN_RET_LOG(cond, ERR_IMAGE_DECODE_ABNORMAL, "pngStructPtr_ is nullptr");
+    cond = png_set_longjmp_fn((pngStructPtr_), longjmp, (sizeof(jmp_buf))) == nullptr;
+    CHECK_ERROR_RETURN_RET_LOG(cond, ERR_IMAGE_DECODE_ABNORMAL, "png_set_longjmp_fn() is nullptr");
     if (png_jmpbuf(pngStructPtr_) == nullptr) {
         return ERR_IMAGE_DECODE_ABNORMAL;
     }
@@ -960,7 +970,7 @@ uint32_t PngDecoder::IncrementalReadRows(InputDataStream *stream)
         return SUCCESS;
     }
     uint32_t ret = PushCurrentToDecode(stream);
-    bool cond = ret != SUCCESS;
+    cond = ret != SUCCESS;
     CHECK_ERROR_RETURN_RET_LOG(cond, ret, "push stream to decode fail, "
                                "ret:%{public}u, idatLen:%{public}zu, incrementalLen:%{public}zu.",
                                ret, idatLength_, incrementalLength_);
@@ -1074,6 +1084,10 @@ uint32_t PngDecoder::ConfigInfo(const PixelDecodeOptions &opts)
     }
 
     // get the libpng interface exception.
+    bool cond = pngStructPtr_ == nullptr;
+    CHECK_ERROR_RETURN_RET_LOG(cond, ERR_IMAGE_DATA_ABNORMAL, "pngStructPtr_ is nullptr");
+    cond = png_set_longjmp_fn((pngStructPtr_), longjmp, (sizeof(jmp_buf))) == nullptr;
+    CHECK_ERROR_RETURN_RET_LOG(cond, ERR_IMAGE_DATA_ABNORMAL, "png_set_longjmp_fn() is nullptr");
     if (png_jmpbuf(pngStructPtr_) == nullptr) {
         return ERR_IMAGE_DATA_ABNORMAL;
     }
@@ -1092,6 +1106,10 @@ uint32_t PngDecoder::DoOneTimeDecode(DecodeContext &context)
         IMAGE_LOGE("normal decode the image source incomplete.");
         return ERR_IMAGE_SOURCE_DATA_INCOMPLETE;
     }
+    bool cond = pngStructPtr_ == nullptr;
+    CHECK_ERROR_RETURN_RET_LOG(cond, ERR_IMAGE_DECODE_ABNORMAL, "pngStructPtr_ is nullptr");
+    cond = png_set_longjmp_fn((pngStructPtr_), longjmp, (sizeof(jmp_buf))) == nullptr;
+    CHECK_ERROR_RETURN_RET_LOG(cond, ERR_IMAGE_DECODE_ABNORMAL, "png_set_longjmp_fn() is nullptr");
     if (png_jmpbuf(pngStructPtr_) == nullptr) {
         return ERR_IMAGE_DECODE_ABNORMAL;
     }

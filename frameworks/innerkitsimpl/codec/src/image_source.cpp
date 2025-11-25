@@ -685,9 +685,9 @@ static inline bool IsDensityChange(int32_t srcDensity, int32_t wantDensity)
 
 static inline int32_t GetScalePropByDensity(int32_t prop, int32_t srcDensity, int32_t wantDensity)
 {
-    bool cond = srcDensity != 0;
-    int32_t ret = (prop * wantDensity + (srcDensity >> 1)) / srcDensity;
-    CHECK_ERROR_RETURN_RET(cond, ret);
+    if (srcDensity != 0) {
+        return (prop * wantDensity + (srcDensity / NUM_2)) / srcDensity;
+    }
     return prop;
 }
 
@@ -4400,10 +4400,10 @@ bool ImageSource::ApplyGainMap(ImageHdrType hdrType, DecodeContext& baseCtx, Dec
 void ImageSource::SetVividMetaColor(HdrMetadata& metadata,
     CM_ColorSpaceType base, CM_ColorSpaceType gainmap, CM_ColorSpaceType hdr)
 {
-    metadata.extendMeta.baseColorMeta.baseColorPrimary = base & 0xFF;
-    metadata.extendMeta.gainmapColorMeta.enhanceDataColorPrimary = gainmap & 0xFF;
-    metadata.extendMeta.gainmapColorMeta.combineColorPrimary = gainmap & 0xFF;
-    metadata.extendMeta.gainmapColorMeta.alternateColorPrimary = hdr & 0xFF;
+    metadata.extendMeta.baseColorMeta.baseColorPrimary = static_cast<uint32_t>(base) & 0xFF;
+    metadata.extendMeta.gainmapColorMeta.enhanceDataColorPrimary = static_cast<uint32_t>(gainmap) & 0xFF;
+    metadata.extendMeta.gainmapColorMeta.combineColorPrimary = static_cast<uint32_t>(gainmap) & 0xFF;
+    metadata.extendMeta.gainmapColorMeta.alternateColorPrimary = static_cast<uint32_t>(hdr) & 0xFF;
 }
 
 static CM_HDR_Metadata_Type GetHdrMediaType(HdrMetadata& metadata)
