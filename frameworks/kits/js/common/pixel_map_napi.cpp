@@ -87,12 +87,6 @@ struct PositionArea {
     Rect region;
 };
 
-struct ImageEnum {
-    std::string name;
-    int32_t numVal;
-    std::string strVal;
-};
-
 static std::vector<struct ImageEnum> AntiAliasingLevelMap = {
     {"NONE", 0, ""},
     {"LOW", 1, ""},
@@ -386,39 +380,6 @@ static bool parsePositionArea(napi_env env, napi_value root, PositionArea* area)
     return true;
 }
 
-static napi_value CreateEnumTypeObject(napi_env env, napi_valuetype type, std::vector<struct ImageEnum> imageEnumMap)
-{
-    napi_value result = nullptr;
-    napi_status status = napi_create_object(env, &result);
-    if (status == napi_ok) {
-        for (auto imgEnum : imageEnumMap) {
-            napi_value enumNapiValue = nullptr;
-            if (type == napi_string) {
-                status = napi_create_string_utf8(env, imgEnum.strVal.c_str(),
-                    NAPI_AUTO_LENGTH, &enumNapiValue);
-            } else if (type == napi_number) {
-                status = napi_create_int32(env, imgEnum.numVal, &enumNapiValue);
-            } else {
-                IMAGE_LOGE("Unsupported type %{public}d!", type);
-            }
-            if (status == napi_ok && enumNapiValue != nullptr) {
-                status = napi_set_named_property(env, result, imgEnum.name.c_str(), enumNapiValue);
-            }
-            if (status != napi_ok) {
-                IMAGE_LOGE("Failed to add named prop!");
-                break;
-            }
-        }
-
-        if (status == napi_ok) {
-            return result;
-        }
-    }
-    IMAGE_LOGE("CreateEnumTypeObject is Failed!");
-    napi_get_undefined(env, &result);
-    return result;
-}
-
 static void CommonCallbackRoutine(napi_env env, PixelMapAsyncContext* &asyncContext, const napi_value &valueParam)
 {
     napi_value result[NUM_2] = {0};
@@ -636,9 +597,12 @@ napi_value PixelMapNapi::Init(napi_env env, napi_value exports)
             CreatePixelMapFromSurfaceWithTransformationSync),
         DECLARE_NAPI_STATIC_FUNCTION("convertPixelFormat", ConvertPixelMapFormat),
 #endif
-        DECLARE_NAPI_PROPERTY("AntiAliasingLevel", CreateEnumTypeObject(env, napi_number, AntiAliasingLevelMap)),
-        DECLARE_NAPI_PROPERTY("HdrMetadataKey", CreateEnumTypeObject(env, napi_number, HdrMetadataKeyMap)),
-        DECLARE_NAPI_PROPERTY("HdrMetadataType", CreateEnumTypeObject(env, napi_number, HdrMetadataTypeMap)),
+        DECLARE_NAPI_PROPERTY("AntiAliasingLevel",
+            ImageNapiUtils::CreateEnumTypeObject(env, napi_number, AntiAliasingLevelMap)),
+        DECLARE_NAPI_PROPERTY("HdrMetadataKey",
+            ImageNapiUtils::CreateEnumTypeObject(env, napi_number, HdrMetadataKeyMap)),
+        DECLARE_NAPI_PROPERTY("HdrMetadataType",
+            ImageNapiUtils::CreateEnumTypeObject(env, napi_number, HdrMetadataTypeMap)),
     };
 
     napi_value constructor = nullptr;

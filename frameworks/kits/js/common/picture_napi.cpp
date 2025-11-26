@@ -72,13 +72,7 @@ struct PictureAsyncContext {
 
 using PictureAsyncContextPtr = std::unique_ptr<PictureAsyncContext>;
 
-struct PictureEnum {
-    std::string name;
-    int32_t numVal;
-    std::string strVal;
-};
-
-static std::vector<struct PictureEnum> auxiliaryPictureTypeMap = {
+static std::vector<struct ImageEnum> auxiliaryPictureTypeMap = {
     {"GAINMAP", static_cast<uint32_t>(AuxiliaryPictureType::GAINMAP), ""},
     {"DEPTH_MAP", static_cast<uint32_t>(AuxiliaryPictureType::DEPTH_MAP), ""},
     {"UNREFOCUS_MAP", static_cast<uint32_t>(AuxiliaryPictureType::UNREFOCUS_MAP), ""},
@@ -87,7 +81,7 @@ static std::vector<struct PictureEnum> auxiliaryPictureTypeMap = {
     {"THUMBNAIL", static_cast<uint32_t>(AuxiliaryPictureType::THUMBNAIL), ""},
 };
 
-static std::vector<struct PictureEnum> metadataTypeMap = {
+static std::vector<struct ImageEnum> metadataTypeMap = {
     {"EXIF_METADATA", static_cast<uint32_t>(MetadataType::EXIF), ""},
     {"FRAGMENT_METADATA", static_cast<uint32_t>(MetadataType::FRAGMENT), ""},
     {"XTSTYLE_METADATA", static_cast<uint32_t>(MetadataType::XTSTYLE), ""},
@@ -96,12 +90,12 @@ static std::vector<struct PictureEnum> metadataTypeMap = {
     {"HEIFS_METADATA", static_cast<uint32_t>(MetadataType::HEIFS), ""},
 };
 
-static std::vector<struct PictureEnum> gifPropertyKeyMap = {
+static std::vector<struct ImageEnum> gifPropertyKeyMap = {
     {"GIF_DELAY_TIME", 0, "GifDelayTime"},
     {"GIF_DISPOSAL_TYPE", 0, "GifDisposalType"},
 };
 
-static std::vector<struct PictureEnum> heifsPropertyKeyMap = {
+static std::vector<struct ImageEnum> heifsPropertyKeyMap = {
     {"HEIFS_DELAY_TIME", 0, "HeifsDelayTime"},
 };
 
@@ -114,38 +108,6 @@ struct NapiValues {
     int32_t refCount = 1;
     std::unique_ptr<PictureAsyncContext> context;
 };
-
-static napi_value CreateEnumTypeObject(napi_env env,
-    napi_valuetype type, std::vector<struct PictureEnum> pictureEnumMap)
-{
-    napi_value result = nullptr;
-    napi_status status = napi_create_object(env, &result);
-    if (status == napi_ok) {
-        for (auto imgEnum : pictureEnumMap) {
-            napi_value enumNapiValue = nullptr;
-            if (type == napi_string) {
-                status = napi_create_string_utf8(env, imgEnum.strVal.c_str(),
-                    NAPI_AUTO_LENGTH, &enumNapiValue);
-            } else if (type == napi_number) {
-                status = napi_create_int32(env, imgEnum.numVal, &enumNapiValue);
-            } else {
-                IMAGE_LOGE("Unsupported type %{public}d!", type);
-                break;
-            }
-            if (status == napi_ok && enumNapiValue != nullptr) {
-                status = napi_set_named_property(env, result, imgEnum.name.c_str(), enumNapiValue);
-            }
-            if (status != napi_ok) {
-                IMAGE_LOGE("Failed to add named prop!");
-                break;
-            }
-        }
-        return result;
-    }
-    IMAGE_LOGE("CreateEnumTypeObject is Failed!");
-    napi_get_undefined(env, &result);
-    return result;
-}
 
 static void CommonCallbackRoutine(napi_env env, PictureAsyncContext* &asyncContext, const napi_value &valueParam)
 {
@@ -265,10 +227,14 @@ napi_value PictureNapi::Init(napi_env env, napi_value exports)
         DECLARE_NAPI_STATIC_FUNCTION("createPicture", CreatePicture),
         DECLARE_NAPI_STATIC_FUNCTION("createPictureFromParcel", CreatePictureFromParcel),
         DECLARE_NAPI_STATIC_FUNCTION("createPictureByHdrAndSdrPixelMap", CreatePictureByHdrAndSdrPixelMap),
-        DECLARE_NAPI_PROPERTY("AuxiliaryPictureType", CreateEnumTypeObject(env, napi_number, auxiliaryPictureTypeMap)),
-        DECLARE_NAPI_PROPERTY("MetadataType", CreateEnumTypeObject(env, napi_number, metadataTypeMap)),
-        DECLARE_NAPI_PROPERTY("GifPropertyKey", CreateEnumTypeObject(env, napi_string, gifPropertyKeyMap)),
-        DECLARE_NAPI_PROPERTY("HeifsPropertyKey", CreateEnumTypeObject(env, napi_string, heifsPropertyKeyMap)),
+        DECLARE_NAPI_PROPERTY("AuxiliaryPictureType",
+            ImageNapiUtils::CreateEnumTypeObject(env, napi_number, auxiliaryPictureTypeMap)),
+        DECLARE_NAPI_PROPERTY("MetadataType",
+            ImageNapiUtils::CreateEnumTypeObject(env, napi_number, metadataTypeMap)),
+        DECLARE_NAPI_PROPERTY("GifPropertyKey",
+            ImageNapiUtils::CreateEnumTypeObject(env, napi_string, gifPropertyKeyMap)),
+        DECLARE_NAPI_PROPERTY("HeifsPropertyKey",
+            ImageNapiUtils::CreateEnumTypeObject(env, napi_string, heifsPropertyKeyMap)),
     };
 
     napi_value constructor = nullptr;
@@ -772,7 +738,7 @@ napi_value PictureNapi::GetMainPixelmap(napi_env env, napi_callback_info info)
     nVal.status = napi_unwrap(env, nVal.thisVar, reinterpret_cast<void**>(&pictureNapi));
 
     IMG_NAPI_CHECK_RET_D(IMG_IS_READY(nVal.status, pictureNapi), nVal.result, IMAGE_LOGE("Fail to unwrap context"));
-    
+
     if (pictureNapi->nativePicture_ != nullptr) {
         auto pixelmap = pictureNapi->nativePicture_->GetMainPixel();
         nVal.result = PixelMapNapi::CreatePixelMap(env, pixelmap);

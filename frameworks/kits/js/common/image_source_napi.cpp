@@ -150,12 +150,6 @@ struct ImageSourceSyncContext {
     DecodingOptionsForThumbnail decodingOptsForThumbnail;
 };
 
-struct ImageEnum {
-    std::string name;
-    int32_t numVal;
-    std::string strVal;
-};
-
 static std::vector<struct ImageEnum> sPixelMapFormatMap = {
     {"UNKNOWN", 0, ""},
     {"ARGB_8888", 1, ""},
@@ -900,37 +894,6 @@ static void ImageSourceCallbackWithErrorObj(napi_env env,
     context = nullptr;
 }
 
-static napi_value CreateEnumTypeObject(napi_env env,
-    napi_valuetype type, std::vector<struct ImageEnum> imageEnumMap)
-{
-    napi_value result = nullptr;
-    napi_status status = napi_create_object(env, &result);
-    if (status == napi_ok) {
-        for (auto imgEnum : imageEnumMap) {
-            napi_value enumNapiValue = nullptr;
-            if (type == napi_string) {
-                status = napi_create_string_utf8(env, imgEnum.strVal.c_str(),
-                    NAPI_AUTO_LENGTH, &enumNapiValue);
-            } else if (type == napi_number) {
-                status = napi_create_int32(env, imgEnum.numVal, &enumNapiValue);
-            } else {
-                IMAGE_LOGE("Unsupported type %{public}d!", type);
-            }
-            if (status == napi_ok && enumNapiValue != nullptr) {
-                status = napi_set_named_property(env, result, imgEnum.name.c_str(), enumNapiValue);
-            }
-            if (status != napi_ok) {
-                IMAGE_LOGE("Failed to add named prop!");
-                break;
-            }
-        }
-        return result;
-    }
-    IMAGE_LOGE("CreateEnumTypeObject is Failed!");
-    napi_get_undefined(env, &result);
-    return result;
-}
-
 std::vector<std::string> GetStringArrayArgument(napi_env env, napi_value object)
 {
     std::vector<std::string> keyStrArray;
@@ -1354,27 +1317,27 @@ napi_value ImageSourceNapi::Init(napi_env env, napi_value exports)
         DECLARE_NAPI_STATIC_FUNCTION("CreateIncrementalSource", CreateIncrementalSource),
         DECLARE_NAPI_STATIC_FUNCTION("getImageSourceSupportedFormats", GetImageSourceSupportedFormats),
         DECLARE_NAPI_PROPERTY("PixelMapFormat",
-            CreateEnumTypeObject(env, napi_number, sPixelMapFormatMap)),
-        DECLARE_NAPI_PROPERTY("PropertyKey", CreateEnumTypeObject(env, napi_string, sPropertyKeyMap)),
-        DECLARE_NAPI_PROPERTY("ImageFormat", CreateEnumTypeObject(env, napi_number, sImageFormatMap)),
-        DECLARE_NAPI_PROPERTY("AlphaType", CreateEnumTypeObject(env, napi_number, sAlphaTypeMap)),
-        DECLARE_NAPI_PROPERTY("ScaleMode", CreateEnumTypeObject(env, napi_number, sScaleModeMap)),
+            ImageNapiUtils::CreateEnumTypeObject(env, napi_number, sPixelMapFormatMap)),
+        DECLARE_NAPI_PROPERTY("PropertyKey", ImageNapiUtils::CreateEnumTypeObject(env, napi_string, sPropertyKeyMap)),
+        DECLARE_NAPI_PROPERTY("ImageFormat", ImageNapiUtils::CreateEnumTypeObject(env, napi_number, sImageFormatMap)),
+        DECLARE_NAPI_PROPERTY("AlphaType", ImageNapiUtils::CreateEnumTypeObject(env, napi_number, sAlphaTypeMap)),
+        DECLARE_NAPI_PROPERTY("ScaleMode", ImageNapiUtils::CreateEnumTypeObject(env, napi_number, sScaleModeMap)),
         DECLARE_NAPI_PROPERTY("ComponentType",
-            CreateEnumTypeObject(env, napi_number, sComponentTypeMap)),
+            ImageNapiUtils::CreateEnumTypeObject(env, napi_number, sComponentTypeMap)),
         DECLARE_NAPI_PROPERTY("DecodingDynamicRange",
-            CreateEnumTypeObject(env, napi_number, sDecodingDynamicRangeMap)),
+            ImageNapiUtils::CreateEnumTypeObject(env, napi_number, sDecodingDynamicRangeMap)),
         DECLARE_NAPI_PROPERTY("ResolutionQuality",
-            CreateEnumTypeObject(env, napi_number, sDecodingResolutionQualityMap)),
+            ImageNapiUtils::CreateEnumTypeObject(env, napi_number, sDecodingResolutionQualityMap)),
         DECLARE_NAPI_PROPERTY("AllocatorType",
-            CreateEnumTypeObject(env, napi_number, sAllocatorType)),
+            ImageNapiUtils::CreateEnumTypeObject(env, napi_number, sAllocatorType)),
         DECLARE_NAPI_PROPERTY("CropAndScaleStrategy",
-            CreateEnumTypeObject(env, napi_number, sCropAndScaleStrategyMap)),
+            ImageNapiUtils::CreateEnumTypeObject(env, napi_number, sCropAndScaleStrategyMap)),
         DECLARE_NAPI_PROPERTY("Orientation",
-            CreateEnumTypeObject(env, napi_number, sOrientationMap)),
+            ImageNapiUtils::CreateEnumTypeObject(env, napi_number, sOrientationMap)),
         DECLARE_NAPI_PROPERTY("FocusMode",
-            CreateEnumTypeObject(env, napi_number, sFocusModeMap)),
+            ImageNapiUtils::CreateEnumTypeObject(env, napi_number, sFocusModeMap)),
         DECLARE_NAPI_PROPERTY("XmageColorMode",
-            CreateEnumTypeObject(env, napi_number, sXmageColorModeMap)),
+            ImageNapiUtils::CreateEnumTypeObject(env, napi_number, sXmageColorModeMap)),
     };
 
     struct ImageConstructorInfo info = {

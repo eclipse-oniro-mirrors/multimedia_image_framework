@@ -153,6 +153,12 @@ struct NapiConstructorContext {
     napi_ref ref_ = nullptr;
 };
 
+struct ImageEnum {
+    std::string name;
+    int32_t numVal;
+    std::string strVal;
+};
+
 class ImageNapiUtils {
 public:
     static bool GetBufferByName(napi_env env, napi_value root, const char* name, void **res, size_t* len);
@@ -175,6 +181,8 @@ public:
     static napi_value ThrowExceptionError(napi_env env, const int32_t errCode, const std::string errMsg);
     static void CleanUpConstructorContext(void* data);
     static bool IsSystemApp();
+    static napi_value CreateEnumTypeObject(napi_env env, napi_valuetype type,
+        const std::vector<struct ImageEnum> &imageEnumMap);
 };
 } // namespace Media
 } // namespace OHOS

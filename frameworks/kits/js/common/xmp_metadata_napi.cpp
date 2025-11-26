@@ -32,6 +32,17 @@ constexpr uint32_t NUM_1 = 1;
 constexpr uint32_t NUM_2 = 2;
 constexpr uint32_t NUM_3 = 3;
 
+static std::vector<struct OHOS::Media::ImageEnum> sXMPTagType = {
+    {"UNKNOWN", 0, ""},
+    {"SIMPLE", 1, ""},
+    {"UNORDERED_ARRAY", 2, ""},
+    {"ORDERED_ARRAY", 3, ""},
+    {"ALTERNATE_ARRAY", 4, ""},
+    {"ALTERNATE_TEXT", 5, ""},
+    {"STRUCTURE", 6, ""},
+    {"QUALIFIER", 7, ""}
+};
+
 // Structure to hold callback information for EnumerateTags
 struct EnumerateTagsCallbackContext {
     napi_env env = nullptr;
@@ -78,6 +89,7 @@ napi_status XMPMetadataNapi::DefineStaticProperties(napi_env env, napi_value exp
 {
     napi_property_descriptor static_prop[] = {
         DECLARE_NAPI_PROPERTY("XMP_NAMESPACES", CreateXMPNamespaces(env)),
+        DECLARE_NAPI_PROPERTY("XMPTagType", ImageNapiUtils::CreateEnumTypeObject(env, napi_number, sXMPTagType)),
         // DECLARE_NAPI_STATIC_FUNCTION("createXMPMetadataFromXMPData", CreateXMPMetadataFromXMPData),
         // DECLARE_NAPI_STATIC_FUNCTION("createXMPData", CreateXMPData),
     };

@@ -336,5 +336,37 @@ bool ImageNapiUtils::IsSystemApp()
     return false;
 #endif
 }
+
+napi_value ImageNapiUtils::CreateEnumTypeObject(napi_env env, napi_valuetype type,
+    const std::vector<struct ImageEnum> &imageEnumMap)
+{
+    napi_value result = nullptr;
+    napi_status status = napi_create_object(env, &result);
+    if (status == napi_ok) {
+        for (const auto &[name, numVal, strVal] : imageEnumMap) {
+            napi_value enumNapiValue = nullptr;
+            if (type == napi_string) {
+                status = napi_create_string_utf8(env, strVal.c_str(), strVal.size(), &enumNapiValue);
+            } else if (type == napi_number) {
+                status = napi_create_int32(env, numVal, &enumNapiValue);
+            } else {
+                IMAGE_LOGE("%{public}s: Unsupported type %{public}d!", __func__, type);
+            }
+            if (status == napi_ok && enumNapiValue != nullptr) {
+                status = napi_set_named_property(env, result, name.c_str(), enumNapiValue);
+            }
+            if (status != napi_ok) {
+                IMAGE_LOGE("%{public}s: Failed to add named prop for %{public}s!", __func__, name.c_str());
+                break;
+            }
+        }
+        if (status == napi_ok) {
+            return result;
+        }
+    }
+    IMAGE_LOGE("%{public}s: CreateEnumTypeObject is Failed!", __func__);
+    napi_get_undefined(env, &result);
+    return result;
+}
 }  // namespace Media
 }  // namespace OHOS
