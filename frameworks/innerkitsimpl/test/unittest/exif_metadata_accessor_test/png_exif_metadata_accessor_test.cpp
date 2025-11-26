@@ -49,6 +49,11 @@ static const std::string IMAGE_OUTPUT_ITXT_WITHCOMPRESS_PNG_PATH =
 static const std::string IMAGE_INPUT1_JPEG_PATH = "/data/local/tmp/image/test_jpeg_readmetadata001.jpg";
 static const auto TIFF_IFH_LENGTH = 8;
 static const uint32_t MOCK_SIZE = 4;
+static const uint32_t CHUNK_LENGTH = 4;
+static const uint32_t CHUNK_BUFFER = 4;
+static const uint32_t PNG_SIGN_SIZE_LOCAL = 8;
+static const uint32_t CHUNK_FIELD_SIZE = 4;
+static const uint32_t INVALID_TEXT_DATA_SIZE = 10;
 }
 class PngExifMetadataAccessorTest : public testing::Test {
 public:
@@ -1413,6 +1418,129 @@ HWTEST_F(PngExifMetadataAccessorTest, TestWriteAndReadFnumberWithTwoDecimal001, 
     exifMetadata = imageAccessor.Get();
     ASSERT_NE(exifMetadata, nullptr);
     ASSERT_EQ(GetProperty(exifMetadata, "FNumber"), "f/1.8");
+}
+
+/**
+ * @tc.name: WriteFreeDataBlobTest001
+ * @tc.desc: Test that the Write method succeeds after the dataBlob is released.
+ * @tc.type: FUNC
+ */
+HWTEST_F(PngExifMetadataAccessorTest, WriteFreeDataBlobTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PngExifMetadataAccessorTest: WriteFreeDataBlobTest001 start";
+    
+    std::shared_ptr<MetadataStream> stream = std::make_shared<FileMetadataStream>(IMAGE_OUTPUT_EXIF_PNG_PATH);
+    ASSERT_TRUE(stream->Open(OpenMode::ReadWrite));
+    PngExifMetadataAccessor imageAccessor(stream);
+    ASSERT_EQ(imageAccessor.Read(), 0);
+
+    auto exifMetadata = imageAccessor.Get();
+    ASSERT_NE(exifMetadata, nullptr);
+    ASSERT_TRUE(exifMetadata->SetValue("XResolution", "96"));
+    
+    uint32_t ret = imageAccessor.Write();
+    ASSERT_EQ(ret, SUCCESS);
+    
+    GTEST_LOG_(INFO) << "PngExifMetadataAccessorTest: WriteFreeDataBlobTest001 end";
+}
+
+/**
+ * @tc.name: ProcessExifDataReadChunkFailTest001
+ * @tc.desc: Test ProcessExifData when ReadChunk fails
+ * @tc.type: FUNC
+ */
+HWTEST_F(PngExifMetadataAccessorTest, ProcessExifDataReadChunkFailTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PngExifMetadataAccessorTest: ProcessExifDataReadChunkFailTest001 start";
+    
+    std::shared_ptr<MetadataStream> shortStream = std::make_shared<FileMetadataStream>("/dev/null");
+    ASSERT_TRUE(shortStream->Open(OpenMode::ReadWrite));
+    PngExifMetadataAccessor accessor(shortStream);
+    DataBuf mockBuf;
+    bool ret = accessor.ProcessExifData(mockBuf, std::string("eXIf"), CHUNK_LENGTH);
+    ASSERT_FALSE(ret);
+    
+    GTEST_LOG_(INFO) << "PngExifMetadataAccessorTest: ProcessExifDataReadChunkFailTest001 end";
+}
+
+/**
+ * @tc.name: WriteExifDataUnknownChunkTypeTest001
+ * @tc.desc: Test WriteExifData with unknown chunk type
+ * @tc.type: FUNC
+ */
+HWTEST_F(PngExifMetadataAccessorTest, WriteExifDataUnknownChunkTypeTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PngExifMetadataAccessorTest: WriteExifDataUnknownChunkTypeTest001 start";
+    
+    std::shared_ptr<MetadataStream> stream = std::make_shared<FileMetadataStream>(IMAGE_OUTPUT_EXIF_PNG_PATH);
+    ASSERT_TRUE(stream->Open(OpenMode::ReadWrite));
+    PngExifMetadataAccessor accessor(stream);
+    
+    BufferMetadataStream bufStream;
+    ASSERT_TRUE(bufStream.Open(OpenMode::ReadWrite));
+    
+    uint8_t mockData[] = "test";
+    uint32_t size = sizeof(mockData);
+    
+    DataBuf chunkBuf(CHUNK_BUFFER);
+    
+    bool ret = accessor.WriteExifData(bufStream, mockData, size, chunkBuf, std::string("UNKN"));
+    ASSERT_TRUE(ret);
+    
+    GTEST_LOG_(INFO) << "PngExifMetadataAccessorTest: WriteExifDataUnknownChunkTypeTest001 end";
+}
+
+/**
+ * @tc.name: ReadBlobProcessExifDataReturnFalseTest001
+ * @tc.desc: Test ReadBlob when ProcessExifData returns false
+ * @tc.type: FUNC
+ */
+HWTEST_F(PngExifMetadataAccessorTest, ReadBlobProcessExifDataReturnFalseTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PngExifMetadataAccessorTest: ReadBlobProcessExifDataReturnFalseTest001 start";
+    
+    std::string tempPngPath = "/data/local/tmp/image/test_invalid_text_chunk.png";
+    system(("cp " + IMAGE_INPUT_NOEXIF_PNG_PATH + " " + tempPngPath).c_str());
+    
+    FILE* fp = fopen(tempPngPath.c_str(), "r+b");
+    ASSERT_NE(fp, nullptr);
+    
+    fseek(fp, PNG_SIGN_SIZE_LOCAL, SEEK_SET);
+    uint32_t ihdrLen;
+    fread(&ihdrLen, CHUNK_FIELD_SIZE, 1, fp);
+    uint32_t ihdrLenBE = __builtin_bswap32(ihdrLen);
+
+    fseek(fp, PNG_SIGN_SIZE_LOCAL + CHUNK_FIELD_SIZE + CHUNK_FIELD_SIZE + ihdrLenBE + CHUNK_FIELD_SIZE, SEEK_SET);
+    long insertPos = ftell(fp);
+
+    fseek(fp, 0, SEEK_END);
+    long remainSize = ftell(fp) - insertPos;
+    std::vector<uint8_t> remainData(remainSize);
+    fseek(fp, insertPos, SEEK_SET);
+    fread(remainData.data(), 1, remainSize, fp);
+
+    fseek(fp, insertPos, SEEK_SET);
+    uint32_t invalidLenBE = __builtin_bswap32(INVALID_TEXT_DATA_SIZE);
+    fwrite(&invalidLenBE, CHUNK_FIELD_SIZE, 1, fp);
+    fwrite("tEXt", CHUNK_FIELD_SIZE, 1, fp);
+    uint8_t invalidData[INVALID_TEXT_DATA_SIZE] = {0xFF};
+    std::fill_n(invalidData, INVALID_TEXT_DATA_SIZE, 0xFF);
+    fwrite(invalidData, 1, INVALID_TEXT_DATA_SIZE, fp);
+    uint32_t fakeCrc = 0;
+    fwrite(&fakeCrc, CHUNK_FIELD_SIZE, 1, fp);
+    fwrite(remainData.data(), 1, remainSize, fp);
+    fclose(fp);
+
+    std::shared_ptr<MetadataStream> stream = std::make_shared<FileMetadataStream>(tempPngPath);
+    ASSERT_TRUE(stream->Open(OpenMode::ReadWrite));
+    PngExifMetadataAccessor accessor(stream);
+    
+    DataBuf blob;
+    bool ret = accessor.ReadBlob(blob);
+    ASSERT_FALSE(ret);
+    remove(tempPngPath.c_str());
+
+    GTEST_LOG_(INFO) << "PngExifMetadataAccessorTest: ReadBlobProcessExifDataReturnFalseTest001 end";
 }
 } // namespace Multimedia
 } // namespace OHOS

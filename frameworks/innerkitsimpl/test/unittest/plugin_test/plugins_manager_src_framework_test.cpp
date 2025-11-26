@@ -54,6 +54,9 @@ static constexpr uint32_t MOCKRANGESIZE = 2;
 static constexpr uint32_t MOCKSIZE = 1;
 static constexpr uint32_t LOWERRANGE = 1;
 static constexpr uint32_t UPPERRANGE = 3;
+static constexpr uint32_t TEST_UINT32_SET_VAL1 = 100;
+static constexpr uint32_t TEST_UINT32_SET_VAL2 = 200;
+static constexpr uint32_t TEST_UINT32_SET_VAL3 = 300;
 
 static void StopFunction() {}
 static bool StartFunction()
@@ -1296,10 +1299,6 @@ HWTEST_F(PluginsManagerSrcFrameWorkTest, CompareStringPriority002, TestSize.Leve
     rhs2.value_.stringValue = str3;
     ret = implClassMgr.CompareStringPriority(lhs, rhs, type);
     ASSERT_EQ(ret, ERR_COMP_LOWER);
-    delete str1;
-    delete str2;
-    delete str3;
-    delete str4;
     GTEST_LOG_(INFO) << "PluginsManagerSrcFrameWorkTest: CompareStringPriority002 end";
 }
 
@@ -2519,6 +2518,243 @@ HWTEST_F(PluginsManagerSrcFrameWorkTest, AnalyzeAttrDataTest006, TestSize.Level3
     auto ret = mockCapability.AnalyzeAttrData(mockJson, mockAttrData);
     ASSERT_EQ(ret, SUCCESS);
     GTEST_LOG_(INFO) << "PluginsManagerSrcFrameWorkTest: AnalyzeAttrDataTest006 end";
+}
+
+/**
+ * @tc.name: CheckTargetVersionInvalidTest001
+ * @tc.desc: Test CheckTargetVersion with invalid version format
+ * @tc.type: FUNC
+ */
+HWTEST_F(PluginsManagerSrcFrameWorkTest, CheckTargetVersionInvalidTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PluginsManagerSrcFrameWorkTest: CheckTargetVersionInvalidTest001 start";
+
+    Plugin plugin;
+    std::string metadataJson = R"({
+        "packageName": "TestPackage",
+        "targetVersion": "invalid.version.format.abc",
+        "version": "1.0.0",
+        "classes": []
+    })";
+
+    std::istringstream metadata(metadataJson);
+    std::weak_ptr<Plugin> weakPlugin;
+
+    uint32_t ret = plugin.Register(metadata, "", weakPlugin);
+    ASSERT_NE(ret, SUCCESS);
+
+    GTEST_LOG_(INFO) << "PluginsManagerSrcFrameWorkTest: CheckTargetVersionInvalidTest001 end";
+}
+
+/**
+ * @tc.name: AnalyzeVersionInvalidTest001
+ * @tc.desc: Test AnalyzeVersion with invalid version format
+ * @tc.type: FUNC
+ */
+HWTEST_F(PluginsManagerSrcFrameWorkTest, AnalyzeVersionInvalidTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PluginsManagerSrcFrameWorkTest: AnalyzeVersionInvalidTest001 start";
+
+    Plugin plugin;
+    std::string metadataJson = R"({
+        "packageName": "TestPackage",
+        "targetVersion": "1.0.0",
+        "version": "invalid.abc.xyz",
+        "classes": []
+    })";
+
+    std::istringstream metadata(metadataJson);
+    std::weak_ptr<Plugin> weakPlugin;
+
+    uint32_t ret = plugin.Register(metadata, "", weakPlugin);
+    ASSERT_NE(ret, SUCCESS);
+
+    GTEST_LOG_(INFO) << "PluginsManagerSrcFrameWorkTest: AnalyzeVersionInvalidTest001 end";
+}
+
+/**
+ * @tc.name: GetArraySizeClassesFailTest001
+ * @tc.desc: Test RegisterMetadata when classes array is missing
+ * @tc.type: FUNC
+ */
+HWTEST_F(PluginsManagerSrcFrameWorkTest, GetArraySizeClassesFailTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PluginsManagerSrcFrameWorkTest: GetArraySizeClassesFailTest001 start";
+
+    Plugin plugin;
+    std::string metadataJson = R"({
+        "packageName": "TestPackage",
+        "targetVersion": "1.0.0",
+        "version": "1.0.0"
+    })";
+
+    std::istringstream metadata(metadataJson);
+    std::weak_ptr<Plugin> weakPlugin;
+
+    uint32_t ret = plugin.Register(metadata, "", weakPlugin);
+    ASSERT_NE(ret, SUCCESS);
+    ASSERT_EQ(ret, ERR_INVALID_PARAMETER);
+
+    GTEST_LOG_(INFO) << "PluginsManagerSrcFrameWorkTest: GetArraySizeClassesFailTest001 end";
+}
+
+/**
+ * @tc.name: VersionParseStepNanoDefaultTest001
+ * @tc.desc: Test AnalyzeVersion with 3-part version
+ * @tc.type: FUNC
+ */
+HWTEST_F(PluginsManagerSrcFrameWorkTest, VersionParseStepNanoDefaultTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PluginsManagerSrcFrameWorkTest: VersionParseStepNanoDefaultTest001 start";
+
+    Plugin plugin;
+    VersionNum versionNum;
+
+    std::string version3Part = "1.0.0";
+    uint32_t ret = plugin.AnalyzeVersion(version3Part, versionNum);
+    ASSERT_EQ(ret, SUCCESS);
+    ASSERT_EQ(versionNum.major, 1);
+    ASSERT_EQ(versionNum.minor, 0);
+    ASSERT_EQ(versionNum.micro, 0);
+    ASSERT_EQ(versionNum.nano, 0);
+
+    GTEST_LOG_(INFO) << "PluginsManagerSrcFrameWorkTest: VersionParseStepNanoDefaultTest001 end";
+}
+
+/**
+ * @tc.name: CapabilityAnalyzeFailureTest001
+ * @tc.desc: Test Capability::AnalyzeAttrData failure branch
+ * @tc.type: FUNC
+ */
+HWTEST_F(PluginsManagerSrcFrameWorkTest, CapabilityAnalyzeFailureTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PluginsManagerSrcFrameWorkTest: CapabilityAnalyzeFailureTest001 start";
+    Capability capability;
+    nlohmann::json capInfo;
+    capInfo["name"] = "testCapability";
+    capInfo["type"] = "invalidType";
+    capInfo["value"] = "testValue";
+    AttrData attrData;
+    uint32_t ret = capability.AnalyzeAttrData(capInfo, attrData);
+    ASSERT_NE(ret, SUCCESS);
+    GTEST_LOG_(INFO) << "PluginsManagerSrcFrameWorkTest: CapabilityAnalyzeFailureTest001 end";
+}
+
+/**
+ * @tc.name: CapabilityUnexpectedTypeTest001
+ * @tc.desc: Test unexpected cap value type branch
+ * @tc.type: FUNC
+ */
+HWTEST_F(PluginsManagerSrcFrameWorkTest, CapabilityUnexpectedTypeTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PluginsManagerSrcFrameWorkTest: CapabilityUnexpectedTypeTest001 start";
+    Capability capability;
+    nlohmann::json capInfo;
+    capInfo["name"] = "testCapability";
+    capInfo["type"] = "unknownType";
+    capInfo["value"] = "testValue";
+    AttrData attrData;
+    uint32_t ret = capability.AnalyzeAttrData(capInfo, attrData);
+    ASSERT_NE(ret, SUCCESS);
+    GTEST_LOG_(INFO) << "PluginsManagerSrcFrameWorkTest: CapabilityUnexpectedTypeTest001 end";
+}
+
+/**
+ * @tc.name: CapabilityEmptyStringTest001
+ * @tc.desc: Test empty string value branch
+ * @tc.type: FUNC
+ */
+HWTEST_F(PluginsManagerSrcFrameWorkTest, CapabilityEmptyStringTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PluginsManagerSrcFrameWorkTest: CapabilityEmptyStringTest001 start";
+    Capability capability;
+    nlohmann::json capInfo;
+    capInfo["name"] = "testString";
+    capInfo["type"] = "string";
+    capInfo["value"] = "";
+    AttrData attrData;
+    uint32_t ret = capability.AnalyzeString(capInfo, attrData);
+    ASSERT_NE(ret, SUCCESS);
+    GTEST_LOG_(INFO) << "PluginsManagerSrcFrameWorkTest: CapabilityEmptyStringTest001 end";
+}
+
+/**
+ * @tc.name: CapabilityStringSetDataFailTest001
+ * @tc.desc: Test string SetData success branch
+ * @tc.type: FUNC
+ */
+HWTEST_F(PluginsManagerSrcFrameWorkTest, CapabilityStringSetDataFailTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PluginsManagerSrcFrameWorkTest: CapabilityStringSetDataFailTest001 start";
+    Capability capability;
+    nlohmann::json capInfo;
+    capInfo["name"] = "testString";
+    capInfo["type"] = "string";
+    capInfo["value"] = "validString";
+    AttrData attrData;
+    uint32_t ret = capability.AnalyzeString(capInfo, attrData);
+    ASSERT_EQ(ret, SUCCESS);
+    ASSERT_EQ(attrData.type_, AttrDataType::ATTR_DATA_STRING);
+    GTEST_LOG_(INFO) << "PluginsManagerSrcFrameWorkTest: CapabilityStringSetDataFailTest001 end";
+}
+
+/**
+ * @tc.name: CapabilityUint32SetInsertFailTest001
+ * @tc.desc: Test uint32Set InsertSet success branch
+ * @tc.type: FUNC
+ */
+HWTEST_F(PluginsManagerSrcFrameWorkTest, CapabilityUint32SetInsertFailTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PluginsManagerSrcFrameWorkTest: CapabilityUint32SetInsertFailTest001 start";
+    Capability capability;
+    nlohmann::json capInfo;
+    capInfo["name"] = "testUint32Set";
+    capInfo["type"] = "uint32Set";
+    capInfo["value"] = nlohmann::json::array({TEST_UINT32_SET_VAL1, TEST_UINT32_SET_VAL2, TEST_UINT32_SET_VAL3});
+    AttrData attrData;
+    uint32_t ret = capability.AnalyzeUint32Set(capInfo, attrData);
+    ASSERT_EQ(ret, SUCCESS);
+    ASSERT_EQ(attrData.type_, AttrDataType::ATTR_DATA_UINT32_SET);
+    GTEST_LOG_(INFO) << "PluginsManagerSrcFrameWorkTest: CapabilityUint32SetInsertFailTest001 end";
+}
+
+/**
+ * @tc.name: CapabilityStringSetInsertFailTest001
+ * @tc.desc: Test stringSet InsertSet success branch
+ * @tc.type: FUNC
+ */
+HWTEST_F(PluginsManagerSrcFrameWorkTest, CapabilityStringSetInsertFailTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PluginsManagerSrcFrameWorkTest: CapabilityStringSetInsertFailTest001 start";
+    Capability capability;
+    nlohmann::json capInfo;
+    capInfo["name"] = "testStringSet";
+    capInfo["type"] = "stringSet";
+    capInfo["value"] = nlohmann::json::array({"string1", "string2", "string3"});
+    AttrData attrData;
+    uint32_t ret = capability.AnalyzeStringSet(capInfo, attrData);
+    ASSERT_EQ(ret, SUCCESS);
+    ASSERT_EQ(attrData.type_, AttrDataType::ATTR_DATA_STRING_SET);
+    GTEST_LOG_(INFO) << "PluginsManagerSrcFrameWorkTest: CapabilityStringSetInsertFailTest001 end";
+}
+
+/**
+ * @tc.name: CapabilityDefaultSwitchBranchTest001
+ * @tc.desc: Test AnalyzeBool with invalid bool value to trigger failure branch
+ * @tc.type: FUNC
+ */
+HWTEST_F(PluginsManagerSrcFrameWorkTest, CapabilityDefaultSwitchBranchTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PluginsManagerSrcFrameWorkTest: CapabilityDefaultSwitchBranchTest001 start";
+    Capability capability;
+    nlohmann::json capInfo;
+    capInfo["name"] = "testDefault";
+    capInfo["type"] = "bool";
+    capInfo["value"] = "invalid_bool_value";
+    AttrData attrData;
+    uint32_t ret = capability.AnalyzeBool(capInfo, attrData);
+    ASSERT_NE(ret, SUCCESS);
+    GTEST_LOG_(INFO) << "PluginsManagerSrcFrameWorkTest: CapabilityDefaultSwitchBranchTest001 end";
 }
 
 /**

@@ -33,6 +33,12 @@ static constexpr size_t ERR_LENGTH = -1;
 static constexpr size_t NORMAL_LENGTH = 1;
 static constexpr size_t SIZE_32BITS = 0xFFFFFFFF;
 static constexpr size_t UUID_TYPE_BYTE_NUM = 16;
+static constexpr uint8_t LARGE_PROPERTY_INDEX_FLAG = 1;
+static constexpr uint8_t PROPERTY_NUMBER = 2;
+static constexpr uint8_t NOT_DEFAULT_INDEX = 1;
+static constexpr uint8_t BOX_TYPE = 2;
+std::vector<uint8_t> BUFFER = {0x01, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x01,
+                               0x12, 0x34, 0x56, 0x78, 0x01, 0xAB, 0xCD};
 static constexpr uint32_t NAL_LAYER_ID = 33;
 static constexpr uint8_t SKIP_DOUBLE_DATA_PROCESS_BYTE = 2;
 
@@ -673,6 +679,146 @@ HWTEST_F(HeifParserBoxTest, MakeFromReaderTest001, TestSize.Level3)
     heif_error error = heifBox.MakeFromReader(reader, &heifBoxSptr, recursionCount);
     EXPECT_EQ(error, heif_error_eof);
     GTEST_LOG_(INFO) << "HeifParserBoxTest: MakeFromReaderTest001 end";
+}
+
+/**
+ * @tc.name: GetPropertiesTest003
+ * @tc.desc: Test HeifIpcoBox.GetProperties with propertyIndex equal to 0.
+ * @tc.type: FUNC
+ */
+HWTEST_F(HeifParserBoxTest, GetPropertiesTest003, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "HeifParserBoxTest: GetPropertiesTest003 start";
+    auto heifIpcoBox = std::make_shared<HeifIpcoBox>();
+    uint32_t itemId = 0;
+    std::shared_ptr<HeifIpmaBox> ipma = std::make_shared<HeifIpmaBox>();
+    std::vector<std::shared_ptr<HeifBox>> outProperties;
+
+    struct PropertyAssociation rec {
+        .essential = false,
+        .propertyIndex = 0,
+    };
+    std::vector<PropertyAssociation> proPerty;
+    proPerty.push_back(rec);
+    struct PropertyEntry ref {
+        .itemId = 0,
+        .associations = proPerty,
+    };
+    ipma->entries_.push_back(ref);
+
+    ASSERT_EQ(heifIpcoBox->GetProperties(itemId, ipma, outProperties), heif_error_ok);
+    ASSERT_EQ(outProperties.empty(), true);
+    GTEST_LOG_(INFO) << "HeifParserBoxTest: GetPropertiesTest003 end";
+}
+
+/**
+ * @tc.name: GetPropertyTest002
+ * @tc.desc: Test HeifIpcoBox.GetProperty with matching property.
+ * @tc.type: FUNC
+ */
+HWTEST_F(HeifParserBoxTest, GetPropertyTest002, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "HeifParserBoxTest: GetPropertyTest002 start";
+    auto heifIpcoBox = std::make_shared<HeifIpcoBox>();
+    std::shared_ptr<HeifIpmaBox> heifIpmaBox = std::make_shared<HeifIpmaBox>();
+    heif_item_id itemId = NOT_DEFAULT_INDEX;
+    uint32_t boxType = NOT_DEFAULT_INDEX;
+
+    auto property = std::make_shared<HeifBox>(boxType);
+    heifIpcoBox->children_.push_back(property);
+
+    struct PropertyAssociation assoc {
+        .essential = false,
+        .propertyIndex = NOT_DEFAULT_INDEX,
+    };
+    std::vector<PropertyAssociation> proPerty;
+    proPerty.push_back(assoc);
+    struct PropertyEntry entry {
+        .itemId = itemId,
+        .associations = proPerty,
+    };
+    heifIpmaBox->entries_.push_back(entry);
+
+    auto result = heifIpcoBox->GetProperty(itemId, heifIpmaBox, boxType);
+    ASSERT_NE(result, nullptr);
+    ASSERT_EQ(result->GetBoxType(), boxType);
+
+    boxType = BOX_TYPE;
+    result = heifIpcoBox->GetProperty(itemId, heifIpmaBox, boxType);
+    ASSERT_EQ(result, nullptr);
+    GTEST_LOG_(INFO) << "HeifParserBoxTest: GetPropertyTest002 end";
+}
+
+/**
+ * @tc.name: ParseContentTest005
+ * @tc.desc: Test HeifIpmaBox.ParseContent, parsing content of HeifIpmaBox successfully.
+ * @tc.type: FUNC
+ */
+HWTEST_F(HeifParserBoxTest, ParseContentTest005, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "HeifParserBoxTest: ParseContentTest005 start";
+    HeifIpmaBox heifIpmaBox;
+    auto stream = std::make_shared<HeifBufferInputStream>(BUFFER.data(), BUFFER.size(), true);
+    HeifStreamReader reader(stream, 0, BUFFER.size());
+
+    heif_error ret = heifIpmaBox.ParseContent(reader);
+    ASSERT_EQ(ret, heif_error_ok);
+    GTEST_LOG_(INFO) << "HeifParserBoxTest: ParseContentTest005 end";
+}
+
+/**
+ * @tc.name: AddPropertyTest001
+ * @tc.desc: Test HeifIpmaBox.AddProperty, adding an already existing property.
+ * @tc.type: FUNC
+ */
+HWTEST_F(HeifParserBoxTest, AddPropertyTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "HeifParserBoxTest: AddPropertyTest001 start";
+    std::shared_ptr<HeifIpmaBox> heifIpmaBox = std::make_shared<HeifIpmaBox>();
+    heif_item_id itemId = NOT_DEFAULT_INDEX;
+
+    struct PropertyAssociation assoc {
+        .essential = false,
+        .propertyIndex = NOT_DEFAULT_INDEX,
+    };
+    std::vector<PropertyAssociation> proPerty;
+    proPerty.push_back(assoc);
+    struct PropertyEntry entry {
+        .itemId = itemId,
+        .associations = proPerty,
+    };
+    heifIpmaBox->entries_.push_back(entry);
+
+    heifIpmaBox->AddProperty(0, assoc);
+    ASSERT_EQ(heifIpmaBox->entries_.size(), PROPERTY_NUMBER);
+    GTEST_LOG_(INFO) << "HeifParserBoxTest: AddPropertyTest001 end";
+}
+
+/**
+ * @tc.name: WriteTest005
+ * @tc.desc: Test HeifIpmaBox.Write, writing a HeifIpmaBox to a stream successfully.
+ * @tc.type: FUNC
+ */
+HWTEST_F(HeifParserBoxTest, WriteTest005, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "HeifParserBoxTest: WriteTest005 start";
+    HeifIpmaBox heifIpmaBox;
+    HeifStreamWriter writer;
+
+    heifIpmaBox.SetVersion(HEIF_BOX_VERSION_ONE);
+    heifIpmaBox.SetFlags(LARGE_PROPERTY_INDEX_FLAG);
+    PropertyAssociation assoc;
+    assoc.essential = true;
+    assoc.propertyIndex = NOT_DEFAULT_INDEX;
+
+    PropertyEntry entry;
+    entry.itemId = NOT_DEFAULT_INDEX;
+    entry.associations.push_back(assoc);
+    heifIpmaBox.entries_.push_back(entry);
+
+    heif_error ret = heifIpmaBox.Write(writer);
+    ASSERT_EQ(ret, heif_error_ok);
+    GTEST_LOG_(INFO) << "HeifParserBoxTest: WriteTest005 end";
 }
 
 /**
