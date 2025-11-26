@@ -90,7 +90,7 @@ static constexpr XMPTagType ConvertOptionsToTagType(XMP_OptionBits options)
     }
     
     if (options & kXMP_PropIsQualifier) {
-        return XMPTagType::QUALITY;
+        return XMPTagType::QUALIFIER;
     }
     
     return XMPTagType::SIMPLE;
@@ -111,7 +111,7 @@ static constexpr XMP_OptionBits ConvertTagTypeToOptions(XMPTagType tagType)
             return kXMP_PropValueIsArray | kXMP_PropArrayIsAlternate | kXMP_PropArrayIsAltText;
         case XMPTagType::STRUCTURE:
             return kXMP_PropValueIsStruct;
-        case XMPTagType::QUALITY:
+        case XMPTagType::QUALIFIER:
             return kXMP_PropIsQualifier;
         default:
             return kXMP_NoOptions;

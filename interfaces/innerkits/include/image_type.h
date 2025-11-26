@@ -71,11 +71,17 @@ constexpr uint8_t ASTC_EXTEND_INFO_TLV_NUM_6 = 6;
 #define RFIMAGE_ID "urn:com:huawei:photo:5:1:0:meta:Res-Map"
 #define METADATA_TAG_RESMAP "Res-Map\0"
 
-constexpr const char* NS_XMP_BASIC = "http://ns.adobe.com/xap/1.0/";
-constexpr const char* NS_XMP_RIGHTS = "http://ns.adobe.com/xap/1.0/rights/";
-constexpr const char* NS_DC = "http://purl.org/dc/elements/1.1/";
-constexpr const char* NS_EXIF = "http://ns.adobe.com/exif/1.0/";
-constexpr const char* NS_TIFF = "http://ns.adobe.com/tiff/1.0/";
+constexpr const char *NS_XMP_BASIC = "http://ns.adobe.com/xap/1.0/";
+constexpr const char *NS_XMP_RIGHTS = "http://ns.adobe.com/xap/1.0/rights/";
+constexpr const char *NS_DC = "http://purl.org/dc/elements/1.1/";
+constexpr const char *NS_EXIF = "http://ns.adobe.com/exif/1.0/";
+constexpr const char *NS_TIFF = "http://ns.adobe.com/tiff/1.0/";
+
+constexpr const char *PF_XMP_BASIC = "xmp";
+constexpr const char *PF_XMP_RIGHTS = "xmpRights";
+constexpr const char *PF_DC = "dc";
+constexpr const char *PF_EXIF = "exif";
+constexpr const char *PF_TIFF = "tiff";
 
 enum class AllocatorType : int32_t {
     // keep same with java AllocatorType
@@ -563,7 +569,7 @@ enum class XMPTagType: int32_t {
     ALTERNATE_ARRAY = 4,
     ALTERNATE_TEXT = 5,
     STRUCTURE = 6,
-    QUALITY = 7,
+    QUALIFIER = 7,
 };
 
 struct XMPTag {

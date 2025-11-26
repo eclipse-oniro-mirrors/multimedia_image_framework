@@ -34,7 +34,7 @@ XMPMetadataAccessor::XMPMetadataAccessor(const uint8_t *data, size_t size, XMPAc
 
     auto impl = std::make_unique<XMPMetadataImpl>();
     CHECK_ERROR_RETURN_LOG(!impl->IsValid(), "%{public}s XMPMetadataImpl is invalid", __func__);
-    if (!xmpFiles_->GetXMP(impl->get())) {
+    if (!xmpFiles_->GetXMP(impl->GetRawPtr())) {
         IMAGE_LOGE("%{public}s GetXMP failed", __func__);
         return;
     }

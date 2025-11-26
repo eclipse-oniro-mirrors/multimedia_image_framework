@@ -225,23 +225,23 @@ napi_value XMPMetadataNapi::CreateXMPNamespaces(napi_env env)
     napi_create_object(env, &namespacesObj);
 
     // XMP Basic namespace
-    napi_value xmpBasic = CreateXMPNamespace(env, NS_XMP_BASIC, "xmp");
+    napi_value xmpBasic = CreateXMPNamespace(env, NS_XMP_BASIC, PF_XMP_BASIC);
     napi_set_named_property(env, namespacesObj, "XMP_BASIC", xmpBasic);
 
     // XMP Rights namespace
-    napi_value xmpRights = CreateXMPNamespace(env, NS_XMP_RIGHTS, "xmpRights");
+    napi_value xmpRights = CreateXMPNamespace(env, NS_XMP_RIGHTS, PF_XMP_RIGHTS);
     napi_set_named_property(env, namespacesObj, "XMP_RIGHTS", xmpRights);
 
     // Dublin Core namespace
-    napi_value dublinCore = CreateXMPNamespace(env, NS_DC, "dc");
+    napi_value dublinCore = CreateXMPNamespace(env, NS_DC, PF_DC);
     napi_set_named_property(env, namespacesObj, "DUBLIN_CORE", dublinCore);
 
     // EXIF namespace
-    napi_value exif = CreateXMPNamespace(env, NS_EXIF, "exif");
+    napi_value exif = CreateXMPNamespace(env, NS_EXIF, PF_EXIF);
     napi_set_named_property(env, namespacesObj, "EXIF", exif);
 
     // TIFF namespace
-    napi_value tiff = CreateXMPNamespace(env, NS_TIFF, "tiff");
+    napi_value tiff = CreateXMPNamespace(env, NS_TIFF, PF_TIFF);
     napi_set_named_property(env, namespacesObj, "TIFF", tiff);
 
     return namespacesObj;

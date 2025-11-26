@@ -13,8 +13,8 @@
  * limitations under the License.
  */
 
-#ifndef FRAMEWORKS_INNERKITSIMPL_ACCESSOR_INCLUDE_XMP_METADATA_IMPL_H
-#define FRAMEWORKS_INNERKITSIMPL_ACCESSOR_INCLUDE_XMP_METADATA_IMPL_H
+#ifndef INTERFACES_INNERKITS_INCLUDE_XMP_METADATA_IMPL_H
+#define INTERFACES_INNERKITS_INCLUDE_XMP_METADATA_IMPL_H
 
 #include <memory>
 #include "XMP.hpp"
@@ -32,6 +32,12 @@ public:
 
     bool IsValid() const { return xmpMeta_ != nullptr; }
 
+    SXMPMeta& GetMeta() { return *xmpMeta_; }
+    const SXMPMeta& GetMeta() const { return *xmpMeta_; }
+
+    SXMPMeta* GetRawPtr() { return xmpMeta_.get(); }
+    const SXMPMeta* GetRawPtr() const { return xmpMeta_.get(); }
+
     // Forwarding methods - simple delegation to SXMPMeta
     void SetProperty(const char* schemaNS, const char* propName, const char* propValue, XMP_OptionBits options)
     {
@@ -48,14 +54,6 @@ public:
         xmpMeta_->DeleteProperty(schemaNS, propName);
     }
 
-    // For iterator access - returns reference to SXMPMeta
-    SXMPMeta& GetMeta() { return *xmpMeta_; }
-    const SXMPMeta& GetMeta() const { return *xmpMeta_; }
-
-    // For C API requiring pointer
-    SXMPMeta* get() { return xmpMeta_.get(); }
-    const SXMPMeta* get() const { return xmpMeta_.get(); }
-
 private:
     std::unique_ptr<SXMPMeta> xmpMeta_;
 };
@@ -63,4 +61,4 @@ private:
 } // namespace Media
 } // namespace OHOS
 
-#endif // FRAMEWORKS_INNERKITSIMPL_ACCESSOR_INCLUDE_XMP_METADATA_IMPL_H
+#endif // INTERFACES_INNERKITS_INCLUDE_XMP_METADATA_IMPL_H
