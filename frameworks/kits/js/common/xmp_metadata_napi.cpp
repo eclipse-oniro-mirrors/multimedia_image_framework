@@ -58,7 +58,7 @@ XMPMetadataNapi::~XMPMetadataNapi()
     Release();
 }
 
-napi_value XMPMetadataNapi::Init(napi_env env, napi_value exports)
+napi_status XMPMetadataNapi::DefineClassProperties(napi_env env, napi_value &constructor)
 {
     napi_property_descriptor props[] = {
         // DECLARE_NAPI_FUNCTION("setTag", SetTag),
@@ -69,26 +69,32 @@ napi_value XMPMetadataNapi::Init(napi_env env, napi_value exports)
         // DECLARE_NAPI_FUNCTION("registerNamespacePrefix", RegisterNamespacePrefix),
     };
 
-    // Static properties for XMPTagType enum and global functions
+    return napi_define_class(env, CLASS_NAME.c_str(), NAPI_AUTO_LENGTH,
+                            Constructor, nullptr, IMG_ARRAY_SIZE(props),
+                            props, &constructor);
+}
+
+napi_status XMPMetadataNapi::DefineStaticProperties(napi_env env, napi_value exports)
+{
     napi_property_descriptor static_prop[] = {
-        DECLARE_NAPI_STATIC_PROPERTY("XMP_NAMESPACES", CreateXMPNamespaces(env)),
-        // DECLARE_NAPI_FUNCTION("createXMPMetadataFromXMPData", CreateXMPMetadataFromXMPData),
-        // DECLARE_NAPI_FUNCTION("createXMPData", CreateXMPData),
+        DECLARE_NAPI_PROPERTY("XMP_NAMESPACES", CreateXMPNamespaces(env)),
+        // DECLARE_NAPI_STATIC_FUNCTION("createXMPMetadataFromXMPData", CreateXMPMetadataFromXMPData),
+        // DECLARE_NAPI_STATIC_FUNCTION("createXMPData", CreateXMPData),
     };
 
+    return napi_define_properties(env, exports, IMG_ARRAY_SIZE(static_prop), static_prop);
+}
+
+napi_value XMPMetadataNapi::Init(napi_env env, napi_value exports)
+{
     napi_value constructor = nullptr;
+    int32_t refCount = 1;
 
-    IMG_NAPI_CHECK_RET_D(IMG_IS_OK(
-        napi_define_class(env, CLASS_NAME.c_str(), NAPI_AUTO_LENGTH,
-                          Constructor, nullptr, IMG_ARRAY_SIZE(props),
-                          props, &constructor)),
-        nullptr, IMAGE_LOGE("Define class fail")
-    );
+    napi_status status = DefineClassProperties(env, constructor);
+    IMG_NAPI_CHECK_RET_D(IMG_IS_OK(status), nullptr, IMAGE_LOGE("Define class fail"));
 
-    IMG_NAPI_CHECK_RET_D(IMG_IS_OK(
-        napi_create_reference(env, constructor, 1, &sConstructor_)),
-        nullptr, IMAGE_LOGE("Create reference fail")
-    );
+    status = napi_create_reference(env, constructor, refCount, &sConstructor_);
+    IMG_NAPI_CHECK_RET_D(IMG_IS_OK(status), nullptr, IMAGE_LOGE("Create reference fail"));
 
     auto ctorContext = new NapiConstructorContext();
     ctorContext->env_ = env;
@@ -106,15 +112,11 @@ napi_value XMPMetadataNapi::Init(napi_env env, napi_value exports)
         nullptr, IMAGE_LOGE("Init:set global named property fail")
     );
 
-    IMG_NAPI_CHECK_RET_D(IMG_IS_OK(
-        napi_set_named_property(env, exports, CLASS_NAME.c_str(), constructor)),
-        nullptr, IMAGE_LOGE("Set named property fail")
-    );
+    status = napi_set_named_property(env, exports, CLASS_NAME.c_str(), constructor);
+    IMG_NAPI_CHECK_RET_D(IMG_IS_OK(status), nullptr, IMAGE_LOGE("Set named property fail"));
 
-    IMG_NAPI_CHECK_RET_D(IMG_IS_OK(
-        napi_define_properties(env, exports, IMG_ARRAY_SIZE(static_prop), static_prop)),
-        nullptr, IMAGE_LOGE("Define properties fail")
-    );
+    status = DefineStaticProperties(env, exports);
+    IMG_NAPI_CHECK_RET_D(IMG_IS_OK(status), nullptr, IMAGE_LOGE("Define static properties fail"));
 
     IMAGE_LOGD("Init success");
     return exports;

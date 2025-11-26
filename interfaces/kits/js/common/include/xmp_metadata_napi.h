@@ -56,6 +56,8 @@ private:
     static napi_value Constructor(napi_env env, napi_callback_info info);
     static void Destructor(napi_env env, void *nativeObject, void *finalize);
 
+    static napi_status DefineClassProperties(napi_env env, napi_value &constructor);
+    static napi_status DefineStaticProperties(napi_env env, napi_value exports);
     static napi_value CreateXMPNamespaces(napi_env env);
 
     // static napi_value SetTag(napi_env env, napi_callback_info info);

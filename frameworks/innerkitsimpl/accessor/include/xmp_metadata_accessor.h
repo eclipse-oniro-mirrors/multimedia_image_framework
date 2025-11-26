@@ -17,6 +17,8 @@
 #define FRAMEWORKS_INNERKITSIMPL_ACCESSOR_INCLUDE_XMP_METADATA_ACCESSOR_H
 
 #include "xmp_metadata.h"
+#include "XMP.hpp"
+#include "XMP.incl_cpp"
 
 namespace OHOS {
 namespace Media {
@@ -31,7 +33,7 @@ enum class XMPAccessMode {
 class XMPMetadataAccessor {
 public:
     XMPMetadataAccessor(const uint8_t *data, size_t size, XMPAccessMode mode);
-    ~XMPMetadataAccessor();
+    ~XMPMetadataAccessor() = default;
 
     std::shared_ptr<XMPMetadata> Get();
     void Set(std::shared_ptr<XMPMetadata> &xmpMetadata);

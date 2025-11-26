@@ -23,15 +23,17 @@
 
 #include "image_type.h"
 #include "nocopyable.h"
-#include "XMP.hpp"
-#include "XMP.incl_cpp"
 
 namespace OHOS {
 namespace Media {
+
+class XMPMetadataImpl;
+
 class XMPMetadata {
 public:
     XMPMetadata();
-    XMPMetadata(std::shared_ptr<SXMPMeta> &xmpMeta);
+    // Internal constructor for XMPMetadataAccessor - takes ownership
+    explicit XMPMetadata(std::unique_ptr<XMPMetadataImpl> impl);
     ~XMPMetadata();
 
     static bool Initialize();
@@ -53,7 +55,7 @@ public:
 private:
     DISALLOW_COPY_AND_MOVE(XMPMetadata);
     static bool xmpInitialized_;
-    std::shared_ptr<SXMPMeta> xmpMeta_ = nullptr;
+    std::unique_ptr<XMPMetadataImpl> impl_;
 };
 } // namespace Media
 } // namespace OHOS

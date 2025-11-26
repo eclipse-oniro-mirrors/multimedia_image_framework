@@ -17,6 +17,7 @@
 #include "media_errors.h"
 #include "xmp_helper.h"
 #include "xmp_metadata.h"
+#include "xmp_metadata_impl.h"
 
 namespace {
 static const char *COLON = ":";
@@ -24,6 +25,7 @@ static const char *COLON = ":";
 
 namespace OHOS {
 namespace Media {
+
 bool XMPMetadata::xmpInitialized_ = false;
 
 XMPMetadata::XMPMetadata()
@@ -32,21 +34,20 @@ XMPMetadata::XMPMetadata()
         IMAGE_LOGE("%{public}s failed to initialize XMP Metadata", __func__);
         return;
     }
-
-    xmpMeta_ = std::make_shared<SXMPMeta>();
+    impl_ = std::make_unique<XMPMetadataImpl>();
 }
 
-XMPMetadata::XMPMetadata(std::shared_ptr<SXMPMeta> &xmpMeta)
+XMPMetadata::XMPMetadata(std::unique_ptr<XMPMetadataImpl> impl)
+    : impl_(std::move(impl))
 {
     if (!Initialize()) {
         IMAGE_LOGE("%{public}s failed to initialize XMP Metadata", __func__);
+        impl_.reset();
         return;
     }
-
-    xmpMeta_ = xmpMeta;
 }
 
-XMPMetadata::~XMPMetadata() {}
+XMPMetadata::~XMPMetadata() = default;
 
 bool XMPMetadata::Initialize()
 {
@@ -155,8 +156,8 @@ bool XMPMetadata::RegisterNamespacePrefix(const std::string &uri, const std::str
 
 bool XMPMetadata::SetTag(const std::string &path, const XMPTag &tag)
 {
-    CHECK_ERROR_RETURN_RET_LOG(!xmpMeta_, false, "%{public}s xmpMeta is null for path: %{public}s",
-        __func__, path.c_str());
+    CHECK_ERROR_RETURN_RET_LOG(!impl_ || !impl_->IsValid(), false,
+        "%{public}s impl is null for path: %{public}s", __func__, path.c_str());
 
     const auto &[prefix, propName] = XMPHelper::SplitPrefixPath(path);
     std::string namespaceUri;
@@ -165,17 +166,17 @@ bool XMPMetadata::SetTag(const std::string &path, const XMPTag &tag)
 
     XMP_OptionBits options = ConvertTagTypeToOptions(tag.type);
     if (IsContainerTagType(tag.type)) {
-        xmpMeta_->SetProperty(namespaceUri.c_str(), propName.c_str(), nullptr, options);
+        impl_->SetProperty(namespaceUri.c_str(), propName.c_str(), nullptr, options);
     } else {
-        xmpMeta_->SetProperty(namespaceUri.c_str(), propName.c_str(), tag.value, options);
+        impl_->SetProperty(namespaceUri.c_str(), propName.c_str(), tag.value.c_str(), options);
     }
     return true;
 }
 
 bool XMPMetadata::GetTag(const std::string &path, XMPTag &tag)
 {
-    CHECK_ERROR_RETURN_RET_LOG(!xmpMeta_, false, "%{public}s xmpMeta is null for path: %{public}s",
-        __func__, path.c_str());
+    CHECK_ERROR_RETURN_RET_LOG(!impl_ || !impl_->IsValid(), false,
+        "%{public}s impl is null for path: %{public}s", __func__, path.c_str());
     
     const auto &[prefix, propName] = XMPHelper::SplitPrefixPath(path);
     std::string namespaceUri;
@@ -184,7 +185,7 @@ bool XMPMetadata::GetTag(const std::string &path, XMPTag &tag)
 
     XMP_OptionBits options = kXMP_NoOptions;
     std::string value;
-    bool ret = xmpMeta_->GetProperty(namespaceUri.c_str(), propName.c_str(), &value, &options);
+    bool ret = impl_->GetProperty(namespaceUri.c_str(), propName.c_str(), &value, &options);
     CHECK_ERROR_RETURN_RET_LOG(!ret, false, "%{public}s failed to get property for path: %{public}s",
         __func__, path.c_str());
 
@@ -194,20 +195,21 @@ bool XMPMetadata::GetTag(const std::string &path, XMPTag &tag)
 
 bool XMPMetadata::RemoveTag(const std::string &path)
 {
-    CHECK_ERROR_RETURN_RET_LOG(!xmpMeta_, false, "%{public}s xmpMeta is null for path: %{public}s",
-        __func__, path.c_str());
+    CHECK_ERROR_RETURN_RET_LOG(!impl_ || !impl_->IsValid(), false,
+        "%{public}s impl is null for path: %{public}s", __func__, path.c_str());
 
     const auto &[prefix, propName] = XMPHelper::SplitPrefixPath(path);
     std::string namespaceUri;
     CHECK_ERROR_RETURN_RET_LOG(!SXMPMeta::GetNamespaceURI(prefix.c_str(), &namespaceUri), false,
         "%{public}s failed to get namespace URI for prefix: %{public}s", __func__, prefix.c_str());
-    xmpMeta_->DeleteProperty(namespaceUri.c_str(), propName.c_str());
+    impl_->DeleteProperty(namespaceUri.c_str(), propName.c_str());
     return true;
 }
 
 void XMPMetadata::EnumerateTags(EnumerateCallback callback, const std::string &rootPath, XMPEnumerateOption options)
 {
-    CHECK_ERROR_RETURN_LOG(!xmpMeta_, "%{public}s xmpMeta is null for path: %{public}s", __func__, rootPath.c_str());
+    CHECK_ERROR_RETURN_LOG(!impl_ || !impl_->IsValid(),
+        "%{public}s impl is null for path: %{public}s", __func__, rootPath.c_str());
     CHECK_ERROR_RETURN_LOG(!callback, "%{public}s callback is null", __func__);
 
     std::string schemaNS;
@@ -223,7 +225,8 @@ void XMPMetadata::EnumerateTags(EnumerateCallback callback, const std::string &r
     if (options.isRecursive) {
         iterOptions = kXMP_NoOptions;
     }
-    SXMPIterator iter(*xmpMeta_, schemaNS.c_str(), rootPropName.c_str(), iterOptions);
+    // Get SXMPMeta reference for SXMPIterator
+    SXMPIterator iter(impl_->GetMeta(), schemaNS.c_str(), rootPropName.c_str(), iterOptions);
     std::string iterSchemaNS;
     std::string iterPropPath;
     std::string iterPropValue;

@@ -16,6 +16,7 @@
 #include "image_log.h"
 #include "xmp_buffer_IO.h"
 #include "xmp_metadata_accessor.h"
+#include "xmp_metadata_impl.h"
 
 namespace OHOS {
 namespace Media {
@@ -31,18 +32,16 @@ XMPMetadataAccessor::XMPMetadataAccessor(const uint8_t *data, size_t size, XMPAc
         return;
     }
 
-    std::shared_ptr<SXMPMeta> xmpMeta = std::make_shared<SXMPMeta>();
-    if (!xmpFiles_->GetXMP(xmpMeta.get())) {
+    auto impl = std::make_unique<XMPMetadataImpl>();
+    CHECK_ERROR_RETURN_LOG(!impl->IsValid(), "%{public}s XMPMetadataImpl is invalid", __func__);
+    if (!xmpFiles_->GetXMP(impl->get())) {
         IMAGE_LOGE("%{public}s GetXMP failed", __func__);
         return;
     }
 
-    xmpMetadata_ = std::make_shared<XMPMetadata>(xmpMeta);
-    IMAGE_LOGD("%{public}s successfully create XMPMetadataAccessor", __func__);
-}
-
-XMPMetadataAccessor::~XMPMetadataAccessor()
-{
+    // Transfer ownership to XMPMetadata
+    xmpMetadata_ = std::make_shared<XMPMetadata>(std::move(impl));
+    IMAGE_LOGD("%{public}s successfully created XMPMetadataAccessor", __func__);
 }
 
 std::shared_ptr<XMPMetadata> XMPMetadataAccessor::Get()
