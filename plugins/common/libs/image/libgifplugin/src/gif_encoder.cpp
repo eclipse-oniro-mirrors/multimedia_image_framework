@@ -550,15 +550,11 @@ void SubdivColorByPartition(ColorCoordinate *colorCoordinate, ColorSubdivMap *co
         static_cast<long>(static_cast<uint64_t>(colorSubdivMap[index].pixelNum) >> 1) - colorCoordinate->pixelNum;
     uint32_t colorNum = 1;
     long pixelNum = colorCoordinate->pixelNum;
-    while (colorCoordinate->next != NULL && sum >= 0) {
+    while (colorCoordinate->next != NULL && sum >= 0 && colorCoordinate->next->next != NULL) {
         colorCoordinate = colorCoordinate->next;
         colorNum++;
         pixelNum += colorCoordinate->pixelNum;
-        if (colorCoordinate->next->next != NULL) {
-            sum -= colorCoordinate->next->pixelNum;
-        } else {
-            break;
-        }
+        sum -= colorCoordinate->next->pixelNum;
     }
     if (g_sortRGBAxis >= 0 && g_sortRGBAxis < NUM_OF_RGB) {
         uint32_t maxColor = colorCoordinate->rgb[g_sortRGBAxis] << (BITS_IN_BYTE - BITS_PER_PRIM_COLOR);
