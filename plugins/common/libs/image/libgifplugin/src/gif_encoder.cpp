@@ -278,7 +278,7 @@ uint32_t GifEncoder::processFrame(int index)
     }
     uint16_t width = static_cast<uint16_t>(pixelMaps_[index]->GetWidth());
     uint16_t height = static_cast<uint16_t>(pixelMaps_[index]->GetHeight());
-    uint64_t frameSize = width * height;
+    uint64_t frameSize = static_cast<uint64_t>(width) * height;
     uint8_t *colorBuffer = (uint8_t *)malloc(frameSize);
     if (colorBuffer == NULL) {
         IMAGE_LOGE("Failed to allocate memory.");
@@ -550,11 +550,15 @@ void SubdivColorByPartition(ColorCoordinate *colorCoordinate, ColorSubdivMap *co
         static_cast<long>(static_cast<uint64_t>(colorSubdivMap[index].pixelNum) >> 1) - colorCoordinate->pixelNum;
     uint32_t colorNum = 1;
     long pixelNum = colorCoordinate->pixelNum;
-    while (colorCoordinate->next != NULL && sum >= 0 && colorCoordinate->next->next != NULL) {
+    while (colorCoordinate->next != NULL && sum >= 0) {
         colorCoordinate = colorCoordinate->next;
         colorNum++;
         pixelNum += colorCoordinate->pixelNum;
-        sum -= colorCoordinate->next->pixelNum;
+        if (colorCoordinate->next->next != NULL) {
+            sum -= colorCoordinate->next->pixelNum;
+        } else {
+            break;
+        }
     }
     if (g_sortRGBAxis >= 0 && g_sortRGBAxis < NUM_OF_RGB) {
         uint32_t maxColor = colorCoordinate->rgb[g_sortRGBAxis] << (BITS_IN_BYTE - BITS_PER_PRIM_COLOR);
