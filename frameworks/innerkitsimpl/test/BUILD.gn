@@ -130,6 +130,7 @@ ohos_unittest("auxiliarypicturetest") {
   sources = [
     "$image_subsystem/frameworks/innerkitsimpl/accessor/src/kv_metadata.cpp",
     "$image_subsystem/frameworks/innerkitsimpl/test/unittest/auxiliary_picture_test/auxiliary_picture_test.cpp",
+    "$image_subsystem/frameworks/innerkitsimpl/test/unittest/auxiliary_generator_test.cpp",
   ]
 
   deps = [
@@ -2093,6 +2094,7 @@ ohos_unittest("itempropertybasicboxtest"){
   sources = [
     "${image_subsystem}/frameworks/innerkitsimpl/test/unittest/item_property_basic_box_test.cpp",
     "${image_subsystem}/frameworks/innerkitsimpl/test/unittest/item_data_box_test.cpp",
+    "${image_subsystem}/frameworks/innerkitsimpl/test/unittest/item_info_box_test.cpp",
   ]
 
   deps = [

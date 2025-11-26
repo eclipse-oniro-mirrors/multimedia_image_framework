@@ -40,6 +40,7 @@
 #include "mock_data_stream.h"
 #include "mock_abs_image_decoder.h"
 #include "exif_metadata.h"
+#include "metadata_accessor_factory.h"
 
 using namespace testing::ext;
 using namespace OHOS::Media;
@@ -89,6 +90,7 @@ static const uint32_t SDR_SET_ARGB8888_DMA = 2;
 static const uint32_t SCALE_FIRST_SETTING = 1;
 static const uint32_t CROP_FIRST_SETTING = 2;
 static const uint32_t ASTC_SETTING = 3;
+static const uint32_t SIZE = 1024;
 static const std::vector<std::pair<std::string, std::string>> VALID_PROPERTIES = {
     {"ImageLength", "1000"},
     {"ImageWidth", "1001"},
@@ -3673,6 +3675,21 @@ HWTEST_F(ImageSourceTest, ModifyImagePropertiesExTest006, TestSize.Level3)
     auto ret = imageSource->ModifyImagePropertiesEx(0, VALID_PROPERTIES);
     ASSERT_EQ(ret, ERR_IMAGE_SOURCE_DATA);
     GTEST_LOG_(INFO) << "ImageSourceTest: ModifyImagePropertiesExTest006 end";
+}
+
+/**
+ * @tc.name: MetadataAccessorFactoryNullBufferTest001
+ * @tc.desc: Test MetadataAccessorFactory::Create with null buffer
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageSourceTest, MetadataAccessorFactoryNullBufferTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImageSourceTest: MetadataAccessorFactoryNullBufferTest001 start";
+    uint8_t* nullBuffer = nullptr;
+    uint32_t size = SIZE;
+    std::shared_ptr<MetadataAccessor> accessor = MetadataAccessorFactory::Create(nullBuffer, size);
+    ASSERT_EQ(accessor, nullptr);
+    GTEST_LOG_(INFO) << "ImageSourceTest: MetadataAccessorFactoryNullBufferTest001 end";
 }
 } // namespace Multimedia
 } // namespace OHOS

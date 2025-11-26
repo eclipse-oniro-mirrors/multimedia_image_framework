@@ -24,6 +24,10 @@ namespace OHOS {
 namespace Media {
 static const size_t MOCKOFFSET = 4;
 static const size_t MOCKSIZE = 4;
+static const size_t DATA_BUFFER_SIZE = 2;
+static const size_t OFFSET = 100;
+static const size_t INVALID_BUFFER_SIZE = -10;
+static const size_t COMPARE_FAIL = -1;
 class DataBufTest : public testing::Test {
 public:
     DataBufTest() {}
@@ -168,6 +172,21 @@ HWTEST_F(DataBufTest, CmpBytesTest002, TestSize.Level3)
     auto ret = dataBuf.CmpBytes(MOCKOFFSET, nullptr, MOCKSIZE);
     ASSERT_EQ(ret, -1);
     GTEST_LOG_(INFO) << "DataBufTest: CmpBytesTest002 end";
+}
+
+/**
+ * @tc.name: CmpBytesTest003
+ * @tc.desc: Test the CmpBytes return -1 when bufsize is invalid.
+ * @tc.type: FUNC
+ */
+HWTEST_F(DataBufTest, CmpBytesTest003, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "DataBufTest: CmpBytesTest003 start";
+    const void *buf = nullptr;
+    DataBuf dataBuf(DATA_BUFFER_SIZE);
+    int ret = dataBuf.CmpBytes(OFFSET, buf, INVALID_BUFFER_SIZE);
+    ASSERT_EQ(ret, COMPARE_FAIL);
+    GTEST_LOG_(INFO) << "DataBufTest: CmpBytesTest003 end";
 }
 
 /**

@@ -23,6 +23,10 @@
 
 struct OH_NativeBuffer {};
 
+#define TEST_PIXEL_STRIDE_VALUE 4
+#define TEST_COMPONENT_TYPE 1
+#define DEFAULT_STRIDE_VALUE 0
+
 using namespace testing::ext;
 namespace OHOS {
 namespace Media {
@@ -637,6 +641,77 @@ HWTEST_F(ImageNativeTest, OH_ImageNative_ReleaseTest001, TestSize.Level3)
     errCode = OH_ImageNative_Release(image);
     EXPECT_EQ(errCode, IMAGE_SUCCESS);
     GTEST_LOG_(INFO) << "ImageNativeTest: OH_ImageNative_ReleaseTest001 end";
+}
+
+/**
+ * @tc.name: OH_ImageNative_ReleaseWithValidImgNativeTest001
+ * @tc.desc: Test OH_ImageNative_Release successfully releases image resources when imgNative is valid
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageNativeTest, OH_ImageNative_ReleaseWithValidImgNativeTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImageNativeTest: OH_ImageNative_ReleaseWithValidImgNativeTest001 start";
+    OH_ImageNative* image = new OH_ImageNative;
+    ASSERT_NE(image, nullptr);
+    sptr<SurfaceBuffer> buffer = SurfaceBuffer::Create();
+    ASSERT_NE(buffer, nullptr);
+    std::shared_ptr<IBufferProcessor> releaser;
+    NativeImage* imgNative = new NativeImage(buffer, releaser);
+    ASSERT_NE(imgNative, nullptr);
+    image->imgNative = imgNative;
+    Image_ErrorCode errCode = OH_ImageNative_Release(image);
+    EXPECT_EQ(errCode, IMAGE_SUCCESS);
+    GTEST_LOG_(INFO) << "ImageNativeTest: OH_ImageNative_ReleaseWithValidImgNativeTest001 end";
+}
+
+/**
+ * @tc.name: OH_ImageNative_GetPixelStrideSuccessTest001
+ * @tc.desc: Test OH_ImageNative_GetPixelStride returns correct pixel stride value for valid image and component
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageNativeTest, OH_ImageNative_GetPixelStrideSuccessTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImageNativeTest: OH_ImageNative_GetPixelStrideSuccessTest001 start";
+    OH_ImageNative* image = new OH_ImageNative;
+    ASSERT_NE(image, nullptr);
+    sptr<SurfaceBuffer> buffer = SurfaceBuffer::Create();
+    ASSERT_NE(buffer, nullptr);
+    std::shared_ptr<IBufferProcessor> releaser;
+    NativeImage imgNative(buffer, releaser);
+    uint32_t componentType = TEST_COMPONENT_TYPE;
+    std::unique_ptr<NativeComponent> component = std::make_unique<NativeComponent>();
+    ASSERT_NE(component, nullptr);
+    component->pixelStride = TEST_PIXEL_STRIDE_VALUE;
+    imgNative.components_.emplace(componentType, std::move(component));
+    image->imgNative = &imgNative;
+    int32_t pixelStride = DEFAULT_STRIDE_VALUE;
+    Image_ErrorCode errCode = OH_ImageNative_GetPixelStride(image, componentType, &pixelStride);
+    EXPECT_EQ(errCode, IMAGE_SUCCESS);
+    EXPECT_EQ(pixelStride, TEST_PIXEL_STRIDE_VALUE);
+    delete image;
+    GTEST_LOG_(INFO) << "ImageNativeTest: OH_ImageNative_GetPixelStrideSuccessTest001 end";
+}
+
+/**
+ * @tc.name: OH_ImageNative_GetPixelStrideNullParamTest001
+ * @tc.desc: Test OH_ImageNative_GetPixelStride returns error when pixel stride output parameter is null
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageNativeTest, OH_ImageNative_GetPixelStrideNullParamTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImageNativeTest: OH_ImageNative_GetPixelStrideNullParamTest001 start";
+    OH_ImageNative* image = new OH_ImageNative;
+    ASSERT_NE(image, nullptr);
+    sptr<SurfaceBuffer> buffer = SurfaceBuffer::Create();
+    ASSERT_NE(buffer, nullptr);
+    std::shared_ptr<IBufferProcessor> releaser;
+    NativeImage imgNative(buffer, releaser);
+    image->imgNative = &imgNative;
+    uint32_t componentType = TEST_COMPONENT_TYPE;
+    Image_ErrorCode errCode = OH_ImageNative_GetPixelStride(image, componentType, nullptr);
+    EXPECT_EQ(errCode, IMAGE_BAD_PARAMETER);
+    delete image;
+    GTEST_LOG_(INFO) << "ImageNativeTest: OH_ImageNative_GetPixelStrideNullParamTest001 end";
 }
 } // namespace Media
 } // namespace OHOS

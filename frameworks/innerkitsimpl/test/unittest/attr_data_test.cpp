@@ -28,6 +28,12 @@ namespace Multimedia {
 static const std::string IMAGE_INPUT_JPEG_PATH = "/data/local/tmp/image/test.jpg";
 static constexpr uint8_t LOWER_BOUND_INDEX = 0;
 static constexpr uint8_t UPPER_BOUND_INDEX = 1;
+static constexpr uint32_t TEST_UINT32_SET_VALUE = 100;
+static constexpr uint32_t TEST_UINT32_FIRST_VALUE = 10;
+static constexpr uint32_t TEST_UINT32_SECOND_VALUE = 20;
+static constexpr uint32_t TEST_UINT32_COMPARE_VALUE = 50;
+static constexpr uint32_t TEST_RANGE_LOWER = 5;
+static constexpr uint32_t TEST_RANGE_UPPER = 8;
 class AttrDataTest : public testing::Test {
 public:
     AttrDataTest() {}
@@ -1481,6 +1487,151 @@ HWTEST_F(AttrDataTest, InRangeTest005, TestSize.Level3)
     bool ret = attrData.InRange(array);
     ASSERT_EQ(ret, false);
     GTEST_LOG_(INFO) << "AttrDataTest: InRangeTest005 end";
+}
+
+/**
+ * @tc.name: AttrDataUint32SetClearTest001
+ * @tc.desc: Test ClearData successfully clears uint32 set and resets type to ATTR_DATA_NULL
+ * @tc.type: FUNC
+ */
+HWTEST_F(AttrDataTest, AttrDataUint32SetClearTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "AttrDataTest: AttrDataUint32SetClearTest001 start";
+    AttrData attrData;
+    uint32_t value = TEST_UINT32_SET_VALUE;
+    uint32_t ret = attrData.InsertSet(value);
+    ASSERT_EQ(ret, SUCCESS);
+    ASSERT_EQ(attrData.GetType(), AttrDataType::ATTR_DATA_UINT32_SET);
+    attrData.ClearData();
+    ASSERT_EQ(attrData.GetType(), AttrDataType::ATTR_DATA_NULL);
+    GTEST_LOG_(INFO) << "AttrDataTest: AttrDataUint32SetClearTest001 end";
+}
+
+/**
+ * @tc.name: AttrDataStringSetClearTest001
+ * @tc.desc: Test ClearData successfully clears string set and resets type to ATTR_DATA_NULL
+ * @tc.type: FUNC
+ */
+HWTEST_F(AttrDataTest, AttrDataStringSetClearTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "AttrDataTest: AttrDataStringSetClearTest001 start";
+    AttrData attrData;
+    std::string value = "test_string";
+    uint32_t ret = attrData.InsertSet(value);
+    ASSERT_EQ(ret, SUCCESS);
+    ASSERT_EQ(attrData.GetType(), AttrDataType::ATTR_DATA_STRING_SET);
+    attrData.ClearData();
+    ASSERT_EQ(attrData.GetType(), AttrDataType::ATTR_DATA_NULL);
+    GTEST_LOG_(INFO) << "AttrDataTest: AttrDataStringSetClearTest001 end";
+}
+
+/**
+ * @tc.name: AttrDataStringSetInsertErrorTest001
+ * @tc.desc: Test InsertSet returns error when attempting to insert duplicate string value
+ * @tc.type: FUNC
+ */
+HWTEST_F(AttrDataTest, AttrDataStringSetInsertErrorTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "AttrDataTest: AttrDataStringSetInsertErrorTest001 start";
+
+    AttrData attrData;
+    std::string value = "duplicate_string";
+
+    uint32_t ret = attrData.InsertSet(value);
+    ASSERT_EQ(ret, SUCCESS);
+
+    ret = attrData.InsertSet(value);
+    ASSERT_EQ(ret, ERR_INTERNAL);
+
+    GTEST_LOG_(INFO) << "AttrDataTest: AttrDataStringSetInsertErrorTest001 end";
+}
+
+/**
+ * @tc.name: AttrDataStringSetInRangeFailTest001
+ * @tc.desc: Test InRange fails when string value not in the provided set
+ * @tc.type: FUNC
+ */
+HWTEST_F(AttrDataTest, AttrDataStringSetInRangeFailTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "AttrDataTest: AttrDataStringSetInRangeFailTest001 start";
+
+    AttrData attrData(std::string("validString"));
+    ASSERT_EQ(attrData.GetType(), AttrDataType::ATTR_DATA_STRING);
+
+    std::set<std::string> stringSet;
+    stringSet.insert("validString");
+    stringSet.insert("invalidString");
+
+    bool result = attrData.InRange(stringSet);
+    ASSERT_EQ(result, false);
+
+    GTEST_LOG_(INFO) << "AttrDataTest: AttrDataStringSetInRangeFailTest001 end";
+}
+
+/**
+ * @tc.name: AttrDataStringSetInRangeSuccessTest001
+ * @tc.desc: Test InRange succeeds when all string set elements are present in valid set
+ * @tc.type: FUNC
+ */
+HWTEST_F(AttrDataTest, AttrDataStringSetInRangeSuccessTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "AttrDataTest: AttrDataStringSetInRangeSuccessTest001 start";
+
+    AttrData attrData;
+    uint32_t ret1 = attrData.InsertSet("string1");
+    uint32_t ret2 = attrData.InsertSet("string2");
+    uint32_t ret3 = attrData.InsertSet("string3");
+    ASSERT_EQ(ret1, SUCCESS);
+    ASSERT_EQ(ret2, SUCCESS);
+    ASSERT_EQ(ret3, SUCCESS);
+    ASSERT_EQ(attrData.GetType(), AttrDataType::ATTR_DATA_STRING_SET);
+
+    std::set<std::string> stringSet;
+    stringSet.insert("string1");
+    stringSet.insert("string2");
+    stringSet.insert("string3");
+
+    bool result = attrData.InRange(stringSet);
+    ASSERT_EQ(result, true);
+
+    GTEST_LOG_(INFO) << "AttrDataTest: AttrDataStringSetInRangeSuccessTest001 end";
+}
+
+/**
+ * @tc.name: AttrDataUint32CompareTest001
+ * @tc.desc: Test InRange returns true when uint32 value matches range boundaries
+ * @tc.type: FUNC
+ */
+HWTEST_F(AttrDataTest, AttrDataUint32CompareTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "AttrDataTest: AttrDataUint32CompareTest001 start";
+    uint32_t testValue = TEST_UINT32_COMPARE_VALUE;
+    AttrData attrData(testValue);
+    uint32_t rangeArray[2] = {TEST_UINT32_COMPARE_VALUE, TEST_UINT32_COMPARE_VALUE};
+    bool result = attrData.InRange(rangeArray);
+    ASSERT_EQ(result, true);
+    GTEST_LOG_(INFO) << "AttrDataTest: AttrDataUint32CompareTest001 end";
+}
+
+/**
+ * @tc.name: AttrDataUint32SetRangeTest001
+ * @tc.desc: Test InRange returns false when uint32 set values fall outside specified range
+ * @tc.type: FUNC
+ */
+HWTEST_F(AttrDataTest, AttrDataUint32SetRangeTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "AttrDataTest: AttrDataUint32SetRangeTest001 start";
+    AttrData attrData;
+    uint32_t value1 = TEST_UINT32_FIRST_VALUE;
+    uint32_t value2 = TEST_UINT32_SECOND_VALUE;
+    uint32_t ret1 = attrData.InsertSet(value1);
+    uint32_t ret2 = attrData.InsertSet(value2);
+    ASSERT_EQ(ret1, SUCCESS);
+    ASSERT_EQ(ret2, SUCCESS);
+    uint32_t rangeArray[2] = {TEST_RANGE_LOWER, TEST_RANGE_UPPER};
+    bool result = attrData.InRange(rangeArray);
+    ASSERT_EQ(result, false);
+    GTEST_LOG_(INFO) << "AttrDataTest: AttrDataUint32SetRangeTest001 end";
 }
 }
 }

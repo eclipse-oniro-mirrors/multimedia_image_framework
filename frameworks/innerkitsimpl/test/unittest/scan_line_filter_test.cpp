@@ -31,6 +31,10 @@ using namespace OHOS::Media;
 namespace OHOS {
 namespace Multimedia {
 using Rect = OHOS::Media::Rect;
+
+#define TEST_BUFFER_SIZE 100
+#define TEST_PIXEL_NUM 10
+
 class ScanLineFilterTest : public testing::Test {
 public:
     ScanLineFilterTest() {}
@@ -158,6 +162,33 @@ HWTEST_F(ScanLineFilterTest, FilterLineTest002, TestSize.Level3)
     ret = scanlineFilter.FilterLine(destRowPixels, destRowBytes, srcRowPixels);
     ASSERT_EQ(ret, ERR_IMAGE_COLOR_CONVERT);
     GTEST_LOG_(INFO) << "ScanLineFilterTest: FilterLineTest002 end";
+}
+
+/**
+ * @tc.name: ConvertPixelsNullParameterTest001
+ * @tc.desc: Test ConvertPixels returns false when destination buffer or source pixel pointer is null
+ * @tc.type: FUNC
+ */
+HWTEST_F(ScanLineFilterTest, ConvertPixelsNullParameterTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ScanLineFilterTest: ConvertPixelsNullParameterTest001 start";
+    ScanlineFilter scanlineFilter(PixelFormat::RGBA_8888);
+    void* destRowPixels = nullptr;
+    uint8_t srcBuffer[TEST_BUFFER_SIZE];
+    const uint8_t* startPixel = srcBuffer;
+    uint32_t reqPixelNum = TEST_PIXEL_NUM;
+    bool result = scanlineFilter.ConvertPixels(destRowPixels, startPixel, reqPixelNum);
+    ASSERT_EQ(result, false);
+    uint8_t destBuffer[TEST_BUFFER_SIZE];
+    destRowPixels = destBuffer;
+    startPixel = nullptr;
+    result = scanlineFilter.ConvertPixels(destRowPixels, startPixel, reqPixelNum);
+    ASSERT_EQ(result, false);
+    destRowPixels = nullptr;
+    startPixel = nullptr;
+    result = scanlineFilter.ConvertPixels(destRowPixels, startPixel, reqPixelNum);
+    ASSERT_EQ(result, false);
+    GTEST_LOG_(INFO) << "ScanLineFilterTest: ConvertPixelsNullParameterTest001 end";
 }
 }
 }
