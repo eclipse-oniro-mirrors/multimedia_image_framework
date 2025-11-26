@@ -71,6 +71,12 @@ constexpr uint8_t ASTC_EXTEND_INFO_TLV_NUM_6 = 6;
 #define RFIMAGE_ID "urn:com:huawei:photo:5:1:0:meta:Res-Map"
 #define METADATA_TAG_RESMAP "Res-Map\0"
 
+constexpr const char* NS_XMP_BASIC = "http://ns.adobe.com/xap/1.0/";
+constexpr const char* NS_XMP_RIGHTS = "http://ns.adobe.com/xap/1.0/rights/";
+constexpr const char* NS_DC = "http://purl.org/dc/elements/1.1/";
+constexpr const char* NS_EXIF = "http://ns.adobe.com/exif/1.0/";
+constexpr const char* NS_TIFF = "http://ns.adobe.com/tiff/1.0/";
+
 enum class AllocatorType : int32_t {
     // keep same with java AllocatorType
     DEFAULT = 0,
@@ -566,6 +572,10 @@ struct XMPTag {
     std::string name;
     XMPTagType type;
     std::string value;
+};
+
+struct XMPEnumerateOption {
+    bool isRecursive = false;
 };
 } // namespace Media
 } // namespace OHOS

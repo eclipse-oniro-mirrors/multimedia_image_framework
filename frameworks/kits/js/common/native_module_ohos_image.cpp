@@ -36,6 +36,8 @@ static napi_value Export(napi_env env, napi_value exports)
     PixelMapNapi::Init(env, exports);
     IMAGE_LOGD("ImageSourceNapi CALL");
     ImageSourceNapi::Init(env, exports);
+    IMAGE_LOGD("XMPMetadataNapi CALL");
+    XMPMetadataNapi::Init(env, exports);
 #if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
     IMAGE_LOGD("PictureNapi CALL");
     PictureNapi::Init(env, exports);

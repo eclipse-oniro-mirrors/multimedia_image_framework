@@ -42,11 +42,13 @@ public:
     bool GetTag(const std::string &path, XMPTag &tag);
     bool RemoveTag(const std::string &path);
 
-    static constexpr const char* NS_XMP = "http://ns.adobe.com/xap/1.0/";
-    static constexpr const char* NS_XMP_RIGHTS = "http://ns.adobe.com/xap/1.0/rights/";
-    static constexpr const char* NS_DC = "http://purl.org/dc/elements/1.1/";
-    static constexpr const char* NS_EXIF = "http://ns.adobe.com/exif/1.0/";
-    static constexpr const char* NS_TIFF = "http://ns.adobe.com/tiff/1.0/";
+    // Callback type for EnumerateTags
+    // Returns true to continue enumeration, false to stop
+    using EnumerateCallback = std::function<bool(const std::string &path, const XMPTag &tag)>;
+
+    // Enumerate all tags, optionally starting from a specific path
+    // options parameter controls the behavior of the enumeration
+    void EnumerateTags(EnumerateCallback callback, const std::string &rootPath, XMPEnumerateOption options);
 
 private:
     DISALLOW_COPY_AND_MOVE(XMPMetadata);

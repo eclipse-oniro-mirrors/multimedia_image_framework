@@ -205,5 +205,48 @@ bool XMPMetadata::RemoveTag(const std::string &path)
     return true;
 }
 
+void XMPMetadata::EnumerateTags(EnumerateCallback callback, const std::string &rootPath, XMPEnumerateOption options)
+{
+    CHECK_ERROR_RETURN_LOG(!xmpMeta_, "%{public}s xmpMeta is null for path: %{public}s", __func__, rootPath.c_str());
+    CHECK_ERROR_RETURN_LOG(!callback, "%{public}s callback is null", __func__);
+
+    std::string schemaNS;
+    std::string rootPropName;
+    if (!rootPath.empty()) {
+        const auto &[prefix, propName] = XMPHelper::SplitPrefixPath(rootPath);
+        CHECK_ERROR_RETURN_LOG(!SXMPMeta::GetNamespaceURI(prefix.c_str(), &schemaNS),
+            "%{public}s failed to get namespace URI for prefix: %{public}s", __func__, prefix.c_str());
+        rootPropName = propName;
+    }
+
+    XMP_OptionBits iterOptions = kXMP_IterJustChildren;
+    if (options.isRecursive) {
+        iterOptions = kXMP_NoOptions;
+    }
+    SXMPIterator iter(*xmpMeta_, schemaNS.c_str(), rootPropName.c_str(), iterOptions);
+    std::string iterSchemaNS;
+    std::string iterPropPath;
+    std::string iterPropValue;
+    // Iterate through all properties
+    while (iter.Next(&iterSchemaNS, &iterPropPath, &iterPropValue, &iterOptions)) {
+        // TODO: Skip empty or schema-only items
+        if (iterPropPath.empty()) {
+            continue;
+        }
+
+        std::string prefix;
+        CHECK_ERROR_RETURN_LOG(!SXMPMeta::GetNamespacePrefix(iterSchemaNS.c_str(), &prefix),
+            "%{public}s failed to get namespace prefix for URI: %{public}s", __func__, iterSchemaNS.c_str());
+        XMPTag tag = BuildXMPTag(iterSchemaNS, prefix, iterPropPath, iterOptions, iterPropValue);
+
+        // Call the callback
+        bool shouldContinue = callback(iterPropPath, tag);
+        if (!shouldContinue) {
+            IMAGE_LOGD("%{public}s enumeration stopped by callback", __func__);
+            break;
+        }
+    }
+}
+
 } // namespace Media
 } // namespace OHOS

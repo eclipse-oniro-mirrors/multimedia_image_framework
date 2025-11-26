@@ -98,6 +98,7 @@ private:
     static napi_value CreatePixelMapUsingAllocator(napi_env env, napi_callback_info info);
     static napi_value CreatePixelMapUsingAllocatorSync(napi_env env, napi_callback_info info);
     static napi_value CreateWideGamutSdrPixelMap(napi_env env, napi_callback_info info);
+    static napi_value ReadXMPMetadata(napi_env env, napi_callback_info info);
 
     void release();
     static thread_local napi_ref sConstructor_;

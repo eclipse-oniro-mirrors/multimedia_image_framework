@@ -299,6 +299,7 @@ public:
     NATIVEEXPORT std::vector<std::shared_ptr<ImageMetadata>> GetAllSupportedMetadataTypes(uint32_t index,
         uint32_t &errorCode);
     NATIVEEXPORT bool IsJpegProgressive(uint32_t &errorCode);
+    NATIVEEXPORT std::shared_ptr<XMPMetadata> ReadXMPMetadata(uint32_t &errorCode);
 
 private:
     DISALLOW_COPY_AND_MOVE(ImageSource);
@@ -439,7 +440,6 @@ private:
     void RefreshImageSourceByPathName();
     std::string GetPixelMapName(PixelMap* pixelMap);
     bool IsDngImage();
-    std::shared_ptr<XMPMetadata> ReadXMPMetadata(uint32_t &errorCode);
 
 #if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
     void SpecialSetComposeBuffer(ImagePlugin::DecodeContext &baseCtx, sptr<SurfaceBuffer>& baseSptr,

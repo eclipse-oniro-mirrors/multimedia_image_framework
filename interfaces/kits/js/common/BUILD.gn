@@ -332,6 +332,7 @@ if (use_clang_ios) {
       "ipc:ipc_single",
       "napi:ace_napi",
       "resource_management:librawfile",
+      "xmpsdk:xmpsdk"
     ]
 
     public_external_deps = [ "graphic_2d:color_manager" ]
@@ -341,6 +342,13 @@ if (use_clang_ios) {
       external_deps += [ "hichecker:libhichecker" ]
       defines += [ "HICHECKER_ENABLE" ]
     }
+
+    defines += [
+      "UNIX_ENV=1",
+      "XMP_StaticBuild=1",
+      "XMP_INCLUDE_XMPFILES=1",
+      "TXMP_STRING_TYPE=std::string"
+    ]
 
     output_name = "libimage_napi"
     subsystem_name = "multimedia"
