@@ -5103,6 +5103,12 @@ static void FixCuvaPicture(std::unique_ptr<Picture> &picture)
         IMAGE_LOGE("FixCuvaPicture: Fail to create new picture.");
         return;
     }
+    auto newGainMap = newPicture->GetGainmapPixelMap();
+    if (newGainMap == nullptr) {
+        IMAGE_LOGE("FixCuvaPicture: Fail to get new gainmap.");
+        return;
+    }
+    newGainMap->SetEditable(true);
     auto isoGainMap = newPicture->GetAuxiliaryPicture(AuxiliaryPictureType::GAINMAP);
     picture->SetAuxiliaryPicture(isoGainMap);
     IMAGE_LOGI("FixCuvaPicture: Finish set isoGainMap");
