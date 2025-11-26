@@ -404,7 +404,7 @@ bool ImageUtils::PathToRealPath(const string &path, string &realPath)
     char tmpPath[PATH_MAX] = { 0 };
 
 #ifdef _WIN32
-    if (_fullpath(tmpPath, path.c_str(), path.length()) == nullptr) {
+    if (_fullpath(tmpPath, path.c_str(), PATH_MAX) == nullptr) {
         IMAGE_LOGW("path to _fullpath error");
     }
 #else

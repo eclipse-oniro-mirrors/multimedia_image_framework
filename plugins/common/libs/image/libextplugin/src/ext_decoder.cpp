@@ -488,6 +488,10 @@ uint32_t ExtDecoder::HeifYUVMemAlloc(OHOS::ImagePlugin::DecodeContext &context, 
 
 ExtDecoder::ExtDecoder() : codec_(nullptr), frameCount_(ZERO)
 {
+    dstSubset_.fLeft = 0;
+    dstSubset_.fRight = 0;
+    dstSubset_.fBottom = 0;
+    dstSubset_.fTop = 0;
 }
 
 ExtDecoder::~ExtDecoder()
