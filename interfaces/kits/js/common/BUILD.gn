@@ -331,7 +331,7 @@ if (use_clang_ios) {
       "ipc:ipc_napi",
       "ipc:ipc_single",
       "napi:ace_napi",
-      "resource_management:librawfile"
+      "resource_management:librawfile",
     ]
 
     public_external_deps = [ "graphic_2d:color_manager" ]

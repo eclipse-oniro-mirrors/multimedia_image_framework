@@ -96,7 +96,7 @@ napi_status XMPMetadataNapi::DefineClassProperties(napi_env env, napi_value &con
         DECLARE_NAPI_FUNCTION("getTag", GetTag),
         DECLARE_NAPI_FUNCTION("removeTag", RemoveTag),
         DECLARE_NAPI_FUNCTION("enumerateTags", EnumerateTags),
-        // DECLARE_NAPI_FUNCTION("countArrayItems", CountArrayItems),
+        DECLARE_NAPI_FUNCTION("countArrayItems", CountArrayItems),
         DECLARE_NAPI_FUNCTION("registerNamespacePrefix", RegisterNamespacePrefix),
     };
 
@@ -526,17 +526,17 @@ napi_value XMPMetadataNapi::RemoveTag(napi_env env, napi_callback_info info)
     napi_value argValue[NUM_1] = {0};
     size_t argCount = NUM_1;
     IMG_JS_ARGS(env, info, status, argCount, argValue, thisVar);
-    IMG_NAPI_CHECK_RET_D(IMG_IS_OK(status), nullptr, IMAGE_LOGE("Fail to napi_get_cb_info"));
+    IMG_NAPI_CHECK_RET_D(IMG_IS_OK(status), result, IMAGE_LOGE("Fail to napi_get_cb_info"));
     if (argCount != NUM_1) {
         return ImageNapiUtils::ThrowExceptionError(env, IMAGE_BAD_PARAMETER, "Invalid argument count");
     }
 
     std::unique_ptr<XMPMetadataNapiAsyncContext> asyncContext = std::make_unique<XMPMetadataNapiAsyncContext>();
     status = napi_unwrap(env, thisVar, reinterpret_cast<void**>(&asyncContext->xmpMetadataNapi));
-    IMG_NAPI_CHECK_RET_D(IMG_IS_READY(status, asyncContext->xmpMetadataNapi), nullptr,
+    IMG_NAPI_CHECK_RET_D(IMG_IS_READY(status, asyncContext->xmpMetadataNapi), result,
         IMAGE_LOGE("Fail to unwrap context"));
     asyncContext->rXMPMetadata = asyncContext->xmpMetadataNapi->GetNativeXMPMetadata();
-    IMG_NAPI_CHECK_RET_D(IMG_IS_READY(status, asyncContext->rXMPMetadata), nullptr,
+    IMG_NAPI_CHECK_RET_D(IMG_IS_READY(status, asyncContext->rXMPMetadata), result,
         IMAGE_LOGE("Empty native XMPMetadata"));
 
     asyncContext->path = ImageNapiUtils::GetStringArgument(env, argValue[NUM_0]);
@@ -571,52 +571,55 @@ napi_value XMPMetadataNapi::RemoveTag(napi_env env, napi_callback_info info)
     // return result;
 }
 
-// napi_value XMPMetadataNapi::CountArrayItems(napi_env env, napi_callback_info info)
-// {
-//     napi_value result = nullptr;
-//     napi_get_undefined(env, &result);
-    
-//     napi_status status;
-//     napi_value thisVar = nullptr;
-//     napi_value argValue[NUM_1] = {0};
-//     size_t argCount = NUM_1;
-    
-//     IMG_JS_ARGS(env, info, status, argCount, argValue, thisVar);
-//     IMG_NAPI_CHECK_RET_D(IMG_IS_OK(status), nullptr, IMAGE_LOGE("Fail to napi_get_cb_info"));
-    
-//     if (argCount != NUM_1) {
-//         return ImageNapiUtils::ThrowExceptionError(env, IMAGE_BAD_PARAMETER, "Invalid argument count");
-//     }
-    
-//     std::unique_ptr<XMPMetadataNapiAsyncContext> asyncContext = std::make_unique<XMPMetadataNapiAsyncContext>();
-//     status = napi_unwrap(env, thisVar, reinterpret_cast<void**>(&asyncContext->nConstructor));
-//     IMG_NAPI_CHECK_RET_D(IMG_IS_READY(status, asyncContext->nConstructor), nullptr, IMAGE_LOGE("Fail to unwrap context"));
-    
-//     asyncContext->rXMPMetadata = asyncContext->nConstructor->GetNativeXMPMetadata();
-//     IMG_NAPI_CHECK_RET_D(IMG_IS_READY(status, asyncContext->rXMPMetadata), nullptr, IMAGE_LOGE("Empty native XMPMetadata"));
-    
-//     asyncContext->path = ImageNapiUtils::GetStringArgument(env, argValue[NUM_0]);
-    
-//     napi_create_promise(env, &(asyncContext->deferred), &result);
-    
-//     IMG_CREATE_CREATE_ASYNC_WORK(env, status, "CountArrayItems",
-//         [](napi_env env, void *data) {
-//             auto context = static_cast<XMPMetadataNapiAsyncContext*>(data);
-//             context->arrayCount = context->rXMPMetadata->CountArrayItems(context->path);
-//             context->status = SUCCESS;
-//         },
-//         [](napi_env env, napi_status status, void *data) {
-//             auto context = static_cast<XMPMetadataNapiAsyncContext*>(data);
-//             napi_value result = nullptr;
-//             napi_create_int32(env, context->arrayCount, &result);
-//             CommonCallbackRoutine(env, context, result);
-//         },
-//         asyncContext.release(),
-//         asyncContext->work);
-    
-//     IMG_NAPI_CHECK_RET_D(IMG_IS_OK(status), nullptr, IMAGE_LOGE("Fail to create async work"));
-//     return result;
-// }
+napi_value XMPMetadataNapi::CountArrayItems(napi_env env, napi_callback_info info)
+{
+    napi_value result = nullptr;
+    napi_get_undefined(env, &result);
+
+    napi_status status;
+    napi_value thisVar = nullptr;
+    napi_value argValue[NUM_1] = {0};
+    size_t argCount = NUM_1;
+    IMG_JS_ARGS(env, info, status, argCount, argValue, thisVar);
+    IMG_NAPI_CHECK_RET_D(IMG_IS_OK(status), result, IMAGE_LOGE("Fail to napi_get_cb_info"));
+    if (argCount != NUM_1) {
+        return ImageNapiUtils::ThrowExceptionError(env, IMAGE_BAD_PARAMETER, "Invalid argument count");
+    }
+
+    std::unique_ptr<XMPMetadataNapiAsyncContext> asyncContext = std::make_unique<XMPMetadataNapiAsyncContext>();
+    status = napi_unwrap(env, thisVar, reinterpret_cast<void**>(&asyncContext->xmpMetadataNapi));
+    IMG_NAPI_CHECK_RET_D(IMG_IS_READY(status, asyncContext->xmpMetadataNapi), result,
+        IMAGE_LOGE("Fail to unwrap context"));
+    asyncContext->rXMPMetadata = asyncContext->xmpMetadataNapi->GetNativeXMPMetadata();
+    IMG_NAPI_CHECK_RET_D(IMG_IS_READY(status, asyncContext->rXMPMetadata), result,
+        IMAGE_LOGE("Empty native XMPMetadata"));
+
+    asyncContext->path = ImageNapiUtils::GetStringArgument(env, argValue[NUM_0]);
+
+    int32_t arrayCount = asyncContext->rXMPMetadata->CountArrayItems(asyncContext->path);
+    ImageNapiUtils::CreateNapiInt32(env, arrayCount, result);
+    return result;
+
+    // napi_create_promise(env, &(asyncContext->deferred), &result);
+
+    // IMG_CREATE_CREATE_ASYNC_WORK(env, status, "CountArrayItems",
+    //     [](napi_env env, void *data) {
+    //         auto context = static_cast<XMPMetadataNapiAsyncContext*>(data);
+    //         context->arrayCount = context->rXMPMetadata->CountArrayItems(context->path);
+    //         context->status = SUCCESS;
+    //     },
+    //     [](napi_env env, napi_status status, void *data) {
+    //         auto context = static_cast<XMPMetadataNapiAsyncContext*>(data);
+    //         napi_value result = nullptr;
+    //         napi_create_int32(env, context->arrayCount, &result);
+    //         CommonCallbackRoutine(env, context, result);
+    //     },
+    //     asyncContext.release(),
+    //     asyncContext->work);
+
+    // IMG_NAPI_CHECK_RET_D(IMG_IS_OK(status), nullptr, IMAGE_LOGE("Fail to create async work"));
+    // return result;
+}
 
 napi_value XMPMetadataNapi::RegisterNamespacePrefix(napi_env env, napi_callback_info info)
 {
@@ -628,17 +631,17 @@ napi_value XMPMetadataNapi::RegisterNamespacePrefix(napi_env env, napi_callback_
     napi_value argValue[NUM_2] = {0};
     size_t argCount = NUM_2;
     IMG_JS_ARGS(env, info, status, argCount, argValue, thisVar);
-    IMG_NAPI_CHECK_RET_D(IMG_IS_OK(status), nullptr, IMAGE_LOGE("Fail to napi_get_cb_info"));
+    IMG_NAPI_CHECK_RET_D(IMG_IS_OK(status), result, IMAGE_LOGE("Fail to napi_get_cb_info"));
     if (argCount != NUM_2) {
         return ImageNapiUtils::ThrowExceptionError(env, IMAGE_BAD_PARAMETER, "Invalid argument count");
     }
 
     std::unique_ptr<XMPMetadataNapiAsyncContext> asyncContext = std::make_unique<XMPMetadataNapiAsyncContext>();
     status = napi_unwrap(env, thisVar, reinterpret_cast<void**>(&asyncContext->xmpMetadataNapi));
-    IMG_NAPI_CHECK_RET_D(IMG_IS_READY(status, asyncContext->xmpMetadataNapi), nullptr,
+    IMG_NAPI_CHECK_RET_D(IMG_IS_READY(status, asyncContext->xmpMetadataNapi), result,
         IMAGE_LOGE("Fail to unwrap context"));
     asyncContext->rXMPMetadata = asyncContext->xmpMetadataNapi->GetNativeXMPMetadata();
-    IMG_NAPI_CHECK_RET_D(IMG_IS_READY(status, asyncContext->rXMPMetadata), nullptr,
+    IMG_NAPI_CHECK_RET_D(IMG_IS_READY(status, asyncContext->rXMPMetadata), result,
         IMAGE_LOGE("Empty native XMPMetadata"));
 
     asyncContext->xmlns = ImageNapiUtils::GetStringArgument(env, argValue[NUM_0]);

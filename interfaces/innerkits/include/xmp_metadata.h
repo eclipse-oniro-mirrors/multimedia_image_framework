@@ -52,6 +52,8 @@ public:
     // options parameter controls the behavior of the enumeration
     void EnumerateTags(EnumerateCallback callback, const std::string &rootPath, XMPEnumerateOption options);
 
+    int32_t CountArrayItems(const std::string &arrayPath);
+
 private:
     DISALLOW_COPY_AND_MOVE(XMPMetadata);
     static bool xmpInitialized_;

@@ -39,19 +39,24 @@ public:
     const SXMPMeta* GetRawPtr() const { return xmpMeta_.get(); }
 
     // Forwarding methods - simple delegation to SXMPMeta
-    void SetProperty(const char* schemaNS, const char* propName, const char* propValue, XMP_OptionBits options)
+    void SetProperty(const char *schemaNS, const char *propName, const char *propValue, XMP_OptionBits options)
     {
         xmpMeta_->SetProperty(schemaNS, propName, propValue, options);
     }
 
-    bool GetProperty(const char* schemaNS, const char* propName, std::string* propValue, XMP_OptionBits* options)
+    bool GetProperty(const char *schemaNS, const char *propName, std::string *propValue, XMP_OptionBits *options)
     {
         return xmpMeta_->GetProperty(schemaNS, propName, propValue, options);
     }
 
-    void DeleteProperty(const char* schemaNS, const char* propName)
+    void DeleteProperty(const char *schemaNS, const char *propName)
     {
         xmpMeta_->DeleteProperty(schemaNS, propName);
+    }
+
+    int32_t CountArrayItems(const char *schemaNS, const char *arrayPath)
+    {
+        return xmpMeta_->CountArrayItems(schemaNS, arrayPath);
     }
 
 private:
