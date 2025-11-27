@@ -704,7 +704,8 @@ Image_ErrorCode OH_PixelmapNative_CreatePixelmapFromNativeBuffer(OH_NativeBuffer
     if (!IsNativeBufferFormatSupported(config.format)) {
         return IMAGE_BAD_PARAMETER;
     }
-    if (!((config.usage & NATIVEBUFFER_USAGE_CPU_READ) && (config.usage & NATIVEBUFFER_USAGE_CPU_WRITE))) {
+    if (!((static_cast<uint32_t>(config.usage) & NATIVEBUFFER_USAGE_CPU_READ) &&
+        (static_cast<uint32_t>(config.usage) & NATIVEBUFFER_USAGE_CPU_WRITE))) {
         return IMAGE_BAD_PARAMETER;
     }
 
