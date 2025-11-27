@@ -101,9 +101,7 @@ namespace {
     constexpr static uint32_t DESC_SIGNATURE = 0x64657363;
     constexpr static size_t SIZE_1 = 1;
     constexpr static size_t SIZE_4 = 4;
-    constexpr static int HARDWARE_MIN_DIM = 512;
     constexpr static int HARDWARE_MID_DIM = 1024;
-    constexpr static int HARDWARE_MAX_DIM = 8192;
     constexpr static int HARDWARE_ALIGN_SIZE = 16;
     constexpr static int DEFAULT_SCALE_SIZE = 1;
     constexpr static int DOUBLE_SCALE_SIZE = 2;
@@ -648,7 +646,7 @@ bool ExtDecoder::IsSupportCropOnDecode(SkIRect &target)
 {
     bool cond = info_.isEmpty() && !DecodeHeader();
     CHECK_ERROR_RETURN_RET(cond, false);
-    if (SupportRegionFlag_) {
+    if (supportRegionFlag_) {
         return true;
     }
     SkIRect orgbounds = info_.bounds();
@@ -788,23 +786,50 @@ uint32_t ExtDecoder::ExtractHeifRegion(const PixelDecodeOptions &opts)
 #endif
 }
 
+static bool IsSampleDecodeFormat(SkEncodedImageFormat format)
+{
+    return format == SkEncodedImageFormat::kJPEG || format == SkEncodedImageFormat::kHEIF ||
+        format == SkEncodedImageFormat::kPNG;
+}
+
+bool ExtDecoder::IsProgressiveJpeg()
+{
+    bool cond = CheckCodec();
+    CHECK_ERROR_RETURN_RET_LOG(!cond, false, "%{public}s check codec fail", __func__);
+
+    bool isProgressive = false;
+    if (codec_->getEncodedFormat() == SkEncodedImageFormat::kJPEG) {
+        SkJpegCodec* codec = static_cast<SkJpegCodec*>(codec_.get());
+        cond = (codec == nullptr || codec->decoderMgr() == nullptr|| codec->decoderMgr()->dinfo() == nullptr);
+        CHECK_ERROR_RETURN_RET_LOG(cond, false, "%{public}s invalid SkJpegCodec", __func__);
+
+        struct jpeg_decompress_struct* dInfo = codec->decoderMgr()->dinfo();
+        isProgressive = dInfo->progressive_mode;
+        CHECK_DEBUG_PRINT_LOG(isProgressive, "%{public}s image is progressive JPEG", __func__);
+    }
+    return isProgressive;
+}
+
 uint32_t ExtDecoder::CheckDecodeOptions(uint32_t index, const PixelDecodeOptions &opts)
 {
     bool cond = ImageUtils::CheckMulOverflow(dstInfo_.width(), dstInfo_.height(), dstInfo_.bytesPerPixel());
     CHECK_ERROR_RETURN_RET_LOG(cond, ERR_IMAGE_INVALID_PARAMETER,
         "SetDecodeOptions failed, width:%{public}d, height:%{public}d is too large",
         dstInfo_.width(), dstInfo_.height());
-    cond = !IsValidCrop(opts.CropRect, info_, dstSubset_);
-    CHECK_ERROR_RETURN_RET_LOG(cond, ERR_IMAGE_INVALID_PARAMETER,
-        "Invalid crop rect top:%{public}d, bottom:%{public}d, left:%{public}d, right:%{public}d",
-        dstSubset_.top(), dstSubset_.bottom(), dstSubset_.left(), dstSubset_.right());
     cond = ExtractHeifRegion(opts) != SUCCESS;
     CHECK_ERROR_RETURN_RET(cond, ERR_IMAGE_INVALID_PARAMETER);
     IMAGE_LOGD("%{public}s IN, dstSubset_: xy [%{public}d x %{public}d] right,bottom: [%{public}d x %{public}d]",
         __func__, dstSubset_.left(), dstSubset_.top(), dstSubset_.right(), dstSubset_.bottom());
     size_t tempSrcByteCount = info_.computeMinByteSize();
     size_t tempDstByteCount = dstInfo_.computeMinByteSize();
-    cond = SkImageInfo::ByteSizeOverflowed(tempSrcByteCount) || SkImageInfo::ByteSizeOverflowed(tempDstByteCount);
+    bool srcOverflowed = SkImageInfo::ByteSizeOverflowed(tempSrcByteCount);
+    bool dstOverflowed = supportRegionFlag_ ? false : SkImageInfo::ByteSizeOverflowed(tempDstByteCount);
+    IMAGE_LOGD("%{public}s srcOverflowed: %{public}d, dstOverflowed: %{public}d, supportRegionFlag_: %{public}d",
+        __func__, srcOverflowed, dstOverflowed, supportRegionFlag_);
+    cond = dstOverflowed;
+    if (IsProgressiveJpeg() || !IsSampleDecodeFormat(codec_->getEncodedFormat())) {
+        cond = cond || srcOverflowed;
+    }
     CHECK_ERROR_RETURN_RET_LOG(cond, ERR_IMAGE_TOO_LARGE,
         "Image too large, srcInfo_height: %{public}d, srcInfo_width: %{public}d, "
         "dstInfo_height: %{public}d, dstInfo_width: %{public}d",
@@ -814,6 +839,19 @@ uint32_t ExtDecoder::CheckDecodeOptions(uint32_t index, const PixelDecodeOptions
 #ifdef IMAGE_COLORSPACE_FLAG
     dstColorSpace_ = opts.plDesiredColorSpace;
 #endif
+    return SUCCESS;
+}
+
+uint32_t ExtDecoder::CheckCropRect(const PixelDecodeOptions &opts)
+{
+    IMAGE_LOGD("%{public}s IN, opts.CropRect: xy [%{public}d x %{public}d] wh [%{public}d x %{public}d]",
+        __func__, opts.CropRect.left, opts.CropRect.top, opts.CropRect.width, opts.CropRect.height);
+    bool cond = !IsValidCrop(opts.CropRect, info_, dstSubset_);
+    CHECK_ERROR_RETURN_RET_LOG(cond, ERR_IMAGE_INVALID_PARAMETER,
+        "Invalid crop rect top:%{public}d, bottom:%{public}d, left:%{public}d, right:%{public}d",
+        dstSubset_.top(), dstSubset_.bottom(), dstSubset_.left(), dstSubset_.right());
+    IMAGE_LOGD("%{public}s IN, dstSubset_: xy [%{public}d x %{public}d] right,bottom: [%{public}d x %{public}d]",
+        __func__, dstSubset_.left(), dstSubset_.top(), dstSubset_.right(), dstSubset_.bottom());
     return SUCCESS;
 }
 
@@ -857,8 +895,8 @@ uint32_t ExtDecoder::SetDecodeOptions(uint32_t index, const PixelDecodeOptions &
             info.pixelFormat = opts.desiredPixelFormat;
         }
     }
-    RegiondesiredSize_.width = opts.desiredSize.width;
-    RegiondesiredSize_.height = opts.desiredSize.height;
+    regionDesiredSize_.width = opts.desiredSize.width;
+    regionDesiredSize_.height = opts.desiredSize.height;
     // SK only support low down scale
     int dstWidth = opts.desiredSize.width;
     int dstHeight = opts.desiredSize.height;
@@ -888,9 +926,9 @@ uint32_t ExtDecoder::SetDecodeOptions(uint32_t index, const PixelDecodeOptions &
     } else {
         SetHeifSampleSize(opts, dstWidth, dstHeight, desireColor, desireAlpha);
     }
-    auto resCode = CheckDecodeOptions(index, opts);
+    uint32_t resCode = CheckCropRect(opts);
     CHECK_ERROR_RETURN_RET(resCode != SUCCESS, resCode);
-    SupportRegionFlag_ = IsRegionDecodeSupported(index, opts, info);
+    supportRegionFlag_ = IsRegionDecodeSupported(index, opts, info);
 #ifdef SK_ENABLE_OHOS_CODEC
     if (IsSupportSampleDecode(opts.desiredPixelFormat) &&
         GetSampleSize(opts.desiredSize.width, opts.desiredSize.height)) {
@@ -900,6 +938,8 @@ uint32_t ExtDecoder::SetDecodeOptions(uint32_t index, const PixelDecodeOptions &
             getDesiredColorSpace(info_, opts));
     }
 #endif
+    resCode = CheckDecodeOptions(index, opts);
+    CHECK_ERROR_RETURN_RET(resCode != SUCCESS, resCode);
     info.size.width = dstInfo_.width();
     info.size.height = dstInfo_.height();
     reusePixelmap_ = opts.plReusePixelmap;
@@ -1280,38 +1320,38 @@ bool ExtDecoder::IsHeifRegionDecode()
 #endif
 }
 
-SkCodec::Result ExtDecoder::DoRegionDecode(DecodeContext &context)
+uint32_t ExtDecoder::DoRegionDecode(DecodeContext &context)
 {
 #ifdef SK_ENABLE_OHOS_CODEC
-    auto SkOHOSCodec = SkOHOSCodec::MakeFromCodec(std::move(codec_));
+    auto skOHOSCodec = SkOHOSCodec::MakeFromCodec(std::move(codec_));
     // Ask the codec for a scaled subset
     SkIRect decodeSubset = dstSubset_;
-    bool cond = SkOHOSCodec == nullptr || !SkOHOSCodec->getSupportedSubset(&decodeSubset);
-    CHECK_ERROR_RETURN_RET_LOG(cond, SkCodec::kErrorInInput, "Error: Could not get subset");
-    int sampleSize = GetSoftwareScaledSize(RegiondesiredSize_.width, RegiondesiredSize_.height);
+    bool cond = skOHOSCodec == nullptr || !skOHOSCodec->getSupportedSubset(&decodeSubset);
+    CHECK_ERROR_RETURN_RET_LOG(cond, ERR_IMAGE_DECODE_FAILED, "Error: Could not get subset");
+    int sampleSize = GetSoftwareScaledSize(regionDesiredSize_.width, regionDesiredSize_.height);
     ImageFuncTimer imageFuncTimer("%s, decodeSubset: left:%d, top:%d, width:%d, height:%d, sampleSize:%d", __func__,
         decodeSubset.left(), decodeSubset.top(), decodeSubset.width(), decodeSubset.height(), sampleSize);
-    SkISize scaledSize = SkOHOSCodec->getSampledSubsetDimensions(sampleSize, decodeSubset);
+    SkISize scaledSize = skOHOSCodec->getSampledSubsetDimensions(sampleSize, decodeSubset);
     SkImageInfo decodeInfo = dstInfo_.makeWH(scaledSize.width(), scaledSize.height());
 
     uint64_t byteCount = decodeInfo.computeMinByteSize();
+    CHECK_ERROR_RETURN_RET_LOG(SkImageInfo::ByteSizeOverflowed(byteCount), ERR_IMAGE_TOO_LARGE,
+        "%{public}s too large region size: %{public}llu", __func__, static_cast<unsigned long long>(byteCount));
     uint32_t res = 0;
     if (context.allocatorType == Media::AllocatorType::DMA_ALLOC) {
         res = DmaMemAlloc(context, byteCount, decodeInfo);
     } else if (context.allocatorType == Media::AllocatorType::SHARE_MEM_ALLOC) {
-        ShareMemAlloc(context, byteCount);
+        res = ShareMemAlloc(context, byteCount);
     }
-    CHECK_ERROR_RETURN_RET_LOG(res != SUCCESS, SkCodec::kErrorInInput,
+    CHECK_ERROR_RETURN_RET_LOG(res != SUCCESS, ERR_IMAGE_DECODE_FAILED,
         "do region decode failed, SetContextPixelsBuffer failed");
 
     uint8_t* dstBuffer = static_cast<uint8_t *>(context.pixelsBuffer.buffer);
     uint64_t rowStride = decodeInfo.minRowBytes64();
     if (context.allocatorType == Media::AllocatorType::DMA_ALLOC) {
         SurfaceBuffer* sbBuffer = reinterpret_cast<SurfaceBuffer*> (context.pixelsBuffer.context);
-        if (sbBuffer == nullptr) {
-            IMAGE_LOGE("%{public}s: surface buffer is nullptr", __func__);
-            return SkCodec::kErrorInInput;
-        }
+        CHECK_ERROR_RETURN_RET_LOG(sbBuffer == nullptr, ERR_IMAGE_DECODE_FAILED,
+            "%{public}s: surface buffer is nullptr", __func__);
         rowStride = static_cast<uint64_t>(sbBuffer->GetStride());
     }
 
@@ -1319,20 +1359,20 @@ SkCodec::Result ExtDecoder::DoRegionDecode(DecodeContext &context)
     SkOHOSCodec::OHOSOptions options;
     options.fSampleSize = sampleSize;
     options.fSubset = &decodeSubset;
-    SkCodec::Result result = SkOHOSCodec->getOHOSPixels(decodeInfo, dstBuffer, rowStride, &options);
+    SkCodec::Result result = skOHOSCodec->getOHOSPixels(decodeInfo, dstBuffer, rowStride, &options);
     switch (result) {
         case SkCodec::kSuccess:
         case SkCodec::kIncompleteInput:
         case SkCodec::kErrorInInput:
             context.outInfo.size.width = decodeInfo.width();
             context.outInfo.size.height = decodeInfo.height();
-            return SkCodec::kSuccess;
+            return SUCCESS;
         default:
             IMAGE_LOGE("Error: Could not get pixels with message %{public}s", SkCodec::ResultToString(result));
-            return result;
+            return ERR_IMAGE_DECODE_FAILED;
     }
 #else
-    return SkCodec::kSuccess;
+    return SUCCESS;
 #endif
 }
 
@@ -1569,16 +1609,12 @@ uint32_t ExtDecoder::DoHeifDecode(DecodeContext &context)
 uint32_t ExtDecoder::Decode(uint32_t index, DecodeContext &context)
 {
 #ifdef SK_ENABLE_OHOS_CODEC
-    if (SupportRegionFlag_) {
+    if (supportRegionFlag_) {
         DebugInfo(info_, dstInfo_, dstOptions_);
-        SkCodec::Result regionDecodeRes = DoRegionDecode(context);
+        uint32_t regionDecodeRes = DoRegionDecode(context);
         ResetCodec();
-        if (SkCodec::kSuccess == regionDecodeRes) {
-            return SUCCESS;
-        } else {
-            IMAGE_LOGE("do region decode failed");
-            return ERR_IMAGE_DECODE_FAILED;
-        }
+        CHECK_ERROR_PRINT_LOG(regionDecodeRes != SUCCESS, "do region decode failed");
+        return regionDecodeRes;
     }
     if (IsSupportSampleDecode(context.info.pixelFormat)) {
         DebugInfo(info_, dstInfo_, dstOptions_);
@@ -2746,6 +2782,7 @@ uint32_t ExtDecoder::GetTopLevelImageNum(uint32_t &num)
 }
 
 bool ExtDecoder::IsSupportHardwareDecode() {
+#ifdef JPEG_HW_DECODE_ENABLE
     if (info_.isEmpty() && !DecodeHeader()) {
         return false;
     }
@@ -2753,10 +2790,13 @@ bool ExtDecoder::IsSupportHardwareDecode() {
         && codec_->getEncodedFormat() == SkEncodedImageFormat::kJPEG)) {
         return false;
     }
+    if (!initJpegErr_ && hwDecoderPtr_ == nullptr) {
+        InitJpegDecoder();
+    }
+    CHECK_ERROR_RETURN_RET_LOG((initJpegErr_ || hwDecoderPtr_ == nullptr), false, "Jpeg hardware decoder error");
     int width = info_.width();
     int height = info_.height();
-    if (width >= HARDWARE_MIN_DIM && width <= HARDWARE_MAX_DIM
-        && height >= HARDWARE_MIN_DIM && height <= HARDWARE_MAX_DIM) {
+    if (hwDecoderPtr_->IsHardwareDecodeSupported(IMAGE_JPEG_FORMAT, {width, height})) {
         if (width < HARDWARE_MID_DIM || height < HARDWARE_MID_DIM) {
             int remWidth = width % HARDWARE_ALIGN_SIZE;
             int remHeight = height % HARDWARE_ALIGN_SIZE;
@@ -2767,6 +2807,7 @@ bool ExtDecoder::IsSupportHardwareDecode() {
             return true;
         }
     }
+#endif
     return false;
 }
 
