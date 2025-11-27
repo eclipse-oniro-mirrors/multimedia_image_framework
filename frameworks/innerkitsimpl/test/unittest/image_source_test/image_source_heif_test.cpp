@@ -62,6 +62,7 @@ static const std::string IMAGE_OUTPUT_HEIF_MULTI_ONETIME1_PATH = "/data/test/tes
 static const std::string IMAGE_OUTPUT_HEIF_MULTI_INC2_PATH = "/data/test/test_inc2.heic";
 static const std::string IMAGE_OUTPUT_HEIF_MULTI_ONETIME2_PATH = "/data/test/test_onetime2.heic";
 static const std::string IMAGE_INPUT_HEIF_10BIT_SDR_PATH = "/data/local/tmp/image/test-10bit-1.heic";
+static const std::string IMAGE_INPUT_JPEG_PATH = "/data/local/tmp/image/test.jpg";
 
 const std::string ORIENTATION = "Orientation";
 const std::string IMAGE_HEIGHT = "ImageHeight";
@@ -1571,6 +1572,62 @@ HWTEST_F(ImageSourceHeifTest, HeifSampleSizeDecode006, TestSize.Level3)
     ASSERT_NE(pixelMap.get(), nullptr);
     EXPECT_EQ(500, pixelMap->GetWidth());
     EXPECT_EQ(1000, pixelMap->GetHeight());
+}
+
+/**
+ * @tc.name: IsHeifHasAlpha001
+ * @tc.desc: Test the input HeifImage has alpha channel
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageSourceHeifTest, IsHeifHasAlpha001, TestSize.Level3)
+{
+    uint32_t errorCode = 0;
+    SourceOptions opts;
+    opts.formatHint = "image/heif";
+    std::unique_ptr<ImageSource> imageSource =
+        ImageSource::CreateImageSource(IMAGE_INPUT_ALPHA_HEIF_PATH, opts, errorCode);
+    ASSERT_EQ(errorCode, SUCCESS);
+    ASSERT_NE(imageSource.get(), nullptr);
+    bool isAlpha;
+    isAlpha = imageSource->IsHeifHasAlpha();
+    ASSERT_EQ(isAlpha, true);
+}
+
+/**
+ * @tc.name: IsHeifHasAlpha002
+ * @tc.desc: Test the input HeifImage does not have alpha channel
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageSourceHeifTest, IsHeifHasAlpha002, TestSize.Level3)
+{
+    uint32_t errorCode = 0;
+    SourceOptions opts;
+    opts.formatHint = "image/heif";
+    std::unique_ptr<ImageSource> imageSource =
+        ImageSource::CreateImageSource(IMAGE_INPUT_HEIF_PATH, opts, errorCode);
+    ASSERT_EQ(errorCode, SUCCESS);
+    ASSERT_NE(imageSource.get(), nullptr);
+    bool isAlpha;
+    isAlpha = imageSource->IsHeifHasAlpha();
+    ASSERT_EQ(isAlpha, false);
+}
+
+/**
+ * @tc.name: IsHeifHasAlpha003
+ * @tc.desc: Test the input image type is not Heif
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageSourceHeifTest, IsHeifHasAlpha003, TestSize.Level3)
+{
+    uint32_t errorCode = 0;
+    SourceOptions opts;
+    std::unique_ptr<ImageSource> imageSource =
+        ImageSource::CreateImageSource(IMAGE_INPUT_JPEG_PATH, opts, errorCode);
+    ASSERT_EQ(errorCode, SUCCESS);
+    ASSERT_NE(imageSource.get(), nullptr);
+    bool isAlpha;
+    isAlpha = imageSource->IsHeifHasAlpha();
+    ASSERT_EQ(isAlpha, false);
 }
 } // namespace Multimedia
 } // namespace OHOS

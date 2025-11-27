@@ -3324,6 +3324,7 @@ void ExtDecoder::SetHeifParseError()
 
 bool ExtDecoder::HasAlpha()
 {
+#ifdef HEIF_HW_DECODE_ENABLE
     if (!CheckCodec()) {
         IMAGE_LOGE("HasAlpha CheckCodec failed");
         return false;
@@ -3334,6 +3335,8 @@ bool ExtDecoder::HasAlpha()
     CHECK_ERROR_RETURN_RET_LOG(cond, false, "Decode Heifdecoder is nullptr");
 
     return decoder->IsHeifHasAlphaImage();
+#endif
+    return false;
 }
 
 bool ExtDecoder::CheckAuxiliaryMap(AuxiliaryPictureType type)
