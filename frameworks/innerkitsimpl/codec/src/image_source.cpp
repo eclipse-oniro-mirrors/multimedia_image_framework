@@ -5646,7 +5646,7 @@ uint32_t ImageSource::GetiTxtLength()
     return 0;
 }
 
-bool ImageSource::IsHeifHasAlpha() 
+bool ImageSource::IsHeifHasAlpha()
 {
     uint32_t ret = SUCCESS;
     auto iter = GetValidImageStatus(0, ret);
