@@ -5648,6 +5648,7 @@ uint32_t ImageSource::GetiTxtLength()
 
 bool ImageSource::IsHeifHasAlpha()
 {
+#ifdef HEIF_HW_DECODE_ENABLE
     uint32_t ret = SUCCESS;
     auto iter = GetValidImageStatus(0, ret);
     if (iter == imageStatusMap_.end()) {
@@ -5661,6 +5662,8 @@ bool ImageSource::IsHeifHasAlpha()
     }
 
     return mainDecoder_->HasAlpha();
+#endif
+    return false;
 }
 } // namespace Media
 } // namespace OHOS
