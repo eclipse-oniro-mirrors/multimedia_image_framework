@@ -854,31 +854,6 @@ void MetadataNapi::Destructor(napi_env env, void *nativeObject, void *finalize)
     }
 }
 
-static std::string GetStringArgument(napi_env env, napi_value value)
-{
-    std::string strValue = "";
-    size_t bufLength = 0;
-    napi_status status = napi_get_value_string_utf8(env, value, nullptr, NUM_0, &bufLength);
-    if (status == napi_ok && bufLength > NUM_0 && bufLength < PATH_MAX) {
-        char *buffer = reinterpret_cast<char *>(malloc((bufLength + NUM_1) * sizeof(char)));
-        if (buffer == nullptr) {
-            IMAGE_LOGE("No memory");
-            return strValue;
-        }
-
-        status = napi_get_value_string_utf8(env, value, buffer, bufLength + NUM_1, &bufLength);
-        if (status == napi_ok) {
-            IMAGE_LOGD("Get Success");
-            strValue.assign(buffer, 0, bufLength + NUM_1);
-        }
-        if (buffer != nullptr) {
-            free(buffer);
-            buffer = nullptr;
-        }
-    }
-    return strValue;
-}
-
 std::vector<std::string> GetStrArrayArgument(napi_env env, napi_value object)
 {
     std::vector<std::string> keyStrArray;
@@ -892,7 +867,7 @@ std::vector<std::string> GetStrArrayArgument(napi_env env, napi_value object)
     for (uint32_t i = 0; i < arrayLen; i++) {
         napi_value element;
         if (napi_get_element(env, object, i, &element) == napi_ok) {
-            keyStrArray.emplace_back(GetStringArgument(env, element));
+            keyStrArray.emplace_back(ImageNapiUtils::GetStringArgument(env, element));
         }
     }
     IMAGE_LOGD("Get string argument success.");
@@ -923,13 +898,13 @@ std::vector<std::pair<std::string, std::string>> GetArrayArgument(napi_env env, 
             IMAGE_LOGE("Get recordName element failed %{public}d", status);
             continue;
         }
-        std::string keyStr = GetStringArgument(env, recordName);
+        std::string keyStr = ImageNapiUtils::GetStringArgument(env, recordName);
         status = napi_get_named_property(env, object, keyStr.c_str(), &recordValue);
         if (status != napi_ok) {
             IMAGE_LOGE("Get recordValue name property failed %{public}d", status);
             continue;
         }
-        std::string valueStr = GetStringArgument(env, recordValue);
+        std::string valueStr = ImageNapiUtils::GetStringArgument(env, recordValue);
         kVStrArray.push_back(std::make_pair(keyStr, valueStr));
     }
 

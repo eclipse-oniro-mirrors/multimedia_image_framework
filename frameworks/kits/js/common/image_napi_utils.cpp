@@ -13,10 +13,10 @@
  * limitations under the License.
  */
 
+#include "image_log.h"
 #include "image_napi_utils.h"
 #include <securec.h>
 #include <unistd.h>
-#include "image_log.h"
 #if !defined(CROSS_PLATFORM)
 #include "tokenid_kit.h"
 #include "ipc_skeleton.h"
@@ -24,6 +24,11 @@
 #if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM) && defined(HICHECKER_ENABLE)
 #include "hichecker.h"
 #endif
+
+namespace {
+constexpr uint32_t NUM_0 = 0;
+constexpr uint32_t NUM_1 = 1;
+}
 
 namespace OHOS {
 namespace Media {
@@ -120,6 +125,31 @@ bool ImageNapiUtils::GetUtf8String(napi_env env, napi_value root, std::string &r
     return true;
 }
 
+std::string ImageNapiUtils::GetStringArgument(napi_env env, napi_value value)
+{
+    std::string strValue = "";
+    size_t bufLength = 0;
+    napi_status status = napi_get_value_string_utf8(env, value, nullptr, NUM_0, &bufLength);
+    if (status == napi_ok && bufLength > NUM_0 && bufLength < PATH_MAX) {
+        char *buffer = reinterpret_cast<char *>(malloc((bufLength + NUM_1) * sizeof(char)));
+        if (buffer == nullptr) {
+            IMAGE_LOGE("%{public}s: No memory", __func__);
+            return strValue;
+        }
+
+        status = napi_get_value_string_utf8(env, value, buffer, bufLength + NUM_1, &bufLength);
+        if (status == napi_ok) {
+            IMAGE_LOGD("%{public}s: Get success", __func__);
+            strValue.assign(buffer, 0, bufLength);
+        }
+        if (buffer != nullptr) {
+            free(buffer);
+            buffer = nullptr;
+        }
+    }
+    return strValue;
+}
+
 bool ImageNapiUtils::CreateArrayBuffer(napi_env env, void* src, size_t srcLen, napi_value *res)
 {
     if (src == nullptr || srcLen == 0) {
@@ -132,6 +162,14 @@ bool ImageNapiUtils::CreateArrayBuffer(napi_env env, void* src, size_t srcLen, n
     }
 
     if (memcpy_s(nativePtr, srcLen, src, srcLen) != EOK) {
+        return false;
+    }
+    return true;
+}
+
+bool ImageNapiUtils::CreateNapiBoolean(napi_env env, bool value, napi_value &root)
+{
+    if (napi_get_boolean(env, value, &root) != napi_ok) {
         return false;
     }
     return true;

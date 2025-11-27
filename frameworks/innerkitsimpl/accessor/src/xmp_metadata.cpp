@@ -215,10 +215,16 @@ void XMPMetadata::EnumerateTags(EnumerateCallback callback, const std::string &r
     std::string schemaNS;
     std::string rootPropName;
     if (!rootPath.empty()) {
-        const auto &[prefix, propName] = XMPHelper::SplitPrefixPath(rootPath);
+        std::string prefix;
+        if (rootPath.find(COLON) == std::string::npos) {
+            prefix = rootPath;
+        } else {
+            auto [prefixPart, propName] = XMPHelper::SplitPrefixPath(rootPath);
+            prefix = std::move(prefixPart);
+            rootPropName = std::move(propName);
+        }
         CHECK_ERROR_RETURN_LOG(!SXMPMeta::GetNamespaceURI(prefix.c_str(), &schemaNS),
             "%{public}s failed to get namespace URI for prefix: %{public}s", __func__, prefix.c_str());
-        rootPropName = propName;
     }
 
     XMP_OptionBits iterOptions = kXMP_IterJustChildren;

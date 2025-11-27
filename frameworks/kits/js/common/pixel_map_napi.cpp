@@ -1771,31 +1771,6 @@ void setSurfaceId(const char *surfaceId, std::string &dst)
     dst = surfaceId;
 }
 
-static std::string GetStringArgument(napi_env env, napi_value value)
-{
-    std::string strValue = "";
-    size_t bufLength = 0;
-    napi_status status = napi_get_value_string_utf8(env, value, nullptr, NUM_0, &bufLength);
-    if (status == napi_ok && bufLength > NUM_0 && bufLength < PATH_MAX) {
-        char *buffer = reinterpret_cast<char *>(malloc((bufLength + NUM_1) * sizeof(char)));
-        if (buffer == nullptr) {
-            IMAGE_LOGE("No memory");
-            return strValue;
-        }
-
-        status = napi_get_value_string_utf8(env, value, buffer, bufLength + NUM_1, &bufLength);
-        if (status == napi_ok) {
-            IMAGE_LOGD("Get Success");
-            strValue.assign(buffer, 0, bufLength + NUM_1);
-        }
-        if (buffer != nullptr) {
-            free(buffer);
-            buffer = nullptr;
-        }
-    }
-    return strValue;
-}
-
 static bool ParseSurfaceRegion(napi_env env, napi_value root, size_t argCount, Rect* region)
 {
     if (argCount == NUM_2) {
@@ -1840,7 +1815,7 @@ napi_value PixelMapNapi::CreatePixelMapFromSurface(napi_env env, napi_callback_i
         ImageNapiUtils::ThrowExceptionError(env, COMMON_ERR_INVALID_PARAMETER, "Invalid args count"),
         IMAGE_LOGE("CreatePixelMapFromSurface Invalid args count %{public}zu", argCount));
     std::unique_ptr<PixelMapAsyncContext> asyncContext = std::make_unique<PixelMapAsyncContext>();
-    asyncContext->surfaceId = GetStringArgument(env, argValue[NUM_0]);
+    asyncContext->surfaceId = ImageNapiUtils::GetStringArgument(env, argValue[NUM_0]);
     bool ret = ParseSurfaceRegion(env, argValue[NUM_1], argCount, &(asyncContext->area.region));
     asyncContext->argc = argCount;
     napi_create_promise(env, &(asyncContext->deferred), &result);
@@ -1926,7 +1901,7 @@ napi_value PixelMapNapi::CreatePixelMapFromSurfaceSync(napi_env env, napi_callba
         ImageNapiUtils::ThrowExceptionError(env, COMMON_ERR_INVALID_PARAMETER, "Invalid args count"),
         IMAGE_LOGE("CreatePixelMapFromSurfaceSync Invalid args count %{public}zu", argCount));
     std::unique_ptr<PixelMapAsyncContext> asyncContext = std::make_unique<PixelMapAsyncContext>();
-    asyncContext->surfaceId = GetStringArgument(env, argValue[NUM_0]);
+    asyncContext->surfaceId = ImageNapiUtils::GetStringArgument(env, argValue[NUM_0]);
     bool ret = ParseSurfaceRegion(env, argValue[NUM_1], argCount, &(asyncContext->area.region));
     IMG_NAPI_CHECK_RET_D(ret,
         ImageNapiUtils::ThrowExceptionError(env, COMMON_ERR_INVALID_PARAMETER,
@@ -3951,7 +3926,7 @@ napi_value PixelMapNapi::SetMemoryNameSync(napi_env env, napi_callback_info info
         ImageNapiUtils::ThrowExceptionError(env, COMMON_ERR_INVALID_PARAMETER,
         "Invalid args count"),
         IMAGE_LOGE("Invalid args count %{public}zu", argCount));
-    std::string pixelMapName = GetStringArgument(env, argValue[0]);
+    std::string pixelMapName = ImageNapiUtils::GetStringArgument(env, argValue[0]);
 
     PixelMapNapi* pixelMapNapi = nullptr;
     napiStatus = napi_unwrap(env, thisVar, reinterpret_cast<void**>(&pixelMapNapi));

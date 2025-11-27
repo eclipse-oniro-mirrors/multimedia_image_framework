@@ -523,31 +523,6 @@ static std::string GetErrorCodeMsg(Image_ErrorCode apiErrorCode)
     return errMsg;
 }
 
-static std::string GetStringArgument(napi_env env, napi_value value)
-{
-    std::string strValue = "";
-    size_t bufLength = 0;
-    napi_status status = napi_get_value_string_utf8(env, value, nullptr, NUM_0, &bufLength);
-    if (status == napi_ok && bufLength > NUM_0 && bufLength < PATH_MAX) {
-        char *buffer = reinterpret_cast<char *>(malloc((bufLength + NUM_1) * sizeof(char)));
-        if (buffer == nullptr) {
-            IMAGE_LOGE("No memory");
-            return strValue;
-        }
-
-        status = napi_get_value_string_utf8(env, value, buffer, bufLength + NUM_1, &bufLength);
-        if (status == napi_ok) {
-            IMAGE_LOGD("Get Success");
-            strValue.assign(buffer, 0, bufLength + NUM_1);
-        }
-        if (buffer != nullptr) {
-            free(buffer);
-            buffer = nullptr;
-        }
-    }
-    return strValue;
-}
-
 static int32_t GetIntArgument(napi_env env, napi_value value)
 {
     int32_t intValue = -1;
@@ -714,7 +689,7 @@ static std::string HandleEnumCase(napi_env env, napi_value value, std::string ke
     napi_typeof(env, value, &valueType);
     IMAGE_LOGD("Orientation value type: %{public}d", valueType);
     if (valueType == napi_string && key == "Orientation") {
-        std::string enumName = GetStringArgument(env, value);
+        std::string enumName = ImageNapiUtils::GetStringArgument(env, value);
         static const std::unordered_map<std::string, int32_t> orientationMap = {
             {"TOP_LEFT", 1}, {"TOP_RIGHT", 2}, {"BOTTOM_RIGHT", 3},
             {"BOTTOM_LEFT", 4}, {"LEFT_TOP", 5}, {"RIGHT_TOP", 6},
@@ -723,7 +698,7 @@ static std::string HandleEnumCase(napi_env env, napi_value value, std::string ke
         auto it = orientationMap.find(enumName);
         return (it != orientationMap.end()) ? std::to_string(it->second) : "";
     } else if (valueType == napi_string && key == "HwMnoteFocusMode") {
-        std::string enumName = GetStringArgument(env, value);
+        std::string enumName = ImageNapiUtils::GetStringArgument(env, value);
         static const std::unordered_map<std::string, int32_t> focusModeMap = {
             {"AF_A", 0}, {"AF_S", 1}, {"AF_C", 2},
             {"MF", 3}
@@ -731,7 +706,7 @@ static std::string HandleEnumCase(napi_env env, napi_value value, std::string ke
         auto it = focusModeMap.find(enumName);
         return (it != focusModeMap.end()) ? std::to_string(it->second) : "";
     } else if (valueType == napi_string && key == "HwMnoteXmageColorMode") {
-        std::string enumName = GetStringArgument(env, value);
+        std::string enumName = ImageNapiUtils::GetStringArgument(env, value);
         static const std::unordered_map<std::string, int32_t> xmageColorModeMap = {
             {"NORMAL", 0}, {"BRIGHT", 1}, {"SOFT", 2},
             {"MONO", 3}
@@ -751,7 +726,7 @@ static std::string GetExifValueArgumentForKey(napi_env env, napi_value value, co
 {
     switch (ExifMetadata::GetPropertyValueType(keyStr)) {
         case PropertyValueType::STRING:
-            return GetStringArgument(env, value);
+            return ImageNapiUtils::GetStringArgument(env, value);
         case PropertyValueType::INT:
             if (keyStr == "Orientation" || keyStr == "HwMnoteFocusMode" || keyStr == "HwMnoteXmageColorMode") {
                 return HandleEnumCase(env, value, keyStr);
@@ -907,7 +882,7 @@ std::vector<std::string> GetStringArrayArgument(napi_env env, napi_value object)
     for (uint32_t i = 0; i < arrayLen; i++) {
         napi_value element;
         if (napi_get_element(env, object, i, &element) == napi_ok) {
-            keyStrArray.emplace_back(GetStringArgument(env, element));
+            keyStrArray.emplace_back(ImageNapiUtils::GetStringArgument(env, element));
         }
     }
 
@@ -939,13 +914,13 @@ std::vector<std::pair<std::string, std::string>> GetRecordArgument(napi_env env,
             IMAGE_LOGE("Get recordName element failed %{public}d", status);
             continue;
         }
-        std::string keyStr = GetStringArgument(env, recordName);
+        std::string keyStr = ImageNapiUtils::GetStringArgument(env, recordName);
         status = napi_get_named_property(env, object, keyStr.c_str(), &recordValue);
         if (status != napi_ok) {
             IMAGE_LOGE("Get recordValue name property failed %{public}d", status);
             continue;
         }
-        std::string valueStr = GetStringArgument(env, recordValue);
+        std::string valueStr = ImageNapiUtils::GetStringArgument(env, recordValue);
         kVStrArray.push_back(std::make_pair(keyStr, valueStr));
     }
 
@@ -982,7 +957,7 @@ static void ProcessMetadataProperty(napi_env env, napi_value propertyNamesArray,
         IMAGE_LOGE("Get property name at index %{public}u failed", index);
         return;
     }
-    std::string stringArgument = GetStringArgument(env, propertyName);
+    std::string stringArgument = ImageNapiUtils::GetStringArgument(env, propertyName);
     const std::set<std::string> internalProps = {"_napiwrapper", "__nativePtr", "__cached__"};
     if (internalProps.find(stringArgument) != internalProps.end()) {
         return;
@@ -2612,7 +2587,7 @@ static bool ParsePropertyOptions(napi_env env, napi_value root, ImageSourceAsync
         IMAGE_LOGD("no defaultValue");
     } else {
         if (tmpValue != nullptr) {
-            context->defaultValueStr = GetStringArgument(env, tmpValue);
+            context->defaultValueStr = ImageNapiUtils::GetStringArgument(env, tmpValue);
         }
     }
     return true;
@@ -3137,7 +3112,7 @@ static std::unique_ptr<ImageSourceAsyncContext> UnwrapContext(napi_env env, napi
         return nullptr;
     }
     if (ImageNapiUtils::getType(env, argValue[NUM_0]) == napi_string) {
-        context->keyStr = GetStringArgument(env, argValue[NUM_0]);
+        context->keyStr = ImageNapiUtils::GetStringArgument(env, argValue[NUM_0]);
     } else if (ImageNapiUtils::getType(env, argValue[NUM_0]) == napi_object) {
         context->keyStrArray = GetStringArrayArgument(env, argValue[NUM_0]);
         if (context->keyStrArray.size() == 0) return nullptr;
@@ -3357,7 +3332,7 @@ static std::unique_ptr<ImageSourceAsyncContext> UnwrapContextForModify(napi_env 
         return nullptr;
     }
     if (ImageNapiUtils::getType(env, argValue[NUM_0]) == napi_string) {
-        context->keyStr = GetStringArgument(env, argValue[NUM_0]);
+        context->keyStr = ImageNapiUtils::GetStringArgument(env, argValue[NUM_0]);
     } else if (ImageNapiUtils::getType(env, argValue[NUM_0]) == napi_object) {
         context->kVStrArray = GetRecordArgument(env, argValue[NUM_0]);
         if (context->kVStrArray.size() == 0) return nullptr;
@@ -3895,7 +3870,7 @@ napi_value ImageSourceNapi::GetImagePropertySync(napi_env env, napi_callback_inf
 
     // if argCount is 1 and argValue[NUM_0] is string, get image property
     if (argCount == NUM_1 && ImageNapiUtils::getType(env, argValue[NUM_0]) == napi_string) {
-        std::string key = GetStringArgument(env, argValue[NUM_0]);
+        std::string key = ImageNapiUtils::GetStringArgument(env, argValue[NUM_0]);
         std::string value = "";
         napi_value result = nullptr;
         napi_get_undefined(env, &result);
