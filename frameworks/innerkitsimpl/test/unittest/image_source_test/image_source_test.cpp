@@ -52,6 +52,7 @@ static const std::string IMAGE_INPUT_EXIF_JPEG_PATH = "/data/local/tmp/image/tes
 static const std::string IMAGE_OUTPUT_JPEG_PATH = "/data/local/tmp/image/test_out.jpg";
 static const std::string IMAGE_INPUT_ICO_PATH = "/data/local/tmp/image/test.ico";
 static const std::string IMAGE_INPUT_HEIF_PATH = "/data/local/tmp/image/test.heic";
+static const std::string IMAGE_INPUT_ALPHA_HEIF_PATH = "/data/local/tmp/image/alpha.heic";
 static const std::string IMAGE_INPUT_JPEG_HDR_PATH = "/data/local/tmp/image/hdr.jpg";
 static const std::string IMAGE_INPUT_JPEG_BROKEN_ONE = "/data/local/tmp/image/test_jpeg_broken_one.jpg";
 static const std::string IMAGE_INPUT_JPEG_BROKEN_TWO = "/data/local/tmp/image/test_jpeg_broken_two.jpg";
@@ -3690,6 +3691,62 @@ HWTEST_F(ImageSourceTest, MetadataAccessorFactoryNullBufferTest001, TestSize.Lev
     std::shared_ptr<MetadataAccessor> accessor = MetadataAccessorFactory::Create(nullBuffer, size);
     ASSERT_EQ(accessor, nullptr);
     GTEST_LOG_(INFO) << "ImageSourceTest: MetadataAccessorFactoryNullBufferTest001 end";
+}
+
+/**
+ * @tc.name: IsHeifHasAlpha001
+ * @tc.desc: Test the input HeifImage has alpha channel
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageSourceTest, IsHeifHasAlpha001, TestSize.Level3)
+{
+    uint32_t errorCode = 0;
+    SourceOptions opts;
+    opts.formatHint = "image/heif";
+    std::unique_ptr<ImageSource> imageSource =
+        ImageSource::CreateImageSource(IMAGE_INPUT_ALPHA_HEIF_PATH, opts, errorCode);
+    ASSERT_EQ(errorCode, SUCCESS);
+    ASSERT_NE(imageSource.get(), nullptr);
+    bool isAlpha;
+    isAlpha = imageSource->IsHeifHasAlpha();
+    ASSERT_EQ(isAlpha, true);
+}
+
+/**
+ * @tc.name: IsHeifHasAlpha002
+ * @tc.desc: Test the input HeifImage does not have alpha channel
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageSourceTest, IsHeifHasAlpha002, TestSize.Level3)
+{
+    uint32_t errorCode = 0;
+    SourceOptions opts;
+    opts.formatHint = "image/heif";
+    std::unique_ptr<ImageSource> imageSource =
+        ImageSource::CreateImageSource(IMAGE_INPUT_HEIF_PATH, opts, errorCode);
+    ASSERT_EQ(errorCode, SUCCESS);
+    ASSERT_NE(imageSource.get(), nullptr);
+    bool isAlpha;
+    isAlpha = imageSource->IsHeifHasAlpha();
+    ASSERT_EQ(isAlpha, false);
+}
+
+/**
+ * @tc.name: IsHeifHasAlpha003
+ * @tc.desc: Test the input image type is not Heif
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageSourceTest, IsHeifHasAlpha003, TestSize.Level3)
+{
+    uint32_t errorCode = 0;
+    SourceOptions opts;
+    std::unique_ptr<ImageSource> imageSource =
+        ImageSource::CreateImageSource(IMAGE_INPUT_JPEG_PATH, opts, errorCode);
+    ASSERT_EQ(errorCode, SUCCESS);
+    ASSERT_NE(imageSource.get(), nullptr);
+    bool isAlpha;
+    isAlpha = imageSource->IsHeifHasAlpha();
+    ASSERT_EQ(isAlpha, false);
 }
 } // namespace Multimedia
 } // namespace OHOS
