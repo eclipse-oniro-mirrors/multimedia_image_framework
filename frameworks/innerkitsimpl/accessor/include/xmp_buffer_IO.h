@@ -45,9 +45,9 @@ namespace {
 
 class XMPBuffer_IO : public XMP_IO {
 public:
-    XMPBuffer_IO(const void* buffer, XMP_Uns32 size);
+    XMPBuffer_IO(const void* buffer, XMP_Uns32 size, bool writable = true);
 
-    XMPBuffer_IO();
+    XMPBuffer_IO();  // Empty writable buffer
 
     virtual ~XMPBuffer_IO();
 

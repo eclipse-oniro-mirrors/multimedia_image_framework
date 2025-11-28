@@ -162,7 +162,10 @@ const int32_t ERR_MEMORY_COPY_FAILED = BASE_MEDIA_ERR_OFFSET + 206; // media unk
 const int32_t ERR_NOT_CARRY_THUMBNAIL = BASE_MEDIA_ERR_OFFSET + 207; // not carry thumbnail
 const int32_t ERR_GENERATE_THUMBNAIL_FAILED = BASE_MEDIA_ERR_OFFSET + 208; // generate thumbnail failed
 
-const int32_t ERR_XMP_UNSUPPORT_PROPERTY = BASE_MEDIA_ERR_OFFSET + 210; // xmp unsupport property
+const int32_t ERR_XMP_INIT_FAILED = BASE_MEDIA_ERR_OFFSET + 210; // xmp init failed
+const int32_t ERR_XMP_INVALID_FILE = BASE_MEDIA_ERR_OFFSET + 211; // xmp invalid file
+const int32_t ERR_XMP_DECODE_FAILED = BASE_MEDIA_ERR_OFFSET + 212; // xmp decode failed
+const int32_t ERR_XMP_UNSUPPORT_PROPERTY = BASE_MEDIA_ERR_OFFSET + 213; // xmp unsupport property
 
 const int32_t ERR_RESOURCE_UNAVAILABLE = 501; // Resource Unavailable
 const int32_t COMMON_ERR_INVALID_PARAMETER = 401; // Common error，Invalid parameter

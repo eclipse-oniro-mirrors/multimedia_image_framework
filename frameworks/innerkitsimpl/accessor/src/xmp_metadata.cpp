@@ -70,6 +70,11 @@ void XMPMetadata::Terminate()
     }
 }
 
+std::unique_ptr<XMPMetadataImpl>& XMPMetadata::GetImpl()
+{
+    return impl_;
+}
+
 static constexpr XMPTagType ConvertOptionsToTagType(XMP_OptionBits options)
 {
     if (options & kXMP_PropValueIsStruct) {

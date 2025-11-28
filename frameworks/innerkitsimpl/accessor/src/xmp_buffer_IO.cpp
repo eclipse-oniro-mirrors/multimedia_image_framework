@@ -23,8 +23,8 @@
 
 namespace OHOS {
 namespace Media {
-
-XMPBuffer_IO::XMPBuffer_IO(const void* buffer, XMP_Uns32 size) : position_(0), readOnly_(true), derivedTemp_(nullptr)
+XMPBuffer_IO::XMPBuffer_IO(const void* buffer, XMP_Uns32 size, bool writable)
+    : position_(0), readOnly_(!writable), derivedTemp_(nullptr)
 {
     CHECK_ERROR_RETURN_LOG(buffer == nullptr || size == 0, "%{public}s invalid buffer or size", __func__);
 
@@ -32,7 +32,8 @@ XMPBuffer_IO::XMPBuffer_IO(const void* buffer, XMP_Uns32 size) : position_(0), r
     memcpy_s(data_.data(), size, buffer, size);
 }
 
-XMPBuffer_IO::XMPBuffer_IO() : position_(0), readOnly_(false), derivedTemp_(nullptr)
+XMPBuffer_IO::XMPBuffer_IO()
+    : position_(0), readOnly_(false), derivedTemp_(nullptr)
 {
     data_.clear();
 }

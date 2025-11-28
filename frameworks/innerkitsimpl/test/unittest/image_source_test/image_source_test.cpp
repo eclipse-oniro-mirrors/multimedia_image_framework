@@ -43,6 +43,7 @@
 #include "mock_abs_image_decoder.h"
 #include "exif_metadata.h"
 #include "metadata_accessor_factory.h"
+#include "xmp_metadata.h"
 
 using namespace testing::ext;
 using namespace OHOS::Media;
@@ -3732,6 +3733,18 @@ HWTEST_F(ImageSourceTest, MetadataAccessorFactoryNullBufferTest001, TestSize.Lev
     GTEST_LOG_(INFO) << "ImageSourceTest: MetadataAccessorFactoryNullBufferTest001 end";
 }
 
+static bool CompareXMPTag(const XMPTag &tag1, const XMPTag &tag2)
+{
+    GTEST_LOG_(INFO) << "CompareXMPTag: tag1.xmlns: " << tag1.xmlns << ", tag2.xmlns: " << tag2.xmlns;
+    GTEST_LOG_(INFO) << "CompareXMPTag: tag1.prefix: " << tag1.prefix << ", tag2.prefix: " << tag2.prefix;
+    GTEST_LOG_(INFO) << "CompareXMPTag: tag1.name: " << tag1.name << ", tag2.name: " << tag2.name;
+    GTEST_LOG_(INFO) << "CompareXMPTag: tag1.value: " << tag1.value << ", tag2.value: " << tag2.value;
+    GTEST_LOG_(INFO) << "CompareXMPTag: tag1.type: " << static_cast<int>(tag1.type) << ", tag2.type: "\
+        << static_cast<int>(tag2.type);
+    return tag1.xmlns == tag2.xmlns && tag1.prefix == tag2.prefix && tag1.name == tag2.name &&
+        tag1.value == tag2.value && tag1.type == tag2.type;
+}
+
 /**
  * @tc.name: IsHeifWithoutAlpha001
  * @tc.desc: Test when the input HeifImage has alpha channel
@@ -4938,6 +4951,46 @@ HWTEST_F(ImageSourceTest, ReadXMPMetadataTest001, TestSize.Level3)
     ASSERT_NE(xmpMetadata, nullptr);
     ASSERT_EQ(errorCode, SUCCESS);
     GTEST_LOG_(INFO) << "ImageSourceTest: ReadXMPMetadataTest001 end";
+}
+
+/**
+ * @tc.name: WriteXMPMetadataTest001
+ * @tc.desc: Verify that WriteXMPMetadata works correctly.
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageSourceTest, WriteXMPMetadataTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImageSourceTest: WriteXMPMetadataTest001 start";
+    std::unique_ptr<ImageSource> imageSource = CreateImageSourceByPath(IMAGE_JPEG_XMP_PATH);
+    ASSERT_NE(imageSource, nullptr);
+
+    uint32_t errorCode = 0;
+    std::shared_ptr<XMPMetadata> xmpMetadata = imageSource->ReadXMPMetadata(errorCode);
+    ASSERT_NE(xmpMetadata, nullptr);
+    ASSERT_EQ(errorCode, SUCCESS);
+
+    XMPTag tag;
+    tag.xmlns = NS_XMP_BASIC;
+    tag.prefix = PF_XMP_BASIC;
+    tag.name = "CreatorTool";
+    tag.type = XMPTagType::SIMPLE;
+    tag.value = "WriteXMPMetadataTest001";
+    xmpMetadata->SetTag("xmp:CreatorTool", tag);
+    errorCode = imageSource->WriteXMPMetadata(xmpMetadata);
+    ASSERT_EQ(errorCode, SUCCESS);
+
+    // Verify that the XMP metadata is written correctly
+    std::unique_ptr<ImageSource> imageSource2 = CreateImageSourceByPath(IMAGE_JPEG_XMP_PATH);
+    ASSERT_NE(imageSource2, nullptr);
+
+    std::shared_ptr<XMPMetadata> xmpMetadata2 = imageSource2->ReadXMPMetadata(errorCode);
+    ASSERT_NE(xmpMetadata2, nullptr);
+    ASSERT_EQ(errorCode, SUCCESS);
+
+    XMPTag tag2;
+    xmpMetadata2->GetTag("xmp:CreatorTool", tag2);
+    EXPECT_TRUE(CompareXMPTag(tag, tag2));
+    GTEST_LOG_(INFO) << "ImageSourceTest: WriteXMPMetadataTest001 end";
 }
 } // namespace Multimedia
 } // namespace OHOS

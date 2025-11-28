@@ -54,6 +54,8 @@ public:
 
     int32_t CountArrayItems(const std::string &arrayPath);
 
+    std::unique_ptr<XMPMetadataImpl>& GetImpl();
+
 private:
     DISALLOW_COPY_AND_MOVE(XMPMetadata);
     static bool xmpInitialized_;

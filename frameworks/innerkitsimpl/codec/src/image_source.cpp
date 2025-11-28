@@ -44,6 +44,7 @@
 #endif
 #include "exif_metadata.h"
 #include "exif_metadata_formatter.h"
+#include "file_metadata_stream.h"
 #include "file_source_stream.h"
 #include "image/abs_image_decoder.h"
 #include "image/abs_image_format_agent.h"
@@ -6638,51 +6639,114 @@ bool ImageSource::IsJpegProgressive(uint32_t &errorCode)
     return mainDecoder_->IsProgressiveJpeg();
 }
 
+std::shared_ptr<MetadataStream> ImageSource::CreateMetadataStreamFromSource(OpenMode mode)
+{
+    std::shared_ptr<MetadataStream> metadataStream = nullptr;
+
+    if (!srcFilePath_.empty()) {
+        metadataStream = std::make_shared<FileMetadataStream>(srcFilePath_);
+    } else if (srcFd_ >= 0) {
+        metadataStream = std::make_shared<FileMetadataStream>(srcFd_);
+    } else {
+        IMAGE_LOGE("%{public}s no valid file source (path or fd) found", __func__);
+        return nullptr;
+    }
+
+    if (!metadataStream->Open(mode)) {
+        IMAGE_LOGE("%{public}s failed to open metadata stream", __func__);
+        return nullptr;
+    }
+
+    return metadataStream;
+}
+
+uint32_t ImageSource::CreateXMPMetadataByImageSource()
+{
+    uint32_t errorCode = ERROR;
+    IMAGE_LOGD("%{public}s enter", __func__);
+    if (xmpMetadata_ != nullptr) {
+        IMAGE_LOGD("xmpMetadata_ already exists");
+        return SUCCESS;
+    }
+
+    if (sourceStreamPtr_ == nullptr) {
+        IMAGE_LOGE("%{public}s sourceStreamPtr is nullptr", __func__);
+        return ERR_IMAGE_SOURCE_DATA;
+    }
+
+    // Try to get buffer from sourceStreamPtr first
+    if (!PrereadSourceStream()) {
+        IMAGE_LOGE("%{public}s preread source stream failed", __func__);
+        return ERR_IMAGE_SOURCE_DATA;
+    }
+
+    uint32_t bufferSize = sourceStreamPtr_->GetStreamSize();
+    if (bufferSize == 0 || bufferSize > MAX_SOURCE_SIZE) {
+        IMAGE_LOGE("%{public}s invalid stream size: %{public}u", __func__, bufferSize);
+        return ERR_IMAGE_SOURCE_DATA;
+    }
+
+    auto bufferPtr = sourceStreamPtr_->GetDataPtr();
+    std::unique_ptr<uint8_t[]> tmpGuard;
+    if (bufferPtr == nullptr) {
+        uint8_t *tmpBuffer = ReadSourceBuffer(bufferSize, errorCode);
+        CHECK_ERROR_RETURN_RET_LOG(tmpBuffer == nullptr, errorCode, "%{public}s ReadSourceBuffer failed", __func__);
+        tmpGuard.reset(tmpBuffer);
+        bufferPtr = tmpBuffer;
+    }
+
+    // Create BufferMetadataStream with buffer (either from GetDataPtr or ReadSourceBuffer)
+    auto metadataStream = static_pointer_cast<MetadataStream>(std::make_shared<BufferMetadataStream>(
+        bufferPtr, bufferSize, BufferMetadataStream::Fix,
+        sourceStreamPtr_->GetOriginalFd(),
+        sourceStreamPtr_->GetOriginalPath()));
+
+    if (!metadataStream->Open(OpenMode::Read)) {
+        IMAGE_LOGE("%{public}s failed to open metadata stream", __func__);
+        return ERR_IMAGE_SOURCE_DATA;
+    }
+
+    // Create XMPMetadataAccessor with stream
+    auto accessor = std::make_unique<XMPMetadataAccessor>(metadataStream, XMPAccessMode::READ_ONLY_XMP);
+    errorCode = accessor->Read();
+    CHECK_ERROR_RETURN_RET_LOG(errorCode != SUCCESS, errorCode, "%{public}s failed to read xmp metadata", __func__);
+    xmpMetadata_ = accessor->Get();
+    return SUCCESS;
+}
+
 std::shared_ptr<XMPMetadata> ImageSource::ReadXMPMetadata(uint32_t &errorCode)
 {
-    IMAGE_LOGD("%{public}s enter", __func__);
+    IMAGE_LOGE("%{public}s enter", __func__);
     if (xmpMetadata_ != nullptr) {
         IMAGE_LOGD("%{public}s already read xmp metadata", __func__);
         errorCode = SUCCESS;
         return xmpMetadata_;
     }
 
-    if (sourceStreamPtr_ == nullptr) {
-        IMAGE_LOGE("%{public}s sourceStreamPtr is nullptr", __func__);
-        errorCode = ERR_IMAGE_SOURCE_DATA;
-        return nullptr;
-    }
-
-    if (!PrereadSourceStream()) {
-        IMAGE_LOGE("%{public}s preread source stream failed", __func__);
-        errorCode = ERR_IMAGE_SOURCE_DATA;
-        return nullptr;
-    }
-
-    uint32_t bufferSize = sourceStreamPtr_->GetStreamSize();
-    if (bufferSize == 0 || bufferSize > MAX_SOURCE_SIZE) {
-        errorCode = ERR_IMAGE_SOURCE_DATA;
-        IMAGE_LOGE("%{public}s source stream size is %{public}u, max size is %{public}u", __func__, bufferSize,
-            MAX_SOURCE_SIZE);
-        return nullptr;
-    }
-
-    auto bufferPtr = sourceStreamPtr_->GetDataPtr();
-    uint8_t *data = nullptr;
-    std::unique_ptr<uint8_t[]> tmpGuard;
-    if (bufferPtr != nullptr) {
-        data = bufferPtr;
-    } else {
-        uint8_t *tmpBuffer = ReadSourceBuffer(bufferSize, errorCode);
-        CHECK_ERROR_RETURN_RET_LOG(tmpBuffer == nullptr, nullptr, "%{public}s ReadSourceBuffer failed", __func__);
-        tmpGuard.reset(tmpBuffer);
-        data = tmpBuffer;
-    }
-
-    std::unique_ptr<XMPMetadataAccessor> accessor = std::make_unique<XMPMetadataAccessor>(
-        data, bufferSize, XMPAccessMode::READ_ONLY_XMP);
-    return accessor->Get();
+    errorCode = CreateXMPMetadataByImageSource();
+    CHECK_ERROR_RETURN_RET_LOG(errorCode != SUCCESS, nullptr, "%{public}s failed to create xmp metadata", __func__);
+    return xmpMetadata_;
 }
 
+uint32_t ImageSource::WriteXMPMetadata(std::shared_ptr<XMPMetadata> &xmpMetadata)
+{
+    IMAGE_LOGD("%{public}s enter", __func__);
+    auto metadataStream = CreateMetadataStreamFromSource(OpenMode::ReadWrite);
+    if (metadataStream == nullptr) {
+        IMAGE_LOGE("%{public}s failed to create metadata stream", __func__);
+        return ERR_IMAGE_SOURCE_DATA;
+    }
+
+    auto accessor = std::make_unique<XMPMetadataAccessor>(metadataStream, XMPAccessMode::READ_WRITE_XMP);
+    accessor->Set(xmpMetadata);
+
+    // Write XMP data (this will automatically update the file via MetadataStream)
+    uint32_t errorCode = accessor->Write();
+    CHECK_ERROR_RETURN_RET_LOG(errorCode != SUCCESS, errorCode, "%{public}s XMP write failed", __func__);
+
+    xmpMetadata_ = xmpMetadata;
+    IMAGE_LOGD("%{public}s XMP metadata written successfully", __func__);
+    return SUCCESS;
+}
 } // namespace Media
 } // namespace OHOS

@@ -16,12 +16,14 @@
 #ifndef FRAMEWORKS_INNERKITSIMPL_ACCESSOR_INCLUDE_XMP_METADATA_ACCESSOR_H
 #define FRAMEWORKS_INNERKITSIMPL_ACCESSOR_INCLUDE_XMP_METADATA_ACCESSOR_H
 
+#include "metadata_stream.h"
 #include "xmp_metadata.h"
 #include "XMP.hpp"
 #include "XMP.incl_cpp"
 
 namespace OHOS {
 namespace Media {
+class XMPBuffer_IO;
 
 enum class XMPAccessMode {
     READ_ONLY_XMP,
@@ -32,15 +34,18 @@ enum class XMPAccessMode {
 
 class XMPMetadataAccessor {
 public:
-    XMPMetadataAccessor(const uint8_t *data, size_t size, XMPAccessMode mode);
+    XMPMetadataAccessor(std::shared_ptr<MetadataStream> &stream, XMPAccessMode mode);
     ~XMPMetadataAccessor() = default;
 
+    uint32_t Read();
+    uint32_t Write();
     std::shared_ptr<XMPMetadata> Get();
     void Set(std::shared_ptr<XMPMetadata> &xmpMetadata);
 
-    static XMP_OptionBits ConvertAccessModeToXMPOptions(XMPAccessMode mode);
-
 private:
+    uint32_t CheckXMPFiles();
+    void InitializeFromStream();
+    uint32_t UpdateData(const uint8_t *dataBlob, uint32_t size);
 
     struct XmpFileDeleter {
         void operator()(SXMPFiles *ptr) const
@@ -53,6 +58,9 @@ private:
 
     std::unique_ptr<SXMPFiles, XmpFileDeleter> xmpFiles_ = nullptr;
     std::shared_ptr<XMPMetadata> xmpMetadata_ = nullptr;
+    std::shared_ptr<XMPBuffer_IO> bufferIO_ = nullptr;
+    std::shared_ptr<MetadataStream> imageStream_ = nullptr;  // Stream for file I/O
+    XMPAccessMode accessMode_ = XMPAccessMode::READ_ONLY_XMP;  // Access mode for XMP operations
 };
 } // namespace Media
 } // namespace OHOS
