@@ -266,7 +266,7 @@ public:
     NATIVEEXPORT bool IsSupportAllocatorType(DecodeOptions& decOps, int32_t allocatorType);
     ImageHdrType CheckHdrType();
     NATIVEEXPORT uint32_t GetiTxtLength();
-    NATIVEEXPORT bool IsHeifHasAlpha();
+    NATIVEEXPORT bool IsHeifHasNoAlpha();
 
 private:
     DISALLOW_COPY_AND_MOVE(ImageSource);

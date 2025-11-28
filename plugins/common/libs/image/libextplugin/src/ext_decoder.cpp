@@ -3322,11 +3322,11 @@ void ExtDecoder::SetHeifParseError()
     free(fileMem);
 }
 
-bool ExtDecoder::HasAlpha()
+bool ExtDecoder::HasNoAlpha()
 {
 #ifdef HEIF_HW_DECODE_ENABLE
     if (!CheckCodec()) {
-        IMAGE_LOGE("HasAlpha CheckCodec failed");
+        IMAGE_LOGE("HasNoAlpha CheckCodec failed");
         return false;
     }
 
@@ -3334,7 +3334,7 @@ bool ExtDecoder::HasAlpha()
     bool cond = decoder == nullptr;
     CHECK_ERROR_RETURN_RET_LOG(cond, false, "Decode Heifdecoder is nullptr");
 
-    return decoder->IsHeifHasAlphaImage();
+    return !decoder->IsHeifHasAlphaImage();
 #endif
     return false;
 }

@@ -78,7 +78,7 @@ public:
     bool DecodeHeifAuxiliaryMap(DecodeContext& context, Media::AuxiliaryPictureType type) override;
     bool CheckAuxiliaryMap(Media::AuxiliaryPictureType type) override;
     bool GetHeifFragmentMetadata(Media::Rect& metadata) override;
-    bool HasAlpha() override;
+    bool HasNoAlpha() override;
 #ifdef IMAGE_COLORSPACE_FLAG
     OHOS::ColorManager::ColorSpace GetPixelMapColorSpace() override;
     bool IsSupportICCProfile() override;
