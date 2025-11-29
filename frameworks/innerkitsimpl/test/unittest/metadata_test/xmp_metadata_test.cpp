@@ -45,11 +45,11 @@ static bool CompareXMPTag(const XMPTag &tag1, const XMPTag &tag2)
 }
 
 /**
- *@tc.name: InitializeTest001
- *@tc.desc: test the Initialize method.
- *@tc.type: FUNC
+ * @tc.name: InitializeTest001
+ * @tc.desc: test the Initialize method.
+ * @tc.type: FUNC
  */
-HWTEST_F(XmpMetadataTest, InitializeTest001, TestSize.Level3)
+HWTEST_F(XmpMetadataTest, InitializeTest001, TestSize.Level1)
 {
     GTEST_LOG_(INFO) << "XmpMetadataTest: InitializeTest001 start";
     bool ret = XMPMetadata::Initialize();
@@ -59,11 +59,11 @@ HWTEST_F(XmpMetadataTest, InitializeTest001, TestSize.Level3)
 }
 
 /**
- *@tc.name: InitializeTest002
- *@tc.desc: test the Initialize method.
- *@tc.type: FUNC
+ * @tc.name: InitializeTest002
+ * @tc.desc: test the Initialize method.
+ * @tc.type: FUNC
  */
-HWTEST_F(XmpMetadataTest, InitializeTest002, TestSize.Level3)
+HWTEST_F(XmpMetadataTest, InitializeTest002, TestSize.Level1)
 {
     GTEST_LOG_(INFO) << "XmpMetadataTest: InitializeTest002 start";
     bool ret = XMPMetadata::Initialize();
@@ -76,11 +76,11 @@ HWTEST_F(XmpMetadataTest, InitializeTest002, TestSize.Level3)
 
 
 /**
- *@tc.name: TerminateTest001
- *@tc.desc: test the Terminate method.
- *@tc.type: FUNC
+ * @tc.name: TerminateTest001
+ * @tc.desc: test the Terminate method.
+ * @tc.type: FUNC
  */
-HWTEST_F(XmpMetadataTest, TerminateTest001, TestSize.Level3)
+HWTEST_F(XmpMetadataTest, TerminateTest001, TestSize.Level1)
 {
     GTEST_LOG_(INFO) << "XmpMetadataTest: TerminateTest001 start";
     XMPMetadata::Terminate();
@@ -89,11 +89,11 @@ HWTEST_F(XmpMetadataTest, TerminateTest001, TestSize.Level3)
 
 
 /**
- *@tc.name: RegisterNamespacePrefixTest001
- *@tc.desc: test the RegisterNamespacePrefix method.
- *@tc.type: FUNC
+ * @tc.name: RegisterNamespacePrefixTest001
+ * @tc.desc: test the RegisterNamespacePrefix method.
+ * @tc.type: FUNC
  */
-HWTEST_F(XmpMetadataTest, RegisterNamespacePrefixTest001, TestSize.Level3)
+HWTEST_F(XmpMetadataTest, RegisterNamespacePrefixTest001, TestSize.Level1)
 {
     GTEST_LOG_(INFO) << "XmpMetadataTest: RegisterNamespacePrefixTest001 start";
     XMPMetadata xmpMetadata;
@@ -105,11 +105,11 @@ HWTEST_F(XmpMetadataTest, RegisterNamespacePrefixTest001, TestSize.Level3)
 }
 
 /**
- *@tc.name: RegisterNamespacePrefixTest002
- *@tc.desc: test the RegisterNamespacePrefix when try to register a namespace that is already registered.
- *@tc.type: FUNC
+ * @tc.name: RegisterNamespacePrefixTest002
+ * @tc.desc: test the RegisterNamespacePrefix when try to register a namespace that is already registered.
+ * @tc.type: FUNC
  */
-HWTEST_F(XmpMetadataTest, RegisterNamespacePrefixTest002, TestSize.Level3)
+HWTEST_F(XmpMetadataTest, RegisterNamespacePrefixTest002, TestSize.Level1)
 {
     GTEST_LOG_(INFO) << "XmpMetadataTest: RegisterNamespacePrefixTest002 start";
     XMPMetadata xmpMetadata;
@@ -121,11 +121,11 @@ HWTEST_F(XmpMetadataTest, RegisterNamespacePrefixTest002, TestSize.Level3)
 }
 
 /**
- *@tc.name: RegisterNamespacePrefixTest003
- *@tc.desc: test the RegisterNamespacePrefix when try to register a prefix that is already registered.
- *@tc.type: FUNC
+ * @tc.name: RegisterNamespacePrefixTest003
+ * @tc.desc: test the RegisterNamespacePrefix when try to register a prefix that is already registered.
+ * @tc.type: FUNC
  */
-HWTEST_F(XmpMetadataTest, RegisterNamespacePrefixTest003, TestSize.Level3)
+HWTEST_F(XmpMetadataTest, RegisterNamespacePrefixTest003, TestSize.Level1)
 {
     GTEST_LOG_(INFO) << "XmpMetadataTest: RegisterNamespacePrefixTest003 start";
     XMPMetadata xmpMetadata;
@@ -137,11 +137,11 @@ HWTEST_F(XmpMetadataTest, RegisterNamespacePrefixTest003, TestSize.Level3)
 }
 
 /**
- *@tc.name: SetTagTest001
- *@tc.desc: test the SetTag method.
- *@tc.type: FUNC
+ * @tc.name: SetTagTest001
+ * @tc.desc: test the SetTag method when the type of tag is simple.
+ * @tc.type: FUNC
  */
-HWTEST_F(XmpMetadataTest, SetTagTest001, TestSize.Level3)
+HWTEST_F(XmpMetadataTest, SetTagTest001, TestSize.Level1)
 {
     GTEST_LOG_(INFO) << "XmpMetadataTest: SetTagTest001 start";
     XMPMetadata xmpMetadata;
@@ -155,17 +155,154 @@ HWTEST_F(XmpMetadataTest, SetTagTest001, TestSize.Level3)
 }
 
 /**
- *@tc.name: SetTagTest002
- *@tc.desc: test the SetTag method.
- *@tc.type: FUNC
+ * @tc.name: SetTagTest002
+ * @tc.desc: test the SetTag method when the type of tag is unordered array.
+ * @tc.type: FUNC
  */
-HWTEST_F(XmpMetadataTest, SetTagTest002, TestSize.Level3)
+HWTEST_F(XmpMetadataTest, SetTagTest002, TestSize.Level1)
 {
     GTEST_LOG_(INFO) << "XmpMetadataTest: SetTagTest002 start";
     XMPMetadata xmpMetadata;
+    XMPTag tag;
+    tag.name = "CreatorTool";
+    tag.value = "XmpMetadataTest.SetTagTest002";
+    tag.type = XMPTagType::UNORDERED_ARRAY;
+    bool ret = xmpMetadata.SetTag("xmp:CreatorTool", tag);
+    EXPECT_TRUE(ret);
+    GTEST_LOG_(INFO) << "XmpMetadataTest: SetTagTest002 end";
+}
+
+/**
+ * @tc.name: SetTagTest003
+ * @tc.desc: test the SetTag method when the type of tag is ordered array.
+ * @tc.type: FUNC
+ */
+HWTEST_F(XmpMetadataTest, SetTagTest003, TestSize.Level1)
+{
+    GTEST_LOG_(INFO) << "XmpMetadataTest: SetTagTest003 start";
+    XMPMetadata xmpMetadata;
+    XMPTag tag;
+    tag.name = "CreatorTool";
+    tag.value = "XmpMetadataTest.SetTagTest003";
+    tag.type = XMPTagType::ORDERED_ARRAY;
+    bool ret = xmpMetadata.SetTag("xmp:CreatorTool", tag);
+    EXPECT_TRUE(ret);
+    GTEST_LOG_(INFO) << "XmpMetadataTest: SetTagTest003 end";
+}
+
+/**
+ * @tc.name: SetTagTest004
+ * @tc.desc: test the SetTag method when the type of tag is alternate array.
+ * @tc.type: FUNC
+ */
+HWTEST_F(XmpMetadataTest, SetTagTest004, TestSize.Level1)
+{
+    GTEST_LOG_(INFO) << "XmpMetadataTest: SetTagTest004 start";
+    XMPMetadata xmpMetadata;
+    XMPTag tag;
+    tag.name = "CreatorTool";
+    tag.value = "XmpMetadataTest.SetTagTest004";
+    tag.type = XMPTagType::ALTERNATE_ARRAY;
+    bool ret = xmpMetadata.SetTag("xmp:CreatorTool", tag);
+    EXPECT_TRUE(ret);
+    GTEST_LOG_(INFO) << "XmpMetadataTest: SetTagTest004 end";
+}
+
+/**
+ * @tc.name: SetTagTest005
+ * @tc.desc: test the SetTag method when the type of tag is alternate text.
+ * @tc.type: FUNC
+ */
+HWTEST_F(XmpMetadataTest, SetTagTest005, TestSize.Level1)
+{
+    GTEST_LOG_(INFO) << "XmpMetadataTest: SetTagTest005 start";
+    XMPMetadata xmpMetadata;
+    XMPTag tag;
+    tag.name = "CreatorTool";
+    tag.value = "XmpMetadataTest.SetTagTest005";
+    tag.type = XMPTagType::ALTERNATE_TEXT;
+    bool ret = xmpMetadata.SetTag("xmp:CreatorTool", tag);
+    EXPECT_TRUE(ret);
+    GTEST_LOG_(INFO) << "XmpMetadataTest: SetTagTest005 end";
+}
+
+/**
+ * @tc.name: SetTagTest006
+ * @tc.desc: test the SetTag method when the type of tag is alternate text.
+ * @tc.type: FUNC
+ */
+HWTEST_F(XmpMetadataTest, SetTagTest006, TestSize.Level1)
+{
+    GTEST_LOG_(INFO) << "XmpMetadataTest: SetTagTest006 start";
+    XMPMetadata xmpMetadata;
+    XMPTag tag;
+    tag.name = "CreatorTool";
+    tag.value = "XmpMetadataTest.SetTagTest006";
+    tag.type = XMPTagType::ALTERNATE_TEXT;
+    bool ret = xmpMetadata.SetTag("xmp:CreatorTool", tag);
+    EXPECT_TRUE(ret);
+    GTEST_LOG_(INFO) << "XmpMetadataTest: SetTagTest006 end";
+}
+
+/**
+ * @tc.name: SetTagTest007
+ * @tc.desc: test the SetTag method when the type of tag is structure.
+ * @tc.type: FUNC
+ */
+HWTEST_F(XmpMetadataTest, SetTagTest007, TestSize.Level1)
+{
+    GTEST_LOG_(INFO) << "XmpMetadataTest: SetTagTest007 start";
+    XMPMetadata xmpMetadata;
+    XMPTag tag;
+    tag.name = "CreatorTool";
+    tag.value = "XmpMetadataTest.SetTagTest007";
+    tag.type = XMPTagType::STRUCTURE;
+    bool ret = xmpMetadata.SetTag("xmp:CreatorTool", tag);
+    EXPECT_TRUE(ret);
+    GTEST_LOG_(INFO) << "XmpMetadataTest: SetTagTest007 end";
+}
+
+/**
+ * @tc.name: SetTagTest008
+ * @tc.desc: test the SetTag method when the type of tag is qualifier.
+ * @tc.type: FUNC
+ */
+HWTEST_F(XmpMetadataTest, SetTagTest008, TestSize.Level1)
+{
+    GTEST_LOG_(INFO) << "XmpMetadataTest: SetTagTest008 start";
+    XMPMetadata xmpMetadata;
     XMPTag baseTag;
-    baseTag.xmlns = "http://purl.org/dc/elements/1.1/";
-    baseTag.prefix = "dc";
+    baseTag.xmlns = NS_DC;
+    baseTag.prefix = PF_DC;
+    baseTag.name = "title";
+    baseTag.value = "XmpMetadataTest.SetTagTest008_title";
+    baseTag.type = XMPTagType::SIMPLE;
+    bool ret = xmpMetadata.SetTag("dc:title", baseTag);
+    EXPECT_TRUE(ret);
+
+    XMPTag childTag;
+    childTag.xmlns = NS_DC;
+    childTag.prefix = PF_DC;
+    childTag.name = "language";
+    childTag.value = "English";
+    childTag.type = XMPTagType::QUALIFIER;
+    ret = xmpMetadata.SetTag("dc:title/?dc:language", childTag);
+    EXPECT_TRUE(ret);
+    GTEST_LOG_(INFO) << "XmpMetadataTest: SetTagTest008 end";
+}
+
+/**
+ * @tc.name: GetTagTest001
+ * @tc.desc: test the GetTag method when the type of parent tag is unordered array and the child type is simple.
+ * @tc.type: FUNC
+ */
+HWTEST_F(XmpMetadataTest, GetTagTest001, TestSize.Level1)
+{
+    GTEST_LOG_(INFO) << "XmpMetadataTest: GetTagTest001 start";
+    XMPMetadata xmpMetadata;
+    XMPTag baseTag;
+    baseTag.xmlns = NS_DC;
+    baseTag.prefix = PF_DC;
     baseTag.name = "subject";
     baseTag.type = XMPTagType::UNORDERED_ARRAY;
     bool ret = xmpMetadata.SetTag("dc:subject", baseTag);
@@ -177,11 +314,11 @@ HWTEST_F(XmpMetadataTest, SetTagTest002, TestSize.Level3)
     EXPECT_TRUE(CompareXMPTag(baseTag, getTag));
 
     XMPTag tag;
-    tag.xmlns = "http://purl.org/dc/elements/1.1/";
-    tag.prefix = "dc";
+    tag.xmlns = NS_DC;
+    tag.prefix = PF_DC;
     tag.name = "subject";
     tag.type = XMPTagType::SIMPLE;
-    tag.value = "XmpMetadataTest.SetTagTest002_value1";
+    tag.value = "XmpMetadataTest.GetTagTest001_value1";
     ret = xmpMetadata.SetTag("dc:subject[1]", tag);
     EXPECT_TRUE(ret);
 
@@ -189,24 +326,187 @@ HWTEST_F(XmpMetadataTest, SetTagTest002, TestSize.Level3)
     EXPECT_TRUE(ret);
     EXPECT_TRUE(CompareXMPTag(tag, getTag));
 
-    tag.value = "XmpMetadataTest.SetTagTest002_value2";
+    tag.value = "XmpMetadataTest.GetTagTest001_value2";
     ret = xmpMetadata.SetTag("dc:subject[2]", tag);
     EXPECT_TRUE(ret);
 
     ret = xmpMetadata.GetTag("dc:subject[2]", getTag);
     EXPECT_TRUE(ret);
     EXPECT_TRUE(CompareXMPTag(tag, getTag));
+    GTEST_LOG_(INFO) << "XmpMetadataTest: GetTagTest001 end";
+}
 
-    tag.value = "XmpMetadataTest.SetTagTest002_value3";
-    ret = xmpMetadata.SetTag("dc:subject[3]", tag);
+/**
+ * @tc.name: GetTagTest002
+ * @tc.desc: test the GetTag method when the type of parent tag is ordered array and the child type is simple.
+ * @tc.type: FUNC
+ */
+HWTEST_F(XmpMetadataTest, GetTagTest002, TestSize.Level1)
+{
+    GTEST_LOG_(INFO) << "XmpMetadataTest: GetTagTest002 start";
+    XMPMetadata xmpMetadata;
+    XMPTag baseTag;
+    baseTag.xmlns = NS_DC;
+    baseTag.prefix = PF_DC;
+    baseTag.name = "subject";
+    baseTag.type = XMPTagType::ORDERED_ARRAY;
+    bool ret = xmpMetadata.SetTag("dc:subject", baseTag);
     EXPECT_TRUE(ret);
 
-    ret = xmpMetadata.GetTag("dc:subject[3]", getTag);
+    XMPTag getTag;
+    ret = xmpMetadata.GetTag("dc:subject", getTag);
+    EXPECT_TRUE(ret);
+    EXPECT_TRUE(CompareXMPTag(baseTag, getTag));
+
+    XMPTag tag;
+    tag.xmlns = NS_DC;
+    tag.prefix = PF_DC;
+    tag.name = "subject";
+    tag.type = XMPTagType::SIMPLE;
+    tag.value = "XmpMetadataTest.GetTagTest002_value1";
+    ret = xmpMetadata.SetTag("dc:subject[1]", tag);
+    EXPECT_TRUE(ret);
+
+    ret = xmpMetadata.GetTag("dc:subject[1]", getTag);
     EXPECT_TRUE(ret);
     EXPECT_TRUE(CompareXMPTag(tag, getTag));
 
-    GTEST_LOG_(INFO) << "XmpMetadataTest: SetTagTest002 end";
+    tag.value = "XmpMetadataTest.GetTagTest002_value2";
+    ret = xmpMetadata.SetTag("dc:subject[2]", tag);
+    EXPECT_TRUE(ret);
+
+    ret = xmpMetadata.GetTag("dc:subject[2]", getTag);
+    EXPECT_TRUE(ret);
+    EXPECT_TRUE(CompareXMPTag(tag, getTag));
+    GTEST_LOG_(INFO) << "XmpMetadataTest: GetTagTest002 end";
 }
 
+/**
+ * @tc.name: GetTagTest003
+ * @tc.desc: test the GetTag method when the type of parent tag is alternate array and the child type is simple.
+ * @tc.type: FUNC
+ */
+HWTEST_F(XmpMetadataTest, GetTagTest003, TestSize.Level1)
+{
+    GTEST_LOG_(INFO) << "XmpMetadataTest: GetTagTest003 start";
+    XMPMetadata xmpMetadata;
+    XMPTag baseTag;
+    baseTag.xmlns = NS_DC;
+    baseTag.prefix = PF_DC;
+    baseTag.name = "subject";
+    baseTag.type = XMPTagType::ALTERNATE_ARRAY;
+    bool ret = xmpMetadata.SetTag("dc:subject", baseTag);
+    EXPECT_TRUE(ret);
+
+    XMPTag getTag;
+    ret = xmpMetadata.GetTag("dc:subject", getTag);
+    EXPECT_TRUE(ret);
+    EXPECT_TRUE(CompareXMPTag(baseTag, getTag));
+
+    XMPTag tag;
+    tag.xmlns = NS_DC;
+    tag.prefix = PF_DC;
+    tag.name = "subject";
+    tag.type = XMPTagType::SIMPLE;
+    tag.value = "XmpMetadataTest.GetTagTest003_value1";
+    ret = xmpMetadata.SetTag("dc:subject[1]", tag);
+    EXPECT_TRUE(ret);
+
+    ret = xmpMetadata.GetTag("dc:subject[1]", getTag);
+    EXPECT_TRUE(ret);
+    EXPECT_TRUE(CompareXMPTag(tag, getTag));
+
+    tag.value = "XmpMetadataTest.GetTagTest003_value2";
+    ret = xmpMetadata.SetTag("dc:subject[2]", tag);
+    EXPECT_TRUE(ret);
+
+    ret = xmpMetadata.GetTag("dc:subject[2]", getTag);
+    EXPECT_TRUE(ret);
+    EXPECT_TRUE(CompareXMPTag(tag, getTag));
+    GTEST_LOG_(INFO) << "XmpMetadataTest: GetTagTest003 end";
+}
+
+/**
+ * @tc.name: GetTagTest004
+ * @tc.desc: test the GetTag method when the type of parent tag is alternate text and the child type is simple.
+ * @tc.type: FUNC
+ */
+HWTEST_F(XmpMetadataTest, GetTagTest004, TestSize.Level1)
+{
+    GTEST_LOG_(INFO) << "XmpMetadataTest: GetTagTest004 start";
+    XMPMetadata xmpMetadata;
+    XMPTag baseTag;
+    baseTag.xmlns = NS_DC;
+    baseTag.prefix = PF_DC;
+    baseTag.name = "subject";
+    baseTag.type = XMPTagType::ALTERNATE_TEXT;
+    bool ret = xmpMetadata.SetTag("dc:subject", baseTag);
+    EXPECT_TRUE(ret);
+
+    XMPTag getTag;
+    ret = xmpMetadata.GetTag("dc:subject", getTag);
+    EXPECT_TRUE(ret);
+    EXPECT_TRUE(CompareXMPTag(baseTag, getTag));
+
+    XMPTag tag;
+    tag.xmlns = NS_DC;
+    tag.prefix = PF_DC;
+    tag.name = "subject";
+    tag.type = XMPTagType::SIMPLE;
+    tag.value = "XmpMetadataTest.GetTagTest004_value1";
+    ret = xmpMetadata.SetTag("dc:subject[1]", tag);
+    EXPECT_TRUE(ret);
+
+    ret = xmpMetadata.GetTag("dc:subject[1]", getTag);
+    EXPECT_TRUE(ret);
+    EXPECT_TRUE(CompareXMPTag(tag, getTag));
+
+    tag.value = "XmpMetadataTest.GetTagTest004_value2";
+    ret = xmpMetadata.SetTag("dc:subject[2]", tag);
+    EXPECT_TRUE(ret);
+
+    ret = xmpMetadata.GetTag("dc:subject[2]", getTag);
+    EXPECT_TRUE(ret);
+    EXPECT_TRUE(CompareXMPTag(tag, getTag));
+    GTEST_LOG_(INFO) << "XmpMetadataTest: GetTagTest004 end";
+}
+
+/**
+ * @tc.name: GetTagTest005
+ * @tc.desc: test the GetTag method when the type of parent tag is alternate text and the child type is simple.
+ * @tc.type: FUNC
+ */
+HWTEST_F(XmpMetadataTest, GetTagTest005, TestSize.Level1)
+{
+    GTEST_LOG_(INFO) << "XmpMetadataTest: GetTagTest005 start";
+    XMPMetadata xmpMetadata;
+    XMPTag baseTag;
+    baseTag.xmlns = NS_DC;
+    baseTag.prefix = PF_DC;
+    baseTag.name = "title";
+    baseTag.value = "XmpMetadataTest.GetTagTest005_title";
+    baseTag.type = XMPTagType::SIMPLE;
+    bool ret = xmpMetadata.SetTag("dc:title", baseTag);
+    EXPECT_TRUE(ret);
+
+    XMPTag getTag;
+    ret = xmpMetadata.GetTag("dc:title", getTag);
+    EXPECT_TRUE(ret);
+    EXPECT_TRUE(CompareXMPTag(baseTag, getTag));
+
+    XMPTag tag;
+    tag.xmlns = NS_DC;
+    tag.prefix = PF_DC;
+    tag.name = "language";
+    tag.type = XMPTagType::QUALIFIER;
+    tag.value = "XmpMetadataTest.English";
+    ret = xmpMetadata.SetTag("dc:title/?dc:language", tag);
+    EXPECT_TRUE(ret);
+
+    ret = xmpMetadata.GetTag("dc:title/?dc:language", getTag);
+    EXPECT_TRUE(ret);
+    EXPECT_TRUE(CompareXMPTag(tag, getTag));
+    GTEST_LOG_(INFO) << "XmpMetadataTest: GetTagTest005 end";
+}
 } // namespace Multimedia
 } // namespace OHOS
