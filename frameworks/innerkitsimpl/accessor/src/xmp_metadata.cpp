@@ -80,7 +80,7 @@ static constexpr XMPTagType ConvertOptionsToTagType(XMP_OptionBits options)
     if (options & kXMP_PropValueIsStruct) {
         return XMPTagType::STRUCTURE;
     }
-    
+
     if (options & kXMP_PropValueIsArray) {
         if (options & kXMP_PropArrayIsAlternate) {
             if (options & kXMP_PropArrayIsAltText) {
@@ -93,11 +93,11 @@ static constexpr XMPTagType ConvertOptionsToTagType(XMP_OptionBits options)
             return XMPTagType::UNORDERED_ARRAY;
         }
     }
-    
+
     if (options & kXMP_PropIsQualifier) {
         return XMPTagType::QUALIFIER;
     }
-    
+
     return XMPTagType::SIMPLE;
 }
 
@@ -105,6 +105,7 @@ static constexpr XMP_OptionBits ConvertTagTypeToOptions(XMPTagType tagType)
 {
     switch (tagType) {
         case XMPTagType::SIMPLE:
+        case XMPTagType::QUALIFIER:
             return kXMP_NoOptions;
         case XMPTagType::UNORDERED_ARRAY:
             return kXMP_PropValueIsArray;
@@ -116,8 +117,6 @@ static constexpr XMP_OptionBits ConvertTagTypeToOptions(XMPTagType tagType)
             return kXMP_PropValueIsArray | kXMP_PropArrayIsAlternate | kXMP_PropArrayIsAltText;
         case XMPTagType::STRUCTURE:
             return kXMP_PropValueIsStruct;
-        case XMPTagType::QUALIFIER:
-            return kXMP_PropIsQualifier;
         default:
             return kXMP_NoOptions;
     }
