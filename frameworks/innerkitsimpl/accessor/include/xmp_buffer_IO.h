@@ -60,15 +60,21 @@ public:
     virtual void AbsorbTemp() override;
     virtual void DeleteTemp() override;
 
-    std::vector<XMP_Uns8> GetData() const;
     const void* GetDataPtr() const;
     XMP_Uns32 GetDataSize() const;
 
 private:
-    std::vector<XMP_Uns8> data_;
+    std::vector<XMP_Uns8> data_;           // Copy mode data storage
+    const XMP_Uns8* externalData_;         // Zero-copy mode external data pointer
+    XMP_Uns32 dataSize_;                   // Data size
     XMP_Int64 position_;
     bool readOnly_;
+    bool isExternalData_;                  // Flag to indicate whether external data is used (zero-copy)
     XMP_IO* derivedTemp_;
+
+    void EnsureOwnedData();               // Ensure data ownership (COW trigger point)
+    const XMP_Uns8* GetCurrentDataPtr() const;   // Get current data pointer
+    XMP_Uns32 GetCurrentSize() const;     // Get current data size
 
     XMPBuffer_IO(const XMPBuffer_IO& original);
     void operator=(const XMP_IO& in);

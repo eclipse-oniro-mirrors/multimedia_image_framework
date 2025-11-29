@@ -6716,7 +6716,7 @@ uint32_t ImageSource::CreateXMPMetadataByImageSource()
 
 std::shared_ptr<XMPMetadata> ImageSource::ReadXMPMetadata(uint32_t &errorCode)
 {
-    IMAGE_LOGE("%{public}s enter", __func__);
+    IMAGE_LOGD("%{public}s enter", __func__);
     if (xmpMetadata_ != nullptr) {
         IMAGE_LOGD("%{public}s already read xmp metadata", __func__);
         errorCode = SUCCESS;

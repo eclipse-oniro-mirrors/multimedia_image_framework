@@ -117,25 +117,17 @@ uint32_t XMPMetadataAccessor::CheckXMPFiles()
 
 void XMPMetadataAccessor::InitializeFromStream()
 {
-    if (!imageStream_->IsOpen()) {
-        IMAGE_LOGE("%{public}s image stream is not open", __func__);
-        return;
-    }
+    CHECK_ERROR_RETURN_LOG(imageStream_ == nullptr || !imageStream_->IsOpen(),
+        "%{public}s failed, image stream is invalid", __func__);
 
     imageStream_->Seek(0, SeekPos::BEGIN);
     ssize_t streamSize = imageStream_->GetSize();
-    if (streamSize <= 0) {
-        IMAGE_LOGE("%{public}s invalid stream size: %{public}zd", __func__, streamSize);
-        return;
-    }
+    CHECK_ERROR_RETURN_LOG(streamSize <= 0, "%{public}s failed, stream size is invalid", __func__);
 
     // Read data from stream
     std::vector<uint8_t> buffer(streamSize);
     ssize_t readSize = imageStream_->Read(buffer.data(), streamSize);
-    if (readSize != streamSize) {
-        IMAGE_LOGE("%{public}s failed to read from stream", __func__);
-        return;
-    }
+    CHECK_ERROR_RETURN_LOG(readSize != streamSize, "%{public}s failed to read from stream", __func__);
 
     // Determine if writable based on access mode
     bool isWritable = (accessMode_ == XMPAccessMode::READ_WRITE_XMP || 
@@ -155,14 +147,12 @@ void XMPMetadataAccessor::InitializeFromStream()
 
 uint32_t XMPMetadataAccessor::UpdateData(const uint8_t *dataBlob, uint32_t size)
 {
-    CHECK_ERROR_RETURN_RET_LOG(imageStream_ == nullptr, ERR_IMAGE_SOURCE_DATA,
-        "%{public}s imageStream is nullptr", __func__);
-    CHECK_ERROR_RETURN_RET_LOG(!imageStream_->IsOpen(), ERR_IMAGE_SOURCE_DATA,
-        "%{public}s image stream is not open", __func__);
+    CHECK_ERROR_RETURN_RET_LOG(imageStream_ == nullptr || !imageStream_->IsOpen(), ERR_IMAGE_SOURCE_DATA,
+        "%{public}s imageStream is invalid", __func__);
 
     // Create temporary buffer stream with modified data
     BufferMetadataStream tmpBufStream(const_cast<uint8_t*>(dataBlob), size, BufferMetadataStream::MemoryMode::Fix);
-    CHECK_ERROR_RETURN_RET_LOG(!tmpBufStream.Open(OpenMode::Read), ERR_IMAGE_SOURCE_DATA,
+    CHECK_ERROR_RETURN_RET_LOG(!tmpBufStream.Open(OpenMode::ReadWrite), ERR_IMAGE_SOURCE_DATA,
         "%{public}s BufferMetadataStream::Open failed", __func__);
 
     // Write back to original stream

@@ -24,16 +24,22 @@
 namespace OHOS {
 namespace Media {
 XMPBuffer_IO::XMPBuffer_IO(const void* buffer, XMP_Uns32 size, bool writable)
-    : position_(0), readOnly_(!writable), derivedTemp_(nullptr)
+    : externalData_(static_cast<const XMP_Uns8*>(buffer)), dataSize_(size), position_(0), 
+      readOnly_(!writable), isExternalData_(!writable), derivedTemp_(nullptr)
 {
     CHECK_ERROR_RETURN_LOG(buffer == nullptr || size == 0, "%{public}s invalid buffer or size", __func__);
 
-    data_.resize(size);
-    memcpy_s(data_.data(), size, buffer, size);
+    // If writable, copy the data to internal storage
+    if (writable) {
+        data_.resize(size);
+        memcpy_s(data_.data(), size, buffer, size);
+        isExternalData_ = false;
+    }
 }
 
 XMPBuffer_IO::XMPBuffer_IO()
-    : position_(0), readOnly_(false), derivedTemp_(nullptr)
+    : externalData_(nullptr), dataSize_(0), position_(0), readOnly_(false), 
+      isExternalData_(false), derivedTemp_(nullptr)
 {
     data_.clear();
 }
@@ -50,12 +56,13 @@ XMP_Uns32 XMPBuffer_IO::Read(void* buffer, XMP_Uns32 count, bool readAll)
 {
     CHECK_ERROR_RETURN_RET_LOG(buffer == nullptr, XMP_UNS32_ERROR, "XMPBuffer_IO Read buffer is null");
 
-    if (position_ >= static_cast<XMP_Int64>(data_.size())) {
+    XMP_Uns32 currentSize = GetCurrentSize();
+    if (position_ >= static_cast<XMP_Int64>(currentSize)) {
         CHECK_ERROR_RETURN_RET_LOG(readAll, XMP_UNS32_ERROR, "XMPBuffer_IO Read data is not enough");
         return XMP_UNS32_ERROR;
     }
 
-    XMP_Uns32 available = static_cast<XMP_Uns32>(data_.size() - position_);
+    XMP_Uns32 available = static_cast<XMP_Uns32>(currentSize - position_);
     XMP_Uns32 toRead = (count > available) ? available : count;
 
     if (toRead == 0) {
@@ -63,7 +70,8 @@ XMP_Uns32 XMPBuffer_IO::Read(void* buffer, XMP_Uns32 count, bool readAll)
         return XMP_UNS32_ERROR;
     }
 
-    memcpy_s(buffer, toRead, &data_[position_], toRead);
+    const XMP_Uns8* dataPtr = GetCurrentDataPtr();
+    memcpy_s(buffer, toRead, &dataPtr[position_], toRead);
     position_ += toRead;
     return toRead;
 }
@@ -73,9 +81,13 @@ void XMPBuffer_IO::Write(const void* buffer, XMP_Uns32 count)
     CHECK_ERROR_RETURN_LOG(readOnly_, "XMPBuffer_IO Write on read-only stream is not permitted");
     CHECK_ERROR_RETURN_LOG(buffer == nullptr, "XMPBuffer_IO Write buffer is null ");
 
+    // Trigger COW to ensure data ownership
+    EnsureOwnedData();
+
     XMP_Int64 newSize = position_ + count;
     if (newSize > static_cast<XMP_Int64>(data_.size())) {
         data_.resize(static_cast<size_t>(newSize));
+        dataSize_ = static_cast<XMP_Uns32>(data_.size());
     }
 
     memcpy_s(&data_[position_], count, buffer, count);
@@ -94,7 +106,7 @@ XMP_Int64 XMPBuffer_IO::Seek(XMP_Int64 offset, SeekMode mode)
             newPosition = position_ + offset;
             break;
         case kXMP_SeekFromEnd:
-            newPosition = static_cast<XMP_Int64>(data_.size()) + offset;
+            newPosition = static_cast<XMP_Int64>(GetCurrentSize()) + offset;
             break;
         default:
             IMAGE_LOGE("XMPBuffer_IO Seek mode is invalid");
@@ -102,7 +114,7 @@ XMP_Int64 XMPBuffer_IO::Seek(XMP_Int64 offset, SeekMode mode)
     }
 
     CHECK_ERROR_RETURN_RET_LOG(newPosition < 0, XMP_INT64_ERROR, "XMPBuffer_IO Seek position is negative");
-    CHECK_ERROR_RETURN_RET_LOG(readOnly_ && newPosition > static_cast<XMP_Int64>(data_.size()), XMP_INT64_ERROR,
+    CHECK_ERROR_RETURN_RET_LOG(readOnly_ && newPosition > static_cast<XMP_Int64>(GetCurrentSize()), XMP_INT64_ERROR,
         "XMPBuffer_IO Seek beyond EOF is read-only");
 
     position_ = newPosition;
@@ -111,16 +123,20 @@ XMP_Int64 XMPBuffer_IO::Seek(XMP_Int64 offset, SeekMode mode)
 
 XMP_Int64 XMPBuffer_IO::Length()
 {
-    return static_cast<XMP_Int64>(data_.size());
+    return static_cast<XMP_Int64>(GetCurrentSize());
 }
 
 void XMPBuffer_IO::Truncate(XMP_Int64 length)
 {
     CHECK_ERROR_RETURN_LOG(readOnly_, "XMPBuffer_IO::Truncate not permitted on read-only stream");
-    CHECK_ERROR_RETURN_LOG(length < 0 || length > static_cast<XMP_Int64>(data_.size()),
+    CHECK_ERROR_RETURN_LOG(length < 0 || length > static_cast<XMP_Int64>(GetCurrentSize()),
         "XMPBuffer_IO Truncate length is invalid");
 
+    // Trigger COW to ensure data ownership
+    EnsureOwnedData();
+    
     data_.resize(static_cast<size_t>(length));
+    dataSize_ = static_cast<XMP_Uns32>(data_.size());
     if (position_ > length) {
         position_ = length;
     }
@@ -158,19 +174,35 @@ void XMPBuffer_IO::DeleteTemp()
     }
 }
 
-std::vector<XMP_Uns8> XMPBuffer_IO::GetData() const
-{
-    return data_;
-}
-
 const void* XMPBuffer_IO::GetDataPtr() const
 {
-    return data_.data();
+    return GetCurrentDataPtr();
 }
 
 XMP_Uns32 XMPBuffer_IO::GetDataSize() const
 {
-    return static_cast<XMP_Uns32>(data_.size());
+    return GetCurrentSize();
+}
+
+void XMPBuffer_IO::EnsureOwnedData()
+{
+    if (isExternalData_) {
+        // COW: Copy external data to internal storage
+        data_.resize(dataSize_);
+        memcpy_s(data_.data(), dataSize_, externalData_, dataSize_);
+        isExternalData_ = false;
+        externalData_ = nullptr;
+    }
+}
+
+const XMP_Uns8* XMPBuffer_IO::GetCurrentDataPtr() const
+{
+    return isExternalData_ ? externalData_ : data_.data();
+}
+
+XMP_Uns32 XMPBuffer_IO::GetCurrentSize() const
+{
+    return isExternalData_ ? dataSize_ : static_cast<XMP_Uns32>(data_.size());
 }
 
 } // namespace Media
