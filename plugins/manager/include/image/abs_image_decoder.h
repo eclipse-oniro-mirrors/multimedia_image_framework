@@ -295,7 +295,7 @@ public:
         return {0, 0};
     }
 
-    virtual bool HasNoAlpha()
+    virtual bool IsHeifWithoutAlpha()
     {
         return false;
     }

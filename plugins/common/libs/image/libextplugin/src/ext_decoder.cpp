@@ -3322,11 +3322,11 @@ void ExtDecoder::SetHeifParseError()
     free(fileMem);
 }
 
-bool ExtDecoder::HasNoAlpha()
+bool ExtDecoder::IsHeifWithoutAlpha()
 {
 #ifdef HEIF_HW_DECODE_ENABLE
     if (!CheckCodec()) {
-        IMAGE_LOGE("HasNoAlpha CheckCodec failed");
+        IMAGE_LOGE("IsHeifWithoutAlpha CheckCodec failed");
         return false;
     }
 

@@ -5646,22 +5646,22 @@ uint32_t ImageSource::GetiTxtLength()
     return 0;
 }
 
-bool ImageSource::IsHeifHasNoAlpha()
+bool ImageSource::IsHeifWithoutAlpha()
 {
 #ifdef HEIF_HW_DECODE_ENABLE
     uint32_t ret = SUCCESS;
     auto iter = GetValidImageStatus(0, ret);
     if (iter == imageStatusMap_.end()) {
-        IMAGE_LOGE("[ImageSource] IsHeifHasNoAlpha, get valid image status fail, ret:%{public}u.", ret);
+        IMAGE_LOGE("[ImageSource] IsHeifWithoutAlpha, get valid image status fail, ret:%{public}u.", ret);
         return false;
     }
 
     if (InitMainDecoder() != SUCCESS) {
-        IMAGE_LOGE("[ImageSource] IsHeifHasNoAlpha, get decoder failed");
+        IMAGE_LOGE("[ImageSource] IsHeifWithoutAlpha, get decoder failed");
         return false;
     }
 
-    return mainDecoder_->HasNoAlpha();
+    return mainDecoder_->IsHeifWithoutAlpha();
 #endif
     return false;
 }
