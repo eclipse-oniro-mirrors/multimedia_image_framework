@@ -121,11 +121,10 @@ void ExtDecoderFuncTest001(const std::string& pathName)
 
     context.info.pixelFormat = static_cast<Media::PixelFormat>(FDP->ConsumeIntegral<uint8_t>() % PIXELFORMAT_MODULO);
     context.allocatorType = static_cast<Media::AllocatorType>(FDP->ConsumeIntegral<uint8_t>() % ALLOCATORTYPE_MODULO);
-    const uint32_t decodeType = FDP->ConsumeIntegralInRange<uint32_t>(1u, 3u);
-    switch (decodeType) {
-        case 1: extDecoder->DecodeToYuv420(0, context); break;
-        case 2: extDecoder->DoHeifToYuvDecode(context); break;
-        case 3: extDecoder->DoHeifDecode(context); break;
+    switch (FDP->ConsumeIntegralInRange<uint8_t>(0, 2)) {
+        case 0: extDecoder->DecodeToYuv420(0, context); break;
+        case 1: extDecoder->DoHeifToYuvDecode(context); break;
+        default: extDecoder->DoHeifDecode(context); break;
     }
     extDecoder->CheckContext(context);
     ExtDecoderFuncTest002(extDecoder);
