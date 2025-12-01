@@ -35,7 +35,10 @@
 constexpr uint32_t PIXELFORMAT_MODULO = 8;
 constexpr uint32_t COLORSPACE_MODULO = 17;
 constexpr uint32_t ALPHATYPE_MODULO = 4;
+constexpr uint32_t ALLOCATORTYPE_MODULO = 5;
 constexpr uint32_t OPT_SIZE = 40;
+constexpr uint32_t MAX_SAMPLE_SIZE = 16u;
+constexpr float MAX_ROTATE = 360.0f;
 
 #undef LOG_DOMAIN
 #define LOG_DOMAIN LOG_TAG_DOMAIN_ID_IMAGE
@@ -47,6 +50,37 @@ namespace OHOS {
 namespace Media {
 FuzzedDataProvider* FDP;
 using namespace OHOS::ImagePlugin;
+
+const static std::string CODEC_INITED_KEY = "CodecInited";
+const static std::string ENCODED_FORMAT_KEY = "EncodedFormat";
+const static std::string SUPPORT_SCALE_KEY = "SupportScale";
+const static std::string SUPPORT_CROP_KEY = "SupportCrop";
+const static std::string EXT_SHAREMEM_NAME = "EXT RawData";
+const static std::string IMAGE_DELAY_TIME = "DelayTime";
+const static std::string IMAGE_DISPOSAL_TYPE = "DisposalType";
+const static std::string IMAGE_LOOP_COUNT = "GIFLoopCount";
+const std::string ACTUAL_IMAGE_ENCODED_FORMAT = "actual_encoded_format";
+void ExtDecoderFuncTest002(std::shared_ptr<ExtDecoder> extDecoder)
+{
+    std::vector<std::string> keys = {
+        CODEC_INITED_KEY, ENCODED_FORMAT_KEY, SUPPORT_SCALE_KEY, SUPPORT_CROP_KEY, 
+        EXT_SHAREMEM_NAME, IMAGE_DELAY_TIME, IMAGE_DISPOSAL_TYPE, IMAGE_LOOP_COUNT, ACTUAL_IMAGE_ENCODED_FORMAT};
+    std::string key = keys[FDP->ConsumeIntegral<uint8_t>() % keys.size()];
+
+    int32_t value = 0;
+    extDecoder->GetImagePropertyInt(0, key, value);
+    std::string valueStr;
+    extDecoder->GetImagePropertyString(0, key, valueStr);
+    extDecoder->ModifyImageProperty(0, key, valueStr, "");
+    extDecoder->ModifyImageProperty(0, key, valueStr, 0);
+    extDecoder->ModifyImageProperty(0, key, valueStr, nullptr, 0);
+    std::vector<std::pair<uint32_t, uint32_t>> ranges;
+    extDecoder->GetFilterArea(0, ranges);
+    ColorManager::ColorSpaceName gainmap;
+    ColorManager::ColorSpaceName hdr;
+    extDecoder->GetHeifHdrColorSpace(gainmap, hdr);
+}
+
 void ExtDecoderFuncTest001(const std::string& pathName)
 {
     SourceOptions srcOpts;
@@ -73,8 +107,8 @@ void ExtDecoderFuncTest001(const std::string& pathName)
     plOpts.CropRect.height = FDP->ConsumeIntegral<int32_t>();
     plOpts.desiredSize.width = FDP->ConsumeIntegralInRange<uint16_t>(0, 0xfff);
     plOpts.desiredSize.height = FDP->ConsumeIntegralInRange<uint16_t>(0, 0xfff);
-    plOpts.rotateDegrees = FDP->ConsumeFloatingPoint<float>();
-    plOpts.sampleSize = FDP->ConsumeIntegral<uint32_t>();
+    plOpts.rotateDegrees = FDP->ConsumeFloatingPointInRange<float>(0.0f, MAX_ROTATE);
+    plOpts.sampleSize = FDP->ConsumeIntegralInRange<uint32_t>(1u, MAX_SAMPLE_SIZE);
     plOpts.desiredPixelFormat = static_cast<Media::PixelFormat>(FDP->ConsumeIntegral<uint8_t>() % PIXELFORMAT_MODULO);
     plOpts.desiredColorSpace = static_cast<Media::ColorSpace>(FDP->ConsumeIntegral<uint8_t>() % COLORSPACE_MODULO);
     plOpts.desireAlphaType = static_cast<Media::AlphaType>(FDP->ConsumeIntegral<uint8_t>() % ALPHATYPE_MODULO);
@@ -83,13 +117,29 @@ void ExtDecoderFuncTest001(const std::string& pathName)
 	
     uint32_t ret = extDecoder->SetDecodeOptions(0, plOpts, plInfo);
     if (ret != SUCCESS) return;
-	extDecoder->Decode(0, context);
-	
-	context.info.pixelFormat = static_cast<Media::PixelFormat>(FDP->ConsumeIntegral<uint8_t>() % PIXELFORMAT_MODULO);
-    extDecoder->DecodeToYuv420(0, context);
+
+    extDecoder->Decode(0, context);
+    context.info.pixelFormat = static_cast<Media::PixelFormat>(FDP->ConsumeIntegral<uint8_t>() % PIXELFORMAT_MODULO);
+    context.allocatorType = static_cast<Media::AllocatorType>(FDP->ConsumeIntegral<uint8_t>() % ALLOCATORTYPE_MODULO);
+    uint32_t decodeType = FDP->ConsumeIntegralInRange<uint32_t>(1u, 3u);
+    switch (decodeType) {
+        case 1: 
+            extDecoder->DecodeToYuv420(0, context);
+            break;
+        case 2:
+            extDecoder->DoHeifToYuvDecode(context);
+            break;
+        case 3:
+            extDecoder->DoHeifDecode(context);
+            break;
+    }
     extDecoder->CheckContext(context);
-	
-    extDecoder->DoHeifToYuvDecode(context);
+    ExtDecoderFuncTest002(extDecoder);
+    extDecoder->Reset();
+    context.pixelsBuffer.buffer = nullptr;
+    context.freeFunc = nullptr;
+    context.pixelsBuffer.bufferSize = 0;
+    context.pixelsBuffer.context = nullptr;
 }
 } // namespace Media
 } // namespace OHOS
