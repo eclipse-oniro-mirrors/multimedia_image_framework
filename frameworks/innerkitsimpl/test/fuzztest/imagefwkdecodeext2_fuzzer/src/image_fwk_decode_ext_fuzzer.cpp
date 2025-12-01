@@ -39,6 +39,7 @@ constexpr uint32_t ALLOCATORTYPE_MODULO = 5;
 constexpr uint32_t OPT_SIZE = 40;
 constexpr uint32_t MAX_SAMPLE_SIZE = 16u;
 constexpr float MAX_ROTATE = 360.0f;
+constexpr uint8_t DECODE_BRANCH_COUNT = 2;
 
 #undef LOG_DOMAIN
 #define LOG_DOMAIN LOG_TAG_DOMAIN_ID_IMAGE
@@ -121,7 +122,7 @@ void ExtDecoderFuncTest001(const std::string& pathName)
 
     context.info.pixelFormat = static_cast<Media::PixelFormat>(FDP->ConsumeIntegral<uint8_t>() % PIXELFORMAT_MODULO);
     context.allocatorType = static_cast<Media::AllocatorType>(FDP->ConsumeIntegral<uint8_t>() % ALLOCATORTYPE_MODULO);
-    switch (FDP->ConsumeIntegralInRange<uint8_t>(0, 2)) {
+    switch (FDP->ConsumeIntegralInRange<uint8_t>(0, DECODE_BRANCH_COUNT)) {
         case 0: extDecoder->DecodeToYuv420(0, context); break;
         case 1: extDecoder->DoHeifToYuvDecode(context); break;
         default: extDecoder->DoHeifDecode(context); break;
