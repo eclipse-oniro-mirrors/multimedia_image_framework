@@ -60,6 +60,7 @@ void ImageSourceFuncTest002(std::unique_ptr<ImageSource> &imageSource, DecodeOpt
     auto incrementalRecordIter = imageSource->incDecodingMap_.find(&pixelMap);
     imageSource->AddIncrementalContext(pixelMap, incrementalRecordIter);
     imageSource->GetImageInfoFromExif(0, imageInfo);
+    imageSource->IsHeifWithoutAlpha();
     IMAGE_LOGI("%{public}s SUCCESS", __func__);
 }
 
