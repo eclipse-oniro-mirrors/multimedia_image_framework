@@ -63,7 +63,7 @@ const std::string ACTUAL_IMAGE_ENCODED_FORMAT = "actual_encoded_format";
 void ExtDecoderFuncTest002(std::shared_ptr<ExtDecoder> extDecoder)
 {
     std::vector<std::string> keys = {
-        CODEC_INITED_KEY, ENCODED_FORMAT_KEY, SUPPORT_SCALE_KEY, SUPPORT_CROP_KEY, 
+        CODEC_INITED_KEY, ENCODED_FORMAT_KEY, SUPPORT_SCALE_KEY, SUPPORT_CROP_KEY,
         EXT_SHAREMEM_NAME, IMAGE_DELAY_TIME, IMAGE_DISPOSAL_TYPE, IMAGE_LOOP_COUNT, ACTUAL_IMAGE_ENCODED_FORMAT};
     std::string key = keys[FDP->ConsumeIntegral<uint8_t>() % keys.size()];
 
@@ -117,21 +117,15 @@ void ExtDecoderFuncTest001(const std::string& pathName)
 	
     uint32_t ret = extDecoder->SetDecodeOptions(0, plOpts, plInfo);
     if (ret != SUCCESS) return;
-
     extDecoder->Decode(0, context);
+
     context.info.pixelFormat = static_cast<Media::PixelFormat>(FDP->ConsumeIntegral<uint8_t>() % PIXELFORMAT_MODULO);
     context.allocatorType = static_cast<Media::AllocatorType>(FDP->ConsumeIntegral<uint8_t>() % ALLOCATORTYPE_MODULO);
-    uint32_t decodeType = FDP->ConsumeIntegralInRange<uint32_t>(1u, 3u);
+    const uint32_t decodeType = FDP->ConsumeIntegralInRange<uint32_t>(1u, 3u);
     switch (decodeType) {
-        case 1: 
-            extDecoder->DecodeToYuv420(0, context);
-            break;
-        case 2:
-            extDecoder->DoHeifToYuvDecode(context);
-            break;
-        case 3:
-            extDecoder->DoHeifDecode(context);
-            break;
+        case 1: extDecoder->DecodeToYuv420(0, context); break;
+        case 2: extDecoder->DoHeifToYuvDecode(context); break;
+        case 3: extDecoder->DoHeifDecode(context); break;
     }
     extDecoder->CheckContext(context);
     ExtDecoderFuncTest002(extDecoder);
