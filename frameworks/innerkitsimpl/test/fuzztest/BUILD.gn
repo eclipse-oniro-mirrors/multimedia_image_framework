@@ -52,5 +52,6 @@ group("fuzztest") {
     "imagetextureencode_fuzzer:ImageTextureEncodeFuzzTest",
     "imagecr3parser_fuzzer:ImageCr3ParserFuzzTest",
     "imagecr3box_fuzzer:ImageCr3BoxFuzzTest",
+    "imageheifsdecode_fuzzer:ImageHeifsDecodeFuzzTest",
   ]
 }
