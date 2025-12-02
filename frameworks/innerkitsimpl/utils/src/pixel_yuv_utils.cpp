@@ -354,7 +354,7 @@ static bool CreateCropFilter(AVFilterGraph **filterGraph, AVFilterContext **crop
     const Rect &rect, YUVStrideInfo &strides)
 {
     const char *cropArgs = av_asprintf("x=%d:y=%d:out_w=%d:out_h=%d",
-        rect.left, rect.top, strides.yStride, rect.height);
+        rect.left, rect.top, strides.width, rect.height);
     if (!cropArgs) {
         IMAGE_LOGE("YuvCrop cropArgs is null");
         return false;
