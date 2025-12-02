@@ -5645,5 +5645,25 @@ uint32_t ImageSource::GetiTxtLength()
     sourceStreamPtr_->Seek(savedPosition);
     return 0;
 }
+
+bool ImageSource::IsHeifWithoutAlpha()
+{
+#ifdef HEIF_HW_DECODE_ENABLE
+    uint32_t ret = SUCCESS;
+    auto iter = GetValidImageStatus(0, ret);
+    if (iter == imageStatusMap_.end()) {
+        IMAGE_LOGE("[ImageSource] IsHeifWithoutAlpha, get valid image status fail, ret:%{public}u.", ret);
+        return false;
+    }
+
+    if (InitMainDecoder() != SUCCESS) {
+        IMAGE_LOGE("[ImageSource] IsHeifWithoutAlpha, get decoder failed");
+        return false;
+    }
+
+    return mainDecoder_->IsHeifWithoutAlpha();
+#endif
+    return false;
+}
 } // namespace Media
 } // namespace OHOS

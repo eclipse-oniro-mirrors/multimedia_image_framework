@@ -62,6 +62,7 @@ static const std::string IMAGE_OUTPUT_HEIF_MULTI_ONETIME1_PATH = "/data/test/tes
 static const std::string IMAGE_OUTPUT_HEIF_MULTI_INC2_PATH = "/data/test/test_inc2.heic";
 static const std::string IMAGE_OUTPUT_HEIF_MULTI_ONETIME2_PATH = "/data/test/test_onetime2.heic";
 static const std::string IMAGE_INPUT_HEIF_10BIT_SDR_PATH = "/data/local/tmp/image/test-10bit-1.heic";
+static const std::string IMAGE_INPUT_JPEG_PATH = "/data/local/tmp/image/test.jpg";
 
 const std::string ORIENTATION = "Orientation";
 const std::string IMAGE_HEIGHT = "ImageHeight";

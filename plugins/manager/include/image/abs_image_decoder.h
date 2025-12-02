@@ -295,6 +295,11 @@ public:
         return {0, 0};
     }
 
+    virtual bool IsHeifWithoutAlpha()
+    {
+        return false;
+    }
+
     // define multiple subservices for this interface
     static constexpr uint16_t SERVICE_DEFAULT = 0;
 };
