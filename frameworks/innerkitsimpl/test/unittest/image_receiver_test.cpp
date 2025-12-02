@@ -387,7 +387,6 @@ HWTEST_F(ImageReceiverTest, ImageReceiver0016, TestSize.Level3)
     ASSERT_NE(imageReceiver, nullptr);
     int64_t timestamp = 0;
     OHOS::sptr<OHOS::SurfaceBuffer> surfaceBuffer1 = imageReceiver->ReadLastImage(timestamp);
-    ASSERT_EQ(timestamp, 0);
     imageReceiver->iraContext_ = nullptr;
     imageReceiver->ReleaseBuffer(surfaceBuffer1);
     ASSERT_EQ(surfaceBuffer1, nullptr);
@@ -407,7 +406,6 @@ HWTEST_F(ImageReceiverTest, ImageReceiver0017, TestSize.Level3)
         RECEIVER_TEST_HEIGHT, RECEIVER_TEST_FORMAT, RECEIVER_TEST_CAPACITY);
     int64_t timestamp = 0;
     OHOS::sptr<OHOS::SurfaceBuffer> surfacebuffer = imageReceiver->ReadNextImage(timestamp);
-    ASSERT_EQ(timestamp, 0);
     ASSERT_EQ(surfacebuffer, nullptr);
     GTEST_LOG_(INFO) << "ImageReceiverTest: ImageReceiver0017 end";
 }

@@ -25,6 +25,8 @@ namespace OHOS {
 namespace Multimedia {
 static const std::string IMAGE_INPUT_JPEG_PATH = "/data/local/tmp/image/test_exif.jpg";
 constexpr uint32_t TEST_BUFFER_SIZE = 100;
+constexpr uint32_t SIZE = 0;
+constexpr unsigned char* NULLPTR_DATAPTR = nullptr;
 
 class TiffParserTest : public testing::Test {
 public:
@@ -130,8 +132,8 @@ HWTEST_F(TiffParserTest, EncodeNullptrTest001, TestSize.Level3)
 {
     GTEST_LOG_(INFO) << "TiffParserTest: EncodeNullptrTest001 start";
     TiffParser parser;
-    unsigned char *dataPtr = nullptr;
-    uint32_t size = 0;
+    unsigned char *dataPtr = NULLPTR_DATAPTR;
+    uint32_t size = SIZE;
     parser.Encode(&dataPtr, size, nullptr);
     EXPECT_EQ(dataPtr, nullptr);
     EXPECT_EQ(size, 0);
@@ -162,8 +164,8 @@ HWTEST_F(TiffParserTest, EncodeJpegExifNullptrTest001, TestSize.Level3)
 {
     GTEST_LOG_(INFO) << "TiffParserTest: EncodeJpegExifNullptrTest001 start";
     TiffParser parser;
-    unsigned char *dataPtr = nullptr;
-    uint32_t size = 0;
+    unsigned char *dataPtr = NULLPTR_DATAPTR;
+    uint32_t size = SIZE;
     parser.EncodeJpegExif(&dataPtr, size, nullptr);
     EXPECT_EQ(dataPtr, nullptr);
     EXPECT_EQ(size, 0);

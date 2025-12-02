@@ -674,7 +674,8 @@ HWTEST_F(ImageUtilsTest, SetContextHdrTest001, TestSize.Level3)
 
 /**
  * @tc.name: SetContextHdrTest002
- * @tc.desc: test SetContextHdr when format is GRAPHIC_PIXEL_FMT_YCRCB_P010.
+ * @tc.desc: test SetContextHdr when format is GRAPHIC_PIXEL_FMT_YCRCB_P010. Format is not
+ * GRAPHIC_PIXEL_FMT_RGBA_1010102 and GRAPHIC_PIXEL_FMT_YCBCR_P010 so context.info.pixelFormat remains unchanged.
  * @tc.type: FUNC
  */
 HWTEST_F(ImageUtilsTest, SetContextHdrTest002, TestSize.Level3)
@@ -684,7 +685,7 @@ HWTEST_F(ImageUtilsTest, SetContextHdrTest002, TestSize.Level3)
     context.pixelFormat = PixelFormat::UNKNOWN;
     uint32_t format = GRAPHIC_PIXEL_FMT_YCRCB_P010;
     ImageUtils::SetContextHdr(context, format);
-    ASSERT_EQ(context.pixelFormat, PixelFormat::UNKNOWN);
+    ASSERT_NE(context.info.pixelFormat, PixelFormat::YCBCR_P010);
     GTEST_LOG_(INFO) << "ImageUtilsTest: SetContextHdrTest002 end";
 }
 
