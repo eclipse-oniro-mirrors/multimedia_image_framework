@@ -28,15 +28,11 @@ namespace Media {
 class XMPHelper {
 public:
     static std::pair<std::string, std::string> SplitOnce(std::string_view path, std::string_view delim);
+    static std::string Trim(const std::string &str, const std::string &trimString = WHITE_SPACE_STRING);
+
     static std::string ExtractProperty(const std::string &path);
     static std::pair<std::string, std::string> ExtractSplitProperty(const std::string &path);
 
-    static std::string Trim(const std::string &str, const std::string &trimString = WHITE_SPACE_STRING);
-
-private:
-    static std::string ExtractLocalName(const std::string &name);
-    static std::string ExtractQualifierFromSelector(const std::string &selector);
-    static std::string ExtractLastPathComponent(const std::string &path);
 };
 } // namespace Media
 } // namespace OHOS

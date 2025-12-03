@@ -129,13 +129,6 @@ static bool IsContainerTagType(XMPTagType tagType)
         tagType == XMPTagType::ALTERNATE_TEXT;
 }
 
-/**
- * 根据路径表达式构建 XMPTag
- * 按照 Property 提取规则，正确设置 xmlns、prefix、name
- * @param pathExpression 路径表达式，如 "dc:title[1]/?book:lastUpdated"
- * @param options XMP SDK 返回的属性选项
- * @param value 属性值
- */
 static XMPTag BuildXMPTag(const std::string &pathExpression, const XMP_OptionBits &options, const std::string &value)
 {
     const auto &[propertyNS, propertyKey] = XMPHelper::ExtractSplitProperty(pathExpression);
