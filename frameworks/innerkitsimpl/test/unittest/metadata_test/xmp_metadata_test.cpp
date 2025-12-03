@@ -27,6 +27,12 @@ using namespace testing::ext;
 namespace OHOS {
 namespace Multimedia {
 
+namespace {
+    constexpr const int32_t XMP_ARRAY_COUNT_ONE = 1;
+    constexpr const int32_t XMP_ARRAY_COUNT_TWO = 2;
+    constexpr const int32_t XMP_ARRAY_COUNT_THREE = 3;
+}
+
 class XmpMetadataTest : public testing::Test {
 public:
     XmpMetadataTest() = default;
@@ -62,8 +68,13 @@ static bool DoSetTagAndGetTag(std::string path, XMPTag inputTag, XMPTag &outputT
 
 static void InitTestXMPTag(XMPTag &xmpTag, XMPTagType XMPTagType, std::string tagName)
 {
-    xmpTag.xmlns = NS_DC;
-    xmpTag.prefix = PF_DC;
+    if (XMPTagType == XMPTagType::QUALIFIER) {
+        xmpTag.xmlns = NS_XML;
+        xmpTag.prefix = PF_XML;
+    } else {
+        xmpTag.xmlns = NS_DC;
+        xmpTag.prefix = PF_DC;
+    }
     xmpTag.type = XMPTagType;
     xmpTag.name = tagName;
 }
@@ -170,6 +181,8 @@ HWTEST_F(XmpMetadataTest, SetTagTest001, TestSize.Level1)
     GTEST_LOG_(INFO) << "XmpMetadataTest: SetTagTest001 start";
     XMPMetadata xmpMetadata;
     XMPTag tag;
+    tag.xmlns = NS_XMP_BASIC;
+    tag.prefix = PF_XMP_BASIC;
     tag.name = "CreatorTool";
     tag.value = "XmpMetadataTest.SetTagTest001";
     tag.type = XMPTagType::SIMPLE;
@@ -188,6 +201,8 @@ HWTEST_F(XmpMetadataTest, SetTagTest002, TestSize.Level1)
     GTEST_LOG_(INFO) << "XmpMetadataTest: SetTagTest002 start";
     XMPMetadata xmpMetadata;
     XMPTag tag;
+    tag.xmlns = NS_XMP_BASIC;
+    tag.prefix = PF_XMP_BASIC;
     tag.name = "CreatorTool";
     tag.value = "XmpMetadataTest.SetTagTest002";
     tag.type = XMPTagType::UNORDERED_ARRAY;
@@ -206,6 +221,8 @@ HWTEST_F(XmpMetadataTest, SetTagTest003, TestSize.Level1)
     GTEST_LOG_(INFO) << "XmpMetadataTest: SetTagTest003 start";
     XMPMetadata xmpMetadata;
     XMPTag tag;
+    tag.xmlns = NS_XMP_BASIC;
+    tag.prefix = PF_XMP_BASIC;
     tag.name = "CreatorTool";
     tag.value = "XmpMetadataTest.SetTagTest003";
     tag.type = XMPTagType::ORDERED_ARRAY;
@@ -224,6 +241,8 @@ HWTEST_F(XmpMetadataTest, SetTagTest004, TestSize.Level1)
     GTEST_LOG_(INFO) << "XmpMetadataTest: SetTagTest004 start";
     XMPMetadata xmpMetadata;
     XMPTag tag;
+    tag.xmlns = NS_XMP_BASIC;
+    tag.prefix = PF_XMP_BASIC;
     tag.name = "CreatorTool";
     tag.value = "XmpMetadataTest.SetTagTest004";
     tag.type = XMPTagType::ALTERNATE_ARRAY;
@@ -242,6 +261,8 @@ HWTEST_F(XmpMetadataTest, SetTagTest005, TestSize.Level1)
     GTEST_LOG_(INFO) << "XmpMetadataTest: SetTagTest005 start";
     XMPMetadata xmpMetadata;
     XMPTag tag;
+    tag.xmlns = NS_XMP_BASIC;
+    tag.prefix = PF_XMP_BASIC;
     tag.name = "CreatorTool";
     tag.value = "XmpMetadataTest.SetTagTest005";
     tag.type = XMPTagType::ALTERNATE_TEXT;
@@ -260,6 +281,8 @@ HWTEST_F(XmpMetadataTest, SetTagTest006, TestSize.Level1)
     GTEST_LOG_(INFO) << "XmpMetadataTest: SetTagTest006 start";
     XMPMetadata xmpMetadata;
     XMPTag tag;
+    tag.xmlns = NS_XMP_BASIC;
+    tag.prefix = PF_XMP_BASIC;
     tag.name = "CreatorTool";
     tag.value = "XmpMetadataTest.SetTagTest006";
     tag.type = XMPTagType::ALTERNATE_TEXT;
@@ -278,6 +301,8 @@ HWTEST_F(XmpMetadataTest, SetTagTest007, TestSize.Level1)
     GTEST_LOG_(INFO) << "XmpMetadataTest: SetTagTest007 start";
     XMPMetadata xmpMetadata;
     XMPTag tag;
+    tag.xmlns = NS_XMP_BASIC;
+    tag.prefix = PF_XMP_BASIC;
     tag.name = "CreatorTool";
     tag.value = "XmpMetadataTest.SetTagTest007";
     tag.type = XMPTagType::STRUCTURE;
@@ -285,29 +310,6 @@ HWTEST_F(XmpMetadataTest, SetTagTest007, TestSize.Level1)
     EXPECT_TRUE(ret);
     GTEST_LOG_(INFO) << "XmpMetadataTest: SetTagTest007 end";
 }
-
-/**
- * @tc.name: SetTagTest008
- * @tc.desc: test the SetTag method when the type of tag is qualifier.
- * @tc.type: FUNC
- */
-// HWTEST_F(XmpMetadataTest, SetTagTest008, TestSize.Level1)
-// {
-//     GTEST_LOG_(INFO) << "XmpMetadataTest: SetTagTest008 start";
-//     XMPMetadata xmpMetadata;
-//     XMPTag baseTag;
-//     InitTestXMPTag(baseTag, XMPTagType::UNORDERED_ARRAY, "title");
-//     baseTag.value = "XmpMetadataTest.SetTagTest008_title";
-//     bool ret = xmpMetadata.SetTag("dc:title", baseTag);
-//     EXPECT_TRUE(ret);
-
-//     XMPTag childTag;
-//     InitTestXMPTag(childTag, XMPTagType::QUALIFIER, "language");
-//     childTag.value = "English";
-//     ret = xmpMetadata.SetTag("dc:title/?dc:language", childTag);
-//     EXPECT_TRUE(ret);
-//     GTEST_LOG_(INFO) << "XmpMetadataTest: SetTagTest008 end";
-// }
 
 /**
  * @tc.name: GetTagTest001
@@ -715,7 +717,7 @@ HWTEST_F(XmpMetadataTest, GetTagTest010, TestSize.Level1)
 
 /**
  * @tc.name: GetTagTest011
- * @tc.desc: test the GetTag method when the type of the first parent tag is unordered array, the second parent tag and 
+ * @tc.desc: test the GetTag method when the type of the first parent tag is unordered array, the second parent tag and
  *           the third parent tag are both alternate array, and the child tag is simple.
  * @tc.type: FUNC
  */
@@ -1162,7 +1164,7 @@ HWTEST_F(XmpMetadataTest, GetTagTest021, TestSize.Level1)
 
 /**
  * @tc.name: GetTagTest022
- * @tc.desc: test the GetTag method when the type of the first parent tag, the second parent tag and the third parent 
+ * @tc.desc: test the GetTag method when the type of the first parent tag, the second parent tag and the third parent
  *           tag are all ordered array, and the child tag is simple.
  * @tc.type: FUNC
  */
@@ -1570,7 +1572,7 @@ HWTEST_F(XmpMetadataTest, GetTagTest031, TestSize.Level1)
  * @tc.desc: test the GetTag method when the type of the first parent tag is ordered array, the second parent tag and
  *           the third parent tag are both alternate array, and the child tag is simple.
  * @tc.type: FUNC
- */ 
+ */
 HWTEST_F(XmpMetadataTest, GetTagTest032, TestSize.Level1)
 {
     GTEST_LOG_(INFO) << "XmpMetadataTest: GetTagTest032 start";
@@ -2864,8 +2866,8 @@ HWTEST_F(XmpMetadataTest, GetTagTest063, TestSize.Level1)
 
 /**
  * @tc.name: GetTagTest064
- * @tc.desc: test the GetTag method when the type of the first parent tag, the second parent tag are both structure and
- *           the third parent tag are all structure, and the child tag is simple.
+ * @tc.desc: test the GetTag method when the type of the first parent tag, the second parent tag and the third parent
+ *           tag are all structure, and the child tag is simple.
  * @tc.type: FUNC
  */
 HWTEST_F(XmpMetadataTest, GetTagTest064, TestSize.Level1)
@@ -2899,6 +2901,198 @@ HWTEST_F(XmpMetadataTest, GetTagTest064, TestSize.Level1)
     EXPECT_TRUE(CompareXMPTag(childTag, getTag));
 
     GTEST_LOG_(INFO) << "XmpMetadataTest: GetTagTest064 end";
+}
+
+/**
+ * @tc.name: GetTagTest065
+ * @tc.desc: test the GetTag method when the type of the first parent tag is alternate text, the child tag is simple
+ *           with the tag witch the type is qualifier.
+ * @tc.type: FUNC
+ */
+HWTEST_F(XmpMetadataTest, GetTagTest065, TestSize.Level1)
+{
+    GTEST_LOG_(INFO) << "XmpMetadataTest: GetTagTest065 start";
+    XMPMetadata xmpMetadata;
+    XMPTag baseTag;
+    InitTestXMPTag(baseTag, XMPTagType::ALTERNATE_TEXT, "title");
+
+    bool ret = xmpMetadata.SetTag("dc:title", baseTag);
+    EXPECT_TRUE(ret);
+
+    XMPTag childTag_1;
+    InitTestXMPTag(childTag_1, XMPTagType::SIMPLE, "title");
+    childTag_1.value = "Default Title";
+    ret = xmpMetadata.SetTag("dc:title[1]", childTag_1);
+    EXPECT_TRUE(ret);
+
+    XMPTag childTag_2;
+    InitTestXMPTag(childTag_2, XMPTagType::SIMPLE, "title");
+    childTag_2.value = "中文标题";
+    ret = xmpMetadata.SetTag("dc:title[2]", childTag_2);
+    EXPECT_TRUE(ret);
+
+    XMPTag getTag;
+    XMPTag qualTag_1;
+    InitTestXMPTag(qualTag_1, XMPTagType::QUALIFIER, "lang");
+    qualTag_1.value = "x-default";
+    ret = DoSetTagAndGetTag("dc:title[1]/@xml:lang", qualTag_1, getTag, xmpMetadata);
+    EXPECT_TRUE(ret);
+    EXPECT_TRUE(CompareXMPTag(qualTag_1, getTag));
+
+    XMPTag qualTag_2;
+    InitTestXMPTag(qualTag_2, XMPTagType::QUALIFIER, "lang");
+    qualTag_2.value = "zh-CN";
+    ret = DoSetTagAndGetTag("dc:title[2]/@xml:lang", qualTag_2, getTag, xmpMetadata);
+    EXPECT_TRUE(ret);
+    EXPECT_TRUE(CompareXMPTag(qualTag_2, getTag));
+
+    ret = xmpMetadata.GetTag("dc:title[@xml:lang='x-default']", getTag);
+    EXPECT_TRUE(ret);
+    EXPECT_TRUE(CompareXMPTag(childTag_1, getTag));
+
+    ret = xmpMetadata.GetTag("dc:title[@xml:lang='zh-CN']", getTag);
+    EXPECT_TRUE(ret);
+    EXPECT_TRUE(CompareXMPTag(childTag_2, getTag));
+
+    GTEST_LOG_(INFO) << "XmpMetadataTest: GetTagTest065 end";
+}
+
+/**
+ * @tc.name: CountArrayItems001
+ * @tc.desc: test the CountArrayItems method when some items in unordered array.
+ * @tc.type: FUNC
+ */
+HWTEST_F(XmpMetadataTest, CountArrayItems001, TestSize.Level1)
+{
+    GTEST_LOG_(INFO) << "XmpMetadataTest: CountArrayItems001 start";
+    XMPMetadata xmpMetadata;
+    XMPTag baseTag;
+    InitTestXMPTag(baseTag, XMPTagType::UNORDERED_ARRAY, "parent");
+    bool ret = xmpMetadata.SetTag("dc:parent", baseTag);
+    EXPECT_TRUE(ret);
+
+    XMPTag childTag;
+    InitTestXMPTag(childTag, XMPTagType::SIMPLE, "parent");
+    childTag.value = "first";
+    ret = xmpMetadata.SetTag("dc:parent[1]", childTag);
+    EXPECT_TRUE(ret);
+
+    childTag.value = "second";
+    ret = xmpMetadata.SetTag("dc:parent[2]", childTag);
+    EXPECT_TRUE(ret);
+
+    childTag.value = "third";
+    ret = xmpMetadata.SetTag("dc:parent[3]", childTag);
+    EXPECT_TRUE(ret);
+
+    int32_t count = xmpMetadata.CountArrayItems("dc:parent");
+    EXPECT_EQ(count, XMP_ARRAY_COUNT_THREE);
+
+    xmpMetadata.RemoveTag("dc:parent[2]");
+    count = xmpMetadata.CountArrayItems("dc:parent");
+    EXPECT_EQ(count, XMP_ARRAY_COUNT_TWO);
+
+    XMPTag getTag;
+    ret = xmpMetadata.GetTag("dc:parent[2]", getTag);
+    EXPECT_TRUE(CompareXMPTag(childTag, getTag));
+
+    xmpMetadata.RemoveTag("dc:parent[2]");
+    count = xmpMetadata.CountArrayItems("dc:parent");
+    EXPECT_EQ(count, XMP_ARRAY_COUNT_ONE);
+
+    GTEST_LOG_(INFO) << "XmpMetadataTest: CountArrayItems001 end";
+}
+
+/**
+ * @tc.name: CountArrayItems002
+ * @tc.desc: test the CountArrayItems method when some items in ordered array.
+ * @tc.type: FUNC
+ */
+HWTEST_F(XmpMetadataTest, CountArrayItems002, TestSize.Level1)
+{
+    GTEST_LOG_(INFO) << "XmpMetadataTest: CountArrayItems002 start";
+    XMPMetadata xmpMetadata;
+    XMPTag baseTag;
+    InitTestXMPTag(baseTag, XMPTagType::ORDERED_ARRAY, "parent");
+    bool ret = xmpMetadata.SetTag("dc:parent", baseTag);
+    EXPECT_TRUE(ret);
+
+    XMPTag childTag;
+    InitTestXMPTag(childTag, XMPTagType::SIMPLE, "parent");
+    childTag.value = "first";
+    ret = xmpMetadata.SetTag("dc:parent[1]", childTag);
+    EXPECT_TRUE(ret);
+
+    childTag.value = "second";
+    ret = xmpMetadata.SetTag("dc:parent[2]", childTag);
+    EXPECT_TRUE(ret);
+
+    childTag.value = "third";
+    ret = xmpMetadata.SetTag("dc:parent[3]", childTag);
+    EXPECT_TRUE(ret);
+
+    int32_t count = xmpMetadata.CountArrayItems("dc:parent");
+    EXPECT_EQ(count, XMP_ARRAY_COUNT_THREE);
+
+    xmpMetadata.RemoveTag("dc:parent[2]");
+    count = xmpMetadata.CountArrayItems("dc:parent");
+    EXPECT_EQ(count, XMP_ARRAY_COUNT_TWO);
+
+    XMPTag getTag;
+    ret = xmpMetadata.GetTag("dc:parent[2]", getTag);
+    EXPECT_TRUE(CompareXMPTag(childTag, getTag));
+
+    xmpMetadata.RemoveTag("dc:parent[2]");
+    count = xmpMetadata.CountArrayItems("dc:parent");
+    EXPECT_EQ(count, XMP_ARRAY_COUNT_ONE);
+
+    GTEST_LOG_(INFO) << "XmpMetadataTest: CountArrayItems002 end";
+}
+
+/**
+ * @tc.name: CountArrayItems003
+ * @tc.desc: test the CountArrayItems method when some items in alternate array.
+ * @tc.type: FUNC
+ */
+HWTEST_F(XmpMetadataTest, CountArrayItems003, TestSize.Level1)
+{
+    GTEST_LOG_(INFO) << "XmpMetadataTest: CountArrayItems003 start";
+    XMPMetadata xmpMetadata;
+    XMPTag baseTag;
+    InitTestXMPTag(baseTag, XMPTagType::ALTERNATE_ARRAY, "parent");
+    bool ret = xmpMetadata.SetTag("dc:parent", baseTag);
+    EXPECT_TRUE(ret);
+
+    XMPTag childTag;
+    InitTestXMPTag(childTag, XMPTagType::SIMPLE, "parent");
+    childTag.value = "first";
+    ret = xmpMetadata.SetTag("dc:parent[1]", childTag);
+    EXPECT_TRUE(ret);
+
+    childTag.value = "second";
+    ret = xmpMetadata.SetTag("dc:parent[2]", childTag);
+    EXPECT_TRUE(ret);
+
+    childTag.value = "third";
+    ret = xmpMetadata.SetTag("dc:parent[3]", childTag);
+    EXPECT_TRUE(ret);
+
+    int32_t count = xmpMetadata.CountArrayItems("dc:parent");
+    EXPECT_EQ(count, XMP_ARRAY_COUNT_THREE);
+
+    xmpMetadata.RemoveTag("dc:parent[2]");
+    count = xmpMetadata.CountArrayItems("dc:parent");
+    EXPECT_EQ(count, XMP_ARRAY_COUNT_TWO);
+
+    XMPTag getTag;
+    ret = xmpMetadata.GetTag("dc:parent[2]", getTag);
+    EXPECT_TRUE(CompareXMPTag(childTag, getTag));
+
+    xmpMetadata.RemoveTag("dc:parent[2]");
+    count = xmpMetadata.CountArrayItems("dc:parent");
+    EXPECT_EQ(count, XMP_ARRAY_COUNT_ONE);
+
+    GTEST_LOG_(INFO) << "XmpMetadataTest: CountArrayItems003 end";
 }
 } // namespace Multimedia
 } // namespace OHOS
