@@ -27,8 +27,9 @@ namespace OHOS {
 namespace Media {
 class XMPHelper {
 public:
-    static std::pair<std::string, std::string> SplitPrefixPath(const std::string &path);
-    static std::string ExtractPropertyKey(const std::string &path);
+    static std::pair<std::string, std::string> SplitOnce(std::string_view path, std::string_view delim);
+    static std::string ExtractProperty(const std::string &path);
+    static std::pair<std::string, std::string> ExtractSplitProperty(const std::string &path);
 
     static std::string Trim(const std::string &str, const std::string &trimString = WHITE_SPACE_STRING);
 

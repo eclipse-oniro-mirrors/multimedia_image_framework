@@ -129,16 +129,65 @@ static bool IsContainerTagType(XMPTagType tagType)
         tagType == XMPTagType::ALTERNATE_TEXT;
 }
 
-static XMPTag BuildXMPTag(const std::string &uri, const std::string &prefix, const std::string &propName,
-    const XMP_OptionBits &options, const std::string &value)
+/**
+ * 根据路径表达式构建 XMPTag
+ * 按照 Property 提取规则，正确设置 xmlns、prefix、name
+ * @param pathExpression 路径表达式，如 "dc:title[1]/?book:lastUpdated"
+ * @param options XMP SDK 返回的属性选项
+ * @param value 属性值
+ */
+static XMPTag BuildXMPTag(const std::string &pathExpression, const XMP_OptionBits &options, const std::string &value)
 {
+    const auto &[propertyNS, propertyKey] = XMPHelper::ExtractSplitProperty(pathExpression);
+    CHECK_ERROR_RETURN_RET_LOG(propertyNS.empty() || propertyKey.empty(), {},
+        "%{public}s failed to extract property NS or key for path: %{public}s", __func__, pathExpression.c_str());
+
+    std::string xmlns;
+    CHECK_ERROR_RETURN_RET_LOG(!SXMPMeta::GetNamespaceURI(propertyNS.c_str(), &xmlns), {},
+        "%{public}s failed to get namespace URI for path: %{public}s", __func__, pathExpression.c_str());
+
     return XMPTag {
-        .xmlns = uri,
-        .prefix = XMPHelper::Trim(prefix, COLON),
-        .name = XMPHelper::ExtractPropertyKey(propName),
+        .xmlns = xmlns,
+        .prefix = propertyNS,
+        .name = propertyKey,
         .type = ConvertOptionsToTagType(options),
         .value = value,
     };
+}
+
+static bool ValidateTagWithPath(const std::string &path, const XMPTag &tag)
+{
+    CHECK_ERROR_RETURN_RET_LOG(tag.prefix.empty() || tag.xmlns.empty() || tag.name.empty(), false,
+        "%{public}s tag is invalid, prefix: %{public}s, xmlns: %{public}s, name: %{public}s", __func__,
+        tag.prefix.c_str(), tag.xmlns.c_str(), tag.name.c_str());
+
+    const auto &[expectedNS, expectedKey] = XMPHelper::ExtractSplitProperty(path);
+    CHECK_ERROR_RETURN_RET_LOG(expectedNS.empty() || expectedKey.empty(), false,
+        "%{public}s path is invalid, expectedNS: %{public}s, expectedKey: %{public}s", __func__,
+        expectedNS.c_str(), expectedKey.c_str());
+
+    // TODO: 后续 prefix 可能是可选的
+    if (tag.prefix != expectedNS) {
+        IMAGE_LOGW("%{public}s tag prefix mismatch: expected %{public}s, got %{public}s",
+            __func__, expectedNS.c_str(), tag.prefix.c_str());
+        return false;
+    }
+
+    std::string expectedXmlns;
+    if (SXMPMeta::GetNamespaceURI(expectedNS.c_str(), &expectedXmlns)) {    // TODO: 临时处理，异常情况需要优化
+        if (tag.xmlns != expectedXmlns) {
+            IMAGE_LOGW("%{public}s tag xmlns mismatch: expected %{public}s, got %{public}s",
+                __func__, expectedXmlns.c_str(), tag.xmlns.c_str());
+            return false;
+        }
+    }
+
+    if (tag.name != expectedKey) {
+        IMAGE_LOGW("%{public}s tag name mismatch: expected %{public}s, got %{public}s",
+            __func__, expectedKey.c_str(), tag.name.c_str());
+        return false;
+    }
+    return true;
 }
 
 bool XMPMetadata::RegisterNamespacePrefix(const std::string &uri, const std::string &prefix)
@@ -163,7 +212,10 @@ bool XMPMetadata::SetTag(const std::string &path, const XMPTag &tag)
     CHECK_ERROR_RETURN_RET_LOG(!impl_ || !impl_->IsValid(), false,
         "%{public}s impl is null for path: %{public}s", __func__, path.c_str());
 
-    const auto &[prefix, propName] = XMPHelper::SplitPrefixPath(path);
+    CHECK_ERROR_RETURN_RET_LOG(!ValidateTagWithPath(path, tag), false,
+        "%{public}s tag validation failed for path: %{public}s", __func__, path.c_str());
+
+    const auto &[prefix, propName] = XMPHelper::SplitOnce(path, COLON);
     std::string namespaceUri;
     CHECK_ERROR_RETURN_RET_LOG(!SXMPMeta::GetNamespaceURI(prefix.c_str(), &namespaceUri), false,
         "%{public}s failed to get namespace URI for prefix: %{public}s", __func__, prefix.c_str());
@@ -182,7 +234,7 @@ bool XMPMetadata::GetTag(const std::string &path, XMPTag &tag)
     CHECK_ERROR_RETURN_RET_LOG(!impl_ || !impl_->IsValid(), false,
         "%{public}s impl is null for path: %{public}s", __func__, path.c_str());
     
-    const auto &[prefix, propName] = XMPHelper::SplitPrefixPath(path);
+    const auto &[prefix, propName] = XMPHelper::SplitOnce(path, COLON);
     std::string namespaceUri;
     CHECK_ERROR_RETURN_RET_LOG(!SXMPMeta::GetNamespaceURI(prefix.c_str(), &namespaceUri), false,
         "%{public}s failed to get namespace URI for prefix: %{public}s", __func__, prefix.c_str());
@@ -193,7 +245,7 @@ bool XMPMetadata::GetTag(const std::string &path, XMPTag &tag)
     CHECK_ERROR_RETURN_RET_LOG(!ret, false, "%{public}s failed to get property for path: %{public}s",
         __func__, path.c_str());
 
-    tag = BuildXMPTag(namespaceUri, prefix, propName, options, value);
+    tag = BuildXMPTag(path, options, value);
     return true;
 }
 
@@ -202,7 +254,7 @@ bool XMPMetadata::RemoveTag(const std::string &path)
     CHECK_ERROR_RETURN_RET_LOG(!impl_ || !impl_->IsValid(), false,
         "%{public}s impl is null for path: %{public}s", __func__, path.c_str());
 
-    const auto &[prefix, propName] = XMPHelper::SplitPrefixPath(path);
+    const auto &[prefix, propName] = XMPHelper::SplitOnce(path, COLON);
     std::string namespaceUri;
     CHECK_ERROR_RETURN_RET_LOG(!SXMPMeta::GetNamespaceURI(prefix.c_str(), &namespaceUri), false,
         "%{public}s failed to get namespace URI for prefix: %{public}s", __func__, prefix.c_str());
@@ -223,7 +275,7 @@ void XMPMetadata::EnumerateTags(EnumerateCallback callback, const std::string &r
         if (rootPath.find(COLON) == std::string::npos) {
             prefix = rootPath;
         } else {
-            auto [prefixPart, propName] = XMPHelper::SplitPrefixPath(rootPath);
+            auto [prefixPart, propName] = XMPHelper::SplitOnce(rootPath, COLON);    // TODO
             prefix = std::move(prefixPart);
             rootPropName = std::move(propName);
         }
@@ -246,10 +298,7 @@ void XMPMetadata::EnumerateTags(EnumerateCallback callback, const std::string &r
             continue;
         }
 
-        std::string prefix;
-        CHECK_ERROR_RETURN_LOG(!SXMPMeta::GetNamespacePrefix(iterSchemaNS.c_str(), &prefix),
-            "%{public}s failed to get namespace prefix for URI: %{public}s", __func__, iterSchemaNS.c_str());
-        XMPTag tag = BuildXMPTag(iterSchemaNS, prefix, iterPropPath, iterOptions, iterPropValue);
+        XMPTag tag = BuildXMPTag(iterPropPath, iterOptions, iterPropValue);
 
         // Call the callback
         bool shouldContinue = callback(iterPropPath, tag);
@@ -265,7 +314,7 @@ int32_t XMPMetadata::CountArrayItems(const std::string &arrayPath)
     CHECK_ERROR_RETURN_RET_LOG(!impl_ || !impl_->IsValid(), 0,
         "%{public}s impl is null for path: %{public}s", __func__, arrayPath.c_str());
 
-    const auto &[prefix, propName] = XMPHelper::SplitPrefixPath(arrayPath);
+    const auto &[prefix, propName] = XMPHelper::SplitOnce(arrayPath, COLON);
     std::string namespaceUri;
     CHECK_ERROR_RETURN_RET_LOG(!SXMPMeta::GetNamespaceURI(prefix.c_str(), &namespaceUri), 0,
         "%{public}s failed to get namespace URI for prefix: %{public}s", __func__, prefix.c_str());

@@ -20,31 +20,31 @@
 
 namespace {
 static const char *COLON = ":";
-static const std::string KEY_LANG = "lang";
-static const int NEXT_COLON_POS = 1;
 }
 
 namespace OHOS {
 namespace Media {
 
-std::pair<std::string, std::string> XMPHelper::SplitPrefixPath(const std::string &path)
+std::pair<std::string, std::string> XMPHelper::SplitOnce(std::string_view path, std::string_view delim)
 {
-    std::pair<std::string, std::string> result;
-    CHECK_ERROR_RETURN_RET_LOG(path.empty(), result, "%{public}s path is empty", __func__);
+    CHECK_ERROR_RETURN_RET_LOG(path.empty(), {}, "%{public}s path is empty", __func__);
 
-    size_t colonPos = path.find_first_of(COLON);
-    CHECK_ERROR_RETURN_RET_LOG(colonPos == std::string::npos, result, "%{public}s path is invalid", __func__);
+    size_t delimPos = path.find(delim);
+    CHECK_ERROR_RETURN_RET_LOG(delimPos == std::string_view::npos, {}, "%{public}s path is invalid", __func__);
 
-    result.first = path.substr(0, colonPos);
-    result.second = path.substr(colonPos + NEXT_COLON_POS);
-    return result;
+    return {
+        std::string(path.substr(0, delimPos)),
+        std::string(path.substr(delimPos + delim.size()))
+    };
 }
 
 std::string XMPHelper::Trim(const std::string &str, const std::string &trimString)
 {
     size_t start = str.find_first_not_of(trimString);
-    if (start == std::string::npos) return "";
-    
+    if (start == std::string::npos) {
+        return "";
+    }
+
     size_t end = str.find_last_not_of(trimString);
     return str.substr(start, end - start + 1);
 }
@@ -72,17 +72,21 @@ std::string XMPHelper::ExtractQualifierFromSelector(const std::string &selector)
 {
     // 查找 [? 开始
     size_t start = selector.find("[?");
-    if (start == std::string::npos) return "";
-    
+    if (start == std::string::npos) {
+        return "";
+    }
+
     start += 2; // 跳过 "[?"
-    
+
     // 查找 = 或 ] 结束
     size_t end = selector.find_first_of("=]", start);
-    if (end == std::string::npos) return "";
-    
+    if (end == std::string::npos) {
+        return "";
+    }
+
     std::string qualifier = selector.substr(start, end - start);
     qualifier = Trim(qualifier);
-    
+
     // 提取本地名称
     return ExtractLocalName(qualifier);
 }
@@ -100,94 +104,81 @@ std::string XMPHelper::ExtractLastPathComponent(const std::string &path)
     return path;
 }
 
-std::string XMPHelper::ExtractPropertyKey(const std::string &pathExpression)
+std::string XMPHelper::ExtractProperty(const std::string &pathExpression)
 {
     CHECK_DEBUG_RETURN_RET_LOG(pathExpression.empty(), "", "%{public}s pathExpression is empty", __func__);
 
     std::string path = Trim(pathExpression);
     CHECK_DEBUG_RETURN_RET_LOG(path.empty(), "", "%{public}s path is empty after trim", __func__);
 
-    // 处理 [@xml:lang="value"] 选择器: dc:title[@xml:lang="zh-CN"] → lang
-    if (path.find("[@xml:lang=") != std::string::npos) {
-        return KEY_LANG;
-    }
-    
-    // 处理 [?xml:lang="value"] 选择器: dc:title[?xml:lang="zh-CN"] → lang
-    if (path.find("[?xml:lang=") != std::string::npos) {
-        return KEY_LANG;
+    // Case 1: 数组选择器形式 - 多语言文本: dc:title[@xml:lang="en-US"] 或 dc:title[?xml:lang="zh-CN"]
+    // 返回数组元素本身 dc:title
+    if (path.find("[@xml:lang=") != std::string::npos || path.find("[?xml:lang=") != std::string::npos) {
+        size_t bracketPos = path.find('[');
+        if (bracketPos != std::string::npos) {
+            return path.substr(0, bracketPos);
+        }
     }
 
-    // 处理其他限定符选择器: dc:title[?book:lastUpdated="2023"] → lastUpdated
+    // Case 2: 数组选择器形式 - 限定符: dc:title[?book:lastUpdated="2023"]
+    // 返回数组元素本身 dc:title
     if (path.find("[?") != std::string::npos) {
-        size_t selectorStart = path.find("[?");
-        size_t selectorEnd = path.find(']', selectorStart);
-        if (selectorEnd != std::string::npos) {
-            std::string selector = path.substr(selectorStart, selectorEnd - selectorStart + 1);
-            std::string qualifierKey = ExtractQualifierFromSelector(selector);
-            if (!qualifierKey.empty()) {
-                return qualifierKey;
-            }
+        size_t bracketPos = path.find('[');
+        size_t equalPos = path.find('=', bracketPos);
+        // 确保是选择器形式 (包含 =)，而非纯数组索引
+        if (bracketPos != std::string::npos && equalPos != std::string::npos) {
+            return path.substr(0, bracketPos);
         }
     }
 
-    // 处理 @xml:lang 限定符: QualProp2/@xml:lang → lang
-    if (path.find("/@xml:lang") != std::string::npos) {
-        return KEY_LANG;
+    // Case 3: 路径分隔符形式 - 多语言文本: dc:title[1]/@xml:lang 或 dc:title[1]/?xml:lang
+    // 返回限定符 xml:lang
+    size_t atXmlLangPos = path.find("/@xml:lang");
+    if (atXmlLangPos != std::string::npos) {
+        return "xml:lang";
+    }
+    size_t qXmlLangPos = path.find("/?xml:lang");
+    if (qXmlLangPos != std::string::npos) {
+        return "xml:lang";
     }
 
-    // 处理XML语言限定符: dc:title[1]/?xml:lang → lang
-    if (path.find("/?xml:lang") != std::string::npos) {
-        return KEY_LANG;
+    // Case 4: 路径分隔符形式 - 限定符: dc:title[1]/?book:lastUpdated
+    // 返回限定符 book:lastUpdated
+    size_t qualifierPos = path.find("/?");
+    if (qualifierPos != std::string::npos) {
+        return path.substr(qualifierPos + 2);
     }
 
-    // 处理一般限定符: dc:title/?book:lastUpdated → lastUpdated
-    if (path.find("/?") != std::string::npos) {
-        size_t qualifierStart = path.find("/?");
-        if (qualifierStart != std::string::npos) {
-            std::string qualifier = path.substr(qualifierStart + 2);
-            return ExtractLocalName(qualifier);
+    // Case 5: 结构体字段或深层嵌套路径: exif:Flash/exif:Fired, dc:first[1]/dc:second[1]/dc:third[1]
+    // 返回最后一个字段（移除数组索引）: exif:Fired, dc:third
+    size_t lastSlashPos = path.find_last_of('/');
+    if (lastSlashPos != std::string::npos && lastSlashPos < path.length() - 1) {
+        std::string lastComponent = path.substr(lastSlashPos + 1);
+        // 移除数组索引: dc:third[1] -> dc:third
+        size_t bracketPos = lastComponent.find('[');
+        if (bracketPos != std::string::npos) {
+            return lastComponent.substr(0, bracketPos);
         }
+        return lastComponent;
     }
 
-    // 对于结构体路径，需要先找到最后一个路径组件，再移除数组索引
-    // 例如: xmp:Thumbnails[1]/xmp:Format → xmp:Format
-    std::string lastComponent = ExtractLastPathComponent(path);
-
-    // 移除数组索引: dc:subject[2] → dc:subject
-    size_t bracketPos = lastComponent.find('[');
+    // Case 6: 数组索引（无路径分隔符）: dc:subject[2]
+    // 返回数组名 dc:subject
+    size_t bracketPos = path.find('[');
     if (bracketPos != std::string::npos) {
-        lastComponent = lastComponent.substr(0, bracketPos);
+        return path.substr(0, bracketPos);
     }
 
-    // 提取本地名称: exif:Fired → Fired
-    std::string localName = ExtractLocalName(lastComponent);
-
-    // 处理边界情况：如果提取后为空或者包含特殊字符，返回原始处理后的结果
-    if (localName.empty() && !lastComponent.empty()) {
-        // 对于 "ns:" 这种情况，返回空字符串
-        if (lastComponent.back() == ':') {
-            return "";
-        }
-        // 对于其他情况，返回清理后的结果
-        std::string cleaned = lastComponent;
-        // 移除末尾的特殊字符
-        while (!cleaned.empty() && (cleaned.back() == '/' || cleaned.back() == ']')) {
-            cleaned.pop_back();
-        }
-        return cleaned;
-    }
-
-    // 对于包含特殊字符的情况，进行清理
-    if (!localName.empty()) {
-        std::string cleaned = localName;
-        // 移除末尾的特殊字符
-        while (!cleaned.empty() && (cleaned.back() == '/' || cleaned.back() == ']')) {
-            cleaned.pop_back();
-        }
-        return cleaned;
-    }
-    return localName;
+    // Case 7: 命名空间字段: dc:creator
+    // 返回原路径 dc:creator
+    return path;
 }
 
+std::pair<std::string, std::string> XMPHelper::ExtractSplitProperty(const std::string &pathExpression)
+{
+    std::string property = ExtractProperty(pathExpression);
+    CHECK_ERROR_RETURN_RET_LOG(property.empty(), {}, "%{public}s extract property failed", __func__);
+    return SplitOnce(property, COLON); 
+}
 } // namespace Media
 } // namespace OHOS
