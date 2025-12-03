@@ -73,8 +73,12 @@ void ExtDecoderFuncTest002(std::shared_ptr<ExtDecoder> extDecoder)
     std::string valueStr;
     extDecoder->GetImagePropertyString(0, key, valueStr);
     extDecoder->ModifyImageProperty(0, key, valueStr, "");
-    extDecoder->ModifyImageProperty(0, key, valueStr, 0);
-    extDecoder->ModifyImageProperty(0, key, valueStr, nullptr, 0);
+    if (FDP->ConsumeBool()) {
+        extDecoder->ModifyImageProperty(0, key, valueStr, nullptr, 0);
+    } else {
+        int32_t randomVal = FDP->ConsumeIntegralInRange<int32_t>(0, 100);
+        extDecoder->ModifyImageProperty(0, key, valueStr, randomVal);
+    }
     std::vector<std::pair<uint32_t, uint32_t>> ranges;
     extDecoder->GetFilterArea(0, ranges);
     ColorManager::ColorSpaceName gainmap;
