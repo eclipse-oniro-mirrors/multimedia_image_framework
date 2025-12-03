@@ -13,13 +13,19 @@
  * limitations under the License.
  */
 
-#include <regex>
-
 #include "image_log.h"
 #include "xmp_helper.h"
 
 namespace {
-static const char *COLON = ":";
+constexpr std::string_view COLON = ":";
+constexpr std::string_view SELECTOR_XML_LANG_AT = "[@xml:lang=";
+constexpr std::string_view SELECTOR_XML_LANG_Q = "[?xml:lang=";
+constexpr std::string_view QUALIFIER_SELECTOR = "[?";
+constexpr std::string_view PATH_QUALIFIER_Q = "/?";
+constexpr std::string_view PATH_QUALIFIER_AT = "/@";
+constexpr std::string_view PATH_XML_LANG_AT = "/@xml:lang";
+constexpr std::string_view PATH_XML_LANG_Q = "/?xml:lang";
+constexpr std::string_view XML_LANG = "xml:lang";
 }
 
 namespace OHOS {
@@ -38,15 +44,15 @@ std::pair<std::string, std::string> XMPHelper::SplitOnce(std::string_view path, 
     };
 }
 
-std::string XMPHelper::Trim(const std::string &str, const std::string &trimString)
+std::string XMPHelper::Trim(std::string_view str, std::string_view trimChars)
 {
-    size_t start = str.find_first_not_of(trimString);
-    if (start == std::string::npos) {
+    size_t start = str.find_first_not_of(trimChars);
+    if (start == std::string_view::npos) {
         return "";
     }
 
-    size_t end = str.find_last_not_of(trimString);
-    return str.substr(start, end - start + 1);
+    size_t end = str.find_last_not_of(trimChars);
+    return std::string(str.substr(start, end - start + 1));
 }
 
 /**
@@ -54,39 +60,40 @@ std::string XMPHelper::Trim(const std::string &str, const std::string &trimStrin
  * Selector form:     [dc:source="network"], [?book:lastUpdated="2023"], [@xml:lang="en-US"]
  * Non-selector form: [1], [2], [last()]
  */
-static bool IsSelectorExpression(const std::string &path, size_t bracketPos)
+static bool IsSelectorExpression(std::string_view path, size_t bracketPos)
 {
     size_t closeBracketPos = path.find(']', bracketPos);
-    if (closeBracketPos == std::string::npos) {
+    if (closeBracketPos == std::string_view::npos) {
         return false;
     }
-    std::string bracketContent = path.substr(bracketPos + 1, closeBracketPos - bracketPos - 1);
-    return bracketContent.find('=') != std::string::npos;
+    std::string_view bracketContent = path.substr(bracketPos + 1, closeBracketPos - bracketPos - 1);
+    return bracketContent.find('=') != std::string_view::npos;
 }
 
-// Normalize array index path
+// Normalize array index path (single-pass optimization)
 // dc:subject/[2] -> dc:subject[2]
 // dc:subject*[2] -> dc:subject[2]
 // dc:subject/*[2] -> dc:subject[2]
-static std::string NormalizeArrayIndexPath(const std::string &path)
+static std::string NormalizeArrayIndexPath(std::string_view path)
 {
-    std::string result = path;
-    size_t pos = result.find("/*[");
-    while (pos != std::string::npos) {
-        result.replace(pos, 3, "[");
-        pos = result.find("/*[", pos);
-    }
+    std::string result;
+    result.reserve(path.size());
 
-    pos = result.find("/[");
-    while (pos != std::string::npos) {
-        result.replace(pos, 2, "[");
-        pos = result.find("/[", pos);
-    }
-
-    pos = result.find("*[");
-    while (pos != std::string::npos) {
-        result.replace(pos, 2, "[");
-        pos = result.find("*[", pos);
+    for (size_t i = 0; i < path.size(); ++i) {
+        char c = path[i];
+        // Check for patterns ending with '['
+        if (c == '[') {
+            // Remove trailing "/*", "/", or "*" before '['
+            while (!result.empty()) {
+                char last = result.back();
+                if (last == '/' || last == '*') {
+                    result.pop_back();
+                } else {
+                    break;
+                }
+            }
+        }
+        result.push_back(c);
     }
     return result;
 }
@@ -104,19 +111,20 @@ static std::string NormalizeArrayIndexPath(const std::string &path)
 // | Localization Text(Path)    | dc:title[1]/@xml:lang, dc:title[1]/?xml:lang   | xml:lang          |
 // | Localization Text(Selector)| dc:title[@xml:lang="en-US"]                    | dc:title          |
 // | Structure Array(Selector)  | dc:subject[dc:source="network"]                | dc:subject        |
-std::string XMPHelper::ExtractProperty(const std::string &pathExpression)
+std::string XMPHelper::ExtractProperty(std::string_view pathExpression)
 {
     CHECK_DEBUG_RETURN_RET_LOG(pathExpression.empty(), "", "%{public}s pathExpression is empty", __func__);
 
-    std::string path = Trim(pathExpression);
-    CHECK_DEBUG_RETURN_RET_LOG(path.empty(), "", "%{public}s path is empty after trim", __func__);
+    std::string trimmed = Trim(pathExpression);
+    CHECK_DEBUG_RETURN_RET_LOG(trimmed.empty(), "", "%{public}s path is empty after trim", __func__);
 
     // Normalize array index path variant format
-    path = NormalizeArrayIndexPath(path);
+    std::string path = NormalizeArrayIndexPath(trimmed);
 
     // Case 1: 数组选择器形式 - 多语言文本: dc:title[@xml:lang="en-US"] 或 dc:title[?xml:lang="zh-CN"]
     // 返回数组元素本身 dc:title
-    if (path.find("[@xml:lang=") != std::string::npos || path.find("[?xml:lang=") != std::string::npos) {
+    if (path.find(SELECTOR_XML_LANG_AT) != std::string::npos ||
+        path.find(SELECTOR_XML_LANG_Q) != std::string::npos) {
         size_t bracketPos = path.find('[');
         if (bracketPos != std::string::npos) {
             return path.substr(0, bracketPos);
@@ -125,7 +133,7 @@ std::string XMPHelper::ExtractProperty(const std::string &pathExpression)
 
     // Case 2: 数组选择器形式 - 限定符选择器: dc:title[?book:lastUpdated="2023"]
     // 返回数组元素本身 dc:title
-    if (path.find("[?") != std::string::npos) {
+    if (path.find(QUALIFIER_SELECTOR) != std::string::npos) {
         size_t bracketPos = path.find('[');
         if (bracketPos != std::string::npos && IsSelectorExpression(path, bracketPos)) {
             return path.substr(0, bracketPos);
@@ -137,40 +145,37 @@ std::string XMPHelper::ExtractProperty(const std::string &pathExpression)
     size_t bracketPos = path.find('[');
     if (bracketPos != std::string::npos && IsSelectorExpression(path, bracketPos)) {
         // 确保不是路径分隔符形式的限定符访问（如 dc:title[1]/?book:xxx）
-        if (path.find("/?") == std::string::npos && path.find("/@") == std::string::npos) {
+        if (path.find(PATH_QUALIFIER_Q) == std::string::npos &&
+            path.find(PATH_QUALIFIER_AT) == std::string::npos) {
             return path.substr(0, bracketPos);
         }
     }
 
     // Case 4: 路径分隔符形式 - 多语言文本: dc:title[1]/@xml:lang 或 dc:title[1]/?xml:lang
     // 返回限定符 xml:lang
-    size_t atXmlLangPos = path.find("/@xml:lang");
-    if (atXmlLangPos != std::string::npos) {
-        return "xml:lang";
-    }
-    size_t qXmlLangPos = path.find("/?xml:lang");
-    if (qXmlLangPos != std::string::npos) {
-        return "xml:lang";
+    if (path.find(PATH_XML_LANG_AT) != std::string::npos ||
+        path.find(PATH_XML_LANG_Q) != std::string::npos) {
+        return std::string(XML_LANG);
     }
 
     // Case 5: 路径分隔符形式 - 限定符: dc:title[1]/?book:lastUpdated
     // 返回限定符 book:lastUpdated
-    size_t qualifierPos = path.find("/?");
+    size_t qualifierPos = path.find(PATH_QUALIFIER_Q);
     if (qualifierPos != std::string::npos) {
-        return path.substr(qualifierPos + 2);
+        return path.substr(qualifierPos + PATH_QUALIFIER_Q.size());
     }
 
     // Case 6: 结构体字段或深层嵌套路径: exif:Flash/exif:Fired, dc:first[1]/dc:second[1]/dc:third[1]
     // 返回最后一个字段（移除数组索引）: exif:Fired, dc:third
     size_t lastSlashPos = path.find_last_of('/');
     if (lastSlashPos != std::string::npos && lastSlashPos < path.length() - 1) {
-        std::string lastComponent = path.substr(lastSlashPos + 1);
+        std::string_view lastComponent(path.data() + lastSlashPos + 1, path.length() - lastSlashPos - 1);
         // 移除数组索引: dc:third[1] -> dc:third
         size_t compBracketPos = lastComponent.find('[');
-        if (compBracketPos != std::string::npos) {
-            return lastComponent.substr(0, compBracketPos);
+        if (compBracketPos != std::string_view::npos) {
+            return std::string(lastComponent.substr(0, compBracketPos));
         }
-        return lastComponent;
+        return std::string(lastComponent);
     }
 
     // Case 7: 数组索引（无路径分隔符）: dc:subject[2], dc:subject[last()]
@@ -185,7 +190,7 @@ std::string XMPHelper::ExtractProperty(const std::string &pathExpression)
     return path;
 }
 
-std::pair<std::string, std::string> XMPHelper::ExtractSplitProperty(const std::string &pathExpression)
+std::pair<std::string, std::string> XMPHelper::ExtractSplitProperty(std::string_view pathExpression)
 {
     std::string property = ExtractProperty(pathExpression);
     CHECK_ERROR_RETURN_RET_LOG(property.empty(), {}, "%{public}s extract property failed", __func__);

@@ -17,22 +17,20 @@
 #define INTERFACES_INNERKITS_UTILS_INCLUDE_XMP_HELPER_H
 
 #include <string>
+#include <string_view>
 #include <utility>
-
-namespace {
-static const std::string WHITE_SPACE_STRING = " \t\r\n";
-}
 
 namespace OHOS {
 namespace Media {
+inline constexpr std::string_view WHITE_SPACE_CHARS = " \t\r\n";
+
 class XMPHelper {
 public:
     static std::pair<std::string, std::string> SplitOnce(std::string_view path, std::string_view delim);
-    static std::string Trim(const std::string &str, const std::string &trimString = WHITE_SPACE_STRING);
+    static std::string Trim(std::string_view str, std::string_view trimChars = WHITE_SPACE_CHARS);
 
-    static std::string ExtractProperty(const std::string &path);
-    static std::pair<std::string, std::string> ExtractSplitProperty(const std::string &path);
-
+    static std::string ExtractProperty(std::string_view pathExpression);
+    static std::pair<std::string, std::string> ExtractSplitProperty(std::string_view pathExpression);
 };
 } // namespace Media
 } // namespace OHOS

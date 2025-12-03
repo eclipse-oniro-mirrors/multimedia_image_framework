@@ -20,7 +20,7 @@
 #include "xmp_metadata_impl.h"
 
 namespace {
-static const char *COLON = ":";
+constexpr std::string_view COLON = ":";
 }
 
 namespace OHOS {
@@ -167,19 +167,15 @@ static bool ValidateTagWithPath(const std::string &path, const XMPTag &tag)
     }
 
     std::string expectedXmlns;
-    if (SXMPMeta::GetNamespaceURI(expectedNS.c_str(), &expectedXmlns)) {    // TODO: 临时处理，异常情况需要优化
-        if (tag.xmlns != expectedXmlns) {
-            IMAGE_LOGW("%{public}s tag xmlns mismatch: expected %{public}s, got %{public}s",
-                __func__, expectedXmlns.c_str(), tag.xmlns.c_str());
-            return false;
-        }
-    }
+    CHECK_ERROR_RETURN_RET_LOG(!SXMPMeta::GetNamespaceURI(expectedNS.c_str(), &expectedXmlns), false,
+        "%{public}s failed to get namespace URI for path: %{public}s", __func__, path.c_str());
+    CHECK_ERROR_RETURN_RET_LOG(tag.xmlns != expectedXmlns, false,
+        "%{public}s tag xmlns mismatch: expected %{public}s, got %{public}s", __func__,
+        expectedXmlns.c_str(), tag.xmlns.c_str());
 
-    if (tag.name != expectedKey) {
-        IMAGE_LOGW("%{public}s tag name mismatch: expected %{public}s, got %{public}s",
-            __func__, expectedKey.c_str(), tag.name.c_str());
-        return false;
-    }
+    CHECK_ERROR_RETURN_RET_LOG(tag.name != expectedKey, false,
+        "%{public}s tag name mismatch: expected %{public}s, got %{public}s", __func__,
+        expectedKey.c_str(), tag.name.c_str());
     return true;
 }
 
@@ -264,13 +260,14 @@ void XMPMetadata::EnumerateTags(EnumerateCallback callback, const std::string &r
     std::string schemaNS;
     std::string rootPropName;
     if (!rootPath.empty()) {
+        std::string_view rootPathView(rootPath);
+        size_t colonPos = rootPathView.find(COLON);
         std::string prefix;
-        if (rootPath.find(COLON) == std::string::npos) {
+        if (colonPos == std::string_view::npos) {
             prefix = rootPath;
         } else {
-            auto [prefixPart, propName] = XMPHelper::SplitOnce(rootPath, COLON);    // TODO
-            prefix = std::move(prefixPart);
-            rootPropName = std::move(propName);
+            prefix = std::string(rootPathView.substr(0, colonPos));
+            rootPropName = std::string(rootPathView.substr(colonPos + COLON.size()));
         }
         CHECK_ERROR_RETURN_LOG(!SXMPMeta::GetNamespaceURI(prefix.c_str(), &schemaNS),
             "%{public}s failed to get namespace URI for prefix: %{public}s", __func__, prefix.c_str());
