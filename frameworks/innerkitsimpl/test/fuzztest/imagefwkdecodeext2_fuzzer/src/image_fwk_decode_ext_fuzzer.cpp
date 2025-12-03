@@ -146,7 +146,16 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
     FuzzedDataProvider fdp(data + size - OPT_SIZE, OPT_SIZE);
     OHOS::Media::FDP = &fdp;
     static const std::string pathName = "/data/local/tmp/test.jpg";
-    WriteDataToFile(data, size - OPT_SIZE, pathName);
+    bool needUnlink = false;
+    if (WriteDataToFile(data, size - OPT_SIZE, pathName)) {
+        needUnlink = true;
+    }
     OHOS::Media::ExtDecoderFuncTest001(pathName);
+
+    if (needUnlink) {
+        if (unlink(pathName.c_str()) == -1) {
+            IMAGE_LOGW("Unlink temp file %{public}s failed", pathName.c_str());
+        }
+    }
     return 0;
 }
