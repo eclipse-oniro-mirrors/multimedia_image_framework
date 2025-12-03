@@ -73,10 +73,12 @@ void ExtDecoderFuncTest002(std::shared_ptr<ExtDecoder> extDecoder)
     std::string valueStr;
     extDecoder->GetImagePropertyString(0, key, valueStr);
     extDecoder->ModifyImageProperty(0, key, valueStr, "");
+    extDecoder->ModifyImageProperty(0, key, valueStr, 0);
     if (FDP->ConsumeBool()) {
         extDecoder->ModifyImageProperty(0, key, valueStr, nullptr, 0);
     } else {
-        extDecoder->ModifyImageProperty(0, key, valueStr, 0);
+        uint8_t validData = 0;
+        extDecoder->ModifyImageProperty(0, key, valueStr, &validData, 1);
     }
     std::vector<std::pair<uint32_t, uint32_t>> ranges;
     extDecoder->GetFilterArea(0, ranges);
