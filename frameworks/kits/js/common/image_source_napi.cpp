@@ -1273,6 +1273,7 @@ std::vector<napi_property_descriptor> ImageSourceNapi::RegisterNapi()
         DECLARE_NAPI_FUNCTION("isJpegProgressive", IsJpegProgressive),
         DECLARE_NAPI_GETTER("supportedFormats", GetSupportedFormats),
         DECLARE_NAPI_FUNCTION("readXMPMetadata", ReadXMPMetadata),
+        DECLARE_NAPI_FUNCTION("writeXMPMetadata", WriteXMPMetadata),
 #if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
         DECLARE_NAPI_FUNCTION("createPicture", CreatePicture),
         DECLARE_NAPI_FUNCTION("createPictureAtIndex", CreatePictureAtIndex),
@@ -4708,6 +4709,56 @@ napi_value ImageSourceNapi::ReadXMPMetadata(napi_env env, napi_callback_info inf
         uint32_t errorCode = ERROR;
         context->rXMPMetadata = context->rImageSource->ReadXMPMetadata(errorCode);
     }, ReadXMPMetadataComplete, asyncContext, asyncContext->work);
+
+    IMG_NAPI_CHECK_RET_D(IMG_IS_OK(status), result, IMAGE_LOGE("fail to create async work"));
+    return result;
+}
+
+static void WriteXMPMetadataComplete(napi_env env, napi_status status, void *data)
+{
+    IMAGE_LOGD("WriteXMPMetadataComplete IN");
+    napi_value result = nullptr;
+    napi_get_undefined(env, &result);
+    auto context = static_cast<ImageSourceAsyncContext*>(data);
+    CHECK_ERROR_RETURN_LOG(context == nullptr, "empty context");
+    ImageSourceCallbackRoutine(env, context, result);
+}
+
+napi_value ImageSourceNapi::WriteXMPMetadata(napi_env env, napi_callback_info info)
+{
+    IMAGE_LOGD("WriteXMPMetadata IN");
+    napi_value result = nullptr;
+    napi_get_undefined(env, &result);
+
+    napi_status status;
+    napi_value thisVar = nullptr;
+    napi_value argValue[NUM_1] = {0};
+    size_t argCount = NUM_1;
+    IMG_JS_ARGS(env, info, status, argCount, argValue, thisVar);
+    IMG_NAPI_CHECK_RET_D(IMG_IS_OK(status), result, IMAGE_LOGE("fail to get thisVar"));
+    if (argCount != NUM_1) {
+        return ImageNapiUtils::ThrowExceptionError(env, IMAGE_BAD_PARAMETER, "Invalid argument count");
+    }
+
+    std::unique_ptr<ImageSourceAsyncContext> asyncContext = std::make_unique<ImageSourceAsyncContext>();
+    CHECK_ERROR_RETURN_RET_LOG(asyncContext == nullptr, result, "fail to create async context");
+    status = napi_unwrap(env, thisVar, reinterpret_cast<void**>(&asyncContext->constructor_));
+    IMG_NAPI_CHECK_RET_D(IMG_IS_READY(status, asyncContext->constructor_), result,
+        IMAGE_LOGE("fail to unwrap thisVar"));
+    asyncContext->rImageSource = reinterpret_cast<ImageSourceNapi*>(asyncContext->constructor_)->nativeImgSrc;
+    CHECK_ERROR_RETURN_RET_LOG(asyncContext->rImageSource == nullptr, result, "fail to get nativeImgSrc");
+
+    if (!ImageNapiUtils::CheckTypeByName(env, argValue[NUM_0], "XMPMetadata")) {
+        return ImageNapiUtils::ThrowExceptionError(env, IMAGE_BAD_PARAMETER, "Invalid argument type");
+    }
+    asyncContext->rXMPMetadata = XMPMetadataNapi::GetXMPMetadata(env, argValue[NUM_0]);
+    CHECK_ERROR_RETURN_RET_LOG(asyncContext->rXMPMetadata == nullptr, result, "fail to get xmpMetadata");
+
+    napi_create_promise(env, &(asyncContext->deferred), &result);
+    IMG_CREATE_CREATE_ASYNC_WORK(env, status, "WriteXMPMetadata", [](napi_env env, void *data) {
+        auto context = static_cast<ImageSourceAsyncContext*>(data);
+        context->status = context->rImageSource->WriteXMPMetadata(context->rXMPMetadata);
+    }, WriteXMPMetadataComplete, asyncContext, asyncContext->work);
 
     IMG_NAPI_CHECK_RET_D(IMG_IS_OK(status), result, IMAGE_LOGE("fail to create async work"));
     return result;

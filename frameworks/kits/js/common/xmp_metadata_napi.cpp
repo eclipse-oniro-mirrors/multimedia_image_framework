@@ -178,6 +178,29 @@ napi_value XMPMetadataNapi::CreateXMPMetadata(napi_env env, std::shared_ptr<XMPM
     return result;
 }
 
+std::shared_ptr<XMPMetadata> XMPMetadataNapi::GetXMPMetadata(napi_env env, napi_value xmpMetadata)
+{
+    std::unique_ptr<XMPMetadataNapi> xmpMetadataNapi = nullptr;
+
+    napi_status status = napi_unwrap(env, xmpMetadata, reinterpret_cast<void**>(&xmpMetadataNapi));
+    if (!IMG_IS_OK(status)) {
+        IMAGE_LOGE("GetXMPMetadata napi unwrap failed, status is %{public}d", status);
+        return nullptr;
+    }
+
+    if (xmpMetadataNapi == nullptr) {
+        IMAGE_LOGE("GetXMPMetadata xmpMetadataNapi is nullptr");
+        return nullptr;
+    }
+
+    auto xmpMetadataNapiPtr = xmpMetadataNapi.release();
+    if (xmpMetadataNapiPtr == nullptr) {
+        IMAGE_LOGE("GetXMPMetadata xmpMetadataNapi is nullptr");
+        return nullptr;
+    }
+    return xmpMetadataNapiPtr->nativeXMPMetadata_;
+}
+
 std::shared_ptr<XMPMetadata> XMPMetadataNapi::GetNativeXMPMetadata()
 {
     return nativeXMPMetadata_;

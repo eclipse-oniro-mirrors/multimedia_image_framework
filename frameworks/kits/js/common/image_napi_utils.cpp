@@ -310,6 +310,33 @@ const std::set<AuxiliaryPictureType> &ImageNapiUtils::GetNapiSupportedAuxiliaryP
     return auxTypes;
 }
 
+bool ImageNapiUtils::CheckTypeByName(napi_env env, napi_value root, const char *name)
+{
+    napi_value constructor = nullptr;
+    napi_value global = nullptr;
+    bool isInstance = false;
+    napi_status ret = napi_invalid_arg;
+
+    ret = napi_get_global(env, &global);
+    if (ret != napi_ok) {
+        IMAGE_LOGE("%{public}s Get global failed!", __func__);
+        return false;
+    }
+
+    if (!GetNodeByName(env, global, name, &constructor)) {
+        IMAGE_LOGE("%{public}s Get node failed! name: %{public}s", __func__, name);
+        return false;
+    }
+
+    ret = napi_instanceof(env, root, constructor, &isInstance);
+    if (ret != napi_ok || !isInstance) {
+        IMAGE_LOGE("%{public}s Check instanceof failed! name: %{public}s, isInstance: %{public}d",
+            __func__, name, isInstance);
+        return false;
+    }
+    return true;
+}
+
 void ImageNapiUtils::HicheckerReport()
 {
 #if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM) && defined(HICHECKER_ENABLE)

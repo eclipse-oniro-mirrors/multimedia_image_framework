@@ -30,6 +30,7 @@ public:
 
     static napi_value Init(napi_env env, napi_value exports);
     static napi_value CreateXMPMetadata(napi_env env, std::shared_ptr<XMPMetadata> &xmpMetadata);
+    static std::shared_ptr<XMPMetadata> GetXMPMetadata(napi_env env, napi_value xmpMetadata);
     std::shared_ptr<XMPMetadata> GetNativeXMPMetadata();
 private:
     static napi_value Constructor(napi_env env, napi_callback_info info);

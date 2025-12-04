@@ -17,6 +17,7 @@
 #include "xmp_helper.h"
 
 namespace {
+constexpr std::string_view WHITE_SPACE_CHARS = " \t\r\n";
 constexpr std::string_view COLON = ":";
 constexpr std::string_view SELECTOR_XML_LANG_AT = "[@xml:lang=";
 constexpr std::string_view SELECTOR_XML_LANG_Q = "[?xml:lang=";
@@ -115,7 +116,7 @@ std::string XMPHelper::ExtractProperty(std::string_view pathExpression)
 {
     CHECK_DEBUG_RETURN_RET_LOG(pathExpression.empty(), "", "%{public}s pathExpression is empty", __func__);
 
-    std::string trimmed = Trim(pathExpression);
+    std::string trimmed = Trim(pathExpression, WHITE_SPACE_CHARS);
     CHECK_DEBUG_RETURN_RET_LOG(trimmed.empty(), "", "%{public}s path is empty after trim", __func__);
 
     // Normalize array index path variant format

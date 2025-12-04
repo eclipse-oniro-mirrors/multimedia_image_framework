@@ -181,6 +181,7 @@ public:
     static bool ParseImageCreatorReceiverArgs(napi_env env, size_t argc,
         napi_value argv[], int32_t args[], std::string &errMsg);
     static const std::set<AuxiliaryPictureType> &GetNapiSupportedAuxiliaryPictureType();
+    static bool CheckTypeByName(napi_env env, napi_value root, const char *name);
     static void HicheckerReport();
     static void CreateErrorObj(napi_env env, napi_value &errorObj,
         const int32_t errCode, const std::string errMsg);
