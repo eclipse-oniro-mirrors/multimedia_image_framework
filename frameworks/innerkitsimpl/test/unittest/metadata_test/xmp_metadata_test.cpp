@@ -90,7 +90,33 @@ static void InitTestXMPTag(XMPTag &xmpTag, XMPTagType XMPTagType, std::string ta
     xmpTag.name = tagName;
 }
 
-static Media::XMPMetadata::EnumerateCallback InitEnumerateCallback(std::vector<XMPTag> &xmpTagVec,
+static void GetLastTag(XMPMetadata &xmpMetadata, std::string &path, XMPTag &lastTag,
+    std::vector<XMPTag> &xmpTagVec)
+{
+    XMPTag parentTag;
+    std::string lastTagPath;
+    xmpMetadata.GetTag(path, parentTag);
+
+    switch (parentTag.type) {
+        case XMPTagType::UNORDERED_ARRAY:
+        case XMPTagType::ORDERED_ARRAY:
+        case XMPTagType::ALTERNATE_ARRAY:
+            lastTagPath = path + "[last()]";
+            xmpMetadata.GetTag(lastTagPath, lastTag);
+            break;
+        case XMPTagType::SIMPLE:
+        case XMPTagType::STRUCTURE:
+            if (!xmpTagVec.empty()) {
+                lastTag = xmpTagVec.back();
+            }
+            break;
+        default:
+            GTEST_LOG_(INFO) << "GetLastTag: Invalid XMPTagType";
+            break;
+    }
+}
+
+static Media::XMPMetadata::EnumerateCallback InitTestCallback(std::vector<XMPTag> &xmpTagVec,
     XMPMetadata &xmpMetadata, std::string &parentPath)
 {
     Media::XMPMetadata::EnumerateCallback callback =
@@ -106,8 +132,8 @@ static Media::XMPMetadata::EnumerateCallback InitEnumerateCallback(std::vector<X
             isTagFound = false;
 
             XMPTag lastTag;
-            std::string lastTagPath = parentPath + "[last()]";
-            xmpMetadata.GetTag(lastTagPath, lastTag);
+            GetLastTag(xmpMetadata, parentPath, lastTag, xmpTagVec);
+
             if (CompareXMPTagNoLog(tag, lastTag)) {
                 return false;
             }
@@ -3166,7 +3192,7 @@ HWTEST_F(XmpMetadataTest, EnumerateTags001, TestSize.Level1)
     EXPECT_TRUE(ret);
     xmpTagVec.push_back(childTag);
 
-    Media::XMPMetadata::EnumerateCallback callback = InitEnumerateCallback(xmpTagVec, xmpMetadata, parentPath);
+    Media::XMPMetadata::EnumerateCallback callback = InitTestCallback(xmpTagVec, xmpMetadata, parentPath);
     XMPEnumerateOption options;
     xmpMetadata.EnumerateTags(callback, parentPath, options);
 
@@ -3206,7 +3232,7 @@ HWTEST_F(XmpMetadataTest, EnumerateTags002, TestSize.Level1)
     EXPECT_TRUE(ret);
     xmpTagVec.push_back(childTag);
 
-    Media::XMPMetadata::EnumerateCallback callback = InitEnumerateCallback(xmpTagVec, xmpMetadata, parentPath);
+    Media::XMPMetadata::EnumerateCallback callback = InitTestCallback(xmpTagVec, xmpMetadata, parentPath);
     XMPEnumerateOption options;
     xmpMetadata.EnumerateTags(callback, parentPath, options);
 
@@ -3246,11 +3272,95 @@ HWTEST_F(XmpMetadataTest, EnumerateTags003, TestSize.Level1)
     EXPECT_TRUE(ret);
     xmpTagVec.push_back(childTag);
 
-    Media::XMPMetadata::EnumerateCallback callback = InitEnumerateCallback(xmpTagVec, xmpMetadata, parentPath);
+    Media::XMPMetadata::EnumerateCallback callback = InitTestCallback(xmpTagVec, xmpMetadata, parentPath);
     XMPEnumerateOption options;
     xmpMetadata.EnumerateTags(callback, parentPath, options);
 
     GTEST_LOG_(INFO) << "XmpMetadataTest: EnumerateTags003 end";
+}
+
+/**
+ * @tc.name: EnumerateTags004
+ * @tc.desc: test the EnumerateTags method when some items in structure.
+ * @tc.type: FUNC
+ */
+HWTEST_F(XmpMetadataTest, EnumerateTags004, TestSize.Level1)
+{
+    GTEST_LOG_(INFO) << "XmpMetadataTest: EnumerateTags004 start";
+    std::string parentPath = "dc:parent";
+    XMPMetadata xmpMetadata;
+    XMPTag baseTag;
+    InitTestXMPTag(baseTag, XMPTagType::STRUCTURE, "parent");
+    bool ret = xmpMetadata.SetTag(parentPath, baseTag);
+    EXPECT_TRUE(ret);
+
+    std::vector<XMPTag> xmpTagVec;
+    XMPTag childTag;
+    InitTestXMPTag(childTag, XMPTagType::SIMPLE, "first");
+    childTag.value = "first";
+    ret = xmpMetadata.SetTag("dc:parent/dc:first", childTag);
+    EXPECT_TRUE(ret);
+    xmpTagVec.push_back(childTag);
+
+    childTag.name = "second";
+    childTag.value = "second";
+    ret = xmpMetadata.SetTag("dc:parent/dc:second", childTag);
+    EXPECT_TRUE(ret);
+    xmpTagVec.push_back(childTag);
+
+    childTag.name = "third";
+    childTag.value = "third";
+    ret = xmpMetadata.SetTag("dc:parent/dc:third", childTag);
+    EXPECT_TRUE(ret);
+    xmpTagVec.push_back(childTag);
+
+    Media::XMPMetadata::EnumerateCallback callback = InitTestCallback(xmpTagVec, xmpMetadata, parentPath);
+    XMPEnumerateOption options;
+    xmpMetadata.EnumerateTags(callback, parentPath, options);
+
+    GTEST_LOG_(INFO) << "XmpMetadataTest: EnumerateTags004 end";
+}
+
+/**
+ * @tc.name: EnumerateTags005
+ * @tc.desc: test the EnumerateTags method when the a simple tag has several qualifier.
+ * @tc.type: FUNC
+ */
+HWTEST_F(XmpMetadataTest, EnumerateTags005, TestSize.Level1)
+{
+    GTEST_LOG_(INFO) << "XmpMetadataTest: EnumerateTags005 start";
+    std::string parentPath = "dc:parent";
+    XMPMetadata xmpMetadata;
+    XMPTag baseTag;
+    InitTestXMPTag(baseTag, XMPTagType::SIMPLE, "parent");
+    bool ret = xmpMetadata.SetTag(parentPath, baseTag);
+    EXPECT_TRUE(ret);
+
+    std::vector<XMPTag> xmpTagVec;
+    XMPTag childTag;
+    InitTestXMPTag(childTag, XMPTagType::QUALIFIER, "first");
+    childTag.value = "first";
+    ret = xmpMetadata.SetTag("dc:parent/?xml:first", childTag);
+    EXPECT_TRUE(ret);
+    xmpTagVec.push_back(childTag);
+
+    childTag.name = "second";
+    childTag.value = "second";
+    ret = xmpMetadata.SetTag("dc:parent/?xml:second", childTag);
+    EXPECT_TRUE(ret);
+    xmpTagVec.push_back(childTag);
+
+    childTag.name = "third";
+    childTag.value = "third";
+    ret = xmpMetadata.SetTag("dc:parent/?xml:third", childTag);
+    EXPECT_TRUE(ret);
+    xmpTagVec.push_back(childTag);
+
+    Media::XMPMetadata::EnumerateCallback callback = InitTestCallback(xmpTagVec, xmpMetadata, parentPath);
+    XMPEnumerateOption options;
+    xmpMetadata.EnumerateTags(callback, parentPath, options);
+
+    GTEST_LOG_(INFO) << "XmpMetadataTest: EnumerateTags005 end";
 }
 } // namespace Multimedia
 } // namespace OHOS
