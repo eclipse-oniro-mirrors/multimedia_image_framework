@@ -40,6 +40,8 @@ namespace Media {
 #define GIF_METADATA_KEY_DELAY_TIME "GifDelayTime"
 #define GIF_METADATA_KEY_DISPOSAL_TYPE "GifDisposalType"
 
+#define HEIFS_METADATA_KEY_DELAY_TIME "HeifsDelayTime"
+
 // There is no definite tag name for gainmap
 #define AUXILIARY_TAG_GAINMAP ""
 #define AUXILIARY_TAG_DEPTH_MAP_BACK "DepthP"
@@ -445,6 +447,7 @@ enum class MetadataType {
     STDATA = 6,
     RESMAP = 7,
     UNKNOWN = 0,
+    HEIFS = 15,
 };
 
 static const std::map<MetadataType, std::string> BLOB_METADATA_TAG_MAP = {

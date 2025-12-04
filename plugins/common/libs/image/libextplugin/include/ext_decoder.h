@@ -174,6 +174,9 @@ private:
     bool IsCr3Format();
     bool MakeCr3Codec();
 
+    bool IsHeifsDecode(DecodeContext &context);
+    uint32_t DoHeifsDecode(OHOS::ImagePlugin::DecodeContext &context);
+
     ImagePlugin::InputDataStream *stream_ = nullptr;
     std::unique_ptr<InputDataStream> previewStream_ = nullptr;
     uint32_t streamOff_ = 0;

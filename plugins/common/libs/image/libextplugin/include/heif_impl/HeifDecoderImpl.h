@@ -29,8 +29,10 @@
 #include "color_space.h"
 #endif
 
-namespace OHOS::Media {
-    class ImageFwkExtManager;
+#include "image_fwk_ext_manager.h"
+
+namespace OHOS {
+    struct BufferRequestConfig;
 }
 
 namespace OHOS {
@@ -75,7 +77,7 @@ public:
     bool decodeAuxiliaryMap();
     void setAuxiliaryDstBuffer(uint8_t* dstBuffer, size_t dstSize, size_t rowStride, void *context);
     void getFragmentMetadata(Media::Rect& fragmentMetadata);
-    bool SwDecode(bool isSharedMemory = false);
+    bool SwDecode(bool isSharedMemory = false, uint32_t index = 0);
     void GetMetadataBlob(std::vector<uint8_t>& metadata, Media::MetadataType type);
 
     void SetDecodeRegion(int32_t colCount, int32_t rowCount, int32_t left, int32_t top, size_t rowStride);
@@ -89,6 +91,11 @@ public:
     bool IsGainmapDivisibleBySampleSize(uint32_t sampleSize);
     void setGainmapDstBuffer(uint8_t* dstBuffer, size_t rowStride, void *context);
     void SetColorSpaceSupportFlag(bool supported);
+    bool GetHeifsFrameCount(uint32_t &sampleCount);
+    bool IsHeifsImage();
+    uint32_t GetHeifsDelayTime(uint32_t index, int32_t &value);
+    void SetDstBufferSize(uint64_t byteCount);
+    void SetDstImageInfo(uint32_t dstWidth, uint32_t dstHeight);
 private:
     bool Reinit(HeifFrameInfo *frameInfo);
 
@@ -152,20 +159,20 @@ private:
     bool HwDecodeMimeImage(std::shared_ptr<HeifImage> &image);
 
     bool SwDecodeImage(std::shared_ptr<HeifImage> &image, HevcSoftDecodeParam &param,
-                       GridInfo &gridInfo, bool isPrimary);
+                       GridInfo &gridInfo, bool isPrimary, uint32_t index = 0);
     bool SwDecodeAuxiliaryImage(std::shared_ptr<HeifImage> &gainmapImage,
                                 GridInfo &gainmapGridInfo, uint8_t *auxiliaryDstMemory);
     bool DoSwDecodeAuxiliaryImage(std::shared_ptr<HeifImage> &gainmapImage, GridInfo &gainmapGridInfo,
                                   sptr<SurfaceBuffer> &output, uint8_t *auxiliaryDstMemory);
 
-    bool SwDecodeGrids(Media::ImageFwkExtManager &extManager,
-                       std::shared_ptr<HeifImage> &image, HevcSoftDecodeParam &param);
+    bool SwDecodeGrids(std::shared_ptr<HeifImage> &image, HevcSoftDecodeParam &param);
 
     bool SwDecodeIdenImage(std::shared_ptr<HeifImage> &image, HevcSoftDecodeParam &param,
                            GridInfo &gridInfo, bool isPrimary);
 
-    bool SwDecodeSingleImage(Media::ImageFwkExtManager &extManager,
-                             std::shared_ptr<HeifImage> &image, HevcSoftDecodeParam &param);
+    bool SwDecodeSingleImage(std::shared_ptr<HeifImage> &image, HevcSoftDecodeParam &param);
+
+    bool SwDecodeHeifsFrameImage(uint32_t index, HevcSoftDecodeParam &refParam);
 
     bool HwApplyAlphaImage(std::shared_ptr<HeifImage> &masterImage, uint8_t *dstMemory, size_t dstRowStride);
 
@@ -183,6 +190,26 @@ private:
     void GetGainmapColorSpace(ColorManager::ColorSpaceName &gainmapColor);
 
     void SetHardwareDecodeErrMsg(const uint32_t width, const uint32_t height);
+
+    bool CreateHeifsSwDecoder(HevcSoftDecodeParam &refParam);
+
+    void DeleteHeifsSwDecoder();
+
+    bool SwDecodeHeifsImage(uint32_t index, HevcSoftDecodeParam &param);
+
+    bool SwDecodeHeifsOnceFrame(uint32_t index, const HevcSoftDecodeParam &refParam);
+
+    bool HasDecodedFrame(uint32_t index);
+
+    bool AllocateBufferSize(HevcSoftDecodeParam &param);
+
+    void DeleteParamBuffer(HevcSoftDecodeParam &param);
+
+    void DeleteParamsBuffer();
+
+    bool GetSwDecodeHeifsDecodedParam(uint32_t index, HevcSoftDecodeParam &param);
+
+    bool CopyParamBuffer(HevcSoftDecodeParam &dst, const HevcSoftDecodeParam &src);
 
     std::shared_ptr<HeifParser> parser_;
     std::shared_ptr<HeifImage> primaryImage_;
@@ -231,6 +258,14 @@ private:
     std::string errMsg_;
 
     GridInfo gainmapGridInfo_ = {0, 0, false, 0, 0, 0, 0, 0};
+
+    IH265DEC_HANDLE* swDecHeifsHandle_ = nullptr;
+    static inline Media::ImageFwkExtManager extManager_;
+    std::map<uint32_t, HevcSoftDecodeParam> params_;
+    bool isFirstFrameDecoded_ = false;
+    uint32_t dstWidth_ = 0;
+    uint32_t dstHeight_ = 0;
+    uint64_t dstBufferSize_ = 0;
 };
 } // namespace ImagePlugin
 } // namespace OHOS

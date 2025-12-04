@@ -117,6 +117,8 @@ protected:
     heif_error WriteCalculatedHeader(HeifStreamWriter &, size_t startPos) const;
 
     virtual heif_error WriteHeader(HeifStreamWriter &, size_t boxSize) const;
+
+    heif_error ParseContentChildrenByReadChildren(HeifStreamReader &reader, uint32_t &recursionCount);
 };
 
 class HeifFullBox : public HeifBox {

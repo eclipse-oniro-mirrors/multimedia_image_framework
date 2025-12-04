@@ -25,6 +25,8 @@ public:
     HeifFtypBox() : HeifBox(BOX_TYPE_FTYP) {}
 
     heif_error Write(HeifStreamWriter &writer) const override;
+
+    uint32_t GetMajorBrand() const { return majorBrand_; }
 protected:
     heif_error ParseContent(HeifStreamReader &reader) override;
 

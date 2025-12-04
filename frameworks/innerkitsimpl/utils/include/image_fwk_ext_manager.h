@@ -19,6 +19,8 @@
 #include <cstdint>
 #include <vector>
 
+typedef void* IH265DEC_HANDLE;
+
 namespace OHOS::ImagePlugin {
     struct PlEncodeOptions;
     struct HevcSoftDecodeParam;
@@ -39,6 +41,14 @@ using HevcSoftwareDecodeFunc = int32_t (*)(std::vector<std::vector<uint8_t>>& in
 using DoHardwareEncodePictureFunc = int32_t (*)(SkWStream* output, const OHOS::ImagePlugin::PlEncodeOptions& opts,
     OHOS::Media::Picture* picture);
 
+using HeifsSoftwareDecodeFunc = int32_t (*)(IH265DEC_HANDLE*& handle, std::vector<uint8_t>& inputs,
+                                            OHOS::ImagePlugin::HevcSoftDecodeParam& param);
+
+using HeifsSoftwareCreateDecoderFunc = int32_t (*)(IH265DEC_HANDLE*& handle,
+                                                   OHOS::ImagePlugin::HevcSoftDecodeParam& param);
+
+using HeifsSoftwareDeleteDecoderFunc = int32_t (*)(IH265DEC_HANDLE*& handle);
+
 namespace OHOS {
 namespace Media {
 class ImageFwkExtManager {
@@ -49,7 +59,11 @@ public:
     DoHardWareEncodeFunc doHardWareEncodeFunc_;
     HevcSoftwareDecodeFunc hevcSoftwareDecodeFunc_;
     DoHardwareEncodePictureFunc doHardwareEncodePictureFunc_;
+    HeifsSoftwareDecodeFunc heifsSoftwareDecodeFunc_;
+    HeifsSoftwareCreateDecoderFunc heifsSoftwareCreateDecoderFunc_;
+    HeifsSoftwareDeleteDecoderFunc heifsSoftwareDeleteDecoderFunc_;
 private:
+    bool LoadImageFwkExtNativeHeifsSwDecodeSo();
     bool isImageFwkExtNativeSoOpened_;
     void* extNativeSoHandle_;
 };

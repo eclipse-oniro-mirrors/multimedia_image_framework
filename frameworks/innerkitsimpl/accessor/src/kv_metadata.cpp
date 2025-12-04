@@ -42,9 +42,14 @@ const static std::set<std::string> GIF_METADATA_KEYS = {
     GIF_METADATA_KEY_DISPOSAL_TYPE,
 };
 
+const static std::set<std::string> HEIFS_METADATA_KEYS = {
+    HEIFS_METADATA_KEY_DELAY_TIME,
+};
+
 const static std::map<MetadataType, std::set<std::string>> KV_METADATA_KEYS = {
     {MetadataType::FRAGMENT, FRAGMENT_METADATA_KEYS},
     {MetadataType::GIF, GIF_METADATA_KEYS},
+    {MetadataType::HEIFS, HEIFS_METADATA_KEYS},
 };
 
 ImageKvMetadata::ImageKvMetadata() {}
