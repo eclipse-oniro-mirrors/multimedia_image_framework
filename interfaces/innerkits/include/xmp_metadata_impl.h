@@ -59,6 +59,16 @@ public:
         return xmpMeta_->CountArrayItems(schemaNS, arrayPath);
     }
 
+    void ParseFromBuffer(const char *buffer, uint32_t size)
+    {
+        return xmpMeta_->ParseFromBuffer(buffer, size);
+    }
+
+    void SerializeToBuffer(std::string &buffer, XMP_OptionBits options, uint32_t padding = 0)
+    {
+        return xmpMeta_->SerializeToBuffer(&buffer, options, padding);
+    }
+
 private:
     std::unique_ptr<SXMPMeta> xmpMeta_;
 };

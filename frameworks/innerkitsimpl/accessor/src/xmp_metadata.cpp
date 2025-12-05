@@ -15,12 +15,14 @@
 
 #include "image_log.h"
 #include "media_errors.h"
+#include "securec.h"
 #include "xmp_helper.h"
 #include "xmp_metadata.h"
 #include "xmp_metadata_impl.h"
 
 namespace {
 constexpr std::string_view COLON = ":";
+constexpr uint32_t MAX_XMP_METADATA_LENGTH = 64 * 1024;
 }
 
 namespace OHOS {
@@ -309,6 +311,39 @@ int32_t XMPMetadata::CountArrayItems(const std::string &arrayPath)
     CHECK_ERROR_RETURN_RET_LOG(!SXMPMeta::GetNamespaceURI(prefix.c_str(), &namespaceUri), 0,
         "%{public}s failed to get namespace URI for prefix: %{public}s", __func__, prefix.c_str());
     return impl_->CountArrayItems(namespaceUri.c_str(), propName.c_str());
+}
+
+uint32_t XMPMetadata::GetBlob(uint32_t bufferSize, uint8_t *dst)
+{
+    CHECK_ERROR_RETURN_RET_LOG(!impl_ || !impl_->IsValid(), ERR_MEDIA_NULL_POINTER,
+        "%{public}s impl is invalid", __func__);
+    CHECK_ERROR_RETURN_RET_LOG(dst == nullptr, ERR_IMAGE_INVALID_PARAMETER,
+        "%{public}s dst is nullptr", __func__);
+
+    std::string buffer;
+    impl_->SerializeToBuffer(buffer, kXMP_UseCompactFormat);
+    if (buffer.size() > bufferSize) {
+        IMAGE_LOGE("%{public}s buffer size is too small", __func__);
+        return ERR_IMAGE_INVALID_PARAMETER;
+    }
+    CHECK_ERROR_RETURN_RET_LOG(memcpy_s(dst, bufferSize, buffer.data(), buffer.size()) != EOK,
+        ERR_MEDIA_MALLOC_FAILED, "%{public}s memcpy_s failed", __func__);
+    IMAGE_LOGD("%{public}s success! actualSize is %{public}u, bufferSize is %{public}u", __func__,
+        buffer.size(), bufferSize);
+    return SUCCESS;
+}
+
+uint32_t XMPMetadata::SetBlob(const uint8_t *source, uint32_t bufferSize)
+{
+    CHECK_ERROR_RETURN_RET_LOG(!impl_ || !impl_->IsValid(), ERR_MEDIA_NULL_POINTER,
+        "%{public}s impl is invalid", __func__);
+    CHECK_ERROR_RETURN_RET_LOG(source == nullptr || bufferSize == 0 || bufferSize > MAX_XMP_METADATA_LENGTH,
+        ERR_IMAGE_INVALID_PARAMETER, "%{public}s source is nullptr or size:(%{public}u) is invalid",
+        __func__, bufferSize);
+
+    impl_->ParseFromBuffer(reinterpret_cast<const char*>(source), bufferSize);
+    IMAGE_LOGD("%{public}s success! bufferSize is %{public}u", __func__, bufferSize);
+    return SUCCESS;
 }
 } // namespace Media
 } // namespace OHOS
