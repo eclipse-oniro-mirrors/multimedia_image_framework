@@ -3927,30 +3927,6 @@ uint32_t ImageSource::GetFrameCount(uint32_t &errorCode)
     return frameCount;
 }
 
-uint32_t ImageSource::SetHeifsMetadataForPicture(std::unique_ptr<Picture> &picture, uint32_t index)
-{
-    CHECK_ERROR_RETURN_RET_LOG(picture == nullptr, ERR_IMAGE_PICTURE_CREATE_FAILED,
-        "[%{public}s] picture is nullptr", __func__);
-    CHECK_ERROR_RETURN_RET_LOG(mainDecoder_ == nullptr, ERR_IMAGE_DECODE_ABNORMAL,
-        "[%{public}s] mainDecoder_ is nullptr", __func__);
-
-    int32_t delayTime = 0;
-    uint32_t errorCode = mainDecoder_->GetImagePropertyInt(index, IMAGE_DELAY_TIME, delayTime);
-    CHECK_ERROR_RETURN_RET_LOG(errorCode != SUCCESS, errorCode,
-        "[%{public}s] get delay time failed", __func__);
-
-    std::shared_ptr<ImageMetadata> heifsMetadata = std::make_shared<HeifsMetadata>();
-    CHECK_ERROR_RETURN_RET_LOG(heifsMetadata == nullptr, ERR_SHAMEM_NOT_EXIST,
-        "[%{public}s] make_shared heifsMetadata failed", __func__);
-    bool result = heifsMetadata->SetValue(HEIFS_METADATA_KEY_DELAY_TIME, std::to_string(delayTime));
-    CHECK_ERROR_RETURN_RET_LOG(!result, ERR_IMAGE_DECODE_METADATA_FAILED,
-        "[%{public}s] set delay time failed", __func__);
-    uint32_t ret = picture->SetMetadata(MetadataType::HEIFS, heifsMetadata);
-    CHECK_ERROR_RETURN_RET_LOG(ret != SUCCESS, ERR_IMAGE_DECODE_METADATA_FAILED,
-        "[%{public}s] set heifs metadata failed", __func__);
-    return SUCCESS;
-}
-
 void ImageSource::SetSource(const std::string &source)
 {
     source_ = source;
@@ -5114,6 +5090,30 @@ uint32_t ImageSource::SetGifMetadataForPicture(std::unique_ptr<Picture> &picture
     uint32_t ret = picture->SetMetadata(MetadataType::GIF, gifMetadata);
     CHECK_ERROR_RETURN_RET_LOG(ret != SUCCESS, ERR_IMAGE_DECODE_METADATA_FAILED,
         "[%{public}s] set gif metadata failed", __func__);
+    return SUCCESS;
+}
+
+uint32_t ImageSource::SetHeifsMetadataForPicture(std::unique_ptr<Picture> &picture, uint32_t index)
+{
+    CHECK_ERROR_RETURN_RET_LOG(picture == nullptr, ERR_IMAGE_PICTURE_CREATE_FAILED,
+        "[%{public}s] picture is nullptr", __func__);
+    CHECK_ERROR_RETURN_RET_LOG(mainDecoder_ == nullptr, ERR_IMAGE_DECODE_ABNORMAL,
+        "[%{public}s] mainDecoder_ is nullptr", __func__);
+
+    int32_t delayTime = 0;
+    uint32_t errorCode = mainDecoder_->GetImagePropertyInt(index, IMAGE_DELAY_TIME, delayTime);
+    CHECK_ERROR_RETURN_RET_LOG(errorCode != SUCCESS, errorCode,
+        "[%{public}s] get delay time failed", __func__);
+
+    std::shared_ptr<ImageMetadata> heifsMetadata = std::make_shared<HeifsMetadata>();
+    CHECK_ERROR_RETURN_RET_LOG(heifsMetadata == nullptr, ERR_SHAMEM_NOT_EXIST,
+        "[%{public}s] make_shared heifsMetadata failed", __func__);
+    bool result = heifsMetadata->SetValue(HEIFS_METADATA_KEY_DELAY_TIME, std::to_string(delayTime));
+    CHECK_ERROR_RETURN_RET_LOG(!result, ERR_IMAGE_DECODE_METADATA_FAILED,
+        "[%{public}s] set delay time failed", __func__);
+    uint32_t ret = picture->SetMetadata(MetadataType::HEIFS, heifsMetadata);
+    CHECK_ERROR_RETURN_RET_LOG(ret != SUCCESS, ERR_IMAGE_DECODE_METADATA_FAILED,
+        "[%{public}s] set heifs metadata failed", __func__);
     return SUCCESS;
 }
 
