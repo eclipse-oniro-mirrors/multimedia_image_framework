@@ -31,6 +31,42 @@ namespace {
     constexpr const int32_t XMP_ARRAY_COUNT_ONE = 1;
     constexpr const int32_t XMP_ARRAY_COUNT_TWO = 2;
     constexpr const int32_t XMP_ARRAY_COUNT_THREE = 3;
+    constexpr const uint8_t XMP_BLOB_DATA[] = R"XMP(<?xpacket begin="?" id="W5M0MpCehiHzreSzNTczkc9d"?>
+ <x:xmpmeta xmlns:x="adobe:ns:meta/" x:xmptk="Adobe XMP Core 5.4-c002 1.000000, 0000/00/00-00:00:00        ">
+   <rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#">
+      <rdf:Description rdf:about=""
+            xmlns:xmp="http://ns.adobe.com/xap/1.0/">
+         <xmp:CreatorTool>Picasa</xmp:CreatorTool>
+      </rdf:Description>
+      <rdf:Description rdf:about=""
+            xmlns:mwg-rs="http://www.metadataworkinggroup.com/schemas/regions/"
+            xmlns:stDim="http://ns.adobe.com/xap/1.0/sType/Dimensions#"
+            xmlns:stArea="http://ns.adobe.com/xmp/sType/Area#">
+         <mwg-rs:Regions rdf:parseType="Resource">
+            <mwg-rs:AppliedToDimensions rdf:parseType="Resource">
+               <stDim:w>912</stDim:w>
+               <stDim:h>687</stDim:h>
+               <stDim:unit>pixel</stDim:unit>
+            </mwg-rs:AppliedToDimensions>
+            <mwg-rs:RegionList>
+               <rdf:Bag>
+                  <rdf:li rdf:parseType="Resource">
+                     <mwg-rs:Area rdf:parseType="Resource">
+                        <stArea:x>0.680921052631579</stArea:x>
+                        <stArea:y>0.3537117903930131</stArea:y>
+                        <stArea:h>0.4264919941775837</stArea:h>
+                        <stArea:w>0.32127192982456143</stArea:w>
+                     </mwg-rs:Area>
+                  </rdf:li>
+               </rdf:Bag>
+            </mwg-rs:RegionList>
+         </mwg-rs:Regions>
+      </rdf:Description>
+   </rdf:RDF>
+ </x:xmpmeta>
+<?xpacket end="w"?>)XMP";
+    constexpr uint32_t XMP_BLOB_DATA_SIZE = 4096;
+    constexpr uint32_t XMP_BLOB_SMALL_SIZE = 1;
 }
 
 class XmpMetadataTest : public testing::Test {
@@ -3361,6 +3397,66 @@ HWTEST_F(XmpMetadataTest, EnumerateTags005, TestSize.Level1)
     xmpMetadata.EnumerateTags(callback, parentPath, options);
 
     GTEST_LOG_(INFO) << "XmpMetadataTest: EnumerateTags005 end";
+}
+
+/**
+ * @tc.name: SetGetBlobTest001
+ * @tc.desc: test the SetBlob and GetBlob method.
+ * @tc.type: FUNC
+ */
+HWTEST_F(XmpMetadataTest, SetGetBlobTest001, TestSize.Level1)
+{
+    GTEST_LOG_(INFO) << "XmpMetadataTest: SetGetBlobTest001 start";
+    XMPMetadata xmpMetadata;
+    uint32_t ret = xmpMetadata.SetBlob(XMP_BLOB_DATA, sizeof(XMP_BLOB_DATA));
+    EXPECT_EQ(ret, SUCCESS);
+
+    uint8_t buffer[XMP_BLOB_DATA_SIZE] = { 0 };
+    ret = xmpMetadata.GetBlob(sizeof(buffer), buffer);
+    EXPECT_EQ(ret, SUCCESS);
+
+    std::string str(reinterpret_cast<char*>(buffer), strlen(reinterpret_cast<char*>(buffer)));
+    GTEST_LOG_(INFO) << "XmpMetadataTest: SetGetBlobTest001 str is " << str;
+    GTEST_LOG_(INFO) << "XmpMetadataTest: SetGetBlobTest001 end";
+}
+
+/**
+ * @tc.name: SetGetBlobTest002
+ * @tc.desc: test the SetBlob and GetBlob method when the source and buffer size is invalid.
+ * @tc.type: FUNC
+ */
+HWTEST_F(XmpMetadataTest, SetGetBlobTest002, TestSize.Level1)
+{
+    GTEST_LOG_(INFO) << "XmpMetadataTest: SetGetBlobTest002 start";
+    XMPMetadata xmpMetadata;
+    uint32_t ret = xmpMetadata.SetBlob(nullptr, 0);
+    EXPECT_EQ(ret, ERR_IMAGE_INVALID_PARAMETER);
+
+    uint8_t buffer[XMP_BLOB_DATA_SIZE] = { 0 };
+    ret = xmpMetadata.GetBlob(sizeof(buffer), buffer);
+    EXPECT_EQ(ret, SUCCESS);
+
+    std::string str(reinterpret_cast<char*>(buffer), strlen(reinterpret_cast<char*>(buffer)));
+    GTEST_LOG_(INFO) << "XmpMetadataTest: SetGetBlobTest002 str is " << str;
+    GTEST_LOG_(INFO) << "XmpMetadataTest: SetGetBlobTest002 end";
+}
+
+/**
+ * @tc.name: SetGetBlobTest003
+ * @tc.desc: test the SetBlob and GetBlob method when the buffer size is smaller than the source size.
+ * @tc.type: FUNC
+ */
+HWTEST_F(XmpMetadataTest, SetGetBlobTest003, TestSize.Level1)
+{
+    GTEST_LOG_(INFO) << "XmpMetadataTest: SetGetBlobTest003 start";
+    XMPMetadata xmpMetadata;
+    uint32_t ret = xmpMetadata.SetBlob(XMP_BLOB_DATA, sizeof(XMP_BLOB_DATA));
+    EXPECT_EQ(ret, SUCCESS);
+
+    uint8_t buffer[XMP_BLOB_SMALL_SIZE] = { 0 };
+    ret = xmpMetadata.GetBlob(sizeof(buffer), buffer);
+    EXPECT_EQ(ret, ERR_IMAGE_INVALID_PARAMETER);
+    GTEST_LOG_(INFO) << "XmpMetadataTest: SetGetBlobTest003 end";
 }
 } // namespace Multimedia
 } // namespace OHOS
