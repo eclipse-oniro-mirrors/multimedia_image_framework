@@ -3204,7 +3204,7 @@ void PixelMap::WriteData(std::vector<uint8_t> &buff, const uint8_t *data,
             }
         }
     } else {
-        int32_t size = rowDataSize * height;
+        int32_t size = pixelsSize_;
         buff.insert(buff.end(), data, data + size);
     }
 }
@@ -3224,7 +3224,7 @@ std::unique_ptr<AbsMemory> PixelMap::ReadData(std::vector<uint8_t> &buff, int32_
     int32_t dstRowStride = 0;
     InitializationOptions opts;
     opts.allocatorType = allocType;
-    int32_t errorCode = AllocPixelMapMemory(dstMemory, dstRowStride, imageInfo, opts);
+    int32_t errorCode = ImageUtils::AllocPixelMapMemory(dstMemory, dstRowStride, imageInfo, opts);
     if (dstMemory == nullptr || dstMemory->data.data == nullptr || errorCode != SUCCESS) {
         IMAGE_LOGE("[PixelMap] tlv read data fail: alloc memory failed");
         return nullptr;
@@ -3267,26 +3267,26 @@ void PixelMap::TlvWriteSurfaceInfo(const PixelMap* pixelMap, vector<uint8_t>& bu
     sptr<SurfaceBuffer> surfaceBuffer(reinterpret_cast<SurfaceBuffer*>(pixelMap->GetFd()));
     CM_ColorSpaceType colorSpaceType;
     if (VpeUtils::GetSbColorSpaceType(surfaceBuffer, colorSpaceType)) {
-        WriteUint8(buff, TLV_IMAGE_COLORTYPE);
-        WriteVarint(buff, GetVarintLen(static_cast<int32_t>(colorSpaceType)));
-        WriteVarint(buff, static_cast<int32_t>(colorSpaceType));
+        ImageUtils::WriteUint8(buff, TLV_IMAGE_COLORTYPE);
+        ImageUtils::WriteVarint(buff, ImageUtils::GetVarintLen(static_cast<int32_t>(colorSpaceType)));
+        ImageUtils::WriteVarint(buff, static_cast<int32_t>(colorSpaceType));
     }
     CM_HDR_Metadata_Type metadataType;
-    if (VpeUtils::GetSbMetaDataType(surfaceBuffer, metadataType)) {
-        WriteUint8(buff, TLV_IMAGE_METADATATYPE);
-        WriteVarint(buff, GetVarintLen(static_cast<int32_t>(metadataType)));
-        WriteVarint(buff, static_cast<int32_t>(metadataType));
+    if (VpeUtils::GetSbMetadataType(surfaceBuffer, metadataType)) {
+        ImageUtils::WriteUint8(buff, TLV_IMAGE_METADATATYPE);
+        ImageUtils::WriteVarint(buff, ImageUtils::GetVarintLen(static_cast<int32_t>(metadataType)));
+        ImageUtils::WriteVarint(buff, static_cast<int32_t>(metadataType));
     }
     vector<uint8_t> staticMetadata;
     if (VpeUtils::GetSbStaticMetadata(surfaceBuffer, staticMetadata)) {
-        WriteUint8(buff, TLV_IMAGE_STATICMETADATA);
-        WriteVarint(buff, static_cast<int32_t>(staticMetadata.size()));
+        ImageUtils::WriteUint8(buff, TLV_IMAGE_STATICMETADATA);
+        ImageUtils::WriteVarint(buff, static_cast<int32_t>(staticMetadata.size()));
         buff.insert(buff.end(), staticMetadata.begin(), staticMetadata.end());
     }
     vector<uint8_t> dynamicMetadata;
     if (VpeUtils::GetSbDynamicMetadata(surfaceBuffer, dynamicMetadata)) {
-        WriteUint8(buff, TLV_IMAGE_DYNAMICMETADATA);
-        WriteVarint(buff, static_cast<int32_t>(dynamicMetadata.size()));
+        ImageUtils::WriteUint8(buff, TLV_IMAGE_DYNAMICMETADATA);
+        ImageUtils::WriteVarint(buff, static_cast<int32_t>(dynamicMetadata.size()));
         buff.insert(buff.end(), dynamicMetadata.begin(), dynamicMetadata.end());
     }
 }
@@ -3297,52 +3297,52 @@ bool PixelMap::EncodeTlv(std::vector<uint8_t> &buff) const
         IMAGE_LOGE("[PixelMap] EncodeTlv fail, format not supported, format: %{public}d", imageInfo_.pixelFormat);
         return false;
     }
-    WriteUint8(buff, TLV_IMAGE_WIDTH);
-    WriteVarint(buff, GetVarintLen(imageInfo_.size.width));
-    WriteVarint(buff, imageInfo_.size.width);
-    WriteUint8(buff, TLV_IMAGE_HEIGHT);
-    WriteVarint(buff, GetVarintLen(imageInfo_.size.height));
-    WriteVarint(buff, imageInfo_.size.height);
-    WriteUint8(buff, TLV_IMAGE_PIXELFORMAT);
-    WriteVarint(buff, GetVarintLen(static_cast<int32_t>(imageInfo_.pixelFormat)));
-    WriteVarint(buff, static_cast<int32_t>(imageInfo_.pixelFormat));
-    WriteUint8(buff, TLV_IMAGE_COLORSPACE);
-    WriteVarint(buff, GetVarintLen(static_cast<int32_t>(imageInfo_.colorSpace)));
-    WriteVarint(buff, static_cast<int32_t>(imageInfo_.colorSpace));
-    WriteUint8(buff, TLV_IMAGE_ALPHATYPE);
-    WriteVarint(buff, GetVarintLen(static_cast<int32_t>(imageInfo_.alphaType)));
-    WriteVarint(buff, static_cast<int32_t>(imageInfo_.alphaType));
-    WriteUint8(buff, TLV_IMAGE_BASEDENSITY);
-    WriteVarint(buff, GetVarintLen(imageInfo_.baseDensity));
-    WriteVarint(buff, imageInfo_.baseDensity);
+    ImageUtils::WriteUint8(buff, TLV_IMAGE_WIDTH);
+    ImageUtils::WriteVarint(buff, ImageUtils::GetVarintLen(imageInfo_.size.width));
+    ImageUtils::WriteVarint(buff, imageInfo_.size.width);
+    ImageUtils::WriteUint8(buff, TLV_IMAGE_HEIGHT);
+    ImageUtils::WriteVarint(buff, ImageUtils::GetVarintLen(imageInfo_.size.height));
+    ImageUtils::WriteVarint(buff, imageInfo_.size.height);
+    ImageUtils::WriteUint8(buff, TLV_IMAGE_PIXELFORMAT);
+    ImageUtils::WriteVarint(buff, ImageUtils::GetVarintLen(static_cast<int32_t>(imageInfo_.pixelFormat)));
+    ImageUtils::WriteVarint(buff, static_cast<int32_t>(imageInfo_.pixelFormat));
+    ImageUtils::WriteUint8(buff, TLV_IMAGE_COLORSPACE);
+    ImageUtils::WriteVarint(buff, ImageUtils::GetVarintLen(static_cast<int32_t>(imageInfo_.colorSpace)));
+    ImageUtils::WriteVarint(buff, static_cast<int32_t>(imageInfo_.colorSpace));
+    ImageUtils::WriteUint8(buff, TLV_IMAGE_ALPHATYPE);
+    ImageUtils::WriteVarint(buff, ImageUtils::GetVarintLen(static_cast<int32_t>(imageInfo_.alphaType)));
+    ImageUtils::WriteVarint(buff, static_cast<int32_t>(imageInfo_.alphaType));
+    ImageUtils::WriteUint8(buff, TLV_IMAGE_BASEDENSITY);
+    ImageUtils::WriteVarint(buff, ImageUtils::GetVarintLen(imageInfo_.baseDensity));
+    ImageUtils::WriteVarint(buff, imageInfo_.baseDensity);
     AllocatorType tmpAllocatorType = AllocatorType::HEAP_ALLOC;
     if (allocatorType_ == AllocatorType::DMA_ALLOC && const_cast<PixelMap*>(this)->IsHdr() &&
         grColorSpace_ != nullptr) {
-        WriteUint8(buff, TLV_IMAGE_HDR);
-        WriteVarint(buff, NUM_1);
-        WriteVarint(buff, NUM_1);
-        TlvWriteSurfaceInfo(this, buff);
+        ImageUtils::WriteUint8(buff, TLV_IMAGE_HDR);
+        ImageUtils::WriteVarint(buff, NUM_1);
+        ImageUtils::WriteVarint(buff, NUM_1);
+        ImageUtils::TlvWriteSurfaceInfo(this, buff);
         int32_t csm = static_cast<int32_t>(grColorSpace_->GetColorSpaceName());
-        WriteUint8(buff, TLV_IMAGE_CSM);
-        WriteVarint(buff, GetVarintLen(csm));
-        WriteVarint(buff, csm);
+        ImageUtils::WriteUint8(buff, TLV_IMAGE_CSM);
+        ImageUtils::WriteVarint(buff, ImageUtils::GetVarintLen(csm));
+        ImageUtils::WriteVarint(buff, csm);
         tmpAllocatorType = allocatorType_;
     }
-    WriteUint8(buff, TLV_IMAGE_ALLOCATORTYPE);
-    WriteVarint(buff, GetVarintLen(static_cast<int32_t>(tmpAllocatorType)));
-    WriteVarint(buff, static_cast<int32_t>(tmpAllocatorType));
-    WriteUint8(buff, TLV_IMAGE_DATA);
+    ImageUtils::WriteUint8(buff, TLV_IMAGE_ALLOCATORTYPE);
+    ImageUtils::WriteVarint(buff, ImageUtils::GetVarintLen(static_cast<int32_t>(tmpAllocatorType)));
+    ImageUtils::WriteVarint(buff, static_cast<int32_t>(tmpAllocatorType));
+    ImageUtils::WriteUint8(buff, TLV_IMAGE_DATA);
     uint64_t dataSize = static_cast<uint64_t>(rowDataSize_) * static_cast<uint64_t>(imageInfo_.size.height);
-    if (isUnMap_ || data == nullptr || dataSize > MAX_IMAGEDATA_SIZE || 
+    if (isUnMap_ || data_ == nullptr || dataSize > MAX_IMAGEDATA_SIZE ||
         dataSize > static_cast<uint64_t>(pixelsSize_)) {
-        WriteVarint(buff, 0); // L is zero and no value
-        WriteUint8(buff, TLV_END); // end tag
+        ImageUtils::WriteVarint(buff, 0); // L is zero and no value
+        ImageUtils::WriteUint8(buff, TLV_END); // end tag
         IMAGE_LOGE("[PixelMap] tlv encode fail: no data or invalid dataSize, isUnMap %{public}d", isUnMap_);
         return false;
     }
-    WriteVarint(buff, static_cast<int32_t>(dataSize));
+    ImageUtils::WriteVarint(buff, static_cast<int32_t>(dataSize));
     WriteData(buff, data_, imageInfo_.size.height, rowDataSize_, rowStride_);
-    WriteUint8(buff, TLV_END); // end tag
+    ImageUtils::WriteUint8(buff, TLV_END); // end tag
     return true;
 }
 
@@ -3398,15 +3398,15 @@ struct TlvDecodeInfo {
 static std::map<uint8_t, std::function<bool(TlvDecodeInfo&, vector<uint8_t>&, int32_t&, int32_t)>>
     TlvDecodeFunc = {
         {TLV_IMAGE_WIDTH, [](TlvDecodeInfo& decodeInfo, vector<uint8_t>& buff, int32_t& cursor, int32_t len) {
-            decodeInfo.info.size.width = PixelMap::ReadVarint(buff, cursor);
+            decodeInfo.info.size.width = ImageUtils::ReadVarint(buff, cursor);
             return true;
         }},
         {TLV_IMAGE_HEIGHT, [](TlvDecodeInfo& decodeInfo, vector<uint8_t>& buff, int32_t& cursor, int32_t len) {
-            decodeInfo.info.size.height = PixelMap::ReadVarint(buff, cursor);
+            decodeInfo.info.size.height = ImageUtils::ReadVarint(buff, cursor);
             return true;
         }},
         {TLV_IMAGE_PIXELFORMAT, [](TlvDecodeInfo& decodeInfo, vector<uint8_t>& buff, int32_t& cursor, int32_t len) {
-            decodeInfo.info.pixelFormat = static_cast<PixelFormat>(PixelMap::ReadVarint(buff, cursor));
+            decodeInfo.info.pixelFormat = static_cast<PixelFormat>(ImageUtils::ReadVarint(buff, cursor));
             if (!ImageUtils::CheckTlvSupportedFormat(decodeInfo.info.pixelFormat)) {
                 IMAGE_LOGE("[PixelMap] tlv decode unsupported pixelformat: %{public}d", decodeInfo.info.pixelFormat);
                 return false;
@@ -3414,28 +3414,28 @@ static std::map<uint8_t, std::function<bool(TlvDecodeInfo&, vector<uint8_t>&, in
             return true;
         }},
         {TLV_IMAGE_COLORSPACE, [](TlvDecodeInfo& decodeInfo, vector<uint8_t>& buff, int32_t& cursor, int32_t len) {
-            decodeInfo.info.colorSpace = static_cast<ColorSpace>(PixelMap::ReadVarint(buff, cursor));
+            decodeInfo.info.colorSpace = static_cast<ColorSpace>(ImageUtils::ReadVarint(buff, cursor));
             return true;
         }},
         {TLV_IMAGE_ALPHATYPE, [](TlvDecodeInfo& decodeInfo, vector<uint8_t>& buff, int32_t& cursor, int32_t len) {
-            decodeInfo.info.alphaType = static_cast<AlphaType>(PixelMap::ReadVarint(buff, cursor));
+            decodeInfo.info.alphaType = static_cast<AlphaType>(ImageUtils::ReadVarint(buff, cursor));
             return true;
         }},
         {TLV_IMAGE_BASEDENSITY, [](TlvDecodeInfo& decodeInfo, vector<uint8_t>& buff, int32_t& cursor, int32_t len) {
-            decodeInfo.info.baseDensity = PixelMap::ReadVarint(buff, cursor);
+            decodeInfo.info.baseDensity = ImageUtils::ReadVarint(buff, cursor);
             return true;
         }},
         {TLV_IMAGE_ALLOCATORTYPE, [](TlvDecodeInfo& decodeInfo, vector<uint8_t>& buff, int32_t& cursor, int32_t len) {
-            decodeInfo.allocatorType = static_cast<AllocatorType>(PixelMap::ReadVarint(buff, cursor));
-            if (decodeInfo.allocatorType != NUM_4 && decodeInfo.allocatorType != NUM_1) {
-                IMAGE_LOGE("[PixelMap] tlv decode invalid allocatorType: %{public}d", decodeInfo.allocatorType);
+            decodeInfo.allocType = ImageUtils::ReadVarint(buff, cursor);
+            if (decodeInfo.allocType != NUM_4 && decodeInfo.allocType != NUM_1) {
+                IMAGE_LOGE("[PixelMap] tlv decode invalid allocatorType: %{public}d", decodeInfo.allocType);
                 return false;
             }
             return true;
         }},
         {TLV_IMAGE_DATA, [](TlvDecodeInfo& decodeInfo, vector<uint8_t>& buff, int32_t& cursor, int32_t len) {
-            decodeInfo.dstMemory = PixelMap::ReadData(buff, len, cursor,
-                static_cast<AllocatorType>(decodeInfo.allocatorType), decodeInfo.info);
+            decodeInfo.dstMemory = ImageUtils::ReadData(buff, len, cursor,
+                static_cast<AllocatorType>(decodeInfo.allocType), decodeInfo.info);
             cursor += len; // skip data
             if (decodeInfo.dstMemory == nullptr) {
                 return false;
@@ -3443,17 +3443,17 @@ static std::map<uint8_t, std::function<bool(TlvDecodeInfo&, vector<uint8_t>&, in
             return true;
         }},
         {TLV_IMAGE_HDR, [](TlvDecodeInfo& decodeInfo, vector<uint8_t>& buff, int32_t& cursor, int32_t len) {
-            decodeInfo.isHdr = PixelMap::ReadVarint(buff, cursor);
+            decodeInfo.isHdr = ImageUtils::ReadVarint(buff, cursor);
             return true;
         }},
         {TLV_IMAGE_COLORTYPE, [](TlvDecodeInfo& decodeInfo, vector<uint8_t>& buff, int32_t& cursor, int32_t len) {
             decodeInfo.hdrInfo.colorSpaceType =
-                static_cast<CM_ColorSpaceType>(PixelMap::ReadVarint(buff, cursor));
+                static_cast<CM_ColorSpaceType>(ImageUtils::ReadVarint(buff, cursor));
             return true;
         }},
         {TLV_IMAGE_METADATATYPE, [](TlvDecodeInfo& decodeInfo, vector<uint8_t>& buff, int32_t& cursor, int32_t len) {
             decodeInfo.hdrInfo.metadataType =
-                static_cast<CM_HDR_Metadata_Type>(PixelMap::ReadVarint(buff, cursor));
+                static_cast<CM_HDR_Metadata_Type>(ImageUtils::ReadVarint(buff, cursor));
             return true;
         }},
         {TLV_IMAGE_STATICMETADATA, [](TlvDecodeInfo& decodeInfo, vector<uint8_t>& buff, int32_t& cursor, int32_t len) {
@@ -3469,10 +3469,10 @@ static std::map<uint8_t, std::function<bool(TlvDecodeInfo&, vector<uint8_t>&, in
             return true;
         }},
         {TLV_IMAGE_CSM, [](TlvDecodeInfo& decodeInfo, vector<uint8_t>& buff, int32_t& cursor, int32_t len) {
-            decodeInfo.csm = PixelMap::ReadVarint(buff, cursor);
+            decodeInfo.csm = ImageUtils::ReadVarint(buff, cursor);
             return true;
         }},
-}
+};
 
 static std::map<uint8_t, bool> InitTlvReEntryCheckMap()
 {

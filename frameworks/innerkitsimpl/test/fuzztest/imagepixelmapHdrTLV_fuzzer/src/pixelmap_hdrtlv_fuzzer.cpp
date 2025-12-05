@@ -29,7 +29,6 @@
 constexpr uint32_t MAX_LENGTH_MODULO = 1024;
 constexpr uint32_t HDR_PIXELFORMAT_COUNT = 3;
 constexpr uint32_t MIN_DMA_SIZE = 512;
-constexpr uint32_t SUCCESS = 0;
 constexpr uint32_t PIXELFORMAT_MODULO = 8;
 constexpr uint32_t ALPHATYPE_MODULO = 4;
 constexpr uint32_t SCALEMODE_MODULO = 2;
@@ -64,7 +63,6 @@ T GetData()
 
 std::unique_ptr<Media::PixelMap> CreateDmaHdrPixelMap(const std::string& pathName)
 {
-    IMAGE_LOGI("%{public}s IN", __func__);
     SourceOptions srcOpts;
     uint32_t errorCode;
     auto imageSource = ImageSource::CreateImageSource(pathName, srcOpts, errorCode);
@@ -80,7 +78,6 @@ std::unique_ptr<Media::PixelMap> CreateDmaHdrPixelMap(const std::string& pathNam
     decodeOpts.desiredPixelFormat = hdrFormats[GetData<int32_t>() % HDR_PIXELFORMAT_COUNT];
     decodeOpts.desiredDynamicRange = DecodeDynamicRange::HDR;
     auto pixelMap = imageSource->CreatePixelMapEx(0, decodeOpts, errorCode);
-    IMAGE_LOGI("%{public}s SUCCESS", __func__);
     return pixelMap;
 }
 

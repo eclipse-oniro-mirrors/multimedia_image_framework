@@ -3800,7 +3800,7 @@ HWTEST_F(PixelMapTest, HdrPixelMapTlvTest002, TestSize.Level3)
     ASSERT_EQ(errorCode, SUCCESS);
     ASSERT_NE(imageSource.get(), nullptr);
 
-    DecodeOptions opts;
+    DecodeOptions optsPixel;
     optsPixel.desiredDynamicRange = Media::DecodeDynamicRange::HDR;
     optsPixel.desiredPixelFormat = PixelFormat::YCBCR_P010;
     std::unique_ptr<PixelMap> pixelMap = imageSource->CreatePixelMap(optsPixel, errorCode);
@@ -3834,7 +3834,7 @@ HWTEST_F(PixelMapTest, HdrPixelMapTlvTest003, TestSize.Level3)
     ASSERT_EQ(errorCode, SUCCESS);
     ASSERT_NE(imageSource.get(), nullptr);
 
-    DecodeOptions opts;
+    DecodeOptions optsPixel;
     optsPixel.desiredDynamicRange = Media::DecodeDynamicRange::HDR;
     optsPixel.desiredPixelFormat = PixelFormat::YCRCB_P010;
     std::unique_ptr<PixelMap> pixelMap = imageSource->CreatePixelMap(optsPixel, errorCode);

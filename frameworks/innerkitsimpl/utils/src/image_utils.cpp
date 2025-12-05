@@ -32,6 +32,7 @@
 #include "ios"
 #include "istream"
 #include "media_errors.h"
+#include "memory_manager.h"
 #include "new"
 #include "plugin_server.h"
 #include "singleton.h"
@@ -55,6 +56,8 @@
 #include "v1_0/cm_color_space.h"
 #include "v1_0/buffer_handle_meta_key_type.h"
 #include "metadata_helper.h"
+#include "v1_0/hdr_static_metadata.h"
+#include "vpe_utils.h"
 #else
 #include "refbase.h"
 #endif
@@ -1719,6 +1722,174 @@ bool ImageUtils::CheckPixelsInput(PixelMap* pixelMap, const RWPixelsOptions &opt
 bool ImageUtils::FloatEqual(float a, float b)
 {
     return std::fabs(a - b) < EPSILON;
+}
+
+void ImageUtils::WriteUint8(std::vector<uint8_t> &buff, uint8_t value)
+{
+    buff.push_back(value);
+}
+
+void ImageUtils::WriteVarint(std::vector<uint8_t> &buff, int32_t value)
+{
+    uint32_t uValue = uint32_t(value);
+    while (uValue > TLV_VARINT_MASK) {
+        buff.push_back(TLV_VARINT_MORE | uint8_t(uValue & TLV_VARINT_MASK));
+        uValue >>= TLV_VARINT_BITS;
+    }
+    buff.push_back(uint8_t(uValue));
+}
+
+uint8_t ImageUtils::GetVarintLen(int32_t value)
+{
+    uint32_t uValue = static_cast<uint32_t>(value);
+    uint8_t len = 1;
+    while (uValue > TLV_VARINT_MASK) {
+        len++;
+        uValue >>= TLV_VARINT_BITS;
+    }
+    return len;
+}
+
+void ImageUtils::TlvWriteSurfaceInfo(const PixelMap* pixelMap, vector<uint8_t>& buff)
+{
+    sptr<SurfaceBuffer> surfaceBuffer(reinterpret_cast<SurfaceBuffer*>(pixelMap->GetFd()));
+    CM_ColorSpaceType colorSpaceType;
+    if (VpeUtils::GetSbColorSpaceType(surfaceBuffer, colorSpaceType)) {
+        WriteUint8(buff, TLV_IMAGE_COLORTYPE);
+        WriteVarint(buff, GetVarintLen(static_cast<int32_t>(colorSpaceType)));
+        WriteVarint(buff, static_cast<int32_t>(colorSpaceType));
+    }
+    CM_HDR_Metadata_Type metadataType;
+    if (VpeUtils::GetSbMetadataType(surfaceBuffer, metadataType)) {
+        WriteUint8(buff, TLV_IMAGE_METADATATYPE);
+        WriteVarint(buff, GetVarintLen(static_cast<int32_t>(metadataType)));
+        WriteVarint(buff, static_cast<int32_t>(metadataType));
+    }
+    vector<uint8_t> staticMetadata;
+    if (VpeUtils::GetSbStaticMetadata(surfaceBuffer, staticMetadata)) {
+        WriteUint8(buff, TLV_IMAGE_STATICMETADATA);
+        WriteVarint(buff, static_cast<int32_t>(staticMetadata.size()));
+        buff.insert(buff.end(), staticMetadata.begin(), staticMetadata.end());
+    }
+    vector<uint8_t> dynamicMetadata;
+    if (VpeUtils::GetSbDynamicMetadata(surfaceBuffer, dynamicMetadata)) {
+        WriteUint8(buff, TLV_IMAGE_DYNAMICMETADATA);
+        WriteVarint(buff, static_cast<int32_t>(dynamicMetadata.size()));
+        buff.insert(buff.end(), dynamicMetadata.begin(), dynamicMetadata.end());
+    }
+}
+
+int32_t ImageUtils::ReadVarint(std::vector<uint8_t> &buff, int32_t &cursor)
+{
+    uint32_t value = 0;
+    uint8_t shift = 0;
+    uint32_t item = 0;
+    do {
+        if (static_cast<size_t>(cursor + 1) > buff.size()) {
+            IMAGE_LOGE("ReadVarint out of range");
+            return static_cast<int32_t>(TLV_END);
+        }
+        item = uint32_t(buff[cursor++]);
+        value |= (item & TLV_VARINT_MASK) << shift;
+        shift += TLV_VARINT_BITS;
+    } while ((item & TLV_VARINT_MORE) != 0);
+    return int32_t(value);
+}
+
+int32_t ImageUtils::AllocPixelMapMemory(std::unique_ptr<AbsMemory> &dstMemory, int32_t &dstRowStride,
+    const ImageInfo &dstImageInfo, const InitializationOptions &opts)
+{
+    int64_t rowDataSize = ImageUtils::GetRowDataSizeByPixelFormat(dstImageInfo.size.width, dstImageInfo.pixelFormat);
+    if (rowDataSize <= 0) {
+        IMAGE_LOGE("[PixelMap] AllocPixelMapMemory: Get row data size failed");
+        return -1;
+    }
+    int64_t bufferSize = rowDataSize * dstImageInfo.size.height;
+    if (bufferSize > UINT32_MAX) {
+        IMAGE_LOGE("[PixelMap]Create: pixelmap size too large: width = %{public}d, height = %{public}d",
+            dstImageInfo.size.width, dstImageInfo.size.height);
+        return -1;
+    }
+    if (IsYuvFormat(dstImageInfo.pixelFormat)) {
+        bufferSize = GetYUVByteCount(dstImageInfo);
+    }
+    MemoryData memoryData = {nullptr, static_cast<size_t>(bufferSize), "Create PixelMap", dstImageInfo.size,
+        dstImageInfo.pixelFormat};
+    AllocatorType allocType = opts.allocatorType == AllocatorType::DEFAULT ?
+        ImageUtils::GetPixelMapAllocatorType(dstImageInfo.size, dstImageInfo.pixelFormat, opts.useDMA) :
+        opts.allocatorType;
+    dstMemory = MemoryManager::CreateMemory(allocType, memoryData);
+    if (dstMemory == nullptr) {
+        IMAGE_LOGE("[PixelMap]Create: allocate memory failed");
+        return -1;
+    }
+
+    dstRowStride = dstImageInfo.size.width * ImageUtils::GetPixelBytes(dstImageInfo.pixelFormat);
+#if !defined(_WIN32) && !defined(_APPLE) && !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
+    if (dstMemory->GetType() == AllocatorType::DMA_ALLOC) {
+        SurfaceBuffer* sbBuffer = static_cast<SurfaceBuffer*>(dstMemory->extend.data);
+        if (sbBuffer == nullptr) {
+            IMAGE_LOGE("get SurfaceBuffer failed");
+            return -1;
+        }
+        dstRowStride = sbBuffer->GetStride();
+    }
+#endif
+
+    return SUCCESS;
+}
+
+std::unique_ptr<AbsMemory> ImageUtils::ReadData(std::vector<uint8_t> &buff, int32_t size, int32_t &cursor,
+    AllocatorType allocType, ImageInfo imageInfo)
+{
+    if (size <= 0 || static_cast<size_t>(size) > MAX_TLV_HEAP_SIZE) {
+        IMAGE_LOGE("[PixelMap] tlv read data fail: invalid size[%{public}d]", size);
+        return nullptr;
+    }
+    if (static_cast<size_t>(cursor + size) > buff.size()) {
+        IMAGE_LOGE("[PixelMap] ReadData out of range");
+        return nullptr;
+    }
+    std::unique_ptr<AbsMemory> dstMemory = nullptr;
+    int32_t dstRowStride = 0;
+    InitializationOptions opts;
+    opts.allocatorType = allocType;
+    int32_t errorCode = AllocPixelMapMemory(dstMemory, dstRowStride, imageInfo, opts);
+    if (dstMemory == nullptr || dstMemory->data.data == nullptr || errorCode != SUCCESS) {
+        IMAGE_LOGE("[PixelMap] tlv read data fail: alloc memory failed");
+        return nullptr;
+    }
+    uint8_t* addr = static_cast<uint8_t*>(dstMemory->data.data);
+    int32_t rowDataSize = ImageUtils::GetRowDataSizeByPixelFormat(imageInfo.size.width, imageInfo.pixelFormat);
+    uint8_t* srcAddr = buff.data() + cursor;
+
+    if (size != rowDataSize * imageInfo.size.height) {
+        IMAGE_LOGE("[PixelMap] tlv read data fail: alloc memory failed");
+        return nullptr;
+    }
+    if (allocType == AllocatorType::DMA_ALLOC) {
+        if (dstRowStride == 0 || dstRowStride < rowDataSize ||
+            size > static_cast<SurfaceBuffer*>(dstMemory->extend.data)->GetSize()) {
+                IMAGE_LOGE("[PixelMap] tlv check dma size failed");
+                return nullptr;
+        }
+        for (int i = 0; i < imageInfo.size.height; i++) {
+            if (memcpy_s(addr + i * dstRowStride, rowDataSize, srcAddr + i * rowDataSize, rowDataSize) != EOK) {
+                IMAGE_LOGE("[PixelMap] tlv copy dma data failed");
+                return nullptr;
+            }
+        }
+    } else {
+        if (rowDataSize != dstRowStride) {
+            IMAGE_LOGE("[PixelMap] tlv check heap size failed");
+            return nullptr;
+        }
+        if (memcpy_s(addr, size, srcAddr, size) != EOK) {
+            IMAGE_LOGE("[PixelMap] tlv copy heap data failed");
+            return nullptr;
+        }
+    }
+    return dstMemory;
 }
 } // namespace Media
 } // namespace OHOS
