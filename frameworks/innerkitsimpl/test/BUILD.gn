@@ -1321,6 +1321,7 @@ ohos_unittest("jpeg_hw_decoder_test") {
     "libjpeg-turbo:turbojpeg",
     "skia:libjpeg",
     "skia:skia_canvaskit",
+    "skia:piex",
   ]
   if (enable_heif_hw_decode) {
     defines += [ "HEIF_HW_DECODE_ENABLE" ]
