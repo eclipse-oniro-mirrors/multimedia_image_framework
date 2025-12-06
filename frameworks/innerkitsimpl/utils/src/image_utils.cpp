@@ -1752,6 +1752,7 @@ uint8_t ImageUtils::GetVarintLen(int32_t value)
 
 void ImageUtils::TlvWriteSurfaceInfo(const PixelMap* pixelMap, vector<uint8_t>& buff)
 {
+#if !defined(_WIN32) && !defined(_APPLE) && !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
     sptr<SurfaceBuffer> surfaceBuffer(reinterpret_cast<SurfaceBuffer*>(pixelMap->GetFd()));
     CM_ColorSpaceType colorSpaceType;
     if (VpeUtils::GetSbColorSpaceType(surfaceBuffer, colorSpaceType)) {
@@ -1777,6 +1778,8 @@ void ImageUtils::TlvWriteSurfaceInfo(const PixelMap* pixelMap, vector<uint8_t>& 
         WriteVarint(buff, static_cast<int32_t>(dynamicMetadata.size()));
         buff.insert(buff.end(), dynamicMetadata.begin(), dynamicMetadata.end());
     }
+#endif
+    return;
 }
 
 int32_t ImageUtils::ReadVarint(std::vector<uint8_t> &buff, int32_t &cursor)
@@ -1835,7 +1838,6 @@ int32_t ImageUtils::AllocPixelMapMemory(std::unique_ptr<AbsMemory> &dstMemory, i
         dstRowStride = sbBuffer->GetStride();
     }
 #endif
-
     return SUCCESS;
 }
 
@@ -1869,7 +1871,7 @@ std::unique_ptr<AbsMemory> ImageUtils::ReadData(std::vector<uint8_t> &buff, int3
     }
     if (allocType == AllocatorType::DMA_ALLOC) {
         if (dstRowStride == 0 || dstRowStride < rowDataSize ||
-            size > static_cast<SurfaceBuffer*>(dstMemory->extend.data)->GetSize()) {
+            static_cast<uint32_t>(size) > static_cast<SurfaceBuffer*>(dstMemory->extend.data)->GetSize()) {
                 IMAGE_LOGE("[PixelMap] tlv check dma size failed");
                 return nullptr;
         }

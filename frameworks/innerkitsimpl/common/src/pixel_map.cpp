@@ -3264,6 +3264,7 @@ std::unique_ptr<AbsMemory> PixelMap::ReadData(std::vector<uint8_t> &buff, int32_
 
 void PixelMap::TlvWriteSurfaceInfo(const PixelMap* pixelMap, vector<uint8_t>& buff) const
 {
+#if !defined(_WIN32) && !defined(_APPLE) && !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
     sptr<SurfaceBuffer> surfaceBuffer(reinterpret_cast<SurfaceBuffer*>(pixelMap->GetFd()));
     CM_ColorSpaceType colorSpaceType;
     if (VpeUtils::GetSbColorSpaceType(surfaceBuffer, colorSpaceType)) {
@@ -3289,6 +3290,30 @@ void PixelMap::TlvWriteSurfaceInfo(const PixelMap* pixelMap, vector<uint8_t>& bu
         ImageUtils::WriteVarint(buff, static_cast<int32_t>(dynamicMetadata.size()));
         buff.insert(buff.end(), dynamicMetadata.begin(), dynamicMetadata.end());
     }
+#endif
+    return;
+}
+
+static bool EncodeTlvHdrInfo(std::vector<uint8_t> &buff, AllocatorType allocatorType, PixelMap* pixelMap)
+{
+    if (pixelMap == nullptr) {
+        return false;
+    }
+#if !defined(_WIN32) && !defined(_APPLE) && !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
+    if (allocatorType == AllocatorType::DMA_ALLOC && pixelMap->IsHdr() &&
+        pixelMap->InnerGetGrColorSpacePtr() != nullptr) {
+        ImageUtils::WriteUint8(buff, TLV_IMAGE_HDR);
+        ImageUtils::WriteVarint(buff, NUM_1);
+        ImageUtils::WriteVarint(buff, NUM_1);
+        ImageUtils::TlvWriteSurfaceInfo(pixelMap, buff);
+        int32_t csm = static_cast<int32_t>(pixelMap->InnerGetGrColorSpacePtr()->GetColorSpaceName());
+        ImageUtils::WriteUint8(buff, TLV_IMAGE_CSM);
+        ImageUtils::WriteVarint(buff, ImageUtils::GetVarintLen(csm));
+        ImageUtils::WriteVarint(buff, csm);
+    }
+    return true;
+#endif
+    return true;
 }
 
 bool PixelMap::EncodeTlv(std::vector<uint8_t> &buff) const
@@ -3315,26 +3340,16 @@ bool PixelMap::EncodeTlv(std::vector<uint8_t> &buff) const
     ImageUtils::WriteUint8(buff, TLV_IMAGE_BASEDENSITY);
     ImageUtils::WriteVarint(buff, ImageUtils::GetVarintLen(imageInfo_.baseDensity));
     ImageUtils::WriteVarint(buff, imageInfo_.baseDensity);
-    AllocatorType tmpAllocatorType = AllocatorType::HEAP_ALLOC;
-    if (allocatorType_ == AllocatorType::DMA_ALLOC && const_cast<PixelMap*>(this)->IsHdr() &&
-        grColorSpace_ != nullptr) {
-        ImageUtils::WriteUint8(buff, TLV_IMAGE_HDR);
-        ImageUtils::WriteVarint(buff, NUM_1);
-        ImageUtils::WriteVarint(buff, NUM_1);
-        ImageUtils::TlvWriteSurfaceInfo(this, buff);
-        int32_t csm = static_cast<int32_t>(grColorSpace_->GetColorSpaceName());
-        ImageUtils::WriteUint8(buff, TLV_IMAGE_CSM);
-        ImageUtils::WriteVarint(buff, ImageUtils::GetVarintLen(csm));
-        ImageUtils::WriteVarint(buff, csm);
-        tmpAllocatorType = allocatorType_;
+    if (!EncodeTlvHdrInfo(buff, allocatorType_, const_cast<PixelMap*>(this))) {
+        return false;
     }
+    AllocatorType tmpAllocatorType = AllocatorType::HEAP_ALLOC;
     ImageUtils::WriteUint8(buff, TLV_IMAGE_ALLOCATORTYPE);
     ImageUtils::WriteVarint(buff, ImageUtils::GetVarintLen(static_cast<int32_t>(tmpAllocatorType)));
     ImageUtils::WriteVarint(buff, static_cast<int32_t>(tmpAllocatorType));
     ImageUtils::WriteUint8(buff, TLV_IMAGE_DATA);
     uint64_t dataSize = static_cast<uint64_t>(rowDataSize_) * static_cast<uint64_t>(imageInfo_.size.height);
-    if (isUnMap_ || data_ == nullptr || dataSize > MAX_IMAGEDATA_SIZE ||
-        dataSize > static_cast<uint64_t>(pixelsSize_)) {
+    if (isUnMap_ || data_ == nullptr || dataSize > MAX_IMAGEDATA_SIZE) {
         ImageUtils::WriteVarint(buff, 0); // L is zero and no value
         ImageUtils::WriteUint8(buff, TLV_END); // end tag
         IMAGE_LOGE("[PixelMap] tlv encode fail: no data or invalid dataSize, isUnMap %{public}d", isUnMap_);
@@ -3347,13 +3362,15 @@ bool PixelMap::EncodeTlv(std::vector<uint8_t> &buff) const
 }
 
 struct HdrInfo {
+#if !defined(_WIN32) && !defined(_APPLE) && !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
     CM_ColorSpaceType colorSpaceType;
     CM_HDR_Metadata_Type metadataType;
     vector<uint8_t> staticMetadata;
     vector<uint8_t> dynamicMetadata;
+#endif
 };
 
-static bool CheckTlvImageInfo(const ImageInfo &info, std::unique_ptr<AbsMemory>& dstMemory, 
+static bool CheckTlvImageInfo(const ImageInfo &info, std::unique_ptr<AbsMemory>& dstMemory,
     bool isHdr, const HdrInfo& hdrInfo, int32_t& csm)
 {
     if (info.size.width <= 0 || info.size.height <= 0 || dstMemory == nullptr || dstMemory->data.data == nullptr) {
@@ -3362,6 +3379,7 @@ static bool CheckTlvImageInfo(const ImageInfo &info, std::unique_ptr<AbsMemory>&
     if (!isHdr && csm == -1 && dstMemory->GetType() == AllocatorType::HEAP_ALLOC) {
         return true;
     }
+#if !defined(_WIN32) && !defined(_APPLE) && !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
     if (isHdr && csm != -1 && dstMemory->GetType() == AllocatorType::DMA_ALLOC) {
         sptr<SurfaceBuffer> sbBuffer(static_cast<SurfaceBuffer*>(dstMemory->extend.data));
         if (!VpeUtils::SetSbColorSpaceType(sbBuffer, hdrInfo.colorSpaceType)) {
@@ -3382,6 +3400,7 @@ static bool CheckTlvImageInfo(const ImageInfo &info, std::unique_ptr<AbsMemory>&
         }
         return true;
     }
+#endif
     IMAGE_LOGE("[PixelMap] tlv data invalid");
     return false;
 }
@@ -3427,9 +3446,12 @@ static std::map<uint8_t, std::function<bool(TlvDecodeInfo&, vector<uint8_t>&, in
         }},
         {TLV_IMAGE_ALLOCATORTYPE, [](TlvDecodeInfo& decodeInfo, vector<uint8_t>& buff, int32_t& cursor, int32_t len) {
             decodeInfo.allocType = ImageUtils::ReadVarint(buff, cursor);
-            if (decodeInfo.allocType != NUM_4 && decodeInfo.allocType != NUM_1) {
+            if (decodeInfo.allocType != NUM_1) {
                 IMAGE_LOGE("[PixelMap] tlv decode invalid allocatorType: %{public}d", decodeInfo.allocType);
                 return false;
+            }
+            if (decodeInfo.isHdr == NUM_1) {
+                decodeInfo.allocType = static_cast<int32_t>(AllocatorType::DMA_ALLOC);
             }
             return true;
         }},
@@ -3442,6 +3464,7 @@ static std::map<uint8_t, std::function<bool(TlvDecodeInfo&, vector<uint8_t>&, in
             }
             return true;
         }},
+#if !defined(_WIN32) && !defined(_APPLE) && !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
         {TLV_IMAGE_HDR, [](TlvDecodeInfo& decodeInfo, vector<uint8_t>& buff, int32_t& cursor, int32_t len) {
             decodeInfo.isHdr = ImageUtils::ReadVarint(buff, cursor);
             return true;
@@ -3472,6 +3495,7 @@ static std::map<uint8_t, std::function<bool(TlvDecodeInfo&, vector<uint8_t>&, in
             decodeInfo.csm = ImageUtils::ReadVarint(buff, cursor);
             return true;
         }},
+#endif
 };
 
 static std::map<uint8_t, bool> InitTlvReEntryCheckMap()
