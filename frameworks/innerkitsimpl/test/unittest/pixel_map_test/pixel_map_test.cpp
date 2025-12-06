@@ -63,6 +63,8 @@ constexpr uint32_t SIZE_HEIGHT = 2;
 constexpr uint32_t SIZE_MAX_WIDTH = 61440;
 constexpr uint32_t SIZE_MAX_HEIGHT = 61440;
 const static std::string EXIF_JPEG_PATH = "/data/local/tmp/image/test_exif.jpg";
+static const std::string IMAGE_INPUT_JPEG_HDR_PATH = "/data/local/tmp/image/hdr.jpg";
+static const std::string IMAGE_INPUT_JPEG_HDR_MEDIA_TYPE_PATH = "/data/local/tmp/image/hdr_media_type_test.jpg";
 
 struct ImageSize {
     int32_t width = 0;
@@ -3746,6 +3748,190 @@ HWTEST_F(PixelMapTest, SetInitializationOptionAboutAllocator001, TestSize.Level3
     EXPECT_EQ(false, ImageUtils::SetInitializationOptionAllocatorType(opts,
         static_cast<int32_t>(AllocatorType::SHARE_MEM_ALLOC)));
     GTEST_LOG_(INFO) << "PixelMapTest: SetInitializationOptionAboutAllocator001 end";
+}
+
+/**
+ * @tc.name: HdrPixelMapTlvTest001
+ * @tc.desc: Test HdrPixelMapTlv
+ * @tc.type: FUNC
+ */
+HWTEST_F(PixelMapTest, HdrPixelMapTlvTest001, TestSize.Level3)
+{
+    uint32_t errorCode = 0;
+    SourceOptions opts;
+    std::unique_ptr<ImageSource> imageSource =
+        ImageSource::CreateImageSource(IMAGE_INPUT_JPEG_HDR_PATH, opts, errorCode);
+    ASSERT_EQ(errorCode, SUCCESS);
+    ASSERT_NE(imageSource.get(), nullptr);
+
+    uint32_t index = 0;
+    DecodeOptions optsPixel;
+    optsPixel.desiredDynamicRange = Media::DecodeDynamicRange::AUTO;
+    errorCode = 0;
+    std::unique_ptr<PixelMap> pixelMap = imageSource->CreatePixelMap(index, optsPixel, errorCode);
+    ASSERT_EQ(errorCode, SUCCESS);
+    ASSERT_NE(pixelMap.get(), nullptr);
+
+    bool isHdr = pixelMap->IsHdr();
+#ifdef IMAGE_COLORSPACE_FLAG
+    ASSERT_EQ(isHdr, true);
+    vector<uint8_t> buff;
+    ASSERT_EQ(pixelMap->EncodeTlv(buff), true);
+    std::unique_ptr<PixelMap> hdrPixelMap(PixelMap::DecodeTlv(buff));
+
+    ASSERT_NE(hdrPixelMap, nullptr);
+    ASSERT_EQ(hdrPixelMap->IsHdr(), true);
+#else
+    ASSERT_EQ(isHdr, false);
+#endif
+}
+
+/**
+ * @tc.name: HdrPixelMapTlvTest002
+ * @tc.desc: Test HdrPixelMapTlv
+ * @tc.type: FUNC
+ */
+HWTEST_F(PixelMapTest, HdrPixelMapTlvTest002, TestSize.Level3)
+{
+    uint32_t errorCode = 0;
+    SourceOptions opts;
+    std::unique_ptr<ImageSource> imageSource =
+        ImageSource::CreateImageSource(IMAGE_INPUT_JPEG_HDR_MEDIA_TYPE_PATH, opts, errorCode);
+    ASSERT_EQ(errorCode, SUCCESS);
+    ASSERT_NE(imageSource.get(), nullptr);
+
+    DecodeOptions optsPixel;
+    optsPixel.desiredDynamicRange = Media::DecodeDynamicRange::HDR;
+    optsPixel.desiredPixelFormat = PixelFormat::YCBCR_P010;
+    std::unique_ptr<PixelMap> pixelMap = imageSource->CreatePixelMap(optsPixel, errorCode);
+    ASSERT_NE(pixelMap, nullptr);
+
+    bool isHdr = pixelMap->IsHdr();
+#ifdef IMAGE_COLORSPACE_FLAG
+    ASSERT_EQ(isHdr, true);
+    vector<uint8_t> buff;
+    ASSERT_EQ(pixelMap->EncodeTlv(buff), true);
+    std::unique_ptr<PixelMap> hdrPixelMap(PixelMap::DecodeTlv(buff));
+
+    ASSERT_NE(hdrPixelMap, nullptr);
+    ASSERT_EQ(hdrPixelMap->IsHdr(), true);
+#else
+    ASSERT_EQ(isHdr, false);
+#endif
+}
+
+/**
+ * @tc.name: HdrPixelMapTlvTest003
+ * @tc.desc: Test HdrPixelMapTlv
+ * @tc.type: FUNC
+ */
+HWTEST_F(PixelMapTest, HdrPixelMapTlvTest003, TestSize.Level3)
+{
+    uint32_t errorCode = 0;
+    SourceOptions opts;
+    std::unique_ptr<ImageSource> imageSource =
+        ImageSource::CreateImageSource(IMAGE_INPUT_JPEG_HDR_MEDIA_TYPE_PATH, opts, errorCode);
+    ASSERT_EQ(errorCode, SUCCESS);
+    ASSERT_NE(imageSource.get(), nullptr);
+
+    DecodeOptions optsPixel;
+    optsPixel.desiredDynamicRange = Media::DecodeDynamicRange::HDR;
+    optsPixel.desiredPixelFormat = PixelFormat::YCRCB_P010;
+    std::unique_ptr<PixelMap> pixelMap = imageSource->CreatePixelMap(optsPixel, errorCode);
+    ASSERT_NE(pixelMap, nullptr);
+
+    bool isHdr = pixelMap->IsHdr();
+#ifdef IMAGE_COLORSPACE_FLAG
+    ASSERT_EQ(isHdr, true);
+    vector<uint8_t> buff;
+    ASSERT_EQ(pixelMap->EncodeTlv(buff), true);
+    std::unique_ptr<PixelMap> hdrPixelMap(PixelMap::DecodeTlv(buff));
+
+    ASSERT_NE(hdrPixelMap, nullptr);
+    ASSERT_EQ(hdrPixelMap->IsHdr(), true);
+#else
+    ASSERT_EQ(isHdr, false);
+#endif
+}
+
+/**
+ * @tc.name: HdrPixelMapTlvTest004
+ * @tc.desc: Test HdrPixelMapTlv
+ * @tc.type: FUNC
+ */
+HWTEST_F(PixelMapTest, HdrPixelMapTlvTest004, TestSize.Level3)
+{
+    uint32_t errorCode = 0;
+    SourceOptions opts;
+    std::unique_ptr<ImageSource> imageSource =
+        ImageSource::CreateImageSource(IMAGE_INPUT_JPEG_HDR_PATH, opts, errorCode);
+    ASSERT_EQ(errorCode, SUCCESS);
+    ASSERT_NE(imageSource.get(), nullptr);
+
+    uint32_t index = 0;
+    DecodeOptions optsPixel;
+    optsPixel.desiredDynamicRange = Media::DecodeDynamicRange::AUTO;
+    errorCode = 0;
+    std::unique_ptr<PixelMap> pixelMap = imageSource->CreatePixelMap(index, optsPixel, errorCode);
+    ASSERT_EQ(errorCode, SUCCESS);
+    ASSERT_NE(pixelMap.get(), nullptr);
+    vector<uint8_t> buff;
+    ASSERT_EQ(pixelMap->EncodeTlv(buff), true);
+    std::unique_ptr<PixelMap> hdrPixelMap(PixelMap::DecodeTlv(buff));
+    ASSERT_NE(hdrPixelMap, nullptr);
+    ASSERT_EQ(hdrPixelMap->GetAllocatorType(), pixelMap->GetAllocatorType());
+}
+
+/**
+ * @tc.name: HdrPixelMapTlvTest005
+ * @tc.desc: Test PixelMapTlv
+ * @tc.type: FUNC
+ */
+HWTEST_F(PixelMapTest, HdrPixelMapTlvTest005, TestSize.Level3)
+{
+    InitializationOptions opts;
+    opts.size.width = 512;
+    opts.size.height = 512;
+    opts.pixelFormat = PixelFormat::RGBA_8888;
+    std::unique_ptr<PixelMap> pixelMap = PixelMap::Create(opts);
+    ASSERT_NE(pixelMap, nullptr);
+    vector<uint8_t> buff;
+    ASSERT_EQ(pixelMap->EncodeTlv(buff), true);
+    std::unique_ptr<PixelMap> tlvPixelMap(PixelMap::DecodeTlv(buff));
+    ASSERT_NE(tlvPixelMap, nullptr);
+    ASSERT_NE(tlvPixelMap->GetAllocatorType(), pixelMap->GetAllocatorType());
+    ASSERT_EQ(tlvPixelMap->GetAllocatorType(), AllocatorType::HEAP_ALLOC);
+}
+
+/**
+ * @tc.name: HdrPixelMapTlvTest006
+ * @tc.desc: Test HdrPixelMapTlvTest
+ * @tc.type: FUNC
+ */
+HWTEST_F(PixelMapTest, HdrPixelMapTlvTest006, TestSize.Level3)
+{
+    PixelMap srcPixelMap;
+    ImageInfo imageInfo;
+    imageInfo.size.width = 200;
+    imageInfo.size.height = 300;
+    imageInfo.pixelFormat = PixelFormat::ARGB_8888;
+    imageInfo.colorSpace = ColorSpace::SRGB;
+    srcPixelMap.SetImageInfo(imageInfo);
+    int32_t rowDataSize = 200 * 4;
+    uint32_t bufferSize = rowDataSize * 300;
+    void *buffer = malloc(bufferSize);
+    char *ch = static_cast<char *>(buffer);
+    for (unsigned int i = 0; i < bufferSize; i++) {
+        *(ch++) = (char)i;
+    }
+    srcPixelMap.SetPixelsAddr(buffer, nullptr, bufferSize, AllocatorType::HEAP_ALLOC, nullptr);
+
+    vector<uint8_t> buff;
+    ASSERT_EQ(srcPixelMap.EncodeTlv(buff), true);
+    std::unique_ptr<PixelMap> tlvPixelMap(PixelMap::DecodeTlv(buff));
+    ASSERT_NE(tlvPixelMap, nullptr);
+    ASSERT_EQ(tlvPixelMap->GetAllocatorType(), AllocatorType::HEAP_ALLOC);
+    ASSERT_EQ(tlvPixelMap->GetAllocatorType(), srcPixelMap.GetAllocatorType());
 }
 }
 }
