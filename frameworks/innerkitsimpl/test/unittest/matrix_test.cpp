@@ -18,6 +18,7 @@
 #include "image_type.h"
 #include "matrix.h"
 
+#define INITIAL_POINT_VALUE 0.0f
 using namespace testing::ext;
 using namespace OHOS::Media;
 namespace OHOS {
@@ -579,12 +580,12 @@ HWTEST_F(MatrixTest, SetTranslateAndScaleTranslateBranchTest001, TestSize.Level3
 HWTEST_F(MatrixTest, RotXYExecutionTest001, TestSize.Level3)
 {
     GTEST_LOG_(INFO) << "MatrixTest: RotXYExecutionTest001 start";
-    
+
     Matrix matrix;
     Point pt;
-    pt.x = 0.0f;
-    pt.y = 0.0f;
-    
+    pt.x = INITIAL_POINT_VALUE;
+    pt.y = INITIAL_POINT_VALUE;
+
     matrix.operType_ = 0x04;
     matrix.fMat_[IMAGE_SCALEX] = 2.0f;
     matrix.fMat_[IMAGE_SCALEY] = 2.0f;
@@ -592,15 +593,15 @@ HWTEST_F(MatrixTest, RotXYExecutionTest001, TestSize.Level3)
     matrix.fMat_[IMAGE_SKEWY] = 0.0f;
     matrix.fMat_[IMAGE_TRANSX] = 1.0f;
     matrix.fMat_[IMAGE_TRANSY] = 1.0f;
-    
+
     Matrix::RotXY(matrix, 3.0f, 4.0f, pt);
     ASSERT_EQ(pt.x, 7.0f);
     ASSERT_EQ(pt.y, 9.0f);
-    
+
     matrix.operType_ = 0x01;
-    pt.x = 0.0f;
-    pt.y = 0.0f;
-    
+    pt.x = INITIAL_POINT_VALUE;
+    pt.y = INITIAL_POINT_VALUE;
+
     Matrix::RotXY(matrix, 5.0f, 6.0f, pt);
     ASSERT_EQ(pt.x, 0.0f);
     ASSERT_EQ(pt.y, 0.0f);
