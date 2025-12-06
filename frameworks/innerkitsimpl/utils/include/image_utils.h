@@ -33,9 +33,30 @@ namespace OHOS {
 namespace Media {
 const std::string IMAGE_ENCODE_FORMAT = "encodeFormat";
 constexpr uint32_t MALLOC_MAX_LENTH = 0x40000000;
+constexpr uint32_t MAX_TLV_HEAP_SIZE = 128 * 1021 * 1024;
 constexpr int32_t APIVERSION_13 = 13;
 constexpr int32_t APIVERSION_20 = 20;
+static constexpr uint8_t TLV_VARINT_BITS = 7;
+static constexpr uint8_t TLV_VARINT_MASK = 0x7F;
+static constexpr uint8_t TLV_VARINT_MORE = 0x80;
+static constexpr uint8_t TLV_END = 0x00;
+static constexpr uint8_t TLV_IMAGE_WIDTH = 0x01;
+static constexpr uint8_t TLV_IMAGE_HEIGHT = 0x02;
+static constexpr uint8_t TLV_IMAGE_PIXELFORMAT = 0x03;
+static constexpr uint8_t TLV_IMAGE_COLORSPACE = 0x04;
+static constexpr uint8_t TLV_IMAGE_ALPHATYPE = 0x05;
+static constexpr uint8_t TLV_IMAGE_BASEDENSITY = 0x06;
+static constexpr uint8_t TLV_IMAGE_ALLOCATORTYPE = 0x07;
+static constexpr uint8_t TLV_IMAGE_DATA = 0x08;
+static constexpr uint8_t TLV_IMAGE_HDR = 0x09;
+static constexpr uint8_t TLV_IMAGE_COLORTYPE = 0x0A;
+static constexpr uint8_t TLV_IMAGE_METADATATYPE = 0x0B;
+static constexpr uint8_t TLV_IMAGE_STATICMETADATA = 0x11;
+static constexpr uint8_t TLV_IMAGE_DYNAMICMETADATA = 0x12;
+static constexpr uint8_t TLV_IMAGE_CSM = 0x1F;
+
 class PixelMap;
+class AbsMemory;
 struct RWPixelsOptions;
 struct InitializationOptions;
 
@@ -174,6 +195,15 @@ public:
     static uint16_t GetRGBA1010102ColorA(uint32_t color);
     static bool CheckPixelsInput(PixelMap* pixelMap, const RWPixelsOptions &opts);
     static bool FloatEqual(float a, float b);
+    static int32_t ReadVarint(std::vector<uint8_t> &buff, int32_t &cursor);
+    static std::unique_ptr<AbsMemory> ReadData(std::vector<uint8_t> &buff, int32_t size, int32_t &cursor,
+        AllocatorType allocType, ImageInfo imageInfo);
+    static int32_t AllocPixelMapMemory(std::unique_ptr<AbsMemory> &dstMemory, int32_t &dstRowStride,
+        const ImageInfo &dstImageInfo, const InitializationOptions &opts);
+    static void TlvWriteSurfaceInfo(const PixelMap* pixelMap, std::vector<uint8_t>& buff);
+    static uint8_t GetVarintLen(int32_t value);
+    static void WriteVarint(std::vector<uint8_t> &buff, int32_t value);
+    static void WriteUint8(std::vector<uint8_t> &buff, uint8_t value);
 #if !defined(CROSS_PLATFORM)
     static void FlushSurfaceBuffer(sptr<SurfaceBuffer>& surfaceBuffer);
 #endif

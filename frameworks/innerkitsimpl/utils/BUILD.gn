@@ -80,6 +80,7 @@ if (use_clang_ios) {
     sources = [
       "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/utils/src/image_trace.cpp",
       "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/utils/src/image_utils.cpp",
+      "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/common/src/memory_manager.cpp",
       "src/color_utils.cpp",
       "src/image_convert_tools.cpp",
       "src/image_system_properties.cpp",
