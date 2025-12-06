@@ -1691,7 +1691,7 @@ bool HeifDecoderImpl::HasDecodedFrame(uint32_t index)
     return params_.count(index) != 0;
 }
 
-bool HeifDecoderImpl::AllocateBufferSize(HevcSoftDecodeParam &param, const HevcSoftDecodeParam &refParam)
+bool HeifDecoderImpl::AllocateBufferSize(HevcSoftDecodeParam &param)
 {
     uint64_t num = params_.size() + FRAME_INDEX;
     uint64_t curBufferSize = dstBufferSize_ * num;
