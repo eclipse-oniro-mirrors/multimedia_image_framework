@@ -2195,6 +2195,73 @@ ohos_unittest("imagedfxtest"){
   ]
 }
 
+ohos_unittest("heifs_decode_test") {
+  module_out_path = module_output_path
+
+  defines = []
+  sources = [
+    "unittest/heifs_decode_test/heifs_decode_test.cpp",
+  ]
+
+  include_dirs = [
+    "${image_subsystem}/frameworks/innerkitsimpl/test/unittest/mock/",
+    "${image_subsystem}/frameworks/innerkitsimpl/utils/include/",
+    "${image_subsystem}/plugins/common/libs/image/libextplugin/include/",
+    "${image_subsystem}/plugins/manager/include/",
+    "${image_subsystem}/plugins/manager/include/pluginbase/",
+    "${image_subsystem}/interfaces/innerkits/include/",
+    "${image_subsystem}/plugins/common/libs/image/libextplugin/include/heif_impl/",
+    "${image_subsystem}/plugins/common/libs/image/libextplugin/include/heif_impl/heif_parser/box",
+  ]
+
+  deps = [
+    "${image_subsystem}/frameworks/innerkitsimpl/utils:image_utils",
+    "${image_subsystem}/interfaces/innerkits:image_native",
+    "${image_subsystem}/plugins/common/libs/image/libextplugin:extplugin",
+    "${image_subsystem}/plugins/common/libs/image/libextplugin:heifparser",
+  ]
+
+  external_deps = [
+    "c_utils:utils",
+    "drivers_interface_codec:libimage_proxy_2.1",
+    "drivers_interface_display:libdisplay_buffer_hdi_impl",
+    "drivers_interface_display:libdisplay_buffer_proxy_1.0",
+    "drivers_interface_display:libdisplay_composer_hdi_impl_1.3",
+    "drivers_interface_display:libdisplay_composer_proxy_1.0",
+    "googletest:gtest_main",
+    "graphic_surface:surface",
+    "hdf_core:libhdf_utils",
+    "hdf_core:libhdi",
+    "hilog:libhilog",
+    "ipc:ipc_single",
+    "libexif:libexif",
+    "libjpeg-turbo:turbojpeg",
+    "skia:libjpeg",
+    "skia:skia_canvaskit",
+  ]
+  if (enable_heif_hw_decode) {
+    defines += [ "HEIF_HW_DECODE_ENABLE" ]
+    deps += [ "${image_subsystem}/plugins/common/libs/image/libextplugin:heifimpl" ]
+    external_deps += [
+      "drivers_interface_codec:libcodec_proxy_4.0",
+      "ffmpeg:libohosffmpeg",
+      "ffrt:libffrt",
+      "graphic_2d:color_manager",
+      "hitrace:hitrace_meter",
+      "init:libbegetutil",
+      "ipc:ipc_core",
+      "openmax:libopenmax_static",
+      "qos_manager:qos",
+    ]
+  }
+  resource_config_file = "$image_subsystem/test/resource/image/ohos_test.xml"
+  cflags = [
+    "-Dprivate=public",
+    "-DIMAGE_COLORSPACE_FLAG",
+    "-Dprotected=public",
+  ]
+}
+
 ################################################
 group("unittest") {
   testonly = true
@@ -2264,6 +2331,7 @@ group("unittest") {
     deps += [
       ":heif_decode_impl_test",
       ":heifyuvtest",
+      ":heifs_decode_test",
     ]
   }
 
