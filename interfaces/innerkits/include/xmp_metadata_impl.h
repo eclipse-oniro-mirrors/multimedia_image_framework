@@ -54,11 +54,6 @@ public:
         xmpMeta_->DeleteProperty(schemaNS, propName);
     }
 
-    int32_t CountArrayItems(const char *schemaNS, const char *arrayPath)
-    {
-        return xmpMeta_->CountArrayItems(schemaNS, arrayPath);
-    }
-
     void ParseFromBuffer(const char *buffer, uint32_t size)
     {
         return xmpMeta_->ParseFromBuffer(buffer, size);

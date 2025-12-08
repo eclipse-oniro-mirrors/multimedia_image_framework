@@ -43,7 +43,6 @@ private:
     static napi_value SetTag(napi_env env, napi_callback_info info);
     static napi_value GetTag(napi_env env, napi_callback_info info);
     static napi_value RemoveTag(napi_env env, napi_callback_info info);
-    static napi_value CountArrayItems(napi_env env, napi_callback_info info);
     static napi_value RegisterNamespacePrefix(napi_env env, napi_callback_info info);
     static napi_value EnumerateTags(napi_env env, napi_callback_info info);
 

@@ -301,18 +301,6 @@ void XMPMetadata::EnumerateTags(EnumerateCallback callback, const std::string &r
     }
 }
 
-int32_t XMPMetadata::CountArrayItems(const std::string &arrayPath)
-{
-    CHECK_ERROR_RETURN_RET_LOG(!impl_ || !impl_->IsValid(), 0,
-        "%{public}s impl is null for path: %{public}s", __func__, arrayPath.c_str());
-
-    const auto &[prefix, propName] = XMPHelper::SplitOnce(arrayPath, COLON);
-    std::string namespaceUri;
-    CHECK_ERROR_RETURN_RET_LOG(!SXMPMeta::GetNamespaceURI(prefix.c_str(), &namespaceUri), 0,
-        "%{public}s failed to get namespace URI for prefix: %{public}s", __func__, prefix.c_str());
-    return impl_->CountArrayItems(namespaceUri.c_str(), propName.c_str());
-}
-
 uint32_t XMPMetadata::GetBlob(uint32_t bufferSize, uint8_t *dst)
 {
     CHECK_ERROR_RETURN_RET_LOG(!impl_ || !impl_->IsValid(), ERR_MEDIA_NULL_POINTER,

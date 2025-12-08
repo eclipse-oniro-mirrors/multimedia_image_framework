@@ -52,7 +52,6 @@ public:
     // Enumerate all tags, optionally starting from a specific path
     // options parameter controls the behavior of the enumeration
     void EnumerateTags(EnumerateCallback callback, const std::string &rootPath, XMPEnumerateOption options);
-    int32_t CountArrayItems(const std::string &arrayPath);
     uint32_t GetBlob(uint32_t bufferSize, uint8_t *dst);
     uint32_t SetBlob(const uint8_t *source, const uint32_t bufferSize);
 
