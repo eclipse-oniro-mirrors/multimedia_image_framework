@@ -15,6 +15,7 @@
 
 #include <gtest/gtest.h>
 #include <memory>
+#include <securec.h>
 #define private public
 #include "libexif/exif-tag.h"
 #include "media_errors.h"
@@ -45,6 +46,9 @@ static const std::string IMAGE_INPUT_JPEG_HW_PATH = "/data/local/tmp/image/test_
 static const std::string IMAGE_INPUT_JPEG_RM_ENTRY_PATH = "/data/local/tmp/image/test_entrys.jpg";
 static const char HUAWEI_HEADER[] = { 'H', 'U', 'A', 'W', 'E', 'I', '\0', '\0'};
 static const std::string MAKER_NOTE_TAG = "MakerNote";
+static const uint32_t TAG_VALUE_SIZE = 1024;
+static const uint32_t MAX_TAG_VALUE_SIZE_FOR_STR = 64 * 1024;
+static const uint32_t TERMINATOR_SIZE = 1;
 
 class ExifMetadataTest : public testing::Test {
 public:
@@ -2132,6 +2136,321 @@ HWTEST_F(ExifMetadataTest, SetCommonValueUnsupportedFormatTest001, TestSize.Leve
     bool result = metadata.SetCommonValue("ImageWidth", std::to_string(TEST_IMAGE_WIDTH_VALUE));
     ASSERT_FALSE(result);
     exif_data_unref(exifData);
+}
+
+/**
+ * @tc.name: GetBlobSizeTest001
+ * @tc.desc: Verify GetBlobSize returns correct size for null and initialized metadata.
+ * @tc.type: FUNC
+ */
+HWTEST_F(ExifMetadataTest, GetBlobSizeTest001, TestSize.Level3)
+{
+    ExifMetadata nullMeta(nullptr);
+    EXPECT_EQ(0, nullMeta.GetBlobSize());
+    ExifData* validExif = exif_data_new();
+    ASSERT_NE(validExif, nullptr);
+    ExifMetadata validMeta(validExif);
+
+    exif_data_set_option(validExif, EXIF_DATA_OPTION_FOLLOW_SPECIFICATION);
+    ExifEntry* entry = exif_entry_new();
+    exif_content_add_entry(validExif->ifd[EXIF_IFD_0], entry);
+    exif_entry_initialize(entry, EXIF_TAG_IMAGE_DESCRIPTION);
+    entry->data = (unsigned char *)"TestDescription";
+    entry->size = strlen("TestDescription") + 1;
+    
+    EXPECT_GT(validMeta.GetBlobSize(), 0);
+    exif_data_unref(validExif);
+}
+
+/**
+ * @tc.name: GetBlobTest001
+ * @tc.desc: Verify GetBlob returns correct status for null metadata and valid metadata with sufficient buffer.
+ * @tc.type: FUNC
+ */
+HWTEST_F(ExifMetadataTest, GetBlobTest001, TestSize.Level3)
+{
+    const uint32_t validBlobSize = 128;
+    uint8_t validBlobData[validBlobSize] = {0};
+
+    ExifMetadata nullMeta(nullptr);
+    uint8_t buffer[100];
+    EXPECT_EQ(ERR_IMAGE_INVALID_PARAMETER, nullMeta.GetBlob(100, buffer));
+    
+    ExifMetadata filledMeta(exif_data_new());
+    exif_data_load_data(filledMeta.GetExifData(), validBlobData, validBlobSize);
+
+    uint8_t largeBuffer[validBlobSize * 2];
+    EXPECT_EQ(SUCCESS, filledMeta.GetBlob(validBlobSize * 2, largeBuffer));
+}
+
+/**
+ * @tc.name: GetPropertyValueTypeTest001
+ * @tc.desc: Verify GetPropertyValueType returns STRING for existing tag and UNKNOWN for non-existing tag.
+ * @tc.type: FUNC
+ */
+HWTEST_F(ExifMetadataTest, GetPropertyValueTypeTest001, TestSize.Level3)
+{
+    EXPECT_EQ(PropertyValueType::STRING, ExifMetadata::GetPropertyValueType("ImageDescription"));
+    EXPECT_EQ(PropertyValueType::UNKNOWN, ExifMetadata::GetPropertyValueType("NonExistentTag"));
+}
+
+/**
+ * @tc.name: GetValueByTypeTest001
+ * @tc.desc: Test string value handling (indirectly tests CalculateTagValueSize)
+ * @tc.type: FUNC
+ */
+HWTEST_F(ExifMetadataTest, GetValueByTypeTest001, TestSize.Level3)
+{
+    ExifData* exifData = exif_data_new();
+    ASSERT_NE(exifData, nullptr);
+    ExifMetadata meta(exifData);
+    ExifEntry* entry = exif_entry_new();
+    entry->tag = EXIF_TAG_IMAGE_DESCRIPTION;
+    entry->format = EXIF_FORMAT_ASCII;
+    std::string longString(70000, 'A');
+    
+    entry->components = longString.size() + 1;
+    entry->size = longString.size() + 1;
+    entry->data = reinterpret_cast<unsigned char*>(malloc(entry->size));
+    memcpy_s(entry->data, entry->size, longString.c_str(), entry->size);
+    exif_content_add_entry(exifData->ifd[EXIF_IFD_0], entry);
+    MetadataValue result;
+    ASSERT_EQ(SUCCESS, meta.GetValueByType("ImageDescription", result));
+    ASSERT_EQ(result.stringValue.size(), 65535);
+
+    exif_data_unref(exifData);
+}
+
+/**
+ * @tc.name: GetValueByTypeTest002
+ * @tc.desc: Verify GetValueByType correctly parses SHORT as integer and RATIONAL as double values.
+ * @tc.type: FUNC
+ */
+HWTEST_F(ExifMetadataTest, GetValueByTypeTest002, TestSize.Level3)
+{
+    ExifData* exifData = exif_data_new();
+    ASSERT_NE(exifData, nullptr);
+    
+    exif_data_set_byte_order(exifData, EXIF_BYTE_ORDER_MOTOROLA);
+    
+    ExifMetadata meta(exifData);
+    ExifEntry* entry = exif_entry_new();
+    entry->tag = EXIF_TAG_IMAGE_WIDTH;
+    entry->format = EXIF_FORMAT_SHORT;
+    entry->components = 1;
+    entry->size = sizeof(uint16_t);
+    entry->data = reinterpret_cast<unsigned char*>(malloc(sizeof(uint16_t)));
+    
+    uint16_t shortValue = 1600;
+    exif_set_short(entry->data, EXIF_BYTE_ORDER_MOTOROLA, shortValue);
+    
+    exif_content_add_entry(exifData->ifd[EXIF_IFD_0], entry);
+    MetadataValue intResult;
+    ASSERT_EQ(SUCCESS, meta.GetValueByType("ImageWidth", intResult));
+    ASSERT_FALSE(intResult.intArrayValue.empty());
+    ASSERT_EQ(1600, intResult.intArrayValue[0]);
+    free(entry->data);
+    entry->format = EXIF_FORMAT_RATIONAL;
+    entry->components = 1;
+    entry->size = sizeof(ExifRational);
+    entry->data = reinterpret_cast<unsigned char*>(malloc(sizeof(ExifRational)));
+    ExifRational rationalValue = {50, 10};
+    exif_set_rational(entry->data, EXIF_BYTE_ORDER_MOTOROLA, rationalValue);
+    
+    MetadataValue rationalResult;
+    ASSERT_EQ(SUCCESS, meta.GetValueByType("ImageWidth", rationalResult));
+    ASSERT_FALSE(rationalResult.doubleArrayValue.empty());
+    ASSERT_DOUBLE_EQ(5.0, rationalResult.doubleArrayValue[0]);
+    
+    free(entry->data);
+    exif_data_unref(exifData);
+}
+
+/**
+ * @tc.name: GetValueByTypeTest003
+ * @tc.desc: Test handling of unsupported formats
+ * @tc.type: FUNC
+ */
+HWTEST_F(ExifMetadataTest, GetValueByTypeTest003, TestSize.Level3)
+{
+    ExifData* exifData = exif_data_new();
+    ASSERT_NE(exifData, nullptr);
+    ExifMetadata meta(exifData);
+    ExifEntry* entry = exif_entry_new();
+    entry->tag = EXIF_TAG_IMAGE_WIDTH;
+    entry->format = EXIF_FORMAT_DOUBLE;
+    entry->components = 1;
+    entry->size = sizeof(double);
+    entry->data = reinterpret_cast<unsigned char*>(malloc(sizeof(double)));
+    double value = 3.14159;
+    memcpy_s(entry->data, sizeof(double), &value, sizeof(double));
+    exif_content_add_entry(exifData->ifd[EXIF_IFD_0], entry);
+    MetadataValue result;
+    ASSERT_EQ(SUCCESS, meta.GetValueByType("ImageWidth", result));
+    ASSERT_FALSE(result.stringValue.empty());
+    ASSERT_NE(result.stringValue.find("unsupported"), std::string::npos);
+    exif_data_unref(exifData);
+}
+
+/**
+ * @tc.name: GetValueByTypeTest004
+ * @tc.desc: Test empty array handling for zero-component tags.
+ * @tc.type: FUNC
+ */
+HWTEST_F(ExifMetadataTest, GetValueByTypeTest004, TestSize.Level3)
+{
+    ExifData* exifData = exif_data_new();
+    exif_data_set_byte_order(exifData, EXIF_BYTE_ORDER_MOTOROLA);
+    
+    ExifMetadata meta(exifData);
+    ExifEntry* entry = exif_entry_new();
+    entry->tag = EXIF_TAG_FOCAL_LENGTH;
+    entry->format = EXIF_FORMAT_SHORT;
+    entry->components = 0;
+    entry->data = nullptr;
+    
+    exif_content_add_entry(exifData->ifd[EXIF_IFD_0], entry);
+    
+    MetadataValue result;
+    ASSERT_EQ(SUCCESS, meta.GetValueByType("FocalLength", result));
+    EXPECT_TRUE(result.intArrayValue.empty());
+}
+
+/**
+ * @tc.name: GetValueByTypeTest005
+ * @tc.desc: Verify precise parsing of BYTE and SBYTE integer formats.
+ * @tc.type: FUNC
+ */
+HWTEST_F(ExifMetadataTest, GetValueByTypeTest005, TestSize.Level3)
+{
+    ExifData* exifData = exif_data_new();
+    exif_data_set_byte_order(exifData, EXIF_BYTE_ORDER_MOTOROLA);
+    ExifMetadata meta(exifData);
+    ExifEntry* byteEntry = exif_entry_new();
+    byteEntry->tag = EXIF_TAG_ISO_SPEED_RATINGS;
+    byteEntry->format = EXIF_FORMAT_BYTE;
+    byteEntry->components = 1;
+    byteEntry->size = sizeof(uint8_t);
+    byteEntry->data = reinterpret_cast<unsigned char*>(malloc(byteEntry->size));
+    *byteEntry->data = 200;
+    exif_content_add_entry(exifData->ifd[EXIF_IFD_EXIF], byteEntry);
+    
+    ExifEntry* sbyteEntry = exif_entry_new();
+    sbyteEntry->tag = EXIF_TAG_SHARPNESS;
+    sbyteEntry->format = EXIF_FORMAT_SBYTE;
+    sbyteEntry->components = 1;
+    sbyteEntry->size = sizeof(int8_t);
+    sbyteEntry->data = reinterpret_cast<unsigned char*>(malloc(sbyteEntry->size));
+    *reinterpret_cast<int8_t*>(sbyteEntry->data) = -5;
+    exif_content_add_entry(exifData->ifd[EXIF_IFD_EXIF], sbyteEntry);
+    MetadataValue byteResult;
+    ASSERT_EQ(SUCCESS, meta.GetValueByType("ISOSpeedRatings", byteResult));
+    ASSERT_FALSE(byteResult.intArrayValue.empty());
+    EXPECT_EQ(200, byteResult.intArrayValue[0]);
+    MetadataValue sbyteResult;
+    ASSERT_EQ(SUCCESS, meta.GetValueByType("Sharpness", sbyteResult));
+    ASSERT_FALSE(sbyteResult.intArrayValue.empty());
+    EXPECT_EQ(-5, sbyteResult.intArrayValue[0]);
+}
+
+/**
+ * @tc.name: SetBlobValueTest001
+ * @tc.desc: Verify SetBlobValue successfully stores blob data and maintains integrity when retrieved.
+ * @tc.type: FUNC
+ */
+HWTEST_F(ExifMetadataTest, SetBlobValueTest001, TestSize.Level3)
+{
+    ExifData* exifData = exif_data_new();
+    ASSERT_NE(exifData, nullptr);
+    ExifMetadata meta(exifData);
+    MetadataValue blobProp;
+    blobProp.key = "SpatialFrequencyResponse";
+    blobProp.bufferValue = {0x01, 0x02, 0x03};
+    ASSERT_TRUE(meta.SetBlobValue(blobProp));
+    MetadataValue result;
+    ASSERT_EQ(SUCCESS, meta.GetValueByType(blobProp.key, result));
+    ASSERT_EQ(blobProp.bufferValue, result.bufferValue);
+    exif_data_unref(exifData);
+}
+
+/**
+ * @tc.name: GetValueByTypeTest006
+ * @tc.desc: Test rational value skipping with zero denominator.
+ * @tc.type: FUNC
+ */
+HWTEST_F(ExifMetadataTest, GetValueByTypeTest006, TestSize.Level3)
+{
+    ExifData* exifData = exif_data_new();
+    exif_data_set_byte_order(exifData, EXIF_BYTE_ORDER_MOTOROLA);
+    ExifMetadata meta(exifData);
+    ExifEntry* entry = exif_entry_new();
+    entry->tag = EXIF_TAG_APERTURE_VALUE;
+    entry->format = EXIF_FORMAT_RATIONAL;
+    entry->components = 1;
+    entry->size = sizeof(ExifRational);
+    entry->data = reinterpret_cast<unsigned char*>(malloc(entry->size));
+    
+    ExifRational invalidRational = {3, 0};
+    exif_set_rational(entry->data, EXIF_BYTE_ORDER_MOTOROLA, invalidRational);
+    
+    exif_content_add_entry(exifData->ifd[EXIF_IFD_EXIF], entry);
+    
+    MetadataValue result;
+    ASSERT_EQ(SUCCESS, meta.GetValueByType("ApertureValue", result));
+    EXPECT_TRUE(result.doubleArrayValue.empty());
+}
+
+/**
+ * @tc.name: GetValueByTypeTest007
+ * @tc.desc: Verify string extraction for near-max and small content lengths.
+ * @tc.type: FUNC
+ */
+HWTEST_F(ExifMetadataTest, GetValueByTypeTest007, TestSize.Level3)
+{
+    ExifData* exifData = exif_data_new();
+    ExifMetadata meta(exifData);
+    const unsigned int nearMaxSize = MAX_TAG_VALUE_SIZE_FOR_STR - TERMINATOR_SIZE;
+    std::string nearMaxStr(nearMaxSize, 'A');
+    
+    ExifEntry* nearMaxEntry = exif_entry_new();
+    nearMaxEntry->tag = EXIF_TAG_IMAGE_DESCRIPTION;
+    nearMaxEntry->format = EXIF_FORMAT_ASCII;
+    nearMaxEntry->components = nearMaxStr.size() + 1;
+    nearMaxEntry->size = nearMaxStr.size() + 1;
+    nearMaxEntry->data = reinterpret_cast<unsigned char*>(malloc(nearMaxEntry->size));
+    memcpy_s(nearMaxEntry->data, nearMaxEntry->size, nearMaxStr.c_str(), nearMaxEntry->size);
+    exif_content_add_entry(exifData->ifd[EXIF_IFD_0], nearMaxEntry);
+    
+    MetadataValue result;
+    ASSERT_EQ(SUCCESS, meta.GetValueByType("ImageDescription", result));
+    EXPECT_EQ(nearMaxStr.size(), result.stringValue.size());
+    const unsigned int smallSize = TAG_VALUE_SIZE - 1;
+    std::string smallStr(smallSize, 'B');
+    
+    ExifEntry* smallEntry = exif_entry_new();
+    smallEntry->tag = EXIF_TAG_USER_COMMENT;
+    smallEntry->format = EXIF_FORMAT_UNDEFINED;
+    smallEntry->components = smallStr.size() + 1;
+    smallEntry->size = smallStr.size() + 1;
+    smallEntry->data = reinterpret_cast<unsigned char*>(malloc(smallEntry->size));
+    memcpy_s(smallEntry->data, smallEntry->size, smallStr.c_str(), smallEntry->size);
+    exif_content_add_entry(exifData->ifd[EXIF_IFD_EXIF], smallEntry);
+    
+    MetadataValue smallResult;
+    ASSERT_EQ(SUCCESS, meta.GetValueByType("UserComment", smallResult));
+}
+
+/**
+ * @tc.name: GetValueByTypeTest008
+ * @tc.desc: Verify error returned for unsupported tag.
+ * @tc.type: FUNC
+ */
+HWTEST_F(ExifMetadataTest, GetValueByTypeTest008, TestSize.Level3)
+{
+    ExifData* exifData = exif_data_new();
+    ExifMetadata meta(exifData);
+    MetadataValue result;
+    EXPECT_EQ(ERR_IMAGE_DECODE_EXIF_UNSUPPORT, meta.GetValueByType("HwMnoteIsXmageSupported", result));
 }
 } // namespace Multimedia
 } // namespace OHOS

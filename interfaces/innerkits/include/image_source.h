@@ -220,7 +220,20 @@ public:
     NATIVEEXPORT bool IsIncrementalSource();
     NATIVEEXPORT uint32_t GetImagePropertyInt(uint32_t index, const std::string &key, int32_t &value);
     NATIVEEXPORT uint32_t GetImagePropertyString(uint32_t index, const std::string &key, std::string &value);
+    NATIVEEXPORT uint32_t GetImagePropertyByType(uint32_t index, const std::string &key, MetadataValue &value);
+    NATIVEEXPORT uint32_t GetImagePropertyCommonByType(const std::string &key, MetadataValue &value);
+    NATIVEEXPORT uint32_t RemoveAllProperties();
+    NATIVEEXPORT std::vector<MetadataValue> GetAllPropertiesWithType();
     NATIVEEXPORT uint32_t GetImagePropertyStringBySync(uint32_t index, const std::string &key, std::string &value);
+    NATIVEEXPORT uint32_t WriteImageMetadataBlob(const std::vector<MetadataValue> &properties);
+    NATIVEEXPORT uint32_t ModifyImagePropertyBlob(const std::vector<MetadataValue> &properties);
+    NATIVEEXPORT uint32_t ModifyImagePropertyBlob(const std::vector<MetadataValue> &properties,
+        const std::string &path);
+    NATIVEEXPORT uint32_t ModifyImagePropertyBlob(const std::vector<MetadataValue> &properties, const int fd);
+    NATIVEEXPORT uint32_t ModifyImagePropertyBlob(std::shared_ptr<MetadataAccessor> metadataAccessor,
+        const std::vector<MetadataValue> &properties);
+    NATIVEEXPORT uint32_t ModifyImagePropertyBlob(const std::vector<MetadataValue> &properties,
+        uint8_t *data, uint32_t size);
     NATIVEEXPORT uint32_t ModifyImageProperty(uint32_t index, const std::string &key, const std::string &value,
         const std::string &path);
     NATIVEEXPORT uint32_t ModifyImageProperty(uint32_t index, const std::string &key, const std::string &value,
@@ -232,6 +245,7 @@ public:
     NATIVEEXPORT uint32_t ModifyImagePropertiesEx(uint32_t index,
         const std::vector<std::pair<std::string, std::string>> &properties);
     NATIVEEXPORT std::set<std::string> GetModifyExifUnsupportedKeys();
+    NATIVEEXPORT uint32_t RemoveImageProperties(uint32_t index, const std::set<std::string> &keys);
     NATIVEEXPORT uint32_t RemoveImageProperties(uint32_t index, const std::set<std::string> &keys,
         const std::string &path);
     NATIVEEXPORT uint32_t RemoveImageProperties(uint32_t index, const std::set<std::string> &keys,
@@ -359,6 +373,9 @@ private:
         const std::vector<std::pair<std::string, std::string>> &properties, bool isEnhanced);
     uint32_t CreatExifMetadataByImageSource(bool addFlag = false);
     uint32_t CreateExifMetadata(uint8_t *buffer, const uint32_t size, bool addFlag, bool hasOriginalFd = false);
+    uint32_t HandleInvalidExifBuffer(void* exifDataPtr);
+    std::shared_ptr<MetadataAccessor> CreateMetadataAccessorForWrite(uint32_t &error);
+    uint32_t WriteExifMetadataToFile(std::shared_ptr<MetadataAccessor> metadataAccessor);
     void SetDecodeInfoOptions(uint32_t index, const DecodeOptions &opts, const ImageInfo &info, ImageEvent &imageEvent);
     void SetDecodeInfoOptions(uint32_t index, const DecodeOptions &opts, const ImagePlugin::PlImageInfo &plInfo,
         ImageEvent &imageEvent);

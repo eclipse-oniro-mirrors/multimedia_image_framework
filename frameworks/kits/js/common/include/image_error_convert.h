@@ -25,6 +25,8 @@ public:
     static std::pair<int32_t, std::string> CreatePictureAtIndexMakeErrMsg(uint32_t errorCode);
     static std::pair<int32_t, std::string> ModifyImagePropertiesEnhancedMakeErrMsg(uint32_t errorCode,
         std::string &exMessage);
+    static std::pair<int32_t, std::string> ModifyImagePropertyArrayMakeErrMsg(uint32_t errorCode,
+        std::string exMessage);
 };
 } // namespace Media
 } // namespace OHOS
