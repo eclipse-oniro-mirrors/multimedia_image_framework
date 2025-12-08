@@ -1587,6 +1587,7 @@ bool HeifDecoderImpl::SwDecodeHeifsOnceFrame(uint32_t index, const HevcSoftDecod
 bool HeifDecoderImpl::SwDecodeHeifsImage(uint32_t index, HevcSoftDecodeParam &param)
 {
     CHECK_ERROR_RETURN_RET(!parser_, false);
+    param.gridInfo.decodeMode = DecodeMode::VIDEO;
     if (!HasDecodedFrame(index)) {
         DeleteParamsBuffer();
         if (!isFirstFrameDecoded_) {
