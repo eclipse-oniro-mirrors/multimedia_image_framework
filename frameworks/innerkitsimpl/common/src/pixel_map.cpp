@@ -837,6 +837,29 @@ unique_ptr<PixelMap> PixelMap::Create(PixelMap &source, const Rect &srcRect, con
     return Create(source, srcRect, opts, error);
 }
 
+static unique_ptr<PixelMap> CreateFromAstc(PixelMap &source, const Rect &srcRect, const InitializationOptions &opts,
+    int32_t &errorCode, CropValue type)
+{
+    auto pixelAstc = source.Clone(errorCode);
+    if (!(errorCode == SUCCESS && pixelAstc != nullptr)) {
+        IMAGE_LOGE("clone Astc failed");
+        return nullptr;
+    }
+    if (type == CropValue::VALID && pixelAstc->crop(srcRect) != SUCCESS) {
+        IMAGE_LOGE("astc clone crop failed");
+        return nullptr;
+    }
+    ImageInfo srcInfo;
+    source.GetImageInfo(srcInfo);
+    if ((opts.size.width != 0 && opts.size.height != 0) &&
+        (opts.size.width != pixelAstc->GetWidth() || opts.size.height != pixelAstc->GetHeight())) {
+        pixelAstc->scale(static_cast<float>(opts.size.width) / pixelAstc->GetWidth(),
+            static_cast<float>(opts.size.height) / pixelAstc->GetHeight());
+    }
+    errorCode = SUCCESS;
+    return pixelAstc;
+}
+
 unique_ptr<PixelMap> PixelMap::Create(PixelMap &source, const Rect &srcRect, const InitializationOptions &opts,
     int32_t &errorCode)
 {
@@ -855,6 +878,10 @@ unique_ptr<PixelMap> PixelMap::Create(PixelMap &source, const Rect &srcRect, con
         IMAGE_LOGE("src crop range is invalid");
         errorCode = IMAGE_RESULT_DECODE_FAILED;
         return nullptr;
+    }
+    if (source.IsAstc() && ImageUtils::IsAstc(opts.pixelFormat) && ImageUtils::IsAstc(opts.srcPixelFormat)) {
+        errorCode = IMAGE_RESULT_DECODE_FAILED;
+        return CreateFromAstc(source, srcRect, opts, errorCode, cropType);
     }
     ImageInfo dstImageInfo;
     InitDstImageInfo(opts, srcImageInfo, dstImageInfo);
@@ -1085,10 +1112,7 @@ bool PixelMap::CopyPixelMap(PixelMap &source, PixelMap &dstPixelMap, int32_t &er
 
 bool CheckImageInfo(const ImageInfo &imageInfo, int32_t &errorCode, AllocatorType type, int32_t rowDataSize)
 {
-    if (IsYUV(imageInfo.pixelFormat)||
-        imageInfo.pixelFormat == PixelFormat::ASTC_4x4 ||
-        imageInfo.pixelFormat == PixelFormat::ASTC_6x6 ||
-        imageInfo.pixelFormat == PixelFormat::ASTC_8x8) {
+    if (IsYUV(imageInfo.pixelFormat)) {
         errorCode = IMAGE_RESULT_DATA_UNSUPPORT;
         IMAGE_LOGE("[PixelMap] PixelMap type does not support clone");
         return false;
@@ -1103,31 +1127,76 @@ bool CheckImageInfo(const ImageInfo &imageInfo, int32_t &errorCode, AllocatorTyp
     return true;
 }
 
+static unique_ptr<PixelMap> CloneAstc(PixelMap *srcAstc, int32_t &errorCode)
+{
+    unique_ptr<PixelMap> dstAstc = make_unique<PixelAstc>();
+    ImageInfo srcAstcInfo;
+    srcAstc->GetImageInfo(srcAstcInfo);
+    dstAstc->SetImageInfo(srcAstcInfo);
+
+    Size astcRealSize;
+    srcAstc->GetAstcRealSize(astcRealSize);
+    dstAstc->SetAstcRealSize(astcRealSize);
+
+    dstAstc->SetAstcHdr(srcAstc->IsHdr());
+    dstAstc->SetRowStride(srcAstc->GetRowStride());
+    dstAstc->SetAstc(true);
+
+    AllocatorType allocType = srcAstc->GetAllocatorType();
+    uint32_t astcSize = srcAstc->GetCapacity();
+
+    MemoryData memoryData = {nullptr, static_cast<size_t>(astcSize), "CloneAstc", {astcSize, 1},
+        srcAstcInfo.pixelFormat};
+    auto dstMemory = MemoryManager::CreateMemory(allocType, memoryData);
+    if (dstMemory == nullptr || dstMemory->data.data == nullptr) {
+        IMAGE_LOGE("CloneAstc create memory failed");
+        return nullptr;
+    }
+    if (memcpy_s(dstMemory->data.data, astcSize, srcAstc->GetPixels(), astcSize) != 0) {
+        IMAGE_LOGE("CloneAstc source memory size %{public}u", astcSize);
+        return nullptr;
+    }
+    dstAstc->SetPixelsAddr(dstMemory->data.data, dstMemory->extend.data, dstMemory->data.size, dstMemory->GetType(),
+        nullptr);
+#ifdef IMAGE_COLORSPACE_FLAG
+    OHOS::ColorManager::ColorSpace colorspace = srcAstc->InnerGetGrColorSpace();
+    dstAstc->InnerSetColorSpace(colorspace);
+#endif
+    return dstAstc;
+}
+
 unique_ptr<PixelMap> PixelMap::Clone(int32_t &errorCode)
 {
     if (!CheckImageInfo(imageInfo_, errorCode, allocatorType_, rowDataSize_)) {
         return nullptr;
     }
-    InitializationOptions opts;
-    opts.srcPixelFormat = imageInfo_.pixelFormat;
-    opts.pixelFormat = imageInfo_.pixelFormat;
-    opts.alphaType = imageInfo_.alphaType;
-    opts.size = imageInfo_.size;
-    opts.srcRowStride = rowStride_;
-    opts.editable = editable_;
-    opts.useDMA = allocatorType_ == AllocatorType::DMA_ALLOC;
-    unique_ptr<PixelMap> pixelMap = PixelMap::Create(opts);
+    unique_ptr<PixelMap> pixelMap = nullptr;
+    if (isAstc_ && ImageUtils::IsAstc(imageInfo_.pixelFormat)) {
+        pixelMap = CloneAstc(this, errorCode);
+    } else {
+        InitializationOptions opts;
+        opts.srcPixelFormat = imageInfo_.pixelFormat;
+        opts.pixelFormat = imageInfo_.pixelFormat;
+        opts.alphaType = imageInfo_.alphaType;
+        opts.size = imageInfo_.size;
+        opts.srcRowStride = rowStride_;
+        opts.editable = editable_;
+        opts.useDMA = allocatorType_ == AllocatorType::DMA_ALLOC;
+        pixelMap = PixelMap::Create(opts);
+        if (bool notNull = (pixelMap != nullptr); notNull && !CopyPixelMap(*this, *(pixelMap.get()), errorCode)) {
+            errorCode = IMAGE_RESULT_MALLOC_ABNORMAL;
+            IMAGE_LOGE("[PixelMap] Copy PixelMap data failed");
+            return nullptr;
+        }
+    }
     if (!pixelMap) {
         errorCode = IMAGE_RESULT_INIT_ABNORMAL;
         IMAGE_LOGE("[PixelMap] Initial a empty PixelMap failed");
         return nullptr;
     }
-    if (!CopyPixelMap(*this, *(pixelMap.get()), errorCode)) {
-        errorCode = IMAGE_RESULT_MALLOC_ABNORMAL;
-        IMAGE_LOGE("[PixelMap] Copy PixelMap data failed");
-        return nullptr;
+    if (!ImageUtils::IsAstc(pixelMap->GetPixelFormat())) {
+        pixelMap->SetTransformered(isTransformered_);
     }
-    pixelMap->SetTransformered(isTransformered_);
     TransformData transformData;
     GetTransformData(transformData);
     pixelMap->SetTransformData(transformData);
