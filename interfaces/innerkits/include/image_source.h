@@ -25,6 +25,7 @@
 #include <set>
 
 #include "decode_listener.h"
+#include "fragment_metadata.h"
 #include "image_type.h"
 #include "incremental_pixel_map.h"
 #include "peer_listener.h"
@@ -267,6 +268,7 @@ public:
     ImageHdrType CheckHdrType();
     NATIVEEXPORT uint32_t GetiTxtLength();
     NATIVEEXPORT bool IsHeifWithoutAlpha();
+    NATIVEEXPORT std::shared_ptr<ImageMetadata> GetMetadata(MetadataType type);
 
 private:
     DISALLOW_COPY_AND_MOVE(ImageSource);
@@ -414,6 +416,9 @@ private:
     uint32_t SetHeifsMetadataForPicture(std::unique_ptr<Picture> &picture, uint32_t index);
     void DecodeBlobMetaData(std::unique_ptr<Picture> &picture, const std::set<MetadataType> &metadataTypes,
         ImageInfo &info, uint32_t &errorCode);
+    std::shared_ptr<FragmentMetadata> GetFragmentMetadata();
+    std::shared_ptr<GifMetadata> GetGifMetadata();
+    std::shared_ptr<ImageMetadata> FindMetadataFromMap(MetadataType type);
 #endif
 
     const std::string NINE_PATCH = "ninepatch";
@@ -449,6 +454,7 @@ private:
     ImageHdrType checkHdrType_;
     bool checkHdrTypeHasSet = false;
     std::shared_ptr<ExifMetadata> exifMetadata_ = nullptr;
+    std::map<MetadataType, std::shared_ptr<ImageMetadata>> metadatas_;
     std::string source_; // Image source fd buffer etc
     bool isExifReadFailed_ = false;
     uint32_t exifReadStatus_ = 0;
