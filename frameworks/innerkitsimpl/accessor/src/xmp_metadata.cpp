@@ -301,15 +301,23 @@ void XMPMetadata::EnumerateTags(EnumerateCallback callback, const std::string &r
     }
 }
 
-uint32_t XMPMetadata::GetBlob(uint32_t bufferSize, uint8_t *dst)
+uint32_t XMPMetadata::GetBlob(std::string &buffer)
 {
     CHECK_ERROR_RETURN_RET_LOG(!impl_ || !impl_->IsValid(), ERR_MEDIA_NULL_POINTER,
         "%{public}s impl is invalid", __func__);
+
+    impl_->SerializeToBuffer(buffer, kXMP_UseCompactFormat);
+    IMAGE_LOGD("%{public}s success! string buffer size is %{public}u", __func__, buffer.size());
+    return SUCCESS;
+}
+
+uint32_t XMPMetadata::GetBlob(uint32_t bufferSize, uint8_t *dst)
+{
     CHECK_ERROR_RETURN_RET_LOG(dst == nullptr, ERR_IMAGE_INVALID_PARAMETER,
         "%{public}s dst is nullptr", __func__);
 
     std::string buffer;
-    impl_->SerializeToBuffer(buffer, kXMP_UseCompactFormat);
+    this->GetBlob(buffer);
     if (buffer.size() > bufferSize) {
         IMAGE_LOGE("%{public}s buffer size is too small", __func__);
         return ERR_IMAGE_INVALID_PARAMETER;

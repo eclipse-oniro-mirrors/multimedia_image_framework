@@ -40,11 +40,13 @@ private:
     static napi_status DefineStaticProperties(napi_env env, napi_value exports);
     static napi_value CreateXMPNamespaces(napi_env env);
 
+    static napi_value RegisterNamespacePrefix(napi_env env, napi_callback_info info);
     static napi_value SetTag(napi_env env, napi_callback_info info);
     static napi_value GetTag(napi_env env, napi_callback_info info);
     static napi_value RemoveTag(napi_env env, napi_callback_info info);
-    static napi_value RegisterNamespacePrefix(napi_env env, napi_callback_info info);
     static napi_value EnumerateTags(napi_env env, napi_callback_info info);
+    static napi_value SetBlob(napi_env env, napi_callback_info info);
+    static napi_value GetBlob(napi_env env, napi_callback_info info);
 
     void Release();
 
