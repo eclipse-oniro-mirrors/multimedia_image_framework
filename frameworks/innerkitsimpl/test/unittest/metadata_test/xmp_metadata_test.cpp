@@ -154,12 +154,19 @@ static Media::XMPMetadata::EnumerateCallback InitTestCallback(std::vector<XMPTag
 {
     Media::XMPMetadata::EnumerateCallback callback =
         [&xmpTagVec, &xmpMetadata, &parentPath](const std::string &path, const XMPTag &tag) -> bool {
+            GTEST_LOG_(INFO) <<
+                "name: " << tag.name << ", type: " << static_cast<int>(tag.type) << ", value: " << tag.value << " in.";
             bool isTagFound = false;
             for(const XMPTag &it : xmpTagVec) {
                 if (CompareXMPTagNoLog(it, tag)) {
                     isTagFound = true;
                     break;
                 }
+            }
+            if (!isTagFound) {
+                GTEST_LOG_(INFO) <<
+                    "name: " << tag.name <<
+                    ", type: " << static_cast<int>(tag.type) << ", value: " << tag.value << " not found!";
             }
             EXPECT_TRUE(isTagFound);
             isTagFound = false;
@@ -3054,6 +3061,56 @@ HWTEST_F(XmpMetadataTest, GetTagTest065, TestSize.Level1)
 }
 
 /**
+ * @tc.name: GetTagTest066
+ * @tc.desc: test the GetTag method with other symbol when the type of the first parent tag is alternate text, the child
+ *           tag is simple with the tag witch the type is qualifier.
+ * @tc.type: FUNC
+ */
+HWTEST_F(XmpMetadataTest, GetTagTest066, TestSize.Level1)
+{
+    GTEST_LOG_(INFO) << "XmpMetadataTest: GetTagTest066 start";
+    XMPMetadata xmpMetadata;
+    XMPTag baseTag;
+    InitTestXMPTag(baseTag, XMPTagType::ALTERNATE_TEXT, "title");
+
+    bool ret = xmpMetadata.SetTag("dc:title", baseTag);
+    EXPECT_TRUE(ret);
+
+    XMPTag childTag_1;
+    InitTestXMPTag(childTag_1, XMPTagType::SIMPLE, "title");
+    childTag_1.value = "Default Title";
+    ret = xmpMetadata.SetTag("dc:title[1]", childTag_1);
+    EXPECT_TRUE(ret);
+
+    XMPTag childTag_2;
+    InitTestXMPTag(childTag_2, XMPTagType::SIMPLE, "title");
+    childTag_2.value = "中文标题";
+    ret = xmpMetadata.SetTag("dc:title[2]", childTag_2);
+    EXPECT_TRUE(ret);
+
+    XMPTag qualTag;
+    InitTestXMPTag(qualTag, XMPTagType::QUALIFIER, "lang");
+    qualTag.value = "x-default";
+    ret = xmpMetadata.SetTag("dc:title[1]/?xml:lang", qualTag);
+    EXPECT_TRUE(ret);
+
+    qualTag.value = "zh-CN";
+    ret = xmpMetadata.SetTag("dc:title[2]/?xml:lang", qualTag);
+    EXPECT_TRUE(ret);
+
+    XMPTag getTag;
+    ret = xmpMetadata.GetTag("dc:title[?xml:lang='x-default']", getTag);
+    EXPECT_TRUE(ret);
+    EXPECT_TRUE(CompareXMPTag(childTag_1, getTag));
+
+    ret = xmpMetadata.GetTag("dc:title[?xml:lang=\"zh-CN\"]", getTag);
+    EXPECT_TRUE(ret);
+    EXPECT_TRUE(CompareXMPTag(childTag_2, getTag));
+
+    GTEST_LOG_(INFO) << "XmpMetadataTest: GetTagTest066 end";
+}
+
+/**
  * @tc.name: EnumerateTags001
  * @tc.desc: test the EnumerateTags method when some items in unordered array.
  * @tc.type: FUNC
@@ -3256,6 +3313,60 @@ HWTEST_F(XmpMetadataTest, EnumerateTags005, TestSize.Level1)
     xmpMetadata.EnumerateTags(callback, parentPath, options);
 
     GTEST_LOG_(INFO) << "XmpMetadataTest: EnumerateTags005 end";
+}
+
+/**
+ * @tc.name: EnumerateTags006
+ * @tc.desc: test the EnumerateTags method when some items which is array in unordered array.
+ * @tc.type: FUNC
+ */
+HWTEST_F(XmpMetadataTest, EnumerateTags006, TestSize.Level1)
+{
+    GTEST_LOG_(INFO) << "XmpMetadataTest: EnumerateTags006 start";
+    std::vector<XMPTag> xmpTagVec;
+    std::string parentPath = "dc:parent";
+    XMPMetadata xmpMetadata;
+    XMPTag baseTag;
+    InitTestXMPTag(baseTag, XMPTagType::UNORDERED_ARRAY, "parent");
+    bool ret = xmpMetadata.SetTag(parentPath, baseTag);
+    EXPECT_TRUE(ret);
+    xmpTagVec.push_back(baseTag);
+
+    XMPTag childTag;
+    InitTestXMPTag(childTag, XMPTagType::SIMPLE, "parent");
+    childTag.value = "first";
+    ret = xmpMetadata.SetTag("dc:parent[1]", childTag);
+    EXPECT_TRUE(ret);
+    xmpTagVec.push_back(childTag);
+
+    XMPTag childArrayTag;
+    InitTestXMPTag(childArrayTag, XMPTagType::ORDERED_ARRAY, "parent");
+    ret = xmpMetadata.SetTag("dc:parent[2]", childArrayTag);
+    EXPECT_TRUE(ret);
+    xmpTagVec.push_back(childArrayTag);
+
+    // childTag.name = "child";
+    childTag.value = "childFirst";
+    ret = xmpMetadata.SetTag("dc:parent[2][1]", childTag);
+    EXPECT_TRUE(ret);
+    xmpTagVec.push_back(childTag);
+
+    childTag.value = "childSecond";
+    ret = xmpMetadata.SetTag("dc:parent[2][2]", childTag);
+    EXPECT_TRUE(ret);
+    xmpTagVec.push_back(childTag);
+    // childTag.name = "parent";
+    childTag.value = "third";
+    ret = xmpMetadata.SetTag("dc:parent[3]", childTag);
+    EXPECT_TRUE(ret);
+    xmpTagVec.push_back(childTag);
+
+    Media::XMPMetadata::EnumerateCallback callback = InitTestCallback(xmpTagVec, xmpMetadata, parentPath);
+    XMPEnumerateOption options;
+    options.isRecursive = true;
+    xmpMetadata.EnumerateTags(callback, parentPath, options);
+
+    GTEST_LOG_(INFO) << "XmpMetadataTest: EnumerateTags006 end";
 }
 
 /**
