@@ -165,6 +165,7 @@ ohos_shared_library("extplugin") {
     "src/hdr/jpeg_mpf_parser.cpp",
     "src/jpeg_yuv_decoder/jpeg_decoder_yuv.cpp",
     "src/jpeg_yuv_decoder/jpeg_yuvdata_converter.cpp",
+    "src/jpeg_yuv_decoder/yuv_helper.cpp",
     "src/plugin_export.cpp",
     "src/texture_encode/astc_codec.cpp",
   ]
