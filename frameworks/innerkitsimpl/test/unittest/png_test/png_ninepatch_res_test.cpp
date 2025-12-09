@@ -16,11 +16,16 @@
 #include <gtest/gtest.h>
 #include <arpa/inet.h>
 #include <fstream>
+#include <memory>
 #include "png_ninepatch_res.h"
 
 using namespace testing::ext;
 namespace OHOS {
 namespace Multimedia {
+
+static constexpr size_t NUMX_DIVS = 2;
+static constexpr size_t NUMY_DIVS = 3;
+
 class PngNinepatchResTest : public testing::Test {
 public:
     PngNinepatchResTest() {}
@@ -67,6 +72,34 @@ HWTEST_F(PngNinepatchResTest, SerializedSize001, TestSize.Level3)
     const size_t sersize = pngnp.SerializedSize();
     ASSERT_EQ(sersize, 32);
     GTEST_LOG_(INFO) << "PngNinepatchResTest: SerializedSize001 end";
+}
+
+/**
+ * @tc.name: Deserialize001
+ * @tc.desc: Test Deserialize with valid inData (covers Fill9patchOffsets: patch != nullptr)
+ * @tc.type: FUNC
+ */
+HWTEST_F(PngNinepatchResTest, Deserialize001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PngNinepatchResTest: Deserialize001 start";
+    ImagePlugin::PngNinePatchRes patch;
+    patch.numXDivs = NUMX_DIVS;
+    patch.numYDivs = NUMY_DIVS;
+    patch.wasDeserialized = false;
+    void* inData = &patch;
+    ImagePlugin::PngNinePatchRes* result = ImagePlugin::PngNinePatchRes::Deserialize(inData);
+    EXPECT_EQ(result, &patch);
+    EXPECT_TRUE(patch.wasDeserialized);
+    const size_t structSize = sizeof(ImagePlugin::PngNinePatchRes);
+    const size_t xDivsSize = patch.numXDivs * sizeof(int32_t);
+    const size_t yDivsSize = patch.numYDivs * sizeof(int32_t);
+    const uint32_t expectedXDivsOffset = structSize;
+    const uint32_t expectedYDivsOffset = expectedXDivsOffset + xDivsSize;
+    const uint32_t expectedColorsOffset = expectedYDivsOffset + yDivsSize;
+    EXPECT_EQ(patch.xDivsOffset, expectedXDivsOffset);
+    EXPECT_EQ(patch.yDivsOffset, expectedYDivsOffset);
+    EXPECT_EQ(patch.colorsOffset, expectedColorsOffset);
+    GTEST_LOG_(INFO) << "PngNinepatchResTest: Deserialize001 end";
 }
 } // namespace Multimedia
 } // namespace OHOS

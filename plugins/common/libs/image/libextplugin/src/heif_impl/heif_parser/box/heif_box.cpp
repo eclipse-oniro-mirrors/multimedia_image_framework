@@ -25,6 +25,7 @@
 #include "box/item_property_transform_box.h"
 #include "box/item_ref_box.h"
 #include "box/item_property_display_box.h"
+#include "box/item_movie_box.h"
 
 #define MAKE_BOX_CASE(box_type, box_class_type)    \
 case fourcc_to_code(box_type):                     \
@@ -197,6 +198,24 @@ std::shared_ptr<HeifBox> HeifBox::MakeBox(uint32_t boxType)
         MAKE_BOX_CASE("iloc", HeifIlocBox);
         MAKE_BOX_CASE("rloc", HeifRlocBox);
         MAKE_BOX_CASE("clli", HeifClliBox);
+        MAKE_BOX_CASE("moov", HeifMoovBox);
+        MAKE_BOX_CASE("mvhd", HeifMvhdBox);
+        MAKE_BOX_CASE("trak", HeifTrakBox);
+        MAKE_BOX_CASE("tkhd", HeifTkhdBox);
+        MAKE_BOX_CASE("mdia", HeifMdiaBox);
+        MAKE_BOX_CASE("mdhd", HeifMdhdBox);
+        MAKE_BOX_CASE("minf", HeifMinfBox);
+        MAKE_BOX_CASE("vmhd", HeifVmhdBox);
+        MAKE_BOX_CASE("dinf", HeifDinfBox);
+        MAKE_BOX_CASE("dref", HeifDrefBox);
+        MAKE_BOX_CASE("stbl", HeifStblBox);
+        MAKE_BOX_CASE("stsd", HeifStsdBox);
+        MAKE_BOX_CASE("hvc1", HeifHvc1Box);
+        MAKE_BOX_CASE("stts", HeifSttsBox);
+        MAKE_BOX_CASE("stsc", HeifStscBox);
+        MAKE_BOX_CASE("stco", HeifStcoBox);
+        MAKE_BOX_CASE("stsz", HeifStszBox);
+        MAKE_BOX_CASE("stss", HeifStssBox);
         default:
             box = std::make_shared<HeifBox>();
             break;
@@ -207,7 +226,10 @@ std::shared_ptr<HeifBox> HeifBox::MakeBox(uint32_t boxType)
 bool BoxContentChildren(std::shared_ptr<HeifBox> box)
 {
     return box->GetBoxType() == BOX_TYPE_IPRP || box->GetBoxType() == BOX_TYPE_IPCO ||
-        box->GetBoxType() == BOX_TYPE_META || box->GetBoxType() == BOX_TYPE_IINF;
+        box->GetBoxType() == BOX_TYPE_META || box->GetBoxType() == BOX_TYPE_IINF ||
+        box->GetBoxType() == BOX_TYPE_MOOV || box->GetBoxType() == BOX_TYPE_TRAK ||
+        box->GetBoxType() == BOX_TYPE_MDIA || box->GetBoxType() == BOX_TYPE_DINF ||
+        box->GetBoxType() == BOX_TYPE_STBL || box->GetBoxType() == BOX_TYPE_MINF;
 }
 
 heif_error HeifBox::MakeFromReader(HeifStreamReader &reader,
@@ -305,6 +327,15 @@ void HeifBox::InferAllFullBoxVersion()
     for (auto &child: children_) {
         child->InferAllFullBoxVersion();
     }
+}
+
+heif_error HeifBox::ParseContentChildrenByReadChildren(HeifStreamReader &reader, uint32_t &recursionCount)
+{
+    recursionCount++;
+    if (recursionCount > MAX_RECURSION_COUNT) {
+        return heif_error_too_many_recursion;
+    }
+    return ReadChildren(reader, recursionCount);
 }
 } // namespace ImagePlugin
 } // namespace OHOS

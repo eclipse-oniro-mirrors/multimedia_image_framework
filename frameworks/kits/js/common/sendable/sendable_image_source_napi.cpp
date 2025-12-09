@@ -887,7 +887,7 @@ void SendableImageSourceNapi::Destructor(napi_env env, void *nativeObject, void 
 }
 
 static bool ReleaseSendEvent(napi_env env, ImageSourceAsyncContext* context,
-                             napi_event_priority prio)
+                             napi_event_priority prio, const char* taskName)
 {
     auto task = [env, context]() {
         napi_value result = nullptr;
@@ -897,7 +897,7 @@ static bool ReleaseSendEvent(napi_env env, ImageSourceAsyncContext* context,
         context->constructor_ = nullptr;
         ImageSourceCallbackRoutine(env, const_cast<ImageSourceAsyncContext *&>(context), result);
     };
-    if (napi_status::napi_ok != napi_send_event(env, task, prio)) {
+    if (napi_status::napi_ok != napi_send_event(env, task, prio, taskName)) {
         IMAGE_LOGE("ReleaseSendEvent: failed to SendEvent!");
         return false;
     }
@@ -935,7 +935,7 @@ napi_value SendableImageSourceNapi::Release(napi_env env, napi_callback_info inf
         napi_create_promise(env, &(asyncContext->deferred), &result);
     }
 
-    if (ReleaseSendEvent(env, asyncContext.get(), napi_eprio_high)) {
+    if (ReleaseSendEvent(env, asyncContext.get(), napi_eprio_high, "SendableImage.ImageSource.release")) {
         asyncContext.release();
     }
     IMAGE_LOGD("Release exit");

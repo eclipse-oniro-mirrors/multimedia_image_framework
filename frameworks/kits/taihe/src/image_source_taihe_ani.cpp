@@ -26,7 +26,7 @@ ani_object ImageSourceTaiheAni::CreateEtsImageSource(ani_env *env, std::shared_p
     imageSourceAni->nativeImgSrc = imageSource;
 
     ani_namespace imageNamespace;
-    if (env->FindNamespace("L@ohos/multimedia/image/image;", &imageNamespace) != ANI_OK) {
+    if (env->FindNamespace("@ohos.multimedia.image.image", &imageNamespace) != ANI_OK) {
         IMAGE_LOGE("%{public}s FindNamespace failed", __func__);
         return nullptr;
     }

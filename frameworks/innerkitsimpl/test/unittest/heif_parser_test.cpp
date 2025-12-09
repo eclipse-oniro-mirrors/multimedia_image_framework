@@ -37,8 +37,15 @@ static const uint16_t INDEX_2 = 2;
 static const uint16_t INDEX_3 = 3;
 static const uint8_t MOCK_DATA_1 = 1;
 static const uint8_t MOCK_DATA_2 = 2;
+static const uint8_t MOCK_FILL_BYTE = 0xFF;
 static const uint32_t MOCK_DATA_SIZE = 5;
 static const uint32_t NUM_1 = 1;
+static const int NUM_8 = 8;
+static const int NUM_10 = 10;
+static const int NUM_100 = 100;
+static const uint32_t MOCK_TIFF_OFFSET = 50;
+const static uint32_t HEIF_MAX_EXIF_SIZE = 128 * 1024;
+const static size_t METADATA_COUNT = 0;
 
 class HeifParserTest : public testing::Test {
 public:
@@ -437,6 +444,131 @@ HWTEST_F(HeifParserTest, ExtractDerivedImagePropertiesTest001, TestSize.Level3)
 }
 
 /**
+ * @tc.name: ExtractDerivedImagePropertiesTest002
+ * @tc.desc: Test ExtractDerivedImageProperties when GetImage returns nullptr
+ * @tc.type: FUNC
+ */
+HWTEST_F(HeifParserTest, ExtractDerivedImagePropertiesTest002, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "HeifParserTest: ExtractDerivedImagePropertiesTest002 start";
+    HeifParser heifParser;
+    heif_item_id testItemId = IT35_TRUE_ID;
+    heif_item_id tileItemId = IT35_MOCK_ID;
+    auto heifImage = std::make_shared<HeifImage>(testItemId);
+    heifParser.images_.insert(std::make_pair(testItemId, heifImage));
+    auto heifBox = std::make_shared<HeifInfeBox>(testItemId, "grid", false);
+    heifParser.infeBoxes_.insert(std::make_pair(testItemId, heifBox));
+    heifParser.irefBox_ = std::make_shared<HeifIrefBox>();
+    HeifIrefBox::Reference ref;
+    ref.fromItemId = testItemId;
+    ref.toItemIds.push_back(tileItemId);
+    ref.box.SetBoxType(BOX_TYPE_DIMG);
+    heifParser.irefBox_->references_.push_back(ref);
+    heifParser.ExtractDerivedImageProperties();
+    ASSERT_NE(heifParser.images_.find(testItemId), heifParser.images_.end());
+    ASSERT_EQ(heifParser.images_.find(tileItemId), heifParser.images_.end());
+    GTEST_LOG_(INFO) << "HeifParserTest: ExtractDerivedImagePropertiesTest002 end";
+}
+
+/**
+ * @tc.name: ExtractDerivedImagePropertiesTest003
+ * @tc.desc: Test ExtractDerivedImageProperties when image->GetDefaultColorFormat() == HeifColorFormat::UNDEDEFINED
+ * @tc.type: FUNC
+ */
+HWTEST_F(HeifParserTest, ExtractDerivedImagePropertiesTest003, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "HeifParserTest: ExtractDerivedImagePropertiesTest003 start";
+    
+    HeifParser heifParser;
+    heif_item_id testItemId = IT35_TRUE_ID;
+    heif_item_id tileItemId = IT35_MOCK_ID;
+    auto heifImage = std::make_shared<HeifImage>(testItemId);
+    ASSERT_EQ(heifImage->GetDefaultColorFormat(), HeifColorFormat::UNDEDEFINED);
+    heifParser.images_.insert(std::make_pair(testItemId, heifImage));
+    auto tileImage = std::make_shared<HeifImage>(tileItemId);
+    tileImage->SetDefaultColorFormat(HeifColorFormat::YCBCR);
+    heifParser.images_.insert(std::make_pair(tileItemId, tileImage));
+    auto heifBox = std::make_shared<HeifInfeBox>(testItemId, "grid", false);
+    heifParser.infeBoxes_.insert(std::make_pair(testItemId, heifBox));
+    heifParser.irefBox_ = std::make_shared<HeifIrefBox>();
+    HeifIrefBox::Reference ref;
+    ref.fromItemId = testItemId;
+    ref.toItemIds.push_back(tileItemId);
+    ref.box.SetBoxType(BOX_TYPE_DIMG);
+    heifParser.irefBox_->references_.push_back(ref);
+    heifParser.ExtractDerivedImageProperties();
+    ASSERT_EQ(heifImage->GetDefaultColorFormat(), HeifColorFormat::YCBCR);
+    ASSERT_NE(heifImage->GetDefaultColorFormat(), HeifColorFormat::UNDEDEFINED);
+    GTEST_LOG_(INFO) << "HeifParserTest: ExtractDerivedImagePropertiesTest003 end";
+}
+
+/**
+ * @tc.name: ExtractDerivedImagePropertiesTest004
+ * @tc.desc: Test ExtractDerivedImageProperties when image->GetLumaBitNum() >= 0
+ * @tc.type: FUNC
+ */
+HWTEST_F(HeifParserTest, ExtractDerivedImagePropertiesTest004, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "HeifParserTest: ExtractDerivedImagePropertiesTest004 start";
+    
+    HeifParser heifParser;
+    heif_item_id testItemId = IT35_TRUE_ID;
+    heif_item_id tileItemId = IT35_MOCK_ID;
+    auto heifImage = std::make_shared<HeifImage>(testItemId);
+    heifImage->SetLumaBitNum(NUM_8);
+    ASSERT_EQ(heifImage->GetLumaBitNum(), NUM_8);
+    heifParser.images_.insert(std::make_pair(testItemId, heifImage));
+    auto tileImage = std::make_shared<HeifImage>(tileItemId);
+    tileImage->SetLumaBitNum(NUM_10);
+    heifParser.images_.insert(std::make_pair(tileItemId, tileImage));
+    auto heifBox = std::make_shared<HeifInfeBox>(testItemId, "grid", false);
+    heifParser.infeBoxes_.insert(std::make_pair(testItemId, heifBox));
+    heifParser.irefBox_ = std::make_shared<HeifIrefBox>();
+    HeifIrefBox::Reference ref;
+    ref.fromItemId = testItemId;
+    ref.toItemIds.push_back(tileItemId);
+    ref.box.SetBoxType(BOX_TYPE_DIMG);
+    heifParser.irefBox_->references_.push_back(ref);
+    heifParser.ExtractDerivedImageProperties();
+    ASSERT_EQ(heifImage->GetLumaBitNum(), NUM_8);
+    ASSERT_NE(heifImage->GetLumaBitNum(), NUM_10);
+    ASSERT_GE(heifImage->GetLumaBitNum(), NUM_8);
+    GTEST_LOG_(INFO) << "HeifParserTest: ExtractDerivedImagePropertiesTest004 end";
+}
+
+/**
+ * @tc.name: ExtractDerivedImagePropertiesTest005
+ * @tc.desc: Test ExtractDerivedImageProperties skip ChromaBitNum < 0 branch
+ * @tc.type: FUNC
+ */
+HWTEST_F(HeifParserTest, ExtractDerivedImagePropertiesTest005, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "HeifParserTest: ExtractDerivedImagePropertiesTest005 start";
+    HeifParser heifParser;
+    heif_item_id testItemId = IT35_TRUE_ID;
+    heif_item_id tileItemId = IT35_MOCK_ID;
+    auto heifImage = std::make_shared<HeifImage>(testItemId);
+    heifImage->SetChromaBitNum(NUM_8);
+    ASSERT_EQ(heifImage->GetChromaBitNum(), NUM_8);
+    heifParser.images_.insert(std::make_pair(testItemId, heifImage));
+    auto tileImage = std::make_shared<HeifImage>(tileItemId);
+    tileImage->SetChromaBitNum(NUM_10);
+    heifParser.images_.insert(std::make_pair(tileItemId, tileImage));
+    auto heifBox = std::make_shared<HeifInfeBox>(testItemId, "grid", false);
+    heifParser.infeBoxes_.insert(std::make_pair(testItemId, heifBox));
+    heifParser.irefBox_ = std::make_shared<HeifIrefBox>();
+    HeifIrefBox::Reference ref;
+    ref.fromItemId = testItemId;
+    ref.toItemIds.push_back(tileItemId);
+    ref.box.SetBoxType(BOX_TYPE_DIMG);
+    heifParser.irefBox_->references_.push_back(ref);
+    heifParser.ExtractDerivedImageProperties();
+    ASSERT_EQ(heifImage->GetChromaBitNum(), NUM_8);
+    ASSERT_NE(heifImage->GetChromaBitNum(), NUM_10);
+    GTEST_LOG_(INFO) << "HeifParserTest: ExtractDerivedImagePropertiesTest005 end";
+}
+
+/**
  * @tc.name: ExtractThumbnailImageTest001
  * @tc.desc: HeifParser:ExtractThumbnailImage And ExtractAuxImage
  * @tc.type: FUNC
@@ -461,6 +593,91 @@ HWTEST_F(HeifParserTest, ExtractThumbnailImageTest001, TestSize.Level3)
     heifParser.ExtractThumbnailImage(thumbnailImage, ref);
     heifParser.ExtractAuxImage(thumbnailImage, ref);
     GTEST_LOG_(INFO) << "HeifParserTest: ExtractThumbnailImageTest001 end";
+}
+
+/**
+ * @tc.name: ExtractAuxImageTest001
+ * @tc.desc: Test ExtractAuxImage when auxc is null
+ * @tc.type: FUNC
+ */
+HWTEST_F(HeifParserTest, ExtractAuxImageTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "HeifParserTest: ExtractAuxImageTest001 start";
+    HeifParser heifParser;
+    heif_item_id auxItemId = IT35_TRUE_ID;
+    heif_item_id masterItemId = IT35_MOCK_ID;
+    std::shared_ptr<HeifImage> auxImage = std::make_shared<HeifImage>(auxItemId);
+    std::shared_ptr<HeifImage> masterImage = std::make_shared<HeifImage>(masterItemId);
+    heifParser.images_.insert(std::make_pair(masterItemId, masterImage));
+    HeifIrefBox::Reference ref;
+    ref.fromItemId = auxItemId;
+    ref.toItemIds.push_back(masterItemId);
+    ref.box.SetBoxType(BOX_TYPE_AUXL);
+    heifParser.ipcoBox_ = std::make_shared<HeifIpcoBox>();
+    heifParser.ipmaBox_ = std::make_shared<HeifIpmaBox>();
+    heifParser.ExtractAuxImage(auxImage, ref);
+    ASSERT_TRUE(masterImage->GetAuxImages().empty());
+    GTEST_LOG_(INFO) << "HeifParserTest: ExtractAuxImageTest001 end";
+}
+
+/**
+ * @tc.name: ExtractGainmapImageTest001
+ * @tc.desc: Test ExtractGainmapImage when fromItemInfeBox is null
+ * @tc.type: FUNC
+ */
+HWTEST_F(HeifParserTest, ExtractGainmapImageTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "HeifParserTest: ExtractGainmapImageTest001 start";
+    HeifParser heifParser;
+    heif_item_id tmapId = IT35_TRUE_ID;
+    heif_item_id baseId = TMAP_TRUE_ID;
+    heif_item_id gainmapId = TMAP_MOCK_ID;
+    std::shared_ptr<HeifImage> primaryImage = std::make_shared<HeifImage>(baseId);
+    primaryImage->SetPrimaryImage(true);
+    heifParser.primaryImage_ = primaryImage;
+    heifParser.irefBox_ = std::make_shared<HeifIrefBox>();
+    HeifIrefBox::Reference ref;
+    ref.fromItemId = tmapId;
+    ref.toItemIds.push_back(baseId);
+    ref.toItemIds.push_back(gainmapId);
+    ref.box.SetBoxType(BOX_TYPE_DIMG);
+    heifParser.irefBox_->references_.push_back(ref);
+    std::shared_ptr<HeifImage> gainmapImage = std::make_shared<HeifImage>(gainmapId);
+    heifParser.images_.insert(std::make_pair(gainmapId, gainmapImage));
+    heifParser.ExtractGainmapImage(tmapId);
+    ASSERT_EQ(heifParser.primaryImage_->GetGainmapImage(), nullptr);
+    GTEST_LOG_(INFO) << "HeifParserTest: ExtractGainmapImageTest001 end";
+}
+
+/**
+ * @tc.name: ExtractGainmapImageTest002
+ * @tc.desc: Test ExtractGainmapImage when fromItemInfeBox->GetItemType() != "tmap"
+ * @tc.type: FUNC
+ */
+HWTEST_F(HeifParserTest, ExtractGainmapImageTest002, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "HeifParserTest: ExtractGainmapImageTest002 start";
+    HeifParser heifParser;
+    heif_item_id tmapId = IT35_TRUE_ID;
+    heif_item_id baseId = TMAP_TRUE_ID;
+    heif_item_id gainmapId = TMAP_MOCK_ID;
+    std::shared_ptr<HeifImage> primaryImage = std::make_shared<HeifImage>(baseId);
+    primaryImage->SetPrimaryImage(true);
+    heifParser.primaryImage_ = primaryImage;
+    std::shared_ptr<HeifInfeBox> tmapInfeBox = std::make_shared<HeifInfeBox>(tmapId, "grid", false);
+    heifParser.infeBoxes_.insert(std::make_pair(tmapId, tmapInfeBox));
+    heifParser.irefBox_ = std::make_shared<HeifIrefBox>();
+    HeifIrefBox::Reference ref;
+    ref.fromItemId = tmapId;
+    ref.toItemIds.push_back(baseId);
+    ref.toItemIds.push_back(gainmapId);
+    ref.box.SetBoxType(BOX_TYPE_DIMG);
+    heifParser.irefBox_->references_.push_back(ref);
+    std::shared_ptr<HeifImage> gainmapImage = std::make_shared<HeifImage>(gainmapId);
+    heifParser.images_.insert(std::make_pair(gainmapId, gainmapImage));
+    heifParser.ExtractGainmapImage(tmapId);
+    ASSERT_EQ(heifParser.primaryImage_->GetGainmapImage(), nullptr);
+    GTEST_LOG_(INFO) << "HeifParserTest: ExtractGainmapImageTest002 end";
 }
 
 /**
@@ -493,6 +710,75 @@ HWTEST_F(HeifParserTest, ExtractMetadataTest001, TestSize.Level3)
     heifParser.infeBoxes_.clear();
     heifParser.ExtractMetadata(allItemIds);
     GTEST_LOG_(INFO) << "HeifParserTest: ExtractMetadataTest001 end";
+}
+
+/**
+ * @tc.name: ExtractMetadataTest002
+ * @tc.desc: Test ExtractMetadata when masterImageId == metadataItemId
+ * @tc.type: FUNC
+ */
+HWTEST_F(HeifParserTest, ExtractMetadataTest002, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "HeifParserTest: ExtractMetadataTest002 start";
+    HeifParser heifParser;
+    heif_item_id metadataItemId = IT35_TRUE_ID;
+    std::vector<heif_item_id> allItemIds;
+    allItemIds.push_back(metadataItemId);
+    heifParser.irefBox_ = std::make_shared<HeifIrefBox>();
+    HeifIrefBox::Reference ref;
+    ref.fromItemId = metadataItemId;
+    ref.toItemIds.push_back(metadataItemId);
+    ref.box.SetBoxType(BOX_TYPE_CDSC);
+    heifParser.irefBox_->references_.push_back(ref);
+    std::shared_ptr<HeifImage> masterImage = std::make_shared<HeifImage>(metadataItemId);
+    heifParser.images_.insert(std::make_pair(metadataItemId, masterImage));
+    size_t initialMetadataCount = masterImage->GetAllMetadata().size();
+    heifParser.ExtractMetadata(allItemIds);
+    ASSERT_EQ(initialMetadataCount, METADATA_COUNT);
+    GTEST_LOG_(INFO) << "HeifParserTest: ExtractMetadataTest002 end";
+}
+
+/**
+ * @tc.name: ExtractMetadataTest003
+ * @tc.desc: Test ExtractMetadata when GetItemData returns error
+ * @tc.type: FUNC
+ */
+HWTEST_F(HeifParserTest, ExtractMetadataTest003, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "HeifParserTest: ExtractMetadataTest003 start";
+    HeifParser heifParser;
+    heif_item_id metadataItemId = IT35_TRUE_ID;
+    heif_item_id masterImageId = IT35_MOCK_ID;
+    std::vector<heif_item_id> allItemIds;
+    allItemIds.push_back(metadataItemId);
+    heifParser.irefBox_ = std::make_shared<HeifIrefBox>();
+    HeifIrefBox::Reference ref;
+    ref.fromItemId = metadataItemId;
+    ref.toItemIds.push_back(masterImageId);
+    ref.box.SetBoxType(BOX_TYPE_CDSC);
+    heifParser.irefBox_->references_.push_back(ref);
+    std::shared_ptr<HeifImage> masterImage = std::make_shared<HeifImage>(masterImageId);
+    heifParser.images_.insert(std::make_pair(masterImageId, masterImage));
+    size_t initialMetadataCount = masterImage->GetAllMetadata().size();
+    heifParser.ExtractMetadata(allItemIds);
+    ASSERT_EQ(initialMetadataCount, METADATA_COUNT);
+    GTEST_LOG_(INFO) << "HeifParserTest: ExtractMetadataTest003 end";
+}
+
+/**
+ * @tc.name: GetAuxiliaryMapImageTest001
+ * @tc.desc: Test GetAuxiliaryMapImage when primaryImage_ is null
+ * @tc.type: FUNC
+ */
+HWTEST_F(HeifParserTest, GetAuxiliaryMapImageTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "HeifParserTest: GetAuxiliaryMapImageTest001 start";
+    HeifParser heifParser;
+    std::string auxType = "test_aux_type";
+    ASSERT_EQ(heifParser.primaryImage_, nullptr);
+    std::shared_ptr<HeifImage> result = heifParser.GetAuxiliaryMapImage(auxType);
+    ASSERT_EQ(result, nullptr);
+    GTEST_LOG_(INFO) << "HeifParserTest: GetAuxiliaryMapImageTest001 end";
 }
 
 /**
@@ -676,6 +962,48 @@ HWTEST_F(HeifParserTest, MakeFromStreamTest001, TestSize.Level3)
     auto ret = heifParser.MakeFromStream(stream, nullptr);
     ASSERT_EQ(ret, heif_error_no_data);
     GTEST_LOG_(INFO) << "HeifParserTest: MakeFromStreamTest001 end";
+}
+
+/**
+ * @tc.name: MakeFromStreamTest002
+ * @tc.desc: Test MakeFromStream when AssembleImages fails to find primary image.
+ * @tc.type: FUNC
+ */
+HWTEST_F(HeifParserTest, MakeFromStreamTest002, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "HeifParserTest: MakeFromStreamTest002 start";
+    std::vector<uint8_t> heifData = {
+        0x00, 0x00, 0x00, 0x18, 'f', 't', 'y', 'p',
+        'h', 'e', 'i', 'c',
+        0x00, 0x00, 0x00, 0x00,
+        'h', 'e', 'i', 'c', 'm', 'i', 'f', '1',
+        0x00, 0x00, 0x00, 0x70, 'm', 'e', 't', 'a',
+        0x00, 0x00, 0x00, 0x00,
+        0x00, 0x00, 0x00, 0x20, 'h', 'd', 'l', 'r',
+        0x00, 0x00, 0x00, 0x00,
+        0x00, 0x00, 0x00, 0x00,
+        'p', 'i', 'c', 't',
+        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+        0x00, 0x00, 0x00, 0x0E, 'p', 'i', 't', 'm',
+        0x00, 0x00, 0x00, 0x00,
+        0xFF, 0xFF,
+        0x00, 0x00, 0x00, 0x0C, 'i', 'i', 'n', 'f',
+        0x00, 0x00, 0x00, 0x00,
+        0x00, 0x00,
+        0x00, 0x00, 0x00, 0x20, 'i', 'p', 'r', 'p',
+        0x00, 0x00, 0x00, 0x08, 'i', 'p', 'c', 'o',
+        0x00, 0x00, 0x00, 0x10, 'i', 'p', 'm', 'a',
+        0x00, 0x00, 0x00, 0x00,
+        0x00, 0x00, 0x00, 0x00,
+        0x00, 0x00, 0x00, 0x10, 'i', 'l', 'o', 'c',
+        0x00, 0x00, 0x00, 0x00,
+        0x44, 0x40, 0x00, 0x00,
+    };
+    auto inputStream = std::make_shared<HeifBufferInputStream>(heifData.data(), heifData.size(), false);
+    std::shared_ptr<HeifParser> parser;
+    heif_error ret = HeifParser::MakeFromStream(inputStream, &parser);
+    ASSERT_EQ(ret, heif_error_invalid_box_size);
+    GTEST_LOG_(INFO) << "HeifParserTest: MakeFromStreamTest002 end";
 }
 
 /**
@@ -1270,6 +1598,30 @@ HWTEST_F(HeifParserTest, AssembleBoxesTest008, TestSize.Level3)
 }
 
 /**
+ * @tc.name: AssembleBoxesTest009
+ * @tc.desc: Test AssembleBoxes when reader reaches end or encounters EOF
+ * @tc.type: FUNC
+ */
+HWTEST_F(HeifParserTest, AssembleBoxesTest009, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "HeifParserTest: AssembleBoxesTest009 start";
+    std::vector<uint8_t> heifData = {
+        0x00, 0x00, 0x00, 0x18, 'f', 't', 'y', 'p',
+        'h', 'e', 'i', 'c',
+        0x00, 0x00, 0x00, 0x00,
+        'h', 'e', 'i', 'c', 'm', 'i', 'f', '1',
+    };
+    auto stream = std::make_shared<HeifBufferInputStream>(heifData.data(), heifData.size(), false);
+    HeifParser heifParser(stream);
+    auto maxSize = static_cast<uint64_t>(std::numeric_limits<int64_t>::max());
+    HeifStreamReader reader(stream, 0, maxSize);
+    auto ret = heifParser.AssembleBoxes(reader);
+    ASSERT_EQ(ret, heif_error_no_meta);
+    ASSERT_NE(heifParser.ftypBox_, nullptr);
+    GTEST_LOG_(INFO) << "HeifParserTest: AssembleBoxesTest009 end";
+}
+
+/**
  * @tc.name: GetGridLengthTest002
  * @tc.desc: Verify that HeifParser call GetGridLength when item data id is mock.
  * @tc.type: FUNC
@@ -1285,6 +1637,28 @@ HWTEST_F(HeifParserTest, GetGridLengthTest002, TestSize.Level3)
     auto ret = heifParser.GetGridLength(MOCK_ITEM_ID, mockSize);
     ASSERT_EQ(ret, heif_error_item_data_not_found);
     GTEST_LOG_(INFO) << "HeifParserTest: GetGridLengthTest002 end";
+}
+
+/**
+ * @tc.name: GetGridLengthTest003
+ * @tc.desc: Test GetGridLength when item exists in both infeBoxes and iloc items
+ * @tc.type: FUNC
+ */
+HWTEST_F(HeifParserTest, GetGridLengthTest003, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "HeifParserTest: GetGridLengthTest003 start";
+    HeifParser heifParser;
+    heif_item_id testItemId = IT35_TRUE_ID;
+    auto infeBox = std::make_shared<HeifInfeBox>(testItemId, "grid", false);
+    heifParser.infeBoxes_[testItemId] = infeBox;
+    heifParser.ilocBox_ = std::make_shared<HeifIlocBox>();
+    std::vector<uint8_t> testData(NUM_100, 0x01);
+    heif_error appendResult = heifParser.ilocBox_->AppendData(testItemId, testData, 0);
+    ASSERT_EQ(appendResult, heif_error_ok);
+    size_t length = 0;
+    heif_error ret = heifParser.GetGridLength(testItemId, length);
+    ASSERT_EQ(ret, heif_error_ok);
+    GTEST_LOG_(INFO) << "HeifParserTest: GetGridLengthTest003 end";
 }
 
 /**
@@ -1307,6 +1681,23 @@ HWTEST_F(HeifParserTest, GetItemDataTest002, TestSize.Level3)
 }
 
 /**
+ * @tc.name: GetItemDataTest003
+ * @tc.desc: Test GetItemData when infe_box is nullptr
+ * @tc.type: FUNC
+ */
+HWTEST_F(HeifParserTest, GetItemDataTest003, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "HeifParserTest: GetItemDataTest003 start";
+    HeifParser heifParser;
+    heif_item_id testItemId = IT35_TRUE_ID;
+    heifParser.infeBoxes_[testItemId] = nullptr;
+    std::vector<uint8_t> outData;
+    heif_error ret = heifParser.GetItemData(testItemId, &outData);
+    ASSERT_EQ(ret, heif_error_item_not_found);
+    GTEST_LOG_(INFO) << "HeifParserTest: GetItemDataTest003 end";
+}
+
+/**
  * @tc.name: AddItemTest001
  * @tc.desc: Verify that HeifParser call AddItem when iinfBox_ is nullptr.
  * @tc.type: FUNC
@@ -1319,6 +1710,81 @@ HWTEST_F(HeifParserTest, AddItemTest001, TestSize.Level3)
     auto ret = heifParser.AddItem("mock", false);
     ASSERT_EQ(ret, nullptr);
     GTEST_LOG_(INFO) << "HeifParserTest: AddItemTest001 end";
+}
+
+/**
+ * @tc.name: ExtractIT35MetadataTest001
+ * @tc.desc: Test ExtractIT35Metadata when GetItemType returns non-it35 type
+ * @tc.type: FUNC
+ */
+HWTEST_F(HeifParserTest, ExtractIT35MetadataTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "HeifParserTest: ExtractIT35MetadataTest001 start";
+    HeifParser heifParser;
+    heif_item_id testItemId = IT35_TRUE_ID;
+    auto infeBox = std::make_shared<HeifInfeBox>(testItemId, "mime", false);
+    heifParser.infeBoxes_[testItemId] = infeBox;
+    heifParser.primaryImage_ = std::make_shared<HeifImage>(2);
+    heifParser.ExtractIT35Metadata(testItemId);
+    std::string itemType = heifParser.GetItemType(testItemId);
+    ASSERT_EQ(itemType, "mime");
+    GTEST_LOG_(INFO) << "HeifParserTest: ExtractIT35MetadataTest001 end";
+}
+
+/**
+ * @tc.name: ExtractISOMetadataTest001
+ * @tc.desc: Test ExtractISOMetadata when GetItemType returns non-tmap type
+ * @tc.type: FUNC
+ */
+HWTEST_F(HeifParserTest, ExtractISOMetadataTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "HeifParserTest: ExtractISOMetadataTest001 start";
+    HeifParser heifParser;
+    heif_item_id testItemId = IT35_TRUE_ID;
+    auto infeBox = std::make_shared<HeifInfeBox>(testItemId, "hvc1", false);
+    heifParser.infeBoxes_[testItemId] = infeBox;
+    heifParser.primaryImage_ = std::make_shared<HeifImage>(2);
+    heifParser.ExtractISOMetadata(testItemId);
+    std::string itemType = heifParser.GetItemType(testItemId);
+    ASSERT_EQ(itemType, "hvc1");
+    GTEST_LOG_(INFO) << "HeifParserTest: ExtractISOMetadataTest001 end";
+}
+
+/**
+ * @tc.name: ExtractFragmentMetadataTest001
+ * @tc.desc: Test ExtractFragmentMetadata when GetProperty<HeifIspeBox> returns nullptr
+ * @tc.type: FUNC
+ */
+HWTEST_F(HeifParserTest, ExtractFragmentMetadataTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "HeifParserTest: ExtractFragmentMetadataTest001 start";
+    HeifParser heifParser;
+    heif_item_id testItemId = IT35_TRUE_ID;
+    heifParser.ipcoBox_ = nullptr;
+    heifParser.ipmaBox_ = nullptr;
+    heifParser.primaryImage_ = std::make_shared<HeifImage>(2);
+    heifParser.ExtractFragmentMetadata(testItemId);
+    ASSERT_NE(heifParser.primaryImage_, nullptr);
+    GTEST_LOG_(INFO) << "HeifParserTest: ExtractFragmentMetadataTest001 end";
+}
+
+/**
+ * @tc.name: ExtractFragmentMetadataTest002
+ * @tc.desc: Test ExtractFragmentMetadata when GetProperty<HeifRlocBox> returns nullptr
+ * @tc.type: FUNC
+ */
+HWTEST_F(HeifParserTest, ExtractFragmentMetadataTest002, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "HeifParserTest: ExtractFragmentMetadataTest002 start";
+    
+    HeifParser heifParser;
+    heif_item_id testItemId = IT35_TRUE_ID;
+    heifParser.ipcoBox_ = nullptr;
+    heifParser.ipmaBox_ = nullptr;
+    heifParser.primaryImage_ = std::make_shared<HeifImage>(2);
+    heifParser.ExtractFragmentMetadata(testItemId);
+    ASSERT_NE(heifParser.primaryImage_, nullptr);
+    GTEST_LOG_(INFO) << "HeifParserTest: ExtractFragmentMetadataTest002 end";
 }
 
 /**
@@ -1336,6 +1802,90 @@ HWTEST_F(HeifParserTest, SetMetadataTest001, TestSize.Level3)
     auto ret = heifParser.SetMetadata(mockImage, std::vector<uint8_t>(), "mock", "mock");
     ASSERT_EQ(ret, heif_error_ok);
     GTEST_LOG_(INFO) << "HeifParserTest: SetMetadataTest001 end";
+}
+
+/**
+ * @tc.name: SetPrimaryImageTest002
+ * @tc.desc: Test SetPrimaryImage when primaryImage_ is null to skip the if branch
+ * @tc.type: FUNC
+ */
+HWTEST_F(HeifParserTest, SetPrimaryImageTest002, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "HeifParserTest: SetPrimaryImageTest002 start";
+    HeifParser heifParser;
+    heifParser.pitmBox_ = std::make_shared<HeifPtimBox>();
+    std::shared_ptr<HeifImage> mockImage = std::make_shared<HeifImage>(MOCK_ITEM_ID);
+    ASSERT_EQ(heifParser.primaryImage_, nullptr);
+    heifParser.SetPrimaryImage(mockImage);
+    ASSERT_EQ(heifParser.primaryImage_, mockImage);
+    GTEST_LOG_(INFO) << "HeifParserTest: SetPrimaryImageTest002 end";
+}
+
+/**
+ * @tc.name: SetExifMetadataTest002
+ * @tc.desc: Test SetExifMetadata when size > HEIF_MAX_EXIF_SIZE
+ * @tc.type: FUNC
+ */
+HWTEST_F(HeifParserTest, SetExifMetadataTest002, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "HeifParserTest: SetExifMetadataTest002 start";
+    HeifParser heifParser;
+    std::shared_ptr<HeifImage> mockImage = std::make_shared<HeifImage>(MOCK_ITEM_ID);
+    const uint32_t largeSize = HEIF_MAX_EXIF_SIZE + 1;
+    std::vector<uint8_t> largeData(largeSize, MOCK_FILL_BYTE);
+    heif_error result = heifParser.SetExifMetadata(mockImage, largeData.data(), largeSize);
+    ASSERT_EQ(result, heif_invalid_exif_data);
+    GTEST_LOG_(INFO) << "HeifParserTest: SetExifMetadataTest002 end";
+}
+
+/**
+ * @tc.name: UpdateExifMetadataTest002
+ * @tc.desc: Test UpdateExifMetadata when size > HEIF_MAX_EXIF_SIZE
+ * @tc.type: FUNC
+ */
+HWTEST_F(HeifParserTest, UpdateExifMetadataTest002, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "HeifParserTest: UpdateExifMetadataTest002 start";
+    HeifParser heifParser;
+    std::shared_ptr<HeifImage> mockImage = std::make_shared<HeifImage>(MOCK_ITEM_ID);
+    heif_item_id testItemId = IT35_TRUE_ID;
+    const uint32_t largeSize = HEIF_MAX_EXIF_SIZE + 1;
+    std::vector<uint8_t> largeData(largeSize, MOCK_FILL_BYTE);
+    heif_error result = heifParser.UpdateExifMetadata(mockImage, largeData.data(), largeSize, testItemId);
+    ASSERT_EQ(result, heif_invalid_exif_data);
+    GTEST_LOG_(INFO) << "HeifParserTest: UpdateExifMetadataTest002 end";
+}
+
+/**
+ * @tc.name: SetMetadataTest002
+ * @tc.desc: Test SetMetadata when AddItem returns nullptr
+ * @tc.type: FUNC
+ */
+HWTEST_F(HeifParserTest, SetMetadataTest002, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "HeifParserTest: SetMetadataTest002 start";
+    HeifParser heifParser;
+    std::shared_ptr<HeifImage> mockImage = std::make_shared<HeifImage>(MOCK_ITEM_ID);
+    std::vector<uint8_t> testData = {MOCK_DATA_1, MOCK_DATA_2};
+    heifParser.metaBox_ = std::make_shared<HeifMetaBox>();
+    heif_error result = heifParser.SetMetadata(mockImage, testData, "test", "test");
+    ASSERT_EQ(result, heif_invalid_exif_data);
+    GTEST_LOG_(INFO) << "HeifParserTest: SetMetadataTest002 end";
+}
+
+/**
+ * @tc.name: SetTiffOffsetTest001
+ * @tc.desc: Test SetTiffOffset when tiffOffset_ is already set
+ * @tc.type: FUNC
+ */
+HWTEST_F(HeifParserTest, SetTiffOffsetTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "HeifParserTest: SetTiffOffsetTest001 start";
+    HeifParser heifParser;
+    heifParser.tiffOffset_ = MOCK_TIFF_OFFSET;
+    heifParser.SetTiffOffset();
+    ASSERT_NE(heifParser.tiffOffset_, 0);
+    GTEST_LOG_(INFO) << "HeifParserTest: SetTiffOffsetTest001 end";
 }
 }
 }

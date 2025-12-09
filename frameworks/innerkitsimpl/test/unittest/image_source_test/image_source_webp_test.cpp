@@ -78,6 +78,7 @@ HWTEST_F(ImageSourceWebpTest, WebpImageDecode001, TestSize.Level3)
     std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(IMAGE_INPUT_WEBP_PATH, opts, errorCode);
     ASSERT_EQ(errorCode, SUCCESS);
     ASSERT_NE(imageSource.get(), nullptr);
+    ASSERT_EQ(imageSource->GetiTxtLength(), 0);
     /**
      * @tc.steps: step2. get support decode image format.
      * @tc.expected: step2. get support format info success.
@@ -124,6 +125,7 @@ HWTEST_F(ImageSourceWebpTest, WebpImageDecode002, TestSize.Level3)
     std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(IMAGE_INPUT_WEBP_PATH, opts, errorCode);
     ASSERT_EQ(errorCode, SUCCESS);
     ASSERT_NE(imageSource.get(), nullptr);
+    ASSERT_EQ(imageSource->GetiTxtLength(), 0);
     /**
      * @tc.steps: step2. get image info from input image.
      * @tc.expected: step2. get image info success.
@@ -153,6 +155,7 @@ HWTEST_F(ImageSourceWebpTest, WebpImageDecode003, TestSize.Level3)
     std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(IMAGE_INPUT_WEBP_PATH, opts, errorCode);
     ASSERT_EQ(errorCode, SUCCESS);
     ASSERT_NE(imageSource.get(), nullptr);
+    ASSERT_EQ(imageSource->GetiTxtLength(), 0);
 }
 
 /**
@@ -196,6 +199,7 @@ HWTEST_F(ImageSourceWebpTest, WebpImageDecode005, TestSize.Level3)
     std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(buffer, bufferSize, opts, errorCode);
     ASSERT_EQ(errorCode, SUCCESS);
     ASSERT_NE(imageSource.get(), nullptr);
+    ASSERT_EQ(imageSource->GetiTxtLength(), 0);
     /**
      * @tc.steps: step2. decode image source to pixel map by default decode options
      * @tc.expected: step2. decode image source to pixel map success.
@@ -243,6 +247,7 @@ HWTEST_F(ImageSourceWebpTest, WebpImageDecode006, TestSize.Level3)
     std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(std::move(fs), opts, errorCode);
     ASSERT_EQ(errorCode, SUCCESS);
     ASSERT_NE(imageSource.get(), nullptr);
+    ASSERT_EQ(imageSource->GetiTxtLength(), 0);
     /**
      * @tc.steps: step2. decode image source to pixel map by default decode options
      * @tc.expected: step2. decode image source to pixel map success.
@@ -282,6 +287,7 @@ HWTEST_F(ImageSourceWebpTest, WebpImageDecode007, TestSize.Level3)
     std::unique_ptr<ImageSource> imageSource = ImageSource::CreateIncrementalImageSource(incOpts, errorCode);
     ASSERT_EQ(errorCode, SUCCESS);
     ASSERT_NE(imageSource.get(), nullptr);
+    ASSERT_EQ(imageSource->GetiTxtLength(), 0);
     /**
      * @tc.steps: step2. update incremental stream every 10 ms with random data size and promote decode
      * image to pixel map by default decode options
@@ -335,6 +341,7 @@ HWTEST_F(ImageSourceWebpTest, WebpImageDecode008, TestSize.Level3)
     std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(IMAGE_INPUT_WEBP_PATH, opts, errorCode);
     ASSERT_EQ(errorCode, SUCCESS);
     ASSERT_NE(imageSource.get(), nullptr);
+    ASSERT_EQ(imageSource->GetiTxtLength(), 0);
     /**
      * @tc.steps: step2. decode image source to pixel map by default decode options.
      * @tc.expected: step2. decode image source to pixel map success.
@@ -384,6 +391,7 @@ HWTEST_F(ImageSourceWebpTest, WebpImageDecode009, TestSize.Level3)
     std::unique_ptr<ImageSource> imageSource = ImageSource::CreateIncrementalImageSource(incOpts, errorCode);
     ASSERT_EQ(errorCode, SUCCESS);
     ASSERT_NE(imageSource.get(), nullptr);
+    ASSERT_EQ(imageSource->GetiTxtLength(), 0);
     /**
      * @tc.steps: step2. update incremental stream every 10 ms with random data size and promote decode
      * image to pixel map by default decode options
@@ -454,6 +462,7 @@ HWTEST_F(ImageSourceWebpTest, WebpImageDecode010, TestSize.Level3)
     std::unique_ptr<ImageSource> imageSource = ImageSource::CreateIncrementalImageSource(incOpts, errorCode);
     ASSERT_EQ(errorCode, SUCCESS);
     ASSERT_NE(imageSource.get(), nullptr);
+    ASSERT_EQ(imageSource->GetiTxtLength(), 0);
     /**
      * @tc.steps: step2. update incremental stream every 10 ms with random data size.
      * @tc.expected: step2. update success.
@@ -511,6 +520,7 @@ HWTEST_F(ImageSourceWebpTest, GetDelayTime001, TestSize.Level3)
     uint32_t errorCode = 0;
     const SourceOptions opts;
     auto imageSource = ImageSource::CreateImageSource(TEST_FILE_SINGLE_FRAME_WEBP, opts, errorCode);
+    ASSERT_EQ(imageSource->GetiTxtLength(), 0);
     auto delayTimes = imageSource->GetDelayTime(errorCode);
     ASSERT_EQ(errorCode, SUCCESS);
     ASSERT_NE(delayTimes, nullptr);
@@ -527,6 +537,7 @@ HWTEST_F(ImageSourceWebpTest, GetDelayTime002, TestSize.Level3)
     uint32_t errorCode = 0;
     const SourceOptions opts;
     auto imageSource = ImageSource::CreateImageSource(TEST_FILE_MULTI_FRAME_WEBP, opts, errorCode);
+    ASSERT_EQ(imageSource->GetiTxtLength(), 0);
 
     auto delayTimes = imageSource->GetDelayTime(errorCode);
     ASSERT_EQ(errorCode, SUCCESS);
@@ -548,6 +559,7 @@ HWTEST_F(ImageSourceWebpTest, GetDelayTime003, TestSize.Level3)
     uint32_t errorCode = 0;
     const SourceOptions opts;
     auto imageSource = ImageSource::CreateImageSource(TEST_FILE_JPG, opts, errorCode);
+    ASSERT_EQ(imageSource->GetiTxtLength(), 0);
 
     auto delayTimes = imageSource->GetDelayTime(errorCode);
     ASSERT_NE(errorCode, SUCCESS);
@@ -574,6 +586,7 @@ HWTEST_F(ImageSourceWebpTest, WebpImageCrop001, TestSize.Level3)
     std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(std::move(fs), opts, errorCode);
     ASSERT_EQ(errorCode, SUCCESS);
     ASSERT_NE(imageSource.get(), nullptr);
+    ASSERT_EQ(imageSource->GetiTxtLength(), 0);
     /**
      * @tc.steps: step2. crop jpg image source to pixel map crop options
      * @tc.expected: step2. crop jpg image source to pixel map success.
@@ -607,6 +620,7 @@ HWTEST_F(ImageSourceWebpTest, PromoteDecoding001, TestSize.Level3)
     std::unique_ptr<ImageSource> imageSource = ImageSource::CreateIncrementalImageSource(incOpt, errorCode);
     ASSERT_EQ(errorCode, SUCCESS);
     ASSERT_NE(imageSource.get(), nullptr);
+    ASSERT_EQ(imageSource->GetiTxtLength(), 0);
     DecodeOptions decodeOpts;
     decodeOpts.desiredPixelFormat = PixelFormat::BGRA_8888;
     decodeOpts.rotateDegrees = 180;
@@ -637,6 +651,7 @@ HWTEST_F(ImageSourceWebpTest, OnPeerDestory001, TestSize.Level3)
     std::unique_ptr<ImageSource> imageSource = ImageSource::CreateIncrementalImageSource(incOpt, errorCode);
     ASSERT_EQ(errorCode, SUCCESS);
     ASSERT_NE(imageSource.get(), nullptr);
+    ASSERT_EQ(imageSource->GetiTxtLength(), 0);
     DecodeOptions decodeOpts;
     decodeOpts.desiredPixelFormat = PixelFormat::BGRA_8888;
     decodeOpts.rotateDegrees = 180;
@@ -662,6 +677,7 @@ HWTEST_F(ImageSourceWebpTest, WebpGetEncodedFormat001, TestSize.Level3)
     std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(IMAGE_INPUT_WEBP_PATH, opts, errorCode);
     ASSERT_EQ(errorCode, SUCCESS);
     ASSERT_NE(imageSource.get(), nullptr);
+    ASSERT_EQ(imageSource->GetiTxtLength(), 0);
     /**
      * @tc.steps: step2. decode image source to pixel map by default decode options.
      * @tc.expected: step2. decode image source to pixel map success.

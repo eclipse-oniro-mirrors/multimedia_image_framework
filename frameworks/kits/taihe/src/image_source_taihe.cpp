@@ -181,27 +181,55 @@ int64_t ImageSourceImpl::GetImplPtr()
     return static_cast<int64_t>(reinterpret_cast<uintptr_t>(this));
 }
 
-ImageInfo ImageSourceImpl::GetImageInfoSyncWithIndex(int32_t index)
+optional<ImageInfo> ImageSourceImpl::GetImageInfoWithIndexCallback(int32_t index)
 {
-    OHOS::Media::ImageInfo imageinfo;
-    bool isHdr = false;
-    if (nativeImgSrc != nullptr) {
-        index = index >= NUM_0 ? index : NUM_0;
-        uint32_t ret = nativeImgSrc->GetImageInfo(index, imageinfo);
-        if (ret != OHOS::Media::SUCCESS) {
-            ImageTaiheUtils::ThrowExceptionError("Inner GetImageInfo failed");
-        }
-        isHdr = nativeImgSrc->IsHdrImage();
-    } else {
-        ImageTaiheUtils::ThrowExceptionError("nativeImgSrc is nullptr");
-    }
-    return ImageTaiheUtils::ToTaiheImageInfo(imageinfo, isHdr);
+    return GetImageInfoInner(::taihe::optional<int32_t>::make(index), false);
 }
 
-ImageInfo ImageSourceImpl::GetImageInfoSync()
+optional<ImageInfo> ImageSourceImpl::GetImageInfoWithCallback()
 {
-    int32_t index = 0;
-    return GetImageInfoSyncWithIndex(index);
+    return GetImageInfoInner(::taihe::optional<int32_t>::make(), false);
+}
+
+optional<ImageInfo> ImageSourceImpl::GetImageInfoReturnsPromise(optional_view<int32_t> index)
+{
+    return GetImageInfoInner(index, false);
+}
+
+optional<ImageInfo> ImageSourceImpl::GetImageInfoSync(optional_view<int32_t> index)
+{
+    return GetImageInfoInner(index, true);
+}
+
+optional<ImageInfo> ImageSourceImpl::GetImageInfoInner(optional_view<int32_t> index, bool isSync)
+{
+    optional<ImageInfo> res = optional<ImageInfo>(std::nullopt);
+
+    if (nativeImgSrc == nullptr) {
+        IMAGE_LOGE("nativeImgSrc is nullptr");
+        return res;
+    }
+
+    int32_t indexValue = NUM_0;
+    if (index.has_value()) {
+        indexValue = index.value() >= NUM_0 ? index.value() : NUM_0;
+    }
+
+    OHOS::Media::ImageInfo imageinfo;
+    uint32_t ret = nativeImgSrc->GetImageInfo(indexValue, imageinfo);
+    if (ret != OHOS::Media::SUCCESS) {
+        if (isSync) {
+            IMAGE_LOGE("Inner GetImageInfo failed");
+        } else {
+            ImageTaiheUtils::ThrowExceptionError("Inner GetImageInfo failed");
+        }
+    } else {
+        bool isHdr = nativeImgSrc->IsHdrImage();
+        auto taiheImageInfo = ImageTaiheUtils::ToTaiheImageInfo(imageinfo, isHdr);
+        res = optional<ImageInfo>(std::in_place, taiheImageInfo);
+    }
+
+    return res;
 }
 
 static bool ParseRotate(DecodingOptions const& options, OHOS::Media::DecodeOptions &dst, std::string &errMsg)
@@ -458,6 +486,7 @@ static void CreatePixelMapExecute(std::unique_ptr<ImageSourceTaiheContext> &taih
 
     if (taiheContext->errMsg.size() > 0) {
         IMAGE_LOGE("%{public}s errMsg: %{public}s", __func__, taiheContext->errMsg.c_str());
+        taiheContext->status = OHOS::Media::ERROR;
         return;
     }
 
@@ -469,17 +498,6 @@ static void CreatePixelMapExecute(std::unique_ptr<ImageSourceTaiheContext> &taih
         IMAGE_LOGE("Create PixelMap error");
     }
     IMAGE_LOGD("CreatePixelMapExecute OUT");
-}
-
-static PixelMap CreatePixelMapComplete(std::unique_ptr<ImageSourceTaiheContext> &taiheContext)
-{
-    IMAGE_LOGD("CreatePixelMapComplete IN");
-    if (taiheContext->status == OHOS::Media::SUCCESS && taiheContext->rPixelMap != nullptr) {
-        return PixelMapImpl::CreatePixelMap(taiheContext->rPixelMap);
-    }
-    IMAGE_LOGD("CreatePixelMapComplete OUT");
-    ImageTaiheUtils::ThrowExceptionError(taiheContext->errMsg);
-    return make_holder<PixelMapImpl, PixelMap>();
 }
 
 static optional<PixelMap> CreatePixelMapComplete(std::unique_ptr<ImageSourceTaiheContext> &taiheContext, bool isSync)
@@ -496,37 +514,50 @@ static optional<PixelMap> CreatePixelMapComplete(std::unique_ptr<ImageSourceTaih
     return optional<PixelMap>(std::nullopt);
 }
 
-PixelMap ImageSourceImpl::CreatePixelMapSyncWithOptions(DecodingOptions const& options)
+optional<PixelMap> ImageSourceImpl::CreatePixelMapSyncWithOptions(optional_view<DecodingOptions> options, bool isSync)
 {
     std::unique_ptr<ImageSourceTaiheContext> taiheContext = std::make_unique<ImageSourceTaiheContext>();
     taiheContext->rImageSource = nativeImgSrc;
     if (taiheContext->rImageSource == nullptr) {
         IMAGE_LOGE("%{public}s nativeImgSrc is nullptr", __func__);
-        ImageTaiheUtils::ThrowExceptionError(IMAGE_BAD_PARAMETER, "nativeImgSrc is nullptr");
-        return make_holder<PixelMapImpl, PixelMap>();
+        return optional<PixelMap>(std::nullopt);
     }
 
     taiheContext->thisPtr = this;
     if (taiheContext->thisPtr == nullptr) {
         IMAGE_LOGE("%{public}s thisPtr is nullptr", __func__);
-        ImageTaiheUtils::ThrowExceptionError(IMAGE_BAD_PARAMETER, "thisPtr is nullptr");
-        return make_holder<PixelMapImpl, PixelMap>();
+        return optional<PixelMap>(std::nullopt);
     }
 
-    if (!ParseDecodeOptions(options, taiheContext->decodeOpts, taiheContext->index,
+    DecodingOptions decodingOptions = options.value_or(DecodingOptions {});
+    if (!ParseDecodeOptions(decodingOptions, taiheContext->decodeOpts, taiheContext->index,
         taiheContext->errMsg)) {
         IMAGE_LOGE("%{public}s ParseDecodeOptions failed", __func__);
     }
 
     ImageTaiheUtils::HicheckerReport();
     CreatePixelMapExecute(taiheContext);
-    return CreatePixelMapComplete(taiheContext);
+    return CreatePixelMapComplete(taiheContext, isSync);
 }
 
-PixelMap ImageSourceImpl::CreatePixelMapSync()
+optional<PixelMap> ImageSourceImpl::CreatePixelMapWithOptionsCallback(DecodingOptions const& options)
 {
-    DecodingOptions options {};
-    return CreatePixelMapSyncWithOptions(options);
+    return CreatePixelMapSyncWithOptions(optional<DecodingOptions>(std::in_place, options), false);
+}
+
+optional<PixelMap> ImageSourceImpl::CreatePixelMapWithCallback()
+{
+    return CreatePixelMapSyncWithOptions(optional<DecodingOptions>(std::nullopt), false);
+}
+
+optional<PixelMap> ImageSourceImpl::CreatePixelMapReturnsPromise(optional_view<DecodingOptions> options)
+{
+    return CreatePixelMapSyncWithOptions(options, false);
+}
+
+optional<PixelMap> ImageSourceImpl::CreatePixelMapSync(optional_view<DecodingOptions> options)
+{
+    return CreatePixelMapSyncWithOptions(options, true);
 }
 
 static void CreatePixelMapUsingAllocatorSyncExecute(std::unique_ptr<ImageSourceTaiheContext> &taiheContext)
@@ -545,31 +576,32 @@ static void CreatePixelMapUsingAllocatorSyncExecute(std::unique_ptr<ImageSourceT
     }
 }
 
-static PixelMap CreatePixelMapUsingAllocatorSyncComplete(std::unique_ptr<ImageSourceTaiheContext> &taiheContext)
+static optional<PixelMap> CreatePixelMapUsingAllocatorSyncComplete(std::unique_ptr<ImageSourceTaiheContext> &context)
 {
-    if (taiheContext->status == OHOS::Media::SUCCESS && taiheContext->rPixelMap != nullptr) {
-        return PixelMapImpl::CreatePixelMap(taiheContext->rPixelMap);
+    if (context->status == OHOS::Media::SUCCESS && context->rPixelMap != nullptr) {
+        auto res = PixelMapImpl::CreatePixelMap(context->rPixelMap);
+        return optional<PixelMap>(std::in_place, res);
     }
-    for (const auto &[errorCode, errMsg] : taiheContext->errMsgArray) {
+    for (const auto &[errorCode, errMsg] : context->errMsgArray) {
         ImageTaiheUtils::ThrowExceptionError(errorCode, errMsg);
     }
-    return make_holder<PixelMapImpl, PixelMap>();
+    return optional<PixelMap>(std::nullopt);
 }
 
-PixelMap ImageSourceImpl::CreatePixelMapUsingAllocatorSync(optional_view<DecodingOptions> options,
+optional<PixelMap> ImageSourceImpl::CreatePixelMapUsingAllocatorSync(optional_view<DecodingOptions> options,
     optional_view<AllocatorType> allocatorType)
 {
     std::unique_ptr<ImageSourceTaiheContext> taiheContext = std::make_unique<ImageSourceTaiheContext>();
     taiheContext->rImageSource = nativeImgSrc;
     if (taiheContext->rImageSource == nullptr) {
         IMAGE_LOGE("%{public}s nativeImgSrc is nullptr", __func__);
-        return make_holder<PixelMapImpl, PixelMap>();
+        return optional<PixelMap>(std::nullopt);
     }
 
     taiheContext->thisPtr = this;
     if (taiheContext->thisPtr == nullptr) {
         IMAGE_LOGE("%{public}s thisPtr is nullptr", __func__);
-        return make_holder<PixelMapImpl, PixelMap>();
+        return optional<PixelMap>(std::nullopt);
     }
 
     DecodingOptions opts = options.value_or(DecodingOptions {});
@@ -577,14 +609,14 @@ PixelMap ImageSourceImpl::CreatePixelMapUsingAllocatorSync(optional_view<Decodin
         taiheContext->errMsg)) {
         IMAGE_LOGE("DecodeOptions mismatch.");
         ImageTaiheUtils::ThrowExceptionError(IMAGE_BAD_PARAMETER, "DecodeOptions mismatch.");
-        return make_holder<PixelMapImpl, PixelMap>();
+        return optional<PixelMap>(std::nullopt);
     }
 
     int32_t allocatorTypeInner = allocatorType.value_or(AllocatorType::key_t::AUTO);
     if (!taiheContext->rImageSource->IsSupportAllocatorType(taiheContext->decodeOpts, allocatorTypeInner)) {
         IMAGE_LOGE("Unsupported allocator type.");
         ImageTaiheUtils::ThrowExceptionError(IMAGE_SOURCE_UNSUPPORTED_ALLOCATOR_TYPE, "Unsupported allocator type.");
-        return make_holder<PixelMapImpl, PixelMap>();
+        return optional<PixelMap>(std::nullopt);
     }
 
     CreatePixelMapUsingAllocatorSyncExecute(taiheContext);
@@ -1343,27 +1375,29 @@ static void CreatePictureExecute(std::unique_ptr<ImageSourceTaiheContext> &conte
     IMAGE_LOGD("CreatePictureExecute OUT");
 }
 
-static Picture CreatePictureComplete(std::unique_ptr<ImageSourceTaiheContext> &context)
+static optional<Picture> CreatePictureComplete(std::unique_ptr<ImageSourceTaiheContext> &context)
 {
     IMAGE_LOGD("CreatePictureComplete IN");
-    if (context->status != OHOS::Media::SUCCESS) {
+    if (context->status != OHOS::Media::SUCCESS || context->rPicture == nullptr) {
         std::pair<int32_t, std::string> errorMsg(static_cast<int32_t>(IMAGE_DECODE_FAILED), "Create Picture error");
         context->errMsgArray.insert(errorMsg);
         for (const auto &[errorCode, errMsg] : context->errMsgArray) {
             ImageTaiheUtils::ThrowExceptionError(errorCode, errMsg);
         }
+        return optional<Picture>(std::nullopt);
     }
     IMAGE_LOGD("CreatePictureComplete OUT");
-    return PictureImpl::CreatePicture(context->rPicture);
+    auto res = PictureImpl::CreatePicture(context->rPicture);
+    return optional<Picture>(std::in_place, res);
 }
 
-Picture ImageSourceImpl::CreatePictureSync(optional_view<DecodingOptionsForPicture> options)
+optional<Picture> ImageSourceImpl::CreatePictureSync(optional_view<DecodingOptionsForPicture> options)
 {
     std::unique_ptr<ImageSourceTaiheContext> taiheContext = std::make_unique<ImageSourceTaiheContext>();
     taiheContext->thisPtr = this;
     if (nativeImgSrc == nullptr) {
-        ImageTaiheUtils::ThrowExceptionError("empty native rImageSource");
-        return make_holder<PictureImpl, Picture>();
+        IMAGE_LOGE("empty native rImageSource");
+        return optional<Picture>(std::nullopt);
     }
     taiheContext->rImageSource = nativeImgSrc;
 
@@ -1376,7 +1410,7 @@ Picture ImageSourceImpl::CreatePictureSync(optional_view<DecodingOptionsForPictu
     } else {
         if (!ParseDecodingOptionsForPicture(options.value(), taiheContext->decodingOptsForPicture)) {
             ImageTaiheUtils::ThrowExceptionError(IMAGE_BAD_PARAMETER, "DecodingOptionsForPicture mismatch");
-            return make_holder<PictureImpl, Picture>();
+            return optional<Picture>(std::nullopt);
         }
     }
 
@@ -1420,7 +1454,7 @@ static std::string FileUrlToRawPath(const std::string &path)
     return path;
 }
 
-ImageSource CreateImageSourceByUriOption(string_view uri, SourceOptions const& options)
+optional<ImageSource> CreateImageSourceByUriOption(string_view uri, SourceOptions const& options)
 {
     OHOS::Media::SourceOptions opts = ImageTaiheUtils::ParseSourceOptions(options);
     uint32_t errorCode = OHOS::Media::ERR_MEDIA_INVALID_VALUE;
@@ -1429,8 +1463,8 @@ ImageSource CreateImageSourceByUriOption(string_view uri, SourceOptions const& o
     std::shared_ptr<OHOS::Media::ImageSource> imageSource =
         OHOS::Media::ImageSource::CreateImageSource(rawPath, opts, errorCode);
     if (imageSource == nullptr) {
-        ImageTaiheUtils::ThrowExceptionError("CreateImageSourceByUriOption error");
-        return make_holder<ImageSourceImpl, ImageSource>();
+        IMAGE_LOGE("CreateImageSourceExec error, errorCode: %{public}d", errorCode);
+        return optional<ImageSource>(std::nullopt);
     }
     {
         std::lock_guard<std::mutex> lock(imageSourceCrossThreadMutex_);
@@ -1439,16 +1473,17 @@ ImageSource CreateImageSourceByUriOption(string_view uri, SourceOptions const& o
         ImageSourceImpl::fileBuffer_ = nullptr;
         ImageSourceImpl::fileBufferSize_ = NUM_0;
     }
-    return make_holder<ImageSourceImpl, ImageSource>(imageSource);
+    auto res = make_holder<ImageSourceImpl, ImageSource>(imageSource);
+    return optional<ImageSource>(std::in_place, res);
 }
 
-ImageSource CreateImageSourceByUri(string_view uri)
+optional<ImageSource> CreateImageSourceByUri(string_view uri)
 {
     SourceOptions opts {};
     return CreateImageSourceByUriOption(uri, opts);
 }
 
-ImageSource CreateImageSourceByFdOption(double fd, SourceOptions const& options)
+optional<ImageSource> CreateImageSourceByFdOption(double fd, SourceOptions const& options)
 {
     int32_t fdInt = static_cast<int32_t>(fd);
     OHOS::Media::SourceOptions opts = ImageTaiheUtils::ParseSourceOptions(options);
@@ -1456,8 +1491,8 @@ ImageSource CreateImageSourceByFdOption(double fd, SourceOptions const& options)
     std::shared_ptr<OHOS::Media::ImageSource> imageSource =
         OHOS::Media::ImageSource::CreateImageSource(fdInt, opts, errorCode);
     if (imageSource == nullptr) {
-        ImageTaiheUtils::ThrowExceptionError("CreateImageSourceByFdOption error");
-        return make_holder<ImageSourceImpl, ImageSource>();
+        IMAGE_LOGE("CreateImageSourceExec error, errorCode: %{public}d", errorCode);
+        return optional<ImageSource>(std::nullopt);
     }
     {
         std::lock_guard<std::mutex> lock(imageSourceCrossThreadMutex_);
@@ -1466,16 +1501,17 @@ ImageSource CreateImageSourceByFdOption(double fd, SourceOptions const& options)
         ImageSourceImpl::fileBuffer_ = nullptr;
         ImageSourceImpl::fileBufferSize_ = NUM_0;
     }
-    return make_holder<ImageSourceImpl, ImageSource>(imageSource);
+    auto res = make_holder<ImageSourceImpl, ImageSource>(imageSource);
+    return optional<ImageSource>(std::in_place, res);
 }
 
-ImageSource CreateImageSourceByFd(int32_t fd)
+optional<ImageSource> CreateImageSourceByFd(int32_t fd)
 {
     SourceOptions opts {};
     return CreateImageSourceByFdOption(fd, opts);
 }
 
-ImageSource CreateImageSourceByArrayBufferOption(array_view<uint8_t> buf, SourceOptions const& options)
+optional<ImageSource> CreateImageSourceByArrayBufferOption(array_view<uint8_t> buf, SourceOptions const& options)
 {
     OHOS::Media::SourceOptions opts = ImageTaiheUtils::ParseSourceOptions(options);
     uint32_t errorCode = OHOS::Media::ERR_MEDIA_INVALID_VALUE;
@@ -1483,8 +1519,8 @@ ImageSource CreateImageSourceByArrayBufferOption(array_view<uint8_t> buf, Source
     std::shared_ptr<OHOS::Media::ImageSource> imageSource =
         OHOS::Media::ImageSource::CreateImageSource(bufPtr, buf.size(), opts, errorCode);
     if (imageSource == nullptr) {
-        ImageTaiheUtils::ThrowExceptionError("CreateImageSourceByArrayBufferOption error");
-        return make_holder<ImageSourceImpl, ImageSource>();
+        IMAGE_LOGE("CreateImageSourceExec error, errorCode: %{public}d", errorCode);
+        return optional<ImageSource>(std::nullopt);
     }
     {
         std::lock_guard<std::mutex> lock(imageSourceCrossThreadMutex_);
@@ -1493,16 +1529,18 @@ ImageSource CreateImageSourceByArrayBufferOption(array_view<uint8_t> buf, Source
         ImageSourceImpl::fileBuffer_ = bufPtr;
         ImageSourceImpl::fileBufferSize_ = buf.size();
     }
-    return make_holder<ImageSourceImpl, ImageSource>(imageSource);
+    auto res = make_holder<ImageSourceImpl, ImageSource>(imageSource);
+    return optional<ImageSource>(std::in_place, res);
 }
 
-ImageSource CreateImageSourceByArrayBuffer(array_view<uint8_t> buf)
+optional<ImageSource> CreateImageSourceByArrayBuffer(array_view<uint8_t> buf)
 {
     SourceOptions opts {};
     return CreateImageSourceByArrayBufferOption(buf, opts);
 }
 
-ImageSource CreateIncrementalSourceByArrayBufferOption(array_view<uint8_t> buf, optional_view<SourceOptions> options)
+optional<ImageSource> CreateIncrementalSourceByArrayBufferOption(
+    array_view<uint8_t> buf, optional_view<SourceOptions> options)
 {
     OHOS::Media::IncrementalSourceOptions incOpts;
     SourceOptions etsOpts = options.value_or(SourceOptions {});
@@ -1513,8 +1551,8 @@ ImageSource CreateIncrementalSourceByArrayBufferOption(array_view<uint8_t> buf, 
     std::shared_ptr<OHOS::Media::ImageSource> imageSource =
         OHOS::Media::ImageSource::CreateIncrementalImageSource(incOpts, errorCode);
     if (imageSource == nullptr) {
-        ImageTaiheUtils::ThrowExceptionError("CreateImageSourceByArrayBufferOption error");
-        return make_holder<ImageSourceImpl, ImageSource>();
+        IMAGE_LOGE("%{public}s error, errorCode: %{public}d", __func__, errorCode);
+        return optional<ImageSource>(std::nullopt);
     }
 
     OHOS::Media::DecodeOptions decodeOpts;
@@ -1522,20 +1560,22 @@ ImageSource CreateIncrementalSourceByArrayBufferOption(array_view<uint8_t> buf, 
         imageSource->CreateIncrementalPixelMap(0, decodeOpts, errorCode);
 
     if (errorCode != OHOS::Media::SUCCESS) {
-        ImageTaiheUtils::ThrowExceptionError("CreateIncrementalPixelMap error");
-        return make_holder<ImageSourceImpl, ImageSource>();
+        IMAGE_LOGE("CreateIncrementalImageSource error, errorCode: %{public}d", errorCode);
+        return optional<ImageSource>(std::nullopt);
     }
 
-    return make_holder<ImageSourceImpl, ImageSource>(imageSource, navIncPixelMap);
+    auto res = make_holder<ImageSourceImpl, ImageSource>(imageSource, navIncPixelMap);
+    return optional<ImageSource>(std::in_place, res);
 }
 
-ImageSource CreateIncrementalSourceByArrayBuffer(array_view<uint8_t> buf)
+optional<ImageSource> CreateIncrementalSourceByArrayBuffer(array_view<uint8_t> buf)
 {
     optional_view<SourceOptions> optionalView;
     return CreateIncrementalSourceByArrayBufferOption(buf, optionalView);
 }
 
-ImageSource CreateImageSourceByRawFileDescriptorOption(uintptr_t rawfile, optional_view<SourceOptions> options)
+optional<ImageSource> CreateImageSourceByRawFileDescriptorOption(
+    uintptr_t rawfile, optional_view<SourceOptions> options)
 {
     int32_t fd;
     int64_t offset;
@@ -1546,7 +1586,8 @@ ImageSource CreateImageSourceByRawFileDescriptorOption(uintptr_t rawfile, option
         !ImageTaiheUtils::GetPropertyLong(env, rawfileObj, "offset", offset) ||
         !ImageTaiheUtils::GetPropertyLong(env, rawfileObj, "length", length)) {
         ImageTaiheUtils::ThrowExceptionError(OHOS::Media::COMMON_ERR_INVALID_PARAMETER, "GetProperty failed");
-        return make_holder<ImageSourceImpl, ImageSource>();
+        IMAGE_LOGD("RawFileDescriptor mismatch");
+        return optional<ImageSource>(std::nullopt);
     }
     SourceOptions etsOpts = options.value_or(SourceOptions {});
     OHOS::Media::SourceOptions opts = ImageTaiheUtils::ParseSourceOptions(etsOpts);
@@ -1556,8 +1597,8 @@ ImageSource CreateImageSourceByRawFileDescriptorOption(uintptr_t rawfile, option
     std::shared_ptr<OHOS::Media::ImageSource> imageSource = OHOS::Media::ImageSource::CreateImageSource(
         fd, static_cast<int32_t>(offset), fileSize, opts, errorCode);
     if (imageSource == nullptr) {
-        ImageTaiheUtils::ThrowExceptionError("CreateImageSourceByRawFileDescriptorOption error");
-        return make_holder<ImageSourceImpl, ImageSource>();
+        IMAGE_LOGE("CreateImageSourceExec error, errorCode: %{public}d", errorCode);
+        return optional<ImageSource>(std::nullopt);
     }
     {
         std::lock_guard<std::mutex> lock(imageSourceCrossThreadMutex_);
@@ -1566,7 +1607,8 @@ ImageSource CreateImageSourceByRawFileDescriptorOption(uintptr_t rawfile, option
         ImageSourceImpl::fileBuffer_ = nullptr;
         ImageSourceImpl::fileBufferSize_ = NUM_0;
     }
-    return make_holder<ImageSourceImpl, ImageSource>(imageSource);
+    auto res = make_holder<ImageSourceImpl, ImageSource>(imageSource);
+    return optional<ImageSource>(std::in_place, res);
 }
 
 ImageSource CreateImageSourceByPtr(int64_t ptr)

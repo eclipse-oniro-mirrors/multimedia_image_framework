@@ -40,6 +40,7 @@
 #include "mock_data_stream.h"
 #include "mock_abs_image_decoder.h"
 #include "exif_metadata.h"
+#include "metadata_accessor_factory.h"
 
 using namespace testing::ext;
 using namespace OHOS::Media;
@@ -51,6 +52,7 @@ static const std::string IMAGE_INPUT_EXIF_JPEG_PATH = "/data/local/tmp/image/tes
 static const std::string IMAGE_OUTPUT_JPEG_PATH = "/data/local/tmp/image/test_out.jpg";
 static const std::string IMAGE_INPUT_ICO_PATH = "/data/local/tmp/image/test.ico";
 static const std::string IMAGE_INPUT_HEIF_PATH = "/data/local/tmp/image/test.heic";
+static const std::string IMAGE_INPUT_ALPHA_HEIF_PATH = "/data/local/tmp/image/alpha.heic";
 static const std::string IMAGE_INPUT_JPEG_HDR_PATH = "/data/local/tmp/image/hdr.jpg";
 static const std::string IMAGE_INPUT_JPEG_BROKEN_ONE = "/data/local/tmp/image/test_jpeg_broken_one.jpg";
 static const std::string IMAGE_INPUT_JPEG_BROKEN_TWO = "/data/local/tmp/image/test_jpeg_broken_two.jpg";
@@ -89,6 +91,7 @@ static const uint32_t SDR_SET_ARGB8888_DMA = 2;
 static const uint32_t SCALE_FIRST_SETTING = 1;
 static const uint32_t CROP_FIRST_SETTING = 2;
 static const uint32_t ASTC_SETTING = 3;
+static const uint32_t SIZE = 1024;
 static const std::vector<std::pair<std::string, std::string>> VALID_PROPERTIES = {
     {"ImageLength", "1000"},
     {"ImageWidth", "1001"},
@@ -3673,6 +3676,74 @@ HWTEST_F(ImageSourceTest, ModifyImagePropertiesExTest006, TestSize.Level3)
     auto ret = imageSource->ModifyImagePropertiesEx(0, VALID_PROPERTIES);
     ASSERT_EQ(ret, ERR_IMAGE_SOURCE_DATA);
     GTEST_LOG_(INFO) << "ImageSourceTest: ModifyImagePropertiesExTest006 end";
+}
+
+/**
+ * @tc.name: MetadataAccessorFactoryNullBufferTest001
+ * @tc.desc: Test MetadataAccessorFactory::Create with null buffer
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageSourceTest, MetadataAccessorFactoryNullBufferTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImageSourceTest: MetadataAccessorFactoryNullBufferTest001 start";
+    uint8_t* nullBuffer = nullptr;
+    uint32_t size = SIZE;
+    std::shared_ptr<MetadataAccessor> accessor = MetadataAccessorFactory::Create(nullBuffer, size);
+    ASSERT_EQ(accessor, nullptr);
+    GTEST_LOG_(INFO) << "ImageSourceTest: MetadataAccessorFactoryNullBufferTest001 end";
+}
+
+/**
+ * @tc.name: IsHeifWithoutAlpha001
+ * @tc.desc: Test when the input HeifImage has alpha channel
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageSourceTest, IsHeifWithoutAlpha001, TestSize.Level3)
+{
+    uint32_t errorCode = 0;
+    SourceOptions opts;
+    opts.formatHint = "image/heif";
+    std::unique_ptr<ImageSource> imageSource =
+        ImageSource::CreateImageSource(IMAGE_INPUT_ALPHA_HEIF_PATH, opts, errorCode);
+    ASSERT_EQ(errorCode, SUCCESS);
+    ASSERT_NE(imageSource.get(), nullptr);
+    bool withoutAlpha = imageSource->IsHeifWithoutAlpha();
+    ASSERT_EQ(withoutAlpha, false);
+}
+
+/**
+ * @tc.name: IsHeifWithoutAlpha002
+ * @tc.desc: Test when the input HeifImage does not have alpha channel
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageSourceTest, IsHeifWithoutAlpha002, TestSize.Level3)
+{
+    uint32_t errorCode = 0;
+    SourceOptions opts;
+    opts.formatHint = "image/heif";
+    std::unique_ptr<ImageSource> imageSource =
+        ImageSource::CreateImageSource(IMAGE_INPUT_HEIF_PATH, opts, errorCode);
+    ASSERT_EQ(errorCode, SUCCESS);
+    ASSERT_NE(imageSource.get(), nullptr);
+    bool withoutAlpha = imageSource->IsHeifWithoutAlpha();
+    ASSERT_EQ(withoutAlpha, true);
+}
+
+/**
+ * @tc.name: IsHeifWithoutAlpha003
+ * @tc.desc: Test when the input image type is not Heif
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageSourceTest, IsHeifWithoutAlpha003, TestSize.Level3)
+{
+    uint32_t errorCode = 0;
+    SourceOptions opts;
+    std::unique_ptr<ImageSource> imageSource =
+        ImageSource::CreateImageSource(IMAGE_INPUT_JPEG_PATH, opts, errorCode);
+    ASSERT_EQ(errorCode, SUCCESS);
+    ASSERT_NE(imageSource.get(), nullptr);
+    bool withoutAlpha = imageSource->IsHeifWithoutAlpha();
+    ASSERT_EQ(withoutAlpha, false);
 }
 } // namespace Multimedia
 } // namespace OHOS

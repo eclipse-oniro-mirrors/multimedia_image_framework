@@ -32,6 +32,7 @@
 #include "ios"
 #include "istream"
 #include "media_errors.h"
+#include "memory_manager.h"
 #include "new"
 #include "plugin_server.h"
 #include "singleton.h"
@@ -55,6 +56,8 @@
 #include "v1_0/cm_color_space.h"
 #include "v1_0/buffer_handle_meta_key_type.h"
 #include "metadata_helper.h"
+#include "v1_0/hdr_static_metadata.h"
+#include "vpe_utils.h"
 #else
 #include "refbase.h"
 #endif
@@ -81,6 +84,7 @@ namespace Media {
 using namespace std;
 using namespace MultimediaPlugin;
 #if !defined(CROSS_PLATFORM)
+#define GET_VAR_NAME(var) #var
 using namespace HDI::Display::Graphic::Common::V1_0;
 #endif
 
@@ -403,7 +407,7 @@ bool ImageUtils::PathToRealPath(const string &path, string &realPath)
     char tmpPath[PATH_MAX] = { 0 };
 
 #ifdef _WIN32
-    if (_fullpath(tmpPath, path.c_str(), path.length()) == nullptr) {
+    if (_fullpath(tmpPath, path.c_str(), PATH_MAX) == nullptr) {
         IMAGE_LOGW("path to _fullpath error");
     }
 #else
@@ -649,7 +653,7 @@ void ImageUtils::ARGBToBGRA(uint8_t* srcPixels, uint8_t* dstPixels, uint32_t byt
 int32_t ImageUtils::SurfaceBuffer_Reference(void* buffer)
 {
     if (buffer == nullptr) {
-        IMAGE_LOGE("parameter error, please check input parameter");
+        IMAGE_LOGE("input parameter error");
         return ERR_SURFACEBUFFER_REFERENCE_FAILED;
     }
     OHOS::RefBase *ref = reinterpret_cast<OHOS::RefBase *>(buffer);
@@ -660,7 +664,7 @@ int32_t ImageUtils::SurfaceBuffer_Reference(void* buffer)
 int32_t ImageUtils::SurfaceBuffer_Unreference(void* buffer)
 {
     if (buffer == nullptr) {
-        IMAGE_LOGE("parameter error, please check input parameter");
+        IMAGE_LOGE("input parameter error");
         return ERR_SURFACEBUFFER_UNREFERENCE_FAILED;
     }
     OHOS::RefBase *ref = reinterpret_cast<OHOS::RefBase *>(buffer);
@@ -751,19 +755,165 @@ void ImageUtils::DumpDataIfDumpEnabled(const char* data, const size_t& totalSize
 #if !defined(CROSS_PLATFORM)
 void ImageUtils::DumpHdrBufferEnabled(sptr<SurfaceBuffer>& buffer, const std::string& fileName)
 {
-    bool cond = !ImageSystemProperties::GetDumpHdrEnbaled() || buffer == nullptr;
+    bool cond = !ImageSystemProperties::GetDumpHdrEnabled() || buffer == nullptr;
     CHECK_ERROR_RETURN(cond);
     uint32_t bufferSize = buffer->GetSize();
     std::string fileSuffix = fileName + "-format-" + std::to_string(buffer->GetFormat()) + "-Width-"
-        + std::to_string(buffer->GetWidth()) + "-Height-" + std::to_string(buffer->GetWidth()) + "-Stride-"
+        + std::to_string(buffer->GetWidth()) + "-Height-" + std::to_string(buffer->GetHeight()) + "-Stride-"
         + std::to_string(buffer->GetStride()) + ".dat";
     std::vector<uint8_t> staticMetadata;
     std::vector<uint8_t> dynamicMetadata;
     buffer->GetMetadata(HDI::Display::Graphic::Common::V1_0::ATTRKEY_HDR_STATIC_METADATA, staticMetadata);
     buffer->GetMetadata(HDI::Display::Graphic::Common::V1_0::ATTRKEY_HDR_DYNAMIC_METADATA, dynamicMetadata);
-    DumpData(reinterpret_cast<const char*>(buffer->GetVirAddr()), bufferSize, fileSuffix, 0);
-    DumpData(reinterpret_cast<const char*>(staticMetadata.data()), staticMetadata.size(), fileSuffix, 0);
-    DumpData(reinterpret_cast<const char*>(dynamicMetadata.data()), dynamicMetadata.size(), fileSuffix, 0);
+    uint64_t bufferId = buffer->GetBufferId();
+    DumpData(reinterpret_cast<const char*>(buffer->GetVirAddr()), bufferSize, fileSuffix, bufferId);
+    DumpData(reinterpret_cast<const char*>(staticMetadata.data()), staticMetadata.size(), fileSuffix, bufferId);
+    DumpData(reinterpret_cast<const char*>(dynamicMetadata.data()), dynamicMetadata.size(), fileSuffix, bufferId);
+}
+
+template <typename T>
+static void AppendStringifyPropToStream(int intend, std::stringstream& ss, std::string varName, T arr,
+    size_t length)
+{
+    ss << std::string(intend, ' ') << varName << "[" << length << "]:";
+    for (size_t i = 0; i < length; ++i) {
+        ss << " " << static_cast<double>(arr[i]);
+    }
+    ss << "\n";
+}
+
+template <typename T>
+static void AppendStringifyPropToStream(int intend, std::stringstream& ss, std::string varName, T value)
+{
+    ss << std::string(intend, ' ') << varName << ": " << static_cast<double>(value) << "\n";
+}
+
+static void AppendISOMetadataToStream(int intend, std::stringstream& ss, const ISOMetadata& iso)
+{
+    ss << std::string(intend, ' ') << "ISOMetadata" << " {\n";
+    int nextIntend = intend + 1;
+    AppendStringifyPropToStream(nextIntend, ss, GET_VAR_NAME(iso.writeVersion), iso.writeVersion);
+    AppendStringifyPropToStream(nextIntend, ss, GET_VAR_NAME(iso.miniVersion), iso.miniVersion);
+    AppendStringifyPropToStream(nextIntend, ss, GET_VAR_NAME(iso.gainmapChannelNum), iso.gainmapChannelNum);
+    AppendStringifyPropToStream(nextIntend, ss, GET_VAR_NAME(iso.useBaseColorFlag), iso.useBaseColorFlag);
+    AppendStringifyPropToStream(nextIntend, ss, GET_VAR_NAME(iso.baseHeadroom), iso.baseHeadroom);
+    AppendStringifyPropToStream(nextIntend, ss, GET_VAR_NAME(iso.alternateHeadroom), iso.alternateHeadroom);
+    AppendStringifyPropToStream(nextIntend, ss, GET_VAR_NAME(iso.enhanceClippedThreholdMaxGainmap),
+        iso.enhanceClippedThreholdMaxGainmap, std::size(iso.enhanceClippedThreholdMaxGainmap));
+    AppendStringifyPropToStream(nextIntend, ss, GET_VAR_NAME(iso.enhanceClippedThreholdMinGainmap),
+        iso.enhanceClippedThreholdMinGainmap, std::size(iso.enhanceClippedThreholdMaxGainmap));
+    AppendStringifyPropToStream(nextIntend, ss, GET_VAR_NAME(iso.enhanceMappingGamma),
+        iso.enhanceMappingGamma, std::size(iso.enhanceClippedThreholdMaxGainmap));
+    AppendStringifyPropToStream(nextIntend, ss, GET_VAR_NAME(iso.enhanceMappingBaselineOffset),
+        iso.enhanceMappingBaselineOffset, std::size(iso.enhanceClippedThreholdMaxGainmap));
+    AppendStringifyPropToStream(nextIntend, ss, GET_VAR_NAME(iso.enhanceMappingAlternateOffset),
+        iso.enhanceMappingAlternateOffset, std::size(iso.enhanceClippedThreholdMaxGainmap));
+    ss << std::string(intend, ' ') << "}\n";
+}
+
+static void AppendGainmapColorMetadataToStream(int intend, std::stringstream& ss, const GainmapColorMetadata& gcm)
+{
+    ss << std::string(intend, ' ') << "GainmapColorMetadata" << " {\n";
+    int nextIntend = intend + 1;
+    AppendStringifyPropToStream(nextIntend, ss, GET_VAR_NAME(gcm.enhanceDataColorPrimary), gcm.enhanceDataColorPrimary);
+    AppendStringifyPropToStream(nextIntend, ss, GET_VAR_NAME(gcm.enhanceDataTransFunction),
+        gcm.enhanceDataTransFunction);
+    AppendStringifyPropToStream(nextIntend, ss, GET_VAR_NAME(gcm.enhanceDataColorModel), gcm.enhanceDataColorModel);
+    AppendStringifyPropToStream(nextIntend, ss, GET_VAR_NAME(gcm.combineColorPrimary), gcm.combineColorPrimary);
+    AppendStringifyPropToStream(nextIntend, ss, GET_VAR_NAME(gcm.combineTransFunction), gcm.combineTransFunction);
+    AppendStringifyPropToStream(nextIntend, ss, GET_VAR_NAME(gcm.combineColorModel), gcm.combineColorModel);
+    AppendStringifyPropToStream(nextIntend, ss, GET_VAR_NAME(gcm.alternateColorPrimary), gcm.alternateColorPrimary);
+    AppendStringifyPropToStream(nextIntend, ss, GET_VAR_NAME(gcm.alternateTransFunction), gcm.alternateTransFunction);
+    AppendStringifyPropToStream(nextIntend, ss, GET_VAR_NAME(gcm.alternateColorModel), gcm.alternateColorModel);
+    AppendStringifyPropToStream(nextIntend, ss, GET_VAR_NAME(gcm.enhanceICCSize), gcm.enhanceICCSize);
+    AppendStringifyPropToStream(nextIntend, ss, GET_VAR_NAME(gcm.enhanceICC), gcm.enhanceICC, gcm.enhanceICC.size());
+    AppendStringifyPropToStream(nextIntend, ss, GET_VAR_NAME(gcm.combineMappingFlag), gcm.combineMappingFlag);
+    AppendStringifyPropToStream(nextIntend, ss, GET_VAR_NAME(gcm.combineMappingSize), gcm.combineMappingSize);
+    AppendStringifyPropToStream(nextIntend, ss, GET_VAR_NAME(gcm.combineMappingMatrix), gcm.combineMappingMatrix,
+        std::size(gcm.combineMappingMatrix));
+    AppendStringifyPropToStream(nextIntend, ss, GET_VAR_NAME(gcm.combineMapping), gcm.combineMapping,
+        gcm.combineMapping.size());
+    ss << std::string(intend, ' ') << "}\n";
+}
+
+static void AppendBaseColorMetadataToStream(int intend, std::stringstream& ss, const BaseColorMetadata& bcm)
+{
+    ss << std::string(intend, ' ') << "BaseColorMetadata" << " {\n";
+    int nextIntend = intend + 1;
+    AppendStringifyPropToStream(nextIntend, ss, GET_VAR_NAME(bcm.baseColorPrimary), bcm.baseColorPrimary);
+    AppendStringifyPropToStream(nextIntend, ss, GET_VAR_NAME(bcm.baseTransFunction), bcm.baseTransFunction);
+    AppendStringifyPropToStream(nextIntend, ss, GET_VAR_NAME(bcm.baseColorModel), bcm.baseColorModel);
+    AppendStringifyPropToStream(nextIntend, ss, GET_VAR_NAME(bcm.baseIccSize), bcm.baseIccSize);
+    AppendStringifyPropToStream(nextIntend, ss, GET_VAR_NAME(bcm.baseICC), bcm.baseICC, bcm.baseICC.size());
+    AppendStringifyPropToStream(nextIntend, ss, GET_VAR_NAME(bcm.baseMappingFlag), bcm.baseMappingFlag);
+    AppendStringifyPropToStream(nextIntend, ss, GET_VAR_NAME(bcm.baseMappingSize), bcm.baseMappingSize);
+    AppendStringifyPropToStream(nextIntend, ss, GET_VAR_NAME(bcm.baseMappingMatrix), bcm.baseMappingMatrix,
+        std::size(bcm.baseMappingMatrix));
+    AppendStringifyPropToStream(nextIntend, ss, GET_VAR_NAME(bcm.baseMapping), bcm.baseMapping, bcm.baseMapping.size());
+    ss << std::string(intend, ' ') << "}\n";
+}
+
+static std::string StringifyHDRVividExtendMetadata(const HDRVividExtendMetadata& meta)
+{
+    std::stringstream ss;
+    int intend = 0;
+
+    ss << "HDRVividExtendMetadata {\n";
+    AppendISOMetadataToStream(intend + 1, ss, meta.metaISO);
+    AppendGainmapColorMetadataToStream(intend + 1, ss, meta.gainmapColorMeta);
+    AppendBaseColorMetadataToStream(intend + 1, ss, meta.baseColorMeta);
+    ss << "}\n";
+
+    std::string hdrExtendMetadataStr = ss.str();
+    return hdrExtendMetadataStr;
+}
+
+void ImageUtils::DumpHdrExtendMetadataEnabled(sptr<SurfaceBuffer>& buffer, const std::string& fileName)
+{
+    bool cond = !ImageSystemProperties::GetDumpHdrEnabled() || buffer == nullptr;
+    CHECK_ERROR_RETURN(cond);
+    std::string fileSuffix = fileName + "-format-" + std::to_string(buffer->GetFormat()) + "-Width-"
+        + std::to_string(buffer->GetWidth()) + "-Height-" + std::to_string(buffer->GetHeight()) + "-Stride-"
+        + std::to_string(buffer->GetStride()) + ".dat";
+
+    std::vector<uint8_t> dynamicMetadata;
+    buffer->GetMetadata(HDI::Display::Graphic::Common::V1_0::ATTRKEY_HDR_DYNAMIC_METADATA, dynamicMetadata);
+    HDRVividExtendMetadata extendMetadata = {};
+
+    size_t copySize = std::min(sizeof(HDRVividExtendMetadata), dynamicMetadata.size());
+    int32_t memCpyRes = memcpy_s(&extendMetadata, sizeof(HDRVividExtendMetadata),
+        dynamicMetadata.data(), copySize);
+    if (memCpyRes != EOK) {
+        IMAGE_LOGE("%{public}s memcpy_s extendMetadata fail, error: %{public}d", __func__, memCpyRes);
+        return;
+    }
+
+    std::string hdrExtendMetadataStr = StringifyHDRVividExtendMetadata(extendMetadata);
+    DumpData(reinterpret_cast<const char*>(hdrExtendMetadataStr.data()), hdrExtendMetadataStr.size(), fileSuffix,
+        buffer->GetBufferId());
+}
+
+void ImageUtils::DumpSurfaceBufferAllKeysEnabled(sptr<SurfaceBuffer>& buffer, const std::string& fileName)
+{
+    bool cond = !ImageSystemProperties::GetDumpHdrEnabled() || buffer == nullptr;
+    CHECK_ERROR_RETURN(cond);
+    std::string filePrefix = fileName + "-format-" + std::to_string(buffer->GetFormat()) + "-Width-"
+        + std::to_string(buffer->GetWidth()) + "-Height-" + std::to_string(buffer->GetHeight()) + "-Stride-"
+        + std::to_string(buffer->GetStride());
+
+    uint64_t bufferId = buffer->GetBufferId();
+    std::vector<uint8_t> attrInfo{};
+    std::vector<uint32_t> keys{};
+    if (buffer->ListMetadataKeys(keys) == GSERROR_OK && !keys.empty()) {
+        for (size_t i = 0; i < keys.size(); i++) {
+            if (buffer->GetMetadata(keys[i], attrInfo) == GSERROR_OK && !attrInfo.empty()) {
+                IMAGE_LOGD("%{public}s dump SurfaceBufferInfo metadata key:%{public}d", __func__, keys[i]);
+                std::string fileSuffix = filePrefix + "-key-" + std::to_string(keys[i]) + ".dat";
+                DumpData(reinterpret_cast<const char*>(attrInfo.data()), attrInfo.size(), fileSuffix, bufferId);
+            }
+            attrInfo.clear();
+        }
+    }
 }
 
 static bool IsAlphaFormat(PixelFormat format)
@@ -1276,7 +1426,8 @@ const std::set<MetadataType> &ImageUtils::GetAllMetadataType()
         MetadataType::FRAGMENT,
         MetadataType::XTSTYLE,
         MetadataType::RFDATAB,
-        MetadataType::STDATA
+        MetadataType::STDATA,
+        MetadataType::HEIFS,
     };
     return metadataTypes;
 }
@@ -1357,6 +1508,11 @@ std::string ImageUtils::GetEncodedHeifFormat()
     } else {
         return "image/heif";
     }
+}
+
+std::string ImageUtils::GetEncodedHeifsFormat()
+{
+    return "image/heif-sequence";
 }
 
 int32_t ImageUtils::GetAPIVersion()
@@ -1661,6 +1817,234 @@ uint16_t ImageUtils::GetRGBA1010102ColorB(uint32_t color)
 uint16_t ImageUtils::GetRGBA1010102ColorA(uint32_t color)
 {
     return (color >> RGBA1010102_A_SHIFT) & RGBA1010102_ALPHA_MASK;
+}
+
+bool ImageUtils::CheckPixelsInput(PixelMap* pixelMap, const RWPixelsOptions &opts)
+{
+    const Rect& rect = opts.region;
+    if (opts.bufferSize == 0 || opts.pixels == nullptr) {
+        IMAGE_LOGE("checkPixelsInput bufferSize or dst address invalid, bufferSize: %{public}" PRIu64, opts.bufferSize);
+        return false;
+    }
+    if (rect.left < 0 || rect.top < 0 || opts.stride > numeric_limits<int32_t>::max() ||
+        static_cast<uint64_t>(opts.offset) > opts.bufferSize) {
+        IMAGE_LOGE(
+            "checkPixelsInput left(%{public}d) or top(%{public}d) or stride(%{public}u) or offset(%{public}u) < 0.",
+            rect.left, rect.top, opts.stride, opts.offset);
+        return false;
+    }
+    if (rect.width <= 0 || rect.height <= 0 || rect.width > MAX_DIMENSION || rect.height > MAX_DIMENSION) {
+        IMAGE_LOGE("checkPixelsInput width(%{public}d) or height(%{public}d) is < 0.", rect.width, rect.height);
+        return false;
+    }
+    if (rect.left > pixelMap->GetWidth() - rect.width) {
+        IMAGE_LOGE("checkPixelsInput left(%{public}d) + width(%{public}d) is > pixelmap width(%{public}d).",
+            rect.left, rect.width, pixelMap->GetWidth());
+        return false;
+    }
+    if (rect.top > pixelMap->GetHeight() - rect.height) {
+        IMAGE_LOGE("checkPixelsInput top(%{public}d) + height(%{public}d) is > pixelmap height(%{public}d).",
+            rect.top, rect.height, pixelMap->GetHeight());
+        return false;
+    }
+    uint32_t regionStride = static_cast<uint32_t>(rect.width) * NUM_4;  // bytes count, need multiply by 4
+    if (opts.pixelFormat == PixelFormat::RGB_888) {
+        regionStride = static_cast<uint32_t>(rect.width) * NUM_3;  // bytes count, need multiply by 3
+    }
+    if (opts.stride < regionStride) {
+        IMAGE_LOGE("checkPixelsInput stride(%{public}d) < width*4 (%{public}d).", opts.stride, regionStride);
+        return false;
+    }
+    if (opts.bufferSize < regionStride) {
+        IMAGE_LOGE("checkPixelsInput input buffer size is < width * 4.");
+        return false;
+    }
+    // "1" is except the last line.
+    uint64_t lastLinePos = opts.offset + static_cast<uint64_t>(rect.height - NUM_1) * opts.stride;
+    if (static_cast<uint64_t>(opts.offset) > (opts.bufferSize - regionStride) ||
+        lastLinePos > (opts.bufferSize - regionStride)) {
+            IMAGE_LOGE(
+                "checkPixelsInput fail, height(%{public}d), width(%{public}d), lastLine(%{public}" PRIu64 "), "
+                "offset(%{public}u), bufferSize:%{public}" PRIu64 ".", rect.height, rect.width,
+                static_cast<uint64_t>(lastLinePos), opts.offset, static_cast<uint64_t>(opts.bufferSize));
+            return false;
+    }
+    return true;
+}
+
+bool ImageUtils::FloatEqual(float a, float b)
+{
+    return std::fabs(a - b) < EPSILON;
+}
+
+void ImageUtils::WriteUint8(std::vector<uint8_t> &buff, uint8_t value)
+{
+    buff.push_back(value);
+}
+
+void ImageUtils::WriteVarint(std::vector<uint8_t> &buff, int32_t value)
+{
+    uint32_t uValue = uint32_t(value);
+    while (uValue > TLV_VARINT_MASK) {
+        buff.push_back(TLV_VARINT_MORE | uint8_t(uValue & TLV_VARINT_MASK));
+        uValue >>= TLV_VARINT_BITS;
+    }
+    buff.push_back(uint8_t(uValue));
+}
+
+uint8_t ImageUtils::GetVarintLen(int32_t value)
+{
+    uint32_t uValue = static_cast<uint32_t>(value);
+    uint8_t len = 1;
+    while (uValue > TLV_VARINT_MASK) {
+        len++;
+        uValue >>= TLV_VARINT_BITS;
+    }
+    return len;
+}
+
+void ImageUtils::TlvWriteSurfaceInfo(const PixelMap* pixelMap, vector<uint8_t>& buff)
+{
+#if !defined(_WIN32) && !defined(_APPLE) && !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
+    sptr<SurfaceBuffer> surfaceBuffer(reinterpret_cast<SurfaceBuffer*>(pixelMap->GetFd()));
+    CM_ColorSpaceType colorSpaceType;
+    if (VpeUtils::GetSbColorSpaceType(surfaceBuffer, colorSpaceType)) {
+        WriteUint8(buff, TLV_IMAGE_COLORTYPE);
+        WriteVarint(buff, GetVarintLen(static_cast<int32_t>(colorSpaceType)));
+        WriteVarint(buff, static_cast<int32_t>(colorSpaceType));
+    }
+    CM_HDR_Metadata_Type metadataType;
+    if (VpeUtils::GetSbMetadataType(surfaceBuffer, metadataType)) {
+        WriteUint8(buff, TLV_IMAGE_METADATATYPE);
+        WriteVarint(buff, GetVarintLen(static_cast<int32_t>(metadataType)));
+        WriteVarint(buff, static_cast<int32_t>(metadataType));
+    }
+    vector<uint8_t> staticMetadata;
+    if (VpeUtils::GetSbStaticMetadata(surfaceBuffer, staticMetadata)) {
+        WriteUint8(buff, TLV_IMAGE_STATICMETADATA);
+        WriteVarint(buff, static_cast<int32_t>(staticMetadata.size()));
+        buff.insert(buff.end(), staticMetadata.begin(), staticMetadata.end());
+    }
+    vector<uint8_t> dynamicMetadata;
+    if (VpeUtils::GetSbDynamicMetadata(surfaceBuffer, dynamicMetadata)) {
+        WriteUint8(buff, TLV_IMAGE_DYNAMICMETADATA);
+        WriteVarint(buff, static_cast<int32_t>(dynamicMetadata.size()));
+        buff.insert(buff.end(), dynamicMetadata.begin(), dynamicMetadata.end());
+    }
+#endif
+    return;
+}
+
+int32_t ImageUtils::ReadVarint(std::vector<uint8_t> &buff, int32_t &cursor)
+{
+    uint32_t value = 0;
+    uint8_t shift = 0;
+    uint32_t item = 0;
+    do {
+        if (static_cast<size_t>(cursor + 1) > buff.size()) {
+            IMAGE_LOGE("ReadVarint out of range");
+            return static_cast<int32_t>(TLV_END);
+        }
+        item = uint32_t(buff[cursor++]);
+        value |= (item & TLV_VARINT_MASK) << shift;
+        shift += TLV_VARINT_BITS;
+    } while ((item & TLV_VARINT_MORE) != 0);
+    return int32_t(value);
+}
+
+int32_t ImageUtils::AllocPixelMapMemory(std::unique_ptr<AbsMemory> &dstMemory, int32_t &dstRowStride,
+    const ImageInfo &dstImageInfo, const InitializationOptions &opts)
+{
+    int64_t rowDataSize = ImageUtils::GetRowDataSizeByPixelFormat(dstImageInfo.size.width, dstImageInfo.pixelFormat);
+    if (rowDataSize <= 0) {
+        IMAGE_LOGE("[PixelMap] AllocPixelMapMemory: Get row data size failed");
+        return -1;
+    }
+    int64_t bufferSize = rowDataSize * dstImageInfo.size.height;
+    if (bufferSize > UINT32_MAX) {
+        IMAGE_LOGE("[PixelMap]Create: pixelmap size too large: width = %{public}d, height = %{public}d",
+            dstImageInfo.size.width, dstImageInfo.size.height);
+        return -1;
+    }
+    if (IsYuvFormat(dstImageInfo.pixelFormat)) {
+        bufferSize = GetYUVByteCount(dstImageInfo);
+    }
+    MemoryData memoryData = {nullptr, static_cast<size_t>(bufferSize), "Create PixelMap", dstImageInfo.size,
+        dstImageInfo.pixelFormat};
+    AllocatorType allocType = opts.allocatorType == AllocatorType::DEFAULT ?
+        ImageUtils::GetPixelMapAllocatorType(dstImageInfo.size, dstImageInfo.pixelFormat, opts.useDMA) :
+        opts.allocatorType;
+    dstMemory = MemoryManager::CreateMemory(allocType, memoryData);
+    if (dstMemory == nullptr) {
+        IMAGE_LOGE("[PixelMap]Create: allocate memory failed");
+        return -1;
+    }
+
+    dstRowStride = dstImageInfo.size.width * ImageUtils::GetPixelBytes(dstImageInfo.pixelFormat);
+#if !defined(_WIN32) && !defined(_APPLE) && !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
+    if (dstMemory->GetType() == AllocatorType::DMA_ALLOC) {
+        SurfaceBuffer* sbBuffer = static_cast<SurfaceBuffer*>(dstMemory->extend.data);
+        if (sbBuffer == nullptr) {
+            IMAGE_LOGE("get SurfaceBuffer failed");
+            return -1;
+        }
+        dstRowStride = sbBuffer->GetStride();
+    }
+#endif
+    return SUCCESS;
+}
+
+std::unique_ptr<AbsMemory> ImageUtils::ReadData(std::vector<uint8_t> &buff, int32_t size, int32_t &cursor,
+    AllocatorType allocType, ImageInfo imageInfo)
+{
+    if (size <= 0 || static_cast<size_t>(size) > MAX_TLV_HEAP_SIZE) {
+        IMAGE_LOGE("[PixelMap] tlv read data fail: invalid size[%{public}d]", size);
+        return nullptr;
+    }
+    if (static_cast<size_t>(cursor + size) > buff.size()) {
+        IMAGE_LOGE("[PixelMap] ReadData out of range");
+        return nullptr;
+    }
+    std::unique_ptr<AbsMemory> dstMemory = nullptr;
+    int32_t dstRowStride = 0;
+    InitializationOptions opts;
+    opts.allocatorType = allocType;
+    int32_t errorCode = AllocPixelMapMemory(dstMemory, dstRowStride, imageInfo, opts);
+    if (dstMemory == nullptr || dstMemory->data.data == nullptr || errorCode != SUCCESS) {
+        IMAGE_LOGE("[PixelMap] tlv read data fail: alloc memory failed");
+        return nullptr;
+    }
+    uint8_t* addr = static_cast<uint8_t*>(dstMemory->data.data);
+    int32_t rowDataSize = ImageUtils::GetRowDataSizeByPixelFormat(imageInfo.size.width, imageInfo.pixelFormat);
+    uint8_t* srcAddr = buff.data() + cursor;
+
+    if (size != rowDataSize * imageInfo.size.height) {
+        IMAGE_LOGE("[PixelMap] tlv read data fail: alloc memory failed");
+        return nullptr;
+    }
+    if (allocType == AllocatorType::DMA_ALLOC) {
+        if (dstRowStride == 0 || dstRowStride < rowDataSize ||
+            static_cast<uint32_t>(size) > static_cast<SurfaceBuffer*>(dstMemory->extend.data)->GetSize()) {
+                IMAGE_LOGE("[PixelMap] tlv check dma size failed");
+                return nullptr;
+        }
+        for (int i = 0; i < imageInfo.size.height; i++) {
+            if (memcpy_s(addr + i * dstRowStride, rowDataSize, srcAddr + i * rowDataSize, rowDataSize) != EOK) {
+                IMAGE_LOGE("[PixelMap] tlv copy dma data failed");
+                return nullptr;
+            }
+        }
+    } else {
+        if (rowDataSize != dstRowStride) {
+            IMAGE_LOGE("[PixelMap] tlv check heap size failed");
+            return nullptr;
+        }
+        if (memcpy_s(addr, size, srcAddr, size) != EOK) {
+            IMAGE_LOGE("[PixelMap] tlv copy heap data failed");
+            return nullptr;
+        }
+    }
+    return dstMemory;
 }
 } // namespace Media
 } // namespace OHOS

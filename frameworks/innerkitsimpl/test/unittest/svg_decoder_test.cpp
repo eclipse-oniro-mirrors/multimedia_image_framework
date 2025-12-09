@@ -636,5 +636,78 @@ HWTEST_F(SvgDecoderTest, PluginExternalCreateTest001, TestSize.Level3)
     ASSERT_EQ(result, nullptr);
     GTEST_LOG_(INFO) << "SvgDecoderTest: PluginExternalCreateTest001 end";
 }
+
+/**
+ * @tc.name: DecodeFailureTest001
+ * @tc.desc: Test Decode failure branch
+ * @tc.type: FUNC
+ */
+HWTEST_F(SvgDecoderTest, DecodeFailureTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "SvgDecoderTest: DecodeFailureTest001 start";
+    auto svgDecoder = std::make_shared<SvgDecoder>();
+    ASSERT_NE(svgDecoder, nullptr);
+    svgDecoder->state_ = SvgDecoder::SvgDecodingState::IMAGE_DECODING;
+    svgDecoder->svgDom_ = nullptr;
+    DecodeContext context;
+    uint32_t ret = svgDecoder->Decode(0, context);
+    ASSERT_NE(ret, Media::SUCCESS);
+    ASSERT_EQ(svgDecoder->state_, SvgDecoder::SvgDecodingState::IMAGE_ERROR);
+    GTEST_LOG_(INFO) << "SvgDecoderTest: DecodeFailureTest001 end";
+}
+
+/**
+ * @tc.name: DoSetDecodeOptionsFailureTest001
+ * @tc.desc: Test SetDecodeOptions failure in DoSetDecodeOptions
+ * @tc.type: FUNC
+ */
+HWTEST_F(SvgDecoderTest, DoSetDecodeOptionsFailureTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "SvgDecoderTest: DoSetDecodeOptionsFailureTest001 start";
+    
+    auto svgDecoder = std::make_shared<SvgDecoder>();
+    ASSERT_NE(svgDecoder, nullptr);
+    
+    auto mock = std::make_shared<MockInputDataStream>();
+    svgDecoder->SetSource(*mock.get());
+    
+    svgDecoder->state_ = SvgDecoder::SvgDecodingState::SOURCE_INITED;
+    
+    PixelDecodeOptions opts;
+    opts.desiredSize.width = OPTS_DESIREDSIZE;
+    opts.desiredSize.height = OPTS_DESIREDSIZE;
+    PlImageInfo info;
+    
+    uint32_t ret = svgDecoder->SetDecodeOptions(0, opts, info);
+    
+    ASSERT_NE(ret, Media::SUCCESS);
+    ASSERT_EQ(svgDecoder->state_, SvgDecoder::SvgDecodingState::BASE_INFO_PARSING);
+    
+    GTEST_LOG_(INFO) << "SvgDecoderTest: DoSetDecodeOptionsFailureTest001 end";
+}
+
+/**
+ * @tc.name: DoGetImageSizeFailureTest001
+ * @tc.desc: Test GetImageSize failure in DoGetImageSize
+ * @tc.type: FUNC
+ */
+HWTEST_F(SvgDecoderTest, DoGetImageSizeFailureTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "SvgDecoderTest: DoGetImageSizeFailureTest001 start";
+    auto svgDecoder = std::make_shared<SvgDecoder>();
+    ASSERT_NE(svgDecoder, nullptr);
+    
+    auto mock = std::make_shared<MockInputDataStream>();
+    svgDecoder->SetSource(*mock.get());
+    svgDecoder->state_ = SvgDecoder::SvgDecodingState::SOURCE_INITED;
+    Size size;
+    uint32_t ret = svgDecoder->GetImageSize(0, size);
+    
+    ASSERT_NE(ret, Media::SUCCESS);
+    ASSERT_EQ(svgDecoder->state_, SvgDecoder::SvgDecodingState::BASE_INFO_PARSING);
+    ASSERT_EQ(size.width, 0);
+    ASSERT_EQ(size.height, 0);
+    GTEST_LOG_(INFO) << "SvgDecoderTest: DoGetImageSizeFailureTest001 end";
+}
 }
 }

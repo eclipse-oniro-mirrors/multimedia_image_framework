@@ -18,6 +18,7 @@
 #include "image_type.h"
 #include "matrix.h"
 
+#define INITIAL_POINT_VALUE 0.0f
 using namespace testing::ext;
 using namespace OHOS::Media;
 namespace OHOS {
@@ -539,6 +540,73 @@ HWTEST_F(MatrixTest, SetConcatTest003, TestSize.Level3)
     matrix_.SetConcat(m);
     ASSERT_EQ(matrix_.operType_, Matrix::OperType::ROTATEORSKEW);
     GTEST_LOG_(INFO) << "MatrixTest: SetConcatTest003 end";
+}
+
+/**
+ * @tc.name: SetTranslateAndScaleTranslateBranchTest001
+ * @tc.desc: Test SetTranslateAndScale when tx or ty is not zero
+ * @tc.type: FUNC
+ */
+HWTEST_F(MatrixTest, SetTranslateAndScaleTranslateBranchTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "MatrixTest: SetTranslateAndScaleTranslateBranchTest001 start";
+    
+    Matrix matrix;
+    
+    matrix.SetTranslateAndScale(5.0f, 0.0f, 1.0f, 1.0f);
+    ASSERT_EQ(matrix.GetTransX(), 5.0f);
+    ASSERT_EQ(matrix.GetTranY(), 0.0f);
+    
+    matrix.SetTranslateAndScale(0.0f, 3.0f, 1.0f, 1.0f);
+    ASSERT_EQ(matrix.GetTransX(), 0.0f);
+    ASSERT_EQ(matrix.GetTranY(), 3.0f);
+    
+    matrix.SetTranslateAndScale(10.0f, 20.0f, 1.0f, 1.0f);
+    ASSERT_EQ(matrix.GetTransX(), 10.0f);
+    ASSERT_EQ(matrix.GetTranY(), 20.0f);
+    
+    matrix.SetTranslateAndScale(0.0f, 0.0f, 1.0f, 1.0f);
+    ASSERT_EQ(matrix.GetTransX(), 0.0f);
+    ASSERT_EQ(matrix.GetTranY(), 0.0f);
+    
+    GTEST_LOG_(INFO) << "MatrixTest: SetTranslateAndScaleTranslateBranchTest001 end";
+}
+
+/**
+ * @tc.name: RotXYExecutionTest001
+ * @tc.desc: Test RotXY function execution
+ * @tc.type: FUNC
+ */
+HWTEST_F(MatrixTest, RotXYExecutionTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "MatrixTest: RotXYExecutionTest001 start";
+
+    Matrix matrix;
+    Point pt;
+    pt.x = INITIAL_POINT_VALUE;
+    pt.y = INITIAL_POINT_VALUE;
+
+    matrix.operType_ = 0x04;
+    matrix.fMat_[IMAGE_SCALEX] = 2.0f;
+    matrix.fMat_[IMAGE_SCALEY] = 2.0f;
+    matrix.fMat_[IMAGE_SKEWX] = 0.0f;
+    matrix.fMat_[IMAGE_SKEWY] = 0.0f;
+    matrix.fMat_[IMAGE_TRANSX] = 1.0f;
+    matrix.fMat_[IMAGE_TRANSY] = 1.0f;
+
+    Matrix::RotXY(matrix, 3.0f, 4.0f, pt);
+    ASSERT_EQ(pt.x, 7.0f);
+    ASSERT_EQ(pt.y, 9.0f);
+
+    matrix.operType_ = 0x01;
+    pt.x = INITIAL_POINT_VALUE;
+    pt.y = INITIAL_POINT_VALUE;
+
+    Matrix::RotXY(matrix, 5.0f, 6.0f, pt);
+    ASSERT_EQ(pt.x, 0.0f);
+    ASSERT_EQ(pt.y, 0.0f);
+    
+    GTEST_LOG_(INFO) << "MatrixTest: RotXYExecutionTest001 end";
 }
 }
 }

@@ -315,6 +315,46 @@ HDI::Display::Graphic::Common::V1_0::CM_ColorSpaceType ColorUtils::ConvertToCMCo
     }
     return HDI::Display::Graphic::Common::V1_0::CM_COLORSPACE_NONE;
 }
+
+HDI::Display::Graphic::Common::V1_0::CM_ColorPrimaries ColorUtils::ConvertCicpToCMColor(uint16_t name)
+{
+    switch (name) {
+        case CICP_COLORPRIMARIES_SRGB:
+            return HDI::Display::Graphic::Common::V1_0::COLORPRIMARIES_SRGB;
+        case CICP_COLORPRIMARIES_BT601_P:
+            return HDI::Display::Graphic::Common::V1_0::COLORPRIMARIES_BT601_P;
+        case CICP_COLORPRIMARIES_BT601_N:
+            return HDI::Display::Graphic::Common::V1_0::COLORPRIMARIES_BT601_N;
+        case CICP_COLORPRIMARIES_BT2020:
+            return HDI::Display::Graphic::Common::V1_0::COLORPRIMARIES_BT2020;
+        case CICP_COLORPRIMARIES_P3_DCI:
+            return HDI::Display::Graphic::Common::V1_0::COLORPRIMARIES_P3_DCI;
+        case CICP_COLORPRIMARIES_P3_D65:
+            return HDI::Display::Graphic::Common::V1_0::COLORPRIMARIES_P3_D65;
+        default:
+            return HDI::Display::Graphic::Common::V1_0::COLORPRIMARIES_SRGB;
+    }
+}
+
+uint16_t ColorUtils::ConvertCMColorToCicp(uint16_t name)
+{
+    switch (name) {
+        case HDI::Display::Graphic::Common::V1_0::COLORPRIMARIES_SRGB:
+            return CICP_COLORPRIMARIES_SRGB;
+        case HDI::Display::Graphic::Common::V1_0::COLORPRIMARIES_BT601_P:
+            return CICP_COLORPRIMARIES_BT601_P;
+        case HDI::Display::Graphic::Common::V1_0::COLORPRIMARIES_BT601_N:
+            return CICP_COLORPRIMARIES_BT601_N;
+        case HDI::Display::Graphic::Common::V1_0::COLORPRIMARIES_BT2020:
+            return CICP_COLORPRIMARIES_BT2020;
+        case HDI::Display::Graphic::Common::V1_0::COLORPRIMARIES_P3_DCI:
+            return CICP_COLORPRIMARIES_P3_DCI;
+        case HDI::Display::Graphic::Common::V1_0::COLORPRIMARIES_P3_D65:
+            return CICP_COLORPRIMARIES_P3_D65;
+        default:
+            return CICP_COLORPRIMARIES_SRGB;
+    }
+}
 #endif
 
 } // namespace Media

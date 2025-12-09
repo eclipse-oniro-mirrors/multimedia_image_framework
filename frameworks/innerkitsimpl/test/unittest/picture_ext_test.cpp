@@ -841,6 +841,42 @@ HWTEST_F(PictureExtTest, getHDRComposedPixelmapTest005, TestSize.Level1)
     EXPECT_NE(ret, nullptr);
 }
 
+HWTEST_F(PictureExtTest, ConvertGainmapHdrMetadataTest001, TestSize.Level1)
+{
+    uint32_t res = 0;
+    SourceOptions sourceOpts;
+    sourceOpts.formatHint = "image/jpeg";
+    std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(IMAGE_JPEGHDR_SRC.c_str(),
+                                                                              sourceOpts, res);
+    ASSERT_NE(imageSource, nullptr);
+    DecodingOptionsForPicture opts;
+    opts.desireAuxiliaryPictures.insert(AuxiliaryPictureType::GAINMAP);
+    uint32_t error_code;
+    std::unique_ptr<Picture> picture = imageSource->CreatePicture(opts, error_code);
+    ASSERT_NE(picture, nullptr);
+    sptr<SurfaceBuffer> maintenanceBuffer = SurfaceBuffer::Create();
+    ASSERT_NE(maintenanceBuffer, nullptr);
+    uint8_t dataBlob[] = "Test set maintenance data";
+    uint32_t size = sizeof(dataBlob);
+    BufferRequestConfig requestConfig = {
+        .width = SIZE_WIDTH,
+        .height = SIZE_HEIGHT,
+        .strideAlignment = STRIDE_ALIGNMENT,
+        .format = GraphicPixelFormat::GRAPHIC_PIXEL_FMT_BGRA_8888,
+        .usage = BUFFER_USAGE_CPU_READ | BUFFER_USAGE_CPU_WRITE | BUEFFER_USAGE_MEM_DMA | BUFFER_USAGE_MEM_MMZ_CACHE,
+        .timeout = 0,
+    };
+    GSError ret = maintenanceBuffer->Alloc(requestConfig);
+    ASSERT_EQ(ret, GSERROR_OK);
+    bool result = memcpy_s(maintenanceBuffer->GetVirAddr(), size, dataBlob, size);
+    ASSERT_EQ(result, EOK);
+    result = picture->SetMaintenanceData(maintenanceBuffer);
+    EXPECT_EQ(result, true);
+    PixelFormat expectedPixelFormat = PixelFormat::NV21;
+    std::unique_ptr<Pixelmap> pixelmap = picture->GetHdrComposedPixelMlap(expectedPixelFormat);
+    ASSERT_NE(pixelmap, nullptr);
+}
+
 /**
  * @tc.name: SetMaintenanceDataTest001
  * @tc.desc: Set maintenance data successfully.

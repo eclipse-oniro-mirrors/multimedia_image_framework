@@ -34,6 +34,7 @@
 #include "v1_0/cm_color_space.h"
 #include "vpe_utils.h"
 #include "image_system_properties.h"
+#include "color_utils.h"
 
 namespace OHOS {
 namespace Media {
@@ -318,6 +319,43 @@ static int32_t GetHdrAllocFormat(PixelFormat pixelFormat)
     return hdrAllocFormat;
 }
 
+static void ConvertGainmapHdrMetadata(sptr<SurfaceBuffer> &gainmapSptr, bool convertToHDI)
+{
+    std::vector<uint8_t> gainmapDynamicMetadata;
+    VpeUtils::GetSbDynamicMetadata(gainmapSptr, gainmapDynamicMetadata);
+    int32_t memCpyRes = 0;
+    HDRVividExtendMetadata extendMetadata = {};
+    uint16_t combineColorPrimary = 0;
+
+    IMAGE_LOGI("%{public}s need to fix gainmap dynamic metadata from camera", __func__);
+    memCpyRes = memcpy_s(&extendMetadata, sizeof(HDRVividExtendMetadata),
+        gainmapDynamicMetadata.data(), gainmapDynamicMetadata.size());
+    CHECK_ERROR_RETURN_LOG(memCpyRes != EOK,
+        "%{public}s memcpy_s ISOMetadata fail, error: %{public}d", __func__, memCpyRes);
+    if (convertToHDI) {
+        combineColorPrimary = ColorUtils::ConvertCicpToCMColor(
+            extendMetadata.gainmapColorMeta.combineColorPrimary);
+    } else  {
+        combineColorPrimary = ColorUtils::ConvertCMColorToCicp(
+            extendMetadata.gainmapColorMeta.combineColorPrimary);
+    }
+
+    if (extendMetadata.metaISO.useBaseColorFlag != 0) {
+        extendMetadata.baseColorMeta.baseColorPrimary = combineColorPrimary;
+        extendMetadata.gainmapColorMeta.combineColorPrimary = combineColorPrimary;
+    } else {
+        extendMetadata.gainmapColorMeta.combineColorPrimary = combineColorPrimary;
+        extendMetadata.gainmapColorMeta.alternateColorPrimary = combineColorPrimary;
+    }
+
+    std::vector<uint8_t> extendMetadataVec(sizeof(HDRVividExtendMetadata));
+    memCpyRes = memcpy_s(extendMetadataVec.data(), extendMetadataVec.size(),
+        &extendMetadata, sizeof(HDRVividExtendMetadata));
+    CHECK_ERROR_RETURN_LOG(memCpyRes != EOK,
+        "%{public}s memcpy_s HDRVividExtendMetadata fail, error: %{public}d", __func__, memCpyRes);
+    VpeUtils::SetSbDynamicMetadata(gainmapSptr, extendMetadataVec);
+}
+
 static void TryFixGainmapHdrMetadata(sptr<SurfaceBuffer> &gainmapSptr)
 {
     std::vector<uint8_t> gainmapDynamicMetadata;
@@ -375,11 +413,13 @@ sptr<SurfaceBuffer> CreateGainmapByHdrAndSdr(std::shared_ptr<PixelMap> &hdrPixel
     ImageUtils::DumpHdrBufferEnabled(buffers.sdr, "Calgainmap-sdr");
     ImageUtils::DumpHdrBufferEnabled(buffers.hdr, "Calgainmap-hdr");
     int32_t res = VpeUtils().ColorSpaceCalGainmap(buffers);
-    ImageUtils::DumpHdrBufferEnabled(buffers.gainmap, "Calgainmap-gainmap");
     if (res != VPE_ERROR_OK) {
         IMAGE_LOGE("HDR-IMAGE CalGainmap failed, res: %{public}d", res);
         return nullptr;
     }
+    ImageUtils::DumpHdrBufferEnabled(buffers.gainmap, "Calgainmap-gainmap");
+    ImageUtils::DumpHdrExtendMetadataEnabled(buffers.gainmap, "Calgainmap-ExtendMetadata-gainmap");
+    ImageUtils::DumpSurfaceBufferAllKeysEnabled(buffers.gainmap, "Calgainmap-AllKeys-gainmap");
     return gainmapSptr;
 }
 
@@ -417,17 +457,21 @@ static bool ShouldComposeAsCuva(const sptr<SurfaceBuffer> &baseSptr, const sptr<
     return false;
 }
 
-static std::unique_ptr<PixelMap> ComposeHdrPixelMap(
-    std::shared_ptr<PixelMap> &mainPixelMap, sptr<SurfaceBuffer> &baseSptr, sptr<SurfaceBuffer> &gainmapSptr)
+static std::unique_ptr<PixelMap> ComposeHdrPixelMap(std::shared_ptr<PixelMap> &mainPixelMap,
+    sptr<SurfaceBuffer> &baseSptr, sptr<SurfaceBuffer> &gainmapSptr, PixelFormat pixelFormat)
 {
     sptr<SurfaceBuffer> hdrSptr = SurfaceBuffer::Create();
     ImageInfo imageInfo;
     mainPixelMap->GetImageInfo(imageInfo);
+    if (pixelFormat == PixelFormat::UNKNOWN) {
+        IMAGE_LOGI("Using mainPixelMap imageInfo format");
+        pixelFormat = imageInfo.pixelFormat;
+    }
     BufferRequestConfig requestConfig = {
         .width = imageInfo.size.width,
         .height = imageInfo.size.height,
         .strideAlignment = imageInfo.size.width,
-        .format = GetHdrAllocFormat(imageInfo.pixelFormat),
+        .format = GetHdrAllocFormat(pixelFormat),
         .usage = BUFFER_USAGE_CPU_READ | BUFFER_USAGE_CPU_WRITE | BUFFER_USAGE_MEM_DMA | BUFFER_USAGE_MEM_MMZ_CACHE,
         .timeout = 0,
     };
@@ -447,6 +491,8 @@ static std::unique_ptr<PixelMap> ComposeHdrPixelMap(
     IMAGE_LOGD("HDR-IMAGE Compose image, isCuva: %{public}d", isCuva);
     ImageUtils::DumpHdrBufferEnabled(baseSptr, "Picture-SDR-tobeComposed");
     ImageUtils::DumpHdrBufferEnabled(gainmapSptr, "Picture-GAINMAP-tobeComposed");
+    ImageUtils::DumpHdrExtendMetadataEnabled(gainmapSptr, "Picture-GAINMAP-ExtendMetadata-tobeComposed");
+    ImageUtils::DumpSurfaceBufferAllKeysEnabled(gainmapSptr, "Picture-GAINMAP-AllKeys-tobeComposed");
     int32_t res = VpeUtils().ColorSpaceConverterComposeImage(buffers, isCuva);
     if (res != VPE_ERROR_OK) {
         IMAGE_LOGE("Compose HDR image failed, res: %{public}d", res);
@@ -457,6 +503,11 @@ static std::unique_ptr<PixelMap> ComposeHdrPixelMap(
 }
 
 std::unique_ptr<PixelMap> Picture::GetHdrComposedPixelMap()
+{
+    return GetHdrComposedPixelMap(PixelFormat::UNKNOWN);
+}
+
+std::unique_ptr<PixelMap> Picture::GetHdrComposedPixelMap(PixelFormat pixelFormat)
 {
     std::shared_ptr<PixelMap> gainmap = GetGainmapPixelMap();
     bool cond = mainPixelMap_ == nullptr || gainmap == nullptr;
@@ -469,8 +520,28 @@ std::unique_ptr<PixelMap> Picture::GetHdrComposedPixelMap()
     sptr<SurfaceBuffer> gainmapSptr(reinterpret_cast<SurfaceBuffer*>(gainmap->GetFd()));
     VpeUtils::SetSbMetadataType(gainmapSptr, CM_METADATA_NONE);
     TryFixGainmapHdrMetadata(gainmapSptr);
-    auto hdrPixelMap = ComposeHdrPixelMap(mainPixelMap_, baseSptr, gainmapSptr);
+
+    if (GetMaintenanceData()) {
+        auto exifMetadata = GetExifMetadata();
+        if (exifMetadata) {
+            XmageCoordinateMetadata coordMetadata = {};
+            if (exifMetadata->ExtractXmageCoordinates(coordMetadata)) {
+                std::vector<uint8_t> metaDataVec(sizeof(XmageCoordinateMetadata));
+                int32_t memCpyRes = memcpy_s(metaDataVec.data(), metaDataVec.size(),
+                    &coordMetadata, sizeof(XmageCoordinateMetadata));
+                CHECK_ERROR_RETURN_RET_LOG(memCpyRes != EOK, nullptr, "copy xmage coordinate metadata failed");
+                bool setMetaRes = VpeUtils::SetSbStaticMetadata(gainmapSptr, metaDataVec);
+                CHECK_ERROR_RETURN_RET_LOG(!setMetaRes, nullptr, "Set xmage coordinate metadata failed");
+            }
+        }
+        ConvertGainmapHdrMetadata(gainmapSptr, true);
+    }
+    auto hdrPixelMap = ComposeHdrPixelMap(mainPixelMap_, baseSptr, gainmapSptr, pixelFormat);
     SetImageInfoToHdr(mainPixelMap_, hdrPixelMap);
+
+    if (GetMaintenanceData()) {
+        ConvertGainmapHdrMetadata(gainmapSptr, false);
+    }
     return hdrPixelMap;
 }
 
@@ -622,6 +693,8 @@ bool Picture::UnmarshalMetadata(Parcel &parcel, Picture &picture, PICTURE_ERR &e
             imagedataPtr.reset(XtStyleMetadata::Unmarshalling(parcel));
         } else if (type == MetadataType::RFDATAB) {
             imagedataPtr.reset(RfDataBMetadata::Unmarshalling(parcel));
+        } else if (type == MetadataType::HEIFS) {
+            imagedataPtr.reset(HeifsMetadata::Unmarshalling(parcel));
         } else {
             IMAGE_LOGE("Unsupported metadata type: %{public}d in picture", static_cast<int32_t>(type));
         }
@@ -847,6 +920,7 @@ bool Picture::IsValidPictureMetadataType(MetadataType metadataType)
         MetadataType::RFDATAB,
         MetadataType::GIF,
         MetadataType::STDATA,
+        MetadataType::HEIFS,
     };
     return pictureMetadataTypes.find(metadataType) != pictureMetadataTypes.end();
 }

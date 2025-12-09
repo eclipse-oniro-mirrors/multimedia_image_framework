@@ -240,43 +240,48 @@ static void GetAllPropertiesSyncExecute(std::unique_ptr<MetadataTaiheContext> &c
     context->status = OHOS::Media::SUCCESS;
 }
 
-static map<string, PropertyValue> GetAllPropertiesSyncComplete(std::unique_ptr<MetadataTaiheContext> const& context)
+static optional<map<string, PropertyValue>> GetAllPropertiesSyncComplete(
+    std::unique_ptr<MetadataTaiheContext> const& context)
 {
     map<string, PropertyValue> result;
     if (context == nullptr) {
         IMAGE_LOGE("Context is nullptr");
-        return result;
+        return optional<map<string, PropertyValue>>(std::nullopt);
     }
     if (context->status == OHOS::Media::SUCCESS) {
         result = CreatePropertiesRecord(context->kVStrArray);
     } else {
         CreateErrorArray(context);
     }
-    return result;
+    return optional<map<string, PropertyValue>>(std::in_place, result);
 }
 
-map<string, PropertyValue> MetadataImpl::GetAllPropertiesSync()
+optional<map<string, PropertyValue>> MetadataImpl::GetAllPropertiesSync()
 {
     std::unique_ptr<MetadataTaiheContext> context = std::make_unique<MetadataTaiheContext>();
     context->rMetadata = nativeMetadata_;
     map<string, PropertyValue> result;
     if (context->rMetadata == nullptr) {
-        ImageTaiheUtils::ThrowExceptionError("Empty native metadata.");
-        return result;
+        IMAGE_LOGE("Empty native metadata.");
+        return optional<map<string, PropertyValue>>(std::nullopt);
     }
     GetAllPropertiesSyncExecute(context);
-    result = GetAllPropertiesSyncComplete(context);
-    return result;
+    return GetAllPropertiesSyncComplete(context);
 }
 
-Metadata MetadataImpl::CloneSync()
+optional<Metadata> MetadataImpl::CloneSync()
 {
     if (nativeMetadata_ == nullptr) {
-        ImageTaiheUtils::ThrowExceptionError("Empty native metadata.");
-        return make_holder<MetadataImpl, Metadata>();
+        IMAGE_LOGE("Empty native metadata.");
+        return optional<Metadata>(std::nullopt);
     }
     auto metadata = nativeMetadata_->CloneMetadata();
-    return make_holder<MetadataImpl, Metadata>(std::move(metadata));
+    if (metadata == nullptr) {
+        ImageTaiheUtils::ThrowExceptionError("Clone metadata failed.");
+        return optional<Metadata>(std::nullopt);
+    }
+    auto result = make_holder<MetadataImpl, Metadata>(std::move(metadata));
+    return optional<Metadata>(std::in_place, result);
 }
 
 void MetadataImpl::Release()

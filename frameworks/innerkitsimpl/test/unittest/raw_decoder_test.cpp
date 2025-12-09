@@ -21,6 +21,7 @@
 #include "mock_data_stream.h"
 #include "mock_abs_image_decoder.h"
 #include "image_source.h"
+#include "plugin_export.h"
 
 using namespace testing::ext;
 using namespace OHOS::Media;
@@ -29,6 +30,7 @@ namespace OHOS {
 namespace Multimedia {
 
 static const std::string IMAGE_RAW_PATH = "/data/local/tmp/image/test_raw_dng.dng";
+static constexpr size_t NUMBER_TWO = 2;
 
 class RawDecoderTest : public testing::Test {
 public:
@@ -151,6 +153,46 @@ HWTEST_F(RawDecoderTest, GetImageSizeTest006, TestSize.Level3)
     bool result = (rawDecoder != nullptr);
     ASSERT_EQ(result, true);
     GTEST_LOG_(INFO) << "RawDecoderTest: GetImageSizeTest006 end";
+}
+
+/**
+ * @tc.name: GetImageSizeTest008
+ * @tc.desc: Test GetImageSize when jpegDecoder_ is nullptr, should return ERR_IMAGE_DATA_UNSUPPORT
+ * @tc.type: FUNC
+ */
+HWTEST_F(RawDecoderTest, GetImageSizeTest008, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "RawDecoderTest: GetImageSizeTest008 start";
+    auto rawDecoder = std::make_shared<RawDecoder>();
+    auto mock = std::make_shared<MockInputDataStream>();
+    mock->SetStreamSize(NUMBER_TWO);
+    mock->SetReturn(true);
+    rawDecoder->SetSource(*mock.get());
+    rawDecoder->jpegDecoder_ = nullptr;
+    ImagePlugin::Size plSize;
+    uint32_t result = rawDecoder->GetImageSize(0, plSize);
+    ASSERT_EQ(result, Media::ERR_IMAGE_DATA_UNSUPPORT);
+    GTEST_LOG_(INFO) << "RawDecoderTest: GetImageSizeTest008 end";
+}
+
+/**
+ * @tc.name: GetImageSizeTest009
+ * @tc.desc: Test GetImageSize with MockAbsImageDecoder, should return ERR_IMAGE_DATA_UNSUPPORT
+ * @tc.type: FUNC
+ */
+HWTEST_F(RawDecoderTest, GetImageSizeTest009, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "RawDecoderTest: GetImageSizeTest009 start";
+    auto rawDecoder = std::make_shared<RawDecoder>();
+    auto mock = std::make_shared<MockInputDataStream>();
+    mock->SetStreamSize(NUMBER_TWO);
+    mock->SetReturn(true);
+    rawDecoder->SetSource(*mock.get());
+    rawDecoder->jpegDecoder_ = std::make_unique<MockAbsImageDecoder>();
+    ImagePlugin::Size plSize;
+    uint32_t result = rawDecoder->GetImageSize(0, plSize);
+    ASSERT_EQ(result, Media::ERR_IMAGE_DATA_UNSUPPORT);
+    GTEST_LOG_(INFO) << "RawDecoderTest: GetImageSizeTest009 end";
 }
 
 /**
@@ -812,6 +854,108 @@ HWTEST_F(RawDecoderTest, SetDecodeOptionsTest009, TestSize.Level3)
 }
 
 /**
+ * @tc.name: SetDecodeOptionsTest0010
+ * @tc.desc: Test SetDecodeOptions with real RAW image in BASE_INFO_PARSED state
+ * @tc.type: FUNC
+ */
+HWTEST_F(RawDecoderTest, SetDecodeOptionsTest0010, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "RawStreamTest: SetDecodeOptionsTest0010 start";
+    auto rawDecoder = std::make_shared<RawDecoder>();
+    ASSERT_NE(rawDecoder, nullptr);
+    uint32_t errorCode = -1;
+    SourceOptions sourceOpts;
+    sourceOpts.formatHint = "image/jpeg";
+    std::unique_ptr<ImageSource> imageSource =
+        ImageSource::CreateImageSource(IMAGE_RAW_PATH, sourceOpts, errorCode);
+    ASSERT_NE(imageSource, nullptr);
+    rawDecoder->SetSource(*(imageSource->sourceStreamPtr_.get()));
+    rawDecoder->state_ = ImagePlugin::RawDecoder::RawDecodingState::BASE_INFO_PARSED;
+    PixelDecodeOptions opts;
+    PlImageInfo info;
+    rawDecoder->SetDecodeOptions(0, opts, info);
+    ASSERT_NE(rawDecoder, nullptr);
+    GTEST_LOG_(INFO) << "RawStreamTest: SetDecodeOptionsTest0010 end";
+}
+
+/**
+ * @tc.name: SetDecodeOptionsTest0011
+ * @tc.desc: Test SetDecodeOptions with real RAW image in SOURCE_INITED state
+ * @tc.type: FUNC
+ */
+HWTEST_F(RawDecoderTest, SetDecodeOptionsTest0011, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "RawStreamTest: SetDecodeOptionsTest0011 start";
+    auto rawDecoder = std::make_shared<RawDecoder>();
+    ASSERT_NE(rawDecoder, nullptr);
+    uint32_t errorCode = -1;
+    SourceOptions sourceOpts;
+    sourceOpts.formatHint = "image/jpeg";
+    std::unique_ptr<ImageSource> imageSource =
+        ImageSource::CreateImageSource(IMAGE_RAW_PATH, sourceOpts, errorCode);
+    ASSERT_NE(imageSource, nullptr);
+    rawDecoder->SetSource(*(imageSource->sourceStreamPtr_.get()));
+    rawDecoder->state_ = ImagePlugin::RawDecoder::RawDecodingState::SOURCE_INITED;
+    PixelDecodeOptions opts;
+    PlImageInfo info;
+    rawDecoder->SetDecodeOptions(0, opts, info);
+    ASSERT_NE(rawDecoder, nullptr);
+    GTEST_LOG_(INFO) << "RawStreamTest: SetDecodeOptionsTest0011 end";
+}
+
+/**
+ * @tc.name: SetDecodeOptionsTest0012
+ * @tc.desc: Test SetDecodeOptions with real RAW image in BASE_INFO_PARSED state when jpegDecoder_ is nullptr.
+ * @tc.type: FUNC
+ */
+HWTEST_F(RawDecoderTest, SetDecodeOptionsTest0012, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "RawStreamTest: SetDecodeOptionsTest0012 start";
+    auto rawDecoder = std::make_shared<RawDecoder>();
+    ASSERT_NE(rawDecoder, nullptr);
+    uint32_t errorCode = -1;
+    SourceOptions sourceOpts;
+    sourceOpts.formatHint = "image/jpeg";
+    std::unique_ptr<ImageSource> imageSource =
+        ImageSource::CreateImageSource(IMAGE_RAW_PATH, sourceOpts, errorCode);
+    ASSERT_NE(imageSource, nullptr);
+    rawDecoder->SetSource(*(imageSource->sourceStreamPtr_.get()));
+    rawDecoder->state_ = ImagePlugin::RawDecoder::RawDecodingState::BASE_INFO_PARSED;
+    rawDecoder->jpegDecoder_ = nullptr;
+    PixelDecodeOptions opts;
+    PlImageInfo info;
+    uint32_t result = rawDecoder->SetDecodeOptions(0, opts, info);
+    ASSERT_EQ(result, Media::ERR_IMAGE_DATA_UNSUPPORT);
+    GTEST_LOG_(INFO) << "RawStreamTest: SetDecodeOptionsTest0012 end";
+}
+
+/**
+ * @tc.name: SetDecodeOptionsTest013
+ * @tc.desc: Test SetDecodeOptions when DoSetDecodeOptions succeeds (skips ret != Media::SUCCESS branch)
+ * @tc.type: FUNC
+ */
+HWTEST_F(RawDecoderTest, SetDecodeOptionsTest013, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "RawStreamTest: SetDecodeOptionsTest013 start";
+    auto rawDecoder = std::make_shared<RawDecoder>();
+    ASSERT_NE(rawDecoder, nullptr);
+    uint32_t errorCode = -1;
+    SourceOptions sourceOpts;
+    sourceOpts.formatHint = "image/jpeg";
+    std::unique_ptr<ImageSource> imageSource =
+        ImageSource::CreateImageSource(IMAGE_RAW_PATH, sourceOpts, errorCode);
+    ASSERT_NE(imageSource, nullptr);
+    rawDecoder->SetSource(*(imageSource->sourceStreamPtr_.get()));
+    rawDecoder->state_ = ImagePlugin::RawDecoder::RawDecodingState::BASE_INFO_PARSED;
+    rawDecoder->jpegDecoder_ = std::make_unique<MockAbsImageDecoder>();
+    PixelDecodeOptions opts;
+    PlImageInfo info;
+    uint32_t result = rawDecoder->SetDecodeOptions(0, opts, info);
+    ASSERT_EQ(result, Media::SUCCESS);
+    GTEST_LOG_(INFO) << "RawStreamTest: SetDecodeOptionsTest013 end";
+}
+
+/**
  * @tc.name: GetImageSizeTest007
  * @tc.desc: Verify RawDecoder using raw image to call GetImageSize.
  * @tc.type: FUNC
@@ -850,6 +994,198 @@ HWTEST_F(RawDecoderTest, DecodeTest004, TestSize.Level3)
     uint32_t result = rawDecoder->Decode(index, context);
     ASSERT_EQ(result, Media::ERR_IMAGE_DATA_UNSUPPORT);
     GTEST_LOG_(INFO) << "RawStreamTest: DecodeTest004 end";
+}
+
+/**
+ * @tc.name: DecodeTest005
+ * @tc.desc: Verify that the RawDecoder's state is IMAGE_DECODING and call Decode.
+ * @tc.type: FUNC
+ */
+HWTEST_F(RawDecoderTest, DecodeTest005, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "RawStreamTest: DecodeTest005 start";
+    auto rawDecoder = std::make_shared<RawDecoder>();
+    ASSERT_NE(rawDecoder, nullptr);
+    uint32_t errorCode = -1;
+    SourceOptions sourceOpts;
+    sourceOpts.formatHint = "image/jpeg";
+    std::unique_ptr<ImageSource> imageSource =
+        ImageSource::CreateImageSource(IMAGE_RAW_PATH, sourceOpts, errorCode);
+    ASSERT_NE(imageSource, nullptr);
+    rawDecoder->SetSource(*(imageSource->sourceStreamPtr_.get()));
+    rawDecoder->state_ = ImagePlugin::RawDecoder::RawDecodingState::IMAGE_DECODING;
+    rawDecoder->jpegDecoder_ = std::make_unique<MockAbsImageDecoder>();
+    DecodeContext context;
+    uint32_t result = rawDecoder->Decode(0, context);
+    ASSERT_EQ(result, Media::SUCCESS);
+    GTEST_LOG_(INFO) << "RawStreamTest: DecodeTest005 end";
+}
+
+/**
+ * @tc.name: DoDecodeHeaderTest001
+ * @tc.desc: Test DoDecodeHeader when rawStream_ is nullptr
+ * @tc.type: FUNC
+ */
+HWTEST_F(RawDecoderTest, DoDecodeHeaderTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "RawDecoderTest: DoDecodeHeaderTest001 start";
+    auto rawDecoder = std::make_shared<RawDecoder>();
+    auto mock = std::make_shared<MockInputDataStream>();
+    rawDecoder->SetSource(*mock.get());
+    rawDecoder->rawStream_ = nullptr;
+    uint32_t result = rawDecoder->DoDecodeHeader();
+    ASSERT_EQ(result, Media::ERR_IMAGE_DATA_UNSUPPORT);
+    GTEST_LOG_(INFO) << "RawDecoderTest: DoDecodeHeaderTest001 end";
+}
+
+/**
+ * @tc.name: DoDecodeHeaderTest002
+ * @tc.desc: Test DoDecodeHeader when rawStream_ is nullptr
+ * @tc.type: FUNC
+ */
+HWTEST_F(RawDecoderTest, DoDecodeHeaderTest002, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "RawDecoderTest: DoDecodeHeaderTest002 start";
+    auto rawDecoder = std::make_shared<RawDecoder>();
+    auto mock = std::make_shared<MockInputDataStream>();
+    rawDecoder->SetSource(*mock.get());
+    rawDecoder->jpegDecoder_ = std::make_unique<MockAbsImageDecoder>();
+    uint32_t result = rawDecoder->DoDecodeHeader();
+    ASSERT_EQ(result, Media::ERR_IMAGE_DATA_UNSUPPORT);
+    GTEST_LOG_(INFO) << "RawDecoderTest: DoDecodeHeaderTest002 end";
+}
+
+/**
+ * @tc.name: DoDecodeHeaderByPiex005
+ * @tc.desc: Test DoDecodeHeaderByPiex when error == piex::Error::kOk but format is not kJpegCompressed (skip branch)
+ * @tc.type: FUNC
+ */
+HWTEST_F(RawDecoderTest, DoDecodeHeaderByPiex005, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "RawDecoderTest: DoDecodeHeaderByPiex005 start";
+    auto rawDecoder = std::make_shared<RawDecoder>();
+    auto mock = std::make_shared<MockInputDataStream>();
+    mock->SetReturn(true);
+    rawDecoder->SetSource(*mock.get());
+    uint32_t result = rawDecoder->DoDecodeHeaderByPiex();
+    ASSERT_EQ(result, Media::ERR_IMAGE_DATA_ABNORMAL);
+    GTEST_LOG_(INFO) << "RawDecoderTest: DoDecodeHeaderByPiex005 end";
+}
+
+/**
+ * @tc.name: DoDecodeHeaderByPiex006
+ * @tc.desc: Test DoDecodeHeaderByPiex when error == piex::Error::kOk and length is 0 (skip branch)
+ * @tc.type: FUNC
+ */
+HWTEST_F(RawDecoderTest, DoDecodeHeaderByPiex006, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "RawDecoderTest: DoDecodeHeaderByPiex006 start";
+    auto rawDecoder = std::make_shared<RawDecoder>();
+    auto mock = std::make_shared<MockInputDataStream>();
+    mock->SetReturn(true);
+    mock->SetStreamSize(2);
+    rawDecoder->SetSource(*mock.get());
+    uint32_t result = rawDecoder->DoDecodeHeaderByPiex();
+    ASSERT_EQ(result, Media::ERR_IMAGE_DATA_ABNORMAL);
+    GTEST_LOG_(INFO) << "RawDecoderTest: DoDecodeHeaderByPiex006 end";
+}
+
+/**
+ * @tc.name: DoDecodeHeaderByPiex007
+ * @tc.desc: Test DoDecodeHeaderByPiex when entering the target branch (format is kJpegCompressed and length > 0)
+ * @tc.type: FUNC
+ */
+HWTEST_F(RawDecoderTest, DoDecodeHeaderByPiex007, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "RawDecoderTest: DoDecodeHeaderByPiex007 start";
+    auto rawDecoder = std::make_shared<RawDecoder>();
+    uint32_t errorCode = -1;
+    SourceOptions sourceOpts;
+    sourceOpts.formatHint = "image/jpeg";
+    std::unique_ptr<ImageSource> imageSource =
+        ImageSource::CreateImageSource(IMAGE_RAW_PATH, sourceOpts, errorCode);
+    ASSERT_NE(imageSource, nullptr);
+    rawDecoder->SetSource(*(imageSource->sourceStreamPtr_.get()));
+    uint32_t result = rawDecoder->DoDecodeHeaderByPiex();
+    ASSERT_EQ(result, Media::SUCCESS);
+    GTEST_LOG_(INFO) << "RawDecoderTest: DoDecodeHeaderByPiex007 end";
+}
+
+/**
+ * @tc.name: DoDecodeHeaderByPiex008
+ * @tc.desc: Test DoDecodeHeaderByPiex when skipping the !hasImage branch (hasImage is true)
+ * @tc.type: FUNC
+ */
+HWTEST_F(RawDecoderTest, DoDecodeHeaderByPiex008, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "RawDecoderTest: DoDecodeHeaderByPiex008 start";
+    auto rawDecoder = std::make_shared<RawDecoder>();
+    uint32_t errorCode = -1;
+    SourceOptions sourceOpts;
+    sourceOpts.formatHint = "image/jpeg";
+    std::unique_ptr<ImageSource> imageSource =
+        ImageSource::CreateImageSource(IMAGE_RAW_PATH, sourceOpts, errorCode);
+    ASSERT_NE(imageSource, nullptr);
+    rawDecoder->SetSource(*(imageSource->sourceStreamPtr_.get()));
+    uint32_t result = rawDecoder->DoDecodeHeaderByPiex();
+    ASSERT_EQ(result, Media::SUCCESS);
+    GTEST_LOG_(INFO) << "RawDecoderTest: DoDecodeHeaderByPiex008 end";
+}
+
+/**
+ * @tc.name: DoDecodeHeaderByPiex009
+ * @tc.desc: Test DoDecodeHeaderByPiex when BufferSourceStream::CreateSourceStream fails (jpegStream_ is nullptr)
+ * @tc.type: FUNC
+ */
+HWTEST_F(RawDecoderTest, DoDecodeHeaderByPiex009, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "RawDecoderTest: DoDecodeHeaderByPiex009 start";
+    auto rawDecoder = std::make_shared<RawDecoder>();
+    auto mock = std::make_shared<MockInputDataStream>();
+    mock->SetReturn(true);
+    mock->SetStreamSize(1024);
+    rawDecoder->SetSource(*mock.get());
+    uint32_t result = rawDecoder->DoDecodeHeaderByPiex();
+    ASSERT_EQ(result, Media::ERR_IMAGE_DATA_ABNORMAL);
+    GTEST_LOG_(INFO) << "RawDecoderTest: DoDecodeHeaderByPiex009 end";
+}
+
+/**
+ * @tc.name: DoDecodeHeaderByPiexTest010
+ * @tc.desc: Test DoDecodeHeaderByPiex when rawStream GetData fails
+ * @tc.type: FUNC
+ */
+HWTEST_F(RawDecoderTest, DoDecodeHeaderByPiexTest010, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "RawDecoderTest: DoDecodeHeaderByPiexTest010 start";
+    auto rawDecoder = std::make_shared<RawDecoder>();
+    uint32_t errorCode = -1;
+    SourceOptions sourceOpts;
+    sourceOpts.formatHint = "image/jpeg";
+    std::unique_ptr<ImageSource> imageSource =
+        ImageSource::CreateImageSource(IMAGE_RAW_PATH, sourceOpts, errorCode);
+    ASSERT_NE(imageSource, nullptr);
+    rawDecoder->SetSource(*(imageSource->sourceStreamPtr_.get()));
+    uint32_t result = rawDecoder->DoDecodeHeaderByPiex();
+    ASSERT_EQ(result, Media::SUCCESS);
+    GTEST_LOG_(INFO) << "RawDecoderTest: DoDecodeHeaderByPiexTest010 end";
+}
+
+/**
+ * @tc.name: PluginExternalCreateTest001
+ * @tc.desc: Test of PluginExternalCreate when not find class or creator is nullptr
+ * @tc.type: FUNC
+ */
+HWTEST_F(RawDecoderTest, PluginExternalCreateTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "RawDecoderTest: PluginExternalCreateTest001 start";
+    std::string className = "";
+    auto result = PluginExternalCreate(className);
+    ASSERT_EQ(result, nullptr);
+    className = "#ImplClassType";
+    result = PluginExternalCreate(className);
+    ASSERT_EQ(result, nullptr);
+    GTEST_LOG_(INFO) << "RawDecoderTest: PluginExternalCreateTest001 end";
 }
 }
 }

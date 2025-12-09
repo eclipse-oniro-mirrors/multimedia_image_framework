@@ -342,6 +342,7 @@ if (is_arkui_x) {
       "src/heif_impl/heif_parser/box/heif_box.cpp",
       "src/heif_impl/heif_parser/box/item_data_box.cpp",
       "src/heif_impl/heif_parser/box/item_info_box.cpp",
+      "src/heif_impl/heif_parser/box/item_movie_box.cpp",
       "src/heif_impl/heif_parser/box/item_property_aux_box.cpp",
       "src/heif_impl/heif_parser/box/item_property_basic_box.cpp",
       "src/heif_impl/heif_parser/box/item_property_box.cpp",
@@ -394,6 +395,7 @@ if (is_arkui_x) {
       "src/heif_impl/heif_parser/box/heif_box.cpp",
       "src/heif_impl/heif_parser/box/item_data_box.cpp",
       "src/heif_impl/heif_parser/box/item_info_box.cpp",
+      "src/heif_impl/heif_parser/box/item_movie_box.cpp",
       "src/heif_impl/heif_parser/box/item_property_aux_box.cpp",
       "src/heif_impl/heif_parser/box/item_property_basic_box.cpp",
       "src/heif_impl/heif_parser/box/item_property_box.cpp",
@@ -456,11 +458,14 @@ ohos_shared_library("heifimpl") {
     "${image_subsystem}/interfaces/innerkits/include",
   ]
 
-  sources = [ "src/heif_impl/HeifDecoderImpl.cpp" ]
+  sources = [
+    "src/heif_impl/HeifDecoderImpl.cpp",
+  ]
 
   deps = [
     ":heifparser",
     "${image_subsystem}/frameworks/innerkitsimpl/utils:image_utils",
+    "${image_subsystem}/interfaces/innerkits:image_native",
   ]
 
   external_deps = [
@@ -481,6 +486,7 @@ ohos_shared_library("heifimpl") {
       "ipc:ipc_core",
       "openmax:libopenmax_static",
       "qos_manager:qos",
+      "libjpeg-turbo:turbojpeg",
     ]
   }
 

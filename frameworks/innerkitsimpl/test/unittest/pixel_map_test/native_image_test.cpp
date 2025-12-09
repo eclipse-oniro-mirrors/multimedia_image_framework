@@ -19,6 +19,9 @@
 #include "media_errors.h"
 #include "native_image.h"
 #include "image_creator.h"
+#include "surface_buffer.h"
+#include "buffer_extra_data_impl.h"
+#include "sync_fence.h"
 
 using namespace testing::ext;
 namespace OHOS {
@@ -26,18 +29,137 @@ namespace Media {
 const std::string DATA_SIZE_TAG = "dataSize";
 static constexpr int32_t NUMI_0 = 0;
 static constexpr uint32_t NUM_0 = 0;
+static constexpr int32_t NUMI_2 = 2;
+static constexpr uint32_t BUFFER_SIZE_1000 = 1000;
+static constexpr uint32_t BUFFER_SIZE_100 = 100;
+static constexpr uint32_t BUFFER_SIZE_10 = 10;
+static constexpr uint32_t BUFFER_SIZE_190 = 190;
+static constexpr int32_t DATA_SIZE_2 = 2;
+static constexpr int32_t DATA_SIZE_200 = 200;
 static constexpr int32_t RECEIVER_TEST_WIDTH = 8192;
 static constexpr int32_t RECEIVER_TEST_HEIGHT = 8;
 static constexpr int32_t RECEIVER_TEST_CAPACITY = 8;
 static constexpr int32_t RECEIVER_TEST_FORMAT = 4;
 static constexpr int32_t ROWSTRIDE = 2;
 static constexpr int32_t WIDTH = 10;
+static constexpr int32_t WIDTH_100000 = 100000;
+static constexpr int32_t HEIGHT = 10;
+static constexpr int32_t HEIGHT_30000 = 30000;
 static constexpr int32_t SIZE_WIDTH = 100;
 static constexpr int32_t SIZE_HEIGHT = 100;
 class NativeImageTest : public testing::Test {
 public:
     NativeImageTest() {}
     ~NativeImageTest() {}
+};
+
+class MockSurfaceBuffer : public SurfaceBuffer {
+public:
+    MockSurfaceBuffer() = default;
+    ~MockSurfaceBuffer() = default;
+
+    int32_t GetFormat() const override
+    {
+        return mockFormat_;
+    }
+
+    void* GetVirAddr() override
+    {
+        return mockVirAddr_;
+    }
+
+    uint32_t GetSize() const override
+    {
+        return mockSize_;
+    }
+
+    int32_t GetWidth() const override
+    {
+        return mockWidth_;
+    }
+
+    int32_t GetHeight() const override
+    {
+        return mockHeight_;
+    }
+
+    sptr<BufferExtraData> GetExtraData() const override
+    {
+        return mockExtraData_;
+    }
+
+    void SetMockFormat(int32_t format)
+    {
+        mockFormat_ = format;
+    }
+
+    void SetMockVirAddr(void* addr)
+    {
+        mockVirAddr_ = addr;
+    }
+
+    void SetMockSize(uint32_t size)
+    {
+        mockSize_ = size;
+    }
+
+    void SetMockWidth(int32_t width)
+    {
+        mockWidth_ = width;
+    }
+
+    void SetMockHeight(int32_t height)
+    {
+        mockHeight_ = height;
+    }
+
+    void SetMockExtraData(sptr<BufferExtraData> extraData)
+    {
+        mockExtraData_ = extraData;
+    }
+
+    BufferHandle *GetBufferHandle() const override { return nullptr; }
+    int32_t GetStride() const override { return mockWidth_ * 4; }
+    uint64_t GetUsage() const override { return 0; }
+    uint64_t GetPhyAddr() const override { return 0; }
+    int32_t GetFileDescriptor() const override { return -1; }
+    GraphicColorGamut GetSurfaceBufferColorGamut() const override { return GRAPHIC_COLOR_GAMUT_SRGB; }
+    GraphicTransformType GetSurfaceBufferTransform() const override { return GRAPHIC_ROTATE_NONE; }
+    void SetSurfaceBufferColorGamut(const GraphicColorGamut& colorGamut) override {}
+    void SetSurfaceBufferTransform(const GraphicTransformType& transform) override {}
+    int32_t GetSurfaceBufferWidth() const override { return mockWidth_; }
+    int32_t GetSurfaceBufferHeight() const override { return mockHeight_; }
+    void SetSurfaceBufferWidth(int32_t width) override {}
+    void SetSurfaceBufferHeight(int32_t height) override {}
+    uint32_t GetSeqNum() const override { return 0; }
+    void SetExtraData(sptr<BufferExtraData> bedata) override {}
+    GSError WriteToMessageParcel(MessageParcel &parcel) override { return GSERROR_NOT_SUPPORT; }
+    GSError ReadFromMessageParcel(MessageParcel &parcel, std::function<int(MessageParcel &parcel,
+        std::function<int(Parcel &)>readFdDefaultFunc)> readSafeFdFunc = nullptr) override {return GSERROR_NOT_SUPPORT;}
+    void SetBufferHandle(BufferHandle *handle) override {}
+    GSError Alloc(const BufferRequestConfig &config, const sptr<SurfaceBuffer>& previousBuffer = nullptr) override
+        { return GSERROR_NOT_SUPPORT; }
+    GSError Map() override { return GSERROR_OK; }
+    GSError Unmap() override { return GSERROR_OK; }
+    GSError FlushCache() override { return GSERROR_OK; }
+    GSError InvalidateCache() override { return GSERROR_OK; }
+    GSError SetMetadata(uint32_t key, const std::vector<uint8_t>& value, bool enableCache = true) override
+        { return GSERROR_OK; }
+    GSError GetMetadata(uint32_t key, std::vector<uint8_t>& value) override { return GSERROR_OK; }
+    GSError ListMetadataKeys(std::vector<uint32_t>& keys) override { return GSERROR_NOT_SUPPORT; }
+    GSError EraseMetadataKey(uint32_t key) override { return GSERROR_NOT_SUPPORT; }
+    OH_NativeBuffer* SurfaceBufferToNativeBuffer() override { return nullptr; }
+    GSError GetPlanesInfo(void** planes) override { return GSERROR_OK; }
+    void SetAndMergeSyncFence(const sptr<OHOS::SyncFence>& syncFence) override {}
+    sptr<OHOS::SyncFence> GetSyncFence() const override { return nullptr; }
+
+private:
+    int32_t mockFormat_ = 0;
+    void* mockVirAddr_ = nullptr;
+    uint32_t mockSize_ = 0;
+    int32_t mockWidth_ = 0;
+    int32_t mockHeight_ = 0;
+    sptr<BufferExtraData> mockExtraData_ = nullptr;
 };
 
 /**
@@ -75,6 +197,102 @@ HWTEST_F(NativeImageTest, NativeImageTest002, TestSize.Level3)
     ASSERT_EQ(res, ERR_MEDIA_DEAD_OBJECT);
 
     GTEST_LOG_(INFO) << "NativeImageTest: NativeImageTest002 end";
+}
+
+/**
+ * @tc.name: GetDataSizeTest003
+ * @tc.desc: Test that GetDataSize returns buffer size when ExtraData is nullptr.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeImageTest, GetDataSizeTest003, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "NativeImageTest: GetDataSizeTest003 start";
+    sptr<MockSurfaceBuffer> mockBuffer = new MockSurfaceBuffer();
+    uint32_t bufferSize = BUFFER_SIZE_1000;
+    mockBuffer->SetMockSize(bufferSize);
+    mockBuffer->SetMockExtraData(nullptr);
+    std::shared_ptr<IBufferProcessor> releaser = nullptr;
+    NativeImage image(mockBuffer, releaser);
+    uint64_t size = 0;
+    int32_t res = image.GetDataSize(size);
+    ASSERT_EQ(res, SUCCESS);
+    ASSERT_EQ(size, bufferSize);
+    GTEST_LOG_(INFO) << "NativeImageTest: GetDataSizeTest003 end";
+}
+
+/**
+ * @tc.name: GetDataSizeTest004
+ * @tc.desc: Test that GetDataSize returns buffer size when ExtraData exists but its dataSize is zero.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeImageTest, GetDataSizeTest004, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "NativeImageTest: GetDataSizeTest004 start";
+    sptr<MockSurfaceBuffer> mockBuffer = new MockSurfaceBuffer();
+    uint32_t bufferSize = BUFFER_SIZE_1000;
+    mockBuffer->SetMockSize(bufferSize);
+    sptr<BufferExtraData> extraData = new BufferExtraDataImpl();
+    ASSERT_NE(extraData, nullptr);
+    int32_t zeroDataSize = 0;
+    extraData->ExtraSet(DATA_SIZE_TAG, zeroDataSize);
+    mockBuffer->SetMockExtraData(extraData);
+    std::shared_ptr<IBufferProcessor> releaser = nullptr;
+    NativeImage image(mockBuffer, releaser);
+    uint64_t size = 0;
+    int32_t res = image.GetDataSize(size);
+    ASSERT_EQ(res, SUCCESS);
+    ASSERT_EQ(size, bufferSize);
+    GTEST_LOG_(INFO) << "NativeImageTest: GetDataSizeTest004 end";
+}
+
+/**
+ * @tc.name: GetDataSizeTest005
+ * @tc.desc: Test that GetDataSize returns buffer size when ExtraData's dataSize is greater than buffer size.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeImageTest, GetDataSizeTest005, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "NativeImageTest: GetDataSizeTest005 start";
+    sptr<MockSurfaceBuffer> mockBuffer = new MockSurfaceBuffer();
+    uint32_t bufferSize = BUFFER_SIZE_100;
+    mockBuffer->SetMockSize(bufferSize);
+    sptr<BufferExtraData> extraData = new BufferExtraDataImpl();
+    ASSERT_NE(extraData, nullptr);
+    int32_t extraDataSize = DATA_SIZE_200;
+    extraData->ExtraSet(DATA_SIZE_TAG, extraDataSize);
+    mockBuffer->SetMockExtraData(extraData);
+    std::shared_ptr<IBufferProcessor> releaser = nullptr;
+    NativeImage image(mockBuffer, releaser);
+    uint64_t size = 0;
+    int32_t res = image.GetDataSize(size);
+    ASSERT_EQ(res, SUCCESS);
+    ASSERT_EQ(size, bufferSize);
+    GTEST_LOG_(INFO) << "NativeImageTest: GetDataSizeTest005 end";
+}
+
+/**
+ * @tc.name: GetDataSizeTest006
+ * @tc.desc: Test that GetDataSize returns ExtraData's dataSize when it is valid and less than buffer size.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeImageTest, GetDataSizeTest006, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "NativeImageTest: GetDataSizeTest006 start";
+    sptr<MockSurfaceBuffer> mockBuffer = new MockSurfaceBuffer();
+    uint32_t bufferSize = BUFFER_SIZE_100;
+    mockBuffer->SetMockSize(bufferSize);
+    sptr<BufferExtraData> extraData = new BufferExtraDataImpl();
+    ASSERT_NE(extraData, nullptr);
+    int32_t extraDataSize = DATA_SIZE_2;
+    extraData->ExtraSet(DATA_SIZE_TAG, extraDataSize);
+    mockBuffer->SetMockExtraData(extraData);
+    std::shared_ptr<IBufferProcessor> releaser = nullptr;
+    NativeImage image(mockBuffer, releaser);
+    uint64_t size = 0;
+    int32_t res = image.GetDataSize(size);
+    ASSERT_EQ(res, SUCCESS);
+    ASSERT_EQ(size, static_cast<uint64_t>(extraDataSize));
+    GTEST_LOG_(INFO) << "NativeImageTest: GetDataSizeTest006 end";
 }
 
 /**
@@ -145,6 +363,47 @@ HWTEST_F(NativeImageTest, NativeImageTest006, TestSize.Level3)
 
     GTEST_LOG_(INFO) << "NativeImageTest: NativeImageTest006 end";
 }
+
+/**
+ * @tc.name: NativeImageTest008
+ * @tc.desc: Test that CombineYUVComponents returns ERR_MEDIA_DATA_UNSUPPORT when buffer size is zero.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeImageTest, NativeImageTest008, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "NativeImageTest: NativeImageTest008 start";
+    sptr<MockSurfaceBuffer> mockBuffer = new MockSurfaceBuffer();
+    int dummyAddr = 0;
+    mockBuffer->SetMockVirAddr(&dummyAddr);
+    mockBuffer->SetMockFormat(static_cast<int32_t>(GRAPHIC_PIXEL_FMT_YCBCR_422_SP));
+    mockBuffer->SetMockSize(0);
+    std::shared_ptr<IBufferProcessor> releaser = nullptr;
+    NativeImage image(mockBuffer, releaser);
+    int32_t res = image.CombineYUVComponents();
+    ASSERT_EQ(res, ERR_MEDIA_DATA_UNSUPPORT);
+    GTEST_LOG_(INFO) << "NativeImageTest: NativeImageTest008 end";
+}
+
+/**
+ * @tc.name: NativeImageTest009
+ * @tc.desc: Test that CombineYUVComponents returns SUCCESS when buffer size is valid and format is YCBCR_422_SP.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeImageTest, NativeImageTest009, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "NativeImageTest: NativeImageTest009 start";
+    sptr<MockSurfaceBuffer> mockBuffer = new MockSurfaceBuffer();
+    int dummyAddr = 0;
+    mockBuffer->SetMockVirAddr(&dummyAddr);
+    mockBuffer->SetMockFormat(static_cast<int32_t>(GRAPHIC_PIXEL_FMT_YCBCR_422_SP));
+    mockBuffer->SetMockSize(BUFFER_SIZE_10);
+    std::shared_ptr<IBufferProcessor> releaser = nullptr;
+    NativeImage image(mockBuffer, releaser);
+    int32_t res = image.CombineYUVComponents();
+    ASSERT_EQ(res, SUCCESS);
+    GTEST_LOG_(INFO) << "NativeImageTest: NativeImageTest009 end";
+}
+
 /**
  * @tc.name: NativeImageTest006
  * @tc.desc: SplitSurfaceToComponent***
@@ -160,6 +419,53 @@ HWTEST_F(NativeImageTest, SplitSurfaceToComponent, TestSize.Level3)
     int32_t ret = image.SplitSurfaceToComponent();
     ASSERT_NE(ret, SUCCESS);
     GTEST_LOG_(INFO) << "NativeImageTest: SplitSurfaceToComponent end";
+}
+
+/**
+ * @tc.name: SplitSurfaceToComponent002
+ * @tc.desc: Test that SplitSurfaceToComponent returns SUCCESS when buffer is valid and format is YCBCR_422_SP.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeImageTest, SplitSurfaceToComponent002, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "NativeImageTest: SplitSurfaceToComponent002 start";
+    sptr<MockSurfaceBuffer> mockBuffer = new MockSurfaceBuffer();
+    size_t bufferSize = SIZE_WIDTH * SIZE_HEIGHT * NUMI_2;
+    std::vector<uint8_t> buffer(bufferSize, 0);
+    mockBuffer->SetMockVirAddr(buffer.data());
+    mockBuffer->SetMockFormat(GRAPHIC_PIXEL_FMT_YCBCR_422_SP);
+    mockBuffer->SetMockWidth(SIZE_WIDTH);
+    mockBuffer->SetMockHeight(SIZE_HEIGHT);
+    mockBuffer->SetMockSize(SIZE_WIDTH * SIZE_HEIGHT * NUMI_2);
+
+    std::shared_ptr<IBufferProcessor> releaser = nullptr;
+    NativeImage nativeImage(mockBuffer, releaser);
+    int32_t ret = nativeImage.SplitSurfaceToComponent();
+    ASSERT_EQ(ret, SUCCESS);
+    GTEST_LOG_(INFO) << "NativeImageTest: SplitSurfaceToComponent002 end";
+}
+
+/**
+ * @tc.name: SplitSurfaceToComponent003
+ * @tc.desc: Test that SplitSurfaceToComponent returns SUCCESS when buffer is valid and format is JPEG.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeImageTest, SplitSurfaceToComponent003, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "NativeImageTest: SplitSurfaceToComponent003 start";
+    sptr<MockSurfaceBuffer> mockBuffer = new MockSurfaceBuffer();
+    int dummyAddr = 0;
+    mockBuffer->SetMockVirAddr(&dummyAddr);
+    mockBuffer->SetMockFormat(static_cast<int32_t>(ImageFormat::JPEG));
+    mockBuffer->SetMockWidth(SIZE_WIDTH);
+    mockBuffer->SetMockHeight(SIZE_HEIGHT);
+    mockBuffer->SetMockSize(SIZE_WIDTH * SIZE_HEIGHT);
+
+    std::shared_ptr<IBufferProcessor> releaser = nullptr;
+    NativeImage nativeImage(mockBuffer, releaser);
+    int32_t ret = nativeImage.SplitSurfaceToComponent();
+    ASSERT_EQ(ret, SUCCESS);
+    GTEST_LOG_(INFO) << "NativeImageTest: SplitSurfaceToComponent003 end";
 }
 
 /**
@@ -226,6 +532,93 @@ HWTEST_F(NativeImageTest, SplitYUV422SPComponent001, TestSize.Level3)
     int32_t ret = image.SplitYUV422SPComponent();
     ASSERT_EQ(ret, ERR_MEDIA_NULL_POINTER);
     GTEST_LOG_(INFO) << "NativeImageTest: SplitYUV422SPComponent001 end";
+}
+
+/**
+ * @tc.name: SplitYUV422SPComponent002
+ * @tc.desc: Test that SplitYUV422SPComponent returns ERR_MEDIA_DATA_UNSUPPORT when buffer size is zero.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeImageTest, SplitYUV422SPComponent002, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "NativeImageTest: SplitYUV422SPComponent002 start";
+    sptr<MockSurfaceBuffer> mockBuffer = new MockSurfaceBuffer();
+    int dummyAddr = 0;
+    mockBuffer->SetMockVirAddr(&dummyAddr);
+    mockBuffer->SetMockSize(0);
+    std::shared_ptr<IBufferProcessor> release = nullptr;
+    NativeImage image(mockBuffer, release);
+    int32_t ret = image.SplitYUV422SPComponent();
+    ASSERT_EQ(ret, ERR_MEDIA_DATA_UNSUPPORT);
+    GTEST_LOG_(INFO) << "NativeImageTest: SplitYUV422SPComponent002 end";
+}
+
+/**
+ * @tc.name: SplitYUV422SPComponent003
+ * @tc.desc: Test that SplitYUV422SPComponent returns ERR_MEDIA_DATA_UNSUPPORT when width or height is zero.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeImageTest, SplitYUV422SPComponent003, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "NativeImageTest: SplitYUV422SPComponent003 start";
+    sptr<MockSurfaceBuffer> mockBuffer = new MockSurfaceBuffer();
+    int dummyAddr = 0;
+    mockBuffer->SetMockVirAddr(&dummyAddr);
+    std::shared_ptr<IBufferProcessor> release = nullptr;
+    NativeImage image(mockBuffer, release);
+    mockBuffer->SetMockSize(BUFFER_SIZE_10);
+    mockBuffer->SetMockWidth(0);
+    mockBuffer->SetMockHeight(HEIGHT);
+    int32_t ret = image.SplitYUV422SPComponent();
+    ASSERT_EQ(ret, ERR_MEDIA_DATA_UNSUPPORT);
+
+    mockBuffer->SetMockWidth(WIDTH);
+    mockBuffer->SetMockHeight(0);
+    ret = image.SplitYUV422SPComponent();
+    ASSERT_EQ(ret, ERR_MEDIA_DATA_UNSUPPORT);
+    GTEST_LOG_(INFO) << "NativeImageTest: SplitYUV422SPComponent003 end";
+}
+
+/**
+ * @tc.name: SplitYUV422SPComponent004
+ * @tc.desc: Test that SplitYUV422SPComponent returns ERR_MEDIA_DATA_UNSUPPORT when buffer size is too large.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeImageTest, SplitYUV422SPComponent004, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "NativeImageTest: SplitYUV422SPComponent004 start";
+    sptr<MockSurfaceBuffer> mockBuffer = new MockSurfaceBuffer();
+    int dummyAddr = 0;
+    mockBuffer->SetMockVirAddr(&dummyAddr);
+    std::shared_ptr<IBufferProcessor> release = nullptr;
+    NativeImage image(mockBuffer, release);
+    mockBuffer->SetMockSize(BUFFER_SIZE_10);
+    mockBuffer->SetMockWidth(WIDTH_100000);
+    mockBuffer->SetMockHeight(HEIGHT_30000);
+    int32_t ret = image.SplitYUV422SPComponent();
+    ASSERT_EQ(ret, ERR_MEDIA_DATA_UNSUPPORT);
+    GTEST_LOG_(INFO) << "NativeImageTest: SplitYUV422SPComponent004 end";
+}
+
+/**
+ * @tc.name: SplitYUV422SPComponent005
+ * @tc.desc: Test that SplitYUV422SPComponent returns ERR_MEDIA_DATA_UNSUPPORT when buffer size not match.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeImageTest, SplitYUV422SPComponent005, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "NativeImageTest: SplitYUV422SPComponent005 start";
+    sptr<MockSurfaceBuffer> mockBuffer = new MockSurfaceBuffer();
+    int dummyAddr = 0;
+    mockBuffer->SetMockVirAddr(&dummyAddr);
+    std::shared_ptr<IBufferProcessor> release = nullptr;
+    NativeImage image(mockBuffer, release);
+    mockBuffer->SetMockWidth(WIDTH);
+    mockBuffer->SetMockHeight(HEIGHT);
+    mockBuffer->SetMockSize(BUFFER_SIZE_190);
+    int32_t ret = image.SplitYUV422SPComponent();
+    ASSERT_EQ(ret, ERR_MEDIA_DATA_UNSUPPORT);
+    GTEST_LOG_(INFO) << "NativeImageTest: SplitYUV422SPComponent005 end";
 }
 
 /**
@@ -543,6 +936,60 @@ HWTEST_F(NativeImageTest, ScalePixelMapTest001, TestSize.Level3)
     ret = pixelmap.ScalePixelMap(targetSize, dstSize, scaleMode, dstPixelMap);
     ASSERT_EQ(ret, false);
     GTEST_LOG_(INFO) << "NativeImageTest: ScalePixelMapTest001 end";
+}
+
+/**
+ * @tc.name: IsYUV422SPFormat001
+ * @tc.desc: Test that CombineYUVComponents when format is YCBCR_422_SP and buffer address is nullptr.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeImageTest, IsYUV422SPFormat001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "NativeImageTest: IsYUV422SPFormat001 start";
+    sptr<MockSurfaceBuffer> mockBuffer = new MockSurfaceBuffer();
+    mockBuffer->SetMockFormat(static_cast<int32_t>(ImageFormat::YCBCR_422_SP));
+    mockBuffer->SetMockVirAddr(nullptr);
+    std::shared_ptr<IBufferProcessor> releaser = nullptr;
+    NativeImage image(mockBuffer, releaser);
+    int32_t res = image.CombineYUVComponents();
+    ASSERT_EQ(res, ERR_MEDIA_DATA_UNSUPPORT);
+    GTEST_LOG_(INFO) << "NativeImageTest: IsYUV422SPFormat001 end";
+}
+
+/**
+ * @tc.name: IsYUV422SPFormat002
+ * @tc.desc: Test that CombineYUVComponents when format is GRAPHIC_PIXEL_FMT_YCBCR_422_SP and buffer address is nullptr.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeImageTest, IsYUV422SPFormat002, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "NativeImageTest: IsYUV422SPFormat002 start";
+    sptr<MockSurfaceBuffer> mockBuffer = new MockSurfaceBuffer();
+    mockBuffer->SetMockFormat(static_cast<int32_t>(GRAPHIC_PIXEL_FMT_YCBCR_422_SP));
+    mockBuffer->SetMockVirAddr(nullptr);
+    std::shared_ptr<IBufferProcessor> releaser = nullptr;
+    NativeImage image(mockBuffer, releaser);
+    int32_t res = image.CombineYUVComponents();
+    ASSERT_EQ(res, ERR_MEDIA_DATA_UNSUPPORT);
+    GTEST_LOG_(INFO) << "NativeImageTest: IsYUV422SPFormat002 end";
+}
+
+/**
+ * @tc.name: Release001
+ * @tc.desc: Test that release correctly resets buffer and releaser to nullptr.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeImageTest, Release001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "NativeImageTest: Release001 start";
+    sptr<MockSurfaceBuffer> mockBuffer = new MockSurfaceBuffer();
+    std::shared_ptr<IBufferProcessor> releaser = nullptr;
+    NativeImage image(mockBuffer, releaser);
+    ASSERT_EQ(image.components_.size(), 0);
+    image.release();
+    ASSERT_EQ(image.buffer_, nullptr);
+    ASSERT_EQ(image.releaser_, nullptr);
+    GTEST_LOG_(INFO) << "NativeImageTest: Release001 end";
 }
 }
 }

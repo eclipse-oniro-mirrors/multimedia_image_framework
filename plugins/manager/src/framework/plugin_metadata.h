@@ -262,7 +262,7 @@ const std::vector<std::string> META_DATA = {
                 {
                   "name":"encodeFormat",
                   "type":"string",
-                  "value": "image/jpeg,image/png,image/webp,image/x-icon,image/gif,image/bmp"
+                  "value": "image/jpeg,image/png,image/webp,image/x-icon,image/gif,image/bmp,image/wbmp"
                 }
               ]
             },

@@ -488,6 +488,10 @@ uint32_t ExtDecoder::HeifYUVMemAlloc(OHOS::ImagePlugin::DecodeContext &context, 
 
 ExtDecoder::ExtDecoder() : codec_(nullptr), frameCount_(ZERO)
 {
+    dstSubset_.fLeft = 0;
+    dstSubset_.fRight = 0;
+    dstSubset_.fBottom = 0;
+    dstSubset_.fTop = 0;
 }
 
 ExtDecoder::~ExtDecoder()
@@ -1603,6 +1607,9 @@ uint32_t ExtDecoder::DoHeifToRgbDecode(OHOS::ImagePlugin::DecodeContext &context
 uint32_t ExtDecoder::DoHeifDecode(DecodeContext &context)
 {
 #ifdef HEIF_HW_DECODE_ENABLE
+    if (IsHeifsDecode(context)) {
+        return DoHeifsDecode(context);
+    }
     context.isHardDecode = true;
     if (IsHeifSharedMemDecode(context)) {
         context.isHardDecode = false;
@@ -1664,6 +1671,7 @@ uint32_t ExtDecoder::Decode(uint32_t index, DecodeContext &context)
     }
 #endif
     if (skEncodeFormat == SkEncodedImageFormat::kHEIF) {
+        context.index = index;
         return DoHeifDecode(context);
     }
     PixelFormat format = context.info.pixelFormat;
@@ -2269,6 +2277,16 @@ bool ExtDecoder::DecodeHeader()
     }
     info_ = codec_->getInfo();
     frameCount_ = codec_->getFrameCount();
+#ifdef HEIF_HW_DECODE_ENABLE
+    SkEncodedImageFormat skEncodeFormat = codec_->getEncodedFormat();
+    if (skEncodeFormat == SkEncodedImageFormat::kHEIF) {
+        auto decoder = reinterpret_cast<HeifDecoderImpl*>(codec_->getHeifContext());
+        uint32_t frameCount = 0;
+        if (decoder && decoder->GetHeifsFrameCount(frameCount)) {
+            frameCount_ = frameCount;
+        }
+    }
+#endif
     IMAGE_LOGD("DecodeHeader: get frame count %{public}d.", frameCount_);
     return true;
 }
@@ -2281,7 +2299,7 @@ bool ExtDecoder::CheckIndexValied(uint32_t index)
     return static_cast<int32_t>(index) >= ZERO && static_cast<int32_t>(index) < frameCount_;
 }
 
-static uint32_t GetFormatName(SkEncodedImageFormat format, std::string &name)
+static uint32_t GetFormatName(SkEncodedImageFormat format, std::string &name, SkCodec* codec)
 {
     auto formatNameIter = FORMAT_NAME.find(format);
     if (formatNameIter != FORMAT_NAME.end() && !formatNameIter->second.empty()) {
@@ -2289,6 +2307,16 @@ static uint32_t GetFormatName(SkEncodedImageFormat format, std::string &name)
         if (name == IMAGE_HEIF_FORMAT && ImageUtils::GetAPIVersion() > APIVERSION_13) {
             name = IMAGE_HEIC_FORMAT;
         }
+#ifdef HEIF_HW_DECODE_ENABLE
+        if (format == SkEncodedImageFormat::kHEIF) {
+            CHECK_ERROR_RETURN_RET_LOG(!codec, ERR_IMAGE_DATA_UNSUPPORT, "codec is nullptr");
+            auto decoder = reinterpret_cast<HeifDecoderImpl*>(codec->getHeifContext());
+            CHECK_ERROR_RETURN_RET_LOG(!decoder, ERR_IMAGE_DATA_UNSUPPORT, "HeifDecoder is nullptr");
+            if (decoder->IsHeifsImage()) {
+                name = IMAGE_HEIFS_FORMAT;
+            }
+        }
+#endif
         if (format == SkEncodedImageFormat::kWBMP && ImageUtils::GetAPIVersion() >= APIVERSION_20) {
             name = IMAGE_WBMP_FORMAT;
         }
@@ -2621,8 +2649,24 @@ bool ExtDecoder::GetPropertyCheck(uint32_t index, const std::string &key, uint32
     return result;
 }
 
+#ifdef HEIF_HW_DECODE_ENABLE
+static uint32_t GetHeifsDelayTime(SkCodec *codec, uint32_t index, int32_t &value)
+{
+    auto decoder = reinterpret_cast<HeifDecoderImpl*>(codec->getHeifContext());
+    CHECK_ERROR_RETURN_RET(!decoder, ERR_MEDIA_INVALID_PARAM);
+    auto ret = decoder->GetHeifsDelayTime(index, value);
+    IMAGE_LOGI("GetHeifsDelayTime : %{public}d", value);
+    return ret;
+}
+#endif
+
 static uint32_t GetDelayTime(SkCodec * codec, uint32_t index, int32_t &value)
 {
+#ifdef HEIF_HW_DECODE_ENABLE
+    if (codec->getEncodedFormat() == SkEncodedImageFormat::kHEIF) {
+        return GetHeifsDelayTime(codec, index, value);
+    }
+#endif
     if (codec->getEncodedFormat() != SkEncodedImageFormat::kGIF &&
         codec->getEncodedFormat() != SkEncodedImageFormat::kWEBP) {
         IMAGE_LOGE("[GetDelayTime] Should not get delay time in %{public}d", codec->getEncodedFormat());
@@ -2751,7 +2795,7 @@ OHOS::Media::Size ExtDecoder::GetHeifGridTileSize()
 
 uint32_t ExtDecoder::GetImagePropertyString(uint32_t index, const std::string &key, std::string &value)
 {
-    IMAGE_LOGD("[GetImagePropertyString] enter jpeg plugin, key:%{public}s", key.c_str());
+    IMAGE_LOGD("[GetImagePropertyString] enter ext plugin, key:%{public}s", key.c_str());
     uint32_t res = Media::ERR_IMAGE_DATA_ABNORMAL;
     if (!GetPropertyCheck(index, key, res)) {
         return res;
@@ -2763,7 +2807,7 @@ uint32_t ExtDecoder::GetImagePropertyString(uint32_t index, const std::string &k
             ImageUtils::GetAPIVersion() >= APIVERSION_20 && IsRawFormat(value)) {
             return SUCCESS;
         } else {
-            return GetFormatName(format, value);
+            return GetFormatName(format, value, codec_.get());
         }
     } else if (IMAGE_DELAY_TIME.compare(key) == ZERO) {
         int delayTime = ZERO;
@@ -3318,6 +3362,23 @@ void ExtDecoder::SetHeifParseError()
     free(fileMem);
 }
 
+bool ExtDecoder::IsHeifWithoutAlpha()
+{
+#ifdef HEIF_HW_DECODE_ENABLE
+    if (!CheckCodec()) {
+        IMAGE_LOGE("IsHeifWithoutAlpha CheckCodec failed");
+        return false;
+    }
+
+    auto decoder = reinterpret_cast<HeifDecoderImpl*>(codec_->getHeifContext());
+    bool cond = decoder == nullptr;
+    CHECK_ERROR_RETURN_RET_LOG(cond, false, "Decode Heifdecoder is nullptr");
+
+    return !decoder->IsHeifHasAlphaImage();
+#endif
+    return false;
+}
+
 bool ExtDecoder::CheckAuxiliaryMap(AuxiliaryPictureType type)
 {
 #ifdef HEIF_HW_DECODE_ENABLE
@@ -3385,6 +3446,68 @@ bool ExtDecoder::DecodeHeifAuxiliaryMap(DecodeContext& context, AuxiliaryPicture
     return true;
 #endif
     return false;
+}
+
+bool ExtDecoder::IsHeifsDecode(DecodeContext& context)
+{
+#ifdef HEIF_HW_DECODE_ENABLE
+    bool cond = codec_ == nullptr || codec_->getEncodedFormat() != SkEncodedImageFormat::kHEIF;
+    CHECK_ERROR_RETURN_RET_LOG(cond, false, "IsHeifsDecode falied, codec error.");
+    auto decoder = reinterpret_cast<HeifDecoderImpl*>(codec_->getHeifContext());
+    CHECK_ERROR_RETURN_RET_LOG(decoder == nullptr, false, "IsHeifsDecode failed, heif context error.");
+    uint32_t frameCount = 0;
+    cond = decoder->GetHeifsFrameCount(frameCount) && (context.index < frameCount);
+    CHECK_ERROR_RETURN_RET_LOG(!cond, false, "IsHeifsDecode failed, frame count error.");
+    return decoder->IsHeifsImage();
+#endif
+    return false;
+}
+
+uint32_t ExtDecoder::DoHeifsDecode(DecodeContext &context)
+{
+#ifdef HEIF_HW_DECODE_ENABLE
+    auto decoder = reinterpret_cast<HeifDecoderImpl*>(codec_->getHeifContext());
+    CHECK_ERROR_RETURN_RET_LOG(decoder == nullptr, ERR_IMAGE_DATA_UNSUPPORT, "Decode HeifDecoder is nullptr");
+    uint64_t byteCount = 0;
+    uint64_t rowStride = 0;
+    UpdateDstInfoAndOutInfo(context);
+    rowStride = dstInfo_.minRowBytes64();
+    byteCount = dstInfo_.computeMinByteSize();
+    GridInfo gridInfo = decoder->GetGridInfo();
+    if (IsYuv420Format(context.info.pixelFormat)) {
+        rowStride = static_cast<uint32_t>(dstInfo_.width());
+        byteCount = JpegDecoderYuv::GetYuvOutSize(dstInfo_.width(), dstInfo_.height());
+    }
+    CHECK_ERROR_RETURN_RET_LOG(SkImageInfo::ByteSizeOverflowed(byteCount), ERR_IMAGE_TOO_LARGE,
+        "%{public}s too large byteCount: %{public}llu", __func__, static_cast<unsigned long long>(byteCount));
+    CHECK_ERROR_RETURN_RET(!SetOutPutFormat(context.info.pixelFormat, decoder), ERR_IMAGE_DATA_UNSUPPORT);
+    auto cond = context.allocatorType == Media::AllocatorType::SHARE_MEM_ALLOC ||
+                context.allocatorType == Media::AllocatorType::DMA_ALLOC;
+    CHECK_ERROR_RETURN_RET_LOG(!cond, ERR_IMAGE_MALLOC_ABNORMAL,
+        "%{public}s invalid allocatorType: %{public}d", __func__, static_cast<uint32_t>(context.allocatorType));
+    uint32_t res = ERR_IMAGE_MALLOC_ABNORMAL;
+    if (context.allocatorType == Media::AllocatorType::DMA_ALLOC) {
+        res = DmaMemAlloc(context, byteCount, dstInfo_);
+        auto dstBuffer = reinterpret_cast<SurfaceBuffer*>(context.pixelsBuffer.context);
+        rowStride = dstBuffer->GetStride();
+    } else {
+        IMAGE_LOGE("DoHeifsDecode need DMA_ALLOC.");
+        res = ERR_IMAGE_DATA_UNSUPPORT;
+    }
+    CHECK_ERROR_RETURN_RET(res != SUCCESS, res);
+    decoder->setDstBuffer(reinterpret_cast<uint8_t *>(context.pixelsBuffer.buffer), rowStride, nullptr);
+    decoder->SetDstBufferSize(byteCount);
+    decoder->SetDstImageInfo(dstInfo_.width(), dstInfo_.height());
+    bool decodeRet = decoder->SwDecode(false, context.index);
+    if (!decodeRet) {
+        decoder->getErrMsg(context.hardDecodeError);
+    } else if (IsYuv420Format(context.info.pixelFormat)) {
+        FillYuvInfo(context, dstInfo_);
+    }
+    return decodeRet ? SUCCESS : ERR_IMAGE_DATA_UNSUPPORT;
+#else
+    return ERR_IMAGE_DATA_UNSUPPORT;
+#endif
 }
 } // namespace ImagePlugin
 } // namespace OHOS

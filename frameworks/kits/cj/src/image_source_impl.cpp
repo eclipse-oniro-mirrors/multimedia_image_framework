@@ -310,12 +310,10 @@ int64_t ImageSourceImpl::CreatePixelMap(uint32_t index, DecodeOptions& opts, uin
     }
 
     auto nativeImage = FFIData::Create<PixelMapImpl>(move(incPixelMap));
-    if (GetSdkApiVersion() > API_VERSION_20) {
-        if (nativeImage == nullptr) {
-            IMAGE_LOGE("nativeImage is nullptr.");
-            errorCode = ERR_IMAGE_INIT_ABNORMAL;
-            return 0;
-        }
+    if (nativeImage == nullptr) {
+        IMAGE_LOGE("nativeImage is nullptr.");
+        errorCode = ERR_IMAGE_INIT_ABNORMAL;
+        return 0;
     }
     errorCode = SUCCESS;
     IMAGE_LOGD("[ImageSourceImpl] CreatePixelMap success.");

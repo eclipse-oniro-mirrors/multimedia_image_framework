@@ -14,6 +14,9 @@
  */
 #define private public
 #include <gtest/gtest.h>
+#include <fstream>
+#include <ctime>
+#include <sys/stat.h>
 #include "attr_data.h"
 #include "capability.h"
 #include "impl_class_key.h"
@@ -25,6 +28,7 @@
 #include "plugin_info_lock.h"
 #include "plugin_mgr.h"
 #include "plugin.h"
+#include "plugin_metadata.h"
 #include "priority_scheme.h"
 
 using namespace testing::ext;
@@ -42,11 +46,17 @@ namespace OHOS {
 namespace Multimedia {
 static constexpr uint32_t SUCCESS = 0;
 static constexpr uint16_t UINT16_ONE = 1;
+static constexpr uint16_t UINT16_TEN = 10;
+static constexpr uint16_t UINT16_TWENTY = 20;
+static constexpr uint32_t UINT32_ONE_HUNDRED = 100;
 static const std::string OVER_UINT16_VALUE_STRING = "70000";
 static constexpr uint32_t MOCKRANGESIZE = 2;
 static constexpr uint32_t MOCKSIZE = 1;
 static constexpr uint32_t LOWERRANGE = 1;
 static constexpr uint32_t UPPERRANGE = 3;
+static constexpr uint32_t TEST_UINT32_SET_VAL1 = 100;
+static constexpr uint32_t TEST_UINT32_SET_VAL2 = 200;
+static constexpr uint32_t TEST_UINT32_SET_VAL3 = 300;
 
 static void StopFunction() {}
 static bool StartFunction()
@@ -132,6 +142,49 @@ HWTEST_F(PluginsManagerSrcFrameWorkTest, CapabilityTest005, TestSize.Level3)
     std::map<std::string, AttrData> ret = capability.GetCapability();
     ASSERT_NE(&ret, nullptr);
     GTEST_LOG_(INFO) << "PluginsManagerSrcFrameWorkTest: CapabilityTest005 end";
+}
+
+/**
+ * @tc.name: CapabilityTest006
+ * @tc.desc: Make normal Capability object， expect IsCompatible returns true
+ * @tc.type: FUNC
+ */
+HWTEST_F(PluginsManagerSrcFrameWorkTest, CapabilityTest006, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PluginsManagerSrcFrameWorkTest: CapabilityTest006 start";
+    Capability capability;
+    nlohmann::json capabilityInfo = nlohmann::json::array({
+        {
+            {"name", "format"},
+            {"type", "string"},
+            {"value", "jpeg"}
+        },
+        {
+            {"name", "width"},
+            {"type", "uint32Range"},
+            {"value", nlohmann::json::array({100, 2000})}
+        },
+        {
+            {"name", "quality"},
+            {"type", "uint32"},
+            {"value", 80}
+        }
+    });
+    uint32_t ret = capability.SetCapability(capabilityInfo);
+    ASSERT_EQ(ret, SUCCESS);
+    std::map<string, AttrData> inputCaps;
+    AttrData formatAttr;
+    formatAttr.SetData(string("jpeg"));
+    inputCaps["format"] = formatAttr;
+    AttrData widthAttr;
+    widthAttr.SetData(static_cast<uint32_t>(1920));
+    inputCaps["width"] = widthAttr;
+    AttrData qualityAttr;
+    qualityAttr.SetData(static_cast<uint32_t>(80));
+    inputCaps["quality"] = qualityAttr;
+    bool compatible = capability.IsCompatible(inputCaps);
+    ASSERT_TRUE(compatible);
+    GTEST_LOG_(INFO) << "PluginsManagerSrcFrameWorkTest: CapabilityTest006 end";
 }
 
 /**
@@ -251,6 +304,164 @@ HWTEST_F(PluginsManagerSrcFrameWorkTest, ImplClassMgrTest006, TestSize.Level3)
     std::shared_ptr<ImplClass> implClass = implClassMgr.GetImplClass(packageName, className);
     ASSERT_EQ(implClass, nullptr);
     GTEST_LOG_(INFO) << "PluginsManagerSrcFrameWorkTest: ImplClassMgrTest006 end";
+}
+
+/**
+ * @tc.name: ImplClassMgrTest007
+ * @tc.desc: test GetImplClass with invalid plugin after AddClass
+ * @tc.type: FUNC
+ */
+HWTEST_F(PluginsManagerSrcFrameWorkTest, ImplClassMgrTest007, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PluginsManagerSrcFrameWorkTest: ImplClassMgrTest007 start";
+    ImplClassMgr &implClassMgr = DelayedRefSingleton<ImplClassMgr>::GetInstance();
+    std::weak_ptr<Plugin> plugin;
+    nlohmann::json classInfo = {
+        {"className", "TestClass"},
+        {"packageName", "TestPackage"},
+        {"services", nlohmann::json::array({
+            {{"IID", 1}, {"serviceType", 1}}
+        })}
+    };
+    implClassMgr.AddClass(plugin, classInfo);
+    const string packageName = "TestPackage";
+    const string className = "TestClass";
+    std::shared_ptr<ImplClass> implClass = implClassMgr.GetImplClass(packageName, className);
+    ASSERT_EQ(implClass, nullptr);
+    GTEST_LOG_(INFO) << "PluginsManagerSrcFrameWorkTest: ImplClassMgrTest007 end";
+}
+
+/**
+ * @tc.name: ImplClassMgrTest008
+ * @tc.desc: test CreateObject failure with invalid plugin and missing packageName
+ * @tc.type: FUNC
+ */
+HWTEST_F(PluginsManagerSrcFrameWorkTest, ImplClassMgrTest008, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PluginsManagerSrcFrameWorkTest: ImplClassMgrTest008 start";
+    ImplClassMgr &implClassMgr = DelayedRefSingleton<ImplClassMgr>::GetInstance();
+    std::weak_ptr<Plugin> plugin;
+    nlohmann::json classInfo = {
+        {"className", "TestClass"},
+        {"services", nlohmann::json::array({
+            {{"IID", 1}, {"serviceType", 1}}
+        })}
+    };
+    implClassMgr.AddClass(plugin, classInfo);
+    const string implClassName = "TestClass";
+    uint16_t id = 1;
+    uint32_t errorCode;
+    PluginClassBase *obj = implClassMgr.CreateObject(id, implClassName, errorCode);
+    EXPECT_NE(errorCode, SUCCESS);
+    ASSERT_EQ(obj, nullptr);
+    GTEST_LOG_(INFO) << "PluginsManagerSrcFrameWorkTest: ImplClassMgrTest008 end";
+}
+
+/**
+ * @tc.name: ImplClassMgrTest009
+ * @tc.desc: test GetImplClass with mismatched package name
+ * @tc.type: FUNC
+ */
+HWTEST_F(PluginsManagerSrcFrameWorkTest, ImplClassMgrTest009, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PluginsManagerSrcFrameWorkTest: ImplClassMgrTest009 start";
+    ImplClassMgr &implClassMgr = DelayedRefSingleton<ImplClassMgr>::GetInstance();
+    std::weak_ptr<Plugin> plugin;
+    nlohmann::json classInfo = {
+        {"className", "TestClass"},
+        {"packageName", "TestPackage"},
+        {"services", nlohmann::json::array({
+            {{"IID", 1}, {"serviceType", 1}}
+        })}
+    };
+    implClassMgr.AddClass(plugin, classInfo);
+    const string packageName = "DifferentPackage";
+    const string className = "TestClass";
+    std::shared_ptr<ImplClass> implClass = implClassMgr.GetImplClass(packageName, className);
+    ASSERT_EQ(implClass, nullptr);
+    GTEST_LOG_(INFO) << "PluginsManagerSrcFrameWorkTest: ImplClassMgrTest009 end";
+}
+
+/**
+ * @tc.name: ImplClassMgrTest010
+ * @tc.desc: Test DeleteClass functionality by adding two classes and deleting one, verifying it's removed
+ * @tc.type: FUNC
+ */
+HWTEST_F(PluginsManagerSrcFrameWorkTest, ImplClassMgrTest010, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PluginsManagerSrcFrameWorkTest: ImplClassMgrTest010 start";
+    ImplClassMgr &implClassMgr = DelayedRefSingleton<ImplClassMgr>::GetInstance();
+    std::shared_ptr<Plugin> plugin1 = std::make_shared<Plugin>();
+    std::weak_ptr<Plugin> weakPlugin1 = plugin1;
+    nlohmann::json classInfo1 = {
+        {"className", "TestClass1"},
+        {"packageName", "TestPackage1"},
+        {"services", nlohmann::json::array({
+            {{"IID", 1}, {"serviceType", 1}}
+        })}
+    };
+    implClassMgr.AddClass(weakPlugin1, classInfo1);
+    std::shared_ptr<Plugin> plugin2 = std::make_shared<Plugin>();
+    std::weak_ptr<Plugin> weakPlugin2 = plugin2;
+    nlohmann::json classInfo2 = {
+        {"className", "TestClass2"},
+        {"packageName", "TestPackage2"},
+        {"services", nlohmann::json::array({
+            {{"IID", 2}, {"serviceType", 2}}
+        })}
+    };
+    implClassMgr.AddClass(weakPlugin2, classInfo2);
+    implClassMgr.DeleteClass(weakPlugin2);
+    std::shared_ptr<ImplClass> implClass2 = implClassMgr.GetImplClass("TestPackage2", "TestClass2");
+    ASSERT_EQ(implClass2, nullptr);
+    GTEST_LOG_(INFO) << "PluginsManagerSrcFrameWorkTest: ImplClassMgrTest010 end";
+}
+
+/**
+ * @tc.name: ImplClassMgrTest011
+ * @tc.desc: Test ImplClassMgrGetClassInfo with incompatible capabilities, should return ERR_MATCHING_PLUGIN
+ * @tc.type: FUNC
+ */
+HWTEST_F(PluginsManagerSrcFrameWorkTest, ImplClassMgrTest011, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PluginsManagerSrcFrameWorkTest: ImplClassMgrTest011 start";
+    ImplClassMgr &implClassMgr = DelayedRefSingleton<ImplClassMgr>::GetInstance();
+    std::shared_ptr<Plugin> plugin = std::make_shared<Plugin>();
+    std::weak_ptr<Plugin> weakPlugin = plugin;
+    nlohmann::json classInfo = {
+        {"className", "TestClass"},
+        {"packageName", "TestPackage"},
+        {"services", nlohmann::json::array({
+            {{"IID", 1}, {"serviceType", 1}}
+        })},
+        {"capabilities", nlohmann::json::array({
+            {
+                {"name", "format"},
+                {"type", "string"},
+                {"value", "jpeg"}
+            },
+            {
+                {"name", "width"},
+                {"type", "uint32"},
+                {"value", 1920}
+            }
+        })}
+    };
+    implClassMgr.AddClass(weakPlugin, classInfo);
+    std::map<string, AttrData> incompatibleCaps;
+    AttrData formatAttr;
+    formatAttr.SetData(string("png"));
+    incompatibleCaps["format"] = formatAttr;
+    AttrData widthAttr;
+    widthAttr.SetData(static_cast<uint32_t>(3840));
+    incompatibleCaps["width"] = widthAttr;
+    std::vector<ClassInfo> classesInfo;
+    uint16_t interfaceID = 1;
+    uint16_t serviceType = 1;
+    uint32_t result = implClassMgr.ImplClassMgrGetClassInfo(interfaceID, serviceType, incompatibleCaps, classesInfo);
+    ASSERT_EQ(result, ERR_MATCHING_PLUGIN);
+    ASSERT_TRUE(classesInfo.empty());
+    GTEST_LOG_(INFO) << "PluginsManagerSrcFrameWorkTest: ImplClassMgrTest011 end";
 }
 
 /**
@@ -798,6 +1009,110 @@ HWTEST_F(PluginsManagerSrcFrameWorkTest, SearchByPriority001, TestSize.Level3)
 }
 
 /**
+ * @tc.name: SearchByPriority002
+ * @tc.desc: Test SearchByPriority with PRIORITY_ORDER_BY_ATTR_ASCENDING and two candidates
+ * @tc.type: FUNC
+ */
+HWTEST_F(PluginsManagerSrcFrameWorkTest, SearchByPriority002, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PluginsManagerSrcFrameWorkTest: SearchByPriority002 start";
+    ImplClassMgr &implClassMgr = DelayedRefSingleton<ImplClassMgr>::GetInstance();
+    std::list<std::shared_ptr<ImplClass>> candidates;
+    PriorityScheme priorityScheme;
+    priorityScheme.type_ = PriorityType::PRIORITY_ORDER_BY_ATTR_ASCENDING;
+    auto ptr = std::make_shared<ImplClass>();
+    candidates.push_back(ptr);
+    auto ptr2 = std::make_shared<ImplClass>();
+    candidates.push_back(ptr2);
+    std::shared_ptr<ImplClass> implClass = implClassMgr.SearchByPriority(candidates, priorityScheme);
+    ASSERT_NE(implClass, nullptr);
+    GTEST_LOG_(INFO) << "PluginsManagerSrcFrameWorkTest: SearchByPriority002 end";
+}
+
+/**
+ * @tc.name: SearchByPriority003
+ * @tc.desc: Test SearchByPriority with mixed class states (UNREGISTER and REGISTERED), should return valid result
+ * @tc.type: FUNC
+ */
+HWTEST_F(PluginsManagerSrcFrameWorkTest, SearchByPriority003, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PluginsManagerSrcFrameWorkTest: SearchByPriority003 start";
+    ImplClassMgr &implClassMgr = DelayedRefSingleton<ImplClassMgr>::GetInstance();
+    std::list<std::shared_ptr<ImplClass>> candidates;
+    PriorityScheme priorityScheme;
+    priorityScheme.type_ = PriorityType::PRIORITY_ORDER_BY_ATTR_ASCENDING;
+    auto ptr = std::make_shared<ImplClass>();
+    ptr->state_ = ClassState::CLASS_STATE_UNREGISTER;
+    candidates.push_back(ptr);
+    auto ptr2 = std::make_shared<ImplClass>();
+    ptr2->state_ = ClassState::CLASS_STATE_REGISTERED;
+    candidates.push_back(ptr2);
+    std::shared_ptr<ImplClass> implClass = implClassMgr.SearchByPriority(candidates, priorityScheme);
+    ASSERT_NE(implClass, nullptr);
+    GTEST_LOG_(INFO) << "PluginsManagerSrcFrameWorkTest: SearchByPriority003 end";
+}
+
+/**
+ * @tc.name: SearchByPriority004
+ * @tc.desc: Test SearchByPriority with reversed class states (REGISTERED first, then UNREGISTER).
+ * @tc.type: FUNC
+ */
+HWTEST_F(PluginsManagerSrcFrameWorkTest, SearchByPriority004, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PluginsManagerSrcFrameWorkTest: SearchByPriority004 start";
+    ImplClassMgr &implClassMgr = DelayedRefSingleton<ImplClassMgr>::GetInstance();
+    std::list<std::shared_ptr<ImplClass>> candidates;
+    PriorityScheme priorityScheme;
+    priorityScheme.type_ = PriorityType::PRIORITY_ORDER_BY_ATTR_ASCENDING;
+    auto ptr = std::make_shared<ImplClass>();
+    ptr->state_ = ClassState::CLASS_STATE_REGISTERED;
+    candidates.push_back(ptr);
+    auto ptr2 = std::make_shared<ImplClass>();
+    ptr2->state_ = ClassState::CLASS_STATE_UNREGISTER;
+    candidates.push_back(ptr2);
+    std::shared_ptr<ImplClass> implClass = implClassMgr.SearchByPriority(candidates, priorityScheme);
+    ASSERT_NE(implClass, nullptr);
+    GTEST_LOG_(INFO) << "PluginsManagerSrcFrameWorkTest: SearchByPriority004 end";
+}
+
+/**
+ * @tc.name: SearchByPriority005
+ * @tc.desc: Test SearchByPriority with attribute-based ascending order
+ * @tc.type: FUNC
+ */
+HWTEST_F(PluginsManagerSrcFrameWorkTest, SearchByPriority005, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PluginsManagerSrcFrameWorkTest: SearchByPriority005 start";
+    ImplClassMgr &implClassMgr = DelayedRefSingleton<ImplClassMgr>::GetInstance();
+    std::list<std::shared_ptr<ImplClass>> candidates;
+    auto implClass1 = std::make_shared<ImplClass>();
+    implClass1->state_ = ClassState::CLASS_STATE_REGISTERED;
+    implClass1->priority_ = UINT16_TEN;
+    std::map<string, AttrData> caps1;
+    AttrData attr1;
+    attr1.SetData(static_cast<uint32_t>(UINT32_ONE_HUNDRED));
+    caps1["quality"] = attr1;
+    implClass1->capability_ = Capability(caps1);
+    candidates.push_back(implClass1);
+    auto implClass2 = std::make_shared<ImplClass>();
+    implClass2->state_ = ClassState::CLASS_STATE_REGISTERED;
+    implClass2->priority_ = UINT16_TWENTY;
+    std::map<string, AttrData> caps2;
+    AttrData attr2;
+    attr2.SetData(static_cast<uint32_t>(UINT32_ONE_HUNDRED));
+    caps2["quality"] = attr2;
+    implClass2->capability_ = Capability(caps2);
+    candidates.push_back(implClass2);
+    PriorityScheme priorityScheme;
+    priorityScheme.type_ = PriorityType::PRIORITY_ORDER_BY_ATTR_ASCENDING;
+    priorityScheme.attrKey_ = "quality";
+    std::shared_ptr<ImplClass> result = implClassMgr.SearchByPriority(candidates, priorityScheme);
+    ASSERT_NE(result, nullptr);
+    ASSERT_EQ(result->GetPriority(), UINT16_TWENTY);
+    GTEST_LOG_(INFO) << "PluginsManagerSrcFrameWorkTest: SearchByPriority005 end";
+}
+
+/**
  * @tc.name: SearchSimplePriority001
  * @tc.desc: SearchSimplePriority
  * @tc.type: FUNC
@@ -814,6 +1129,39 @@ HWTEST_F(PluginsManagerSrcFrameWorkTest, SearchSimplePriority001, TestSize.Level
     implClass = implClassMgr.SearchSimplePriority(candidates);
     ASSERT_NE(implClass, nullptr);
     GTEST_LOG_(INFO) << "PluginsManagerSrcFrameWorkTest: SearchSimplePriority001 end";
+}
+
+/**
+ * @tc.name: SearchSimplePriority002
+ * @tc.desc: Test SearchSimplePriority with multiple candidates having different priorities
+ * @tc.type: FUNC
+ */
+HWTEST_F(PluginsManagerSrcFrameWorkTest, SearchSimplePriority002, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PluginsManagerSrcFrameWorkTest: SearchSimplePriority002 start";
+    ImplClassMgr &implClassMgr = DelayedRefSingleton<ImplClassMgr>::GetInstance();
+    std::list<std::shared_ptr<ImplClass>> candidates;
+    auto implClass1 = std::make_shared<ImplClass>();
+    implClass1->state_ = ClassState::CLASS_STATE_REGISTERED;
+    implClass1->priority_ = UINT16_TEN;
+    std::map<string, AttrData> caps1;
+    AttrData attr1;
+    attr1.SetData(static_cast<uint32_t>(UINT32_ONE_HUNDRED));
+    caps1["quality"] = attr1;
+    implClass1->capability_ = Capability(caps1);
+    candidates.push_back(implClass1);
+    auto implClass2 = std::make_shared<ImplClass>();
+    implClass2->state_ = ClassState::CLASS_STATE_REGISTERED;
+    implClass2->priority_ = UINT16_TWENTY;
+    std::map<string, AttrData> caps2;
+    AttrData attr2;
+    attr2.SetData(static_cast<uint32_t>(UINT32_ONE_HUNDRED));
+    caps2["quality"] = attr2;
+    implClass2->capability_ = Capability(caps2);
+    candidates.push_back(implClass2);
+    std::shared_ptr<ImplClass> implClass = implClassMgr.SearchSimplePriority(candidates);
+    ASSERT_NE(implClass, nullptr);
+    GTEST_LOG_(INFO) << "PluginsManagerSrcFrameWorkTest: SearchSimplePriority002 end";
 }
 
 /**
@@ -903,6 +1251,55 @@ HWTEST_F(PluginsManagerSrcFrameWorkTest, CompareStringPriority001, TestSize.Leve
     ret = implClassMgr.CompareStringPriority(lhs, rhs, type);
     ASSERT_NE(ret, ERR_COMP_ERROR);
     GTEST_LOG_(INFO) << "PluginsManagerSrcFrameWorkTest: CompareStringPriority001 end";
+}
+
+/**
+ * @tc.name: CompareStringPriority002
+ * @tc.desc: Test CompareStringPriority with different strings in ascending order and various comparison scenarios
+ * @tc.type: FUNC
+ */
+HWTEST_F(PluginsManagerSrcFrameWorkTest, CompareStringPriority002, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PluginsManagerSrcFrameWorkTest: CompareStringPriority002 start";
+    ImplClassMgr &implClassMgr = DelayedRefSingleton<ImplClassMgr>::GetInstance();
+    AttrData lhs;
+    AttrData rhs;
+    PriorityType type = PriorityType::PRIORITY_ORDER_BY_ATTR_ASCENDING;
+    uint32_t ret;
+    lhs.type_ = AttrDataType::ATTR_DATA_STRING;
+    rhs.type_ = AttrDataType::ATTR_DATA_STRING;
+    string *str1 = new std::string("aaa");
+    string *str2 = new std::string("bbb");
+    lhs.value_.stringValue = str1;
+    rhs.value_.stringValue = str2;
+    ret = implClassMgr.CompareStringPriority(lhs, rhs, type);
+    ASSERT_NE(ret, ERR_COMP_ERROR);
+    lhs.value_.stringValue = str2;
+    rhs.value_.stringValue = str1;
+    ret = implClassMgr.CompareStringPriority(lhs, rhs, type);
+    ASSERT_EQ(ret, ERR_COMP_LOWER);
+    lhs.value_.stringValue = str1;
+    rhs.value_.stringValue = str2;
+    ret = implClassMgr.CompareStringPriority(lhs, rhs, type);
+    ASSERT_EQ(ret, ERR_COMP_HIGHER);
+    type = PriorityType::PRIORITY_TYPE_NULL;
+    AttrData lhs2;
+    AttrData rhs2;
+    ret = implClassMgr.CompareStringPriority(lhs2, rhs2, type);
+    ASSERT_EQ(ret, ERR_COMP_ERROR);
+    lhs2.type_ = AttrDataType::ATTR_DATA_STRING;
+    rhs2.type_ = AttrDataType::ATTR_DATA_STRING;
+    string *str3 = new std::string("aaa");
+    string *str4 = new std::string("bbb");
+    lhs2.value_.stringValue = str3;
+    rhs2.value_.stringValue = str4;
+    ret = implClassMgr.CompareStringPriority(lhs, rhs, type);
+    ASSERT_NE(ret, ERR_COMP_HIGHER);
+    lhs2.value_.stringValue = str4;
+    rhs2.value_.stringValue = str3;
+    ret = implClassMgr.CompareStringPriority(lhs, rhs, type);
+    ASSERT_EQ(ret, ERR_COMP_LOWER);
+    GTEST_LOG_(INFO) << "PluginsManagerSrcFrameWorkTest: CompareStringPriority002 end";
 }
 
 /**
@@ -2121,6 +2518,383 @@ HWTEST_F(PluginsManagerSrcFrameWorkTest, AnalyzeAttrDataTest006, TestSize.Level3
     auto ret = mockCapability.AnalyzeAttrData(mockJson, mockAttrData);
     ASSERT_EQ(ret, SUCCESS);
     GTEST_LOG_(INFO) << "PluginsManagerSrcFrameWorkTest: AnalyzeAttrDataTest006 end";
+}
+
+/**
+ * @tc.name: CheckTargetVersionInvalidTest001
+ * @tc.desc: Test CheckTargetVersion with invalid version format
+ * @tc.type: FUNC
+ */
+HWTEST_F(PluginsManagerSrcFrameWorkTest, CheckTargetVersionInvalidTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PluginsManagerSrcFrameWorkTest: CheckTargetVersionInvalidTest001 start";
+
+    Plugin plugin;
+    std::string metadataJson = R"({
+        "packageName": "TestPackage",
+        "targetVersion": "invalid.version.format.abc",
+        "version": "1.0.0",
+        "classes": []
+    })";
+
+    std::istringstream metadata(metadataJson);
+    std::weak_ptr<Plugin> weakPlugin;
+
+    uint32_t ret = plugin.Register(metadata, "", weakPlugin);
+    ASSERT_NE(ret, SUCCESS);
+
+    GTEST_LOG_(INFO) << "PluginsManagerSrcFrameWorkTest: CheckTargetVersionInvalidTest001 end";
+}
+
+/**
+ * @tc.name: AnalyzeVersionInvalidTest001
+ * @tc.desc: Test AnalyzeVersion with invalid version format
+ * @tc.type: FUNC
+ */
+HWTEST_F(PluginsManagerSrcFrameWorkTest, AnalyzeVersionInvalidTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PluginsManagerSrcFrameWorkTest: AnalyzeVersionInvalidTest001 start";
+
+    Plugin plugin;
+    std::string metadataJson = R"({
+        "packageName": "TestPackage",
+        "targetVersion": "1.0.0",
+        "version": "invalid.abc.xyz",
+        "classes": []
+    })";
+
+    std::istringstream metadata(metadataJson);
+    std::weak_ptr<Plugin> weakPlugin;
+
+    uint32_t ret = plugin.Register(metadata, "", weakPlugin);
+    ASSERT_NE(ret, SUCCESS);
+
+    GTEST_LOG_(INFO) << "PluginsManagerSrcFrameWorkTest: AnalyzeVersionInvalidTest001 end";
+}
+
+/**
+ * @tc.name: GetArraySizeClassesFailTest001
+ * @tc.desc: Test RegisterMetadata when classes array is missing
+ * @tc.type: FUNC
+ */
+HWTEST_F(PluginsManagerSrcFrameWorkTest, GetArraySizeClassesFailTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PluginsManagerSrcFrameWorkTest: GetArraySizeClassesFailTest001 start";
+
+    Plugin plugin;
+    std::string metadataJson = R"({
+        "packageName": "TestPackage",
+        "targetVersion": "1.0.0",
+        "version": "1.0.0"
+    })";
+
+    std::istringstream metadata(metadataJson);
+    std::weak_ptr<Plugin> weakPlugin;
+
+    uint32_t ret = plugin.Register(metadata, "", weakPlugin);
+    ASSERT_NE(ret, SUCCESS);
+    ASSERT_EQ(ret, ERR_INVALID_PARAMETER);
+
+    GTEST_LOG_(INFO) << "PluginsManagerSrcFrameWorkTest: GetArraySizeClassesFailTest001 end";
+}
+
+/**
+ * @tc.name: VersionParseStepNanoDefaultTest001
+ * @tc.desc: Test AnalyzeVersion with 3-part version
+ * @tc.type: FUNC
+ */
+HWTEST_F(PluginsManagerSrcFrameWorkTest, VersionParseStepNanoDefaultTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PluginsManagerSrcFrameWorkTest: VersionParseStepNanoDefaultTest001 start";
+
+    Plugin plugin;
+    VersionNum versionNum;
+
+    std::string version3Part = "1.0.0";
+    uint32_t ret = plugin.AnalyzeVersion(version3Part, versionNum);
+    ASSERT_EQ(ret, SUCCESS);
+    ASSERT_EQ(versionNum.major, 1);
+    ASSERT_EQ(versionNum.minor, 0);
+    ASSERT_EQ(versionNum.micro, 0);
+    ASSERT_EQ(versionNum.nano, 0);
+
+    GTEST_LOG_(INFO) << "PluginsManagerSrcFrameWorkTest: VersionParseStepNanoDefaultTest001 end";
+}
+
+/**
+ * @tc.name: CapabilityAnalyzeFailureTest001
+ * @tc.desc: Test Capability::AnalyzeAttrData failure branch
+ * @tc.type: FUNC
+ */
+HWTEST_F(PluginsManagerSrcFrameWorkTest, CapabilityAnalyzeFailureTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PluginsManagerSrcFrameWorkTest: CapabilityAnalyzeFailureTest001 start";
+    Capability capability;
+    nlohmann::json capInfo;
+    capInfo["name"] = "testCapability";
+    capInfo["type"] = "invalidType";
+    capInfo["value"] = "testValue";
+    AttrData attrData;
+    uint32_t ret = capability.AnalyzeAttrData(capInfo, attrData);
+    ASSERT_NE(ret, SUCCESS);
+    GTEST_LOG_(INFO) << "PluginsManagerSrcFrameWorkTest: CapabilityAnalyzeFailureTest001 end";
+}
+
+/**
+ * @tc.name: CapabilityUnexpectedTypeTest001
+ * @tc.desc: Test unexpected cap value type branch
+ * @tc.type: FUNC
+ */
+HWTEST_F(PluginsManagerSrcFrameWorkTest, CapabilityUnexpectedTypeTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PluginsManagerSrcFrameWorkTest: CapabilityUnexpectedTypeTest001 start";
+    Capability capability;
+    nlohmann::json capInfo;
+    capInfo["name"] = "testCapability";
+    capInfo["type"] = "unknownType";
+    capInfo["value"] = "testValue";
+    AttrData attrData;
+    uint32_t ret = capability.AnalyzeAttrData(capInfo, attrData);
+    ASSERT_NE(ret, SUCCESS);
+    GTEST_LOG_(INFO) << "PluginsManagerSrcFrameWorkTest: CapabilityUnexpectedTypeTest001 end";
+}
+
+/**
+ * @tc.name: CapabilityEmptyStringTest001
+ * @tc.desc: Test empty string value branch
+ * @tc.type: FUNC
+ */
+HWTEST_F(PluginsManagerSrcFrameWorkTest, CapabilityEmptyStringTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PluginsManagerSrcFrameWorkTest: CapabilityEmptyStringTest001 start";
+    Capability capability;
+    nlohmann::json capInfo;
+    capInfo["name"] = "testString";
+    capInfo["type"] = "string";
+    capInfo["value"] = "";
+    AttrData attrData;
+    uint32_t ret = capability.AnalyzeString(capInfo, attrData);
+    ASSERT_NE(ret, SUCCESS);
+    GTEST_LOG_(INFO) << "PluginsManagerSrcFrameWorkTest: CapabilityEmptyStringTest001 end";
+}
+
+/**
+ * @tc.name: CapabilityStringSetDataFailTest001
+ * @tc.desc: Test string SetData success branch
+ * @tc.type: FUNC
+ */
+HWTEST_F(PluginsManagerSrcFrameWorkTest, CapabilityStringSetDataFailTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PluginsManagerSrcFrameWorkTest: CapabilityStringSetDataFailTest001 start";
+    Capability capability;
+    nlohmann::json capInfo;
+    capInfo["name"] = "testString";
+    capInfo["type"] = "string";
+    capInfo["value"] = "validString";
+    AttrData attrData;
+    uint32_t ret = capability.AnalyzeString(capInfo, attrData);
+    ASSERT_EQ(ret, SUCCESS);
+    ASSERT_EQ(attrData.type_, AttrDataType::ATTR_DATA_STRING);
+    GTEST_LOG_(INFO) << "PluginsManagerSrcFrameWorkTest: CapabilityStringSetDataFailTest001 end";
+}
+
+/**
+ * @tc.name: CapabilityUint32SetInsertFailTest001
+ * @tc.desc: Test uint32Set InsertSet success branch
+ * @tc.type: FUNC
+ */
+HWTEST_F(PluginsManagerSrcFrameWorkTest, CapabilityUint32SetInsertFailTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PluginsManagerSrcFrameWorkTest: CapabilityUint32SetInsertFailTest001 start";
+    Capability capability;
+    nlohmann::json capInfo;
+    capInfo["name"] = "testUint32Set";
+    capInfo["type"] = "uint32Set";
+    capInfo["value"] = nlohmann::json::array({TEST_UINT32_SET_VAL1, TEST_UINT32_SET_VAL2, TEST_UINT32_SET_VAL3});
+    AttrData attrData;
+    uint32_t ret = capability.AnalyzeUint32Set(capInfo, attrData);
+    ASSERT_EQ(ret, SUCCESS);
+    ASSERT_EQ(attrData.type_, AttrDataType::ATTR_DATA_UINT32_SET);
+    GTEST_LOG_(INFO) << "PluginsManagerSrcFrameWorkTest: CapabilityUint32SetInsertFailTest001 end";
+}
+
+/**
+ * @tc.name: CapabilityStringSetInsertFailTest001
+ * @tc.desc: Test stringSet InsertSet success branch
+ * @tc.type: FUNC
+ */
+HWTEST_F(PluginsManagerSrcFrameWorkTest, CapabilityStringSetInsertFailTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PluginsManagerSrcFrameWorkTest: CapabilityStringSetInsertFailTest001 start";
+    Capability capability;
+    nlohmann::json capInfo;
+    capInfo["name"] = "testStringSet";
+    capInfo["type"] = "stringSet";
+    capInfo["value"] = nlohmann::json::array({"string1", "string2", "string3"});
+    AttrData attrData;
+    uint32_t ret = capability.AnalyzeStringSet(capInfo, attrData);
+    ASSERT_EQ(ret, SUCCESS);
+    ASSERT_EQ(attrData.type_, AttrDataType::ATTR_DATA_STRING_SET);
+    GTEST_LOG_(INFO) << "PluginsManagerSrcFrameWorkTest: CapabilityStringSetInsertFailTest001 end";
+}
+
+/**
+ * @tc.name: CapabilityDefaultSwitchBranchTest001
+ * @tc.desc: Test AnalyzeBool with invalid bool value to trigger failure branch
+ * @tc.type: FUNC
+ */
+HWTEST_F(PluginsManagerSrcFrameWorkTest, CapabilityDefaultSwitchBranchTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PluginsManagerSrcFrameWorkTest: CapabilityDefaultSwitchBranchTest001 start";
+    Capability capability;
+    nlohmann::json capInfo;
+    capInfo["name"] = "testDefault";
+    capInfo["type"] = "bool";
+    capInfo["value"] = "invalid_bool_value";
+    AttrData attrData;
+    uint32_t ret = capability.AnalyzeBool(capInfo, attrData);
+    ASSERT_NE(ret, SUCCESS);
+    GTEST_LOG_(INFO) << "PluginsManagerSrcFrameWorkTest: CapabilityDefaultSwitchBranchTest001 end";
+}
+
+/**
+ * @tc.name: RegisterPluginErrorBranch001
+ * @tc.desc: Test RegisterPlugin when plugin->Register fails
+ * @tc.type: FUNC
+ */
+HWTEST_F(PluginsManagerSrcFrameWorkTest, RegisterPluginErrorBranch001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PluginsManagerSrcFrameWorkTest: RegisterPluginErrorBranch001 start";
+    
+    PluginMgr &pluginMgr = DelayedRefSingleton<PluginMgr>::GetInstance();
+    
+    std::string tempMetaFile = "/tmp/test_invalid_register.pluginmeta";
+    std::string tempLibPath = "/tmp/test_lib.so";
+    
+    std::ofstream metaFile(tempMetaFile);
+    if (metaFile.is_open()) {
+        metaFile << R"({
+            "version":"1.0.0.0",
+            "targetVersion":"1.0.0.0",
+            "classes": []
+        })";
+        metaFile.close();
+    }
+    
+    std::ofstream libFile(tempLibPath);
+    if (libFile.is_open()) {
+        libFile << "";
+        libFile.close();
+    }
+    
+    std::string libPath = tempLibPath;
+    uint32_t ret = pluginMgr.RegisterPlugin(tempMetaFile, std::move(libPath));
+    EXPECT_NE(ret, SUCCESS);
+    
+    std::remove(tempMetaFile.c_str());
+    std::remove(tempLibPath.c_str());
+    
+    GTEST_LOG_(INFO) << "PluginsManagerSrcFrameWorkTest: RegisterPluginErrorBranch001 end";
+}
+
+/**
+ * @tc.name: RegisterPluginJsonRegisterFailTest001
+ * @tc.desc: Test RegisterPlugin(metadataJson) with Plugin::Register failure
+ * @tc.type: FUNC
+ */
+HWTEST_F(PluginsManagerSrcFrameWorkTest, RegisterPluginJsonRegisterFailTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PluginsManagerSrcFrameWorkTest: RegisterPluginJsonRegisterFailTest001 start";
+    PluginMgr pluginMgr;
+    std::string invalidJson = R"({
+        "libraryPath": "/system/lib/libtest_plugin2.so",
+        "pluginClass": "TestPlugin2"
+    })";
+    uint32_t ret = pluginMgr.RegisterPlugin(invalidJson);
+    EXPECT_NE(ret, SUCCESS);
+    EXPECT_NE(ret, ERR_GENERAL);
+    GTEST_LOG_(INFO) << "PluginsManagerSrcFrameWorkTest: RegisterPluginJsonRegisterFailTest001 end";
+}
+
+/**
+ * @tc.name: RegisterPluginJsonInvalidParameterTest001
+ * @tc.desc: Test RegisterPlugin(metadataJson) with invalid parameters
+ * @tc.type: FUNC
+ */
+HWTEST_F(PluginsManagerSrcFrameWorkTest, RegisterPluginJsonInvalidParameterTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PluginsManagerSrcFrameWorkTest: RegisterPluginJsonInvalidParameterTest001 start";
+    PluginMgr pluginMgr;
+    uint32_t ret1 = pluginMgr.RegisterPlugin("");
+    EXPECT_EQ(ret1, ERR_INVALID_PARAMETER);
+    uint32_t ret2 = pluginMgr.RegisterPlugin("not a json");
+    EXPECT_EQ(ret2, ERR_INVALID_PARAMETER);
+    std::string noLibPathJson = R"({
+        "pluginClass": "TestPlugin",
+        "packageName": "com.test.plugin"
+    })";
+    uint32_t ret3 = pluginMgr.RegisterPlugin(noLibPathJson);
+    EXPECT_EQ(ret3, ERR_INVALID_PARAMETER);
+    GTEST_LOG_(INFO) << "PluginsManagerSrcFrameWorkTest: RegisterPluginJsonInvalidParameterTest001 end";
+}
+
+/**
+ * @tc.name: TraverseFilesCheckPluginMetaFileContinueTest001
+ * @tc.desc: Test TraverseFiles when CheckPluginMetaFile returns false and continues
+ * @tc.type: FUNC
+ */
+HWTEST_F(PluginsManagerSrcFrameWorkTest, TraverseFilesCheckPluginMetaFileContinueTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PluginsManagerSrcFrameWorkTest: TraverseFilesCheckPluginMetaFileContinueTest001 start";
+    PluginMgr pluginMgr;
+    std::string tempDir = "/data/local/tmp/test_traverse_files_" + std::to_string(time(nullptr));
+    mkdir(tempDir.c_str(), 0755);
+    std::string txtFile = tempDir + "/normal_file.txt";
+    std::ofstream txt(txtFile);
+    txt << "This is a normal text file";
+    txt.close();
+    std::string invalidMeta = tempDir + "/invalid.pluginmeta";
+    std::ofstream invalid(invalidMeta);
+    invalid << "invalid json content {{{";
+    invalid.close();
+    std::string noLibPathMeta = tempDir + "/no_libpath.pluginmeta";
+    std::ofstream noLib(noLibPathMeta);
+    noLib << R"({"pluginClass": "TestPlugin"})";
+    noLib.close();
+    std::string wrongSuffixMeta = tempDir + "/wrong_suffix.pluginmeta";
+    std::ofstream wrongSuffix(wrongSuffixMeta);
+    wrongSuffix << R"({"libraryPath": "libtest.dll"})";
+    wrongSuffix.close();
+    uint32_t ret = pluginMgr.TraverseFiles(tempDir);
+    EXPECT_EQ(ret, ERR_NO_TARGET);
+    remove(txtFile.c_str());
+    remove(invalidMeta.c_str());
+    remove(noLibPathMeta.c_str());
+    remove(wrongSuffixMeta.c_str());
+    rmdir(tempDir.c_str());
+    GTEST_LOG_(INFO) << "PluginsManagerSrcFrameWorkTest: TraverseFilesCheckPluginMetaFileContinueTest001 end";
+}
+
+/**
+ * @tc.name: RegisterPluginJsonAlreadyRegisteredRealTest001
+ * @tc.desc: Test RegisterPlugin(metadataJson) with actually registered plugin (using built-in metadata)
+ * @tc.type: FUNC
+ */
+HWTEST_F(PluginsManagerSrcFrameWorkTest, RegisterPluginJsonAlreadyRegisteredRealTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PluginsManagerSrcFrameWorkTest: RegisterPluginJsonAlreadyRegisteredRealTest001 start";
+    PluginMgr pluginMgr;
+    std::vector<std::string> emptyPaths;
+    uint32_t ret1 = pluginMgr.Register(emptyPaths);
+    if (ret1 == SUCCESS && !OHOS::MultimediaPlugin::META_DATA.empty()) {
+        std::string firstMetadata = OHOS::MultimediaPlugin::META_DATA[0];
+        uint32_t ret2 = pluginMgr.RegisterPlugin(firstMetadata);
+        EXPECT_EQ(ret2, ERR_GENERAL);
+        GTEST_LOG_(INFO) << "Successfully hit already registered branch, ret2=" << ret2;
+    } else {
+        GTEST_LOG_(INFO) << "META_DATA is empty or registration failed, skip this test";
+    }
+    GTEST_LOG_(INFO) << "PluginsManagerSrcFrameWorkTest: RegisterPluginJsonAlreadyRegisteredRealTest001 end";
 }
 }
 }

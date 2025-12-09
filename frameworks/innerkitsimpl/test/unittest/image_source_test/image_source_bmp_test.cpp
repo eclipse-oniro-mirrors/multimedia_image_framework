@@ -55,6 +55,7 @@ HWTEST_F(ImageSourceBmpTest, BmpImageDecode001, TestSize.Level3)
     std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(IMAGE_INPUT_BMP_PATH, opts, errorCode);
     ASSERT_EQ(errorCode, SUCCESS);
     ASSERT_NE(imageSource.get(), nullptr);
+    ASSERT_EQ(imageSource->GetiTxtLength(), 0);
     /**
      * @tc.steps: step2. decode image source to pixel map by default decode options(RGBA_8888).
      * @tc.expected: step2. decode image source to pixel map success.
@@ -89,6 +90,7 @@ HWTEST_F(ImageSourceBmpTest, BmpImageDecode002, TestSize.Level3)
     std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(IMAGE_INPUT_BMP_PATH, opts, errorCode);
     ASSERT_EQ(errorCode, SUCCESS);
     ASSERT_NE(imageSource.get(), nullptr);
+    ASSERT_EQ(imageSource->GetiTxtLength(), 0);
     /**
      * @tc.steps: step2. decode image source to pixel map using pixel format BGRA_8888.
      * @tc.expected: step2. decode image source to pixel map success.
@@ -124,6 +126,7 @@ HWTEST_F(ImageSourceBmpTest, BmpImageDecode003, TestSize.Level3)
     std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(IMAGE_INPUT_BMP_PATH, opts, errorCode);
     ASSERT_EQ(errorCode, SUCCESS);
     ASSERT_NE(imageSource.get(), nullptr);
+    ASSERT_EQ(imageSource->GetiTxtLength(), 0);
     /**
      * @tc.steps: step2. decode image source to pixel map using pixel format RGB_565.
      * @tc.expected: step2. decode image source to pixel map success.
@@ -153,6 +156,7 @@ HWTEST_F(ImageSourceBmpTest, BmpImageDecode004, TestSize.Level3)
     std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(IMAGE_INPUT_BMP_PATH, opts, errorCode);
     ASSERT_EQ(errorCode, SUCCESS);
     ASSERT_NE(imageSource.get(), nullptr);
+    ASSERT_EQ(imageSource->GetiTxtLength(), 0);
     /**
      * @tc.steps: step2. decode image source to pixel map using pixel format BGRA_8888.
      * @tc.expected: step2. decode image source to pixel map success.
@@ -187,6 +191,7 @@ HWTEST_F(ImageSourceBmpTest, BmpImageDecode005, TestSize.Level3)
     std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(IMAGE_INPUT_BMP_PATH, opts, errorCode);
     ASSERT_EQ(errorCode, SUCCESS);
     ASSERT_NE(imageSource.get(), nullptr);
+    ASSERT_EQ(imageSource->GetiTxtLength(), 0);
     /**
      * @tc.steps: step2. get image info from input image.
      * @tc.expected: step2. get image info success.
@@ -216,6 +221,7 @@ HWTEST_F(ImageSourceBmpTest, BmpImageDecode006, TestSize.Level3)
     std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(IMAGE_INPUT_BMP_PATH, opts, errorCode);
     ASSERT_EQ(errorCode, SUCCESS);
     ASSERT_NE(imageSource.get(), nullptr);
+    ASSERT_EQ(imageSource->GetiTxtLength(), 0);
 }
 
 /**
@@ -259,6 +265,7 @@ HWTEST_F(ImageSourceBmpTest, BmpImageDecode008, TestSize.Level3)
     std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(buffer, bufferSize, opts, errorCode);
     ASSERT_EQ(errorCode, SUCCESS);
     ASSERT_NE(imageSource.get(), nullptr);
+    ASSERT_EQ(imageSource->GetiTxtLength(), 0);
     /**
      * @tc.steps: step2. decode image source to pixel map by default decode options
      * @tc.expected: step2. decode image source to pixel map success.
@@ -306,6 +313,7 @@ HWTEST_F(ImageSourceBmpTest, BmpImageDecode009, TestSize.Level3)
     std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(std::move(fs), opts, errorCode);
     ASSERT_EQ(errorCode, SUCCESS);
     ASSERT_NE(imageSource.get(), nullptr);
+    ASSERT_EQ(imageSource->GetiTxtLength(), 0);
     /**
      * @tc.steps: step2. decode image source to pixel map by default decode options
      * @tc.expected: step2. decode image source to pixel map success.
@@ -337,6 +345,7 @@ HWTEST_F(ImageSourceBmpTest, BmpImageDecode010, TestSize.Level3)
     std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(IMAGE_INPUT_BMP_PATH, opts, errorCode);
     ASSERT_EQ(errorCode, SUCCESS);
     ASSERT_NE(imageSource.get(), nullptr);
+    ASSERT_EQ(imageSource->GetiTxtLength(), 0);
     /**
      * @tc.steps: step2. decode image source to pixel map by default decode options.
      * @tc.expected: step2. decode image source to pixel map success.
@@ -387,6 +396,7 @@ HWTEST_F(ImageSourceBmpTest, BmpImageDecode011, TestSize.Level3)
     std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(buffer, bufferSize, opts, errorCode);
     ASSERT_EQ(errorCode, SUCCESS);
     ASSERT_NE(imageSource.get(), nullptr);
+    ASSERT_EQ(imageSource->GetiTxtLength(), 0);
     /**
      * @tc.steps: step2. decode image source to pixel map by default decode options
      * @tc.expected: step2. decode image source to pixel map failed, because bmp format error.
@@ -418,6 +428,7 @@ HWTEST_F(ImageSourceBmpTest, BmpImageDecode013, TestSize.Level3)
     std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(std::move(fs), opts, errorCode);
     ASSERT_EQ(errorCode, SUCCESS);
     ASSERT_NE(imageSource.get(), nullptr);
+    ASSERT_EQ(imageSource->GetiTxtLength(), 0);
     /**
      * @tc.steps: step2. decode image source to pixel map by default decode options(RGBA_8888).
      * @tc.expected: step2. decode image source to pixel map success.

@@ -17,6 +17,7 @@
 #include <gtest/gtest.h>
 #include <fcntl.h>
 #include <fstream>
+#include <unistd.h>
 #include "image_utils.h"
 #include "image_trace.h"
 #include "source_stream.h"
@@ -30,6 +31,14 @@
 static const uint8_t NUM_0 = 0;
 static const uint8_t NUM_2 = 2;
 static const uint8_t NUM_4 = 4;
+constexpr int32_t INVALID_RESULT = -1;
+constexpr int32_t VALID_DIMENSION = 1;
+constexpr int32_t ASTC_4X4_BLOCK_SIZE = 13;
+constexpr int32_t ASTC_4X4_BYTE_COUNT = 272;
+constexpr int32_t TEST_HEIGHT_LARGE = 30000;
+constexpr int32_t TEST_WIDTH_LARGE = 10000;
+constexpr int32_t INVALID_PARAM_RESULT = -2;
+constexpr int32_t TEST_BYTE_COUNT_MEDIUM = 200;
 constexpr int32_t ALPHA8_BYTES = 1;
 constexpr int32_t RGB565_BYTES = 2;
 constexpr int32_t RGB888_BYTES = 3;
@@ -37,6 +46,8 @@ constexpr int32_t ARGB8888_BYTES = 4;
 constexpr int32_t RGBA_F16_BYTES = 8;
 constexpr int32_t NV21_BYTES = 2;  // Each pixel is sorted on 3/2 bytes.
 constexpr int32_t ASTC_4X4_BYTES = 1;
+constexpr int32_t TEST_HEIGHT_MEDIUM = 15000;
+constexpr int32_t TEST_BYTE_COUNT_LARGE = 200000;
 constexpr uint32_t MAX_BYTE_NUM = 8;
 constexpr int MAX_DIMENSION = INT32_MAX >> 2;
 
@@ -49,6 +60,7 @@ namespace OHOS {
 namespace Multimedia {
 static const std::string IMAGE_INPUT_JPEG_PATH = "/data/local/tmp/image/test.jpg";
 static const std::string IMAGE_JPEG_PATH = "/data/local/tmp/image/test_jpeg.jpg";
+static const std::string SANDBOX_PATH = "/data/local/tmp/";
 static constexpr int32_t LENGTH = 8;
 constexpr int32_t RGB_888_PIXEL_BYTES = 3;
 constexpr int32_t RGBA_F16_PIXEL_BYTES = 8;
@@ -470,6 +482,31 @@ HWTEST_F(ImageUtilsTest, GetPixelMapName001, TestSize.Level3)
 }
 
 /**
+ * @tc.name: GetPixelMapName002
+ * @tc.desc: test GetPixelMapName when pixelformat is NV12 or NV21.
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageUtilsTest, GetPixelMapName002, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImageUtilsTest: GetPixelMapName002 start";
+    InitializationOptions opts;
+    opts.size.width = NUM_4;
+    opts.size.height = NUM_4;
+    opts.pixelFormat = PixelFormat::NV12;
+    std::unique_ptr<PixelMap> pixelMap = PixelMap::Create(opts);
+    ASSERT_NE(pixelMap, nullptr);
+    auto res = ImageUtils::GetPixelMapName(pixelMap.get());
+    ASSERT_NE(res, "");
+
+    opts.pixelFormat = PixelFormat::NV21;
+    pixelMap = PixelMap::Create(opts);
+    ASSERT_NE(pixelMap, nullptr);
+    res = ImageUtils::GetPixelMapName(pixelMap.get());
+    ASSERT_NE(res, "");
+    GTEST_LOG_(INFO) << "ImageUtilsTest: GetPixelMapName002 end";
+}
+
+/**
  * @tc.name: CheckMulOverflowTest002
  * @tc.desc: CheckMulOverflow
  * @tc.type: FUNC
@@ -578,6 +615,182 @@ HWTEST_F(ImageUtilsTest, ImageUtilsTest001, TestSize.Level3)
     ImageUtils::Uint32ToBytes(1, byte, offset, isBigEndian);
     ASSERT_NE(byte_uint32[0], 1);
     GTEST_LOG_(INFO) << "ImageUtilsTest: ImageUtilsTest001 end";
+}
+
+/**
+ * @tc.name: UpdateSdrYuvStridesTest001
+ * @tc.desc: test UpdateSdrYuvStrides when context is nullptr.
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageUtilsTest, UpdateSdrYuvStridesTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImageUtilsTest: UpdateSdrYuvStridesTest001 start";
+    ImageInfo imageInfo = {};
+    imageInfo.size.width = NUM_4;
+    imageInfo.size.height = NUM_4;
+    YUVStrideInfo dstStrides = {};
+    void* context = nullptr;
+    AllocatorType dstType = AllocatorType::HEAP_ALLOC;
+    ImageUtils::UpdateSdrYuvStrides(imageInfo, dstStrides, context, dstType);
+    ASSERT_EQ(dstStrides.yStride, NUM_4);
+    ASSERT_EQ(dstStrides.uvStride, NUM_4);
+    GTEST_LOG_(INFO) << "ImageUtilsTest: UpdateSdrYuvStridesTest001 end";
+}
+
+/**
+ * @tc.name: GetReusePixelRefCountTest001
+ * @tc.desc: test GetReusePixelRefCount when allocatortype is not DMA_ALLOC.
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageUtilsTest, GetReusePixelRefCountTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImageUtilsTest: GetReusePixelRefCountTest001 start";
+    InitializationOptions opts;
+    opts.size.width = NUM_4;
+    opts.size.height = NUM_4;
+    opts.pixelFormat = PixelFormat::NV12;
+    opts.allocatorType = AllocatorType::SHARE_MEM_ALLOC;
+    std::shared_ptr<PixelMap> pixelMap = PixelMap::Create(opts);
+    ASSERT_NE(pixelMap, nullptr);
+    uint16_t res = ImageUtils::GetReusePixelRefCount(pixelMap);
+    ASSERT_EQ(res, 0);
+    GTEST_LOG_(INFO) << "ImageUtilsTest: GetReusePixelRefCountTest001 end";
+}
+
+/**
+ * @tc.name: SetContextHdrTest001
+ * @tc.desc: test SetContextHdr when format is GRAPHIC_PIXEL_FMT_YCBCR_P010.
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageUtilsTest, SetContextHdrTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImageUtilsTest: SetContextHdrTest001 start";
+    DecodeContext context;
+    uint32_t format = GRAPHIC_PIXEL_FMT_YCBCR_P010;
+    ImageUtils::SetContextHdr(context, format);
+    ASSERT_EQ(context.pixelFormat, PixelFormat::YCBCR_P010);
+    GTEST_LOG_(INFO) << "ImageUtilsTest: SetContextHdrTest001 end";
+}
+
+/**
+ * @tc.name: SetContextHdrTest002
+ * @tc.desc: test SetContextHdr when format is GRAPHIC_PIXEL_FMT_YCRCB_P010. Format is not
+ * GRAPHIC_PIXEL_FMT_RGBA_1010102 and GRAPHIC_PIXEL_FMT_YCBCR_P010 so context.info.pixelFormat remains unchanged.
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageUtilsTest, SetContextHdrTest002, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImageUtilsTest: SetContextHdrTest002 start";
+    DecodeContext context;
+    context.pixelFormat = PixelFormat::UNKNOWN;
+    uint32_t format = GRAPHIC_PIXEL_FMT_YCRCB_P010;
+    ImageUtils::SetContextHdr(context, format);
+    ASSERT_NE(context.info.pixelFormat, PixelFormat::YCBCR_P010);
+    GTEST_LOG_(INFO) << "ImageUtilsTest: SetContextHdrTest002 end";
+}
+
+/**
+ * @tc.name: CheckRowDataSizeIsVaildTest001
+ * @tc.desc: test CheckRowDataSizeIsVaild when PixelFormat is UNKNOWN.
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageUtilsTest, CheckRowDataSizeIsVaildTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImageUtilsTest: CheckRowDataSizeIsVaildTest001 start";
+    ImageInfo imgInfo;
+    imgInfo.size.width = NUM_4;
+    imgInfo.size.height = NUM_4;
+    imgInfo.pixelFormat = PixelFormat::UNKNOWN;
+    int32_t rowDataSize = NUM_4;
+    bool res = ImageUtils::CheckRowDataSizeIsVaild(rowDataSize, imgInfo);
+    ASSERT_EQ(res, false);
+    GTEST_LOG_(INFO) << "ImageUtilsTest: CheckRowDataSizeIsVaildTest001 end";
+}
+
+/**
+ * @tc.name: CheckRowDataSizeIsVaildTest002
+ * @tc.desc: test CheckRowDataSizeIsVaild when rowDataSize is zero.
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageUtilsTest, CheckRowDataSizeIsVaildTest002, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImageUtilsTest: CheckRowDataSizeIsVaildTest002 start";
+    ImageInfo imgInfo;
+    imgInfo.size.width = 0;
+    imgInfo.size.height = NUM_4;
+    imgInfo.pixelFormat = PixelFormat::ARGB_8888;
+    int32_t rowDataSize = 0;
+    bool res = ImageUtils::CheckRowDataSizeIsVaild(rowDataSize, imgInfo);
+    ASSERT_EQ(res, false);
+    GTEST_LOG_(INFO) << "ImageUtilsTest: CheckRowDataSizeIsVaildTest002 end";
+}
+
+/**
+ * @tc.name: CheckRowDataSizeIsVaildTest003
+ * @tc.desc: test CheckRowDataSizeIsVaild when rowDataSize is not equal.
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageUtilsTest, CheckRowDataSizeIsVaildTest003, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImageUtilsTest: CheckRowDataSizeIsVaildTest003 start";
+    ImageInfo imgInfo;
+    imgInfo.size.width = NUM_4;
+    imgInfo.size.height = NUM_4;
+    imgInfo.pixelFormat = PixelFormat::RGB_565;
+    int32_t rowDataSize = NUM_4;
+    bool res = ImageUtils::CheckRowDataSizeIsVaild(rowDataSize, imgInfo);
+    ASSERT_EQ(res, false);
+    GTEST_LOG_(INFO) << "ImageUtilsTest: CheckRowDataSizeIsVaildTest003 end";
+}
+
+/**
+ * @tc.name: GetAlignedNumberTest001
+ * @tc.desc: test GetAlignedNumber when number or align is less than zero.
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageUtilsTest, GetAlignedNumberTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImageUtilsTest: GetAlignedNumberTest001 start";
+    int32_t number = INVALID_PARAM_RESULT;
+    int32_t align = NUM_4;
+    bool res = ImageUtils::GetAlignedNumber(number, align);
+    ASSERT_EQ(res, false);
+
+    number = NUM_4;
+    align = INVALID_PARAM_RESULT;
+    res = ImageUtils::GetAlignedNumber(number, align);
+    ASSERT_EQ(res, false);
+    GTEST_LOG_(INFO) << "ImageUtilsTest: GetAlignedNumberTest001 end";
+}
+
+/**
+ * @tc.name: GetAlignedNumberTest002
+ * @tc.desc: test GetAlignedNumber when res is more than INT32_MAX.
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageUtilsTest, GetAlignedNumberTest002, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImageUtilsTest: GetAlignedNumberTest002 start";
+    int32_t number = INT32_MAX - NUM_4;
+    int32_t align = TEST_BYTE_COUNT_MEDIUM;
+    bool res = ImageUtils::GetAlignedNumber(number, align);
+    ASSERT_EQ(res, false);
+    GTEST_LOG_(INFO) << "ImageUtilsTest: GetAlignedNumberTest002 end";
+}
+
+/**
+ * @tc.name: SurfaceBuffer2PixelMapTest002
+ * @tc.desc: test DumpPixelMap when pixelMap is nullptr.
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageUtilsTest, SurfaceBuffer2PixelMapTest002, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImageUtilsTest: SurfaceBuffer2PixelMapTest002 start";
+    sptr<OHOS::SurfaceBuffer> surfaceBuffer = SurfaceBuffer::Create();
+    std::unique_ptr<PixelMap> pixelMap = nullptr;
+    bool res = ImageUtils::SurfaceBuffer2PixelMap(surfaceBuffer, pixelMap);
+    ASSERT_FALSE(res);
+    GTEST_LOG_(INFO) << "ImageUtilsTest: SurfaceBuffer2PixelMapTest002 end";
 }
 
 /**
@@ -720,6 +933,22 @@ HWTEST_F(ImageUtilsTest, IsSizeSupportDmaTest001, TestSize.Level3)
 }
 
 /**
+ * @tc.name: IsSizeSupportDmaTest002
+ * @tc.desc: test IsSizeSupportDma method when the width is more than zero and height is too large.
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageUtilsTest, IsSizeSupportDmaTest002, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImageUtilsTest: IsSizeSupportDmaTest002 start";
+    Size size;
+    size.width = TEST_HEIGHT_MEDIUM;
+    size.height = TEST_BYTE_COUNT_LARGE;
+    bool res = ImageUtils::IsSizeSupportDma(size);
+    EXPECT_FALSE(res);
+    GTEST_LOG_(INFO) << "ImageUtilsTest: IsSizeSupportDmaTest002 end";
+}
+
+/**
  * @tc.name: CheckMulOverflowTest011
  * @tc.desc: test CheckMulOverflow witdh only method when size overflow
  * @tc.type: FUNC
@@ -753,6 +982,125 @@ HWTEST_F(ImageUtilsTest, CheckMulOverflowTest012, TestSize.Level3)
 }
 
 /**
+ * @tc.name: DumpPixelMapTest002
+ * @tc.desc: test DumpPixelMap with a YUV pixel format.
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageUtilsTest, DumpPixelMapTest002, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImageUtilsTest: DumpPixelMapTest002 start";
+    InitializationOptions opts;
+    opts.size.width = NUM_4;
+    opts.size.height = NUM_4;
+    opts.pixelFormat = PixelFormat::NV12;
+    std::unique_ptr<PixelMap> pixelMap = PixelMap::Create(opts);
+    ASSERT_NE(pixelMap, nullptr);
+    std::string dumpFile = SANDBOX_PATH + "_test_yuv_dump_0_NV12.yuv";
+    ImageUtils::DumpPixelMap(pixelMap.get(), (SANDBOX_PATH + "_test_yuv_dump").c_str(), 0);
+    ASSERT_NE(access(dumpFile.c_str(), F_OK), 0);
+    remove(dumpFile.c_str());
+
+    opts.pixelFormat = PixelFormat::NV21;
+    pixelMap = PixelMap::Create(opts);
+    ASSERT_NE(pixelMap, nullptr);
+    dumpFile = SANDBOX_PATH + "_test_yuv_dump_0_NV21.yuv";
+    ImageUtils::DumpPixelMap(pixelMap.get(), (SANDBOX_PATH + "_test_yuv_dump").c_str(), 0);
+    ASSERT_NE(access(dumpFile.c_str(), F_OK), 0);
+    remove(dumpFile.c_str());
+
+    opts.pixelFormat = PixelFormat::YCBCR_P010;
+    pixelMap = PixelMap::Create(opts);
+    ASSERT_NE(pixelMap, nullptr);
+    dumpFile = SANDBOX_PATH + "_test_yuv_dump_0_YCBCR_P010.yuv";
+    ImageUtils::DumpPixelMap(pixelMap.get(), (SANDBOX_PATH + "_test_yuv_dump").c_str(), 0);
+    ASSERT_NE(access(dumpFile.c_str(), F_OK), 0);
+    remove(dumpFile.c_str());
+
+    opts.pixelFormat = PixelFormat::YCRCB_P010;
+    pixelMap = PixelMap::Create(opts);
+    ASSERT_NE(pixelMap, nullptr);
+    dumpFile = SANDBOX_PATH + "_test_yuv_dump_0_YCRCB_P010.yuv";
+    ImageUtils::DumpPixelMap(pixelMap.get(), (SANDBOX_PATH + "_test_yuv_dump").c_str(), 0);
+    ASSERT_NE(access(dumpFile.c_str(), F_OK), 0);
+    remove(dumpFile.c_str());
+    GTEST_LOG_(INFO) << "ImageUtilsTest: DumpPixelMapTest002 end";
+}
+
+/**
+ * @tc.name: DumpPixelMapTest003
+ * @tc.desc: test DumpPixelMap when allocatorType is not DMA_ALLOC.
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageUtilsTest, DumpPixelMapTest003, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImageUtilsTest: DumpPixelMapTest003 start";
+    InitializationOptions opts;
+    opts.size.width = NUM_4;
+    opts.size.height = NUM_4;
+    opts.pixelFormat = PixelFormat::NV12;
+    opts.allocatorType = AllocatorType::SHARE_MEM_ALLOC;
+    std::unique_ptr<PixelMap> pixelMap = PixelMap::Create(opts);
+    ASSERT_NE(pixelMap, nullptr);
+    std::string dumpFile = SANDBOX_PATH + "_test_yuv_dump_0_NV12.yuv";
+    ImageUtils::DumpPixelMap(pixelMap.get(), (SANDBOX_PATH + "_test_yuv_dump").c_str(), 0);
+    ASSERT_NE(access(dumpFile.c_str(), F_OK), 0);
+    remove(dumpFile.c_str());
+    GTEST_LOG_(INFO) << "ImageUtilsTest: DumpPixelMapTest003 end";
+}
+
+/**
+ * @tc.name: DumpPixelMapTest004
+ * @tc.desc: test DumpPixelMap when pixelMap is nullptr.
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageUtilsTest, DumpPixelMapTest004, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImageUtilsTest: DumpPixelMapTest004 start";
+    std::string dumpFile = "/data/_test_yuv_dump_0_NV12.yuv";
+    InitializationOptions opts;
+    opts.size.width = NUM_4;
+    opts.size.height = NUM_4;
+    opts.pixelFormat = PixelFormat::NV12;
+    std::unique_ptr<PixelMap> pixelMap = PixelMap::Create(opts);
+    ASSERT_NE(pixelMap, nullptr);
+    ImageUtils::DumpPixelMap(pixelMap.get(), "/data/", 0);
+    ASSERT_NE(access(dumpFile.c_str(), F_OK), 0);
+    GTEST_LOG_(INFO) << "ImageUtilsTest: DumpPixelMapTest004 end";
+}
+
+/**
+ * @tc.name: SbFormat2PixelFormatTest001
+ * @tc.desc: test DumpPixelMap when sbFormat is not equal.
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageUtilsTest, SbFormat2PixelFormatTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImageUtilsTest: SbFormat2PixelFormatTest001 start";
+    auto res = ImageUtils::SbFormat2PixelFormat(0);
+    ASSERT_EQ(res, PixelFormat::UNKNOWN);
+    GTEST_LOG_(INFO) << "ImageUtilsTest: SbFormat2PixelFormatTest001 end";
+}
+
+/**
+ * @tc.name: SurfaceBuffer2PixelMapTest001
+ * @tc.desc: test DumpPixelMap when surfaceBuffer is nullptr.
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageUtilsTest, SurfaceBuffer2PixelMapTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImageUtilsTest: SurfaceBuffer2PixelMapTest001 start";
+    sptr<OHOS::SurfaceBuffer> surfaceBuffer = nullptr;
+    InitializationOptions opts;
+    opts.size.width = NUM_4;
+    opts.size.height = NUM_4;
+    opts.pixelFormat = PixelFormat::RGBA_8888;
+    std::unique_ptr<PixelMap> pixelMap = PixelMap::Create(opts);
+    bool res = ImageUtils::SurfaceBuffer2PixelMap(surfaceBuffer, pixelMap);
+    ASSERT_FALSE(res);
+    GTEST_LOG_(INFO) << "ImageUtilsTest: SurfaceBuffer2PixelMapTest001 end";
+}
+
+/**
  * @tc.name: InvalidateContextSurfaceBufferTest001
  * @tc.desc: test ImageUtils::InvalidateContextSurfaceBufferTest001
  * @tc.type: FUNC
@@ -764,6 +1112,93 @@ HWTEST_F(ImageUtilsTest, InvalidateContextSurfaceBufferTest001, TestSize.Level3)
     ImageUtils::InvalidateContextSurfaceBuffer(context);
     EXPECT_EQ(context.pixelsBuffer.context, nullptr);
     GTEST_LOG_(INFO) << "ImageUtilsTest: InvalidateContextSurfaceBufferTest001 end";
+}
+
+/**
+ * @tc.name: GetYUVByteCountTest001
+ * @tc.desc: test GetYUVByteCount when pixelFormat is not YUV format.
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageUtilsTest, GetYUVByteCountTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImageUtilsTest: GetYUVByteCountTest001 start";
+    ImageInfo info;
+    info.pixelFormat = PixelFormat::ARGB_8888;
+    int32_t res = ImageUtils::GetYUVByteCount(info);
+    EXPECT_EQ(res, INVALID_RESULT);
+    GTEST_LOG_(INFO) << "ImageUtilsTest: GetYUVByteCountTest001 end";
+}
+
+/**
+ * @tc.name: GetYUVByteCountTest002
+ * @tc.desc: test GetYUVByteCount when width or height is zero.
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageUtilsTest, GetYUVByteCountTest002, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImageUtilsTest: GetYUVByteCountTest002 start";
+    ImageInfo info;
+    info.pixelFormat = PixelFormat::NV12;
+    info.size.width = NUM_0;
+    info.size.height = VALID_DIMENSION;
+    int32_t res = ImageUtils::GetYUVByteCount(info);
+    EXPECT_EQ(res, INVALID_RESULT);
+
+    info.size.width = VALID_DIMENSION;
+    info.size.height = NUM_0;
+    res = ImageUtils::GetYUVByteCount(info);
+    EXPECT_EQ(res, INVALID_RESULT);
+    GTEST_LOG_(INFO) << "ImageUtilsTest: GetYUVByteCountTest002 end";
+}
+
+/**
+ * @tc.name: GetByteCountTest001
+ * @tc.desc: test GetByteCount when pixelFormat is ASTC_4x4.
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageUtilsTest, GetByteCountTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImageUtilsTest: GetByteCountTest001 start";
+    ImageInfo info;
+    info.pixelFormat = PixelFormat::ASTC_4x4;
+    info.size.width = ASTC_4X4_BLOCK_SIZE;
+    info.size.height = ASTC_4X4_BLOCK_SIZE;
+    int32_t res = ImageUtils::GetByteCount(info);
+    EXPECT_EQ(res, ASTC_4X4_BYTE_COUNT);
+    GTEST_LOG_(INFO) << "ImageUtilsTest: GetByteCountTest001 end";
+}
+
+/**
+ * @tc.name: GetByteCountTest002
+ * @tc.desc: test GetByteCount when rowDataSize is zero.
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageUtilsTest, GetByteCountTest002, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImageUtilsTest: GetByteCountTest002 start";
+    ImageInfo info;
+    info.pixelFormat = PixelFormat::ARGB_8888;
+    info.size.width = NUM_0;
+    int32_t res = ImageUtils::GetByteCount(info);
+    EXPECT_EQ(res, NUM_0);
+    GTEST_LOG_(INFO) << "ImageUtilsTest: GetByteCountTest002 end";
+}
+
+/**
+ * @tc.name: GetByteCountTest003
+ * @tc.desc: test GetByteCount when byteCount is more than INT32_MAX.
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageUtilsTest, GetByteCountTest003, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImageUtilsTest: GetByteCountTest003 start";
+    ImageInfo info;
+    info.pixelFormat = PixelFormat::RGBA_F16;
+    info.size.width = TEST_HEIGHT_LARGE;
+    info.size.height = TEST_WIDTH_LARGE;
+    int32_t res = ImageUtils::GetByteCount(info);
+    EXPECT_EQ(res, NUM_0);
+    GTEST_LOG_(INFO) << "ImageUtilsTest: GetByteCountTest003 end";
 }
 
 }

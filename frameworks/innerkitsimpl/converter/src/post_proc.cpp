@@ -784,7 +784,7 @@ bool CheckPixelMapSLR(const Size &desiredSize, PixelMap &pixelMap)
 {
     ImageInfo imgInfo;
     pixelMap.GetImageInfo(imgInfo);
-    bool cond = imgInfo.pixelFormat != PixelFormat::RGBA_8888;
+    bool cond = imgInfo.pixelFormat != PixelFormat::RGBA_8888 && imgInfo.pixelFormat != PixelFormat::BGRA_8888;
     CHECK_ERROR_RETURN_RET_LOG(cond, false, "CheckPixelMapSLR only support RGBA_8888 format");
     int32_t srcWidth = pixelMap.GetWidth();
     int32_t srcHeight = pixelMap.GetHeight();

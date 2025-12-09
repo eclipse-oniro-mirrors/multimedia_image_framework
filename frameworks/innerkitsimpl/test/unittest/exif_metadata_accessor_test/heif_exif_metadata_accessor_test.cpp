@@ -37,6 +37,12 @@ static const std::string IMAGE_INPUT_HEIF_NO_EXIF_PATH = "/data/local/tmp/image/
 static const std::string IMAGE_INPUT_HEIF_APPEND_EXIF_PATH = "/data/local/tmp/image/test_append_exif.heic";
 static const std::string IMAGE_HEIF_DEST = "/data/local/tmp/image/test_exif_packer.heic";
 static const std::string IMAGE_OUTPUT_WRITE1_HEIF_PATH = "/data/local/tmp/image/test_heif_writemetadata002.heic";
+static const std::string IMAGE_INPUT_CR3_PATH = "/data/local/tmp/image/test.cr3";
+
+static const size_t TIFF_BYTE_SIZE = 1;
+static const uint8_t TIFF_MAGIC_NUMBER = 0x2A;
+static const uint8_t TIFF_MAGIC_NUMBER_LOW = 0x00;
+static const uint8_t TIFF_IFD_OFFSET = 0x08;
 }
 
 class HeifExifMetadataAccessorTest : public testing::Test {
@@ -159,6 +165,76 @@ HWTEST_F(HeifExifMetadataAccessorTest, Read003, TestSize.Level3)
         "HwMnoteSceneNightConf:10,HwMnoteSceneTextConf:11");
 
     GTEST_LOG_(INFO) << "HeifExifMetadataAccessorTest: Read003 end";
+}
+
+/**
+ * @tc.name: Read004
+ * @tc.desc: test read when parse cr3 file.
+ * @tc.type: FUNC
+ */
+HWTEST_F(HeifExifMetadataAccessorTest, Read004, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "HeifExifMetadataAccessorTest: Read004 start";
+    std::shared_ptr<MetadataStream> stream = std::make_shared<FileMetadataStream>(IMAGE_INPUT_CR3_PATH);
+    ASSERT_TRUE(stream->Open(OpenMode::ReadWrite));
+    HeifExifMetadataAccessor imageAccessor(stream);
+    uint32_t result = imageAccessor.Read();
+    ASSERT_EQ(result, SUCCESS);
+    GTEST_LOG_(INFO) << "HeifExifMetadataAccessorTest: Read004 end";
+}
+
+/**
+ * @tc.name: Read005
+ * @tc.desc: test read when checkTiffPos return false.
+ * @tc.type: FUNC
+ */
+HWTEST_F(HeifExifMetadataAccessorTest, Read005, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "HeifExifMetadataAccessorTest: Read005 start";
+    const std::string invalidTiffPath = "/data/local/tmp/image/invalid_tiff.heic";
+    {
+        FILE *fp = fopen(invalidTiffPath.c_str(), "wb");
+        ASSERT_NE(fp, nullptr);
+        const char dummy[] = "NOT_A_TIFF";
+        fwrite(dummy, TIFF_BYTE_SIZE, sizeof(dummy), fp);
+        fclose(fp);
+    }
+    std::shared_ptr<MetadataStream> stream = std::make_shared<FileMetadataStream>(invalidTiffPath);
+    ASSERT_TRUE(stream->Open(OpenMode::ReadWrite));
+    HeifExifMetadataAccessor imageAccessor(stream);
+    uint32_t result = imageAccessor.Read();
+    ASSERT_EQ(result, ERR_IMAGE_SOURCE_DATA);
+    remove(invalidTiffPath.c_str());
+    GTEST_LOG_(INFO) << "HeifExifMetadataAccessorTest: Read005 end";
+}
+
+/**
+ * @tc.name: Read006
+ * @tc.desc: test read when exifData is nullptr.
+ * @tc.type: FUNC
+ */
+HWTEST_F(HeifExifMetadataAccessorTest, Read006, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "HeifExifMetadataAccessorTest: Read006 start";
+    const unsigned char invalidTiffData[] = {
+        'I', 'I', TIFF_MAGIC_NUMBER, TIFF_MAGIC_NUMBER_LOW,
+        TIFF_IFD_OFFSET, TIFF_MAGIC_NUMBER_LOW, TIFF_MAGIC_NUMBER_LOW, TIFF_MAGIC_NUMBER_LOW,
+    };
+    DataBuf dataBuf(const_cast<unsigned char*>(invalidTiffData), sizeof(invalidTiffData));
+    const std::string invalidHeifPath = "/data/local/tmp/image/invalid_heif_for_read006.heic";
+    {
+        FILE *fp = fopen(invalidHeifPath.c_str(), "wb");
+        ASSERT_NE(fp, nullptr);
+        fwrite(invalidTiffData, TIFF_BYTE_SIZE, sizeof(invalidTiffData), fp);
+        fclose(fp);
+    }
+    std::shared_ptr<MetadataStream> stream = std::make_shared<FileMetadataStream>(invalidHeifPath);
+    ASSERT_TRUE(stream->Open(OpenMode::ReadWrite));
+    HeifExifMetadataAccessor imageAccessor(stream);
+    uint32_t result = imageAccessor.Read();
+    ASSERT_EQ(result, ERR_IMAGE_SOURCE_DATA);
+    remove(invalidHeifPath.c_str());
+    GTEST_LOG_(INFO) << "HeifExifMetadataAccessorTest: Read006 end";
 }
 
 /**
@@ -324,6 +400,63 @@ HWTEST_F(HeifExifMetadataAccessorTest, WriteMetadata002, TestSize.Level3)
     byte* buff = reinterpret_cast<byte*>(buffer.data());
     res = imageAccessor.CheckTiffPos(buff, 0, byteOrderPos);
     EXPECT_FALSE(res);
+}
+
+/**
+ * @tc.name: WriteMetadata003
+ * @tc.desc: test the WriteMetadata expect return ERR_IMAGE_DECODE_EXIF_UNSUPPORT.
+ * @tc.type: FUNC
+ */
+HWTEST_F(HeifExifMetadataAccessorTest, WriteMetadata003, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "HeifExifMetadataAccessorTest: WriteMetadata003 start";
+    const std::string invalidHeifPath = "/data/local/tmp/image/invalid_for_write_metadata.heic";
+    {
+        FILE *fp = fopen(invalidHeifPath.c_str(), "wb");
+        ASSERT_NE(fp, nullptr);
+        const char dummy[] = "NOT_A_HEIF";
+        fwrite(dummy, TIFF_BYTE_SIZE, sizeof(dummy), fp);
+        fclose(fp);
+    }
+    std::shared_ptr<MetadataStream> stream = std::make_shared<FileMetadataStream>(invalidHeifPath);
+    ASSERT_TRUE(stream->Open(OpenMode::ReadWrite));
+    HeifExifMetadataAccessor imageAccessor(stream);
+
+    DataBuf dataBuf;
+    uint32_t result = imageAccessor.WriteMetadata(dataBuf);
+    ASSERT_EQ(result, ERR_IMAGE_DECODE_EXIF_UNSUPPORT);
+    GTEST_LOG_(INFO) << "HeifExifMetadataAccessorTest: WriteMetadata003 end";
+}
+
+/**
+ * @tc.name: ReadCr3001
+ * @tc.desc: test the ReadCr3 when imageStream_ is nullptr.
+ * @tc.type: FUNC
+ */
+HWTEST_F(HeifExifMetadataAccessorTest, ReadCr3001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "HeifExifMetadataAccessorTest: ReadCr3001 start";
+    std::shared_ptr<MetadataStream> nullStream = nullptr;
+    HeifExifMetadataAccessor accessor(nullStream);
+    uint32_t ret = accessor.ReadCr3();
+    ASSERT_EQ(ret, ERR_IMAGE_SOURCE_DATA);
+    GTEST_LOG_(INFO) << "HeifExifMetadataAccessorTest: ReadCr3001 end";
+}
+
+/**
+ * @tc.name: ReadCr3002
+ * @tc.desc: test the ReadCr3 expect return SUCCESS.
+ * @tc.type: FUNC
+ */
+HWTEST_F(HeifExifMetadataAccessorTest, ReadCr3002, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "HeifExifMetadataAccessorTest: ReadCr3003 start";
+    std::shared_ptr<MetadataStream> stream = std::make_shared<FileMetadataStream>(IMAGE_INPUT_CR3_PATH);
+    ASSERT_TRUE(stream->Open(OpenMode::ReadWrite));
+    HeifExifMetadataAccessor accessor(stream);
+    uint32_t ret = accessor.ReadCr3();
+    ASSERT_EQ(ret, SUCCESS);
+    GTEST_LOG_(INFO) << "HeifExifMetadataAccessorTest: ReadCr3002 end";
 }
 
 /**

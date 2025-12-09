@@ -476,6 +476,14 @@
             <option name="push" value="images/P010.yuv -> /data/local/tmp/image" src="res"/>
             <option name="push" value="images/test_exif.jpg -> /data/local/tmp/image" src="res"/>
             <option name="push" value="images/test_picture.jpg -> /data/local/tmp/image" src="res"/>
+            <option name="push" value="images/hdr.jpg -> /data/local/tmp/image/" src="res"/>
+            <option name="push" value="images/hdr_media_type_test.jpg -> /data/local/tmp/image/" src="res"/>
+        </preparer>
+    </target>
+    <target name="ImagePixelmapHdrTLVFuzzTest">
+        <preparer>
+            <option name="push" value="images/hdr.jpg -> /data/local/tmp/image/" src="res"/>
+            <option name="push" value="images/hdr_media_type_test.jpg -> /data/local/tmp/image/" src="res"/>
         </preparer>
     </target>
     <target name="rawdecodertest">
@@ -526,6 +534,12 @@
     <target name="cr3_parser_test">
         <preparer>
             <option name="push" value="images/test.cr3 -> /data/local/tmp/image" src="res"/>
+        </preparer>
+    </target>
+    <target name="heifs_decode_test">
+        <preparer>
+            <option name="push" value="images/starfield_animation.heic -> /data/local/tmp/image" src="res"/>
+            <option name="push" value="images/test-10bit-1.heic -> /data/local/tmp/image" src="res"/>
         </preparer>
     </target>
 </configuration>

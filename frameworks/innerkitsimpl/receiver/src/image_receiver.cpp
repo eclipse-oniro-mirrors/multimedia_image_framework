@@ -21,6 +21,7 @@
 #include "image_utils.h"
 #include "image_receiver_buffer_processor.h"
 #include "image_receiver_manager.h"
+#include "sync_fence.h"
 
 #undef LOG_DOMAIN
 #define LOG_DOMAIN LOG_TAG_DOMAIN_ID_IMAGE
@@ -231,12 +232,18 @@ std::shared_ptr<ImageReceiver> ImageReceiver::CreateImageReceiver(int32_t width,
 
 OHOS::sptr<OHOS::SurfaceBuffer> ImageReceiver::ReadNextImage(int64_t &timestamp)
 {
-    int32_t flushFence = 0;
+    sptr<SyncFence> flushFence = SyncFence::InvalidFence();
     OHOS::Rect damage = {};
     OHOS::sptr<OHOS::SurfaceBuffer> buffer;
     sptr<IConsumerSurface> listenerConsumerSurface = iraContext_->GetReceiverBufferConsumer();
     SurfaceError surfaceError = listenerConsumerSurface->AcquireBuffer(buffer, flushFence, timestamp, damage);
     if (surfaceError == SURFACE_ERROR_OK) {
+        uint32_t timeout = 3000;
+        if (flushFence->IsValid() && flushFence->Wait(timeout) != EOK) {
+            IMAGE_LOGI("%{public}s buffer is not ready, try to get next buffer", __func__);
+            listenerConsumerSurface->ReleaseBuffer(buffer, -1);
+            return nullptr;
+        }
         iraContext_->currentBuffer_ = buffer;
     } else {
         IMAGE_LOGD("buffer is null");
@@ -247,30 +254,26 @@ OHOS::sptr<OHOS::SurfaceBuffer> ImageReceiver::ReadNextImage(int64_t &timestamp)
 
 OHOS::sptr<OHOS::SurfaceBuffer> ImageReceiver::ReadNextImage()
 {
-    int32_t flushFence = 0;
     int64_t timestamp = 0;
-    OHOS::Rect damage = {};
-    OHOS::sptr<OHOS::SurfaceBuffer> buffer;
-    sptr<IConsumerSurface> listenerConsumerSurface = iraContext_->GetReceiverBufferConsumer();
-    SurfaceError surfaceError = listenerConsumerSurface->AcquireBuffer(buffer, flushFence, timestamp, damage);
-    if (surfaceError == SURFACE_ERROR_OK) {
-        iraContext_->currentBuffer_ = buffer;
-    } else {
-        IMAGE_LOGD("buffer is null");
-    }
-    IMAGE_LOGD("[ImageReceiver] ReadNextImage %{public}lld", static_cast<long long>(timestamp));
-    return iraContext_->GetCurrentBuffer();
+    return ReadNextImage(timestamp);
 }
 
 OHOS::sptr<OHOS::SurfaceBuffer> ImageReceiver::ReadLastImage(int64_t &timestamp)
 {
-    int32_t flushFence = 0;
+    sptr<SyncFence> flushFence = SyncFence::InvalidFence();
     OHOS::Rect damage = {};
     OHOS::sptr<OHOS::SurfaceBuffer> buffer;
     OHOS::sptr<OHOS::SurfaceBuffer> bufferBefore;
     sptr<IConsumerSurface> listenerConsumerSurface = iraContext_->GetReceiverBufferConsumer();
     SurfaceError surfaceError = listenerConsumerSurface->AcquireBuffer(buffer, flushFence, timestamp, damage);
     while (surfaceError == SURFACE_ERROR_OK) {
+        uint32_t timeout = 3000;
+        if (flushFence->IsValid() && flushFence->Wait(timeout) != EOK) {
+            IMAGE_LOGI("%{public}s buffer is not ready, try to get next buffer", __func__);
+            listenerConsumerSurface->ReleaseBuffer(buffer, -1);
+            surfaceError = listenerConsumerSurface->AcquireBuffer(buffer, flushFence, timestamp, damage);
+            continue;
+        }
         bufferBefore = buffer;
         surfaceError = listenerConsumerSurface->AcquireBuffer(buffer, flushFence, timestamp, damage);
     }
@@ -282,21 +285,8 @@ OHOS::sptr<OHOS::SurfaceBuffer> ImageReceiver::ReadLastImage(int64_t &timestamp)
 
 OHOS::sptr<OHOS::SurfaceBuffer> ImageReceiver::ReadLastImage()
 {
-    int32_t flushFence = 0;
     int64_t timestamp = 0;
-    OHOS::Rect damage = {};
-    OHOS::sptr<OHOS::SurfaceBuffer> buffer;
-    OHOS::sptr<OHOS::SurfaceBuffer> bufferBefore;
-    sptr<IConsumerSurface> listenerConsumerSurface = iraContext_->GetReceiverBufferConsumer();
-    SurfaceError surfaceError = listenerConsumerSurface->AcquireBuffer(buffer, flushFence, timestamp, damage);
-    while (surfaceError == SURFACE_ERROR_OK) {
-        bufferBefore = buffer;
-        surfaceError = listenerConsumerSurface->AcquireBuffer(buffer, flushFence, timestamp, damage);
-    }
-
-    iraContext_->currentBuffer_ = bufferBefore;
-    IMAGE_LOGD("[ImageReceiver] ReadLastImage %{public}lld", static_cast<long long>(timestamp));
-    return iraContext_->GetCurrentBuffer();
+    return ReadLastImage(timestamp);
 }
 
 sptr<Surface> ImageReceiver::GetReceiverSurface()

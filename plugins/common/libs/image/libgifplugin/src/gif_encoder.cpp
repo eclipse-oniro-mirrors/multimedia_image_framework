@@ -278,7 +278,7 @@ uint32_t GifEncoder::processFrame(int index)
     }
     uint16_t width = static_cast<uint16_t>(pixelMaps_[index]->GetWidth());
     uint16_t height = static_cast<uint16_t>(pixelMaps_[index]->GetHeight());
-    uint64_t frameSize = width * height;
+    uint64_t frameSize = static_cast<uint64_t>(width) * height;
     uint8_t *colorBuffer = (uint8_t *)malloc(frameSize);
     if (colorBuffer == NULL) {
         IMAGE_LOGE("Failed to allocate memory.");

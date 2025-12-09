@@ -76,6 +76,7 @@ struct InitializationOptions {
     bool useDMA = false;
 };
 struct TransInfos;
+struct HdrInfo;
 
 // Build ARGB_8888 pixel value
 constexpr uint8_t ARGB_MASK = 0xFF;
@@ -871,18 +872,6 @@ public:
     uint64_t GetNoPaddingUsage();
 
 protected:
-    static constexpr uint8_t TLV_VARINT_BITS = 7;
-    static constexpr uint8_t TLV_VARINT_MASK = 0x7F;
-    static constexpr uint8_t TLV_VARINT_MORE = 0x80;
-    static constexpr uint8_t TLV_END = 0x00;
-    static constexpr uint8_t TLV_IMAGE_WIDTH = 0x01;
-    static constexpr uint8_t TLV_IMAGE_HEIGHT = 0x02;
-    static constexpr uint8_t TLV_IMAGE_PIXELFORMAT = 0x03;
-    static constexpr uint8_t TLV_IMAGE_COLORSPACE = 0x04;
-    static constexpr uint8_t TLV_IMAGE_ALPHATYPE = 0x05;
-    static constexpr uint8_t TLV_IMAGE_BASEDENSITY = 0x06;
-    static constexpr uint8_t TLV_IMAGE_ALLOCATORTYPE = 0x07;
-    static constexpr uint8_t TLV_IMAGE_DATA = 0x08;
     static constexpr size_t MAX_IMAGEDATA_SIZE = 128 * 1024 * 1024; // 128M
     static constexpr size_t MIN_IMAGEDATA_SIZE = 32 * 1024;         // 32k
     friend class ImageSource;
@@ -972,8 +961,10 @@ protected:
     static int32_t ReadVarint(std::vector<uint8_t> &buff, int32_t &cursor);
     void WriteData(std::vector<uint8_t> &buff, const uint8_t *data,
         const int32_t &height, const int32_t &rowDataSize, const int32_t &rowStride) const;
-    static uint8_t *ReadData(std::vector<uint8_t> &buff, int32_t size, int32_t &cursor);
-    static bool ReadTlvAttr(std::vector<uint8_t> &buff, ImageInfo &info, int32_t &type, int32_t &size, uint8_t **data);
+    static std::unique_ptr<AbsMemory> ReadData(std::vector<uint8_t> &buff, int32_t size, int32_t &cursor,
+        AllocatorType allocType, ImageInfo imageInfo);
+    static bool ReadTlvAttr(std::vector<uint8_t>& buff, ImageInfo& info, std::unique_ptr<AbsMemory>& mem, int32_t& csm);
+    void TlvWriteSurfaceInfo(const PixelMap* pixelMap, std::vector<uint8_t>& buff) const;
     bool DoTranslation(TransInfos &infos, const AntiAliasingOption &option = AntiAliasingOption::NONE);
     void UpdateImageInfo();
     bool IsYuvFormat() const;

@@ -33,6 +33,8 @@ constexpr unsigned char EXIF_HEADER[] = {'E', 'x', 'i', 'f', '\0', '\0'};
 constexpr unsigned char EXIF_TAIL[] = {'e', 'x', 'p', 'o', 'r', 't', 's', 'c', 't', 'e', 's', 't', '\0'};
 constexpr unsigned char EXIF_TCL[] = {'f', 'd', 'e', 'b'};
 constexpr unsigned char EXIF_TCB[] = {'f', 'd'};
+static constexpr uint32_t UINT32_EIGHT = 8;
+static constexpr uint32_t UINT32_SIXTEEN = 16;
 class ExifMakerNoteTest : public testing::Test {
 public:
     ExifMakerNoteTest() {}
@@ -462,6 +464,47 @@ HWTEST_F(ExifMakerNoteTest, ParserHwMakerNoteTest001, TestSize.Level3)
 }
 
 /**
+ * @tc.name: ParserHwMakerNoteTest002
+ * @tc.desc: Test ParserHwMakerNote with Normal MakerNote header and EXIF item, test Dump
+ * @tc.type: FUNC
+ */
+HWTEST_F(ExifMakerNoteTest, ParserHwMakerNoteTest002, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ExifMakerNoteTest: ParserHwMakerNoteTest002 start";
+    ExifMakerNote exifMakerNote;
+    exifMakerNote.tiff_offset_ = UINT32_EIGHT;
+    exifMakerNote.ifd0_offset_ = UINT32_SIXTEEN;
+    exifMakerNote.order_ = ExifByteOrder::EXIF_BYTE_ORDER_INTEL;
+    unsigned char makerData[] = {
+        'H', 'U', 'A', 'W', 'E', 'I', '\0', '\0',
+        'I', 'I', 0x2A, 0x00, 0x08, 0x00, 0x00, 0x00,
+        0x00, 0x00, 0x00, 0x00, 0x00, 0x00
+    };
+    exifMakerNote.makerNote_.assign(makerData, makerData + sizeof(makerData));
+    ExifMakerNote::ExifItem item;
+    item.ifd = 0;
+    item.tag = 0x0001;
+    item.format = 0;
+    item.count = 0;
+    item.data.clear();
+    exifMakerNote.items_.push_back(item);
+    bool result = exifMakerNote.ParserHwMakerNote();
+    ASSERT_EQ(result, true);
+
+    auto exifMakerNote1 = std::make_shared<ExifMakerNote::ExifItem>();
+    std::string info = "information";
+    ExifMakerNote::ExifItem item1;
+    const std::vector<unsigned char> buffer(5);
+    item1.data.assign(buffer.begin(), buffer.end());
+    ExifByteOrder order = ExifByteOrder::EXIF_BYTE_ORDER_INTEL;
+    uint32_t dataOrOffset = 0;
+    bool ret = ExifMakerNote::GetUInt32(item1.data, order, 0, dataOrOffset);
+    ASSERT_EQ(ret, true);
+    exifMakerNote1->Dump(info, item1, order);
+    GTEST_LOG_(INFO) << "ExifMakerNoteTest: ParserHwMakerNoteTest002 end";
+}
+
+/**
  * @tc.name: ParserItemTest001
  * @tc.desc: Test of ParserItem
  * @tc.type: FUNC
@@ -692,6 +735,24 @@ HWTEST_F(ExifMakerNoteTest, FindExifLocationTest004, TestSize.Level3)
 }
 
 /**
+ * @tc.name: FindExifLocationTest005
+ * @tc.desc: Test FindExifLocation with EXIF_TAIL data that doesn't contain valid EXIF header
+ * @tc.type: FUNC
+ */
+HWTEST_F(ExifMakerNoteTest, FindExifLocationTest005, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ExifMakerNoteTest: FindExifLocationTest005 start";
+    ExifMakerNote exifMakerNote;
+    const unsigned char *data = EXIF_TAIL;
+    uint32_t size = 15;
+    const unsigned char *&newData = data;
+    uint32_t newSize = 7;
+    bool result = exifMakerNote.FindExifLocation(data, size, newData, newSize);
+    ASSERT_EQ(result, false);
+    GTEST_LOG_(INFO) << "ExifMakerNoteTest: FindExifLocationTest005 end";
+}
+
+/**
  * @tc.name: FindJpegAPP1Test003
  * @tc.desc: Test of FindJpegAPP1
  * @tc.type: FUNC
@@ -836,6 +897,39 @@ HWTEST_F(ExifMakerNoteTest, ParserMakerNoteTest002, TestSize.Level3)
 }
 
 /**
+ * @tc.name: ParserMakerNoteTest003
+ * @tc.desc: Test ParserMakerNote with complete ExifData structure containing Normal MakerNote entry
+ * @tc.type: FUNC
+ */
+HWTEST_F(ExifMakerNoteTest, ParserMakerNoteTest003, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ExifMakerNoteTest: ParserMakerNoteTest003 start";
+    ExifMakerNote exifMakerNote;
+    ExifData *exif = exif_data_new();
+    exif_data_fix(exif);
+    ExifEntry* makerEntry = exif_entry_new();
+    makerEntry->tag = EXIF_TAG_MAKER_NOTE;
+    makerEntry->format = EXIF_FORMAT_UNDEFINED;
+    unsigned char completeData[] = {
+        'H', 'U', 'A', 'W', 'E', 'I', '\0', '\0',
+        'I', 'I', 0x2A, 0x00, 0x08, 0x00, 0x00, 0x00,
+        0x00, 0x00,
+        0x00, 0x00, 0x00, 0x00
+    };
+    makerEntry->size = sizeof(completeData);
+    makerEntry->components = makerEntry->size;
+    makerEntry->data = (unsigned char*)malloc(makerEntry->size);
+    memcpy_s(makerEntry->data, makerEntry->size, completeData, makerEntry->size);
+    exif_content_add_entry(exif->ifd[EXIF_IFD_0], makerEntry);
+    exif_entry_unref(makerEntry);
+    bool moreCheck = false;
+    uint32_t result = exifMakerNote.ParserMakerNote(exif, moreCheck);
+    ASSERT_EQ(result, Media::SUCCESS);
+    exif_data_unref(exif);
+    GTEST_LOG_(INFO) << "ExifMakerNoteTest: ParserMakerNoteTest003 end";
+}
+
+/**
  * @tc.name: GetUInt16Test003
  * @tc.desc: Test of GetUInt16
  * @tc.type: FUNC
@@ -976,6 +1070,115 @@ HWTEST_F(ExifMakerNoteTest, ParserItemTest002, TestSize.Level3)
 }
 
 /**
+ * @tc.name: ParserItemTest003
+ * @tc.desc: Test ParserItem with minimal IFD entry data containing tag 0x0002
+ * @tc.type: FUNC
+ */
+HWTEST_F(ExifMakerNoteTest, ParserItemTest003, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ExifMakerNoteTest: ParserItemTest003 start";
+    ExifMakerNote exifMakerNote;
+    unsigned char ifdEntryData[] = {
+        0x00, 0x02, 0x01, 0x00,
+        0x01, 0x00, 0x00, 0x00,
+        0x01, 0x00, 0x00, 0x00
+    };
+    exifMakerNote.makerNote_.assign(ifdEntryData, ifdEntryData + sizeof(ifdEntryData));
+    exifMakerNote.order_ = ExifByteOrder::EXIF_BYTE_ORDER_INTEL;
+    uint32_t offset = 0;
+    uint32_t ifd = 0;
+    uint32_t deep = 0;
+    bool result = exifMakerNote.ParserItem(offset, ifd, deep);
+    ASSERT_EQ(result, true);
+    GTEST_LOG_(INFO) << "ExifMakerNoteTest: ParserItemTest003 end";
+}
+
+/**
+ * @tc.name: ParserItemTest004
+ * @tc.desc: Test ParserItem with complex IFD data structure using Intel byte order and TIFF offset
+ * @tc.type: FUNC
+ */
+HWTEST_F(ExifMakerNoteTest, ParserItemTest004, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ExifMakerNoteTest: ParserItemTest004 start";
+    ExifMakerNote exifMakerNote;
+    unsigned char complexIfdData[] = {
+        0x00, 0x00,
+        0x01, 0x00,
+        0x01, 0x00, 0x00, 0x00,
+        0x0C, 0x00, 0x00, 0x00,
+        0x00, 0x00,
+        0x00, 0x00, 0x00, 0x00
+    };
+    exifMakerNote.makerNote_.assign(complexIfdData, complexIfdData + sizeof(complexIfdData));
+    exifMakerNote.order_ = ExifByteOrder::EXIF_BYTE_ORDER_INTEL;
+    exifMakerNote.tiff_offset_ = 0;
+    uint32_t offset = 0;
+    uint32_t ifd = 0;
+    uint32_t deep = 0;
+    bool result = exifMakerNote.ParserItem(offset, ifd, deep);
+    ASSERT_EQ(result, true);
+    GTEST_LOG_(INFO) << "ExifMakerNoteTest: ParserItemTest004 end";
+}
+
+/**
+ * @tc.name: ParserItemTest005
+ * @tc.desc: Test of ParserItem interface to cover HW_MNOTE_TAG_SCENE_INFO_OFFSET branch specifically
+ * @tc.type: FUNC
+ */
+HWTEST_F(ExifMakerNoteTest, ParserItemTest005, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ExifMakerNoteTest: ParserItemTest005 start";
+    ExifMakerNote exifMakerNote;
+    unsigned char sceneInfoData[] = {
+        0x00, 0x00,
+        0x04, 0x00,
+        0x01, 0x00, 0x00, 0x00,
+        0x0C, 0x00, 0x00, 0x00,
+        0x00, 0x00,
+        0x00, 0x00, 0x00, 0x00
+    };
+    
+    exifMakerNote.makerNote_.assign(sceneInfoData, sceneInfoData + sizeof(sceneInfoData));
+    exifMakerNote.order_ = ExifByteOrder::EXIF_BYTE_ORDER_INTEL;
+    exifMakerNote.tiff_offset_ = 0;
+    uint32_t offset = 0;
+    uint32_t ifd = 0;
+    uint32_t deep = 0;
+    bool result = exifMakerNote.ParserItem(offset, ifd, deep);
+    ASSERT_EQ(result, true);
+    GTEST_LOG_(INFO) << "ExifMakerNoteTest: ParserItemTest005 end";
+}
+
+/**
+ * @tc.name: ParserItemTest006
+ * @tc.desc: Test ParserItem with face information data containing tag 0x0001 and format 0x0004
+ * @tc.type: FUNC
+ */
+HWTEST_F(ExifMakerNoteTest, ParserItemTest006, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ExifMakerNoteTest: ParserItemTest006 start";
+    ExifMakerNote exifMakerNote;
+    unsigned char faceInfoData[] = {
+        0x00, 0x01,
+        0x04, 0x00,
+        0x01, 0x00, 0x00, 0x00,
+        0x0C, 0x00, 0x00, 0x00,
+        0x00, 0x00,
+        0x00, 0x00, 0x00, 0x00
+    };
+    exifMakerNote.makerNote_.assign(faceInfoData, faceInfoData + sizeof(faceInfoData));
+    exifMakerNote.order_ = ExifByteOrder::EXIF_BYTE_ORDER_INTEL;
+    exifMakerNote.tiff_offset_ = 0;
+    uint32_t offset = 0;
+    uint32_t ifd = 0;
+    uint32_t deep = 0;
+    bool result = exifMakerNote.ParserItem(offset, ifd, deep);
+    ASSERT_EQ(result, true);
+    GTEST_LOG_(INFO) << "ExifMakerNoteTest: ParserItemTest006 end";
+}
+
+/**
  * @tc.name: ParserIFDTest002
  * @tc.desc: Test of ParserIFD
  * @tc.type: FUNC
@@ -993,6 +1196,33 @@ HWTEST_F(ExifMakerNoteTest, ParserIFDTest002, TestSize.Level3)
     bool result = exifMakerNote.ParserIFD(offset, ifd, deep);
     ASSERT_EQ(result, false);
     GTEST_LOG_(INFO) << "ExifMakerNoteTest: ParserIFDTest002 end";
+}
+
+/**
+ * @tc.name: ParserIFDTest003
+ * @tc.desc: Test ParserIFD with complete IFD structure containing one entry with tag 0x0200 and Intel byte order
+ * @tc.type: FUNC
+ */
+HWTEST_F(ExifMakerNoteTest, ParserIFDTest003, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ExifMakerNoteTest: ParserIFDTest003 start";
+    ExifMakerNote exifMakerNote;
+    unsigned char ifdData[] = {
+        0x01, 0x00,
+        0x00, 0x02,
+        0x01, 0x00,
+        0x01, 0x00, 0x00, 0x00,
+        0x01, 0x00, 0x00, 0x00,
+        0x00, 0x00, 0x00, 0x00
+    };
+    exifMakerNote.makerNote_.assign(ifdData, ifdData + sizeof(ifdData));
+    exifMakerNote.order_ = ExifByteOrder::EXIF_BYTE_ORDER_INTEL;
+    uint32_t offset = 0;
+    uint32_t ifd = 0;
+    uint32_t deep = 0;
+    bool result = exifMakerNote.ParserIFD(offset, ifd, deep);
+    ASSERT_EQ(result, true);
+    GTEST_LOG_(INFO) << "ExifMakerNoteTest: ParserIFDTest003 end";
 }
 }
 }

@@ -68,7 +68,7 @@ uint32_t JpegExifMetadataAccessor::Read()
         return ERR_IMAGE_SOURCE_DATA;
     }
 
-    ExifData *exifData;
+    ExifData *exifData = nullptr;
     TiffParser::DecodeJpegExif(reinterpret_cast<const unsigned char *>(dataBuf.CData()), dataBuf.Size(), &exifData);
     if (exifData == nullptr) {
         IMAGE_LOGE("Failed to decode EXIF data from image stream.");

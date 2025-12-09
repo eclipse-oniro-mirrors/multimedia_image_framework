@@ -54,6 +54,7 @@ void JpegTest001(const std::string& pathName)
     if (imageSource == nullptr) {
         return;
     }
+    imageSource->GetiTxtLength();
     DecodeOptions decodeOpts;
     std::vector<PixelFormat> formats = {PixelFormat::NV21, PixelFormat::NV12, PixelFormat::RGBA_8888};
     uint8_t index = FDP->ConsumeIntegral<uint8_t>() % PIXELFORMAT_MODULO;

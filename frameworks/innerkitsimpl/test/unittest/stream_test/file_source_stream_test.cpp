@@ -17,6 +17,7 @@
 #define private public
 #include <fstream>
 #include <fcntl.h>
+#include <vector>
 #include "file_source_stream.h"
 #include "image_type.h"
 #include "image_utils.h"
@@ -36,6 +37,10 @@ static const std::string IMAGE_INPUT_JPG_PATH = "/data/local/tmp/image/test.jpg"
 static constexpr uint32_t MAXSIZE = 10000;
 static constexpr size_t FILE_SIZE = 10;
 static constexpr size_t SIZE_T = 0;
+static constexpr size_t TEST_FILE_SIZE_PARTIAL_1 = 50;
+static constexpr uint32_t TEST_DESIRED_SIZE_PARTIAL = 100;
+static constexpr size_t TEST_FILE_SIZE_PARTIAL_2 = 30;
+static constexpr uint32_t TEST_BUFFER_SIZE_PARTIAL = 100;
 class FileSourceStreamTest : public testing::Test {
 public:
     FileSourceStreamTest() {}
@@ -578,6 +583,69 @@ HWTEST_F(FileSourceStreamTest, FileSourceStreamTest0027, TestSize.Level3)
     delete fileSourceStream->fileData_;
     fileSourceStream->fileData_ = nullptr;
     GTEST_LOG_(INFO) << "FileSourceStreamTest: FileSourceStreamTest0027 end";
+}
+
+/**
+ * @tc.name: FileSourceStreamTest0030
+ * @tc.desc: Test reading partial file data with DataStreamBuffer when file size is less than desired
+ * @tc.type: FUNC
+ */
+HWTEST_F(FileSourceStreamTest, FileSourceStreamTest0030, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "FileSourceStreamTest: FileSourceStreamTest0030 start";
+
+    const char* testFile = "/data/local/tmp/image/test_partial_read.dat";
+    std::ofstream ofs(testFile, std::ios::binary);
+    const size_t actualSize = TEST_FILE_SIZE_PARTIAL_1;
+    std::vector<char> data(actualSize, 'B');
+    ofs.write(data.data(), actualSize);
+    ofs.close();
+
+    std::unique_ptr<FileSourceStream> fileSourceStream = FileSourceStream::CreateSourceStream(testFile);
+    ASSERT_NE(fileSourceStream, nullptr);
+
+    DataStreamBuffer outData;
+    uint32_t desiredSize = TEST_DESIRED_SIZE_PARTIAL;
+
+    bool ret = fileSourceStream->Read(desiredSize, outData);
+    ASSERT_EQ(ret, true);
+    ASSERT_EQ(outData.dataSize, actualSize);
+
+    unlink(testFile);
+    GTEST_LOG_(INFO) << "FileSourceStreamTest: FileSourceStreamTest0030 end";
+}
+
+/**
+ * @tc.name: FileSourceStreamTest0031
+ * @tc.desc: Test reading partial file data with buffer pointer when file size is less than desired
+ * @tc.type: FUNC
+ */
+HWTEST_F(FileSourceStreamTest, FileSourceStreamTest0031, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "FileSourceStreamTest: FileSourceStreamTest0031 start";
+
+    const char* testFile = "/data/local/tmp/image/test_partial_read2.dat";
+    std::ofstream ofs(testFile, std::ios::binary);
+    const size_t actualSize = TEST_FILE_SIZE_PARTIAL_2;
+    std::vector<char> data(actualSize, 'C');
+    ofs.write(data.data(), actualSize);
+    ofs.close();
+
+    std::unique_ptr<FileSourceStream> fileSourceStream = FileSourceStream::CreateSourceStream(testFile);
+    ASSERT_NE(fileSourceStream, nullptr);
+
+    uint32_t bufferSize = TEST_BUFFER_SIZE_PARTIAL;
+    uint8_t* outBuffer = new uint8_t[bufferSize];
+    uint32_t desiredSize = TEST_FILE_SIZE_PARTIAL_2;
+    uint32_t readSize = 0;
+
+    bool ret = fileSourceStream->Read(desiredSize, outBuffer, bufferSize, readSize);
+    ASSERT_EQ(ret, true);
+    ASSERT_EQ(readSize, actualSize);
+
+    delete[] outBuffer;
+    unlink(testFile);
+    GTEST_LOG_(INFO) << "FileSourceStreamTest: FileSourceStreamTest0031 end";
 }
 }
 }

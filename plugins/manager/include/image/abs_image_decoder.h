@@ -92,6 +92,8 @@ struct DecodeContext {
     bool isAppUseAllocator = false;
     // In : User set CreateWideGamutSdrPixelMap
     bool  isCreateWideGamutSdrPixelMap = false;
+    // In : set heifs frame index
+    uint32_t index = 0;
 };
 
 struct ProgDecodeContext {
@@ -293,6 +295,11 @@ public:
     virtual OHOS::Media::Size GetHeifGridTileSize()
     {
         return {0, 0};
+    }
+
+    virtual bool IsHeifWithoutAlpha()
+    {
+        return false;
     }
 
     // define multiple subservices for this interface

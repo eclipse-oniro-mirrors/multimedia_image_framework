@@ -418,7 +418,7 @@ static GSError SetColorSpaceInfo(sptr<SurfaceBuffer>& buffer, const CM_ColorSpac
     return buffer->SetMetadata(ATTRKEY_COLORSPACE_INFO, colorSpaceInfoVec);
 }
 
-static bool GetColorSpaceInfo(const sptr<SurfaceBuffer>& buffer, CM_ColorSpaceInfo& colorSpaceInfo)
+bool VpeUtils::GetColorSpaceInfo(const sptr<SurfaceBuffer>& buffer, CM_ColorSpaceInfo& colorSpaceInfo)
 {
     std::vector<uint8_t> colorSpaceInfoVec;
     auto ret = buffer->GetMetadata(ATTRKEY_COLORSPACE_INFO, colorSpaceInfoVec);
@@ -671,22 +671,16 @@ void VpeUtils::CopySurfaceBufferInfo(sptr<SurfaceBuffer>& source, sptr<SurfaceBu
         IMAGE_LOGI("VpeUtils CopySurfaceBufferInfo failed, source or dst is nullptr");
         return;
     }
-    std::vector<uint8_t> hdrMetadataTypeVec;
-    std::vector<uint8_t> colorSpaceInfoVec;
-    std::vector<uint8_t> staticData;
-    std::vector<uint8_t> dynamicData;
-
-    if (source->GetMetadata(ATTRKEY_HDR_METADATA_TYPE, hdrMetadataTypeVec) == GSERROR_OK) {
-        dst->SetMetadata(ATTRKEY_HDR_METADATA_TYPE, hdrMetadataTypeVec);
-    }
-    if (source->GetMetadata(ATTRKEY_COLORSPACE_INFO, colorSpaceInfoVec) == GSERROR_OK) {
-        dst->SetMetadata(ATTRKEY_COLORSPACE_INFO, colorSpaceInfoVec);
-    }
-    if (GetSbStaticMetadata(source, staticData) && (staticData.size() > 0)) {
-        SetSbStaticMetadata(dst, staticData);
-    }
-    if (GetSbDynamicMetadata(source, dynamicData) && (dynamicData.size()) > 0) {
-        SetSbDynamicMetadata(dst, dynamicData);
+    std::vector<uint8_t> attrInfo{};
+    std::vector<uint32_t> keys{};
+    if (source->ListMetadataKeys(keys) == GSERROR_OK && !keys.empty()) {
+        for (size_t i = 0; i < keys.size(); i++) {
+            if (source->GetMetadata(keys[i], attrInfo) == GSERROR_OK && !attrInfo.empty()) {
+                IMAGE_LOGD("VpeUtils CopySurfaceBufferInfo Metadata key:%{public}d", keys[i]);
+                dst->SetMetadata(keys[i], attrInfo);
+            }
+            attrInfo.clear();
+        }
     }
 }
 #endif

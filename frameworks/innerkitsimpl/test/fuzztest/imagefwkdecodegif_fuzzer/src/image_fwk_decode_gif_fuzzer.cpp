@@ -49,6 +49,7 @@ void GifTest001(const std::string& pathName)
     if (imageSource == nullptr) {
         return ;
     }
+    imageSource->GetiTxtLength();
     for (uint32_t index = 0; index < imageSource->GetFrameCount(errorCode); ++index) {
         DecodeOptions decodeOpts;
         auto pixelMap = imageSource->CreatePixelMapEx(index, decodeOpts, errorCode);

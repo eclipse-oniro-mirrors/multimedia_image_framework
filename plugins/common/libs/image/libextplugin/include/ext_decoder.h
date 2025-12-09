@@ -78,6 +78,7 @@ public:
     bool DecodeHeifAuxiliaryMap(DecodeContext& context, Media::AuxiliaryPictureType type) override;
     bool CheckAuxiliaryMap(Media::AuxiliaryPictureType type) override;
     bool GetHeifFragmentMetadata(Media::Rect& metadata) override;
+    bool IsHeifWithoutAlpha() override;
 #ifdef IMAGE_COLORSPACE_FLAG
     OHOS::ColorManager::ColorSpace GetPixelMapColorSpace() override;
     bool IsSupportICCProfile() override;
@@ -172,6 +173,9 @@ private:
     OHOS::Media::Size GetHeifGridTileSize() override;
     bool IsCr3Format();
     bool MakeCr3Codec();
+
+    bool IsHeifsDecode(DecodeContext &context);
+    uint32_t DoHeifsDecode(OHOS::ImagePlugin::DecodeContext &context);
 
     ImagePlugin::InputDataStream *stream_ = nullptr;
     std::unique_ptr<InputDataStream> previewStream_ = nullptr;

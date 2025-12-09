@@ -19,6 +19,7 @@
 #include "box/item_property_display_box.h"
 #include "box/item_property_transform_box.h"
 #include "securec.h"
+#include "image_log.h"
 
 #include <algorithm>
 #include <limits>
@@ -37,6 +38,8 @@ const std::set<std::string> INFE_ITEM_TYPE = {
     "hvc1", "grid", "tmap", "iden", "mime"
 };
 const static uint32_t HEIF_MAX_EXIF_SIZE = 128 * 1024;
+const static uint32_t HEIF_MAX_SAMPLE_SIZE = 20 * 1024 * 1024;
+const static uint32_t FRAME_INDEX_DELTA = 1;
 
 HeifParser::HeifParser() = default;
 
@@ -117,9 +120,16 @@ heif_error HeifParser::AssembleBoxes(HeifStreamReader &reader)
         if (box->GetBoxType() == BOX_TYPE_META) {
             metaBox_ = std::dynamic_pointer_cast<HeifMetaBox>(box);
         }
+        if (box->GetBoxType() == BOX_TYPE_MOOV) {
+            moovBox_ = std::dynamic_pointer_cast<HeifMoovBox>(box);
+        }
         if (box->GetBoxType() == BOX_TYPE_FTYP) {
             ftypBox_ = std::dynamic_pointer_cast<HeifFtypBox>(box);
         }
+    }
+
+    if (moovBox_) {
+        return AssembleMovieBoxes();
     }
 
     if (!ftypBox_) {
@@ -336,6 +346,14 @@ heif_error HeifParser::AssembleImages()
     images_.clear();
     primaryImage_.reset();
 
+    if (moovBox_) {
+        auto image = std::make_shared<HeifImage>(0);
+        image->SetPrimaryImage(true);
+        image->SetMovieImage(true);
+        primaryImage_ = image;
+        ExtractMovieImageProperties(image);
+    }
+
     std::vector<heif_item_id> allItemIds;
     GetAllItemId(allItemIds);
 
@@ -529,6 +547,16 @@ void HeifParser::ExtractRfDataBMetadata(const std::vector<heif_item_id>& allItem
     }
 }
 
+void HeifParser::ExtractMovieImageProperties(std::shared_ptr<HeifImage> &image)
+{
+    if (stsdBox_) {
+        uint32_t width = 0;
+        uint32_t height = 0;
+        stsdBox_->GetSampleEntryWidthHeight(0, width, height);
+        image->SetOriginalSize(width, height);
+    }
+}
+
 void HeifParser::ExtractImageProperties(std::shared_ptr<HeifImage> &image)
 {
     heif_item_id itemId = image->GetItemId();
@@ -573,11 +601,9 @@ void HeifParser::ExtractImageProperties(std::shared_ptr<HeifImage> &image)
         image->SetDefaultPixelFormat((HeifPixelFormat) hvccConfig.chromaFormat);
 
         auto nalArrays = hvcc->GetNalArrays();
-        bool isGetFlag = hvcc->ParserHvccColorRangeFlag(nalArrays);
-        if (isGetFlag) {
-            auto spsConfig = hvcc->GetSpsConfig();
-            image->SetColorRangeFlag(static_cast<int>(spsConfig.videoRangeFlag));
-        }
+        hvcc->ParserHvccColorRangeFlag(nalArrays);
+        auto spsConfig = hvcc->GetSpsConfig();
+        image->SetColorRangeFlag(static_cast<int>(spsConfig.videoRangeFlag));
     }
     ExtractDisplayData(image, itemId);
 }
@@ -1063,6 +1089,181 @@ void HeifParser::SetTiffOffset()
     if (!ilocItem->extents.empty()) {
         tiffOffset_ += ilocItem->extents[0].offset;
     }
+}
+
+heif_error HeifParser::AssembleMovieBoxes()
+{
+    mvhdBox_ = moovBox_->GetChild<HeifMvhdBox>(BOX_TYPE_MVHD);
+    CHECK_ERROR_RETURN_RET(!mvhdBox_, heif_error_no_mvhd);
+    trakBox_ = moovBox_->GetChild<HeifTrakBox>(BOX_TYPE_TRAK);
+    CHECK_ERROR_RETURN_RET(!trakBox_, heif_error_no_trak);
+    tkhdBox_ = trakBox_->GetChild<HeifTkhdBox>(BOX_TYPE_TKHD);
+    CHECK_ERROR_RETURN_RET(!tkhdBox_, heif_error_no_tkhd);
+    mdiaBox_ = trakBox_->GetChild<HeifMdiaBox>(BOX_TYPE_MDIA);
+    CHECK_ERROR_RETURN_RET(!mdiaBox_, heif_error_no_mdia);
+    mdhdBox_ = mdiaBox_->GetChild<HeifMdhdBox>(BOX_TYPE_MDHD);
+    CHECK_ERROR_RETURN_RET(!mdhdBox_, heif_error_no_mdhd);
+    hdlrBox_ = mdiaBox_->GetChild<HeifHdlrBox>(BOX_TYPE_HDLR);
+    CHECK_ERROR_RETURN_RET(!hdlrBox_, heif_error_no_hdlr);
+    minfBox_ = mdiaBox_->GetChild<HeifMinfBox>(BOX_TYPE_MINF);
+    CHECK_ERROR_RETURN_RET(!minfBox_, heif_error_no_minf);
+    vmhdBox_ = minfBox_->GetChild<HeifVmhdBox>(BOX_TYPE_VMHD);
+    CHECK_ERROR_RETURN_RET(!vmhdBox_, heif_error_no_vmhd);
+    dinfBox_ = minfBox_->GetChild<HeifDinfBox>(BOX_TYPE_DINF);
+    CHECK_ERROR_RETURN_RET(!dinfBox_, heif_error_no_dinf);
+    stblBox_ = minfBox_->GetChild<HeifStblBox>(BOX_TYPE_STBL);
+    CHECK_ERROR_RETURN_RET(!stblBox_, heif_error_no_stbl);
+    drefBox_ = dinfBox_->GetChild<HeifDrefBox>(BOX_TYPE_DREF);
+    CHECK_ERROR_RETURN_RET(!drefBox_, heif_error_no_dref);
+    stsdBox_ = stblBox_->GetChild<HeifStsdBox>(BOX_TYPE_STSD);
+    CHECK_ERROR_RETURN_RET(!stsdBox_, heif_error_no_stsd);
+    sttsBox_ = stblBox_->GetChild<HeifSttsBox>(BOX_TYPE_STTS);
+    CHECK_ERROR_RETURN_RET(!sttsBox_, heif_error_no_stts);
+    stscBox_ = stblBox_->GetChild<HeifStscBox>(BOX_TYPE_STSC);
+    CHECK_ERROR_RETURN_RET(!stscBox_, heif_error_no_stsc);
+    stcoBox_ = stblBox_->GetChild<HeifStcoBox>(BOX_TYPE_STCO);
+    CHECK_ERROR_RETURN_RET(!stcoBox_, heif_error_no_stco);
+    stszBox_ = stblBox_->GetChild<HeifStszBox>(BOX_TYPE_STSZ);
+    CHECK_ERROR_RETURN_RET(!stszBox_, heif_error_no_stsz);
+    stssBox_ = stblBox_->GetChild<HeifStssBox>(BOX_TYPE_STSS);
+    CHECK_ERROR_RETURN_RET(!stssBox_, heif_error_no_stss);
+    return heif_error_ok;
+}
+
+heif_error HeifParser::IsHeifsImage(bool &isHeifs) const
+{
+    if (!ftypBox_ || ftypBox_->GetMajorBrand() != HEIF_BRAND_TYPE_MSF1) {
+        return heif_error_invalid_major_brand;
+    }
+    if (!hdlrBox_ || hdlrBox_->GetHandlerType() != HANDLER_TYPE_PICT) {
+        return heif_error_invalid_handler;
+    }
+    isHeifs = true;
+    return heif_error_ok;
+}
+
+heif_error HeifParser::GetHeifsFrameCount(uint32_t &sampleCount) const
+{
+    bool isHeifs = false;
+    if (IsHeifsImage(isHeifs) != heif_error_ok || !isHeifs) {
+        return heif_error_not_heifs;
+    }
+    if (!stszBox_) {
+        return heif_error_no_stsz;
+    }
+    sampleCount = stszBox_->GetSampleCount();
+    return heif_error_ok;
+}
+
+heif_error HeifParser::GetHeifsMovieFrameData(uint32_t index, std::vector<uint8_t> &dest)
+{
+    if (!stsdBox_) {
+        return heif_error_no_stsd;
+    }
+    auto hvcc = std::dynamic_pointer_cast<HeifHvccBox>(stsdBox_->GetHvccBox(0));
+    if (!hvcc) {
+        return heif_error_no_hvcc;
+    }
+    if (index == 0) {
+        if (!hvcc->GetHeaders(&dest)) {
+            return heif_error_item_data_not_found;
+        }
+    }
+
+    return GetHeifsFrameData(index, dest);
+}
+
+heif_error HeifParser::GetHeifsFrameData(uint32_t index, std::vector<uint8_t> &dest)
+{
+    uint32_t chunkOffset = 0;
+    if (!stcoBox_) {
+        return heif_error_no_stco;
+    }
+    heif_error res = stcoBox_->GetChunkOffset(0, chunkOffset);
+    if (res != heif_error_ok) {
+        return res;
+    }
+    if (!stszBox_) {
+        return heif_error_no_stsz;
+    }
+    uint32_t sampleSize = 0;
+    res = stszBox_->GetSampleSize(index, sampleSize);
+    if (res != heif_error_ok) {
+        return res;
+    }
+    size_t oldSize = dest.size();
+    size_t newSize = static_cast<size_t>(sampleSize) + oldSize;
+    if (newSize > HEIF_MAX_SAMPLE_SIZE) {
+        return heif_error_sample_size_too_large;
+    }
+    dest.resize(newSize);
+    uint32_t preSampleSize = 0;
+    res = GetPreSampleSize(index, preSampleSize);
+    if (res != heif_error_ok) {
+        return res;
+    }
+    if (!inputStream_) {
+        return heif_error_eof;
+    }
+    inputStream_->Seek(chunkOffset + preSampleSize);
+    inputStream_->Read(reinterpret_cast<char*>(dest.data()) + oldSize, static_cast<size_t>(sampleSize));
+    return heif_error_ok;
+}
+
+heif_error HeifParser::GetHeifsDelayTime(uint32_t index, int32_t &value) const
+{
+    if (!sttsBox_) {
+        return heif_error_no_stts;
+    }
+    return sttsBox_->GetDelayTime(index, value);
+}
+
+heif_error HeifParser::GetPreSampleSize(uint32_t index, uint32_t &preSampleSize)
+{
+    if (!stszBox_) {
+        return heif_error_no_stsz;
+    }
+    for (uint32_t i = 0; i < index; i++) {
+        uint32_t sampleSize = 0;
+        auto res = stszBox_->GetSampleSize(i, sampleSize);
+        if (res != heif_error_ok) {
+            return res;
+        }
+        preSampleSize += sampleSize;
+    }
+    return heif_error_ok;
+}
+
+heif_error HeifParser::GetHeifsGroupFrameInfo(uint32_t index, HeifsFrameGroup &frameGroup)
+{
+    if (!stssBox_) {
+        return heif_error_no_stss;
+    }
+    std::vector<uint32_t> sampleNumbers;
+    auto ret = stssBox_->GetSampleNumbers(sampleNumbers);
+    if (ret != heif_error_ok) {
+        return ret;
+    }
+    uint32_t beginFrameIndex = 0;
+    uint32_t endFrameIndex = 0;
+    uint32_t frameCount = 0;
+    ret = GetHeifsFrameCount(frameCount);
+    if (ret != heif_error_ok) {
+        return ret;
+    }
+    sampleNumbers.emplace_back(frameCount + FRAME_INDEX_DELTA);
+    for (int i = 0; i < sampleNumbers.size(); i++) {
+        uint32_t keyFrameIndex = sampleNumbers[i] - FRAME_INDEX_DELTA;
+        if (index >= keyFrameIndex) {
+            beginFrameIndex = keyFrameIndex;
+        } else {
+            endFrameIndex = keyFrameIndex;
+            break;
+        }
+    }
+    frameGroup.beginFrameIndex = beginFrameIndex;
+    frameGroup.endFrameIndex = endFrameIndex;
+    return heif_error_ok;
 }
 } // namespace ImagePlugin
 } // namespace OHOS

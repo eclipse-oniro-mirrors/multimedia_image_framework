@@ -124,6 +124,7 @@ HWTEST_F(ImageSourceHdrTest, CheckImageSourceHdr001, TestSize.Level3)
         ImageSource::CreateImageSource(IMAGE_INPUT_JPEG_SDR_PATH, opts, errorCode);
     ASSERT_EQ(errorCode, SUCCESS);
     ASSERT_NE(imageSource.get(), nullptr);
+    ASSERT_EQ(imageSource->GetiTxtLength(), 0);
 
     bool isHdr = imageSource->IsHdrImage();
     ASSERT_EQ(isHdr, false);
@@ -142,6 +143,7 @@ HWTEST_F(ImageSourceHdrTest, CheckImageSourceHdr002, TestSize.Level3)
         ImageSource::CreateImageSource(IMAGE_INPUT_HEIF_SDR_PATH, opts, errorCode);
     ASSERT_EQ(errorCode, SUCCESS);
     ASSERT_NE(imageSource.get(), nullptr);
+    ASSERT_EQ(imageSource->GetiTxtLength(), 0);
 
     bool isHdr = imageSource->IsHdrImage();
     ASSERT_EQ(isHdr, false);
@@ -160,6 +162,7 @@ HWTEST_F(ImageSourceHdrTest, CheckImageSourceHdr003, TestSize.Level3)
         ImageSource::CreateImageSource(IMAGE_INPUT_HEIF_10BIT_SDR_PATH, opts, errorCode);
     ASSERT_EQ(errorCode, SUCCESS);
     ASSERT_NE(imageSource.get(), nullptr);
+    ASSERT_EQ(imageSource->GetiTxtLength(), 0);
 
     bool isHdr = imageSource->IsHdrImage();
     ASSERT_EQ(isHdr, false);
@@ -178,6 +181,7 @@ HWTEST_F(ImageSourceHdrTest, CheckImageSourceHdr004, TestSize.Level3)
         ImageSource::CreateImageSource(IMAGE_INPUT_JPEG_HDR_PATH, opts, errorCode);
     ASSERT_EQ(errorCode, SUCCESS);
     ASSERT_NE(imageSource.get(), nullptr);
+    ASSERT_EQ(imageSource->GetiTxtLength(), 0);
 
     bool isHdr = imageSource->IsHdrImage();
 #ifdef IMAGE_VPE_FLAG
@@ -200,6 +204,7 @@ HWTEST_F(ImageSourceHdrTest, CheckPixelMapHdr001, TestSize.Level3)
         ImageSource::CreateImageSource(IMAGE_INPUT_JPEG_SDR_PATH, opts, errorCode);
     ASSERT_EQ(errorCode, SUCCESS);
     ASSERT_NE(imageSource.get(), nullptr);
+    ASSERT_EQ(imageSource->GetiTxtLength(), 0);
 
     uint32_t index = 0;
     DecodeOptions optsPixel;
@@ -227,6 +232,7 @@ HWTEST_F(ImageSourceHdrTest, CheckPixelMapHdr002, TestSize.Level3)
         ImageSource::CreateImageSource(IMAGE_INPUT_HEIF_SDR_PATH, opts, errorCode);
     ASSERT_EQ(errorCode, SUCCESS);
     ASSERT_NE(imageSource.get(), nullptr);
+    ASSERT_EQ(imageSource->GetiTxtLength(), 0);
 
     uint32_t index = 0;
     DecodeOptions optsPixel;
@@ -254,6 +260,7 @@ HWTEST_F(ImageSourceHdrTest, CheckPixelMapHdr003, TestSize.Level3)
         ImageSource::CreateImageSource(IMAGE_INPUT_HEIF_10BIT_SDR_PATH, opts, errorCode);
     ASSERT_EQ(errorCode, SUCCESS);
     ASSERT_NE(imageSource.get(), nullptr);
+    ASSERT_EQ(imageSource->GetiTxtLength(), 0);
 
     uint32_t index = 0;
     DecodeOptions optsPixel;
@@ -281,6 +288,7 @@ HWTEST_F(ImageSourceHdrTest, CheckPixelMapHdr004, TestSize.Level3)
         ImageSource::CreateImageSource(IMAGE_INPUT_JPEG_HDR_PATH, opts, errorCode);
     ASSERT_EQ(errorCode, SUCCESS);
     ASSERT_NE(imageSource.get(), nullptr);
+    ASSERT_EQ(imageSource->GetiTxtLength(), 0);
 
     uint32_t index = 0;
     DecodeOptions optsPixel;
@@ -312,6 +320,7 @@ HWTEST_F(ImageSourceHdrTest, CheckPixelMapHdr005, TestSize.Level3)
         ImageSource::CreateImageSource(IMAGE_INPUT_JPEG_HDR_VIVID_PATH, opts, errorCode);
     ASSERT_EQ(errorCode, SUCCESS);
     ASSERT_NE(imageSource.get(), nullptr);
+    ASSERT_EQ(imageSource->GetiTxtLength(), 0);
 
     uint32_t index = 0;
     DecodeOptions optsPixel;
@@ -343,6 +352,7 @@ HWTEST_F(ImageSourceHdrTest, CheckPixelMapDynamicRangeSdr001, TestSize.Level3)
         ImageSource::CreateImageSource(IMAGE_INPUT_JPEG_SDR_PATH, opts, errorCode);
     ASSERT_EQ(errorCode, SUCCESS);
     ASSERT_NE(imageSource.get(), nullptr);
+    ASSERT_EQ(imageSource->GetiTxtLength(), 0);
 
     uint32_t index = 0;
     DecodeOptions optsPixel;
@@ -370,6 +380,7 @@ HWTEST_F(ImageSourceHdrTest, CheckPixelMapDynamicRangeSdr002, TestSize.Level3)
         ImageSource::CreateImageSource(IMAGE_INPUT_HEIF_SDR_PATH, opts, errorCode);
     ASSERT_EQ(errorCode, SUCCESS);
     ASSERT_NE(imageSource.get(), nullptr);
+    ASSERT_EQ(imageSource->GetiTxtLength(), 0);
 
     uint32_t index = 0;
     DecodeOptions optsPixel;
@@ -397,6 +408,7 @@ HWTEST_F(ImageSourceHdrTest, CheckPixelMapDynamicRangeSdr003, TestSize.Level3)
         ImageSource::CreateImageSource(IMAGE_INPUT_JPEG_HDR_PATH, opts, errorCode);
     ASSERT_EQ(errorCode, SUCCESS);
     ASSERT_NE(imageSource.get(), nullptr);
+    ASSERT_EQ(imageSource->GetiTxtLength(), 0);
 
     uint32_t index = 0;
     DecodeOptions optsPixel;
@@ -424,6 +436,7 @@ HWTEST_F(ImageSourceHdrTest, ToSdr001, TestSize.Level3)
     std::string path = "/data/local/tmp/image/hdr.jpg";
     std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(path, opts, errorCode);
     ASSERT_EQ(errorCode, SUCCESS);
+    ASSERT_EQ(imageSource->GetiTxtLength(), 0);
 
     DecodeOptions decopts;
     decopts.desiredDynamicRange = DecodeDynamicRange::AUTO;
@@ -451,6 +464,7 @@ HWTEST_F(ImageSourceHdrTest, ToSdr002, TestSize.Level3)
     std::string path = "/data/local/tmp/image/test.jpg";
     std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(path, opts, errorCode);
     ASSERT_EQ(errorCode, SUCCESS);
+    ASSERT_EQ(imageSource->GetiTxtLength(), 0);
 
     DecodeOptions decopts;
     decopts.desiredDynamicRange = DecodeDynamicRange::AUTO;
@@ -474,6 +488,7 @@ HWTEST_F(ImageSourceHdrTest, PackHdrPixelMap001, TestSize.Level3)
         ImageSource::CreateImageSource(IMAGE_INPUT_JPEG_HDR_VIVID_PATH, opts, errorCode);
     ASSERT_EQ(errorCode, SUCCESS);
     ASSERT_NE(imageSource.get(), nullptr);
+    ASSERT_EQ(imageSource->GetiTxtLength(), 0);
 
     uint32_t index = 0;
     DecodeOptions optsPixel;
@@ -542,6 +557,7 @@ HWTEST_F(ImageSourceHdrTest, GetHdrMetadataTest001, TestSize.Level3)
             ImageSource::CreateImageSource(IMAGE_INPUT_JPEG_HDR_MEDIA_TYPE_PATH, opts, errorCode);
     ASSERT_EQ(errorCode, SUCCESS);
     ASSERT_NE(imageSource.get(), nullptr);
+    ASSERT_EQ(imageSource->GetiTxtLength(), 0);
     DecodeOptions opt;
     opt.desiredDynamicRange = DecodeDynamicRange::HDR;
     opt.desiredPixelFormat = PixelFormat::YCBCR_P010;
@@ -578,6 +594,7 @@ HWTEST_F(ImageSourceHdrTest, CheckPhotoDesiredPixelForamt001, TestSize.Level3)
         ImageSource::CreateImageSource(IMAGE_INPUT_JPEG_HDR_VIVID_PATH, opts, errorCode);
     ASSERT_EQ(errorCode, SUCCESS);
     ASSERT_NE(imageSource.get(), nullptr);
+    ASSERT_EQ(imageSource->GetiTxtLength(), 0);
 #ifdef IMAGE_VPE_FLAG
     uint32_t index = 0;
     DecodeOptions optsPixel;
@@ -609,6 +626,7 @@ HWTEST_F(ImageSourceHdrTest, CheckPhotoDesiredPixelForamt002, TestSize.Level3)
         ImageSource::CreateImageSource(IMAGE_INPUT_JPEG_HDR_VIVID_PATH, opts, errorCode);
     ASSERT_EQ(errorCode, SUCCESS);
     ASSERT_NE(imageSource.get(), nullptr);
+    ASSERT_EQ(imageSource->GetiTxtLength(), 0);
 
     uint32_t index = 0;
     DecodeOptions optsPixel;
@@ -633,6 +651,7 @@ HWTEST_F(ImageSourceHdrTest, CheckPhotoDesiredPixelForamt003, TestSize.Level3)
         ImageSource::CreateImageSource(IMAGE_INPUT_JPEG_HDR_VIVID_PATH, opts, errorCode);
     ASSERT_EQ(errorCode, SUCCESS);
     ASSERT_NE(imageSource.get(), nullptr);
+    ASSERT_EQ(imageSource->GetiTxtLength(), 0);
 
     uint32_t index = 0;
     DecodeOptions optsPixel;
@@ -657,6 +676,7 @@ HWTEST_F(ImageSourceHdrTest, CheckPhotoDesiredPixelForamt004, TestSize.Level3)
         ImageSource::CreateImageSource(IMAGE_INPUT_JPEG_SDR_PATH, opts, errorCode);
     ASSERT_EQ(errorCode, SUCCESS);
     ASSERT_NE(imageSource.get(), nullptr);
+    ASSERT_EQ(imageSource->GetiTxtLength(), 0);
 #ifdef IMAGE_VPE_FLAG
     uint32_t index = 0;
     DecodeOptions optsPixel;
@@ -688,6 +708,7 @@ HWTEST_F(ImageSourceHdrTest, CheckPhotoDesiredPixelForamt005, TestSize.Level3)
         ImageSource::CreateImageSource(IMAGE_INPUT_JPEG_SDR_PATH, opts, errorCode);
     ASSERT_EQ(errorCode, SUCCESS);
     ASSERT_NE(imageSource.get(), nullptr);
+    ASSERT_EQ(imageSource->GetiTxtLength(), 0);
 
     uint32_t index = 0;
     DecodeOptions optsPixel;
@@ -712,6 +733,7 @@ HWTEST_F(ImageSourceHdrTest, CheckPhotoDesiredPixelForamt006, TestSize.Level3)
         ImageSource::CreateImageSource(IMAGE_INPUT_JPEG_SDR_PATH, opts, errorCode);
     ASSERT_EQ(errorCode, SUCCESS);
     ASSERT_NE(imageSource.get(), nullptr);
+    ASSERT_EQ(imageSource->GetiTxtLength(), 0);
 
     uint32_t index = 0;
     DecodeOptions optsPixel;
@@ -791,6 +813,7 @@ HWTEST_F(ImageSourceHdrTest, CheckMpfOffsetTest003, TestSize.Level3)
         ImageSource::CreateImageSource(IMAGE_INPUT_BAD_MPF_OFFSET_PATH, opts, errorCode);
     ASSERT_EQ(errorCode, SUCCESS);
     ASSERT_NE(imageSource.get(), nullptr);
+    ASSERT_EQ(imageSource->GetiTxtLength(), 0);
 
     uint32_t index = 0;
     DecodeOptions optsPixel;
@@ -941,6 +964,292 @@ HWTEST_F(ImageSourceHdrTest, ParsingFragmentMetadataTest002, TestSize.Level3)
 
     bool res = jpegMpfParser->ParsingFragmentMetadata(buf, dataSize, fragmentRect, true);
     EXPECT_FALSE(res);
+}
+
+/**
+ * @tc.name: CheckMpfOffsetSizeCheckTest001
+ * @tc.desc: Test CheckMpfOffset when offset + UINT32_BYTE_SIZE > size
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageSourceHdrTest, CheckMpfOffsetSizeCheckTest001, TestSize.Level3)
+{
+    auto jpegMpfParser = std::make_shared<JpegMpfParser>();
+    ASSERT_NE(jpegMpfParser, nullptr);
+
+    uint8_t buf[] = {JPEG_MARKER_PREFIX, JPEG_MARKER_APP2, 0x00};
+    uint32_t size = sizeof(buf);
+    uint32_t offset = 0;
+
+    bool res = jpegMpfParser->CheckMpfOffset(buf, size, offset);
+    EXPECT_FALSE(res);
+}
+
+/**
+ * @tc.name: ParsingLittleEndianTest001
+ * @tc.desc: Test Parsing with LITTLE_ENDIAN_FLAG
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageSourceHdrTest, ParsingLittleEndianTest001, TestSize.Level3)
+{
+    auto jpegMpfParser = std::make_shared<JpegMpfParser>();
+    ASSERT_NE(jpegMpfParser, nullptr);
+
+    uint8_t buf[] = {
+        'M', 'P', 'F', '\0',
+        0x49, 0x49, 0x2A, 0x00,
+        0xFF, 0xFF, 0xFF, 0xFF
+    };
+    uint32_t size = sizeof(buf);
+
+    bool res = jpegMpfParser->Parsing(buf, size);
+    EXPECT_FALSE(res);
+}
+
+/**
+ * @tc.name: ParsingInvalidIfdOffsetTest001
+ * @tc.desc: Test Parsing when ifdOffset < dataOffset
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageSourceHdrTest, ParsingInvalidIfdOffsetTest001, TestSize.Level3)
+{
+    auto jpegMpfParser = std::make_shared<JpegMpfParser>();
+    ASSERT_NE(jpegMpfParser, nullptr);
+
+    uint8_t buf[] = {
+        'M', 'P', 'F', '\0',
+        0x4D, 0x4D, 0x00, 0x2A,
+        0x00, 0x00, 0x00, 0x02
+    };
+    uint32_t size = sizeof(buf);
+
+    bool res = jpegMpfParser->Parsing(buf, size);
+    EXPECT_FALSE(res);
+}
+
+/**
+ * @tc.name: ParsingInvalidIfdOffsetTest002
+ * @tc.desc: Test Parsing when ifdOffset > size
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageSourceHdrTest, ParsingInvalidIfdOffsetTest002, TestSize.Level3)
+{
+    auto jpegMpfParser = std::make_shared<JpegMpfParser>();
+    ASSERT_NE(jpegMpfParser, nullptr);
+
+    uint8_t buf[] = {
+        'M', 'P', 'F', '\0',
+        0x4D, 0x4D, 0x00, 0x2A,
+        0x00, 0x00, 0xFF, 0xFF
+    };
+    uint32_t size = sizeof(buf);
+
+    bool res = jpegMpfParser->Parsing(buf, size);
+    EXPECT_FALSE(res);
+}
+
+/**
+ * @tc.name: ParsingMpIndexIFDTagOrderTest001
+ * @tc.desc: Test ParsingMpIndexIFD when tag <= previousTag
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageSourceHdrTest, ParsingMpIndexIFDTagOrderTest001, TestSize.Level3)
+{
+    auto jpegMpfParser = std::make_shared<JpegMpfParser>();
+    ASSERT_NE(jpegMpfParser, nullptr);
+
+    uint8_t buf[] = {
+        'M', 'P', 'F', '\0',
+        0x4D, 0x4D, 0x00, 0x2A,
+        0x00, 0x00, 0x00, 0x08,
+        0x00, 0x02,
+        0xB0, 0x00,
+        0x00, 0x07,
+        0x00, 0x00, 0x00, 0x04,
+        '0', '1', '0', '0',
+        0xB0, 0x00,
+        0x00, 0x04,
+        0x00, 0x00, 0x00, 0x01,
+        0x00, 0x00, 0x00, 0x02
+    };
+    uint32_t size = sizeof(buf);
+
+    bool res = jpegMpfParser->Parsing(buf, size);
+    EXPECT_FALSE(res);
+}
+
+/**
+ * @tc.name: ParsingMpfVersionInvalidTest001
+ * @tc.desc: Test ParsingMpIndexIFD with invalid MPF version
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageSourceHdrTest, ParsingMpfVersionInvalidTest001, TestSize.Level3)
+{
+    auto jpegMpfParser = std::make_shared<JpegMpfParser>();
+    ASSERT_NE(jpegMpfParser, nullptr);
+
+    uint8_t buf[] = {
+        'M', 'P', 'F', '\0',
+        0x4D, 0x4D, 0x00, 0x2A,
+        0x00, 0x00, 0x00, 0x08,
+        0x00, 0x01,
+        0xB0, 0x00,
+        0x00, 0x07,
+        0x00, 0x00, 0x00, 0x04,
+        '9', '9', '9', '9'
+    };
+    uint32_t size = sizeof(buf);
+
+    bool res = jpegMpfParser->Parsing(buf, size);
+    EXPECT_FALSE(res);
+}
+
+/**
+ * @tc.name: ParsingMpAttrIFDOffsetInvalidTest001
+ * @tc.desc: Test ParsingMpIndexIFD when mpAttrIFDOffset > 0 && dataOffset > mpAttrIFDOffset
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageSourceHdrTest, ParsingMpAttrIFDOffsetInvalidTest001, TestSize.Level3)
+{
+    auto jpegMpfParser = std::make_shared<JpegMpfParser>();
+    ASSERT_NE(jpegMpfParser, nullptr);
+
+    uint8_t buf[] = {
+        'M', 'P', 'F', '\0',
+        0x4D, 0x4D, 0x00, 0x2A,
+        0x00, 0x00, 0x00, 0x08,
+        0x00, 0x01,
+        0xB0, 0x00,
+        0x00, 0x07,
+        0x00, 0x00, 0x00, 0x04,
+        '0', '1', '0', '0',
+        0x00, 0x00, 0x00, 0x08
+    };
+    uint32_t size = sizeof(buf);
+
+    bool res = jpegMpfParser->Parsing(buf, size);
+    EXPECT_FALSE(res);
+}
+
+/**
+ * @tc.name: ParsingInvalidEndianFlagTest001
+ * @tc.desc: test Parsing when endian flag is neither BIG_ENDIAN nor LITTLE_ENDIAN
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageSourceHdrTest, ParsingInvalidEndianFlagTest001, TestSize.Level3)
+{
+    auto jpegMpfParser = std::make_shared<JpegMpfParser>();
+    ASSERT_NE(jpegMpfParser, nullptr);
+
+    uint8_t buf[] = {
+        'M', 'P', 'F', '\0',
+        0x00, 0x00, 0x00, 0x00,
+        0x08, 0x00, 0x00, 0x00
+    };
+    uint32_t size = sizeof(buf);
+
+    bool res = jpegMpfParser->Parsing(buf, size);
+    EXPECT_FALSE(res);
+}
+
+/**
+ * @tc.name: ParsingMpEntryInvalidCountTest001
+ * @tc.desc: test ParsingMpIndexIFD when MP_ENTRY_TAG count is invalid
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageSourceHdrTest, ParsingMpEntryInvalidCountTest001, TestSize.Level3)
+{
+    auto jpegMpfParser = std::make_shared<JpegMpfParser>();
+    ASSERT_NE(jpegMpfParser, nullptr);
+
+    uint8_t buf[] = {
+        'M', 'P', 'F', '\0',
+        0x4D, 0x4D, 0x00, 0x2A,
+        0x00, 0x00, 0x00, 0x08,
+        0x00, 0x03,
+        0xB0, 0x00, 0x00, 0x07, 0x00, 0x00, 0x00, 0x04, '0', '1', '0', '0',
+        0xB0, 0x01, 0x00, 0x04, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x02,
+        0xB0, 0x02, 0x00, 0x07, 0x00, 0x00, 0x00, 0x10, 0x00, 0x00, 0x00, 0x40,
+        0x00, 0x00, 0x00, 0x00
+    };
+    uint32_t size = sizeof(buf);
+
+    bool res = jpegMpfParser->Parsing(buf, size);
+    EXPECT_FALSE(res);
+}
+
+/**
+ * @tc.name: ParsingMpEntryFailureTest001
+ * @tc.desc: test ParsingMpIndexIFD when ParsingMpEntry fails
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageSourceHdrTest, ParsingMpEntryFailureTest001, TestSize.Level3)
+{
+    auto jpegMpfParser = std::make_shared<JpegMpfParser>();
+    ASSERT_NE(jpegMpfParser, nullptr);
+
+    uint8_t buf[] = {
+        'M', 'P', 'F', '\0',
+        0x4D, 0x4D, 0x00, 0x2A,
+        0x00, 0x00, 0x00, 0x08,
+        0x00, 0x03,
+        0xB0, 0x00, 0x00, 0x07, 0x00, 0x00, 0x00, 0x04, '0', '1', '0', '0',
+        0xB0, 0x01, 0x00, 0x04, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x02,
+        0xB0, 0x02, 0x00, 0x07, 0x00, 0x00, 0x00, 0x20, 0x00, 0x00, 0x00, 0x38,
+        0x00, 0x00, 0x00, 0x00,
+        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
+    };
+    uint32_t size = sizeof(buf);
+
+    bool res = jpegMpfParser->Parsing(buf, size);
+    EXPECT_FALSE(res);
+}
+
+/**
+ * @tc.name: ParsingDefaultTagBranchTest001
+ * @tc.desc: Test ParsingMpIndexIFD with unrecognized tag values
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageSourceHdrTest, ParsingDefaultTagBranchTest001, TestSize.Level3)
+{
+    auto jpegMpfParser = std::make_shared<JpegMpfParser>();
+    ASSERT_NE(jpegMpfParser, nullptr);
+
+    uint8_t buf[] = {
+        'M', 'P', 'F', '\0',
+        0x4D, 0x4D, 0x00, 0x2A,
+        0x00, 0x00, 0x00, 0x08,
+        0x00, 0x01,
+        0xFF, 0xFF, 0x00, 0x04, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x01,
+        0x00, 0x00, 0x00, 0x00
+    };
+    uint32_t size = sizeof(buf);
+
+    bool res = jpegMpfParser->Parsing(buf, size);
+    EXPECT_TRUE(res);
+}
+
+/**
+ * @tc.name: ParsingBigEndianFlagTest001
+ * @tc.desc: test Parsing with BIG_ENDIAN_FLAG
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageSourceHdrTest, ParsingBigEndianFlagTest001, TestSize.Level3)
+{
+    auto jpegMpfParser = std::make_shared<JpegMpfParser>();
+    ASSERT_NE(jpegMpfParser, nullptr);
+
+    uint8_t buf[] = {
+        'M', 'P', 'F', '\0',
+        0x4D, 0x4D, 0x00, 0x2A,
+        0x00, 0x00, 0x00, 0x08,
+        0x00, 0x01,
+        0xB0, 0x01, 0x00, 0x04, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x02,
+        0x00, 0x00, 0x00, 0x00
+    };
+    uint32_t size = sizeof(buf);
+
+    bool res = jpegMpfParser->Parsing(buf, size);
+    EXPECT_TRUE(res);
 }
 }
 }

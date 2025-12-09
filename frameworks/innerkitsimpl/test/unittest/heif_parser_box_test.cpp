@@ -33,6 +33,12 @@ static constexpr size_t ERR_LENGTH = -1;
 static constexpr size_t NORMAL_LENGTH = 1;
 static constexpr size_t SIZE_32BITS = 0xFFFFFFFF;
 static constexpr size_t UUID_TYPE_BYTE_NUM = 16;
+static constexpr uint8_t LARGE_PROPERTY_INDEX_FLAG = 1;
+static constexpr uint8_t PROPERTY_NUMBER = 2;
+static constexpr uint8_t NOT_DEFAULT_INDEX = 1;
+static constexpr uint8_t BOX_TYPE = 2;
+std::vector<uint8_t> BUFFER = {0x01, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x01,
+                               0x12, 0x34, 0x56, 0x78, 0x01, 0xAB, 0xCD};
 static constexpr uint32_t NAL_LAYER_ID = 33;
 static constexpr uint8_t SKIP_DOUBLE_DATA_PROCESS_BYTE = 2;
 
@@ -588,6 +594,24 @@ HWTEST_F(HeifParserBoxTest, WriteHeaderTest001, TestSize.Level3)
 }
 
 /**
+ * @tc.name: WriteHeaderTest002
+ * @tc.desc: Test WriteHeader when boxSize over 32 bits
+ * @tc.type: FUNC
+ */
+HWTEST_F(HeifParserBoxTest, WriteHeaderTest002, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "HeifParserBoxTest: WriteHeaderTest002 start";
+    HeifBox heifBox;
+    HeifStreamWriter writer;
+    size_t boxSize = SIZE_32BITS + 1;
+    heifBox.boxType_ = BOX_TYPE_UUID;
+
+    heif_error error = heifBox.WriteHeader(writer, boxSize);
+    EXPECT_EQ(error, heif_error_ok);
+    GTEST_LOG_(INFO) << "HeifParserBoxTest: WriteHeaderTest002 end";
+}
+
+/**
  * @tc.name: ParseContentTest004
  * @tc.desc: Test ParseContent of HeifBox when CheckSize failed
  * @tc.type: FUNC
@@ -655,6 +679,295 @@ HWTEST_F(HeifParserBoxTest, MakeFromReaderTest001, TestSize.Level3)
     heif_error error = heifBox.MakeFromReader(reader, &heifBoxSptr, recursionCount);
     EXPECT_EQ(error, heif_error_eof);
     GTEST_LOG_(INFO) << "HeifParserBoxTest: MakeFromReaderTest001 end";
+}
+
+/**
+ * @tc.name: GetPropertiesTest003
+ * @tc.desc: Test HeifIpcoBox.GetProperties with propertyIndex equal to 0.
+ * @tc.type: FUNC
+ */
+HWTEST_F(HeifParserBoxTest, GetPropertiesTest003, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "HeifParserBoxTest: GetPropertiesTest003 start";
+    auto heifIpcoBox = std::make_shared<HeifIpcoBox>();
+    uint32_t itemId = 0;
+    std::shared_ptr<HeifIpmaBox> ipma = std::make_shared<HeifIpmaBox>();
+    std::vector<std::shared_ptr<HeifBox>> outProperties;
+
+    struct PropertyAssociation rec {
+        .essential = false,
+        .propertyIndex = 0,
+    };
+    std::vector<PropertyAssociation> proPerty;
+    proPerty.push_back(rec);
+    struct PropertyEntry ref {
+        .itemId = 0,
+        .associations = proPerty,
+    };
+    ipma->entries_.push_back(ref);
+
+    ASSERT_EQ(heifIpcoBox->GetProperties(itemId, ipma, outProperties), heif_error_ok);
+    ASSERT_EQ(outProperties.empty(), true);
+    GTEST_LOG_(INFO) << "HeifParserBoxTest: GetPropertiesTest003 end";
+}
+
+/**
+ * @tc.name: GetPropertyTest002
+ * @tc.desc: Test HeifIpcoBox.GetProperty with matching property.
+ * @tc.type: FUNC
+ */
+HWTEST_F(HeifParserBoxTest, GetPropertyTest002, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "HeifParserBoxTest: GetPropertyTest002 start";
+    auto heifIpcoBox = std::make_shared<HeifIpcoBox>();
+    std::shared_ptr<HeifIpmaBox> heifIpmaBox = std::make_shared<HeifIpmaBox>();
+    heif_item_id itemId = NOT_DEFAULT_INDEX;
+    uint32_t boxType = NOT_DEFAULT_INDEX;
+
+    auto property = std::make_shared<HeifBox>(boxType);
+    heifIpcoBox->children_.push_back(property);
+
+    struct PropertyAssociation assoc {
+        .essential = false,
+        .propertyIndex = NOT_DEFAULT_INDEX,
+    };
+    std::vector<PropertyAssociation> proPerty;
+    proPerty.push_back(assoc);
+    struct PropertyEntry entry {
+        .itemId = itemId,
+        .associations = proPerty,
+    };
+    heifIpmaBox->entries_.push_back(entry);
+
+    auto result = heifIpcoBox->GetProperty(itemId, heifIpmaBox, boxType);
+    ASSERT_NE(result, nullptr);
+    ASSERT_EQ(result->GetBoxType(), boxType);
+
+    boxType = BOX_TYPE;
+    result = heifIpcoBox->GetProperty(itemId, heifIpmaBox, boxType);
+    ASSERT_EQ(result, nullptr);
+    GTEST_LOG_(INFO) << "HeifParserBoxTest: GetPropertyTest002 end";
+}
+
+/**
+ * @tc.name: ParseContentTest005
+ * @tc.desc: Test HeifIpmaBox.ParseContent, parsing content of HeifIpmaBox successfully.
+ * @tc.type: FUNC
+ */
+HWTEST_F(HeifParserBoxTest, ParseContentTest005, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "HeifParserBoxTest: ParseContentTest005 start";
+    HeifIpmaBox heifIpmaBox;
+    auto stream = std::make_shared<HeifBufferInputStream>(BUFFER.data(), BUFFER.size(), true);
+    HeifStreamReader reader(stream, 0, BUFFER.size());
+
+    heif_error ret = heifIpmaBox.ParseContent(reader);
+    ASSERT_EQ(ret, heif_error_ok);
+    GTEST_LOG_(INFO) << "HeifParserBoxTest: ParseContentTest005 end";
+}
+
+/**
+ * @tc.name: AddPropertyTest001
+ * @tc.desc: Test HeifIpmaBox.AddProperty, adding an already existing property.
+ * @tc.type: FUNC
+ */
+HWTEST_F(HeifParserBoxTest, AddPropertyTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "HeifParserBoxTest: AddPropertyTest001 start";
+    std::shared_ptr<HeifIpmaBox> heifIpmaBox = std::make_shared<HeifIpmaBox>();
+    heif_item_id itemId = NOT_DEFAULT_INDEX;
+
+    struct PropertyAssociation assoc {
+        .essential = false,
+        .propertyIndex = NOT_DEFAULT_INDEX,
+    };
+    std::vector<PropertyAssociation> proPerty;
+    proPerty.push_back(assoc);
+    struct PropertyEntry entry {
+        .itemId = itemId,
+        .associations = proPerty,
+    };
+    heifIpmaBox->entries_.push_back(entry);
+
+    heifIpmaBox->AddProperty(0, assoc);
+    ASSERT_EQ(heifIpmaBox->entries_.size(), PROPERTY_NUMBER);
+    GTEST_LOG_(INFO) << "HeifParserBoxTest: AddPropertyTest001 end";
+}
+
+/**
+ * @tc.name: WriteTest005
+ * @tc.desc: Test HeifIpmaBox.Write, writing a HeifIpmaBox to a stream successfully.
+ * @tc.type: FUNC
+ */
+HWTEST_F(HeifParserBoxTest, WriteTest005, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "HeifParserBoxTest: WriteTest005 start";
+    HeifIpmaBox heifIpmaBox;
+    HeifStreamWriter writer;
+
+    heifIpmaBox.SetVersion(HEIF_BOX_VERSION_ONE);
+    heifIpmaBox.SetFlags(LARGE_PROPERTY_INDEX_FLAG);
+    PropertyAssociation assoc;
+    assoc.essential = true;
+    assoc.propertyIndex = NOT_DEFAULT_INDEX;
+
+    PropertyEntry entry;
+    entry.itemId = NOT_DEFAULT_INDEX;
+    entry.associations.push_back(assoc);
+    heifIpmaBox.entries_.push_back(entry);
+
+    heif_error ret = heifIpmaBox.Write(writer);
+    ASSERT_EQ(ret, heif_error_ok);
+    GTEST_LOG_(INFO) << "HeifParserBoxTest: WriteTest005 end";
+}
+
+/**
+ * @tc.name: ParseHeaderTest002
+ * @tc.desc: test ParseHeader interface to cover BOX_TYPE_UUID branch
+ * @tc.type: FUNC
+ */
+HWTEST_F(HeifParserBoxTest, ParseHeaderTest002, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "HeifParserBoxTest: ParseHeaderTest002 start";
+    std::vector<uint8_t> data;
+    uint32_t boxSize = 24;
+    auto sizeData = SetUint32ToUint8Vertor(boxSize);
+    data.insert(data.end(), sizeData.begin(), sizeData.end());
+    auto typeData = SetUint32ToUint8Vertor(BOX_TYPE_UUID);
+    data.insert(data.end(), typeData.begin(), typeData.end());
+    std::vector<uint8_t> uuidData = {
+        0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08,
+        0x09, 0x0A, 0x0B, 0x0C, 0x0D, 0x0E, 0x0F, 0x10
+    };
+    data.insert(data.end(), uuidData.begin(), uuidData.end());
+    auto stream = std::make_shared<HeifBufferInputStream>(data.data(), data.size(), true);
+    ASSERT_NE(stream, nullptr);
+    HeifStreamReader reader(stream, 0, data.size());
+    HeifBox heifBox;
+    heif_error error = heifBox.ParseHeader(reader);
+    EXPECT_EQ(error, heif_error_ok);
+    EXPECT_EQ(heifBox.GetBoxType(), BOX_TYPE_UUID);
+    EXPECT_EQ(heifBox.boxUuidType_.size(), UUID_TYPE_BYTE_NUM);
+    EXPECT_EQ(memcmp(heifBox.boxUuidType_.data(), uuidData.data(), UUID_TYPE_BYTE_NUM), 0);
+    GTEST_LOG_(INFO) << "HeifParserBoxTest: ParseHeaderTest002 end";
+}
+
+/**
+ * @tc.name: ParseHeaderTest003
+ * @tc.desc: test ParseHeader interface to cover BOX_TYPE_UUID branch with successful CheckSize
+ * @tc.type: FUNC
+ */
+HWTEST_F(HeifParserBoxTest, ParseHeaderTest003, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "HeifParserBoxTest: ParseHeaderTest003 start";
+    std::vector<uint8_t> data;
+    uint32_t boxSize = 24;
+    auto sizeData = SetUint32ToUint8Vertor(boxSize);
+    data.insert(data.end(), sizeData.begin(), sizeData.end());
+    auto typeData = SetUint32ToUint8Vertor(BOX_TYPE_UUID);
+    data.insert(data.end(), typeData.begin(), typeData.end());
+    std::vector<uint8_t> uuidData = {
+        0xA1, 0xB2, 0xC3, 0xD4, 0xE5, 0xF6, 0x07, 0x18,
+        0x29, 0x3A, 0x4B, 0x5C, 0x6D, 0x7E, 0x8F, 0x90
+    };
+    data.insert(data.end(), uuidData.begin(), uuidData.end());
+    auto stream = std::make_shared<HeifBufferInputStream>(data.data(), data.size(), true);
+    ASSERT_NE(stream, nullptr);
+    HeifStreamReader reader(stream, 0, data.size());
+    HeifBox heifBox;
+    heif_error error = heifBox.ParseHeader(reader);
+    EXPECT_EQ(error, heif_error_ok);
+    EXPECT_EQ(heifBox.GetBoxType(), BOX_TYPE_UUID);
+    EXPECT_EQ(heifBox.boxUuidType_.size(), UUID_TYPE_BYTE_NUM);
+    EXPECT_EQ(memcmp(heifBox.boxUuidType_.data(), uuidData.data(), UUID_TYPE_BYTE_NUM), 0);
+    EXPECT_EQ(heifBox.headerSize_, UINT64_BYTES_NUM + UUID_TYPE_BYTE_NUM);
+    GTEST_LOG_(INFO) << "HeifParserBoxTest: ParseHeaderTest003 end";
+}
+
+/**
+ * @tc.name: MakeBox001
+ * @tc.desc: test MakeBox when boxType is imir
+ * @tc.type: FUNC
+ */
+HWTEST_F(HeifParserBoxTest, MakeBox001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "HeifParserBoxTest: MakeBox001 start";
+    uint32_t boxType = fourcc_to_code("imir");
+    std::shared_ptr<HeifBox> test = HeifBox::MakeBox(boxType);
+    ASSERT_NE(test, nullptr);
+    GTEST_LOG_(INFO) << "HeifParserBoxTest: MakeBox001 end";
+}
+
+/**
+ * @tc.name: MakeFromReaderTest002
+ * @tc.desc: test MakeFromReader interface to cover invalid box size branch
+ * @tc.type: FUNC
+ */
+HWTEST_F(HeifParserBoxTest, MakeFromReaderTest002, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "HeifParserBoxTest: MakeFromReaderTest002 start";
+    uint32_t recursionCount = 0;
+    uint32_t boxSize = 4;
+    auto sizeData = SetUint32ToUint8Vertor(boxSize);
+    auto typeData = SetUint32ToUint8Vertor(BOX_TYPE_FTYP);
+    std::vector<uint8_t> data;
+    data.insert(data.end(), sizeData.begin(), sizeData.end());
+    data.insert(data.end(), typeData.begin(), typeData.end());
+    auto stream = std::make_shared<HeifBufferInputStream>(data.data(), data.size(), true);
+    ASSERT_NE(stream, nullptr);
+    HeifStreamReader reader(stream, 0, data.size());
+    std::shared_ptr<HeifBox> heifBoxSptr;
+    HeifBox heifBox;
+    heif_error error = heifBox.MakeFromReader(reader, &heifBoxSptr, recursionCount);
+    EXPECT_EQ(error, heif_error_invalid_box_size);
+    GTEST_LOG_(INFO) << "HeifParserBoxTest: MakeFromReaderTest002 end";
+}
+
+/**
+ * @tc.name: ReadChildren001
+ * @tc.desc: test ReadChildren interface
+ * @tc.type: FUNC
+ */
+HWTEST_F(HeifParserBoxTest, ReadChildren001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "HeifParserBoxTest: ReadChildren001 start";
+    uint32_t recursionCount = 0;
+    uint32_t boxSize = 1;
+    auto data = SetUint32ToUint8Vertor(boxSize);
+    auto type = SetUint32ToUint8Vertor(BOX_TYPE_FTYP);
+    data.insert(data.end(), type.begin(), type.end());
+    auto stream = std::make_shared<HeifBufferInputStream>(data.data(), UINT64_BYTES_NUM, true);
+    ASSERT_NE(stream, nullptr);
+    HeifStreamReader reader(stream, 0, UINT64_BYTES_NUM);
+    reader.hasError_ = true;
+
+    HeifBox heifBox;
+    heif_error error = heifBox.ReadChildren(reader, recursionCount);
+    EXPECT_EQ(error, heif_error_eof);
+    GTEST_LOG_(INFO) << "HeifParserBoxTest: ReadChildren001 end";
+}
+
+/**
+ * @tc.name: WriteChildren001
+ * @tc.desc: test WriteChildren interface
+ * @tc.type: FUNC
+ */
+HWTEST_F(HeifParserBoxTest, WriteChildren001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "HeifParserBoxTest: WriteChildren001 start";
+    HeifBox parentBox;
+    auto grplChild = std::make_shared<HeifBox>();
+    grplChild->boxType_ = BOX_TYPE_GRPL;
+    auto normalChild = std::make_shared<HeifBox>();
+    normalChild->boxType_ = BOX_TYPE_FTYP;
+    parentBox.children_.push_back(grplChild);
+    parentBox.children_.push_back(normalChild);
+    HeifStreamWriter writer;
+    heif_error error = parentBox.WriteChildren(writer);
+    EXPECT_EQ(error, heif_error_ok);
+    const std::vector<uint8_t>& writtenData = writer.GetData();
+    EXPECT_GE(writtenData.size(), 8u);
+    GTEST_LOG_(INFO) << "HeifParserBoxTest: WriteChildren001 end";
 }
 }
 }

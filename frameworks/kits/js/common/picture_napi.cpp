@@ -66,6 +66,7 @@ struct PictureAsyncContext {
     MetadataNapi *metadataNapi;
     std::shared_ptr<ImageMetadata> imageMetadata;
     MetadataType metadataType = MetadataType::EXIF;
+    PixelFormat hdrFormat = PixelFormat::UNKNOWN;
 };
 
 using PictureAsyncContextPtr = std::unique_ptr<PictureAsyncContext>;
@@ -90,11 +91,16 @@ static std::vector<struct PictureEnum> metadataTypeMap = {
     {"XTSTYLE_METADATA", static_cast<uint32_t>(MetadataType::XTSTYLE), ""},
     {"RFDATAB_METADATA", static_cast<uint32_t>(MetadataType::RFDATAB), ""},
     {"GIF_METADATA", static_cast<uint32_t>(MetadataType::GIF), ""},
+    {"HEIFS_METADATA", static_cast<uint32_t>(MetadataType::HEIFS), ""},
 };
 
 static std::vector<struct PictureEnum> gifPropertyKeyMap = {
     {"GIF_DELAY_TIME", 0, "GifDelayTime"},
     {"GIF_DISPOSAL_TYPE", 0, "GifDisposalType"},
+};
+
+static std::vector<struct PictureEnum> heifsPropertyKeyMap = {
+    {"HEIFS_DELAY_TIME", 0, "HeifsDelayTime"},
 };
 
 struct NapiValues {
@@ -256,6 +262,7 @@ napi_value PictureNapi::Init(napi_env env, napi_value exports)
         DECLARE_NAPI_PROPERTY("AuxiliaryPictureType", CreateEnumTypeObject(env, napi_number, auxiliaryPictureTypeMap)),
         DECLARE_NAPI_PROPERTY("MetadataType", CreateEnumTypeObject(env, napi_number, metadataTypeMap)),
         DECLARE_NAPI_PROPERTY("GifPropertyKey", CreateEnumTypeObject(env, napi_string, gifPropertyKeyMap)),
+        DECLARE_NAPI_PROPERTY("HeifsPropertyKey", CreateEnumTypeObject(env, napi_string, heifsPropertyKeyMap)),
     };
 
     napi_value constructor = nullptr;
@@ -811,10 +818,12 @@ napi_value PictureNapi::GetHdrComposedPixelMap(napi_env env, napi_callback_info 
 
     napi_status status;
     napi_value thisVar = nullptr;
-    size_t argCount = NUM_0;
+    size_t argCount = NUM_1;
+    napi_value argValue[NUM_1] = {0};
+    int32_t format = 0;
 
     IMAGE_LOGD("GetHdrComposedPixelMap IN");
-    IMG_JS_ARGS(env, info, status, argCount, nullptr, thisVar);
+    IMG_JS_ARGS(env, info, status, argCount, argValue, thisVar);
 
     IMG_NAPI_CHECK_RET_D(IMG_IS_OK(status), result, IMAGE_LOGE("Fail to napi_get_cb_info"));
 
@@ -831,12 +840,19 @@ napi_value PictureNapi::GetHdrComposedPixelMap(napi_env env, napi_callback_info 
     if (asyncContext->rPicture->GetMainPixel()->GetAllocatorType() != AllocatorType::DMA_ALLOC) {
         return ImageNapiUtils::ThrowExceptionError(env, IMAGE_UNSUPPORTED_OPERATION, "Unsupported operations");
     }
+    if (argCount == NUM_1) {
+        status = napi_get_value_int32(env, argValue[NUM_0], &format);
+        IMG_NAPI_CHECK_RET_D(IMG_IS_OK(status), ImageNapiUtils::ThrowExceptionError(env, IMAGE_BAD_PARAMETER,
+            "Fail to get format"), IMAGE_LOGE("Fail to get format"));
+        asyncContext->hdrFormat = static_cast<PixelFormat>(format);
+    }
+
     napi_create_promise(env, &(asyncContext->deferred), &result);
 
     IMG_CREATE_CREATE_ASYNC_WORK(env, status, "GetHdrComposedPixelMap",
         [](napi_env env, void *data) {
             auto context = static_cast<PictureAsyncContext*>(data);
-            auto tmpixel = context->rPicture->GetHdrComposedPixelMap();
+            auto tmpixel = context->rPicture->GetHdrComposedPixelMap(context->hdrFormat);
             context->rPixelMap = std::move(tmpixel);
             context->status = SUCCESS;
         }, CreateHDRComposedPixelmapComplete, asyncContext, asyncContext->work);

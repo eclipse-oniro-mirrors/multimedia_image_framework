@@ -80,6 +80,7 @@ void PngDecoderFuncTest001(const std::string& pathName)
         IMAGE_LOGI("%{public}s CreateImageSource failed", __func__);
         return;
     }
+    imageSource->GetiTxtLength();
     DecodeOptions dstOpts;
     imageSource->CreatePixelMap(0, dstOpts, errorCode);
     std::shared_ptr<PngDecoder> pngDecoder = std::make_shared<PngDecoder>();

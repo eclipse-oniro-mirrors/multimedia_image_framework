@@ -22,6 +22,7 @@
 #include "log_tags.h"
 #include "media_errors.h"
 #include "pixel_map_ani.h"
+#include <ani_signature_builder.h>
 
 #undef LOG_DOMAIN
 #define LOG_DOMAIN LOG_TAG_DOMAIN_ID_IMAGE
@@ -32,6 +33,7 @@
 namespace OHOS {
 namespace Media {
 using namespace std;
+using namespace arkts::ani_signature;
 
 static ani_int parseEnumFromStruct(ani_env* env, ani_object &param, string propertyGet, string enumType)
 {
@@ -71,36 +73,36 @@ static bool ParseInitializationOptions([[maybe_unused]] ani_env* env, ani_object
         return false;
     }
     ani_ref size;
-    if (ANI_OK != env->Object_CallMethodByName_Ref(param, "<get>size", ":C{@ohos.multimedia.image.image.Size}",
-                                                   &size)) {
+    if (ANI_OK != env->Object_CallMethodByName_Ref(param, Builder::BuildGetterName("size").c_str(),
+        ":C{@ohos.multimedia.image.image.Size}", &size)) {
         IMAGE_LOGE("Object_GetFieldByName_Ref Failed");
     }
     ani_status ret;
     if (ANI_OK != env->Object_CallMethodByName_Int(reinterpret_cast<ani_object>(size),
-        "<get>width", ":i", &opts.size.width)) {
+        Builder::BuildGetterName("width").c_str(), ":i", &opts.size.width)) {
         IMAGE_LOGE("Object_CallMethodByName_Int width Failed");
     }
     if ((ret = env->Object_CallMethodByName_Int(reinterpret_cast<ani_object>(size),
-        "<get>height", ":i", &opts.size.height)) != ANI_OK) {
+        Builder::BuildGetterName("height").c_str(), ":i", &opts.size.height)) != ANI_OK) {
         IMAGE_LOGE("Object_CallMethodByName_Int height Failed");
     }
-    opts.srcPixelFormat = PixelFormat(parseEnumFromStruct(env, param, "<get>srcPixelFormat",
-        ":C{@ohos.multimedia.image.image.PixelMapFormat}"));
-    opts.pixelFormat = PixelFormat(parseEnumFromStruct(env, param, "<get>pixelFormat",
+    opts.srcPixelFormat = PixelFormat(parseEnumFromStruct(env, param,
+        Builder::BuildGetterName("srcPixelFormat").c_str(), ":C{@ohos.multimedia.image.image.PixelMapFormat}"));
+    opts.pixelFormat = PixelFormat(parseEnumFromStruct(env, param, Builder::BuildGetterName("pixelFormat").c_str(),
         ":C{@ohos.multimedia.image.image.PixelMapFormat}"));
     ani_ref editableRef;
     if (ANI_OK != (ret = env->Object_CallMethodByName_Ref(param,
-        "<get>editable", ":C{std.core.Boolean}", &editableRef))) {
+        Builder::BuildGetterName("editable").c_str(), ":C{std.core.Boolean}", &editableRef))) {
         IMAGE_LOGE("Object_CallMethodByName_Int Failed editableRef:%{public}d", ret);
     }
     ani_boolean editable;
     if ((ret = env->Object_CallMethodByName_Boolean(reinterpret_cast<ani_object>(editableRef),
-        "unboxed", ":z", &editable)) != ANI_OK) {
+        "toBoolean", ":z", &editable)) != ANI_OK) {
         IMAGE_LOGE("Object_CallMethodByName_Int Failed editable:%{public}d", ret);
     }
-    opts.alphaType = AlphaType(parseEnumFromStruct(env, param, "<get>alphaType",
+    opts.alphaType = AlphaType(parseEnumFromStruct(env, param, Builder::BuildGetterName("alphaType").c_str(),
         ":C{@ohos.multimedia.image.image.AlphaType}"));
-    opts.scaleMode = ScaleMode(parseEnumFromStruct(env, param, "<get>scaleMode",
+    opts.scaleMode = ScaleMode(parseEnumFromStruct(env, param, Builder::BuildGetterName("scaleMode").c_str(),
         ":C{@ohos.multimedia.image.image.ScaleMode}"));
     return true;
 }
@@ -115,27 +117,27 @@ static bool ParseRegion([[maybe_unused]] ani_env* env, ani_object region, Rect& 
     }
 
     ani_ref size;
-    if (ANI_OK != env->Object_CallMethodByName_Ref(region, "<get>size", ":C{@ohos.multimedia.image.image.Size}",
-        &size)) {
+    if (ANI_OK != env->Object_CallMethodByName_Ref(region, Builder::BuildGetterName("size").c_str(),
+        ":C{@ohos.multimedia.image.image.Size}", &size)) {
         IMAGE_LOGE("Object_GetFieldByName_Ref Failed");
         return false;
     }
-    if (ANI_OK != env->Object_CallMethodByName_Int(reinterpret_cast<ani_object>(size), "<get>width", ":i",
-        &rect.width)) {
+    if (ANI_OK != env->Object_CallMethodByName_Int(reinterpret_cast<ani_object>(size),
+        Builder::BuildGetterName("width").c_str(), ":i", &rect.width)) {
         IMAGE_LOGE("Object_CallMethodByName_Int width Failed");
         return false;
     }
-    if (ANI_OK != env->Object_CallMethodByName_Int(reinterpret_cast<ani_object>(size), "<get>height", ":i",
-        &rect.height)) {
+    if (ANI_OK != env->Object_CallMethodByName_Int(reinterpret_cast<ani_object>(size),
+        Builder::BuildGetterName("height").c_str(), ":i", &rect.height)) {
         IMAGE_LOGE("Object_CallMethodByName_Int height Failed");
         return false;
     }
 
-    if (ANI_OK != env->Object_CallMethodByName_Int(region, "<get>x", ":i", &rect.left)) {
+    if (ANI_OK != env->Object_CallMethodByName_Int(region, Builder::BuildGetterName("x").c_str(), ":i", &rect.left)) {
         IMAGE_LOGE("Object_CallMethodByName_Int x Failed");
         return false;
     }
-    if (ANI_OK != env->Object_CallMethodByName_Int(region, "<get>y", ":i", &rect.top)) {
+    if (ANI_OK != env->Object_CallMethodByName_Int(region, Builder::BuildGetterName("y").c_str(), ":i", &rect.top)) {
         IMAGE_LOGE("Object_CallMethodByName_Int y Failed");
         return false;
     }
@@ -326,7 +328,7 @@ ani_status PixelMapAni::Init(ani_env* env)
         ani_native_function {"getBytesNumberPerRow", ":i", reinterpret_cast<void*>(OHOS::Media::GetBytesNumberPerRow)},
         ani_native_function {"getPixelBytesNumber", ":i", reinterpret_cast<void*>(OHOS::Media::GetPixelBytesNumber)},
         ani_native_function {"nativeRelease", ":", reinterpret_cast<void*>(OHOS::Media::Release)},
-        ani_native_function {"nativeReadPixelsToBuffer", "C{escompat.ArrayBuffer}:",
+        ani_native_function {"nativeReadPixelsToBuffer", "C{std.core.ArrayBuffer}:",
             reinterpret_cast<void*>(OHOS::Media::ReadPixelsToBuffer)},
         ani_native_function {"nativeScale", "ddC{@ohos.multimedia.image.image.AntiAliasingLevel}:",
             reinterpret_cast<void*>(OHOS::Media::Scale)},

@@ -359,7 +359,7 @@ static void JSCommonProcessSendEvent(ImageCreatorCommonArgs &args, napi_status s
     auto task = [args, status, context]() {
         (void)args.callBack(args.env, status, context);
     };
-    if (napi_status::napi_ok != napi_send_event(args.env, task, prio)) {
+    if (napi_status::napi_ok != napi_send_event(args.env, task, prio, args.taskName)) {
         IMAGE_LOGE("JSCommonProcessSendEvent: failed to SendEvent!");
     }
 }
@@ -608,6 +608,7 @@ napi_value ImageCreatorNapi::JsDequeueImage(napi_env env, napi_callback_info inf
         .callBack = nullptr,
         .argc = ARGS1,
         .queryArgs = PrepareOneArg,
+        .taskName = "ImageCreator.dequeueImage",
     };
 
     args.callBack = [](napi_env env, napi_status status, Contextc context) {
@@ -695,7 +696,7 @@ static bool JsQueueArgs(napi_env env, size_t argc, napi_value* argv,
 }
 
 void ImageCreatorNapi::JsQueueImageSendEvent(napi_env env, ImageCreatorAsyncContext* context,
-                                             napi_event_priority prio)
+                                             napi_event_priority prio, const char* taskName)
 {
     auto task = [env, context]() {
         IMAGE_FUNCTION_IN();
@@ -720,7 +721,7 @@ void ImageCreatorNapi::JsQueueImageSendEvent(napi_env env, ImageCreatorAsyncCont
         IMAGE_LINE_OUT();
         CommonCallbackRoutine(env, const_cast<ImageCreatorAsyncContext *&>(context), result);
     };
-    if (napi_status::napi_ok != napi_send_event(env, task, prio)) {
+    if (napi_status::napi_ok != napi_send_event(env, task, prio, taskName)) {
         IMAGE_LOGE("JsQueueImageSendEvent: failed to SendEvent!");
     }
 }
@@ -755,7 +756,7 @@ napi_value ImageCreatorNapi::JsQueueImage(napi_env env, napi_callback_info info)
         napi_create_promise(env, &(context->deferred), &result);
     }
 
-    JsQueueImageSendEvent(env, context.get(), napi_eprio_high);
+    JsQueueImageSendEvent(env, context.get(), napi_eprio_high, "ImageCreator.queueImage");
     context.release();
 
     IMAGE_FUNCTION_OUT();
@@ -919,6 +920,7 @@ napi_value ImageCreatorNapi::JsOn(napi_env env, napi_callback_info info)
         .env = env, .info = info,
         .async = CreatorCallType::ASYNC,
         .name = "JsOn",
+        .taskName = "ImageCreator.on",
     };
     args.argc = ARGS2;
     args.asyncLater = true;
@@ -958,7 +960,7 @@ napi_value ImageCreatorNapi::JsOffOneArg(napi_env env, napi_callback_info info)
 {
     ImageCreatorCommonArgs args = {
         .env = env, .info = info, .async = CreatorCallType::ASYNC,
-        .name = "JsOff", .argc = ARGS1, .asyncLater = true,
+        .name = "JsOff", .argc = ARGS1, .asyncLater = true, .taskName = "ImageCreator.off",
     };
 
     args.queryArgs = [](ImageCreatorCommonArgs &args, ImageCreatorInnerContext &ic) -> bool {
@@ -1018,6 +1020,7 @@ napi_value ImageCreatorNapi::JsOffTwoArgs(napi_env env, napi_callback_info info)
     ImageCreatorCommonArgs args = {
         .env = env, .info = info, .async = CreatorCallType::ASYNC,
         .name = "JsOff", .argc = ARGS2, .queryArgs = JsOnQueryArgs,
+        .taskName = "ImageCreator.off",
     };
 
     args.callBack = [](napi_env env, napi_status status, Contextc context) {
@@ -1065,6 +1068,7 @@ napi_value ImageCreatorNapi::JsRelease(napi_env env, napi_callback_info info)
         .callBack = nullptr,
         .argc = ARGS1,
         .queryArgs = PrepareOneArg,
+        .taskName = "ImageCreator.release",
     };
 
     args.callBack = [](napi_env env, napi_status status, Contextc context) {

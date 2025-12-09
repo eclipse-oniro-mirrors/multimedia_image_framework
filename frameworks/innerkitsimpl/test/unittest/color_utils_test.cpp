@@ -187,5 +187,78 @@ HWTEST_F(ColorUtilsTest, ConvertToCMColorTest001, TestSize.Level3)
     ASSERT_EQ(ret, HDI::Display::Graphic::Common::V1_0::CM_COLORSPACE_NONE);
     GTEST_LOG_(INFO) << "ColorUtilsTest: ConvertToCMColorTest001 end";
 }
+
+/**
+@tc.name: CM_ColorPrimariesTest001
+@tc.desc: test ConvertToCMColor
+@tc.type: FUNC
+*/
+HWTEST_F(ColorUtilsTest, CM_ColorPrimariesTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ColorUtilsTest: CM_ColorPrimariesTest001 start";
+    uint16_t name = CICP_COLORPRIMARIES_SRGB;
+    auto ret = ColorUtils::ConvertCicpToCMColor(name);
+    ASSERT_EQ(ret, HDI::Display::Graphic::Common::V1_0::COLORPRIMARIES_SRGB);
+
+    name = CICP_COLORPRIMARIES_BT601_P;
+    ret = ColorUtils::ConvertCicpToCMColor(name);
+    ASSERT_EQ(ret, HDI::Display::Graphic::Common::V1_0::COLORPRIMARIES_BT601_P);
+
+    name = CICP_COLORPRIMARIES_BT601_N;
+    ret = ColorUtils::ConvertCicpToCMColor(name);
+    ASSERT_EQ(ret, HDI::Display::Graphic::Common::V1_0::COLORPRIMARIES_BT601_N);
+
+    name = CICP_COLORPRIMARIES_BT2020;
+    ret = ColorUtils::ConvertCicpToCMColor(name);
+    ASSERT_EQ(ret, HDI::Display::Graphic::Common::V1_0::COLORPRIMARIES_BT2020);
+
+    name =  CICP_COLORPRIMARIES_P3_DCI;
+    ret = ColorUtils::ConvertCicpToCMColor(name);
+    ASSERT_EQ(ret, HDI::Display::Graphic::Common::V1_0::COLORPRIMARIES_P3_DCI);
+
+    name = CICP_COLORPRIMARIES_P3_D65;
+    ret = ColorUtils::ConvertCicpToCMColor(name);
+    ASSERT_EQ(ret, HDI::Display::Graphic::Common::V1_0::COLORPRIMARIES_P3_D65);
+
+    name = CICP_COLORPRIMARIES_UNKNOWN;
+    ret = ColorUtils::ConvertCicpToCMColor(name);
+    ASSERT_EQ(ret, HDI::Display::Graphic::Common::V1_0::COLORPRIMARIES_SRGB);
+
+    GTEST_LOG_(INFO) << "ColorUtilsTest: CM_ColorPrimariesTest001 end";
+}
+
+HWTEST_F(ColorUtilsTest, ConvertCMColorToCicpTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ColorUtilsTest: CM_ColorPrimariesTest001 start";
+    uint16_t name = HDI::Display::Graphic::Common::V1_0::COLORPRIMARIES_SRGB;
+    auto ret = ColorUtils::ConvertCMColorToCicp(name);
+    ASSERT_EQ(ret, CICP_COLORPRIMARIES_SRGB);
+
+    name = HDI::Display::Graphic::Common::V1_0::COLORPRIMARIES_BT601_P;
+    ret = ColorUtils::ConvertCMColorToCicp(name);
+    ASSERT_EQ(ret, CICP_COLORPRIMARIES_BT601_P);
+
+    name = HDI::Display::Graphic::Common::V1_0::COLORPRIMARIES_BT601_N;
+    ret = ColorUtils::ConvertCMColorToCicp(name);
+    ASSERT_EQ(ret, CICP_COLORPRIMARIES_BT601_N);
+
+    name = HDI::Display::Graphic::Common::V1_0::COLORPRIMARIES_BT2020;
+    ret = ColorUtils::ConvertCMColorToCicp(name);
+    ASSERT_EQ(ret, CICP_COLORPRIMARIES_BT2020);
+
+    name = HDI::Display::Graphic::Common::V1_0::COLORPRIMARIES_P3_DCI;
+    ret = ColorUtils::ConvertCMColorToCicp(name);
+    ASSERT_EQ(ret, CICP_COLORPRIMARIES_P3_DCI);
+
+    name = HDI::Display::Graphic::Common::V1_0::COLORPRIMARIES_P3_D65;
+    ret = ColorUtils::ConvertCMColorToCicp(name);
+    ASSERT_EQ(ret, CICP_COLORPRIMARIES_P3_D65);
+
+    name = 0;
+    ret = ColorUtils::ConvertCMColorToCicp(name);
+    ASSERT_EQ(ret, CICP_COLORPRIMARIES_SRGB);
+
+    GTEST_LOG_(INFO) << "ColorUtilsTest: CM_ColorPrimariesTest001 end";
+}
 }
 }

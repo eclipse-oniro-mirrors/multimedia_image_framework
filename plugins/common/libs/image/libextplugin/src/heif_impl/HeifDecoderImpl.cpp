@@ -19,7 +19,6 @@
 #include <dlfcn.h>
 #include <sys/timerfd.h>
 #include <sys/mman.h>
-#include "image_fwk_ext_manager.h"
 #include "image_func_timer.h"
 #include "image_system_properties.h"
 #include "image_trace.h"
@@ -34,6 +33,13 @@
 #include "color_utils.h"
 
 #include "heif_impl/hevc_sw_decode_param.h"
+
+#include "SkImageInfo.h"
+
+#if !defined(CROSS_PLATFORM)
+#include <sys/ioctl.h>
+#include <linux/dma-buf.h>
+#endif
 
 #include <cmath>
 #include <sstream>
@@ -80,6 +86,11 @@ const static uint32_t FULL_RANGE_FLAG = 1;
 const static int INVALID_GRID_FLAG = -1;
 // The maximum recursion depth of heif iden type.
 const static uint32_t MAX_IDEN_RECURSION_COUNT = 300;
+const static uint64_t FRAME_INDEX = 1;
+
+#if !defined(CROSS_PLATFORM)
+#define DMA_BUF_SET_TYPE _IOW(DMA_BUF_BASE, 2, const char *)
+#endif
 
 const std::map<AuxiliaryPictureType, std::string> HEIF_AUXTTYPE_ID_MAP = {
     {AuxiliaryPictureType::GAINMAP, HEIF_AUXTTYPE_ID_GAINMAP},
@@ -88,6 +99,19 @@ const std::map<AuxiliaryPictureType, std::string> HEIF_AUXTTYPE_ID_MAP = {
     {AuxiliaryPictureType::LINEAR_MAP, HEIF_AUXTTYPE_ID_LINEAR_MAP},
     {AuxiliaryPictureType::FRAGMENT_MAP, HEIF_AUXTTYPE_ID_FRAGMENT_MAP}
 };
+
+#if !defined(CROSS_PLATFORM)
+static const std::map<PixelFormat, int32_t> PIXELFORMAT_TOGRAPHIC_MAP = {
+    {PixelFormat::RGBA_1010102, GRAPHIC_PIXEL_FMT_RGBA_1010102},
+    {PixelFormat::YCRCB_P010, GRAPHIC_PIXEL_FMT_YCRCB_P010},
+    {PixelFormat::YCBCR_P010, GRAPHIC_PIXEL_FMT_YCBCR_P010},
+    {PixelFormat::NV12, GRAPHIC_PIXEL_FMT_YCBCR_420_SP},
+    {PixelFormat::NV21, GRAPHIC_PIXEL_FMT_YCRCB_420_SP},
+    {PixelFormat::RGBA_F16, GRAPHIC_PIXEL_FMT_RGBA16_FLOAT},
+    {PixelFormat::BGRA_8888, GRAPHIC_PIXEL_FMT_BGRA_8888},
+    {PixelFormat::RGB_565, GRAPHIC_PIXEL_FMT_RGB_565},
+};
+#endif
 
 static std::mutex g_codecMtxDecode;
 static sptr<OHOS::HDI::Codec::Image::V2_1::ICodecImage> g_codecMgrDecode;
@@ -181,6 +205,8 @@ HeifDecoderImpl::~HeifDecoderImpl()
     if (srcMemory_ != nullptr) {
         delete[] srcMemory_;
     }
+    DeleteHeifsSwDecoder();
+    DeleteParamsBuffer();
 }
 
 bool HeifDecoderImpl::init(HeifStream *stream, HeifFrameInfo *frameInfo)
@@ -384,7 +410,7 @@ void HeifDecoderImpl::GetTileSize(const std::shared_ptr<HeifImage> &image,
     CHECK_ERROR_RETURN(cond);
 
     std::string imageType = parser_->GetItemType(image->GetItemId());
-    if (imageType == "hvc1") {
+    if (imageType == "hvc1" || image->IsMovieImage()) {
         gridInfo.tileWidth = image->GetOriginalWidth();
         gridInfo.tileHeight = image->GetOriginalHeight();
         return;
@@ -540,7 +566,7 @@ bool HeifDecoderImpl::decode(HeifFrameInfo *frameInfo)
     return true;
 }
 
-bool HeifDecoderImpl::SwDecode(bool isSharedMemory)
+bool HeifDecoderImpl::SwDecode(bool isSharedMemory, uint32_t index)
 {
     HevcSoftDecodeParam param {
             gridInfo_, Media::PixelFormat::UNKNOWN, outPixelFormat_,
@@ -548,7 +574,7 @@ bool HeifDecoderImpl::SwDecode(bool isSharedMemory)
             static_cast<uint32_t>(dstRowStride_), dstHwBuffer_,
             isSharedMemory, nullptr, static_cast<uint32_t>(dstRowStride_)
     };
-    bool decodeRes = SwDecodeImage(primaryImage_, param, gridInfo_, true);
+    bool decodeRes = SwDecodeImage(primaryImage_, param, gridInfo_, true, index);
     if (!decodeRes) {
         return false;
     }
@@ -875,7 +901,7 @@ bool HeifDecoderImpl::HwDecodeMimeImage(std::shared_ptr<HeifImage> &image)
 }
 
 bool HeifDecoderImpl::SwDecodeImage(std::shared_ptr<HeifImage> &image, HevcSoftDecodeParam &param,
-                                    GridInfo &gridInfo, bool isPrimary)
+                                    GridInfo &gridInfo, bool isPrimary, uint32_t index)
 {
     ImageFuncTimer imageFuncTime("HeifDecoderImpl::%s, desiredpixelformat: %d", __func__, outPixelFormat_);
     if (outPixelFormat_ == PixelFormat::UNKNOWN) {
@@ -886,21 +912,25 @@ bool HeifDecoderImpl::SwDecodeImage(std::shared_ptr<HeifImage> &image, HevcSoftD
         return false;
     }
 
+    if (IsHeifsImage()) {
+        IMAGE_LOGI("SwDecodeImage image is heifs image.");
+        return SwDecodeHeifsImage(index, param);
+    }
+
     std::string imageType = parser_->GetItemType(image->GetItemId());
     if (imageType == "iden") {
         return SwDecodeIdenImage(image, param, gridInfo, isPrimary);
     }
 
-    static ImageFwkExtManager imageFwkExtManager;
     bool res = false;
     if (imageType == "grid") {
         param.gridInfo.enableGrid = true;
         gridInfo.enableGrid = true;
-        res = SwDecodeGrids(imageFwkExtManager, image, param);
+        res = SwDecodeGrids(image, param);
     } else if (imageType == "hvc1") {
         param.gridInfo.enableGrid = false;
         gridInfo.enableGrid = false;
-        res = SwDecodeSingleImage(imageFwkExtManager, image, param);
+        res = SwDecodeSingleImage(image, param);
     }
     return res;
 }
@@ -935,10 +965,9 @@ void HeifDecoderImpl::SwRegionDecode(std::vector<std::shared_ptr<HeifImage>> til
     }
 }
 
-bool HeifDecoderImpl::SwDecodeGrids(ImageFwkExtManager &extManager,
-                                    std::shared_ptr<HeifImage> &image, HevcSoftDecodeParam &param)
+bool HeifDecoderImpl::SwDecodeGrids(std::shared_ptr<HeifImage> &image, HevcSoftDecodeParam &param)
 {
-    bool cond = extManager.hevcSoftwareDecodeFunc_ == nullptr && !extManager.LoadImageFwkExtNativeSo();
+    bool cond = extManager_.hevcSoftwareDecodeFunc_ == nullptr && !extManager_.LoadImageFwkExtNativeSo();
     CHECK_ERROR_RETURN_RET(cond, false);
     cond = param.dstBuffer == nullptr || param.dstStride == 0;
     CHECK_ERROR_RETURN_RET(cond, false);
@@ -974,7 +1003,7 @@ bool HeifDecoderImpl::SwDecodeGrids(ImageFwkExtManager &extManager,
         }
     }
 
-    int32_t retCode = extManager.hevcSoftwareDecodeFunc_(inputs, param);
+    int32_t retCode = extManager_.hevcSoftwareDecodeFunc_(inputs, param);
     cond = retCode != 0;
     CHECK_ERROR_RETURN_RET_LOG(cond, false, "SwDecodeGrids decode failed: %{public}d", retCode);
     return true;
@@ -992,10 +1021,9 @@ bool HeifDecoderImpl::SwDecodeIdenImage(std::shared_ptr<HeifImage> &image,
     return SwDecodeImage(idenImage, param, gridInfo, isPrimary);
 }
 
-bool HeifDecoderImpl::SwDecodeSingleImage(ImageFwkExtManager &extManager,
-                                          std::shared_ptr<HeifImage> &image, HevcSoftDecodeParam &param)
+bool HeifDecoderImpl::SwDecodeSingleImage(std::shared_ptr<HeifImage> &image, HevcSoftDecodeParam &param)
 {
-    if (extManager.hevcSoftwareDecodeFunc_ == nullptr && !extManager.LoadImageFwkExtNativeSo()) {
+    if (extManager_.hevcSoftwareDecodeFunc_ == nullptr && !extManager_.LoadImageFwkExtNativeSo()) {
         return false;
     }
     bool cond = (param.dstBuffer == nullptr || param.dstStride == 0);
@@ -1004,7 +1032,7 @@ bool HeifDecoderImpl::SwDecodeSingleImage(ImageFwkExtManager &extManager,
     parser_->GetItemData(image->GetItemId(), &inputs[0], heif_header_data);
     ProcessChunkHead(inputs[0].data(), inputs[0].size());
 
-    int32_t retCode = extManager.hevcSoftwareDecodeFunc_(inputs, param);
+    int32_t retCode = extManager_.hevcSoftwareDecodeFunc_(inputs, param);
     if (retCode != 0) {
         IMAGE_LOGE("SwDecodeSingleImage decode failed: %{public}d", retCode);
         return false;
@@ -1541,6 +1569,202 @@ uint32_t HeifDecoderImpl::getColorDepth()
 {
     // no need to implement
     return 0;
+}
+
+bool HeifDecoderImpl::SwDecodeHeifsOnceFrame(uint32_t index, const HevcSoftDecodeParam &refParam)
+{
+    HevcSoftDecodeParam tmpParam = refParam;
+    CHECK_ERROR_RETURN_RET_LOG(!AllocateBufferSize(tmpParam), false, "AllocateBuffer failed.");
+    if (!SwDecodeHeifsFrameImage(index, tmpParam)) {
+        DeleteParamBuffer(tmpParam);
+        IMAGE_LOGE("SwDecodeHeifsFrameImage decode first frame failed.");
+        return false;
+    }
+    params_[index] = tmpParam;
+    return true;
+}
+
+bool HeifDecoderImpl::SwDecodeHeifsImage(uint32_t index, HevcSoftDecodeParam &param)
+{
+    CHECK_ERROR_RETURN_RET(!parser_, false);
+    if (!HasDecodedFrame(index)) {
+        DeleteParamsBuffer();
+        if (!isFirstFrameDecoded_) {
+            CHECK_ERROR_RETURN_RET(!SwDecodeHeifsOnceFrame(0, param), false);
+            isFirstFrameDecoded_ = true;
+        }
+        HeifsFrameGroup frameGroup;
+        auto getInfoRet = parser_->GetHeifsGroupFrameInfo(index, frameGroup);
+        CHECK_ERROR_RETURN_RET_LOG(getInfoRet != heif_error_ok, false, "GetHeifsGroupFrameInfo failed.");
+        for (uint32_t i = frameGroup.beginFrameIndex; i < frameGroup.endFrameIndex; i++) {
+            if (i == 0 && params_.count(0) != 0) {
+                continue;
+            }
+            CHECK_ERROR_RETURN_RET(!SwDecodeHeifsOnceFrame(i, param), false);
+        }
+    }
+    return GetSwDecodeHeifsDecodedParam(index, param);
+}
+
+bool HeifDecoderImpl::SwDecodeHeifsFrameImage(uint32_t index, HevcSoftDecodeParam &param)
+{
+    CHECK_ERROR_RETURN_RET(!parser_, false);
+    CHECK_ERROR_RETURN_RET(!extManager_.heifsSoftwareDecodeFunc_ && !extManager_.LoadImageFwkExtNativeSo(), false);
+    CHECK_ERROR_RETURN_RET(!CreateHeifsSwDecoder(param), false);
+    uint32_t sampleCount = 0;
+    CHECK_ERROR_RETURN_RET(!GetHeifsFrameCount(sampleCount), false);
+    IMAGE_LOGD("Heifs frame count: %{public}d", sampleCount);
+    CHECK_ERROR_RETURN_RET(index >= sampleCount, false);
+    std::vector<uint8_t> inputs;
+    auto ret = parser_->GetHeifsMovieFrameData(index, inputs);
+    CHECK_ERROR_RETURN_RET_LOG(ret != heif_error_ok, false,
+        "GetHeifsMovieFrameData failed: %{public}d", ret);
+    CHECK_ERROR_RETURN_RET(!ProcessChunkHead(inputs.data(), inputs.size()), false);
+    int32_t retCode = extManager_.heifsSoftwareDecodeFunc_(swDecHeifsHandle_, inputs, param);
+    CHECK_ERROR_RETURN_RET_LOG(retCode != 0, false,
+        "HeifsSoftwareDecode decode failed: %{public}d", retCode);
+    return true;
+}
+
+bool HeifDecoderImpl::GetHeifsFrameCount(uint32_t &sampleCount)
+{
+    if (IsHeifsImage()) {
+        CHECK_ERROR_RETURN_RET(!parser_, false);
+        CHECK_ERROR_RETURN_RET(parser_->GetHeifsFrameCount(sampleCount) != heif_error_ok, false);
+        return true;
+    }
+    IMAGE_LOGE("GetHeifsFrameCount is not heifs image");
+    return false;
+}
+
+bool HeifDecoderImpl::IsHeifsImage()
+{
+    if (!primaryImage_ || !primaryImage_->IsMovieImage()) {
+        IMAGE_LOGE("IsHeifsImage() is not movie image.");
+        return false;
+    }
+    bool isHeifs = false;
+    CHECK_ERROR_RETURN_RET(!parser_, false);
+    auto ret = parser_->IsHeifsImage(isHeifs);
+    if (ret != heif_error_ok) {
+        return false;
+    }
+    return isHeifs;
+}
+
+uint32_t HeifDecoderImpl::GetHeifsDelayTime(uint32_t index, int32_t &value)
+{
+    CHECK_ERROR_RETURN_RET(!IsHeifsImage(), ERR_MEDIA_FORMAT_UNSUPPORT);
+    CHECK_ERROR_RETURN_RET(!parser_, ERROR);
+    auto ret = parser_->GetHeifsDelayTime(index, value);
+    CHECK_ERROR_RETURN_RET_LOG(ret != heif_error_ok, ERROR,
+        "GetHeifsDelayTime failed, ret : %{public}d", ret);
+    return SUCCESS;
+}
+
+bool HeifDecoderImpl::CreateHeifsSwDecoder(HevcSoftDecodeParam &refParam)
+{
+    if (swDecHeifsHandle_) {
+        return true;
+    }
+    CHECK_ERROR_RETURN_RET_LOG(!extManager_.heifsSoftwareCreateDecoderFunc_ && !extManager_.LoadImageFwkExtNativeSo(),
+        false, "CreateHeifsSwDecoder LoadImageFwkExtNativeSo failed.");
+    auto ret = extManager_.heifsSoftwareCreateDecoderFunc_(swDecHeifsHandle_, refParam);
+    CHECK_ERROR_RETURN_RET_LOG(ret != 0, false, "CreateHeifsSwDecoder create decoder failed: %{public}d", ret);
+    return true;
+}
+
+void HeifDecoderImpl::DeleteHeifsSwDecoder()
+{
+    if (!swDecHeifsHandle_) {
+        return;
+    }
+    CHECK_ERROR_RETURN_LOG(!extManager_.heifsSoftwareDeleteDecoderFunc_ && !extManager_.LoadImageFwkExtNativeSo(),
+        "DeleteHeifsSwDecoder LoadImageFwkExtNativeSo failed.");
+    auto ret = extManager_.heifsSoftwareDeleteDecoderFunc_(swDecHeifsHandle_);
+    CHECK_ERROR_RETURN_LOG(ret != 0, "DeleteHeifsSwDecoder delete decoder failed: %{public}d", ret);
+    swDecHeifsHandle_ = nullptr;
+}
+
+bool HeifDecoderImpl::HasDecodedFrame(uint32_t index)
+{
+    return params_.count(index) != 0;
+}
+
+bool HeifDecoderImpl::AllocateBufferSize(HevcSoftDecodeParam &param)
+{
+    uint64_t num = params_.size() + FRAME_INDEX;
+    uint64_t curBufferSize = dstBufferSize_ * num;
+    CHECK_ERROR_RETURN_RET_LOG(SkImageInfo::ByteSizeOverflowed(curBufferSize), false,
+        "%{public}s too large byteCount: %{public}llu", __func__, static_cast<unsigned long long>(curBufferSize));
+#if defined(CROSS_PLATFORM)
+    IMAGE_LOGE("Unsupport dma mem alloc");
+    return false;
+#else
+    BufferRequestConfig requestConfig = {
+        .width = dstWidth_,
+        .height = dstHeight_,
+        .strideAlignment = 0x8, // set 0x8 as default value to alloc SurfaceBufferImpl
+        .format = GRAPHIC_PIXEL_FMT_RGBA_8888, // hardware decode only support rgba8888
+        .usage = BUFFER_USAGE_CPU_READ | BUFFER_USAGE_CPU_WRITE | BUFFER_USAGE_MEM_DMA | BUFFER_USAGE_MEM_MMZ_CACHE,
+        .timeout = 0,
+    };
+    auto formatSearch = PIXELFORMAT_TOGRAPHIC_MAP.find(param.dstPixFmt);
+    requestConfig.format = (formatSearch != PIXELFORMAT_TOGRAPHIC_MAP.end()) ?
+        formatSearch->second : GRAPHIC_PIXEL_FMT_RGBA_8888;
+    sptr<SurfaceBuffer> sb = SurfaceBuffer::Create();
+    CHECK_ERROR_RETURN_RET(sb->Alloc(requestConfig) != GSERROR_OK, false);
+    void* nativeBuffer = sb.GetRefPtr();
+    CHECK_ERROR_RETURN_RET(ImageUtils::SurfaceBuffer_Reference(nativeBuffer) != GSERROR_OK, false);
+    param.isSharedMemory = false;
+    param.dstBuffer = static_cast<uint8_t*>(sb->GetVirAddr());
+    param.bufferSize = sb->GetSize();
+    param.hwBuffer = nativeBuffer;
+    return true;
+#endif
+}
+
+void HeifDecoderImpl::DeleteParamBuffer(HevcSoftDecodeParam &param)
+{
+#if !defined(CROSS_PLATFORM)
+    if (param.dstBuffer != nullptr) {
+        ImageUtils::SurfaceBuffer_Unreference(static_cast<SurfaceBuffer *>(param.hwBuffer));
+        param.hwBuffer = nullptr;
+    }
+#else
+    IMAGE_LOGE("DeleteParamBuffer unsupport.");
+#endif
+}
+
+void HeifDecoderImpl::DeleteParamsBuffer()
+{
+    for (auto& [_, v] : params_) {
+        DeleteParamBuffer(v);
+    }
+    decltype(params_){}.swap(params_);
+}
+
+bool HeifDecoderImpl::GetSwDecodeHeifsDecodedParam(uint32_t index, HevcSoftDecodeParam &param)
+{
+    IMAGE_LOGD("GetSwDecodeHeifsDecodedParam in. index:%{public}d", index);
+    CHECK_ERROR_RETURN_RET(params_.count(index) == 0, false);
+    return CopyParamBuffer(param, params_[index]);
+}
+
+bool HeifDecoderImpl::CopyParamBuffer(HevcSoftDecodeParam &dst, const HevcSoftDecodeParam &src)
+{
+    return memcpy_s(dst.dstBuffer, src.bufferSize, src.dstBuffer, src.bufferSize) == 0;
+}
+
+void HeifDecoderImpl::SetDstBufferSize(uint64_t byteCount)
+{
+    dstBufferSize_ = byteCount;
+}
+
+void HeifDecoderImpl::SetDstImageInfo(uint32_t dstWidth, uint32_t dstHeight)
+{
+    dstWidth_ = dstWidth;
+    dstHeight_ = dstHeight;
 }
 } // namespace ImagePlugin
 } // namespace OHOS

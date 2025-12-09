@@ -1637,7 +1637,6 @@ napi_value ImageSourceNapi::GetImageInfo(napi_env env, napi_callback_info info)
     napi_value thisVar = nullptr;
     napi_value argValue[NUM_2] = {0};
     size_t argCount = 2;
-    IMAGE_LOGD("GetImageInfo IN");
     IMG_JS_ARGS(env, info, status, argCount, argValue, thisVar);
     IMAGE_LOGD("GetImageInfo argCount is [%{public}zu]", argCount);
 
@@ -1675,10 +1674,12 @@ napi_value ImageSourceNapi::GetImageInfo(napi_env env, napi_callback_info info)
 
     IMG_CREATE_CREATE_ASYNC_WORK(env, status, "GetImageInfo",
         [](napi_env env, void *data) {
+            IMAGE_LOGD("[ImageSourceNapi]GetImageInfo IN");
             auto context = static_cast<ImageSourceAsyncContext*>(data);
             int index = (context->index >= NUM_0) ? context->index : NUM_0;
             context->status = context->rImageSource->GetImageInfo(index, context->imageInfo);
             context->rImageSource->IsHdrImage();
+            IMAGE_LOGD("[ImageSourceNapi]GetImageInfo OUT");
         }, GetImageInfoComplete, asyncContext, asyncContext->work);
 
     IMG_NAPI_CHECK_RET_D(IMG_IS_OK(status),
@@ -1697,7 +1698,7 @@ napi_value ImageSourceNapi::GetImageInfoSync(napi_env env, napi_callback_info in
     uint32_t index = 0;
     uint32_t ret = SUCCESS;
 
-    IMAGE_LOGD("GetImageInfoSync IN");
+    IMAGE_LOGD("[ImageSourceNapi]GetImageInfoSync IN");
     IMG_JS_ARGS(env, info, status, argCount, argValue, thisVar);
     IMAGE_LOGD("GetImageInfoSync argCount is [%{public}zu]", argCount);
     IMG_NAPI_CHECK_RET_D(IMG_IS_OK(status), nullptr, IMAGE_LOGE("fail to napi_get_cb_info"));
@@ -1724,6 +1725,7 @@ napi_value ImageSourceNapi::GetImageInfoSync(napi_env env, napi_callback_info in
         IMAGE_LOGE("native imageSourceNapi is nullptr!");
     }
     imageSourceNapi.release();
+    IMAGE_LOGD("[ImageSourceNapi]GetImageInfoSync OUT");
     return result;
 }
 
@@ -1755,7 +1757,7 @@ static std::shared_ptr<PixelMap> CreatePixelMapInner(ImageSourceNapi *thisPtr,
 
 static void CreatePixelMapExecute(napi_env env, void *data)
 {
-    IMAGE_LOGD("CreatePixelMapExecute IN");
+    IMAGE_LOGD("[ImageSourceNapi]CreatePixelMapExecute IN");
     if (data == nullptr) {
         IMAGE_LOGE("data is nullptr");
         return;
@@ -1779,12 +1781,12 @@ static void CreatePixelMapExecute(napi_env env, void *data)
         context->errMsg = "Create PixelMap error";
         IMAGE_LOGE("Create PixelMap error");
     }
-    IMAGE_LOGD("CreatePixelMapExecute OUT");
+    IMAGE_LOGD("[ImageSourceNapi]CreatePixelMapExecute OUT");
 }
 
 static void CreateWideGamutSdrPixelMapExecute(napi_env env, void *data)
 {
-    IMAGE_LOGD("CreateWideGamutSdrPixelMapExecute IN");
+    IMAGE_LOGD("[ImageSourceNapi]CreateWideGamutSdrPixelMapExecute IN");
     if (data == nullptr) {
         IMAGE_LOGE("data is nullptr");
         return;
@@ -1810,11 +1812,12 @@ static void CreateWideGamutSdrPixelMapExecute(napi_env env, void *data)
         context->errMsgArray.emplace(apiErrorCode, apiErrorMsg);
         IMAGE_LOGE("CreateWideGamutSdrPixelMap error");
     }
-    IMAGE_LOGD("CreateWideGamutSdrPixelMapExecute OUT");
+    IMAGE_LOGD("[ImageSourceNapi]CreateWideGamutSdrPixelMapExecute OUT");
 }
 
 static void CreatePixelMapUsingAllocatorExecute(napi_env env, void *data)
 {
+    IMAGE_LOGD("[ImageSourceNapi]CreatePixelMapUsingAllocatorExecute IN");
     if (data == nullptr) {
         IMAGE_LOGE("data is nullptr");
         return;
@@ -1831,11 +1834,12 @@ static void CreatePixelMapUsingAllocatorExecute(napi_env env, void *data)
         std::string apiErrorMsg = GetErrorCodeMsg(apiErrorCode);
         context->errMsgArray.emplace(apiErrorCode, apiErrorMsg);
     }
+    IMAGE_LOGD("[ImageSourceNapi]CreatePixelMapUsingAllocatorExecute OUT");
 }
 
 static void CreatePixelMapComplete(napi_env env, napi_status status, void *data)
 {
-    IMAGE_LOGD("CreatePixelMapComplete IN");
+    IMAGE_LOGD("[ImageSourceNapi]CreatePixelMapComplete IN");
     napi_value result = nullptr;
     auto context = static_cast<ImageSourceAsyncContext*>(data);
 
@@ -1844,7 +1848,7 @@ static void CreatePixelMapComplete(napi_env env, napi_status status, void *data)
     } else {
         napi_get_undefined(env, &result);
     }
-    IMAGE_LOGD("CreatePixelMapComplete OUT");
+    IMAGE_LOGD("[ImageSourceNapi]CreatePixelMapComplete OUT");
     ImageSourceCallbackRoutine(env, context, result);
 }
 
@@ -1935,6 +1939,7 @@ napi_value ImageSourceNapi::CreatePixelMap(napi_env env, napi_callback_info info
 
 napi_value ImageSourceNapi::CreatePixelMapSync(napi_env env, napi_callback_info info)
 {
+    IMAGE_LOGD("[ImageSourceNapi]CreatePixelMapSync IN");
     napi_value result = nullptr;
     napi_get_undefined(env, &result);
 
@@ -1977,6 +1982,7 @@ napi_value ImageSourceNapi::CreatePixelMapSync(napi_env env, napi_callback_info 
 
     IMG_NAPI_CHECK_RET_D(IMG_IS_OK(status),
         nullptr, IMAGE_LOGE("fail to create PixelMap"));
+    IMAGE_LOGD("[ImageSourceNapi]CreatePixelMapSync OUT");
     return result;
 }
 
@@ -2094,6 +2100,7 @@ napi_value ImageSourceNapi::CreatePixelMapUsingAllocator(napi_env env, napi_call
 
 napi_value ImageSourceNapi::CreatePixelMapUsingAllocatorSync(napi_env env, napi_callback_info info)
 {
+    IMAGE_LOGD("[ImageSourceNapi]CreatePixelMapUsingAllocatorSync IN");
     napi_value result = nullptr;
     napi_get_undefined(env, &result);
 
@@ -2148,6 +2155,7 @@ napi_value ImageSourceNapi::CreatePixelMapUsingAllocatorSync(napi_env env, napi_
         static_cast<ImageSourceSyncContext*>((syncContext).get()));
 
     IMG_NAPI_CHECK_RET_D(IMG_IS_OK(status), nullptr, IMAGE_LOGE("Fail to create PixelMap."));
+    IMAGE_LOGD("[ImageSourceNapi]CreatePixelMapUsingAllocatorSync OUT");
     return result;
 }
 
@@ -2414,6 +2422,7 @@ static void ModifyImagePropertiesExecute(napi_env env, void *data)
 
 static void ModifyImagePropertyExecute(napi_env env, void *data)
 {
+    IMAGE_LOGD("[ImageSourceNapi]ModifyImagePropertyExecute IN.");
     auto context = static_cast<ImageSourceAsyncContext*>(data);
     if (context == nullptr) {
         IMAGE_LOGE("empty context");
@@ -2428,10 +2437,12 @@ static void ModifyImagePropertyExecute(napi_env env, void *data)
         return;
     }
     context->status = context->rImageSource->ModifyImagePropertyEx(context->index, context->keyStr, context->valueStr);
+    IMAGE_LOGD("[ImageSourceNapi]ModifyImagePropertyExecute OUT.");
 }
 
 static void GetImagePropertiesExecute(napi_env env, void *data)
 {
+    IMAGE_LOGD("[ImageSourceNapi]GetImagePropertiesExecute IN.");
     auto context = static_cast<ImageSourceAsyncContext*>(data);
     if (context == nullptr) {
         IMAGE_LOGE("empty context");
@@ -2450,6 +2461,7 @@ static void GetImagePropertiesExecute(napi_env env, void *data)
         }
     }
      context->status = context->kVStrArray.size() == context->errMsgArray.size() ? ERROR : SUCCESS;
+    IMAGE_LOGD("[ImageSourceNapi]GetImagePropertiesExecute OUT.");
 }
 
 static std::unique_ptr<ImageSourceAsyncContext> UnwrapContextForModify(napi_env env, napi_callback_info info)
@@ -2664,7 +2676,7 @@ napi_value ImageSourceNapi::GetImagePropertySync(napi_env env, napi_callback_inf
     napi_value argValue[NUM_1] = {0};
     size_t argCount = NUM_1;
 
-    IMAGE_LOGD("GetImagePropertySync IN");
+    IMAGE_LOGD("[ImageSourceNapi]GetImagePropertySync IN");
     IMG_JS_ARGS(env, info, status, argCount, argValue, thisVar);
     IMAGE_LOGD("GetImagePropertySync argCount is [%{public}zu]", argCount);
     IMG_NAPI_CHECK_RET_D(IMG_IS_OK(status), nullptr, IMAGE_LOGE("fail to napi_get_sync_info"));
@@ -3400,7 +3412,7 @@ ImageResource ImageSourceNapi::GetImageResource()
 #if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
 static void CreatePictureAtIndexExecute(napi_env env, void *data)
 {
-    IMAGE_LOGD("CreatePictureAtIndexExecute IN");
+    IMAGE_LOGD("[ImageSourceNapi]CreatePictureAtIndexExecute IN");
     CHECK_ERROR_RETURN_LOG(data == nullptr, "data is nullptr");
 
     auto context = static_cast<ImageSourceAsyncContext*>(data);
@@ -3422,12 +3434,12 @@ static void CreatePictureAtIndexExecute(napi_env env, void *data)
         context->status = SUCCESS;
     }
 
-    IMAGE_LOGD("CreatePictureAtIndexExecute OUT");
+    IMAGE_LOGD("[ImageSourceNapi]CreatePictureAtIndexExecute OUT");
 }
 
 static void CreatePictureAtIndexComplete(napi_env env, napi_status status, void *data)
 {
-    IMAGE_LOGD("CreatePictureAtIndexComplete IN");
+    IMAGE_LOGD("[ImageSourceNapi]CreatePictureAtIndexComplete IN");
     napi_value result = nullptr;
     auto context = static_cast<ImageSourceAsyncContext*>(data);
     CHECK_ERROR_RETURN_LOG(context == nullptr, "empty context");
@@ -3437,7 +3449,7 @@ static void CreatePictureAtIndexComplete(napi_env env, napi_status status, void 
     } else {
         napi_get_undefined(env, &result);
     }
-    IMAGE_LOGD("CreatePictureAtIndexComplete OUT");
+    IMAGE_LOGD("[ImageSourceNapi]CreatePictureAtIndexComplete OUT");
     ImageSourceCallbackRoutine(env, context, result);
 }
 
@@ -3487,7 +3499,7 @@ napi_value ImageSourceNapi::CreatePictureAtIndex(napi_env env, napi_callback_inf
 
 static void CreatePictureExecute(napi_env env, void *data)
 {
-    IMAGE_LOGD("CreatePictureExecute IN");
+    IMAGE_LOGD("[ImageSourceNapi]CreatePictureExecute IN");
     if (data == nullptr) {
         IMAGE_LOGE("data is nullptr");
         return;
@@ -3512,7 +3524,7 @@ static void CreatePictureExecute(napi_env env, void *data)
         context->status = ERROR;
     }
 
-    IMAGE_LOGD("CreatePictureExecute OUT");
+    IMAGE_LOGD("[ImageSourceNapi]CreatePictureExecute OUT");
 }
 
 static void CreatePictureComplete(napi_env env, napi_status status, void *data)

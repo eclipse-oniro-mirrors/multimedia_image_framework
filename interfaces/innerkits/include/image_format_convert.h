@@ -52,6 +52,8 @@ public:
         ImageInfo &srcImageinfo, DestConvertInfo &destInfo, void *context);
     static uint32_t RGBConvertImageFormatOptionUnique(std::unique_ptr<PixelMap> &srcPixelMap,
         const PixelFormat &srcFormat, PixelFormat destFormat);
+    static uint32_t RGBConvertImageFormatOption(std::shared_ptr<PixelMap> &srcPixelMap,
+        const PixelFormat &srcFormat, PixelFormat destFormat);
     static bool SetConvertImageMetaData(std::unique_ptr<PixelMap> &srcPixelMap, std::unique_ptr<PixelMap> &dstPixelMap);
     static bool SetConvertImageMetaData(std::shared_ptr<PixelMap> &srcPixelMap, std::unique_ptr<PixelMap> &dstPixelMap);
 private:
@@ -68,8 +70,6 @@ private:
     static std::unique_ptr<AbsMemory> CreateMemory(PixelFormat pixelFormat,
                                                    AllocatorType allocatorType, Size size,
                                                    YUVStrideInfo &strides, uint64_t usage = 0);
-    static uint32_t RGBConvertImageFormatOption(std::shared_ptr<PixelMap> &srcPixelMap,
-                                                const PixelFormat &srcFormat, PixelFormat destFormat);
     static uint32_t YUVConvert(const ConvertDataInfo &srcDataInfo, DestConvertInfo &destInfo);
     static uint32_t RGBConvert(const ConvertDataInfo &srcDataInfo, DestConvertInfo &destInfo);
 };

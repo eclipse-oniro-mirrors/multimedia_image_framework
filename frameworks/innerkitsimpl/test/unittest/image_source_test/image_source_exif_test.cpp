@@ -121,6 +121,7 @@ HWTEST_F(ImageSourceExifTest, ModifyImageProperty001, TestSize.Level3)
     opts.formatHint = "image/jpeg";
     std::unique_ptr<ImageSource> imageSource =
         ImageSource::CreateImageSource(IMAGE_INPUT_EXIF_JPEG_PATH, opts, errorCode);
+    ASSERT_EQ(imageSource->GetiTxtLength(), 0);
     std::string valueGetIn;
     uint32_t index = 0;
     std::string key = "GPSLongitudeRef";
@@ -164,6 +165,7 @@ HWTEST_F(ImageSourceExifTest, ModifyImageProperty002, TestSize.Level3)
     opts.formatHint = "image/jpeg";
     std::unique_ptr<ImageSource> imageSource =
         ImageSource::CreateImageSource(IMAGE_INPUT_EXIF_JPEG_PATH, opts, errorCode);
+    ASSERT_EQ(imageSource->GetiTxtLength(), 0);
     std::string valueGetIn;
     uint32_t index = 0;
     std::string key = "GPSLongitudeRef";
@@ -204,6 +206,7 @@ HWTEST_F(ImageSourceExifTest, ModifyImageProperty003, TestSize.Level3)
     opts.formatHint = "image/jpeg";
     std::unique_ptr<ImageSource> imageSource =
         ImageSource::CreateImageSource(IMAGE_INPUT_NO_EXIF_JPEG_PATH, opts, errorCode);
+    ASSERT_EQ(imageSource->GetiTxtLength(), 0);
     std::string valueGetIn;
     uint32_t index = 0;
     std::string key = "GPSLongitudeRef";
@@ -237,6 +240,7 @@ HWTEST_F(ImageSourceExifTest, ModifyImageProperty004, TestSize.Level3)
     opts.formatHint = "image/jpeg";
     std::string path = IMAGE_INPUT_EXIF_JPEG_PATH;
     std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(path, opts, errorCode);
+    ASSERT_EQ(imageSource->GetiTxtLength(), 0);
     std::string valueGetIn;
     uint32_t index = 0;
     std::string key = "GPSLongitudeRef";
@@ -270,6 +274,7 @@ HWTEST_F(ImageSourceExifTest, GetImagePropertyInt001, TestSize.Level3)
     uint32_t errorCode = 0;
     SourceOptions opts;
     std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(fd, opts, errorCode);
+    ASSERT_EQ(imageSource->GetiTxtLength(), 0);
 
     uint32_t index = 0;
     int32_t value = 0;
@@ -318,6 +323,7 @@ HWTEST_F(ImageSourceExifTest, GetImagePropertyInt002, TestSize.Level3)
     uint32_t errorCode = 0;
     SourceOptions opts;
     std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(fd, opts, errorCode);
+    ASSERT_EQ(imageSource->GetiTxtLength(), 0);
     DecodeOptions decodeOpts;
     std::unique_ptr<PixelMap> pixelMap = imageSource->CreatePixelMap(decodeOpts, errorCode);
 
@@ -345,6 +351,7 @@ HWTEST_F(ImageSourceExifTest, RemoveImageProperty001, TestSize.Level3)
     SourceOptions opts;
     std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(fd, opts, errorCode);
     ASSERT_EQ(errorCode, SUCCESS);
+    ASSERT_EQ(imageSource->GetiTxtLength(), 0);
     ASSERT_EQ(GetProperty(imageSource, "DateTimeOriginal"), "2024:01:11 09:39:58");
     ASSERT_EQ(GetProperty(imageSource, "ExposureTime"), "1/590 sec.");
     ASSERT_EQ(GetProperty(imageSource, "SceneType"), "Directly photographed");
@@ -370,6 +377,7 @@ HWTEST_F(ImageSourceExifTest, RemoveImageProperty002, TestSize.Level3)
     SourceOptions opts;
     std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(path, opts, errorCode);
     ASSERT_EQ(errorCode, SUCCESS);
+    ASSERT_EQ(imageSource->GetiTxtLength(), 0);
     ASSERT_EQ(GetProperty(imageSource, "DateTime"), "2015:11:05 23:04:30");
     ASSERT_EQ(GetProperty(imageSource, "YCbCrPositioning"), "Centered");
 
@@ -393,6 +401,7 @@ HWTEST_F(ImageSourceExifTest, RemoveImageProperty003, TestSize.Level3)
     SourceOptions opts;
     std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(path, opts, errorCode);
     ASSERT_EQ(errorCode, SUCCESS);
+    ASSERT_EQ(imageSource->GetiTxtLength(), 0);
     ASSERT_EQ(GetProperty(imageSource, "DateTimeOriginal"), "2022:06:02 15:51:35");
     ASSERT_EQ(GetProperty(imageSource, "ExposureTime"), "1/33 sec.");
     ASSERT_EQ(GetProperty(imageSource, "SceneType"), "Directly photographed");
@@ -418,6 +427,7 @@ HWTEST_F(ImageSourceExifTest, RemoveImageProperty004, TestSize.Level3)
     SourceOptions opts;
     std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(path, opts, errorCode);
     ASSERT_EQ(errorCode, SUCCESS);
+    ASSERT_EQ(imageSource->GetiTxtLength(), 0);
 
     ASSERT_EQ(GetProperty(imageSource, "HwMnoteBurstNumber"), "2");
     ASSERT_EQ(GetProperty(imageSource, "HwMnoteCaptureMode"), "1");
@@ -442,6 +452,7 @@ HWTEST_F(ImageSourceExifTest, RemoveImageProperty005, TestSize.Level3)
     SourceOptions opts;
     std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(path, opts, errorCode);
     ASSERT_EQ(errorCode, SUCCESS);
+    ASSERT_EQ(imageSource->GetiTxtLength(), 0);
     ASSERT_EQ(GetProperty(imageSource, "DateTimeOriginal"), "2024:02:28 09:23:06");
     ASSERT_EQ(GetProperty(imageSource, "ExposureTime"), "1/50 sec.");
     ASSERT_EQ(GetProperty(imageSource, "SceneType"), "Directly photographed");
@@ -467,6 +478,7 @@ HWTEST_F(ImageSourceExifTest, RemoveImageProperty006, TestSize.Level3)
     SourceOptions opts;
     std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(path, opts, errorCode);
     ASSERT_EQ(errorCode, SUCCESS);
+    ASSERT_EQ(imageSource->GetiTxtLength(), 0);
     std::set<std::string> keys = {"DateTimeOriginal", "ExposureTime", "SceneType"};
     errorCode = imageSource->RemoveImageProperties(0, keys, path);
     ASSERT_EQ(errorCode, ERR_IMAGE_DECODE_EXIF_UNSUPPORT);
@@ -483,6 +495,7 @@ HWTEST_F(ImageSourceExifTest, HwXmageTest001, TestSize.Level3)
     SourceOptions opts;
     std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(path, opts, errorCode);
     ASSERT_EQ(errorCode, SUCCESS);
+    ASSERT_EQ(imageSource->GetiTxtLength(), 0);
 
     std::string value = "";
     for (int i = 0; i < hwExifReadKey.size(); ++i) {
@@ -512,6 +525,7 @@ HWTEST_F(ImageSourceExifTest, HwXmageTest002, TestSize.Level3)
     SourceOptions opts;
     std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(path, opts, errorCode);
     ASSERT_EQ(errorCode, SUCCESS);
+    ASSERT_EQ(imageSource->GetiTxtLength(), 0);
 
     std::string value = "";
     for (auto key : hwExifReadKey) {
@@ -540,6 +554,7 @@ HWTEST_F(ImageSourceExifTest, HwXmageTest003, TestSize.Level3)
     SourceOptions opts;
     std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(path, opts, errorCode);
     ASSERT_EQ(errorCode, SUCCESS);
+    ASSERT_EQ(imageSource->GetiTxtLength(), 0);
 
     std::string value = "";
     for (auto key : hwExifReadKey) {
@@ -569,6 +584,7 @@ HWTEST_F(ImageSourceExifTest, HwXmageTest004, TestSize.Level3)
     SourceOptions opts;
     std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(path, opts, errorCode);
     ASSERT_EQ(errorCode, SUCCESS);
+    ASSERT_EQ(imageSource->GetiTxtLength(), 0);
 
     std::string value = "";
     for (auto key : hwExifReadKey) {
@@ -598,6 +614,7 @@ HWTEST_F(ImageSourceExifTest, HwXmageTest005, TestSize.Level3)
     SourceOptions opts;
     std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(path, opts, errorCode);
     ASSERT_EQ(errorCode, SUCCESS);
+    ASSERT_EQ(imageSource->GetiTxtLength(), 0);
 
     std::string value = "";
     for (int i = 0; i < hwExifReadKey.size()-1; ++i) {

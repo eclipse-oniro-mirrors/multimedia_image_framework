@@ -27,6 +27,8 @@ using namespace testing::ext;
 
 namespace OHOS {
 namespace Multimedia {
+constexpr int32_t TEST_INVALID_METADATA_TYPE = 999;
+constexpr uint64_t TEST_PARCEL_SIZE_ONE = 1;
 const static uint64_t MAX_FRAGMENT_MAP_META_COUNT = 10;
 const static uint64_t MAX_FRAGMENT_MAP_META_LENGTH = 128;
 
@@ -442,6 +444,115 @@ HWTEST_F(FragmentMetadataTest, MarshallingTest002, TestSize.Level2)
     };
     ASSERT_EQ(fragmentMetadata.properties_->size(), MAX_FRAGMENT_MAP_META_COUNT + 1);
     res = fragmentMetadata.Marshalling(parcel);
+    EXPECT_FALSE(res);
+}
+
+/**
+ * @tc.name: UnmarshallingInvalidKeyTest001
+ * @tc.desc: Test Unmarshalling with invalid key
+ * @tc.type: FUNC
+ */
+HWTEST_F(FragmentMetadataTest, UnmarshallingInvalidKeyTest001, TestSize.Level3)
+{
+    Parcel parcel;
+    
+    parcel.WriteInt32(static_cast<int32_t>(MetadataType::FRAGMENT));
+    parcel.WriteUint64(TEST_PARCEL_SIZE_ONE);
+    parcel.WriteString("invalid_key");
+    parcel.WriteString("value");
+    
+    FragmentMetadata fragmentMetadata;
+    ImageKvMetadata* result = fragmentMetadata.Unmarshalling(parcel);
+    EXPECT_EQ(result, nullptr);
+}
+
+/**
+ * @tc.name: UnmarshallingStringLengthExceedTest001
+ * @tc.desc: Test Unmarshalling when string length exceeds limit
+ * @tc.type: FUNC
+ */
+HWTEST_F(FragmentMetadataTest, UnmarshallingStringLengthExceedTest001, TestSize.Level3)
+{
+    Parcel parcel;
+    
+    std::string longString(MAX_FRAGMENT_MAP_META_LENGTH + 1, 'a');
+    
+    parcel.WriteInt32(static_cast<int32_t>(MetadataType::FRAGMENT));
+    parcel.WriteUint64(TEST_PARCEL_SIZE_ONE);
+    parcel.WriteString(FRAGMENT_METADATA_KEY_X);
+    parcel.WriteString(longString);
+    
+    FragmentMetadata fragmentMetadata;
+    ImageKvMetadata* result = fragmentMetadata.Unmarshalling(parcel);
+    EXPECT_EQ(result, nullptr);
+}
+
+/**
+ * @tc.name: UnmarshallingErrorLogTest001
+ * @tc.desc: Test Unmarshalling error logging branch expect result is nullptr
+ * @tc.type: FUNC
+ */
+HWTEST_F(FragmentMetadataTest, UnmarshallingErrorLogTest001, TestSize.Level3)
+{
+    Parcel parcel;
+    
+    parcel.WriteInt32(TEST_INVALID_METADATA_TYPE);
+    
+    FragmentMetadata fragmentMetadata;
+    ImageKvMetadata* result = fragmentMetadata.Unmarshalling(parcel);
+    EXPECT_EQ(result, nullptr);
+}
+
+/**
+ * @tc.name: MarshallingInvalidKeyTest001
+ * @tc.desc: Test Marshalling with invalid key in properties
+ * @tc.type: FUNC
+ */
+HWTEST_F(FragmentMetadataTest, MarshallingInvalidKeyTest001, TestSize.Level3)
+{
+    Parcel parcel;
+    FragmentMetadata fragmentMetadata;
+    
+    fragmentMetadata.properties_ = std::make_shared<ImageMetadata::PropertyMap>();
+    fragmentMetadata.properties_->insert(std::make_pair("invalid_key", "value"));
+    
+    bool res = fragmentMetadata.Marshalling(parcel);
+    EXPECT_FALSE(res);
+}
+
+/**
+ * @tc.name: MarshallingStringLengthExceedTest001
+ * @tc.desc: Test Marshalling when string length exceeds limit
+ * @tc.type: FUNC
+ */
+HWTEST_F(FragmentMetadataTest, MarshallingStringLengthExceedTest001, TestSize.Level3)
+{
+    Parcel parcel;
+    FragmentMetadata fragmentMetadata;
+    
+    std::string longString(MAX_FRAGMENT_MAP_META_LENGTH + 1, 'a');
+    
+    fragmentMetadata.properties_ = std::make_shared<ImageMetadata::PropertyMap>();
+    fragmentMetadata.properties_->insert(std::make_pair(FRAGMENT_METADATA_KEY_X, longString));
+    
+    bool res = fragmentMetadata.Marshalling(parcel);
+    EXPECT_FALSE(res);
+}
+
+/**
+ * @tc.name: IsValidKeyInvalidMetadataTypeTest001
+ * @tc.desc: Test IsValidKey with invalid metadata type
+ * @tc.type: FUNC
+ */
+HWTEST_F(FragmentMetadataTest, IsValidKeyInvalidMetadataTypeTest001, TestSize.Level3)
+{
+    FragmentMetadata fragmentMetadata;
+    fragmentMetadata.metadataType_ = static_cast<MetadataType>(TEST_INVALID_METADATA_TYPE);
+    
+    std::string key = FRAGMENT_METADATA_KEY_X;
+    std::string value = "100";
+    
+    bool res = fragmentMetadata.SetValue(key, value);
     EXPECT_FALSE(res);
 }
 } // namespace OHOS

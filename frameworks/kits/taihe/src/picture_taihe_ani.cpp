@@ -26,7 +26,7 @@ ani_object PictureTaiheAni::CreateEtsPicture(ani_env *env, std::shared_ptr<Pictu
     pictureAni->nativePicture_ = picture;
 
     ani_namespace imageNamespace;
-    if (env->FindNamespace("L@ohos/multimedia/image/image;", &imageNamespace) != ANI_OK) {
+    if (env->FindNamespace("@ohos.multimedia.image.image", &imageNamespace) != ANI_OK) {
         IMAGE_LOGE("%{public}s FindNamespace failed", __func__);
         return nullptr;
     }

@@ -61,6 +61,7 @@ HWTEST_F(ImageSourceGifTest, GifImageDecode002, TestSize.Level3)
         ImageSource::CreateImageSource("/data/local/tmp/image/test.gif", opts, errorCode);
     ASSERT_EQ(errorCode, SUCCESS);
     ASSERT_NE(imageSource.get(), nullptr);
+    ASSERT_EQ(imageSource->GetiTxtLength(), 0);
     /**
      * @tc.steps: step2. get the number of image, compatibility test.
      * @tc.expected: step2. check the number of image equals the actual number.
@@ -113,6 +114,7 @@ HWTEST_F(ImageSourceGifTest, GifImageDecode004, TestSize.Level3)
     std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(buffer, bufferSize, opts, errorCode);
     ASSERT_EQ(errorCode, SUCCESS);
     ASSERT_NE(imageSource.get(), nullptr);
+    ASSERT_EQ(imageSource->GetiTxtLength(), 0);
     /**
      * @tc.steps: step2. decode image source to pixel map by pixel format BGRA.
      * @tc.expected: step2. decode image source to pixel map success.
@@ -163,6 +165,7 @@ HWTEST_F(ImageSourceGifTest, GifImageDecode005, TestSize.Level3)
     std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(std::move(fs), opts, errorCode);
     ASSERT_EQ(errorCode, SUCCESS);
     ASSERT_NE(imageSource.get(), nullptr);
+    ASSERT_EQ(imageSource->GetiTxtLength(), 0);
     /**
      * @tc.steps: step2. decode image source to pixel map by default decode options
      * @tc.expected: step2. decode image source to pixel map success.

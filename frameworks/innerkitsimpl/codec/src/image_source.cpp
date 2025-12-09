@@ -123,7 +123,7 @@ namespace InnerFormat {
 const string RAW_FORMAT = "image/x-raw";
 const string ASTC_FORMAT = "image/astc";
 const string EXTENDED_FORMAT = "image/x-skia";
-const string IMAGE_EXTENDED_CODEC = "image/jpeg,image/png,image/webp,image/x-icon,image/gif,image/bmp";
+const string IMAGE_EXTENDED_CODEC = "image/jpeg,image/png,image/webp,image/x-icon,image/gif,image/bmp,image/wbmp";
 const string SVG_FORMAT = "image/svg+xml";
 } // namespace InnerFormat
 // BASE64 image prefix type data:image/<type>;base64,<data>
@@ -447,6 +447,7 @@ uint32_t ImageSource::GetSupportedFormats(set<string> &formats)
     static bool isSupportHeif = IsSupportHeif();
     if (isSupportHeif) {
         formats.insert(ImageUtils::GetEncodedHeifFormat());
+        formats.insert(ImageUtils::GetEncodedHeifsFormat());
     }
     return SUCCESS;
 }
@@ -862,7 +863,7 @@ DecodeContext ImageSource::InitDecodeContext(const DecodeOptions &opts, const Im
     } else {
         if ((preference == MemoryUsagePreference::DEFAULT && IsSupportDma(opts, info, hasDesiredSizeOptions)) ||
             info.encodedFormat == IMAGE_HEIF_FORMAT || info.encodedFormat == IMAGE_HEIC_FORMAT ||
-            ImageSystemProperties::GetDecodeDmaEnabled()) {
+            info.encodedFormat == IMAGE_HEIFS_FORMAT || ImageSystemProperties::GetDecodeDmaEnabled()) {
             IMAGE_LOGD("[ImageSource] allocatorType is DMA_ALLOC");
             context.allocatorType = AllocatorType::DMA_ALLOC;
         } else if (ImageSystemProperties::GetNoPaddingEnabled()) {
@@ -4327,9 +4328,9 @@ bool ImageSource::DecodeJpegGainMap(ImageHdrType hdrType, float scale, DecodeCon
     ImageTrace imageTrace("ImageSource::DecodeJpegGainMap hdrType:%d, scale:%d", hdrType, scale);
     uint32_t gainMapOffset = mainDecoder_->GetGainMapOffset();
     uint32_t streamSize = sourceStreamPtr_->GetStreamSize();
-    if (gainMapOffset == 0 || gainMapOffset > streamSize || streamSize == 0) {
-        return false;
-    }
+    bool cond = gainMapOffset == 0 || gainMapOffset > streamSize || streamSize == 0;
+    CHECK_ERROR_RETURN_RET_LOG(cond, false, "[ImageSource] decode jpeg gainmap failed, gainmap offset is %{public}d"
+        " stream size is %{public}d", gainMapOffset, streamSize);
     uint8_t* streamBuffer = sourceStreamPtr_->GetDataPtr();
     if (sourceStreamPtr_->GetStreamType() != ImagePlugin::BUFFER_SOURCE_TYPE) {
         streamBuffer = new (std::nothrow) uint8_t[streamSize];
@@ -4343,10 +4344,8 @@ bool ImageSource::DecodeJpegGainMap(ImageHdrType hdrType, float scale, DecodeCon
     if (sourceStreamPtr_->GetStreamType() != ImagePlugin::BUFFER_SOURCE_TYPE) {
         delete[] streamBuffer;
     }
-    if (gainMapStream == nullptr) {
-        IMAGE_LOGE("[ImageSource] create gainmap stream fail, gainmap offset is %{public}d", gainMapOffset);
-        return false;
-    }
+    CHECK_ERROR_RETURN_RET_LOG(gainMapStream == nullptr, false, "[ImageSource] create gainmap stream fail, gainmap"
+        " offset is %{public}d", gainMapOffset);
     uint32_t errorCode;
     jpegGainmapDecoder_ = std::unique_ptr<AbsImageDecoder>(
         DoCreateDecoder(InnerFormat::IMAGE_EXTENDED_CODEC, pluginServer_, *gainMapStream, errorCode));
@@ -4368,6 +4367,7 @@ bool ImageSource::DecodeJpegGainMap(ImageHdrType hdrType, float scale, DecodeCon
     }
     gainMapCtx.info = gainMapInfo;
     if (errorCode != SUCCESS) {
+        IMAGE_LOGE("[ImageSource] decode gainmap fail, error code is %{public}d", errorCode);
         FreeContextBuffer(gainMapCtx.freeFunc, gainMapCtx.allocatorType, gainMapCtx.pixelsBuffer);
         return false;
     }
@@ -4534,11 +4534,11 @@ bool ImageSource::ComposeHdrImage(ImageHdrType hdrType, DecodeContext& baseCtx, 
     std::unique_ptr<VpeUtils> utils = std::make_unique<VpeUtils>();
     int32_t res = utils->ColorSpaceConverterComposeImage(buffers, hdrType == ImageHdrType::HDR_CUVA);
     if (res != VPE_ERROR_OK) {
-        IMAGE_LOGE("[ImageSource] composeImage failed");
+        IMAGE_LOGE("[ImageSource] composeImage failed, res: %{public}d", res);
         FreeContextBuffer(hdrCtx.freeFunc, hdrCtx.allocatorType, hdrCtx.pixelsBuffer);
         return false;
     }
-    ImageUtils::DumpHdrBufferEnabled(buffers.hdr, "PixelMap-GAINMAP-Composed");
+    ImageUtils::DumpHdrBufferEnabled(buffers.hdr, "PixelMap-HDR-Composed");
     SetDmaContextYuvInfo(hdrCtx);
     if (GetHdrMediaType(metadata) == CM_IMAGE_HDR_VIVID_SINGLE) {
         VpeUtils::SetSbMetadataType(hdrSptr, static_cast<CM_HDR_Metadata_Type>(metadata.hdrMetadataType));
@@ -4682,6 +4682,8 @@ void ImageSource::SpecialSetComposeBuffer(DecodeContext &baseCtx, sptr<SurfaceBu
     }
     ImageUtils::DumpHdrBufferEnabled(baseSptr, "PixelMap-SDR-tobeComposed");
     ImageUtils::DumpHdrBufferEnabled(gainmapSptr, "PixelMap-GAINMAP-tobeComposed");
+    ImageUtils::DumpHdrExtendMetadataEnabled(gainmapSptr, "PixelMap-GAINMAP-ExtendMetadata-tobeComposed");
+    ImageUtils::DumpSurfaceBufferAllKeysEnabled(gainmapSptr, "PixelMap-GAINMAP-AllKeys-tobeComposed");
 }
 
 static uint32_t CopyContextIntoSurfaceBuffer(Size dstSize, const DecodeContext &context, DecodeContext &dstCtx,
@@ -5028,6 +5030,12 @@ std::unique_ptr<Picture> ImageSource::CreatePictureAtIndex(uint32_t index, uint3
             "[%{public}s] SetGifMetadataForPicture failed, index=%{public}u, errorCode=%{public}u",
             __func__, index, errorCode);
     }
+    if (info.encodedFormat == IMAGE_HEIFS_FORMAT) {
+        errorCode = SetHeifsMetadataForPicture(picture, index);
+        CHECK_ERROR_RETURN_RET_LOG(errorCode != SUCCESS, nullptr,
+            "[%{public}s] SetHeifsMetadataForPicture failed, index=%{public}u, errorCode=%{public}u",
+            __func__, index, errorCode);
+    }
     return picture;
 }
 
@@ -5038,7 +5046,7 @@ uint32_t ImageSource::CreatePictureAtIndexPreCheck(uint32_t index, const ImageIn
         return ERR_IMAGE_SOURCE_DATA;
     }
 
-    if (info.encodedFormat != IMAGE_GIF_FORMAT) {
+    if (info.encodedFormat != IMAGE_GIF_FORMAT && info.encodedFormat != IMAGE_HEIFS_FORMAT) {
         IMAGE_LOGE("[%{public}s] unsupport format: %{public}s", __func__, info.encodedFormat.c_str());
         return ERR_IMAGE_MISMATCHED_FORMAT;
     }
@@ -5085,6 +5093,58 @@ uint32_t ImageSource::SetGifMetadataForPicture(std::unique_ptr<Picture> &picture
     return SUCCESS;
 }
 
+uint32_t ImageSource::SetHeifsMetadataForPicture(std::unique_ptr<Picture> &picture, uint32_t index)
+{
+    CHECK_ERROR_RETURN_RET_LOG(picture == nullptr, ERR_IMAGE_PICTURE_CREATE_FAILED,
+        "[%{public}s] picture is nullptr", __func__);
+    CHECK_ERROR_RETURN_RET_LOG(mainDecoder_ == nullptr, ERR_IMAGE_DECODE_ABNORMAL,
+        "[%{public}s] mainDecoder_ is nullptr", __func__);
+
+    int32_t delayTime = 0;
+    uint32_t errorCode = mainDecoder_->GetImagePropertyInt(index, IMAGE_DELAY_TIME, delayTime);
+    CHECK_ERROR_RETURN_RET_LOG(errorCode != SUCCESS, errorCode,
+        "[%{public}s] get delay time failed", __func__);
+
+    std::shared_ptr<ImageMetadata> heifsMetadata = std::make_shared<HeifsMetadata>();
+    CHECK_ERROR_RETURN_RET_LOG(heifsMetadata == nullptr, ERR_SHAMEM_NOT_EXIST,
+        "[%{public}s] make_shared heifsMetadata failed", __func__);
+    bool result = heifsMetadata->SetValue(HEIFS_METADATA_KEY_DELAY_TIME, std::to_string(delayTime));
+    CHECK_ERROR_RETURN_RET_LOG(!result, ERR_IMAGE_DECODE_METADATA_FAILED,
+        "[%{public}s] set delay time failed", __func__);
+    uint32_t ret = picture->SetMetadata(MetadataType::HEIFS, heifsMetadata);
+    CHECK_ERROR_RETURN_RET_LOG(ret != SUCCESS, ERR_IMAGE_DECODE_METADATA_FAILED,
+        "[%{public}s] set heifs metadata failed", __func__);
+    return SUCCESS;
+}
+
+static void FixCuvaPicture(std::unique_ptr<Picture> &picture)
+{
+    auto hdrPixelMapTmp = picture->GetHdrComposedPixelMap();
+    std::shared_ptr<PixelMap> hdrPixelMap = std::move(hdrPixelMapTmp);
+    auto sdrPixelMap = picture->GetMainPixel();
+    if (!hdrPixelMap || !sdrPixelMap) {
+        IMAGE_LOGE("FixCuvaPicture: Invalid PixelMap, hdr or sdr is null");
+        return;
+    }
+    IMAGE_LOGD("FixCuvaPicture: hdrPixelMap format: %{public}d, sdrPixelMap format: %{public}d",
+        hdrPixelMap->GetPixelFormat(), sdrPixelMap->GetPixelFormat());
+
+    auto newPicture = picture->CreatePictureByHdrAndSdrPixelMap(hdrPixelMap, sdrPixelMap);
+    if (newPicture == nullptr) {
+        IMAGE_LOGE("FixCuvaPicture: Fail to create new picture.");
+        return;
+    }
+    auto newGainMap = newPicture->GetGainmapPixelMap();
+    if (newGainMap == nullptr) {
+        IMAGE_LOGE("FixCuvaPicture: Fail to get new gainmap.");
+        return;
+    }
+    newGainMap->SetEditable(true);
+    auto isoGainMap = newPicture->GetAuxiliaryPicture(AuxiliaryPictureType::GAINMAP);
+    picture->SetAuxiliaryPicture(isoGainMap);
+    IMAGE_LOGI("FixCuvaPicture: Finish set isoGainMap");
+}
+
 std::unique_ptr<Picture> ImageSource::CreatePicture(const DecodingOptionsForPicture &opts, uint32_t &errorCode)
 {
     ImageInfo info;
@@ -5124,6 +5184,9 @@ std::unique_ptr<Picture> ImageSource::CreatePicture(const DecodingOptionsForPict
     SetHdrMetadataForPicture(picture);
     if (errorCode != SUCCESS) {
         IMAGE_LOGE("Decode auxiliary pictures failed, error code: %{public}u", errorCode);
+    }
+    if (CheckHdrType() == ImageHdrType::HDR_CUVA && dopts.desiredPixelFormat == PixelFormat::RGBA_8888) {
+        FixCuvaPicture(picture);
     }
     Picture::DumpPictureIfDumpEnabled(*picture, "picture_decode_after");
     return picture;
@@ -5429,6 +5492,21 @@ unique_ptr<PixelMap> ImageSource::CreatePixelAstcFromImageFile(uint32_t index, c
         dstMemory->GetType(), nullptr);
     dstPixelAstc->SetAstc(true);
     dstPixelAstc->SetEditable(false);
+
+    size_t realSize = ImageUtils::GetAstcBytesCount(info);
+    Size desiredSize = {realSize, 1};
+    MemoryData memoryData = {nullptr, realSize, "CompressToAstcFromPixelmap Data", desiredSize,
+        dstPixelAstc->GetPixelFormat()};
+    dstMemory = MemoryManager::CreateMemory(dstMemory->GetType(), memoryData);
+    CHECK_ERROR_RETURN_RET_LOG(dstMemory == nullptr, nullptr, "CompressToAstcFromPixelmap Dst Memory Create failed");
+    if (memcpy_s(dstMemory->data.data, realSize, dstPixelAstc->GetPixels(), realSize) != 0) {
+        IMAGE_LOGE("CreatePixelAstcFromImageFile copy memory fail, size %{public}zu", realSize);
+        dstMemory->Release();
+        return nullptr;
+    }
+    dstPixelAstc->SetPixelsAddr(dstMemory->data.data, dstMemory->extend.data, dstMemory->data.size,
+        dstMemory->GetType(), nullptr);
+
     ImageUtils::FlushSurfaceBuffer(dstPixelAstc.get());
     return dstPixelAstc;
 #else
@@ -5474,10 +5552,10 @@ std::string ImageSource::GetPixelMapName(PixelMap* pixelMap)
     }
 
     std::string pixelMapStr =
-        "srcImageSize-" + std::to_string(info.size.width) + "_x" + std::to_string(info.size.height) +
-        "-pixelMapSize-" + std::to_string(pixelMap->GetWidth()) + "_x" + std::to_string(pixelMap->GetHeight()) +
+        "srcImageSize-" + std::to_string(info.size.width) + "x" + std::to_string(info.size.height) +
+        "-pixelMapSize-" + std::to_string(pixelMap->GetWidth()) + "x" + std::to_string(pixelMap->GetHeight()) +
         "-streamsize-" + std::to_string(sourceStreamPtr_->GetStreamSize()) +
-        "-mimeType-";
+        "-mimetype-";
     std::string prefix = "image/";
     size_t minFormatLength = 9;
     size_t maxFormatLength = 20;
@@ -5514,6 +5592,109 @@ ImageHdrType ImageSource::CheckHdrType()
     }
     checkHdrTypeHasSet = true;
     return checkHdrType_;
+}
+
+uint32_t read_u32_be(const uint8_t* data)
+{
+    const uint8_t THREE_BYTES_BITS = 24;
+    const uint8_t TWO_BYTES_BITS = 16;
+    const uint8_t ONE_BYTES_BITS = 8;
+    return (
+        uint32_t(data[0] << THREE_BYTES_BITS) |
+        uint32_t(data[1] << TWO_BYTES_BITS) |
+        uint32_t(data[2] << ONE_BYTES_BITS) |
+        uint32_t(data[3]));
+}
+
+uint32_t ImageSource::GetiTxtLength()
+{
+    std::unique_lock<std::mutex> guard(decodingMutex_);
+    if (sourceStreamPtr_ == nullptr) {
+        return 0;
+    }
+    uint32_t savedPosition = sourceStreamPtr_->Tell();
+    uint64_t streamSize = sourceStreamPtr_->GetStreamSize();
+
+    sourceStreamPtr_->Seek(0);
+    // 1. read sig
+    const uint8_t SIG_FIELD_BYTES = 8;
+    const uint8_t PNG_SIG[SIG_FIELD_BYTES] = {0x89, 'P', 'N', 'G', 0x0D, 0x0A, 0x1A, 0x0A};
+    if (static_cast<uint64_t>(sourceStreamPtr_->Tell()) + SIG_FIELD_BYTES > streamSize) {
+        sourceStreamPtr_->Seek(savedPosition);
+        return 0;
+    }
+    uint8_t sigbuf[SIG_FIELD_BYTES];
+    uint32_t readSize = 0;
+    // Read param: uint32_t desiredSize, uint8_t *outBuffer, uint32_t bufferSize, uint32_t &readSize
+    bool readRet = sourceStreamPtr_->Read(SIG_FIELD_BYTES, sigbuf, sizeof(sigbuf), readSize);
+    if (!readRet || readSize < SIG_FIELD_BYTES) {
+        sourceStreamPtr_->Seek(savedPosition);
+        return 0;
+    }
+    if (std::memcmp(sigbuf, PNG_SIG, SIG_FIELD_BYTES) != 0) {
+        sourceStreamPtr_->Seek(savedPosition);
+        return 0;
+    }
+
+    // 2. read trunk
+    const uint8_t TRUNK_LENGTH_FIELD_BYTES = 4;
+    const uint8_t TRUNK_TYPE_FIELD_BYTES = 4;
+    const uint8_t TRUNK_CRC_FIELD_BYTES = 4;
+    while (true) {
+        // 2.1 read length of trunk
+        if (static_cast<uint64_t>(sourceStreamPtr_->Tell()) + TRUNK_LENGTH_FIELD_BYTES > streamSize) {
+            break;
+        }
+        uint8_t lenbuf[TRUNK_LENGTH_FIELD_BYTES];
+        readRet = sourceStreamPtr_->Read(TRUNK_LENGTH_FIELD_BYTES, lenbuf, sizeof(lenbuf), readSize);
+        if (!readRet || readSize < TRUNK_LENGTH_FIELD_BYTES) {
+            break;
+        }
+        uint32_t length = read_u32_be(lenbuf);
+
+        // 2.2 read type of trunk
+        if (static_cast<uint64_t>(sourceStreamPtr_->Tell()) + TRUNK_TYPE_FIELD_BYTES > streamSize) {
+            break;
+        }
+        uint8_t typebuf[TRUNK_TYPE_FIELD_BYTES];
+        readRet = sourceStreamPtr_->Read(TRUNK_TYPE_FIELD_BYTES, typebuf, sizeof(typebuf), readSize);
+        if (!readRet || readSize < TRUNK_TYPE_FIELD_BYTES) {
+            break;
+        }
+        std::string chunk_type(reinterpret_cast<char*>(typebuf), TRUNK_TYPE_FIELD_BYTES);
+        if (chunk_type == "iTXt") {
+            sourceStreamPtr_->Seek(savedPosition);
+            return length;
+        }
+
+        // 3. move filePtr to next trunk head
+        if (static_cast<uint64_t>(sourceStreamPtr_->Tell()) + length + TRUNK_CRC_FIELD_BYTES > streamSize) {
+            break;
+        }
+        sourceStreamPtr_->Seek(sourceStreamPtr_->Tell() + length + TRUNK_CRC_FIELD_BYTES);
+    }
+    sourceStreamPtr_->Seek(savedPosition);
+    return 0;
+}
+
+bool ImageSource::IsHeifWithoutAlpha()
+{
+#ifdef HEIF_HW_DECODE_ENABLE
+    uint32_t ret = SUCCESS;
+    auto iter = GetValidImageStatus(0, ret);
+    if (iter == imageStatusMap_.end()) {
+        IMAGE_LOGE("[ImageSource] IsHeifWithoutAlpha, get valid image status fail, ret:%{public}u.", ret);
+        return false;
+    }
+
+    if (InitMainDecoder() != SUCCESS) {
+        IMAGE_LOGE("[ImageSource] IsHeifWithoutAlpha, get decoder failed");
+        return false;
+    }
+
+    return mainDecoder_->IsHeifWithoutAlpha();
+#endif
+    return false;
 }
 } // namespace Media
 } // namespace OHOS

@@ -380,7 +380,7 @@ STATIC_EXEC_FUNC(Packing)
 }
 
 static bool PackingErrorSendEvent(napi_env env, ImagePackerAsyncContext* context,
-                                  napi_event_priority prio)
+                                  napi_event_priority prio, const char* taskName)
 {
     auto task = [env, context]() {
         napi_value result = nullptr;
@@ -388,7 +388,7 @@ static bool PackingErrorSendEvent(napi_env env, ImagePackerAsyncContext* context
         context->status = ERROR;
         CommonCallbackRoutine(env, const_cast<ImagePackerAsyncContext *&>(context), result);
     };
-    if (napi_status::napi_ok != napi_send_event(env, task, prio)) {
+    if (napi_status::napi_ok != napi_send_event(env, task, prio, taskName)) {
         IMAGE_LOGE("PackingErrorSendEvent: failed to SendEvent!");
         return false;
     }
@@ -954,7 +954,8 @@ static void ParserPackingArguments(napi_env env,
     }
 }
 
-napi_value ImagePackerNapi::Packing(napi_env env, napi_callback_info info, bool needReturnError)
+napi_value ImagePackerNapi::Packing(napi_env env, napi_callback_info info, bool needReturnError,
+    const char* taskName)
 {
     ImageTrace imageTrace("ImagePackerNapi::Packing");
     IMAGE_LOGD("PackingFromNapi IN");
@@ -983,7 +984,7 @@ napi_value ImagePackerNapi::Packing(napi_env env, napi_callback_info info, bool 
     ImageNapiUtils::HicheckerReport();
 
     if (IsImagePackerErrorOccur(asyncContext.get())) {
-        if (PackingErrorSendEvent(env, asyncContext.get(), napi_eprio_high)) {
+        if (PackingErrorSendEvent(env, asyncContext.get(), napi_eprio_high, taskName)) {
             asyncContext.release();
         }
     } else {
@@ -998,12 +999,12 @@ napi_value ImagePackerNapi::Packing(napi_env env, napi_callback_info info, bool 
 
 napi_value ImagePackerNapi::Packing(napi_env env, napi_callback_info info)
 {
-    return Packing(env, info, false);
+    return Packing(env, info, false, "ImagePacker.packing");
 }
 
 napi_value ImagePackerNapi::PackToData(napi_env env, napi_callback_info info)
 {
-    return Packing(env, info, true);
+    return Packing(env, info, true, "ImagePacker.packToData");
 }
 
 napi_value ImagePackerNapi::GetSupportedFormats(napi_env env, napi_callback_info info)
@@ -1248,7 +1249,7 @@ napi_value ImagePackerNapi::PackToFile(napi_env env, napi_callback_info info)
     ImageNapiUtils::HicheckerReport();
 
     if (IsImagePackerErrorOccur(asyncContext.get())) {
-        if (PackingErrorSendEvent(env, asyncContext.get(), napi_eprio_high)) {
+        if (PackingErrorSendEvent(env, asyncContext.get(), napi_eprio_high, "ImagePacker.packToFile")) {
             asyncContext.release();
         }
     } else {

@@ -366,13 +366,6 @@ static sk_sp<SkColorSpace> ToHdrEncodeSkColorSpace(Media::PixelMap *pixelmap,
 #endif
     sk_sp<SkColorSpace> colorSpace =
         SkColorSpace::MakeRGB(SkNamedTransferFn::kSRGB, sdrIsSRGB? SkNamedGamut::kSRGB : SkNamedGamut::kDisplayP3);
-    if (isGainmap) {
-        colorSpace = SkColorSpace::MakeRGB(SkNamedTransferFn::kRec2020, SkNamedGamut::kRec2020);
-        if (pixelmap->InnerGetGrColorSpacePtr() != nullptr &&
-            pixelmap->InnerGetGrColorSpace().GetColorSpaceName() != ColorManager::ColorSpaceName::NONE) {
-            colorSpace = pixelmap->InnerGetGrColorSpacePtr()->ToSkColorSpace();
-        }
-    }
     colorSpace->SetIccCicp(cicp);
     return colorSpace;
 #endif
@@ -1034,15 +1027,15 @@ static SkImageInfo GetSkInfo(PixelMap* pixelMap, bool isGainmap, bool isSRGB = f
         if (pixelMap->InnerGetGrColorSpacePtr() != nullptr &&
             pixelMap->InnerGetGrColorSpace().GetColorSpaceName() != ColorManager::ColorSpaceName::NONE) {
             colorSpace = pixelMap->InnerGetGrColorSpacePtr()->ToSkColorSpace();
-        }
-        skcms_CICP cicp;
-        ColorUtils::ColorSpaceGetCicp(pixelMap->InnerGetGrColorSpace().GetColorSpaceName(),
+            skcms_CICP cicp;
+            ColorUtils::ColorSpaceGetCicp(pixelMap->InnerGetGrColorSpace().GetColorSpaceName(),
 #ifdef USE_M133_SKIA
             cicp.color_primaries, cicp.transfer_characteristics, cicp.matrix_coefficients, cicp.video_full_range_flag);
 #else
             cicp.colour_primaries, cicp.transfer_characteristics, cicp.matrix_coefficients, cicp.full_range_flag);
 #endif
-        colorSpace->SetIccCicp(cicp);
+            colorSpace->SetIccCicp(cicp);
+        }
 #endif
     }
     return SkImageInfo::Make(width, height, colorType, alphaType, colorSpace);
@@ -2448,7 +2441,8 @@ bool ExtEncoder::GetToneMapMetadata(HdrMetadata& metadata, ToneMapMetadata& tone
 {
     ISOMetadata isoMeta = metadata.extendMeta.metaISO;
     toneMapMetadata.useBaseColorSpace = (isoMeta.useBaseColorFlag == 1) ? true : false;
-    toneMapMetadata.channelCnt = (isoMeta.gainmapChannelNum == 0) ? GAINMAP_CHANNEL_SINGLE : GAINMAP_CHANNEL_MULTI;
+    toneMapMetadata.channelCnt = (isoMeta.gainmapChannelNum == GAINMAP_CHANNEL_MULTI) ?
+        GAINMAP_CHANNEL_MULTI : GAINMAP_CHANNEL_SINGLE;
     toneMapMetadata.baseHdrHeadroom.denominator = DEFAULT_DENOMINATOR;
     if (isoMeta.baseHeadroom > 0.0f) {
         toneMapMetadata.baseHdrHeadroom.numerator = (uint32_t)(isoMeta.baseHeadroom * DEFAULT_DENOMINATOR);

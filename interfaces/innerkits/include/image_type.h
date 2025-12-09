@@ -40,6 +40,8 @@ namespace Media {
 #define GIF_METADATA_KEY_DELAY_TIME "GifDelayTime"
 #define GIF_METADATA_KEY_DISPOSAL_TYPE "GifDisposalType"
 
+#define HEIFS_METADATA_KEY_DELAY_TIME "HeifsDelayTime"
+
 // There is no definite tag name for gainmap
 #define AUXILIARY_TAG_GAINMAP ""
 #define AUXILIARY_TAG_DEPTH_MAP_BACK "DepthP"
@@ -277,6 +279,23 @@ struct RGBDataInfo {
     uint32_t stride = 0;
 };
 
+enum class YuvConversion : int {
+    BT601 = 0,
+    BT709 = 1,
+    BT2020 = 2,
+    BT240 = 3,
+    BTFCC = 4,
+    BT_MAX,
+};
+
+struct YUVConvertColorSpaceDetails {
+    // Range: 0 means limit range, 1 means full range.
+    uint8_t srcRange = 0;
+    uint8_t dstRange = 0;
+    YuvConversion srcYuvConversion = YuvConversion::BT601;
+    YuvConversion dstYuvConversion = YuvConversion::BT601;
+};
+
 struct DestConvertInfo {
     uint32_t width = 0;
     uint32_t height = 0;
@@ -289,6 +308,7 @@ struct DestConvertInfo {
     uint32_t yOffset = 0;
     uint32_t uvOffset = 0;
     void *context = nullptr;
+    YUVConvertColorSpaceDetails yuvConvertCSDetails;
 };
 
 struct SrcConvertParam {
@@ -311,6 +331,7 @@ struct DestConvertParam {
     uint32_t bufferSize = 0;
     int stride[4] = {0, 0, 0, 0};
     uint8_t *slice[4] = {nullptr, nullptr, nullptr, nullptr};
+    YUVConvertColorSpaceDetails yuvConvertCSDetails;
 };
 
 struct FillColor {
@@ -426,6 +447,7 @@ enum class MetadataType {
     STDATA = 6,
     RESMAP = 7,
     UNKNOWN = 0,
+    HEIFS = 15,
 };
 
 static const std::map<MetadataType, std::string> BLOB_METADATA_TAG_MAP = {
@@ -451,23 +473,6 @@ struct MaintenanceData {
     std::shared_ptr<uint8_t[]> data_;
     size_t size_ = 0;
     MaintenanceData(std::shared_ptr<uint8_t[]> data, size_t size) : data_(data), size_(size) {}
-};
-
-enum class YuvConversion : int {
-    BT601 = 0,
-    BT709 = 1,
-    BT2020 = 2,
-    BT240 = 3,
-    BTFCC = 4,
-    BT_MAX,
-};
-
-struct YUVConvertColorSpaceDetails {
-    // Range: 0 means limit range, 1 means full range.
-    uint8_t srcRange = 0;
-    uint8_t dstRange = 0;
-    YuvConversion srcYuvConversion = YuvConversion::BT601;
-    YuvConversion dstYuvConversion = YuvConversion::BT601;
 };
 
 struct AstcMetadata {
@@ -500,6 +505,8 @@ struct XmageCoordinateMetadata {
     uint32_t top;
     uint32_t right;
     uint32_t bottom;
+    uint32_t imageWidth;
+    uint32_t imageLength;
 };
 } // namespace Media
 } // namespace OHOS
