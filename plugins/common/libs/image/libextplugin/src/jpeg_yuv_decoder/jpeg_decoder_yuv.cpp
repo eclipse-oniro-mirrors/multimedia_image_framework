@@ -539,8 +539,7 @@ bool JpegDecoderYuv::ValidateParameter(YuvPlaneInfo &srcPlaneInfo, ConverterPair
     return true;
 }
 
-void UpdateDestStride(JpegDecoderYuvParameter decodeParameter, const DecodeContext &context, YuvPlaneInfo &dest,
-    uint32_t height)
+void UpdateDestStride(JpegDecoderYuvParameter decodeParameter, const DecodeContext &context, YuvPlaneInfo &dest)
 {
     unsigned char* outYData = decodeParameter.yuvBuffer_;
     if (context.allocatorType == Media::AllocatorType::DMA_ALLOC) {
@@ -596,7 +595,7 @@ int JpegDecoderYuv::ConvertFrom4xx(YuvPlaneInfo &srcPlaneInfo, ConverterPair &co
             JpegDecoderYuv::InitPlaneOutInfoTo420NV(width, height, dest);
             dest.planes[YCOM] = outYData;
             dest.planes[UVCOM] = outUVData;
-            UpdateDestStride(decodeParameter_, context, dest, height);
+            UpdateDestStride(decodeParameter_, context, dest);
             ret = converter.toNV21Func(srcYVU, dest);
             break;
         }
@@ -604,7 +603,7 @@ int JpegDecoderYuv::ConvertFrom4xx(YuvPlaneInfo &srcPlaneInfo, ConverterPair &co
             JpegDecoderYuv::InitPlaneOutInfoTo420NV(width, height, dest);
             dest.planes[YCOM] = outYData;
             dest.planes[UVCOM] = outUVData;
-            UpdateDestStride(decodeParameter_, context, dest, height);
+            UpdateDestStride(decodeParameter_, context, dest);
             ret = converter.toNV21Func(srcPlaneInfo, dest);
             break;
         }
@@ -641,7 +640,7 @@ int JpegDecoderYuv::ConvertFromGray(YuvPlaneInfo &srcPlaneInfo, const DecodeCont
     dest.planes[VCOM] = outVData;
     int ret = 0;
     if (decodeParameter_.outfmt_ == JpegYuvFmt::OutFmt_NV12 || decodeParameter_.outfmt_ == JpegYuvFmt::OutFmt_NV21) {
-        UpdateDestStride(decodeParameter_, context, dest, height);
+        UpdateDestStride(decodeParameter_, context, dest);
         dest.planes[UVCOM] = outYData + dest.strides[YCOM] * dest.planeHeight[YCOM];
         ret = I400ToYUV420Sp(srcPlaneInfo, dest);
     } else {
