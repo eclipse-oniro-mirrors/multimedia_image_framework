@@ -30,7 +30,10 @@ class PixelMapImpl {
 public:
     PixelMapImpl();
     explicit PixelMapImpl(array_view<uint8_t> const& colors, InitializationOptions const& etsOptions);
+    explicit PixelMapImpl(array_view<uint8_t> const& colors, InitializationOptions const& etsOptions,
+        AllocatorType const& allocatorType);
     explicit PixelMapImpl(InitializationOptions const& etsOptions);
+    explicit PixelMapImpl(InitializationOptions const& etsOptions, AllocatorType const& allocatorType);
     explicit PixelMapImpl(std::shared_ptr<OHOS::Media::PixelMap> pixelMap);
     explicit PixelMapImpl(int64_t aniPtr);
     ~PixelMapImpl();
@@ -84,6 +87,7 @@ public:
 private:
     std::shared_ptr<OHOS::Media::PixelMap> nativePixelMap_ = nullptr;
     bool Is10BitFormat(OHOS::Media::PixelFormat format);
+    bool Is10BitYuvFormat(OHOS::Media::PixelFormat format);
     void ParseInitializationOptions(InitializationOptions const& etsOptions,
         OHOS::Media::InitializationOptions &options);
     void Release();

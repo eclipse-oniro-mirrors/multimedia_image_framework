@@ -919,19 +919,23 @@ export function pixelMapTransferDynamic(input: Object): Any {
 """)
 
 // global functions
-function MakeEmptySize(): Size;
-function MakeEmptyImageInfo(): ImageInfo;
 
 @gen_async("createPixelMap")
 @gen_promise("createPixelMap")
 @overload("createPixelMapSync")
-function CreatePixelMapByBufferAndOptionsSync(colors: @arraybuffer Array<u8>, options: InitializationOptions): PixelMap;
+function CreatePixelMapSync(colors: @arraybuffer Array<u8>, options: InitializationOptions): PixelMap;
 
 @overload("createPixelMapSync")
-function CreatePixelMapByOptionsSync(options: InitializationOptions): PixelMap;
+function CreateEmptyPixelMapSync(options: InitializationOptions): PixelMap;
 
-// For legacy ANI backward compatibility
-function CreatePixelMapByPtr(ptr: i64): PixelMap;
+@gen_promise("createPixelMapUsingAllocator")
+@overload("createPixelMapUsingAllocatorSync")
+function CreatePixelMapUsingAllocatorSync(colors: @arraybuffer Array<u8>, param: InitializationOptions, allocatorType: Optional<AllocatorType>): PixelMap;
+
+@overload("createPixelMapUsingAllocatorSync")
+function CreateEmptyPixelMapUsingAllocatorSync(param: InitializationOptions, allocatorType: Optional<AllocatorType>): PixelMap;
+
+function CreatePixelMapByPtr(aniPtr: i64): PixelMap;
 
 @gen_promise("createPixelMapFromSurface")
 @overload("createPixelMapFromSurfaceSync")
@@ -982,7 +986,6 @@ function GetImageSourceSupportedFormats(): Array<String>;
 
 function GetImagePackerSupportedFormats(): Array<String>;
 
-// For legacy ANI backward compatibility
 function CreateImageSourceByPtr(ptr: i64): ImageSource;
 
 function CreateImagePacker(): ImagePacker;
@@ -994,7 +997,6 @@ function CreateImageReceiver(size: Size, format: ImageFormat, capacity: i32): Op
 @overload("createPicture")
 function CreatePictureByPixelMap(mainPixelmap : PixelMap): Picture;
 
-// For legacy ANI backward compatibility
 function CreatePictureByPtr(ptr: i64): Picture;
 
 function CreatePictureFromParcel(sequence: @sts_type("rpc.MessageSequence") Opaque): Picture;

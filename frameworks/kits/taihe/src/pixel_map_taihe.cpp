@@ -46,36 +46,51 @@ enum class FormatType : int8_t {
     ASTC
 };
 
-Size MakeEmptySize()
+static Size MakeEmptySize()
 {
     return {0, 0};
 }
 
-ImageInfo MakeEmptyImageInfo()
+static ImageInfo MakeEmptyImageInfo()
 {
     return {MakeEmptySize(), 0, 0, PixelMapFormat(PixelMapFormat::key_t::UNKNOWN),
         AlphaType(AlphaType::key_t::UNKNOWN), "", false};
 }
 
-PixelMap CreatePixelMapByBufferAndOptionsSync(array_view<uint8_t> colors, InitializationOptions const& options)
+PixelMap CreatePixelMapSync(array_view<uint8_t> colors, InitializationOptions const& options)
 {
     return make_holder<PixelMapImpl, PixelMap>(colors, options);
 }
 
-PixelMap CreatePixelMapByOptionsSync(InitializationOptions const& options)
+PixelMap CreateEmptyPixelMapSync(InitializationOptions const& options)
 {
     return make_holder<PixelMapImpl, PixelMap>(options);
 }
 
-PixelMap CreatePixelMapByPtr(int64_t ptr)
+PixelMap CreatePixelMapUsingAllocatorSync(array_view<uint8_t> colors, InitializationOptions const& options,
+    optional_view<AllocatorType> allocatorType)
 {
-    return make_holder<PixelMapImpl, PixelMap>(ptr);
+    return make_holder<PixelMapImpl, PixelMap>(colors, options,
+        allocatorType.has_value() ? allocatorType.value() : AllocatorType::key_t::AUTO);
+}
+
+PixelMap CreateEmptyPixelMapUsingAllocatorSync(InitializationOptions const& options,
+    optional_view<AllocatorType> allocatorType)
+{
+    return make_holder<PixelMapImpl, PixelMap>(options,
+        allocatorType.has_value() ? allocatorType.value() : AllocatorType::key_t::AUTO);
+}
+
+PixelMap CreatePixelMapByPtr(int64_t aniPtr)
+{
+    return make_holder<PixelMapImpl, PixelMap>(aniPtr);
 }
 
 #if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
 static bool GetSurfaceSize(uint64_t surfaceId, Media::Rect& region)
 {
     if (region.width <= 0 || region.height <= 0) {
+        // Called by APIs without region information, need to calculate the full region
         sptr<Surface> surface = SurfaceUtils::GetInstance()->GetSurface(surfaceId);
         if (surface == nullptr) {
             IMAGE_LOGE("[%{public}s] GetSurfaceSize: GetSurface failed", __func__);
@@ -101,16 +116,21 @@ static bool GetSurfaceSize(uint64_t surfaceId, Media::Rect& region)
     return true;
 }
 
-static PixelMap CreatePixelMapFromSurface(std::string const& surfaceId, Media::Rect& region)
+static PixelMap CreatePixelMapFromSurface(std::string const& surfaceId, Media::Rect& region,
+    bool regionProvided = false)
 {
     uint64_t surfaceIdInt = 0;
     auto res = std::from_chars(surfaceId.data(), surfaceId.data() + surfaceId.size(), surfaceIdInt);
     if (res.ec != std::errc()) {
-        ImageTaiheUtils::ThrowExceptionError(Media::COMMON_ERR_INVALID_PARAMETER, "Empty or invalid Surface ID");
+        ImageTaiheUtils::ThrowExceptionError(
+            regionProvided ? Media::ERR_IMAGE_INVALID_PARAMETER : Media::COMMON_ERR_INVALID_PARAMETER,
+            "Empty or invalid Surface ID");
         return make_holder<PixelMapImpl, PixelMap>();
     }
     if (!GetSurfaceSize(surfaceIdInt, region)) {
-        ImageTaiheUtils::ThrowExceptionError(Media::COMMON_ERR_INVALID_PARAMETER, "Get Surface size failed");
+        ImageTaiheUtils::ThrowExceptionError(
+            regionProvided ? Media::ERR_IMAGE_INVALID_PARAMETER : Media::COMMON_ERR_INVALID_PARAMETER,
+            "Get Surface size failed");
         return make_holder<PixelMapImpl, PixelMap>();
     }
 
@@ -127,6 +147,12 @@ static PixelMap CreatePixelMapFromSurface(std::string const& surfaceId, Media::R
         pixelMap = CreatePixelMapFromSurfaceId(surfaceIdInt, region);
     }
 #endif
+    if (pixelMap == nullptr) {
+        ImageTaiheUtils::ThrowExceptionError(
+            regionProvided ? Media::ERR_IMAGE_INVALID_PARAMETER : Media::COMMON_ERR_INVALID_PARAMETER,
+            "Create PixelMap from Surface failed");
+        return make_holder<PixelMapImpl, PixelMap>();
+    }
     return make_holder<PixelMapImpl, PixelMap>(std::move(pixelMap));
 }
 #endif
@@ -154,10 +180,10 @@ PixelMap CreatePixelMapFromSurfaceByIdAndRegionSync(string_view etsSurfaceId,
     IMAGE_LOGD("[%{public}s] surfaceId=%{public}s, region=%{public}d,%{public}d,%{public}d,%{public}d",
         __func__, surfaceId.c_str(), region.left, region.top, region.width, region.height);
     if (region.width <= 0 || region.height <= 0) {
-        ImageTaiheUtils::ThrowExceptionError(Media::COMMON_ERR_INVALID_PARAMETER, "Invalid region");
+        ImageTaiheUtils::ThrowExceptionError(Media::ERR_IMAGE_INVALID_PARAMETER, "Invalid region");
         return make_holder<PixelMapImpl, PixelMap>();
     }
-    return CreatePixelMapFromSurface(surfaceId, region);
+    return CreatePixelMapFromSurface(surfaceId, region, true);
 #endif
 }
 
@@ -236,15 +262,47 @@ PixelMapImpl::PixelMapImpl(array_view<uint8_t> const& colors, InitializationOpti
 {
     Media::InitializationOptions options;
     ParseInitializationOptions(etsOptions, options);
-    if (!Is10BitFormat(options.pixelFormat)) {
-        nativePixelMap_ = Media::PixelMap::Create(reinterpret_cast<uint32_t*>(colors.data()),
-            colors.size() / sizeof(uint32_t), options);
+    if (Is10BitFormat(options.pixelFormat)) {
+        ImageTaiheUtils::ThrowExceptionError(Media::ERROR, "10-bit format is not supported");
+        return;
     }
+
+    nativePixelMap_ = Media::PixelMap::Create(reinterpret_cast<uint32_t*>(colors.data()), colors.size(), options);
     if (nativePixelMap_ == nullptr) {
-        ImageTaiheUtils::ThrowExceptionError(Media::COMMON_ERR_INVALID_PARAMETER,
-            "Create PixelMap by buffer and options failed");
-    } else {
-        IMAGE_LOGD("[%{public}s] Created PixelMap with ID: %{public}d", __func__, nativePixelMap_->GetUniqueId());
+        ImageTaiheUtils::ThrowExceptionError(Media::ERROR, "Create PixelMap from buffer failed");
+    }
+}
+
+PixelMapImpl::PixelMapImpl(array_view<uint8_t> const& colors, InitializationOptions const& etsOptions,
+    AllocatorType const& allocatorType)
+{
+    Media::InitializationOptions options;
+    ParseInitializationOptions(etsOptions, options);
+    if (Is10BitYuvFormat(options.pixelFormat) || Is10BitYuvFormat(options.srcPixelFormat)) {
+        ImageTaiheUtils::ThrowExceptionError(Media::ERR_MEDIA_UNSUPPORT_OPERATION,
+            "10-bit YUV format is not supported");
+        return;
+    }
+    if (!Media::ImageUtils::SetInitializationOptionAllocatorType(options, allocatorType.get_value())) {
+        ImageTaiheUtils::ThrowExceptionError(Media::ERR_MEDIA_UNSUPPORT_OPERATION, "Unsupported allocator type");
+        return;
+    }
+
+    Media::ImageInfo imageInfo;
+    imageInfo.size = options.size;
+    imageInfo.pixelFormat = options.srcPixelFormat;
+    int32_t requiredBufferSize = Media::ImageUtils::GetByteCount(imageInfo);
+    if (requiredBufferSize <= 0 || colors.size() < static_cast<size_t>(requiredBufferSize)) {
+        ImageTaiheUtils::ThrowExceptionError(Media::ERR_MEDIA_UNSUPPORT_OPERATION,
+            "Buffer size " + std::to_string(colors.size()) +
+            " is less than required buffer size " + std::to_string(requiredBufferSize));
+        return;
+    }
+
+    nativePixelMap_ = Media::PixelMap::Create(reinterpret_cast<uint32_t*>(colors.data()), colors.size(), options);
+    if (nativePixelMap_ == nullptr) {
+        ImageTaiheUtils::ThrowExceptionError(Media::ERR_MEDIA_UNSUPPORT_OPERATION,
+            "Create PixelMap from buffer using allocator failed");
     }
 }
 
@@ -257,9 +315,23 @@ PixelMapImpl::PixelMapImpl(InitializationOptions const& etsOptions)
     }
     nativePixelMap_ = Media::PixelMap::Create(options);
     if (nativePixelMap_ == nullptr) {
-        ImageTaiheUtils::ThrowExceptionError(Media::COMMON_ERR_INVALID_PARAMETER, "Create PixelMap by options failed");
-    } else {
-        IMAGE_LOGD("[%{public}s] Created PixelMap with ID: %{public}d", __func__, nativePixelMap_->GetUniqueId());
+        ImageTaiheUtils::ThrowExceptionError(Media::ERROR, "Create empty PixelMap failed");
+    }
+}
+
+PixelMapImpl::PixelMapImpl(InitializationOptions const& etsOptions, AllocatorType const& allocatorType)
+{
+    Media::InitializationOptions options;
+    ParseInitializationOptions(etsOptions, options);
+    if (!Media::ImageUtils::SetInitializationOptionAllocatorType(options, allocatorType.get_value())) {
+        ImageTaiheUtils::ThrowExceptionError(Media::ERR_MEDIA_UNSUPPORT_OPERATION, "Unsupported allocator type");
+        return;
+    }
+
+    nativePixelMap_ = Media::PixelMap::Create(options);
+    if (nativePixelMap_ == nullptr) {
+        ImageTaiheUtils::ThrowExceptionError(Media::ERR_MEDIA_UNSUPPORT_OPERATION,
+            "Create empty PixelMap using allocator failed");
     }
 }
 
@@ -1235,6 +1307,11 @@ bool PixelMapImpl::Is10BitFormat(Media::PixelFormat format)
         format == Media::PixelFormat::YCRCB_P010;
 }
 
+bool PixelMapImpl::Is10BitYuvFormat(Media::PixelFormat format)
+{
+    return format == Media::PixelFormat::YCBCR_P010 || format == Media::PixelFormat::YCRCB_P010;
+}
+
 void PixelMapImpl::ParseInitializationOptions(InitializationOptions const& etsOptions,
     Media::InitializationOptions &options)
 {
@@ -1267,10 +1344,10 @@ void PixelMapImpl::Release()
 
 } // namespace ANI::Image
 
-TH_EXPORT_CPP_API_MakeEmptySize(ANI::Image::MakeEmptySize);
-TH_EXPORT_CPP_API_MakeEmptyImageInfo(ANI::Image::MakeEmptyImageInfo);
-TH_EXPORT_CPP_API_CreatePixelMapByBufferAndOptionsSync(ANI::Image::CreatePixelMapByBufferAndOptionsSync);
-TH_EXPORT_CPP_API_CreatePixelMapByOptionsSync(ANI::Image::CreatePixelMapByOptionsSync);
+TH_EXPORT_CPP_API_CreatePixelMapSync(ANI::Image::CreatePixelMapSync);
+TH_EXPORT_CPP_API_CreateEmptyPixelMapSync(ANI::Image::CreateEmptyPixelMapSync);
+TH_EXPORT_CPP_API_CreatePixelMapUsingAllocatorSync(ANI::Image::CreatePixelMapUsingAllocatorSync);
+TH_EXPORT_CPP_API_CreateEmptyPixelMapUsingAllocatorSync(ANI::Image::CreateEmptyPixelMapUsingAllocatorSync);
 TH_EXPORT_CPP_API_CreatePixelMapByPtr(ANI::Image::CreatePixelMapByPtr);
 TH_EXPORT_CPP_API_CreatePixelMapFromSurfaceByIdSync(ANI::Image::CreatePixelMapFromSurfaceByIdSync);
 TH_EXPORT_CPP_API_CreatePixelMapFromSurfaceByIdAndRegionSync(ANI::Image::CreatePixelMapFromSurfaceByIdAndRegionSync);
