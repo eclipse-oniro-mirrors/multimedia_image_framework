@@ -113,9 +113,7 @@ constexpr uint32_t MAX_READ_COUNT = 2048;
 constexpr uint8_t FILL_NUMBER = 3;
 constexpr uint8_t ALIGN_NUMBER = 4;
 
-#if !defined(_WIN32) && !defined(_APPLE) && !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
 static constexpr uint8_t NUM_1 = 1;
-#endif
 static constexpr uint8_t NUM_2 = 2;
 static constexpr uint8_t NUM_3 = 3;
 static constexpr uint8_t NUM_4 = 4;
@@ -3207,11 +3205,6 @@ PixelMap *PixelMap::Unmarshalling(Parcel &parcel, PIXEL_MAP_ERR &error,
     return FinishUnmarshalling(pixelMap, parcel, imgInfo, pixelMemInfo, error);
 }
 
-void PixelMap::WriteUint8(std::vector<uint8_t> &buff, uint8_t value) const
-{
-    buff.push_back(value);
-}
-
 uint8_t PixelMap::ReadUint8(std::vector<uint8_t> &buff, int32_t &cursor)
 {
     if (static_cast<size_t>(cursor + 1) > buff.size()) {
@@ -3219,44 +3212,6 @@ uint8_t PixelMap::ReadUint8(std::vector<uint8_t> &buff, int32_t &cursor)
         return TLV_END;
     }
     return buff[cursor++];
-}
-
-uint8_t PixelMap::GetVarintLen(int32_t value) const
-{
-    uint32_t uValue = static_cast<uint32_t>(value);
-    uint8_t len = 1;
-    while (uValue > TLV_VARINT_MASK) {
-        len++;
-        uValue >>= TLV_VARINT_BITS;
-    }
-    return len;
-}
-
-void PixelMap::WriteVarint(std::vector<uint8_t> &buff, int32_t value) const
-{
-    uint32_t uValue = uint32_t(value);
-    while (uValue > TLV_VARINT_MASK) {
-        buff.push_back(TLV_VARINT_MORE | uint8_t(uValue & TLV_VARINT_MASK));
-        uValue >>= TLV_VARINT_BITS;
-    }
-    buff.push_back(uint8_t(uValue));
-}
-
-int32_t PixelMap::ReadVarint(std::vector<uint8_t> &buff, int32_t &cursor)
-{
-    uint32_t value = 0;
-    uint8_t shift = 0;
-    uint32_t item = 0;
-    do {
-        if (static_cast<size_t>(cursor + 1) > buff.size()) {
-            IMAGE_LOGE("ReadVarint out of range");
-            return static_cast<int32_t>(TLV_END);
-        }
-        item = uint32_t(buff[cursor++]);
-        value |= (item & TLV_VARINT_MASK) << shift;
-        shift += TLV_VARINT_BITS;
-    } while ((item & TLV_VARINT_MORE) != 0);
-    return int32_t(value);
 }
 
 void PixelMap::WriteData(std::vector<uint8_t> &buff, const uint8_t *data,
@@ -3277,91 +3232,6 @@ void PixelMap::WriteData(std::vector<uint8_t> &buff, const uint8_t *data,
         int32_t size = pixelsSize_;
         buff.insert(buff.end(), data, data + size);
     }
-}
-
-std::unique_ptr<AbsMemory> PixelMap::ReadData(std::vector<uint8_t> &buff, int32_t size, int32_t &cursor,
-    AllocatorType allocType, ImageInfo imageInfo)
-{
-    if (size <= 0 || static_cast<size_t>(size) > MAX_IMAGEDATA_SIZE) {
-        IMAGE_LOGE("[PixelMap] tlv read data fail: invalid size[%{public}d]", size);
-        return nullptr;
-    }
-    if (static_cast<size_t>(cursor + size) > buff.size()) {
-        IMAGE_LOGE("[PixelMap] ReadData out of range");
-        return nullptr;
-    }
-    std::unique_ptr<AbsMemory> dstMemory = nullptr;
-    int32_t dstRowStride = 0;
-    InitializationOptions opts;
-    opts.allocatorType = allocType;
-    int32_t errorCode = ImageUtils::AllocPixelMapMemory(dstMemory, dstRowStride, imageInfo, opts);
-    if (dstMemory == nullptr || dstMemory->data.data == nullptr || errorCode != SUCCESS) {
-        IMAGE_LOGE("[PixelMap] tlv read data fail: alloc memory failed");
-        return nullptr;
-    }
-    uint8_t* addr = static_cast<uint8_t*>(dstMemory->data.data);
-    int32_t rowDataSize = ImageUtils::GetRowDataSizeByPixelFormat(imageInfo.size.width, imageInfo.pixelFormat);
-    uint8_t* srcAddr = buff.data() + cursor;
-
-    if (size != rowDataSize * imageInfo.size.height) {
-        IMAGE_LOGE("[PixelMap] tlv read data fail: alloc memory failed");
-        return nullptr;
-    }
-    if (allocType == AllocatorType::DMA_ALLOC) {
-        if (dstRowStride == 0 || dstRowStride < rowDataSize ||
-            size > static_cast<SurfaceBuffer*>(dstMemory->extend.data)->GetSize()) {
-                IMAGE_LOGE("[PixelMap] tlv check dma size failed");
-                return nullptr;
-        }
-        for (int i = 0; i < imageInfo.size.height; i++) {
-            if (memcpy_s(addr + i * dstRowStride, rowDataSize, srcAddr + i * rowDataSize, rowDataSize) != EOK) {
-                IMAGE_LOGE("[PixelMap] tlv copy dma data failed");
-                return nullptr;
-            }
-        }
-    } else {
-        if (rowDataSize != dstRowStride) {
-            IMAGE_LOGE("[PixelMap] tlv check heap size failed");
-            return nullptr;
-        }
-        if (memcpy_s(addr, size, srcAddr, size) != EOK) {
-            IMAGE_LOGE("[PixelMap] tlv copy heap data failed");
-            return nullptr;
-        }
-    }
-    return dstMemory;
-}
-
-void PixelMap::TlvWriteSurfaceInfo(const PixelMap* pixelMap, vector<uint8_t>& buff) const
-{
-#if !defined(_WIN32) && !defined(_APPLE) && !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
-    sptr<SurfaceBuffer> surfaceBuffer(reinterpret_cast<SurfaceBuffer*>(pixelMap->GetFd()));
-    CM_ColorSpaceType colorSpaceType;
-    if (VpeUtils::GetSbColorSpaceType(surfaceBuffer, colorSpaceType)) {
-        ImageUtils::WriteUint8(buff, TLV_IMAGE_COLORTYPE);
-        ImageUtils::WriteVarint(buff, ImageUtils::GetVarintLen(static_cast<int32_t>(colorSpaceType)));
-        ImageUtils::WriteVarint(buff, static_cast<int32_t>(colorSpaceType));
-    }
-    CM_HDR_Metadata_Type metadataType;
-    if (VpeUtils::GetSbMetadataType(surfaceBuffer, metadataType)) {
-        ImageUtils::WriteUint8(buff, TLV_IMAGE_METADATATYPE);
-        ImageUtils::WriteVarint(buff, ImageUtils::GetVarintLen(static_cast<int32_t>(metadataType)));
-        ImageUtils::WriteVarint(buff, static_cast<int32_t>(metadataType));
-    }
-    vector<uint8_t> staticMetadata;
-    if (VpeUtils::GetSbStaticMetadata(surfaceBuffer, staticMetadata)) {
-        ImageUtils::WriteUint8(buff, TLV_IMAGE_STATICMETADATA);
-        ImageUtils::WriteVarint(buff, static_cast<int32_t>(staticMetadata.size()));
-        buff.insert(buff.end(), staticMetadata.begin(), staticMetadata.end());
-    }
-    vector<uint8_t> dynamicMetadata;
-    if (VpeUtils::GetSbDynamicMetadata(surfaceBuffer, dynamicMetadata)) {
-        ImageUtils::WriteUint8(buff, TLV_IMAGE_DYNAMICMETADATA);
-        ImageUtils::WriteVarint(buff, static_cast<int32_t>(dynamicMetadata.size()));
-        buff.insert(buff.end(), dynamicMetadata.begin(), dynamicMetadata.end());
-    }
-#endif
-    return;
 }
 
 static bool EncodeTlvHdrInfo(std::vector<uint8_t> &buff, AllocatorType allocatorType, PixelMap* pixelMap)
@@ -3596,7 +3466,7 @@ bool PixelMap::ReadTlvAttr(std::vector<uint8_t> &buff, ImageInfo &info,
     map<uint8_t, bool> tlvReEntryCheck = InitTlvReEntryCheckMap();
     int32_t cursor = 0;
     for (uint8_t tag = ReadUint8(buff, cursor); tag != TLV_END; tag = ReadUint8(buff, cursor)) {
-        int32_t len = ReadVarint(buff, cursor);
+        int32_t len = ImageUtils::ReadVarint(buff, cursor);
         if (len <= 0 || static_cast<size_t>(cursor + len) > buff.size()) {
             IMAGE_LOGE("[PixelMap] ReadTlvAttr out of range tag: %{public}d, len: %{public}d", tag, len);
             return false;
