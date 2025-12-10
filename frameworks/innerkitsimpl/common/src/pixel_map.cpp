@@ -849,8 +849,6 @@ static unique_ptr<PixelMap> CreateFromAstc(PixelMap &source, const Rect &srcRect
         IMAGE_LOGE("astc clone crop failed");
         return nullptr;
     }
-    ImageInfo srcInfo;
-    source.GetImageInfo(srcInfo);
     if ((opts.size.width != 0 && opts.size.height != 0) &&
         (opts.size.width != pixelAstc->GetWidth() || opts.size.height != pixelAstc->GetHeight())) {
         pixelAstc->scale(static_cast<float>(opts.size.width) / pixelAstc->GetWidth(),
@@ -1129,6 +1127,7 @@ bool CheckImageInfo(const ImageInfo &imageInfo, int32_t &errorCode, AllocatorTyp
 
 static unique_ptr<PixelMap> CloneAstc(PixelMap *srcAstc, int32_t &errorCode)
 {
+#if !defined(_WIN32) && !defined(_APPLE) && !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
     unique_ptr<PixelMap> dstAstc = make_unique<PixelAstc>();
     ImageInfo srcAstcInfo;
     srcAstc->GetImageInfo(srcAstcInfo);
@@ -1163,6 +1162,8 @@ static unique_ptr<PixelMap> CloneAstc(PixelMap *srcAstc, int32_t &errorCode)
     dstAstc->InnerSetColorSpace(colorspace);
 #endif
     return dstAstc;
+#endif
+    return nullptr;
 }
 
 unique_ptr<PixelMap> PixelMap::Clone(int32_t &errorCode)
