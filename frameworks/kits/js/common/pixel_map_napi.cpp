@@ -1533,6 +1533,26 @@ napi_value PixelMapNapi::CreatePixelMapUsingAllocatorSync(napi_env env, napi_cal
     return result;
 }
 
+static bool DealSurfaceId(std::string &surfaceId, unsigned long &id)
+{
+    if (surfaceId.find_first_not_of("0123456789") != std::string::npos) {
+        IMAGE_LOGE("The input string contains non-decimal characters.");
+    }
+    auto res = std::from_chars(surfaceId.c_str(), surfaceId.c_str() + surfaceId.size(), id);
+    if (res.ec != std::errc()) {
+        return true;
+    } else if (res.ec == std::errc::invalid_argument) {
+        IMAGE_LOGE("Invalid argument: the input string is not a valid number.");
+    return false;
+    } else if (res.ec == std::errc::result_out_of_range) {
+        IMAGE_LOGE("Out of range: the number is too large or too small for the target type.");
+        return false;
+    } else {
+        IMAGE_LOGE("Unknown error occured during conversion.");
+        return false;
+    }
+}
+
 #if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
 static bool GetSurfaceSize(size_t argc, Rect &region, std::string fd)
 {
@@ -1571,7 +1591,7 @@ static bool GetSurfaceSize(size_t argc, Rect &region, std::string fd)
     return true;
 }
 
-static bool GetSurfaceSize(Rect &region, uint64_t fd)
+static bool GetSurfaceSize(Rect &region, unsigned long fd)
 {
     if (region.width <= 0 || region.height <= 0) {
         sptr<Surface> surface = SurfaceUtils::GetInstance()->GetSurface(fd);
@@ -1650,7 +1670,7 @@ STATIC_EXEC_FUNC(CreatePixelMapFromSurfaceWithTransformation)
     IMAGE_LOGD("CreatePixelMapFromSurface id:%{public}s,area:%{public}d,%{public}d,%{public}d,%{public}d",
         context->surfaceId.c_str(), context->area.region.left, context->area.region.top,
         context->area.region.height, context->area.region.width);
-    uint64_t surfaceId = 0;
+    unsigned long surfaceId = 0;
     if (!DealSurfaceId(context->surfaceId, surfaceId)) {
         context->status = ERR_IMAGE_INVALID_PARAM;
         return;
