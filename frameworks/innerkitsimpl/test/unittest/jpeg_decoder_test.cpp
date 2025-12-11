@@ -59,6 +59,11 @@ static const std::string IMAGE_INPUT_JPG_PATH = "/data/local/tmp/image/800-500.j
 static constexpr int32_t IMAGE_INPUT_JPG_WIDTH = 800;
 static constexpr int32_t IMAGE_INPUT_JPG_HEIGHT = 500;
 static constexpr int32_t NUM_4 = 4;
+static constexpr int32_t SETJMP_ERR_RETURN = 1;
+static constexpr int32_t WIDTH_SMALL = 1;
+static constexpr int32_t HEIGHT_SMALL = 2;
+static constexpr int JPEG_TEST_MIN_STREAM_SIZE = 1;
+static constexpr int JPEG_TEST_INVALID_EXIF_CODE = -1;
 static constexpr int PERMISSION_GPS_TYPE = 1;
 static const std::string IMAGE_INPUT_EXIF_PATH = "/data/local/tmp/image/test_exif.jpg";
 class JpegDecoderTest : public testing::Test {
@@ -1759,6 +1764,321 @@ HWTEST_F(JpegDecoderTest, CreateExifDataTest001, TestSize.Level3)
     EXPECT_TRUE(ret);
     EXPECT_TRUE(isNewExifData);
     GTEST_LOG_(INFO) << "JpegDecoderTest: CreateExifDataTest001 end";
+}
+
+/**
+ * @tc.name: SetDecodeOptionsTest005
+ * @tc.desc: Test SetDecodeOptions when image width or height is 0.
+ * @tc.type: FUNC
+ */
+HWTEST_F(JpegDecoderTest, SetDecodeOptionsTest005, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "JpegDecoderTest: SetDecodeOptionsTest005 start";
+    auto jpegDecoder = std::make_shared<JpegDecoder>();
+    int size = STREAM_SIZE;
+    std::unique_ptr<uint8_t[]> data = std::make_unique<uint8_t[]>(size);
+    auto streamPtr = BufferSourceStream::CreateSourceStream(data.get(), size);
+    jpegDecoder->SetSource(*streamPtr.release());
+
+    jpegDecoder->state_ = JpegDecodingState::BASE_INFO_PARSED;
+    jpegDecoder->decodeInfo_.image_width = 0;
+    jpegDecoder->decodeInfo_.image_height = IMAGE_INPUT_JPG_HEIGHT;
+    PixelDecodeOptions opts;
+    PlImageInfo info;
+    uint32_t ret = jpegDecoder->SetDecodeOptions(0, opts, info);
+    ASSERT_EQ(ret, Media::ERR_IMAGE_INVALID_PARAMETER);
+
+    jpegDecoder->decodeInfo_.image_width = IMAGE_INPUT_JPG_WIDTH;
+    jpegDecoder->decodeInfo_.image_height = 0;
+    ret = jpegDecoder->SetDecodeOptions(0, opts, info);
+    ASSERT_EQ(ret, Media::ERR_IMAGE_INVALID_PARAMETER);
+    GTEST_LOG_(INFO) << "JpegDecoderTest: SetDecodeOptionsTest005 end";
+}
+
+/**
+ * @tc.name: SetDecodeOptionsTest007
+ * @tc.desc: Test SetDecodeOptions when StartDecompress return ERR_IMAGE_UNKNOWN_FORMAT.
+ * @tc.type: FUNC
+ */
+HWTEST_F(JpegDecoderTest, SetDecodeOptionsTest007, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "JpegDecoderTest: SetDecodeOptionsTest007 start";
+    auto jpegDecoder = std::make_shared<JpegDecoder>();
+    int size = STREAM_SIZE;
+    std::unique_ptr<uint8_t[]> data = std::make_unique<uint8_t[]>(size);
+    auto streamPtr = BufferSourceStream::CreateSourceStream(data.get(), size);
+    jpegDecoder->SetSource(*streamPtr.release());
+
+    jpegDecoder->state_ = JpegDecodingState::BASE_INFO_PARSED;
+    jpegDecoder->decodeInfo_.image_width = IMAGE_INPUT_JPG_WIDTH;
+    jpegDecoder->decodeInfo_.image_height = IMAGE_INPUT_JPG_HEIGHT;
+    jpegDecoder->decodeInfo_.jpeg_color_space = JCS_CMYK;
+    PixelDecodeOptions opts;
+    opts.desiredPixelFormat = PixelFormat::ALPHA_8;
+    PlImageInfo info;
+    uint32_t ret = jpegDecoder->SetDecodeOptions(0, opts, info);
+    ASSERT_EQ(ret, Media::ERR_IMAGE_UNKNOWN_FORMAT);
+    GTEST_LOG_(INFO) << "JpegDecoderTest: SetDecodeOptionsTest007 end";
+}
+
+/**
+ * @tc.name: DoSwDecodeTest001
+ * @tc.desc: Test DoSwDecode expect return ERR_IMAGE_DECODE_ABNORMAL when CheckMulOverflow returns true.
+ * @tc.type: FUNC
+ */
+HWTEST_F(JpegDecoderTest, DoSwDecodeTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "JpegDecoderTest: DoSwDecodeTest001 start";
+    auto jpegDecoder = std::make_shared<JpegDecoder>();
+    int size = STREAM_SIZE;
+    std::unique_ptr<uint8_t[]> data = std::make_unique<uint8_t[]>(size);
+    auto streamPtr = BufferSourceStream::CreateSourceStream(data.get(), size);
+    jpegDecoder->SetSource(*streamPtr.release());
+
+    jpegDecoder->decodeInfo_.out_color_space = JCS_EXT_ABGR;
+    jpegDecoder->decodeInfo_.out_color_components = UINT32_MAX;
+    jpegDecoder->decodeInfo_.output_width = WIDTH_SMALL;
+    jpegDecoder->decodeInfo_.output_height = HEIGHT_SMALL;
+    DecodeContext context;
+    uint32_t ret = jpegDecoder->DoSwDecode(context);
+    ASSERT_EQ(ret, ERR_IMAGE_DECODE_ABNORMAL);
+    GTEST_LOG_(INFO) << "JpegDecoderTest: DoSwDecodeTest001 end";
+}
+
+/**
+ * @tc.name: DoSwDecodeTest002
+ * @tc.desc: Test DoSwDecode when context.pixelsBuffer.buffer is not nullptr and decodeInfo_.src is nullptr.
+ * @tc.type: FUNC
+ */
+HWTEST_F(JpegDecoderTest, DoSwDecodeTest002, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "JpegDecoderTest: DoSwDecodeTest002 start";
+    auto jpegDecoder = std::make_shared<JpegDecoder>();
+    int size = STREAM_SIZE;
+    std::unique_ptr<uint8_t[]> data = std::make_unique<uint8_t[]>(size);
+    auto streamPtr = BufferSourceStream::CreateSourceStream(data.get(), size);
+    jpegDecoder->SetSource(*streamPtr.release());
+
+    DecodeContext context;
+    auto pixelBufHolder = std::unique_ptr<uint8_t, decltype(&free)>(static_cast<uint8_t*>(malloc(NUM_4)), &free);
+    ASSERT_NE(pixelBufHolder.get(), nullptr);
+    context.pixelsBuffer.buffer = pixelBufHolder.get();
+    jpegDecoder->decodeInfo_.src = nullptr;
+    uint32_t ret = jpegDecoder->DoSwDecode(context);
+    ASSERT_EQ(ret, ERR_IMAGE_INVALID_PARAMETER);
+    GTEST_LOG_(INFO) << "JpegDecoderTest: DoSwDecodeTest002 end";
+}
+
+/**
+ * @tc.name: DecodeTest006
+ * @tc.desc: Test Decode when state_ is IMAGE_DECODING hwJpegDecompress_ is not nullptr.
+ * @tc.type: FUNC
+ */
+HWTEST_F(JpegDecoderTest, DecodeTest006, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "JpegDecoderTest: DecodeTest006 start";
+    auto jpegDecoder = std::make_shared<JpegDecoder>();
+    int size = STREAM_SIZE;
+    std::unique_ptr<uint8_t[]> data = std::make_unique<uint8_t[]>(size);
+    auto streamPtr = BufferSourceStream::CreateSourceStream(data.get(), size);
+    jpegDecoder->SetSource(*streamPtr.release());
+    SourceOptions sourceOpts;
+    sourceOpts.formatHint = "image/jpeg";
+
+    uint32_t index = 0;
+    DecodeContext context;
+    jpegDecoder->state_ = JpegDecodingState::IMAGE_DECODING;
+    std::map<std::string, MultimediaPlugin::AttrData> capabilites;
+    capabilites.insert(std::map<std::string, MultimediaPlugin::AttrData>::value_type("encodeFormat",
+        MultimediaPlugin::AttrData(sourceOpts.formatHint)));
+    jpegDecoder->hwJpegDecompress_ = JpegDecoder::pluginServer_.CreateObject<AbsImageDecompressComponent>(
+        AbsImageDecompressComponent::SERVICE_DEFAULT, capabilites);
+    uint32_t ret = jpegDecoder->Decode(index, context);
+    ASSERT_EQ(ret, ERR_IMAGE_DECODE_ABNORMAL);
+    GTEST_LOG_(INFO) << "JpegDecoderTest: DecodeTest006 end";
+}
+
+/**
+ * @tc.name: FindMarkerTest001
+ * @tc.desc: Test FindMarker when readSize is not equal MARKER_SIZE.
+ * @tc.type: FUNC
+ */
+HWTEST_F(JpegDecoderTest, FindMarkerTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "JpegDecoderTest: FindMarkerTest001 start";
+    auto jpegDecoder = std::make_shared<JpegDecoder>();
+    int size = JPEG_TEST_MIN_STREAM_SIZE;
+    std::unique_ptr<uint8_t[]> data = std::make_unique<uint8_t[]>(size);
+    auto streamPtr = BufferSourceStream::CreateSourceStream(data.get(), size);
+    jpegDecoder->SetSource(*streamPtr.release());
+
+    uint8_t marker = 0;
+    bool ret = jpegDecoder->FindMarker(*jpegDecoder->srcMgr_.inputStream, marker);
+    ASSERT_EQ(ret, false);
+    GTEST_LOG_(INFO) << "JpegDecoderTest: FindMarkerTest001 end";
+}
+
+/**
+ * @tc.name: DecodeHeaderTest001
+ * @tc.desc: Test DecodeHeader when setjmp not returns zero.
+ * @tc.type: FUNC
+ */
+HWTEST_F(JpegDecoderTest, DecodeHeaderTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "JpegDecoderTest: DecodeHeaderTest001 start";
+    auto jpegDecoder = std::make_shared<JpegDecoder>();
+    int size = STREAM_SIZE;
+    std::unique_ptr<uint8_t[]> data = std::make_unique<uint8_t[]>(size);
+    auto streamPtr = BufferSourceStream::CreateSourceStream(data.get(), size);
+    jpegDecoder->SetSource(*streamPtr.release());
+
+    jpegDecoder->jerr_.error_exit = [](j_common_ptr cinfo) {
+        JpegDecoder* decoder = reinterpret_cast<JpegDecoder*>(cinfo->client_data);
+        longjmp(decoder->jerr_.setjmp_buffer, SETJMP_ERR_RETURN);
+    };
+    jpegDecoder->decodeInfo_.client_data = jpegDecoder.get();
+    uint32_t ret = jpegDecoder->DecodeHeader();
+    ASSERT_EQ(ret, ERR_IMAGE_DECODE_ABNORMAL);
+    GTEST_LOG_(INFO) << "JpegDecoderTest: DecodeHeaderTest001 end";
+}
+
+/**
+ * @tc.name: DecodeHeaderTest002
+ * @tc.desc: Test DecodeHeader expect return ERR_IMAGE_SOURCE_DATA_INCOMPLETE when the input stream is too short.
+ * @tc.type: FUNC
+ */
+HWTEST_F(JpegDecoderTest, DecodeHeaderTest002, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "JpegDecoderTest: DecodeHeaderTest002 start";
+    auto jpegDecoder = std::make_shared<JpegDecoder>();
+    int size = JPEG_TEST_MIN_STREAM_SIZE;
+    std::unique_ptr<uint8_t[]> data = std::make_unique<uint8_t[]>(size);
+    auto streamPtr = BufferSourceStream::CreateSourceStream(data.get(), size);
+    jpegDecoder->SetSource(*streamPtr.release());
+
+    uint32_t ret = jpegDecoder->DecodeHeader();
+    ASSERT_EQ(ret, ERR_IMAGE_SOURCE_DATA_INCOMPLETE);
+    GTEST_LOG_(INFO) << "JpegDecoderTest: DecodeHeaderTest002 end";
+}
+
+/**
+ * @tc.name: StartDecompressTest002
+ * @tc.desc: Test StartDecompress when setjmp not returns zero.
+ * @tc.type: FUNC
+ */
+HWTEST_F(JpegDecoderTest, StartDecompressTest002, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "JpegDecoderTest: StartDecompressTest002 start";
+    auto jpegDecoder = std::make_shared<JpegDecoder>();
+    int size = STREAM_SIZE;
+    std::unique_ptr<uint8_t[]> data = std::make_unique<uint8_t[]>(size);
+    auto streamPtr = BufferSourceStream::CreateSourceStream(data.get(), size);
+    jpegDecoder->SetSource(*streamPtr.release());
+
+    jpegDecoder->jerr_.error_exit = [](j_common_ptr cinfo) {
+        JpegDecoder* decoder = reinterpret_cast<JpegDecoder*>(cinfo->client_data);
+        longjmp(decoder->jerr_.setjmp_buffer, SETJMP_ERR_RETURN);
+    };
+    jpegDecoder->decodeInfo_.client_data = jpegDecoder.get();
+    PixelDecodeOptions opts;
+    uint32_t ret = jpegDecoder->StartDecompress(opts);
+    ASSERT_EQ(ret, ERR_IMAGE_DECODE_ABNORMAL);
+    GTEST_LOG_(INFO) << "JpegDecoderTest: StartDecompressTest002 end";
+}
+
+/**
+ * @tc.name: StartDecompressTest003
+ * @tc.desc: Test StartDecompress when the JPEG color space is CMYK and the desired pixel format is NV21.
+ * @tc.type: FUNC
+ */
+HWTEST_F(JpegDecoderTest, StartDecompressTest003, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "JpegDecoderTest: StartDecompressTest003 start";
+    auto jpegDecoder = std::make_shared<JpegDecoder>();
+    uint32_t errorCode = JPEG_TEST_INVALID_EXIF_CODE;
+    SourceOptions sourceOpts;
+    sourceOpts.formatHint = "image/jpeg";
+    std::unique_ptr<ImageSource> imageSource =
+        ImageSource::CreateImageSource(IMAGE_INPUT_JPG_PATH, sourceOpts, errorCode);
+    ASSERT_NE(imageSource, nullptr);
+    ASSERT_EQ(errorCode, SUCCESS);
+    jpegDecoder->SetSource(*(imageSource->sourceStreamPtr_.get()));
+
+    PixelDecodeOptions opts;
+    opts.desiredPixelFormat = PixelFormat::NV21;
+    opts.editable = true;
+    opts.desiredSize.width = IMAGE_INPUT_JPG_WIDTH;
+    opts.desiredSize.height = IMAGE_INPUT_JPG_HEIGHT;
+    jpegDecoder->CreateDecoder();
+
+    jpegDecoder->decodeInfo_.jpeg_color_space = JCS_CMYK;
+    uint32_t ret = jpegDecoder->StartDecompress(opts);
+    ASSERT_NE(ret, Media::SUCCESS);
+    GTEST_LOG_(INFO) << "JpegDecoderTest: StartDecompressTest003 end";
+}
+
+/**
+ * @tc.name: GetImagePropertyStringTest041
+ * @tc.desc: Test GetImagePropertyString when EXIF data has already been parsed.
+ * @tc.type: FUNC
+ */
+HWTEST_F(JpegDecoderTest, GetImagePropertyStringTest041, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "JpegDecoderTest: GetImagePropertyStringTest041 start";
+    auto jpegDecoder = std::make_shared<JpegDecoder>();
+    int size = STREAM_SIZE;
+    std::unique_ptr<uint8_t[]> data = std::make_unique<uint8_t[]>(size);
+    auto streamPtr = BufferSourceStream::CreateSourceStream(data.get(), size);
+    jpegDecoder->SetSource(*streamPtr.release());
+
+    jpegDecoder->ParseExifData();
+    std::string value;
+    std::string key = ORIENTATION;
+    uint32_t ret = jpegDecoder->GetImagePropertyString(0, key, value);
+    ASSERT_NE(ret, Media::ERROR);
+    GTEST_LOG_(INFO) << "JpegDecoderTest: GetImagePropertyStringTest041 end";
+}
+
+/**
+ * @tc.name: GetImagePropertyStringTest042
+ * @tc.desc: Test GetImagePropertyString when key is same as ISO_SPEED.
+ * @tc.type: FUNC
+ */
+HWTEST_F(JpegDecoderTest, GetImagePropertyStringTest042, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "JpegDecoderTest: GetImagePropertyStringTest042 start";
+    auto jpegDecoder = std::make_shared<JpegDecoder>();
+    int size = STREAM_SIZE;
+    std::unique_ptr<uint8_t[]> data = std::make_unique<uint8_t[]>(size);
+    auto streamPtr = BufferSourceStream::CreateSourceStream(data.get(), size);
+    jpegDecoder->SetSource(*streamPtr.release());
+
+    std::string value;
+    std::string key = "ISOSpeedRatings";
+    uint32_t ret = jpegDecoder->GetImagePropertyString(key, value);
+    ASSERT_EQ(ret, Media::SUCCESS);
+    GTEST_LOG_(INFO) << "JpegDecoderTest: GetImagePropertyStringTest042 end";
+}
+
+/**
+ * @tc.name: FormatTimeStampTest006
+ * @tc.desc: Test FormatTimeStamp when input src is empty.
+ * @tc.type: FUNC
+ */
+HWTEST_F(JpegDecoderTest, FormatTimeStampTest006, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "JpegDecoderTest: FormatTimeStampTest006 start";
+    auto jpegDecoder = std::make_shared<JpegDecoder>();
+    int size = STREAM_SIZE;
+    std::unique_ptr<uint8_t[]> data = std::make_unique<uint8_t[]>(size);
+    auto streamPtr = BufferSourceStream::CreateSourceStream(data.get(), size);
+    jpegDecoder->SetSource(*streamPtr.release());
+
+    std::string value = "123456789";
+    std::string src = "";
+    jpegDecoder->FormatTimeStamp(value, src);
+    ASSERT_EQ(value, "");
+    GTEST_LOG_(INFO) << "JpegDecoderTest: FormatTimeStampTest006 end";
 }
 }
 }

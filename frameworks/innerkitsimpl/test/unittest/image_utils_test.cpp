@@ -72,6 +72,32 @@ public:
 };
 
 /**
+ * @tc.name: DumpPixelMapIfDumpEnabledTest001
+ * @tc.desc: test DumpPixelMapIfDumpEnabled when dump is disabled
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageUtilsTest, DumpPixelMapIfDumpEnabledTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImageUtilsTest: DumpPixelMapIfDumpEnabledTest001 start";
+    std::unique_ptr<PixelMap> pixelMap = nullptr;
+    ImageUtils::DumpPixelMapIfDumpEnabled(pixelMap, 123);
+    GTEST_LOG_(INFO) << "ImageUtilsTest: DumpPixelMapIfDumpEnabledTest001 end";
+}
+
+/**
+ * @tc.name: DumpPixelMapIfDumpEnabledTest002
+ * @tc.desc: test DumpPixelMapIfDumpEnabled when pixelMap is null
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageUtilsTest, DumpPixelMapIfDumpEnabledTest002, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImageUtilsTest: DumpPixelMapIfDumpEnabledTest002 start";
+    std::unique_ptr<PixelMap> pixelMap = nullptr;
+    ImageUtils::DumpPixelMapIfDumpEnabled(pixelMap, 456);
+    GTEST_LOG_(INFO) << "ImageUtilsTest: DumpPixelMapIfDumpEnabledTest002 end";
+}
+
+/**
  * @tc.name: ImageTraceTest001
  * @tc.desc: test SetData and ClearData data type is bool
  * @tc.type: FUNC
@@ -1149,6 +1175,49 @@ HWTEST_F(ImageUtilsTest, GetYUVByteCountTest002, TestSize.Level3)
     res = ImageUtils::GetYUVByteCount(info);
     EXPECT_EQ(res, INVALID_RESULT);
     GTEST_LOG_(INFO) << "ImageUtilsTest: GetYUVByteCountTest002 end";
+}
+
+/**
+ * @tc.name: GetYUVByteCountTest003
+ * @tc.desc: test GetYUVByteCount when PixelFormatToAVPixelFormat returns AV_PIX_FMT_NONE.
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageUtilsTest, GetYUVByteCountTest003, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImageUtilsTest: GetYUVByteCountTest003 start";
+    ImageInfo info;
+    info.pixelFormat = PixelFormat::UNKNOWN;
+    info.size.width = VALID_DIMENSION;
+    info.size.height = VALID_DIMENSION;
+    int32_t res = ImageUtils::GetYUVByteCount(info);
+    EXPECT_EQ(res, INVALID_RESULT);
+    GTEST_LOG_(INFO) << "ImageUtilsTest: GetYUVByteCountTest003 end";
+}
+
+/**
+ * @tc.name: IsInRangeTest001
+ * @tc.desc: test IsInRange returns true when in range
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageUtilsTest, IsInRangeTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImageUtilsTest: IsInRangeTest001 start";
+    bool ret = ImageUtils::IsInRange(5, 1, 10);
+    ASSERT_TRUE(ret);
+    GTEST_LOG_(INFO) << "ImageUtilsTest: IsInRangeTest001 end";
+}
+
+/**
+ * @tc.name: IsInRangeTest002
+ * @tc.desc: test IsInRange returns false when out of range
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageUtilsTest, IsInRangeTest002, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImageUtilsTest: IsInRangeTest002 start";
+    bool ret = ImageUtils::IsInRange(0, 1, 10);
+    ASSERT_FALSE(ret);
+    GTEST_LOG_(INFO) << "ImageUtilsTest: IsInRangeTest002 end";
 }
 
 /**

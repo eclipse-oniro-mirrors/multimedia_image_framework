@@ -26,6 +26,12 @@
 #include "item_property_transform_box.h"
 #include "item_ref_box.h"
 
+#define TEST_FROM_ITEM_ID 1
+#define TEST_TO_ITEM_ID_1 100
+#define TEST_TO_ITEM_ID_2 200
+#define TEST_TO_ITEM_ID_3 300
+#define TEST_ITEM_COUNT 3
+
 using namespace testing::ext;
 namespace OHOS {
 namespace ImagePlugin {
@@ -969,5 +975,66 @@ HWTEST_F(HeifParserBoxTest, WriteChildren001, TestSize.Level3)
     EXPECT_GE(writtenData.size(), 8u);
     GTEST_LOG_(INFO) << "HeifParserBoxTest: WriteChildren001 end";
 }
+
+/**
+ * @tc.name: ParseItemRefNormalLoopTest001
+ * @tc.desc: Test parsing complete item reference data with multiple target items
+ *           Verifies correct extraction of all referenced item IDs from stream
+ * @tc.type: FUNC
+ */
+HWTEST_F(HeifParserBoxTest, ParseItemRefNormalLoopTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "HeifParserBoxTest: ParseItemRefNormalLoopTest001 start";
+    HeifIrefBox heifIrefBox;
+    HeifIrefBox::Reference ref;
+
+    std::vector<uint8_t> data;
+    auto fromId = SetUint32ToUint8Vertor(TEST_FROM_ITEM_ID);
+    data.insert(data.end(), fromId.begin(), fromId.end());
+    data.push_back(0x00);
+    data.push_back(TEST_ITEM_COUNT);
+    auto toId1 = SetUint32ToUint8Vertor(TEST_TO_ITEM_ID_1);
+    data.insert(data.end(), toId1.begin(), toId1.end());
+    auto toId2 = SetUint32ToUint8Vertor(TEST_TO_ITEM_ID_2);
+    data.insert(data.end(), toId2.begin(), toId2.end());
+    auto toId3 = SetUint32ToUint8Vertor(TEST_TO_ITEM_ID_3);
+    data.insert(data.end(), toId3.begin(), toId3.end());
+
+    auto stream = std::make_shared<HeifBufferInputStream>(data.data(), data.size(), true);
+    HeifStreamReader reader(stream, 0, data.size());
+
+    heifIrefBox.version_ = HEIF_BOX_VERSION_ONE;
+    heifIrefBox.ParseItemRef(reader, ref);
+
+    ASSERT_EQ(ref.fromItemId, TEST_FROM_ITEM_ID);
+    ASSERT_EQ(ref.toItemIds.size(), TEST_ITEM_COUNT);
+    ASSERT_EQ(ref.toItemIds[0], TEST_TO_ITEM_ID_1);
+    ASSERT_EQ(ref.toItemIds[1], TEST_TO_ITEM_ID_2);
+    ASSERT_EQ(ref.toItemIds[2], TEST_TO_ITEM_ID_3);
+    GTEST_LOG_(INFO) << "HeifParserBoxTest: ParseItemRefNormalLoopTest001 end";
+}
+
+/**
+ * @tc.name: ParseContentHeaderErrorTest001
+ * @tc.desc: Test parsing IREF box with truncated child box data stream
+ *           Ensures proper error detection when box structure is incomplete
+ * @tc.type: FUNC
+ */
+HWTEST_F(HeifParserBoxTest, ParseContentHeaderErrorTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "HeifParserBoxTest: ParseContentHeaderErrorTest001 start";
+    HeifIrefBox heifIrefBox;
+
+    std::vector<uint8_t> data = {0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
+
+    auto stream = std::make_shared<HeifBufferInputStream>(data.data(), data.size(), true);
+    HeifStreamReader reader(stream, 0, data.size());
+
+    heif_error error = heifIrefBox.ParseContent(reader);
+
+    ASSERT_NE(error, heif_error_ok);
+    GTEST_LOG_(INFO) << "HeifParserBoxTest: ParseContentHeaderErrorTest001 end";
+}
+
 }
 }
