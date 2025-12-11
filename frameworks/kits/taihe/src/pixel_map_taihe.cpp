@@ -116,9 +116,9 @@ static bool GetSurfaceSize(uint64_t surfaceId, Media::Rect& region)
     return true;
 }
 
-static PixelMap CreatePixelMapFromSurface(std::string const& surfaceId, Media::Rect& region,
-    bool regionProvided = false)
+static PixelMap CreatePixelMapFromSurface(std::string const& surfaceId, Media::Rect& region)
 {
+    bool regionProvided = region.width > 0 && region.height > 0;
     uint64_t surfaceIdInt = 0;
     auto res = std::from_chars(surfaceId.data(), surfaceId.data() + surfaceId.size(), surfaceIdInt);
     if (res.ec != std::errc()) {
@@ -155,6 +155,40 @@ static PixelMap CreatePixelMapFromSurface(std::string const& surfaceId, Media::R
     }
     return make_holder<PixelMapImpl, PixelMap>(std::move(pixelMap));
 }
+
+static PixelMap CreatePixelMapFromSurfaceV2(std::string const& surfaceId, Media::Rect& region, bool transformEnabled)
+{
+    uint64_t surfaceIdInt = 0;
+    auto res = std::from_chars(surfaceId.data(), surfaceId.data() + surfaceId.size(), surfaceIdInt);
+    if (res.ec != std::errc()) {
+        ImageTaiheUtils::ThrowExceptionError(Media::ERR_IMAGE_INVALID_PARAM, "Empty or invalid Surface ID");
+        return make_holder<PixelMapImpl, PixelMap>();
+    }
+    if (!GetSurfaceSize(surfaceIdInt, region)) {
+        ImageTaiheUtils::ThrowExceptionError(Media::ERR_IMAGE_GET_IMAGE_DATA_FAILED, "Get Surface size failed");
+        return make_holder<PixelMapImpl, PixelMap>();
+    }
+
+    auto &rsClient = Rosen::RSInterfaces::GetInstance();
+    OHOS::Rect r = {
+        .x = region.left,
+        .y = region.top,
+        .w = region.width,
+        .h = region.height,
+    };
+    std::shared_ptr<Media::PixelMap> pixelMap = rsClient.CreatePixelMapFromSurfaceId(surfaceIdInt, r, transformEnabled);
+#ifndef EXT_PIXEL
+    if (pixelMap == nullptr) {
+        pixelMap = CreatePixelMapFromSurfaceId(surfaceIdInt, region);
+    }
+#endif
+    if (pixelMap == nullptr) {
+        ImageTaiheUtils::ThrowExceptionError(Media::ERR_IMAGE_CREATE_PIXELMAP_FAILED,
+            "Create PixelMap from Surface failed");
+        return make_holder<PixelMapImpl, PixelMap>();
+    }
+    return make_holder<PixelMapImpl, PixelMap>(std::move(pixelMap));
+}
 #endif
 
 PixelMap CreatePixelMapFromSurfaceByIdSync(string_view etsSurfaceId)
@@ -166,6 +200,20 @@ PixelMap CreatePixelMapFromSurfaceByIdSync(string_view etsSurfaceId)
     Media::Rect region;
     IMAGE_LOGD("[%{public}s] surfaceId=%{public}s", __func__, surfaceId.c_str());
     return CreatePixelMapFromSurface(surfaceId, region);
+#endif
+}
+
+PixelMap CreatePixelMapFromSurfaceWithTransformationSync(string_view etsSurfaceId, bool transformEnabled)
+{
+#if defined(IOS_PLATFORM) || defined(ANDROID_PLATFORM)
+    ImageTaiheUtils::ThrowExceptionError(Media::ERR_IMAGE_GET_IMAGE_DATA_FAILED,
+        "Unsupported operation on cross-platform");
+    return make_holder<PixelMapImpl, PixelMap>();
+#else
+    std::string surfaceId(etsSurfaceId);
+    Media::Rect region;
+    IMAGE_LOGD("[%{public}s] surfaceId=%{public}s", __func__, surfaceId.c_str());
+    return CreatePixelMapFromSurfaceV2(surfaceId, region, transformEnabled);
 #endif
 }
 
@@ -183,7 +231,7 @@ PixelMap CreatePixelMapFromSurfaceByIdAndRegionSync(string_view etsSurfaceId,
         ImageTaiheUtils::ThrowExceptionError(Media::ERR_IMAGE_INVALID_PARAMETER, "Invalid region");
         return make_holder<PixelMapImpl, PixelMap>();
     }
-    return CreatePixelMapFromSurface(surfaceId, region, true);
+    return CreatePixelMapFromSurface(surfaceId, region);
 #endif
 }
 
@@ -1351,6 +1399,8 @@ TH_EXPORT_CPP_API_CreateEmptyPixelMapUsingAllocatorSync(ANI::Image::CreateEmptyP
 TH_EXPORT_CPP_API_CreatePixelMapByPtr(ANI::Image::CreatePixelMapByPtr);
 TH_EXPORT_CPP_API_CreatePixelMapFromSurfaceByIdSync(ANI::Image::CreatePixelMapFromSurfaceByIdSync);
 TH_EXPORT_CPP_API_CreatePixelMapFromSurfaceByIdAndRegionSync(ANI::Image::CreatePixelMapFromSurfaceByIdAndRegionSync);
+TH_EXPORT_CPP_API_CreatePixelMapFromSurfaceWithTransformationSync(
+    ANI::Image::CreatePixelMapFromSurfaceWithTransformationSync);
 TH_EXPORT_CPP_API_CreatePixelMapFromParcel(ANI::Image::CreatePixelMapFromParcel);
 TH_EXPORT_CPP_API_CreatePremultipliedPixelMapSync(ANI::Image::CreatePremultipliedPixelMapSync);
 TH_EXPORT_CPP_API_CreateUnpremultipliedPixelMapSync(ANI::Image::CreateUnpremultipliedPixelMapSync);

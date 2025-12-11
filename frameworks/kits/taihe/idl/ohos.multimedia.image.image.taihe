@@ -945,6 +945,9 @@ function CreatePixelMapFromSurfaceByIdSync(surfaceId: String): PixelMap;
 @overload("createPixelMapFromSurfaceSync")
 function CreatePixelMapFromSurfaceByIdAndRegionSync(surfaceId: String, region: Region): PixelMap;
 
+@gen_promise("createPixelMapFromSurfaceWithTransformation")
+function CreatePixelMapFromSurfaceWithTransformationSync(surfaceId: String, transformEnabled: bool): PixelMap;
+
 function CreatePixelMapFromParcel(sequence: @sts_type("rpc.MessageSequence") Opaque): PixelMap;
 
 @gen_async("createPremultipliedPixelMap")
