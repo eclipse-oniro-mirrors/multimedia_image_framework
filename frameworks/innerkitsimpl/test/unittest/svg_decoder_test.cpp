@@ -27,6 +27,10 @@ namespace ImagePlugin {
 
 constexpr static int32_t OPTS_DESIREDSIZE = 2;
 static const std::string IMAGE_SVG_SRC = "/data/local/tmp/image/test.svg";
+constexpr static int32_t DESIRED_WIDTH = 100;
+constexpr static int32_t DESIRED_HEIGHT = 100;
+constexpr static float DOM_WIDTH = 100.0f;
+constexpr static float DOM_HEIGHT = 100.0f;
 class SvgDecoderTest : public testing::Test {
 public:
     SvgDecoderTest() {}
@@ -708,6 +712,145 @@ HWTEST_F(SvgDecoderTest, DoGetImageSizeFailureTest001, TestSize.Level3)
     ASSERT_EQ(size.width, 0);
     ASSERT_EQ(size.height, 0);
     GTEST_LOG_(INFO) << "SvgDecoderTest: DoGetImageSizeFailureTest001 end";
+}
+
+/**
+ * @tc.name: SetDecodeOptionsParseHeaderSuccessTest001
+ * @tc.desc: Test SetDecodeOptions successfully parses header and reaches BASE_INFO_PARSED state with valid SVG data
+ * @tc.type: FUNC
+ */
+HWTEST_F(SvgDecoderTest, SetDecodeOptionsParseHeaderSuccessTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "SvgDecoderTest: SetDecodeOptionsParseHeaderSuccessTest001 start";
+    auto svgDecoder = std::make_shared<SvgDecoder>();
+    ASSERT_NE(svgDecoder, nullptr);
+
+    auto streamPtr = SkStream::MakeFromFile(IMAGE_SVG_SRC.c_str());
+    ASSERT_NE(streamPtr, nullptr);
+    size_t length = streamPtr->getLength();
+    auto data = std::make_unique<uint8_t[]>(length);
+    streamPtr->read(data.get(), length);
+
+    auto bufferStream = BufferSourceStream::CreateSourceStream(data.get(), length);
+    svgDecoder->SetSource(*bufferStream.release());
+    svgDecoder->state_ = SvgDecoder::SvgDecodingState::SOURCE_INITED;
+
+    PixelDecodeOptions opts;
+    opts.desiredSize.width = DESIRED_WIDTH;
+    opts.desiredSize.height = DESIRED_HEIGHT;
+    PlImageInfo info;
+    uint32_t ret = svgDecoder->SetDecodeOptions(0, opts, info);
+
+    ASSERT_EQ(ret, Media::SUCCESS);
+    GTEST_LOG_(INFO) << "SvgDecoderTest: SetDecodeOptionsParseHeaderSuccessTest001 end";
+}
+
+/**
+ * @tc.name: SetDecodeOptionsDoSetFailureTest001
+ * @tc.desc: Test SetDecodeOptions fails and returns to BASE_INFO_PARSING state when DOM container size is empty
+ * @tc.type: FUNC
+ */
+HWTEST_F(SvgDecoderTest, SetDecodeOptionsDoSetFailureTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "SvgDecoderTest: SetDecodeOptionsDoSetFailureTest001 start";
+    auto svgDecoder = std::make_shared<SvgDecoder>();
+    ASSERT_NE(svgDecoder, nullptr);
+
+    auto streamPtr = SkStream::MakeFromFile(IMAGE_SVG_SRC.c_str());
+    ASSERT_NE(streamPtr, nullptr);
+    svgDecoder->svgDom_ = SkSVGDOM::MakeFromStream(*streamPtr);
+    ASSERT_NE(svgDecoder->svgDom_, nullptr);
+
+    svgDecoder->svgDom_->setContainerSize(SkSize::MakeEmpty());
+    svgDecoder->state_ = SvgDecoder::SvgDecodingState::BASE_INFO_PARSED;
+
+    PixelDecodeOptions opts;
+    PlImageInfo info;
+    uint32_t ret = svgDecoder->SetDecodeOptions(0, opts, info);
+
+    ASSERT_NE(ret, Media::SUCCESS);
+    ASSERT_EQ(svgDecoder->state_, SvgDecoder::SvgDecodingState::BASE_INFO_PARSING);
+    GTEST_LOG_(INFO) << "SvgDecoderTest: SetDecodeOptionsDoSetFailureTest001 end";
+}
+
+/**
+ * @tc.name: AllocBufferEmptySizeTest001
+ * @tc.desc: Test AllocBuffer fails when attempting to allocate with empty SVG DOM container size
+ * @tc.type: FUNC
+ */
+HWTEST_F(SvgDecoderTest, AllocBufferEmptySizeTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "SvgDecoderTest: AllocBufferEmptySizeTest001 start";
+    auto svgDecoder = std::make_shared<SvgDecoder>();
+    ASSERT_NE(svgDecoder, nullptr);
+
+    auto streamPtr = SkStream::MakeFromFile(IMAGE_SVG_SRC.c_str());
+    ASSERT_NE(streamPtr, nullptr);
+    svgDecoder->svgDom_ = SkSVGDOM::MakeFromStream(*streamPtr);
+    ASSERT_NE(svgDecoder->svgDom_, nullptr);
+
+    svgDecoder->svgDom_->setContainerSize(SkSize::MakeEmpty());
+
+    DecodeContext context;
+    bool ret = svgDecoder->AllocBuffer(context);
+
+    ASSERT_FALSE(ret);
+    GTEST_LOG_(INFO) << "SvgDecoderTest: AllocBufferEmptySizeTest001 end";
+}
+
+/**
+ * @tc.name: AllocBufferDmaAllocTest001
+ * @tc.desc: Test AllocBuffer correctly uses DMA allocator when allocatorType is set to DMA_ALLOC
+ * @tc.type: FUNC
+ */
+HWTEST_F(SvgDecoderTest, AllocBufferDmaAllocTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "SvgDecoderTest: AllocBufferDmaAllocTest001 start";
+    auto svgDecoder = std::make_shared<SvgDecoder>();
+    ASSERT_NE(svgDecoder, nullptr);
+
+    auto streamPtr = SkStream::MakeFromFile(IMAGE_SVG_SRC.c_str());
+    ASSERT_NE(streamPtr, nullptr);
+    svgDecoder->svgDom_ = SkSVGDOM::MakeFromStream(*streamPtr);
+    ASSERT_NE(svgDecoder->svgDom_, nullptr);
+
+    svgDecoder->svgDom_->setContainerSize(SkSize::Make(DOM_WIDTH, DOM_HEIGHT));
+
+    DecodeContext context;
+    context.allocatorType = Media::AllocatorType::DMA_ALLOC;
+
+    svgDecoder->AllocBuffer(context);
+
+    GTEST_LOG_(INFO) << "SvgDecoderTest: AllocBufferDmaAllocTest001 end";
+}
+
+/**
+ * @tc.name: AllocBufferHeapAllocTest001
+ * @tc.desc: Test AllocBuffer successfully allocates heap memory and returns valid buffer
+ * when allocatorType is HEAP_ALLOC
+ * @tc.type: FUNC
+ */
+HWTEST_F(SvgDecoderTest, AllocBufferHeapAllocTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "SvgDecoderTest: AllocBufferHeapAllocTest001 start";
+    auto svgDecoder = std::make_shared<SvgDecoder>();
+    ASSERT_NE(svgDecoder, nullptr);
+
+    auto streamPtr = SkStream::MakeFromFile(IMAGE_SVG_SRC.c_str());
+    ASSERT_NE(streamPtr, nullptr);
+    svgDecoder->svgDom_ = SkSVGDOM::MakeFromStream(*streamPtr);
+    ASSERT_NE(svgDecoder->svgDom_, nullptr);
+
+    svgDecoder->svgDom_->setContainerSize(SkSize::Make(DOM_WIDTH, DOM_HEIGHT));
+
+    DecodeContext context;
+    context.allocatorType = Media::AllocatorType::HEAP_ALLOC;
+
+    bool ret = svgDecoder->AllocBuffer(context);
+
+    ASSERT_TRUE(ret);
+    ASSERT_NE(context.pixelsBuffer.buffer, nullptr);
+    GTEST_LOG_(INFO) << "SvgDecoderTest: AllocBufferHeapAllocTest001 end";
 }
 }
 }

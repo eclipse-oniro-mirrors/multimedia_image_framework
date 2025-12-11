@@ -65,6 +65,7 @@ const int SEEK_SIZE = -1;
 const int MOCK_FILE_SIZE = 100;
 const int MOCK_TRUNCATE_SIZE = 5;
 const int DATA_HELLO_SIZE = 5;
+const int NUM = 19;
 
 class MemoryCheck {
 public:
@@ -2191,6 +2192,110 @@ HWTEST_F(MetadataStreamTest, BufferMetadataStream_HandleWriteFailureDynamicTest0
     ASSERT_EQ(stream.currentOffset_, 0);
 
     GTEST_LOG_(INFO) << "MetadataStreamTest: BufferMetadataStream_HandleWriteFailureDynamicTest001 end";
+}
+
+/**
+ * @tc.name: FileMetadataStream_CopyFromSrcNotOpenTest001
+ * @tc.desc: Test taht CopyFrom handles unopened source stream gracefully and returns false
+ * @tc.type: FUNC
+ */
+HWTEST_F(MetadataStreamTest, FileMetadataStream_CopyFromSrcNotOpenTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "MetadataStreamTest: FileMetadataStream_CopyFromSrcNotOpenTest001 start";
+
+    MockBufferMetaDataStream src;
+    FileMetadataStream dest(CreateIfNotExit(filePath));
+    ASSERT_TRUE(dest.Open(OpenMode::ReadWrite));
+
+    bool ret = dest.CopyFrom(src);
+
+    ASSERT_FALSE(ret);
+    GTEST_LOG_(INFO) << "MetadataStreamTest: FileMetadataStream_CopyFromSrcNotOpenTest001 end";
+}
+
+/**
+ * @tc.name: FileMetadataStream_GetAddrMmapFailTest001
+ * @tc.desc: Test GetAddr returns nullptr when memory mapping large file fails due to insufficient resources
+ * @tc.type: FUNC
+ */
+HWTEST_F(MetadataStreamTest, FileMetadataStream_GetAddrMmapFailTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "MetadataStreamTest: FileMetadataStream_GetAddrMmapFailTest001 start";
+
+    FileMetadataStream stream(CreateIfNotExit(filePath));
+    ASSERT_TRUE(stream.Open(OpenMode::ReadWrite));
+
+    std::string testData = "Hello, world!";
+    stream.Write((byte *)testData.c_str(), testData.size());
+    stream.Flush();
+
+    fclose(stream.fp_);
+    stream.fp_ = fopen(filePath.c_str(), "r");
+    ASSERT_NE(stream.fp_, nullptr);
+
+    stream.fileSize_ = SIZE_1024 * SIZE_1024 * SIZE_1024;
+
+    byte *addr = stream.GetAddr(true);
+
+    ASSERT_EQ(addr, nullptr);
+    GTEST_LOG_(INFO) << "MetadataStreamTest: FileMetadataStream_GetAddrMmapFailTest001 end";
+}
+
+/**
+ * @tc.name: FileMetadataStream_CopyFromFlushFailsTest001
+ * @tc.desc: Test CopyFrom returns false when destination stream flush fails after writing copied data
+ * @tc.type: FUNC
+ */
+HWTEST_F(MetadataStreamTest, FileMetadataStream_CopyFromFlushFailsTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "MetadataStreamTest: FileMetadataStream_CopyFromFlushFailsTest001 start";
+
+    BufferMetadataStream src;
+    ASSERT_TRUE(src.Open());
+    src.Write((byte *)"Test data for flush", NUM);
+    src.Seek(0, SeekPos::BEGIN);
+
+    FileMetadataStream dest(CreateIfNotExit(filePath));
+    ASSERT_TRUE(dest.Open(OpenMode::ReadWrite));
+
+    int fd = fileno(dest.fp_);
+    dup(fd);
+    close(fd);
+
+    bool ret = dest.CopyFrom(src);
+
+    ASSERT_FALSE(ret);
+    GTEST_LOG_(INFO) << "MetadataStreamTest: FileMetadataStream_CopyFromFlushFailsTest001 end";
+}
+
+/**
+ * @tc.name: FileMetadataStream_ReadFromSourceReturnsNegativeTest001
+ * @tc.desc: Test CopyFrom returns false when source read operation fails and IsEof check is false
+ * @tc.type: FUNC
+ */
+HWTEST_F(MetadataStreamTest, FileMetadataStream_ReadFromSourceReturnsNegativeTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "MetadataStreamTest: FileMetadataStream_ReadFromSourceReturnsNegativeTest001 start";
+
+    std::ofstream ofs(filePathSource);
+    ofs << "Test data for reading";
+    ofs.close();
+
+    auto mockSrcWrapper = std::make_unique<MockFileWrapper>();
+
+    EXPECT_CALL(*mockSrcWrapper.get(), FRead(_, _, _, _))
+        .WillOnce(Return(-1));
+
+    FileMetadataStream src(filePathSource, std::move(mockSrcWrapper));
+    FileMetadataStream dest(CreateIfNotExit(filePath));
+
+    ASSERT_TRUE(src.Open(OpenMode::ReadWrite));
+    ASSERT_TRUE(dest.Open(OpenMode::ReadWrite));
+
+    bool ret = dest.CopyFrom(src);
+
+    ASSERT_FALSE(ret);
+    GTEST_LOG_(INFO) << "MetadataStreamTest: FileMetadataStream_ReadFromSourceReturnsNegativeTest001 end";
 }
 } // namespace Media
 } // namespace OHOS
