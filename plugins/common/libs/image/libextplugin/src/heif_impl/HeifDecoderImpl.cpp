@@ -1633,14 +1633,14 @@ bool HeifDecoderImpl::GetHeifsFrameCount(uint32_t &sampleCount)
         CHECK_ERROR_RETURN_RET(parser_->GetHeifsFrameCount(sampleCount) != heif_error_ok, false);
         return true;
     }
-    IMAGE_LOGE("GetHeifsFrameCount is not heifs image");
+    IMAGE_LOGD("GetHeifsFrameCount is not heifs image");
     return false;
 }
 
 bool HeifDecoderImpl::IsHeifsImage()
 {
     if (!primaryImage_ || !primaryImage_->IsMovieImage()) {
-        IMAGE_LOGE("IsHeifsImage() is not movie image.");
+        IMAGE_LOGD("IsHeifsImage() is not movie image.");
         return false;
     }
     bool isHeifs = false;
