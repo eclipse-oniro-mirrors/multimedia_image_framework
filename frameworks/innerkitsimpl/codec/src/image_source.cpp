@@ -1694,6 +1694,22 @@ uint32_t ImageSource::ModifyImageProperties(const vector<pair<string, string>> &
     return SUCCESS;
 }
 
+uint32_t ImageSource::ModifyImagePropertyBlob(const std::vector<MetadataValue> &properties)
+{
+    exifUnsupportKeys_.clear();
+    uint32_t ret = CreatExifMetadataByImageSource(true);
+    bool cond = (ret != SUCCESS);
+    CHECK_DEBUG_RETURN_RET_LOG(cond, ret, "Failed to create Exif metadata "
+                           "when attempting to modify property.");
+    for (auto property : properties) {
+        if (!exifMetadata_->SetBlobValue(property)) {
+            exifUnsupportKeys_.emplace(property.key);
+            IMAGE_LOGE("%{public}s unsupported key: %{public}s", __func__, property.key.c_str());
+        }
+    }
+    return SUCCESS;
+}
+
 uint32_t ImageSource::ModifyImageProperty(std::shared_ptr<MetadataAccessor> metadataAccessor,
     const std::string &key, const std::string &value)
 {
@@ -1744,6 +1760,50 @@ uint32_t ImageSource::ModifyImageProperties(std::shared_ptr<MetadataAccessor> me
     return ret;
 }
 
+uint32_t ImageSource::ModifyImagePropertyBlob(std::shared_ptr<MetadataAccessor> metadataAccessor,
+    const vector<MetadataValue> &properties)
+{
+    if (srcFd_ != -1) {
+        size_t fileSize = 0;
+        if (!ImageUtils::GetFileSize(srcFd_, fileSize)) {
+            IMAGE_LOGE("ModifyImageProperty accessor start get file size failed.");
+        } else {
+            IMAGE_LOGI("ModifyImageProperty accessor start fd file size:%{public}llu",
+                static_cast<unsigned long long>(fileSize));
+        }
+    }
+    uint32_t ret = ModifyImagePropertyBlob(properties);
+    bool cond = (ret != SUCCESS);
+    CHECK_ERROR_RETURN_RET_LOG(cond, ret, "Failed to create ExifMetadata.");
+
+    cond = metadataAccessor == nullptr;
+    ret = ERR_IMAGE_SOURCE_DATA;
+    CHECK_ERROR_RETURN_RET_LOG(cond, ret,
+                               "Failed to create image accessor when attempting to modify image property.");
+
+    if (srcFd_ != -1) {
+        size_t fileSize = 0;
+        if (!ImageUtils::GetFileSize(srcFd_, fileSize)) {
+            IMAGE_LOGE("ModifyImageProperty accessor end get file size failed.");
+        } else {
+            IMAGE_LOGI("ModifyImageProperty accessor end fd file size:%{public}llu",
+                static_cast<unsigned long long>(fileSize));
+        }
+    }
+    metadataAccessor->Set(exifMetadata_);
+    IMAGE_LOGD("ModifyImageProperty accesssor modify start");
+    ret = metadataAccessor->Write();
+    IMAGE_LOGD("ModifyImageProperty accesssor modify end");
+    if (!srcFilePath_.empty() && ret == SUCCESS) {
+        RefreshImageSourceByPathName();
+    }
+
+    if (!exifUnsupportKeys_.empty()) {
+        return ERR_IMAGE_DECODE_EXIF_UNSUPPORT;
+    }
+    return ret;
+}
+
 uint32_t ImageSource::ModifyImageProperty(uint32_t index, const std::string &key, const std::string &value)
 {
     std::unique_lock<std::mutex> guard(decodingMutex_);
@@ -1763,6 +1823,22 @@ uint32_t ImageSource::ModifyImageProperties(uint32_t index, const vector<pair<st
 
     if (srcBuffer_ != nullptr && srcBufferSize_ != 0) {
         return ModifyImageProperties(index, properties, srcBuffer_, srcBufferSize_, isEnhanced);
+    }
+    return ERROR;
+}
+
+uint32_t ImageSource::WriteImageMetadataBlob(const vector<MetadataValue> &properties)
+{
+    if (srcFd_ != -1) {
+        return ModifyImagePropertyBlob(properties, srcFd_);
+    }
+
+    if (!srcFilePath_.empty()) {
+        return ModifyImagePropertyBlob(properties, srcFilePath_);
+    }
+
+    if (srcBuffer_ != nullptr && srcBufferSize_ != 0) {
+        return ModifyImagePropertyBlob(properties, srcBuffer_, srcBufferSize_);
     }
     return ERROR;
 }
@@ -1801,6 +1877,22 @@ uint32_t ImageSource::ModifyImageProperties(uint32_t index, const vector<pair<st
     return ModifyImageProperties(metadataAccessor, properties, isEnhanced);
 }
 
+uint32_t ImageSource::ModifyImagePropertyBlob(const vector<MetadataValue> &properties,
+    const std::string &path)
+{
+    ImageDataStatistics imageDataStatistics("[ImageSource]ModifyImagePropertyBlob by path.");
+
+#if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
+    std::error_code ec;
+    bool cond = (!std::filesystem::exists(path, ec));
+    CHECK_ERROR_RETURN_RET_LOG(cond, ERR_IMAGE_SOURCE_DATA, "File not exists, error: %{public}d, message: %{public}s",
+        ec.value(), ec.message().c_str());
+#endif
+    std::unique_lock<std::mutex> guard(decodingMutex_);
+    auto metadataAccessor = MetadataAccessorFactory::Create(path);
+    return ModifyImagePropertyBlob(metadataAccessor, properties);
+}
+
 uint32_t ImageSource::ModifyImageProperty(uint32_t index, const std::string &key, const std::string &value,
     const std::string &path)
 {
@@ -1828,6 +1920,26 @@ uint32_t ImageSource::ModifyImageProperties(uint32_t index, const vector<pair<st
     return ret;
 }
 
+uint32_t ImageSource::ModifyImagePropertyBlob(const vector<MetadataValue> &properties, const int fd)
+{
+    ImageDataStatistics imageDataStatistics("[ImageSource]ModifyImagePropertyBlob by fd.");
+    bool cond = (fd <= STDERR_FILENO);
+    CHECK_DEBUG_RETURN_RET_LOG(cond, ERR_IMAGE_SOURCE_DATA, "Invalid file descriptor.");
+
+    std::unique_lock<std::mutex> guard(decodingMutex_);
+    size_t fileSize = 0;
+    if (!ImageUtils::GetFileSize(fd, fileSize)) {
+        IMAGE_LOGE("ModifyImagePropertyBlob get file size failed.");
+    }
+    IMAGE_LOGI("ModifyImagePropertyBlob accesssor create start, fd file size:%{public}llu",
+        static_cast<unsigned long long>(fileSize));
+    auto metadataAccessor = MetadataAccessorFactory::Create(fd);
+    IMAGE_LOGI("ModifyImagePropertyBlob accesssor create end");
+
+    auto ret = ModifyImagePropertyBlob(metadataAccessor, properties);
+    return ret;
+}
+
 uint32_t ImageSource::ModifyImageProperty(uint32_t index, const std::string &key, const std::string &value,
     const int fd)
 {
@@ -1836,6 +1948,12 @@ uint32_t ImageSource::ModifyImageProperty(uint32_t index, const std::string &key
 
 uint32_t ImageSource::ModifyImageProperties(uint32_t index, const vector<pair<string, string>> &properties,
     uint8_t *data, uint32_t size, bool isEnhanced)
+{
+    return ERR_MEDIA_WRITE_PARCEL_FAIL;
+}
+
+uint32_t ImageSource::ModifyImagePropertyBlob(const vector<MetadataValue> &properties,
+    uint8_t *data, uint32_t size)
 {
     return ERR_MEDIA_WRITE_PARCEL_FAIL;
 }
@@ -1971,6 +2089,60 @@ uint32_t ImageSource::GetImagePropertyCommon(uint32_t index, const std::string &
     return exifMetadata_->GetValue(key, value);
 }
 
+uint32_t ImageSource::GetImagePropertyCommonByType(const std::string &key, MetadataValue &value)
+{
+    CHECK_ERROR_RETURN_RET(isExifReadFailed_ && exifMetadata_ == nullptr, exifReadStatus_);
+    uint32_t ret = CreatExifMetadataByImageSource();
+    if (ret != SUCCESS) {
+        IMAGE_LOGD("Failed to create Exif metadata, when attempting to get property.");
+        isExifReadFailed_ = true;
+        exifReadStatus_ = ret;
+        return ret;
+    }
+    CHECK_ERROR_RETURN_RET(exifMetadata_ == nullptr, exifReadStatus_);
+    return exifMetadata_->GetValueByType(key, value);
+}
+
+std::vector<MetadataValue> ImageSource::GetAllPropertiesWithType()
+{
+    std::vector<MetadataValue> result;
+    CHECK_ERROR_RETURN_RET_LOG(!exifMetadata_ && isExifReadFailed_, result, "Exif metadata not initialized");
+    CHECK_ERROR_RETURN_RET_LOG(CreatExifMetadataByImageSource() != SUCCESS, result, "Metadata creation failed");
+
+    auto processKeys = [&](const std::set<std::string>& keys) {
+        for (const auto& key : keys) {
+            MetadataValue entry;
+            if (exifMetadata_->GetValueByType(key, entry) != SUCCESS) {
+                IMAGE_LOGW("Failed to get property: %{public}s", key.c_str());
+                continue;
+            }
+            entry.key = key;
+            entry.type = ExifMetadata::GetPropertyValueType(key);
+            if (entry.key.empty()) {
+                entry.key = key;
+                IMAGE_LOGW("Recovered empty key for: %{public}s", key.c_str());
+            }
+            result.push_back(std::move(entry));
+        }
+    };
+
+    processKeys(ExifMetadatFormatter::GetRWKeys());
+    processKeys(ExifMetadatFormatter::GetROKeys());
+    
+    IMAGE_LOGD("Retrieved %zu metadata properties", result.size());
+    return result;
+}
+
+uint32_t ImageSource::RemoveAllProperties()
+{
+    CHECK_ERROR_RETURN_RET_LOG(!exifMetadata_ && isExifReadFailed_, ERR_IMAGE_DECODE_EXIF_UNSUPPORT,
+        "Exif metadata not initialized");
+    std::set<std::string> keys = ExifMetadatFormatter::GetRWKeys();
+    std::set<std::string> roKeys = ExifMetadatFormatter::GetROKeys();
+    keys.insert(roKeys.begin(), roKeys.end());
+    return RemoveImageProperties(0, keys);
+}
+
 uint32_t ImageSource::GetImagePropertyInt(uint32_t index, const std::string &key, int32_t &value)
 {
     std::unique_lock<std::mutex> guard(decodingMutex_);
@@ -2028,6 +2200,29 @@ uint32_t ImageSource::GetImagePropertyString(uint32_t index, const std::string &
     std::unique_lock<std::mutex> guard(decodingMutex_);
     std::unique_lock<std::mutex> guardFile(fileMutex_);
     return GetImagePropertyCommon(index, key, value);
+}
+
+uint32_t ImageSource::GetImagePropertyByType(uint32_t index, const std::string &key, MetadataValue &value)
+{
+    CHECK_ERROR_RETURN_RET(key.empty(), Media::ERR_IMAGE_DECODE_EXIF_UNSUPPORT);
+    uint32_t ret = SUCCESS;
+    if (IMAGE_GIFLOOPCOUNT_TYPE.compare(key) == ZERO) {
+        IMAGE_LOGD("GetImagePropertyString special key: %{public}s", key.c_str());
+        (void)GetFrameCount(ret);
+        if (ret != SUCCESS || mainDecoder_ == nullptr) {
+            IMAGE_LOGE("[ImageSource]GetFrameCount get frame sum error.");
+            return ret;
+        } else {
+            ret = mainDecoder_->GetImagePropertyString(index, key, value.stringValue);
+            CHECK_ERROR_RETURN_RET_LOG(ret != SUCCESS, ret,
+                "[ImageSource]GetLoopCount get loop count issue. errorCode=%{public}u", ret);
+        }
+        return ret;
+    }
+
+    std::unique_lock<std::mutex> guard(decodingMutex_);
+    std::unique_lock<std::mutex> guardFile(fileMutex_);
+    return GetImagePropertyCommonByType(key, value);
 }
 
 uint32_t ImageSource::GetImagePropertyStringBySync(uint32_t index, const std::string &key, std::string &value)
@@ -2204,6 +2399,22 @@ NATIVEEXPORT std::shared_ptr<ExifMetadata> ImageSource::GetExifMetadata()
 NATIVEEXPORT void ImageSource::SetExifMetadata(std::shared_ptr<ExifMetadata> &ptr)
 {
     exifMetadata_ = ptr;
+}
+
+uint32_t ImageSource::RemoveImageProperties(uint32_t index, const std::set<std::string> &keys)
+{
+    if (srcFd_ != -1) {
+        return RemoveImageProperties(index, keys, srcFd_);
+    }
+
+    if (!srcFilePath_.empty()) {
+        return RemoveImageProperties(index, keys, srcFilePath_);
+    }
+
+    if (srcBuffer_ != nullptr && srcBufferSize_ != 0) {
+        return RemoveImageProperties(index, keys, srcBuffer_, srcBufferSize_);
+    }
+    return ERROR;
 }
 
 uint32_t ImageSource::RemoveImageProperties(uint32_t index, const std::set<std::string> &keys, const std::string &path)

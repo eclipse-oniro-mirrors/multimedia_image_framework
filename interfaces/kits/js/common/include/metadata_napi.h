@@ -31,7 +31,10 @@ public:
     ~MetadataNapi();
 
     static napi_value Init(napi_env env, napi_value exports);
+    static napi_value InitExifMetadata(napi_env env, napi_value exports);
+    static napi_value InitMakerNoteMetadata(napi_env env, napi_value exports);
     static napi_value CreateMetadata(napi_env env, std::shared_ptr<ImageMetadata> metadata);
+    static napi_value CreateExifMetadata(napi_env env, std::shared_ptr<ImageMetadata> metadata);
     std::shared_ptr<ImageMetadata> GetNativeMetadata()
     {
         return nativeMetadata_;
@@ -45,11 +48,14 @@ private:
     static napi_value SetProperties(napi_env env, napi_callback_info info);
     static napi_value GetAllProperties(napi_env env, napi_callback_info info);
     static napi_value Clone(napi_env env, napi_callback_info info);
+    static napi_value CloneExif(napi_env env, napi_callback_info info);
     static napi_value GetBlob(napi_env env, napi_callback_info info);
     static napi_value SetBlob(napi_env env, napi_callback_info info);
-    
+    static napi_value CreateInstance(napi_env env, napi_callback_info info);
     void release();
     static thread_local napi_ref sConstructor_;
+    static thread_local napi_ref sExifConstructor_;
+    static thread_local napi_ref sMakerNoteConstructor_;
     static thread_local std::shared_ptr<ImageMetadata> sMetadata_;
     std::shared_ptr<ImageMetadata> nativeMetadata_;
     napi_env env_ = nullptr;

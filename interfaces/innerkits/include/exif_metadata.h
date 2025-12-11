@@ -26,12 +26,22 @@
 
 namespace OHOS {
 namespace Media {
+
+struct EntryBasicInfo {
+    ExifFormat format;
+    unsigned long components;
+    unsigned char *data;
+    ExifByteOrder byteOrder;
+};
 class ExifMetadata : public ImageMetadata {
 public:
     ExifMetadata();
     ExifMetadata(ExifData *exifData);
     virtual ~ExifMetadata();
     virtual int GetValue(const std::string &key, std::string &value) const override;
+    int GetValueByType(const std::string &key, MetadataValue &result) const;
+    int HandleHwMnoteByType(const std::string &key, MetadataValue &result) const;
+    bool SetBlobValue(const MetadataValue &properties);
     virtual bool SetValue(const std::string &key, const std::string &value) override;
     virtual bool RemoveEntry(const std::string &key) override;
     virtual const ImageMetadata::PropertyMapPtr GetAllProperties() override;
@@ -49,6 +59,15 @@ public:
     }
     bool RemoveExifThumbnail() override;
     bool ExtractXmageCoordinates(XmageCoordinateMetadata &coordMetadata) const;
+    uint32_t GetBlobSize() override;
+    uint32_t GetBlob(uint32_t bufferSize, uint8_t *dst) override;
+    uint32_t SetBlob(const uint8_t *source, const uint32_t bufferSize) override;
+    static PropertyValueType GetPropertyValueType(const std::string& key);
+    static std::shared_ptr<ExifMetadata> InitExifMetadata();
+    static const std::map<std::string, PropertyValueType>& GetExifMetadataMap();
+    static const std::map<std::string, PropertyValueType>& GetHwMetadataMap();
+    static const std::map<NapiMetadataType, std::map<std::string, PropertyValueType>>& GetPropertyTypeMapping();
+    static const std::unordered_map<std::string, std::string>& GetPropertyKeyMap();
 
 private:
     bool ParseExifCoordinate(const std::string& fieldName, uint32_t& outputValue) const;

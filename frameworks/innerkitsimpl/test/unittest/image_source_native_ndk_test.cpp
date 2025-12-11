@@ -42,6 +42,8 @@ public:
 
 static constexpr int32_t TestLength = 2;
 static const std::string IMAGE_JPEG_PATH_TEST = "/data/local/tmp/image/test.jpg";
+static const std::string IMAGE_ICO_PATH_TEST = "/data/local/tmp/image/test.ico";
+static const std::string IMAGE_JPEG_EXIF_TEST = "/data/local/tmp/image/test_exif.jpg";
 static const std::string IMAGE_JPEG_PATH = "/data/local/tmp/image/test_picture.jpg";
 static const std::string IMAGE_JPEG_HDR_PATH = "/data/local/tmp/image/test_jpeg_hdr.jpg";
 static const std::string IMAGE_HEIF_PATH = "/data/local/tmp/image/test_allocator_heif.heic";
@@ -2464,6 +2466,1322 @@ HWTEST_F(ImagSourceNdk2Test, OH_ImageSourceNative_CreatePictureAtIndex007, TestS
     EXPECT_EQ(ret, IMAGE_SUCCESS);
     OH_ImageSourceNative_Release(imageSource);
     GTEST_LOG_(INFO) << "ImagSourceNdk2Test: OH_ImageSourceNative_CreatePictureAtIndex007 end";
+}
+
+/**
+ * @tc.name: OH_ImageSourceNative_GetImagePropertyShort001
+ * @tc.desc: test OH_ImageSourceNative_GetImagePropertyShort with invalid parameters and invalid keys
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImagSourceNdk2Test, OH_ImageSourceNative_GetImagePropertyShort001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImagSourceNdk2Test: OH_ImageSourceNative_GetImagePropertyShort001 start";
+    
+    // Test with null source
+    OH_ImageSourceNative *imageSource = nullptr;
+    Image_String key;
+    char keyData[] = "test_key";
+    key.data = keyData;
+    key.size = strlen(keyData);
+    uint16_t value = 0;
+    Image_ErrorCode ret = OH_ImageSourceNative_GetImagePropertyShort(imageSource, &key, &value);
+    EXPECT_EQ(ret, IMAGE_SOURCE_INVALID_PARAMETER);
+    
+    // Test with valid source but null key
+    imageSource = CreateImageSourceNative(IMAGE_JPEG_EXIF_TEST);
+    ASSERT_NE(imageSource, nullptr);
+    Image_String *nullKey = nullptr;
+    ret = OH_ImageSourceNative_GetImagePropertyShort(imageSource, nullKey, &value);
+    EXPECT_EQ(ret, IMAGE_SOURCE_INVALID_PARAMETER);
+    
+    // Test with null key data
+    Image_String key2;
+    key2.data = nullptr;
+    key2.size = 5;
+    ret = OH_ImageSourceNative_GetImagePropertyShort(imageSource, &key2, &value);
+    EXPECT_EQ(ret, IMAGE_SOURCE_INVALID_PARAMETER);
+    
+    // Test with zero key size
+    Image_String key3;
+    char keyData3[] = "test_key";
+    key3.data = keyData3;
+    key3.size = 0;
+    ret = OH_ImageSourceNative_GetImagePropertyShort(imageSource, &key3, &value);
+    EXPECT_EQ(ret, IMAGE_SOURCE_INVALID_PARAMETER);
+    
+    // Test with null value
+    Image_String key4;
+    char keyData4[] = "test_key";
+    key4.data = keyData4;
+    key4.size = strlen(keyData4);
+    uint16_t *nullValue = nullptr;
+    ret = OH_ImageSourceNative_GetImagePropertyShort(imageSource, &key4, nullValue);
+    EXPECT_EQ(ret, IMAGE_SOURCE_INVALID_PARAMETER);
+    
+    // Test with empty key string
+    Image_String key5;
+    char keyData5[] = "";
+    key5.data = keyData5;
+    key5.size = strlen(keyData5);
+    ret = OH_ImageSourceNative_GetImagePropertyShort(imageSource, &key5, &value);
+    EXPECT_EQ(ret, IMAGE_SOURCE_INVALID_PARAMETER);
+    
+    // Test with invalid property key
+    Image_String key6;
+    char keyData6[] = "InvalidPropertyKey";
+    key6.data = keyData6;
+    key6.size = strlen(keyData6);
+    ret = OH_ImageSourceNative_GetImagePropertyShort(imageSource, &key6, &value);
+    EXPECT_EQ(ret, IMAGE_SOURCE_UNSUPPORTED_METADATA);
+    
+    OH_ImageSourceNative_Release(imageSource);
+    GTEST_LOG_(INFO) << "ImagSourceNdk2Test: OH_ImageSourceNative_GetImagePropertyShort001 end";
+}
+
+/**
+ * @tc.name: OH_ImageSourceNative_GetImagePropertyShort002
+ * @tc.desc: test OH_ImageSourceNative_GetImagePropertyShort with valid property keys
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImagSourceNdk2Test, OH_ImageSourceNative_GetImagePropertyShort002, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImagSourceNdk2Test: OH_ImageSourceNative_GetImagePropertyShort002 start";
+    OH_ImageSourceNative *imageSource = CreateImageSourceNative(IMAGE_JPEG_EXIF_TEST);
+    ASSERT_NE(imageSource, nullptr);
+    
+    Image_String key1;
+    char keyData1[] = "ISOSpeedRatings";
+    key1.data = keyData1;
+    key1.size = strlen(keyData1);
+    uint16_t value1 = 0;
+    Image_ErrorCode ret = OH_ImageSourceNative_GetImagePropertyShort(imageSource, &key1, &value1);
+    EXPECT_GE(value1, 0);
+    EXPECT_LE(value1, UINT16_MAX);
+    
+    Image_String key2;
+    char keyData2[] = "ImageWidth";
+    key2.data = keyData2;
+    key2.size = strlen(keyData2);
+    uint16_t value2 = 0;
+    ret = OH_ImageSourceNative_GetImagePropertyShort(imageSource, &key2, &value2);
+    EXPECT_GE(value2, 0);
+    EXPECT_LE(value2, UINT16_MAX);
+    
+    Image_String key3;
+    char keyData3[] = "NewSubfileType";
+    key3.data = keyData3;
+    key3.size = strlen(keyData3);
+    uint16_t value3 = 0;
+    ret = OH_ImageSourceNative_GetImagePropertyShort(imageSource, &key3, &value3);
+    EXPECT_EQ(ret, IMAGE_SOURCE_UNSUPPORTED_METADATA);
+    
+    OH_ImageSourceNative_Release(imageSource);
+    GTEST_LOG_(INFO) << "ImagSourceNdk2Test: OH_ImageSourceNative_GetImagePropertyShort002 end";
+}
+
+/**
+ * @tc.name: OH_ImageSourceNative_GetImagePropertyLong001
+ * @tc.desc: test OH_ImageSourceNative_GetImagePropertyLong with invalid parameters and invalid keys
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImagSourceNdk2Test, OH_ImageSourceNative_GetImagePropertyLong001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImagSourceNdk2Test: OH_ImageSourceNative_GetImagePropertyLong001 start";
+    
+    OH_ImageSourceNative *imageSource = nullptr;
+    Image_String key;
+    char keyData[] = "test_key";
+    key.data = keyData;
+    key.size = strlen(keyData);
+    uint32_t value = 0;
+    Image_ErrorCode ret = OH_ImageSourceNative_GetImagePropertyLong(imageSource, &key, &value);
+    EXPECT_EQ(ret, IMAGE_SOURCE_INVALID_PARAMETER);
+    
+    imageSource = CreateImageSourceNative(IMAGE_JPEG_EXIF_TEST);
+    ASSERT_NE(imageSource, nullptr);
+    Image_String *nullKey = nullptr;
+    ret = OH_ImageSourceNative_GetImagePropertyLong(imageSource, nullKey, &value);
+    EXPECT_EQ(ret, IMAGE_SOURCE_INVALID_PARAMETER);
+    
+    Image_String key2;
+    key2.data = nullptr;
+    key2.size = 5;
+    ret = OH_ImageSourceNative_GetImagePropertyLong(imageSource, &key2, &value);
+    EXPECT_EQ(ret, IMAGE_SOURCE_INVALID_PARAMETER);
+    
+    Image_String key3;
+    char keyData3[] = "test_key";
+    key3.data = keyData3;
+    key3.size = 0;
+    ret = OH_ImageSourceNative_GetImagePropertyLong(imageSource, &key3, &value);
+    EXPECT_EQ(ret, IMAGE_SOURCE_INVALID_PARAMETER);
+    
+    Image_String key4;
+    char keyData4[] = "test_key";
+    key4.data = keyData4;
+    key4.size = strlen(keyData4);
+    uint32_t *nullValue = nullptr;
+    ret = OH_ImageSourceNative_GetImagePropertyLong(imageSource, &key4, nullValue);
+    EXPECT_EQ(ret, IMAGE_SOURCE_INVALID_PARAMETER);
+    
+    Image_String key5;
+    char keyData5[] = "";
+    key5.data = keyData5;
+    key5.size = strlen(keyData5);
+    ret = OH_ImageSourceNative_GetImagePropertyLong(imageSource, &key5, &value);
+    EXPECT_EQ(ret, IMAGE_SOURCE_INVALID_PARAMETER);
+    
+    Image_String key6;
+    char keyData6[] = "InvalidPropertyKey";
+    key6.data = keyData6;
+    key6.size = strlen(keyData6);
+    ret = OH_ImageSourceNative_GetImagePropertyLong(imageSource, &key6, &value);
+    EXPECT_EQ(ret, IMAGE_SOURCE_UNSUPPORTED_METADATA);
+    
+    OH_ImageSourceNative_Release(imageSource);
+    GTEST_LOG_(INFO) << "ImagSourceNdk2Test: OH_ImageSourceNative_GetImagePropertyLong001 end";
+}
+
+/**
+ * @tc.name: OH_ImageSourceNative_GetImagePropertyLong002
+ * @tc.desc: test OH_ImageSourceNative_GetImagePropertyLong with valid property keys
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImagSourceNdk2Test, OH_ImageSourceNative_GetImagePropertyLong002, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImagSourceNdk2Test: OH_ImageSourceNative_GetImagePropertyLong002 start";
+    OH_ImageSourceNative *imageSource = CreateImageSourceNative(IMAGE_JPEG_EXIF_TEST);
+    ASSERT_NE(imageSource, nullptr);
+    
+    Image_String key1;
+    char keyData1[] = "ISOSpeedRatings";
+    key1.data = keyData1;
+    key1.size = strlen(keyData1);
+    uint32_t value1 = 0;
+    Image_ErrorCode ret = OH_ImageSourceNative_GetImagePropertyLong(imageSource, &key1, &value1);
+    EXPECT_GE(value1, 0);
+    EXPECT_LE(value1, UINT32_MAX);
+    
+    Image_String key2;
+    char keyData2[] = "ImageWidth";
+    key2.data = keyData2;
+    key2.size = strlen(keyData2);
+    uint32_t value2 = 0;
+    ret = OH_ImageSourceNative_GetImagePropertyLong(imageSource, &key2, &value2);
+    EXPECT_GE(value2, 0);
+    EXPECT_LE(value2, UINT32_MAX);
+    
+    Image_String key3;
+    char keyData3[] = "SubfileType";
+    key3.data = keyData3;
+    key3.size = strlen(keyData3);
+    uint32_t value3 = 0;
+    ret = OH_ImageSourceNative_GetImagePropertyLong(imageSource, &key3, &value3);
+    EXPECT_EQ(ret, IMAGE_SOURCE_UNSUPPORTED_METADATA);
+    
+    OH_ImageSourceNative_Release(imageSource);
+    GTEST_LOG_(INFO) << "ImagSourceNdk2Test: OH_ImageSourceNative_GetImagePropertyLong002 end";
+}
+
+/**
+ * @tc.name: OH_ImageSourceNative_GetImagePropertyDouble001
+ * @tc.desc: test OH_ImageSourceNative_GetImagePropertyDouble with invalid parameters and invalid keys
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImagSourceNdk2Test, OH_ImageSourceNative_GetImagePropertyDouble001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImagSourceNdk2Test: OH_ImageSourceNative_GetImagePropertyDouble001 start";
+    
+    OH_ImageSourceNative *imageSource = nullptr;
+    Image_String key;
+    char keyData[] = "test_key";
+    key.data = keyData;
+    key.size = strlen(keyData);
+    double value = 0.0;
+    Image_ErrorCode ret = OH_ImageSourceNative_GetImagePropertyDouble(imageSource, &key, &value);
+    EXPECT_EQ(ret, IMAGE_SOURCE_INVALID_PARAMETER);
+    
+    imageSource = CreateImageSourceNative(IMAGE_JPEG_EXIF_TEST);
+    ASSERT_NE(imageSource, nullptr);
+    Image_String *nullKey = nullptr;
+    ret = OH_ImageSourceNative_GetImagePropertyDouble(imageSource, nullKey, &value);
+    EXPECT_EQ(ret, IMAGE_SOURCE_INVALID_PARAMETER);
+    
+    Image_String key2;
+    key2.data = nullptr;
+    key2.size = 5;
+    ret = OH_ImageSourceNative_GetImagePropertyDouble(imageSource, &key2, &value);
+    EXPECT_EQ(ret, IMAGE_SOURCE_INVALID_PARAMETER);
+    
+    Image_String key3;
+    char keyData3[] = "test_key";
+    key3.data = keyData3;
+    key3.size = 0;
+    ret = OH_ImageSourceNative_GetImagePropertyDouble(imageSource, &key3, &value);
+    EXPECT_EQ(ret, IMAGE_SOURCE_INVALID_PARAMETER);
+    
+    Image_String key4;
+    char keyData4[] = "test_key";
+    key4.data = keyData4;
+    key4.size = strlen(keyData4);
+    double *nullValue = nullptr;
+    ret = OH_ImageSourceNative_GetImagePropertyDouble(imageSource, &key4, nullValue);
+    EXPECT_EQ(ret, IMAGE_SOURCE_INVALID_PARAMETER);
+    
+    Image_String key5;
+    char keyData5[] = "";
+    key5.data = keyData5;
+    key5.size = strlen(keyData5);
+    ret = OH_ImageSourceNative_GetImagePropertyDouble(imageSource, &key5, &value);
+    EXPECT_EQ(ret, IMAGE_SOURCE_INVALID_PARAMETER);
+    
+    Image_String key6;
+    char keyData6[] = "InvalidPropertyKey";
+    key6.data = keyData6;
+    key6.size = strlen(keyData6);
+    ret = OH_ImageSourceNative_GetImagePropertyDouble(imageSource, &key6, &value);
+    EXPECT_EQ(ret, IMAGE_SOURCE_UNSUPPORTED_METADATA);
+    
+    OH_ImageSourceNative_Release(imageSource);
+    GTEST_LOG_(INFO) << "ImagSourceNdk2Test: OH_ImageSourceNative_GetImagePropertyDouble001 end";
+}
+
+/**
+ * @tc.name: OH_ImageSourceNative_GetImagePropertyDouble002
+ * @tc.desc: test OH_ImageSourceNative_GetImagePropertyDouble with valid property keys that return double values
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImagSourceNdk2Test, OH_ImageSourceNative_GetImagePropertyDouble002, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImagSourceNdk2Test: OH_ImageSourceNative_GetImagePropertyDouble002 start";
+    OH_ImageSourceNative *imageSource = CreateImageSourceNative(IMAGE_JPEG_EXIF_TEST);
+    ASSERT_NE(imageSource, nullptr);
+    
+    Image_String key1;
+    char keyData1[] = "ExposureTime";
+    key1.data = keyData1;
+    key1.size = strlen(keyData1);
+    double value1 = 0.0;
+    Image_ErrorCode ret = OH_ImageSourceNative_GetImagePropertyDouble(imageSource, &key1, &value1);
+    EXPECT_GE(value1, 0.0);
+    
+    Image_String key2;
+    char keyData2[] = "FNumber";
+    key2.data = keyData2;
+    key2.size = strlen(keyData2);
+    double value2 = 0.0;
+    ret = OH_ImageSourceNative_GetImagePropertyDouble(imageSource, &key2, &value2);
+    EXPECT_GE(value2, 0.0);
+    
+    Image_String key3;
+    char keyData3[] = "GPSSpeed";
+    key3.data = keyData3;
+    key3.size = strlen(keyData3);
+    double value3 = 0.0;
+    ret = OH_ImageSourceNative_GetImagePropertyDouble(imageSource, &key3, &value3);
+    EXPECT_EQ(ret, IMAGE_SOURCE_UNSUPPORTED_METADATA);
+    
+    OH_ImageSourceNative_Release(imageSource);
+    GTEST_LOG_(INFO) << "ImagSourceNdk2Test: OH_ImageSourceNative_GetImagePropertyDouble002 end";
+}
+
+/**
+ * @tc.name: OH_ImageSourceNative_GetImagePropertyArraySize001
+ * @tc.desc: Test invalid parameter handling
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImagSourceNdk2Test, OH_ImageSourceNative_GetImagePropertyArraySize001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImagSourceNdk2Test: GetImagePropertyArraySize001 start";
+    
+    OH_ImageSourceNative *imageSource = nullptr;
+    Image_String key;
+    char validKey[] = "valid_key";
+    key.data = validKey;
+    key.size = strlen(validKey);
+    size_t size = 0;
+    
+    Image_ErrorCode ret = OH_ImageSourceNative_GetImagePropertyArraySize(imageSource, &key, &size);
+    EXPECT_EQ(ret, IMAGE_SOURCE_INVALID_PARAMETER);
+    
+    imageSource = CreateImageSourceNative(IMAGE_JPEG_EXIF_TEST);
+    ASSERT_NE(imageSource, nullptr);
+    
+    ret = OH_ImageSourceNative_GetImagePropertyArraySize(imageSource, nullptr, &size);
+    EXPECT_EQ(ret, IMAGE_SOURCE_INVALID_PARAMETER);
+    
+    Image_String nullDataKey;
+    nullDataKey.data = nullptr;
+    nullDataKey.size = 5;
+    ret = OH_ImageSourceNative_GetImagePropertyArraySize(imageSource, &nullDataKey, &size);
+    EXPECT_EQ(ret, IMAGE_SOURCE_INVALID_PARAMETER);
+    
+    Image_String zeroSizeKey;
+    zeroSizeKey.data = validKey;
+    zeroSizeKey.size = 0;
+    ret = OH_ImageSourceNative_GetImagePropertyArraySize(imageSource, &zeroSizeKey, &size);
+    EXPECT_EQ(ret, IMAGE_SOURCE_INVALID_PARAMETER);
+    
+    ret = OH_ImageSourceNative_GetImagePropertyArraySize(imageSource, &key, nullptr);
+    EXPECT_EQ(ret, IMAGE_SOURCE_INVALID_PARAMETER);
+    
+    Image_String emptyStrKey;
+    char emptyData[] = "";
+    emptyStrKey.data = emptyData;
+    emptyStrKey.size = sizeof(emptyData) - 1;
+    ret = OH_ImageSourceNative_GetImagePropertyArraySize(imageSource, &emptyStrKey, &size);
+    EXPECT_EQ(ret, IMAGE_SOURCE_INVALID_PARAMETER);
+    
+    OH_ImageSourceNative_Release(imageSource);
+    GTEST_LOG_(INFO) << "ImagSourceNdk2Test: GetImagePropertyArraySize001 end";
+}
+
+/**
+ * @tc.name: OH_ImageSourceNative_GetImagePropertyArraySize002
+ * @tc.desc: Test metadata retrieval errors
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImagSourceNdk2Test, OH_ImageSourceNative_GetImagePropertyArraySize002, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImagSourceNdk2Test: GetImagePropertyArraySize002 start";
+    
+    OH_ImageSourceNative *badSource = CreateImageSourceNative(IMAGE_ICO_PATH_TEST);
+    ASSERT_NE(badSource, nullptr);
+    
+    Image_String key;
+    char validKey[] = "valid_key";
+    key.data = validKey;
+    key.size = strlen(validKey);
+    size_t size = 0;
+    
+    Image_ErrorCode ret = OH_ImageSourceNative_GetImagePropertyArraySize(badSource, &key, &size);
+    EXPECT_TRUE(ret == IMAGE_SOURCE_UNSUPPORTED_MIMETYPE);
+    
+    OH_ImageSourceNative *imageSource = CreateImageSourceNative(IMAGE_JPEG_EXIF_TEST);
+    ASSERT_NE(imageSource, nullptr);
+    
+    Image_String invalidKey;
+    char badKey[] = "non_existent_metadata";
+    invalidKey.data = badKey;
+    invalidKey.size = strlen(badKey);
+    
+    ret = OH_ImageSourceNative_GetImagePropertyArraySize(imageSource, &invalidKey, &size);
+    EXPECT_EQ(ret, IMAGE_SOURCE_UNSUPPORTED_METADATA);
+    
+    Image_String emptyKey;
+    char emptyMetaKey[] = "empty_meta";
+    emptyKey.data = emptyMetaKey;
+    emptyKey.size = strlen(emptyMetaKey);
+    
+    ret = OH_ImageSourceNative_GetImagePropertyArraySize(imageSource, &emptyKey, &size);
+    EXPECT_EQ(ret, IMAGE_SOURCE_UNSUPPORTED_METADATA);
+    OH_ImageSourceNative_Release(badSource);
+    OH_ImageSourceNative_Release(imageSource);
+    GTEST_LOG_(INFO) << "ImagSourceNdk2Test: GetImagePropertyArraySize002 end";
+}
+
+/**
+ * @tc.name: OH_ImageSourceNative_GetImagePropertyArraySize003
+ * @tc.desc: Test valid metadata type handling
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImagSourceNdk2Test, OH_ImageSourceNative_GetImagePropertyArraySize003, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImagSourceNdk2Test: GetImagePropertyArraySize003 start";
+    
+    OH_ImageSourceNative *source = CreateImageSourceNative(IMAGE_JPEG_EXIF_TEST);
+    ASSERT_NE(source, nullptr);
+
+    size_t actualSize = 0;
+    Image_String intArrayKey;
+    char intKey[] = "BitsPerSample";
+    intArrayKey.data = intKey;
+    intArrayKey.size = strlen(intKey);
+    
+    Image_ErrorCode ret = OH_ImageSourceNative_GetImagePropertyArraySize(source, &intArrayKey, &actualSize);
+    EXPECT_EQ(ret, IMAGE_SUCCESS);
+    EXPECT_GT(actualSize, 0);
+    
+    Image_String doubleArrayKey;
+    char doubleKey[] = "GPSTimeStamp";
+    doubleArrayKey.data = doubleKey;
+    doubleArrayKey.size = strlen(doubleKey);
+    Image_String doubleArrayValue;
+    char doubleValue[] = "12:30:30.12";
+    doubleArrayValue.data = doubleValue;
+    doubleArrayValue.size = strlen(doubleValue);
+    ret = OH_ImageSourceNative_ModifyImageProperty(source, &doubleArrayKey, &doubleArrayValue);
+    EXPECT_EQ(ret, IMAGE_SUCCESS);
+    ret = OH_ImageSourceNative_GetImagePropertyArraySize(source, &doubleArrayKey, &actualSize);
+    EXPECT_EQ(ret, IMAGE_SUCCESS);
+    EXPECT_GT(actualSize, 0);
+    
+    Image_String stringKey;
+    char strKey[] = "Model";
+    stringKey.data = strKey;
+    stringKey.size = strlen(strKey);
+    
+    ret = OH_ImageSourceNative_GetImagePropertyArraySize(source, &stringKey, &actualSize);
+    EXPECT_EQ(ret, IMAGE_SUCCESS);
+    EXPECT_GT(actualSize, 0);
+    
+    Image_String bufferKey;
+    char bufKey[] = "MakerNote";
+    bufferKey.data = bufKey;
+    bufferKey.size = strlen(bufKey);
+    
+    ret = OH_ImageSourceNative_GetImagePropertyArraySize(source, &bufferKey, &actualSize);
+    EXPECT_EQ(ret, IMAGE_SUCCESS);
+    EXPECT_GT(actualSize, 0);
+    
+    OH_ImageSourceNative_Release(source);
+    GTEST_LOG_(INFO) << "ImagSourceNdk2Test: GetImagePropertyArraySize003 end";
+}
+
+/**
+ * @tc.name: OH_ImageSourceNative_GetImagePropertyString001
+ * @tc.desc: Test string property with invalid parameters
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImagSourceNdk2Test, OH_ImageSourceNative_GetImagePropertyString001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImagSourceNdk2Test: GetImagePropertyString001 start";
+    
+    OH_ImageSourceNative *source = nullptr;
+    Image_String key;
+    char keyData[] = "Make";
+    key.data = keyData;
+    key.size = strlen(keyData);
+    char value[256] = {0};
+    size_t bufSize = sizeof(value);
+    
+    Image_ErrorCode ret = OH_ImageSourceNative_GetImagePropertyString(source, &key, value, bufSize);
+    EXPECT_EQ(ret, IMAGE_SOURCE_INVALID_PARAMETER);
+    
+    source = CreateImageSourceNative(IMAGE_JPEG_EXIF_TEST);
+    ASSERT_NE(source, nullptr);
+    
+    ret = OH_ImageSourceNative_GetImagePropertyString(source, nullptr, value, bufSize);
+    EXPECT_EQ(ret, IMAGE_SOURCE_INVALID_PARAMETER);
+    
+    Image_String nullKey;
+    nullKey.data = nullptr;
+    nullKey.size = 5;
+    ret = OH_ImageSourceNative_GetImagePropertyString(source, &nullKey, value, bufSize);
+    EXPECT_EQ(ret, IMAGE_SOURCE_INVALID_PARAMETER);
+    
+    ret = OH_ImageSourceNative_GetImagePropertyString(source, &key, value, 0);
+    EXPECT_EQ(ret, IMAGE_SOURCE_INVALID_PARAMETER);
+    
+    OH_ImageSourceNative_Release(source);
+    GTEST_LOG_(INFO) << "ImagSourceNdk2Test: GetImagePropertyString001 end";
+}
+
+/**
+ * @tc.name: OH_ImageSourceNative_GetImagePropertyString002
+ * @tc.desc: Test valid string property retrieval
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImagSourceNdk2Test, OH_ImageSourceNative_GetImagePropertyString002, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImagSourceNdk2Test: GetImagePropertyString002 start";
+    
+    OH_ImageSourceNative *source = CreateImageSourceNative(IMAGE_JPEG_EXIF_TEST);
+    ASSERT_NE(source, nullptr);
+    
+    // Get size first
+    Image_String key;
+    char keyData[] = "GPSStatus";
+    key.data = keyData;
+    key.size = strlen(keyData);
+    Image_String value;
+    char stringValue[] = "A";
+    value.data = stringValue;
+    value.size = strlen(stringValue);
+    Image_ErrorCode ret = OH_ImageSourceNative_ModifyImageProperty(source, &key, &value);
+    EXPECT_EQ(ret, IMAGE_SUCCESS);
+    size_t requiredSize = 0;
+    ret = OH_ImageSourceNative_GetImagePropertyArraySize(source, &key, &requiredSize);
+    ASSERT_EQ(ret, IMAGE_SUCCESS);
+    ASSERT_GT(requiredSize, 0u);
+    
+    std::vector<char> buffer(requiredSize);
+    ret = OH_ImageSourceNative_GetImagePropertyString(source, &key, buffer.data(), buffer.size());
+    EXPECT_EQ(ret, IMAGE_SUCCESS);
+    EXPECT_GT(strlen(buffer.data()), 0u);
+    
+    Image_String invalidKey;
+    char invalidData[] = "InvalidKey";
+    invalidKey.data = invalidData;
+    invalidKey.size = strlen(invalidData);
+    ret = OH_ImageSourceNative_GetImagePropertyString(source, &invalidKey, buffer.data(), buffer.size());
+    EXPECT_EQ(ret, IMAGE_SOURCE_UNSUPPORTED_METADATA);
+    
+    Image_String wrongTypeKey;
+    char wrongTypeData[] = "ImageWidth";
+    wrongTypeKey.data = wrongTypeData;
+    wrongTypeKey.size = strlen(wrongTypeData);
+    ret = OH_ImageSourceNative_GetImagePropertyString(source, &wrongTypeKey, buffer.data(), buffer.size());
+    EXPECT_EQ(ret, IMAGE_SOURCE_UNSUPPORTED_METADATA);
+    
+    OH_ImageSourceNative_Release(source);
+    GTEST_LOG_(INFO) << "ImagSourceNdk2Test: GetImagePropertyString002 end";
+}
+
+/**
+ * @tc.name: OH_ImageSourceNative_GetImagePropertyIntArray001
+ * @tc.desc: Test OH_ImageSourceNative_GetImagePropertyArraySize and OH_ImageSourceNative_GetImagePropertyIntArray
+ *           with invalid parameters.
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImagSourceNdk2Test, OH_ImageSourceNative_GetImagePropertyIntArray001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImagSourceNdk2Test: OH_ImageSourceNative_GetImagePropertyIntArray001 start";
+    size_t arraySize = 0;
+    char testKeyData[] = "test_key";
+    Image_String key;
+    key.data = testKeyData;
+    key.size = strlen(testKeyData);
+    
+    Image_ErrorCode ret = OH_ImageSourceNative_GetImagePropertyArraySize(nullptr, &key, &arraySize);
+    EXPECT_EQ(ret, IMAGE_SOURCE_INVALID_PARAMETER);
+    
+    OH_ImageSourceNative* source = CreateImageSourceNative(IMAGE_JPEG_EXIF_TEST);
+    ASSERT_NE(source, nullptr);
+    
+    ret = OH_ImageSourceNative_GetImagePropertyArraySize(source, nullptr, &arraySize);
+    EXPECT_EQ(ret, IMAGE_SOURCE_INVALID_PARAMETER);
+    
+    Image_String keyWithNullData;
+    keyWithNullData.data = nullptr;
+    keyWithNullData.size = 5;
+    ret = OH_ImageSourceNative_GetImagePropertyArraySize(source, &keyWithNullData, &arraySize);
+    EXPECT_EQ(ret, IMAGE_SOURCE_INVALID_PARAMETER);
+    
+    Image_String keyZeroLength;
+    keyZeroLength.data = testKeyData;
+    keyZeroLength.size = 0;
+    ret = OH_ImageSourceNative_GetImagePropertyArraySize(source, &keyZeroLength, &arraySize);
+    EXPECT_EQ(ret, IMAGE_SOURCE_INVALID_PARAMETER);
+    
+    ret = OH_ImageSourceNative_GetImagePropertyArraySize(source, &key, nullptr);
+    EXPECT_EQ(ret, IMAGE_SOURCE_INVALID_PARAMETER);
+    
+    char bitsPerSampleData[] = "BitsPerSample";
+    Image_String validKey;
+    validKey.data = bitsPerSampleData;
+    validKey.size = strlen(bitsPerSampleData);
+    
+    size_t validSize = 0;
+    ret = OH_ImageSourceNative_GetImagePropertyArraySize(source, &validKey, &validSize);
+    ASSERT_EQ(ret, IMAGE_SUCCESS);
+    ASSERT_GT(validSize, 0);
+    int32_t* buffer = static_cast<int32_t*>(malloc(validSize * sizeof(int32_t)));
+    ASSERT_NE(buffer, nullptr);
+    
+    ret = OH_ImageSourceNative_GetImagePropertyIntArray(nullptr, &validKey, buffer, validSize);
+    EXPECT_EQ(ret, IMAGE_SOURCE_INVALID_PARAMETER);
+    
+    ret = OH_ImageSourceNative_GetImagePropertyIntArray(source, nullptr, buffer, validSize);
+    EXPECT_EQ(ret, IMAGE_SOURCE_INVALID_PARAMETER);
+    
+    ret = OH_ImageSourceNative_GetImagePropertyIntArray(source, &keyWithNullData, buffer, validSize);
+    EXPECT_EQ(ret, IMAGE_SOURCE_INVALID_PARAMETER);
+    
+    ret = OH_ImageSourceNative_GetImagePropertyIntArray(source, &keyZeroLength, buffer, validSize);
+    EXPECT_EQ(ret, IMAGE_SOURCE_INVALID_PARAMETER);
+    
+    ret = OH_ImageSourceNative_GetImagePropertyIntArray(source, &validKey, nullptr, validSize);
+    EXPECT_EQ(ret, IMAGE_SOURCE_INVALID_PARAMETER);
+    
+    ret = OH_ImageSourceNative_GetImagePropertyIntArray(source, &validKey, buffer, validSize - 1);
+    EXPECT_NE(ret, IMAGE_SUCCESS);
+    
+    free(buffer);
+    OH_ImageSourceNative_Release(source);
+    GTEST_LOG_(INFO) << "ImagSourceNdk2Test: OH_ImageSourceNative_GetImagePropertyIntArray001 end";
+}
+
+/**
+ * @tc.name: OH_ImageSourceNative_GetImagePropertyIntArray002
+ * @tc.desc: Test OH_ImageSourceNative_GetImagePropertyArraySize with invalid and unsupported keys.
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImagSourceNdk2Test, OH_ImageSourceNative_GetImagePropertyIntArray002, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImagSourceNdk2Test: OH_ImageSourceNative_GetImagePropertyIntArray002 start";
+    OH_ImageSourceNative* source = CreateImageSourceNative(IMAGE_JPEG_EXIF_TEST);
+    ASSERT_NE(source, nullptr);
+    
+    size_t arraySize = 0;
+    
+    char emptyStrData[] = "";
+    Image_String emptyKey;
+    emptyKey.data = emptyStrData;
+    emptyKey.size = 0;
+    Image_ErrorCode ret = OH_ImageSourceNative_GetImagePropertyArraySize(source, &emptyKey, &arraySize);
+    EXPECT_EQ(ret, IMAGE_SOURCE_INVALID_PARAMETER);
+    
+    char dummyStrData[] = "dummy";
+    Image_String zeroLengthKey;
+    zeroLengthKey.data = dummyStrData;
+    zeroLengthKey.size = 0;
+    ret = OH_ImageSourceNative_GetImagePropertyArraySize(source, &zeroLengthKey, &arraySize);
+    EXPECT_EQ(ret, IMAGE_SOURCE_INVALID_PARAMETER);
+    
+    char invalidKeyData[] = "InvalidPropertyKey";
+    Image_String invalidKey;
+    invalidKey.data = invalidKeyData;
+    invalidKey.size = strlen(invalidKeyData);
+    ret = OH_ImageSourceNative_GetImagePropertyArraySize(source, &invalidKey, &arraySize);
+    EXPECT_EQ(ret, IMAGE_SOURCE_UNSUPPORTED_METADATA);
+    
+    char stripOffsetsData[] = "StripOffsets";
+    Image_String keyNotInImage;
+    keyNotInImage.data = stripOffsetsData;
+    keyNotInImage.size = strlen(stripOffsetsData);
+    ret = OH_ImageSourceNative_GetImagePropertyArraySize(source, &keyNotInImage, &arraySize);
+    EXPECT_EQ(ret, IMAGE_SOURCE_UNSUPPORTED_METADATA);
+    
+    OH_ImageSourceNative_Release(source);
+    GTEST_LOG_(INFO) << "ImagSourceNdk2Test: OH_ImageSourceNative_GetImagePropertyIntArray002 end";
+}
+
+/**
+ * @tc.name: OH_ImageSourceNative_GetImagePropertyIntArray003
+ * @tc.desc: Test OH_ImageSourceNative_GetImagePropertyArraySize and OH_ImageSourceNative_GetImagePropertyIntArray
+ *           with valid keys.
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImagSourceNdk2Test, OH_ImageSourceNative_GetImagePropertyIntArray003, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImagSourceNdk2Test: OH_ImageSourceNative_GetImagePropertyIntArray003 start";
+    OH_ImageSourceNative* source = CreateImageSourceNative(IMAGE_JPEG_EXIF_TEST);
+    ASSERT_NE(source, nullptr);
+    
+    char bitsPerSampleData[] = "BitsPerSample";
+    Image_String key1;
+    key1.data = bitsPerSampleData;
+    key1.size = strlen(bitsPerSampleData);
+    
+    size_t size1 = 0;
+    Image_ErrorCode ret = OH_ImageSourceNative_GetImagePropertyArraySize(source, &key1, &size1);
+    ASSERT_EQ(ret, IMAGE_SUCCESS);
+    ASSERT_GT(size1, 0);
+    
+    int32_t* value1 = static_cast<int32_t*>(malloc(size1 * sizeof(int32_t)));
+    ASSERT_NE(value1, nullptr);
+    ret = OH_ImageSourceNative_GetImagePropertyIntArray(source, &key1, value1, size1);
+    EXPECT_EQ(ret, IMAGE_SUCCESS);
+    free(value1);
+    
+    char subjectAreaData[] = "SubjectArea";
+    Image_String key2;
+    key2.data = subjectAreaData;
+    key2.size = strlen(subjectAreaData);
+
+    Image_String doubleArrayValue;
+    char doubleValue[] = "50,50";
+    doubleArrayValue.data = doubleValue;
+    doubleArrayValue.size = strlen(doubleValue);
+    ret = OH_ImageSourceNative_ModifyImageProperty(source, &key2, &doubleArrayValue);
+    EXPECT_EQ(ret, IMAGE_SUCCESS);
+    
+    size_t size2 = 0;
+    ret = OH_ImageSourceNative_GetImagePropertyArraySize(source, &key2, &size2);
+    ASSERT_EQ(ret, IMAGE_SUCCESS);
+    ASSERT_GT(size2, 0);
+    int32_t* value2 = static_cast<int32_t*>(malloc(size2 * sizeof(int32_t)));
+    ASSERT_NE(value2, nullptr);
+    ret = OH_ImageSourceNative_GetImagePropertyIntArray(source, &key2, value2, size2);
+    EXPECT_EQ(ret, IMAGE_SUCCESS);
+    free(value2);
+    
+    // Also test with insufficient buffer size (should fail)
+    int32_t* smallBuf = static_cast<int32_t*>(malloc((size2 - 1) * sizeof(int32_t)));
+    ret = OH_ImageSourceNative_GetImagePropertyIntArray(source, &key2, smallBuf, size2 - 1);
+    EXPECT_NE(ret, IMAGE_SUCCESS);
+    free(smallBuf);
+    
+    OH_ImageSourceNative_Release(source);
+    GTEST_LOG_(INFO) << "ImagSourceNdk2Test: OH_ImageSourceNative_GetImagePropertyIntArray003 end";
+}
+
+/**
+ * @tc.name: OH_ImageSourceNative_GetImagePropertyDoubleArray001
+ * @tc.desc: Test OH_ImageSourceNative_GetImagePropertyArraySize and OH_ImageSourceNative_GetImagePropertyDoubleArray
+ *           with invalid parameters.
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImagSourceNdk2Test, OH_ImageSourceNative_GetImagePropertyDoubleArray001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImagSourceNdk2Test: OH_ImageSourceNative_GetImagePropertyDoubleArray001 start";
+    size_t arraySize = 0;
+    char testKeyData[] = "test_key";
+    Image_String key;
+    key.data = testKeyData;
+    key.size = strlen(testKeyData);
+    
+    Image_ErrorCode ret = OH_ImageSourceNative_GetImagePropertyArraySize(nullptr, &key, &arraySize);
+    EXPECT_EQ(ret, IMAGE_SOURCE_INVALID_PARAMETER);
+    
+    OH_ImageSourceNative* source = CreateImageSourceNative(IMAGE_JPEG_EXIF_TEST);
+    ASSERT_NE(source, nullptr);
+    
+    ret = OH_ImageSourceNative_GetImagePropertyArraySize(source, nullptr, &arraySize);
+    EXPECT_EQ(ret, IMAGE_SOURCE_INVALID_PARAMETER);
+    
+    Image_String keyWithNullData;
+    keyWithNullData.data = nullptr;
+    keyWithNullData.size = 5;
+    ret = OH_ImageSourceNative_GetImagePropertyArraySize(source, &keyWithNullData, &arraySize);
+    EXPECT_EQ(ret, IMAGE_SOURCE_INVALID_PARAMETER);
+    
+    Image_String keyZeroLength;
+    keyZeroLength.data = testKeyData;
+    keyZeroLength.size = 0;
+    ret = OH_ImageSourceNative_GetImagePropertyArraySize(source, &keyZeroLength, &arraySize);
+    EXPECT_EQ(ret, IMAGE_SOURCE_INVALID_PARAMETER);
+    
+    ret = OH_ImageSourceNative_GetImagePropertyArraySize(source, &key, nullptr);
+    EXPECT_EQ(ret, IMAGE_SOURCE_INVALID_PARAMETER);
+    
+    char gpsLatitudeData[] = "GPSLatitude";
+    Image_String validKey;
+    validKey.data = gpsLatitudeData;
+    validKey.size = strlen(gpsLatitudeData);
+    
+    size_t validSize = 0;
+    ret = OH_ImageSourceNative_GetImagePropertyArraySize(source, &validKey, &validSize);
+    ASSERT_EQ(ret, IMAGE_SUCCESS);
+    ASSERT_GT(validSize, 0);
+    double* buffer = static_cast<double*>(malloc(validSize * sizeof(double)));
+    ASSERT_NE(buffer, nullptr);
+    
+    ret = OH_ImageSourceNative_GetImagePropertyDoubleArray(nullptr, &validKey, buffer, validSize);
+    EXPECT_EQ(ret, IMAGE_SOURCE_INVALID_PARAMETER);
+    
+    ret = OH_ImageSourceNative_GetImagePropertyDoubleArray(source, nullptr, buffer, validSize);
+    EXPECT_EQ(ret, IMAGE_SOURCE_INVALID_PARAMETER);
+    
+    ret = OH_ImageSourceNative_GetImagePropertyDoubleArray(source, &keyWithNullData, buffer, validSize);
+    EXPECT_EQ(ret, IMAGE_SOURCE_INVALID_PARAMETER);
+    
+    ret = OH_ImageSourceNative_GetImagePropertyDoubleArray(source, &keyZeroLength, buffer, validSize);
+    EXPECT_EQ(ret, IMAGE_SOURCE_INVALID_PARAMETER);
+    
+    ret = OH_ImageSourceNative_GetImagePropertyDoubleArray(source, &validKey, nullptr, validSize);
+    EXPECT_EQ(ret, IMAGE_SOURCE_INVALID_PARAMETER);
+    
+    ret = OH_ImageSourceNative_GetImagePropertyDoubleArray(source, &validKey, buffer, validSize - 1);
+    EXPECT_NE(ret, IMAGE_SUCCESS);
+    free(buffer);
+    
+    OH_ImageSourceNative_Release(source);
+    GTEST_LOG_(INFO) << "ImagSourceNdk2Test: OH_ImageSourceNative_GetImagePropertyDoubleArray001 end";
+}
+
+/**
+ * @tc.name: OH_ImageSourceNative_GetImagePropertyDoubleArray002
+ * @tc.desc: Test OH_ImageSourceNative_GetImagePropertyArraySize with invalid and unsupported keys.
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImagSourceNdk2Test, OH_ImageSourceNative_GetImagePropertyDoubleArray002, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImagSourceNdk2Test: OH_ImageSourceNative_GetImagePropertyDoubleArray002 start";
+    OH_ImageSourceNative* source = CreateImageSourceNative(IMAGE_JPEG_EXIF_TEST);
+    ASSERT_NE(source, nullptr);
+    
+    size_t arraySize = 0;
+    
+    char emptyStrData[] = "";
+    Image_String emptyKey;
+    emptyKey.data = emptyStrData;
+    emptyKey.size = 0;
+    Image_ErrorCode ret = OH_ImageSourceNative_GetImagePropertyArraySize(source, &emptyKey, &arraySize);
+    EXPECT_EQ(ret, IMAGE_SOURCE_INVALID_PARAMETER);
+    
+    char dummyStrData[] = "dummy";
+    Image_String zeroLengthKey;
+    zeroLengthKey.data = dummyStrData;
+    zeroLengthKey.size = 0;
+    ret = OH_ImageSourceNative_GetImagePropertyArraySize(source, &zeroLengthKey, &arraySize);
+    EXPECT_EQ(ret, IMAGE_SOURCE_INVALID_PARAMETER);
+    
+    char invalidKeyData[] = "InvalidPropertyKey";
+    Image_String invalidKey;
+    invalidKey.data = invalidKeyData;
+    invalidKey.size = strlen(invalidKeyData);
+    ret = OH_ImageSourceNative_GetImagePropertyArraySize(source, &invalidKey, &arraySize);
+    EXPECT_EQ(ret, IMAGE_SOURCE_UNSUPPORTED_METADATA);
+    
+    char compositeImageData[] = "SourceImageNumberOfCompositeImage";
+    Image_String keyNotInImage;
+    keyNotInImage.data = compositeImageData;
+    keyNotInImage.size = strlen(compositeImageData);
+    ret = OH_ImageSourceNative_GetImagePropertyArraySize(source, &keyNotInImage, &arraySize);
+    EXPECT_EQ(ret, IMAGE_SOURCE_UNSUPPORTED_METADATA);
+    
+    OH_ImageSourceNative_Release(source);
+    GTEST_LOG_(INFO) << "ImagSourceNdk2Test: OH_ImageSourceNative_GetImagePropertyDoubleArray002 end";
+}
+
+/**
+ * @tc.name: OH_ImageSourceNative_GetImagePropertyDoubleArray003
+ * @tc.desc: Test OH_ImageSourceNative_GetImagePropertyArraySize and OH_ImageSourceNative_GetImagePropertyDoubleArray
+ *           with valid keys.
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImagSourceNdk2Test, OH_ImageSourceNative_GetImagePropertyDoubleArray003, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImagSourceNdk2Test: OH_ImageSourceNative_GetImagePropertyDoubleArray003 start";
+    OH_ImageSourceNative* source = CreateImageSourceNative(IMAGE_JPEG_EXIF_TEST);
+    ASSERT_NE(source, nullptr);
+    
+    char gpsLatitudeData[] = "GPSLatitude";
+    Image_String key1;
+    key1.data = gpsLatitudeData;
+    key1.size = strlen(gpsLatitudeData);
+    
+    size_t size1 = 0;
+    Image_ErrorCode ret = OH_ImageSourceNative_GetImagePropertyArraySize(source, &key1, &size1);
+    ASSERT_EQ(ret, IMAGE_SUCCESS);
+    ASSERT_GT(size1, 0);
+    double* value1 = static_cast<double*>(malloc(size1 * sizeof(double)));
+    ASSERT_NE(value1, nullptr);
+    ret = OH_ImageSourceNative_GetImagePropertyDoubleArray(source, &key1, value1, size1);
+    EXPECT_EQ(ret, IMAGE_SUCCESS);
+    free(value1);
+    
+    char whitePointData[] = "WhitePoint";
+    Image_String key2;
+    key2.data = whitePointData;
+    key2.size = strlen(whitePointData);
+
+    Image_String value;
+    char stringValue1[] = "1,2";
+    value.data = stringValue1;
+    value.size = strlen(stringValue1);
+    ret = OH_ImageSourceNative_ModifyImageProperty(source, &key2, &value);
+    
+    size_t size2 = 0;
+    ret = OH_ImageSourceNative_GetImagePropertyArraySize(source, &key2, &size2);
+    ASSERT_EQ(ret, IMAGE_SUCCESS);
+    ASSERT_GT(size2, 0);
+    double* value2 = static_cast<double*>(malloc(size2 * sizeof(double)));
+    ASSERT_NE(value2, nullptr);
+    ret = OH_ImageSourceNative_GetImagePropertyDoubleArray(source, &key2, value2, size2);
+    EXPECT_EQ(ret, IMAGE_SUCCESS);
+    free(value2);
+
+    char stringValue2[] = "0.299, 0.587, 0.114";
+    value.data = stringValue2;
+    value.size = strlen(stringValue2);
+    char yCbCrCoefficientsData[] = "YCbCrCoefficients";
+    Image_String key3;
+    key3.data = yCbCrCoefficientsData;
+    key3.size = strlen(yCbCrCoefficientsData);
+    ret = OH_ImageSourceNative_ModifyImageProperty(source, &key3, &value);
+    
+    size_t size3 = 0;
+    ret = OH_ImageSourceNative_GetImagePropertyArraySize(source, &key3, &size3);
+    EXPECT_EQ(ret, IMAGE_SUCCESS);
+    
+    OH_ImageSourceNative_Release(source);
+    GTEST_LOG_(INFO) << "ImagSourceNdk2Test: OH_ImageSourceNative_GetImagePropertyDoubleArray003 end";
+}
+
+/**
+ * @tc.name: OH_ImageSourceNative_GetImagePropertyBlob001
+ * @tc.desc: Test array buffer with invalid parameters
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImagSourceNdk2Test, OH_ImageSourceNative_GetImagePropertyBlob001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImagSourceNdk2Test: GetImagePropertyArrayBuffer001 start";
+    
+    OH_ImageSourceNative *source = nullptr;
+    Image_String key;
+    char keyData[] = "OECF";
+    key.data = keyData;
+    key.size = strlen(keyData);
+    uint8_t buffer[256] = {0};
+    
+    Image_ErrorCode ret = OH_ImageSourceNative_GetImagePropertyBlob(source, &key, buffer, sizeof(buffer));
+    EXPECT_EQ(ret, IMAGE_SOURCE_INVALID_PARAMETER);
+    
+    source = CreateImageSourceNative(IMAGE_JPEG_EXIF_TEST);
+    ASSERT_NE(source, nullptr);
+    
+    ret = OH_ImageSourceNative_GetImagePropertyBlob(source, nullptr, buffer, sizeof(buffer));
+    EXPECT_EQ(ret, IMAGE_SOURCE_INVALID_PARAMETER);
+    
+    ret = OH_ImageSourceNative_GetImagePropertyBlob(source, &key, nullptr, sizeof(buffer));
+    EXPECT_EQ(ret, IMAGE_SOURCE_INVALID_PARAMETER);
+    
+    ret = OH_ImageSourceNative_GetImagePropertyBlob(source, &key, buffer, 0);
+    EXPECT_EQ(ret, IMAGE_SOURCE_INVALID_PARAMETER);
+    
+    OH_ImageSourceNative_Release(source);
+    GTEST_LOG_(INFO) << "ImagSourceNdk2Test: GetImagePropertyArrayBuffer001 end";
+}
+
+/**
+ * @tc.name: OH_ImageSourceNative_ModifyImagePropertyShort001
+ * @tc.desc: test OH_ImageSourceNative_ModifyImagePropertyShort invalid parameters and invalid key
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImagSourceNdk2Test, OH_ImageSourceNative_ModifyImagePropertyShort001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImagSourceNdk2Test: OH_ImageSourceNative_ModifyImagePropertyShort001 start";
+    OH_ImageSourceNative *imageSource = nullptr;
+    Image_String key;
+    char keyData[] = "ISOSpeedRatings";
+    key.data = keyData;
+    key.size = strlen(keyData);
+    uint16_t v = 100;
+    Image_ErrorCode ret = OH_ImageSourceNative_ModifyImagePropertyShort(imageSource, &key, v);
+    EXPECT_EQ(ret, IMAGE_SOURCE_INVALID_PARAMETER);
+
+    imageSource = CreateImageSourceNative(IMAGE_JPEG_EXIF_TEST);
+    ASSERT_NE(imageSource, nullptr);
+    Image_String *nullKey = nullptr;
+    ret = OH_ImageSourceNative_ModifyImagePropertyShort(imageSource, nullKey, v);
+    EXPECT_EQ(ret, IMAGE_SOURCE_INVALID_PARAMETER);
+
+    Image_String key2;
+    key2.data = nullptr;
+    key2.size = 5;
+    ret = OH_ImageSourceNative_ModifyImagePropertyShort(imageSource, &key2, v);
+    EXPECT_EQ(ret, IMAGE_SOURCE_INVALID_PARAMETER);
+
+    Image_String key3;
+    key3.data = keyData;
+    key3.size = 0;
+    ret = OH_ImageSourceNative_ModifyImagePropertyShort(imageSource, &key3, v);
+    EXPECT_EQ(ret, IMAGE_SOURCE_INVALID_PARAMETER);
+
+    Image_String badKey;
+    char badKeyData[] = "InvalidPropertyKey";
+    badKey.data = badKeyData;
+    badKey.size = strlen(badKeyData);
+    ret = OH_ImageSourceNative_ModifyImagePropertyShort(imageSource, &badKey, v);
+    EXPECT_EQ(ret, IMAGE_SOURCE_UNSUPPORTED_METADATA);
+
+    OH_ImageSourceNative_Release(imageSource);
+    GTEST_LOG_(INFO) << "ImagSourceNdk2Test: OH_ImageSourceNative_ModifyImagePropertyShort001 end";
+}
+
+/**
+ * @tc.name: OH_ImageSourceNative_ModifyImagePropertyShort002
+ * @tc.desc: test OH_ImageSourceNative_ModifyImagePropertyShort with valid property key
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImagSourceNdk2Test, OH_ImageSourceNative_ModifyImagePropertyShort002, TestSize.Level3)
+{
+    OH_ImageSourceNative *imageSource = CreateImageSourceNative(IMAGE_JPEG_EXIF_TEST);
+    ASSERT_NE(imageSource, nullptr);
+
+    Image_String key;
+    char keyData[] = "ISOSpeedRatings";
+    key.data = keyData;
+    key.size = strlen(keyData);
+    uint16_t v = 200;
+    Image_ErrorCode ret = OH_ImageSourceNative_ModifyImagePropertyShort(imageSource, &key, v);
+    EXPECT_TRUE(ret == IMAGE_SUCCESS);
+
+    OH_ImageSourceNative_Release(imageSource);
+}
+
+/**
+ * @tc.name: OH_ImageSourceNative_ModifyImagePropertyLong001
+ * @tc.desc: test OH_ImageSourceNative_ModifyImagePropertyLong invalid parameters and invalid key
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImagSourceNdk2Test, OH_ImageSourceNative_ModifyImagePropertyLong001, TestSize.Level3)
+{
+    OH_ImageSourceNative *imageSource = nullptr;
+    Image_String key;
+    char keyData[] = "ImageWidth";
+    key.data = keyData;
+    key.size = strlen(keyData);
+    uint32_t v = 1024;
+    Image_ErrorCode ret = OH_ImageSourceNative_ModifyImagePropertyLong(imageSource, &key, v);
+    EXPECT_EQ(ret, IMAGE_SOURCE_INVALID_PARAMETER);
+
+    imageSource = CreateImageSourceNative(IMAGE_JPEG_EXIF_TEST);
+    ASSERT_NE(imageSource, nullptr);
+    Image_String *nullKey = nullptr;
+    ret = OH_ImageSourceNative_ModifyImagePropertyLong(imageSource, nullKey, v);
+    EXPECT_EQ(ret, IMAGE_SOURCE_INVALID_PARAMETER);
+
+    Image_String key2;
+    key2.data = nullptr;
+    key2.size = 5;
+    ret = OH_ImageSourceNative_ModifyImagePropertyLong(imageSource, &key2, v);
+    EXPECT_EQ(ret, IMAGE_SOURCE_INVALID_PARAMETER);
+
+    Image_String key3;
+    key3.data = keyData;
+    key3.size = 0;
+    ret = OH_ImageSourceNative_ModifyImagePropertyLong(imageSource, &key3, v);
+    EXPECT_EQ(ret, IMAGE_SOURCE_INVALID_PARAMETER);
+
+    Image_String badKey;
+    char badKeyData[] = "InvalidPropertyKey";
+    badKey.data = badKeyData;
+    badKey.size = strlen(badKeyData);
+    ret = OH_ImageSourceNative_ModifyImagePropertyLong(imageSource, &badKey, v);
+    EXPECT_EQ(ret, IMAGE_SOURCE_UNSUPPORTED_METADATA);
+
+    OH_ImageSourceNative_Release(imageSource);
+}
+
+/**
+ * @tc.name: OH_ImageSourceNative_ModifyImagePropertyLong002
+ * @tc.desc: test OH_ImageSourceNative_ModifyImagePropertyLong valid property key
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImagSourceNdk2Test, OH_ImageSourceNative_ModifyImagePropertyLong002, TestSize.Level3)
+{
+    OH_ImageSourceNative *imageSource = CreateImageSourceNative(IMAGE_JPEG_EXIF_TEST);
+    ASSERT_NE(imageSource, nullptr);
+
+    Image_String key;
+    char keyData[] = "ImageWidth";
+    key.data = keyData;
+    key.size = strlen(keyData);
+    uint32_t v = 2048;
+    Image_ErrorCode ret = OH_ImageSourceNative_ModifyImagePropertyLong(imageSource, &key, v);
+    EXPECT_TRUE(ret == IMAGE_SUCCESS);
+
+    OH_ImageSourceNative_Release(imageSource);
+}
+
+/**
+ * @tc.name: OH_ImageSourceNative_ModifyImagePropertyDouble001
+ * @tc.desc: test OH_ImageSourceNative_ModifyImagePropertyDouble invalid parameters and invalid key
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImagSourceNdk2Test, OH_ImageSourceNative_ModifyImagePropertyDouble001, TestSize.Level3)
+{
+    OH_ImageSourceNative *imageSource = nullptr;
+    Image_String key;
+    char keyData[] = "ExposureTime";
+    key.data = keyData;
+    key.size = strlen(keyData);
+    double v = 0.01;
+    Image_ErrorCode ret = OH_ImageSourceNative_ModifyImagePropertyDouble(imageSource, &key, v);
+    EXPECT_EQ(ret, IMAGE_SOURCE_INVALID_PARAMETER);
+
+    imageSource = CreateImageSourceNative(IMAGE_JPEG_EXIF_TEST);
+    ASSERT_NE(imageSource, nullptr);
+    Image_String *nullKey = nullptr;
+    ret = OH_ImageSourceNative_ModifyImagePropertyDouble(imageSource, nullKey, v);
+    EXPECT_EQ(ret, IMAGE_SOURCE_INVALID_PARAMETER);
+
+    Image_String key2;
+    key2.data = nullptr;
+    key2.size = 5;
+    ret = OH_ImageSourceNative_ModifyImagePropertyDouble(imageSource, &key2, v);
+    EXPECT_EQ(ret, IMAGE_SOURCE_INVALID_PARAMETER);
+
+    Image_String key3;
+    key3.data = keyData;
+    key3.size = 0;
+    ret = OH_ImageSourceNative_ModifyImagePropertyDouble(imageSource, &key3, v);
+    EXPECT_EQ(ret, IMAGE_SOURCE_INVALID_PARAMETER);
+
+    Image_String badKey;
+    char badKeyData[] = "InvalidPropertyKey";
+    badKey.data = badKeyData;
+    badKey.size = strlen(badKeyData);
+    ret = OH_ImageSourceNative_ModifyImagePropertyDouble(imageSource, &badKey, v);
+    EXPECT_EQ(ret, IMAGE_SOURCE_UNSUPPORTED_METADATA);
+
+    OH_ImageSourceNative_Release(imageSource);
+}
+
+/**
+ * @tc.name: OH_ImageSourceNative_ModifyImagePropertyDouble002
+ * @tc.desc: test OH_ImageSourceNative_ModifyImagePropertyDouble valid property key
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImagSourceNdk2Test, OH_ImageSourceNative_ModifyImagePropertyDouble002, TestSize.Level3)
+{
+    OH_ImageSourceNative *imageSource = CreateImageSourceNative(IMAGE_JPEG_EXIF_TEST);
+    ASSERT_NE(imageSource, nullptr);
+
+    Image_String key;
+    char keyData[] = "FNumber";
+    key.data = keyData;
+    key.size = strlen(keyData);
+    double v = 2.8;
+    Image_ErrorCode ret = OH_ImageSourceNative_ModifyImagePropertyDouble(imageSource, &key, v);
+    EXPECT_TRUE(ret == IMAGE_SUCCESS);
+
+    OH_ImageSourceNative_Release(imageSource);
+}
+
+/**
+ * @tc.name: OH_ImageSourceNative_ModifyImagePropertyIntArray001
+ * @tc.desc: test OH_ImageSourceNative_ModifyImagePropertyIntArray invalid parameters and invalid key
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImagSourceNdk2Test, OH_ImageSourceNative_ModifyImagePropertyIntArray001, TestSize.Level3)
+{
+    OH_ImageSourceNative *imageSource = nullptr;
+    Image_String key;
+    char keyData[] = "BitsPerSample";
+    key.data = keyData;
+    key.size = strlen(keyData);
+    int32_t vals[3] = {8, 8, 8};
+    size_t sz = 3;
+    Image_ErrorCode ret = OH_ImageSourceNative_ModifyImagePropertyIntArray(imageSource, &key, vals, sz);
+    EXPECT_EQ(ret, IMAGE_SOURCE_INVALID_PARAMETER);
+
+    imageSource = CreateImageSourceNative(IMAGE_JPEG_EXIF_TEST);
+    ASSERT_NE(imageSource, nullptr);
+    Image_String *nullKey = nullptr;
+    ret = OH_ImageSourceNative_ModifyImagePropertyIntArray(imageSource, nullKey, vals, sz);
+    EXPECT_EQ(ret, IMAGE_SOURCE_INVALID_PARAMETER);
+
+    Image_String key2;
+    key2.data = nullptr;
+    key2.size = 5;
+    ret = OH_ImageSourceNative_ModifyImagePropertyIntArray(imageSource, &key2, vals, sz);
+    EXPECT_EQ(ret, IMAGE_SOURCE_INVALID_PARAMETER);
+
+    Image_String key3;
+    key3.data = keyData;
+    key3.size = 0;
+    ret = OH_ImageSourceNative_ModifyImagePropertyIntArray(imageSource, &key3, vals, sz);
+    EXPECT_EQ(ret, IMAGE_SOURCE_INVALID_PARAMETER);
+
+    Image_String badKey;
+    char badKeyData[] = "InvalidPropertyKey";
+    badKey.data = badKeyData;
+    badKey.size = strlen(badKeyData);
+    ret = OH_ImageSourceNative_ModifyImagePropertyIntArray(imageSource, &badKey, vals, sz);
+    EXPECT_EQ(ret, IMAGE_SOURCE_UNSUPPORTED_METADATA);
+
+    OH_ImageSourceNative_Release(imageSource);
+}
+
+/**
+ * @tc.name: OH_ImageSourceNative_ModifyImagePropertyIntArray002
+ * @tc.desc: test OH_ImageSourceNative_ModifyImagePropertyIntArray valid property key
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImagSourceNdk2Test, OH_ImageSourceNative_ModifyImagePropertyIntArray002, TestSize.Level3)
+{
+    OH_ImageSourceNative *imageSource = CreateImageSourceNative(IMAGE_JPEG_EXIF_TEST);
+    ASSERT_NE(imageSource, nullptr);
+
+    Image_String key;
+    char keyData[] = "BitsPerSample";
+    key.data = keyData;
+    key.size = strlen(keyData);
+    int32_t vals[3] = {8, 8, 8};
+    size_t sz = 3;
+    Image_ErrorCode ret = OH_ImageSourceNative_ModifyImagePropertyIntArray(imageSource, &key, vals, sz);
+    EXPECT_TRUE(ret == IMAGE_SUCCESS);
+
+    OH_ImageSourceNative_Release(imageSource);
+}
+
+/**
+ * @tc.name: OH_ImageSourceNative_ModifyImagePropertyDoubleArray001
+ * @tc.desc: test OH_ImageSourceNative_ModifyImagePropertyDoubleArray invalid parameters and invalid key
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImagSourceNdk2Test, OH_ImageSourceNative_ModifyImagePropertyDoubleArray001, TestSize.Level3)
+{
+    OH_ImageSourceNative *imageSource = nullptr;
+    Image_String key;
+    char keyData[] = "YCbCrCoefficients";
+    key.data = keyData;
+    key.size = strlen(keyData);
+    double vals[3] = {0.299, 0.587, 0.114};
+    size_t sz = 3;
+    Image_ErrorCode ret = OH_ImageSourceNative_ModifyImagePropertyDoubleArray(imageSource, &key, vals, sz);
+    EXPECT_EQ(ret, IMAGE_SOURCE_INVALID_PARAMETER);
+
+    imageSource = CreateImageSourceNative(IMAGE_JPEG_EXIF_TEST);
+    ASSERT_NE(imageSource, nullptr);
+    Image_String *nullKey = nullptr;
+    ret = OH_ImageSourceNative_ModifyImagePropertyDoubleArray(imageSource, nullKey, vals, sz);
+    EXPECT_EQ(ret, IMAGE_SOURCE_INVALID_PARAMETER);
+
+    Image_String key2;
+    key2.data = nullptr;
+    key2.size = 5;
+    ret = OH_ImageSourceNative_ModifyImagePropertyDoubleArray(imageSource, &key2, vals, sz);
+    EXPECT_EQ(ret, IMAGE_SOURCE_INVALID_PARAMETER);
+
+    Image_String key3;
+    key3.data = keyData;
+    key3.size = 0;
+    ret = OH_ImageSourceNative_ModifyImagePropertyDoubleArray(imageSource, &key3, vals, sz);
+    EXPECT_EQ(ret, IMAGE_SOURCE_INVALID_PARAMETER);
+
+    Image_String badKey;
+    char badKeyData[] = "InvalidPropertyKey";
+    badKey.data = badKeyData;
+    badKey.size = strlen(badKeyData);
+    ret = OH_ImageSourceNative_ModifyImagePropertyDoubleArray(imageSource, &badKey, vals, sz);
+    EXPECT_EQ(ret, IMAGE_SOURCE_UNSUPPORTED_METADATA);
+
+    OH_ImageSourceNative_Release(imageSource);
+}
+
+/**
+ * @tc.name: OH_ImageSourceNative_ModifyImagePropertyDoubleArray002
+ * @tc.desc: test OH_ImageSourceNative_ModifyImagePropertyDoubleArray valid property key
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImagSourceNdk2Test, OH_ImageSourceNative_ModifyImagePropertyDoubleArray002, TestSize.Level3)
+{
+    OH_ImageSourceNative *imageSource = CreateImageSourceNative(IMAGE_JPEG_EXIF_TEST);
+    ASSERT_NE(imageSource, nullptr);
+
+    Image_String key;
+    char keyData[] = "YCbCrCoefficients";
+    key.data = keyData;
+    key.size = strlen(keyData);
+    double vals[3] = {0.299, 0.587, 0.114};
+    size_t sz = 3;
+    Image_ErrorCode ret = OH_ImageSourceNative_ModifyImagePropertyDoubleArray(imageSource, &key, vals, sz);
+    EXPECT_TRUE(ret == IMAGE_SUCCESS);
+
+    OH_ImageSourceNative_Release(imageSource);
+}
+
+/**
+ * @tc.name: OH_ImageSourceNative_ModifyImagePropertyBlob001
+ * @tc.desc: Test modifying image property blob with valid parameters
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImagSourceNdk2Test, OH_ImageSourceNative_ModifyImagePropertyBlob001, TestSize.Level3)
+{
+    // Step 1: Create valid image source instance
+    OH_ImageSourceNative *imageSource = CreateImageSourceNative(IMAGE_JPEG_EXIF_TEST);
+    ASSERT_NE(imageSource, nullptr);
+    // Step 2: Prepare valid test data
+    Image_String propertyKey;
+    char keyData[] = "SpatialFrequencyResponse";
+    propertyKey.data = keyData;
+    propertyKey.size = strlen(keyData);
+    
+    const size_t payloadSize = 16;
+    uint8_t testPayload[payloadSize];
+    for (size_t i = 0; i < payloadSize; ++i) {
+        testPayload[i] = static_cast<uint8_t>(i * 3);
+    }
+    Image_ErrorCode errorCode = OH_ImageSourceNative_ModifyImagePropertyBlob(imageSource, &propertyKey, testPayload,
+        payloadSize);
+    EXPECT_EQ(errorCode, IMAGE_SUCCESS);
+    OH_ImageSourceNative_Release(imageSource);
 }
 }
 }

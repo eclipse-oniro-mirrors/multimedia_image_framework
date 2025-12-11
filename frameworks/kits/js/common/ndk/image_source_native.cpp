@@ -13,6 +13,7 @@
  * limitations under the License.
  */
 
+#include <iomanip>
 #include "image_source_native.h"
 #include "picture_native_impl.h"
 #include "common_utils.h"
@@ -52,9 +53,11 @@ static constexpr int32_t FORMAT_6 = 6;
 static constexpr int32_t FORMAT_7 = 7;
 static constexpr int32_t FORMAT_8 = 8;
 static constexpr int32_t FORMAT_9 = 9;
+static constexpr int32_t INTEGER_PART_WIDTH = 2;
+static constexpr int32_t REQUIRED_GPS_COMPONENTS = 3;
 using JpegYuvDecodeError = OHOS::ImagePlugin::JpegYuvDecodeError;
 static Image_MimeType *IMAGE_SOURCE_SUPPORTED_FORMATS = nullptr;
-static size_t SUPPORTED_FORMATS_SIZE = 0;
+static size_t g_supportedFormatSize = 0;
 
 struct OH_DecodingOptions {
     int32_t pixelFormat;
@@ -846,6 +849,261 @@ Image_ErrorCode OH_ImageSourceNative_GetImageProperty(OH_ImageSourceNative *sour
 }
 
 MIDK_EXPORT
+Image_ErrorCode OH_ImageSourceNative_GetImagePropertyShort(OH_ImageSourceNative *source,
+    Image_String *key, uint16_t *value)
+{
+    if (source == nullptr || key == nullptr || key->data == nullptr || key->size == SIZE_ZERO || value == nullptr) {
+        return IMAGE_SOURCE_INVALID_PARAMETER;
+    }
+
+    std::string keyString(key->data, key->size);
+    if (keyString.empty()) {
+        return IMAGE_SOURCE_INVALID_PARAMETER;
+    }
+    MetadataValue exifValue;
+    uint32_t errorCode = source->GetInnerImageSource()->GetImagePropertyByType(DEFAULT_INDEX, keyString, exifValue);
+    if (errorCode != SUCCESS) {
+        if (errorCode == ERR_IMAGE_SOURCE_DATA) {
+            return IMAGE_SOURCE_UNSUPPORTED_MIMETYPE;
+        } else {
+            return IMAGE_SOURCE_UNSUPPORTED_METADATA;
+        }
+    }
+    if (exifValue.intArrayValue.empty()) {
+        return IMAGE_SOURCE_UNSUPPORTED_METADATA;
+    }
+    if (exifValue.intArrayValue[0] < 0 || exifValue.intArrayValue[0] > UINT16_MAX) {
+        return IMAGE_SOURCE_UNSUPPORTED_METADATA;
+    }
+    *value = static_cast<uint16_t>(exifValue.intArrayValue[0]);
+    return IMAGE_SUCCESS;
+}
+
+MIDK_EXPORT
+Image_ErrorCode OH_ImageSourceNative_GetImagePropertyLong(OH_ImageSourceNative *source,
+    Image_String *key, uint32_t *value)
+{
+    if (source == nullptr || key == nullptr || key->data == nullptr || key->size == SIZE_ZERO || value == nullptr) {
+        return IMAGE_SOURCE_INVALID_PARAMETER;
+    }
+
+    std::string keyString(key->data, key->size);
+    if (keyString.empty()) {
+        return IMAGE_SOURCE_INVALID_PARAMETER;
+    }
+    MetadataValue exifValue;
+    uint32_t errorCode = source->GetInnerImageSource()->GetImagePropertyByType(DEFAULT_INDEX, keyString, exifValue);
+    if (errorCode != SUCCESS) {
+        if (errorCode == ERR_IMAGE_SOURCE_DATA) {
+            return IMAGE_SOURCE_UNSUPPORTED_MIMETYPE;
+        } else {
+            return IMAGE_SOURCE_UNSUPPORTED_METADATA;
+        }
+    }
+    if (exifValue.intArrayValue.empty()) {
+        return IMAGE_SOURCE_UNSUPPORTED_METADATA;
+    }
+    if (exifValue.intArrayValue[0] < 0 || exifValue.intArrayValue[0] > UINT32_MAX) {
+        return IMAGE_SOURCE_UNSUPPORTED_METADATA;
+    }
+    *value = static_cast<uint32_t>(exifValue.intArrayValue[0]);
+    return IMAGE_SUCCESS;
+}
+
+MIDK_EXPORT
+Image_ErrorCode OH_ImageSourceNative_GetImagePropertyDouble(OH_ImageSourceNative *source,
+    Image_String *key, double *value)
+{
+    if (source == nullptr || key == nullptr || key->data == nullptr || key->size == SIZE_ZERO || value == nullptr) {
+        return IMAGE_SOURCE_INVALID_PARAMETER;
+    }
+
+    std::string keyString(key->data, key->size);
+    if (keyString.empty()) {
+        return IMAGE_SOURCE_INVALID_PARAMETER;
+    }
+    MetadataValue exifValue;
+    uint32_t errorCode = source->GetInnerImageSource()->GetImagePropertyByType(DEFAULT_INDEX, keyString, exifValue);
+    if (errorCode != SUCCESS) {
+        if (errorCode == ERR_IMAGE_SOURCE_DATA) {
+            return IMAGE_SOURCE_UNSUPPORTED_MIMETYPE;
+        } else {
+            return IMAGE_SOURCE_UNSUPPORTED_METADATA;
+        }
+    }
+    if (exifValue.doubleArrayValue.empty()) {
+        return IMAGE_SOURCE_UNSUPPORTED_METADATA;
+    }
+    *value = exifValue.doubleArrayValue[0];
+    return IMAGE_SUCCESS;
+}
+
+Image_ErrorCode OH_ImageSourceNative_GetImagePropertyArraySize(OH_ImageSourceNative *source,
+    Image_String *key, size_t *size)
+{
+    if (source == nullptr || key == nullptr || key->data == nullptr || key->size == 0 || size == nullptr) {
+        return IMAGE_SOURCE_INVALID_PARAMETER;
+    }
+    std::string keyStr(key->data, key->size);
+    if (keyStr.empty()) {
+        return IMAGE_SOURCE_INVALID_PARAMETER;
+    }
+    MetadataValue metaValue;
+    uint32_t ret = source->GetInnerImageSource()->GetImagePropertyByType(DEFAULT_INDEX, keyStr, metaValue);
+    if (ret != SUCCESS) {
+        return (ret == ERR_IMAGE_SOURCE_DATA) ? IMAGE_SOURCE_UNSUPPORTED_MIMETYPE : IMAGE_SOURCE_UNSUPPORTED_METADATA;
+    }
+    if (!metaValue.intArrayValue.empty()) {
+        *size = metaValue.intArrayValue.size();
+    } else if (!metaValue.doubleArrayValue.empty()) {
+        *size = metaValue.doubleArrayValue.size();
+    } else if (!metaValue.stringValue.empty()) {
+        *size = metaValue.stringValue.length() + 1;
+    } else if (!metaValue.bufferValue.empty()) {
+        *size = metaValue.bufferValue.size();
+    } else {
+        return IMAGE_SOURCE_UNSUPPORTED_METADATA;
+    }
+    return IMAGE_SUCCESS;
+}
+
+Image_ErrorCode OH_ImageSourceNative_GetImagePropertyString(OH_ImageSourceNative *source,
+    Image_String *key, char *value, size_t size)
+{
+    if (source == nullptr || key == nullptr || key->data == nullptr || key->size == SIZE_ZERO ||
+        size == SIZE_ZERO || value == nullptr) {
+        return IMAGE_SOURCE_INVALID_PARAMETER;
+    }
+    std::string keyString(key->data, key->size);
+    if (keyString.empty()) {
+        return IMAGE_SOURCE_INVALID_PARAMETER;
+    }
+    MetadataValue exifValue;
+    uint32_t errorCode = source->GetInnerImageSource()->GetImagePropertyByType(DEFAULT_INDEX, keyString, exifValue);
+    if (errorCode != SUCCESS) {
+        if (errorCode == ERR_IMAGE_SOURCE_DATA) {
+            return IMAGE_SOURCE_UNSUPPORTED_MIMETYPE;
+        } else {
+            return IMAGE_SOURCE_UNSUPPORTED_METADATA;
+        }
+    }
+    if (exifValue.stringValue.empty()) {
+        return IMAGE_SOURCE_UNSUPPORTED_METADATA;
+    }
+    if (size < exifValue.stringValue.length() + 1) {
+        return IMAGE_SOURCE_INVALID_PARAMETER;
+    }
+    if (EOK != memcpy_s(value, size, exifValue.stringValue.c_str(), exifValue.stringValue.length())) {
+        return IMAGE_SOURCE_UNSUPPORTED_METADATA;
+    }
+    value[exifValue.stringValue.length()] = '\0';
+    return IMAGE_SUCCESS;
+}
+
+Image_ErrorCode OH_ImageSourceNative_GetImagePropertyIntArray(OH_ImageSourceNative *source,
+    Image_String *key, int32_t *value, size_t size)
+{
+    if (source == nullptr || key == nullptr || key->data == nullptr || key->size == SIZE_ZERO ||
+        size == SIZE_ZERO || value == nullptr) {
+        return IMAGE_SOURCE_INVALID_PARAMETER;
+    }
+    std::string keyString(key->data, key->size);
+    if (keyString.empty()) {
+        return IMAGE_SOURCE_INVALID_PARAMETER;
+    }
+    MetadataValue exifValue;
+    uint32_t errorCode = source->GetInnerImageSource()->GetImagePropertyByType(DEFAULT_INDEX, keyString, exifValue);
+    if (errorCode != SUCCESS) {
+        if (errorCode == ERR_IMAGE_SOURCE_DATA) {
+            return IMAGE_SOURCE_UNSUPPORTED_MIMETYPE;
+        } else {
+            return IMAGE_SOURCE_UNSUPPORTED_METADATA;
+        }
+    }
+    if (exifValue.intArrayValue.empty()) {
+        return IMAGE_SOURCE_UNSUPPORTED_METADATA;
+    }
+    size_t arraySize = exifValue.intArrayValue.size();
+    if (size < arraySize) {
+        return IMAGE_SOURCE_UNSUPPORTED_METADATA;
+    }
+    for (size_t i = 0; i < arraySize; i++) {
+        if (exifValue.intArrayValue[i] > INT32_MAX || exifValue.intArrayValue[i] < INT32_MIN) {
+            return IMAGE_SOURCE_UNSUPPORTED_METADATA;
+        }
+        value[i] = static_cast<int32_t>(exifValue.intArrayValue[i]);
+    }
+    return IMAGE_SUCCESS;
+}
+
+Image_ErrorCode OH_ImageSourceNative_GetImagePropertyDoubleArray(OH_ImageSourceNative *source,
+    Image_String *key, double *value, size_t size)
+{
+    if (source == nullptr || key == nullptr || key->data == nullptr || key->size == SIZE_ZERO ||
+        size == SIZE_ZERO || value == nullptr) {
+        return IMAGE_SOURCE_INVALID_PARAMETER;
+    }
+    std::string keyString(key->data, key->size);
+    if (keyString.empty()) {
+        return IMAGE_SOURCE_INVALID_PARAMETER;
+    }
+    MetadataValue exifValue;
+    uint32_t errorCode = source->GetInnerImageSource()->GetImagePropertyByType(DEFAULT_INDEX, keyString, exifValue);
+    if (errorCode != SUCCESS) {
+        if (errorCode == ERR_IMAGE_SOURCE_DATA) {
+            return IMAGE_SOURCE_UNSUPPORTED_MIMETYPE;
+        } else {
+            return IMAGE_SOURCE_UNSUPPORTED_METADATA;
+        }
+    }
+    if (exifValue.doubleArrayValue.empty()) {
+        return IMAGE_SOURCE_UNSUPPORTED_METADATA;
+    }
+    size_t arraySize = exifValue.doubleArrayValue.size();
+    if (size < arraySize) {
+        return IMAGE_SOURCE_UNSUPPORTED_METADATA;
+    }
+    if (EOK != memcpy_s(value, size * sizeof(double),
+                        exifValue.doubleArrayValue.data(), arraySize * sizeof(double))) {
+        return IMAGE_SOURCE_UNSUPPORTED_METADATA;
+    }
+    return IMAGE_SUCCESS;
+}
+
+Image_ErrorCode OH_ImageSourceNative_GetImagePropertyBlob(OH_ImageSourceNative *source, Image_String *key,
+    void *value, size_t size)
+{
+    if (source == nullptr || key == nullptr || key->data == nullptr || key->size == SIZE_ZERO || value == nullptr ||
+        size == SIZE_ZERO) {
+        return IMAGE_SOURCE_INVALID_PARAMETER;
+    }
+    std::string keyString(key->data, key->size);
+    if (keyString.empty()) {
+        return IMAGE_SOURCE_INVALID_PARAMETER;
+    }
+    MetadataValue exifValue;
+    uint32_t errorCode = source->GetInnerImageSource()->GetImagePropertyByType(DEFAULT_INDEX, keyString, exifValue);
+    if (errorCode != SUCCESS) {
+        if (errorCode == ERR_IMAGE_SOURCE_DATA) {
+            return IMAGE_SOURCE_UNSUPPORTED_MIMETYPE;
+        } else {
+            return IMAGE_SOURCE_UNSUPPORTED_METADATA;
+        }
+    }
+    if (exifValue.bufferValue.empty()) {
+        return IMAGE_SOURCE_UNSUPPORTED_METADATA;
+    }
+    size_t requiredBytes = exifValue.bufferValue.size();
+    if (size < requiredBytes) {
+        return IMAGE_SOURCE_UNSUPPORTED_METADATA;
+    }
+    if (EOK != memcpy_s(value, size, exifValue.bufferValue.data(), requiredBytes)) {
+        return IMAGE_SOURCE_UNSUPPORTED_METADATA;
+    }
+    return IMAGE_SUCCESS;
+}
+
+MIDK_EXPORT
 Image_ErrorCode OH_ImageSourceNative_GetImagePropertyWithNull(OH_ImageSourceNative *source, Image_String *key,
     Image_String *value)
 {
@@ -923,6 +1181,277 @@ Image_ErrorCode OH_ImageSourceNative_ModifyImageProperty(OH_ImageSourceNative *s
         return IMAGE_SUCCESS;
     }
     return IMAGE_BAD_PARAMETER;
+}
+
+static std::string IntArrayToString(const std::vector<int32_t> &intArray)
+{
+    std::ostringstream oss;
+    size_t arrayLength = intArray.size();
+    for (size_t i = 0; i < arrayLength; i++) {
+        if (i > 0) {
+            oss << ",";
+        }
+        oss << intArray[i];
+    }
+    return oss.str();
+}
+
+static std::string DoubleArrayToString(const std::vector<double> &doubleArray)
+{
+    std::ostringstream oss;
+    for (size_t i = 0; i < doubleArray.size(); i++) {
+        if (i > 0) {
+            oss << ",";
+        }
+        oss << doubleArray[i];
+    }
+    return oss.str();
+}
+
+Image_ErrorCode OH_ImageSourceNative_ModifyImagePropertyShort(OH_ImageSourceNative *source, Image_String *key,
+    uint16_t value)
+{
+    if (source == nullptr || source->GetInnerImageSource() == nullptr || key == nullptr || key->data == nullptr ||
+        key->size == SIZE_ZERO) {
+        return IMAGE_SOURCE_INVALID_PARAMETER;
+    }
+
+    std::string keyString(key->data, key->size);
+    if (keyString.empty()) {
+        return IMAGE_SOURCE_INVALID_PARAMETER;
+    }
+    std::string valueString = std::to_string(value);
+    uint32_t errorCode = IMAGE_SOURCE_UNSUPPORTED_METADATA;
+    if (!(source->filePath_.empty())) {
+        errorCode = source->GetInnerImageSource()->ModifyImageProperty(DEFAULT_INDEX, keyString, valueString,
+            source->filePath_);
+    } else if (source->fileDescriptor_ != INVALID_FD) {
+        errorCode = source->GetInnerImageSource()->ModifyImageProperty(DEFAULT_INDEX, keyString, valueString,
+            source->fileDescriptor_);
+    } else if (source->fileBuffer_ != nullptr && source->fileBufferSize_ != 0) {
+        errorCode = source->GetInnerImageSource()->ModifyImageProperty(DEFAULT_INDEX, keyString, valueString,
+            static_cast<uint8_t *>(source->fileBuffer_), source->fileBufferSize_);
+    }
+    if (errorCode != IMAGE_SUCCESS) {
+        if (errorCode == ERR_IMAGE_SOURCE_DATA) {
+            return IMAGE_SOURCE_UNSUPPORTED_MIMETYPE;
+        } else {
+            return IMAGE_SOURCE_UNSUPPORTED_METADATA;
+        }
+    }
+    return IMAGE_SUCCESS;
+}
+
+Image_ErrorCode OH_ImageSourceNative_ModifyImagePropertyLong(OH_ImageSourceNative *source, Image_String *key,
+    uint32_t value)
+{
+    if (source == nullptr || source->GetInnerImageSource() == nullptr || key == nullptr || key->data == nullptr ||
+        key->size == SIZE_ZERO) {
+        return IMAGE_SOURCE_INVALID_PARAMETER;
+    }
+
+    std::string keyString(key->data, key->size);
+    if (keyString.empty()) {
+        return IMAGE_SOURCE_INVALID_PARAMETER;
+    }
+    std::string valueString = std::to_string(value);
+    uint32_t errorCode = IMAGE_SOURCE_UNSUPPORTED_METADATA;
+    if (!(source->filePath_.empty())) {
+        errorCode = source->GetInnerImageSource()->ModifyImageProperty(DEFAULT_INDEX, keyString, valueString,
+            source->filePath_);
+    } else if (source->fileDescriptor_ != INVALID_FD) {
+        errorCode = source->GetInnerImageSource()->ModifyImageProperty(DEFAULT_INDEX, keyString, valueString,
+            source->fileDescriptor_);
+    } else if (source->fileBuffer_ != nullptr && source->fileBufferSize_ != 0) {
+        errorCode = source->GetInnerImageSource()->ModifyImageProperty(DEFAULT_INDEX, keyString, valueString,
+            static_cast<uint8_t *>(source->fileBuffer_), source->fileBufferSize_);
+    }
+    if (errorCode != IMAGE_SUCCESS) {
+        if (errorCode == ERR_IMAGE_SOURCE_DATA) {
+            return IMAGE_SOURCE_UNSUPPORTED_MIMETYPE;
+        } else {
+            return IMAGE_SOURCE_UNSUPPORTED_METADATA;
+        }
+    }
+    return IMAGE_SUCCESS;
+}
+
+Image_ErrorCode OH_ImageSourceNative_ModifyImagePropertyDouble(OH_ImageSourceNative *source, Image_String *key,
+    double value)
+{
+    if (source == nullptr || source->GetInnerImageSource() == nullptr || key == nullptr || key->data == nullptr ||
+        key->size == SIZE_ZERO) {
+        return IMAGE_SOURCE_INVALID_PARAMETER;
+    }
+
+    std::string keyString(key->data, key->size);
+    if (keyString.empty()) {
+        return IMAGE_SOURCE_INVALID_PARAMETER;
+    }
+    std::string valueString = std::to_string(value);
+    uint32_t errorCode = IMAGE_SOURCE_UNSUPPORTED_METADATA;
+    if (!(source->filePath_.empty())) {
+        errorCode = source->GetInnerImageSource()->ModifyImageProperty(DEFAULT_INDEX, keyString, valueString,
+            source->filePath_);
+    } else if (source->fileDescriptor_ != INVALID_FD) {
+        errorCode = source->GetInnerImageSource()->ModifyImageProperty(DEFAULT_INDEX, keyString, valueString,
+            source->fileDescriptor_);
+    } else if (source->fileBuffer_ != nullptr && source->fileBufferSize_ != 0) {
+        errorCode = source->GetInnerImageSource()->ModifyImageProperty(DEFAULT_INDEX, keyString, valueString,
+            static_cast<uint8_t *>(source->fileBuffer_), source->fileBufferSize_);
+    }
+    if (errorCode != IMAGE_SUCCESS) {
+        if (errorCode == ERR_IMAGE_SOURCE_DATA) {
+            return IMAGE_SOURCE_UNSUPPORTED_MIMETYPE;
+        } else {
+            return IMAGE_SOURCE_UNSUPPORTED_METADATA;
+        }
+    }
+    return IMAGE_SUCCESS;
+}
+
+Image_ErrorCode OH_ImageSourceNative_ModifyImagePropertyIntArray(OH_ImageSourceNative *source, Image_String *key,
+    int32_t *value, size_t size)
+{
+    if (source == nullptr || source->GetInnerImageSource() == nullptr || key == nullptr || key->data == nullptr ||
+        key->size == SIZE_ZERO || value == nullptr || size == SIZE_ZERO) {
+        return IMAGE_SOURCE_INVALID_PARAMETER;
+    }
+
+    std::string keyString(key->data, key->size);
+    if (keyString.empty()) {
+        return IMAGE_SOURCE_INVALID_PARAMETER;
+    }
+    std::string valueString = IntArrayToString(std::vector<int32_t>(value, value + size));
+    if (keyString == "GPSVersionID") {
+        std::vector<int64_t> intArray(value, value + size);
+        std::ostringstream oss;
+        for (size_t i = 0; i < intArray.size(); i++) {
+            if (i > 0) {
+                oss << ".";
+            }
+            oss << intArray[i];
+        }
+        valueString = oss.str();
+    }
+    uint32_t errorCode = IMAGE_SOURCE_UNSUPPORTED_METADATA;
+    if (!(source->filePath_.empty())) {
+        errorCode = source->GetInnerImageSource()->ModifyImageProperty(DEFAULT_INDEX, keyString, valueString,
+            source->filePath_);
+    } else if (source->fileDescriptor_ != INVALID_FD) {
+        errorCode = source->GetInnerImageSource()->ModifyImageProperty(DEFAULT_INDEX, keyString, valueString,
+            source->fileDescriptor_);
+    } else if (source->fileBuffer_ != nullptr && source->fileBufferSize_ != 0) {
+        errorCode = source->GetInnerImageSource()->ModifyImageProperty(DEFAULT_INDEX, keyString, valueString,
+            static_cast<uint8_t *>(source->fileBuffer_), source->fileBufferSize_);
+    }
+    if (errorCode != IMAGE_SUCCESS) {
+        if (errorCode == ERR_IMAGE_SOURCE_DATA) {
+            return IMAGE_SOURCE_UNSUPPORTED_MIMETYPE;
+        } else {
+            return IMAGE_SOURCE_UNSUPPORTED_METADATA;
+        }
+    }
+    return IMAGE_SUCCESS;
+}
+
+static std::string FormatTimePart(double value)
+{
+    double intPart;
+    double fracPart = std::modf(value, &intPart);
+    std::ostringstream oss;
+    oss << std::setfill('0') << std::setw(INTEGER_PART_WIDTH) << static_cast<int>(intPart);
+    if (std::abs(fracPart) > 1e-6) {
+        std::ostringstream fracStream;
+        fracStream << std::fixed << fracPart;
+        std::string fracStr = fracStream.str();
+        size_t dotPos = fracStr.find('.');
+        if (dotPos != std::string::npos) {
+            std::string digits = fracStr.substr(dotPos + 1);
+            size_t lastNonZero = digits.find_last_not_of('0');
+            if (lastNonZero != std::string::npos) {
+                digits = digits.substr(0, lastNonZero + 1);
+            } else {
+                digits.clear();
+            }
+            if (!digits.empty()) {
+                oss << "." << digits;
+            }
+        }
+    }
+    return oss.str();
+}
+
+static std::string HandleDoubleArray(const std::string& keyStr, std::vector<double> doubleArray)
+{
+    if (keyStr != "GPSTimeStamp" || doubleArray.size() < REQUIRED_GPS_COMPONENTS) {
+        return DoubleArrayToString(doubleArray);
+    }
+
+    return FormatTimePart(doubleArray[0]) + ":" +FormatTimePart(doubleArray[1]) + ":" +
+        FormatTimePart(doubleArray[INTEGER_PART_WIDTH]);
+}
+
+Image_ErrorCode OH_ImageSourceNative_ModifyImagePropertyDoubleArray(OH_ImageSourceNative *source, Image_String *key,
+    double *value, size_t size)
+{
+    if (source == nullptr || source->GetInnerImageSource() == nullptr || key == nullptr || key->data == nullptr ||
+        key->size == SIZE_ZERO || value == nullptr || size == SIZE_ZERO) {
+        return IMAGE_SOURCE_INVALID_PARAMETER;
+    }
+
+    std::string keyString(key->data, key->size);
+    if (keyString.empty()) {
+        return IMAGE_SOURCE_INVALID_PARAMETER;
+    }
+    std::vector<double> doubleArray = std::vector<double>(value, value + size);
+    std::string valueString = "";
+    valueString = HandleDoubleArray(keyString, doubleArray);
+    uint32_t errorCode = IMAGE_SOURCE_UNSUPPORTED_METADATA;
+    if (!(source->filePath_.empty())) {
+        errorCode = source->GetInnerImageSource()->ModifyImageProperty(DEFAULT_INDEX, keyString, valueString,
+            source->filePath_);
+    } else if (source->fileDescriptor_ != INVALID_FD) {
+        errorCode = source->GetInnerImageSource()->ModifyImageProperty(DEFAULT_INDEX, keyString, valueString,
+            source->fileDescriptor_);
+    } else if (source->fileBuffer_ != nullptr && source->fileBufferSize_ != 0) {
+        errorCode = source->GetInnerImageSource()->ModifyImageProperty(DEFAULT_INDEX, keyString, valueString,
+            static_cast<uint8_t *>(source->fileBuffer_), source->fileBufferSize_);
+    }
+    if (errorCode != IMAGE_SUCCESS) {
+        if (errorCode == ERR_IMAGE_SOURCE_DATA) {
+            return IMAGE_SOURCE_UNSUPPORTED_MIMETYPE;
+        } else {
+            return IMAGE_SOURCE_UNSUPPORTED_METADATA;
+        }
+    }
+    return IMAGE_SUCCESS;
+}
+
+Image_ErrorCode OH_ImageSourceNative_ModifyImagePropertyBlob(OH_ImageSourceNative *source, Image_String *key,
+    void *value, size_t size)
+{
+    if (source == nullptr || source->GetInnerImageSource() == nullptr || key == nullptr || key->data == nullptr ||
+        key->size == 0 || value == nullptr || size == 0) {
+        return IMAGE_SOURCE_INVALID_PARAMETER;
+    }
+    std::string keyString(key->data, key->size);
+    if (keyString.empty()) {
+        return IMAGE_SOURCE_INVALID_PARAMETER;
+    }
+    uint8_t* byteData = static_cast<uint8_t*>(value);
+    std::vector<uint8_t> bufferValue(byteData, byteData + size);
+    std::vector<MetadataValue> properties;
+    MetadataValue metadataValue;
+    metadataValue.key = keyString;
+    metadataValue.bufferValue = std::move(bufferValue);
+    properties.push_back(std::move(metadataValue));
+    uint32_t errorCode = source->GetInnerImageSource()->WriteImageMetadataBlob(properties);
+    if (errorCode != IMAGE_SUCCESS) {
+        return (errorCode == ERR_IMAGE_SOURCE_DATA) ? IMAGE_SOURCE_UNSUPPORTED_MIMETYPE :
+            IMAGE_SOURCE_UNSUPPORTED_METADATA;
+    }
+    return IMAGE_SUCCESS;
 }
 
 MIDK_EXPORT
@@ -1021,9 +1550,9 @@ Image_ErrorCode OH_ImageSourceNative_GetSupportedFormats(Image_MimeType** suppor
     if (supportedFormat == nullptr || length == nullptr) {
         return IMAGE_SOURCE_INVALID_PARAMETER;
     }
-    if (IMAGE_SOURCE_SUPPORTED_FORMATS != nullptr || SUPPORTED_FORMATS_SIZE != 0) {
+    if (IMAGE_SOURCE_SUPPORTED_FORMATS != nullptr || g_supportedFormatSize != 0) {
         *supportedFormat = IMAGE_SOURCE_SUPPORTED_FORMATS;
-        *length = SUPPORTED_FORMATS_SIZE;
+        *length = g_supportedFormatSize;
         return IMAGE_SUCCESS;
     }
     std::set<std::string> formats;
@@ -1041,7 +1570,7 @@ Image_ErrorCode OH_ImageSourceNative_GetSupportedFormats(Image_MimeType** suppor
         count++;
     }
     IMAGE_SOURCE_SUPPORTED_FORMATS = *supportedFormat;
-    SUPPORTED_FORMATS_SIZE = *length;
+    g_supportedFormatSize = *length;
     return IMAGE_SUCCESS;
 }
 
