@@ -299,6 +299,9 @@ ohos_unittest("imagesourcetest") {
     "$image_subsystem/plugins/common/libs/image/libextplugin/include/hdr",
     "$image_subsystem/plugins/manager/include",
   ]
+  cflags = [
+    "-Dprivate=public",
+  ]
   sources = [
     "$image_subsystem/frameworks/innerkitsimpl/accessor/src/abstract_exif_metadata_accessor.cpp",
     "$image_subsystem/frameworks/innerkitsimpl/accessor/src/buffer_metadata_stream.cpp",
@@ -327,6 +330,7 @@ ohos_unittest("imagesourcetest") {
     # "$image_subsystem/frameworks/innerkitsimpl/test/unittest/image_source_test/image_source_webp_test.cpp",
     "$image_subsystem/plugins/common/libs/image/libextplugin/src/ext_stream.cpp",
     "$image_subsystem/plugins/common/libs/image/libextplugin/src/hdr/hdr_helper.cpp",
+    "$image_subsystem/frameworks/innerkitsimpl/test/unittest/hdr_helper_test.cpp",
     "$image_subsystem/plugins/common/libs/image/libextplugin/src/hdr/jpeg_mpf_parser.cpp",
   ]
 
@@ -1282,6 +1286,7 @@ ohos_unittest("jpeg_hw_decoder_test") {
     "${image_subsystem}/plugins/common/libs/image/libextplugin/src/ext_stream.cpp",
     "unittest/jpeg_hw_decode/common/mock_jpeg_hw_decode_flow.cpp",
     "unittest/jpeg_hw_decode/unittest/jpeg_hw_decoder_test.cpp",
+    "${image_subsystem}/frameworks/innerkitsimpl/test/unittest/HeifDecoderImpl_test.cpp",
   ]
 
   include_dirs = [
@@ -1657,7 +1662,12 @@ ohos_unittest("jpeg_yuv_decoder_test") {
     "${image_subsystem}/plugins/manager/include",
   ]
 
-  sources = [ "${image_subsystem}/frameworks/innerkitsimpl/test/unittest/jpeg_yuv_decoder/jpeg_yuv_decoder_test.cpp" ]
+  sources = [
+    "${image_subsystem}/frameworks/innerkitsimpl/test/unittest/jpeg_yuv_decoder/jpeg_yuv_decoder_test.cpp",
+    "${image_subsystem}/frameworks/innerkitsimpl/test/unittest/jpeg_decoder_yuv_test.cpp",
+  ]
+
+  cflags = [ "-Dprotected=public" ]
 
   deps = [
     "${image_subsystem}/frameworks/innerkitsimpl/utils:image_utils",
@@ -2168,6 +2178,40 @@ ohos_unittest("memorymanagertest") {
   resource_config_file = "$image_subsystem/test/resource/image/ohos_test.xml"
 }
 
+ohos_unittest("kvmetadatatest") {
+  module_out_path = module_output_path
+
+  include_dirs = [
+    "${image_subsystem}/frameworks/innerkitsimpl/accessor/include",
+    "${image_subsystem}/frameworks/innerkitsimpl/utils/include",
+    "${image_subsystem}/interfaces/innerkits/include",
+  ]
+
+  sources = [
+    "${image_subsystem}/frameworks/innerkitsimpl/accessor/src/kv_metadata.cpp",
+    "${image_subsystem}/frameworks/innerkitsimpl/test/unittest/kv_metadata_test.cpp",
+  ]
+
+  deps = [
+    "${image_subsystem}/frameworks/innerkitsimpl/utils:image_utils",
+    "${image_subsystem}/interfaces/innerkits:image_native",
+  ]
+
+  resource_config_file = "$image_subsystem/test/resource/image/ohos_test.xml"
+
+  cflags = [
+    "-Dprivate=public",
+    "-Dprotected=public",
+  ]
+
+  external_deps = [
+    "c_utils:utils",
+    "googletest:gtest",
+    "googletest:gtest_main",
+    "hilog:libhilog",
+  ]
+}
+
 ohos_unittest("imagedfxtest"){
   module_out_path = module_output_path
 
@@ -2300,6 +2344,7 @@ group("unittest") {
     ":jpegdecoderextest",
     ":jpegutilstest",
     ":jpgyuvtest",
+    ":kvmetadatatest",
     ":memorymanagertest",
     ":metadatatest",
     ":napitest",
