@@ -1034,7 +1034,7 @@ unique_ptr<PixelMap> ImageSource::CreatePixelMapExtended(uint32_t index, const D
         context.pixelsBuffer.bufferSize, context.allocatorType);
     imageDataStatistics.SetRequestMemory(context.pixelsBuffer.bufferSize);
     if (errorCode != SUCCESS) {
-        IMAGE_LOGE("[ImageSource]decode source fail, ret:%{public}u.", errorCode);
+        HILOG_COMM_ERROR("[ImageSource]decode source fail, ret:%{public}u.", errorCode);
         imageEvent.SetDecodeErrorMsg("decode source fail, ret:" + std::to_string(errorCode));
         return nullptr;
     }
@@ -2856,7 +2856,7 @@ uint32_t ImageSource::DecodeImageInfo(uint32_t index, ImageStatusMap::iterator &
         status.imageInfo.encodedFormat = "none";
         auto errorResult = imageStatusMap_.insert(ImageStatusMap::value_type(index, status));
         iter = errorResult.first;
-        IMAGE_LOGE("[ImageSource]decode the image info fail.");
+        HILOG_COMM_ERROR("[ImageSource]decode the image info fail.");
         return ERR_IMAGE_DECODE_FAILED;
     }
 }
@@ -4745,7 +4745,7 @@ bool ImageSource::ComposeHdrImage(ImageHdrType hdrType, DecodeContext& baseCtx, 
     std::unique_ptr<VpeUtils> utils = std::make_unique<VpeUtils>();
     int32_t res = utils->ColorSpaceConverterComposeImage(buffers, hdrType == ImageHdrType::HDR_CUVA);
     if (res != VPE_ERROR_OK) {
-        IMAGE_LOGE("[ImageSource] composeImage failed, res: %{public}d", res);
+        HILOG_COMM_ERROR("[ImageSource] composeImage failed, res: %{public}d", res);
         FreeContextBuffer(hdrCtx.freeFunc, hdrCtx.allocatorType, hdrCtx.pixelsBuffer);
         return false;
     }
