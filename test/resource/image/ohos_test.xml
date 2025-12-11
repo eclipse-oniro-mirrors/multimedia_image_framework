@@ -198,6 +198,16 @@
             <option name="push" value="images/RGBA1010102.rgba -> /data/local/tmp/image" src="res"/>
         </preparer>
     </target>
+    <target name="sk_ohoscodec_test">
+    <preparer>
+        <option name="push" value="images/test_hw1.jpg -> /data/local/tmp/image" src="res"/>
+        <option name="push" value="images/three_gainmap_hdr.jpg -> /data/local/tmp/image" src="res"/>
+        <option name="push" value="images/test_broken.gif -> /data/local/tmp/image" src="res"/>
+        <option name="push" value="images/color_wheel_with_bad_profile.png -> /data/local/tmp/image" src="res"/>
+        <option name="push" value="images/test.webp -> /data/local/tmp/image" src="res"/>
+        <option name="push" value="images/test.bmp -> /data/local/tmp/image" src="res"/>
+    </preparer>
+    </target>
     <target name="jpgyuvtest">
         <preparer>
             <option name="push" value="images/test-tree-400.jpg -> /data/local/tmp/image" src="res"/>
