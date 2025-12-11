@@ -157,6 +157,51 @@ public:
     }
 };
 
+class NapiScopeBase {
+public:
+    explicit NapiScopeBase(napi_env env) : env_(env) {}
+    virtual ~NapiScopeBase() = default;
+    napi_env env() const { return env_; }
+protected:
+    napi_env env_ = nullptr;
+};
+
+class NapiHandleScope : public NapiScopeBase {
+public:
+    explicit NapiHandleScope(napi_env env) : NapiScopeBase(env) {
+        napi_status status = napi_open_handle_scope(env, &scope_);
+        if (status != napi_ok) {
+            IMAGE_LOGE("[PixelMap] napi_open_handle_scope failed! status: %{public}d", status);
+        }
+    }
+    ~NapiHandleScope() override {
+        if (env_ != nullptr && scope_ != nullptr) {
+            napi_close_handle_scope(env_, scope_);
+        }
+    }
+    napi_handle_scope scope() const { return scope_; }
+private:
+    napi_handle_scope scope_ = nullptr;
+};
+
+class NapiEscapableScope : public NapiScopeBase {
+public:
+    explicit NapiEscapableScope(napi_env env) : NapiScopeBase(env) {
+        napi_status status = napi_open_escapable_handle_scope(env, &scope_);
+        if (status != napi_ok) {
+            IMAGE_LOGE("[PixelMap] napi_open_escapable_handle_scope failed! status: %{public}d", status);
+        }
+    }
+    ~NapiEscapableScope() override {
+        if (env_ != nullptr && scope_ != nullptr) {
+            napi_close_escapable_handle_scope(env_, scope_);
+        }
+    }
+    napi_escapable_handle_scope scope() const { return scope_; }
+private:
+    napi_escapable_handle_scope scope_ = nullptr;
+};
+
 static PixelFormat ParsePixlForamt(int32_t val)
 {
     if (val < static_cast<int32_t>(PixelFormat::EXTERNAL_MAX)) {
@@ -1773,29 +1818,29 @@ napi_value PixelMapNapi::CreatePixelMapFromSurfaceSync(napi_env env, napi_callba
 
 napi_value PixelMapNapi::CreatePixelMap(napi_env env, std::shared_ptr<PixelMap> pixelmap)
 {
+    NapiEscapableScope escapeScope(env);
     if (PixelMapNapi::GetConstructor() == nullptr) {
         napi_value exports = nullptr;
         napi_create_object(env, &exports);
         PixelMapNapi::Init(env, exports);
     }
-
     napi_value constructor = nullptr;
     napi_value result = nullptr;
     napi_status status;
-
     IMAGE_LOGD("CreatePixelMap IN");
     status = napi_get_reference_value(env, sConstructor_, &constructor);
-
     if (IMG_IS_OK(status)) {
         status = NewPixelNapiInstance(env, constructor, pixelmap, result);
     }
-
     if (!IMG_IS_OK(status)) {
         IMAGE_LOGE("CreatePixelMap | New instance could not be obtained");
         napi_get_undefined(env, &result);
     }
-
-    return result;
+    napi_value escapeResult = nullptr;
+    if (napi_escape_handle(env, escapeScope.scope(), result, &escapeResult) != napi_ok) {
+        return nullptr;
+    }
+    return escapeResult;
 }
 
 extern "C" {
