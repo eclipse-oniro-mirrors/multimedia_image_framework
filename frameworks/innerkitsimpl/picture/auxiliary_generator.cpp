@@ -255,17 +255,23 @@ static uint32_t DecodeHdrMetadata(ImageHdrType hdrType, std::unique_ptr<AbsImage
     return SUCCESS;
 }
 
+std::shared_ptr<ImageMetadata> AuxiliaryGenerator::MakeFragmentMetadata(Rect fragmentRect)
+{
+    std::shared_ptr<ImageMetadata> fragmentMetadata = std::make_shared<FragmentMetadata>();
+    fragmentMetadata->SetValue(FRAGMENT_METADATA_KEY_X, std::to_string(fragmentRect.left));
+    fragmentMetadata->SetValue(FRAGMENT_METADATA_KEY_Y, std::to_string(fragmentRect.top));
+    fragmentMetadata->SetValue(FRAGMENT_METADATA_KEY_WIDTH, std::to_string(fragmentRect.width));
+    fragmentMetadata->SetValue(FRAGMENT_METADATA_KEY_HEIGHT, std::to_string(fragmentRect.height));
+    return fragmentMetadata;
+}
+
 static uint32_t DecodeHeifFragmentMetadata(std::unique_ptr<AbsImageDecoder> &extDecoder,
     std::unique_ptr<AuxiliaryPicture> &auxPicture)
 {
     Rect fragmentRect;
     bool cond = extDecoder->GetHeifFragmentMetadata(fragmentRect);
     CHECK_ERROR_RETURN_RET_LOG(!cond, ERR_IMAGE_GET_DATA_ABNORMAL, "Heif parsing fragment metadata failed");
-    std::shared_ptr<ImageMetadata> fragmentMetadata = std::make_shared<FragmentMetadata>();
-    fragmentMetadata->SetValue(FRAGMENT_METADATA_KEY_X, std::to_string(fragmentRect.left));
-    fragmentMetadata->SetValue(FRAGMENT_METADATA_KEY_Y, std::to_string(fragmentRect.top));
-    fragmentMetadata->SetValue(FRAGMENT_METADATA_KEY_WIDTH, std::to_string(fragmentRect.width));
-    fragmentMetadata->SetValue(FRAGMENT_METADATA_KEY_HEIGHT, std::to_string(fragmentRect.height));
+    auto fragmentMetadata = AuxiliaryGenerator::MakeFragmentMetadata(fragmentRect);
     auxPicture->SetMetadata(MetadataType::FRAGMENT, fragmentMetadata);
     return SUCCESS;
 }
@@ -278,11 +284,7 @@ static uint32_t DecodeJpegFragmentMetadata(std::unique_ptr<InputDataStream> &aux
     Rect fragmentRect;
     bool cond = JpegMpfParser::ParsingFragmentMetadata(data, size, fragmentRect);
     CHECK_ERROR_RETURN_RET_LOG(!cond, ERR_IMAGE_GET_DATA_ABNORMAL, "Jpeg parsing fragment metadata failed");
-    std::shared_ptr<ImageMetadata> fragmentMetadata = std::make_shared<FragmentMetadata>();
-    fragmentMetadata->SetValue(FRAGMENT_METADATA_KEY_X, std::to_string(fragmentRect.left));
-    fragmentMetadata->SetValue(FRAGMENT_METADATA_KEY_Y, std::to_string(fragmentRect.top));
-    fragmentMetadata->SetValue(FRAGMENT_METADATA_KEY_WIDTH, std::to_string(fragmentRect.width));
-    fragmentMetadata->SetValue(FRAGMENT_METADATA_KEY_HEIGHT, std::to_string(fragmentRect.height));
+    auto fragmentMetadata = AuxiliaryGenerator::MakeFragmentMetadata(fragmentRect);
     auxPicture->SetMetadata(MetadataType::FRAGMENT, fragmentMetadata);
     return SUCCESS;
 }

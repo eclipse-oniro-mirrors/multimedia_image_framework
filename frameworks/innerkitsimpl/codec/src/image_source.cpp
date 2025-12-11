@@ -5907,5 +5907,131 @@ bool ImageSource::IsHeifWithoutAlpha()
 #endif
     return false;
 }
+
+std::shared_ptr<ImageMetadata> ImageSource::FindMetadataFromMap(MetadataType type)
+{
+    if (metadatas_.find(type) == metadatas_.end()) {
+        IMAGE_LOGD("metadata type(%{public}d) not exist.", static_cast<int32_t>(type));
+        return nullptr;
+    }
+    return metadatas_[type];
+}
+
+static bool GetFragmentAuxiliaryPicture(uint8_t *stream, uint32_t streamSize,
+    std::shared_ptr<SingleJpegImage>& fragmentPicture)
+{
+    auto jpegMpfParser = std::make_unique<JpegMpfParser>();
+    if (!jpegMpfParser->ParsingAuxiliaryPictures(stream, streamSize, false)) {
+        IMAGE_LOGE("JpegMpfParser parse auxiliary pictures failed!");
+        jpegMpfParser->images_.clear();
+        return false;
+    }
+    for (const auto& picture : jpegMpfParser->images_) {
+        if (picture.auxType == AuxiliaryPictureType::FRAGMENT_MAP) {
+            fragmentPicture = std::make_shared<SingleJpegImage>(picture);
+            return true;
+        }
+    }
+    IMAGE_LOGE("Fragmentpicture not found!");
+    return false;
+}
+
+static std::shared_ptr<FragmentMetadata> ParseJpegFragmentMetadata(std::unique_ptr<InputDataStream> &auxStream)
+{
+    uint8_t *data = auxStream->GetDataPtr();
+    uint32_t size = auxStream->GetStreamSize();
+    Rect fragmentRect;
+    bool cond = JpegMpfParser::ParsingFragmentMetadata(data, size, fragmentRect);
+    auto fragmentMetadata = AuxiliaryGenerator::MakeFragmentMetadata(fragmentRect);
+    return std::static_pointer_cast<FragmentMetadata>(fragmentMetadata);
+}
+
+std::shared_ptr<FragmentMetadata> ImageSource::GetFragmentMetadata()
+{
+    ImageInfo info;
+    GetImageInfo(info);
+    if (info.encodedFormat != IMAGE_HEIF_FORMAT && info.encodedFormat != IMAGE_JPEG_FORMAT &&
+        info.encodedFormat != IMAGE_HEIC_FORMAT) {
+        IMAGE_LOGE("Unsupport format: %{public}s", info.encodedFormat.c_str());
+        return nullptr;
+    }
+
+    auto fragmentMetadata = std::static_pointer_cast<FragmentMetadata>(FindMetadataFromMap(MetadataType::FRAGMENT));
+    if (fragmentMetadata != nullptr) {
+        return fragmentMetadata;
+    }
+
+    if (info.encodedFormat == IMAGE_JPEG_FORMAT) {
+        StreamInfo streamInfo;
+        if (!CheckJpegSourceStream(streamInfo) || streamInfo.buffer == nullptr || streamInfo.GetCurrentSize() == 0) {
+            IMAGE_LOGE("Source stream is invalid!");
+            return nullptr;
+        }
+        std::shared_ptr<SingleJpegImage> fragmentPicture;
+        if (GetFragmentAuxiliaryPicture(streamInfo.buffer, streamInfo.GetCurrentSize(), fragmentPicture)) {
+            std::unique_ptr<InputDataStream> auxStream =
+                BufferSourceStream::CreateSourceStream((streamInfo.GetCurrentAddress() + fragmentPicture->offset),
+                fragmentPicture->size);
+            fragmentMetadata = ParseJpegFragmentMetadata(auxStream);
+            metadatas_[MetadataType::FRAGMENT] = fragmentMetadata;
+            return fragmentMetadata;
+        }
+        return nullptr;
+    } else {
+        Rect fragmentRect;
+        mainDecoder_->GetHeifFragmentMetadata(fragmentRect);
+        fragmentMetadata = std::static_pointer_cast<FragmentMetadata>(
+            AuxiliaryGenerator::MakeFragmentMetadata(fragmentRect));
+        metadatas_[MetadataType::FRAGMENT] = fragmentMetadata;
+        return fragmentMetadata;
+    }
+    return fragmentMetadata;
+}
+
+std::shared_ptr<GifMetadata> ImageSource::GetGifMetadata()
+{
+    ImageInfo info;
+    GetImageInfo(info);
+    if (sourceStreamPtr_ == nullptr) {
+        IMAGE_LOGE("[%{public}s] sourceStreamPtr_ is nullptr", __func__);
+        return nullptr;
+    }
+
+    if (info.encodedFormat != IMAGE_GIF_FORMAT) {
+        IMAGE_LOGE("[%{public}s] unsupport format: %{public}s", __func__, info.encodedFormat.c_str());
+        return nullptr;
+    }
+
+    int32_t delayTime = 0;
+    uint32_t errorCode = mainDecoder_->GetImagePropertyInt(0, IMAGE_DELAY_TIME, delayTime);
+    CHECK_ERROR_RETURN_RET_LOG(errorCode != SUCCESS, nullptr, "[%{public}s] get delay time failed", __func__);
+    int32_t disposalType = 0;
+    errorCode = mainDecoder_->GetImagePropertyInt(0, IMAGE_DISPOSAL_TYPE, disposalType);
+    CHECK_ERROR_RETURN_RET_LOG(errorCode != SUCCESS, nullptr, "[%{public}s] get disposal type failed", __func__);
+
+    std::shared_ptr<GifMetadata> gifMetadata = std::make_shared<GifMetadata>();
+    std::shared_ptr<ImageMetadata> metadataTemp = std::make_shared<GifMetadata>();
+    metadataTemp->SetValue(GIF_METADATA_KEY_DELAY_TIME, std::to_string(delayTime));
+    metadataTemp->SetValue(GIF_METADATA_KEY_DISPOSAL_TYPE, std::to_string(disposalType));
+    gifMetadata = std::static_pointer_cast<GifMetadata>(metadataTemp);
+    metadatas_[MetadataType::GIF] = gifMetadata;
+    return gifMetadata;
+}
+
+std::shared_ptr<ImageMetadata> ImageSource::GetMetadata(MetadataType type)
+{
+    switch (type) {
+        case MetadataType::EXIF:
+            return GetExifMetadata();
+        case MetadataType::FRAGMENT:
+            return GetFragmentMetadata();
+        case MetadataType::GIF:
+            return GetGifMetadata();
+        default:
+            IMAGE_LOGE("Unsupported MetadataType");
+            break;
+    }
+    return nullptr;
+}
 } // namespace Media
 } // namespace OHOS

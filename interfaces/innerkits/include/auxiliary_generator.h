@@ -39,6 +39,7 @@ public:
     static std::shared_ptr<AuxiliaryPicture> GenerateJpegAuxiliaryPicture(
         const MainPictureInfo &mainInfo, AuxiliaryPictureType type, std::unique_ptr<InputDataStream> &auxStream,
         std::unique_ptr<AbsImageDecoder> &extDecoder, uint32_t &errorCode);
+    static std::shared_ptr<ImageMetadata> MakeFragmentMetadata(Rect fragmentRect);
 };
 } // namespace Media
 } // namespace OHOS
