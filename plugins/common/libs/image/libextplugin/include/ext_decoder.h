@@ -30,6 +30,8 @@
 #include "nocopyable.h"
 #include "plugin_class_base.h"
 #include "jpeg_yuv_decoder/jpeg_decoder_yuv.h"
+#include "third_party/externals/piex/src/binary_parse/range_checked_byte_ptr.h"
+#include "third_party/externals/piex/src/image_type_recognition/image_type_recognition_lite.h"
 
 namespace OHOS {
     struct BufferRequestConfig;
@@ -231,7 +233,7 @@ private:
     OHOS::Media::Size desiredSizeYuv_;
     int softSampleSize_ = 1;
     uint32_t sampleSize_ = 1;
-    std::string rawEncodedFormat_ = "";
+    piex::image_type_recognition::RawImageTypes rawType_ = piex::image_type_recognition::kNonRawImage;
 
     // hdr
     Media::ImageHdrType hdrType_ = Media::ImageHdrType::UNKNOWN;
