@@ -1050,6 +1050,26 @@ Image_ErrorCode OH_PixelmapNative_CreatePixelmapFromSurface(const char *surfaceI
     OH_PixelmapNative **pixelmap);
 
 /**
+ * @brief Creates a PixelMap object based on the ID of a Surface with transformation.
+ *
+ * @param surfaceId ID of the Surface.
+ * @param length Length of the Surface ID.
+ * @param transformEnabled Whether to inverse transform the PixelMap to cancel out the transformation from the Surface.
+ *     If true, the PixelMap will be transformed by the same amount from the Surface but in a reversed direction;
+ *     if false, the PixelMap will not be transformed.
+ * @param pixelmap The PixelMap to be created.
+ * @return Function result code:
+ *         {@link IMAGE_SUCCESS} Operation is successful.
+ *         {@link IMAGE_INVALID_PARAMETER} Invalid parameter, e.g. surfaceId or pixelmap is incorrect.
+ *         {@link IMAGE_GET_IMAGE_DATA_FAILED} Failed to get the data from Surface.
+ *         {@link IMAGE_CREATE_PIXELMAP_FAILED} Failed to create the PixelMap.
+ * @see OH_PixelmapNative
+ * @since 23
+ */
+Image_ErrorCode OH_PixelmapNative_CreatePixelmapFromSurfaceWithTransformation(const char *surfaceId, size_t length,
+    bool transformEnabled, OH_PixelmapNative **pixelmap);
+
+/**
  * @brief Creates a PixelMap from a native buffer. If the native buffer usage is not configured with CPU access
  * permissions, then the creation is not supported.
  * Supports creation with pixel format RGBA_8888, NV21, NV12, YCBCR_P010, YCRCB_P010.
