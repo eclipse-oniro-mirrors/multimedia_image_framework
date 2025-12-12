@@ -15,7 +15,6 @@
 
 #include "image_log.h"
 #include "media_errors.h"
-// #include "xmp_buffer_IO.h"
 #include "XMPBuffer_IO.hpp"
 #include "XMPFd_IO.hpp"
 #include "xmp_metadata_accessor.h"
