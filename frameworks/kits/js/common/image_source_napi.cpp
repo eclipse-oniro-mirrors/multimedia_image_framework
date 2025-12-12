@@ -2913,6 +2913,7 @@ static void CreatePropertyResult(napi_env env, ImageSourceAsyncContext *context,
 
 static void HandleSuccessResult(napi_env env, ImageSourceAsyncContext *context, napi_value result[])
 {
+#if !defined(CROSS_PLATFORM)
     napi_value resultObj;
     NAPI_CALL_RETURN_VOID(env, napi_create_object(env, &resultObj));
     napi_value exifMetadata = MetadataNapi::CreateExifMetadata(env, context->rExifMetadata);
@@ -2938,6 +2939,7 @@ static void HandleSuccessResult(napi_env env, ImageSourceAsyncContext *context, 
             napi_set_named_property(env, resultObj, "makerNoteHuaweiMetadata", makerNoteMetadata));
     }
     result[NUM_1] = resultObj;
+#endif
 }
 
 static void ReadImageMetadataComplete(napi_env env, napi_status status, ImageSourceAsyncContext *context)

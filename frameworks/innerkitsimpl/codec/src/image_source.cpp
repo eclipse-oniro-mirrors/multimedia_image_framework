@@ -5908,6 +5908,7 @@ bool ImageSource::IsHeifWithoutAlpha()
     return false;
 }
 
+#if !defined(CROSS_PLATFORM)
 std::shared_ptr<ImageMetadata> ImageSource::FindMetadataFromMap(MetadataType type)
 {
     if (metadatas_.find(type) == metadatas_.end()) {
@@ -6033,5 +6034,6 @@ std::shared_ptr<ImageMetadata> ImageSource::GetMetadata(MetadataType type)
     }
     return nullptr;
 }
+#endif
 } // namespace Media
 } // namespace OHOS
