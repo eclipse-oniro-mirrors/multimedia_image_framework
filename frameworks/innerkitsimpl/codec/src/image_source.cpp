@@ -44,7 +44,6 @@
 #endif
 #include "exif_metadata.h"
 #include "exif_metadata_formatter.h"
-#include "file_metadata_stream.h"
 #include "file_source_stream.h"
 #include "image/abs_image_decoder.h"
 #include "image/abs_image_format_agent.h"
@@ -182,6 +181,7 @@ static constexpr uint8_t JPEG_SOI[] = { 0xFF, 0xD8, 0xFF };
 constexpr uint8_t PIXEL_BYTES = 4;
 static constexpr int32_t THUMBNAIL_SHORT_SIDE_SIZE = 350;
 static constexpr int32_t THUMBNAIL_LONG_SIDE_MULTIPLIER = 3;
+constexpr int32_t INVALID_FILE_DESCRIPTOR = -1;
 
 struct StreamInfo {
     uint8_t* buffer = nullptr;
@@ -6639,27 +6639,6 @@ bool ImageSource::IsJpegProgressive(uint32_t &errorCode)
     return mainDecoder_->IsProgressiveJpeg();
 }
 
-std::shared_ptr<MetadataStream> ImageSource::CreateMetadataStreamFromSource(OpenMode mode)
-{
-    std::shared_ptr<MetadataStream> metadataStream = nullptr;
-
-    if (!srcFilePath_.empty()) {
-        metadataStream = std::make_shared<FileMetadataStream>(srcFilePath_);
-    } else if (srcFd_ >= 0) {
-        metadataStream = std::make_shared<FileMetadataStream>(srcFd_);
-    } else {
-        IMAGE_LOGE("%{public}s no valid file source (path or fd) found", __func__);
-        return nullptr;
-    }
-
-    if (!metadataStream->Open(mode)) {
-        IMAGE_LOGE("%{public}s failed to open metadata stream", __func__);
-        return nullptr;
-    }
-
-    return metadataStream;
-}
-
 uint32_t ImageSource::CreateXMPMetadataByImageSource()
 {
     uint32_t errorCode = ERROR;
@@ -6695,19 +6674,9 @@ uint32_t ImageSource::CreateXMPMetadataByImageSource()
         bufferPtr = tmpBuffer;
     }
 
-    // Create BufferMetadataStream with buffer (either from GetDataPtr or ReadSourceBuffer)
-    auto metadataStream = static_pointer_cast<MetadataStream>(std::make_shared<BufferMetadataStream>(
-        bufferPtr, bufferSize, BufferMetadataStream::Fix,
-        sourceStreamPtr_->GetOriginalFd(),
-        sourceStreamPtr_->GetOriginalPath()));
-
-    if (!metadataStream->Open(OpenMode::Read)) {
-        IMAGE_LOGE("%{public}s failed to open metadata stream", __func__);
-        return ERR_IMAGE_SOURCE_DATA;
-    }
-
-    // Create XMPMetadataAccessor with stream
-    auto accessor = std::make_unique<XMPMetadataAccessor>(metadataStream, XMPAccessMode::READ_ONLY_XMP);
+    auto accessor = XMPMetadataAccessor::Create(bufferPtr, bufferSize, XMPAccessMode::READ_ONLY_XMP);
+    CHECK_ERROR_RETURN_RET_LOG(accessor == nullptr, ERR_IMAGE_SOURCE_DATA,
+        "%{public}s failed to create XMPMetadataAccessor from buffer", __func__);
     errorCode = accessor->Read();
     CHECK_ERROR_RETURN_RET_LOG(errorCode != SUCCESS, errorCode, "%{public}s failed to read xmp metadata", __func__);
     xmpMetadata_ = accessor->Get();
@@ -6731,13 +6700,18 @@ std::shared_ptr<XMPMetadata> ImageSource::ReadXMPMetadata(uint32_t &errorCode)
 uint32_t ImageSource::WriteXMPMetadata(std::shared_ptr<XMPMetadata> &xmpMetadata)
 {
     IMAGE_LOGD("%{public}s enter", __func__);
-    auto metadataStream = CreateMetadataStreamFromSource(OpenMode::ReadWrite);
-    if (metadataStream == nullptr) {
-        IMAGE_LOGE("%{public}s failed to create metadata stream", __func__);
-        return ERR_IMAGE_SOURCE_DATA;
+    std::unique_ptr<XMPMetadataAccessor> accessor = nullptr;
+    if (!srcFilePath_.empty()) {
+        accessor = XMPMetadataAccessor::Create(srcFilePath_, XMPAccessMode::READ_WRITE_XMP);
+    } else if (srcFd_ != INVALID_FILE_DESCRIPTOR) {
+        accessor = XMPMetadataAccessor::Create(srcFd_, XMPAccessMode::READ_WRITE_XMP);
+    } else {
+        IMAGE_LOGE("%{public}s no valid file source (path or fd) found", __func__);
+        return ERR_MEDIA_INVALID_OPERATION;
     }
+    CHECK_ERROR_RETURN_RET_LOG(accessor == nullptr, ERR_IMAGE_SOURCE_DATA,
+        "%{public}s failed to create XMPMetadataAccessor from path or fd", __func__);
 
-    auto accessor = std::make_unique<XMPMetadataAccessor>(metadataStream, XMPAccessMode::READ_WRITE_XMP);
     accessor->Set(xmpMetadata);
 
     // Write XMP data (this will automatically update the file via MetadataStream)

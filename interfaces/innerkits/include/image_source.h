@@ -67,8 +67,6 @@ namespace Media {
 using namespace HDI::Display::Graphic::Common::V1_0;
 #endif
 class ImageEvent;
-class MetadataStream;
-enum class OpenMode;
 struct SourceOptions {
     std::string formatHint;
     int32_t baseDensity = 0;
@@ -404,7 +402,6 @@ private:
     std::shared_ptr<MetadataAccessor> CreateMetadataAccessorForWrite(uint32_t &error);
     uint32_t WriteExifMetadataToFile(std::shared_ptr<MetadataAccessor> metadataAccessor);
     uint32_t CreateXMPMetadataByImageSource();
-    std::shared_ptr<MetadataStream> CreateMetadataStreamFromSource(OpenMode mode);
     void SetDecodeInfoOptions(uint32_t index, const DecodeOptions &opts, const ImageInfo &info, ImageEvent &imageEvent);
     void SetDecodeInfoOptions(uint32_t index, const DecodeOptions &opts, const ImagePlugin::PlImageInfo &plInfo,
         ImageEvent &imageEvent);

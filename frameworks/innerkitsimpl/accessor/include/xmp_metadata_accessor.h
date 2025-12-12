@@ -16,14 +16,15 @@
 #ifndef FRAMEWORKS_INNERKITSIMPL_ACCESSOR_INCLUDE_XMP_METADATA_ACCESSOR_H
 #define FRAMEWORKS_INNERKITSIMPL_ACCESSOR_INCLUDE_XMP_METADATA_ACCESSOR_H
 
-#include "metadata_stream.h"
 #include "xmp_metadata.h"
 #include "XMP.hpp"
 #include "XMP.incl_cpp"
 
+class XMPBuffer_IO;
+class XMPFd_IO;
+
 namespace OHOS {
 namespace Media {
-class XMPBuffer_IO;
 
 enum class XMPAccessMode {
     READ_ONLY_XMP,
@@ -34,8 +35,13 @@ enum class XMPAccessMode {
 
 class XMPMetadataAccessor {
 public:
-    XMPMetadataAccessor(std::shared_ptr<MetadataStream> &stream, XMPAccessMode mode);
+    XMPMetadataAccessor() = default;
     ~XMPMetadataAccessor() = default;
+
+    // static methods to create XMPMetadataAccessor
+    static std::unique_ptr<XMPMetadataAccessor> Create(const uint8_t *data, uint32_t size, XMPAccessMode mode);
+    static std::unique_ptr<XMPMetadataAccessor> Create(const std::string &filePath, XMPAccessMode mode);
+    static std::unique_ptr<XMPMetadataAccessor> Create(int32_t fileDescriptor, XMPAccessMode mode);
 
     uint32_t Read();
     uint32_t Write();
@@ -44,8 +50,9 @@ public:
 
 private:
     uint32_t CheckXMPFiles();
-    void InitializeFromStream();
-    uint32_t UpdateData(const uint8_t *dataBlob, uint32_t size);
+    uint32_t InitializeFromBuffer(const uint8_t *data, uint32_t size, XMPAccessMode mode);
+    uint32_t InitializeFromPath(const std::string &filePath, XMPAccessMode mode);
+    uint32_t InitializeFromFd(int32_t fileDescriptor, XMPAccessMode mode);
 
     struct XmpFileDeleter {
         void operator()(SXMPFiles *ptr) const
@@ -56,11 +63,18 @@ private:
         }
     };
 
+    enum class IOType: uint8_t {
+        UNKNOWN,
+        XMP_FILE_PATH,
+        XMP_BUFFER_IO,
+        XMP_FD_IO,
+    };
+
+    IOType ioType_ = IOType::UNKNOWN;
     std::unique_ptr<SXMPFiles, XmpFileDeleter> xmpFiles_ = nullptr;
     std::shared_ptr<XMPMetadata> xmpMetadata_ = nullptr;
     std::shared_ptr<XMPBuffer_IO> bufferIO_ = nullptr;
-    std::shared_ptr<MetadataStream> imageStream_ = nullptr;  // Stream for file I/O
-    XMPAccessMode accessMode_ = XMPAccessMode::READ_ONLY_XMP;  // Access mode for XMP operations
+    std::shared_ptr<XMPFd_IO> fdIO_ = nullptr;
 };
 } // namespace Media
 } // namespace OHOS

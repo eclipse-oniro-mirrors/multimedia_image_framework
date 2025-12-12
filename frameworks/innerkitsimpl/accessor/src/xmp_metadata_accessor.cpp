@@ -13,12 +13,17 @@
  * limitations under the License.
  */
 
-#include "buffer_metadata_stream.h"
 #include "image_log.h"
 #include "media_errors.h"
-#include "xmp_buffer_IO.h"
+// #include "xmp_buffer_IO.h"
+#include "XMPBuffer_IO.hpp"
+#include "XMPFd_IO.hpp"
 #include "xmp_metadata_accessor.h"
 #include "xmp_metadata_impl.h"
+
+namespace {
+    constexpr int32_t INVALID_FILE_DESCRIPTOR = -1;
+}
 
 namespace OHOS {
 namespace Media {
@@ -38,12 +43,29 @@ static constexpr XMP_OptionBits ConvertAccessModeToXMPOptions(XMPAccessMode mode
     }
 }
 
-XMPMetadataAccessor::XMPMetadataAccessor(std::shared_ptr<MetadataStream> &stream, XMPAccessMode mode)
-    : imageStream_(stream), accessMode_(mode)
+std::unique_ptr<XMPMetadataAccessor> XMPMetadataAccessor::Create(const uint8_t *data, uint32_t size,
+    XMPAccessMode mode)
 {
-    CHECK_ERROR_RETURN_LOG(!XMPMetadata::Initialize(), "%{public}s failed to init XMPMetadataAccessor", __func__);
-    CHECK_ERROR_RETURN_LOG(imageStream_ == nullptr, "%{public}s imageStream is nullptr", __func__);
-    InitializeFromStream();
+    std::unique_ptr<XMPMetadataAccessor> accessor = std::make_unique<XMPMetadataAccessor>();
+    uint32_t status = accessor->InitializeFromBuffer(data, size, mode);
+    CHECK_ERROR_RETURN_RET_LOG(status != SUCCESS, nullptr, "%{public}s failed to initialize from buffer", __func__);
+    return accessor;
+}
+
+std::unique_ptr<XMPMetadataAccessor> XMPMetadataAccessor::Create(const std::string &filePath, XMPAccessMode mode)
+{
+    std::unique_ptr<XMPMetadataAccessor> accessor = std::make_unique<XMPMetadataAccessor>();
+    uint32_t status = accessor->InitializeFromPath(filePath, mode);
+    CHECK_ERROR_RETURN_RET_LOG(status != SUCCESS, nullptr, "%{public}s failed to initialize from path", __func__);
+    return accessor;
+}
+
+std::unique_ptr<XMPMetadataAccessor> XMPMetadataAccessor::Create(int32_t fileDescriptor, XMPAccessMode mode)
+{
+    std::unique_ptr<XMPMetadataAccessor> accessor = std::make_unique<XMPMetadataAccessor>();
+    uint32_t status = accessor->InitializeFromFd(fileDescriptor, mode);
+    CHECK_ERROR_RETURN_RET_LOG(status != SUCCESS, nullptr, "%{public}s failed to initialize from fd", __func__);
+    return accessor;
 }
 
 uint32_t XMPMetadataAccessor::Read()
@@ -71,6 +93,11 @@ uint32_t XMPMetadataAccessor::Write()
     CHECK_ERROR_RETURN_RET_LOG(xmpMetadata_ == nullptr, ERR_MEDIA_NULL_POINTER,
         "%{public}s xmpMetadata is nullptr", __func__);
 
+    if (ioType_ == IOType::UNKNOWN || ioType_ == IOType::XMP_BUFFER_IO) {
+        IMAGE_LOGE("%{public}s IOType: %{public}hhu is not supported for write operation", __func__, ioType_);
+        return ERR_MEDIA_INVALID_OPERATION;
+    }
+
     std::unique_ptr<XMPMetadataImpl> &impl = xmpMetadata_->GetImpl();
     CHECK_ERROR_RETURN_RET_LOG(!impl || !impl->IsValid(), ERR_MEDIA_NULL_POINTER,
         "%{public}s XMPMetadataImpl is invalid", __func__);
@@ -80,12 +107,8 @@ uint32_t XMPMetadataAccessor::Write()
         "%{public}s CanPutXMP failed", __func__);
 
     xmpFiles_->PutXMP(meta);
-    xmpFiles_->CloseFile();  // This updates the XMPBuffer_IO's internal buffer
-
-    // Write back to file
-    CHECK_ERROR_RETURN_RET_LOG(bufferIO_ == nullptr, ERR_MEDIA_NULL_POINTER,
-        "%{public}s bufferIO is nullptr", __func__);
-    return UpdateData(static_cast<const uint8_t*>(bufferIO_->GetDataPtr()), bufferIO_->GetDataSize());
+    xmpFiles_->CloseFile();
+    return SUCCESS;
 }
 
 std::shared_ptr<XMPMetadata> XMPMetadataAccessor::Get()
@@ -115,52 +138,75 @@ uint32_t XMPMetadataAccessor::CheckXMPFiles()
     return SUCCESS;
 }
 
-void XMPMetadataAccessor::InitializeFromStream()
+uint32_t XMPMetadataAccessor::InitializeFromBuffer(const uint8_t *data, uint32_t size, XMPAccessMode mode)
 {
-    CHECK_ERROR_RETURN_LOG(imageStream_ == nullptr || !imageStream_->IsOpen(),
-        "%{public}s failed, image stream is invalid", __func__);
-
-    imageStream_->Seek(0, SeekPos::BEGIN);
-    ssize_t streamSize = imageStream_->GetSize();
-    CHECK_ERROR_RETURN_LOG(streamSize <= 0, "%{public}s failed, stream size is invalid", __func__);
-
-    // Read data from stream
-    std::vector<uint8_t> buffer(streamSize);
-    ssize_t readSize = imageStream_->Read(buffer.data(), streamSize);
-    CHECK_ERROR_RETURN_LOG(readSize != streamSize, "%{public}s failed to read from stream", __func__);
-
-    // Determine if writable based on access mode
-    bool isWritable = (accessMode_ == XMPAccessMode::READ_WRITE_XMP || 
-                      accessMode_ == XMPAccessMode::READ_WRITE_XMP_OPTIMIZED);
-
-    // Create XMPBuffer_IO and open with XMP SDK
-    bufferIO_ = std::make_shared<XMPBuffer_IO>(buffer.data(), static_cast<XMP_Uns32>(streamSize), isWritable);
+    CHECK_ERROR_RETURN_RET_LOG(data == nullptr || size == 0, ERR_IMAGE_INVALID_PARAMETER,
+        "%{public}s data is nullptr or size is 0", __func__);
+    CHECK_ERROR_RETURN_RET_LOG(!XMPMetadata::Initialize(), ERR_XMP_INIT_FAILED,
+        "%{public}s failed to init XMPMetadataAccessor", __func__);
     xmpFiles_.reset(new SXMPFiles());
+    CHECK_ERROR_RETURN_RET_LOG(xmpFiles_ == nullptr, ERR_MEDIA_MALLOC_FAILED,
+        "%{public}s failed to create XMPFiles", __func__);
 
-    XMP_OptionBits openFlags = ConvertAccessModeToXMPOptions(accessMode_);
+    // Determine if read only based on access mode
+    bool readOnly = (mode == XMPAccessMode::READ_ONLY_XMP || mode == XMPAccessMode::READ_FULL_METADATA);
+    bufferIO_ = std::make_shared<XMPBuffer_IO>(data, static_cast<XMP_Uns32>(size), readOnly);
+    CHECK_ERROR_RETURN_RET_LOG(bufferIO_ == nullptr, ERR_MEDIA_MALLOC_FAILED,
+        "%{public}s failed to create XMPBuffer_IO", __func__);
+
+    XMP_OptionBits openFlags = ConvertAccessModeToXMPOptions(mode);
     if (!xmpFiles_->OpenFile(bufferIO_.get(), kXMP_UnknownFile, openFlags)) {
         IMAGE_LOGE("%{public}s failed to open file with XMPBuffer_IO", __func__);
-        xmpFiles_ = nullptr;
-        bufferIO_ = nullptr;
+        return ERR_XMP_INVALID_FILE;
     }
+
+    ioType_ = IOType::XMP_BUFFER_IO;
+    return SUCCESS;
 }
 
-uint32_t XMPMetadataAccessor::UpdateData(const uint8_t *dataBlob, uint32_t size)
+uint32_t XMPMetadataAccessor::InitializeFromPath(const std::string &filePath, XMPAccessMode mode)
 {
-    CHECK_ERROR_RETURN_RET_LOG(imageStream_ == nullptr || !imageStream_->IsOpen(), ERR_IMAGE_SOURCE_DATA,
-        "%{public}s imageStream is invalid", __func__);
+    CHECK_ERROR_RETURN_RET_LOG(filePath.empty(), ERR_IMAGE_INVALID_PARAMETER,
+        "%{public}s filePath is empty", __func__);
+    CHECK_ERROR_RETURN_RET_LOG(!XMPMetadata::Initialize(), ERR_XMP_INIT_FAILED,
+        "%{public}s failed to init XMPMetadataAccessor", __func__);
+    xmpFiles_.reset(new SXMPFiles());
+    CHECK_ERROR_RETURN_RET_LOG(xmpFiles_ == nullptr, ERR_MEDIA_MALLOC_FAILED,
+        "%{public}s failed to create XMPFiles", __func__);
 
-    // Create temporary buffer stream with modified data
-    BufferMetadataStream tmpBufStream(const_cast<uint8_t*>(dataBlob), size, BufferMetadataStream::MemoryMode::Fix);
-    CHECK_ERROR_RETURN_RET_LOG(!tmpBufStream.Open(OpenMode::ReadWrite), ERR_IMAGE_SOURCE_DATA,
-        "%{public}s BufferMetadataStream::Open failed", __func__);
+    XMP_OptionBits openFlags = ConvertAccessModeToXMPOptions(mode);
+    if (!xmpFiles_->OpenFile(filePath.c_str(), kXMP_UnknownFile, openFlags)) {
+        IMAGE_LOGE("%{public}s failed to open file with XMPFiles_IO: %{public}s", __func__, filePath.c_str());
+        return ERR_XMP_INVALID_FILE;
+    }
 
-    // Write back to original stream
-    imageStream_->Seek(0, SeekPos::BEGIN);
-    CHECK_ERROR_RETURN_RET_LOG(!imageStream_->CopyFrom(tmpBufStream), ERR_MEDIA_INVALID_OPERATION,
-        "%{public}s Copy from temp stream failed", __func__);
+    ioType_ = IOType::XMP_FILE_PATH;
+    return SUCCESS;
+}
 
-    IMAGE_LOGD("%{public}s successfully updated XMP data, size: %{public}u", __func__, size);
+uint32_t XMPMetadataAccessor::InitializeFromFd(int32_t fileDescriptor, XMPAccessMode mode)
+{
+    CHECK_ERROR_RETURN_RET_LOG(fileDescriptor == INVALID_FILE_DESCRIPTOR, ERR_IMAGE_INVALID_PARAMETER,
+        "%{public}s fileDescriptor is invalid", __func__);
+    CHECK_ERROR_RETURN_RET_LOG(!XMPMetadata::Initialize(), ERR_XMP_INIT_FAILED,
+        "%{public}s failed to init XMPMetadataAccessor", __func__);
+    xmpFiles_.reset(new SXMPFiles());
+    CHECK_ERROR_RETURN_RET_LOG(xmpFiles_ == nullptr, ERR_MEDIA_MALLOC_FAILED,
+        "%{public}s failed to create XMPFiles", __func__);
+
+    // Determine if read only based on access mode
+    bool readOnly = (mode == XMPAccessMode::READ_ONLY_XMP || mode == XMPAccessMode::READ_FULL_METADATA);
+    fdIO_ = std::make_shared<XMPFd_IO>(fileDescriptor, readOnly, false);
+    CHECK_ERROR_RETURN_RET_LOG(fdIO_ == nullptr || !fdIO_->IsValid(), ERR_MEDIA_MALLOC_FAILED,
+        "%{public}s failed to create XMPFd_IO", __func__);
+
+    XMP_OptionBits openFlags = ConvertAccessModeToXMPOptions(mode);
+    if (!xmpFiles_->OpenFile(fdIO_.get(), kXMP_UnknownFile, openFlags)) {
+        IMAGE_LOGE("%{public}s failed to open file with XMPFd_IO", __func__);
+        return ERR_XMP_INVALID_FILE;
+    }
+
+    ioType_ = IOType::XMP_FD_IO;
     return SUCCESS;
 }
 } // namespace OHOS
