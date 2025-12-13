@@ -235,6 +235,10 @@ static const uint8_t NUM_3 = 3;
 static const uint8_t NUM_4 = 4;
 static const uint8_t RGBA_BIT_DEPTH = 4;
 
+static const int32_t PLANE_Y = 0;
+static const int32_t PLANE_U = 1;
+static const int32_t PLANE_V = 2;
+
 static constexpr int32_t MAX_IMAGE_SIZE = 32768;
 static constexpr int32_t MIN_IMAGE_SIZE = 128;
 static constexpr int32_t MIN_RGBA_IMAGE_SIZE = 1024;
@@ -829,6 +833,59 @@ static sptr<SurfaceBuffer> AllocSurfaceBuffer(int32_t width, int32_t height,
     return sb;
 }
 
+bool ProcessNVFormat(PixelMap* pixelmap, sptr<SurfaceBuffer> surfacebuffer, uint32_t height, uint64_t srcStride) {
+    uint8_t* src = const_cast<uint8_t*>(pixelmap->GetPixels());
+    uint8_t* dst = static_cast<uint8_t*>(surfaceBuffer->GetVirAddr());
+    uint32_t dstSize = surfaceBuffer->GetSize();
+
+    uint32_t yHeight = height;
+    uint32_t uvHeight = (height + 1) / NUM_2;
+    uint32_t yStride = static_cast<uint32_t>(surfaceBuffer->GetStride());
+    uint32_t uvStride = static_cast<uint32_t>(surfaceBuffer->GetStride());
+    uint32_t yOffset = 0;
+    uint32_t uvOffset = yStride * yHeight;
+
+    OH_NativeBuffer_Planes *planes = nullptr;
+    GSError retVal = surfaceBuffer->GetPlanesInfo(reinterpret_cast<void**>(&planes));
+    if (retVal == OHOS::GSERROR_OK && planes != nullptr && planes->planeCount >= NUM_2) {
+        yStride = planes->planes[PLANE_Y].columnStride;
+        uvStride = planes->planes[PLANE_U].columnStride;
+        yOffset = planes->planes[PLANE_Y].offset;
+        if (pixelmap->GetPixelFormat() == PixelFormat::NV21) {
+            uvOffset = planes->planes[PLANE_V].offset;
+        } else {
+            uvOffset = planes->planes[PLANE_U].offset;
+        }
+    } else {
+        IMAGE_LOGE("Convert to surfacebuffer, get planesInfo failed, retVal:%{public}d", retVal);
+    }
+
+    for (uint32_t i = 0; i < yHeight; ++i) {
+        if (memcpy_s(dst, dstSize, src, srcStride) != EOK) {
+            return false;
+        }
+        dst += yStride;
+        dstSize -= yStride;
+        src += srcStride;
+    }
+
+    if (srcStride % NUM_2 != 0) {
+        srcStride++;
+    }
+    dst += uvOffset - (yStride * yHeight);
+
+    for (uint32_t i = 0; i < uvHeight; ++i) {
+        if (memcpy_s(dst, dstSize, src, srcStride) != EOK) {
+            return false;
+        }
+        dst += uvStride;
+        dstSize -= uvStride;
+        src += srcStride;
+    }
+
+    return true;
+}
+
 sptr<SurfaceBuffer> ExtEncoder::ConvertToSurfaceBuffer(PixelMap* pixelmap)
 {
     bool cond = pixelmap->GetHeight() <= 0 || pixelmap->GetWidth() <= 0;
@@ -852,57 +909,10 @@ sptr<SurfaceBuffer> ExtEncoder::ConvertToSurfaceBuffer(PixelMap* pixelmap)
     uint32_t copyHeight = height;
     uint64_t srcStride = width;
     if (format == PixelFormat::NV12 || format == PixelFormat::NV21) {
-        const int32_t NUM_2 = 2;
-        const int32_t PLANE_Y = 0;
-        const int32_t PLANE_U = 1;
-        const int32_t PLANE_V = 2;
-        uint32_t yHeight = height;
-        uint32_t uvHeight = (height + 1) / NUM_2;
-        uint32_t yStride = dstStride;
-        uint32_t uvStride = dstStride;
-        uint32_t yOffset = 0;
-        uint32_t uvOffset = yStride * yHeight;
-
-        OH_NativeBuffer_Planes *planes = nullptr;
-        GSError retVal = surfaceBuffer->GetPlanesInfo(reinterpret_cast<void**>(&planes));
-        if (retVal != OHOS::GSERROR_OK || planes == nullptr) {
-            IMAGE_LOGE("Convert to surfacebuffer, get planesInfo failed, retVal:%{public}d", retVal);
-        } else if (planes->planeCount >= NUM_2) {
-            yStride = planes->planes[PLANE_Y].columnStride;
-            uvStride = planes->planes[PLANE_U].columnStride;
-            yOffset = planes->planes[PLANE_Y].offset;
-            if (format == PixelFormat::NV21) {
-                uvOffset = planes->planes[PLANE_V].offset;
-            } else {
-                uvOffset = planes->planes[PLANE_U].offset;
-            }
-        }
-
-        for (uint32_t i = 0; i < yHeight; ++i) {
-            if (memcpy_s(dst, dstSize, src, srcStride) != EOK) {
-                IMAGE_LOGE("ConvertToSurfaceBuffer memcpy failed");
-                ImageUtils::SurfaceBuffer_Unreference(surfaceBuffer.GetRefPtr());
-                return nullptr;
-            }
-            dst += yStride;
-            dstSize -= yStride;
-            src += srcStride;
-        }
-
-        if (srcStride % NUM_2 != 0) {
-            srcStride++;
-        }
-        dst += uvOffset - (yStride * yHeight);
-
-        for (uint32_t i = 0; i < uvHeight; ++i) {
-            if (memcpy_s(dst, dstSize, src, srcStride) != EOK) {
-                IMAGE_LOGE("ConvertToSurfaceBuffer memcpy failed");
-                ImageUtils::SurfaceBuffer_Unreference(surfaceBuffer.GetRefPtr());
-                return nullptr;
-            }
-            dst += uvStride;
-            dstSize -= uvStride;
-            src += srcStride;
+        if (!ProcessNVFormat(pixelmap, surfacebuffer, height, srcStride)) {
+            IMAGE_LOGE("ConvertToSurfaceBuffer memcpy failed");
+            ImageUtils::SurfaceBuffer_Unreference(surfaceBuffer.GetRefPtr());
+            return nullptr;
         }
     } else if (format == PixelFormat::RGBA_8888) {
         copyHeight = height;
