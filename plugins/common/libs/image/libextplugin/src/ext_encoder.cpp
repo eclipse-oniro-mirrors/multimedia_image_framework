@@ -853,22 +853,73 @@ sptr<SurfaceBuffer> ExtEncoder::ConvertToSurfaceBuffer(PixelMap* pixelmap)
     uint64_t srcStride = width;
     if (format == PixelFormat::NV12 || format == PixelFormat::NV21) {
         const int32_t NUM_2 = 2;
-        copyHeight = height + height / NUM_2;
-        srcStride = width;
+        const int32_t PLANE_Y = 0;
+        const int32_t PLANE_U = 1;
+        const int32_t PLANE_V = 2;
+        uint32_t yHeight = height;
+        uint32_t uvHeight = (height + 1) / NUM_2;
+        uint32_t yStride = dstStride;
+        uint32_t uvStride = dstStride;
+        uint32_t yOffset = 0;
+        uint32_t uvOffset = yStride * yHeight;
+
+        OH_NativeBuffer_Planes *planes = nullptr;
+        GSError retVal = surfaceBuffer->GetPlanesInfo(reinterpret_cast<void**>(&planes));
+        if (retVal != OHOS::GSERROR_OK || planes == nullptr) {
+            IMAGE_LOGE("Convert to surfacebuffer, get planesInfo failed, retVal:%{public}d", retVal);
+        } else if (planes->planeCount >= NUM_2) {
+            yStride = planes->planes[PLANE_Y].columnStride;
+            uvStride = planes->planes[PLANE_U].columnStride;
+            yOffset = planes->planes[PLANE_Y].offset;
+            if (format == PixelFormat::NV21) {
+                uvOffset = planes->planes[PLANE_V].offset;
+            } else {
+                uvOffset = planes->planes[PLANE_U].offset;
+            }
+        }
+
+        for (uint32_t i = 0; i < yHeight; ++i) {
+            if (memcpy_s(dst, dstSize, src, srcStride) != EOK) {
+                IMAGE_LOGE("ConvertToSurfaceBuffer memcpy failed");
+                ImageUtils::SurfaceBuffer_Unreference(surfaceBuffer.GetRefPtr());
+                return nullptr;
+            }
+            dst += yStride;
+            dstSize -= yStride;
+            src += srcStride;
+        }
+
+        if (srcStride % NUM_2 != 0) {
+            srcStride++;
+        }
+        dst += uvOffset - (yStride * yHeight);
+
+        for (uint32_t i = 0; i < uvHeight; ++i) {
+            if (memcpy_s(dst, dstSize, src, srcStride) != EOK) {
+                IMAGE_LOGE("ConvertToSurfaceBuffer memcpy failed");
+                ImageUtils::SurfaceBuffer_Unreference(surfaceBuffer.GetRefPtr());
+                return nullptr;
+            }
+            dst += uvStride;
+            dstSize -= uvStride;
+            src += srcStride;
+        }
     } else if (format == PixelFormat::RGBA_8888) {
         copyHeight = height;
         srcStride = static_cast<uint64_t>(width * NUM_4);
-    }
-    for (uint32_t i = 0; i < copyHeight; i++) {
-        if (memcpy_s(dst, dstSize, src, srcStride) != EOK) {
-            IMAGE_LOGE("ConvertToSurfaceBuffer memcpy failed");
-            ImageUtils::SurfaceBuffer_Unreference(surfaceBuffer.GetRefPtr());
-            return nullptr;
+        
+        for (uint32_t i = 0; i < copyHeight; i++) {
+            if (memcpy_s(dst, dstSize, src, srcStride) != EOK) {
+                IMAGE_LOGE("ConvertToSurfaceBuffer memcpy failed");
+                ImageUtils::SurfaceBuffer_Unreference(surfaceBuffer.GetRefPtr());
+                return nullptr;
+            }
+            dst += dstStride;
+            dstSize -= dstStride;
+            src += srcStride;
         }
-        dst += dstStride;
-        dstSize -= dstStride;
-        src += srcStride;
     }
+
     ImageUtils::FlushSurfaceBuffer(surfaceBuffer);
     return surfaceBuffer;
 }
