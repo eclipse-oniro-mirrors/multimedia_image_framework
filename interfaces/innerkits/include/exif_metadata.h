@@ -19,6 +19,7 @@
 #include <libexif/exif-entry.h>
 #include <libexif/exif-tag.h>
 #include <libexif/huawei/exif-mnote-data-huawei.h>
+#include <unordered_map>
 
 #include "image_type.h"
 #include "metadata.h"
