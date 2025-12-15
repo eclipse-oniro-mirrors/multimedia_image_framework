@@ -261,6 +261,7 @@ protected:
 private:
     static constexpr uint32_t RESERVED_SIZE = 6;
     uint8_t reserved_[RESERVED_SIZE];
+    uint16_t dataRefIndex_ = 0;
     uint32_t width_ = 0;
     uint32_t height_ = 0;
     std::shared_ptr<HeifBox> hvccBox_;
