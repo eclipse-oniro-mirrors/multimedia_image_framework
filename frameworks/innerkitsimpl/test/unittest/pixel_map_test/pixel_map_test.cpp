@@ -3933,5 +3933,91 @@ HWTEST_F(PixelMapTest, HdrPixelMapTlvTest006, TestSize.Level3)
     ASSERT_EQ(tlvPixelMap->GetAllocatorType(), AllocatorType::HEAP_ALLOC);
     ASSERT_EQ(tlvPixelMap->GetAllocatorType(), srcPixelMap.GetAllocatorType());
 }
+
+static int g_getPos(std::vector<uint8_t> &buff, uint8_t findTag)
+{
+    int32_t cursor = 0;
+    for (uint8_t tag = PixelMap::ReadUint8(buff, cursor); tag != TLV_END; tag = PixelMap::ReadUint8(buff, cursor)) {
+        if (tag == findTag) {
+            return cursor - 1;
+        }
+        int32_t len = ImageUtils::ReadVarint(buff, cursor);
+        if (tag == TLV_IMAGE_DATA || tag == TLV_IMAGE_STATICMETADATA || tag == TLV_IMAGE_DYNAMICMETADATA) {
+            cursor += len;
+            continue;
+        }
+        ImageUtils::ReadVarint(buff, cursor);
+    }
+    return -1;
+}
+
+/**
+ * @tc.name: HdrPixelMapTlvTest007
+ * @tc.desc: Test HdrPixelMapTlv
+ * @tc.type: FUNC
+ */
+HWTEST_F(PixelMapTest, HdrPixelMapTlvTest007, TestSize.Level3)
+{
+    uint32_t errorCode = 0;
+    SourceOptions opts;
+    std::unique_ptr<ImageSource> imageSource =
+        ImageSource::CreateImageSource(IMAGE_INPUT_JPEG_HDR_PATH, opts, errorCode);
+    ASSERT_EQ(errorCode, SUCCESS);
+    ASSERT_NE(imageSource.get(), nullptr);
+
+    uint32_t index = 0;
+    DecodeOptions optsPixel;
+    optsPixel.desiredDynamicRange = Media::DecodeDynamicRange::AUTO;
+    errorCode = 0;
+    std::unique_ptr<PixelMap> pixelMap = imageSource->CreatePixelMap(index, optsPixel, errorCode);
+    ASSERT_EQ(errorCode, SUCCESS);
+    ASSERT_NE(pixelMap.get(), nullptr);
+#ifdef IMAGE_COLORSPACE_FLAG
+    std::vector<uint8_t> buff1, buff2, buff3, buff4;
+    ASSERT_EQ(pixelMap->EncodeTlv(buff1), true);
+    ASSERT_EQ(pixelMap->EncodeTlv(buff2), true);
+    ASSERT_EQ(pixelMap->EncodeTlv(buff3), true);
+    ASSERT_EQ(pixelMap->EncodeTlv(buff4), true);
+    uint8_t pos1 = g_getPos(buff1, TLV_IMAGE_COLORTYPE); // record the position of TLV_IMAGE_COLORTYPE
+    uint8_t pos2 = g_getPos(buff1, TLV_IMAGE_METADATATYPE); // record the position of TLV_IMAGE_METADATATYPE
+    uint8_t pos3 = g_getPos(buff1, TLV_IMAGE_STATICMETADATA); // record the position of TLV_IMAGE_STATICMETADATA
+    uint8_t pos4 = g_getPos(buff1, TLV_IMAGE_DYNAMICMETADATA); // record the position of TLV_IMAGE_DYNAMICMETADATA
+    uint8_t pos5 = g_getPos(buff1, TLV_IMAGE_CSM); // record the position of TLV_IMAGE_CSM
+
+    buff1.erase(buff1.begin() + pos1, buff1.begin() + pos2); // erase the TLV_IMAGE_COLORTYPE
+    buff2.erase(buff2.begin() + pos2, buff2.begin() + pos3); // erase the TLV_IMAGE_METADATATYPE
+    buff3.erase(buff3.begin() + pos3, buff3.begin() + pos4); // erase the TLV_IMAGE_STATICMETADATA
+    buff4.erase(buff4.begin() + pos4, buff4.begin() + pos5); // erase the TLV_IMAGE_DYNAMICMETADATATYPE
+
+    ASSERT_NE(PixelMap::DecodeTlv(buff1), nullptr); // Test DecodeTlv with TLV_IMAGE_COLORTYPE removed
+    ASSERT_NE(PixelMap::DecodeTlv(buff2), nullptr); // Test DecodeTlv with TLV_IMAGE_METADATATYPE removed
+    ASSERT_NE(PixelMap::DecodeTlv(buff3), nullptr); // Test DecodeTlv with TLV_IMAGE_STATICMETADATATYPE removed
+    ASSERT_NE(PixelMap::DecodeTlv(buff4), nullptr); // Test DecodeTlv with TLV_IMAGE_DYNAMICMETADATA removed
+#endif
+}
+
+/**
+ * @tc.name: HdrPixelMapTlvTest008
+ * @tc.desc: Test PixelMapTlv
+ * @tc.type: FUNC
+ */
+HWTEST_F(PixelMapTest, HdrPixelMapTlvTest008, TestSize.Level3)
+{
+    InitializationOptions opts;
+    opts.size.width = 100;
+    opts.size.height = 100;
+    for (const auto& it: gPixelFormat) {
+        opts.pixelFormat = it.first;
+        std::unique_ptr<PixelMap> pixelMap = PixelMap::Create(opts);
+        ASSERT_NE(pixelMap, nullptr);
+        std::vector<uint8_t> buff;
+        if (ImageUtils::IsRGBX(it.first)) {
+            ASSERT_EQ(pixelMap->EncodeTlv(buff), true);
+            ASSERT_NE(PixelMap::DecodeTlv(buff), nullptr);
+        } else {
+            ASSERT_EQ(pixelMap->EncodeTlv(buff), false);
+        }
+    }
+}
 }
 }
