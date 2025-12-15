@@ -1512,5 +1512,26 @@ HWTEST_F(JpegExifMetadataAccessorTest, TestWriteAndReadHwTagAnnotationEdit001, T
     ASSERT_EQ(imageAccessor.Read(), 0);
     ASSERT_EQ(GetProperty(exifMetadata, "HwMnoteAnnotationEdit"), "2");
 }
+
+/**
+ * @tc.name: TestWriteAndReadHwTagVignettingAndNoise001
+ * @tc.desc: test write and read exif tags Vignetting and Noise.
+ * @tc.type: FUNC
+ */
+HWTEST_F(JpegExifMetadataAccessorTest, TestWriteAndReadHwTagVignettingAndNoise001, TestSize.Level3)
+{
+    std::shared_ptr<MetadataStream> readStream = std::make_shared<FileMetadataStream>(IMAGE_INPUT_WRITE21_JPEG_PATH);
+    ASSERT_TRUE(readStream->Open(OpenMode::ReadWrite));
+    JpegExifMetadataAccessor imageAccessor(readStream);
+    ASSERT_EQ(imageAccessor.Read(), 0);
+    auto exifMetadata = imageAccessor.Get();
+    ASSERT_NE(exifMetadata, nullptr);
+    ASSERT_TRUE(exifMetadata->SetValue("HwMnoteXtStyleVignetting", "0.666666"));
+    ASSERT_TRUE(exifMetadata->SetValue("HwMnoteXtStyleNoise", "0.666666"));
+    ASSERT_EQ(imageAccessor.Write(), 0);
+    ASSERT_EQ(imageAccessor.Read(), 0);
+    ASSERT_EQ(GetProperty(exifMetadata, "HwMnoteXtStyleVignetting"), "0.666666 ");
+    ASSERT_EQ(GetProperty(exifMetadata, "HwMnoteXtStyleNoise"), "0.666666 ");
+}
 } // namespace Multimedia
 } // namespace OHOS

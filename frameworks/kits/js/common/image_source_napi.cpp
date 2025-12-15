@@ -347,6 +347,8 @@ static std::vector<struct ImageEnum> sPropertyKeyMap = {
     {"XTSTYLE_CUSTOM_SATURATION", 0, "HwMnoteXtStyleCustomSaturation"},
     {"XTSTYLE_CUSTOM_HUE", 0, "HwMnoteXtStyleCustomHue"},
     {"XTSTYLE_EXPOSUREPARAM_NAME", 0, "HwMnoteXtStyleExposureParam"},
+    {"XTSTYLE_VIGNETTING", 0, "HwMnoteXtStyleVignetting"},
+    {"XTSTYLE_NOISE", 0, "HwMnoteXtStyleNoise"},
 };
 static std::vector<struct ImageEnum> sImageFormatMap = {
     {"YCBCR_422_SP", 1000, ""},
