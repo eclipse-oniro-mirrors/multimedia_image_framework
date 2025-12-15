@@ -302,6 +302,11 @@ public:
         return false;
     }
 
+    virtual bool IsProgressiveJpeg()
+    {
+        return false;
+    }
+
     // define multiple subservices for this interface
     static constexpr uint16_t SERVICE_DEFAULT = 0;
 };
