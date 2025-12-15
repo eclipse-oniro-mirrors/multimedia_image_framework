@@ -230,6 +230,44 @@ std::shared_ptr<ImageReceiver> ImageReceiver::CreateImageReceiver(int32_t width,
     return iva;
 }
 
+std::shared_ptr<ImageReceiver> ImageReceiver::CreateImageReceiver(ImageReceiverOptions &options)
+{
+    std::shared_ptr<ImageReceiver> receiver = std::make_shared<ImageReceiver>();
+    receiver->iraContext_ = ImageReceiverContext::CreateImageReceiverContext();
+    receiver->receiverConsumerSurface_ = IConsumerSurface::Create();
+    if (receiver->receiverConsumerSurface_ == nullptr) {
+        IMAGE_LOGD("receiverConsumerSurface_ is nullptr");
+        return receiver;
+    }
+
+    receiver->receiverConsumerSurface_->SetDefaultWidthAndHeight(options.width, options.height);
+    receiver->receiverConsumerSurface_->SetQueueSize(options.capacity);
+    receiver->receiverConsumerSurface_->SetDefaultUsage(BUFFER_USAGE_CPU_READ);
+
+    auto p = receiver->receiverConsumerSurface_->GetProducer();
+    receiver->receiverProducerSurface_ = Surface::CreateSurfaceAsProducer(p);
+    if (receiver->receiverProducerSurface_ == nullptr) {
+        IMAGE_LOGD("receiverProducerSurface_ is nullptr");
+        return receiver;
+    }
+    SurfaceUtils* utils = SurfaceUtils::GetInstance();
+    if (utils != nullptr) {
+        utils->Add(receiver->receiverProducerSurface_->GetUniqueId(), receiver->receiverProducerSurface_);                
+    }
+    receiver->iraContext_->SetReceiverBufferConsumer(receiver->receiverConsumerSurface_);
+    receiver->iraContext_->SetReceiverBufferProducer(receiver->receiverProducerSurface_);
+    receiver->iraContext_->SetWidth(options.width);
+    receiver->iraContext_->SetHeight(options.height);
+    receiver->iraContext_->SetCapicity(options.capacity);
+    ImageReceiverManager& imageReceiverManager = ImageReceiverManager::getInstance();
+    std::string receiverKey = imageReceiverManager.SaveImageReceiver(receiver);
+    receiver->iraContext_->SetReceiverKey(receiverKey);
+    sptr<ImageReceiverSurfaceListener> listener = new ImageReceiverSurfaceListener();
+    listener->ir_ = receiver;
+    receiver->receiverConsumerSurface_->RegisterConsumerListener((sptr<IBufferConsumerListener> &)listener);
+    return receiver;
+}
+
 OHOS::sptr<OHOS::SurfaceBuffer> ImageReceiver::ReadNextImage(int64_t &timestamp)
 {
     sptr<SyncFence> flushFence = SyncFence::InvalidFence();

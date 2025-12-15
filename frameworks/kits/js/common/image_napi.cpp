@@ -15,11 +15,19 @@
 
 #include "image_napi.h"
 
+#ifdef IMAGE_COLORSPACE_FLAG
+#include "color_space.h"
+#endif
+#include "media_errors.h"                                                                                                
 #include "napi/native_node_api.h"
+#include "image_common.h"
 #include "image_log.h"
-#include "media_errors.h"
 #include "image_format.h"
 #include "image_napi_utils.h"
+#if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
+#include "vpe_utils.h"
+#include "v1_0/cm_color_space.h"
+#endif
 
 #undef LOG_DOMAIN
 #define LOG_DOMAIN LOG_TAG_DOMAIN_ID_IMAGE
@@ -31,11 +39,13 @@ namespace {
     constexpr int NUM0 = 0;
     constexpr int NUM1 = 1;
     constexpr int NUM2 = 2;
+    constexpr int NUM3 = 3;
     const std::string MY_NAME = "ImageNapi";
 }
 
 namespace OHOS {
 namespace Media {
+
 struct ImageAsyncContext {
     napi_env env = nullptr;
     napi_async_work work = nullptr;
@@ -49,6 +59,79 @@ struct ImageAsyncContext {
     NativeComponent* component = nullptr;
     bool isTestContext = false;
 };
+
+#if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
+using namespace HDI::Display::Graphic::Common::V1_0;
+
+#ifdef IMAGE_COLORSPACE_FLAG
+static const std::map<CM_ColorSpaceType, ColorManager::ColorSpaceName> CM_COLORSPACE_NAME_MAP = {
+    { CM_COLORSPACE_NONE, ColorManager::NONE },
+    { CM_BT601_EBU_FULL, ColorManager::BT601_EBU },
+    { CM_BT601_SMPTE_C_FULL, ColorManager::BT601_SMPTE_C },
+    { CM_BT709_FULL, ColorManager::BT709 },
+    { CM_BT2020_HLG_FULL, ColorManager::BT2020_HLG },
+    { CM_BT2020_PQ_FULL, ColorManager::BT2020_PQ },
+    { CM_BT601_EBU_LIMIT, ColorManager::BT601_EBU_LIMIT },
+    { CM_BT601_SMPTE_C_LIMIT, ColorManager::BT601_SMPTE_C_LIMIT },
+    { CM_BT709_LIMIT, ColorManager::BT709_LIMIT },
+    { CM_BT2020_HLG_LIMIT, ColorManager::BT2020_HLG_LIMIT },
+    { CM_BT2020_PQ_LIMIT, ColorManager::BT2020_PQ_LIMIT },
+    { CM_SRGB_FULL, ColorManager::SRGB },
+    { CM_P3_FULL, ColorManager::DISPLAY_P3 },
+    { CM_P3_HLG_FULL, ColorManager::P3_HLG },
+    { CM_P3_PQ_FULL, ColorManager::P3_PQ },
+    { CM_ADOBERGB_FULL, ColorManager::ADOBE_RGB },
+    { CM_SRGB_LIMIT, ColorManager::SRGB_LIMIT },
+    { CM_P3_LIMIT, ColorManager::DISPLAY_P3_LIMIT },
+    { CM_P3_HLG_LIMIT, ColorManager::P3_HLG_LIMIT },
+    { CM_P3_PQ_LIMIT, ColorManager::P3_PQ_LIMIT },
+    { CM_ADOBERGB_LIMIT, ColorManager::ADOBE_RGB_LIMIT },
+    { CM_LINEAR_SRGB, ColorManager::LINEAR_SRGB },
+    { CM_LINEAR_BT709, ColorManager::LINEAR_BT709 },
+    { CM_LINEAR_P3, ColorManager::LINEAR_P3 },
+    { CM_LINEAR_BT2020, ColorManager::LINEAR_BT2020 },
+    { CM_DISPLAY_SRGB, ColorManager::DISPLAY_SRGB },
+    { CM_DISPLAY_P3_SRGB, ColorManager::DISPLAY_P3_SRGB },
+    { CM_DISPLAY_P3_HLG, ColorManager::DISPLAY_P3_HLG },
+    { CM_DISPLAY_P3_PQ, ColorManager::DISPLAY_P3_PQ },
+    { CM_DISPLAY_BT2020_SRGB, ColorManager::DISPLAY_BT2020_SRGB },
+    { CM_DISPLAY_BT2020_HLG, ColorManager::DISPLAY_BT2020_HLG },
+    { CM_DISPLAY_BT2020_PQ, ColorManager::DISPLAY_BT2020_PQ },
+};
+#endif
+
+enum HdrMetadataType : uint32_t {
+    NONE = 0,
+    BASE,
+    GAINMAP,
+    ALTERNATE,
+    INVALID,
+};
+
+static std::map<CM_HDR_Metadata_Type, HdrMetadataType> MetadataEtsMap = {
+    {CM_METADATA_NONE, NONE},
+    {CM_IMAGE_HDR_VIVID_DUAL, BASE},
+    {CM_IMAGE_HDR_VIVID_SINGLE, ALTERNATE},
+};
+
+struct NapiValues {
+    napi_status status;
+    napi_value thisVar = nullptr;
+    napi_value result = nullptr;
+    napi_value* argv = nullptr;
+    size_t argc;
+    int32_t refCount = 1;
+    std::unique_ptr<ImageAsyncContext> context;
+};
+
+enum HdrMetadataKey : uint32_t {
+    HDR_METADATA_TYPE = 0,
+    HDR_STATIC_METADATA,
+    HDR_DYNAMIC_METADATA,
+    HDR_GAINMAP_METADATA,
+};
+#endif
+
 ImageHolderManager<NativeImage> ImageNapi::sNativeImageHolder_;
 thread_local napi_ref ImageNapi::sConstructor_ = nullptr;
 
@@ -77,6 +160,9 @@ napi_value ImageNapi::Init(napi_env env, napi_value exports)
         DECLARE_NAPI_GETTER("size", JsGetSize),
         DECLARE_NAPI_GETTER("format", JsGetFormat),
         DECLARE_NAPI_GETTER("timestamp", JsGetTimestamp),
+        DECLARE_NAPI_GETTER("colorspace", JsGetColorSpace),
+        DECLARE_NAPI_FUNCTION("getBufferData", JsGetBufferData),
+        DECLARE_NAPI_FUNCTION("getMetadata", JsGetHdrMetadata),
         DECLARE_NAPI_FUNCTION("getComponent", JsGetComponent),
         DECLARE_NAPI_FUNCTION("release", JsRelease),
     };
@@ -486,6 +572,404 @@ napi_value ImageNapi::JsGetTimestamp(napi_env env, napi_callback_info info)
     return result;
 }
 
+#ifdef IMAGE_COLORSPACE_FLAG
+static ColorManager::ColorSpaceName CMColorSpaceType2ColorSpaceName(CM_ColorSpaceType type)
+{
+    auto iter = CM_COLORSPACE_NAME_MAP.find(type);
+    CHECK_ERROR_RETURN_RET(iter == CM_COLORSPACE_NAME_MAP.end(), ColorManager::NONE);
+    return iter->second;
+}
+#endif
+
+napi_value ImageNapi::JsGetColorSpace(napi_env env, napi_callback_info info)
+{
+    napi_value result = nullptr;
+    IMAGE_FUNCTION_IN();
+    napi_get_undefined(env, &result);
+    std::unique_ptr<ImageAsyncContext> context = UnwrapContext(env, info);
+    if (context == nullptr || context->image == nullptr) {
+        IMAGE_ERR("context is nullptr or Image native is nullptr");
+        return result;
+    }
+    int32_t colorSpace;
+    if (context->image->GetColorSpace(colorSpace) != SUCCESS) {
+        IMAGE_ERR("Image native get color space failed");
+        return result;
+    }
+    ColorManager::ColorSpaceName colorSpaceName = CMColorSpaceType2ColorSpaceName(
+        static_cast<CM_ColorSpaceType>(colorSpace));
+    napi_create_int32(env, static_cast<int32_t>(colorSpaceName), &result);
+    return result;
+}
+
+static bool CreateArrayBuffer(napi_env env, uint8_t* src, size_t srcLen, napi_value *res)
+{
+    if (src == nullptr || srcLen == 0) {
+        IMAGE_LOGE("Invalid input src or srcLen");
+        return false;
+    }
+    auto status = napi_create_external_arraybuffer(env, src, srcLen,
+        [](napi_env env, void* data, void* hint) { }, nullptr, res);
+    if (status != napi_ok) {
+        IMAGE_LOGE("Failed to create arraybuffer");
+        return false;
+    }
+    return true;
+}
+
+static napi_value BuildImageBufferData(napi_env env, NativeBufferData* bufferData)
+{
+    if (bufferData == nullptr) {
+        IMAGE_LOGE("bufferData is nullptr");
+        return nullptr;
+    }
+
+    napi_value result = nullptr;
+    napi_create_object(env, &result);
+
+    napi_value rowStrideArray = nullptr;
+    if (napi_create_array_with_length(env, bufferData->rowStride.size(), &rowStrideArray) != napi_ok) {
+        IMAGE_LOGE("Failed to create rowStride array");
+        return nullptr;
+    }
+    for (size_t i = NUM0; i < bufferData->rowStride.size(); i++) {
+        napi_value stride = nullptr;
+        napi_create_int32(env, bufferData->rowStride[i], &stride);
+        napi_set_element(env, rowStrideArray, i, stride);
+    }
+    napi_set_named_property(env, result, "rowStride", rowStrideArray);
+
+    napi_value pixelStrideArray = nullptr;
+    if (napi_create_array_with_length(env, bufferData->pixelStride.size(), &pixelStrideArray) != napi_ok) {
+        IMAGE_LOGE("Failed to create pixelStride array");
+        return nullptr;
+    }
+    for (size_t i = NUM0; i < bufferData->pixelStride.size(); i++) {
+        napi_value stride = nullptr;
+        napi_create_int32(env, bufferData->pixelStride[i], &stride);
+        napi_set_element(env, pixelStrideArray, i, stride);
+    }
+    napi_set_named_property(env, result, "pixelStride", pixelStrideArray);
+
+    napi_value byteBuffer = nullptr;
+    if (!CreateArrayBuffer(env, bufferData->virAddr, bufferData->size, &byteBuffer)) {
+        IMAGE_LOGE("Failed to create ArrayBuffer");
+        return nullptr;
+    }
+    napi_set_named_property(env, result, "byteBuffer", byteBuffer);
+
+    return result;
+}
+
+napi_value ImageNapi::JsGetBufferData(napi_env env, napi_callback_info info)
+{
+    napi_value result = nullptr;
+    IMAGE_FUNCTION_IN();
+    napi_get_null(env, &result);
+    std::unique_ptr<ImageAsyncContext> context = UnwrapContext(env, info);
+    if (context == nullptr || context->image == nullptr) {
+        IMAGE_ERR("context is nullptr or Image native is nullptr");
+        return result;
+    }
+
+    NativeBufferData* bufferData = context->image->GetBufferData();
+    if (bufferData == nullptr) {
+        IMAGE_LOGE("Failed to get buffer data from NativeImage");
+        return result;
+    }
+
+    napi_value bufferDataObj = BuildImageBufferData(env, bufferData);
+    if (bufferDataObj == nullptr) {
+        IMAGE_LOGE("Failed to build ImageBufferData object");
+        return result;
+    }
+
+    IMAGE_FUNCTION_OUT();
+    return bufferDataObj;
+}
+
+#if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
+
+static double FloatToDouble(float val)
+{
+    const double precision = 1000000.0;
+    val *= precision;
+    double result = static_cast<double>(val / precision);
+    return result;
+}
+
+static bool CreateArrayDouble(napi_env env, napi_value &root, float value, int index)
+{
+    napi_value node = nullptr;
+    if (!CREATE_NAPI_DOUBLE(FloatToDouble(value), node)) {
+        return false;
+    }
+    if (napi_set_element(env, root, index, node) != napi_ok) {
+        return false;
+    }
+    return true;
+}
+
+inline napi_value CreateJsNumber(napi_env env, double value)
+{
+    napi_value result = nullptr;
+    napi_create_double(env, value, &result);
+    return result;
+}
+
+static bool CreateNapiDouble(napi_env env, napi_value &root, float value, std::string name)
+{
+    napi_value node = CreateJsNumber(env, FloatToDouble(value));
+    if (napi_set_named_property(env, root, name.c_str(), node) != napi_ok) {
+        return false;
+    }
+    return true;
+}
+
+static bool CreateNapiUint32(napi_env env, napi_value &root, int32_t value, std::string name)
+{
+    napi_value node = nullptr;
+    if (!CREATE_NAPI_INT32(value, node)) {
+        return false;
+    }
+
+    if (napi_set_named_property(env, root, name.c_str(), node) != napi_ok) {
+        return false;
+    }
+    return true;
+}
+
+static bool CreateNapiBool(napi_env env, napi_value &root, bool value, std::string name)
+{
+    napi_value node = nullptr;
+    if (napi_get_boolean(env, value, &node) != napi_ok) {
+        return false;
+    }
+    if (napi_set_named_property(env, root, name.c_str(), node) != napi_ok) {
+        return false;
+    }
+    return true;
+}
+
+static napi_value BuildStaticMetadataNapi(napi_env env,
+    HDI::Display::Graphic::Common::V1_0::HdrStaticMetadata &staticMetadata)
+{
+    napi_value metadataValue = nullptr;
+    napi_create_object(env, &metadataValue);
+    napi_value displayPrimariesX = nullptr;
+    napi_create_array_with_length(env, NUM3, &displayPrimariesX);
+    bool status = true;
+    status &= CreateArrayDouble(env, displayPrimariesX, staticMetadata.smpte2086.displayPrimaryRed.x, NUM0);
+    status &= CreateArrayDouble(env, displayPrimariesX, staticMetadata.smpte2086.displayPrimaryGreen.x, NUM1);
+    status &= CreateArrayDouble(env, displayPrimariesX, staticMetadata.smpte2086.displayPrimaryBlue.x, NUM2);
+    status &= napi_set_named_property(env, metadataValue, "displayPrimariesX", displayPrimariesX) == napi_ok;
+    napi_value displayPrimariesY = nullptr;
+    napi_create_array_with_length(env, NUM3, &displayPrimariesY);
+    status &= CreateArrayDouble(env, displayPrimariesY, staticMetadata.smpte2086.displayPrimaryRed.y, NUM0);
+    status &= CreateArrayDouble(env, displayPrimariesY, staticMetadata.smpte2086.displayPrimaryGreen.y, NUM1);
+    status &= CreateArrayDouble(env, displayPrimariesY, staticMetadata.smpte2086.displayPrimaryBlue.y, NUM2);
+    status &= napi_set_named_property(env, metadataValue, "displayPrimariesY", displayPrimariesY) == napi_ok;
+    status &= CreateNapiDouble(env, metadataValue, staticMetadata.smpte2086.whitePoint.x, "whitePointX");
+    status &= CreateNapiDouble(env, metadataValue, staticMetadata.smpte2086.whitePoint.y, "whitePointY");
+    status &= CreateNapiDouble(env, metadataValue, staticMetadata.smpte2086.maxLuminance, "maxLuminance");
+    status &= CreateNapiDouble(env, metadataValue, staticMetadata.smpte2086.minLuminance, "minLuminance");
+    status &= CreateNapiDouble(env, metadataValue,
+        staticMetadata.cta861.maxContentLightLevel, "maxContentLightLevel");
+    status &= CreateNapiDouble(env, metadataValue,
+        staticMetadata.cta861.maxFrameAverageLightLevel, "maxFrameAverageLightLevel");
+    if (!status) {
+        IMAGE_LOGD("BuildStaticMetadataNapi failed");
+    }
+    return metadataValue;
+}
+
+static napi_status GetStaticMetadata(napi_env env, OHOS::sptr<OHOS::SurfaceBuffer> surfaceBuffer,
+    napi_value &metadataValue)
+{
+    HDI::Display::Graphic::Common::V1_0::HdrStaticMetadata staticMetadata;
+    uint32_t vecSize = sizeof(HDI::Display::Graphic::Common::V1_0::HdrStaticMetadata);
+    std::vector<uint8_t> staticData;
+    if (!VpeUtils::GetSbStaticMetadata(surfaceBuffer, staticData) ||
+        (staticData.size() != vecSize)) {
+        IMAGE_LOGE("GetSbStaticMetadata failed");
+        return napi_invalid_arg;
+    }
+    if (memcpy_s(&staticMetadata, vecSize, staticData.data(), staticData.size()) != EOK) {
+        return napi_invalid_arg;
+    }
+    metadataValue = BuildStaticMetadataNapi(env, staticMetadata);
+    return napi_ok;
+}
+
+static napi_status GetDynamicMetadata(napi_env env,
+    OHOS::sptr<OHOS::SurfaceBuffer> surfaceBuffer, napi_value &metadataValue)
+{
+    std::vector<uint8_t> dynamicData;
+    if (VpeUtils::GetSbDynamicMetadata(surfaceBuffer, dynamicData) && (dynamicData.size() > 0)) {
+        napi_value result = nullptr;
+        napi_get_undefined(env, &result);
+        ImageNapiUtils::CreateArrayBuffer(env, dynamicData.data(), dynamicData.size(), &result);
+        metadataValue = result;
+        if (metadataValue == nullptr) {
+            return napi_invalid_arg;
+        }
+        return napi_ok;
+    }
+    IMAGE_LOGE("GetSbDynamicMetadata failed");
+    return napi_invalid_arg;
+}
+
+static napi_status GetMetadataType(napi_env env,
+    OHOS::sptr<OHOS::SurfaceBuffer> surfaceBuffer, napi_value &metadataValue)
+{
+    CM_HDR_Metadata_Type type;
+    VpeUtils::GetSbMetadataType(surfaceBuffer, type);
+    if (MetadataEtsMap.find(type) != MetadataEtsMap.end()) {
+        int32_t value = static_cast<int32_t>(MetadataEtsMap[type]);
+        std::vector<uint8_t> gainmapData;
+        if (type == CM_HDR_Metadata_Type::CM_METADATA_NONE &&
+            VpeUtils::GetSbDynamicMetadata(surfaceBuffer, gainmapData) &&
+            gainmapData.size() == sizeof(HDRVividExtendMetadata)) {
+            value = static_cast<int32_t>(HdrMetadataType::GAINMAP);
+        }
+        if (!CREATE_NAPI_INT32(value, metadataValue)) {
+            return napi_invalid_arg;
+        }
+        return napi_ok;
+    }
+    IMAGE_LOGE("GetMetadataType failed");
+    return napi_invalid_arg;
+}
+
+static bool BuildGainmapChannel(napi_env env, napi_value &root, HDRVividExtendMetadata & gainmapMetadata, int index)
+{
+    bool status = true;
+    status &= CreateNapiDouble(env, root,
+        gainmapMetadata.metaISO.enhanceClippedThreholdMaxGainmap[index], "gainmapMax");
+    status &= CreateNapiDouble(env, root,
+        gainmapMetadata.metaISO.enhanceClippedThreholdMinGainmap[index], "gainmapMin");
+    status &= CreateNapiDouble(env, root,
+        gainmapMetadata.metaISO.enhanceMappingGamma[index], "gamma");
+    status &= CreateNapiDouble(env, root,
+        gainmapMetadata.metaISO.enhanceMappingBaselineOffset[index], "baseOffset");
+    status &= CreateNapiDouble(env, root,
+        gainmapMetadata.metaISO.enhanceMappingAlternateOffset[index], "alternateOffset");
+    return status;
+}
+
+static napi_value BuildDynamicMetadataNapi(napi_env env, HDRVividExtendMetadata &gainmapMetadata)
+{
+    napi_value metadataValue = nullptr;
+    napi_create_object(env, &metadataValue);
+    bool status = true;
+    status &= CreateNapiUint32(env, metadataValue, static_cast<int32_t>(
+        gainmapMetadata.metaISO.writeVersion), "writerVersion");
+    status &= CreateNapiUint32(env, metadataValue, static_cast<int32_t>(
+        gainmapMetadata.metaISO.miniVersion), "miniVersion");
+    status &= CreateNapiUint32(env, metadataValue, static_cast<int32_t>(
+        gainmapMetadata.metaISO.gainmapChannelNum), "gainmapChannelCount");
+    status &= CreateNapiBool(env, metadataValue, static_cast<bool>(
+        gainmapMetadata.metaISO.useBaseColorFlag), "useBaseColorFlag");
+    status &= CreateNapiDouble(env, metadataValue, gainmapMetadata.metaISO.baseHeadroom, "baseHeadroom");
+    status &= CreateNapiDouble(env, metadataValue, gainmapMetadata.metaISO.alternateHeadroom, "alternateHeadroom");
+    napi_value array = nullptr;
+    napi_create_object(env, &array);
+    for (uint32_t i = 0; i < NUM3; i++) {
+        napi_value gainmapChannel = nullptr;
+        napi_create_object(env, &gainmapChannel);
+        status &= BuildGainmapChannel(env, gainmapChannel, gainmapMetadata, i);
+        napi_set_element(env, array, i, gainmapChannel);
+    }
+    napi_set_named_property(env, metadataValue, "channels", array);
+    if (!status) {
+        IMAGE_LOGD("BuildDynamicMetadataNapi failed");
+    }
+    return metadataValue;
+}
+
+static napi_status BuildHdrMetadataValue(napi_env env, napi_value argv[],
+    std::shared_ptr<NativeImage> nativeImage, napi_value &metadataValue)
+{
+    uint32_t metadataKey = 0;
+    napi_get_value_uint32(env, argv[NUM0], &metadataKey);
+    OHOS::sptr<OHOS::SurfaceBuffer> surfaceBuffer = nativeImage->GetBuffer();
+    switch (HdrMetadataKey(metadataKey)) {
+        case HDR_METADATA_TYPE:
+            return GetMetadataType(env, surfaceBuffer, metadataValue);
+            break;
+        case HDR_STATIC_METADATA:
+            return GetStaticMetadata(env, surfaceBuffer, metadataValue);
+            break;
+        case HDR_DYNAMIC_METADATA:
+            return GetDynamicMetadata(env, surfaceBuffer, metadataValue);
+            break;
+        case HDR_GAINMAP_METADATA:
+            {
+                std::vector<uint8_t> gainmapData;
+                if (VpeUtils::GetSbDynamicMetadata(surfaceBuffer, gainmapData) &&
+                    (gainmapData.size() == sizeof(HDRVividExtendMetadata))) {
+                    HDRVividExtendMetadata &gainmapMetadata =
+                        *(reinterpret_cast<HDRVividExtendMetadata*>(gainmapData.data()));
+                    metadataValue = BuildDynamicMetadataNapi(env, gainmapMetadata);
+                    return napi_ok;
+                }
+                IMAGE_LOGE("GetSbDynamicMetadata failed");
+            }
+            break;
+        default:
+            break;
+    }
+    return napi_invalid_arg;
+}
+
+static bool prepareNapiEnv(napi_env env, napi_callback_info info, struct NapiValues* nVal)
+{
+    if (nVal == nullptr) {
+        IMAGE_LOGE("prepareNapiEnv invalid parameter: nVal is null");
+        return false;
+    }
+
+    napi_get_undefined(env, &(nVal->result));
+    nVal->status = napi_get_cb_info(env, info, &(nVal->argc), nVal->argv, &(nVal->thisVar), nullptr);
+    if (nVal->status != napi_ok) {
+        IMAGE_LOGE("fail to napi_get_cb_info");
+        return false;
+    }
+    nVal->context = std::make_unique<ImageAsyncContext>();
+    nVal->status = napi_unwrap(env, nVal->thisVar, reinterpret_cast<void**>(&(nVal->context->napi)));
+    if (nVal->status != napi_ok) {
+        IMAGE_LOGE("fail to unwrap context");
+        return false;
+    }
+    if (nVal->context->napi == nullptr || nVal->context->napi->GetNative() == nullptr) {
+        IMAGE_LOGE("prepareNapiEnv native image is nullptr");
+        return false;
+    }
+    nVal->context->status = SUCCESS;
+    return true;
+}
+
+napi_value ImageNapi::JsGetHdrMetadata(napi_env env, napi_callback_info info)
+{
+
+    NapiValues nVal;
+    napi_value argValue[NUM1];
+    nVal.argc = NUM1;
+    nVal.argv = argValue;
+    nVal.status = napi_invalid_arg;
+    napi_get_null(env, &nVal.result);
+    if (!prepareNapiEnv(env, info, &nVal)) {
+        return ImageNapiUtils::ThrowExceptionError(env, IMAGE_INVALID_PARAMETER, "Fail to unwrap context");
+    }
+    nVal.status = BuildHdrMetadataValue(env, nVal.argv, nVal.context->napi->native_, nVal.result);
+    IMG_NAPI_CHECK_RET_D(IMG_IS_OK(nVal.status),
+        ImageNapiUtils::ThrowExceptionError(env, IMAGE_COPY_FAILED,
+        "BuildHdrMetadataValue failed"),
+        IMAGE_LOGE("BuildHdrMetadataValue failed"));
+    return nVal.result;
+}
+#endif
+
 static void JSReleaseCallBack(napi_env env, napi_status status,
                               ImageAsyncContext* context)
 {
@@ -544,19 +1028,6 @@ napi_value ImageNapi::JsRelease(napi_env env, napi_callback_info info)
     }
     IMAGE_FUNCTION_OUT();
     return result;
-}
-
-static bool CreateArrayBuffer(napi_env env, uint8_t* src, size_t srcLen, napi_value *res)
-{
-    if (src == nullptr || srcLen == 0) {
-        return false;
-    }
-    auto status = napi_create_external_arraybuffer(env, src, srcLen,
-        [](napi_env env, void* data, void* hint) { }, nullptr, res);
-    if (status != napi_ok) {
-        return false;
-    }
-    return true;
 }
 
 static inline bool IsEqual(const int32_t& check,  ImageFormat format)

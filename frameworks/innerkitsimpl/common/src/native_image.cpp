@@ -17,7 +17,11 @@
 #include "image_log.h"
 #include "image_utils.h"
 #include "media_errors.h"
+#if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
+#include "metadata_helper.h"
 #include "native_image.h"
+#include "v1_0/cm_color_space.h"
+#endif
 
 #undef LOG_DOMAIN
 #define LOG_DOMAIN LOG_TAG_DOMAIN_ID_IMAGE
@@ -30,11 +34,13 @@ namespace {
     constexpr uint32_t NUM_0 = 0;
     constexpr uint32_t NUM_1 = 1;
     constexpr uint32_t NUM_2 = 2;
+    constexpr uint32_t NUM_4 = 4;
     const std::string DATA_SIZE_TAG = "dataSize";
 }
 
 namespace OHOS {
 namespace Media {
+
 NativeImage::NativeImage(sptr<SurfaceBuffer> buffer,
     std::shared_ptr<IBufferProcessor> releaser) : buffer_(buffer), releaser_(releaser), timestamp_(0)
 {}
@@ -42,6 +48,13 @@ NativeImage::NativeImage(sptr<SurfaceBuffer> buffer,
 NativeImage::NativeImage(sptr<SurfaceBuffer> buffer, std::shared_ptr<IBufferProcessor> releaser,
     int64_t timestamp) : buffer_(buffer), releaser_(releaser), timestamp_(timestamp)
 {}
+
+static const std::set<int32_t> SUPPORTED_YUVFORMAT = {
+    GRAPHIC_PIXEL_FMT_YCBCR_420_SP,
+    GRAPHIC_PIXEL_FMT_YCRCB_420_SP,
+    GRAPHIC_PIXEL_FMT_YCBCR_P010,
+    GRAPHIC_PIXEL_FMT_YCRCB_P010,
+};
 
 struct YUVData {
     std::vector<uint8_t> y;
@@ -316,6 +329,87 @@ int32_t NativeImage::GetTimestamp(int64_t &timestamp)
     }
     timestamp = timestamp_;
     return SUCCESS;
+}
+
+#if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
+int32_t NativeImage::GetColorSpace(int32_t &colorSpace)
+{
+    if (buffer_ == nullptr) {
+        IMAGE_LOGE("GetColorSpace failed, buffer is nullptr");
+        return ERR_MEDIA_DEAD_OBJECT;
+    }
+    using namespace HDI::Display::Graphic::Common::V1_0;
+    CM_ColorSpaceType colorSpaceType;
+    GSError ret = OHOS::MetadataHelper::GetColorSpaceType(buffer_, colorSpaceType);
+    if (ret != GSERROR_OK) {
+        IMAGE_LOGE("GetColorSpaceType failed ret=%{public}d", ret);
+        return ERR_MEDIA_DATA_UNSUPPORT;
+    }
+    colorSpace = static_cast<int32_t>(colorSpaceType);
+    return SUCCESS;
+}
+#endif
+
+static int32_t GetStrides(sptr<SurfaceBuffer> buffer, std::vector<int32_t> &rowStride,
+    std::vector<int32_t> &pixelStride)
+{
+    if (buffer == nullptr) {
+        IMAGE_LOGE("Buffer is nullptr");
+        return ERR_MEDIA_NULL_POINTER;
+    }
+    int32_t format = buffer->GetFormat();
+    if (format == GRAPHIC_PIXEL_FMT_BLOB) {
+        rowStride = { buffer->GetStride() };
+        pixelStride = { NUM_1 };
+    } else if (format == GRAPHIC_PIXEL_FMT_RGBA_8888) {
+        rowStride = { buffer->GetStride() };
+        pixelStride = { NUM_4 };
+    } else if (SUPPORTED_YUVFORMAT.count(format) != NUM_0) {
+        OH_NativeBuffer_Planes *planes = nullptr;
+        GSError retVal = buffer->GetPlanesInfo(reinterpret_cast<void**>(&planes));
+        if (retVal != OHOS::GSERROR_OK || planes == nullptr || planes->planeCount < NUM_2) {
+            IMAGE_LOGE("Get planesInfo failed, retVal:%{public}d", retVal);
+            return ERR_MEDIA_DATA_UNSUPPORT;
+        } else {
+            uint32_t uvPlaneIndex = NUM_1;
+            uint32_t yRowStride = planes->planes[0].columnStride;
+            uint32_t yPixelStride = planes->planes[0].rowStride;
+            uint32_t uvRowStride = planes->planes[uvPlaneIndex].columnStride;
+            uint32_t uvPixelStride = planes->planes[uvPlaneIndex].rowStride;
+            rowStride = { yRowStride, uvRowStride };
+            pixelStride = { yPixelStride, uvPixelStride };
+        }
+    } else {
+        IMAGE_LOGE("Unsupported format %{public}d for GetStrides", format);
+        return ERR_MEDIA_DATA_UNSUPPORT;
+    }
+    return SUCCESS;
+}
+
+NativeBufferData* NativeImage::GetBufferData()
+{
+    if (bufferData_ != nullptr) {
+        return bufferData_.get();
+    }
+    bufferData_ = std::make_unique<NativeBufferData>();
+    auto res = GetStrides(buffer_, bufferData_->rowStride, bufferData_->pixelStride);
+    if(res != SUCCESS) {
+        IMAGE_LOGE("GetStrides failed");
+        return nullptr;
+    }
+    uint64_t bufferSize = NUM_0;
+    res = GetDataSize(bufferSize);
+    if (res != SUCCESS) {
+        IMAGE_LOGE("GetDataSize failed");
+        return nullptr;
+    }
+    bufferData_->size = static_cast<size_t>(bufferSize);
+    bufferData_->virAddr = GetSurfaceBufferAddr();
+    if (bufferData_->virAddr == nullptr) {
+        IMAGE_LOGE("GetSurfaceBufferAddr failed");
+        return nullptr;
+    }
+    return bufferData_.get();
 }
 
 NativeComponent* NativeImage::GetComponent(int32_t type)

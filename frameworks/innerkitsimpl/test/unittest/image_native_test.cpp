@@ -20,6 +20,7 @@
 #include "image_receiver_native.h"
 #include "image_kits.h"
 #include "image_receiver.h"
+#include "metadata_helper.h"
 
 struct OH_NativeBuffer {};
 
@@ -28,8 +29,10 @@ struct OH_NativeBuffer {};
 #define DEFAULT_STRIDE_VALUE 0
 
 using namespace testing::ext;
+using namespace OHOS::HDI::Display::Graphic::Common::V1_0;
 namespace OHOS {
 namespace Media {
+static constexpr uint32_t NUM_1 = 1;
 
 class ImageNativeTest : public testing::Test {
 public:
@@ -712,6 +715,85 @@ HWTEST_F(ImageNativeTest, OH_ImageNative_GetPixelStrideNullParamTest001, TestSiz
     EXPECT_EQ(errCode, IMAGE_BAD_PARAMETER);
     delete image;
     GTEST_LOG_(INFO) << "ImageNativeTest: OH_ImageNative_GetPixelStrideNullParamTest001 end";
+}
+
+/**
+ * @tc.name: OH_ImageNative_GetColorSpaceTest001
+ * @tc.desc: test OH_ImageNative_GetColorSpace when return IMAGE_SUCCESS
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageNativeTest, OH_ImageNative_GetColorSpaceTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImageNativeTest: OH_ImageNative_GetColorSpaceTest001 start";
+    OH_ImageNative* image = new OH_ImageNative;
+    ASSERT_NE(image, nullptr);
+
+    sptr<SurfaceBuffer> buffer = SurfaceBuffer::Create();
+    ASSERT_NE(buffer, nullptr);
+    MetadataHelper::SetColorSpaceType(buffer, CM_ColorSpaceType::CM_BT601_EBU_FULL);
+    std::shared_ptr<IBufferProcessor> releaser = nullptr;
+    NativeImage imgNative(buffer, releaser);
+    image->imgNative = &imgNative;
+
+    ColorSpaceName colorSpace = ColorSpaceName::NONE;
+    Image_ErrorCode errCode = OH_ImageNative_GetColorSpace(image, &colorSpace);
+    EXPECT_EQ(errCode, IMAGE_SUCCESS);
+    EXPECT_EQ(colorSpace, ColorSpaceName::BT601_EBU);
+    delete image;
+    GTEST_LOG_(INFO) << "ImageNativeTest: OH_ImageNative_GetColorSpaceTest001 end";
+}
+
+/**
+ * @tc.name: OH_ImageNative_GetFormatTest001
+ * @tc.desc: test OH_ImageNative_GetFormat when return IMAGE_SUCCESS
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageNativeTest, OH_ImageNative_GetFormatTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImageNativeTest: OH_ImageNative_GetFormatTest001 start";
+    OH_ImageNative* image = new OH_ImageNative;
+    ASSERT_NE(image, nullptr);
+    sptr<SurfaceBuffer> buffer = SurfaceBuffer::Create();
+    ASSERT_NE(buffer, nullptr);
+    BufferHandle* handle = new BufferHandle();
+    handle->format = GraphicPixelFormat::GRAPHIC_PIXEL_FMT_YCBCR_420_SP;
+    buffer->SetBufferHandle(handle);
+    std::shared_ptr<IBufferProcessor> releaser;
+    NativeImage imgNative(buffer, releaser);
+    image->imgNative = &imgNative;
+
+    OH_NativeBuffer_Format format = OH_NativeBuffer_Format::NATIVEBUFFER_PIXEL_FMT_BUTT;
+    Image_ErrorCode errCode = OH_ImageNative_GetFormat(image, &format);
+    EXPECT_EQ(errCode, IMAGE_SUCCESS);
+    EXPECT_EQ(handle->format, format);
+    delete image;
+    GTEST_LOG_(INFO) << "ImageNativeTest: OH_ImageNative_GetFormatTest001 end";
+}
+
+/**
+ * @tc.name: OH_ImageNative_GetBufferDataTest001
+ * @tc.desc: test OH_ImageNative_GetBufferData when return IMAGE_SUCCESS
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageNativeTest, OH_ImageNative_GetBufferDataTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImageNativeTest: OH_ImageNative_GetBufferDataTest001 start";
+    OH_ImageNative* image = new OH_ImageNative;
+    ASSERT_NE(image, nullptr);
+    sptr<SurfaceBuffer> buffer = SurfaceBuffer::Create();
+    ASSERT_NE(buffer, nullptr);
+    std::shared_ptr<IBufferProcessor> releaser;
+    NativeImage imgNative(buffer, releaser);
+    imgNative.bufferData_ = std::make_unique<NativeBufferData>();
+    imgNative.bufferData_->size = NUM_1;
+    image->imgNative = &imgNative;
+
+    OH_ImageBufferData bufferData;
+    Image_ErrorCode errCode = OH_ImageNative_GetBufferData(image, &bufferData);
+    EXPECT_EQ(errCode, IMAGE_SUCCESS);
+    EXPECT_EQ(bufferData.bufferSize, imgNative.bufferData_->size);
+    delete image;
+    GTEST_LOG_(INFO) << "ImageNativeTest: OH_ImageNative_GetBufferDataTest001 end";
 }
 } // namespace Media
 } // namespace OHOS

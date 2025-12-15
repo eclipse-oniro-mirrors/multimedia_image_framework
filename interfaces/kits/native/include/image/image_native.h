@@ -57,6 +57,24 @@ struct OH_ImageNative;
 typedef struct OH_ImageNative OH_ImageNative;
 
 /**
+ * @brief Defines the image buffer data.
+ *
+ * @since 23
+ */
+typedef struct OH_ImageBufferData {
+    /** rowStride of each component. */
+    int32_t *rowStride;
+    /** pixelStride of each component. */
+    int32_t *pixelStride;
+    /** number of stride. */
+    int32_t numStride;
+    /** byte length of the buffer */
+    size_t bufferSize;
+    /** native buffer of the image. */
+    OH_NativeBuffer *nativeBuffer;
+} OH_ImageBufferData;
+
+/**
  * @brief Obtains {@link Image_Size} of an {@link OH_ImageNative} object.
  *
  * @param image Indicates the pointer to an {@link OH_ImageNative} object.
@@ -156,6 +174,42 @@ Image_ErrorCode OH_ImageNative_GetTimestamp(OH_ImageNative *image,
  * @since 12
  */
 Image_ErrorCode OH_ImageNative_Release(OH_ImageNative *image);
+
+/**
+ * @brief Get colorspace from an {@link OH_ImageNative} object.
+ *
+ * @param image Indicates the pointer to an {@link OH_ImageNative} object.
+ * @param colorSpaceName Indicates the pointer to the obtained color space name.
+ * @return Returns one of the following result codes:
+ * {@link IMAGE_SUCCESS} if the execution is successful.
+ * {@link IMAGE_BAD_PARAMETER} if bad parameter.
+ * @since 23
+ */
+Image_ErrorCode OH_ImageNative_GetColorSpace(OH_ImageNative *image, int32_t *colorSpaceName);
+
+/**
+ * @brief Obtains the image format from an {@link OH_ImageNative} object.
+ *
+ * @param image Indicates the pointer to an {@link OH_ImageNative} object.
+ * @param format Indicates the pointer to the obtained image format.
+ * @return Returns one of the following result codes:
+ * {@link IMAGE_SUCCESS} if the execution is successful.
+ * {@link IMAGE_BAD_PARAMETER} if bad parameter.
+ * @since 23
+ */
+Image_ErrorCode OH_ImageNative_GetFormat(OH_ImageNative *image, OH_NativeBuffer_Format *format);
+
+/**
+ * @brief Obtains the image buffer data from an {@link OH_ImageNative} object.
+ *
+ * @param image Indicates the pointer to an {@link OH_ImageNative} object.
+ * @param imageBufferData Indicates the pointer to the obtained image buffer data.
+ * @return Returns one of the following result codes:
+ * {@link IMAGE_SUCCESS} if the execution is successful.
+ * {@link IMAGE_BAD_PARAMETER} if bad parameter.
+ * @since 23
+ */
+Image_ErrorCode OH_ImageNative_GetBufferData(OH_ImageNative *image, OH_ImageBufferData *imageBufferData);
 
 #ifdef __cplusplus
 };
