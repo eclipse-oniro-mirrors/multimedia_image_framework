@@ -66,6 +66,10 @@ static const std::string IMAGE_INPUT_JPG_PATH2 = "/data/local/tmp/image/951-595.
 static const std::string IMAGE_OUTPUT_JPG_PATH = "/data/local/tmp/";
 static const std::string IMAGE_INPUT_YUV_PATH3 = "/data/local/tmp/image/P010.yuv";
 static const std::string IMAGE_INPUT_RGBA_PATH4 = "/data/local/tmp/image/RGBA1010102.rgba";
+
+std::unique_ptr<AbsMemory> Truncate10BitMemory(std::shared_ptr<PixelMap> &srcPixelmap,
+    ImageInfo &imageInfo, PixelFormat destFormat, AllocatorType dstType, uint32_t &errorCode);
+
 class ImageFormatConvertTest : public testing::Test {
 public:
     ImageFormatConvertTest() {}
@@ -2254,6 +2258,64 @@ HWTEST_F(ImageFormatConvertTest, YUVConvert_002, TestSize.Level3)
 }
 
 /**
+ * @tc.name: YUVConvert_003
+ * @tc.desc: Verify YUVConvert returns IMAGE_RESULT_FORMAT_CONVERT_FAILED when length parameters are not 0.
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageFormatConvertTest, YUVConvert_003, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImageFormatConvertTest.YUVConvert_003: start";
+    ConvertDataInfo srcDataInfo{};
+    DestConvertInfo destInfo{};
+    srcDataInfo.pixelFormat = PixelFormat::NV21;
+    destInfo.format = PixelFormat::RGB_888;
+    destInfo.width = TREE_ORIGINAL_WIDTH;
+    destInfo.height = TREE_ORIGINAL_HEIGHT;
+    srcDataInfo.yuvDataInfo.yWidth = TREE_ORIGINAL_WIDTH;
+    srcDataInfo.yuvDataInfo.yHeight = TREE_ORIGINAL_HEIGHT;
+    srcDataInfo.yuvDataInfo.uvWidth = TREE_ORIGINAL_WIDTH;
+    srcDataInfo.yuvDataInfo.uvHeight = TREE_ORIGINAL_HEIGHT;
+    uint32_t ret = ImageFormatConvert::YUVConvert(srcDataInfo, destInfo);
+    ASSERT_EQ(ret, IMAGE_RESULT_FORMAT_CONVERT_FAILED);
+    GTEST_LOG_(INFO) << "ImageFormatConvertTest.YUVConvert_003: end";
+}
+
+/**
+ * @tc.name: YUVConvert_004
+ * @tc.desc: Verify YUVConvert returns IMAGE_RESULT_FORMAT_CONVERT_FAILED when length parameters are 0.
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageFormatConvertTest, YUVConvert_004, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImageFormatConvertTest.YUVConvert_004: start";
+    ConvertDataInfo srcDataInfo{};
+    DestConvertInfo destInfo{};
+    srcDataInfo.pixelFormat = PixelFormat::NV21;
+    destInfo.format = PixelFormat::RGB_888;
+    destInfo.width = TREE_ORIGINAL_WIDTH;
+    destInfo.height = 0;
+    srcDataInfo.yuvDataInfo.yWidth = TREE_ORIGINAL_WIDTH;
+    srcDataInfo.yuvDataInfo.yHeight = 0;
+    srcDataInfo.yuvDataInfo.uvWidth = TREE_ORIGINAL_WIDTH;
+    srcDataInfo.yuvDataInfo.uvHeight = TREE_ORIGINAL_HEIGHT;
+    srcDataInfo.imageSize.width = TREE_ORIGINAL_WIDTH;
+    srcDataInfo.imageSize.height = TREE_ORIGINAL_HEIGHT;
+    uint32_t ret = ImageFormatConvert::YUVConvert(srcDataInfo, destInfo);
+    ASSERT_EQ(ret, IMAGE_RESULT_FORMAT_CONVERT_FAILED);
+
+    srcDataInfo.yuvDataInfo.yHeight = TREE_ORIGINAL_HEIGHT;
+    srcDataInfo.yuvDataInfo.uvWidth = 0;
+    ret = ImageFormatConvert::YUVConvert(srcDataInfo, destInfo);
+    ASSERT_EQ(ret, IMAGE_RESULT_FORMAT_CONVERT_FAILED);
+
+    srcDataInfo.yuvDataInfo.uvWidth = TREE_ORIGINAL_WIDTH;
+    srcDataInfo.yuvDataInfo.uvHeight = 0;
+    ret = ImageFormatConvert::YUVConvert(srcDataInfo, destInfo);
+    ASSERT_EQ(ret, IMAGE_RESULT_FORMAT_CONVERT_FAILED);
+    GTEST_LOG_(INFO) << "ImageFormatConvertTest.YUVConvert_004: end";
+}
+
+/**
  * @tc.name: RGBConvert_001
  * @tc.desc: Verify RGBConvert uses srcDataInfo.stride directly when stride is non-zero.
  * @tc.type: FUNC
@@ -2281,6 +2343,29 @@ HWTEST_F(ImageFormatConvertTest, RGBConvert_001, TestSize.Level3)
 }
 
 /**
+ * @tc.name: RGBConvert_002
+ * @tc.desc: Verify RGBConvert returns IMAGE_RESULT_FORMAT_CONVERT_FAILED when buffer is nullptr.
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageFormatConvertTest, RGBConvert_002, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImageFormatConvertTest.RGBConvert_002: start";
+    ConvertDataInfo srcDataInfo{};
+    DestConvertInfo destInfo{};
+    srcDataInfo.pixelFormat = PixelFormat::RGB_888;
+    srcDataInfo.imageSize.width = TREE_ORIGINAL_WIDTH;
+    srcDataInfo.imageSize.height = TREE_ORIGINAL_HEIGHT;
+    destInfo.format = PixelFormat::NV21;
+    destInfo.allocType = AllocatorType::HEAP_ALLOC;
+    destInfo.width = TREE_ORIGINAL_WIDTH;
+    destInfo.height = TREE_ORIGINAL_HEIGHT;
+    srcDataInfo.stride = TREE_ORIGINAL_WIDTH;
+    uint32_t ret = ImageFormatConvert::RGBConvert(srcDataInfo, destInfo);
+    ASSERT_EQ(ret, IMAGE_RESULT_FORMAT_CONVERT_FAILED);
+    GTEST_LOG_(INFO) << "ImageFormatConvertTest.RGBConvert_002: end";
+}
+
+/**
  * @tc.name: CheckIfConvertRGB1010102ToRGBA8888_001
  * @tc.desc: Verify CheckIfConvertRGB1010102ToRGBA8888 returns ERR_IMAGE_INVALID_PARAMETER when srcPixelMap is nullptr.
  * @tc.type: FUNC
@@ -2294,6 +2379,27 @@ HWTEST_F(ImageFormatConvertTest, CheckIfConvertRGB1010102ToRGBA8888_001, TestSiz
     uint32_t ret = ImageFormatConvert::RGBConvertImageFormatOption(srcPixelMap, srcFormat, destFormat);
     ASSERT_EQ(ret, ERR_IMAGE_INVALID_PARAMETER);
     GTEST_LOG_(INFO) << "ImageFormatConvertTest.CheckIfConvertRGB1010102ToRGBA8888_001: end";
+}
+
+/**
+ * @tc.name: CheckIfConvertRGB1010102ToRGBA8888_002
+ * @tc.desc: Verify CheckIfConvertRGB1010102ToRGBA8888 returns IMAGE_RESULT_FORMAT_CONVERT_FAILED
+ *           when pixels address is nullptr.
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageFormatConvertTest, CheckIfConvertRGB1010102ToRGBA8888_002, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImageFormatConvertTest.CheckIfConvertRGB1010102ToRGBA8888_002: start";
+    std::shared_ptr<PixelMap> srcPixelMap = std::make_shared<PixelMap>();
+    ImageInfo imageInfo;
+    imageInfo.size = {TREE_ORIGINAL_WIDTH, TREE_ORIGINAL_HEIGHT};
+    imageInfo.pixelFormat = PixelFormat::RGBA_8888;
+    srcPixelMap->SetImageInfo(imageInfo, true);
+    srcPixelMap->SetPixelsAddr(nullptr, nullptr, 0, AllocatorType::SHARE_MEM_ALLOC, nullptr);
+    PixelFormat destFormat = PixelFormat::NV21;
+    uint32_t result = ImageFormatConvert::RGBConvertImageFormatOption(srcPixelMap, imageInfo.pixelFormat, destFormat);
+    EXPECT_EQ(result, IMAGE_RESULT_FORMAT_CONVERT_FAILED);
+    GTEST_LOG_(INFO) << "ImageFormatConvertTest.CheckIfConvertRGB1010102ToRGBA8888_002: end";
 }
 
 /**
@@ -2325,5 +2431,191 @@ HWTEST_F(ImageFormatConvertTest, ConvertImageFormat_001, TestSize.Level3)
     ASSERT_NE(ret, SUCCESS);
     GTEST_LOG_(INFO) << "ImageFormatConvertTest: ConvertImageFormat_Test_002 end";
 }
+
+/**
+ * @tc.name: GetYUVStrideInfo_001
+ * @tc.desc: Test GetYUVStrideInfo by calling CreateMemory when format is GRAPHIC_PIXEL_FMT_YCBCR_420_SP.
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageFormatConvertTest, GetYUVStrideInfo_001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImageFormatConvertTest: GetYUVStrideInfo_001 start";
+    PixelFormat pixelFormat = PixelFormat::NV12;
+    AllocatorType allocatorType = AllocatorType::DMA_ALLOC;
+    Size size { TREE_ORIGINAL_WIDTH, TREE_ORIGINAL_HEIGHT };
+    YUVStrideInfo strides {};
+    uint64_t usage = 0;
+    std::unique_ptr<AbsMemory> mem =
+        ImageFormatConvert::CreateMemory(pixelFormat, allocatorType, size, strides, usage);
+    ASSERT_NE(mem, nullptr);
+    ASSERT_NE(mem->extend.data, nullptr);
+    auto sb = reinterpret_cast<SurfaceBuffer*>(mem->extend.data);
+    ASSERT_NE(sb, nullptr);
+    int32_t pixelFmt = sb->GetFormat();
+    EXPECT_EQ(pixelFmt, GRAPHIC_PIXEL_FMT_YCBCR_420_SP);
+    mem->Release();
+    GTEST_LOG_(INFO) << "ImageFormatConvertTest: GetYUVStrideInfo_001 end";
+}
+
+/**
+ * @tc.name: GetYUVStrideInfo_002
+ * @tc.desc: Test GetYUVStrideInfo by calling CreateMemory when format is GRAPHIC_PIXEL_FMT_RGBA_8888.
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageFormatConvertTest, GetYUVStrideInfo_002, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImageFormatConvertTest: GetYUVStrideInfo_002 start";
+    PixelFormat pixelFormat = PixelFormat::RGBA_8888;
+    AllocatorType allocatorType = AllocatorType::DMA_ALLOC;
+    Size size { TREE_ORIGINAL_WIDTH, TREE_ORIGINAL_HEIGHT };
+    YUVStrideInfo strides {};
+    uint64_t usage = 0;
+    std::unique_ptr<AbsMemory> mem =
+        ImageFormatConvert::CreateMemory(pixelFormat, allocatorType, size, strides, usage);
+    ASSERT_NE(mem, nullptr);
+    ASSERT_NE(mem->extend.data, nullptr);
+    auto sb = reinterpret_cast<SurfaceBuffer*>(mem->extend.data);
+    ASSERT_NE(sb, nullptr);
+    int32_t pixelFmt = sb->GetFormat();
+    EXPECT_EQ(pixelFmt, GRAPHIC_PIXEL_FMT_RGBA_8888);
+    mem->Release();
+    GTEST_LOG_(INFO) << "ImageFormatConvertTest: GetYUVStrideInfo_002 end";
+}
+
+/**
+ * @tc.name: CreateMemory_001
+ * @tc.desc: Test CreateMemory when pixel format is UNKNOWN or size is invalid.
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageFormatConvertTest, CreateMemory_001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImageFormatConvertTest: CreateMemory_001 start";
+    PixelFormat pixelFormat = PixelFormat::UNKNOWN;
+    AllocatorType allocatorType = AllocatorType::DMA_ALLOC;
+    Size sizeOne { TREE_ORIGINAL_WIDTH, TREE_ORIGINAL_HEIGHT };
+    YUVStrideInfo strides {};
+    uint64_t usage = 0;
+    std::unique_ptr<AbsMemory> mem =
+        ImageFormatConvert::CreateMemory(pixelFormat, allocatorType, sizeOne, strides, usage);
+    ASSERT_EQ(mem, nullptr);
+
+    pixelFormat = PixelFormat::RGBA_8888;
+    Size sizeTwo { TREE_ORIGINAL_WIDTH, 0 };
+    mem = ImageFormatConvert::CreateMemory(pixelFormat, allocatorType, sizeTwo, strides, usage);
+    ASSERT_EQ(mem, nullptr);
+
+    Size sizeThree { 0, TREE_ORIGINAL_HEIGHT };
+    mem = ImageFormatConvert::CreateMemory(pixelFormat, allocatorType, sizeThree, strides, usage);
+    ASSERT_EQ(mem, nullptr);
+    GTEST_LOG_(INFO) << "ImageFormatConvertTest: CreateMemory_001 end";
+}
+
+/**
+ * @tc.name: Truncate10BitMemory_001
+ * @tc.desc: Test Truncate10BitMemory when AllocatorType is CUSTOM_ALLOC.
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageFormatConvertTest, Truncate10BitMemory_001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImageFormatConvertTest: Truncate10BitMemory_001 start";
+    std::shared_ptr<PixelMap> srcPixelmap = std::make_shared<PixelMap>();
+    ImageInfo imageInfo;
+    imageInfo.size = {TREE_ORIGINAL_WIDTH, TREE_ORIGINAL_HEIGHT};
+    PixelFormat destFormat = PixelFormat::RGBA_8888;
+    AllocatorType dstType = AllocatorType::CUSTOM_ALLOC;
+    uint32_t errorCode = 0;
+    std::unique_ptr<AbsMemory> res = Truncate10BitMemory(srcPixelmap, imageInfo, destFormat, dstType, errorCode);
+    ASSERT_EQ(res, nullptr);
+    GTEST_LOG_(INFO) << "ImageFormatConvertTest: Truncate10BitMemory_001 end";
+}
+
+/**
+ * @tc.name: TRGBConvertImageFormatOptionUnique_001
+ * @tc.desc: Test RGBConvertImageFormatOptionUnique expects IMAGE_RESULT_FORMAT_CONVERT_FAILED when cvtFunc fails.
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageFormatConvertTest, TRGBConvertImageFormatOptionUnique_001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImageFormatConvertTest: TRGBConvertImageFormatOptionUnique_001 start";
+    std::unique_ptr<PixelMap> srcPixelMap = std::make_unique<PixelMap>();
+    ImageInfo imageInfo;
+    imageInfo.size = {TREE_ORIGINAL_WIDTH, TREE_ORIGINAL_HEIGHT};
+    imageInfo.pixelFormat = PixelFormat::RGBA_8888;
+    srcPixelMap->SetImageInfo(imageInfo, true);
+    srcPixelMap->SetPixelsAddr(nullptr, nullptr, 0, AllocatorType::SHARE_MEM_ALLOC, nullptr);
+    PixelFormat destFormat = PixelFormat::NV21;
+    uint32_t result =
+        ImageFormatConvert::RGBConvertImageFormatOptionUnique(srcPixelMap, imageInfo.pixelFormat, destFormat);
+    EXPECT_EQ(result, IMAGE_RESULT_FORMAT_CONVERT_FAILED);
+    GTEST_LOG_(INFO) << "ImageFormatConvertTest: TRGBConvertImageFormatOptionUnique_001 end";
+}
+
+/**
+ * @tc.name: TRGBConvertImageFormatOptionUnique_002
+ * @tc.desc: Test RGBConvertImageFormatOptionUnique expects ERR_IMAGE_INVALID_PARAMETER when size invalid.
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageFormatConvertTest, TRGBConvertImageFormatOptionUnique_002, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImageFormatConvertTest: TRGBConvertImageFormatOptionUnique_002 start";
+    std::unique_ptr<PixelMap> srcPixelMap = std::make_unique<PixelMap>();
+    ImageInfo imageInfo;
+    imageInfo.size = {0, 0};
+    imageInfo.pixelFormat = PixelFormat::RGBA_8888;
+    srcPixelMap->SetImageInfo(imageInfo, true);
+    PixelFormat destFormat = PixelFormat::NV21;
+    uint32_t result =
+        ImageFormatConvert::RGBConvertImageFormatOptionUnique(srcPixelMap, imageInfo.pixelFormat, destFormat);
+    EXPECT_EQ(result, ERR_IMAGE_INVALID_PARAMETER);
+    GTEST_LOG_(INFO) << "ImageFormatConvertTest: TRGBConvertImageFormatOptionUnique_002 end";
+}
+
+/**
+ * @tc.name: YUVConvertImageFormatOption_001
+ * @tc.desc: Test YUVConvertImageFormatOption expects IMAGE_RESULT_FORMAT_CONVERT_FAILED when cvtFunc fails.
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageFormatConvertTest, YUVConvertImageFormatOption_001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImageFormatConvertTest: YUVConvertImageFormatOption_001 start";
+    std::shared_ptr<PixelMap> srcPixelMap = std::make_shared<PixelMap>();
+    ImageInfo imageInfo;
+    imageInfo.size = {TREE_ORIGINAL_WIDTH, TREE_ORIGINAL_HEIGHT};
+    imageInfo.pixelFormat = PixelFormat::NV12;
+    srcPixelMap->SetImageInfo(imageInfo, true);
+    srcPixelMap->SetPixelsAddr(nullptr, nullptr, 0, AllocatorType::SHARE_MEM_ALLOC, nullptr);
+    PixelFormat destFormat = PixelFormat::NV21;
+    uint32_t result = ImageFormatConvert::YUVConvertImageFormatOption(srcPixelMap, imageInfo.pixelFormat, destFormat);
+    EXPECT_EQ(result, IMAGE_RESULT_FORMAT_CONVERT_FAILED);
+    GTEST_LOG_(INFO) << "ImageFormatConvertTest: YUVConvertImageFormatOption_001 end";
+}
+
+/**
+ * @tc.name: MakeDestPixelMapUnique_001
+ * @tc.desc: Test MakeDestPixelMapUnique when pixel format is YCBCR_P010 or YCRCB_P010.
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageFormatConvertTest, MakeDestPixelMapUnique_001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImageFormatConvertTest: MakeDestPixelMapUnique_001 start";
+    std::unique_ptr<PixelMap> srcPixelMap = std::make_unique<PixelMap>();
+    ImageInfo srcImageinfo;
+    srcImageinfo.size = {TREE_ORIGINAL_WIDTH, TREE_ORIGINAL_HEIGHT};
+    srcImageinfo.pixelFormat = PixelFormat::NV12;
+    DestConvertInfo destInfo;
+    destInfo.width = TREE_ORIGINAL_WIDTH;
+    destInfo.height = TREE_ORIGINAL_HEIGHT;
+    destInfo.format = PixelFormat::YCBCR_P010;
+    destInfo.allocType = AllocatorType::DMA_ALLOC;
+    void *context = nullptr;
+    uint32_t res = ImageFormatConvert::MakeDestPixelMapUnique(srcPixelMap, srcImageinfo, destInfo, context);
+    EXPECT_EQ(res, ERR_IMAGE_DATA_ABNORMAL);
+
+    destInfo.format = PixelFormat::YCRCB_P010;
+    res = ImageFormatConvert::MakeDestPixelMapUnique(srcPixelMap, srcImageinfo, destInfo, context);
+    EXPECT_EQ(res, ERR_IMAGE_DATA_ABNORMAL);
+    GTEST_LOG_(INFO) << "ImageFormatConvertTest: MakeDestPixelMapUnique_001 end";
+}
+
 } // namespace Media
 } // namespace OHOS
