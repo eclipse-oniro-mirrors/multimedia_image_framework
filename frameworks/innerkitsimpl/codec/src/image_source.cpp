@@ -14,6 +14,7 @@
  */
 
 #include "image_source.h"
+#include <type_traits>
 #ifdef EXT_PIXEL
 #include "pixel_yuv_ext.h"
 #endif
@@ -39,6 +40,7 @@
 #include "image_trace.h"
 #include "image_data_statistics.h"
 #endif
+#include "dng/dng_exif_metadata.h"
 #include "exif_metadata.h"
 #include "exif_metadata_formatter.h"
 #include "file_source_stream.h"
@@ -2109,6 +2111,15 @@ std::vector<MetadataValue> ImageSource::GetAllPropertiesWithType()
     CHECK_ERROR_RETURN_RET_LOG(!exifMetadata_ && isExifReadFailed_, result, "Exif metadata not initialized");
     CHECK_ERROR_RETURN_RET_LOG(CreatExifMetadataByImageSource() != SUCCESS, result, "Metadata creation failed");
 
+    if (IsDngImage()) {
+        std::shared_ptr<DngExifMetadata> dngMetadata = std::static_pointer_cast<DngExifMetadata>(exifMetadata_);
+        if (dngMetadata != nullptr) {
+            result = dngMetadata->GetAllDngProperties();
+            IMAGE_LOGD("Retrieved %{public}d DNG metadata properties", result.size());
+            return result;
+        }
+    }
+
     auto processKeys = [&](const std::set<std::string>& keys) {
         for (const auto& key : keys) {
             MetadataValue entry;
@@ -2128,7 +2139,7 @@ std::vector<MetadataValue> ImageSource::GetAllPropertiesWithType()
 
     processKeys(ExifMetadatFormatter::GetRWKeys());
     processKeys(ExifMetadatFormatter::GetROKeys());
-    
+
     IMAGE_LOGD("Retrieved %zu metadata properties", result.size());
     return result;
 }
@@ -2218,6 +2229,10 @@ uint32_t ImageSource::GetImagePropertyByType(uint32_t index, const std::string &
                 "[ImageSource]GetLoopCount get loop count issue. errorCode=%{public}u", ret);
         }
         return ret;
+    }
+
+    if (IsDngImage()) {
+        return GetDngImagePropertyByDngSdk(key, value);
     }
 
     std::unique_lock<std::mutex> guard(decodingMutex_);
@@ -6035,5 +6050,26 @@ std::shared_ptr<ImageMetadata> ImageSource::GetMetadata(MetadataType type)
     return nullptr;
 }
 #endif
+
+bool ImageSource::IsDngImage()
+{
+    ImageInfo info;
+    GetImageInfo(info);
+    IMAGE_LOGD("[%{public}s] IsDngImage: encodedFormat: %{public}s", __func__, info.encodedFormat.c_str());
+    return info.encodedFormat == DNG_FORMAT;
+}
+
+uint32_t ImageSource::GetDngImagePropertyByDngSdk(const std::string &key, MetadataValue &value)
+{
+    std::shared_ptr<ExifMetadata> exifMetadata = GetExifMetadata();
+    CHECK_ERROR_RETURN_RET_LOG(exifMetadata == nullptr, ERR_IMAGE_DATA_ABNORMAL, "exifMetadata is nullptr");
+
+    std::shared_ptr<DngExifMetadata> dngMetadata = std::static_pointer_cast<DngExifMetadata>(exifMetadata);
+    CHECK_ERROR_RETURN_RET_LOG(dngMetadata == nullptr, ERR_IMAGE_DATA_ABNORMAL,
+        "[%{public}s] Failed to cast to DngExifMetadata", __func__);
+
+    value.key = key;
+    return dngMetadata->GetExifProperty(value);
+}
 } // namespace Media
 } // namespace OHOS
