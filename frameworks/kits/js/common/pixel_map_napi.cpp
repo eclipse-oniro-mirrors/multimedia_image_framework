@@ -1578,6 +1578,7 @@ napi_value PixelMapNapi::CreatePixelMapUsingAllocatorSync(napi_env env, napi_cal
     return result;
 }
 
+#if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
 static bool DealSurfaceId(std::string &surfaceId, unsigned long &id)
 {
     if (surfaceId.find_first_not_of("0123456789") != std::string::npos) {
@@ -1598,7 +1599,6 @@ static bool DealSurfaceId(std::string &surfaceId, unsigned long &id)
     }
 }
 
-#if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
 static bool GetSurfaceSize(size_t argc, Rect &region, std::string fd)
 {
     if (argc == NUM_2 && (region.width <= 0 || region.height <= 0)) {
