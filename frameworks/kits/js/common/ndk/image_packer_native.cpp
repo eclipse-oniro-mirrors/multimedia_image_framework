@@ -55,7 +55,7 @@ static constexpr int32_t IMAGE_BASE_20 = 20;
 static constexpr int32_t IMAGE_BASE_22 = 22;
 static constexpr int32_t IMAGE_BASE_23 = 23;
 static Image_MimeType *IMAGE_PACKER_SUPPORTED_FORMATS = nullptr;
-static size_t SUPPORTED_FORMATS_SIZE = 0;
+static size_t g_supportedFormatSize = 0;
 
 struct OH_PackingOptions {
     Image_MimeType mimeType;
@@ -707,9 +707,9 @@ Image_ErrorCode OH_ImagePackerNative_GetSupportedFormats(Image_MimeType** suppor
     if (supportedFormat == nullptr || length == nullptr) {
         return IMAGE_PACKER_INVALID_PARAMETER;
     }
-    if (IMAGE_PACKER_SUPPORTED_FORMATS != nullptr || SUPPORTED_FORMATS_SIZE != 0) {
+    if (IMAGE_PACKER_SUPPORTED_FORMATS != nullptr || g_supportedFormatSize != 0) {
         *supportedFormat = IMAGE_PACKER_SUPPORTED_FORMATS;
-        *length = SUPPORTED_FORMATS_SIZE;
+        *length = g_supportedFormatSize;
         return IMAGE_SUCCESS;
     }
     std::set<std::string> formats;
@@ -728,7 +728,7 @@ Image_ErrorCode OH_ImagePackerNative_GetSupportedFormats(Image_MimeType** suppor
         count++;
     }
     IMAGE_PACKER_SUPPORTED_FORMATS = *supportedFormat;
-    SUPPORTED_FORMATS_SIZE = *length;
+    g_supportedFormatSize = *length;
     return IMAGE_SUCCESS;
 }
 

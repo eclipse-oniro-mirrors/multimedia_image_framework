@@ -810,7 +810,7 @@ bool HeifDecoderImpl::HwDecodeGrids(std::shared_ptr<HeifImage> &image,
     CHECK_ERROR_RETURN_RET(codec == nullptr, false);
     int32_t result = codec->DoHeifDecode(hwInputs, output, heifDecodeInfo);
     if (result != SUCCESS) {
-        IMAGE_LOGE("heif hw decoder return error: %{public}d, width: %{public}d, height: %{public}d,"
+        HILOG_COMM_ERROR("heif hw decoder return error: %{public}d, width: %{public}d, height: %{public}d,"
             " imageType: grid, inPixelFormat: %{public}d, colNum: %{public}d, rowNum: %{public}d,"
             " tileWidth: %{public}d, tileHeight: %{public}d, hvccLen: %{public}zu",
             result, gridInfo.displayWidth, gridInfo.displayHeight, hwBuffer->GetFormat(), gridInfo.cols,
@@ -1587,6 +1587,7 @@ bool HeifDecoderImpl::SwDecodeHeifsOnceFrame(uint32_t index, const HevcSoftDecod
 bool HeifDecoderImpl::SwDecodeHeifsImage(uint32_t index, HevcSoftDecodeParam &param)
 {
     CHECK_ERROR_RETURN_RET(!parser_, false);
+    param.gridInfo.decodeMode = DecodeMode::VIDEO;
     if (!HasDecodedFrame(index)) {
         DeleteParamsBuffer();
         if (!isFirstFrameDecoded_) {
@@ -1633,14 +1634,14 @@ bool HeifDecoderImpl::GetHeifsFrameCount(uint32_t &sampleCount)
         CHECK_ERROR_RETURN_RET(parser_->GetHeifsFrameCount(sampleCount) != heif_error_ok, false);
         return true;
     }
-    IMAGE_LOGE("GetHeifsFrameCount is not heifs image");
+    IMAGE_LOGD("GetHeifsFrameCount is not heifs image");
     return false;
 }
 
 bool HeifDecoderImpl::IsHeifsImage()
 {
     if (!primaryImage_ || !primaryImage_->IsMovieImage()) {
-        IMAGE_LOGE("IsHeifsImage() is not movie image.");
+        IMAGE_LOGD("IsHeifsImage() is not movie image.");
         return false;
     }
     bool isHeifs = false;

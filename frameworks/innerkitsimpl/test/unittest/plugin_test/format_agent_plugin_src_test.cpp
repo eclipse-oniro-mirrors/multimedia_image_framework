@@ -33,6 +33,7 @@ namespace OHOS {
 namespace Multimedia {
 static const std::string IMAGE_INPUT_JPEG_PATH = "/data/local/tmp/image/test.jpg";
 constexpr uint32_t LEAST_SIZE = 8;
+constexpr uint32_t DATA_SIZE = 20;
 
 class FormatAgentPluginSrcTest : public testing::Test {
 public:
@@ -256,6 +257,32 @@ HWTEST_F(FormatAgentPluginSrcTest, WbmpReadHeaderSuccessTest001, TestSize.Level3
     ASSERT_TRUE(checkResult);
     
     GTEST_LOG_(INFO) << "FormatAgentPluginSrcTest: WbmpReadHeaderSuccessTest001 end";
+}
+
+/**
+ * @tc.name: WbmpReadMbfOverflowTest001
+ * @tc.desc: Test read_mbf returns false when value would overflow on shift by 7
+ * @tc.type: FUNC
+ */
+HWTEST_F(FormatAgentPluginSrcTest, WbmpReadMbfOverflowTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "FormatAgentPluginSrcTest: WbmpReadMbfOverflowTest001 start";
+    WbmpFormatAgent wbmpAgent;
+
+    uint8_t data[DATA_SIZE];
+
+    data[0] = 0x00;
+    data[1] = 0x00;
+
+    for (uint32_t i = 2; i < 12; i++) {
+        data[i] = 0xFF;
+    }
+    data[12] = 0x01;
+
+    bool result = wbmpAgent.read_header(data, DATA_SIZE);
+
+    ASSERT_FALSE(result);
+    GTEST_LOG_(INFO) << "FormatAgentPluginSrcTest: WbmpReadMbfOverflowTest001 end";
 }
 }
 }

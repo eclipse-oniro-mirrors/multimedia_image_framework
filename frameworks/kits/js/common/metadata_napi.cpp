@@ -21,6 +21,7 @@
 #include "image_common.h"
 #include "napi_message_sequence.h"
 #include "exif_metadata_formatter.h"
+#include "exif_metadata.h"
 
 #undef LOG_DOMAIN
 #define LOG_DOMAIN LOG_TAG_DOMAIN_ID_IMAGE
@@ -37,11 +38,31 @@ namespace {
 namespace OHOS {
 namespace Media {
     static const std::string CLASS_NAME = "ImageMetadata";
+    static const std::string EXIF_CLASS = "ExifMetadata";
+    static const std::string MAKERNOTE_CLASS = "MakerNoteHuaweiMetadata";
     thread_local napi_ref MetadataNapi::sConstructor_ = nullptr;
+    thread_local napi_ref MetadataNapi::sExifConstructor_ = nullptr;
+    thread_local napi_ref MetadataNapi::sMakerNoteConstructor_ = nullptr;
     thread_local std::shared_ptr<ImageMetadata> MetadataNapi::sMetadata_ = nullptr;
 
 #if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
 #endif
+static const uint32_t XMAGE_WATERMARK_MODE_AT_THE_BOTTOM = 9;
+static const uint32_t XMAGE_WATERMARK_MODE_BORDER = 10;
+static const uint32_t CAPTURE_MODE_PROFESSIONAL = 2;
+static const uint32_t CAPTURE_MODE_FRONT_LENS_NIGHT_VIEW = 7;
+static const uint32_t CAPTURE_MODE_PANORAMA = 8;
+static const uint32_t CAPTURE_MODE_TAIL_LIGHT = 9;
+static const uint32_t CAPTURE_MODE_LIGHT_GRAFFITI = 10;
+static const uint32_t CAPTURE_MODE_SILKY_WATER = 11;
+static const uint32_t CAPTURE_MODE_STAR_TRACK = 12;
+static const uint32_t CAPTURE_MODE_WIDEAPERTURE = 19;
+static const uint32_t CAPTURE_MODE_MOVING_PHOTO = 20;
+static const uint32_t CAPTURE_MODE_PORTRAIT = 23;
+static const uint32_t CAPTURE_MODE_REAR_LENS_NIGHT_VIEW = 42;
+static const uint32_t CAPTURE_MODE_SUPER_MACRO = 47;
+static const uint32_t CAPTURE_MODE_SNAP_SHOT = 62;
+
 
 struct MetadataNapiAsyncContext {
     napi_env env;
@@ -57,6 +78,7 @@ struct MetadataNapiAsyncContext {
     std::vector<std::pair<std::string, std::string>> KVSArray;
     void *arrayBuffer;
     size_t arrayBufferSize;
+    std::vector<std::pair<std::string, napi_ref>> customProperties;
 };
 using MetadataNapiAsyncContextPtr = std::unique_ptr<MetadataNapiAsyncContext>;
 
@@ -215,6 +237,185 @@ napi_value MetadataNapi::Init(napi_env env, napi_value exports)
     return exports;
 }
 
+napi_value MetadataNapi::InitExifMetadata(napi_env env, napi_value exports)
+{
+    IMAGE_LOGD("InitExifMetadata ENTER");
+    
+    napi_property_descriptor instanceProps[] = {
+        DECLARE_NAPI_FUNCTION("getProperties", GetProperties),
+        DECLARE_NAPI_FUNCTION("setProperties", SetProperties),
+        DECLARE_NAPI_FUNCTION("getAllProperties", GetAllProperties),
+        DECLARE_NAPI_FUNCTION("getBlob", GetBlob),
+        DECLARE_NAPI_FUNCTION("setBlob", SetBlob),
+        DECLARE_NAPI_FUNCTION("clone", CloneExif),
+    };
+    
+    napi_property_descriptor staticProps[] = {
+        DECLARE_NAPI_STATIC_FUNCTION("createInstance", CreateInstance),
+    };
+    
+    napi_value constructor = nullptr;
+    napi_status status = napi_define_class(env, EXIF_CLASS.c_str(), NAPI_AUTO_LENGTH, Constructor, nullptr,
+        sizeof(instanceProps) / sizeof(instanceProps[0]), instanceProps, &constructor);
+    
+    if (status != napi_ok || constructor == nullptr) {
+        IMAGE_LOGE("Failed to define ExifMetadata class: %{public}d", status);
+        return exports;
+    }
+    status = napi_define_properties(env, constructor, sizeof(staticProps) / sizeof(staticProps[0]), staticProps);
+    if (status != napi_ok) {
+        IMAGE_LOGE("Failed to define static methods: %{public}d", status);
+    }
+    
+    status = napi_create_reference(env, constructor, 1, &sExifConstructor_);
+    if (status != napi_ok || sExifConstructor_ == nullptr) {
+        IMAGE_LOGE("Failed to create EXIF ref: %{public}d", status);
+        return exports;
+    }
+    
+    status = napi_set_named_property(env, exports, EXIF_CLASS.c_str(), constructor);
+    if (status != napi_ok) {
+        IMAGE_LOGE("Failed to export %{public}s class: %{public}d", EXIF_CLASS.c_str(), status);
+    }
+    
+    auto context = new NapiConstructorContext();
+    context->env_ = env;
+    context->ref_ = sExifConstructor_;
+    napi_add_env_cleanup_hook(env, ImageNapiUtils::CleanUpConstructorContext, context);
+    
+    IMAGE_LOGD("InitExifMetadata EXIT");
+    return exports;
+}
+
+static void ExportConstant(napi_env env, napi_value exports, const char* name, PropertyValueType type, void* value)
+{
+    napi_value constantValue;
+    napi_status status = napi_ok;
+    switch (type) {
+        case PropertyValueType::INT:
+            status = napi_create_int32(env, *static_cast<int32_t*>(value), &constantValue);
+            break;
+        case PropertyValueType::STRING:
+            status = napi_create_string_utf8(env, static_cast<const char*>(value),
+                NAPI_AUTO_LENGTH, &constantValue);
+            break;
+        case PropertyValueType::DOUBLE:
+            status = napi_create_double(env, *static_cast<double*>(value), &constantValue);
+            break;
+        default:
+            IMAGE_LOGE("Unsupported constant type for '%s'", name);
+            return;
+    }
+    if (status != napi_ok) {
+        IMAGE_LOGE("Failed to create constant '%s': %{public}d", name, status);
+        return;
+    }
+    napi_status exportStatus = napi_set_named_property(env, exports, name, constantValue);
+    if (exportStatus != napi_ok) {
+        IMAGE_LOGE("Failed to export constant '%s': %{public}d", name, exportStatus);
+    }
+}
+
+static void ExportValue(napi_env env, napi_value exports)
+{
+    const int32_t exportValueXmageWatermarkModeAtTheBottom = XMAGE_WATERMARK_MODE_AT_THE_BOTTOM;
+    ExportConstant(env, exports, "XMAGE_WATERMARK_MODE_AT_THE_BOTTOM", PropertyValueType::INT,
+        const_cast<void*>(static_cast<const void*>(&exportValueXmageWatermarkModeAtTheBottom)));
+    const int32_t exportValueXmageWatermarkModeBorder = XMAGE_WATERMARK_MODE_BORDER;
+    ExportConstant(env, exports, "XMAGE_WATERMARK_MODE_BORDER", PropertyValueType::INT,
+        const_cast<void*>(static_cast<const void*>(&exportValueXmageWatermarkModeBorder)));
+    const int32_t exportValueCaptureModeProfessional = CAPTURE_MODE_PROFESSIONAL;
+    ExportConstant(env, exports, "CAPTURE_MODE_PROFESSIONAL", PropertyValueType::INT,
+        const_cast<void*>(static_cast<const void*>(&exportValueCaptureModeProfessional)));
+    const int32_t exportValueCaptureModeFrontLensNightView = CAPTURE_MODE_FRONT_LENS_NIGHT_VIEW;
+    ExportConstant(env, exports, "CAPTURE_MODE_FRONT_LENS_NIGHT_VIEW", PropertyValueType::INT,
+        const_cast<void*>(static_cast<const void*>(&exportValueCaptureModeFrontLensNightView)));
+    const int32_t exportValueCaptureModePanorama = CAPTURE_MODE_PANORAMA;
+    ExportConstant(env, exports, "CAPTURE_MODE_PANORAMA", PropertyValueType::INT,
+        const_cast<void*>(static_cast<const void*>(&exportValueCaptureModePanorama)));
+    const int32_t exportValueCaptureModeTailLight = CAPTURE_MODE_TAIL_LIGHT;
+    ExportConstant(env, exports, "CAPTURE_MODE_TAIL_LIGHT", PropertyValueType::INT,
+        const_cast<void*>(static_cast<const void*>(&exportValueCaptureModeTailLight)));
+    const int32_t exportValueCaptureModeLightGraffiti = CAPTURE_MODE_LIGHT_GRAFFITI;
+    ExportConstant(env, exports, "CAPTURE_MODE_LIGHT_GRAFFITI", PropertyValueType::INT,
+        const_cast<void*>(static_cast<const void*>(&exportValueCaptureModeLightGraffiti)));
+    const int32_t exportValueCaptureModeSilkyWater = CAPTURE_MODE_SILKY_WATER;
+    ExportConstant(env, exports, "CAPTURE_MODE_SILKY_WATER", PropertyValueType::INT,
+        const_cast<void*>(static_cast<const void*>(&exportValueCaptureModeSilkyWater)));
+    const int32_t exportValueCaptureModeStarTrack = CAPTURE_MODE_STAR_TRACK;
+    ExportConstant(env, exports, "CAPTURE_MODE_STAR_TRACK", PropertyValueType::INT,
+        const_cast<void*>(static_cast<const void*>(&exportValueCaptureModeStarTrack)));
+    const int32_t exportValueCaptureModeWideaperture = CAPTURE_MODE_WIDEAPERTURE;
+    ExportConstant(env, exports, "CAPTURE_MODE_WIDEAPERTURE", PropertyValueType::INT,
+        const_cast<void*>(static_cast<const void*>(&exportValueCaptureModeWideaperture)));
+    const int32_t exportValueCaptureModeMovingPhoto = CAPTURE_MODE_MOVING_PHOTO;
+    ExportConstant(env, exports, "CAPTURE_MODE_MOVING_PHOTO", PropertyValueType::INT,
+        const_cast<void*>(static_cast<const void*>(&exportValueCaptureModeMovingPhoto)));
+    const int32_t exportValueCaptureModePortrait = CAPTURE_MODE_PORTRAIT;
+    ExportConstant(env, exports, "CAPTURE_MODE_PORTRAIT", PropertyValueType::INT,
+        const_cast<void*>(static_cast<const void*>(&exportValueCaptureModePortrait)));
+    const int32_t exportValueCaptureModeRearLensNightView = CAPTURE_MODE_REAR_LENS_NIGHT_VIEW;
+    ExportConstant(env, exports, "CAPTURE_MODE_REAR_LENS_NIGHT_VIEW", PropertyValueType::INT,
+        const_cast<void*>(static_cast<const void*>(&exportValueCaptureModeRearLensNightView)));
+    const int32_t exportValueCaptureModeSuperMacro = CAPTURE_MODE_SUPER_MACRO;
+    ExportConstant(env, exports, "CAPTURE_MODE_SUPER_MACRO", PropertyValueType::INT,
+        const_cast<void*>(static_cast<const void*>(&exportValueCaptureModeSuperMacro)));
+    const int32_t exportValueCaptureModeSnapShot = CAPTURE_MODE_SNAP_SHOT;
+    ExportConstant(env, exports, "CAPTURE_MODE_SNAP_SHOT", PropertyValueType::INT,
+        const_cast<void*>(static_cast<const void*>(&exportValueCaptureModeSnapShot)));
+}
+
+napi_value MetadataNapi::InitMakerNoteMetadata(napi_env env, napi_value exports)
+{
+    IMAGE_LOGD("InitMakerNoteMetadata ENTER");
+    ExportValue(env, exports);
+
+    napi_property_descriptor instanceProps[] = {
+        DECLARE_NAPI_FUNCTION("getProperties", GetProperties),
+        DECLARE_NAPI_FUNCTION("setProperties", SetProperties),
+        DECLARE_NAPI_FUNCTION("getAllProperties", GetAllProperties),
+        DECLARE_NAPI_FUNCTION("getBlob", GetBlob),
+        DECLARE_NAPI_FUNCTION("setBlob", SetBlob),
+        DECLARE_NAPI_FUNCTION("clone", CloneExif),
+    };
+    
+    napi_property_descriptor staticProps[] = {
+        DECLARE_NAPI_STATIC_FUNCTION("createInstance", CreateInstance),
+    };
+    
+    napi_value constructor = nullptr;
+    napi_status status = napi_define_class(env, MAKERNOTE_CLASS.c_str(), NAPI_AUTO_LENGTH, Constructor, nullptr,
+        sizeof(instanceProps) / sizeof(instanceProps[0]), instanceProps, &constructor);
+    
+    if (status != napi_ok || constructor == nullptr) {
+        IMAGE_LOGE("Failed to define ExifMetadata class: %{public}d", status);
+        return exports;
+    }
+    status = napi_define_properties(env, constructor, sizeof(staticProps) / sizeof(staticProps[0]), staticProps);
+    if (status != napi_ok) {
+        IMAGE_LOGE("Failed to define static methods: %{public}d", status);
+    }
+    
+    status = napi_create_reference(env, constructor, 1, &sMakerNoteConstructor_);
+    if (status != napi_ok || sMakerNoteConstructor_ == nullptr) {
+        IMAGE_LOGE("Failed to create EXIF ref: %{public}d", status);
+        return exports;
+    }
+    
+    status = napi_set_named_property(env, exports, MAKERNOTE_CLASS.c_str(), constructor);
+    if (status != napi_ok) {
+        IMAGE_LOGE("Failed to export %{public}s class: %{public}d", MAKERNOTE_CLASS.c_str(), status);
+    }
+    
+    auto context = new NapiConstructorContext();
+    context->env_ = env;
+    context->ref_ = sMakerNoteConstructor_;
+    napi_add_env_cleanup_hook(env, ImageNapiUtils::CleanUpConstructorContext, context);
+    
+    IMAGE_LOGD("InitMakerNoteMetadata EXIT");
+    return exports;
+}
+
 napi_value MetadataNapi::CreateMetadata(napi_env env, std::shared_ptr<ImageMetadata> metadata)
 {
     if (sConstructor_ == nullptr) {
@@ -238,6 +439,27 @@ napi_value MetadataNapi::CreateMetadata(napi_env env, std::shared_ptr<ImageMetad
     return result;
 }
 
+napi_value MetadataNapi::CreateExifMetadata(napi_env env, std::shared_ptr<ImageMetadata> metadata)
+{
+    if (sExifConstructor_ == nullptr) {
+        napi_value exports = nullptr;
+        napi_create_object(env, &exports);
+        MetadataNapi::InitExifMetadata(env, exports);
+    }
+    napi_value constructor = nullptr;
+    napi_value result = nullptr;
+    napi_status status = napi_get_reference_value(env, sExifConstructor_, &constructor);
+    if (status == napi_ok) {
+        sMetadata_ = metadata;
+        status = napi_new_instance(env, constructor, 0, nullptr, &result);
+    }
+    if (status != napi_ok) {
+        IMAGE_LOGE("CreateExifMetadata | Failed to create instance");
+        napi_get_undefined(env, &result);
+    }
+    return result;
+}
+
 napi_value MetadataNapi::Constructor(napi_env env, napi_callback_info info)
 {
     napi_value undefineVar = nullptr;
@@ -253,9 +475,6 @@ napi_value MetadataNapi::Constructor(napi_env env, napi_callback_info info)
     if (pMetadataNapi != nullptr) {
         pMetadataNapi->env_ = env;
         pMetadataNapi->nativeMetadata_ = sMetadata_;
-        if (pMetadataNapi->nativeMetadata_  == nullptr) {
-            IMAGE_LOGE("Failed to set nativeMetadata_ with null. Maybe a reentrancy error");
-        }
         status = napi_wrap(env, thisVar, reinterpret_cast<void *>(pMetadataNapi.release()),
                            MetadataNapi::Destructor, nullptr, nullptr);
         if (status != napi_ok) {
@@ -567,6 +786,52 @@ static void CloneMetadataComplete(napi_env env, napi_status status, void *data)
     CommonCallbackRoutine(env, context, result);
 }
 
+napi_value CreateBusinessError(napi_env env, int errCode, const char* msg)
+{
+    napi_value error;
+    napi_value codeValue;
+    napi_value msgValue;
+    
+    napi_create_int32(env, errCode, &codeValue);
+    napi_create_string_utf8(env, msg, NAPI_AUTO_LENGTH, &msgValue);
+    
+    napi_create_error(env, nullptr, msgValue, &error);
+    napi_set_named_property(env, error, "code", codeValue);
+    
+    return error;
+}
+
+static void CloneExifMetadataComplete(napi_env env, napi_status status, void *data)
+{
+    auto context = static_cast<MetadataNapiAsyncContext*>(data);
+    napi_handle_scope scope;
+    napi_open_handle_scope(env, &scope);
+    
+    napi_value result = nullptr;
+    bool success = context->rMetadata != nullptr &&
+                 (result = MetadataNapi::CreateExifMetadata(env, context->rMetadata)) != nullptr;
+    if (success) {
+        for (auto& [name, ref] : context->customProperties) {
+            napi_value propValue;
+            if (napi_get_reference_value(env, ref, &propValue) == napi_ok) {
+                napi_set_named_property(env, result, name.c_str(), propValue);
+            }
+            napi_delete_reference(env, ref);
+        }
+        context->customProperties.clear();
+    }
+    napi_deferred deferred = context->deferred;
+    if (success) {
+        napi_resolve_deferred(env, deferred, result);
+    } else {
+        napi_reject_deferred(env, deferred, CreateBusinessError(env,
+            IMAGE_SOURCE_UNSUPPORTED_METADATA, "Failed to clone EXIF metadata"));
+    }
+    napi_delete_async_work(env, context->work);
+    napi_close_handle_scope(env, scope);
+    delete context;
+}
+
 napi_value MetadataNapi::GetProperties(napi_env env, napi_callback_info info)
 {
     napi_value result = nullptr;
@@ -694,6 +959,94 @@ napi_value MetadataNapi::Clone(napi_env env, napi_callback_info info)
     return result;
 }
 
+static void CloneExifExecute(napi_env env, void *data)
+{
+    auto context = static_cast<MetadataNapiAsyncContext*>(data);
+    if (context == nullptr) {
+        IMAGE_LOGE("Empty context");
+        return;
+    }
+    auto tmpixel = context->rMetadata->CloneMetadata();
+    context->rMetadata = std::move(tmpixel);
+    context->status = SUCCESS;
+}
+
+std::string GetStringFromValue(napi_env env, napi_value value)
+{
+    char buffer[256] = {0};
+    size_t length = 0;
+    napi_get_value_string_utf8(env, value, buffer, sizeof(buffer) - 1, &length);
+    return std::string(buffer, length);
+}
+
+static void GetJsProperties(napi_env env, napi_value thisVar, void *data)
+{
+    auto context = static_cast<MetadataNapiAsyncContext*>(data);
+    if (context == nullptr) {
+        IMAGE_LOGE("Empty context");
+        return;
+    }
+    napi_value propNames;
+    if (napi_get_property_names(env, thisVar, &propNames) == napi_ok) {
+        uint32_t count = 0;
+        napi_get_array_length(env, propNames, &count);
+        
+        for (uint32_t i = 0; i < count; i++) {
+            napi_value name;
+            napi_status nameStatus = napi_get_element(env, propNames, i, &name);
+            if (nameStatus != napi_ok) {
+                continue;
+            }
+            std::string propName = GetStringFromValue(env, name);
+            if (propName.empty() || propName[0] == '_') {
+                continue;
+            }
+            napi_value propValue;
+            if (napi_get_property(env, thisVar, name, &propValue) != napi_ok) {
+                continue;
+            }
+            napi_ref ref;
+            if (napi_create_reference(env, propValue, 1, &ref) == napi_ok) {
+                context->customProperties.push_back({propName, ref});
+                IMAGE_LOGD("Collecting custom property: %s", propName.c_str());
+            }
+        }
+    }
+}
+
+napi_value MetadataNapi::CloneExif(napi_env env, napi_callback_info info)
+{
+    napi_value result = nullptr;
+    napi_get_undefined(env, &result);
+    napi_status status;
+    napi_value thisVar = nullptr;
+    size_t argCount = NUM_0;
+    IMG_JS_ARGS(env, info, status, argCount, nullptr, thisVar);
+    IMG_NAPI_CHECK_RET_D(IMG_IS_OK(status), nullptr, IMAGE_LOGE("Fail to napi_get_cb_info"));
+
+    std::unique_ptr<MetadataNapiAsyncContext> asyncContext = std::make_unique<MetadataNapiAsyncContext>();
+    status = napi_unwrap(env, thisVar, reinterpret_cast<void**>(&asyncContext->nConstructor));
+    IMG_NAPI_CHECK_RET_D(IMG_IS_READY(status, asyncContext->nConstructor), nullptr,
+                         IMAGE_LOGE("Fail to unwrap context"));
+
+    asyncContext->rMetadata = asyncContext->nConstructor->nativeMetadata_;
+
+    IMG_NAPI_CHECK_RET_D(IMG_IS_READY(status, asyncContext->rMetadata), nullptr, IMAGE_LOGE("Empty native rMetadata"));
+    if (argCount != NUM_0) {
+        IMAGE_LOGE("ArgCount mismatch");
+        return nullptr;
+    }
+
+    napi_create_promise(env, &(asyncContext->deferred), &result);
+    GetJsProperties(env, thisVar, static_cast<void*>((asyncContext).get()));
+
+    IMG_CREATE_CREATE_ASYNC_WORK(env, status, "CloneExif",
+        CloneExifExecute, CloneExifMetadataComplete, asyncContext, asyncContext->work);
+    IMG_NAPI_CHECK_RET_D(IMG_IS_OK(status),
+        nullptr, IMAGE_LOGE("Fail to create async work"));
+    return result;
+}
+
 void MetadataNapi::release()
 {
     if (!isRelease) {
@@ -775,7 +1128,7 @@ static void SetBlobComplete(napi_env env, napi_status status, void *data)
     if (context->status == SUCCESS) {
         result[NUM_1] = valueParam;
     } else {
-        ImageNapiUtils::CreateErrorObj(env, result[0], context->status,
+        ImageNapiUtils::CreateErrorObj(env, result[0], IMAGE_SOURCE_UNSUPPORTED_METADATA,
                                        "There is generic napi failure!");
         napi_get_undefined(env, &result[1]);
     }
@@ -832,6 +1185,41 @@ napi_value MetadataNapi::SetBlob(napi_env env, napi_callback_info info)
     return result;
 }
 
-
+napi_value MetadataNapi::CreateInstance(napi_env env, napi_callback_info info)
+{
+    IMAGE_LOGD("MetadataNapi::CreateInstance IN");
+    napi_value result = nullptr;
+    napi_value constructor = nullptr;
+    napi_status status;
+    
+    status = napi_get_reference_value(env, sExifConstructor_, &constructor);
+    if (status != napi_ok || constructor == nullptr) {
+        IMAGE_LOGE("Failed to get constructor reference, status: %{public}d", status);
+        napi_get_undefined(env, &result);
+        return result;
+    }
+    auto metadata = ExifMetadata::InitExifMetadata();
+    if (!metadata) {
+        IMAGE_LOGE("Failed to create ExifMetadata instance");
+        napi_get_undefined(env, &result);
+        return result;
+    }
+    status = napi_new_instance(env, constructor, 0, nullptr, &result);
+    if (status != napi_ok) {
+        IMAGE_LOGE("Failed to create new instance, status: %{public}d", status);
+        napi_get_undefined(env, &result);
+        return result;
+    }
+    MetadataNapi* metadataNapi = nullptr;
+    status = napi_unwrap(env, result, reinterpret_cast<void**>(&metadataNapi));
+    if (status != napi_ok || metadataNapi == nullptr) {
+        IMAGE_LOGE("Failed to unwrap metadataNapi, status: %{public}d", status);
+        napi_get_undefined(env, &result);
+        return result;
+    }
+    metadataNapi->nativeMetadata_ = metadata;
+    IMAGE_LOGD("MetadataNapi::CreateInstance OUT");
+    return result;
+}
 } // namespace Media
 } // namespace OHOS

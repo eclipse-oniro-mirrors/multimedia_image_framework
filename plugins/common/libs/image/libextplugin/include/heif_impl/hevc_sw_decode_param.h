@@ -20,6 +20,11 @@
 
 namespace OHOS {
 namespace ImagePlugin {
+enum DecodeMode {
+    VIDEO = 0,
+    HEIF = 1
+};
+
 struct GridInfo {
     uint32_t displayWidth = 0;
     uint32_t displayHeight = 0;
@@ -28,7 +33,8 @@ struct GridInfo {
     uint32_t rows = 0;
     uint32_t tileWidth = 0;
     uint32_t tileHeight = 0;
-    uint8_t colorRangeflag = 0; // 0 -> limitRange:[16,235], 1 -> fullRange:[0, 255]
+    uint8_t colorRangeFlag = 0; // 0 -> limitRange:[16,235], 1 -> fullRange:[0, 255]
+    uint8_t decodeMode = DecodeMode::HEIF;
 };
 
 struct HevcSoftDecodeParam {

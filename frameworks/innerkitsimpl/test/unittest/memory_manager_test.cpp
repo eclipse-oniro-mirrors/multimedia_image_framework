@@ -24,6 +24,8 @@ namespace OHOS {
 namespace Multimedia {
 
 constexpr uint64_t TEST_MEMORY_SIZE_1024 = 1024;
+constexpr uint32_t TEST_BUFFER_WIDTH_32 = 32;
+constexpr uint32_t TEST_BUFFER_HEIGHT_32 = 32;
 
 class MemoryManagerTest : public testing::Test {
 public:
@@ -47,6 +49,30 @@ HWTEST_F(MemoryManagerTest, MemoryManagerCreateMemoryTest001, TestSize.Level3)
     EXPECT_EQ(memory, nullptr);
     
     GTEST_LOG_(INFO) << "MemoryManagerTest: MemoryManagerCreateMemoryTest001 end";
+}
+
+/**
+ * @tc.name: DmaMemoryReleaseTest001
+ * @tc.desc: Test DmaMemory successfully releases allocated DMA memory when Release is called
+ * @tc.type: FUNC
+ */
+HWTEST_F(MemoryManagerTest, DmaMemoryReleaseTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "MemoryManagerTest: DmaMemoryReleaseTest001 start";
+
+    MemoryData data;
+    data.size = TEST_MEMORY_SIZE_1024;
+    data.desiredSize.width = TEST_BUFFER_WIDTH_32;
+    data.desiredSize.height = TEST_BUFFER_HEIGHT_32;
+    data.format = PixelFormat::RGBA_8888;
+
+    std::unique_ptr<AbsMemory> memory = MemoryManager::CreateMemory(AllocatorType::DMA_ALLOC, data);
+    ASSERT_NE(memory, nullptr);
+
+    uint32_t ret = memory->Release();
+    EXPECT_EQ(ret, SUCCESS);
+
+    GTEST_LOG_(INFO) << "MemoryManagerTest: DmaMemoryReleaseTest001 end";
 }
 } // namespace Multimedia
 } // namespace OHOS

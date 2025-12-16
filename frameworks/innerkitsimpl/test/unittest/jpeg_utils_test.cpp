@@ -17,6 +17,8 @@
 #include "buffer_source_stream.h"
 #include "image_packer.h"
 #include "jpeg_decoder.h"
+#include "jpeglib.h"
+#include <csetjmp>
 
 using namespace testing::ext;
 namespace OHOS {
@@ -26,6 +28,15 @@ public:
     JpegUtilsTest() {}
     ~JpegUtilsTest() {}
 };
+
+struct JpegErrorMgr : public jpeg_error_mgr {
+    jmp_buf jumpBuffer;
+};
+extern "C" void JpegErrorHandler(j_common_ptr cinfo)
+{
+    JpegErrorMgr* err = reinterpret_cast<JpegErrorMgr*>(cinfo->err);
+    longjmp(err->jumpBuffer, 1);
+}
 
 /**
  * @tc.name: FillInputBufferTest001
@@ -53,6 +64,34 @@ HWTEST_F(JpegUtilsTest, SkipInputDataTest001, TestSize.Level3)
     long numBytes = 0;
     ImagePlugin::SkipInputData(dinfo, numBytes);
     GTEST_LOG_(INFO) << "JpegUtilsTest: SkipInputDataTest001 end";
+}
+
+/**
+ * @tc.name: SkipInputDataTest003
+ * @tc.desc: Test of dinfo src is nullptr
+ * @tc.type: FUNC
+ */
+HWTEST_F(JpegUtilsTest, SkipInputDataTest003, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "JpegUtilsTest: SkipInputDataSrcNullTest start";
+
+    struct jpeg_decompress_struct dinfo = {};
+    JpegErrorMgr errorManager = {};
+
+    dinfo.err = jpeg_std_error(&errorManager);
+    dinfo.err->error_exit = JpegErrorHandler;
+
+    if (setjmp(errorManager.jumpBuffer) == 0) {
+        dinfo.src = nullptr;
+
+        ImagePlugin::SkipInputData(&dinfo, 100);
+
+        GTEST_LOG_(INFO) << "SkipInputData returned normally or triggered ERREXIT safely.";
+    } else {
+        GTEST_LOG_(INFO) << "Caught ERREXIT safely via longjmp.";
+    }
+
+    GTEST_LOG_(INFO) << "JpegUtilsTest: SkipInputDataSrcNullTest end";
 }
 
 /**

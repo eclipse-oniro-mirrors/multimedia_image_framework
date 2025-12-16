@@ -99,6 +99,8 @@
             <option name="push" value="images/fake_large_size_test.gif -> /data/local/tmp/image" src="res"/>
             <option name="push" value="images/incomplete_test.gif -> /data/local/tmp/image" src="res"/>
             <option name="push" value="images/fake_large_size_test.jpg -> /data/local/tmp/image" src="res"/>
+            <option name="push" value="images/exif.jpg -> /data/local/tmp/image" src="res"/>
+            <option name="push" value="images/test_metadata.jpg -> /data/local/tmp/image" src="res"/>
         </preparer>
     </target>
     <target name="imagecolorspacetest">
@@ -196,6 +198,16 @@
             <option name="push" value="images/test.jpg -> /data/local/tmp/image" src="res"/>
             <option name="push" value="images/RGBA1010102.rgba -> /data/local/tmp/image" src="res"/>
         </preparer>
+    </target>
+    <target name="sk_ohoscodec_test">
+    <preparer>
+        <option name="push" value="images/test_hw1.jpg -> /data/local/tmp/image" src="res"/>
+        <option name="push" value="images/three_gainmap_hdr.jpg -> /data/local/tmp/image" src="res"/>
+        <option name="push" value="images/test_broken.gif -> /data/local/tmp/image" src="res"/>
+        <option name="push" value="images/color_wheel_with_bad_profile.png -> /data/local/tmp/image" src="res"/>
+        <option name="push" value="images/test.webp -> /data/local/tmp/image" src="res"/>
+        <option name="push" value="images/test.bmp -> /data/local/tmp/image" src="res"/>
+    </preparer>
     </target>
     <target name="jpgyuvtest">
         <preparer>
@@ -342,6 +354,8 @@
             <option name="push" value="images/exif/test_dng_readmetadata003.dng -> /data/local/tmp/image" src="res"/>
             <option name="push" value="images/exif/test_dng_readmetadata004.dng -> /data/local/tmp/image" src="res"/>
             <option name="push" value="images/exif/test_notiff.dng -> /data/local/tmp/image" src="res"/>
+            <option name="push" value="images/test.cr3 -> /data/local/tmp/image" src="res"/>
+            <option name="push" value="images/exif/test_remove_exif.heic -> /data/local/tmp/image" src="res"/>
         </preparer>
     </target>
     <target name="ndktest2">
@@ -456,6 +470,8 @@
             <option name="push" value="images/moving_test.gif -> /data/local/tmp/image" src="res"/>
             <option name="push" value="images/fake_large_size_test.gif -> /data/local/tmp/image" src="res"/>
             <option name="push" value="images/incomplete_test.gif -> /data/local/tmp/image" src="res"/>
+            <option name="push" value="images/test_exif.jpg -> /data/local/tmp/image" src="res"/>
+            <option name="push" value="images/test.ico -> /data/local/tmp/image" src="res"/>
         </preparer>
     </target>
     <target name="ImagePictureFuzzTest">

@@ -495,7 +495,7 @@ static std::unique_ptr<PixelMap> ComposeHdrPixelMap(std::shared_ptr<PixelMap> &m
     ImageUtils::DumpSurfaceBufferAllKeysEnabled(gainmapSptr, "Picture-GAINMAP-AllKeys-tobeComposed");
     int32_t res = VpeUtils().ColorSpaceConverterComposeImage(buffers, isCuva);
     if (res != VPE_ERROR_OK) {
-        IMAGE_LOGE("Compose HDR image failed, res: %{public}d", res);
+        HILOG_COMM_ERROR("Compose HDR image failed, res: %{public}d", res);
         return nullptr;
     }
     ImageUtils::DumpHdrBufferEnabled(hdrSptr, "Picture-HDR-Composed");

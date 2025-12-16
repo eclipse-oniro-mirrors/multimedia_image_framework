@@ -58,5 +58,26 @@ std::pair<int32_t, std::string> ImageErrorConvert::ModifyImagePropertiesEnhanced
                 "Failed to write image properties to the file.");
     }
 }
+
+std::pair<int32_t, std::string> ImageErrorConvert::ModifyImagePropertyArrayMakeErrMsg(uint32_t errorCode,
+    std::string exMessage)
+{
+    switch (errorCode) {
+        case ERR_IMAGE_INVALID_PARAMETER:
+        case ERR_MEDIA_VALUE_INVALID:
+            return std::make_pair<int32_t, std::string>(IMAGE_SOURCE_INVALID_PARAMETER,
+                "Invalid parameter.");
+        case ERR_IMAGE_SOURCE_DATA:
+            return std::make_pair<int32_t, std::string>(IMAGE_SOURCE_UNSUPPORTED_MIMETYPE,
+                "unsupported mime type.");
+        case ERR_MEDIA_WRITE_PARCEL_FAIL:
+            return std::make_pair<int32_t, std::string>(IMAGE_SOURCE_UNSUPPORTED_MIMETYPE,
+                "Failed to write EXIF data to the file. The file may be read-only or inaccessible.");
+        case ERR_IMAGE_DECODE_EXIF_UNSUPPORT:
+        default:
+            return std::make_pair(IMAGE_SOURCE_UNSUPPORTED_METADATA,
+                "unsupported metadata."  + exMessage);
+    }
+}
 }  // namespace Media
 }  // namespace OHOS

@@ -369,6 +369,46 @@ void CreatePictureFuzzTest(const uint8_t *data, size_t size)
     imageSource->CreatePicture(opts, errorCode);
 }
 
+void GetImagePropertiesByFuzzTest(const uint8_t *data, size_t size)
+{
+    auto imageSource = ConstructImageSourceByBuffer(data, size);
+    if (!imageSource) {
+        return;
+    }
+
+    MetadataValue value;
+    imageSource->GetImagePropertyByType(0, "ImageWidth", value);
+    imageSource->GetImagePropertyByType(0, "DigitalZoomRatio", value);
+    imageSource->GetImagePropertyByType(0, "BitsPerSample", value);
+    imageSource->GetImagePropertyByType(0, "GPSLatitude", value);
+    imageSource->GetImagePropertyByType(0, "FlashpixVersion", value);
+    imageSource->GetImagePropertyByType(0, "DateTimeDigitized", value);
+    imageSource->GetImagePropertyByType(0, "", value);
+    imageSource->GetImagePropertyByType(0, "GIFLoopCount", value);
+    imageSource->GetImagePropertyByType(0, "HwMnoteFocusMode", value);
+
+    imageSource->GetAllPropertiesWithType();
+
+    MetadataValue metadataValue;
+    value.key = "ExifVersion";
+    value.bufferValue = {0x00, 0x02, 0x01, 0x00};
+
+    MetadataValue validProp;
+    validProp.key = "ImageWidth";
+    validProp.intArrayValue = {2000};
+    
+    MetadataValue invalidProp;
+    invalidProp.key = "InvalidKey";
+    invalidProp.stringValue = "test";
+    std::vector<MetadataValue> kValueTypeArray = {metadataValue, validProp, invalidProp};
+    imageSource->WriteImageMetadataBlob(kValueTypeArray);
+    imageSource->GetAllPropertiesWithType();
+
+    std::shared_ptr<MetadataAccessor> nullAccessor;
+    std::vector<MetadataValue> properties;
+    imageSource->ModifyImagePropertyBlob(nullAccessor, properties);
+}
+
 }  // namespace Media
 }  // namespace OHOS
 
@@ -391,5 +431,7 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
     OHOS::Media::GetImagePropertyFuzzTest(data, size);
     OHOS::Media::DecodeSourceInfoFuzzTest(data, size);
     OHOS::Media::CreatePictureFuzzTest(data, size);
+    OHOS::Media::GetImagePropertiesByFuzzTest(data, size);
+    
     return 0;
 }
