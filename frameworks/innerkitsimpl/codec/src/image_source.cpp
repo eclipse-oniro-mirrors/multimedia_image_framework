@@ -340,6 +340,7 @@ const static std::map<std::string, uint32_t> ORIENTATION_INT_MAP = {
 const static string IMAGE_DELAY_TIME = "DelayTime";
 const static string IMAGE_DISPOSAL_TYPE = "DisposalType";
 const static string IMAGE_GIFLOOPCOUNT_TYPE = "GIFLoopCount";
+const static string IMAGE_HEIFS_DELAY_TIME = "HeifsDelayTime";
 const static int32_t ZERO = 0;
 
 PluginServer &ImageSource::pluginServer_ = ImageUtils::GetPluginServer();
@@ -2219,7 +2220,21 @@ uint32_t ImageSource::GetImagePropertyByType(uint32_t index, const std::string &
         }
         return ret;
     }
-
+    if (IMAGE_HEIFS_DELAY_TIME.compare(key) == ZERO) {
+        IMAGE_LOGI("GetImagePropertyString special key: %{public}s", key.c_str());
+        (void)GetFrameCount(ret);
+        if (ret != SUCCESS || mainDecoder_ == nullptr) {
+            IMAGE_LOGE("[ImageSource]GetFrameCount get frame sum error.");
+            return ret;
+        } else {
+            int32_t delayTime = 0;
+            ret = mainDecoder_->GetImagePropertyInt(index, IMAGE_DELAY_TIME, delayTime);
+            IMAGE_LOGD("GetDelayTime value:%{public}d", delayTime);
+            value.intArrayValue.emplace_back(delayTime);
+            CHECK_ERROR_RETURN_RET_LOG(ret != SUCCESS, ret,
+                "[ImageSource]GetDelayTime get heifs delay time error. errorCode=%{public}u", ret);
+        }
+    }
     std::unique_lock<std::mutex> guard(decodingMutex_);
     std::unique_lock<std::mutex> guardFile(fileMutex_);
     return GetImagePropertyCommonByType(key, value);
