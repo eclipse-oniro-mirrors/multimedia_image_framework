@@ -39,6 +39,8 @@ public:
 
     static bool Initialize();
     static void Terminate();
+    static bool CreateXMPTag(const std::string &path, const XMPTagType &tagType, const std::string &value,
+        XMPTag &outTag);
 
     bool RegisterNamespacePrefix(const std::string &uri, const std::string &prefix);
     bool SetTag(const std::string &path, const XMPTag &tag);

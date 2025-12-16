@@ -131,23 +131,25 @@ static bool IsContainerTagType(XMPTagType tagType)
         tagType == XMPTagType::ALTERNATE_TEXT;
 }
 
-static XMPTag BuildXMPTag(const std::string &pathExpression, const XMP_OptionBits &options, const std::string &value)
+static bool BuildXMPTag(const std::string &pathExpression, const XMP_OptionBits &options, const std::string &value,
+    XMPTag &outTag)
 {
     const auto &[propertyNS, propertyKey] = XMPHelper::ExtractSplitProperty(pathExpression);
-    CHECK_ERROR_RETURN_RET_LOG(propertyNS.empty() || propertyKey.empty(), {},
+    CHECK_ERROR_RETURN_RET_LOG(propertyNS.empty() || propertyKey.empty(), false,
         "%{public}s failed to extract property NS or key for path: %{public}s", __func__, pathExpression.c_str());
 
     std::string xmlns;
-    CHECK_ERROR_RETURN_RET_LOG(!SXMPMeta::GetNamespaceURI(propertyNS.c_str(), &xmlns), {},
+    CHECK_ERROR_RETURN_RET_LOG(!SXMPMeta::GetNamespaceURI(propertyNS.c_str(), &xmlns), false,
         "%{public}s failed to get namespace URI for path: %{public}s", __func__, pathExpression.c_str());
 
-    return XMPTag {
+    outTag = XMPTag {
         .xmlns = xmlns,
         .prefix = propertyNS,
         .name = propertyKey,
         .type = ConvertOptionsToTagType(options),
         .value = value,
     };
+    return true;
 }
 
 static bool ValidateTagWithPath(const std::string &path, const XMPTag &tag)
@@ -179,6 +181,16 @@ static bool ValidateTagWithPath(const std::string &path, const XMPTag &tag)
         "%{public}s tag name mismatch: expected %{public}s, got %{public}s", __func__,
         expectedKey.c_str(), tag.name.c_str());
     return true;
+}
+
+bool XMPMetadata::CreateXMPTag(const std::string &path, const XMPTagType &tagType, const std::string &value,
+    XMPTag &outTag)
+{
+    if (BuildXMPTag(path, ConvertTagTypeToOptions(tagType), value, outTag)) {
+        outTag.type = tagType;
+        return true;
+    }
+    return false;
 }
 
 bool XMPMetadata::RegisterNamespacePrefix(const std::string &uri, const std::string &prefix)
@@ -236,8 +248,7 @@ bool XMPMetadata::GetTag(const std::string &path, XMPTag &tag)
     CHECK_ERROR_RETURN_RET_LOG(!ret, false, "%{public}s failed to get property for path: %{public}s",
         __func__, path.c_str());
 
-    tag = BuildXMPTag(path, options, value);
-    return true;
+    return BuildXMPTag(path, options, value, tag);
 }
 
 bool XMPMetadata::RemoveTag(const std::string &path)
@@ -290,7 +301,11 @@ void XMPMetadata::EnumerateTags(EnumerateCallback callback, const std::string &r
             continue;
         }
 
-        XMPTag tag = BuildXMPTag(iterPropPath, iterOptions, iterPropValue);
+        XMPTag tag;
+        if (!BuildXMPTag(iterPropPath, iterOptions, iterPropValue, tag)) {
+            IMAGE_LOGW("Failed to build XMPTag for path: %{public}s", iterPropPath.c_str());
+            continue;
+        }
 
         // Call the callback
         bool shouldContinue = callback(iterPropPath, tag);

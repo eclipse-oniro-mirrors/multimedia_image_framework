@@ -6714,7 +6714,7 @@ uint32_t ImageSource::WriteXMPMetadata(std::shared_ptr<XMPMetadata> &xmpMetadata
 
     accessor->Set(xmpMetadata);
 
-    // Write XMP data (this will automatically update the file via MetadataStream)
+    // Write XMP data (this will automatically update the file)
     uint32_t errorCode = accessor->Write();
     CHECK_ERROR_RETURN_RET_LOG(errorCode != SUCCESS, errorCode, "%{public}s XMP write failed", __func__);
 
