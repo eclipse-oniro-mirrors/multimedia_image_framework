@@ -833,55 +833,53 @@ static sptr<SurfaceBuffer> AllocSurfaceBuffer(int32_t width, int32_t height,
     return sb;
 }
 
-bool ProcessNVFormat(PixelMap* pixelmap, sptr<SurfaceBuffer> surfaceBuffer, uint32_t height, uint64_t srcStride)
+bool ProcessNVFormat(PixelMap* pixelmap, sptr<SurfaceBuffer> surfaceBuffer)
 {
     uint8_t* src = const_cast<uint8_t*>(pixelmap->GetPixels());
     uint8_t* dst = static_cast<uint8_t*>(surfaceBuffer->GetVirAddr());
     uint32_t dstSize = surfaceBuffer->GetSize();
 
-    uint32_t yHeight = height;
-    uint32_t uvHeight = (height + 1) / NUM_2;
-    uint32_t yStride = static_cast<uint32_t>(surfaceBuffer->GetStride());
-    uint32_t uvStride = static_cast<uint32_t>(surfaceBuffer->GetStride());
-    uint32_t yOffset = 0;
-    uint32_t uvOffset = yStride * yHeight;
+    YUVDataInfo yuvInfo;
+
+    yuvInfo.yHeight = static_cast<uint32_t>(pixelmap->GetHeight());
+    yuvInfo.uvHeight = (static_cast<uint32_t>(pixelmap->GetHeight()) + 1) / NUM_2;
+    uint64_t srcStride = static_cast<uint32_t>(pixelmap->GetWidth());
 
     OH_NativeBuffer_Planes* planes = nullptr;
     GSError retVal = surfaceBuffer->GetPlanesInfo(reinterpret_cast<void**>(&planes));
     if (retVal == OHOS::GSERROR_OK && planes != nullptr && planes->planeCount >= NUM_2) {
-        yStride = planes->planes[PLANE_Y].columnStride;
-        uvStride = planes->planes[PLANE_U].columnStride;
-        yOffset = planes->planes[PLANE_Y].offset;
+        yuvInfo.yStride = planes->planes[PLANE_Y].columnStride;
+        yuvInfo.uvStride = planes->planes[PLANE_U].columnStride;
+        yuvInfo.yOffset = planes->planes[PLANE_Y].offset;
         if (pixelmap->GetPixelFormat() == PixelFormat::NV21) {
-            uvOffset = planes->planes[PLANE_V].offset;
+            yuvInfo.uvOffset = planes->planes[PLANE_V].offset;
         } else {
-            uvOffset = planes->planes[PLANE_U].offset;
+            yuvInfo.uvOffset = planes->planes[PLANE_U].offset;
         }
     } else {
         IMAGE_LOGE("Convert to surfaceBuffer, get planesInfo failed, retVal:%{public}d", retVal);
+        return false;
     }
 
-    for (uint32_t i = 0; i < yHeight; ++i) {
+    for (uint32_t i = 0; i < yuvInfo.yHeight; ++i) {
         if (memcpy_s(dst, dstSize, src, srcStride) != EOK) {
             return false;
         }
-        dst += yStride;
-        dstSize -= yStride;
+        dst += yuvInfo.yStride;
+        dstSize -= yuvInfo.yStride;
         src += srcStride;
     }
 
-    if (srcStride % NUM_2 != 0) {
-        srcStride++;
-    }
-    dst += uvOffset - (yStride * yHeight);
+    uint64_t uvSrcSize = ImageUtils::IsEven(srcStride) ? srcStride : srcStride + 1;
+    dst += yuvInfo.uvOffset - (yuvInfo.yStride * yuvInfo.yHeight);
 
-    for (uint32_t i = 0; i < uvHeight; ++i) {
-        if (memcpy_s(dst, dstSize, src, srcStride) != EOK) {
+    for (uint32_t i = 0; i < yuvInfo.uvHeight; ++i) {
+        if (memcpy_s(dst, dstSize, src, uvSrcSize) != EOK) {
             return false;
         }
-        dst += uvStride;
-        dstSize -= uvStride;
-        src += srcStride;
+        dst += yuvInfo.uvStride;
+        dstSize -= yuvInfo.uvStride;
+        src += uvSrcSize;
     }
 
     return true;
@@ -907,16 +905,15 @@ sptr<SurfaceBuffer> ExtEncoder::ConvertToSurfaceBuffer(PixelMap* pixelmap)
     uint8_t* src = const_cast<uint8_t*>(pixelmap->GetPixels());
     uint8_t* dst = static_cast<uint8_t*>(surfaceBuffer->GetVirAddr());
     uint32_t dstSize = surfaceBuffer->GetSize();
-    uint32_t copyHeight = height;
     uint64_t srcStride = width;
     if (format == PixelFormat::NV12 || format == PixelFormat::NV21) {
-        if (!ProcessNVFormat(pixelmap, surfaceBuffer, height, srcStride)) {
+        if (!ProcessNVFormat(pixelmap, surfaceBuffer)) {
             IMAGE_LOGE("ConvertToSurfaceBuffer memcpy failed");
             ImageUtils::SurfaceBuffer_Unreference(surfaceBuffer.GetRefPtr());
             return nullptr;
         }
     } else if (format == PixelFormat::RGBA_8888) {
-        copyHeight = height;
+        uint32_t copyHeight = height;
         srcStride = static_cast<uint64_t>(width * NUM_4);
         
         for (uint32_t i = 0; i < copyHeight; i++) {
