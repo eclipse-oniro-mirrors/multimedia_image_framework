@@ -125,6 +125,7 @@ struct ImageSourceAsyncContext {
     void* buffer = nullptr;
     size_t bufferSize = 0;
     std::shared_ptr<ExifMetadata> rExifMetadata;
+    std::shared_ptr<HeifsMetadata> rImageHeifsMetadata;
 };
 
 struct ImageSourceSyncContext {
@@ -2872,6 +2873,9 @@ NapiMetadataType GetMetadataTypeByKey(const std::string& key)
         for (const auto& pair : ExifMetadata::GetHwMetadataMap()) {
             mapping[pair.first] = NapiMetadataType::HWMAKERNOTE_METADATA;
         }
+        for (const auto& pair : ExifMetadata::GetHeifsMetadataMap()) {
+            mapping[pair.first] = NapiMetadataType::HEIFS_METADATA;
+        }
         return mapping;
     }();
     auto it = KEY_TYPE_MAP.find(key);
@@ -2917,16 +2921,25 @@ static void HandleSuccessResult(napi_env env, ImageSourceAsyncContext *context, 
     NAPI_CALL_RETURN_VOID(env, napi_create_object(env, &resultObj));
     napi_value exifMetadata = MetadataNapi::CreateExifMetadata(env, context->rExifMetadata);
     napi_value makerNoteMetadata = MetadataNapi::CreateExifMetadata(env, context->rExifMetadata);
+    napi_value heifsMetadata = MetadataNapi::CreateHeifsMetadata(env, context->rImageHeifsMetadata);
     bool hasExif = false;
     bool hasMakerNote = false;
-    for (auto &exifMetadataValue: context->kValueTypeArray) {
-        auto type = GetMetadataTypeByKey(exifMetadataValue.key);
+    bool hasHeifsMetadata = false;
+    for (auto &metadataValue: context->kValueTypeArray) {
+        auto type = GetMetadataTypeByKey(metadataValue.key);
         if (type == NapiMetadataType::EXIF_METADATA) {
             CreatePropertyResult(env, context, exifMetadata, type);
             hasExif = true;
         } else if (type == NapiMetadataType::HWMAKERNOTE_METADATA) {
             CreatePropertyResult(env, context, makerNoteMetadata, type);
             hasMakerNote = true;
+        } else if (type == NapiMetadataType::HEIFS_METADATA) {
+            if (!metadataValue.intArrayValue.empty()) {
+                context->rImageHeifsMetadata->SetValue(metadataValue.key,
+                    std::to_string(metadataValue.intArrayValue[0]));
+            }
+            CreatePropertyResult(env, context, heifsMetadata, type);
+            hasHeifsMetadata = true;
         }
     }
     if (hasExif) {
@@ -2936,6 +2949,10 @@ static void HandleSuccessResult(napi_env env, ImageSourceAsyncContext *context, 
     if (hasMakerNote) {
         NAPI_CALL_RETURN_VOID(env,
             napi_set_named_property(env, resultObj, "makerNoteHuaweiMetadata", makerNoteMetadata));
+    }
+    if (hasHeifsMetadata) {
+        NAPI_CALL_RETURN_VOID(env,
+            napi_set_named_property(env, resultObj, "heifsMetadata", heifsMetadata));
     }
     result[NUM_1] = resultObj;
 }
@@ -3025,8 +3042,8 @@ static std::unique_ptr<ImageSourceAsyncContext> UnwrapContextForReadImageMetadat
 {
     napi_status status;
     napi_value thisVar = nullptr;
-    napi_value argValue[NUM_1] = {0};
-    size_t argCount = NUM_1;
+    napi_value argValue[NUM_2] = {0};
+    size_t argCount = NUM_2;
     IMG_JS_ARGS(env, info, status, argCount, argValue, thisVar);
     IMAGE_LOGD("ReadImageMetadata argCount is [%{public}zu]", argCount);
 
@@ -3045,6 +3062,14 @@ static std::unique_ptr<ImageSourceAsyncContext> UnwrapContextForReadImageMetadat
 
     if (ImageNapiUtils::getType(env, argValue[NUM_0]) == napi_object) {
         context->keyStrArray = GetStringArrayArgument(env, argValue[NUM_0]);
+    }
+    if (argCount > NUM_1 && ImageNapiUtils::getType(env, argValue[NUM_1]) == napi_number) {
+        int index = 0;
+        napi_status status = napi_get_value_int32(env, argValue[NUM_1], &index);
+        IMG_NAPI_CHECK_RET_D(IMG_IS_OK(status), context, IMAGE_LOGE("Fail to get readImageMetadata index argument"));
+        IMG_NAPI_CHECK_RET_D(index >= 0, context, IMAGE_LOGE("Invalid readImageMetadata index"));
+        context->index = static_cast<uint32_t>(index);
+        IMAGE_LOGD("index is %{public}d", index);
     }
     return context;
 }
@@ -3134,6 +3159,16 @@ static void GetImagePropertiesExecute(napi_env env, void *data)
     IMAGE_LOGD("[ImageSourceNapi]GetImagePropertiesExecute OUT.");
 }
 
+static std::shared_ptr<HeifsMetadata> CreateNullHeifsMetadata()
+{
+    std::shared_ptr<HeifsMetadata> metadata = std::make_shared<HeifsMetadata>();
+    if (!metadata) {
+        IMAGE_LOGE("Construct HeifsMetadata failed");
+        return nullptr;
+    }
+    return metadata;
+}
+
 static void ReadImageMetadataExecute(napi_env env, void *data)
 {
     auto context = static_cast<ImageSourceAsyncContext*>(data);
@@ -3142,6 +3177,7 @@ static void ReadImageMetadataExecute(napi_env env, void *data)
         return;
     }
     context->rExifMetadata = context->rImageSource->GetExifMetadata();
+    context->rImageHeifsMetadata = context->rImageHeifsMetadata = CreateNullHeifsMetadata();
     if (context->keyStrArray.empty()) {
         const std::vector<MetadataValue> allProperties = context->rImageSource->GetAllPropertiesWithType();
         for (const auto& property : allProperties) {
@@ -3156,7 +3192,7 @@ static void ReadImageMetadataExecute(napi_env env, void *data)
         uint32_t status = SUCCESS;
         for (auto keyStrIt = context->keyStrArray.begin(); keyStrIt != context->keyStrArray.end(); ++keyStrIt) {
             MetadataValue value;
-            status = context->rImageSource->GetImagePropertyByType(0, *keyStrIt, value);
+            status = context->rImageSource->GetImagePropertyByType(context->index, *keyStrIt, value);
             value.key = *keyStrIt;
             value.type = ExifMetadata::GetPropertyValueType(value.key);
             context->kValueTypeArray.emplace_back(value);

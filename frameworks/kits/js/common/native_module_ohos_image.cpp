@@ -47,6 +47,8 @@ static napi_value Export(napi_env env, napi_value exports)
     MetadataNapi::InitExifMetadata(env, exports);
     IMAGE_LOGD("MakerNoteMetadata CALL");
     MetadataNapi::InitMakerNoteMetadata(env, exports);
+    IMAGE_LOGD("HeifsMetadataNapi CALL");
+    MetadataNapi::InitHeifsMetadata(env, exports);
     IMAGE_LOGD("ImageReceiverNapi CALL");
     ImageReceiverNapi::Init(env, exports);
     IMAGE_LOGD("ImageCreatorNapi CALL");

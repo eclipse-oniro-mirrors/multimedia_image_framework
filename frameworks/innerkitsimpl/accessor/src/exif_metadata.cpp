@@ -259,13 +259,22 @@ const std::map<std::string, PropertyValueType>& ExifMetadata::GetHwMetadataMap()
     return hwMetadataMap;
 }
 
+const std::map<std::string, PropertyValueType>& ExifMetadata::GetHeifsMetadataMap()
+{
+    static const std::map<std::string, PropertyValueType> heifsMetadataMap = {
+        {"HeifsDelayTime", PropertyValueType::INT},
+    };
+    return heifsMetadataMap;
+}
+
 const std::map<NapiMetadataType, std::map<std::string, PropertyValueType>>& ExifMetadata::GetPropertyTypeMapping()
 {
     static const std::map<NapiMetadataType, std::map<std::string, PropertyValueType>> propertyTypeMap = {
         {NapiMetadataType::EXIF_METADATA, GetExifMetadataMap()},
         {NapiMetadataType::HWMAKERNOTE_METADATA, GetHwMetadataMap()},
+        {NapiMetadataType::HEIFS_METADATA, GetHeifsMetadataMap()},
     };
-    return propertyTypeMap;    
+    return propertyTypeMap;
 }
 
 const std::unordered_map<std::string, std::string>& ExifMetadata::GetPropertyKeyMap()
@@ -445,7 +454,10 @@ const std::unordered_map<std::string, std::string>& ExifMetadata::GetPropertyKey
         {"rollAngle", "HwMnoteRollAngle"},
         {"pitchAngle", "HwMnotePitchAngle"},
         {"physicalAperture", "HwMnotePhysicalAperture"},
-        {"focusMode", "HwMnoteFocusMode"}
+        {"focusMode", "HwMnoteFocusMode"},
+
+        // ============ HeifsMetadata ============
+        {"heifsDelayTime", "HeifsDelayTime"}
     };
     return propertyKeyMap;
 }

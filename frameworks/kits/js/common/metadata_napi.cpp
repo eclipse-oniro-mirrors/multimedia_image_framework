@@ -22,6 +22,7 @@
 #include "napi_message_sequence.h"
 #include "exif_metadata_formatter.h"
 #include "exif_metadata.h"
+#include "heifs_metadata.h"
 
 #undef LOG_DOMAIN
 #define LOG_DOMAIN LOG_TAG_DOMAIN_ID_IMAGE
@@ -40,9 +41,11 @@ namespace Media {
     static const std::string CLASS_NAME = "ImageMetadata";
     static const std::string EXIF_CLASS = "ExifMetadata";
     static const std::string MAKERNOTE_CLASS = "MakerNoteHuaweiMetadata";
+    static const std::string HEIFS_CLASS = "HeifsMetadata";
     thread_local napi_ref MetadataNapi::sConstructor_ = nullptr;
     thread_local napi_ref MetadataNapi::sExifConstructor_ = nullptr;
     thread_local napi_ref MetadataNapi::sMakerNoteConstructor_ = nullptr;
+    thread_local napi_ref MetadataNapi::sHeifsMetadataConstructor_ = nullptr;
     thread_local std::shared_ptr<ImageMetadata> MetadataNapi::sMetadata_ = nullptr;
 
 #if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
@@ -416,6 +419,53 @@ napi_value MetadataNapi::InitMakerNoteMetadata(napi_env env, napi_value exports)
     return exports;
 }
 
+napi_value MetadataNapi::InitHeifsMetadata(napi_env env, napi_value exports)
+{
+    IMAGE_LOGD("InitHeifsMetadata ENTER");
+    
+    napi_property_descriptor instanceProps[] = {
+        DECLARE_NAPI_FUNCTION("getProperties", GetProperties),
+        DECLARE_NAPI_FUNCTION("setProperties", SetProperties),
+        DECLARE_NAPI_FUNCTION("getAllProperties", GetAllProperties),
+        DECLARE_NAPI_FUNCTION("clone", CloneHeifsMetadata),
+    };
+    
+    napi_property_descriptor staticProps[] = {
+        DECLARE_NAPI_STATIC_FUNCTION("createInstance", CreateHeifsMetadataInstance),
+    };
+    
+    napi_value constructor = nullptr;
+    napi_status status = napi_define_class(env, HEIFS_CLASS.c_str(), NAPI_AUTO_LENGTH, Constructor, nullptr,
+        sizeof(instanceProps) / sizeof(instanceProps[0]), instanceProps, &constructor);
+    if (status != napi_ok || constructor == nullptr) {
+        IMAGE_LOGE("Failed to define HeifsMetadata class: %{public}d", status);
+        return exports;
+    }
+    status = napi_define_properties(env, constructor, sizeof(staticProps) / sizeof(staticProps[0]), staticProps);
+    if (status != napi_ok) {
+        IMAGE_LOGE("Failed to define static methods: %{public}d", status);
+    }
+    
+    status = napi_create_reference(env, constructor, 1, &sHeifsMetadataConstructor_);
+    if (status != napi_ok || sHeifsMetadataConstructor_ == nullptr) {
+        IMAGE_LOGE("Failed to create HeifsMetadata ref: %{public}d", status);
+        return exports;
+    }
+    
+    status = napi_set_named_property(env, exports, HEIFS_CLASS.c_str(), constructor);
+    if (status != napi_ok) {
+        IMAGE_LOGE("Failed to export %{public}s class: %{public}d", HEIFS_CLASS.c_str(), status);
+    }
+    
+    auto context = new NapiConstructorContext();
+    context->env_ = env;
+    context->ref_ = sHeifsMetadataConstructor_;
+    napi_add_env_cleanup_hook(env, ImageNapiUtils::CleanUpConstructorContext, context);
+    
+    IMAGE_LOGD("InitHeifsMetadata EXIT");
+    return exports;
+}
+
 napi_value MetadataNapi::CreateMetadata(napi_env env, std::shared_ptr<ImageMetadata> metadata)
 {
     if (sConstructor_ == nullptr) {
@@ -455,6 +505,27 @@ napi_value MetadataNapi::CreateExifMetadata(napi_env env, std::shared_ptr<ImageM
     }
     if (status != napi_ok) {
         IMAGE_LOGE("CreateExifMetadata | Failed to create instance");
+        napi_get_undefined(env, &result);
+    }
+    return result;
+}
+
+napi_value MetadataNapi::CreateHeifsMetadata(napi_env env, std::shared_ptr<ImageMetadata> metadata)
+{
+    if (sHeifsMetadataConstructor_ == nullptr) {
+        napi_value exports = nullptr;
+        napi_create_object(env, &exports);
+        MetadataNapi::InitHeifsMetadata(env, exports);
+    }
+    napi_value constructor = nullptr;
+    napi_value result = nullptr;
+    napi_status status = napi_get_reference_value(env, sHeifsMetadataConstructor_, &constructor);
+    if (status == napi_ok) {
+        sMetadata_ = metadata;
+        status = napi_new_instance(env, constructor, 0, nullptr, &result);
+    }
+    if (status != napi_ok) {
+        IMAGE_LOGE("CreateHeifsMetadata | Failed to create instance");
         napi_get_undefined(env, &result);
     }
     return result;
@@ -832,6 +903,37 @@ static void CloneExifMetadataComplete(napi_env env, napi_status status, void *da
     delete context;
 }
 
+static void CloneHeifsMetadataComplete(napi_env env, napi_status status, void *data)
+{
+    auto context = static_cast<MetadataNapiAsyncContext*>(data);
+    napi_handle_scope scope;
+    napi_open_handle_scope(env, &scope);
+    
+    napi_value result = nullptr;
+    bool success = context->rMetadata != nullptr &&
+                 (result = MetadataNapi::CreateHeifsMetadata(env, context->rMetadata)) != nullptr;
+    if (success) {
+        for (auto& [name, ref] : context->customProperties) {
+            napi_value propValue;
+            if (napi_get_reference_value(env, ref, &propValue) == napi_ok) {
+                napi_set_named_property(env, result, name.c_str(), propValue);
+            }
+            napi_delete_reference(env, ref);
+        }
+        context->customProperties.clear();
+    }
+    napi_deferred deferred = context->deferred;
+    if (success) {
+        napi_resolve_deferred(env, deferred, result);
+    } else {
+        napi_reject_deferred(env, deferred, CreateBusinessError(env,
+            IMAGE_SOURCE_UNSUPPORTED_METADATA, "Failed to clone EXIF metadata"));
+    }
+    napi_delete_async_work(env, context->work);
+    napi_close_handle_scope(env, scope);
+    delete context;
+}
+
 napi_value MetadataNapi::GetProperties(napi_env env, napi_callback_info info)
 {
     napi_value result = nullptr;
@@ -971,6 +1073,18 @@ static void CloneExifExecute(napi_env env, void *data)
     context->status = SUCCESS;
 }
 
+static void CloneHeifsMetadataExecute(napi_env env, void *data)
+{
+    auto context = static_cast<MetadataNapiAsyncContext*>(data);
+    if (context == nullptr) {
+        IMAGE_LOGE("Empty context");
+        return;
+    }
+    auto tmpixel = context->rMetadata->CloneMetadata();
+    context->rMetadata = std::move(tmpixel);
+    context->status = SUCCESS;
+}
+
 std::string GetStringFromValue(napi_env env, napi_value value)
 {
     char buffer[256] = {0};
@@ -1042,6 +1156,39 @@ napi_value MetadataNapi::CloneExif(napi_env env, napi_callback_info info)
 
     IMG_CREATE_CREATE_ASYNC_WORK(env, status, "CloneExif",
         CloneExifExecute, CloneExifMetadataComplete, asyncContext, asyncContext->work);
+    IMG_NAPI_CHECK_RET_D(IMG_IS_OK(status),
+        nullptr, IMAGE_LOGE("Fail to create async work"));
+    return result;
+}
+
+napi_value MetadataNapi::CloneHeifsMetadata(napi_env env, napi_callback_info info)
+{
+    napi_value result = nullptr;
+    napi_get_undefined(env, &result);
+    napi_status status;
+    napi_value thisVar = nullptr;
+    size_t argCount = NUM_0;
+    IMG_JS_ARGS(env, info, status, argCount, nullptr, thisVar);
+    IMG_NAPI_CHECK_RET_D(IMG_IS_OK(status), nullptr, IMAGE_LOGE("Fail to napi_get_cb_info"));
+
+    std::unique_ptr<MetadataNapiAsyncContext> asyncContext = std::make_unique<MetadataNapiAsyncContext>();
+    status = napi_unwrap(env, thisVar, reinterpret_cast<void**>(&asyncContext->nConstructor));
+    IMG_NAPI_CHECK_RET_D(IMG_IS_READY(status, asyncContext->nConstructor), nullptr,
+                         IMAGE_LOGE("Fail to unwrap context"));
+
+    asyncContext->rMetadata = asyncContext->nConstructor->nativeMetadata_;
+
+    IMG_NAPI_CHECK_RET_D(IMG_IS_READY(status, asyncContext->rMetadata), nullptr, IMAGE_LOGE("Empty native rMetadata"));
+    if (argCount != NUM_0) {
+        IMAGE_LOGE("ArgCount mismatch");
+        return nullptr;
+    }
+
+    napi_create_promise(env, &(asyncContext->deferred), &result);
+    GetJsProperties(env, thisVar, static_cast<void*>((asyncContext).get()));
+
+    IMG_CREATE_CREATE_ASYNC_WORK(env, status, "CloneHeifsMetadata",
+        CloneHeifsMetadataExecute, CloneHeifsMetadataComplete, asyncContext, asyncContext->work);
     IMG_NAPI_CHECK_RET_D(IMG_IS_OK(status),
         nullptr, IMAGE_LOGE("Fail to create async work"));
     return result;
@@ -1219,6 +1366,44 @@ napi_value MetadataNapi::CreateInstance(napi_env env, napi_callback_info info)
     }
     metadataNapi->nativeMetadata_ = metadata;
     IMAGE_LOGD("MetadataNapi::CreateInstance OUT");
+    return result;
+}
+
+
+napi_value MetadataNapi::CreateHeifsMetadataInstance(napi_env env, napi_callback_info info)
+{
+    IMAGE_LOGD("MetadataNapi::CreateHeifsMetadataInstance IN");
+    napi_value result = nullptr;
+    napi_value constructor = nullptr;
+    napi_status status;
+    
+    status = napi_get_reference_value(env, sHeifsMetadataConstructor_, &constructor);
+    if (status != napi_ok || constructor == nullptr) {
+        IMAGE_LOGE("Failed to get constructor reference, status: %{public}d", status);
+        napi_get_undefined(env, &result);
+        return result;
+    }
+    auto metadata = std::make_shared<HeifsMetadata>();
+    if (!metadata) {
+        IMAGE_LOGE("Failed to create ExifMetadata instance");
+        napi_get_undefined(env, &result);
+        return result;
+    }
+    status = napi_new_instance(env, constructor, 0, nullptr, &result);
+    if (status != napi_ok) {
+        IMAGE_LOGE("Failed to create new instance, status: %{public}d", status);
+        napi_get_undefined(env, &result);
+        return result;
+    }
+    MetadataNapi* metadataNapi = nullptr;
+    status = napi_unwrap(env, result, reinterpret_cast<void**>(&metadataNapi));
+    if (status != napi_ok || metadataNapi == nullptr) {
+        IMAGE_LOGE("Failed to unwrap metadataNapi, status: %{public}d", status);
+        napi_get_undefined(env, &result);
+        return result;
+    }
+    metadataNapi->nativeMetadata_ = metadata;
+    IMAGE_LOGD("MetadataNapi::CreateHeifsMetadataInstance OUT");
     return result;
 }
 } // namespace Media
