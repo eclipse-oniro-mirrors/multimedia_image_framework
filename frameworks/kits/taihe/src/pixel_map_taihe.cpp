@@ -116,56 +116,21 @@ static bool GetSurfaceSize(uint64_t surfaceId, Media::Rect& region)
     return true;
 }
 
-static PixelMap CreatePixelMapFromSurface(std::string const& surfaceId, Media::Rect& region)
+static PixelMap CreatePixelMapFromSurface(std::string const& surfaceId, Media::Rect& region, bool transformEnabled,
+    bool useLegacyErrCode = false)
 {
-    bool regionProvided = region.width > 0 && region.height > 0;
     uint64_t surfaceIdInt = 0;
     auto res = std::from_chars(surfaceId.data(), surfaceId.data() + surfaceId.size(), surfaceIdInt);
     if (res.ec != std::errc()) {
         ImageTaiheUtils::ThrowExceptionError(
-            regionProvided ? Media::ERR_IMAGE_INVALID_PARAMETER : Media::COMMON_ERR_INVALID_PARAMETER,
+            useLegacyErrCode ? Media::ERR_IMAGE_PIXELMAP_CREATE_FAILED : Media::ERR_IMAGE_INVALID_PARAM,
             "Empty or invalid Surface ID");
         return make_holder<PixelMapImpl, PixelMap>();
     }
     if (!GetSurfaceSize(surfaceIdInt, region)) {
         ImageTaiheUtils::ThrowExceptionError(
-            regionProvided ? Media::ERR_IMAGE_INVALID_PARAMETER : Media::COMMON_ERR_INVALID_PARAMETER,
+            useLegacyErrCode ? Media::ERR_IMAGE_PIXELMAP_CREATE_FAILED : Media::ERR_IMAGE_GET_IMAGE_DATA_FAILED,
             "Get Surface size failed");
-        return make_holder<PixelMapImpl, PixelMap>();
-    }
-
-    auto &rsClient = Rosen::RSInterfaces::GetInstance();
-    OHOS::Rect r = {
-        .x = region.left,
-        .y = region.top,
-        .w = region.width,
-        .h = region.height,
-    };
-    std::shared_ptr<Media::PixelMap> pixelMap = rsClient.CreatePixelMapFromSurfaceId(surfaceIdInt, r);
-#ifndef EXT_PIXEL
-    if (pixelMap == nullptr) {
-        pixelMap = CreatePixelMapFromSurfaceId(surfaceIdInt, region);
-    }
-#endif
-    if (pixelMap == nullptr) {
-        ImageTaiheUtils::ThrowExceptionError(
-            regionProvided ? Media::ERR_IMAGE_INVALID_PARAMETER : Media::COMMON_ERR_INVALID_PARAMETER,
-            "Create PixelMap from Surface failed");
-        return make_holder<PixelMapImpl, PixelMap>();
-    }
-    return make_holder<PixelMapImpl, PixelMap>(std::move(pixelMap));
-}
-
-static PixelMap CreatePixelMapFromSurfaceV2(std::string const& surfaceId, Media::Rect& region, bool transformEnabled)
-{
-    uint64_t surfaceIdInt = 0;
-    auto res = std::from_chars(surfaceId.data(), surfaceId.data() + surfaceId.size(), surfaceIdInt);
-    if (res.ec != std::errc()) {
-        ImageTaiheUtils::ThrowExceptionError(Media::ERR_IMAGE_INVALID_PARAM, "Empty or invalid Surface ID");
-        return make_holder<PixelMapImpl, PixelMap>();
-    }
-    if (!GetSurfaceSize(surfaceIdInt, region)) {
-        ImageTaiheUtils::ThrowExceptionError(Media::ERR_IMAGE_GET_IMAGE_DATA_FAILED, "Get Surface size failed");
         return make_holder<PixelMapImpl, PixelMap>();
     }
 
@@ -183,7 +148,8 @@ static PixelMap CreatePixelMapFromSurfaceV2(std::string const& surfaceId, Media:
     }
 #endif
     if (pixelMap == nullptr) {
-        ImageTaiheUtils::ThrowExceptionError(Media::ERR_IMAGE_CREATE_PIXELMAP_FAILED,
+        ImageTaiheUtils::ThrowExceptionError(
+            useLegacyErrCode ? Media::ERR_IMAGE_PIXELMAP_CREATE_FAILED : Media::ERR_IMAGE_CREATE_PIXELMAP_FAILED,
             "Create PixelMap from Surface failed");
         return make_holder<PixelMapImpl, PixelMap>();
     }
@@ -199,7 +165,7 @@ PixelMap CreatePixelMapFromSurfaceByIdSync(string_view etsSurfaceId)
     std::string surfaceId(etsSurfaceId);
     Media::Rect region;
     IMAGE_LOGD("[%{public}s] surfaceId=%{public}s", __func__, surfaceId.c_str());
-    return CreatePixelMapFromSurface(surfaceId, region);
+    return CreatePixelMapFromSurface(surfaceId, region, false, true);
 #endif
 }
 
@@ -213,7 +179,7 @@ PixelMap CreatePixelMapFromSurfaceWithTransformationSync(string_view etsSurfaceI
     std::string surfaceId(etsSurfaceId);
     Media::Rect region;
     IMAGE_LOGD("[%{public}s] surfaceId=%{public}s", __func__, surfaceId.c_str());
-    return CreatePixelMapFromSurfaceV2(surfaceId, region, transformEnabled);
+    return CreatePixelMapFromSurface(surfaceId, region, transformEnabled);
 #endif
 }
 
@@ -231,7 +197,7 @@ PixelMap CreatePixelMapFromSurfaceByIdAndRegionSync(string_view etsSurfaceId,
         ImageTaiheUtils::ThrowExceptionError(Media::ERR_IMAGE_INVALID_PARAMETER, "Invalid region");
         return make_holder<PixelMapImpl, PixelMap>();
     }
-    return CreatePixelMapFromSurface(surfaceId, region);
+    return CreatePixelMapFromSurface(surfaceId, region, false, true);
 #endif
 }
 
