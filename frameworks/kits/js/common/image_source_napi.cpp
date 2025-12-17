@@ -1489,9 +1489,9 @@ STATIC_NAPI_VALUE_FUNC(GetImageInfo)
         napi_get_boolean(env, rImageSource->IsHdrImage(), &isHdrValue);
         napi_set_named_property(env, result, "isHdr", isHdrValue);
     }
-    napi_value isProgressiveImage = nullptr;
-    napi_get_boolean(env, imageInfo->isProgressiveImage, &isProgressiveImage);
-    napi_set_named_property(env, result, "isProgressive", isProgressiveImage);
+    napi_value isProgressive = nullptr;
+    napi_get_boolean(env, imageInfo->isProgressive, &isProgressive);
+    napi_set_named_property(env, result, "isProgressive", isProgressive);
     return result;
 }
 
