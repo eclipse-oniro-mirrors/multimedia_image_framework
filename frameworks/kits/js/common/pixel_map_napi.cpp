@@ -1729,7 +1729,9 @@ STATIC_EXEC_FUNC(CreatePixelMapFromSurfaceWithTransformation)
         .w = context->area.region.width, .h = context->area.region.height, };
     std::shared_ptr<Media::PixelMap> pixelMap = rsClient.CreatePixelMapFromSurfaceId(surfaceId,
         r, context->transformEnabled);
-    ImageUtils::DumpPixelMap(pixelMap.get(), "CreatePixelMapFromSurfaceWithTransformation");
+    if (pixelMap) {
+        ImageUtils::DumpPixelMapIfDumpEnabled(*pixelMap, "CreatePixelMapFromSurfaceWithTransformation");
+    }
 #ifndef EXT_PIXEL
     if (pixelMap == nullptr) {
         pixelMap = CreatePixelMapFromSurfaceId(surfaceId, context->area.region);
