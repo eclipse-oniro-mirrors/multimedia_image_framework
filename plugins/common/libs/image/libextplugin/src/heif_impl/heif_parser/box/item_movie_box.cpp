@@ -23,7 +23,7 @@ namespace {
     const uint32_t MVHD_PREDEFINED_OFFSET = 6;
     const uint32_t TKHD_MATRIX_OFFSET = 9;
     const uint32_t VMHD_OPCOLOR_OFFSET = 3;
-    const uint32_t HVC1_RESERVED_OFFSET = 8;
+    const uint32_t HVC1_RESERVED_OFFSET = 6;
     const uint32_t HVC1_PREDEFINE_OFFSET = 16;
     const uint32_t HVC1_SKIP_OFFSET = 50;
     const uint32_t RESERVERED_INDEX_ZERO = 0;
@@ -533,6 +533,7 @@ heif_error HeifHvc1Box::ParseContent(HeifStreamReader &reader)
     for (uint32_t i = 0; i < HVC1_RESERVED_OFFSET; i++) {
         reserved_[i] = reader.Read8();
     }
+    dataRefIndex_ = reader.Read16();
     for (uint32_t i = 0; i < HVC1_PREDEFINE_OFFSET; i++) {
         reader.Read8();
     }
