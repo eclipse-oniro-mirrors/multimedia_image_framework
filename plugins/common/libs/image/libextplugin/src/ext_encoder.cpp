@@ -839,47 +839,46 @@ bool ProcessNVFormat(PixelMap* pixelmap, sptr<SurfaceBuffer> surfaceBuffer)
     uint8_t* dst = static_cast<uint8_t*>(surfaceBuffer->GetVirAddr());
     uint32_t dstSize = surfaceBuffer->GetSize();
 
-    YUVDataInfo yuvInfo;
-
-    yuvInfo.yHeight = static_cast<uint32_t>(pixelmap->GetHeight());
-    yuvInfo.uvHeight = (static_cast<uint32_t>(pixelmap->GetHeight()) + 1) / NUM_2;
-    uint64_t srcStride = static_cast<uint32_t>(pixelmap->GetWidth());
+    YUVDataInfo yuvDstInfo;
+    YUVDataInfo yuvSrcInfo;
+    pixelmap->GetImageYUVInfo(yuvSrcInfo);
 
     OH_NativeBuffer_Planes* planes = nullptr;
     GSError retVal = surfaceBuffer->GetPlanesInfo(reinterpret_cast<void**>(&planes));
     if (retVal == OHOS::GSERROR_OK && planes != nullptr && planes->planeCount >= NUM_2) {
-        yuvInfo.yStride = planes->planes[PLANE_Y].columnStride;
-        yuvInfo.uvStride = planes->planes[PLANE_U].columnStride;
-        yuvInfo.yOffset = planes->planes[PLANE_Y].offset;
+        yuvDstInfo.yStride = planes->planes[PLANE_Y].columnStride;
+        yuvDstInfo.uvStride = planes->planes[PLANE_U].columnStride;
+        yuvDstInfo.yOffset = planes->planes[PLANE_Y].offset;
         if (pixelmap->GetPixelFormat() == PixelFormat::NV21) {
-            yuvInfo.uvOffset = planes->planes[PLANE_V].offset;
+            yuvDstInfo.uvOffset = planes->planes[PLANE_V].offset;
         } else {
-            yuvInfo.uvOffset = planes->planes[PLANE_U].offset;
+            yuvDstInfo.uvOffset = planes->planes[PLANE_U].offset;
         }
     } else {
         IMAGE_LOGE("Convert to surfaceBuffer, get planesInfo failed, retVal:%{public}d", retVal);
         return false;
     }
 
-    for (uint32_t i = 0; i < yuvInfo.yHeight; ++i) {
-        if (memcpy_s(dst, dstSize, src, srcStride) != EOK) {
+    for (uint32_t i = 0; i < yuvSrcInfo.yHeight; ++i) {
+        if (memcpy_s(dst, dstSize, src, yuvSrcInfo.yWidth) != EOK) {
             return false;
         }
-        dst += yuvInfo.yStride;
-        dstSize -= yuvInfo.yStride;
-        src += srcStride;
+        dst += yuvDstInfo.yStride;
+        dstSize -= yuvDstInfo.yStride;
+        src += yuvSrcInfo.yWidth;
     }
 
-    uint64_t uvSrcSize = ImageUtils::IsEven(srcStride) ? srcStride : srcStride + 1;
-    dst += yuvInfo.uvOffset - (yuvInfo.yStride * yuvInfo.yHeight);
+    uint64_t uvWidth = yuvSrcInfo.uvWidth * NUM_2;
+    dst = static_cast<uint8_t*>(surfaceBuffer->GetVirAddr());
+    dst += yuvDstInfo.uvOffset
 
-    for (uint32_t i = 0; i < yuvInfo.uvHeight; ++i) {
-        if (memcpy_s(dst, dstSize, src, uvSrcSize) != EOK) {
+    for (uint32_t i = 0; i < yuvSrcInfo.uvHeight; ++i) {
+        if (memcpy_s(dst, dstSize, src, uvWidth) != EOK) {
             return false;
         }
-        dst += yuvInfo.uvStride;
-        dstSize -= yuvInfo.uvStride;
-        src += uvSrcSize;
+        dst += yuvDstInfo.uvStride;
+        dstSize -= yuvDstInfo.uvStride;
+        src += uvWidth;
     }
 
     return true;
