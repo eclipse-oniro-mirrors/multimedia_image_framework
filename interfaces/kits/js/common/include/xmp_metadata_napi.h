@@ -46,6 +46,7 @@ private:
     static napi_value GetTag(napi_env env, napi_callback_info info);
     static napi_value RemoveTag(napi_env env, napi_callback_info info);
     static napi_value EnumerateTags(napi_env env, napi_callback_info info);
+    static napi_value GetTags(napi_env env, napi_callback_info info);
     static napi_value SetBlob(napi_env env, napi_callback_info info);
     static napi_value GetBlob(napi_env env, napi_callback_info info);
 

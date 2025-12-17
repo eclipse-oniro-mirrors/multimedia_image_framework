@@ -71,6 +71,7 @@ struct XMPMetadataAsyncContext {
     OHOS::Media::XMPEnumerateOption options;
     void *arrayBuffer = nullptr;
     size_t arrayBufferSize = 0;
+    std::vector<std::pair<std::string, OHOS::Media::XMPTag>> tags;
 };
 
 // Structure to hold callback information for EnumerateTags
@@ -106,6 +107,7 @@ napi_status XMPMetadataNapi::DefineClassProperties(napi_env env, napi_value &con
         DECLARE_NAPI_FUNCTION("getTag", GetTag),
         DECLARE_NAPI_FUNCTION("removeTag", RemoveTag),
         DECLARE_NAPI_FUNCTION("enumerateTags", EnumerateTags),
+        DECLARE_NAPI_FUNCTION("getTags", GetTags),
         DECLARE_NAPI_FUNCTION("setBlob", SetBlob),
         DECLARE_NAPI_FUNCTION("getBlob", GetBlob),
     };
@@ -854,6 +856,80 @@ napi_value XMPMetadataNapi::EnumerateTags(napi_env env, napi_callback_info info)
         return ImageNapiUtils::ThrowExceptionError(env, IMAGE_BAD_PARAMETER, "Failed to enumerate tags");
     }
     IMAGE_LOGD("EnumerateTags completed successfully");
+    return result;
+}
+
+static void GetTagsExecute(napi_env env, void *data)
+{
+    IMAGE_LOGD("GetTagsExecute IN");
+    auto context = static_cast<XMPMetadataAsyncContext*>(data);
+    CHECK_ERROR_RETURN_LOG(context == nullptr, "%{public}s context is null", __func__);
+    CHECK_ERROR_RETURN_LOG(context->rXMPMetadata == nullptr, "%{public}s XMP metadata is null", __func__);
+    context->rXMPMetadata->EnumerateTags([&context](const std::string &path, const XMPTag &tag) {
+        context->tags.emplace_back(path, tag);
+        return true;
+    }, context->rootPath, context->options);
+    context->status = SUCCESS;
+}
+
+static void GetTagsComplete(napi_env env, napi_status status, void *data)
+{
+    IMAGE_LOGD("GetTagsComplete IN");
+    auto context = static_cast<XMPMetadataAsyncContext*>(data);
+    CHECK_ERROR_RETURN_LOG(context == nullptr, "%{public}s context is null", __func__);
+
+    napi_value result = nullptr;
+    if (context->status == SUCCESS) {
+        // Create JavaScript object (Record<string, XMPTag>)
+        napi_create_object(env, &result);
+        for (const auto &[path, tag] : context->tags) {
+            napi_value tagObj = CreateJsXMPTag(env, tag);
+            napi_set_named_property(env, result, path.c_str(), tagObj);
+        }
+    } else {
+        napi_get_undefined(env, &result);
+    }
+    CommonCallbackRoutine(env, context, result);
+}
+
+napi_value XMPMetadataNapi::GetTags(napi_env env, napi_callback_info info)
+{
+    napi_value result = nullptr;
+    napi_get_undefined(env, &result);
+
+    napi_status status;
+    napi_value thisVar = nullptr;
+    size_t argc = NUM_2;
+    napi_value argv[NUM_2] = {0};
+    IMG_JS_ARGS(env, info, status, argc, argv, thisVar);
+    IMG_NAPI_CHECK_RET_D(IMG_IS_OK(status), result, IMAGE_LOGE("Fail to napi_get_cb_info"));
+
+    std::unique_ptr<XMPMetadataAsyncContext> asyncContext = std::make_unique<XMPMetadataAsyncContext>();
+    status = napi_unwrap(env, thisVar, reinterpret_cast<void**>(&asyncContext->xmpMetadataNapi));
+    IMG_NAPI_CHECK_RET_D(IMG_IS_READY(status, asyncContext->xmpMetadataNapi), result,
+        IMAGE_LOGE("Fail to unwrap context"));
+    asyncContext->rXMPMetadata = asyncContext->xmpMetadataNapi->GetNativeXMPMetadata();
+    IMG_NAPI_CHECK_RET_D(IMG_IS_READY(status, asyncContext->rXMPMetadata), result,
+        IMAGE_LOGE("Empty native XMPMetadata"));
+
+    // Parse optional arguments: rootPath and options
+    if (argc >= NUM_1) {
+        napi_valuetype type0 = ImageNapiUtils::getType(env, argv[0]);
+        if (type0 == napi_string) {
+            asyncContext->rootPath = ImageNapiUtils::GetStringArgument(env, argv[0]);
+            IMAGE_LOGD("%{public}s: rootPath: %{public}s", __func__, asyncContext->rootPath.c_str());
+        }
+
+        if (argc >= NUM_2) {
+            ParseEnumerateTagsOptions(env, argv[1], asyncContext->options);
+        }
+    }
+
+    napi_create_promise(env, &(asyncContext->deferred), &result);
+
+    IMG_CREATE_CREATE_ASYNC_WORK(env, status, "GetTags",
+        GetTagsExecute, GetTagsComplete, asyncContext, asyncContext->work);
+    IMG_NAPI_CHECK_RET_D(IMG_IS_OK(status), nullptr, IMAGE_LOGE("Failed to create async work"));
     return result;
 }
 
