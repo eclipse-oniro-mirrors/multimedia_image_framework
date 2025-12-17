@@ -1491,7 +1491,7 @@ STATIC_NAPI_VALUE_FUNC(GetImageInfo)
     }
     napi_value isProgressiveImage = nullptr;
     napi_get_boolean(env, imageInfo->isProgressiveImage, &isProgressiveImage);
-    napi_set_named_property(env, result, "isProgressiveImage", isProgressiveImage);
+    napi_set_named_property(env, result, "isProgressive", isProgressiveImage);
     return result;
 }
 
