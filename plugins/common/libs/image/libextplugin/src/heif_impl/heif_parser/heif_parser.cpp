@@ -128,12 +128,12 @@ heif_error HeifParser::AssembleBoxes(HeifStreamReader &reader)
         }
     }
 
-    if (moovBox_) {
-        return AssembleMovieBoxes();
-    }
-
     if (!ftypBox_) {
         return heif_error_no_ftyp;
+    }
+
+    if (moovBox_ && ftypBox_->GetMajorBrand() == HEIF_BRAND_TYPE_MSF1) {
+        return AssembleMovieBoxes();
     }
 
     if (!metaBox_) {
