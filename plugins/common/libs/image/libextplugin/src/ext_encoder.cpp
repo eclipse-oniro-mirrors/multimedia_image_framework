@@ -870,7 +870,7 @@ bool ProcessNVFormat(PixelMap* pixelmap, sptr<SurfaceBuffer> surfaceBuffer)
 
     uint64_t uvWidth = yuvSrcInfo.uvWidth * NUM_2;
     dst = static_cast<uint8_t*>(surfaceBuffer->GetVirAddr());
-    dst += yuvDstInfo.uvOffset
+    dst += yuvDstInfo.uvOffset;
 
     for (uint32_t i = 0; i < yuvSrcInfo.uvHeight; ++i) {
         if (memcpy_s(dst, dstSize, src, uvWidth) != EOK) {
