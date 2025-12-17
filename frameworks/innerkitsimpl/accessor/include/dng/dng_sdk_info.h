@@ -27,6 +27,44 @@
 
 namespace OHOS {
 namespace Media {
+
+enum class DngMetaSourceType {
+    DEFAULT = 0,
+    EXIF = 1,
+    SHARED = 2,
+    SUB_PREVIEW_IFD = 3,
+    CHAINED_IFD = 4,
+    IPTC = 5,
+    XMP = 6,
+};
+
+struct DngPropertyOption {
+    DngMetaSourceType type = DngMetaSourceType::DEFAULT;
+    uint32_t ifdIndex = 0; // Effective for SUB_PREVIEW_IFD and CHAINED_IFD
+};
+
+// |<---------- Directory Entry structure(12 bytes) ---------->|
+// |<-   Tag   ->|<-  Type   ->|<-  Count  ->|<- ValueOffset ->| -----> |<-   Value (Optional)   ->|
+// |<- 2 bytes ->|<- 2 bytes ->|<- 4 bytes ->|<-   4 bytes   ->| -----> |<- (Type * Count) bytes ->|
+struct DngTagRecord {
+    uint16_t tagCode = 0;           // identifies the field
+    uint16_t tagType = 0;           // the indicated data type
+    uint32_t tagCount = 0;          // the number of values
+    uint64_t tagValueOffset = 0;    // the original value offset in file stream
+    uint32_t tagValueSize = 0;      // the original value size in file stream
+};
+
+enum class DngPropertyOperation {
+    UNKNOWN = 0,
+    ADD = 1,
+    MODIFY = 2,
+    DELETE = 3,
+};
+
+struct DngUpdateTagItem {
+    DngPropertyOperation operation = DngPropertyOperation::UNKNOWN;
+    MetadataValue value;
+};
 class DngSdkInfo : public dng_info {
 public:
     using TagName = std::string;
@@ -59,7 +97,7 @@ public:
     static uint32_t ParseAsciiTag(const DngTagRecord& tagRecord, dng_stream& stream, MetadataValue& value);
     static uint32_t ParseShortTag(const DngTagRecord& tagRecord, dng_stream& stream, MetadataValue& value);
     static uint32_t ParseShortTagToString(const DngTagRecord& tagRecord, dng_stream& stream, MetadataValue& value);
-    static uint32_t ParseLongTag(const DngTagRecord& tagRecord, dng_stream& stream, MetadataValue& value);
+    static uint32_t ParseIntArrayTag(const DngTagRecord& tagRecord, dng_stream& stream, MetadataValue& value);
     static uint32_t ParseRationalTag(const DngTagRecord& tagRecord, dng_stream& stream, MetadataValue& value);
     static uint32_t ParseUndefinedTag(const DngTagRecord& tagRecord, dng_stream& stream, MetadataValue& value);
     static uint32_t ParseIntTag(const DngTagRecord& tagRecord, dng_stream& stream, MetadataValue& value);
@@ -165,13 +203,11 @@ public:
     static uint32_t GetIfdNewSubfileType(const dng_ifd& fIFD, MetadataValue& value);
     static uint32_t GetIfdImageWidth(const dng_ifd& fIFD, MetadataValue& value);
     static uint32_t GetIfdImageLength(const dng_ifd& fIFD, MetadataValue& value);
-    static uint32_t GetIfdBitsPerSample(const dng_ifd& fIFD, MetadataValue& value);
     static uint32_t GetIfdCompression(const dng_ifd& fIFD, MetadataValue& value);
     static uint32_t GetIfdPhotometricInterpretation(const dng_ifd& fIFD, MetadataValue& value);
     static uint32_t GetIfdOrientation(const dng_ifd& fIFD, MetadataValue& value);
     static uint32_t GetIfdSamplesPerPixel(const dng_ifd& fIFD, MetadataValue& value);
     static uint32_t GetIfdRowsPerStrip(const dng_ifd& fIFD, MetadataValue& value);
-    static uint32_t GetIfdStripByteCounts(const dng_ifd& fIFD, MetadataValue& value);
     static uint32_t GetIfdXResolution(const dng_ifd& fIFD, MetadataValue& value);
     static uint32_t GetIfdYResolution(const dng_ifd& fIFD, MetadataValue& value);
     static uint32_t GetIfdPlanarConfiguration(const dng_ifd& fIFD, MetadataValue& value);
@@ -194,7 +230,7 @@ private:
     void ProcessSpecialTag(const UniqueTagKey& tagKey, dng_stream& stream);
     uint32_t GetOrSetProperty(MetadataValue& value, const DngPropertyOption& option, UniqueTagKey& tagKey, bool isGet);
     uint32_t GetSpecialProperty(MetadataValue& value, const DngPropertyOption& option);
-    bool IsParsedTag(const UniqueTagKey& tagKey);
+    bool IsInvalidParsedTag(const UniqueTagKey& tagKey);
     bool IsParsedParentCode(uint32_t parentCode);
     bool IsSpecialTagName(const std::string& tagName);
     UniqueTagKey GetSpecialUniqueTagKey(const std::string& tagName, const DngPropertyOption& option);
@@ -212,7 +248,7 @@ private:
 
     // Used to handle tags that have not been parsed or value have been changed in dng_sdk
     static std::map<TagName, TagCode> specialTagNameMap_;
-    static std::map<TagCode, ParseTagType> specialTagPraseMap_;
+    static std::map<TagCode, ParseTagType> specialTagParseMap_;
 
     std::set<ParentCode> parsedParentCode_;
     std::map<UniqueTagKey, DngTagRecord> parsedTagRecordMap_;

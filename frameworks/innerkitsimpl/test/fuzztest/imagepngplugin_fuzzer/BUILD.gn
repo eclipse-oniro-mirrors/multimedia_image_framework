@@ -42,5 +42,6 @@ ohos_fuzztest("ImagePngPluginFuzzTest") {
     "hilog:libhilog",
     "libpng:libpng",
     "ipc:ipc_single",
+    "skia:piex",
   ]
 }

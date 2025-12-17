@@ -14,6 +14,8 @@
  */
 #include "dng/dng_sdk_helper.h"
 
+#include <limits>
+
 #include "dng/dng_exif_metadata.h"
 #include "image_log.h"
 #include "media_errors.h"
@@ -56,6 +58,10 @@ protected:
             ThrowReadFile();
             return;
         }
+        if (offset > std::numeric_limits<uint32_t>::max()) {
+            ThrowReadFile();
+            return;
+        }
         if (!stream_ || !stream_->Seek(static_cast<uint32_t>(offset))) {
             ThrowReadFile();
             return;
@@ -63,6 +69,7 @@ protected:
         uint32_t readSize = 0;
         if (!stream_->Read(count, static_cast<uint8_t*>(data), count, readSize) || readSize != count) {
             ThrowReadFile();
+            return;
         }
     }
 
@@ -89,6 +96,10 @@ protected:
             ThrowReadFile();
             return;
         }
+        if (offset > std::numeric_limits<long>::max()) {
+            ThrowReadFile();
+            return;
+        }
         if (!stream_ || stream_->Seek(static_cast<long>(offset), SeekPos::BEGIN) < 0) {
             ThrowReadFile();
             return;
@@ -96,6 +107,7 @@ protected:
         ssize_t readSize = stream_->Read(static_cast<uint8_t*>(data), count);
         if (readSize < 0 || static_cast<uint32_t>(readSize) != count) {
             ThrowReadFile();
+            return;
         }
     }
 
@@ -173,25 +185,26 @@ static uint32_t SetPropertyByOptions(const std::unique_ptr<DngSdkInfo>& info, co
     return ERR_IMAGE_DECODE_EXIF_UNSUPPORT;
 }
 
-static const std::vector<DngPropertyOption>& GetExifPropertyOptions(uint32_t mainIndex)
+static std::vector<DngPropertyOption> GetExifPropertyOptions(uint32_t mainIndex)
 {
-    static const std::vector<DngPropertyOption> options = {
-        {DngMetaSourceType::EXIF, 0},
+    return {
         {DngMetaSourceType::SUB_PREVIEW_IFD, mainIndex},
         {DngMetaSourceType::SUB_PREVIEW_IFD, 0},
+        {DngMetaSourceType::EXIF, 0},
         {DngMetaSourceType::SHARED, 0},
         {DngMetaSourceType::CHAINED_IFD, 0},
     };
-    return options;
 }
 
 uint32_t DngSdkHelper::GetExifProperty(const std::unique_ptr<DngSdkInfo>& info, MetadataValue& value)
 {
+    CHECK_ERROR_RETURN_RET(info == nullptr, ERR_IMAGE_DECODE_EXIF_UNSUPPORT);
     return GetPropertyByOptions(info, value, GetExifPropertyOptions(info->fMainIndex));
 }
 
 uint32_t DngSdkHelper::SetExifProperty(const std::unique_ptr<DngSdkInfo>& info, const MetadataValue& value)
 {
+    CHECK_ERROR_RETURN_RET(info == nullptr, ERR_IMAGE_DECODE_EXIF_UNSUPPORT);
     return SetPropertyByOptions(info, value, GetExifPropertyOptions(info->fMainIndex));
 }
 } // namespace Media

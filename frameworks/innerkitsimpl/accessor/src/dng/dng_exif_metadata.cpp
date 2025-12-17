@@ -30,14 +30,6 @@
 
 namespace OHOS {
 namespace Media {
-static constexpr uint32_t HW_KEY_SIZE = 2;
-static const std::set<std::string_view> HW_SPECIAL_KEYS = {
-    "MovingPhotoId",
-    "MovingPhotoVersion",
-    "MicroVideoPresentationTimestampUS",
-    "HwUnknow",
-};
-
 static const std::vector<std::string> HW_KEYS = {
     "HwMnoteCaptureMode",
     "HwMnotePhysicalAperture",
@@ -88,8 +80,11 @@ DngExifMetadata::DngExifMetadata() : dngSdkInfo_(nullptr)
 }
 
 DngExifMetadata::DngExifMetadata(ExifData* exifData, std::unique_ptr<DngSdkInfo>& dngSdkInfo)
-    : ExifMetadata(exifData), dngSdkInfo_(dngSdkInfo.release())
+    : ExifMetadata(exifData), dngSdkInfo_(dngSdkInfo ? dngSdkInfo.release() : nullptr)
 {
+    if (dngSdkInfo_ == nullptr) {
+        IMAGE_LOGE("dngSdkInfo_ is nullptr in constructor");
+    }
 }
 
 DngExifMetadata::~DngExifMetadata()
@@ -113,7 +108,7 @@ bool DngExifMetadata::RemoveEntry(const std::string &key)
 
 std::shared_ptr<ImageMetadata> DngExifMetadata::CloneMetadata()
 {
-    return Clone();
+    return ExifMetadata::CloneMetadata();
 }
 
 std::shared_ptr<DngExifMetadata> DngExifMetadata::Clone()
@@ -130,42 +125,14 @@ bool DngExifMetadata::Marshalling(Parcel &parcel) const
     return true;
 }
 
-DngExifMetadata* DngExifMetadata::Unmarshalling(Parcel &parcel)
-{
-    PICTURE_ERR error;
-    DngExifMetadata* dstExifMetadata = DngExifMetadata::Unmarshalling(parcel, error);
-    if (dstExifMetadata == nullptr || error.errorCode != SUCCESS) {
-        IMAGE_LOGE("unmarshalling failed errorCode:%{public}d, errorInfo:%{public}s",
-            error.errorCode, error.errorInfo.c_str());
-    }
-    return dstExifMetadata;
-}
-
-DngExifMetadata* DngExifMetadata::Unmarshalling(Parcel &parcel, PICTURE_ERR &error)
-{
-    ExifMetadata* exifMetadata = ExifMetadata::Unmarshalling(parcel, error);
-    CHECK_ERROR_RETURN_RET_LOG(exifMetadata == nullptr, nullptr, "Unmarshalling ExifMetadata failed");
-
-    std::unique_ptr<DngSdkInfo> dngSdkInfo = nullptr;
-    CHECK_ERROR_RETURN_RET_LOG(dngSdkInfo == nullptr, nullptr, "Unmarshalling DngSdkInfo failed");
-
-    DngExifMetadata* dngExifMetadata = new(std::nothrow) DngExifMetadata(exifMetadata->GetExifData(), dngSdkInfo);
-    return dngExifMetadata;
-}
-
-bool DngExifMetadata::IsSpecialHwKey(const std::string &key) const
-{
-    auto iter = HW_SPECIAL_KEYS.find(key);
-    return (iter != HW_SPECIAL_KEYS.end());
-}
-
 uint32_t DngExifMetadata::GetExifProperty(MetadataValue& value)
 {
+    static constexpr uint32_t hwKeySize = 2;
     if (dngSdkInfo_ == nullptr) {
         IMAGE_LOGE("[%{public}s] dngSdkInfo_ is nullptr", __func__);
         return ERR_IMAGE_DECODE_EXIF_UNSUPPORT;
     }
-    if ((value.key.size() > HW_KEY_SIZE && value.key.substr(0, HW_KEY_SIZE) == "Hw") || IsSpecialHwKey(value.key)) {
+    if ((value.key.size() > hwKeySize && value.key.substr(0, hwKeySize) == "Hw") || IsSpecialHwKey(value.key)) {
         std::string key = value.key;
         uint32_t ret = ExifMetadata::GetValueByType(key, value);
         value.type = ExifMetadata::GetPropertyValueType(key);

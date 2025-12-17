@@ -32,13 +32,10 @@ public:
     virtual std::shared_ptr<ImageMetadata> CloneMetadata() override;
     NATIVEEXPORT std::shared_ptr<DngExifMetadata> Clone();
     bool Marshalling(Parcel& parcel) const override;
-    static DngExifMetadata* Unmarshalling(Parcel& parcel);
-    static DngExifMetadata* Unmarshalling(Parcel& parcel, PICTURE_ERR& error);
     uint32_t GetExifProperty(MetadataValue& value);
     std::vector<MetadataValue> GetAllDngProperties();
 
 private:
-    bool IsSpecialHwKey(const std::string &key) const;
     std::unique_ptr<DngSdkInfo> dngSdkInfo_;
 };
 } // namespace Media

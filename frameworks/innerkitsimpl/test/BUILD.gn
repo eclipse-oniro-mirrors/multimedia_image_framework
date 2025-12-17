@@ -870,7 +870,10 @@ ohos_unittest("pluginsmanagersrcframeworktest") {
     "//foundation/multimedia/image_framework/plugins/manager/src/framework",
   ]
 
-  sources = [ "$image_subsystem/frameworks/innerkitsimpl/test/unittest/plugin_test/plugins_manager_src_framework_test.cpp" ]
+  sources = [
+    "$image_subsystem/frameworks/innerkitsimpl/test/unittest/plugin_test/plugins_manager_src_framework_test.cpp",
+    "$image_subsystem/frameworks/innerkitsimpl/test/unittest/plugin_test/impl_class_test.cpp",
+  ]
 
   deps = [
     "//foundation/multimedia/image_framework/plugins/manager:pluginmanager",
@@ -1669,6 +1672,7 @@ ohos_unittest("jpeg_yuv_decoder_test") {
   sources = [
     "${image_subsystem}/frameworks/innerkitsimpl/test/unittest/jpeg_yuv_decoder/jpeg_yuv_decoder_test.cpp",
     "${image_subsystem}/frameworks/innerkitsimpl/test/unittest/jpeg_decoder_yuv_test.cpp",
+    "${image_subsystem}/frameworks/innerkitsimpl/test/unittest/jpeg_yuv_decoder/jpeg_yuvdata_converter_test.cpp",
   ]
 
   cflags = [ "-Dprotected=public" ]

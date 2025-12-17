@@ -233,6 +233,7 @@ struct ImageInfo {
     AlphaType alphaType = AlphaType::IMAGE_ALPHA_TYPE_UNKNOWN;
     int32_t baseDensity = 0;
     std::string encodedFormat;
+    bool isProgressiveImage = false;
 };
 
 struct YUVDataInfo {
@@ -526,46 +527,6 @@ struct MetadataValue {
     std::vector<int64_t> intArrayValue;
     std::vector<double> doubleArrayValue;
     std::vector<uint8_t> bufferValue;
-};
-
-enum class DngMetaSourceType {
-    DEFAULT = 0,
-    EXIF = 1,
-    SHARED = 2,
-    SUB_PREVIEW_IFD = 3,
-    CHAINED_IFD = 4,
-    IPTC = 5,
-    XMP = 6,
-};
-
-struct DngPropertyOption {
-    DngMetaSourceType type = DngMetaSourceType::DEFAULT;
-    uint32_t ifdIndex = 0; // Effective for SUB_PREVIEW_IFD and CHAINED_IFD
-};
-
-// |<---------- Directory Entry structure(12 bytes) ---------->|
-// |<-   Tag   ->|<-  Type   ->|<-  Count  ->|<- ValueOffset ->| -----> |<-   Value (Optional)   ->|
-// |<- 2 bytes ->|<- 2 bytes ->|<- 4 bytes ->|<-   4 bytes   ->| -----> |<- (Type * Count) bytes ->|
-struct DngTagRecord {
-    uint32_t parentCode = 0;        // determine which IFD the tag belongs to
-    uint16_t tagCode = 0;           // identifies the field
-    uint16_t tagType = 0;           // the indicated data type
-    uint32_t tagCount = 0;          // the number of values
-    uint64_t tagValueOffset = 0;    // the original value offset in file stream
-    uint32_t tagValueSize = 0;      // the original value size in file stream
-    bool isEmbedded = false;        // true if the value stored in DE (≤ 4 bytes)
-};
-
-enum class DngPropertyOperation {
-    UNKNOWN = 0,
-    ADD = 1,
-    MODIFY = 2,
-    DELETE = 3,
-};
-
-struct DngUpdateTagItem {
-    DngPropertyOperation operation = DngPropertyOperation::UNKNOWN;
-    MetadataValue value;
 };
 
 enum class NapiMetadataType {

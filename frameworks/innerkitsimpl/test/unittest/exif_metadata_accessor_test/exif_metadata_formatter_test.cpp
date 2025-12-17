@@ -225,6 +225,20 @@ HWTEST_F(ExifMetadataFormatterTest, RationalFormat001, TestSize.Level3)
 }
 
 /**
+ * @tc.name: RationalFormat002
+ * @tc.desc: test the RationalFormat when no regex match is found in the value.
+ * @tc.type: FUNC
+ */
+HWTEST_F(ExifMetadataFormatterTest, RationalFormat002, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ExifMetadataFormatterTest: RationalFormat002 start";
+    std::string value = "abc def";
+    ExifMetadatFormatter::RationalFormat(value);
+    EXPECT_EQ(value, "");
+    GTEST_LOG_(INFO) << "ExifMetadataFormatterTest: RationalFormat002 end";
+}
+
+/**
  * @tc.name: GetFractionFromStrTest001
  * @tc.desc: Test GetFractionFromStr when int part out of range
  * @tc.type: FUNC
@@ -315,6 +329,22 @@ HWTEST_F(ExifMetadataFormatterTest, GetFractionFromStrTest006, TestSize.Level3)
 }
 
 /**
+ * @tc.name: GetFractionFromStrTest007
+ * @tc.desc: test the GetFractionFromStr when Gcd returns zero
+ * @tc.type: FUNC
+ */
+HWTEST_F(ExifMetadataFormatterTest, GetFractionFromStrTest007, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ExifMetadataFormatterTest: GetFractionFromStrTest007 start";
+    bool isOutRange = false;
+    std::string testValue = "0.0";
+    std::string result = ExifMetadatFormatter::GetFractionFromStr(testValue, isOutRange);
+    EXPECT_EQ(result, "0/1");
+    EXPECT_FALSE(isOutRange);
+    GTEST_LOG_(INFO) << "ExifMetadataFormatterTest: GetFractionFromStrTest007 end";
+}
+
+/**
  * @tc.name: ValidDecimalRationalFormatTest001
  * @tc.desc: test the ValidDecimalRationalFormat when value is very small scientific notation
  * @tc.type: FUNC
@@ -341,6 +371,36 @@ HWTEST_F(ExifMetadataFormatterTest, ValidDecimalRationalFormatTest002, TestSize.
 }
 
 /**
+ * @tc.name: ValidDecimalRationalFormatTest003
+ * @tc.desc: test the ValidDecimalRationalFormat when isOutRange is true expects return false
+ * @tc.type: FUNC
+ */
+HWTEST_F(ExifMetadataFormatterTest, ValidDecimalRationalFormatTest003, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ExifMetadataFormatterTest: ValidDecimalRationalFormatTest003 start";
+    std::string testValue = "111111111111111111.1111111111111111111111";
+    bool res = ExifMetadatFormatter::ValidDecimalRationalFormat(testValue);
+    EXPECT_FALSE(res);
+    GTEST_LOG_(INFO) << "ExifMetadataFormatterTest: ValidDecimalRationalFormatTest003 end";
+}
+
+/**
+ * @tc.name: ValidDecimalRationalFormatTest004
+ * @tc.desc: test the ValidDecimalRationalFormat when value is non-numeric string
+ * @tc.type: FUNC
+ */
+HWTEST_F(ExifMetadataFormatterTest, ValidDecimalRationalFormatTest004, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ExifMetadataFormatterTest: ValidDecimalRationalFormatTest004 start";
+    bool res = false;
+    std::string testValue = "abc";
+    res = ExifMetadatFormatter::ValidDecimalRationalFormat(testValue);
+    EXPECT_TRUE(res);
+    EXPECT_EQ(testValue, "");
+    GTEST_LOG_(INFO) << "ExifMetadataFormatterTest: ValidDecimalRationalFormatTest004 end";
+}
+
+/**
  * @tc.name: ValidConvertRationalFormatTest001
  * @tc.desc: test the ValidConvertRationalFormat when value is extremely large scientific notation
  * @tc.type: FUNC
@@ -351,6 +411,36 @@ HWTEST_F(ExifMetadataFormatterTest, ValidConvertRationalFormatTest001, TestSize.
     std::string testValue = "2.5e400";
     res = ExifMetadatFormatter::ValidConvertRationalFormat(testValue);
     EXPECT_EQ(res, true);
+}
+
+/**
+ * @tc.name: ValidConvertRationalFormatTest002
+ * @tc.desc: test the ValidConvertRationalFormat when value is non-numeric string
+ * @tc.type: FUNC
+ */
+HWTEST_F(ExifMetadataFormatterTest, ValidConvertRationalFormatTest002, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ExifMetadataFormatterTest: ValidConvertRationalFormatTest002 start";
+    bool res = false;
+    std::string testValue = "abc";
+    res = ExifMetadatFormatter::ValidConvertRationalFormat(testValue);
+    EXPECT_EQ(res, true);
+    EXPECT_EQ(testValue, "");
+    GTEST_LOG_(INFO) << "ExifMetadataFormatterTest: ValidConvertRationalFormatTest002 end";
+}
+
+/**
+ * @tc.name: ValidConvertRationalFormatTest003
+ * @tc.desc: test the ValidConvertRationalFormat when isOutRange is true expects return false
+ * @tc.type: FUNC
+ */
+HWTEST_F(ExifMetadataFormatterTest, ValidConvertRationalFormatTest003, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ExifMetadataFormatterTest: ValidConvertRationalFormatTest003 start";
+    std::string testValue = "111111111111111111.1111111111111111111111";
+    bool res = ExifMetadatFormatter::ValidConvertRationalFormat(testValue);
+    EXPECT_FALSE(res);
+    GTEST_LOG_(INFO) << "ExifMetadataFormatterTest: ValidConvertRationalFormatTest003 end";
 }
 
 /**
@@ -379,6 +469,25 @@ HWTEST_F(ExifMetadataFormatterTest, ValidRegexWithChannelFormatTest002, TestSize
     std::string regex = "[-YCbCrRGB]+";
     res = ExifMetadatFormatter::ValidRegexWithChannelFormat(testValue, regex);
     EXPECT_EQ(res, false);
+}
+
+/**
+ * @tc.name: ValidRegexWithChannelFormatTest003
+ * @tc.desc: test the ValidRegexWithChannelFormat when testValue is "Cr" or "A"
+ * @tc.type: FUNC
+ */
+HWTEST_F(ExifMetadataFormatterTest, ValidRegexWithChannelFormatTest003, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ExifMetadataFormatterTest: ValidRegexWithChannelFormatTest003 start";
+    std::string testValue = "Cr";
+    std::string regex = "[-YCbCrRGB]+";
+    bool res = ExifMetadatFormatter::ValidRegexWithChannelFormat(testValue, regex);
+    EXPECT_EQ(res, true);
+
+    testValue = "A";
+    res = ExifMetadatFormatter::ValidRegexWithChannelFormat(testValue, regex);
+    EXPECT_EQ(res, false);
+    GTEST_LOG_(INFO) << "ExifMetadataFormatterTest: ValidRegexWithChannelFormatTest003 end";
 }
 
 /**

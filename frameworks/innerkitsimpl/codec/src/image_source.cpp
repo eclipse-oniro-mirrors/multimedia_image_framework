@@ -14,7 +14,6 @@
  */
 
 #include "image_source.h"
-#include <type_traits>
 #ifdef EXT_PIXEL
 #include "pixel_yuv_ext.h"
 #endif
@@ -342,6 +341,7 @@ const static std::map<std::string, uint32_t> ORIENTATION_INT_MAP = {
 const static string IMAGE_DELAY_TIME = "DelayTime";
 const static string IMAGE_DISPOSAL_TYPE = "DisposalType";
 const static string IMAGE_GIFLOOPCOUNT_TYPE = "GIFLoopCount";
+const static string IMAGE_HEIFS_DELAY_TIME = "HeifsDelayTime";
 const static int32_t ZERO = 0;
 
 PluginServer &ImageSource::pluginServer_ = ImageUtils::GetPluginServer();
@@ -2115,7 +2115,7 @@ std::vector<MetadataValue> ImageSource::GetAllPropertiesWithType()
         std::shared_ptr<DngExifMetadata> dngMetadata = std::static_pointer_cast<DngExifMetadata>(exifMetadata_);
         if (dngMetadata != nullptr) {
             result = dngMetadata->GetAllDngProperties();
-            IMAGE_LOGD("Retrieved %{public}d DNG metadata properties", result.size());
+            IMAGE_LOGD("Retrieved %{public}lu DNG metadata properties", static_cast<unsigned long>(result.size()));
             return result;
         }
     }
@@ -2139,7 +2139,7 @@ std::vector<MetadataValue> ImageSource::GetAllPropertiesWithType()
 
     processKeys(ExifMetadatFormatter::GetRWKeys());
     processKeys(ExifMetadatFormatter::GetROKeys());
-
+    
     IMAGE_LOGD("Retrieved %zu metadata properties", result.size());
     return result;
 }
@@ -2230,7 +2230,21 @@ uint32_t ImageSource::GetImagePropertyByType(uint32_t index, const std::string &
         }
         return ret;
     }
-
+    if (IMAGE_HEIFS_DELAY_TIME.compare(key) == ZERO) {
+        IMAGE_LOGI("GetImagePropertyString special key: %{public}s", key.c_str());
+        (void)GetFrameCount(ret);
+        if (ret != SUCCESS || mainDecoder_ == nullptr) {
+            IMAGE_LOGE("[ImageSource]GetFrameCount get frame sum error.");
+            return ret;
+        } else {
+            int32_t delayTime = 0;
+            ret = mainDecoder_->GetImagePropertyInt(index, IMAGE_DELAY_TIME, delayTime);
+            IMAGE_LOGD("GetDelayTime value:%{public}d", delayTime);
+            value.intArrayValue.emplace_back(delayTime);
+            CHECK_ERROR_RETURN_RET_LOG(ret != SUCCESS, ret,
+                "[ImageSource]GetDelayTime get heifs delay time error. errorCode=%{public}u", ret);
+        }
+    }
     if (IsDngImage()) {
         return GetDngImagePropertyByDngSdk(key, value);
     }
@@ -2858,6 +2872,7 @@ uint32_t ImageSource::DecodeImageInfo(uint32_t index, ImageStatusMap::iterator &
         imageStatus.imageInfo.size.width = size.width;
         imageStatus.imageInfo.size.height = size.height;
         imageStatus.imageInfo.encodedFormat = sourceInfo_.encodedFormat;
+        imageStatus.imageInfo.isProgressiveImage = mainDecoder_->IsProgressiveJpeg();
         imageStatus.imageState = ImageDecodingState::BASE_INFO_PARSED;
         auto result = imageStatusMap_.insert(ImageStatusMap::value_type(index, imageStatus));
         iter = result.first;
@@ -6054,8 +6069,10 @@ std::shared_ptr<ImageMetadata> ImageSource::GetMetadata(MetadataType type)
 bool ImageSource::IsDngImage()
 {
     ImageInfo info;
-    GetImageInfo(info);
-    IMAGE_LOGD("[%{public}s] IsDngImage: encodedFormat: %{public}s", __func__, info.encodedFormat.c_str());
+    uint32_t ret = GetImageInfo(info);
+    bool cond = (ret != SUCCESS);
+    CHECK_ERROR_RETURN_RET_LOG(cond, false, "IsDngImage GetImageInfo failed");
+    IMAGE_LOGD("IsDngImage info.encodedFormat: %{public}s", info.encodedFormat.c_str());
     return info.encodedFormat == DNG_FORMAT;
 }
 

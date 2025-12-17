@@ -33,52 +33,16 @@ namespace Media {
 static constexpr uint16_t TAG_CODE_OFFSET_TIME = 0x9010;
 static constexpr uint16_t TAG_CODE_OFFSET_TIME_ORIGINAL = 0x9011;
 static constexpr uint16_t TAG_CODE_OFFSET_TIME_DIGITIZED = 0x9012;
-static constexpr uint16_t TAG_CODE_COMPOSITE_IMAGE = 0xa460;
-static constexpr uint16_t TAG_CODE_SOURCE_IMAGE_NUMBER_OF_COMPOSITE_IMAGE = 0xa461;
-static constexpr uint16_t TAG_CODE_SOURCE_EXPOSURE_TIMES_OF_COMPOSITE_IMAGE = 0xa462;
+static constexpr uint16_t TAG_CODE_COMPOSITE_IMAGE = 0xA460;
+static constexpr uint16_t TAG_CODE_SOURCE_IMAGE_NUMBER_OF_COMPOSITE_IMAGE = 0xA461;
+static constexpr uint16_t TAG_CODE_SOURCE_EXPOSURE_TIMES_OF_COMPOSITE_IMAGE = 0xA462;
 
-static constexpr uint32_t SUB_PREVIEW_IFD_FIRST_INDEX = 1;
-static constexpr uint32_t EMBEDDED_TAG_VALUE_MAX_SIZE = 4;
 static constexpr uint32_t GPS_COORD_ELEMENTS = 3;
-static constexpr uint32_t GPS_TIMESTAMP_ELEMENTS = 3;
-static constexpr uint32_t LENS_INFO_ELEMENTS = 4;
-static constexpr uint32_t DEFAULT_CROP_ELEMENTS = 2;
-static constexpr uint32_t REFERENCE_BLACK_WHITE_ELEMENTS = 6;
-static constexpr uint32_t INT_ARRAY_RESERVE_SIZE = 4;
 static constexpr uint32_t UNDEFINED_PREFIX_LEN = 8;
-static constexpr uint32_t TERMINATOR_SIZE = 1;
-static constexpr uint32_t MAX_TAG_VALUE_SIZE_FOR_STR = 64 * 1024;
-static constexpr const char* UNDEFINED_PREFIX_ASCII = "ASCII\0\0\0";
-static constexpr const char* UNDEFINED_PREFIX_UNICODE = "UNICODE\0";
-static constexpr const char* UNDEFINED_PREFIX_JIS = "JIS\0\0\0\0\0";
-static constexpr uint32_t YEAR_WIDTH = 4;
-static constexpr uint32_t DATE_TIME_FIELD_WIDTH = 2;
 static constexpr uint32_t BYTE_MASK = 0xFF;
-static constexpr uint32_t BITS_PER_BYTE = 8;
 static constexpr uint32_t BYTE3_SHIFT = 24; // 3 * BITS_PER_BYTE
 static constexpr uint32_t BYTE2_SHIFT = 16; // 2 * BITS_PER_BYTE
 static constexpr uint32_t BYTE1_SHIFT = 8;  // 1 * BITS_PER_BYTE
-static constexpr uint32_t HEX_CHARS_PER_BYTE = 2;
-static constexpr uint32_t COMPONENT_CONFIG_COUNT = 4;
-static constexpr uint32_t COMPONENT_CONFIG_LAST_INDEX = 3;
-static constexpr uint32_t COMPONENT_LABEL_MAX_INDEX = 6;
-static constexpr uint32_t COMPONENT_STRING_RESERVE_SIZE = 35;
-static constexpr uint32_t COPYRIGHT_RESERVE_PADDING = 32;
-static constexpr uint32_t YCBCR_COEFFICIENT_ELEMENTS = 3;
-static constexpr uint32_t YCBCR_SUB_SAMPLE_ELEMENTS = 2;
-static constexpr size_t FLASH_VERSION_SIZE = 4;
-static constexpr const char* FLASH_VERSION_1_0 = "0100";
-static constexpr const char* FLASH_VERSION_1_01 = "0101";
-static constexpr size_t EXIF_VERSION_SIZE = 4;
-static constexpr const char* EXIF_VERSION_0110 = "0110";
-static constexpr const char* EXIF_VERSION_0120 = "0120";
-static constexpr const char* EXIF_VERSION_0200 = "0200";
-static constexpr const char* EXIF_VERSION_0210 = "0210";
-static constexpr const char* EXIF_VERSION_0220 = "0220";
-static constexpr const char* EXIF_VERSION_0221 = "0221";
-static constexpr const char* EXIF_VERSION_0230 = "0230";
-static constexpr const char* EXIF_VERSION_0231 = "0231";
-static constexpr const char* EXIF_VERSION_0232 = "0232";
 
 std::map<std::string, std::tuple<uint16_t, uint32_t, DngSdkInfo::ExifGetType>> DngSdkInfo::exifPropertyMap_ = {
     {"ImageDescription", {tcImageDescription, 0, DngSdkInfo::GetExifImageDescription}},
@@ -123,7 +87,6 @@ std::map<std::string, std::tuple<uint16_t, uint32_t, DngSdkInfo::ExifGetType>> D
     {"FNumber", {tcFNumber, tcExifIFD, DngSdkInfo::GetExifFNumber}},
     {"ExposureProgram", {tcExposureProgram, tcExifIFD, DngSdkInfo::GetExifExposureProgram}},
     {"ISOSpeedRatings", {tcISOSpeedRatings, tcExifIFD, DngSdkInfo::GetExifISOSpeedRatings}},
-    {"PhotographicSensitivity", {tcISOSpeedRatings, tcExifIFD, DngSdkInfo::GetExifISOSpeedRatings}},
     {"SensitivityType", {tcSensitivityType, tcExifIFD, DngSdkInfo::GetExifSensitivityType}},
     {"StandardOutputSensitivity", {tcStandardOutputSensitivity, tcExifIFD,
         DngSdkInfo::GetExifStandardOutputSensitivity}},
@@ -185,13 +148,11 @@ std::map<std::string, std::tuple<uint16_t, uint32_t, DngSdkInfo::IfdGetType>> Dn
     {"NewSubfileType", {tcNewSubFileType, 0, DngSdkInfo::GetIfdNewSubfileType}},
     {"ImageWidth", {tcImageWidth, 0, DngSdkInfo::GetIfdImageWidth}},
     {"ImageLength", {tcImageLength, 0, DngSdkInfo::GetIfdImageLength}},
-    {"BitsPerSample", {tcBitsPerSample, 0, DngSdkInfo::GetIfdBitsPerSample}},
     {"Compression", {tcCompression, 0, DngSdkInfo::GetIfdCompression}},
     {"PhotometricInterpretation", {tcPhotometricInterpretation, 0, DngSdkInfo::GetIfdPhotometricInterpretation}},
     {"Orientation", {tcOrientation, 0, DngSdkInfo::GetIfdOrientation}},
     {"SamplesPerPixel", {tcSamplesPerPixel, 0, DngSdkInfo::GetIfdSamplesPerPixel}},
     {"RowsPerStrip", {tcRowsPerStrip, 0, DngSdkInfo::GetIfdRowsPerStrip}},
-    {"StripByteCounts", {tcStripByteCounts, 0, DngSdkInfo::GetIfdStripByteCounts}},
     {"XResolution", {tcXResolution, 0, DngSdkInfo::GetIfdXResolution}},
     {"YResolution", {tcYResolution, 0, DngSdkInfo::GetIfdYResolution}},
     {"PlanarConfiguration", {tcPlanarConfiguration, 0, DngSdkInfo::GetIfdPlanarConfiguration}},
@@ -206,7 +167,7 @@ std::map<std::string, std::tuple<uint16_t, uint32_t, DngSdkInfo::IfdGetType>> Dn
 };
 
 std::map<std::string, uint16_t> DngSdkInfo::specialTagNameMap_ = {
-    {"SubFileType", tcSubFileType},
+    {"SubfileType", tcSubFileType},
     {"TransferFunction", tcTransferFunction},
     {"WhitePoint", tcWhitePoint},
     {"PrimaryChromaticities", tcPrimaryChromaticities},
@@ -228,6 +189,9 @@ std::map<std::string, uint16_t> DngSdkInfo::specialTagNameMap_ = {
     {"CFAPattern", tcCFAPatternExif},
     {"ExposureTime", tcExposureTime},
     {"StripOffsets", tcStripOffsets},
+    {"PhotographicSensitivity", tcISOSpeedRatings},
+    {"BitsPerSample", tcBitsPerSample},
+    {"StripByteCounts", tcStripByteCounts},
     {"OffsetTime", TAG_CODE_OFFSET_TIME},
     {"OffsetTimeOriginal", TAG_CODE_OFFSET_TIME_ORIGINAL},
     {"OffsetTimeDigitized", TAG_CODE_OFFSET_TIME_DIGITIZED},
@@ -236,7 +200,7 @@ std::map<std::string, uint16_t> DngSdkInfo::specialTagNameMap_ = {
     {"SourceExposureTimesOfCompositeImage", TAG_CODE_SOURCE_EXPOSURE_TIMES_OF_COMPOSITE_IMAGE},
 };
 
-std::map<uint16_t, DngSdkInfo::ParseTagType> DngSdkInfo::specialTagPraseMap_ = {
+std::map<uint16_t, DngSdkInfo::ParseTagType> DngSdkInfo::specialTagParseMap_ = {
     {tcSubFileType, DngSdkInfo::ParseIntTag},
     {tcTransferFunction, DngSdkInfo::ParseShortTagToString},
     {tcWhitePoint, DngSdkInfo::ParseRationalTag},
@@ -258,7 +222,10 @@ std::map<uint16_t, DngSdkInfo::ParseTagType> DngSdkInfo::specialTagPraseMap_ = {
     {tcSubjectDistance, DngSdkInfo::ParseDoubleTag},
     {tcCFAPatternExif, DngSdkInfo::ParseUndefinedTag},
     {tcExposureTime, DngSdkInfo::ParseDoubleTag},
-    {tcStripOffsets, DngSdkInfo::ParseLongTag},
+    {tcStripOffsets, DngSdkInfo::ParseIntArrayTag},
+    {tcISOSpeedRatings, DngSdkInfo::ParseIntArrayTag},
+    {tcBitsPerSample, DngSdkInfo::ParseIntArrayTag},
+    {tcStripByteCounts, DngSdkInfo::ParseIntArrayTag},
     {TAG_CODE_OFFSET_TIME, DngSdkInfo::ParseAsciiTag},
     {TAG_CODE_OFFSET_TIME_ORIGINAL, DngSdkInfo::ParseAsciiTag},
     {TAG_CODE_OFFSET_TIME_DIGITIZED, DngSdkInfo::ParseAsciiTag},
@@ -277,6 +244,10 @@ static uint32_t GetDngUint32(uint32 in, MetadataValue& out)
 static std::string FormatUndefinedExifString(const dng_string& input)
 {
     dng_memory_data buffer;
+    constexpr uint32_t maxTagValueSizeForStr = 64 * 1024;
+    constexpr const char* undefinedPrefixAscii = "ASCII\0\0\0";
+    constexpr const char* undefinedPrefixUnicode = "UNICODE\0";
+    constexpr const char* undefinedPrefixJis = "JIS\0\0\0\0\0";
     uint32_t length = input.Get_SystemEncoding(buffer);
     if (length == 0) {
         return "";
@@ -286,19 +257,18 @@ static std::string FormatUndefinedExifString(const dng_string& input)
         return "";
     }
 
-    uint32_t maxlen = length + TERMINATOR_SIZE > MAX_TAG_VALUE_SIZE_FOR_STR ?
-                MAX_TAG_VALUE_SIZE_FOR_STR : length + TERMINATOR_SIZE;
+    uint32_t maxlen = length + 1 > maxTagValueSizeForStr ? maxTagValueSizeForStr : length + 1;
     if (length >= UNDEFINED_PREFIX_LEN) {
-        if (std::memcmp(raw, UNDEFINED_PREFIX_ASCII, UNDEFINED_PREFIX_LEN) == 0) {
+        if (std::memcmp(raw, undefinedPrefixAscii, UNDEFINED_PREFIX_LEN) == 0) {
             const char* asciiData = reinterpret_cast<const char*>(raw + UNDEFINED_PREFIX_LEN);
             size_t dataLen = std::min(length - UNDEFINED_PREFIX_LEN, maxlen - 1);
             const char* nullPos = static_cast<const char*>(std::memchr(asciiData, '\0', dataLen));
             return std::string(asciiData, nullPos != nullptr ? nullPos - asciiData : dataLen);
         }
-        if (std::memcmp(raw, UNDEFINED_PREFIX_UNICODE, UNDEFINED_PREFIX_LEN) == 0) {
+        if (std::memcmp(raw, undefinedPrefixUnicode, UNDEFINED_PREFIX_LEN) == 0) {
             return "Unsupported UNICODE string";
         }
-        if (std::memcmp(raw, UNDEFINED_PREFIX_JIS, UNDEFINED_PREFIX_LEN) == 0) {
+        if (std::memcmp(raw, undefinedPrefixJis, UNDEFINED_PREFIX_LEN) == 0) {
             return "Unsupported JIS string";
         }
     }
@@ -311,7 +281,6 @@ static std::string FormatUndefinedExifString(const dng_string& input)
             return "";
         }
     }
-
     // If we reach this point, the tag does not comply with the standard but seems to contain data.
     // Print as much as possible, replacing non-printable characters with '.'
     std::string result;
@@ -381,37 +350,31 @@ static uint32_t GetDngURationalArray(const dng_urational* in, uint32_t count, Me
     return SUCCESS;
 }
 
-static uint32_t GetDngUint32Array(const uint32* in, uint32_t count, MetadataValue& out)
-{
-    out.type = PropertyValueType::INT_ARRAY;
-    out.intArrayValue.clear();
-    out.intArrayValue.reserve(count);
-    for (uint32_t i = 0; i < count; i++) {
-        out.intArrayValue.push_back(static_cast<int64_t>(in[i]));
-    }
-    return SUCCESS;
-}
-
 static uint32_t GetDngDateTime(const dng_date_time& in, MetadataValue& out)
 {
     out.type = PropertyValueType::STRING;
+    constexpr uint32_t yearWidth = 4;
+    constexpr uint32_t dateTimeFieldWidth = 2;
     std::ostringstream oss;
-    oss << std::setfill('0') << std::setw(YEAR_WIDTH) << in.fYear << ":"
-        << std::setw(DATE_TIME_FIELD_WIDTH) << in.fMonth << ":" << std::setw(DATE_TIME_FIELD_WIDTH) << in.fDay << " "
-        << std::setw(DATE_TIME_FIELD_WIDTH) << in.fHour << ":" << std::setw(DATE_TIME_FIELD_WIDTH) << in.fMinute << ":"
-        << std::setw(DATE_TIME_FIELD_WIDTH) << in.fSecond;
+    oss << std::setfill('0') << std::setw(yearWidth) << in.fYear << ":"
+        << std::setw(dateTimeFieldWidth) << in.fMonth << ":" << std::setw(dateTimeFieldWidth) << in.fDay << " "
+        << std::setw(dateTimeFieldWidth) << in.fHour << ":" << std::setw(dateTimeFieldWidth) << in.fMinute << ":"
+        << std::setw(dateTimeFieldWidth) << in.fSecond;
     out.stringValue = oss.str();
     return SUCCESS;
 }
 
 static uint32_t GetDngFingerprint(const dng_fingerprint& in, MetadataValue& out)
 {
+    constexpr uint32_t hexCharsPerByte = 2;
     out.type = PropertyValueType::STRING;
     if (!in.IsValid()) {
-        return ERROR;
+        IMAGE_LOGD("%{public}s, dng_fingerprint is invalid", __func__);
+        out.stringValue = "";
+        return SUCCESS;
     }
 
-    char hexString[HEX_CHARS_PER_BYTE * dng_fingerprint::kDNGFingerprintSize + 1];
+    char hexString[hexCharsPerByte * dng_fingerprint::kDNGFingerprintSize + 1];
     in.ToUtf8HexString(hexString);
     out.stringValue = std::string(hexString);
     return SUCCESS;
@@ -425,8 +388,9 @@ uint32_t DngSdkInfo::GetExifImageDescription(const dng_exif& fExif, MetadataValu
 uint32_t DngSdkInfo::GetExifGPSVersionID(const dng_exif& fExif, MetadataValue& value)
 {
     value.type = PropertyValueType::INT_ARRAY;
+    constexpr uint32_t intArrayReserveSize = 4;
     value.intArrayValue.clear();
-    value.intArrayValue.reserve(INT_ARRAY_RESERVE_SIZE);
+    value.intArrayValue.reserve(intArrayReserveSize);
     uint32_t versionID = fExif.fGPSVersionID;
 
     value.intArrayValue.push_back((versionID >> BYTE3_SHIFT) & BYTE_MASK);
@@ -468,7 +432,8 @@ uint32_t DngSdkInfo::GetExifGPSAltitude(const dng_exif& fExif, MetadataValue& va
 
 uint32_t DngSdkInfo::GetExifGPSTimeStamp(const dng_exif& fExif, MetadataValue& value)
 {
-    return GetDngURationalArray(fExif.fGPSTimeStamp, GPS_TIMESTAMP_ELEMENTS, value);
+    constexpr uint32_t gpsTimeStampElements = 3;
+    return GetDngURationalArray(fExif.fGPSTimeStamp, gpsTimeStampElements, value);
 }
 
 uint32_t DngSdkInfo::GetExifGPSSatellites(const dng_exif& fExif, MetadataValue& value)
@@ -649,11 +614,12 @@ uint32_t DngSdkInfo::GetExifCopyright(const dng_exif& fExif, MetadataValue& valu
     constexpr const char* PHOTOGRAPHER_SUFFIX = " (Photographer)";
     constexpr const char* EDITOR_SUFFIX = " (Editor)";
     constexpr const char* SEPARATOR = " - ";
+    constexpr uint32_t copyrightReservePadding = 32;
 
     const std::string photographerText = photographer.empty() ? std::string(NONE_PLACEHOLDER) : photographer;
     const std::string editorText = editor.empty() ? std::string(NONE_PLACEHOLDER) : editor;
 
-    value.stringValue.reserve(photographerText.size() + editorText.size() + COPYRIGHT_RESERVE_PADDING);
+    value.stringValue.reserve(photographerText.size() + editorText.size() + copyrightReservePadding);
     value.stringValue.append(photographerText);
     value.stringValue.append(PHOTOGRAPHER_SUFFIX);
     value.stringValue.append(SEPARATOR);
@@ -681,31 +647,30 @@ uint32_t DngSdkInfo::GetExifExifVersion(const dng_exif& fExif, MetadataValue& va
 {
     value.type = PropertyValueType::STRING;
     value.stringValue = "Unknown Exif Version";
+    constexpr size_t exifVersionSize = 4;
 
-    std::vector<uint8_t> versionBytes(EXIF_VERSION_SIZE);
+    std::vector<uint8_t> versionBytes(exifVersionSize);
     uint32_t offset = 0;
     ImageUtils::Uint32ToBytes(fExif.fExifVersion, versionBytes, offset, true);
 
     std::string_view versionView(reinterpret_cast<const char*>(versionBytes.data()), versionBytes.size());
 
-    if (versionView == EXIF_VERSION_0110) {
-        value.stringValue = "Exif Version 1.1";
-    } else if (versionView == EXIF_VERSION_0120) {
-        value.stringValue = "Exif Version 1.2";
-    } else if (versionView == EXIF_VERSION_0200) {
-        value.stringValue = "Exif Version 2.0";
-    } else if (versionView == EXIF_VERSION_0210) {
-        value.stringValue = "Exif Version 2.1";
-    } else if (versionView == EXIF_VERSION_0220) {
-        value.stringValue = "Exif Version 2.2";
-    } else if (versionView == EXIF_VERSION_0221) {
-        value.stringValue = "Exif Version 2.21";
-    } else if (versionView == EXIF_VERSION_0230) {
-        value.stringValue = "Exif Version 2.3";
-    } else if (versionView == EXIF_VERSION_0231) {
-        value.stringValue = "Exif Version 2.31";
-    } else if (versionView == EXIF_VERSION_0232) {
-        value.stringValue = "Exif Version 2.32";
+    static const std::map<std::string, std::string> exifVersionMap = {
+        {"0110", "Exif Version 1.1"},
+        {"0120", "Exif Version 1.2"},
+        {"0200", "Exif Version 2.0"},
+        {"0210", "Exif Version 2.1"},
+        {"0220", "Exif Version 2.2"},
+        {"0221", "Exif Version 2.21"},
+        {"0230", "Exif Version 2.3"},
+        {"0231", "Exif Version 2.31"},
+        {"0232", "Exif Version 2.32"},
+    };
+
+    std::string versionStr(versionView);
+    auto it = exifVersionMap.find(versionStr);
+    if (it != exifVersionMap.end()) {
+        value.stringValue = it->second;
     }
 
     return SUCCESS;
@@ -751,20 +716,25 @@ uint32_t DngSdkInfo::GetExifComponentsConfiguration(const dng_exif& fExif, Metad
     static constexpr const char* COMPONENT_LABELS[] = {
         "-", "Y", "Cb", "Cr", "R", "G", "B"
     };
+    constexpr uint32_t bitsPerByte = 8;
+    constexpr uint32_t componentConfigCount = 4;
+    constexpr uint32_t componentConfigLastIndex = 3;
+    constexpr uint32_t componentLabelMaxIndex = 6;
+    constexpr uint32_t componentStringReserveSize = 35;
 
     value.type = PropertyValueType::STRING;
     value.stringValue.clear();
-    value.stringValue.reserve(COMPONENT_STRING_RESERVE_SIZE);
+    value.stringValue.reserve(componentStringReserveSize);
 
     const uint32_t config = fExif.fComponentsConfiguration;
-    for (int i = 0; i < COMPONENT_CONFIG_COUNT; i++) {
+    for (int i = 0; i < componentConfigCount; i++) {
         const uint8_t component = static_cast<uint8_t>(
-            (config >> ((COMPONENT_CONFIG_COUNT - 1 - i) * BITS_PER_BYTE)) & BYTE_MASK);
+            (config >> ((componentConfigCount - 1 - i) * bitsPerByte)) & BYTE_MASK);
         const char* label = "Reserved";
-        if (component <= COMPONENT_LABEL_MAX_INDEX) {
+        if (component <= componentLabelMaxIndex) {
             label = COMPONENT_LABELS[component];
         }
-        if (i < COMPONENT_CONFIG_LAST_INDEX) {
+        if (i < componentConfigLastIndex) {
             value.stringValue.push_back(' ');
         }
         value.stringValue.append(label);
@@ -827,18 +797,23 @@ uint32_t DngSdkInfo::GetExifSubsecTimeDigitized(const dng_exif& fExif, MetadataV
 uint32_t DngSdkInfo::GetExifFlashPixVersion(const dng_exif& fExif, MetadataValue& value)
 {
     value.type = PropertyValueType::STRING;
-
-    std::vector<uint8_t> versionBytes(FLASH_VERSION_SIZE);
+    value.stringValue = "Unknown FlashPix Version";
+    constexpr size_t flashVersionSize = 4;
+    std::vector<uint8_t> versionBytes(flashVersionSize);
     uint32_t offset = 0;
     ImageUtils::Uint32ToBytes(fExif.fFlashPixVersion, versionBytes, offset, true);
 
     std::string_view versionView(reinterpret_cast<const char*>(versionBytes.data()), versionBytes.size());
-    if (versionView == FLASH_VERSION_1_0) {
-        value.stringValue = "FlashPix Version 1.0";
-    } else if (versionView == FLASH_VERSION_1_01) {
-        value.stringValue = "FlashPix Version 1.01";
-    } else {
-        value.stringValue = "Unknown FlashPix Version";
+
+    static const std::map<std::string, std::string> flashPixVersionMap = {
+        {"0100", "FlashPix Version 1.0"},
+        {"0101", "FlashPix Version 1.01"},
+    };
+
+    std::string versionStr(versionView);
+    auto it = flashPixVersionMap.find(versionStr);
+    if (it != flashPixVersionMap.end()) {
+        value.stringValue = it->second;
     }
 
     return SUCCESS;
@@ -972,7 +947,8 @@ uint32_t DngSdkInfo::GetExifCameraSerialNumber(const dng_exif& fExif, MetadataVa
 
 uint32_t DngSdkInfo::GetExifLensSpecification(const dng_exif& fExif, MetadataValue& value)
 {
-    return GetDngURationalArray(fExif.fLensInfo, LENS_INFO_ELEMENTS, value);
+    constexpr uint32_t lensInfoElements = 4;
+    return GetDngURationalArray(fExif.fLensInfo, lensInfoElements, value);
 }
 
 uint32_t DngSdkInfo::GetExifLensMake(const dng_exif& fExif, MetadataValue& value)
@@ -1021,11 +997,6 @@ uint32_t DngSdkInfo::GetIfdImageLength(const dng_ifd& fIFD, MetadataValue& value
     return GetDngUint32(fIFD.fImageLength, value);
 }
 
-uint32_t DngSdkInfo::GetIfdBitsPerSample(const dng_ifd& fIFD, MetadataValue& value)
-{
-    return GetDngUint32Array(fIFD.fBitsPerSample, fIFD.fSamplesPerPixel, value);
-}
-
 uint32_t DngSdkInfo::GetIfdCompression(const dng_ifd& fIFD, MetadataValue& value)
 {
     return GetDngUint32(fIFD.fCompression, value);
@@ -1051,11 +1022,6 @@ uint32_t DngSdkInfo::GetIfdRowsPerStrip(const dng_ifd& fIFD, MetadataValue& valu
     return GetDngUint32(fIFD.fTileLength, value);
 }
 
-uint32_t DngSdkInfo::GetIfdStripByteCounts(const dng_ifd& fIFD, MetadataValue& value)
-{
-    return GetDngUint32Array(fIFD.fTileByteCount, fIFD.fTileByteCountsCount, value);
-}
-
 uint32_t DngSdkInfo::GetIfdXResolution(const dng_ifd& fIFD, MetadataValue& value)
 {
     return GetDngReal64(fIFD.fXResolution, value);
@@ -1078,8 +1044,9 @@ uint32_t DngSdkInfo::GetIfdResolutionUnit(const dng_ifd& fIFD, MetadataValue& va
 
 uint32_t DngSdkInfo::GetIfdYCbCrCoefficients(const dng_ifd& fIFD, MetadataValue& value)
 {
+    constexpr uint32_t ycbcrCoefficientElements = 3;
     value.type = PropertyValueType::DOUBLE_ARRAY;
-    value.doubleArrayValue.reserve(YCBCR_COEFFICIENT_ELEMENTS);
+    value.doubleArrayValue.reserve(ycbcrCoefficientElements);
     value.doubleArrayValue.push_back(fIFD.fYCbCrCoefficientR);
     value.doubleArrayValue.push_back(fIFD.fYCbCrCoefficientG);
     value.doubleArrayValue.push_back(fIFD.fYCbCrCoefficientB);
@@ -1089,7 +1056,8 @@ uint32_t DngSdkInfo::GetIfdYCbCrCoefficients(const dng_ifd& fIFD, MetadataValue&
 uint32_t DngSdkInfo::GetIfdYCbCrSubSampling(const dng_ifd& fIFD, MetadataValue& value)
 {
     value.type = PropertyValueType::INT_ARRAY;
-    value.intArrayValue.reserve(YCBCR_SUB_SAMPLE_ELEMENTS);
+    constexpr uint32_t ycbcrSubSampleElements = 2;
+    value.intArrayValue.reserve(ycbcrSubSampleElements);
     value.intArrayValue.push_back(static_cast<int64_t>(fIFD.fYCbCrSubSampleH));
     value.intArrayValue.push_back(static_cast<int64_t>(fIFD.fYCbCrSubSampleV));
     return SUCCESS;
@@ -1102,14 +1070,16 @@ uint32_t DngSdkInfo::GetIfdYCbCrPositioning(const dng_ifd& fIFD, MetadataValue& 
 
 uint32_t DngSdkInfo::GetIfdReferenceBlackWhite(const dng_ifd& fIFD, MetadataValue& value)
 {
-    return GetDngReal64Array(fIFD.fReferenceBlackWhite, REFERENCE_BLACK_WHITE_ELEMENTS, value);
+    constexpr uint32_t referenceBlackWhiteElements = 6;
+    return GetDngReal64Array(fIFD.fReferenceBlackWhite, referenceBlackWhiteElements, value);
 }
 
 uint32_t DngSdkInfo::GetIfdDefaultCropSize(const dng_ifd& fIFD, MetadataValue& value)
 {
     value.type = PropertyValueType::INT_ARRAY;
+    constexpr uint32_t defaultCropElements = 2;
     value.intArrayValue.clear();
-    value.intArrayValue.reserve(DEFAULT_CROP_ELEMENTS);
+    value.intArrayValue.reserve(defaultCropElements);
 
     // Convert dng_urational to integer: numerator / denominator
     uint32_t cropH = (fIFD.fDefaultCropSizeH.d != 0) ?
@@ -1166,17 +1136,14 @@ bool DngSdkInfo::SaveParsedTag(const UniqueTagKey& tagKey, uint16_t tagType, uin
     if (tagValueSize == 0) {
         IMAGE_LOGD("Parse invalid tagCode:%{public}u tagType:%{public}u tagCount:%{public}u",
             tagKey.second, tagType, tagCount);
-        return false;
     }
 
     DngTagRecord record = {
-        .parentCode = tagKey.first,
         .tagCode = tagKey.second,
         .tagType = tagType,
         .tagCount = tagCount,
         .tagValueOffset = tagOffset,
         .tagValueSize = tagValueSize,
-        .isEmbedded = (tagValueSize <= EMBEDDED_TAG_VALUE_MAX_SIZE) ? true : false,
     };
 
     parsedTagRecordMap_[tagKey] = record;
@@ -1231,7 +1198,7 @@ uint32_t DngSdkInfo::ParseShortTagToString(const DngTagRecord& tagRecord, dng_st
     return SUCCESS;
 }
 
-uint32_t DngSdkInfo::ParseLongTag(const DngTagRecord& tagRecord, dng_stream& stream, MetadataValue& value)
+uint32_t DngSdkInfo::ParseIntArrayTag(const DngTagRecord& tagRecord, dng_stream& stream, MetadataValue& value)
 {
     value.type = PropertyValueType::INT_ARRAY;
     value.intArrayValue.clear();
@@ -1289,7 +1256,7 @@ uint32_t DngSdkInfo::ParseIntTag(const DngTagRecord& tagRecord, dng_stream& stre
                 v = static_cast<int64_t>(stream.Get_int32());
                 break;
             default:
-                return ERROR;
+                return ERR_IMAGE_DECODE_EXIF_UNSUPPORT;
         }
         value.intArrayValue.push_back(v);
     }
@@ -1298,39 +1265,40 @@ uint32_t DngSdkInfo::ParseIntTag(const DngTagRecord& tagRecord, dng_stream& stre
 
 uint32_t DngSdkInfo::ParseDoubleTag(const DngTagRecord& tagRecord, dng_stream& stream, MetadataValue& value)
 {
-    value.type = PropertyValueType::DOUBLE_ARRAY;
+    value.type = PropertyValueType::DOUBLE;
     value.doubleArrayValue.clear();
-    for (uint32_t i = 0; i < tagRecord.tagCount; i++) {
-        double d = 0.0;
-        switch (tagRecord.tagType) {
-            case ttDouble:
-                d = stream.Get_real64();
-                break;
-            case ttRational: {
-                uint32_t n = stream.Get_uint32();
-                uint32_t dnm = stream.Get_uint32();
-                d = (dnm != 0) ? static_cast<double>(n) / dnm : 0.0;
-                break;
-            }
-            case ttSRational: {
-                int32_t n = stream.Get_int32();
-                int32_t dnm = stream.Get_int32();
-                d = (dnm != 0) ? static_cast<double>(n) / dnm : 0.0;
-                break;
-            }
-            default:
-                return ERROR;
-        }
-        value.doubleArrayValue.push_back(d);
+    if (tagRecord.tagCount == 0) {
+        return SUCCESS;
     }
+    double d = 0.0;
+    switch (tagRecord.tagType) {
+        case ttDouble:
+            d = stream.Get_real64();
+            break;
+        case ttRational: {
+            uint32_t n = stream.Get_uint32();
+            uint32_t dnm = stream.Get_uint32();
+            d = (dnm != 0) ? static_cast<double>(n) / dnm : 0.0;
+            break;
+        }
+        case ttSRational: {
+            int32_t n = stream.Get_int32();
+            int32_t dnm = stream.Get_int32();
+            d = (dnm != 0) ? static_cast<double>(n) / dnm : 0.0;
+            break;
+        }
+        default:
+            return ERR_IMAGE_DECODE_EXIF_UNSUPPORT;
+    }
+    value.doubleArrayValue.push_back(d);
     return SUCCESS;
 }
 
 void DngSdkInfo::ProcessSpecialTag(const UniqueTagKey& tagKey, dng_stream& stream)
 {
     uint16_t tagCode = tagKey.second;
-    auto parseIter = specialTagPraseMap_.find(tagCode);
-    CHECK_DEBUG_RETURN_LOG(parseIter == specialTagPraseMap_.end(),
+    auto parseIter = specialTagParseMap_.find(tagCode);
+    CHECK_DEBUG_RETURN_LOG(parseIter == specialTagParseMap_.end(),
         "%{public}s: Not need to parse tagCode: %{public}u", __func__, tagCode);
 
     auto tagRecordIter = parsedTagRecordMap_.find(tagKey);
@@ -1343,8 +1311,8 @@ void DngSdkInfo::ProcessSpecialTag(const UniqueTagKey& tagKey, dng_stream& strea
 
     bool cond = tagRecord.tagValueOffset + tagRecord.tagValueSize > stream.Length();
     CHECK_DEBUG_RETURN_LOG(cond,
-        "%{public}s: Invalid value offset(%{public}llu) and size(%{public}u) for tagCode: %{public}u",
-        __func__, tagRecord.tagValueOffset, tagRecord.tagValueSize, tagCode);
+        "%{public}s: Invalid value offset(%{public}d) and size(%{public}u) for tagCode: %{public}u",
+        __func__, static_cast<uint32_t>(tagRecord.tagValueOffset), tagRecord.tagValueSize, tagCode);
 
     uint64_t savedPosition = stream.Position();
     stream.SetReadPosition(tagRecord.tagValueOffset);
@@ -1428,7 +1396,7 @@ uint32_t DngSdkInfo::GetOrSetProperty(MetadataValue& value, const DngPropertyOpt
         CHECK_ERROR_RETURN_RET(fIFD[option.ifdIndex].Get() == nullptr, ERR_MEDIA_NO_EXIF_DATA);
         result = GetOrSetIfdProperty(*(fIFD[option.ifdIndex].Get()), value, tagKey, isGet);
         if (option.ifdIndex > 0) {
-            tagKey.first = tcFirstSubIFD + option.ifdIndex - SUB_PREVIEW_IFD_FIRST_INDEX;
+            tagKey.first = tcFirstSubIFD + option.ifdIndex - 1;
         }
     } else if (option.type == DngMetaSourceType::CHAINED_IFD) {
         CHECK_ERROR_RETURN_RET(option.ifdIndex >= fChainedIFDCount, IMAGE_RESULT_INDEX_INVALID);
@@ -1474,7 +1442,7 @@ uint32_t DngSdkInfo::GetProperty(MetadataValue& value, const DngPropertyOption& 
         __func__, value.key.c_str(), option.type, option.ifdIndex, result);
     CHECK_ERROR_RETURN_RET(result != SUCCESS, result);
 
-    if (!IsParsedTag(tagKey)) {
+    if (!IsInvalidParsedTag(tagKey)) {
         IMAGE_LOGE("%{public}s: key[%{public}s] is not exist in sourceType[%{public}d][%{public}u]",
             __func__, value.key.c_str(), option.type, option.ifdIndex);
         ClearMetadataValue(value);
@@ -1498,7 +1466,7 @@ uint32_t DngSdkInfo::SetProperty(const MetadataValue& value, const DngPropertyOp
         return ERR_IMAGE_DATA_UNSUPPORT;
     }
 
-    bool isParsed = IsParsedTag(tagKey);
+    bool isParsed = IsInvalidParsedTag(tagKey);
     DngUpdateTagItem tagItem = {
         .operation = isParsed ? DngPropertyOperation::MODIFY : DngPropertyOperation::ADD,
         .value = std::move(copiedValue),
@@ -1518,7 +1486,7 @@ uint32_t DngSdkInfo::RemoveProperty(const std::string& key, const DngPropertyOpt
         __func__, key.c_str(), option.type, option.ifdIndex, result);
     CHECK_ERROR_RETURN_RET(result != SUCCESS, result);
 
-    if (!IsParsedTag(tagKey)) {
+    if (!IsInvalidParsedTag(tagKey)) {
         return ERR_MEDIA_NO_EXIF_DATA;
     }
     DngUpdateTagItem tagItem = {
@@ -1528,9 +1496,18 @@ uint32_t DngSdkInfo::RemoveProperty(const std::string& key, const DngPropertyOpt
     return SUCCESS;
 }
 
-bool DngSdkInfo::IsParsedTag(const UniqueTagKey& tagKey)
+bool DngSdkInfo::IsInvalidParsedTag(const UniqueTagKey& tagKey)
 {
-    return parsedTagRecordMap_.find(tagKey) != parsedTagRecordMap_.end();
+    auto iter = parsedTagRecordMap_.find(tagKey);
+    if (iter == parsedTagRecordMap_.end()) {
+        return false;
+    }
+
+    const DngTagRecord& record = iter->second;
+    if (record.tagCount <= 0) {
+        return false;
+    }
+    return true;
 }
 
 bool DngSdkInfo::IsParsedParentCode(uint32_t parentCode)
@@ -1550,7 +1527,7 @@ DngSdkInfo::UniqueTagKey DngSdkInfo::GetSpecialUniqueTagKey(const std::string& t
     if (option.type == DngMetaSourceType::EXIF) {
         parentCode = tcExifIFD;
     } else if (option.type == DngMetaSourceType::SUB_PREVIEW_IFD) {
-        parentCode = option.ifdIndex > 0 ? tcFirstSubIFD + option.ifdIndex - SUB_PREVIEW_IFD_FIRST_INDEX : 0;
+        parentCode = option.ifdIndex > 0 ? tcFirstSubIFD + option.ifdIndex - 1 : 0;
     } else if (option.type == DngMetaSourceType::CHAINED_IFD) {
         parentCode = tcFirstChainedIFD + option.ifdIndex;
     }
