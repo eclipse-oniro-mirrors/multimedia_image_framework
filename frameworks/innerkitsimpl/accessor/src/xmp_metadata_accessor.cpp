@@ -20,6 +20,12 @@
 #include "xmp_metadata_accessor.h"
 #include "xmp_metadata_impl.h"
 
+#undef LOG_DOMAIN
+#define LOG_DOMAIN LOG_TAG_DOMAIN_ID_IMAGE
+
+#undef LOG_TAG
+#define LOG_TAG "XMPMetadataAccessor"
+
 namespace {
     constexpr int32_t INVALID_FILE_DESCRIPTOR = -1;
 }

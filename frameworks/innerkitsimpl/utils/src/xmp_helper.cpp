@@ -16,6 +16,12 @@
 #include "image_log.h"
 #include "xmp_helper.h"
 
+#undef LOG_DOMAIN
+#define LOG_DOMAIN LOG_TAG_DOMAIN_ID_IMAGE
+
+#undef LOG_TAG
+#define LOG_TAG "XMPHelper"
+
 namespace {
 constexpr std::string_view WHITE_SPACE_CHARS = " \t\r\n";
 constexpr std::string_view COLON = ":";

@@ -3052,7 +3052,7 @@ uint32_t ImageSource::SetDecodeOptions(std::unique_ptr<AbsImageDecoder> &decoder
         IMAGE_LOGE("decoder is nullptr");
         return ERROR;
     }
-
+    
     bool isDecodeHdrImage = (opts.desiredDynamicRange == DecodeDynamicRange::AUTO &&
                             (sourceHdrType_ > ImageHdrType::SDR)) ||
                             opts.desiredDynamicRange == DecodeDynamicRange::HDR;
@@ -3069,7 +3069,7 @@ uint32_t ImageSource::SetDecodeOptions(std::unique_ptr<AbsImageDecoder> &decoder
             plOptions.desiredPixelFormat = PixelFormat::NV21;
         }
     }
-
+    
     uint32_t ret = decoder->SetDecodeOptions(index, plOptions, plInfo);
     if (ret != SUCCESS) {
         IMAGE_LOGE("[ImageSource]decoder plugin set decode options fail (image index:%{public}u),"
@@ -6162,7 +6162,7 @@ std::string ImageSource::GetPixelMapName(PixelMap* pixelMap)
 ImageHdrType ImageSource::CheckHdrType()
 {
     IMAGE_LOGD("start CheckHdrType()");
-
+    
     if (checkHdrTypeHasSet) {
         IMAGE_LOGD("already have checkHdrType_: %{public}d", checkHdrType_);
         return checkHdrType_;

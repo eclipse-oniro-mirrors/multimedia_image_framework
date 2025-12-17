@@ -44,6 +44,14 @@ static std::vector<struct OHOS::Media::ImageEnum> sXMPTagType = {
     {"QUALIFIER", 7, ""}
 };
 
+struct JsXMPTag {
+    napi_value xmlns;
+    napi_value prefix;
+    napi_value name;
+    napi_value type;
+    napi_value value;
+};
+
 struct XMPMetadataAsyncContext {
     napi_env env;
     napi_async_work work;
@@ -316,52 +324,57 @@ static napi_value CreateJsXMPTag(napi_env env, const XMPTag &tag)
 {
     napi_value tagObj = nullptr;
     napi_create_object(env, &tagObj);
-    
-    napi_value xmlns, prefix, name, type, value;
-    napi_create_string_utf8(env, tag.xmlns.c_str(), tag.xmlns.length(), &xmlns);
-    napi_create_string_utf8(env, tag.prefix.c_str(), tag.prefix.length(), &prefix);
-    napi_create_string_utf8(env, tag.name.c_str(), tag.name.length(), &name);
-    napi_create_int32(env, static_cast<int32_t>(tag.type), &type);
-    if (!tag.value.empty()) {
-        napi_create_string_utf8(env, tag.value.c_str(), tag.value.length(), &value);
+
+    JsXMPTag jsTag;
+    napi_create_string_utf8(env, tag.xmlns.c_str(), tag.xmlns.length(), &jsTag.xmlns);
+    if (!tag.prefix.empty()) {
+        napi_create_string_utf8(env, tag.prefix.c_str(), tag.prefix.length(), &jsTag.prefix);
     } else {
-        napi_get_null(env, &value);
+        napi_get_undefined(env, &jsTag.prefix);
     }
-    
-    napi_set_named_property(env, tagObj, "xmlns", xmlns);
-    napi_set_named_property(env, tagObj, "prefix", prefix);
-    napi_set_named_property(env, tagObj, "name", name);
-    napi_set_named_property(env, tagObj, "type", type);
-    napi_set_named_property(env, tagObj, "value", value);
-    
+    napi_create_string_utf8(env, tag.name.c_str(), tag.name.length(), &jsTag.name);
+    napi_create_int32(env, static_cast<int32_t>(tag.type), &jsTag.type);
+    if (!tag.value.empty()) {
+        napi_create_string_utf8(env, tag.value.c_str(), tag.value.length(), &jsTag.value);
+    } else {
+        napi_get_undefined(env, &jsTag.value);
+    }
+
+    napi_set_named_property(env, tagObj, "xmlns", jsTag.xmlns);
+    napi_set_named_property(env, tagObj, "prefix", jsTag.prefix);
+    napi_set_named_property(env, tagObj, "name", jsTag.name);
+    napi_set_named_property(env, tagObj, "type", jsTag.type);
+    napi_set_named_property(env, tagObj, "value", jsTag.value);
+
     return tagObj;
 }
 
 static XMPTag ParseXMPTagFromJS(napi_env env, napi_value tagObj)
 {
     XMPTag tag;
-    napi_value xmlns;
-    napi_value prefix;
-    napi_value name;
-    napi_value type;
-    napi_value value;
-    napi_get_named_property(env, tagObj, "xmlns", &xmlns);
-    napi_get_named_property(env, tagObj, "prefix", &prefix);
-    napi_get_named_property(env, tagObj, "name", &name);
-    napi_get_named_property(env, tagObj, "type", &type);
-    napi_get_named_property(env, tagObj, "value", &value);
+    JsXMPTag jsTag;
+    napi_get_named_property(env, tagObj, "xmlns", &jsTag.xmlns);
+    napi_get_named_property(env, tagObj, "prefix", &jsTag.prefix);
+    napi_get_named_property(env, tagObj, "name", &jsTag.name);
+    napi_get_named_property(env, tagObj, "type", &jsTag.type);
+    napi_get_named_property(env, tagObj, "value", &jsTag.value);
 
-    tag.xmlns = ImageNapiUtils::GetStringArgument(env, xmlns);
-    tag.prefix = ImageNapiUtils::GetStringArgument(env, prefix);
-    tag.name = ImageNapiUtils::GetStringArgument(env, name);
+    tag.xmlns = ImageNapiUtils::GetStringArgument(env, jsTag.xmlns);
+
+    napi_valuetype prefixType = ImageNapiUtils::getType(env, jsTag.prefix);
+    if (prefixType == napi_string) {
+        tag.prefix = ImageNapiUtils::GetStringArgument(env, jsTag.prefix);
+    }
+
+    tag.name = ImageNapiUtils::GetStringArgument(env, jsTag.name);
 
     int32_t typeValue;
-    napi_get_value_int32(env, type, &typeValue);
+    napi_get_value_int32(env, jsTag.type, &typeValue);
     tag.type = static_cast<XMPTagType>(typeValue);
 
-    napi_valuetype valueType = ImageNapiUtils::getType(env, value);
-    if (valueType != napi_null && valueType != napi_undefined) {
-        tag.value = ImageNapiUtils::GetStringArgument(env, value);
+    napi_valuetype valueType = ImageNapiUtils::getType(env, jsTag.value);
+    if (valueType == napi_string) {
+        tag.value = ImageNapiUtils::GetStringArgument(env, jsTag.value);
     }
     return tag;
 }
@@ -836,7 +849,7 @@ napi_value XMPMetadataNapi::EnumerateTags(napi_env env, napi_callback_info info)
             ParseEnumerateTagsOptions(env, argv[NUM_2], context->options);
         }
     }
-    
+
     if (!ProcessEnumerateTags(env, context, nativePtr)) {
         return ImageNapiUtils::ThrowExceptionError(env, IMAGE_BAD_PARAMETER, "Failed to enumerate tags");
     }

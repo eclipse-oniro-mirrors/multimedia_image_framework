@@ -187,10 +187,10 @@ public:
     NATIVEEXPORT static bool IsSupportGenAstc();
 
     NATIVEEXPORT static CM_ColorSpaceType ConvertColorSpaceType(ColorManager::ColorSpaceName colorSpace, bool base);
-
+    
     NATIVEEXPORT static void SetVividMetaColor(HdrMetadata& metadata, CM_ColorSpaceType base,
                                                 CM_ColorSpaceType gainmap, CM_ColorSpaceType hdr);
-
+    
     NATIVEEXPORT std::unique_ptr<PixelMap> CreatePixelMap(const DecodeOptions &opts, uint32_t &errorCode)
     {
         return CreatePixelMapEx(0, opts, errorCode);

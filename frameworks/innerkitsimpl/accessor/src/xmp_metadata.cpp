@@ -20,6 +20,12 @@
 #include "xmp_metadata.h"
 #include "xmp_metadata_impl.h"
 
+#undef LOG_DOMAIN
+#define LOG_DOMAIN LOG_TAG_DOMAIN_ID_IMAGE
+
+#undef LOG_TAG
+#define LOG_TAG "XMPMetadata"
+
 namespace {
 constexpr std::string_view COLON = ":";
 constexpr uint32_t MAX_XMP_METADATA_LENGTH = 64 * 1024;
