@@ -3182,7 +3182,7 @@ static void ReadImageMetadataExecute(napi_env env, void *data)
         return;
     }
     context->rExifMetadata = context->rImageSource->GetExifMetadata();
-    context->rImageHeifsMetadata = context->rImageHeifsMetadata = CreateNullHeifsMetadata();
+    context->rImageHeifsMetadata = CreateNullHeifsMetadata();
     if (context->keyStrArray.empty()) {
         const std::vector<MetadataValue> allProperties = context->rImageSource->GetAllPropertiesWithType();
         for (const auto& property : allProperties) {
