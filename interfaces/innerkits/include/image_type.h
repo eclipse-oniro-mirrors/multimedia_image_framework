@@ -233,7 +233,7 @@ struct ImageInfo {
     AlphaType alphaType = AlphaType::IMAGE_ALPHA_TYPE_UNKNOWN;
     int32_t baseDensity = 0;
     std::string encodedFormat;
-    bool isProgressiveImage = false;
+    bool isProgressive = false;
 };
 
 struct YUVDataInfo {
