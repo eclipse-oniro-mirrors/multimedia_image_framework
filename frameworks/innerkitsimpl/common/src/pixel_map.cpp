@@ -4518,7 +4518,7 @@ std::unique_ptr<AbsMemory> PixelMap::CreateSdrMemory(ImageInfo &imageInfo, Pixel
     ImageUtils::DumpHdrBufferEnabled(hdrSurfaceBuffer, "decompose-HDR");
     if (!DecomposeImage(hdrSurfaceBuffer, sdrSurfaceBuffer, toSRGB)) {
         sdrMemory->Release();
-        HILOG_COMM_ERROR("HDR-IMAGE ToSdr decompose failed, CM_ColorType : %{public}d",
+        IMAGE_LOGE("HDR-IMAGE ToSdr decompose failed, CM_ColorType : %{public}d",
             static_cast<uint32_t>(colorspaceType));
         errorCode = IMAGE_RESULT_GET_SURFAC_FAILED;
         return nullptr;
