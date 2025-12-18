@@ -20,6 +20,7 @@
 #include "image_log.h"
 #include "media_errors.h"
 #include "xmp_metadata.h"
+#include "xmp_helper.h"
 
 using namespace OHOS::Media;
 using namespace testing::ext;
@@ -3111,6 +3112,167 @@ HWTEST_F(XmpMetadataTest, GetTagTest066, TestSize.Level1)
 }
 
 /**
+ * @tc.name: GetTagTest067
+ * @tc.desc: test the GetTag method with other symbol when the type of the first parent tag is structure, the child
+ *           tag is ALTERNATE_TEXT and its element is simple with the tag which has qualifier.
+ * @tc.type: FUNC
+ */
+HWTEST_F(XmpMetadataTest, GetTagTest067, TestSize.Level1)
+{
+    GTEST_LOG_(INFO) << "XmpMetadataTest: GetTagTest067 start";
+    XMPMetadata xmpMetadata;
+    XMPTag baseTag;
+    InitTestXMPTag(baseTag, XMPTagType::STRUCTURE, "subject");
+
+    bool ret = xmpMetadata.SetTag("dc:subject", baseTag);
+    EXPECT_TRUE(ret);
+
+    InitTestXMPTag(baseTag, XMPTagType::ALTERNATE_TEXT, "title");
+    ret = xmpMetadata.SetTag("dc:subject/dc:title", baseTag);
+    EXPECT_TRUE(ret);
+
+    XMPTag childTag_1;
+    InitTestXMPTag(childTag_1, XMPTagType::SIMPLE, "title");
+    childTag_1.value = "Default Title";
+    ret = xmpMetadata.SetTag("dc:subject/dc:title[1]", childTag_1);
+    EXPECT_TRUE(ret);
+
+    XMPTag childTag_2;
+    InitTestXMPTag(childTag_2, XMPTagType::SIMPLE, "title");
+    childTag_2.value = "中文标题";
+    ret = xmpMetadata.SetTag("dc:subject/dc:title[2]", childTag_2);
+    EXPECT_TRUE(ret);
+
+    XMPTag qualTag;
+    InitTestXMPTag(qualTag, XMPTagType::QUALIFIER, "lang");
+    qualTag.value = "x-default";
+    ret = xmpMetadata.SetTag("dc:subject/dc:title[1]/?xml:lang", qualTag);
+    EXPECT_TRUE(ret);
+
+    qualTag.value = "zh-CN";
+    ret = xmpMetadata.SetTag("dc:subject/dc:title[2]/?xml:lang", qualTag);
+    EXPECT_TRUE(ret);
+
+    XMPTag getTag;
+    ret = xmpMetadata.GetTag("dc:subject/dc:title[?xml:lang='x-default']", getTag);
+    EXPECT_TRUE(ret);
+    EXPECT_TRUE(CompareXMPTag(childTag_1, getTag));
+
+    ret = xmpMetadata.GetTag("dc:subject/dc:title[?xml:lang=\"zh-CN\"]", getTag);
+    EXPECT_TRUE(ret);
+    EXPECT_TRUE(CompareXMPTag(childTag_2, getTag));
+
+    GTEST_LOG_(INFO) << "XmpMetadataTest: GetTagTest067 end";
+}
+
+/**
+ * @tc.name: GetTagTest068
+ * @tc.desc: test the GetTag method with other symbol when the type of the first parent tag is structure, the child
+ *           tag is simple with the tag witch the type is qualifier.
+ * @tc.type: FUNC   
+ */
+HWTEST_F(XmpMetadataTest, GetTagTest068, TestSize.Level1)
+{
+    GTEST_LOG_(INFO) << "XmpMetadataTest: GetTagTest068 start";
+    XMPMetadata xmpMetadata;
+    XMPTag baseTag;
+    InitTestXMPTag(baseTag, XMPTagType::STRUCTURE, "subject");
+
+    bool ret = xmpMetadata.SetTag("dc:subject", baseTag);
+    EXPECT_TRUE(ret);
+
+    XMPTag childTag_1;
+    InitTestXMPTag(childTag_1, XMPTagType::SIMPLE, "child1");
+    childTag_1.value = "childTag_1";
+    ret = xmpMetadata.SetTag("dc:subject/dc:child1", childTag_1);
+    EXPECT_TRUE(ret);
+
+    XMPTag childTag_2;
+    InitTestXMPTag(childTag_2, XMPTagType::SIMPLE, "child2");
+    childTag_2.value = "childTag_2";
+    ret = xmpMetadata.SetTag("dc:subject/dc:child2", childTag_2);
+    EXPECT_TRUE(ret);
+
+    XMPTag qualTag1;
+    InitTestXMPTag(qualTag1, XMPTagType::QUALIFIER, "age");
+    qualTag1.value = "25";
+    ret = xmpMetadata.SetTag("dc:subject/dc:child1/?xml:age", qualTag1);
+    EXPECT_TRUE(ret);
+
+    XMPTag qualTag2;
+    InitTestXMPTag(qualTag2, XMPTagType::QUALIFIER, "age");
+    qualTag2.value = "30";
+    ret = xmpMetadata.SetTag("dc:subject/dc:child2/?xml:age", qualTag2);
+    EXPECT_TRUE(ret);
+
+    XMPTag getTag;
+    ret = xmpMetadata.GetTag("dc:subject/dc:child1/?xml:age", getTag);
+    EXPECT_TRUE(ret);
+    EXPECT_TRUE(CompareXMPTag(qualTag1, getTag));
+
+    ret = xmpMetadata.GetTag("dc:subject/dc:child2/?xml:age", getTag);
+    EXPECT_TRUE(ret);
+    EXPECT_TRUE(CompareXMPTag(qualTag2, getTag));
+
+    GTEST_LOG_(INFO) << "XmpMetadataTest: GetTagTest068 end";
+}
+
+
+/**
+ * @tc.name: GetTagTest069
+ * @tc.desc: test the GetTag method with other symbol when the type of the first parent tag is unordered array, the child
+ *           tag is simple with the tag witch the type is qualifier.
+ * @tc.type: FUNC
+ */
+HWTEST_F(XmpMetadataTest, GetTagTest069, TestSize.Level1)
+{
+    GTEST_LOG_(INFO) << "XmpMetadataTest: GetTagTest069 start";
+    XMPMetadata xmpMetadata;
+    XMPTag baseTag;
+    InitTestXMPTag(baseTag, XMPTagType::UNORDERED_ARRAY, "subject");
+
+    bool ret = xmpMetadata.SetTag("dc:subject", baseTag);
+    EXPECT_TRUE(ret);
+
+    InitTestXMPTag(baseTag, XMPTagType::ALTERNATE_TEXT, "title");
+    ret = xmpMetadata.SetTag("dc:subject[1]/dc:title", baseTag);
+    EXPECT_TRUE(ret);
+
+    XMPTag childTag_1;
+    InitTestXMPTag(childTag_1, XMPTagType::SIMPLE, "title");
+    childTag_1.value = "Default Title";
+    ret = xmpMetadata.SetTag("dc:subject[1]/dc:title[1]", childTag_1);
+    EXPECT_TRUE(ret);
+
+    XMPTag childTag_2;
+    InitTestXMPTag(childTag_2, XMPTagType::SIMPLE, "title");
+    childTag_2.value = "中文标题";
+    ret = xmpMetadata.SetTag("dc:subject[1]/dc:title[2]", childTag_2);
+    EXPECT_TRUE(ret);
+
+    XMPTag qualTag;
+    InitTestXMPTag(qualTag, XMPTagType::QUALIFIER, "lang");
+    qualTag.value = "x-default";
+    ret = xmpMetadata.SetTag("dc:subject[1]/dc:title[1]/@xml:lang", qualTag);
+    EXPECT_TRUE(ret);
+
+    qualTag.value = "zh-CN";
+    ret = xmpMetadata.SetTag("dc:subject[1]/dc:title[2]/@xml:lang", qualTag);
+    EXPECT_TRUE(ret);
+
+    XMPTag getTag;
+    ret = xmpMetadata.GetTag("dc:subject[1]/dc:title[@xml:lang='x-default']", getTag);
+    EXPECT_TRUE(ret);
+    EXPECT_TRUE(CompareXMPTag(childTag_1, getTag));
+
+    ret = xmpMetadata.GetTag("dc:subject[1]/dc:title[@xml:lang=\"zh-CN\"]", getTag);
+    EXPECT_TRUE(ret);
+    EXPECT_TRUE(CompareXMPTag(childTag_2, getTag));
+
+    GTEST_LOG_(INFO) << "XmpMetadataTest: GetTagTest069 end";
+}
+
+/**
  * @tc.name: EnumerateTags001
  * @tc.desc: test the EnumerateTags method when some items in unordered array.
  * @tc.type: FUNC
@@ -3427,6 +3589,37 @@ HWTEST_F(XmpMetadataTest, SetGetBlobTest003, TestSize.Level1)
     ret = xmpMetadata.GetBlob(sizeof(buffer), buffer);
     EXPECT_EQ(ret, ERR_IMAGE_INVALID_PARAMETER);
     GTEST_LOG_(INFO) << "XmpMetadataTest: SetGetBlobTest003 end";
+}
+
+/**
+ * @tc.name: ExtractPropertyTest001
+ * @tc.desc: test the ExtractProperty method with nested paths.
+ * @tc.type: FUNC
+ */
+HWTEST_F(XmpMetadataTest, ExtractPropertyTest001, TestSize.Level1)
+{
+    GTEST_LOG_(INFO) << "XmpMetadataTest: ExtractPropertyTest001 start";
+    // Case 1: Nested path with Localization Text Selector
+    std::string path1 = "dc:subject/dc:title[?xml:lang='x-default']";
+    EXPECT_EQ(XMPHelper::ExtractProperty(path1), "dc:title");
+
+    // Case 2: Nested path with Array Index and Localization Text Selector
+    std::string path2 = "dc:subject[1]/dc:title[@xml:lang='x-default']";
+    EXPECT_EQ(XMPHelper::ExtractProperty(path2), "dc:title");
+
+    // Case 3: Nested path with Structure Field
+    std::string path3 = "exif:Flash/exif:Fired";
+    EXPECT_EQ(XMPHelper::ExtractProperty(path3), "exif:Fired");
+
+    // Case 4: Deep nested path
+    std::string path4 = "dc:first[1]/dc:second[1]/dc:third[1]";
+    EXPECT_EQ(XMPHelper::ExtractProperty(path4), "dc:third");
+
+    // Case 5: Nested Qualifier (Selector)
+    std::string path5 = "dc:description/dc:title[?book:lastUpdated='2023']";
+    EXPECT_EQ(XMPHelper::ExtractProperty(path5), "dc:title");
+
+    GTEST_LOG_(INFO) << "XmpMetadataTest: ExtractPropertyTest001 end";
 }
 } // namespace Multimedia
 } // namespace OHOS
