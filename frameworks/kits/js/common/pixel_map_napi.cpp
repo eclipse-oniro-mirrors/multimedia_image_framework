@@ -1727,6 +1727,34 @@ void PixelMapNapi::CreatePixelMapFromSurfaceComplete(napi_env env, napi_status s
     CommonCallbackRoutine(env, context, result);
 }
 
+void PixelMapNapi::CreatePixelMapFromSurfaceWithTransformationComplete(napi_env env, napi_status status, void *data)
+{
+    if (data == nullptr) {
+        IMAGE_LOGE("CreatePixelMapFromSurfaceWithTransformationComplete invalid parameter: data is null");
+        return;
+    }
+
+    napi_value constructor = nullptr;
+    napi_value result = nullptr;
+
+    IMAGE_LOGD("CreatePixelMapFromSurfaceWithTransformationComplete IN");
+    auto context = static_cast<PixelMapAsyncContext*>(data);
+    status = napi_get_reference_value(env, sConstructor_, &constructor);
+    if (IMG_IS_OK(status)) {
+        status = NewPixelNapiInstance(env, constructor, context->rPixelMap, result);
+    }
+
+    if (!IMG_IS_OK(status)) {
+        if (context->status == SUCCESS) {
+            context->status = ERR_IMAGE_CREATE_PIXELMAP_FAILED;
+        }
+        IMAGE_LOGE("New instance could not be obtained");
+        napi_get_undefined(env, &result);
+    }
+
+    CommonCallbackRoutine(env, context, result);
+}
+
 void setSurfaceId(const char *surfaceId, std::string &dst)
 {
     dst = surfaceId;
@@ -1847,7 +1875,7 @@ napi_value PixelMapNapi::CreatePixelMapFromSurfaceWithTransformation(napi_env en
     asyncContext->argc = argCount;
     napi_create_promise(env, &(asyncContext->deferred), &result);
     IMG_CREATE_CREATE_ASYNC_WORK(env, status, "CreatePixelMapFromSurfaceWithTransformation",
-        CreatePixelMapFromSurfaceWithTransformationExec, CreatePixelMapFromSurfaceComplete,
+        CreatePixelMapFromSurfaceWithTransformationExec, CreatePixelMapFromSurfaceWithTransformationComplete,
         asyncContext, asyncContext->work);
     IMG_NAPI_CHECK_RET_D(IMG_IS_OK(status),
         ImageNapiUtils::ThrowExceptionError(env, ERR_IMAGE_CREATE_PIXELMAP_FAILED,
