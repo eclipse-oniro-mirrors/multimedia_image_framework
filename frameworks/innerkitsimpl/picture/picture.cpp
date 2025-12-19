@@ -124,6 +124,8 @@ namespace {
 const static uint64_t MAX_AUXILIARY_PICTURE_COUNT = 32;
 const static uint64_t MAX_PICTURE_META_TYPE_COUNT = 64;
 
+const static int32_t HDR_ALLOC_FORMAT_INVALID = -1;
+
 // Define ExifData malloc max size 1MB
 const static uint64_t MAX_EXIFMETADATA_SIZE = 1024 * 1024;
 static const uint8_t NUM_0 = 0;
@@ -299,7 +301,7 @@ void Picture::SetMainPixel(std::shared_ptr<PixelMap> PixelMap)
 
 static int32_t GetHdrAllocFormat(PixelFormat pixelFormat)
 {
-    int32_t hdrAllocFormat = GRAPHIC_PIXEL_FMT_RGBA_1010102;
+    int32_t hdrAllocFormat = HDR_ALLOC_FORMAT_INVALID;
     switch (pixelFormat) {
         case PixelFormat::RGBA_8888:
             hdrAllocFormat = GRAPHIC_PIXEL_FMT_RGBA_1010102;
@@ -308,6 +310,15 @@ static int32_t GetHdrAllocFormat(PixelFormat pixelFormat)
             hdrAllocFormat = GRAPHIC_PIXEL_FMT_YCRCB_P010;
             break;
         case PixelFormat::NV12:
+            hdrAllocFormat = GRAPHIC_PIXEL_FMT_YCBCR_P010;
+            break;
+        case PixelFormat::RGBA_1010102:
+            hdrAllocFormat = GRAPHIC_PIXEL_FMT_RGBA_1010102;
+            break;
+        case PixelFormat::YCRCB_P010:
+            hdrAllocFormat = GRAPHIC_PIXEL_FMT_YCRCB_P010;
+            break;
+        case PixelFormat::YCBCR_P010:
             hdrAllocFormat = GRAPHIC_PIXEL_FMT_YCBCR_P010;
             break;
         default:
@@ -396,7 +407,7 @@ sptr<SurfaceBuffer> CreateGainmapByHdrAndSdr(std::shared_ptr<PixelMap> &hdrPixel
         .width = imageInfo.size.width / 2,
         .height = imageInfo.size.height / 2,
         .strideAlignment = imageInfo.size.width / 2,
-        .format = GetHdrAllocFormat(imageInfo.pixelFormat),
+        .format = GRAPHIC_PIXEL_FMT_RGBA_8888,
         .usage = BUFFER_USAGE_CPU_READ | BUFFER_USAGE_CPU_WRITE | BUFFER_USAGE_MEM_DMA | BUFFER_USAGE_MEM_MMZ_CACHE,
         .timeout = 0,
     };
@@ -467,11 +478,18 @@ static std::unique_ptr<PixelMap> ComposeHdrPixelMap(std::shared_ptr<PixelMap> &m
         IMAGE_LOGI("Using mainPixelMap imageInfo format");
         pixelFormat = imageInfo.pixelFormat;
     }
+
+    int32_t hdrAllocFormat = GetHdrAllocFormat(pixelFormat);
+    if (hdrAllocFormat == HDR_ALLOC_FORMAT_INVALID) {
+        IMAGE_LOGE("%{public}s unsupported pixelFormat: %{public}d", __func__, pixelFormat);
+        return nullptr;
+    }
+
     BufferRequestConfig requestConfig = {
         .width = imageInfo.size.width,
         .height = imageInfo.size.height,
         .strideAlignment = imageInfo.size.width,
-        .format = GetHdrAllocFormat(pixelFormat),
+        .format = hdrAllocFormat,
         .usage = BUFFER_USAGE_CPU_READ | BUFFER_USAGE_CPU_WRITE | BUFFER_USAGE_MEM_DMA | BUFFER_USAGE_MEM_MMZ_CACHE,
         .timeout = 0,
     };
