@@ -265,7 +265,6 @@ image_native_android_deps = [
   "//foundation/multimedia/image_framework/mock/native:log_mock_static",
 
   # gif
-  "//third_party/giflib:gif_static",
   "//third_party/libexif:exif_static",
 
   # heif

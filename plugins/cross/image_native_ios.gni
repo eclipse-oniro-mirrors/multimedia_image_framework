@@ -259,7 +259,6 @@ image_native_ios_deps = [
   #"//third_party/libpng:png_static",
   # gif
   # png
-  "//third_party/giflib:gif_static",
   "//third_party/libexif:exif_static",
 
   # heif

@@ -1034,7 +1034,11 @@ unique_ptr<PixelMap> ImageSource::CreatePixelMapExtended(uint32_t index, const D
         context.pixelsBuffer.bufferSize, context.allocatorType);
     imageDataStatistics.SetRequestMemory(context.pixelsBuffer.bufferSize);
     if (errorCode != SUCCESS) {
+    #ifndef IOS_PLATFORM
         HILOG_COMM_ERROR("[ImageSource]decode source fail, ret:%{public}u.", errorCode);
+    #else
+        IMAGE_LOGE("[ImageSource]decode source fail, ret:%{public}u.", errorCode);
+    #endif
         imageEvent.SetDecodeErrorMsg("decode source fail, ret:" + std::to_string(errorCode));
         return nullptr;
     }
@@ -2856,7 +2860,11 @@ uint32_t ImageSource::DecodeImageInfo(uint32_t index, ImageStatusMap::iterator &
         status.imageInfo.encodedFormat = "none";
         auto errorResult = imageStatusMap_.insert(ImageStatusMap::value_type(index, status));
         iter = errorResult.first;
+    #ifndef IOS_PLATFORM
         HILOG_COMM_ERROR("[ImageSource]decode the image info fail.");
+    #else
+        IMAGE_LOGE("[ImageSource]decode the image info fail.");
+    #endif
         return ERR_IMAGE_DECODE_FAILED;
     }
 }
