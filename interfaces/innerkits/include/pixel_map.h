@@ -954,17 +954,10 @@ protected:
     static bool WriteFileDescriptor(Parcel &parcel, int fd);
     static bool ReadImageInfo(Parcel &parcel, ImageInfo &imgInfo);
     bool WriteImageInfo(Parcel &parcel) const;
-    void WriteUint8(std::vector<uint8_t> &buff, uint8_t value) const;
     static uint8_t ReadUint8(std::vector<uint8_t> &buff, int32_t &cursor);
-    uint8_t GetVarintLen(int32_t value) const;
-    void WriteVarint(std::vector<uint8_t> &buff, int32_t value) const;
-    static int32_t ReadVarint(std::vector<uint8_t> &buff, int32_t &cursor);
     void WriteData(std::vector<uint8_t> &buff, const uint8_t *data,
         const int32_t &height, const int32_t &rowDataSize, const int32_t &rowStride) const;
-    static std::unique_ptr<AbsMemory> ReadData(std::vector<uint8_t> &buff, int32_t size, int32_t &cursor,
-        AllocatorType allocType, ImageInfo imageInfo);
     static bool ReadTlvAttr(std::vector<uint8_t>& buff, ImageInfo& info, std::unique_ptr<AbsMemory>& mem, int32_t& csm);
-    void TlvWriteSurfaceInfo(const PixelMap* pixelMap, std::vector<uint8_t>& buff) const;
     bool DoTranslation(TransInfos &infos, const AntiAliasingOption &option = AntiAliasingOption::NONE);
     void UpdateImageInfo();
     bool IsYuvFormat() const;

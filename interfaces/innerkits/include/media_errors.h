@@ -163,11 +163,14 @@ const int32_t ERR_RESOURCE_UNAVAILABLE = 501; // Resource Unavailable
 const int32_t COMMON_ERR_INVALID_PARAMETER = 401; // Common error，Invalid parameter
 const int32_t ERR_MEDIA_NO_EXIF_DATA = 402; // no exif_data info
 
+const int32_t ERR_IMAGE_GET_IMAGE_DATA_FAILED = 7600104; // Failed to get image data
 const int32_t ERR_MEDIA_UNSUPPORT_OPERATION = 7600201; // Unsupported operation
 const int32_t ERR_MEDIA_INVALID_REGION = 7600204; // Invalid Region
 const int32_t ERR_MEDIA_UNSUPPORTED_MEMORY_FORMAT = 7600205; // Unsupported memory format
+const int32_t ERR_IMAGE_INVALID_PARAM = 7600206; // Invalid parameter
 const int32_t ERR_MEDIA_MEMORY_ALLOC_FAILED = 7600301; // Memory alloc failed
 const int32_t ERR_MEDIA_MEMORY_COPY_FAILED = 7600302; // Memory copy failed
+const int32_t ERR_IMAGE_CREATE_PIXELMAP_FAILED = 7600305; // Failed to create PixelMap
 const int32_t ERR_IMAGE_WRITE_PROPERTY_FAILED = 7700304; // Failed to write image properties to the file
 }  // namespace Media
 }  // namespace OHOS

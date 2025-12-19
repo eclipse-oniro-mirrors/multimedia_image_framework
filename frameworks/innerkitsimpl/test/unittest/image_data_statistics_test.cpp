@@ -92,5 +92,85 @@ HWTEST_F(ImageDataStatisticsTest, DataStatistics005, TestSize.Level3)
     imageDataStatistics.AddTitle(nullptr);
     GTEST_LOG_(INFO) << "ImageDataStatisticsTest: DataStatistics005 end";
 }
+
+/**
+ * @tc.name: DataStatistics006
+ * @tc.desc: Test ImageDataStatistics constructor with nullptr
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageDataStatisticsTest, DataStatistics006, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImageDataStatisticsTest: DataStatistics006 start";
+    
+    EXPECT_NO_FATAL_FAILURE({
+        ImageDataStatistics imageDataStatistics(nullptr);
+    });
+    
+    GTEST_LOG_(INFO) << "ImageDataStatisticsTest: DataStatistics006 end";
+}
+
+/**
+ * @tc.name: DataStatistics007
+ * @tc.desc: Test ImageDataStatistics constructor format error
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageDataStatisticsTest, DataStatistics007, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImageDataStatisticsTest: DataStatistics007 start";
+    
+    EXPECT_NO_FATAL_FAILURE({
+        ImageDataStatistics stats("%n");
+    });
+    
+    EXPECT_NO_FATAL_FAILURE({
+        ImageDataStatistics stats("%d", "string_not_int");
+    });
+    
+    EXPECT_NO_FATAL_FAILURE({
+        ImageDataStatistics stats("%s %d", "only_string");
+    });
+    
+    EXPECT_NO_FATAL_FAILURE({
+        std::string longFmt(1000, 'A');
+        longFmt += "%s";
+        ImageDataStatistics stats(longFmt.c_str(), "additional_string");
+    });
+    
+    GTEST_LOG_(INFO) << "ImageDataStatisticsTest: DataStatistics007 end";
+}
+
+/**
+ * @tc.name: DataStatistics008
+ * @tc.desc: Test ImageDataStatistics destructor memory threshold branch
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageDataStatisticsTest, DataStatistics008, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImageDataStatisticsTest: DataStatistics008 start";
+    
+    EXPECT_NO_FATAL_FAILURE({
+        ImageDataStatistics stats("Memory threshold test");
+        stats.SetRequestMemory(314572801);
+    });
+    
+    GTEST_LOG_(INFO) << "ImageDataStatisticsTest: DataStatistics008 end";
+}
+
+/**
+ * @tc.name: AddTitleStringTest001
+ * @tc.desc: Test AddTitle with string
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageDataStatisticsTest, AddTitleStringTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImageDataStatisticsTest: AddTitleStringTest001 start";
+    
+    EXPECT_NO_FATAL_FAILURE({
+        ImageDataStatistics stats("initial title");
+        stats.AddTitle(" additional text");
+    }) << "Basic AddTitle should not crash";
+    
+    GTEST_LOG_(INFO) << "ImageDataStatisticsTest: AddTitleStringTest001 end";
+}
 } // namespace Multimedia
 } // namespace OHOS

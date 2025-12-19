@@ -18,8 +18,6 @@
 #include <ani_signature_builder.h>
 #include "pixel_map_taihe.h"
 
-// This file is for legacy ANI backward compatibility
-
 namespace OHOS {
 namespace Media {
 using namespace ANI::Image;
@@ -53,6 +51,7 @@ bool PixelMapTaiheAni::InitCreatePixelMapByPtr(ani_env* env)
     return true;
 }
 
+// Wrap a native PixelMap into ANI object, for the use of external ANI/Taihe components
 ani_object PixelMapTaiheAni::CreateEtsPixelMap([[maybe_unused]] ani_env* env, std::shared_ptr<PixelMap> pixelMap)
 {
     if (!InitCreatePixelMapByPtr(env)) {
@@ -96,6 +95,7 @@ bool PixelMapTaiheAni::InitGetImplPtr(ani_env* env)
     return true;
 }
 
+// Unwrap native PixelMap from an ANI object, for the use of external ANI/Taihe components
 std::shared_ptr<PixelMap> PixelMapTaiheAni::GetNativePixelMap([[maybe_unused]] ani_env* env, ani_object obj)
 {
     if (!InitGetImplPtr(env)) {

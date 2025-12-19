@@ -465,7 +465,6 @@ ohos_shared_library("heifimpl") {
   deps = [
     ":heifparser",
     "${image_subsystem}/frameworks/innerkitsimpl/utils:image_utils",
-    "${image_subsystem}/interfaces/innerkits:image_native",
   ]
 
   external_deps = [
@@ -486,7 +485,6 @@ ohos_shared_library("heifimpl") {
       "ipc:ipc_core",
       "openmax:libopenmax_static",
       "qos_manager:qos",
-      "libjpeg-turbo:turbojpeg",
     ]
   }
 

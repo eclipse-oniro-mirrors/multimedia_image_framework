@@ -233,6 +233,7 @@ struct ImageInfo {
     AlphaType alphaType = AlphaType::IMAGE_ALPHA_TYPE_UNKNOWN;
     int32_t baseDensity = 0;
     std::string encodedFormat;
+    bool isProgressive = false;
 };
 
 struct YUVDataInfo {
@@ -507,6 +508,32 @@ struct XmageCoordinateMetadata {
     uint32_t bottom;
     uint32_t imageWidth;
     uint32_t imageLength;
+};
+
+enum class PropertyValueType : int32_t {
+    UNKNOWN = 0,
+    STRING = 1,
+    INT = 2,
+    DOUBLE = 3,
+    INT_ARRAY = 4,
+    DOUBLE_ARRAY = 5,
+    BLOB = 6,
+};
+
+struct MetadataValue {
+    std::string key = "";
+    PropertyValueType type = PropertyValueType::UNKNOWN;
+    std::string stringValue = "";
+    std::vector<int64_t> intArrayValue;
+    std::vector<double> doubleArrayValue;
+    std::vector<uint8_t> bufferValue;
+};
+
+enum class NapiMetadataType {
+    UNKNOWN = 0,
+    EXIF_METADATA = 1,
+    HWMAKERNOTE_METADATA = 2,
+    HEIFS_METADATA = 3,
 };
 } // namespace Media
 } // namespace OHOS

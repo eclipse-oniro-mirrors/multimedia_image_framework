@@ -70,8 +70,6 @@
 #include "include/codec/SkCodecAnimation.h"
 #include "modules/skcms/src/skcms_public.h"
 #endif
-#include "src/binary_parse/range_checked_byte_ptr.h"
-#include "src/image_type_recognition/image_type_recognition_lite.h"
 
 #if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
 #define DMA_BUF_SET_TYPE _IOW(DMA_BUF_BASE, 2, const char *)
@@ -519,7 +517,6 @@ void ExtDecoder::Reset()
     dstInfo_.reset();
     dstSubset_ = SkIRect::MakeEmpty();
     info_.reset();
-    rawEncodedFormat_.clear();
 }
 
 static inline float Max(float a, float b)
@@ -2744,10 +2741,25 @@ uint32_t ExtDecoder::GetImagePropertyInt(uint32_t index, const std::string &key,
     return Media::ERR_MEDIA_VALUE_INVALID;
 }
 
+static bool GetRawFormatName(piex::image_type_recognition::RawImageTypes type, std::string &rawName)
+{
+    auto rawFormatNameIter = RAW_FORMAT_NAME.find(type);
+    if (rawFormatNameIter != RAW_FORMAT_NAME.end() && !rawFormatNameIter->second.empty()) {
+        rawName = rawFormatNameIter->second;
+        return true;
+    }
+    return false;
+}
+
 bool ExtDecoder::IsRawFormat(std::string &name)
 {
-    if (rawEncodedFormat_.size() > 0) {
-        name = rawEncodedFormat_;
+    std::string encodedFormat;
+    if (GetRawFormatName(rawType_, encodedFormat)) {
+        name = encodedFormat;
+        return true;
+    }
+    if (IsCr3Format()) {
+        name = IMAGE_CR3_FORMAT;
         return true;
     }
     CHECK_ERROR_RETURN_RET(stream_ == nullptr, false);
@@ -2762,14 +2774,9 @@ bool ExtDecoder::IsRawFormat(std::string &name)
         stream_->Seek(savedPosition);
         piex::binary_parse::RangeCheckedBytePtr header_buffer(outData.inputStreamBuffer, outData.dataSize);
         piex::image_type_recognition::RawImageTypes type = RecognizeRawImageTypeLite(header_buffer);
-        auto rawFormatNameIter = RAW_FORMAT_NAME.find(type);
-        if (rawFormatNameIter != RAW_FORMAT_NAME.end() && !rawFormatNameIter->second.empty()) {
-            rawEncodedFormat_ = rawFormatNameIter->second;
-        } else if (IsCr3Format()) {
-            rawEncodedFormat_ = IMAGE_CR3_FORMAT;
-        }
-        if (rawEncodedFormat_.size() > 0) {
-            name = rawEncodedFormat_;
+        if (type != piex::image_type_recognition::kNonRawImage && GetRawFormatName(type, encodedFormat)) {
+            rawType_ = type;
+            name = encodedFormat;
             return true;
         }
     }
@@ -2926,7 +2933,7 @@ bool ExtDecoder::IsSupportHardwareDecode() {
     if (hwDecoderPtr_->IsHardwareDecodeSupported(IMAGE_JPEG_FORMAT, {width, height})) {
         std::string encodedFormat;
         if (IsRawFormat(encodedFormat)) {
-            IMAGE_LOGD("Raw format: %{public}s, turn to software decode", encodedFormat.c_str());
+            IMAGE_LOGD("Raw format: %{public}s", encodedFormat.c_str());
             return false;
         }
         if (width < HARDWARE_MID_DIM || height < HARDWARE_MID_DIM) {

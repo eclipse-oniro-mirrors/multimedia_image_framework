@@ -65,11 +65,47 @@ static constexpr int32_t LENGTH = 8;
 constexpr int32_t RGB_888_PIXEL_BYTES = 3;
 constexpr int32_t RGBA_F16_PIXEL_BYTES = 8;
 constexpr int32_t NV12_PIXEL_BYTES = 2;
+
+class MockPixelMap : public PixelMap {
+public:
+    MockPixelMap() = default;
+    ~MockPixelMap() = default;
+    bool isNeedEmptyFd_ = false;
+    void *GetFd() const override { return nullptr; }
+    AllocatorType GetAllocatorType() override { return AllocatorType::DMA_ALLOC; }
+};
+
 class ImageUtilsTest : public testing::Test {
 public:
     ImageUtilsTest() {}
     ~ImageUtilsTest() {}
 };
+
+/**
+ * @tc.name: DumpPixelMapIfDumpEnabledTest001
+ * @tc.desc: test DumpPixelMapIfDumpEnabled when dump is disabled
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageUtilsTest, DumpPixelMapIfDumpEnabledTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImageUtilsTest: DumpPixelMapIfDumpEnabledTest001 start";
+    std::unique_ptr<PixelMap> pixelMap = nullptr;
+    ImageUtils::DumpPixelMapIfDumpEnabled(pixelMap, 123);
+    GTEST_LOG_(INFO) << "ImageUtilsTest: DumpPixelMapIfDumpEnabledTest001 end";
+}
+
+/**
+ * @tc.name: DumpPixelMapIfDumpEnabledTest002
+ * @tc.desc: test DumpPixelMapIfDumpEnabled when pixelMap is null
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageUtilsTest, DumpPixelMapIfDumpEnabledTest002, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImageUtilsTest: DumpPixelMapIfDumpEnabledTest002 start";
+    std::unique_ptr<PixelMap> pixelMap = nullptr;
+    ImageUtils::DumpPixelMapIfDumpEnabled(pixelMap, 456);
+    GTEST_LOG_(INFO) << "ImageUtilsTest: DumpPixelMapIfDumpEnabledTest002 end";
+}
 
 /**
  * @tc.name: ImageTraceTest001
@@ -638,6 +674,91 @@ HWTEST_F(ImageUtilsTest, UpdateSdrYuvStridesTest001, TestSize.Level3)
 }
 
 /**
+ * @tc.name: UpdateSdrYuvStridesTest002
+ * @tc.desc: test UpdateSdrYuvStrides when context is not nullptr and AllocatorType is HEAP_ALLOC.
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageUtilsTest, UpdateSdrYuvStridesTest002, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImageUtilsTest: UpdateSdrYuvStridesTest002 start";
+    ImageInfo imageInfo = {};
+    imageInfo.size.width = NUM_4;
+    imageInfo.size.height = NUM_4;
+    YUVStrideInfo dstStrides = {};
+    int dummy = 0;
+    void* context = &dummy;
+    AllocatorType dstType = AllocatorType::HEAP_ALLOC;
+    ImageUtils::UpdateSdrYuvStrides(imageInfo, dstStrides, context, dstType);
+    ASSERT_EQ(dstStrides.yStride, NUM_4);
+    ASSERT_EQ(dstStrides.uvStride, NUM_4);
+    GTEST_LOG_(INFO) << "ImageUtilsTest: UpdateSdrYuvStridesTest002 end";
+}
+
+/**
+ * @tc.name: GetYUVStrideInfoTest001
+ * @tc.desc: test GetYUVStrideInfo by calling UpdateSdrYuvStrides when format is GRAPHIC_PIXEL_FMT_YCRCB_420_SP.
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageUtilsTest, GetYUVStrideInfoTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImageUtilsTest: GetYUVStrideInfoTest001 start";
+    sptr<SurfaceBuffer> sb = SurfaceBuffer::Create();
+    BufferRequestConfig cfg = {
+        .width = NUM_4,
+        .height = NUM_4,
+        .strideAlignment = 0x8,
+        .format = GRAPHIC_PIXEL_FMT_YCRCB_420_SP,
+        .usage = BUFFER_USAGE_CPU_READ,
+        .timeout = 0,
+        .colorGamut = GraphicColorGamut::GRAPHIC_COLOR_GAMUT_SRGB,
+        .transform = GraphicTransformType::GRAPHIC_ROTATE_NONE,
+    };
+    ASSERT_EQ(sb->Alloc(cfg), GSERROR_OK);
+    ImageInfo imageInfo = {};
+    imageInfo.size.width = cfg.width;
+    imageInfo.size.height = cfg.height;
+    YUVStrideInfo dstStrides = {};
+    void* context = sb.GetRefPtr();
+    AllocatorType dstType = AllocatorType::DMA_ALLOC;
+    ImageUtils::UpdateSdrYuvStrides(imageInfo, dstStrides, context, dstType);
+    ASSERT_GT(dstStrides.yStride, 0);
+    ASSERT_GT(dstStrides.uvStride, 0);
+    GTEST_LOG_(INFO) << "ImageUtilsTest: GetYUVStrideInfoTest001 end";
+}
+
+/**
+ * @tc.name: GetYUVStrideInfoTest002
+ * @tc.desc: test GetYUVStrideInfo by calling UpdateSdrYuvStrides when format is GRAPHIC_PIXEL_FMT_RGBA_8888.
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageUtilsTest, GetYUVStrideInfoTest002, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImageUtilsTest: GetYUVStrideInfoTest002 start";
+    sptr<SurfaceBuffer> sb = SurfaceBuffer::Create();
+    BufferRequestConfig cfg = {
+        .width = NUM_4,
+        .height = NUM_4,
+        .strideAlignment = 0x8,
+        .format = GRAPHIC_PIXEL_FMT_RGBA_8888,
+        .usage = BUFFER_USAGE_CPU_READ,
+        .timeout = 0,
+        .colorGamut = GraphicColorGamut::GRAPHIC_COLOR_GAMUT_SRGB,
+        .transform = GraphicTransformType::GRAPHIC_ROTATE_NONE,
+    };
+    ASSERT_EQ(sb->Alloc(cfg), GSERROR_OK);
+    ImageInfo imageInfo = {};
+    imageInfo.size.width = cfg.width;
+    imageInfo.size.height = cfg.height;
+    YUVStrideInfo dstStrides = {};
+    void* context = sb.GetRefPtr();
+    AllocatorType dstType = AllocatorType::DMA_ALLOC;
+    ImageUtils::UpdateSdrYuvStrides(imageInfo, dstStrides, context, dstType);
+    ASSERT_GT(dstStrides.yStride, 0);
+    ASSERT_GT(dstStrides.uvStride, 0);
+    GTEST_LOG_(INFO) << "ImageUtilsTest: GetYUVStrideInfoTest002 end";
+}
+
+/**
  * @tc.name: GetReusePixelRefCountTest001
  * @tc.desc: test GetReusePixelRefCount when allocatortype is not DMA_ALLOC.
  * @tc.type: FUNC
@@ -655,6 +776,21 @@ HWTEST_F(ImageUtilsTest, GetReusePixelRefCountTest001, TestSize.Level3)
     uint16_t res = ImageUtils::GetReusePixelRefCount(pixelMap);
     ASSERT_EQ(res, 0);
     GTEST_LOG_(INFO) << "ImageUtilsTest: GetReusePixelRefCountTest001 end";
+}
+
+/**
+ * @tc.name: GetReusePixelRefCountTest002
+ * @tc.desc: test GetReusePixelRefCount when allocatortype is DMA_ALLOC and GetFd returns nullptr.
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageUtilsTest, GetReusePixelRefCountTest002, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImageUtilsTest: GetReusePixelRefCountTest002 start";
+    std::shared_ptr<PixelMap> pixelMap = std::make_shared<MockPixelMap>();
+    ASSERT_NE(pixelMap, nullptr);
+    uint16_t res = ImageUtils::GetReusePixelRefCount(pixelMap);
+    ASSERT_EQ(res, 0);
+    GTEST_LOG_(INFO) << "ImageUtilsTest: GetReusePixelRefCountTest002 end";
 }
 
 /**
@@ -791,6 +927,83 @@ HWTEST_F(ImageUtilsTest, SurfaceBuffer2PixelMapTest002, TestSize.Level3)
     bool res = ImageUtils::SurfaceBuffer2PixelMap(surfaceBuffer, pixelMap);
     ASSERT_FALSE(res);
     GTEST_LOG_(INFO) << "ImageUtilsTest: SurfaceBuffer2PixelMapTest002 end";
+}
+
+/**
+ * @tc.name: SurfaceBuffer2PixelMapTest003
+ * @tc.desc: test SurfaceBuffer2PixelMap when pixel format is yuv format.
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageUtilsTest, SurfaceBuffer2PixelMapTest003, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImageUtilsTest: SurfaceBuffer2PixelMapTest003 start";
+    sptr<OHOS::SurfaceBuffer> surfaceBuffer = SurfaceBuffer::Create();
+    BufferRequestConfig cfg = {
+        .width = NUM_4,
+        .height = NUM_4,
+        .strideAlignment = 0x8,
+        .format = GRAPHIC_PIXEL_FMT_RGBA_8888,
+        .usage = BUFFER_USAGE_CPU_READ,
+        .timeout = 0,
+        .colorGamut = GraphicColorGamut::GRAPHIC_COLOR_GAMUT_SRGB,
+        .transform = GraphicTransformType::GRAPHIC_ROTATE_NONE,
+    };
+    ASSERT_EQ(surfaceBuffer->Alloc(cfg), GSERROR_OK);
+
+    InitializationOptions opts;
+    opts.size.width = NUM_4;
+    opts.size.height = NUM_4;
+    opts.pixelFormat = PixelFormat::NV12;
+    std::unique_ptr<PixelMap> pixelMap = PixelMap::Create(opts);
+    bool res = ImageUtils::SurfaceBuffer2PixelMap(surfaceBuffer, pixelMap);
+    ASSERT_TRUE(res);
+    GTEST_LOG_(INFO) << "ImageUtilsTest: SurfaceBuffer2PixelMapTest003 end";
+}
+
+/**
+ * @tc.name: SurfaceBuffer2PixelMapTest004
+ * @tc.desc: test SurfaceBuffer2PixelMap when pixel format is not yuv format.
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageUtilsTest, SurfaceBuffer2PixelMapTest004, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImageUtilsTest: SurfaceBuffer2PixelMapTest004 start";
+    sptr<OHOS::SurfaceBuffer> surfaceBuffer = SurfaceBuffer::Create();
+    BufferRequestConfig cfg = {
+        .width = NUM_4,
+        .height = NUM_4,
+        .strideAlignment = 0x8,
+        .format = GRAPHIC_PIXEL_FMT_RGBA_8888,
+        .usage = BUFFER_USAGE_CPU_READ,
+        .timeout = 0,
+        .colorGamut = GraphicColorGamut::GRAPHIC_COLOR_GAMUT_SRGB,
+        .transform = GraphicTransformType::GRAPHIC_ROTATE_NONE,
+    };
+    ASSERT_EQ(surfaceBuffer->Alloc(cfg), GSERROR_OK);
+
+    InitializationOptions opts;
+    opts.size.width = NUM_4;
+    opts.size.height = NUM_4;
+    opts.pixelFormat = PixelFormat::ARGB_8888;
+    std::unique_ptr<PixelMap> pixelMap = PixelMap::Create(opts);
+    bool res = ImageUtils::SurfaceBuffer2PixelMap(surfaceBuffer, pixelMap);
+    ASSERT_TRUE(res);
+    GTEST_LOG_(INFO) << "ImageUtilsTest: SurfaceBuffer2PixelMapTest004 end";
+}
+
+/**
+ * @tc.name: FlushSurfaceBufferTest001
+ * @tc.desc: test FlushSurfaceBuffert when surfaceBuffer is nullptr.
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageUtilsTest, FlushSurfaceBufferTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImageUtilsTest: FlushSurfaceBufferTest001 start";
+    sptr<OHOS::SurfaceBuffer> surfaceBuffer = nullptr;
+    ImageUtils::FlushSurfaceBuffer(surfaceBuffer);
+    sptr<OHOS::SurfaceBuffer> expectBuffer = nullptr;
+    ASSERT_EQ(surfaceBuffer, expectBuffer);
+    GTEST_LOG_(INFO) << "ImageUtilsTest: FlushSurfaceBufferTest001 end";
 }
 
 /**
@@ -1082,6 +1295,20 @@ HWTEST_F(ImageUtilsTest, SbFormat2PixelFormatTest001, TestSize.Level3)
 }
 
 /**
+ * @tc.name: SbFormat2PixelFormatTest002
+ * @tc.desc: test SbFormat2PixelFormat when format is GRAPHIC_PIXEL_FMT_RGBA_8888 and exists in PIXEL_FORMAT_MAP.
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageUtilsTest, SbFormat2PixelFormatTest002, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImageUtilsTest: SbFormat2PixelFormatTest002 start";
+    int32_t sbFormat = GRAPHIC_PIXEL_FMT_RGBA_8888;
+    auto res = ImageUtils::SbFormat2PixelFormat(sbFormat);
+    ASSERT_EQ(res, PixelFormat::RGBA_8888);
+    GTEST_LOG_(INFO) << "ImageUtilsTest: SbFormat2PixelFormatTest002 end";
+}
+
+/**
  * @tc.name: SurfaceBuffer2PixelMapTest001
  * @tc.desc: test DumpPixelMap when surfaceBuffer is nullptr.
  * @tc.type: FUNC
@@ -1112,6 +1339,94 @@ HWTEST_F(ImageUtilsTest, InvalidateContextSurfaceBufferTest001, TestSize.Level3)
     ImageUtils::InvalidateContextSurfaceBuffer(context);
     EXPECT_EQ(context.pixelsBuffer.context, nullptr);
     GTEST_LOG_(INFO) << "ImageUtilsTest: InvalidateContextSurfaceBufferTest001 end";
+}
+
+
+/**
+ * @tc.name: InvalidateContextSurfaceBufferTest002
+ * @tc.desc: test InvalidateContextSurfaceBuffer when surfaceBuffer is not nullptr and
+ *           usage is BUFFER_USAGE_MEM_MMZ_CACHE.
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageUtilsTest, InvalidateContextSurfaceBufferTest002, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImageUtilsTest: InvalidateContextSurfaceBufferTest002 start";
+    sptr<SurfaceBuffer> sb = SurfaceBuffer::Create();
+    BufferRequestConfig cfg = {
+        .width = NUM_4,
+        .height = NUM_4,
+        .strideAlignment = 0x8,
+        .format = GRAPHIC_PIXEL_FMT_RGBA_8888,
+        .usage = BUFFER_USAGE_MEM_MMZ_CACHE,
+        .timeout = 0,
+        .colorGamut = GraphicColorGamut::GRAPHIC_COLOR_GAMUT_SRGB,
+        .transform = GraphicTransformType::GRAPHIC_ROTATE_NONE,
+    };
+    ASSERT_EQ(sb->Alloc(cfg), GSERROR_OK);
+    DecodeContext context;
+    context.allocatorType = AllocatorType::DMA_ALLOC;
+    context.pixelsBuffer.context = sb.GetRefPtr();
+    ImageUtils::InvalidateContextSurfaceBuffer(context);
+    ASSERT_NE(context.pixelsBuffer.context, nullptr);
+    GTEST_LOG_(INFO) << "ImageUtilsTest: InvalidateContextSurfaceBufferTest002 end";
+}
+
+/**
+ * @tc.name: InvalidateContextSurfaceBufferTest003
+ * @tc.desc: test InvalidateContextSurfaceBuffer when surfaceBuffer is not nullptr and usage is BUFFER_USAGE_CPU_READ.
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageUtilsTest, InvalidateContextSurfaceBufferTest003, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImageUtilsTest: InvalidateContextSurfaceBufferTest003 start";
+    sptr<SurfaceBuffer> sb = SurfaceBuffer::Create();
+    BufferRequestConfig cfg = {
+        .width = NUM_4,
+        .height = NUM_4,
+        .strideAlignment = 0x8,
+        .format = GRAPHIC_PIXEL_FMT_RGBA_8888,
+        .usage = BUFFER_USAGE_CPU_READ,
+        .timeout = 0,
+        .colorGamut = GraphicColorGamut::GRAPHIC_COLOR_GAMUT_SRGB,
+        .transform = GraphicTransformType::GRAPHIC_ROTATE_NONE,
+    };
+    ASSERT_EQ(sb->Alloc(cfg), GSERROR_OK);
+    DecodeContext context;
+    context.allocatorType = AllocatorType::DMA_ALLOC;
+    context.pixelsBuffer.context = sb.GetRefPtr();
+    ImageUtils::InvalidateContextSurfaceBuffer(context);
+    ASSERT_NE(context.pixelsBuffer.context, nullptr);
+    GTEST_LOG_(INFO) << "ImageUtilsTest: InvalidateContextSurfaceBufferTest003 end";
+}
+
+/**
+ * @tc.name: CheckPixelsInputTest001
+ * @tc.desc: test CheckPixelsInput when pixel format is RGB_888.
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageUtilsTest, CheckPixelsInputTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImageUtilsTest: CheckPixelsInputTest001 start";
+    InitializationOptions initOpts;
+    initOpts.size.width = NUM_4;
+    initOpts.size.height = NUM_4;
+    initOpts.pixelFormat = PixelFormat::RGB_888;
+    initOpts.allocatorType = AllocatorType::SHARE_MEM_ALLOC;
+    std::shared_ptr<PixelMap> pixelMap = PixelMap::Create(initOpts);
+    ASSERT_NE(pixelMap, nullptr);
+    RWPixelsOptions opts;
+    opts.bufferSize = NUM_4;
+    auto pixelBufHolder = std::make_unique<uint8_t[]>(NUM_4);
+    opts.pixels = pixelBufHolder.get();
+    opts.region.left = 0;
+    opts.region.top = 0;
+    opts.stride = NUM_4;
+    opts.region.width = NUM_4;
+    opts.region.height = NUM_2;
+    PixelMap* pm = pixelMap.get();
+    bool ret = ImageUtils::CheckPixelsInput(pm, opts);
+    ASSERT_FALSE(ret);
+    GTEST_LOG_(INFO) << "ImageUtilsTest: CheckPixelsInputTest001 end";
 }
 
 /**
@@ -1149,6 +1464,49 @@ HWTEST_F(ImageUtilsTest, GetYUVByteCountTest002, TestSize.Level3)
     res = ImageUtils::GetYUVByteCount(info);
     EXPECT_EQ(res, INVALID_RESULT);
     GTEST_LOG_(INFO) << "ImageUtilsTest: GetYUVByteCountTest002 end";
+}
+
+/**
+ * @tc.name: GetYUVByteCountTest003
+ * @tc.desc: test GetYUVByteCount when PixelFormatToAVPixelFormat returns AV_PIX_FMT_NONE.
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageUtilsTest, GetYUVByteCountTest003, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImageUtilsTest: GetYUVByteCountTest003 start";
+    ImageInfo info;
+    info.pixelFormat = PixelFormat::UNKNOWN;
+    info.size.width = VALID_DIMENSION;
+    info.size.height = VALID_DIMENSION;
+    int32_t res = ImageUtils::GetYUVByteCount(info);
+    EXPECT_EQ(res, INVALID_RESULT);
+    GTEST_LOG_(INFO) << "ImageUtilsTest: GetYUVByteCountTest003 end";
+}
+
+/**
+ * @tc.name: IsInRangeTest001
+ * @tc.desc: test IsInRange returns true when in range
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageUtilsTest, IsInRangeTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImageUtilsTest: IsInRangeTest001 start";
+    bool ret = ImageUtils::IsInRange(5, 1, 10);
+    ASSERT_TRUE(ret);
+    GTEST_LOG_(INFO) << "ImageUtilsTest: IsInRangeTest001 end";
+}
+
+/**
+ * @tc.name: IsInRangeTest002
+ * @tc.desc: test IsInRange returns false when out of range
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageUtilsTest, IsInRangeTest002, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImageUtilsTest: IsInRangeTest002 start";
+    bool ret = ImageUtils::IsInRange(0, 1, 10);
+    ASSERT_FALSE(ret);
+    GTEST_LOG_(INFO) << "ImageUtilsTest: IsInRangeTest002 end";
 }
 
 /**
@@ -1201,5 +1559,16 @@ HWTEST_F(ImageUtilsTest, GetByteCountTest003, TestSize.Level3)
     GTEST_LOG_(INFO) << "ImageUtilsTest: GetByteCountTest003 end";
 }
 
+/**
+ * @tc.name:SetReuseContextBufferTest001
+ * @tc.desc: test SetReuseContextBuffer when allocatorType is SHARE_MEM_ALLOC.
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageUtilsTest, SetReuseContextBufferTest001, TestSize.Level3)
+{
+    DecodeContext context;
+    ImageUtils::SetReuseContextBuffer(context, AllocatorType::SHARE_MEM_ALLOC, nullptr, 0, nullptr);
+    EXPECT_EQ(context.allocatorType, AllocatorType::SHARE_MEM_ALLOC);
+}
 }
 }

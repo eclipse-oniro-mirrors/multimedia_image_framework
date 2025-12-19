@@ -18,6 +18,8 @@
 #include <fcntl.h>
 #include <filesystem>
 #include <fstream>
+#include <unistd.h>
+#include <cstring>
 #include <gtest/gtest.h>
 #include <vector>
 #include "image/abs_image_decoder.h"
@@ -48,6 +50,7 @@ namespace OHOS {
 namespace Media {
 static const std::string IMAGE_INPUT_JPEG_PATH = "/data/local/tmp/image/test.jpg";
 static const std::string IMAGE_INPUT_PNG_PATH = "/data/local/tmp/image/test.png";
+static const std::string IMAGE_INPUT_GIF_PATH = "/data/local/tmp/image/test.gif";
 static const std::string IMAGE_INPUT_EXIF_JPEG_PATH = "/data/local/tmp/image/test_exif.jpg";
 static const std::string IMAGE_OUTPUT_JPEG_PATH = "/data/local/tmp/image/test_out.jpg";
 static const std::string IMAGE_INPUT_ICO_PATH = "/data/local/tmp/image/test.ico";
@@ -72,6 +75,8 @@ static const std::string IMAGE_JPG_JPEG_UWA_MULTI_BASE_COLOR_PATH =
     "/data/local/tmp/image/jpeg_uwa_multi_base_color.jpg";
 static const std::string IMAGE_JPG_JPEG_UWA_MULTI_ALTERNATE_COLOR_PATH =
     "/data/local/tmp/image/jpeg_uwa_multi_alternate_color.jpg";
+static const std::string IMAGE_EXIF_PATH =
+    "/data/local/tmp/image/exif.jpg";
 static const int32_t DECODE_DESIRED_WIDTH = 7500;
 static const int32_t DECODE_DESIRED_HEIGHT = 7500;
 static const int32_t DESIRED_REGION_WIDTH = 4096;
@@ -3744,6 +3749,280 @@ HWTEST_F(ImageSourceTest, IsHeifWithoutAlpha003, TestSize.Level3)
     ASSERT_NE(imageSource.get(), nullptr);
     bool withoutAlpha = imageSource->IsHeifWithoutAlpha();
     ASSERT_EQ(withoutAlpha, false);
+}
+
+/**
+ * @tc.name: GetImagePropertyByTypeTest001
+ * @tc.desc: Verify that ModifyImagePropertiesEx works correctly when srcFilePath_ is not exist.
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageSourceTest, GetImagePropertyByTypeTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImageSourceTest: GetImagePropertyByTypeTest001 start";
+    std::unique_ptr<ImageSource> imageSource = CreateImageSourceByPath(IMAGE_INPUT_EXIF_JPEG_PATH);
+    ASSERT_NE(imageSource, nullptr);
+    MetadataValue value;
+
+    uint32_t ret = imageSource->GetImagePropertyByType(0, "ImageWidth", value);  // SHORT
+    EXPECT_FALSE(value.intArrayValue.empty());
+    EXPECT_GT(value.intArrayValue[0], 0);
+
+    ret = imageSource->GetImagePropertyByType(0, "DigitalZoomRatio", value);  // RATIONAL
+    EXPECT_FALSE(value.doubleArrayValue.empty());
+    EXPECT_GT(value.doubleArrayValue[0], 0);
+
+    ret = imageSource->GetImagePropertyByType(0, "BitsPerSample", value);  // SHORT
+    EXPECT_FALSE(value.intArrayValue.empty());
+
+    ret = imageSource->GetImagePropertyByType(0, "GPSLatitude", value);  // RATIONAL
+    EXPECT_FALSE(value.doubleArrayValue.empty());
+
+    ret = imageSource->GetImagePropertyByType(0, "DateTimeDigitized", value);  // ASCII
+    EXPECT_FALSE(value.stringValue.empty());
+
+    GTEST_LOG_(INFO) << "ImageSourceTest: GetImagePropertyByTypeTest001 end";
+}
+
+/**
+ * @tc.name: GetImagePropertyByTypeTest002
+ * @tc.desc: Verify that ModifyImagePropertiesEx works correctly when srcFilePath_ is not exist.
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageSourceTest, GetImagePropertyByTypeTest002, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImageSourceTest: GetImagePropertyByTypeTest002 start";
+    std::unique_ptr<ImageSource> imageSource = CreateImageSourceByPath(IMAGE_INPUT_EXIF_JPEG_PATH);
+    ASSERT_NE(imageSource, nullptr);
+    MetadataValue value;
+
+    uint32_t ret = imageSource->GetImagePropertyByType(0, "", value);
+    EXPECT_EQ(ret, Media::ERR_IMAGE_DECODE_EXIF_UNSUPPORT);
+
+    ret = imageSource->GetImagePropertyByType(0, "GIFLoopCount", value);
+    EXPECT_EQ(ret, Media::ERR_MEDIA_INVALID_PARAM);
+
+    ret = imageSource->GetImagePropertyByType(0, "HwMnoteFocusMode", value);
+    EXPECT_TRUE(value.intArrayValue.empty());
+
+    GTEST_LOG_(INFO) << "ImageSourceTest: GetImagePropertyByTypeTest002 end";
+}
+
+/**
+ * @tc.name: GetImagePropertyByTypeTest003
+ * @tc.desc: Verify GIF special attribute handling
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageSourceTest, GetImagePropertyByTypeTest003, TestSize.Level3)
+{
+    uint32_t errorCode = 0;
+    auto imageSource = ImageSource::CreateImageSource(IMAGE_INPUT_GIF_PATH, SourceOptions(), errorCode);
+    ASSERT_NE(imageSource, nullptr);
+    
+    MetadataValue value;
+    uint32_t ret = imageSource->GetImagePropertyByType(0, "GIFLoopCount", value);
+    EXPECT_EQ(ret, SUCCESS);
+    EXPECT_FALSE(value.stringValue.empty());
+}
+
+/**
+ * @tc.name: GetImagePropertyByTypeTest004
+ * @tc.desc: Test property retrieval when decoder is unavailable
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageSourceTest, GetImagePropertyByTypeTest004, TestSize.Level3)
+{
+    auto imageSource = CreateImageSourceByPath(IMAGE_INPUT_GIF_PATH);
+    ASSERT_NE(imageSource, nullptr);
+    
+    imageSource->mainDecoder_.reset();
+    
+    MetadataValue value;
+    EXPECT_EQ(imageSource->GetImagePropertyByType(0, "GIFLoopCount", value), Media::SUCCESS);
+}
+
+static uint8_t* LoadFileToBuffer(const std::string& path, size_t& size)
+{
+    std::ifstream file(path, std::ios::binary | std::ios::ate);
+    if (!file) {
+        return nullptr;
+    }
+    size = file.tellg();
+    file.seekg(0, std::ios::beg);
+    uint32_t maxSize = 10 * 1024 * 1024;
+    if (size > maxSize) {
+        return nullptr;
+    }
+    uint8_t* buffer = new uint8_t[size];
+    if (!file.read(reinterpret_cast<char*>(buffer), size)) {
+        delete[] buffer;
+        return nullptr;
+    }
+    return buffer;
+}
+
+/**
+ * @tc.name: WriteImageMetadata001
+ * @tc.desc: Verify memory buffer source processing
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageSourceTest, WriteImageMetadataTest001, TestSize.Level3)
+{
+    size_t bufferSize = 0;
+    uint8_t* imageBuffer = LoadFileToBuffer(IMAGE_INPUT_EXIF_JPEG_PATH, bufferSize);
+    ASSERT_NE(imageBuffer, nullptr);
+    uint32_t errorCode = 0;
+    auto imageSource = ImageSource::CreateImageSource(
+        imageBuffer, bufferSize, SourceOptions(), errorCode, true);
+    ASSERT_NE(imageSource, nullptr);
+    
+    std::vector<MetadataValue> properties;
+    EXPECT_EQ(imageSource->WriteImageMetadataBlob(properties), ERR_MEDIA_WRITE_PARCEL_FAIL);
+    
+    delete[] imageBuffer;
+}
+
+/**
+ * @tc.name: WriteImageMetadataBlobTest002
+ * @tc.desc: Validate memory buffer source processing with valid data
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageSourceTest, WriteImageMetadataBlobTest002, TestSize.Level3)
+{
+    size_t bufferSize = 0;
+    uint8_t* imageBuffer = LoadFileToBuffer(IMAGE_INPUT_EXIF_JPEG_PATH, bufferSize);
+    ASSERT_NE(imageBuffer, nullptr);
+    uint32_t errorCode = 0;
+    
+    auto imageSource = ImageSource::CreateImageSource(
+        imageBuffer, bufferSize, SourceOptions(), errorCode, false);\
+    ASSERT_NE(imageSource, nullptr);
+    imageSource->srcBuffer_ = imageBuffer;
+    
+    MetadataValue property;
+    property.key = "ExifVersion";
+    property.bufferValue = {0x00, 0x02, 0x01, 0x00};
+    vector<MetadataValue> properties = {property};
+    
+    EXPECT_EQ(imageSource->WriteImageMetadataBlob(properties), ERR_MEDIA_WRITE_PARCEL_FAIL);
+    
+    imageSource->srcBuffer_ = nullptr;
+    delete[] imageBuffer;
+}
+
+/**
+ * @tc.name: ModifyImagePropertyBlob001
+ * @tc.desc: Verify the path based attribute modification function
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageSourceTest, ModifyImagePropertyBlobTest001, TestSize.Level3)
+{
+    uint32_t errorCode = 0;
+    auto imageSource = ImageSource::CreateImageSource(
+        IMAGE_INPUT_EXIF_JPEG_PATH, SourceOptions(), errorCode);
+    ASSERT_NE(imageSource, nullptr);
+
+    MetadataValue validProp;
+    validProp.key = "ImageWidth";
+    validProp.intArrayValue = {2000};
+
+    MetadataValue invalidProp;
+    invalidProp.key = "InvalidKey";
+    invalidProp.stringValue = "test";
+    
+    std::vector<MetadataValue> properties = {validProp, invalidProp};
+    
+    EXPECT_EQ(imageSource->WriteImageMetadataBlob(properties), ERR_IMAGE_DECODE_EXIF_UNSUPPORT);
+}
+
+/**
+ * @tc.name: ModifyImagePropertyBlobTest002
+ * @tc.desc: Verify the handling of empty Metadata Accessor
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageSourceTest, ModifyImagePropertyBlobTest002, TestSize.Level3)
+{
+    uint32_t errorCode = 0;
+    auto imageSource = ImageSource::CreateImageSource(
+        IMAGE_INPUT_EXIF_JPEG_PATH, SourceOptions(), errorCode);
+    ASSERT_NE(imageSource, nullptr);
+    
+    std::shared_ptr<MetadataAccessor> nullAccessor;
+    std::vector<MetadataValue> properties;
+    EXPECT_EQ(imageSource->ModifyImagePropertyBlob(nullAccessor, properties), ERR_IMAGE_SOURCE_DATA);
+}
+
+/**
+ * @tc.name: GetAllPropertiesWithType001
+ * @tc.desc: Validate behavior under empty metadata conditions
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageSourceTest, GetAllPropertiesWithTypeTest001, TestSize.Level3)
+{
+    uint32_t errorCode = 0;
+    auto imageSource = ImageSource::CreateImageSource(
+        IMAGE_INPUT_EXIF_JPEG_PATH, SourceOptions(), errorCode);
+    ASSERT_NE(imageSource, nullptr);
+    imageSource->exifMetadata_ = nullptr;
+    imageSource->isExifReadFailed_ = true;
+    
+    auto properties = imageSource->GetAllPropertiesWithType();
+    EXPECT_TRUE(properties.empty());
+}
+
+/**
+ * @tc.name: GetAllPropertiesWithTypeTest002
+ * @tc.desc: Verify retrieval of all metadata properties
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageSourceTest, GetAllPropertiesWithTypeTest002, TestSize.Level3)
+{
+    auto imageSource = CreateImageSourceByPath(IMAGE_EXIF_PATH);
+    ASSERT_NE(imageSource, nullptr);
+    
+    auto properties = imageSource->GetAllPropertiesWithType();
+    EXPECT_FALSE(properties.empty());
+    
+    bool hasWidth = false;
+    for (const auto& prop : properties) {
+        if (prop.key == "ImageWidth") hasWidth = true;
+    }
+    EXPECT_TRUE(hasWidth);
+}
+
+/**
+ * @tc.name: RemovePropertiesTest001
+ * @tc.desc: Test removing specific metadata properties
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageSourceTest, RemovePropertiesTest001, TestSize.Level3)
+{
+    auto imageSource = CreateImageSourceByPath(IMAGE_EXIF_PATH);
+    ASSERT_NE(imageSource, nullptr);
+    
+    MetadataValue value;
+    ASSERT_EQ(imageSource->GetImagePropertyByType(0, "GPSLatitude", value), SUCCESS);
+    
+    std::set<std::string> keysToRemove{"GPSLatitude", "InvalidKey"};
+    EXPECT_EQ(imageSource->RemoveImageProperties(0, keysToRemove), SUCCESS);
+    
+    EXPECT_NE(imageSource->GetImagePropertyCommonByType("GPSLatitude", value), SUCCESS);
+}
+/**
+ * @tc.name: RemoveAllPropertiesTest001
+ * @tc.desc: Test removing all metadata properties
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageSourceTest, RemoveAllPropertiesTest001, TestSize.Level3)
+{
+    auto imageSource = CreateImageSourceByPath(IMAGE_EXIF_PATH);
+    ASSERT_NE(imageSource, nullptr);
+    
+    auto initialProps = imageSource->GetAllPropertiesWithType();
+    ASSERT_GT(initialProps.size(), 0);
+    EXPECT_EQ(imageSource->RemoveAllProperties(), SUCCESS);
+    
+    auto finalProps = imageSource->GetAllPropertiesWithType();
+    EXPECT_LT(finalProps.size(), initialProps.size());
 }
 } // namespace Multimedia
 } // namespace OHOS

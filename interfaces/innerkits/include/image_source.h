@@ -25,6 +25,7 @@
 #include <set>
 
 #include "decode_listener.h"
+#include "fragment_metadata.h"
 #include "image_type.h"
 #include "incremental_pixel_map.h"
 #include "peer_listener.h"
@@ -220,7 +221,20 @@ public:
     NATIVEEXPORT bool IsIncrementalSource();
     NATIVEEXPORT uint32_t GetImagePropertyInt(uint32_t index, const std::string &key, int32_t &value);
     NATIVEEXPORT uint32_t GetImagePropertyString(uint32_t index, const std::string &key, std::string &value);
+    NATIVEEXPORT uint32_t GetImagePropertyByType(uint32_t index, const std::string &key, MetadataValue &value);
+    NATIVEEXPORT uint32_t GetImagePropertyCommonByType(const std::string &key, MetadataValue &value);
+    NATIVEEXPORT uint32_t RemoveAllProperties();
+    NATIVEEXPORT std::vector<MetadataValue> GetAllPropertiesWithType();
     NATIVEEXPORT uint32_t GetImagePropertyStringBySync(uint32_t index, const std::string &key, std::string &value);
+    NATIVEEXPORT uint32_t WriteImageMetadataBlob(const std::vector<MetadataValue> &properties);
+    NATIVEEXPORT uint32_t ModifyImagePropertyBlob(const std::vector<MetadataValue> &properties);
+    NATIVEEXPORT uint32_t ModifyImagePropertyBlob(const std::vector<MetadataValue> &properties,
+        const std::string &path);
+    NATIVEEXPORT uint32_t ModifyImagePropertyBlob(const std::vector<MetadataValue> &properties, const int fd);
+    NATIVEEXPORT uint32_t ModifyImagePropertyBlob(std::shared_ptr<MetadataAccessor> metadataAccessor,
+        const std::vector<MetadataValue> &properties);
+    NATIVEEXPORT uint32_t ModifyImagePropertyBlob(const std::vector<MetadataValue> &properties,
+        uint8_t *data, uint32_t size);
     NATIVEEXPORT uint32_t ModifyImageProperty(uint32_t index, const std::string &key, const std::string &value,
         const std::string &path);
     NATIVEEXPORT uint32_t ModifyImageProperty(uint32_t index, const std::string &key, const std::string &value,
@@ -232,6 +246,7 @@ public:
     NATIVEEXPORT uint32_t ModifyImagePropertiesEx(uint32_t index,
         const std::vector<std::pair<std::string, std::string>> &properties);
     NATIVEEXPORT std::set<std::string> GetModifyExifUnsupportedKeys();
+    NATIVEEXPORT uint32_t RemoveImageProperties(uint32_t index, const std::set<std::string> &keys);
     NATIVEEXPORT uint32_t RemoveImageProperties(uint32_t index, const std::set<std::string> &keys,
         const std::string &path);
     NATIVEEXPORT uint32_t RemoveImageProperties(uint32_t index, const std::set<std::string> &keys,
@@ -267,6 +282,7 @@ public:
     ImageHdrType CheckHdrType();
     NATIVEEXPORT uint32_t GetiTxtLength();
     NATIVEEXPORT bool IsHeifWithoutAlpha();
+    NATIVEEXPORT std::shared_ptr<ImageMetadata> GetMetadata(MetadataType type);
 
 private:
     DISALLOW_COPY_AND_MOVE(ImageSource);
@@ -359,6 +375,9 @@ private:
         const std::vector<std::pair<std::string, std::string>> &properties, bool isEnhanced);
     uint32_t CreatExifMetadataByImageSource(bool addFlag = false);
     uint32_t CreateExifMetadata(uint8_t *buffer, const uint32_t size, bool addFlag, bool hasOriginalFd = false);
+    uint32_t HandleInvalidExifBuffer(void* exifDataPtr);
+    std::shared_ptr<MetadataAccessor> CreateMetadataAccessorForWrite(uint32_t &error);
+    uint32_t WriteExifMetadataToFile(std::shared_ptr<MetadataAccessor> metadataAccessor);
     void SetDecodeInfoOptions(uint32_t index, const DecodeOptions &opts, const ImageInfo &info, ImageEvent &imageEvent);
     void SetDecodeInfoOptions(uint32_t index, const DecodeOptions &opts, const ImagePlugin::PlImageInfo &plInfo,
         ImageEvent &imageEvent);
@@ -414,6 +433,9 @@ private:
     uint32_t SetHeifsMetadataForPicture(std::unique_ptr<Picture> &picture, uint32_t index);
     void DecodeBlobMetaData(std::unique_ptr<Picture> &picture, const std::set<MetadataType> &metadataTypes,
         ImageInfo &info, uint32_t &errorCode);
+    std::shared_ptr<FragmentMetadata> GetFragmentMetadata();
+    std::shared_ptr<GifMetadata> GetGifMetadata();
+    std::shared_ptr<ImageMetadata> FindMetadataFromMap(MetadataType type);
 #endif
 
     const std::string NINE_PATCH = "ninepatch";
@@ -449,6 +471,7 @@ private:
     ImageHdrType checkHdrType_;
     bool checkHdrTypeHasSet = false;
     std::shared_ptr<ExifMetadata> exifMetadata_ = nullptr;
+    std::map<MetadataType, std::shared_ptr<ImageMetadata>> metadatas_;
     std::string source_; // Image source fd buffer etc
     bool isExifReadFailed_ = false;
     uint32_t exifReadStatus_ = 0;
