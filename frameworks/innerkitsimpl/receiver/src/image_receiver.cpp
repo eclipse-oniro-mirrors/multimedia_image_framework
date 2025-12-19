@@ -252,7 +252,7 @@ std::shared_ptr<ImageReceiver> ImageReceiver::CreateImageReceiver(ImageReceiverO
     }
     SurfaceUtils* utils = SurfaceUtils::GetInstance();
     if (utils != nullptr) {
-        utils->Add(receiver->receiverProducerSurface_->GetUniqueId(), receiver->receiverProducerSurface_);                
+        utils->Add(receiver->receiverProducerSurface_->GetUniqueId(), receiver->receiverProducerSurface_);
     }
     receiver->iraContext_->SetReceiverBufferConsumer(receiver->receiverConsumerSurface_);
     receiver->iraContext_->SetReceiverBufferProducer(receiver->receiverProducerSurface_);

@@ -396,7 +396,7 @@ NativeBufferData* NativeImage::GetBufferData()
     }
     bufferData_ = std::make_unique<NativeBufferData>();
     auto res = GetStrides(buffer_, bufferData_->rowStride, bufferData_->pixelStride);
-    if(res != SUCCESS) {
+    if (res != SUCCESS) {
         IMAGE_LOGE("GetStrides failed");
         return nullptr;
     }

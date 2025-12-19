@@ -18,7 +18,7 @@
 #ifdef IMAGE_COLORSPACE_FLAG
 #include "color_space.h"
 #endif
-#include "media_errors.h"                                                                                                
+#include "media_errors.h"
 #include "napi/native_node_api.h"
 #include "image_common.h"
 #include "image_log.h"
