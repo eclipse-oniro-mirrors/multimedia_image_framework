@@ -31,8 +31,7 @@ namespace OHOS { namespace MultimediaPlugin { class PluginServer; } }
 namespace OHOS { namespace ImagePlugin { struct DecodeContext; } }
 namespace OHOS { namespace ColorManager {enum ColorSpaceName: uint32_t; } }
 namespace OHOS { namespace HDI { namespace Display { namespace Graphic { namespace Common {
-    namespace V1_0 { enum CM_ColorSpaceType: int32_t; }
-} } } } }
+    namespace V1_0 { enum CM_ColorSpaceType: int32_t; } } } } } }
 namespace OHOS {
 namespace Media {
 const std::string IMAGE_ENCODE_FORMAT = "encodeFormat";

@@ -123,7 +123,7 @@ napi_value ImageNapi::Init(napi_env env, napi_value exports)
         DECLARE_NAPI_GETTER("size", JsGetSize),
         DECLARE_NAPI_GETTER("format", JsGetFormat),
         DECLARE_NAPI_GETTER("timestamp", JsGetTimestamp),
-        DECLARE_NAPI_GETTER("colorspace", JsGetColorSpace),
+        DECLARE_NAPI_GETTER("colorSpace", JsGetColorSpace),
         DECLARE_NAPI_FUNCTION("getBufferData", JsGetBufferData),
         DECLARE_NAPI_FUNCTION("getMetadata", JsGetHdrMetadata),
         DECLARE_NAPI_FUNCTION("getComponent", JsGetComponent),

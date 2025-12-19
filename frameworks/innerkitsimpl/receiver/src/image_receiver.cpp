@@ -268,6 +268,16 @@ std::shared_ptr<ImageReceiver> ImageReceiver::CreateImageReceiver(ImageReceiverO
     return receiver;
 }
 
+static void DumpSurfaceBufferFromImageReceiver(OHOS::sptr<OHOS::SurfaceBuffer> buffer, const std::string suffix = "")
+{
+    CHECK_ERROR_RETURN(!buffer);
+    std::string fileSuffix = suffix + "-format-" + std::to_string(buffer->GetFormat()) + "-Width-"
+        + std::to_string(buffer->GetWidth()) + "-Height-" + std::to_string(buffer->GetHeight()) + "-Stride-"
+        + std::to_string(buffer->GetStride());
+    ImageUtils::DumpDataIfDumpEnabled(reinterpret_cast<const char*>(buffer->GetVirAddr()), buffer->GetSize(),
+        fileSuffix);
+}
+
 OHOS::sptr<OHOS::SurfaceBuffer> ImageReceiver::ReadNextImage(int64_t &timestamp)
 {
     sptr<SyncFence> flushFence = SyncFence::InvalidFence();
@@ -282,6 +292,7 @@ OHOS::sptr<OHOS::SurfaceBuffer> ImageReceiver::ReadNextImage(int64_t &timestamp)
             listenerConsumerSurface->ReleaseBuffer(buffer, -1);
             return nullptr;
         }
+        DumpSurfaceBufferFromImageReceiver(buffer, "imageReceiver");
         iraContext_->currentBuffer_ = buffer;
     } else {
         IMAGE_LOGD("buffer is null");
@@ -314,6 +325,7 @@ OHOS::sptr<OHOS::SurfaceBuffer> ImageReceiver::ReadLastImage(int64_t &timestamp)
         }
         bufferBefore = buffer;
         surfaceError = listenerConsumerSurface->AcquireBuffer(buffer, flushFence, timestamp, damage);
+        DumpSurfaceBufferFromImageReceiver(bufferBefore, "imageReceiver") ;
     }
 
     iraContext_->currentBuffer_ = bufferBefore;
