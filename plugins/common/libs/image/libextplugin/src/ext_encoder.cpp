@@ -593,7 +593,11 @@ uint32_t ExtEncoder::DoHardWareEncode(SkWStream* skStream)
     if (imageFwkExtManager.doHardWareEncodeFunc_ != nullptr || imageFwkExtManager.LoadImageFwkExtNativeSo()) {
         int32_t retCode = imageFwkExtManager.doHardWareEncodeFunc_(skStream, opts_, pixelmap_);
         CHECK_DEBUG_RETURN_RET_LOG(retCode == SUCCESS, SUCCESS, "DoHardWareEncode Success return");
+    #ifndef IOS_PLATFORM
         HILOG_COMM_ERROR("hardware encode failed, retCode is %{public}d", retCode);
+    #else
+        IMAGE_LOGE("hardware encode failed, retCode is %{public}d", retCode);
+    #endif
         ImageInfo imageInfo;
         pixelmap_->GetImageInfo(imageInfo);
         ReportEncodeFault(imageInfo.size.width, imageInfo.size.height, opts_.format, "hardware encode failed");
@@ -655,7 +659,11 @@ uint32_t ExtEncoder::DoEncode(SkWStream* skStream, const SkBitmap& src, const Sk
     ImageInfo imageInfo;
     pixelmap_->GetImageInfo(imageInfo);
     if (!SkEncodeImage(skStream, src, skFormat, opts_.quality)) {
+    #ifndef IOS_PLATFORM
         HILOG_COMM_ERROR("Failed to encode image without exif data");
+    #else
+        IMAGE_LOGE("Failed to encode image without exif data");
+    #endif
         ReportEncodeFault(imageInfo.size.width, imageInfo.size.height, opts_.format, "Failed to encode image");
         return ERR_IMAGE_ENCODE_FAILED;
     }
