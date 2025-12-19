@@ -148,7 +148,8 @@ public:
     GSError InvalidateCache() override { return GSERROR_OK; }
     GSError SetMetadata(uint32_t key, const std::vector<uint8_t>& value, bool enableCache = true) override
         { return GSERROR_OK; }
-    GSError GetMetadata(uint32_t key, std::vector<uint8_t>& value) override { 
+    GSError GetMetadata(uint32_t key, std::vector<uint8_t>& value) override
+    {
         CM_ColorSpaceType type = CM_ColorSpaceType::CM_BT601_EBU_FULL;
         CM_ColorSpaceInfo info;
         MetadataHelper::ConvertColorSpaceTypeToInfo(type, info);
