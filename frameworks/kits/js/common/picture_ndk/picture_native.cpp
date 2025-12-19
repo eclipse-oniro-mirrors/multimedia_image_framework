@@ -27,6 +27,10 @@
 extern "C" {
 #endif
 
+struct OH_ComposeOptions {
+    PIXEL_FORMAT desiredPixelFormat = PIXEL_FORMAT::PIXEL_FORMAT_UNKNOWN;
+};
+
 static Image_AuxiliaryPictureType AuxTypeInnerToNative(OHOS::Media::AuxiliaryPictureType type)
 {
     return static_cast<Image_AuxiliaryPictureType>(static_cast<int>(type));
@@ -40,6 +44,52 @@ static OHOS::Media::AuxiliaryPictureType AuxTypeNativeToInner(Image_AuxiliaryPic
 static OHOS::Media::MetadataType MetaDataTypeNativeToInner(Image_MetadataType metadataType)
 {
     return static_cast<OHOS::Media::MetadataType>(static_cast<int>(metadataType));
+}
+
+MIDK_EXPORT
+Image_ErrorCode OH_ComposeOptions_Create(OH_ComposeOptions **options)
+{
+    if (options == nullptr) {
+        return IMAGE_BAD_PARAMETER;
+    }
+    *options = new OH_ComposeOptions();
+    if (*options == nullptr) {
+        return IMAGE_BAD_PARAMETER;
+    }
+    return IMAGE_SUCCESS;
+}
+
+MIDK_EXPORT
+Image_ErrorCode OH_ComposeOptions_SetDesiredPixelFormat(OH_ComposeOptions *options,
+    PIXEL_FORMAT desiredPixelFormat)
+{
+    if (options == nullptr) {
+        return IMAGE_BAD_PARAMETER;
+    }
+    options->desiredPixelFormat = desiredPixelFormat;
+    return IMAGE_SUCCESS;
+}
+
+MIDK_EXPORT
+Image_ErrorCode OH_ComposeOptions_GetDesiredPixelFormat(OH_ComposeOptions *options,
+    PIXEL_FORMAT *desiredPixelFormat)
+{
+    if (options == nullptr || desiredPixelFormat == nullptr) {
+        return IMAGE_BAD_PARAMETER;
+    }
+    *desiredPixelFormat = options->desiredPixelFormat;
+    return IMAGE_SUCCESS;
+}
+
+MIDK_EXPORT
+Image_ErrorCode OH_ComposeOptions_Release(OH_ComposeOptions *options)
+{
+    if (options == nullptr) {
+        return IMAGE_BAD_PARAMETER;
+    }
+    delete options;
+    options = nullptr;
+    return IMAGE_SUCCESS;
 }
 
 MIDK_EXPORT
@@ -88,6 +138,27 @@ Image_ErrorCode OH_PictureNative_GetHdrComposedPixelmap(OH_PictureNative *pictur
         return IMAGE_ALLOC_FAILED;
     }
     *mainPixelmap = mainPixelmapNative.release();
+    return IMAGE_SUCCESS;
+}
+
+MIDK_EXPORT
+Image_ErrorCode OH_PictureNative_GetHdrComposedPixelmapWithOptions(OH_PictureNative *picture,
+    OH_ComposeOptions *options, OH_PixelmapNative **hdrPixelmap)
+{
+    if (hdrPixelmap == nullptr || picture == nullptr || !picture->GetInnerPicture() || options == nullptr) {
+        return IMAGE_BAD_PARAMETER;
+    }
+
+    OHOS::Media::PixelFormat pixelFormat = static_cast<OHOS::Media::PixelFormat>(options->desiredPixelFormat);
+    auto pixelPtrTmp = picture->GetInnerPicture()->GetHdrComposedPixelMap(pixelFormat);
+    if (pixelPtrTmp == nullptr) {
+        return IMAGE_UNSUPPORTED_OPERATION;
+    }
+    auto hdrPixelmapNative = std::make_unique<OH_PixelmapNative>(std::move(pixelPtrTmp));
+    if (hdrPixelmapNative.get() == nullptr || !hdrPixelmapNative->GetInnerPixelmap()) {
+        return IMAGE_ALLOC_FAILED;
+    }
+    *hdrPixelmap = hdrPixelmapNative.release();
     return IMAGE_SUCCESS;
 }
 
