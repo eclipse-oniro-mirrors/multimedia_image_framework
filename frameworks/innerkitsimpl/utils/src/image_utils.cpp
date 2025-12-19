@@ -958,7 +958,8 @@ void ImageUtils::DumpSurfaceBufferAllKeysEnabled(sptr<SurfaceBuffer>& buffer, co
 }
 
 #ifdef IMAGE_COLORSPACE_FLAG
-ColorManager::ColorSpaceName ImageUtils::SbCMColorSpaceType2ColorSpaceName(CM_ColorSpaceType type)
+ColorManager::ColorSpaceName ImageUtils::SbCMColorSpaceType2ColorSpaceName(
+    HDI::Display::Graphic::Common::V1_0::CM_ColorSpaceType type)
 {
     auto iter = CM_COLORSPACE_NAME_MAP.find(type);
     CHECK_ERROR_RETURN_RET(iter == CM_COLORSPACE_NAME_MAP.end(), ColorManager::NONE);

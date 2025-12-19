@@ -24,6 +24,7 @@
 #include "image_log.h"
 #include "image_format.h"
 #include "image_napi_utils.h"
+#include "image_utils.h"
 #if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
 #include "vpe_utils.h"
 #include "v1_0/cm_color_space.h"
@@ -61,7 +62,7 @@ struct ImageAsyncContext {
 };
 
 #if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
-using HDI::Display::Graphic::Common::V1_0::CM_ColorSpaceType;
+using namespace HDI::Display::Graphic::Common::V1_0;
 enum HdrMetadataType : uint32_t {
     NONE = 0,
     BASE,
