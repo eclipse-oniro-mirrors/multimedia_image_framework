@@ -33,14 +33,14 @@ constexpr uint32_t MAX_XMP_METADATA_LENGTH = 64 * 1024;
 
 namespace OHOS {
 namespace Media {
-
-bool XMPMetadata::xmpInitialized_ = false;
+std::atomic<int32_t> XMPMetadata::refCount_{0};
+std::mutex XMPMetadata::initMutex_;
 
 XMPMetadata::XMPMetadata()
 {
-    if (!Initialize()) {
-        IMAGE_LOGE("%{public}s failed to initialize XMP Metadata", __func__);
-        return;
+    std::lock_guard<std::mutex> lock(initMutex_);
+    if (refCount_++ == 0) {
+        CHECK_ERROR_RETURN_LOG(!SXMPMeta::Initialize(), "%{public}s failed to initialize XMPMeta", __func__);
     }
     impl_ = std::make_unique<XMPMetadataImpl>();
 }
@@ -48,33 +48,17 @@ XMPMetadata::XMPMetadata()
 XMPMetadata::XMPMetadata(std::unique_ptr<XMPMetadataImpl> impl)
     : impl_(std::move(impl))
 {
-    if (!Initialize()) {
-        IMAGE_LOGE("%{public}s failed to initialize XMP Metadata", __func__);
-        impl_.reset();
-        return;
+    std::lock_guard<std::mutex> lock(initMutex_);
+    if (refCount_++ == 0) {
+        CHECK_ERROR_RETURN_LOG(!SXMPMeta::Initialize(), "%{public}s failed to initialize XMPMeta", __func__);
     }
 }
 
-XMPMetadata::~XMPMetadata() = default;
-
-bool XMPMetadata::Initialize()
+XMPMetadata::~XMPMetadata()
 {
-    if (xmpInitialized_) {
-        return true;
-    }
-    CHECK_ERROR_RETURN_RET_LOG(!SXMPFiles::Initialize(kXMPFiles_IgnoreLocalText), false,
-        "%{public}s failed to initialize XMPFiles", __func__);
-    CHECK_ERROR_RETURN_RET_LOG(!SXMPMeta::Initialize(), false, "%{public}s failed to initialize XMPMeta", __func__);
-    xmpInitialized_ = true;
-    return true;
-}
-
-void XMPMetadata::Terminate()
-{
-    if (xmpInitialized_) {
+    std::lock_guard<std::mutex> lock(initMutex_);
+    if (--refCount_ == 0) {
         SXMPMeta::Terminate();
-        SXMPFiles::Terminate();
-        xmpInitialized_ = false;
     }
 }
 

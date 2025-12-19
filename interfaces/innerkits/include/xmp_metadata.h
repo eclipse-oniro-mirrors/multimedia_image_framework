@@ -16,10 +16,12 @@
 #ifndef INTERFACES_INNERKITS_INCLUDE_XMP_METADATA_H
 #define INTERFACES_INNERKITS_INCLUDE_XMP_METADATA_H
 
-#include <string>
-#include <vector>
-#include <unordered_map>
+#include <atomic>
 #include <memory>
+#include <mutex>
+#include <string>
+#include <unordered_map>
+#include <vector>
 
 #include "image_type.h"
 #include "nocopyable.h"
@@ -37,8 +39,6 @@ public:
     ~XMPMetadata();
     std::unique_ptr<XMPMetadataImpl>& GetImpl();
 
-    static bool Initialize();
-    static void Terminate();
     static bool CreateXMPTag(const std::string &path, const XMPTagType &tagType, const std::string &value,
         XMPTag &outTag);
 
@@ -60,7 +60,8 @@ public:
 
 private:
     DISALLOW_COPY_AND_MOVE(XMPMetadata);
-    static bool xmpInitialized_;
+    static std::atomic<int32_t> refCount_;
+    static std::mutex initMutex_;
     std::unique_ptr<XMPMetadataImpl> impl_;
 };
 } // namespace Media

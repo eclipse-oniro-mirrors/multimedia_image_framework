@@ -35,8 +35,8 @@ enum class XMPAccessMode {
 
 class XMPMetadataAccessor {
 public:
-    XMPMetadataAccessor() = default;
-    ~XMPMetadataAccessor() = default;
+    XMPMetadataAccessor();
+    ~XMPMetadataAccessor();
 
     // static methods to create XMPMetadataAccessor
     static std::unique_ptr<XMPMetadataAccessor> Create(const uint8_t *data, uint32_t size, XMPAccessMode mode);
@@ -70,6 +70,8 @@ private:
         XMP_FD_IO,
     };
 
+    static std::atomic<int32_t> refCount_;
+    static std::mutex initMutex_;
     IOType ioType_ = IOType::UNKNOWN;
     std::unique_ptr<SXMPFiles, XmpFileDeleter> xmpFiles_ = nullptr;
     std::shared_ptr<XMPMetadata> xmpMetadata_ = nullptr;

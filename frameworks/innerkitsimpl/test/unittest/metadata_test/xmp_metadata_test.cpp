@@ -16,6 +16,7 @@
 #define private public
 #include <gtest/gtest.h>
 #include <memory>
+#include <thread>
 
 #include "image_log.h"
 #include "media_errors.h"
@@ -184,48 +185,34 @@ static Media::XMPMetadata::EnumerateCallback InitTestCallback(std::vector<XMPTag
 }
 
 /**
- * @tc.name: InitializeTest001
- * @tc.desc: test the Initialize method.
+ * @tc.name: XMPMetadataRefCountTest001
+ * @tc.desc: test the constructor method.
  * @tc.type: FUNC
  */
-HWTEST_F(XmpMetadataTest, InitializeTest001, TestSize.Level1)
+HWTEST_F(XmpMetadataTest, XMPMetadataRefCountTest001, TestSize.Level1)
 {
-    GTEST_LOG_(INFO) << "XmpMetadataTest: InitializeTest001 start";
-    bool ret = XMPMetadata::Initialize();
-    EXPECT_TRUE(ret);
-    XMPMetadata::Terminate();
-    GTEST_LOG_(INFO) << "XmpMetadataTest: InitializeTest001 end";
+    GTEST_LOG_(INFO) << "XmpMetadataTest: XMPMetadataRefCountTest001 start";
+    std::unique_ptr<XMPMetadata> xmpMetadata1;
+    std::unique_ptr<XMPMetadata> xmpMetadata2;
+    std::thread t1([&xmpMetadata1]() {
+        xmpMetadata1 = std::make_unique<XMPMetadata>();
+    });
+    std::thread t2([&xmpMetadata2]() {
+        xmpMetadata2 = std::make_unique<XMPMetadata>();
+    });
+
+    t1.join();
+    t2.join();
+    GTEST_LOG_(INFO) << "XmpMetadataTest: XMPMetadataRefCountTest001 refCount: " << XMPMetadata::refCount_;
+    EXPECT_TRUE(XMPMetadata::refCount_ == 2);
+    xmpMetadata1.reset();
+    GTEST_LOG_(INFO) << "XmpMetadataTest: XMPMetadataRefCountTest001 refCount: " << XMPMetadata::refCount_;
+    EXPECT_TRUE(XMPMetadata::refCount_ == 1);
+    xmpMetadata2.reset();
+    GTEST_LOG_(INFO) << "XmpMetadataTest: XMPMetadataRefCountTest001 refCount: " << XMPMetadata::refCount_;
+    EXPECT_TRUE(XMPMetadata::refCount_ == 0);
+    GTEST_LOG_(INFO) << "XmpMetadataTest: XMPMetadataRefCountTest001 end";
 }
-
-/**
- * @tc.name: InitializeTest002
- * @tc.desc: test the Initialize method.
- * @tc.type: FUNC
- */
-HWTEST_F(XmpMetadataTest, InitializeTest002, TestSize.Level1)
-{
-    GTEST_LOG_(INFO) << "XmpMetadataTest: InitializeTest002 start";
-    bool ret = XMPMetadata::Initialize();
-    EXPECT_TRUE(ret);
-    ret = XMPMetadata::Initialize();
-    EXPECT_TRUE(ret);
-    XMPMetadata::Terminate();
-    GTEST_LOG_(INFO) << "XmpMetadataTest: InitializeTest002 end";
-}
-
-
-/**
- * @tc.name: TerminateTest001
- * @tc.desc: test the Terminate method.
- * @tc.type: FUNC
- */
-HWTEST_F(XmpMetadataTest, TerminateTest001, TestSize.Level1)
-{
-    GTEST_LOG_(INFO) << "XmpMetadataTest: TerminateTest001 start";
-    XMPMetadata::Terminate();
-    GTEST_LOG_(INFO) << "XmpMetadataTest: TerminateTest001 end";
-}
-
 
 /**
  * @tc.name: RegisterNamespacePrefixTest001

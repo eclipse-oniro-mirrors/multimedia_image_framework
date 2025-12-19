@@ -32,6 +32,26 @@ namespace {
 
 namespace OHOS {
 namespace Media {
+std::atomic<int32_t> XMPMetadataAccessor::refCount_{0};
+std::mutex XMPMetadataAccessor::initMutex_;
+
+XMPMetadataAccessor::XMPMetadataAccessor()
+{
+    std::lock_guard<std::mutex> lock(initMutex_);
+    if (refCount_++ == 0) {
+        CHECK_ERROR_RETURN_LOG(!SXMPFiles::Initialize(kXMPFiles_IgnoreLocalText),
+            "%{public}s failed to initialize XMPFiles", __func__);
+    }
+}
+
+XMPMetadataAccessor::~XMPMetadataAccessor()
+{
+    std::lock_guard<std::mutex> lock(initMutex_);
+    if (--refCount_ == 0) {
+        SXMPFiles::Terminate();
+    }
+}
+
 static constexpr XMP_OptionBits ConvertAccessModeToXMPOptions(XMPAccessMode mode)
 {
     switch (mode) {
@@ -128,9 +148,6 @@ void XMPMetadataAccessor::Set(std::shared_ptr<XMPMetadata> &xmpMetadata)
 
 uint32_t XMPMetadataAccessor::CheckXMPFiles()
 {
-    CHECK_ERROR_RETURN_RET_LOG(!XMPMetadata::Initialize(), ERR_XMP_INIT_FAILED,
-        "%{public}s failed to init XMPMetadataAccessor", __func__);
-
     if (xmpFiles_ == nullptr) {
         IMAGE_LOGE("%{public}s xmpFiles is nullptr", __func__);
         return ERR_XMP_INVALID_FILE;
@@ -147,8 +164,6 @@ uint32_t XMPMetadataAccessor::InitializeFromBuffer(const uint8_t *data, uint32_t
 {
     CHECK_ERROR_RETURN_RET_LOG(data == nullptr || size == 0, ERR_IMAGE_INVALID_PARAMETER,
         "%{public}s data is nullptr or size is 0", __func__);
-    CHECK_ERROR_RETURN_RET_LOG(!XMPMetadata::Initialize(), ERR_XMP_INIT_FAILED,
-        "%{public}s failed to init XMPMetadataAccessor", __func__);
     xmpFiles_.reset(new SXMPFiles());
     CHECK_ERROR_RETURN_RET_LOG(xmpFiles_ == nullptr, ERR_MEDIA_MALLOC_FAILED,
         "%{public}s failed to create XMPFiles", __func__);
@@ -173,8 +188,6 @@ uint32_t XMPMetadataAccessor::InitializeFromPath(const std::string &filePath, XM
 {
     CHECK_ERROR_RETURN_RET_LOG(filePath.empty(), ERR_IMAGE_INVALID_PARAMETER,
         "%{public}s filePath is empty", __func__);
-    CHECK_ERROR_RETURN_RET_LOG(!XMPMetadata::Initialize(), ERR_XMP_INIT_FAILED,
-        "%{public}s failed to init XMPMetadataAccessor", __func__);
     xmpFiles_.reset(new SXMPFiles());
     CHECK_ERROR_RETURN_RET_LOG(xmpFiles_ == nullptr, ERR_MEDIA_MALLOC_FAILED,
         "%{public}s failed to create XMPFiles", __func__);
@@ -193,8 +206,6 @@ uint32_t XMPMetadataAccessor::InitializeFromFd(int32_t fileDescriptor, XMPAccess
 {
     CHECK_ERROR_RETURN_RET_LOG(fileDescriptor == INVALID_FILE_DESCRIPTOR, ERR_IMAGE_INVALID_PARAMETER,
         "%{public}s fileDescriptor is invalid", __func__);
-    CHECK_ERROR_RETURN_RET_LOG(!XMPMetadata::Initialize(), ERR_XMP_INIT_FAILED,
-        "%{public}s failed to init XMPMetadataAccessor", __func__);
     xmpFiles_.reset(new SXMPFiles());
     CHECK_ERROR_RETURN_RET_LOG(xmpFiles_ == nullptr, ERR_MEDIA_MALLOC_FAILED,
         "%{public}s failed to create XMPFiles", __func__);
