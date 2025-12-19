@@ -25,48 +25,48 @@
 #include "v1_0/cm_color_space.h"
 #endif
 
-#define COLORSPACE_IMPL
-
 #ifdef __cplusplus
 extern "C" {
 #endif
 
 #if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
 using namespace OHOS::HDI::Display::Graphic::Common::V1_0;
+#ifdef IMAGE_COLORSPACE_FLAG
 static std::unordered_map<CM_ColorSpaceType, ColorSpaceName> HDI_TO_COLORSPACENAME_MAP = {
-    { CM_COLORSPACE_NONE, NONE },
-    { CM_BT601_EBU_FULL, BT601_EBU },
-    { CM_BT601_SMPTE_C_FULL, BT601_SMPTE_C },
-    { CM_BT709_FULL, BT709 },
-    { CM_BT2020_HLG_FULL, BT2020_HLG },
-    { CM_BT2020_PQ_FULL, BT2020_PQ },
-    { CM_BT601_EBU_LIMIT, BT601_EBU_LIMIT },
-    { CM_BT601_SMPTE_C_LIMIT, BT601_SMPTE_C_LIMIT },
-    { CM_BT709_LIMIT, BT709_LIMIT },
-    { CM_BT2020_HLG_LIMIT, BT2020_HLG_LIMIT },
-    { CM_BT2020_PQ_LIMIT, BT2020_PQ_LIMIT },
-    { CM_SRGB_FULL, SRGB },
-    { CM_P3_FULL, DISPLAY_P3 },
-    { CM_P3_HLG_FULL, P3_HLG },
-    { CM_P3_PQ_FULL, P3_PQ },
-    { CM_ADOBERGB_FULL, ADOBE_RGB },
-    { CM_SRGB_LIMIT, SRGB_LIMIT },
-    { CM_P3_LIMIT, DISPLAY_P3_LIMIT },
-    { CM_P3_HLG_LIMIT, P3_HLG_LIMIT },
-    { CM_P3_PQ_LIMIT, P3_PQ_LIMIT },
-    { CM_ADOBERGB_LIMIT, ADOBE_RGB_LIMIT },
-    { CM_LINEAR_SRGB, LINEAR_SRGB },
-    { CM_LINEAR_BT709, LINEAR_BT709 },
-    { CM_LINEAR_P3, LINEAR_P3 },
-    { CM_LINEAR_BT2020, LINEAR_BT2020 },
-    { CM_DISPLAY_SRGB, DISPLAY_SRGB },
-    { CM_DISPLAY_P3_SRGB, DISPLAY_P3_SRGB },
-    { CM_DISPLAY_P3_HLG, DISPLAY_P3_HLG },
-    { CM_DISPLAY_P3_PQ, DISPLAY_P3_PQ },
-    { CM_DISPLAY_BT2020_SRGB, DISPLAY_BT2020_SRGB },
-    { CM_DISPLAY_BT2020_HLG, BT2020_HLG },
-    { CM_DISPLAY_BT2020_PQ, BT2020_PQ },
+    {CM_COLORSPACE_NONE, NONE},
+    {CM_BT601_EBU_FULL, BT601_EBU},
+    {CM_BT601_SMPTE_C_FULL, BT601_SMPTE_C},
+    {CM_BT709_FULL, BT709},
+    {CM_BT2020_HLG_FULL, BT2020_HLG},
+    {CM_BT2020_PQ_FULL, BT2020_PQ},
+    {CM_BT601_EBU_LIMIT, BT601_EBU_LIMIT},
+    {CM_BT601_SMPTE_C_LIMIT, BT601_SMPTE_C_LIMIT},
+    {CM_BT709_LIMIT, BT709_LIMIT},
+    {CM_BT2020_HLG_LIMIT, BT2020_HLG_LIMIT},
+    {CM_BT2020_PQ_LIMIT, BT2020_PQ_LIMIT},
+    {CM_SRGB_FULL, SRGB},
+    {CM_P3_FULL, DISPLAY_P3},
+    {CM_P3_HLG_FULL, P3_HLG},
+    {CM_P3_PQ_FULL, P3_PQ},
+    {CM_ADOBERGB_FULL, ADOBE_RGB},
+    {CM_SRGB_LIMIT, SRGB_LIMIT},
+    {CM_P3_LIMIT, DISPLAY_P3_LIMIT},
+    {CM_P3_HLG_LIMIT, P3_HLG_LIMIT},
+    {CM_P3_PQ_LIMIT, P3_PQ_LIMIT},
+    {CM_ADOBERGB_LIMIT, ADOBE_RGB_LIMIT},
+    {CM_LINEAR_SRGB, LINEAR_SRGB},
+    {CM_LINEAR_BT709, LINEAR_BT709},
+    {CM_LINEAR_P3, LINEAR_P3},
+    {CM_LINEAR_BT2020, LINEAR_BT2020},
+    {CM_DISPLAY_SRGB, DISPLAY_SRGB},
+    {CM_DISPLAY_P3_SRGB, DISPLAY_P3_SRGB},
+    {CM_DISPLAY_P3_HLG, DISPLAY_P3_HLG},
+    {CM_DISPLAY_P3_PQ, DISPLAY_P3_PQ},
+    {CM_DISPLAY_BT2020_SRGB, DISPLAY_BT2020_SRGB},
+    {CM_DISPLAY_BT2020_HLG, BT2020_HLG},
+    {CM_DISPLAY_BT2020_PQ, BT2020_PQ},
 };
+#endif
 #endif
 
 MIDK_EXPORT
@@ -220,6 +220,8 @@ Image_ErrorCode OH_ImageNative_GetColorSpace(OH_ImageNative *image, int32_t *col
         return IMAGE_BAD_PARAMETER;
     }
     int32_t colorSpaceValue = 0;
+#if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM) && defined(IMAGE_COLORSPACE_FLAG)
+
     if (OHOS::Media::SUCCESS != image->imgNative->GetColorSpace(colorSpaceValue)) {
         IMAGE_LOGE("image buffer is unusable");
         return IMAGE_BAD_PARAMETER;
@@ -230,6 +232,9 @@ Image_ErrorCode OH_ImageNative_GetColorSpace(OH_ImageNative *image, int32_t *col
         return IMAGE_BAD_PARAMETER;
     }
     *colorSpaceName = it->second;
+#else
+    *colorSpaceName = colorSpaceValue;
+#endif
     return IMAGE_SUCCESS;
 }
 
@@ -256,7 +261,7 @@ Image_ErrorCode OH_ImageNative_GetFormat(OH_ImageNative *image, OH_NativeBuffer_
 }
 
 MIDK_EXPORT
-Image_ErrorCode OH_ImageNative_GetBufferData(OH_ImageNative* image, OH_ImageBufferData *imageBufferData)
+Image_ErrorCode OH_ImageNative_GetBufferData(OH_ImageNative *image, OH_ImageBufferData *imageBufferData)
 {
     if (nullptr == image || nullptr == image->imgNative || nullptr == imageBufferData) {
         IMAGE_LOGE("%{public}s Invalid parameter: Null Pointer Error", __func__);

@@ -179,7 +179,7 @@ Image_ErrorCode OH_ImageNative_Release(OH_ImageNative *image);
  * @brief Get colorspace from an {@link OH_ImageNative} object.
  *
  * @param image Indicates the pointer to an {@link OH_ImageNative} object.
- * @param colorSpaceName Indicates the pointer to the obtained color space name.
+ * @param colorSpaceName Indicates the pointer to the obtained color space name, see {@link ColorSpaceName}.
  * @return Returns one of the following result codes:
  * {@link IMAGE_SUCCESS} if the execution is successful.
  * {@link IMAGE_BAD_PARAMETER} if bad parameter.

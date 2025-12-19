@@ -260,8 +260,7 @@ napi_value ImageReceiverNapi::Constructor(napi_env env, napi_callback_info info)
             ImageReceiverOptions options = {(inputArgs.args)[PARAM0],
                 (inputArgs.args)[PARAM1], (inputArgs.args)[PARAM2]};
             reference->imageReceiver_ = ImageReceiver::CreateImageReceiver(options);
-        }
-        else {
+        } else {
             reference->imageReceiver_ = ImageReceiver::CreateImageReceiver((inputArgs.args)[PARAM0],
             (inputArgs.args)[PARAM1], (inputArgs.args)[PARAM2], (inputArgs.args)[PARAM3]);
         }

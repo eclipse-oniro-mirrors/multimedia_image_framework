@@ -61,55 +61,17 @@ struct ImageAsyncContext {
 };
 
 #if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
-using namespace HDI::Display::Graphic::Common::V1_0;
-
-#ifdef IMAGE_COLORSPACE_FLAG
-static const std::map<CM_ColorSpaceType, ColorManager::ColorSpaceName> CM_COLORSPACE_NAME_MAP = {
-    { CM_COLORSPACE_NONE, ColorManager::NONE },
-    { CM_BT601_EBU_FULL, ColorManager::BT601_EBU },
-    { CM_BT601_SMPTE_C_FULL, ColorManager::BT601_SMPTE_C },
-    { CM_BT709_FULL, ColorManager::BT709 },
-    { CM_BT2020_HLG_FULL, ColorManager::BT2020_HLG },
-    { CM_BT2020_PQ_FULL, ColorManager::BT2020_PQ },
-    { CM_BT601_EBU_LIMIT, ColorManager::BT601_EBU_LIMIT },
-    { CM_BT601_SMPTE_C_LIMIT, ColorManager::BT601_SMPTE_C_LIMIT },
-    { CM_BT709_LIMIT, ColorManager::BT709_LIMIT },
-    { CM_BT2020_HLG_LIMIT, ColorManager::BT2020_HLG_LIMIT },
-    { CM_BT2020_PQ_LIMIT, ColorManager::BT2020_PQ_LIMIT },
-    { CM_SRGB_FULL, ColorManager::SRGB },
-    { CM_P3_FULL, ColorManager::DISPLAY_P3 },
-    { CM_P3_HLG_FULL, ColorManager::P3_HLG },
-    { CM_P3_PQ_FULL, ColorManager::P3_PQ },
-    { CM_ADOBERGB_FULL, ColorManager::ADOBE_RGB },
-    { CM_SRGB_LIMIT, ColorManager::SRGB_LIMIT },
-    { CM_P3_LIMIT, ColorManager::DISPLAY_P3_LIMIT },
-    { CM_P3_HLG_LIMIT, ColorManager::P3_HLG_LIMIT },
-    { CM_P3_PQ_LIMIT, ColorManager::P3_PQ_LIMIT },
-    { CM_ADOBERGB_LIMIT, ColorManager::ADOBE_RGB_LIMIT },
-    { CM_LINEAR_SRGB, ColorManager::LINEAR_SRGB },
-    { CM_LINEAR_BT709, ColorManager::LINEAR_BT709 },
-    { CM_LINEAR_P3, ColorManager::LINEAR_P3 },
-    { CM_LINEAR_BT2020, ColorManager::LINEAR_BT2020 },
-    { CM_DISPLAY_SRGB, ColorManager::DISPLAY_SRGB },
-    { CM_DISPLAY_P3_SRGB, ColorManager::DISPLAY_P3_SRGB },
-    { CM_DISPLAY_P3_HLG, ColorManager::DISPLAY_P3_HLG },
-    { CM_DISPLAY_P3_PQ, ColorManager::DISPLAY_P3_PQ },
-    { CM_DISPLAY_BT2020_SRGB, ColorManager::DISPLAY_BT2020_SRGB },
-    { CM_DISPLAY_BT2020_HLG, ColorManager::DISPLAY_BT2020_HLG },
-    { CM_DISPLAY_BT2020_PQ, ColorManager::DISPLAY_BT2020_PQ },
-};
-#endif
-
+using HDI::Display::Graphic::Common::V1_0::CM_ColorSpaceType;
 enum HdrMetadataType : uint32_t {
     NONE = 0,
     BASE,
     GAINMAP,
     ALTERNATE,
-    INVALID,
 };
 
 static std::map<CM_HDR_Metadata_Type, HdrMetadataType> MetadataEtsMap = {
     {CM_METADATA_NONE, NONE},
+    {CM_VIDEO_HDR_VIVID, BASE},
     {CM_IMAGE_HDR_VIVID_DUAL, BASE},
     {CM_IMAGE_HDR_VIVID_SINGLE, ALTERNATE},
 };
@@ -572,20 +534,12 @@ napi_value ImageNapi::JsGetTimestamp(napi_env env, napi_callback_info info)
     return result;
 }
 
-#ifdef IMAGE_COLORSPACE_FLAG
-static ColorManager::ColorSpaceName CMColorSpaceType2ColorSpaceName(CM_ColorSpaceType type)
-{
-    auto iter = CM_COLORSPACE_NAME_MAP.find(type);
-    CHECK_ERROR_RETURN_RET(iter == CM_COLORSPACE_NAME_MAP.end(), ColorManager::NONE);
-    return iter->second;
-}
-#endif
-
 napi_value ImageNapi::JsGetColorSpace(napi_env env, napi_callback_info info)
 {
     napi_value result = nullptr;
     IMAGE_FUNCTION_IN();
     napi_get_undefined(env, &result);
+#if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM) && defined(IMAGE_COLORSPACE_FLAG)
     std::unique_ptr<ImageAsyncContext> context = UnwrapContext(env, info);
     if (context == nullptr || context->image == nullptr) {
         IMAGE_ERR("context is nullptr or Image native is nullptr");
@@ -596,9 +550,10 @@ napi_value ImageNapi::JsGetColorSpace(napi_env env, napi_callback_info info)
         IMAGE_ERR("Image native get color space failed");
         return result;
     }
-    ColorManager::ColorSpaceName colorSpaceName = CMColorSpaceType2ColorSpaceName(
+    ColorManager::ColorSpaceName colorSpaceName = ImageUtils::SbCMColorSpaceType2ColorSpaceName(
         static_cast<CM_ColorSpaceType>(colorSpace));
     napi_create_int32(env, static_cast<int32_t>(colorSpaceName), &result);
+#endif
     return result;
 }
 
@@ -951,7 +906,6 @@ static bool prepareNapiEnv(napi_env env, napi_callback_info info, struct NapiVal
 
 napi_value ImageNapi::JsGetHdrMetadata(napi_env env, napi_callback_info info)
 {
-
     NapiValues nVal;
     napi_value argValue[NUM1];
     nVal.argc = NUM1;

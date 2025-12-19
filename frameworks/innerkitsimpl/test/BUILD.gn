@@ -1924,7 +1924,6 @@ ohos_unittest("image_receiver_native_test") {
     "googletest:gtest",
     "googletest:gtest_main",
     "graphic_surface:surface",
-    "graphic_2d:libnative_color_space_manager",
   ]
 }
 

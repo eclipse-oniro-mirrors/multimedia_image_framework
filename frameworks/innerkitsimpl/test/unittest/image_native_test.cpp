@@ -21,6 +21,7 @@
 #include "image_kits.h"
 #include "image_receiver.h"
 #include "metadata_helper.h"
+#include "native_color_space_manager.h"
 
 struct OH_NativeBuffer {};
 
@@ -735,10 +736,10 @@ HWTEST_F(ImageNativeTest, OH_ImageNative_GetColorSpaceTest001, TestSize.Level3)
     NativeImage imgNative(buffer, releaser);
     image->imgNative = &imgNative;
 
-    ColorSpaceName colorSpace = ColorSpaceName::NONE;
+    int32_t colorSpace = 0;
     Image_ErrorCode errCode = OH_ImageNative_GetColorSpace(image, &colorSpace);
     EXPECT_EQ(errCode, IMAGE_SUCCESS);
-    EXPECT_EQ(colorSpace, ColorSpaceName::BT601_EBU);
+    EXPECT_EQ(colorSpace, static_cast<int32_t>(ColorSpaceName::BT601_EBU));
     delete image;
     GTEST_LOG_(INFO) << "ImageNativeTest: OH_ImageNative_GetColorSpaceTest001 end";
 }

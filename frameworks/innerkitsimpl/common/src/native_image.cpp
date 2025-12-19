@@ -331,24 +331,25 @@ int32_t NativeImage::GetTimestamp(int64_t &timestamp)
     return SUCCESS;
 }
 
-#if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
 int32_t NativeImage::GetColorSpace(int32_t &colorSpace)
 {
+#if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
     if (buffer_ == nullptr) {
         IMAGE_LOGE("GetColorSpace failed, buffer is nullptr");
         return ERR_MEDIA_DEAD_OBJECT;
     }
-    using namespace HDI::Display::Graphic::Common::V1_0;
-    CM_ColorSpaceType colorSpaceType;
+    HDI::Display::Graphic::Common::V1_0::CM_ColorSpaceType colorSpaceType;
     GSError ret = OHOS::MetadataHelper::GetColorSpaceType(buffer_, colorSpaceType);
     if (ret != GSERROR_OK) {
         IMAGE_LOGE("GetColorSpaceType failed ret=%{public}d", ret);
         return ERR_MEDIA_DATA_UNSUPPORT;
     }
     colorSpace = static_cast<int32_t>(colorSpaceType);
+#else
+    colorSpace = NUMI_0;
+#endif
     return SUCCESS;
 }
-#endif
 
 static int32_t GetStrides(sptr<SurfaceBuffer> buffer, std::vector<int32_t> &rowStride,
     std::vector<int32_t> &pixelStride)
@@ -365,8 +366,10 @@ static int32_t GetStrides(sptr<SurfaceBuffer> buffer, std::vector<int32_t> &rowS
         rowStride = { buffer->GetStride() };
         pixelStride = { NUM_4 };
     } else if (SUPPORTED_YUVFORMAT.count(format) != NUM_0) {
-        OH_NativeBuffer_Planes *planes = nullptr;
-        GSError retVal = buffer->GetPlanesInfo(reinterpret_cast<void**>(&planes));
+        OH_NativeBuffer_Planes* planes = nullptr;
+        void* rawPlanes = nullptr;
+        GSError retVal = buffer->GetPlanesInfo(&rawPlanes);
+        planes = static_cast<OH_NativeBuffer_Planes*>(rawPlanes);
         if (retVal != OHOS::GSERROR_OK || planes == nullptr || planes->planeCount < NUM_2) {
             IMAGE_LOGE("Get planesInfo failed, retVal:%{public}d", retVal);
             return ERR_MEDIA_DATA_UNSUPPORT;

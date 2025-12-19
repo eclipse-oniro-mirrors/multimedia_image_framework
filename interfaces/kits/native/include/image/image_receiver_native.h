@@ -34,25 +34,11 @@
 #ifndef INTERFACES_KITS_NATIVE_INCLUDE_IMAGE_RECEIVER_NATIVE_H
 #define INTERFACES_KITS_NATIVE_INCLUDE_IMAGE_RECEIVER_NATIVE_H
 
-#include "image_common.h"
+#include "image_native.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
-
-/**
- * @brief Defines an <b>OH_ImageNative</b> object.
- *
- * @since 12
- */
-struct OH_ImageNative;
-
-/**
- * @brief Defines the data type name of a native image.
- *
- * @since 12
- */
-typedef struct OH_ImageNative OH_ImageNative;
 
 /**
  * @brief Defines an <b>OH_ImageReceiverNative</b> object.
