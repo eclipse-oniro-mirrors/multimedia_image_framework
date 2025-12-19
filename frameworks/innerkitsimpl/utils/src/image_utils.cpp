@@ -967,9 +967,9 @@ static ImageInfo MakeImageInfo(int width, int height, PixelFormat pf, AlphaType 
     return info;
 }
 
-static void SetYuvDataInfo(std::unique_ptr<PixelMap> &pixelmap, sptr<OHOS::SurfaceBuffer>& sBuffer)
+void ImageUtils::SetYuvDataInfo(std::unique_ptr<PixelMap> &pixelMap, sptr<OHOS::SurfaceBuffer> &sBuffer)
 {
-    bool cond = pixelmap == nullptr || sBuffer == nullptr;
+    bool cond = pixelMap == nullptr || sBuffer == nullptr;
     CHECK_ERROR_RETURN(cond);
     int32_t width = sBuffer->GetWidth();
     int32_t height = sBuffer->GetHeight();
@@ -979,15 +979,23 @@ static void SetYuvDataInfo(std::unique_ptr<PixelMap> &pixelmap, sptr<OHOS::Surfa
     info.imageSize = { width, height };
     cond = retVal != OHOS::GSERROR_OK || planes == nullptr || planes->planeCount <= NUM_1;
     CHECK_ERROR_RETURN_LOG(cond, "Get planesInfo failed, retVal:%{public}d", retVal);
+    info.yWidth = static_cast<uint32_t>(width);
+    info.uvWidth = static_cast<uint32_t>(width / NUM_2);
+    info.yHeight = static_cast<uint32_t>(height);
+    info.uvHeight = static_cast<uint32_t>(height / NUM_2);
     if (planes->planeCount >= NUM_2) {
-        info.yWidth = static_cast<uint32_t>(info.imageSize.width);
-        info.yHeight = static_cast<uint32_t>(info.imageSize.height);
-        info.yStride = planes->planes[NUM_0].columnStride;
-        info.uvStride = planes->planes[NUM_1].columnStride;
-        info.yOffset = planes->planes[NUM_0].offset;
-        info.uvOffset = planes->planes[NUM_1].offset - NUM_1;
+        int32_t pixelFmt = sBuffer->GetFormat();
+        bool isYuvP010 = (pixelFmt == GRAPHIC_PIXEL_FMT_YCBCR_P010 || pixelFmt == GRAPHIC_PIXEL_FMT_YCRCB_P010);
+        int uvPlaneOffset = (pixelFmt == GRAPHIC_PIXEL_FMT_YCBCR_420_SP ||
+            pixelFmt == GRAPHIC_PIXEL_FMT_YCBCR_P010) ? NUM_1 : NUM_2;
+        info.yStride = isYuvP010 ? (planes->planes[NUM_0].columnStride / NUM_2) : (planes->planes[NUM_0].columnStride);
+        info.uvStride = isYuvP010 ? (planes->planes[uvPlaneOffset].columnStride / NUM_2) :
+            (planes->planes[uvPlaneOffset].columnStride);
+        info.yOffset = isYuvP010 ? (planes->planes[NUM_0].offset / NUM_2) : (planes->planes[NUM_0].offset);
+        info.uvOffset =
+            isYuvP010 ? (planes->planes[uvPlaneOffset].offset / NUM_2) : (planes->planes[uvPlaneOffset].offset);
     }
-    pixelmap->SetImageYUVInfo(info);
+    pixelMap->SetImageYUVInfo(info);
 }
 
 bool ImageUtils::SurfaceBuffer2PixelMap(sptr<OHOS::SurfaceBuffer> &surfaceBuffer, std::unique_ptr<PixelMap> &Pixelmap)
