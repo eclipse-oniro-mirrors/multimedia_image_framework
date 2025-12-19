@@ -45,7 +45,7 @@ static const uint32_t MOCK_INDEX = 1;
 static const uint32_t MOCK_INDEX_TWO = 2;
 static const uint32_t MOCK_INDEX_THREE = 3;
 #ifdef HEIF_HW_DECODE_ENABLE
-static const std::string IMAGE_INPUT_HEIFS_PATH = "/data/local/tmp/image/starfield_animation.heic";
+static const std::string IMAGE_INPUT_HEIFS_PATH = "/data/local/tmp/image/heifs.heic";
 static const std::string IMAGE_INPUT_HEIC_PATH = "/data/local/tmp/image/test-10bit-1.heic";
 static const std::string HEIFS_MIME_TYPE = "image/heif-sequence";
 static const uint32_t INPUT_HEIFS_FRAMECOUNT = 120;
