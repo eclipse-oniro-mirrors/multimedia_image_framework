@@ -45,9 +45,6 @@
 #include "image_system_properties.h"
 #include "image/abs_image_decoder.h"
 #include "pixel_map.h"
-#ifdef IMAGE_COLORSPACE_FLAG
-#include "color_space.h"
-#endif
 #ifdef IOS_PLATFORM
 #include <sys/syscall.h>
 #endif
@@ -198,7 +195,6 @@ static const std::map<CM_ColorSpaceType, ColorSpace> CM_COLORSPACE_MAP = {
     { CM_DISPLAY_BT2020_PQ, ColorSpace::ITU_2020 },
 };
 
-#ifdef IMAGE_COLORSPACE_FLAG
 static const std::map<CM_ColorSpaceType, ColorManager::ColorSpaceName> CM_COLORSPACE_NAME_MAP = {
     {CM_COLORSPACE_NONE, ColorManager::NONE},
     {CM_BT601_EBU_FULL, ColorManager::BT601_EBU},
@@ -233,7 +229,6 @@ static const std::map<CM_ColorSpaceType, ColorManager::ColorSpaceName> CM_COLORS
     {CM_DISPLAY_BT2020_HLG, ColorManager::DISPLAY_BT2020_HLG},
     {CM_DISPLAY_BT2020_PQ, ColorManager::DISPLAY_BT2020_PQ},
 };
-#endif
 #endif
 
 
@@ -957,7 +952,6 @@ void ImageUtils::DumpSurfaceBufferAllKeysEnabled(sptr<SurfaceBuffer>& buffer, co
     }
 }
 
-#ifdef IMAGE_COLORSPACE_FLAG
 ColorManager::ColorSpaceName ImageUtils::SbCMColorSpaceType2ColorSpaceName(
     HDI::Display::Graphic::Common::V1_0::CM_ColorSpaceType type)
 {
@@ -965,7 +959,6 @@ ColorManager::ColorSpaceName ImageUtils::SbCMColorSpaceType2ColorSpaceName(
     CHECK_ERROR_RETURN_RET(iter == CM_COLORSPACE_NAME_MAP.end(), ColorManager::NONE);
     return iter->second;
 }
-#endif
 
 static bool IsAlphaFormat(PixelFormat format)
 {

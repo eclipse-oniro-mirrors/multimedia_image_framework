@@ -102,10 +102,8 @@ public:
     static void DumpHdrBufferEnabled(sptr<SurfaceBuffer>& buffer, const std::string& fileName);
     static void DumpHdrExtendMetadataEnabled(sptr<SurfaceBuffer>& buffer, const std::string& fileName);
     static void DumpSurfaceBufferAllKeysEnabled(sptr<SurfaceBuffer>& buffer, const std::string& fileName);
-#ifdef IMAGE_COLORSPACE_FLAG
     static ColorManager::ColorSpaceName SbCMColorSpaceType2ColorSpaceName(
         HDI::Display::Graphic::Common::V1_0::CM_ColorSpaceType type);
-#endif
 #endif
     static PixelFormat SbFormat2PixelFormat(int32_t sbFormat);
     static uint64_t GetNowTimeMilliSeconds();
