@@ -738,7 +738,7 @@ napi_value PictureNapi::GetMainPixelmap(napi_env env, napi_callback_info info)
     nVal.status = napi_unwrap(env, nVal.thisVar, reinterpret_cast<void**>(&pictureNapi));
 
     IMG_NAPI_CHECK_RET_D(IMG_IS_READY(nVal.status, pictureNapi), nVal.result, IMAGE_LOGE("Fail to unwrap context"));
-
+    
     if (pictureNapi->nativePicture_ != nullptr) {
         auto pixelmap = pictureNapi->nativePicture_->GetMainPixel();
         nVal.result = PixelMapNapi::CreatePixelMap(env, pixelmap);

@@ -130,7 +130,7 @@ static constexpr XMP_OptionBits ConvertTagTypeToOptions(XMPTagType tagType)
     }
 }
 
-static bool IsContainerTagType(XMPTagType tagType)
+static constexpr bool IsContainerTagType(XMPTagType tagType)
 {
     return tagType == XMPTagType::STRUCTURE || tagType == XMPTagType::UNORDERED_ARRAY ||
         tagType == XMPTagType::ORDERED_ARRAY || tagType == XMPTagType::ALTERNATE_ARRAY ||
@@ -160,17 +160,16 @@ static bool BuildXMPTag(const std::string &pathExpression, const XMP_OptionBits 
 
 static bool ValidateTagWithPath(const std::string &path, const XMPTag &tag)
 {
-    CHECK_ERROR_RETURN_RET_LOG(tag.prefix.empty() || tag.xmlns.empty() || tag.name.empty(), false,
-        "%{public}s tag is invalid, prefix: %{public}s, xmlns: %{public}s, name: %{public}s", __func__,
-        tag.prefix.c_str(), tag.xmlns.c_str(), tag.name.c_str());
+    CHECK_ERROR_RETURN_RET_LOG(tag.xmlns.empty() || tag.name.empty(), false,
+        "%{public}s tag is invalid, xmlns: %{public}s, name: %{public}s", __func__, tag.xmlns.c_str(),
+        tag.name.c_str());
 
     const auto &[expectedNS, expectedKey] = XMPHelper::ExtractSplitProperty(path);
     CHECK_ERROR_RETURN_RET_LOG(expectedNS.empty() || expectedKey.empty(), false,
         "%{public}s path is invalid, expectedNS: %{public}s, expectedKey: %{public}s", __func__,
         expectedNS.c_str(), expectedKey.c_str());
 
-    // TODO: 后续 prefix 可能是可选的
-    if (tag.prefix != expectedNS) {
+    if (!tag.prefix.empty() && tag.prefix != expectedNS) {
         IMAGE_LOGW("%{public}s tag prefix mismatch: expected %{public}s, got %{public}s",
             __func__, expectedNS.c_str(), tag.prefix.c_str());
         return false;
