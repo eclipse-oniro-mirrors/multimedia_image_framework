@@ -4238,7 +4238,8 @@ bool PixelMap::DoTranslation(TransInfos &infos, const AntiAliasingOption &option
 void PixelMap::scale(float xAxis, float yAxis)
 {
     ImageTrace imageTrace("PixelMap scale xAxis = %f, yAxis = %f", xAxis, yAxis);
-    if (ImageUtils::FloatEqual(xAxis, 1.0f) && ImageUtils::FloatEqual(yAxis, 1.0f)) {
+    if (std::abs(xAxis * imageInfo_.size.width - static_cast<float>(imageInfo_.size.width))  <= 1.0f &&
+        std::abs(xAxis * imageInfo_.size.height - static_cast<float>(imageInfo_.size.height))  <= 1.0f) {
         return;
     }
     TransInfos infos;
@@ -4251,7 +4252,8 @@ void PixelMap::scale(float xAxis, float yAxis)
 
 void PixelMap::scale(float xAxis, float yAxis, const AntiAliasingOption &option)
 {
-    if (ImageUtils::FloatEqual(xAxis, 1.0f) && ImageUtils::FloatEqual(yAxis, 1.0f)) {
+    if (std::abs(xAxis * imageInfo_.size.width - static_cast<float>(imageInfo_.size.width))  <= 1.0f &&
+        std::abs(xAxis * imageInfo_.size.height - static_cast<float>(imageInfo_.size.height))  <= 1.0f) {
         return;
     }
     if (isAstc_) {
@@ -4289,8 +4291,7 @@ void PixelMap::scale(float xAxis, float yAxis, const AntiAliasingOption &option)
         TransInfos infos;
         infos.matrix.setScale(xAxis, yAxis);
         bool fixPixelFormat = imageInfo_.pixelFormat == PixelFormat::BGRA_8888 && option == AntiAliasingOption::LOW;
-        if (fixPixelFormat) {
-            // Workaround to fix a color glitching issue under BGRA with LOW anti-aliasing
+        if (fixPixelFormat) {  // Workaround to fix a color glitching issue under BGRA with LOW anti-aliasing
             imageInfo_.pixelFormat = PixelFormat::RGBA_8888;
         }
         if (!DoTranslation(infos, option)) {
