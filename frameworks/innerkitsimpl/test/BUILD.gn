@@ -1893,8 +1893,8 @@ ohos_unittest("image_native_test") {
   external_deps = [
     "c_utils:utils",
     "drivers_interface_display:libdisplay_commontype_proxy_1.0",
-    "googletest:gtest",
     "googletest:gtest_main",
+    "googletest:gtest",
     "graphic_surface:surface",
     "graphic_2d:libnative_color_space_manager",
   ]
