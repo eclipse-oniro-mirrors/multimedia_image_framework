@@ -307,6 +307,8 @@ ohos_unittest("imagesourcetest") {
     "$image_subsystem/frameworks/innerkitsimpl/accessor/src/buffer_metadata_stream.cpp",
     "$image_subsystem/frameworks/innerkitsimpl/accessor/src/data_buf.cpp",
     "$image_subsystem/frameworks/innerkitsimpl/accessor/src/dng_exif_metadata_accessor.cpp",
+    "${image_subsystem}/frameworks/innerkitsimpl/accessor/src/dng/dng_sdk_helper.cpp",
+    "${image_subsystem}/frameworks/innerkitsimpl/accessor/src/dng/dng_sdk_info.cpp",
     "$image_subsystem/frameworks/innerkitsimpl/accessor/src/exif_metadata.cpp",
     "$image_subsystem/frameworks/innerkitsimpl/accessor/src/exif_metadata_formatter.cpp",
     "$image_subsystem/frameworks/innerkitsimpl/accessor/src/file_metadata_stream.cpp",
@@ -360,8 +362,9 @@ ohos_unittest("imagesourcetest") {
     "graphic_surface:surface",
     "hilog:libhilog",
     "libjpeg-turbo:turbojpeg",
-    "skia:libjpeg",
+    "skia:libjpegm133",
     "zlib:libz",
+    "skia:dng_sdk",
   ]
   if (enable_libexif) {
     external_deps += [ "libexif:libexif" ]
@@ -1737,6 +1740,8 @@ ohos_unittest("imageaccessortest") {
     "${image_subsystem}/frameworks/innerkitsimpl/accessor/src/buffer_metadata_stream.cpp",
     "${image_subsystem}/frameworks/innerkitsimpl/accessor/src/data_buf.cpp",
     "${image_subsystem}/frameworks/innerkitsimpl/accessor/src/dng_exif_metadata_accessor.cpp",
+    "${image_subsystem}/frameworks/innerkitsimpl/accessor/src/dng/dng_sdk_helper.cpp",
+    "${image_subsystem}/frameworks/innerkitsimpl/accessor/src/dng/dng_sdk_info.cpp",
     "${image_subsystem}/frameworks/innerkitsimpl/accessor/src/exif_metadata.cpp",
     "${image_subsystem}/frameworks/innerkitsimpl/accessor/src/exif_metadata_formatter.cpp",
     "${image_subsystem}/frameworks/innerkitsimpl/accessor/src/file_metadata_stream.cpp",
@@ -1768,6 +1773,7 @@ ohos_unittest("imageaccessortest") {
     "googletest:gtest",
     "hilog:libhilog",
     "zlib:libz",
+    "skia:dng_sdk",
   ]
   if (enable_libexif) {
     external_deps += [ "libexif:libexif" ]
