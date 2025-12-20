@@ -340,6 +340,7 @@ const static std::map<std::string, uint32_t> ORIENTATION_INT_MAP = {
 const static string IMAGE_DELAY_TIME = "DelayTime";
 const static string IMAGE_DISPOSAL_TYPE = "DisposalType";
 const static string IMAGE_GIFLOOPCOUNT_TYPE = "GIFLoopCount";
+const static string IMAGE_HEIFS_DELAY_TIME = "HeifsDelayTime";
 const static int32_t ZERO = 0;
 
 PluginServer &ImageSource::pluginServer_ = ImageUtils::GetPluginServer();
@@ -1034,7 +1035,7 @@ unique_ptr<PixelMap> ImageSource::CreatePixelMapExtended(uint32_t index, const D
         context.pixelsBuffer.bufferSize, context.allocatorType);
     imageDataStatistics.SetRequestMemory(context.pixelsBuffer.bufferSize);
     if (errorCode != SUCCESS) {
-        HILOG_COMM_ERROR("[ImageSource]decode source fail, ret:%{public}u.", errorCode);
+        IMAGE_LOGE("[ImageSource]decode source fail, ret:%{public}u.", errorCode);
         imageEvent.SetDecodeErrorMsg("decode source fail, ret:" + std::to_string(errorCode));
         return nullptr;
     }
@@ -2219,7 +2220,21 @@ uint32_t ImageSource::GetImagePropertyByType(uint32_t index, const std::string &
         }
         return ret;
     }
-
+    if (IMAGE_HEIFS_DELAY_TIME.compare(key) == ZERO) {
+        IMAGE_LOGI("GetImagePropertyString special key: %{public}s", key.c_str());
+        (void)GetFrameCount(ret);
+        if (ret != SUCCESS || mainDecoder_ == nullptr) {
+            IMAGE_LOGE("[ImageSource]GetFrameCount get frame sum error.");
+            return ret;
+        } else {
+            int32_t delayTime = 0;
+            ret = mainDecoder_->GetImagePropertyInt(index, IMAGE_DELAY_TIME, delayTime);
+            IMAGE_LOGD("GetDelayTime value:%{public}d", delayTime);
+            value.intArrayValue.emplace_back(delayTime);
+            CHECK_ERROR_RETURN_RET_LOG(ret != SUCCESS, ret,
+                "[ImageSource]GetDelayTime get heifs delay time error. errorCode=%{public}u", ret);
+        }
+    }
     std::unique_lock<std::mutex> guard(decodingMutex_);
     std::unique_lock<std::mutex> guardFile(fileMutex_);
     return GetImagePropertyCommonByType(key, value);
@@ -2843,6 +2858,7 @@ uint32_t ImageSource::DecodeImageInfo(uint32_t index, ImageStatusMap::iterator &
         imageStatus.imageInfo.size.width = size.width;
         imageStatus.imageInfo.size.height = size.height;
         imageStatus.imageInfo.encodedFormat = sourceInfo_.encodedFormat;
+        imageStatus.imageInfo.isProgressive = mainDecoder_->IsProgressiveJpeg();
         imageStatus.imageState = ImageDecodingState::BASE_INFO_PARSED;
         auto result = imageStatusMap_.insert(ImageStatusMap::value_type(index, imageStatus));
         iter = result.first;
@@ -2856,7 +2872,7 @@ uint32_t ImageSource::DecodeImageInfo(uint32_t index, ImageStatusMap::iterator &
         status.imageInfo.encodedFormat = "none";
         auto errorResult = imageStatusMap_.insert(ImageStatusMap::value_type(index, status));
         iter = errorResult.first;
-        HILOG_COMM_ERROR("[ImageSource]decode the image info fail.");
+        IMAGE_LOGE("[ImageSource]decode the image info fail.");
         return ERR_IMAGE_DECODE_FAILED;
     }
 }
@@ -4745,7 +4761,7 @@ bool ImageSource::ComposeHdrImage(ImageHdrType hdrType, DecodeContext& baseCtx, 
     std::unique_ptr<VpeUtils> utils = std::make_unique<VpeUtils>();
     int32_t res = utils->ColorSpaceConverterComposeImage(buffers, hdrType == ImageHdrType::HDR_CUVA);
     if (res != VPE_ERROR_OK) {
-        HILOG_COMM_ERROR("[ImageSource] composeImage failed, res: %{public}d", res);
+        IMAGE_LOGE("[ImageSource] composeImage failed, res: %{public}d", res);
         FreeContextBuffer(hdrCtx.freeFunc, hdrCtx.allocatorType, hdrCtx.pixelsBuffer);
         return false;
     }
@@ -5908,6 +5924,7 @@ bool ImageSource::IsHeifWithoutAlpha()
     return false;
 }
 
+#if !defined(CROSS_PLATFORM)
 std::shared_ptr<ImageMetadata> ImageSource::FindMetadataFromMap(MetadataType type)
 {
     if (metadatas_.find(type) == metadatas_.end()) {
@@ -6033,5 +6050,6 @@ std::shared_ptr<ImageMetadata> ImageSource::GetMetadata(MetadataType type)
     }
     return nullptr;
 }
+#endif
 } // namespace Media
 } // namespace OHOS

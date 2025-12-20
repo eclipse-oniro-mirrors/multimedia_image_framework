@@ -597,7 +597,7 @@ uint32_t ExtEncoder::DoHardWareEncode(SkWStream* skStream)
     if (imageFwkExtManager.doHardWareEncodeFunc_ != nullptr || imageFwkExtManager.LoadImageFwkExtNativeSo()) {
         int32_t retCode = imageFwkExtManager.doHardWareEncodeFunc_(skStream, opts_, pixelmap_);
         CHECK_DEBUG_RETURN_RET_LOG(retCode == SUCCESS, SUCCESS, "DoHardWareEncode Success return");
-        HILOG_COMM_ERROR("hardware encode failed, retCode is %{public}d", retCode);
+        IMAGE_LOGE("hardware encode failed, retCode is %{public}d", retCode);
         ImageInfo imageInfo;
         pixelmap_->GetImageInfo(imageInfo);
         ReportEncodeFault(imageInfo.size.width, imageInfo.size.height, opts_.format, "hardware encode failed");
@@ -659,7 +659,7 @@ uint32_t ExtEncoder::DoEncode(SkWStream* skStream, const SkBitmap& src, const Sk
     ImageInfo imageInfo;
     pixelmap_->GetImageInfo(imageInfo);
     if (!SkEncodeImage(skStream, src, skFormat, opts_.quality)) {
-        HILOG_COMM_ERROR("Failed to encode image without exif data");
+        IMAGE_LOGE("Failed to encode image without exif data");
         ReportEncodeFault(imageInfo.size.width, imageInfo.size.height, opts_.format, "Failed to encode image");
         return ERR_IMAGE_ENCODE_FAILED;
     }
@@ -1056,10 +1056,8 @@ static bool DecomposeImage(VpeSurfaceBuffers& buffers, HdrMetadata& metadata, bo
         VpeUtils::SetSbColorSpaceType(buffers.gainmap, sdrIsSRGB ? CM_SRGB_FULL : CM_P3_FULL);
         res = utils->ColorSpaceConverterDecomposeImage(buffers);
     }
-    if (res != VPE_ERROR_OK) {
-        HILOG_COMM_ERROR("DecomposeImage [%{public}d] failed, res = %{public}d", onlySdr, res);
-        return false;
-    }
+    bool cond = res != VPE_ERROR_OK;
+    CHECK_ERROR_RETURN_RET_LOG(cond, false, "DecomposeImage [%{public}d] failed, res = %{public}d", onlySdr, res);
     if (!onlySdr) {
         metadata = GetHdrMetadata(buffers.hdr, buffers.gainmap);
     }
@@ -2630,10 +2628,8 @@ uint32_t ExtEncoder::DoHeifEncode(std::vector<ImageItem>& inputImgs, std::vector
     CHECK_ERROR_RETURN_RET(codec == nullptr, ERR_IMAGE_ENCODE_FAILED);
     uint32_t outSize = DEFAULT_OUTPUT_SIZE;
     int32_t encodeRes = codec->DoHeifEncode(inputImgs, inputMetas, refs, outputBuffer, outSize);
-    if (encodeRes != HDF_SUCCESS) {
-        HILOG_COMM_ERROR("ExtEncoder::DoHeifEncode DoHeifEncode failed");
-        return ERR_IMAGE_ENCODE_FAILED;
-    }
+    cond = encodeRes != HDF_SUCCESS;
+    CHECK_ERROR_RETURN_RET_LOG(cond, ERR_IMAGE_ENCODE_FAILED, "ExtEncoder::DoHeifEncode DoHeifEncode failed");
     IMAGE_LOGI("ExtEncoder::DoHeifEncode output type is %{public}d", output_->GetType());
     bool writeRes = output_->Write(reinterpret_cast<uint8_t *>(outputAshmem->data.data), outSize);
     cond = !writeRes;

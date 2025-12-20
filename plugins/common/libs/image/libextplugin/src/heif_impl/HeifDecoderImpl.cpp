@@ -810,7 +810,7 @@ bool HeifDecoderImpl::HwDecodeGrids(std::shared_ptr<HeifImage> &image,
     CHECK_ERROR_RETURN_RET(codec == nullptr, false);
     int32_t result = codec->DoHeifDecode(hwInputs, output, heifDecodeInfo);
     if (result != SUCCESS) {
-        HILOG_COMM_ERROR("heif hw decoder return error: %{public}d, width: %{public}d, height: %{public}d,"
+        IMAGE_LOGE("heif hw decoder return error: %{public}d, width: %{public}d, height: %{public}d,"
             " imageType: grid, inPixelFormat: %{public}d, colNum: %{public}d, rowNum: %{public}d,"
             " tileWidth: %{public}d, tileHeight: %{public}d, hvccLen: %{public}zu",
             result, gridInfo.displayWidth, gridInfo.displayHeight, hwBuffer->GetFormat(), gridInfo.cols,

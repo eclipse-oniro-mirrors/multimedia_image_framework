@@ -259,13 +259,22 @@ const std::map<std::string, PropertyValueType>& ExifMetadata::GetHwMetadataMap()
     return hwMetadataMap;
 }
 
+const std::map<std::string, PropertyValueType>& ExifMetadata::GetHeifsMetadataMap()
+{
+    static const std::map<std::string, PropertyValueType> heifsMetadataMap = {
+        {"HeifsDelayTime", PropertyValueType::INT},
+    };
+    return heifsMetadataMap;
+}
+
 const std::map<NapiMetadataType, std::map<std::string, PropertyValueType>>& ExifMetadata::GetPropertyTypeMapping()
 {
     static const std::map<NapiMetadataType, std::map<std::string, PropertyValueType>> propertyTypeMap = {
         {NapiMetadataType::EXIF_METADATA, GetExifMetadataMap()},
         {NapiMetadataType::HWMAKERNOTE_METADATA, GetHwMetadataMap()},
+        {NapiMetadataType::HEIFS_METADATA, GetHeifsMetadataMap()},
     };
-    return propertyTypeMap;    
+    return propertyTypeMap;
 }
 
 const std::unordered_map<std::string, std::string>& ExifMetadata::GetPropertyKeyMap()
@@ -437,15 +446,18 @@ const std::unordered_map<std::string, std::string>& ExifMetadata::GetPropertyKey
         {"sceneNightConfidence", "HwMnoteSceneNightConf"},
         {"sceneTextConfidence", "HwMnoteSceneTextConf"},
         {"faceCount", "HwMnoteFaceCount"},
-        {"faceConfidence", "HwMnoteFaceConf"},
-        {"faceSmileScore", "HwMnoteFaceSmileScore"},
+        {"faceConfidences", "HwMnoteFaceConf"},
+        {"faceSmileScores", "HwMnoteFaceSmileScore"},
         {"captureMode", "HwMnoteCaptureMode"},
         {"burstNumber", "HwMnoteBurstNumber"},
         {"isFrontCamera", "HwMnoteFrontCamera"},
         {"rollAngle", "HwMnoteRollAngle"},
         {"pitchAngle", "HwMnotePitchAngle"},
         {"physicalAperture", "HwMnotePhysicalAperture"},
-        {"focusMode", "HwMnoteFocusMode"}
+        {"focusMode", "HwMnoteFocusMode"},
+
+        // ============ HeifsMetadata ============
+        {"heifsDelayTime", "HeifsDelayTime"}
     };
     return propertyKeyMap;
 }
@@ -552,8 +564,8 @@ static unsigned int CalculateTagValueSize(ExifEntry *entry)
 
 static void GetIntValue(EntryBasicInfo info, MetadataValue &result)
 {
-    CHECK_ERROR_RETURN_LOG(info.components == 0,
-        "%{public}s, entry is nullptr or components is 0", __func__);
+    CHECK_ERROR_RETURN_LOG(info.components == 0 || info.data == nullptr,
+        "%{public}s, data is nullptr or components is 0", __func__);
     result.intArrayValue.clear();
     result.intArrayValue.reserve(info.components);
     size_t formatSize = exif_format_get_size(info.format);
@@ -590,7 +602,8 @@ static void GetIntValue(EntryBasicInfo info, MetadataValue &result)
 
 static void GetRationalValue(EntryBasicInfo info, MetadataValue &result)
 {
-    CHECK_ERROR_RETURN_LOG(info.components == 0, "%{public}s, components is 0", __func__);
+    CHECK_ERROR_RETURN_LOG(info.components == 0 || info.data == nullptr,
+        "%{public}s, data is nullptr or components is 0", __func__);
     result.doubleArrayValue.clear();
     result.doubleArrayValue.reserve(info.components);
     size_t formatSize = exif_format_get_size(info.format);
@@ -629,14 +642,14 @@ static uint32_t GetBlobValueFromExifEntry(ExifEntry *entry, MetadataValue &resul
 {
     CHECK_ERROR_RETURN_RET_LOG(entry == nullptr || !entry->parent || !entry->parent->parent,
         ERR_IMAGE_DECODE_METADATA_FAILED, "Invalid EXIF entry structure");
-    if (entry->size > 0 && entry->data != nullptr) {
-        result.bufferValue.resize(entry->size);
-        CHECK_ERROR_RETURN_RET(result.bufferValue.size() != entry->size, ERR_IMAGE_DECODE_METADATA_FAILED);
-        errno_t err = memcpy_s(result.bufferValue.data(), result.bufferValue.size(), entry->data, entry->size);
-        CHECK_ERROR_RETURN_RET_LOG(err != EOK, ERR_IMAGE_DECODE_METADATA_FAILED,
-            "memcpy_s failed: %{public}d", err);
-        IMAGE_LOGD("Copied %{public}u bytes", result.bufferValue.size());
-    }
+    CHECK_ERROR_RETURN_RET_LOG(entry->size <= 0 || entry->data == nullptr, ERR_IMAGE_DECODE_METADATA_FAILED,
+        "data is nullptr or size is invalid");
+    result.bufferValue.resize(entry->size);
+    CHECK_ERROR_RETURN_RET(result.bufferValue.size() != entry->size, ERR_IMAGE_DECODE_METADATA_FAILED);
+    errno_t err = memcpy_s(result.bufferValue.data(), result.bufferValue.size(), entry->data, entry->size);
+    CHECK_ERROR_RETURN_RET_LOG(err != EOK, ERR_IMAGE_DECODE_METADATA_FAILED,
+        "memcpy_s failed: %{public}d", err);
+    IMAGE_LOGD("Copied %{public}u bytes", result.bufferValue.size());
     return SUCCESS;
 }
 

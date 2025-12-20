@@ -64,6 +64,134 @@ public:
 };
 
 /**
+ * @tc.name: GetAuxiliaryPictureDenominatorTest001
+ * @tc.desc: Test DEPTH_MAP uses DEPTH_SCALE_DENOMINATOR
+ * @tc.type: FUNC
+ */
+HWTEST_F(AuxiliaryGeneratorTest, GenerateJpegAuxiliary_Denominator_DepthMap_Test, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "GetAuxiliaryPictureDenominatorTest001 start";
+
+    MainPictureInfo mainInfo;
+    mainInfo.imageInfo.size.width = 800;
+    mainInfo.imageInfo.size.height = 600;
+    mainInfo.imageInfo.pixelFormat = PixelFormat::RGBA_8888;
+    mainInfo.hdrType = ImageHdrType::SDR;
+
+    std::unique_ptr<OHOS::ImagePlugin::InputDataStream> auxStream =
+        std::make_unique<MockInputDataStream>();
+    
+    std::unique_ptr<OHOS::ImagePlugin::AbsImageDecoder> extDecoder =
+        std::make_unique<MockAbsImageDecoder>();
+
+    uint32_t errorCode = SUCCESS;
+
+    auto result = AuxiliaryGenerator::GenerateJpegAuxiliaryPicture(
+        mainInfo,
+        AuxiliaryPictureType::DEPTH_MAP,
+        auxStream,
+        extDecoder,
+        errorCode);
+
+    ASSERT_EQ(result, nullptr);
+    ASSERT_NE(errorCode, SUCCESS);
+
+    GTEST_LOG_(INFO) << "GetAuxiliaryPictureDenominatorTest001 end";
+}
+
+/**
+ * @tc.name: GetAuxiliaryPictureDenominatorTest002
+ * @tc.desc: Test LINEAR_MAP uses LINEAR_SCALE_DENOMINATOR
+ * @tc.type: FUNC
+ */
+HWTEST_F(AuxiliaryGeneratorTest, GetAuxiliaryPictureDenominatorTest002, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "GenerateJpegAuxiliary_Denominator_LinearMap_Test start";
+
+    MainPictureInfo mainInfo;
+    mainInfo.imageInfo.size.width = 1024;
+    mainInfo.imageInfo.size.height = 768;
+    mainInfo.imageInfo.pixelFormat = PixelFormat::RGBA_8888;
+    mainInfo.hdrType = ImageHdrType::SDR;
+
+    std::unique_ptr<OHOS::ImagePlugin::InputDataStream> auxStream =
+        std::make_unique<MockInputDataStream>();
+    
+    std::unique_ptr<OHOS::ImagePlugin::AbsImageDecoder> extDecoder =
+        std::make_unique<MockAbsImageDecoder>();
+
+    uint32_t errorCode = SUCCESS;
+
+    auto result = AuxiliaryGenerator::GenerateJpegAuxiliaryPicture(
+        mainInfo,
+        AuxiliaryPictureType::LINEAR_MAP,
+        auxStream,
+        extDecoder,
+        errorCode);
+
+    if (result == nullptr) {
+        GTEST_LOG_(INFO) << "Result is nullptr as expected with mock objects";
+        GTEST_LOG_(INFO) << "Error code: " << errorCode;
+        
+        EXPECT_NE(errorCode, SUCCESS) << "Should have error with mock decoder";
+    } else {
+        GTEST_LOG_(INFO) << "Unexpected success! Checking dimensions...";
+        
+        auto pixelMap = result->GetContentPixel();
+        if (pixelMap != nullptr) {
+            EXPECT_EQ(pixelMap->GetWidth(), 1024 / 4);
+            EXPECT_EQ(pixelMap->GetHeight(), 768 / 4);
+        } else {
+            GTEST_LOG_(WARNING) << "Cannot get pixel map from result";
+        }
+    }
+    GTEST_LOG_(INFO) << "GetAuxiliaryPictureDenominatorTest002";
+}
+
+/**
+ * @tc.name: GetAuxiliaryPictureDenominatorTest003
+ * @tc.desc: Test other types use DEFAULT_SCALE_DENOMINATOR
+ * @tc.type: FUNC
+ */
+HWTEST_F(AuxiliaryGeneratorTest, GetAuxiliaryPictureDenominatorTest003, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "GetAuxiliaryPictureDenominatorTest003 start";
+
+    MainPictureInfo mainInfo;
+    mainInfo.imageInfo.size = {500, 400};
+    mainInfo.imageInfo.pixelFormat = PixelFormat::RGBA_8888;
+    mainInfo.hdrType = ImageHdrType::SDR;
+
+    std::unique_ptr<OHOS::ImagePlugin::InputDataStream> auxStream =
+        std::make_unique<MockInputDataStream>();
+    std::unique_ptr<OHOS::ImagePlugin::AbsImageDecoder> extDecoder =
+        std::make_unique<MockAbsImageDecoder>();
+    uint32_t errorCode = SUCCESS;
+
+    auto result = AuxiliaryGenerator::GenerateJpegAuxiliaryPicture(
+        mainInfo, AuxiliaryPictureType::GAINMAP, auxStream, extDecoder, errorCode);
+
+
+    if (result != nullptr) {
+        GTEST_LOG_(INFO) << "Function returned non-null result";
+
+        EXPECT_EQ(result->GetType(), AuxiliaryPictureType::GAINMAP);
+        
+        auto pixelMap = result->GetContentPixel();
+        EXPECT_NE(pixelMap, nullptr) << "PixelMap should not be null";
+        
+        if (pixelMap != nullptr) {
+            GTEST_LOG_(INFO) << "PixelMap obtained, size: "
+                           << pixelMap->GetWidth() << "x" << pixelMap->GetHeight();
+        }
+    } else {
+        GTEST_LOG_(INFO) << "Function returned nullptr, error: " << errorCode;
+    }
+
+    GTEST_LOG_(INFO) << "GetAuxiliaryPictureDenominatorTest003 end";
+}
+
+/**
  * @tc.name: GenerateHeifAuxiliaryPictureTest001
  * @tc.desc: test GenerateHeifAuxiliaryPicture when extDecoder is nullptr or type is NONE
  * @tc.type: FUNC

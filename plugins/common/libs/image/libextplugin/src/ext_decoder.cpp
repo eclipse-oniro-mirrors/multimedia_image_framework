@@ -1736,7 +1736,7 @@ uint32_t ExtDecoder::Decode(uint32_t index, DecodeContext &context)
         ret = codec_->getPixels(dstInfo_, dstBuffer, rowStride, &dstOptions_); // Try again
     }
     if (ret != SkCodec::kSuccess && ret != SkCodec::kIncompleteInput && ret != SkCodec::kErrorInInput) {
-        HILOG_COMM_ERROR("Decode failed, get pixels failed, ret=%{public}d", ret);
+        IMAGE_LOGE("Decode failed, get pixels failed, ret=%{public}d", ret);
         SetHeifDecodeError(context);
         ResetCodec(); // release old jpeg codec
         return ERR_IMAGE_DECODE_ABNORMAL;
