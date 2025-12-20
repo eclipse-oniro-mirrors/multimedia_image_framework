@@ -22,6 +22,7 @@
 #include "image_receiver.h"
 #include "metadata_helper.h"
 #include "native_color_space_manager.h"
+#include "sync_fence.h"
 
 struct OH_NativeBuffer {};
 
