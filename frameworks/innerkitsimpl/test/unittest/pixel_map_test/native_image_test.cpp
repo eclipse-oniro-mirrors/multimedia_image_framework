@@ -33,6 +33,7 @@ static constexpr int32_t NUMI_0 = 0;
 static constexpr uint32_t NUM_0 = 0;
 static constexpr int32_t NUM_1 = 1;
 static constexpr int32_t NUMI_2 = 2;
+static constexpr int32_t NUMI_4 = 4;
 static constexpr uint32_t BUFFER_SIZE_1000 = 1000;
 static constexpr uint32_t BUFFER_SIZE_100 = 100;
 static constexpr uint32_t BUFFER_SIZE_10 = 10;
@@ -1009,15 +1010,12 @@ HWTEST_F(NativeImageTest, Release001, TestSize.Level3)
 HWTEST_F(NativeImageTest, GetColorSpaceTest001, TestSize.Level3)
 {
     GTEST_LOG_(INFO) << "NativeImageTest: GetColorSpaceTest001 start";
-    sptr<SurfaceBuffer> buffer = SurfaceBuffer::Create();
+    sptr<SurfaceBuffer> buffer = new MockSurfaceBuffer();
     ASSERT_NE(buffer, nullptr);
-    BufferHandle handle;
-    buffer->SetBufferHandle(&handle);
-    MetadataHelper::SetColorSpaceType(buffer, CM_ColorSpaceType::CM_BT601_EBU_FULL);
     std::shared_ptr<IBufferProcessor> releaser = nullptr;
     NativeImage image(buffer, releaser);
 
-    int32_t colorSpace = NUM_1;
+    int32_t colorSpace = 0;
     image.GetColorSpace(colorSpace);
     EXPECT_EQ(colorSpace, static_cast<int32_t>(CM_ColorSpaceType::CM_BT601_EBU_FULL));
     GTEST_LOG_(INFO) << "NativeImageTest: GetColorSpaceTest001 end";
@@ -1036,9 +1034,9 @@ HWTEST_F(NativeImageTest, GetBufferDataTest001, TestSize.Level3)
     BufferHandle* handle = new BufferHandle();
     handle->width = SIZE_WIDTH;
     handle->height = SIZE_HEIGHT;
-    handle->size = sizeof(int32_t);
-    handle->format = GraphicPixelFormat::GRAPHIC_PIXEL_FMT_YCBCR_420_SP;
+    handle->format = GraphicPixelFormat::GRAPHIC_PIXEL_FMT_RGBA_8888;
     int32_t* data = new int32_t;
+    handle->size = sizeof(*data);
     *data = NUM_1;
     handle->virAddr = data;
     buffer->SetBufferHandle(handle);
@@ -1047,10 +1045,10 @@ HWTEST_F(NativeImageTest, GetBufferDataTest001, TestSize.Level3)
 
     NativeBufferData* bufferData = image.GetBufferData();
     ASSERT_NE(bufferData, nullptr);
-    ASSERT_NE(bufferData->rowStride.empty(), true);
-    ASSERT_NE(bufferData->pixelStride.empty(), true);
+    ASSERT_EQ(bufferData->rowStride.empty(), false);
+    ASSERT_EQ(bufferData->pixelStride.empty(), false);
     EXPECT_EQ(bufferData->rowStride[NUM_0], SIZE_WIDTH);
-    EXPECT_EQ(bufferData->pixelStride[NUM_0], NUM_1);
+    EXPECT_EQ(bufferData->pixelStride[NUM_0], NUMI_4);
     EXPECT_EQ(bufferData->size, sizeof(int32_t));
     ASSERT_NE(bufferData->virAddr, nullptr);
     int32_t* bufData = reinterpret_cast<int32_t*>(bufferData->virAddr);
