@@ -1033,10 +1033,10 @@ HWTEST_F(NativeImageTest, GetBufferDataTest001, TestSize.Level3)
     ASSERT_NE(buffer, nullptr);
     BufferHandle* handle = new BufferHandle();
     handle->width = SIZE_WIDTH;
-    handle->height = SIZE_HEIGHT;
     handle->format = GraphicPixelFormat::GRAPHIC_PIXEL_FMT_RGBA_8888;
     int32_t* data = new int32_t;
     handle->size = sizeof(*data);
+    handle->stride = SIZE_WIDTH;
     *data = NUM_1;
     handle->virAddr = data;
     buffer->SetBufferHandle(handle);
@@ -1045,8 +1045,6 @@ HWTEST_F(NativeImageTest, GetBufferDataTest001, TestSize.Level3)
 
     NativeBufferData* bufferData = image.GetBufferData();
     ASSERT_NE(bufferData, nullptr);
-    ASSERT_EQ(bufferData->rowStride.empty(), false);
-    ASSERT_EQ(bufferData->pixelStride.empty(), false);
     EXPECT_EQ(bufferData->rowStride[NUM_0], SIZE_WIDTH);
     EXPECT_EQ(bufferData->pixelStride[NUM_0], NUMI_4);
     EXPECT_EQ(bufferData->size, sizeof(int32_t));

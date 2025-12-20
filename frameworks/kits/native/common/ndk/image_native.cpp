@@ -21,7 +21,7 @@
 #include "image_kits.h"
 #include "media_errors.h"
 #include "native_color_space_manager.h"
-#if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
+#if !defined(CROSS_PLATFORM)
 #include "v1_0/cm_color_space.h"
 #endif
 
@@ -29,7 +29,7 @@
 extern "C" {
 #endif
 
-#if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
+#if !defined(CROSS_PLATFORM)
 using namespace OHOS::HDI::Display::Graphic::Common::V1_0;
 #ifdef IMAGE_COLORSPACE_FLAG
 static std::unordered_map<CM_ColorSpaceType, ColorSpaceName> HDI_TO_COLORSPACENAME_MAP = {
@@ -220,8 +220,7 @@ Image_ErrorCode OH_ImageNative_GetColorSpace(OH_ImageNative *image, int32_t *col
         return IMAGE_BAD_PARAMETER;
     }
     int32_t colorSpaceValue = 0;
-#if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM) && defined(IMAGE_COLORSPACE_FLAG)
-
+#if !defined(CROSS_PLATFORM) && defined(IMAGE_COLORSPACE_FLAG)
     if (OHOS::Media::SUCCESS != image->imgNative->GetColorSpace(colorSpaceValue)) {
         IMAGE_LOGE("image buffer is unusable");
         return IMAGE_BAD_PARAMETER;

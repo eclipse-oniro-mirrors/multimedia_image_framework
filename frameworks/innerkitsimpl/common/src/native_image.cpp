@@ -17,9 +17,9 @@
 #include "image_log.h"
 #include "image_utils.h"
 #include "media_errors.h"
-#if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
-#include "metadata_helper.h"
 #include "native_image.h"
+#if !defined(CROSS_PLATFORM)
+#include "metadata_helper.h"
 #include "v1_0/cm_color_space.h"
 #endif
 
@@ -333,7 +333,7 @@ int32_t NativeImage::GetTimestamp(int64_t &timestamp)
 
 int32_t NativeImage::GetColorSpace(int32_t &colorSpace)
 {
-#if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
+#if !defined(CROSS_PLATFORM)
     if (buffer_ == nullptr) {
         IMAGE_LOGE("GetColorSpace failed, buffer is nullptr");
         return ERR_MEDIA_DEAD_OBJECT;

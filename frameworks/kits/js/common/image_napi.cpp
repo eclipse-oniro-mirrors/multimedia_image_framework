@@ -25,7 +25,7 @@
 #include "image_format.h"
 #include "image_napi_utils.h"
 #include "image_utils.h"
-#if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
+#if !defined(CROSS_PLATFORM)
 #include "vpe_utils.h"
 #include "v1_0/cm_color_space.h"
 #endif
@@ -61,7 +61,7 @@ struct ImageAsyncContext {
     bool isTestContext = false;
 };
 
-#if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
+#if !defined(CROSS_PLATFORM)
 using namespace HDI::Display::Graphic::Common::V1_0;
 enum HdrMetadataType : uint32_t {
     NONE = 0,
@@ -540,7 +540,7 @@ napi_value ImageNapi::JsGetColorSpace(napi_env env, napi_callback_info info)
     napi_value result = nullptr;
     IMAGE_FUNCTION_IN();
     napi_get_undefined(env, &result);
-#if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM) && defined(IMAGE_COLORSPACE_FLAG)
+#if !defined(CROSS_PLATFORM) && defined(IMAGE_COLORSPACE_FLAG)
     std::unique_ptr<ImageAsyncContext> context = UnwrapContext(env, info);
     if (context == nullptr || context->image == nullptr) {
         IMAGE_ERR("context is nullptr or Image native is nullptr");
@@ -644,7 +644,7 @@ napi_value ImageNapi::JsGetBufferData(napi_env env, napi_callback_info info)
     return bufferDataObj;
 }
 
-#if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
+#if !defined(CROSS_PLATFORM)
 
 static double FloatToDouble(float val)
 {
