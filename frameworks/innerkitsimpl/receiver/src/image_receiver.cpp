@@ -230,6 +230,54 @@ std::shared_ptr<ImageReceiver> ImageReceiver::CreateImageReceiver(int32_t width,
     return iva;
 }
 
+std::shared_ptr<ImageReceiver> ImageReceiver::CreateImageReceiver(ImageReceiverOptions &options)
+{
+    std::shared_ptr<ImageReceiver> receiver = std::make_shared<ImageReceiver>();
+    receiver->iraContext_ = ImageReceiverContext::CreateImageReceiverContext();
+    receiver->receiverConsumerSurface_ = IConsumerSurface::Create();
+    if (receiver->receiverConsumerSurface_ == nullptr) {
+        IMAGE_LOGD("receiverConsumerSurface_ is nullptr");
+        return receiver;
+    }
+
+    receiver->receiverConsumerSurface_->SetDefaultWidthAndHeight(options.width, options.height);
+    receiver->receiverConsumerSurface_->SetQueueSize(options.capacity);
+    receiver->receiverConsumerSurface_->SetDefaultUsage(BUFFER_USAGE_CPU_READ);
+
+    auto p = receiver->receiverConsumerSurface_->GetProducer();
+    receiver->receiverProducerSurface_ = Surface::CreateSurfaceAsProducer(p);
+    if (receiver->receiverProducerSurface_ == nullptr) {
+        IMAGE_LOGD("receiverProducerSurface_ is nullptr");
+        return receiver;
+    }
+    SurfaceUtils* utils = SurfaceUtils::GetInstance();
+    if (utils != nullptr) {
+        utils->Add(receiver->receiverProducerSurface_->GetUniqueId(), receiver->receiverProducerSurface_);
+    }
+    receiver->iraContext_->SetReceiverBufferConsumer(receiver->receiverConsumerSurface_);
+    receiver->iraContext_->SetReceiverBufferProducer(receiver->receiverProducerSurface_);
+    receiver->iraContext_->SetWidth(options.width);
+    receiver->iraContext_->SetHeight(options.height);
+    receiver->iraContext_->SetCapicity(options.capacity);
+    ImageReceiverManager& imageReceiverManager = ImageReceiverManager::getInstance();
+    std::string receiverKey = imageReceiverManager.SaveImageReceiver(receiver);
+    receiver->iraContext_->SetReceiverKey(receiverKey);
+    sptr<ImageReceiverSurfaceListener> listener = new ImageReceiverSurfaceListener();
+    listener->ir_ = receiver;
+    receiver->receiverConsumerSurface_->RegisterConsumerListener((sptr<IBufferConsumerListener> &)listener);
+    return receiver;
+}
+
+static void DumpSurfaceBufferFromImageReceiver(OHOS::sptr<OHOS::SurfaceBuffer> buffer, const std::string suffix = "")
+{
+    CHECK_ERROR_RETURN(!buffer);
+    std::string fileSuffix = suffix + "-format-" + std::to_string(buffer->GetFormat()) + "-Width-"
+        + std::to_string(buffer->GetWidth()) + "-Height-" + std::to_string(buffer->GetHeight()) + "-Stride-"
+        + std::to_string(buffer->GetStride());
+    ImageUtils::DumpDataIfDumpEnabled(reinterpret_cast<const char*>(buffer->GetVirAddr()), buffer->GetSize(),
+        fileSuffix);
+}
+
 OHOS::sptr<OHOS::SurfaceBuffer> ImageReceiver::ReadNextImage(int64_t &timestamp)
 {
     sptr<SyncFence> flushFence = SyncFence::InvalidFence();
@@ -244,6 +292,7 @@ OHOS::sptr<OHOS::SurfaceBuffer> ImageReceiver::ReadNextImage(int64_t &timestamp)
             listenerConsumerSurface->ReleaseBuffer(buffer, -1);
             return nullptr;
         }
+        DumpSurfaceBufferFromImageReceiver(buffer, "imageReceiver");
         iraContext_->currentBuffer_ = buffer;
     } else {
         IMAGE_LOGD("buffer is null");
@@ -276,6 +325,7 @@ OHOS::sptr<OHOS::SurfaceBuffer> ImageReceiver::ReadLastImage(int64_t &timestamp)
         }
         bufferBefore = buffer;
         surfaceError = listenerConsumerSurface->AcquireBuffer(buffer, flushFence, timestamp, damage);
+        DumpSurfaceBufferFromImageReceiver(bufferBefore, "imageReceiver") ;
     }
 
     iraContext_->currentBuffer_ = bufferBefore;

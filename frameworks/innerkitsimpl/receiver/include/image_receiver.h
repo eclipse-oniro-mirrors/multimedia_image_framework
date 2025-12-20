@@ -110,6 +110,12 @@ private:
     mutable std::mutex mutex_;
 };
 
+struct ImageReceiverOptions {
+    int32_t width = 0;
+    int32_t height = 0;
+    int32_t capacity = 0;
+};
+
 class ImageReceiver {
 public:
     std::shared_ptr<ImageReceiverContext> iraContext_ = nullptr;
@@ -128,6 +134,7 @@ public:
                                                               int32_t height,
                                                               int32_t format,
                                                               int32_t capicity);
+    static std::shared_ptr<ImageReceiver> CreateImageReceiver(ImageReceiverOptions &options);
     sptr<Surface> GetReceiverSurface();
     OHOS::sptr<OHOS::SurfaceBuffer> ReadNextImage();
     OHOS::sptr<OHOS::SurfaceBuffer> ReadLastImage();

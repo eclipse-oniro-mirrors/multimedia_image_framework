@@ -32,6 +32,13 @@ struct NativeComponent {
     size_t size = 0;
 };
 
+struct NativeBufferData {
+    std::vector<int32_t> rowStride;
+    std::vector<int32_t> pixelStride;
+    uint8_t* virAddr = nullptr;
+    size_t size = 0;
+};
+
 class IBufferProcessor {
 public:
     virtual ~IBufferProcessor() {};
@@ -47,6 +54,8 @@ public:
     int32_t GetDataSize(uint64_t &size);
     int32_t GetFormat(int32_t &format);
     int32_t GetTimestamp(int64_t &timestamp);
+    int32_t GetColorSpace(int32_t &colorSpace);
+    NativeBufferData* GetBufferData();
     NativeComponent* GetComponent(int32_t type);
     std::map<int32_t, std::unique_ptr<NativeComponent>>& GetComponents()
     {
@@ -78,6 +87,7 @@ private:
     std::map<int32_t, std::unique_ptr<NativeComponent>> components_;
     int64_t timestamp_;
     std::string id_;
+    std::unique_ptr<NativeBufferData> bufferData_ = nullptr;
 };
 } // namespace Media
 } // namespace OHOS

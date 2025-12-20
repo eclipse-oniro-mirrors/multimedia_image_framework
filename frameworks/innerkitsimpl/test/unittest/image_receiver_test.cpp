@@ -998,5 +998,23 @@ HWTEST_F(ImageReceiverTest, SaveBufferAsImage001, TestSize.Level3)
     ASSERT_EQ(res, SUCCESS);
     GTEST_LOG_(INFO) << "ImageReceiverTest: SaveBufferAsImage001 end";
 }
+
+/**
+ * @tc.name: CreateImageReceiver001
+ * @tc.desc: test CreateImageReceiver by options
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageReceiverTest, CreateImageReceiver001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImageReceiverTest: CreateImageReceiver001 start";
+    std::shared_ptr<ImageReceiver> imageReceiver;
+    ImageReceiverOptions options;
+    options.width = RECEIVER_TEST_WIDTH;
+    options.height = RECEIVER_TEST_HEIGHT;
+    options.capacity = RECEIVER_TEST_CAPACITY;
+    imageReceiver = ImageReceiver::CreateImageReceiver(options);
+    ASSERT_NE(imageReceiver, nullptr);
+    GTEST_LOG_(INFO) << "ImageReceiverTest: CreateImageReceiver001 end";
+}
 }
 }
