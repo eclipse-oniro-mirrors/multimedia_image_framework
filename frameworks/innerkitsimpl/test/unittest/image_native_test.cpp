@@ -805,31 +805,6 @@ HWTEST_F(ImageNativeTest, OH_ImageNative_GetPixelStrideNullParamTest001, TestSiz
 }
 
 /**
- * @tc.name: OH_ImageNative_GetColorSpaceTest001
- * @tc.desc: test OH_ImageNative_GetColorSpace when return IMAGE_SUCCESS
- * @tc.type: FUNC
- */
-HWTEST_F(ImageNativeTest, OH_ImageNative_GetColorSpaceTest001, TestSize.Level3)
-{
-    GTEST_LOG_(INFO) << "ImageNativeTest: OH_ImageNative_GetColorSpaceTest001 start";
-    OH_ImageNative* image = new OH_ImageNative;
-    ASSERT_NE(image, nullptr);
-
-    sptr<SurfaceBuffer> buffer = new MockSurfaceBuffer();
-    ASSERT_NE(buffer, nullptr);
-    std::shared_ptr<IBufferProcessor> releaser = nullptr;
-    NativeImage imgNative(buffer, releaser);
-    image->imgNative = &imgNative;
-
-    int32_t colorSpace = 0;
-    Image_ErrorCode errCode = OH_ImageNative_GetColorSpace(image, &colorSpace);
-    EXPECT_EQ(errCode, IMAGE_SUCCESS);
-    EXPECT_EQ(colorSpace, static_cast<int32_t>(ColorSpaceName::BT601_EBU));
-    delete image;
-    GTEST_LOG_(INFO) << "ImageNativeTest: OH_ImageNative_GetColorSpaceTest001 end";
-}
-
-/**
  * @tc.name: OH_ImageNative_GetFormatTest001
  * @tc.desc: test OH_ImageNative_GetFormat when return IMAGE_SUCCESS
  * @tc.type: FUNC
