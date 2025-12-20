@@ -31,7 +31,9 @@ namespace Media {
 const std::string DATA_SIZE_TAG = "dataSize";
 static constexpr int32_t NUMI_0 = 0;
 static constexpr uint32_t NUM_0 = 0;
+static constexpr int32_t NUM_1 = 1;
 static constexpr int32_t NUMI_2 = 2;
+static constexpr int32_t NUMI_4 = 4;
 static constexpr uint32_t BUFFER_SIZE_1000 = 1000;
 static constexpr uint32_t BUFFER_SIZE_100 = 100;
 static constexpr uint32_t BUFFER_SIZE_10 = 10;
@@ -1017,6 +1019,40 @@ HWTEST_F(NativeImageTest, GetColorSpaceTest001, TestSize.Level3)
     image.GetColorSpace(colorSpace);
     EXPECT_EQ(colorSpace, static_cast<int32_t>(CM_ColorSpaceType::CM_BT601_EBU_FULL));
     GTEST_LOG_(INFO) << "NativeImageTest: GetColorSpaceTest001 end";
+}
+
+/**
+ * @tc.name: GetBufferDataTest001
+ * @tc.desc: test GetBufferData buffer_ is not nullptr
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeImageTest, GetBufferDataTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "NativeImageTest: GetBufferDataTest001 start";
+    sptr<SurfaceBuffer> buffer = SurfaceBuffer::Create();
+    ASSERT_NE(buffer, nullptr);
+    BufferHandle* handle = new BufferHandle();
+    handle->width = SIZE_WIDTH;
+    handle->format = GraphicPixelFormat::GRAPHIC_PIXEL_FMT_RGBA_8888;
+    int32_t* data = new int32_t;
+    handle->size = sizeof(*data);
+    handle->stride = SIZE_WIDTH;
+    *data = NUM_1;
+    handle->virAddr = data;
+    buffer->SetBufferHandle(handle);
+    std::shared_ptr<IBufferProcessor> releaser = nullptr;
+    NativeImage image(buffer, releaser);
+
+    NativeBufferData* bufferData = image.GetBufferData();
+    ASSERT_NE(bufferData, nullptr);
+    EXPECT_EQ(bufferData->rowStride[NUM_0], SIZE_WIDTH);
+    EXPECT_EQ(bufferData->pixelStride[NUM_0], NUMI_4);
+    EXPECT_EQ(bufferData->size, sizeof(int32_t));
+    ASSERT_NE(bufferData->virAddr, nullptr);
+    int32_t* bufData = reinterpret_cast<int32_t*>(bufferData->virAddr);
+    EXPECT_EQ(*bufData, NUM_1);
+    delete data;
+    GTEST_LOG_(INFO) << "NativeImageTest: GetBufferDataTest001 end";
 }
 }
 }
