@@ -708,6 +708,64 @@ int32_t ImageUtils::SurfaceBuffer_Unreference(void* buffer)
     return SUCCESS;
 }
 
+bool ImageUtils::GetYUVInfoFromSurfaceBuffer(YUVDataInfo &yuvInfo, PixelMap* pixelmap, 
+                                             sptr<SurfaceBuffer> surfaceBuffer)
+{
+    OH_NativeBuffer_Planes* planes = nullptr;
+    GSError retVal = surfaceBuffer->GetPlanesInfo(reinterpret_cast<void**>(&planes));
+    if (retVal == OHOS::GSERROR_OK && planes != nullptr && planes->planeCount >= NUM_2) {
+        yuvInfo.yStride = planes->planes[PLANE_Y].columnStride;
+        yuvInfo.uvStride = planes->planes[PLANE_U].columnStride;
+        yuvInfo.yOffset = planes->planes[PLANE_Y].offset;
+        if (pixelmap->GetPixelFormat() == PixelFormat::NV21) {
+            yuvInfo.uvOffset = planes->planes[PLANE_V].offset;
+        } else {
+            yuvInfo.uvOffset = planes->planes[PLANE_U].offset;
+        }
+    } else {
+        IMAGE_LOGE("Convert to surfaceBuffer, get planesInfo failed, retVal:%{public}d", retVal);
+        return false;
+    }
+}
+
+bool ImageUtils::ConvertYUVInfoToSurfaceBuffer(PixelMap* pixelmap, 
+                                               sptr<SurfaceBuffer> surfaceBuffer)
+{
+    uint8_t* src = const_cast<uint8_t*>(pixelmap->GetPixels());
+    uint8_t* dst = static_cast<uint8_t*>(surfaceBuffer->GetVirAddr());
+    uint32_t dstSize = surfaceBuffer->GetSize();
+
+    YUVDataInfo yuvDstInfo;
+    YUVDataInfo yuvSrcInfo;
+    pixelmap->GetImageYUVInfo(yuvSrcInfo);
+
+    bool cond = !ImageUtils::GetYUVInfoFromSurfaceBuffer(yuvDstInfo, pixelmap, surfacebuffer);
+    CHECK_ERROR_RETURN_RET_LOG(cond, false, "Get YUVInfo from SurfaceBuffer failed");
+
+    for (uint32_t i = 0; i < yuvSrcInfo.yHeight; ++i) {
+        if (memcpy_s(dst, dstSize, src, yuvSrcInfo.yWidth) != EOK) {
+            return false;
+        }
+        dst += yuvDstInfo.yStride;
+        dstSize -= yuvDstInfo.yStride;
+        src += yuvSrcInfo.yWidth;
+    }
+
+    uint64_t uvWidth = yuvSrcInfo.uvWidth * NUM_2;
+    dst = static_cast<uint8_t*>(surfaceBuffer->GetVirAddr()) + yuvDstInfo.uvOffset;
+
+    for (uint32_t i = 0; i < yuvSrcInfo.uvHeight; ++i) {
+        if (memcpy_s(dst, dstSize, src, uvWidth) != EOK) {
+            return false;
+        }
+        dst += yuvDstInfo.uvStride;
+        dstSize -= yuvDstInfo.uvStride;
+        src += uvWidth;
+    }
+
+    return true;
+}
+
 void ImageUtils::DumpPixelMap(PixelMap* pixelMap, std::string customFileName, uint64_t imageId)
 {
     IMAGE_LOGI("ImageUtils::DumpPixelMap start");
