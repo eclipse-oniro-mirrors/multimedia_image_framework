@@ -88,10 +88,10 @@ public:
     static void ARGBToBGRA(uint8_t* srcPixels, uint8_t* dstPixels, uint32_t byteCount);
     static int32_t SurfaceBuffer_Reference(void* buffer);
     static int32_t SurfaceBuffer_Unreference(void* buffer);
-    static bool ConvertYUVInfoToSurfaceBuffer(PixelMap* pixelmap, 
-                                               sptr<SurfaceBuffer> surfaceBuffer);
-    static bool GetYUVInfoFromSurfaceBuffer(YUVDataInfo &yuvInfo, PixelMap* pixelmap, 
-                                                sptr<SurfaceBuffer> surfaceBuffer)                                               
+    static bool ConvertYUVInfoToSurfaceBuffer(PixelMap* pixelmap,
+        sptr<SurfaceBuffer> surfaceBuffer);
+    static bool GetYUVInfoFromSurfaceBuffer(YUVDataInfo &yuvInfo, PixelMap* pixelmap,
+        sptr<SurfaceBuffer> surfaceBuffer);
     static void DumpPixelMap(PixelMap* pixelMap, std::string customFileName, uint64_t imageId = 0);
     static void DumpPixelMapIfDumpEnabled(std::unique_ptr<PixelMap>& pixelMap, uint64_t imageId = 0);
     static void DumpPixelMapIfDumpEnabled(PixelMap& pixelMap, std::string func);

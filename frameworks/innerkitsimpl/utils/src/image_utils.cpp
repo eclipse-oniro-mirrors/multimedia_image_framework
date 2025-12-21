@@ -708,8 +708,8 @@ int32_t ImageUtils::SurfaceBuffer_Unreference(void* buffer)
     return SUCCESS;
 }
 
-bool ImageUtils::GetYUVInfoFromSurfaceBuffer(YUVDataInfo &yuvInfo, PixelMap* pixelmap, 
-                                             sptr<SurfaceBuffer> surfaceBuffer)
+bool ImageUtils::GetYUVInfoFromSurfaceBuffer(YUVDataInfo &yuvInfo, PixelMap* pixelmap,
+    sptr<SurfaceBuffer> surfaceBuffer)
 {
     OH_NativeBuffer_Planes* planes = nullptr;
     GSError retVal = surfaceBuffer->GetPlanesInfo(reinterpret_cast<void**>(&planes));
@@ -728,8 +728,8 @@ bool ImageUtils::GetYUVInfoFromSurfaceBuffer(YUVDataInfo &yuvInfo, PixelMap* pix
     }
 }
 
-bool ImageUtils::ConvertYUVInfoToSurfaceBuffer(PixelMap* pixelmap, 
-                                               sptr<SurfaceBuffer> surfaceBuffer)
+bool ImageUtils::ConvertYUVInfoToSurfaceBuffer(PixelMap* pixelmap,
+    sptr<SurfaceBuffer> surfaceBuffer)
 {
     uint8_t* src = const_cast<uint8_t*>(pixelmap->GetPixels());
     uint8_t* dst = static_cast<uint8_t*>(surfaceBuffer->GetVirAddr());
