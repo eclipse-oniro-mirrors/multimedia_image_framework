@@ -20,9 +20,53 @@
 #include "image_native.h"
 #include "image_kits.h"
 #include "media_errors.h"
+#include "native_color_space_manager.h"
+#if !defined(CROSS_PLATFORM)
+#include "v1_0/cm_color_space.h"
+#endif
 
 #ifdef __cplusplus
 extern "C" {
+#endif
+
+#if !defined(CROSS_PLATFORM)
+using namespace OHOS::HDI::Display::Graphic::Common::V1_0;
+#ifdef IMAGE_COLORSPACE_FLAG
+static std::unordered_map<CM_ColorSpaceType, ColorSpaceName> HDI_TO_COLORSPACENAME_MAP = {
+    {CM_COLORSPACE_NONE, NONE},
+    {CM_BT601_EBU_FULL, BT601_EBU},
+    {CM_BT601_SMPTE_C_FULL, BT601_SMPTE_C},
+    {CM_BT709_FULL, BT709},
+    {CM_BT2020_HLG_FULL, BT2020_HLG},
+    {CM_BT2020_PQ_FULL, BT2020_PQ},
+    {CM_BT601_EBU_LIMIT, BT601_EBU_LIMIT},
+    {CM_BT601_SMPTE_C_LIMIT, BT601_SMPTE_C_LIMIT},
+    {CM_BT709_LIMIT, BT709_LIMIT},
+    {CM_BT2020_HLG_LIMIT, BT2020_HLG_LIMIT},
+    {CM_BT2020_PQ_LIMIT, BT2020_PQ_LIMIT},
+    {CM_SRGB_FULL, SRGB},
+    {CM_P3_FULL, DISPLAY_P3},
+    {CM_P3_HLG_FULL, P3_HLG},
+    {CM_P3_PQ_FULL, P3_PQ},
+    {CM_ADOBERGB_FULL, ADOBE_RGB},
+    {CM_SRGB_LIMIT, SRGB_LIMIT},
+    {CM_P3_LIMIT, DISPLAY_P3_LIMIT},
+    {CM_P3_HLG_LIMIT, P3_HLG_LIMIT},
+    {CM_P3_PQ_LIMIT, P3_PQ_LIMIT},
+    {CM_ADOBERGB_LIMIT, ADOBE_RGB_LIMIT},
+    {CM_LINEAR_SRGB, LINEAR_SRGB},
+    {CM_LINEAR_BT709, LINEAR_BT709},
+    {CM_LINEAR_P3, LINEAR_P3},
+    {CM_LINEAR_BT2020, LINEAR_BT2020},
+    {CM_DISPLAY_SRGB, DISPLAY_SRGB},
+    {CM_DISPLAY_P3_SRGB, DISPLAY_P3_SRGB},
+    {CM_DISPLAY_P3_HLG, DISPLAY_P3_HLG},
+    {CM_DISPLAY_P3_PQ, DISPLAY_P3_PQ},
+    {CM_DISPLAY_BT2020_SRGB, DISPLAY_BT2020_SRGB},
+    {CM_DISPLAY_BT2020_HLG, BT2020_HLG},
+    {CM_DISPLAY_BT2020_PQ, BT2020_PQ},
+};
+#endif
 #endif
 
 MIDK_EXPORT
@@ -165,6 +209,78 @@ Image_ErrorCode OH_ImageNative_Release(OH_ImageNative* image)
     }
     IMAGE_LOGD("OH_ImageNative Release");
     delete image;
+    return IMAGE_SUCCESS;
+}
+
+MIDK_EXPORT
+Image_ErrorCode OH_ImageNative_GetColorSpace(OH_ImageNative *image, int32_t *colorSpaceName)
+{
+    if (nullptr == image || nullptr == image->imgNative || nullptr == colorSpaceName) {
+        IMAGE_LOGE("%{public}s Invalid parameter: Null Pointer Error", __func__);
+        return IMAGE_BAD_PARAMETER;
+    }
+    int32_t colorSpaceValue = 0;
+#if !defined(CROSS_PLATFORM) && defined(IMAGE_COLORSPACE_FLAG)
+    if (OHOS::Media::SUCCESS != image->imgNative->GetColorSpace(colorSpaceValue)) {
+        IMAGE_LOGE("image buffer is unusable");
+        return IMAGE_BAD_PARAMETER;
+    }
+    auto it = HDI_TO_COLORSPACENAME_MAP.find(static_cast<CM_ColorSpaceType>(colorSpaceValue));
+    if (it == HDI_TO_COLORSPACENAME_MAP.end()) {
+        IMAGE_LOGE("Unsupported color space type: %{public}d", colorSpaceValue);
+        return IMAGE_BAD_PARAMETER;
+    }
+    *colorSpaceName = it->second;
+#else
+    *colorSpaceName = colorSpaceValue;
+#endif
+    return IMAGE_SUCCESS;
+}
+
+MIDK_EXPORT
+Image_ErrorCode OH_ImageNative_GetFormat(OH_ImageNative *image, OH_NativeBuffer_Format *format)
+{
+    if (nullptr == image || nullptr == image->imgNative || nullptr == format) {
+        IMAGE_LOGE("%{public}s Invalid parameter: Null Pointer Error", __func__);
+        return IMAGE_BAD_PARAMETER;
+    }
+    int32_t imageFormat;
+    if (OHOS::Media::SUCCESS != image->imgNative->GetFormat(imageFormat)) {
+        IMAGE_LOGE("native image get format failed");
+        return IMAGE_BAD_PARAMETER;
+    }
+    if (imageFormat > static_cast<int32_t>(NATIVEBUFFER_PIXEL_FMT_Y16) &&
+        imageFormat < static_cast<int32_t>(NATIVEBUFFER_PIXEL_FMT_VENDER_MASK)) {
+        IMAGE_LOGE("image format %{public}d is invalid", imageFormat);
+        return IMAGE_BAD_PARAMETER;
+    } else {
+        *format = static_cast<OH_NativeBuffer_Format>(imageFormat);
+        return IMAGE_SUCCESS;
+    }
+}
+
+MIDK_EXPORT
+Image_ErrorCode OH_ImageNative_GetBufferData(OH_ImageNative *image, OH_ImageBufferData *imageBufferData)
+{
+    if (nullptr == image || nullptr == image->imgNative || nullptr == imageBufferData) {
+        IMAGE_LOGE("%{public}s Invalid parameter: Null Pointer Error", __func__);
+        return IMAGE_BAD_PARAMETER;
+    }
+    OHOS::Media::NativeBufferData* bufferData = image->imgNative->GetBufferData();
+    if (bufferData == nullptr) {
+        IMAGE_LOGE("get native buffer data failed");
+        return IMAGE_BAD_PARAMETER;
+    }
+    imageBufferData->rowStride = bufferData->rowStride.data();
+    imageBufferData->pixelStride = bufferData->pixelStride.data();
+    imageBufferData->numStride = bufferData->rowStride.size();
+    imageBufferData->bufferSize = bufferData->size;
+    sptr<SurfaceBuffer> buffer = image->imgNative->GetBuffer();
+    if (buffer == nullptr) {
+        IMAGE_LOGE("get surface buffer failed, buffer is nullptr");
+        return IMAGE_BAD_PARAMETER;
+    }
+    imageBufferData->nativeBuffer = buffer->SurfaceBufferToNativeBuffer();
     return IMAGE_SUCCESS;
 }
 

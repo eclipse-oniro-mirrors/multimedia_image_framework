@@ -29,6 +29,9 @@
 
 namespace OHOS { namespace MultimediaPlugin { class PluginServer; } }
 namespace OHOS { namespace ImagePlugin { struct DecodeContext; } }
+namespace OHOS { namespace ColorManager {enum ColorSpaceName: uint32_t; } }
+namespace OHOS { namespace HDI { namespace Display { namespace Graphic { namespace Common {
+    namespace V1_0 { enum CM_ColorSpaceType: int32_t; } } } } } }
 namespace OHOS {
 namespace Media {
 const std::string IMAGE_ENCODE_FORMAT = "encodeFormat";
@@ -98,6 +101,8 @@ public:
     static void DumpHdrBufferEnabled(sptr<SurfaceBuffer>& buffer, const std::string& fileName);
     static void DumpHdrExtendMetadataEnabled(sptr<SurfaceBuffer>& buffer, const std::string& fileName);
     static void DumpSurfaceBufferAllKeysEnabled(sptr<SurfaceBuffer>& buffer, const std::string& fileName);
+    static ColorManager::ColorSpaceName SbCMColorSpaceType2ColorSpaceName(
+        HDI::Display::Graphic::Common::V1_0::CM_ColorSpaceType type);
 #endif
     static PixelFormat SbFormat2PixelFormat(int32_t sbFormat);
     static uint64_t GetNowTimeMilliSeconds();

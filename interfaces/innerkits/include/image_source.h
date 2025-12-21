@@ -158,6 +158,7 @@ enum class ImageHdrType;
 struct HdrMetadata;
 class MetadataAccessor;
 class ExifMetadata;
+class DngExifMetadata;
 struct StreamInfo;
 
 class ImageSource {
@@ -281,6 +282,7 @@ public:
     NATIVEEXPORT bool IsSupportAllocatorType(DecodeOptions& decOps, int32_t allocatorType);
     ImageHdrType CheckHdrType();
     NATIVEEXPORT uint32_t GetiTxtLength();
+    NATIVEEXPORT uint32_t GetDngImagePropertyByDngSdk(const std::string &key, MetadataValue &value);
     NATIVEEXPORT bool IsHeifWithoutAlpha();
     NATIVEEXPORT std::shared_ptr<ImageMetadata> GetMetadata(MetadataType type);
 
@@ -417,6 +419,7 @@ private:
     void InitDecoderForJpeg();
     void RefreshImageSourceByPathName();
     std::string GetPixelMapName(PixelMap* pixelMap);
+    bool IsDngImage();
 
 #if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
     void SpecialSetComposeBuffer(ImagePlugin::DecodeContext &baseCtx, sptr<SurfaceBuffer>& baseSptr,

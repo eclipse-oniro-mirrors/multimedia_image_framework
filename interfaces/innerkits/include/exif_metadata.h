@@ -63,6 +63,7 @@ public:
     uint32_t GetBlobSize() override;
     uint32_t GetBlob(uint32_t bufferSize, uint8_t *dst) override;
     uint32_t SetBlob(const uint8_t *source, const uint32_t bufferSize) override;
+    bool IsSpecialHwKey(const std::string &key) const;
     static PropertyValueType GetPropertyValueType(const std::string& key);
     static std::shared_ptr<ExifMetadata> InitExifMetadata();
     static const std::map<std::string, PropertyValueType>& GetExifMetadataMap();
@@ -93,7 +94,6 @@ private:
     bool SetMakerNoteValue(const std::string &value);
     bool RemoveHwEntry(const std::string &key);
     bool SetCommonValue(const std::string &key, const std::string &value);
-    bool IsSpecialHwKey(const std::string &key) const;
     void FindRationalRanges(ExifContent *content,
         std::vector<std::pair<uint32_t, uint32_t>> &ranges, int index);
     void FindRanges(const ExifTag &tag, std::vector<std::pair<uint32_t, uint32_t>> &ranges);

@@ -16,6 +16,7 @@
 #include "image_napi_utils.h"
 #include <securec.h>
 #include <unistd.h>
+#include "image_log.h"
 #if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM) && defined(HICHECKER_ENABLE)
 #include "hichecker.h"
 #endif
@@ -24,6 +25,11 @@ namespace OHOS {
 namespace Media {
 const size_t NUM0 = 0;
 const size_t NUM1 = 1;
+const int DEFAULT_CAPACITY = 3;
+const int DEFAULT_WIDTH = 1920;
+const int DEFAULT_HEIGHT = 1080;
+const int ARGS0 = 0;
+const int ARGS1 = 1;
 const int ARGS3 = 3;
 const int ARGS4 = 4;
 const int PARAM0 = 0;
@@ -150,7 +156,7 @@ napi_valuetype ImageNapiUtils::getType(napi_env env, napi_value root)
     return res;
 }
 
-static bool ParseSize(napi_env env, napi_value root, int32_t& width, int32_t& height)
+static bool ParseSize(napi_env env, napi_value root, int32_t &width, int32_t &height)
 {
     if (!GET_INT32_BY_NAME(root, "width", width) || !GET_INT32_BY_NAME(root, "height", height)) {
         return false;
@@ -158,13 +164,58 @@ static bool ParseSize(napi_env env, napi_value root, int32_t& width, int32_t& he
     return true;
 }
 
+static bool ParseImageReceiverOptions(napi_env env, napi_value options,
+    int32_t &width, int32_t &height, int32_t &capacity)
+{
+    napi_value sizeObj = nullptr;
+    if (!GET_NODE_BY_NAME(options, "size", sizeObj) ||
+        ImageNapiUtils::getType(env, sizeObj) == napi_undefined) {
+        IMAGE_LOGD("no size in options");
+        width = DEFAULT_WIDTH;
+        height = DEFAULT_HEIGHT;
+    } else {
+        if (!ParseSize(env, sizeObj, width, height)) {
+            IMAGE_LOGD("ParseSize error");
+            return false;
+        }
+        IMAGE_LOGD("size: width=%{public}d, height=%{public}d", width, height);
+    }
+    if (!GET_INT32_BY_NAME(options, "capacity", capacity) ||
+        ImageNapiUtils::getType(env, sizeObj) == napi_undefined) {
+        capacity = DEFAULT_CAPACITY;
+    }
+    return true;
+}
+
+static bool ParseImageCreatorReceiverArgsInner(napi_env env, size_t argc,
+    napi_value argv[], int32_t args[], std::string &errMsg)
+{
+    if (argc == ARGS0) {
+        args[PARAM0] = DEFAULT_WIDTH;
+        args[PARAM1] = DEFAULT_HEIGHT;
+        args[PARAM2] = DEFAULT_CAPACITY;
+    } else {
+        napi_valuetype type = ImageNapiUtils::getType(env, argv[PARAM0]);
+        if (type != napi_object || !ParseImageReceiverOptions(env, argv[PARAM0],
+            args[PARAM0], args[PARAM1], args[PARAM2])) {
+            errMsg = "Invalid arg ";
+            errMsg.append(std::to_string(PARAM0)).append(",type:").append(std::to_string(type));
+            return false;
+        }
+    }
+    return true;
+}
+
 bool ImageNapiUtils::ParseImageCreatorReceiverArgs(napi_env env, size_t argc,
     napi_value argv[], int32_t args[], std::string &errMsg)
 {
-    if ((argc != ARGS3) && (argc != ARGS4)) {
+    if ((argc != ARGS0) && (argc != ARGS1) && (argc != ARGS3) && (argc != ARGS4)) {
         errMsg = "Invalid arg counts ";
         errMsg.append(std::to_string(argc));
         return false;
+    }
+    if (argc == ARGS0 || argc == ARGS1) {
+        return ParseImageCreatorReceiverArgsInner(env, argc, argv, args, errMsg);
     }
     if (argc == ARGS3) {
         napi_valuetype argvType0 = ImageNapiUtils::getType(env, argv[PARAM0]);

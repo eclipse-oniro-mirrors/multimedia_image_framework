@@ -223,7 +223,7 @@ static bool parseImageReceiverArgs(napi_env env, napi_callback_info info,
         return false;
     }
 
-    if (args.argc != ARGS3 && args.argc != ARGS4) {
+    if (args.argc != ARGS0 && args.argc != ARGS1 && args.argc != ARGS3 && args.argc != ARGS4) {
         errMsg = "Invalid arg counts ";
         errMsg.append(std::to_string(args.argc));
         return false;
@@ -256,8 +256,14 @@ napi_value ImageReceiverNapi::Constructor(napi_env env, napi_callback_info info)
             IMAGE_ERR("Failure. %{public}s", errMsg.c_str());
             return undefineVar;
         }
-        reference->imageReceiver_ = ImageReceiver::CreateImageReceiver((inputArgs.args)[PARAM0],
+        if (inputArgs.argc < ARGS2) {
+            ImageReceiverOptions options = {(inputArgs.args)[PARAM0],
+                (inputArgs.args)[PARAM1], (inputArgs.args)[PARAM2]};
+            reference->imageReceiver_ = ImageReceiver::CreateImageReceiver(options);
+        } else {
+            reference->imageReceiver_ = ImageReceiver::CreateImageReceiver((inputArgs.args)[PARAM0],
             (inputArgs.args)[PARAM1], (inputArgs.args)[PARAM2], (inputArgs.args)[PARAM3]);
+        }
     }
 
     if (reference->imageReceiver_ == nullptr) {
@@ -386,7 +392,7 @@ napi_value ImageReceiverNapi::JSCreateImageReceiver(napi_env env, napi_callback_
         return ImageNapiUtils::ThrowExceptionError(env, COMMON_ERR_INVALID_PARAMETER, errMsg);
     }
 
-    if (!checkFormat(inputArgs.args[PARAM2])) {
+    if (inputArgs.argc > ARGS2 && !checkFormat(inputArgs.args[PARAM2])) {
         return ImageNapiUtils::ThrowExceptionError(env, COMMON_ERR_INVALID_PARAMETER, "Invalid type");
     }
 

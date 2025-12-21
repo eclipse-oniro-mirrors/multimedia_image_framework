@@ -41,7 +41,9 @@ ohos_shared_library("ohimage") {
 
   external_deps = [
     "c_utils:utils",
+    "drivers_interface_display:libdisplay_commontype_proxy_1.0",
     "graphic_surface:surface",
+    "graphic_2d:libnative_color_space_manager",
     "hilog:libhilog",
     "ipc:ipc_single",
   ]
