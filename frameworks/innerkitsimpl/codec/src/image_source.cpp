@@ -2872,7 +2872,6 @@ uint32_t ImageSource::DecodeImageInfo(uint32_t index, ImageStatusMap::iterator &
         imageStatus.imageInfo.size.width = size.width;
         imageStatus.imageInfo.size.height = size.height;
         imageStatus.imageInfo.encodedFormat = sourceInfo_.encodedFormat;
-        imageStatus.imageInfo.isProgressive = mainDecoder_->IsProgressiveJpeg();
         imageStatus.imageState = ImageDecodingState::BASE_INFO_PARSED;
         auto result = imageStatusMap_.insert(ImageStatusMap::value_type(index, imageStatus));
         iter = result.first;
@@ -6087,6 +6086,21 @@ uint32_t ImageSource::GetDngImagePropertyByDngSdk(const std::string &key, Metada
 
     value.key = key;
     return dngMetadata->GetExifProperty(value);
+}
+
+bool ImageSource::IsJpegProgressive(uint32_t &errorCode)
+{
+    auto iter = GetValidImageStatus(0, errorCode);
+    bool cond = (iter == imageStatusMap_.end());
+    CHECK_ERROR_RETURN_RET_LOG(cond, false,
+        "[ImageSource] IsJpegProgressive, get valid image status fail, ret:%{public}u.", errorCode);
+
+    if (InitMainDecoder() != SUCCESS) {
+        IMAGE_LOGE("[ImageSource] IsJpegProgressive, get decoder failed");
+        errorCode = ERR_IMAGE_PLUGIN_CREATE_FAILED;
+        return false;
+    }
+    return mainDecoder_->IsProgressiveJpeg();
 }
 } // namespace Media
 } // namespace OHOS

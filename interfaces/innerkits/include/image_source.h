@@ -284,6 +284,7 @@ public:
     NATIVEEXPORT uint32_t GetiTxtLength();
     NATIVEEXPORT uint32_t GetDngImagePropertyByDngSdk(const std::string &key, MetadataValue &value);
     NATIVEEXPORT bool IsHeifWithoutAlpha();
+    NATIVEEXPORT bool IsJpegProgressive(uint32_t &errorCode);
     NATIVEEXPORT std::shared_ptr<ImageMetadata> GetMetadata(MetadataType type);
 
 private:
