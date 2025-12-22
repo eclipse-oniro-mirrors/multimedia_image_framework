@@ -63,7 +63,8 @@
           "runtime_core",
           "qos_manager",
           "eventhandler",
-          "ets_runtime"
+          "ets_runtime",
+          "libtiff"
         ],
         "third_party": [
           "bounds_checking_function"

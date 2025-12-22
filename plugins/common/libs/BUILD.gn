@@ -34,6 +34,12 @@ group("multimediaplugin") {
       "//foundation/multimedia/image_framework/adapter/frameworks/libwbmpplugin:wbmpplugin",
       "//foundation/multimedia/image_framework/adapter/frameworks/libwbmpplugin:wbmppluginmetadata",
     ]
+    if (has_libtiff) {
+        deps += [
+            "image/libtiffplugin:tiffplugin",
+            "image/libtiffplugin:tiffpluginmetadata",
+        ]
+    }
   } else {
     DUAL_ADAPTER = true
     deps = [
@@ -63,6 +69,12 @@ group("multimediaplugin") {
       #      "//foundation/multimedia/image_framework/adapter/frameworks/libhwjpegplugin:hwjpegplugin",
       #      "//foundation/multimedia/image_framework/adapter/frameworks/libhwjpegplugin:hwjpegpluginmetadata",
     ]
+    if (has_libtiff) {
+        deps += [
+            "image/libtiffplugin:tiffplugin",
+            "image/libtiffplugin:tiffpluginmetadata",
+        ]
+    }
     if (DUAL_ADAPTER) {
       deps += [
         #        "//foundation/multimedia/image_framework/adapter/frameworks/libbmpplugin:bmpplugin",

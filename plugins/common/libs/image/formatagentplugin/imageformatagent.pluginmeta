@@ -141,6 +141,23 @@
       ]
     },
     {
+    "className":"OHOS::ImagePlugin::TiffFormatAgent",
+    "services": [
+      {
+        "interfaceID":1,
+        "serviceType":0
+      }
+    ],
+    "priority":100,
+    "capabilities": [
+      {
+        "name":"encodeFormat",
+        "type":"string",
+        "value": "image/tiff"
+      }
+    ]
+    },
+    {
       "className":"OHOS::ImagePlugin::RawFormatAgent",
       "services": [
         {

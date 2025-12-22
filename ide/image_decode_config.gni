@@ -104,4 +104,5 @@ declare_args() {
     enable_picture = false
     enable_picture_ndk = false
   }
+  has_libtiff = true
 }

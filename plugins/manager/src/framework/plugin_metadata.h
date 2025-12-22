@@ -119,6 +119,33 @@ const std::vector<std::string> META_DATA = {
     )",
     R"(
         {
+          "packageName":"LibTiffPlugin",
+          "version":"1.0.0.0",
+          "targetVersion":"1.0.0.0",
+          "libraryPath":"libtiffplugin.z.so",
+          "classes": [
+            {
+              "className":"OHOS::ImagePlugin::TiffDecoder",
+              "services": [
+                {
+                  "interfaceID":2,
+                  "serviceType":0
+                }
+              ],
+              "priority":100,
+              "capabilities": [
+                {
+                  "name":"encodeFormat",
+                  "type":"string",
+                  "value": "image/tiff"
+                }
+              ]
+            }
+          ]
+        }
+    )",
+    R"(
+        {
           "packageName":"LibSvgPlugin",
           "version":"1.0.0.0",
           "targetVersion":"1.0.0.0",
