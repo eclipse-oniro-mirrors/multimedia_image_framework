@@ -722,6 +722,7 @@ bool ImageUtils::GetYUVInfoFromSurfaceBuffer(YUVDataInfo &yuvInfo, PixelMap* pix
         } else {
             yuvInfo.uvOffset = planes->planes[PLANE_U].offset;
         }
+        return true;
     } else {
         IMAGE_LOGE("Convert to surfaceBuffer, get planesInfo failed, retVal:%{public}d", retVal);
         return false;
@@ -739,7 +740,7 @@ bool ImageUtils::ConvertYUVInfoToSurfaceBuffer(PixelMap* pixelmap,
     YUVDataInfo yuvSrcInfo;
     pixelmap->GetImageYUVInfo(yuvSrcInfo);
 
-    bool cond = !ImageUtils::GetYUVInfoFromSurfaceBuffer(yuvDstInfo, pixelmap, surfacebuffer);
+    bool cond = !ImageUtils::GetYUVInfoFromSurfaceBuffer(yuvDstInfo, pixelmap, surfaceBuffer);
     CHECK_ERROR_RETURN_RET_LOG(cond, false, "Get YUVInfo from SurfaceBuffer failed");
 
     for (uint32_t i = 0; i < yuvSrcInfo.yHeight; ++i) {

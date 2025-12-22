@@ -862,7 +862,7 @@ sptr<SurfaceBuffer> ExtEncoder::ConvertToSurfaceBuffer(PixelMap* pixelmap)
         uint8_t* src = const_cast<uint8_t*>(pixelmap->GetPixels());
         uint8_t* dst = static_cast<uint8_t*>(surfaceBuffer->GetVirAddr());
         uint32_t dstSize = surfaceBuffer->GetSize();
-        uint64_t srcStride = static_cast<uint64_t>(width * NUM_4); 
+        uint64_t srcStride = static_cast<uint64_t>(width * NUM_4);
         
         for (uint32_t i = 0; i < copyHeight; i++) {
             if (memcpy_s(dst, dstSize, src, srcStride) != EOK) {
