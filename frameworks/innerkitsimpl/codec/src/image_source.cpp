@@ -1472,6 +1472,9 @@ unique_ptr<PixelMap> ImageSource::CreatePixelMap(uint32_t index, const DecodeOpt
         OHOS::ColorManager::ColorSpace grColorSpace = mainDecoder_->GetPixelMapColorSpace();
         pixelMap->InnerSetColorSpace(grColorSpace);
     }
+    if (sourceInfo_.encodedFormat == "image/tiff" && opts_.desiredColorSpaceInfo != nullptr) {
+        pixelMap->ApplyColorSpace(*opts_.desiredColorSpaceInfo);
+    }
 #endif
 
     DecodeOptions procOpts;

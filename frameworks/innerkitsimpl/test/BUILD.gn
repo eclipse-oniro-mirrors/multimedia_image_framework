@@ -2356,6 +2356,45 @@ ohos_unittest("heifs_decode_test") {
   ]
 }
 
+ohos_unittest("tiffplugintest") {
+  module_out_path = module_output_path
+
+  include_dirs = [
+    "$image_subsystem/plugins/manager/include",
+    "$image_subsystem/plugins/manager/include/image",
+    "$image_subsystem/plugins/manager/include/pluginbase",
+    "$image_subsystem/plugins/common/libs/image/libtiffplugin/include",
+    "$image_subsystem/interfaces/innerkits/include",
+    "$image_subsystem/frameworks/innerkitsimpl/utils/include",
+  ]
+  sources = [ "$image_subsystem/frameworks/innerkitsimpl/test/unittest/plugin_test/tiff_decoder_test.cpp" ]
+
+  deps = [
+    "//foundation/multimedia/image_framework/interfaces/innerkits:image_native",
+    "//foundation/multimedia/image_framework/plugins/common/libs/image/libtiffplugin:tiffplugin",
+    "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/utils:image_utils",
+  ]
+
+  external_deps = [
+    "c_utils:utils",
+    "hilog:libhilog",
+    "graphic_2d:color_manager",
+    "graphic_surface:surface",
+    "drivers_interface_display:libdisplay_commontype_proxy_1.0",
+  ]
+  if (has_libtiff) {
+    external_deps += [ "libtiff:libtiff" ]
+  }
+
+  cflags = [
+    "-Dprotected=public",
+    "-Dprivate=public",
+    "-DIMAGE_COLORSPACE_FLAG",
+  ]
+
+  resource_config_file = "${image_subsystem}/test/resource/image/ohos_test.xml"
+}
+
 ################################################
 group("unittest") {
   testonly = true
@@ -2418,6 +2457,9 @@ group("unittest") {
     ":itempropertybasicboxtest",
     ":imagedfxtest",
   ]
+  if (has_libtiff) {
+    deps += [ ":tiffplugintest" ]
+  }
 
   if (enable_jpeg_hw_decode) {
     deps += [ ":jpeg_hw_decoder_test" ]

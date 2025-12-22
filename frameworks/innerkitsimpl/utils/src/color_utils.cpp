@@ -13,6 +13,9 @@
  * limitations under the License.
  */
 #include "color_utils.h"
+#include "image_log.h"
+#include "image_utils.h"
+
 #if !defined(CROSS_PLATFORM)
 using namespace OHOS::HDI::Display::Graphic::Common::V1_0;
 #endif
@@ -112,6 +115,34 @@ std::map<ColorManager::ColorSpaceName, CM_ColorSpaceInfo> ColorUtils::COLORSPACE
         CM_ColorSpaceInfo {COLORPRIMARIES_BT2020, TRANSFUNC_HLG, MATRIX_BT2020, RANGE_FULL} },
     { ColorManager::DISPLAY_BT2020_PQ,
         CM_ColorSpaceInfo {COLORPRIMARIES_BT2020, TRANSFUNC_PQ, MATRIX_BT2020, RANGE_FULL} },
+};
+
+static constexpr uint8_t SIZE_4 = 4;
+constexpr static uint32_t OFFSET_5 = 5;
+constexpr static uint32_t DESC_SIGNATURE = 0x64657363;
+constexpr static uint64_t ICC_HEADER_SIZE = 132;
+struct ColorSpaceNameEnum {
+    std::string desc;
+    OHOS::ColorManager::ColorSpaceName name;
+};
+
+struct ICCTag {
+    uint8_t signature[SIZE_4];
+    uint8_t offset[SIZE_4];
+    uint8_t size[SIZE_4];
+};
+
+static std::vector<ColorSpaceNameEnum> sColorSpaceNamedMap = {
+    {"Display P3", OHOS::ColorManager::ColorSpaceName::DISPLAY_P3},
+    {"sRGB EOTF with DCI-P3 Color Gamut", OHOS::ColorManager::ColorSpaceName::DISPLAY_P3},
+    {"DCI-P3 D65 Gamut with sRGB Transfer", OHOS::ColorManager::ColorSpaceName::DISPLAY_P3},
+    {"Adobe RGB (1998)", OHOS::ColorManager::ColorSpaceName::ADOBE_RGB},
+    {"DCI P3", OHOS::ColorManager::ColorSpaceName::DCI_P3},
+    {"sRGB", OHOS::ColorManager::ColorSpaceName::SRGB},
+    {"BT.2020", OHOS::ColorManager::ColorSpaceName::BT2020},
+    {"DCI-P3", OHOS::ColorManager::ColorSpaceName::DCI_P3},
+    {"Rec2020 Gamut with HLG Transfer", OHOS::ColorManager::ColorSpaceName::BT2020_HLG},
+    {"REC. 2020", OHOS::ColorManager::ColorSpaceName::BT2020_HLG}
 };
 #endif
 
@@ -355,6 +386,86 @@ uint16_t ColorUtils::ConvertCMColorToCicp(uint16_t name)
             return CICP_COLORPRIMARIES_SRGB;
     }
 }
+
+bool ColorUtils::MatchColorSpaceName(const uint8_t* buf, uint32_t size, OHOS::ColorManager::ColorSpaceName &name)
+{
+    bool cond = buf == nullptr || size <= OFFSET_5;
+    CHECK_ERROR_RETURN_RET(cond, false);
+    std::vector<char> desc;
+    // We need skip desc type
+    for (uint32_t i = OFFSET_5; i < size; i++) {
+        if (buf[i] != '\0') {
+            desc.push_back(buf[i]);
+        }
+    }
+    cond = desc.size() <= 1;
+    CHECK_INFO_RETURN_RET_LOG(cond, false, "empty buffer");
+    std::string descText(desc.begin() + 1, desc.end());
+    for (auto nameEnum : sColorSpaceNamedMap) {
+        IMAGE_LOGD("descText is %{public}s.", descText.c_str());
+        if (descText.find(nameEnum.desc) == std::string::npos) {
+            continue;
+        }
+        name = nameEnum.name;
+        return true;
+    }
+    IMAGE_LOGE("Failed to match desc");
+    return false;
+}
+
+bool ColorUtils::GetColorSpaceName(const skcms_ICCProfile* profile, OHOS::ColorManager::ColorSpaceName &name)
+{
+    if (profile == nullptr || profile->buffer == nullptr) {
+        IMAGE_LOGD("profile is nullptr");
+        return false;
+    }
+    auto tags = reinterpret_cast<const ICCTag*>(profile->buffer + ICC_HEADER_SIZE);
+    for (uint32_t i = 0; i < profile->tag_count; i++) {
+        uint32_t tmpOffset = 0;
+        auto signature = ImageUtils::BytesToUint32(const_cast<uint8_t*>(tags[i].signature),
+            tmpOffset, SIZE_4, true);
+        if (signature != DESC_SIGNATURE) {
+            continue;
+        }
+        tmpOffset = 0;
+        auto size = ImageUtils::BytesToUint32(const_cast<uint8_t*>(tags[i].size),
+            tmpOffset, SIZE_4, true);
+        tmpOffset = 0;
+        auto offset = ImageUtils::BytesToUint32(const_cast<uint8_t*>(tags[i].offset),
+            tmpOffset, SIZE_4, true);
+        if (size == 0 || offset >= profile->size) {
+            continue;
+        }
+        tmpOffset = 0;
+        auto buffer = ImageUtils::BytesToUint32(const_cast<uint8_t*>(tags[i].offset),
+            tmpOffset, SIZE_4, true) + profile->buffer;
+        if (MatchColorSpaceName(buffer, size, name)) {
+            return true;
+        }
+    }
+    return false;
+}
+
+OHOS::ColorManager::ColorSpaceName ColorUtils::GetSrcColorSpace(const skcms_ICCProfile* profile)
+{
+    if (profile == nullptr) {
+        return OHOS::ColorManager::ColorSpaceName::NONE;
+    }
+    OHOS::ColorManager::ColorSpaceName name = OHOS::ColorManager::ColorSpaceName::NONE;
+    OHOS::Media::ColorUtils::GetColorSpaceName(profile, name);
+    if (profile->has_CICP) {
+        ColorManager::ColorSpaceName cName = OHOS::Media::ColorUtils::CicpToColorSpace(profile->CICP.color_primaries,
+            profile->CICP.transfer_characteristics, profile->CICP.matrix_coefficients,
+            profile->CICP.video_full_range_flag);
+        if (cName != ColorManager::NONE) {
+            IMAGE_LOGI("%{public}s profile has CICP, cName: %{public}u", __func__, static_cast<uint32_t>(cName));
+            return cName;
+        }
+    }
+    IMAGE_LOGD("%{public}s Parse ColorSpaceName is not support.", __func__);
+    return name;
+}
+
 #endif
 
 } // namespace Media
