@@ -42,6 +42,12 @@ public:
         OHOS::HDI::Display::Graphic::Common::V1_0::CM_ColorSpaceInfo> COLORSPACE_NAME_TO_COLORINFO_MAP;
     static HDI::Display::Graphic::Common::V1_0::CM_ColorPrimaries ConvertCicpToCMColor(uint16_t name);
     static uint16_t ConvertCMColorToCicp(uint16_t name);
+
+    static bool GetColorSpaceName(const skcms_ICCProfile* profile, OHOS::ColorManager::ColorSpaceName &name);
+    static bool MatchColorSpaceName(const uint8_t* buf, uint32_t size, OHOS::ColorManager::ColorSpaceName &name);
+    static OHOS::ColorManager::ColorSpaceName GetSrcColorSpace(const skcms_ICCProfile* profile);
+
+
 #endif
 };
 } // namespace Media
