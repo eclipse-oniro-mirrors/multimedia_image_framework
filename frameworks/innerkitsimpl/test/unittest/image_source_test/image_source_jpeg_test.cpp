@@ -3611,7 +3611,7 @@ HWTEST_F(ImageSourceJpegTest, IsJpegProgressive001, TestSize.Level3)
         ImageSource::CreateImageSource(IMAGE_INPUT_JPEG_PATH, opts, errorCode);
     ASSERT_EQ(errorCode, SUCCESS);
     ASSERT_NE(imageSource.get(), nullptr);
-    bool isJpegProgressive = imageSource->IsJpegProgressive();
+    bool isJpegProgressive = imageSource->IsJpegProgressive(errorCode);
     ASSERT_EQ(isJpegProgressive, false);
 }
 
@@ -3628,7 +3628,7 @@ HWTEST_F(ImageSourceJpegTest, IsJpegProgressive002, TestSize.Level3)
         ImageSource::CreateImageSource(IMAGE_INPUT_JPEG_PROGRESSIVE_PATH, opts, errorCode);
     ASSERT_EQ(errorCode, SUCCESS);
     ASSERT_NE(imageSource.get(), nullptr);
-    bool isJpegProgressive = imageSource->IsJpegProgressive();
+    bool isJpegProgressive = imageSource->IsJpegProgressive(errorCode);
     ASSERT_EQ(isJpegProgressive, true);
 }
 } // namespace Multimedia
