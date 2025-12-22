@@ -115,7 +115,7 @@ struct ImageSourceAsyncContext {
     std::unique_ptr<std::vector<int32_t>> delayTimes;
     std::unique_ptr<std::vector<int32_t>> disposalType;
     uint32_t frameCount = 0;
-    bool isProgressiveJpeg = false; 
+    bool isProgressiveJpeg = false;
     struct RawFileDescriptorInfo rawFileInfo;
 #if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
     DecodingOptionsForPicture decodingOptsForPicture;
