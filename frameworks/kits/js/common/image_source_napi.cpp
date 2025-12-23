@@ -4254,14 +4254,12 @@ STATIC_EXEC_FUNC(IsJpegProgressive)
         return;
     }
 
-    uint32_t errorCode = 0;
-    context->isProgressiveJpeg = context->rImageSource->IsJpegProgressive(errorCode);
-    if (errorCode == SUCCESS) {
-        context->status = SUCCESS;
-    } else {
-        IMAGE_LOGE("IsJpegProgressive error, error=%{public}u", errorCode);
-        context->errMsg = "IsJpegProgressive error";
-        context->status = errorCode;
+    context->isProgressiveJpeg = context->rImageSource->IsJpegProgressive(context->status);
+    if (context->status != SUCCESS) {
+        Image_ErrorCode apiErrorCode = ConvertToErrorCode(context->status);
+        std::string apiErrorMsg = GetErrorCodeMsg(apiErrorCode);
+        context->errMsgArray.emplace(apiErrorCode, apiErrorMsg);
+        IMAGE_LOGE("IsJpegProgressive error");
     }
 }
 
