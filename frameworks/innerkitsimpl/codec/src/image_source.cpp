@@ -6090,17 +6090,11 @@ uint32_t ImageSource::GetDngImagePropertyByDngSdk(const std::string &key, Metada
 
 bool ImageSource::IsJpegProgressive(uint32_t &errorCode)
 {
-    uint32_t ret = SUCCESS;
-    ImageInfo info;
-    ret = GetImageInfo(FIRST_FRAME, info);
-    if (ret != SUCCESS) {
-        errorCode = ret;
-        return false;
-    }
-    if (info.encodedFormat != IMAGE_JPEG_FORMAT) {
-        errorCode = ERR_IMAGE_MISMATCHED_FORMAT;
-        return false;
-    }
+    auto iter = GetValidImageStatus(0, errorCode);
+    bool cond = (iter == imageStatusMap_.end());
+    CHECK_ERROR_RETURN_RET_LOG(cond, false,
+        "[ImageSource] IsJpegProgressive, get valid image status fail, ret:%{public}u.", errorCode);
+
     if (InitMainDecoder() != SUCCESS) {
         IMAGE_LOGE("[ImageSource] IsJpegProgressive, get decoder failed");
         errorCode = ERR_IMAGE_PLUGIN_CREATE_FAILED;

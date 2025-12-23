@@ -4249,7 +4249,7 @@ STATIC_EXEC_FUNC(IsJpegProgressive)
     }
 
     auto context = CheckAsyncContext(static_cast<ImageSourceAsyncContext*>(data), true);
-    if (context == nullptr) {
+    if (context == nullptr || context->rImageSource == nullptr) {
         IMAGE_LOGE("check async context fail");
         return;
     }
@@ -4259,7 +4259,7 @@ STATIC_EXEC_FUNC(IsJpegProgressive)
         Image_ErrorCode apiErrorCode = ConvertToErrorCode(context->status);
         std::string apiErrorMsg = GetErrorCodeMsg(apiErrorCode);
         context->errMsgArray.emplace(apiErrorCode, apiErrorMsg);
-        IMAGE_LOGE("IsJpegProgressive error");
+        IMAGE_LOGD("IsJpegProgressive error");
     }
 }
 
