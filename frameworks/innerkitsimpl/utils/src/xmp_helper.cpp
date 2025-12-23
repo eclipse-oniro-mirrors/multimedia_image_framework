@@ -14,6 +14,8 @@
  */
 
 #include "image_log.h"
+#include "media_errors.h"
+#include "XMP_Const.h"
 #include "xmp_helper.h"
 
 #undef LOG_DOMAIN
@@ -73,6 +75,30 @@ std::string XMPHelper::Trim(std::string_view str, std::string_view trimChars)
 
     size_t end = str.find_last_not_of(trimChars);
     return std::string(str.substr(start, end - start + NUM_1));
+}
+
+uint32_t XMPHelper::MapXMPErrorToMediaError(const XMP_Error &error)
+{
+    XMP_Int32 id = error.GetID();
+    switch (id) {
+        case kXMPErr_BadParam:
+        case kXMPErr_BadValue:
+            return ERR_IMAGE_INVALID_PARAMETER;
+        case kXMPErr_Unimplemented:
+            return ERR_MEDIA_UNSUPPORT_OPERATION;
+        default:
+            return ERR_XMP_DECODE_FAILED;
+    }
+}
+
+void XMPHelper::LogXMPError(const char *funcName, const XMP_Error &error)
+{
+    const char *msg = error.GetErrMsg();
+    if (msg == nullptr) {
+        msg = "";
+    }
+    IMAGE_LOGE("%{public}s XMP exception, id=%{public}d, msg=%{public}s", funcName,
+        static_cast<int32_t>(error.GetID()), msg);
 }
 
 /**

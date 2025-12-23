@@ -39,8 +39,10 @@ XMPMetadataAccessor::XMPMetadataAccessor()
 {
     std::lock_guard<std::mutex> lock(initMutex_);
     if (refCount_++ == 0) {
+        XMP_TRY();
         CHECK_ERROR_RETURN_LOG(!SXMPFiles::Initialize(kXMPFiles_IgnoreLocalText),
             "%{public}s failed to initialize XMPFiles", __func__);
+        XMP_CATCH_NO_RETURN();
     }
 }
 
@@ -48,7 +50,9 @@ XMPMetadataAccessor::~XMPMetadataAccessor()
 {
     std::lock_guard<std::mutex> lock(initMutex_);
     if (--refCount_ == 0) {
+        XMP_TRY();
         SXMPFiles::Terminate();
+        XMP_CATCH_NO_RETURN();
     }
 }
 
@@ -95,6 +99,7 @@ std::unique_ptr<XMPMetadataAccessor> XMPMetadataAccessor::Create(int32_t fileDes
 
 uint32_t XMPMetadataAccessor::Read()
 {
+    XMP_TRY();
     uint32_t status = CheckXMPFiles();
     CHECK_ERROR_RETURN_RET_LOG(status != SUCCESS, status, "%{public}s failed to check XMPFiles", __func__);
 
@@ -109,10 +114,12 @@ uint32_t XMPMetadataAccessor::Read()
     xmpMetadata_ = std::make_shared<XMPMetadata>(std::move(impl));
     IMAGE_LOGD("%{public}s successfully read XMPMetadata", __func__);
     return SUCCESS;
+    XMP_CATCH_RETURN_CODE(ERR_XMP_DECODE_FAILED);
 }
 
 uint32_t XMPMetadataAccessor::Write()
 {
+    XMP_TRY();
     uint32_t status = CheckXMPFiles();
     CHECK_ERROR_RETURN_RET_LOG(status != SUCCESS, status, "%{public}s failed to check XMPFiles", __func__);
     CHECK_ERROR_RETURN_RET_LOG(xmpMetadata_ == nullptr, ERR_MEDIA_NULL_POINTER,
@@ -134,6 +141,7 @@ uint32_t XMPMetadataAccessor::Write()
     xmpFiles_->PutXMP(meta);
     xmpFiles_->CloseFile();
     return SUCCESS;
+    XMP_CATCH_RETURN_CODE(ERR_XMP_DECODE_FAILED);
 }
 
 std::shared_ptr<XMPMetadata> XMPMetadataAccessor::Get()
@@ -148,6 +156,7 @@ void XMPMetadataAccessor::Set(std::shared_ptr<XMPMetadata> &xmpMetadata)
 
 uint32_t XMPMetadataAccessor::CheckXMPFiles()
 {
+    XMP_TRY();
     if (xmpFiles_ == nullptr) {
         IMAGE_LOGE("%{public}s xmpFiles is nullptr", __func__);
         return ERR_XMP_INVALID_FILE;
@@ -158,10 +167,12 @@ uint32_t XMPMetadataAccessor::CheckXMPFiles()
         return ERR_XMP_INVALID_FILE;
     }
     return SUCCESS;
+    XMP_CATCH_RETURN_CODE(ERR_XMP_INVALID_FILE);
 }
 
 uint32_t XMPMetadataAccessor::InitializeFromBuffer(const uint8_t *data, uint32_t size, XMPAccessMode mode)
 {
+    XMP_TRY();
     CHECK_ERROR_RETURN_RET_LOG(data == nullptr || size == 0, ERR_IMAGE_INVALID_PARAMETER,
         "%{public}s data is nullptr or size is 0", __func__);
     xmpFiles_.reset(new SXMPFiles());
@@ -182,10 +193,12 @@ uint32_t XMPMetadataAccessor::InitializeFromBuffer(const uint8_t *data, uint32_t
 
     ioType_ = IOType::XMP_BUFFER_IO;
     return SUCCESS;
+    XMP_CATCH_RETURN_CODE(ERR_XMP_INVALID_FILE);
 }
 
 uint32_t XMPMetadataAccessor::InitializeFromPath(const std::string &filePath, XMPAccessMode mode)
 {
+    XMP_TRY();
     CHECK_ERROR_RETURN_RET_LOG(filePath.empty(), ERR_IMAGE_INVALID_PARAMETER,
         "%{public}s filePath is empty", __func__);
     xmpFiles_.reset(new SXMPFiles());
@@ -200,10 +213,12 @@ uint32_t XMPMetadataAccessor::InitializeFromPath(const std::string &filePath, XM
 
     ioType_ = IOType::XMP_FILE_PATH;
     return SUCCESS;
+    XMP_CATCH_RETURN_CODE(ERR_XMP_INVALID_FILE);
 }
 
 uint32_t XMPMetadataAccessor::InitializeFromFd(int32_t fileDescriptor, XMPAccessMode mode)
 {
+    XMP_TRY();
     CHECK_ERROR_RETURN_RET_LOG(fileDescriptor == INVALID_FILE_DESCRIPTOR, ERR_IMAGE_INVALID_PARAMETER,
         "%{public}s fileDescriptor is invalid", __func__);
     xmpFiles_.reset(new SXMPFiles());
@@ -224,6 +239,7 @@ uint32_t XMPMetadataAccessor::InitializeFromFd(int32_t fileDescriptor, XMPAccess
 
     ioType_ = IOType::XMP_FD_IO;
     return SUCCESS;
+    XMP_CATCH_RETURN_CODE(ERR_XMP_INVALID_FILE);
 }
 } // namespace OHOS
 } // namespace Media

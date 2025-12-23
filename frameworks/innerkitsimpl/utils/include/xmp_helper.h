@@ -19,6 +19,45 @@
 #include <string>
 #include <string_view>
 #include <utility>
+#include "image_log.h"
+
+class XMP_Error;
+
+// Helper macros to simplify XMP exception handling patterns.
+// Usage pattern:
+//   uint32_t Foo() {
+//       XMP_TRY();
+//       ... normal logic ...
+//       return SUCCESS;
+//       XMP_CATCH_RETURN_CODE(ERR_XMP_DECODE_FAILED);
+//   }
+
+#define XMP_TRY() try {
+
+#define XMP_CATCH_RETURN_RET(retExpr)                                            \
+    } catch (const XMP_Error &error) {                                           \
+        OHOS::Media::XMPHelper::LogXMPError(__func__, error);                    \
+        return (retExpr);                                                        \
+    } catch (...) {                                                              \
+        IMAGE_LOGE("%{public}s unknown exception", __func__);                    \
+        return (retExpr);                                                        \
+    }
+
+#define XMP_CATCH_RETURN_CODE(defaultErrorCode)                                  \
+    } catch (const XMP_Error &error) {                                           \
+        OHOS::Media::XMPHelper::LogXMPError(__func__, error);                    \
+        return OHOS::Media::XMPHelper::MapXMPErrorToMediaError(error);           \
+    } catch (...) {                                                              \
+        IMAGE_LOGE("%{public}s unknown exception", __func__);                    \
+        return (defaultErrorCode);                                               \
+    }
+
+#define XMP_CATCH_NO_RETURN()                                                    \
+    } catch (const XMP_Error &error) {                                           \
+        OHOS::Media::XMPHelper::LogXMPError(__func__, error);                    \
+    } catch (...) {                                                              \
+        IMAGE_LOGE("%{public}s unknown exception", __func__);                    \
+    }
 
 namespace OHOS {
 namespace Media {
@@ -29,6 +68,9 @@ public:
 
     static std::string ExtractProperty(std::string_view pathExpression);
     static std::pair<std::string, std::string> ExtractSplitProperty(std::string_view pathExpression);
+
+    static uint32_t MapXMPErrorToMediaError(const XMP_Error &error);
+    static void LogXMPError(const char *funcName, const XMP_Error &error);
 };
 } // namespace Media
 } // namespace OHOS

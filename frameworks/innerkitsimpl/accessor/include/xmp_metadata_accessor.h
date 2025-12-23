@@ -16,6 +16,8 @@
 #ifndef FRAMEWORKS_INNERKITSIMPL_ACCESSOR_INCLUDE_XMP_METADATA_ACCESSOR_H
 #define FRAMEWORKS_INNERKITSIMPL_ACCESSOR_INCLUDE_XMP_METADATA_ACCESSOR_H
 
+#include "image_log.h"
+#include "xmp_helper.h"
 #include "xmp_metadata.h"
 #include "XMP.hpp"
 #include "XMP.incl_cpp"
@@ -58,8 +60,10 @@ private:
         void operator()(SXMPFiles *ptr) const
         {
             CHECK_ERROR_RETURN_LOG(ptr == nullptr, "XMPFiles delete failed because ptr is nullptr");
+            XMP_TRY();
             ptr->CloseFile();
             delete ptr;
+            XMP_CATCH_NO_RETURN();
         }
     };
 
