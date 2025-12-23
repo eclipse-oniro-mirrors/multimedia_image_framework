@@ -4297,7 +4297,7 @@ napi_value ImageSourceNapi::IsJpegProgressive(napi_env env, napi_callback_info i
     napi_status status;
     auto asyncContext = UnwrapContextForList(env, info);
     if (asyncContext == nullptr) {
-        return ImageNapiUtils::ThrowExceptionError(env, COMMON_ERR_INVALID_PARAMETER, "async context unwrap failed");
+        return ImageNapiUtils::ThrowExceptionError(env, IMAGE_BAD_SOURCE, "async context unwrap failed");
     }
     if (asyncContext->callbackRef == nullptr) {
         napi_create_promise(env, &(asyncContext->deferred), &result);
