@@ -82,6 +82,7 @@ private:
     static napi_value GetDelayTime(napi_env env, napi_callback_info info);
     static napi_value GetDisposalType(napi_env env, napi_callback_info info);
     static napi_value GetFrameCount(napi_env env, napi_callback_info info);
+    static napi_value IsJpegProgressive(napi_env env, napi_callback_info info);
     static std::vector<napi_property_descriptor> RegisterNapi();
 #if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
     static napi_value CreatePicture(napi_env env, napi_callback_info info);

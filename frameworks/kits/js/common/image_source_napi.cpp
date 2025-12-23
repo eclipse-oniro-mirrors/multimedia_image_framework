@@ -115,6 +115,7 @@ struct ImageSourceAsyncContext {
     std::unique_ptr<std::vector<int32_t>> delayTimes;
     std::unique_ptr<std::vector<int32_t>> disposalType;
     uint32_t frameCount = 0;
+    bool isProgressiveJpeg = false;
     struct RawFileDescriptorInfo rawFileInfo;
 #if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
     DecodingOptionsForPicture decodingOptsForPicture;
@@ -1317,6 +1318,7 @@ std::vector<napi_property_descriptor> ImageSourceNapi::RegisterNapi()
         DECLARE_NAPI_FUNCTION("createWideGamutSdrPixelMap", CreateWideGamutSdrPixelMap),
         DECLARE_NAPI_FUNCTION("updateData", UpdateData),
         DECLARE_NAPI_FUNCTION("release", Release),
+        DECLARE_NAPI_GETTER("isJpegProgressive", IsJpegProgressive),
         DECLARE_NAPI_GETTER("supportedFormats", GetSupportedFormats),
 #if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
         DECLARE_NAPI_FUNCTION("createPicture", CreatePicture),
@@ -1489,9 +1491,6 @@ STATIC_NAPI_VALUE_FUNC(GetImageInfo)
         napi_get_boolean(env, rImageSource->IsHdrImage(), &isHdrValue);
         napi_set_named_property(env, result, "isHdr", isHdrValue);
     }
-    napi_value isProgressive = nullptr;
-    napi_get_boolean(env, imageInfo->isProgressive, &isProgressive);
-    napi_set_named_property(env, result, "isProgressive", isProgressive);
     return result;
 }
 
@@ -4239,6 +4238,77 @@ napi_value ImageSourceNapi::CreateImageSourceNapi(napi_env env, std::shared_ptr<
         IMAGE_LOGE("CreateImageSource | New instance could not be obtained");
         napi_get_undefined(env, &result);
     }
+    return result;
+}
+
+STATIC_EXEC_FUNC(IsJpegProgressive)
+{
+    if (data == nullptr) {
+        IMAGE_LOGE("data is nullptr");
+        return;
+    }
+
+    auto context = CheckAsyncContext(static_cast<ImageSourceAsyncContext*>(data), true);
+    if (context == nullptr || context->rImageSource == nullptr) {
+        IMAGE_LOGE("check async context fail");
+        return;
+    }
+
+    context->isProgressiveJpeg = context->rImageSource->IsJpegProgressive(context->status);
+    if (context->status != SUCCESS) {
+        Image_ErrorCode apiErrorCode = ConvertToErrorCode(context->status);
+        std::string apiErrorMsg = GetErrorCodeMsg(apiErrorCode);
+        context->errMsgArray.emplace(apiErrorCode, apiErrorMsg);
+        IMAGE_LOGD("IsJpegProgressive error");
+    }
+}
+
+STATIC_COMPLETE_FUNC(IsJpegProgressive)
+{
+    if (data == nullptr) {
+        IMAGE_LOGE("data is nullptr");
+        return;
+    }
+
+    auto context = CheckAsyncContext(static_cast<ImageSourceAsyncContext*>(data), false);
+    if (context == nullptr) {
+        IMAGE_LOGE("check async context fail");
+        return;
+    }
+
+    napi_value result = nullptr;
+    if (context->status == SUCCESS) {
+        IMAGE_LOGD("IsJpegProgressiveComplete");
+        napi_get_boolean(env, context->isProgressiveJpeg, &result);
+    } else {
+        napi_get_undefined(env, &result);
+    }
+    context->isProgressiveJpeg = false;
+    ImageSourceCallbackRoutine(env, context, result);
+}
+
+napi_value ImageSourceNapi::IsJpegProgressive(napi_env env, napi_callback_info info)
+{
+    ImageTrace imageTrace("ImageSourceNapi::IsJpegProgressive");
+    IMAGE_LOGD("[ImageSourceNapi]IsJpegProgressive IN");
+    napi_value result = nullptr;
+    napi_get_undefined(env, &result);
+
+    napi_status status;
+    auto asyncContext = UnwrapContextForList(env, info);
+    if (asyncContext == nullptr) {
+        return ImageNapiUtils::ThrowExceptionError(env, IMAGE_BAD_SOURCE, "async context unwrap failed");
+    }
+    if (asyncContext->callbackRef == nullptr) {
+        napi_create_promise(env, &(asyncContext->deferred), &result);
+    } else {
+        napi_get_undefined(env, &result);
+    }
+
+    IMG_CREATE_CREATE_ASYNC_WORK(env, status, "IsJpegProgressive", IsJpegProgressiveExec,
+        IsJpegProgressiveComplete, asyncContext, asyncContext->work);
+    IMG_NAPI_CHECK_RET_D(IMG_IS_OK(status), nullptr, IMAGE_LOGE("fail to create async work"));
+    IMAGE_LOGD("[ImageSourceNapi]IsJpegProgressive OUT");
     return result;
 }
 
