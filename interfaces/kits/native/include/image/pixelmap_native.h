@@ -1061,6 +1061,7 @@ Image_ErrorCode OH_PixelmapNative_CreatePixelmapFromSurface(const char *surfaceI
  * @return Function result code:
  *         {@link IMAGE_SUCCESS} Operation is successful.
  *         {@link IMAGE_INVALID_PARAMETER} Invalid parameter, e.g. surfaceId or pixelmap is incorrect.
+ *         {@link IMAGE_UNSUPPORTED_OPERATION} Unsupported operation, e.g. on cross-platform.
  *         {@link IMAGE_GET_IMAGE_DATA_FAILED} Failed to get the data from Surface.
  *         {@link IMAGE_CREATE_PIXELMAP_FAILED} Failed to create the PixelMap.
  * @see OH_PixelmapNative

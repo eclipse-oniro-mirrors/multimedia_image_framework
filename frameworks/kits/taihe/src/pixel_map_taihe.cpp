@@ -172,7 +172,7 @@ PixelMap CreatePixelMapFromSurfaceByIdSync(string_view etsSurfaceId)
 PixelMap CreatePixelMapFromSurfaceWithTransformationSync(string_view etsSurfaceId, bool transformEnabled)
 {
 #if defined(IOS_PLATFORM) || defined(ANDROID_PLATFORM)
-    ImageTaiheUtils::ThrowExceptionError(Media::ERR_IMAGE_GET_IMAGE_DATA_FAILED,
+    ImageTaiheUtils::ThrowExceptionError(Media::ERR_MEDIA_UNSUPPORT_OPERATION,
         "Unsupported operation on cross-platform");
     return make_holder<PixelMapImpl, PixelMap>();
 #else
