@@ -1474,6 +1474,9 @@ unique_ptr<PixelMap> ImageSource::CreatePixelMap(uint32_t index, const DecodeOpt
         OHOS::ColorManager::ColorSpace grColorSpace = mainDecoder_->GetPixelMapColorSpace();
         pixelMap->InnerSetColorSpace(grColorSpace);
     }
+    if (sourceInfo_.encodedFormat == "image/tiff" && opts_.desiredColorSpaceInfo != nullptr) {
+        pixelMap->ApplyColorSpace(*opts_.desiredColorSpaceInfo);
+    }
 #endif
 
     DecodeOptions procOpts;
@@ -2877,7 +2880,6 @@ uint32_t ImageSource::DecodeImageInfo(uint32_t index, ImageStatusMap::iterator &
         imageStatus.imageInfo.size.width = size.width;
         imageStatus.imageInfo.size.height = size.height;
         imageStatus.imageInfo.encodedFormat = sourceInfo_.encodedFormat;
-        imageStatus.imageInfo.isProgressive = mainDecoder_->IsProgressiveJpeg();
         imageStatus.imageState = ImageDecodingState::BASE_INFO_PARSED;
         auto result = imageStatusMap_.insert(ImageStatusMap::value_type(index, imageStatus));
         iter = result.first;
@@ -6093,5 +6095,24 @@ uint32_t ImageSource::GetDngImagePropertyByDngSdk(const std::string &key, Metada
     return dngMetadata->GetExifProperty(value);
 }
 #endif
+
+bool ImageSource::IsJpegProgressive(uint32_t &errorCode)
+{
+    auto iter = GetValidImageStatus(0, errorCode);
+    if (iter == imageStatusMap_.end()) {
+        IMAGE_LOGE("[ImageSource] IsJpegProgressive, get valid image status fail, ret:%{public}u.", errorCode);
+        if (errorCode != ERR_IMAGE_UNKNOWN_FORMAT) {
+            errorCode = ERR_IMAGE_SOURCE_DATA;
+        }
+        return false;
+    }
+
+    if (InitMainDecoder() != SUCCESS) {
+        IMAGE_LOGE("[ImageSource] IsJpegProgressive, get decoder failed");
+        errorCode = ERR_IMAGE_SOURCE_DATA;
+        return false;
+    }
+    return mainDecoder_->IsProgressiveJpeg();
+}
 } // namespace Media
 } // namespace OHOS

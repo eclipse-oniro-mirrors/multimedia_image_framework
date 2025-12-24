@@ -164,6 +164,7 @@ public:
     static bool GetAlignedNumber(int32_t& number, int32_t align);
     static int32_t GetByteCount(ImageInfo imageInfo);
     static int32_t GetYUVByteCount(const ImageInfo& info);
+    static void SetYuvDataInfo(std::unique_ptr<PixelMap> &pixelMap, sptr<OHOS::SurfaceBuffer> &sBuffer);
 
     template<typename T>
     static bool CheckMulOverflow(const T& num1, const T& num2)

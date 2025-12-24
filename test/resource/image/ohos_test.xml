@@ -47,6 +47,7 @@
             <option name="push" value="images/test.png -> /data/local/tmp/image" src="res"/>
             <option name="push" value="images/test.jpg -> /data/local/tmp/image" src="res"/>
             <option name="push" value="images/test.gif -> /data/local/tmp/image" src="res"/>
+            <option name="push" value="images/progressivejpg.jpg -> /data/local/tmp/image" src="res"/>
             <option name="push" value="images/moving_test.gif -> /data/local/tmp/image" src="res"/>
             <option name="push" value="images/test_hw.heic -> /data/local/tmp/image" src="res"/>
             <option name="push" value="images/test_hw.jpg -> /data/local/tmp/image" src="res"/>
@@ -555,6 +556,13 @@
     <target name="heifs_decode_test">
         <preparer>
             <option name="push" value="images/test-10bit-1.heic -> /data/local/tmp/image" src="res"/>
+        </preparer>
+    </target>
+    <target name="tiffplugintest">
+        <preparer>
+            <option name="push" value="images/output.tiff -> /data/local/tmp/image" src="res"/>
+            <option name="push" value="images/output_icc_Display_P3.tiff -> /data/local/tmp/image" src="res"/>
+            <option name="push" value="images/output_icc_D50_XYZ.tiff -> /data/local/tmp/image" src="res"/>
         </preparer>
     </target>
 </configuration>
