@@ -250,7 +250,7 @@ std::pair<std::string, std::string> XMPHelper::ExtractSplitProperty(std::string_
 {
     std::string property = ExtractProperty(pathExpression);
     CHECK_ERROR_RETURN_RET_LOG(property.empty(), {}, "%{public}s extract property failed", __func__);
-    return SplitOnce(property, COLON); 
+    return SplitOnce(property, COLON);
 }
 } // namespace Media
 } // namespace OHOS

@@ -1853,7 +1853,7 @@ napi_value PixelMapNapi::CreatePixelMapFromSurfaceWithTransformation(napi_env en
         ImageNapiUtils::ThrowExceptionError(env, ERR_IMAGE_INVALID_PARAM, "Invalid args count"),
         IMAGE_LOGE("CreatePixelMapFromSurfaceWithTransformation Invalid args count %{public}zu", argCount));
     std::unique_ptr<PixelMapAsyncContext> asyncContext = std::make_unique<PixelMapAsyncContext>();
-    asyncContext->surfaceId = GetStringArgument(env, argValue[NUM_0]);
+    asyncContext->surfaceId = ImageNapiUtils::GetStringArgument(env, argValue[NUM_0]);
     bool transformEnabled = false;
     NAPI_ASSERT(env, napi_get_value_bool(env, argValue[NUM_1], &transformEnabled) == napi_ok,
         "Parse input error");
@@ -1949,7 +1949,7 @@ napi_value PixelMapNapi::CreatePixelMapFromSurfaceWithTransformationSync(napi_en
         ImageNapiUtils::ThrowExceptionError(env, COMMON_ERR_INVALID_PARAMETER, "Invalid args count"),
         IMAGE_LOGE("CreatePixelMapFromSurfaceWithTransformationSync Invalid args count %{public}zu", argCount));
     std::unique_ptr<PixelMapAsyncContext> asyncContext = std::make_unique<PixelMapAsyncContext>();
-    asyncContext->surfaceId = GetStringArgument(env, argValue[NUM_0]);
+    asyncContext->surfaceId = ImageNapiUtils::GetStringArgument(env, argValue[NUM_0]);
     bool transformEnabled = false;
     NAPI_ASSERT(env, napi_get_value_bool(env, argValue[NUM_1], &transformEnabled) == napi_ok,
         "Parse input error");
@@ -3992,7 +3992,7 @@ static void CloneComplete(napi_env env, napi_status status, void *data)
     }
     napi_value result = nullptr;
     napi_get_undefined(env, &result);
- 
+
     auto context = static_cast<PixelMapAsyncContext*>(data);
     if (context->alphaMap != nullptr) {
         result = PixelMapNapi::CreatePixelMap(env, context->alphaMap);
