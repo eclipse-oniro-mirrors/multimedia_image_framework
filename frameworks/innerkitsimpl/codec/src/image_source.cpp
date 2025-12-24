@@ -39,7 +39,9 @@
 #include "image_trace.h"
 #include "image_data_statistics.h"
 #endif
+#if !defined(CROSS_PLATFORM)
 #include "dng/dng_exif_metadata.h"
+#endif
 #include "exif_metadata.h"
 #include "exif_metadata_formatter.h"
 #include "file_source_stream.h"
@@ -2113,7 +2115,7 @@ std::vector<MetadataValue> ImageSource::GetAllPropertiesWithType()
     std::vector<MetadataValue> result;
     CHECK_ERROR_RETURN_RET_LOG(!exifMetadata_ && isExifReadFailed_, result, "Exif metadata not initialized");
     CHECK_ERROR_RETURN_RET_LOG(CreatExifMetadataByImageSource() != SUCCESS, result, "Metadata creation failed");
-
+#if !defined(CROSS_PLATFORM)
     if (IsDngImage()) {
         std::shared_ptr<DngExifMetadata> dngMetadata = std::static_pointer_cast<DngExifMetadata>(exifMetadata_);
         if (dngMetadata != nullptr) {
@@ -2122,6 +2124,7 @@ std::vector<MetadataValue> ImageSource::GetAllPropertiesWithType()
             return result;
         }
     }
+#endif
 
     auto processKeys = [&](const std::set<std::string>& keys) {
         for (const auto& key : keys) {
@@ -2248,9 +2251,11 @@ uint32_t ImageSource::GetImagePropertyByType(uint32_t index, const std::string &
                 "[ImageSource]GetDelayTime get heifs delay time error. errorCode=%{public}u", ret);
         }
     }
+#if !defined(CROSS_PLATFORM)
     if (IsDngImage()) {
         return GetDngImagePropertyByDngSdk(key, value);
     }
+#endif
 
     std::unique_lock<std::mutex> guard(decodingMutex_);
     std::unique_lock<std::mutex> guardFile(fileMutex_);
@@ -6066,7 +6071,6 @@ std::shared_ptr<ImageMetadata> ImageSource::GetMetadata(MetadataType type)
     }
     return nullptr;
 }
-#endif
 
 bool ImageSource::IsDngImage()
 {
@@ -6090,6 +6094,7 @@ uint32_t ImageSource::GetDngImagePropertyByDngSdk(const std::string &key, Metada
     value.key = key;
     return dngMetadata->GetExifProperty(value);
 }
+#endif
 
 bool ImageSource::IsJpegProgressive(uint32_t &errorCode)
 {
