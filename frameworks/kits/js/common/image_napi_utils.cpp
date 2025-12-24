@@ -256,6 +256,19 @@ bool ImageNapiUtils::ParseImageCreatorReceiverArgs(napi_env env, size_t argc,
     return true;
 }
 
+const std::set<AuxiliaryPictureType> &ImageNapiUtils::GetNapiSupportedAuxiliaryPictureType()
+{
+    static const std::set<AuxiliaryPictureType> auxTypes = {
+        AuxiliaryPictureType::GAINMAP,
+        AuxiliaryPictureType::DEPTH_MAP,
+        AuxiliaryPictureType::UNREFOCUS_MAP,
+        AuxiliaryPictureType::LINEAR_MAP,
+        AuxiliaryPictureType::FRAGMENT_MAP,
+        AuxiliaryPictureType::THUMBNAIL,
+    };
+    return auxTypes;
+}
+
 void ImageNapiUtils::HicheckerReport()
 {
 #if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM) && defined(HICHECKER_ENABLE)

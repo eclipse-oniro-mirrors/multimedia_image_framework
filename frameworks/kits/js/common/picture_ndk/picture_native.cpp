@@ -107,6 +107,39 @@ Image_ErrorCode OH_PictureNative_GetGainmapPixelmap(OH_PictureNative *picture, O
 }
 
 MIDK_EXPORT
+Image_ErrorCode OH_PictureNative_GetThumbnailPixelmap(OH_PictureNative *picture, OH_PixelmapNative **thumbnailPixelmap)
+{
+    if (thumbnailPixelmap == nullptr || picture == nullptr || !picture->GetInnerPicture()) {
+        return IMAGE_BAD_PARAMETER;
+    }
+
+    auto thumbnailPixelmapTmp =
+        std::make_unique<OH_PixelmapNative>(picture->GetInnerPicture()->GetThumbnailPixelMap());
+    if (!thumbnailPixelmapTmp || !thumbnailPixelmapTmp->GetInnerPixelmap()) {
+        IMAGE_LOGE("%{public}s picture does not have thumbnail pixelmap", __func__);
+        *thumbnailPixelmap = nullptr;
+        return IMAGE_SUCCESS;
+    }
+    *thumbnailPixelmap = thumbnailPixelmapTmp.release();
+    return IMAGE_SUCCESS;
+}
+
+MIDK_EXPORT
+Image_ErrorCode OH_PictureNative_SetThumbnailPixelmap(OH_PictureNative *picture, OH_PixelmapNative *thumbnailPixelmap)
+{
+    if (picture == nullptr || !picture->GetInnerPicture() || thumbnailPixelmap == nullptr) {
+        return IMAGE_BAD_PARAMETER;
+    }
+
+    auto thumbnailPixelmapTmp = thumbnailPixelmap->GetInnerPixelmap();
+    if (!thumbnailPixelmapTmp) {
+        return IMAGE_BAD_PARAMETER;
+    }
+    picture->GetInnerPicture()->SetThumbnailPixelMap(thumbnailPixelmapTmp);
+    return IMAGE_SUCCESS;
+}
+
+MIDK_EXPORT
 Image_ErrorCode OH_PictureNative_SetAuxiliaryPicture(OH_PictureNative *picture, Image_AuxiliaryPictureType type,
     OH_AuxiliaryPictureNative *auxiliaryPicture)
 {
@@ -151,6 +184,21 @@ Image_ErrorCode OH_PictureNative_GetAuxiliaryPicture(OH_PictureNative *picture, 
         return IMAGE_ALLOC_FAILED;
     }
     *auxiliaryPicture = auxNativeTmp.release();
+    return IMAGE_SUCCESS;
+}
+
+MIDK_EXPORT
+Image_ErrorCode OH_PictureNative_DropAuxiliaryPicture(OH_PictureNative *picture, Image_AuxiliaryPictureType type)
+{
+    if (picture == nullptr || !picture->GetInnerPicture()) {
+        return IMAGE_BAD_PARAMETER;
+    }
+    auto auxPicTypeInner = AuxTypeNativeToInner(type);
+    if (!OHOS::Media::ImageUtils::IsAuxiliaryPictureTypeSupported(auxPicTypeInner)) {
+        return IMAGE_BAD_PARAMETER;
+    }
+
+    picture->GetInnerPicture()->DropAuxiliaryPicture(auxPicTypeInner);
     return IMAGE_SUCCESS;
 }
 

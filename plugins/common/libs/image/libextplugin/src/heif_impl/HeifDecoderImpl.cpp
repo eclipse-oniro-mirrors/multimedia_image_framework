@@ -252,6 +252,20 @@ GridInfo HeifDecoderImpl::GetGridInfo()
     return gridInfo_;
 }
 
+std::shared_ptr<HeifImage> HeifDecoderImpl::GetThumbnailImage()
+{
+    if (primaryImage_ == nullptr) {
+        IMAGE_LOGE("Primary image is not init");
+        return nullptr;
+    }
+    auto thumbImages = primaryImage_->GetThumbnailImages();
+    if (thumbImages.empty()) {
+        IMAGE_LOGE("Heif parser has not thumbnail Images.");
+        return nullptr;
+    }
+    return thumbImages[0];
+}
+
 bool HeifDecoderImpl::CheckAuxiliaryMap(AuxiliaryPictureType type)
 {
     if (parser_ == nullptr) {
@@ -269,6 +283,9 @@ bool HeifDecoderImpl::CheckAuxiliaryMap(AuxiliaryPictureType type)
         case AuxiliaryPictureType::LINEAR_MAP:
         case AuxiliaryPictureType::FRAGMENT_MAP:
             auxiliaryImage_ = parser_->GetAuxiliaryMapImage(iter->second);
+            break;
+        case AuxiliaryPictureType::THUMBNAIL:
+            auxiliaryImage_ = this->GetThumbnailImage();
             break;
         default:
             auxiliaryImage_ = nullptr;

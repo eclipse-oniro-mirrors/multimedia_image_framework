@@ -52,10 +52,13 @@ static const std::string IMAGE_PNG_PATH = "/data/local/tmp/image/test_picture_pn
 static const std::string IMAGE_GIF_MOVING_PATH = "/data/local/tmp/image/moving_test.gif";
 static const std::string IMAGE_GIF_LARGE_PATH = "/data/local/tmp/image/fake_large_size_test.gif";  // 50000x50000
 static const std::string IMAGE_GIF_INCOMPLETE_PATH = "/data/local/tmp/image/incomplete_test.gif";
+static const std::string IMAGE_INPUT_JPEG_EXIF_THUMBNAIL = "/data/local/tmp/image/jpeg_exif_thumbnail.jpg";
 static const size_t IMAGE_GIF_MOVING_FRAME_COUNT = 3;
 static const size_t IMAGE_GIF_INCOMPLETE_FRAME_INDEX = 16;
 static const int32_t MAX_BUFFER_SIZE = 256;
 static const int32_t INVALID_INDEX = 1000;
+static const int32_t SIZE_WIDTH = 100;
+static const int32_t SIZE_HEIGHT = 100;
 
 static OH_ImageSourceNative *CreateImageSourceNative(std::string IMAGE_PATH)
 {
@@ -3781,6 +3784,227 @@ HWTEST_F(ImagSourceNdk2Test, OH_ImageSourceNative_ModifyImagePropertyBlob001, Te
     Image_ErrorCode errorCode = OH_ImageSourceNative_ModifyImagePropertyBlob(imageSource, &propertyKey, testPayload,
         payloadSize);
     EXPECT_EQ(errorCode, IMAGE_SUCCESS);
+    OH_ImageSourceNative_Release(imageSource);
+}
+
+/**
+ * @tc.name: OH_DecodingOptionsForThumbnailCreate001
+ * @tc.desc: test OH_DecodingOptionsForThumbnailCreate with nullptr parameter
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImagSourceNdk2Test, OH_DecodingOptionsForThumbnailCreate001, TestSize.Level3)
+{
+    Image_ErrorCode ret = OH_DecodingOptionsForThumbnail_Create(nullptr);
+    EXPECT_EQ(ret, IMAGE_SOURCE_INVALID_PARAMETER);
+}
+
+/**
+ * @tc.name: OH_DecodingOptionsForThumbnailSetGetDesiredSize001
+ * @tc.desc: test OH_DecodingOptionsForThumbnailSetGetDesiredSize
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImagSourceNdk2Test, OH_DecodingOptionsForThumbnailSetGetDesiredSize001, TestSize.Level1)
+{
+    OH_DecodingOptionsForThumbnail *ops = nullptr;
+    Image_ErrorCode ret = IMAGE_UNKNOWN_ERROR;
+    Image_Size desiredSize = {SIZE_WIDTH, SIZE_HEIGHT};
+    Image_Size expectSize = {0, 0};
+    ret = OH_DecodingOptionsForThumbnail_Create(&ops);
+    ASSERT_EQ(ret, IMAGE_SUCCESS);
+    OH_DecodingOptionsForThumbnail_SetDesiredSize(ops, &desiredSize);
+    OH_DecodingOptionsForThumbnail_GetDesiredSize(ops, &expectSize);
+    EXPECT_EQ(desiredSize.width, expectSize.width);
+    EXPECT_EQ(desiredSize.height, expectSize.height);
+    OH_DecodingOptionsForThumbnail_Release(ops);
+}
+
+/**
+ * @tc.name: OH_DecodingOptionsForThumbnailSetGetDesiredSize002
+ * @tc.desc: test OH_DecodingOptionsForThumbnailSetGetDesiredSize
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImagSourceNdk2Test, OH_DecodingOptionsForThumbnailSetGetDesiredSize002, TestSize.Level1)
+{
+    OH_DecodingOptionsForThumbnail *ops = nullptr;
+    Image_ErrorCode ret = IMAGE_UNKNOWN_ERROR;
+    Image_Size desiredSize = {SIZE_WIDTH, SIZE_HEIGHT};
+    Image_Size expectSize = {0, 0};
+    ret = OH_DecodingOptionsForThumbnail_SetDesiredSize(ops, &desiredSize);
+    EXPECT_EQ(ret, IMAGE_SOURCE_INVALID_PARAMETER);
+    ret = OH_DecodingOptionsForThumbnail_GetDesiredSize(ops, &expectSize);
+    EXPECT_EQ(ret, IMAGE_SOURCE_INVALID_PARAMETER);
+    OH_DecodingOptionsForThumbnail_Release(ops);
+}
+
+/**
+ * @tc.name: OH_DecodingOptionsForThumbnailSetGetDesiredSize003
+ * @tc.desc: test OH_DecodingOptionsForThumbnailSetGetDesiredSize
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImagSourceNdk2Test, OH_DecodingOptionsForThumbnailSetGetDesiredSize003, TestSize.Level1)
+{
+    OH_DecodingOptionsForThumbnail *ops = nullptr;
+    Image_ErrorCode ret = IMAGE_UNKNOWN_ERROR;
+    Image_Size *desiredSize = nullptr;
+    Image_Size *expectSize = nullptr;
+    ret = OH_DecodingOptionsForThumbnail_Create(&ops);
+    ASSERT_EQ(ret, IMAGE_SUCCESS);
+    ret = OH_DecodingOptionsForThumbnail_SetDesiredSize(ops, desiredSize);
+    EXPECT_EQ(ret, IMAGE_SOURCE_INVALID_PARAMETER);
+    ret = OH_DecodingOptionsForThumbnail_GetDesiredSize(ops, expectSize);
+    EXPECT_EQ(ret, IMAGE_SOURCE_INVALID_PARAMETER);
+    OH_DecodingOptionsForThumbnail_Release(ops);
+}
+
+/**
+ * @tc.name: OH_DecodingOptionsForThumbnailSetGetNeedGenerate001
+ * @tc.desc: Test OH_DecodingOptionsForThumbnail_SetNeedGenerate and OH_DecodingOptionsForThumbnail_GetNeedGenerate.
+ *           Create options, set needGenerate to true, get the value and expect it to match the set value.
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImagSourceNdk2Test, OH_DecodingOptionsForThumbnailSetGetNeedGenerate001, TestSize.Level1)
+{
+    OH_DecodingOptionsForThumbnail *opts = nullptr;
+    Image_ErrorCode ret = IMAGE_UNKNOWN_ERROR;
+    bool needGenerate = true;
+    bool expectGenerate = false;
+    ret = OH_DecodingOptionsForThumbnail_Create(&opts);
+    ASSERT_EQ(ret, IMAGE_SUCCESS);
+    OH_DecodingOptionsForThumbnail_SetNeedGenerate(opts, &needGenerate);
+    OH_DecodingOptionsForThumbnail_GetNeedGenerate(opts, &expectGenerate);
+    EXPECT_EQ(needGenerate, expectGenerate);
+    OH_DecodingOptionsForThumbnail_Release(opts);
+}
+
+/**
+ * @tc.name: OH_DecodingOptionsForThumbnailSetGetNeedGenerate002
+ * @tc.desc: Test OH_DecodingOptionsForThumbnail_SetNeedGenerate and OH_DecodingOptionsForThumbnail_GetNeedGenerate
+ *           with a null OH_DecodingOptionsForThumbnail pointer.
+ *           Expect IMAGE_SOURCE_INVALID_PARAMETER error and unchanged values.
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImagSourceNdk2Test, OH_DecodingOptionsForThumbnailSetGetNeedGenerate002, TestSize.Level1)
+{
+    OH_DecodingOptionsForThumbnail *opts = nullptr;
+    Image_ErrorCode ret = IMAGE_UNKNOWN_ERROR;
+    bool needGenerate = true;
+    bool expectGenerate = false;
+    ret = OH_DecodingOptionsForThumbnail_SetNeedGenerate(opts, &needGenerate);
+    EXPECT_EQ(ret, IMAGE_SOURCE_INVALID_PARAMETER);
+    ret = OH_DecodingOptionsForThumbnail_GetNeedGenerate(opts, &expectGenerate);
+    EXPECT_EQ(ret, IMAGE_SOURCE_INVALID_PARAMETER);
+    OH_DecodingOptionsForThumbnail_Release(opts);
+}
+
+/**
+ * @tc.name: OH_DecodingOptionsForThumbnailSetGetNeedGenerate003
+ * @tc.desc: Test OH_DecodingOptionsForThumbnail_SetNeedGenerate and OH_DecodingOptionsForThumbnail_GetNeedGenerate
+ *           with null pointers. Expect IMAGE_SOURCE_INVALID_PARAMETER error.
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImagSourceNdk2Test, OH_DecodingOptionsForThumbnailSetGetNeedGenerate003, TestSize.Level1)
+{
+    OH_DecodingOptionsForThumbnail *opts = nullptr;
+    Image_ErrorCode ret = IMAGE_UNKNOWN_ERROR;
+    bool *needGenerate = nullptr;
+    bool *expectGenerate = nullptr;
+    ret = OH_DecodingOptionsForThumbnail_Create(&opts);
+    ASSERT_EQ(ret, IMAGE_SUCCESS);
+    ret = OH_DecodingOptionsForThumbnail_SetNeedGenerate(opts, needGenerate);
+    EXPECT_EQ(ret, IMAGE_SOURCE_INVALID_PARAMETER);
+    ret = OH_DecodingOptionsForThumbnail_GetNeedGenerate(opts, expectGenerate);
+    EXPECT_EQ(ret, IMAGE_SOURCE_INVALID_PARAMETER);
+    OH_DecodingOptionsForThumbnail_Release(opts);
+}
+
+/**
+ * @tc.name: OH_DecodingOptionsForThumbnail_Release001
+ * @tc.desc: Test OH_DecodingOptionsForThumbnail_Release with null pointers.
+ *           Expect IMAGE_SOURCE_INVALID_PARAMETER error.
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImagSourceNdk2Test, OH_DecodingOptionsForThumbnail_Release001, TestSize.Level3)
+{
+    OH_DecodingOptionsForThumbnail *opts = nullptr;
+    Image_ErrorCode ret = IMAGE_UNKNOWN_ERROR;
+    ret = OH_DecodingOptionsForThumbnail_Release(opts);
+    EXPECT_EQ(ret, IMAGE_SOURCE_INVALID_PARAMETER);
+}
+
+/**
+ * @tc.name: OH_ImageSourceNative_CreateThumbnail001
+ * @tc.desc: Test OH_ImageSourceNative_CreateThumbnail with JPEG having EXIF thumbnail. Create decoding options
+ *           successfully and expect successful thumbnail creation.
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImagSourceNdk2Test, OH_ImageSourceNative_CreateThumbnail001, TestSize.Level1)
+{
+    OH_ImageSourceNative *imageSource = CreateImageSourceNative(IMAGE_INPUT_JPEG_EXIF_THUMBNAIL);
+    ASSERT_NE(imageSource, nullptr);
+    OH_DecodingOptionsForThumbnail *dopts = nullptr;
+    uint32_t ret = OH_DecodingOptionsForThumbnail_Create(&dopts);
+    ASSERT_EQ(ret, IMAGE_SUCCESS);
+    OH_PixelmapNative *pixelmap = nullptr;
+    ret = OH_ImageSourceNative_CreateThumbnail(imageSource, dopts, &pixelmap);
+    ASSERT_EQ(ret, IMAGE_SUCCESS);
+    ASSERT_NE(pixelmap, nullptr);
+    OH_ImageSourceNative_Release(imageSource);
+    OH_DecodingOptionsForThumbnail_Release(dopts);
+    OH_PixelmapNative_Release(pixelmap);
+}
+
+/**
+ * @tc.name: OH_ImageSourceNative_CreateThumbnail002
+ * @tc.desc: Test OH_ImageSourceNative_CreateThumbnail with a null OH_ImageSourceNative pointer and a valid decoding
+ *           options for thumbnail. Expect IMAGE_SOURCE_INVALID_PARAMETER error when creating the thumbnail.
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImagSourceNdk2Test, OH_ImageSourceNative_CreateThumbnail002, TestSize.Level1)
+{
+    OH_ImageSourceNative *imageSource = nullptr;
+    OH_DecodingOptionsForThumbnail *dopts = nullptr;
+    uint32_t ret = OH_DecodingOptionsForThumbnail_Create(&dopts);
+    ASSERT_EQ(ret, IMAGE_SUCCESS);
+    OH_PixelmapNative *pixelmap = nullptr;
+    ret = OH_ImageSourceNative_CreateThumbnail(imageSource, dopts, &pixelmap);
+    ASSERT_EQ(ret, IMAGE_SOURCE_INVALID_PARAMETER);
+    OH_DecodingOptionsForThumbnail_Release(dopts);
+}
+
+/**
+ * @tc.name: OH_ImageSourceNative_CreateThumbnail003
+ * @tc.desc: Test OH_ImageSourceNative_CreateThumbnail using a JPEG image with EXIF thumbnail.
+ *           expect IMAGE_SOURCE_INVALID_PARAMETER error.
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImagSourceNdk2Test, OH_ImageSourceNative_CreateThumbnail003, TestSize.Level1)
+{
+    OH_ImageSourceNative *imageSource = CreateImageSourceNative(IMAGE_INPUT_JPEG_EXIF_THUMBNAIL);
+    ASSERT_NE(imageSource, nullptr);
+    OH_DecodingOptionsForThumbnail *dopts = nullptr;
+    uint32_t ret = OH_DecodingOptionsForThumbnail_Create(&dopts);
+    ASSERT_EQ(ret, IMAGE_SUCCESS);
+    OH_PixelmapNative **pixelmap = nullptr;
+    ret = OH_ImageSourceNative_CreateThumbnail(imageSource, dopts, pixelmap);
+    ASSERT_EQ(ret, IMAGE_SOURCE_INVALID_PARAMETER);
+    OH_ImageSourceNative_Release(imageSource);
+    OH_DecodingOptionsForThumbnail_Release(dopts);
+}
+
+/**
+ * @tc.name: OH_ImageSourceNative_CreateThumbnail004
+ * @tc.desc: Test OH_ImageSourceNative_CreateThumbnail with JPEG having EXIF thumbnail and null decoding options.
+ *           Expect IMAGE_SOURCE_INVALID_PARAMETER error.
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImagSourceNdk2Test, OH_ImageSourceNative_CreateThumbnail004, TestSize.Level1)
+{
+    OH_ImageSourceNative *imageSource = CreateImageSourceNative(IMAGE_INPUT_JPEG_EXIF_THUMBNAIL);
+    ASSERT_NE(imageSource, nullptr);
+    OH_DecodingOptionsForThumbnail *dopts = nullptr;
+    OH_PixelmapNative *pixelmap = nullptr;
+    uint32_t ret = OH_ImageSourceNative_CreateThumbnail(imageSource, dopts, &pixelmap);
+    ASSERT_EQ(ret, IMAGE_SOURCE_INVALID_PARAMETER);
     OH_ImageSourceNative_Release(imageSource);
 }
 }

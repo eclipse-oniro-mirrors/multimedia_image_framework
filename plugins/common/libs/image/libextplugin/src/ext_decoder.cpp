@@ -3434,6 +3434,9 @@ bool ExtDecoder::DecodeHeifAuxiliaryMap(DecodeContext& context, AuxiliaryPicture
     uint64_t byteCount = tempByteCount;
     context.info.size.width = static_cast<int32_t>(width);
     context.info.size.height = static_cast<int32_t>(height);
+    if (!SetOutPutFormat(context.info.pixelFormat, decoder)) {
+        return ERR_IMAGE_DATA_UNSUPPORT;
+    }
     cond = DmaMemAlloc(context, byteCount, dstInfo) != SUCCESS;
     CHECK_INFO_RETURN_RET_LOG(cond, false, "DmaMemAlloc execution failed.");
     auto* dstBuffer = static_cast<uint8_t*>(context.pixelsBuffer.buffer);

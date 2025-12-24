@@ -421,6 +421,81 @@ Image_ErrorCode OH_DecodingOptions_SetDesiredColorSpace(OH_DecodingOptions *opti
 Image_ErrorCode OH_DecodingOptions_Release(OH_DecodingOptions *options);
 
 /**
+ * @brief Defines the options for decoding the thumbnail.
+ * It is used in {@link OH_ImageSourceNative_CreateThumbnail}.
+ *
+ * @since 22
+ */
+struct OH_DecodingOptionsForThumbnail;
+typedef struct OH_DecodingOptionsForThumbnail OH_DecodingOptionsForThumbnail;
+
+/**
+ * @brief Create a pointer for DecodingOptionsForThumbnail struct.
+ *
+ * @param options The DecodingOptionsForThumbnail pointer will be operated.
+ * @return Image functions result code.
+ *         {@link IMAGE_SUCCESS} if the execution is successful.
+ *         {@link IMAGE_BAD_PARAMETER} options is nullptr.
+ * @since 22
+ */
+Image_ErrorCode OH_DecodingOptionsForThumbnail_Create(OH_DecodingOptionsForThumbnail **options);
+
+/**
+ * @brief Get desiredSize number for DecodingOptionsForThumbnail struct.
+ *
+ * @param options The DecodingOptionsForThumbnail pointer will be operated.
+ * @param desiredSize The number of image desiredSize.
+ * @return Returns {@link Image_ErrorCode}
+ * @since 22
+ */
+Image_ErrorCode OH_DecodingOptionsForThumbnail_GetDesiredSize(OH_DecodingOptionsForThumbnail *options,
+    Image_Size *desiredSize);
+
+/**
+ * @brief Set desiredSize number for DecodingOptionsForThumbnail struct.
+ *
+ * @param options The DecodingOptionsForThumbnail pointer will be operated.
+ * @param desiredSize The number of image desiredSize.
+ * @return Returns {@link Image_ErrorCode}
+ * @since 22
+ */
+Image_ErrorCode OH_DecodingOptionsForThumbnail_SetDesiredSize(OH_DecodingOptionsForThumbnail *options,
+    Image_Size *desiredSize);
+
+/**
+ * @brief Get needGenerate number for DecodingOptionsForThumbnail struct.
+ *
+ * @param options The DecodingOptionsForThumbnail pointer will be operated.
+ * @param needGenerate Whether the thumbnail should be generated, if the image does not have a thumbnail.
+ *        Default is false.
+ * @return Returns {@link Image_ErrorCode}
+ * @since 22
+ */
+Image_ErrorCode OH_DecodingOptionsForThumbnail_GetNeedGenerate(OH_DecodingOptionsForThumbnail *options,
+    bool *needGenerate);
+
+/**
+ * @brief Set needGenerate number for DecodingOptionsForThumbnail struct.
+ *
+ * @param options The DecodingOptionsForThumbnail pointer will be operated.
+ * @param needGenerate Whether the thumbnail should be generated, if the image does not have a thumbnail.
+ *        Default is false.
+ * @return Returns {@link Image_ErrorCode}
+ * @since 22
+ */
+Image_ErrorCode OH_DecodingOptionsForThumbnail_SetNeedGenerate(OH_DecodingOptionsForThumbnail *options,
+    bool *needGenerate);
+
+/**
+ * @brief Delete DecodingOptionsForThumbnail pointer.
+ *
+ * @param options The DecodingOptionsForThumbnail pointer will be operated.
+ * @return Returns {@link Image_ErrorCode}
+ * @since 22
+ */
+Image_ErrorCode OH_DecodingOptionsForThumbnail_Release(OH_DecodingOptionsForThumbnail *options);
+
+/**
  * @brief Creates an ImageSource pointer.
  *
  * @param uri Indicates a pointer to the image source URI. Only a file URI or Base64 URI is accepted.
@@ -540,6 +615,88 @@ Image_ErrorCode OH_ImageSourceNative_CreatePixelmapList(OH_ImageSourceNative *so
  */
 Image_ErrorCode OH_ImageSourceNative_CreatePicture(OH_ImageSourceNative *source, OH_DecodingOptionsForPicture *options,
     OH_PictureNative **picture);
+
+/**
+ * @brief Create Thumbnail pointer from ImageSource
+ * based on the specified {@link OH_DecodingOptionsForThumbnail} struct.
+ *
+ * @param source Indicates a void pointer(from ImageSource pointer convert).
+ * @param options Indicates a pointer to the options for decoding the image source.
+ * For details, see {@link OH_DecodingOptionsForThumbnail}.
+ * @param needGenerate Indicates whether the thumbnail needs to be generated.
+ * @param pixelMap Indicates a void pointer to the <b>Thumbnail Pixelmap</b> object obtained at the C++ native layer.
+ * @return Image functions result code.
+ *         {@link IMAGE_SUCCESS} if the execution is successful.
+ *         {@link IMAGE_BAD_PARAMETER} source is nullptr, or pixelmap is nullptr.
+ *         {@link IMAGE_DECODE_FAILED} decode failed.
+ * @since 22
+ */
+Image_ErrorCode OH_ImageSourceNative_CreateThumbnail(OH_ImageSourceNative *source,
+    OH_DecodingOptionsForThumbnail *options, OH_PixelmapNative **pixelmap);
+
+/**
+ * @brief Create a pointer for DecodingOptionsForThumbnail struct.
+ *
+ * @param options The DecodingOptionsForThumbnail pointer will be operated.
+ * @return Image functions result code.
+ *         {@link IMAGE_SUCCESS} if the execution is successful.
+ *         {@link IMAGE_BAD_PARAMETER} options is nullptr.
+ * @since 16
+ */
+Image_ErrorCode OH_DecodingOptionsForThumbnail_Create(OH_DecodingOptionsForThumbnail **options);
+
+/**
+ * @brief Get desiredSize number for DecodingOptionsForThumbnail struct.
+ *
+ * @param  options The DecodingOptionsForThumbnail pointer will be operated.
+ * @param desiredSize the number of image desiredSize.
+ * @return Returns {@link Image_ErrorCode}
+ * @since 16
+ */
+Image_ErrorCode OH_DecodingOptionsForThumbnail_GetDesiredSize(OH_DecodingOptionsForThumbnail *options,
+    Image_Size *desiredSize);
+
+/**
+ * @brief Set desiredSize number for DecodingOptionsForThumbnail struct.
+ *
+ * @param  options The DecodingOptionsForThumbnail pointer will be operated.
+ * @param desiredSize the number of image desiredSize.
+ * @return Returns {@link Image_ErrorCode}
+ * @since 16
+ */
+Image_ErrorCode OH_DecodingOptionsForThumbnail_SetDesiredSize(OH_DecodingOptionsForThumbnail *options,
+    Image_Size *desiredSize);
+
+/**
+ * @brief Get needGenerate number for DecodingOptionsForThumbnail struct.
+ *
+ * @param  options The DecodingOptionsForThumbnail pointer will be operated.
+ * @param needGenerate the number of image needGenerate.
+ * @return Returns {@link Image_ErrorCode}
+ * @since 16
+ */
+Image_ErrorCode OH_DecodingOptionsForThumbnail_GetNeedGenerate(OH_DecodingOptionsForThumbnail *options,
+    bool *needGenerate);
+
+/**
+ * @brief Set needGenerate number for DecodingOptionsForThumbnail struct.
+ *
+ * @param  options The DecodingOptionsForThumbnail pointer will be operated.
+ * @param needGenerate the number of image needGenerate.
+ * @return Returns {@link Image_ErrorCode}
+ * @since 16
+ */
+Image_ErrorCode OH_DecodingOptionsForThumbnail_SetNeedGenerate(OH_DecodingOptionsForThumbnail *options,
+    bool *needGenerate);
+
+/**
+ * @brief delete DecodingOptionsForThumbnail pointer.
+ *
+ * @param  options The DecodingOptionsForThumbnail pointer will be operated.
+ * @return Returns {@link Image_ErrorCode}
+ * @since 16
+ */
+Image_ErrorCode OH_DecodingOptionsForThumbnail_Release(OH_DecodingOptionsForThumbnail *options);
 
 /**
  * @brief Decodes an image at the specified index into a Picture object.

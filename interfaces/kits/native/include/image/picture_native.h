@@ -114,6 +114,11 @@ typedef enum {
     * Fragment map
     */
     AUXILIARY_PICTURE_TYPE_FRAGMENT_MAP = 5,
+    /*
+    * Thumbnail
+    * @since 22
+    */
+    AUXILIARY_PICTURE_TYPE_THUMBNAIL = 10,
 } Image_AuxiliaryPictureType;
 
 /**
@@ -166,6 +171,31 @@ Image_ErrorCode OH_PictureNative_GetHdrComposedPixelmap(OH_PictureNative *pictur
 Image_ErrorCode OH_PictureNative_GetGainmapPixelmap(OH_PictureNative *picture, OH_PixelmapNative **gainmapPixelmap);
 
 /**
+ * @brief Obtains the thumbnail pixel map.
+ *
+ * @param picture The Picture pointer will be operated.
+ * @param thumbnailPixelmap Thumbnail pixel map pointer for obtained.
+ * @return Image functions result code.
+ *         {@link IMAGE_SUCCESS} if the execution is successful.
+ *         {@link IMAGE_BAD_PARAMETER} picture is nullptr, or thumbnailPixelmap is nullptr.
+ * @since 22
+ */
+Image_ErrorCode OH_PictureNative_GetThumbnailPixelmap(OH_PictureNative *picture,
+    OH_PixelmapNative **thumbnailPixelmap);
+
+/**
+ * @brief Set thumbnail pixel map.
+ *
+ * @param picture The Picture pointer will be operated.
+ * @param thumbnailPixelmap Thumbnail pixel map will be set.
+ * @return Image functions result code.
+ *         {@link IMAGE_SUCCESS} if the execution is successful.
+ *         {@link IMAGE_BAD_PARAMETER} picture is nullptr.
+ * @since 22
+ */
+Image_ErrorCode OH_PictureNative_SetThumbnailPixelmap(OH_PictureNative *picture, OH_PixelmapNative *thumbnailPixelmap);
+
+/**
  * @brief Set auxiliary picture.
  *
  * @param picture The Picture pointer will be operated.
@@ -192,6 +222,18 @@ Image_ErrorCode OH_PictureNative_SetAuxiliaryPicture(OH_PictureNative *picture, 
  */
 Image_ErrorCode OH_PictureNative_GetAuxiliaryPicture(OH_PictureNative *picture, Image_AuxiliaryPictureType type,
     OH_AuxiliaryPictureNative **auxiliaryPicture);
+
+/**
+ * @brief Drop the auxiliary picture based on type.
+ *
+ * @param picture The Picture pointer will be operated.
+ * @param type The type of auxiliary picture.
+ * @return Image functions result code.
+ *         {@link IMAGE_SUCCESS} if the execution is successful.
+ *         {@link IMAGE_BAD_PARAMETER} picture is nullptr, or the type is invalid.
+ * @since 22
+ */
+Image_ErrorCode OH_PictureNative_DropAuxiliaryPicture(OH_PictureNative *picture, Image_AuxiliaryPictureType type);
 
 /**
  * @brief Obtains the metadata of main picture.

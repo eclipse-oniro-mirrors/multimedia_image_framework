@@ -46,6 +46,7 @@
 #include "image_fwk_ext_manager.h"
 #include "image_log.h"
 #include "image_system_properties.h"
+#include "image_trace.h"
 #include "image_type_converter.h"
 #include "image_utils.h"
 #include "jpeg_mpf_parser.h"
@@ -69,6 +70,7 @@
 #include "tiff_parser.h"
 #include "image_mime_type.h"
 #include "securec.h"
+#include "buffer_packer_stream.h"
 #include "file_packer_stream.h"
 #include "memory_manager.h"
 #ifdef HEIF_HW_ENCODE_ENABLE
@@ -147,6 +149,7 @@ namespace {
     constexpr static uint32_t XTSTYLE_META_ITEM_ID = 9;
     constexpr static uint32_t RFDATAB_META_ITEM_ID = 10;
     constexpr static uint32_t STDATA_META_ITEM_ID = 11;
+    constexpr static uint32_t THUMBNAIL_ITEM_ID = 22;
     const static std::string COMPRESS_TYPE_TMAP = "tmap";
     const static std::string COMPRESS_TYPE_HEVC = "hevc";
     const static std::string COMPRESS_TYPE_NONE = "none";
@@ -165,6 +168,7 @@ namespace {
     const static std::string UNREFOCUS_MAP_ITEM_NAME = "Unrefocus Map Image";
     const static std::string LINEAR_MAP_ITEM_NAME = "Linear Map Image";
     const static std::string FRAGMENT_MAP_ITEM_NAME = "Fragment Map Image";
+    const static std::string THUMBNAIL_ITEM_NAME = "Thumbnail Image";
     const static std::string XTSTYLE_METADATA_ITEM_NAME = "urn:com:huawei:photo:5:1:0:meta:xtstyle";
     const static std::string RFDATAB_METADATA_ITEM_NAME = "RfDataB\0";
     const static std::string STDATA_METADATA_ITEM_NAME = "STData\0";
@@ -228,6 +232,7 @@ static const std::map<AuxiliaryPictureType, std::string> DEFAULT_AUXILIARY_TAG_M
     {AuxiliaryPictureType::UNREFOCUS_MAP, AUXILIARY_TAG_UNREFOCUS_MAP},
     {AuxiliaryPictureType::LINEAR_MAP, AUXILIARY_TAG_LINEAR_MAP},
     {AuxiliaryPictureType::FRAGMENT_MAP, AUXILIARY_TAG_FRAGMENT_MAP},
+    {AuxiliaryPictureType::THUMBNAIL, AUXILIARY_TAG_THUMBNAIL},
 };
 
 static const uint8_t NUM_2 = 2;
@@ -238,6 +243,7 @@ static const uint8_t RGBA_BIT_DEPTH = 4;
 static constexpr int32_t MAX_IMAGE_SIZE = 32768;
 static constexpr int32_t MIN_IMAGE_SIZE = 128;
 static constexpr int32_t MIN_RGBA_IMAGE_SIZE = 1024;
+static constexpr uint32_t EXIF_MAX_SIZE = 64 * 1024; // 64K
 
 #ifdef HEIF_HW_ENCODE_ENABLE
 using namespace OHOS::HDI::Codec::Image::V2_1;
@@ -1267,6 +1273,46 @@ uint32_t ExtEncoder::AssembleSdrImageItem(
     return SUCCESS;
 }
 
+uint32_t ExtEncoder::AssembleHeifThumbnail(std::vector<ImageItem>& inputImgs)
+{
+    bool cond = picture_ == nullptr;
+    CHECK_ERROR_RETURN_RET_LOG(cond, ERR_IMAGE_INVALID_PARAMETER, "%{public}s picture_ is nullptr", __func__);
+    auto thumbnail = picture_->GetAuxiliaryPicture(AuxiliaryPictureType::THUMBNAIL);
+    cond = !thumbnail || !thumbnail->GetContentPixel();
+    CHECK_ERROR_RETURN_RET_LOG(cond, ERR_IMAGE_INVALID_PARAMETER, "%{public}s The thumbnail is nullptr", __func__);
+    HeifEncodeItemInfo itemInfo = GetHeifEncodeItemInfo(AuxiliaryPictureType::THUMBNAIL);
+
+    auto item = InitAuxiliaryImageItem(itemInfo.itemId, itemInfo.itemName);
+    bool sdrIsSRGB = thumbnail->GetContentPixel()->GetToSdrColorSpaceIsSRGB();
+    SkImageInfo thumbnailInfo = GetSkInfo(thumbnail->GetContentPixel().get(), false, sdrIsSRGB);
+#ifdef USE_M133_SKIA
+    sk_sp<SkData> iccProfile = icc_from_color_space(thumbnailInfo, nullptr, nullptr);
+#else
+    sk_sp<SkData> iccProfile = icc_from_color_space(thumbnailInfo);
+#endif
+    cond = !AssembleICCImageProperty(iccProfile, item.sharedProperties);
+    CHECK_ERROR_RETURN_RET_LOG(cond, ERR_IMAGE_INVALID_PARAMETER,
+        "%{public}s AssembleICCImageProperty failed", __func__);
+    sptr<SurfaceBuffer> thumbnailSptr = ConvertPixelMapToDmaBuffer(thumbnail->GetContentPixel());
+    cond = thumbnailSptr == nullptr;
+    CHECK_ERROR_RETURN_RET_LOG(cond, ERR_IMAGE_INVALID_PARAMETER, "%{public}s thumbnailSptr is nullptr", __func__);
+    item.pixelBuffer = sptr<NativeBuffer>::MakeSptr(thumbnailSptr->GetBufferHandle());
+    std::string auxTypeStr = itemInfo.itemType;
+
+    uint32_t litePropertiesSize =
+        sizeof(PropertyType::AUX_TYPE) + UINT32_BYTES_NUM + auxTypeStr.length() + PLACE_HOLDER_LENGTH;
+    litePropertiesSize += (sizeof(PropertyType::COLOR_TYPE) + sizeof(ColorType));
+    item.liteProperties.resize(litePropertiesSize);
+    size_t offset = 0;
+    cond = !FillLitePropertyItemByString(item.liteProperties, offset, PropertyType::AUX_TYPE, auxTypeStr);
+    CHECK_ERROR_RETURN_RET_LOG(cond, ERR_IMAGE_INVALID_PARAMETER, "%{public}s Fill auxiliary type failed", __func__);
+    ColorType colorType = ColorType::RICC;
+    cond = !FillLitePropertyItem(item.liteProperties, offset, PropertyType::COLOR_TYPE, &colorType, sizeof(ColorType));
+    CHECK_ERROR_RETURN_RET_LOG(cond, ERR_IMAGE_INVALID_PARAMETER, "%{public}s Fill color type failed", __func__);
+    inputImgs.push_back(item);
+    return SUCCESS;
+}
+
 uint32_t ExtEncoder::AssembleHeifAuxiliaryPicture(std::vector<ImageItem>& inputImgs, std::vector<ItemRef>& refs)
 {
     bool cond = !picture_;
@@ -1286,6 +1332,10 @@ uint32_t ExtEncoder::AssembleHeifAuxiliaryPicture(std::vector<ImageItem>& inputI
     if (picture_->HasAuxiliaryPicture(AuxiliaryPictureType::FRAGMENT_MAP) &&
         AssembleHeifFragmentMap(inputImgs) == SUCCESS) {
         AssembleAuxiliaryRefItem(AuxiliaryPictureType::FRAGMENT_MAP, refs);
+    }
+    if (opts_.needsPackProperties != false || (picture_->HasAuxiliaryPicture(AuxiliaryPictureType::THUMBNAIL) &&
+        AssembleHeifThumbnail(inputImgs) == SUCCESS)) {
+        AssembleAuxiliaryRefItem(AuxiliaryPictureType::THUMBNAIL, refs);
     }
     return SUCCESS;
 }
@@ -1336,6 +1386,11 @@ HeifEncodeItemInfo GetHeifEncodeItemInfo(AuxiliaryPictureType auxType)
             itemInfo.itemId = FRAGMENT_MAP_ITEM_ID;
             itemInfo.itemName = FRAGMENT_MAP_ITEM_NAME;
             itemInfo.itemType = HEIF_AUXTTYPE_ID_FRAGMENT_MAP;
+            break;
+        case AuxiliaryPictureType::THUMBNAIL:
+            itemInfo.itemId = THUMBNAIL_ITEM_ID;
+            itemInfo.itemName = THUMBNAIL_ITEM_NAME;
+            itemInfo.itemType = HEIF_AUXTTYPE_ID_THUMBNAIL;
             break;
         default:
             break;
@@ -1771,6 +1826,94 @@ uint32_t ExtEncoder::EncodeHeifSdrImage(sptr<SurfaceBuffer>& sdr, SkImageInfo sd
 #endif
 }
 
+static bool CheckThumbnailCanSet(std::shared_ptr<ExifMetadata> &exifMetadata, uint8_t *data, const uint32_t &thumbSize)
+{
+    CHECK_ERROR_RETURN_RET_LOG(exifMetadata == nullptr, false,
+        "%{public}s: exifMetadata is nullptr", __func__);
+    
+    ExifData *exifData = exifMetadata->GetExifData();
+    CHECK_ERROR_RETURN_RET_LOG(exifData == nullptr, false, "%{public}s: exifData is nullptr", __func__);
+
+    uint32_t totalSize = 0;
+    {
+        // set new thumbnail data temporarily to get total exif size
+        ScopeRestorer<unsigned char*> thumbDataRestorer(exifData->data, data);
+        ScopeRestorer<unsigned int> thumbSizeRestorer(exifData->size, thumbSize);
+        exifMetadata->GetDataSize(totalSize, true, true);
+    }
+
+    if (totalSize > EXIF_MAX_SIZE) {
+        IMAGE_LOGE("%{public}s: total exif size %{public}u exceed max size %{public}u, cannot set thumbnail",
+            __func__, totalSize, EXIF_MAX_SIZE);
+        exifMetadata->DropThumbnail();
+        return false;
+    }
+    return true;
+}
+
+static uint32_t FillExifThumbnail(PixelMap *pixelMap, uint8_t *data, const uint32_t &size)
+{
+    CHECK_ERROR_RETURN_RET_LOG(pixelMap == nullptr || data == nullptr, ERR_IMAGE_DATA_ABNORMAL,
+        "%{public}s: pixelMap is nullptr", __func__);
+    std::shared_ptr<ExifMetadata> exifMetadata = pixelMap->GetExifMetadata();
+    if (exifMetadata == nullptr) {
+        IMAGE_LOGI("%{public}s: exifMetadata is nullptr. Try to create a new exifMetadata", __func__);
+        exifMetadata = std::make_shared<ExifMetadata>();
+        CHECK_ERROR_RETURN_RET_LOG(!exifMetadata->CreateExifdata(), ERR_MEDIA_NO_EXIF_DATA,
+            "%{public}s: try to create new exifMetadata failed!", __func__);
+        pixelMap->SetExifMetadata(exifMetadata);
+    }
+    CHECK_ERROR_RETURN_RET_LOG(exifMetadata == nullptr, ERR_MEDIA_NO_EXIF_DATA,
+        "%{public}s: exifMetadata is nullptr", __func__);
+
+    CHECK_ERROR_RETURN_RET_LOG(!CheckThumbnailCanSet(exifMetadata, data, size), ERR_IMAGE_DATA_ABNORMAL,
+        "%{public}s: check thumbnail can set failed", __func__);
+
+    exifMetadata->SetThumbnail(data, size);
+    return SUCCESS;
+}
+
+uint32_t ExtEncoder::ProcessJpegThumbnail()
+{
+    if (opts_.needsPackProperties == false) {
+        IMAGE_LOGI("%{public}s: needsPackProperties is false, skip process jpeg thumbnail", __func__);
+        return SUCCESS;
+    }
+
+    CHECK_ERROR_RETURN_RET_LOG(picture_ == nullptr, ERR_IMAGE_DATA_ABNORMAL,
+        "%{public}s: picture is nullptr", __func__);
+    std::shared_ptr<PixelMap> pixelMap = picture_->GetMainPixel();
+    std::shared_ptr<PixelMap> thumbnailPixelMap = picture_->GetThumbnailPixelMap();
+    CHECK_ERROR_RETURN_RET_LOG(pixelMap == nullptr || thumbnailPixelMap == nullptr, ERR_IMAGE_DATA_ABNORMAL,
+        "%{public}s: mainPixelMap or thumbnailPixelMap is nullptr, stop process jpeg thumbnail", __func__);
+
+    // Encode thumbnail
+    ImageTrace imageTrace("%{publics}: size:(%d, %d)", __func__,
+        thumbnailPixelMap->GetWidth(), thumbnailPixelMap->GetHeight());
+    uint32_t errorCode = ERR_IMAGE_ENCODE_FAILED;
+    std::vector<uint8_t> packedData(EXIF_MAX_SIZE);
+    auto stream = std::make_unique<BufferPackerStream>(packedData.data(), packedData.size());
+    CHECK_ERROR_RETURN_RET_LOG(stream == nullptr, ERR_MEDIA_MALLOC_FAILED,
+        "%{public}s: buffer packer stream is nullptr", __func__);
+
+    ExtWStream wStream(stream.get());
+    // thumbnail always use JPEG format
+    ScopeRestorer<SkEncodedImageFormat> encodeFormatRestorer(encodeFormat_, SkEncodedImageFormat::kJPEG);
+    ScopeRestorer<PixelMap*> pixelmapRestorer(pixelmap_, thumbnailPixelMap.get());
+    errorCode = EncodeImageByPixelMap(thumbnailPixelMap.get(), false, wStream);
+    if (errorCode != SUCCESS) {
+        IMAGE_LOGE("%{public}s: encode Picture's thumbnail failed, errorCode: %{public}d", __func__, errorCode);
+        std::shared_ptr<ExifMetadata> exifMetadata = pixelMap->GetExifMetadata();
+        if (exifMetadata != nullptr) {
+            exifMetadata->DropThumbnail();
+        }
+        return errorCode;
+    }
+
+    // Fill Exif with encoded thumbnail data
+    return FillExifThumbnail(pixelMap.get(), packedData.data(), wStream.bytesWritten());
+}
+
 uint32_t ExtEncoder::EncodePicture()
 {
     bool cond = (encodeFormat_ != SkEncodedImageFormat::kJPEG && encodeFormat_ != SkEncodedImageFormat::kHEIF);
@@ -1781,6 +1924,7 @@ uint32_t ExtEncoder::EncodePicture()
     }
     if (encodeFormat_ == SkEncodedImageFormat::kJPEG) {
         CheckJpegAuxiliaryTagName();
+        ProcessJpegThumbnail();
     }
     ExtWStream wStream(output_);
     return EncodeCameraScenePicture(wStream);
@@ -2132,7 +2276,8 @@ void ExtEncoder::EncodeJpegAuxiliaryPictures(SkWStream& skStream)
     for (AuxiliaryPictureType auxType : auxTypes) {
         auto auxPicture = picture_->GetAuxiliaryPicture(auxType);
         // Gainmap has been encoded before
-        if (auxPicture == nullptr || auxType == AuxiliaryPictureType::GAINMAP) {
+        if (auxPicture == nullptr || auxType == AuxiliaryPictureType::GAINMAP ||
+            auxType == AuxiliaryPictureType::THUMBNAIL) {
             continue;
         }
         IMAGE_LOGI("%{public}s try to encode auxiliary picture type: %{public}d", __func__, auxType);
@@ -2768,6 +2913,10 @@ void ExtEncoder::AssembleAuxiliaryRefItem(AuxiliaryPictureType type, std::vector
             break;
         case AuxiliaryPictureType::FRAGMENT_MAP:
             item->from = FRAGMENT_MAP_ITEM_ID;
+            break;
+        case AuxiliaryPictureType::THUMBNAIL:
+            item->type = ReferenceType::THMB;
+            item->from = THUMBNAIL_ITEM_ID;
             break;
         default:
             break;

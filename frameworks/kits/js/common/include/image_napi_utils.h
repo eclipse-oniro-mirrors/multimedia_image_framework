@@ -16,6 +16,7 @@
 #ifndef FRAMEWORKS_KITS_JS_COMMON_INCLUDE_IMAGE_NAPI_UTILS_H
 #define FRAMEWORKS_KITS_JS_COMMON_INCLUDE_IMAGE_NAPI_UTILS_H
 
+#include "image_type.h"
 #include "napi/native_api.h"
 #include "napi/native_node_api.h"
 
@@ -167,6 +168,7 @@ public:
     static bool CreateNapiDouble(napi_env env, double value, napi_value &root);
     static bool ParseImageCreatorReceiverArgs(napi_env env, size_t argc,
         napi_value argv[], int32_t args[], std::string &errMsg);
+    static const std::set<AuxiliaryPictureType> &GetNapiSupportedAuxiliaryPictureType();
     static void HicheckerReport();
     static void CreateErrorObj(napi_env env, napi_value &errorObj,
         const int32_t errCode, const std::string errMsg);

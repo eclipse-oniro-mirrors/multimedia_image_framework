@@ -66,6 +66,7 @@ public:
 #if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
     optional<Picture> CreatePictureSync(optional_view<DecodingOptionsForPicture> options);
     optional<Picture> CreatePictureAtIndexSync(int32_t index);
+    optional<PixelMap> CreateThumbnailSync(optional_view<DecodingOptionsForThumbnail> options);
 #endif
 
     array<string> GetSupportedFormats();
