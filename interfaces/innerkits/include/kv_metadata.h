@@ -46,6 +46,10 @@ public:
     {
         return false;
     }
+    virtual uint32_t GetBlob(uint32_t bufferSize, uint8_t *dst) override;
+    virtual uint32_t SetBlob(const uint8_t *source, const uint32_t bufferSize) override;
+    virtual uint32_t GetBlobSize() override;
+    virtual uint8_t* GetBlobPtr() override;
 
 protected:
     MetadataType metadataType_ = MetadataType::UNKNOWN;

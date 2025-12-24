@@ -55,6 +55,7 @@ group("fuzztest") {
     "imagecr3parser_fuzzer:ImageCr3ParserFuzzTest",
     "imagecr3box_fuzzer:ImageCr3BoxFuzzTest",
     "imageheifsdecode_fuzzer:ImageHeifsDecodeFuzzTest",
+    "imageheifsmetadata_fuzzer:ImageHeifsMetadataFuzzTest",
   ]
   if (has_libtiff) {
     deps += [

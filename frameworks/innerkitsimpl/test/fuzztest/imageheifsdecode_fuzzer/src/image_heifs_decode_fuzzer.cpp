@@ -39,7 +39,6 @@ using namespace OHOS::ImagePlugin;
 FuzzedDataProvider* FDP;
 
 namespace {
-    static const std::string IMAGE_INPUT_HEIFS_PATH = "/data/local/tmp/image/starfield_animation.heic";
     static constexpr uint32_t NUM_0 = 0;
     static constexpr uint32_t NUM_2 = 2;
     static constexpr uint32_t NUM_4 = 4;

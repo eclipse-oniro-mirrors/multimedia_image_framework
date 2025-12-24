@@ -1,0 +1,51 @@
+# Copyright (c) 2025 Huawei Device Co., Ltd.
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+import("//build/test.gni")
+import("//foundation/multimedia/image_framework/ide/image_decode_config.gni")
+
+ohos_fuzztest("ImageHeifsMetadataFuzzTest") {
+  module_out_path = "image_framework/image_framework"
+  fuzz_config_file = "$image_subsystem/frameworks/innerkitsimpl/test/fuzztest/imageheifsmetadata_fuzzer"
+
+  include_dirs = [
+    "./include",
+    "$image_subsystem/interfaces/innerkits/include",
+    "$image_subsystem/plugins/common/libs/image/libextplugin/include",
+    "$image_subsystem/frameworks/innerkitsimpl/test/fuzztest/common/include",
+  ]
+
+  sources = [ "src/image_heifs_metadata_fuzzer.cpp" ]
+
+  defines = []
+
+  deps = [
+    "$image_subsystem/interfaces/innerkits:image_native",
+    "${image_subsystem}/frameworks/innerkitsimpl/utils:image_utils",
+  ]
+
+  external_deps = [
+    "drivers_interface_codec:libcodec_proxy_4.0",
+    "drivers_interface_codec:libimage_proxy_2.1",
+    "graphic_2d:color_manager",
+    "graphic_surface:surface",
+    "openmax:libopenmax_static",
+    "ipc:ipc_single",
+    "c_utils:utils",
+  ]
+
+  cflags = [
+    "-Dprotected=public",
+    "-Dprivate=public",
+  ]
+}
