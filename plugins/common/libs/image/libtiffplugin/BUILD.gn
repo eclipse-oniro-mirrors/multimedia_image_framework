@@ -50,8 +50,10 @@ ohos_shared_library("tiffplugin") {
     "graphic_2d:color_manager",
     "graphic_surface:surface",
     "hilog:libhilog",
-    "libtiff:libtiff",
   ]
+  if (has_libtiff) {
+    external_deps += [ "libtiff:libtiff", ]
+  }
 
   cflags = [ "-DIMAGE_COLORSPACE_FLAG" ]
   innerapi_tags = [ "platformsdk" ]
