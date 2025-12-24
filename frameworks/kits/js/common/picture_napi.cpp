@@ -83,6 +83,7 @@ static std::vector<struct PictureEnum> auxiliaryPictureTypeMap = {
     {"UNREFOCUS_MAP", static_cast<uint32_t>(AuxiliaryPictureType::UNREFOCUS_MAP), ""},
     {"LINEAR_MAP", static_cast<uint32_t>(AuxiliaryPictureType::LINEAR_MAP), ""},
     {"FRAGMENT_MAP", static_cast<uint32_t>(AuxiliaryPictureType::FRAGMENT_MAP), ""},
+    {"THUMBNAIL", static_cast<uint32_t>(AuxiliaryPictureType::THUMBNAIL), ""},
 };
 
 static std::vector<struct PictureEnum> metadataTypeMap = {
@@ -248,8 +249,11 @@ napi_value PictureNapi::Init(napi_env env, napi_value exports)
         DECLARE_NAPI_FUNCTION("getMainPixelmap", GetMainPixelmap),
         DECLARE_NAPI_FUNCTION("getHdrComposedPixelmap", GetHdrComposedPixelMap),
         DECLARE_NAPI_FUNCTION("getGainmapPixelmap", GetGainmapPixelmap),
+        DECLARE_NAPI_FUNCTION("getThumbnailPixelmap", GetThumbnailPixelmap),
+        DECLARE_NAPI_FUNCTION("setThumbnailPixelmap", SetThumbnailPixelmap),
         DECLARE_NAPI_FUNCTION("getAuxiliaryPicture", GetAuxiliaryPicture),
         DECLARE_NAPI_FUNCTION("setAuxiliaryPicture", SetAuxiliaryPicture),
+        DECLARE_NAPI_FUNCTION("dropAuxiliaryPicture", DropAuxiliaryPicture),
         DECLARE_NAPI_FUNCTION("release", Release),
         DECLARE_NAPI_FUNCTION("marshalling", Marshalling),
         DECLARE_NAPI_FUNCTION("getMetadata", GetMetadata),
@@ -385,12 +389,11 @@ bool GetNativePicture(void *pictureNapi, std::shared_ptr<Picture> &picture)
 
 static AuxiliaryPictureType ParseAuxiliaryPictureType(int32_t val)
 {
-    if (val >= static_cast<int32_t>(AuxiliaryPictureType::GAINMAP)
-        && val<= static_cast<int32_t>(AuxiliaryPictureType::FRAGMENT_MAP)) {
-        return AuxiliaryPictureType(val);
+    if (!ImageNapiUtils::GetNapiSupportedAuxiliaryPictureType().count(static_cast<AuxiliaryPictureType>(val))) {
+        IMAGE_LOGE("%{public}s auxiliaryPictureType is invalid: %{public}d", __func__, val);
+        return AuxiliaryPictureType::NONE;
     }
-
-    return AuxiliaryPictureType::NONE;
+    return AuxiliaryPictureType(val);
 }
 
 static void PreparePicNapiEnv(napi_env env)
@@ -537,6 +540,41 @@ napi_value PictureNapi::SetAuxiliaryPicture(napi_env env, napi_callback_info inf
         IMAGE_LOGE("native picture is nullptr!");
     }
 
+    return result;
+}
+
+napi_value PictureNapi::DropAuxiliaryPicture(napi_env env, napi_callback_info info)
+{
+    napi_value result = nullptr;
+    napi_get_undefined(env, &result);
+    napi_status status;
+    napi_value thisVar = nullptr;
+    napi_value argValue[NUM_1] = {0};
+    size_t argCount = NUM_1;
+
+    uint32_t auxType = 0;
+    IMAGE_LOGD("DropAuxiliaryPicture IN");
+    IMG_JS_ARGS(env, info, status, argCount, argValue, thisVar);
+    PictureNapi* pictureNapi = nullptr;
+    status = napi_unwrap(env, thisVar, reinterpret_cast<void**>(&pictureNapi));
+    IMG_NAPI_CHECK_RET_D(IMG_IS_READY(status, pictureNapi), result, IMAGE_LOGE("fail to unwrap PictureNapi"));
+    status = napi_get_value_uint32(env, argValue[NUM_0], &auxType);
+    IMG_NAPI_CHECK_RET_D(IMG_IS_OK(status), ImageNapiUtils::ThrowExceptionError(env, IMAGE_BAD_PARAMETER,
+        "Fail to get auxiliary picture type!"), IMAGE_LOGE("Fail to get auxiliary picture type."));
+
+    AuxiliaryPictureType type = ParseAuxiliaryPictureType(auxType);
+    if (type == AuxiliaryPictureType::NONE) {
+        return ImageNapiUtils::ThrowExceptionError(env, IMAGE_BAD_PARAMETER,
+            "The type does not match the auxiliary picture type!");
+    }
+
+    if (pictureNapi->nativePicture_ == nullptr) {
+        IMAGE_LOGE("native picture is nullptr!");
+        return result;
+    }
+    pictureNapi->nativePicture_->DropAuxiliaryPicture(type);
+
+    IMAGE_LOGD("DropAuxiliaryPicture OUT");
     return result;
 }
 
@@ -882,6 +920,66 @@ napi_value PictureNapi::GetGainmapPixelmap(napi_env env, napi_callback_info info
     } else {
         return ImageNapiUtils::ThrowExceptionError(env, ERR_MEDIA_UNKNOWN, "Picture is a null pointer");
     }
+    return nVal.result;
+}
+
+napi_value PictureNapi::GetThumbnailPixelmap(napi_env env, napi_callback_info info)
+{
+    NapiValues nVal;
+    napi_get_null(env, &nVal.result);
+    IMAGE_LOGD("[PictureNapi]GetThumbnailPixelmap IN");
+    nVal.argc = NUM_0;
+    IMG_JS_ARGS(env, info, nVal.status, nVal.argc, nullptr, nVal.thisVar);
+    IMG_NAPI_CHECK_RET_D(IMG_IS_OK(nVal.status), nVal.result,
+        IMAGE_LOGE("%{public}s Parameter acquisition failed", __func__));
+
+    PictureNapi* pictureNapi = nullptr;
+    nVal.status = napi_unwrap(env, nVal.thisVar, reinterpret_cast<void**>(&pictureNapi));
+    IMG_NAPI_CHECK_RET_D(IMG_IS_READY(nVal.status, pictureNapi),
+        nVal.result, IMAGE_LOGE("%{public}s Failed to retrieve native pointer", __func__));
+
+    if (pictureNapi->nativePicture_ == nullptr) {
+        return ImageNapiUtils::ThrowExceptionError(env, IMAGE_BAD_PARAMETER, "Picture is a null pointer");
+    }
+
+    auto thumbnailPixelmap = pictureNapi->nativePicture_->GetThumbnailPixelMap();
+    if (thumbnailPixelmap == nullptr) {
+        IMAGE_LOGE("%{public}s Get thumbnail pixelmap failed, thumbnail pixelmap is nullptr", __func__);
+        return nVal.result;
+    }
+
+    napi_value result = PixelMapNapi::CreatePixelMap(env, thumbnailPixelmap);
+    if (result == nullptr || ImageNapiUtils::getType(env, result) == napi_undefined) {
+        IMAGE_LOGE("%{public}s CreatePixelMap failed", __func__);
+        return nVal.result;
+    }
+    return result;
+}
+
+napi_value PictureNapi::SetThumbnailPixelmap(napi_env env, napi_callback_info info)
+{
+    NapiValues nVal;
+    napi_get_undefined(env, &nVal.result);
+    IMAGE_LOGD("[PictureNapi]SetThumbnailPixelmap IN");
+    nVal.argc = NUM_1;
+    napi_value argValue[NUM_1] = {0};
+    nVal.argv = argValue;
+    IMG_JS_ARGS(env, info, nVal.status, nVal.argc, nVal.argv, nVal.thisVar);
+    IMG_NAPI_CHECK_RET_D(IMG_IS_OK(nVal.status), nVal.result,
+        IMAGE_LOGE("%{public}s Parameter acquisition failed", __func__));
+
+    PictureNapi* pictureNapi = nullptr;
+    nVal.status = napi_unwrap(env, nVal.thisVar, reinterpret_cast<void**>(&pictureNapi));
+    IMG_NAPI_CHECK_RET_D(IMG_IS_READY(nVal.status, pictureNapi),
+        nVal.result, IMAGE_LOGE("%{public}s Failed to retrieve native pointer", __func__));
+    IMG_NAPI_CHECK_RET_D(IMG_IS_READY(nVal.status, pictureNapi->nativePicture_),
+        nVal.result, IMAGE_LOGE("empty native picture"));
+
+    auto thumbnailPixelmap = PixelMapNapi::GetPixelMap(env, argValue[NUM_0]);
+    if (thumbnailPixelmap == nullptr) {
+        return ImageNapiUtils::ThrowExceptionError(env, IMAGE_BAD_PARAMETER, "Thumbnail pixelmap is null!");
+    }
+    pictureNapi->nativePicture_->SetThumbnailPixelMap(thumbnailPixelmap);
     return nVal.result;
 }
 

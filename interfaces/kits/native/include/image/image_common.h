@@ -262,6 +262,10 @@ typedef enum {
     IMAGE_DECODE_FAILED = 7700301,
     /** memory allocation failed */
     IMAGE_SOURCE_ALLOC_FAILED = 7700302,
+    /** not carry thumbnail  */
+    IMAGE_SOURCE_NOT_CARRY_THUMBNAIL = 7700303,
+    /** generate thumbnail failed */
+    IMAGE_SOURCE_GENERATE_THUMBNAIL_FAILED = 7700305,
     /**
      * @error Invalid parameter for ImagePacker.
      * @since 19

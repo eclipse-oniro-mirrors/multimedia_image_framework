@@ -27,6 +27,7 @@ public:
         std::string &exMessage);
     static std::pair<int32_t, std::string> ModifyImagePropertyArrayMakeErrMsg(uint32_t errorCode,
         std::string exMessage);
+    static std::pair<int32_t, std::string> CreateThumbnailMakeErrMsg(uint32_t errorCode);
 };
 } // namespace Media
 } // namespace OHOS

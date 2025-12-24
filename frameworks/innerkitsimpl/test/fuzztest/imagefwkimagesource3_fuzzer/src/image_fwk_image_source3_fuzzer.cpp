@@ -32,6 +32,7 @@
 namespace OHOS {
 namespace Media {
 FuzzedDataProvider *FDP;
+static const std::string IMAGE_DEST = "/data/local/tmp/test_out";
 
 namespace {
     static constexpr uint32_t MAX_SIZE = 1024;
@@ -49,6 +50,8 @@ namespace {
     static constexpr uint32_t INCREMENTAL_DECODING_STATE_MODULO = 7;
     static constexpr uint32_t SOURCE_DECODING_STATE_MODULO = 9;
     static constexpr uint32_t AUXILIARY_PICTURE_TYPE_MODULO = 6;
+    static constexpr uint32_t MIMETYPE_MODULO = 14;
+    static constexpr uint32_t ALPHATYPE_MODULO = 3;
 }
 
 std::unique_ptr<ImageSource> ConstructImageSourceByBuffer(const uint8_t *data, size_t size)
@@ -409,6 +412,71 @@ void GetImagePropertiesByFuzzTest(const uint8_t *data, size_t size)
     imageSource->ModifyImagePropertyBlob(nullAccessor, properties);
 }
 
+static std::shared_ptr<PixelMap> CreateThumbnail(const uint8_t *data, size_t size)
+{
+    auto imageSource = ConstructImageSourceByBuffer(data, size);
+    if (!imageSource) {
+        return nullptr;
+    }
+    DecodingOptionsForThumbnail opts;
+    opts.desiredSize.width = FDP->ConsumeIntegralInRange<uint16_t>(0, 0xfff);
+    opts.desiredSize.height = FDP->ConsumeIntegralInRange<uint16_t>(0, 0xfff);
+    opts.needGenerate = FDP->ConsumeBool();
+    uint32_t errorCode { NUM_0 };
+    return imageSource->CreateThumbnail(opts, errorCode);
+}
+
+void PackThumbnailFuzzTest(const uint8_t *data, size_t size)
+{
+    auto imageSource = ConstructImageSourceByBuffer(data, size);
+    if (!imageSource) {
+        return;
+    }
+    const DecodingOptionsForPicture opts;
+    uint32_t errorCode { NUM_0 };
+    auto picture = imageSource->CreatePicture(opts, errorCode);
+    if (!picture) {
+        return;
+    }
+    std::shared_ptr<PixelMap> thumbnail = CreateThumbnail(data, size);
+    picture->SetThumbnailPixelMap(thumbnail);
+    picture->GetThumbnailPixelMap();
+    picture->HasAuxiliaryPicture(AuxiliaryPictureType::THUMBNAIL);
+
+    std::string mimeType[] = {"image/png", "image/raw", "image/vnd.wap.wbmp", "image/bmp", "image/gif",
+        "image/jpeg", "image/mpo", "image/heic", "image/heif", "image/x-adobe-dng", "image/webp", "image/tiff",
+        "image/x-icon", "image/x-sony-arw"};
+    
+    ImagePacker pack;
+    PackOption packOption;
+    packOption.format = mimeType[FDP->ConsumeIntegral<uint8_t>() % MIMETYPE_MODULO];
+    packOption.quality = FDP->ConsumeIntegral<uint8_t>();
+    packOption.numberHint = FDP->ConsumeIntegral<uint32_t>();
+    packOption.desiredDynamicRange = static_cast<Media::EncodeDynamicRange>(
+        FDP->ConsumeIntegral<uint8_t>() % ALPHATYPE_MODULO);
+    packOption.needsPackProperties = FDP->ConsumeBool();
+    packOption.isEditScene = FDP->ConsumeBool();
+    packOption.loop = FDP->ConsumeIntegral<uint16_t>();
+    uint8_t delaytimessize = FDP->ConsumeIntegral<uint8_t>();
+    std::vector<uint16_t> delaytimes(delaytimessize);
+    FDP->ConsumeData(delaytimes.data(), delaytimessize * NUM_2);
+    packOption.delayTimes = delaytimes;
+    uint8_t disposalsize = FDP->ConsumeIntegral<uint8_t>();
+    packOption.disposalTypes = FDP->ConsumeBytes<uint8_t>(disposalsize);
+    
+    if (pack.StartPacking(IMAGE_DEST, packOption) != SUCCESS) {
+        IMAGE_LOGE("%{public}s StartPacking failed.", __func__);
+        return;
+    }
+    if (pack.AddPicture(*picture) != SUCCESS) {
+        IMAGE_LOGE("%{public}s AddPicture failed.", __func__);
+        return;
+    }
+    if (pack.FinalizePacking() != SUCCESS) {
+        IMAGE_LOGE("%{public}s FinalizePacking failed.", __func__);
+        return;
+    }
+}
 }  // namespace Media
 }  // namespace OHOS
 
@@ -433,5 +501,6 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
     OHOS::Media::CreatePictureFuzzTest(data, size);
     OHOS::Media::GetImagePropertiesByFuzzTest(data, size);
     
+    OHOS::Media::PackThumbnailFuzzTest(data, size);
     return 0;
 }

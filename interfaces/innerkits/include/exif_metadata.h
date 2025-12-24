@@ -58,6 +58,11 @@ public:
     {
         return MetadataType::EXIF;
     }
+    bool GetDataSize(uint32_t &size, bool withThumbnail = true, bool isJpeg = false);
+    bool HasThumbnail();
+    bool GetThumbnail(uint8_t *&data, uint32_t &size);
+    bool SetThumbnail(uint8_t *data, const uint32_t &size);
+    bool DropThumbnail();
     bool RemoveExifThumbnail() override;
     bool ExtractXmageCoordinates(XmageCoordinateMetadata &coordMetadata) const;
     uint32_t GetBlobSize() override;

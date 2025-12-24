@@ -79,5 +79,26 @@ std::pair<int32_t, std::string> ImageErrorConvert::ModifyImagePropertyArrayMakeE
                 "unsupported metadata."  + exMessage);
     }
 }
+
+std::pair<int32_t, std::string> ImageErrorConvert::CreateThumbnailMakeErrMsg(uint32_t errorCode)
+{
+    switch (errorCode) {
+        case ERR_IMAGE_MISMATCHED_FORMAT:
+        case ERR_IMAGE_UNKNOWN_FORMAT:
+        case ERR_IMAGE_DECODE_HEAD_ABNORMAL:
+            return std::make_pair<int32_t, std::string>(IMAGE_SOURCE_UNSUPPORTED_MIMETYPE, "Unsupported mimetype.");
+        case ERR_IMAGE_TOO_LARGE:
+            return std::make_pair<int32_t, std::string>(IMAGE_SOURCE_TOO_LARGE, "Image too large.");
+        case ERR_IMAGE_INVALID_PARAMETER:
+            return std::make_pair<int32_t, std::string>(IMAGE_SOURCE_INVALID_PARAMETER, "Unsupported options.");
+        case ERR_NOT_CARRY_THUMBNAIL:
+            return std::make_pair<int32_t, std::string>(IMAGE_SOURCE_NOT_CARRY_THUMBNAIL, "not carry thumbnail.");
+        case ERR_GENERATE_THUMBNAIL_FAILED:
+            return std::make_pair<int32_t, std::string>(IMAGE_SOURCE_GENERATE_THUMBNAIL_FAILED,
+                "Generate thumbnail failed.");
+        default:
+            return std::make_pair<int32_t, std::string>(IMAGE_DECODE_FAILED, "Decode failed.");
+    }
+}
 }  // namespace Media
 }  // namespace OHOS

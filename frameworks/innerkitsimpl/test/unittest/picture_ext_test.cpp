@@ -37,6 +37,7 @@
 #include "metadata_accessor_factory.h"
 #include "image_source_util.h"
 #include "webp_exif_metadata_accessor.h"
+#include "image_mime_type.h"
 using namespace OHOS::Media;
 using namespace testing::ext;
 namespace OHOS {
@@ -45,11 +46,18 @@ namespace Multimedia {
 static const int32_t COLORSPACE_SRGB = 4;
 static const int32_t SIZE_WIDTH = 2;
 static const int32_t SIZE_HEIGHT = 3;
+static const int32_t BUFFER_LENGTH = 8;
 static const int32_t STRIDE_ALIGNMENT = 8;
 static const int32_t BUFFER_SIZE = 256;
 static const int32_t DEFAULT_BUFF_SIZE = 25 * 1024 * 1024;
 static const int32_t DEFAULT_QUALITY = 98;
 static const int32_t INVALID_COLOR_SPACE_OVERFLOW = 100;
+static const int32_t SIZE_WIDTH_SHORT = 500;
+static const int32_t SIZE_WIDTH_MIDDLE = 1050;
+static const int32_t SIZE_WIDTH_LONG = 2000;
+static const int32_t SIZE_HEIGHT_SHORT = 200;
+static const int32_t SIZE_HEIGHT_MIDDLE = 350;
+static const int32_t SIZE_HEIGHT_LONG = 500;
 static const std::string IMAGE_JPEG_SRC = "/data/local/tmp/image/test_jpeg.jpg";
 static const std::string IMAGE_JPEG_DEST = "/data/local/tmp/image/test_jpeg_out.jpg";
 static const std::string IMAGE_HEIF_SRC = "/data/local/tmp/image/test_heif.heic";
@@ -64,12 +72,53 @@ static const std::string IMAGE_JPEG_128_128 = "/data/local/tmp/image/test_jpeg_1
 static const std::string IMAGE_GIF_PATH = "/data/local/tmp/image/test.gif";
 static const std::string HEIF_POC_PATH = "/data/local/tmp/image/heif_poc";
 static const std::string WEBP_POC_PATH = "/data/local/tmp/image/webp_poc";
+static const std::string IMAGE_INPUT_JPEG_EXIF_THUMBNAIL = "/data/local/tmp/image/jpeg_exif_thumbnail.jpg";
+static const std::string IMAGE_INPUT_JPEG_NO_THUMBNAIL = "/data/local/tmp/image/jpeg_no_thumbnail.jpg";
+static const std::string IMAGE_INPUT_HEIF_EXIF_THUMBNAIL = "/data/local/tmp/image/heif_exif_thumbnail.heic";
+static const std::string IMAGE_INPUT_HEIF_BOX_THUMBNAIL = "/data/local/tmp/image/heif_box_thumbnail.heic";
+static const std::string IMAGE_INPUT_HEIF_NO_THUMBNAIL = "/data/local/tmp/image/heif_no_thumbnail.heic";
 
 class PictureExtTest : public testing::Test {
 public:
     PictureExtTest() {}
     ~PictureExtTest() {}
 };
+
+static std::shared_ptr<PixelMap> CreatePixelMap()
+{
+    const uint32_t color[BUFFER_LENGTH] = { 0x80, 0x02, 0x04, 0x08, 0x40, 0x02, 0x04, 0x08};
+    InitializationOptions options;
+    options.size.width = SIZE_WIDTH;
+    options.size.height = SIZE_HEIGHT;
+    options.srcPixelFormat = PixelFormat::UNKNOWN;
+    options.pixelFormat = PixelFormat::UNKNOWN;
+    options.alphaType = AlphaType::IMAGE_ALPHA_TYPE_OPAQUE;
+    std::unique_ptr<PixelMap> tmpPixelMap = PixelMap::Create(color, BUFFER_LENGTH, options);
+    std::shared_ptr<PixelMap> pixelmap = std::move(tmpPixelMap);
+    return pixelmap;
+}
+
+static std::shared_ptr<PixelMap> CreatePixelMap(std::string srcFormat, std::string srcPathName)
+{
+    uint32_t errorCode = -1;
+    SourceOptions opts;
+    opts.formatHint = srcFormat;
+    std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(srcPathName.c_str(), opts, errorCode);
+    EXPECT_EQ(errorCode, OHOS::Media::SUCCESS);
+    EXPECT_NE(imageSource.get(), nullptr);
+    if (imageSource == nullptr) {
+        return nullptr;
+    }
+
+    DecodeOptions dstOpts;
+    std::shared_ptr<PixelMap> pixelmap = imageSource->CreatePixelMapEx(0, dstOpts, errorCode);
+    EXPECT_EQ(errorCode, OHOS::Media::SUCCESS);
+    EXPECT_NE(pixelmap, nullptr);
+    if (pixelmap == nullptr) {
+        return nullptr;
+    }
+    return pixelmap;
+}
 
 static std::shared_ptr<Picture> CreatePictureByPixelMap(std::string srcFormat, std::string srcPathName)
 {
@@ -79,12 +128,18 @@ static std::shared_ptr<Picture> CreatePictureByPixelMap(std::string srcFormat, s
     std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(srcPathName.c_str(), opts, errorCode);
     EXPECT_EQ(errorCode, OHOS::Media::SUCCESS);
     EXPECT_NE(imageSource.get(), nullptr);
+    if (imageSource == nullptr) {
+        return nullptr;
+    }
 
     DecodeOptions dstOpts;
     dstOpts.desiredPixelFormat = PixelFormat::NV12;
     std::shared_ptr<PixelMap> pixelMap = imageSource->CreatePixelMapEx(0, dstOpts, errorCode);
     EXPECT_EQ(errorCode, OHOS::Media::SUCCESS);
     EXPECT_NE(pixelMap, nullptr);
+    if (pixelMap == nullptr) {
+        return nullptr;
+    }
     std::unique_ptr<Picture> tmpPicture = Picture::Create(pixelMap);
     EXPECT_NE(tmpPicture, nullptr);
     std::shared_ptr<Picture> picture = std::move(tmpPicture);
@@ -1446,6 +1501,863 @@ HWTEST_F(PictureExtTest, WebpPocTest, TestSize.Level1)
     ASSERT_NE(webpMetadataAccessor, nullptr);
     webpMetadataAccessor->Read();
     EXPECT_EQ(webpMetadataAccessor->Write(), SUCCESS);
+}
+
+/**
+ * @tc.name: CreateThumbnail001
+ * @tc.desc: Test CreateThumbnail with JPEG image having EXIF thumbnail. Ensure successful creation of thumbnail.
+ * @tc.type: FUNC
+ */
+HWTEST_F(PictureExtTest, CreateThumbnail001, TestSize.Level1)
+{
+    uint32_t errorCode = 0;
+    SourceOptions opts;
+    std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(IMAGE_INPUT_JPEG_EXIF_THUMBNAIL,
+        opts, errorCode);
+    ASSERT_EQ(errorCode, SUCCESS);
+    ASSERT_NE(imageSource.get(), nullptr);
+    DecodingOptionsForThumbnail dopts;
+    std::unique_ptr<PixelMap> pixelMap = imageSource->CreateThumbnail(dopts, errorCode);
+    ASSERT_EQ(errorCode, SUCCESS);
+    ASSERT_NE(pixelMap.get(), nullptr);
+}
+
+/**
+ * @tc.name: CreateThumbnail002
+ * @tc.desc: Test a JPEG image having EXIF thumbnail. Ensure successful creation and correct thumbnail size (500x200).
+ * @tc.type: FUNC
+ */
+HWTEST_F(PictureExtTest, CreateThumbnail002, TestSize.Level1)
+{
+    uint32_t errorCode = 0;
+    SourceOptions opts;
+    std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(IMAGE_INPUT_JPEG_EXIF_THUMBNAIL,
+        opts, errorCode);
+    ASSERT_EQ(errorCode, SUCCESS);
+    ASSERT_NE(imageSource.get(), nullptr);
+    DecodingOptionsForThumbnail dopts;
+    dopts.desiredSize = {SIZE_WIDTH_SHORT, SIZE_HEIGHT_SHORT};
+    std::unique_ptr<PixelMap> pixelMap = imageSource->CreateThumbnail(dopts, errorCode);
+    ASSERT_EQ(errorCode, SUCCESS);
+    ASSERT_NE(pixelMap.get(), nullptr);
+    ImageInfo info;
+    pixelMap->GetImageInfo(info);
+    EXPECT_EQ(SIZE_WIDTH_SHORT, info.size.width);
+    EXPECT_EQ(SIZE_HEIGHT_SHORT, info.size.height);
+}
+
+/**
+ * @tc.name: CreateThumbnail003
+ * @tc.desc: Test CreateThumbnail with JPEG image having EXIF thumbnail.
+ *           Ensure success and expected size (1050x350) of thumbnail.
+ * @tc.type: FUNC
+ */
+HWTEST_F(PictureExtTest, CreateThumbnail003, TestSize.Level1)
+{
+    uint32_t errorCode = 0;
+    SourceOptions opts;
+    std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(IMAGE_INPUT_JPEG_EXIF_THUMBNAIL,
+        opts, errorCode);
+    ASSERT_EQ(errorCode, SUCCESS);
+    ASSERT_NE(imageSource.get(), nullptr);
+    DecodingOptionsForThumbnail dopts;
+    dopts.desiredSize = {SIZE_WIDTH_MIDDLE, SIZE_HEIGHT_MIDDLE};
+    std::unique_ptr<PixelMap> pixelMap = imageSource->CreateThumbnail(dopts, errorCode);
+    ASSERT_EQ(errorCode, SUCCESS);
+    ASSERT_NE(pixelMap.get(), nullptr);
+    ImageInfo info;
+    pixelMap->GetImageInfo(info);
+    EXPECT_EQ(SIZE_WIDTH_MIDDLE, info.size.width);
+    EXPECT_EQ(SIZE_HEIGHT_MIDDLE, info.size.height);
+}
+
+/**
+ * @tc.name: CreateThumbnail004
+ * @tc.desc: Test CreateThumbnail using a JPEG with EXIF thumbnail.
+ *           Ensure successful creation and that the thumbnail size is 1050x350 despite desired size 2000x500.
+ * @tc.type: FUNC
+ */
+HWTEST_F(PictureExtTest, CreateThumbnail004, TestSize.Level1)
+{
+    uint32_t errorCode = 0;
+    SourceOptions opts;
+    std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(IMAGE_INPUT_JPEG_EXIF_THUMBNAIL,
+        opts, errorCode);
+    ASSERT_EQ(errorCode, SUCCESS);
+    ASSERT_NE(imageSource.get(), nullptr);
+    DecodingOptionsForThumbnail dopts;
+    dopts.desiredSize = {SIZE_WIDTH_LONG, SIZE_HEIGHT_LONG};
+    std::unique_ptr<PixelMap> pixelMap = imageSource->CreateThumbnail(dopts, errorCode);
+    ASSERT_EQ(errorCode, SUCCESS);
+    ASSERT_NE(pixelMap.get(), nullptr);
+    ImageInfo info;
+    pixelMap->GetImageInfo(info);
+    EXPECT_EQ(SIZE_WIDTH_LONG, info.size.width);
+    EXPECT_EQ(SIZE_HEIGHT_LONG, info.size.height);
+}
+
+/**
+ * @tc.name: CreateThumbnail005
+ * @tc.desc: Test CreateThumbnail with a JPEG without EXIF thumbnail.
+ *           Enable generation and ensure successful creation of thumbnail.
+ * @tc.type: FUNC
+ */
+HWTEST_F(PictureExtTest, CreateThumbnail005, TestSize.Level1)
+{
+    uint32_t errorCode = 0;
+    SourceOptions opts;
+    std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(IMAGE_INPUT_JPEG_NO_THUMBNAIL,
+        opts, errorCode);
+    ASSERT_EQ(errorCode, SUCCESS);
+    ASSERT_NE(imageSource.get(), nullptr);
+    DecodingOptionsForThumbnail dopts;
+    dopts.needGenerate = true;
+    std::unique_ptr<PixelMap> pixelMap = imageSource->CreateThumbnail(dopts, errorCode);
+    ASSERT_EQ(errorCode, SUCCESS);
+    ASSERT_NE(pixelMap.get(), nullptr);
+}
+
+/**
+ * @tc.name: CreateThumbnail006
+ * @tc.desc: Test CreateThumbnail with JPEG lacking EXIF thumbnail.
+ *           Enable generation, set size 500x200, ensure success and expected size.
+ * @tc.type: FUNC
+ */
+HWTEST_F(PictureExtTest, CreateThumbnail006, TestSize.Level1)
+{
+    uint32_t errorCode = 0;
+    SourceOptions opts;
+    std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(IMAGE_INPUT_JPEG_NO_THUMBNAIL,
+        opts, errorCode);
+    ASSERT_EQ(errorCode, SUCCESS);
+    ASSERT_NE(imageSource.get(), nullptr);
+    DecodingOptionsForThumbnail dopts;
+    dopts.desiredSize = {SIZE_WIDTH_SHORT, SIZE_HEIGHT_SHORT};
+    dopts.needGenerate = true;
+    std::unique_ptr<PixelMap> pixelMap = imageSource->CreateThumbnail(dopts, errorCode);
+    ASSERT_EQ(errorCode, SUCCESS);
+    ASSERT_NE(pixelMap.get(), nullptr);
+    ImageInfo info;
+    pixelMap->GetImageInfo(info);
+    EXPECT_EQ(SIZE_WIDTH_SHORT, info.size.width);
+    EXPECT_EQ(SIZE_HEIGHT_SHORT, info.size.height);
+}
+
+/**
+ * @tc.name: CreateThumbnail007
+ * @tc.desc: Test the CreateThumbnail function with a JPEG image that has no EXIF thumbnail.
+ *           Enable thumbnail generation, set the desired size to 1050x350,
+ *           verify successful creation of the thumbnail and that its size matches the expected 1050x350.
+ * @tc.type: FUNC
+ */
+HWTEST_F(PictureExtTest, CreateThumbnail007, TestSize.Level1)
+{
+    uint32_t errorCode = 0;
+    SourceOptions opts;
+    std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(IMAGE_INPUT_JPEG_NO_THUMBNAIL,
+        opts, errorCode);
+    ASSERT_EQ(errorCode, SUCCESS);
+    ASSERT_NE(imageSource.get(), nullptr);
+    DecodingOptionsForThumbnail dopts;
+    dopts.desiredSize = {SIZE_WIDTH_MIDDLE, SIZE_HEIGHT_MIDDLE};
+    dopts.needGenerate = true;
+    std::unique_ptr<PixelMap> pixelMap = imageSource->CreateThumbnail(dopts, errorCode);
+    ASSERT_EQ(errorCode, SUCCESS);
+    ASSERT_NE(pixelMap.get(), nullptr);
+    ImageInfo info;
+    pixelMap->GetImageInfo(info);
+    EXPECT_EQ(SIZE_WIDTH_MIDDLE, info.size.width);
+    EXPECT_EQ(SIZE_HEIGHT_MIDDLE, info.size.height);
+}
+
+/**
+ * @tc.name: CreateThumbnail008
+ * @tc.desc: Test CreateThumbnail with JPEG w/o EXIF thumbnail. Enable generation,
+ *           set 2000x500 size, ensure success & 1050x350 result.
+ * @tc.type: FUNC
+ */
+HWTEST_F(PictureExtTest, CreateThumbnail008, TestSize.Level1)
+{
+    uint32_t errorCode = 0;
+    SourceOptions opts;
+    std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(IMAGE_INPUT_JPEG_NO_THUMBNAIL,
+        opts, errorCode);
+    ASSERT_EQ(errorCode, SUCCESS);
+    ASSERT_NE(imageSource.get(), nullptr);
+    DecodingOptionsForThumbnail dopts;
+    dopts.desiredSize = {SIZE_WIDTH_LONG, SIZE_HEIGHT_LONG};
+    dopts.needGenerate = true;
+    std::unique_ptr<PixelMap> pixelMap = imageSource->CreateThumbnail(dopts, errorCode);
+    ASSERT_EQ(errorCode, SUCCESS);
+    ASSERT_NE(pixelMap.get(), nullptr);
+    ImageInfo info;
+    pixelMap->GetImageInfo(info);
+    EXPECT_EQ(SIZE_WIDTH_LONG, info.size.width);
+    EXPECT_EQ(SIZE_HEIGHT_LONG, info.size.height);
+}
+
+/**
+ * @tc.name: CreateThumbnail009
+ * @tc.desc: Test CreateThumbnail with HEIF image having EXIF thumbnail. Ensure successful creation of thumbnail.
+ * @tc.type: FUNC
+ */
+HWTEST_F(PictureExtTest, CreateThumbnail009, TestSize.Level1)
+{
+    uint32_t errorCode = 0;
+    SourceOptions opts;
+    std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(IMAGE_INPUT_HEIF_EXIF_THUMBNAIL,
+        opts, errorCode);
+    ASSERT_EQ(errorCode, SUCCESS);
+    ASSERT_NE(imageSource.get(), nullptr);
+    DecodingOptionsForThumbnail dopts;
+    std::unique_ptr<PixelMap> pixelMap = imageSource->CreateThumbnail(dopts, errorCode);
+    ASSERT_EQ(errorCode, SUCCESS);
+    ASSERT_NE(pixelMap.get(), nullptr);
+}
+
+/**
+ * @tc.name: CreateThumbnail010
+ * @tc.desc: Test CreateThumbnail with HEIF image having EXIF thumbnail.
+ *           Set size 500x200, ensure success and expected size.
+ * @tc.type: FUNC
+ */
+HWTEST_F(PictureExtTest, CreateThumbnail010, TestSize.Level1)
+{
+    uint32_t errorCode = 0;
+    SourceOptions opts;
+    std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(IMAGE_INPUT_HEIF_EXIF_THUMBNAIL,
+        opts, errorCode);
+    ASSERT_EQ(errorCode, SUCCESS);
+    ASSERT_NE(imageSource.get(), nullptr);
+    DecodingOptionsForThumbnail dopts;
+    dopts.desiredSize = {SIZE_WIDTH_SHORT, SIZE_HEIGHT_SHORT};
+    std::unique_ptr<PixelMap> pixelMap = imageSource->CreateThumbnail(dopts, errorCode);
+    ASSERT_EQ(errorCode, SUCCESS);
+    ASSERT_NE(pixelMap.get(), nullptr);
+    ImageInfo info;
+    pixelMap->GetImageInfo(info);
+    EXPECT_EQ(SIZE_WIDTH_SHORT, info.size.width);
+    EXPECT_EQ(SIZE_HEIGHT_SHORT, info.size.height);
+}
+
+/**
+ * @tc.name: CreateThumbnail011
+ * @tc.desc: Test CreateThumbnail using a HEIF image with EXIF thumbnail. Set desired size 1050x350,
+ *           ensure successful creation and expected thumbnail size.
+ * @tc.type: FUNC
+ */
+HWTEST_F(PictureExtTest, CreateThumbnail011, TestSize.Level1)
+{
+    uint32_t errorCode = 0;
+    SourceOptions opts;
+    std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(IMAGE_INPUT_HEIF_EXIF_THUMBNAIL,
+        opts, errorCode);
+    ASSERT_EQ(errorCode, SUCCESS);
+    ASSERT_NE(imageSource.get(), nullptr);
+    DecodingOptionsForThumbnail dopts;
+    dopts.desiredSize = {SIZE_WIDTH_MIDDLE, SIZE_HEIGHT_MIDDLE};
+    std::unique_ptr<PixelMap> pixelMap = imageSource->CreateThumbnail(dopts, errorCode);
+    ASSERT_EQ(errorCode, SUCCESS);
+    ASSERT_NE(pixelMap.get(), nullptr);
+    ImageInfo info;
+    pixelMap->GetImageInfo(info);
+    EXPECT_EQ(SIZE_WIDTH_MIDDLE, info.size.width);
+    EXPECT_EQ(SIZE_HEIGHT_MIDDLE, info.size.height);
+}
+
+/**
+ * @tc.name: CreateThumbnail012
+ * @tc.desc: Test CreateThumbnail with HEIF image having EXIF thumbnail. Set desired size 2000x500,
+ *           ensure success and that actual size is 1050x350.
+ * @tc.type: FUNC
+ */
+HWTEST_F(PictureExtTest, CreateThumbnail012, TestSize.Level1)
+{
+    uint32_t errorCode = 0;
+    SourceOptions opts;
+    std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(IMAGE_INPUT_HEIF_EXIF_THUMBNAIL,
+        opts, errorCode);
+    ASSERT_EQ(errorCode, SUCCESS);
+    ASSERT_NE(imageSource.get(), nullptr);
+    DecodingOptionsForThumbnail dopts;
+    dopts.desiredSize = {SIZE_WIDTH_LONG, SIZE_HEIGHT_LONG};
+    std::unique_ptr<PixelMap> pixelMap = imageSource->CreateThumbnail(dopts, errorCode);
+    ASSERT_EQ(errorCode, SUCCESS);
+    ASSERT_NE(pixelMap.get(), nullptr);
+    ImageInfo info;
+    pixelMap->GetImageInfo(info);
+    EXPECT_EQ(SIZE_WIDTH_LONG, info.size.width);
+    EXPECT_EQ(SIZE_HEIGHT_LONG, info.size.height);
+}
+
+/**
+ * @tc.name: CreateThumbnail013
+ * @tc.desc: Test CreateThumbnail with image lacking EXIF thumbnail.
+ *           Enable generation, ensure successful thumbnail creation.
+ * @tc.type: FUNC
+ */
+HWTEST_F(PictureExtTest, CreateThumbnail013, TestSize.Level1)
+{
+    uint32_t errorCode = 0;
+    SourceOptions opts;
+    std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(IMAGE_INPUT_HEIF_NO_THUMBNAIL,
+        opts, errorCode);
+    ASSERT_EQ(errorCode, SUCCESS);
+    ASSERT_NE(imageSource.get(), nullptr);
+    DecodingOptionsForThumbnail dopts;
+    dopts.needGenerate = true;
+    std::unique_ptr<PixelMap> pixelMap = imageSource->CreateThumbnail(dopts, errorCode);
+    ASSERT_EQ(errorCode, SUCCESS);
+    ASSERT_NE(pixelMap.get(), nullptr);
+}
+
+/**
+ * @tc.name: CreateThumbnail014
+ * @tc.desc: Test CreateThumbnail with image w/o EXIF thumbnail. Enable generation,
+ *           set 500x200 size, ensure success & expected result.
+ * @tc.type: FUNC
+ */
+HWTEST_F(PictureExtTest, CreateThumbnail014, TestSize.Level1)
+{
+    uint32_t errorCode = 0;
+    SourceOptions opts;
+    std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(IMAGE_INPUT_HEIF_NO_THUMBNAIL,
+        opts, errorCode);
+    ASSERT_EQ(errorCode, SUCCESS);
+    ASSERT_NE(imageSource.get(), nullptr);
+    DecodingOptionsForThumbnail dopts;
+    dopts.desiredSize = {SIZE_WIDTH_SHORT, SIZE_HEIGHT_SHORT};
+    dopts.needGenerate = true;
+    std::unique_ptr<PixelMap> pixelMap = imageSource->CreateThumbnail(dopts, errorCode);
+    ASSERT_EQ(errorCode, SUCCESS);
+    ASSERT_NE(pixelMap.get(), nullptr);
+    ImageInfo info;
+    pixelMap->GetImageInfo(info);
+    EXPECT_EQ(SIZE_WIDTH_SHORT, info.size.width);
+    EXPECT_EQ(SIZE_HEIGHT_SHORT, info.size.height);
+}
+
+/**
+ * @tc.name: CreateThumbnail015
+ * @tc.desc: Test CreateThumbnail on image without EXIF thumbnail. Enable generation,
+ *           set 1050x350 size, ensure success and expected thumbnail size.
+ * @tc.type: FUNC
+ */
+HWTEST_F(PictureExtTest, CreateThumbnail015, TestSize.Level1)
+{
+    uint32_t errorCode = 0;
+    SourceOptions opts;
+    std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(IMAGE_INPUT_HEIF_NO_THUMBNAIL,
+        opts, errorCode);
+    ASSERT_EQ(errorCode, SUCCESS);
+    ASSERT_NE(imageSource.get(), nullptr);
+    DecodingOptionsForThumbnail dopts;
+    dopts.desiredSize = {SIZE_WIDTH_MIDDLE, SIZE_HEIGHT_MIDDLE};
+    dopts.needGenerate = true;
+    std::unique_ptr<PixelMap> pixelMap = imageSource->CreateThumbnail(dopts, errorCode);
+    ASSERT_EQ(errorCode, SUCCESS);
+    ASSERT_NE(pixelMap.get(), nullptr);
+    ImageInfo info;
+    pixelMap->GetImageInfo(info);
+    EXPECT_EQ(SIZE_WIDTH_MIDDLE, info.size.width);
+    EXPECT_EQ(SIZE_HEIGHT_MIDDLE, info.size.height);
+}
+
+/**
+ * @tc.name: CreateThumbnail016
+ * @tc.desc: Test CreateThumbnail with image lacking EXIF thumbnail.
+ *           Enable generation, set 2000x500 size, ensure success & 1050x350 result.
+ * @tc.type: FUNC
+ */
+HWTEST_F(PictureExtTest, CreateThumbnail016, TestSize.Level1)
+{
+    uint32_t errorCode = 0;
+    SourceOptions opts;
+    std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(IMAGE_INPUT_HEIF_NO_THUMBNAIL,
+        opts, errorCode);
+    ASSERT_EQ(errorCode, SUCCESS);
+    ASSERT_NE(imageSource.get(), nullptr);
+    DecodingOptionsForThumbnail dopts;
+    dopts.desiredSize = {SIZE_WIDTH_LONG, SIZE_HEIGHT_LONG};
+    dopts.needGenerate = true;
+    std::unique_ptr<PixelMap> pixelMap = imageSource->CreateThumbnail(dopts, errorCode);
+    ASSERT_EQ(errorCode, SUCCESS);
+    ASSERT_NE(pixelMap.get(), nullptr);
+    ImageInfo info;
+    pixelMap->GetImageInfo(info);
+    EXPECT_EQ(SIZE_WIDTH_LONG, info.size.width);
+    EXPECT_EQ(SIZE_HEIGHT_LONG, info.size.height);
+}
+
+/**
+ * @tc.name: CreateThumbnail017
+ * @tc.desc: Test CreatePicture and GetAuxiliaryPicture with HEIF image having box thumbnail.
+ *           Ensure successful creation and non - null thumbnail auxiliary picture content.
+ * @tc.type: FUNC
+ */
+HWTEST_F(PictureExtTest, CreateThumbnail017, TestSize.Level1)
+{
+    uint32_t errorCode = 0;
+    SourceOptions opts;
+    std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(IMAGE_INPUT_HEIF_BOX_THUMBNAIL,
+        opts, errorCode);
+    ASSERT_EQ(errorCode, SUCCESS);
+    ASSERT_NE(imageSource.get(), nullptr);
+    DecodingOptionsForPicture dopts;
+    std::shared_ptr<Picture> picture = imageSource->CreatePicture(dopts, errorCode);
+    ASSERT_EQ(errorCode, SUCCESS);
+    ASSERT_NE(picture.get(), nullptr);
+    std::shared_ptr<AuxiliaryPicture> auxPicture = picture->GetAuxiliaryPicture(AuxiliaryPictureType::THUMBNAIL);
+    ASSERT_NE(auxPicture.get(), nullptr);
+    ASSERT_NE(auxPicture->GetContentPixel().get(), nullptr);
+}
+
+/**
+ * @tc.name: CreateThumbnail018
+ * @tc.desc: Test CreateThumbnail with unsupported format.
+ * @tc.type: FUNC
+ */
+HWTEST_F(PictureExtTest, CreateThumbnail018, TestSize.Level3)
+{
+    uint32_t errorCode = 0;
+    SourceOptions opts;
+    std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(IMAGE_GIF_PATH, opts, errorCode);
+    ASSERT_EQ(errorCode, SUCCESS);
+    ASSERT_NE(imageSource.get(), nullptr);
+    DecodingOptionsForThumbnail dopts;
+    std::unique_ptr<PixelMap> pixelMap = imageSource->CreateThumbnail(dopts, errorCode);
+    ASSERT_EQ(errorCode, ERR_IMAGE_MISMATCHED_FORMAT);
+    ASSERT_EQ(pixelMap.get(), nullptr);
+}
+
+bool EncodeThumbnailPicture(std::shared_ptr<Picture> picture, PackOption option, std::string IMAGE_DEST)
+{
+    ImagePacker pack;
+    const int fd = open(IMAGE_DEST.c_str(), O_CREAT | O_RDWR, S_IRUSR | S_IWUSR);
+    EXPECT_NE(fd, -1);
+    if (fd == -1) {
+        return false;
+    }
+    uint32_t startpc = pack.StartPacking(fd, option);
+    close(fd);
+    EXPECT_EQ(startpc, OHOS::Media::SUCCESS);
+    if (startpc != OHOS::Media::SUCCESS) {
+        return false;
+    }
+    uint32_t retAddPicture = pack.AddPicture(*picture);
+    EXPECT_EQ(retAddPicture, OHOS::Media::SUCCESS);
+    if (retAddPicture != OHOS::Media::SUCCESS) {
+        return false;
+    }
+    uint32_t retFinalizePacking = pack.FinalizePacking();
+    EXPECT_EQ(retFinalizePacking, OHOS::Media::SUCCESS);
+    if (retFinalizePacking != OHOS::Media::SUCCESS) {
+        return false;
+    }
+    return true;
+}
+
+std::shared_ptr<PixelMap> CreateThumbnailInner(std::string srcFormat, std::string srcPathName)
+{
+    uint32_t errorCode = -1;
+    SourceOptions opts;
+    opts.formatHint = srcFormat;
+    std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(srcPathName.c_str(), opts, errorCode);
+    EXPECT_EQ(errorCode, OHOS::Media::SUCCESS);
+    EXPECT_NE(imageSource.get(), nullptr);
+    if (imageSource == nullptr) {
+        return nullptr;
+    }
+
+    DecodingOptionsForThumbnail dopts;
+    std::unique_ptr<PixelMap> pixelMap = imageSource->CreateThumbnail(dopts, errorCode);
+    return pixelMap;
+}
+
+/**
+ * @tc.name: EncodeThumbnailPicture001
+ * @tc.desc: Test encode thumbnail picture without thumbnail auxiliary picture, but with exif thumbnail.
+ * @tc.type: FUNC
+ */
+HWTEST_F(PictureExtTest, EncodeThumbnailPicture001, TestSize.Level1)
+{
+    GTEST_LOG_(INFO) << "PictureExtTest: EncodeThumbnailPicture001 start";
+    auto srcPicture = CreatePictureByPixelMap(IMAGE_JPEG_FORMAT, IMAGE_INPUT_JPEG_EXIF_THUMBNAIL);
+    ASSERT_NE(srcPicture, nullptr);
+    PackOption option {
+        .format = IMAGE_JPEG_FORMAT,
+        .quality = 98,
+        .needsPackProperties = true,
+    };
+    // remove the file if it exists
+    std::filesystem::remove(IMAGE_JPEG_DEST);
+    bool ret = EncodeThumbnailPicture(srcPicture, option, IMAGE_JPEG_DEST);
+    EXPECT_TRUE(ret);
+
+    std::shared_ptr<PixelMap> thumbnailPixelMap = CreateThumbnailInner(IMAGE_JPEG_FORMAT, IMAGE_JPEG_DEST);
+    ASSERT_NE(thumbnailPixelMap, nullptr);
+    GTEST_LOG_(INFO) << "PictureExtTest: EncodeThumbnailPicture001 end";
+}
+
+/**
+ * @tc.name: EncodeThumbnailPicture002
+ * @tc.desc: Test encode thumbnail picture with thumbnail auxiliary picture. (whether has exif thumbnail)
+ * @tc.type: FUNC
+ */
+HWTEST_F(PictureExtTest, EncodeThumbnailPicture002, TestSize.Level1)
+{
+    GTEST_LOG_(INFO) << "PictureExtTest: EncodeThumbnailPicture002 start";
+    auto srcPicture = CreatePictureByImageSource(IMAGE_JPEG_FORMAT, IMAGE_INPUT_JPEG_EXIF_THUMBNAIL);
+    ASSERT_NE(srcPicture, nullptr);
+    ASSERT_NE(srcPicture->GetThumbnailPixelMap(), nullptr);
+
+    PackOption option {
+        .format = IMAGE_JPEG_FORMAT,
+        .quality = 98,
+        .needsPackProperties = true,
+    };
+    // remove the file if it exists
+    std::filesystem::remove(IMAGE_JPEG_DEST);
+    bool ret = EncodeThumbnailPicture(srcPicture, option, IMAGE_JPEG_DEST);
+    EXPECT_TRUE(ret);
+
+    std::shared_ptr<PixelMap> thumbnailPixelMap = CreateThumbnailInner(IMAGE_JPEG_FORMAT, IMAGE_JPEG_DEST);
+    ASSERT_NE(thumbnailPixelMap, nullptr);
+    GTEST_LOG_(INFO) << "PictureExtTest: EncodeThumbnailPicture002 end";
+}
+
+/**
+ * @tc.name: EncodeThumbnailPicture003
+ * @tc.desc: Test encode thumbnail picture, after drop thumbnail auxiliary picture.
+ * @tc.type: FUNC
+ */
+HWTEST_F(PictureExtTest, EncodeThumbnailPicture003, TestSize.Level1)
+{
+    GTEST_LOG_(INFO) << "PictureExtTest: EncodeThumbnailPicture003 start";
+    auto srcPicture = CreatePictureByImageSource(IMAGE_JPEG_FORMAT, IMAGE_INPUT_JPEG_EXIF_THUMBNAIL);
+    ASSERT_NE(srcPicture, nullptr);
+    ASSERT_NE(srcPicture->GetThumbnailPixelMap(), nullptr);
+    srcPicture->DropAuxiliaryPicture(AuxiliaryPictureType::THUMBNAIL);
+    ASSERT_EQ(srcPicture->GetThumbnailPixelMap(), nullptr);
+    std::shared_ptr<ExifMetadata> exifMetadata = srcPicture->GetExifMetadata();
+    ASSERT_NE(exifMetadata, nullptr);
+    ASSERT_EQ(exifMetadata->HasThumbnail(), false);
+
+    PackOption option {
+        .format = IMAGE_JPEG_FORMAT,
+        .quality = 98,
+        .needsPackProperties = true,
+    };
+    // remove the file if it exists
+    std::filesystem::remove(IMAGE_JPEG_DEST);
+    bool ret = EncodeThumbnailPicture(srcPicture, option, IMAGE_JPEG_DEST);
+    EXPECT_TRUE(ret);
+
+    std::shared_ptr<PixelMap> thumbnailPixelMap = CreateThumbnailInner(IMAGE_JPEG_FORMAT, IMAGE_JPEG_DEST);
+    ASSERT_EQ(thumbnailPixelMap, nullptr);
+    GTEST_LOG_(INFO) << "PictureExtTest: EncodeThumbnailPicture003 end";
+}
+
+/**
+ * @tc.name: EncodeThumbnailPicture004
+ * @tc.desc: Test encode thumbnail picture, after setThumbnailPixelMap with specific pixelmap.
+ * @tc.type: FUNC
+ */
+HWTEST_F(PictureExtTest, EncodeThumbnailPicture004, TestSize.Level1)
+{
+    GTEST_LOG_(INFO) << "PictureExtTest: EncodeThumbnailPicture004 start";
+    auto srcPicture = CreatePictureByImageSource(IMAGE_JPEG_FORMAT, IMAGE_INPUT_JPEG_EXIF_THUMBNAIL);
+    ASSERT_NE(srcPicture, nullptr);
+    auto tbPixelMap = srcPicture->GetThumbnailPixelMap();
+    ASSERT_NE(tbPixelMap, nullptr);
+    // edit the thumbnail pixelmap
+    tbPixelMap->rotate(180);
+    srcPicture->SetThumbnailPixelMap(tbPixelMap);
+
+    PackOption option {
+        .format = IMAGE_JPEG_FORMAT,
+        .quality = 98,
+        .needsPackProperties = true,
+    };
+    // remove the file if it exists
+    std::filesystem::remove(IMAGE_JPEG_DEST);
+    bool ret = EncodeThumbnailPicture(srcPicture, option, IMAGE_JPEG_DEST);
+    EXPECT_TRUE(ret);
+
+    std::shared_ptr<PixelMap> thumbnailPixelMap = CreateThumbnailInner(IMAGE_JPEG_FORMAT, IMAGE_JPEG_DEST);
+    ASSERT_NE(thumbnailPixelMap, nullptr);
+    GTEST_LOG_(INFO) << "PictureExtTest: EncodeThumbnailPicture004 end";
+}
+
+/**
+ * @tc.name: EncodeThumbnailPicture005
+ * @tc.desc: Test encode thumbnail picture(no thumbnail image), after setThumbnailPixelMap with specific pixelmap.
+ * @tc.type: FUNC
+ */
+HWTEST_F(PictureExtTest, EncodeThumbnailPicture005, TestSize.Level1)
+{
+    GTEST_LOG_(INFO) << "PictureExtTest: EncodeThumbnailPicture005 start";
+    auto srcPicture = CreatePictureByImageSource(IMAGE_JPEG_FORMAT, IMAGE_INPUT_JPEG_NO_THUMBNAIL);
+    ASSERT_NE(srcPicture, nullptr);
+    auto tbPixelMap = srcPicture->GetThumbnailPixelMap();
+    ASSERT_EQ(tbPixelMap, nullptr);
+
+    // create a new thumbnail pixelmap
+    tbPixelMap = CreatePixelMap();
+    ASSERT_NE(tbPixelMap, nullptr);
+
+    // set the thumbnail pixelmap to the picture
+    srcPicture->SetThumbnailPixelMap(tbPixelMap);
+
+    PackOption option {
+        .format = IMAGE_JPEG_FORMAT,
+        .quality = 98,
+        .needsPackProperties = true,
+    };
+    // remove the file if it exists
+    std::filesystem::remove(IMAGE_JPEG_DEST);
+    bool ret = EncodeThumbnailPicture(srcPicture, option, IMAGE_JPEG_DEST);
+    EXPECT_TRUE(ret);
+
+    std::shared_ptr<PixelMap> thumbnailPixelMap = CreateThumbnailInner(IMAGE_JPEG_FORMAT, IMAGE_JPEG_DEST);
+    ASSERT_NE(thumbnailPixelMap, nullptr);
+    GTEST_LOG_(INFO) << "PictureExtTest: EncodeThumbnailPicture005 end";
+}
+
+/**
+ * @tc.name: EncodeThumbnailPicture006
+ * @tc.desc: Test encode thumbnail picture, but needsPackProperties is false.
+ * @tc.type: FUNC
+ */
+HWTEST_F(PictureExtTest, EncodeThumbnailPicture006, TestSize.Level1)
+{
+    GTEST_LOG_(INFO) << "PictureExtTest: EncodeThumbnailPicture006 start";
+    auto srcPicture = CreatePictureByImageSource(IMAGE_JPEG_FORMAT, IMAGE_INPUT_JPEG_EXIF_THUMBNAIL);
+    ASSERT_NE(srcPicture, nullptr);
+    ASSERT_NE(srcPicture->GetThumbnailPixelMap(), nullptr);
+
+    PackOption option {
+        .format = IMAGE_JPEG_FORMAT,
+        .quality = 98,
+        .needsPackProperties = false,
+    };
+    // remove the file if it exists
+    std::filesystem::remove(IMAGE_JPEG_DEST);
+    bool ret = EncodeThumbnailPicture(srcPicture, option, IMAGE_JPEG_DEST);
+    EXPECT_TRUE(ret);
+
+    std::shared_ptr<PixelMap> thumbnailPixelMap = CreateThumbnailInner(IMAGE_JPEG_FORMAT, IMAGE_JPEG_DEST);
+    ASSERT_EQ(thumbnailPixelMap, nullptr);
+    GTEST_LOG_(INFO) << "PictureExtTest: EncodeThumbnailPicture006 end";
+}
+
+/**
+ * @tc.name: EncodeThumbnailPicture007
+ * @tc.desc: Test HEIF encode thumbnail picture without thumbnail auxiliary picture, but with exif thumbnail.
+ * @tc.type: FUNC
+ */
+HWTEST_F(PictureExtTest, EncodeThumbnailPicture007, TestSize.Level1)
+{
+    GTEST_LOG_(INFO) << "PictureExtTest: EncodeThumbnailPicture007 start";
+    auto srcPicture = CreatePictureByPixelMap(IMAGE_HEIF_FORMAT, IMAGE_INPUT_HEIF_EXIF_THUMBNAIL);
+    ASSERT_NE(srcPicture, nullptr);
+    PackOption option {
+        .format = IMAGE_HEIF_FORMAT,
+        .quality = 98,
+        .needsPackProperties = true,
+    };
+    // remove the file if it exists
+    std::filesystem::remove(IMAGE_HEIF_DEST);
+    bool ret = EncodeThumbnailPicture(srcPicture, option, IMAGE_HEIF_DEST);
+    EXPECT_TRUE(ret);
+
+    std::shared_ptr<PixelMap> thumbnailPixelMap = CreateThumbnailInner(IMAGE_HEIF_FORMAT, IMAGE_HEIF_DEST);
+    ASSERT_NE(thumbnailPixelMap, nullptr);
+    GTEST_LOG_(INFO) << "PictureExtTest: EncodeThumbnailPicture007 end";
+}
+
+/**
+ * @tc.name: EncodeThumbnailPicture008
+ * @tc.desc: Test heif encode thumbnail picture with thumbnail auxiliary picture. (whether has exif thumbnail)
+ * @tc.type: FUNC
+ */
+HWTEST_F(PictureExtTest, EncodeThumbnailPicture008, TestSize.Level1)
+{
+    GTEST_LOG_(INFO) << "PictureExtTest: EncodeThumbnailPicture008 start";
+    auto srcPicture = CreatePictureByImageSource(IMAGE_HEIF_FORMAT, IMAGE_INPUT_HEIF_EXIF_THUMBNAIL);
+    ASSERT_NE(srcPicture, nullptr);
+    ASSERT_NE(srcPicture->GetThumbnailPixelMap(), nullptr);
+
+    PackOption option {
+        .format = IMAGE_HEIF_FORMAT,
+        .quality = 98,
+        .needsPackProperties = true,
+    };
+    // remove the file if it exists
+    std::filesystem::remove(IMAGE_HEIF_DEST);
+    bool ret = EncodeThumbnailPicture(srcPicture, option, IMAGE_HEIF_DEST);
+    EXPECT_TRUE(ret);
+
+    std::shared_ptr<PixelMap> thumbnailPixelMap = CreateThumbnailInner(IMAGE_HEIF_FORMAT, IMAGE_HEIF_DEST);
+    ASSERT_NE(thumbnailPixelMap, nullptr);
+    GTEST_LOG_(INFO) << "PictureExtTest: EncodeThumbnailPicture008 end";
+}
+
+/**
+ * @tc.name: EncodeThumbnailPicture009
+ * @tc.desc: Test encode thumbnail picture, after drop thumbnail auxiliary picture.
+ * @tc.type: FUNC
+ */
+HWTEST_F(PictureExtTest, EncodeThumbnailPicture009, TestSize.Level1)
+{
+    GTEST_LOG_(INFO) << "PictureExtTest: EncodeThumbnailPicture009 start";
+    auto srcPicture = CreatePictureByImageSource(IMAGE_HEIF_FORMAT, IMAGE_INPUT_HEIF_EXIF_THUMBNAIL);
+    ASSERT_NE(srcPicture, nullptr);
+    ASSERT_NE(srcPicture->GetThumbnailPixelMap(), nullptr);
+    srcPicture->DropAuxiliaryPicture(AuxiliaryPictureType::THUMBNAIL);
+    ASSERT_EQ(srcPicture->GetThumbnailPixelMap(), nullptr);
+    std::shared_ptr<ExifMetadata> exifMetadata = srcPicture->GetExifMetadata();
+    ASSERT_NE(exifMetadata, nullptr);
+    ASSERT_EQ(exifMetadata->HasThumbnail(), false);
+
+    PackOption option {
+        .format = IMAGE_HEIF_FORMAT,
+        .quality = 98,
+        .needsPackProperties = true,
+    };
+    // remove the file if it exists
+    std::filesystem::remove(IMAGE_HEIF_DEST);
+    bool ret = EncodeThumbnailPicture(srcPicture, option, IMAGE_HEIF_DEST);
+    EXPECT_TRUE(ret);
+
+    std::shared_ptr<PixelMap> thumbnailPixelMap = CreateThumbnailInner(IMAGE_HEIF_FORMAT, IMAGE_HEIF_DEST);
+    ASSERT_EQ(thumbnailPixelMap, nullptr);
+    GTEST_LOG_(INFO) << "PictureExtTest: EncodeThumbnailPicture009 end";
+}
+
+/**
+ * @tc.name: EncodeThumbnailPicture010
+ * @tc.desc: Test encode thumbnail picture, after setThumbnailPixelMap with specific pixelmap.
+ * @tc.type: FUNC
+ */
+HWTEST_F(PictureExtTest, EncodeThumbnailPicture010, TestSize.Level1)
+{
+    GTEST_LOG_(INFO) << "PictureExtTest: EncodeThumbnailPicture010 start";
+    auto srcPicture = CreatePictureByImageSource(IMAGE_HEIF_FORMAT, IMAGE_INPUT_HEIF_BOX_THUMBNAIL);
+    ASSERT_NE(srcPicture, nullptr);
+    auto tbPixelMap = srcPicture->GetThumbnailPixelMap();
+    ASSERT_NE(tbPixelMap, nullptr);
+    // edit the thumbnail pixelmap
+    tbPixelMap->rotate(180);
+    srcPicture->SetThumbnailPixelMap(tbPixelMap);
+
+    PackOption option {
+        .format = IMAGE_HEIF_FORMAT,
+        .quality = 98,
+        .needsPackProperties = true,
+    };
+    // remove the file if it exists
+    std::filesystem::remove(IMAGE_HEIF_DEST);
+    bool ret = EncodeThumbnailPicture(srcPicture, option, IMAGE_HEIF_DEST);
+    EXPECT_TRUE(ret);
+
+    std::shared_ptr<PixelMap> thumbnailPixelMap = CreateThumbnailInner(IMAGE_HEIF_FORMAT, IMAGE_HEIF_DEST);
+    ASSERT_NE(thumbnailPixelMap, nullptr);
+    GTEST_LOG_(INFO) << "PictureExtTest: EncodeThumbnailPicture010 end";
+}
+
+/**
+ * @tc.name: EncodeThumbnailPicture011
+ * @tc.desc: Test encode thumbnail picture(no thumbnail image), after setThumbnailPixelMap with specific pixelmap.
+ * @tc.type: FUNC
+ */
+HWTEST_F(PictureExtTest, EncodeThumbnailPicture011, TestSize.Level1)
+{
+    GTEST_LOG_(INFO) << "PictureExtTest: EncodeThumbnailPicture011 start";
+    auto srcPicture = CreatePictureByImageSource(IMAGE_HEIF_FORMAT, IMAGE_INPUT_HEIF_NO_THUMBNAIL);
+    ASSERT_NE(srcPicture, nullptr);
+    auto tbPixelMap = srcPicture->GetThumbnailPixelMap();
+    ASSERT_EQ(tbPixelMap, nullptr);
+
+    // create a new thumbnail pixelmap
+    tbPixelMap = CreatePixelMap();
+    ASSERT_NE(tbPixelMap, nullptr);
+
+    // set the thumbnail pixelmap to the picture
+    srcPicture->SetThumbnailPixelMap(tbPixelMap);
+
+    PackOption option {
+        .format = IMAGE_HEIF_FORMAT,
+        .quality = 98,
+        .needsPackProperties = true,
+    };
+    // remove the file if it exists
+    std::filesystem::remove(IMAGE_HEIF_DEST);
+    bool ret = EncodeThumbnailPicture(srcPicture, option, IMAGE_HEIF_DEST);
+    EXPECT_TRUE(ret);
+
+    std::shared_ptr<PixelMap> thumbnailPixelMap = CreateThumbnailInner(IMAGE_HEIF_FORMAT, IMAGE_HEIF_DEST);
+    ASSERT_NE(thumbnailPixelMap, nullptr);
+    GTEST_LOG_(INFO) << "PictureExtTest: EncodeThumbnailPicture011 end";
+}
+
+/**
+ * @tc.name: EncodeThumbnailPicture012
+ * @tc.desc: Test encode thumbnail picture, but needsPackProperties is false.
+ * @tc.type: FUNC
+ */
+HWTEST_F(PictureExtTest, EncodeThumbnailPicture012, TestSize.Level1)
+{
+    GTEST_LOG_(INFO) << "PictureExtTest: EncodeThumbnailPicture012 start";
+    auto srcPicture = CreatePictureByImageSource(IMAGE_HEIF_FORMAT, IMAGE_INPUT_HEIF_BOX_THUMBNAIL);
+    ASSERT_NE(srcPicture, nullptr);
+    ASSERT_NE(srcPicture->GetThumbnailPixelMap(), nullptr);
+
+    PackOption option {
+        .format = IMAGE_HEIF_FORMAT,
+        .quality = 98,
+        .needsPackProperties = false,
+    };
+    // remove the file if it exists
+    std::filesystem::remove(IMAGE_HEIF_DEST);
+    bool ret = EncodeThumbnailPicture(srcPicture, option, IMAGE_HEIF_DEST);
+    EXPECT_TRUE(ret);
+
+    std::shared_ptr<PixelMap> thumbnailPixelMap = CreateThumbnailInner(IMAGE_HEIF_FORMAT, IMAGE_HEIF_DEST);
+    ASSERT_EQ(thumbnailPixelMap, nullptr);
+    GTEST_LOG_(INFO) << "PictureExtTest: EncodeThumbnailPicture012 end";
+}
+
+/**
+ * @tc.name: EncodeThumbnailPicture013
+ * @tc.desc: Test encode thumbnail picture, but thumbnail data + exif data exceeds the maximum exif size in JPEG.
+ * @tc.type: FUNC
+ */
+HWTEST_F(PictureExtTest, EncodeThumbnailPicture013, TestSize.Level1)
+{
+    GTEST_LOG_(INFO) << "PictureExtTest: EncodeThumbnailPicture013 start";
+    auto srcPicture = CreatePictureByImageSource(IMAGE_JPEG_FORMAT, IMAGE_INPUT_JPEG_EXIF_THUMBNAIL);
+    ASSERT_NE(srcPicture, nullptr);
+    ASSERT_NE(srcPicture->GetThumbnailPixelMap(), nullptr);
+
+    std::shared_ptr<PixelMap> largeThumbnailPixelMap = CreatePixelMap(IMAGE_JPEG_FORMAT,
+        IMAGE_INPUT_JPEG_NO_THUMBNAIL);
+    ASSERT_NE(largeThumbnailPixelMap, nullptr);
+    srcPicture->SetThumbnailPixelMap(largeThumbnailPixelMap);
+
+    PackOption option {
+        .format = IMAGE_JPEG_FORMAT,
+        .quality = 98,
+        .needsPackProperties = true,
+    };
+    // remove the file if it exists
+    std::filesystem::remove(IMAGE_JPEG_DEST);
+    bool ret = EncodeThumbnailPicture(srcPicture, option, IMAGE_JPEG_DEST);
+    EXPECT_TRUE(ret);
+
+    std::shared_ptr<PixelMap> thumbnailPixelMap = CreateThumbnailInner(IMAGE_JPEG_FORMAT, IMAGE_JPEG_DEST);
+    EXPECT_EQ(thumbnailPixelMap, nullptr);
+    GTEST_LOG_(INFO) << "PictureExtTest: EncodeThumbnailPicture013 end";
 }
 } // namespace Multimedia
 } // namespace OHOS

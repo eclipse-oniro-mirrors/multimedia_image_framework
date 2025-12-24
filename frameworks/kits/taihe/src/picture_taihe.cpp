@@ -109,31 +109,61 @@ optional<PixelMap> PictureImpl::GetHdrComposedPixelmapSync()
     return optional<PixelMap>(std::in_place, res);
 }
 
-GainMap PictureImpl::GetGainmapPixelmap()
+NullablePixelMap PictureImpl::GetGainmapPixelmap()
 {
     IMAGE_LOGD("GetGainmapPixelmap");
-
     if (nativePicture_ != nullptr) {
         auto gainpixelmap = nativePicture_->GetGainmapPixelMap();
         if (gainpixelmap != nullptr) {
-            return GainMap::make_type_gainMap(PixelMapImpl::CreatePixelMap(gainpixelmap));
+            return NullablePixelMap::make_type_pixelMap(PixelMapImpl::CreatePixelMap(gainpixelmap));
         } else {
-            return GainMap::make_type_null();
+            return NullablePixelMap::make_type_null();
         }
     } else {
         ImageTaiheUtils::ThrowExceptionError(OHOS::Media::ERR_MEDIA_UNKNOWN, "Picture is a null pointer");
-        return GainMap::make_type_null();
+        return NullablePixelMap::make_type_null();
     }
+}
+
+NullablePixelMap PictureImpl::GetThumbnailPixelmap()
+{
+    IMAGE_LOGD("GetThumbnailPixelmap");
+    if (nativePicture_ == nullptr) {
+        ImageTaiheUtils::ThrowExceptionError(IMAGE_BAD_PARAMETER, "Picture is a null pointer");
+        return NullablePixelMap::make_type_null();
+    }
+
+    auto thumbnailPixelmap = nativePicture_->GetThumbnailPixelMap();
+    if (thumbnailPixelmap == nullptr) {
+        IMAGE_LOGE("%{public}s Get thumbnail pixelmap failed, thumbnail pixelmap is nullptr", __func__);
+        return NullablePixelMap::make_type_null();
+    }
+    return NullablePixelMap::make_type_pixelMap(PixelMapImpl::CreatePixelMap(thumbnailPixelmap));
+}
+
+void PictureImpl::SetThumbnailPixelmap(PixelMap thumbnailPixelmap)
+{
+    IMAGE_LOGD("SetThumbnailPixelmap IN");
+    if (nativePicture_ == nullptr) {
+        ImageTaiheUtils::ThrowExceptionError(IMAGE_BAD_PARAMETER, "Picture is a null pointer");
+        return;
+    }
+
+    std::shared_ptr<OHOS::Media::PixelMap> nativeThumbnailPixelmap = PixelMapImpl::GetPixelMap(thumbnailPixelmap);
+    if (nativeThumbnailPixelmap == nullptr) {
+        ImageTaiheUtils::ThrowExceptionError(IMAGE_BAD_PARAMETER, "native thumbnail pixelmap is nullptr");
+        return;
+    }
+    nativePicture_->SetThumbnailPixelMap(nativeThumbnailPixelmap);
 }
 
 static OHOS::Media::AuxiliaryPictureType ParseAuxiliaryPictureType(int32_t val)
 {
-    if (val >= static_cast<int32_t>(OHOS::Media::AuxiliaryPictureType::GAINMAP)
-        && val<= static_cast<int32_t>(OHOS::Media::AuxiliaryPictureType::FRAGMENT_MAP)) {
-        return OHOS::Media::AuxiliaryPictureType(val);
+    if (!ImageTaiheUtils::GetTaiheSupportedAuxTypes().count(static_cast<OHOS::Media::AuxiliaryPictureType>(val))) {
+        IMAGE_LOGE("%{public}s auxiliary picture type is not supported: %{public}d", __func__, val);
+        return OHOS::Media::AuxiliaryPictureType::NONE;
     }
-
-    return OHOS::Media::AuxiliaryPictureType::NONE;
+    return OHOS::Media::AuxiliaryPictureType(val);
 }
 
 void PictureImpl::SetAuxiliaryPicture(AuxiliaryPictureType type, weak::AuxiliaryPicture auxiliaryPicture)
@@ -197,6 +227,23 @@ AuxPicture PictureImpl::GetAuxiliaryPicture(AuxiliaryPictureType type)
     }
 
     return result;
+}
+
+void PictureImpl::DropAuxiliaryPicture(AuxiliaryPictureType type)
+{
+    IMAGE_LOGD("DropAuxiliaryPicture IN");
+    OHOS::Media::AuxiliaryPictureType auxType = ParseAuxiliaryPictureType(type.get_value());
+    if (auxType == OHOS::Media::AuxiliaryPictureType::NONE) {
+        ImageTaiheUtils::ThrowExceptionError(IMAGE_BAD_PARAMETER,
+            "The type does not match the auxiliary picture type!");
+    }
+
+    if (nativePicture_ == nullptr) {
+        IMAGE_LOGE("native picture is nullptr!");
+        return;
+    }
+    nativePicture_->DropAuxiliaryPicture(auxType);
+    IMAGE_LOGD("DropAuxiliaryPicture OUT");
 }
 
 void PictureImpl::SetMetadataSync(MetadataType metadataType, weak::Metadata metadata)

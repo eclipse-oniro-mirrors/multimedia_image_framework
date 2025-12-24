@@ -466,6 +466,42 @@ HWTEST_F(PictureTest, GetAuxiliaryPictureTest007, TestSize.Level1)
 }
 
 /**
+ * @tc.name: DropAuxiliaryPictureTest001
+ * @tc.desc: Drop gainmap auxiliary picture from a picture.
+ * @tc.type: FUNC
+ */
+HWTEST_F(PictureTest, DropAuxiliaryPictureTest001, TestSize.Level1)
+{
+    const AuxiliaryPictureType type = AuxiliaryPictureType::GAINMAP;
+    std::unique_ptr<Picture> picture = CreatePicture();
+    ASSERT_NE(picture, nullptr);
+    std::shared_ptr<AuxiliaryPicture> auxiliaryPicture = CreateAuxiliaryPicture(type);
+    ASSERT_NE(auxiliaryPicture, nullptr);
+    picture->SetAuxiliaryPicture(auxiliaryPicture);
+    picture->DropAuxiliaryPicture(type);
+    EXPECT_FALSE(picture->HasAuxiliaryPicture(type));
+}
+
+/**
+ * @tc.name: DropAuxiliaryPictureTest002
+ * @tc.desc: Drop thumbnail auxiliary picture from a picture.
+ * @tc.type: FUNC
+ */
+HWTEST_F(PictureTest, DropAuxiliaryPictureTest002, TestSize.Level1)
+{
+    const AuxiliaryPictureType type = AuxiliaryPictureType::THUMBNAIL;
+    std::unique_ptr<Picture> picture = CreatePicture();
+    ASSERT_NE(picture, nullptr);
+    std::shared_ptr<AuxiliaryPicture> auxiliaryPicture = CreateAuxiliaryPicture(type);
+    ASSERT_NE(auxiliaryPicture, nullptr);
+    std::shared_ptr<ExifMetadata> metadata = std::make_shared<ExifMetadata>();
+    auxiliaryPicture->SetMetadata(MetadataType::EXIF, metadata);
+    picture->SetAuxiliaryPicture(auxiliaryPicture);
+    picture->DropAuxiliaryPicture(type);
+    EXPECT_FALSE(picture->HasAuxiliaryPicture(type));
+}
+
+/**
  * @tc.name: MarshallingTest001
  * @tc.desc: Marshalling picture without auxiliary picture.
  * @tc.type: FUNC
@@ -980,5 +1016,87 @@ HWTEST_F(PictureTest, SetMetadataTest002, TestSize.Level3)
     GTEST_LOG_(INFO) << "PictureTest: SetMetadataTest002 end";
 }
 
+/**
+* @tc.name: GetAuxPicturePixelMapTest001
+* @tc.desc: Verify get thumbnail pixel map.
+* @tc.type: FUNC
+*/
+HWTEST_F(PictureTest, GetAuxPicturePixelMapTest001, TestSize.Level1)
+{
+    std::shared_ptr<AuxiliaryPicture> thumbnailAuxPicture = CreateAuxiliaryPicture(AuxiliaryPictureType::THUMBNAIL);
+    ASSERT_NE(thumbnailAuxPicture, nullptr);
+    std::unique_ptr<Picture> picture = CreatePicture();
+    ASSERT_NE(picture, nullptr);
+    picture->SetAuxiliaryPicture(thumbnailAuxPicture);
+    auto thumbnailPixelMap = picture->GetAuxPicturePixelMap(AuxiliaryPictureType::THUMBNAIL);
+    EXPECT_NE(thumbnailPixelMap, nullptr);
+    EXPECT_EQ(thumbnailPixelMap->GetHeight(), SIZE_HEIGHT);
+}
+
+/**
+* @tc.name: GetAuxPicturePixelMapTest002
+* @tc.desc: Verify get fragment map pixel map, when picture does not have fragment map.
+* @tc.type: FUNC
+*/
+HWTEST_F(PictureTest, GetAuxPicturePixelMapTest002, TestSize.Level1)
+{
+    std::shared_ptr<AuxiliaryPicture> thumbnailAuxPicture = CreateAuxiliaryPicture(AuxiliaryPictureType::THUMBNAIL);
+    ASSERT_NE(thumbnailAuxPicture, nullptr);
+    std::unique_ptr<Picture> picture = CreatePicture();
+    ASSERT_NE(picture, nullptr);
+    picture->SetAuxiliaryPicture(thumbnailAuxPicture);
+    auto fragmentPixelMap = picture->GetAuxPicturePixelMap(AuxiliaryPictureType::FRAGMENT_MAP);
+    EXPECT_EQ(fragmentPixelMap, nullptr);
+}
+
+/**
+* @tc.name: GetThumbnailPixelmapTest001
+* @tc.desc: Verify get thumbnail pixel map.
+* @tc.type: FUNC
+*/
+HWTEST_F(PictureTest, GetThumbnailPixelmapTest001, TestSize.Level1)
+{
+    std::shared_ptr<AuxiliaryPicture> thumbnailAuxPicture = CreateAuxiliaryPicture(AuxiliaryPictureType::THUMBNAIL);
+    ASSERT_NE(thumbnailAuxPicture, nullptr);
+    std::unique_ptr<Picture> picture = CreatePicture();
+    ASSERT_NE(picture, nullptr);
+    picture->SetAuxiliaryPicture(thumbnailAuxPicture);
+    auto thumbnailPixelMap = picture->GetThumbnailPixelMap();
+    EXPECT_NE(thumbnailPixelMap, nullptr);
+    EXPECT_EQ(thumbnailPixelMap->GetHeight(), SIZE_HEIGHT);
+}
+
+/**
+* @tc.name: GetThumbnailPixelmapTest002
+* @tc.desc: Verify get thumbnail pixel map, when picture does not have thumbnail map.
+* @tc.type: FUNC
+*/
+HWTEST_F(PictureTest, GetThumbnailPixelmapTest002, TestSize.Level2)
+{
+    std::shared_ptr<AuxiliaryPicture> thumbnailAuxPicture = CreateAuxiliaryPicture(AuxiliaryPictureType::FRAGMENT_MAP);
+    ASSERT_NE(thumbnailAuxPicture, nullptr);
+    std::unique_ptr<Picture> picture = CreatePicture();
+    ASSERT_NE(picture, nullptr);
+    picture->SetAuxiliaryPicture(thumbnailAuxPicture);
+    std::shared_ptr<PixelMap> desPixelMap = picture->GetThumbnailPixelMap();
+    EXPECT_EQ(desPixelMap, nullptr);
+}
+
+/**
+* @tc.name: SetThumbnailPixelmapTest001
+* @tc.desc: Verify set thumbnail pixelmap to picture.
+* @tc.type: FUNC
+*/
+HWTEST_F(PictureTest, SetThumbnailPixelmapTest001, TestSize.Level1)
+{
+    std::shared_ptr<PixelMap> thumbnailPixelMap = CreatePixelMap();
+    ASSERT_NE(thumbnailPixelMap, nullptr);
+    std::unique_ptr<Picture> picture = CreatePicture();
+    ASSERT_NE(picture, nullptr);
+    picture->SetThumbnailPixelMap(thumbnailPixelMap);
+    auto thumbnailPixelMapByGet = picture->GetThumbnailPixelMap();
+    EXPECT_NE(thumbnailPixelMapByGet, nullptr);
+    EXPECT_EQ(thumbnailPixelMapByGet->GetHeight(), SIZE_HEIGHT);
+}
 } // namespace Media
 } // namespace OHOS

@@ -63,6 +63,61 @@ class AbsMemory;
 struct RWPixelsOptions;
 struct InitializationOptions;
 
+template<typename T>
+class ScopeRestorer {
+public:
+    // Constructor without immediate value setting
+    explicit ScopeRestorer(T& ref)
+        : ref_(ref), old_value_(ref), new_value_set_(false)
+    {}
+
+    // Constructor with immediate value setting
+    explicit ScopeRestorer(T& ref, T new_value)
+        : ref_(ref), old_value_(ref), new_value_set_(true)
+    {
+        ref_ = new_value;
+    }
+
+    // Set/Update the new value
+    void SetValue(const T& value)
+    {
+        ref_ = value;
+        new_value_set_ = true;
+    }
+
+    // Keep the new value (Discard restoration)
+    void Keep()
+    {
+        new_value_set_ = false;
+    }
+
+    // Immediately restore old value and deactivate
+    void Restore()
+    {
+        if (new_value_set_) {
+            ref_ = old_value_;
+            new_value_set_ = false;
+        }
+    }
+
+    ~ScopeRestorer()
+    {
+        if (new_value_set_) {
+            ref_ = old_value_;
+        }
+    }
+
+    ScopeRestorer(const ScopeRestorer&) = delete;
+    ScopeRestorer& operator=(const ScopeRestorer&) = delete;
+    ScopeRestorer(ScopeRestorer&&) = delete;
+    ScopeRestorer& operator=(ScopeRestorer&&) = delete;
+
+private:
+    T& ref_;
+    T old_value_;
+    bool new_value_set_;
+};
+
 class ImageUtils {
 public:
     static bool GetFileSize(const std::string &pathName, size_t &size);
@@ -84,6 +139,7 @@ public:
     static MultimediaPlugin::PluginServer& GetPluginServer();
     static bool CheckMulOverflow(int32_t width, int32_t bytesPerPixel);
     static bool CheckMulOverflow(int32_t width, int32_t height, int32_t bytesPerPixel);
+    static bool CheckFloatMulOverflow(float num1, float num2);
     static void BGRAToARGB(uint8_t* srcPixels, uint8_t* dstPixels, uint32_t byteCount);
     static void ARGBToBGRA(uint8_t* srcPixels, uint8_t* dstPixels, uint32_t byteCount);
     static int32_t SurfaceBuffer_Reference(void* buffer);
@@ -127,7 +183,7 @@ public:
     static bool IsAuxiliaryPictureTypeSupported(AuxiliaryPictureType auxiliaryPictureType);
     static bool IsAuxiliaryPictureEncoded(AuxiliaryPictureType type);
     static bool IsMetadataTypeSupported(MetadataType metadataType);
-    static const std::set<AuxiliaryPictureType> GetAllAuxiliaryPictureType();
+    static const std::set<AuxiliaryPictureType> &GetAllAuxiliaryPictureType();
     static const std::set<MetadataType> &GetAllMetadataType();
     static size_t GetAstcBytesCount(const ImageInfo& imageInfo);
     static bool StrToUint32(const std::string& str, uint32_t& value);
