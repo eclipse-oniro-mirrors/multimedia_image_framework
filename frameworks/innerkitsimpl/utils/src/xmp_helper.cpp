@@ -49,7 +49,7 @@ namespace Media {
  */
 std::pair<std::string, std::string> XMPHelper::SplitOnce(std::string_view path, std::string_view delim)
 {
-    CHECK_ERROR_RETURN_RET_LOG(path.empty(), {}, "%{public}s path is empty", __func__);
+    CHECK_ERROR_RETURN_RET_LOG(path.empty() || delim.empty(), {}, "%{public}s path or delim is empty", __func__);
 
     size_t delimPos = path.find(delim);
     CHECK_ERROR_RETURN_RET_LOG(delimPos == std::string_view::npos, {}, "%{public}s path is invalid", __func__);
@@ -68,6 +68,8 @@ std::pair<std::string, std::string> XMPHelper::SplitOnce(std::string_view path, 
  */
 std::string XMPHelper::Trim(std::string_view str, std::string_view trimChars)
 {
+    CHECK_ERROR_RETURN_RET_LOG(str.empty() || trimChars.empty(), "", "%{public}s str or trimChars is empty", __func__);
+
     size_t start = str.find_first_not_of(trimChars);
     if (start == std::string_view::npos) {
         return "";

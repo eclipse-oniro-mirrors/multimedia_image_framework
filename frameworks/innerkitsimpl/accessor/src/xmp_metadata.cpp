@@ -225,6 +225,8 @@ bool XMPMetadata::SetTag(const std::string &path, const XMPTag &tag)
 
     XMP_OptionBits options = ConvertTagTypeToOptions(tag.type);
     if (IsContainerTagType(tag.type)) {
+        CHECK_ERROR_RETURN_RET_LOG(!tag.value.empty(), false, "%{public}s: container tag's value should be empty "
+            "for path: %{public}s", __func__, path.c_str());
         impl_->SetProperty(namespaceUri.c_str(), propName.c_str(), nullptr, options);
     } else {
         impl_->SetProperty(namespaceUri.c_str(), propName.c_str(), tag.value.c_str(), options);
