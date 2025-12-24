@@ -103,6 +103,7 @@ public:
     static void DumpSurfaceBufferAllKeysEnabled(sptr<SurfaceBuffer>& buffer, const std::string& fileName);
     static ColorManager::ColorSpaceName SbCMColorSpaceType2ColorSpaceName(
         HDI::Display::Graphic::Common::V1_0::CM_ColorSpaceType type);
+    static void SetYuvDataInfo(std::unique_ptr<PixelMap> &pixelMap, sptr<OHOS::SurfaceBuffer> &sBuffer);
 #endif
     static PixelFormat SbFormat2PixelFormat(int32_t sbFormat);
     static uint64_t GetNowTimeMilliSeconds();
@@ -164,7 +165,6 @@ public:
     static bool GetAlignedNumber(int32_t& number, int32_t align);
     static int32_t GetByteCount(ImageInfo imageInfo);
     static int32_t GetYUVByteCount(const ImageInfo& info);
-    static void SetYuvDataInfo(std::unique_ptr<PixelMap> &pixelMap, sptr<OHOS::SurfaceBuffer> &sBuffer);
 
     template<typename T>
     static bool CheckMulOverflow(const T& num1, const T& num2)
