@@ -101,6 +101,9 @@ if (use_clang_android) {
     if (image_use_new_skia) {
       defines += [ "USE_M133_SKIA" ]
     }
+    if (has_libtiff) {
+        defines += [ "SUPPORT_TIFF_DECODER" ]
+    }
     cflags = image_native_android_cflags
     sources = image_native_android_sources
     include_dirs = image_native_android_include_dirs
@@ -117,6 +120,9 @@ if (use_clang_android) {
     defines += [ "CROSS_PLATFORM" ]
     if (image_use_new_skia) {
       defines += [ "USE_M133_SKIA" ]
+    }
+    if (has_libtiff) {
+        defines += [ "SUPPORT_TIFF_DECODER" ]
     }
     cflags = image_native_ios_cflags
     include_dirs = image_native_ios_include_dirs

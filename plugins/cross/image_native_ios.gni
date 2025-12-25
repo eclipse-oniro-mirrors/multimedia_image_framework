@@ -294,3 +294,16 @@ image_native_ios_external_deps = [
   # png
   "//third_party/zlib:shared_libz",
 ]
+
+if (has_libtiff) {
+    image_native_ios_sources += [
+        # tiff
+        "${image_subsystem}/plugins/common/libs/image/libtiffplugin/src/tiff_decoder.cpp",
+        "${image_subsystem}/plugins/common/libs/image/formatagentplugin/src/tiff_format_agent.cpp",
+    ]
+
+    image_native_ios_include_dirs += [
+        # tiff
+        "$image_subsystem/plugins/common/libs/image/libtiffplugin/include",
+    ]
+}
