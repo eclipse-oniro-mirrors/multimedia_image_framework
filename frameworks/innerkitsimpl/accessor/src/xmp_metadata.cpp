@@ -240,7 +240,7 @@ bool XMPMetadata::GetTag(const std::string &path, XMPTag &tag)
     XMP_TRY();
     CHECK_ERROR_RETURN_RET_LOG(!impl_ || !impl_->IsValid(), false,
         "%{public}s impl is null for path: %{public}s", __func__, path.c_str());
-    
+
     const auto &[prefix, propName] = XMPHelper::SplitOnce(path, COLON);
     std::string namespaceUri;
     CHECK_ERROR_RETURN_RET_LOG(!SXMPMeta::GetNamespaceURI(prefix.c_str(), &namespaceUri), false,

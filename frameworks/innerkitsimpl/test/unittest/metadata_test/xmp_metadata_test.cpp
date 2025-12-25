@@ -66,6 +66,13 @@ namespace {
 <?xpacket end="w"?>)XMP";
     constexpr uint32_t XMP_BLOB_DATA_SIZE = 4096;
     constexpr uint32_t XMP_BLOB_SMALL_SIZE = 1;
+
+    constexpr std::string_view EMPTY_STRING = "";
+    constexpr std::string_view TEST_PATH = "test:path";
+    constexpr std::string_view COLON = ":";
+
+    const std::pair<std::string, std::string> RESULT_PAIR = {"test", "path"};
+    const std::pair<std::string, std::string> ERROR_RESULT_PAIR = {};
 }
 
 class XmpMetadataTest : public testing::Test {
@@ -295,7 +302,6 @@ HWTEST_F(XmpMetadataTest, SetTagTest002, TestSize.Level1)
     tag.xmlns = NS_XMP_BASIC;
     tag.prefix = PF_XMP_BASIC;
     tag.name = "CreatorTool";
-    tag.value = "XmpMetadataTest.SetTagTest002";
     tag.type = XMPTagType::UNORDERED_ARRAY;
     bool ret = xmpMetadata.SetTag("xmp:CreatorTool", tag);
     EXPECT_TRUE(ret);
@@ -315,7 +321,6 @@ HWTEST_F(XmpMetadataTest, SetTagTest003, TestSize.Level1)
     tag.xmlns = NS_XMP_BASIC;
     tag.prefix = PF_XMP_BASIC;
     tag.name = "CreatorTool";
-    tag.value = "XmpMetadataTest.SetTagTest003";
     tag.type = XMPTagType::ORDERED_ARRAY;
     bool ret = xmpMetadata.SetTag("xmp:CreatorTool", tag);
     EXPECT_TRUE(ret);
@@ -335,7 +340,6 @@ HWTEST_F(XmpMetadataTest, SetTagTest004, TestSize.Level1)
     tag.xmlns = NS_XMP_BASIC;
     tag.prefix = PF_XMP_BASIC;
     tag.name = "CreatorTool";
-    tag.value = "XmpMetadataTest.SetTagTest004";
     tag.type = XMPTagType::ALTERNATE_ARRAY;
     bool ret = xmpMetadata.SetTag("xmp:CreatorTool", tag);
     EXPECT_TRUE(ret);
@@ -355,7 +359,6 @@ HWTEST_F(XmpMetadataTest, SetTagTest005, TestSize.Level1)
     tag.xmlns = NS_XMP_BASIC;
     tag.prefix = PF_XMP_BASIC;
     tag.name = "CreatorTool";
-    tag.value = "XmpMetadataTest.SetTagTest005";
     tag.type = XMPTagType::ALTERNATE_TEXT;
     bool ret = xmpMetadata.SetTag("xmp:CreatorTool", tag);
     EXPECT_TRUE(ret);
@@ -364,7 +367,7 @@ HWTEST_F(XmpMetadataTest, SetTagTest005, TestSize.Level1)
 
 /**
  * @tc.name: SetTagTest006
- * @tc.desc: test the SetTag method when the type of tag is alternate text.
+ * @tc.desc: test the SetTag method when the type of tag is structure.
  * @tc.type: FUNC
  */
 HWTEST_F(XmpMetadataTest, SetTagTest006, TestSize.Level1)
@@ -375,8 +378,7 @@ HWTEST_F(XmpMetadataTest, SetTagTest006, TestSize.Level1)
     tag.xmlns = NS_XMP_BASIC;
     tag.prefix = PF_XMP_BASIC;
     tag.name = "CreatorTool";
-    tag.value = "XmpMetadataTest.SetTagTest006";
-    tag.type = XMPTagType::ALTERNATE_TEXT;
+    tag.type = XMPTagType::STRUCTURE;
     bool ret = xmpMetadata.SetTag("xmp:CreatorTool", tag);
     EXPECT_TRUE(ret);
     GTEST_LOG_(INFO) << "XmpMetadataTest: SetTagTest006 end";
@@ -384,7 +386,7 @@ HWTEST_F(XmpMetadataTest, SetTagTest006, TestSize.Level1)
 
 /**
  * @tc.name: SetTagTest007
- * @tc.desc: test the SetTag method when the type of tag is structure.
+ * @tc.desc: test the SetTag method when the type of tag is unordered array with value.
  * @tc.type: FUNC
  */
 HWTEST_F(XmpMetadataTest, SetTagTest007, TestSize.Level1)
@@ -396,9 +398,9 @@ HWTEST_F(XmpMetadataTest, SetTagTest007, TestSize.Level1)
     tag.prefix = PF_XMP_BASIC;
     tag.name = "CreatorTool";
     tag.value = "XmpMetadataTest.SetTagTest007";
-    tag.type = XMPTagType::STRUCTURE;
+    tag.type = XMPTagType::UNORDERED_ARRAY;
     bool ret = xmpMetadata.SetTag("xmp:CreatorTool", tag);
-    EXPECT_TRUE(ret);
+    EXPECT_FALSE(ret);
     GTEST_LOG_(INFO) << "XmpMetadataTest: SetTagTest007 end";
 }
 
@@ -3156,7 +3158,7 @@ HWTEST_F(XmpMetadataTest, GetTagTest067, TestSize.Level1)
  * @tc.name: GetTagTest068
  * @tc.desc: test the GetTag method with other symbol when the type of the first parent tag is structure, the child
  *           tag is simple with the tag witch the type is qualifier.
- * @tc.type: FUNC   
+ * @tc.type: FUNC
  */
 HWTEST_F(XmpMetadataTest, GetTagTest068, TestSize.Level1)
 {
@@ -3579,6 +3581,67 @@ HWTEST_F(XmpMetadataTest, SetGetBlobTest003, TestSize.Level1)
 }
 
 /**
+ * @tc.name: SplitOnceTest001
+ * @tc.desc: test the SplitOnce method.
+ * @tc.type: FUNC
+ */
+HWTEST_F(XmpMetadataTest, SplitOnceTest001, TestSize.Level1)
+{
+    GTEST_LOG_(INFO) << "XmpMetadataTest: SplitOnceTest001 start";
+    auto ret = XMPHelper::SplitOnce(TEST_PATH, COLON);
+    EXPECT_EQ(ret, RESULT_PAIR);
+
+    ret = XMPHelper::SplitOnce(EMPTY_STRING, COLON);
+    EXPECT_EQ(ret, ERROR_RESULT_PAIR);
+
+    ret = XMPHelper::SplitOnce(TEST_PATH, EMPTY_STRING);
+    EXPECT_EQ(ret, ERROR_RESULT_PAIR);
+
+    std::string path = "test:test:path";
+    ret = XMPHelper::SplitOnce(path, COLON);
+    EXPECT_EQ(ret, std::make_pair(std::string("test"), std::string("test:path")));
+
+    ret = XMPHelper::SplitOnce(path, "/");
+    EXPECT_EQ(ret, ERROR_RESULT_PAIR);
+
+    path = "testpath:";
+    ret = XMPHelper::SplitOnce(path, COLON);
+    EXPECT_EQ(ret, std::make_pair(std::string("testpath"), std::string("")));
+
+    path = ":testpath";
+    ret = XMPHelper::SplitOnce(path, COLON);
+    EXPECT_EQ(ret, std::make_pair(std::string(""), std::string("testpath")));
+
+    GTEST_LOG_(INFO) << "XmpMetadataTest: SplitOnceTest001 end";
+}
+
+/**
+ * @tc.name: TrimTest001
+ * @tc.desc: test the Trim method.
+ * @tc.type: FUNC
+ */
+HWTEST_F(XmpMetadataTest, TrimTest001, TestSize.Level1)
+{
+    GTEST_LOG_(INFO) << "XmpMetadataTest: TrimTest001 start";
+    auto ret = XMPHelper::Trim(TEST_PATH, COLON);
+    EXPECT_EQ(ret, "test:path");
+
+    ret = XMPHelper::Trim(TEST_PATH, TEST_PATH);
+    EXPECT_EQ(ret, "");
+
+    ret = XMPHelper::Trim(TEST_PATH, ":path");
+    EXPECT_EQ(ret, "es");
+
+    ret = XMPHelper::Trim(TEST_PATH, "abc");
+    EXPECT_EQ(ret, TEST_PATH);
+
+    ret = XMPHelper::Trim(TEST_PATH, "t");
+    EXPECT_EQ(ret, "est:path");
+
+    GTEST_LOG_(INFO) << "XmpMetadataTest: TrimTest001 end";
+}
+
+/**
  * @tc.name: ExtractPropertyTest001
  * @tc.desc: test the ExtractProperty method with nested paths.
  * @tc.type: FUNC
@@ -3607,6 +3670,148 @@ HWTEST_F(XmpMetadataTest, ExtractPropertyTest001, TestSize.Level1)
     EXPECT_EQ(XMPHelper::ExtractProperty(path5), "dc:title");
 
     GTEST_LOG_(INFO) << "XmpMetadataTest: ExtractPropertyTest001 end";
+}
+
+/**
+ * @tc.name: ExtractPropertyTest002
+ * @tc.desc: test the ExtractProperty method .
+ * @tc.type: FUNC
+ */
+HWTEST_F(XmpMetadataTest, ExtractPropertyTest002, TestSize.Level1)
+{
+    GTEST_LOG_(INFO) << "XmpMetadataTest: ExtractPropertyTest002 start";
+    EXPECT_EQ(XMPHelper::ExtractProperty(""), "");
+
+    std::string path = "  test path  ";
+    EXPECT_EQ(XMPHelper::ExtractProperty(path), "test path");
+
+    EXPECT_EQ(XMPHelper::ExtractProperty("["), "");
+    EXPECT_EQ(XMPHelper::ExtractProperty("]"), "]");
+
+    path = "testpath]";
+    EXPECT_EQ(XMPHelper::ExtractProperty(path), path);
+
+    path = "dc:title[invalid path";
+    EXPECT_EQ(XMPHelper::ExtractProperty(path), "dc:title");
+
+    path = "prop/?; rm -rf /";
+    EXPECT_EQ(XMPHelper::ExtractProperty("prop/?; rm -rf /"), "; rm -rf /");
+
+    GTEST_LOG_(INFO) << "XmpMetadataTest: ExtractPropertyTest002 end";
+}
+
+/**
+ * @tc.name: CreateXMPTagTest001
+ * @tc.desc: test the CreateXMPTag method when tag is simple .
+ * @tc.type: FUNC
+ */
+HWTEST_F(XmpMetadataTest, CreateXMPTagTest001, TestSize.Level1)
+{
+    GTEST_LOG_(INFO) << "XmpMetadataTest: CreateXMPTagTest001 start";
+    XMPMetadata xmpMetadata;
+    std::string tagPath = "dc:parent";
+    std::string value = "test value";
+    XMPTag outTag;
+
+    bool ret = xmpMetadata.CreateXMPTag(tagPath, XMPTagType::SIMPLE, value, outTag);
+    EXPECT_TRUE(ret);
+
+    GTEST_LOG_(INFO) << "XmpMetadataTest: CreateXMPTagTest001 end";
+}
+
+/**
+ * @tc.name: CreateXMPTagTest002
+ * @tc.desc: test the CreateXMPTag method when tag is unordered array .
+ * @tc.type: FUNC
+ */
+HWTEST_F(XmpMetadataTest, CreateXMPTagTest002, TestSize.Level1)
+{
+    GTEST_LOG_(INFO) << "XmpMetadataTest: CreateXMPTagTest002 start";
+    XMPMetadata xmpMetadata;
+    std::string tagPath = "dc:parent";
+    std::string value = "";
+    XMPTag outTag;
+
+    bool ret = xmpMetadata.CreateXMPTag(tagPath, XMPTagType::UNORDERED_ARRAY, value, outTag);
+    EXPECT_TRUE(ret);
+
+    GTEST_LOG_(INFO) << "XmpMetadataTest: CreateXMPTagTest002 end";
+}
+
+/**
+ * @tc.name: CreateXMPTagTest003
+ * @tc.desc: test the CreateXMPTag method when tag is ordered array .
+ * @tc.type: FUNC
+ */
+HWTEST_F(XmpMetadataTest, CreateXMPTagTest003, TestSize.Level1)
+{
+    GTEST_LOG_(INFO) << "XmpMetadataTest: CreateXMPTagTest003 start";
+    XMPMetadata xmpMetadata;
+    std::string tagPath = "dc:parent";
+    std::string value = "";
+    XMPTag outTag;
+
+    bool ret = xmpMetadata.CreateXMPTag(tagPath, XMPTagType::ORDERED_ARRAY, value, outTag);
+    EXPECT_TRUE(ret);
+
+    GTEST_LOG_(INFO) << "XmpMetadataTest: CreateXMPTagTest003 end";
+}
+
+/**
+ * @tc.name: CreateXMPTagTest004
+ * @tc.desc: test the CreateXMPTag method when tag is alternate array .
+ * @tc.type: FUNC
+ */
+HWTEST_F(XmpMetadataTest, CreateXMPTagTest004, TestSize.Level1)
+{
+    GTEST_LOG_(INFO) << "XmpMetadataTest: CreateXMPTagTest004 start";
+    XMPMetadata xmpMetadata;
+    std::string tagPath = "dc:parent";
+    std::string value = "";
+    XMPTag outTag;
+
+    bool ret = xmpMetadata.CreateXMPTag(tagPath, XMPTagType::ALTERNATE_ARRAY, value, outTag);
+    EXPECT_TRUE(ret);
+
+    GTEST_LOG_(INFO) << "XmpMetadataTest: CreateXMPTagTest004 end";
+}
+
+/**
+ * @tc.name: CreateXMPTagTest005
+ * @tc.desc: test the CreateXMPTag method when tag is alternate array .
+ * @tc.type: FUNC
+ */
+HWTEST_F(XmpMetadataTest, CreateXMPTagTest005, TestSize.Level1)
+{
+    GTEST_LOG_(INFO) << "XmpMetadataTest: CreateXMPTagTest005 start";
+    XMPMetadata xmpMetadata;
+    std::string tagPath = "dc:parent";
+    std::string value = "";
+    XMPTag outTag;
+
+    bool ret = xmpMetadata.CreateXMPTag(tagPath, XMPTagType::ALTERNATE_TEXT, value, outTag);
+    EXPECT_TRUE(ret);
+
+    GTEST_LOG_(INFO) << "XmpMetadataTest: CreateXMPTagTest005 end";
+}
+
+/**
+ * @tc.name: CreateXMPTagTest006
+ * @tc.desc: test the CreateXMPTag method when tag is alternate array .
+ * @tc.type: FUNC
+ */
+HWTEST_F(XmpMetadataTest, CreateXMPTagTest006, TestSize.Level1)
+{
+    GTEST_LOG_(INFO) << "XmpMetadataTest: CreateXMPTagTest006 start";
+    XMPMetadata xmpMetadata;
+    std::string tagPath = "dc:parent";
+    std::string value = "";
+    XMPTag outTag;
+
+    bool ret = xmpMetadata.CreateXMPTag(tagPath, XMPTagType::STRUCTURE, value, outTag);
+    EXPECT_TRUE(ret);
+
+    GTEST_LOG_(INFO) << "XmpMetadataTest: CreateXMPTagTest006 end";
 }
 } // namespace Multimedia
 } // namespace OHOS
