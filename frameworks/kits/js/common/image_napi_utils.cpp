@@ -168,8 +168,7 @@ static bool ParseImageReceiverOptions(napi_env env, napi_value options,
     int32_t &width, int32_t &height, int32_t &capacity)
 {
     napi_value sizeObj = nullptr;
-    if (!GET_NODE_BY_NAME(options, "size", sizeObj) ||
-        ImageNapiUtils::getType(env, sizeObj) == napi_undefined) {
+    if (!GET_NODE_BY_NAME(options, "size", sizeObj)) {
         IMAGE_LOGD("no size in options");
         width = DEFAULT_WIDTH;
         height = DEFAULT_HEIGHT;
@@ -180,8 +179,7 @@ static bool ParseImageReceiverOptions(napi_env env, napi_value options,
         }
         IMAGE_LOGD("size: width=%{public}d, height=%{public}d", width, height);
     }
-    if (!GET_INT32_BY_NAME(options, "capacity", capacity) ||
-        ImageNapiUtils::getType(env, sizeObj) == napi_undefined) {
+    if (!GET_INT32_BY_NAME(options, "capacity", capacity)) {
         capacity = DEFAULT_CAPACITY;
     }
     return true;

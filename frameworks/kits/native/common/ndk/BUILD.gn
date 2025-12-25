@@ -29,6 +29,11 @@ ohos_shared_library("ohimage") {
     cfi_vcall_icall_only = true
     debug = false
   }
+
+  cflags = [
+    "-DIMAGE_COLORSPACE_FLAG",
+  ]
+
   output_name = "ohimage"
   output_extension = "so"
 
