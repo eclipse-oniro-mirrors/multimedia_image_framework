@@ -2744,6 +2744,7 @@ bool PixelMap::WriteAstcInfoToParcel(Parcel &parcel) const
 
 bool PixelMap::Marshalling(Parcel &parcel) const
 {
+    std::lock_guard<std::mutex> lock(*translationMutex_);
     int32_t PIXEL_MAP_INFO_MAX_LENGTH = 128;
     if (ImageUtils::CheckMulOverflow(imageInfo_.size.height, rowDataSize_)) {
         IMAGE_LOGE("pixelmap invalid params, height:%{public}d, rowDataSize:%{public}d.",
