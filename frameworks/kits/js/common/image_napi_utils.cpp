@@ -180,8 +180,7 @@ static bool ParseImageReceiverOptions(napi_env env, napi_value options,
         }
         IMAGE_LOGD("size: width=%{public}d, height=%{public}d", width, height);
     }
-    if (!GET_INT32_BY_NAME(options, "capacity", capacity) ||
-        ImageNapiUtils::getType(env, sizeObj) == napi_undefined) {
+    if (!GET_INT32_BY_NAME(options, "capacity", capacity)) {
         capacity = DEFAULT_CAPACITY;
     }
     return true;
