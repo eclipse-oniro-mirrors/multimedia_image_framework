@@ -722,7 +722,7 @@ interface ImageSource {
   GetImagePropertyReturnsPromise(key: PropertyKey, options: Optional<ImagePropertyOptions>): String;
 
   @gen_promise("getImageProperties")
-  GetImagePropertiesSync(key: Array<PropertyKey>): @record Map<PropertyKey, PropertyValue>;
+  GetImagePropertiesSync(key: Array<PropertyKey>): @record Map<String, PropertyValue>;
 
   GetImagePropertySync(key: PropertyKey): Optional<String>;
 
@@ -730,7 +730,7 @@ interface ImageSource {
   ModifyImagePropertySync(key: PropertyKey, value: String): void;
   
   @gen_promise("modifyImageProperties")
-  ModifyImagePropertiesSync(records: @record Map<PropertyKey, PropertyValue>): void;
+  ModifyImagePropertiesSync(records: @record Map<String, PropertyValue>): void;
 
   @gen_promise("modifyImagePropertiesEnhanced")
   ModifyImagePropertiesEnhancedSync(records: @record Map<String, PropertyValue>): void;
