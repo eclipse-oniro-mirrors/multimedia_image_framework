@@ -2280,7 +2280,7 @@ bool ExtDecoder::DecodeHeader()
         auto decoder = reinterpret_cast<HeifDecoderImpl*>(codec_->getHeifContext());
         uint32_t frameCount = 0;
         if (decoder && decoder->GetHeifsFrameCount(frameCount)) {
-            frameCount_ = frameCount;
+            frameCount_ = static_cast<int32_t>(frameCount);
         }
     }
 #endif
@@ -3499,7 +3499,7 @@ uint32_t ExtDecoder::DoHeifsDecode(DecodeContext &context)
     if (context.allocatorType == Media::AllocatorType::DMA_ALLOC) {
         res = DmaMemAlloc(context, byteCount, dstInfo_);
         auto dstBuffer = reinterpret_cast<SurfaceBuffer*>(context.pixelsBuffer.context);
-        rowStride = dstBuffer->GetStride();
+        rowStride = static_cast<uint64_t>(dstBuffer->GetStride());
     } else {
         IMAGE_LOGE("DoHeifsDecode need DMA_ALLOC.");
         res = ERR_IMAGE_DATA_UNSUPPORT;
