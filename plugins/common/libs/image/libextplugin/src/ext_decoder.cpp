@@ -2194,7 +2194,7 @@ uint32_t ExtDecoder::PromoteIncrementalDecode(uint32_t index, ProgDecodeContext 
 bool ExtDecoder::IsCr3Format()
 {
     int32_t apiVersion = ImageUtils::GetAPIVersion();
-    CHECK_ERROR_RETURN_RET_LOG(apiVersion < APIVERSION_20, false,
+    CHECK_DEBUG_RETURN_RET_LOG(apiVersion < APIVERSION_20, false,
         "%{public}s unsupport Cr3 format under API version: %{public}d", __func__, apiVersion);
 
     CHECK_ERROR_RETURN_RET_LOG(stream_ == nullptr, false, "%{public}s invalid stream", __func__);
@@ -2537,7 +2537,7 @@ OHOS::ColorManager::ColorSpace ExtDecoder::GetSrcColorSpace()
             if (cName != ColorManager::NONE) {
                 heifColorSpaceName_ = cName;
                 heifIsColorSpaceFromCicp_ = true;
-                IMAGE_LOGI("%{public}s profile has CICP, cName: %{public}u", __func__, static_cast<uint32_t>(cName));
+                IMAGE_LOGD("%{public}s profile has CICP, cName: %{public}u", __func__, static_cast<uint32_t>(cName));
                 return ColorManager::ColorSpace(cName);
             }
         }
@@ -2545,7 +2545,7 @@ OHOS::ColorManager::ColorSpace ExtDecoder::GetSrcColorSpace()
             ColorManager::ColorSpaceName cName = GetHeifNclxColor(codec_.get());
             if (cName != ColorManager::NONE) {
                 heifColorSpaceName_ = cName;
-                IMAGE_LOGI("%{public}s profile has HEIF NCLX color, cName: %{public}u",
+                IMAGE_LOGD("%{public}s profile has HEIF NCLX color, cName: %{public}u",
                     __func__, static_cast<uint32_t>(cName));
                 return ColorManager::ColorSpace(cName);
             }
