@@ -6322,8 +6322,19 @@ bool ImageSource::IsDngImage()
     return info.encodedFormat == DNG_FORMAT;
 }
 
+static void ClearMetadataValue(MetadataValue &value)
+{
+    value.key.clear();
+    value.type = PropertyValueType::UNKNOWN;
+    value.stringValue.clear();
+    value.intArrayValue.clear();
+    value.doubleArrayValue.clear();
+    value.bufferValue.clear();
+}
+
 uint32_t ImageSource::GetDngImagePropertyByDngSdk(const std::string &key, MetadataValue &value)
 {
+    ClearMetadataValue(value);
     std::shared_ptr<ExifMetadata> exifMetadata = GetExifMetadata();
     CHECK_ERROR_RETURN_RET_LOG(exifMetadata == nullptr, ERR_IMAGE_DATA_ABNORMAL, "exifMetadata is nullptr");
 
