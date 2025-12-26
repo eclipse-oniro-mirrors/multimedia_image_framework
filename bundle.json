@@ -225,7 +225,7 @@
                 "image_source_mdk.h"
               ]
             },
-            "name": "//foundation/multimedia/image_framework/frameworks/kits/js/common/ndk:image_source_ndk"
+            "name": "//foundation/multimedia/image_framework/frameworks/kits/js/common/ndk:image_source_ndk"          
           },
           {
             "header": {

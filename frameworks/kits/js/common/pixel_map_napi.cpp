@@ -3992,7 +3992,7 @@ static void CloneComplete(napi_env env, napi_status status, void *data)
     }
     napi_value result = nullptr;
     napi_get_undefined(env, &result);
-
+ 
     auto context = static_cast<PixelMapAsyncContext*>(data);
     if (context->alphaMap != nullptr) {
         result = PixelMapNapi::CreatePixelMap(env, context->alphaMap);

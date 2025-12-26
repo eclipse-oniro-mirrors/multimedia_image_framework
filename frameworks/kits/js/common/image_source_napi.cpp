@@ -820,7 +820,7 @@ static void ImageSourceCallbackRoutine(napi_env env, ImageSourceAsyncContext* &c
     }
 
     napi_delete_async_work(env, context->work);
-
+    
     if (context != nullptr) {
         delete context;
         context = nullptr;
@@ -3441,7 +3441,7 @@ static void WriteImageMetadataExecute(napi_env env, void *data)
         [](const auto& item) {
             return ExifMetadata::GetPropertyValueType(item.key) != PropertyValueType::BLOB;
         });
-
+    
     for (auto it = context->kValueTypeArray.begin(); it != partition_end; ++it) {
         context->kVStrArray.emplace_back(std::move(it->key), std::move(it->stringValue));
     }
@@ -3455,7 +3455,7 @@ static void WriteImageMetadataExecute(napi_env env, void *data)
     if (context->kVStrArray.empty() && context->kValueTypeArray.empty()) {
         context->status = context->rImageSource->RemoveAllProperties();
     }
-
+    
     if (context->status != SUCCESS) {
         auto unsupportedKeys = context->rImageSource->GetModifyExifUnsupportedKeys();
         if (!unsupportedKeys.empty()) {
@@ -3512,7 +3512,7 @@ napi_value ImageSourceNapi::WriteImageMetadata(napi_env env, napi_callback_info 
     if (asyncContext == nullptr) {
         return ImageNapiUtils::ThrowExceptionError(env, IMAGE_SOURCE_INVALID_PARAMETER, "async context unwrap failed");
     }
-
+    
     napi_create_promise(env, &(asyncContext->deferred), &result);
     IMG_CREATE_CREATE_ASYNC_WORK(env, status, "WriteImageMetadata",
         WriteImageMetadataExecute,
