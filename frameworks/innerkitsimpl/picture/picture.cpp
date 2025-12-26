@@ -20,6 +20,7 @@
 #include "picture.h"
 #include "pixel_yuv.h"
 #include "pixel_yuv_ext.h"
+#include "image_trace.h"
 #include "image_utils.h"
 #include "image_log.h"
 #include "image_source.h"
@@ -504,6 +505,7 @@ std::unique_ptr<PixelMap> Picture::GetHdrComposedPixelMap()
 
 std::unique_ptr<PixelMap> Picture::GetHdrComposedPixelMap(PixelFormat pixelFormat)
 {
+    ImageTrace imageTrace("Picture::GetHdrComposedPixelMap pixelFormat is %d", pixelFormat);
     std::shared_ptr<PixelMap> gainmap = GetGainmapPixelMap();
     bool cond = mainPixelMap_ == nullptr || gainmap == nullptr;
     CHECK_ERROR_RETURN_RET_LOG(cond, nullptr, "picture mainPixelMap_ or gainmap is empty.");

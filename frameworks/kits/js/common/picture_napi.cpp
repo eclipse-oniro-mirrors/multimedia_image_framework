@@ -67,6 +67,7 @@ struct PictureAsyncContext {
     std::shared_ptr<ImageMetadata> imageMetadata;
     MetadataType metadataType = MetadataType::EXIF;
     PixelFormat hdrFormat = PixelFormat::UNKNOWN;
+    bool withOptions = false;
 };
 
 using PictureAsyncContextPtr = std::unique_ptr<PictureAsyncContext>;
@@ -248,6 +249,7 @@ napi_value PictureNapi::Init(napi_env env, napi_value exports)
     napi_property_descriptor props[] = {
         DECLARE_NAPI_FUNCTION("getMainPixelmap", GetMainPixelmap),
         DECLARE_NAPI_FUNCTION("getHdrComposedPixelmap", GetHdrComposedPixelMap),
+        DECLARE_NAPI_FUNCTION("getHdrComposedPixelmapWithOptions", GetHdrComposedPixelMapWithOptions),
         DECLARE_NAPI_FUNCTION("getGainmapPixelmap", GetGainmapPixelmap),
         DECLARE_NAPI_FUNCTION("getThumbnailPixelmap", GetThumbnailPixelmap),
         DECLARE_NAPI_FUNCTION("setThumbnailPixelmap", SetThumbnailPixelmap),
@@ -844,12 +846,22 @@ static void CreateHDRComposedPixelmapComplete(napi_env env, napi_status status, 
         result = PixelMapNapi::CreatePixelMap(env, context->rPixelMap);
         context->status = SUCCESS;
     } else {
-        context->status = ERROR;
+        context->status = context->withOptions ? IMAGE_UNSUPPORTED_OPERATION : ERROR;
     }
     CommonCallbackRoutine(env, context, result);
 }
 
-napi_value PictureNapi::GetHdrComposedPixelMap(napi_env env, napi_callback_info info)
+static bool ParseHdrComposeOptions(napi_env env, napi_value root, std::unique_ptr<PictureAsyncContext> &asyncContext)
+{
+    uint32_t format = 0;
+    if (!ImageNapiUtils::GetUint32ByName(env, root, "desiredPixelFormat", &format)) {
+        IMAGE_LOGD("no desiredPixelFormat");
+    }
+    asyncContext->hdrFormat = static_cast<PixelFormat>(format);
+    return true;
+}
+
+napi_value PictureNapi::GetHdrComposedPixelMapNapi(napi_env env, napi_callback_info info, bool withOptions)
 {
     napi_value result = nullptr;
     napi_get_undefined(env, &result);
@@ -869,9 +881,9 @@ napi_value PictureNapi::GetHdrComposedPixelMap(napi_env env, napi_callback_info 
     status = napi_unwrap(env, thisVar, reinterpret_cast<void**>(&asyncContext->nConstructor));
     IMG_NAPI_CHECK_RET_D(IMG_IS_READY(status, asyncContext->nConstructor), result,
                          IMAGE_LOGE("Fail to napi_unwrap context"));
+    asyncContext->withOptions = withOptions;
     asyncContext->rPicture = asyncContext->nConstructor->nativePicture_;
-    IMG_NAPI_CHECK_RET_D(IMG_IS_READY(status, asyncContext->rPicture),
-        nullptr, IMAGE_LOGE("Empty native pixelmap"));
+    IMG_NAPI_CHECK_RET_D(IMG_IS_READY(status, asyncContext->rPicture), nullptr, IMAGE_LOGE("Empty native pixelmap"));
     if (asyncContext->rPicture->GetAuxiliaryPicture(AuxiliaryPictureType::GAINMAP) == nullptr) {
         return ImageNapiUtils::ThrowExceptionError(env, IMAGE_UNSUPPORTED_OPERATION, "There is no GAINMAP");
     }
@@ -879,10 +891,18 @@ napi_value PictureNapi::GetHdrComposedPixelMap(napi_env env, napi_callback_info 
         return ImageNapiUtils::ThrowExceptionError(env, IMAGE_UNSUPPORTED_OPERATION, "Unsupported operations");
     }
     if (argCount == NUM_1) {
-        status = napi_get_value_int32(env, argValue[NUM_0], &format);
-        IMG_NAPI_CHECK_RET_D(IMG_IS_OK(status), ImageNapiUtils::ThrowExceptionError(env, IMAGE_BAD_PARAMETER,
-            "Fail to get format"), IMAGE_LOGE("Fail to get format"));
-        asyncContext->hdrFormat = static_cast<PixelFormat>(format);
+        if (asyncContext->withOptions) {
+            if (ImageNapiUtils::getType(env, argValue[NUM_0]) == napi_object &&
+                !ParseHdrComposeOptions(env, argValue[NUM_0], asyncContext)) {
+                return ImageNapiUtils::ThrowExceptionError(env, IMAGE_UNSUPPORTED_OPERATION,
+                    "HdrComposeOptions mismatch");
+            }
+        } else {
+            status = napi_get_value_int32(env, argValue[NUM_0], &format);
+            IMG_NAPI_CHECK_RET_D(IMG_IS_OK(status), ImageNapiUtils::ThrowExceptionError(env, IMAGE_BAD_PARAMETER,
+                "Fail to get format"), IMAGE_LOGE("Fail to get format"));
+            asyncContext->hdrFormat = static_cast<PixelFormat>(format);
+        }
     }
 
     napi_create_promise(env, &(asyncContext->deferred), &result);
@@ -898,6 +918,16 @@ napi_value PictureNapi::GetHdrComposedPixelMap(napi_env env, napi_callback_info 
         nullptr, IMAGE_LOGE("Fail to create async work"));
 
     return result;
+}
+
+napi_value PictureNapi::GetHdrComposedPixelMap(napi_env env, napi_callback_info info)
+{
+    return GetHdrComposedPixelMapNapi(env, info, false);
+}
+
+napi_value PictureNapi::GetHdrComposedPixelMapWithOptions(napi_env env, napi_callback_info info)
+{
+    return GetHdrComposedPixelMapNapi(env, info, true);
 }
 
 napi_value PictureNapi::GetGainmapPixelmap(napi_env env, napi_callback_info info)
