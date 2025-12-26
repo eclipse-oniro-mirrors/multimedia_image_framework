@@ -153,26 +153,11 @@ if (use_clang_android) {
     ]
 
     sources = [
-      "${image_subsystem}/frameworks/innerkitsimpl/accessor/src/abstract_exif_metadata_accessor.cpp",
-      "${image_subsystem}/frameworks/innerkitsimpl/accessor/src/buffer_metadata_stream.cpp",
-      "${image_subsystem}/frameworks/innerkitsimpl/accessor/src/data_buf.cpp",
-      "${image_subsystem}/frameworks/innerkitsimpl/accessor/src/dng_exif_metadata_accessor.cpp",
-      "${image_subsystem}/frameworks/innerkitsimpl/accessor/src/dng/dng_exif_metadata.cpp",
-      "${image_subsystem}/frameworks/innerkitsimpl/accessor/src/dng/dng_sdk_helper.cpp",
-      "${image_subsystem}/frameworks/innerkitsimpl/accessor/src/dng/dng_sdk_info.cpp",
       "${image_subsystem}/frameworks/innerkitsimpl/accessor/src/exif_metadata.cpp",
       "${image_subsystem}/frameworks/innerkitsimpl/accessor/src/metadata.cpp",
       "${image_subsystem}/frameworks/innerkitsimpl/accessor/src/blob_metadata.cpp",
-      "${image_subsystem}/frameworks/innerkitsimpl/accessor/src/exif_metadata_formatter.cpp",
       "${image_subsystem}/frameworks/innerkitsimpl/accessor/src/file_metadata_stream.cpp",
       "${image_subsystem}/frameworks/innerkitsimpl/accessor/src/kv_metadata.cpp",
-      "${image_subsystem}/frameworks/innerkitsimpl/accessor/src/heif_exif_metadata_accessor.cpp",
-      "${image_subsystem}/frameworks/innerkitsimpl/accessor/src/jpeg_exif_metadata_accessor.cpp",
-      "${image_subsystem}/frameworks/innerkitsimpl/accessor/src/metadata_accessor_factory.cpp",
-      "${image_subsystem}/frameworks/innerkitsimpl/accessor/src/png_exif_metadata_accessor.cpp",
-      "${image_subsystem}/frameworks/innerkitsimpl/accessor/src/png_image_chunk_utils.cpp",
-      "${image_subsystem}/frameworks/innerkitsimpl/accessor/src/tiff_parser.cpp",
-      "${image_subsystem}/frameworks/innerkitsimpl/accessor/src/webp_exif_metadata_accessor.cpp",
       "${image_subsystem}/frameworks/innerkitsimpl/common/src/memory_manager.cpp",
       "${image_subsystem}/frameworks/innerkitsimpl/common/src/native_image.cpp",
       "${image_subsystem}/frameworks/innerkitsimpl/common/src/pixel_astc.cpp",
@@ -254,6 +239,7 @@ if (use_clang_android) {
         "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/pixelconverter:pixelconvertadapter",
         "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/utils:image_utils",
         "//foundation/multimedia/image_framework/plugins/manager:pluginmanager",
+        "${image_subsystem}/frameworks/innerkitsimpl/accessor:image_accessor",
       ]
 
       if (DUAL_ADAPTER) {
@@ -273,7 +259,6 @@ if (use_clang_android) {
         "hitrace:hitrace_meter",
         "ipc:ipc_core",
         "libjpeg-turbo:turbojpeg",
-        "skia:dng_sdk",
         "napi:ace_napi",
         "zlib:libz",
       ]

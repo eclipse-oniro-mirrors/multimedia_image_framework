@@ -164,7 +164,6 @@ ohos_unittest("metadatatest") {
 
   sources = [
     "${image_subsystem}/frameworks/innerkitsimpl/accessor/src/exif_metadata.cpp",
-    "${image_subsystem}/frameworks/innerkitsimpl/accessor/src/exif_metadata_formatter.cpp",
     "${image_subsystem}/frameworks/innerkitsimpl/accessor/src/tiff_parser.cpp",
     "${image_subsystem}/frameworks/innerkitsimpl/test/unittest/metadata_test/metadata_test.cpp",
     "${image_subsystem}/frameworks/innerkitsimpl/test/unittest/blob_metadata_test.cpp",
@@ -173,6 +172,7 @@ ohos_unittest("metadatatest") {
   deps = [
     "${image_subsystem}/frameworks/innerkitsimpl/utils:image_utils",
     "${image_subsystem}/interfaces/innerkits:image_native",
+    "${image_subsystem}/frameworks/innerkitsimpl/accessor:image_accessor",
   ]
 
   external_deps = [
@@ -304,22 +304,6 @@ ohos_unittest("imagesourcetest") {
     "-Dprivate=public",
   ]
   sources = [
-    "$image_subsystem/frameworks/innerkitsimpl/accessor/src/abstract_exif_metadata_accessor.cpp",
-    "$image_subsystem/frameworks/innerkitsimpl/accessor/src/buffer_metadata_stream.cpp",
-    "$image_subsystem/frameworks/innerkitsimpl/accessor/src/data_buf.cpp",
-    "$image_subsystem/frameworks/innerkitsimpl/accessor/src/dng_exif_metadata_accessor.cpp",
-    "${image_subsystem}/frameworks/innerkitsimpl/accessor/src/dng/dng_sdk_helper.cpp",
-    "${image_subsystem}/frameworks/innerkitsimpl/accessor/src/dng/dng_sdk_info.cpp",
-    "$image_subsystem/frameworks/innerkitsimpl/accessor/src/exif_metadata.cpp",
-    "$image_subsystem/frameworks/innerkitsimpl/accessor/src/exif_metadata_formatter.cpp",
-    "$image_subsystem/frameworks/innerkitsimpl/accessor/src/file_metadata_stream.cpp",
-    "$image_subsystem/frameworks/innerkitsimpl/accessor/src/heif_exif_metadata_accessor.cpp",
-    "$image_subsystem/frameworks/innerkitsimpl/accessor/src/jpeg_exif_metadata_accessor.cpp",
-    "$image_subsystem/frameworks/innerkitsimpl/accessor/src/metadata_accessor_factory.cpp",
-    "$image_subsystem/frameworks/innerkitsimpl/accessor/src/png_exif_metadata_accessor.cpp",
-    "$image_subsystem/frameworks/innerkitsimpl/accessor/src/png_image_chunk_utils.cpp",
-    "$image_subsystem/frameworks/innerkitsimpl/accessor/src/tiff_parser.cpp",
-    "$image_subsystem/frameworks/innerkitsimpl/accessor/src/webp_exif_metadata_accessor.cpp",
     "$image_subsystem/frameworks/innerkitsimpl/test/unittest/image_source_test/image_packer_test.cpp",
     "$image_subsystem/frameworks/innerkitsimpl/test/unittest/image_source_test/image_source_ai_sr_hdr_test.cpp",
     "$image_subsystem/frameworks/innerkitsimpl/test/unittest/image_source_test/image_source_exif_test.cpp",
@@ -353,6 +337,7 @@ ohos_unittest("imagesourcetest") {
     "$image_subsystem/plugins/common/libs/image/libextplugin:heifparser",
     "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/utils:image_utils",
     "//foundation/multimedia/image_framework/interfaces/innerkits:image_native",
+    "${image_subsystem}/frameworks/innerkitsimpl/accessor:image_accessor",
   ]
 
   external_deps = [
@@ -1219,7 +1204,6 @@ ohos_unittest("ndktest2") {
   ]
   sources = [
     "${image_subsystem}/frameworks/innerkitsimpl/accessor/src/exif_metadata.cpp",
-    "${image_subsystem}/frameworks/innerkitsimpl/accessor/src/exif_metadata_formatter.cpp",
     "${image_subsystem}/frameworks/innerkitsimpl/accessor/src/tiff_parser.cpp",
     "unittest/image_common_ndk_test.cpp",
     "unittest/image_packer_native_ndk_test.cpp",
@@ -1237,6 +1221,7 @@ ohos_unittest("ndktest2") {
     "$image_subsystem/frameworks/kits/js/common/picture_ndk:image_common",
     "$image_subsystem/frameworks/kits/js/common/picture_ndk:picture",
     "$image_subsystem/frameworks/kits/js/common/pixelmap_ndk:pixelmap",
+    "${image_subsystem}/frameworks/innerkitsimpl/accessor:image_accessor",
   ]
 
   external_deps = [
@@ -1737,21 +1722,6 @@ ohos_unittest("imageaccessortest") {
   ]
 
   sources = [
-    "${image_subsystem}/frameworks/innerkitsimpl/accessor/src/abstract_exif_metadata_accessor.cpp",
-    "${image_subsystem}/frameworks/innerkitsimpl/accessor/src/buffer_metadata_stream.cpp",
-    "${image_subsystem}/frameworks/innerkitsimpl/accessor/src/data_buf.cpp",
-    "${image_subsystem}/frameworks/innerkitsimpl/accessor/src/dng_exif_metadata_accessor.cpp",
-    "${image_subsystem}/frameworks/innerkitsimpl/accessor/src/dng/dng_sdk_helper.cpp",
-    "${image_subsystem}/frameworks/innerkitsimpl/accessor/src/dng/dng_sdk_info.cpp",
-    "${image_subsystem}/frameworks/innerkitsimpl/accessor/src/exif_metadata.cpp",
-    "${image_subsystem}/frameworks/innerkitsimpl/accessor/src/exif_metadata_formatter.cpp",
-    "${image_subsystem}/frameworks/innerkitsimpl/accessor/src/file_metadata_stream.cpp",
-    "${image_subsystem}/frameworks/innerkitsimpl/accessor/src/heif_exif_metadata_accessor.cpp",
-    "${image_subsystem}/frameworks/innerkitsimpl/accessor/src/jpeg_exif_metadata_accessor.cpp",
-    "${image_subsystem}/frameworks/innerkitsimpl/accessor/src/png_exif_metadata_accessor.cpp",
-    "${image_subsystem}/frameworks/innerkitsimpl/accessor/src/png_image_chunk_utils.cpp",
-    "${image_subsystem}/frameworks/innerkitsimpl/accessor/src/tiff_parser.cpp",
-    "${image_subsystem}/frameworks/innerkitsimpl/accessor/src/webp_exif_metadata_accessor.cpp",
     "${image_subsystem}/frameworks/innerkitsimpl/test/unittest/exif_metadata_accessor_test/abstract_exif_metadata_accessor_test.cpp",
     "${image_subsystem}/frameworks/innerkitsimpl/test/unittest/exif_metadata_accessor_test/dng_exif_metadata_accessor_test.cpp",
     "${image_subsystem}/frameworks/innerkitsimpl/test/unittest/exif_metadata_accessor_test/heif_exif_metadata_accessor_test.cpp",
@@ -1765,6 +1735,7 @@ ohos_unittest("imageaccessortest") {
     "${image_subsystem}/frameworks/innerkitsimpl/utils:image_utils",
     "${image_subsystem}/interfaces/innerkits:image_native",
     "${image_subsystem}/plugins/common/libs/image/libextplugin:heifparser",
+    "${image_subsystem}/frameworks/innerkitsimpl/accessor:image_accessor",
   ]
 
   resource_config_file = "$image_subsystem/test/resource/image/ohos_test.xml"
@@ -1791,9 +1762,6 @@ ohos_unittest("imagetiffparsertest") {
   ]
 
   sources = [
-    "${image_subsystem}/frameworks/innerkitsimpl/accessor/src/data_buf.cpp",
-    "${image_subsystem}/frameworks/innerkitsimpl/accessor/src/exif_metadata_formatter.cpp",
-    "${image_subsystem}/frameworks/innerkitsimpl/accessor/src/tiff_parser.cpp",
     "${image_subsystem}/frameworks/innerkitsimpl/test/unittest/exif_metadata_accessor_test/exif_metadata_formatter_test.cpp",
     "${image_subsystem}/frameworks/innerkitsimpl/test/unittest/exif_metadata_accessor_test/tiff_parser_test.cpp",
   ]
@@ -1801,6 +1769,7 @@ ohos_unittest("imagetiffparsertest") {
   deps = [
     "${image_subsystem}/frameworks/innerkitsimpl/utils:image_utils",
     "${image_subsystem}/interfaces/innerkits:image_native",
+    "${image_subsystem}/frameworks/innerkitsimpl/accessor:image_accessor",
   ]
 
   resource_config_file = "$image_subsystem/test/resource/image/ohos_test.xml"
@@ -1854,7 +1823,6 @@ ohos_unittest("exifmetadatatest") {
 
   sources = [
     "${image_subsystem}/frameworks/innerkitsimpl/accessor/src/exif_metadata.cpp",
-    "${image_subsystem}/frameworks/innerkitsimpl/accessor/src/exif_metadata_formatter.cpp",
     "${image_subsystem}/frameworks/innerkitsimpl/accessor/src/tiff_parser.cpp",
     "${image_subsystem}/frameworks/innerkitsimpl/test/unittest/exif_metadata_accessor_test/exif_metadata_test.cpp",
   ]
@@ -1867,6 +1835,7 @@ ohos_unittest("exifmetadatatest") {
   deps = [
     "${image_subsystem}/frameworks/innerkitsimpl/utils:image_utils",
     "${image_subsystem}/interfaces/innerkits:image_native",
+    "${image_subsystem}/frameworks/innerkitsimpl/accessor:image_accessor",
   ]
 
   resource_config_file = "$image_subsystem/test/resource/image/ohos_test.xml"
@@ -2067,6 +2036,7 @@ ohos_unittest("picture_ext_test") {
     "${image_subsystem}/frameworks/kits/js/common/pixelmap_ndk:pixelmap",
     "${image_subsystem}/interfaces/innerkits:image_native",
     "${image_subsystem}/plugins/common/libs/image/libextplugin:extplugin",
+    "${image_subsystem}/frameworks/innerkitsimpl/accessor:image_accessor",
   ]
 
   external_deps = [
@@ -2111,7 +2081,8 @@ ohos_unittest("cr3_parser_test"){
     "${image_subsystem}/frameworks/innerkitsimpl/utils:image_utils",
     "${image_subsystem}/plugins/common/libs/image/libextplugin:heifparser",
     "${image_subsystem}/interfaces/innerkits:image_native",
-    "${image_subsystem}/plugins/common/libs/image/formatagentplugin:imageformatagent"
+    "${image_subsystem}/plugins/common/libs/image/formatagentplugin:imageformatagent",
+    "${image_subsystem}/frameworks/innerkitsimpl/accessor:image_accessor",
   ]
 
   cflags = [

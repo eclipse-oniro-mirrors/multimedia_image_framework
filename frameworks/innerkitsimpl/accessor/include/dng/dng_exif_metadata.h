@@ -16,11 +16,13 @@
 #ifndef FRAMEWORKS_INNERKITSIMPL_ACCESSOR_INCLUDE_DNG_DNG_EXIF_METADATA_H
 #define FRAMEWORKS_INNERKITSIMPL_ACCESSOR_INCLUDE_DNG_DNG_EXIF_METADATA_H
 
-#include "dng/dng_sdk_helper.h"
 #include "exif_metadata.h"
 
 namespace OHOS {
 namespace Media {
+
+class DngSdkInfo;
+
 class DngExifMetadata : public ExifMetadata {
 public:
     DngExifMetadata();

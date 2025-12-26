@@ -23,7 +23,6 @@
 #include "image_taihe_utils.h"
 #include "image_trace.h"
 #include "image_type.h"
-#include "jpeg_decoder_yuv.h"
 #include "media_errors.h"
 #include "picture_taihe.h"
 #include "pixel_map_taihe.h"

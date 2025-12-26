@@ -18,6 +18,11 @@
 #include <fcntl.h>
 #include <fstream>
 #include <unistd.h>
+
+#if !defined(CROSS_PLATFORM)
+#include "surface_type.h"
+#include "surface_buffer.h"
+#endif
 #include "image_utils.h"
 #include "image_trace.h"
 #include "source_stream.h"
