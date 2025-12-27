@@ -95,7 +95,6 @@ public:
 
     // Parse special tag that have not been parsed or value have been changed in dng_sdk
     static uint32_t ParseAsciiTag(const DngTagRecord& tagRecord, dng_stream& stream, MetadataValue& value);
-    static uint32_t ParseShortTag(const DngTagRecord& tagRecord, dng_stream& stream, MetadataValue& value);
     static uint32_t ParseShortTagToString(const DngTagRecord& tagRecord, dng_stream& stream, MetadataValue& value);
     static uint32_t ParseIntArrayTag(const DngTagRecord& tagRecord, dng_stream& stream, MetadataValue& value);
     static uint32_t ParseRationalTag(const DngTagRecord& tagRecord, dng_stream& stream, MetadataValue& value);
