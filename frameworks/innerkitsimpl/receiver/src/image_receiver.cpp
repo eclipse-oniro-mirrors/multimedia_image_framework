@@ -231,7 +231,7 @@ std::shared_ptr<ImageReceiver> ImageReceiver::CreateImageReceiver(int32_t width,
                                                                   int32_t format,
                                                                   int32_t capacity)
 {
-    ImageReceiverOptions options{width, height, format, capacity};
+    ImageReceiverOptions options{width, height, capacity, format};
     return CreateImageReceiverInner(options);
 }
 

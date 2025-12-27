@@ -113,8 +113,8 @@ private:
 struct ImageReceiverOptions {
     int32_t width = 0;
     int32_t height = 0;
-    int32_t format = 0;
     int32_t capacity = 0;
+    int32_t format = 0;
 };
 
 class ImageReceiver {
