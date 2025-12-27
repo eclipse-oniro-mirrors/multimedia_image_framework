@@ -114,7 +114,6 @@ HWTEST_F(ExtDecoderTest, ResetTest001, TestSize.Level3)
 {
     GTEST_LOG_(INFO) << "ExtDecoderTest: ResetTest001 start";
     std::shared_ptr<ExtDecoder> extDecoder = std::make_shared<ExtDecoder>();
-    EXIFInfo exifInfo_;
     extDecoder->Reset();
     ASSERT_EQ(extDecoder->dstSubset_.fLeft, 0);
     ASSERT_EQ(extDecoder->codec_, nullptr);
@@ -131,7 +130,6 @@ HWTEST_F(ExtDecoderTest, CheckCodecTest001, TestSize.Level3)
 {
     GTEST_LOG_(INFO) << "ExtDecoderTest: CheckCodecTest001 start";
     std::shared_ptr<ExtDecoder> extDecoder = std::make_shared<ExtDecoder>();
-    EXIFInfo exifInfo_;
     extDecoder->codec_ = nullptr;
     bool ret = extDecoder->CheckCodec();
     ASSERT_EQ(ret, false);
@@ -150,7 +148,6 @@ HWTEST_F(ExtDecoderTest, GetHardwareScaledSizeTest001, TestSize.Level3)
 {
     GTEST_LOG_(INFO) << "ExtDecoderTest: GetHardwareScaledSizeTest001 start";
     std::shared_ptr<ExtDecoder> extDecoder = std::make_shared<ExtDecoder>();
-    EXIFInfo exifInfo_;
     int dWidth = 0;
     int dHeight = 0;
     float scale = ZERO;
@@ -169,7 +166,6 @@ HWTEST_F(ExtDecoderTest, IsSupportScaleOnDecodeTest001, TestSize.Level3)
 {
     GTEST_LOG_(INFO) << "ExtDecoderTest: IsSupportScaleOnDecodeTest001 start";
     std::shared_ptr<ExtDecoder> extDecoder = std::make_shared<ExtDecoder>();
-    EXIFInfo exifInfo_;
     extDecoder->codec_ = nullptr;
     bool ret = extDecoder->IsSupportScaleOnDecode();
     ASSERT_EQ(ret, false);
@@ -185,7 +181,6 @@ HWTEST_F(ExtDecoderTest, IsSupportCropOnDecodeTest001, TestSize.Level3)
 {
     GTEST_LOG_(INFO) << "ExtDecoderTest: IsSupportCropOnDecodeTest001 start";
     std::shared_ptr<ExtDecoder> extDecoder = std::make_shared<ExtDecoder>();
-    EXIFInfo exifInfo_;
     extDecoder->codec_ = nullptr;
     bool ret = extDecoder->IsSupportCropOnDecode();
     ASSERT_EQ(ret, false);
@@ -204,7 +199,6 @@ HWTEST_F(ExtDecoderTest, HasPropertyTest001, TestSize.Level3)
 {
     GTEST_LOG_(INFO) << "ExtDecoderTest: HasPropertyTest001 start";
     std::shared_ptr<ExtDecoder> extDecoder = std::make_shared<ExtDecoder>();
-    EXIFInfo exifInfo_;
     extDecoder->codec_ = nullptr;
     string key = CODEC_INITED_KEY;
     bool ret = extDecoder->HasProperty(key);
@@ -233,7 +227,6 @@ HWTEST_F(ExtDecoderTest, GetImageSizeTest001, TestSize.Level3)
 {
     GTEST_LOG_(INFO) << "ExtDecoderTest: GetImageSizeTest001 start";
     std::shared_ptr<ExtDecoder> extDecoder = std::make_shared<ExtDecoder>();
-    EXIFInfo exifInfo_;
     extDecoder->codec_ = nullptr;
     uint32_t index = 0;
     Size size;
@@ -255,7 +248,6 @@ HWTEST_F(ExtDecoderTest, CheckDecodeOptionsTest001, TestSize.Level3)
 {
     GTEST_LOG_(INFO) << "ExtDecoderTest: CheckDecodeOptionsTest001 start";
     std::shared_ptr<ExtDecoder> extDecoder = std::make_shared<ExtDecoder>();
-    EXIFInfo exifInfo_;
     uint32_t index = 0;
     PixelDecodeOptions opts;
     uint32_t ret = extDecoder->CheckDecodeOptions(index, opts);
@@ -287,7 +279,6 @@ HWTEST_F(ExtDecoderTest, SetDecodeOptionsTest001, TestSize.Level3)
 {
     GTEST_LOG_(INFO) << "ExtDecoderTest: SetDecodeOptionsTest001 start";
     std::shared_ptr<ExtDecoder> extDecoder = std::make_shared<ExtDecoder>();
-    EXIFInfo exifInfo_;
     uint32_t index = ZERO;
     PixelDecodeOptions opts;
     PlImageInfo info;
@@ -310,7 +301,6 @@ HWTEST_F(ExtDecoderTest, SetContextPixelsBufferTest001, TestSize.Level3)
 {
     GTEST_LOG_(INFO) << "ExtDecoderTest: SetContextPixelsBufferTest001 start";
     std::shared_ptr<ExtDecoder> extDecoder = std::make_shared<ExtDecoder>();
-    EXIFInfo exifInfo_;
     uint64_t byteCount = ZERO;
     DecodeContext context;
     uint32_t ret = extDecoder->SetContextPixelsBuffer(byteCount, context);
@@ -340,7 +330,6 @@ HWTEST_F(ExtDecoderTest, PreDecodeCheckTest001, TestSize.Level3)
 {
     GTEST_LOG_(INFO) << "ExtDecoderTest: PreDecodeCheckTest001 start";
     std::shared_ptr<ExtDecoder> extDecoder = std::make_shared<ExtDecoder>();
-    EXIFInfo exifInfo_;
     uint32_t index = 0;
     extDecoder->codec_ = nullptr;
     uint32_t ret = extDecoder->PreDecodeCheck(index);
@@ -357,7 +346,6 @@ HWTEST_F(ExtDecoderTest, DecodeTest001, TestSize.Level3)
 {
     GTEST_LOG_(INFO) << "ExtDecoderTest: DecodeTest001 start";
     std::shared_ptr<ExtDecoder> extDecoder = std::make_shared<ExtDecoder>();
-    EXIFInfo exifInfo_;
     uint32_t index = 0;
     DecodeContext context;
     const int fd = open("/data/local/tmp/image/test_hw1.jpg", O_RDWR | O_CREAT, S_IRUSR | S_IWUSR);
@@ -382,7 +370,6 @@ HWTEST_F(ExtDecoderTest, ReportImageTypeTest001, TestSize.Level3)
     GTEST_LOG_(INFO) << "ExtDecoderTest: ReportImageTypeTest001 start";
     std::shared_ptr<ExtDecoder> extDecoder = std::make_shared<ExtDecoder>();
     ASSERT_NE(extDecoder, nullptr);
-    EXIFInfo exifInfo_;
     SkEncodedImageFormat skEncodeFormat = SkEncodedImageFormat::kBMP;
     extDecoder->ReportImageType(skEncodeFormat);
     skEncodeFormat = SkEncodedImageFormat::kGIF;
@@ -421,7 +408,6 @@ HWTEST_F(ExtDecoderTest, ConvertInfoToAlphaTypeTest001, TestSize.Level3)
 {
     GTEST_LOG_(INFO) << "ExtDecoderTest: ConvertInfoToAlphaTypeTest001 start";
     std::shared_ptr<ExtDecoder> extDecoder = std::make_shared<ExtDecoder>();
-    EXIFInfo exifInfo_;
     SkAlphaType alphaType;
     AlphaType outputType;
     bool ret = extDecoder->ConvertInfoToAlphaType(alphaType, outputType);
@@ -446,7 +432,6 @@ HWTEST_F(ExtDecoderTest, ConvertInfoToColorTypeTest001, TestSize.Level3)
 {
     GTEST_LOG_(INFO) << "ExtDecoderTest: ConvertInfoToColorTypeTest001 start";
     std::shared_ptr<ExtDecoder> extDecoder = std::make_shared<ExtDecoder>();
-    EXIFInfo exifInfo_;
     SkColorType format;
     PixelFormat outputFormat;
     bool ret = extDecoder->ConvertInfoToColorType(format, outputFormat);
@@ -471,7 +456,6 @@ HWTEST_F(ExtDecoderTest, ConvertToAlphaTypeTest001, TestSize.Level3)
 {
     GTEST_LOG_(INFO) << "ExtDecoderTest: ConvertToAlphaTypeTest001 start";
     std::shared_ptr<ExtDecoder> extDecoder = std::make_shared<ExtDecoder>();
-    EXIFInfo exifInfo_;
     AlphaType desiredType;
     AlphaType outputType;
     desiredType = AlphaType::IMAGE_ALPHA_TYPE_OPAQUE;
@@ -500,7 +484,6 @@ HWTEST_F(ExtDecoderTest, ConvertToColorTypeTest001, TestSize.Level3)
 {
     GTEST_LOG_(INFO) << "ExtDecoderTest: ConvertToColorTypeTest001 start";
     std::shared_ptr<ExtDecoder> extDecoder = std::make_shared<ExtDecoder>();
-    EXIFInfo exifInfo_;
     PixelFormat format;
     PixelFormat outputFormat;
     format = PixelFormat::RGBA_8888;
@@ -529,7 +512,6 @@ HWTEST_F(ExtDecoderTest, GetPropertyCheckTest001, TestSize.Level3)
 {
     GTEST_LOG_(INFO) << "ExtDecoderTest: GetPropertyCheckTest001 start";
     std::shared_ptr<ExtDecoder> extDecoder = std::make_shared<ExtDecoder>();
-    EXIFInfo exifInfo_;
     uint32_t index = 0;
     std::string key = ACTUAL_IMAGE_ENCODED_FORMAT;
     uint32_t res = 0;
@@ -553,7 +535,6 @@ HWTEST_F(ExtDecoderTest, GetImagePropertyIntTest001, TestSize.Level3)
 {
     GTEST_LOG_(INFO) << "ExtDecoderTest: GetImagePropertyIntTest001 start";
     std::shared_ptr<ExtDecoder> extDecoder = std::make_shared<ExtDecoder>();
-    EXIFInfo exifInfo_;
     uint32_t index = 0;
     std::string key = ACTUAL_IMAGE_ENCODED_FORMAT;
     int32_t value = 0;
@@ -594,7 +575,6 @@ HWTEST_F(ExtDecoderTest, ModifyImagePropertyTest001, TestSize.Level3)
 {
     GTEST_LOG_(INFO) << "ExtDecoderTest: ModifyImagePropertyTest001 start";
     std::shared_ptr<ExtDecoder> extDecoder = std::make_shared<ExtDecoder>();
-    EXIFInfo exifInfo_;
     uint32_t index = 0;
     std::string key = "Path";
     std::string value = "void";
@@ -620,7 +600,6 @@ HWTEST_F(ExtDecoderTest, GetFilterAreaTest001, TestSize.Level3)
 {
     GTEST_LOG_(INFO) << "ExtDecoderTest: GetFilterAreaTest001 start";
     std::shared_ptr<ExtDecoder> extDecoder = std::make_shared<ExtDecoder>();
-    EXIFInfo exifInfo_;
     int privacyType = 0;
     std::vector<std::pair<uint32_t, uint32_t>> ranges;
     extDecoder->codec_ = nullptr;
@@ -638,7 +617,6 @@ HWTEST_F(ExtDecoderTest, GetTopLevelImageNumTest001, TestSize.Level3)
 {
     GTEST_LOG_(INFO) << "ExtDecoderTest: GetTopLevelImageNumTest001 start";
     std::shared_ptr<ExtDecoder> extDecoder = std::make_shared<ExtDecoder>();
-    EXIFInfo exifInfo_;
     uint32_t num = 0;
     extDecoder->codec_ = nullptr;
     uint32_t ret = extDecoder->GetTopLevelImageNum(num);
@@ -659,7 +637,6 @@ HWTEST_F(ExtDecoderTest, IsSupportHardwareDecodeTest001, TestSize.Level3)
 {
     GTEST_LOG_(INFO) << "ExtDecoderTest: IsSupportHardwareDecodeTest001 start";
     std::shared_ptr<ExtDecoder> extDecoder = std::make_shared<ExtDecoder>();
-    EXIFInfo exifInfo_;
     extDecoder->codec_ = nullptr;
     bool ret = extDecoder->IsSupportHardwareDecode();
     ASSERT_EQ(extDecoder->info_.isEmpty(), true);
@@ -876,7 +853,6 @@ HWTEST_F(ExtDecoderTest, CheckCodecTest002, TestSize.Level3)
 {
     GTEST_LOG_(INFO) << "ExtDecoderTest: CheckCodecTest002 start";
     std::shared_ptr<ExtDecoder> extDecoder = std::make_shared<ExtDecoder>();
-    EXIFInfo exifInfo_;
     const int fd = open("/data/local/tmp/image/test_hw1.jpg", O_RDWR | O_CREAT, S_IRUSR | S_IWUSR);
     std::unique_ptr<FileSourceStream> streamPtr = FileSourceStream::CreateSourceStream(fd);
     ASSERT_NE(streamPtr, nullptr);
@@ -898,7 +874,6 @@ HWTEST_F(ExtDecoderTest, GetHardwareScaledSizeTest002, TestSize.Level3)
 {
     GTEST_LOG_(INFO) << "ExtDecoderTest: GetHardwareScaledSizeTest002 start";
     std::shared_ptr<ExtDecoder> extDecoder = std::make_shared<ExtDecoder>();
-    EXIFInfo exifInfo_;
     extDecoder->info_.fDimensions = {20, 20};
     ASSERT_EQ(extDecoder->info_.isEmpty(), false);
     float scale = ZERO;
@@ -930,7 +905,6 @@ HWTEST_F(ExtDecoderTest, PreDecodeCheckTest002, TestSize.Level3)
 {
     GTEST_LOG_(INFO) << "ExtDecoderTest: PreDecodeCheckTest002 start";
     std::shared_ptr<ExtDecoder> extDecoder = std::make_shared<ExtDecoder>();
-    EXIFInfo exifInfo_;
     uint32_t index = 0;
     extDecoder->codec_ = nullptr;
     uint32_t ret = extDecoder->PreDecodeCheck(index);
@@ -967,7 +941,6 @@ HWTEST_F(ExtDecoderTest, PreDecodeCheckYuvTest001, TestSize.Level3)
 {
     GTEST_LOG_(INFO) << "ExtDecoderTest: PreDecodeCheckYuvTest001 start";
     std::shared_ptr<ExtDecoder> extDecoder = std::make_shared<ExtDecoder>();
-    EXIFInfo exifInfo_;
     extDecoder->codec_ = nullptr;
     uint32_t index = 0;
     PixelFormat desiredFormat = PixelFormat::UNKNOWN;
@@ -1008,7 +981,6 @@ HWTEST_F(ExtDecoderTest, ReadJpegDataTest001, TestSize.Level3)
 {
     GTEST_LOG_(INFO) << "ExtDecoderTest: ReadJpegDataTest001 start";
     std::shared_ptr<ExtDecoder> extDecoder = std::make_shared<ExtDecoder>();
-    EXIFInfo exifInfo_;
     uint8_t *jpegBuffer = nullptr;
     uint32_t jpegBufferSize = 0;
     extDecoder->stream_ = nullptr;
@@ -1043,7 +1015,6 @@ HWTEST_F(ExtDecoderTest, GetJpegYuvOutFmtTest001, TestSize.Level3)
 {
     GTEST_LOG_(INFO) << "ExtDecoderTest: GetJpegYuvOutFmtTest001 start";
     std::shared_ptr<ExtDecoder> extDecoder = std::make_shared<ExtDecoder>();
-    EXIFInfo exifInfo_;
     PixelFormat desiredFormat = PixelFormat::UNKNOWN;
     auto ret = extDecoder->GetJpegYuvOutFmt(desiredFormat);
     ASSERT_EQ(ret, JpegYuvFmt::OutFmt_NV12);

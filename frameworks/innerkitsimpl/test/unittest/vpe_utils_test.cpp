@@ -150,13 +150,13 @@ HWTEST_F(VpeUtilsTest, ColorSpaceConverterComposeImageTest001, TestSize.Level3)
     VpeSurfaceBuffers bufs;
     auto vpeUtils = std::make_shared<VpeUtils>();
     ASSERT_NE(vpeUtils, nullptr);
-    vpeUtils->dlHandler_ = nullptr;
+    vpeUtils->dlHandler_->handle_ = nullptr;
 
     int32_t res = vpeUtils->ColorSpaceConverterComposeImage(bufs, true);
     EXPECT_EQ(res, VPE_ERROR_FAILED);
 
     int mockHandler = 0;
-    vpeUtils->dlHandler_ = &mockHandler;
+    vpeUtils->dlHandler_->handle_ = &mockHandler;
     res = vpeUtils->ColorSpaceConverterComposeImage(bufs, true);
     EXPECT_EQ(res, VPE_ERROR_FAILED);
 }
@@ -203,13 +203,13 @@ HWTEST_F(VpeUtilsTest, ColorSpaceConverterDecomposeImageTest001, TestSize.Level3
     VpeSurfaceBuffers bufs;
     auto vpeUtils = std::make_shared<VpeUtils>();
     ASSERT_NE(vpeUtils, nullptr);
-    vpeUtils->dlHandler_ = nullptr;
+    vpeUtils->dlHandler_->handle_ = nullptr;
 
     int32_t res = vpeUtils->ColorSpaceConverterDecomposeImage(bufs);
     EXPECT_EQ(res, VPE_ERROR_FAILED);
 
     int mockHandler = 0;
-    vpeUtils->dlHandler_ = &mockHandler;
+    vpeUtils->dlHandler_->handle_ = &mockHandler;
     res = vpeUtils->ColorSpaceConverterDecomposeImage(bufs);
     EXPECT_EQ(res, VPE_ERROR_FAILED);
 }
@@ -250,21 +250,21 @@ HWTEST_F(VpeUtilsTest, DetailEnhancerDestoryTest001, TestSize.Level3)
 
 /**
  * @tc.name: ColorSpaceConverterImageProcessTest001
- * @tc.desc: Verify that VpeUtils call ColorSpaceConverterImageProcess when dlHandler_ is nullptr.
+ * @tc.desc: Verify that VpeUtils call ColorSpaceConverterImageProcess when dlHandler_->handle_ is nullptr.
  * @tc.type: FUNC
  */
 HWTEST_F(VpeUtilsTest, ColorSpaceConverterImageProcessTest001, TestSize.Level3)
 {
     GTEST_LOG_(INFO) << "VpeUtilsTest: ColorSpaceConverterImageProcessTest001 start";
     VpeUtils mockVpeUtils;
-    ASSERT_NE(mockVpeUtils.dlHandler_, nullptr);
-    void* storeP = mockVpeUtils.dlHandler_;
-    mockVpeUtils.dlHandler_ = nullptr;
+    ASSERT_NE(mockVpeUtils.dlHandler_->handle_, nullptr);
+    void* storeP = mockVpeUtils.dlHandler_->handle_;
+    mockVpeUtils.dlHandler_->handle_ = nullptr;
     sptr<SurfaceBuffer> src = SurfaceBuffer::Create();
     sptr<SurfaceBuffer> des = SurfaceBuffer::Create();
     auto ret = mockVpeUtils.ColorSpaceConverterImageProcess(src, des);
     ASSERT_EQ(ret, VPE_ERROR_FAILED);
-    mockVpeUtils.dlHandler_ = storeP;
+    mockVpeUtils.dlHandler_->handle_ = storeP;
     GTEST_LOG_(INFO) << "VpeUtilsTest: ColorSpaceConverterImageProcessTest001 end";
 }
 
@@ -277,11 +277,11 @@ HWTEST_F(VpeUtilsTest, ColorSpaceConverterImageProcessTest002, TestSize.Level3)
 {
     GTEST_LOG_(INFO) << "VpeUtilsTest: ColorSpaceConverterImageProcessTest002 start";
     VpeUtils mockVpeUtils;
-    ASSERT_NE(mockVpeUtils.dlHandler_, nullptr);
+    ASSERT_NE(mockVpeUtils.dlHandler_->handle_, nullptr);
     sptr<SurfaceBuffer> src = SurfaceBuffer::Create();
     sptr<SurfaceBuffer> des = SurfaceBuffer::Create();
     int mockHandler = 0;
-    mockVpeUtils.dlHandler_ = &mockHandler;
+    mockVpeUtils.dlHandler_->handle_ = &mockHandler;
     auto ret = mockVpeUtils.ColorSpaceConverterImageProcess(src, des);
     ASSERT_EQ(ret, VPE_ERROR_FAILED);
     GTEST_LOG_(INFO) << "VpeUtilsTest: ColorSpaceConverterImageProcessTest002 end";
@@ -296,7 +296,7 @@ HWTEST_F(VpeUtilsTest, ColorSpaceConverterImageProcessTest003, TestSize.Level3)
 {
     GTEST_LOG_(INFO) << "VpeUtilsTest: ColorSpaceConverterImageProcessTest003 start";
     VpeUtils mockVpeUtils;
-    ASSERT_NE(mockVpeUtils.dlHandler_, nullptr);
+    ASSERT_NE(mockVpeUtils.dlHandler_->handle_, nullptr);
     sptr<SurfaceBuffer> src = SurfaceBuffer::Create();
     sptr<SurfaceBuffer> des = SurfaceBuffer::Create();
     sptr<SurfaceBuffer> nullInput = nullptr;
@@ -371,14 +371,14 @@ HWTEST_F(VpeUtilsTest, DetailEnhancerImageProcessTest001, TestSize.Level3)
 {
     GTEST_LOG_(INFO) << "VpeUtilsTest: DetailEnhancerImageProcessTest001 start";
     VpeUtils mockVpeUtils;
-    ASSERT_NE(mockVpeUtils.dlHandler_, nullptr);
-    void* storeP = mockVpeUtils.dlHandler_;
-    mockVpeUtils.dlHandler_ = nullptr;
+    ASSERT_NE(mockVpeUtils.dlHandler_->handle_, nullptr);
+    void* storeP = mockVpeUtils.dlHandler_->handle_;
+    mockVpeUtils.dlHandler_->handle_ = nullptr;
     sptr<SurfaceBuffer> src = SurfaceBuffer::Create();
     sptr<SurfaceBuffer> des = SurfaceBuffer::Create();
     auto ret = mockVpeUtils.DetailEnhancerImageProcess(src, des, 0);
     ASSERT_EQ(ret, VPE_ERROR_FAILED);
-    mockVpeUtils.dlHandler_ = storeP;
+    mockVpeUtils.dlHandler_->handle_ = storeP;
     GTEST_LOG_(INFO) << "VpeUtilsTest: DetailEnhancerImageProcessTest001 end";
 }
 
@@ -391,9 +391,9 @@ HWTEST_F(VpeUtilsTest, DetailEnhancerImageProcessTest002, TestSize.Level3)
 {
     GTEST_LOG_(INFO) << "VpeUtilsTest: DetailEnhancerImageProcessTest002 start";
     VpeUtils mockVpeUtils;
-    ASSERT_NE(mockVpeUtils.dlHandler_, nullptr);
+    ASSERT_NE(mockVpeUtils.dlHandler_->handle_, nullptr);
     int mockHandler = 0;
-    mockVpeUtils.dlHandler_ = &mockHandler;
+    mockVpeUtils.dlHandler_->handle_ = &mockHandler;
     sptr<SurfaceBuffer> src = SurfaceBuffer::Create();
     sptr<SurfaceBuffer> des = SurfaceBuffer::Create();
     auto ret = mockVpeUtils.DetailEnhancerImageProcess(src, des, 0);
@@ -410,7 +410,7 @@ HWTEST_F(VpeUtilsTest, DetailEnhancerImageProcessTest003, TestSize.Level3)
 {
     GTEST_LOG_(INFO) << "VpeUtilsTest: DetailEnhancerImageProcessTest003 start";
     VpeUtils mockVpeUtils;
-    ASSERT_NE(mockVpeUtils.dlHandler_, nullptr);
+    ASSERT_NE(mockVpeUtils.dlHandler_->handle_, nullptr);
     sptr<SurfaceBuffer> src = SurfaceBuffer::Create();
     sptr<SurfaceBuffer> des = SurfaceBuffer::Create();
     sptr<SurfaceBuffer> nullInput = nullptr;
@@ -511,7 +511,7 @@ HWTEST_F(VpeUtilsTest, TruncateBufferTest002, TestSize.Level3)
 
 /**
  * @tc.name: ColorSpaceCalGainmapTest001
- * @tc.desc: Verify that VpeUtils call ColorSpaceCalGainmap when dlHandler_ is nullptr.
+ * @tc.desc: Verify that VpeUtils call ColorSpaceCalGainmap when dlHandler_->handle_ is nullptr.
  * @tc.type: FUNC
  */
 HWTEST_F(VpeUtilsTest, ColorSpaceCalGainmapTest001, TestSize.Level3)
@@ -519,11 +519,11 @@ HWTEST_F(VpeUtilsTest, ColorSpaceCalGainmapTest001, TestSize.Level3)
     GTEST_LOG_(INFO) << "VpeUtilsTest: ColorSpaceCalGainmapTest001 start";
     VpeUtils mockVpeUtils;
     VpeSurfaceBuffers buffers;
-    void* storeP = mockVpeUtils.dlHandler_;
-    mockVpeUtils.dlHandler_ = nullptr;
+    void* storeP = mockVpeUtils.dlHandler_->handle_;
+    mockVpeUtils.dlHandler_->handle_ = nullptr;
     auto ret = mockVpeUtils.ColorSpaceCalGainmap(buffers);
     ASSERT_EQ(ret, VPE_ERROR_FAILED);
-    mockVpeUtils.dlHandler_ = storeP;
+    mockVpeUtils.dlHandler_->handle_ = storeP;
     GTEST_LOG_(INFO) << "VpeUtilsTest: ColorSpaceCalGainmapTest001 end";
 }
 
@@ -536,10 +536,10 @@ HWTEST_F(VpeUtilsTest, ColorSpaceCalGainmapTest002, TestSize.Level3)
 {
     GTEST_LOG_(INFO) << "VpeUtilsTest: ColorSpaceCalGainmapTest002 start";
     VpeUtils mockVpeUtils;
-    ASSERT_NE(mockVpeUtils.dlHandler_, nullptr);
+    ASSERT_NE(mockVpeUtils.dlHandler_->handle_, nullptr);
     VpeSurfaceBuffers buffers;
     int mockHandler = 0;
-    mockVpeUtils.dlHandler_ = &mockHandler;
+    mockVpeUtils.dlHandler_->handle_ = &mockHandler;
     auto ret = mockVpeUtils.ColorSpaceCalGainmap(buffers);
     ASSERT_EQ(ret, VPE_ERROR_FAILED);
     GTEST_LOG_(INFO) << "VpeUtilsTest: ColorSpaceCalGainmapTest002 end";
@@ -554,7 +554,7 @@ HWTEST_F(VpeUtilsTest, ColorSpaceCalGainmapTest003, TestSize.Level3)
 {
     GTEST_LOG_(INFO) << "VpeUtilsTest: ColorSpaceCalGainmapTest003 start";
     VpeUtils mockVpeUtils;
-    ASSERT_NE(mockVpeUtils.dlHandler_, nullptr);
+    ASSERT_NE(mockVpeUtils.dlHandler_->handle_, nullptr);
     VpeSurfaceBuffers buffersSdr;
     buffersSdr.sdr = nullptr;
     buffersSdr.gainmap = new MockSurfaceBuffer();
