@@ -1320,7 +1320,7 @@ std::vector<napi_property_descriptor> ImageSourceNapi::RegisterNapi()
         DECLARE_NAPI_FUNCTION("createWideGamutSdrPixelMap", CreateWideGamutSdrPixelMap),
         DECLARE_NAPI_FUNCTION("updateData", UpdateData),
         DECLARE_NAPI_FUNCTION("release", Release),
-        DECLARE_NAPI_GETTER("isJpegProgressive", IsJpegProgressive),
+        DECLARE_NAPI_FUNCTION("isJpegProgressive", IsJpegProgressive),
         DECLARE_NAPI_GETTER("supportedFormats", GetSupportedFormats),
 #if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
         DECLARE_NAPI_FUNCTION("createPicture", CreatePicture),
