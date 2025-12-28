@@ -16,9 +16,9 @@
 #include "image_napi_utils.h"
 #include <securec.h>
 #include <unistd.h>
+#include "image_log.h"
 #include "tokenid_kit.h"
 #include "ipc_skeleton.h"
-#include "image_log.h"
 #if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM) && defined(HICHECKER_ENABLE)
 #include "hichecker.h"
 #endif
