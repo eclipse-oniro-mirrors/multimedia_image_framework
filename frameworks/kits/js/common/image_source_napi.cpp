@@ -4342,6 +4342,7 @@ napi_value ImageSourceNapi::IsJpegProgressive(napi_env env, napi_callback_info i
         napi_get_undefined(env, &result);
     }
     if (!ImageNapiUtils::IsSystemApp()) {
+        IMAGE_LOGE("This interface can be called only by system apps");
         return ImageNapiUtils::ThrowExceptionError(env, IMAGE_BAD_SOURCE,
             "This interface can be called only by system apps");
     }
