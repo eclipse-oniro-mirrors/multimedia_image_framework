@@ -708,7 +708,7 @@ int32_t ImageUtils::SurfaceBuffer_Unreference(void* buffer)
     return SUCCESS;
 }
 
-bool ImageUtils::GetYUVInfoFromSurfaceBuffer(YUVDataInfo &yuvInfo, PixelMap* pixelmap,
+bool ImageUtils::GetYuvInfoFromSurfaceBuffer(YUVDataInfo &yuvInfo,
     sptr<SurfaceBuffer> surfaceBuffer)
 {
     OH_NativeBuffer_Planes* planes = nullptr;
@@ -717,19 +717,19 @@ bool ImageUtils::GetYUVInfoFromSurfaceBuffer(YUVDataInfo &yuvInfo, PixelMap* pix
         yuvInfo.yStride = planes->planes[PLANE_Y].columnStride;
         yuvInfo.uvStride = planes->planes[PLANE_U].columnStride;
         yuvInfo.yOffset = planes->planes[PLANE_Y].offset;
-        if (pixelmap->GetPixelFormat() == PixelFormat::NV21) {
+        if (surfaceBuffer->GetFormat() == GRAPHIC_PIXEL_FMT_YCRCB_420_SP) {
             yuvInfo.uvOffset = planes->planes[PLANE_V].offset;
         } else {
             yuvInfo.uvOffset = planes->planes[PLANE_U].offset;
         }
         return true;
     } else {
-        IMAGE_LOGE("Convert to surfaceBuffer, get planesInfo failed, retVal:%{public}d", retVal);
+        IMAGE_LOGE("%{public}s, get planesInfo failed, retVal:%{public}d", __func__, retVal);
         return false;
     }
 }
 
-bool ImageUtils::ConvertYUVInfoToSurfaceBuffer(PixelMap* pixelmap,
+bool ImageUtils::CopyYuvPixelMapToSurfaceBuffer(PixelMap* pixelmap,
     sptr<SurfaceBuffer> surfaceBuffer)
 {
     uint8_t* src = const_cast<uint8_t*>(pixelmap->GetPixels());
@@ -740,7 +740,7 @@ bool ImageUtils::ConvertYUVInfoToSurfaceBuffer(PixelMap* pixelmap,
     YUVDataInfo yuvSrcInfo;
     pixelmap->GetImageYUVInfo(yuvSrcInfo);
 
-    bool cond = !ImageUtils::GetYUVInfoFromSurfaceBuffer(yuvDstInfo, pixelmap, surfaceBuffer);
+    bool cond = !ImageUtils::GetYuvInfoFromSurfaceBuffer(yuvDstInfo, surfaceBuffer);
     CHECK_ERROR_RETURN_RET_LOG(cond, false, "Get YUVInfo from SurfaceBuffer failed");
 
     for (uint32_t i = 0; i < yuvSrcInfo.yHeight; ++i) {

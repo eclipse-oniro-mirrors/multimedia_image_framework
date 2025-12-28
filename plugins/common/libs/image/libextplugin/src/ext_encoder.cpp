@@ -851,20 +851,19 @@ sptr<SurfaceBuffer> ExtEncoder::ConvertToSurfaceBuffer(PixelMap* pixelmap)
     CHECK_ERROR_RETURN_RET_LOG(cond, nullptr, "ConvertToSurfaceBuffer surfaceBuffer is nullptr failed");
 
     if (format == PixelFormat::NV12 || format == PixelFormat::NV21) {
-        if (!ImageUtils::ConvertYUVInfoToSurfaceBuffer(pixelmap, surfaceBuffer)) {
+        if (!ImageUtils::CopyYuvPixelMapToSurfaceBuffer(pixelmap, surfaceBuffer)) {
             IMAGE_LOGE("ConvertToSurfaceBuffer memcpy failed");
             ImageUtils::SurfaceBuffer_Unreference(surfaceBuffer.GetRefPtr());
             return nullptr;
         }
     } else if (format == PixelFormat::RGBA_8888) {
-        uint32_t copyHeight = height;
         uint32_t dstStride = static_cast<uint32_t>(surfaceBuffer->GetStride());
         uint8_t* src = const_cast<uint8_t*>(pixelmap->GetPixels());
         uint8_t* dst = static_cast<uint8_t*>(surfaceBuffer->GetVirAddr());
         uint32_t dstSize = surfaceBuffer->GetSize();
         uint64_t srcStride = static_cast<uint64_t>(width * NUM_4);
         
-        for (uint32_t i = 0; i < copyHeight; i++) {
+        for (uint32_t i = 0; i < height; i++) {
             if (memcpy_s(dst, dstSize, src, srcStride) != EOK) {
                 IMAGE_LOGE("ConvertToSurfaceBuffer memcpy failed");
                 ImageUtils::SurfaceBuffer_Unreference(surfaceBuffer.GetRefPtr());

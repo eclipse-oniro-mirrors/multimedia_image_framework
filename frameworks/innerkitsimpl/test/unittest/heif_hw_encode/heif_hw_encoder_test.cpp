@@ -61,6 +61,34 @@ public:
     ~HeifHwEncoderTest() {}
 };
 
+void EncodeHeifWithImage(const std::string& imagePath)
+{
+    uint32_t errorCode = 0;
+    SourceOptions opts;
+    std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(imagePath.c_str(), opts, errorCode);
+    ASSERT_EQ(errorCode, OHOS::Media::SUCCESS);
+    ASSERT_NE(imageSource, nullptr);
+
+    DecodeOptions dstOpts;
+    dstOpts.desiredPixelFormat = PixelFormat::NV12;
+    std::unique_ptr<PixelMap> pixelMap = imageSource->CreatePixelMapEx(0, dstOpts, errorCode);
+    ASSERT_EQ(errorCode, OHOS::Media::SUCCESS);
+    ASSERT_NE(pixelMap, nullptr);
+
+    const int fileSize = 1024 * 1024 * 35;
+    std::vector<uint8_t> outputData(fileSize);
+    ImagePacker pack;
+    PackOption option;
+    option.format = "image/heif";
+
+    errorCode = pack.StartPacking(outputData.data(), fileSize, option);
+    ASSERT_EQ(errorCode, OHOS::Media::SUCCESS);
+    errorCode = pack.AddImage(*(pixelMap.get()));
+    ASSERT_EQ(errorCode, OHOS::Media::SUCCESS);
+    uint32_t retFinalizePacking = pack.FinalizePacking();
+    ASSERT_EQ(retFinalizePacking, OHOS::Media::SUCCESS);
+}
+
 /**
  * @tc.name: EncodeHeif001
  * @tc.desc: test encode heif by fd
@@ -461,31 +489,7 @@ HWTEST_F(HeifHwEncoderTest, EncodeHeifExif004, TestSize.Level3)
 HWTEST_F(HeifHwEncoderTest, EncodeHeifWithOddImage001, TestSize.Level3)
 {
     GTEST_LOG_(INFO) << "HeifHwEncoderTest: EncodeHeifWithOddImage001 start";
-
-    uint32_t errorCode = 0;
-    SourceOptions opts;
-    std::string srcJpeg = IMAGE_INPUT_ODD_IMAGE_PATH;
-    std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(srcJpeg.c_str(), opts, errorCode);
-    ASSERT_EQ(errorCode, OHOS::Media::SUCCESS);
-    ASSERT_NE(imageSource, nullptr);
-    DecodeOptions dstOpts;
-    dstOpts.desiredPixelFormat = PixelFormat::NV12;
-    std::unique_ptr<PixelMap> pixelMap = imageSource->CreatePixelMapEx(0, dstOpts, errorCode);
-    ASSERT_EQ(errorCode, OHOS::Media::SUCCESS);
-    ASSERT_NE(pixelMap, nullptr);
-
-    const int fileSize = 1024 * 1024 * 35;
-    std::vector<uint8_t> outputData(fileSize);
-    ImagePacker pack;
-    PackOption option;
-    option.format = "image/heif";
-    errorCode = pack.StartPacking(outputData.data(), fileSize, option);
-    ASSERT_EQ(errorCode, OHOS::Media::SUCCESS);
-    errorCode = pack.AddImage(*(pixelMap.get()));
-    ASSERT_EQ(errorCode, OHOS::Media::SUCCESS);
-    uint32_t retFinalizePacking = pack.FinalizePacking();
-    ASSERT_EQ(retFinalizePacking, OHOS::Media::SUCCESS);
-
+    EncodeHeifWithImage(IMAGE_INPUT_ODD_IMAGE_PATH);
     GTEST_LOG_(INFO) << "HeifHwEncoderTest: EncodeHeifWithOddImage001 end";
 }
 
@@ -497,31 +501,7 @@ HWTEST_F(HeifHwEncoderTest, EncodeHeifWithOddImage001, TestSize.Level3)
 HWTEST_F(HeifHwEncoderTest, EncodeHeifWithOddImage002, TestSize.Level3)
 {
     GTEST_LOG_(INFO) << "HeifHwEncoderTest: EncodeHeifWithOddImage002 start";
-
-    uint32_t errorCode = 0;
-    SourceOptions opts;
-    std::string srcJpeg = IMAGE_INPUT_ODD_HEIGHT_IMAGE_PATH;
-    std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(srcJpeg.c_str(), opts, errorCode);
-    ASSERT_EQ(errorCode, OHOS::Media::SUCCESS);
-    ASSERT_NE(imageSource, nullptr);
-    DecodeOptions dstOpts;
-    dstOpts.desiredPixelFormat = PixelFormat::NV12;
-    std::unique_ptr<PixelMap> pixelMap = imageSource->CreatePixelMapEx(0, dstOpts, errorCode);
-    ASSERT_EQ(errorCode, OHOS::Media::SUCCESS);
-    ASSERT_NE(pixelMap, nullptr);
-
-    const int fileSize = 1024 * 1024 * 35;
-    std::vector<uint8_t> outputData(fileSize);
-    ImagePacker pack;
-    PackOption option;
-    option.format = "image/heif";
-    errorCode = pack.StartPacking(outputData.data(), fileSize, option);
-    ASSERT_EQ(errorCode, OHOS::Media::SUCCESS);
-    errorCode = pack.AddImage(*(pixelMap.get()));
-    ASSERT_EQ(errorCode, OHOS::Media::SUCCESS);
-    uint32_t retFinalizePacking = pack.FinalizePacking();
-    ASSERT_EQ(retFinalizePacking, OHOS::Media::SUCCESS);
-
+    EncodeHeifWithImage(IMAGE_INPUT_ODD_HEIGHT_IMAGE_PATH);
     GTEST_LOG_(INFO) << "HeifHwEncoderTest: EncodeHeifWithOddImage002 end";
 }
 
@@ -533,31 +513,7 @@ HWTEST_F(HeifHwEncoderTest, EncodeHeifWithOddImage002, TestSize.Level3)
 HWTEST_F(HeifHwEncoderTest, EncodeHeifWithOddImage003, TestSize.Level3)
 {
     GTEST_LOG_(INFO) << "HeifHwEncoderTest: EncodeHeifWithOddImage003 start";
-
-    uint32_t errorCode = 0;
-    SourceOptions opts;
-    std::string srcJpeg = IMAGE_INPUT_ODD_WIDTH_IMAGE_PATH;
-    std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(srcJpeg.c_str(), opts, errorCode);
-    ASSERT_EQ(errorCode, OHOS::Media::SUCCESS);
-    ASSERT_NE(imageSource, nullptr);
-    DecodeOptions dstOpts;
-    dstOpts.desiredPixelFormat = PixelFormat::NV12;
-    std::unique_ptr<PixelMap> pixelMap = imageSource->CreatePixelMapEx(0, dstOpts, errorCode);
-    ASSERT_EQ(errorCode, OHOS::Media::SUCCESS);
-    ASSERT_NE(pixelMap, nullptr);
-
-    const int fileSize = 1024 * 1024 * 35;
-    std::vector<uint8_t> outputData(fileSize);
-    ImagePacker pack;
-    PackOption option;
-    option.format = "image/heif";
-    errorCode = pack.StartPacking(outputData.data(), fileSize, option);
-    ASSERT_EQ(errorCode, OHOS::Media::SUCCESS);
-    errorCode = pack.AddImage(*(pixelMap.get()));
-    ASSERT_EQ(errorCode, OHOS::Media::SUCCESS);
-    uint32_t retFinalizePacking = pack.FinalizePacking();
-    ASSERT_EQ(retFinalizePacking, OHOS::Media::SUCCESS);
-
+    EncodeHeifWithImage(IMAGE_INPUT_ODD_WIDTH_IMAGE_PATH);
     GTEST_LOG_(INFO) << "HeifHwEncoderTest: EncodeHeifWithOddImage003 end";
 }
 }
