@@ -1320,7 +1320,7 @@ std::vector<napi_property_descriptor> ImageSourceNapi::RegisterNapi()
         DECLARE_NAPI_FUNCTION("createWideGamutSdrPixelMap", CreateWideGamutSdrPixelMap),
         DECLARE_NAPI_FUNCTION("updateData", UpdateData),
         DECLARE_NAPI_FUNCTION("release", Release),
-        DECLARE_NAPI_GETTER("isJpegProgressive", IsJpegProgressive),
+        DECLARE_NAPI_FUNCTION("isJpegProgressive", IsJpegProgressive),
         DECLARE_NAPI_GETTER("supportedFormats", GetSupportedFormats),
 #if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
         DECLARE_NAPI_FUNCTION("createPicture", CreatePicture),
@@ -4340,6 +4340,11 @@ napi_value ImageSourceNapi::IsJpegProgressive(napi_env env, napi_callback_info i
         napi_create_promise(env, &(asyncContext->deferred), &result);
     } else {
         napi_get_undefined(env, &result);
+    }
+    if (!ImageNapiUtils::IsSystemApp()) {
+        IMAGE_LOGE("This interface can be called only by system apps");
+        return ImageNapiUtils::ThrowExceptionError(env, IMAGE_BAD_SOURCE,
+            "This interface can be called only by system apps");
     }
 
     IMG_CREATE_CREATE_ASYNC_WORK(env, status, "IsJpegProgressive", IsJpegProgressiveExec,
