@@ -240,6 +240,10 @@ static const uint8_t NUM_3 = 3;
 static const uint8_t NUM_4 = 4;
 static const uint8_t RGBA_BIT_DEPTH = 4;
 
+static const int32_t PLANE_Y = 0;
+static const int32_t PLANE_U = 1;
+static const int32_t PLANE_V = 2;
+
 static constexpr int32_t MAX_IMAGE_SIZE = 32768;
 static constexpr int32_t MIN_IMAGE_SIZE = 128;
 static constexpr int32_t MIN_RGBA_IMAGE_SIZE = 1024;
@@ -851,30 +855,32 @@ sptr<SurfaceBuffer> ExtEncoder::ConvertToSurfaceBuffer(PixelMap* pixelmap)
     sptr<SurfaceBuffer> surfaceBuffer = AllocSurfaceBuffer(width, height, graphicFormat);
     cond = surfaceBuffer == nullptr || surfaceBuffer->GetStride() < 0;
     CHECK_ERROR_RETURN_RET_LOG(cond, nullptr, "ConvertToSurfaceBuffer surfaceBuffer is nullptr failed");
-    uint32_t dstStride = static_cast<uint32_t>(surfaceBuffer->GetStride());
-    uint8_t* src = const_cast<uint8_t*>(pixelmap->GetPixels());
-    uint8_t* dst = static_cast<uint8_t*>(surfaceBuffer->GetVirAddr());
-    uint32_t dstSize = surfaceBuffer->GetSize();
-    uint32_t copyHeight = height;
-    uint64_t srcStride = width;
+
     if (format == PixelFormat::NV12 || format == PixelFormat::NV21) {
-        const int32_t NUM_2 = 2;
-        copyHeight = height + height / NUM_2;
-        srcStride = width;
-    } else if (format == PixelFormat::RGBA_8888) {
-        copyHeight = height;
-        srcStride = static_cast<uint64_t>(width * NUM_4);
-    }
-    for (uint32_t i = 0; i < copyHeight; i++) {
-        if (memcpy_s(dst, dstSize, src, srcStride) != EOK) {
+        if (!ImageUtils::CopyYuvPixelMapToSurfaceBuffer(pixelmap, surfaceBuffer)) {
             IMAGE_LOGE("ConvertToSurfaceBuffer memcpy failed");
             ImageUtils::SurfaceBuffer_Unreference(surfaceBuffer.GetRefPtr());
             return nullptr;
         }
-        dst += dstStride;
-        dstSize -= dstStride;
-        src += srcStride;
+    } else if (format == PixelFormat::RGBA_8888) {
+        uint32_t dstStride = static_cast<uint32_t>(surfaceBuffer->GetStride());
+        uint8_t* src = const_cast<uint8_t*>(pixelmap->GetPixels());
+        uint8_t* dst = static_cast<uint8_t*>(surfaceBuffer->GetVirAddr());
+        uint32_t dstSize = surfaceBuffer->GetSize();
+        uint64_t srcStride = static_cast<uint64_t>(width * NUM_4);
+        
+        for (uint32_t i = 0; i < height; i++) {
+            if (memcpy_s(dst, dstSize, src, srcStride) != EOK) {
+                IMAGE_LOGE("ConvertToSurfaceBuffer memcpy failed");
+                ImageUtils::SurfaceBuffer_Unreference(surfaceBuffer.GetRefPtr());
+                return nullptr;
+            }
+            dst += dstStride;
+            dstSize -= dstStride;
+            src += srcStride;
+        }
     }
+
     ImageUtils::FlushSurfaceBuffer(surfaceBuffer);
     return surfaceBuffer;
 }

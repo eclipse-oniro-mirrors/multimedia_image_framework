@@ -415,6 +415,9 @@
             <option name="push" value="images/test_packing_exif.jpg -> /data/local/tmp/image" src="res"/>
             <option name="push" value="images/hdr.jpg -> /data/local/tmp/image/" src="res"/>
             <option name="push" value="images/hasNoExif.jpg -> /data/local/tmp/image" src="res"/>
+            <option name="push" value="images/test_odd_image_size.jpg -> /data/local/tmp/image" src="res"/>
+            <option name="push" value="images/test_odd_height_image_size.jpg -> /data/local/tmp/image" src="res"/>
+            <option name="push" value="images/test_odd_width_image_size.jpg -> /data/local/tmp/image" src="res"/>
         </preparer>
     </target>
     <target name="ImageAccessorFuzzTest">
