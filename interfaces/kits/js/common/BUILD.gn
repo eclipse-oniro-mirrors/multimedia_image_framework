@@ -240,7 +240,7 @@ if (use_clang_ios) {
       "-DIMAGE_DEBUG_FLAG",
       "-DIMAGE_COLORSPACE_FLAG",
     ]
-    external_deps = [ "skia:libjpeg", "libjpeg-turbo:turbojpeg"]
+    external_deps = [ "skia:libjpeg", "libjpeg-turbo:turbojpeg", "access_token:libtokenid_sdk", "ipc:ipc_core" ]
     if (enable_libexif) {
       external_deps += [ "libexif:libexif" ]
     }

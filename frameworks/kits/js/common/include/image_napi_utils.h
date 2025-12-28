@@ -174,6 +174,7 @@ public:
         const int32_t errCode, const std::string errMsg);
     static napi_value ThrowExceptionError(napi_env env, const int32_t errCode, const std::string errMsg);
     static void CleanUpConstructorContext(void* data);
+    static bool IsSystemApp();
 };
 } // namespace Media
 } // namespace OHOS

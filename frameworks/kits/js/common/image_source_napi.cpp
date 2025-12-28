@@ -4341,6 +4341,10 @@ napi_value ImageSourceNapi::IsJpegProgressive(napi_env env, napi_callback_info i
     } else {
         napi_get_undefined(env, &result);
     }
+    if (!ImageNapiUtils::IsSystemApp()) {
+        return ImageNapiUtils::ThrowExceptionError(env, IMAGE_BAD_SOURCE,
+            "This interface can be called only by system apps");
+    }
 
     IMG_CREATE_CREATE_ASYNC_WORK(env, status, "IsJpegProgressive", IsJpegProgressiveExec,
         IsJpegProgressiveComplete, asyncContext, asyncContext->work);

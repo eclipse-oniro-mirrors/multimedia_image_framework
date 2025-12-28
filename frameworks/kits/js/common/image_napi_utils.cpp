@@ -15,6 +15,8 @@
 
 #include "image_napi_utils.h"
 #include <securec.h>
+#include "tokenid_kit.h"
+#include "ipc_skeleton.h"
 #include <unistd.h>
 #include "image_log.h"
 #if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM) && defined(HICHECKER_ENABLE)
@@ -320,6 +322,12 @@ void ImageNapiUtils::CleanUpConstructorContext(void* data)
     ctorContext->env_ = nullptr;
     ctorContext->ref_ = nullptr;
     delete ctorContext;
+}
+
+bool ImageNapiUtils::IsSystemApp()
+{
+    static bool isSys = Security::AccessToken::TokenIdKit::IsSystemAppByFullTokenID(IPCSkeleton::GetSelfTokenID());
+    return isSys;
 }
 }  // namespace Media
 }  // namespace OHOS
