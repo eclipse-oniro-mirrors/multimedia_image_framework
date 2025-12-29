@@ -740,7 +740,6 @@ bool ImageUtils::GetYuvInfoFromSurfaceBuffer(YUVDataInfo &yuvInfo,
         return false;
     }
 }
-#endif
 
 bool ImageUtils::CopyYuvPixelMapToSurfaceBuffer(PixelMap* pixelmap,
     sptr<SurfaceBuffer> surfaceBuffer)
@@ -779,6 +778,7 @@ bool ImageUtils::CopyYuvPixelMapToSurfaceBuffer(PixelMap* pixelmap,
 
     return true;
 }
+#endif
 
 void ImageUtils::DumpPixelMap(PixelMap* pixelMap, std::string customFileName, uint64_t imageId)
 {
