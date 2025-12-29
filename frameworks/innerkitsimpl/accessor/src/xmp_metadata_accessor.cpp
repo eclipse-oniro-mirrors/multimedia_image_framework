@@ -65,8 +65,6 @@ static constexpr XMP_OptionBits ConvertAccessModeToXMPOptions(XMPAccessMode mode
             return kXMPFiles_OpenForRead;
         case XMPAccessMode::READ_WRITE_XMP:
             return kXMPFiles_OpenForUpdate | kXMPFiles_OpenOnlyXMP;
-        case XMPAccessMode::READ_WRITE_XMP_OPTIMIZED:
-            return kXMPFiles_OpenForUpdate | kXMPFiles_OptimizeFileLayout;
         default:
             return kXMPFiles_OpenForRead | kXMPFiles_OpenOnlyXMP;
     }

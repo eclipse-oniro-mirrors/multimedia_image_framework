@@ -32,7 +32,6 @@ enum class XMPAccessMode {
     READ_ONLY_XMP,
     READ_FULL_METADATA,
     READ_WRITE_XMP,
-    READ_WRITE_XMP_OPTIMIZED,
 };
 
 class XMPMetadataAccessor {

@@ -28,7 +28,6 @@
 
 namespace {
 constexpr std::string_view COLON = ":";
-constexpr uint32_t MAX_XMP_METADATA_LENGTH = 64 * 1024;
 }
 
 namespace OHOS {
@@ -331,7 +330,7 @@ uint32_t XMPMetadata::GetBlob(std::string &buffer)
     CHECK_ERROR_RETURN_RET_LOG(!impl_ || !impl_->IsValid(), ERR_MEDIA_NULL_POINTER,
         "%{public}s impl is invalid", __func__);
 
-    impl_->SerializeToBuffer(buffer, kXMP_UseCompactFormat);
+    impl_->SerializeToBuffer(buffer, kXMP_OmitPacketWrapper);
     IMAGE_LOGD("%{public}s success! string buffer size is %{public}u", __func__, buffer.size());
     return SUCCESS;
     XMP_CATCH_RETURN_CODE(ERR_XMP_DECODE_FAILED);
@@ -363,9 +362,8 @@ uint32_t XMPMetadata::SetBlob(const uint8_t *source, uint32_t bufferSize)
     XMP_TRY();
     CHECK_ERROR_RETURN_RET_LOG(!impl_ || !impl_->IsValid(), ERR_MEDIA_NULL_POINTER,
         "%{public}s impl is invalid", __func__);
-    CHECK_ERROR_RETURN_RET_LOG(source == nullptr || bufferSize == 0 || bufferSize > MAX_XMP_METADATA_LENGTH,
-        ERR_IMAGE_INVALID_PARAMETER, "%{public}s source is nullptr or size:(%{public}u) is invalid",
-        __func__, bufferSize);
+    CHECK_ERROR_RETURN_RET_LOG(source == nullptr || bufferSize == 0, ERR_IMAGE_INVALID_PARAMETER,
+        "%{public}s source is nullptr or size:(%{public}u) is invalid", __func__, bufferSize);
 
     impl_->ParseFromBuffer(reinterpret_cast<const char*>(source), bufferSize);
     IMAGE_LOGD("%{public}s success! bufferSize is %{public}u", __func__, bufferSize);
