@@ -719,6 +719,7 @@ int32_t ImageUtils::SurfaceBuffer_Unreference(void* buffer)
     return SUCCESS;
 }
 
+#if !defined(CROSS_PLATFORM)
 bool ImageUtils::GetYuvInfoFromSurfaceBuffer(YUVDataInfo &yuvInfo,
     sptr<SurfaceBuffer> surfaceBuffer)
 {
@@ -777,6 +778,7 @@ bool ImageUtils::CopyYuvPixelMapToSurfaceBuffer(PixelMap* pixelmap,
 
     return true;
 }
+#endif
 
 void ImageUtils::DumpPixelMap(PixelMap* pixelMap, std::string customFileName, uint64_t imageId)
 {
