@@ -909,10 +909,8 @@ static void CloneHeifsMetadataComplete(napi_env env, napi_status status, void *d
     napi_handle_scope scope;
     napi_open_handle_scope(env, &scope);
     
-    napi_value result = nullptr;
-    bool success = context->rMetadata != nullptr &&
-                 (result = MetadataNapi::CreateHeifsMetadata(env, context->rMetadata)) != nullptr;
-    if (success) {
+    napi_value result = MetadataNapi::CreateHeifsMetadata(env, context->rMetadata);
+    if (context->rMetadata != nullptr && result != nullptr) {
         for (auto& [name, ref] : context->customProperties) {
             napi_value propValue;
             if (napi_get_reference_value(env, ref, &propValue) == napi_ok) {
@@ -923,7 +921,7 @@ static void CloneHeifsMetadataComplete(napi_env env, napi_status status, void *d
         context->customProperties.clear();
     }
     napi_deferred deferred = context->deferred;
-    if (success) {
+    if (context->rMetadata != nullptr && result != nullptr) {
         napi_resolve_deferred(env, deferred, result);
     } else {
         napi_reject_deferred(env, deferred, CreateBusinessError(env,
