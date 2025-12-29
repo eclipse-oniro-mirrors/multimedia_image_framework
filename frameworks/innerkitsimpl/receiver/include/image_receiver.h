@@ -114,6 +114,7 @@ struct ImageReceiverOptions {
     int32_t width = 0;
     int32_t height = 0;
     int32_t capacity = 0;
+    int32_t format = 0;
 };
 
 class ImageReceiver {
@@ -133,7 +134,7 @@ public:
     static std::shared_ptr<ImageReceiver> CreateImageReceiver(int32_t width,
                                                               int32_t height,
                                                               int32_t format,
-                                                              int32_t capicity);
+                                                              int32_t capacity);
     static std::shared_ptr<ImageReceiver> CreateImageReceiver(ImageReceiverOptions &options);
     sptr<Surface> GetReceiverSurface();
     OHOS::sptr<OHOS::SurfaceBuffer> ReadNextImage();
