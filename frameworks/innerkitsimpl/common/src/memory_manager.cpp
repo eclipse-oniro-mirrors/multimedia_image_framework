@@ -40,7 +40,7 @@ namespace Media {
 static const size_t SIZE_ZERO = 0;
 static const int LINUX_SUCCESS = 0;
 // Define pixel map malloc max size 1500MB
-constexpr int32_t PIXEL_MAP_MAX_RAM_SIZE = 1500 * 1024 * 1024;
+constexpr int32_t PIXEL_MAP_MAX_RAM_SIZE = 600 * 1024 * 1024;
 
 uint32_t HeapMemory::Create()
 {
