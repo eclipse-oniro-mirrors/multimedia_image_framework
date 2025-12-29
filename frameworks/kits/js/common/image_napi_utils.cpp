@@ -17,7 +17,7 @@
 #include <securec.h>
 #include <unistd.h>
 #include "image_log.h"
-#if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM) && defined(HICHECKER_ENABLE)
+#if !defined(CROSS_PLATFORM)
 #include "tokenid_kit.h"
 #include "ipc_skeleton.h"
 #include "hichecker.h"
