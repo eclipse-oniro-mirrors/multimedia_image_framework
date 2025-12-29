@@ -58,8 +58,6 @@ taihe_shared_library("image_taihe") {
 
   sources = get_target_outputs(":run_taihe")
   sources += [
-    "${image_subsystem}/frameworks/innerkitsimpl/accessor/src/exif_metadata_formatter.cpp",
-    "${image_subsystem}/frameworks/kits/js/common/image_error_convert.cpp",
     "src/auxiliary_picture_taihe.cpp",
     "src/image_creator_taihe.cpp",
     "src/image_packer_taihe.cpp",
@@ -85,6 +83,8 @@ taihe_shared_library("image_taihe") {
     "${image_subsystem}/frameworks/innerkitsimpl/egl_image:egl_image",
     "${image_subsystem}/frameworks/innerkitsimpl/utils:image_utils",
     "${image_subsystem}/interfaces/innerkits:image_native",
+    "$image_subsystem/interfaces/kits/js/common:image_error_convert",
+    "${image_subsystem}/frameworks/innerkitsimpl/accessor:image_accessor",
   ]
 
   external_deps = [
@@ -102,7 +102,6 @@ taihe_shared_library("image_taihe") {
     "hilog:libhilog",
     "hitrace:hitrace_meter",
     "ipc:ipc_single",
-    "libjpeg-turbo:turbojpeg",
     "napi:ace_napi",
     "runtime_core:ani_helpers",
   ]

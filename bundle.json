@@ -290,6 +290,14 @@
               ]
             },
             "name": "//foundation/multimedia/image_framework/plugins/common/libs/image/libextplugin:extplugin"
+          },
+          {
+            "header": {
+              "header_base": "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/accessor/include",
+              "header_files": [
+              ]
+            },
+            "name": "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/accessor:image_accessor"
           }
         ],
         "test": [

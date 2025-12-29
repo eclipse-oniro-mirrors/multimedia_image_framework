@@ -199,6 +199,36 @@ if (use_clang_ios) {
     part_name = "image_framework"
   }
 
+  ohos_shared_library("image_error_convert") {
+    if (!use_clang_android && !use_clang_ios) {
+      sanitize = {
+        cfi = true
+        cfi_cross_dso = true
+        cfi_vcall_icall_only = true
+        debug = false
+      }
+    }
+
+    include_dirs = [
+      "${image_subsystem}/frameworks/kits/js/common/include",
+      "${image_subsystem}/interfaces/innerkits/include",
+      "${image_subsystem}/interfaces/kits/native/include/image",
+    ]
+
+    sources = [
+      "${image_subsystem}/frameworks/kits/js/common/image_error_convert.cpp",
+    ]
+
+    external_deps = [
+      "c_utils:utils",
+    ]
+
+    output_name = "libimage_error_convert"
+    subsystem_name = "multimedia"
+    part_name = "image_framework"
+    version_script = "libimage_error_convert.versionscript"
+  }
+
   ohos_shared_library("image") {
     if (!use_clang_android && !use_clang_ios) {
       branch_protector_ret = "pac_ret"
@@ -212,7 +242,6 @@ if (use_clang_ios) {
     public_configs = [ ":image_external_config" ]
     sources = [
       "$image_subsystem/frameworks/innerkitsimpl/accessor/src/buffer_metadata_stream.cpp",
-      "$image_subsystem/frameworks/innerkitsimpl/accessor/src/exif_metadata_formatter.cpp",
       "$image_subsystem/frameworks/kits/js/common/image_format_convert_mdk_kits.cpp",
       "$image_subsystem/frameworks/kits/js/common/image_mdk_kits.cpp",
       "$image_subsystem/frameworks/kits/js/common/image_packer_mdk_kits.cpp",
@@ -220,7 +249,6 @@ if (use_clang_ios) {
       "$image_subsystem/frameworks/kits/js/common/image_receiver_mdk_kits.cpp",
       "$image_subsystem/frameworks/kits/js/common/image_source_mdk_kits.cpp",
       "${image_subsystem}/frameworks/kits/js/common/auxiliary_picture_napi.cpp",
-      "${image_subsystem}/frameworks/kits/js/common/image_error_convert.cpp",
       "${image_subsystem}/frameworks/kits/js/common/metadata_napi.cpp",
       "${image_subsystem}/frameworks/kits/js/common/picture_napi.cpp",
       "${image_subsystem}/frameworks/kits/js/common/sendable/sendable_image_napi.cpp",
@@ -271,6 +299,8 @@ if (use_clang_ios) {
         "$image_subsystem/frameworks/innerkitsimpl/pixelconverter:pixelconvertadapter",
         "$image_subsystem/frameworks/innerkitsimpl/utils:image_utils",
         "$image_subsystem/interfaces/innerkits:image_native",
+        "$image_subsystem/interfaces/kits/js/common:image_error_convert",
+        "${image_subsystem}/frameworks/innerkitsimpl/accessor:image_accessor",
       ]
       external_deps += [ "hilog:libhilog" ]
     }

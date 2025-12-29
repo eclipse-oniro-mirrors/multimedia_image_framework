@@ -18,6 +18,7 @@
 #include "data_buf.h"
 #if !defined(CROSS_PLATFORM)
 #include "dng/dng_exif_metadata.h"
+#include "dng/dng_sdk_helper.h"
 #endif
 #include "image_log.h"
 #include "media_errors.h"
