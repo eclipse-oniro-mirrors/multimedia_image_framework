@@ -20,6 +20,8 @@
 #if !defined(CROSS_PLATFORM)
 #include "tokenid_kit.h"
 #include "ipc_skeleton.h"
+#endif
+#if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM) && defined(HICHECKER_ENABLE)
 #include "hichecker.h"
 #endif
 
