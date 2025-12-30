@@ -44,6 +44,7 @@
 #include "image_format_convert.h"
 #include "image_func_timer.h"
 #include "image_fwk_ext_manager.h"
+#include "hispeed_image_manager.h"
 #include "image_log.h"
 #include "image_system_properties.h"
 #include "image_trace.h"
@@ -670,6 +671,25 @@ uint32_t ExtEncoder::DoEncode(SkWStream* skStream, const SkBitmap& src, const Sk
         return ERR_IMAGE_ENCODE_FAILED;
     }
     return SUCCESS;
+}
+
+bool ExtEncoder::HispeedEncode(SkWStream &skStream, Media::PixelMap *pixelMap, bool needExif, SkImageInfo info)
+{
+    uint32_t retCode = ERR_IMAGE_ENCODE_FAILED;
+    if (!needExif || pixelMap->GetExifMetadata() == nullptr || pixelMap->GetExifMetadata()->GetExifData() == nullptr) {
+        retCode = HispeedImageManager::GetInstance().DoEncodeJpeg(&skStream, pixelmap_, opts_.quality, info);
+        IMAGE_LOGD("HispeedEncode retCode:%{public}d", retCode);
+        return (retCode == SUCCESS);
+    }
+    MetadataWStream tStream;
+    retCode = HispeedImageManager::GetInstance().DoEncodeJpeg(&tStream, pixelmap_, opts_.quality, info);
+    bool cond = retCode != SUCCESS;
+    CHECK_DEBUG_RETURN_RET_LOG(cond, false, "HispeedEncode failed, retCode:%{public}d", retCode);
+    ImageInfo imageInfo;
+    pixelMap->GetImageInfo(imageInfo);
+    retCode = CreateAndWriteBlob(tStream, pixelMap, skStream, imageInfo, opts_);
+    IMAGE_LOGD("HispeedEncode retCode:%{public}d", retCode);
+    return (retCode == SUCCESS);
 }
 
 bool ExtEncoder::HardwareEncode(SkWStream &skStream, bool needExif)

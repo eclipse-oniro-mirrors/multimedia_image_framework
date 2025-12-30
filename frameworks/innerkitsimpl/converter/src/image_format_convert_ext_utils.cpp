@@ -24,6 +24,7 @@
 #include "image_log.h"
 #include "log_tags.h"
 #include "securec.h"
+#include "hispeed_image_manager.h"
 
 namespace {
 constexpr uint32_t NUM_0 = 0;
@@ -1117,7 +1118,13 @@ bool ImageFormatConvertExtUtils::NV12P010ToRGB565(const uint8_t *srcBuffer, cons
 bool ImageFormatConvertExtUtils::NV12P010ToRGBA8888(const uint8_t *srcBuffer, const YUVDataInfo &yDInfo,
                                                     DestConvertInfo &destInfo, [[maybe_unused]]ColorSpace colorSpace)
 {
-    return P010ToI010ToI420ToRGB(srcBuffer, yDInfo, PixelFormat::YCBCR_P010, destInfo, colorSpace);
+    bool bRet = HispeedImageManager::GetInstance().P010ToARGB(srcBuffer, yDInfo, destInfo);
+    if (!bRet) {
+        IMAGE_LOGI("Hispeed NV12P010ToARGB convert failed");
+        return P010ToI010ToI420ToRGB(srcBuffer, yDInfo, PixelFormat::YCBCR_P010, destInfo, colorSpace);
+    }
+    IMAGE_LOGD("Hispeed NV12P010ToARGB convert success");
+    return bRet;
 }
 
 bool ImageFormatConvertExtUtils::NV12P010ToBGRA8888(const uint8_t *srcBuffer, const YUVDataInfo &yDInfo,
@@ -1148,7 +1155,13 @@ bool ImageFormatConvertExtUtils::NV12P010ToRGBA1010102(const uint8_t *srcBuffer,
                                                        DestConvertInfo &destInfo,
                                                        [[maybe_unused]]ColorSpace colorSpace)
 {
-    return P010ToI010ToRGB10(srcBuffer, yDInfo, PixelFormat::YCBCR_P010, destInfo, colorSpace);
+    bool bRet = HispeedImageManager::GetInstance().P010ToAR30(srcBuffer, yDInfo, destInfo);
+    if (!bRet) {
+        IMAGE_LOGI("Hispeed NV12P010ToAR30 convert failed");
+        return P010ToI010ToRGB10(srcBuffer, yDInfo, PixelFormat::YCBCR_P010, destInfo, colorSpace);
+    }
+    IMAGE_LOGD("Hispeed NV12P010ToAR30 convert success");
+    return bRet;
 }
 
 bool ImageFormatConvertExtUtils::NV21P010ToRGB565(const uint8_t *srcBuffer, const YUVDataInfo &yDInfo,
