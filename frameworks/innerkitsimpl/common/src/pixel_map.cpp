@@ -2743,6 +2743,7 @@ bool PixelMap::WriteAstcInfoToParcel(Parcel &parcel) const
 
 bool PixelMap::Marshalling(Parcel &parcel) const
 {
+    std::lock_guard<std::mutex> lock(*translationMutex_);
     int32_t PIXEL_MAP_INFO_MAX_LENGTH = 128;
     if (ImageUtils::CheckMulOverflow(imageInfo_.size.height, rowDataSize_)) {
         IMAGE_LOGE("pixelmap invalid params, height:%{public}d, rowDataSize:%{public}d.",
@@ -4238,7 +4239,8 @@ bool PixelMap::DoTranslation(TransInfos &infos, const AntiAliasingOption &option
 void PixelMap::scale(float xAxis, float yAxis)
 {
     ImageTrace imageTrace("PixelMap scale xAxis = %f, yAxis = %f", xAxis, yAxis);
-    if (ImageUtils::FloatEqual(xAxis, 1.0f) && ImageUtils::FloatEqual(yAxis, 1.0f)) {
+    if ((static_cast<int32_t>(round(imageInfo_.size.width * abs(xAxis))) - imageInfo_.size.width) == 0 &&
+        (static_cast<int32_t>(round(imageInfo_.size.height * abs(yAxis))) - imageInfo_.size.height) == 0) {
         return;
     }
     TransInfos infos;
@@ -4251,7 +4253,8 @@ void PixelMap::scale(float xAxis, float yAxis)
 
 void PixelMap::scale(float xAxis, float yAxis, const AntiAliasingOption &option)
 {
-    if (ImageUtils::FloatEqual(xAxis, 1.0f) && ImageUtils::FloatEqual(yAxis, 1.0f)) {
+    if ((static_cast<int32_t>(round(imageInfo_.size.width * abs(xAxis))) - imageInfo_.size.width) == 0 &&
+        (static_cast<int32_t>(round(imageInfo_.size.height * abs(yAxis))) - imageInfo_.size.height) == 0) {
         return;
     }
     if (isAstc_) {
@@ -4289,8 +4292,7 @@ void PixelMap::scale(float xAxis, float yAxis, const AntiAliasingOption &option)
         TransInfos infos;
         infos.matrix.setScale(xAxis, yAxis);
         bool fixPixelFormat = imageInfo_.pixelFormat == PixelFormat::BGRA_8888 && option == AntiAliasingOption::LOW;
-        if (fixPixelFormat) {
-            // Workaround to fix a color glitching issue under BGRA with LOW anti-aliasing
+        if (fixPixelFormat) {  // Workaround to fix a color glitching issue under BGRA with LOW anti-aliasing
             imageInfo_.pixelFormat = PixelFormat::RGBA_8888;
         }
         if (!DoTranslation(infos, option)) {
@@ -4518,7 +4520,7 @@ std::unique_ptr<AbsMemory> PixelMap::CreateSdrMemory(ImageInfo &imageInfo, Pixel
     ImageUtils::DumpHdrBufferEnabled(hdrSurfaceBuffer, "decompose-HDR");
     if (!DecomposeImage(hdrSurfaceBuffer, sdrSurfaceBuffer, toSRGB)) {
         sdrMemory->Release();
-        HILOG_COMM_ERROR("HDR-IMAGE ToSdr decompose failed, CM_ColorType : %{public}d",
+        IMAGE_LOGE("HDR-IMAGE ToSdr decompose failed, CM_ColorType : %{public}d",
             static_cast<uint32_t>(colorspaceType));
         errorCode = IMAGE_RESULT_GET_SURFAC_FAILED;
         return nullptr;

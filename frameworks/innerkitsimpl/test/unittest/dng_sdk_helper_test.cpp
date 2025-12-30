@@ -13,7 +13,6 @@
  * limitations under the License.
  */
 #include "dng/dng_sdk_helper.h"
-#include "dng/dng_sdk_info.h"
 #include "image_log.h"
 #include "media_errors.h"
 

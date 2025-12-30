@@ -101,6 +101,7 @@ private:
     static napi_value CreatePixelMapFromSurfaceWithTransformationSync(napi_env env,
         napi_callback_info info);
     static void CreatePixelMapFromSurfaceComplete(napi_env env, napi_status status, void *data);
+    static void CreatePixelMapFromSurfaceWithTransformationComplete(napi_env env, napi_status status, void *data);
     static void CreatePixelMapUsingAllocatorComplete(napi_env env, napi_status status, void *data);
     static napi_value ThrowExceptionError(napi_env env,
         const std::string &tag, const std::uint32_t &code, const std::string &info);

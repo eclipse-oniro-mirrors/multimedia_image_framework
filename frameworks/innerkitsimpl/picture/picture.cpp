@@ -20,6 +20,7 @@
 #include "picture.h"
 #include "pixel_yuv.h"
 #include "pixel_yuv_ext.h"
+#include "image_trace.h"
 #include "image_utils.h"
 #include "image_log.h"
 #include "image_source.h"
@@ -124,6 +125,8 @@ namespace {
 const static uint64_t MAX_AUXILIARY_PICTURE_COUNT = 32;
 const static uint64_t MAX_PICTURE_META_TYPE_COUNT = 64;
 
+const static int32_t HDR_ALLOC_FORMAT_INVALID = -1;
+
 // Define ExifData malloc max size 1MB
 const static uint64_t MAX_EXIFMETADATA_SIZE = 1024 * 1024;
 static const uint8_t NUM_0 = 0;
@@ -185,29 +188,6 @@ static ImageInfo MakeImageInfo(int width, int height, PixelFormat pf, AlphaType 
     info.alphaType = at;
     info.colorSpace = cs;
     return info;
-}
-
-static void SetYuvDataInfo(std::unique_ptr<PixelMap> &pixelMap, sptr<OHOS::SurfaceBuffer> &sBuffer)
-{
-    bool cond = pixelMap == nullptr || sBuffer == nullptr;
-    CHECK_ERROR_RETURN(cond);
-    int32_t width = sBuffer->GetWidth();
-    int32_t height = sBuffer->GetHeight();
-    OH_NativeBuffer_Planes *planes = nullptr;
-    GSError retVal = sBuffer->GetPlanesInfo(reinterpret_cast<void**>(&planes));
-    YUVDataInfo info;
-    info.imageSize = { width, height };
-    cond = retVal != OHOS::GSERROR_OK || planes == nullptr || planes->planeCount <= NUM_1;
-    CHECK_ERROR_RETURN_LOG(cond, "Get planesInfo failed, retVal:%{public}d", retVal);
-    if (planes->planeCount >= NUM_2) {
-        info.yWidth = static_cast<uint32_t>(info.imageSize.width);
-        info.yHeight = static_cast<uint32_t>(info.imageSize.height);
-        info.yStride = planes->planes[NUM_0].columnStride;
-        info.uvStride = planes->planes[NUM_1].columnStride;
-        info.yOffset = planes->planes[NUM_0].offset;
-        info.uvOffset = planes->planes[NUM_1].offset - NUM_1;
-    }
-    pixelMap->SetImageYUVInfo(info);
 }
 
 static void SetImageInfoToHdr(std::shared_ptr<PixelMap> &mainPixelMap, std::unique_ptr<PixelMap> &hdrPixelMap)
@@ -282,7 +262,7 @@ std::unique_ptr<PixelMap> Picture::SurfaceBuffer2PixelMap(sptr<OHOS::SurfaceBuff
     pixelMap->InnerSetColorSpace(ColorManager::ColorSpace(colorSpaceName));
 #endif
     if (IsYuvFormat(pixelFormat)) {
-        SetYuvDataInfo(pixelMap, surfaceBuffer);
+        ImageUtils::SetYuvDataInfo(pixelMap, surfaceBuffer);
     }
     return pixelMap;
 }
@@ -299,7 +279,7 @@ void Picture::SetMainPixel(std::shared_ptr<PixelMap> PixelMap)
 
 static int32_t GetHdrAllocFormat(PixelFormat pixelFormat)
 {
-    int32_t hdrAllocFormat = GRAPHIC_PIXEL_FMT_RGBA_1010102;
+    int32_t hdrAllocFormat = HDR_ALLOC_FORMAT_INVALID;
     switch (pixelFormat) {
         case PixelFormat::RGBA_8888:
             hdrAllocFormat = GRAPHIC_PIXEL_FMT_RGBA_1010102;
@@ -308,6 +288,15 @@ static int32_t GetHdrAllocFormat(PixelFormat pixelFormat)
             hdrAllocFormat = GRAPHIC_PIXEL_FMT_YCRCB_P010;
             break;
         case PixelFormat::NV12:
+            hdrAllocFormat = GRAPHIC_PIXEL_FMT_YCBCR_P010;
+            break;
+        case PixelFormat::RGBA_1010102:
+            hdrAllocFormat = GRAPHIC_PIXEL_FMT_RGBA_1010102;
+            break;
+        case PixelFormat::YCRCB_P010:
+            hdrAllocFormat = GRAPHIC_PIXEL_FMT_YCRCB_P010;
+            break;
+        case PixelFormat::YCBCR_P010:
             hdrAllocFormat = GRAPHIC_PIXEL_FMT_YCBCR_P010;
             break;
         default:
@@ -396,7 +385,7 @@ sptr<SurfaceBuffer> CreateGainmapByHdrAndSdr(std::shared_ptr<PixelMap> &hdrPixel
         .width = imageInfo.size.width / 2,
         .height = imageInfo.size.height / 2,
         .strideAlignment = imageInfo.size.width / 2,
-        .format = GetHdrAllocFormat(imageInfo.pixelFormat),
+        .format = GRAPHIC_PIXEL_FMT_RGBA_8888,
         .usage = BUFFER_USAGE_CPU_READ | BUFFER_USAGE_CPU_WRITE | BUFFER_USAGE_MEM_DMA | BUFFER_USAGE_MEM_MMZ_CACHE,
         .timeout = 0,
     };
@@ -467,11 +456,18 @@ static std::unique_ptr<PixelMap> ComposeHdrPixelMap(std::shared_ptr<PixelMap> &m
         IMAGE_LOGI("Using mainPixelMap imageInfo format");
         pixelFormat = imageInfo.pixelFormat;
     }
+
+    int32_t hdrAllocFormat = GetHdrAllocFormat(pixelFormat);
+    if (hdrAllocFormat == HDR_ALLOC_FORMAT_INVALID) {
+        IMAGE_LOGE("%{public}s unsupported pixelFormat: %{public}d", __func__, pixelFormat);
+        return nullptr;
+    }
+
     BufferRequestConfig requestConfig = {
         .width = imageInfo.size.width,
         .height = imageInfo.size.height,
         .strideAlignment = imageInfo.size.width,
-        .format = GetHdrAllocFormat(pixelFormat),
+        .format = hdrAllocFormat,
         .usage = BUFFER_USAGE_CPU_READ | BUFFER_USAGE_CPU_WRITE | BUFFER_USAGE_MEM_DMA | BUFFER_USAGE_MEM_MMZ_CACHE,
         .timeout = 0,
     };
@@ -495,7 +491,7 @@ static std::unique_ptr<PixelMap> ComposeHdrPixelMap(std::shared_ptr<PixelMap> &m
     ImageUtils::DumpSurfaceBufferAllKeysEnabled(gainmapSptr, "Picture-GAINMAP-AllKeys-tobeComposed");
     int32_t res = VpeUtils().ColorSpaceConverterComposeImage(buffers, isCuva);
     if (res != VPE_ERROR_OK) {
-        HILOG_COMM_ERROR("Compose HDR image failed, res: %{public}d", res);
+        IMAGE_LOGE("Compose HDR image failed, res: %{public}d", res);
         return nullptr;
     }
     ImageUtils::DumpHdrBufferEnabled(hdrSptr, "Picture-HDR-Composed");
@@ -509,6 +505,7 @@ std::unique_ptr<PixelMap> Picture::GetHdrComposedPixelMap()
 
 std::unique_ptr<PixelMap> Picture::GetHdrComposedPixelMap(PixelFormat pixelFormat)
 {
+    ImageTrace imageTrace("Picture::GetHdrComposedPixelMap pixelFormat is %d", pixelFormat);
     std::shared_ptr<PixelMap> gainmap = GetGainmapPixelMap();
     bool cond = mainPixelMap_ == nullptr || gainmap == nullptr;
     CHECK_ERROR_RETURN_RET_LOG(cond, nullptr, "picture mainPixelMap_ or gainmap is empty.");
@@ -545,16 +542,38 @@ std::unique_ptr<PixelMap> Picture::GetHdrComposedPixelMap(PixelFormat pixelForma
     return hdrPixelMap;
 }
 
+std::shared_ptr<PixelMap> Picture::GetAuxPicturePixelMap(const AuxiliaryPictureType &type)
+{
+    CHECK_ERROR_RETURN_RET_LOG(!HasAuxiliaryPicture(type), nullptr,
+        "%{public}s AuxiliaryPicture(type: %{public}d) not found in picture", __func__, static_cast<int32_t>(type));
+    auto auxiliaryPicture = GetAuxiliaryPicture(type);
+    CHECK_ERROR_RETURN_RET_LOG(auxiliaryPicture == nullptr, nullptr,
+        "%{public}s Failed to GetAuxiliaryPicture: %{public}d", __func__, static_cast<int32_t>(type));
+    return auxiliaryPicture->GetContentPixel();
+}
+
 std::shared_ptr<PixelMap> Picture::GetGainmapPixelMap()
 {
-    if (!HasAuxiliaryPicture(AuxiliaryPictureType::GAINMAP)) {
-        IMAGE_LOGE("Unsupport gain map.");
-        return nullptr;
-    } else {
-        auto auxiliaryPicture = GetAuxiliaryPicture(AuxiliaryPictureType::GAINMAP);
-        CHECK_ERROR_RETURN_RET(auxiliaryPicture == nullptr, nullptr);
-        return auxiliaryPicture->GetContentPixel();
-    }
+    return GetAuxPicturePixelMap(AuxiliaryPictureType::GAINMAP);
+}
+
+std::shared_ptr<PixelMap> Picture::GetThumbnailPixelMap()
+{
+    return GetAuxPicturePixelMap(AuxiliaryPictureType::THUMBNAIL);
+}
+
+bool Picture::SetThumbnailPixelMap(std::shared_ptr<PixelMap> &thumbnailPixelMap)
+{
+    CHECK_ERROR_RETURN_RET_LOG(thumbnailPixelMap == nullptr, false,
+        "%{public}s set null thumbnail pixelmap", __func__);
+
+    std::shared_ptr<AuxiliaryPicture> auxPicture =
+        AuxiliaryPicture::Create(thumbnailPixelMap, AuxiliaryPictureType::THUMBNAIL);
+    CHECK_ERROR_RETURN_RET_LOG(auxPicture == nullptr || auxPicture->GetContentPixel() == nullptr, false,
+        "%{public}s Failed to create auxiliary picture.", __func__);
+    SetAuxiliaryPicture(auxPicture);
+    IMAGE_LOGD("%{public}s Set thumbnail pixelMap success.", __func__);
+    return true;
 }
 
 std::shared_ptr<AuxiliaryPicture> Picture::GetAuxiliaryPicture(AuxiliaryPictureType type)
@@ -588,10 +607,18 @@ bool Picture::HasAuxiliaryPicture(AuxiliaryPictureType type)
 void Picture::DropAuxiliaryPicture(AuxiliaryPictureType type)
 {
     auto it = auxiliaryPictures_.find(type);
-    if (it != auxiliaryPictures_.end()) {
-        auxiliaryPictures_.erase(it);
-    } else {
-        IMAGE_LOGE("Failed to drop auxiliary picture.");
+    if (it == auxiliaryPictures_.end()) {
+        IMAGE_LOGE("%{public}s Failed to drop auxiliary picture, because type: %{public}d is not found.",
+            __func__, static_cast<int32_t>(type));
+        return;
+    }
+
+    auxiliaryPictures_.erase(it);
+    if (type == AuxiliaryPictureType::THUMBNAIL) {
+        std::shared_ptr<ExifMetadata> exifMetadata = GetExifMetadata();
+        if (exifMetadata != nullptr) {
+            exifMetadata->DropThumbnail();
+        }
     }
 }
 

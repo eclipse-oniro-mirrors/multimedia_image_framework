@@ -14,7 +14,10 @@
 1.0 {
     global:
         *ANIRegister*;
+        *ohos_multimedia_image_image_AuxiliaryPicture_i*;
         *ohos_multimedia_image_image_Image_i*;
+        *ohos_multimedia_image_image_Metadata_i*;
+        *ohos_multimedia_image_image_Picture_i*;
         *ohos_multimedia_image_image_PixelMap_i*;
         *ImageImpl*;
         *ImageSourceTaiheAni*;

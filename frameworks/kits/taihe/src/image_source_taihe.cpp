@@ -23,7 +23,6 @@
 #include "image_taihe_utils.h"
 #include "image_trace.h"
 #include "image_type.h"
-#include "jpeg_decoder_yuv.h"
 #include "media_errors.h"
 #include "picture_taihe.h"
 #include "pixel_map_taihe.h"
@@ -77,6 +76,7 @@ struct ImageSourceTaiheContext {
     OHOS::Media::DecodingOptionsForPicture decodingOptsForPicture;
     std::shared_ptr<OHOS::Media::Picture> rPicture;
 #endif
+    OHOS::Media::DecodingOptionsForThumbnail decodingOptsForThumbnail;
 };
 
 static const std::map<int32_t, Image_ErrorCode> ERROR_CODE_MAP = {
@@ -588,6 +588,20 @@ static optional<PixelMap> CreatePixelMapUsingAllocatorSyncComplete(std::unique_p
     return optional<PixelMap>(std::nullopt);
 }
 
+static optional<PixelMap> CreatePixelMapThrowErrorComplete(std::unique_ptr<ImageSourceTaiheContext> &context)
+{
+    IMAGE_LOGD("CreatePixelMapThrowErrorComplete IN");
+    if (context->status == OHOS::Media::SUCCESS && context->rPixelMap != nullptr) {
+        auto res = PixelMapImpl::CreatePixelMap(context->rPixelMap);
+        return optional<PixelMap>(std::in_place, res);
+    }
+    for (const auto &[errorCode, errMsg] : context->errMsgArray) {
+        ImageTaiheUtils::ThrowExceptionError(errorCode, errMsg);
+    }
+    IMAGE_LOGD("CreatePixelMapThrowErrorComplete OUT");
+    return optional<PixelMap>(std::nullopt);
+}
+
 optional<PixelMap> ImageSourceImpl::CreatePixelMapUsingAllocatorSync(optional_view<DecodingOptions> options,
     optional_view<AllocatorType> allocatorType)
 {
@@ -711,7 +725,7 @@ array<PixelMap> ImageSourceImpl::CreatePixelMapListSyncWithOptions(DecodingOptio
         ImageTaiheUtils::ThrowExceptionError(OHOS::Media::ERR_IMAGE_DATA_ABNORMAL, "nativeImgSrc is nullptr");
         return array<PixelMap>(nullptr, 0);
     }
-    
+
     taiheContext->thisPtr = this;
     if (taiheContext->thisPtr == nullptr) {
         taiheContext->errMsg = "thisPtr is nullptr";
@@ -951,18 +965,13 @@ static PropertyValue CreatePropertyValue(const std::string& valueStr)
     }
 }
 
-map<PropertyKey, PropertyValue> CreatePropertiesRecord(
+map<string, PropertyValue> CreatePropertiesRecord(
     std::vector<std::pair<std::string, std::string>> recordParameters)
 {
-    map<PropertyKey, PropertyValue> result;
+    map<string, PropertyValue> result;
     for (size_t index = 0; index < recordParameters.size(); ++index) {
-        PropertyKey::key_t key;
-        if (!ImageTaiheUtils::GetEnumKeyByValue<PropertyKey>(recordParameters[index].first, key)) {
-            IMAGE_LOGE("Get current record parameter failed");
-            continue;
-        }
         PropertyValue value = CreatePropertyValue(recordParameters[index].second);
-        result.emplace(PropertyKey(key), value);
+        result.emplace(recordParameters[index].first, value);
     }
 
     IMAGE_LOGD("Get record parameters info success.");
@@ -1002,11 +1011,11 @@ std::vector<std::string> GetStringArrayArgument(array_view<PropertyKey> key)
     return keyStrArray;
 }
 
-map<PropertyKey, PropertyValue> ImageSourceImpl::GetImagePropertiesSync(array_view<PropertyKey> key)
+map<string, PropertyValue> ImageSourceImpl::GetImagePropertiesSync(array_view<PropertyKey> key)
 {
     OHOS::Media::ImageTrace imageTrace("ImageSourceImpl::GetImagePropertiesSync");
 
-    map<PropertyKey, PropertyValue> result;
+    map<string, PropertyValue> result;
     std::unique_ptr<ImageSourceTaiheContext> context = std::make_unique<ImageSourceTaiheContext>();
     if (nativeImgSrc == nullptr) {
         ImageTaiheUtils::ThrowExceptionError(OHOS::Media::COMMON_ERR_INVALID_PARAMETER, "empty native rImageSource");
@@ -1161,24 +1170,6 @@ static void ModifyImagePropertiesExecute(std::unique_ptr<ImageSourceTaiheContext
     context->status = context->errMsgArray.size() > 0 ? OHOS::Media::ERROR : OHOS::Media::SUCCESS;
 }
 
-std::vector<std::pair<std::string, std::string>> GetRecordArgument(map_view<PropertyKey, PropertyValue> records)
-{
-    std::vector<std::pair<std::string, std::string>> kVStrArray;
-
-    for (const auto& [key, value] : records) {
-        std::string valueStr;
-        if (value.holds_type_string()) {
-            valueStr = std::string(value.get_type_string_ref());
-        } else if (value.holds_type_null()) {
-            valueStr = "";
-        }
-        kVStrArray.push_back(std::make_pair(std::string(key.get_value()), valueStr));
-    }
-
-    IMAGE_LOGD("Get record argument success.");
-    return kVStrArray;
-}
-
 std::vector<std::pair<std::string, std::string>> GetRecordArgument(map_view<string, PropertyValue> records)
 {
     std::vector<std::pair<std::string, std::string>> kVStrArray;
@@ -1197,7 +1188,7 @@ std::vector<std::pair<std::string, std::string>> GetRecordArgument(map_view<stri
     return kVStrArray;
 }
 
-void ImageSourceImpl::ModifyImagePropertiesSync(map_view<PropertyKey, PropertyValue> records)
+void ImageSourceImpl::ModifyImagePropertiesSync(map_view<string, PropertyValue> records)
 {
     OHOS::Media::ImageTrace imageTrace("ImageSourceImpl::ModifyImagePropertiesSync");
 
@@ -1351,8 +1342,8 @@ static bool ParseDecodingOptionsForPicture(DecodingOptionsForPicture const& opti
 {
     for (size_t i = 0; i < options.desiredAuxiliaryPictures.size(); i++) {
         int32_t type = options.desiredAuxiliaryPictures[i];
-        if (type <= static_cast<int32_t>(OHOS::Media::AuxiliaryPictureType::FRAGMENT_MAP)) {
-            dst.desireAuxiliaryPictures.insert(static_cast<OHOS::Media::AuxiliaryPictureType>(type));
+        if (ImageTaiheUtils::GetTaiheSupportedAuxTypes().count(static_cast<OHOS::Media::AuxiliaryPictureType>(type))) {
+            dst.desireAuxiliaryPictures.emplace(OHOS::Media::AuxiliaryPictureType(type));
             IMAGE_LOGD("desireAuxiliaryPictures[%{public}zu]: %{public}d", i, type);
         } else {
             IMAGE_LOGE("unknown auxiliary picture type: %{public}d", type);
@@ -1402,11 +1393,10 @@ optional<Picture> ImageSourceImpl::CreatePictureSync(optional_view<DecodingOptio
     taiheContext->rImageSource = nativeImgSrc;
 
     if (!options.has_value()) {
-        for (int32_t type = static_cast<int32_t>(OHOS::Media::AuxiliaryPictureType::GAINMAP);
-            type <= static_cast<int32_t>(OHOS::Media::AuxiliaryPictureType::FRAGMENT_MAP); type++) {
-            taiheContext->decodingOptsForPicture.desireAuxiliaryPictures.insert(
-                OHOS::Media::AuxiliaryPictureType(type));
-        }
+        taiheContext->decodingOptsForPicture.desireAuxiliaryPictures = {
+            ImageTaiheUtils::GetTaiheSupportedAuxTypes().begin(),
+            ImageTaiheUtils::GetTaiheSupportedAuxTypes().end()
+        };
     } else {
         if (!ParseDecodingOptionsForPicture(options.value(), taiheContext->decodingOptsForPicture)) {
             ImageTaiheUtils::ThrowExceptionError(IMAGE_BAD_PARAMETER, "DecodingOptionsForPicture mismatch");
@@ -1434,6 +1424,56 @@ optional<Picture> ImageSourceImpl::CreatePictureAtIndexSync(int32_t index)
     }
     auto res = make_holder<PictureImpl, Picture>(std::move(picture));
     return optional<Picture>(std::in_place, res);
+}
+
+static bool IsSizeInvalid(const OHOS::Media::Size &size)
+{
+    return size.width < 0 || size.height < 0;
+}
+
+static void ParseDecodeOptionsForThumbnail(optional_view<DecodingOptionsForThumbnail> options,
+    OHOS::Media::DecodingOptionsForThumbnail &dOpts)
+{
+    if (!options.has_value()) {
+        IMAGE_LOGD("no options");
+        return;
+    }
+
+    if (options.value().desiredSize.has_value()) {
+        dOpts.desiredSize.width = options.value().desiredSize.value().width;
+        dOpts.desiredSize.height = options.value().desiredSize.value().height;
+        if (IsSizeInvalid(dOpts.desiredSize)) {
+            IMAGE_LOGE("%{public}s: desiredSize is invalid, size: (%{public}d, %{public}d)",
+                __func__, dOpts.desiredSize.width, dOpts.desiredSize.height);
+            return;
+        }
+    }
+    dOpts.needGenerate = options.value().needGenerate.value_or(false);
+}
+
+static void CreateThumbnailExecute(std::unique_ptr<ImageSourceTaiheContext> &context)
+{
+    IMAGE_LOGD("CreateThumbnailExecute IN");
+    context->rPixelMap = context->rImageSource->CreateThumbnail(context->decodingOptsForThumbnail, context->status);
+    if (context->status != OHOS::Media::SUCCESS) {
+        context->errMsgArray.emplace(OHOS::Media::ImageErrorConvert::CreateThumbnailMakeErrMsg(context->status));
+    }
+    IMAGE_LOGD("CreateThumbnailExecute OUT");
+}
+
+optional<PixelMap> ImageSourceImpl::CreateThumbnailSync(optional_view<DecodingOptionsForThumbnail> options)
+{
+    if (nativeImgSrc == nullptr) {
+        ImageTaiheUtils::ThrowExceptionError("nativeImgSrc is nullptr");
+        return optional<PixelMap>(std::nullopt);
+    }
+
+    std::unique_ptr<ImageSourceTaiheContext> taiheContext = std::make_unique<ImageSourceTaiheContext>();
+    taiheContext->rImageSource = nativeImgSrc;
+    ParseDecodeOptionsForThumbnail(options, taiheContext->decodingOptsForThumbnail);
+
+    CreateThumbnailExecute(taiheContext);
+    return CreatePixelMapThrowErrorComplete(taiheContext);
 }
 #endif
 
@@ -1545,7 +1585,7 @@ optional<ImageSource> CreateIncrementalSourceByArrayBufferOption(
     OHOS::Media::IncrementalSourceOptions incOpts;
     SourceOptions etsOpts = options.value_or(SourceOptions {});
     incOpts.sourceOptions = ImageTaiheUtils::ParseSourceOptions(etsOpts);
-    
+
     incOpts.incrementalMode = OHOS::Media::IncrementalMode::INCREMENTAL_DATA;
     uint32_t errorCode = 0;
     std::shared_ptr<OHOS::Media::ImageSource> imageSource =

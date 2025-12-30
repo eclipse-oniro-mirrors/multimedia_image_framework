@@ -1,0 +1,69 @@
+# Copyright (C) 2025 Huawei Device Co., Ltd.
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+import("//build/ohos.gni")
+import("//foundation/multimedia/image_framework/ide/image_decode_config.gni")
+
+ohos_shared_library("tiffplugin") {
+  if (!use_clang_android && !use_clang_ios) {
+    branch_protector_ret = "pac_ret"
+    sanitize = {
+      cfi = true
+      cfi_cross_dso = true
+      cfi_vcall_icall_only = true
+      debug = false
+    }
+  }
+
+  sources = [
+    "src/plugin_export.cpp",
+    "src/tiff_decoder.cpp",
+  ]
+
+  include_dirs = [
+    "$image_subsystem/plugins/manager/include",
+    "$image_subsystem/plugins/manager/include/image",
+    "$image_subsystem/plugins/manager/include/pluginbase",
+    "$image_subsystem/plugins/common/libs/image/libtiffplugin/include",
+    "$image_subsystem/interfaces/innerkits/include",
+    "$image_subsystem/frameworks/innerkitsimpl/utils/include",
+  ]
+
+  deps = [
+    "$image_subsystem/plugins/manager:pluginmanager",
+    "${image_subsystem}/frameworks/innerkitsimpl/utils:image_utils",
+  ]
+
+  external_deps = [
+    "c_utils:utils",
+    "drivers_interface_display:libdisplay_commontype_proxy_1.0",
+    "graphic_2d:color_manager",
+    "graphic_surface:surface",
+    "hilog:libhilog",
+  ]
+  if (has_libtiff) {
+    external_deps += [ "libtiff:libtiff", ]
+  }
+
+  cflags = [ "-DIMAGE_COLORSPACE_FLAG" ]
+  innerapi_tags = [ "platformsdk" ]
+  part_name = "image_framework"
+  subsystem_name = "multimedia"
+}
+
+ohos_prebuilt_etc("tiffpluginmetadata") {
+  source = "tiffplugin.pluginmeta"
+  relative_install_dir = "multimediaplugin/image"
+  subsystem_name = "multimedia"
+  part_name = "image_framework"
+}

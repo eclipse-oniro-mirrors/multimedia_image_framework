@@ -119,18 +119,16 @@ optional<AuxiliaryPictureType> AuxiliaryPictureImpl::GetType()
         IMAGE_LOGE("Native auxiliary picture is nullptr!");
         return optional<AuxiliaryPictureType>(std::nullopt);
     }
-    AuxiliaryPictureType::key_t auxPictureTypeKey;
-    auto auxType = nativeAuxiliaryPicture_->GetType();
-    IMAGE_LOGD("AuxiliaryPictureImpl::GetType %{public}d", auxType);
-    if (static_cast<int32_t>(auxType) >= 0 && auxType <= OHOS::Media::AuxiliaryPictureType::FRAGMENT_MAP) {
-        if (ImageTaiheUtils::GetEnumKeyByValue<AuxiliaryPictureType>(static_cast<int32_t>(auxType),
-            auxPictureTypeKey)) {
-            return optional<AuxiliaryPictureType>(std::in_place, AuxiliaryPictureType(auxPictureTypeKey));
-        } else {
-            IMAGE_LOGE("Get auxiliary picture type failed");
-        }
+
+    OHOS::Media::AuxiliaryPictureType auxType = nativeAuxiliaryPicture_->GetType();
+    IMAGE_LOGD("AuxiliaryPictureImpl::GetType %{public}d", static_cast<int32_t>(auxType));
+    if (!ImageTaiheUtils::GetTaiheSupportedAuxTypes().count(static_cast<OHOS::Media::AuxiliaryPictureType>(auxType))) {
+        IMAGE_LOGE("%{public}s auxiliary picture type is not supported: %{public}d",
+            __func__, static_cast<int32_t>(auxType));
+        return optional<AuxiliaryPictureType>(std::nullopt);
     }
-    return optional<AuxiliaryPictureType>(std::nullopt);
+    return optional<AuxiliaryPictureType>(std::in_place,
+        AuxiliaryPictureType::from_value(static_cast<int32_t>(auxType)));
 }
 
 static bool CheckMetadataType(std::unique_ptr<AuxiliaryPictureTaiheContext> const& context)
@@ -272,11 +270,11 @@ optional<AuxiliaryPictureInfo> AuxiliaryPictureImpl::GetAuxiliaryPictureInfo()
 
 static OHOS::Media::AuxiliaryPictureType ParseAuxiliaryPictureType(int32_t val)
 {
-    if (val >= static_cast<int32_t>(OHOS::Media::AuxiliaryPictureType::GAINMAP)
-        && val <= static_cast<int32_t>(OHOS::Media::AuxiliaryPictureType::FRAGMENT_MAP)) {
-        return OHOS::Media::AuxiliaryPictureType(val);
+    if (!ImageTaiheUtils::GetTaiheSupportedAuxTypes().count(static_cast<OHOS::Media::AuxiliaryPictureType>(val))) {
+        IMAGE_LOGE("%{public}s auxiliaryPictureType is invalid: %{public}d", __func__, val);
+        return OHOS::Media::AuxiliaryPictureType::NONE;
     }
-    return OHOS::Media::AuxiliaryPictureType::NONE;
+    return OHOS::Media::AuxiliaryPictureType(val);
 }
 
 static bool ParseSize(Size const& size)

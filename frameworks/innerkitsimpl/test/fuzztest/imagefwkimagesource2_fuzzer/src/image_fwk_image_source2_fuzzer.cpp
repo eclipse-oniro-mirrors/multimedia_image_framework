@@ -61,6 +61,7 @@ void ImageSourceFuncTest002(std::unique_ptr<ImageSource> &imageSource, DecodeOpt
     imageSource->AddIncrementalContext(pixelMap, incrementalRecordIter);
     imageSource->GetImageInfoFromExif(0, imageInfo);
     imageSource->IsHeifWithoutAlpha();
+    imageSource->IsJpegProgressive(errCode);
     IMAGE_LOGI("%{public}s SUCCESS", __func__);
 }
 

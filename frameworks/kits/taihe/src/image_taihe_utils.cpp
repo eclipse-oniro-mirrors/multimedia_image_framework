@@ -136,6 +136,19 @@ ImageInfo ImageTaiheUtils::ToTaiheImageInfo(const OHOS::Media::ImageInfo &src, b
     return result;
 }
 
+const std::set<OHOS::Media::AuxiliaryPictureType> &ImageTaiheUtils::GetTaiheSupportedAuxTypes()
+{
+    static const std::set<OHOS::Media::AuxiliaryPictureType> auxTypes = {
+        OHOS::Media::AuxiliaryPictureType::GAINMAP,
+        OHOS::Media::AuxiliaryPictureType::DEPTH_MAP,
+        OHOS::Media::AuxiliaryPictureType::UNREFOCUS_MAP,
+        OHOS::Media::AuxiliaryPictureType::LINEAR_MAP,
+        OHOS::Media::AuxiliaryPictureType::FRAGMENT_MAP,
+        OHOS::Media::AuxiliaryPictureType::THUMBNAIL,
+    };
+    return auxTypes;
+}
+
 array<string> ImageTaiheUtils::ToTaiheArrayString(const std::vector<std::string> &src)
 {
     std::vector<::taihe::string> vec;

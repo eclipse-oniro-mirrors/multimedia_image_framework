@@ -22,6 +22,10 @@
 #include <iostream>
 #include <unistd.h>
 
+#if !defined(CROSS_PLATFORM)
+#include "surface_type.h"
+#include "surface_buffer.h"
+#endif
 #include "buffer_packer_stream.h"
 #include "hilog/log.h"
 #include "hilog/log_cpp.h"

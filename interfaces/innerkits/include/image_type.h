@@ -42,13 +42,14 @@ namespace Media {
 
 #define HEIFS_METADATA_KEY_DELAY_TIME "HeifsDelayTime"
 
-// There is no definite tag name for gainmap
+// There is no definite tag name for gainmap and thumbnail
 #define AUXILIARY_TAG_GAINMAP ""
 #define AUXILIARY_TAG_DEPTH_MAP_BACK "DepthP"
 #define AUXILIARY_TAG_DEPTH_MAP_FRONT "VShapEn"
 #define AUXILIARY_TAG_UNREFOCUS_MAP "edof"
 #define AUXILIARY_TAG_LINEAR_MAP "HighBit"
 #define AUXILIARY_TAG_FRAGMENT_MAP "Fragmnt"
+#define AUXILIARY_TAG_THUMBNAIL ""
 
 #define HEIF_AUXTTYPE_ID_GAINMAP "urn:iso:std:iso:ts:21496:-1"
 #define HEIF_AUXTTYPE_ID_DEPTH_MAP "urn:com:huawei:photo:5:0:0:aux:depthmap"
@@ -56,6 +57,7 @@ namespace Media {
 #define HEIF_AUXTTYPE_ID_LINEAR_MAP "urn:com:huawei:photo:5:0:0:aux:linearhmap"
 #define HEIF_AUXTTYPE_ID_FRAGMENT_MAP "urn:com:huawei:photo:5:0:0:aux:fragmentmap"
 #define HEIF_METADATA_ID_XTSTYLE "urn:com:huawei:photo:5:1:0:meta:xtstyle"
+#define HEIF_AUXTTYPE_ID_THUMBNAIL "urn:com:huawei:photo:6:1:0:aux:thumbnail"
 
 #define METADATA_TAG_RFDATAB "RfDataB\0"
 #define METADATA_TAG_XTSTYLE "XtStyle\0"
@@ -233,7 +235,6 @@ struct ImageInfo {
     AlphaType alphaType = AlphaType::IMAGE_ALPHA_TYPE_UNKNOWN;
     int32_t baseDensity = 0;
     std::string encodedFormat;
-    bool isProgressiveImage = false;
 };
 
 struct YUVDataInfo {
@@ -428,6 +429,7 @@ enum class AuxiliaryPictureType {
     UNREFOCUS_MAP = 3,
     LINEAR_MAP = 4,
     FRAGMENT_MAP = 5,
+    THUMBNAIL = 10,
 };
 
 struct AuxiliaryPictureInfo {
@@ -461,6 +463,13 @@ static const std::map<MetadataType, std::string> BLOB_METADATA_TAG_MAP = {
 struct DecodingOptionsForPicture {
     std::set<AuxiliaryPictureType> desireAuxiliaryPictures;
     std::set<MetadataType> desiredMetadatas;
+    PixelFormat desiredPixelFormat = PixelFormat::RGBA_8888;
+    AllocatorType allocatorType = AllocatorType::DMA_ALLOC;
+};
+
+struct DecodingOptionsForThumbnail {
+    Size desiredSize;
+    bool needGenerate = false;
     PixelFormat desiredPixelFormat = PixelFormat::RGBA_8888;
     AllocatorType allocatorType = AllocatorType::DMA_ALLOC;
 };
