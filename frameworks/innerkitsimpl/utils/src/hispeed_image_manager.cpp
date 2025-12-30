@@ -86,7 +86,6 @@ bool HispeedImageManager::LoadYuvJpegEncoderSym()
         reinterpret_cast<YuvJpegEncoderEncodeFunc>(dlsym(hispeedImageSoHandle_, "HSD_Image_JpegEncoderEncode"));
     jpegEncoderDestroyFunc_ =
         reinterpret_cast<YuvJpegEncoderDestroyFunc>(dlsym(hispeedImageSoHandle_, "HSD_Image_JpegEncoderDestroy"));
- 
     if (jpegEncoderCreateFunc_ == nullptr || jpegEncoderSetQualityFunc_ == nullptr ||
         jpegEncoderSetSubsamplingFunc_ == nullptr || jpegEncoderSetICCMetadataFunc_ == nullptr ||
         jpegEncoderEncodeFunc_ == nullptr || jpegEncoderDestroyFunc_ == nullptr) {
@@ -328,7 +327,7 @@ const int* HispeedImageManager::GetYuvCoeffFromDest(const DestConvertParam &dest
 {
 #if !defined(CROSS_PLATFORM)
     bool isFullRange = destParam.yuvConvertCSDetails.srcRange != 0; // 0: limit range, 1: full range
-    const int* yuvConstantGet = nullptr; 
+    const int* yuvConstantGet = nullptr;
     switch (destParam.yuvConvertCSDetails.srcYuvConversion) {
         case YuvConversion::BT601:
             yuvConstantGet = isFullRange ?
