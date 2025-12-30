@@ -58,6 +58,9 @@ static constexpr int32_t REQUIRED_GPS_COMPONENTS = 3;
 using JpegYuvDecodeError = OHOS::ImagePlugin::JpegYuvDecodeError;
 static Image_MimeType *IMAGE_SOURCE_SUPPORTED_FORMATS = nullptr;
 static size_t g_supportedFormatSize = 0;
+static const size_t MAX_DOUBLE_ARRAY_SIZE = 8 * 1024;
+static const size_t MAX_INT_ARRAY_SIZE = 16 * 1024;
+static const size_t MAX_EXIF_SIZE = 64 * 1024;
 struct OH_DecodingOptionsForThumbnail {
     struct Image_Size desiredSize;
     bool needGenerate = false;
@@ -1094,7 +1097,7 @@ Image_ErrorCode OH_ImageSourceNative_GetImagePropertyString(OH_ImageSourceNative
             return IMAGE_SOURCE_UNSUPPORTED_METADATA;
         }
     }
-    if (exifValue.stringValue.empty()) {
+    if (exifValue.stringValue.empty() || exifValue.stringValue.length() > MAX_EXIF_SIZE) {
         return IMAGE_SOURCE_UNSUPPORTED_METADATA;
     }
     if (size < exifValue.stringValue.length() + 1) {
@@ -1429,6 +1432,9 @@ Image_ErrorCode OH_ImageSourceNative_ModifyImagePropertyIntArray(OH_ImageSourceN
     if (keyString.empty()) {
         return IMAGE_SOURCE_INVALID_PARAMETER;
     }
+    if (size > MAX_INT_ARRAY_SIZE) {
+        return IMAGE_SOURCE_INVALID_PARAMETER;
+    }
     std::string valueString = IntArrayToString(std::vector<int32_t>(value, value + size));
     if (keyString == "GPSVersionID") {
         std::vector<int64_t> intArray(value, value + size);
@@ -1511,6 +1517,9 @@ Image_ErrorCode OH_ImageSourceNative_ModifyImagePropertyDoubleArray(OH_ImageSour
     if (keyString.empty()) {
         return IMAGE_SOURCE_INVALID_PARAMETER;
     }
+    if (size > MAX_DOUBLE_ARRAY_SIZE) {
+        return IMAGE_SOURCE_INVALID_PARAMETER;
+    }
     std::vector<double> doubleArray = std::vector<double>(value, value + size);
     std::string valueString = "";
     valueString = HandleDoubleArray(keyString, doubleArray);
@@ -1544,6 +1553,9 @@ Image_ErrorCode OH_ImageSourceNative_ModifyImagePropertyBlob(OH_ImageSourceNativ
     }
     std::string keyString(key->data, key->size);
     if (keyString.empty()) {
+        return IMAGE_SOURCE_INVALID_PARAMETER;
+    }
+    if (size > MAX_EXIF_SIZE) {
         return IMAGE_SOURCE_INVALID_PARAMETER;
     }
     uint8_t* byteData = static_cast<uint8_t*>(value);
