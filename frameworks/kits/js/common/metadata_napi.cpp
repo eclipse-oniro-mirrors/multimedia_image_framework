@@ -879,9 +879,10 @@ static void CloneExifMetadataComplete(napi_env env, napi_status status, void *da
     napi_open_handle_scope(env, &scope);
     
     napi_value result = nullptr;
-    bool success = context->rMetadata != nullptr &&
-                 (result = MetadataNapi::CreateExifMetadata(env, context->rMetadata)) != nullptr;
-    if (success) {
+    if (context->rMetadata != nullptr) {
+        result = MetadataNapi::CreateExifMetadata(env, context->rMetadata);
+    }
+    if (result != nullptr) {
         for (auto& [name, ref] : context->customProperties) {
             napi_value propValue;
             if (napi_get_reference_value(env, ref, &propValue) == napi_ok) {
@@ -892,7 +893,7 @@ static void CloneExifMetadataComplete(napi_env env, napi_status status, void *da
         context->customProperties.clear();
     }
     napi_deferred deferred = context->deferred;
-    if (success) {
+    if (result != nullptr) {
         napi_resolve_deferred(env, deferred, result);
     } else {
         napi_reject_deferred(env, deferred, CreateBusinessError(env,
