@@ -381,7 +381,7 @@ bool HispeedImageManager::P010ToARGB(const uint8_t* srcBuffer, const YUVDataInfo
         destParam.width,
         destParam.height,
         nullptr);
-    if (ret) {
+    if (ret != SUCCESS) {
         IMAGE_LOGE("hispeed image so yuv10ToRgb8888 failed");
         return false;
     }
@@ -412,7 +412,7 @@ bool HispeedImageManager::P010ToAR30(const uint8_t* srcBuffer, const YUVDataInfo
         destParam.width,
         destParam.height,
         yuvConstantGet);
-    if (ret) {
+    if (ret != SUCCESS) {
         IMAGE_LOGE("hispeed image so yuv10ToRgb10 failed");
         return false;
     }

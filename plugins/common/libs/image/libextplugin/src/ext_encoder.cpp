@@ -675,6 +675,7 @@ uint32_t ExtEncoder::DoEncode(SkWStream* skStream, const SkBitmap& src, const Sk
 
 bool ExtEncoder::HispeedEncode(SkWStream &skStream, Media::PixelMap *pixelMap, bool needExif, SkImageInfo info)
 {
+    CHECK_ERROR_RETURN_RET_LOG(pixelMap == nullptr, false, "pixelMap is nullptr");
     uint32_t retCode = ERR_IMAGE_ENCODE_FAILED;
     if (!needExif || pixelMap->GetExifMetadata() == nullptr || pixelMap->GetExifMetadata()->GetExifData() == nullptr) {
         retCode = HispeedImageManager::GetInstance().DoEncodeJpeg(&skStream, pixelmap_, opts_.quality, info);
