@@ -684,8 +684,7 @@ bool ExtEncoder::HispeedEncode(SkWStream &skStream, Media::PixelMap *pixelMap, b
     }
     MetadataWStream tStream;
     retCode = HispeedImageManager::GetInstance().DoEncodeJpeg(&tStream, pixelmap_, opts_.quality, info);
-    bool cond = retCode != SUCCESS;
-    CHECK_DEBUG_RETURN_RET_LOG(cond, false, "HispeedEncode failed, retCode:%{public}d", retCode);
+    CHECK_DEBUG_RETURN_RET_LOG(retCode != SUCCESS, false, "HispeedEncode failed, retCode:%{public}d", retCode);
     ImageInfo imageInfo;
     pixelMap->GetImageInfo(imageInfo);
     retCode = CreateAndWriteBlob(tStream, pixelMap, skStream, imageInfo, opts_);

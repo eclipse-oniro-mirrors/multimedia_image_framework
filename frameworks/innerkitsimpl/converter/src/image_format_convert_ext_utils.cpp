@@ -1120,7 +1120,7 @@ bool ImageFormatConvertExtUtils::NV12P010ToRGBA8888(const uint8_t *srcBuffer, co
 {
     bool bRet = HispeedImageManager::GetInstance().P010ToARGB(srcBuffer, yDInfo, destInfo);
     if (!bRet) {
-        IMAGE_LOGI("Hispeed NV12P010ToARGB convert failed");
+        IMAGE_LOGW("Hispeed NV12P010ToARGB convert failed");
         return P010ToI010ToI420ToRGB(srcBuffer, yDInfo, PixelFormat::YCBCR_P010, destInfo, colorSpace);
     }
     IMAGE_LOGD("Hispeed NV12P010ToARGB convert success");
@@ -1157,7 +1157,7 @@ bool ImageFormatConvertExtUtils::NV12P010ToRGBA1010102(const uint8_t *srcBuffer,
 {
     bool bRet = HispeedImageManager::GetInstance().P010ToAR30(srcBuffer, yDInfo, destInfo);
     if (!bRet) {
-        IMAGE_LOGI("Hispeed NV12P010ToAR30 convert failed");
+        IMAGE_LOGW("Hispeed NV12P010ToAR30 convert failed");
         return P010ToI010ToRGB10(srcBuffer, yDInfo, PixelFormat::YCBCR_P010, destInfo, colorSpace);
     }
     IMAGE_LOGD("Hispeed NV12P010ToAR30 convert success");
