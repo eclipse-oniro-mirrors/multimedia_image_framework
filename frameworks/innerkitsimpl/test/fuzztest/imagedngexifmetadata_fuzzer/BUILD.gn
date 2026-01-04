@@ -1,4 +1,4 @@
-# Copyright (c) 2025 Huawei Device Co., Ltd.
+# Copyright (c) 2026 Huawei Device Co., Ltd.
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -14,33 +14,38 @@
 import("//build/test.gni")
 import("//foundation/multimedia/image_framework/ide/image_decode_config.gni")
 
-ohos_fuzztest("ImageFwkImageSource3FuzzTest") {
+ohos_fuzztest("ImageDngExifMetadataFuzzTest") {
   module_out_path = "image_framework/image_framework"
-  fuzz_config_file = "$image_subsystem/frameworks/innerkitsimpl/test/fuzztest/imagefwkimagesource3_fuzzer"
-  resource_config_file = "$image_subsystem/test/resource/image/ohos_test.xml"
+  fuzz_config_file = "$image_subsystem/frameworks/innerkitsimpl/test/fuzztest/imagedngexifmetadata_fuzzer"
 
   include_dirs = [
     "./include",
     "$image_subsystem/frameworks/innerkitsimpl/utils/include",
     "$image_subsystem/frameworks/innerkitsimpl/test/fuzztest/common/include",
     "$image_subsystem/frameworks/innerkitsimpl/accessor/include/dng",
+    "$image_subsystem/interfaces/innerkits/include",
   ]
 
   sources = [
     "$image_subsystem/frameworks/innerkitsimpl/test/fuzztest/common/src/common_fuzztest_function.cpp",
+    "$image_subsystem/frameworks/innerkitsimpl/accessor/src/dng_exif_metadata_accessor.cpp",
     "${image_subsystem}/frameworks/innerkitsimpl/accessor/src/dng/dng_sdk_info.cpp",
-    "src/image_fwk_image_source3_fuzzer.cpp",
+    "$image_subsystem/frameworks/innerkitsimpl/accessor/src/dng/dng_sdk_helper.cpp",
+    "$image_subsystem/frameworks/innerkitsimpl/accessor/src/tiff_parser.cpp",
+    "src/image_dng_exif_metadata_fuzzer.cpp",
   ]
 
   deps = [
     "$image_subsystem/frameworks/innerkitsimpl/utils:image_utils",
     "$image_subsystem/interfaces/innerkits:image_native",
+    "$image_subsystem/frameworks/innerkitsimpl/accessor:image_accessor",
   ]
 
   external_deps = [
     "c_utils:utils",
     "graphic_2d:color_manager",
     "hilog:libhilog",
+    "ipc:ipc_single",
     "skia:dng_sdk",
   ]
 
@@ -48,4 +53,8 @@ ohos_fuzztest("ImageFwkImageSource3FuzzTest") {
     "-Dprotected=public",
     "-Dprivate=public",
   ]
+
+  if (enable_libexif) {
+    external_deps += [ "libexif:libexif" ]
+  }
 }
