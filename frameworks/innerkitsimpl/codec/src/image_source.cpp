@@ -39,6 +39,9 @@
 #include "image_trace.h"
 #include "image_data_statistics.h"
 #endif
+#if !defined(CROSS_PLATFORM)
+#include "dng/dng_exif_metadata.h"
+#endif
 #include "exif_metadata.h"
 #include "exif_metadata_formatter.h"
 #include "file_source_stream.h"
@@ -174,6 +177,8 @@ constexpr int32_t SHARE_MEMORY_ALLOC = 2;
 constexpr int32_t AUTO_ALLOC = 0;
 static constexpr uint8_t JPEG_SOI[] = { 0xFF, 0xD8, 0xFF };
 constexpr uint8_t PIXEL_BYTES = 4;
+static constexpr int32_t THUMBNAIL_SHORT_SIDE_SIZE = 350;
+static constexpr int32_t THUMBNAIL_LONG_SIDE_MULTIPLIER = 3;
 
 struct StreamInfo {
     uint8_t* buffer = nullptr;
@@ -340,6 +345,7 @@ const static std::map<std::string, uint32_t> ORIENTATION_INT_MAP = {
 const static string IMAGE_DELAY_TIME = "DelayTime";
 const static string IMAGE_DISPOSAL_TYPE = "DisposalType";
 const static string IMAGE_GIFLOOPCOUNT_TYPE = "GIFLoopCount";
+const static string IMAGE_HEIFS_DELAY_TIME = "HeifsDelayTime";
 const static int32_t ZERO = 0;
 
 PluginServer &ImageSource::pluginServer_ = ImageUtils::GetPluginServer();
@@ -1034,7 +1040,7 @@ unique_ptr<PixelMap> ImageSource::CreatePixelMapExtended(uint32_t index, const D
         context.pixelsBuffer.bufferSize, context.allocatorType);
     imageDataStatistics.SetRequestMemory(context.pixelsBuffer.bufferSize);
     if (errorCode != SUCCESS) {
-        HILOG_COMM_ERROR("[ImageSource]decode source fail, ret:%{public}u.", errorCode);
+        IMAGE_LOGE("[ImageSource]decode source fail, ret:%{public}u.", errorCode);
         imageEvent.SetDecodeErrorMsg("decode source fail, ret:" + std::to_string(errorCode));
         return nullptr;
     }
@@ -1469,6 +1475,9 @@ unique_ptr<PixelMap> ImageSource::CreatePixelMap(uint32_t index, const DecodeOpt
     if (isSupportICCProfile) {
         OHOS::ColorManager::ColorSpace grColorSpace = mainDecoder_->GetPixelMapColorSpace();
         pixelMap->InnerSetColorSpace(grColorSpace);
+    }
+    if (sourceInfo_.encodedFormat == "image/tiff" && opts_.desiredColorSpaceInfo != nullptr) {
+        pixelMap->ApplyColorSpace(*opts_.desiredColorSpaceInfo);
     }
 #endif
 
@@ -2108,6 +2117,16 @@ std::vector<MetadataValue> ImageSource::GetAllPropertiesWithType()
     std::vector<MetadataValue> result;
     CHECK_ERROR_RETURN_RET_LOG(!exifMetadata_ && isExifReadFailed_, result, "Exif metadata not initialized");
     CHECK_ERROR_RETURN_RET_LOG(CreatExifMetadataByImageSource() != SUCCESS, result, "Metadata creation failed");
+#if !defined(CROSS_PLATFORM)
+    if (IsDngImage()) {
+        std::shared_ptr<DngExifMetadata> dngMetadata = std::static_pointer_cast<DngExifMetadata>(exifMetadata_);
+        if (dngMetadata != nullptr) {
+            result = dngMetadata->GetAllDngProperties();
+            IMAGE_LOGD("Retrieved %{public}lu DNG metadata properties", static_cast<unsigned long>(result.size()));
+            return result;
+        }
+    }
+#endif
 
     auto processKeys = [&](const std::set<std::string>& keys) {
         for (const auto& key : keys) {
@@ -2219,6 +2238,26 @@ uint32_t ImageSource::GetImagePropertyByType(uint32_t index, const std::string &
         }
         return ret;
     }
+    if (IMAGE_HEIFS_DELAY_TIME.compare(key) == ZERO) {
+        IMAGE_LOGI("GetImagePropertyString special key: %{public}s", key.c_str());
+        (void)GetFrameCount(ret);
+        if (ret != SUCCESS || mainDecoder_ == nullptr) {
+            IMAGE_LOGE("[ImageSource]GetFrameCount get frame sum error.");
+            return ret;
+        } else {
+            int32_t delayTime = 0;
+            ret = mainDecoder_->GetImagePropertyInt(index, IMAGE_DELAY_TIME, delayTime);
+            IMAGE_LOGD("GetDelayTime value:%{public}d", delayTime);
+            value.intArrayValue.emplace_back(delayTime);
+            CHECK_ERROR_RETURN_RET_LOG(ret != SUCCESS, ret,
+                "[ImageSource]GetDelayTime get heifs delay time error. errorCode=%{public}u", ret);
+        }
+    }
+#if !defined(CROSS_PLATFORM)
+    if (IsDngImage()) {
+        return GetDngImagePropertyByDngSdk(key, value);
+    }
+#endif
 
     std::unique_lock<std::mutex> guard(decodingMutex_);
     std::unique_lock<std::mutex> guardFile(fileMutex_);
@@ -2856,7 +2895,7 @@ uint32_t ImageSource::DecodeImageInfo(uint32_t index, ImageStatusMap::iterator &
         status.imageInfo.encodedFormat = "none";
         auto errorResult = imageStatusMap_.insert(ImageStatusMap::value_type(index, status));
         iter = errorResult.first;
-        HILOG_COMM_ERROR("[ImageSource]decode the image info fail.");
+        IMAGE_LOGE("[ImageSource]decode the image info fail.");
         return ERR_IMAGE_DECODE_FAILED;
     }
 }
@@ -4745,7 +4784,7 @@ bool ImageSource::ComposeHdrImage(ImageHdrType hdrType, DecodeContext& baseCtx, 
     std::unique_ptr<VpeUtils> utils = std::make_unique<VpeUtils>();
     int32_t res = utils->ColorSpaceConverterComposeImage(buffers, hdrType == ImageHdrType::HDR_CUVA);
     if (res != VPE_ERROR_OK) {
-        HILOG_COMM_ERROR("[ImageSource] composeImage failed, res: %{public}d", res);
+        IMAGE_LOGE("[ImageSource] composeImage failed, res: %{public}d", res);
         FreeContextBuffer(hdrCtx.freeFunc, hdrCtx.allocatorType, hdrCtx.pixelsBuffer);
         return false;
     }
@@ -5456,6 +5495,11 @@ void ImageSource::DecodeHeifAuxiliaryPictures(
     mainInfo.hdrType = sourceHdrType_;
     picture->GetMainPixel()->GetImageInfo(mainInfo.imageInfo);
     for (auto& auxType : auxTypes) {
+        if (auxType == AuxiliaryPictureType::THUMBNAIL) {
+            IMAGE_LOGD("%{public}s: Set thumbnail for Picture", __func__);
+            SetThumbnailForPicture(picture, IMAGE_HEIF_FORMAT);
+            continue;
+        }
         if (!mainDecoder_->CheckAuxiliaryMap(auxType)) {
             IMAGE_LOGE("The auxiliary picture type does not exist! Type: %{public}d", auxType);
             continue;
@@ -5545,6 +5589,27 @@ bool ImageSource::CheckJpegSourceStream(StreamInfo &streamInfo)
     return true;
 }
 
+void ImageSource::SetThumbnailForPicture(std::unique_ptr<Picture> &picture, const std::string &mimeType)
+{
+    uint32_t auxErrorCode = ERROR;
+    CHECK_ERROR_RETURN_LOG(picture == nullptr || picture->GetMainPixel() == nullptr,
+        "%{public}s failed. picture or mainPixelMap is nullptr", __func__);
+
+    DecodingOptionsForThumbnail opts;
+    opts.desiredPixelFormat = picture->GetMainPixel()->GetPixelFormat();
+    opts.allocatorType = picture->GetMainPixel()->GetAllocatorType();
+    std::shared_ptr<PixelMap> pixelMap = CreateThumbnail(opts, auxErrorCode);
+    std::shared_ptr<AuxiliaryPicture> auxPicture = AuxiliaryPicture::Create(pixelMap, AuxiliaryPictureType::THUMBNAIL);
+    CHECK_ERROR_RETURN_LOG(auxPicture == nullptr || auxPicture->GetContentPixel() == nullptr,
+        "%{public}s failed. Create thumbnail auxiliary picture failed, errorCode: %{public}u", __func__, auxErrorCode);
+
+    AuxiliaryPictureInfo auxPictureInfo = auxPicture->GetAuxiliaryPictureInfo();
+    auxPictureInfo.jpegTagName = AUXILIARY_TAG_THUMBNAIL;
+    auxPicture->SetAuxiliaryPictureInfo(auxPictureInfo);
+    auxPicture->GetContentPixel()->SetEditable(true);
+    picture->SetAuxiliaryPicture(auxPicture);
+}
+
 void ImageSource::DecodeJpegAuxiliaryPicture(
     std::set<AuxiliaryPictureType> &auxTypes, std::unique_ptr<Picture> &picture, uint32_t &errorCode)
 {
@@ -5591,6 +5656,218 @@ void ImageSource::DecodeJpegAuxiliaryPicture(
             IMAGE_LOGE("Generate jpeg auxiliary picture failed!, error: %{public}d", auxErrorCode);
         }
     }
+    SetThumbnailForPicture(picture, IMAGE_JPEG_FORMAT);
+}
+
+static uint32_t SetThumbnailDecodeOptions(std::unique_ptr<AbsImageDecoder> &thumbDecoder,
+    const DecodingOptionsForThumbnail &opts, PlImageInfo &plInfo)
+{
+    CHECK_ERROR_RETURN_RET_LOG(thumbDecoder == nullptr, ERR_IMAGE_INVALID_PARAMETER,
+        "%{public}s: thumbDecoder is nullptr!", __func__);
+
+    if (opts.desiredSize.width < 0 || opts.desiredSize.height < 0) {
+        IMAGE_LOGE("%{public}s: invalid opts.desiredSize: (%{public}d,%{public}d)",
+            __func__, opts.desiredSize.width, opts.desiredSize.height);
+        return ERR_IMAGE_INVALID_PARAMETER;
+    }
+    Size imageSize{};
+    uint32_t errorCode = thumbDecoder->GetImageSize(FIRST_FRAME, imageSize);
+    CHECK_ERROR_RETURN_RET_LOG(errorCode != SUCCESS || !IsSizeVailed(imageSize), errorCode,
+        "%{public}s: Get image size failed!", __func__);
+
+    PixelDecodeOptions plOptions;
+    plOptions.desiredSize = imageSize;
+    plOptions.desiredPixelFormat = opts.desiredPixelFormat;
+    errorCode = thumbDecoder->SetDecodeOptions(FIRST_FRAME, plOptions, plInfo);
+    CHECK_ERROR_RETURN_RET_LOG(errorCode != SUCCESS, errorCode, "%{public}s: Set decode options failed!", __func__);
+    return SUCCESS;
+}
+
+static Size CalculateDefaultScaleSize(Size &size)
+{
+    const int32_t shortSideSize = THUMBNAIL_SHORT_SIDE_SIZE;
+    const int32_t longSideMultiplier = THUMBNAIL_LONG_SIDE_MULTIPLIER;
+    bool cond = ImageUtils::CheckFloatMulOverflow(shortSideSize, longSideMultiplier);
+    CHECK_ERROR_RETURN_RET_LOG(cond, {}, "%{public}s: shortSideSize * longSideMultiplier overflow!", __func__);
+
+    float longSideBoundary = static_cast<float>(shortSideSize) * longSideMultiplier;
+    float scaleFactor = 1.0f;
+    if (size.width < size.height) {
+        scaleFactor = static_cast<float>(shortSideSize) / size.width;
+        cond = ImageUtils::CheckFloatMulOverflow(size.height, scaleFactor);
+        CHECK_ERROR_RETURN_RET_LOG(cond, {}, "%{public}s: height * scaleFactor overflow!", __func__);
+
+        size.width = shortSideSize;
+        size.height = static_cast<int32_t>(std::round(
+            (size.height * scaleFactor > longSideBoundary) ? longSideBoundary : size.height * scaleFactor));
+    } else {
+        scaleFactor = static_cast<float>(shortSideSize) / size.height;
+        cond = ImageUtils::CheckFloatMulOverflow(size.width, scaleFactor);
+        CHECK_ERROR_RETURN_RET_LOG(cond, {}, "%{public}s: width * scaleFactor overflow!", __func__);
+
+        size.width = static_cast<int32_t>(std::round(
+            (size.width * scaleFactor > longSideBoundary) ? longSideBoundary : size.width * scaleFactor));
+        size.height = shortSideSize;
+    }
+    return size;
+}
+
+static void ScaleThumbnail(std::unique_ptr<PixelMap> &pixelMap, const Size &desiredSize, bool useDefaultScale = false)
+{
+    bool cond = (pixelMap == nullptr);
+    CHECK_ERROR_RETURN_LOG(cond, "%{public}s: pixelMap is nullptr!", __func__);
+
+    ImageInfo imageInfo;
+    pixelMap->GetImageInfo(imageInfo);
+    Size &scaledSize = imageInfo.size;
+    cond = !IsSizeVailed(scaledSize);
+    CHECK_ERROR_RETURN_LOG(cond, "%{public}s: pixelMap size is invalid, size: (%{public}d,%{public}d)",
+        __func__, scaledSize.width, scaledSize.height);
+
+    if (IsSizeVailed(desiredSize)) {
+        IMAGE_LOGD("%{public}s: use desiredSize", __func__);
+        scaledSize = desiredSize;
+    } else if (useDefaultScale) {
+        IMAGE_LOGD("%{public}s: use default scale", __func__);
+        scaledSize = CalculateDefaultScaleSize(scaledSize);
+    }
+    cond = !IsSizeVailed(scaledSize);
+    CHECK_ERROR_RETURN_LOG(cond, "%{public}s: scaledSize is invalid: (%{public}d,%{public}d)",
+        __func__, scaledSize.width, scaledSize.height);
+
+    PostProc postProc;
+    cond = !postProc.ScalePixelMapWithGPU(*(pixelMap.get()), scaledSize, AntiAliasingOption::HIGH, true);
+    CHECK_ERROR_RETURN_LOG(cond, "Fail to scale thumbnail, ScalePixelMapWithGPU failed,"
+        "scaledSize: %{public}d * %{public}d", scaledSize.width, scaledSize.height);
+
+    cond = !postProc.CenterScale(scaledSize, *(pixelMap.get()));
+    CHECK_ERROR_RETURN_LOG(cond, "Fail to scale thumbnail, CenterScale failed");
+
+    pixelMap->GetImageInfo(imageInfo);
+    IMAGE_LOGD("%{public}s: desiredSize: (%{public}d,%{public}d), scaledSize:(%{public}d,%{public}d)",
+        __func__, desiredSize.width, desiredSize.height, scaledSize.width, scaledSize.height);
+}
+
+std::unique_ptr<PixelMap> ImageSource::DecodeHeifParserThumbnail(const DecodingOptionsForThumbnail &opts,
+    DecodeContext &context, const std::string &format, uint32_t &errorCode)
+{
+    if (mainDecoder_ == nullptr) {
+        IMAGE_LOGE("%{public}s: mainDecoder_ is nullptr!", __func__);
+        errorCode = ERR_IMAGE_INVALID_PARAMETER;
+        return nullptr;
+    }
+    CHECK_ERROR_RETURN_RET_LOG(!mainDecoder_->CheckAuxiliaryMap(AuxiliaryPictureType::THUMBNAIL), nullptr,
+        "%{public}s: heifParser does not have thumbnail Images", __func__);
+
+    errorCode = SetThumbnailDecodeOptions(mainDecoder_, opts, context.info);
+    CHECK_ERROR_RETURN_RET_LOG(errorCode != SUCCESS, nullptr,
+        "%{public}s: SetThumbnailDecodeOptions failed!, errorCode: %{public}u", __func__, errorCode);
+
+    if (!mainDecoder_->DecodeHeifAuxiliaryMap(context, AuxiliaryPictureType::THUMBNAIL)) {
+        errorCode = ERR_IMAGE_DECODE_FAILED;
+        IMAGE_LOGE("%{public}s: SetDecodeOptions failed!", __func__);
+        return nullptr;
+    }
+
+    std::unique_ptr<PixelMap> pixelMap =
+        AuxiliaryGenerator::CreatePixelMapByContext(context, mainDecoder_, format, errorCode);
+    ScaleThumbnail(pixelMap, opts.desiredSize);
+    return pixelMap;
+}
+
+std::unique_ptr<PixelMap> ImageSource::GenerateThumbnail(const DecodingOptionsForThumbnail &opts, uint32_t &errorCode)
+{
+    DecodeOptions dOpts;
+    dOpts.desiredDynamicRange = DecodeDynamicRange::SDR;
+    dOpts.desiredPixelFormat = opts.desiredPixelFormat;
+    dOpts.allocatorType = opts.allocatorType;
+    std::unique_ptr<PixelMap> pixelMap = CreatePixelMap(dOpts, errorCode);
+    if (errorCode != SUCCESS || pixelMap == nullptr) {
+        IMAGE_LOGE("%{public}s: CreatePixelMap failed!", __func__);
+        errorCode = ERR_GENERATE_THUMBNAIL_FAILED;
+        return nullptr;
+    }
+
+    ScaleThumbnail(pixelMap, opts.desiredSize, true);
+    IMAGE_LOGI("%{public}s: desiredSize: (%{public}d, %{public}d), after scale size: (%{public}d, %{public}d)",
+        __func__, opts.desiredSize.width, opts.desiredSize.height, pixelMap->GetWidth(), pixelMap->GetHeight());
+    return pixelMap;
+}
+
+std::unique_ptr<PixelMap> ImageSource::DecodeExifThumbnail(const DecodingOptionsForThumbnail &opts,
+    DecodeContext &context, const std::string &format, uint32_t &errorCode)
+{
+    uint8_t *data = nullptr;
+    uint32_t dataSize = 0;
+    errorCode = CreatExifMetadataByImageSource();
+    if (errorCode != SUCCESS || exifMetadata_ == nullptr || !exifMetadata_->GetThumbnail(data, dataSize)) {
+        IMAGE_LOGW("%{public}s: Exif or exif-thumbnail does not exist!", __func__);
+        errorCode = ERR_NOT_CARRY_THUMBNAIL;
+        return nullptr;
+    }
+
+    std::unique_ptr<InputDataStream> thumbStream = BufferSourceStream::CreateSourceStream(data, dataSize);
+    CHECK_ERROR_RETURN_RET_LOG(thumbStream == nullptr, nullptr,
+        "Create thumbnail stream fail, thumbnail dataSize is %{public}u", dataSize);
+
+    auto thumbDecoder = std::unique_ptr<AbsImageDecoder>(
+        DoCreateDecoder(InnerFormat::IMAGE_EXTENDED_CODEC, pluginServer_, *thumbStream, errorCode));
+    CHECK_ERROR_RETURN_RET_LOG(errorCode != SUCCESS || thumbDecoder == nullptr, nullptr,
+        "Create thumbnail decoder fail!");
+
+    errorCode = SetThumbnailDecodeOptions(thumbDecoder, opts, context.info);
+    CHECK_ERROR_RETURN_RET_LOG(errorCode != SUCCESS, nullptr,
+        "%{public}s: SetThumbnailDecodeOptions failed!, errorCode: %{public}u", __func__, errorCode);
+
+    ImageTrace imageTrace("%{public}s: size:(%d, %d)", __func__, context.info.size.width, context.info.size.height);
+    errorCode = thumbDecoder->Decode(FIRST_FRAME, context);
+    if (errorCode != SUCCESS) {
+        IMAGE_LOGE("Decode thumbnail failed!");
+        FreeContextBuffer(context.freeFunc, context.allocatorType, context.pixelsBuffer);
+        return nullptr;
+    }
+
+    std::unique_ptr<PixelMap> pixelMap =
+        AuxiliaryGenerator::CreatePixelMapByContext(context, thumbDecoder, format, errorCode);
+    ScaleThumbnail(pixelMap, opts.desiredSize);
+    return pixelMap;
+}
+
+std::unique_ptr<PixelMap> ImageSource::CreateThumbnail(const DecodingOptionsForThumbnail &opts, uint32_t &errorCode)
+{
+    if (!ParseHdrType()) {
+        IMAGE_LOGE("%{public}s: Init mainDecoder_ failed!", __func__);
+        errorCode = ERR_IMAGE_PLUGIN_CREATE_FAILED;
+        return nullptr;
+    }
+
+    std::string format = GetExtendedCodecMimeType(mainDecoder_.get());
+    if (!(format == IMAGE_JPEG_FORMAT || format == IMAGE_HEIF_FORMAT || format == IMAGE_HEIC_FORMAT)) {
+        IMAGE_LOGE("%{public}s: unsupported format: %{public}s", __func__, format.c_str());
+        errorCode = ERR_IMAGE_MISMATCHED_FORMAT;
+        return nullptr;
+    }
+
+    DecodeContext context;
+    context.allocatorType = opts.allocatorType;
+    std::unique_ptr<PixelMap> pixelMap = nullptr;
+    if (format == IMAGE_HEIF_FORMAT || format == IMAGE_HEIC_FORMAT) {
+        pixelMap = DecodeHeifParserThumbnail(opts, context, format, errorCode);
+        if (errorCode == SUCCESS && pixelMap != nullptr) {
+            IMAGE_LOGD("%{public}s: DecodeHeifParserThumbnail success", __func__);
+            return pixelMap;
+        }
+        CHECK_ERROR_RETURN_RET_LOG(errorCode == ERR_IMAGE_INVALID_PARAMETER, nullptr,
+            "%{public}s: DecodeHeifParserThumbnail failed with parameter invaild", __func__);
+        IMAGE_LOGI("%{public}s: DecodeHeifParserThumbnail failed, get thumbnail with other method", __func__);
+    }
+
+    pixelMap = DecodeExifThumbnail(opts, context, format, errorCode);
+    if (opts.needGenerate && (errorCode != SUCCESS || pixelMap == nullptr)) {
+        IMAGE_LOGW("%{public}s: DecodeExifThumbnail failed, generate thumbnail by primary image", __func__);
+        return GenerateThumbnail(opts, errorCode);
+    }
+    return pixelMap;
 }
 
 void ImageSource::DecodeBlobMetaData(std::unique_ptr<Picture> &picture, const std::set<MetadataType> &metadataTypes,
@@ -6034,6 +6311,59 @@ std::shared_ptr<ImageMetadata> ImageSource::GetMetadata(MetadataType type)
     }
     return nullptr;
 }
+
+bool ImageSource::IsDngImage()
+{
+    ImageInfo info;
+    uint32_t ret = GetImageInfo(info);
+    bool cond = (ret != SUCCESS);
+    CHECK_ERROR_RETURN_RET_LOG(cond, false, "IsDngImage GetImageInfo failed");
+    IMAGE_LOGD("IsDngImage info.encodedFormat: %{public}s", info.encodedFormat.c_str());
+    return info.encodedFormat == DNG_FORMAT;
+}
+
+static void ClearMetadataValue(MetadataValue &value)
+{
+    value.key.clear();
+    value.type = PropertyValueType::UNKNOWN;
+    value.stringValue.clear();
+    value.intArrayValue.clear();
+    value.doubleArrayValue.clear();
+    value.bufferValue.clear();
+}
+
+uint32_t ImageSource::GetDngImagePropertyByDngSdk(const std::string &key, MetadataValue &value)
+{
+    ClearMetadataValue(value);
+    std::shared_ptr<ExifMetadata> exifMetadata = GetExifMetadata();
+    CHECK_ERROR_RETURN_RET_LOG(exifMetadata == nullptr, ERR_IMAGE_DATA_ABNORMAL, "exifMetadata is nullptr");
+
+    std::shared_ptr<DngExifMetadata> dngMetadata = std::static_pointer_cast<DngExifMetadata>(exifMetadata);
+    CHECK_ERROR_RETURN_RET_LOG(dngMetadata == nullptr, ERR_IMAGE_DATA_ABNORMAL,
+        "[%{public}s] Failed to cast to DngExifMetadata", __func__);
+
+    value.key = key;
+    return dngMetadata->GetExifProperty(value);
+}
 #endif
+
+bool ImageSource::IsJpegProgressive(uint32_t &errorCode)
+{
+    auto iter = GetValidImageStatus(0, errorCode);
+    if (iter == imageStatusMap_.end()) {
+        IMAGE_LOGE("[ImageSource] IsJpegProgressive, get valid image status fail, ret:%{public}u.", errorCode);
+        if (errorCode != ERR_IMAGE_UNKNOWN_FORMAT) {
+            errorCode = ERR_IMAGE_SOURCE_DATA;
+        }
+        return false;
+    }
+
+    if (InitMainDecoder() != SUCCESS) {
+        IMAGE_LOGE("[ImageSource] IsJpegProgressive, get decoder failed");
+        errorCode = ERR_IMAGE_SOURCE_DATA;
+        return false;
+    }
+    return mainDecoder_->IsProgressiveJpeg();
+}
 } // namespace Media
 } // namespace OHOS

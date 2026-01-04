@@ -115,6 +115,7 @@ struct ImageSourceAsyncContext {
     std::unique_ptr<std::vector<int32_t>> delayTimes;
     std::unique_ptr<std::vector<int32_t>> disposalType;
     uint32_t frameCount = 0;
+    bool isProgressiveJpeg = false;
     struct RawFileDescriptorInfo rawFileInfo;
 #if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
     DecodingOptionsForPicture decodingOptsForPicture;
@@ -125,6 +126,8 @@ struct ImageSourceAsyncContext {
     void* buffer = nullptr;
     size_t bufferSize = 0;
     std::shared_ptr<ExifMetadata> rExifMetadata;
+    std::shared_ptr<HeifsMetadata> rImageHeifsMetadata;
+    DecodingOptionsForThumbnail decodingOptsForThumbnail;
 };
 
 struct ImageSourceSyncContext {
@@ -135,6 +138,7 @@ struct ImageSourceSyncContext {
     std::shared_ptr<PixelMap> rPixelMap;
     std::string errMsg;
     std::multimap<std::int32_t, std::string> errMsgArray;
+    DecodingOptionsForThumbnail decodingOptsForThumbnail;
 };
 
 struct ImageEnum {
@@ -1318,10 +1322,13 @@ std::vector<napi_property_descriptor> ImageSourceNapi::RegisterNapi()
         DECLARE_NAPI_FUNCTION("createWideGamutSdrPixelMap", CreateWideGamutSdrPixelMap),
         DECLARE_NAPI_FUNCTION("updateData", UpdateData),
         DECLARE_NAPI_FUNCTION("release", Release),
+        DECLARE_NAPI_FUNCTION("isJpegProgressive", IsJpegProgressive),
         DECLARE_NAPI_GETTER("supportedFormats", GetSupportedFormats),
 #if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
         DECLARE_NAPI_FUNCTION("createPicture", CreatePicture),
         DECLARE_NAPI_FUNCTION("createPictureAtIndex", CreatePictureAtIndex),
+        DECLARE_NAPI_FUNCTION("createThumbnail", CreateThumbnail),
+        DECLARE_NAPI_FUNCTION("createThumbnailSync", CreateThumbnailSync),
 #endif
     };
 
@@ -1584,7 +1591,7 @@ static bool IsSupportPixelFormat(int32_t val)
     return false;
 }
 
-static PixelFormat ParsePixlForamt(int32_t val)
+static PixelFormat ParsePixelFormat(int32_t val)
 {
     if (IsAstc(val)) {
         return PixelFormat(val);
@@ -1652,9 +1659,9 @@ static bool ParsePixelFormat(napi_env env, napi_value root, const char* name,
     } else {
         if (IsSupportPixelFormat(tmpNumber)) {
             if (strcmp(name, "desiredPixelFormat") == 0) {
-                opts->desiredPixelFormat = ParsePixlForamt(tmpNumber);
+                opts->desiredPixelFormat = ParsePixelFormat(tmpNumber);
             } else if (strcmp(name, "photoDesiredPixelFormat") == 0) {
-                opts->photoDesiredPixelFormat = ParsePixlForamt(tmpNumber);
+                opts->photoDesiredPixelFormat = ParsePixelFormat(tmpNumber);
             }
         } else {
             IMAGE_LOGD("Invalid %{public}s %{public}d", name, tmpNumber);
@@ -1774,6 +1781,39 @@ static bool ParseDecodeOptions(napi_env env, napi_value root, DecodeOptions* opt
         }
     }
     return ParseDecodeOptions2(env, root, opts, error);
+}
+
+static bool IsSizeInvalid(const Size &size)
+{
+    return size.width < 0 || size.height < 0;
+}
+
+static bool ParseDecodeOptionsForThumbnail(napi_env env, napi_value root, DecodingOptionsForThumbnail *opts,
+    std::string &error)
+{
+    napi_value tmpValue = nullptr;
+
+    if (opts == nullptr) {
+        IMAGE_LOGE("opts is nullptr");
+        return false;
+    }
+
+    if (!GET_NODE_BY_NAME(root, "desiredSize", tmpValue)) {
+        IMAGE_LOGD("no desiredSize");
+    } else {
+        if (!ParseSize(env, tmpValue, &(opts->desiredSize))) {
+            IMAGE_LOGD("ParseSize error");
+        }
+        if (IsSizeInvalid(opts->desiredSize)) {
+            IMAGE_LOGE("%{public}s: desiredSize is invalid, size: (%{public}d, %{public}d)",
+                __func__, opts->desiredSize.width, opts->desiredSize.height);
+            return false;
+        }
+    }
+    if (!GET_BOOL_BY_NAME(root, "needGenerate", opts->needGenerate)) {
+        IMAGE_LOGD("no needGenerate");
+    }
+    return true;
 }
 
 static std::string FileUrlToRawPath(const std::string &path)
@@ -2292,7 +2332,7 @@ static napi_value CreatePixelMapCompleteSync(napi_env env, napi_status status, I
     return result;
 }
 
-static napi_value CreatePixelMapAllocatorTypeCompleteSync(napi_env env, napi_status status,
+static napi_value CreatePixelMapThrowErrorCompleteSync(napi_env env, napi_status status,
     ImageSourceSyncContext *context)
 {
     napi_value result = nullptr;
@@ -2577,7 +2617,7 @@ napi_value ImageSourceNapi::CreatePixelMapUsingAllocatorSync(napi_env env, napi_
         std::string apiErrorMsg = GetErrorCodeMsg(apiErrorCode);
         syncContext->errMsgArray.emplace(apiErrorCode, apiErrorMsg);
     }
-    result = CreatePixelMapAllocatorTypeCompleteSync(env, status,
+    result = CreatePixelMapThrowErrorCompleteSync(env, status,
         static_cast<ImageSourceSyncContext*>((syncContext).get()));
 
     IMG_NAPI_CHECK_RET_D(IMG_IS_OK(status), nullptr, IMAGE_LOGE("Fail to create PixelMap."));
@@ -2874,6 +2914,9 @@ NapiMetadataType GetMetadataTypeByKey(const std::string& key)
         for (const auto& pair : ExifMetadata::GetHwMetadataMap()) {
             mapping[pair.first] = NapiMetadataType::HWMAKERNOTE_METADATA;
         }
+        for (const auto& pair : ExifMetadata::GetHeifsMetadataMap()) {
+            mapping[pair.first] = NapiMetadataType::HEIFS_METADATA;
+        }
         return mapping;
     }();
     auto it = KEY_TYPE_MAP.find(key);
@@ -2920,16 +2963,25 @@ static void HandleSuccessResult(napi_env env, ImageSourceAsyncContext *context, 
     NAPI_CALL_RETURN_VOID(env, napi_create_object(env, &resultObj));
     napi_value exifMetadata = MetadataNapi::CreateExifMetadata(env, context->rExifMetadata);
     napi_value makerNoteMetadata = MetadataNapi::CreateExifMetadata(env, context->rExifMetadata);
+    napi_value heifsMetadata = MetadataNapi::CreateHeifsMetadata(env, context->rImageHeifsMetadata);
     bool hasExif = false;
     bool hasMakerNote = false;
-    for (auto &exifMetadataValue: context->kValueTypeArray) {
-        auto type = GetMetadataTypeByKey(exifMetadataValue.key);
+    bool hasHeifsMetadata = false;
+    for (auto &metadataValue: context->kValueTypeArray) {
+        auto type = GetMetadataTypeByKey(metadataValue.key);
         if (type == NapiMetadataType::EXIF_METADATA) {
             CreatePropertyResult(env, context, exifMetadata, type);
             hasExif = true;
         } else if (type == NapiMetadataType::HWMAKERNOTE_METADATA) {
             CreatePropertyResult(env, context, makerNoteMetadata, type);
             hasMakerNote = true;
+        } else if (type == NapiMetadataType::HEIFS_METADATA) {
+            if (!metadataValue.intArrayValue.empty()) {
+                context->rImageHeifsMetadata->SetValue(metadataValue.key,
+                    std::to_string(metadataValue.intArrayValue[0]));
+            }
+            CreatePropertyResult(env, context, heifsMetadata, type);
+            hasHeifsMetadata = true;
         }
     }
     if (hasExif) {
@@ -2939,6 +2991,10 @@ static void HandleSuccessResult(napi_env env, ImageSourceAsyncContext *context, 
     if (hasMakerNote) {
         NAPI_CALL_RETURN_VOID(env,
             napi_set_named_property(env, resultObj, "makerNoteHuaweiMetadata", makerNoteMetadata));
+    }
+    if (hasHeifsMetadata) {
+        NAPI_CALL_RETURN_VOID(env,
+            napi_set_named_property(env, resultObj, "heifsMetadata", heifsMetadata));
     }
     result[NUM_1] = resultObj;
 #endif
@@ -3029,8 +3085,8 @@ static std::unique_ptr<ImageSourceAsyncContext> UnwrapContextForReadImageMetadat
 {
     napi_status status;
     napi_value thisVar = nullptr;
-    napi_value argValue[NUM_1] = {0};
-    size_t argCount = NUM_1;
+    napi_value argValue[NUM_2] = {0};
+    size_t argCount = NUM_2;
     IMG_JS_ARGS(env, info, status, argCount, argValue, thisVar);
     IMAGE_LOGD("ReadImageMetadata argCount is [%{public}zu]", argCount);
 
@@ -3049,6 +3105,14 @@ static std::unique_ptr<ImageSourceAsyncContext> UnwrapContextForReadImageMetadat
 
     if (ImageNapiUtils::getType(env, argValue[NUM_0]) == napi_object) {
         context->keyStrArray = GetStringArrayArgument(env, argValue[NUM_0]);
+    }
+    if (argCount > NUM_1 && ImageNapiUtils::getType(env, argValue[NUM_1]) == napi_number) {
+        int index = 0;
+        napi_status status = napi_get_value_int32(env, argValue[NUM_1], &index);
+        IMG_NAPI_CHECK_RET_D(IMG_IS_OK(status), context, IMAGE_LOGE("Fail to get readImageMetadata index argument"));
+        IMG_NAPI_CHECK_RET_D(index >= 0, context, IMAGE_LOGE("Invalid readImageMetadata index"));
+        context->index = static_cast<uint32_t>(index);
+        IMAGE_LOGD("index is %{public}d", index);
     }
     return context;
 }
@@ -3138,6 +3202,16 @@ static void GetImagePropertiesExecute(napi_env env, void *data)
     IMAGE_LOGD("[ImageSourceNapi]GetImagePropertiesExecute OUT.");
 }
 
+static std::shared_ptr<HeifsMetadata> CreateNullHeifsMetadata()
+{
+    std::shared_ptr<HeifsMetadata> metadata = std::make_shared<HeifsMetadata>();
+    if (!metadata) {
+        IMAGE_LOGE("Construct HeifsMetadata failed");
+        return nullptr;
+    }
+    return metadata;
+}
+
 static void ReadImageMetadataExecute(napi_env env, void *data)
 {
     auto context = static_cast<ImageSourceAsyncContext*>(data);
@@ -3146,6 +3220,7 @@ static void ReadImageMetadataExecute(napi_env env, void *data)
         return;
     }
     context->rExifMetadata = context->rImageSource->GetExifMetadata();
+    context->rImageHeifsMetadata = CreateNullHeifsMetadata();
     if (context->keyStrArray.empty()) {
         const std::vector<MetadataValue> allProperties = context->rImageSource->GetAllPropertiesWithType();
         for (const auto& property : allProperties) {
@@ -3160,7 +3235,7 @@ static void ReadImageMetadataExecute(napi_env env, void *data)
         uint32_t status = SUCCESS;
         for (auto keyStrIt = context->keyStrArray.begin(); keyStrIt != context->keyStrArray.end(); ++keyStrIt) {
             MetadataValue value;
-            status = context->rImageSource->GetImagePropertyByType(0, *keyStrIt, value);
+            status = context->rImageSource->GetImagePropertyByType(context->index, *keyStrIt, value);
             value.key = *keyStrIt;
             value.type = ExifMetadata::GetPropertyValueType(value.key);
             context->kValueTypeArray.emplace_back(value);
@@ -4205,6 +4280,82 @@ napi_value ImageSourceNapi::CreateImageSourceNapi(napi_env env, std::shared_ptr<
     return result;
 }
 
+STATIC_EXEC_FUNC(IsJpegProgressive)
+{
+    if (data == nullptr) {
+        IMAGE_LOGE("data is nullptr");
+        return;
+    }
+
+    auto context = CheckAsyncContext(static_cast<ImageSourceAsyncContext*>(data), true);
+    if (context == nullptr || context->rImageSource == nullptr) {
+        IMAGE_LOGE("check async context fail");
+        return;
+    }
+
+    context->isProgressiveJpeg = context->rImageSource->IsJpegProgressive(context->status);
+    if (context->status != SUCCESS) {
+        Image_ErrorCode apiErrorCode = ConvertToErrorCode(context->status);
+        std::string apiErrorMsg = GetErrorCodeMsg(apiErrorCode);
+        context->errMsgArray.emplace(apiErrorCode, apiErrorMsg);
+        IMAGE_LOGD("IsJpegProgressive error");
+    }
+}
+
+STATIC_COMPLETE_FUNC(IsJpegProgressive)
+{
+    if (data == nullptr) {
+        IMAGE_LOGE("data is nullptr");
+        return;
+    }
+
+    auto context = CheckAsyncContext(static_cast<ImageSourceAsyncContext*>(data), false);
+    if (context == nullptr) {
+        IMAGE_LOGE("check async context fail");
+        return;
+    }
+
+    napi_value result = nullptr;
+    if (context->status == SUCCESS) {
+        IMAGE_LOGD("IsJpegProgressiveComplete");
+        napi_get_boolean(env, context->isProgressiveJpeg, &result);
+    } else {
+        napi_get_undefined(env, &result);
+    }
+    context->isProgressiveJpeg = false;
+    ImageSourceCallbackRoutine(env, context, result);
+}
+
+napi_value ImageSourceNapi::IsJpegProgressive(napi_env env, napi_callback_info info)
+{
+    ImageTrace imageTrace("ImageSourceNapi::IsJpegProgressive");
+    IMAGE_LOGD("[ImageSourceNapi]IsJpegProgressive IN");
+    napi_value result = nullptr;
+    napi_get_undefined(env, &result);
+
+    napi_status status;
+    auto asyncContext = UnwrapContextForList(env, info);
+    if (asyncContext == nullptr) {
+        return ImageNapiUtils::ThrowExceptionError(env, IMAGE_BAD_SOURCE, "async context unwrap failed");
+    }
+    if (asyncContext->callbackRef == nullptr) {
+        napi_create_promise(env, &(asyncContext->deferred), &result);
+    } else {
+        napi_get_undefined(env, &result);
+    }
+    if (!ImageNapiUtils::IsSystemApp()) {
+        IMAGE_LOGE("This interface can be called only by system apps");
+        return ImageNapiUtils::ThrowExceptionError(env, IMAGE_BAD_SOURCE,
+            "This interface can be called only by system apps");
+    }
+
+    IMG_CREATE_CREATE_ASYNC_WORK(env, status, "IsJpegProgressive", IsJpegProgressiveExec,
+        IsJpegProgressiveComplete, asyncContext, asyncContext->work);
+    IMG_NAPI_CHECK_RET_D(IMG_IS_OK(status), nullptr, IMAGE_LOGE("fail to create async work"));
+    IMAGE_LOGD("[ImageSourceNapi]IsJpegProgressive OUT");
+    return result;
+}
+
 extern "C" {
 napi_value GetImageSourceNapi(napi_env env, std::shared_ptr<ImageSource> imageSource)
 {
@@ -4407,7 +4558,7 @@ static bool ParseDecodingOptionsForPicture(napi_env env, napi_value root, Decodi
             IMAGE_LOGE("get type from element failed");
             return false;
         }
-        if (type <= static_cast<uint32_t>(AuxiliaryPictureType::FRAGMENT_MAP)) {
+        if (ImageNapiUtils::GetNapiSupportedAuxiliaryPictureType().count(static_cast<AuxiliaryPictureType>(type))) {
             opts->desireAuxiliaryPictures.insert(AuxiliaryPictureType(type));
             IMAGE_LOGD("desireAuxiliaryPictures[%{public}d]: %{public}d", i, type);
         } else {
@@ -4443,10 +4594,10 @@ napi_value ImageSourceNapi::CreatePicture(napi_env env, napi_callback_info info)
         nullptr, IMAGE_LOGE("empty native rImageSource"));
 
     if (argCount == NUM_0) {
-        for (int32_t type = static_cast<int32_t>(AuxiliaryPictureType::GAINMAP);
-            type <= static_cast<int32_t>(AuxiliaryPictureType::FRAGMENT_MAP); type++) {
-                asyncContext->decodingOptsForPicture.desireAuxiliaryPictures.insert(AuxiliaryPictureType(type));
-        }
+        asyncContext->decodingOptsForPicture.desireAuxiliaryPictures = {
+            ImageNapiUtils::GetNapiSupportedAuxiliaryPictureType().begin(),
+            ImageNapiUtils::GetNapiSupportedAuxiliaryPictureType().end()
+        };
     } else if (argCount == NUM_1) {
         if (!ParseDecodingOptionsForPicture(env, argValue[NUM_0], &(asyncContext->decodingOptsForPicture))) {
             return ImageNapiUtils::ThrowExceptionError(env, IMAGE_BAD_PARAMETER,
@@ -4462,6 +4613,113 @@ napi_value ImageSourceNapi::CreatePicture(napi_env env, napi_callback_info info)
 
     IMG_NAPI_CHECK_RET_D(IMG_IS_OK(status),
         nullptr, IMAGE_LOGE("fail to create async work"));
+    return result;
+}
+
+static void CreateThumbnailExecute(napi_env env, void *data)
+{
+    IMAGE_LOGD("[ImageSourceNapi]CreateThumbnailExecute IN");
+    if (data == nullptr) {
+        IMAGE_LOGE("%{public}s data is nullptr", __func__);
+        return;
+    }
+    auto context = static_cast<ImageSourceAsyncContext*>(data);
+    if (context == nullptr) {
+        IMAGE_LOGE("%{public}s empty context", __func__);
+        return;
+    }
+
+    context->rPixelMap = context->rImageSource->CreateThumbnail(context->decodingOptsForThumbnail, context->status);
+    if (context->status != SUCCESS) {
+        context->errMsgArray.emplace(ImageErrorConvert::CreateThumbnailMakeErrMsg(context->status));
+    }
+    IMAGE_LOGD("[ImageSourceNapi]CreateThumbnailExecute OUT");
+}
+
+napi_value ImageSourceNapi::CreateThumbnail(napi_env env, napi_callback_info info)
+{
+    napi_value result = nullptr;
+    napi_get_undefined(env, &result);
+
+    napi_status status;
+    napi_value thisVar = nullptr;
+    napi_value argValue[TWO_ARGS] = {0};
+    size_t argCount = TWO_ARGS;
+    IMG_JS_ARGS(env, info, status, argCount, argValue, thisVar);
+    IMG_NAPI_CHECK_RET_D(IMG_IS_READY(status, thisVar), nullptr, IMAGE_LOGE("fail to get thisVar"));
+    IMG_NAPI_CHECK_RET_D(IMG_IS_OK(status), nullptr, IMAGE_LOGE("fail to napi_get_cb_info"));
+
+    std::unique_ptr<ImageSourceAsyncContext> asyncContext = std::make_unique<ImageSourceAsyncContext>();
+    status = napi_unwrap(env, thisVar, reinterpret_cast<void**>(&asyncContext->constructor_));
+    IMG_NAPI_CHECK_RET_D(IMG_IS_READY(status, asyncContext->constructor_),
+        nullptr, IMAGE_LOGE("fail to unwrap context"));
+    IMG_NAPI_CHECK_RET_D(IMG_IS_READY(status, asyncContext->constructor_->nativeImgSrc),
+        nullptr, IMAGE_LOGE("fail to unwrap nativeImgSrc"));
+    asyncContext->rImageSource = asyncContext->constructor_->nativeImgSrc;
+    IMG_NAPI_CHECK_RET_D(IMG_IS_READY(status, asyncContext->rImageSource),
+        nullptr, IMAGE_LOGE("native rImageSource is nullptr"));
+
+    if (argCount > 0) {
+        if (ImageNapiUtils::getType(env, argValue[DECODE_OPTS_INDEX_0]) == napi_object) {
+            if (!ParseDecodeOptionsForThumbnail(env, argValue[DECODE_OPTS_INDEX_0],
+                &(asyncContext->decodingOptsForThumbnail), asyncContext->errMsg)) {
+                IMAGE_LOGE("DecodeOptions mismatch");
+                return ImageNapiUtils::ThrowExceptionError(env, IMAGE_SOURCE_INVALID_PARAMETER,
+                    "DecodeOptions mismatch");
+            }
+        } else {
+            return ImageNapiUtils::ThrowExceptionError(env, IMAGE_SOURCE_INVALID_PARAMETER,
+                "DecodeOptions type mismatch");
+        }
+    }
+    napi_create_promise(env, &(asyncContext->deferred), &result);
+    ImageNapiUtils::HicheckerReport();
+    IMG_CREATE_CREATE_ASYNC_WORK_WITH_QOS(env, status, "CreateThumbnail", CreateThumbnailExecute,
+        CreatePixelMapComplete, asyncContext, asyncContext->work, napi_qos_user_initiated);
+
+    IMG_NAPI_CHECK_RET_D(IMG_IS_OK(status), nullptr, IMAGE_LOGE("fail to create async work"));
+    return result;
+}
+
+napi_value ImageSourceNapi::CreateThumbnailSync(napi_env env, napi_callback_info info)
+{
+    napi_value result = nullptr;
+    napi_get_undefined(env, &result);
+    napi_status status;
+    napi_value thisVar = nullptr;
+    napi_value argValue[TWO_ARGS] = {0};
+    size_t argCount = TWO_ARGS;
+    IMG_JS_ARGS(env, info, status, argCount, argValue, thisVar);
+    IMG_NAPI_CHECK_RET_D(IMG_IS_READY(status, thisVar), nullptr, IMAGE_LOGE("fail to get thisVar"));
+    IMG_NAPI_CHECK_RET_D(IMG_IS_OK(status), nullptr, IMAGE_LOGE("fail to napi_get_cb_info"));
+    std::unique_ptr<ImageSourceSyncContext> syncContext = std::make_unique<ImageSourceSyncContext>();
+    status = napi_unwrap(env, thisVar, reinterpret_cast<void**>(&syncContext->constructor_));
+    IMG_NAPI_CHECK_RET_D(IMG_IS_READY(status, syncContext->constructor_),
+        nullptr, IMAGE_LOGE("fail to unwrap context"));
+    IMG_NAPI_CHECK_RET_D(IMG_IS_READY(status, syncContext->constructor_->nativeImgSrc),
+        nullptr, IMAGE_LOGE("nativeImgSrc is nullptr"));
+
+    if (argCount > 0) {
+        if (ImageNapiUtils::getType(env, argValue[DECODE_OPTS_INDEX_0]) == napi_object) {
+            if (!ParseDecodeOptionsForThumbnail(env, argValue[DECODE_OPTS_INDEX_0],
+                &(syncContext->decodingOptsForThumbnail), syncContext->errMsg)) {
+                IMAGE_LOGE("DecodeOptions mismatch");
+                return ImageNapiUtils::ThrowExceptionError(env, IMAGE_SOURCE_INVALID_PARAMETER,
+                    "DecodeOptions mismatch");
+            }
+        } else {
+            return ImageNapiUtils::ThrowExceptionError(env, IMAGE_SOURCE_INVALID_PARAMETER,
+                "DecodeOptions type mismatch");
+        }
+    }
+    syncContext->rPixelMap = syncContext->constructor_->nativeImgSrc->CreateThumbnail(
+        syncContext->decodingOptsForThumbnail, syncContext->status);
+    if (syncContext->status != SUCCESS) {
+        syncContext->errMsgArray.emplace(ImageErrorConvert::CreateThumbnailMakeErrMsg(syncContext->status));
+    }
+    result = CreatePixelMapThrowErrorCompleteSync(env, status,
+        static_cast<ImageSourceSyncContext*>((syncContext).get()));
+    IMG_NAPI_CHECK_RET_D(IMG_IS_OK(status), nullptr, IMAGE_LOGE("fail to create Thumbnail"));
     return result;
 }
 #endif

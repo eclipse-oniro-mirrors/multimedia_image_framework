@@ -1736,7 +1736,7 @@ uint32_t ExtDecoder::Decode(uint32_t index, DecodeContext &context)
         ret = codec_->getPixels(dstInfo_, dstBuffer, rowStride, &dstOptions_); // Try again
     }
     if (ret != SkCodec::kSuccess && ret != SkCodec::kIncompleteInput && ret != SkCodec::kErrorInInput) {
-        HILOG_COMM_ERROR("Decode failed, get pixels failed, ret=%{public}d", ret);
+        IMAGE_LOGE("Decode failed, get pixels failed, ret=%{public}d", ret);
         SetHeifDecodeError(context);
         ResetCodec(); // release old jpeg codec
         return ERR_IMAGE_DECODE_ABNORMAL;
@@ -2194,7 +2194,7 @@ uint32_t ExtDecoder::PromoteIncrementalDecode(uint32_t index, ProgDecodeContext 
 bool ExtDecoder::IsCr3Format()
 {
     int32_t apiVersion = ImageUtils::GetAPIVersion();
-    CHECK_ERROR_RETURN_RET_LOG(apiVersion < APIVERSION_20, false,
+    CHECK_DEBUG_RETURN_RET_LOG(apiVersion < APIVERSION_20, false,
         "%{public}s unsupport Cr3 format under API version: %{public}d", __func__, apiVersion);
 
     CHECK_ERROR_RETURN_RET_LOG(stream_ == nullptr, false, "%{public}s invalid stream", __func__);
@@ -2280,7 +2280,7 @@ bool ExtDecoder::DecodeHeader()
         auto decoder = reinterpret_cast<HeifDecoderImpl*>(codec_->getHeifContext());
         uint32_t frameCount = 0;
         if (decoder && decoder->GetHeifsFrameCount(frameCount)) {
-            frameCount_ = frameCount;
+            frameCount_ = static_cast<int32_t>(frameCount);
         }
     }
 #endif
@@ -2537,7 +2537,7 @@ OHOS::ColorManager::ColorSpace ExtDecoder::GetSrcColorSpace()
             if (cName != ColorManager::NONE) {
                 heifColorSpaceName_ = cName;
                 heifIsColorSpaceFromCicp_ = true;
-                IMAGE_LOGI("%{public}s profile has CICP, cName: %{public}u", __func__, static_cast<uint32_t>(cName));
+                IMAGE_LOGD("%{public}s profile has CICP, cName: %{public}u", __func__, static_cast<uint32_t>(cName));
                 return ColorManager::ColorSpace(cName);
             }
         }
@@ -2545,7 +2545,7 @@ OHOS::ColorManager::ColorSpace ExtDecoder::GetSrcColorSpace()
             ColorManager::ColorSpaceName cName = GetHeifNclxColor(codec_.get());
             if (cName != ColorManager::NONE) {
                 heifColorSpaceName_ = cName;
-                IMAGE_LOGI("%{public}s profile has HEIF NCLX color, cName: %{public}u",
+                IMAGE_LOGD("%{public}s profile has HEIF NCLX color, cName: %{public}u",
                     __func__, static_cast<uint32_t>(cName));
                 return ColorManager::ColorSpace(cName);
             }
@@ -3434,6 +3434,9 @@ bool ExtDecoder::DecodeHeifAuxiliaryMap(DecodeContext& context, AuxiliaryPicture
     uint64_t byteCount = tempByteCount;
     context.info.size.width = static_cast<int32_t>(width);
     context.info.size.height = static_cast<int32_t>(height);
+    if (!SetOutPutFormat(context.info.pixelFormat, decoder)) {
+        return ERR_IMAGE_DATA_UNSUPPORT;
+    }
     cond = DmaMemAlloc(context, byteCount, dstInfo) != SUCCESS;
     CHECK_INFO_RETURN_RET_LOG(cond, false, "DmaMemAlloc execution failed.");
     auto* dstBuffer = static_cast<uint8_t*>(context.pixelsBuffer.buffer);
@@ -3496,7 +3499,7 @@ uint32_t ExtDecoder::DoHeifsDecode(DecodeContext &context)
     if (context.allocatorType == Media::AllocatorType::DMA_ALLOC) {
         res = DmaMemAlloc(context, byteCount, dstInfo_);
         auto dstBuffer = reinterpret_cast<SurfaceBuffer*>(context.pixelsBuffer.context);
-        rowStride = dstBuffer->GetStride();
+        rowStride = static_cast<uint64_t>(dstBuffer->GetStride());
     } else {
         IMAGE_LOGE("DoHeifsDecode need DMA_ALLOC.");
         res = ERR_IMAGE_DATA_UNSUPPORT;

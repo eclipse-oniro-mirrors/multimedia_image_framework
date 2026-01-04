@@ -642,15 +642,15 @@ static bool GetSurfaceSize(uint64_t surfaceId, OHOS::Media::Rect &region)
 }
 
 static Image_ErrorCode CreatePixelMapFromSurface(const std::string &surfaceId, OHOS::Media::Rect &region,
-    OH_PixelmapNative **pixelmap)
+    OH_PixelmapNative **pixelmap, bool transformEnabled = false)
 {
     uint64_t surfaceIdInt = 0;
     auto res = std::from_chars(surfaceId.data(), surfaceId.data() + surfaceId.size(), surfaceIdInt);
     if (res.ec != std::errc()) {
-        return IMAGE_BAD_PARAMETER;
+        return IMAGE_INVALID_PARAMETER;
     }
     if (!GetSurfaceSize(surfaceIdInt, region)) {
-        return IMAGE_BAD_PARAMETER;
+        return IMAGE_GET_IMAGE_DATA_FAILED;
     }
 
     auto &rsClient = Rosen::RSInterfaces::GetInstance();
@@ -660,7 +660,8 @@ static Image_ErrorCode CreatePixelMapFromSurface(const std::string &surfaceId, O
         .w = region.width,
         .h = region.height,
     };
-    std::shared_ptr<PixelMap> pixelMapFromSurface = rsClient.CreatePixelMapFromSurfaceId(surfaceIdInt, r);
+    std::shared_ptr<PixelMap> pixelMapFromSurface = rsClient.CreatePixelMapFromSurfaceId(surfaceIdInt, r,
+        transformEnabled);
 #ifndef EXT_PIXEL
     if (pixelMapFromSurface == nullptr) {
         pixelMapFromSurface = CreatePixelMapFromSurfaceId(surfaceIdInt, region);
@@ -681,7 +682,26 @@ Image_ErrorCode OH_PixelmapNative_CreatePixelmapFromSurface(const char *surfaceI
         return IMAGE_BAD_PARAMETER;
     }
     OHOS::Media::Rect region;
-    return CreatePixelMapFromSurface(std::string(surfaceId, length), region, pixelmap);
+    Image_ErrorCode errCode = CreatePixelMapFromSurface(std::string(surfaceId, length), region, pixelmap);
+    if (errCode == IMAGE_INVALID_PARAMETER || errCode == IMAGE_GET_IMAGE_DATA_FAILED) {
+        errCode = IMAGE_BAD_PARAMETER;
+    }
+    return errCode;
+}
+
+MIDK_EXPORT
+Image_ErrorCode OH_PixelmapNative_CreatePixelmapFromSurfaceWithTransformation(const char *surfaceId, size_t length,
+    bool transformEnabled, OH_PixelmapNative **pixelmap)
+{
+#if defined(IOS_PLATFORM) || defined(ANDROID_PLATFORM)
+    return IMAGE_UNSUPPORTED_OPERATION;
+#else
+    if (pixelmap == nullptr || surfaceId == nullptr) {
+        return IMAGE_INVALID_PARAMETER;
+    }
+    OHOS::Media::Rect region;
+    return CreatePixelMapFromSurface(std::string(surfaceId, length), region, pixelmap, transformEnabled);
+#endif
 }
 
 static bool IsNativeBufferFormatSupported(int32_t format)

@@ -26,6 +26,7 @@
 #include "exif_metadata.h"
 #include "exif_metadata_formatter.h"
 #include "image_log.h"
+#include "image_utils.h"
 #include "libexif/exif-format.h"
 #include "libexif/exif-mem.h"
 #include "libexif/exif-tag.h"
@@ -261,13 +262,22 @@ const std::map<std::string, PropertyValueType>& ExifMetadata::GetHwMetadataMap()
     return hwMetadataMap;
 }
 
+const std::map<std::string, PropertyValueType>& ExifMetadata::GetHeifsMetadataMap()
+{
+    static const std::map<std::string, PropertyValueType> heifsMetadataMap = {
+        {"HeifsDelayTime", PropertyValueType::INT},
+    };
+    return heifsMetadataMap;
+}
+
 const std::map<NapiMetadataType, std::map<std::string, PropertyValueType>>& ExifMetadata::GetPropertyTypeMapping()
 {
     static const std::map<NapiMetadataType, std::map<std::string, PropertyValueType>> propertyTypeMap = {
         {NapiMetadataType::EXIF_METADATA, GetExifMetadataMap()},
         {NapiMetadataType::HWMAKERNOTE_METADATA, GetHwMetadataMap()},
+        {NapiMetadataType::HEIFS_METADATA, GetHeifsMetadataMap()},
     };
-    return propertyTypeMap;    
+    return propertyTypeMap;
 }
 
 const std::unordered_map<std::string, std::string>& ExifMetadata::GetPropertyKeyMap()
@@ -449,7 +459,10 @@ const std::unordered_map<std::string, std::string>& ExifMetadata::GetPropertyKey
         {"physicalAperture", "HwMnotePhysicalAperture"},
         {"focusMode", "HwMnoteFocusMode"},
         {"xtStyleVignetting", "HwMnoteXtStyleVignetting"},
-        {"xtStyleNoise", "HwMnoteXtStyleNoise"}
+        {"xtStyleNoise", "HwMnoteXtStyleNoise"},
+
+        // ============ HeifsMetadata ============
+        {"heifsDelayTime", "HeifsDelayTime"}
     };
     return propertyKeyMap;
 }
@@ -990,6 +1003,92 @@ std::shared_ptr<ExifMetadata> ExifMetadata::Clone()
         dataBlob = nullptr;
     }
     return exifDataPtr;
+}
+
+bool ExifMetadata::GetDataSize(uint32_t &size, bool withThumbnail, bool isJpeg)
+{
+    CHECK_ERROR_RETURN_RET_LOG(exifData_ == nullptr, false, "%{public}s: exifData_ is nullptr", __func__);
+
+    ScopeRestorer<unsigned char *> thumbDataRestorer(exifData_->data);
+    ScopeRestorer<unsigned int> thumbSizeRestorer(exifData_->size);
+
+    // remove thumbnail data temporarily
+    if (!withThumbnail) {
+        thumbDataRestorer.SetValue(nullptr);
+        thumbSizeRestorer.SetValue(0);
+    }
+
+    unsigned char *dataBlob = nullptr;
+    uint32_t dataSize = 0;
+    if (isJpeg) {
+        TiffParser::EncodeJpegExif(&dataBlob, dataSize, exifData_);
+    } else {
+        TiffParser::Encode(&dataBlob, dataSize, exifData_);
+    }
+
+    CHECK_ERROR_RETURN_RET_LOG(dataBlob == nullptr, false, "%{public}s: TiffParser encode failed", __func__);
+    size = dataSize;
+
+    // release encoded data blob
+    if (dataBlob != nullptr) {
+        free(dataBlob);
+        dataBlob = nullptr;
+    }
+
+    IMAGE_LOGD("%{public}s: exif data size: %{public}u", __func__, size);
+    return true;
+}
+
+bool ExifMetadata::HasThumbnail()
+{
+    CHECK_ERROR_RETURN_RET_LOG(exifData_ == nullptr, false, "%{public}s: exifData_ is nullptr", __func__);
+    return exifData_->data != nullptr && exifData_->size != 0;
+}
+
+bool ExifMetadata::GetThumbnail(uint8_t *&data, uint32_t &size)
+{
+    CHECK_ERROR_RETURN_RET_LOG(exifData_ == nullptr, false, "%{public}s: exifData_ is nullptr", __func__);
+    data = reinterpret_cast<uint8_t *>(exifData_->data);
+    size = static_cast<uint32_t>(exifData_->size);
+    IMAGE_LOGD("%{public}s: size: %{public}u", __func__, size);
+    CHECK_ERROR_RETURN_RET(data == nullptr || size == 0, false);
+    return true;
+}
+
+bool ExifMetadata::SetThumbnail(uint8_t *data, const uint32_t &size)
+{
+    CHECK_ERROR_RETURN_RET_LOG(exifData_ == nullptr, false, "%{public}s: exifData_ is nullptr", __func__);
+    CHECK_ERROR_RETURN_RET_LOG(data == nullptr || size == 0, false, "%{public}s: data or size is invalid", __func__);
+
+    // Free old thumbnail memory if it exists
+    CHECK_ERROR_RETURN_RET_LOG(!DropThumbnail(), false, "%{public}s: Drop thumbnail failed", __func__);
+    // Allocate a new memory for thumbnail.
+    ExifMem* mem = exif_data_get_priv_mem(exifData_);
+    CHECK_ERROR_RETURN_RET_LOG(mem == nullptr, false, "%{public}s: GetExif mem allocator failed", __func__);
+    exifData_->data = static_cast<unsigned char *>(exif_mem_alloc(mem, size));
+    CHECK_ERROR_RETURN_RET_LOG(exifData_->data == nullptr, false,
+        "%{public}s: exif_mem_alloc failed, size: %{public}u", __func__, size);
+    memcpy_s(exifData_->data, size, data, size);
+    exifData_->size = size;
+    IMAGE_LOGI("%{public}s success! size: %{public}u", __func__, size);
+    return true;
+}
+
+bool ExifMetadata::DropThumbnail()
+{
+    bool cond = exifData_ == nullptr;
+    CHECK_ERROR_RETURN_RET_LOG(cond, false, "%{public}s: exifData_ is nullptr", __func__);
+    if (!HasThumbnail()) {
+        IMAGE_LOGD("%{public}s: No thumbnail to drop", __func__);
+        return true;
+    }
+    ExifMem* mem = exif_data_get_priv_mem(exifData_);
+    CHECK_ERROR_RETURN_RET_LOG(mem == nullptr, false, "%{public}s: GetExif mem allocator failed", __func__);
+    exif_mem_free(mem, exifData_->data);
+    exifData_->data = nullptr;
+    exifData_->size = 0;
+    IMAGE_LOGD("%{public}s: Drop thumbnail success", __func__);
+    return true;
 }
 
 ExifEntry *ExifMetadata::CreateEntry(const std::string &key, const ExifTag &tag, const size_t valueLen)
@@ -1661,6 +1760,7 @@ bool ExifMetadata::RemoveExifThumbnail()
     bool cond = exifData_ == nullptr;
     CHECK_ERROR_RETURN_RET(cond, false);
     exifData_->remove_thumbnail = 1;
+    IMAGE_LOGD("%{public}s set remove exif thumbnail flag", __func__);
     return true;
 }
 

@@ -128,12 +128,12 @@ heif_error HeifParser::AssembleBoxes(HeifStreamReader &reader)
         }
     }
 
-    if (moovBox_) {
-        return AssembleMovieBoxes();
-    }
-
     if (!ftypBox_) {
         return heif_error_no_ftyp;
+    }
+
+    if (moovBox_ && ftypBox_->GetMajorBrand() == HEIF_BRAND_TYPE_MSF1) {
+        return AssembleMovieBoxes();
     }
 
     if (!metaBox_) {
@@ -1252,7 +1252,7 @@ heif_error HeifParser::GetHeifsGroupFrameInfo(uint32_t index, HeifsFrameGroup &f
         return ret;
     }
     sampleNumbers.emplace_back(frameCount + FRAME_INDEX_DELTA);
-    for (int i = 0; i < sampleNumbers.size(); i++) {
+    for (size_t i = 0; i < sampleNumbers.size(); i++) {
         uint32_t keyFrameIndex = sampleNumbers[i] - FRAME_INDEX_DELTA;
         if (index >= keyFrameIndex) {
             beginFrameIndex = keyFrameIndex;

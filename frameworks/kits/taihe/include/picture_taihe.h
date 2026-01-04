@@ -37,9 +37,12 @@ public:
 
     optional<PixelMap> GetMainPixelmap();
     optional<PixelMap> GetHdrComposedPixelmapSync();
-    GainMap GetGainmapPixelmap();
+    NullablePixelMap GetGainmapPixelmap();
+    NullablePixelMap GetThumbnailPixelmap();
+    void SetThumbnailPixelmap(PixelMap thumbnailPixelmap);
     void SetAuxiliaryPicture(AuxiliaryPictureType type, weak::AuxiliaryPicture auxiliaryPicture);
     AuxPicture GetAuxiliaryPicture(AuxiliaryPictureType type);
+    void DropAuxiliaryPicture(AuxiliaryPictureType type);
     void SetMetadataSync(MetadataType metadataType, weak::Metadata metadata);
     optional<Metadata> GetMetadataSync(MetadataType metadataType);
     void Marshalling(uintptr_t sequence);

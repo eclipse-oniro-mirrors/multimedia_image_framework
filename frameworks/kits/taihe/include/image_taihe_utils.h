@@ -44,6 +44,8 @@ public:
 
     static OHOS::Media::SourceOptions ParseSourceOptions(SourceOptions const& options);
     static ImageInfo ToTaiheImageInfo(const OHOS::Media::ImageInfo &src, bool isHdr);
+    static const std::set<OHOS::Media::AuxiliaryPictureType> &GetTaiheSupportedAuxTypes();
+
     static array<string> ToTaiheArrayString(const std::vector<std::string> &src);
     static array<uint8_t> CreateTaiheArrayBuffer(uint8_t* src, size_t srcLen);
     static uintptr_t GetUndefinedPtr(ani_env *env);

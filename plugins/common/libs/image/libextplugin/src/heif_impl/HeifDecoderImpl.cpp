@@ -252,6 +252,20 @@ GridInfo HeifDecoderImpl::GetGridInfo()
     return gridInfo_;
 }
 
+std::shared_ptr<HeifImage> HeifDecoderImpl::GetThumbnailImage()
+{
+    if (primaryImage_ == nullptr) {
+        IMAGE_LOGE("Primary image is not init");
+        return nullptr;
+    }
+    auto thumbImages = primaryImage_->GetThumbnailImages();
+    if (thumbImages.empty()) {
+        IMAGE_LOGE("Heif parser has not thumbnail Images.");
+        return nullptr;
+    }
+    return thumbImages[0];
+}
+
 bool HeifDecoderImpl::CheckAuxiliaryMap(AuxiliaryPictureType type)
 {
     if (parser_ == nullptr) {
@@ -269,6 +283,9 @@ bool HeifDecoderImpl::CheckAuxiliaryMap(AuxiliaryPictureType type)
         case AuxiliaryPictureType::LINEAR_MAP:
         case AuxiliaryPictureType::FRAGMENT_MAP:
             auxiliaryImage_ = parser_->GetAuxiliaryMapImage(iter->second);
+            break;
+        case AuxiliaryPictureType::THUMBNAIL:
+            auxiliaryImage_ = this->GetThumbnailImage();
             break;
         default:
             auxiliaryImage_ = nullptr;
@@ -810,7 +827,7 @@ bool HeifDecoderImpl::HwDecodeGrids(std::shared_ptr<HeifImage> &image,
     CHECK_ERROR_RETURN_RET(codec == nullptr, false);
     int32_t result = codec->DoHeifDecode(hwInputs, output, heifDecodeInfo);
     if (result != SUCCESS) {
-        HILOG_COMM_ERROR("heif hw decoder return error: %{public}d, width: %{public}d, height: %{public}d,"
+        IMAGE_LOGE("heif hw decoder return error: %{public}d, width: %{public}d, height: %{public}d,"
             " imageType: grid, inPixelFormat: %{public}d, colNum: %{public}d, rowNum: %{public}d,"
             " tileWidth: %{public}d, tileHeight: %{public}d, hvccLen: %{public}zu",
             result, gridInfo.displayWidth, gridInfo.displayHeight, hwBuffer->GetFormat(), gridInfo.cols,

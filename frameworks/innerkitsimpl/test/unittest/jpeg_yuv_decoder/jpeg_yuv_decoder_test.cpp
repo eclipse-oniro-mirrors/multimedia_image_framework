@@ -784,8 +784,6 @@ HWTEST_F(JpgYuvDecoderTest, JpegYuvDataTest001, TestSize.Level3)
 HWTEST_F(JpgYuvDecoderTest, JpegYuvDataTest002, TestSize.Level3)
 {
     GTEST_LOG_(INFO) << "JpgYuvDecoderTest: JpegYuvDataTest002 start";
-    JpegDecoderYuv jpegDecoderYuv;
-    jpegDecoderYuv.LoadLibYuv();
     YuvPlaneInfo src;
     YuvPlaneInfo dst;
 
@@ -813,9 +811,6 @@ HWTEST_F(JpgYuvDecoderTest, JpegYuvDataTest002, TestSize.Level3)
 HWTEST_F(JpgYuvDecoderTest, JpegYuvDataTest003, TestSize.Level3)
 {
     GTEST_LOG_(INFO) << "JpgYuvDecoderTest: JpegYuvDataTest003 start";
-    JpegDecoderYuv jpegDecoderYuv;
-    jpegDecoderYuv.LoadLibYuv();
-
     YuvPlaneInfo src;
     for (int i = 0; i < YUVCOMPONENT_MAX; ++i) {
         src.strides[i] = 1;
@@ -846,8 +841,6 @@ HWTEST_F(JpgYuvDecoderTest, JpegYuvDataTest003, TestSize.Level3)
 HWTEST_F(JpgYuvDecoderTest, JpegYuvDataTest004, TestSize.Level3)
 {
     GTEST_LOG_(INFO) << "JpgYuvDecoderTest: JpegYuvDataTest004 start";
-    JpegDecoderYuv jpegDecoderYuv;
-    jpegDecoderYuv.LoadLibYuv();
     YuvPlaneInfo src;
     YuvPlaneInfo dst;
     src.imageHeight = 1;

@@ -19,6 +19,7 @@
 #include <mutex>
 #include <string>
 #include <sstream>
+#include <dlfcn.h>
 
 #if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
 #include "v1_0/cm_color_space.h"
@@ -63,6 +64,29 @@ struct SurfaceBufferInfo {
     }
 };
 
+class VpeSoHelper {
+public:
+    VpeSoHelper() = default;
+    VpeSoHelper(const std::string& soPath)
+    {
+        handle_ = dlopen(soPath.c_str(), RTLD_LAZY);
+    }
+
+    ~VpeSoHelper()
+    {
+        if (handle_ != nullptr) {
+            dlclose(handle_);
+            handle_ = nullptr;
+        }
+    }
+
+    void* GetSoHandle()
+    {
+        return handle_;
+    }
+private:
+    void* handle_;
+};
 
 class VpeUtils {
 public:
@@ -96,16 +120,13 @@ public:
     static bool SetSbColorSpaceDefault(sptr<SurfaceBuffer>& buffer);
     static void CopySurfaceBufferInfo(sptr<SurfaceBuffer>& source, sptr<SurfaceBuffer>& dst);
 #endif
-    static bool LoadLibVpe();
-    static void UnloadLibVpe();
-
 private:
     int32_t ColorSpaceConverterCreate(void* handle, int32_t* instanceId);
     int32_t ColorSpaceConverterDestory(void* handle, int32_t* instanceId);
     int32_t DetailEnhancerCreate(void* handle, int32_t* instanceId);
     int32_t DetailEnhancerDestory(void* handle, int32_t* instanceId);
     std::mutex vpeMtx_;
-    static void* dlHandler_;
+    static std::unique_ptr<VpeSoHelper> dlHandler_;
 };
 } // namespace Media
 } // namespace OHOS
