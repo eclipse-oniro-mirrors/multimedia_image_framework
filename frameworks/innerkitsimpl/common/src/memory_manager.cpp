@@ -41,13 +41,12 @@ static const size_t SIZE_ZERO = 0;
 static const int LINUX_SUCCESS = 0;
 // Define pixel map malloc max size 600MB
 constexpr int32_t PIXEL_MAP_MAX_RAM_SIZE = 600 * 1024 * 1024;
-constexpr int32_t PIXEL_MAP_MAX_HEAP_RAM_SIZE = 1500 * 1024 * 1024;
 
 uint32_t HeapMemory::Create()
 {
     IMAGE_LOGD("HeapMemory::Create IN");
     CHECK_DEBUG_RETURN_RET_LOG(data.data != nullptr, SUCCESS, "HeapMemory::Create has created");
-    if (data.size == 0 || data.size > PIXEL_MAP_MAX_HEAP_RAM_SIZE) {
+    if (data.size == 0 || data.size > PIXEL_MAP_MAX_RAM_SIZE) {
         IMAGE_LOGE("HeapMemory::Create Invalid value of bufferSize");
         return ERR_IMAGE_DATA_ABNORMAL;
     }
