@@ -144,10 +144,12 @@ public:
     static void ARGBToBGRA(uint8_t* srcPixels, uint8_t* dstPixels, uint32_t byteCount);
     static int32_t SurfaceBuffer_Reference(void* buffer);
     static int32_t SurfaceBuffer_Unreference(void* buffer);
+#if !defined(CROSS_PLATFORM)
     static bool CopyYuvPixelMapToSurfaceBuffer(PixelMap* pixelmap,
         sptr<SurfaceBuffer> surfaceBuffer);
     static bool GetYuvInfoFromSurfaceBuffer(YUVDataInfo &yuvInfo,
         sptr<SurfaceBuffer> surfaceBuffer);
+#endif
     static void DumpPixelMap(PixelMap* pixelMap, std::string customFileName, uint64_t imageId = 0);
     static void DumpPixelMapIfDumpEnabled(std::unique_ptr<PixelMap>& pixelMap, uint64_t imageId = 0);
     static void DumpPixelMapIfDumpEnabled(PixelMap& pixelMap, std::string func);
