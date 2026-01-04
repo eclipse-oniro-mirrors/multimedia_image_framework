@@ -70,6 +70,7 @@ private:
     uint32_t TryHardwareEncodePicture(SkWStream& skStream, std::string& errorMsg);
     uint32_t DoHardWareEncode(SkWStream* skStream);
     bool HardwareEncode(SkWStream &skStream, bool needExif);
+    bool HispeedEncode(SkWStream &skStream, Media::PixelMap* pixelMap, bool needExif, SkImageInfo info);
 #ifdef USE_M133_SKIA
     bool SkEncodeImage(SkWStream* dst, const SkBitmap& src, SkEncodedImageFormat format, int quality);
 #endif
