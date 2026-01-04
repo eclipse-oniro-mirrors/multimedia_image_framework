@@ -672,8 +672,9 @@ bool PixelMap::CheckParams(const uint32_t *colors, uint32_t colorLength, int32_t
     return true;
 }
 
-bool PixelMap::CheckYuvDataInfoValid(const YUVDataInfo& yDataInfo) {
-//size
+bool PixelMap::CheckYuvDataInfoValid(const YUVDataInfo& yDataInfo)
+{
+    //size
     if (yDataInfo.yWidth == 0 || yDataInfo.yHeight == 0) {
         IMAGE_LOGE("Invalid Y plane size: yWidth or yHeight is 0");
         return false;
@@ -690,7 +691,7 @@ bool PixelMap::CheckYuvDataInfoValid(const YUVDataInfo& yDataInfo) {
         return false;
     }
 
-//stride
+    //stride
     if (yDataInfo.yStride < yDataInfo.yWidth) {
         IMAGE_LOGE("Invalid Y stride: stride=%{public}u < width=%{public}u",
             yDataInfo.yStride, yDataInfo.yWidth);
@@ -703,18 +704,18 @@ bool PixelMap::CheckYuvDataInfoValid(const YUVDataInfo& yDataInfo) {
     }
     if (yDataInfo.yStride >= yDataInfo.yWidth * NUM_2 || yDataInfo.uvStride >= yDataInfo.yWidth * NUM_2) {
         IMAGE_LOGW("Possible invalid stride as byte value: Stride=(%{public}u, %{public}u), Width=%{public}u",
-           yDataInfo.yStride, yDataInfo.uvStride, yDataInfo.yWidth);
+            yDataInfo.yStride, yDataInfo.uvStride, yDataInfo.yWidth);
     }
     if (yDataInfo.uStride != 0 && yDataInfo.uStride < yDataInfo.uvWidth) {
         IMAGE_LOGW("Invalid U stride: uStride=%{public}u < uvWidth=%{public}u",
-                   yDataInfo.uStride, yDataInfo.uvWidth);
+            yDataInfo.uStride, yDataInfo.uvWidth);
     }
     if (yDataInfo.vStride != 0 && yDataInfo.vStride < yDataInfo.uvWidth) {
         IMAGE_LOGW("Invalid V stride: vStride=%{public}u < uvWidth=%{public}u",
-                   yDataInfo.vStride, yDataInfo.uvWidth);
+            yDataInfo.vStride, yDataInfo.uvWidth);
     }
 
-//offset
+    //offset
     if (yDataInfo.yOffset != 0) {
         IMAGE_LOGW("Invalid offset: Y(%{public}u)", yDataInfo.yOffset);
     }
