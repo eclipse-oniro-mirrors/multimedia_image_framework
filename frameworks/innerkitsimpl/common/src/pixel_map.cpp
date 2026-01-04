@@ -3649,8 +3649,10 @@ PixelMap *PixelMap::DecodeTlv(std::vector<uint8_t> &buff)
         IMAGE_LOGE("[PixelMap]  tlv decode fail: set image info error[%{public}d]", ret);
         return nullptr;
     }
-    if ((dstMemory->GetType() == AllocatorType::DMA_ALLOC && dstMemory->data.size < pixelMap->GetByteCount()) ||
-        (dstMemory->GetType() == AllocatorType::HEAP_ALLOC && dstMemory->data.size != pixelMap->GetByteCount())) {
+    if ((dstMemory->GetType() == AllocatorType::DMA_ALLOC &&
+        dstMemory->data.size < static_cast<uint32_t>(pixelMap->GetByteCount())) ||
+        (dstMemory->GetType() == AllocatorType::HEAP_ALLOC &&
+        dstMemory->data.size != static_cast<uint32_t>(pixelMap->GetByteCount()))) {
         dstMemory->Release();
         delete pixelMap;
         IMAGE_LOGE("[PixelMap]  tlv decode fail: size not match");
