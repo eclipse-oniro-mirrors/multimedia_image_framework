@@ -721,7 +721,7 @@ bool PixelMap::CheckYuvDataInfoValid(const YUVDataInfo& yDataInfo)
     }
     uint64_t yPlaneSize = static_cast<uint64_t>(yDataInfo.yWidth) * yDataInfo.yHeight;
     if (yDataInfo.uvOffset < yPlaneSize) {
-        IMAGE_LOGE("Invalid offset: UV(%{public}u) mismatch yPlaneSize(%{public}lu)", yDataInfo.uvOffset, yPlaneSize);
+        IMAGE_LOGE("Invalid offset: UV(%{public}u) mismatch yPlaneSize(%{public}llu)", yDataInfo.uvOffset, yPlaneSize);
         return false;
     }
 
