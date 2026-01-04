@@ -2004,6 +2004,8 @@ uint32_t ExtDecoder::UpdateHardWareDecodeInfo(DecodeContext &context)
             context.yuvInfo.uvStride = planes->planes[1].columnStride;
             context.yuvInfo.yOffset = planes->planes[0].offset;
             context.yuvInfo.uvOffset = planes->planes[1].offset - 1;
+            context.yuvInfo.yWidth = static_cast<uint32_t>(hwDstInfo_.width());
+            context.yuvInfo.yHeight = static_cast<uint32_t>(hwDstInfo_.height());
             context.yuvInfo.uvWidth = static_cast<uint32_t>((hwDstInfo_.width() + 1) / NUM_2);
             context.yuvInfo.uvHeight = static_cast<uint32_t>((hwDstInfo_.height() + 1) / NUM_2);
         }
