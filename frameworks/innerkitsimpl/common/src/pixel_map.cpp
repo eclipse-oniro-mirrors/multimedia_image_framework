@@ -693,13 +693,11 @@ bool PixelMap::CheckYuvDataInfoValid(const YUVDataInfo& yDataInfo)
 
     //stride
     if (yDataInfo.yStride < yDataInfo.yWidth) {
-        IMAGE_LOGE("Invalid Y stride: stride=%{public}u < width=%{public}u",
-            yDataInfo.yStride, yDataInfo.yWidth);
+        IMAGE_LOGE("Invalid Y stride: %{public}u < width=%{public}u", yDataInfo.yStride, yDataInfo.yWidth);
         return false;
     }
     if (yDataInfo.uvStride < yDataInfo.uvWidth) {
-        IMAGE_LOGE("Invalid UV stride: stride=%{public}u < width=%{public}u",
-            yDataInfo.uvStride, yDataInfo.uvWidth);
+        IMAGE_LOGE("Invalid UV stride: %{public}u < width=%{public}u", yDataInfo.uvStride, yDataInfo.uvWidth);
         return false;
     }
     if (yDataInfo.yStride >= yDataInfo.yWidth * NUM_2 || yDataInfo.uvStride >= yDataInfo.yWidth * NUM_2) {
@@ -707,12 +705,10 @@ bool PixelMap::CheckYuvDataInfoValid(const YUVDataInfo& yDataInfo)
             yDataInfo.yStride, yDataInfo.uvStride, yDataInfo.yWidth);
     }
     if (yDataInfo.uStride != 0 && yDataInfo.uStride < yDataInfo.uvWidth) {
-        IMAGE_LOGW("Invalid U stride: uStride=%{public}u < uvWidth=%{public}u",
-            yDataInfo.uStride, yDataInfo.uvWidth);
+        IMAGE_LOGW("Invalid U stride: %{public}u < uvWidth=%{public}u", yDataInfo.uStride, yDataInfo.uvWidth);
     }
     if (yDataInfo.vStride != 0 && yDataInfo.vStride < yDataInfo.uvWidth) {
-        IMAGE_LOGW("Invalid V stride: vStride=%{public}u < uvWidth=%{public}u",
-            yDataInfo.vStride, yDataInfo.uvWidth);
+        IMAGE_LOGW("Invalid V stride: %{public}u < uvWidth=%{public}u", yDataInfo.vStride, yDataInfo.uvWidth);
     }
 
     //offset
