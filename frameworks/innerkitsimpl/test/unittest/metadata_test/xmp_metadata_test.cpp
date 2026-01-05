@@ -3751,5 +3751,125 @@ HWTEST_F(XmpMetadataTest, CreateXMPTagTest006, TestSize.Level1)
 
     GTEST_LOG_(INFO) << "XmpMetadataTest: CreateXMPTagTest006 end";
 }
+
+/**
+ * @tc.name: RemoveTagTest001
+ * @tc.desc: test the RemoveTag method unordered array.
+ * @tc.type: FUNC
+ */
+HWTEST_F(XmpMetadataTest, RemoveTagTest001, TestSize.Level1)
+{
+    GTEST_LOG_(INFO) << "XmpMetadataTest: RemoveTagTest001 start";
+    XMPMetadata xmpMetadata;
+    XMPTag baseTag;
+    InitTestXMPTag(baseTag, XMPTagType::UNORDERED_ARRAY, "parent");
+    bool ret = xmpMetadata.SetTag("dc:parent", baseTag);
+    EXPECT_TRUE(ret);
+
+    XMPTag childTag_1;
+    InitTestXMPTag(childTag_1, XMPTagType::SIMPLE, "parent", "first");
+    ret = xmpMetadata.SetTag("dc:parent[1]", childTag_1);
+    EXPECT_TRUE(ret);
+
+    XMPTag childTag_2;
+    InitTestXMPTag(childTag_2, XMPTagType::SIMPLE, "parent", "second");
+    ret = xmpMetadata.SetTag("dc:parent[2]", childTag_2);
+    EXPECT_TRUE(ret);
+
+    XMPTag childTag_3;
+    InitTestXMPTag(childTag_3, XMPTagType::SIMPLE, "parent", "third");
+    ret = xmpMetadata.SetTag("dc:parent[3]", childTag_3);
+    EXPECT_TRUE(ret);
+
+    ret = xmpMetadata.RemoveTag("dc:parent[1]");
+    EXPECT_TRUE(ret);
+
+    XMPTag getTag;
+    ret = xmpMetadata.GetTag("dc:parent[1]", getTag);
+    EXPECT_TRUE(ret);
+    EXPECT_TRUE(CompareXMPTag(getTag, childTag_2));
+
+    GTEST_LOG_(INFO) << "XmpMetadataTest: RemoveTagTest001 end";
+}
+
+/**
+ * @tc.name: RemoveTagTest002
+ * @tc.desc: test the RemoveTag ordered array.
+ * @tc.type: FUNC
+ */
+HWTEST_F(XmpMetadataTest, RemoveTagTest002, TestSize.Level1)
+{
+    GTEST_LOG_(INFO) << "XmpMetadataTest: RemoveTagTest002 start";
+    XMPMetadata xmpMetadata;
+    XMPTag baseTag;
+    InitTestXMPTag(baseTag, XMPTagType::ORDERED_ARRAY, "parent");
+    bool ret = xmpMetadata.SetTag("dc:parent", baseTag);
+    EXPECT_TRUE(ret);
+
+    XMPTag childTag_1;
+    InitTestXMPTag(childTag_1, XMPTagType::SIMPLE, "parent", "first");
+    ret = xmpMetadata.SetTag("dc:parent[1]", childTag_1);
+    EXPECT_TRUE(ret);
+
+    XMPTag childTag_2;
+    InitTestXMPTag(childTag_2, XMPTagType::SIMPLE, "parent", "second");
+    ret = xmpMetadata.SetTag("dc:parent[2]", childTag_2);
+    EXPECT_TRUE(ret);
+
+    XMPTag childTag_3;
+    InitTestXMPTag(childTag_3, XMPTagType::SIMPLE, "parent", "third");
+    ret = xmpMetadata.SetTag("dc:parent[3]", childTag_3);
+    EXPECT_TRUE(ret);
+
+    ret = xmpMetadata.RemoveTag("dc:parent[1]");
+    EXPECT_TRUE(ret);
+
+    XMPTag getTag;
+    ret = xmpMetadata.GetTag("dc:parent[1]", getTag);
+    EXPECT_TRUE(ret);
+    EXPECT_TRUE(CompareXMPTag(getTag, childTag_2));
+
+    GTEST_LOG_(INFO) << "XmpMetadataTest: RemoveTagTest002 end";
+}
+
+/**
+ * @tc.name: RemoveTagTest003
+ * @tc.desc: test the RemoveTag method alternate array.
+ * @tc.type: FUNC
+ */
+HWTEST_F(XmpMetadataTest, RemoveTagTest003, TestSize.Level1)
+{
+    GTEST_LOG_(INFO) << "XmpMetadataTest: RemoveTagTest003 start";
+    XMPMetadata xmpMetadata;
+    XMPTag baseTag;
+    InitTestXMPTag(baseTag, XMPTagType::ALTERNATE_ARRAY, "parent");
+    bool ret = xmpMetadata.SetTag("dc:parent", baseTag);
+    EXPECT_TRUE(ret);
+
+    XMPTag childTag_1;
+    InitTestXMPTag(childTag_1, XMPTagType::SIMPLE, "parent", "first");
+    ret = xmpMetadata.SetTag("dc:parent[1]", childTag_1);
+    EXPECT_TRUE(ret);
+
+    XMPTag childTag_2;
+    InitTestXMPTag(childTag_2, XMPTagType::SIMPLE, "parent", "second");
+    ret = xmpMetadata.SetTag("dc:parent[2]", childTag_2);
+    EXPECT_TRUE(ret);
+
+    XMPTag childTag_3;
+    InitTestXMPTag(childTag_3, XMPTagType::SIMPLE, "parent", "third");
+    ret = xmpMetadata.SetTag("dc:parent[3]", childTag_3);
+    EXPECT_TRUE(ret);
+
+    ret = xmpMetadata.RemoveTag("dc:parent[1]");
+    EXPECT_TRUE(ret);
+
+    XMPTag getTag;
+    ret = xmpMetadata.GetTag("dc:parent[1]", getTag);
+    EXPECT_TRUE(ret);
+    EXPECT_TRUE(CompareXMPTag(getTag, childTag_2));
+
+    GTEST_LOG_(INFO) << "XmpMetadataTest: RemoveTagTest003 end";
+}
 } // namespace Multimedia
 } // namespace OHOS
