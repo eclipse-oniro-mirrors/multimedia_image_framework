@@ -717,11 +717,17 @@ bool PixelMap::CheckYuvDataInfoValid(const YUVDataInfo& yDataInfo)
 
     //offset
     if (yDataInfo.yOffset != 0) {
-        IMAGE_LOGW("Invalid offset: Y(%{public}u)", yDataInfo.yOffset);
+        IMAGE_LOGW("Invalid Y offset: %{public}u (expected 0)", yDataInfo.yOffset);
     }
-    uint64_t yPlaneSize = static_cast<uint64_t>(yDataInfo.yWidth) * yDataInfo.yHeight;
+
+    uint64_t yPlaneSize = static_cast<uint64_t>(yDataInfo.yStride) * yDataInfo.yHeight;
     if (yDataInfo.uvOffset < yPlaneSize) {
-        IMAGE_LOGE("Invalid offset: UV(%{public}u) mismatch yPlaneSize(%{public}llu)", yDataInfo.uvOffset, yPlaneSize);
+        IMAGE_LOGE("Invalid UV offset: %{public}u less than Y plane size", yDataInfo.uvOffset);
+        return false;
+    }
+    uint64_t bufferSize = yPlaneSize + static_cast<uint64_t>(yDataInfo.uvStride) * yDataInfo.uvHeight;
+    if (bufferSize > UINT32_MAX) {
+        IMAGE_LOGE("Invalid YUV buffer size: overflow (exceeds UINT32_MAX)");
         return false;
     }
 
