@@ -4333,8 +4333,6 @@ static uint32_t AllocSurfaceBuffer(DecodeContext &context, uint32_t format)
 CM_ColorSpaceType ImageSource::ConvertColorSpaceType(ColorManager::ColorSpaceName colorSpace, bool base)
 {
     switch (colorSpace) {
-        case ColorManager::ColorSpaceName::ADOBE_RGB :
-            return CM_ADOBERGB_FULL;
         case ColorManager::ColorSpaceName::SRGB :
             return CM_SRGB_FULL;
         case ColorManager::ColorSpaceName::SRGB_LIMIT :
@@ -4352,10 +4350,13 @@ CM_ColorSpaceType ImageSource::ConvertColorSpaceType(ColorManager::ColorSpaceNam
             return CM_BT2020_PQ_FULL;
         case ColorManager::ColorSpaceName::BT2020_PQ_LIMIT :
             return CM_BT2020_PQ_LIMIT;
+        case ColorManager::ColorSpaceName::DISPLAY_BT2020_SRGB :
+            return CM_DISPLAY_BT2020_SRGB;
+        case ColorManager::ColorSpaceName::ADOBE_RGB :
+            return CM_ADOBERGB_FULL;
         default:
-            return base ? CM_P3_FULL : CM_BT2020_HLG_FULL;
+            return CM_COLORCPACE_NONE;
     }
-    return base ? CM_P3_FULL : CM_BT2020_HLG_FULL;
 }
 
 static ColorManager::ColorSpaceName ConvertColorSpaceName(CM_ColorSpaceType colorSpace, bool base)
