@@ -4355,7 +4355,7 @@ CM_ColorSpaceType ImageSource::ConvertColorSpaceType(ColorManager::ColorSpaceNam
         case ColorManager::ColorSpaceName::ADOBE_RGB :
             return CM_ADOBERGB_FULL;
         default:
-            return CM_COLORCPACE_NONE;
+            return CM_COLORSPACE_NONE;
     }
 }
 
