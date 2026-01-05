@@ -22,6 +22,7 @@
 #include <fstream>
 #include "common_fuzztest_function.h"
 
+#include "dng_sdk_info.h"
 #include "image_dfx.h"
 #include "image_log.h"
 #include "image_packer.h"
@@ -477,6 +478,40 @@ void PackThumbnailFuzzTest(const uint8_t *data, size_t size)
         return;
     }
 }
+
+void GetDngImagePropertyByDngSdkFuzzTest()
+{
+    if (FDP == nullptr) {
+        return;
+    }
+    std::string path = "/data/local/tmp/test_create_imagesource_pathname.png";
+    uint32_t errorCode = 0;
+    SourceOptions opts;
+    opts.formatHint = "image/dng";
+    std::unique_ptr<ImageSource> imageSource =
+        ImageSource::CreateImageSource(path, opts, errorCode);
+    if (errorCode != 0 || imageSource == nullptr) {
+        return;
+    }
+    
+    std::vector<std::string> validKeys;
+    for (const auto& pair : DngSdkInfo::exifPropertyMap_) {
+        validKeys.push_back(pair.first);
+    }
+    for (const auto& pair : DngSdkInfo::sharedPropertyMap_) {
+        validKeys.push_back(pair.first);
+    }
+    for (const auto& pair : DngSdkInfo::ifdPropertyMap_) {
+        validKeys.push_back(pair.first);
+    }
+    for (const auto& pair : DngSdkInfo::specialTagNameMap_) {
+        validKeys.push_back(pair.first);
+    }
+    uint8_t randomIdx = FDP->ConsumeIntegral<uint8_t>() % validKeys.size();
+    MetadataValue value;
+    std::string key = validKeys[randomIdx];
+    imageSource->GetDngImagePropertyByDngSdk(key, value);
+}
 }  // namespace Media
 }  // namespace OHOS
 
@@ -502,5 +537,6 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
     OHOS::Media::GetImagePropertiesByFuzzTest(data, size);
     
     OHOS::Media::PackThumbnailFuzzTest(data, size);
+    OHOS::Media::GetDngImagePropertyByDngSdkFuzzTest();
     return 0;
 }
