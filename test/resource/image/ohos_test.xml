@@ -102,6 +102,7 @@
             <option name="push" value="images/fake_large_size_test.jpg -> /data/local/tmp/image" src="res"/>
             <option name="push" value="images/exif.jpg -> /data/local/tmp/image" src="res"/>
             <option name="push" value="images/test_metadata.jpg -> /data/local/tmp/image" src="res"/>
+            <option name="push" value="images/exif/test_dng_readmetadata001.dng -> /data/local/tmp/image" src="res"/>
         </preparer>
     </target>
     <target name="imagecolorspacetest">

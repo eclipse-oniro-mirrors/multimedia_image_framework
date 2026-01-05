@@ -77,6 +77,7 @@ static const std::string IMAGE_JPG_JPEG_UWA_MULTI_ALTERNATE_COLOR_PATH =
     "/data/local/tmp/image/jpeg_uwa_multi_alternate_color.jpg";
 static const std::string IMAGE_EXIF_PATH =
     "/data/local/tmp/image/exif.jpg";
+static const std::string IMAGE_INPUT1_DNG_PATH = "/data/local/tmp/image/test_dng_readmetadata001.dng";
 static const int32_t DECODE_DESIRED_WIDTH = 7500;
 static const int32_t DECODE_DESIRED_HEIGHT = 7500;
 static const int32_t DESIRED_REGION_WIDTH = 4096;
@@ -4023,6 +4024,824 @@ HWTEST_F(ImageSourceTest, RemoveAllPropertiesTest001, TestSize.Level3)
     
     auto finalProps = imageSource->GetAllPropertiesWithType();
     EXPECT_LT(finalProps.size(), initialProps.size());
+}
+
+/**
+ * @tc.name: GetDngImagePropertyByDngSdkTest001
+ * @tc.desc: Test GetDngImagePropertyByDngSdk returns ERR_IMAGE_DECODE_EXIF_UNSUPPORT with invalid "errorkey"
+ *           as property key for DNG image
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageSourceTest, GetDngImagePropertyByDngSdkTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImageSourceTest: GetDngImagePropertyByDngSdkTest001 start";
+    std::string key = "errorkey";
+    MetadataValue value;
+    auto imageSource = CreateImageSourceByPath(IMAGE_INPUT1_DNG_PATH);
+    ASSERT_NE(imageSource, nullptr);
+    auto ret = imageSource->GetDngImagePropertyByDngSdk(key, value);
+    EXPECT_EQ(ret, ERR_IMAGE_DECODE_EXIF_UNSUPPORT);
+    GTEST_LOG_(INFO) << "ImageSourceTest: GetDngImagePropertyByDngSdkTest001 end";
+}
+
+/**
+ * @tc.name: GetDngImagePropertyByDngSdkTest002
+ * @tc.desc: Test GetDngImagePropertyByDngSdk for basic DNG Exif properties BitsPerSample, Orientation, GPSLatitude etc
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageSourceTest, GetDngImagePropertyByDngSdkTest002, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImageSourceTest: GetDngImagePropertyByDngSdkTest002 start";
+    static constexpr uint32_t bitsPerSampleRed = 12;
+    static constexpr uint32_t bitsPerSampleGreen = 12;
+    static constexpr uint32_t bitsPerSampleBlue = 12;
+    static constexpr uint32_t orientationNormal = 6;
+    static constexpr uint32_t imageHeightPixels = 3024;
+    static constexpr uint32_t imageWidthPixels = 4032;
+    static constexpr double gpsLatitudeDegrees = 34.0;
+    static constexpr double gpsLatitudeMinutes = 3.0;
+    static constexpr double gpsLatitudeSeconds = 34.59;
+    static constexpr double gpsLongitudeDegrees = 84.0;
+    static constexpr double gpsLongitudeMinutes = 40.0;
+    static constexpr double gpsLongitudeSeconds = 54.21;
+    static constexpr const char* gpsLatitudeRefNorth = "N";
+    static constexpr const char* gpsLongitudeRefWest = "W";
+
+    MetadataValue value;
+    auto imageSource = CreateImageSourceByPath(IMAGE_INPUT1_DNG_PATH);
+    ASSERT_NE(imageSource, nullptr);
+    ASSERT_EQ(imageSource->GetDngImagePropertyByDngSdk("BitsPerSample", value), SUCCESS);
+    ASSERT_EQ(value.intArrayValue[0], bitsPerSampleRed);
+    ASSERT_EQ(value.intArrayValue[1], bitsPerSampleGreen);
+    ASSERT_EQ(value.intArrayValue[2], bitsPerSampleBlue);
+    ASSERT_EQ(imageSource->GetDngImagePropertyByDngSdk("Orientation", value), SUCCESS);
+    ASSERT_EQ(value.intArrayValue[0], orientationNormal);
+    ASSERT_EQ(imageSource->GetDngImagePropertyByDngSdk("ImageLength", value), SUCCESS);
+    ASSERT_EQ(value.intArrayValue[0], imageHeightPixels);
+    ASSERT_EQ(imageSource->GetDngImagePropertyByDngSdk("ImageWidth", value), SUCCESS);
+    ASSERT_EQ(value.intArrayValue[0], imageWidthPixels);
+    ASSERT_EQ(imageSource->GetDngImagePropertyByDngSdk("GPSLatitude", value), SUCCESS);
+    ASSERT_EQ(value.doubleArrayValue[0], gpsLatitudeDegrees);
+    ASSERT_EQ(value.doubleArrayValue[1], gpsLatitudeMinutes);
+    ASSERT_EQ(value.doubleArrayValue[2], gpsLatitudeSeconds);
+    ASSERT_EQ(imageSource->GetDngImagePropertyByDngSdk("GPSLongitude", value), SUCCESS);
+    ASSERT_EQ(value.doubleArrayValue[0], gpsLongitudeDegrees);
+    ASSERT_EQ(value.doubleArrayValue[1], gpsLongitudeMinutes);
+    ASSERT_EQ(value.doubleArrayValue[2], gpsLongitudeSeconds);
+    ASSERT_EQ(imageSource->GetDngImagePropertyByDngSdk("GPSLatitudeRef", value), SUCCESS);
+    ASSERT_EQ(value.stringValue, gpsLatitudeRefNorth);
+    ASSERT_EQ(imageSource->GetDngImagePropertyByDngSdk("GPSLongitudeRef", value), SUCCESS);
+    ASSERT_EQ(value.stringValue, gpsLongitudeRefWest);
+    GTEST_LOG_(INFO) << "ImageSourceTest: GetDngImagePropertyByDngSdkTest002 end";
+}
+
+/**
+ * @tc.name: GetDngImagePropertyByDngSdkTest003
+ * @tc.desc: Test GetDngImagePropertyByDngSdk for time and exposure related DNG Exif properties
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageSourceTest, GetDngImagePropertyByDngSdkTest003, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImageSourceTest: GetDngImagePropertyByDngSdkTest003 start";
+    static constexpr const char* dateTimeOriginalDefault = "0000:00:00 00:00:00";
+    static constexpr double exposureTimeSeconds = 0.00017998560115190784;
+    static constexpr uint32_t isoSpeedRating = 32;
+    static constexpr double fNumber = 1.6;
+    static constexpr const char* dateTimeValue = "2020:12:29 14:24:45";
+    static constexpr double gpsHours = 1.0;
+    static constexpr double gpsMinutes = 39.0;
+    static constexpr double gpsSeconds = 58.0;
+    
+    MetadataValue value;
+    auto imageSource = CreateImageSourceByPath(IMAGE_INPUT1_DNG_PATH);
+    ASSERT_NE(imageSource, nullptr);
+    ASSERT_EQ(imageSource->GetDngImagePropertyByDngSdk("DateTimeOriginal", value), SUCCESS);
+    ASSERT_EQ(value.stringValue, dateTimeOriginalDefault);
+    ASSERT_EQ(imageSource->GetDngImagePropertyByDngSdk("ExposureTime", value), SUCCESS);
+    ASSERT_EQ(value.doubleArrayValue[0], exposureTimeSeconds);
+    ASSERT_EQ(imageSource->GetDngImagePropertyByDngSdk("ISOSpeedRatings", value), SUCCESS);
+    ASSERT_EQ(value.intArrayValue[0], isoSpeedRating);
+    ASSERT_EQ(imageSource->GetDngImagePropertyByDngSdk("FNumber", value), SUCCESS);
+    ASSERT_EQ(value.doubleArrayValue[0], fNumber);
+    ASSERT_EQ(imageSource->GetDngImagePropertyByDngSdk("DateTime", value), SUCCESS);
+    ASSERT_EQ(value.stringValue, dateTimeValue);
+    ASSERT_EQ(imageSource->GetDngImagePropertyByDngSdk("GPSTimeStamp", value), SUCCESS);
+    ASSERT_EQ(value.doubleArrayValue[0], gpsHours);
+    ASSERT_EQ(value.doubleArrayValue[1], gpsMinutes);
+    ASSERT_EQ(value.doubleArrayValue[2], gpsSeconds);
+    GTEST_LOG_(INFO) << "ImageSourceTest: GetDngImagePropertyByDngSdkTest003 end";
+}
+
+/**
+ * @tc.name: GetDngImagePropertyByDngSdkTest004
+ * @tc.desc: Test GetDngImagePropertyByDngSdk for GPS and device related DNG Exif properties
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageSourceTest, GetDngImagePropertyByDngSdkTest004, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImageSourceTest: GetDngImagePropertyByDngSdkTest004 start";
+    static constexpr const char* gpsDateStamp = "2020:12:29";
+    static constexpr const char* imageDescription = "_cuva";
+    static constexpr const char* cameraMake = "Apple";
+    static constexpr const char* cameraModel = "iPhone 12 Pro";
+    
+    MetadataValue value;
+    auto imageSource = CreateImageSourceByPath(IMAGE_INPUT1_DNG_PATH);
+    ASSERT_NE(imageSource, nullptr);
+    ASSERT_EQ(imageSource->GetDngImagePropertyByDngSdk("GPSDateStamp", value), SUCCESS);
+    ASSERT_EQ(value.stringValue, gpsDateStamp);
+    ASSERT_EQ(imageSource->GetDngImagePropertyByDngSdk("ImageDescription", value), SUCCESS);
+    ASSERT_EQ(value.stringValue, imageDescription);
+    ASSERT_EQ(imageSource->GetDngImagePropertyByDngSdk("Make", value), SUCCESS);
+    ASSERT_EQ(value.stringValue, cameraMake);
+    ASSERT_EQ(imageSource->GetDngImagePropertyByDngSdk("Model", value), SUCCESS);
+    ASSERT_EQ(value.stringValue, cameraModel);
+    GTEST_LOG_(INFO) << "ImageSourceTest: GetDngImagePropertyByDngSdkTest004 end";
+}
+
+/**
+ * @tc.name: GetDngImagePropertyByDngSdkTest005
+ * @tc.desc: Test GetDngImagePropertyByDngSdk for sensitivity and exposure index related DNG Exif properties
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageSourceTest, GetDngImagePropertyByDngSdkTest005, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "DngExifMetadataAccessorTest: GetDngImagePropertyByDngSdkTest005 start";
+    static constexpr uint32_t sensitivityType = 5;
+    static constexpr uint32_t standardOutputSensitivity = 5;
+    static constexpr uint32_t recommendedExposureIndex = 241;
+    static constexpr double apertureValue = 1.3561438092556088;
+    static constexpr double exposureBiasValue = 0.0;
+    static constexpr uint32_t meteringMode = 5;
+    
+    MetadataValue value;
+    auto imageSource = CreateImageSourceByPath(IMAGE_INPUT1_DNG_PATH);
+    ASSERT_NE(imageSource, nullptr);
+    ASSERT_EQ(imageSource->GetDngImagePropertyByDngSdk("SensitivityType", value), SUCCESS);
+    ASSERT_EQ(value.intArrayValue[0], sensitivityType);
+    ASSERT_EQ(imageSource->GetDngImagePropertyByDngSdk("StandardOutputSensitivity", value), SUCCESS);
+    ASSERT_EQ(value.intArrayValue[0], standardOutputSensitivity);
+    ASSERT_EQ(imageSource->GetDngImagePropertyByDngSdk("RecommendedExposureIndex", value), SUCCESS);
+    ASSERT_EQ(value.intArrayValue[0], recommendedExposureIndex);
+    ASSERT_EQ(imageSource->GetDngImagePropertyByDngSdk("ApertureValue", value), SUCCESS);
+    ASSERT_EQ(value.doubleArrayValue[0], apertureValue);
+    ASSERT_EQ(imageSource->GetDngImagePropertyByDngSdk("ExposureBiasValue", value), SUCCESS);
+    ASSERT_EQ(value.doubleArrayValue[0], exposureBiasValue);
+    ASSERT_EQ(imageSource->GetDngImagePropertyByDngSdk("MeteringMode", value), SUCCESS);
+    ASSERT_EQ(value.intArrayValue[0], meteringMode);
+    GTEST_LOG_(INFO) << "DngExifMetadataAccessorTest: GetDngImagePropertyByDngSdkTest005 end";
+}
+
+/**
+ * @tc.name: GetDngImagePropertyByDngSdkTest006
+ * @tc.desc: Test GetDngImagePropertyByDngSdk for light source and focal length related DNG Exif properties
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageSourceTest, GetDngImagePropertyByDngSdkTest006, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "DngExifMetadataAccessorTest: GetDngImagePropertyByDngSdkTest006 start";
+    static constexpr uint32_t lightSource = 2;
+    static constexpr uint32_t flashMode = 16;
+    static constexpr double focalLength = 4.2;
+    static constexpr const char* userComment = "comm";
+    static constexpr uint32_t pixelXDimension = 4032;
+    static constexpr uint32_t pixelYDimension = 3024;
+    
+    MetadataValue value;
+    auto imageSource = CreateImageSourceByPath(IMAGE_INPUT1_DNG_PATH);
+    ASSERT_NE(imageSource, nullptr);
+    ASSERT_EQ(imageSource->GetDngImagePropertyByDngSdk("LightSource", value), SUCCESS);
+    ASSERT_EQ(value.intArrayValue[0], lightSource);
+    ASSERT_EQ(imageSource->GetDngImagePropertyByDngSdk("Flash", value), SUCCESS);
+    ASSERT_EQ(value.intArrayValue[0], flashMode);
+    ASSERT_EQ(imageSource->GetDngImagePropertyByDngSdk("FocalLength", value), SUCCESS);
+    ASSERT_EQ(value.doubleArrayValue[0], focalLength);
+    ASSERT_EQ(imageSource->GetDngImagePropertyByDngSdk("UserComment", value), SUCCESS);
+    ASSERT_EQ(value.stringValue, userComment);
+    ASSERT_EQ(imageSource->GetDngImagePropertyByDngSdk("PixelXDimension", value), SUCCESS);
+    ASSERT_EQ(value.intArrayValue[0], pixelXDimension);
+    ASSERT_EQ(imageSource->GetDngImagePropertyByDngSdk("PixelYDimension", value), SUCCESS);
+    ASSERT_EQ(value.intArrayValue[0], pixelYDimension);
+    GTEST_LOG_(INFO) << "DngExifMetadataAccessorTest: GetDngImagePropertyByDngSdkTest006 end";
+}
+
+/**
+ * @tc.name: GetDngImagePropertyByDngSdkTest007
+ * @tc.desc: Test GetDngImagePropertyByDngSdk for white balance and artist related DNG Exif properties
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageSourceTest, GetDngImagePropertyByDngSdkTest007, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "DngExifMetadataAccessorTest: GetDngImagePropertyByDngSdkTest007 start";
+    static constexpr uint32_t whiteBalanceAuto = 0;
+    static constexpr uint32_t focalLength35mmEquivalent = 26;
+    static constexpr double maxApertureValue = 0.083333333333333329;
+    static constexpr const char* artistName = "Joseph.Xu";
+    static constexpr uint32_t newSubfileType = 0;
+
+    MetadataValue value;
+    auto imageSource = CreateImageSourceByPath(IMAGE_INPUT1_DNG_PATH);
+    ASSERT_NE(imageSource, nullptr);
+    ASSERT_EQ(imageSource->GetDngImagePropertyByDngSdk("WhiteBalance", value), SUCCESS);
+    ASSERT_EQ(value.intArrayValue[0], whiteBalanceAuto);
+    ASSERT_EQ(imageSource->GetDngImagePropertyByDngSdk("FocalLengthIn35mmFilm", value), SUCCESS);
+    ASSERT_EQ(value.intArrayValue[0], focalLength35mmEquivalent);
+    ASSERT_EQ(imageSource->GetDngImagePropertyByDngSdk("MaxApertureValue", value), SUCCESS);
+    ASSERT_EQ(value.doubleArrayValue[0], maxApertureValue);
+    ASSERT_EQ(imageSource->GetDngImagePropertyByDngSdk("Artist", value), SUCCESS);
+    ASSERT_EQ(value.stringValue, artistName);
+    ASSERT_EQ(imageSource->GetDngImagePropertyByDngSdk("NewSubfileType", value), SUCCESS);
+    ASSERT_EQ(value.intArrayValue[0], newSubfileType);
+    GTEST_LOG_(INFO) << "DngExifMetadataAccessorTest: GetDngImagePropertyByDngSdkTest007 end";
+}
+
+/**
+ * @tc.name: GetDngImagePropertyByDngSdkTest008
+ * @tc.desc: Test GetDngImagePropertyByDngSdk for planar configuration and chromaticities related DNG Exif properties
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageSourceTest, GetDngImagePropertyByDngSdkTest008, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "DngExifMetadataAccessorTest: GetDngImagePropertyByDngSdkTest008 start";
+    static constexpr uint32_t planarConfiguration = 1;
+    static constexpr double primaryChromaticitiesRedX = 124.0;
+    static constexpr double referenceBlackWhiteBlack = 0.0;
+    static constexpr uint32_t samplesPerPixel = 3;
+    static constexpr uint32_t compressionType = 7;
+    
+    MetadataValue value;
+    auto imageSource = CreateImageSourceByPath(IMAGE_INPUT1_DNG_PATH);
+    ASSERT_NE(imageSource, nullptr);
+    ASSERT_EQ(imageSource->GetDngImagePropertyByDngSdk("PlanarConfiguration", value), SUCCESS);
+    ASSERT_EQ(value.intArrayValue[0], planarConfiguration);
+    ASSERT_EQ(imageSource->GetDngImagePropertyByDngSdk("PrimaryChromaticities", value), SUCCESS);
+    ASSERT_EQ(value.doubleArrayValue[0], primaryChromaticitiesRedX);
+    ASSERT_EQ(imageSource->GetDngImagePropertyByDngSdk("ReferenceBlackWhite", value), SUCCESS);
+    ASSERT_EQ(value.doubleArrayValue[0], referenceBlackWhiteBlack);
+    ASSERT_EQ(imageSource->GetDngImagePropertyByDngSdk("SamplesPerPixel", value), SUCCESS);
+    ASSERT_EQ(value.intArrayValue[0], samplesPerPixel);
+    ASSERT_EQ(imageSource->GetDngImagePropertyByDngSdk("Compression", value), SUCCESS);
+    ASSERT_EQ(value.intArrayValue[0], compressionType);
+    GTEST_LOG_(INFO) << "DngExifMetadataAccessorTest: GetDngImagePropertyByDngSdkTest008 end";
+}
+
+/**
+ * @tc.name: GetDngImagePropertyByDngSdkTest009
+ * @tc.desc: Test GetDngImagePropertyByDngSdk for software and DNG version related DNG Exif properties
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageSourceTest, GetDngImagePropertyByDngSdkTest009, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "DngExifMetadataAccessorTest: GetDngImagePropertyByDngSdkTest009 start";
+    static constexpr const char* softwareVersion = "14.3";
+    static constexpr const char* copyrightInfo = "XXXXXX (Photographer) - [None] (Editor)";
+    static constexpr const char* spectralSensitivity = "sensitivity";
+    static constexpr uint32_t dngVersionMajor = 1;
+    static constexpr uint32_t dngVersionMinor = 4;
+    static constexpr double subjectDistance = 2.5;
+    
+    MetadataValue value;
+    auto imageSource = CreateImageSourceByPath(IMAGE_INPUT1_DNG_PATH);
+    ASSERT_NE(imageSource, nullptr);
+    ASSERT_EQ(imageSource->GetDngImagePropertyByDngSdk("Software", value), SUCCESS);
+    ASSERT_EQ(value.stringValue, softwareVersion);
+    ASSERT_EQ(imageSource->GetDngImagePropertyByDngSdk("Copyright", value), SUCCESS);
+    ASSERT_EQ(value.stringValue, copyrightInfo);
+    ASSERT_EQ(imageSource->GetDngImagePropertyByDngSdk("SpectralSensitivity", value), SUCCESS);
+    ASSERT_EQ(value.stringValue, spectralSensitivity);
+    ASSERT_EQ(imageSource->GetDngImagePropertyByDngSdk("DNGVersion", value), SUCCESS);
+    ASSERT_EQ(value.intArrayValue[0], dngVersionMajor);
+    ASSERT_EQ(value.intArrayValue[1], dngVersionMinor);
+    ASSERT_EQ(imageSource->GetDngImagePropertyByDngSdk("SubjectDistance", value), SUCCESS);
+    ASSERT_EQ(value.doubleArrayValue[0], subjectDistance);
+    GTEST_LOG_(INFO) << "DngExifMetadataAccessorTest: GetDngImagePropertyByDngSdkTest009 end";
+}
+
+/**
+ * @tc.name: GetDngImagePropertyByDngSdkTest010
+ * @tc.desc: Test GetDngImagePropertyByDngSdk for crop size and YCbCr related DNG Exif properties
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageSourceTest, GetDngImagePropertyByDngSdkTest010, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "DngExifMetadataAccessorTest: GetDngImagePropertyByDngSdkTest010 start";
+    static constexpr uint32_t defaultCropWidth = 4032;
+    static constexpr uint32_t defaultCropHeight = 3024;
+    static constexpr uint32_t subjectLocationX = 3;
+    static constexpr const char* transferFunction = "2";
+    static constexpr double whitePointX = 124.2;
+    static constexpr double yCbCrCoefficientR = 0.299;
+    static constexpr double yCbCrCoefficientG = 0.587;
+    static constexpr double yCbCrCoefficientB = 0.114;
+    
+    MetadataValue value;
+    auto imageSource = CreateImageSourceByPath(IMAGE_INPUT1_DNG_PATH);
+    ASSERT_NE(imageSource, nullptr);
+    ASSERT_EQ(imageSource->GetDngImagePropertyByDngSdk("DefaultCropSize", value), SUCCESS);
+    ASSERT_EQ(value.intArrayValue[0], defaultCropWidth);
+    ASSERT_EQ(value.intArrayValue[1], defaultCropHeight);
+    ASSERT_EQ(imageSource->GetDngImagePropertyByDngSdk("SubjectLocation", value), SUCCESS);
+    ASSERT_EQ(value.intArrayValue[0], subjectLocationX);
+    ASSERT_EQ(imageSource->GetDngImagePropertyByDngSdk("TransferFunction", value), SUCCESS);
+    ASSERT_EQ(value.stringValue, transferFunction);
+    ASSERT_EQ(imageSource->GetDngImagePropertyByDngSdk("WhitePoint", value), SUCCESS);
+    ASSERT_EQ(value.doubleArrayValue[0], whitePointX);
+    ASSERT_EQ(imageSource->GetDngImagePropertyByDngSdk("YCbCrCoefficients", value), SUCCESS);
+    ASSERT_EQ(value.doubleArrayValue[0], yCbCrCoefficientR);
+    ASSERT_EQ(value.doubleArrayValue[1], yCbCrCoefficientG);
+    ASSERT_EQ(value.doubleArrayValue[2], yCbCrCoefficientB);
+    GTEST_LOG_(INFO) << "DngExifMetadataAccessorTest: GetDngImagePropertyByDngSdkTest010 end";
+}
+
+/**
+ * @tc.name: GetDngImagePropertyByDngSdkTest011
+ * @tc.desc: Test GetDngImagePropertyByDngSdk for YCbCr positioning and gamma related DNG Exif properties
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageSourceTest, GetDngImagePropertyByDngSdkTest011, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "DngExifMetadataAccessorTest: GetDngImagePropertyByDngSdkTest011 start";
+    static constexpr uint32_t yCbCrPositioning = 1;
+    static constexpr uint32_t yCbCrSubSamplingHorizontal = 3;
+    static constexpr uint32_t yCbCrSubSamplingVertical = 2;
+    static constexpr double gammaValue = 1.5;
+    static constexpr uint32_t isoSpeedLatitudeYyy = 3;
+    static constexpr uint32_t isoSpeedLatitudeZzz = 3;
+    
+    MetadataValue value;
+    auto imageSource = CreateImageSourceByPath(IMAGE_INPUT1_DNG_PATH);
+    ASSERT_NE(imageSource, nullptr);
+    ASSERT_EQ(imageSource->GetDngImagePropertyByDngSdk("YCbCrPositioning", value), SUCCESS);
+    ASSERT_EQ(value.intArrayValue[0], yCbCrPositioning);
+    ASSERT_EQ(imageSource->GetDngImagePropertyByDngSdk("YCbCrSubSampling", value), SUCCESS);
+    ASSERT_EQ(value.intArrayValue[0], yCbCrSubSamplingHorizontal);
+    ASSERT_EQ(value.intArrayValue[1], yCbCrSubSamplingVertical);
+    ASSERT_EQ(imageSource->GetDngImagePropertyByDngSdk("Gamma", value), SUCCESS);
+    ASSERT_EQ(value.doubleArrayValue[0], gammaValue);
+    ASSERT_EQ(imageSource->GetDngImagePropertyByDngSdk("ISOSpeedLatitudeyyy", value), SUCCESS);
+    ASSERT_EQ(value.intArrayValue[0], isoSpeedLatitudeYyy);
+    ASSERT_EQ(imageSource->GetDngImagePropertyByDngSdk("ISOSpeedLatitudezzz", value), SUCCESS);
+    ASSERT_EQ(value.intArrayValue[0], isoSpeedLatitudeZzz);
+    GTEST_LOG_(INFO) << "DngExifMetadataAccessorTest: GetDngImagePropertyByDngSdkTest011 end";
+}
+
+/**
+ * @tc.name: GetDngImagePropertyByDngSdkTest012
+ * @tc.desc: Test GetDngImagePropertyByDngSdk for image unique ID and GPS altitude related DNG Exif properties
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageSourceTest, GetDngImagePropertyByDngSdkTest012, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "DngExifMetadataAccessorTest: GetDngImagePropertyByDngSdkTest012 start";
+    static constexpr const char* imageUniqueIdEmpty = "";
+    static constexpr double gpsAltitude = 261.01653261840931;
+    static constexpr uint32_t gpsAltitudeRefAboveSeaLevel = 0;
+    static constexpr const char* gpsAreaInformation = "23...15...57";
+    static constexpr double gpsDop = 182.0;
+    
+    MetadataValue value;
+    auto imageSource = CreateImageSourceByPath(IMAGE_INPUT1_DNG_PATH);
+    ASSERT_NE(imageSource, nullptr);
+    ASSERT_EQ(imageSource->GetDngImagePropertyByDngSdk("ImageUniqueID", value), SUCCESS);
+    ASSERT_EQ(value.stringValue, imageUniqueIdEmpty);
+    ASSERT_EQ(imageSource->GetDngImagePropertyByDngSdk("GPSAltitude", value), SUCCESS);
+    ASSERT_EQ(value.doubleArrayValue[0], gpsAltitude);
+    ASSERT_EQ(imageSource->GetDngImagePropertyByDngSdk("GPSAltitudeRef", value), SUCCESS);
+    ASSERT_EQ(value.intArrayValue[0], gpsAltitudeRefAboveSeaLevel);
+    ASSERT_EQ(imageSource->GetDngImagePropertyByDngSdk("GPSAreaInformation", value), SUCCESS);
+    ASSERT_EQ(value.stringValue, gpsAreaInformation);
+    ASSERT_EQ(imageSource->GetDngImagePropertyByDngSdk("GPSDOP", value), SUCCESS);
+    ASSERT_EQ(value.doubleArrayValue[0], gpsDop);
+    GTEST_LOG_(INFO) << "DngExifMetadataAccessorTest: GetDngImagePropertyByDngSdkTest012 end";
+}
+
+/**
+ * @tc.name: GetDngImagePropertyByDngSdkTest013
+ * @tc.desc: Test GetDngImagePropertyByDngSdk for GPS destination related DNG Exif properties
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageSourceTest, GetDngImagePropertyByDngSdkTest013, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "DngExifMetadataAccessorTest: GetDngImagePropertyByDngSdkTest013 start";
+    
+    static constexpr double gpsDestBearing = 143.86636363636364;
+    static constexpr const char* gpsDestBearingRefTrue = "T";
+    static constexpr double gpsDestDistance = 10.0;
+    static constexpr const char* gpsDestDistanceRefNauticalMiles = "N";
+    static constexpr double gpsDestLatitudeDegrees = 33.0;
+    static constexpr double gpsDestLatitudeMinutes = 22.0;
+    static constexpr double gpsDestLatitudeSeconds = 11.0;
+    
+    MetadataValue value;
+    auto imageSource = CreateImageSourceByPath(IMAGE_INPUT1_DNG_PATH);
+    ASSERT_NE(imageSource, nullptr);
+    ASSERT_EQ(imageSource->GetDngImagePropertyByDngSdk("GPSDestBearing", value), SUCCESS);
+    ASSERT_EQ(value.doubleArrayValue[0], gpsDestBearing);
+    ASSERT_EQ(imageSource->GetDngImagePropertyByDngSdk("GPSDestBearingRef", value), SUCCESS);
+    ASSERT_EQ(value.stringValue, gpsDestBearingRefTrue);
+    ASSERT_EQ(imageSource->GetDngImagePropertyByDngSdk("GPSDestDistance", value), SUCCESS);
+    ASSERT_EQ(value.doubleArrayValue[0], gpsDestDistance);
+    ASSERT_EQ(imageSource->GetDngImagePropertyByDngSdk("GPSDestDistanceRef", value), SUCCESS);
+    ASSERT_EQ(value.stringValue, gpsDestDistanceRefNauticalMiles);
+    ASSERT_EQ(imageSource->GetDngImagePropertyByDngSdk("GPSDestLatitude", value), SUCCESS);
+    ASSERT_EQ(value.doubleArrayValue[0], gpsDestLatitudeDegrees);
+    ASSERT_EQ(value.doubleArrayValue[1], gpsDestLatitudeMinutes);
+    ASSERT_EQ(value.doubleArrayValue[2], gpsDestLatitudeSeconds);
+    GTEST_LOG_(INFO) << "DngExifMetadataAccessorTest: GetDngImagePropertyByDngSdkTest013 end";
+}
+
+/**
+ * @tc.name: GetDngImagePropertyByDngSdkTest014
+ * @tc.desc: Test GetDngImagePropertyByDngSdk for GPS destination longitude and differential related DNG Exif properties
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageSourceTest, GetDngImagePropertyByDngSdkTest014, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "DngExifMetadataAccessorTest: GetDngImagePropertyByDngSdkTest014 start";
+    
+    static constexpr double gpsDestLongitudeDegrees = 33.0;
+    static constexpr double gpsDestLongitudeMinutes = 22.0;
+    static constexpr double gpsDestLongitudeSeconds = 11.0;
+    static constexpr const char* gpsDestLongitudeRefEast = "E";
+    static constexpr uint32_t gpsDifferentialCorrectionApplied = 1;
+    
+    MetadataValue value;
+    auto imageSource = CreateImageSourceByPath(IMAGE_INPUT1_DNG_PATH);
+    ASSERT_NE(imageSource, nullptr);
+    ASSERT_EQ(imageSource->GetDngImagePropertyByDngSdk("GPSDestLongitude", value), SUCCESS);
+    ASSERT_EQ(value.doubleArrayValue[0], gpsDestLongitudeDegrees);
+    ASSERT_EQ(value.doubleArrayValue[1], gpsDestLongitudeMinutes);
+    ASSERT_EQ(value.doubleArrayValue[2], gpsDestLongitudeSeconds);
+    ASSERT_EQ(imageSource->GetDngImagePropertyByDngSdk("GPSDestLongitudeRef", value), SUCCESS);
+    ASSERT_EQ(value.stringValue, gpsDestLongitudeRefEast);
+    ASSERT_EQ(imageSource->GetDngImagePropertyByDngSdk("GPSDifferential", value), SUCCESS);
+    ASSERT_EQ(value.intArrayValue[0], gpsDifferentialCorrectionApplied);
+    GTEST_LOG_(INFO) << "DngExifMetadataAccessorTest: GetDngImagePropertyByDngSdkTest014 end";
+}
+
+/**
+ * @tc.name: GetDngImagePropertyByDngSdkTest015
+ * @tc.desc: Test GetDngImagePropertyByDngSdk for GPS image direction and map datum related DNG Exif properties
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageSourceTest, GetDngImagePropertyByDngSdkTest015, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "DngExifMetadataAccessorTest: GetDngImagePropertyByDngSdkTest015 start";
+    
+    static constexpr double gpsImageDirection = 143.86636363636364;
+    static constexpr const char* gpsImageDirectionRefTrue = "T";
+    static constexpr const char* gpsMapDatum = "xxxx";
+    static constexpr const char* gpsMeasureMode = "2";
+    static constexpr const char* gpsProcessingMethod = "CELLID";
+    
+    MetadataValue value;
+    auto imageSource = CreateImageSourceByPath(IMAGE_INPUT1_DNG_PATH);
+    ASSERT_NE(imageSource, nullptr);
+    ASSERT_EQ(imageSource->GetDngImagePropertyByDngSdk("GPSImgDirection", value), SUCCESS);
+    ASSERT_EQ(value.doubleArrayValue[0], gpsImageDirection);
+    ASSERT_EQ(imageSource->GetDngImagePropertyByDngSdk("GPSImgDirectionRef", value), SUCCESS);
+    ASSERT_EQ(value.stringValue, gpsImageDirectionRefTrue);
+    ASSERT_EQ(imageSource->GetDngImagePropertyByDngSdk("GPSMapDatum", value), SUCCESS);
+    ASSERT_EQ(value.stringValue, gpsMapDatum);
+    ASSERT_EQ(imageSource->GetDngImagePropertyByDngSdk("GPSMeasureMode", value), SUCCESS);
+    ASSERT_EQ(value.stringValue, gpsMeasureMode);
+    ASSERT_EQ(imageSource->GetDngImagePropertyByDngSdk("GPSProcessingMethod", value), SUCCESS);
+    ASSERT_EQ(value.stringValue, gpsProcessingMethod);
+    GTEST_LOG_(INFO) << "DngExifMetadataAccessorTest: GetDngImagePropertyByDngSdkTest015 end";
+}
+
+/**
+ * @tc.name: GetDngImagePropertyByDngSdkTest016
+ * @tc.desc: Test GetDngImagePropertyByDngSdk for GPS satellites and speed related DNG Exif properties
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageSourceTest, GetDngImagePropertyByDngSdkTest016, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "DngExifMetadataAccessorTest: GetDngImagePropertyByDngSdkTest016 start";
+    
+    static constexpr const char* gpsSatellites = "xxx";
+    static constexpr double gpsSpeed = 0.0;
+    static constexpr const char* gpsSpeedRefKilometersPerHour = "K";
+    static constexpr const char* gpsStatusVoid = "V";
+    static constexpr double gpsTrack = 56.0;
+    
+    MetadataValue value;
+    auto imageSource = CreateImageSourceByPath(IMAGE_INPUT1_DNG_PATH);
+    ASSERT_NE(imageSource, nullptr);
+    ASSERT_EQ(imageSource->GetDngImagePropertyByDngSdk("GPSSatellites", value), SUCCESS);
+    ASSERT_EQ(value.stringValue, gpsSatellites);
+    ASSERT_EQ(imageSource->GetDngImagePropertyByDngSdk("GPSSpeed", value), SUCCESS);
+    ASSERT_EQ(value.doubleArrayValue[0], gpsSpeed);
+    ASSERT_EQ(imageSource->GetDngImagePropertyByDngSdk("GPSSpeedRef", value), SUCCESS);
+    ASSERT_EQ(value.stringValue, gpsSpeedRefKilometersPerHour);
+    ASSERT_EQ(imageSource->GetDngImagePropertyByDngSdk("GPSStatus", value), SUCCESS);
+    ASSERT_EQ(value.stringValue, gpsStatusVoid);
+    ASSERT_EQ(imageSource->GetDngImagePropertyByDngSdk("GPSTrack", value), SUCCESS);
+    ASSERT_EQ(value.doubleArrayValue[0], gpsTrack);
+    GTEST_LOG_(INFO) << "DngExifMetadataAccessorTest: GetDngImagePropertyByDngSdkTest016 end";
+}
+
+/**
+ * @tc.name: GetDngImagePropertyByDngSdkTest017
+ * @tc.desc: Test GetDngImagePropertyByDngSdk for GPS track ref and version ID related DNG Exif properties
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageSourceTest, GetDngImagePropertyByDngSdkTest017, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "DngExifMetadataAccessorTest: GetDngImagePropertyByDngSdkTest017 start";
+
+    static constexpr double gpsHorizontalPositioningError = 4.6966158381044156;
+    static constexpr const char* gpsTrackRefTrue = "T";
+
+    MetadataValue value;
+    auto imageSource = CreateImageSourceByPath(IMAGE_INPUT1_DNG_PATH);
+    ASSERT_NE(imageSource, nullptr);
+    ASSERT_EQ(imageSource->GetDngImagePropertyByDngSdk("GPSTrackRef", value), SUCCESS);
+    ASSERT_EQ(value.stringValue, gpsTrackRefTrue);
+    ASSERT_EQ(imageSource->GetDngImagePropertyByDngSdk("GPSVersionID", value), SUCCESS);
+    ASSERT_EQ(value.intArrayValue[0], 2);
+    ASSERT_EQ(value.intArrayValue[1], 2);
+    ASSERT_EQ(value.intArrayValue[2], 0);
+    ASSERT_EQ(value.intArrayValue[3], 0);
+    ASSERT_EQ(imageSource->GetDngImagePropertyByDngSdk("GPSHPositioningError", value), SUCCESS);
+    ASSERT_EQ(value.doubleArrayValue[0], gpsHorizontalPositioningError);
+    ASSERT_EQ(imageSource->GetDngImagePropertyByDngSdk("JPEGInterchangeFormat", value), SUCCESS);
+    ASSERT_EQ(value.intArrayValue[0], 0);
+    GTEST_LOG_(INFO) << "DngExifMetadataAccessorTest: GetDngImagePropertyByDngSdkTest017 end";
+}
+
+/**
+ * @tc.name: GetDngImagePropertyByDngSdkTest018
+ * @tc.desc: Test GetDngImagePropertyByDngSdk for JPEG interchange length and lens related DNG Exif properties
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageSourceTest, GetDngImagePropertyByDngSdkTest018, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "DngExifMetadataAccessorTest: GetDngImagePropertyByDngSdkTest018 start";
+    static constexpr uint32_t jpegInterchangeFormatLength = 0;
+    static constexpr const char* lensMake = "Apple";
+    static constexpr const char* lensModel = "iPhone 12 Pro back triple camera 4.2mm f/1.6";
+    static constexpr const char* lensSerialNumber = "xxx";
+    static constexpr double lensMinFocalLength = 1.5399999618512084;
+    static constexpr double lensMaxFocalLength = 6.0;
+    static constexpr double lensMinAperture = 1.6;
+    static constexpr double lensMaxAperture = 2.4;
+    
+    MetadataValue value;
+    auto imageSource = CreateImageSourceByPath(IMAGE_INPUT1_DNG_PATH);
+    ASSERT_NE(imageSource, nullptr);
+    ASSERT_EQ(imageSource->GetDngImagePropertyByDngSdk("JPEGInterchangeFormatLength", value), SUCCESS);
+    ASSERT_EQ(value.intArrayValue[0], jpegInterchangeFormatLength);
+    ASSERT_EQ(imageSource->GetDngImagePropertyByDngSdk("LensMake", value), SUCCESS);
+    ASSERT_EQ(value.stringValue, lensMake);
+    ASSERT_EQ(imageSource->GetDngImagePropertyByDngSdk("LensModel", value), SUCCESS);
+    ASSERT_EQ(value.stringValue, lensModel);
+    ASSERT_EQ(imageSource->GetDngImagePropertyByDngSdk("LensSerialNumber", value), SUCCESS);
+    ASSERT_EQ(value.stringValue, lensSerialNumber);
+    ASSERT_EQ(imageSource->GetDngImagePropertyByDngSdk("LensSpecification", value), SUCCESS);
+    ASSERT_EQ(value.doubleArrayValue[0], lensMinFocalLength);
+    ASSERT_EQ(value.doubleArrayValue[1], lensMaxFocalLength);
+    ASSERT_EQ(value.doubleArrayValue[2], lensMinAperture);
+    ASSERT_EQ(value.doubleArrayValue[3], lensMaxAperture);
+    GTEST_LOG_(INFO) << "DngExifMetadataAccessorTest: GetDngImagePropertyByDngSdkTest018 end";
+}
+
+/**
+ * @tc.name: GetDngImagePropertyByDngSdkTest019
+ * @tc.desc: Test GetDngImagePropertyByDngSdk for gain control and offset time related DNG Exif properties
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageSourceTest, GetDngImagePropertyByDngSdkTest019, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "DngExifMetadataAccessorTest: GetDngImagePropertyByDngSdkTest019 start";
+    
+    static constexpr uint32_t gainControlNone = 0;
+    static constexpr const char* offsetTime = "-05:00";
+    static constexpr const char* offsetTimeDigitized = "-05:00";
+    static constexpr const char* offsetTimeOriginal = "-05:00";
+    static constexpr uint32_t photometricInterpretationCfa = 34892;
+    
+    MetadataValue value;
+    auto imageSource = CreateImageSourceByPath(IMAGE_INPUT1_DNG_PATH);
+    ASSERT_NE(imageSource, nullptr);
+    ASSERT_EQ(imageSource->GetDngImagePropertyByDngSdk("GainControl", value), SUCCESS);
+    ASSERT_EQ(value.intArrayValue[0], gainControlNone);
+    ASSERT_EQ(imageSource->GetDngImagePropertyByDngSdk("OffsetTime", value), SUCCESS);
+    ASSERT_EQ(value.stringValue, offsetTime);
+    ASSERT_EQ(imageSource->GetDngImagePropertyByDngSdk("OffsetTimeDigitized", value), SUCCESS);
+    ASSERT_EQ(value.stringValue, offsetTimeDigitized);
+    ASSERT_EQ(imageSource->GetDngImagePropertyByDngSdk("OffsetTimeOriginal", value), SUCCESS);
+    ASSERT_EQ(value.stringValue, offsetTimeOriginal);
+    ASSERT_EQ(imageSource->GetDngImagePropertyByDngSdk("PhotometricInterpretation", value), SUCCESS);
+    ASSERT_EQ(value.intArrayValue[0], photometricInterpretationCfa);
+    GTEST_LOG_(INFO) << "DngExifMetadataAccessorTest: GetDngImagePropertyByDngSdkTest019 end";
+}
+
+/**
+ * @tc.name: GetDngImagePropertyByDngSdkTest020
+ * @tc.desc: Test GetDngImagePropertyByDngSdk for sound file and rows per strip related DNG Exif properties
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageSourceTest, GetDngImagePropertyByDngSdkTest020, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "DngExifMetadataAccessorTest: GetDngImagePropertyByDngSdkTest020 start";
+    static constexpr uint32_t rowsPerStrip = 3024;
+    static constexpr uint32_t sensingMethod = 2;
+
+    MetadataValue value;
+    auto imageSource = CreateImageSourceByPath(IMAGE_INPUT1_DNG_PATH);
+    ASSERT_NE(imageSource, nullptr);
+    ASSERT_EQ(imageSource->GetDngImagePropertyByDngSdk("RelatedSoundFile", value), SUCCESS);
+    ASSERT_EQ(value.stringValue, "/usr/home/sound/sea.wav");
+    ASSERT_EQ(imageSource->GetDngImagePropertyByDngSdk("RowsPerStrip", value), SUCCESS);
+    ASSERT_EQ(value.intArrayValue[0], rowsPerStrip);
+    ASSERT_EQ(imageSource->GetDngImagePropertyByDngSdk("Saturation", value), SUCCESS);
+    ASSERT_EQ(value.intArrayValue[0], 0);
+    ASSERT_EQ(imageSource->GetDngImagePropertyByDngSdk("SceneCaptureType", value), SUCCESS);
+    ASSERT_EQ(value.intArrayValue[0], 0);
+    ASSERT_EQ(imageSource->GetDngImagePropertyByDngSdk("SensingMethod", value), SUCCESS);
+    ASSERT_EQ(value.intArrayValue[0], sensingMethod);
+    GTEST_LOG_(INFO) << "DngExifMetadataAccessorTest: GetDngImagePropertyByDngSdkTest020 end";
+}
+
+/**
+ * @tc.name: GetDngImagePropertyByDngSdkTest021
+ * @tc.desc: Test GetDngImagePropertyByDngSdk for sharpness and shutter speed related DNG Exif properties
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageSourceTest, GetDngImagePropertyByDngSdkTest021, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "DngExifMetadataAccessorTest: GetDngImagePropertyByDngSdkTest021 start";
+    
+    static constexpr uint32_t sharpnessNormal = 0;
+    static constexpr double shutterSpeedValue = 12.439715471250741;
+    static constexpr uint32_t sourceImageNumberOfCompositeImage = 1234;
+    static constexpr uint32_t stripOffsets = 0;
+    static constexpr const char* subsecTime = "427000";
+    
+    MetadataValue value;
+    auto imageSource = CreateImageSourceByPath(IMAGE_INPUT1_DNG_PATH);
+    ASSERT_NE(imageSource, nullptr);
+    ASSERT_EQ(imageSource->GetDngImagePropertyByDngSdk("Sharpness", value), SUCCESS);
+    ASSERT_EQ(value.intArrayValue[0], sharpnessNormal);
+    ASSERT_EQ(imageSource->GetDngImagePropertyByDngSdk("ShutterSpeedValue", value), SUCCESS);
+    ASSERT_EQ(value.doubleArrayValue[0], shutterSpeedValue);
+    ASSERT_EQ(imageSource->GetDngImagePropertyByDngSdk("SourceImageNumberOfCompositeImage", value), SUCCESS);
+    ASSERT_EQ(value.intArrayValue[0], sourceImageNumberOfCompositeImage);
+    ASSERT_EQ(imageSource->GetDngImagePropertyByDngSdk("StripOffsets", value), SUCCESS);
+    ASSERT_EQ(value.intArrayValue[0], stripOffsets);
+    ASSERT_EQ(imageSource->GetDngImagePropertyByDngSdk("SubsecTime", value), SUCCESS);
+    ASSERT_EQ(value.stringValue, subsecTime);
+    GTEST_LOG_(INFO) << "DngExifMetadataAccessorTest: GetDngImagePropertyByDngSdkTest021 end";
+}
+
+/**
+ * @tc.name: GetDngImagePropertyByDngSdkTest022
+ * @tc.desc: Test GetDngImagePropertyByDngSdk for subsec time and subfile type related DNG Exif properties
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageSourceTest, GetDngImagePropertyByDngSdkTest022, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "DngExifMetadataAccessorTest: GetDngImagePropertyByDngSdkTest022 start";
+    
+    static constexpr const char* subsecTimeDigitized = "700";
+    static constexpr const char* subsecTimeOriginal = "700";
+    static constexpr uint32_t subfileType = 1;
+    static constexpr uint32_t subjectAreaX = 2009;
+    static constexpr uint32_t subjectDistanceRange = 3;
+    
+    MetadataValue value;
+    auto imageSource = CreateImageSourceByPath(IMAGE_INPUT1_DNG_PATH);
+    ASSERT_NE(imageSource, nullptr);
+    ASSERT_EQ(imageSource->GetDngImagePropertyByDngSdk("SubsecTimeDigitized", value), SUCCESS);
+    ASSERT_EQ(value.stringValue, subsecTimeDigitized);
+    ASSERT_EQ(imageSource->GetDngImagePropertyByDngSdk("SubsecTimeOriginal", value), SUCCESS);
+    ASSERT_EQ(value.stringValue, subsecTimeOriginal);
+    ASSERT_EQ(imageSource->GetDngImagePropertyByDngSdk("SubfileType", value), SUCCESS);
+    ASSERT_EQ(value.intArrayValue[0], subfileType);
+    ASSERT_EQ(imageSource->GetDngImagePropertyByDngSdk("SubjectArea", value), SUCCESS);
+    ASSERT_EQ(value.intArrayValue[0], subjectAreaX);
+    ASSERT_EQ(imageSource->GetDngImagePropertyByDngSdk("SubjectDistanceRange", value), SUCCESS);
+    ASSERT_EQ(value.intArrayValue[0], subjectDistanceRange);
+    GTEST_LOG_(INFO) << "DngExifMetadataAccessorTest: GetDngImagePropertyByDngSdkTest022 end";
+}
+
+/**
+ * @tc.name: GetDngImagePropertyByDngSdkTest023
+ * @tc.desc: Test GetDngImagePropertyByDngSdk for body serial number and brightness related DNG Exif properties
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageSourceTest, GetDngImagePropertyByDngSdkTest023, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "DngExifMetadataAccessorTest: GetDngImagePropertyByDngSdkTest023 start";
+    
+    static constexpr const char* bodySerialNumber = "xx";
+    static constexpr double brightnessValue = 10.45524964216553;
+    static constexpr const char* cameraOwnerName = "xx";
+    static constexpr const char* componentsConfiguration = " Y Cb GB";
+    static constexpr uint32_t compositeImage = 1;
+    
+    MetadataValue value;
+    auto imageSource = CreateImageSourceByPath(IMAGE_INPUT1_DNG_PATH);
+    ASSERT_NE(imageSource, nullptr);
+    ASSERT_EQ(imageSource->GetDngImagePropertyByDngSdk("BodySerialNumber", value), SUCCESS);
+    ASSERT_EQ(value.stringValue, bodySerialNumber);
+    ASSERT_EQ(imageSource->GetDngImagePropertyByDngSdk("BrightnessValue", value), SUCCESS);
+    ASSERT_EQ(value.doubleArrayValue[0], brightnessValue);
+    ASSERT_EQ(imageSource->GetDngImagePropertyByDngSdk("CameraOwnerName", value), SUCCESS);
+    ASSERT_EQ(value.stringValue, cameraOwnerName);
+    ASSERT_EQ(imageSource->GetDngImagePropertyByDngSdk("ComponentsConfiguration", value), SUCCESS);
+    ASSERT_EQ(value.stringValue, componentsConfiguration);
+    ASSERT_EQ(imageSource->GetDngImagePropertyByDngSdk("CompositeImage", value), SUCCESS);
+    ASSERT_EQ(value.intArrayValue[0], compositeImage);
+    GTEST_LOG_(INFO) << "DngExifMetadataAccessorTest: GetDngImagePropertyByDngSdkTest023 end";
+}
+
+/**
+ * @tc.name: GetDngImagePropertyByDngSdkTest024
+ * @tc.desc: Test GetDngImagePropertyByDngSdk for compressed bits and contrast related DNG Exif properties
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageSourceTest, GetDngImagePropertyByDngSdkTest024, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "DngExifMetadataAccessorTest: GetDngImagePropertyByDngSdkTest024 start";
+    
+    static constexpr double compressedBitsPerPixel = 1.5;
+    static constexpr uint32_t contrastNormal = 0;
+    static constexpr uint32_t customRendered = 1;
+    static constexpr const char* dateTimeDigitized = "2020:12:29 14:24:45";
+    static constexpr double digitalZoomRatio = 321.000000;
+    
+    MetadataValue value;
+    auto imageSource = CreateImageSourceByPath(IMAGE_INPUT1_DNG_PATH);
+    ASSERT_NE(imageSource, nullptr);
+    ASSERT_EQ(imageSource->GetDngImagePropertyByDngSdk("CompressedBitsPerPixel", value), SUCCESS);
+    ASSERT_EQ(value.doubleArrayValue[0], compressedBitsPerPixel);
+    ASSERT_EQ(imageSource->GetDngImagePropertyByDngSdk("Contrast", value), SUCCESS);
+    ASSERT_EQ(value.intArrayValue[0], contrastNormal);
+    ASSERT_EQ(imageSource->GetDngImagePropertyByDngSdk("CustomRendered", value), SUCCESS);
+    ASSERT_EQ(value.intArrayValue[0], customRendered);
+    ASSERT_EQ(imageSource->GetDngImagePropertyByDngSdk("DateTimeDigitized", value), SUCCESS);
+    ASSERT_EQ(value.stringValue, dateTimeDigitized);
+    ASSERT_EQ(imageSource->GetDngImagePropertyByDngSdk("DigitalZoomRatio", value), SUCCESS);
+    ASSERT_EQ(value.doubleArrayValue[0], digitalZoomRatio);
+    GTEST_LOG_(INFO) << "DngExifMetadataAccessorTest: GetDngImagePropertyByDngSdkTest024 end";
+}
+
+/**
+ * @tc.name: GetDngImagePropertyByDngSdkTest025
+ * @tc.desc: Test GetDngImagePropertyByDngSdk for Exif version and exposure index related DNG Exif properties
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageSourceTest, GetDngImagePropertyByDngSdkTest025, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "DngExifMetadataAccessorTest: GetDngImagePropertyByDngSdkTest025 start";
+    
+    static constexpr const char* exifVersion = "Exif Version 2.32";
+    static constexpr double exposureIndex = 1.5;
+    static constexpr uint32_t exposureModeAuto = 0;
+    static constexpr uint32_t exposureProgram = 2;
+    static constexpr double flashEnergy = 832.0;
+    
+    MetadataValue value;
+    auto imageSource = CreateImageSourceByPath(IMAGE_INPUT1_DNG_PATH);
+    ASSERT_NE(imageSource, nullptr);
+    ASSERT_EQ(imageSource->GetDngImagePropertyByDngSdk("ExifVersion", value), SUCCESS);
+    ASSERT_EQ(value.stringValue, exifVersion);
+    ASSERT_EQ(imageSource->GetDngImagePropertyByDngSdk("ExposureIndex", value), SUCCESS);
+    ASSERT_EQ(value.doubleArrayValue[0], exposureIndex);
+    ASSERT_EQ(imageSource->GetDngImagePropertyByDngSdk("ExposureMode", value), SUCCESS);
+    ASSERT_EQ(value.intArrayValue[0], exposureModeAuto);
+    ASSERT_EQ(imageSource->GetDngImagePropertyByDngSdk("ExposureProgram", value), SUCCESS);
+    ASSERT_EQ(value.intArrayValue[0], exposureProgram);
+    ASSERT_EQ(imageSource->GetDngImagePropertyByDngSdk("FlashEnergy", value), SUCCESS);
+    ASSERT_EQ(value.doubleArrayValue[0], flashEnergy);
+    GTEST_LOG_(INFO) << "DngExifMetadataAccessorTest: GetDngImagePropertyByDngSdkTest025 end";
+}
+
+/**
+ * @tc.name: GetDngImagePropertyByDngSdkTest026
+ * @tc.desc: Test GetDngImagePropertyByDngSdk for focal plane resolution related DNG Exif properties
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageSourceTest, GetDngImagePropertyByDngSdkTest026, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "DngExifMetadataAccessorTest: GetDngImagePropertyByDngSdkTest026 start";
+    
+    static constexpr uint32_t focalPlaneResolutionUnit = 3;
+    static constexpr double focalPlaneXResolution = 1080.0;
+    static constexpr double focalPlaneYResolution = 880.0;
+    
+    MetadataValue value;
+    auto imageSource = CreateImageSourceByPath(IMAGE_INPUT1_DNG_PATH);
+    ASSERT_NE(imageSource, nullptr);
+    ASSERT_EQ(imageSource->GetDngImagePropertyByDngSdk("FocalPlaneResolutionUnit", value), SUCCESS);
+    ASSERT_EQ(value.intArrayValue[0], focalPlaneResolutionUnit);
+    ASSERT_EQ(imageSource->GetDngImagePropertyByDngSdk("FocalPlaneXResolution", value), SUCCESS);
+    ASSERT_EQ(value.doubleArrayValue[0], focalPlaneXResolution);
+    ASSERT_EQ(imageSource->GetDngImagePropertyByDngSdk("FocalPlaneYResolution", value), SUCCESS);
+    ASSERT_EQ(value.doubleArrayValue[0], focalPlaneYResolution);
+    GTEST_LOG_(INFO) << "DngExifMetadataAccessorTest: GetDngImagePropertyByDngSdkTest026 end";
 }
 } // namespace Multimedia
 } // namespace OHOS

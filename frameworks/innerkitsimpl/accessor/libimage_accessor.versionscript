@@ -19,6 +19,8 @@
     *TiffParser*;
     *DataBuf*;
     *DngExifMetadata*;
+    *DngSdkInfo*;
+    *DngSdkHelper*;
     *HeifExifMetadataAccessor*;
     *AbstractExifMetadataAccessor*;
     *FileMetadataStream*;
