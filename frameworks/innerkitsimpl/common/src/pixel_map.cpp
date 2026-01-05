@@ -672,64 +672,6 @@ bool PixelMap::CheckParams(const uint32_t *colors, uint32_t colorLength, int32_t
     return true;
 }
 
-bool PixelMap::CheckYuvDataInfoValid(const YUVDataInfo& yDataInfo)
-{
-    //size
-    if (yDataInfo.yWidth == 0 || yDataInfo.yHeight == 0) {
-        IMAGE_LOGE("Invalid Y plane size: yWidth or yHeight is 0");
-        return false;
-    }
-    const uint32_t uvExpectedWidth = (yDataInfo.yWidth + NUM_1) / NUM_2;
-    const uint32_t uvExpectedHeight = (yDataInfo.yHeight + NUM_1) / NUM_2;
-    if (yDataInfo.uvWidth == 0 || yDataInfo.uvHeight == 0) {
-        IMAGE_LOGE("Invalid UV plane size: uvWidth or uvHeight is 0");
-        return false;
-    }
-    if (yDataInfo.uvWidth != uvExpectedWidth || yDataInfo.uvHeight != uvExpectedHeight) {
-        IMAGE_LOGE("Invalid UV plane size: UV(%{public}u, %{public}u) mismatch expected(%{public}u, %{public}u)",
-            yDataInfo.uvWidth, yDataInfo.uvHeight, uvExpectedWidth, uvExpectedHeight);
-        return false;
-    }
-
-    //stride
-    if (yDataInfo.yStride < yDataInfo.yWidth) {
-        IMAGE_LOGE("Invalid Y stride: %{public}u < width=%{public}u", yDataInfo.yStride, yDataInfo.yWidth);
-        return false;
-    }
-    if (yDataInfo.uvStride < yDataInfo.uvWidth) {
-        IMAGE_LOGE("Invalid UV stride: %{public}u < width=%{public}u", yDataInfo.uvStride, yDataInfo.uvWidth);
-        return false;
-    }
-    if (yDataInfo.yStride >= yDataInfo.yWidth * NUM_2 || yDataInfo.uvStride >= yDataInfo.yWidth * NUM_2) {
-        IMAGE_LOGW("Possible invalid stride as byte value: Stride=(%{public}u, %{public}u), Width=%{public}u",
-            yDataInfo.yStride, yDataInfo.uvStride, yDataInfo.yWidth);
-    }
-    if (yDataInfo.uStride != 0 && yDataInfo.uStride < yDataInfo.uvWidth) {
-        IMAGE_LOGW("Invalid U stride: %{public}u < uvWidth=%{public}u", yDataInfo.uStride, yDataInfo.uvWidth);
-    }
-    if (yDataInfo.vStride != 0 && yDataInfo.vStride < yDataInfo.uvWidth) {
-        IMAGE_LOGW("Invalid V stride: %{public}u < uvWidth=%{public}u", yDataInfo.vStride, yDataInfo.uvWidth);
-    }
-
-    //offset
-    if (yDataInfo.yOffset != 0) {
-        IMAGE_LOGW("Invalid Y offset: %{public}u (expected 0)", yDataInfo.yOffset);
-    }
-
-    uint64_t yPlaneSize = static_cast<uint64_t>(yDataInfo.yStride) * yDataInfo.yHeight;
-    if (yDataInfo.uvOffset < yPlaneSize) {
-        IMAGE_LOGE("Invalid UV offset: %{public}u less than Y plane size", yDataInfo.uvOffset);
-        return false;
-    }
-    uint64_t bufferSize = yPlaneSize + static_cast<uint64_t>(yDataInfo.uvStride) * yDataInfo.uvHeight;
-    if (bufferSize > UINT32_MAX) {
-        IMAGE_LOGE("Invalid YUV buffer size: overflow (exceeds UINT32_MAX)");
-        return false;
-    }
-
-    return true;
-}
-
 #if !defined(_WIN32) && !defined(_APPLE) && !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
 bool InitYuvDataOutInfo(SurfaceBuffer* surfaceBuffer, const ImageInfo &info, YUVDataInfo &yuvInfo)
 {
