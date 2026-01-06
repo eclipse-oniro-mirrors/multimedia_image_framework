@@ -427,6 +427,8 @@ napi_value MetadataNapi::InitHeifsMetadata(napi_env env, napi_value exports)
         DECLARE_NAPI_FUNCTION("getProperties", GetProperties),
         DECLARE_NAPI_FUNCTION("setProperties", SetProperties),
         DECLARE_NAPI_FUNCTION("getAllProperties", GetAllProperties),
+        DECLARE_NAPI_FUNCTION("getBlob", GetBlob),
+        DECLARE_NAPI_FUNCTION("setBlob", SetBlob),
         DECLARE_NAPI_FUNCTION("clone", CloneHeifsMetadata),
     };
     
