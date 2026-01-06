@@ -18,6 +18,11 @@
 #include <fcntl.h>
 #include <fstream>
 #include <unistd.h>
+
+#if !defined(CROSS_PLATFORM)
+#include "surface_type.h"
+#include "surface_buffer.h"
+#endif
 #include "image_utils.h"
 #include "image_trace.h"
 #include "source_stream.h"
@@ -1569,6 +1574,73 @@ HWTEST_F(ImageUtilsTest, SetReuseContextBufferTest001, TestSize.Level3)
     DecodeContext context;
     ImageUtils::SetReuseContextBuffer(context, AllocatorType::SHARE_MEM_ALLOC, nullptr, 0, nullptr);
     EXPECT_EQ(context.allocatorType, AllocatorType::SHARE_MEM_ALLOC);
+}
+/**
+ * @tc.name: ScopeRestorerTest001
+ * @tc.desc: test ScopeRestorer to set new value immediately when constructed
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageUtilsTest, ScopeRestorerTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImageUtilsTest: ScopeRestorerTest001 start";
+    int32_t value = 0;
+    {
+        ScopeRestorer<int32_t> restorer(value, 1);
+        EXPECT_EQ(value, 1);
+    }
+    EXPECT_EQ(value, 0);
+    GTEST_LOG_(INFO) << "ImageUtilsTest: ScopeRestorerTest001 end";
+}
+
+/**
+ * @tc.name: ScopeRestorerTest002
+ * @tc.desc: test ScopeRestorer defer to set new value after constructed
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageUtilsTest, ScopeRestorerTest002, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImageUtilsTest: ScopeRestorerTest002 start";
+    int32_t value = 0;
+    {
+        ScopeRestorer<int32_t> restorer(value);
+        EXPECT_EQ(value, 0);
+        restorer.SetValue(1);
+        EXPECT_EQ(value, 1);
+    }
+    EXPECT_EQ(value, 0);
+    GTEST_LOG_(INFO) << "ImageUtilsTest: ScopeRestorerTest002 end";
+}
+
+/**
+ * @tc.name: ScopeRestorerTest003
+ * @tc.desc: test ScopeRestorer keep new value
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageUtilsTest, ScopeRestorerTest003, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImageUtilsTest: ScopeRestorerTest003 start";
+    int32_t value = 0;
+    {
+        ScopeRestorer<int32_t> restorer(value, 1);
+        restorer.Keep();
+    }
+    EXPECT_EQ(value, 1);
+    GTEST_LOG_(INFO) << "ImageUtilsTest: ScopeRestorerTest003 end";
+}
+
+/**
+ * @tc.name: ScopeRestorerTest004
+ * @tc.desc: test ScopeRestorer restore old value
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageUtilsTest, ScopeRestorerTest004, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImageUtilsTest: ScopeRestorerTest004 start";
+    int32_t value = 0;
+    ScopeRestorer<int32_t> restorer(value, 1);
+    restorer.Restore();
+    EXPECT_EQ(value, 0);
+    GTEST_LOG_(INFO) << "ImageUtilsTest: ScopeRestorerTest004 end";
 }
 }
 }

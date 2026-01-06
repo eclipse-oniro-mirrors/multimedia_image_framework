@@ -881,9 +881,10 @@ static void CloneExifMetadataComplete(napi_env env, napi_status status, void *da
     napi_open_handle_scope(env, &scope);
     
     napi_value result = nullptr;
-    bool success = context->rMetadata != nullptr &&
-                 (result = MetadataNapi::CreateExifMetadata(env, context->rMetadata)) != nullptr;
-    if (success) {
+    if (context->rMetadata != nullptr) {
+        result = MetadataNapi::CreateExifMetadata(env, context->rMetadata);
+    }
+    if (result != nullptr) {
         for (auto& [name, ref] : context->customProperties) {
             napi_value propValue;
             if (napi_get_reference_value(env, ref, &propValue) == napi_ok) {
@@ -894,7 +895,7 @@ static void CloneExifMetadataComplete(napi_env env, napi_status status, void *da
         context->customProperties.clear();
     }
     napi_deferred deferred = context->deferred;
-    if (success) {
+    if (result != nullptr) {
         napi_resolve_deferred(env, deferred, result);
     } else {
         napi_reject_deferred(env, deferred, CreateBusinessError(env,
@@ -912,9 +913,10 @@ static void CloneHeifsMetadataComplete(napi_env env, napi_status status, void *d
     napi_open_handle_scope(env, &scope);
     
     napi_value result = nullptr;
-    bool success = context->rMetadata != nullptr &&
-                 (result = MetadataNapi::CreateHeifsMetadata(env, context->rMetadata)) != nullptr;
-    if (success) {
+    if (context->rMetadata != nullptr) {
+        result = MetadataNapi::CreateHeifsMetadata(env, context->rMetadata);
+    }
+    if (result != nullptr) {
         for (auto& [name, ref] : context->customProperties) {
             napi_value propValue;
             if (napi_get_reference_value(env, ref, &propValue) == napi_ok) {
@@ -925,11 +927,11 @@ static void CloneHeifsMetadataComplete(napi_env env, napi_status status, void *d
         context->customProperties.clear();
     }
     napi_deferred deferred = context->deferred;
-    if (success) {
+    if (result != nullptr) {
         napi_resolve_deferred(env, deferred, result);
     } else {
         napi_reject_deferred(env, deferred, CreateBusinessError(env,
-            IMAGE_SOURCE_UNSUPPORTED_METADATA, "Failed to clone EXIF metadata"));
+            IMAGE_SOURCE_UNSUPPORTED_METADATA, "Failed to clone Heifs metadata"));
     }
     napi_delete_async_work(env, context->work);
     napi_close_handle_scope(env, scope);

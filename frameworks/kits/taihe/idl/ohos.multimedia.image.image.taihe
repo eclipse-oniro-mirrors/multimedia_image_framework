@@ -421,6 +421,7 @@ enum AuxiliaryPictureType: i32 {
   UNREFOCUS_MAP = 3,
   LINEAR_MAP = 4,
   FRAGMENT_MAP = 5,
+  THUMBNAIL = 10,
 }
 
 enum MetadataType: i32 {
@@ -443,6 +444,11 @@ enum GifPropertyKey: String {
 
 struct DecodingOptionsForPicture {
   desiredAuxiliaryPictures: Array<AuxiliaryPictureType>;
+}
+
+struct DecodingOptionsForThumbnail {
+  desiredSize: Optional<Size>;
+  needGenerate: Optional<bool>;
 }
 
 struct AuxiliaryPictureInfo {
@@ -583,8 +589,8 @@ interface PixelMap {
   @get GetTimestamp(): i64;
 }
 
-union GainMap {
-    type_gainMap: PixelMap;
+union NullablePixelMap {
+    type_pixelMap: PixelMap;
     @null type_null;
 }
 
@@ -601,11 +607,17 @@ interface Picture {
   @gen_promise("getHdrComposedPixelmap")
   GetHdrComposedPixelmapSync(): Optional<PixelMap>;
 
-  GetGainmapPixelmap(): GainMap;
+  GetGainmapPixelmap(): NullablePixelMap;
+
+  GetThumbnailPixelmap(): NullablePixelMap;
+
+  SetThumbnailPixelmap(thumbnailPixelmap: PixelMap): void;
 
   SetAuxiliaryPicture(type: AuxiliaryPictureType, auxiliaryPicture: AuxiliaryPicture): void;
 
   GetAuxiliaryPicture(type: AuxiliaryPictureType): AuxPicture;
+
+  DropAuxiliaryPicture(type: AuxiliaryPictureType): void;
 
   @gen_promise("setMetadata")
   SetMetadataSync(metadataType: MetadataType, metadata: Metadata): void;
@@ -710,7 +722,7 @@ interface ImageSource {
   GetImagePropertyReturnsPromise(key: PropertyKey, options: Optional<ImagePropertyOptions>): String;
 
   @gen_promise("getImageProperties")
-  GetImagePropertiesSync(key: Array<PropertyKey>): @record Map<PropertyKey, PropertyValue>;
+  GetImagePropertiesSync(key: Array<PropertyKey>): @record Map<String, PropertyValue>;
 
   GetImagePropertySync(key: PropertyKey): Optional<String>;
 
@@ -718,7 +730,7 @@ interface ImageSource {
   ModifyImagePropertySync(key: PropertyKey, value: String): void;
   
   @gen_promise("modifyImageProperties")
-  ModifyImagePropertiesSync(records: @record Map<PropertyKey, PropertyValue>): void;
+  ModifyImagePropertiesSync(records: @record Map<String, PropertyValue>): void;
 
   @gen_promise("modifyImagePropertiesEnhanced")
   ModifyImagePropertiesEnhancedSync(records: @record Map<String, PropertyValue>): void;
@@ -739,6 +751,9 @@ interface ImageSource {
 
   @gen_promise("createWideGamutSdrPixelMap")
   CreateWideGamutSdrPixelMapSync(): Optional<PixelMap>;
+
+  @gen_promise("createThumbnail")
+  CreateThumbnailSync(options: Optional<DecodingOptionsForThumbnail>): Optional<PixelMap>;
 
   @get GetSupportedFormats(): Array<String>;
 }

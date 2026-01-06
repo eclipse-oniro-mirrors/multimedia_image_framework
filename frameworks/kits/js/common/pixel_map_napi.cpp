@@ -1662,6 +1662,7 @@ static bool GetSurfaceSize(Rect &region, unsigned long fd)
     }
     return true;
 }
+
 STATIC_EXEC_FUNC(CreatePixelMapFromSurface)
 {
     if (data == nullptr) {
@@ -1853,6 +1854,7 @@ void RegisterArkEngine(napi_env env)
     napi_value returnValue;
     napi_call_function(env, globalValue, func, 1, funcArgv, &returnValue);
 }
+
 napi_value PixelMapNapi::CreatePixelMapFromSurface(napi_env env, napi_callback_info info)
 {
 #if defined(IOS_PLATFORM) || defined(ANDROID_PLATFORM)
@@ -1891,11 +1893,10 @@ napi_value PixelMapNapi::CreatePixelMapFromSurface(napi_env env, napi_callback_i
 #endif
 }
 
-napi_value PixelMapNapi::CreatePixelMapFromSurfaceWithTransformation(napi_env env,
-    napi_callback_info info)
+napi_value PixelMapNapi::CreatePixelMapFromSurfaceWithTransformation(napi_env env, napi_callback_info info)
 {
 #if defined(IOS_PLATFORM) || defined(ANDROID_PLATFORM)
-    return ImageNapiUtils::ThrowExceptionError(env, ERR_IMAGE_GET_IMAGE_DATA_FAILED,
+    return ImageNapiUtils::ThrowExceptionError(env, ERR_MEDIA_UNSUPPORT_OPERATION,
         "Unsupported operation on cross-platform");
 #else
     RegisterArkEngine(env);
@@ -1980,11 +1981,10 @@ napi_value PixelMapNapi::CreatePixelMapFromSurfaceSync(napi_env env, napi_callba
 #endif
 }
 
-napi_value PixelMapNapi::CreatePixelMapFromSurfaceWithTransformationSync(napi_env env,
-    napi_callback_info info)
+napi_value PixelMapNapi::CreatePixelMapFromSurfaceWithTransformationSync(napi_env env, napi_callback_info info)
 {
 #if defined(IOS_PLATFORM) || defined(ANDROID_PLATFORM)
-    return ImageNapiUtils::ThrowExceptionError(env, ERR_IMAGE_GET_IMAGE_DATA_FAILED,
+    return ImageNapiUtils::ThrowExceptionError(env, ERR_MEDIA_UNSUPPORT_OPERATION,
         "Unsupported operation on cross-platform");
 #else
     if (PixelMapNapi::GetConstructor() == nullptr) {

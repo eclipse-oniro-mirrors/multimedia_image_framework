@@ -1014,6 +1014,9 @@ HWTEST_F(ImageReceiverTest, CreateImageReceiver001, TestSize.Level3)
     options.capacity = RECEIVER_TEST_CAPACITY;
     imageReceiver = ImageReceiver::CreateImageReceiver(options);
     ASSERT_NE(imageReceiver, nullptr);
+    EXPECT_EQ(imageReceiver->iraContext_->GetWidth(), RECEIVER_TEST_WIDTH);
+    EXPECT_EQ(imageReceiver->iraContext_->GetHeight(), RECEIVER_TEST_HEIGHT);
+    EXPECT_EQ(imageReceiver->iraContext_->GetCapicity(), RECEIVER_TEST_CAPACITY);
     GTEST_LOG_(INFO) << "ImageReceiverTest: CreateImageReceiver001 end";
 }
 }

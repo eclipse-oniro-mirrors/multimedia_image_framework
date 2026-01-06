@@ -102,6 +102,7 @@
             <option name="push" value="images/fake_large_size_test.jpg -> /data/local/tmp/image" src="res"/>
             <option name="push" value="images/exif.jpg -> /data/local/tmp/image" src="res"/>
             <option name="push" value="images/test_metadata.jpg -> /data/local/tmp/image" src="res"/>
+            <option name="push" value="images/exif/test_dng_readmetadata001.dng -> /data/local/tmp/image" src="res"/>
         </preparer>
     </target>
     <target name="imagecolorspacetest">
@@ -415,6 +416,9 @@
             <option name="push" value="images/test_packing_exif.jpg -> /data/local/tmp/image" src="res"/>
             <option name="push" value="images/hdr.jpg -> /data/local/tmp/image/" src="res"/>
             <option name="push" value="images/hasNoExif.jpg -> /data/local/tmp/image" src="res"/>
+            <option name="push" value="images/test_odd_image_size.jpg -> /data/local/tmp/image" src="res"/>
+            <option name="push" value="images/test_odd_height_image_size.jpg -> /data/local/tmp/image" src="res"/>
+            <option name="push" value="images/test_odd_width_image_size.jpg -> /data/local/tmp/image" src="res"/>
         </preparer>
     </target>
     <target name="ImageAccessorFuzzTest">
@@ -473,6 +477,11 @@
             <option name="push" value="images/incomplete_test.gif -> /data/local/tmp/image" src="res"/>
             <option name="push" value="images/test_exif.jpg -> /data/local/tmp/image" src="res"/>
             <option name="push" value="images/test.ico -> /data/local/tmp/image" src="res"/>
+            <option name="push" value="images/jpeg_exif_thumbnail.jpg -> /data/local/tmp/image" src="res"/>
+            <option name="push" value="images/jpeg_no_thumbnail.jpg -> /data/local/tmp/image" src="res"/>
+            <option name="push" value="images/heif_exif_thumbnail.heic -> /data/local/tmp/image" src="res"/>
+            <option name="push" value="images/heif_box_thumbnail.heic -> /data/local/tmp/image" src="res"/>
+            <option name="push" value="images/heif_no_thumbnail.heic -> /data/local/tmp/image" src="res"/>
         </preparer>
     </target>
     <target name="ImagePictureFuzzTest">

@@ -2743,6 +2743,7 @@ bool PixelMap::WriteAstcInfoToParcel(Parcel &parcel) const
 
 bool PixelMap::Marshalling(Parcel &parcel) const
 {
+    std::lock_guard<std::mutex> lock(*translationMutex_);
     int32_t PIXEL_MAP_INFO_MAX_LENGTH = 128;
     if (ImageUtils::CheckMulOverflow(imageInfo_.size.height, rowDataSize_)) {
         IMAGE_LOGE("pixelmap invalid params, height:%{public}d, rowDataSize:%{public}d.",
@@ -3520,8 +3521,10 @@ PixelMap *PixelMap::DecodeTlv(std::vector<uint8_t> &buff)
         IMAGE_LOGE("[PixelMap]  tlv decode fail: set image info error[%{public}d]", ret);
         return nullptr;
     }
-    if ((dstMemory->GetType() == AllocatorType::DMA_ALLOC && dstMemory->data.size < pixelMap->GetByteCount()) ||
-        (dstMemory->GetType() == AllocatorType::HEAP_ALLOC && dstMemory->data.size != pixelMap->GetByteCount())) {
+    if ((dstMemory->GetType() == AllocatorType::DMA_ALLOC &&
+        dstMemory->data.size < static_cast<uint32_t>(pixelMap->GetByteCount())) ||
+        (dstMemory->GetType() == AllocatorType::HEAP_ALLOC &&
+        dstMemory->data.size != static_cast<uint32_t>(pixelMap->GetByteCount()))) {
         dstMemory->Release();
         delete pixelMap;
         IMAGE_LOGE("[PixelMap]  tlv decode fail: size not match");
@@ -4238,8 +4241,8 @@ bool PixelMap::DoTranslation(TransInfos &infos, const AntiAliasingOption &option
 void PixelMap::scale(float xAxis, float yAxis)
 {
     ImageTrace imageTrace("PixelMap scale xAxis = %f, yAxis = %f", xAxis, yAxis);
-    if (std::abs(xAxis * imageInfo_.size.width - static_cast<float>(imageInfo_.size.width))  <= 1.0f &&
-        std::abs(xAxis * imageInfo_.size.height - static_cast<float>(imageInfo_.size.height))  <= 1.0f) {
+    if ((static_cast<int32_t>(round(imageInfo_.size.width * abs(xAxis))) - imageInfo_.size.width) == 0 &&
+        (static_cast<int32_t>(round(imageInfo_.size.height * abs(yAxis))) - imageInfo_.size.height) == 0) {
         return;
     }
     TransInfos infos;
@@ -4252,8 +4255,8 @@ void PixelMap::scale(float xAxis, float yAxis)
 
 void PixelMap::scale(float xAxis, float yAxis, const AntiAliasingOption &option)
 {
-    if (std::abs(xAxis * imageInfo_.size.width - static_cast<float>(imageInfo_.size.width))  <= 1.0f &&
-        std::abs(xAxis * imageInfo_.size.height - static_cast<float>(imageInfo_.size.height))  <= 1.0f) {
+    if ((static_cast<int32_t>(round(imageInfo_.size.width * abs(xAxis))) - imageInfo_.size.width) == 0 &&
+        (static_cast<int32_t>(round(imageInfo_.size.height * abs(yAxis))) - imageInfo_.size.height) == 0) {
         return;
     }
     if (isAstc_) {

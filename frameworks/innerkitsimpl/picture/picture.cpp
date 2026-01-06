@@ -20,6 +20,7 @@
 #include "picture.h"
 #include "pixel_yuv.h"
 #include "pixel_yuv_ext.h"
+#include "image_trace.h"
 #include "image_utils.h"
 #include "image_log.h"
 #include "image_source.h"
@@ -504,6 +505,7 @@ std::unique_ptr<PixelMap> Picture::GetHdrComposedPixelMap()
 
 std::unique_ptr<PixelMap> Picture::GetHdrComposedPixelMap(PixelFormat pixelFormat)
 {
+    ImageTrace imageTrace("Picture::GetHdrComposedPixelMap pixelFormat is %d", pixelFormat);
     std::shared_ptr<PixelMap> gainmap = GetGainmapPixelMap();
     bool cond = mainPixelMap_ == nullptr || gainmap == nullptr;
     CHECK_ERROR_RETURN_RET_LOG(cond, nullptr, "picture mainPixelMap_ or gainmap is empty.");
@@ -540,16 +542,38 @@ std::unique_ptr<PixelMap> Picture::GetHdrComposedPixelMap(PixelFormat pixelForma
     return hdrPixelMap;
 }
 
+std::shared_ptr<PixelMap> Picture::GetAuxPicturePixelMap(const AuxiliaryPictureType &type)
+{
+    CHECK_ERROR_RETURN_RET_LOG(!HasAuxiliaryPicture(type), nullptr,
+        "%{public}s AuxiliaryPicture(type: %{public}d) not found in picture", __func__, static_cast<int32_t>(type));
+    auto auxiliaryPicture = GetAuxiliaryPicture(type);
+    CHECK_ERROR_RETURN_RET_LOG(auxiliaryPicture == nullptr, nullptr,
+        "%{public}s Failed to GetAuxiliaryPicture: %{public}d", __func__, static_cast<int32_t>(type));
+    return auxiliaryPicture->GetContentPixel();
+}
+
 std::shared_ptr<PixelMap> Picture::GetGainmapPixelMap()
 {
-    if (!HasAuxiliaryPicture(AuxiliaryPictureType::GAINMAP)) {
-        IMAGE_LOGE("Unsupport gain map.");
-        return nullptr;
-    } else {
-        auto auxiliaryPicture = GetAuxiliaryPicture(AuxiliaryPictureType::GAINMAP);
-        CHECK_ERROR_RETURN_RET(auxiliaryPicture == nullptr, nullptr);
-        return auxiliaryPicture->GetContentPixel();
-    }
+    return GetAuxPicturePixelMap(AuxiliaryPictureType::GAINMAP);
+}
+
+std::shared_ptr<PixelMap> Picture::GetThumbnailPixelMap()
+{
+    return GetAuxPicturePixelMap(AuxiliaryPictureType::THUMBNAIL);
+}
+
+bool Picture::SetThumbnailPixelMap(std::shared_ptr<PixelMap> &thumbnailPixelMap)
+{
+    CHECK_ERROR_RETURN_RET_LOG(thumbnailPixelMap == nullptr, false,
+        "%{public}s set null thumbnail pixelmap", __func__);
+
+    std::shared_ptr<AuxiliaryPicture> auxPicture =
+        AuxiliaryPicture::Create(thumbnailPixelMap, AuxiliaryPictureType::THUMBNAIL);
+    CHECK_ERROR_RETURN_RET_LOG(auxPicture == nullptr || auxPicture->GetContentPixel() == nullptr, false,
+        "%{public}s Failed to create auxiliary picture.", __func__);
+    SetAuxiliaryPicture(auxPicture);
+    IMAGE_LOGD("%{public}s Set thumbnail pixelMap success.", __func__);
+    return true;
 }
 
 std::shared_ptr<AuxiliaryPicture> Picture::GetAuxiliaryPicture(AuxiliaryPictureType type)
@@ -583,10 +607,18 @@ bool Picture::HasAuxiliaryPicture(AuxiliaryPictureType type)
 void Picture::DropAuxiliaryPicture(AuxiliaryPictureType type)
 {
     auto it = auxiliaryPictures_.find(type);
-    if (it != auxiliaryPictures_.end()) {
-        auxiliaryPictures_.erase(it);
-    } else {
-        IMAGE_LOGE("Failed to drop auxiliary picture.");
+    if (it == auxiliaryPictures_.end()) {
+        IMAGE_LOGE("%{public}s Failed to drop auxiliary picture, because type: %{public}d is not found.",
+            __func__, static_cast<int32_t>(type));
+        return;
+    }
+
+    auxiliaryPictures_.erase(it);
+    if (type == AuxiliaryPictureType::THUMBNAIL) {
+        std::shared_ptr<ExifMetadata> exifMetadata = GetExifMetadata();
+        if (exifMetadata != nullptr) {
+            exifMetadata->DropThumbnail();
+        }
     }
 }
 

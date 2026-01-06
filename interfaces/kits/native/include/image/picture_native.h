@@ -114,7 +114,65 @@ typedef enum {
     * Fragment map
     */
     AUXILIARY_PICTURE_TYPE_FRAGMENT_MAP = 5,
+    /*
+    * Thumbnail
+    * @since 22
+    */
+    AUXILIARY_PICTURE_TYPE_THUMBNAIL = 10,
 } Image_AuxiliaryPictureType;
+
+/**
+ * @brief Define a OH_ComposeOptions struct type, Describes compose parameters.
+ *
+ * @since 23
+ */
+typedef struct OH_ComposeOptions OH_ComposeOptions;
+
+/**
+ * @brief Create a instance for OH_ComposeOptions struct.
+ *
+ * @param options The OH_ComposeOptions pointer will be operated.
+ * @return Image functions result code.
+ *         {@link IMAGE_SUCCESS} if the execution is successful.
+ *         {@link IMAGE_BAD_PARAMETER} options is nullptr.
+ * @since 23
+ */
+Image_ErrorCode OH_ComposeOptions_Create(OH_ComposeOptions **options);
+
+/**
+ * @brief Set desired pixel format for ComposeOptions.
+ *
+ * @param options The OH_ComposeOptions pointer will be operated.
+ * @param desiredPixelFormat The desired pixel format will be set, RGBA_1010102\YCBCR_P010\YCRCB_P010 are supported.
+ * @return Image functions result code.
+ *         {@link IMAGE_SUCCESS} if the execution is successful.
+ *         {@link IMAGE_BAD_PARAMETER} options is nullptr.
+ * @since 23
+ */
+Image_ErrorCode OH_ComposeOptions_SetDesiredPixelFormat(OH_ComposeOptions *options, PIXEL_FORMAT desiredPixelFormat);
+
+/**
+ * @brief Get desired pixel format for ComposeOptions.
+ *
+ * @param options The OH_ComposeOptions pointer will be operated.
+ * @param desiredPixelFormat The desired pixel format.
+ * @return Image functions result code.
+ *         {@link IMAGE_SUCCESS} if the execution is successful.
+ *         {@link IMAGE_BAD_PARAMETER} options is nullptr, or desiredPixelFormat is nullptr.
+ * @since 23
+ */
+Image_ErrorCode OH_ComposeOptions_GetDesiredPixelFormat(OH_ComposeOptions *options, PIXEL_FORMAT *desiredPixelFormat);
+
+/**
+ * @brief Releases an OH_ComposeOptions object.
+ *
+ * @param options Indicates a OH_ComposeOptions pointer.
+ * @return Image functions result code.
+ *         {@link IMAGE_SUCCESS} if the execution is successful.
+ *         {@link IMAGE_BAD_PARAMETER} options is nullptr.
+ * @since 23
+ */
+Image_ErrorCode OH_ComposeOptions_Release(OH_ComposeOptions *options);
 
 /**
  * @brief Create a <b>Picture</b> object.
@@ -148,10 +206,25 @@ Image_ErrorCode OH_PictureNative_GetMainPixelmap(OH_PictureNative *picture, OH_P
  * @return Image functions result code.
  *         {@link IMAGE_SUCCESS} if the execution is successful.
  *         {@link IMAGE_BAD_PARAMETER} picture is nullptr, or hdrPixelmap is nullptr.
- *         {@link IMAGE_UNSUPPORTED_OPERATION} Unsupported operation, e.g. the picture does not has a gainmap
+ *         {@link IMAGE_UNSUPPORTED_OPERATION} Unsupported operation, e.g. the picture does not has a gainmap.
  * @since 13
  */
 Image_ErrorCode OH_PictureNative_GetHdrComposedPixelmap(OH_PictureNative *picture, OH_PixelmapNative **hdrPixelmap);
+
+/**
+ * @brief Obtains the hdr pixel map with options.
+ *
+ * @param picture The Picture pointer will be operated.
+ * @param options The compose options.
+ * @param hdrPixelmap Hdr pixel map pointer for obtained.
+ * @return Image functions result code.
+ *         {@link IMAGE_SUCCESS} if the execution is successful.
+ *         {@link IMAGE_BAD_PARAMETER} picture is nullptr, or hdrPixelmap is nullptr.
+ *         {@link IMAGE_UNSUPPORTED_OPERATION} Unsupported operation, e.g. the picture does not has a gainmap.
+ * @since 23
+ */
+Image_ErrorCode OH_PictureNative_GetHdrComposedPixelmapWithOptions(OH_PictureNative *picture,
+    OH_ComposeOptions *options, OH_PixelmapNative **hdrPixelmap);
 
 /**
  * @brief Obtains the gainmap pixel map.
@@ -164,6 +237,31 @@ Image_ErrorCode OH_PictureNative_GetHdrComposedPixelmap(OH_PictureNative *pictur
  * @since 13
  */
 Image_ErrorCode OH_PictureNative_GetGainmapPixelmap(OH_PictureNative *picture, OH_PixelmapNative **gainmapPixelmap);
+
+/**
+ * @brief Obtains the thumbnail pixel map.
+ *
+ * @param picture The Picture pointer will be operated.
+ * @param thumbnailPixelmap Thumbnail pixel map pointer for obtained.
+ * @return Image functions result code.
+ *         {@link IMAGE_SUCCESS} if the execution is successful.
+ *         {@link IMAGE_BAD_PARAMETER} picture is nullptr, or thumbnailPixelmap is nullptr.
+ * @since 22
+ */
+Image_ErrorCode OH_PictureNative_GetThumbnailPixelmap(OH_PictureNative *picture,
+    OH_PixelmapNative **thumbnailPixelmap);
+
+/**
+ * @brief Set thumbnail pixel map.
+ *
+ * @param picture The Picture pointer will be operated.
+ * @param thumbnailPixelmap Thumbnail pixel map will be set.
+ * @return Image functions result code.
+ *         {@link IMAGE_SUCCESS} if the execution is successful.
+ *         {@link IMAGE_BAD_PARAMETER} picture is nullptr.
+ * @since 22
+ */
+Image_ErrorCode OH_PictureNative_SetThumbnailPixelmap(OH_PictureNative *picture, OH_PixelmapNative *thumbnailPixelmap);
 
 /**
  * @brief Set auxiliary picture.
@@ -192,6 +290,18 @@ Image_ErrorCode OH_PictureNative_SetAuxiliaryPicture(OH_PictureNative *picture, 
  */
 Image_ErrorCode OH_PictureNative_GetAuxiliaryPicture(OH_PictureNative *picture, Image_AuxiliaryPictureType type,
     OH_AuxiliaryPictureNative **auxiliaryPicture);
+
+/**
+ * @brief Drop the auxiliary picture based on type.
+ *
+ * @param picture The Picture pointer will be operated.
+ * @param type The type of auxiliary picture.
+ * @return Image functions result code.
+ *         {@link IMAGE_SUCCESS} if the execution is successful.
+ *         {@link IMAGE_BAD_PARAMETER} picture is nullptr, or the type is invalid.
+ * @since 22
+ */
+Image_ErrorCode OH_PictureNative_DropAuxiliaryPicture(OH_PictureNative *picture, Image_AuxiliaryPictureType type);
 
 /**
  * @brief Obtains the metadata of main picture.

@@ -144,6 +144,7 @@ if (use_clang_ios) {
         "src/image_dfx.cpp",
         "src/image_func_timer.cpp",
         "src/image_fwk_ext_manager.cpp",
+        "src/hispeed_image_manager.cpp",
       ]
       external_deps += [
         "access_token:libprivacy_sdk",
@@ -263,6 +264,7 @@ ohos_static_library("image_utils_static") {
       "src/image_dfx.cpp",
       "src/image_func_timer.cpp",
       "src/image_fwk_ext_manager.cpp",
+      "src/hispeed_image_manager.cpp",
     ]
     deps += [ "//third_party/ffmpeg:libohosffmpeg_static" ]
   } else if (use_clang_android) {
@@ -284,6 +286,7 @@ ohos_static_library("image_utils_static") {
       "src/image_dfx.cpp",
       "src/image_func_timer.cpp",
       "src/image_fwk_ext_manager.cpp",
+      "src/hispeed_image_manager.cpp",
     ]
     deps += [ "//third_party/ffmpeg:libohosffmpeg_static" ]
   } else {
@@ -293,6 +296,7 @@ ohos_static_library("image_utils_static") {
       "src/image_dfx.cpp",
       "src/image_func_timer.cpp",
       "src/image_fwk_ext_manager.cpp",
+      "src/hispeed_image_manager.cpp",
     ]
     deps = [
       "//foundation/multimedia/image_framework/plugins/manager:pluginmanager",

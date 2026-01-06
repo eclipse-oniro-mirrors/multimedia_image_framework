@@ -142,19 +142,6 @@ ohos_shared_library("extplugin") {
     }
   }
   sources = [
-    "$image_subsystem/frameworks/innerkitsimpl/accessor/src/abstract_exif_metadata_accessor.cpp",
-    "$image_subsystem/frameworks/innerkitsimpl/accessor/src/buffer_metadata_stream.cpp",
-    "$image_subsystem/frameworks/innerkitsimpl/accessor/src/data_buf.cpp",
-    "$image_subsystem/frameworks/innerkitsimpl/accessor/src/exif_metadata.cpp",
-    "$image_subsystem/frameworks/innerkitsimpl/accessor/src/exif_metadata_formatter.cpp",
-    "$image_subsystem/frameworks/innerkitsimpl/accessor/src/file_metadata_stream.cpp",
-    "$image_subsystem/frameworks/innerkitsimpl/accessor/src/heif_exif_metadata_accessor.cpp",
-    "$image_subsystem/frameworks/innerkitsimpl/accessor/src/jpeg_exif_metadata_accessor.cpp",
-    "$image_subsystem/frameworks/innerkitsimpl/accessor/src/metadata_accessor_factory.cpp",
-    "$image_subsystem/frameworks/innerkitsimpl/accessor/src/png_exif_metadata_accessor.cpp",
-    "$image_subsystem/frameworks/innerkitsimpl/accessor/src/png_image_chunk_utils.cpp",
-    "$image_subsystem/frameworks/innerkitsimpl/accessor/src/tiff_parser.cpp",
-    "$image_subsystem/frameworks/innerkitsimpl/accessor/src/webp_exif_metadata_accessor.cpp",
     "src/ext_decoder.cpp",
     "src/ext_encoder.cpp",
     "src/ext_pixel_convert.cpp",
@@ -164,6 +151,7 @@ ohos_shared_library("extplugin") {
     "src/hdr/jpeg_mpf_parser.cpp",
     "src/jpeg_yuv_decoder/jpeg_decoder_yuv.cpp",
     "src/jpeg_yuv_decoder/jpeg_yuvdata_converter.cpp",
+    "src/jpeg_yuv_decoder/yuv_helper.cpp",
     "src/plugin_export.cpp",
     "src/texture_encode/astc_codec.cpp",
   ]
@@ -223,6 +211,7 @@ ohos_shared_library("extplugin") {
       "${image_subsystem}/interfaces/innerkits:image_native",
       "${image_subsystem}/plugins/common/libs/image/formatagentplugin:imageformatagent",
       "${image_subsystem}/plugins/manager:pluginmanager",
+      "${image_subsystem}/frameworks/innerkitsimpl/accessor:image_accessor",
     ]
 
     external_deps = [

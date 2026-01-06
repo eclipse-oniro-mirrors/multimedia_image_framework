@@ -20,7 +20,6 @@
 #include "input_data_stream.h"
 #include "metadata_stream.h"
 
-#include "dng_info.h"
 namespace OHOS {
 namespace Media {
 class DngSdkHelper {

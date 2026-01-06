@@ -458,7 +458,7 @@ OHOS::ColorManager::ColorSpaceName ColorUtils::GetSrcColorSpace(const skcms_ICCP
             profile->CICP.transfer_characteristics, profile->CICP.matrix_coefficients,
             profile->CICP.video_full_range_flag);
         if (cName != ColorManager::NONE) {
-            IMAGE_LOGI("%{public}s profile has CICP, cName: %{public}u", __func__, static_cast<uint32_t>(cName));
+            IMAGE_LOGD("%{public}s profile has CICP, cName: %{public}u", __func__, static_cast<uint32_t>(cName));
             return cName;
         }
     }

@@ -58,6 +58,13 @@ static constexpr int32_t REQUIRED_GPS_COMPONENTS = 3;
 using JpegYuvDecodeError = OHOS::ImagePlugin::JpegYuvDecodeError;
 static Image_MimeType *IMAGE_SOURCE_SUPPORTED_FORMATS = nullptr;
 static size_t g_supportedFormatSize = 0;
+static const size_t MAX_DOUBLE_ARRAY_SIZE = 8 * 1024;
+static const size_t MAX_INT_ARRAY_SIZE = 16 * 1024;
+static const size_t MAX_EXIF_SIZE = 64 * 1024;
+struct OH_DecodingOptionsForThumbnail {
+    struct Image_Size desiredSize;
+    bool needGenerate = false;
+};
 
 struct OH_DecodingOptions {
     int32_t pixelFormat;
@@ -525,6 +532,14 @@ static void ParseDecodingOps(DecodeOptions &decOps, struct OH_DecodingOptions *o
     }
 }
 
+static void ParseDecodingOptsForThumbnail(DecodingOptionsForThumbnail &decOps,
+    struct OH_DecodingOptionsForThumbnail *ops)
+{
+    decOps.desiredSize.width = static_cast<int32_t>(ops->desiredSize.width);
+    decOps.desiredSize.height = static_cast<int32_t>(ops->desiredSize.height);
+    decOps.needGenerate = ops->needGenerate;
+}
+
 static void ParseImageSourceInfo(struct OH_ImageSource_Info *source, const ImageInfo &info)
 {
     if (source == nullptr) {
@@ -747,6 +762,101 @@ Image_ErrorCode OH_ImageSourceNative_CreatePicture(OH_ImageSourceNative *source,
     
     auto pictureNative  = new OH_PictureNative(std::move(pictureTemp));
     *picture = pictureNative;
+    return IMAGE_SUCCESS;
+}
+
+MIDK_EXPORT
+Image_ErrorCode OH_DecodingOptionsForThumbnail_Create(OH_DecodingOptionsForThumbnail **options)
+{
+    if (options == nullptr) {
+        return IMAGE_SOURCE_INVALID_PARAMETER;
+    }
+    *options = new OH_DecodingOptionsForThumbnail();
+    return IMAGE_SUCCESS;
+}
+
+MIDK_EXPORT
+Image_ErrorCode OH_DecodingOptionsForThumbnail_GetDesiredSize(OH_DecodingOptionsForThumbnail *options,
+    Image_Size *desiredSize)
+{
+    if (options == nullptr || desiredSize == nullptr) {
+        return IMAGE_SOURCE_INVALID_PARAMETER;
+    }
+    desiredSize->width = options->desiredSize.width;
+    desiredSize->height = options->desiredSize.height;
+    return IMAGE_SUCCESS;
+}
+
+MIDK_EXPORT
+Image_ErrorCode OH_DecodingOptionsForThumbnail_SetDesiredSize(OH_DecodingOptionsForThumbnail *options,
+    Image_Size *desiredSize)
+{
+    if (options == nullptr || desiredSize == nullptr) {
+        return IMAGE_SOURCE_INVALID_PARAMETER;
+    }
+    options->desiredSize.width = desiredSize->width;
+    options->desiredSize.height = desiredSize->height;
+    return IMAGE_SUCCESS;
+}
+
+Image_ErrorCode OH_DecodingOptionsForThumbnail_GetNeedGenerate(OH_DecodingOptionsForThumbnail *options,
+    bool *needGenerate)
+{
+    if (options == nullptr || needGenerate == nullptr) {
+        return IMAGE_SOURCE_INVALID_PARAMETER;
+    }
+    *needGenerate = options->needGenerate;
+    return IMAGE_SUCCESS;
+}
+
+Image_ErrorCode OH_DecodingOptionsForThumbnail_SetNeedGenerate(OH_DecodingOptionsForThumbnail *options,
+    bool *needGenerate)
+{
+    if (options == nullptr || needGenerate == nullptr) {
+        return IMAGE_SOURCE_INVALID_PARAMETER;
+    }
+    options->needGenerate = *needGenerate;
+    return IMAGE_SUCCESS;
+}
+
+MIDK_EXPORT
+Image_ErrorCode OH_DecodingOptionsForThumbnail_Release(OH_DecodingOptionsForThumbnail *options)
+{
+    if (options == nullptr) {
+        return IMAGE_SOURCE_INVALID_PARAMETER;
+    }
+    delete options;
+    options = nullptr;
+    return IMAGE_SUCCESS;
+}
+
+static bool IsSizeInvalid(const Size &size)
+{
+    return size.width < 0 || size.height < 0;
+}
+
+MIDK_EXPORT
+Image_ErrorCode OH_ImageSourceNative_CreateThumbnail(OH_ImageSourceNative *source, OH_DecodingOptionsForThumbnail *ops,
+    OH_PixelmapNative **pixelmap)
+{
+    if (source == nullptr || source->GetInnerImageSource() == nullptr || ops == nullptr || pixelmap == nullptr) {
+        return IMAGE_SOURCE_INVALID_PARAMETER;
+    }
+
+    DecodingOptionsForThumbnail decOps;
+    uint32_t errorCode = IMAGE_SOURCE_INVALID_PARAMETER;
+    ParseDecodingOptsForThumbnail(decOps, ops);
+    if (IsSizeInvalid(decOps.desiredSize)) {
+        return IMAGE_SOURCE_INVALID_PARAMETER;
+    }
+    std::unique_ptr<PixelMap> tmpPixelmap = source->GetInnerImageSource()->CreateThumbnail(decOps, errorCode);
+    if (tmpPixelmap == nullptr || errorCode != IMAGE_SUCCESS) {
+        auto [errCode, _] = ImageErrorConvert::CreateThumbnailMakeErrMsg(errorCode);
+        return static_cast<Image_ErrorCode>(errCode);
+    }
+    std::shared_ptr<PixelMap> nativePixelmap = std::move(tmpPixelmap);
+    OH_PixelmapNative *stPixMap = new OH_PixelmapNative(nativePixelmap);
+    *pixelmap = stPixMap;
     return IMAGE_SUCCESS;
 }
 
@@ -987,7 +1097,7 @@ Image_ErrorCode OH_ImageSourceNative_GetImagePropertyString(OH_ImageSourceNative
             return IMAGE_SOURCE_UNSUPPORTED_METADATA;
         }
     }
-    if (exifValue.stringValue.empty()) {
+    if (exifValue.stringValue.empty() || exifValue.stringValue.length() > MAX_EXIF_SIZE) {
         return IMAGE_SOURCE_UNSUPPORTED_METADATA;
     }
     if (size < exifValue.stringValue.length() + 1) {
@@ -1322,6 +1432,9 @@ Image_ErrorCode OH_ImageSourceNative_ModifyImagePropertyIntArray(OH_ImageSourceN
     if (keyString.empty()) {
         return IMAGE_SOURCE_INVALID_PARAMETER;
     }
+    if (size > MAX_INT_ARRAY_SIZE) {
+        return IMAGE_SOURCE_INVALID_PARAMETER;
+    }
     std::string valueString = IntArrayToString(std::vector<int32_t>(value, value + size));
     if (keyString == "GPSVersionID") {
         std::vector<int64_t> intArray(value, value + size);
@@ -1404,6 +1517,9 @@ Image_ErrorCode OH_ImageSourceNative_ModifyImagePropertyDoubleArray(OH_ImageSour
     if (keyString.empty()) {
         return IMAGE_SOURCE_INVALID_PARAMETER;
     }
+    if (size > MAX_DOUBLE_ARRAY_SIZE) {
+        return IMAGE_SOURCE_INVALID_PARAMETER;
+    }
     std::vector<double> doubleArray = std::vector<double>(value, value + size);
     std::string valueString = "";
     valueString = HandleDoubleArray(keyString, doubleArray);
@@ -1437,6 +1553,9 @@ Image_ErrorCode OH_ImageSourceNative_ModifyImagePropertyBlob(OH_ImageSourceNativ
     }
     std::string keyString(key->data, key->size);
     if (keyString.empty()) {
+        return IMAGE_SOURCE_INVALID_PARAMETER;
+    }
+    if (size > MAX_EXIF_SIZE) {
         return IMAGE_SOURCE_INVALID_PARAMETER;
     }
     uint8_t* byteData = static_cast<uint8_t*>(value);

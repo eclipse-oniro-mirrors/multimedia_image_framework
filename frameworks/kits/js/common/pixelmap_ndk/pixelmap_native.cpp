@@ -693,11 +693,15 @@ MIDK_EXPORT
 Image_ErrorCode OH_PixelmapNative_CreatePixelmapFromSurfaceWithTransformation(const char *surfaceId, size_t length,
     bool transformEnabled, OH_PixelmapNative **pixelmap)
 {
+#if defined(IOS_PLATFORM) || defined(ANDROID_PLATFORM)
+    return IMAGE_UNSUPPORTED_OPERATION;
+#else
     if (pixelmap == nullptr || surfaceId == nullptr) {
         return IMAGE_INVALID_PARAMETER;
     }
     OHOS::Media::Rect region;
     return CreatePixelMapFromSurface(std::string(surfaceId, length), region, pixelmap, transformEnabled);
+#endif
 }
 
 static bool IsNativeBufferFormatSupported(int32_t format)

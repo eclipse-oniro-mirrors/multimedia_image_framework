@@ -112,6 +112,7 @@ constexpr int32_t FAULT_API_VERSION = -1;
 constexpr int32_t BUNDLE_MGR_SERVICE_SYS_ABILITY_ID = 401;
 constexpr int32_t BASE_EVEN_DIVISOR = 2;
 constexpr float EPSILON = 1e-6;
+constexpr float FLOAT_1 = 1.0f;
 constexpr int MAX_DIMENSION = INT32_MAX >> 2;
 static bool g_pluginRegistered = false;
 static const uint8_t NUM_0 = 0;
@@ -656,6 +657,16 @@ bool ImageUtils::CheckMulOverflow(int32_t width, int32_t height, int32_t bytesPe
     return false;
 }
 
+bool ImageUtils::CheckFloatMulOverflow(float num1, float num2)
+{
+    if (fabs(num1) <= FLOAT_1 || fabs(num2) <= FLOAT_1) {
+        return false;
+    }
+    CHECK_ERROR_RETURN_RET_LOG(fabs(num1) > std::numeric_limits<float>::max() / fabs(num2), true,
+        "num1 * num2 overflow! num1:%{public}f, num2:%{public}f", num1, num2);
+    return false;
+}
+
 static void ReversePixels(uint8_t* srcPixels, uint8_t* dstPixels, uint32_t byteCount)
 {
     if (byteCount % NUM_4 != NUM_0) {
@@ -707,6 +718,67 @@ int32_t ImageUtils::SurfaceBuffer_Unreference(void* buffer)
     ref->DecStrongRef(ref);
     return SUCCESS;
 }
+
+#if !defined(CROSS_PLATFORM)
+bool ImageUtils::GetYuvInfoFromSurfaceBuffer(YUVDataInfo &yuvInfo,
+    sptr<SurfaceBuffer> surfaceBuffer)
+{
+    OH_NativeBuffer_Planes* planes = nullptr;
+    GSError retVal = surfaceBuffer->GetPlanesInfo(reinterpret_cast<void**>(&planes));
+    if (retVal == OHOS::GSERROR_OK && planes != nullptr && planes->planeCount >= NUM_2) {
+        yuvInfo.yStride = planes->planes[PLANE_Y].columnStride;
+        yuvInfo.uvStride = planes->planes[PLANE_U].columnStride;
+        yuvInfo.yOffset = planes->planes[PLANE_Y].offset;
+        if (surfaceBuffer->GetFormat() == GRAPHIC_PIXEL_FMT_YCRCB_420_SP) {
+            yuvInfo.uvOffset = planes->planes[PLANE_V].offset;
+        } else {
+            yuvInfo.uvOffset = planes->planes[PLANE_U].offset;
+        }
+        return true;
+    } else {
+        IMAGE_LOGE("%{public}s, get planesInfo failed, retVal:%{public}d", __func__, retVal);
+        return false;
+    }
+}
+
+bool ImageUtils::CopyYuvPixelMapToSurfaceBuffer(PixelMap* pixelmap,
+    sptr<SurfaceBuffer> surfaceBuffer)
+{
+    uint8_t* src = const_cast<uint8_t*>(pixelmap->GetPixels());
+    uint8_t* dst = static_cast<uint8_t*>(surfaceBuffer->GetVirAddr());
+    uint32_t dstSize = surfaceBuffer->GetSize();
+
+    YUVDataInfo yuvDstInfo;
+    YUVDataInfo yuvSrcInfo;
+    pixelmap->GetImageYUVInfo(yuvSrcInfo);
+
+    bool cond = !ImageUtils::GetYuvInfoFromSurfaceBuffer(yuvDstInfo, surfaceBuffer);
+    CHECK_ERROR_RETURN_RET_LOG(cond, false, "Get YUVInfo from SurfaceBuffer failed");
+
+    for (uint32_t i = 0; i < yuvSrcInfo.yHeight; ++i) {
+        if (memcpy_s(dst, dstSize, src, yuvSrcInfo.yWidth) != EOK) {
+            return false;
+        }
+        dst += yuvDstInfo.yStride;
+        dstSize -= yuvDstInfo.yStride;
+        src += yuvSrcInfo.yWidth;
+    }
+
+    uint64_t uvWidth = yuvSrcInfo.uvWidth * NUM_2;
+    dst = static_cast<uint8_t*>(surfaceBuffer->GetVirAddr()) + yuvDstInfo.uvOffset;
+
+    for (uint32_t i = 0; i < yuvSrcInfo.uvHeight; ++i) {
+        if (memcpy_s(dst, dstSize, src, uvWidth) != EOK) {
+            return false;
+        }
+        dst += yuvDstInfo.uvStride;
+        dstSize -= yuvDstInfo.uvStride;
+        src += uvWidth;
+    }
+
+    return true;
+}
+#endif
 
 void ImageUtils::DumpPixelMap(PixelMap* pixelMap, std::string customFileName, uint64_t imageId)
 {
@@ -1460,14 +1532,16 @@ bool ImageUtils::IsMetadataTypeSupported(MetadataType metadataType)
     }
 }
 
-const std::set<AuxiliaryPictureType> ImageUtils::GetAllAuxiliaryPictureType()
+const std::set<AuxiliaryPictureType> &ImageUtils::GetAllAuxiliaryPictureType()
 {
     static const std::set<AuxiliaryPictureType> auxTypes = {
         AuxiliaryPictureType::GAINMAP,
         AuxiliaryPictureType::DEPTH_MAP,
         AuxiliaryPictureType::UNREFOCUS_MAP,
         AuxiliaryPictureType::LINEAR_MAP,
-        AuxiliaryPictureType::FRAGMENT_MAP};
+        AuxiliaryPictureType::FRAGMENT_MAP,
+        AuxiliaryPictureType::THUMBNAIL,
+    };
     return auxTypes;
 }
 

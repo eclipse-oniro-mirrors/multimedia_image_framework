@@ -418,11 +418,6 @@ bool ImageFormatConvert::CheckConvertDataInfo(const ConvertDataInfo &convertData
         return false;
     }
 
-    if (GetBufferSizeByFormat(convertDataInfo.pixelFormat, convertDataInfo.imageSize) != convertDataInfo.bufferSize) {
-        IMAGE_LOGE("buffer size is wrong");
-        return false;
-    }
-
     return true;
 }
 

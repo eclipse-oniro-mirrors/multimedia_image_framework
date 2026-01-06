@@ -164,7 +164,7 @@ HWTEST_F(TiffDecoderTest, SetDecodeOptionsTest001, TestSize.Level3)
     //index is not 0
     errorCode = tiffDecoder->SetDecodeOptions(MOCK_INDEX, opts, imageInfo);
     ASSERT_EQ(errorCode, ERR_MEDIA_INVALID_PARAM);
-    
+
     errorCode = tiffDecoder->SetDecodeOptions(0, opts, imageInfo);
     ASSERT_EQ(errorCode, SUCCESS);
     GTEST_LOG_(INFO) << "TiffDecoderTest: SetDecodeOptionsTest001 end";
@@ -293,6 +293,7 @@ HWTEST_F(TiffDecoderTest, AllocBufferTest001, TestSize.Level3)
 #if !defined(CROSS_PLATFORM)
     if (ImageSystemProperties::GetDmaEnabled()) {
         decodeContext.allocatorType = AllocatorType::DMA_ALLOC;
+        tiffDecoder->tiffSize_ = {1, 1};
         ret = tiffDecoder->AllocBuffer(decodeContext, MOCK_SIZE);
         FreeContext(decodeContext);
         decodeContext.pixelsBuffer.buffer = nullptr;

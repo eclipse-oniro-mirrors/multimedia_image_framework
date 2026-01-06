@@ -216,8 +216,8 @@ std::map<uint16_t, DngSdkInfo::ParseTagType> DngSdkInfo::specialTagParseMap_ = {
     {tcSubsecTime, DngSdkInfo::ParseAsciiTag},
     {tcShutterSpeedValue, DngSdkInfo::ParseDoubleTag},
     {tcApertureValue, DngSdkInfo::ParseDoubleTag},
-    {tcSubjectArea, DngSdkInfo::ParseShortTag},
-    {tcSubjectLocation, DngSdkInfo::ParseShortTag},
+    {tcSubjectArea, DngSdkInfo::ParseIntArrayTag},
+    {tcSubjectLocation, DngSdkInfo::ParseIntArrayTag},
     {tcMaxApertureValue, DngSdkInfo::ParseDoubleTag},
     {tcSubjectDistance, DngSdkInfo::ParseDoubleTag},
     {tcCFAPatternExif, DngSdkInfo::ParseUndefinedTag},
@@ -230,7 +230,7 @@ std::map<uint16_t, DngSdkInfo::ParseTagType> DngSdkInfo::specialTagParseMap_ = {
     {TAG_CODE_OFFSET_TIME_ORIGINAL, DngSdkInfo::ParseAsciiTag},
     {TAG_CODE_OFFSET_TIME_DIGITIZED, DngSdkInfo::ParseAsciiTag},
     {TAG_CODE_COMPOSITE_IMAGE, DngSdkInfo::ParseIntTag},
-    {TAG_CODE_SOURCE_IMAGE_NUMBER_OF_COMPOSITE_IMAGE, DngSdkInfo::ParseShortTag},
+    {TAG_CODE_SOURCE_IMAGE_NUMBER_OF_COMPOSITE_IMAGE, DngSdkInfo::ParseIntArrayTag},
     {TAG_CODE_SOURCE_EXPOSURE_TIMES_OF_COMPOSITE_IMAGE, DngSdkInfo::ParseUndefinedTag},
 };
 
@@ -1165,18 +1165,6 @@ uint32_t DngSdkInfo::ParseAsciiTag(const DngTagRecord& tagRecord, dng_stream& st
     return SUCCESS;
 }
 
-uint32_t DngSdkInfo::ParseShortTag(const DngTagRecord& tagRecord, dng_stream& stream, MetadataValue& value)
-{
-    value.type = PropertyValueType::INT_ARRAY;
-    value.intArrayValue.clear();
-    value.intArrayValue.reserve(tagRecord.tagCount);
-    for (uint32_t i = 0; i < tagRecord.tagCount; i++) {
-        uint16_t shortVal = stream.Get_uint16();
-        value.intArrayValue.push_back(static_cast<int64_t>(shortVal));
-    }
-    return SUCCESS;
-}
-
 uint32_t DngSdkInfo::ParseShortTagToString(const DngTagRecord& tagRecord, dng_stream& stream, MetadataValue& value)
 {
     value.type = PropertyValueType::STRING;
@@ -1204,7 +1192,7 @@ uint32_t DngSdkInfo::ParseIntArrayTag(const DngTagRecord& tagRecord, dng_stream&
     value.intArrayValue.clear();
     value.intArrayValue.reserve(tagRecord.tagCount);
     for (uint32_t i = 0; i < tagRecord.tagCount; i++) {
-        uint32_t longVal = stream.Get_uint32();
+        uint32_t longVal = stream.TagValue_uint32(static_cast<uint32_t>(tagRecord.tagType));
         value.intArrayValue.push_back(static_cast<int64_t>(longVal));
     }
     return SUCCESS;
@@ -1216,9 +1204,7 @@ uint32_t DngSdkInfo::ParseRationalTag(const DngTagRecord& tagRecord, dng_stream&
     value.doubleArrayValue.clear();
     value.doubleArrayValue.reserve(tagRecord.tagCount);
     for (uint32_t i = 0; i < tagRecord.tagCount; i++) {
-        uint32_t numerator = stream.Get_uint32();
-        uint32_t denominator = stream.Get_uint32();
-        double rationalVal = (denominator != 0) ? static_cast<double>(numerator) / denominator : 0.0;
+        double rationalVal = stream.TagValue_real64(static_cast<uint32_t>(tagRecord.tagType));
         value.doubleArrayValue.push_back(rationalVal);
     }
     return SUCCESS;
@@ -1241,24 +1227,8 @@ uint32_t DngSdkInfo::ParseIntTag(const DngTagRecord& tagRecord, dng_stream& stre
     value.type = PropertyValueType::INT;
     value.intArrayValue.clear();
     for (uint32_t i = 0; i < tagRecord.tagCount; i++) {
-        int64_t v = 0;
-        switch (tagRecord.tagType) {
-            case ttShort:
-                v = static_cast<int64_t>(stream.Get_uint16());
-                break;
-            case ttSShort:
-                v = static_cast<int64_t>(stream.Get_int16());
-                break;
-            case ttLong:
-                v = static_cast<int64_t>(stream.Get_uint32());
-                break;
-            case ttSLong:
-                v = static_cast<int64_t>(stream.Get_int32());
-                break;
-            default:
-                return ERR_IMAGE_DECODE_EXIF_UNSUPPORT;
-        }
-        value.intArrayValue.push_back(v);
+        int64_t tagValue = static_cast<int64_t>(stream.TagValue_uint32(static_cast<uint32_t>(tagRecord.tagType)));
+        value.intArrayValue.push_back(tagValue);
     }
     return SUCCESS;
 }
@@ -1270,27 +1240,7 @@ uint32_t DngSdkInfo::ParseDoubleTag(const DngTagRecord& tagRecord, dng_stream& s
     if (tagRecord.tagCount == 0) {
         return SUCCESS;
     }
-    double d = 0.0;
-    switch (tagRecord.tagType) {
-        case ttDouble:
-            d = stream.Get_real64();
-            break;
-        case ttRational: {
-            uint32_t n = stream.Get_uint32();
-            uint32_t dnm = stream.Get_uint32();
-            d = (dnm != 0) ? static_cast<double>(n) / dnm : 0.0;
-            break;
-        }
-        case ttSRational: {
-            int32_t n = stream.Get_int32();
-            int32_t dnm = stream.Get_int32();
-            d = (dnm != 0) ? static_cast<double>(n) / dnm : 0.0;
-            break;
-        }
-        default:
-            return ERR_IMAGE_DECODE_EXIF_UNSUPPORT;
-    }
-    value.doubleArrayValue.push_back(d);
+    value.doubleArrayValue.push_back(stream.TagValue_real64(static_cast<uint32_t>(tagRecord.tagType)));
     return SUCCESS;
 }
 

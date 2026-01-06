@@ -17,6 +17,10 @@
 #include <securec.h>
 #include <unistd.h>
 #include "image_log.h"
+#if !defined(CROSS_PLATFORM)
+#include "tokenid_kit.h"
+#include "ipc_skeleton.h"
+#endif
 #if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM) && defined(HICHECKER_ENABLE)
 #include "hichecker.h"
 #endif
@@ -168,8 +172,7 @@ static bool ParseImageReceiverOptions(napi_env env, napi_value options,
     int32_t &width, int32_t &height, int32_t &capacity)
 {
     napi_value sizeObj = nullptr;
-    if (!GET_NODE_BY_NAME(options, "size", sizeObj) ||
-        ImageNapiUtils::getType(env, sizeObj) == napi_undefined) {
+    if (!GET_NODE_BY_NAME(options, "size", sizeObj)) {
         IMAGE_LOGD("no size in options");
         width = DEFAULT_WIDTH;
         height = DEFAULT_HEIGHT;
@@ -180,8 +183,7 @@ static bool ParseImageReceiverOptions(napi_env env, napi_value options,
         }
         IMAGE_LOGD("size: width=%{public}d, height=%{public}d", width, height);
     }
-    if (!GET_INT32_BY_NAME(options, "capacity", capacity) ||
-        ImageNapiUtils::getType(env, sizeObj) == napi_undefined) {
+    if (!GET_INT32_BY_NAME(options, "capacity", capacity)) {
         capacity = DEFAULT_CAPACITY;
     }
     return true;
@@ -256,6 +258,19 @@ bool ImageNapiUtils::ParseImageCreatorReceiverArgs(napi_env env, size_t argc,
     return true;
 }
 
+const std::set<AuxiliaryPictureType> &ImageNapiUtils::GetNapiSupportedAuxiliaryPictureType()
+{
+    static const std::set<AuxiliaryPictureType> auxTypes = {
+        AuxiliaryPictureType::GAINMAP,
+        AuxiliaryPictureType::DEPTH_MAP,
+        AuxiliaryPictureType::UNREFOCUS_MAP,
+        AuxiliaryPictureType::LINEAR_MAP,
+        AuxiliaryPictureType::FRAGMENT_MAP,
+        AuxiliaryPictureType::THUMBNAIL,
+    };
+    return auxTypes;
+}
+
 void ImageNapiUtils::HicheckerReport()
 {
 #if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM) && defined(HICHECKER_ENABLE)
@@ -309,6 +324,16 @@ void ImageNapiUtils::CleanUpConstructorContext(void* data)
     ctorContext->env_ = nullptr;
     ctorContext->ref_ = nullptr;
     delete ctorContext;
+}
+
+bool ImageNapiUtils::IsSystemApp()
+{
+#if !defined(CROSS_PLATFORM)
+    static bool isSys = Security::AccessToken::TokenIdKit::IsSystemAppByFullTokenID(IPCSkeleton::GetSelfTokenID());
+    return isSys;
+#else
+    return false;
+#endif
 }
 }  // namespace Media
 }  // namespace OHOS

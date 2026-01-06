@@ -16,7 +16,10 @@
 #include "dng_exif_metadata_accessor.h"
 
 #include "data_buf.h"
+#if !defined(CROSS_PLATFORM)
 #include "dng/dng_exif_metadata.h"
+#include "dng/dng_sdk_helper.h"
+#endif
 #include "image_log.h"
 #include "media_errors.h"
 #include "tiff_parser.h"
@@ -70,8 +73,12 @@ uint32_t DngExifMetadataAccessor::Read()
     }
 
     tiffOffset_ = static_cast<long>(tiffHeaderPos);
+#if !defined(CROSS_PLATFORM)
     std::unique_ptr<DngSdkInfo> dngSdkInfo = DngSdkHelper::ParseInfoFromStream(imageStream_);
     exifMetadata_ = std::make_shared<OHOS::Media::DngExifMetadata>(exifData, dngSdkInfo);
+#else
+    exifMetadata_ = std::make_shared<OHOS::Media::ExifMetadata>(exifData);
+#endif
     return SUCCESS;
 }
 

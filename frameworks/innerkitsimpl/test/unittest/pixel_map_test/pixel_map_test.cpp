@@ -1028,6 +1028,18 @@ HWTEST_F(PixelMapTest, PixelMapTest006, TestSize.Level3)
     pixelMap1->SetPixelsAddr(dstPixels, fdBuffer, bufferSize, AllocatorType::HEAP_ALLOC, nullptr);
     pixelMap1->SetPixelsAddr(dstPixels, fdBuffer, bufferSize, AllocatorType::HEAP_ALLOC, false);
     pixelMap1->SetPixelsAddr(dstPixels, fdBuffer, bufferSize, AllocatorType::HEAP_ALLOC, true);
+    pixelMap1->SetPixelsAddr(dstPixels, fdBuffer, bufferSize, static_cast<AllocatorType>(-1), true);
+    EXPECT_NE(static_cast<int32_t>(pixelMap1->GetAllocatorType()), -1);
+    pixelMap1->SetPixelsAddr(dstPixels, fdBuffer, bufferSize, static_cast<AllocatorType>(100), true);
+    EXPECT_NE(static_cast<int32_t>(pixelMap1->GetAllocatorType()), 100);
+    pixelMap1->allocatorType_ = AllocatorType::SHARE_MEM_ALLOC;
+    pixelMap1->data_ = new uint8_t[10];
+    pixelMap1->rowDataSize_ = 1;
+    pixelMap1->SetPixelsAddr(dstPixels, fdBuffer, bufferSize, AllocatorType::DMA_ALLOC, true);
+    if (pixelMap1->data_ != nullptr) {
+        delete[] pixelMap1->data_;
+        pixelMap1->data_ = nullptr;
+    }
     ImageInfo info1;
     info1.size.width = INT32_MAX;
     // 300 means height
@@ -4018,6 +4030,41 @@ HWTEST_F(PixelMapTest, HdrPixelMapTlvTest008, TestSize.Level3)
             ASSERT_EQ(pixelMap->EncodeTlv(buff), false);
         }
     }
+}
+
+/**
+ * @tc.name: Verify parameter validation of PixelMap::Create
+ * @tc.desc: Verify invalid size.
+ * @tc.type: FUNC
+ */
+HWTEST_F(PixelMapTest, CreatePixelMapInvalidSizeTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PixelMapTest: CreatePixelMapInvalidSizeTest001 start";
+    InitializationOptions opts;
+    opts.size.width = 0;
+    opts.size.height = 0;
+    opts.pixelFormat = PixelFormat::NV21;
+    std::unique_ptr<PixelMap> pixelMap = PixelMap::Create(opts);
+    EXPECT_EQ(pixelMap, nullptr);
+    GTEST_LOG_(INFO) << "PixelMapTest: CreatePixelMapInvalidSizeTest001 end";
+}
+
+/**
+ * @tc.name: bgra data to argb data test
+ * @tc.desc: Verify invalid size.
+ * @tc.type: FUNC
+ */
+HWTEST_F(PixelMapTest, BGRATOARGBTEST, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PixelMapTest: CreatePixelMapInvalidSizeTest001 start";
+
+    InitializationOptions opts;
+    opts.size.width = 0;
+    opts.size.height = 0;
+    opts.pixelFormat = PixelFormat::NV21;
+    std::unique_ptr<PixelMap> pixelMap = PixelMap::Create(opts);
+    EXPECT_EQ(pixelMap, nullptr);
+    GTEST_LOG_(INFO) << "PixelMapTest: CreatePixelMapInvalidSizeTest001 end";
 }
 }
 }
