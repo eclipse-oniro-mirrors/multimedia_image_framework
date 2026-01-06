@@ -4358,6 +4358,26 @@ CM_ColorSpaceType ImageSource::ConvertColorSpaceType(ColorManager::ColorSpaceNam
     return base ? CM_P3_FULL : CM_BT2020_HLG_FULL;
 }
 
+static CM_ColorSpaceType ConvertColorSpaceTypeForAiHDR(ColorManager::ColorSpaceName colorSpace)
+{
+    switch (colorSpace) {
+        case ColorManager::ColorSpaceName::SRGB :
+            return CM_SRGB_FULL;
+        case ColorManager::ColorSpaceName::SRGB_LIMIT :
+            return CM_SRGB_LIMIT;
+        case ColorManager::ColorSpaceName::DISPLAY_P3 :
+            return CM_P3_FULL;
+        case ColorManager::ColorSpaceName::DISPLAY_P3_LIMIT :
+            return CM_P3_LIMIT;
+        case ColorManager::ColorSpaceName::DISPLAY_BT2020_SRGB :
+            return CM_DISPLAY_BT2020_SRGB;
+        case ColorManager::ColorSpaceName::ADOBE_RGB :
+            return CM_ADOBERGB_FULL;
+        default:
+            return CM_COLORSPACE_NONE;
+    }
+}
+
 static ColorManager::ColorSpaceName ConvertColorSpaceName(CM_ColorSpaceType colorSpace, bool base)
 {
     switch (colorSpace) {
@@ -5212,7 +5232,7 @@ uint32_t ImageSource::ImageAiProcess(Size imageSize, const DecodeOptions &opts, 
         dstCtx.info.size.height = opts.desiredSize.height;
     }
     CM_ColorSpaceType cmColorSpaceType =
-        ConvertColorSpaceType(mainDecoder_->GetPixelMapColorSpace().GetColorSpaceName(), true);
+        ConvertColorSpaceTypeForAiHDR(mainDecoder_->GetPixelMapColorSpace().GetColorSpaceName());
     auto res = DoImageAiProcess(input, dstCtx, cmColorSpaceType, needAisr, needHdr);
     if (res == SUCCESS || res == ERR_IMAGE_AI_ONLY_SR_SUCCESS) {
         FreeContextBuffer(context.freeFunc, context.allocatorType, context.pixelsBuffer);
