@@ -110,18 +110,6 @@ void ParseICCProfileFuzzTest(std::shared_ptr<TiffDecoder> tiffDecoder)
 #endif
 }
 
-void PreSetSourceFuzzTest(const uint8_t *data, size_t size)
-{
-    std::shared_ptr<TiffDecoder> tiffDecoder = std::make_shared<TiffDecoder>();
-    if (!tiffDecoder) {
-        return;
-    }
-    SetDecodeOptionsFuzzTest(tiffDecoder);
-    DecodeFuzzTest(tiffDecoder);
-    GetImageSizeFuzzTest(tiffDecoder);
-    HasPropertyFuzzTest(tiffDecoder);
-    ParseICCProfileFuzzTest(tiffDecoder);
-}
 
 void NormalDecodeFuzzTest(const uint8_t *data, size_t size)
 {
@@ -130,14 +118,14 @@ void NormalDecodeFuzzTest(const uint8_t *data, size_t size)
         return;
     }
     std::unique_ptr<BufferSourceStream> sourceStream = BufferSourceStream::CreateSourceStream(data, size);
-    if (!sourceStream) {
-        return;
+    if (sourceStream != nullptr) {
+        SetSourceStreamFuzzTest(tiffDecoder, *(sourceStream.get()));
     }
-    SetSourceStreamFuzzTest(tiffDecoder, *(sourceStream.get()));
-    SetDecodeOptionsFuzzTest(tiffDecoder);
     SetDecodeOptionsFuzzTest(tiffDecoder);
     DecodeFuzzTest(tiffDecoder);
     GetImageSizeFuzzTest(tiffDecoder);
+    HasPropertyFuzzTest(tiffDecoder);
+    ParseICCProfileFuzzTest(tiffDecoder);
     ProgDecodeContext progContext;
     tiffDecoder->PromoteIncrementalDecode(0, progContext);
     uint32_t num = 0;
@@ -163,7 +151,6 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
     if (!OHOS::Media::FDP) {
         return 0;
     }
-    OHOS::Media::PreSetSourceFuzzTest(data, size);
     OHOS::Media::NormalDecodeFuzzTest(data, size);
     return 0;
 }

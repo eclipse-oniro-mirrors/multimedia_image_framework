@@ -1375,6 +1375,13 @@ unique_ptr<PixelMap> ImageSource::CreatePixelMap(uint32_t index, const DecodeOpt
         imageEvent.SetDecodeErrorMsg("get YUV420 not support without going through CreatePixelMapExtended");
         return nullptr;
     }
+    if (sourceInfo_.encodedFormat == "image/tiff" &&
+        (opts.desiredPixelFormat == PixelFormat::ARGB_8888 ||
+        opts.desiredPixelFormat == PixelFormat::RGBA_F16)) {
+        IMAGE_LOGE("ARGB_8888 and RGBA_F16 pixel formats are not supported for tiff.");
+        errorCode = ERR_IMAGE_PIXELMAP_CREATE_FAILED;
+        return nullptr;
+    }
     // the mainDecoder_ may be borrowed by Incremental decoding, so needs to be checked.
     if (InitMainDecoder() != SUCCESS) {
         IMAGE_LOGE("[ImageSource]image decode plugin is null.");
