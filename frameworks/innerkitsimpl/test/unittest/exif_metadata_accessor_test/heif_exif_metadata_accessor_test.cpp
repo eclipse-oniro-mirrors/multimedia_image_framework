@@ -761,5 +761,29 @@ HWTEST_F(HeifExifMetadataAccessorTest, TestWriteAndReadHwTagAnnotationEdit001, T
     ASSERT_EQ(GetProperty(exifMetadata, "HwMnoteAnnotationEdit"), "2");
     GTEST_LOG_(INFO) << "HeifExifMetadataAccessorTest: TestWriteAndReadHwTagAnnotationEdit001 end";
 }
+
+/**
+ * @tc.name: TestWriteAndReadHwTagVignettingAndNoise001
+ * @tc.desc: test write and read exif tags Vignetting and Noise.
+ * @tc.type: FUNC
+ */
+HWTEST_F(HeifExifMetadataAccessorTest, TestWriteAndReadHwTagVignettingAndNoise001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "HeifExifMetadataAccessorTest: TestWriteAndReadHwTagVignettingAndNoise001 start";
+    std::shared_ptr<MetadataStream> stream = std::make_shared<FileMetadataStream>(IMAGE_INPUT_HEIF_EXIF_PATH);
+    ASSERT_TRUE(stream->Open(OpenMode::ReadWrite));
+    HeifExifMetadataAccessor imageAccessor(stream);
+    uint32_t result = imageAccessor.Read();
+    ASSERT_EQ(result, 0);
+    auto exifMetadata = imageAccessor.Get();
+    ASSERT_TRUE(exifMetadata->SetValue("HwMnoteXtStyleVignetting", "0.666666"));
+    ASSERT_TRUE(exifMetadata->SetValue("HwMnoteXtStyleNoise", "0.666666"));
+    uint32_t errcode = imageAccessor.Write();
+    ASSERT_EQ(errcode, SUCCESS);
+    exifMetadata = imageAccessor.Get();
+    ASSERT_EQ(GetProperty(exifMetadata, "HwMnoteXtStyleVignetting"), "0.666666 ");
+    ASSERT_EQ(GetProperty(exifMetadata, "HwMnoteXtStyleNoise"), "0.666666 ");
+    GTEST_LOG_(INFO) << "HeifExifMetadataAccessorTest: TestWriteAndReadHwTagVignettingAndNoise001 end";
+}
 } // namespace Multimedia
 } // namespace OHOS

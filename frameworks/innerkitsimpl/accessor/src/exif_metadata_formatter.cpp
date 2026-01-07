@@ -216,6 +216,8 @@ const static std::set<std::string> READ_WRITE_KEYS = {
     "HwMnoteXtStyleAlgoVideoEnable",
     "HwMnoteIsApertureEditSupported",
     "HwMnoteAnnotationEdit",
+    "HwMnoteXtStyleVignetting",
+    "HwMnoteXtStyleNoise",
 };
 
 const static std::set<std::string> READ_ONLY_KEYS = {
@@ -810,6 +812,10 @@ void ExifMetadatFormatter::InitValueFormatConvertConfig()
         {"HwMnoteXtStyleAlgoVideoEnable", singleInt_},
         {"HwMnoteIsApertureEditSupported", singleInt_},
         {"HwMnoteAnnotationEdit", singleInt_},
+        {"HwMnoteXtStyleVignetting", singleDecimalToRational_},
+        {"HwMnoteXtStyleNoise", singleDecimalToRational_},
+        {"HwMnoteXtStyleVignetting", singleRational_},
+        {"HwMnoteXtStyleNoise", singleRational_},
     };
 }
 
