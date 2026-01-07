@@ -43,7 +43,7 @@ public:
         XMPTag &outTag);
 
     bool RegisterNamespacePrefix(const std::string &uri, const std::string &prefix);
-    bool SetTag(const std::string &path, const XMPTag &tag);
+    bool SetValue(const std::string &path, const XMPTagType &tagType, const std::string &value);
     bool GetTag(const std::string &path, XMPTag &tag);
     bool RemoveTag(const std::string &path);
 

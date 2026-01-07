@@ -3793,14 +3793,10 @@ HWTEST_F(ImageSourceTest, MetadataAccessorFactoryNullBufferTest001, TestSize.Lev
 
 static bool CompareXMPTag(const XMPTag &tag1, const XMPTag &tag2)
 {
-    GTEST_LOG_(INFO) << "CompareXMPTag: tag1.xmlns: " << tag1.xmlns << ", tag2.xmlns: " << tag2.xmlns;
-    GTEST_LOG_(INFO) << "CompareXMPTag: tag1.prefix: " << tag1.prefix << ", tag2.prefix: " << tag2.prefix;
-    GTEST_LOG_(INFO) << "CompareXMPTag: tag1.name: " << tag1.name << ", tag2.name: " << tag2.name;
     GTEST_LOG_(INFO) << "CompareXMPTag: tag1.value: " << tag1.value << ", tag2.value: " << tag2.value;
-    GTEST_LOG_(INFO) << "CompareXMPTag: tag1.type: " << static_cast<int>(tag1.type) << ", tag2.type: "\
+    GTEST_LOG_(INFO) << "CompareXMPTag: tag1.type: " << static_cast<int>(tag1.type) << ", tag2.type: "
         << static_cast<int>(tag2.type);
-    return tag1.xmlns == tag2.xmlns && tag1.prefix == tag2.prefix && tag1.name == tag2.name &&
-        tag1.value == tag2.value && tag1.type == tag2.type;
+    return tag1.value == tag2.value && tag1.type == tag2.type;
 }
 
 /**
@@ -5033,12 +5029,10 @@ HWTEST_F(ImageSourceTest, WriteXMPMetadataTest001, TestSize.Level1)
     ASSERT_EQ(errorCode, SUCCESS);
 
     XMPTag tag;
-    tag.xmlns = NS_XMP_BASIC;
-    tag.prefix = PF_XMP_BASIC;
-    tag.name = "CreatorTool";
     tag.type = XMPTagType::SIMPLE;
     tag.value = "WriteXMPMetadataTest001";
-    xmpMetadata->SetTag("xmp:CreatorTool", tag);
+    bool ret = xmpMetadata->SetValue("xmp:CreatorTool", tag.type, tag.value);
+    ASSERT_TRUE(ret);
     errorCode = imageSource->WriteXMPMetadata(xmpMetadata);
     ASSERT_EQ(errorCode, SUCCESS);
 
@@ -5143,12 +5137,10 @@ HWTEST_F(ImageSourceTest, WriteXMPMetadataTest005, TestSize.Level1)
     ASSERT_EQ(errorCode, SUCCESS);
 
     XMPTag tag;
-    tag.xmlns = NS_XMP_BASIC;
-    tag.prefix = PF_XMP_BASIC;
-    tag.name = "CreatorTool";
     tag.type = XMPTagType::SIMPLE;
     tag.value = "WriteXMPMetadataTest005";
-    xmpMetadata->SetTag("xmp:CreatorTool", tag);
+    bool ret = xmpMetadata->SetValue("xmp:CreatorTool", tag.type, tag.value);
+    ASSERT_TRUE(ret);
     errorCode = imageSource->WriteXMPMetadata(xmpMetadata);
     ASSERT_EQ(errorCode, SUCCESS);
 
@@ -5183,12 +5175,10 @@ HWTEST_F(ImageSourceTest, WriteXMPMetadataTest006, TestSize.Level1)
     ASSERT_EQ(errorCode, SUCCESS);
 
     XMPTag tag;
-    tag.xmlns = NS_XMP_BASIC;
-    tag.prefix = PF_XMP_BASIC;
-    tag.name = "CreatorTool";
     tag.type = XMPTagType::SIMPLE;
     tag.value = "WriteXMPMetadataTest006";
-    xmpMetadata->SetTag("xmp:CreatorTool", tag);
+    bool ret = xmpMetadata->SetValue("xmp:CreatorTool", tag.type, tag.value);
+    ASSERT_TRUE(ret);
     errorCode = imageSource->WriteXMPMetadata(xmpMetadata);
     ASSERT_EQ(errorCode, SUCCESS);
 
@@ -5223,12 +5213,10 @@ HWTEST_F(ImageSourceTest, WriteXMPMetadataTest007, TestSize.Level1)
     ASSERT_EQ(errorCode, SUCCESS);
 
     XMPTag tag;
-    tag.xmlns = NS_XMP_BASIC;
-    tag.prefix = PF_XMP_BASIC;
-    tag.name = "CreatorTool";
     tag.type = XMPTagType::SIMPLE;
     tag.value = "WriteXMPMetadataTest007";
-    xmpMetadata->SetTag("xmp:CreatorTool", tag);
+    bool ret = xmpMetadata->SetValue("xmp:CreatorTool", tag.type, tag.value);
+    ASSERT_TRUE(ret);
     errorCode = imageSource->WriteXMPMetadata(xmpMetadata);
     ASSERT_EQ(errorCode, SUCCESS);
 
@@ -5263,12 +5251,10 @@ HWTEST_F(ImageSourceTest, WriteXMPMetadataTest008, TestSize.Level1)
     ASSERT_EQ(errorCode, SUCCESS);
 
     XMPTag tag;
-    tag.xmlns = NS_XMP_BASIC;
-    tag.prefix = PF_XMP_BASIC;
-    tag.name = "CreatorTool";
     tag.type = XMPTagType::SIMPLE;
     tag.value = "WriteXMPMetadataTest008";
-    xmpMetadata->SetTag("xmp:CreatorTool", tag);
+    bool ret = xmpMetadata->SetValue("xmp:CreatorTool", tag.type, tag.value);
+    ASSERT_TRUE(ret);
     errorCode = imageSource->WriteXMPMetadata(xmpMetadata);
     ASSERT_EQ(errorCode, SUCCESS);
 
@@ -5303,12 +5289,10 @@ HWTEST_F(ImageSourceTest, WriteXMPMetadataTest009, TestSize.Level1)
     ASSERT_EQ(errorCode, SUCCESS);
 
     XMPTag tag;
-    tag.xmlns = NS_XMP_BASIC;
-    tag.prefix = PF_XMP_BASIC;
-    tag.name = "CreatorTool";
     tag.type = XMPTagType::SIMPLE;
     tag.value = "WriteXMPMetadataTest009";
-    xmpMetadata->SetTag("xmp:CreatorTool", tag);
+    bool ret = xmpMetadata->SetValue("xmp:CreatorTool", tag.type, tag.value);
+    ASSERT_TRUE(ret);
     errorCode = imageSource->WriteXMPMetadata(xmpMetadata);
     ASSERT_EQ(errorCode, SUCCESS);
 

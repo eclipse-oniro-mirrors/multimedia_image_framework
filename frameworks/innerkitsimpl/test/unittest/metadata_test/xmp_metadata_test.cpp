@@ -81,74 +81,43 @@ public:
     ~XmpMetadataTest() = default;
 };
 
-static bool CompareXMPTag(const XMPTag &tag1, const XMPTag &tag2)
+
+
+static bool SetValueForTest(XMPMetadata &xmpMetadata, const std::string &path, XMPTagType type,
+    const std::string &value)
 {
-    bool ret = tag1.xmlns == tag2.xmlns && tag1.prefix == tag2.prefix && tag1.name == tag2.name &&
-        tag1.value == tag2.value && tag1.type == tag2.type;
+    bool ret = xmpMetadata.SetValue(path, type, value);
     if (!ret) {
-        GTEST_LOG_(INFO) <<
-            "\n CompareXMPTag: tag1.xmlns: " << tag1.xmlns << ", tag2.xmlns: " << tag2.xmlns <<
-            "\n CompareXMPTag: tag1.prefix: " << tag1.prefix << ", tag2.prefix: " << tag2.prefix <<
-            "\n CompareXMPTag: tag1.name: " << tag1.name << ", tag2.name: " << tag2.name <<
-            "\n CompareXMPTag: tag1.value: " << tag1.value << ", tag2.value: " << tag2.value <<
-            "\n CompareXMPTag: tag1.type: " << static_cast<int>(tag1.type) <<
-            ", tag2.type: " << static_cast<int>(tag2.type);
+        GTEST_LOG_(INFO) << "SetValueForTest: SetValue failed for path: " << path;
     }
     return ret;
 }
 
-static bool CompareXMPTagNoLog(const XMPTag &tag1, const XMPTag &tag2)
+static bool GetTagForTest(XMPMetadata &xmpMetadata, const std::string &path, XMPTag &outTag)
 {
-    return tag1.xmlns == tag2.xmlns && tag1.prefix == tag2.prefix && tag1.name == tag2.name &&
-        tag1.value == tag2.value && tag1.type == tag2.type;
+    bool ret = xmpMetadata.GetTag(path, outTag);
+    if (!ret) {
+        GTEST_LOG_(INFO) << "GetTagForTest: GetTag failed for path: " << path;
+    }
+    return ret;
 }
 
-static bool DoSetTagAndGetTag(std::string path, XMPTag inputTag, XMPTag &outputTag, XMPMetadata &xmpMetadata)
+static bool SetValueAndGetTagForTest(XMPMetadata &xmpMetadata, const std::string &path, XMPTagType type,
+    const std::string &value, XMPTag &outTag)
 {
-    bool ret = xmpMetadata.SetTag(path, inputTag);
-    if (!ret) {
-        GTEST_LOG_(INFO) << "DoSetTagAndGetTag: SetTag failed!";
+    if (!SetValueForTest(xmpMetadata, path, type, value)) {
         return false;
     }
-
-    ret = xmpMetadata.GetTag(path, outputTag);
-    if (!ret) {
-        GTEST_LOG_(INFO) << "DoSetTagAndGetTag: GetTag failed!";
-        return false;
-    }
-    return true;
+    return GetTagForTest(xmpMetadata, path, outTag);
 }
 
-static void ResetXMPTag(XMPTag &xmpTag)
-{
-    xmpTag.xmlns = "";
-    xmpTag.prefix = "";
-    xmpTag.name = "";
-    xmpTag.type = XMPTagType::UNKNOWN;
-    xmpTag.value = "";
-}
+struct ExpectedTagTypeValue {
+    XMPTagType type;
+    std::string value;
+};
 
-static void InitTestXMPTag(XMPTag &xmpTag, XMPTagType tagType, std::string tagName, std::string tagValue = "")
-{
-    ResetXMPTag(xmpTag);
-    if (tagType == XMPTagType::SIMPLE) {
-        xmpTag.value = tagValue;
-    }
-
-    if (tagType == XMPTagType::QUALIFIER) {
-        xmpTag.xmlns = NS_XML;
-        xmpTag.prefix = PF_XML;
-        xmpTag.value = tagValue;
-    } else {
-        xmpTag.xmlns = NS_DC;
-        xmpTag.prefix = PF_DC;
-    }
-    xmpTag.type = tagType;
-    xmpTag.name = tagName;
-}
-
-static void GetLastTag(XMPMetadata &xmpMetadata, std::string &path, XMPTag &lastTag,
-    std::vector<XMPTag> &xmpTagVec)
+static void GetLastTag(XMPMetadata &xmpMetadata, std::string &path, ExpectedTagTypeValue &lastTag,
+    std::vector<ExpectedTagTypeValue> &xmpTagVec)
 {
     XMPTag parentTag;
     std::string lastTagPath;
@@ -159,7 +128,11 @@ static void GetLastTag(XMPMetadata &xmpMetadata, std::string &path, XMPTag &last
         case XMPTagType::ORDERED_ARRAY:
         case XMPTagType::ALTERNATE_ARRAY:
             lastTagPath = path + "[last()]";
-            xmpMetadata.GetTag(lastTagPath, lastTag);
+            {
+                XMPTag lastXmpTag;
+                xmpMetadata.GetTag(lastTagPath, lastXmpTag);
+                lastTag = { lastXmpTag.type, lastXmpTag.value };
+            }
             break;
         case XMPTagType::SIMPLE:
         case XMPTagType::STRUCTURE:
@@ -173,7 +146,7 @@ static void GetLastTag(XMPMetadata &xmpMetadata, std::string &path, XMPTag &last
     }
 }
 
-static Media::XMPMetadata::EnumerateCallback InitTestCallback(std::vector<XMPTag> &xmpTagVec,
+static Media::XMPMetadata::EnumerateCallback InitTestCallback(std::vector<ExpectedTagTypeValue> &xmpTagVec,
     XMPMetadata &xmpMetadata, std::string &parentPath)
 {
     Media::XMPMetadata::EnumerateCallback callback =
@@ -181,8 +154,8 @@ static Media::XMPMetadata::EnumerateCallback InitTestCallback(std::vector<XMPTag
             GTEST_LOG_(INFO) <<
                 "name: " << tag.name << ", type: " << static_cast<int>(tag.type) << ", value: " << tag.value << " in.";
             bool isTagFound = false;
-            for(const XMPTag &it : xmpTagVec) {
-                if (CompareXMPTagNoLog(it, tag)) {
+            for(const ExpectedTagTypeValue &it : xmpTagVec) {
+                if (it.type == tag.type && it.value == tag.value) {
                     isTagFound = true;
                     break;
                 }
@@ -195,10 +168,10 @@ static Media::XMPMetadata::EnumerateCallback InitTestCallback(std::vector<XMPTag
             EXPECT_TRUE(isTagFound);
             isTagFound = false;
 
-            XMPTag lastTag;
+            ExpectedTagTypeValue lastTag { XMPTagType::UNKNOWN, "" };
             GetLastTag(xmpMetadata, parentPath, lastTag, xmpTagVec);
 
-            if (CompareXMPTagNoLog(tag, lastTag)) {
+            if (tag.type == lastTag.type && tag.value == lastTag.value) {
                 return false;
             }
             return true;
@@ -206,125 +179,100 @@ static Media::XMPMetadata::EnumerateCallback InitTestCallback(std::vector<XMPTag
     return callback;
 }
 
-static void InitTestChildTagsPart1(XMPMetadata &xmpMetadata, std::vector<XMPTag> &xmpTagVec)
+static void InitTestChildTagsPart1(XMPMetadata &xmpMetadata, std::vector<ExpectedTagTypeValue> &xmpTagVec)
 {
-    XMPTag childTag;
-    InitTestXMPTag(childTag, XMPTagType::SIMPLE, "unorderedArray", "first");
-    bool ret = xmpMetadata.SetTag("dc:unorderedArray[1]", childTag);
+    bool ret = SetValueForTest(xmpMetadata, "dc:unorderedArray[1]", XMPTagType::SIMPLE, "first");
     EXPECT_TRUE(ret);
-    xmpTagVec.push_back(childTag);
+    xmpTagVec.push_back({ XMPTagType::SIMPLE, "first" });
 
-    InitTestXMPTag(childTag, XMPTagType::UNORDERED_ARRAY, "unorderedArray");
-    ret = xmpMetadata.SetTag("dc:unorderedArray[2]", childTag);
+    ret = SetValueForTest(xmpMetadata, "dc:unorderedArray[2]", XMPTagType::UNORDERED_ARRAY, "");
     EXPECT_TRUE(ret);
-    xmpTagVec.push_back(childTag);
+    xmpTagVec.push_back({ XMPTagType::UNORDERED_ARRAY, "" });
 
-    InitTestXMPTag(childTag, XMPTagType::SIMPLE, "unorderedArray", "firstChild");
-    ret = xmpMetadata.SetTag("dc:unorderedArray[2][1]", childTag);
+    ret = SetValueForTest(xmpMetadata, "dc:unorderedArray[2][1]", XMPTagType::SIMPLE, "firstChild");
     EXPECT_TRUE(ret);
-    xmpTagVec.push_back(childTag);
+    xmpTagVec.push_back({ XMPTagType::SIMPLE, "firstChild" });
 
-    InitTestXMPTag(childTag, XMPTagType::SIMPLE, "unorderedArray", "secondChild");
-    ret = xmpMetadata.SetTag("dc:unorderedArray[2][2]", childTag);
+    ret = SetValueForTest(xmpMetadata, "dc:unorderedArray[2][2]", XMPTagType::SIMPLE, "secondChild");
     EXPECT_TRUE(ret);
-    xmpTagVec.push_back(childTag);
+    xmpTagVec.push_back({ XMPTagType::SIMPLE, "secondChild" });
 
-    InitTestXMPTag(childTag, XMPTagType::SIMPLE, "orderedArray", "first");
-    ret = xmpMetadata.SetTag("dc:orderedArray[1]", childTag);
+    ret = SetValueForTest(xmpMetadata, "dc:orderedArray[1]", XMPTagType::SIMPLE, "first");
     EXPECT_TRUE(ret);
-    xmpTagVec.push_back(childTag);
+    xmpTagVec.push_back({ XMPTagType::SIMPLE, "first" });
 
-    InitTestXMPTag(childTag, XMPTagType::SIMPLE, "orderedArray", "second");
-    ret = xmpMetadata.SetTag("dc:orderedArray[2]", childTag);
+    ret = SetValueForTest(xmpMetadata, "dc:orderedArray[2]", XMPTagType::SIMPLE, "second");
     EXPECT_TRUE(ret);
-    xmpTagVec.push_back(childTag);
+    xmpTagVec.push_back({ XMPTagType::SIMPLE, "second" });
 
-    InitTestXMPTag(childTag, XMPTagType::SIMPLE, "alternateArray", "first");
-    ret = xmpMetadata.SetTag("dc:alternateArray[1]", childTag);
+    ret = SetValueForTest(xmpMetadata, "dc:alternateArray[1]", XMPTagType::SIMPLE, "first");
     EXPECT_TRUE(ret);
-    xmpTagVec.push_back(childTag);
+    xmpTagVec.push_back({ XMPTagType::SIMPLE, "first" });
 
-    InitTestXMPTag(childTag, XMPTagType::SIMPLE, "alternateArray", "second");
-    ret = xmpMetadata.SetTag("dc:alternateArray[2]", childTag);
+    ret = SetValueForTest(xmpMetadata, "dc:alternateArray[2]", XMPTagType::SIMPLE, "second");
     EXPECT_TRUE(ret);
-    xmpTagVec.push_back(childTag);
+    xmpTagVec.push_back({ XMPTagType::SIMPLE, "second" });
 }
 
-static void InitTestChildTagsPart2(XMPMetadata &xmpMetadata, std::vector<XMPTag> &xmpTagVec)
+static void InitTestChildTagsPart2(XMPMetadata &xmpMetadata, std::vector<ExpectedTagTypeValue> &xmpTagVec)
 {
-    XMPTag childTag;
-    InitTestXMPTag(childTag, XMPTagType::SIMPLE, "title", "Default Title");
-    bool ret = xmpMetadata.SetTag("dc:title[1]", childTag);
+    bool ret = SetValueForTest(xmpMetadata, "dc:title[1]", XMPTagType::SIMPLE, "Default Title");
     EXPECT_TRUE(ret);
-    xmpTagVec.push_back(childTag);
+    xmpTagVec.push_back({ XMPTagType::SIMPLE, "Default Title" });
 
-    InitTestXMPTag(childTag, XMPTagType::SIMPLE, "title", "中文标题");
-    ret = xmpMetadata.SetTag("dc:title[2]", childTag);
+    ret = SetValueForTest(xmpMetadata, "dc:title[2]", XMPTagType::SIMPLE, "中文标题");
     EXPECT_TRUE(ret);
-    xmpTagVec.push_back(childTag);
+    xmpTagVec.push_back({ XMPTagType::SIMPLE, "中文标题" });
 
-    InitTestXMPTag(childTag, XMPTagType::QUALIFIER, "lang", "x-default");
-    ret = xmpMetadata.SetTag("dc:title[1]/@xml:lang", childTag);
+    ret = SetValueForTest(xmpMetadata, "dc:title[1]/@xml:lang", XMPTagType::QUALIFIER, "x-default");
     EXPECT_TRUE(ret);
-    xmpTagVec.push_back(childTag);
+    xmpTagVec.push_back({ XMPTagType::QUALIFIER, "x-default" });
 
-    InitTestXMPTag(childTag, XMPTagType::QUALIFIER, "lang", "zh-CN");
-    ret = xmpMetadata.SetTag("dc:title[2]/@xml:lang", childTag);
+    ret = SetValueForTest(xmpMetadata, "dc:title[2]/@xml:lang", XMPTagType::QUALIFIER, "zh-CN");
     EXPECT_TRUE(ret);
-    xmpTagVec.push_back(childTag);
+    xmpTagVec.push_back({ XMPTagType::QUALIFIER, "zh-CN" });
 
-    InitTestXMPTag(childTag, XMPTagType::SIMPLE, "first", "first");
-    ret = xmpMetadata.SetTag("dc:structure/dc:first", childTag);
+    ret = SetValueForTest(xmpMetadata, "dc:structure/dc:first", XMPTagType::SIMPLE, "first");
     EXPECT_TRUE(ret);
-    xmpTagVec.push_back(childTag);
+    xmpTagVec.push_back({ XMPTagType::SIMPLE, "first" });
 
-    InitTestXMPTag(childTag, XMPTagType::SIMPLE, "second", "second");
-    ret = xmpMetadata.SetTag("dc:structure/dc:second", childTag);
+    ret = SetValueForTest(xmpMetadata, "dc:structure/dc:second", XMPTagType::SIMPLE, "second");
     EXPECT_TRUE(ret);
-    xmpTagVec.push_back(childTag);
+    xmpTagVec.push_back({ XMPTagType::SIMPLE, "second" });
 
-    InitTestXMPTag(childTag, XMPTagType::QUALIFIER, "first", "first");
-    ret = xmpMetadata.SetTag("dc:simple/?xml:first", childTag);
+    ret = SetValueForTest(xmpMetadata, "dc:simple/?xml:first", XMPTagType::QUALIFIER, "first");
     EXPECT_TRUE(ret);
-    xmpTagVec.push_back(childTag);
+    xmpTagVec.push_back({ XMPTagType::QUALIFIER, "first" });
 
-    InitTestXMPTag(childTag, XMPTagType::QUALIFIER, "second", "second");
-    ret = xmpMetadata.SetTag("dc:simple/?xml:second", childTag);
+    ret = SetValueForTest(xmpMetadata, "dc:simple/?xml:second", XMPTagType::QUALIFIER, "second");
     EXPECT_TRUE(ret);
-    xmpTagVec.push_back(childTag);
+    xmpTagVec.push_back({ XMPTagType::QUALIFIER, "second" });
 }
 
-static void InitTestXMPMetadataForEnumerate(XMPMetadata &xmpMetadata, std::vector<XMPTag> &xmpTagVec)
+static void InitTestXMPMetadataForEnumerate(XMPMetadata &xmpMetadata, std::vector<ExpectedTagTypeValue> &xmpTagVec)
 {
-    XMPTag baseTag;
-    InitTestXMPTag(baseTag, XMPTagType::UNORDERED_ARRAY, "unorderedArray");
-    bool ret = xmpMetadata.SetTag("dc:unorderedArray", baseTag);
+    bool ret = SetValueForTest(xmpMetadata, "dc:unorderedArray", XMPTagType::UNORDERED_ARRAY, "");
     EXPECT_TRUE(ret);
 
-    InitTestXMPTag(baseTag, XMPTagType::ORDERED_ARRAY, "orderedArray");
-    ret = xmpMetadata.SetTag("dc:orderedArray", baseTag);
+    ret = SetValueForTest(xmpMetadata, "dc:orderedArray", XMPTagType::ORDERED_ARRAY, "");
     EXPECT_TRUE(ret);
-    xmpTagVec.push_back(baseTag);
+    xmpTagVec.push_back({ XMPTagType::ORDERED_ARRAY, "" });
 
-    InitTestXMPTag(baseTag, XMPTagType::ALTERNATE_ARRAY, "alternateArray");
-    ret = xmpMetadata.SetTag("dc:alternateArray", baseTag);
+    ret = SetValueForTest(xmpMetadata, "dc:alternateArray", XMPTagType::ALTERNATE_ARRAY, "");
     EXPECT_TRUE(ret);
-    xmpTagVec.push_back(baseTag);
+    xmpTagVec.push_back({ XMPTagType::ALTERNATE_ARRAY, "" });
 
-    InitTestXMPTag(baseTag, XMPTagType::ALTERNATE_TEXT, "title");
-    ret = xmpMetadata.SetTag("dc:title", baseTag);
+    ret = SetValueForTest(xmpMetadata, "dc:title", XMPTagType::ALTERNATE_TEXT, "");
     EXPECT_TRUE(ret);
-    xmpTagVec.push_back(baseTag);
+    xmpTagVec.push_back({ XMPTagType::ALTERNATE_TEXT, "" });
 
-    InitTestXMPTag(baseTag, XMPTagType::STRUCTURE, "structure");
-    ret = xmpMetadata.SetTag("dc:structure", baseTag);
+    ret = SetValueForTest(xmpMetadata, "dc:structure", XMPTagType::STRUCTURE, "");
     EXPECT_TRUE(ret);
-    xmpTagVec.push_back(baseTag);
+    xmpTagVec.push_back({ XMPTagType::STRUCTURE, "" });
 
-    InitTestXMPTag(baseTag, XMPTagType::SIMPLE, "simple", "simple");
-    ret = xmpMetadata.SetTag("dc:simple", baseTag);
+    ret = SetValueForTest(xmpMetadata, "dc:simple", XMPTagType::SIMPLE, "simple");
     EXPECT_TRUE(ret);
-    xmpTagVec.push_back(baseTag);
+    xmpTagVec.push_back({ XMPTagType::SIMPLE, "simple" });
 
     InitTestChildTagsPart1(xmpMetadata, xmpTagVec);
     InitTestChildTagsPart2(xmpMetadata, xmpTagVec);
@@ -423,7 +371,7 @@ HWTEST_F(XmpMetadataTest, SetTagTest001, TestSize.Level1)
     tag.name = "CreatorTool";
     tag.value = "XmpMetadataTest.SetTagTest001";
     tag.type = XMPTagType::SIMPLE;
-    bool ret = xmpMetadata.SetTag("xmp:CreatorTool", tag);
+    bool ret = xmpMetadata.SetValue("xmp:CreatorTool", tag.type, tag.value);
     EXPECT_TRUE(ret);
     GTEST_LOG_(INFO) << "XmpMetadataTest: SetTagTest001 end";
 }
@@ -442,7 +390,7 @@ HWTEST_F(XmpMetadataTest, SetTagTest002, TestSize.Level1)
     tag.prefix = PF_XMP_BASIC;
     tag.name = "CreatorTool";
     tag.type = XMPTagType::UNORDERED_ARRAY;
-    bool ret = xmpMetadata.SetTag("xmp:CreatorTool", tag);
+    bool ret = xmpMetadata.SetValue("xmp:CreatorTool", tag.type, "");
     EXPECT_TRUE(ret);
     GTEST_LOG_(INFO) << "XmpMetadataTest: SetTagTest002 end";
 }
@@ -461,7 +409,7 @@ HWTEST_F(XmpMetadataTest, SetTagTest003, TestSize.Level1)
     tag.prefix = PF_XMP_BASIC;
     tag.name = "CreatorTool";
     tag.type = XMPTagType::ORDERED_ARRAY;
-    bool ret = xmpMetadata.SetTag("xmp:CreatorTool", tag);
+    bool ret = xmpMetadata.SetValue("xmp:CreatorTool", tag.type, "");
     EXPECT_TRUE(ret);
     GTEST_LOG_(INFO) << "XmpMetadataTest: SetTagTest003 end";
 }
@@ -480,7 +428,7 @@ HWTEST_F(XmpMetadataTest, SetTagTest004, TestSize.Level1)
     tag.prefix = PF_XMP_BASIC;
     tag.name = "CreatorTool";
     tag.type = XMPTagType::ALTERNATE_ARRAY;
-    bool ret = xmpMetadata.SetTag("xmp:CreatorTool", tag);
+    bool ret = xmpMetadata.SetValue("xmp:CreatorTool", tag.type, "");
     EXPECT_TRUE(ret);
     GTEST_LOG_(INFO) << "XmpMetadataTest: SetTagTest004 end";
 }
@@ -499,7 +447,7 @@ HWTEST_F(XmpMetadataTest, SetTagTest005, TestSize.Level1)
     tag.prefix = PF_XMP_BASIC;
     tag.name = "CreatorTool";
     tag.type = XMPTagType::ALTERNATE_TEXT;
-    bool ret = xmpMetadata.SetTag("xmp:CreatorTool", tag);
+    bool ret = xmpMetadata.SetValue("xmp:CreatorTool", tag.type, "");
     EXPECT_TRUE(ret);
     GTEST_LOG_(INFO) << "XmpMetadataTest: SetTagTest005 end";
 }
@@ -518,7 +466,7 @@ HWTEST_F(XmpMetadataTest, SetTagTest006, TestSize.Level1)
     tag.prefix = PF_XMP_BASIC;
     tag.name = "CreatorTool";
     tag.type = XMPTagType::STRUCTURE;
-    bool ret = xmpMetadata.SetTag("xmp:CreatorTool", tag);
+    bool ret = xmpMetadata.SetValue("xmp:CreatorTool", tag.type, "");
     EXPECT_TRUE(ret);
     GTEST_LOG_(INFO) << "XmpMetadataTest: SetTagTest006 end";
 }
@@ -538,7 +486,7 @@ HWTEST_F(XmpMetadataTest, SetTagTest007, TestSize.Level1)
     tag.name = "CreatorTool";
     tag.value = "XmpMetadataTest.SetTagTest007";
     tag.type = XMPTagType::UNORDERED_ARRAY;
-    bool ret = xmpMetadata.SetTag("xmp:CreatorTool", tag);
+    bool ret = xmpMetadata.SetValue("xmp:CreatorTool", tag.type, tag.value);
     EXPECT_FALSE(ret);
     GTEST_LOG_(INFO) << "XmpMetadataTest: SetTagTest007 end";
 }
@@ -553,30 +501,26 @@ HWTEST_F(XmpMetadataTest, GetTagTest001, TestSize.Level1)
 {
     GTEST_LOG_(INFO) << "XmpMetadataTest: GetTagTest001 start";
     XMPMetadata xmpMetadata;
-    XMPTag baseTag;
-    InitTestXMPTag(baseTag, XMPTagType::UNORDERED_ARRAY, "first");
-
     XMPTag getTag;
-    bool ret = DoSetTagAndGetTag("dc:first", baseTag, getTag, xmpMetadata);
+    bool ret = SetValueAndGetTagForTest(xmpMetadata, "dc:first", XMPTagType::UNORDERED_ARRAY, "", getTag);
     EXPECT_TRUE(ret);
-    EXPECT_TRUE(CompareXMPTag(baseTag, getTag));
+    EXPECT_EQ(getTag.type, XMPTagType::UNORDERED_ARRAY);
 
-    baseTag.name = "second";
-    ret = DoSetTagAndGetTag("dc:first[1]/dc:second", baseTag, getTag, xmpMetadata);
+    ret = SetValueAndGetTagForTest(xmpMetadata, "dc:first[1]/dc:second", XMPTagType::UNORDERED_ARRAY, "", getTag);
     EXPECT_TRUE(ret);
-    EXPECT_TRUE(CompareXMPTag(baseTag, getTag));
+    EXPECT_EQ(getTag.type, XMPTagType::UNORDERED_ARRAY);
 
-    baseTag.name = "third";
-    ret = DoSetTagAndGetTag("dc:first[1]/dc:second[1]/dc:third", baseTag, getTag, xmpMetadata);
+    ret = SetValueAndGetTagForTest(xmpMetadata, "dc:first[1]/dc:second[1]/dc:third", XMPTagType::UNORDERED_ARRAY, "",
+        getTag);
     EXPECT_TRUE(ret);
-    EXPECT_TRUE(CompareXMPTag(baseTag, getTag));
+    EXPECT_EQ(getTag.type, XMPTagType::UNORDERED_ARRAY);
 
-    XMPTag childTag;
-    InitTestXMPTag(childTag, XMPTagType::SIMPLE, "third", "XmpMetadataTest.GetTagTest001_value1");
-
-    ret = DoSetTagAndGetTag("dc:first[1]/dc:second[1]/dc:third[1]", childTag, getTag, xmpMetadata);
+    const std::string childValue = "XmpMetadataTest.GetTagTest001_value1";
+    ret = SetValueAndGetTagForTest(xmpMetadata, "dc:first[1]/dc:second[1]/dc:third[1]", XMPTagType::SIMPLE,
+        childValue, getTag);
     EXPECT_TRUE(ret);
-    EXPECT_TRUE(CompareXMPTag(childTag, getTag));
+    EXPECT_EQ(getTag.type, XMPTagType::SIMPLE);
+    EXPECT_EQ(getTag.value, childValue);
 
     GTEST_LOG_(INFO) << "XmpMetadataTest: GetTagTest001 end";
 }
@@ -591,31 +535,26 @@ HWTEST_F(XmpMetadataTest, GetTagTest002, TestSize.Level1)
 {
     GTEST_LOG_(INFO) << "XmpMetadataTest: GetTagTest002 start";
     XMPMetadata xmpMetadata;
-    XMPTag baseTag;
-    InitTestXMPTag(baseTag, XMPTagType::UNORDERED_ARRAY, "first");
-
     XMPTag getTag;
-    bool ret = DoSetTagAndGetTag("dc:first", baseTag, getTag, xmpMetadata);
+    bool ret = SetValueAndGetTagForTest(xmpMetadata, "dc:first", XMPTagType::UNORDERED_ARRAY, "", getTag);
     EXPECT_TRUE(ret);
-    EXPECT_TRUE(CompareXMPTag(baseTag, getTag));
+    EXPECT_EQ(getTag.type, XMPTagType::UNORDERED_ARRAY);
 
-    baseTag.name = "second";
-    ret = DoSetTagAndGetTag("dc:first[1]/dc:second", baseTag, getTag, xmpMetadata);
+    ret = SetValueAndGetTagForTest(xmpMetadata, "dc:first[1]/dc:second", XMPTagType::UNORDERED_ARRAY, "", getTag);
     EXPECT_TRUE(ret);
-    EXPECT_TRUE(CompareXMPTag(baseTag, getTag));
+    EXPECT_EQ(getTag.type, XMPTagType::UNORDERED_ARRAY);
 
-    baseTag.name = "third";
-    baseTag.type = XMPTagType::ORDERED_ARRAY;
-    ret = DoSetTagAndGetTag("dc:first[1]/dc:second[1]/dc:third", baseTag, getTag, xmpMetadata);
+    ret = SetValueAndGetTagForTest(xmpMetadata, "dc:first[1]/dc:second[1]/dc:third", XMPTagType::ORDERED_ARRAY, "",
+        getTag);
     EXPECT_TRUE(ret);
-    EXPECT_TRUE(CompareXMPTag(baseTag, getTag));
+    EXPECT_EQ(getTag.type, XMPTagType::ORDERED_ARRAY);
 
-    XMPTag childTag;
-    InitTestXMPTag(childTag, XMPTagType::SIMPLE, "third", "XmpMetadataTest.GetTagTest002_value1");
-
-    ret = DoSetTagAndGetTag("dc:first[1]/dc:second[1]/dc:third[1]", childTag, getTag, xmpMetadata);
+    const std::string childValue = "XmpMetadataTest.GetTagTest002_value1";
+    ret = SetValueAndGetTagForTest(xmpMetadata, "dc:first[1]/dc:second[1]/dc:third[1]", XMPTagType::SIMPLE,
+        childValue, getTag);
     EXPECT_TRUE(ret);
-    EXPECT_TRUE(CompareXMPTag(childTag, getTag));
+    EXPECT_EQ(getTag.type, XMPTagType::SIMPLE);
+    EXPECT_EQ(getTag.value, childValue);
 
     GTEST_LOG_(INFO) << "XmpMetadataTest: GetTagTest002 end";
 }
@@ -630,31 +569,26 @@ HWTEST_F(XmpMetadataTest, GetTagTest003, TestSize.Level1)
 {
     GTEST_LOG_(INFO) << "XmpMetadataTest: GetTagTest003 start";
     XMPMetadata xmpMetadata;
-    XMPTag baseTag;
-    InitTestXMPTag(baseTag, XMPTagType::UNORDERED_ARRAY, "first");
-
     XMPTag getTag;
-    bool ret = DoSetTagAndGetTag("dc:first", baseTag, getTag, xmpMetadata);
+    bool ret = SetValueAndGetTagForTest(xmpMetadata, "dc:first", XMPTagType::UNORDERED_ARRAY, "", getTag);
     EXPECT_TRUE(ret);
-    EXPECT_TRUE(CompareXMPTag(baseTag, getTag));
+    EXPECT_EQ(getTag.type, XMPTagType::UNORDERED_ARRAY);
 
-    baseTag.name = "second";
-    ret = DoSetTagAndGetTag("dc:first[1]/dc:second", baseTag, getTag, xmpMetadata);
+    ret = SetValueAndGetTagForTest(xmpMetadata, "dc:first[1]/dc:second", XMPTagType::UNORDERED_ARRAY, "", getTag);
     EXPECT_TRUE(ret);
-    EXPECT_TRUE(CompareXMPTag(baseTag, getTag));
+    EXPECT_EQ(getTag.type, XMPTagType::UNORDERED_ARRAY);
 
-    baseTag.name = "third";
-    baseTag.type = XMPTagType::ALTERNATE_ARRAY;
-    ret = DoSetTagAndGetTag("dc:first[1]/dc:second[1]/dc:third", baseTag, getTag, xmpMetadata);
+    ret = SetValueAndGetTagForTest(xmpMetadata, "dc:first[1]/dc:second[1]/dc:third", XMPTagType::ALTERNATE_ARRAY, "",
+        getTag);
     EXPECT_TRUE(ret);
-    EXPECT_TRUE(CompareXMPTag(baseTag, getTag));
+    EXPECT_EQ(getTag.type, XMPTagType::ALTERNATE_ARRAY);
 
-    XMPTag childTag;
-    InitTestXMPTag(childTag, XMPTagType::SIMPLE, "third", "XmpMetadataTest.GetTagTest003_value1");
-
-    ret = DoSetTagAndGetTag("dc:first[1]/dc:second[1]/dc:third[1]", childTag, getTag, xmpMetadata);
+    const std::string childValue = "XmpMetadataTest.GetTagTest003_value1";
+    ret = SetValueAndGetTagForTest(xmpMetadata, "dc:first[1]/dc:second[1]/dc:third[1]", XMPTagType::SIMPLE,
+        childValue, getTag);
     EXPECT_TRUE(ret);
-    EXPECT_TRUE(CompareXMPTag(childTag, getTag));
+    EXPECT_EQ(getTag.type, XMPTagType::SIMPLE);
+    EXPECT_EQ(getTag.value, childValue);
 
     GTEST_LOG_(INFO) << "XmpMetadataTest: GetTagTest003 end";
 }
@@ -669,31 +603,26 @@ HWTEST_F(XmpMetadataTest, GetTagTest004, TestSize.Level1)
 {
     GTEST_LOG_(INFO) << "XmpMetadataTest: GetTagTest004 start";
     XMPMetadata xmpMetadata;
-    XMPTag baseTag;
-    InitTestXMPTag(baseTag, XMPTagType::UNORDERED_ARRAY, "first");
-
     XMPTag getTag;
-    bool ret = DoSetTagAndGetTag("dc:first", baseTag, getTag, xmpMetadata);
+    bool ret = SetValueAndGetTagForTest(xmpMetadata, "dc:first", XMPTagType::UNORDERED_ARRAY, "", getTag);
     EXPECT_TRUE(ret);
-    EXPECT_TRUE(CompareXMPTag(baseTag, getTag));
+    EXPECT_EQ(getTag.type, XMPTagType::UNORDERED_ARRAY);
 
-    baseTag.name = "second";
-    ret = DoSetTagAndGetTag("dc:first[1]/dc:second", baseTag, getTag, xmpMetadata);
+    ret = SetValueAndGetTagForTest(xmpMetadata, "dc:first[1]/dc:second", XMPTagType::UNORDERED_ARRAY, "", getTag);
     EXPECT_TRUE(ret);
-    EXPECT_TRUE(CompareXMPTag(baseTag, getTag));
+    EXPECT_EQ(getTag.type, XMPTagType::UNORDERED_ARRAY);
 
-    baseTag.name = "third";
-    baseTag.type = XMPTagType::STRUCTURE;
-    ret = DoSetTagAndGetTag("dc:first[1]/dc:second[1]/dc:third", baseTag, getTag, xmpMetadata);
+    ret = SetValueAndGetTagForTest(xmpMetadata, "dc:first[1]/dc:second[1]/dc:third", XMPTagType::STRUCTURE, "",
+        getTag);
     EXPECT_TRUE(ret);
-    EXPECT_TRUE(CompareXMPTag(baseTag, getTag));
+    EXPECT_EQ(getTag.type, XMPTagType::STRUCTURE);
 
-    XMPTag childTag;
-    InitTestXMPTag(childTag, XMPTagType::SIMPLE, "child", "XmpMetadataTest.GetTagTest004_value1");
-
-    ret = DoSetTagAndGetTag("dc:first[1]/dc:second[1]/dc:third/dc:child", childTag, getTag, xmpMetadata);
+    const std::string childValue = "XmpMetadataTest.GetTagTest004_value1";
+    ret = SetValueAndGetTagForTest(xmpMetadata, "dc:first[1]/dc:second[1]/dc:third/dc:child", XMPTagType::SIMPLE,
+        childValue, getTag);
     EXPECT_TRUE(ret);
-    EXPECT_TRUE(CompareXMPTag(childTag, getTag));
+    EXPECT_EQ(getTag.type, XMPTagType::SIMPLE);
+    EXPECT_EQ(getTag.value, childValue);
 
     GTEST_LOG_(INFO) << "XmpMetadataTest: GetTagTest004 end";
 }
@@ -708,32 +637,26 @@ HWTEST_F(XmpMetadataTest, GetTagTest005, TestSize.Level1)
 {
     GTEST_LOG_(INFO) << "XmpMetadataTest: GetTagTest005 start";
     XMPMetadata xmpMetadata;
-    XMPTag baseTag;
-    InitTestXMPTag(baseTag, XMPTagType::UNORDERED_ARRAY, "first");
-
     XMPTag getTag;
-    bool ret = DoSetTagAndGetTag("dc:first", baseTag, getTag, xmpMetadata);
+    bool ret = SetValueAndGetTagForTest(xmpMetadata, "dc:first", XMPTagType::UNORDERED_ARRAY, "", getTag);
     EXPECT_TRUE(ret);
-    EXPECT_TRUE(CompareXMPTag(baseTag, getTag));
+    EXPECT_EQ(getTag.type, XMPTagType::UNORDERED_ARRAY);
 
-    baseTag.name = "second";
-    baseTag.type = XMPTagType::ORDERED_ARRAY;
-    ret = DoSetTagAndGetTag("dc:first[1]/dc:second", baseTag, getTag, xmpMetadata);
+    ret = SetValueAndGetTagForTest(xmpMetadata, "dc:first[1]/dc:second", XMPTagType::ORDERED_ARRAY, "", getTag);
     EXPECT_TRUE(ret);
-    EXPECT_TRUE(CompareXMPTag(baseTag, getTag));
+    EXPECT_EQ(getTag.type, XMPTagType::ORDERED_ARRAY);
 
-    baseTag.name = "third";
-    baseTag.type = XMPTagType::UNORDERED_ARRAY;
-    ret = DoSetTagAndGetTag("dc:first[1]/dc:second[1]/dc:third", baseTag, getTag, xmpMetadata);
+    ret = SetValueAndGetTagForTest(xmpMetadata, "dc:first[1]/dc:second[1]/dc:third", XMPTagType::UNORDERED_ARRAY, "",
+        getTag);
     EXPECT_TRUE(ret);
-    EXPECT_TRUE(CompareXMPTag(baseTag, getTag));
+    EXPECT_EQ(getTag.type, XMPTagType::UNORDERED_ARRAY);
 
-    XMPTag childTag;
-    InitTestXMPTag(childTag, XMPTagType::SIMPLE, "third", "XmpMetadataTest.GetTagTest005_value1");
-
-    ret = DoSetTagAndGetTag("dc:first[1]/dc:second[1]/dc:third[1]", childTag, getTag, xmpMetadata);
+    const std::string childValue = "XmpMetadataTest.GetTagTest005_value1";
+    ret = SetValueAndGetTagForTest(xmpMetadata, "dc:first[1]/dc:second[1]/dc:third[1]", XMPTagType::SIMPLE,
+        childValue, getTag);
     EXPECT_TRUE(ret);
-    EXPECT_TRUE(CompareXMPTag(childTag, getTag));
+    EXPECT_EQ(getTag.type, XMPTagType::SIMPLE);
+    EXPECT_EQ(getTag.value, childValue);
 
     GTEST_LOG_(INFO) << "XmpMetadataTest: GetTagTest005 end";
 }
@@ -748,31 +671,26 @@ HWTEST_F(XmpMetadataTest, GetTagTest006, TestSize.Level1)
 {
     GTEST_LOG_(INFO) << "XmpMetadataTest: GetTagTest006 start";
     XMPMetadata xmpMetadata;
-    XMPTag baseTag;
-    InitTestXMPTag(baseTag, XMPTagType::UNORDERED_ARRAY, "first");
-
     XMPTag getTag;
-    bool ret = DoSetTagAndGetTag("dc:first", baseTag, getTag, xmpMetadata);
+    bool ret = SetValueAndGetTagForTest(xmpMetadata, "dc:first", XMPTagType::UNORDERED_ARRAY, "", getTag);
     EXPECT_TRUE(ret);
-    EXPECT_TRUE(CompareXMPTag(baseTag, getTag));
+    EXPECT_EQ(getTag.type, XMPTagType::UNORDERED_ARRAY);
 
-    baseTag.name = "second";
-    baseTag.type = XMPTagType::ORDERED_ARRAY;
-    ret = DoSetTagAndGetTag("dc:first[1]/dc:second", baseTag, getTag, xmpMetadata);
+    ret = SetValueAndGetTagForTest(xmpMetadata, "dc:first[1]/dc:second", XMPTagType::ORDERED_ARRAY, "", getTag);
     EXPECT_TRUE(ret);
-    EXPECT_TRUE(CompareXMPTag(baseTag, getTag));
+    EXPECT_EQ(getTag.type, XMPTagType::ORDERED_ARRAY);
 
-    baseTag.name = "third";
-    ret = DoSetTagAndGetTag("dc:first[1]/dc:second[1]/dc:third", baseTag, getTag, xmpMetadata);
+    ret = SetValueAndGetTagForTest(xmpMetadata, "dc:first[1]/dc:second[1]/dc:third", XMPTagType::ORDERED_ARRAY, "",
+        getTag);
     EXPECT_TRUE(ret);
-    EXPECT_TRUE(CompareXMPTag(baseTag, getTag));
+    EXPECT_EQ(getTag.type, XMPTagType::ORDERED_ARRAY);
 
-    XMPTag childTag;
-    InitTestXMPTag(childTag, XMPTagType::SIMPLE, "third", "XmpMetadataTest.GetTagTest006_value1");
-
-    ret = DoSetTagAndGetTag("dc:first[1]/dc:second[1]/dc:third[1]", childTag, getTag, xmpMetadata);
+    const std::string childValue = "XmpMetadataTest.GetTagTest006_value1";
+    ret = SetValueAndGetTagForTest(xmpMetadata, "dc:first[1]/dc:second[1]/dc:third[1]", XMPTagType::SIMPLE,
+        childValue, getTag);
     EXPECT_TRUE(ret);
-    EXPECT_TRUE(CompareXMPTag(childTag, getTag));
+    EXPECT_EQ(getTag.type, XMPTagType::SIMPLE);
+    EXPECT_EQ(getTag.value, childValue);
 
     GTEST_LOG_(INFO) << "XmpMetadataTest: GetTagTest006 end";
 }
@@ -787,32 +705,26 @@ HWTEST_F(XmpMetadataTest, GetTagTest007, TestSize.Level1)
 {
     GTEST_LOG_(INFO) << "XmpMetadataTest: GetTagTest007 start";
     XMPMetadata xmpMetadata;
-    XMPTag baseTag;
-    InitTestXMPTag(baseTag, XMPTagType::UNORDERED_ARRAY, "first");
-
     XMPTag getTag;
-    bool ret = DoSetTagAndGetTag("dc:first", baseTag, getTag, xmpMetadata);
+    bool ret = SetValueAndGetTagForTest(xmpMetadata, "dc:first", XMPTagType::UNORDERED_ARRAY, "", getTag);
     EXPECT_TRUE(ret);
-    EXPECT_TRUE(CompareXMPTag(baseTag, getTag));
+    EXPECT_EQ(getTag.type, XMPTagType::UNORDERED_ARRAY);
 
-    baseTag.name = "second";
-    baseTag.type = XMPTagType::ORDERED_ARRAY;
-    ret = DoSetTagAndGetTag("dc:first[1]/dc:second", baseTag, getTag, xmpMetadata);
+    ret = SetValueAndGetTagForTest(xmpMetadata, "dc:first[1]/dc:second", XMPTagType::ORDERED_ARRAY, "", getTag);
     EXPECT_TRUE(ret);
-    EXPECT_TRUE(CompareXMPTag(baseTag, getTag));
+    EXPECT_EQ(getTag.type, XMPTagType::ORDERED_ARRAY);
 
-    baseTag.name = "third";
-    baseTag.type = XMPTagType::ALTERNATE_ARRAY;
-    ret = DoSetTagAndGetTag("dc:first[1]/dc:second[1]/dc:third", baseTag, getTag, xmpMetadata);
+    ret = SetValueAndGetTagForTest(xmpMetadata, "dc:first[1]/dc:second[1]/dc:third", XMPTagType::ALTERNATE_ARRAY, "",
+        getTag);
     EXPECT_TRUE(ret);
-    EXPECT_TRUE(CompareXMPTag(baseTag, getTag));
+    EXPECT_EQ(getTag.type, XMPTagType::ALTERNATE_ARRAY);
 
-    XMPTag childTag;
-    InitTestXMPTag(childTag, XMPTagType::SIMPLE, "third", "XmpMetadataTest.GetTagTest007_value1");
-
-    ret = DoSetTagAndGetTag("dc:first[1]/dc:second[1]/dc:third[1]", childTag, getTag, xmpMetadata);
+    const std::string childValue = "XmpMetadataTest.GetTagTest007_value1";
+    ret = SetValueAndGetTagForTest(xmpMetadata, "dc:first[1]/dc:second[1]/dc:third[1]", XMPTagType::SIMPLE,
+        childValue, getTag);
     EXPECT_TRUE(ret);
-    EXPECT_TRUE(CompareXMPTag(childTag, getTag));
+    EXPECT_EQ(getTag.type, XMPTagType::SIMPLE);
+    EXPECT_EQ(getTag.value, childValue);
 
     GTEST_LOG_(INFO) << "XmpMetadataTest: GetTagTest007 end";
 }
@@ -827,32 +739,25 @@ HWTEST_F(XmpMetadataTest, GetTagTest008, TestSize.Level1)
 {
     GTEST_LOG_(INFO) << "XmpMetadataTest: GetTagTest008 start";
     XMPMetadata xmpMetadata;
-    XMPTag baseTag;
-    InitTestXMPTag(baseTag, XMPTagType::UNORDERED_ARRAY, "first");
-
     XMPTag getTag;
-    bool ret = DoSetTagAndGetTag("dc:first", baseTag, getTag, xmpMetadata);
+    bool ret = SetValueAndGetTagForTest(xmpMetadata, "dc:first", XMPTagType::UNORDERED_ARRAY, "", getTag);
     EXPECT_TRUE(ret);
-    EXPECT_TRUE(CompareXMPTag(baseTag, getTag));
+    EXPECT_EQ(getTag.type, XMPTagType::UNORDERED_ARRAY);
 
-    baseTag.name = "second";
-    baseTag.type = XMPTagType::ORDERED_ARRAY;
-    ret = DoSetTagAndGetTag("dc:first[1]/dc:second", baseTag, getTag, xmpMetadata);
+    ret = SetValueAndGetTagForTest(xmpMetadata, "dc:first[1]/dc:second", XMPTagType::ORDERED_ARRAY, "", getTag);
     EXPECT_TRUE(ret);
-    EXPECT_TRUE(CompareXMPTag(baseTag, getTag));
+    EXPECT_EQ(getTag.type, XMPTagType::ORDERED_ARRAY);
 
-    baseTag.name = "third";
-    baseTag.type = XMPTagType::STRUCTURE;
-    ret = DoSetTagAndGetTag("dc:first[1]/dc:second[1]/dc:third", baseTag, getTag, xmpMetadata);
+    ret = SetValueAndGetTagForTest(xmpMetadata, "dc:first[1]/dc:second[1]/dc:third", XMPTagType::STRUCTURE, "", getTag);
     EXPECT_TRUE(ret);
-    EXPECT_TRUE(CompareXMPTag(baseTag, getTag));
+    EXPECT_EQ(getTag.type, XMPTagType::STRUCTURE);
 
-    XMPTag childTag;
-    InitTestXMPTag(childTag, XMPTagType::SIMPLE, "child", "XmpMetadataTest.GetTagTest008_value1");
-
-    ret = DoSetTagAndGetTag("dc:first[1]/dc:second[1]/dc:third/dc:child", childTag, getTag, xmpMetadata);
+    const std::string childValue = "XmpMetadataTest.GetTagTest008_value1";
+    ret = SetValueAndGetTagForTest(xmpMetadata, "dc:first[1]/dc:second[1]/dc:third/dc:child", XMPTagType::SIMPLE,
+        childValue, getTag);
     EXPECT_TRUE(ret);
-    EXPECT_TRUE(CompareXMPTag(childTag, getTag));
+    EXPECT_EQ(getTag.type, XMPTagType::SIMPLE);
+    EXPECT_EQ(getTag.value, childValue);
 
     GTEST_LOG_(INFO) << "XmpMetadataTest: GetTagTest008 end";
 }
@@ -865,34 +770,28 @@ HWTEST_F(XmpMetadataTest, GetTagTest008, TestSize.Level1)
  */
 HWTEST_F(XmpMetadataTest, GetTagTest009, TestSize.Level1)
 {
-    GTEST_LOG_(INFO) << "XmpMetadataTest: GetTagTest008 start";
+    GTEST_LOG_(INFO) << "XmpMetadataTest: GetTagTest009 start";
     XMPMetadata xmpMetadata;
-    XMPTag baseTag;
-    InitTestXMPTag(baseTag, XMPTagType::UNORDERED_ARRAY, "first");
-
     XMPTag getTag;
-    bool ret = DoSetTagAndGetTag("dc:first", baseTag, getTag, xmpMetadata);
+    bool ret = SetValueAndGetTagForTest(xmpMetadata, "dc:first", XMPTagType::UNORDERED_ARRAY, "", getTag);
     EXPECT_TRUE(ret);
-    EXPECT_TRUE(CompareXMPTag(baseTag, getTag));
+    EXPECT_EQ(getTag.type, XMPTagType::UNORDERED_ARRAY);
 
-    baseTag.name = "second";
-    baseTag.type = XMPTagType::ALTERNATE_ARRAY;
-    ret = DoSetTagAndGetTag("dc:first[1]/dc:second", baseTag, getTag, xmpMetadata);
+    ret = SetValueAndGetTagForTest(xmpMetadata, "dc:first[1]/dc:second", XMPTagType::ALTERNATE_ARRAY, "", getTag);
     EXPECT_TRUE(ret);
-    EXPECT_TRUE(CompareXMPTag(baseTag, getTag));
+    EXPECT_EQ(getTag.type, XMPTagType::ALTERNATE_ARRAY);
 
-    baseTag.name = "third";
-    baseTag.type = XMPTagType::UNORDERED_ARRAY;
-    ret = DoSetTagAndGetTag("dc:first[1]/dc:second[1]/dc:third", baseTag, getTag, xmpMetadata);
+    ret = SetValueAndGetTagForTest(xmpMetadata, "dc:first[1]/dc:second[1]/dc:third", XMPTagType::UNORDERED_ARRAY, "",
+        getTag);
     EXPECT_TRUE(ret);
-    EXPECT_TRUE(CompareXMPTag(baseTag, getTag));
+    EXPECT_EQ(getTag.type, XMPTagType::UNORDERED_ARRAY);
 
-    XMPTag childTag;
-    InitTestXMPTag(childTag, XMPTagType::SIMPLE, "third", "XmpMetadataTest.GetTagTest009_value1");
-
-    ret = DoSetTagAndGetTag("dc:first[1]/dc:second[1]/dc:third[1]", childTag, getTag, xmpMetadata);
+    const std::string childValue = "XmpMetadataTest.GetTagTest009_value1";
+    ret = SetValueAndGetTagForTest(xmpMetadata, "dc:first[1]/dc:second[1]/dc:third[1]", XMPTagType::SIMPLE,
+        childValue, getTag);
     EXPECT_TRUE(ret);
-    EXPECT_TRUE(CompareXMPTag(childTag, getTag));
+    EXPECT_EQ(getTag.type, XMPTagType::SIMPLE);
+    EXPECT_EQ(getTag.value, childValue);
 
     GTEST_LOG_(INFO) << "XmpMetadataTest: GetTagTest009 end";
 }
@@ -907,32 +806,26 @@ HWTEST_F(XmpMetadataTest, GetTagTest010, TestSize.Level1)
 {
     GTEST_LOG_(INFO) << "XmpMetadataTest: GetTagTest010 start";
     XMPMetadata xmpMetadata;
-    XMPTag baseTag;
-    InitTestXMPTag(baseTag, XMPTagType::UNORDERED_ARRAY, "first");
-
     XMPTag getTag;
-    bool ret = DoSetTagAndGetTag("dc:first", baseTag, getTag, xmpMetadata);
+    bool ret = SetValueAndGetTagForTest(xmpMetadata, "dc:first", XMPTagType::UNORDERED_ARRAY, "", getTag);
     EXPECT_TRUE(ret);
-    EXPECT_TRUE(CompareXMPTag(baseTag, getTag));
+    EXPECT_EQ(getTag.type, XMPTagType::UNORDERED_ARRAY);
 
-    baseTag.name = "second";
-    baseTag.type = XMPTagType::ALTERNATE_ARRAY;
-    ret = DoSetTagAndGetTag("dc:first[1]/dc:second", baseTag, getTag, xmpMetadata);
+    ret = SetValueAndGetTagForTest(xmpMetadata, "dc:first[1]/dc:second", XMPTagType::ALTERNATE_ARRAY, "", getTag);
     EXPECT_TRUE(ret);
-    EXPECT_TRUE(CompareXMPTag(baseTag, getTag));
+    EXPECT_EQ(getTag.type, XMPTagType::ALTERNATE_ARRAY);
 
-    baseTag.name = "third";
-    baseTag.type = XMPTagType::UNORDERED_ARRAY;
-    ret = DoSetTagAndGetTag("dc:first[1]/dc:second[1]/dc:third", baseTag, getTag, xmpMetadata);
+    ret = SetValueAndGetTagForTest(xmpMetadata, "dc:first[1]/dc:second[1]/dc:third", XMPTagType::UNORDERED_ARRAY, "",
+        getTag);
     EXPECT_TRUE(ret);
-    EXPECT_TRUE(CompareXMPTag(baseTag, getTag));
+    EXPECT_EQ(getTag.type, XMPTagType::UNORDERED_ARRAY);
 
-    XMPTag childTag;
-    InitTestXMPTag(childTag, XMPTagType::SIMPLE, "third", "XmpMetadataTest.GetTagTest010_value1");
-
-    ret = DoSetTagAndGetTag("dc:first[1]/dc:second[1]/dc:third[1]", childTag, getTag, xmpMetadata);
+    const std::string childValue = "XmpMetadataTest.GetTagTest010_value1";
+    ret = SetValueAndGetTagForTest(xmpMetadata, "dc:first[1]/dc:second[1]/dc:third[1]", XMPTagType::SIMPLE,
+        childValue, getTag);
     EXPECT_TRUE(ret);
-    EXPECT_TRUE(CompareXMPTag(childTag, getTag));
+    EXPECT_EQ(getTag.type, XMPTagType::SIMPLE);
+    EXPECT_EQ(getTag.value, childValue);
 
     GTEST_LOG_(INFO) << "XmpMetadataTest: GetTagTest010 end";
 }
@@ -947,31 +840,26 @@ HWTEST_F(XmpMetadataTest, GetTagTest011, TestSize.Level1)
 {
     GTEST_LOG_(INFO) << "XmpMetadataTest: GetTagTest011 start";
     XMPMetadata xmpMetadata;
-    XMPTag baseTag;
-    InitTestXMPTag(baseTag, XMPTagType::UNORDERED_ARRAY, "first");
-
     XMPTag getTag;
-    bool ret = DoSetTagAndGetTag("dc:first", baseTag, getTag, xmpMetadata);
+    bool ret = SetValueAndGetTagForTest(xmpMetadata, "dc:first", XMPTagType::UNORDERED_ARRAY, "", getTag);
     EXPECT_TRUE(ret);
-    EXPECT_TRUE(CompareXMPTag(baseTag, getTag));
+    EXPECT_EQ(getTag.type, XMPTagType::UNORDERED_ARRAY);
 
-    baseTag.name = "second";
-    baseTag.type = XMPTagType::ALTERNATE_ARRAY;
-    ret = DoSetTagAndGetTag("dc:first[1]/dc:second", baseTag, getTag, xmpMetadata);
+    ret = SetValueAndGetTagForTest(xmpMetadata, "dc:first[1]/dc:second", XMPTagType::ALTERNATE_ARRAY, "", getTag);
     EXPECT_TRUE(ret);
-    EXPECT_TRUE(CompareXMPTag(baseTag, getTag));
+    EXPECT_EQ(getTag.type, XMPTagType::ALTERNATE_ARRAY);
 
-    baseTag.name = "third";
-    ret = DoSetTagAndGetTag("dc:first[1]/dc:second[1]/dc:third", baseTag, getTag, xmpMetadata);
+    ret = SetValueAndGetTagForTest(xmpMetadata, "dc:first[1]/dc:second[1]/dc:third", XMPTagType::ALTERNATE_ARRAY, "",
+        getTag);
     EXPECT_TRUE(ret);
-    EXPECT_TRUE(CompareXMPTag(baseTag, getTag));
+    EXPECT_EQ(getTag.type, XMPTagType::ALTERNATE_ARRAY);
 
-    XMPTag childTag;
-    InitTestXMPTag(childTag, XMPTagType::SIMPLE, "third", "XmpMetadataTest.GetTagTest011_value1");
-
-    ret = DoSetTagAndGetTag("dc:first[1]/dc:second[1]/dc:third[1]", childTag, getTag, xmpMetadata);
+    const std::string childValue = "XmpMetadataTest.GetTagTest011_value1";
+    ret = SetValueAndGetTagForTest(xmpMetadata, "dc:first[1]/dc:second[1]/dc:third[1]", XMPTagType::SIMPLE,
+        childValue, getTag);
     EXPECT_TRUE(ret);
-    EXPECT_TRUE(CompareXMPTag(childTag, getTag));
+    EXPECT_EQ(getTag.type, XMPTagType::SIMPLE);
+    EXPECT_EQ(getTag.value, childValue);
 
     GTEST_LOG_(INFO) << "XmpMetadataTest: GetTagTest011 end";
 }
@@ -986,32 +874,26 @@ HWTEST_F(XmpMetadataTest, GetTagTest012, TestSize.Level1)
 {
     GTEST_LOG_(INFO) << "XmpMetadataTest: GetTagTest012 start";
     XMPMetadata xmpMetadata;
-    XMPTag baseTag;
-    InitTestXMPTag(baseTag, XMPTagType::UNORDERED_ARRAY, "first");
-
     XMPTag getTag;
-    bool ret = DoSetTagAndGetTag("dc:first", baseTag, getTag, xmpMetadata);
+    bool ret = SetValueAndGetTagForTest(xmpMetadata, "dc:first", XMPTagType::UNORDERED_ARRAY, "", getTag);
     EXPECT_TRUE(ret);
-    EXPECT_TRUE(CompareXMPTag(baseTag, getTag));
+    EXPECT_EQ(getTag.type, XMPTagType::UNORDERED_ARRAY);
 
-    baseTag.name = "second";
-    baseTag.type = XMPTagType::ALTERNATE_ARRAY;
-    ret = DoSetTagAndGetTag("dc:first[1]/dc:second", baseTag, getTag, xmpMetadata);
+    ret = SetValueAndGetTagForTest(xmpMetadata, "dc:first[1]/dc:second", XMPTagType::ALTERNATE_ARRAY, "", getTag);
     EXPECT_TRUE(ret);
-    EXPECT_TRUE(CompareXMPTag(baseTag, getTag));
+    EXPECT_EQ(getTag.type, XMPTagType::ALTERNATE_ARRAY);
 
-    baseTag.name = "third";
-    baseTag.type = XMPTagType::STRUCTURE;
-    ret = DoSetTagAndGetTag("dc:first[1]/dc:second[1]/dc:third", baseTag, getTag, xmpMetadata);
+    ret = SetValueAndGetTagForTest(xmpMetadata, "dc:first[1]/dc:second[1]/dc:third", XMPTagType::STRUCTURE, "",
+        getTag);
     EXPECT_TRUE(ret);
-    EXPECT_TRUE(CompareXMPTag(baseTag, getTag));
+    EXPECT_EQ(getTag.type, XMPTagType::STRUCTURE);
 
-    XMPTag childTag;
-    InitTestXMPTag(childTag, XMPTagType::SIMPLE, "child", "XmpMetadataTest.GetTagTest012_value1");
-
-    ret = DoSetTagAndGetTag("dc:first[1]/dc:second[1]/dc:third/dc:child", childTag, getTag, xmpMetadata);
+    const std::string childValue = "XmpMetadataTest.GetTagTest012_value1";
+    ret = SetValueAndGetTagForTest(xmpMetadata, "dc:first[1]/dc:second[1]/dc:third/dc:child", XMPTagType::SIMPLE,
+        childValue, getTag);
     EXPECT_TRUE(ret);
-    EXPECT_TRUE(CompareXMPTag(childTag, getTag));
+    EXPECT_EQ(getTag.type, XMPTagType::SIMPLE);
+    EXPECT_EQ(getTag.value, childValue);
 
     GTEST_LOG_(INFO) << "XmpMetadataTest: GetTagTest012 end";
 }
@@ -1026,32 +908,26 @@ HWTEST_F(XmpMetadataTest, GetTagTest013, TestSize.Level1)
 {
     GTEST_LOG_(INFO) << "XmpMetadataTest: GetTagTest013 start";
     XMPMetadata xmpMetadata;
-    XMPTag baseTag;
-    InitTestXMPTag(baseTag, XMPTagType::UNORDERED_ARRAY, "first");
-
     XMPTag getTag;
-    bool ret = DoSetTagAndGetTag("dc:first", baseTag, getTag, xmpMetadata);
+    bool ret = SetValueAndGetTagForTest(xmpMetadata, "dc:first", XMPTagType::UNORDERED_ARRAY, "", getTag);
     EXPECT_TRUE(ret);
-    EXPECT_TRUE(CompareXMPTag(baseTag, getTag));
+    EXPECT_EQ(getTag.type, XMPTagType::UNORDERED_ARRAY);
 
-    baseTag.name = "second";
-    baseTag.type = XMPTagType::STRUCTURE;
-    ret = DoSetTagAndGetTag("dc:first[1]/dc:second", baseTag, getTag, xmpMetadata);
+    ret = SetValueAndGetTagForTest(xmpMetadata, "dc:first[1]/dc:second", XMPTagType::STRUCTURE, "", getTag);
     EXPECT_TRUE(ret);
-    EXPECT_TRUE(CompareXMPTag(baseTag, getTag));
+    EXPECT_EQ(getTag.type, XMPTagType::STRUCTURE);
 
-    baseTag.name = "third";
-    baseTag.type = XMPTagType::UNORDERED_ARRAY;
-    ret = DoSetTagAndGetTag("dc:first[1]/dc:second/dc:third", baseTag, getTag, xmpMetadata);
+    ret = SetValueAndGetTagForTest(xmpMetadata, "dc:first[1]/dc:second/dc:third", XMPTagType::UNORDERED_ARRAY, "",
+        getTag);
     EXPECT_TRUE(ret);
-    EXPECT_TRUE(CompareXMPTag(baseTag, getTag));
+    EXPECT_EQ(getTag.type, XMPTagType::UNORDERED_ARRAY);
 
-    XMPTag childTag;
-    InitTestXMPTag(childTag, XMPTagType::SIMPLE, "third", "XmpMetadataTest.GetTagTest013_value1");
-
-    ret = DoSetTagAndGetTag("dc:first[1]/dc:second/dc:third[1]", childTag, getTag, xmpMetadata);
+    const std::string childValue = "XmpMetadataTest.GetTagTest013_value1";
+    ret = SetValueAndGetTagForTest(xmpMetadata, "dc:first[1]/dc:second/dc:third[1]", XMPTagType::SIMPLE, childValue,
+        getTag);
     EXPECT_TRUE(ret);
-    EXPECT_TRUE(CompareXMPTag(childTag, getTag));
+    EXPECT_EQ(getTag.type, XMPTagType::SIMPLE);
+    EXPECT_EQ(getTag.value, childValue);
 
     GTEST_LOG_(INFO) << "XmpMetadataTest: GetTagTest013 end";
 }
@@ -1066,32 +942,26 @@ HWTEST_F(XmpMetadataTest, GetTagTest014, TestSize.Level1)
 {
     GTEST_LOG_(INFO) << "XmpMetadataTest: GetTagTest014 start";
     XMPMetadata xmpMetadata;
-    XMPTag baseTag;
-    InitTestXMPTag(baseTag, XMPTagType::UNORDERED_ARRAY, "first");
-
     XMPTag getTag;
-    bool ret = DoSetTagAndGetTag("dc:first", baseTag, getTag, xmpMetadata);
+    bool ret = SetValueAndGetTagForTest(xmpMetadata, "dc:first", XMPTagType::UNORDERED_ARRAY, "", getTag);
     EXPECT_TRUE(ret);
-    EXPECT_TRUE(CompareXMPTag(baseTag, getTag));
+    EXPECT_EQ(getTag.type, XMPTagType::UNORDERED_ARRAY);
 
-    baseTag.name = "second";
-    baseTag.type = XMPTagType::STRUCTURE;
-    ret = DoSetTagAndGetTag("dc:first[1]/dc:second", baseTag, getTag, xmpMetadata);
+    ret = SetValueAndGetTagForTest(xmpMetadata, "dc:first[1]/dc:second", XMPTagType::STRUCTURE, "", getTag);
     EXPECT_TRUE(ret);
-    EXPECT_TRUE(CompareXMPTag(baseTag, getTag));
+    EXPECT_EQ(getTag.type, XMPTagType::STRUCTURE);
 
-    baseTag.name = "third";
-    baseTag.type = XMPTagType::ORDERED_ARRAY;
-    ret = DoSetTagAndGetTag("dc:first[1]/dc:second/dc:third", baseTag, getTag, xmpMetadata);
+    ret = SetValueAndGetTagForTest(xmpMetadata, "dc:first[1]/dc:second/dc:third", XMPTagType::ORDERED_ARRAY, "",
+        getTag);
     EXPECT_TRUE(ret);
-    EXPECT_TRUE(CompareXMPTag(baseTag, getTag));
+    EXPECT_EQ(getTag.type, XMPTagType::ORDERED_ARRAY);
 
-    XMPTag childTag;
-    InitTestXMPTag(childTag, XMPTagType::SIMPLE, "third", "XmpMetadataTest.GetTagTest014_value1");
-
-    ret = DoSetTagAndGetTag("dc:first[1]/dc:second/dc:third[1]", childTag, getTag, xmpMetadata);
+    const std::string childValue = "XmpMetadataTest.GetTagTest014_value1";
+    ret = SetValueAndGetTagForTest(xmpMetadata, "dc:first[1]/dc:second/dc:third[1]", XMPTagType::SIMPLE, childValue,
+        getTag);
     EXPECT_TRUE(ret);
-    EXPECT_TRUE(CompareXMPTag(childTag, getTag));
+    EXPECT_EQ(getTag.type, XMPTagType::SIMPLE);
+    EXPECT_EQ(getTag.value, childValue);
 
     GTEST_LOG_(INFO) << "XmpMetadataTest: GetTagTest014 end";
 }
@@ -1106,32 +976,26 @@ HWTEST_F(XmpMetadataTest, GetTagTest015, TestSize.Level1)
 {
     GTEST_LOG_(INFO) << "XmpMetadataTest: GetTagTest015 start";
     XMPMetadata xmpMetadata;
-    XMPTag baseTag;
-    InitTestXMPTag(baseTag, XMPTagType::UNORDERED_ARRAY, "first");
-
     XMPTag getTag;
-    bool ret = DoSetTagAndGetTag("dc:first", baseTag, getTag, xmpMetadata);
+    bool ret = SetValueAndGetTagForTest(xmpMetadata, "dc:first", XMPTagType::UNORDERED_ARRAY, "", getTag);
     EXPECT_TRUE(ret);
-    EXPECT_TRUE(CompareXMPTag(baseTag, getTag));
+    EXPECT_EQ(getTag.type, XMPTagType::UNORDERED_ARRAY);
 
-    baseTag.name = "second";
-    baseTag.type = XMPTagType::STRUCTURE;
-    ret = DoSetTagAndGetTag("dc:first[1]/dc:second", baseTag, getTag, xmpMetadata);
+    ret = SetValueAndGetTagForTest(xmpMetadata, "dc:first[1]/dc:second", XMPTagType::STRUCTURE, "", getTag);
     EXPECT_TRUE(ret);
-    EXPECT_TRUE(CompareXMPTag(baseTag, getTag));
+    EXPECT_EQ(getTag.type, XMPTagType::STRUCTURE);
 
-    baseTag.name = "third";
-    baseTag.type = XMPTagType::ALTERNATE_ARRAY;
-    ret = DoSetTagAndGetTag("dc:first[1]/dc:second/dc:third", baseTag, getTag, xmpMetadata);
+    ret = SetValueAndGetTagForTest(xmpMetadata, "dc:first[1]/dc:second/dc:third", XMPTagType::ALTERNATE_ARRAY, "",
+        getTag);
     EXPECT_TRUE(ret);
-    EXPECT_TRUE(CompareXMPTag(baseTag, getTag));
+    EXPECT_EQ(getTag.type, XMPTagType::ALTERNATE_ARRAY);
 
-    XMPTag childTag;
-    InitTestXMPTag(childTag, XMPTagType::SIMPLE, "third", "XmpMetadataTest.GetTagTest015_value1");
-
-    ret = DoSetTagAndGetTag("dc:first[1]/dc:second/dc:third[1]", childTag, getTag, xmpMetadata);
+    const std::string childValue = "XmpMetadataTest.GetTagTest015_value1";
+    ret = SetValueAndGetTagForTest(xmpMetadata, "dc:first[1]/dc:second/dc:third[1]", XMPTagType::SIMPLE, childValue,
+        getTag);
     EXPECT_TRUE(ret);
-    EXPECT_TRUE(CompareXMPTag(childTag, getTag));
+    EXPECT_EQ(getTag.type, XMPTagType::SIMPLE);
+    EXPECT_EQ(getTag.value, childValue);
 
     GTEST_LOG_(INFO) << "XmpMetadataTest: GetTagTest015 end";
 }
@@ -1146,31 +1010,25 @@ HWTEST_F(XmpMetadataTest, GetTagTest016, TestSize.Level1)
 {
     GTEST_LOG_(INFO) << "XmpMetadataTest: GetTagTest016 start";
     XMPMetadata xmpMetadata;
-    XMPTag baseTag;
-    InitTestXMPTag(baseTag, XMPTagType::UNORDERED_ARRAY, "first");
-
     XMPTag getTag;
-    bool ret = DoSetTagAndGetTag("dc:first", baseTag, getTag, xmpMetadata);
+    bool ret = SetValueAndGetTagForTest(xmpMetadata, "dc:first", XMPTagType::UNORDERED_ARRAY, "", getTag);
     EXPECT_TRUE(ret);
-    EXPECT_TRUE(CompareXMPTag(baseTag, getTag));
+    EXPECT_EQ(getTag.type, XMPTagType::UNORDERED_ARRAY);
 
-    baseTag.name = "second";
-    baseTag.type = XMPTagType::STRUCTURE;
-    ret = DoSetTagAndGetTag("dc:first[1]/dc:second", baseTag, getTag, xmpMetadata);
+    ret = SetValueAndGetTagForTest(xmpMetadata, "dc:first[1]/dc:second", XMPTagType::STRUCTURE, "", getTag);
     EXPECT_TRUE(ret);
-    EXPECT_TRUE(CompareXMPTag(baseTag, getTag));
+    EXPECT_EQ(getTag.type, XMPTagType::STRUCTURE);
 
-    baseTag.name = "third";
-    ret = DoSetTagAndGetTag("dc:first[1]/dc:second/dc:third", baseTag, getTag, xmpMetadata);
+    ret = SetValueAndGetTagForTest(xmpMetadata, "dc:first[1]/dc:second/dc:third", XMPTagType::STRUCTURE, "", getTag);
     EXPECT_TRUE(ret);
-    EXPECT_TRUE(CompareXMPTag(baseTag, getTag));
+    EXPECT_EQ(getTag.type, XMPTagType::STRUCTURE);
 
-    XMPTag childTag;
-    InitTestXMPTag(childTag, XMPTagType::SIMPLE, "child", "XmpMetadataTest.GetTagTest016_value1");
-
-    ret = DoSetTagAndGetTag("dc:first[1]/dc:second/dc:third/dc:child", childTag, getTag, xmpMetadata);
+    const std::string childValue = "XmpMetadataTest.GetTagTest016_value1";
+    ret = SetValueAndGetTagForTest(xmpMetadata, "dc:first[1]/dc:second/dc:third/dc:child", XMPTagType::SIMPLE,
+        childValue, getTag);
     EXPECT_TRUE(ret);
-    EXPECT_TRUE(CompareXMPTag(childTag, getTag));
+    EXPECT_EQ(getTag.type, XMPTagType::SIMPLE);
+    EXPECT_EQ(getTag.value, childValue);
 
     GTEST_LOG_(INFO) << "XmpMetadataTest: GetTagTest016 end";
 }
@@ -1185,31 +1043,26 @@ HWTEST_F(XmpMetadataTest, GetTagTest017, TestSize.Level1)
 {
     GTEST_LOG_(INFO) << "XmpMetadataTest: GetTagTest017 start";
     XMPMetadata xmpMetadata;
-    XMPTag baseTag;
-    InitTestXMPTag(baseTag, XMPTagType::ORDERED_ARRAY, "first");
-
     XMPTag getTag;
-    bool ret = DoSetTagAndGetTag("dc:first", baseTag, getTag, xmpMetadata);
+    bool ret = SetValueAndGetTagForTest(xmpMetadata, "dc:first", XMPTagType::ORDERED_ARRAY, "", getTag);
     EXPECT_TRUE(ret);
-    EXPECT_TRUE(CompareXMPTag(baseTag, getTag));
+    EXPECT_EQ(getTag.type, XMPTagType::ORDERED_ARRAY);
 
-    baseTag.name = "second";
-    baseTag.type = XMPTagType::UNORDERED_ARRAY;
-    ret = DoSetTagAndGetTag("dc:first[1]/dc:second", baseTag, getTag, xmpMetadata);
+    ret = SetValueAndGetTagForTest(xmpMetadata, "dc:first[1]/dc:second", XMPTagType::UNORDERED_ARRAY, "", getTag);
     EXPECT_TRUE(ret);
-    EXPECT_TRUE(CompareXMPTag(baseTag, getTag));
+    EXPECT_EQ(getTag.type, XMPTagType::UNORDERED_ARRAY);
 
-    baseTag.name = "third";
-    ret = DoSetTagAndGetTag("dc:first[1]/dc:second[1]/dc:third", baseTag, getTag, xmpMetadata);
+    ret = SetValueAndGetTagForTest(xmpMetadata, "dc:first[1]/dc:second[1]/dc:third", XMPTagType::UNORDERED_ARRAY, "",
+        getTag);
     EXPECT_TRUE(ret);
-    EXPECT_TRUE(CompareXMPTag(baseTag, getTag));
+    EXPECT_EQ(getTag.type, XMPTagType::UNORDERED_ARRAY);
 
-    XMPTag childTag;
-    InitTestXMPTag(childTag, XMPTagType::SIMPLE, "third", "XmpMetadataTest.GetTagTest017_value1");
-
-    ret = DoSetTagAndGetTag("dc:first[1]/dc:second[1]/dc:third[1]", childTag, getTag, xmpMetadata);
+    const std::string childValue = "XmpMetadataTest.GetTagTest017_value1";
+    ret = SetValueAndGetTagForTest(xmpMetadata, "dc:first[1]/dc:second[1]/dc:third[1]", XMPTagType::SIMPLE,
+        childValue, getTag);
     EXPECT_TRUE(ret);
-    EXPECT_TRUE(CompareXMPTag(childTag, getTag));
+    EXPECT_EQ(getTag.type, XMPTagType::SIMPLE);
+    EXPECT_EQ(getTag.value, childValue);
 
     GTEST_LOG_(INFO) << "XmpMetadataTest: GetTagTest017 end";
 }
@@ -1224,32 +1077,26 @@ HWTEST_F(XmpMetadataTest, GetTagTest018, TestSize.Level1)
 {
     GTEST_LOG_(INFO) << "XmpMetadataTest: GetTagTest018 start";
     XMPMetadata xmpMetadata;
-    XMPTag baseTag;
-    InitTestXMPTag(baseTag, XMPTagType::ORDERED_ARRAY, "first");
-
     XMPTag getTag;
-    bool ret = DoSetTagAndGetTag("dc:first", baseTag, getTag, xmpMetadata);
+    bool ret = SetValueAndGetTagForTest(xmpMetadata, "dc:first", XMPTagType::ORDERED_ARRAY, "", getTag);
     EXPECT_TRUE(ret);
-    EXPECT_TRUE(CompareXMPTag(baseTag, getTag));
+    EXPECT_EQ(getTag.type, XMPTagType::ORDERED_ARRAY);
 
-    baseTag.name = "second";
-    baseTag.type = XMPTagType::UNORDERED_ARRAY;
-    ret = DoSetTagAndGetTag("dc:first[1]/dc:second", baseTag, getTag, xmpMetadata);
+    ret = SetValueAndGetTagForTest(xmpMetadata, "dc:first[1]/dc:second", XMPTagType::UNORDERED_ARRAY, "", getTag);
     EXPECT_TRUE(ret);
-    EXPECT_TRUE(CompareXMPTag(baseTag, getTag));
+    EXPECT_EQ(getTag.type, XMPTagType::UNORDERED_ARRAY);
 
-    baseTag.name = "third";
-    baseTag.type = XMPTagType::ORDERED_ARRAY;
-    ret = DoSetTagAndGetTag("dc:first[1]/dc:second[1]/dc:third", baseTag, getTag, xmpMetadata);
+    ret = SetValueAndGetTagForTest(xmpMetadata, "dc:first[1]/dc:second[1]/dc:third", XMPTagType::ORDERED_ARRAY, "",
+        getTag);
     EXPECT_TRUE(ret);
-    EXPECT_TRUE(CompareXMPTag(baseTag, getTag));
+    EXPECT_EQ(getTag.type, XMPTagType::ORDERED_ARRAY);
 
-    XMPTag childTag;
-    InitTestXMPTag(childTag, XMPTagType::SIMPLE, "third", "XmpMetadataTest.GetTagTest018_value1");
-
-    ret = DoSetTagAndGetTag("dc:first[1]/dc:second[1]/dc:third[1]", childTag, getTag, xmpMetadata);
+    const std::string childValue = "XmpMetadataTest.GetTagTest018_value1";
+    ret = SetValueAndGetTagForTest(xmpMetadata, "dc:first[1]/dc:second[1]/dc:third[1]", XMPTagType::SIMPLE,
+        childValue, getTag);
     EXPECT_TRUE(ret);
-    EXPECT_TRUE(CompareXMPTag(childTag, getTag));
+    EXPECT_EQ(getTag.type, XMPTagType::SIMPLE);
+    EXPECT_EQ(getTag.value, childValue);
 
     GTEST_LOG_(INFO) << "XmpMetadataTest: GetTagTest018 end";
 }
@@ -1264,32 +1111,26 @@ HWTEST_F(XmpMetadataTest, GetTagTest019, TestSize.Level1)
 {
     GTEST_LOG_(INFO) << "XmpMetadataTest: GetTagTest019 start";
     XMPMetadata xmpMetadata;
-    XMPTag baseTag;
-    InitTestXMPTag(baseTag, XMPTagType::ORDERED_ARRAY, "first");
-
     XMPTag getTag;
-    bool ret = DoSetTagAndGetTag("dc:first", baseTag, getTag, xmpMetadata);
+    bool ret = SetValueAndGetTagForTest(xmpMetadata, "dc:first", XMPTagType::ORDERED_ARRAY, "", getTag);
     EXPECT_TRUE(ret);
-    EXPECT_TRUE(CompareXMPTag(baseTag, getTag));
+    EXPECT_EQ(getTag.type, XMPTagType::ORDERED_ARRAY);
 
-    baseTag.name = "second";
-    baseTag.type = XMPTagType::UNORDERED_ARRAY;
-    ret = DoSetTagAndGetTag("dc:first[1]/dc:second", baseTag, getTag, xmpMetadata);
+    ret = SetValueAndGetTagForTest(xmpMetadata, "dc:first[1]/dc:second", XMPTagType::UNORDERED_ARRAY, "", getTag);
     EXPECT_TRUE(ret);
-    EXPECT_TRUE(CompareXMPTag(baseTag, getTag));
+    EXPECT_EQ(getTag.type, XMPTagType::UNORDERED_ARRAY);
 
-    baseTag.name = "third";
-    baseTag.type = XMPTagType::ALTERNATE_ARRAY;
-    ret = DoSetTagAndGetTag("dc:first[1]/dc:second[1]/dc:third", baseTag, getTag, xmpMetadata);
+    ret = SetValueAndGetTagForTest(xmpMetadata, "dc:first[1]/dc:second[1]/dc:third", XMPTagType::ALTERNATE_ARRAY, "",
+        getTag);
     EXPECT_TRUE(ret);
-    EXPECT_TRUE(CompareXMPTag(baseTag, getTag));
+    EXPECT_EQ(getTag.type, XMPTagType::ALTERNATE_ARRAY);
 
-    XMPTag childTag;
-    InitTestXMPTag(childTag, XMPTagType::SIMPLE, "third", "XmpMetadataTest.GetTagTest019_value1");
-
-    ret = DoSetTagAndGetTag("dc:first[1]/dc:second[1]/dc:third[1]", childTag, getTag, xmpMetadata);
+    const std::string childValue = "XmpMetadataTest.GetTagTest019_value1";
+    ret = SetValueAndGetTagForTest(xmpMetadata, "dc:first[1]/dc:second[1]/dc:third[1]", XMPTagType::SIMPLE,
+        childValue, getTag);
     EXPECT_TRUE(ret);
-    EXPECT_TRUE(CompareXMPTag(childTag, getTag));
+    EXPECT_EQ(getTag.type, XMPTagType::SIMPLE);
+    EXPECT_EQ(getTag.value, childValue);
 
     GTEST_LOG_(INFO) << "XmpMetadataTest: GetTagTest019 end";
 }
@@ -1304,32 +1145,26 @@ HWTEST_F(XmpMetadataTest, GetTagTest020, TestSize.Level1)
 {
     GTEST_LOG_(INFO) << "XmpMetadataTest: GetTagTest020 start";
     XMPMetadata xmpMetadata;
-    XMPTag baseTag;
-    InitTestXMPTag(baseTag, XMPTagType::ORDERED_ARRAY, "first");
-
     XMPTag getTag;
-    bool ret = DoSetTagAndGetTag("dc:first", baseTag, getTag, xmpMetadata);
+    bool ret = SetValueAndGetTagForTest(xmpMetadata, "dc:first", XMPTagType::ORDERED_ARRAY, "", getTag);
     EXPECT_TRUE(ret);
-    EXPECT_TRUE(CompareXMPTag(baseTag, getTag));
+    EXPECT_EQ(getTag.type, XMPTagType::ORDERED_ARRAY);
 
-    baseTag.name = "second";
-    baseTag.type = XMPTagType::UNORDERED_ARRAY;
-    ret = DoSetTagAndGetTag("dc:first[1]/dc:second", baseTag, getTag, xmpMetadata);
+    ret = SetValueAndGetTagForTest(xmpMetadata, "dc:first[1]/dc:second", XMPTagType::UNORDERED_ARRAY, "", getTag);
     EXPECT_TRUE(ret);
-    EXPECT_TRUE(CompareXMPTag(baseTag, getTag));
+    EXPECT_EQ(getTag.type, XMPTagType::UNORDERED_ARRAY);
 
-    baseTag.name = "third";
-    baseTag.type = XMPTagType::STRUCTURE;
-    ret = DoSetTagAndGetTag("dc:first[1]/dc:second[1]/dc:third", baseTag, getTag, xmpMetadata);
+    ret = SetValueAndGetTagForTest(xmpMetadata, "dc:first[1]/dc:second[1]/dc:third", XMPTagType::STRUCTURE, "",
+        getTag);
     EXPECT_TRUE(ret);
-    EXPECT_TRUE(CompareXMPTag(baseTag, getTag));
+    EXPECT_EQ(getTag.type, XMPTagType::STRUCTURE);
 
-    XMPTag childTag;
-    InitTestXMPTag(childTag, XMPTagType::SIMPLE, "child", "XmpMetadataTest.GetTagTest020_value1");
-
-    ret = DoSetTagAndGetTag("dc:first[1]/dc:second[1]/dc:third/dc:child", childTag, getTag, xmpMetadata);
+    const std::string childValue = "XmpMetadataTest.GetTagTest020_value1";
+    ret = SetValueAndGetTagForTest(xmpMetadata, "dc:first[1]/dc:second[1]/dc:third/dc:child", XMPTagType::SIMPLE,
+        childValue, getTag);
     EXPECT_TRUE(ret);
-    EXPECT_TRUE(CompareXMPTag(childTag, getTag));
+    EXPECT_EQ(getTag.type, XMPTagType::SIMPLE);
+    EXPECT_EQ(getTag.value, childValue);
 
     GTEST_LOG_(INFO) << "XmpMetadataTest: GetTagTest020 end";
 }
@@ -1344,31 +1179,26 @@ HWTEST_F(XmpMetadataTest, GetTagTest021, TestSize.Level1)
 {
     GTEST_LOG_(INFO) << "XmpMetadataTest: GetTagTest021 start";
     XMPMetadata xmpMetadata;
-    XMPTag baseTag;
-    InitTestXMPTag(baseTag, XMPTagType::ORDERED_ARRAY, "first");
-
     XMPTag getTag;
-    bool ret = DoSetTagAndGetTag("dc:first", baseTag, getTag, xmpMetadata);
+    bool ret = SetValueAndGetTagForTest(xmpMetadata, "dc:first", XMPTagType::ORDERED_ARRAY, "", getTag);
     EXPECT_TRUE(ret);
-    EXPECT_TRUE(CompareXMPTag(baseTag, getTag));
+    EXPECT_EQ(getTag.type, XMPTagType::ORDERED_ARRAY);
 
-    baseTag.name = "second";
-    ret = DoSetTagAndGetTag("dc:first[1]/dc:second", baseTag, getTag, xmpMetadata);
+    ret = SetValueAndGetTagForTest(xmpMetadata, "dc:first[1]/dc:second", XMPTagType::ORDERED_ARRAY, "", getTag);
     EXPECT_TRUE(ret);
-    EXPECT_TRUE(CompareXMPTag(baseTag, getTag));
+    EXPECT_EQ(getTag.type, XMPTagType::ORDERED_ARRAY);
 
-    baseTag.name = "third";
-    baseTag.type = XMPTagType::UNORDERED_ARRAY;
-    ret = DoSetTagAndGetTag("dc:first[1]/dc:second[1]/dc:third", baseTag, getTag, xmpMetadata);
+    ret = SetValueAndGetTagForTest(xmpMetadata, "dc:first[1]/dc:second[1]/dc:third", XMPTagType::UNORDERED_ARRAY, "",
+        getTag);
     EXPECT_TRUE(ret);
-    EXPECT_TRUE(CompareXMPTag(baseTag, getTag));
+    EXPECT_EQ(getTag.type, XMPTagType::UNORDERED_ARRAY);
 
-    XMPTag childTag;
-    InitTestXMPTag(childTag, XMPTagType::SIMPLE, "third", "XmpMetadataTest.GetTagTest021_value1");
-
-    ret = DoSetTagAndGetTag("dc:first[1]/dc:second[1]/dc:third[1]", childTag, getTag, xmpMetadata);
+    const std::string childValue = "XmpMetadataTest.GetTagTest021_value1";
+    ret = SetValueAndGetTagForTest(xmpMetadata, "dc:first[1]/dc:second[1]/dc:third[1]", XMPTagType::SIMPLE,
+        childValue, getTag);
     EXPECT_TRUE(ret);
-    EXPECT_TRUE(CompareXMPTag(childTag, getTag));
+    EXPECT_EQ(getTag.type, XMPTagType::SIMPLE);
+    EXPECT_EQ(getTag.value, childValue);
 
     GTEST_LOG_(INFO) << "XmpMetadataTest: GetTagTest021 end";
 }
@@ -1383,30 +1213,26 @@ HWTEST_F(XmpMetadataTest, GetTagTest022, TestSize.Level1)
 {
     GTEST_LOG_(INFO) << "XmpMetadataTest: GetTagTest022 start";
     XMPMetadata xmpMetadata;
-    XMPTag baseTag;
-    InitTestXMPTag(baseTag, XMPTagType::ORDERED_ARRAY, "first");
-
     XMPTag getTag;
-    bool ret = DoSetTagAndGetTag("dc:first", baseTag, getTag, xmpMetadata);
+    bool ret = SetValueAndGetTagForTest(xmpMetadata, "dc:first", XMPTagType::ORDERED_ARRAY, "", getTag);
     EXPECT_TRUE(ret);
-    EXPECT_TRUE(CompareXMPTag(baseTag, getTag));
+    EXPECT_EQ(getTag.type, XMPTagType::ORDERED_ARRAY);
 
-    baseTag.name = "second";
-    ret = DoSetTagAndGetTag("dc:first[1]/dc:second", baseTag, getTag, xmpMetadata);
+    ret = SetValueAndGetTagForTest(xmpMetadata, "dc:first[1]/dc:second", XMPTagType::ORDERED_ARRAY, "", getTag);
     EXPECT_TRUE(ret);
-    EXPECT_TRUE(CompareXMPTag(baseTag, getTag));
+    EXPECT_EQ(getTag.type, XMPTagType::ORDERED_ARRAY);
 
-    baseTag.name = "third";
-    ret = DoSetTagAndGetTag("dc:first[1]/dc:second[1]/dc:third", baseTag, getTag, xmpMetadata);
+    ret = SetValueAndGetTagForTest(xmpMetadata, "dc:first[1]/dc:second[1]/dc:third", XMPTagType::ORDERED_ARRAY, "",
+        getTag);
     EXPECT_TRUE(ret);
-    EXPECT_TRUE(CompareXMPTag(baseTag, getTag));
+    EXPECT_EQ(getTag.type, XMPTagType::ORDERED_ARRAY);
 
-    XMPTag childTag;
-    InitTestXMPTag(childTag, XMPTagType::SIMPLE, "third","XmpMetadataTest.GetTagTest022_value1");
-
-    ret = DoSetTagAndGetTag("dc:first[1]/dc:second[1]/dc:third[1]", childTag, getTag, xmpMetadata);
+    const std::string childValue = "XmpMetadataTest.GetTagTest022_value1";
+    ret = SetValueAndGetTagForTest(xmpMetadata, "dc:first[1]/dc:second[1]/dc:third[1]", XMPTagType::SIMPLE,
+        childValue, getTag);
     EXPECT_TRUE(ret);
-    EXPECT_TRUE(CompareXMPTag(childTag, getTag));
+    EXPECT_EQ(getTag.type, XMPTagType::SIMPLE);
+    EXPECT_EQ(getTag.value, childValue);
 
     GTEST_LOG_(INFO) << "XmpMetadataTest: GetTagTest022 end";
 }
@@ -1421,31 +1247,26 @@ HWTEST_F(XmpMetadataTest, GetTagTest023, TestSize.Level1)
 {
     GTEST_LOG_(INFO) << "XmpMetadataTest: GetTagTest023 start";
     XMPMetadata xmpMetadata;
-    XMPTag baseTag;
-    InitTestXMPTag(baseTag, XMPTagType::ORDERED_ARRAY, "first");
-
     XMPTag getTag;
-    bool ret = DoSetTagAndGetTag("dc:first", baseTag, getTag, xmpMetadata);
+    bool ret = SetValueAndGetTagForTest(xmpMetadata, "dc:first", XMPTagType::ORDERED_ARRAY, "", getTag);
     EXPECT_TRUE(ret);
-    EXPECT_TRUE(CompareXMPTag(baseTag, getTag));
+    EXPECT_EQ(getTag.type, XMPTagType::ORDERED_ARRAY);
 
-    baseTag.name = "second";
-    ret = DoSetTagAndGetTag("dc:first[1]/dc:second", baseTag, getTag, xmpMetadata);
+    ret = SetValueAndGetTagForTest(xmpMetadata, "dc:first[1]/dc:second", XMPTagType::ORDERED_ARRAY, "", getTag);
     EXPECT_TRUE(ret);
-    EXPECT_TRUE(CompareXMPTag(baseTag, getTag));
+    EXPECT_EQ(getTag.type, XMPTagType::ORDERED_ARRAY);
 
-    baseTag.name = "third";
-    baseTag.type = XMPTagType::ALTERNATE_ARRAY;
-    ret = DoSetTagAndGetTag("dc:first[1]/dc:second[1]/dc:third", baseTag, getTag, xmpMetadata);
+    ret = SetValueAndGetTagForTest(xmpMetadata, "dc:first[1]/dc:second[1]/dc:third", XMPTagType::ALTERNATE_ARRAY, "",
+        getTag);
     EXPECT_TRUE(ret);
-    EXPECT_TRUE(CompareXMPTag(baseTag, getTag));
+    EXPECT_EQ(getTag.type, XMPTagType::ALTERNATE_ARRAY);
 
-    XMPTag childTag;
-    InitTestXMPTag(childTag, XMPTagType::SIMPLE, "third", "XmpMetadataTest.GetTagTest023_value1");
-
-    ret = DoSetTagAndGetTag("dc:first[1]/dc:second[1]/dc:third[1]", childTag, getTag, xmpMetadata);
+    const std::string childValue = "XmpMetadataTest.GetTagTest023_value1";
+    ret = SetValueAndGetTagForTest(xmpMetadata, "dc:first[1]/dc:second[1]/dc:third[1]", XMPTagType::SIMPLE,
+        childValue, getTag);
     EXPECT_TRUE(ret);
-    EXPECT_TRUE(CompareXMPTag(childTag, getTag));
+    EXPECT_EQ(getTag.type, XMPTagType::SIMPLE);
+    EXPECT_EQ(getTag.value, childValue);
 
     GTEST_LOG_(INFO) << "XmpMetadataTest: GetTagTest023 end";
 }
@@ -1460,31 +1281,26 @@ HWTEST_F(XmpMetadataTest, GetTagTest024, TestSize.Level1)
 {
     GTEST_LOG_(INFO) << "XmpMetadataTest: GetTagTest024 start";
     XMPMetadata xmpMetadata;
-    XMPTag baseTag;
-    InitTestXMPTag(baseTag, XMPTagType::ORDERED_ARRAY, "first");
-
     XMPTag getTag;
-    bool ret = DoSetTagAndGetTag("dc:first", baseTag, getTag, xmpMetadata);
+    bool ret = SetValueAndGetTagForTest(xmpMetadata, "dc:first", XMPTagType::ORDERED_ARRAY, "", getTag);
     EXPECT_TRUE(ret);
-    EXPECT_TRUE(CompareXMPTag(baseTag, getTag));
+    EXPECT_EQ(getTag.type, XMPTagType::ORDERED_ARRAY);
 
-    baseTag.name = "second";
-    ret = DoSetTagAndGetTag("dc:first[1]/dc:second", baseTag, getTag, xmpMetadata);
+    ret = SetValueAndGetTagForTest(xmpMetadata, "dc:first[1]/dc:second", XMPTagType::ORDERED_ARRAY, "", getTag);
     EXPECT_TRUE(ret);
-    EXPECT_TRUE(CompareXMPTag(baseTag, getTag));
+    EXPECT_EQ(getTag.type, XMPTagType::ORDERED_ARRAY);
 
-    baseTag.name = "third";
-    baseTag.type = XMPTagType::STRUCTURE;
-    ret = DoSetTagAndGetTag("dc:first[1]/dc:second[1]/dc:third", baseTag, getTag, xmpMetadata);
+    ret = SetValueAndGetTagForTest(xmpMetadata, "dc:first[1]/dc:second[1]/dc:third", XMPTagType::STRUCTURE, "",
+        getTag);
     EXPECT_TRUE(ret);
-    EXPECT_TRUE(CompareXMPTag(baseTag, getTag));
+    EXPECT_EQ(getTag.type, XMPTagType::STRUCTURE);
 
-    XMPTag childTag;
-    InitTestXMPTag(childTag, XMPTagType::SIMPLE, "child", "XmpMetadataTest.GetTagTest024_value1");
-
-    ret = DoSetTagAndGetTag("dc:first[1]/dc:second[1]/dc:third/dc:child", childTag, getTag, xmpMetadata);
+    const std::string childValue = "XmpMetadataTest.GetTagTest024_value1";
+    ret = SetValueAndGetTagForTest(xmpMetadata, "dc:first[1]/dc:second[1]/dc:third/dc:child", XMPTagType::SIMPLE,
+        childValue, getTag);
     EXPECT_TRUE(ret);
-    EXPECT_TRUE(CompareXMPTag(childTag, getTag));
+    EXPECT_EQ(getTag.type, XMPTagType::SIMPLE);
+    EXPECT_EQ(getTag.value, childValue);
 
     GTEST_LOG_(INFO) << "XmpMetadataTest: GetTagTest024 end";
 }
@@ -1499,32 +1315,26 @@ HWTEST_F(XmpMetadataTest, GetTagTest025, TestSize.Level1)
 {
     GTEST_LOG_(INFO) << "XmpMetadataTest: GetTagTest025 start";
     XMPMetadata xmpMetadata;
-    XMPTag baseTag;
-    InitTestXMPTag(baseTag, XMPTagType::ORDERED_ARRAY, "first");
-
     XMPTag getTag;
-    bool ret = DoSetTagAndGetTag("dc:first", baseTag, getTag, xmpMetadata);
+    bool ret = SetValueAndGetTagForTest(xmpMetadata, "dc:first", XMPTagType::ORDERED_ARRAY, "", getTag);
     EXPECT_TRUE(ret);
-    EXPECT_TRUE(CompareXMPTag(baseTag, getTag));
+    EXPECT_EQ(getTag.type, XMPTagType::ORDERED_ARRAY);
 
-    baseTag.name = "second";
-    baseTag.type = XMPTagType::ALTERNATE_ARRAY;
-    ret = DoSetTagAndGetTag("dc:first[1]/dc:second", baseTag, getTag, xmpMetadata);
+    ret = SetValueAndGetTagForTest(xmpMetadata, "dc:first[1]/dc:second", XMPTagType::ALTERNATE_ARRAY, "", getTag);
     EXPECT_TRUE(ret);
-    EXPECT_TRUE(CompareXMPTag(baseTag, getTag));
+    EXPECT_EQ(getTag.type, XMPTagType::ALTERNATE_ARRAY);
 
-    baseTag.name = "third";
-    baseTag.type = XMPTagType::UNORDERED_ARRAY;
-    ret = DoSetTagAndGetTag("dc:first[1]/dc:second[1]/dc:third", baseTag, getTag, xmpMetadata);
+    ret = SetValueAndGetTagForTest(xmpMetadata, "dc:first[1]/dc:second[1]/dc:third", XMPTagType::UNORDERED_ARRAY, "",
+        getTag);
     EXPECT_TRUE(ret);
-    EXPECT_TRUE(CompareXMPTag(baseTag, getTag));
+    EXPECT_EQ(getTag.type, XMPTagType::UNORDERED_ARRAY);
 
-    XMPTag childTag;
-    InitTestXMPTag(childTag, XMPTagType::SIMPLE, "third", "XmpMetadataTest.GetTagTest025_value1");
-
-    ret = DoSetTagAndGetTag("dc:first[1]/dc:second[1]/dc:third[1]", childTag, getTag, xmpMetadata);
+    const std::string childValue = "XmpMetadataTest.GetTagTest025_value1";
+    ret = SetValueAndGetTagForTest(xmpMetadata, "dc:first[1]/dc:second[1]/dc:third[1]", XMPTagType::SIMPLE,
+        childValue, getTag);
     EXPECT_TRUE(ret);
-    EXPECT_TRUE(CompareXMPTag(childTag, getTag));
+    EXPECT_EQ(getTag.type, XMPTagType::SIMPLE);
+    EXPECT_EQ(getTag.value, childValue);
 
     GTEST_LOG_(INFO) << "XmpMetadataTest: GetTagTest025 end";
 }
@@ -1539,32 +1349,26 @@ HWTEST_F(XmpMetadataTest, GetTagTest026, TestSize.Level1)
 {
     GTEST_LOG_(INFO) << "XmpMetadataTest: GetTagTest026 start";
     XMPMetadata xmpMetadata;
-    XMPTag baseTag;
-    InitTestXMPTag(baseTag, XMPTagType::ORDERED_ARRAY, "first");
-
     XMPTag getTag;
-    bool ret = DoSetTagAndGetTag("dc:first", baseTag, getTag, xmpMetadata);
+    bool ret = SetValueAndGetTagForTest(xmpMetadata, "dc:first", XMPTagType::ORDERED_ARRAY, "", getTag);
     EXPECT_TRUE(ret);
-    EXPECT_TRUE(CompareXMPTag(baseTag, getTag));
+    EXPECT_EQ(getTag.type, XMPTagType::ORDERED_ARRAY);
 
-    baseTag.name = "second";
-    baseTag.type = XMPTagType::ALTERNATE_ARRAY;
-    ret = DoSetTagAndGetTag("dc:first[1]/dc:second", baseTag, getTag, xmpMetadata);
+    ret = SetValueAndGetTagForTest(xmpMetadata, "dc:first[1]/dc:second", XMPTagType::ALTERNATE_ARRAY, "", getTag);
     EXPECT_TRUE(ret);
-    EXPECT_TRUE(CompareXMPTag(baseTag, getTag));
+    EXPECT_EQ(getTag.type, XMPTagType::ALTERNATE_ARRAY);
 
-    baseTag.name = "third";
-    baseTag.type = XMPTagType::ORDERED_ARRAY;
-    ret = DoSetTagAndGetTag("dc:first[1]/dc:second[1]/dc:third", baseTag, getTag, xmpMetadata);
+    ret = SetValueAndGetTagForTest(xmpMetadata, "dc:first[1]/dc:second[1]/dc:third", XMPTagType::ORDERED_ARRAY, "",
+        getTag);
     EXPECT_TRUE(ret);
-    EXPECT_TRUE(CompareXMPTag(baseTag, getTag));
+    EXPECT_EQ(getTag.type, XMPTagType::ORDERED_ARRAY);
 
-    XMPTag childTag;
-    InitTestXMPTag(childTag, XMPTagType::SIMPLE, "third", "XmpMetadataTest.GetTagTest026_value1");
-
-    ret = DoSetTagAndGetTag("dc:first[1]/dc:second[1]/dc:third[1]", childTag, getTag, xmpMetadata);
+    const std::string childValue = "XmpMetadataTest.GetTagTest026_value1";
+    ret = SetValueAndGetTagForTest(xmpMetadata, "dc:first[1]/dc:second[1]/dc:third[1]", XMPTagType::SIMPLE,
+        childValue, getTag);
     EXPECT_TRUE(ret);
-    EXPECT_TRUE(CompareXMPTag(childTag, getTag));
+    EXPECT_EQ(getTag.type, XMPTagType::SIMPLE);
+    EXPECT_EQ(getTag.value, childValue);
 
     GTEST_LOG_(INFO) << "XmpMetadataTest: GetTagTest026 end";
 }
@@ -1579,31 +1383,26 @@ HWTEST_F(XmpMetadataTest, GetTagTest027, TestSize.Level1)
 {
     GTEST_LOG_(INFO) << "XmpMetadataTest: GetTagTest027 start";
     XMPMetadata xmpMetadata;
-    XMPTag baseTag;
-    InitTestXMPTag(baseTag, XMPTagType::ORDERED_ARRAY, "first");
-
     XMPTag getTag;
-    bool ret = DoSetTagAndGetTag("dc:first", baseTag, getTag, xmpMetadata);
+    bool ret = SetValueAndGetTagForTest(xmpMetadata, "dc:first", XMPTagType::ORDERED_ARRAY, "", getTag);
     EXPECT_TRUE(ret);
-    EXPECT_TRUE(CompareXMPTag(baseTag, getTag));
+    EXPECT_EQ(getTag.type, XMPTagType::ORDERED_ARRAY);
 
-    baseTag.name = "second";
-    baseTag.type = XMPTagType::ALTERNATE_ARRAY;
-    ret = DoSetTagAndGetTag("dc:first[1]/dc:second", baseTag, getTag, xmpMetadata);
+    ret = SetValueAndGetTagForTest(xmpMetadata, "dc:first[1]/dc:second", XMPTagType::ALTERNATE_ARRAY, "", getTag);
     EXPECT_TRUE(ret);
-    EXPECT_TRUE(CompareXMPTag(baseTag, getTag));
+    EXPECT_EQ(getTag.type, XMPTagType::ALTERNATE_ARRAY);
 
-    baseTag.name = "third";
-    ret = DoSetTagAndGetTag("dc:first[1]/dc:second[1]/dc:third", baseTag, getTag, xmpMetadata);
+    ret = SetValueAndGetTagForTest(xmpMetadata, "dc:first[1]/dc:second[1]/dc:third", XMPTagType::ALTERNATE_ARRAY, "",
+        getTag);
     EXPECT_TRUE(ret);
-    EXPECT_TRUE(CompareXMPTag(baseTag, getTag));
+    EXPECT_EQ(getTag.type, XMPTagType::ALTERNATE_ARRAY);
 
-    XMPTag childTag;
-    InitTestXMPTag(childTag, XMPTagType::SIMPLE, "third", "XmpMetadataTest.GetTagTest027_value1");
-
-    ret = DoSetTagAndGetTag("dc:first[1]/dc:second[1]/dc:third[1]", childTag, getTag, xmpMetadata);
+    const std::string childValue = "XmpMetadataTest.GetTagTest027_value1";
+    ret = SetValueAndGetTagForTest(xmpMetadata, "dc:first[1]/dc:second[1]/dc:third[1]", XMPTagType::SIMPLE,
+        childValue, getTag);
     EXPECT_TRUE(ret);
-    EXPECT_TRUE(CompareXMPTag(childTag, getTag));
+    EXPECT_EQ(getTag.type, XMPTagType::SIMPLE);
+    EXPECT_EQ(getTag.value, childValue);
 
     GTEST_LOG_(INFO) << "XmpMetadataTest: GetTagTest027 end";
 }
@@ -1618,32 +1417,26 @@ HWTEST_F(XmpMetadataTest, GetTagTest028, TestSize.Level1)
 {
     GTEST_LOG_(INFO) << "XmpMetadataTest: GetTagTest028 start";
     XMPMetadata xmpMetadata;
-    XMPTag baseTag;
-    InitTestXMPTag(baseTag, XMPTagType::ORDERED_ARRAY, "first");
-
     XMPTag getTag;
-    bool ret = DoSetTagAndGetTag("dc:first", baseTag, getTag, xmpMetadata);
+    bool ret = SetValueAndGetTagForTest(xmpMetadata, "dc:first", XMPTagType::ORDERED_ARRAY, "", getTag);
     EXPECT_TRUE(ret);
-    EXPECT_TRUE(CompareXMPTag(baseTag, getTag));
+    EXPECT_EQ(getTag.type, XMPTagType::ORDERED_ARRAY);
 
-    baseTag.name = "second";
-    baseTag.type = XMPTagType::ALTERNATE_ARRAY;
-    ret = DoSetTagAndGetTag("dc:first[1]/dc:second", baseTag, getTag, xmpMetadata);
+    ret = SetValueAndGetTagForTest(xmpMetadata, "dc:first[1]/dc:second", XMPTagType::ALTERNATE_ARRAY, "", getTag);
     EXPECT_TRUE(ret);
-    EXPECT_TRUE(CompareXMPTag(baseTag, getTag));
+    EXPECT_EQ(getTag.type, XMPTagType::ALTERNATE_ARRAY);
 
-    baseTag.name = "third";
-    baseTag.type = XMPTagType::STRUCTURE;
-    ret = DoSetTagAndGetTag("dc:first[1]/dc:second[1]/dc:third", baseTag, getTag, xmpMetadata);
+    ret = SetValueAndGetTagForTest(xmpMetadata, "dc:first[1]/dc:second[1]/dc:third", XMPTagType::STRUCTURE, "",
+        getTag);
     EXPECT_TRUE(ret);
-    EXPECT_TRUE(CompareXMPTag(baseTag, getTag));
+    EXPECT_EQ(getTag.type, XMPTagType::STRUCTURE);
 
-    XMPTag childTag;
-    InitTestXMPTag(childTag, XMPTagType::SIMPLE, "child", "XmpMetadataTest.GetTagTest028_value1");
-
-    ret = DoSetTagAndGetTag("dc:first[1]/dc:second[1]/dc:third/dc:child", childTag, getTag, xmpMetadata);
+    const std::string childValue = "XmpMetadataTest.GetTagTest028_value1";
+    ret = SetValueAndGetTagForTest(xmpMetadata, "dc:first[1]/dc:second[1]/dc:third/dc:child", XMPTagType::SIMPLE,
+        childValue, getTag);
     EXPECT_TRUE(ret);
-    EXPECT_TRUE(CompareXMPTag(childTag, getTag));
+    EXPECT_EQ(getTag.type, XMPTagType::SIMPLE);
+    EXPECT_EQ(getTag.value, childValue);
 
     GTEST_LOG_(INFO) << "XmpMetadataTest: GetTagTest028 end";
 }
@@ -1658,32 +1451,26 @@ HWTEST_F(XmpMetadataTest, GetTagTest029, TestSize.Level1)
 {
     GTEST_LOG_(INFO) << "XmpMetadataTest: GetTagTest029 start";
     XMPMetadata xmpMetadata;
-    XMPTag baseTag;
-    InitTestXMPTag(baseTag, XMPTagType::ORDERED_ARRAY, "first");
-
     XMPTag getTag;
-    bool ret = DoSetTagAndGetTag("dc:first", baseTag, getTag, xmpMetadata);
+    bool ret = SetValueAndGetTagForTest(xmpMetadata, "dc:first", XMPTagType::ORDERED_ARRAY, "", getTag);
     EXPECT_TRUE(ret);
-    EXPECT_TRUE(CompareXMPTag(baseTag, getTag));
+    EXPECT_EQ(getTag.type, XMPTagType::ORDERED_ARRAY);
 
-    baseTag.name = "second";
-    baseTag.type = XMPTagType::STRUCTURE;
-    ret = DoSetTagAndGetTag("dc:first[1]/dc:second", baseTag, getTag, xmpMetadata);
+    ret = SetValueAndGetTagForTest(xmpMetadata, "dc:first[1]/dc:second", XMPTagType::STRUCTURE, "", getTag);
     EXPECT_TRUE(ret);
-    EXPECT_TRUE(CompareXMPTag(baseTag, getTag));
+    EXPECT_EQ(getTag.type, XMPTagType::STRUCTURE);
 
-    baseTag.name = "third";
-    baseTag.type = XMPTagType::UNORDERED_ARRAY;
-    ret = DoSetTagAndGetTag("dc:first[1]/dc:second/dc:third", baseTag, getTag, xmpMetadata);
+    ret = SetValueAndGetTagForTest(xmpMetadata, "dc:first[1]/dc:second/dc:third", XMPTagType::UNORDERED_ARRAY, "",
+        getTag);
     EXPECT_TRUE(ret);
-    EXPECT_TRUE(CompareXMPTag(baseTag, getTag));
+    EXPECT_EQ(getTag.type, XMPTagType::UNORDERED_ARRAY);
 
-    XMPTag childTag;
-    InitTestXMPTag(childTag, XMPTagType::SIMPLE, "third", "XmpMetadataTest.GetTagTest029_value1");
-
-    ret = DoSetTagAndGetTag("dc:first[1]/dc:second/dc:third[1]", childTag, getTag, xmpMetadata);
+    const std::string childValue = "XmpMetadataTest.GetTagTest029_value1";
+    ret = SetValueAndGetTagForTest(xmpMetadata, "dc:first[1]/dc:second/dc:third[1]", XMPTagType::SIMPLE, childValue,
+        getTag);
     EXPECT_TRUE(ret);
-    EXPECT_TRUE(CompareXMPTag(childTag, getTag));
+    EXPECT_EQ(getTag.type, XMPTagType::SIMPLE);
+    EXPECT_EQ(getTag.value, childValue);
 
     GTEST_LOG_(INFO) << "XmpMetadataTest: GetTagTest029 end";
 }
@@ -1698,32 +1485,26 @@ HWTEST_F(XmpMetadataTest, GetTagTest030, TestSize.Level1)
 {
     GTEST_LOG_(INFO) << "XmpMetadataTest: GetTagTest030 start";
     XMPMetadata xmpMetadata;
-    XMPTag baseTag;
-    InitTestXMPTag(baseTag, XMPTagType::ORDERED_ARRAY, "first");
-
     XMPTag getTag;
-    bool ret = DoSetTagAndGetTag("dc:first", baseTag, getTag, xmpMetadata);
+    bool ret = SetValueAndGetTagForTest(xmpMetadata, "dc:first", XMPTagType::ORDERED_ARRAY, "", getTag);
     EXPECT_TRUE(ret);
-    EXPECT_TRUE(CompareXMPTag(baseTag, getTag));
+    EXPECT_EQ(getTag.type, XMPTagType::ORDERED_ARRAY);
 
-    baseTag.name = "second";
-    baseTag.type = XMPTagType::STRUCTURE;
-    ret = DoSetTagAndGetTag("dc:first[1]/dc:second", baseTag, getTag, xmpMetadata);
+    ret = SetValueAndGetTagForTest(xmpMetadata, "dc:first[1]/dc:second", XMPTagType::STRUCTURE, "", getTag);
     EXPECT_TRUE(ret);
-    EXPECT_TRUE(CompareXMPTag(baseTag, getTag));
+    EXPECT_EQ(getTag.type, XMPTagType::STRUCTURE);
 
-    baseTag.name = "third";
-    baseTag.type = XMPTagType::ORDERED_ARRAY;
-    ret = DoSetTagAndGetTag("dc:first[1]/dc:second/dc:third", baseTag, getTag, xmpMetadata);
+    ret = SetValueAndGetTagForTest(xmpMetadata, "dc:first[1]/dc:second/dc:third", XMPTagType::ORDERED_ARRAY, "",
+        getTag);
     EXPECT_TRUE(ret);
-    EXPECT_TRUE(CompareXMPTag(baseTag, getTag));
+    EXPECT_EQ(getTag.type, XMPTagType::ORDERED_ARRAY);
 
-    XMPTag childTag;
-    InitTestXMPTag(childTag, XMPTagType::SIMPLE, "third", "XmpMetadataTest.GetTagTest030_value1");
-
-    ret = DoSetTagAndGetTag("dc:first[1]/dc:second/dc:third[1]", childTag, getTag, xmpMetadata);
+    const std::string childValue = "XmpMetadataTest.GetTagTest030_value1";
+    ret = SetValueAndGetTagForTest(xmpMetadata, "dc:first[1]/dc:second/dc:third[1]", XMPTagType::SIMPLE, childValue,
+        getTag);
     EXPECT_TRUE(ret);
-    EXPECT_TRUE(CompareXMPTag(childTag, getTag));
+    EXPECT_EQ(getTag.type, XMPTagType::SIMPLE);
+    EXPECT_EQ(getTag.value, childValue);
 
     GTEST_LOG_(INFO) << "XmpMetadataTest: GetTagTest030 end";
 }
@@ -1738,32 +1519,26 @@ HWTEST_F(XmpMetadataTest, GetTagTest031, TestSize.Level1)
 {
     GTEST_LOG_(INFO) << "XmpMetadataTest: GetTagTest031 start";
     XMPMetadata xmpMetadata;
-    XMPTag baseTag;
-    InitTestXMPTag(baseTag, XMPTagType::ORDERED_ARRAY, "first");
-
     XMPTag getTag;
-    bool ret = DoSetTagAndGetTag("dc:first", baseTag, getTag, xmpMetadata);
+    bool ret = SetValueAndGetTagForTest(xmpMetadata, "dc:first", XMPTagType::ORDERED_ARRAY, "", getTag);
     EXPECT_TRUE(ret);
-    EXPECT_TRUE(CompareXMPTag(baseTag, getTag));
+    EXPECT_EQ(getTag.type, XMPTagType::ORDERED_ARRAY);
 
-    baseTag.name = "second";
-    baseTag.type = XMPTagType::STRUCTURE;
-    ret = DoSetTagAndGetTag("dc:first[1]/dc:second", baseTag, getTag, xmpMetadata);
+    ret = SetValueAndGetTagForTest(xmpMetadata, "dc:first[1]/dc:second", XMPTagType::STRUCTURE, "", getTag);
     EXPECT_TRUE(ret);
-    EXPECT_TRUE(CompareXMPTag(baseTag, getTag));
+    EXPECT_EQ(getTag.type, XMPTagType::STRUCTURE);
 
-    baseTag.name = "third";
-    baseTag.type = XMPTagType::ALTERNATE_ARRAY;
-    ret = DoSetTagAndGetTag("dc:first[1]/dc:second/dc:third", baseTag, getTag, xmpMetadata);
+    ret = SetValueAndGetTagForTest(xmpMetadata, "dc:first[1]/dc:second/dc:third", XMPTagType::ALTERNATE_ARRAY, "",
+        getTag);
     EXPECT_TRUE(ret);
-    EXPECT_TRUE(CompareXMPTag(baseTag, getTag));
+    EXPECT_EQ(getTag.type, XMPTagType::ALTERNATE_ARRAY);
 
-    XMPTag childTag;
-    InitTestXMPTag(childTag, XMPTagType::SIMPLE, "third", "XmpMetadataTest.GetTagTest031_value1");
-
-    ret = DoSetTagAndGetTag("dc:first[1]/dc:second/dc:third[1]", childTag, getTag, xmpMetadata);
+    const std::string childValue = "XmpMetadataTest.GetTagTest031_value1";
+    ret = SetValueAndGetTagForTest(xmpMetadata, "dc:first[1]/dc:second/dc:third[1]", XMPTagType::SIMPLE, childValue,
+        getTag);
     EXPECT_TRUE(ret);
-    EXPECT_TRUE(CompareXMPTag(childTag, getTag));
+    EXPECT_EQ(getTag.type, XMPTagType::SIMPLE);
+    EXPECT_EQ(getTag.value, childValue);
 
     GTEST_LOG_(INFO) << "XmpMetadataTest: GetTagTest031 end";
 }
@@ -1778,31 +1553,25 @@ HWTEST_F(XmpMetadataTest, GetTagTest032, TestSize.Level1)
 {
     GTEST_LOG_(INFO) << "XmpMetadataTest: GetTagTest032 start";
     XMPMetadata xmpMetadata;
-    XMPTag baseTag;
-    InitTestXMPTag(baseTag, XMPTagType::ORDERED_ARRAY, "first");
-
     XMPTag getTag;
-    bool ret = DoSetTagAndGetTag("dc:first", baseTag, getTag, xmpMetadata);
+    bool ret = SetValueAndGetTagForTest(xmpMetadata, "dc:first", XMPTagType::ORDERED_ARRAY, "", getTag);
     EXPECT_TRUE(ret);
-    EXPECT_TRUE(CompareXMPTag(baseTag, getTag));
+    EXPECT_EQ(getTag.type, XMPTagType::ORDERED_ARRAY);
 
-    baseTag.name = "second";
-    baseTag.type = XMPTagType::STRUCTURE;
-    ret = DoSetTagAndGetTag("dc:first[1]/dc:second", baseTag, getTag, xmpMetadata);
+    ret = SetValueAndGetTagForTest(xmpMetadata, "dc:first[1]/dc:second", XMPTagType::STRUCTURE, "", getTag);
     EXPECT_TRUE(ret);
-    EXPECT_TRUE(CompareXMPTag(baseTag, getTag));
+    EXPECT_EQ(getTag.type, XMPTagType::STRUCTURE);
 
-    baseTag.name = "third";
-    ret = DoSetTagAndGetTag("dc:first[1]/dc:second/dc:third", baseTag, getTag, xmpMetadata);
+    ret = SetValueAndGetTagForTest(xmpMetadata, "dc:first[1]/dc:second/dc:third", XMPTagType::STRUCTURE, "", getTag);
     EXPECT_TRUE(ret);
-    EXPECT_TRUE(CompareXMPTag(baseTag, getTag));
+    EXPECT_EQ(getTag.type, XMPTagType::STRUCTURE);
 
-    XMPTag childTag;
-    InitTestXMPTag(childTag, XMPTagType::SIMPLE, "child", "XmpMetadataTest.GetTagTest032_value1");
-
-    ret = DoSetTagAndGetTag("dc:first[1]/dc:second/dc:third/dc:child", childTag, getTag, xmpMetadata);
+    const std::string childValue = "XmpMetadataTest.GetTagTest032_value1";
+    ret = SetValueAndGetTagForTest(xmpMetadata, "dc:first[1]/dc:second/dc:third/dc:child", XMPTagType::SIMPLE,
+        childValue, getTag);
     EXPECT_TRUE(ret);
-    EXPECT_TRUE(CompareXMPTag(childTag, getTag));
+    EXPECT_EQ(getTag.type, XMPTagType::SIMPLE);
+    EXPECT_EQ(getTag.value, childValue);
 
     GTEST_LOG_(INFO) << "XmpMetadataTest: GetTagTest032 end";
 }
@@ -1817,31 +1586,26 @@ HWTEST_F(XmpMetadataTest, GetTagTest033, TestSize.Level1)
 {
     GTEST_LOG_(INFO) << "XmpMetadataTest: GetTagTest033 start";
     XMPMetadata xmpMetadata;
-    XMPTag baseTag;
-    InitTestXMPTag(baseTag, XMPTagType::ALTERNATE_ARRAY, "first");
-
     XMPTag getTag;
-    bool ret = DoSetTagAndGetTag("dc:first", baseTag, getTag, xmpMetadata);
+    bool ret = SetValueAndGetTagForTest(xmpMetadata, "dc:first", XMPTagType::ALTERNATE_ARRAY, "", getTag);
     EXPECT_TRUE(ret);
-    EXPECT_TRUE(CompareXMPTag(baseTag, getTag));
+    EXPECT_EQ(getTag.type, XMPTagType::ALTERNATE_ARRAY);
 
-    baseTag.name = "second";
-    baseTag.type = XMPTagType::UNORDERED_ARRAY;
-    ret = DoSetTagAndGetTag("dc:first[1]/dc:second", baseTag, getTag, xmpMetadata);
+    ret = SetValueAndGetTagForTest(xmpMetadata, "dc:first[1]/dc:second", XMPTagType::UNORDERED_ARRAY, "", getTag);
     EXPECT_TRUE(ret);
-    EXPECT_TRUE(CompareXMPTag(baseTag, getTag));
+    EXPECT_EQ(getTag.type, XMPTagType::UNORDERED_ARRAY);
 
-    baseTag.name = "third";
-    ret = DoSetTagAndGetTag("dc:first[1]/dc:second[1]/dc:third", baseTag, getTag, xmpMetadata);
+    ret = SetValueAndGetTagForTest(xmpMetadata, "dc:first[1]/dc:second[1]/dc:third", XMPTagType::UNORDERED_ARRAY, "",
+        getTag);
     EXPECT_TRUE(ret);
-    EXPECT_TRUE(CompareXMPTag(baseTag, getTag));
+    EXPECT_EQ(getTag.type, XMPTagType::UNORDERED_ARRAY);
 
-    XMPTag childTag;
-    InitTestXMPTag(childTag, XMPTagType::SIMPLE, "third", "XmpMetadataTest.GetTagTest033_value1");
-
-    ret = DoSetTagAndGetTag("dc:first[1]/dc:second[1]/dc:third[1]", childTag, getTag, xmpMetadata);
+    const std::string childValue = "XmpMetadataTest.GetTagTest033_value1";
+    ret = SetValueAndGetTagForTest(xmpMetadata, "dc:first[1]/dc:second[1]/dc:third[1]", XMPTagType::SIMPLE,
+        childValue, getTag);
     EXPECT_TRUE(ret);
-    EXPECT_TRUE(CompareXMPTag(childTag, getTag));
+    EXPECT_EQ(getTag.type, XMPTagType::SIMPLE);
+    EXPECT_EQ(getTag.value, childValue);
 
     GTEST_LOG_(INFO) << "XmpMetadataTest: GetTagTest033 end";
 }
@@ -1856,32 +1620,26 @@ HWTEST_F(XmpMetadataTest, GetTagTest034, TestSize.Level1)
 {
     GTEST_LOG_(INFO) << "XmpMetadataTest: GetTagTest034 start";
     XMPMetadata xmpMetadata;
-    XMPTag baseTag;
-    InitTestXMPTag(baseTag, XMPTagType::ALTERNATE_ARRAY, "first");
-
     XMPTag getTag;
-    bool ret = DoSetTagAndGetTag("dc:first", baseTag, getTag, xmpMetadata);
+    bool ret = SetValueAndGetTagForTest(xmpMetadata, "dc:first", XMPTagType::ALTERNATE_ARRAY, "", getTag);
     EXPECT_TRUE(ret);
-    EXPECT_TRUE(CompareXMPTag(baseTag, getTag));
+    EXPECT_EQ(getTag.type, XMPTagType::ALTERNATE_ARRAY);
 
-    baseTag.name = "second";
-    baseTag.type = XMPTagType::UNORDERED_ARRAY;
-    ret = DoSetTagAndGetTag("dc:first[1]/dc:second", baseTag, getTag, xmpMetadata);
+    ret = SetValueAndGetTagForTest(xmpMetadata, "dc:first[1]/dc:second", XMPTagType::UNORDERED_ARRAY, "", getTag);
     EXPECT_TRUE(ret);
-    EXPECT_TRUE(CompareXMPTag(baseTag, getTag));
+    EXPECT_EQ(getTag.type, XMPTagType::UNORDERED_ARRAY);
 
-    baseTag.name = "third";
-    baseTag.type = XMPTagType::ORDERED_ARRAY;
-    ret = DoSetTagAndGetTag("dc:first[1]/dc:second[1]/dc:third", baseTag, getTag, xmpMetadata);
+    ret = SetValueAndGetTagForTest(xmpMetadata, "dc:first[1]/dc:second[1]/dc:third", XMPTagType::ORDERED_ARRAY, "",
+        getTag);
     EXPECT_TRUE(ret);
-    EXPECT_TRUE(CompareXMPTag(baseTag, getTag));
+    EXPECT_EQ(getTag.type, XMPTagType::ORDERED_ARRAY);
 
-    XMPTag childTag;
-    InitTestXMPTag(childTag, XMPTagType::SIMPLE, "third", "XmpMetadataTest.GetTagTest034_value1");
-
-    ret = DoSetTagAndGetTag("dc:first[1]/dc:second[1]/dc:third[1]", childTag, getTag, xmpMetadata);
+    const std::string childValue = "XmpMetadataTest.GetTagTest034_value1";
+    ret = SetValueAndGetTagForTest(xmpMetadata, "dc:first[1]/dc:second[1]/dc:third[1]", XMPTagType::SIMPLE,
+        childValue, getTag);
     EXPECT_TRUE(ret);
-    EXPECT_TRUE(CompareXMPTag(childTag, getTag));
+    EXPECT_EQ(getTag.type, XMPTagType::SIMPLE);
+    EXPECT_EQ(getTag.value, childValue);
 
     GTEST_LOG_(INFO) << "XmpMetadataTest: GetTagTest034 end";
 }
@@ -1896,32 +1654,26 @@ HWTEST_F(XmpMetadataTest, GetTagTest035, TestSize.Level1)
 {
     GTEST_LOG_(INFO) << "XmpMetadataTest: GetTagTest035 start";
     XMPMetadata xmpMetadata;
-    XMPTag baseTag;
-    InitTestXMPTag(baseTag, XMPTagType::ALTERNATE_ARRAY, "first");
-
     XMPTag getTag;
-    bool ret = DoSetTagAndGetTag("dc:first", baseTag, getTag, xmpMetadata);
+    bool ret = SetValueAndGetTagForTest(xmpMetadata, "dc:first", XMPTagType::ALTERNATE_ARRAY, "", getTag);
     EXPECT_TRUE(ret);
-    EXPECT_TRUE(CompareXMPTag(baseTag, getTag));
+    EXPECT_EQ(getTag.type, XMPTagType::ALTERNATE_ARRAY);
 
-    baseTag.name = "second";
-    baseTag.type = XMPTagType::UNORDERED_ARRAY;
-    ret = DoSetTagAndGetTag("dc:first[1]/dc:second", baseTag, getTag, xmpMetadata);
+    ret = SetValueAndGetTagForTest(xmpMetadata, "dc:first[1]/dc:second", XMPTagType::UNORDERED_ARRAY, "", getTag);
     EXPECT_TRUE(ret);
-    EXPECT_TRUE(CompareXMPTag(baseTag, getTag));
+    EXPECT_EQ(getTag.type, XMPTagType::UNORDERED_ARRAY);
 
-    baseTag.name = "third";
-    baseTag.type = XMPTagType::ALTERNATE_ARRAY;
-    ret = DoSetTagAndGetTag("dc:first[1]/dc:second[1]/dc:third", baseTag, getTag, xmpMetadata);
+    ret = SetValueAndGetTagForTest(xmpMetadata, "dc:first[1]/dc:second[1]/dc:third", XMPTagType::ALTERNATE_ARRAY, "",
+        getTag);
     EXPECT_TRUE(ret);
-    EXPECT_TRUE(CompareXMPTag(baseTag, getTag));
+    EXPECT_EQ(getTag.type, XMPTagType::ALTERNATE_ARRAY);
 
-    XMPTag childTag;
-    InitTestXMPTag(childTag, XMPTagType::SIMPLE, "third", "XmpMetadataTest.GetTagTest035_value1");
-
-    ret = DoSetTagAndGetTag("dc:first[1]/dc:second[1]/dc:third[1]", childTag, getTag, xmpMetadata);
+    const std::string childValue = "XmpMetadataTest.GetTagTest035_value1";
+    ret = SetValueAndGetTagForTest(xmpMetadata, "dc:first[1]/dc:second[1]/dc:third[1]", XMPTagType::SIMPLE,
+        childValue, getTag);
     EXPECT_TRUE(ret);
-    EXPECT_TRUE(CompareXMPTag(childTag, getTag));
+    EXPECT_EQ(getTag.type, XMPTagType::SIMPLE);
+    EXPECT_EQ(getTag.value, childValue);
 
     GTEST_LOG_(INFO) << "XmpMetadataTest: GetTagTest035 end";
 }
@@ -1936,32 +1688,26 @@ HWTEST_F(XmpMetadataTest, GetTagTest036, TestSize.Level1)
 {
     GTEST_LOG_(INFO) << "XmpMetadataTest: GetTagTest036 start";
     XMPMetadata xmpMetadata;
-    XMPTag baseTag;
-    InitTestXMPTag(baseTag, XMPTagType::ALTERNATE_ARRAY, "first");
-
     XMPTag getTag;
-    bool ret = DoSetTagAndGetTag("dc:first", baseTag, getTag, xmpMetadata);
+    bool ret = SetValueAndGetTagForTest(xmpMetadata, "dc:first", XMPTagType::ALTERNATE_ARRAY, "", getTag);
     EXPECT_TRUE(ret);
-    EXPECT_TRUE(CompareXMPTag(baseTag, getTag));
+    EXPECT_EQ(getTag.type, XMPTagType::ALTERNATE_ARRAY);
 
-    baseTag.name = "second";
-    baseTag.type = XMPTagType::UNORDERED_ARRAY;
-    ret = DoSetTagAndGetTag("dc:first[1]/dc:second", baseTag, getTag, xmpMetadata);
+    ret = SetValueAndGetTagForTest(xmpMetadata, "dc:first[1]/dc:second", XMPTagType::UNORDERED_ARRAY, "", getTag);
     EXPECT_TRUE(ret);
-    EXPECT_TRUE(CompareXMPTag(baseTag, getTag));
+    EXPECT_EQ(getTag.type, XMPTagType::UNORDERED_ARRAY);
 
-    baseTag.name = "third";
-    baseTag.type = XMPTagType::STRUCTURE;
-    ret = DoSetTagAndGetTag("dc:first[1]/dc:second[1]/dc:third", baseTag, getTag, xmpMetadata);
+    ret = SetValueAndGetTagForTest(xmpMetadata, "dc:first[1]/dc:second[1]/dc:third", XMPTagType::STRUCTURE, "",
+        getTag);
     EXPECT_TRUE(ret);
-    EXPECT_TRUE(CompareXMPTag(baseTag, getTag));
+    EXPECT_EQ(getTag.type, XMPTagType::STRUCTURE);
 
-    XMPTag childTag;
-    InitTestXMPTag(childTag, XMPTagType::SIMPLE, "child", "XmpMetadataTest.GetTagTest036_value1");
-
-    ret = DoSetTagAndGetTag("dc:first[1]/dc:second[1]/dc:third/dc:child", childTag, getTag, xmpMetadata);
+    const std::string childValue = "XmpMetadataTest.GetTagTest036_value1";
+    ret = SetValueAndGetTagForTest(xmpMetadata, "dc:first[1]/dc:second[1]/dc:third/dc:child", XMPTagType::SIMPLE,
+        childValue, getTag);
     EXPECT_TRUE(ret);
-    EXPECT_TRUE(CompareXMPTag(childTag, getTag));
+    EXPECT_EQ(getTag.type, XMPTagType::SIMPLE);
+    EXPECT_EQ(getTag.value, childValue);
 
     GTEST_LOG_(INFO) << "XmpMetadataTest: GetTagTest036 end";
 }
@@ -1976,32 +1722,26 @@ HWTEST_F(XmpMetadataTest, GetTagTest037, TestSize.Level1)
 {
     GTEST_LOG_(INFO) << "XmpMetadataTest: GetTagTest037 start";
     XMPMetadata xmpMetadata;
-    XMPTag baseTag;
-    InitTestXMPTag(baseTag, XMPTagType::ALTERNATE_ARRAY, "first");
-
     XMPTag getTag;
-    bool ret = DoSetTagAndGetTag("dc:first", baseTag, getTag, xmpMetadata);
+    bool ret = SetValueAndGetTagForTest(xmpMetadata, "dc:first", XMPTagType::ALTERNATE_ARRAY, "", getTag);
     EXPECT_TRUE(ret);
-    EXPECT_TRUE(CompareXMPTag(baseTag, getTag));
+    EXPECT_EQ(getTag.type, XMPTagType::ALTERNATE_ARRAY);
 
-    baseTag.name = "second";
-    baseTag.type = XMPTagType::ORDERED_ARRAY;
-    ret = DoSetTagAndGetTag("dc:first[1]/dc:second", baseTag, getTag, xmpMetadata);
+    ret = SetValueAndGetTagForTest(xmpMetadata, "dc:first[1]/dc:second", XMPTagType::ORDERED_ARRAY, "", getTag);
     EXPECT_TRUE(ret);
-    EXPECT_TRUE(CompareXMPTag(baseTag, getTag));
+    EXPECT_EQ(getTag.type, XMPTagType::ORDERED_ARRAY);
 
-    baseTag.name = "third";
-    baseTag.type = XMPTagType::UNORDERED_ARRAY;
-    ret = DoSetTagAndGetTag("dc:first[1]/dc:second[1]/dc:third", baseTag, getTag, xmpMetadata);
+    ret = SetValueAndGetTagForTest(xmpMetadata, "dc:first[1]/dc:second[1]/dc:third", XMPTagType::UNORDERED_ARRAY, "",
+        getTag);
     EXPECT_TRUE(ret);
-    EXPECT_TRUE(CompareXMPTag(baseTag, getTag));
+    EXPECT_EQ(getTag.type, XMPTagType::UNORDERED_ARRAY);
 
-    XMPTag childTag;
-    InitTestXMPTag(childTag, XMPTagType::SIMPLE, "third", "XmpMetadataTest.GetTagTest037_value1");
-
-    ret = DoSetTagAndGetTag("dc:first[1]/dc:second[1]/dc:third[1]", childTag, getTag, xmpMetadata);
+    const std::string childValue = "XmpMetadataTest.GetTagTest037_value1";
+    ret = SetValueAndGetTagForTest(xmpMetadata, "dc:first[1]/dc:second[1]/dc:third[1]", XMPTagType::SIMPLE,
+        childValue, getTag);
     EXPECT_TRUE(ret);
-    EXPECT_TRUE(CompareXMPTag(childTag, getTag));
+    EXPECT_EQ(getTag.type, XMPTagType::SIMPLE);
+    EXPECT_EQ(getTag.value, childValue);
 
     GTEST_LOG_(INFO) << "XmpMetadataTest: GetTagTest037 end";
 }
@@ -2016,31 +1756,26 @@ HWTEST_F(XmpMetadataTest, GetTagTest038, TestSize.Level1)
 {
     GTEST_LOG_(INFO) << "XmpMetadataTest: GetTagTest038 start";
     XMPMetadata xmpMetadata;
-    XMPTag baseTag;
-    InitTestXMPTag(baseTag, XMPTagType::ALTERNATE_ARRAY, "first");
-
     XMPTag getTag;
-    bool ret = DoSetTagAndGetTag("dc:first", baseTag, getTag, xmpMetadata);
+    bool ret = SetValueAndGetTagForTest(xmpMetadata, "dc:first", XMPTagType::ALTERNATE_ARRAY, "", getTag);
     EXPECT_TRUE(ret);
-    EXPECT_TRUE(CompareXMPTag(baseTag, getTag));
+    EXPECT_EQ(getTag.type, XMPTagType::ALTERNATE_ARRAY);
 
-    baseTag.name = "second";
-    baseTag.type = XMPTagType::ORDERED_ARRAY;
-    ret = DoSetTagAndGetTag("dc:first[1]/dc:second", baseTag, getTag, xmpMetadata);
+    ret = SetValueAndGetTagForTest(xmpMetadata, "dc:first[1]/dc:second", XMPTagType::ORDERED_ARRAY, "", getTag);
     EXPECT_TRUE(ret);
-    EXPECT_TRUE(CompareXMPTag(baseTag, getTag));
+    EXPECT_EQ(getTag.type, XMPTagType::ORDERED_ARRAY);
 
-    baseTag.name = "third";
-    ret = DoSetTagAndGetTag("dc:first[1]/dc:second[1]/dc:third", baseTag, getTag, xmpMetadata);
+    ret = SetValueAndGetTagForTest(xmpMetadata, "dc:first[1]/dc:second[1]/dc:third", XMPTagType::ORDERED_ARRAY, "",
+        getTag);
     EXPECT_TRUE(ret);
-    EXPECT_TRUE(CompareXMPTag(baseTag, getTag));
+    EXPECT_EQ(getTag.type, XMPTagType::ORDERED_ARRAY);
 
-    XMPTag childTag;
-    InitTestXMPTag(childTag, XMPTagType::SIMPLE, "third", "XmpMetadataTest.GetTagTest038_value1");
-
-    ret = DoSetTagAndGetTag("dc:first[1]/dc:second[1]/dc:third[1]", childTag, getTag, xmpMetadata);
+    const std::string childValue = "XmpMetadataTest.GetTagTest038_value1";
+    ret = SetValueAndGetTagForTest(xmpMetadata, "dc:first[1]/dc:second[1]/dc:third[1]", XMPTagType::SIMPLE,
+        childValue, getTag);
     EXPECT_TRUE(ret);
-    EXPECT_TRUE(CompareXMPTag(childTag, getTag));
+    EXPECT_EQ(getTag.type, XMPTagType::SIMPLE);
+    EXPECT_EQ(getTag.value, childValue);
 
     GTEST_LOG_(INFO) << "XmpMetadataTest: GetTagTest038 end";
 }
@@ -2055,32 +1790,26 @@ HWTEST_F(XmpMetadataTest, GetTagTest039, TestSize.Level1)
 {
     GTEST_LOG_(INFO) << "XmpMetadataTest: GetTagTest039 start";
     XMPMetadata xmpMetadata;
-    XMPTag baseTag;
-    InitTestXMPTag(baseTag, XMPTagType::ALTERNATE_ARRAY, "first");
-
     XMPTag getTag;
-    bool ret = DoSetTagAndGetTag("dc:first", baseTag, getTag, xmpMetadata);
+    bool ret = SetValueAndGetTagForTest(xmpMetadata, "dc:first", XMPTagType::ALTERNATE_ARRAY, "", getTag);
     EXPECT_TRUE(ret);
-    EXPECT_TRUE(CompareXMPTag(baseTag, getTag));
+    EXPECT_EQ(getTag.type, XMPTagType::ALTERNATE_ARRAY);
 
-    baseTag.name = "second";
-    baseTag.type = XMPTagType::ORDERED_ARRAY;
-    ret = DoSetTagAndGetTag("dc:first[1]/dc:second", baseTag, getTag, xmpMetadata);
+    ret = SetValueAndGetTagForTest(xmpMetadata, "dc:first[1]/dc:second", XMPTagType::ORDERED_ARRAY, "", getTag);
     EXPECT_TRUE(ret);
-    EXPECT_TRUE(CompareXMPTag(baseTag, getTag));
+    EXPECT_EQ(getTag.type, XMPTagType::ORDERED_ARRAY);
 
-    baseTag.name = "third";
-    baseTag.type = XMPTagType::ALTERNATE_ARRAY;
-    ret = DoSetTagAndGetTag("dc:first[1]/dc:second[1]/dc:third", baseTag, getTag, xmpMetadata);
+    ret = SetValueAndGetTagForTest(xmpMetadata, "dc:first[1]/dc:second[1]/dc:third", XMPTagType::ALTERNATE_ARRAY, "",
+        getTag);
     EXPECT_TRUE(ret);
-    EXPECT_TRUE(CompareXMPTag(baseTag, getTag));
+    EXPECT_EQ(getTag.type, XMPTagType::ALTERNATE_ARRAY);
 
-    XMPTag childTag;
-    InitTestXMPTag(childTag, XMPTagType::SIMPLE, "third", "XmpMetadataTest.GetTagTest039_value1");
-
-    ret = DoSetTagAndGetTag("dc:first[1]/dc:second[1]/dc:third[1]", childTag, getTag, xmpMetadata);
+    const std::string childValue = "XmpMetadataTest.GetTagTest039_value1";
+    ret = SetValueAndGetTagForTest(xmpMetadata, "dc:first[1]/dc:second[1]/dc:third[1]", XMPTagType::SIMPLE,
+        childValue, getTag);
     EXPECT_TRUE(ret);
-    EXPECT_TRUE(CompareXMPTag(childTag, getTag));
+    EXPECT_EQ(getTag.type, XMPTagType::SIMPLE);
+    EXPECT_EQ(getTag.value, childValue);
 
     GTEST_LOG_(INFO) << "XmpMetadataTest: GetTagTest039 end";
 }
@@ -2095,32 +1824,26 @@ HWTEST_F(XmpMetadataTest, GetTagTest040, TestSize.Level1)
 {
     GTEST_LOG_(INFO) << "XmpMetadataTest: GetTagTest040 start";
     XMPMetadata xmpMetadata;
-    XMPTag baseTag;
-    InitTestXMPTag(baseTag, XMPTagType::ALTERNATE_ARRAY, "first");
-
     XMPTag getTag;
-    bool ret = DoSetTagAndGetTag("dc:first", baseTag, getTag, xmpMetadata);
+    bool ret = SetValueAndGetTagForTest(xmpMetadata, "dc:first", XMPTagType::ALTERNATE_ARRAY, "", getTag);
     EXPECT_TRUE(ret);
-    EXPECT_TRUE(CompareXMPTag(baseTag, getTag));
+    EXPECT_EQ(getTag.type, XMPTagType::ALTERNATE_ARRAY);
 
-    baseTag.name = "second";
-    baseTag.type = XMPTagType::ORDERED_ARRAY;
-    ret = DoSetTagAndGetTag("dc:first[1]/dc:second", baseTag, getTag, xmpMetadata);
+    ret = SetValueAndGetTagForTest(xmpMetadata, "dc:first[1]/dc:second", XMPTagType::ORDERED_ARRAY, "", getTag);
     EXPECT_TRUE(ret);
-    EXPECT_TRUE(CompareXMPTag(baseTag, getTag));
+    EXPECT_EQ(getTag.type, XMPTagType::ORDERED_ARRAY);
 
-    baseTag.name = "third";
-    baseTag.type = XMPTagType::STRUCTURE;
-    ret = DoSetTagAndGetTag("dc:first[1]/dc:second[1]/dc:third", baseTag, getTag, xmpMetadata);
+    ret = SetValueAndGetTagForTest(xmpMetadata, "dc:first[1]/dc:second[1]/dc:third", XMPTagType::STRUCTURE, "",
+        getTag);
     EXPECT_TRUE(ret);
-    EXPECT_TRUE(CompareXMPTag(baseTag, getTag));
+    EXPECT_EQ(getTag.type, XMPTagType::STRUCTURE);
 
-    XMPTag childTag;
-    InitTestXMPTag(childTag, XMPTagType::SIMPLE, "child", "XmpMetadataTest.GetTagTest040_value1");
-
-    ret = DoSetTagAndGetTag("dc:first[1]/dc:second[1]/dc:third/dc:child", childTag, getTag, xmpMetadata);
+    const std::string childValue = "XmpMetadataTest.GetTagTest040_value1";
+    ret = SetValueAndGetTagForTest(xmpMetadata, "dc:first[1]/dc:second[1]/dc:third/dc:child", XMPTagType::SIMPLE,
+        childValue, getTag);
     EXPECT_TRUE(ret);
-    EXPECT_TRUE(CompareXMPTag(childTag, getTag));
+    EXPECT_EQ(getTag.type, XMPTagType::SIMPLE);
+    EXPECT_EQ(getTag.value, childValue);
 
     GTEST_LOG_(INFO) << "XmpMetadataTest: GetTagTest040 end";
 }
@@ -2135,31 +1858,26 @@ HWTEST_F(XmpMetadataTest, GetTagTest041, TestSize.Level1)
 {
     GTEST_LOG_(INFO) << "XmpMetadataTest: GetTagTest041 start";
     XMPMetadata xmpMetadata;
-    XMPTag baseTag;
-    InitTestXMPTag(baseTag, XMPTagType::ALTERNATE_ARRAY, "first");
-
     XMPTag getTag;
-    bool ret = DoSetTagAndGetTag("dc:first", baseTag, getTag, xmpMetadata);
+    bool ret = SetValueAndGetTagForTest(xmpMetadata, "dc:first", XMPTagType::ALTERNATE_ARRAY, "", getTag);
     EXPECT_TRUE(ret);
-    EXPECT_TRUE(CompareXMPTag(baseTag, getTag));
+    EXPECT_EQ(getTag.type, XMPTagType::ALTERNATE_ARRAY);
 
-    baseTag.name = "second";
-    ret = DoSetTagAndGetTag("dc:first[1]/dc:second", baseTag, getTag, xmpMetadata);
+    ret = SetValueAndGetTagForTest(xmpMetadata, "dc:first[1]/dc:second", XMPTagType::ALTERNATE_ARRAY, "", getTag);
     EXPECT_TRUE(ret);
-    EXPECT_TRUE(CompareXMPTag(baseTag, getTag));
+    EXPECT_EQ(getTag.type, XMPTagType::ALTERNATE_ARRAY);
 
-    baseTag.name = "third";
-    baseTag.type = XMPTagType::UNORDERED_ARRAY;
-    ret = DoSetTagAndGetTag("dc:first[1]/dc:second[1]/dc:third", baseTag, getTag, xmpMetadata);
+    ret = SetValueAndGetTagForTest(xmpMetadata, "dc:first[1]/dc:second[1]/dc:third", XMPTagType::UNORDERED_ARRAY, "",
+        getTag);
     EXPECT_TRUE(ret);
-    EXPECT_TRUE(CompareXMPTag(baseTag, getTag));
+    EXPECT_EQ(getTag.type, XMPTagType::UNORDERED_ARRAY);
 
-    XMPTag childTag;
-    InitTestXMPTag(childTag, XMPTagType::SIMPLE, "third", "XmpMetadataTest.GetTagTest040_value1");
-
-    ret = DoSetTagAndGetTag("dc:first[1]/dc:second[1]/dc:third[1]", childTag, getTag, xmpMetadata);
+    const std::string childValue = "XmpMetadataTest.GetTagTest041_value1";
+    ret = SetValueAndGetTagForTest(xmpMetadata, "dc:first[1]/dc:second[1]/dc:third[1]", XMPTagType::SIMPLE,
+        childValue, getTag);
     EXPECT_TRUE(ret);
-    EXPECT_TRUE(CompareXMPTag(childTag, getTag));
+    EXPECT_EQ(getTag.type, XMPTagType::SIMPLE);
+    EXPECT_EQ(getTag.value, childValue);
 
     GTEST_LOG_(INFO) << "XmpMetadataTest: GetTagTest041 end";
 }
@@ -2174,31 +1892,26 @@ HWTEST_F(XmpMetadataTest, GetTagTest042, TestSize.Level1)
 {
     GTEST_LOG_(INFO) << "XmpMetadataTest: GetTagTest042 start";
     XMPMetadata xmpMetadata;
-    XMPTag baseTag;
-    InitTestXMPTag(baseTag, XMPTagType::ALTERNATE_ARRAY, "first");
-
     XMPTag getTag;
-    bool ret = DoSetTagAndGetTag("dc:first", baseTag, getTag, xmpMetadata);
+    bool ret = SetValueAndGetTagForTest(xmpMetadata, "dc:first", XMPTagType::ALTERNATE_ARRAY, "", getTag);
     EXPECT_TRUE(ret);
-    EXPECT_TRUE(CompareXMPTag(baseTag, getTag));
+    EXPECT_EQ(getTag.type, XMPTagType::ALTERNATE_ARRAY);
 
-    baseTag.name = "second";
-    ret = DoSetTagAndGetTag("dc:first[1]/dc:second", baseTag, getTag, xmpMetadata);
+    ret = SetValueAndGetTagForTest(xmpMetadata, "dc:first[1]/dc:second", XMPTagType::ALTERNATE_ARRAY, "", getTag);
     EXPECT_TRUE(ret);
-    EXPECT_TRUE(CompareXMPTag(baseTag, getTag));
+    EXPECT_EQ(getTag.type, XMPTagType::ALTERNATE_ARRAY);
 
-    baseTag.name = "third";
-    baseTag.type = XMPTagType::ORDERED_ARRAY;
-    ret = DoSetTagAndGetTag("dc:first[1]/dc:second[1]/dc:third", baseTag, getTag, xmpMetadata);
+    ret = SetValueAndGetTagForTest(xmpMetadata, "dc:first[1]/dc:second[1]/dc:third", XMPTagType::ORDERED_ARRAY, "",
+        getTag);
     EXPECT_TRUE(ret);
-    EXPECT_TRUE(CompareXMPTag(baseTag, getTag));
+    EXPECT_EQ(getTag.type, XMPTagType::ORDERED_ARRAY);
 
-    XMPTag childTag;
-    InitTestXMPTag(childTag, XMPTagType::SIMPLE, "third", "XmpMetadataTest.GetTagTest042_value1");
-
-    ret = DoSetTagAndGetTag("dc:first[1]/dc:second[1]/dc:third[1]", childTag, getTag, xmpMetadata);
+    const std::string childValue = "XmpMetadataTest.GetTagTest042_value1";
+    ret = SetValueAndGetTagForTest(xmpMetadata, "dc:first[1]/dc:second[1]/dc:third[1]", XMPTagType::SIMPLE,
+        childValue, getTag);
     EXPECT_TRUE(ret);
-    EXPECT_TRUE(CompareXMPTag(childTag, getTag));
+    EXPECT_EQ(getTag.type, XMPTagType::SIMPLE);
+    EXPECT_EQ(getTag.value, childValue);
 
     GTEST_LOG_(INFO) << "XmpMetadataTest: GetTagTest042 end";
 }
@@ -2213,30 +1926,26 @@ HWTEST_F(XmpMetadataTest, GetTagTest043, TestSize.Level1)
 {
     GTEST_LOG_(INFO) << "XmpMetadataTest: GetTagTest043 start";
     XMPMetadata xmpMetadata;
-    XMPTag baseTag;
-    InitTestXMPTag(baseTag, XMPTagType::ALTERNATE_ARRAY, "first");
-
     XMPTag getTag;
-    bool ret = DoSetTagAndGetTag("dc:first", baseTag, getTag, xmpMetadata);
+    bool ret = SetValueAndGetTagForTest(xmpMetadata, "dc:first", XMPTagType::ALTERNATE_ARRAY, "", getTag);
     EXPECT_TRUE(ret);
-    EXPECT_TRUE(CompareXMPTag(baseTag, getTag));
+    EXPECT_EQ(getTag.type, XMPTagType::ALTERNATE_ARRAY);
 
-    baseTag.name = "second";
-    ret = DoSetTagAndGetTag("dc:first[1]/dc:second", baseTag, getTag, xmpMetadata);
+    ret = SetValueAndGetTagForTest(xmpMetadata, "dc:first[1]/dc:second", XMPTagType::ALTERNATE_ARRAY, "", getTag);
     EXPECT_TRUE(ret);
-    EXPECT_TRUE(CompareXMPTag(baseTag, getTag));
+    EXPECT_EQ(getTag.type, XMPTagType::ALTERNATE_ARRAY);
 
-    baseTag.name = "third";
-    ret = DoSetTagAndGetTag("dc:first[1]/dc:second[1]/dc:third", baseTag, getTag, xmpMetadata);
+    ret = SetValueAndGetTagForTest(xmpMetadata, "dc:first[1]/dc:second[1]/dc:third", XMPTagType::ALTERNATE_ARRAY, "",
+        getTag);
     EXPECT_TRUE(ret);
-    EXPECT_TRUE(CompareXMPTag(baseTag, getTag));
+    EXPECT_EQ(getTag.type, XMPTagType::ALTERNATE_ARRAY);
 
-    XMPTag childTag;
-    InitTestXMPTag(childTag, XMPTagType::SIMPLE, "third", "XmpMetadataTest.GetTagTest043_value1");
-
-    ret = DoSetTagAndGetTag("dc:first[1]/dc:second[1]/dc:third[1]", childTag, getTag, xmpMetadata);
+    const std::string childValue = "XmpMetadataTest.GetTagTest043_value1";
+    ret = SetValueAndGetTagForTest(xmpMetadata, "dc:first[1]/dc:second[1]/dc:third[1]", XMPTagType::SIMPLE,
+        childValue, getTag);
     EXPECT_TRUE(ret);
-    EXPECT_TRUE(CompareXMPTag(childTag, getTag));
+    EXPECT_EQ(getTag.type, XMPTagType::SIMPLE);
+    EXPECT_EQ(getTag.value, childValue);
 
     GTEST_LOG_(INFO) << "XmpMetadataTest: GetTagTest043 end";
 }
@@ -2251,31 +1960,26 @@ HWTEST_F(XmpMetadataTest, GetTagTest044, TestSize.Level1)
 {
     GTEST_LOG_(INFO) << "XmpMetadataTest: GetTagTest044 start";
     XMPMetadata xmpMetadata;
-    XMPTag baseTag;
-    InitTestXMPTag(baseTag, XMPTagType::ALTERNATE_ARRAY, "first");
-
     XMPTag getTag;
-    bool ret = DoSetTagAndGetTag("dc:first", baseTag, getTag, xmpMetadata);
+    bool ret = SetValueAndGetTagForTest(xmpMetadata, "dc:first", XMPTagType::ALTERNATE_ARRAY, "", getTag);
     EXPECT_TRUE(ret);
-    EXPECT_TRUE(CompareXMPTag(baseTag, getTag));
+    EXPECT_EQ(getTag.type, XMPTagType::ALTERNATE_ARRAY);
 
-    baseTag.name = "second";
-    ret = DoSetTagAndGetTag("dc:first[1]/dc:second", baseTag, getTag, xmpMetadata);
+    ret = SetValueAndGetTagForTest(xmpMetadata, "dc:first[1]/dc:second", XMPTagType::ALTERNATE_ARRAY, "", getTag);
     EXPECT_TRUE(ret);
-    EXPECT_TRUE(CompareXMPTag(baseTag, getTag));
+    EXPECT_EQ(getTag.type, XMPTagType::ALTERNATE_ARRAY);
 
-    baseTag.name = "third";
-    baseTag.type = XMPTagType::STRUCTURE;
-    ret = DoSetTagAndGetTag("dc:first[1]/dc:second[1]/dc:third", baseTag, getTag, xmpMetadata);
+    ret = SetValueAndGetTagForTest(xmpMetadata, "dc:first[1]/dc:second[1]/dc:third", XMPTagType::STRUCTURE, "",
+        getTag);
     EXPECT_TRUE(ret);
-    EXPECT_TRUE(CompareXMPTag(baseTag, getTag));
+    EXPECT_EQ(getTag.type, XMPTagType::STRUCTURE);
 
-    XMPTag childTag;
-    InitTestXMPTag(childTag, XMPTagType::SIMPLE, "child", "XmpMetadataTest.GetTagTest044_value1");
-
-    ret = DoSetTagAndGetTag("dc:first[1]/dc:second[1]/dc:third/dc:child", childTag, getTag, xmpMetadata);
+    const std::string childValue = "XmpMetadataTest.GetTagTest044_value1";
+    ret = SetValueAndGetTagForTest(xmpMetadata, "dc:first[1]/dc:second[1]/dc:third/dc:child", XMPTagType::SIMPLE,
+        childValue, getTag);
     EXPECT_TRUE(ret);
-    EXPECT_TRUE(CompareXMPTag(childTag, getTag));
+    EXPECT_EQ(getTag.type, XMPTagType::SIMPLE);
+    EXPECT_EQ(getTag.value, childValue);
 
     GTEST_LOG_(INFO) << "XmpMetadataTest: GetTagTest044 end";
 }
@@ -2290,32 +1994,26 @@ HWTEST_F(XmpMetadataTest, GetTagTest045, TestSize.Level1)
 {
     GTEST_LOG_(INFO) << "XmpMetadataTest: GetTagTest045 start";
     XMPMetadata xmpMetadata;
-    XMPTag baseTag;
-    InitTestXMPTag(baseTag, XMPTagType::ALTERNATE_ARRAY, "first");
-
     XMPTag getTag;
-    bool ret = DoSetTagAndGetTag("dc:first", baseTag, getTag, xmpMetadata);
+    bool ret = SetValueAndGetTagForTest(xmpMetadata, "dc:first", XMPTagType::ALTERNATE_ARRAY, "", getTag);
     EXPECT_TRUE(ret);
-    EXPECT_TRUE(CompareXMPTag(baseTag, getTag));
+    EXPECT_EQ(getTag.type, XMPTagType::ALTERNATE_ARRAY);
 
-    baseTag.name = "second";
-    baseTag.type = XMPTagType::STRUCTURE;
-    ret = DoSetTagAndGetTag("dc:first[1]/dc:second", baseTag, getTag, xmpMetadata);
+    ret = SetValueAndGetTagForTest(xmpMetadata, "dc:first[1]/dc:second", XMPTagType::STRUCTURE, "", getTag);
     EXPECT_TRUE(ret);
-    EXPECT_TRUE(CompareXMPTag(baseTag, getTag));
+    EXPECT_EQ(getTag.type, XMPTagType::STRUCTURE);
 
-    baseTag.name = "third";
-    baseTag.type = XMPTagType::UNORDERED_ARRAY;
-    ret = DoSetTagAndGetTag("dc:first[1]/dc:second/dc:third", baseTag, getTag, xmpMetadata);
+    ret = SetValueAndGetTagForTest(xmpMetadata, "dc:first[1]/dc:second/dc:third", XMPTagType::UNORDERED_ARRAY, "",
+        getTag);
     EXPECT_TRUE(ret);
-    EXPECT_TRUE(CompareXMPTag(baseTag, getTag));
+    EXPECT_EQ(getTag.type, XMPTagType::UNORDERED_ARRAY);
 
-    XMPTag childTag;
-    InitTestXMPTag(childTag, XMPTagType::SIMPLE, "third", "XmpMetadataTest.GetTagTest045_value1");
-
-    ret = DoSetTagAndGetTag("dc:first[1]/dc:second/dc:third[1]", childTag, getTag, xmpMetadata);
+    const std::string childValue = "XmpMetadataTest.GetTagTest045_value1";
+    ret = SetValueAndGetTagForTest(xmpMetadata, "dc:first[1]/dc:second/dc:third[1]", XMPTagType::SIMPLE, childValue,
+        getTag);
     EXPECT_TRUE(ret);
-    EXPECT_TRUE(CompareXMPTag(childTag, getTag));
+    EXPECT_EQ(getTag.type, XMPTagType::SIMPLE);
+    EXPECT_EQ(getTag.value, childValue);
 
     GTEST_LOG_(INFO) << "XmpMetadataTest: GetTagTest045 end";
 }
@@ -2330,32 +2028,26 @@ HWTEST_F(XmpMetadataTest, GetTagTest046, TestSize.Level1)
 {
     GTEST_LOG_(INFO) << "XmpMetadataTest: GetTagTest046 start";
     XMPMetadata xmpMetadata;
-    XMPTag baseTag;
-    InitTestXMPTag(baseTag, XMPTagType::ALTERNATE_ARRAY, "first");
-
     XMPTag getTag;
-    bool ret = DoSetTagAndGetTag("dc:first", baseTag, getTag, xmpMetadata);
+    bool ret = SetValueAndGetTagForTest(xmpMetadata, "dc:first", XMPTagType::ALTERNATE_ARRAY, "", getTag);
     EXPECT_TRUE(ret);
-    EXPECT_TRUE(CompareXMPTag(baseTag, getTag));
+    EXPECT_EQ(getTag.type, XMPTagType::ALTERNATE_ARRAY);
 
-    baseTag.name = "second";
-    baseTag.type = XMPTagType::STRUCTURE;
-    ret = DoSetTagAndGetTag("dc:first[1]/dc:second", baseTag, getTag, xmpMetadata);
+    ret = SetValueAndGetTagForTest(xmpMetadata, "dc:first[1]/dc:second", XMPTagType::STRUCTURE, "", getTag);
     EXPECT_TRUE(ret);
-    EXPECT_TRUE(CompareXMPTag(baseTag, getTag));
+    EXPECT_EQ(getTag.type, XMPTagType::STRUCTURE);
 
-    baseTag.name = "third";
-    baseTag.type = XMPTagType::ORDERED_ARRAY;
-    ret = DoSetTagAndGetTag("dc:first[1]/dc:second/dc:third", baseTag, getTag, xmpMetadata);
+    ret = SetValueAndGetTagForTest(xmpMetadata, "dc:first[1]/dc:second/dc:third", XMPTagType::ORDERED_ARRAY, "",
+        getTag);
     EXPECT_TRUE(ret);
-    EXPECT_TRUE(CompareXMPTag(baseTag, getTag));
+    EXPECT_EQ(getTag.type, XMPTagType::ORDERED_ARRAY);
 
-    XMPTag childTag;
-    InitTestXMPTag(childTag, XMPTagType::SIMPLE, "third", "XmpMetadataTest.GetTagTest046_value1");
-
-    ret = DoSetTagAndGetTag("dc:first[1]/dc:second/dc:third[1]", childTag, getTag, xmpMetadata);
+    const std::string childValue = "XmpMetadataTest.GetTagTest046_value1";
+    ret = SetValueAndGetTagForTest(xmpMetadata, "dc:first[1]/dc:second/dc:third[1]", XMPTagType::SIMPLE, childValue,
+        getTag);
     EXPECT_TRUE(ret);
-    EXPECT_TRUE(CompareXMPTag(childTag, getTag));
+    EXPECT_EQ(getTag.type, XMPTagType::SIMPLE);
+    EXPECT_EQ(getTag.value, childValue);
 
     GTEST_LOG_(INFO) << "XmpMetadataTest: GetTagTest046 end";
 }
@@ -2370,32 +2062,26 @@ HWTEST_F(XmpMetadataTest, GetTagTest047, TestSize.Level1)
 {
     GTEST_LOG_(INFO) << "XmpMetadataTest: GetTagTest047 start";
     XMPMetadata xmpMetadata;
-    XMPTag baseTag;
-    InitTestXMPTag(baseTag, XMPTagType::ALTERNATE_ARRAY, "first");
-
     XMPTag getTag;
-    bool ret = DoSetTagAndGetTag("dc:first", baseTag, getTag, xmpMetadata);
+    bool ret = SetValueAndGetTagForTest(xmpMetadata, "dc:first", XMPTagType::ALTERNATE_ARRAY, "", getTag);
     EXPECT_TRUE(ret);
-    EXPECT_TRUE(CompareXMPTag(baseTag, getTag));
+    EXPECT_EQ(getTag.type, XMPTagType::ALTERNATE_ARRAY);
 
-    baseTag.name = "second";
-    baseTag.type = XMPTagType::STRUCTURE;
-    ret = DoSetTagAndGetTag("dc:first[1]/dc:second", baseTag, getTag, xmpMetadata);
+    ret = SetValueAndGetTagForTest(xmpMetadata, "dc:first[1]/dc:second", XMPTagType::STRUCTURE, "", getTag);
     EXPECT_TRUE(ret);
-    EXPECT_TRUE(CompareXMPTag(baseTag, getTag));
+    EXPECT_EQ(getTag.type, XMPTagType::STRUCTURE);
 
-    baseTag.name = "third";
-    baseTag.type = XMPTagType::ALTERNATE_ARRAY;
-    ret = DoSetTagAndGetTag("dc:first[1]/dc:second/dc:third", baseTag, getTag, xmpMetadata);
+    ret = SetValueAndGetTagForTest(xmpMetadata, "dc:first[1]/dc:second/dc:third", XMPTagType::ALTERNATE_ARRAY, "",
+        getTag);
     EXPECT_TRUE(ret);
-    EXPECT_TRUE(CompareXMPTag(baseTag, getTag));
+    EXPECT_EQ(getTag.type, XMPTagType::ALTERNATE_ARRAY);
 
-    XMPTag childTag;
-    InitTestXMPTag(childTag, XMPTagType::SIMPLE, "third", "XmpMetadataTest.GetTagTest047_value1");
-
-    ret = DoSetTagAndGetTag("dc:first[1]/dc:second/dc:third[1]", childTag, getTag, xmpMetadata);
+    const std::string childValue = "XmpMetadataTest.GetTagTest047_value1";
+    ret = SetValueAndGetTagForTest(xmpMetadata, "dc:first[1]/dc:second/dc:third[1]", XMPTagType::SIMPLE, childValue,
+        getTag);
     EXPECT_TRUE(ret);
-    EXPECT_TRUE(CompareXMPTag(childTag, getTag));
+    EXPECT_EQ(getTag.type, XMPTagType::SIMPLE);
+    EXPECT_EQ(getTag.value, childValue);
 
     GTEST_LOG_(INFO) << "XmpMetadataTest: GetTagTest047 end";
 }
@@ -2410,31 +2096,25 @@ HWTEST_F(XmpMetadataTest, GetTagTest048, TestSize.Level1)
 {
     GTEST_LOG_(INFO) << "XmpMetadataTest: GetTagTest048 start";
     XMPMetadata xmpMetadata;
-    XMPTag baseTag;
-    InitTestXMPTag(baseTag, XMPTagType::ALTERNATE_ARRAY, "first");
-
     XMPTag getTag;
-    bool ret = DoSetTagAndGetTag("dc:first", baseTag, getTag, xmpMetadata);
+    bool ret = SetValueAndGetTagForTest(xmpMetadata, "dc:first", XMPTagType::ALTERNATE_ARRAY, "", getTag);
     EXPECT_TRUE(ret);
-    EXPECT_TRUE(CompareXMPTag(baseTag, getTag));
+    EXPECT_EQ(getTag.type, XMPTagType::ALTERNATE_ARRAY);
 
-    baseTag.name = "second";
-    baseTag.type = XMPTagType::STRUCTURE;
-    ret = DoSetTagAndGetTag("dc:first[1]/dc:second", baseTag, getTag, xmpMetadata);
+    ret = SetValueAndGetTagForTest(xmpMetadata, "dc:first[1]/dc:second", XMPTagType::STRUCTURE, "", getTag);
     EXPECT_TRUE(ret);
-    EXPECT_TRUE(CompareXMPTag(baseTag, getTag));
+    EXPECT_EQ(getTag.type, XMPTagType::STRUCTURE);
 
-    baseTag.name = "third";
-    ret = DoSetTagAndGetTag("dc:first[1]/dc:second/dc:third", baseTag, getTag, xmpMetadata);
+    ret = SetValueAndGetTagForTest(xmpMetadata, "dc:first[1]/dc:second/dc:third", XMPTagType::STRUCTURE, "", getTag);
     EXPECT_TRUE(ret);
-    EXPECT_TRUE(CompareXMPTag(baseTag, getTag));
+    EXPECT_EQ(getTag.type, XMPTagType::STRUCTURE);
 
-    XMPTag childTag;
-    InitTestXMPTag(childTag, XMPTagType::SIMPLE, "child", "XmpMetadataTest.GetTagTest048_value1");
-
-    ret = DoSetTagAndGetTag("dc:first[1]/dc:second/dc:third/dc:child", childTag, getTag, xmpMetadata);
+    const std::string childValue = "XmpMetadataTest.GetTagTest048_value1";
+    ret = SetValueAndGetTagForTest(xmpMetadata, "dc:first[1]/dc:second/dc:third/dc:child", XMPTagType::SIMPLE,
+        childValue, getTag);
     EXPECT_TRUE(ret);
-    EXPECT_TRUE(CompareXMPTag(childTag, getTag));
+    EXPECT_EQ(getTag.type, XMPTagType::SIMPLE);
+    EXPECT_EQ(getTag.value, childValue);
 
     GTEST_LOG_(INFO) << "XmpMetadataTest: GetTagTest048 end";
 }
@@ -2449,31 +2129,26 @@ HWTEST_F(XmpMetadataTest, GetTagTest049, TestSize.Level1)
 {
     GTEST_LOG_(INFO) << "XmpMetadataTest: GetTagTest049 start";
     XMPMetadata xmpMetadata;
-    XMPTag baseTag;
-    InitTestXMPTag(baseTag, XMPTagType::STRUCTURE, "first");
-
     XMPTag getTag;
-    bool ret = DoSetTagAndGetTag("dc:first", baseTag, getTag, xmpMetadata);
+    bool ret = SetValueAndGetTagForTest(xmpMetadata, "dc:first", XMPTagType::STRUCTURE, "", getTag);
     EXPECT_TRUE(ret);
-    EXPECT_TRUE(CompareXMPTag(baseTag, getTag));
+    EXPECT_EQ(getTag.type, XMPTagType::STRUCTURE);
 
-    baseTag.name = "second";
-    baseTag.type = XMPTagType::UNORDERED_ARRAY;
-    ret = DoSetTagAndGetTag("dc:first/dc:second", baseTag, getTag, xmpMetadata);
+    ret = SetValueAndGetTagForTest(xmpMetadata, "dc:first/dc:second", XMPTagType::UNORDERED_ARRAY, "", getTag);
     EXPECT_TRUE(ret);
-    EXPECT_TRUE(CompareXMPTag(baseTag, getTag));
+    EXPECT_EQ(getTag.type, XMPTagType::UNORDERED_ARRAY);
 
-    baseTag.name = "third";
-    ret = DoSetTagAndGetTag("dc:first/dc:second[1]/dc:third", baseTag, getTag, xmpMetadata);
+    ret = SetValueAndGetTagForTest(xmpMetadata, "dc:first/dc:second[1]/dc:third", XMPTagType::UNORDERED_ARRAY, "",
+        getTag);
     EXPECT_TRUE(ret);
-    EXPECT_TRUE(CompareXMPTag(baseTag, getTag));
+    EXPECT_EQ(getTag.type, XMPTagType::UNORDERED_ARRAY);
 
-    XMPTag childTag;
-    InitTestXMPTag(childTag, XMPTagType::SIMPLE, "third", "XmpMetadataTest.GetTagTest049_value1");
-
-    ret = DoSetTagAndGetTag("dc:first/dc:second[1]/dc:third[1]", childTag, getTag, xmpMetadata);
+    const std::string childValue = "XmpMetadataTest.GetTagTest049_value1";
+    ret = SetValueAndGetTagForTest(xmpMetadata, "dc:first/dc:second[1]/dc:third[1]", XMPTagType::SIMPLE, childValue,
+        getTag);
     EXPECT_TRUE(ret);
-    EXPECT_TRUE(CompareXMPTag(childTag, getTag));
+    EXPECT_EQ(getTag.type, XMPTagType::SIMPLE);
+    EXPECT_EQ(getTag.value, childValue);
 
     GTEST_LOG_(INFO) << "XmpMetadataTest: GetTagTest049 end";
 }
@@ -2488,32 +2163,26 @@ HWTEST_F(XmpMetadataTest, GetTagTest050, TestSize.Level1)
 {
     GTEST_LOG_(INFO) << "XmpMetadataTest: GetTagTest050 start";
     XMPMetadata xmpMetadata;
-    XMPTag baseTag;
-    InitTestXMPTag(baseTag, XMPTagType::STRUCTURE, "first");
-
     XMPTag getTag;
-    bool ret = DoSetTagAndGetTag("dc:first", baseTag, getTag, xmpMetadata);
+    bool ret = SetValueAndGetTagForTest(xmpMetadata, "dc:first", XMPTagType::STRUCTURE, "", getTag);
     EXPECT_TRUE(ret);
-    EXPECT_TRUE(CompareXMPTag(baseTag, getTag));
+    EXPECT_EQ(getTag.type, XMPTagType::STRUCTURE);
 
-    baseTag.name = "second";
-    baseTag.type = XMPTagType::UNORDERED_ARRAY;
-    ret = DoSetTagAndGetTag("dc:first/dc:second", baseTag, getTag, xmpMetadata);
+    ret = SetValueAndGetTagForTest(xmpMetadata, "dc:first/dc:second", XMPTagType::UNORDERED_ARRAY, "", getTag);
     EXPECT_TRUE(ret);
-    EXPECT_TRUE(CompareXMPTag(baseTag, getTag));
+    EXPECT_EQ(getTag.type, XMPTagType::UNORDERED_ARRAY);
 
-    baseTag.name = "third";
-    baseTag.type = XMPTagType::ORDERED_ARRAY;
-    ret = DoSetTagAndGetTag("dc:first/dc:second[1]/dc:third", baseTag, getTag, xmpMetadata);
+    ret = SetValueAndGetTagForTest(xmpMetadata, "dc:first/dc:second[1]/dc:third", XMPTagType::ORDERED_ARRAY, "",
+        getTag);
     EXPECT_TRUE(ret);
-    EXPECT_TRUE(CompareXMPTag(baseTag, getTag));
+    EXPECT_EQ(getTag.type, XMPTagType::ORDERED_ARRAY);
 
-    XMPTag childTag;
-    InitTestXMPTag(childTag, XMPTagType::SIMPLE, "third", "XmpMetadataTest.GetTagTest050_value1");
-
-    ret = DoSetTagAndGetTag("dc:first/dc:second[1]/dc:third[1]", childTag, getTag, xmpMetadata);
+    const std::string childValue = "XmpMetadataTest.GetTagTest050_value1";
+    ret = SetValueAndGetTagForTest(xmpMetadata, "dc:first/dc:second[1]/dc:third[1]", XMPTagType::SIMPLE, childValue,
+        getTag);
     EXPECT_TRUE(ret);
-    EXPECT_TRUE(CompareXMPTag(childTag, getTag));
+    EXPECT_EQ(getTag.type, XMPTagType::SIMPLE);
+    EXPECT_EQ(getTag.value, childValue);
 
     GTEST_LOG_(INFO) << "XmpMetadataTest: GetTagTest050 end";
 }
@@ -2528,32 +2197,26 @@ HWTEST_F(XmpMetadataTest, GetTagTest051, TestSize.Level1)
 {
     GTEST_LOG_(INFO) << "XmpMetadataTest: GetTagTest051 start";
     XMPMetadata xmpMetadata;
-    XMPTag baseTag;
-    InitTestXMPTag(baseTag, XMPTagType::STRUCTURE, "first");
-
     XMPTag getTag;
-    bool ret = DoSetTagAndGetTag("dc:first", baseTag, getTag, xmpMetadata);
+    bool ret = SetValueAndGetTagForTest(xmpMetadata, "dc:first", XMPTagType::STRUCTURE, "", getTag);
     EXPECT_TRUE(ret);
-    EXPECT_TRUE(CompareXMPTag(baseTag, getTag));
+    EXPECT_EQ(getTag.type, XMPTagType::STRUCTURE);
 
-    baseTag.name = "second";
-    baseTag.type = XMPTagType::UNORDERED_ARRAY;
-    ret = DoSetTagAndGetTag("dc:first/dc:second", baseTag, getTag, xmpMetadata);
+    ret = SetValueAndGetTagForTest(xmpMetadata, "dc:first/dc:second", XMPTagType::UNORDERED_ARRAY, "", getTag);
     EXPECT_TRUE(ret);
-    EXPECT_TRUE(CompareXMPTag(baseTag, getTag));
+    EXPECT_EQ(getTag.type, XMPTagType::UNORDERED_ARRAY);
 
-    baseTag.name = "third";
-    baseTag.type = XMPTagType::ALTERNATE_ARRAY;
-    ret = DoSetTagAndGetTag("dc:first/dc:second[1]/dc:third", baseTag, getTag, xmpMetadata);
+    ret = SetValueAndGetTagForTest(xmpMetadata, "dc:first/dc:second[1]/dc:third", XMPTagType::ALTERNATE_ARRAY, "",
+        getTag);
     EXPECT_TRUE(ret);
-    EXPECT_TRUE(CompareXMPTag(baseTag, getTag));
+    EXPECT_EQ(getTag.type, XMPTagType::ALTERNATE_ARRAY);
 
-    XMPTag childTag;
-    InitTestXMPTag(childTag, XMPTagType::SIMPLE, "third", "XmpMetadataTest.GetTagTest051_value1");
-
-    ret = DoSetTagAndGetTag("dc:first/dc:second[1]/dc:third[1]", childTag, getTag, xmpMetadata);
+    const std::string childValue = "XmpMetadataTest.GetTagTest051_value1";
+    ret = SetValueAndGetTagForTest(xmpMetadata, "dc:first/dc:second[1]/dc:third[1]", XMPTagType::SIMPLE, childValue,
+        getTag);
     EXPECT_TRUE(ret);
-    EXPECT_TRUE(CompareXMPTag(childTag, getTag));
+    EXPECT_EQ(getTag.type, XMPTagType::SIMPLE);
+    EXPECT_EQ(getTag.value, childValue);
 
     GTEST_LOG_(INFO) << "XmpMetadataTest: GetTagTest051 end";
 }
@@ -2568,32 +2231,25 @@ HWTEST_F(XmpMetadataTest, GetTagTest052, TestSize.Level1)
 {
     GTEST_LOG_(INFO) << "XmpMetadataTest: GetTagTest052 start";
     XMPMetadata xmpMetadata;
-    XMPTag baseTag;
-    InitTestXMPTag(baseTag, XMPTagType::STRUCTURE, "first");
-
     XMPTag getTag;
-    bool ret = DoSetTagAndGetTag("dc:first", baseTag, getTag, xmpMetadata);
+    bool ret = SetValueAndGetTagForTest(xmpMetadata, "dc:first", XMPTagType::STRUCTURE, "", getTag);
     EXPECT_TRUE(ret);
-    EXPECT_TRUE(CompareXMPTag(baseTag, getTag));
+    EXPECT_EQ(getTag.type, XMPTagType::STRUCTURE);
 
-    baseTag.name = "second";
-    baseTag.type = XMPTagType::UNORDERED_ARRAY;
-    ret = DoSetTagAndGetTag("dc:first/dc:second", baseTag, getTag, xmpMetadata);
+    ret = SetValueAndGetTagForTest(xmpMetadata, "dc:first/dc:second", XMPTagType::UNORDERED_ARRAY, "", getTag);
     EXPECT_TRUE(ret);
-    EXPECT_TRUE(CompareXMPTag(baseTag, getTag));
+    EXPECT_EQ(getTag.type, XMPTagType::UNORDERED_ARRAY);
 
-    baseTag.name = "third";
-    baseTag.type = XMPTagType::STRUCTURE;
-    ret = DoSetTagAndGetTag("dc:first/dc:second[1]/dc:third", baseTag, getTag, xmpMetadata);
+    ret = SetValueAndGetTagForTest(xmpMetadata, "dc:first/dc:second[1]/dc:third", XMPTagType::STRUCTURE, "", getTag);
     EXPECT_TRUE(ret);
-    EXPECT_TRUE(CompareXMPTag(baseTag, getTag));
+    EXPECT_EQ(getTag.type, XMPTagType::STRUCTURE);
 
-    XMPTag childTag;
-    InitTestXMPTag(childTag, XMPTagType::SIMPLE, "child", "XmpMetadataTest.GetTagTest051_value1");
-
-    ret = DoSetTagAndGetTag("dc:first/dc:second[1]/dc:third/dc:child", childTag, getTag, xmpMetadata);
+    const std::string childValue = "XmpMetadataTest.GetTagTest052_value1";
+    ret = SetValueAndGetTagForTest(xmpMetadata, "dc:first/dc:second[1]/dc:third/dc:child", XMPTagType::SIMPLE,
+        childValue, getTag);
     EXPECT_TRUE(ret);
-    EXPECT_TRUE(CompareXMPTag(childTag, getTag));
+    EXPECT_EQ(getTag.type, XMPTagType::SIMPLE);
+    EXPECT_EQ(getTag.value, childValue);
 
     GTEST_LOG_(INFO) << "XmpMetadataTest: GetTagTest052 end";
 }
@@ -2608,32 +2264,26 @@ HWTEST_F(XmpMetadataTest, GetTagTest053, TestSize.Level1)
 {
     GTEST_LOG_(INFO) << "XmpMetadataTest: GetTagTest053 start";
     XMPMetadata xmpMetadata;
-    XMPTag baseTag;
-    InitTestXMPTag(baseTag, XMPTagType::STRUCTURE, "first");
-
     XMPTag getTag;
-    bool ret = DoSetTagAndGetTag("dc:first", baseTag, getTag, xmpMetadata);
+    bool ret = SetValueAndGetTagForTest(xmpMetadata, "dc:first", XMPTagType::STRUCTURE, "", getTag);
     EXPECT_TRUE(ret);
-    EXPECT_TRUE(CompareXMPTag(baseTag, getTag));
+    EXPECT_EQ(getTag.type, XMPTagType::STRUCTURE);
 
-    baseTag.name = "second";
-    baseTag.type = XMPTagType::ORDERED_ARRAY;
-    ret = DoSetTagAndGetTag("dc:first/dc:second", baseTag, getTag, xmpMetadata);
+    ret = SetValueAndGetTagForTest(xmpMetadata, "dc:first/dc:second", XMPTagType::ORDERED_ARRAY, "", getTag);
     EXPECT_TRUE(ret);
-    EXPECT_TRUE(CompareXMPTag(baseTag, getTag));
+    EXPECT_EQ(getTag.type, XMPTagType::ORDERED_ARRAY);
 
-    baseTag.name = "third";
-    baseTag.type = XMPTagType::UNORDERED_ARRAY;
-    ret = DoSetTagAndGetTag("dc:first/dc:second[1]/dc:third", baseTag, getTag, xmpMetadata);
+    ret = SetValueAndGetTagForTest(xmpMetadata, "dc:first/dc:second[1]/dc:third", XMPTagType::UNORDERED_ARRAY, "",
+        getTag);
     EXPECT_TRUE(ret);
-    EXPECT_TRUE(CompareXMPTag(baseTag, getTag));
+    EXPECT_EQ(getTag.type, XMPTagType::UNORDERED_ARRAY);
 
-    XMPTag childTag;
-    InitTestXMPTag(childTag, XMPTagType::SIMPLE, "third", "XmpMetadataTest.GetTagTest053_value1");
-
-    ret = DoSetTagAndGetTag("dc:first/dc:second[1]/dc:third[1]", childTag, getTag, xmpMetadata);
+    const std::string childValue = "XmpMetadataTest.GetTagTest053_value1";
+    ret = SetValueAndGetTagForTest(xmpMetadata, "dc:first/dc:second[1]/dc:third[1]", XMPTagType::SIMPLE, childValue,
+        getTag);
     EXPECT_TRUE(ret);
-    EXPECT_TRUE(CompareXMPTag(childTag, getTag));
+    EXPECT_EQ(getTag.type, XMPTagType::SIMPLE);
+    EXPECT_EQ(getTag.value, childValue);
 
     GTEST_LOG_(INFO) << "XmpMetadataTest: GetTagTest053 end";
 }
@@ -2648,31 +2298,26 @@ HWTEST_F(XmpMetadataTest, GetTagTest054, TestSize.Level1)
 {
     GTEST_LOG_(INFO) << "XmpMetadataTest: GetTagTest054 start";
     XMPMetadata xmpMetadata;
-    XMPTag baseTag;
-    InitTestXMPTag(baseTag, XMPTagType::STRUCTURE, "first");
-
     XMPTag getTag;
-    bool ret = DoSetTagAndGetTag("dc:first", baseTag, getTag, xmpMetadata);
+    bool ret = SetValueAndGetTagForTest(xmpMetadata, "dc:first", XMPTagType::STRUCTURE, "", getTag);
     EXPECT_TRUE(ret);
-    EXPECT_TRUE(CompareXMPTag(baseTag, getTag));
+    EXPECT_EQ(getTag.type, XMPTagType::STRUCTURE);
 
-    baseTag.name = "second";
-    baseTag.type = XMPTagType::ORDERED_ARRAY;
-    ret = DoSetTagAndGetTag("dc:first/dc:second", baseTag, getTag, xmpMetadata);
+    ret = SetValueAndGetTagForTest(xmpMetadata, "dc:first/dc:second", XMPTagType::ORDERED_ARRAY, "", getTag);
     EXPECT_TRUE(ret);
-    EXPECT_TRUE(CompareXMPTag(baseTag, getTag));
+    EXPECT_EQ(getTag.type, XMPTagType::ORDERED_ARRAY);
 
-    baseTag.name = "third";
-    ret = DoSetTagAndGetTag("dc:first/dc:second[1]/dc:third", baseTag, getTag, xmpMetadata);
+    ret = SetValueAndGetTagForTest(xmpMetadata, "dc:first/dc:second[1]/dc:third", XMPTagType::ORDERED_ARRAY, "",
+        getTag);
     EXPECT_TRUE(ret);
-    EXPECT_TRUE(CompareXMPTag(baseTag, getTag));
+    EXPECT_EQ(getTag.type, XMPTagType::ORDERED_ARRAY);
 
-    XMPTag childTag;
-    InitTestXMPTag(childTag, XMPTagType::SIMPLE, "third", "XmpMetadataTest.GetTagTest054_value1");
-
-    ret = DoSetTagAndGetTag("dc:first/dc:second[1]/dc:third[1]", childTag, getTag, xmpMetadata);
+    const std::string childValue = "XmpMetadataTest.GetTagTest054_value1";
+    ret = SetValueAndGetTagForTest(xmpMetadata, "dc:first/dc:second[1]/dc:third[1]", XMPTagType::SIMPLE, childValue,
+        getTag);
     EXPECT_TRUE(ret);
-    EXPECT_TRUE(CompareXMPTag(childTag, getTag));
+    EXPECT_EQ(getTag.type, XMPTagType::SIMPLE);
+    EXPECT_EQ(getTag.value, childValue);
 
     GTEST_LOG_(INFO) << "XmpMetadataTest: GetTagTest054 end";
 }
@@ -2687,32 +2332,26 @@ HWTEST_F(XmpMetadataTest, GetTagTest055, TestSize.Level1)
 {
     GTEST_LOG_(INFO) << "XmpMetadataTest: GetTagTest055 start";
     XMPMetadata xmpMetadata;
-    XMPTag baseTag;
-    InitTestXMPTag(baseTag, XMPTagType::STRUCTURE, "first");
-
     XMPTag getTag;
-    bool ret = DoSetTagAndGetTag("dc:first", baseTag, getTag, xmpMetadata);
+    bool ret = SetValueAndGetTagForTest(xmpMetadata, "dc:first", XMPTagType::STRUCTURE, "", getTag);
     EXPECT_TRUE(ret);
-    EXPECT_TRUE(CompareXMPTag(baseTag, getTag));
+    EXPECT_EQ(getTag.type, XMPTagType::STRUCTURE);
 
-    baseTag.name = "second";
-    baseTag.type = XMPTagType::ORDERED_ARRAY;
-    ret = DoSetTagAndGetTag("dc:first/dc:second", baseTag, getTag, xmpMetadata);
+    ret = SetValueAndGetTagForTest(xmpMetadata, "dc:first/dc:second", XMPTagType::ORDERED_ARRAY, "", getTag);
     EXPECT_TRUE(ret);
-    EXPECT_TRUE(CompareXMPTag(baseTag, getTag));
+    EXPECT_EQ(getTag.type, XMPTagType::ORDERED_ARRAY);
 
-    baseTag.name = "third";
-    baseTag.type = XMPTagType::ALTERNATE_ARRAY;
-    ret = DoSetTagAndGetTag("dc:first/dc:second[1]/dc:third", baseTag, getTag, xmpMetadata);
+    ret = SetValueAndGetTagForTest(xmpMetadata, "dc:first/dc:second[1]/dc:third", XMPTagType::ALTERNATE_ARRAY, "",
+        getTag);
     EXPECT_TRUE(ret);
-    EXPECT_TRUE(CompareXMPTag(baseTag, getTag));
+    EXPECT_EQ(getTag.type, XMPTagType::ALTERNATE_ARRAY);
 
-    XMPTag childTag;
-    InitTestXMPTag(childTag, XMPTagType::SIMPLE, "third", "XmpMetadataTest.GetTagTest055_value1");
-
-    ret = DoSetTagAndGetTag("dc:first/dc:second[1]/dc:third[1]", childTag, getTag, xmpMetadata);
+    const std::string childValue = "XmpMetadataTest.GetTagTest055_value1";
+    ret = SetValueAndGetTagForTest(xmpMetadata, "dc:first/dc:second[1]/dc:third[1]", XMPTagType::SIMPLE, childValue,
+        getTag);
     EXPECT_TRUE(ret);
-    EXPECT_TRUE(CompareXMPTag(childTag, getTag));
+    EXPECT_EQ(getTag.type, XMPTagType::SIMPLE);
+    EXPECT_EQ(getTag.value, childValue);
 
     GTEST_LOG_(INFO) << "XmpMetadataTest: GetTagTest055 end";
 }
@@ -2727,32 +2366,25 @@ HWTEST_F(XmpMetadataTest, GetTagTest056, TestSize.Level1)
 {
     GTEST_LOG_(INFO) << "XmpMetadataTest: GetTagTest056 start";
     XMPMetadata xmpMetadata;
-    XMPTag baseTag;
-    InitTestXMPTag(baseTag, XMPTagType::STRUCTURE, "first");
-
     XMPTag getTag;
-    bool ret = DoSetTagAndGetTag("dc:first", baseTag, getTag, xmpMetadata);
+    bool ret = SetValueAndGetTagForTest(xmpMetadata, "dc:first", XMPTagType::STRUCTURE, "", getTag);
     EXPECT_TRUE(ret);
-    EXPECT_TRUE(CompareXMPTag(baseTag, getTag));
+    EXPECT_EQ(getTag.type, XMPTagType::STRUCTURE);
 
-    baseTag.name = "second";
-    baseTag.type = XMPTagType::ORDERED_ARRAY;
-    ret = DoSetTagAndGetTag("dc:first/dc:second", baseTag, getTag, xmpMetadata);
+    ret = SetValueAndGetTagForTest(xmpMetadata, "dc:first/dc:second", XMPTagType::ORDERED_ARRAY, "", getTag);
     EXPECT_TRUE(ret);
-    EXPECT_TRUE(CompareXMPTag(baseTag, getTag));
+    EXPECT_EQ(getTag.type, XMPTagType::ORDERED_ARRAY);
 
-    baseTag.name = "third";
-    baseTag.type = XMPTagType::STRUCTURE;
-    ret = DoSetTagAndGetTag("dc:first/dc:second[1]/dc:third", baseTag, getTag, xmpMetadata);
+    ret = SetValueAndGetTagForTest(xmpMetadata, "dc:first/dc:second[1]/dc:third", XMPTagType::STRUCTURE, "", getTag);
     EXPECT_TRUE(ret);
-    EXPECT_TRUE(CompareXMPTag(baseTag, getTag));
+    EXPECT_EQ(getTag.type, XMPTagType::STRUCTURE);
 
-    XMPTag childTag;
-    InitTestXMPTag(childTag, XMPTagType::SIMPLE, "child", "XmpMetadataTest.GetTagTest056_value1");
-
-    ret = DoSetTagAndGetTag("dc:first/dc:second[1]/dc:third/dc:child", childTag, getTag, xmpMetadata);
+    const std::string childValue = "XmpMetadataTest.GetTagTest056_value1";
+    ret = SetValueAndGetTagForTest(xmpMetadata, "dc:first/dc:second[1]/dc:third/dc:child", XMPTagType::SIMPLE,
+        childValue, getTag);
     EXPECT_TRUE(ret);
-    EXPECT_TRUE(CompareXMPTag(childTag, getTag));
+    EXPECT_EQ(getTag.type, XMPTagType::SIMPLE);
+    EXPECT_EQ(getTag.value, childValue);
 
     GTEST_LOG_(INFO) << "XmpMetadataTest: GetTagTest056 end";
 }
@@ -2767,32 +2399,26 @@ HWTEST_F(XmpMetadataTest, GetTagTest057, TestSize.Level1)
 {
     GTEST_LOG_(INFO) << "XmpMetadataTest: GetTagTest057 start";
     XMPMetadata xmpMetadata;
-    XMPTag baseTag;
-    InitTestXMPTag(baseTag, XMPTagType::STRUCTURE, "first");
-
     XMPTag getTag;
-    bool ret = DoSetTagAndGetTag("dc:first", baseTag, getTag, xmpMetadata);
+    bool ret = SetValueAndGetTagForTest(xmpMetadata, "dc:first", XMPTagType::STRUCTURE, "", getTag);
     EXPECT_TRUE(ret);
-    EXPECT_TRUE(CompareXMPTag(baseTag, getTag));
+    EXPECT_EQ(getTag.type, XMPTagType::STRUCTURE);
 
-    baseTag.name = "second";
-    baseTag.type = XMPTagType::ALTERNATE_ARRAY;
-    ret = DoSetTagAndGetTag("dc:first/dc:second", baseTag, getTag, xmpMetadata);
+    ret = SetValueAndGetTagForTest(xmpMetadata, "dc:first/dc:second", XMPTagType::ALTERNATE_ARRAY, "", getTag);
     EXPECT_TRUE(ret);
-    EXPECT_TRUE(CompareXMPTag(baseTag, getTag));
+    EXPECT_EQ(getTag.type, XMPTagType::ALTERNATE_ARRAY);
 
-    baseTag.name = "third";
-    baseTag.type = XMPTagType::UNORDERED_ARRAY;
-    ret = DoSetTagAndGetTag("dc:first/dc:second[1]/dc:third", baseTag, getTag, xmpMetadata);
+    ret = SetValueAndGetTagForTest(xmpMetadata, "dc:first/dc:second[1]/dc:third", XMPTagType::UNORDERED_ARRAY, "",
+        getTag);
     EXPECT_TRUE(ret);
-    EXPECT_TRUE(CompareXMPTag(baseTag, getTag));
+    EXPECT_EQ(getTag.type, XMPTagType::UNORDERED_ARRAY);
 
-    XMPTag childTag;
-    InitTestXMPTag(childTag, XMPTagType::SIMPLE, "third", "XmpMetadataTest.GetTagTest057_value1");
-
-    ret = DoSetTagAndGetTag("dc:first/dc:second[1]/dc:third[1]", childTag, getTag, xmpMetadata);
+    const std::string childValue = "XmpMetadataTest.GetTagTest057_value1";
+    ret = SetValueAndGetTagForTest(xmpMetadata, "dc:first/dc:second[1]/dc:third[1]", XMPTagType::SIMPLE, childValue,
+        getTag);
     EXPECT_TRUE(ret);
-    EXPECT_TRUE(CompareXMPTag(childTag, getTag));
+    EXPECT_EQ(getTag.type, XMPTagType::SIMPLE);
+    EXPECT_EQ(getTag.value, childValue);
 
     GTEST_LOG_(INFO) << "XmpMetadataTest: GetTagTest057 end";
 }
@@ -2807,32 +2433,26 @@ HWTEST_F(XmpMetadataTest, GetTagTest058, TestSize.Level1)
 {
     GTEST_LOG_(INFO) << "XmpMetadataTest: GetTagTest058 start";
     XMPMetadata xmpMetadata;
-    XMPTag baseTag;
-    InitTestXMPTag(baseTag, XMPTagType::STRUCTURE, "first");
-
     XMPTag getTag;
-    bool ret = DoSetTagAndGetTag("dc:first", baseTag, getTag, xmpMetadata);
+    bool ret = SetValueAndGetTagForTest(xmpMetadata, "dc:first", XMPTagType::STRUCTURE, "", getTag);
     EXPECT_TRUE(ret);
-    EXPECT_TRUE(CompareXMPTag(baseTag, getTag));
+    EXPECT_EQ(getTag.type, XMPTagType::STRUCTURE);
 
-    baseTag.name = "second";
-    baseTag.type = XMPTagType::ALTERNATE_ARRAY;
-    ret = DoSetTagAndGetTag("dc:first/dc:second", baseTag, getTag, xmpMetadata);
+    ret = SetValueAndGetTagForTest(xmpMetadata, "dc:first/dc:second", XMPTagType::ALTERNATE_ARRAY, "", getTag);
     EXPECT_TRUE(ret);
-    EXPECT_TRUE(CompareXMPTag(baseTag, getTag));
+    EXPECT_EQ(getTag.type, XMPTagType::ALTERNATE_ARRAY);
 
-    baseTag.name = "third";
-    baseTag.type = XMPTagType::ORDERED_ARRAY;
-    ret = DoSetTagAndGetTag("dc:first/dc:second[1]/dc:third", baseTag, getTag, xmpMetadata);
+    ret = SetValueAndGetTagForTest(xmpMetadata, "dc:first/dc:second[1]/dc:third", XMPTagType::ORDERED_ARRAY, "",
+        getTag);
     EXPECT_TRUE(ret);
-    EXPECT_TRUE(CompareXMPTag(baseTag, getTag));
+    EXPECT_EQ(getTag.type, XMPTagType::ORDERED_ARRAY);
 
-    XMPTag childTag;
-    InitTestXMPTag(childTag, XMPTagType::SIMPLE, "third", "XmpMetadataTest.GetTagTest057_value1");
-
-    ret = DoSetTagAndGetTag("dc:first/dc:second[1]/dc:third[1]", childTag, getTag, xmpMetadata);
+    const std::string childValue = "XmpMetadataTest.GetTagTest058_value1";
+    ret = SetValueAndGetTagForTest(xmpMetadata, "dc:first/dc:second[1]/dc:third[1]", XMPTagType::SIMPLE, childValue,
+        getTag);
     EXPECT_TRUE(ret);
-    EXPECT_TRUE(CompareXMPTag(childTag, getTag));
+    EXPECT_EQ(getTag.type, XMPTagType::SIMPLE);
+    EXPECT_EQ(getTag.value, childValue);
 
     GTEST_LOG_(INFO) << "XmpMetadataTest: GetTagTest058 end";
 }
@@ -2847,31 +2467,26 @@ HWTEST_F(XmpMetadataTest, GetTagTest059, TestSize.Level1)
 {
     GTEST_LOG_(INFO) << "XmpMetadataTest: GetTagTest059 start";
     XMPMetadata xmpMetadata;
-    XMPTag baseTag;
-    InitTestXMPTag(baseTag, XMPTagType::STRUCTURE, "first");
-
     XMPTag getTag;
-    bool ret = DoSetTagAndGetTag("dc:first", baseTag, getTag, xmpMetadata);
+    bool ret = SetValueAndGetTagForTest(xmpMetadata, "dc:first", XMPTagType::STRUCTURE, "", getTag);
     EXPECT_TRUE(ret);
-    EXPECT_TRUE(CompareXMPTag(baseTag, getTag));
+    EXPECT_EQ(getTag.type, XMPTagType::STRUCTURE);
 
-    baseTag.name = "second";
-    baseTag.type = XMPTagType::ALTERNATE_ARRAY;
-    ret = DoSetTagAndGetTag("dc:first/dc:second", baseTag, getTag, xmpMetadata);
+    ret = SetValueAndGetTagForTest(xmpMetadata, "dc:first/dc:second", XMPTagType::ALTERNATE_ARRAY, "", getTag);
     EXPECT_TRUE(ret);
-    EXPECT_TRUE(CompareXMPTag(baseTag, getTag));
+    EXPECT_EQ(getTag.type, XMPTagType::ALTERNATE_ARRAY);
 
-    baseTag.name = "third";
-    ret = DoSetTagAndGetTag("dc:first/dc:second[1]/dc:third", baseTag, getTag, xmpMetadata);
+    ret = SetValueAndGetTagForTest(xmpMetadata, "dc:first/dc:second[1]/dc:third", XMPTagType::ALTERNATE_ARRAY, "",
+        getTag);
     EXPECT_TRUE(ret);
-    EXPECT_TRUE(CompareXMPTag(baseTag, getTag));
+    EXPECT_EQ(getTag.type, XMPTagType::ALTERNATE_ARRAY);
 
-    XMPTag childTag;
-    InitTestXMPTag(childTag, XMPTagType::SIMPLE, "third", "XmpMetadataTest.GetTagTest059_value1");
-
-    ret = DoSetTagAndGetTag("dc:first/dc:second[1]/dc:third[1]", childTag, getTag, xmpMetadata);
+    const std::string childValue = "XmpMetadataTest.GetTagTest059_value1";
+    ret = SetValueAndGetTagForTest(xmpMetadata, "dc:first/dc:second[1]/dc:third[1]", XMPTagType::SIMPLE, childValue,
+        getTag);
     EXPECT_TRUE(ret);
-    EXPECT_TRUE(CompareXMPTag(childTag, getTag));
+    EXPECT_EQ(getTag.type, XMPTagType::SIMPLE);
+    EXPECT_EQ(getTag.value, childValue);
 
     GTEST_LOG_(INFO) << "XmpMetadataTest: GetTagTest059 end";
 }
@@ -2886,32 +2501,25 @@ HWTEST_F(XmpMetadataTest, GetTagTest060, TestSize.Level1)
 {
     GTEST_LOG_(INFO) << "XmpMetadataTest: GetTagTest060 start";
     XMPMetadata xmpMetadata;
-    XMPTag baseTag;
-    InitTestXMPTag(baseTag, XMPTagType::STRUCTURE, "first");
-
     XMPTag getTag;
-    bool ret = DoSetTagAndGetTag("dc:first", baseTag, getTag, xmpMetadata);
+    bool ret = SetValueAndGetTagForTest(xmpMetadata, "dc:first", XMPTagType::STRUCTURE, "", getTag);
     EXPECT_TRUE(ret);
-    EXPECT_TRUE(CompareXMPTag(baseTag, getTag));
+    EXPECT_EQ(getTag.type, XMPTagType::STRUCTURE);
 
-    baseTag.name = "second";
-    baseTag.type = XMPTagType::ALTERNATE_ARRAY;
-    ret = DoSetTagAndGetTag("dc:first/dc:second", baseTag, getTag, xmpMetadata);
+    ret = SetValueAndGetTagForTest(xmpMetadata, "dc:first/dc:second", XMPTagType::ALTERNATE_ARRAY, "", getTag);
     EXPECT_TRUE(ret);
-    EXPECT_TRUE(CompareXMPTag(baseTag, getTag));
+    EXPECT_EQ(getTag.type, XMPTagType::ALTERNATE_ARRAY);
 
-    baseTag.name = "third";
-    baseTag.type = XMPTagType::STRUCTURE;
-    ret = DoSetTagAndGetTag("dc:first/dc:second[1]/dc:third", baseTag, getTag, xmpMetadata);
+    ret = SetValueAndGetTagForTest(xmpMetadata, "dc:first/dc:second[1]/dc:third", XMPTagType::STRUCTURE, "", getTag);
     EXPECT_TRUE(ret);
-    EXPECT_TRUE(CompareXMPTag(baseTag, getTag));
+    EXPECT_EQ(getTag.type, XMPTagType::STRUCTURE);
 
-    XMPTag childTag;
-    InitTestXMPTag(childTag, XMPTagType::SIMPLE, "child", "XmpMetadataTest.GetTagTest060_value1");
-
-    ret = DoSetTagAndGetTag("dc:first/dc:second[1]/dc:third/dc:child", childTag, getTag, xmpMetadata);
+    const std::string childValue = "XmpMetadataTest.GetTagTest060_value1";
+    ret = SetValueAndGetTagForTest(xmpMetadata, "dc:first/dc:second[1]/dc:third/dc:child", XMPTagType::SIMPLE,
+        childValue, getTag);
     EXPECT_TRUE(ret);
-    EXPECT_TRUE(CompareXMPTag(childTag, getTag));
+    EXPECT_EQ(getTag.type, XMPTagType::SIMPLE);
+    EXPECT_EQ(getTag.value, childValue);
 
     GTEST_LOG_(INFO) << "XmpMetadataTest: GetTagTest060 end";
 }
@@ -2926,31 +2534,26 @@ HWTEST_F(XmpMetadataTest, GetTagTest061, TestSize.Level1)
 {
     GTEST_LOG_(INFO) << "XmpMetadataTest: GetTagTest061 start";
     XMPMetadata xmpMetadata;
-    XMPTag baseTag;
-    InitTestXMPTag(baseTag, XMPTagType::STRUCTURE, "first");
-
     XMPTag getTag;
-    bool ret = DoSetTagAndGetTag("dc:first", baseTag, getTag, xmpMetadata);
+    bool ret = SetValueAndGetTagForTest(xmpMetadata, "dc:first", XMPTagType::STRUCTURE, "", getTag);
     EXPECT_TRUE(ret);
-    EXPECT_TRUE(CompareXMPTag(baseTag, getTag));
+    EXPECT_EQ(getTag.type, XMPTagType::STRUCTURE);
 
-    baseTag.name = "second";
-    ret = DoSetTagAndGetTag("dc:first/dc:second", baseTag, getTag, xmpMetadata);
+    ret = SetValueAndGetTagForTest(xmpMetadata, "dc:first/dc:second", XMPTagType::STRUCTURE, "", getTag);
     EXPECT_TRUE(ret);
-    EXPECT_TRUE(CompareXMPTag(baseTag, getTag));
+    EXPECT_EQ(getTag.type, XMPTagType::STRUCTURE);
 
-    baseTag.name = "third";
-    baseTag.type = XMPTagType::UNORDERED_ARRAY;
-    ret = DoSetTagAndGetTag("dc:first/dc:second/dc:third", baseTag, getTag, xmpMetadata);
+    ret = SetValueAndGetTagForTest(xmpMetadata, "dc:first/dc:second/dc:third", XMPTagType::UNORDERED_ARRAY, "",
+        getTag);
     EXPECT_TRUE(ret);
-    EXPECT_TRUE(CompareXMPTag(baseTag, getTag));
+    EXPECT_EQ(getTag.type, XMPTagType::UNORDERED_ARRAY);
 
-    XMPTag childTag;
-    InitTestXMPTag(childTag, XMPTagType::SIMPLE, "third", "XmpMetadataTest.GetTagTest061_value1");
-
-    ret = DoSetTagAndGetTag("dc:first/dc:second/dc:third[1]", childTag, getTag, xmpMetadata);
+    const std::string childValue = "XmpMetadataTest.GetTagTest061_value1";
+    ret = SetValueAndGetTagForTest(xmpMetadata, "dc:first/dc:second/dc:third[1]", XMPTagType::SIMPLE, childValue,
+        getTag);
     EXPECT_TRUE(ret);
-    EXPECT_TRUE(CompareXMPTag(childTag, getTag));
+    EXPECT_EQ(getTag.type, XMPTagType::SIMPLE);
+    EXPECT_EQ(getTag.value, childValue);
 
     GTEST_LOG_(INFO) << "XmpMetadataTest: GetTagTest061 end";
 }
@@ -2965,31 +2568,25 @@ HWTEST_F(XmpMetadataTest, GetTagTest062, TestSize.Level1)
 {
     GTEST_LOG_(INFO) << "XmpMetadataTest: GetTagTest062 start";
     XMPMetadata xmpMetadata;
-    XMPTag baseTag;
-    InitTestXMPTag(baseTag, XMPTagType::STRUCTURE, "first");
-
     XMPTag getTag;
-    bool ret = DoSetTagAndGetTag("dc:first", baseTag, getTag, xmpMetadata);
+    bool ret = SetValueAndGetTagForTest(xmpMetadata, "dc:first", XMPTagType::STRUCTURE, "", getTag);
     EXPECT_TRUE(ret);
-    EXPECT_TRUE(CompareXMPTag(baseTag, getTag));
+    EXPECT_EQ(getTag.type, XMPTagType::STRUCTURE);
 
-    baseTag.name = "second";
-    ret = DoSetTagAndGetTag("dc:first/dc:second", baseTag, getTag, xmpMetadata);
+    ret = SetValueAndGetTagForTest(xmpMetadata, "dc:first/dc:second", XMPTagType::STRUCTURE, "", getTag);
     EXPECT_TRUE(ret);
-    EXPECT_TRUE(CompareXMPTag(baseTag, getTag));
+    EXPECT_EQ(getTag.type, XMPTagType::STRUCTURE);
 
-    baseTag.name = "third";
-    baseTag.type = XMPTagType::ORDERED_ARRAY;
-    ret = DoSetTagAndGetTag("dc:first/dc:second/dc:third", baseTag, getTag, xmpMetadata);
+    ret = SetValueAndGetTagForTest(xmpMetadata, "dc:first/dc:second/dc:third", XMPTagType::ORDERED_ARRAY, "", getTag);
     EXPECT_TRUE(ret);
-    EXPECT_TRUE(CompareXMPTag(baseTag, getTag));
+    EXPECT_EQ(getTag.type, XMPTagType::ORDERED_ARRAY);
 
-    XMPTag childTag;
-    InitTestXMPTag(childTag, XMPTagType::SIMPLE, "third", "XmpMetadataTest.GetTagTest062_value1");
-
-    ret = DoSetTagAndGetTag("dc:first/dc:second/dc:third[1]", childTag, getTag, xmpMetadata);
+    const std::string childValue = "XmpMetadataTest.GetTagTest062_value1";
+    ret = SetValueAndGetTagForTest(xmpMetadata, "dc:first/dc:second/dc:third[1]", XMPTagType::SIMPLE, childValue,
+        getTag);
     EXPECT_TRUE(ret);
-    EXPECT_TRUE(CompareXMPTag(childTag, getTag));
+    EXPECT_EQ(getTag.type, XMPTagType::SIMPLE);
+    EXPECT_EQ(getTag.value, childValue);
 
     GTEST_LOG_(INFO) << "XmpMetadataTest: GetTagTest062 end";
 }
@@ -3004,31 +2601,26 @@ HWTEST_F(XmpMetadataTest, GetTagTest063, TestSize.Level1)
 {
     GTEST_LOG_(INFO) << "XmpMetadataTest: GetTagTest063 start";
     XMPMetadata xmpMetadata;
-    XMPTag baseTag;
-    InitTestXMPTag(baseTag, XMPTagType::STRUCTURE, "first");
-
     XMPTag getTag;
-    bool ret = DoSetTagAndGetTag("dc:first", baseTag, getTag, xmpMetadata);
+    bool ret = SetValueAndGetTagForTest(xmpMetadata, "dc:first", XMPTagType::STRUCTURE, "", getTag);
     EXPECT_TRUE(ret);
-    EXPECT_TRUE(CompareXMPTag(baseTag, getTag));
+    EXPECT_EQ(getTag.type, XMPTagType::STRUCTURE);
 
-    baseTag.name = "second";
-    ret = DoSetTagAndGetTag("dc:first/dc:second", baseTag, getTag, xmpMetadata);
+    ret = SetValueAndGetTagForTest(xmpMetadata, "dc:first/dc:second", XMPTagType::STRUCTURE, "", getTag);
     EXPECT_TRUE(ret);
-    EXPECT_TRUE(CompareXMPTag(baseTag, getTag));
+    EXPECT_EQ(getTag.type, XMPTagType::STRUCTURE);
 
-    baseTag.name = "third";
-    baseTag.type = XMPTagType::ALTERNATE_ARRAY;
-    ret = DoSetTagAndGetTag("dc:first/dc:second/dc:third", baseTag, getTag, xmpMetadata);
+    ret = SetValueAndGetTagForTest(xmpMetadata, "dc:first/dc:second/dc:third", XMPTagType::ALTERNATE_ARRAY, "",
+        getTag);
     EXPECT_TRUE(ret);
-    EXPECT_TRUE(CompareXMPTag(baseTag, getTag));
+    EXPECT_EQ(getTag.type, XMPTagType::ALTERNATE_ARRAY);
 
-    XMPTag childTag;
-    InitTestXMPTag(childTag, XMPTagType::SIMPLE, "third", "XmpMetadataTest.GetTagTest063_value1");
-
-    ret = DoSetTagAndGetTag("dc:first/dc:second/dc:third[1]", childTag, getTag, xmpMetadata);
+    const std::string childValue = "XmpMetadataTest.GetTagTest063_value1";
+    ret = SetValueAndGetTagForTest(xmpMetadata, "dc:first/dc:second/dc:third[1]", XMPTagType::SIMPLE, childValue,
+        getTag);
     EXPECT_TRUE(ret);
-    EXPECT_TRUE(CompareXMPTag(childTag, getTag));
+    EXPECT_EQ(getTag.type, XMPTagType::SIMPLE);
+    EXPECT_EQ(getTag.value, childValue);
 
     GTEST_LOG_(INFO) << "XmpMetadataTest: GetTagTest063 end";
 }
@@ -3043,30 +2635,25 @@ HWTEST_F(XmpMetadataTest, GetTagTest064, TestSize.Level1)
 {
     GTEST_LOG_(INFO) << "XmpMetadataTest: GetTagTest064 start";
     XMPMetadata xmpMetadata;
-    XMPTag baseTag;
-    InitTestXMPTag(baseTag, XMPTagType::STRUCTURE, "first");
-
     XMPTag getTag;
-    bool ret = DoSetTagAndGetTag("dc:first", baseTag, getTag, xmpMetadata);
+    bool ret = SetValueAndGetTagForTest(xmpMetadata, "dc:first", XMPTagType::STRUCTURE, "", getTag);
     EXPECT_TRUE(ret);
-    EXPECT_TRUE(CompareXMPTag(baseTag, getTag));
+    EXPECT_EQ(getTag.type, XMPTagType::STRUCTURE);
 
-    baseTag.name = "second";
-    ret = DoSetTagAndGetTag("dc:first/dc:second", baseTag, getTag, xmpMetadata);
+    ret = SetValueAndGetTagForTest(xmpMetadata, "dc:first/dc:second", XMPTagType::STRUCTURE, "", getTag);
     EXPECT_TRUE(ret);
-    EXPECT_TRUE(CompareXMPTag(baseTag, getTag));
+    EXPECT_EQ(getTag.type, XMPTagType::STRUCTURE);
 
-    baseTag.name = "third";
-    ret = DoSetTagAndGetTag("dc:first/dc:second/dc:third", baseTag, getTag, xmpMetadata);
+    ret = SetValueAndGetTagForTest(xmpMetadata, "dc:first/dc:second/dc:third", XMPTagType::STRUCTURE, "", getTag);
     EXPECT_TRUE(ret);
-    EXPECT_TRUE(CompareXMPTag(baseTag, getTag));
+    EXPECT_EQ(getTag.type, XMPTagType::STRUCTURE);
 
-    XMPTag childTag;
-    InitTestXMPTag(childTag, XMPTagType::SIMPLE, "child", "XmpMetadataTest.GetTagTest064_value1");
-
-    ret = DoSetTagAndGetTag("dc:first/dc:second/dc:third/dc:child", childTag, getTag, xmpMetadata);
+    const std::string childValue = "XmpMetadataTest.GetTagTest064_value1";
+    ret = SetValueAndGetTagForTest(xmpMetadata, "dc:first/dc:second/dc:third/dc:child", XMPTagType::SIMPLE,
+        childValue, getTag);
     EXPECT_TRUE(ret);
-    EXPECT_TRUE(CompareXMPTag(childTag, getTag));
+    EXPECT_EQ(getTag.type, XMPTagType::SIMPLE);
+    EXPECT_EQ(getTag.value, childValue);
 
     GTEST_LOG_(INFO) << "XmpMetadataTest: GetTagTest064 end";
 }
@@ -3081,42 +2668,40 @@ HWTEST_F(XmpMetadataTest, GetTagTest065, TestSize.Level1)
 {
     GTEST_LOG_(INFO) << "XmpMetadataTest: GetTagTest065 start";
     XMPMetadata xmpMetadata;
-    XMPTag baseTag;
-    InitTestXMPTag(baseTag, XMPTagType::ALTERNATE_TEXT, "title");
-
-    bool ret = xmpMetadata.SetTag("dc:title", baseTag);
-    EXPECT_TRUE(ret);
-
-    XMPTag childTag_1;
-    InitTestXMPTag(childTag_1, XMPTagType::SIMPLE, "title", "Default Title");
-    ret = xmpMetadata.SetTag("dc:title[1]", childTag_1);
-    EXPECT_TRUE(ret);
-
-    XMPTag childTag_2;
-    InitTestXMPTag(childTag_2, XMPTagType::SIMPLE, "title", "中文标题");
-    ret = xmpMetadata.SetTag("dc:title[2]", childTag_2);
-    EXPECT_TRUE(ret);
-
     XMPTag getTag;
-    XMPTag qualTag_1;
-    InitTestXMPTag(qualTag_1, XMPTagType::QUALIFIER, "lang", "x-default");
-    ret = DoSetTagAndGetTag("dc:title[1]/@xml:lang", qualTag_1, getTag, xmpMetadata);
+    bool ret = SetValueAndGetTagForTest(xmpMetadata, "dc:title", XMPTagType::ALTERNATE_TEXT, "", getTag);
     EXPECT_TRUE(ret);
-    EXPECT_TRUE(CompareXMPTag(qualTag_1, getTag));
+    EXPECT_EQ(getTag.type, XMPTagType::ALTERNATE_TEXT);
 
-    XMPTag qualTag_2;
-    InitTestXMPTag(qualTag_2, XMPTagType::QUALIFIER, "lang", "zh-CN");
-    ret = DoSetTagAndGetTag("dc:title[2]/@xml:lang", qualTag_2, getTag, xmpMetadata);
+    const std::string childValue1 = "Default Title";
+    ret = SetValueForTest(xmpMetadata, "dc:title[1]", XMPTagType::SIMPLE, childValue1);
     EXPECT_TRUE(ret);
-    EXPECT_TRUE(CompareXMPTag(qualTag_2, getTag));
+
+    const std::string childValue2 = "中文标题";
+    ret = SetValueForTest(xmpMetadata, "dc:title[2]", XMPTagType::SIMPLE, childValue2);
+    EXPECT_TRUE(ret);
+
+    const std::string qualValue1 = "x-default";
+    ret = SetValueAndGetTagForTest(xmpMetadata, "dc:title[1]/@xml:lang", XMPTagType::QUALIFIER, qualValue1, getTag);
+    EXPECT_TRUE(ret);
+    EXPECT_EQ(getTag.type, XMPTagType::QUALIFIER);
+    EXPECT_EQ(getTag.value, qualValue1);
+
+    const std::string qualValue2 = "zh-CN";
+    ret = SetValueAndGetTagForTest(xmpMetadata, "dc:title[2]/@xml:lang", XMPTagType::QUALIFIER, qualValue2, getTag);
+    EXPECT_TRUE(ret);
+    EXPECT_EQ(getTag.type, XMPTagType::QUALIFIER);
+    EXPECT_EQ(getTag.value, qualValue2);
 
     ret = xmpMetadata.GetTag("dc:title[@xml:lang='x-default']", getTag);
     EXPECT_TRUE(ret);
-    EXPECT_TRUE(CompareXMPTag(childTag_1, getTag));
+    EXPECT_EQ(getTag.type, XMPTagType::SIMPLE);
+    EXPECT_EQ(getTag.value, childValue1);
 
     ret = xmpMetadata.GetTag("dc:title[@xml:lang='zh-CN']", getTag);
     EXPECT_TRUE(ret);
-    EXPECT_TRUE(CompareXMPTag(childTag_2, getTag));
+    EXPECT_EQ(getTag.type, XMPTagType::SIMPLE);
+    EXPECT_EQ(getTag.value, childValue2);
 
     GTEST_LOG_(INFO) << "XmpMetadataTest: GetTagTest065 end";
 }
@@ -3131,39 +2716,33 @@ HWTEST_F(XmpMetadataTest, GetTagTest066, TestSize.Level1)
 {
     GTEST_LOG_(INFO) << "XmpMetadataTest: GetTagTest066 start";
     XMPMetadata xmpMetadata;
-    XMPTag baseTag;
-    InitTestXMPTag(baseTag, XMPTagType::ALTERNATE_TEXT, "title");
-
-    bool ret = xmpMetadata.SetTag("dc:title", baseTag);
-    EXPECT_TRUE(ret);
-
-    XMPTag childTag_1;
-    InitTestXMPTag(childTag_1, XMPTagType::SIMPLE, "title", "Default Title");
-    ret = xmpMetadata.SetTag("dc:title[1]", childTag_1);
-    EXPECT_TRUE(ret);
-
-    XMPTag childTag_2;
-    InitTestXMPTag(childTag_2, XMPTagType::SIMPLE, "title", "中文标题");
-    ret = xmpMetadata.SetTag("dc:title[2]", childTag_2);
-    EXPECT_TRUE(ret);
-
-    XMPTag qualTag;
-    InitTestXMPTag(qualTag, XMPTagType::QUALIFIER, "lang", "x-default");
-    ret = xmpMetadata.SetTag("dc:title[1]/?xml:lang", qualTag);
-    EXPECT_TRUE(ret);
-
-    qualTag.value = "zh-CN";
-    ret = xmpMetadata.SetTag("dc:title[2]/?xml:lang", qualTag);
-    EXPECT_TRUE(ret);
-
     XMPTag getTag;
+    bool ret = SetValueAndGetTagForTest(xmpMetadata, "dc:title", XMPTagType::ALTERNATE_TEXT, "", getTag);
+    EXPECT_TRUE(ret);
+
+    const std::string childValue1 = "Default Title";
+    ret = SetValueForTest(xmpMetadata, "dc:title[1]", XMPTagType::SIMPLE, childValue1);
+    EXPECT_TRUE(ret);
+
+    const std::string childValue2 = "中文标题";
+    ret = SetValueForTest(xmpMetadata, "dc:title[2]", XMPTagType::SIMPLE, childValue2);
+    EXPECT_TRUE(ret);
+
+    ret = SetValueForTest(xmpMetadata, "dc:title[1]/?xml:lang", XMPTagType::QUALIFIER, "x-default");
+    EXPECT_TRUE(ret);
+
+    ret = SetValueForTest(xmpMetadata, "dc:title[2]/?xml:lang", XMPTagType::QUALIFIER, "zh-CN");
+    EXPECT_TRUE(ret);
+
     ret = xmpMetadata.GetTag("dc:title[?xml:lang='x-default']", getTag);
     EXPECT_TRUE(ret);
-    EXPECT_TRUE(CompareXMPTag(childTag_1, getTag));
+    EXPECT_EQ(getTag.type, XMPTagType::SIMPLE);
+    EXPECT_EQ(getTag.value, childValue1);
 
     ret = xmpMetadata.GetTag("dc:title[?xml:lang=\"zh-CN\"]", getTag);
     EXPECT_TRUE(ret);
-    EXPECT_TRUE(CompareXMPTag(childTag_2, getTag));
+    EXPECT_EQ(getTag.type, XMPTagType::SIMPLE);
+    EXPECT_EQ(getTag.value, childValue2);
 
     GTEST_LOG_(INFO) << "XmpMetadataTest: GetTagTest066 end";
 }
@@ -3178,43 +2757,36 @@ HWTEST_F(XmpMetadataTest, GetTagTest067, TestSize.Level1)
 {
     GTEST_LOG_(INFO) << "XmpMetadataTest: GetTagTest067 start";
     XMPMetadata xmpMetadata;
-    XMPTag baseTag;
-    InitTestXMPTag(baseTag, XMPTagType::STRUCTURE, "subject");
-
-    bool ret = xmpMetadata.SetTag("dc:subject", baseTag);
+    bool ret = SetValueForTest(xmpMetadata, "dc:subject", XMPTagType::STRUCTURE, "");
     EXPECT_TRUE(ret);
 
-    InitTestXMPTag(baseTag, XMPTagType::ALTERNATE_TEXT, "title");
-    ret = xmpMetadata.SetTag("dc:subject/dc:title", baseTag);
+    ret = SetValueForTest(xmpMetadata, "dc:subject/dc:title", XMPTagType::ALTERNATE_TEXT, "");
     EXPECT_TRUE(ret);
 
-    XMPTag childTag_1;
-    InitTestXMPTag(childTag_1, XMPTagType::SIMPLE, "title", "Default Title");
-    ret = xmpMetadata.SetTag("dc:subject/dc:title[1]", childTag_1);
+    const std::string childValue1 = "Default Title";
+    ret = SetValueForTest(xmpMetadata, "dc:subject/dc:title[1]", XMPTagType::SIMPLE, childValue1);
     EXPECT_TRUE(ret);
 
-    XMPTag childTag_2;
-    InitTestXMPTag(childTag_2, XMPTagType::SIMPLE, "title", "中文标题");
-    ret = xmpMetadata.SetTag("dc:subject/dc:title[2]", childTag_2);
+    const std::string childValue2 = "中文标题";
+    ret = SetValueForTest(xmpMetadata, "dc:subject/dc:title[2]", XMPTagType::SIMPLE, childValue2);
     EXPECT_TRUE(ret);
 
-    XMPTag qualTag;
-    InitTestXMPTag(qualTag, XMPTagType::QUALIFIER, "lang", "x-default");
-    ret = xmpMetadata.SetTag("dc:subject/dc:title[1]/?xml:lang", qualTag);
+    ret = SetValueForTest(xmpMetadata, "dc:subject/dc:title[1]/?xml:lang", XMPTagType::QUALIFIER, "x-default");
     EXPECT_TRUE(ret);
 
-    qualTag.value = "zh-CN";
-    ret = xmpMetadata.SetTag("dc:subject/dc:title[2]/?xml:lang", qualTag);
+    ret = SetValueForTest(xmpMetadata, "dc:subject/dc:title[2]/?xml:lang", XMPTagType::QUALIFIER, "zh-CN");
     EXPECT_TRUE(ret);
 
     XMPTag getTag;
     ret = xmpMetadata.GetTag("dc:subject/dc:title[?xml:lang='x-default']", getTag);
     EXPECT_TRUE(ret);
-    EXPECT_TRUE(CompareXMPTag(childTag_1, getTag));
+    EXPECT_EQ(getTag.type, XMPTagType::SIMPLE);
+    EXPECT_EQ(getTag.value, childValue1);
 
     ret = xmpMetadata.GetTag("dc:subject/dc:title[?xml:lang=\"zh-CN\"]", getTag);
     EXPECT_TRUE(ret);
-    EXPECT_TRUE(CompareXMPTag(childTag_2, getTag));
+    EXPECT_EQ(getTag.type, XMPTagType::SIMPLE);
+    EXPECT_EQ(getTag.value, childValue2);
 
     GTEST_LOG_(INFO) << "XmpMetadataTest: GetTagTest067 end";
 }
@@ -3229,40 +2801,33 @@ HWTEST_F(XmpMetadataTest, GetTagTest068, TestSize.Level1)
 {
     GTEST_LOG_(INFO) << "XmpMetadataTest: GetTagTest068 start";
     XMPMetadata xmpMetadata;
-    XMPTag baseTag;
-    InitTestXMPTag(baseTag, XMPTagType::STRUCTURE, "subject");
-
-    bool ret = xmpMetadata.SetTag("dc:subject", baseTag);
+    bool ret = SetValueForTest(xmpMetadata, "dc:subject", XMPTagType::STRUCTURE, "");
     EXPECT_TRUE(ret);
 
-    XMPTag childTag_1;
-    InitTestXMPTag(childTag_1, XMPTagType::SIMPLE, "child1", "childTag_1");
-    ret = xmpMetadata.SetTag("dc:subject/dc:child1", childTag_1);
+    ret = SetValueForTest(xmpMetadata, "dc:subject/dc:child1", XMPTagType::SIMPLE, "childTag_1");
     EXPECT_TRUE(ret);
 
-    XMPTag childTag_2;
-    InitTestXMPTag(childTag_2, XMPTagType::SIMPLE, "child2", "childTag_2");
-    ret = xmpMetadata.SetTag("dc:subject/dc:child2", childTag_2);
+    ret = SetValueForTest(xmpMetadata, "dc:subject/dc:child2", XMPTagType::SIMPLE, "childTag_2");
     EXPECT_TRUE(ret);
 
-    XMPTag qualTag1;
-    InitTestXMPTag(qualTag1, XMPTagType::QUALIFIER, "age", "25");
-    ret = xmpMetadata.SetTag("dc:subject/dc:child1/?xml:age", qualTag1);
+    const std::string qualValue1 = "25";
+    ret = SetValueForTest(xmpMetadata, "dc:subject/dc:child1/?xml:age", XMPTagType::QUALIFIER, qualValue1);
     EXPECT_TRUE(ret);
 
-    XMPTag qualTag2;
-    InitTestXMPTag(qualTag2, XMPTagType::QUALIFIER, "age", "30");
-    ret = xmpMetadata.SetTag("dc:subject/dc:child2/?xml:age", qualTag2);
+    const std::string qualValue2 = "30";
+    ret = SetValueForTest(xmpMetadata, "dc:subject/dc:child2/?xml:age", XMPTagType::QUALIFIER, qualValue2);
     EXPECT_TRUE(ret);
 
     XMPTag getTag;
     ret = xmpMetadata.GetTag("dc:subject/dc:child1/?xml:age", getTag);
     EXPECT_TRUE(ret);
-    EXPECT_TRUE(CompareXMPTag(qualTag1, getTag));
+    EXPECT_EQ(getTag.type, XMPTagType::QUALIFIER);
+    EXPECT_EQ(getTag.value, qualValue1);
 
     ret = xmpMetadata.GetTag("dc:subject/dc:child2/?xml:age", getTag);
     EXPECT_TRUE(ret);
-    EXPECT_TRUE(CompareXMPTag(qualTag2, getTag));
+    EXPECT_EQ(getTag.type, XMPTagType::QUALIFIER);
+    EXPECT_EQ(getTag.value, qualValue2);
 
     GTEST_LOG_(INFO) << "XmpMetadataTest: GetTagTest068 end";
 }
@@ -3278,43 +2843,36 @@ HWTEST_F(XmpMetadataTest, GetTagTest069, TestSize.Level1)
 {
     GTEST_LOG_(INFO) << "XmpMetadataTest: GetTagTest069 start";
     XMPMetadata xmpMetadata;
-    XMPTag baseTag;
-    InitTestXMPTag(baseTag, XMPTagType::UNORDERED_ARRAY, "subject");
-
-    bool ret = xmpMetadata.SetTag("dc:subject", baseTag);
+    bool ret = SetValueForTest(xmpMetadata, "dc:subject", XMPTagType::UNORDERED_ARRAY, "");
     EXPECT_TRUE(ret);
 
-    InitTestXMPTag(baseTag, XMPTagType::ALTERNATE_TEXT, "title");
-    ret = xmpMetadata.SetTag("dc:subject[1]/dc:title", baseTag);
+    ret = SetValueForTest(xmpMetadata, "dc:subject[1]/dc:title", XMPTagType::ALTERNATE_TEXT, "");
     EXPECT_TRUE(ret);
 
-    XMPTag childTag_1;
-    InitTestXMPTag(childTag_1, XMPTagType::SIMPLE, "title", "Default Title");
-    ret = xmpMetadata.SetTag("dc:subject[1]/dc:title[1]", childTag_1);
+    const std::string childValue1 = "Default Title";
+    ret = SetValueForTest(xmpMetadata, "dc:subject[1]/dc:title[1]", XMPTagType::SIMPLE, childValue1);
     EXPECT_TRUE(ret);
 
-    XMPTag childTag_2;
-    InitTestXMPTag(childTag_2, XMPTagType::SIMPLE, "title", "中文标题");
-    ret = xmpMetadata.SetTag("dc:subject[1]/dc:title[2]", childTag_2);
+    const std::string childValue2 = "中文标题";
+    ret = SetValueForTest(xmpMetadata, "dc:subject[1]/dc:title[2]", XMPTagType::SIMPLE, childValue2);
     EXPECT_TRUE(ret);
 
-    XMPTag qualTag;
-    InitTestXMPTag(qualTag, XMPTagType::QUALIFIER, "lang", "x-default");
-    ret = xmpMetadata.SetTag("dc:subject[1]/dc:title[1]/@xml:lang", qualTag);
+    ret = SetValueForTest(xmpMetadata, "dc:subject[1]/dc:title[1]/@xml:lang", XMPTagType::QUALIFIER, "x-default");
     EXPECT_TRUE(ret);
 
-    qualTag.value = "zh-CN";
-    ret = xmpMetadata.SetTag("dc:subject[1]/dc:title[2]/@xml:lang", qualTag);
+    ret = SetValueForTest(xmpMetadata, "dc:subject[1]/dc:title[2]/@xml:lang", XMPTagType::QUALIFIER, "zh-CN");
     EXPECT_TRUE(ret);
 
     XMPTag getTag;
     ret = xmpMetadata.GetTag("dc:subject[1]/dc:title[@xml:lang='x-default']", getTag);
     EXPECT_TRUE(ret);
-    EXPECT_TRUE(CompareXMPTag(childTag_1, getTag));
+    EXPECT_EQ(getTag.type, XMPTagType::SIMPLE);
+    EXPECT_EQ(getTag.value, childValue1);
 
     ret = xmpMetadata.GetTag("dc:subject[1]/dc:title[@xml:lang=\"zh-CN\"]", getTag);
     EXPECT_TRUE(ret);
-    EXPECT_TRUE(CompareXMPTag(childTag_2, getTag));
+    EXPECT_EQ(getTag.type, XMPTagType::SIMPLE);
+    EXPECT_EQ(getTag.value, childValue2);
 
     GTEST_LOG_(INFO) << "XmpMetadataTest: GetTagTest069 end";
 }
@@ -3329,7 +2887,7 @@ HWTEST_F(XmpMetadataTest, EnumerateTags001, TestSize.Level1)
     GTEST_LOG_(INFO) << "XmpMetadataTest: EnumerateTags001 start";
     std::string parentPath;
     XMPMetadata xmpMetadata;
-    std::vector<XMPTag> xmpTagVec;
+    std::vector<ExpectedTagTypeValue> xmpTagVec;
     XMPEnumerateOption options;
 
     InitTestXMPMetadataForEnumerate(xmpMetadata, xmpTagVec);
@@ -3350,7 +2908,7 @@ HWTEST_F(XmpMetadataTest, EnumerateTags002, TestSize.Level1)
     GTEST_LOG_(INFO) << "XmpMetadataTest: EnumerateTags002 start";
     std::string parentPath;
     XMPMetadata xmpMetadata;
-    std::vector<XMPTag> xmpTagVec;
+    std::vector<ExpectedTagTypeValue> xmpTagVec;
     XMPEnumerateOption options;
 
     InitTestXMPMetadataForEnumerate(xmpMetadata, xmpTagVec);
@@ -3380,7 +2938,7 @@ HWTEST_F(XmpMetadataTest, EnumerateTags003, TestSize.Level1)
     GTEST_LOG_(INFO) << "XmpMetadataTest: EnumerateTags003 start";
     std::string parentPath;
     XMPMetadata xmpMetadata;
-    std::vector<XMPTag> xmpTagVec;
+    std::vector<ExpectedTagTypeValue> xmpTagVec;
     XMPEnumerateOption options;
 
     InitTestXMPMetadataForEnumerate(xmpMetadata, xmpTagVec);
@@ -3402,7 +2960,7 @@ HWTEST_F(XmpMetadataTest, EnumerateTags004, TestSize.Level1)
     GTEST_LOG_(INFO) << "XmpMetadataTest: EnumerateTags004 start";
     std::string parentPath;
     XMPMetadata xmpMetadata;
-    std::vector<XMPTag> xmpTagVec;
+    std::vector<ExpectedTagTypeValue> xmpTagVec;
     XMPEnumerateOption options;
 
     InitTestXMPMetadataForEnumerate(xmpMetadata, xmpTagVec);
@@ -3424,7 +2982,7 @@ HWTEST_F(XmpMetadataTest, EnumerateTags005, TestSize.Level1)
     GTEST_LOG_(INFO) << "XmpMetadataTest: EnumerateTags005 start";
     std::string parentPath;
     XMPMetadata xmpMetadata;
-    std::vector<XMPTag> xmpTagVec;
+    std::vector<ExpectedTagTypeValue> xmpTagVec;
     XMPEnumerateOption options;
 
     InitTestXMPMetadataForEnumerate(xmpMetadata, xmpTagVec);
@@ -3446,7 +3004,7 @@ HWTEST_F(XmpMetadataTest, EnumerateTags006, TestSize.Level1)
     GTEST_LOG_(INFO) << "XmpMetadataTest: EnumerateTags006 start";
     std::string parentPath;
     XMPMetadata xmpMetadata;
-    std::vector<XMPTag> xmpTagVec;
+    std::vector<ExpectedTagTypeValue> xmpTagVec;
     XMPEnumerateOption options;
     options.isRecursive = true;
 
@@ -3589,11 +3147,11 @@ HWTEST_F(XmpMetadataTest, ExtractPropertyTest001, TestSize.Level1)
     GTEST_LOG_(INFO) << "XmpMetadataTest: ExtractPropertyTest001 start";
     // Case 1: Nested path with Localization Text Selector
     std::string path1 = "dc:subject/dc:title[?xml:lang='x-default']";
-    EXPECT_EQ(XMPHelper::ExtractProperty(path1), "dc:title");
+    EXPECT_EQ(XMPHelper::ExtractProperty(path1), "dc:title[?xml:lang='x-default']");
 
     // Case 2: Nested path with Array Index and Localization Text Selector
     std::string path2 = "dc:subject[1]/dc:title[@xml:lang='x-default']";
-    EXPECT_EQ(XMPHelper::ExtractProperty(path2), "dc:title");
+    EXPECT_EQ(XMPHelper::ExtractProperty(path2), "dc:title[@xml:lang='x-default']");
 
     // Case 3: Nested path with Structure Field
     std::string path3 = "exif:Flash/exif:Fired";
@@ -3601,11 +3159,11 @@ HWTEST_F(XmpMetadataTest, ExtractPropertyTest001, TestSize.Level1)
 
     // Case 4: Deep nested path
     std::string path4 = "dc:first[1]/dc:second[1]/dc:third[1]";
-    EXPECT_EQ(XMPHelper::ExtractProperty(path4), "dc:third");
+    EXPECT_EQ(XMPHelper::ExtractProperty(path4), "dc:third[1]");
 
     // Case 5: Nested Qualifier (Selector)
     std::string path5 = "dc:description/dc:title[?book:lastUpdated='2023']";
-    EXPECT_EQ(XMPHelper::ExtractProperty(path5), "dc:title");
+    EXPECT_EQ(XMPHelper::ExtractProperty(path5), "dc:title[?book:lastUpdated='2023']");
 
     GTEST_LOG_(INFO) << "XmpMetadataTest: ExtractPropertyTest001 end";
 }
@@ -3623,17 +3181,24 @@ HWTEST_F(XmpMetadataTest, ExtractPropertyTest002, TestSize.Level1)
     std::string path = "  test path  ";
     EXPECT_EQ(XMPHelper::ExtractProperty(path), "test path");
 
-    EXPECT_EQ(XMPHelper::ExtractProperty("["), "");
+    EXPECT_EQ(XMPHelper::ExtractProperty("["), "[");
     EXPECT_EQ(XMPHelper::ExtractProperty("]"), "]");
 
     path = "testpath]";
     EXPECT_EQ(XMPHelper::ExtractProperty(path), path);
 
     path = "dc:title[invalid path";
-    EXPECT_EQ(XMPHelper::ExtractProperty(path), "dc:title");
+    EXPECT_EQ(XMPHelper::ExtractProperty(path), path);
 
     path = "prop/?; rm -rf /";
     EXPECT_EQ(XMPHelper::ExtractProperty("prop/?; rm -rf /"), "; rm -rf /");
+
+    EXPECT_EQ(XMPHelper::ExtractProperty("dc:subject/[2]"), "dc:subject[2]");
+    EXPECT_EQ(XMPHelper::ExtractProperty("dc:subject*[2]"), "dc:subject[2]");
+    EXPECT_EQ(XMPHelper::ExtractProperty("dc:subject/*[2]"), "dc:subject[2]");
+    EXPECT_EQ(XMPHelper::ExtractProperty("dc:title[1]/@xml:lang"), "xml:lang");
+    EXPECT_EQ(XMPHelper::ExtractProperty("dc:title[1]/?xml:lang"), "xml:lang");
+    EXPECT_EQ(XMPHelper::ExtractProperty("dc:title[1]/?book:lastUpdated"), "book:lastUpdated");
 
     GTEST_LOG_(INFO) << "XmpMetadataTest: ExtractPropertyTest002 end";
 }
@@ -3761,24 +3326,19 @@ HWTEST_F(XmpMetadataTest, RemoveTagTest001, TestSize.Level1)
 {
     GTEST_LOG_(INFO) << "XmpMetadataTest: RemoveTagTest001 start";
     XMPMetadata xmpMetadata;
-    XMPTag baseTag;
-    InitTestXMPTag(baseTag, XMPTagType::UNORDERED_ARRAY, "parent");
-    bool ret = xmpMetadata.SetTag("dc:parent", baseTag);
+    bool ret = SetValueForTest(xmpMetadata, "dc:parent", XMPTagType::UNORDERED_ARRAY, "");
     EXPECT_TRUE(ret);
 
-    XMPTag childTag_1;
-    InitTestXMPTag(childTag_1, XMPTagType::SIMPLE, "parent", "first");
-    ret = xmpMetadata.SetTag("dc:parent[1]", childTag_1);
+    const std::string value1 = "first";
+    ret = SetValueForTest(xmpMetadata, "dc:parent[1]", XMPTagType::SIMPLE, value1);
     EXPECT_TRUE(ret);
 
-    XMPTag childTag_2;
-    InitTestXMPTag(childTag_2, XMPTagType::SIMPLE, "parent", "second");
-    ret = xmpMetadata.SetTag("dc:parent[2]", childTag_2);
+    const std::string value2 = "second";
+    ret = SetValueForTest(xmpMetadata, "dc:parent[2]", XMPTagType::SIMPLE, value2);
     EXPECT_TRUE(ret);
 
-    XMPTag childTag_3;
-    InitTestXMPTag(childTag_3, XMPTagType::SIMPLE, "parent", "third");
-    ret = xmpMetadata.SetTag("dc:parent[3]", childTag_3);
+    const std::string value3 = "third";
+    ret = SetValueForTest(xmpMetadata, "dc:parent[3]", XMPTagType::SIMPLE, value3);
     EXPECT_TRUE(ret);
 
     ret = xmpMetadata.RemoveTag("dc:parent[1]");
@@ -3787,7 +3347,8 @@ HWTEST_F(XmpMetadataTest, RemoveTagTest001, TestSize.Level1)
     XMPTag getTag;
     ret = xmpMetadata.GetTag("dc:parent[1]", getTag);
     EXPECT_TRUE(ret);
-    EXPECT_TRUE(CompareXMPTag(getTag, childTag_2));
+    EXPECT_EQ(getTag.type, XMPTagType::SIMPLE);
+    EXPECT_EQ(getTag.value, value2);
 
     GTEST_LOG_(INFO) << "XmpMetadataTest: RemoveTagTest001 end";
 }
@@ -3801,24 +3362,19 @@ HWTEST_F(XmpMetadataTest, RemoveTagTest002, TestSize.Level1)
 {
     GTEST_LOG_(INFO) << "XmpMetadataTest: RemoveTagTest002 start";
     XMPMetadata xmpMetadata;
-    XMPTag baseTag;
-    InitTestXMPTag(baseTag, XMPTagType::ORDERED_ARRAY, "parent");
-    bool ret = xmpMetadata.SetTag("dc:parent", baseTag);
+    bool ret = SetValueForTest(xmpMetadata, "dc:parent", XMPTagType::ORDERED_ARRAY, "");
     EXPECT_TRUE(ret);
 
-    XMPTag childTag_1;
-    InitTestXMPTag(childTag_1, XMPTagType::SIMPLE, "parent", "first");
-    ret = xmpMetadata.SetTag("dc:parent[1]", childTag_1);
+    const std::string value1 = "first";
+    ret = SetValueForTest(xmpMetadata, "dc:parent[1]", XMPTagType::SIMPLE, value1);
     EXPECT_TRUE(ret);
 
-    XMPTag childTag_2;
-    InitTestXMPTag(childTag_2, XMPTagType::SIMPLE, "parent", "second");
-    ret = xmpMetadata.SetTag("dc:parent[2]", childTag_2);
+    const std::string value2 = "second";
+    ret = SetValueForTest(xmpMetadata, "dc:parent[2]", XMPTagType::SIMPLE, value2);
     EXPECT_TRUE(ret);
 
-    XMPTag childTag_3;
-    InitTestXMPTag(childTag_3, XMPTagType::SIMPLE, "parent", "third");
-    ret = xmpMetadata.SetTag("dc:parent[3]", childTag_3);
+    const std::string value3 = "third";
+    ret = SetValueForTest(xmpMetadata, "dc:parent[3]", XMPTagType::SIMPLE, value3);
     EXPECT_TRUE(ret);
 
     ret = xmpMetadata.RemoveTag("dc:parent[1]");
@@ -3827,7 +3383,8 @@ HWTEST_F(XmpMetadataTest, RemoveTagTest002, TestSize.Level1)
     XMPTag getTag;
     ret = xmpMetadata.GetTag("dc:parent[1]", getTag);
     EXPECT_TRUE(ret);
-    EXPECT_TRUE(CompareXMPTag(getTag, childTag_2));
+    EXPECT_EQ(getTag.type, XMPTagType::SIMPLE);
+    EXPECT_EQ(getTag.value, value2);
 
     GTEST_LOG_(INFO) << "XmpMetadataTest: RemoveTagTest002 end";
 }
@@ -3841,24 +3398,19 @@ HWTEST_F(XmpMetadataTest, RemoveTagTest003, TestSize.Level1)
 {
     GTEST_LOG_(INFO) << "XmpMetadataTest: RemoveTagTest003 start";
     XMPMetadata xmpMetadata;
-    XMPTag baseTag;
-    InitTestXMPTag(baseTag, XMPTagType::ALTERNATE_ARRAY, "parent");
-    bool ret = xmpMetadata.SetTag("dc:parent", baseTag);
+    bool ret = SetValueForTest(xmpMetadata, "dc:parent", XMPTagType::ALTERNATE_ARRAY, "");
     EXPECT_TRUE(ret);
 
-    XMPTag childTag_1;
-    InitTestXMPTag(childTag_1, XMPTagType::SIMPLE, "parent", "first");
-    ret = xmpMetadata.SetTag("dc:parent[1]", childTag_1);
+    const std::string value1 = "first";
+    ret = SetValueForTest(xmpMetadata, "dc:parent[1]", XMPTagType::SIMPLE, value1);
     EXPECT_TRUE(ret);
 
-    XMPTag childTag_2;
-    InitTestXMPTag(childTag_2, XMPTagType::SIMPLE, "parent", "second");
-    ret = xmpMetadata.SetTag("dc:parent[2]", childTag_2);
+    const std::string value2 = "second";
+    ret = SetValueForTest(xmpMetadata, "dc:parent[2]", XMPTagType::SIMPLE, value2);
     EXPECT_TRUE(ret);
 
-    XMPTag childTag_3;
-    InitTestXMPTag(childTag_3, XMPTagType::SIMPLE, "parent", "third");
-    ret = xmpMetadata.SetTag("dc:parent[3]", childTag_3);
+    const std::string value3 = "third";
+    ret = SetValueForTest(xmpMetadata, "dc:parent[3]", XMPTagType::SIMPLE, value3);
     EXPECT_TRUE(ret);
 
     ret = xmpMetadata.RemoveTag("dc:parent[1]");
@@ -3867,7 +3419,8 @@ HWTEST_F(XmpMetadataTest, RemoveTagTest003, TestSize.Level1)
     XMPTag getTag;
     ret = xmpMetadata.GetTag("dc:parent[1]", getTag);
     EXPECT_TRUE(ret);
-    EXPECT_TRUE(CompareXMPTag(getTag, childTag_2));
+    EXPECT_EQ(getTag.type, XMPTagType::SIMPLE);
+    EXPECT_EQ(getTag.value, value2);
 
     GTEST_LOG_(INFO) << "XmpMetadataTest: RemoveTagTest003 end";
 }

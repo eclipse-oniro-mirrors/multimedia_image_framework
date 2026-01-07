@@ -178,7 +178,7 @@ bool XMPMetadata::RegisterNamespacePrefix(const std::string &uri, const std::str
     XMP_CATCH_RETURN_RET(false);
 }
 
-bool XMPMetadata::SetTag(const std::string &path, const XMPTag &tag)
+bool XMPMetadata::SetValue(const std::string &path, const XMPTagType &tagType, const std::string &value)
 {
     XMP_TRY();
     CHECK_ERROR_RETURN_RET_LOG(!impl_ || !impl_->IsValid(), false,
@@ -189,13 +189,13 @@ bool XMPMetadata::SetTag(const std::string &path, const XMPTag &tag)
     CHECK_ERROR_RETURN_RET_LOG(!SXMPMeta::GetNamespaceURI(prefix.c_str(), &namespaceUri), false,
         "%{public}s failed to get namespace URI for prefix: %{public}s", __func__, prefix.c_str());
 
-    XMP_OptionBits options = ConvertTagTypeToOptions(tag.type);
-    if (IsContainerTagType(tag.type)) {
-        CHECK_ERROR_RETURN_RET_LOG(!tag.value.empty(), false, "%{public}s: container tag's value should be empty "
+    XMP_OptionBits options = ConvertTagTypeToOptions(tagType);
+    if (IsContainerTagType(tagType)) {
+        CHECK_ERROR_RETURN_RET_LOG(!value.empty(), false, "%{public}s: container tag's value should be empty "
             "for path: %{public}s", __func__, path.c_str());
         impl_->SetProperty(namespaceUri.c_str(), propName.c_str(), nullptr, options);
     } else {
-        impl_->SetProperty(namespaceUri.c_str(), propName.c_str(), tag.value.c_str(), options);
+        impl_->SetProperty(namespaceUri.c_str(), propName.c_str(), value.c_str(), options);
     }
     return true;
     XMP_CATCH_RETURN_RET(false);
