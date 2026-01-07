@@ -3110,7 +3110,10 @@ static std::unique_ptr<ImageSourceAsyncContext> UnwrapContextForReadImageMetadat
         int index = 0;
         napi_status status = napi_get_value_int32(env, argValue[NUM_1], &index);
         IMG_NAPI_CHECK_RET_D(IMG_IS_OK(status), nullptr, IMAGE_LOGE("Fail to get readImageMetadata index argument"));
-        IMG_NAPI_CHECK_RET_D(index >= 0, nullptr, IMAGE_LOGE("Invalid readImageMetadata index"));
+        uint32_t errorCode = 0;
+        uint32_t frameCount = context->rImageSource->GetFrameCount(errorCode);
+        IMG_NAPI_CHECK_RET_D((errorCode == SUCCESS) && (index >= 0) && (index < frameCount),
+            nullptr, IMAGE_LOGE("Invalid readImageMetadata index"));
         context->index = static_cast<uint32_t>(index);
         IMAGE_LOGD("index is %{public}d", index);
     }
