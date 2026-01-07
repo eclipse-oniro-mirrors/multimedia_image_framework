@@ -281,15 +281,6 @@ static int32_t GetHdrAllocFormat(PixelFormat pixelFormat)
 {
     int32_t hdrAllocFormat = HDR_ALLOC_FORMAT_INVALID;
     switch (pixelFormat) {
-        case PixelFormat::RGBA_8888:
-            hdrAllocFormat = GRAPHIC_PIXEL_FMT_RGBA_1010102;
-            break;
-        case PixelFormat::NV21:
-            hdrAllocFormat = GRAPHIC_PIXEL_FMT_YCRCB_P010;
-            break;
-        case PixelFormat::NV12:
-            hdrAllocFormat = GRAPHIC_PIXEL_FMT_YCBCR_P010;
-            break;
         case PixelFormat::RGBA_1010102:
             hdrAllocFormat = GRAPHIC_PIXEL_FMT_RGBA_1010102;
             break;
@@ -454,7 +445,7 @@ static std::unique_ptr<PixelMap> ComposeHdrPixelMap(std::shared_ptr<PixelMap> &m
     mainPixelMap->GetImageInfo(imageInfo);
     if (pixelFormat == PixelFormat::UNKNOWN) {
         IMAGE_LOGI("Using mainPixelMap imageInfo format");
-        pixelFormat = imageInfo.pixelFormat;
+        pixelFormat = ImageUtils::ConvertTo10BitPixelFormat(imageInfo.pixelFormat);
     }
 
     int32_t hdrAllocFormat = GetHdrAllocFormat(pixelFormat);
@@ -495,6 +486,7 @@ static std::unique_ptr<PixelMap> ComposeHdrPixelMap(std::shared_ptr<PixelMap> &m
         return nullptr;
     }
     ImageUtils::DumpHdrBufferEnabled(hdrSptr, "Picture-HDR-Composed");
+    IMAGE_LOGI("ComposeHdrPixelMap %{public}d success", hdrAllocFormat);
     return Picture::SurfaceBuffer2PixelMap(hdrSptr);
 }
 

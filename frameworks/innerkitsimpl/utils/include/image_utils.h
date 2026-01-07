@@ -226,7 +226,7 @@ public:
     static bool GetAlignedNumber(int32_t& number, int32_t align);
     static int32_t GetByteCount(ImageInfo imageInfo);
     static int32_t GetYUVByteCount(const ImageInfo& info);
-
+    static PixelFormat ConvertTo10BitPixelFormat(PixelFormat pixelFormat);
     template<typename T>
     static bool CheckMulOverflow(const T& num1, const T& num2)
     {
