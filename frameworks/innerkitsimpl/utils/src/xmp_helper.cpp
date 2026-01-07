@@ -28,9 +28,6 @@ namespace {
 constexpr size_t NUM_1 = 1;
 constexpr std::string_view WHITE_SPACE_CHARS = " \t\r\n";
 constexpr std::string_view COLON = ":";
-constexpr std::string_view SELECTOR_XML_LANG_AT = "[@xml:lang=";
-constexpr std::string_view SELECTOR_XML_LANG_Q = "[?xml:lang=";
-constexpr std::string_view QUALIFIER_SELECTOR = "[?";
 constexpr std::string_view PATH_QUALIFIER_Q = "/?";
 constexpr std::string_view PATH_QUALIFIER_AT = "/@";
 constexpr std::string_view PATH_XML_LANG_AT = "/@xml:lang";
@@ -103,21 +100,6 @@ void XMPHelper::LogXMPError(const char *funcName, const XMP_Error &error)
         static_cast<int32_t>(error.GetID()), msg);
 }
 
-/**
- * @brief Check if the bracket content is a selector expression
- * Selector form:     [dc:source="network"], [?book:lastUpdated="2023"], [@xml:lang="en-US"]
- * Non-selector form: [1], [2], [last()]
- */
-static bool IsSelectorExpression(std::string_view path, size_t bracketPos)
-{
-    size_t closeBracketPos = path.find(']', bracketPos);
-    if (closeBracketPos == std::string_view::npos) {
-        return false;
-    }
-    std::string_view bracketContent = path.substr(bracketPos + NUM_1, closeBracketPos - bracketPos - NUM_1);
-    return bracketContent.find('=') != std::string_view::npos;
-}
-
 // Normalize array index path (single-pass optimization)
 // dc:subject/[2] -> dc:subject[2]
 // dc:subject*[2] -> dc:subject[2]
@@ -152,20 +134,20 @@ static void NormalizeArrayIndexPath(std::string &path)
 }
 
 // Property Extract Rule:
-// | -------------------------- | ---------------------------------------------- | ----------------- |
-// | Path Expression Type       | Format Example                                 | Property          |
-// | -------------------------- | ---------------------------------------------- | ----------------- |
-// | Namespace Field            | dc:creator                                     | dc:creator        |
-// | Array Index                | dc:subject[2], dc:subject/[2],                 | dc:subject        |
-// |                            | dc:subject*[2], dc:subject/*[2]                |                   |
-// | Array Last Item            | dc:subject[last()]                             | dc:subject        |
-// | Structure Field            | exif:Flash/exif:Fired                          | exif:Fired        |
-// | Qualifier(Path)            | dc:title[1]/?book:lastUpdated                  | book:lastUpdated  |
-// | Qualifier(Selector)        | dc:title[?book:lastUpdated="2023"]             | dc:title          |
-// | Localization Text(Path)    | dc:title[1]/@xml:lang, dc:title[1]/?xml:lang   | xml:lang          |
-// | Localization Text(Selector)| dc:title[@xml:lang="en-US"]                    | dc:title          |
-// | Structure Array(Selector)  | dc:subject[dc:source="network"]                | dc:subject        |
-// | -------------------------- | ---------------------------------------------- | ----------------- |
+// | -------------------------- | ---------------------------------------------- | ---------------------------------- |
+// | Path Expression Type       | Format Example                                 | Property                           |
+// | -------------------------- | ---------------------------------------------- | ---------------------------------- |
+// | Namespace Field            | dc:creator                                     | dc:creator                         |
+// | Array Index                | dc:subject[2], dc:subject/[2],                 | dc:subject[2]                      |
+// |                            | dc:subject*[2], dc:subject/*[2]                |                                    |
+// | Array Last Item            | dc:subject[last()]                             | dc:subject[last()]                 |
+// | Structure Field            | exif:Flash/exif:Fired                          | exif:Fired                         |
+// | Qualifier(Path)            | dc:title[1]/?book:lastUpdated                  | book:lastUpdated                   |
+// | Qualifier(Selector)        | dc:title[?book:lastUpdated="2023"]             | dc:title[?book:lastUpdated="2023"] |
+// | Localization Text(Path)    | dc:title[1]/@xml:lang, dc:title[1]/?xml:lang   | xml:lang                           |
+// | Localization Text(Selector)| dc:title[@xml:lang="en-US"]                    | dc:title[@xml:lang="en-US"]        |
+// | Structure Array(Selector)  | dc:subject[dc:source="network"]                | dc:subject[dc:source="network"]    |
+// | -------------------------- | ---------------------------------------------- | ---------------------------------- |
 std::string XMPHelper::ExtractProperty(std::string_view pathExpression)
 {
     CHECK_DEBUG_RETURN_RET_LOG(pathExpression.empty(), "", "%{public}s pathExpression is empty", __func__);
@@ -183,60 +165,35 @@ std::string XMPHelper::ExtractProperty(std::string_view pathExpression)
         return std::string(path);
     }
 
-    // Combined Case 1/2/3: All selector expressions
-    // Case 1: Localization Text(Selector): dc:title[@xml:lang="en-US"] OR dc:title[?xml:lang="zh-CN"]
-    // Case 2: Qualifier(Selector):         dc:title[?book:lastUpdated="2023"]
-    // Case 3: Structure Array(Selector):   dc:subject[dc:source="network"]
-    // Returns the array name: the part before the opening bracket (e.g., dc:subject)
-    size_t bracketPos = path.rfind('[');
-    if (bracketPos != std::string_view::npos && IsSelectorExpression(path, bracketPos)) {
-        // Ensure it is not a path separator form qualifier access (e.g., dc:subject[dc:source="network"]/?book:lastUpdated)
-        if (path.find(PATH_QUALIFIER_Q) == std::string_view::npos &&
-            path.find(PATH_QUALIFIER_AT) == std::string_view::npos) {
-            std::string_view prefix = path.substr(0, bracketPos);
-            size_t lastSlashPos = prefix.rfind('/');
-            if (lastSlashPos != std::string_view::npos) {
-                return std::string(prefix.substr(lastSlashPos + NUM_1));
-            }
-            return std::string(prefix);
-        }
-    }
-
-    // Case 4: Localization Text(Path): dc:title[1]/@xml:lang OR dc:title[1]/?xml:lang
+    // Case 1: Localization Text(Path): dc:title[1]/@xml:lang OR dc:title[1]/?xml:lang
     // Return qualifier: xml:lang
     if (path.find(PATH_XML_LANG_AT) != std::string_view::npos ||
         path.find(PATH_XML_LANG_Q) != std::string_view::npos) {
         return std::string(XML_LANG);
     }
 
-    // Case 5: Qualifier(Path): dc:title[1]/?book:lastUpdated
+    // Case 2: Qualifier(Path): dc:title[1]/?book:lastUpdated
     // Return qualifier: book:lastUpdated
-    size_t qualifierPos = path.find(PATH_QUALIFIER_Q);
+    size_t qualifierPos = path.rfind(PATH_QUALIFIER_Q);
     if (qualifierPos != std::string_view::npos) {
         return std::string(path.substr(qualifierPos + PATH_QUALIFIER_Q.size()));
     }
 
-    // Case 6: Structure Field or Deep Nested Path: exif:Flash/exif:Fired, dc:first[1]/dc:second[1]/dc:third[1]
-    // Return last field (remove array index): exif:Fired, dc:third
+    // Case 2: Structure Field or Deep Nested Path: exif:Flash/exif:Fired, dc:first[1]/dc:second[1]/dc:third[1]
+    // Return last field: exif:Fired, dc:third[1]
     size_t lastSlashPos = path.rfind('/');
     if (lastSlashPos != std::string_view::npos && lastSlashPos < path.size() - NUM_1) {
         std::string_view lastComponent(path.data() + lastSlashPos + NUM_1, path.size() - lastSlashPos - NUM_1);
-        // Remove array index: dc:third[1] -> dc:third
-        size_t compBracketPos = lastComponent.find('[');
-        if (compBracketPos != std::string_view::npos) {
-            return std::string(lastComponent.substr(0, compBracketPos));
-        }
         return std::string(lastComponent);
     }
 
-    // Case 7: Array Index (no path separator): dc:subject[2], dc:subject[last()], dc:subject[2][3]
-    // Return array name: dc:subject
-    bracketPos = path.find('[');
-    if (bracketPos != std::string_view::npos) {
-        return std::string(path.substr(0, bracketPos));
+    // Case 3: Array Index (no path separator): dc:subject[2], dc:subject[last()], dc:subject[2][3]
+    // Return array name with brackets: dc:subject[2], dc:subject[last()], dc:subject[2][3]
+    if (path.find('[') != std::string_view::npos) {
+        return std::string(path);
     }
 
-    // Case 8: Unknown case - return empty string
+    // Case 4: Unknown case - return empty string
     IMAGE_LOGD("%{public}s: Unknown case for path: %{public}s", __func__, trimmed.c_str());
     return "";
 }
@@ -244,7 +201,7 @@ std::string XMPHelper::ExtractProperty(std::string_view pathExpression)
 /**
  * @brief Extract the property from the path expression
  * @param pathExpression: the path expression to extract the property from
- * @return: the extracted property: {Namespace, PropertyKey}
+ * @return: the extracted property: {Namespace, LocalName}
  */
 std::pair<std::string, std::string> XMPHelper::ExtractSplitProperty(std::string_view pathExpression)
 {

@@ -147,36 +147,6 @@ static bool BuildXMPTag(const std::string &pathExpression, const XMP_OptionBits 
     return true;
 }
 
-static bool ValidateTagWithPath(const std::string &path, const XMPTag &tag)
-{
-    CHECK_ERROR_RETURN_RET_LOG(tag.xmlns.empty() || tag.name.empty(), false,
-        "%{public}s tag is invalid, xmlns: %{public}s, name: %{public}s", __func__, tag.xmlns.c_str(),
-        tag.name.c_str());
-
-    const auto &[expectedNS, expectedKey] = XMPHelper::ExtractSplitProperty(path);
-    CHECK_ERROR_RETURN_RET_LOG(expectedNS.empty() || expectedKey.empty(), false,
-        "%{public}s path is invalid, expectedNS: %{public}s, expectedKey: %{public}s", __func__,
-        expectedNS.c_str(), expectedKey.c_str());
-
-    if (!tag.prefix.empty() && tag.prefix != expectedNS) {
-        IMAGE_LOGW("%{public}s tag prefix mismatch: expected %{public}s, got %{public}s",
-            __func__, expectedNS.c_str(), tag.prefix.c_str());
-        return false;
-    }
-
-    std::string expectedXmlns;
-    CHECK_ERROR_RETURN_RET_LOG(!SXMPMeta::GetNamespaceURI(expectedNS.c_str(), &expectedXmlns), false,
-        "%{public}s failed to get namespace URI for path: %{public}s", __func__, path.c_str());
-    CHECK_ERROR_RETURN_RET_LOG(tag.xmlns != expectedXmlns, false,
-        "%{public}s tag xmlns mismatch: expected %{public}s, got %{public}s", __func__,
-        expectedXmlns.c_str(), tag.xmlns.c_str());
-
-    CHECK_ERROR_RETURN_RET_LOG(tag.name != expectedKey, false,
-        "%{public}s tag name mismatch: expected %{public}s, got %{public}s", __func__,
-        expectedKey.c_str(), tag.name.c_str());
-    return true;
-}
-
 bool XMPMetadata::CreateXMPTag(const std::string &path, const XMPTagType &tagType, const std::string &value,
     XMPTag &outTag)
 {
@@ -213,9 +183,6 @@ bool XMPMetadata::SetTag(const std::string &path, const XMPTag &tag)
     XMP_TRY();
     CHECK_ERROR_RETURN_RET_LOG(!impl_ || !impl_->IsValid(), false,
         "%{public}s impl is null for path: %{public}s", __func__, path.c_str());
-
-    CHECK_ERROR_RETURN_RET_LOG(!ValidateTagWithPath(path, tag), false,
-        "%{public}s tag validation failed for path: %{public}s", __func__, path.c_str());
 
     const auto &[prefix, propName] = XMPHelper::SplitOnce(path, COLON);
     std::string namespaceUri;
