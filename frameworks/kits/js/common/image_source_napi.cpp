@@ -2607,7 +2607,7 @@ napi_value ImageSourceNapi::CreatePixelMapUsingAllocatorSync(napi_env env, napi_
         return ImageNapiUtils::ThrowExceptionError(env, IMAGE_SOURCE_UNSUPPORTED_ALLOCATOR_TYPE,
             "Unsupported allocator type.");
     }
-    IMAGE_LOGI("%{public}s allocator type is %{public}d.", __func__, syncContext->decodeOpts.allocatorType);
+    IMAGE_LOGD("%{public}s allocator type is %{public}d.", __func__, syncContext->decodeOpts.allocatorType);
     syncContext->rPixelMap = CreatePixelMapInner(syncContext->constructor_, syncContext->constructor_->nativeImgSrc,
         syncContext->index, syncContext->decodeOpts, syncContext->status);
     if (syncContext->status != SUCCESS) {
