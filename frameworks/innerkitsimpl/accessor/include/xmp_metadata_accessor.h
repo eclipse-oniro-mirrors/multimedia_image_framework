@@ -30,7 +30,6 @@ namespace Media {
 
 enum class XMPAccessMode {
     READ_ONLY_XMP,
-    READ_FULL_METADATA,
     READ_WRITE_XMP,
 };
 

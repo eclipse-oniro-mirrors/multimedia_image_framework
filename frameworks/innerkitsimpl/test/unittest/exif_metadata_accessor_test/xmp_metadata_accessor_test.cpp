@@ -69,7 +69,7 @@ HWTEST_F(XMPMetadataAccessorTest, CreateTest001, TestSize.Level1)
 
 /**
  * @tc.name: CreateTest002
- * @tc.desc: test Create method when input data and mode is READ_FULL_METADATA.
+ * @tc.desc: test Create method when input data and mode is READ_WRITE_XMP.
  * @tc.type: FUNC
  */
 HWTEST_F(XMPMetadataAccessorTest, CreateTest002, TestSize.Level1)
@@ -78,7 +78,7 @@ HWTEST_F(XMPMetadataAccessorTest, CreateTest002, TestSize.Level1)
     auto data = ReadFile(IMAGE_JPEG_XMP_PATH);
     ASSERT_FALSE(data.empty());
 
-    auto accessor = XMPMetadataAccessor::Create(data.data(), data.size(), XMPAccessMode::READ_FULL_METADATA);
+    auto accessor = XMPMetadataAccessor::Create(data.data(), data.size(), XMPAccessMode::READ_WRITE_XMP);
     ASSERT_NE(accessor, nullptr);
 
     GTEST_LOG_(INFO) << "XMPMetadataAccessorTest: CreateTest002 end";
@@ -86,68 +86,38 @@ HWTEST_F(XMPMetadataAccessorTest, CreateTest002, TestSize.Level1)
 
 /**
  * @tc.name: CreateTest003
- * @tc.desc: test Create method when input data and mode is READ_WRITE_XMP.
+ * @tc.desc: test Create method when input path and mode is READ_ONLY_XMP.
  * @tc.type: FUNC
  */
 HWTEST_F(XMPMetadataAccessorTest, CreateTest003, TestSize.Level1)
 {
     GTEST_LOG_(INFO) << "XMPMetadataAccessorTest: CreateTest003 start";
-    auto data = ReadFile(IMAGE_JPEG_XMP_PATH);
-    ASSERT_FALSE(data.empty());
-
-    auto accessor = XMPMetadataAccessor::Create(data.data(), data.size(), XMPAccessMode::READ_WRITE_XMP);
+    auto accessor = XMPMetadataAccessor::Create(IMAGE_JPEG_XMP_PATH, XMPAccessMode::READ_ONLY_XMP);
     ASSERT_NE(accessor, nullptr);
-
     GTEST_LOG_(INFO) << "XMPMetadataAccessorTest: CreateTest003 end";
 }
 
 /**
  * @tc.name: CreateTest004
- * @tc.desc: test Create method when input path and mode is READ_ONLY_XMP.
+ * @tc.desc: test Create method when input path mode is READ_WRITE_XMP.
  * @tc.type: FUNC
  */
 HWTEST_F(XMPMetadataAccessorTest, CreateTest004, TestSize.Level1)
 {
     GTEST_LOG_(INFO) << "XMPMetadataAccessorTest: CreateTest004 start";
-    auto accessor = XMPMetadataAccessor::Create(IMAGE_JPEG_XMP_PATH, XMPAccessMode::READ_ONLY_XMP);
+    auto accessor = XMPMetadataAccessor::Create(IMAGE_JPEG_XMP_PATH, XMPAccessMode::READ_WRITE_XMP);
     ASSERT_NE(accessor, nullptr);
     GTEST_LOG_(INFO) << "XMPMetadataAccessorTest: CreateTest004 end";
 }
 
 /**
  * @tc.name: CreateTest005
- * @tc.desc: test Create method when input path mode is READ_FULL_METADATA.
+ * @tc.desc: test Create method when input fd and mode is READ_ONLY_XMP.
  * @tc.type: FUNC
  */
 HWTEST_F(XMPMetadataAccessorTest, CreateTest005, TestSize.Level1)
 {
     GTEST_LOG_(INFO) << "XMPMetadataAccessorTest: CreateTest005 start";
-    auto accessor = XMPMetadataAccessor::Create(IMAGE_JPEG_XMP_PATH, XMPAccessMode::READ_FULL_METADATA);
-    ASSERT_NE(accessor, nullptr);
-    GTEST_LOG_(INFO) << "XMPMetadataAccessorTest: CreateTest005 end";
-}
-
-/**
- * @tc.name: CreateTest006
- * @tc.desc: test Create method when input path mode is READ_WRITE_XMP.
- * @tc.type: FUNC
- */
-HWTEST_F(XMPMetadataAccessorTest, CreateTest006, TestSize.Level1)
-{
-    GTEST_LOG_(INFO) << "XMPMetadataAccessorTest: CreateTest006 start";
-    auto accessor = XMPMetadataAccessor::Create(IMAGE_JPEG_XMP_PATH, XMPAccessMode::READ_WRITE_XMP);
-    ASSERT_NE(accessor, nullptr);
-    GTEST_LOG_(INFO) << "XMPMetadataAccessorTest: CreateTest006 end";
-}
-
-/**
- * @tc.name: CreateTest007
- * @tc.desc: test Create method when input fd and mode is READ_ONLY_XMP.
- * @tc.type: FUNC
- */
-HWTEST_F(XMPMetadataAccessorTest, CreateTest007, TestSize.Level1)
-{
-    GTEST_LOG_(INFO) << "XMPMetadataAccessorTest: CreateTest007 start";
     int32_t fd = open(IMAGE_JPEG_XMP_PATH.c_str(), O_RDONLY);
     ASSERT_NE(fd, 0);
 
@@ -155,36 +125,17 @@ HWTEST_F(XMPMetadataAccessorTest, CreateTest007, TestSize.Level1)
     ASSERT_NE(accessor, nullptr);
     close(fd);
 
-    GTEST_LOG_(INFO) << "XMPMetadataAccessorTest: CreateTest007 end";
+    GTEST_LOG_(INFO) << "XMPMetadataAccessorTest: CreateTest005 end";
 }
 
 /**
- * @tc.name: CreateTest008
- * @tc.desc: test Create method when input fd and mode is READ_FULL_METADATA.
+ * @tc.name: CreateTest006
+ * @tc.desc: test Create method when input fd and mode is READ_WRITE_XMP.
  * @tc.type: FUNC
  */
-HWTEST_F(XMPMetadataAccessorTest, CreateTest008, TestSize.Level1)
+HWTEST_F(XMPMetadataAccessorTest, CreateTest006, TestSize.Level1)
 {
-    GTEST_LOG_(INFO) << "XMPMetadataAccessorTest: CreateTest008 start";
-    int32_t fd = open(IMAGE_JPEG_XMP_PATH.c_str(), O_RDONLY);
-    ASSERT_NE(fd, 0);
-
-    auto accessor = XMPMetadataAccessor::Create(fd, XMPAccessMode::READ_FULL_METADATA);
-    ASSERT_NE(accessor, nullptr);
-    close(fd);
-
-    GTEST_LOG_(INFO) << "XMPMetadataAccessorTest: CreateTest008 end";
-}
-
-
-/**
- * @tc.name: CreateTest009
- * @tc.desc: test Create method when input fd and mode is READ_FULL_METADATA.
- * @tc.type: FUNC
- */
-HWTEST_F(XMPMetadataAccessorTest, CreateTest009, TestSize.Level1)
-{
-    GTEST_LOG_(INFO) << "XMPMetadataAccessorTest: CreateTest009 start";
+    GTEST_LOG_(INFO) << "XMPMetadataAccessorTest: CreateTest006 start";
     int32_t fd = open(IMAGE_JPEG_XMP_PATH.c_str(), O_RDWR);
     ASSERT_NE(fd, 0);
 
@@ -192,20 +143,20 @@ HWTEST_F(XMPMetadataAccessorTest, CreateTest009, TestSize.Level1)
     ASSERT_NE(accessor, nullptr);
     close(fd);
 
-    GTEST_LOG_(INFO) << "XMPMetadataAccessorTest: CreateTest009 end";
+    GTEST_LOG_(INFO) << "XMPMetadataAccessorTest: CreateTest006 end";
 }
 
 /**
- * @tc.name: CreateTest010
+ * @tc.name: CreateTest007
  * @tc.desc: test Create method when input path is invalid.
  * @tc.type: FUNC
  */
-HWTEST_F(XMPMetadataAccessorTest, CreateTest010, TestSize.Level1)
+HWTEST_F(XMPMetadataAccessorTest, CreateTest007, TestSize.Level1)
 {
-    GTEST_LOG_(INFO) << "XMPMetadataAccessorTest: CreateTest010 start";
+    GTEST_LOG_(INFO) << "XMPMetadataAccessorTest: CreateTest007 start";
     auto accessor = XMPMetadataAccessor::Create(IMAGE_ERROR_XMP_PATH, XMPAccessMode::READ_WRITE_XMP);
     ASSERT_EQ(accessor, nullptr);
-    GTEST_LOG_(INFO) << "XMPMetadataAccessorTest: CreateTest010 end";
+    GTEST_LOG_(INFO) << "XMPMetadataAccessorTest: CreateTest007 end";
 }
 
 /**

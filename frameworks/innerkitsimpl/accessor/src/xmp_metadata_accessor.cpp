@@ -60,13 +60,11 @@ static constexpr XMP_OptionBits ConvertAccessModeToXMPOptions(XMPAccessMode mode
 {
     switch (mode) {
         case XMPAccessMode::READ_ONLY_XMP:
-            return kXMPFiles_OpenForRead | kXMPFiles_OpenOnlyXMP;
-        case XMPAccessMode::READ_FULL_METADATA:
-            return kXMPFiles_OpenForRead;
+            return kXMPFiles_OpenForRead | kXMPFiles_OpenOnlyXMP | kXMPFiles_DisableLegacyImport;
         case XMPAccessMode::READ_WRITE_XMP:
-            return kXMPFiles_OpenForUpdate | kXMPFiles_OpenOnlyXMP;
+            return kXMPFiles_OpenForUpdate | kXMPFiles_OpenOnlyXMP | kXMPFiles_DisableLegacyImport;
         default:
-            return kXMPFiles_OpenForRead | kXMPFiles_OpenOnlyXMP;
+            return kXMPFiles_OpenForRead | kXMPFiles_OpenOnlyXMP | kXMPFiles_DisableLegacyImport;
     }
 }
 
@@ -105,7 +103,7 @@ uint32_t XMPMetadataAccessor::Read()
     CHECK_ERROR_RETURN_RET_LOG(!impl || !impl->IsValid(), ERR_MEDIA_MALLOC_FAILED,
         "%{public}s XMPMetadataImpl is invalid", __func__);
     if (!xmpFiles_->GetXMP(impl->GetRawPtr())) {
-        IMAGE_LOGE("%{public}s GetXMP failed", __func__);
+        IMAGE_LOGE("%{public}s GetXMP failed, maybe no XMP data in file", __func__);
         return ERR_XMP_DECODE_FAILED;
     }
 
@@ -178,7 +176,7 @@ uint32_t XMPMetadataAccessor::InitializeFromBuffer(const uint8_t *data, uint32_t
         "%{public}s failed to create XMPFiles", __func__);
 
     // Determine if read only based on access mode
-    bool readOnly = (mode == XMPAccessMode::READ_ONLY_XMP || mode == XMPAccessMode::READ_FULL_METADATA);
+    bool readOnly = (mode == XMPAccessMode::READ_ONLY_XMP);
     bufferIO_ = std::make_shared<XMPBuffer_IO>(data, static_cast<XMP_Uns32>(size), readOnly);
     CHECK_ERROR_RETURN_RET_LOG(bufferIO_ == nullptr, ERR_MEDIA_MALLOC_FAILED,
         "%{public}s failed to create XMPBuffer_IO", __func__);
@@ -224,7 +222,7 @@ uint32_t XMPMetadataAccessor::InitializeFromFd(int32_t fileDescriptor, XMPAccess
         "%{public}s failed to create XMPFiles", __func__);
 
     // Determine if read only based on access mode
-    bool readOnly = (mode == XMPAccessMode::READ_ONLY_XMP || mode == XMPAccessMode::READ_FULL_METADATA);
+    bool readOnly = (mode == XMPAccessMode::READ_ONLY_XMP);
     fdIO_ = std::make_shared<XMPFd_IO>(fileDescriptor, readOnly, false);
     CHECK_ERROR_RETURN_RET_LOG(fdIO_ == nullptr || !fdIO_->IsValid(), ERR_MEDIA_MALLOC_FAILED,
         "%{public}s failed to create XMPFd_IO", __func__);
