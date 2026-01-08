@@ -39,9 +39,6 @@ public:
     ~XMPMetadata();
     std::unique_ptr<XMPMetadataImpl>& GetImpl();
 
-    static bool CreateXMPTag(const std::string &path, const XMPTagType &tagType, const std::string &value,
-        XMPTag &outTag);
-
     bool RegisterNamespacePrefix(const std::string &uri, const std::string &prefix);
     bool SetValue(const std::string &path, const XMPTagType &tagType, const std::string &value);
     bool GetTag(const std::string &path, XMPTag &tag);

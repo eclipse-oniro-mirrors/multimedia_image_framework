@@ -147,18 +147,6 @@ static bool BuildXMPTag(const std::string &pathExpression, const XMP_OptionBits 
     return true;
 }
 
-bool XMPMetadata::CreateXMPTag(const std::string &path, const XMPTagType &tagType, const std::string &value,
-    XMPTag &outTag)
-{
-    XMP_TRY();
-    if (BuildXMPTag(path, ConvertTagTypeToOptions(tagType), value, outTag)) {
-        outTag.type = tagType;
-        return true;
-    }
-    return false;
-    XMP_CATCH_RETURN_RET(false);
-}
-
 bool XMPMetadata::RegisterNamespacePrefix(const std::string &uri, const std::string &prefix)
 {
     XMP_TRY();

@@ -122,7 +122,6 @@ napi_status XMPMetadataNapi::DefineStaticProperties(napi_env env, napi_value exp
     napi_property_descriptor static_prop[] = {
         DECLARE_NAPI_PROPERTY("XMP_NAMESPACES", CreateXMPNamespaces(env)),
         DECLARE_NAPI_PROPERTY("XMPTagType", ImageNapiUtils::CreateEnumTypeObject(env, napi_number, sXMPTagType)),
-        DECLARE_NAPI_STATIC_FUNCTION("createXMPTag", CreateXMPTag),
     };
 
     return napi_define_properties(env, exports, IMG_ARRAY_SIZE(static_prop), static_prop);
@@ -390,75 +389,6 @@ static void CommonCallbackRoutine(napi_env env, XMPMetadataAsyncContext* &contex
 
     delete context;
     context = nullptr;
-}
-
-static void CreateXMPTagExecute(napi_env env, void *data)
-{
-    IMAGE_LOGD("CreateXMPTagExecute IN");
-    auto context = static_cast<XMPMetadataAsyncContext*>(data);
-    CHECK_ERROR_RETURN_LOG(context == nullptr, "%{public}s context is null", __func__);
-    bool ret = context->rXMPMetadata->CreateXMPTag(context->path, context->tagType, context->tagValue, context->tag);
-    context->status = ret ? SUCCESS : ERROR;
-}
-
-static void CreateXMPTagComplete(napi_env env, napi_status status, void *data)
-{
-    IMAGE_LOGD("CreateXMPTagComplete IN");
-    auto context = static_cast<XMPMetadataAsyncContext*>(data);
-    CHECK_ERROR_RETURN_LOG(context == nullptr, "%{public}s context is null", __func__);
-    napi_value result = nullptr;
-    if (context->status == SUCCESS) {
-        result = CreateJsXMPTag(env, context->tag);
-    } else {
-        napi_get_undefined(env, &result);
-    }
-    CommonCallbackRoutine(env, context, result);
-}
-
-napi_value XMPMetadataNapi::CreateXMPTag(napi_env env, napi_callback_info info)
-{
-    napi_value result = nullptr;
-    napi_get_undefined(env, &result);
-
-    napi_value argv[NUM_3] = {0};
-    size_t argc = NUM_3;
-    napi_value thisVar = nullptr;
-    napi_status status = napi_get_cb_info(env, info, &argc, argv, &thisVar, nullptr);
-    IMG_NAPI_CHECK_RET_D(IMG_IS_OK(status), result, IMAGE_LOGE("Fail to napi_get_cb_info"));
-
-    std::unique_ptr<XMPMetadataAsyncContext> asyncContext = std::make_unique<XMPMetadataAsyncContext>();
-    if (argc < NUM_2 || argc > NUM_3) {
-        return ImageNapiUtils::ThrowExceptionError(env, IMAGE_BAD_PARAMETER,
-            "Invalid argument count, expected 2 or 3 arguments");
-    }
-
-    // arg0: path (string)
-    asyncContext->path = ImageNapiUtils::GetStringArgument(env, argv[NUM_0]);
-    if (asyncContext->path.empty()) {
-        return ImageNapiUtils::ThrowExceptionError(env, IMAGE_BAD_PARAMETER, "path is empty");
-    }
-
-    // arg1: type (number -> XMPTagType)
-    int32_t typeValue = 0;
-    if (!IMG_IS_OK(napi_get_value_int32(env, argv[NUM_1], &typeValue))) {
-        return ImageNapiUtils::ThrowExceptionError(env, IMAGE_BAD_PARAMETER, "type must be number");
-    }
-    asyncContext->tagType = static_cast<XMPTagType>(typeValue);
-
-    // arg2: value (optional string)
-    if (argc == NUM_3) {
-        napi_valuetype vType = ImageNapiUtils::getType(env, argv[NUM_2]);
-        if (vType != napi_undefined) {
-            asyncContext->tagValue = ImageNapiUtils::GetStringArgument(env, argv[NUM_2]);
-        }
-    }
-
-    napi_create_promise(env, &(asyncContext->deferred), &result);
-
-    IMG_CREATE_CREATE_ASYNC_WORK(env, status, "CreateXMPTag",
-        CreateXMPTagExecute, CreateXMPTagComplete, asyncContext, asyncContext->work);
-    IMG_NAPI_CHECK_RET_D(IMG_IS_OK(status), nullptr, IMAGE_LOGE("Failed to create async work"));
-    return result;
 }
 
 static void SetValueExecute(napi_env env, void *data)
