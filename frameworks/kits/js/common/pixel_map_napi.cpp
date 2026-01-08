@@ -2020,8 +2020,9 @@ napi_value PixelMapNapi::CreatePixelMapFromSurfaceWithTransformationSync(napi_en
     if (IMG_IS_OK(status)) {
         status = NewPixelNapiInstance(env, constructor, asyncContext->rPixelMap, result);
     }
-    IMG_NAPI_CHECK_RET_D(IMG_IS_OK(status),
-        ImageNapiUtils::ThrowExceptionError(env, ERR_IMAGE_CREATE_PIXELMAP_FAILED, "Failed to create pixelmap"),
+    IMG_NAPI_CHECK_RET_D(IMG_IS_OK(status), ImageNapiUtils::ThrowExceptionError(env,
+        asyncContext->status == SUCCESS ? ERR_IMAGE_CREATE_PIXELMAP_FAILED : asyncContext->status,
+        "Failed to create pixelmap"),
         IMAGE_LOGE("CreatePixelMapFromSurfaceWithTransformationSync fail to create pixel map sync"));
     return result;
 #endif
