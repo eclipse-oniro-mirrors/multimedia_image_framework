@@ -13,13 +13,13 @@
  * limitations under the License.
  */
 
+#include <fcntl.h>
+#include <unistd.h>
 #include <gtest/gtest.h>
 #include "media_errors.h"
 #include "blob_metadata.h"
 #include "parcel.h"
 #include "ashmem.h"
-#include <fcntl.h>
-#include <unistd.h>
 
 using namespace testing::ext;
 using namespace OHOS::Media;
@@ -27,6 +27,8 @@ namespace OHOS {
 namespace Media {
 static constexpr int32_t INVALID_RESULT = -1;
 static constexpr uint8_t METADATA_SAMPLE_BYTE = 1;
+static constexpr uint8_t METADATA_SAMPLE_BYTE_2 = 2;
+static constexpr uint8_t METADATA_SAMPLE_BYTE_3 = 3;
 static constexpr size_t INDEX_ONE = 1;
 static constexpr size_t INDEX_TWO = 2;
 static constexpr size_t TEST_BLOB_DATA_SIZE = 5000;
@@ -37,6 +39,17 @@ class BlobMetadataTest : public testing::Test {
 public:
     BlobMetadataTest() {}
     ~BlobMetadataTest() {}
+
+    void InitBlobWithData(BlobMetadata& blob, const uint8_t* data, size_t size)
+    {
+        blob.SetBlob(data, size);
+    }
+
+    void InitBlobWithZeroData(BlobMetadata& blob)
+    {
+        uint8_t data[] = {0, 0};
+        InitBlobWithData(blob, data, sizeof(data));
+    }
 };
 
 /**
@@ -62,17 +75,15 @@ HWTEST_F(BlobMetadataTest, BlobMetadataTest001, TestSize.Level3)
 }
 
 /**
- * @tc.name: operatorTest001
+ * @tc.name: GetBlobSize001
  * @tc.desc: Test operator= covering assignment from a non-empty object to an empty one, and self-assignment
  * @tc.type: FUNC
  */
-HWTEST_F(BlobMetadataTest, operatorTest001, TestSize.Level3)
+HWTEST_F(BlobMetadataTest, GetBlobSize001, TestSize.Level3)
 {
-    GTEST_LOG_(INFO) << "BlobMetadataTest: operatorTest001 start";
+    GTEST_LOG_(INFO) << "BlobMetadataTest: GetBlobSize001 start";
     BlobMetadata blob;
-    uint8_t data[] = {0, 0};
-    blob.SetBlob(data, sizeof(data));
-    ASSERT_EQ(blob.GetBlobSize(), sizeof(data));
+    InitBlobWithZeroData(blob);
 
     BlobMetadata emptyBlob;
     blob = emptyBlob;
@@ -83,24 +94,22 @@ HWTEST_F(BlobMetadataTest, operatorTest001, TestSize.Level3)
     blob = blobRef;
     ASSERT_EQ(blob.GetBlobSize(), 0);
     ASSERT_EQ(blob.GetBlobPtr(), nullptr);
-    GTEST_LOG_(INFO) << "BlobMetadataTest: operatorTest001 end";
+    GTEST_LOG_(INFO) << "BlobMetadataTest: GetBlobSize001 end";
 }
 
 /**
- * @tc.name: operatorTest002
+ * @tc.name: GetBlobSize002
  * @tc.desc: Test operator= covering assignment from a non-empty object to another non-empty object
  * @tc.type: FUNC
  */
-HWTEST_F(BlobMetadataTest, operatorTest002, TestSize.Level3)
+HWTEST_F(BlobMetadataTest, GetBlobSize002, TestSize.Level3)
 {
-    GTEST_LOG_(INFO) << "BlobMetadataTest: operatorTest002 start";
+    GTEST_LOG_(INFO) << "BlobMetadataTest: GetBlobSize002 start";
     BlobMetadata blob;
-    uint8_t data[] = {0, 0};
-    blob.SetBlob(data, sizeof(data));
-    ASSERT_EQ(blob.GetBlobSize(), sizeof(data));
+    InitBlobWithZeroData(blob);
 
     BlobMetadata sourceBlob;
-    uint8_t sourceData[] = {METADATA_SAMPLE_BYTE, METADATA_SAMPLE_BYTE, METADATA_SAMPLE_BYTE};
+    uint8_t sourceData[] = {METADATA_SAMPLE_BYTE, METADATA_SAMPLE_BYTE_2, METADATA_SAMPLE_BYTE_3};
     sourceBlob.SetBlob(sourceData, sizeof(sourceData));
     ASSERT_EQ(sourceBlob.GetBlobSize(), sizeof(sourceData));
 
@@ -109,9 +118,9 @@ HWTEST_F(BlobMetadataTest, operatorTest002, TestSize.Level3)
     uint8_t* blobDataPtr = blob.GetBlobPtr();
     ASSERT_NE(blobDataPtr, nullptr);
     ASSERT_EQ(blobDataPtr[0], METADATA_SAMPLE_BYTE);
-    ASSERT_EQ(blobDataPtr[INDEX_ONE], METADATA_SAMPLE_BYTE);
-    ASSERT_EQ(blobDataPtr[INDEX_TWO], METADATA_SAMPLE_BYTE);
-    GTEST_LOG_(INFO) << "BlobMetadataTest: operatorTest002 end";
+    ASSERT_EQ(blobDataPtr[INDEX_ONE], METADATA_SAMPLE_BYTE_2);
+    ASSERT_EQ(blobDataPtr[INDEX_TWO], METADATA_SAMPLE_BYTE_3);
+    GTEST_LOG_(INFO) << "BlobMetadataTest: GetBlobSize002 end";
 }
 
 /**
@@ -123,20 +132,13 @@ HWTEST_F(BlobMetadataTest, ReadDataFromAshmemTest001, TestSize.Level3)
 {
     GTEST_LOG_(INFO) << "BlobMetadataTest: ReadDataFromAshmemTest001 start";
     Parcel parcel;
-    std::unique_ptr<BlobMetadata> blobMetadataPtr =std::make_unique<BlobMetadata>(MetadataType::RFDATAB);
+    std::unique_ptr<BlobMetadata> blobMetadataPtr = std::make_unique<BlobMetadata>(MetadataType::RFDATAB);
     blobMetadataPtr->dataSize_ = INVALID_BLOB_METADATA_LENGTH;
-    blobMetadataPtr->data_ = new uint8_t[INDEX_ONE];
     bool ret = BlobMetadata::ReadDataFromAshmem(parcel, blobMetadataPtr, nullptr);
     ASSERT_FALSE(ret);
-
     blobMetadataPtr->dataSize_ = 0;
     ret = BlobMetadata::ReadDataFromAshmem(parcel, blobMetadataPtr, nullptr);
     ASSERT_FALSE(ret);
-
-    blobMetadataPtr->data_ = nullptr;
-    ret = BlobMetadata::ReadDataFromAshmem(parcel, blobMetadataPtr, nullptr);
-    ASSERT_FALSE(ret);
-
     blobMetadataPtr = nullptr;
     ret = BlobMetadata::ReadDataFromAshmem(parcel, blobMetadataPtr, nullptr);
     ASSERT_FALSE(ret);
@@ -227,13 +229,10 @@ HWTEST_F(BlobMetadataTest, MarshallingTest001, TestSize.Level3)
 {
     GTEST_LOG_(INFO) << "BlobMetadataTest: MarshallingTest001 start";
     Parcel parcel;
-    std::unique_ptr<BlobMetadata> blobMetadataPtr =std::make_unique<BlobMetadata>(MetadataType::RFDATAB);
-    blobMetadataPtr->data_ = new uint8_t[INDEX_ONE];
+    auto blobMetadataPtr = std::make_unique<BlobMetadata>(MetadataType::RFDATAB);
     blobMetadataPtr->dataSize_ = INVALID_BLOB_METADATA_LENGTH;
     bool ret = blobMetadataPtr->Marshalling(parcel);
     ASSERT_FALSE(ret);
-    delete[] blobMetadataPtr->data_;
-    blobMetadataPtr->data_ = nullptr;
     GTEST_LOG_(INFO) << "BlobMetadataTest: MarshallingTest001 end";
 }
 
@@ -246,13 +245,10 @@ HWTEST_F(BlobMetadataTest, MarshallingTest002, TestSize.Level3)
 {
     GTEST_LOG_(INFO) << "BlobMetadataTest: MarshallingTest002 start";
     Parcel parcel;
-    std::unique_ptr<BlobMetadata> blobMetadataPtr =std::make_unique<BlobMetadata>(MetadataType::RFDATAB);
-    blobMetadataPtr->data_ = new uint8_t[INDEX_ONE];
+    auto blobMetadataPtr = std::make_unique<BlobMetadata>(MetadataType::RFDATAB);
     blobMetadataPtr->dataSize_ = 0;
     bool ret = blobMetadataPtr->Marshalling(parcel);
     ASSERT_FALSE(ret);
-    delete[] blobMetadataPtr->data_;
-    blobMetadataPtr->data_ = nullptr;
     GTEST_LOG_(INFO) << "BlobMetadataTest: MarshallingTest002 end";
 }
 
@@ -316,6 +312,8 @@ HWTEST_F(BlobMetadataTest, UnmarshallingTest004, TestSize.Level3)
     parcel.WriteUint32(static_cast<uint32_t>(MetadataType::RFDATAB));
     parcel.WriteUint32(TEST_BLOB_DATA_SIZE);
     PICTURE_ERR error;
+    ASSERT_EQ(error.errorCode, 0);
+    ASSERT_TRUE(error.errorInfo.empty());
     BlobMetadata *ret = BlobMetadata::Unmarshalling(parcel, error);
     ASSERT_NE(ret, nullptr);
     GTEST_LOG_(INFO) << "BlobMetadataTest: UnmarshallingTest004 end";

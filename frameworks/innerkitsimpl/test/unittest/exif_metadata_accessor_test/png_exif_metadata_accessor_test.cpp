@@ -1428,19 +1428,30 @@ HWTEST_F(PngExifMetadataAccessorTest, TestWriteAndReadFnumberWithTwoDecimal001, 
 HWTEST_F(PngExifMetadataAccessorTest, WriteFreeDataBlobTest001, TestSize.Level3)
 {
     GTEST_LOG_(INFO) << "PngExifMetadataAccessorTest: WriteFreeDataBlobTest001 start";
-    
-    std::shared_ptr<MetadataStream> stream = std::make_shared<FileMetadataStream>(IMAGE_OUTPUT_EXIF_PNG_PATH);
-    ASSERT_TRUE(stream->Open(OpenMode::ReadWrite));
-    PngExifMetadataAccessor imageAccessor(stream);
-    ASSERT_EQ(imageAccessor.Read(), 0);
 
-    auto exifMetadata = imageAccessor.Get();
-    ASSERT_NE(exifMetadata, nullptr);
-    ASSERT_TRUE(exifMetadata->SetValue("XResolution", "96"));
-    
-    uint32_t ret = imageAccessor.Write();
-    ASSERT_EQ(ret, SUCCESS);
-    
+    {
+        std::shared_ptr<MetadataStream> stream = std::make_shared<FileMetadataStream>(IMAGE_OUTPUT_EXIF_PNG_PATH);
+        ASSERT_TRUE(stream->Open(OpenMode::ReadWrite));
+        PngExifMetadataAccessor imageAccessor(stream);
+        ASSERT_EQ(imageAccessor.Read(), 0);
+        auto exifMetadata = imageAccessor.Get();
+        ASSERT_NE(exifMetadata, nullptr);
+        ASSERT_TRUE(exifMetadata->SetValue("XResolution", "96"));
+        uint32_t ret = imageAccessor.Write();
+        std::vector<std::string> keys;
+        ASSERT_EQ(ret, SUCCESS);
+    }
+
+    {
+        std::shared_ptr<MetadataStream> stream = std::make_shared<FileMetadataStream>(IMAGE_OUTPUT_EXIF_PNG_PATH);
+        ASSERT_TRUE(stream->Open(OpenMode::Read));
+        PngExifMetadataAccessor imageAccessor(stream);
+        ASSERT_EQ(imageAccessor.Read(), 0);
+        auto exifMetadata = imageAccessor.Get();
+        ASSERT_NE(exifMetadata, nullptr);
+        EXPECT_EQ(GetProperty(exifMetadata, "XResolution"), "96");
+    }
+
     GTEST_LOG_(INFO) << "PngExifMetadataAccessorTest: WriteFreeDataBlobTest001 end";
 }
 

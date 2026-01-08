@@ -966,7 +966,7 @@ HWTEST_F(HeifParserTest, MakeFromStreamTest001, TestSize.Level3)
 
 /**
  * @tc.name: MakeFromStreamTest002
- * @tc.desc: Test MakeFromStream when AssembleImages fails to find primary image.
+ * @tc.desc: Test MakeFromStream returns error when AssembleBoxes fails due to invalid box size
  * @tc.type: FUNC
  */
 HWTEST_F(HeifParserTest, MakeFromStreamTest002, TestSize.Level3)
@@ -1733,7 +1733,7 @@ HWTEST_F(HeifParserTest, ExtractIT35MetadataTest001, TestSize.Level3)
 
 /**
  * @tc.name: ExtractISOMetadataTest001
- * @tc.desc: Test ExtractISOMetadata when GetItemType returns non-tmap type
+ * @tc.desc: Test that ExtractISOMetadata returns early and does NOT set ISOMetadata when item type is not "tmap".
  * @tc.type: FUNC
  */
 HWTEST_F(HeifParserTest, ExtractISOMetadataTest001, TestSize.Level3)
@@ -1743,10 +1743,11 @@ HWTEST_F(HeifParserTest, ExtractISOMetadataTest001, TestSize.Level3)
     heif_item_id testItemId = IT35_TRUE_ID;
     auto infeBox = std::make_shared<HeifInfeBox>(testItemId, "hvc1", false);
     heifParser.infeBoxes_[testItemId] = infeBox;
-    heifParser.primaryImage_ = std::make_shared<HeifImage>(2);
+    auto primaryImage = std::make_shared<HeifImage>(2);
+    heifParser.primaryImage_ = primaryImage;
+    EXPECT_TRUE(primaryImage->GetISOMetadata().empty());
     heifParser.ExtractISOMetadata(testItemId);
-    std::string itemType = heifParser.GetItemType(testItemId);
-    ASSERT_EQ(itemType, "hvc1");
+    EXPECT_TRUE(primaryImage->GetISOMetadata().empty());
     GTEST_LOG_(INFO) << "HeifParserTest: ExtractISOMetadataTest001 end";
 }
 

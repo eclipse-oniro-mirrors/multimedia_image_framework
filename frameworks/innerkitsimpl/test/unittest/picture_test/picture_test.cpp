@@ -978,7 +978,8 @@ HWTEST_F(PictureTest, GetRfDataBMetadataTest001, TestSize.Level3)
 
 /**
  * @tc.name: SetMetadataTest001
- * @tc.desc: Test SetMetadata when MetadataType is FRAGMENT
+ * @tc.desc: Verify that Picture object does not support setting FragmentMetadata, and calling SetMetadata with
+ *           MetadataType::FRAGMENT will return ERR_IMAGE_INVALID_PARAMETER
  * @tc.type: FUNC
  */
 HWTEST_F(PictureTest, SetMetadataTest001, TestSize.Level3)

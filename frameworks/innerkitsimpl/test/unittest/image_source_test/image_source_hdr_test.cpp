@@ -1153,7 +1153,8 @@ HWTEST_F(ImageSourceHdrTest, ParsingInvalidEndianFlagTest001, TestSize.Level3)
 
 /**
  * @tc.name: ParsingMpEntryInvalidCountTest001
- * @tc.desc: test ParsingMpIndexIFD when MP_ENTRY_TAG count is invalid
+ * @tc.desc: Test ParsingMpIndexIFD fails when MPEntry tag count is invalid (not equal to 1).
+ *           According to CIPA DC-007-2009 MPF spec, MPEntry tag count must be 1.
  * @tc.type: FUNC
  */
 HWTEST_F(ImageSourceHdrTest, ParsingMpEntryInvalidCountTest001, TestSize.Level3)

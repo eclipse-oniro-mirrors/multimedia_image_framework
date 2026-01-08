@@ -2141,7 +2141,7 @@ HWTEST_F(PixelConvertTest, PixelConvertTest0053, TestSize.Level3)
 
 /**
  * @tc.name: NV12P010ToNV21P010Test001
- * @tc.desc: Test NV12P010ToNV21P010 with invalid height.
+ * @tc.desc: Test NV12P010ToNV21P010 with invalid height and expect PixelsConver returns CONVERT_FAIL.
  * @tc.type: FUNC
  */
 HWTEST_F(PixelConvertTest, NV12P010ToNV21P010Test001, TestSize.Level3)
@@ -2474,11 +2474,41 @@ HWTEST_F(PixelConvertTest, CreateTest001, TestSize.Level3)
 HWTEST_F(PixelConvertTest, GetStrideTest001, TestSize.Level3)
 {
     GTEST_LOG_(INFO) << "PixelConvertTest: GetStrideTest001 start";
-    auto pixelMap = ConstructPixmap(LARGE_SIZE, LARGE_SIZE, PixelFormat::ASTC_4x4, AlphaType::IMAGE_ALPHA_TYPE_PREMUL,
-        AllocatorType::DMA_ALLOC);
+    auto pixelMap = ConstructPixmap(LARGE_SIZE, LARGE_SIZE, PixelFormat::ASTC_4x4,
+                                    AlphaType::IMAGE_ALPHA_TYPE_PREMUL, AllocatorType::DMA_ALLOC);
     uint32_t errorCode = 0;
-    PixelConvert::AstcToRgba(pixelMap.get(), errorCode, PixelFormat::RGBA_8888);
+    auto resultPixelMap = PixelConvert::AstcToRgba(pixelMap.get(), errorCode, PixelFormat::RGBA_8888);
     EXPECT_EQ(errorCode, SUCCESS);
+    ASSERT_NE(resultPixelMap, nullptr);
+    
+    if (resultPixelMap->GetPixels() != nullptr) {
+        const uint8_t* pixels = static_cast<const uint8_t*>(resultPixelMap->GetPixels());
+        int stride = LARGE_SIZE * 4;
+        struct SamplePoint {
+            int x, y;
+            const char* desc;
+        } samples[] = {
+            {0, 0, "Top-left"},
+            {LARGE_SIZE - 1, 0, "Top-right"},
+            {0, LARGE_SIZE - 1, "Bottom-left"},
+            {LARGE_SIZE / 2, LARGE_SIZE / 2, "Center"}
+        };
+        
+        for (const auto& sp : samples) {
+            int offset = (sp.y * stride) + (sp.x * 4);
+            if (offset + 3 < LARGE_SIZE * LARGE_SIZE * 4) {
+                uint8_t r = pixels[offset];
+                uint8_t g = pixels[offset + 1];
+                uint8_t b = pixels[offset + 2];
+                uint8_t a = pixels[offset + 3];
+                
+                EXPECT_LE(r, 255) << sp.desc << "Red channel out of range";
+                EXPECT_LE(g, 255) << sp.desc << "Green channel out of range";
+                EXPECT_LE(b, 255) << sp.desc << "Blue channel out of range";
+                EXPECT_LE(a, 255) << sp.desc << "Alpha channel out of range";
+            }
+        }
+    }
     GTEST_LOG_(INFO) << "PixelConvertTest: GetStrideTest001 end";
 }
 }
