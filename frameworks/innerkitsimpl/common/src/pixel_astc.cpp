@@ -40,7 +40,6 @@ using namespace std;
 PixelAstc::~PixelAstc()
 {
     IMAGE_LOGD("PixelAstc destory");
-    FreePixelMap();
 }
 
 const uint8_t *PixelAstc::GetPixel8(int32_t x, int32_t y)
