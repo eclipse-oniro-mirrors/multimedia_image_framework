@@ -471,6 +471,27 @@ union PropertyValue {
     @null type_null;
 }
 
+struct ImageReceiverOptions {
+  size: Optional<Size>;
+  capacity: Optional<i32>;
+}
+
+struct ImageBufferData {
+  rowStride: Array<i32>;
+  pixelStride: Array<i32>;
+  byteBuffer: @arraybuffer Array<u8>;
+}
+
+union NullableImageBufferData {
+  type_imageBufferData: ImageBufferData;
+  @null type_null;
+}
+
+union NullableHdrMetadataValue {
+  type_hdrMetadataValue: HdrMetadataValue;
+  @null type_null;
+}
+
 interface PixelMap {
   GetImplPtr(): i64;
 
@@ -801,10 +822,15 @@ interface Image {
   @get("size") GetSize(): Size;
   @get("format") GetFormat(): i32;
   @get("timestamp") GetTimestamp(): i64;
+  @get("colorSpace") GetColorSpace(): @sts_type("colorSpaceManager.ColorSpace") Opaque; 
 
   @gen_async("getComponent")
   @gen_promise("getComponent")
   GetComponentSync(componentType: ComponentType): Component;
+
+  GetBufferData(): NullableImageBufferData;
+
+  GetMetadata(key: HdrMetadataKey): NullableHdrMetadataValue;
 
   @gen_async("release")
   @gen_promise("release")
@@ -1010,7 +1036,11 @@ function CreateImagePacker(): ImagePacker;
 
 function CreateImageCreator(size: Size, format: ImageFormat, capacity: i32): ImageCreator;
 
+@overload("createImageReceiver")
 function CreateImageReceiver(size: Size, format: ImageFormat, capacity: i32): Optional<ImageReceiver>;
+
+@overload("createImageReceiver")
+function CreateImageReceiverByOption(options: Optional<ImageReceiverOptions>): Optional<ImageReceiver>;
 
 @overload("createPicture")
 function CreatePictureByPixelMap(mainPixelmap : PixelMap): Picture;
