@@ -552,7 +552,6 @@ HWTEST_F(ExtDecoderTest, GetMakerImagePropertyStringTest001, TestSize.Level3)
 {
     GTEST_LOG_(INFO) << "ExtDecoderTest: GetMakerImagePropertyStringTest001 start";
     std::shared_ptr<ExtDecoder> extDecoder = std::make_shared<ExtDecoder>();
-    EXIFInfo exifInfo_;
     std::string key = "string";
     std::string value = "propretyString";
     uint32_t ret = extDecoder->GetMakerImagePropertyString(key, value);
