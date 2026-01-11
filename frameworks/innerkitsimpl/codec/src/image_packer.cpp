@@ -26,6 +26,7 @@
 #include "ostream_packer_stream.h"
 #include "plugin_server.h"
 #include "string_ex.h"
+#include "hdr_helper.h"
 #if defined(ANDROID_PLATFORM) || defined(IOS_PLATFORM)
 #include "include/jpeg_encoder.h"
 #endif
@@ -251,14 +252,13 @@ uint32_t ImagePacker::AddImage(ImageSource &source, uint32_t index)
     uint32_t ret = SUCCESS;
     DecodeOptions decodeOpts;
     decodeOpts.desiredDynamicRange = encodeToSdr_ ? DecodeDynamicRange::SDR : DecodeDynamicRange::AUTO;
-    bool isHDR = source.IsDecodeHdrImage(decodeOpts);
-#if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
-    if (isHDR) {
+#if !defined(CROSS_PLATFORM)
+    if (source.CheckHdrType() == ImageHdrType::HDR_VIVID_DUAL) {
         if (picture_ != nullptr) {
             picture_.reset();  // release old inner picture
         }
         DecodingOptionsForPicture decodeOptsForPicture;
-        decodeOptsForPicture.desiredPixelFormat = PixelFormat::RGBA_8888;
+        decodeOptsForPicture.desiredPixelFormat = PixelFormat::NV12;
         decodeOptsForPicture.desireAuxiliaryPictures = { AuxiliaryPictureType::GAINMAP };
         picture_ = source.CreatePicture(decodeOptsForPicture, ret);
         if (ret == SUCCESS && picture_ != nullptr && picture_.get() != nullptr) {
