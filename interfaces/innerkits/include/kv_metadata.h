@@ -17,6 +17,7 @@
 #define INTERFACES_INNERKITS_INCLUDE_KV_METADATA_H
 
 #include <map>
+#include <mutex>
 #include "image_type.h"
 #include "metadata.h"
 
@@ -54,6 +55,7 @@ public:
 protected:
     MetadataType metadataType_ = MetadataType::UNKNOWN;
     ImageMetadata::PropertyMapPtr properties_ = std::make_shared<ImageMetadata::PropertyMap>();
+    mutable std::mutex mutex_;
 };
 } // namespace Media
 } // namespace OHOS
