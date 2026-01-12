@@ -173,7 +173,7 @@ private:
 
     bool SwDecodeSingleImage(std::shared_ptr<HeifImage> &image, HevcSoftDecodeParam &param);
 
-    bool SwDecodeHeifsFrameImage(uint32_t index, HevcSoftDecodeParam &refParam);
+    bool SwDecodeHeifsFrameImage(uint32_t index, HevcSoftDecodeParam &refParam, bool isStatic = false);
 
     bool HwApplyAlphaImage(std::shared_ptr<HeifImage> &masterImage, uint8_t *dstMemory, size_t dstRowStride);
 
@@ -198,7 +198,7 @@ private:
 
     bool SwDecodeHeifsImage(uint32_t index, HevcSoftDecodeParam &param);
 
-    bool SwDecodeHeifsOnceFrame(uint32_t index, const HevcSoftDecodeParam &refParam);
+    bool SwDecodeHeifsOnceFrame(uint32_t index, const HevcSoftDecodeParam &refParam, bool isStatic = false);
 
     bool HasDecodedFrame(uint32_t index);
 
@@ -211,6 +211,8 @@ private:
     bool GetSwDecodeHeifsDecodedParam(uint32_t index, HevcSoftDecodeParam &param);
 
     bool CopyParamBuffer(HevcSoftDecodeParam &dst, const HevcSoftDecodeParam &src);
+
+    void SwDecodeHeifsStaticImage(HevcSoftDecodeParam &param);
 
     std::shared_ptr<HeifParser> parser_;
     std::shared_ptr<HeifImage> primaryImage_;

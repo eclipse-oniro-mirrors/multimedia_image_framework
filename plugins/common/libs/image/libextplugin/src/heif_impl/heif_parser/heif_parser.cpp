@@ -345,18 +345,36 @@ heif_error HeifParser::AssembleImages()
 {
     images_.clear();
     primaryImage_.reset();
-
-    if (moovBox_) {
-        auto image = std::make_shared<HeifImage>(0);
-        image->SetPrimaryImage(true);
-        image->SetMovieImage(true);
-        primaryImage_ = image;
-        ExtractMovieImageProperties(image);
+    if (!ftypBox_) {
+        return heif_error_no_ftyp;
     }
-
+    bool isHeifs = moovBox_ && ftypBox_->GetMajorBrand() == HEIF_BRAND_TYPE_MSF1;
+    if (isHeifs) {
+        primaryImage_ = std::make_shared<HeifImage>(0);
+        primaryImage_->SetPrimaryImage(true);
+        ExtractMovieImageProperties(primaryImage_);
+    }
     std::vector<heif_item_id> allItemIds;
     GetAllItemId(allItemIds);
+    ExtractProperties(allItemIds);
+    if (!primaryImage_) {
+        return heif_error_primary_item_not_found;
+    }
+    if (isHeifs) {
+        primaryImage_->SetMovieImage(true);
+    }
+    ExtractGainmap(allItemIds);
+    ExtractDerivedImageProperties();
+    ExtractNonMasterImages();
+    ExtractMetadata(allItemIds);
+    ExtractXtStyleMetadata(allItemIds);
+    ExtractRfDataBMetadata(allItemIds);
+    ExtractSTDataMetadata(allItemIds);
+    return heif_error_ok;
+}
 
+void HeifParser::ExtractProperties(const std::vector<heif_item_id> &allItemIds)
+{
     for (heif_item_id itemId: allItemIds) {
         // extract Image Item
         auto infe = GetInfeBox(itemId);
@@ -378,22 +396,8 @@ heif_error HeifParser::AssembleImages()
             image->SetPrimaryImage(true);
             primaryImage_ = image;
         }
-
         ExtractImageProperties(image);
     }
-
-    if (!primaryImage_) {
-        return heif_error_primary_item_not_found;
-    }
-
-    ExtractGainmap(allItemIds);
-    ExtractDerivedImageProperties();
-    ExtractNonMasterImages();
-    ExtractMetadata(allItemIds);
-    ExtractXtStyleMetadata(allItemIds);
-    ExtractRfDataBMetadata(allItemIds);
-    ExtractSTDataMetadata(allItemIds);
-    return heif_error_ok;
 }
 
 void HeifParser::ExtractIT35Metadata(const heif_item_id& metadataItemId)
@@ -1126,8 +1130,36 @@ heif_error HeifParser::AssembleMovieBoxes()
     stszBox_ = stblBox_->GetChild<HeifStszBox>(BOX_TYPE_STSZ);
     CHECK_ERROR_RETURN_RET(!stszBox_, heif_error_no_stsz);
     stssBox_ = stblBox_->GetChild<HeifStssBox>(BOX_TYPE_STSS);
-    CHECK_ERROR_RETURN_RET(!stssBox_, heif_error_no_stss);
+    ParseHeifsStaticImageBox();
     return heif_error_ok;
+}
+
+void HeifParser::ParseHeifsStaticImageBox()
+{
+    if (metaBox_) {
+        ilocBox_ = metaBox_->GetChild<HeifIlocBox>(BOX_TYPE_ILOC);
+        pitmBox_ = metaBox_->GetChild<HeifPtimBox>(BOX_TYPE_PITM);
+        iinfBox_ = metaBox_->GetChild<HeifIinfBox>(BOX_TYPE_IINF);
+        irefBox_ = metaBox_->GetChild<HeifIrefBox>(BOX_TYPE_IREF);
+        iprpBox_ = metaBox_->GetChild<HeifIprpBox>(BOX_TYPE_IPRP);
+        idatBox_ = metaBox_->GetChild<HeifIdatBox>(BOX_TYPE_IDAT);
+    }
+    if (iinfBox_) {
+        std::vector<std::shared_ptr<HeifInfeBox>> infes = iinfBox_->GetChildren<HeifInfeBox>(BOX_TYPE_INFE);
+        for (auto &infe: infes) {
+            infeBoxes_.insert(std::make_pair(infe->GetItemId(), infe));
+        }
+    }
+    if (iprpBox_) {
+        ipcoBox_ = iprpBox_->GetChild<HeifIpcoBox>(BOX_TYPE_IPCO);
+        std::vector<std::shared_ptr<HeifIpmaBox>> ipmas = iprpBox_->GetChildren<HeifIpmaBox>(BOX_TYPE_IPMA);
+        if (!ipmas.empty()) {
+            ipmaBox_ = std::make_shared<HeifIpmaBox>();
+            for (auto &ipma : ipmas) {
+                ipmaBox_->MergeImpaBoxes(*ipma);
+            }
+        }
+    }
 }
 
 heif_error HeifParser::IsHeifsImage(bool &isHeifs) const
@@ -1155,7 +1187,7 @@ heif_error HeifParser::GetHeifsFrameCount(uint32_t &sampleCount) const
     return heif_error_ok;
 }
 
-heif_error HeifParser::GetHeifsMovieFrameData(uint32_t index, std::vector<uint8_t> &dest)
+heif_error HeifParser::GetHeifsMovieFrameData(uint32_t index, std::vector<uint8_t> &dest, bool isStatic)
 {
     if (!stsdBox_) {
         return heif_error_no_stsd;
@@ -1163,6 +1195,9 @@ heif_error HeifParser::GetHeifsMovieFrameData(uint32_t index, std::vector<uint8_
     auto hvcc = std::dynamic_pointer_cast<HeifHvccBox>(stsdBox_->GetHvccBox(0));
     if (!hvcc) {
         return heif_error_no_hvcc;
+    }
+    if (isStatic && primaryImage_) {
+        return GetItemData(primaryImage_->GetItemId(), &dest, heif_header_option::heif_header_data);
     }
     if (index == 0) {
         if (!hvcc->GetHeaders(&dest)) {
@@ -1237,7 +1272,9 @@ heif_error HeifParser::GetPreSampleSize(uint32_t index, uint32_t &preSampleSize)
 heif_error HeifParser::GetHeifsGroupFrameInfo(uint32_t index, HeifsFrameGroup &frameGroup)
 {
     if (!stssBox_) {
-        return heif_error_no_stss;
+        frameGroup.beginFrameIndex = index;
+        frameGroup.endFrameIndex = index + FRAME_INDEX_DELTA;
+        return heif_error_ok;
     }
     std::vector<uint32_t> sampleNumbers;
     auto ret = stssBox_->GetSampleNumbers(sampleNumbers);
@@ -1264,6 +1301,22 @@ heif_error HeifParser::GetHeifsGroupFrameInfo(uint32_t index, HeifsFrameGroup &f
     frameGroup.beginFrameIndex = beginFrameIndex;
     frameGroup.endFrameIndex = endFrameIndex;
     return heif_error_ok;
+}
+
+bool HeifParser::IsNeedDecodeHeifsStaticImage() const
+{
+    if (!pitmBox_ || !ilocBox_ || !stcoBox_) {
+        return false;
+    }
+    uint64_t ilocOffset = 0;
+    if (ilocBox_->GetPrimaryImageFileOffset(pitmBox_->GetItemId(), ilocOffset, idatBox_) != heif_error_ok) {
+        return false;
+    }
+    uint32_t stcoOffset = 0;
+    if (stcoBox_->GetChunkOffset(0, stcoOffset) != heif_error_ok) {
+        return false;
+    }
+    return static_cast<uint64_t>(stcoOffset) != ilocOffset;
 }
 } // namespace ImagePlugin
 } // namespace OHOS
