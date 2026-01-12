@@ -4239,8 +4239,7 @@ bool PixelMap::DoTranslation(TransInfos &infos, const AntiAliasingOption &option
 void PixelMap::scale(float xAxis, float yAxis)
 {
     ImageTrace imageTrace("PixelMap scale xAxis = %f, yAxis = %f", xAxis, yAxis);
-    if ((static_cast<int32_t>(round(imageInfo_.size.width * abs(xAxis))) - imageInfo_.size.width) == 0 &&
-        (static_cast<int32_t>(round(imageInfo_.size.height * abs(yAxis))) - imageInfo_.size.height) == 0) {
+    if (ImageUtils::FloatEqual(xAxis, 1.0f) && ImageUtils::FloatEqual(yAxis, 1.0f)) {
         return;
     }
     TransInfos infos;
@@ -4253,8 +4252,7 @@ void PixelMap::scale(float xAxis, float yAxis)
 
 void PixelMap::scale(float xAxis, float yAxis, const AntiAliasingOption &option)
 {
-    if ((static_cast<int32_t>(round(imageInfo_.size.width * abs(xAxis))) - imageInfo_.size.width) == 0 &&
-        (static_cast<int32_t>(round(imageInfo_.size.height * abs(yAxis))) - imageInfo_.size.height) == 0) {
+    if (ImageUtils::FloatEqual(xAxis, 1.0f) && ImageUtils::FloatEqual(yAxis, 1.0f)) {
         return;
     }
     if (isAstc_) {
