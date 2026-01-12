@@ -16,6 +16,10 @@ import("//foundation/multimedia/image_framework/ide/image_decode_config.gni")
 
 import("//foundation/multimedia/image_framework/ide/image_decode_config.gni")
 
+config("dng_exceptions_config") {
+  cflags_cc = [ "-fexceptions" ]
+}
+
 ohos_shared_library("image_accessor") {
   if (!use_clang_android && !use_clang_ios) {
     sanitize = {
@@ -60,6 +64,10 @@ ohos_shared_library("image_accessor") {
   cflags = [
     "-DIMAGE_COLORSPACE_FLAG",
     "-O3",
+  ]
+
+  configs = [
+    ":dng_exceptions_config",
   ]
 
   deps = [

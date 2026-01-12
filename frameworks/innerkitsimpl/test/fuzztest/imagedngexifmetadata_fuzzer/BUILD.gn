@@ -28,10 +28,6 @@ ohos_fuzztest("ImageDngExifMetadataFuzzTest") {
 
   sources = [
     "$image_subsystem/frameworks/innerkitsimpl/test/fuzztest/common/src/common_fuzztest_function.cpp",
-    "$image_subsystem/frameworks/innerkitsimpl/accessor/src/dng_exif_metadata_accessor.cpp",
-    "${image_subsystem}/frameworks/innerkitsimpl/accessor/src/dng/dng_sdk_info.cpp",
-    "$image_subsystem/frameworks/innerkitsimpl/accessor/src/dng/dng_sdk_helper.cpp",
-    "$image_subsystem/frameworks/innerkitsimpl/accessor/src/tiff_parser.cpp",
     "src/image_dng_exif_metadata_fuzzer.cpp",
   ]
 
