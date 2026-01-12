@@ -1611,7 +1611,9 @@ HWTEST_F(ImagSourceNdk2Test, OH_ImageSourceInfo_GetMimeType002, TestSize.Level3)
     ret = OH_ImageSourceInfo_GetMimeType(info, &mimeType);
     EXPECT_EQ(ret, IMAGE_SUCCESS);
     ASSERT_NE(mimeType.data, nullptr);
-    EXPECT_EQ(strcmp(mimeType.data, IMAGE_JPEG_FORMAT.c_str()), 0);
+
+    ASSERT_EQ(mimeType.size, IMAGE_JPEG_FORMAT.size());
+    EXPECT_EQ(memcmp(mimeType.data, IMAGE_JPEG_FORMAT.c_str(), mimeType.size), 0);
     ret = OH_ImageSourceNative_Release(source);
     EXPECT_EQ(ret, IMAGE_SUCCESS);
     ret = OH_ImageSourceInfo_Release(info);
