@@ -30,8 +30,6 @@
 #include "nocopyable.h"
 #include "plugin_class_base.h"
 #include "jpeg_yuv_decoder/jpeg_decoder_yuv.h"
-#include "third_party/externals/piex/src/binary_parse/range_checked_byte_ptr.h"
-#include "third_party/externals/piex/src/image_type_recognition/image_type_recognition_lite.h"
 
 namespace OHOS {
     struct BufferRequestConfig;
@@ -174,7 +172,8 @@ private:
     }
     OHOS::Media::Size GetHeifGridTileSize() override;
     bool IsCr3Format();
-    bool MakeCr3Codec();
+    bool MakeCr3PreviewStream();
+    void MakeRawPreviewStream(uint32_t offset, uint32_t length);
 
     bool IsHeifsDecode(DecodeContext &context);
     uint32_t DoHeifsDecode(OHOS::ImagePlugin::DecodeContext &context);
@@ -233,7 +232,7 @@ private:
     OHOS::Media::Size desiredSizeYuv_;
     int softSampleSize_ = 1;
     uint32_t sampleSize_ = 1;
-    piex::image_type_recognition::RawImageTypes rawType_ = piex::image_type_recognition::kNonRawImage;
+    std::string rawEncodedFormat_ = "";
 
     // hdr
     Media::ImageHdrType hdrType_ = Media::ImageHdrType::UNKNOWN;
