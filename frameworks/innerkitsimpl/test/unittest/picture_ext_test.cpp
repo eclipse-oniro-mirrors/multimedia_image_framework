@@ -918,7 +918,7 @@ HWTEST_F(PictureExtTest, ConvertGainmapHdrMetadataTest001, TestSize.Level1)
         .height = SIZE_HEIGHT,
         .strideAlignment = STRIDE_ALIGNMENT,
         .format = GraphicPixelFormat::GRAPHIC_PIXEL_FMT_BGRA_8888,
-        .usage = BUFFER_USAGE_CPU_READ | BUFFER_USAGE_CPU_WRITE | BUEFFER_USAGE_MEM_DMA | BUFFER_USAGE_MEM_MMZ_CACHE,
+        .usage = BUFFER_USAGE_CPU_READ | BUFFER_USAGE_CPU_WRITE | BUFFER_USAGE_MEM_DMA | BUFFER_USAGE_MEM_MMZ_CACHE,
         .timeout = 0,
     };
     GSError ret = maintenanceBuffer->Alloc(requestConfig);
@@ -927,8 +927,8 @@ HWTEST_F(PictureExtTest, ConvertGainmapHdrMetadataTest001, TestSize.Level1)
     ASSERT_EQ(result, EOK);
     result = picture->SetMaintenanceData(maintenanceBuffer);
     EXPECT_EQ(result, true);
-    PixelFormat expectedPixelFormat = PixelFormat::NV21;
-    std::unique_ptr<Pixelmap> pixelmap = picture->GetHdrComposedPixelMlap(expectedPixelFormat);
+    PixelFormat expectedPixelFormat = PixelFormat::RGBA_8888;
+    std::unique_ptr<PixelMap> pixelmap = picture->GetHdrComposedPixelMap(expectedPixelFormat);
     ASSERT_NE(pixelmap, nullptr);
 }
 
