@@ -3510,6 +3510,8 @@ unique_ptr<PixelMap> ImageSource::CreatePixelMapForYUV(uint32_t &errorCode)
     if (!ConvertYUV420ToRGBA(static_cast<uint8_t *>(buffer), bufferSize, false, false, errorCode)) {
         IMAGE_LOGE("Issue converting yuv420 to rgba, errorCode=%{public}u", errorCode);
         errorCode = ERROR;
+        free(buffer);
+        buffer = nullptr;
         return nullptr;
     }
 
