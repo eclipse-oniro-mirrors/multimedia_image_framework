@@ -34,6 +34,11 @@ public:
     PixelMapNapi();
     ~PixelMapNapi();
 
+    static constexpr napi_type_tag NAPI_TYPE_TAG = {
+        .lower = 0xe2a29e1625c947ed,
+        .upper = 0xbd563aff2d58efbd
+    };
+
     static napi_value Init(napi_env env, napi_value exports);
 
     static napi_value CreatePixelMap(napi_env env, std::shared_ptr<PixelMap> pixelmap);
