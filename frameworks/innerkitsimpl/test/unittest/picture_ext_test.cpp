@@ -927,7 +927,7 @@ HWTEST_F(PictureExtTest, ConvertGainmapHdrMetadataTest001, TestSize.Level1)
     ASSERT_EQ(result, EOK);
     result = picture->SetMaintenanceData(maintenanceBuffer);
     EXPECT_EQ(result, true);
-    PixelFormat expectedPixelFormat = PixelFormat::RGBA_8888;
+    PixelFormat expectedPixelFormat = PixelFormat::RGBA_1010102;
     std::unique_ptr<PixelMap> pixelmap = picture->GetHdrComposedPixelMap(expectedPixelFormat);
     ASSERT_NE(pixelmap, nullptr);
 }
