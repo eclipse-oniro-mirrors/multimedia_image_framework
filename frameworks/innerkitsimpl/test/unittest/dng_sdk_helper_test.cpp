@@ -46,7 +46,7 @@ protected:
  */
 HWTEST_F(DngSdkHelperTest, ParseInfoFromStreamTest001, TestSize.Level3)
 {
-    GTEST_LOG_(INFO) << "ParseInfoFromStreamTeset001 start";
+    GTEST_LOG_(INFO) << "ParseInfoFromStreamTest001 start";
     std::shared_ptr<MetadataStream> nullStream = nullptr;
     auto result = DngSdkHelper::ParseInfoFromStream(nullStream);
     EXPECT_EQ(result, nullptr);

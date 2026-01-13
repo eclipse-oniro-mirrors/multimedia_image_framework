@@ -274,7 +274,7 @@ HWTEST_F(DngSdkInfoTest, ParseIntTagTest001, TestSize.Level3)
  * @tc.desc: Test ParseDoubleTag with tagCount = 0, expect empty doubleArrayValue and SUCCESS.
  * @tc.type: FUNC
  */
-HWTEST_F(DngSdkInfoTest, ParseDoubleTtagTest001, TestSize.Level3)
+HWTEST_F(DngSdkInfoTest, ParseDoubleTagTest001, TestSize.Level3)
 {
     GTEST_LOG_(INFO) << "DngSdkInfoTest: ParseDoubleTagTest001 start";
 
