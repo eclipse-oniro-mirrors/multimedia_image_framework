@@ -25,6 +25,7 @@
 #include "pixel_map.h"
 #include "pixelmap_native.h"
 #include "securec.h"
+#include "picture_native_impl.h"
 using namespace testing::ext;
 namespace OHOS {
 namespace Media {
@@ -118,7 +119,8 @@ OH_PictureNative *CreateNativePicture(std::vector<Image_AuxiliaryPictureType>& a
     return picture;
 }
 
-OH_AuxiliaryPictureNative *CreateAuxiliaryPictureNative()
+OH_AuxiliaryPictureNative *CreateAuxiliaryPictureNative(
+    Image_AuxiliaryPictureType type = Image_AuxiliaryPictureType::AUXILIARY_PICTURE_TYPE_GAINMAP)
 {
     std::unique_ptr<uint32_t[]> color = std::make_unique<uint32_t[]>(BUFFER_LENGTH);
     if (color == nullptr) {
@@ -135,7 +137,7 @@ OH_AuxiliaryPictureNative *CreateAuxiliaryPictureNative()
     OH_AuxiliaryPictureNative *picture = nullptr;
 
     Image_ErrorCode ret = OH_AuxiliaryPictureNative_Create(reinterpret_cast<uint8_t*>(color.get()), dataLength, &size,
-        Image_AuxiliaryPictureType::AUXILIARY_PICTURE_TYPE_GAINMAP, &picture);
+        type, &picture);
     EXPECT_EQ(ret, IMAGE_SUCCESS);
 
     return picture;
@@ -673,6 +675,128 @@ HWTEST_F(PictureNdkTest, OH_PictureNative_GetGainmapPixelmap003, TestSize.Level3
 }
 
 /**
+ * @tc.name: OH_PictureNative_GetThumbnailPixelmap001
+ * @tc.desc: Verify retrieval of the thumbnail pixelmap from a native picture with an auxiliary thumbnail set.
+ * @tc.type: FUNC
+ */
+HWTEST_F(PictureNdkTest, OH_PictureNative_GetThumbnailPixelmap001, TestSize.Level1)
+{
+    std::vector<Image_AuxiliaryPictureType> auxTypeList = {};
+    OH_PictureNative *picture = CreateNativePicture(auxTypeList);
+    ASSERT_NE(picture, nullptr);
+    OH_AuxiliaryPictureNative *auxiliaryPicture = CreateAuxiliaryPictureNative(
+        Image_AuxiliaryPictureType::AUXILIARY_PICTURE_TYPE_THUMBNAIL);
+
+    Image_ErrorCode ret = OH_PictureNative_SetAuxiliaryPicture(picture,
+        Image_AuxiliaryPictureType::AUXILIARY_PICTURE_TYPE_THUMBNAIL, auxiliaryPicture);
+    ASSERT_EQ(ret, IMAGE_SUCCESS);
+
+    OH_PixelmapNative *thumbnailPixelmap = nullptr;
+    ret = OH_PictureNative_GetThumbnailPixelmap(picture, &thumbnailPixelmap);
+    EXPECT_NE(thumbnailPixelmap, nullptr);
+    EXPECT_EQ(ret, IMAGE_SUCCESS);
+
+    OH_PictureNative_Release(picture);
+    OH_AuxiliaryPictureNative_Release(auxiliaryPicture);
+}
+
+/**
+ * @tc.name: OH_PictureNative_GetThumbnailPixelmap002
+ * @tc.desc: Verify that the auxiliary thumbnail cannot retrieve the thumbnail pixel map from the local
+ *           image using the auxiliary thumbnail set.
+ * @tc.type: FUNC
+ */
+HWTEST_F(PictureNdkTest, OH_PictureNative_GetThumbnailPixelmap002, TestSize.Level3)
+{
+    std::vector<Image_AuxiliaryPictureType> auxTypeList = {AUXILIARY_PICTURE_TYPE_THUMBNAIL};
+    OH_PictureNative *picture = CreateNativePicture(auxTypeList);
+    OH_AuxiliaryPictureNative *auxiliaryPicture = CreateAuxiliaryPictureNative();
+
+    OH_PixelmapNative *thumbnailPixelmap = nullptr;
+    Image_ErrorCode ret = OH_PictureNative_GetThumbnailPixelmap(picture, &thumbnailPixelmap);
+    EXPECT_EQ(thumbnailPixelmap, nullptr);
+    EXPECT_EQ(ret, IMAGE_SUCCESS);
+
+    OH_PictureNative_Release(picture);
+    OH_AuxiliaryPictureNative_Release(auxiliaryPicture);
+}
+
+/**
+ * @tc.name: OH_PictureNative_GetThumbnailPixelmap003
+ * @tc.desc: Verify error handling when attempting to retrieve a thumbnail pixelmap from a null picture pointer.
+ * @tc.type: FUNC
+ */
+HWTEST_F(PictureNdkTest, OH_PictureNative_GetThumbnailPixelmap003, TestSize.Level3)
+{
+    OH_PixelmapNative *thumbnailPixelmap = nullptr;
+    Image_ErrorCode ret = OH_PictureNative_GetThumbnailPixelmap(nullptr, &thumbnailPixelmap);
+    EXPECT_EQ(ret, IMAGE_BAD_PARAMETER);
+}
+
+/**
+ * @tc.name: OH_PictureNative_SetThumbnailPixelmap001
+ * @tc.desc: Verify retrieval of the thumbnail pixelmap from a native picture with an auxiliary thumbnail set.
+ * @tc.type: FUNC
+ */
+HWTEST_F(PictureNdkTest, OH_PictureNative_SetThumbnailPixelmap001, TestSize.Level1)
+{
+    std::vector<Image_AuxiliaryPictureType> auxTypeList = {};
+    OH_PictureNative *picture = CreateNativePicture(auxTypeList);
+    ASSERT_NE(picture, nullptr);
+    OH_AuxiliaryPictureNative *auxiliaryPicture = CreateAuxiliaryPictureNative();
+    ASSERT_NE(auxiliaryPicture, nullptr);
+    ASSERT_NE(auxiliaryPicture->GetInnerAuxiliaryPicture(), nullptr);
+    ASSERT_NE(auxiliaryPicture->GetInnerAuxiliaryPicture()->GetContentPixel(), nullptr);
+    std::unique_ptr<OH_PixelmapNative> thumbnailPixelmap =
+        std::make_unique<OH_PixelmapNative>(auxiliaryPicture->GetInnerAuxiliaryPicture()->GetContentPixel());
+    ASSERT_NE(thumbnailPixelmap, nullptr);
+
+    Image_ErrorCode ret = OH_PictureNative_SetThumbnailPixelmap(picture, thumbnailPixelmap.release());
+    ASSERT_EQ(ret, IMAGE_SUCCESS);
+
+    OH_PixelmapNative *thumbnailPixelmapGet = nullptr;
+    ret = OH_PictureNative_GetThumbnailPixelmap(picture, &thumbnailPixelmapGet);
+    EXPECT_NE(thumbnailPixelmapGet, nullptr);
+    EXPECT_EQ(ret, IMAGE_SUCCESS);
+
+    OH_PictureNative_Release(picture);
+    OH_AuxiliaryPictureNative_Release(auxiliaryPicture);
+}
+
+/**
+ * @tc.name: OH_PictureNative_SetThumbnailPixelmap002
+ * @tc.desc: Verify the functionality of OH_PictureNative_SetThumbnailPixelmap when attempting
+ *           to set null picture pointer.
+ * @tc.type: FUNC
+ */
+HWTEST_F(PictureNdkTest, OH_PictureNative_SetThumbnailPixelmap002, TestSize.Level3)
+{
+    Image_ErrorCode ret = OH_PictureNative_SetThumbnailPixelmap(nullptr, nullptr);
+    ASSERT_EQ(ret, IMAGE_BAD_PARAMETER);
+}
+
+/**
+ * @tc.name: OH_PictureNative_SetThumbnailPixelmap003
+ * @tc.desc: Verify the functionality of OH_PictureNative_SetThumbnailPixelmap when attempting
+ *           to set null inner thumbnail pixelmap pointer.
+ * @tc.type: FUNC
+ */
+HWTEST_F(PictureNdkTest, OH_PictureNative_SetThumbnailPixelmap003, TestSize.Level3)
+{
+    std::vector<Image_AuxiliaryPictureType> auxTypeList = {};
+    OH_PictureNative *picture = CreateNativePicture(auxTypeList);
+    ASSERT_NE(picture, nullptr);
+
+    OH_PixelmapNative *thumbnailPixelmap = new OH_PixelmapNative(nullptr);
+    ASSERT_NE(thumbnailPixelmap, nullptr);
+    Image_ErrorCode ret = OH_PictureNative_SetThumbnailPixelmap(picture, thumbnailPixelmap);
+    EXPECT_EQ(ret, IMAGE_BAD_PARAMETER);
+
+    OH_PictureNative_Release(picture);
+    OH_PixelmapNative_Release(thumbnailPixelmap);
+}
+
+/**
  * @tc.name: OH_PictureNative_GetAuxiliaryPicture001
  * @tc.desc: Verify the functionality of retrieving an auxiliary picture of type gainmap
  *           that has been previously set on a native picture.
@@ -830,6 +954,70 @@ HWTEST_F(PictureNdkTest, OH_PictureNative_SetAuxiliaryPicture004, TestSize.Level
     Image_ErrorCode ret = OH_PictureNative_SetAuxiliaryPicture(nullptr,
         Image_AuxiliaryPictureType::AUXILIARY_PICTURE_TYPE_GAINMAP, nullptr);
     EXPECT_EQ(ret, IMAGE_BAD_PARAMETER);
+}
+
+/**
+ * @tc.name: OH_PictureNative_DropAuxiliaryPicture001
+ * @tc.desc: Verify the behavior of OH_PictureNative_DropAuxiliaryPicture.
+ * @tc.type: FUNC
+ */
+HWTEST_F(PictureNdkTest, OH_PictureNative_DropAuxiliaryPicture001, TestSize.Level1)
+{
+    std::vector<Image_AuxiliaryPictureType> auxTypeList = {};
+    OH_PictureNative *picture = CreateNativePicture(auxTypeList);
+    OH_AuxiliaryPictureNative *auxiliaryPicture = CreateAuxiliaryPictureNative();
+
+    Image_AuxiliaryPictureType type = Image_AuxiliaryPictureType::AUXILIARY_PICTURE_TYPE_GAINMAP;
+    Image_ErrorCode ret = OH_PictureNative_SetAuxiliaryPicture(picture, type, auxiliaryPicture);
+    ASSERT_EQ(ret, IMAGE_SUCCESS);
+
+    ret = OH_PictureNative_DropAuxiliaryPicture(picture, type);
+    EXPECT_EQ(ret, IMAGE_SUCCESS);
+
+    OH_AuxiliaryPictureNative *auxPicture = nullptr;
+    ret = OH_PictureNative_GetAuxiliaryPicture(picture, type, &auxPicture);
+    EXPECT_EQ(auxPicture, nullptr);
+    EXPECT_EQ(ret, IMAGE_BAD_PARAMETER);
+
+    OH_PictureNative_Release(picture);
+    OH_AuxiliaryPictureNative_Release(auxiliaryPicture);
+}
+
+/**
+ * @tc.name: OH_PictureNative_DropAuxiliaryPicture002
+ * @tc.desc: Verify the behavior of OH_PictureNative_DropAuxiliaryPicture when passing in
+ *           a null picture pointer.
+ * @tc.type: FUNC
+ */
+HWTEST_F(PictureNdkTest, OH_PictureNative_DropAuxiliaryPicture002, TestSize.Level3)
+{
+    Image_ErrorCode ret = OH_PictureNative_DropAuxiliaryPicture(nullptr,
+        Image_AuxiliaryPictureType::AUXILIARY_PICTURE_TYPE_GAINMAP);
+    EXPECT_EQ(ret, IMAGE_BAD_PARAMETER);
+}
+
+/**
+ * @tc.name: OH_PictureNative_DropAuxiliaryPicture003
+ * @tc.desc: Verify the behavior of OH_PictureNative_DropAuxiliaryPicture when passing in
+ *           a non-existent AuxiliaryPictureType.
+ * @tc.type: FUNC
+ */
+HWTEST_F(PictureNdkTest, OH_PictureNative_DropAuxiliaryPicture003, TestSize.Level3)
+{
+    std::vector<Image_AuxiliaryPictureType> auxTypeList = {};
+    OH_PictureNative *picture = CreateNativePicture(auxTypeList);
+    OH_AuxiliaryPictureNative *auxiliaryPicture = CreateAuxiliaryPictureNative();
+
+    Image_ErrorCode ret = OH_PictureNative_SetAuxiliaryPicture(picture,
+        Image_AuxiliaryPictureType::AUXILIARY_PICTURE_TYPE_GAINMAP, auxiliaryPicture);
+    ASSERT_EQ(ret, IMAGE_SUCCESS);
+
+    Image_AuxiliaryPictureType type = static_cast<Image_AuxiliaryPictureType>(-1);
+    ret = OH_PictureNative_DropAuxiliaryPicture(picture, type);
+    EXPECT_EQ(ret, IMAGE_BAD_PARAMETER);
+
+    OH_PictureNative_Release(picture);
+    OH_AuxiliaryPictureNative_Release(auxiliaryPicture);
 }
 
 /**

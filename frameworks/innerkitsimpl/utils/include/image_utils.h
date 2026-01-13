@@ -29,6 +29,9 @@
 
 namespace OHOS { namespace MultimediaPlugin { class PluginServer; } }
 namespace OHOS { namespace ImagePlugin { struct DecodeContext; } }
+namespace OHOS { namespace ColorManager {enum ColorSpaceName: uint32_t; } }
+namespace OHOS { namespace HDI { namespace Display { namespace Graphic { namespace Common {
+    namespace V1_0 { enum CM_ColorSpaceType: int32_t; } } } } } }
 namespace OHOS {
 namespace Media {
 const std::string IMAGE_ENCODE_FORMAT = "encodeFormat";
@@ -60,6 +63,61 @@ class AbsMemory;
 struct RWPixelsOptions;
 struct InitializationOptions;
 
+template<typename T>
+class ScopeRestorer {
+public:
+    // Constructor without immediate value setting
+    explicit ScopeRestorer(T& ref)
+        : ref_(ref), old_value_(ref), new_value_set_(false)
+    {}
+
+    // Constructor with immediate value setting
+    explicit ScopeRestorer(T& ref, T new_value)
+        : ref_(ref), old_value_(ref), new_value_set_(true)
+    {
+        ref_ = new_value;
+    }
+
+    // Set/Update the new value
+    void SetValue(const T& value)
+    {
+        ref_ = value;
+        new_value_set_ = true;
+    }
+
+    // Keep the new value (Discard restoration)
+    void Keep()
+    {
+        new_value_set_ = false;
+    }
+
+    // Immediately restore old value and deactivate
+    void Restore()
+    {
+        if (new_value_set_) {
+            ref_ = old_value_;
+            new_value_set_ = false;
+        }
+    }
+
+    ~ScopeRestorer()
+    {
+        if (new_value_set_) {
+            ref_ = old_value_;
+        }
+    }
+
+    ScopeRestorer(const ScopeRestorer&) = delete;
+    ScopeRestorer& operator=(const ScopeRestorer&) = delete;
+    ScopeRestorer(ScopeRestorer&&) = delete;
+    ScopeRestorer& operator=(ScopeRestorer&&) = delete;
+
+private:
+    T& ref_;
+    T old_value_;
+    bool new_value_set_;
+};
+
 class ImageUtils {
 public:
     static bool GetFileSize(const std::string &pathName, size_t &size);
@@ -81,6 +139,7 @@ public:
     static MultimediaPlugin::PluginServer& GetPluginServer();
     static bool CheckMulOverflow(int32_t width, int32_t bytesPerPixel);
     static bool CheckMulOverflow(int32_t width, int32_t height, int32_t bytesPerPixel);
+    static bool CheckFloatMulOverflow(float num1, float num2);
     static void BGRAToARGB(uint8_t* srcPixels, uint8_t* dstPixels, uint32_t byteCount);
     static void ARGBToBGRA(uint8_t* srcPixels, uint8_t* dstPixels, uint32_t byteCount);
     static int32_t SurfaceBuffer_Reference(void* buffer);
@@ -98,6 +157,13 @@ public:
     static void DumpHdrBufferEnabled(sptr<SurfaceBuffer>& buffer, const std::string& fileName);
     static void DumpHdrExtendMetadataEnabled(sptr<SurfaceBuffer>& buffer, const std::string& fileName);
     static void DumpSurfaceBufferAllKeysEnabled(sptr<SurfaceBuffer>& buffer, const std::string& fileName);
+    static ColorManager::ColorSpaceName SbCMColorSpaceType2ColorSpaceName(
+        HDI::Display::Graphic::Common::V1_0::CM_ColorSpaceType type);
+    static void SetYuvDataInfo(std::unique_ptr<PixelMap> &pixelMap, sptr<OHOS::SurfaceBuffer> &sBuffer);
+    static bool CopyYuvPixelMapToSurfaceBuffer(PixelMap* pixelmap,
+        sptr<SurfaceBuffer> surfaceBuffer);
+    static bool GetYuvInfoFromSurfaceBuffer(YUVDataInfo &yuvInfo,
+        sptr<SurfaceBuffer> surfaceBuffer);
 #endif
     static PixelFormat SbFormat2PixelFormat(int32_t sbFormat);
     static uint64_t GetNowTimeMilliSeconds();
@@ -122,7 +188,7 @@ public:
     static bool IsAuxiliaryPictureTypeSupported(AuxiliaryPictureType auxiliaryPictureType);
     static bool IsAuxiliaryPictureEncoded(AuxiliaryPictureType type);
     static bool IsMetadataTypeSupported(MetadataType metadataType);
-    static const std::set<AuxiliaryPictureType> GetAllAuxiliaryPictureType();
+    static const std::set<AuxiliaryPictureType> &GetAllAuxiliaryPictureType();
     static const std::set<MetadataType> &GetAllMetadataType();
     static size_t GetAstcBytesCount(const ImageInfo& imageInfo);
     static bool StrToUint32(const std::string& str, uint32_t& value);
@@ -156,10 +222,11 @@ public:
     static bool CheckRowDataSizeIsVaild(int32_t &rowDataSize, ImageInfo &imgInfo);
     static bool CheckBufferSizeIsVaild(int32_t &bufferSize, uint64_t &expectedBufferSize,
         AllocatorType &allocatorType);
+    static bool CheckYuvDataInfoValid(const YUVDataInfo& yDataInfo);
     static bool GetAlignedNumber(int32_t& number, int32_t align);
     static int32_t GetByteCount(ImageInfo imageInfo);
     static int32_t GetYUVByteCount(const ImageInfo& info);
-
+    static PixelFormat ConvertTo10BitPixelFormat(PixelFormat pixelFormat);
     template<typename T>
     static bool CheckMulOverflow(const T& num1, const T& num2)
     {

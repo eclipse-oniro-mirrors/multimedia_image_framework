@@ -31,6 +31,7 @@
 #include "utility"
 #include "wbmp_format_agent.h"
 #include "webp_format_agent.h"
+#include "tiff_format_agent.h"
 
 #undef LOG_DOMAIN
 #define LOG_DOMAIN LOG_TAG_DOMAIN_ID_PLUGIN
@@ -54,6 +55,7 @@ PLUGIN_EXPORT_REGISTER_CLASS(OHOS::ImagePlugin::BmpFormatAgent)
 PLUGIN_EXPORT_REGISTER_CLASS(OHOS::ImagePlugin::RawFormatAgent)
 PLUGIN_EXPORT_REGISTER_CLASS(OHOS::ImagePlugin::SvgFormatAgent)
 PLUGIN_EXPORT_REGISTER_CLASS(OHOS::ImagePlugin::WbmpFormatAgent)
+PLUGIN_EXPORT_REGISTER_CLASS(OHOS::ImagePlugin::TiffFormatAgent)
 PLUGIN_EXPORT_REGISTER_CLASS_END
 
 using std::string;

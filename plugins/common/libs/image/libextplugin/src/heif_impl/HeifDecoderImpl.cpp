@@ -252,6 +252,20 @@ GridInfo HeifDecoderImpl::GetGridInfo()
     return gridInfo_;
 }
 
+std::shared_ptr<HeifImage> HeifDecoderImpl::GetThumbnailImage()
+{
+    if (primaryImage_ == nullptr) {
+        IMAGE_LOGE("Primary image is not init");
+        return nullptr;
+    }
+    auto thumbImages = primaryImage_->GetThumbnailImages();
+    if (thumbImages.empty()) {
+        IMAGE_LOGE("Heif parser has not thumbnail Images.");
+        return nullptr;
+    }
+    return thumbImages[0];
+}
+
 bool HeifDecoderImpl::CheckAuxiliaryMap(AuxiliaryPictureType type)
 {
     if (parser_ == nullptr) {
@@ -269,6 +283,9 @@ bool HeifDecoderImpl::CheckAuxiliaryMap(AuxiliaryPictureType type)
         case AuxiliaryPictureType::LINEAR_MAP:
         case AuxiliaryPictureType::FRAGMENT_MAP:
             auxiliaryImage_ = parser_->GetAuxiliaryMapImage(iter->second);
+            break;
+        case AuxiliaryPictureType::THUMBNAIL:
+            auxiliaryImage_ = this->GetThumbnailImage();
             break;
         default:
             auxiliaryImage_ = nullptr;
@@ -1587,6 +1604,7 @@ bool HeifDecoderImpl::SwDecodeHeifsOnceFrame(uint32_t index, const HevcSoftDecod
 bool HeifDecoderImpl::SwDecodeHeifsImage(uint32_t index, HevcSoftDecodeParam &param)
 {
     CHECK_ERROR_RETURN_RET(!parser_, false);
+    param.gridInfo.decodeMode = DecodeMode::VIDEO;
     if (!HasDecodedFrame(index)) {
         DeleteParamsBuffer();
         if (!isFirstFrameDecoded_) {
@@ -1633,14 +1651,14 @@ bool HeifDecoderImpl::GetHeifsFrameCount(uint32_t &sampleCount)
         CHECK_ERROR_RETURN_RET(parser_->GetHeifsFrameCount(sampleCount) != heif_error_ok, false);
         return true;
     }
-    IMAGE_LOGE("GetHeifsFrameCount is not heifs image");
+    IMAGE_LOGD("GetHeifsFrameCount is not heifs image");
     return false;
 }
 
 bool HeifDecoderImpl::IsHeifsImage()
 {
     if (!primaryImage_ || !primaryImage_->IsMovieImage()) {
-        IMAGE_LOGE("IsHeifsImage() is not movie image.");
+        IMAGE_LOGD("IsHeifsImage() is not movie image.");
         return false;
     }
     bool isHeifs = false;

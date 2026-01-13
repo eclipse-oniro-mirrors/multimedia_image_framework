@@ -40,12 +40,17 @@ private:
     static void Destructor(napi_env env, void *nativeObject, void *finalize);
     // methods
     static napi_value GetMainPixelmap(napi_env env, napi_callback_info info);
+    static napi_value GetHdrComposedPixelMapNapi(napi_env env, napi_callback_info info, bool withOptions);
     static napi_value GetHdrComposedPixelMap(napi_env env, napi_callback_info info);
+    static napi_value GetHdrComposedPixelMapWithOptions(napi_env env, napi_callback_info info);
     static napi_value GetGainmapPixelmap(napi_env env, napi_callback_info info);
+    static napi_value GetThumbnailPixelmap(napi_env env, napi_callback_info info);
+    static napi_value SetThumbnailPixelmap(napi_env env, napi_callback_info info);
     static napi_value Release(napi_env env, napi_callback_info info);
     static napi_value Marshalling(napi_env env, napi_callback_info info);
     static napi_value GetAuxiliaryPicture(napi_env env, napi_callback_info info);
     static napi_value SetAuxiliaryPicture(napi_env env, napi_callback_info info);
+    static napi_value DropAuxiliaryPicture(napi_env env, napi_callback_info info);
     static napi_value GetMetadata(napi_env env, napi_callback_info info);
     static napi_value SetMetadata(napi_env env, napi_callback_info info);
 

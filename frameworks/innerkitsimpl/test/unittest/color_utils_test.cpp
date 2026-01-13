@@ -16,6 +16,9 @@
 #include <gtest/gtest.h>
 #include "color_utils.h"
 
+#define INVALID_COLORSPACE_VALUE 999
+#define ZERO_VALUE 0
+
 using namespace testing::ext;
 using namespace OHOS::Media;
 namespace OHOS {
@@ -259,6 +262,124 @@ HWTEST_F(ColorUtilsTest, ConvertCMColorToCicpTest001, TestSize.Level3)
     ASSERT_EQ(ret, CICP_COLORPRIMARIES_SRGB);
 
     GTEST_LOG_(INFO) << "ColorUtilsTest: CM_ColorPrimariesTest001 end";
+}
+
+/**
+ * @tc.name: CicpBT601NPrimariesTest001
+ * @tc.desc: Test converting BT601_N color primaries with limited range to color space
+ * @tc.type: FUNC
+ */
+HWTEST_F(ColorUtilsTest, CicpBT601NPrimariesTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ColorUtilsTest: CicpBT601NPrimariesTest001 start";
+    ColorManager::ColorSpaceName result = ColorUtils::CicpToColorSpace(
+        uint8_t(CICP_COLORPRIMARIES_BT601_N), uint8_t(ZERO_VALUE), uint8_t(ZERO_VALUE), CICP_FULL_RANGE_LIMIT);
+    ASSERT_EQ(result, ColorManager::BT601_SMPTE_C_LIMIT);
+    GTEST_LOG_(INFO) << "ColorUtilsTest: CicpBT601NPrimariesTest001 end";
+}
+
+/**
+ * @tc.name: CicpBT601PPrimariesTest001
+ * @tc.desc: Test converting BT601_P color primaries with limited range to color space
+ * @tc.type: FUNC
+ */
+HWTEST_F(ColorUtilsTest, CicpBT601PPrimariesTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ColorUtilsTest: CicpBT601PPrimariesTest001 start";
+    ColorManager::ColorSpaceName result = ColorUtils::CicpToColorSpace(
+        uint8_t(CICP_COLORPRIMARIES_BT601_P), uint8_t(ZERO_VALUE), uint8_t(ZERO_VALUE), CICP_FULL_RANGE_LIMIT);
+    ASSERT_EQ(result, ColorManager::BT601_EBU_LIMIT);
+    GTEST_LOG_(INFO) << "ColorUtilsTest: CicpBT601PPrimariesTest001 end";
+}
+
+/**
+ * @tc.name: CicpP3DCIPrimariesTest001
+ * @tc.desc: Test converting DCI-P3 cinema color primaries to color space
+ * @tc.type: FUNC
+ */
+HWTEST_F(ColorUtilsTest, CicpP3DCIPrimariesTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ColorUtilsTest: CicpP3DCIPrimariesTest001 start";
+    ColorManager::ColorSpaceName result = ColorUtils::CicpToColorSpace(
+        uint8_t(CICP_COLORPRIMARIES_P3_DCI), uint8_t(ZERO_VALUE), uint8_t(ZERO_VALUE), uint8_t(ZERO_VALUE));
+    ASSERT_EQ(result, ColorManager::DCI_P3);
+    GTEST_LOG_(INFO) << "ColorUtilsTest: CicpP3DCIPrimariesTest001 end";
+}
+
+/**
+ * @tc.name: CicpUnknownPrimariesDefaultTest001
+ * @tc.desc: Test handling of unrecognized color primaries value
+ * @tc.type: FUNC
+ */
+HWTEST_F(ColorUtilsTest, CicpUnknownPrimariesDefaultTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ColorUtilsTest: CicpUnknownPrimariesDefaultTest001 start";
+    ColorManager::ColorSpaceName result = ColorUtils::CicpToColorSpace(
+        uint16_t(CICP_COLORPRIMARIES_UNKNOWN), uint16_t(ZERO_VALUE), uint16_t(ZERO_VALUE), uint16_t(ZERO_VALUE));
+    ASSERT_EQ(result, ColorManager::NONE);
+    GTEST_LOG_(INFO) << "ColorUtilsTest: CicpUnknownPrimariesDefaultTest001 end";
+}
+
+/**
+ * @tc.name: ColorSpaceGetCicpUnknownColorSpaceTest001
+ * @tc.desc: Test extracting CICP parameters from invalid color space enum value
+ * @tc.type: FUNC
+ */
+HWTEST_F(ColorUtilsTest, ColorSpaceGetCicpUnknownColorSpaceTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ColorUtilsTest: ColorSpaceGetCicpUnknownColorSpaceTest001 start";
+    uint16_t primaries = ZERO_VALUE;
+    uint16_t transfer = ZERO_VALUE;
+    uint16_t matrix = ZERO_VALUE;
+    uint8_t range = ZERO_VALUE;
+    ColorUtils::ColorSpaceGetCicp(static_cast<ColorManager::ColorSpaceName>(INVALID_COLORSPACE_VALUE),
+                                   primaries, transfer, matrix, range);
+    ASSERT_EQ(primaries, uint16_t(CICP_COLORPRIMARIES_UNKNOWN));
+    ASSERT_EQ(transfer, uint16_t(CICP_TRANSFER_UNKNOWN));
+    ASSERT_EQ(range, uint8_t(CICP_FULL_RANGE_FULL));
+    GTEST_LOG_(INFO) << "ColorUtilsTest: ColorSpaceGetCicpUnknownColorSpaceTest001 end";
+}
+
+/**
+ * @tc.name: CicpUnknownTransferDefaultTest001
+ * @tc.desc: Test converting P3_D65 primaries with unsupported transfer function
+ * @tc.type: FUNC
+ */
+HWTEST_F(ColorUtilsTest, CicpUnknownTransferDefaultTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ColorUtilsTest: CicpUnknownTransferDefaultTest001 start";
+    ColorManager::ColorSpaceName result = ColorUtils::CicpToColorSpace(uint16_t(CICP_COLORPRIMARIES_P3_D65),
+    uint16_t(CICP_TRANSFER_UNKNOWN), uint16_t(ZERO_VALUE), uint16_t(ZERO_VALUE));
+    ASSERT_EQ(result, ColorManager::NONE);
+    GTEST_LOG_(INFO) << "ColorUtilsTest: CicpUnknownTransferDefaultTest001 end";
+}
+
+/**
+ * @tc.name: CicpToColorSpaceBT2020InvalidTransferTest001
+ * @tc.desc: Test converting BT2020 primaries with incompatible SRGB transfer function
+ * @tc.type: FUNC
+ */
+HWTEST_F(ColorUtilsTest, CicpToColorSpaceBT2020InvalidTransferTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ColorUtilsTest: CicpToColorSpaceBT2020InvalidTransferTest001 start";
+    ColorManager::ColorSpaceName result = ColorUtils::CicpToColorSpace(uint16_t(CICP_COLORPRIMARIES_BT2020),
+        uint16_t(CICP_TRANSFER_SRGB), uint16_t(ZERO_VALUE), CICP_FULL_RANGE_LIMIT);
+    ASSERT_EQ(result, ColorManager::NONE);
+    GTEST_LOG_(INFO) << "ColorUtilsTest: CicpToColorSpaceBT2020InvalidTransferTest001 end";
+}
+
+/**
+ * @tc.name: CicpToColorSpaceUnknownRangeTest001
+ * @tc.desc: Test converting SRGB with undefined range flag value
+ * @tc.type: FUNC
+ */
+HWTEST_F(ColorUtilsTest, CicpToColorSpaceUnknownRangeTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ColorUtilsTest: CicpToColorSpaceUnknownRangeTest001 start";
+    ColorManager::ColorSpaceName result = ColorUtils::CicpToColorSpace(uint16_t(CICP_COLORPRIMARIES_SRGB),
+        uint16_t(ZERO_VALUE), uint16_t(ZERO_VALUE), uint8_t(CICP_FULL_RANGE_UNKNOWN));
+    ASSERT_EQ(result, ColorManager::SRGB);
+    GTEST_LOG_(INFO) << "ColorUtilsTest: CicpToColorSpaceUnknownRangeTest001 end";
 }
 }
 }

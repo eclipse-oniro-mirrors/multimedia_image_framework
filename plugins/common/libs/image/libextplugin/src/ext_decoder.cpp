@@ -70,6 +70,7 @@
 #include "include/codec/SkCodecAnimation.h"
 #include "modules/skcms/src/skcms_public.h"
 #endif
+#include "raw_stream.h"
 #include "src/binary_parse/range_checked_byte_ptr.h"
 #include "src/image_type_recognition/image_type_recognition_lite.h"
 
@@ -2007,6 +2008,8 @@ uint32_t ExtDecoder::UpdateHardWareDecodeInfo(DecodeContext &context)
             context.yuvInfo.uvStride = planes->planes[1].columnStride;
             context.yuvInfo.yOffset = planes->planes[0].offset;
             context.yuvInfo.uvOffset = planes->planes[1].offset - 1;
+            context.yuvInfo.yWidth = static_cast<uint32_t>(hwDstInfo_.width());
+            context.yuvInfo.yHeight = static_cast<uint32_t>(hwDstInfo_.height());
             context.yuvInfo.uvWidth = static_cast<uint32_t>((hwDstInfo_.width() + 1) / NUM_2);
             context.yuvInfo.uvHeight = static_cast<uint32_t>((hwDstInfo_.height() + 1) / NUM_2);
         }
@@ -2052,7 +2055,9 @@ uint32_t ExtDecoder::HardWareDecode(DecodeContext &context)
             return ERR_IMAGE_DECODE_ABNORMAL;
         }
     }
-    ret = hwDecoderPtr_->Decode(codec_.get(), stream_, orgImgSize_, sampleSize_, outputBuffer);
+    std::string encodedFormat;
+    ImagePlugin::InputDataStream *jpegStream = IsRawFormat(encodedFormat) ? previewStream_.get() : stream_;
+    ret = hwDecoderPtr_->Decode(codec_.get(), jpegStream, orgImgSize_, sampleSize_, outputBuffer);
     if (ret != SUCCESS) {
         IMAGE_LOGE("failed to do jpeg hardware decode, err=%{public}d", ret);
         context.hardDecodeError = "failed to do jpeg hardware decode, err=" + std::to_string(ret);
@@ -2196,10 +2201,6 @@ uint32_t ExtDecoder::PromoteIncrementalDecode(uint32_t index, ProgDecodeContext 
 
 bool ExtDecoder::IsCr3Format()
 {
-    int32_t apiVersion = ImageUtils::GetAPIVersion();
-    CHECK_ERROR_RETURN_RET_LOG(apiVersion < APIVERSION_20, false,
-        "%{public}s unsupport Cr3 format under API version: %{public}d", __func__, apiVersion);
-
     CHECK_ERROR_RETURN_RET_LOG(stream_ == nullptr, false, "%{public}s invalid stream", __func__);
     uint32_t originOffset = stream_->Tell();
     stream_->Seek(0);
@@ -2212,7 +2213,7 @@ bool ExtDecoder::IsCr3Format()
     return cr3Agent.CheckFormat(buffer.inputStreamBuffer, buffer.dataSize);
 }
 
-bool ExtDecoder::MakeCr3Codec()
+bool ExtDecoder::MakeCr3PreviewStream()
 {
     CHECK_ERROR_RETURN_RET_LOG(stream_ == nullptr, false, "%{public}s invalid stream", __func__);
 
@@ -2232,11 +2233,9 @@ bool ExtDecoder::MakeCr3Codec()
     uint32_t offset = static_cast<uint32_t>(previewInfo.fileOffset);
     cond = ImageUtils::HasOverflowed(offset, previewInfo.size) || offset + previewInfo.size > buffer.dataSize;
     CHECK_ERROR_RETURN_RET_LOG(cond, false, "%{public}s invalid preview image info", __func__);
-    previewStream_ = BufferSourceStream::CreateSourceStream((buffer.inputStreamBuffer + offset), previewInfo.size);
-
-    SkCodec::Result skResult;
-    codec_ = SkJpegCodec::MakeFromStream(make_unique<ExtStream>(previewStream_.get()), &skResult);
-    return codec_ != nullptr;
+    previewStream_ =
+        BufferSourceStream::CreateSourceStream((buffer.inputStreamBuffer + offset), previewInfo.size, true);
+    return previewStream_ != nullptr;
 }
 
 bool ExtDecoder::CheckCodec()
@@ -2250,6 +2249,15 @@ bool ExtDecoder::CheckCodec()
         IMAGE_LOGD("create codec: input stream size is zero.");
         return false;
     }
+    std::string encodedFormat;
+    if (IsRawFormat(encodedFormat)) {
+        codec_ = SkCodec::MakeFromStream(make_unique<ExtStream>(previewStream_.get()), nullptr, nullptr,
+            SkCodec::SelectionPolicy::kPreferAnimation);
+        if (codec_ != nullptr) {
+            IMAGE_LOGD("Make Jpeg codec for %{public}s preview", encodedFormat.c_str());
+            return true;
+        }
+    }
     uint32_t src_offset = stream_->Tell();
 #ifdef USE_M133_SKIA
     codec_ = SkCodec::MakeFromStream(make_unique<ExtStream>(stream_), nullptr, nullptr,
@@ -2259,9 +2267,6 @@ bool ExtDecoder::CheckCodec()
 #endif
     if (codec_ == nullptr) {
         stream_->Seek(src_offset);
-        if (IsCr3Format()) {
-            return MakeCr3Codec();
-        }
         IMAGE_LOGD("create codec from stream failed");
         SetHeifParseError();
         return false;
@@ -2283,7 +2288,7 @@ bool ExtDecoder::DecodeHeader()
         auto decoder = reinterpret_cast<HeifDecoderImpl*>(codec_->getHeifContext());
         uint32_t frameCount = 0;
         if (decoder && decoder->GetHeifsFrameCount(frameCount)) {
-            frameCount_ = frameCount;
+            frameCount_ = static_cast<int32_t>(frameCount);
         }
     }
 #endif
@@ -2540,7 +2545,7 @@ OHOS::ColorManager::ColorSpace ExtDecoder::GetSrcColorSpace()
             if (cName != ColorManager::NONE) {
                 heifColorSpaceName_ = cName;
                 heifIsColorSpaceFromCicp_ = true;
-                IMAGE_LOGI("%{public}s profile has CICP, cName: %{public}u", __func__, static_cast<uint32_t>(cName));
+                IMAGE_LOGD("%{public}s profile has CICP, cName: %{public}u", __func__, static_cast<uint32_t>(cName));
                 return ColorManager::ColorSpace(cName);
             }
         }
@@ -2548,7 +2553,7 @@ OHOS::ColorManager::ColorSpace ExtDecoder::GetSrcColorSpace()
             ColorManager::ColorSpaceName cName = GetHeifNclxColor(codec_.get());
             if (cName != ColorManager::NONE) {
                 heifColorSpaceName_ = cName;
-                IMAGE_LOGI("%{public}s profile has HEIF NCLX color, cName: %{public}u",
+                IMAGE_LOGD("%{public}s profile has HEIF NCLX color, cName: %{public}u",
                     __func__, static_cast<uint32_t>(cName));
                 return ColorManager::ColorSpace(cName);
             }
@@ -2744,36 +2749,67 @@ uint32_t ExtDecoder::GetImagePropertyInt(uint32_t index, const std::string &key,
     return Media::ERR_MEDIA_VALUE_INVALID;
 }
 
+static bool GetRawFormatName(piex::image_type_recognition::RawImageTypes type, std::string &rawName)
+{
+    auto rawFormatNameIter = RAW_FORMAT_NAME.find(type);
+    if (rawFormatNameIter != RAW_FORMAT_NAME.end() && !rawFormatNameIter->second.empty()) {
+        rawName = rawFormatNameIter->second;
+        return true;
+    }
+    return false;
+}
+
 bool ExtDecoder::IsRawFormat(std::string &name)
 {
     if (rawEncodedFormat_.size() > 0) {
         name = rawEncodedFormat_;
         return true;
     }
+    if (IsCr3Format()) {
+        rawEncodedFormat_ = IMAGE_CR3_FORMAT;
+        if (MakeCr3PreviewStream()) {
+            IMAGE_LOGD("Make Cr3 preview stream succeed");
+        }
+        name = rawEncodedFormat_;
+        return true;
+    }
+
     CHECK_ERROR_RETURN_RET(stream_ == nullptr, false);
-    ImagePlugin::DataStreamBuffer outData;
     uint32_t savedPosition = stream_->Tell();
-    stream_->Seek(0);
-    if (!stream_->Peek(RAW_MIN_BYTEREAD, outData)) {
-        IMAGE_LOGE("IsRawFormat peek data fail.");
-        stream_->Seek(savedPosition);
-        return false;
-    } else {
-        stream_->Seek(savedPosition);
-        piex::binary_parse::RangeCheckedBytePtr header_buffer(outData.inputStreamBuffer, outData.dataSize);
-        piex::image_type_recognition::RawImageTypes type = RecognizeRawImageTypeLite(header_buffer);
-        auto rawFormatNameIter = RAW_FORMAT_NAME.find(type);
-        if (rawFormatNameIter != RAW_FORMAT_NAME.end() && !rawFormatNameIter->second.empty()) {
-            rawEncodedFormat_ = rawFormatNameIter->second;
-        } else if (IsCr3Format()) {
-            rawEncodedFormat_ = IMAGE_CR3_FORMAT;
-        }
-        if (rawEncodedFormat_.size() > 0) {
-            name = rawEncodedFormat_;
-            return true;
-        }
+    RawStream rawStream(*stream_);
+    piex::PreviewImageData piexData;
+    piex::image_type_recognition::RawImageTypes type = ::piex::image_type_recognition::kNonRawImage;
+    piex::Error error = ::piex::GetPreviewImageData(&rawStream, &piexData, &type);
+    stream_->Seek(savedPosition);
+    CHECK_ERROR_RETURN_RET(type == ::piex::image_type_recognition::kNonRawImage, false);
+    bool cond = error != piex::Error::kOk || piexData.preview.format != piex::Image::kJpegCompressed;
+    CHECK_ERROR_RETURN_RET_LOG(cond, false, "Parse preview stream failed");
+    if (GetRawFormatName(type, rawEncodedFormat_)) {
+        MakeRawPreviewStream(piexData.preview.offset, piexData.preview.length);
+    }
+    if (rawEncodedFormat_.size() > 0) {
+        name = rawEncodedFormat_;
+        return true;
     }
     return false;
+}
+
+void ExtDecoder::MakeRawPreviewStream(uint32_t offset, uint32_t length)
+{
+    CHECK_ERROR_RETURN(stream_ == nullptr);
+    uint32_t savedPosition = stream_->Tell();
+    bool cond = stream_->Seek(offset);
+    CHECK_ERROR_RETURN(!cond);
+
+    ImagePlugin::DataStreamBuffer outData;
+    cond = stream_->Peek(length, outData);
+    stream_->Seek(savedPosition);
+    CHECK_ERROR_RETURN(!cond);
+
+    previewStream_ = BufferSourceStream::CreateSourceStream(outData.inputStreamBuffer, outData.dataSize, true);
+    if (previewStream_ != nullptr) {
+        IMAGE_LOGD("Get Jpeg stream succeed, offset: %{public}u, length: %{public}u", offset, length);
+    }
 }
 
 OHOS::Media::Size ExtDecoder::GetHeifGridTileSize()
@@ -2924,11 +2960,6 @@ bool ExtDecoder::IsSupportHardwareDecode() {
     int width = info_.width();
     int height = info_.height();
     if (hwDecoderPtr_->IsHardwareDecodeSupported(IMAGE_JPEG_FORMAT, {width, height})) {
-        std::string encodedFormat;
-        if (IsRawFormat(encodedFormat)) {
-            IMAGE_LOGD("Raw format: %{public}s, turn to software decode", encodedFormat.c_str());
-            return false;
-        }
         if (width < HARDWARE_MID_DIM || height < HARDWARE_MID_DIM) {
             int remWidth = width % HARDWARE_ALIGN_SIZE;
             int remHeight = height % HARDWARE_ALIGN_SIZE;
@@ -3427,6 +3458,9 @@ bool ExtDecoder::DecodeHeifAuxiliaryMap(DecodeContext& context, AuxiliaryPicture
     uint64_t byteCount = tempByteCount;
     context.info.size.width = static_cast<int32_t>(width);
     context.info.size.height = static_cast<int32_t>(height);
+    if (!SetOutPutFormat(context.info.pixelFormat, decoder)) {
+        return ERR_IMAGE_DATA_UNSUPPORT;
+    }
     cond = DmaMemAlloc(context, byteCount, dstInfo) != SUCCESS;
     CHECK_INFO_RETURN_RET_LOG(cond, false, "DmaMemAlloc execution failed.");
     auto* dstBuffer = static_cast<uint8_t*>(context.pixelsBuffer.buffer);
@@ -3489,7 +3523,7 @@ uint32_t ExtDecoder::DoHeifsDecode(DecodeContext &context)
     if (context.allocatorType == Media::AllocatorType::DMA_ALLOC) {
         res = DmaMemAlloc(context, byteCount, dstInfo_);
         auto dstBuffer = reinterpret_cast<SurfaceBuffer*>(context.pixelsBuffer.context);
-        rowStride = dstBuffer->GetStride();
+        rowStride = static_cast<uint64_t>(dstBuffer->GetStride());
     } else {
         IMAGE_LOGE("DoHeifsDecode need DMA_ALLOC.");
         res = ERR_IMAGE_DATA_UNSUPPORT;

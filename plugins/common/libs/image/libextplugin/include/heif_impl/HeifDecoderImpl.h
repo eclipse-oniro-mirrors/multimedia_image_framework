@@ -71,6 +71,7 @@ public:
     void getErrMsg(std::string& errMsg) override;
     uint32_t getColorDepth() override;
     GridInfo GetGridInfo();
+    std::shared_ptr<HeifImage> GetThumbnailImage();
     bool CheckAuxiliaryMap(Media::AuxiliaryPictureType type);
     bool setAuxiliaryMap(Media::AuxiliaryPictureType type);
     bool getAuxiliaryMapInfo(HeifFrameInfo* frameInfo);

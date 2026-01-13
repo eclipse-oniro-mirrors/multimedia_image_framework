@@ -35,6 +35,7 @@
 #include "memory_manager.h"
 #include "new"
 #include "plugin_server.h"
+#include "securec.h"
 #include "singleton.h"
 #include "string"
 #include "type_traits"
@@ -111,6 +112,7 @@ constexpr int32_t FAULT_API_VERSION = -1;
 constexpr int32_t BUNDLE_MGR_SERVICE_SYS_ABILITY_ID = 401;
 constexpr int32_t BASE_EVEN_DIVISOR = 2;
 constexpr float EPSILON = 1e-6;
+constexpr float FLOAT_1 = 1.0f;
 constexpr int MAX_DIMENSION = INT32_MAX >> 2;
 static bool g_pluginRegistered = false;
 static const uint8_t NUM_0 = 0;
@@ -192,6 +194,41 @@ static const std::map<CM_ColorSpaceType, ColorSpace> CM_COLORSPACE_MAP = {
     { CM_DISPLAY_BT2020_SRGB, ColorSpace::ITU_2020 },
     { CM_DISPLAY_BT2020_HLG, ColorSpace::ITU_2020 },
     { CM_DISPLAY_BT2020_PQ, ColorSpace::ITU_2020 },
+};
+
+static const std::map<CM_ColorSpaceType, ColorManager::ColorSpaceName> CM_COLORSPACE_NAME_MAP = {
+    {CM_COLORSPACE_NONE, ColorManager::NONE},
+    {CM_BT601_EBU_FULL, ColorManager::BT601_EBU},
+    {CM_BT601_SMPTE_C_FULL, ColorManager::BT601_SMPTE_C},
+    {CM_BT709_FULL, ColorManager::BT709},
+    {CM_BT2020_HLG_FULL, ColorManager::BT2020_HLG},
+    {CM_BT2020_PQ_FULL, ColorManager::BT2020_PQ},
+    {CM_BT601_EBU_LIMIT, ColorManager::BT601_EBU_LIMIT},
+    {CM_BT601_SMPTE_C_LIMIT, ColorManager::BT601_SMPTE_C_LIMIT},
+    {CM_BT709_LIMIT, ColorManager::BT709_LIMIT},
+    {CM_BT2020_HLG_LIMIT, ColorManager::BT2020_HLG_LIMIT},
+    {CM_BT2020_PQ_LIMIT, ColorManager::BT2020_PQ_LIMIT},
+    {CM_SRGB_FULL, ColorManager::SRGB},
+    {CM_P3_FULL, ColorManager::DISPLAY_P3},
+    {CM_P3_HLG_FULL, ColorManager::P3_HLG},
+    {CM_P3_PQ_FULL, ColorManager::P3_PQ},
+    {CM_ADOBERGB_FULL, ColorManager::ADOBE_RGB},
+    {CM_SRGB_LIMIT, ColorManager::SRGB_LIMIT},
+    {CM_P3_LIMIT, ColorManager::DISPLAY_P3_LIMIT},
+    {CM_P3_HLG_LIMIT, ColorManager::P3_HLG_LIMIT},
+    {CM_P3_PQ_LIMIT, ColorManager::P3_PQ_LIMIT},
+    {CM_ADOBERGB_LIMIT, ColorManager::ADOBE_RGB_LIMIT},
+    {CM_LINEAR_SRGB, ColorManager::LINEAR_SRGB},
+    {CM_LINEAR_BT709, ColorManager::LINEAR_BT709},
+    {CM_LINEAR_P3, ColorManager::LINEAR_P3},
+    {CM_LINEAR_BT2020, ColorManager::LINEAR_BT2020},
+    {CM_DISPLAY_SRGB, ColorManager::DISPLAY_SRGB},
+    {CM_DISPLAY_P3_SRGB, ColorManager::DISPLAY_P3_SRGB},
+    {CM_DISPLAY_P3_HLG, ColorManager::DISPLAY_P3_HLG},
+    {CM_DISPLAY_P3_PQ, ColorManager::DISPLAY_P3_PQ},
+    {CM_DISPLAY_BT2020_SRGB, ColorManager::DISPLAY_BT2020_SRGB},
+    {CM_DISPLAY_BT2020_HLG, ColorManager::DISPLAY_BT2020_HLG},
+    {CM_DISPLAY_BT2020_PQ, ColorManager::DISPLAY_BT2020_PQ},
 };
 #endif
 
@@ -620,6 +657,16 @@ bool ImageUtils::CheckMulOverflow(int32_t width, int32_t height, int32_t bytesPe
     return false;
 }
 
+bool ImageUtils::CheckFloatMulOverflow(float num1, float num2)
+{
+    if (fabs(num1) <= FLOAT_1 || fabs(num2) <= FLOAT_1) {
+        return false;
+    }
+    CHECK_ERROR_RETURN_RET_LOG(fabs(num1) > std::numeric_limits<float>::max() / fabs(num2), true,
+        "num1 * num2 overflow! num1:%{public}f, num2:%{public}f", num1, num2);
+    return false;
+}
+
 static void ReversePixels(uint8_t* srcPixels, uint8_t* dstPixels, uint32_t byteCount)
 {
     if (byteCount % NUM_4 != NUM_0) {
@@ -671,6 +718,67 @@ int32_t ImageUtils::SurfaceBuffer_Unreference(void* buffer)
     ref->DecStrongRef(ref);
     return SUCCESS;
 }
+
+#if !defined(CROSS_PLATFORM)
+bool ImageUtils::GetYuvInfoFromSurfaceBuffer(YUVDataInfo &yuvInfo,
+    sptr<SurfaceBuffer> surfaceBuffer)
+{
+    OH_NativeBuffer_Planes* planes = nullptr;
+    GSError retVal = surfaceBuffer->GetPlanesInfo(reinterpret_cast<void**>(&planes));
+    if (retVal == OHOS::GSERROR_OK && planes != nullptr && planes->planeCount >= NUM_2) {
+        yuvInfo.yStride = planes->planes[PLANE_Y].columnStride;
+        yuvInfo.uvStride = planes->planes[PLANE_U].columnStride;
+        yuvInfo.yOffset = planes->planes[PLANE_Y].offset;
+        if (surfaceBuffer->GetFormat() == GRAPHIC_PIXEL_FMT_YCRCB_420_SP) {
+            yuvInfo.uvOffset = planes->planes[PLANE_V].offset;
+        } else {
+            yuvInfo.uvOffset = planes->planes[PLANE_U].offset;
+        }
+        return true;
+    } else {
+        IMAGE_LOGE("%{public}s, get planesInfo failed, retVal:%{public}d", __func__, retVal);
+        return false;
+    }
+}
+
+bool ImageUtils::CopyYuvPixelMapToSurfaceBuffer(PixelMap* pixelmap,
+    sptr<SurfaceBuffer> surfaceBuffer)
+{
+    uint8_t* src = const_cast<uint8_t*>(pixelmap->GetPixels());
+    uint8_t* dst = static_cast<uint8_t*>(surfaceBuffer->GetVirAddr());
+    uint32_t dstSize = surfaceBuffer->GetSize();
+
+    YUVDataInfo yuvDstInfo;
+    YUVDataInfo yuvSrcInfo;
+    pixelmap->GetImageYUVInfo(yuvSrcInfo);
+
+    bool cond = !ImageUtils::GetYuvInfoFromSurfaceBuffer(yuvDstInfo, surfaceBuffer);
+    CHECK_ERROR_RETURN_RET_LOG(cond, false, "Get YUVInfo from SurfaceBuffer failed");
+
+    for (uint32_t i = 0; i < yuvSrcInfo.yHeight; ++i) {
+        if (memcpy_s(dst, dstSize, src, yuvSrcInfo.yWidth) != EOK) {
+            return false;
+        }
+        dst += yuvDstInfo.yStride;
+        dstSize -= yuvDstInfo.yStride;
+        src += yuvSrcInfo.yWidth;
+    }
+
+    uint64_t uvWidth = yuvSrcInfo.uvWidth * NUM_2;
+    dst = static_cast<uint8_t*>(surfaceBuffer->GetVirAddr()) + yuvDstInfo.uvOffset;
+
+    for (uint32_t i = 0; i < yuvSrcInfo.uvHeight; ++i) {
+        if (memcpy_s(dst, dstSize, src, uvWidth) != EOK) {
+            return false;
+        }
+        dst += yuvDstInfo.uvStride;
+        dstSize -= yuvDstInfo.uvStride;
+        src += uvWidth;
+    }
+
+    return true;
+}
+#endif
 
 void ImageUtils::DumpPixelMap(PixelMap* pixelMap, std::string customFileName, uint64_t imageId)
 {
@@ -916,6 +1024,14 @@ void ImageUtils::DumpSurfaceBufferAllKeysEnabled(sptr<SurfaceBuffer>& buffer, co
     }
 }
 
+ColorManager::ColorSpaceName ImageUtils::SbCMColorSpaceType2ColorSpaceName(
+    HDI::Display::Graphic::Common::V1_0::CM_ColorSpaceType type)
+{
+    auto iter = CM_COLORSPACE_NAME_MAP.find(type);
+    CHECK_ERROR_RETURN_RET(iter == CM_COLORSPACE_NAME_MAP.end(), ColorManager::NONE);
+    return iter->second;
+}
+
 static bool IsAlphaFormat(PixelFormat format)
 {
     return format == PixelFormat::RGBA_8888 || format == PixelFormat::BGRA_8888 ||
@@ -966,9 +1082,9 @@ static ImageInfo MakeImageInfo(int width, int height, PixelFormat pf, AlphaType 
     return info;
 }
 
-static void SetYuvDataInfo(std::unique_ptr<PixelMap> &pixelmap, sptr<OHOS::SurfaceBuffer>& sBuffer)
+void ImageUtils::SetYuvDataInfo(std::unique_ptr<PixelMap> &pixelMap, sptr<OHOS::SurfaceBuffer> &sBuffer)
 {
-    bool cond = pixelmap == nullptr || sBuffer == nullptr;
+    bool cond = pixelMap == nullptr || sBuffer == nullptr;
     CHECK_ERROR_RETURN(cond);
     int32_t width = sBuffer->GetWidth();
     int32_t height = sBuffer->GetHeight();
@@ -978,15 +1094,23 @@ static void SetYuvDataInfo(std::unique_ptr<PixelMap> &pixelmap, sptr<OHOS::Surfa
     info.imageSize = { width, height };
     cond = retVal != OHOS::GSERROR_OK || planes == nullptr || planes->planeCount <= NUM_1;
     CHECK_ERROR_RETURN_LOG(cond, "Get planesInfo failed, retVal:%{public}d", retVal);
+    info.yWidth = static_cast<uint32_t>(width);
+    info.uvWidth = static_cast<uint32_t>(width / NUM_2);
+    info.yHeight = static_cast<uint32_t>(height);
+    info.uvHeight = static_cast<uint32_t>(height / NUM_2);
     if (planes->planeCount >= NUM_2) {
-        info.yWidth = static_cast<uint32_t>(info.imageSize.width);
-        info.yHeight = static_cast<uint32_t>(info.imageSize.height);
-        info.yStride = planes->planes[NUM_0].columnStride;
-        info.uvStride = planes->planes[NUM_1].columnStride;
-        info.yOffset = planes->planes[NUM_0].offset;
-        info.uvOffset = planes->planes[NUM_1].offset - NUM_1;
+        int32_t pixelFmt = sBuffer->GetFormat();
+        bool isYuvP010 = (pixelFmt == GRAPHIC_PIXEL_FMT_YCBCR_P010 || pixelFmt == GRAPHIC_PIXEL_FMT_YCRCB_P010);
+        int uvPlaneOffset = (pixelFmt == GRAPHIC_PIXEL_FMT_YCBCR_420_SP ||
+            pixelFmt == GRAPHIC_PIXEL_FMT_YCBCR_P010) ? NUM_1 : NUM_2;
+        info.yStride = isYuvP010 ? (planes->planes[NUM_0].columnStride / NUM_2) : (planes->planes[NUM_0].columnStride);
+        info.uvStride = isYuvP010 ? (planes->planes[uvPlaneOffset].columnStride / NUM_2) :
+            (planes->planes[uvPlaneOffset].columnStride);
+        info.yOffset = isYuvP010 ? (planes->planes[NUM_0].offset / NUM_2) : (planes->planes[NUM_0].offset);
+        info.uvOffset =
+            isYuvP010 ? (planes->planes[uvPlaneOffset].offset / NUM_2) : (planes->planes[uvPlaneOffset].offset);
     }
-    pixelmap->SetImageYUVInfo(info);
+    pixelMap->SetImageYUVInfo(info);
 }
 
 bool ImageUtils::SurfaceBuffer2PixelMap(sptr<OHOS::SurfaceBuffer> &surfaceBuffer, std::unique_ptr<PixelMap> &Pixelmap)
@@ -1408,14 +1532,16 @@ bool ImageUtils::IsMetadataTypeSupported(MetadataType metadataType)
     }
 }
 
-const std::set<AuxiliaryPictureType> ImageUtils::GetAllAuxiliaryPictureType()
+const std::set<AuxiliaryPictureType> &ImageUtils::GetAllAuxiliaryPictureType()
 {
     static const std::set<AuxiliaryPictureType> auxTypes = {
         AuxiliaryPictureType::GAINMAP,
         AuxiliaryPictureType::DEPTH_MAP,
         AuxiliaryPictureType::UNREFOCUS_MAP,
         AuxiliaryPictureType::LINEAR_MAP,
-        AuxiliaryPictureType::FRAGMENT_MAP};
+        AuxiliaryPictureType::FRAGMENT_MAP,
+        AuxiliaryPictureType::THUMBNAIL,
+    };
     return auxTypes;
 }
 
@@ -1785,6 +1911,64 @@ bool ImageUtils::CheckBufferSizeIsVaild(int32_t &bufferSize, uint64_t &expectedB
     return true;
 }
 
+bool ImageUtils::CheckYuvDataInfoValid(const YUVDataInfo& yDataInfo)
+{
+    //size
+    if (yDataInfo.yWidth == 0 || yDataInfo.yHeight == 0) {
+        IMAGE_LOGE("Invalid Y plane size: yWidth or yHeight is 0");
+        return false;
+    }
+    const uint32_t uvExpectedWidth = (yDataInfo.yWidth + NUM_1) / NUM_2;
+    const uint32_t uvExpectedHeight = (yDataInfo.yHeight + NUM_1) / NUM_2;
+    if (yDataInfo.uvWidth == 0 || yDataInfo.uvHeight == 0) {
+        IMAGE_LOGE("Invalid UV plane size: uvWidth or uvHeight is 0");
+        return false;
+    }
+    if (yDataInfo.uvWidth != uvExpectedWidth || yDataInfo.uvHeight != uvExpectedHeight) {
+        IMAGE_LOGE("Invalid UV plane size: UV(%{public}u, %{public}u) mismatch expected(%{public}u, %{public}u)",
+            yDataInfo.uvWidth, yDataInfo.uvHeight, uvExpectedWidth, uvExpectedHeight);
+        return false;
+    }
+
+    //stride
+    if (yDataInfo.yStride < yDataInfo.yWidth) {
+        IMAGE_LOGE("Invalid Y stride: %{public}u < width=%{public}u", yDataInfo.yStride, yDataInfo.yWidth);
+        return false;
+    }
+    if (yDataInfo.uvStride < yDataInfo.uvWidth) {
+        IMAGE_LOGE("Invalid UV stride: %{public}u < width=%{public}u", yDataInfo.uvStride, yDataInfo.uvWidth);
+        return false;
+    }
+    if (yDataInfo.yStride >= yDataInfo.yWidth * NUM_2 || yDataInfo.uvStride >= yDataInfo.yWidth * NUM_2) {
+        IMAGE_LOGW("Possible invalid stride as byte value: Stride=(%{public}u, %{public}u), Width=%{public}u",
+            yDataInfo.yStride, yDataInfo.uvStride, yDataInfo.yWidth);
+    }
+    if (yDataInfo.uStride != 0 && yDataInfo.uStride < yDataInfo.uvWidth) {
+        IMAGE_LOGW("Invalid U stride: %{public}u < uvWidth=%{public}u", yDataInfo.uStride, yDataInfo.uvWidth);
+    }
+    if (yDataInfo.vStride != 0 && yDataInfo.vStride < yDataInfo.uvWidth) {
+        IMAGE_LOGW("Invalid V stride: %{public}u < uvWidth=%{public}u", yDataInfo.vStride, yDataInfo.uvWidth);
+    }
+
+    //offset
+    if (yDataInfo.yOffset != 0) {
+        IMAGE_LOGW("Invalid Y offset: %{public}u (expected 0)", yDataInfo.yOffset);
+    }
+
+    uint64_t yPlaneSize = static_cast<uint64_t>(yDataInfo.yStride) * yDataInfo.yHeight;
+    if (yDataInfo.uvOffset < yPlaneSize) {
+        IMAGE_LOGE("Invalid UV offset: %{public}u less than Y plane size", yDataInfo.uvOffset);
+        return false;
+    }
+    uint64_t bufferSize = yPlaneSize + static_cast<uint64_t>(yDataInfo.uvStride) * yDataInfo.uvHeight;
+    if (bufferSize > UINT32_MAX) {
+        IMAGE_LOGE("Invalid YUV buffer size: overflow (exceeds UINT32_MAX)");
+        return false;
+    }
+
+    return true;
+}
+
 bool ImageUtils::GetAlignedNumber(int32_t& number, int32_t align)
 {
     if (number < 0 || align <= 0) {
@@ -2022,6 +2206,7 @@ std::unique_ptr<AbsMemory> ImageUtils::ReadData(std::vector<uint8_t> &buff, int3
         IMAGE_LOGE("[PixelMap] tlv read data fail: alloc memory failed");
         return nullptr;
     }
+#if !defined(CROSS_PLATFORM)
     if (allocType == AllocatorType::DMA_ALLOC) {
         if (dstRowStride == 0 || dstRowStride < rowDataSize ||
             static_cast<uint32_t>(size) > static_cast<SurfaceBuffer*>(dstMemory->extend.data)->GetSize()) {
@@ -2029,22 +2214,54 @@ std::unique_ptr<AbsMemory> ImageUtils::ReadData(std::vector<uint8_t> &buff, int3
                 return nullptr;
         }
         for (int i = 0; i < imageInfo.size.height; i++) {
-            if (memcpy_s(addr + i * dstRowStride, rowDataSize, srcAddr + i * rowDataSize, rowDataSize) != EOK) {
+            if (memcpy_s(addr + i * dstRowStride, rowDataSize, srcAddr + i * rowDataSize, rowDataSize) != 0) {
                 IMAGE_LOGE("[PixelMap] tlv copy dma data failed");
                 return nullptr;
             }
         }
     } else {
+#endif
         if (rowDataSize != dstRowStride) {
             IMAGE_LOGE("[PixelMap] tlv check heap size failed");
             return nullptr;
         }
-        if (memcpy_s(addr, size, srcAddr, size) != EOK) {
+        if (memcpy_s(addr, size, srcAddr, size) != 0) {
             IMAGE_LOGE("[PixelMap] tlv copy heap data failed");
             return nullptr;
         }
+#if !defined(CROSS_PLATFORM)
     }
+#endif
     return dstMemory;
+}
+
+PixelFormat ImageUtils::ConvertTo10BitPixelFormat(PixelFormat pixelFormat)
+{
+    PixelFormat hdrAllocFormat = PixelFormat::UNKNOWN;
+    switch (pixelFormat) {
+        case PixelFormat::RGBA_8888:
+            hdrAllocFormat = PixelFormat::RGBA_1010102;
+            break;
+        case PixelFormat::NV21:
+            hdrAllocFormat = PixelFormat::YCRCB_P010;
+            break;
+        case PixelFormat::NV12:
+            hdrAllocFormat = PixelFormat::YCBCR_P010;
+            break;
+        case PixelFormat::RGBA_1010102:
+            hdrAllocFormat = PixelFormat::RGBA_1010102;
+            break;
+        case PixelFormat::YCRCB_P010:
+            hdrAllocFormat = PixelFormat::YCRCB_P010;
+            break;
+        case PixelFormat::YCBCR_P010:
+            hdrAllocFormat = PixelFormat::YCBCR_P010;
+            break;
+        default:
+            IMAGE_LOGE("ConvertTo10BitPixleFormat failed, format: %{public}d", pixelFormat);
+            break;
+    }
+    return hdrAllocFormat;
 }
 } // namespace Media
 } // namespace OHOS

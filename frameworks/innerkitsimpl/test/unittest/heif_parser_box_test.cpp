@@ -23,8 +23,15 @@
 #include "item_property_box.h"
 #include "item_property_color_box.h"
 #include "item_property_hvcc_box.h"
+#include "item_property_aux_box.h"
 #include "item_property_transform_box.h"
 #include "item_ref_box.h"
+
+#define TEST_FROM_ITEM_ID 1
+#define TEST_TO_ITEM_ID_1 100
+#define TEST_TO_ITEM_ID_2 200
+#define TEST_TO_ITEM_ID_3 300
+#define TEST_ITEM_COUNT 3
 
 using namespace testing::ext;
 namespace OHOS {
@@ -41,6 +48,30 @@ std::vector<uint8_t> BUFFER = {0x01, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x01,
                                0x12, 0x34, 0x56, 0x78, 0x01, 0xAB, 0xCD};
 static constexpr uint32_t NAL_LAYER_ID = 33;
 static constexpr uint8_t SKIP_DOUBLE_DATA_PROCESS_BYTE = 2;
+std::vector<uint8_t> HVCC_PARSE_CONTENT_TRUNCATED = { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x01, 0x00, 0x02, 0x55 };
+std::vector<uint8_t> VALID_STREAM_DATA = { 0x00, 0x01, 0x00, 0x00 };
+std::vector<uint8_t> INVALID_STREAM_DATA = { 0x00, 0x01, 0x00, 0x02 };
+std::vector<uint8_t> AUX_STREAM_DATA = { 0x00, 0x00, 0x00, 0x12, 'a', 'u', 'x', 'c', 0x00, 0x00, 0x00, 0x00,
+    't', 'e', 's', 't', 0x00, 0x11, 0x22 };
+std::vector<uint8_t> NAL_DATA = { 0x80, 0x04, 0x40 };
+std::vector<uint8_t> NAL_UNITS = { 0x04, 0x40 };
+std::vector<uint8_t> PARSE_SPS_NAL_DATA = { 0x80, 0xc0 };
+std::vector<uint8_t> PARSE_SPS_NAL_UNITS = { 0xFF, 0x00, 0x01, 0x00, 0x01, 0x80 };
+static constexpr uint8_t BIT_DEPTH_DIFF = 8;
+static constexpr uint8_t READ_BIT_NUM_FLAG = 1;
+static constexpr uint8_t NAL_UNIT_TYPE = 1;
+static constexpr uint8_t NAL_INDEX = 1;
+static constexpr uint8_t NAL_SIZE = 64;
+static constexpr uint8_t VECTOR_SIZE = 10;
+static constexpr uint8_t UNITS_SIZE = 8;
+static constexpr uint32_t OPERATION_FAILED = -1;
+static constexpr uint32_t ST_RPS_IDX = 1;
+static constexpr uint32_t NUM_SHORT_TERM_REF_PIC_SETS = 1;
+static constexpr uint32_t SIZE_ID = 2;
+static constexpr uint32_t MAX_NUM_SUB_LAYER_MINUS = 1;
+static constexpr uint64_t BOX_SIZE_OFFSET_SMALL = 1;
+static constexpr uint64_t BOX_SIZE_OFFSET_BIG = 10;
 
 static std::vector<uint8_t> SetUint32ToUint8Vertor(uint32_t data)
 {
@@ -73,6 +104,367 @@ public:
     HeifParserBoxTest() {}
     ~HeifParserBoxTest() {}
 };
+
+/**
+ * @tc.name: ParseNalUnitArrayTest001
+ * @tc.desc: Test HeifHvccBox.ParseNalUnitArray with one NAL entry where payload size matches available data.
+ * @tc.type: FUNC
+ */
+HWTEST_F(HeifParserBoxTest, ParseNalUnitArrayTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "HeifParserBoxTest: ParseNalUnitArrayTest001 start";
+    HeifHvccBox heifHvccBox;
+    auto stream = std::make_shared<HeifBufferInputStream>(VALID_STREAM_DATA.data(), VALID_STREAM_DATA.size(), true);
+    HeifStreamReader reader(stream, 0, VALID_STREAM_DATA.size());
+    std::vector<std::vector<uint8_t>> nalUnits;
+
+    heif_error ret = heifHvccBox.ParseNalUnitArray(reader, nalUnits);
+    ASSERT_EQ(ret, heif_error_ok);
+    GTEST_LOG_(INFO) << "HeifParserBoxTest: ParseNalUnitArrayTest001 end";
+}
+
+/**
+ * @tc.name: ParseNalUnitArrayTest002
+ * @tc.desc: Test HeifHvccBox.ParseNalUnitArray when declared NAL size exceeds remaining bytes, expecting EOF.
+ * @tc.type: FUNC
+ */
+HWTEST_F(HeifParserBoxTest, ParseNalUnitArrayTest002, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "HeifParserBoxTest: ParseNalUnitArrayTest002 start";
+    HeifHvccBox heifHvccBox;
+    auto stream = std::make_shared<HeifBufferInputStream>(INVALID_STREAM_DATA.data(), INVALID_STREAM_DATA.size(), true);
+    HeifStreamReader reader(stream, 0, INVALID_STREAM_DATA.size());
+    std::vector<std::vector<uint8_t>> nalUnits;
+
+    heif_error ret = heifHvccBox.ParseNalUnitArray(reader, nalUnits);
+    ASSERT_EQ(ret, heif_error_eof);
+    GTEST_LOG_(INFO) << "HeifParserBoxTest: ParseNalUnitArrayTest002 end";
+}
+
+/**
+ * @tc.name: ParseContentTest006
+ * @tc.desc: Test HeifHvccBox.ParseContent with truncated HVCC payload so that parsing of a NAL unit fails, returns EOF.
+ * @tc.type: FUNC
+ */
+HWTEST_F(HeifParserBoxTest, ParseContentTest006, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "HeifParserBoxTest: ParseContentTest006 start";
+    HeifHvccBox heifHvccBox;
+    auto stream = std::make_shared<HeifBufferInputStream>(HVCC_PARSE_CONTENT_TRUNCATED.data(),
+        HVCC_PARSE_CONTENT_TRUNCATED.size(), true);
+    HeifStreamReader reader(stream, 0, HVCC_PARSE_CONTENT_TRUNCATED.size());
+
+    heif_error ret = heifHvccBox.ParseContent(reader);
+    ASSERT_EQ(ret, heif_error_eof);
+    GTEST_LOG_(INFO) << "HeifParserBoxTest: ParseContentTest006 end";
+}
+
+/**
+ * @tc.name: GetNaluTypeIdTest001
+ * @tc.desc: Test HeifHvccBox.GetNaluTypeId with empty NAL buffer, expecting invalid type (-1).
+ * @tc.type: FUNC
+ */
+HWTEST_F(HeifParserBoxTest, GetNaluTypeIdTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "HeifParserBoxTest: GetNaluTypeIdTest001 start";
+    HeifHvccBox heifHvccBox;
+    std::vector<uint8_t> nalUnits;
+
+    uint32_t ret = heifHvccBox.GetNaluTypeId(nalUnits);
+    ASSERT_EQ(ret, OPERATION_FAILED);
+    GTEST_LOG_(INFO) << "HeifParserBoxTest: GetNaluTypeIdTest001 end";
+}
+
+/**
+ * @tc.name: GetNaluTypeIdTest002
+ * @tc.desc: Test HeifHvccBox.GetNaluTypeId with a single-byte NAL buffer, expecting type value 0.
+ * @tc.type: FUNC
+ */
+HWTEST_F(HeifParserBoxTest, GetNaluTypeIdTest002, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "HeifParserBoxTest: GetNaluTypeIdTest002 start";
+    HeifHvccBox heifHvccBox;
+    std::vector<uint8_t> nalUnits;
+    nalUnits.push_back(0x00);
+
+    uint32_t ret = heifHvccBox.GetNaluTypeId(nalUnits);
+    ASSERT_EQ(ret, 0);
+    GTEST_LOG_(INFO) << "HeifParserBoxTest: GetNaluTypeIdTest002 end";
+}
+
+/**
+ * @tc.name: GetNaluDataTest001
+ * @tc.desc: Test HeifHvccBox.GetNaluData when SPS NAL is absent from list, expecting empty data vector.
+ * @tc.type: FUNC
+ */
+HWTEST_F(HeifParserBoxTest, GetNaluDataTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "HeifParserBoxTest: GetNaluDataTest001 start";
+    HeifHvccBox heifHvccBox;
+    HvccNalArray nalArray;
+    nalArray.nalUnitType = NAL_UNIT_TYPE;
+    std::vector<HvccNalArray> nalArrays;
+    nalArrays.push_back(nalArray);
+
+    auto ret = heifHvccBox.GetNaluData(nalArrays, 0);
+    ASSERT_EQ(ret, std::vector<uint8_t>());
+    GTEST_LOG_(INFO) << "HeifParserBoxTest: GetNaluDataTest001 end";
+}
+
+/**
+ * @tc.name: ParserHvccColorRangeFlagTest001
+ * @tc.desc: Test HeifHvccBox.ParserHvccColorRangeFlag returning false when SPS NAL cannot be found in arrays.
+ * @tc.type: FUNC
+ */
+HWTEST_F(HeifParserBoxTest, ParserHvccColorRangeFlagTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "HeifParserBoxTest: ParserHvccColorRangeFlagTest001 start";
+    HeifHvccBox heifHvccBox;
+    HvccNalArray nalArray;
+    nalArray.nalUnitType = 0;
+    std::vector<HvccNalArray> nalArrays;
+    nalArrays.push_back(nalArray);
+
+    bool ret = heifHvccBox.ParserHvccColorRangeFlag(nalArrays);
+    ASSERT_EQ(ret, false);
+    GTEST_LOG_(INFO) << "HeifParserBoxTest: ParserHvccColorRangeFlagTest001 end";
+}
+
+/**
+ * @tc.name: ProfileTierLevelTest001
+ * @tc.desc: Test HeifHvccBox.ProfileTierLevel to ensure bit cursor advances when profilePresentFlag is enabled.
+ * @tc.type: FUNC
+ */
+HWTEST_F(HeifParserBoxTest, ProfileTierLevelTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "HeifParserBoxTest: ProfileTierLevelTest001 start";
+    HeifHvccBox heifHvccBox;
+    std::vector<uint8_t> nalUnits(VECTOR_SIZE, 0xFF);
+    heifHvccBox.boxBitLength_ = static_cast<uint32_t>(nalUnits.size() * BIT_DEPTH_DIFF);
+
+    heifHvccBox.ProfileTierLevel(nalUnits, 0, MAX_NUM_SUB_LAYER_MINUS);
+    ASSERT_GT(heifHvccBox.pos_, 0u);
+    GTEST_LOG_(INFO) << "HeifParserBoxTest: ProfileTierLevelTest001 end";
+}
+
+/**
+ * @tc.name: ParseSpsSyntaxTest001
+ * @tc.desc: Test HeifHvccBox.ParseSpsSyntax to verify SPS conformanceWindowFlag is parsed and set correctly.
+ * @tc.type: FUNC
+ */
+HWTEST_F(HeifParserBoxTest, ParseSpsSyntaxTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "HeifParserBoxTest: ParseSpsSyntaxTest001 start";
+    HeifHvccBox heifHvccBox;
+    std::vector<uint8_t> nalUnits(NAL_SIZE, 0xFF);
+    nalUnits[0] = 0x00;
+    nalUnits[NAL_INDEX] = 0x00;
+    heifHvccBox.boxBitLength_ = static_cast<uint32_t>(nalUnits.size() * BIT_DEPTH_DIFF);
+
+    heifHvccBox.ParseSpsSyntax(nalUnits);
+    ASSERT_EQ(heifHvccBox.spsConfig_.conformanceWindowFlag, READ_BIT_NUM_FLAG);
+    GTEST_LOG_(INFO) << "HeifParserBoxTest: ParseSpsSyntaxTest001 end";
+}
+
+/**
+ * @tc.name: ReadGolombCodesForSizeIdTest001
+ * @tc.desc: Test HeifHvccBox.ReadGolombCodesForSizeId with sizeId > 1 to cover extra leading Golomb read.
+ * @tc.type: FUNC
+ */
+HWTEST_F(HeifParserBoxTest, ReadGolombCodesForSizeIdTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "HeifParserBoxTest: ReadGolombCodesForSizeIdTest001 start";
+    HeifHvccBox heifHvccBox;
+    std::vector<uint8_t> nalUnits(UNITS_SIZE, 0xFF);
+    heifHvccBox.boxBitLength_ = static_cast<uint32_t>(nalUnits.size() * BIT_DEPTH_DIFF);
+
+    heifHvccBox.ReadGolombCodesForSizeId(nalUnits, SIZE_ID);
+    ASSERT_GT(heifHvccBox.pos_, 0u);
+    GTEST_LOG_(INFO) << "HeifParserBoxTest: ReadGolombCodesForSizeIdTest001 end";
+}
+
+/**
+ * @tc.name: ReadGolombCodesForSizeIdTest002
+ * @tc.desc: Test HeifHvccBox.ReadGolombCodesForSizeId with minimal sizeId to exercise only coefficient decoding path.
+ * @tc.type: FUNC
+ */
+HWTEST_F(HeifParserBoxTest, ReadGolombCodesForSizeIdTest002, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "HeifParserBoxTest: ReadGolombCodesForSizeIdTest002 start";
+    HeifHvccBox heifHvccBox;
+    std::vector<uint8_t> nalUnits(UNITS_SIZE, 0xFF);
+    heifHvccBox.boxBitLength_ = static_cast<uint32_t>(nalUnits.size() * BIT_DEPTH_DIFF);
+
+    heifHvccBox.ReadGolombCodesForSizeId(nalUnits, READ_BIT_NUM_FLAG);
+    ASSERT_GT(heifHvccBox.pos_, 0u);
+    GTEST_LOG_(INFO) << "HeifParserBoxTest: ReadGolombCodesForSizeIdTest002 end";
+}
+
+/**
+ * @tc.name: ParseSpsScallListDataTest001
+ * @tc.desc: Test HeifHvccBox.ParseSpsScallListData where scaling list flags trigger both direct coefficient and
+ *           default paths.
+ * @tc.type: FUNC
+ */
+HWTEST_F(HeifParserBoxTest, ParseSpsScallListDataTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "HeifParserBoxTest: ParseSpsScallListDataTest001 start";
+    HeifHvccBox heifHvccBox;
+    std::vector<uint8_t> nalUnits(UNITS_SIZE, 0xFF);
+    heifHvccBox.boxBitLength_ = static_cast<uint32_t>(nalUnits.size() * BIT_DEPTH_DIFF);
+
+    heifHvccBox.ParseSpsScallListData(nalUnits);
+    ASSERT_GT(heifHvccBox.pos_, 0u);
+    GTEST_LOG_(INFO) << "HeifParserBoxTest: ParseSpsScallListDataTest001 end";
+}
+
+/**
+ * @tc.name: ParseSpsScallListDataTest002
+ * @tc.desc: Test HeifHvccBox.ParseSpsScallListData with empty NAL buffer to ensure function exits safely.
+ * @tc.type: FUNC
+ */
+HWTEST_F(HeifParserBoxTest, ParseSpsScallListDataTest002, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "HeifParserBoxTest: ParseSpsScallListDataTest002 start";
+    HeifHvccBox heifHvccBox;
+    std::vector<uint8_t> nalUnits;
+
+    heifHvccBox.ParseSpsScallListData(nalUnits);
+    ASSERT_GT(heifHvccBox.pos_, 0u);
+    GTEST_LOG_(INFO) << "HeifParserBoxTest: ParseSpsScallListDataTest002 end";
+}
+
+/**
+ * @tc.name: ParseSpsVuiParameterTest001
+ * @tc.desc: Test HeifHvccBox.ParseSpsVuiParameter to cover aspect ratio, overscan and video signal presence flags.
+ * @tc.type: FUNC
+ */
+HWTEST_F(HeifParserBoxTest, ParseSpsVuiParameterTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "HeifParserBoxTest: ParseSpsVuiParameterTest001 start";
+    HeifHvccBox heifHvccBox;
+    bool ret = heifHvccBox.ParseSpsVuiParameter(PARSE_SPS_NAL_UNITS);
+    ASSERT_EQ(ret, true);
+
+    HeifHvccBox heifHvccBoxNal;
+    ret = heifHvccBoxNal.ParseSpsVuiParameter(PARSE_SPS_NAL_DATA);
+    ASSERT_EQ(ret, true);
+    GTEST_LOG_(INFO) << "HeifParserBoxTest: ParseSpsVuiParameterTest001 end";
+}
+
+/**
+ * @tc.name: ParseStRefPicSetTest001
+ * @tc.desc: Test HeifHvccBox.ParseStRefPicSet when stRpsIdx equals numShortTermRefPicSets to drive
+ *           prediction-delta branch.
+ * @tc.type: FUNC
+ */
+HWTEST_F(HeifParserBoxTest, ParseStRefPicSetTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "HeifParserBoxTest: ParseStRefPicSetTest001 start";
+    HeifHvccBox heifHvccBox;
+    std::vector<uint8_t> nalUnits(NAL_SIZE, 0xFF);
+    heifHvccBox.boxBitLength_ = static_cast<uint32_t>(nalUnits.size() * BIT_DEPTH_DIFF);
+
+    heifHvccBox.ParseStRefPicSet(nalUnits, ST_RPS_IDX, NUM_SHORT_TERM_REF_PIC_SETS);
+    ASSERT_GT(heifHvccBox.pos_, 0u);
+    GTEST_LOG_(INFO) << "HeifParserBoxTest: ParseStRefPicSetTest001 end";
+}
+
+/**
+ * @tc.name: ParseStRefPicSetTest002
+ * @tc.desc: Test HeifHvccBox.ParseStRefPicSet in non-prediction mode and with repeated parsing to cover both branches.
+ * @tc.type: FUNC
+ */
+HWTEST_F(HeifParserBoxTest, ParseStRefPicSetTest002, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "HeifParserBoxTest: ParseStRefPicSetTest002 start";
+    HeifHvccBox heifHvccBox;
+    heifHvccBox.boxBitLength_ = static_cast<uint32_t>(NAL_UNITS.size() * BIT_DEPTH_DIFF);
+
+    heifHvccBox.ParseStRefPicSet(NAL_UNITS, 0, NUM_SHORT_TERM_REF_PIC_SETS);
+    ASSERT_GT(heifHvccBox.pos_, 0u);
+
+    heifHvccBox.pos_ = 0;
+    heifHvccBox.boxBitLength_ = static_cast<uint32_t>(NAL_DATA.size() * BIT_DEPTH_DIFF);
+    heifHvccBox.ParseStRefPicSet(NAL_DATA, 0, NUM_SHORT_TERM_REF_PIC_SETS);
+    ASSERT_GT(heifHvccBox.pos_, 0u);
+    GTEST_LOG_(INFO) << "HeifParserBoxTest: ParseStRefPicSetTest002 end";
+}
+
+/**
+ * @tc.name: ParseSpsSyntaxScalingListTest001
+ * @tc.desc: Test HeifHvccBox.ParseSpsSyntaxScalingList to ensure scaling list enable flags and PCM fields are consumed.
+ * @tc.type: FUNC
+ */
+HWTEST_F(HeifParserBoxTest, ParseSpsSyntaxScalingListTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "HeifParserBoxTest: ParseSpsSyntaxScalingListTest001 start";
+    HeifHvccBox heifHvccBox;
+    std::vector<uint8_t> nalUnits(NAL_SIZE, 0xFF);
+
+    heifHvccBox.ParseSpsSyntaxScalingList(nalUnits);
+    ASSERT_GT(heifHvccBox.pos_, 0u);
+    GTEST_LOG_(INFO) << "HeifParserBoxTest: ParseSpsSyntaxScalingListTest001 end";
+}
+
+/**
+ * @tc.name: ParseContentTest007
+ * @tc.desc: Test HeifColrBox.ParseContent returns EOF when declared profile section is larger than remaining bytes.
+ * @tc.type: FUNC
+ */
+HWTEST_F(HeifParserBoxTest, ParseContentTest007, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "HeifParserBoxTest: ParseContentTest007 start";
+    HeifColrBox heifColrBox;
+    heifColrBox.headerSize_ = UINT64_BYTES_NUM;
+    heifColrBox.boxSize_ = heifColrBox.headerSize_ + UINT32_BYTES_NUM + BOX_SIZE_OFFSET_BIG;
+
+    auto streamData = SetUint32ToUint8Vertor(COLOR_TYPE_PROF);
+    auto stream = std::make_shared<HeifBufferInputStream>(streamData.data(), streamData.size(), true);
+    HeifStreamReader reader(stream, 0, streamData.size());
+
+    heif_error ret = heifColrBox.ParseContent(reader);
+    ASSERT_EQ(ret, heif_error_eof);
+    GTEST_LOG_(INFO) << "HeifParserBoxTest: ParseContentTest007 end";
+}
+
+/**
+ * @tc.name: ParseContentTest008
+ * @tc.desc: Test HeifColrBox.ParseContent returns EOF when BOX_TYPE_NCLX data is truncated so CheckSize fails.
+ * @tc.type: FUNC
+ */
+HWTEST_F(HeifParserBoxTest, ParseContentTest008, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "HeifParserBoxTest: ParseContentTest008 start";
+    HeifColrBox heifColrBox;
+    heifColrBox.headerSize_ = UINT64_BYTES_NUM;
+    heifColrBox.boxSize_ = heifColrBox.headerSize_ + UINT32_BYTES_NUM + BOX_SIZE_OFFSET_SMALL;
+
+    auto streamData = SetUint32ToUint8Vertor(BOX_TYPE_NCLX);
+    auto stream = std::make_shared<HeifBufferInputStream>(streamData.data(), streamData.size(), true);
+    HeifStreamReader reader(stream, 0, streamData.size());
+
+    heif_error ret = heifColrBox.ParseContent(reader);
+    ASSERT_EQ(ret, heif_error_eof);
+    GTEST_LOG_(INFO) << "HeifParserBoxTest: ParseContentTest008 end";
+}
+
+/**
+ * @tc.name: ParseContentTest009
+ * @tc.desc: Test HeifAuxcBox.ParseContent so incoming stream contains aux subtypes and they are appended.
+ * @tc.type: FUNC
+ */
+HWTEST_F(HeifParserBoxTest, ParseContentTest009, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "HeifParserBoxTest: ParseContentTest009 start";
+    HeifAuxcBox heifAuxcBox;
+    auto stream = std::make_shared<HeifBufferInputStream>(AUX_STREAM_DATA.data(), AUX_STREAM_DATA.size(), true);
+    HeifStreamReader reader(stream, 0, AUX_STREAM_DATA.size());
+
+    heif_error ret = heifAuxcBox.ParseContent(reader);
+    ASSERT_EQ(ret, heif_error_ok);
+    GTEST_LOG_(INFO) << "HeifParserBoxTest: ParseContentTest009 end";
+}
 
 /**
  * @tc.name: ParseContentTest001
@@ -969,5 +1361,66 @@ HWTEST_F(HeifParserBoxTest, WriteChildren001, TestSize.Level3)
     EXPECT_GE(writtenData.size(), 8u);
     GTEST_LOG_(INFO) << "HeifParserBoxTest: WriteChildren001 end";
 }
+
+/**
+ * @tc.name: ParseItemRefNormalLoopTest001
+ * @tc.desc: Test parsing complete item reference data with multiple target items
+ *           Verifies correct extraction of all referenced item IDs from stream
+ * @tc.type: FUNC
+ */
+HWTEST_F(HeifParserBoxTest, ParseItemRefNormalLoopTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "HeifParserBoxTest: ParseItemRefNormalLoopTest001 start";
+    HeifIrefBox heifIrefBox;
+    HeifIrefBox::Reference ref;
+
+    std::vector<uint8_t> data;
+    auto fromId = SetUint32ToUint8Vertor(TEST_FROM_ITEM_ID);
+    data.insert(data.end(), fromId.begin(), fromId.end());
+    data.push_back(0x00);
+    data.push_back(TEST_ITEM_COUNT);
+    auto toId1 = SetUint32ToUint8Vertor(TEST_TO_ITEM_ID_1);
+    data.insert(data.end(), toId1.begin(), toId1.end());
+    auto toId2 = SetUint32ToUint8Vertor(TEST_TO_ITEM_ID_2);
+    data.insert(data.end(), toId2.begin(), toId2.end());
+    auto toId3 = SetUint32ToUint8Vertor(TEST_TO_ITEM_ID_3);
+    data.insert(data.end(), toId3.begin(), toId3.end());
+
+    auto stream = std::make_shared<HeifBufferInputStream>(data.data(), data.size(), true);
+    HeifStreamReader reader(stream, 0, data.size());
+
+    heifIrefBox.version_ = HEIF_BOX_VERSION_ONE;
+    heifIrefBox.ParseItemRef(reader, ref);
+
+    ASSERT_EQ(ref.fromItemId, TEST_FROM_ITEM_ID);
+    ASSERT_EQ(ref.toItemIds.size(), TEST_ITEM_COUNT);
+    ASSERT_EQ(ref.toItemIds[0], TEST_TO_ITEM_ID_1);
+    ASSERT_EQ(ref.toItemIds[1], TEST_TO_ITEM_ID_2);
+    ASSERT_EQ(ref.toItemIds[2], TEST_TO_ITEM_ID_3);
+    GTEST_LOG_(INFO) << "HeifParserBoxTest: ParseItemRefNormalLoopTest001 end";
+}
+
+/**
+ * @tc.name: ParseContentHeaderErrorTest001
+ * @tc.desc: Test parsing IREF box with truncated child box data stream
+ *           Ensures proper error detection when box structure is incomplete
+ * @tc.type: FUNC
+ */
+HWTEST_F(HeifParserBoxTest, ParseContentHeaderErrorTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "HeifParserBoxTest: ParseContentHeaderErrorTest001 start";
+    HeifIrefBox heifIrefBox;
+
+    std::vector<uint8_t> data = {0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
+
+    auto stream = std::make_shared<HeifBufferInputStream>(data.data(), data.size(), true);
+    HeifStreamReader reader(stream, 0, data.size());
+
+    heif_error error = heifIrefBox.ParseContent(reader);
+
+    ASSERT_NE(error, heif_error_ok);
+    GTEST_LOG_(INFO) << "HeifParserBoxTest: ParseContentHeaderErrorTest001 end";
+}
+
 }
 }

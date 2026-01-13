@@ -131,6 +131,7 @@ void PostProc::GetDstImageInfo(const DecodeOptions &opts, PixelMap &pixelMap,
     dstImageInfo.size = opts.desiredSize;
     dstImageInfo.pixelFormat = opts.desiredPixelFormat;
     dstImageInfo.baseDensity = srcImageInfo.baseDensity;
+    dstImageInfo.encodedFormat = srcImageInfo.encodedFormat;
     decodeOpts_ = opts;
     if (opts.desiredPixelFormat == PixelFormat::UNKNOWN) {
         if (opts.preference == MemoryUsagePreference::LOW_RAM &&

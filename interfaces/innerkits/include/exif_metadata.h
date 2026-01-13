@@ -19,6 +19,7 @@
 #include <libexif/exif-entry.h>
 #include <libexif/exif-tag.h>
 #include <libexif/huawei/exif-mnote-data-huawei.h>
+#include <unordered_map>
 
 #include "image_type.h"
 #include "metadata.h"
@@ -26,12 +27,22 @@
 
 namespace OHOS {
 namespace Media {
+
+struct EntryBasicInfo {
+    ExifFormat format;
+    unsigned long components;
+    unsigned char *data;
+    ExifByteOrder byteOrder;
+};
 class ExifMetadata : public ImageMetadata {
 public:
     ExifMetadata();
     ExifMetadata(ExifData *exifData);
     virtual ~ExifMetadata();
     virtual int GetValue(const std::string &key, std::string &value) const override;
+    int GetValueByType(const std::string &key, MetadataValue &result) const;
+    int HandleHwMnoteByType(const std::string &key, MetadataValue &result) const;
+    bool SetBlobValue(const MetadataValue &properties);
     virtual bool SetValue(const std::string &key, const std::string &value) override;
     virtual bool RemoveEntry(const std::string &key) override;
     virtual const ImageMetadata::PropertyMapPtr GetAllProperties() override;
@@ -47,8 +58,24 @@ public:
     {
         return MetadataType::EXIF;
     }
+    bool GetDataSize(uint32_t &size, bool withThumbnail = true, bool isJpeg = false);
+    bool HasThumbnail();
+    bool GetThumbnail(uint8_t *&data, uint32_t &size);
+    bool SetThumbnail(uint8_t *data, const uint32_t &size);
+    bool DropThumbnail();
     bool RemoveExifThumbnail() override;
     bool ExtractXmageCoordinates(XmageCoordinateMetadata &coordMetadata) const;
+    uint32_t GetBlobSize() override;
+    uint32_t GetBlob(uint32_t bufferSize, uint8_t *dst) override;
+    uint32_t SetBlob(const uint8_t *source, const uint32_t bufferSize) override;
+    bool IsSpecialHwKey(const std::string &key) const;
+    static PropertyValueType GetPropertyValueType(const std::string& key);
+    static std::shared_ptr<ExifMetadata> InitExifMetadata();
+    static const std::map<std::string, PropertyValueType>& GetExifMetadataMap();
+    static const std::map<std::string, PropertyValueType>& GetHwMetadataMap();
+    static const std::map<std::string, PropertyValueType>& GetHeifsMetadataMap();
+    static const std::map<NapiMetadataType, std::map<std::string, PropertyValueType>>& GetPropertyTypeMapping();
+    static const std::unordered_map<std::string, std::string>& GetPropertyKeyMap();
 
 private:
     bool ParseExifCoordinate(const std::string& fieldName, uint32_t& outputValue) const;
@@ -72,7 +99,6 @@ private:
     bool SetMakerNoteValue(const std::string &value);
     bool RemoveHwEntry(const std::string &key);
     bool SetCommonValue(const std::string &key, const std::string &value);
-    bool IsSpecialHwKey(const std::string &key) const;
     void FindRationalRanges(ExifContent *content,
         std::vector<std::pair<uint32_t, uint32_t>> &ranges, int index);
     void FindRanges(const ExifTag &tag, std::vector<std::pair<uint32_t, uint32_t>> &ranges);

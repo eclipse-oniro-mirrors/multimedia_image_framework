@@ -26,6 +26,7 @@
 #include "exif_metadata.h"
 #include "exif_metadata_formatter.h"
 #include "image_log.h"
+#include "image_utils.h"
 #include "libexif/exif-format.h"
 #include "libexif/exif-mem.h"
 #include "libexif/exif-tag.h"
@@ -72,6 +73,400 @@ const unsigned char INIT_HW_DATA[] = {
 
 static const int GET_SUPPORT_MAKERNOTE_COUNT = 1;
 static const int INIT_HW_DATA_HEAD_LENGTH = 8;
+
+const std::map<std::string, PropertyValueType>& ExifMetadata::GetExifMetadataMap()
+{
+    static const std::map<std::string, PropertyValueType> exifMetadataMap = {
+        {"NewSubfileType", PropertyValueType::INT},
+        {"SubfileType", PropertyValueType::INT},
+        {"ImageWidth", PropertyValueType::INT},
+        {"ImageLength", PropertyValueType::INT},
+        {"BitsPerSample", PropertyValueType::INT_ARRAY},
+        {"Compression", PropertyValueType::INT},
+        {"PhotometricInterpretation", PropertyValueType::INT},
+        {"ImageDescription", PropertyValueType::STRING},
+        {"Make", PropertyValueType::STRING},
+        {"Model", PropertyValueType::STRING},
+        {"StripOffsets", PropertyValueType::INT_ARRAY},
+        {"Orientation", PropertyValueType::INT},
+        {"SamplesPerPixel", PropertyValueType::INT},
+        {"RowsPerStrip", PropertyValueType::INT},
+        {"StripByteCounts", PropertyValueType::INT_ARRAY},
+        {"XResolution", PropertyValueType::DOUBLE},
+        {"YResolution", PropertyValueType::DOUBLE},
+        {"PlanarConfiguration", PropertyValueType::INT},
+        {"ResolutionUnit", PropertyValueType::INT},
+        {"TransferFunction", PropertyValueType::STRING},
+        {"Software", PropertyValueType::STRING},
+        {"DateTime", PropertyValueType::STRING},
+        {"Artist", PropertyValueType::STRING},
+        {"WhitePoint", PropertyValueType::DOUBLE_ARRAY},
+        {"PrimaryChromaticities", PropertyValueType::DOUBLE_ARRAY},
+        {"PhotoMode", PropertyValueType::INT},
+        {"JPEGInterchangeFormat", PropertyValueType::INT},
+        {"JPEGInterchangeFormatLength", PropertyValueType::INT},
+        {"YCbCrCoefficients", PropertyValueType::DOUBLE_ARRAY},
+        {"YCbCrSubSampling", PropertyValueType::INT_ARRAY},
+        {"YCbCrPositioning", PropertyValueType::INT},
+        {"ReferenceBlackWhite", PropertyValueType::DOUBLE_ARRAY},
+        {"Copyright", PropertyValueType::STRING},
+        {"ExposureTime", PropertyValueType::DOUBLE},
+        {"FNumber", PropertyValueType::DOUBLE},
+        {"ExposureProgram", PropertyValueType::INT},
+        {"SpectralSensitivity", PropertyValueType::STRING},
+        {"GPSVersionID", PropertyValueType::INT_ARRAY},
+        {"GPSLatitudeRef", PropertyValueType::STRING},
+        {"GPSLatitude", PropertyValueType::DOUBLE_ARRAY},
+        {"GPSLongitudeRef", PropertyValueType::STRING},
+        {"GPSLongitude", PropertyValueType::DOUBLE_ARRAY},
+        {"GPSAltitudeRef", PropertyValueType::INT},
+        {"GPSAltitude", PropertyValueType::DOUBLE},
+        {"GPSTimeStamp", PropertyValueType::DOUBLE_ARRAY},
+        {"GPSSatellites", PropertyValueType::STRING},
+        {"GPSStatus", PropertyValueType::STRING},
+        {"GPSMeasureMode", PropertyValueType::STRING},
+        {"GPSDOP", PropertyValueType::DOUBLE},
+        {"GPSSpeedRef", PropertyValueType::STRING},
+        {"GPSSpeed", PropertyValueType::DOUBLE},
+        {"GPSTrackRef", PropertyValueType::STRING},
+        {"GPSTrack", PropertyValueType::DOUBLE},
+        {"GPSImgDirectionRef", PropertyValueType::STRING},
+        {"GPSImgDirection", PropertyValueType::DOUBLE},
+        {"GPSMapDatum", PropertyValueType::STRING},
+        {"GPSDestLatitudeRef", PropertyValueType::STRING},
+        {"GPSDestLatitude", PropertyValueType::DOUBLE_ARRAY},
+        {"GPSDestLongitudeRef", PropertyValueType::STRING},
+        {"GPSDestLongitude", PropertyValueType::DOUBLE_ARRAY},
+        {"GPSDestBearingRef", PropertyValueType::STRING},
+        {"GPSDestBearing", PropertyValueType::DOUBLE},
+        {"GPSDestDistanceRef", PropertyValueType::STRING},
+        {"GPSDestDistance", PropertyValueType::DOUBLE},
+        {"GPSProcessingMethod", PropertyValueType::STRING},
+        {"GPSAreaInformation", PropertyValueType::STRING},
+        {"GPSDateStamp", PropertyValueType::STRING},
+        {"GPSDifferential", PropertyValueType::INT},
+        {"GPSHPositioningError", PropertyValueType::DOUBLE},
+        {"ISOSpeedRatings", PropertyValueType::INT},
+        {"PhotographicSensitivity", PropertyValueType::INT_ARRAY},
+        {"OECF", PropertyValueType::BLOB},
+        {"SensitivityType", PropertyValueType::INT},
+        {"StandardOutputSensitivity", PropertyValueType::INT},
+        {"RecommendedExposureIndex", PropertyValueType::INT},
+        {"ISOSpeedLatitudeyyy", PropertyValueType::INT},
+        {"ISOSpeedLatitudezzz", PropertyValueType::INT},
+        {"ExifVersion", PropertyValueType::STRING},
+        {"DateTimeOriginal", PropertyValueType::STRING},
+        {"DateTimeDigitized", PropertyValueType::STRING},
+        {"OffsetTime", PropertyValueType::STRING},
+        {"OffsetTimeOriginal", PropertyValueType::STRING},
+        {"OffsetTimeDigitized", PropertyValueType::STRING},
+        {"ComponentsConfiguration", PropertyValueType::STRING},
+        {"CompressedBitsPerPixel", PropertyValueType::DOUBLE},
+        {"ShutterSpeedValue", PropertyValueType::DOUBLE},
+        {"ApertureValue", PropertyValueType::DOUBLE},
+        {"BrightnessValue", PropertyValueType::DOUBLE},
+        {"ExposureBiasValue", PropertyValueType::DOUBLE},
+        {"MaxApertureValue", PropertyValueType::DOUBLE},
+        {"SubjectDistance", PropertyValueType::DOUBLE},
+        {"MeteringMode", PropertyValueType::INT},
+        {"LightSource", PropertyValueType::INT},
+        {"Flash", PropertyValueType::INT},
+        {"FocalLength", PropertyValueType::DOUBLE},
+        {"SubjectArea", PropertyValueType::INT_ARRAY},
+        {"MakerNote", PropertyValueType::BLOB},
+        {"UserComment", PropertyValueType::STRING},
+        {"SubsecTime", PropertyValueType::STRING},
+        {"SubsecTimeOriginal", PropertyValueType::STRING},
+        {"SubsecTimeDigitized", PropertyValueType::STRING},
+        {"FlashpixVersion", PropertyValueType::STRING},
+        {"ColorSpace", PropertyValueType::INT},
+        {"PixelXDimension", PropertyValueType::INT},
+        {"PixelYDimension", PropertyValueType::INT},
+        {"RelatedSoundFile", PropertyValueType::STRING},
+        {"FlashEnergy", PropertyValueType::DOUBLE},
+        {"SpatialFrequencyResponse", PropertyValueType::BLOB},
+        {"FocalPlaneXResolution", PropertyValueType::DOUBLE},
+        {"FocalPlaneYResolution", PropertyValueType::DOUBLE},
+        {"FocalPlaneResolutionUnit", PropertyValueType::INT},
+        {"SubjectLocation", PropertyValueType::INT_ARRAY},
+        {"ExposureIndex", PropertyValueType::DOUBLE},
+        {"SensingMethod", PropertyValueType::INT},
+        {"FileSource", PropertyValueType::BLOB},
+        {"SceneType", PropertyValueType::BLOB},
+        {"CFAPattern", PropertyValueType::BLOB},
+        {"CustomRendered", PropertyValueType::INT},
+        {"ExposureMode", PropertyValueType::INT},
+        {"WhiteBalance", PropertyValueType::INT},
+        {"DigitalZoomRatio", PropertyValueType::DOUBLE},
+        {"FocalLengthIn35mmFilm", PropertyValueType::INT},
+        {"SceneCaptureType", PropertyValueType::INT},
+        {"GainControl", PropertyValueType::INT},
+        {"Contrast", PropertyValueType::INT},
+        {"Saturation", PropertyValueType::INT},
+        {"Sharpness", PropertyValueType::INT},
+        {"DeviceSettingDescription", PropertyValueType::BLOB},
+        {"SubjectDistanceRange", PropertyValueType::INT},
+        {"ImageUniqueID", PropertyValueType::STRING},
+        {"CameraOwnerName", PropertyValueType::STRING},
+        {"BodySerialNumber", PropertyValueType::STRING},
+        {"LensSpecification", PropertyValueType::DOUBLE_ARRAY},
+        {"LensMake", PropertyValueType::STRING},
+        {"LensModel", PropertyValueType::STRING},
+        {"LensSerialNumber", PropertyValueType::STRING},
+        {"CompositeImage", PropertyValueType::INT},
+        {"SourceImageNumberOfCompositeImage", PropertyValueType::INT_ARRAY},
+        {"SourceExposureTimesOfCompositeImage", PropertyValueType::BLOB},
+        {"Gamma", PropertyValueType::DOUBLE},
+        {"DNGVersion", PropertyValueType::INT_ARRAY},
+        {"DefaultCropSize", PropertyValueType::INT_ARRAY},
+    };
+    return exifMetadataMap;
+}
+
+const std::map<std::string, PropertyValueType>& ExifMetadata::GetHwMetadataMap()
+{
+    static const std::map<std::string, PropertyValueType> hwMetadataMap = {
+        {"HwMnoteIsXmageSupported", PropertyValueType::INT},
+        {"HwMnoteXmageMode", PropertyValueType::INT},
+        {"HwMnoteXmageLeft", PropertyValueType::INT},
+        {"HwMnoteXmageTop", PropertyValueType::INT},
+        {"HwMnoteXmageRight", PropertyValueType::INT},
+        {"HwMnoteXmageBottom", PropertyValueType::INT},
+        {"HwMnoteXmageColorMode", PropertyValueType::INT},
+        {"HwMnoteCloudEnhancementMode", PropertyValueType::INT},
+        {"HwMnoteWindSnapshotMode", PropertyValueType::INT},
+        {"HwMnoteSceneVersion", PropertyValueType::INT},
+        {"HwMnoteSceneFoodConf", PropertyValueType::INT},
+        {"HwMnoteSceneStageConf", PropertyValueType::INT},
+        {"HwMnoteSceneBlueSkyConf", PropertyValueType::INT},
+        {"HwMnoteSceneGreenPlantConf", PropertyValueType::INT},
+        {"HwMnoteSceneBeachConf", PropertyValueType::INT},
+        {"HwMnoteSceneSnowConf", PropertyValueType::INT},
+        {"HwMnoteSceneSunsetConf", PropertyValueType::INT},
+        {"HwMnoteSceneFlowersConf", PropertyValueType::INT},
+        {"HwMnoteSceneNightConf", PropertyValueType::INT},
+        {"HwMnoteSceneTextConf", PropertyValueType::INT},
+        {"HwMnoteFaceCount", PropertyValueType::INT},
+        {"HwMnoteFaceConf", PropertyValueType::INT_ARRAY},
+        {"HwMnoteFaceSmileScore", PropertyValueType::INT_ARRAY},
+        {"HwMnoteCaptureMode", PropertyValueType::INT},
+        {"HwMnoteBurstNumber", PropertyValueType::INT},
+        {"HwMnoteFrontCamera", PropertyValueType::INT},
+        {"HwMnoteRollAngle", PropertyValueType::INT},
+        {"HwMnotePitchAngle", PropertyValueType::INT},
+        {"HwMnotePhysicalAperture", PropertyValueType::INT},
+        {"HwMnoteFocusMode", PropertyValueType::INT},
+        {"HwMnoteXtStyleVignetting", PropertyValueType::DOUBLE},
+        {"HwMnoteXtStyleNoise", PropertyValueType::DOUBLE}
+    };
+    return hwMetadataMap;
+}
+
+const std::map<std::string, PropertyValueType>& ExifMetadata::GetHeifsMetadataMap()
+{
+    static const std::map<std::string, PropertyValueType> heifsMetadataMap = {
+        {"HeifsDelayTime", PropertyValueType::INT},
+    };
+    return heifsMetadataMap;
+}
+
+const std::map<NapiMetadataType, std::map<std::string, PropertyValueType>>& ExifMetadata::GetPropertyTypeMapping()
+{
+    static const std::map<NapiMetadataType, std::map<std::string, PropertyValueType>> propertyTypeMap = {
+        {NapiMetadataType::EXIF_METADATA, GetExifMetadataMap()},
+        {NapiMetadataType::HWMAKERNOTE_METADATA, GetHwMetadataMap()},
+        {NapiMetadataType::HEIFS_METADATA, GetHeifsMetadataMap()},
+    };
+    return propertyTypeMap;
+}
+
+const std::unordered_map<std::string, std::string>& ExifMetadata::GetPropertyKeyMap()
+{
+    static const std::unordered_map<std::string, std::string> propertyKeyMap = {
+        // ============ ExifMetadata ============
+        {"newSubfileType", "NewSubfileType"},
+        {"subfileType", "SubfileType"},
+        {"imageWidth", "ImageWidth"},
+        {"imageLength", "ImageLength"},
+        {"bitsPerSample", "BitsPerSample"},
+        {"compression", "Compression"},
+        {"photometricInterpretation", "PhotometricInterpretation"},
+        {"imageDescription", "ImageDescription"},
+        {"make", "Make"},
+        {"model", "Model"},
+        {"stripOffsets", "StripOffsets"},
+        {"orientation", "Orientation"},
+        {"samplesPerPixel", "SamplesPerPixel"},
+        {"rowsPerStrip", "RowsPerStrip"},
+        {"stripByteCounts", "StripByteCounts"},
+        {"xResolution", "XResolution"},
+        {"yResolution", "YResolution"},
+        {"planarConfiguration", "PlanarConfiguration"},
+        {"resolutionUnit", "ResolutionUnit"},
+        {"transferFunction", "TransferFunction"},
+        {"software", "Software"},
+        {"dateTime", "DateTime"},
+        {"artist", "Artist"},
+        {"whitePoint", "WhitePoint"},
+        {"primaryChromaticities", "PrimaryChromaticities"},
+        {"photoMode", "PhotoMode"},
+        {"jpegInterchangeFormat", "JPEGInterchangeFormat"},
+        {"jpegInterchangeFormatLength", "JPEGInterchangeFormatLength"},
+        {"yCbCrCoefficients", "YCbCrCoefficients"},
+        {"yCbCrSubSampling", "YCbCrSubSampling"},
+        {"yCbCrPositioning", "YCbCrPositioning"},
+        {"referenceBlackWhite", "ReferenceBlackWhite"},
+        {"copyright", "Copyright"},
+        {"exposureTime", "ExposureTime"},
+        {"fNumber", "FNumber"},
+        {"exposureProgram", "ExposureProgram"},
+        {"spectralSensitivity", "SpectralSensitivity"},
+        {"gpsVersionID", "GPSVersionID"},
+        {"gpsLatitudeRef", "GPSLatitudeRef"},
+        {"gpsLatitude", "GPSLatitude"},
+        {"gpsLongitudeRef", "GPSLongitudeRef"},
+        {"gpsLongitude", "GPSLongitude"},
+        {"gpsAltitudeRef", "GPSAltitudeRef"},
+        {"gpsAltitude", "GPSAltitude"},
+        {"gpsTimestamp", "GPSTimeStamp"},
+        {"gpsSatellites", "GPSSatellites"},
+        {"gpsStatus", "GPSStatus"},
+        {"gpsMeasureMode", "GPSMeasureMode"},
+        {"gpsDop", "GPSDOP"},
+        {"gpsSpeedRef", "GPSSpeedRef"},
+        {"gpsSpeed", "GPSSpeed"},
+        {"gpsTrackRef", "GPSTrackRef"},
+        {"gpsTrack", "GPSTrack"},
+        {"gpsImgDirectionRef", "GPSImgDirectionRef"},
+        {"gpsImgDirection", "GPSImgDirection"},
+        {"gpsMapDatum", "GPSMapDatum"},
+        {"gpsDestLatitudeRef", "GPSDestLatitudeRef"},
+        {"gpsDestLatitude", "GPSDestLatitude"},
+        {"gpsDestLongitudeRef", "GPSDestLongitudeRef"},
+        {"gpsDestLongitude", "GPSDestLongitude"},
+        {"gpsDestBearingRef", "GPSDestBearingRef"},
+        {"gpsDestBearing", "GPSDestBearing"},
+        {"gpsDestDistanceRef", "GPSDestDistanceRef"},
+        {"gpsDestDistance", "GPSDestDistance"},
+        {"gpsProcessingMethod", "GPSProcessingMethod"},
+        {"gpsAreaInformation", "GPSAreaInformation"},
+        {"gpsDateStamp", "GPSDateStamp"},
+        {"gpsDifferential", "GPSDifferential"},
+        {"gpsHPositioningError", "GPSHPositioningError"},
+        {"isoSpeedRatings", "ISOSpeedRatings"},
+        {"photographicSensitivity", "PhotographicSensitivity"},
+        {"oecf", "OECF"},
+        {"sensitivityType", "SensitivityType"},
+        {"standardOutputSensitivity", "StandardOutputSensitivity"},
+        {"recommendedExposureIndex", "RecommendedExposureIndex"},
+        {"isoSpeedLatitudeyyy", "ISOSpeedLatitudeyyy"},
+        {"isoSpeedLatitudezzz", "ISOSpeedLatitudezzz"},
+        {"exifVersion", "ExifVersion"},
+        {"dateTimeOriginal", "DateTimeOriginal"},
+        {"dateTimeDigitized", "DateTimeDigitized"},
+        {"offsetTime", "OffsetTime"},
+        {"offsetTimeOriginal", "OffsetTimeOriginal"},
+        {"offsetTimeDigitized", "OffsetTimeDigitized"},
+        {"componentsConfiguration", "ComponentsConfiguration"},
+        {"compressedBitsPerPixel", "CompressedBitsPerPixel"},
+        {"shutterSpeedValue", "ShutterSpeedValue"},
+        {"apertureValue", "ApertureValue"},
+        {"brightnessValue", "BrightnessValue"},
+        {"exposureBiasValue", "ExposureBiasValue"},
+        {"maxApertureValue", "MaxApertureValue"},
+        {"subjectDistance", "SubjectDistance"},
+        {"meteringMode", "MeteringMode"},
+        {"lightSource", "LightSource"},
+        {"flash", "Flash"},
+        {"focalLength", "FocalLength"},
+        {"subjectArea", "SubjectArea"},
+        {"makerNote", "MakerNote"},
+        {"userComment", "UserComment"},
+        {"subsecTime", "SubsecTime"},
+        {"subsecTimeOriginal", "SubsecTimeOriginal"},
+        {"subsecTimeDigitized", "SubsecTimeDigitized"},
+        {"flashpixVersion", "FlashpixVersion"},
+        {"colorSpace", "ColorSpace"},
+        {"pixelXDimension", "PixelXDimension"},
+        {"pixelYDimension", "PixelYDimension"},
+        {"relatedSoundFile", "RelatedSoundFile"},
+        {"flashEnergy", "FlashEnergy"},
+        {"spatialFrequencyResponse", "SpatialFrequencyResponse"},
+        {"focalPlaneXResolution", "FocalPlaneXResolution"},
+        {"focalPlaneYResolution", "FocalPlaneYResolution"},
+        {"focalPlaneResolutionUnit", "FocalPlaneResolutionUnit"},
+        {"subjectLocation", "SubjectLocation"},
+        {"exposureIndex", "ExposureIndex"},
+        {"sensingMethod", "SensingMethod"},
+        {"fileSource", "FileSource"},
+        {"sceneType", "SceneType"},
+        {"cfaPattern", "CFAPattern"},
+        {"customRendered", "CustomRendered"},
+        {"exposureMode", "ExposureMode"},
+        {"whiteBalance", "WhiteBalance"},
+        {"digitalZoomRatio", "DigitalZoomRatio"},
+        {"focalLengthIn35mmFilm", "FocalLengthIn35mmFilm"},
+        {"sceneCaptureType", "SceneCaptureType"},
+        {"gainControl", "GainControl"},
+        {"contrast", "Contrast"},
+        {"saturation", "Saturation"},
+        {"sharpness", "Sharpness"},
+        {"deviceSettingDescription", "DeviceSettingDescription"},
+        {"subjectDistanceRange", "SubjectDistanceRange"},
+        {"imageUniqueId", "ImageUniqueID"},
+        {"cameraOwnerName", "CameraOwnerName"},
+        {"bodySerialNumber", "BodySerialNumber"},
+        {"lensSpecification", "LensSpecification"},
+        {"lensMake", "LensMake"},
+        {"lensModel", "LensModel"},
+        {"lensSerialNumber", "LensSerialNumber"},
+        {"compositeImage", "CompositeImage"},
+        {"sourceImageNumberOfCompositeImage", "SourceImageNumberOfCompositeImage"},
+        {"sourceExposureTimesOfCompositeImage", "SourceExposureTimesOfCompositeImage"},
+        {"gamma", "Gamma"},
+        {"dngVersion", "DNGVersion"},
+        {"defaultCropSize", "DefaultCropSize"},
+        
+        // ============ MakerNoteHuaweiMetadata ============
+        {"isXmageSupported", "HwMnoteIsXmageSupported"},
+        {"xmageWatermarkMode", "HwMnoteXmageMode"},
+        {"xmageLeft", "HwMnoteXmageLeft"},
+        {"xmageTop", "HwMnoteXmageTop"},
+        {"xmageRight", "HwMnoteXmageRight"},
+        {"xmageBottom", "HwMnoteXmageBottom"},
+        {"xmageColorMode", "HwMnoteXmageColorMode"},
+        {"isCloudEnhanced", "HwMnoteCloudEnhancementMode"},
+        {"isWindSnapshot", "HwMnoteWindSnapshotMode"},
+        {"sceneVersion", "HwMnoteSceneVersion"},
+        {"sceneFoodConfidence", "HwMnoteSceneFoodConf"},
+        {"sceneStageConfidence", "HwMnoteSceneStageConf"},
+        {"sceneBlueSkyConfidence", "HwMnoteSceneBlueSkyConf"},
+        {"sceneGreenPlantConfidence", "HwMnoteSceneGreenPlantConf"},
+        {"sceneBeachConfidence", "HwMnoteSceneBeachConf"},
+        {"sceneSnowConfidence", "HwMnoteSceneSnowConf"},
+        {"sceneSunsetConfidence", "HwMnoteSceneSunsetConf"},
+        {"sceneFlowersConfidence", "HwMnoteSceneFlowersConf"},
+        {"sceneNightConfidence", "HwMnoteSceneNightConf"},
+        {"sceneTextConfidence", "HwMnoteSceneTextConf"},
+        {"faceCount", "HwMnoteFaceCount"},
+        {"faceConfidences", "HwMnoteFaceConf"},
+        {"faceSmileScores", "HwMnoteFaceSmileScore"},
+        {"captureMode", "HwMnoteCaptureMode"},
+        {"burstNumber", "HwMnoteBurstNumber"},
+        {"isFrontCamera", "HwMnoteFrontCamera"},
+        {"rollAngle", "HwMnoteRollAngle"},
+        {"pitchAngle", "HwMnotePitchAngle"},
+        {"physicalAperture", "HwMnotePhysicalAperture"},
+        {"focusMode", "HwMnoteFocusMode"},
+        {"xtStyleVignetting", "HwMnoteXtStyleVignetting"},
+        {"xtStyleNoise", "HwMnoteXtStyleNoise"},
+
+        // ============ HeifsMetadata ============
+        {"heifsDelayTime", "HeifsDelayTime"}
+    };
+    return propertyKeyMap;
+}
+
 template <typename T, typename U> std::istream &OutputRational(std::istream &is, T &r)
 {
     U nominator = 0;
@@ -155,6 +550,292 @@ int ExifMetadata::GetValue(const std::string &key, std::string &value) const
     } else {
         IMAGE_LOGD("Retrieved value for key: %{public}s is: %{public}s", key.c_str(), value.c_str());
     }
+    return SUCCESS;
+}
+
+static unsigned int CalculateTagValueSize(ExifEntry *entry)
+{
+    CHECK_ERROR_RETURN_RET(entry == nullptr, TAG_VALUE_SIZE);
+    if (entry->size >= TAG_VALUE_SIZE &&
+        (entry->format == EXIF_FORMAT_ASCII || entry->format == EXIF_FORMAT_UNDEFINED)) {
+        if (entry->size + TERMINATOR_SIZE > MAX_TAG_VALUE_SIZE_FOR_STR) {
+            return MAX_TAG_VALUE_SIZE_FOR_STR;
+        } else {
+            return entry->size + TERMINATOR_SIZE;
+        }
+    }
+    return TAG_VALUE_SIZE;
+}
+
+static void GetIntValue(EntryBasicInfo info, MetadataValue &result)
+{
+    CHECK_ERROR_RETURN_LOG(info.components == 0 || info.data == nullptr,
+        "%{public}s, data is nullptr or components is 0", __func__);
+    result.intArrayValue.clear();
+    result.intArrayValue.reserve(info.components);
+    size_t formatSize = exif_format_get_size(info.format);
+    const unsigned int comp = info.components;
+    for (unsigned int i = 0; i < comp; i++) {
+        int64_t value = 0;
+        const unsigned char *dataPtr = info.data + formatSize * i;
+        switch (info.format) {
+            case EXIF_FORMAT_SHORT:
+                value = static_cast<int64_t>(exif_get_short(dataPtr, info.byteOrder));
+                break;
+            case EXIF_FORMAT_LONG:
+                value = static_cast<int64_t>(exif_get_long(dataPtr, info.byteOrder));
+                break;
+            case EXIF_FORMAT_SSHORT:
+                value = static_cast<int64_t>(exif_get_sshort(dataPtr, info.byteOrder));
+                break;
+            case EXIF_FORMAT_SLONG:
+                value = static_cast<int64_t>(exif_get_slong(dataPtr, info.byteOrder));
+                break;
+            case EXIF_FORMAT_BYTE:
+                value = *reinterpret_cast<const uint8_t*>(dataPtr);
+                break;
+            case EXIF_FORMAT_SBYTE:
+                value = *reinterpret_cast<const int8_t*>(dataPtr);
+                break;
+            default:
+                IMAGE_LOGE("%{public}s, unsupported exif type:%{public}d", __func__, info.format);
+                break;
+        }
+        result.intArrayValue.push_back(value);
+    }
+}
+
+static void GetRationalValue(EntryBasicInfo info, MetadataValue &result)
+{
+    CHECK_ERROR_RETURN_LOG(info.components == 0 || info.data == nullptr,
+        "%{public}s, data is nullptr or components is 0", __func__);
+    result.doubleArrayValue.clear();
+    result.doubleArrayValue.reserve(info.components);
+    size_t formatSize = exif_format_get_size(info.format);
+    const unsigned int comp = info.components;
+    for (unsigned int i = 0; i < comp; ++i) {
+        const unsigned char* dataPtr = info.data + formatSize * i;
+        if (info.format == EXIF_FORMAT_RATIONAL) {
+            ExifRational vRat = exif_get_rational(dataPtr, info.byteOrder);
+            if (vRat.denominator) {
+                result.doubleArrayValue.push_back(static_cast<double>(vRat.numerator) / vRat.denominator);
+            }
+        } else if (info.format == EXIF_FORMAT_SRATIONAL) {
+            ExifSRational vSrat = exif_get_srational(dataPtr, info.byteOrder);
+            if (vSrat.denominator) {
+                result.doubleArrayValue.push_back(static_cast<double>(vSrat.numerator) / vSrat.denominator);
+            }
+        }
+    }
+}
+
+static void GetStringValueFromExifEntry(ExifEntry *entry, MetadataValue &result,
+                                        unsigned int tagValueSize)
+{
+    std::vector<char> buffer(tagValueSize);
+    exif_entry_get_value(entry, buffer.data(), buffer.size());
+    result.stringValue = std::string(buffer.data());
+}
+
+static void GetUnsupportedFormatValue(ExifEntry *entry, MetadataValue &result)
+{
+    CHECK_ERROR_RETURN(entry == nullptr);
+    result.stringValue = std::to_string(entry->size) + " bytes unsupported data type";
+}
+
+static uint32_t GetBlobValueFromExifEntry(ExifEntry *entry, MetadataValue &result)
+{
+    CHECK_ERROR_RETURN_RET_LOG(entry == nullptr || !entry->parent || !entry->parent->parent,
+        ERR_IMAGE_DECODE_METADATA_FAILED, "Invalid EXIF entry structure");
+    CHECK_ERROR_RETURN_RET_LOG(entry->size <= 0 || entry->data == nullptr, ERR_IMAGE_DECODE_METADATA_FAILED,
+        "data is nullptr or size is invalid");
+    result.bufferValue.resize(entry->size);
+    CHECK_ERROR_RETURN_RET(result.bufferValue.size() != entry->size, ERR_IMAGE_DECODE_METADATA_FAILED);
+    errno_t err = memcpy_s(result.bufferValue.data(), result.bufferValue.size(), entry->data, entry->size);
+    CHECK_ERROR_RETURN_RET_LOG(err != EOK, ERR_IMAGE_DECODE_METADATA_FAILED,
+        "memcpy_s failed: %{public}d", err);
+    IMAGE_LOGD("Copied %{public}u bytes", result.bufferValue.size());
+    return SUCCESS;
+}
+
+static void GetValueByExifType(ExifEntry *entry, MetadataValue &result, unsigned int tagValueSize)
+{
+    CHECK_ERROR_RETURN_LOG(entry == nullptr || !entry->parent || !entry->parent->parent || entry->data == nullptr,
+        "Invalid EXIF entry structure");
+    const ExifByteOrder byteOrder = exif_data_get_byte_order(entry->parent->parent);
+    EntryBasicInfo info = {entry->format, entry->components, entry->data, byteOrder};
+    switch (entry->format) {
+        case EXIF_FORMAT_SHORT:
+        case EXIF_FORMAT_LONG:
+        case EXIF_FORMAT_SSHORT:
+        case EXIF_FORMAT_SLONG:
+        case EXIF_FORMAT_BYTE:
+        case EXIF_FORMAT_SBYTE:
+            GetIntValue(info, result);
+            break;
+        case EXIF_FORMAT_RATIONAL:
+        case EXIF_FORMAT_SRATIONAL:
+            GetRationalValue(info, result);
+            break;
+        case EXIF_FORMAT_UNDEFINED:
+            GetBlobValueFromExifEntry(entry, result);
+            break;
+        case EXIF_FORMAT_ASCII:
+            GetStringValueFromExifEntry(entry, result, tagValueSize);
+            break;
+        case EXIF_FORMAT_DOUBLE:
+        case EXIF_FORMAT_FLOAT:
+            GetUnsupportedFormatValue(entry, result);
+            break;
+        default:
+            IMAGE_LOGE("Unsupported exif format: %{public}d", entry->format);
+            break;
+    }
+}
+
+static void ParseHwUndefinedData(MnoteHuaweiEntry *entry, MetadataValue &result)
+{
+    CHECK_ERROR_RETURN(entry == nullptr);
+    if (entry->size > 0) {
+        result.bufferValue.resize(entry->size);
+        memcpy_s(result.bufferValue.data(), entry->size, entry->data, entry->size);
+    }
+}
+
+static void ParseHwAsciiData(MnoteHuaweiEntry *entry, MetadataValue &result)
+{
+    CHECK_ERROR_RETURN(entry == nullptr);
+    size_t len = entry->size;
+    if (len > 0 && entry->data[len-1] == '\0') {
+        len--;
+    }
+    result.stringValue.assign(reinterpret_cast<const char*>(entry->data), len);
+}
+
+static void ParseEntryByFormat(MnoteHuaweiEntry *entry, MetadataValue &result, const std::string &key)
+{
+    CHECK_ERROR_RETURN_LOG(entry == nullptr || entry->data == nullptr, "Invalid EXIF entry structure");
+    const ExifByteOrder byteOrder = entry->order;
+    EntryBasicInfo info = {entry->format, entry->components, entry->data, byteOrder};
+    switch (entry->format) {
+        case EXIF_FORMAT_BYTE:
+        case EXIF_FORMAT_SBYTE:
+        case EXIF_FORMAT_SHORT:
+        case EXIF_FORMAT_SSHORT:
+        case EXIF_FORMAT_LONG:
+        case EXIF_FORMAT_SLONG:
+            GetIntValue(info, result);
+            break;
+        case EXIF_FORMAT_RATIONAL:
+        case EXIF_FORMAT_SRATIONAL:
+            GetRationalValue(info, result);
+            break;
+        case EXIF_FORMAT_UNDEFINED:
+            ParseHwUndefinedData(entry, result);
+            break;
+        case EXIF_FORMAT_ASCII:
+            ParseHwAsciiData(entry, result);
+            break;
+        default:
+            IMAGE_LOGW("Unsupported format:%{public}d for key:%{public}s", entry->format, key.c_str());
+            ParseHwUndefinedData(entry, result);
+            break;
+    }
+}
+
+static int ParseMatchingHwEntry(const std::string &key, MnoteHuaweiEntryCount *ec, MetadataValue &result)
+{
+    CHECK_ERROR_RETURN_RET(ec == nullptr, ERR_IMAGE_DECODE_EXIF_UNSUPPORT);
+    for (unsigned int i = 0; i < ec->size; i++) {
+        MnoteHuaweiEntry *entry = ec->entries[i];
+        if (!entry || !entry->data) {
+            continue;
+        }
+        const char* entryKey = mnote_huawei_tag_get_name(entry->tag);
+        if (!entryKey || key != entryKey) {
+            continue;
+        }
+        if (key == "HwMnoteFaceConf" || key == "HwMnoteFaceSmileScore") {
+            std::vector<int64_t> intValue;
+            for (uint32_t i = 0; i < entry->components; i++) {
+                uint8_t value = *(reinterpret_cast<const uint8_t*>(entry->data + i));
+                intValue.push_back(value);
+            }
+            result.intArrayValue = intValue;
+        }
+        ParseEntryByFormat(entry, result, key);
+        return SUCCESS;
+    }
+    return ERR_IMAGE_DECODE_EXIF_UNSUPPORT;
+}
+
+static int GetHwEntryCount(ExifMnoteData *md, MnoteHuaweiEntryCount **ec)
+{
+    CHECK_ERROR_RETURN_RET_LOG(!is_huawei_md(md), ERR_IMAGE_DECODE_EXIF_UNSUPPORT, "Not Huawei maker note");
+    mnote_huawei_get_entry_count(reinterpret_cast<ExifMnoteDataHuawei *>(md), ec);
+    CHECK_ERROR_RETURN_RET_LOG(*ec == nullptr, ERR_IMAGE_DECODE_EXIF_UNSUPPORT, "Huawei entry count null");
+    return SUCCESS;
+}
+
+int ExifMetadata::HandleHwMnoteByType(const std::string &key, MetadataValue &result) const
+{
+    MetadataValue tmpResult;
+    ExifMnoteData *md = exif_data_get_mnote_data(exifData_);
+    CHECK_ERROR_RETURN_RET_LOG(md == nullptr, ERR_IMAGE_DECODE_EXIF_UNSUPPORT, "Exif mnote data null");
+    MnoteHuaweiEntryCount *ec = nullptr;
+    int retCode = GetHwEntryCount(md, &ec);
+    CHECK_ERROR_RETURN_RET_LOG(retCode != SUCCESS, retCode, "Invalid Huawei metadata");
+    retCode = ParseMatchingHwEntry(key, ec, tmpResult);
+    result = tmpResult;
+    
+    mnote_huawei_free_entry_count(ec);
+    return retCode;
+}
+
+bool IsSpecialKey(std::string key)
+{
+    return key == "ExifVersion" || key == "ComponentsConfiguration" || key == "UserComment" ||
+        key == "FlashpixVersion" || key == "TransferFunction" || key == "GPSProcessingMethod" ||
+        key == "GPSAreaInformation";
+}
+
+int ExifMetadata::GetValueByType(const std::string &key, MetadataValue &value) const
+{
+    IMAGE_LOGD("Retrieving value for key: %{public}s", key.c_str());
+    MetadataValue tmpValue;
+    bool cond = exifData_ == nullptr;
+    CHECK_ERROR_RETURN_RET_LOG(cond, ERR_IMAGE_DECODE_EXIF_UNSUPPORT,
+        "Exif data is null for key: %{public}s", key.c_str());
+    if (!ExifMetadatFormatter::IsKeySupported(key)) {
+        IMAGE_LOGD("Key is not supported.");
+        return ERR_IMAGE_DECODE_EXIF_UNSUPPORT;
+    }
+    
+    if ((key.size() > KEY_SIZE && key.substr(0, KEY_SIZE) == "Hw") || IsSpecialHwKey(key)) {
+        int errorCode = HandleHwMnoteByType(key, tmpValue);
+        value = tmpValue;
+        return errorCode;
+    } else {
+        auto tag = exif_tag_from_name(key.c_str());
+        ExifEntry *entry = GetEntry(key);
+        CHECK_DEBUG_RETURN_RET_LOG(entry == nullptr, ERR_IMAGE_DECODE_EXIF_UNSUPPORT,
+            "Exif data entry returned null for key: %{public}s, tag: %{public}d", key.c_str(), tag);
+        IMAGE_LOGD("Using exif_entry_get_value for key: %{public}s, tag: %{public}d", key.c_str(), entry->tag);
+        unsigned int tagValueSize = CalculateTagValueSize(entry);
+        if (IsSpecialKey(key)) {
+            char tagValueChar[tagValueSize];
+            exif_entry_get_value(entry, tagValueChar, sizeof(tagValueChar));
+            value.stringValue = tagValueChar;
+            return SUCCESS;
+        }
+        GetValueByExifType(entry, tmpValue, tagValueSize);
+    }
+    if (ExifMetadatFormatter::IsSensitiveInfo(key)) {
+        IMAGE_LOGD("Retrieved value for key: %{public}s success", key.c_str());
+    } else {
+        IMAGE_LOGD("Retrieved value for key: %{public}s", key.c_str());
+    }
+    value = tmpValue;
     return SUCCESS;
 }
 
@@ -322,6 +1003,92 @@ std::shared_ptr<ExifMetadata> ExifMetadata::Clone()
         dataBlob = nullptr;
     }
     return exifDataPtr;
+}
+
+bool ExifMetadata::GetDataSize(uint32_t &size, bool withThumbnail, bool isJpeg)
+{
+    CHECK_ERROR_RETURN_RET_LOG(exifData_ == nullptr, false, "%{public}s: exifData_ is nullptr", __func__);
+
+    ScopeRestorer<unsigned char *> thumbDataRestorer(exifData_->data);
+    ScopeRestorer<unsigned int> thumbSizeRestorer(exifData_->size);
+
+    // remove thumbnail data temporarily
+    if (!withThumbnail) {
+        thumbDataRestorer.SetValue(nullptr);
+        thumbSizeRestorer.SetValue(0);
+    }
+
+    unsigned char *dataBlob = nullptr;
+    uint32_t dataSize = 0;
+    if (isJpeg) {
+        TiffParser::EncodeJpegExif(&dataBlob, dataSize, exifData_);
+    } else {
+        TiffParser::Encode(&dataBlob, dataSize, exifData_);
+    }
+
+    CHECK_ERROR_RETURN_RET_LOG(dataBlob == nullptr, false, "%{public}s: TiffParser encode failed", __func__);
+    size = dataSize;
+
+    // release encoded data blob
+    if (dataBlob != nullptr) {
+        free(dataBlob);
+        dataBlob = nullptr;
+    }
+
+    IMAGE_LOGD("%{public}s: exif data size: %{public}u", __func__, size);
+    return true;
+}
+
+bool ExifMetadata::HasThumbnail()
+{
+    CHECK_ERROR_RETURN_RET_LOG(exifData_ == nullptr, false, "%{public}s: exifData_ is nullptr", __func__);
+    return exifData_->data != nullptr && exifData_->size != 0;
+}
+
+bool ExifMetadata::GetThumbnail(uint8_t *&data, uint32_t &size)
+{
+    CHECK_ERROR_RETURN_RET_LOG(exifData_ == nullptr, false, "%{public}s: exifData_ is nullptr", __func__);
+    data = reinterpret_cast<uint8_t *>(exifData_->data);
+    size = static_cast<uint32_t>(exifData_->size);
+    IMAGE_LOGD("%{public}s: size: %{public}u", __func__, size);
+    CHECK_ERROR_RETURN_RET(data == nullptr || size == 0, false);
+    return true;
+}
+
+bool ExifMetadata::SetThumbnail(uint8_t *data, const uint32_t &size)
+{
+    CHECK_ERROR_RETURN_RET_LOG(exifData_ == nullptr, false, "%{public}s: exifData_ is nullptr", __func__);
+    CHECK_ERROR_RETURN_RET_LOG(data == nullptr || size == 0, false, "%{public}s: data or size is invalid", __func__);
+
+    // Free old thumbnail memory if it exists
+    CHECK_ERROR_RETURN_RET_LOG(!DropThumbnail(), false, "%{public}s: Drop thumbnail failed", __func__);
+    // Allocate a new memory for thumbnail.
+    ExifMem* mem = exif_data_get_priv_mem(exifData_);
+    CHECK_ERROR_RETURN_RET_LOG(mem == nullptr, false, "%{public}s: GetExif mem allocator failed", __func__);
+    exifData_->data = static_cast<unsigned char *>(exif_mem_alloc(mem, size));
+    CHECK_ERROR_RETURN_RET_LOG(exifData_->data == nullptr, false,
+        "%{public}s: exif_mem_alloc failed, size: %{public}u", __func__, size);
+    memcpy_s(exifData_->data, size, data, size);
+    exifData_->size = size;
+    IMAGE_LOGI("%{public}s success! size: %{public}u", __func__, size);
+    return true;
+}
+
+bool ExifMetadata::DropThumbnail()
+{
+    bool cond = exifData_ == nullptr;
+    CHECK_ERROR_RETURN_RET_LOG(cond, false, "%{public}s: exifData_ is nullptr", __func__);
+    if (!HasThumbnail()) {
+        IMAGE_LOGD("%{public}s: No thumbnail to drop", __func__);
+        return true;
+    }
+    ExifMem* mem = exif_data_get_priv_mem(exifData_);
+    CHECK_ERROR_RETURN_RET_LOG(mem == nullptr, false, "%{public}s: GetExif mem allocator failed", __func__);
+    exif_mem_free(mem, exifData_->data);
+    exifData_->data = nullptr;
+    exifData_->size = 0;
+    IMAGE_LOGD("%{public}s: Drop thumbnail success", __func__);
+    return true;
 }
 
 ExifEntry *ExifMetadata::CreateEntry(const std::string &key, const ExifTag &tag, const size_t valueLen)
@@ -745,6 +1512,34 @@ ExifMnoteData* ExifMetadata::GetHwMnoteData(bool &isNewMaker)
     return md;
 }
 
+bool ExifMetadata::SetBlobValue(const MetadataValue &properties)
+{
+    std::string key = properties.key;
+    const std::vector<uint8_t>& blobData = properties.bufferValue;
+    size_t blobSize = blobData.size();
+    ExifEntry* entry = GetEntry(key, blobSize);
+    bool cond = entry == nullptr;
+    CHECK_ERROR_RETURN_RET_LOG(cond, false, "Failed to get/create entry for key: %{public}s", key.c_str());
+
+    cond = entry->parent == nullptr || entry->parent->parent == nullptr;
+    CHECK_ERROR_RETURN_RET_LOG(cond, false, "Invalid EXIF hierarchy for key: %{public}s", key.c_str());
+    CHECK_ERROR_RETURN_RET_LOG(entry->format != EXIF_FORMAT_UNDEFINED, false,
+        "Unsupported format for blob data, key: %{public}s (format: %{public}d)", key.c_str(), entry->format);
+    CHECK_ERROR_RETURN_RET_LOG(blobSize == 0 || blobSize > MAX_TAG_VALUE_SIZE_FOR_STR, false,
+        "Set invalid blob for key: %{public}s", key.c_str());
+    if (entry->data != nullptr) {
+        free(entry->data);
+        entry->data = nullptr;
+    }
+    entry->data = reinterpret_cast<unsigned char*>(malloc(blobSize));
+    cond = entry->data == nullptr;
+    CHECK_ERROR_RETURN_RET_LOG(cond, false, "Memory allocation failed for blob data. Size: %zu", blobSize);
+    memcpy_s(entry->data, blobSize, blobData.data(), blobSize);
+    entry->size = static_cast<uint32_t>(blobSize);
+    IMAGE_LOGD("Set blob data for key: %{public}s, size: %zu", key.c_str(), blobSize);
+    return true;
+}
+
 bool ExifMetadata::SetCommonValue(const std::string &key, const std::string &value)
 {
     size_t valueLen = value.length();
@@ -965,6 +1760,7 @@ bool ExifMetadata::RemoveExifThumbnail()
     bool cond = exifData_ == nullptr;
     CHECK_ERROR_RETURN_RET(cond, false);
     exifData_->remove_thumbnail = 1;
+    IMAGE_LOGD("%{public}s set remove exif thumbnail flag", __func__);
     return true;
 }
 
@@ -1041,6 +1837,83 @@ bool ExifMetadata::ExtractXmageCoordinates(XmageCoordinateMetadata& coordMetadat
             "Some fields are missing or invalid.");
         return false; // If any field is invalid, return false
     }
+}
+
+uint32_t ExifMetadata::GetBlobSize()
+{
+    CHECK_ERROR_RETURN_RET_LOG(exifData_ == nullptr, 0, "Exif data is null");
+    unsigned int size = 0;
+    unsigned char* data = nullptr;
+    exif_data_save_data(exifData_, &data, &size);
+    if (data != nullptr) {
+        free(data);
+    }
+    return static_cast<uint32_t>(size);
+}
+
+uint32_t ExifMetadata::GetBlob(uint32_t bufferSize, uint8_t* dst)
+{
+    CHECK_ERROR_RETURN_RET_LOG(exifData_ == nullptr || dst == nullptr, ERR_IMAGE_INVALID_PARAMETER,
+        "GetBlob failed: exifData_ is null or dst is null");
+    unsigned char* exifBlob = nullptr;
+    unsigned int exifSize = 0;
+    exif_data_save_data(exifData_, &exifBlob, &exifSize);
+    const uint32_t blobSize = static_cast<uint32_t>(exifSize);
+    if (exifBlob == nullptr || blobSize == 0) {
+        IMAGE_LOGW("GetBlob failed: empty EXIF data");
+        if (exifBlob) {
+            free(exifBlob);
+        }
+        return ERR_IMAGE_DECODE_EXIF_UNSUPPORT;
+    }
+    if (bufferSize < blobSize) {
+        IMAGE_LOGE("Buffer too small for blob data (%u < %u)", bufferSize, blobSize);
+        free(exifBlob);
+        return ERR_MEDIA_BUFFER_TOO_SMALL;
+    }
+    errno_t copyResult = memcpy_s(dst, bufferSize, exifBlob, blobSize);
+    free(exifBlob);
+    CHECK_ERROR_RETURN_RET_LOG(copyResult != EOK, ERR_IMAGE_INVALID_PARAMETER,
+        "Failed to copy blob data: %{public}d", copyResult);
+    return SUCCESS;
+}
+
+uint32_t ExifMetadata::SetBlob(const uint8_t* source, uint32_t bufferSize)
+{
+    CHECK_ERROR_RETURN_RET_LOG(source == nullptr, ERR_IMAGE_INVALID_PARAMETER, "SetBlob failed: source is null");
+    CHECK_ERROR_RETURN_RET_LOG(bufferSize == 0 || bufferSize > MAX_TAG_VALUE_SIZE_FOR_STR, ERR_IMAGE_INVALID_PARAMETER,
+        "Invalid blob size: %{public}u (max: %{public}u)", bufferSize, MAX_TAG_VALUE_SIZE_FOR_STR);
+    if (exifData_ != nullptr) {
+        exif_data_unref(exifData_);
+        exifData_ = nullptr;
+    }
+    IMAGE_LOGD("SetBlob: Input buffer size = %u bytes", bufferSize);
+    exifData_ = exif_data_new();
+    CHECK_ERROR_RETURN_RET_LOG(exifData_ == nullptr, ERR_MEDIA_MALLOC_FAILED,
+        "Failed to create EXIF data structure");
+    exif_data_unset_option(exifData_, EXIF_DATA_OPTION_FOLLOW_SPECIFICATION);
+    exif_data_unset_option(exifData_, EXIF_DATA_OPTION_IGNORE_UNKNOWN_TAGS);
+    exif_data_load_data(exifData_, source, bufferSize);
+    return SUCCESS;
+}
+
+PropertyValueType ExifMetadata::GetPropertyValueType(const std::string& key)
+{
+    for (const auto& typeMapPair : GetPropertyTypeMapping()) {
+        const auto& valueMap = typeMapPair.second;
+        auto iter = valueMap.find(key);
+        if (iter != valueMap.end()) {
+            return iter->second;
+        }
+    }
+    return PropertyValueType::UNKNOWN;
+}
+
+std::shared_ptr<ExifMetadata> ExifMetadata::InitExifMetadata()
+{
+    ExifData* exifData = exif_data_new();
+    CHECK_ERROR_RETURN_RET(exifData == nullptr, nullptr);
+    return std::make_shared<ExifMetadata>(exifData);
 }
 } // namespace Media
 } // namespace OHOS

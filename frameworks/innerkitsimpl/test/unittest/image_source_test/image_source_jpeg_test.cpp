@@ -45,6 +45,7 @@ namespace OHOS {
 namespace Multimedia {
 static constexpr uint32_t DEFAULT_DELAY_UTIME = 10000;  // 10 ms.
 static const std::string IMAGE_INPUT_JPEG_PATH = "/data/local/tmp/image/test.jpg";
+static const std::string IMAGE_INPUT_JPEG_PROGRESSIVE_PATH = "/data/local/tmp/image/progressivejpg.jpg";
 static const std::string IMAGE_INPUT_HW_JPEG_PATH = "/data/local/tmp/image/test_hw.jpg";
 static const std::string IMAGE_INPUT_EXIF_JPEG_PATH = "/data/local/tmp/image/test_exif.jpg";
 static const std::string IMAGE_OUTPUT_JPEG_FILE_PATH = "/data/test/test_file.jpg";
@@ -3595,6 +3596,40 @@ HWTEST_F(ImageSourceJpegTest, GetEncodedFormat003, TestSize.Level3)
     pixelMap->GetImageInfo(imageinfo2);
     EXPECT_EQ(imageinfo2.encodedFormat.empty(), false);
     ASSERT_EQ(imageinfo2.encodedFormat, IMAGE_ENCODEDFORMAT);
+}
+
+/**
+ * @tc.name: IsJpegProgressive001
+ * @tc.desc: Test whether the jpeg image is progressive
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageSourceJpegTest, IsJpegProgressive001, TestSize.Level3)
+{
+    uint32_t errorCode = 0;
+    SourceOptions opts;
+    std::unique_ptr<ImageSource> imageSource =
+        ImageSource::CreateImageSource(IMAGE_INPUT_JPEG_PATH, opts, errorCode);
+    ASSERT_EQ(errorCode, SUCCESS);
+    ASSERT_NE(imageSource.get(), nullptr);
+    bool isJpegProgressive = imageSource->IsJpegProgressive(errorCode);
+    ASSERT_EQ(isJpegProgressive, false);
+}
+
+/**
+ * @tc.name: IsJpegProgressive002
+ * @tc.desc: Test whether the jpeg image is progressive
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageSourceJpegTest, IsJpegProgressive002, TestSize.Level3)
+{
+    uint32_t errorCode = 0;
+    SourceOptions opts;
+    std::unique_ptr<ImageSource> imageSource =
+        ImageSource::CreateImageSource(IMAGE_INPUT_JPEG_PROGRESSIVE_PATH, opts, errorCode);
+    ASSERT_EQ(errorCode, SUCCESS);
+    ASSERT_NE(imageSource.get(), nullptr);
+    bool isJpegProgressive = imageSource->IsJpegProgressive(errorCode);
+    ASSERT_EQ(isJpegProgressive, true);
 }
 } // namespace Multimedia
 } // namespace OHOS

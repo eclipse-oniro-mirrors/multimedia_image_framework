@@ -183,6 +183,11 @@ typedef enum {
     IMAGE_UNKNOWN_MIME_TYPE = 7600102,
     /** too large data or image */
     IMAGE_TOO_LARGE = 7600103,
+    /**
+     * @error Failed to get image data.
+     * @since 23
+     */
+    IMAGE_GET_IMAGE_DATA_FAILED = 7600104,
     /** @error DMA memory does not exist */
     IMAGE_DMA_NOT_EXIST = 7600173,
     /** @error DMA operation failed */
@@ -257,6 +262,10 @@ typedef enum {
     IMAGE_DECODE_FAILED = 7700301,
     /** memory allocation failed */
     IMAGE_SOURCE_ALLOC_FAILED = 7700302,
+    /** not carry thumbnail  */
+    IMAGE_SOURCE_NOT_CARRY_THUMBNAIL = 7700303,
+    /** generate thumbnail failed */
+    IMAGE_SOURCE_GENERATE_THUMBNAIL_FAILED = 7700305,
     /**
      * @error Invalid parameter for ImagePacker.
      * @since 19

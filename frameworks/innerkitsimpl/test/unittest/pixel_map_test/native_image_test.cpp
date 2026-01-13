@@ -17,6 +17,7 @@
 #define protected public
 #include <gtest/gtest.h>
 #include "media_errors.h"
+#include "metadata_helper.h"
 #include "native_image.h"
 #include "image_creator.h"
 #include "surface_buffer.h"
@@ -24,12 +25,15 @@
 #include "sync_fence.h"
 
 using namespace testing::ext;
+using namespace OHOS::HDI::Display::Graphic::Common::V1_0;
 namespace OHOS {
 namespace Media {
 const std::string DATA_SIZE_TAG = "dataSize";
 static constexpr int32_t NUMI_0 = 0;
 static constexpr uint32_t NUM_0 = 0;
+static constexpr int32_t NUM_1 = 1;
 static constexpr int32_t NUMI_2 = 2;
+static constexpr int32_t NUMI_4 = 4;
 static constexpr uint32_t BUFFER_SIZE_1000 = 1000;
 static constexpr uint32_t BUFFER_SIZE_100 = 100;
 static constexpr uint32_t BUFFER_SIZE_10 = 10;
@@ -145,7 +149,13 @@ public:
     GSError InvalidateCache() override { return GSERROR_OK; }
     GSError SetMetadata(uint32_t key, const std::vector<uint8_t>& value, bool enableCache = true) override
         { return GSERROR_OK; }
-    GSError GetMetadata(uint32_t key, std::vector<uint8_t>& value) override { return GSERROR_OK; }
+    GSError GetMetadata(uint32_t key, std::vector<uint8_t>& value) override
+    {
+        CM_ColorSpaceType type = CM_ColorSpaceType::CM_BT601_EBU_FULL;
+        CM_ColorSpaceInfo info;
+        MetadataHelper::ConvertColorSpaceTypeToInfo(type, info);
+        return MetadataHelper::ConvertMetadataToVec(info, value);
+    }
     GSError ListMetadataKeys(std::vector<uint32_t>& keys) override { return GSERROR_NOT_SUPPORT; }
     GSError EraseMetadataKey(uint32_t key) override { return GSERROR_NOT_SUPPORT; }
     OH_NativeBuffer* SurfaceBufferToNativeBuffer() override { return nullptr; }
@@ -160,6 +170,11 @@ private:
     int32_t mockWidth_ = 0;
     int32_t mockHeight_ = 0;
     sptr<BufferExtraData> mockExtraData_ = nullptr;
+};
+
+class MockSurfaceBufferGetMetadataFail : public MockSurfaceBuffer {
+public:
+    GSError GetMetadata(uint32_t key, std::vector<uint8_t>& value) { return GSERROR_API_FAILED; }
 };
 
 /**
@@ -990,6 +1005,127 @@ HWTEST_F(NativeImageTest, Release001, TestSize.Level3)
     ASSERT_EQ(image.buffer_, nullptr);
     ASSERT_EQ(image.releaser_, nullptr);
     GTEST_LOG_(INFO) << "NativeImageTest: Release001 end";
+}
+
+/**
+ * @tc.name: GetColorSpaceTest001
+ * @tc.desc: test GetColorSpace when buffer is not nullptr
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeImageTest, GetColorSpaceTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "NativeImageTest: GetColorSpaceTest001 start";
+    sptr<SurfaceBuffer> buffer = new MockSurfaceBuffer();
+    ASSERT_NE(buffer, nullptr);
+    std::shared_ptr<IBufferProcessor> releaser = nullptr;
+    NativeImage image(buffer, releaser);
+    int32_t colorSpace = 0;
+    auto ret = image.GetColorSpace(colorSpace);
+    EXPECT_EQ(colorSpace, static_cast<int32_t>(CM_ColorSpaceType::CM_BT601_EBU_FULL));
+    EXPECT_EQ(ret, SUCCESS);
+    GTEST_LOG_(INFO) << "NativeImageTest: GetColorSpaceTest001 end";
+}
+
+/**
+ * @tc.name: GetColorSpaceTest002
+ * @tc.desc: test GetColorSpace when buffer is nullptr
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeImageTest, GetColorSpaceTest002, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "NativeImageTest: GetColorSpaceTest002 start";
+    sptr<SurfaceBuffer> buffer = nullptr;
+    std::shared_ptr<IBufferProcessor> releaser = nullptr;
+    NativeImage image(buffer, releaser);
+    int32_t colorSpace = 0;
+    auto ret = image.GetColorSpace(colorSpace);
+    EXPECT_EQ(ret, ERR_MEDIA_DEAD_OBJECT);
+    GTEST_LOG_(INFO) << "NativeImageTest: GetColorSpaceTest002 end";
+}
+
+/**
+ * @tc.name: GetColorSpaceTest003
+ * @tc.desc: test GetColorSpace when get color space type failed
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeImageTest, GetColorSpaceTest003, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "NativeImageTest: GetColorSpaceTest003 start";
+    sptr<SurfaceBuffer> buffer = new MockSurfaceBufferGetMetadataFail();
+    ASSERT_NE(buffer, nullptr);
+    std::shared_ptr<IBufferProcessor> releaser = nullptr;
+    NativeImage image(buffer, releaser);
+    int32_t colorSpace = 0;
+    auto ret = image.GetColorSpace(colorSpace);
+    EXPECT_EQ(ret, ERR_MEDIA_DATA_UNSUPPORT);
+    GTEST_LOG_(INFO) << "NativeImageTest: GetColorSpaceTest003 end";
+}
+
+
+/**
+ * @tc.name: GetBufferDataTest001
+ * @tc.desc: test GetBufferData when buffer is not nullptr
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeImageTest, GetBufferDataTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "NativeImageTest: GetBufferDataTest001 start";
+    sptr<SurfaceBuffer> buffer = SurfaceBuffer::Create();
+    ASSERT_NE(buffer, nullptr);
+    BufferHandle* handle = new BufferHandle();
+    handle->width = SIZE_WIDTH;
+    handle->format = GraphicPixelFormat::GRAPHIC_PIXEL_FMT_RGBA_8888;
+    int32_t* data = new int32_t;
+    handle->size = sizeof(*data);
+    handle->stride = SIZE_WIDTH;
+    *data = NUM_1;
+    handle->virAddr = data;
+    buffer->SetBufferHandle(handle);
+    std::shared_ptr<IBufferProcessor> releaser = nullptr;
+    NativeImage image(buffer, releaser);
+    NativeBufferData* bufferData = image.GetBufferData();
+    ASSERT_NE(bufferData, nullptr);
+    EXPECT_EQ(bufferData->rowStride[NUM_0], SIZE_WIDTH);
+    EXPECT_EQ(bufferData->pixelStride[NUM_0], NUMI_4);
+    EXPECT_EQ(bufferData->size, sizeof(int32_t));
+    ASSERT_NE(bufferData->virAddr, nullptr);
+    int32_t* bufData = reinterpret_cast<int32_t*>(bufferData->virAddr);
+    EXPECT_EQ(*bufData, NUM_1);
+    delete data;
+    GTEST_LOG_(INFO) << "NativeImageTest: GetBufferDataTest001 end";
+}
+
+/**
+ * @tc.name: GetBufferDataTest002
+ * @tc.desc: test GetBufferData when the buffer data already exists in the cache
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeImageTest, GetBufferDataTest002, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "NativeImageTest: GetBufferDataTest002 start";
+    sptr<SurfaceBuffer> buffer = nullptr;
+    std::shared_ptr<IBufferProcessor> releaser = nullptr;
+    NativeImage image(buffer, releaser);
+    image.bufferData_ = std::make_unique<NativeBufferData>();
+    NativeBufferData* bufferData = image.GetBufferData();
+    EXPECT_EQ(bufferData, image.bufferData_.get());
+    GTEST_LOG_(INFO) << "NativeImageTest: GetBufferDataTest002 end";
+}
+
+/**
+ * @tc.name: GetBufferDataTest003
+ * @tc.desc: test GetBufferData when buffer is nullptr
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeImageTest, GetBufferDataTest003, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "NativeImageTest: GetBufferDataTest003 start";
+    sptr<SurfaceBuffer> buffer = nullptr;
+    std::shared_ptr<IBufferProcessor> releaser = nullptr;
+    NativeImage image(buffer, releaser);
+    NativeBufferData* bufferData = image.GetBufferData();
+    EXPECT_EQ(bufferData, nullptr);
+    GTEST_LOG_(INFO) << "NativeImageTest: GetBufferDataTest003 end";
 }
 }
 }

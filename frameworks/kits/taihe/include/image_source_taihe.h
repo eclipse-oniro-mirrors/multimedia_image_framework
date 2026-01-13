@@ -56,16 +56,17 @@ public:
     array<int32_t> GetDisposalTypeListSync();
     int32_t GetFrameCountSync();
     string GetImagePropertyReturnsPromise(PropertyKey key, optional_view<ImagePropertyOptions> options);
-    map<PropertyKey, PropertyValue> GetImagePropertiesSync(array_view<PropertyKey> key);
+    map<string, PropertyValue> GetImagePropertiesSync(array_view<PropertyKey> key);
     optional<string> GetImagePropertySync(PropertyKey key);
     void ModifyImagePropertySync(PropertyKey key, string_view value);
-    void ModifyImagePropertiesSync(map_view<PropertyKey, PropertyValue> records);
+    void ModifyImagePropertiesSync(map_view<string, PropertyValue> records);
     void ModifyImagePropertiesEnhancedSync(map_view<string, PropertyValue> records);
     void UpdateDataSync(array_view<uint8_t> buf, bool isFinished, int32_t offset, int32_t length);
     void ReleaseSync();
 #if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
     optional<Picture> CreatePictureSync(optional_view<DecodingOptionsForPicture> options);
     optional<Picture> CreatePictureAtIndexSync(int32_t index);
+    optional<PixelMap> CreateThumbnailSync(optional_view<DecodingOptionsForThumbnail> options);
 #endif
 
     array<string> GetSupportedFormats();

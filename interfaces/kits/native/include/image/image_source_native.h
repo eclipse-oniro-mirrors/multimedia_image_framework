@@ -421,6 +421,81 @@ Image_ErrorCode OH_DecodingOptions_SetDesiredColorSpace(OH_DecodingOptions *opti
 Image_ErrorCode OH_DecodingOptions_Release(OH_DecodingOptions *options);
 
 /**
+ * @brief Defines the options for decoding the thumbnail.
+ * It is used in {@link OH_ImageSourceNative_CreateThumbnail}.
+ *
+ * @since 22
+ */
+struct OH_DecodingOptionsForThumbnail;
+typedef struct OH_DecodingOptionsForThumbnail OH_DecodingOptionsForThumbnail;
+
+/**
+ * @brief Create a pointer for DecodingOptionsForThumbnail struct.
+ *
+ * @param options The DecodingOptionsForThumbnail pointer will be operated.
+ * @return Image functions result code.
+ *         {@link IMAGE_SUCCESS} if the execution is successful.
+ *         {@link IMAGE_BAD_PARAMETER} options is nullptr.
+ * @since 22
+ */
+Image_ErrorCode OH_DecodingOptionsForThumbnail_Create(OH_DecodingOptionsForThumbnail **options);
+
+/**
+ * @brief Get desiredSize number for DecodingOptionsForThumbnail struct.
+ *
+ * @param options The DecodingOptionsForThumbnail pointer will be operated.
+ * @param desiredSize The number of image desiredSize.
+ * @return Returns {@link Image_ErrorCode}
+ * @since 22
+ */
+Image_ErrorCode OH_DecodingOptionsForThumbnail_GetDesiredSize(OH_DecodingOptionsForThumbnail *options,
+    Image_Size *desiredSize);
+
+/**
+ * @brief Set desiredSize number for DecodingOptionsForThumbnail struct.
+ *
+ * @param options The DecodingOptionsForThumbnail pointer will be operated.
+ * @param desiredSize The number of image desiredSize.
+ * @return Returns {@link Image_ErrorCode}
+ * @since 22
+ */
+Image_ErrorCode OH_DecodingOptionsForThumbnail_SetDesiredSize(OH_DecodingOptionsForThumbnail *options,
+    Image_Size *desiredSize);
+
+/**
+ * @brief Get needGenerate number for DecodingOptionsForThumbnail struct.
+ *
+ * @param options The DecodingOptionsForThumbnail pointer will be operated.
+ * @param needGenerate Whether the thumbnail should be generated, if the image does not have a thumbnail.
+ *        Default is false.
+ * @return Returns {@link Image_ErrorCode}
+ * @since 22
+ */
+Image_ErrorCode OH_DecodingOptionsForThumbnail_GetNeedGenerate(OH_DecodingOptionsForThumbnail *options,
+    bool *needGenerate);
+
+/**
+ * @brief Set needGenerate number for DecodingOptionsForThumbnail struct.
+ *
+ * @param options The DecodingOptionsForThumbnail pointer will be operated.
+ * @param needGenerate Whether the thumbnail should be generated, if the image does not have a thumbnail.
+ *        Default is false.
+ * @return Returns {@link Image_ErrorCode}
+ * @since 22
+ */
+Image_ErrorCode OH_DecodingOptionsForThumbnail_SetNeedGenerate(OH_DecodingOptionsForThumbnail *options,
+    bool *needGenerate);
+
+/**
+ * @brief Delete DecodingOptionsForThumbnail pointer.
+ *
+ * @param options The DecodingOptionsForThumbnail pointer will be operated.
+ * @return Returns {@link Image_ErrorCode}
+ * @since 22
+ */
+Image_ErrorCode OH_DecodingOptionsForThumbnail_Release(OH_DecodingOptionsForThumbnail *options);
+
+/**
  * @brief Creates an ImageSource pointer.
  *
  * @param uri Indicates a pointer to the image source URI. Only a file URI or Base64 URI is accepted.
@@ -540,6 +615,88 @@ Image_ErrorCode OH_ImageSourceNative_CreatePixelmapList(OH_ImageSourceNative *so
  */
 Image_ErrorCode OH_ImageSourceNative_CreatePicture(OH_ImageSourceNative *source, OH_DecodingOptionsForPicture *options,
     OH_PictureNative **picture);
+
+/**
+ * @brief Create Thumbnail pointer from ImageSource
+ * based on the specified {@link OH_DecodingOptionsForThumbnail} struct.
+ *
+ * @param source Indicates a void pointer(from ImageSource pointer convert).
+ * @param options Indicates a pointer to the options for decoding the image source.
+ * For details, see {@link OH_DecodingOptionsForThumbnail}.
+ * @param needGenerate Indicates whether the thumbnail needs to be generated.
+ * @param pixelMap Indicates a void pointer to the <b>Thumbnail Pixelmap</b> object obtained at the C++ native layer.
+ * @return Image functions result code.
+ *         {@link IMAGE_SUCCESS} if the execution is successful.
+ *         {@link IMAGE_BAD_PARAMETER} source is nullptr, or pixelmap is nullptr.
+ *         {@link IMAGE_DECODE_FAILED} decode failed.
+ * @since 22
+ */
+Image_ErrorCode OH_ImageSourceNative_CreateThumbnail(OH_ImageSourceNative *source,
+    OH_DecodingOptionsForThumbnail *options, OH_PixelmapNative **pixelmap);
+
+/**
+ * @brief Create a pointer for DecodingOptionsForThumbnail struct.
+ *
+ * @param options The DecodingOptionsForThumbnail pointer will be operated.
+ * @return Image functions result code.
+ *         {@link IMAGE_SUCCESS} if the execution is successful.
+ *         {@link IMAGE_BAD_PARAMETER} options is nullptr.
+ * @since 16
+ */
+Image_ErrorCode OH_DecodingOptionsForThumbnail_Create(OH_DecodingOptionsForThumbnail **options);
+
+/**
+ * @brief Get desiredSize number for DecodingOptionsForThumbnail struct.
+ *
+ * @param  options The DecodingOptionsForThumbnail pointer will be operated.
+ * @param desiredSize the number of image desiredSize.
+ * @return Returns {@link Image_ErrorCode}
+ * @since 16
+ */
+Image_ErrorCode OH_DecodingOptionsForThumbnail_GetDesiredSize(OH_DecodingOptionsForThumbnail *options,
+    Image_Size *desiredSize);
+
+/**
+ * @brief Set desiredSize number for DecodingOptionsForThumbnail struct.
+ *
+ * @param  options The DecodingOptionsForThumbnail pointer will be operated.
+ * @param desiredSize the number of image desiredSize.
+ * @return Returns {@link Image_ErrorCode}
+ * @since 16
+ */
+Image_ErrorCode OH_DecodingOptionsForThumbnail_SetDesiredSize(OH_DecodingOptionsForThumbnail *options,
+    Image_Size *desiredSize);
+
+/**
+ * @brief Get needGenerate number for DecodingOptionsForThumbnail struct.
+ *
+ * @param  options The DecodingOptionsForThumbnail pointer will be operated.
+ * @param needGenerate the number of image needGenerate.
+ * @return Returns {@link Image_ErrorCode}
+ * @since 16
+ */
+Image_ErrorCode OH_DecodingOptionsForThumbnail_GetNeedGenerate(OH_DecodingOptionsForThumbnail *options,
+    bool *needGenerate);
+
+/**
+ * @brief Set needGenerate number for DecodingOptionsForThumbnail struct.
+ *
+ * @param  options The DecodingOptionsForThumbnail pointer will be operated.
+ * @param needGenerate the number of image needGenerate.
+ * @return Returns {@link Image_ErrorCode}
+ * @since 16
+ */
+Image_ErrorCode OH_DecodingOptionsForThumbnail_SetNeedGenerate(OH_DecodingOptionsForThumbnail *options,
+    bool *needGenerate);
+
+/**
+ * @brief delete DecodingOptionsForThumbnail pointer.
+ *
+ * @param  options The DecodingOptionsForThumbnail pointer will be operated.
+ * @return Returns {@link Image_ErrorCode}
+ * @since 16
+ */
+Image_ErrorCode OH_DecodingOptionsForThumbnail_Release(OH_DecodingOptionsForThumbnail *options);
 
 /**
  * @brief Decodes an image at the specified index into a Picture object.
@@ -707,6 +864,238 @@ Image_ErrorCode OH_DecodingOptionsForPicture_Release(OH_DecodingOptionsForPictur
   * @since 20
  */
 Image_ErrorCode OH_ImageSourceNative_GetSupportedFormats(Image_MimeType** supportedFormat, size_t* length);
+
+/**
+ * @brief Obtains the value of an image property as short int type.
+ *
+ * @param source ImageSource from which the property is queried.
+ * @param key The property to be queried.
+ * @param value Query result. Output Parameter.
+ * @return Returns One of the following result codes: 
+ *         {@link IMAGE_SUCCESS} if the execution is successful.
+ *         {@link IMAGE_SOURCE_INVALID_PARAMETER} if source, key or value is nullptr.
+ *         {@link IMAGE_SOURCE_UNSUPPORTED_MIME_TYPE} if query image property of current mimetype is not supported.
+ *         {@link IMAGE_SOURCE_UNSUPPORTED_METADATA} if indicated metadata doesn't exist, or is not a short int value.
+ * @since 23
+ */
+Image_ErrorCode OH_ImageSourceNative_GetImagePropertyShort(OH_ImageSourceNative *source,
+    Image_String *key, uint16_t *value);
+
+/**
+ * @brief Obtains the value of an image property as long int type.
+ *
+ * @param source ImageSource from which the property is queried.
+ * @param key The property to be queried.
+ * @param value Query result. Output Parameter.
+ * @return Returns One of the following result codes: 
+ *         {@link IMAGE_SUCCESS} if the execution is successful.
+ *         {@link IMAGE_SOURCE_INVALID_PARAMETER} if source, key or value is nullptr.
+ *         {@link IMAGE_SOURCE_UNSUPPORTED_MIME_TYPE} if query image property of current mimetype is not supported.
+ *         {@link IMAGE_SOURCE_UNSUPPORTED_METADATA} if indicated metadata doesn't exist, or is not a long int value.
+ * @since 23
+ */
+Image_ErrorCode OH_ImageSourceNative_GetImagePropertyLong(OH_ImageSourceNative *source,
+    Image_String *key, uint32_t *value);
+
+/**
+ * @brief Obtains the value of an image property as double type.
+ *
+ * @param source ImageSource from which the property is queried.
+ * @param key The property to be queried.
+ * @param value Query result. Output Parameter.
+ * @return Returns One of the following result codes: 
+ *         {@link IMAGE_SUCCESS} if the execution is successful.
+ *         {@link IMAGE_SOURCE_INVALID_PARAMETER} if source, key or value is nullptr.
+ *         {@link IMAGE_SOURCE_UNSUPPORTED_MIME_TYPE} if query image property of current mimetype is not supported.
+ *         {@link IMAGE_SOURCE_UNSUPPORTED_METADATA} if indicated metadata doesn't exist, or is not a double value.
+ * @since 23
+ */
+Image_ErrorCode OH_ImageSourceNative_GetImagePropertyDouble(OH_ImageSourceNative *source,
+    Image_String *key, double *value);
+
+/**
+ * @brief Gets the array length of an array type property or the string length of a string type property.
+ *
+ * @param source ImageSource from which the property is queried.
+ * @param key The property to be queried.
+ * @param size Array length for an array type property, string length for a string type property. Output Parameter.
+ * @return Returns One of the following result codes:
+ *         {@link IMAGE_SUCCESS} if the execution is successful.
+ *         {@link IMAGE_SOURCE_INVALID_PARAMETER} if source, key or size is nullptr.
+ *         {@link IMAGE_SOURCE_UNSUPPORTED_MIME_TYPE} if query image property of current mimetype is not supported.
+ *         {@link IMAGE_SOURCE_UNSUPPORTED_METADATA} if indicated metadata doesn't exist,
+ *         or is not a array\string value.
+ * @since 23
+ */
+Image_ErrorCode OH_ImageSourceNative_GetImagePropertyArraySize(OH_ImageSourceNative *source,
+    Image_String *key, size_t *size);
+
+/**
+ * @brief Obtains the value of an image property as string type.
+ *
+ * @param source ImageSource from which the property is queried.
+ * @param key The property to be queried.
+ * @param value Query result. Output Parameter. The caller needs to manage memory application and release.
+ * @param size String length.
+ * @return Returns One of the following result codes: 
+ *         {@link IMAGE_SUCCESS} if the execution is successful.
+ *         {@link IMAGE_SOURCE_INVALID_PARAMETER} if source, key, value or size is nullptr.
+ *         {@link IMAGE_SOURCE_UNSUPPORTED_MIME_TYPE} if query image property of current mimetype is not supported.
+ *         {@link IMAGE_SOURCE_UNSUPPORTED_METADATA} if indicated metadata doesn't exist, or is not a string value.
+ * @since 23
+ */
+Image_ErrorCode OH_ImageSourceNative_GetImagePropertyString(OH_ImageSourceNative *source,
+    Image_String *key, char *value, size_t size);
+
+/**
+ * @brief Obtains the value of an image property as int array.
+ *
+ * @param source ImageSource from which the property is queried.
+ * @param key The property to be queried.
+ * @param value Query result. Output Parameter. The caller needs to manage memory application and release.
+ * @param size Array length.
+ * @return Returns One of the following result codes: 
+ *         {@link IMAGE_SUCCESS} if the execution is successful.
+ *         {@link IMAGE_SOURCE_INVALID_PARAMETER} if source, key, value or size is nullptr.
+ *         {@link IMAGE_SOURCE_UNSUPPORTED_MIME_TYPE} if query image property of current mimetype is not supported.
+ *         {@link IMAGE_SOURCE_UNSUPPORTED_METADATA} if indicated metadata doesn't exist, or is not a int array.
+ * @since 23
+ */
+Image_ErrorCode OH_ImageSourceNative_GetImagePropertyIntArray(OH_ImageSourceNative *source,
+    Image_String *key, int32_t *value, size_t size);
+
+/**
+ * @brief Obtains the value of an image property as double array.
+ *
+ * @param source ImageSource from which the property is queried.
+ * @param key The property to be queried.
+ * @param value Query result. Output Parameter. The caller needs to manage memory application and release.
+ * @param size Array length.
+ * @return Returns One of the following result codes: 
+ *         {@link IMAGE_SUCCESS} if the execution is successful.
+ *         {@link IMAGE_SOURCE_INVALID_PARAMETER} if source, key, value or size is nullptr.
+ *         {@link IMAGE_SOURCE_UNSUPPORTED_MIME_TYPE} if query image property of current mimetype is not supported.
+ *         {@link IMAGE_SOURCE_UNSUPPORTED_METADATA} if indicated metadata doesn't exist, or is not a double array.
+ * @since 23
+ */
+Image_ErrorCode OH_ImageSourceNative_GetImagePropertyDoubleArray(OH_ImageSourceNative *source,
+    Image_String *key, double *value, size_t size);
+
+/**
+ * @brief Obtains the value of an image property as blob.
+ *
+ * @param source ImageSource from which the property is queried.
+ * @param key The property to be queried.
+ * @param value Query result. Output Parameter. The caller needs to manage memory application and release.
+ * @param size Array length.
+ * @return Returns One of the following result codes: 
+ *         {@link IMAGE_SUCCESS} if the execution is successful.
+ *         {@link IMAGE_SOURCE_INVALID_PARAMETER} if source, key, value or size is nullptr.
+ *         {@link IMAGE_SOURCE_UNSUPPORTED_MIME_TYPE} if query image property of current mimetype is not supported.
+ *         {@link IMAGE_SOURCE_UNSUPPORTED_METADATA} if indicated metadata doesn't exist, or is not a blob.
+ * @since 23
+ */
+Image_ErrorCode OH_ImageSourceNative_GetImagePropertyBlob(OH_ImageSourceNative *source, Image_String *key,
+    void *value, size_t size);
+
+/**
+ * @brief Modify the value of an image property as short int.
+ *
+ * @param source ImageSource from which the property is modified.
+ * @param key The property to be modified.
+ * @param value The value set to the property.
+ * @return Returns One of the following result codes: 
+ *         {@link IMAGE_SUCCESS} if the execution is successful.
+ *         {@link IMAGE_SOURCE_INVALID_PARAMETER} if source, key or value is nullptr.
+ *         {@link IMAGE_SOURCE_UNSUPPORTED_MIME_TYPE} if query image property of current mimetype is not supported.
+ *         {@link IMAGE_SOURCE_UNSUPPORTED_METADATA} if indicated metadata doesn't exist, or is not a short int.
+ * @since 23
+ */
+Image_ErrorCode OH_ImageSourceNative_ModifyImagePropertyShort(OH_ImageSourceNative *source, Image_String *key,
+    uint16_t value);
+
+/**
+ * @brief Modify the value of an image property as long int.
+ *
+ * @param source ImageSource from which the property is modified.
+ * @param key The property to be modified.
+ * @param value The value set to the property.
+ * @return Returns One of the following result codes: 
+ *         {@link IMAGE_SUCCESS} if the execution is successful.
+ *         {@link IMAGE_SOURCE_INVALID_PARAMETER} if source, key or value is nullptr.
+ *         {@link IMAGE_SOURCE_UNSUPPORTED_MIME_TYPE} if query image property of current mimetype is not supported.
+ *         {@link IMAGE_SOURCE_UNSUPPORTED_METADATA} if indicated metadata doesn't exist, or is not a long int.
+ * @since 23
+ */
+Image_ErrorCode OH_ImageSourceNative_ModifyImagePropertyLong(OH_ImageSourceNative *source, Image_String *key,
+    uint32_t value);
+
+/**
+ * @brief Modify the value of an image property as double.
+ *
+ * @param source ImageSource from which the property is modified.
+ * @param key The property to be modified.
+ * @param value The value set to the property.
+ * @return Returns One of the following result codes: 
+ *         {@link IMAGE_SUCCESS} if the execution is successful.
+ *         {@link IMAGE_SOURCE_INVALID_PARAMETER} if source, key or value is nullptr.
+ *         {@link IMAGE_SOURCE_UNSUPPORTED_MIME_TYPE} if query image property of current mimetype is not supported.
+ *         {@link IMAGE_SOURCE_UNSUPPORTED_METADATA} if indicated metadata doesn't exist, or is not a double.
+ * @since 23
+ */
+Image_ErrorCode OH_ImageSourceNative_ModifyImagePropertyDouble(OH_ImageSourceNative *source, Image_String *key,
+    double value);
+
+/**
+ * @brief Modify the value of an image property as int array.
+ *
+ * @param source ImageSource from which the property is modified.
+ * @param key The property to be modified.
+ * @param value The value set to the property.
+ * @param size Array length.
+ * @return Returns One of the following result codes: 
+ *         {@link IMAGE_SUCCESS} if the execution is successful.
+ *         {@link IMAGE_SOURCE_INVALID_PARAMETER} if source, key or value is nullptr.
+ *         {@link IMAGE_SOURCE_UNSUPPORTED_MIME_TYPE} if query image property of current mimetype is not supported.
+ *         {@link IMAGE_SOURCE_UNSUPPORTED_METADATA} if indicated metadata doesn't exist, or is not an int array.
+ * @since 23
+ */
+Image_ErrorCode OH_ImageSourceNative_ModifyImagePropertyIntArray(OH_ImageSourceNative *source, Image_String *key,
+    int32_t *value, size_t size);
+
+/**
+ * @brief Modify the value of an image property as double array. 
+ *
+ * @param source ImageSource from which the property is modified.
+ * @param key The property to be modified.
+ * @param value The value set to the property.
+ * @param size Array length.
+ * @return Returns One of the following result codes: 
+ *         {@link IMAGE_SUCCESS} if the execution is successful.
+ *         {@link IMAGE_SOURCE_INVALID_PARAMETER} if source, key or value is nullptr.
+ *         {@link IMAGE_SOURCE_UNSUPPORTED_MIME_TYPE} if query image property of current mimetype is not supported.
+ *         {@link IMAGE_SOURCE_UNSUPPORTED_METADATA} if indicated metadata doesn't exist, or is not a double array.
+ * @since 23
+ */
+Image_ErrorCode OH_ImageSourceNative_ModifyImagePropertyDoubleArray(OH_ImageSourceNative *source, Image_String *key,
+    double *value, size_t size);
+
+/**
+ * @brief Modify the value of an image property as blob.
+ *
+ * @param source ImageSource from which the property is modified.
+ * @param key The property to be modified.
+ * @param value The value set to the property.
+ * @param size Array length.
+ * @return Returns One of the following result codes: 
+ *         {@link IMAGE_SUCCESS} if the execution is successful.
+ *         {@link IMAGE_SOURCE_INVALID_PARAMETER} if source, key or value is nullptr.
+ *         {@link IMAGE_SOURCE_UNSUPPORTED_MIME_TYPE} if query image property of current mimetype is not supported.
+ *         {@link IMAGE_SOURCE_UNSUPPORTED_METADATA} if indicated metadata doesn't exist, or is not a blob.
+ * @since 23
+ */
+Image_ErrorCode OH_ImageSourceNative_ModifyImagePropertyBlob(OH_ImageSourceNative *source, Image_String *key,
+    void *value, size_t size);
 
 #ifdef __cplusplus
 };

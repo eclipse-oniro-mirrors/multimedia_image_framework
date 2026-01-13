@@ -1447,6 +1447,26 @@ HWTEST_F(PixelMapNdk2Test, OH_PixelmapNative_CreatePixelmapFromSurface, TestSize
 }
 
 /**
+ * @tc.name: OH_PixelmapNative_CreatePixelmapFromSurfaceWithTransformation
+ * @tc.desc: OH_PixelmapNative_CreatePixelmapFromSurfaceWithTransformation
+ * @tc.type: FUNC
+ */
+HWTEST_F(PixelMapNdk2Test, OH_PixelmapNative_CreatePixelmapFromSurfaceWithTransformation, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PixelMapNdk2Test: OH_PixelmapNative_CreatePixelmapFromSurfaceWithTransformation start";
+
+    Image_ErrorCode ret = OH_PixelmapNative_CreatePixelmapFromSurfaceWithTransformation("", 0, true, nullptr);
+    EXPECT_NE(ret, IMAGE_SUCCESS);
+
+    OH_PixelmapNative* dstPixelmap = nullptr;
+    ret = OH_PixelmapNative_CreatePixelmapFromSurfaceWithTransformation("1", 1, true, &dstPixelmap);
+    EXPECT_NE(ret, IMAGE_SUCCESS);
+    EXPECT_EQ(dstPixelmap, nullptr);
+
+    GTEST_LOG_(INFO) << "PixelMapNdk2Test: OH_PixelmapNative_CreatePixelmapFromSurfaceWithTransformation end";
+}
+
+/**
  * @tc.name: OH_PixelmapNative_CreatePixelmapFromNativeBuffer
  * @tc.desc: OH_PixelmapNative_CreatePixelmapFromNativeBuffer
  * @tc.type: FUNC

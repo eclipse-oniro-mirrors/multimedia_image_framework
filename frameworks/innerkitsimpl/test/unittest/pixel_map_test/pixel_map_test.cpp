@@ -1028,6 +1028,18 @@ HWTEST_F(PixelMapTest, PixelMapTest006, TestSize.Level3)
     pixelMap1->SetPixelsAddr(dstPixels, fdBuffer, bufferSize, AllocatorType::HEAP_ALLOC, nullptr);
     pixelMap1->SetPixelsAddr(dstPixels, fdBuffer, bufferSize, AllocatorType::HEAP_ALLOC, false);
     pixelMap1->SetPixelsAddr(dstPixels, fdBuffer, bufferSize, AllocatorType::HEAP_ALLOC, true);
+    pixelMap1->SetPixelsAddr(dstPixels, fdBuffer, bufferSize, static_cast<AllocatorType>(-1), true);
+    EXPECT_NE(static_cast<int32_t>(pixelMap1->GetAllocatorType()), -1);
+    pixelMap1->SetPixelsAddr(dstPixels, fdBuffer, bufferSize, static_cast<AllocatorType>(100), true);
+    EXPECT_NE(static_cast<int32_t>(pixelMap1->GetAllocatorType()), 100);
+    pixelMap1->allocatorType_ = AllocatorType::SHARE_MEM_ALLOC;
+    pixelMap1->data_ = new uint8_t[10];
+    pixelMap1->rowDataSize_ = 1;
+    pixelMap1->SetPixelsAddr(dstPixels, fdBuffer, bufferSize, AllocatorType::DMA_ALLOC, true);
+    if (pixelMap1->data_ != nullptr) {
+        delete[] pixelMap1->data_;
+        pixelMap1->data_ = nullptr;
+    }
     ImageInfo info1;
     info1.size.width = INT32_MAX;
     // 300 means height
@@ -3260,6 +3272,32 @@ HWTEST_F(PixelMapTest, RGB888ToARGBTest001, TestSize.Level3)
 }
 
 /**
+ * @tc.name: BGRA8888ToARGBTest001
+ * @tc.desc: Verify RGBA8888 to ARGB format conversion with invalid inputs and buffer size checks.
+ * @tc.type: FUNC
+ */
+HWTEST_F(PixelMapTest, BGRA8888ToARGBTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PixelMapTest: BGRA8888ToARGBTest001 start";
+    uint8_t inArray[] = {0x43, 0x80, 0xE9, 0xE8, 0xFA};
+    uint8_t *in = nullptr;
+    uint32_t outArray[] = {0x43, 0x80, 0xE9, 0xE8};
+    uint32_t *out = outArray;
+    EXPECT_FALSE(PixelMap::BGRA8888ToARGB(in, 0, out, sizeof(outArray) / sizeof(outArray[0])));
+    in = inArray;
+    out = nullptr;
+    EXPECT_FALSE(PixelMap::BGRA8888ToARGB(in, sizeof(inArray) / sizeof(inArray[0]), out, 0));
+    in = nullptr;
+    out = nullptr;
+    EXPECT_FALSE(PixelMap::BGRA8888ToARGB(in, 0, out, 0));
+    in = inArray;
+    out = outArray;
+    EXPECT_FALSE(PixelMap::BGRA8888ToARGB(in, sizeof(inArray) / sizeof(inArray[0]), out,
+        sizeof(outArray) / sizeof(outArray[0])));
+    GTEST_LOG_(INFO) << "PixelMapTest: BGRA8888ToARGBTest001 end";
+}
+
+/**
  * @tc.name: GetByteCountTest001
  * @tc.desc: Verify GetByteCount returns 0 when pixel map is ASTC compressed format.
  * @tc.type: FUNC
@@ -3724,6 +3762,27 @@ HWTEST_F(PixelMapTest, MarshallingReadOnlyTest001, TestSize.Level3)
 }
 
 /**
+ * @tc.name: MarshallingReadOnlyTest002
+ * @tc.desc: Test UnmarshallingReadOnly
+ * @tc.type: FUNC
+ */
+HWTEST_F(PixelMapTest, MarshallingReadOnlyTest002, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PixelMapTest: MarshallingReadOnlyTest002 start";
+    InitializationOptions opts;
+    opts.size.width = 512;
+    opts.size.height = 512;
+    opts.pixelFormat = PixelFormat::NV12;
+    std::unique_ptr<PixelMap> pixelMap = PixelMap::Create(opts);
+    Parcel parcel;
+    auto ret = pixelMap->Marshalling(parcel);
+    EXPECT_TRUE(ret);
+    PixelMap* newPixelMap = PixelMap::Unmarshalling(parcel);
+    EXPECT_NE(newPixelMap, nullptr);
+    GTEST_LOG_(INFO) << "PixelMapTest: MarshallingReadOnlyTest002 end";
+}
+
+/**
  * @tc.name: SetInitializationOptionAboutAllocator
  * @tc.desc: Test InitializationOption
  * @tc.type: FUNC
@@ -4018,6 +4077,47 @@ HWTEST_F(PixelMapTest, HdrPixelMapTlvTest008, TestSize.Level3)
             ASSERT_EQ(pixelMap->EncodeTlv(buff), false);
         }
     }
+}
+
+/**
+ * @tc.name: Verify parameter validation of PixelMap::Create
+ * @tc.desc: Verify invalid size.
+ * @tc.type: FUNC
+ */
+HWTEST_F(PixelMapTest, CreatePixelMapInvalidSizeTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PixelMapTest: CreatePixelMapInvalidSizeTest001 start";
+    InitializationOptions opts;
+    opts.size.width = 0;
+    opts.size.height = 0;
+    opts.pixelFormat = PixelFormat::NV21;
+    std::unique_ptr<PixelMap> pixelMap = PixelMap::Create(opts);
+    EXPECT_EQ(pixelMap, nullptr);
+    opts.size.width = 512;
+    opts.size.height = 512;
+    opts.useDMA = true;
+    std::unique_ptr<PixelMap> pixelMap1 = PixelMap::Create(opts);
+    EXPECT_EQ(pixelMap1, nullptr);
+    GTEST_LOG_(INFO) << "PixelMapTest: CreatePixelMapInvalidSizeTest001 end";
+}
+
+/**
+ * @tc.name: Verify YUV Format
+ * @tc.desc: Verify YUV Format.
+ * @tc.type: FUNC
+ */
+HWTEST_F(PixelMapTest, CreatePixelMapYUVTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PixelMapTest: Verify YUV Format Create001 start";
+
+    InitializationOptions opts;
+    opts.size.width = 512;
+    opts.size.height = 512;
+    opts.pixelFormat = PixelFormat::YCBCR_P010;
+    opts.useDMA = true;
+    std::unique_ptr<PixelMap> pixelMap = PixelMap::Create(opts);
+    EXPECT_NE(pixelMap, nullptr);
+    GTEST_LOG_(INFO) << "PixelMapTest: Verify YUV Format Create001 end";
 }
 }
 }

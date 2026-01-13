@@ -40,6 +40,11 @@
 #include "webp_format_agent.h"
 #include "ext_decoder.h"
 #include "ext_encoder.h"
+#if defined(SUPPORT_TIFF_DECODER)
+#include "tiff_decoder.h"
+#include "tiff_format_agent.h"
+#endif
+
 #undef LOG_DOMAIN
 #define LOG_DOMAIN LOG_TAG_DOMAIN_ID_PLUGIN
 #undef LOG_TAG
@@ -70,6 +75,10 @@ PLUGIN_EXPORT_REGISTER_CLASS(OHOS::ImagePlugin::SvgDecoder)
 PLUGIN_EXPORT_REGISTER_CLASS(OHOS::ImagePlugin::SvgFormatAgent)
 PLUGIN_EXPORT_REGISTER_CLASS(OHOS::ImagePlugin::ExtDecoder)
 PLUGIN_EXPORT_REGISTER_CLASS(OHOS::ImagePlugin::ExtEncoder)
+#if defined(SUPPORT_TIFF_DECODER)
+PLUGIN_EXPORT_REGISTER_CLASS(OHOS::ImagePlugin::TiffDecoder)
+PLUGIN_EXPORT_REGISTER_CLASS(OHOS::ImagePlugin::TiffFormatAgent)
+#endif
 PLUGIN_EXPORT_REGISTER_CLASS_END
 
 using std::string;

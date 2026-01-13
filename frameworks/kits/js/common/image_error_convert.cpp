@@ -58,5 +58,47 @@ std::pair<int32_t, std::string> ImageErrorConvert::ModifyImagePropertiesEnhanced
                 "Failed to write image properties to the file.");
     }
 }
+
+std::pair<int32_t, std::string> ImageErrorConvert::ModifyImagePropertyArrayMakeErrMsg(uint32_t errorCode,
+    std::string exMessage)
+{
+    switch (errorCode) {
+        case ERR_IMAGE_INVALID_PARAMETER:
+        case ERR_MEDIA_VALUE_INVALID:
+            return std::make_pair<int32_t, std::string>(IMAGE_SOURCE_INVALID_PARAMETER,
+                "Invalid parameter.");
+        case ERR_IMAGE_SOURCE_DATA:
+            return std::make_pair<int32_t, std::string>(IMAGE_SOURCE_UNSUPPORTED_MIMETYPE,
+                "unsupported mime type.");
+        case ERR_MEDIA_WRITE_PARCEL_FAIL:
+            return std::make_pair<int32_t, std::string>(IMAGE_SOURCE_UNSUPPORTED_MIMETYPE,
+                "Failed to write EXIF data to the file. The file may be read-only or inaccessible.");
+        case ERR_IMAGE_DECODE_EXIF_UNSUPPORT:
+        default:
+            return std::make_pair(IMAGE_SOURCE_UNSUPPORTED_METADATA,
+                "unsupported metadata."  + exMessage);
+    }
+}
+
+std::pair<int32_t, std::string> ImageErrorConvert::CreateThumbnailMakeErrMsg(uint32_t errorCode)
+{
+    switch (errorCode) {
+        case ERR_IMAGE_MISMATCHED_FORMAT:
+        case ERR_IMAGE_UNKNOWN_FORMAT:
+        case ERR_IMAGE_DECODE_HEAD_ABNORMAL:
+            return std::make_pair<int32_t, std::string>(IMAGE_SOURCE_UNSUPPORTED_MIMETYPE, "Unsupported mimetype.");
+        case ERR_IMAGE_TOO_LARGE:
+            return std::make_pair<int32_t, std::string>(IMAGE_SOURCE_TOO_LARGE, "Image too large.");
+        case ERR_IMAGE_INVALID_PARAMETER:
+            return std::make_pair<int32_t, std::string>(IMAGE_SOURCE_INVALID_PARAMETER, "Unsupported options.");
+        case ERR_NOT_CARRY_THUMBNAIL:
+            return std::make_pair<int32_t, std::string>(IMAGE_SOURCE_NOT_CARRY_THUMBNAIL, "not carry thumbnail.");
+        case ERR_GENERATE_THUMBNAIL_FAILED:
+            return std::make_pair<int32_t, std::string>(IMAGE_SOURCE_GENERATE_THUMBNAIL_FAILED,
+                "Generate thumbnail failed.");
+        default:
+            return std::make_pair<int32_t, std::string>(IMAGE_DECODE_FAILED, "Decode failed.");
+    }
+}
 }  // namespace Media
 }  // namespace OHOS

@@ -79,6 +79,7 @@ public:
     bool CheckAuxiliaryMap(Media::AuxiliaryPictureType type) override;
     bool GetHeifFragmentMetadata(Media::Rect& metadata) override;
     bool IsHeifWithoutAlpha() override;
+    bool IsProgressiveJpeg() override;
 #ifdef IMAGE_COLORSPACE_FLAG
     OHOS::ColorManager::ColorSpace GetPixelMapColorSpace() override;
     bool IsSupportICCProfile() override;
@@ -127,7 +128,6 @@ private:
     uint32_t GetMakerImagePropertyString(const std::string &key, std::string &value);
     uint32_t CheckDecodeOptions(uint32_t index, const PixelDecodeOptions &opts);
     uint32_t CheckCropRect(const PixelDecodeOptions &opts);
-    bool IsProgressiveJpeg();
     static void ReportImageType(SkEncodedImageFormat skEncodeFormat);
     bool CheckContext(const DecodeContext &context);
     uint32_t DmaMemAlloc(DecodeContext &context, uint64_t count, SkImageInfo &dstInfo);
@@ -172,7 +172,8 @@ private:
     }
     OHOS::Media::Size GetHeifGridTileSize() override;
     bool IsCr3Format();
-    bool MakeCr3Codec();
+    bool MakeCr3PreviewStream();
+    void MakeRawPreviewStream(uint32_t offset, uint32_t length);
 
     bool IsHeifsDecode(DecodeContext &context);
     uint32_t DoHeifsDecode(OHOS::ImagePlugin::DecodeContext &context);

@@ -45,7 +45,7 @@ static const uint32_t MOCK_INDEX = 1;
 static const uint32_t MOCK_INDEX_TWO = 2;
 static const uint32_t MOCK_INDEX_THREE = 3;
 #ifdef HEIF_HW_DECODE_ENABLE
-static const std::string IMAGE_INPUT_HEIFS_PATH = "/data/local/tmp/image/starfield_animation.heic";
+static const std::string IMAGE_INPUT_HEIFS_PATH = "/data/local/tmp/image/heifs.heic";
 static const std::string IMAGE_INPUT_HEIC_PATH = "/data/local/tmp/image/test-10bit-1.heic";
 static const std::string HEIFS_MIME_TYPE = "image/heif-sequence";
 static const uint32_t INPUT_HEIFS_FRAMECOUNT = 120;
@@ -61,7 +61,7 @@ static const uint32_t MOCK_SKIP_NUM_TWO = 2;
 static const uint32_t MOCK_SKIP_NUM_FIVE = 5;
 static const uint32_t MOCK_SKIP_NUM_TEN = 10;
 
-static bool JudgeIsInvalidNumericStr(const std::string &str)
+static bool JudgeIsNumericStr(const std::string &str)
 {
     return std::all_of(str.begin(), str.end(), [](const char &c) {
         return std::isdigit(c);
@@ -94,7 +94,7 @@ static void CreatePictureAtIndexUseSpecificAlloc(uint32_t skipIndex = MOCK_SKIP_
         ASSERT_NE(metaData, nullptr);
         std::string delayTimeStr = "";
         ASSERT_EQ(metaData->GetValue(HEIFS_METADATA_KEY_DELAY_TIME, delayTimeStr), SUCCESS);
-        ASSERT_EQ(JudgeIsInvalidNumericStr(delayTimeStr), true);
+        ASSERT_EQ(JudgeIsNumericStr(delayTimeStr), true);
         ASSERT_EQ(std::stoi(delayTimeStr), INPUT_HEIFS_DELAYTIME);
         auto pixelMap = picture->GetMainPixel();
         ASSERT_NE(pixelMap, nullptr);
@@ -143,9 +143,9 @@ static void CreateAndDeleteHeifsSwDecoder(int32_t createTimes, int32_t deleteTim
         ASSERT_EQ(decoder->CreateHeifsSwDecoder(param), true);
     }
     for (int32_t i = 0; i < deleteTimes; i++) {
-        ASSERT_EQ(decoder->DeleteHeifsSwDecoder(param), true);
+        decoder->DeleteHeifsSwDecoder();
+        ASSERT_EQ(decoder->swDecHeifsHandle_, nullptr);
     }
-    ASSERT_EQ(decoder->swDecHeifsHandle_, nullptr);
 }
 #endif
 
@@ -296,10 +296,10 @@ HWTEST_F(HeifsDecodeTest, GetHeifsFrameCountTest002, TestSize.Level1)
     std::shared_ptr<HeifParser> parser;
     GetHeifParserFromImageSource(imageSource.get(), parser);
     ASSERT_NE(parser->hdlrBox_, nullptr);
+    uint32_t frameCount = 0;
     parser->stszBox_.reset();
     ASSERT_EQ(parser->GetHeifsFrameCount(frameCount), heif_error_no_stsz);
     parser->hdlrBox_->handlerType_ = BOX_TYPE_FTYP;
-    uint32_t frameCount = 0;
     ASSERT_EQ(parser->GetHeifsFrameCount(frameCount), heif_error_not_heifs);
 #endif
     GTEST_LOG_(INFO) << "HeifsDecodeTest: GetHeifsFrameCountTest002 end";

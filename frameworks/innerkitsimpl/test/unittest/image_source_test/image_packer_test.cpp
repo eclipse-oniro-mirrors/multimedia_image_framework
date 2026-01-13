@@ -805,5 +805,36 @@ HWTEST_F(ImagePackerTest, AddImage004, TestSize.Level3)
     ASSERT_NE(ret, OHOS::Media::SUCCESS);
     GTEST_LOG_(INFO) << "ImagePackerTest: AddImage004 end";
 }
+
+/**
+ * @tc.name: FreeOldPackerStreamTest001
+ * @tc.desc: test FreeOldPackerStream when packerStream is null
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImagePackerTest, FreeOldPackerStreamTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImagePackerTest: FreeOldPackerStreamTest001 start";
+    ImagePacker packer;
+    packer.packerStream_ = std::unique_ptr<PackerStream>(static_cast<PackerStream*>(nullptr));
+    packer.FreeOldPackerStream();
+    ASSERT_EQ(packer.packerStream_, nullptr);
+    GTEST_LOG_(INFO) << "ImagePackerTest: FreeOldPackerStreamTest001 end";
+}
+
+/**
+ * @tc.name: GetEncoderPluginTest002
+ * @tc.desc: test GetEncoderPlugin when both encoders fail
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImagePackerTest, GetEncoderPluginTest002, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImagePackerTest: GetEncoderPluginTest002 start";
+    ImagePacker packer;
+    PackOption option;
+    option.format = "unsupported_format_xyz";
+    bool ret = packer.GetEncoderPlugin(option);
+    ASSERT_EQ(ret, true);
+    GTEST_LOG_(INFO) << "ImagePackerTest: GetEncoderPluginTest002 end";
+}
 } // namespace Multimedia
 } // namespace OHOS

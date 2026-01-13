@@ -10,6 +10,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+import("//foundation/multimedia/image_framework/ide/image_decode_config.gni")
 
 group("fuzztest") {
   testonly = true
@@ -54,5 +55,14 @@ group("fuzztest") {
     "imagecr3parser_fuzzer:ImageCr3ParserFuzzTest",
     "imagecr3box_fuzzer:ImageCr3BoxFuzzTest",
     "imageheifsdecode_fuzzer:ImageHeifsDecodeFuzzTest",
+    "imagedngexifmetadata_fuzzer:ImageDngExifMetadataFuzzTest",
+    "imagedngsdkhelper_fuzzer:ImageDngSdkHelperFuzzTest",
+    "imagedngsdkinfo_fuzzer:ImageDngSdkInfoFuzzTest",
+    "imageheifsmetadata_fuzzer:ImageHeifsMetadataFuzzTest",
   ]
+  if (has_libtiff) {
+    deps += [
+      "imagetiffplugin_fuzzer:ImageTiffPluginFuzzTest",
+    ]
+  }
 }

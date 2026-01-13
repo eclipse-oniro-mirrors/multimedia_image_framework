@@ -17,6 +17,7 @@
 #include <fstream>
 #include <gtest/gtest.h>
 #include <string>
+#include <algorithm>
 
 #define protected public
 #include "abs_image_decoder.h"
@@ -51,6 +52,10 @@ static const std::string IMAGE_INPUT_JPG_PATH = "/data/local/tmp/image/";
 #define TEST_DATA_OFFSET_80 80
 #define TEST_DATA_OFFSET_100 100
 #define TEST_STRIDE_1 1
+#define TEST_STRIDE_3 3
+#define TEST_PLANE_HEIGHT_15 15
+#define TEST_PLANE_HEIGHT_8 8
+#define MEMSET_SIZE 128
 
 class JpgYuvDecoderTest : public testing::Test {
 public:
@@ -779,8 +784,6 @@ HWTEST_F(JpgYuvDecoderTest, JpegYuvDataTest001, TestSize.Level3)
 HWTEST_F(JpgYuvDecoderTest, JpegYuvDataTest002, TestSize.Level3)
 {
     GTEST_LOG_(INFO) << "JpgYuvDecoderTest: JpegYuvDataTest002 start";
-    JpegDecoderYuv jpegDecoderYuv;
-    jpegDecoderYuv.LoadLibYuv();
     YuvPlaneInfo src;
     YuvPlaneInfo dst;
 
@@ -808,9 +811,6 @@ HWTEST_F(JpgYuvDecoderTest, JpegYuvDataTest002, TestSize.Level3)
 HWTEST_F(JpgYuvDecoderTest, JpegYuvDataTest003, TestSize.Level3)
 {
     GTEST_LOG_(INFO) << "JpgYuvDecoderTest: JpegYuvDataTest003 start";
-    JpegDecoderYuv jpegDecoderYuv;
-    jpegDecoderYuv.LoadLibYuv();
-
     YuvPlaneInfo src;
     for (int i = 0; i < YUVCOMPONENT_MAX; ++i) {
         src.strides[i] = 1;
@@ -841,8 +841,6 @@ HWTEST_F(JpgYuvDecoderTest, JpegYuvDataTest003, TestSize.Level3)
 HWTEST_F(JpgYuvDecoderTest, JpegYuvDataTest004, TestSize.Level3)
 {
     GTEST_LOG_(INFO) << "JpgYuvDecoderTest: JpegYuvDataTest004 start";
-    JpegDecoderYuv jpegDecoderYuv;
-    jpegDecoderYuv.LoadLibYuv();
     YuvPlaneInfo src;
     YuvPlaneInfo dst;
     src.imageHeight = 1;
@@ -993,6 +991,153 @@ HWTEST_F(JpgYuvDecoderTest, ValidateParameterPlaneHeightZeroTest001, TestSize.Le
     EXPECT_EQ(ret, false);
     
     GTEST_LOG_(INFO) << "JpgYuvDecoderTest: ValidateParameterPlaneHeightZeroTest001 end";
+}
+
+/**
+ * @tc.name: I400ToYUV420SpInvalidDataTest001
+ * @tc.desc: Test I400ToYUV420Sp returns error when input plane data is null and image dimensions are zero
+ * @tc.type: FUNC
+ */
+HWTEST_F(JpgYuvDecoderTest, I400ToYUV420SpInvalidDataTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "JpgYuvDecoderTest: I400ToYUV420SpInvalidDataTest001 start";
+
+    YuvPlaneInfo src;
+    YuvPlaneInfo dest;
+    src.planes[YCOM] = nullptr;
+    src.imageWidth = 0;
+    src.imageHeight = 0;
+
+    int ret = I400ToYUV420Sp(src, dest);
+    EXPECT_EQ(ret, -1);
+
+    GTEST_LOG_(INFO) << "JpgYuvDecoderTest: I400ToYUV420SpInvalidDataTest001 end";
+}
+
+/**
+ * @tc.name: I400ToI420PlaneHeightTest001
+ * @tc.desc: Test I400ToI420_wrapper converts I400 format when destination plane height exceeds source image height
+ * @tc.type: FUNC
+ */
+HWTEST_F(JpgYuvDecoderTest, I400ToI420PlaneHeightTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "JpgYuvDecoderTest: I400ToI420PlaneHeightTest001 start";
+
+    uint8_t srcData[TEST_BUFFER_SIZE_100];
+    uint8_t destData[TEST_BUFFER_SIZE_400];
+    std::fill(std::begin(srcData), std::end(srcData), MEMSET_SIZE);
+
+    YuvPlaneInfo src;
+    src.planes[YCOM] = srcData;
+    src.strides[YCOM] = TEST_STRIDE_10;
+    src.imageWidth = TEST_IMAGE_WIDTH_10;
+    src.imageHeight = TEST_IMAGE_HEIGHT_10;
+
+    YuvPlaneInfo dest;
+    dest.planes[YCOM] = destData;
+    dest.planes[UCOM] = destData + TEST_DATA_OFFSET_100 + TEST_DATA_OFFSET_50;
+    dest.planes[VCOM] = destData + TEST_BUFFER_SIZE_200;
+    dest.strides[YCOM] = TEST_STRIDE_10;
+    dest.strides[UCOM] = TEST_STRIDE_5;
+    dest.strides[VCOM] = TEST_STRIDE_5;
+    dest.planeHeight[YCOM] = TEST_PLANE_HEIGHT_15;
+    dest.planeHeight[UCOM] = TEST_PLANE_HEIGHT_8;
+    dest.planeHeight[VCOM] = TEST_PLANE_HEIGHT_8;
+    dest.planeWidth[UCOM] = TEST_STRIDE_5;
+    dest.planeWidth[VCOM] = TEST_STRIDE_5;
+
+    int ret = I400ToI420_wrapper(src, dest);
+    EXPECT_EQ(ret, 0);
+
+    GTEST_LOG_(INFO) << "JpgYuvDecoderTest: I400ToI420PlaneHeightTest001 end";
+}
+
+/**
+ * @tc.name: CopyYDataPlaneHeightTest001
+ * @tc.desc: Test I420ToI420_wrapper copies Y plane data correctly
+ * when destination plane height exceeds source image height
+ * @tc.type: FUNC
+ */
+HWTEST_F(JpgYuvDecoderTest, CopyYDataPlaneHeightTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "JpgYuvDecoderTest: CopyYDataPlaneHeightTest001 start";
+
+    uint8_t srcData[TEST_BUFFER_SIZE_100];
+    uint8_t destData[TEST_BUFFER_SIZE_200];
+    std::fill(std::begin(srcData), std::end(srcData), MEMSET_SIZE);
+
+    YuvPlaneInfo src;
+    src.planes[YCOM] = srcData;
+    src.planes[UCOM] = srcData + TEST_DATA_OFFSET_50;
+    src.planes[VCOM] = srcData + TEST_DATA_OFFSET_80;
+    src.strides[YCOM] = TEST_STRIDE_10;
+    src.strides[UCOM] = TEST_STRIDE_5;
+    src.strides[VCOM] = TEST_STRIDE_5;
+    src.imageWidth = TEST_IMAGE_WIDTH_10;
+    src.imageHeight = TEST_IMAGE_HEIGHT_10;
+
+    YuvPlaneInfo dest;
+    dest.planes[YCOM] = destData;
+    dest.planes[UCOM] = destData + TEST_DATA_OFFSET_100;
+    dest.planes[VCOM] = destData + TEST_BUFFER_SIZE_100 + TEST_DATA_OFFSET_50;
+    dest.strides[YCOM] = TEST_STRIDE_10;
+    dest.strides[UCOM] = TEST_STRIDE_5;
+    dest.strides[VCOM] = TEST_STRIDE_5;
+    dest.planeHeight[YCOM] = TEST_PLANE_HEIGHT_15;
+    dest.planeHeight[UCOM] = TEST_PLANE_HEIGHT_8;
+    dest.planeHeight[VCOM] = TEST_PLANE_HEIGHT_8;
+    dest.planeWidth[YCOM] = TEST_STRIDE_10;
+    dest.planeWidth[UCOM] = TEST_STRIDE_5;
+    dest.planeWidth[VCOM] = TEST_STRIDE_5;
+
+    int ret = I420ToI420_wrapper(src, dest);
+    EXPECT_EQ(ret, 0);
+
+    GTEST_LOG_(INFO) << "JpgYuvDecoderTest: CopyYDataPlaneHeightTest001 end";
+}
+
+/**
+ * @tc.name: CopyLineDataDestStrideLargerTest001
+ * @tc.desc: Test I420ToI420_wrapper handles YUV format conversion
+ * when destination line stride is larger than source stride
+ * @tc.type: FUNC
+ */
+HWTEST_F(JpgYuvDecoderTest, CopyLineDataDestStrideLargerTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "JpgYuvDecoderTest: CopyLineDataDestStrideLargerTest001 start";
+
+    uint8_t srcData[TEST_BUFFER_SIZE_100];
+    uint8_t destData[TEST_BUFFER_SIZE_200];
+    std::fill(std::begin(srcData), std::end(srcData), MEMSET_SIZE);
+
+    YuvPlaneInfo src;
+    src.planes[YCOM] = srcData;
+    src.planes[UCOM] = srcData + TEST_DATA_OFFSET_50;
+    src.planes[VCOM] = srcData + TEST_DATA_OFFSET_80;
+    src.strides[YCOM] = TEST_STRIDE_5;
+    src.strides[UCOM] = TEST_STRIDE_3;
+    src.strides[VCOM] = TEST_STRIDE_3;
+    src.imageWidth = TEST_STRIDE_5;
+    src.imageHeight = TEST_STRIDE_5;
+
+    YuvPlaneInfo dest;
+    dest.planes[YCOM] = destData;
+    dest.planes[UCOM] = destData + TEST_DATA_OFFSET_100;
+    dest.planes[VCOM] = destData + TEST_BUFFER_SIZE_100 + TEST_DATA_OFFSET_50;
+    dest.strides[YCOM] = TEST_STRIDE_10;
+    dest.strides[UCOM] = TEST_STRIDE_5;
+    dest.strides[VCOM] = TEST_STRIDE_5;
+    dest.planeHeight[YCOM] = TEST_STRIDE_5;
+    dest.planeHeight[UCOM] = TEST_STRIDE_3;
+    dest.planeHeight[VCOM] = TEST_STRIDE_3;
+    dest.planeWidth[YCOM] = TEST_STRIDE_10;
+    dest.planeWidth[UCOM] = TEST_STRIDE_5;
+    dest.planeWidth[VCOM] = TEST_STRIDE_5;
+
+    int ret = I420ToI420_wrapper(src, dest);
+    EXPECT_EQ(ret, 0);
+
+    GTEST_LOG_(INFO) << "JpgYuvDecoderTest: CopyLineDataDestStrideLargerTest001 end";
 }
 }
 }

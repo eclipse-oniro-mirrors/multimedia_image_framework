@@ -144,6 +144,7 @@ struct PixelMapAsyncContext {
     AntiAliasingOption antiAliasing;
     std::shared_ptr<napi_value[]> argv = nullptr;
     size_t argc = 0;
+    bool transformEnabled = false;
 };
 using PixelMapAsyncContextPtr = std::unique_ptr<PixelMapAsyncContext>;
 std::shared_ptr<PixelMap> srcPixelMap = nullptr;
@@ -629,6 +630,10 @@ napi_value PixelMapNapi::Init(napi_env env, napi_value exports)
 #if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
         DECLARE_NAPI_STATIC_FUNCTION("createPixelMapFromSurface", CreatePixelMapFromSurface),
         DECLARE_NAPI_STATIC_FUNCTION("createPixelMapFromSurfaceSync", CreatePixelMapFromSurfaceSync),
+        DECLARE_NAPI_STATIC_FUNCTION("createPixelMapFromSurfaceWithTransformation",
+            CreatePixelMapFromSurfaceWithTransformation),
+        DECLARE_NAPI_STATIC_FUNCTION("createPixelMapFromSurfaceWithTransformationSync",
+            CreatePixelMapFromSurfaceWithTransformationSync),
         DECLARE_NAPI_STATIC_FUNCTION("convertPixelFormat", ConvertPixelMapFormat),
 #endif
         DECLARE_NAPI_PROPERTY("AntiAliasingLevel", CreateEnumTypeObject(env, napi_number, AntiAliasingLevelMap)),
@@ -1574,6 +1579,26 @@ napi_value PixelMapNapi::CreatePixelMapUsingAllocatorSync(napi_env env, napi_cal
 }
 
 #if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
+static bool DealSurfaceId(std::string &surfaceId, unsigned long &id)
+{
+    if (surfaceId.find_first_not_of("0123456789") != std::string::npos) {
+        IMAGE_LOGE("The input string contains non-decimal characters.");
+    }
+    auto res = std::from_chars(surfaceId.c_str(), surfaceId.c_str() + surfaceId.size(), id);
+    if (res.ec != std::errc()) {
+        return true;
+    } else if (res.ec == std::errc::invalid_argument) {
+        IMAGE_LOGE("Invalid argument: the input string is not a valid number.");
+    return false;
+    } else if (res.ec == std::errc::result_out_of_range) {
+        IMAGE_LOGE("Out of range: the number is too large or too small for the target type.");
+        return false;
+    } else {
+        IMAGE_LOGE("Unknown error occured during conversion.");
+        return false;
+    }
+}
+
 static bool GetSurfaceSize(size_t argc, Rect &region, std::string fd)
 {
     if (argc == NUM_2 && (region.width <= 0 || region.height <= 0)) {
@@ -1610,6 +1635,34 @@ static bool GetSurfaceSize(size_t argc, Rect &region, std::string fd)
     }
     return true;
 }
+
+static bool GetSurfaceSize(Rect &region, unsigned long fd)
+{
+    if (region.width <= 0 || region.height <= 0) {
+        sptr<Surface> surface = SurfaceUtils::GetInstance()->GetSurface(fd);
+        if (surface == nullptr) {
+            return false;
+        }
+        sptr<SyncFence> fence = SyncFence::InvalidFence();
+        // a 4 * 4 idetity matrix
+        float matrix[16] = {
+            1, 0, 0, 0,
+            0, 1, 0, 0,
+            0, 0, 1, 0,
+            0, 0, 0, 1
+        };
+        sptr<SurfaceBuffer> surfaceBuffer = nullptr;
+        GSError ret = surface->GetLastFlushedBuffer(surfaceBuffer, fence, matrix);
+        if (ret != OHOS::GSERROR_OK || surfaceBuffer == nullptr) {
+            IMAGE_LOGE("GetLastFlushedBuffer fail, ret = %{public}d", ret);
+            return false;
+        }
+        region.width = surfaceBuffer->GetWidth();
+        region.height = surfaceBuffer->GetHeight();
+    }
+    return true;
+}
+
 STATIC_EXEC_FUNC(CreatePixelMapFromSurface)
 {
     if (data == nullptr) {
@@ -1652,6 +1705,48 @@ STATIC_EXEC_FUNC(CreatePixelMapFromSurface)
     }
 }
 
+STATIC_EXEC_FUNC(CreatePixelMapFromSurfaceWithTransformation)
+{
+    if (data == nullptr) {
+        IMAGE_LOGE("CreatePixelMapFromSurfaceWithTransformationExec invalid parameter: data is null");
+        return;
+    }
+
+    auto context = static_cast<PixelMapAsyncContext*>(data);
+    IMAGE_LOGD("CreatePixelMapFromSurface id:%{public}s,area:%{public}d,%{public}d,%{public}d,%{public}d",
+        context->surfaceId.c_str(), context->area.region.left, context->area.region.top,
+        context->area.region.height, context->area.region.width);
+    unsigned long surfaceId = 0;
+    if (!DealSurfaceId(context->surfaceId, surfaceId)) {
+        context->status = ERR_IMAGE_INVALID_PARAM;
+        return;
+    }
+    if (!GetSurfaceSize(context->area.region, surfaceId)) {
+        context->status = ERR_IMAGE_GET_IMAGE_DATA_FAILED;
+        return;
+    }
+    auto &rsClient = Rosen::RSInterfaces::GetInstance();
+    OHOS::Rect r = {.x = context->area.region.left, .y = context->area.region.top,
+        .w = context->area.region.width, .h = context->area.region.height, };
+    std::shared_ptr<Media::PixelMap> pixelMap = rsClient.CreatePixelMapFromSurfaceId(surfaceId,
+        r, context->transformEnabled);
+    if (pixelMap) {
+        ImageUtils::DumpPixelMapIfDumpEnabled(*pixelMap, "CreatePixelMapFromSurfaceWithTransformation");
+    }
+#ifndef EXT_PIXEL
+    if (pixelMap == nullptr) {
+        pixelMap = CreatePixelMapFromSurfaceId(surfaceId, context->area.region);
+    }
+#endif
+    context->rPixelMap = std::move(pixelMap);
+
+    if (IMG_NOT_NULL(context->rPixelMap)) {
+        context->status = SUCCESS;
+    } else {
+        context->status = ERR_IMAGE_CREATE_PIXELMAP_FAILED;
+    }
+}
+
 void PixelMapNapi::CreatePixelMapFromSurfaceComplete(napi_env env, napi_status status, void *data)
 {
     if (data == nullptr) {
@@ -1671,6 +1766,34 @@ void PixelMapNapi::CreatePixelMapFromSurfaceComplete(napi_env env, napi_status s
 
     if (!IMG_IS_OK(status)) {
         context->status = ERR_IMAGE_PIXELMAP_CREATE_FAILED;
+        IMAGE_LOGE("New instance could not be obtained");
+        napi_get_undefined(env, &result);
+    }
+
+    CommonCallbackRoutine(env, context, result);
+}
+
+void PixelMapNapi::CreatePixelMapFromSurfaceWithTransformationComplete(napi_env env, napi_status status, void *data)
+{
+    if (data == nullptr) {
+        IMAGE_LOGE("CreatePixelMapFromSurfaceWithTransformationComplete invalid parameter: data is null");
+        return;
+    }
+
+    napi_value constructor = nullptr;
+    napi_value result = nullptr;
+
+    IMAGE_LOGD("CreatePixelMapFromSurfaceWithTransformationComplete IN");
+    auto context = static_cast<PixelMapAsyncContext*>(data);
+    status = napi_get_reference_value(env, sConstructor_, &constructor);
+    if (IMG_IS_OK(status)) {
+        status = NewPixelNapiInstance(env, constructor, context->rPixelMap, result);
+    }
+
+    if (!IMG_IS_OK(status)) {
+        if (context->status == SUCCESS) {
+            context->status = ERR_IMAGE_CREATE_PIXELMAP_FAILED;
+        }
         IMAGE_LOGE("New instance could not be obtained");
         napi_get_undefined(env, &result);
     }
@@ -1711,6 +1834,7 @@ static std::string GetStringArgument(napi_env env, napi_value value)
 static bool ParseSurfaceRegion(napi_env env, napi_value root, size_t argCount, Rect* region)
 {
     if (argCount == NUM_2) {
+        IMAGE_LOGD("ParseSurfaceRegion IN");
         return parseRegion(env, root, region);
     }
     return true;
@@ -1730,6 +1854,7 @@ void RegisterArkEngine(napi_env env)
     napi_value returnValue;
     napi_call_function(env, globalValue, func, 1, funcArgv, &returnValue);
 }
+
 napi_value PixelMapNapi::CreatePixelMapFromSurface(napi_env env, napi_callback_info info)
 {
 #if defined(IOS_PLATFORM) || defined(ANDROID_PLATFORM)
@@ -1768,6 +1893,46 @@ napi_value PixelMapNapi::CreatePixelMapFromSurface(napi_env env, napi_callback_i
 #endif
 }
 
+napi_value PixelMapNapi::CreatePixelMapFromSurfaceWithTransformation(napi_env env, napi_callback_info info)
+{
+#if defined(IOS_PLATFORM) || defined(ANDROID_PLATFORM)
+    return ImageNapiUtils::ThrowExceptionError(env, ERR_MEDIA_UNSUPPORT_OPERATION,
+        "Unsupported operation on cross-platform");
+#else
+    RegisterArkEngine(env);
+    napi_value result = nullptr;
+    napi_get_undefined(env, &result);
+    napi_status status;
+    napi_value thisVar = nullptr;
+    napi_value argValue[NUM_3] = {0};
+    size_t argCount = NUM_3;
+    IMAGE_LOGD("CreatePixelMapFromSurfaceWithTransformation IN");
+    IMG_JS_ARGS(env, info, status, argCount, argValue, thisVar);
+    IMG_NAPI_CHECK_RET_D(IMG_IS_OK(status), nullptr, IMAGE_LOGE("fail to napi_get_cb_info"));
+    IMG_NAPI_CHECK_RET_D(argCount == NUM_2,
+        ImageNapiUtils::ThrowExceptionError(env, ERR_IMAGE_INVALID_PARAM, "Invalid args count"),
+        IMAGE_LOGE("CreatePixelMapFromSurfaceWithTransformation Invalid args count %{public}zu", argCount));
+    std::unique_ptr<PixelMapAsyncContext> asyncContext = std::make_unique<PixelMapAsyncContext>();
+    asyncContext->surfaceId = GetStringArgument(env, argValue[NUM_0]);
+    bool transformEnabled = false;
+    NAPI_ASSERT(env, napi_get_value_bool(env, argValue[NUM_1], &transformEnabled) == napi_ok,
+        "Parse input error");
+    asyncContext->transformEnabled = transformEnabled;
+    asyncContext->argc = argCount;
+    napi_create_promise(env, &(asyncContext->deferred), &result);
+    IMG_CREATE_CREATE_ASYNC_WORK(env, status, "CreatePixelMapFromSurfaceWithTransformation",
+        CreatePixelMapFromSurfaceWithTransformationExec, CreatePixelMapFromSurfaceWithTransformationComplete,
+        asyncContext, asyncContext->work);
+    IMG_NAPI_CHECK_RET_D(IMG_IS_OK(status),
+        ImageNapiUtils::ThrowExceptionError(env, ERR_IMAGE_CREATE_PIXELMAP_FAILED,
+            "Failed to create async work"), {
+        IMAGE_LOGE("fail to create async work");
+        NAPI_CHECK_AND_DELETE_REF(env, asyncContext->callbackRef);
+    });
+    return result;
+#endif
+}
+
 napi_value PixelMapNapi::CreatePixelMapFromSurfaceSync(napi_env env, napi_callback_info info)
 {
 #if defined(IOS_PLATFORM) || defined(ANDROID_PLATFORM)
@@ -1786,7 +1951,7 @@ napi_value PixelMapNapi::CreatePixelMapFromSurfaceSync(napi_env env, napi_callba
     napi_value thisVar = nullptr;
     napi_value argValue[NUM_2] = {0};
     size_t argCount = NUM_2;
-    IMAGE_LOGD("CreatePixelMap IN");
+    IMAGE_LOGD("CreatePixelMapFromSurfaceSync IN");
     IMG_JS_ARGS(env, info, status, argCount, argValue, thisVar);
     IMG_NAPI_CHECK_RET_D(IMG_IS_OK(status),
         ImageNapiUtils::ThrowExceptionError(env, ERR_IMAGE_GET_DATA_ABNORMAL,
@@ -1812,6 +1977,53 @@ napi_value PixelMapNapi::CreatePixelMapFromSurfaceSync(napi_env env, napi_callba
         ImageNapiUtils::ThrowExceptionError(env, ERR_IMAGE_PIXELMAP_CREATE_FAILED,
         "Failed to create pixelmap"),
         IMAGE_LOGE("CreatePixelMapFromSurfaceSync fail to create pixel map sync"));
+    return result;
+#endif
+}
+
+napi_value PixelMapNapi::CreatePixelMapFromSurfaceWithTransformationSync(napi_env env, napi_callback_info info)
+{
+#if defined(IOS_PLATFORM) || defined(ANDROID_PLATFORM)
+    return ImageNapiUtils::ThrowExceptionError(env, ERR_MEDIA_UNSUPPORT_OPERATION,
+        "Unsupported operation on cross-platform");
+#else
+    if (PixelMapNapi::GetConstructor() == nullptr) {
+        napi_value exports = nullptr;
+        napi_create_object(env, &exports);
+        PixelMapNapi::Init(env, exports);
+    }
+    napi_value result = nullptr;
+    napi_get_undefined(env, &result);
+    napi_value constructor = nullptr;
+    napi_status status;
+    napi_value thisVar = nullptr;
+    napi_value argValue[NUM_2] = {0};
+    size_t argCount = NUM_2;
+    IMAGE_LOGD("CreatePixelMapFromSurfaceWithTransformationSync IN");
+    IMG_JS_ARGS(env, info, status, argCount, argValue, thisVar);
+    IMG_NAPI_CHECK_RET_D(IMG_IS_OK(status),
+        ImageNapiUtils::ThrowExceptionError(env, ERR_IMAGE_GET_DATA_ABNORMAL,
+        "Failed to get data"),
+        IMAGE_LOGE("CreatePixelMapFromSurfaceWithTransformationSync fail to get data"));
+    IMG_NAPI_CHECK_RET_D(argCount == NUM_2,
+        ImageNapiUtils::ThrowExceptionError(env, COMMON_ERR_INVALID_PARAMETER, "Invalid args count"),
+        IMAGE_LOGE("CreatePixelMapFromSurfaceWithTransformationSync Invalid args count %{public}zu", argCount));
+    std::unique_ptr<PixelMapAsyncContext> asyncContext = std::make_unique<PixelMapAsyncContext>();
+    asyncContext->surfaceId = GetStringArgument(env, argValue[NUM_0]);
+    bool transformEnabled = false;
+    NAPI_ASSERT(env, napi_get_value_bool(env, argValue[NUM_1], &transformEnabled) == napi_ok,
+        "Parse input error");
+    asyncContext->transformEnabled = transformEnabled;
+    asyncContext->argc = argCount;
+    CreatePixelMapFromSurfaceWithTransformationExec(env, static_cast<void*>((asyncContext).get()));
+    status = napi_get_reference_value(env, sConstructor_, &constructor);
+    if (IMG_IS_OK(status)) {
+        status = NewPixelNapiInstance(env, constructor, asyncContext->rPixelMap, result);
+    }
+    IMG_NAPI_CHECK_RET_D(IMG_IS_OK(status), ImageNapiUtils::ThrowExceptionError(env,
+        asyncContext->status == SUCCESS ? ERR_IMAGE_CREATE_PIXELMAP_FAILED : asyncContext->status,
+        "Failed to create pixelmap"),
+        IMAGE_LOGE("CreatePixelMapFromSurfaceWithTransformationSync fail to create pixel map sync"));
     return result;
 #endif
 }

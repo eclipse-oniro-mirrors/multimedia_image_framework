@@ -18,6 +18,7 @@
 #include "image_log.h"
 #include "image_utils.h"
 #include "media_errors.h"
+#include "securec.h"
 
 #undef LOG_DOMAIN
 #define LOG_DOMAIN LOG_TAG_DOMAIN_ID_IMAGE
@@ -29,6 +30,8 @@ namespace OHOS {
 namespace Media {
 const static uint64_t MAX_KV_META_COUNT = 10;
 const static uint64_t MAX_KV_META_STRING_LENGTH = 128;
+const static uint32_t MAX_BLOB_SIZE = sizeof(uint32_t) * (2 * MAX_KV_META_COUNT + 1) + sizeof(uint64_t) +
+    MAX_KV_META_STRING_LENGTH * 2 * MAX_KV_META_COUNT;
 
 const static std::set<std::string> FRAGMENT_METADATA_KEYS = {
     FRAGMENT_METADATA_KEY_X,
@@ -51,6 +54,26 @@ const static std::map<MetadataType, std::set<std::string>> KV_METADATA_KEYS = {
     {MetadataType::GIF, GIF_METADATA_KEYS},
     {MetadataType::HEIFS, HEIFS_METADATA_KEYS},
 };
+
+namespace {
+    struct ScopeGuard {
+    public:
+        explicit ScopeGuard(std::function<void()> f) : func(std::move(f)) {}
+        ~ScopeGuard()
+        {
+            if (!dismiss) {
+                func();
+            }
+        }
+        void Dismiss()
+        {
+            dismiss = true;
+        }
+    private:
+        bool dismiss = false;
+        std::function<void()> func;
+    };
+}
 
 ImageKvMetadata::ImageKvMetadata() {}
 
@@ -107,6 +130,7 @@ int ImageKvMetadata::GetValue(const std::string &key, std::string &value) const
         IMAGE_LOGE("key is not found in properties: %{public}s", key.c_str());
         return ERR_IMAGE_INVALID_PARAMETER;
     }
+    std::unique_lock<std::mutex> guard(mutex_);
     value = it->second;
     return SUCCESS;
 }
@@ -129,6 +153,7 @@ bool ImageKvMetadata::SetValue(const std::string &key, const std::string &value)
             static_cast<unsigned long long>(MAX_KV_META_STRING_LENGTH));
         return false;
     }
+    std::unique_lock<std::mutex> guard(mutex_);
     properties_->insert_or_assign(key, value);
     return true;
 }
@@ -140,12 +165,12 @@ bool ImageKvMetadata::RemoveEntry(const std::string &key)
         IMAGE_LOGE("Key is not supported.");
         return false;
     }
-
     auto it = properties_->find(key);
     if (it == properties_->end()) {
         IMAGE_LOGE("RemoveEntry failed, key is not found in properties: %{public}s", key.c_str());
         return false;
     }
+    std::unique_lock<std::mutex> guard(mutex_);
     properties_->erase(it);
     IMAGE_LOGD("RemoveEntry for key: %{public}s", key.c_str());
     return true;
@@ -218,7 +243,7 @@ ImageKvMetadata *ImageKvMetadata::Unmarshalling(Parcel &parcel, PICTURE_ERR &err
     CHECK_ERROR_RETURN_RET_LOG(kvMetadataPtr == nullptr, nullptr, "%{public}s make_unique failed", __func__);
     CHECK_ERROR_RETURN_RET_LOG(kvMetadataPtr->properties_ == nullptr, nullptr,
         "%{public}s kvMetadataPtr->properties_ is nullptr", __func__);
-
+    
     uint64_t size = 0;
     if (!parcel.ReadUint64(size) || size > MAX_KV_META_COUNT) {
         return nullptr;
@@ -241,6 +266,148 @@ ImageKvMetadata *ImageKvMetadata::Unmarshalling(Parcel &parcel, PICTURE_ERR &err
         kvMetadataPtr->properties_->insert(std::make_pair(key, value));
     }
     return kvMetadataPtr.release();
+}
+
+uint32_t ImageKvMetadata::GetBlobSize()
+{
+    CHECK_ERROR_RETURN_RET_LOG(!properties_, 0, "GetBlobSize properties is nullptr.");
+    // metadataType + properties_.size
+    uint32_t size = sizeof(uint32_t) + sizeof(uint64_t);
+    for (const auto &[k, v] : *properties_) {
+        size += sizeof(uint32_t) + k.length();
+        size += sizeof(uint32_t) + v.length();
+    }
+    return size;
+}
+
+template<typename T>
+bool WriteMem(uint8_t *&ptr, uint32_t &remainingSize, const T &v)
+{
+    CHECK_ERROR_RETURN_RET_LOG(remainingSize < sizeof(T), false, "GetBlobPtr insufficient remaining space.");
+    CHECK_ERROR_RETURN_RET(memcpy_s(ptr, remainingSize, &v, sizeof(T)) != 0, false);
+    ptr += sizeof(T);
+    remainingSize -= sizeof(T);
+    return true;
+}
+
+template<>
+bool WriteMem<std::string>(uint8_t *&ptr, uint32_t &remainingSize, const std::string &v)
+{
+    uint32_t len = v.length();
+    CHECK_ERROR_RETURN_RET(!WriteMem<uint32_t>(ptr, remainingSize, len), false);
+    CHECK_ERROR_RETURN_RET_LOG(remainingSize < len, false, "GetBlobPtr insufficient remaining space.");
+    CHECK_ERROR_RETURN_RET(memcpy_s(ptr, remainingSize, v.c_str(), len) != 0, false);
+    ptr += len;
+    remainingSize -= len;
+    return true;
+}
+
+uint8_t *ImageKvMetadata::GetBlobPtr()
+{
+    uint32_t size = GetBlobSize();
+    uint32_t remainingSize = size;
+    CHECK_ERROR_RETURN_RET_LOG(size > MAX_BLOB_SIZE, nullptr, "GetBlobPtr blob size is too large.");
+    uint8_t *data = new uint8_t[size];
+    CHECK_ERROR_RETURN_RET_LOG(!data, nullptr, "GetBlobPtr alloc failed.");
+    auto deleteFunc = ScopeGuard([&data]() {
+        delete[] data;
+        data = nullptr;
+    });
+
+    uint8_t *ptr = data;
+    CHECK_ERROR_RETURN_RET_LOG(!WriteMem<uint32_t>(ptr, remainingSize, static_cast<uint32_t>(metadataType_)), nullptr,
+        "GetBlobPtr memcpy metadataType failed.");
+
+    CHECK_ERROR_RETURN_RET_LOG(!properties_, nullptr, "GetBlobPtr properties is nullptr.");
+    uint64_t propertiesCount = properties_->size();
+    CHECK_ERROR_RETURN_RET_LOG(!WriteMem<uint64_t>(ptr, remainingSize, propertiesCount), nullptr,
+        "GetBlobPtr memcpy properties count failed.");
+
+    for (const auto &[k, v] : *properties_) {
+        CHECK_ERROR_RETURN_RET_LOG(!WriteMem<std::string>(ptr, remainingSize, k), nullptr,
+            "GetBlobPtr memcpy properties key failed.");
+        CHECK_ERROR_RETURN_RET_LOG(!WriteMem<std::string>(ptr, remainingSize, v), nullptr,
+            "GetBlobPtr memcpy properties value failed.");
+    }
+    deleteFunc.Dismiss();
+    return data;
+}
+
+uint32_t ImageKvMetadata::GetBlob(uint32_t bufferSize, uint8_t *dst)
+{
+    CHECK_ERROR_RETURN_RET_LOG(!dst, ERR_IMAGE_INVALID_PARAMETER, "GetBlob dst is nullptr.");
+    uint32_t blobSize = GetBlobSize();
+    CHECK_ERROR_RETURN_RET_LOG(bufferSize < blobSize, ERR_IMAGE_INVALID_PARAMETER,
+        "GetBlob bufferSize is too small, need %{public}d, cur %{public}d", blobSize, bufferSize);
+    std::unique_ptr<uint8_t[]> blobPtr(GetBlobPtr());
+    CHECK_ERROR_RETURN_RET(!blobPtr, ERR_IMAGE_INVALID_PARAMETER);
+    CHECK_ERROR_RETURN_RET_LOG(memcpy_s(dst, bufferSize, blobPtr.get(), blobSize) != 0, ERR_MEDIA_MALLOC_FAILED,
+        "GetBlob copy to dst failed.");
+    return SUCCESS;
+}
+
+template<typename T>
+bool ReadMem(const uint8_t *&ptr, uint32_t &remainingSize, T &v)
+{
+    CHECK_ERROR_RETURN_RET_LOG(remainingSize < sizeof(T), false, "SetBlob buffer is insufficient.");
+    CHECK_ERROR_RETURN_RET(memcpy_s(&v, sizeof(T), ptr, sizeof(T)) != 0, false);
+    ptr += sizeof(T);
+    remainingSize -= sizeof(T);
+    return true;
+}
+
+template<>
+bool ReadMem<std::string>(const uint8_t *&ptr, uint32_t &remainingSize, std::string &v)
+{
+    uint32_t len = 0;
+    CHECK_ERROR_RETURN_RET(!ReadMem<uint32_t>(ptr, remainingSize, len), false);
+    CHECK_ERROR_RETURN_RET_LOG(remainingSize < len, false, "SetBlob buffer is insufficient.");
+    CHECK_ERROR_RETURN_RET_LOG(len > MAX_KV_META_STRING_LENGTH, false, "SetBlob key or value length is too long.");
+    v.resize(len);
+    CHECK_ERROR_RETURN_RET(memcpy_s(v.data(), len, ptr, len) != 0, false);
+    ptr += len;
+    remainingSize -= len;
+    return true;
+}
+
+uint32_t ImageKvMetadata::SetBlob(const uint8_t *source, const uint32_t bufferSize)
+{
+    CHECK_ERROR_RETURN_RET_LOG(!source || bufferSize == 0, ERR_IMAGE_INVALID_PARAMETER,
+        "SetBlob source is nullptr or bufferSize is zero.");
+    const uint8_t *ptr = source;
+    uint32_t remainingSize = bufferSize;
+
+    uint32_t type = static_cast<uint32_t>(MetadataType::UNKNOWN);
+    CHECK_ERROR_RETURN_RET_LOG(!ReadMem<uint32_t>(ptr, remainingSize, type), ERR_IMAGE_INVALID_PARAMETER,
+        "SetBlob get metadata type failed.");
+    uint32_t curType = static_cast<uint32_t>(metadataType_);
+    CHECK_ERROR_RETURN_RET_LOG(curType != type, ERR_IMAGE_INVALID_PARAMETER,
+        "SetBlob metadata type can not change. cur:%{public}d, input:%{public}d", curType, type);
+
+    uint64_t propertiesCount = 0;
+    CHECK_ERROR_RETURN_RET_LOG(!ReadMem<uint64_t>(ptr, remainingSize, propertiesCount), ERR_IMAGE_INVALID_PARAMETER,
+        "SetBlob get properties count failed.");
+    CHECK_ERROR_RETURN_RET_LOG(propertiesCount > MAX_KV_META_COUNT, ERR_IMAGE_INVALID_PARAMETER,
+        "SetBlob properties count is too many.");
+
+    ImageMetadata::PropertyMapPtr properties = std::make_shared<ImageMetadata::PropertyMap>();
+    CHECK_ERROR_RETURN_RET_LOG(!properties, ERR_MEDIA_MALLOC_FAILED,
+        "SetBlob alloc properties map failed.");
+
+    for (uint64_t i = 0; i < propertiesCount; i++) {
+        std::string key;
+        std::string value;
+        CHECK_ERROR_RETURN_RET_LOG(!ReadMem<std::string>(ptr, remainingSize, key), ERR_IMAGE_INVALID_PARAMETER,
+            "SetBlob get property key failed.");
+        CHECK_ERROR_RETURN_RET_LOG(!ReadMem<std::string>(ptr, remainingSize, value), ERR_IMAGE_INVALID_PARAMETER,
+            "SetBlob get property value failed.");
+        CHECK_ERROR_RETURN_RET_LOG(!IsValidKey(metadataType_, key), ERR_IMAGE_INVALID_PARAMETER,
+            "SetBlob property key is invalid.");
+        properties->insert_or_assign(key, value);
+    }
+
+    properties_ = properties;
+    return SUCCESS;
 }
 } // namespace Media
 } // namespace OHOS

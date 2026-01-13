@@ -23,10 +23,12 @@ ohos_fuzztest("ImageFwkImageSource3FuzzTest") {
     "./include",
     "$image_subsystem/frameworks/innerkitsimpl/utils/include",
     "$image_subsystem/frameworks/innerkitsimpl/test/fuzztest/common/include",
+    "$image_subsystem/frameworks/innerkitsimpl/accessor/include/dng",
   ]
 
   sources = [
     "$image_subsystem/frameworks/innerkitsimpl/test/fuzztest/common/src/common_fuzztest_function.cpp",
+    "${image_subsystem}/frameworks/innerkitsimpl/accessor/src/dng/dng_sdk_info.cpp",
     "src/image_fwk_image_source3_fuzzer.cpp",
   ]
 
@@ -39,6 +41,7 @@ ohos_fuzztest("ImageFwkImageSource3FuzzTest") {
     "c_utils:utils",
     "graphic_2d:color_manager",
     "hilog:libhilog",
+    "skia:dng_sdk",
   ]
 
   cflags = [

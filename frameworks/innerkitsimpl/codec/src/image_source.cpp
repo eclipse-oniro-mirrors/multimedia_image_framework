@@ -39,6 +39,9 @@
 #include "image_trace.h"
 #include "image_data_statistics.h"
 #endif
+#if !defined(CROSS_PLATFORM)
+#include "dng/dng_exif_metadata.h"
+#endif
 #include "exif_metadata.h"
 #include "exif_metadata_formatter.h"
 #include "file_source_stream.h"
@@ -174,6 +177,8 @@ constexpr int32_t SHARE_MEMORY_ALLOC = 2;
 constexpr int32_t AUTO_ALLOC = 0;
 static constexpr uint8_t JPEG_SOI[] = { 0xFF, 0xD8, 0xFF };
 constexpr uint8_t PIXEL_BYTES = 4;
+static constexpr int32_t THUMBNAIL_SHORT_SIDE_SIZE = 350;
+static constexpr int32_t THUMBNAIL_LONG_SIDE_MULTIPLIER = 3;
 
 struct StreamInfo {
     uint8_t* buffer = nullptr;
@@ -340,6 +345,7 @@ const static std::map<std::string, uint32_t> ORIENTATION_INT_MAP = {
 const static string IMAGE_DELAY_TIME = "DelayTime";
 const static string IMAGE_DISPOSAL_TYPE = "DisposalType";
 const static string IMAGE_GIFLOOPCOUNT_TYPE = "GIFLoopCount";
+const static string IMAGE_HEIFS_DELAY_TIME = "HeifsDelayTime";
 const static int32_t ZERO = 0;
 
 PluginServer &ImageSource::pluginServer_ = ImageUtils::GetPluginServer();
@@ -1470,6 +1476,9 @@ unique_ptr<PixelMap> ImageSource::CreatePixelMap(uint32_t index, const DecodeOpt
         OHOS::ColorManager::ColorSpace grColorSpace = mainDecoder_->GetPixelMapColorSpace();
         pixelMap->InnerSetColorSpace(grColorSpace);
     }
+    if (sourceInfo_.encodedFormat == "image/tiff" && opts_.desiredColorSpaceInfo != nullptr) {
+        pixelMap->ApplyColorSpace(*opts_.desiredColorSpaceInfo);
+    }
 #endif
 
     DecodeOptions procOpts;
@@ -1694,6 +1703,22 @@ uint32_t ImageSource::ModifyImageProperties(const vector<pair<string, string>> &
     return SUCCESS;
 }
 
+uint32_t ImageSource::ModifyImagePropertyBlob(const std::vector<MetadataValue> &properties)
+{
+    exifUnsupportKeys_.clear();
+    uint32_t ret = CreatExifMetadataByImageSource(true);
+    bool cond = (ret != SUCCESS);
+    CHECK_DEBUG_RETURN_RET_LOG(cond, ret, "Failed to create Exif metadata "
+                           "when attempting to modify property.");
+    for (auto property : properties) {
+        if (!exifMetadata_->SetBlobValue(property)) {
+            exifUnsupportKeys_.emplace(property.key);
+            IMAGE_LOGE("%{public}s unsupported key: %{public}s", __func__, property.key.c_str());
+        }
+    }
+    return SUCCESS;
+}
+
 uint32_t ImageSource::ModifyImageProperty(std::shared_ptr<MetadataAccessor> metadataAccessor,
     const std::string &key, const std::string &value)
 {
@@ -1744,6 +1769,50 @@ uint32_t ImageSource::ModifyImageProperties(std::shared_ptr<MetadataAccessor> me
     return ret;
 }
 
+uint32_t ImageSource::ModifyImagePropertyBlob(std::shared_ptr<MetadataAccessor> metadataAccessor,
+    const vector<MetadataValue> &properties)
+{
+    if (srcFd_ != -1) {
+        size_t fileSize = 0;
+        if (!ImageUtils::GetFileSize(srcFd_, fileSize)) {
+            IMAGE_LOGE("ModifyImageProperty accessor start get file size failed.");
+        } else {
+            IMAGE_LOGI("ModifyImageProperty accessor start fd file size:%{public}llu",
+                static_cast<unsigned long long>(fileSize));
+        }
+    }
+    uint32_t ret = ModifyImagePropertyBlob(properties);
+    bool cond = (ret != SUCCESS);
+    CHECK_ERROR_RETURN_RET_LOG(cond, ret, "Failed to create ExifMetadata.");
+
+    cond = metadataAccessor == nullptr;
+    ret = ERR_IMAGE_SOURCE_DATA;
+    CHECK_ERROR_RETURN_RET_LOG(cond, ret,
+                               "Failed to create image accessor when attempting to modify image property.");
+
+    if (srcFd_ != -1) {
+        size_t fileSize = 0;
+        if (!ImageUtils::GetFileSize(srcFd_, fileSize)) {
+            IMAGE_LOGE("ModifyImageProperty accessor end get file size failed.");
+        } else {
+            IMAGE_LOGI("ModifyImageProperty accessor end fd file size:%{public}llu",
+                static_cast<unsigned long long>(fileSize));
+        }
+    }
+    metadataAccessor->Set(exifMetadata_);
+    IMAGE_LOGD("ModifyImageProperty accesssor modify start");
+    ret = metadataAccessor->Write();
+    IMAGE_LOGD("ModifyImageProperty accesssor modify end");
+    if (!srcFilePath_.empty() && ret == SUCCESS) {
+        RefreshImageSourceByPathName();
+    }
+
+    if (!exifUnsupportKeys_.empty()) {
+        return ERR_IMAGE_DECODE_EXIF_UNSUPPORT;
+    }
+    return ret;
+}
+
 uint32_t ImageSource::ModifyImageProperty(uint32_t index, const std::string &key, const std::string &value)
 {
     std::unique_lock<std::mutex> guard(decodingMutex_);
@@ -1763,6 +1832,22 @@ uint32_t ImageSource::ModifyImageProperties(uint32_t index, const vector<pair<st
 
     if (srcBuffer_ != nullptr && srcBufferSize_ != 0) {
         return ModifyImageProperties(index, properties, srcBuffer_, srcBufferSize_, isEnhanced);
+    }
+    return ERROR;
+}
+
+uint32_t ImageSource::WriteImageMetadataBlob(const vector<MetadataValue> &properties)
+{
+    if (srcFd_ != -1) {
+        return ModifyImagePropertyBlob(properties, srcFd_);
+    }
+
+    if (!srcFilePath_.empty()) {
+        return ModifyImagePropertyBlob(properties, srcFilePath_);
+    }
+
+    if (srcBuffer_ != nullptr && srcBufferSize_ != 0) {
+        return ModifyImagePropertyBlob(properties, srcBuffer_, srcBufferSize_);
     }
     return ERROR;
 }
@@ -1801,6 +1886,22 @@ uint32_t ImageSource::ModifyImageProperties(uint32_t index, const vector<pair<st
     return ModifyImageProperties(metadataAccessor, properties, isEnhanced);
 }
 
+uint32_t ImageSource::ModifyImagePropertyBlob(const vector<MetadataValue> &properties,
+    const std::string &path)
+{
+    ImageDataStatistics imageDataStatistics("[ImageSource]ModifyImagePropertyBlob by path.");
+
+#if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
+    std::error_code ec;
+    bool cond = (!std::filesystem::exists(path, ec));
+    CHECK_ERROR_RETURN_RET_LOG(cond, ERR_IMAGE_SOURCE_DATA, "File not exists, error: %{public}d, message: %{public}s",
+        ec.value(), ec.message().c_str());
+#endif
+    std::unique_lock<std::mutex> guard(decodingMutex_);
+    auto metadataAccessor = MetadataAccessorFactory::Create(path);
+    return ModifyImagePropertyBlob(metadataAccessor, properties);
+}
+
 uint32_t ImageSource::ModifyImageProperty(uint32_t index, const std::string &key, const std::string &value,
     const std::string &path)
 {
@@ -1828,6 +1929,26 @@ uint32_t ImageSource::ModifyImageProperties(uint32_t index, const vector<pair<st
     return ret;
 }
 
+uint32_t ImageSource::ModifyImagePropertyBlob(const vector<MetadataValue> &properties, const int fd)
+{
+    ImageDataStatistics imageDataStatistics("[ImageSource]ModifyImagePropertyBlob by fd.");
+    bool cond = (fd <= STDERR_FILENO);
+    CHECK_DEBUG_RETURN_RET_LOG(cond, ERR_IMAGE_SOURCE_DATA, "Invalid file descriptor.");
+
+    std::unique_lock<std::mutex> guard(decodingMutex_);
+    size_t fileSize = 0;
+    if (!ImageUtils::GetFileSize(fd, fileSize)) {
+        IMAGE_LOGE("ModifyImagePropertyBlob get file size failed.");
+    }
+    IMAGE_LOGI("ModifyImagePropertyBlob accesssor create start, fd file size:%{public}llu",
+        static_cast<unsigned long long>(fileSize));
+    auto metadataAccessor = MetadataAccessorFactory::Create(fd);
+    IMAGE_LOGI("ModifyImagePropertyBlob accesssor create end");
+
+    auto ret = ModifyImagePropertyBlob(metadataAccessor, properties);
+    return ret;
+}
+
 uint32_t ImageSource::ModifyImageProperty(uint32_t index, const std::string &key, const std::string &value,
     const int fd)
 {
@@ -1836,6 +1957,12 @@ uint32_t ImageSource::ModifyImageProperty(uint32_t index, const std::string &key
 
 uint32_t ImageSource::ModifyImageProperties(uint32_t index, const vector<pair<string, string>> &properties,
     uint8_t *data, uint32_t size, bool isEnhanced)
+{
+    return ERR_MEDIA_WRITE_PARCEL_FAIL;
+}
+
+uint32_t ImageSource::ModifyImagePropertyBlob(const vector<MetadataValue> &properties,
+    uint8_t *data, uint32_t size)
 {
     return ERR_MEDIA_WRITE_PARCEL_FAIL;
 }
@@ -1971,6 +2098,70 @@ uint32_t ImageSource::GetImagePropertyCommon(uint32_t index, const std::string &
     return exifMetadata_->GetValue(key, value);
 }
 
+uint32_t ImageSource::GetImagePropertyCommonByType(const std::string &key, MetadataValue &value)
+{
+    CHECK_ERROR_RETURN_RET(isExifReadFailed_ && exifMetadata_ == nullptr, exifReadStatus_);
+    uint32_t ret = CreatExifMetadataByImageSource();
+    if (ret != SUCCESS) {
+        IMAGE_LOGD("Failed to create Exif metadata, when attempting to get property.");
+        isExifReadFailed_ = true;
+        exifReadStatus_ = ret;
+        return ret;
+    }
+    CHECK_ERROR_RETURN_RET(exifMetadata_ == nullptr, exifReadStatus_);
+    return exifMetadata_->GetValueByType(key, value);
+}
+
+std::vector<MetadataValue> ImageSource::GetAllPropertiesWithType()
+{
+    std::vector<MetadataValue> result;
+    CHECK_ERROR_RETURN_RET_LOG(!exifMetadata_ && isExifReadFailed_, result, "Exif metadata not initialized");
+    CHECK_ERROR_RETURN_RET_LOG(CreatExifMetadataByImageSource() != SUCCESS, result, "Metadata creation failed");
+#if !defined(CROSS_PLATFORM)
+    if (IsDngImage()) {
+        std::shared_ptr<DngExifMetadata> dngMetadata = std::static_pointer_cast<DngExifMetadata>(exifMetadata_);
+        if (dngMetadata != nullptr) {
+            result = dngMetadata->GetAllDngProperties();
+            IMAGE_LOGD("Retrieved %{public}lu DNG metadata properties", static_cast<unsigned long>(result.size()));
+            return result;
+        }
+    }
+#endif
+
+    auto processKeys = [&](const std::set<std::string>& keys) {
+        for (const auto& key : keys) {
+            MetadataValue entry;
+            if (exifMetadata_->GetValueByType(key, entry) != SUCCESS) {
+                IMAGE_LOGW("Failed to get property: %{public}s", key.c_str());
+                continue;
+            }
+            entry.key = key;
+            entry.type = ExifMetadata::GetPropertyValueType(key);
+            if (entry.key.empty()) {
+                entry.key = key;
+                IMAGE_LOGW("Recovered empty key for: %{public}s", key.c_str());
+            }
+            result.push_back(std::move(entry));
+        }
+    };
+
+    processKeys(ExifMetadatFormatter::GetRWKeys());
+    processKeys(ExifMetadatFormatter::GetROKeys());
+    
+    IMAGE_LOGD("Retrieved %zu metadata properties", result.size());
+    return result;
+}
+
+uint32_t ImageSource::RemoveAllProperties()
+{
+    CHECK_ERROR_RETURN_RET_LOG(!exifMetadata_ && isExifReadFailed_, ERR_IMAGE_DECODE_EXIF_UNSUPPORT,
+        "Exif metadata not initialized");
+    std::set<std::string> keys = ExifMetadatFormatter::GetRWKeys();
+    std::set<std::string> roKeys = ExifMetadatFormatter::GetROKeys();
+    keys.insert(roKeys.begin(), roKeys.end());
+    return RemoveImageProperties(0, keys);
+}
+
 uint32_t ImageSource::GetImagePropertyInt(uint32_t index, const std::string &key, int32_t &value)
 {
     std::unique_lock<std::mutex> guard(decodingMutex_);
@@ -2028,6 +2219,49 @@ uint32_t ImageSource::GetImagePropertyString(uint32_t index, const std::string &
     std::unique_lock<std::mutex> guard(decodingMutex_);
     std::unique_lock<std::mutex> guardFile(fileMutex_);
     return GetImagePropertyCommon(index, key, value);
+}
+
+uint32_t ImageSource::GetImagePropertyByType(uint32_t index, const std::string &key, MetadataValue &value)
+{
+    CHECK_ERROR_RETURN_RET(key.empty(), Media::ERR_IMAGE_DECODE_EXIF_UNSUPPORT);
+    uint32_t ret = SUCCESS;
+    if (IMAGE_GIFLOOPCOUNT_TYPE.compare(key) == ZERO) {
+        IMAGE_LOGD("GetImagePropertyString special key: %{public}s", key.c_str());
+        (void)GetFrameCount(ret);
+        if (ret != SUCCESS || mainDecoder_ == nullptr) {
+            IMAGE_LOGE("[ImageSource]GetFrameCount get frame sum error.");
+            return ret;
+        } else {
+            ret = mainDecoder_->GetImagePropertyString(index, key, value.stringValue);
+            CHECK_ERROR_RETURN_RET_LOG(ret != SUCCESS, ret,
+                "[ImageSource]GetLoopCount get loop count issue. errorCode=%{public}u", ret);
+        }
+        return ret;
+    }
+    if (IMAGE_HEIFS_DELAY_TIME.compare(key) == ZERO) {
+        IMAGE_LOGI("GetImagePropertyString special key: %{public}s", key.c_str());
+        (void)GetFrameCount(ret);
+        if (ret != SUCCESS || mainDecoder_ == nullptr) {
+            IMAGE_LOGE("[ImageSource]GetFrameCount get frame sum error.");
+            return ret;
+        } else {
+            int32_t delayTime = 0;
+            ret = mainDecoder_->GetImagePropertyInt(index, IMAGE_DELAY_TIME, delayTime);
+            IMAGE_LOGD("GetDelayTime value:%{public}d", delayTime);
+            value.intArrayValue.emplace_back(delayTime);
+            CHECK_ERROR_RETURN_RET_LOG(ret != SUCCESS, ret,
+                "[ImageSource]GetDelayTime get heifs delay time error. errorCode=%{public}u", ret);
+        }
+    }
+#if !defined(CROSS_PLATFORM)
+    if (IsDngImage()) {
+        return GetDngImagePropertyByDngSdk(key, value);
+    }
+#endif
+
+    std::unique_lock<std::mutex> guard(decodingMutex_);
+    std::unique_lock<std::mutex> guardFile(fileMutex_);
+    return GetImagePropertyCommonByType(key, value);
 }
 
 uint32_t ImageSource::GetImagePropertyStringBySync(uint32_t index, const std::string &key, std::string &value)
@@ -2204,6 +2438,22 @@ NATIVEEXPORT std::shared_ptr<ExifMetadata> ImageSource::GetExifMetadata()
 NATIVEEXPORT void ImageSource::SetExifMetadata(std::shared_ptr<ExifMetadata> &ptr)
 {
     exifMetadata_ = ptr;
+}
+
+uint32_t ImageSource::RemoveImageProperties(uint32_t index, const std::set<std::string> &keys)
+{
+    if (srcFd_ != -1) {
+        return RemoveImageProperties(index, keys, srcFd_);
+    }
+
+    if (!srcFilePath_.empty()) {
+        return RemoveImageProperties(index, keys, srcFilePath_);
+    }
+
+    if (srcBuffer_ != nullptr && srcBufferSize_ != 0) {
+        return RemoveImageProperties(index, keys, srcBuffer_, srcBufferSize_);
+    }
+    return ERROR;
 }
 
 uint32_t ImageSource::RemoveImageProperties(uint32_t index, const std::set<std::string> &keys, const std::string &path)
@@ -3260,6 +3510,8 @@ unique_ptr<PixelMap> ImageSource::CreatePixelMapForYUV(uint32_t &errorCode)
     if (!ConvertYUV420ToRGBA(static_cast<uint8_t *>(buffer), bufferSize, false, false, errorCode)) {
         IMAGE_LOGE("Issue converting yuv420 to rgba, errorCode=%{public}u", errorCode);
         errorCode = ERROR;
+        free(buffer);
+        buffer = nullptr;
         return nullptr;
     }
 
@@ -4106,6 +4358,26 @@ CM_ColorSpaceType ImageSource::ConvertColorSpaceType(ColorManager::ColorSpaceNam
             return base ? CM_P3_FULL : CM_BT2020_HLG_FULL;
     }
     return base ? CM_P3_FULL : CM_BT2020_HLG_FULL;
+}
+
+static CM_ColorSpaceType ConvertColorSpaceTypeForAiHDR(ColorManager::ColorSpaceName colorSpace)
+{
+    switch (colorSpace) {
+        case ColorManager::ColorSpaceName::SRGB :
+            return CM_SRGB_FULL;
+        case ColorManager::ColorSpaceName::SRGB_LIMIT :
+            return CM_SRGB_LIMIT;
+        case ColorManager::ColorSpaceName::DISPLAY_P3 :
+            return CM_P3_FULL;
+        case ColorManager::ColorSpaceName::DISPLAY_P3_LIMIT :
+            return CM_P3_LIMIT;
+        case ColorManager::ColorSpaceName::DISPLAY_BT2020_SRGB :
+            return CM_DISPLAY_BT2020_SRGB;
+        case ColorManager::ColorSpaceName::ADOBE_RGB :
+            return CM_ADOBERGB_FULL;
+        default:
+            return CM_COLORSPACE_NONE;
+    }
 }
 
 static ColorManager::ColorSpaceName ConvertColorSpaceName(CM_ColorSpaceType colorSpace, bool base)
@@ -4962,7 +5234,7 @@ uint32_t ImageSource::ImageAiProcess(Size imageSize, const DecodeOptions &opts, 
         dstCtx.info.size.height = opts.desiredSize.height;
     }
     CM_ColorSpaceType cmColorSpaceType =
-        ConvertColorSpaceType(mainDecoder_->GetPixelMapColorSpace().GetColorSpaceName(), true);
+        ConvertColorSpaceTypeForAiHDR(mainDecoder_->GetPixelMapColorSpace().GetColorSpaceName());
     auto res = DoImageAiProcess(input, dstCtx, cmColorSpaceType, needAisr, needHdr);
     if (res == SUCCESS || res == ERR_IMAGE_AI_ONLY_SR_SUCCESS) {
         FreeContextBuffer(context.freeFunc, context.allocatorType, context.pixelsBuffer);
@@ -5117,34 +5389,6 @@ uint32_t ImageSource::SetHeifsMetadataForPicture(std::unique_ptr<Picture> &pictu
     return SUCCESS;
 }
 
-static void FixCuvaPicture(std::unique_ptr<Picture> &picture)
-{
-    auto hdrPixelMapTmp = picture->GetHdrComposedPixelMap();
-    std::shared_ptr<PixelMap> hdrPixelMap = std::move(hdrPixelMapTmp);
-    auto sdrPixelMap = picture->GetMainPixel();
-    if (!hdrPixelMap || !sdrPixelMap) {
-        IMAGE_LOGE("FixCuvaPicture: Invalid PixelMap, hdr or sdr is null");
-        return;
-    }
-    IMAGE_LOGD("FixCuvaPicture: hdrPixelMap format: %{public}d, sdrPixelMap format: %{public}d",
-        hdrPixelMap->GetPixelFormat(), sdrPixelMap->GetPixelFormat());
-
-    auto newPicture = picture->CreatePictureByHdrAndSdrPixelMap(hdrPixelMap, sdrPixelMap);
-    if (newPicture == nullptr) {
-        IMAGE_LOGE("FixCuvaPicture: Fail to create new picture.");
-        return;
-    }
-    auto newGainMap = newPicture->GetGainmapPixelMap();
-    if (newGainMap == nullptr) {
-        IMAGE_LOGE("FixCuvaPicture: Fail to get new gainmap.");
-        return;
-    }
-    newGainMap->SetEditable(true);
-    auto isoGainMap = newPicture->GetAuxiliaryPicture(AuxiliaryPictureType::GAINMAP);
-    picture->SetAuxiliaryPicture(isoGainMap);
-    IMAGE_LOGI("FixCuvaPicture: Finish set isoGainMap");
-}
-
 std::unique_ptr<Picture> ImageSource::CreatePicture(const DecodingOptionsForPicture &opts, uint32_t &errorCode)
 {
     ImageInfo info;
@@ -5184,9 +5428,6 @@ std::unique_ptr<Picture> ImageSource::CreatePicture(const DecodingOptionsForPict
     SetHdrMetadataForPicture(picture);
     if (errorCode != SUCCESS) {
         IMAGE_LOGE("Decode auxiliary pictures failed, error code: %{public}u", errorCode);
-    }
-    if (CheckHdrType() == ImageHdrType::HDR_CUVA && dopts.desiredPixelFormat == PixelFormat::RGBA_8888) {
-        FixCuvaPicture(picture);
     }
     Picture::DumpPictureIfDumpEnabled(*picture, "picture_decode_after");
     return picture;
@@ -5245,6 +5486,11 @@ void ImageSource::DecodeHeifAuxiliaryPictures(
     mainInfo.hdrType = sourceHdrType_;
     picture->GetMainPixel()->GetImageInfo(mainInfo.imageInfo);
     for (auto& auxType : auxTypes) {
+        if (auxType == AuxiliaryPictureType::THUMBNAIL) {
+            IMAGE_LOGD("%{public}s: Set thumbnail for Picture", __func__);
+            SetThumbnailForPicture(picture, IMAGE_HEIF_FORMAT);
+            continue;
+        }
         if (!mainDecoder_->CheckAuxiliaryMap(auxType)) {
             IMAGE_LOGE("The auxiliary picture type does not exist! Type: %{public}d", auxType);
             continue;
@@ -5334,6 +5580,27 @@ bool ImageSource::CheckJpegSourceStream(StreamInfo &streamInfo)
     return true;
 }
 
+void ImageSource::SetThumbnailForPicture(std::unique_ptr<Picture> &picture, const std::string &mimeType)
+{
+    uint32_t auxErrorCode = ERROR;
+    CHECK_ERROR_RETURN_LOG(picture == nullptr || picture->GetMainPixel() == nullptr,
+        "%{public}s failed. picture or mainPixelMap is nullptr", __func__);
+
+    DecodingOptionsForThumbnail opts;
+    opts.desiredPixelFormat = picture->GetMainPixel()->GetPixelFormat();
+    opts.allocatorType = picture->GetMainPixel()->GetAllocatorType();
+    std::shared_ptr<PixelMap> pixelMap = CreateThumbnail(opts, auxErrorCode);
+    std::shared_ptr<AuxiliaryPicture> auxPicture = AuxiliaryPicture::Create(pixelMap, AuxiliaryPictureType::THUMBNAIL);
+    CHECK_ERROR_RETURN_LOG(auxPicture == nullptr || auxPicture->GetContentPixel() == nullptr,
+        "%{public}s failed. Create thumbnail auxiliary picture failed, errorCode: %{public}u", __func__, auxErrorCode);
+
+    AuxiliaryPictureInfo auxPictureInfo = auxPicture->GetAuxiliaryPictureInfo();
+    auxPictureInfo.jpegTagName = AUXILIARY_TAG_THUMBNAIL;
+    auxPicture->SetAuxiliaryPictureInfo(auxPictureInfo);
+    auxPicture->GetContentPixel()->SetEditable(true);
+    picture->SetAuxiliaryPicture(auxPicture);
+}
+
 void ImageSource::DecodeJpegAuxiliaryPicture(
     std::set<AuxiliaryPictureType> &auxTypes, std::unique_ptr<Picture> &picture, uint32_t &errorCode)
 {
@@ -5380,6 +5647,218 @@ void ImageSource::DecodeJpegAuxiliaryPicture(
             IMAGE_LOGE("Generate jpeg auxiliary picture failed!, error: %{public}d", auxErrorCode);
         }
     }
+    SetThumbnailForPicture(picture, IMAGE_JPEG_FORMAT);
+}
+
+static uint32_t SetThumbnailDecodeOptions(std::unique_ptr<AbsImageDecoder> &thumbDecoder,
+    const DecodingOptionsForThumbnail &opts, PlImageInfo &plInfo)
+{
+    CHECK_ERROR_RETURN_RET_LOG(thumbDecoder == nullptr, ERR_IMAGE_INVALID_PARAMETER,
+        "%{public}s: thumbDecoder is nullptr!", __func__);
+
+    if (opts.desiredSize.width < 0 || opts.desiredSize.height < 0) {
+        IMAGE_LOGE("%{public}s: invalid opts.desiredSize: (%{public}d,%{public}d)",
+            __func__, opts.desiredSize.width, opts.desiredSize.height);
+        return ERR_IMAGE_INVALID_PARAMETER;
+    }
+    Size imageSize{};
+    uint32_t errorCode = thumbDecoder->GetImageSize(FIRST_FRAME, imageSize);
+    CHECK_ERROR_RETURN_RET_LOG(errorCode != SUCCESS || !IsSizeVailed(imageSize), errorCode,
+        "%{public}s: Get image size failed!", __func__);
+
+    PixelDecodeOptions plOptions;
+    plOptions.desiredSize = imageSize;
+    plOptions.desiredPixelFormat = opts.desiredPixelFormat;
+    errorCode = thumbDecoder->SetDecodeOptions(FIRST_FRAME, plOptions, plInfo);
+    CHECK_ERROR_RETURN_RET_LOG(errorCode != SUCCESS, errorCode, "%{public}s: Set decode options failed!", __func__);
+    return SUCCESS;
+}
+
+static Size CalculateDefaultScaleSize(Size &size)
+{
+    const int32_t shortSideSize = THUMBNAIL_SHORT_SIDE_SIZE;
+    const int32_t longSideMultiplier = THUMBNAIL_LONG_SIDE_MULTIPLIER;
+    bool cond = ImageUtils::CheckFloatMulOverflow(shortSideSize, longSideMultiplier);
+    CHECK_ERROR_RETURN_RET_LOG(cond, {}, "%{public}s: shortSideSize * longSideMultiplier overflow!", __func__);
+
+    float longSideBoundary = static_cast<float>(shortSideSize) * longSideMultiplier;
+    float scaleFactor = 1.0f;
+    if (size.width < size.height) {
+        scaleFactor = static_cast<float>(shortSideSize) / size.width;
+        cond = ImageUtils::CheckFloatMulOverflow(size.height, scaleFactor);
+        CHECK_ERROR_RETURN_RET_LOG(cond, {}, "%{public}s: height * scaleFactor overflow!", __func__);
+
+        size.width = shortSideSize;
+        size.height = static_cast<int32_t>(std::round(
+            (size.height * scaleFactor > longSideBoundary) ? longSideBoundary : size.height * scaleFactor));
+    } else {
+        scaleFactor = static_cast<float>(shortSideSize) / size.height;
+        cond = ImageUtils::CheckFloatMulOverflow(size.width, scaleFactor);
+        CHECK_ERROR_RETURN_RET_LOG(cond, {}, "%{public}s: width * scaleFactor overflow!", __func__);
+
+        size.width = static_cast<int32_t>(std::round(
+            (size.width * scaleFactor > longSideBoundary) ? longSideBoundary : size.width * scaleFactor));
+        size.height = shortSideSize;
+    }
+    return size;
+}
+
+static void ScaleThumbnail(std::unique_ptr<PixelMap> &pixelMap, const Size &desiredSize, bool useDefaultScale = false)
+{
+    bool cond = (pixelMap == nullptr);
+    CHECK_ERROR_RETURN_LOG(cond, "%{public}s: pixelMap is nullptr!", __func__);
+
+    ImageInfo imageInfo;
+    pixelMap->GetImageInfo(imageInfo);
+    Size &scaledSize = imageInfo.size;
+    cond = !IsSizeVailed(scaledSize);
+    CHECK_ERROR_RETURN_LOG(cond, "%{public}s: pixelMap size is invalid, size: (%{public}d,%{public}d)",
+        __func__, scaledSize.width, scaledSize.height);
+
+    if (IsSizeVailed(desiredSize)) {
+        IMAGE_LOGD("%{public}s: use desiredSize", __func__);
+        scaledSize = desiredSize;
+    } else if (useDefaultScale) {
+        IMAGE_LOGD("%{public}s: use default scale", __func__);
+        scaledSize = CalculateDefaultScaleSize(scaledSize);
+    }
+    cond = !IsSizeVailed(scaledSize);
+    CHECK_ERROR_RETURN_LOG(cond, "%{public}s: scaledSize is invalid: (%{public}d,%{public}d)",
+        __func__, scaledSize.width, scaledSize.height);
+
+    PostProc postProc;
+    cond = !postProc.ScalePixelMapWithGPU(*(pixelMap.get()), scaledSize, AntiAliasingOption::HIGH, true);
+    CHECK_ERROR_RETURN_LOG(cond, "Fail to scale thumbnail, ScalePixelMapWithGPU failed,"
+        "scaledSize: %{public}d * %{public}d", scaledSize.width, scaledSize.height);
+
+    cond = !postProc.CenterScale(scaledSize, *(pixelMap.get()));
+    CHECK_ERROR_RETURN_LOG(cond, "Fail to scale thumbnail, CenterScale failed");
+
+    pixelMap->GetImageInfo(imageInfo);
+    IMAGE_LOGD("%{public}s: desiredSize: (%{public}d,%{public}d), scaledSize:(%{public}d,%{public}d)",
+        __func__, desiredSize.width, desiredSize.height, scaledSize.width, scaledSize.height);
+}
+
+std::unique_ptr<PixelMap> ImageSource::DecodeHeifParserThumbnail(const DecodingOptionsForThumbnail &opts,
+    DecodeContext &context, const std::string &format, uint32_t &errorCode)
+{
+    if (mainDecoder_ == nullptr) {
+        IMAGE_LOGE("%{public}s: mainDecoder_ is nullptr!", __func__);
+        errorCode = ERR_IMAGE_INVALID_PARAMETER;
+        return nullptr;
+    }
+    CHECK_ERROR_RETURN_RET_LOG(!mainDecoder_->CheckAuxiliaryMap(AuxiliaryPictureType::THUMBNAIL), nullptr,
+        "%{public}s: heifParser does not have thumbnail Images", __func__);
+
+    errorCode = SetThumbnailDecodeOptions(mainDecoder_, opts, context.info);
+    CHECK_ERROR_RETURN_RET_LOG(errorCode != SUCCESS, nullptr,
+        "%{public}s: SetThumbnailDecodeOptions failed!, errorCode: %{public}u", __func__, errorCode);
+
+    if (!mainDecoder_->DecodeHeifAuxiliaryMap(context, AuxiliaryPictureType::THUMBNAIL)) {
+        errorCode = ERR_IMAGE_DECODE_FAILED;
+        IMAGE_LOGE("%{public}s: SetDecodeOptions failed!", __func__);
+        return nullptr;
+    }
+
+    std::unique_ptr<PixelMap> pixelMap =
+        AuxiliaryGenerator::CreatePixelMapByContext(context, mainDecoder_, format, errorCode);
+    ScaleThumbnail(pixelMap, opts.desiredSize);
+    return pixelMap;
+}
+
+std::unique_ptr<PixelMap> ImageSource::GenerateThumbnail(const DecodingOptionsForThumbnail &opts, uint32_t &errorCode)
+{
+    DecodeOptions dOpts;
+    dOpts.desiredDynamicRange = DecodeDynamicRange::SDR;
+    dOpts.desiredPixelFormat = opts.desiredPixelFormat;
+    dOpts.allocatorType = opts.allocatorType;
+    std::unique_ptr<PixelMap> pixelMap = CreatePixelMap(dOpts, errorCode);
+    if (errorCode != SUCCESS || pixelMap == nullptr) {
+        IMAGE_LOGE("%{public}s: CreatePixelMap failed!", __func__);
+        errorCode = ERR_GENERATE_THUMBNAIL_FAILED;
+        return nullptr;
+    }
+
+    ScaleThumbnail(pixelMap, opts.desiredSize, true);
+    IMAGE_LOGI("%{public}s: desiredSize: (%{public}d, %{public}d), after scale size: (%{public}d, %{public}d)",
+        __func__, opts.desiredSize.width, opts.desiredSize.height, pixelMap->GetWidth(), pixelMap->GetHeight());
+    return pixelMap;
+}
+
+std::unique_ptr<PixelMap> ImageSource::DecodeExifThumbnail(const DecodingOptionsForThumbnail &opts,
+    DecodeContext &context, const std::string &format, uint32_t &errorCode)
+{
+    uint8_t *data = nullptr;
+    uint32_t dataSize = 0;
+    errorCode = CreatExifMetadataByImageSource();
+    if (errorCode != SUCCESS || exifMetadata_ == nullptr || !exifMetadata_->GetThumbnail(data, dataSize)) {
+        IMAGE_LOGW("%{public}s: Exif or exif-thumbnail does not exist!", __func__);
+        errorCode = ERR_NOT_CARRY_THUMBNAIL;
+        return nullptr;
+    }
+
+    std::unique_ptr<InputDataStream> thumbStream = BufferSourceStream::CreateSourceStream(data, dataSize);
+    CHECK_ERROR_RETURN_RET_LOG(thumbStream == nullptr, nullptr,
+        "Create thumbnail stream fail, thumbnail dataSize is %{public}u", dataSize);
+
+    auto thumbDecoder = std::unique_ptr<AbsImageDecoder>(
+        DoCreateDecoder(InnerFormat::IMAGE_EXTENDED_CODEC, pluginServer_, *thumbStream, errorCode));
+    CHECK_ERROR_RETURN_RET_LOG(errorCode != SUCCESS || thumbDecoder == nullptr, nullptr,
+        "Create thumbnail decoder fail!");
+
+    errorCode = SetThumbnailDecodeOptions(thumbDecoder, opts, context.info);
+    CHECK_ERROR_RETURN_RET_LOG(errorCode != SUCCESS, nullptr,
+        "%{public}s: SetThumbnailDecodeOptions failed!, errorCode: %{public}u", __func__, errorCode);
+
+    ImageTrace imageTrace("%{public}s: size:(%d, %d)", __func__, context.info.size.width, context.info.size.height);
+    errorCode = thumbDecoder->Decode(FIRST_FRAME, context);
+    if (errorCode != SUCCESS) {
+        IMAGE_LOGE("Decode thumbnail failed!");
+        FreeContextBuffer(context.freeFunc, context.allocatorType, context.pixelsBuffer);
+        return nullptr;
+    }
+
+    std::unique_ptr<PixelMap> pixelMap =
+        AuxiliaryGenerator::CreatePixelMapByContext(context, thumbDecoder, format, errorCode);
+    ScaleThumbnail(pixelMap, opts.desiredSize);
+    return pixelMap;
+}
+
+std::unique_ptr<PixelMap> ImageSource::CreateThumbnail(const DecodingOptionsForThumbnail &opts, uint32_t &errorCode)
+{
+    if (!ParseHdrType()) {
+        IMAGE_LOGE("%{public}s: Init mainDecoder_ failed!", __func__);
+        errorCode = ERR_IMAGE_PLUGIN_CREATE_FAILED;
+        return nullptr;
+    }
+
+    std::string format = GetExtendedCodecMimeType(mainDecoder_.get());
+    if (!(format == IMAGE_JPEG_FORMAT || format == IMAGE_HEIF_FORMAT || format == IMAGE_HEIC_FORMAT)) {
+        IMAGE_LOGE("%{public}s: unsupported format: %{public}s", __func__, format.c_str());
+        errorCode = ERR_IMAGE_MISMATCHED_FORMAT;
+        return nullptr;
+    }
+
+    DecodeContext context;
+    context.allocatorType = opts.allocatorType;
+    std::unique_ptr<PixelMap> pixelMap = nullptr;
+    if (format == IMAGE_HEIF_FORMAT || format == IMAGE_HEIC_FORMAT) {
+        pixelMap = DecodeHeifParserThumbnail(opts, context, format, errorCode);
+        if (errorCode == SUCCESS && pixelMap != nullptr) {
+            IMAGE_LOGD("%{public}s: DecodeHeifParserThumbnail success", __func__);
+            return pixelMap;
+        }
+        CHECK_ERROR_RETURN_RET_LOG(errorCode == ERR_IMAGE_INVALID_PARAMETER, nullptr,
+            "%{public}s: DecodeHeifParserThumbnail failed with parameter invaild", __func__);
+        IMAGE_LOGI("%{public}s: DecodeHeifParserThumbnail failed, get thumbnail with other method", __func__);
+    }
+
+    pixelMap = DecodeExifThumbnail(opts, context, format, errorCode);
+    if (opts.needGenerate && (errorCode != SUCCESS || pixelMap == nullptr)) {
+        IMAGE_LOGW("%{public}s: DecodeExifThumbnail failed, generate thumbnail by primary image", __func__);
+        return GenerateThumbnail(opts, errorCode);
+    }
+    return pixelMap;
 }
 
 void ImageSource::DecodeBlobMetaData(std::unique_ptr<Picture> &picture, const std::set<MetadataType> &metadataTypes,
@@ -5695,6 +6174,187 @@ bool ImageSource::IsHeifWithoutAlpha()
     return mainDecoder_->IsHeifWithoutAlpha();
 #endif
     return false;
+}
+
+#if !defined(CROSS_PLATFORM)
+std::shared_ptr<ImageMetadata> ImageSource::FindMetadataFromMap(MetadataType type)
+{
+    if (metadatas_.find(type) == metadatas_.end()) {
+        IMAGE_LOGD("metadata type(%{public}d) not exist.", static_cast<int32_t>(type));
+        return nullptr;
+    }
+    return metadatas_[type];
+}
+
+static bool GetFragmentAuxiliaryPicture(uint8_t *stream, uint32_t streamSize,
+    std::shared_ptr<SingleJpegImage>& fragmentPicture)
+{
+    auto jpegMpfParser = std::make_unique<JpegMpfParser>();
+    if (!jpegMpfParser->ParsingAuxiliaryPictures(stream, streamSize, false)) {
+        IMAGE_LOGE("JpegMpfParser parse auxiliary pictures failed!");
+        jpegMpfParser->images_.clear();
+        return false;
+    }
+    for (const auto& picture : jpegMpfParser->images_) {
+        if (picture.auxType == AuxiliaryPictureType::FRAGMENT_MAP) {
+            fragmentPicture = std::make_shared<SingleJpegImage>(picture);
+            return true;
+        }
+    }
+    IMAGE_LOGE("Fragmentpicture not found!");
+    return false;
+}
+
+static std::shared_ptr<FragmentMetadata> ParseJpegFragmentMetadata(std::unique_ptr<InputDataStream> &auxStream)
+{
+    uint8_t *data = auxStream->GetDataPtr();
+    uint32_t size = auxStream->GetStreamSize();
+    Rect fragmentRect;
+    bool cond = JpegMpfParser::ParsingFragmentMetadata(data, size, fragmentRect);
+    auto fragmentMetadata = AuxiliaryGenerator::MakeFragmentMetadata(fragmentRect);
+    return std::static_pointer_cast<FragmentMetadata>(fragmentMetadata);
+}
+
+std::shared_ptr<FragmentMetadata> ImageSource::GetFragmentMetadata()
+{
+    ImageInfo info;
+    GetImageInfo(info);
+    if (info.encodedFormat != IMAGE_HEIF_FORMAT && info.encodedFormat != IMAGE_JPEG_FORMAT &&
+        info.encodedFormat != IMAGE_HEIC_FORMAT) {
+        IMAGE_LOGE("Unsupport format: %{public}s", info.encodedFormat.c_str());
+        return nullptr;
+    }
+
+    auto fragmentMetadata = std::static_pointer_cast<FragmentMetadata>(FindMetadataFromMap(MetadataType::FRAGMENT));
+    if (fragmentMetadata != nullptr) {
+        return fragmentMetadata;
+    }
+
+    if (info.encodedFormat == IMAGE_JPEG_FORMAT) {
+        StreamInfo streamInfo;
+        if (!CheckJpegSourceStream(streamInfo) || streamInfo.buffer == nullptr || streamInfo.GetCurrentSize() == 0) {
+            IMAGE_LOGE("Source stream is invalid!");
+            return nullptr;
+        }
+        std::shared_ptr<SingleJpegImage> fragmentPicture;
+        if (GetFragmentAuxiliaryPicture(streamInfo.buffer, streamInfo.GetCurrentSize(), fragmentPicture)) {
+            std::unique_ptr<InputDataStream> auxStream =
+                BufferSourceStream::CreateSourceStream((streamInfo.GetCurrentAddress() + fragmentPicture->offset),
+                fragmentPicture->size);
+            fragmentMetadata = ParseJpegFragmentMetadata(auxStream);
+            metadatas_[MetadataType::FRAGMENT] = fragmentMetadata;
+            return fragmentMetadata;
+        }
+        return nullptr;
+    } else {
+        Rect fragmentRect;
+        mainDecoder_->GetHeifFragmentMetadata(fragmentRect);
+        fragmentMetadata = std::static_pointer_cast<FragmentMetadata>(
+            AuxiliaryGenerator::MakeFragmentMetadata(fragmentRect));
+        metadatas_[MetadataType::FRAGMENT] = fragmentMetadata;
+        return fragmentMetadata;
+    }
+    return fragmentMetadata;
+}
+
+std::shared_ptr<GifMetadata> ImageSource::GetGifMetadata()
+{
+    ImageInfo info;
+    GetImageInfo(info);
+    if (sourceStreamPtr_ == nullptr) {
+        IMAGE_LOGE("[%{public}s] sourceStreamPtr_ is nullptr", __func__);
+        return nullptr;
+    }
+
+    if (info.encodedFormat != IMAGE_GIF_FORMAT) {
+        IMAGE_LOGE("[%{public}s] unsupport format: %{public}s", __func__, info.encodedFormat.c_str());
+        return nullptr;
+    }
+
+    int32_t delayTime = 0;
+    uint32_t errorCode = mainDecoder_->GetImagePropertyInt(0, IMAGE_DELAY_TIME, delayTime);
+    CHECK_ERROR_RETURN_RET_LOG(errorCode != SUCCESS, nullptr, "[%{public}s] get delay time failed", __func__);
+    int32_t disposalType = 0;
+    errorCode = mainDecoder_->GetImagePropertyInt(0, IMAGE_DISPOSAL_TYPE, disposalType);
+    CHECK_ERROR_RETURN_RET_LOG(errorCode != SUCCESS, nullptr, "[%{public}s] get disposal type failed", __func__);
+
+    std::shared_ptr<GifMetadata> gifMetadata = std::make_shared<GifMetadata>();
+    std::shared_ptr<ImageMetadata> metadataTemp = std::make_shared<GifMetadata>();
+    metadataTemp->SetValue(GIF_METADATA_KEY_DELAY_TIME, std::to_string(delayTime));
+    metadataTemp->SetValue(GIF_METADATA_KEY_DISPOSAL_TYPE, std::to_string(disposalType));
+    gifMetadata = std::static_pointer_cast<GifMetadata>(metadataTemp);
+    metadatas_[MetadataType::GIF] = gifMetadata;
+    return gifMetadata;
+}
+
+std::shared_ptr<ImageMetadata> ImageSource::GetMetadata(MetadataType type)
+{
+    switch (type) {
+        case MetadataType::EXIF:
+            return GetExifMetadata();
+        case MetadataType::FRAGMENT:
+            return GetFragmentMetadata();
+        case MetadataType::GIF:
+            return GetGifMetadata();
+        default:
+            IMAGE_LOGE("Unsupported MetadataType");
+            break;
+    }
+    return nullptr;
+}
+
+bool ImageSource::IsDngImage()
+{
+    ImageInfo info;
+    uint32_t ret = GetImageInfo(info);
+    bool cond = (ret != SUCCESS);
+    CHECK_ERROR_RETURN_RET_LOG(cond, false, "IsDngImage GetImageInfo failed");
+    IMAGE_LOGD("IsDngImage info.encodedFormat: %{public}s", info.encodedFormat.c_str());
+    return info.encodedFormat == DNG_FORMAT;
+}
+
+static void ClearMetadataValue(MetadataValue &value)
+{
+    value.key.clear();
+    value.type = PropertyValueType::UNKNOWN;
+    value.stringValue.clear();
+    value.intArrayValue.clear();
+    value.doubleArrayValue.clear();
+    value.bufferValue.clear();
+}
+
+uint32_t ImageSource::GetDngImagePropertyByDngSdk(const std::string &key, MetadataValue &value)
+{
+    ClearMetadataValue(value);
+    std::shared_ptr<ExifMetadata> exifMetadata = GetExifMetadata();
+    CHECK_ERROR_RETURN_RET_LOG(exifMetadata == nullptr, ERR_IMAGE_DATA_ABNORMAL, "exifMetadata is nullptr");
+
+    std::shared_ptr<DngExifMetadata> dngMetadata = std::static_pointer_cast<DngExifMetadata>(exifMetadata);
+    CHECK_ERROR_RETURN_RET_LOG(dngMetadata == nullptr, ERR_IMAGE_DATA_ABNORMAL,
+        "[%{public}s] Failed to cast to DngExifMetadata", __func__);
+
+    value.key = key;
+    return dngMetadata->GetExifProperty(value);
+}
+#endif
+
+bool ImageSource::IsJpegProgressive(uint32_t &errorCode)
+{
+    auto iter = GetValidImageStatus(0, errorCode);
+    if (iter == imageStatusMap_.end()) {
+        IMAGE_LOGE("[ImageSource] IsJpegProgressive, get valid image status fail, ret:%{public}u.", errorCode);
+        if (errorCode != ERR_IMAGE_UNKNOWN_FORMAT) {
+            errorCode = ERR_IMAGE_SOURCE_DATA;
+        }
+        return false;
+    }
+
+    if (InitMainDecoder() != SUCCESS) {
+        IMAGE_LOGE("[ImageSource] IsJpegProgressive, get decoder failed");
+        errorCode = ERR_IMAGE_SOURCE_DATA;
+        return false;
+    }
+    return mainDecoder_->IsProgressiveJpeg();
 }
 } // namespace Media
 } // namespace OHOS

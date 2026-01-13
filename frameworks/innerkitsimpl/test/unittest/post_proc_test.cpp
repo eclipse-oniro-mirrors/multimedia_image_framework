@@ -16,6 +16,11 @@
 #define protected public
 #include <gtest/gtest.h>
 #include <fstream>
+
+#if !defined(CROSS_PLATFORM)
+#include "surface_type.h"
+#include "surface_buffer.h"
+#endif
 #include "image_source.h"
 #include "image_source_util.h"
 #include "image_type.h"

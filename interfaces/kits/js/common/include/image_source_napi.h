@@ -70,8 +70,10 @@ private:
     static napi_value GetImageInfoSync(napi_env env, napi_callback_info info);
     static napi_value CreatePixelMap(napi_env env, napi_callback_info info);
     static napi_value CreatePixelMapSync(napi_env env, napi_callback_info info);
+    static napi_value WriteImageMetadata(napi_env env, napi_callback_info info);
     static napi_value ModifyImageProperty(napi_env env, napi_callback_info info);
     static napi_value ModifyImagePropertiesEnhanced(napi_env env, napi_callback_info info);
+    static napi_value ReadImageMetadata(napi_env env, napi_callback_info info);
     static napi_value GetImageProperty(napi_env env, napi_callback_info info);
     static napi_value GetImagePropertySync(napi_env env, napi_callback_info info);
     static napi_value UpdateData(napi_env env, napi_callback_info info);
@@ -80,10 +82,13 @@ private:
     static napi_value GetDelayTime(napi_env env, napi_callback_info info);
     static napi_value GetDisposalType(napi_env env, napi_callback_info info);
     static napi_value GetFrameCount(napi_env env, napi_callback_info info);
+    static napi_value IsJpegProgressive(napi_env env, napi_callback_info info);
     static std::vector<napi_property_descriptor> RegisterNapi();
 #if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
     static napi_value CreatePicture(napi_env env, napi_callback_info info);
     static napi_value CreatePictureAtIndex(napi_env env, napi_callback_info info);
+    static napi_value CreateThumbnail(napi_env env, napi_callback_info info);
+    static napi_value CreateThumbnailSync(napi_env env, napi_callback_info info);
 #endif
     static napi_value CreatePixelMapUsingAllocator(napi_env env, napi_callback_info info);
     static napi_value CreatePixelMapUsingAllocatorSync(napi_env env, napi_callback_info info);
