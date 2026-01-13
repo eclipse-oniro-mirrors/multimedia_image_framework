@@ -258,6 +258,11 @@ typedef enum {
      * @since 19
      */
     IMAGE_SOURCE_INVALID_PARAMETER = 7700204,
+    /**
+     * @error The image source does not contain XMP metadata.
+     * @since 24
+     */
+    IMAGE_SOURCE_XMP_NOT_FOUND = 7700205,
     /** decode failed */
     IMAGE_DECODE_FAILED = 7700301,
     /** memory allocation failed */
@@ -278,6 +283,11 @@ typedef enum {
      * @since 20
      */
     IMAGE_RECEIVER_INVALID_PARAMETER = 7900201,
+    /**
+     * @error XMP tag not found.
+     * @since 24
+     */
+    IMAGE_XMP_TAG_NOT_FOUND = 8000201,
 } Image_ErrorCode;
 
 /**

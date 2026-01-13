@@ -28,6 +28,8 @@
 #include "image_log.h"
 #include "native_color_space_manager.h"
 #include "ndk_color_space.h"
+#include "xmp_metadata.h"
+#include "xmp_metadata_native_impl.h"
 
 #ifndef _WIN32
 #include "securec.h"
@@ -1597,6 +1599,40 @@ Image_ErrorCode OH_ImageSourceNative_GetFrameCount(OH_ImageSourceNative *source,
         return IMAGE_BAD_PARAMETER;
     }
     return IMAGE_SUCCESS;
+}
+
+MIDK_EXPORT
+Image_ErrorCode OH_ImageSourceNative_ReadXMPMetadata(OH_ImageSourceNative *source, OH_XMPMetadata **outMeta)
+{
+    if (source == nullptr || source->GetInnerImageSource() == nullptr || outMeta == nullptr) {
+        return IMAGE_BAD_PARAMETER;
+    }
+    *outMeta = nullptr;
+
+    uint32_t errorCode = ERROR;
+    std::shared_ptr<XMPMetadata> meta = source->GetInnerImageSource()->ReadXMPMetadata(errorCode);
+    if (meta == nullptr || errorCode != IMAGE_SUCCESS) {
+        return static_cast<Image_ErrorCode>(ImageErrorConvert::ReadXMPMetadataMakeErrMsg(errorCode).first);
+    }
+
+    OH_XMPMetadata *ndkMeta = new(std::nothrow) OH_XMPMetadata();
+    if (ndkMeta == nullptr) {
+        return IMAGE_SOURCE_ALLOC_FAILED;
+    }
+    ndkMeta->inner = meta;
+    *outMeta = ndkMeta;
+    return IMAGE_SUCCESS;
+}
+
+MIDK_EXPORT
+Image_ErrorCode OH_ImageSourceNative_WriteXMPMetadata(OH_ImageSourceNative *source, OH_XMPMetadata *meta)
+{
+    if (source == nullptr || source->GetInnerImageSource() == nullptr || meta == nullptr || meta->inner == nullptr) {
+        return IMAGE_BAD_PARAMETER;
+    }
+
+    uint32_t errorCode = source->GetInnerImageSource()->WriteXMPMetadata(meta->inner);
+    return static_cast<Image_ErrorCode>(ImageErrorConvert::WriteXMPMetadataMakeErrMsg(errorCode).first);
 }
 
 MIDK_EXPORT

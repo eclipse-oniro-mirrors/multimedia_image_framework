@@ -905,7 +905,8 @@ static void GetBlobExec(napi_env env, void *data)
     context->status = context->rXMPMetadata->GetBlob(buffer);
     CHECK_ERROR_RETURN_LOG(context->status != SUCCESS, "GetBlob failed");
     context->arrayBufferSize = buffer.size();
-    context->arrayBuffer = new uint8_t[context->arrayBufferSize];
+    context->arrayBuffer = new(std::nothrow) uint8_t[context->arrayBufferSize];
+    CHECK_ERROR_RETURN_LOG(context->arrayBuffer == nullptr, "Failed to allocate memory");
     if (memcpy_s(context->arrayBuffer, context->arrayBufferSize, buffer.data(), buffer.size()) != EOK) {
         context->status = ERR_MEDIA_MALLOC_FAILED;
         IMAGE_LOGE("%{public}s memcpy_s failed", __func__);

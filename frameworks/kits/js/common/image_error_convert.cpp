@@ -100,5 +100,48 @@ std::pair<int32_t, std::string> ImageErrorConvert::CreateThumbnailMakeErrMsg(uin
             return std::make_pair<int32_t, std::string>(IMAGE_DECODE_FAILED, "Decode failed.");
     }
 }
+
+std::pair<int32_t, std::string> ImageErrorConvert::XMPMetadataMakeErrMsg(uint32_t errorCode)
+{
+    switch (errorCode) {
+        case SUCCESS:
+            return std::make_pair<int32_t, std::string>(IMAGE_SUCCESS, "Success.");
+        case ERR_IMAGE_INVALID_PARAMETER:
+        case COMMON_ERR_INVALID_PARAMETER:
+            return std::make_pair<int32_t, std::string>(IMAGE_BAD_PARAMETER, "Bad parameter.");
+        case ERR_XMP_DECODE_FAILED:
+            return std::make_pair<int32_t, std::string>(IMAGE_SOURCE_XMP_NOT_FOUND, "XMP metadata not found.");
+        default:
+            return std::make_pair<int32_t, std::string>(IMAGE_UNKNOWN_ERROR, "Unknown error.");
+    }
+}
+
+std::pair<int32_t, std::string> ImageErrorConvert::ReadXMPMetadataMakeErrMsg(uint32_t errorCode)
+{
+    switch (errorCode) {
+        case SUCCESS:
+            return std::make_pair<int32_t, std::string>(IMAGE_SUCCESS, "Success.");
+        case ERR_IMAGE_INVALID_PARAMETER:
+        case COMMON_ERR_INVALID_PARAMETER:
+            return std::make_pair<int32_t, std::string>(IMAGE_BAD_PARAMETER, "Bad parameter.");
+        case ERR_XMP_DECODE_FAILED:
+            return std::make_pair<int32_t, std::string>(IMAGE_SOURCE_XMP_NOT_FOUND, "XMP metadata not found.");
+        default:
+            return std::make_pair<int32_t, std::string>(IMAGE_UNKNOWN_ERROR, "Unknown error.");
+    }
+}
+
+std::pair<int32_t, std::string> ImageErrorConvert::WriteXMPMetadataMakeErrMsg(uint32_t errorCode)
+{
+    switch (errorCode) {
+        case SUCCESS:
+            return std::make_pair<int32_t, std::string>(IMAGE_SUCCESS, "Success.");
+        case ERR_IMAGE_INVALID_PARAMETER:
+        case COMMON_ERR_INVALID_PARAMETER:
+            return std::make_pair<int32_t, std::string>(IMAGE_BAD_PARAMETER, "Bad parameter.");
+        default:
+            return std::make_pair<int32_t, std::string>(IMAGE_UNKNOWN_ERROR, "Unknown error.");
+    }
+}
 }  // namespace Media
 }  // namespace OHOS

@@ -32,6 +32,7 @@ ohos_shared_library("image_common") {
   sources = [
     "image_common.cpp",
     "image_common_impl.cpp",
+    "../ndk/xmp_metadata_native.cpp",
   ]
 
   public_configs =
@@ -40,6 +41,7 @@ ohos_shared_library("image_common") {
   deps = [
     "${image_subsystem}/frameworks/innerkitsimpl/utils:image_utils",
     "${image_subsystem}/interfaces/innerkits:image_native",
+    "${image_subsystem}/interfaces/kits/js/common:image_error_convert",
   ]
 
   if (enable_libexif) {
