@@ -903,6 +903,7 @@ static void GetBlobExec(napi_env env, void *data)
     CHECK_ERROR_RETURN_LOG(context->rXMPMetadata == nullptr, "empty native XMPMetadata");
     std::string buffer;
     context->status = context->rXMPMetadata->GetBlob(buffer);
+    CHECK_ERROR_RETURN_LOG(context->status != SUCCESS, "GetBlob failed");
     context->arrayBufferSize = buffer.size();
     context->arrayBuffer = new uint8_t[context->arrayBufferSize];
     if (memcpy_s(context->arrayBuffer, context->arrayBufferSize, buffer.data(), buffer.size()) != EOK) {
@@ -918,16 +919,23 @@ static void GetBlobComplete(napi_env env, napi_status status, void *data)
     CHECK_ERROR_RETURN_LOG(context == nullptr, "empty context");
     napi_value result = nullptr;
     napi_get_undefined(env, &result);
-    if (context->status == SUCCESS &&
-        !ImageNapiUtils::CreateArrayBuffer(env, context->arrayBuffer, context->arrayBufferSize, &result)) {
-        context->status = ERROR;
-        IMAGE_LOGE("%{public}s Fail to create napi arraybuffer!", __func__);
-        napi_get_undefined(env, &result);
+    if (context->status == SUCCESS) {
+        if (!ImageNapiUtils::CreateExternalArrayBuffer(env, context->arrayBuffer, context->arrayBufferSize, &result)) {
+            delete[] static_cast<uint8_t*>(context->arrayBuffer);
+            context->arrayBuffer = nullptr;
+            context->arrayBufferSize = 0;
+            context->status = ERROR;
+            IMAGE_LOGE("%{public}s Fail to create napi external arraybuffer!", __func__);
+            napi_get_undefined(env, &result);
+        } else {
+            context->arrayBuffer = nullptr;
+            context->arrayBufferSize = 0;
+        }
+    } else {
+        delete[] static_cast<uint8_t*>(context->arrayBuffer);
+        context->arrayBuffer = nullptr;
+        context->arrayBufferSize = 0;
     }
-
-    delete[] static_cast<uint8_t*>(context->arrayBuffer);
-    context->arrayBuffer = nullptr;
-    context->arrayBufferSize = 0;
     CommonCallbackRoutine(env, context, result);
 }
 

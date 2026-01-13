@@ -167,6 +167,24 @@ bool ImageNapiUtils::CreateArrayBuffer(napi_env env, void* src, size_t srcLen, n
     return true;
 }
 
+static void ExternalArrayBufferFinalizer(napi_env env, void *data, void *hint)
+{
+    (void)env;
+    (void)hint;
+    delete[] static_cast<uint8_t*>(data);
+}
+
+bool ImageNapiUtils::CreateExternalArrayBuffer(napi_env env, void *data, size_t dataLen, napi_value *res)
+{
+    if (data == nullptr || dataLen == 0 || res == nullptr) {
+        return false;
+    }
+
+    napi_status status = napi_create_external_arraybuffer(
+        env, data, dataLen, ExternalArrayBufferFinalizer, nullptr, res);
+    return status == napi_ok;
+}
+
 bool ImageNapiUtils::CreateNapiBoolean(napi_env env, bool value, napi_value &root)
 {
     if (napi_get_boolean(env, value, &root) != napi_ok) {

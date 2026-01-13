@@ -64,8 +64,6 @@ namespace {
    </rdf:RDF>
  </x:xmpmeta>
 <?xpacket end="w"?>)XMP";
-    constexpr uint32_t XMP_BLOB_DATA_SIZE = 4096;
-    constexpr uint32_t XMP_BLOB_SMALL_SIZE = 1;
 
     constexpr std::string_view EMPTY_STRING = "";
     constexpr std::string_view TEST_PATH = "test:path";
@@ -3028,12 +3026,11 @@ HWTEST_F(XmpMetadataTest, SetGetBlobTest001, TestSize.Level1)
     uint32_t ret = xmpMetadata.SetBlob(XMP_BLOB_DATA, sizeof(XMP_BLOB_DATA));
     EXPECT_EQ(ret, SUCCESS);
 
-    uint8_t buffer[XMP_BLOB_DATA_SIZE] = { 0 };
-    ret = xmpMetadata.GetBlob(sizeof(buffer), buffer);
+    std::string buffer;
+    ret = xmpMetadata.GetBlob(buffer);
     EXPECT_EQ(ret, SUCCESS);
 
-    std::string str(reinterpret_cast<char*>(buffer), strlen(reinterpret_cast<char*>(buffer)));
-    GTEST_LOG_(INFO) << "XmpMetadataTest: SetGetBlobTest001 str is " << str;
+    GTEST_LOG_(INFO) << "XmpMetadataTest: SetGetBlobTest001 str is " << buffer;
     GTEST_LOG_(INFO) << "XmpMetadataTest: SetGetBlobTest001 end";
 }
 
@@ -3049,31 +3046,12 @@ HWTEST_F(XmpMetadataTest, SetGetBlobTest002, TestSize.Level1)
     uint32_t ret = xmpMetadata.SetBlob(nullptr, 0);
     EXPECT_EQ(ret, ERR_IMAGE_INVALID_PARAMETER);
 
-    uint8_t buffer[XMP_BLOB_DATA_SIZE] = { 0 };
-    ret = xmpMetadata.GetBlob(sizeof(buffer), buffer);
+    std::string buffer;
+    ret = xmpMetadata.GetBlob(buffer);
     EXPECT_EQ(ret, SUCCESS);
 
-    std::string str(reinterpret_cast<char*>(buffer), strlen(reinterpret_cast<char*>(buffer)));
-    GTEST_LOG_(INFO) << "XmpMetadataTest: SetGetBlobTest002 str is " << str;
+    GTEST_LOG_(INFO) << "XmpMetadataTest: SetGetBlobTest002 str is " << buffer;
     GTEST_LOG_(INFO) << "XmpMetadataTest: SetGetBlobTest002 end";
-}
-
-/**
- * @tc.name: SetGetBlobTest003
- * @tc.desc: test the SetBlob and GetBlob method when the buffer size is smaller than the source size.
- * @tc.type: FUNC
- */
-HWTEST_F(XmpMetadataTest, SetGetBlobTest003, TestSize.Level1)
-{
-    GTEST_LOG_(INFO) << "XmpMetadataTest: SetGetBlobTest003 start";
-    XMPMetadata xmpMetadata;
-    uint32_t ret = xmpMetadata.SetBlob(XMP_BLOB_DATA, sizeof(XMP_BLOB_DATA));
-    EXPECT_EQ(ret, SUCCESS);
-
-    uint8_t buffer[XMP_BLOB_SMALL_SIZE] = { 0 };
-    ret = xmpMetadata.GetBlob(sizeof(buffer), buffer);
-    EXPECT_EQ(ret, ERR_IMAGE_INVALID_PARAMETER);
-    GTEST_LOG_(INFO) << "XmpMetadataTest: SetGetBlobTest003 end";
 }
 
 /**

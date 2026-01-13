@@ -285,29 +285,11 @@ uint32_t XMPMetadata::GetBlob(std::string &buffer)
     CHECK_ERROR_RETURN_RET_LOG(!impl_ || !impl_->IsValid(), ERR_MEDIA_NULL_POINTER,
         "%{public}s impl is invalid", __func__);
 
+    buffer.clear();
     impl_->SerializeToBuffer(buffer, kXMP_OmitPacketWrapper);
-    IMAGE_LOGD("%{public}s success! string buffer size is %{public}u", __func__, buffer.size());
-    return SUCCESS;
-    XMP_CATCH_RETURN_CODE(ERR_XMP_DECODE_FAILED);
-}
-
-uint32_t XMPMetadata::GetBlob(uint32_t bufferSize, uint8_t *dst)
-{
-    XMP_TRY();
-    CHECK_ERROR_RETURN_RET_LOG(dst == nullptr, ERR_IMAGE_INVALID_PARAMETER,
-        "%{public}s dst is nullptr", __func__);
-
-    std::string buffer;
-    uint32_t ret = this->GetBlob(buffer);
-    CHECK_ERROR_RETURN_RET(ret != SUCCESS, ret);
-    if (buffer.size() > bufferSize) {
-        IMAGE_LOGE("%{public}s buffer size is too small", __func__);
-        return ERR_IMAGE_INVALID_PARAMETER;
-    }
-    CHECK_ERROR_RETURN_RET_LOG(memcpy_s(dst, bufferSize, buffer.data(), buffer.size()) != EOK,
-        ERR_MEDIA_MALLOC_FAILED, "%{public}s memcpy_s failed", __func__);
-    IMAGE_LOGD("%{public}s success! actualSize is %{public}u, bufferSize is %{public}u", __func__,
-        buffer.size(), bufferSize);
+    CHECK_ERROR_RETURN_RET_LOG(buffer.empty(), ERR_XMP_DECODE_FAILED,
+        "%{public}s failed to serialize to buffer", __func__);
+    IMAGE_LOGD("%{public}s success! actual blob size is %{public}zu", __func__, buffer.size());
     return SUCCESS;
     XMP_CATCH_RETURN_CODE(ERR_XMP_DECODE_FAILED);
 }

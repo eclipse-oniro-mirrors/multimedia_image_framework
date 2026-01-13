@@ -172,6 +172,7 @@ public:
 
     static napi_valuetype getType(napi_env env, napi_value root);
     static bool CreateArrayBuffer(napi_env env, void* src, size_t srcLen, napi_value *res);
+    static bool CreateExternalArrayBuffer(napi_env env, void *data, size_t dataLen, napi_value *res);
     static bool CreateNapiBoolean(napi_env env, bool value, napi_value &root);
     static bool CreateNapiInt32(napi_env env, int32_t value, napi_value &root);
     static bool CreateNapiDouble(napi_env env, double value, napi_value &root);
