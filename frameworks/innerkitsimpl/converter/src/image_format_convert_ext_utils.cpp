@@ -95,7 +95,7 @@ static bool RGBToI420(SrcConvertParam &srcParam, I420Info &i420)
                 i420.uStride, i420.I420V, i420.vStride, srcParam.width, srcParam.height);
             break;
         case PixelFormat::BGRA_8888:
-            converter.ARGBToI420(srcParam.slice[0], srcParam.stride[0], i420.I420Y, i420.yStride, i420.I420U,
+            converter.ARGBToJ420(srcParam.slice[0], srcParam.stride[0], i420.I420Y, i420.yStride, i420.I420U,
                 i420.uStride, i420.I420V, i420.vStride, srcParam.width, srcParam.height);
             break;
         default:
@@ -1221,56 +1221,18 @@ static bool RGBToI420ToYuv(const uint8_t *srcBuffer, const RGBDataInfo &rgbInfo,
     return bRet;
 }
 
-static bool RGBToYuvConverter(SrcConvertParam &srcParam, DestConvertParam &destParam)
-{
-    CHECK_ERROR_RETURN_RET(srcParam.format != PixelFormat::BGRA_8888, false);
-    auto &converter = ConverterHandle::GetInstance().GetHandle();
-    switch (destParam.format) {
-        case PixelFormat::NV12:
-            converter.ARGBToNV12(srcParam.slice[0], srcParam.stride[0],
-                destParam.slice[0], destParam.stride[0], destParam.slice[1], destParam.stride[1],
-                destParam.width, destParam.height);
-            break;
-        case PixelFormat::NV21:
-            converter.ARGBToNV21(srcParam.slice[0], srcParam.stride[0],
-                destParam.slice[0], destParam.stride[0], destParam.slice[1], destParam.stride[1],
-                destParam.width, destParam.height);
-            break;
-        default:
-            return false;
-    }
-    return true;
-}
-
-static bool RGBToYuv(const uint8_t *srcBuffer, const RGBDataInfo &rgbInfo, PixelFormat srcFormat,
-                     DestConvertInfo &destInfo, PixelFormat destFormat)
-{
-    bool cond = srcBuffer == nullptr || destInfo.buffer == nullptr || rgbInfo.width == 0 || rgbInfo.height == 0 ||
-        destInfo.bufferSize == 0;
-    CHECK_ERROR_RETURN_RET(cond, false);
-    SrcConvertParam srcParam = {rgbInfo.width, rgbInfo.height};
-    srcParam.buffer = srcBuffer;
-    srcParam.format = srcFormat;
-
-    DestConvertParam destParam = {destInfo.width, destInfo.height};
-    destParam.format = destFormat;
-
-    RGBToYuvParam(rgbInfo, srcParam, destParam, destInfo);
-    return RGBToYuvConverter(srcParam, destParam);
-}
-
 bool ImageFormatConvertExtUtils::BGRAToNV21(const uint8_t *srcBuffer, const RGBDataInfo &rgbInfo,
                                             DestConvertInfo &destInfo,
                                             [[maybe_unused]] ColorSpace colorSpace)
 {
-    return RGBToYuv(srcBuffer, rgbInfo, PixelFormat::BGRA_8888, destInfo, PixelFormat::NV21);
+    return RGBToI420ToYuv(srcBuffer, rgbInfo, PixelFormat::BGRA_8888, destInfo, PixelFormat::NV21);
 }
 
 bool ImageFormatConvertExtUtils::BGRAToNV12(const uint8_t *srcBuffer, const RGBDataInfo &rgbInfo,
                                             DestConvertInfo &destInfo,
                                             [[maybe_unused]] ColorSpace colorSpace)
 {
-    return RGBToYuv(srcBuffer, rgbInfo, PixelFormat::BGRA_8888, destInfo, PixelFormat::NV12);
+    return RGBToI420ToYuv(srcBuffer, rgbInfo, PixelFormat::BGRA_8888, destInfo, PixelFormat::NV12);
 }
 
 bool ImageFormatConvertExtUtils::RGB565ToNV21(const uint8_t *srcBuffer, const RGBDataInfo &rgbInfo,
