@@ -95,7 +95,7 @@ static bool RGBToI420(SrcConvertParam &srcParam, I420Info &i420)
                 i420.uStride, i420.I420V, i420.vStride, srcParam.width, srcParam.height);
             break;
         case PixelFormat::BGRA_8888:
-            converter.ARGBToI420(srcParam.slice[0], srcParam.stride[0], i420.I420Y, i420.yStride, i420.I420U,
+            converter.ARGBToJ420(srcParam.slice[0], srcParam.stride[0], i420.I420Y, i420.yStride, i420.I420U,
                 i420.uStride, i420.I420V, i420.vStride, srcParam.width, srcParam.height);
             break;
         default:
@@ -1263,6 +1263,7 @@ bool ImageFormatConvertExtUtils::BGRAToNV21(const uint8_t *srcBuffer, const RGBD
                                             DestConvertInfo &destInfo,
                                             [[maybe_unused]] ColorSpace colorSpace)
 {
+    return RGBToI420ToYuv(srcBuffer, rgbInfo, PixelFormat::BGRA_8888, destInfo, PixelFormat::NV21);
     return RGBToYuv(srcBuffer, rgbInfo, PixelFormat::BGRA_8888, destInfo, PixelFormat::NV21);
 }
 
@@ -1270,7 +1271,7 @@ bool ImageFormatConvertExtUtils::BGRAToNV12(const uint8_t *srcBuffer, const RGBD
                                             DestConvertInfo &destInfo,
                                             [[maybe_unused]] ColorSpace colorSpace)
 {
-    return RGBToYuv(srcBuffer, rgbInfo, PixelFormat::BGRA_8888, destInfo, PixelFormat::NV12);
+    return RGBToI420ToYuv(srcBuffer, rgbInfo, PixelFormat::BGRA_8888, destInfo, PixelFormat::NV12);
 }
 
 bool ImageFormatConvertExtUtils::RGB565ToNV21(const uint8_t *srcBuffer, const RGBDataInfo &rgbInfo,
