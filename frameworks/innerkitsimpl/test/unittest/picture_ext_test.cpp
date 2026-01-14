@@ -25,6 +25,7 @@
 #include "buffer_source_stream.h"
 #include "picture.h"
 #include "picture_native_impl.h"
+#include "pixelmap_native_impl.h"
 #include "image_source.h"
 #include "image_utils.h"
 #include "image_packer.h"
@@ -250,6 +251,21 @@ OH_PictureNative *CreateNativePicture(std::vector<Image_AuxiliaryPictureType>& a
     OH_DecodingOptions_Release(opts);
     EXPECT_NE(picture, nullptr);
     return picture;
+}
+
+OH_ComposeOptions *CreateComposeOptions(PIXEL_FORMAT pixelFormat)
+{
+    OH_ComposeOptions *options = nullptr;
+    Image_ErrorCode ret = OH_ComposeOptions_Create(&options);
+    EXPECT_EQ(ret, IMAGE_SUCCESS);
+    EXPECT_NE(options, nullptr);
+    ret = OH_ComposeOptions_SetDesiredPixelFormat(options, pixelFormat);
+    EXPECT_EQ(ret, IMAGE_SUCCESS);
+    PIXEL_FORMAT tempFormat = PIXEL_FORMAT_UNKNOWN;
+    ret = OH_ComposeOptions_GetDesiredPixelFormat(options, &tempFormat);
+    EXPECT_EQ(ret, IMAGE_SUCCESS);
+    EXPECT_EQ(tempFormat, pixelFormat);
+    return options;
 }
 
 /**
@@ -1161,6 +1177,115 @@ HWTEST_F(PictureExtTest, OH_PictureNative_GetHdrComposedPixelmap001, TestSize.Le
 HWTEST_F(PictureExtTest, OH_PictureNative_GetHdrComposedPixelmap002, TestSize.Level3)
 {
     Image_ErrorCode ret = OH_PictureNative_GetHdrComposedPixelmap(nullptr, nullptr);
+    EXPECT_EQ(ret, IMAGE_BAD_PARAMETER);
+}
+
+/**
+ * @tc.name: OH_PictureNative_GetHdrComposedPixelmapWithOptions001
+ * @tc.desc: Verify retrieval of the hdr pixelmap from a native picture.
+ * @tc.type: FUNC
+ */
+HWTEST_F(PictureExtTest, OH_PictureNative_GetHdrComposedPixelmapWithOptions001, TestSize.Level1)
+{
+    std::vector<Image_AuxiliaryPictureType> auxTypeList = {AUXILIARY_PICTURE_TYPE_GAINMAP};
+    OH_PictureNative *picture = CreateNativePicture(auxTypeList);
+    ASSERT_NE(picture, nullptr);
+
+    OH_ComposeOptions *composeOptions = CreateComposeOptions(PIXEL_FORMAT_RGBA_1010102);
+    ASSERT_NE(composeOptions, nullptr);
+
+    OH_PixelmapNative *hdrPixelmap = nullptr;
+    Image_ErrorCode ret = OH_PictureNative_GetHdrComposedPixelmapWithOptions(picture, composeOptions, &hdrPixelmap);
+    ASSERT_NE(hdrPixelmap, nullptr);
+    ASSERT_NE(hdrPixelmap->GetInnerPixelmap(), nullptr);
+    EXPECT_EQ(hdrPixelmap->GetInnerPixelmap()->IsHdr(), true);
+    EXPECT_EQ(ret, IMAGE_SUCCESS);
+
+    OH_PictureNative_Release(picture);
+    OH_ComposeOptions_Release(composeOptions);
+}
+
+/**
+ * @tc.name: OH_PictureNative_GetHdrComposedPixelmapWithOptions002
+ * @tc.desc: Verify retrieval of the hdr pixelmap from a native picture.
+ * @tc.type: FUNC
+ */
+HWTEST_F(PictureExtTest, OH_PictureNative_GetHdrComposedPixelmapWithOptions002, TestSize.Level1)
+{
+    std::vector<Image_AuxiliaryPictureType> auxTypeList = {AUXILIARY_PICTURE_TYPE_GAINMAP};
+    OH_PictureNative *picture = CreateNativePicture(auxTypeList);
+    ASSERT_NE(picture, nullptr);
+
+    OH_ComposeOptions *composeOptions = CreateComposeOptions(PIXEL_FORMAT_YCBCR_P010);
+    ASSERT_NE(composeOptions, nullptr);
+
+    OH_PixelmapNative *hdrPixelmap = nullptr;
+    Image_ErrorCode ret = OH_PictureNative_GetHdrComposedPixelmapWithOptions(picture, composeOptions, &hdrPixelmap);
+    ASSERT_NE(hdrPixelmap, nullptr);
+    ASSERT_NE(hdrPixelmap->GetInnerPixelmap(), nullptr);
+    EXPECT_EQ(hdrPixelmap->GetInnerPixelmap()->IsHdr(), true);
+    EXPECT_EQ(ret, IMAGE_SUCCESS);
+
+    OH_PictureNative_Release(picture);
+    OH_ComposeOptions_Release(composeOptions);
+}
+
+/**
+ * @tc.name: OH_PictureNative_GetHdrComposedPixelmapWithOptions003
+ * @tc.desc: Verify retrieval of the hdr pixelmap from a native picture.
+ * @tc.type: FUNC
+ */
+HWTEST_F(PictureExtTest, OH_PictureNative_GetHdrComposedPixelmapWithOptions003, TestSize.Level1)
+{
+    std::vector<Image_AuxiliaryPictureType> auxTypeList = {AUXILIARY_PICTURE_TYPE_GAINMAP};
+    OH_PictureNative *picture = CreateNativePicture(auxTypeList);
+    ASSERT_NE(picture, nullptr);
+
+    OH_ComposeOptions *composeOptions = CreateComposeOptions(PIXEL_FORMAT_YCRCB_P010);
+    ASSERT_NE(composeOptions, nullptr);
+
+    OH_PixelmapNative *hdrPixelmap = nullptr;
+    Image_ErrorCode ret = OH_PictureNative_GetHdrComposedPixelmapWithOptions(picture, composeOptions, &hdrPixelmap);
+    ASSERT_NE(hdrPixelmap, nullptr);
+    ASSERT_NE(hdrPixelmap->GetInnerPixelmap(), nullptr);
+    EXPECT_EQ(hdrPixelmap->GetInnerPixelmap()->IsHdr(), true);
+    EXPECT_EQ(ret, IMAGE_SUCCESS);
+
+    OH_PictureNative_Release(picture);
+    OH_ComposeOptions_Release(composeOptions);
+}
+
+/**
+ * @tc.name: OH_PictureNative_GetHdrComposedPixelmapWithOptions004
+ * @tc.desc: Verify error handling when attempting to retrieve the hdr pixelmap from a null pointers.
+ * @tc.type: FUNC
+ */
+HWTEST_F(PictureExtTest, OH_PictureNative_GetHdrComposedPixelmapWithOptions004, TestSize.Level3)
+{
+    std::vector<Image_AuxiliaryPictureType> auxTypeList = {AUXILIARY_PICTURE_TYPE_GAINMAP};
+    OH_PictureNative *picture = CreateNativePicture(auxTypeList);
+    ASSERT_NE(picture, nullptr);
+
+    OH_ComposeOptions *composeOptions = CreateComposeOptions(PIXEL_FORMAT_RGB_565);
+    ASSERT_NE(composeOptions, nullptr);
+
+    OH_PixelmapNative *hdrPixelmap = nullptr;
+    Image_ErrorCode ret = OH_PictureNative_GetHdrComposedPixelmapWithOptions(picture, composeOptions, &hdrPixelmap);
+    EXPECT_EQ(hdrPixelmap, nullptr);
+    EXPECT_EQ(ret, IMAGE_UNSUPPORTED_OPERATION);
+
+    OH_PictureNative_Release(picture);
+    OH_ComposeOptions_Release(composeOptions);
+}
+
+/**
+ * @tc.name: OH_PictureNative_GetHdrComposedPixelmapWithOptions005
+ * @tc.desc: Verify error handling when attempting to retrieve the hdr pixelmap from a null pointers.
+ * @tc.type: FUNC
+ */
+HWTEST_F(PictureExtTest, OH_PictureNative_GetHdrComposedPixelmapWithOptions005, TestSize.Level3)
+{
+    Image_ErrorCode ret = OH_PictureNative_GetHdrComposedPixelmapWithOptions(nullptr, nullptr, nullptr);
     EXPECT_EQ(ret, IMAGE_BAD_PARAMETER);
 }
 
