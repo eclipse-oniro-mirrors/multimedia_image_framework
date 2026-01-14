@@ -125,6 +125,14 @@ struct OH_XMPTag;
 typedef struct OH_XMPTag OH_XMPTag;
 
 /**
+ * @brief Defines XMP tag list object for the image interface.
+ *
+ * @since 24
+ */
+struct OH_XMPTagList;
+typedef struct OH_XMPTagList OH_XMPTagList;
+
+/**
  * @brief Defines enumerate options for XMP tags.
  *
  * @since 24
@@ -278,6 +286,59 @@ Image_ErrorCode OH_XMPMetadata_GetTag(OH_XMPMetadata *meta, const char *path, OH
  */
 Image_ErrorCode OH_XMPMetadata_EnumerateTags(OH_XMPMetadata *meta, OH_XMPEnumerateCallback callback, void *userData,
     const char *rootPath, const OH_XMPEnumerateOptions *options);
+
+/**
+ * @brief Gets XMP tags list.
+ *
+ * The tag pointers obtained from {@link OH_XMPTagList_GetAt} are borrowed pointers.
+ * The caller MUST NOT release them. They are valid until {@link OH_XMPTagList_Release} is called.
+ *
+ * @param meta Indicates a pointer to the OH_XMPMetadata object.
+ * @param rootPath Indicates the root tag path.
+ * @param options Indicates a pointer to the enumerate options.
+ * @param outList Indicates a pointer to the tag list object.
+ * @return Returns {@link Image_ErrorCode}.
+ * @since 24
+ */
+Image_ErrorCode OH_XMPMetadata_GetTags(OH_XMPMetadata *meta, const char *rootPath,
+    const OH_XMPEnumerateOptions *options, OH_XMPTagList **outList);
+
+/**
+ * @brief Gets the size of tag list.
+ *
+ * @param list Indicates a pointer to the tag list object.
+ * @param outSize Indicates a pointer to the list size.
+ * @return Returns {@link Image_ErrorCode}.
+ * @since 24
+ */
+Image_ErrorCode OH_XMPTagList_GetSize(OH_XMPTagList *list, size_t *outSize);
+
+/**
+ * @brief Gets the tag information at the specified index.
+ *
+ * The returned path and tag are borrowed pointers and MUST NOT be released.
+ * They are valid until {@link OH_XMPTagList_Release} is called.
+ *
+ * @param list Indicates a pointer to the tag list object.
+ * @param index Indicates the index.
+ * @param outPath Indicates a pointer to the borrowed path.
+ * @param outTag Indicates a pointer to the borrowed tag.
+ * @return Returns {@link Image_ErrorCode}.
+ * @since 24
+ */
+Image_ErrorCode OH_XMPTagList_GetAt(OH_XMPTagList *list, size_t index, const char **outPath, const OH_XMPTag **outTag);
+
+/**
+ * @brief Releases an OH_XMPTagList object.
+ *
+ * After release, all borrowed tag pointers obtained from this list become invalid.
+ * After release, all borrowed path pointers obtained from this list become invalid.
+ *
+ * @param list Indicates a pointer to the tag list object.
+ * @return Returns {@link Image_ErrorCode}.
+ * @since 24
+ */
+Image_ErrorCode OH_XMPTagList_Release(OH_XMPTagList *list);
 
 /**
  * @brief Sets blob data to XMP metadata.

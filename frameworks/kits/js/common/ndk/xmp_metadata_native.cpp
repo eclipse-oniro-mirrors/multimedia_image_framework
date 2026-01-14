@@ -18,6 +18,7 @@
 #include <limits>
 #include <memory>
 #include <string>
+#include <vector>
 
 #include "common_utils.h"
 #include "image_error_convert.h"
@@ -45,6 +46,10 @@ struct OH_XMPTag {
     std::string name;
     OH_XMPTagType type = OH_XMP_TAG_TYPE_UNKNOWN;
     std::string value;
+};
+
+struct OH_XMPTagList {
+    std::vector<std::pair<std::string, OH_XMPTag *>> tags;
 };
 
 MIDK_EXPORT
@@ -104,6 +109,43 @@ Image_ErrorCode OH_XMPTag_Release(OH_XMPTag *tag)
         return IMAGE_BAD_PARAMETER;
     }
     delete tag;
+    return IMAGE_SUCCESS;
+}
+
+MIDK_EXPORT
+Image_ErrorCode OH_XMPTagList_GetSize(OH_XMPTagList *list, size_t *outSize)
+{
+    if (list == nullptr || outSize == nullptr) {
+        return IMAGE_BAD_PARAMETER;
+    }
+    *outSize = list->tags.size();
+    return IMAGE_SUCCESS;
+}
+
+MIDK_EXPORT
+Image_ErrorCode OH_XMPTagList_GetAt(OH_XMPTagList *list, size_t index, const char **outPath, const OH_XMPTag **outTag)
+{
+    if (list == nullptr || outPath == nullptr || outTag == nullptr) {
+        return IMAGE_BAD_PARAMETER;
+    }
+    if (index >= list->tags.size()) {
+        return IMAGE_BAD_PARAMETER;
+    }
+    *outPath = list->tags[index].first.c_str();
+    *outTag = list->tags[index].second;
+    return IMAGE_SUCCESS;
+}
+
+MIDK_EXPORT
+Image_ErrorCode OH_XMPTagList_Release(OH_XMPTagList *list)
+{
+    if (list == nullptr) {
+        return IMAGE_BAD_PARAMETER;
+    }
+    for (auto &[_, tag] : list->tags) {
+        delete tag;
+    }
+    delete list;
     return IMAGE_SUCCESS;
 }
 
@@ -228,6 +270,56 @@ Image_ErrorCode OH_XMPMetadata_EnumerateTags(OH_XMPMetadata *meta, OH_XMPEnumera
         },
         root, innerOpt);
 
+    return IMAGE_SUCCESS;
+}
+
+MIDK_EXPORT
+Image_ErrorCode OH_XMPMetadata_GetTags(OH_XMPMetadata *meta, const char *rootPath, const OH_XMPEnumerateOptions *options,
+    OH_XMPTagList **outList)
+{
+    if (meta == nullptr || meta->inner == nullptr || outList == nullptr) {
+        return IMAGE_BAD_PARAMETER;
+    }
+    *outList = nullptr;
+
+    OH_XMPTagList *list = new(std::nothrow) OH_XMPTagList();
+    if (list == nullptr) {
+        return IMAGE_SOURCE_ALLOC_FAILED;
+    }
+
+    XMPEnumerateOption innerOpt;
+    if (options != nullptr) {
+        innerOpt.isRecursive = options->isRecursive;
+    }
+    std::string root = rootPath == nullptr ? std::string() : std::string(rootPath);
+
+    bool allocFailed = false;
+    meta->inner->EnumerateTags(
+        [list, &allocFailed](const std::string &path, const XMPTag &tag) -> bool {
+            OH_XMPTag *ndkTag = new(std::nothrow) OH_XMPTag();
+            if (ndkTag == nullptr) {
+                allocFailed = true;
+                return false;
+            }
+            ndkTag->xmlns = tag.xmlns;
+            ndkTag->prefix = tag.prefix;
+            ndkTag->name = tag.name;
+            ndkTag->type = static_cast<OH_XMPTagType>(static_cast<int32_t>(tag.type));
+            ndkTag->value = tag.value;
+            list->tags.emplace_back(path, ndkTag);
+            return true;
+        },
+        root, innerOpt);
+
+    if (allocFailed) {
+        for (auto &[_, tag] : list->tags) {
+            delete tag;
+        }
+        delete list;
+        return IMAGE_SOURCE_ALLOC_FAILED;
+    }
+
+    *outList = list;
     return IMAGE_SUCCESS;
 }
 
