@@ -273,7 +273,7 @@ Image_ErrorCode OH_ImageNative_GetBufferData(OH_ImageNative *image, OH_ImageBuff
     }
     imageBufferData->rowStride = bufferData->rowStride.data();
     imageBufferData->pixelStride = bufferData->pixelStride.data();
-    imageBufferData->numStride = bufferData->rowStride.size();
+    imageBufferData->numStride = static_cast<int32_t>(bufferData->rowStride.size());
     imageBufferData->bufferSize = bufferData->size;
     sptr<SurfaceBuffer> buffer = image->imgNative->GetBuffer();
     if (buffer == nullptr) {

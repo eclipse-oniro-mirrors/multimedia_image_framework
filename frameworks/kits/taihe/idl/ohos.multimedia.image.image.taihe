@@ -468,7 +468,7 @@ union HdrMetadataValue {
 
 union PropertyValue {
     type_string: String;
-    @null type_null;
+    type_null: @null unit;
 }
 
 interface PixelMap {
@@ -591,12 +591,12 @@ interface PixelMap {
 
 union NullablePixelMap {
     type_pixelMap: PixelMap;
-    @null type_null;
+    type_null: @null unit;
 }
 
 union AuxPicture {
     type_auxPicture: AuxiliaryPicture;
-    @null type_null;
+    type_null: @null unit;
 }
 
 interface Picture {
