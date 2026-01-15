@@ -234,10 +234,15 @@ static void ConvertPixelMapAlphaFormat(weak::PixelMap const& src, weak::PixelMap
     PixelMapImpl* wPixelMapImpl = reinterpret_cast<PixelMapImpl*>(dst->GetImplPtr());
     if (rPixelMapImpl == nullptr || wPixelMapImpl == nullptr) {
         ImageTaiheUtils::ThrowExceptionError(Media::ERR_IMAGE_READ_PIXELMAP_FAILED, "Unwrap PixelMap failed");
+        return;
     }
-
     auto rPixelMap = rPixelMapImpl->GetNativePtr();
     auto wPixelMap = wPixelMapImpl->GetNativePtr();
+    if (rPixelMap == nullptr || wPixelMap == nullptr) {
+        ImageTaiheUtils::ThrowExceptionError(Media::ERR_IMAGE_READ_PIXELMAP_FAILED, "Native PixelMap is nullptr");
+        return;
+    }
+
     if (wPixelMap->IsEditable()) {
         uint32_t status = rPixelMap->ConvertAlphaFormat(*(wPixelMap.get()), isPremul);
         if (status == Media::COMMON_ERR_INVALID_PARAMETER) {
