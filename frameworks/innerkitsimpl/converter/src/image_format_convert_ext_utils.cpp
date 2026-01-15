@@ -269,19 +269,24 @@ static void YuvToRGBParam(const YUVDataInfo &yuvInfo, SrcConvertParam &srcParam,
 
 static bool I420Param(uint32_t width, uint32_t height, I420Info &i420Info)
 {
+    bool cond = (width == 0) || (height == 0);
+    CHECK_ERROR_RETURN_RET_LOG(cond, false, "I420 Width or Height is zero!");
+
     i420Info.yStride = width;
     i420Info.uStride = (width + NUM_1) / NUM_2;
     i420Info.vStride = (width + NUM_1) / NUM_2;
     i420Info.uvHeight = (height + NUM_1) / NUM_2;
 
-    const uint32_t i420BufferSize = static_cast<size_t>(i420Info.yStride * i420Info.height +
-        i420Info.uStride * i420Info.uvHeight * NUM_2);
-    bool cond = i420BufferSize <= NUM_0 || i420BufferSize > PIXEL_MAP_MAX_RAM_SIZE;
-    CHECK_ERROR_RETURN_RET_LOG(cond, false, "Invalid destination buffer size calculation!");
-    uint8_t *i420Buffer = new (std::nothrow) uint8_t[i420BufferSize];
+    const uint64_t i420BufferSize = static_cast<uint64_t>(i420Info.yStride) * i420Info.height +
+        static_cast<uint64_t>(i420Info.uStride) * i420Info.uvHeight * NUM_2;
+    cond = (i420BufferSize > UINT32_MAX) || (i420BufferSize > PIXEL_MAP_MAX_RAM_SIZE);
+    CHECK_ERROR_RETURN_RET_LOG(cond, false, "Invalid I420 buffer size calculation!");
+
+    uint8_t *i420Buffer = new (std::nothrow) uint8_t[static_cast<size_t>(i420BufferSize)];
     CHECK_ERROR_RETURN_RET_LOG(i420Buffer == nullptr, false, "apply space for I420 buffer failed!");
-    auto i420UOffset = height * i420Info.yStride;
-    auto i420VOffset = i420UOffset + i420Info.uStride * ((height + NUM_1) / NUM_2);
+
+    uint32_t i420UOffset = i420Info.yStride * i420Info.height;
+    uint32_t i420VOffset = i420UOffset + i420Info.uStride * i420Info.uvHeight;
     i420Info.I420Y = i420Buffer;
     i420Info.I420U = i420Buffer + i420UOffset;
     i420Info.I420V = i420Buffer + i420VOffset;
@@ -292,7 +297,6 @@ static bool YuvToI420ToRGBParam(const YUVDataInfo &yuvInfo, SrcConvertParam &src
                                 DestConvertParam &destParam, DestConvertInfo &destInfo)
 {
     YuvToRGBParam(yuvInfo, srcParam, destParam, destInfo);
-
     return I420Param(yuvInfo.yWidth, yuvInfo.yHeight, i420Info);
 }
 
@@ -414,21 +418,7 @@ static bool RGBToI420ToYuvP010Param(const RGBDataInfo &rgbInfo, SrcConvertParam 
                                     DestConvertParam &destParam, DestConvertInfo &destInfo)
 {
     RGBToYuvP010Param(rgbInfo, srcParam, destParam, destInfo);
-
-    i420Info.yStride = rgbInfo.width;
-    i420Info.uStride = (rgbInfo.width + NUM_1) / NUM_2;
-    i420Info.vStride = (rgbInfo.width + NUM_1) / NUM_2;
-    i420Info.uvHeight = ((i420Info.height + NUM_1) / NUM_2);
-    const uint32_t i420BufferSize = static_cast<size_t>(i420Info.yStride * i420Info.height +
-        i420Info.uStride * i420Info.uvHeight * NUM_2);
-    bool cond = i420BufferSize <= NUM_0 || i420BufferSize > PIXEL_MAP_MAX_RAM_SIZE;
-    CHECK_ERROR_RETURN_RET_LOG(cond, false, "Invalid destination buffer size calculation!");
-    uint8_t *i420Buffer = new (std::nothrow) uint8_t[i420BufferSize];
-    CHECK_ERROR_RETURN_RET_LOG(i420Buffer == nullptr, false, "apply space for I420 buffer failed!");
-    i420Info.I420Y = i420Buffer;
-    i420Info.I420U = i420Info.I420Y + rgbInfo.height * i420Info.yStride;
-    i420Info.I420V = i420Info.I420U + i420Info.uStride * ((rgbInfo.height + NUM_1) / NUM_2);
-    return true;
+    return I420Param(rgbInfo.width, rgbInfo.height, i420Info);
 }
 
 static bool RGBToI420ToI010ToP010(const uint8_t *srcBuffer, const RGBDataInfo &rgbInfo, PixelFormat srcFormat,
@@ -522,21 +512,7 @@ static bool RGB10ToRGBToI420Param(const RGBDataInfo &rgbInfo, SrcConvertParam &s
                                   DestConvertParam &destParam, DestConvertInfo &destInfo)
 {
     RGBToYuvParam(rgbInfo, srcParam, destParam, destInfo);
-
-    i420Info.yStride = rgbInfo.width;
-    i420Info.uStride = (rgbInfo.width + NUM_1) / NUM_2;
-    i420Info.vStride = (rgbInfo.width + NUM_1) / NUM_2;
-    i420Info.uvHeight = ((i420Info.height + NUM_1) / NUM_2);
-    const uint32_t i420BufferSize = static_cast<size_t>(i420Info.yStride * i420Info.height +
-        i420Info.uStride * i420Info.uvHeight * NUM_2);
-    bool cond = i420BufferSize <= NUM_0 || i420BufferSize > PIXEL_MAP_MAX_RAM_SIZE;
-    CHECK_ERROR_RETURN_RET_LOG(cond, false, "Invalid destination buffer size calculation!");
-    uint8_t *i420Buffer = new (std::nothrow) uint8_t[i420BufferSize];
-    CHECK_ERROR_RETURN_RET_LOG(i420Buffer == nullptr, false, "apply space for I420 buffer failed!");
-    i420Info.I420Y = i420Buffer;
-    i420Info.I420U = i420Info.I420Y + rgbInfo.height * i420Info.yStride;
-    i420Info.I420V = i420Info.I420U + i420Info.uStride * ((rgbInfo.height + NUM_1) / NUM_2);
-    return true;
+    return I420Param(rgbInfo.width, rgbInfo.height, i420Info);
 }
 
 static bool RGB10ToRGBToI420ToYuv(const uint8_t *srcBuffer, const RGBDataInfo &rgbInfo, PixelFormat srcFormat,
@@ -665,20 +641,7 @@ static bool YuvToI420ToP010Param(const YUVDataInfo &yuvInfo, SrcConvertParam &sr
                                  DestConvertParam &destParam, DestConvertInfo &destInfo)
 {
     YuvToP010Param(yuvInfo, srcParam, destParam, destInfo);
-    i420Info.yStride = yuvInfo.yWidth;
-    i420Info.uStride = (yuvInfo.yWidth + NUM_1) / NUM_2;
-    i420Info.vStride = (yuvInfo.yWidth + NUM_1) / NUM_2;
-    i420Info.uvHeight = ((i420Info.height + NUM_1) / NUM_2);
-    const uint32_t i420BufferSize = static_cast<size_t>(i420Info.yStride * i420Info.height +
-        i420Info.uStride * i420Info.uvHeight * NUM_2);
-    bool cond = i420BufferSize <= NUM_0 || i420BufferSize > PIXEL_MAP_MAX_RAM_SIZE;
-    CHECK_ERROR_RETURN_RET_LOG(cond, false, "Invalid destination buffer size calculation!");
-    uint8_t *i420Buffer = new (std::nothrow) uint8_t[i420BufferSize];
-    CHECK_ERROR_RETURN_RET_LOG(i420Buffer == nullptr, false, "apply space for I420 buffer failed!");
-    i420Info.I420Y = i420Buffer;
-    i420Info.I420U = i420Info.I420Y + yuvInfo.yHeight * i420Info.yStride;
-    i420Info.I420V = i420Info.I420U + i420Info.uStride * ((yuvInfo.yHeight + NUM_1) / NUM_2);
-    return true;
+    return I420Param(yuvInfo.yWidth, yuvInfo.yHeight, i420Info);
 }
 
 static bool YuvToI420ToI010ToP010(const uint8_t *srcBuffer, const YUVDataInfo &yuvInfo, PixelFormat srcFormat,
@@ -785,20 +748,7 @@ static bool YuvP010ToI420ToYuvParam(const YUVDataInfo &yuvInfo, SrcConvertParam 
                                     DestConvertParam &destParam, DestConvertInfo &destInfo)
 {
     YuvP010ToYuvParam(yuvInfo, srcParam, destParam, destInfo);
-    i420Info.yStride = yuvInfo.yWidth;
-    i420Info.uStride = (yuvInfo.yWidth + NUM_1) / NUM_2;
-    i420Info.vStride = (yuvInfo.yWidth + NUM_1) / NUM_2;
-    i420Info.uvHeight = ((i420Info.height + NUM_1) / NUM_2);
-    const uint32_t i420BufferSize = static_cast<size_t>(i420Info.yStride * i420Info.height +
-        i420Info.uStride * i420Info.uvHeight * NUM_2);
-    bool cond = i420BufferSize <= NUM_0 || i420BufferSize > PIXEL_MAP_MAX_RAM_SIZE;
-    CHECK_ERROR_RETURN_RET_LOG(cond, false, "Invalid destination buffer size calculation!");
-    uint8_t *i420Buffer = new (std::nothrow) uint8_t[i420BufferSize];
-    CHECK_ERROR_RETURN_RET_LOG(i420Buffer == nullptr, false, "apply space for I420 buffer failed!");
-    i420Info.I420Y = i420Buffer;
-    i420Info.I420U = i420Info.I420Y + yuvInfo.yHeight * i420Info.yStride;
-    i420Info.I420V = i420Info.I420U + i420Info.uStride * ((yuvInfo.yHeight + NUM_1) / NUM_2);
-    return true;
+    return I420Param(yuvInfo.yWidth, yuvInfo.yHeight, i420Info);
 }
 
 static bool I010ToI420(I010Info &i010, I420Info &i420)
@@ -884,20 +834,7 @@ static bool YuvP010ToI420ToRGBParam(const YUVDataInfo &yuvInfo, SrcConvertParam 
                                     DestConvertParam &destParam, DestConvertInfo &destInfo)
 {
     YuvP010ToRGBParam(yuvInfo, srcParam, destParam, destInfo);
-    i420Info.yStride = yuvInfo.yWidth;
-    i420Info.uStride = (yuvInfo.yWidth + NUM_1) / NUM_2;
-    i420Info.vStride = (yuvInfo.yWidth + NUM_1) / NUM_2;
-    i420Info.uvHeight = ((i420Info.height + NUM_1) / NUM_2);
-    const uint32_t i420BufferSize = static_cast<size_t>(i420Info.yStride * i420Info.height +
-        i420Info.uStride * i420Info.uvHeight * NUM_2);
-    bool cond = i420BufferSize <= NUM_0 || i420BufferSize > PIXEL_MAP_MAX_RAM_SIZE;
-    CHECK_ERROR_RETURN_RET_LOG(cond, false, "Invalid destination buffer size calculation!");
-    uint8_t *i420Buffer = new (std::nothrow) uint8_t[i420BufferSize];
-    CHECK_ERROR_RETURN_RET_LOG(i420Buffer == nullptr, false, "apply space for I420 buffer failed!");
-    i420Info.I420Y = i420Buffer;
-    i420Info.I420U = i420Info.I420Y + yuvInfo.yHeight * i420Info.yStride;
-    i420Info.I420V = i420Info.I420U + i420Info.uStride * ((yuvInfo.yHeight + NUM_1) / NUM_2);
-    return true;
+    return I420Param(yuvInfo.yWidth, yuvInfo.yHeight, i420Info);
 }
 
 static bool P010ToI010ToI420ToRGB(const uint8_t *srcBuffer, const YUVDataInfo &yuvInfo, PixelFormat srcFormat,
