@@ -120,7 +120,11 @@ napi_status XMPMetadataNapi::DefineClassProperties(napi_env env, napi_value &con
 napi_status XMPMetadataNapi::DefineStaticProperties(napi_env env, napi_value exports)
 {
     napi_property_descriptor static_prop[] = {
-        DECLARE_NAPI_PROPERTY("XMP_NAMESPACES", CreateXMPNamespaces(env)),
+        DECLARE_NAPI_PROPERTY("XMP_BASIC", CreateXMPNamespace(env, NS_XMP_BASIC, PF_XMP_BASIC)),
+        DECLARE_NAPI_PROPERTY("XMP_RIGHTS", CreateXMPNamespace(env, NS_XMP_RIGHTS, PF_XMP_RIGHTS)),
+        DECLARE_NAPI_PROPERTY("EXIF", CreateXMPNamespace(env, NS_EXIF, PF_EXIF)),
+        DECLARE_NAPI_PROPERTY("DUBLIN_CORE", CreateXMPNamespace(env, NS_DC, PF_DC)),
+        DECLARE_NAPI_PROPERTY("TIFF", CreateXMPNamespace(env, NS_TIFF, PF_TIFF)),
         DECLARE_NAPI_PROPERTY("XMPTagType", ImageNapiUtils::CreateEnumTypeObject(env, napi_number, sXMPTagType)),
     };
 
@@ -278,7 +282,7 @@ void XMPMetadataNapi::Release()
     }
 }
 
-static napi_value CreateXMPNamespace(napi_env env, const std::string &uri, const std::string &prefix)
+napi_value XMPMetadataNapi::CreateXMPNamespace(napi_env env, const std::string &uri, const std::string &prefix)
 {
     napi_value namespaceObj = nullptr;
     napi_create_object(env, &namespaceObj);
@@ -291,34 +295,6 @@ static napi_value CreateXMPNamespace(napi_env env, const std::string &uri, const
     napi_set_named_property(env, namespaceObj, "prefix", prefixValue);
     
     return namespaceObj;
-}
-
-napi_value XMPMetadataNapi::CreateXMPNamespaces(napi_env env)
-{
-    napi_value namespacesObj = nullptr;
-    napi_create_object(env, &namespacesObj);
-
-    // XMP Basic namespace
-    napi_value xmpBasic = CreateXMPNamespace(env, NS_XMP_BASIC, PF_XMP_BASIC);
-    napi_set_named_property(env, namespacesObj, "XMP_BASIC", xmpBasic);
-
-    // XMP Rights namespace
-    napi_value xmpRights = CreateXMPNamespace(env, NS_XMP_RIGHTS, PF_XMP_RIGHTS);
-    napi_set_named_property(env, namespacesObj, "XMP_RIGHTS", xmpRights);
-
-    // Dublin Core namespace
-    napi_value dublinCore = CreateXMPNamespace(env, NS_DC, PF_DC);
-    napi_set_named_property(env, namespacesObj, "DUBLIN_CORE", dublinCore);
-
-    // EXIF namespace
-    napi_value exif = CreateXMPNamespace(env, NS_EXIF, PF_EXIF);
-    napi_set_named_property(env, namespacesObj, "EXIF", exif);
-
-    // TIFF namespace
-    napi_value tiff = CreateXMPNamespace(env, NS_TIFF, PF_TIFF);
-    napi_set_named_property(env, namespacesObj, "TIFF", tiff);
-
-    return namespacesObj;
 }
 
 static napi_value CreateJsXMPTag(napi_env env, const XMPTag &tag)
