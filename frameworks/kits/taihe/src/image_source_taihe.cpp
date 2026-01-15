@@ -27,6 +27,7 @@
 #include "picture_taihe.h"
 #include "pixel_map_taihe.h"
 #include "exif_metadata_formatter.h"
+#include "xmp_metadata_taihe.h"
 
 using namespace ANI::Image;
 using JpegYuvDecodeError = OHOS::ImagePlugin::JpegYuvDecodeError;
@@ -1517,7 +1518,6 @@ void ImageSourceImpl::WriteXMPMetadataSync(XMPMetadata xmpMetadata)
 
     uint32_t errorCode = nativeImgSrc->WriteXMPMetadata(nativeXMPMetadata);
     CHECK_ERROR_RETURN_LOG(errorCode != OHOS::Media::SUCCESS, "%{public}s WriteXMPMetadata failed", __func__);
-    return;
 }
 
 static std::string FileUrlToRawPath(const std::string &path)

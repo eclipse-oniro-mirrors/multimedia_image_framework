@@ -25,30 +25,23 @@ namespace ANI::Image {
 using namespace taihe;
 using namespace ohos::multimedia::image::image;
 
-// using XMPEnumerateOptionTaihe = ohos::multimedia::image::image::XMPEnumerateOption;
-// using XMPTagTaihe = ohos::multimedia::image::image::XMPTag;
-// using XMPTagTypeTaihe = ohos::multimedia::image::image::XMPTagType;
-
-
 class XMPMetadataImpl {
 public:
     XMPMetadataImpl() = default;
-    explicit XMPMetadataImpl(std::shared_ptr<OHOS::Media::XMPMetadata> xmpMetadata) : nativeXMPMetadata_(xmpMetadata) {}
+    explicit XMPMetadataImpl(std::shared_ptr<OHOS::Media::XMPMetadata> xmpMetadata);
     ~XMPMetadataImpl() = default;
-
     int64_t GetImplPtr();
+
+    std::shared_ptr<OHOS::Media::XMPMetadata> GetNativeXMPMetadata();
     bool RegisterNamespacePrefixSync(string_view xmlns, string_view prefix);
     bool SetValueSync(string_view path, XMPTagType type, optional_view<string> value);
     NullableXMPTag GetTagSync(string_view path);
     bool RemoveTagSync(string_view path);
     void EnumerateTags(callback_view<bool(string_view path, XMPTag const& tag)> callback,
         optional_view<string> rootPath, optional_view<XMPEnumerateOption> options);
-    map<string, XMPTag> GetTagsSync(optional_view<string> rootPath,
-        optional_view<XMPEnumerateOption> options);
+    map<string, XMPTag> GetTagsSync(optional_view<string> rootPath, optional_view<XMPEnumerateOption> options);
     void SetBlobSync(array_view<uint8_t> buffer);
     array<uint8_t> GetBlobSync();
-
-    std::shared_ptr<OHOS::Media::XMPMetadata> GetNativeXMPMetadata();
 
 private:
     std::shared_ptr<OHOS::Media::XMPMetadata> nativeXMPMetadata_;

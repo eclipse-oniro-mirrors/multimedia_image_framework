@@ -442,6 +442,17 @@ enum GifPropertyKey: String {
   GIF_DISPOSAL_TYPE = "GifDisposalType"
 }
 
+enum XMPTagType: i32 {
+    UNKNOWN = 0,
+    SIMPLE = 1,
+    UNORDERED_ARRAY = 2,
+    ORDERED_ARRAY = 3,
+    ALTERNATE_ARRAY = 4,
+    ALTERNATE_TEXT = 5,
+    STRUCTURE = 6,
+    QUALIFIER = 7
+}
+
 struct DecodingOptionsForPicture {
   desiredAuxiliaryPictures: Array<AuxiliaryPictureType>;
 }
@@ -866,21 +877,37 @@ interface ImageCreator {
   ReleaseSync(): void;
 }
 
-enum XMPTagType: i32 {
-    UNKNOWN = 0,
-    SIMPLE = 1,
-    UNORDERED_ARRAY = 2,
-    ORDERED_ARRAY = 3,
-    ALTERNATE_ARRAY = 4,
-    ALTERNATE_TEXT = 5,
-    STRUCTURE = 6,
-    QUALIFIER = 7
-}
-
 struct XMPNamespace {
   uri: String;
   prefix: String;
 }
+
+@!sts_inject("""
+const XMP_BASIC: XMPNamespace = {
+    uri: "http://ns.adobe.com/xap/1.0/",
+    prefix: "xmp"
+};
+
+const XMP_RIGHTS: XMPNamespace = {
+    uri: "http://ns.adobe.com/xap/1.0/rights/",
+    prefix: "xmpRights"
+};
+
+const EXIF: XMPNamespace = {
+    uri: "http://ns.adobe.com/exif/1.0/",
+    prefix: "exif"
+};
+
+const DUBLIN_CORE: XMPNamespace = {
+    uri: "http://purl.org/dc/elements/1.1/",
+    prefix: "dc"
+};
+
+const TIFF: XMPNamespace = {
+    uri: "http://ns.adobe.com/tiff/1.0/",
+    prefix: "tiff"
+};
+""")
 
 struct XMPTag {
     xmlns: String;

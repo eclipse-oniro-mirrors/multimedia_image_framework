@@ -21,14 +21,10 @@
 #include "ohos.multimedia.image.image.proj.hpp"
 #include "ohos.multimedia.image.image.impl.hpp"
 #include "taihe/runtime.hpp"
-#include "xmp_metadata_taihe.h"
 
 namespace ANI::Image {
 using namespace taihe;
 using namespace ohos::multimedia::image::image;
-
-// using ImageInfoTaihe = ohos::multimedia::image::image::ImageInfo;
-// using PixelMapTaihe = ohos::multimedia::image::image::PixelMap;
 
 class ImageSourceImpl {
 public:
@@ -72,11 +68,9 @@ public:
     optional<Picture> CreatePictureAtIndexSync(int32_t index);
     optional<PixelMap> CreateThumbnailSync(optional_view<DecodingOptionsForThumbnail> options);
 #endif
-
-    array<string> GetSupportedFormats();
-
     NullableXMPMetadata ReadXMPMetadataSync();
     void WriteXMPMetadataSync(XMPMetadata xmpMetadata);
+    array<string> GetSupportedFormats();
 
     std::shared_ptr<OHOS::Media::ImageSource> nativeImgSrc = nullptr;
     std::shared_ptr<OHOS::Media::IncrementalPixelMap> GetIncrementalPixelMap() const
