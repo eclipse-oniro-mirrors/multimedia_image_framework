@@ -287,14 +287,14 @@ napi_value XMPMetadataNapi::CreateXMPNamespace(napi_env env, const std::string &
 {
     napi_value namespaceObj = nullptr;
     napi_create_object(env, &namespaceObj);
-    
+
     napi_value uriValue, prefixValue;
     napi_create_string_utf8(env, uri.c_str(), uri.length(), &uriValue);
     napi_create_string_utf8(env, prefix.c_str(), prefix.length(), &prefixValue);
-    
+
     napi_set_named_property(env, namespaceObj, "uri", uriValue);
     napi_set_named_property(env, namespaceObj, "prefix", prefixValue);
-    
+
     return namespaceObj;
 }
 
@@ -694,7 +694,7 @@ napi_value XMPMetadataNapi::EnumerateTags(napi_env env, napi_callback_info info)
     IMG_NAPI_CHECK_RET_D(IMG_IS_OK(status), result, IMAGE_LOGE("Fail to napi_get_cb_info"));
     // At least callback is required
     if (argc < NUM_1) {
-        return ImageNapiUtils::ThrowExceptionError(env, IMAGE_BAD_PARAMETER, 
+        return ImageNapiUtils::ThrowExceptionError(env, IMAGE_BAD_PARAMETER,
             "Invalid argument count, at least callback is required");
     }
 
@@ -711,7 +711,7 @@ napi_value XMPMetadataNapi::EnumerateTags(napi_env env, napi_callback_info info)
     // First parameter must be callback function
     napi_valuetype type0 = ImageNapiUtils::getType(env, argv[0]);
     if (type0 != napi_function) {
-        return ImageNapiUtils::ThrowExceptionError(env, IMAGE_BAD_PARAMETER, 
+        return ImageNapiUtils::ThrowExceptionError(env, IMAGE_BAD_PARAMETER,
             "First argument must be a callback function");
     }
     context->callbackValue = argv[0];

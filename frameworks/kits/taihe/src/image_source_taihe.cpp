@@ -1487,6 +1487,39 @@ array<string> ImageSourceImpl::GetSupportedFormats()
     return ImageTaiheUtils::ToTaiheArrayString(vec);
 }
 
+NullableXMPMetadata ImageSourceImpl::ReadXMPMetadataSync()
+{
+    CHECK_ERROR_RETURN_RET_LOG(nativeImgSrc == nullptr, NullableXMPMetadata::make_type_null(),
+        "fail to get nativeImgSrc");
+
+    uint32_t errorCode = OHOS::Media::ERROR;
+    auto xmpMetadata = nativeImgSrc->ReadXMPMetadata(errorCode);
+    if (errorCode != OHOS::Media::SUCCESS) {
+        return NullableXMPMetadata::make_type_null();
+    }
+    CHECK_ERROR_RETURN_RET(errorCode != OHOS::Media::SUCCESS, NullableXMPMetadata::make_type_null());
+    CHECK_ERROR_RETURN_RET_LOG(xmpMetadata == nullptr, NullableXMPMetadata::make_type_null(),
+        "%{public}s xmpMetadata is nullptr", __func__);
+
+    auto res = make_holder<XMPMetadataImpl, XMPMetadata>(xmpMetadata);
+    return NullableXMPMetadata::make_type_xmpMetadata(res);
+}
+
+void ImageSourceImpl::WriteXMPMetadataSync(XMPMetadata xmpMetadata)
+{
+    CHECK_ERROR_RETURN_LOG(nativeImgSrc == nullptr, "fail to get nativeImgSrc");
+
+    XMPMetadataImpl* thisPtr = reinterpret_cast<XMPMetadataImpl*>(xmpMetadata->GetImplPtr());
+    CHECK_ERROR_RETURN_LOG(thisPtr == nullptr, "%{public}s xmpMetadataImpl is nullptr", __func__);
+
+    auto nativeXMPMetadata = thisPtr->GetNativeXMPMetadata();
+    CHECK_ERROR_RETURN_LOG(nativeXMPMetadata == nullptr, "fail to get xmpMetadata");
+
+    uint32_t errorCode = nativeImgSrc->WriteXMPMetadata(nativeXMPMetadata);
+    CHECK_ERROR_RETURN_LOG(errorCode != OHOS::Media::SUCCESS, "%{public}s WriteXMPMetadata failed", __func__);
+    return;
+}
+
 static std::string FileUrlToRawPath(const std::string &path)
 {
     if (path.size() > FILE_URL_PREFIX.size() &&
