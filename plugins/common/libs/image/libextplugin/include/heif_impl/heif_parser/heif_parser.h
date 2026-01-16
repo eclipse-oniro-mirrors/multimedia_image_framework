@@ -94,7 +94,7 @@ public:
 
     heif_error GetHeifsFrameCount(uint32_t &sampleCount) const;
 
-    heif_error GetHeifsMovieFrameData(uint32_t index, std::vector<uint8_t> &dest);
+    heif_error GetHeifsMovieFrameData(uint32_t index, std::vector<uint8_t> &dest, bool isStatic = false);
 
     heif_error GetHeifsFrameData(uint32_t index, std::vector<uint8_t> &dest);
 
@@ -102,6 +102,11 @@ public:
 
     heif_error GetHeifsGroupFrameInfo(uint32_t index, HeifsFrameGroup &frameGroup);
 
+    bool IsNeedDecodeHeifsStaticImage() const;
+
+    void ParseHeifsStaticImageBox();
+
+    void ExtractProperties(const std::vector<heif_item_id> &allItemIds);
 private:
     // stream
     std::shared_ptr<HeifInputStream> inputStream_;

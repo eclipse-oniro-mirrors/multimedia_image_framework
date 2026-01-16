@@ -14,6 +14,7 @@
  */
 
 #include "box/item_data_box.h"
+#include <climits>
 
 namespace {
     const uint8_t CONSTRUCTION_METHOD_FILE_OFFSET = 0;
@@ -25,6 +26,20 @@ namespace {
 
 namespace OHOS {
 namespace ImagePlugin {
+static bool HasOverflowed64(uint64_t num1, uint64_t num2)
+{
+    return num1 > std::numeric_limits<uint64_t>::max() - num2;
+}
+
+static bool HasOverflowed64(uint64_t num1, uint64_t num2, uint64_t num3)
+{
+    if (HasOverflowed64(num1, num2)) {
+        return true;
+    }
+    uint64_t tmp = num1 + num2;
+    return HasOverflowed64(tmp, num3);
+}
+
 heif_error HeifIlocBox::ParseExtents(Item& item, HeifStreamReader &reader,
     int indexSize, int offsetSize, int lengthSize)
 {
@@ -368,6 +383,39 @@ void HeifIlocBox::PackIlocHeader(HeifStreamWriter &writer) const
     }
 
     writer.SetPos(oldPos);
+}
+
+heif_error HeifIlocBox::GetPrimaryImageFileOffset(heif_item_id itemId, uint64_t &offset,
+    const std::shared_ptr<HeifIdatBox> &idat) const
+{
+    const std::vector<Item> items = GetItems();
+    for (const auto &item : items) {
+        if (item.itemId != itemId) {
+            continue;
+        }
+        if (item.extents.empty()) {
+            return heif_error_item_data_not_found;
+        }
+        const auto &extent = item.extents[0];
+        if (item.constructionMethod == CONSTRUCTION_METHOD_FILE_OFFSET) {
+            if (HasOverflowed64(extent.offset, item.baseOffset)) {
+                return heif_error_eof;
+            }
+            offset = extent.offset + item.baseOffset;
+        } else if (item.constructionMethod == CONSTRUCTION_METHOD_IDAT_OFFSET) {
+            if (!idat) {
+                return heif_error_no_idat;
+            }
+            if (HasOverflowed64(idat->GetStartPos(), extent.offset, item.baseOffset)) {
+                return heif_error_eof;
+            }
+            offset = idat->GetStartPos() + extent.offset + item.baseOffset;
+        } else {
+            return heif_error_item_data_not_found;
+        }
+        return heif_error_ok;
+    }
+    return heif_error_primary_item_not_found;
 }
 
 heif_error HeifIdatBox::ParseContent(HeifStreamReader &reader)

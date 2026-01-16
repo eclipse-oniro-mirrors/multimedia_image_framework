@@ -1588,14 +1588,18 @@ uint32_t HeifDecoderImpl::getColorDepth()
     return 0;
 }
 
-bool HeifDecoderImpl::SwDecodeHeifsOnceFrame(uint32_t index, const HevcSoftDecodeParam &refParam)
+bool HeifDecoderImpl::SwDecodeHeifsOnceFrame(uint32_t index, const HevcSoftDecodeParam &refParam, bool isStatic)
 {
     HevcSoftDecodeParam tmpParam = refParam;
     CHECK_ERROR_RETURN_RET_LOG(!AllocateBufferSize(tmpParam), false, "AllocateBuffer failed.");
-    if (!SwDecodeHeifsFrameImage(index, tmpParam)) {
+    if (!SwDecodeHeifsFrameImage(index, tmpParam, isStatic)) {
         DeleteParamBuffer(tmpParam);
         IMAGE_LOGE("SwDecodeHeifsFrameImage decode first frame failed.");
         return false;
+    }
+    if (isStatic) {
+        DeleteParamBuffer(tmpParam);
+        return true;
     }
     params_[index] = tmpParam;
     return true;
@@ -1608,6 +1612,7 @@ bool HeifDecoderImpl::SwDecodeHeifsImage(uint32_t index, HevcSoftDecodeParam &pa
     if (!HasDecodedFrame(index)) {
         DeleteParamsBuffer();
         if (!isFirstFrameDecoded_) {
+            SwDecodeHeifsStaticImage(param);
             CHECK_ERROR_RETURN_RET(!SwDecodeHeifsOnceFrame(0, param), false);
             isFirstFrameDecoded_ = true;
         }
@@ -1624,7 +1629,7 @@ bool HeifDecoderImpl::SwDecodeHeifsImage(uint32_t index, HevcSoftDecodeParam &pa
     return GetSwDecodeHeifsDecodedParam(index, param);
 }
 
-bool HeifDecoderImpl::SwDecodeHeifsFrameImage(uint32_t index, HevcSoftDecodeParam &param)
+bool HeifDecoderImpl::SwDecodeHeifsFrameImage(uint32_t index, HevcSoftDecodeParam &param, bool isStatic)
 {
     CHECK_ERROR_RETURN_RET(!parser_, false);
     CHECK_ERROR_RETURN_RET(!extManager_.heifsSoftwareDecodeFunc_ && !extManager_.LoadImageFwkExtNativeSo(), false);
@@ -1634,7 +1639,7 @@ bool HeifDecoderImpl::SwDecodeHeifsFrameImage(uint32_t index, HevcSoftDecodePara
     IMAGE_LOGD("Heifs frame count: %{public}d", sampleCount);
     CHECK_ERROR_RETURN_RET(index >= sampleCount, false);
     std::vector<uint8_t> inputs;
-    auto ret = parser_->GetHeifsMovieFrameData(index, inputs);
+    auto ret = parser_->GetHeifsMovieFrameData(index, inputs, isStatic);
     CHECK_ERROR_RETURN_RET_LOG(ret != heif_error_ok, false,
         "GetHeifsMovieFrameData failed: %{public}d", ret);
     CHECK_ERROR_RETURN_RET(!ProcessChunkHead(inputs.data(), inputs.size()), false);
@@ -1783,6 +1788,15 @@ void HeifDecoderImpl::SetDstImageInfo(uint32_t dstWidth, uint32_t dstHeight)
 {
     dstWidth_ = dstWidth;
     dstHeight_ = dstHeight;
+}
+
+void HeifDecoderImpl::SwDecodeHeifsStaticImage(HevcSoftDecodeParam &param)
+{
+    CHECK_ERROR_RETURN(!parser_);
+    if (parser_->IsNeedDecodeHeifsStaticImage()) {
+        bool ret = SwDecodeHeifsOnceFrame(0, param, true);
+        IMAGE_LOGI("Need Decode Heifs Static Image, ret:%{public}d", static_cast<int>(ret));
+    }
 }
 } // namespace ImagePlugin
 } // namespace OHOS
