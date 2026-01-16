@@ -134,7 +134,10 @@ uint32_t DngExifMetadata::GetExifProperty(MetadataValue& value)
     }
     if ((value.key.size() > hwKeySize && value.key.substr(0, hwKeySize) == "Hw") || IsSpecialHwKey(value.key)) {
         std::string key = value.key;
-        uint32_t ret = ExifMetadata::GetValueByType(key, value);
+        int ret = ExifMetadata::GetValueByType(key, value);
+        if (ret < 0) {
+            return ERR_IMAGE_DECODE_EXIF_UNSUPPORT;
+        }
         value.type = ExifMetadata::GetPropertyValueType(key);
         value.key = key;
         return ret;

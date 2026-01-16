@@ -1107,7 +1107,10 @@ Image_ErrorCode OH_ImageSourceNative_GetImagePropertyString(OH_ImageSourceNative
     if (exifValue.stringValue.empty() || exifValue.stringValue.length() > MAX_EXIF_SIZE) {
         return IMAGE_SOURCE_UNSUPPORTED_METADATA;
     }
-    if (size < exifValue.stringValue.length() + 1) {
+    if (exifValue.stringValue.find('\0') != std::string::npos) {
+        return IMAGE_SOURCE_UNSUPPORTED_METADATA;
+    }
+    if (size < exifValue.stringValue.length() + 1 || size > MAX_EXIF_SIZE) {
         return IMAGE_SOURCE_INVALID_PARAMETER;
     }
     if (EOK != memcpy_s(value, size, exifValue.stringValue.c_str(), exifValue.stringValue.length())) {
