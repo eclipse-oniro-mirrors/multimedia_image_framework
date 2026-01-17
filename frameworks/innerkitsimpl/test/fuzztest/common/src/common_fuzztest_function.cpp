@@ -323,3 +323,50 @@ void SetFdpPixelDecodeOptions(FuzzedDataProvider* fdp, OHOS::ImagePlugin::PixelD
     plOpts.allowPartialImage = fdp->ConsumeBool();
     plOpts.editable = fdp->ConsumeBool();
 }
+
+std::string GetRandomKey(FuzzedDataProvider* fdp)
+{
+    static const std::vector<std::string> allKeys = {
+        "ImageDescription", "GPSVersionID", "GPSLatitudeRef", "GPSLatitude", "GPSLongitudeRef", "GPSLongitude",
+        "GPSAltitudeRef", "GPSAltitude", "GPSTimeStamp", "GPSSatellites", "GPSStatus",
+        "GPSMeasureMode", "GPSDOP", "GPSSpeedRef", "GPSSpeed", "GPSTrackRef", "GPSTrack",
+        "GPSImgDirectionRef", "GPSImgDirection", "GPSMapDatum", "GPSDestLatitudeRef",
+        "GPSDestLatitude", "GPSDestLongitudeRef", "GPSDestLongitude", "GPSDestBearingRef",
+        "GPSDestBearing", "GPSDestDistanceRef", "GPSDestDistance", "GPSProcessingMethod",
+        "GPSAreaInformation", "GPSDateStamp", "GPSDifferential", "GPSHPositioningError",
+        "Make", "Model", "Software", "DateTime", "Artist", "SubsecTime", "Copyright", "ExposureTime",
+        "FNumber", "ExposureProgram", "ISOSpeedRatings", "PhotographicSensitivity", "SensitivityType",
+        "StandardOutputSensitivity", "RecommendedExposureIndex", "ISOSpeedLatitudeyyy", "ISOSpeedLatitudezzz",
+        "ExifVersion", "DateTimeOriginal", "DateTimeDigitized", "ComponentsConfiguration", "CompressedBitsPerPixel",
+        "ShutterSpeedValue", "ApertureValue", "BrightnessValue", "ExposureBiasValue", "MaxApertureValue",
+        "SubjectDistance", "MeteringMode", "LightSource", "Flash", "FocalLength", "SubjectArea",
+        "UserComment", "SubsecTimeOriginal", "SubsecTimeDigitized", "FlashpixVersion", "ColorSpace",
+        "PixelXDimension", "PixelYDimension", "FocalPlaneXResolution", "FocalPlaneYResolution",
+        "FocalPlaneResolutionUnit", "SubjectLocation", "ExposureIndex", "SensingMethod", "FileSource",
+        "SceneType", "CFAPattern", "CustomRendered", "ExposureMode", "WhiteBalance", "DigitalZoomRatio",
+        "FocalLengthIn35mmFilm", "SceneCaptureType", "GainControl", "Contrast", "Saturation",
+        "Sharpness", "SubjectDistanceRange", "ImageUniqueID", "CameraOwnerName", "BodySerialNumber",
+        "LensSpecification", "LensMake", "LensModel", "LensSerialNumber", "Gamma", "NewSubfileType",
+        "ImageWidth", "ImageLength", "BitsPerSample", "Compression", "PhotometricInterpretation",
+        "StripOffsets", "Orientation", "SamplesPerPixel", "RowsPerStrip", "StripByteCounts", "XResolution",
+        "YResolution", "PlanarConfiguration", "ResolutionUnit", "YCbCrCoefficients", "YCbCrSubSampling",
+        "YCbCrPositioning", "ReferenceBlackWhite", "MakerNote", "DNGVersion", "DefaultCropSize",
+        "JPEGInterchangeFormatLength", "JPEGInterchangeFormat", "SubfileType", "TransferFunction", "WhitePoint",
+        "PrimaryChromaticities", "PhotoMode", "SpectralSensitivity", "OECF", "RelatedSoundFile", "FlashEnergy",
+        "SpatialFrequencyResponse", "DeviceSettingDescription", "OffsetTime", "OffsetTimeOriginal",
+        "OffsetTimeDigitized", "CompositeImage", "SourceImageNumberOfCompositeImage", "HwMnotePitchAngle",
+        "HwMnoteCaptureMode", "HwMnotePhysicalAperture", "HwMnoteRollAngle", "SourceExposureTimesOfCompositeImage",
+        "HwMnoteSceneFoodConf", "HwMnoteSceneStageConf", "HwMnoteSceneBlueSkyConf", "HwMnoteSceneGreenPlantConf",
+        "HwMnoteSceneBeachConf", "HwMnoteSceneSnowConf", "HwMnoteSceneSunsetConf", "HwMnoteSceneFlowersConf",
+        "HwMnoteSceneNightConf", "HwMnoteSceneTextConf", "HwMnoteFaceCount", "HwMnoteFocusMode",
+        "HwMnoteFocusModeExif", "HwMnoteBurstNumber", "HwMnoteFaceConf", "HwMnoteFaceLeyeCenter",
+        "HwMnoteFaceMouthCenter", "HwMnoteFacePointer", "HwMnoteFaceRect", "HwMnoteFaceReyeCenter",
+        "HwMnoteFaceSmileScore", "HwMnoteFaceVersion", "HwMnoteFrontCamera", "HwMnoteScenePointer",
+        "HwMnoteSceneVersion", "HwMnoteIsXmageSupported", "HwMnoteXmageMode", "HwMnoteXmageLeft",
+        "HwMnoteXmageTop", "HwMnoteXmageRight", "HwMnoteXmageBottom", "HwMnoteCloudEnhancementMode",
+        "HwMnoteWindSnapshotMode", "HwMnoteXtStyleTemplateName", "HwMnoteXtStyleCustomLightAndShadow",
+        "HwMnoteXtStyleCustomSaturation", "HwMnoteXtStyleCustomHue", "HwMnoteXtStyleExposureParam"
+    };
+    uint32_t index = fdp->ConsumeIntegral<uint32_t>() % allKeys.size();
+    return allKeys[index];
+}

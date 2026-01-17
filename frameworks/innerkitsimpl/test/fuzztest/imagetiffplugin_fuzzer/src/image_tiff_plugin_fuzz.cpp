@@ -37,15 +37,20 @@ namespace Media {
 using namespace OHOS::ImagePlugin;
 FuzzedDataProvider* FDP;
 
-void SetDecodeOptionsFuzzTest(std::shared_ptr<TiffDecoder> tiffDecoder)
+static constexpr uint32_t OPT_SIZE = 40;
+
+bool SetDecodeOptionsFuzzTest(std::shared_ptr<TiffDecoder> tiffDecoder)
 {
     if (!tiffDecoder) {
-        return;
+        return false;
     }
     PlImageInfo plInfo;
     PixelDecodeOptions plOpts;
     SetFdpPixelDecodeOptions(FDP, plOpts);
-    tiffDecoder->SetDecodeOptions(0, plOpts, plInfo);
+    if (tiffDecoder->SetDecodeOptions(0, plOpts, plInfo) != SUCCESS) {
+        return false;
+    }
+    return true;
 }
 
 void DecodeFuzzTest(std::shared_ptr<TiffDecoder> tiffDecoder)
@@ -121,7 +126,9 @@ void NormalDecodeFuzzTest(const uint8_t *data, size_t size)
     if (sourceStream != nullptr) {
         SetSourceStreamFuzzTest(tiffDecoder, *(sourceStream.get()));
     }
-    SetDecodeOptionsFuzzTest(tiffDecoder);
+    if (!SetDecodeOptionsFuzzTest(tiffDecoder)) {
+        return;
+    }
     DecodeFuzzTest(tiffDecoder);
     GetImageSizeFuzzTest(tiffDecoder);
     HasPropertyFuzzTest(tiffDecoder);
@@ -146,11 +153,14 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
         return 0;
     }
     /* Run your code on data */
-    FuzzedDataProvider fdp(data, size);
+    if (size <  OHOS::Media::OPT_SIZE) {
+        return -1;
+    }
+    FuzzedDataProvider fdp(data + size - OHOS::Media::OPT_SIZE, OHOS::Media::OPT_SIZE);
     OHOS::Media::FDP = &fdp;
     if (!OHOS::Media::FDP) {
         return 0;
     }
-    OHOS::Media::NormalDecodeFuzzTest(data, size);
+    OHOS::Media::NormalDecodeFuzzTest(data, size - OHOS::Media::OPT_SIZE);
     return 0;
 }
