@@ -66,10 +66,9 @@ struct SurfaceBufferInfo {
 
 class VpeSoHelper {
 public:
-    VpeSoHelper() = default;
-    VpeSoHelper(const std::string& soPath)
+    VpeSoHelper()
     {
-        handle_ = dlopen(soPath.c_str(), RTLD_LAZY);
+        handle_ = dlopen("libvideoprocessingengine.z.so", RTLD_LAZY);
     }
 
     ~VpeSoHelper()
