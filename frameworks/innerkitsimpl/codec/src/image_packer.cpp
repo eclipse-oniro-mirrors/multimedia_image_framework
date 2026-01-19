@@ -252,8 +252,9 @@ uint32_t ImagePacker::AddImage(ImageSource &source, uint32_t index)
     uint32_t ret = SUCCESS;
     DecodeOptions decodeOpts;
     decodeOpts.desiredDynamicRange = encodeToSdr_ ? DecodeDynamicRange::SDR : DecodeDynamicRange::AUTO;
+    bool isHdr = source.IsDecodeHdrImage(decodeOpts);
 #if !defined(CROSS_PLATFORM)
-    if (source.CheckHdrType() == ImageHdrType::HDR_VIVID_DUAL) {
+    if (isHdr && source.CheckHdrType() == ImageHdrType::HDR_VIVID_DUAL) {
         if (picture_ != nullptr) {
             picture_.reset();  // release old inner picture
         }
