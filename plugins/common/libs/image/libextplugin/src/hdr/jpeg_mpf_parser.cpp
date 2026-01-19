@@ -86,6 +86,15 @@ static const std::map<std::string, AuxiliaryPictureType> AUXILIARY_TAG_TYPE_MAP 
     {AUXILIARY_TAG_FRAGMENT_MAP, AuxiliaryPictureType::FRAGMENT_MAP}
 };
 
+static const std::map<MetadataType, std::vector<std::string>> BLOB_METADATA_DECODE_TAG_MAP = {
+    {MetadataType::XTSTYLE, {METADATA_TAG_XTSTYLE}},
+    {MetadataType::RFDATAB, {
+        METADATA_TAG_RFDATAB, METADATA_TAG_RFDATAB_DEPTHEN, std::string(METADATA_TAG_RFDATAB_DEPTHP, TAG_NAME_LENGTH)
+    }},
+    {MetadataType::RESMAP, {METADATA_TAG_RESMAP}},
+    {MetadataType::STDATA, {METADATA_TAG_STDATA}},
+};
+
 bool JpegMpfParser::CheckMpfOffset(uint8_t* data, uint32_t size, uint32_t& offset)
 {
     if (data == nullptr || size < JPEG_MARKER_SIZE) {
@@ -311,14 +320,20 @@ bool JpegMpfParser::ParsingBlobMetadata(uint8_t* data, uint32_t size, vector<uin
     if (data == nullptr || size < TAG_NAME_LENGTH) {
         return false;
     }
-    auto it = BLOB_METADATA_TAG_MAP.find(type);
-    if (it == BLOB_METADATA_TAG_MAP.end()) {
+    auto it = BLOB_METADATA_DECODE_TAG_MAP.find(type);
+    if (it == BLOB_METADATA_DECODE_TAG_MAP.end()) {
         IMAGE_LOGW("%{public}s unknown blobmetadata tag: %{public}d", __func__, type);
         return false;
     }
-    std::string tagName = it->second;
     for (uint32_t offset = size - TAG_NAME_LENGTH; offset > 0; --offset) {
-        if (memcmp((data + offset), tagName.c_str(), TAG_NAME_LENGTH) != 0) {
+        bool match = false;
+        for (const auto& tagName: it->second) {
+            match = memcmp((data + offset), tagName.c_str(), TAG_NAME_LENGTH) == 0;
+            if (match) {
+                break;
+            }
+        }
+        if (!match) {
             continue;
         }
         if (offset < UINT32_BYTE_SIZE) {
