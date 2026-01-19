@@ -68,7 +68,7 @@ heif_error Cr3Parser::ParseCr3Boxes(HeifStreamReader &reader)
         }
         if (box->GetBoxType() == BOX_TYPE_UUID) {
             std::shared_ptr<Cr3UuidBox> tempUuidBox = std::dynamic_pointer_cast<Cr3UuidBox>(box);
-            if (tempUuidBox->GetCr3UuidType() == Cr3UuidBox::Cr3UuidType::PREVIEW) {
+            if (tempUuidBox != nullptr && tempUuidBox->GetCr3UuidType() == Cr3UuidBox::Cr3UuidType::PREVIEW) {
                 uuidPrvwBox_ = tempUuidBox;
             }
         }
