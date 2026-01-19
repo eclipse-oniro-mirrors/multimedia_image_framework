@@ -345,10 +345,7 @@ heif_error HeifParser::AssembleImages()
 {
     images_.clear();
     primaryImage_.reset();
-    if (!ftypBox_) {
-        return heif_error_no_ftyp;
-    }
-    bool isHeifs = moovBox_ && ftypBox_->GetMajorBrand() == HEIF_BRAND_TYPE_MSF1;
+    bool isHeifs = moovBox_ && ftypBox_ && ftypBox_->GetMajorBrand() == HEIF_BRAND_TYPE_MSF1;
     if (isHeifs) {
         primaryImage_ = std::make_shared<HeifImage>(0);
         primaryImage_->SetPrimaryImage(true);
