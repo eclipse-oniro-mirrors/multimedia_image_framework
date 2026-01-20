@@ -57,7 +57,6 @@ group("fuzztest") {
     "imageheifsdecode_fuzzer:ImageHeifsDecodeFuzzTest",
     "imagedngexifmetadata_fuzzer:ImageDngExifMetadataFuzzTest",
     "imagedngsdkhelper_fuzzer:ImageDngSdkHelperFuzzTest",
-    "imagedngsdkinfo_fuzzer:ImageDngSdkInfoFuzzTest",
     "imageheifsmetadata_fuzzer:ImageHeifsMetadataFuzzTest",
   ]
   if (has_libtiff) {

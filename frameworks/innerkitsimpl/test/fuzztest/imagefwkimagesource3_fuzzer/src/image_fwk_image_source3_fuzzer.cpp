@@ -473,37 +473,21 @@ void PackThumbnailFuzzTest(const uint8_t *data, size_t size)
     }
 }
 
-void GetDngImagePropertyByDngSdkFuzzTest()
+void GetDngImagePropertyByDngSdkFuzzTest(const std::string& pathName)
 {
     if (FDP == nullptr) {
         return;
     }
-    std::string path = "/data/local/tmp/test_create_imagesource_pathname.png";
     uint32_t errorCode = 0;
     SourceOptions opts;
     opts.formatHint = "image/dng";
     std::unique_ptr<ImageSource> imageSource =
-        ImageSource::CreateImageSource(path, opts, errorCode);
+        ImageSource::CreateImageSource(pathName, opts, errorCode);
     if (errorCode != 0 || imageSource == nullptr) {
         return;
     }
-    
-    std::vector<std::string> validKeys;
-    for (const auto& pair : DngSdkInfo::exifPropertyMap_) {
-        validKeys.push_back(pair.first);
-    }
-    for (const auto& pair : DngSdkInfo::sharedPropertyMap_) {
-        validKeys.push_back(pair.first);
-    }
-    for (const auto& pair : DngSdkInfo::ifdPropertyMap_) {
-        validKeys.push_back(pair.first);
-    }
-    for (const auto& pair : DngSdkInfo::specialTagNameMap_) {
-        validKeys.push_back(pair.first);
-    }
-    uint8_t randomIdx = FDP->ConsumeIntegral<uint8_t>() % validKeys.size();
     MetadataValue value;
-    std::string key = validKeys[randomIdx];
+    std::string key = GetRandomKey(FDP);
     imageSource->GetDngImagePropertyByDngSdk(key, value);
 }
 }  // namespace Media
@@ -514,15 +498,19 @@ void GetDngImagePropertyByDngSdkFuzzTest()
 extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
 {
     if (size <  OHOS::Media::OPT_SIZE) {
-        return -1;
+        return 0;
     }
     FuzzedDataProvider fdp(data + size - OHOS::Media::OPT_SIZE, OHOS::Media::OPT_SIZE);
     OHOS::Media::FDP = &fdp;
-    uint8_t action = fdp.ConsumeIntegral<uint8_t>() % 13;
+    uint8_t action = fdp.ConsumeIntegral<uint8_t>() % 14;
+    std::string pathName = "/data/local/tmp/image/test_dng_readmetadata.dng";
+    if (!WriteDataToFile(data, size, pathName)) {
+        IMAGE_LOGE("WriteDataToFile failed");
+        return 0;
+    }
     switch (action) {
         case 0:
             OHOS::Media::CreateImageSourceFuzzTest();
-            OHOS::Media::GetDngImagePropertyByDngSdkFuzzTest();
             break;
         case 1:
             OHOS::Media::CreatePixelMapExFuzzTest(data, size - OHOS::Media::OPT_SIZE);
@@ -559,6 +547,9 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
             break;
         case 12:
             OHOS::Media::PackThumbnailFuzzTest(data, size - OHOS::Media::OPT_SIZE);
+            break;
+        case 13:
+            OHOS::Media::GetDngImagePropertyByDngSdkFuzzTest(pathName);
             break;
         default:
             break;
