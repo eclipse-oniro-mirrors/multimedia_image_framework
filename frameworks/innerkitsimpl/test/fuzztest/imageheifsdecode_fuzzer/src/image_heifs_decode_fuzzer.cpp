@@ -389,7 +389,7 @@ void GetHeifsGroupFrameInfoTest001(const uint8_t *data, size_t size)
 extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
 {
     if (size <  OHOS::Media::OPT_SIZE) {
-        return -1;
+        return 0;
     }
     FuzzedDataProvider fdp(data + size - OHOS::Media::OPT_SIZE, OHOS::Media::OPT_SIZE);
     OHOS::Media::FDP = &fdp;
