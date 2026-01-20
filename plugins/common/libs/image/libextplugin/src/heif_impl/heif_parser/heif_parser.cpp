@@ -351,6 +351,9 @@ heif_error HeifParser::AssembleImages()
     bool isHeifs = moovBox_ && ftypBox_->GetMajorBrand() == HEIF_BRAND_TYPE_MSF1;
     if (isHeifs) {
         primaryImage_ = std::make_shared<HeifImage>(0);
+        if (!primaryImage_) {
+            return heif_error_primary_item_not_found;
+        }
         primaryImage_->SetPrimaryImage(true);
         ExtractMovieImageProperties(primaryImage_);
     }
