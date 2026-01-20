@@ -600,6 +600,7 @@ Image_ErrorCode OH_ImageSourceNative_CreateFromFd(int32_t fd, OH_ImageSourceNati
     if (imageSource == nullptr || imageSource->GetInnerImageSource() == nullptr) {
         if (imageSource) {
             delete imageSource;
+            imageSource = nullptr;
         }
         *res = nullptr;
         return IMAGE_BAD_PARAMETER;
@@ -619,6 +620,7 @@ Image_ErrorCode CreateFromDataInternal(uint8_t *data, size_t dataSize, OH_ImageS
     if (imageSource == nullptr || imageSource->GetInnerImageSource() == nullptr) {
         if (imageSource) {
             delete imageSource;
+            imageSource = nullptr;
         }
         *res = nullptr;
         return isUserBuffer ? IMAGE_SOURCE_INVALID_PARAMETER : IMAGE_BAD_PARAMETER;
@@ -665,7 +667,7 @@ MIDK_EXPORT
 Image_ErrorCode OH_ImageSourceNative_CreatePixelmap(OH_ImageSourceNative *source, OH_DecodingOptions *ops,
     OH_PixelmapNative **pixelmap)
 {
-    if (source == nullptr) {
+    if (source == nullptr || source->GetInnerImageSource() == nullptr) {
         return IMAGE_BAD_PARAMETER;
     }
     DecodeOptions decOps;
@@ -720,7 +722,8 @@ MIDK_EXPORT
 Image_ErrorCode OH_ImageSourceNative_CreatePixelmapList(OH_ImageSourceNative *source, OH_DecodingOptions *ops,
     OH_PixelmapNative *resVecPixMap[], size_t outSize)
 {
-    if (source == nullptr || ops == nullptr || resVecPixMap == nullptr || outSize == SIZE_ZERO) {
+    if (source == nullptr || source->GetInnerImageSource() == nullptr || ops == nullptr || resVecPixMap == nullptr
+        || outSize == SIZE_ZERO) {
         return IMAGE_BAD_PARAMETER;
     }
     DecodeOptions decOps;
@@ -886,7 +889,7 @@ Image_ErrorCode OH_ImageSourceNative_CreatePictureAtIndex(OH_ImageSourceNative *
 MIDK_EXPORT
 Image_ErrorCode OH_ImageSourceNative_GetDelayTimeList(OH_ImageSourceNative *source, int32_t *delayTimeList, size_t size)
 {
-    if (source == nullptr || delayTimeList == nullptr) {
+    if (source == nullptr || source->GetInnerImageSource() == nullptr || delayTimeList == nullptr) {
         return IMAGE_BAD_PARAMETER;
     }
     uint32_t errorCode = IMAGE_SUCCESS;
@@ -908,7 +911,7 @@ MIDK_EXPORT
 Image_ErrorCode OH_ImageSourceNative_GetImageInfo(OH_ImageSourceNative *source, int32_t index,
     struct OH_ImageSource_Info *info)
 {
-    if (source == nullptr || info == nullptr) {
+    if (source == nullptr || source->GetInnerImageSource() == nullptr || info == nullptr) {
         return IMAGE_BAD_PARAMETER;
     }
     ImageInfo imageInfo;
@@ -925,7 +928,7 @@ MIDK_EXPORT
 Image_ErrorCode OH_ImageSourceNative_GetImageProperty(OH_ImageSourceNative *source, Image_String *key,
     Image_String *value)
 {
-    if (source == nullptr) {
+    if (source == nullptr || source->GetInnerImageSource() == nullptr) {
         return IMAGE_BAD_PARAMETER;
     }
     if (key == nullptr || key->data == nullptr || key->size == SIZE_ZERO) {
@@ -962,7 +965,8 @@ MIDK_EXPORT
 Image_ErrorCode OH_ImageSourceNative_GetImagePropertyShort(OH_ImageSourceNative *source,
     Image_String *key, uint16_t *value)
 {
-    if (source == nullptr || key == nullptr || key->data == nullptr || key->size == SIZE_ZERO || value == nullptr) {
+    if (source == nullptr || source->GetInnerImageSource() == nullptr || key == nullptr || key->data == nullptr
+        || key->size == SIZE_ZERO || value == nullptr) {
         return IMAGE_SOURCE_INVALID_PARAMETER;
     }
 
@@ -993,7 +997,8 @@ MIDK_EXPORT
 Image_ErrorCode OH_ImageSourceNative_GetImagePropertyLong(OH_ImageSourceNative *source,
     Image_String *key, uint32_t *value)
 {
-    if (source == nullptr || key == nullptr || key->data == nullptr || key->size == SIZE_ZERO || value == nullptr) {
+    if (source == nullptr || source->GetInnerImageSource() == nullptr || key == nullptr || key->data == nullptr
+        || key->size == SIZE_ZERO || value == nullptr) {
         return IMAGE_SOURCE_INVALID_PARAMETER;
     }
 
@@ -1024,7 +1029,8 @@ MIDK_EXPORT
 Image_ErrorCode OH_ImageSourceNative_GetImagePropertyDouble(OH_ImageSourceNative *source,
     Image_String *key, double *value)
 {
-    if (source == nullptr || key == nullptr || key->data == nullptr || key->size == SIZE_ZERO || value == nullptr) {
+    if (source == nullptr || source->GetInnerImageSource() == nullptr || key == nullptr
+        || key->data == nullptr || key->size == SIZE_ZERO || value == nullptr) {
         return IMAGE_SOURCE_INVALID_PARAMETER;
     }
 
@@ -1051,7 +1057,8 @@ Image_ErrorCode OH_ImageSourceNative_GetImagePropertyDouble(OH_ImageSourceNative
 Image_ErrorCode OH_ImageSourceNative_GetImagePropertyArraySize(OH_ImageSourceNative *source,
     Image_String *key, size_t *size)
 {
-    if (source == nullptr || key == nullptr || key->data == nullptr || key->size == 0 || size == nullptr) {
+    if (source == nullptr || source->GetInnerImageSource() == nullptr || key == nullptr
+        || key->data == nullptr || key->size == 0 || size == nullptr) {
         return IMAGE_SOURCE_INVALID_PARAMETER;
     }
     std::string keyStr(key->data, key->size);
@@ -1080,8 +1087,8 @@ Image_ErrorCode OH_ImageSourceNative_GetImagePropertyArraySize(OH_ImageSourceNat
 Image_ErrorCode OH_ImageSourceNative_GetImagePropertyString(OH_ImageSourceNative *source,
     Image_String *key, char *value, size_t size)
 {
-    if (source == nullptr || key == nullptr || key->data == nullptr || key->size == SIZE_ZERO ||
-        size == SIZE_ZERO || value == nullptr) {
+    if (source == nullptr || source->GetInnerImageSource() == nullptr || key == nullptr || key->data == nullptr
+        || key->size == SIZE_ZERO || size == SIZE_ZERO || value == nullptr) {
         return IMAGE_SOURCE_INVALID_PARAMETER;
     }
     std::string keyString(key->data, key->size);
@@ -1113,8 +1120,8 @@ Image_ErrorCode OH_ImageSourceNative_GetImagePropertyString(OH_ImageSourceNative
 Image_ErrorCode OH_ImageSourceNative_GetImagePropertyIntArray(OH_ImageSourceNative *source,
     Image_String *key, int32_t *value, size_t size)
 {
-    if (source == nullptr || key == nullptr || key->data == nullptr || key->size == SIZE_ZERO ||
-        size == SIZE_ZERO || value == nullptr) {
+    if (source == nullptr || source->GetInnerImageSource() == nullptr || key == nullptr || key->data == nullptr
+        || size == SIZE_ZERO || value == nullptr) {
         return IMAGE_SOURCE_INVALID_PARAMETER;
     }
     std::string keyString(key->data, key->size);
@@ -1149,8 +1156,8 @@ Image_ErrorCode OH_ImageSourceNative_GetImagePropertyIntArray(OH_ImageSourceNati
 Image_ErrorCode OH_ImageSourceNative_GetImagePropertyDoubleArray(OH_ImageSourceNative *source,
     Image_String *key, double *value, size_t size)
 {
-    if (source == nullptr || key == nullptr || key->data == nullptr || key->size == SIZE_ZERO ||
-        size == SIZE_ZERO || value == nullptr) {
+    if (source == nullptr || source->GetInnerImageSource() == nullptr || key == nullptr || key->data == nullptr
+        || key->size == SIZE_ZERO || size == SIZE_ZERO || value == nullptr) {
         return IMAGE_SOURCE_INVALID_PARAMETER;
     }
     std::string keyString(key->data, key->size);
@@ -1183,8 +1190,8 @@ Image_ErrorCode OH_ImageSourceNative_GetImagePropertyDoubleArray(OH_ImageSourceN
 Image_ErrorCode OH_ImageSourceNative_GetImagePropertyBlob(OH_ImageSourceNative *source, Image_String *key,
     void *value, size_t size)
 {
-    if (source == nullptr || key == nullptr || key->data == nullptr || key->size == SIZE_ZERO || value == nullptr ||
-        size == SIZE_ZERO) {
+    if (source == nullptr || source->GetInnerImageSource() == nullptr || key == nullptr ||
+        key->data == nullptr || key->size == SIZE_ZERO || value == nullptr || size == SIZE_ZERO) {
         return IMAGE_SOURCE_INVALID_PARAMETER;
     }
     std::string keyString(key->data, key->size);
@@ -1217,7 +1224,8 @@ MIDK_EXPORT
 Image_ErrorCode OH_ImageSourceNative_GetImagePropertyWithNull(OH_ImageSourceNative *source, Image_String *key,
     Image_String *value)
 {
-    if (source == nullptr || key == nullptr || key->data == nullptr || key->size == SIZE_ZERO || value == nullptr) {
+    if (source == nullptr || source->GetInnerImageSource() == nullptr || key == nullptr || key->data == nullptr
+        || key->size == SIZE_ZERO || value == nullptr) {
         return IMAGE_SOURCE_INVALID_PARAMETER;
     }
 
@@ -1576,7 +1584,7 @@ Image_ErrorCode OH_ImageSourceNative_ModifyImagePropertyBlob(OH_ImageSourceNativ
 MIDK_EXPORT
 Image_ErrorCode OH_ImageSourceNative_GetFrameCount(OH_ImageSourceNative *source, uint32_t *frameCount)
 {
-    if (source == nullptr || frameCount == nullptr) {
+    if (source == nullptr || source->GetInnerImageSource() == nullptr || frameCount == nullptr) {
         return IMAGE_BAD_PARAMETER;
     }
     uint32_t errorCode = IMAGE_BAD_PARAMETER;
@@ -1594,6 +1602,7 @@ Image_ErrorCode OH_ImageSourceNative_Release(OH_ImageSourceNative *source)
         return IMAGE_BAD_PARAMETER;
     }
     source->~OH_ImageSourceNative();
+    source = nullptr;
     return IMAGE_SUCCESS;
 }
 

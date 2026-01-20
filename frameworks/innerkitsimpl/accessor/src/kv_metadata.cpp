@@ -130,6 +130,7 @@ int ImageKvMetadata::GetValue(const std::string &key, std::string &value) const
         IMAGE_LOGE("key is not found in properties: %{public}s", key.c_str());
         return ERR_IMAGE_INVALID_PARAMETER;
     }
+    std::unique_lock<std::mutex> guard(mutex_);
     value = it->second;
     return SUCCESS;
 }
@@ -152,6 +153,7 @@ bool ImageKvMetadata::SetValue(const std::string &key, const std::string &value)
             static_cast<unsigned long long>(MAX_KV_META_STRING_LENGTH));
         return false;
     }
+    std::unique_lock<std::mutex> guard(mutex_);
     properties_->insert_or_assign(key, value);
     return true;
 }
@@ -163,12 +165,12 @@ bool ImageKvMetadata::RemoveEntry(const std::string &key)
         IMAGE_LOGE("Key is not supported.");
         return false;
     }
-
     auto it = properties_->find(key);
     if (it == properties_->end()) {
         IMAGE_LOGE("RemoveEntry failed, key is not found in properties: %{public}s", key.c_str());
         return false;
     }
+    std::unique_lock<std::mutex> guard(mutex_);
     properties_->erase(it);
     IMAGE_LOGD("RemoveEntry for key: %{public}s", key.c_str());
     return true;
@@ -241,7 +243,7 @@ ImageKvMetadata *ImageKvMetadata::Unmarshalling(Parcel &parcel, PICTURE_ERR &err
     CHECK_ERROR_RETURN_RET_LOG(kvMetadataPtr == nullptr, nullptr, "%{public}s make_unique failed", __func__);
     CHECK_ERROR_RETURN_RET_LOG(kvMetadataPtr->properties_ == nullptr, nullptr,
         "%{public}s kvMetadataPtr->properties_ is nullptr", __func__);
-
+    
     uint64_t size = 0;
     if (!parcel.ReadUint64(size) || size > MAX_KV_META_COUNT) {
         return nullptr;

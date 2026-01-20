@@ -142,7 +142,7 @@ struct ImageYuvConverter {
     int32_t (*I010ToP010)(const uint16_t* src_y, int src_stride_y, const uint16_t* src_u, int src_stride_u,
         const uint16_t* src_v, int src_stride_v, uint16_t* dst_y, int dst_stride_y, uint16_t* dst_uv,
         int dst_stride_uv, int width, int height);
-    int32_t (*ARGBToI420)(const uint8_t* src_argb, int src_stride_argb, uint8_t* dst_y, int dst_stride_y,
+    int32_t (*ARGBToJ420)(const uint8_t* src_argb, int src_stride_argb, uint8_t* dst_y, int dst_stride_y,
         uint8_t* dst_u, int dst_stride_u, uint8_t* dst_v, int dst_stride_v, int width, int height);
     int32_t (*AR30ToARGB)(const uint8_t* src_ar30, int src_stride_ar30, uint8_t* dst_argb, int dst_stride_argb,
         int width, int height);

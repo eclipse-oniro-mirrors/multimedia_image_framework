@@ -14,6 +14,7 @@
  */
 #include <fuzzer/FuzzedDataProvider.h>
 #include <vector>
+#include "common_fuzztest_function.h"
 #include "dng_exif_metadata.h"
 #include "dng_sdk_helper.h"
 #include "dng_sdk_info.h"
@@ -28,91 +29,40 @@
 namespace OHOS {
 namespace Media {
 
-const std::vector<std::string> HW_KEYS = {
-    "HwMnoteCaptureMode",
-    "HwMnotePhysicalAperture",
-    "HwMnoteRollAngle",
-    "HwMnotePitchAngle",
-    "HwMnoteSceneFoodConf",
-    "HwMnoteSceneStageConf",
-    "HwMnoteSceneBlueSkyConf",
-    "HwMnoteSceneGreenPlantConf",
-    "HwMnoteSceneBeachConf",
-    "HwMnoteSceneSnowConf",
-    "HwMnoteSceneSunsetConf",
-    "HwMnoteSceneFlowersConf",
-    "HwMnoteSceneNightConf",
-    "HwMnoteSceneTextConf",
-    "HwMnoteFaceCount",
-    "HwMnoteFocusMode",
-    "HwMnoteFocusModeExif",
-    "HwMnoteBurstNumber",
-    "HwMnoteFaceConf",
-    "HwMnoteFaceLeyeCenter",
-    "HwMnoteFaceMouthCenter",
-    "HwMnoteFacePointer",
-    "HwMnoteFaceRect",
-    "HwMnoteFaceReyeCenter",
-    "HwMnoteFaceSmileScore",
-    "HwMnoteFaceVersion",
-    "HwMnoteFrontCamera",
-    "HwMnoteScenePointer",
-    "HwMnoteSceneVersion",
-    "HwMnoteIsXmageSupported",
-    "HwMnoteXmageMode",
-    "HwMnoteXmageLeft",
-    "HwMnoteXmageTop",
-    "HwMnoteXmageRight",
-    "HwMnoteXmageBottom",
-    "HwMnoteCloudEnhancementMode",
-    "HwMnoteWindSnapshotMode",
-    "HwMnoteXtStyleTemplateName",
-    "HwMnoteXtStyleCustomLightAndShadow",
-    "HwMnoteXtStyleCustomSaturation",
-    "HwMnoteXtStyleCustomHue",
-    "HwMnoteXtStyleExposureParam"
-    "MovingPhotoId",
-    "MovingPhotoVersion",
-    "MicroVideoPresentationTimestampUS",
-    "HwUnknow",
-    "ErrorKey",
-};
+static constexpr uint32_t MAX_STRING_LENGTH = 10;
 
 FuzzedDataProvider* FDP;
 
 void ImageDngExifMetadataGetValueFuzzTest()
 {
-    if (FDP == nullptr) {
-        return;
-    }
     std::shared_ptr<DngExifMetadata> dngExifMetadata = std::make_shared<DngExifMetadata>();
-    uint8_t randomIdx = FDP->ConsumeIntegral<uint8_t>() % HW_KEYS.size();
-    std::string key = HW_KEYS[randomIdx];
-    std::string value = "";
+    std::string key = GetRandomKey(FDP);
+    std::string value = FDP->ConsumeRandomLengthString(MAX_STRING_LENGTH);
     dngExifMetadata->GetValue(key, value);
 }
 
 void ImageDngExifMetadataSetValueFuzzTest()
 {
-    if (FDP == nullptr) {
-        return;
-    }
     std::shared_ptr<DngExifMetadata> dngExifMetadata = std::make_shared<DngExifMetadata>();
-    uint8_t randomIdx = FDP->ConsumeIntegral<uint8_t>() % HW_KEYS.size();
-    std::string key = HW_KEYS[randomIdx];
-    std::string value = "";
+    std::string key = GetRandomKey(FDP);
+    std::string value = FDP->ConsumeRandomLengthString(MAX_STRING_LENGTH);
     dngExifMetadata->SetValue(key, value);
 }
 
 void ImageDngExifMetadataRemoveEntryFuzzTest()
 {
-    if (FDP == nullptr) {
-        return;
-    }
     std::shared_ptr<DngExifMetadata> dngExifMetadata = std::make_shared<DngExifMetadata>();
-    uint8_t randomIdx = FDP->ConsumeIntegral<uint8_t>() % HW_KEYS.size();
-    std::string key = HW_KEYS[randomIdx];
+    std::string key = GetRandomKey(FDP);
     dngExifMetadata->RemoveEntry(key);
+}
+
+void ImageDngExifMetadataGetExifPropertyFuzzTest()
+{
+    std::shared_ptr<DngExifMetadata> dngExifMetadata = std::make_shared<DngExifMetadata>();
+    dngExifMetadata->dngSdkInfo_ = std::make_unique<DngSdkInfo>();
+    MetadataValue value{};
+    std::string key = GetRandomKey(FDP);
+    dngExifMetadata->GetExifProperty(value);
 }
 
 void ImageDngExifMetadataCloneMetadataFuzzTest()
@@ -134,29 +84,10 @@ void ImageDngExifMetadataMarshallingFuzzTest()
     dngExifMetadata->Marshalling(parcel);
 }
 
-void ImageDngExifMetadataGetExifPropertyFuzzTest()
-{
-    if (FDP == nullptr) {
-        return;
-    }
-    std::shared_ptr<DngExifMetadata> dngExifMetadata = std::make_shared<DngExifMetadata>();
-    dngExifMetadata->dngSdkInfo_ = std::make_unique<DngSdkInfo>();
-    MetadataValue value{};
-    uint8_t randomIdx = FDP->ConsumeIntegral<uint8_t>() % HW_KEYS.size();
-    value.key = HW_KEYS[randomIdx];
-    dngExifMetadata->GetExifProperty(value);
-
-    dngExifMetadata->dngSdkInfo_ = nullptr;
-    MetadataValue value1{};
-    dngExifMetadata->GetExifProperty(value1);
-}
-
 void ImageDngExifMetadataGetAllDngPropertiesFuzzTest()
 {
     std::shared_ptr<DngExifMetadata> dngExifMetadata = std::make_shared<DngExifMetadata>();
     dngExifMetadata->dngSdkInfo_ = std::make_unique<DngSdkInfo>();
-    dngExifMetadata->GetAllDngProperties();
-    dngExifMetadata->dngSdkInfo_ = nullptr;
     dngExifMetadata->GetAllDngProperties();
 }
 } // namespace Media
@@ -167,14 +98,17 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
 {
     FuzzedDataProvider fdp(data, size);
     OHOS::Media::FDP = &fdp;
+    if (OHOS::Media::FDP == nullptr) {
+        return 0;
+    }
     /* Run your code on data */
     OHOS::Media::ImageDngExifMetadataGetValueFuzzTest();
     OHOS::Media::ImageDngExifMetadataSetValueFuzzTest();
     OHOS::Media::ImageDngExifMetadataRemoveEntryFuzzTest();
+    OHOS::Media::ImageDngExifMetadataGetExifPropertyFuzzTest();
     OHOS::Media::ImageDngExifMetadataCloneMetadataFuzzTest();
     OHOS::Media::ImageDngExifMetadataCloneFuzzTest();
     OHOS::Media::ImageDngExifMetadataMarshallingFuzzTest();
-    OHOS::Media::ImageDngExifMetadataGetExifPropertyFuzzTest();
     OHOS::Media::ImageDngExifMetadataGetAllDngPropertiesFuzzTest();
     return 0;
 }

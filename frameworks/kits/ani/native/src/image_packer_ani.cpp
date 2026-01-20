@@ -98,9 +98,9 @@ std::string ANIUtils_ANIStringToStdString(ani_env *env, ani_string ani_str)
 bool ParsePackingOptions([[maybe_unused]] ani_env* env, ani_object para, PackOption &packOpts, uint32_t &outBufferSize)
 {
     ani_ref tmptest;
-    const char *formatGetterName = Builder::BuildGetterName("format").c_str();
-    if (ANI_OK != env->Object_CallMethodByName_Ref(para, formatGetterName, ":C{std.core.String}", &tmptest)) {
-        IMAGE_LOGE("Object_CallMethodByName_Ref %{public}s failed", formatGetterName);
+    if (ANI_OK != env->Object_CallMethodByName_Ref(para, Builder::BuildGetterName("format").c_str(),
+        ":C{std.core.String}", &tmptest)) {
+        IMAGE_LOGE("Object_CallMethodByName_Ref format failed");
         return false;
     }
     std::string retStr = ANIUtils_ANIStringToStdString(env, static_cast<ani_string>(tmptest));

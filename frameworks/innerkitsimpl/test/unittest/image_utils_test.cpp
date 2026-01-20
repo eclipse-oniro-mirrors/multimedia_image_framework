@@ -1642,5 +1642,40 @@ HWTEST_F(ImageUtilsTest, ScopeRestorerTest004, TestSize.Level3)
     EXPECT_EQ(value, 0);
     GTEST_LOG_(INFO) << "ImageUtilsTest: ScopeRestorerTest004 end";
 }
+
+/**
+ * @tc.name: ConvertTo10BitPixelFormatTest001
+ * @tc.desc: test ConvertTo10BitPixelFormat
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageUtilsTest, ConvertTo10BitPixelFormatTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImageUtilsTest: ConvertTo10BitPixelFormatTest001 start";
+    PixelFormat result = ImageUtils::ConvertTo10BitPixelFormat(PixelFormat::RGBA_8888);
+    EXPECT_EQ(result, PixelFormat::RGBA_1010102);
+
+    result = ImageUtils::ConvertTo10BitPixelFormat(PixelFormat::RGBA_8888);
+    EXPECT_EQ(result, PixelFormat::RGBA_1010102);
+
+    result = ImageUtils::ConvertTo10BitPixelFormat(PixelFormat::NV21);
+    EXPECT_EQ(result, PixelFormat::YCRCB_P010);
+
+    result = ImageUtils::ConvertTo10BitPixelFormat(PixelFormat::NV12);
+    EXPECT_EQ(result, PixelFormat::YCBCR_P010);
+
+    result = ImageUtils::ConvertTo10BitPixelFormat(PixelFormat::RGBA_1010102);
+    EXPECT_EQ(result, PixelFormat::RGBA_1010102);
+
+    result = ImageUtils::ConvertTo10BitPixelFormat(PixelFormat::YCRCB_P010);
+    EXPECT_EQ(result, PixelFormat::YCRCB_P010);
+
+    result = ImageUtils::ConvertTo10BitPixelFormat(PixelFormat::YCBCR_P010);
+    EXPECT_EQ(result, PixelFormat::YCBCR_P010);
+
+    result = ImageUtils::ConvertTo10BitPixelFormat(PixelFormat::RGB_565);
+    EXPECT_EQ(result, PixelFormat::UNKNOWN);
+
+    GTEST_LOG_(INFO) << "ImageUtilsTest: ConvertTo10BitPixelFormatTest001 end";
+}
 }
 }

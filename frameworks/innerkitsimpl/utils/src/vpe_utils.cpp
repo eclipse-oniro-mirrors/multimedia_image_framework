@@ -56,7 +56,6 @@ constexpr uint8_t INDEX_TWO = 2;
 static constexpr int32_t PLANE_U = 1;
 static constexpr int32_t PLANE_V = 2;
 #endif
-const static std::string VPE_SO_NAME = "libvideoprocessingengine.z.so";
 std::unique_ptr<VpeSoHelper> VpeUtils::dlHandler_ = nullptr;
 
 using CreateT = int32_t (*)(int32_t*);
@@ -80,7 +79,7 @@ VpeUtils::VpeUtils()
 {
     static std::once_flag flag;
     std::function<void()> func = []() {
-        VpeUtils::dlHandler_ = std::make_unique<VpeSoHelper>(VPE_SO_NAME);
+        VpeUtils::dlHandler_ = std::make_unique<VpeSoHelper>();
     };
     std::call_once(flag, func);
 }

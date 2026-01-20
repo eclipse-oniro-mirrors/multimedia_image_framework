@@ -29,14 +29,6 @@
 namespace OHOS {
 namespace Media {
 
-void Throw_dng_error(dng_error_code err, const char* message, const char* sub_message, bool silent)
-{
-    static dng_error_code lastError = dng_error_none;
-    lastError = err;
-    IMAGE_LOGE("DNG SDK error: code=%{public}d, message=%{public}s, subMessage=%{public}s",
-               err, message ? message : "", sub_message ? sub_message : "");
-}
-
 class DngSdkInputDataStream : public dng_stream {
 public:
     explicit DngSdkInputDataStream(ImagePlugin::InputDataStream* stream)
@@ -152,13 +144,18 @@ static bool ReadDngInfo(dng_stream& stream, dng_host& host, dng_info* info)
 
 std::unique_ptr<DngSdkInfo> DngSdkHelper::ParseInfoFromStream(std::shared_ptr<MetadataStream>& stream)
 {
-    DngSdkMetadataStream dngStream(stream);
-    DngSdkHost dngHost;
-    std::unique_ptr<DngSdkInfo> dngInfo = std::make_unique<DngSdkInfo>();
-    if (!ReadDngInfo(dngStream, dngHost, dngInfo.get())) {
+    try {
+        DngSdkMetadataStream dngStream(stream);
+        DngSdkHost dngHost;
+        std::unique_ptr<DngSdkInfo> dngInfo = std::make_unique<DngSdkInfo>();
+        if (!ReadDngInfo(dngStream, dngHost, dngInfo.get())) {
+            return nullptr;
+        }
+        return dngInfo;
+    } catch (...) {
+        IMAGE_LOGE("DNG SDK exception caught in ParseInfoFromStream");
         return nullptr;
     }
-    return dngInfo;
 }
 
 static uint32_t GetPropertyByOptions(const std::unique_ptr<DngSdkInfo>& info, MetadataValue& value,
@@ -199,8 +196,13 @@ static std::vector<DngPropertyOption> GetExifPropertyOptions(uint32_t mainIndex)
 
 uint32_t DngSdkHelper::GetExifProperty(const std::unique_ptr<DngSdkInfo>& info, MetadataValue& value)
 {
-    CHECK_ERROR_RETURN_RET(info == nullptr, ERR_IMAGE_DECODE_EXIF_UNSUPPORT);
-    return GetPropertyByOptions(info, value, GetExifPropertyOptions(info->fMainIndex));
+    try {
+        CHECK_ERROR_RETURN_RET(info == nullptr, ERR_IMAGE_DECODE_EXIF_UNSUPPORT);
+        return GetPropertyByOptions(info, value, GetExifPropertyOptions(info->fMainIndex));
+    } catch (...) {
+        IMAGE_LOGE("Failed to get value %{public}s", value.key.c_str());
+        return ERR_IMAGE_DECODE_EXIF_UNSUPPORT;
+    }
 }
 
 uint32_t DngSdkHelper::SetExifProperty(const std::unique_ptr<DngSdkInfo>& info, const MetadataValue& value)

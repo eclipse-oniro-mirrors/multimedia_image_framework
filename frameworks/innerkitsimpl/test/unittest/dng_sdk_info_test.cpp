@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2025 Huawei Device Co., Ltd.
+ * Copyright (C) 2026 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -274,7 +274,7 @@ HWTEST_F(DngSdkInfoTest, ParseIntTagTest001, TestSize.Level3)
  * @tc.desc: Test ParseDoubleTag with tagCount = 0, expect empty doubleArrayValue and SUCCESS.
  * @tc.type: FUNC
  */
-HWTEST_F(DngSdkInfoTest, ParseDoubleTtagTest001, TestSize.Level3)
+HWTEST_F(DngSdkInfoTest, ParseDoubleTagTest001, TestSize.Level3)
 {
     GTEST_LOG_(INFO) << "DngSdkInfoTest: ParseDoubleTagTest001 start";
 

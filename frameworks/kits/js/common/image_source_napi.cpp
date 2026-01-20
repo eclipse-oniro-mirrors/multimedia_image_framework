@@ -351,6 +351,8 @@ static std::vector<struct ImageEnum> sPropertyKeyMap = {
     {"XTSTYLE_CUSTOM_SATURATION", 0, "HwMnoteXtStyleCustomSaturation"},
     {"XTSTYLE_CUSTOM_HUE", 0, "HwMnoteXtStyleCustomHue"},
     {"XTSTYLE_EXPOSUREPARAM_NAME", 0, "HwMnoteXtStyleExposureParam"},
+    {"XTSTYLE_VIGNETTING", 0, "HwMnoteXtStyleVignetting"},
+    {"XTSTYLE_NOISE", 0, "HwMnoteXtStyleNoise"},
 };
 static std::vector<struct ImageEnum> sImageFormatMap = {
     {"YCBCR_422_SP", 1000, ""},
@@ -2607,7 +2609,7 @@ napi_value ImageSourceNapi::CreatePixelMapUsingAllocatorSync(napi_env env, napi_
         return ImageNapiUtils::ThrowExceptionError(env, IMAGE_SOURCE_UNSUPPORTED_ALLOCATOR_TYPE,
             "Unsupported allocator type.");
     }
-    IMAGE_LOGI("%{public}s allocator type is %{public}d.", __func__, syncContext->decodeOpts.allocatorType);
+    IMAGE_LOGD("%{public}s allocator type is %{public}d.", __func__, syncContext->decodeOpts.allocatorType);
     syncContext->rPixelMap = CreatePixelMapInner(syncContext->constructor_, syncContext->constructor_->nativeImgSrc,
         syncContext->index, syncContext->decodeOpts, syncContext->status);
     if (syncContext->status != SUCCESS) {
@@ -3108,7 +3110,10 @@ static std::unique_ptr<ImageSourceAsyncContext> UnwrapContextForReadImageMetadat
         int index = 0;
         napi_status status = napi_get_value_int32(env, argValue[NUM_1], &index);
         IMG_NAPI_CHECK_RET_D(IMG_IS_OK(status), nullptr, IMAGE_LOGE("Fail to get readImageMetadata index argument"));
-        IMG_NAPI_CHECK_RET_D(index >= 0, nullptr, IMAGE_LOGE("Invalid readImageMetadata index"));
+        uint32_t errorCode = 0;
+        uint32_t frameCount = context->rImageSource->GetFrameCount(errorCode);
+        IMG_NAPI_CHECK_RET_D((errorCode == SUCCESS) && (index >= 0) && (index < frameCount),
+            nullptr, IMAGE_LOGE("Invalid readImageMetadata index"));
         context->index = static_cast<uint32_t>(index);
         IMAGE_LOGD("index is %{public}d", index);
     }

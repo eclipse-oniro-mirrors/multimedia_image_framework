@@ -72,6 +72,9 @@ public:
     heif_error ReadToExtentData(Item &item, const std::shared_ptr<HeifInputStream> &stream,
                                 const std::shared_ptr<HeifIdatBox> &idatBox);
 
+    heif_error GetPrimaryImageFileOffset(heif_item_id itemId, uint64_t &offset,
+        const std::shared_ptr<HeifIdatBox> &idatBox) const;
+
 protected:
     heif_error ParseContent(HeifStreamReader &reader) override;
 
@@ -107,6 +110,11 @@ public:
     }
 
     heif_error Write(HeifStreamWriter &writer) const override;
+
+    uint64_t GetStartPos() const
+    {
+        return static_cast<uint64_t>(startPos_);
+    }
 
 protected:
     heif_error ParseContent(HeifStreamReader &reader) override;

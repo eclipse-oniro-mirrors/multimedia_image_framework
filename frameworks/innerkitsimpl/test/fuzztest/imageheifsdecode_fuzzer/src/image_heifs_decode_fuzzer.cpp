@@ -47,6 +47,7 @@ namespace {
     static constexpr uint32_t PIXELFORMAT_MODULO = 105;
     static constexpr uint32_t SOURCEOPTIONS_MIMETYPE_MODULO = 3;
     static constexpr uint32_t MOCK_MAX_INDEX = 15;
+    static constexpr uint32_t OPT_SIZE = 80;
 }
 
 std::unique_ptr<ImageSource> ConstructImageSourceByBuffer(const uint8_t *data, size_t size)
@@ -387,24 +388,51 @@ void GetHeifsGroupFrameInfoTest001(const uint8_t *data, size_t size)
 /* Fuzzer entry point */
 extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
 {
-    FuzzedDataProvider fdp(data, size);
+    if (size <  OHOS::Media::OPT_SIZE) {
+        return 0;
+    }
+    FuzzedDataProvider fdp(data + size - OHOS::Media::OPT_SIZE, OHOS::Media::OPT_SIZE);
     OHOS::Media::FDP = &fdp;
-    /* Run your code on data */
-    OHOS::Media::CreatePictureAtIndexFuzzTest001(data, size);
-    OHOS::Media::SetHeifsMetadataForPictureTest001(data, size);
-    OHOS::Media::GetHeifsFrameCountTest001();
-    OHOS::Media::ParseContentChildrenTest001(data, size);
-    OHOS::Media::HeifFullBoxParseContentAndWriteTest001(data, size);
-    OHOS::Media::GetSampleEntryWidthHeightTest001();
-    OHOS::Media::GetHvccBoxTest001();
-    OHOS::Media::GetDelayTimeTest001();
-    OHOS::Media::GetChunkOffsetTest001();
-    OHOS::Media::GetSampleSizeTest001();
-    OHOS::Media::GetSampleNumbersTest001();
-    OHOS::Media::IsHeifsImageTest001(data, size);
-    OHOS::Media::GetHeifsMovieFrameDataTest001(data, size);
-    OHOS::Media::GetHeifsFrameDataTest001(data, size);
-    OHOS::Media::GetHeifsDelayTimeTest001(data, size);
-    OHOS::Media::GetPreSampleSizeTest001(data, size);
+    uint8_t action = fdp.ConsumeIntegral<uint8_t>() % 11;
+    switch (action) {
+        case 0:
+            OHOS::Media::CreatePictureAtIndexFuzzTest001(data, size - OHOS::Media::OPT_SIZE);
+            break;
+        case 1:
+            OHOS::Media::SetHeifsMetadataForPictureTest001(data, size - OHOS::Media::OPT_SIZE);
+            break;
+        case 2:
+            OHOS::Media::ParseContentChildrenTest001(data, size - OHOS::Media::OPT_SIZE);
+            break;
+        case 3:
+            OHOS::Media::HeifFullBoxParseContentAndWriteTest001(data, size - OHOS::Media::OPT_SIZE);
+            break;
+        case 4:
+            OHOS::Media::IsHeifsImageTest001(data, size - OHOS::Media::OPT_SIZE);
+            break;
+        case 5:
+            OHOS::Media::GetHeifsMovieFrameDataTest001(data, size - OHOS::Media::OPT_SIZE);
+            break;
+        case 6:
+            OHOS::Media::GetHeifsFrameDataTest001(data, size - OHOS::Media::OPT_SIZE);
+            break;
+        case 7:
+            OHOS::Media::GetHeifsDelayTimeTest001(data, size - OHOS::Media::OPT_SIZE);
+            break;
+        case 8:
+            OHOS::Media::GetPreSampleSizeTest001(data, size - OHOS::Media::OPT_SIZE);
+            break;
+        case 9:
+            OHOS::Media::GetSampleEntryWidthHeightTest001();
+            OHOS::Media::GetHeifsFrameCountTest001();
+            OHOS::Media::GetHvccBoxTest001();
+            OHOS::Media::GetDelayTimeTest001();
+            OHOS::Media::GetChunkOffsetTest001();
+            OHOS::Media::GetSampleSizeTest001();
+            OHOS::Media::GetSampleNumbersTest001();
+            break;
+        default:
+            break;
+    }
     return 0;
 }

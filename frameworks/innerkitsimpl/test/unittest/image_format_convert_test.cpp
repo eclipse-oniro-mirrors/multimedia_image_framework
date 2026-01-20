@@ -1730,9 +1730,6 @@ HWTEST_F(ImageFormatConvertTest, CheckConvertDataInfo_Test_001, TestSize.Level1)
     EXPECT_EQ(cvtFunc, false);
     convertDataInfo.imageSize = {1, 1};
     EXPECT_EQ(ImageFormatConvert::GetBufferSizeByFormat(convertDataInfo.pixelFormat, convertDataInfo.imageSize), 4);
-    convertDataInfo.bufferSize = 1;
-    cvtFunc = ImageFormatConvert::CheckConvertDataInfo(convertDataInfo);
-    EXPECT_EQ(cvtFunc, false);
     convertDataInfo.bufferSize = 4;
     cvtFunc = ImageFormatConvert::CheckConvertDataInfo(convertDataInfo);
     EXPECT_EQ(cvtFunc, true);

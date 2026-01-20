@@ -62,6 +62,8 @@ namespace Media {
 #define METADATA_TAG_RFDATAB "RfDataB\0"
 #define METADATA_TAG_XTSTYLE "XtStyle\0"
 #define METADATA_TAG_STDATA "STData\0"
+#define METADATA_TAG_RFDATAB_DEPTHP "DepthP\0\0"
+#define METADATA_TAG_RFDATAB_DEPTHEN "DepthEn\0"
 
 
 constexpr uint8_t ASTC_EXTEND_INFO_TLV_NUM_6 = 6;

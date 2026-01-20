@@ -175,6 +175,7 @@ ohos_shared_library("extplugin") {
     "${image_subsystem}/frameworks/innerkitsimpl/utils/include",
     "${image_subsystem}/frameworks/innerkitsimpl/accessor/include",
     "${image_subsystem}/plugins/common/libs/image/formatagentplugin/include",
+    "${image_subsystem}/plugins/common/libs/image/librawplugin/include",
     "${image_subsystem}/frameworks/innerkitsimpl/pixelconverter/include",
   ]
   if (use_mingw_win) {
@@ -185,6 +186,7 @@ ohos_shared_library("extplugin") {
       "${image_subsystem}/frameworks/innerkitsimpl/utils:image_utils_static",
       "${image_subsystem}/mock/native:log_mock_static",
       "${image_subsystem}/plugins/common/libs/image/formatagentplugin:imageformatagent",
+      "${image_subsystem}/plugins/common/libs/image/librawplugin:rawplugin",
       "${image_subsystem}/plugins/manager:pluginmanager_static",
     ]
     deps += skia_core
@@ -196,6 +198,7 @@ ohos_shared_library("extplugin") {
       "${image_subsystem}/frameworks/innerkitsimpl/utils:image_utils_static",
       "${image_subsystem}/mock/native:log_mock_static",
       "${image_subsystem}/plugins/common/libs/image/formatagentplugin:imageformatagent",
+      "${image_subsystem}/plugins/common/libs/image/librawplugin:rawplugin",
       "${image_subsystem}/plugins/manager:pluginmanager_static",
       "${third_party_root}/bounds_checking_function:libsec_static",
     ]
@@ -210,6 +213,7 @@ ohos_shared_library("extplugin") {
       "${image_subsystem}/frameworks/innerkitsimpl/utils:image_utils",
       "${image_subsystem}/interfaces/innerkits:image_native",
       "${image_subsystem}/plugins/common/libs/image/formatagentplugin:imageformatagent",
+      "${image_subsystem}/plugins/common/libs/image/librawplugin:rawplugin",
       "${image_subsystem}/plugins/manager:pluginmanager",
       "${image_subsystem}/frameworks/innerkitsimpl/accessor:image_accessor",
     ]

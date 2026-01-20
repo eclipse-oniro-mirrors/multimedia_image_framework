@@ -2234,5 +2234,34 @@ std::unique_ptr<AbsMemory> ImageUtils::ReadData(std::vector<uint8_t> &buff, int3
 #endif
     return dstMemory;
 }
+
+PixelFormat ImageUtils::ConvertTo10BitPixelFormat(PixelFormat pixelFormat)
+{
+    PixelFormat hdrAllocFormat = PixelFormat::UNKNOWN;
+    switch (pixelFormat) {
+        case PixelFormat::RGBA_8888:
+            hdrAllocFormat = PixelFormat::RGBA_1010102;
+            break;
+        case PixelFormat::NV21:
+            hdrAllocFormat = PixelFormat::YCRCB_P010;
+            break;
+        case PixelFormat::NV12:
+            hdrAllocFormat = PixelFormat::YCBCR_P010;
+            break;
+        case PixelFormat::RGBA_1010102:
+            hdrAllocFormat = PixelFormat::RGBA_1010102;
+            break;
+        case PixelFormat::YCRCB_P010:
+            hdrAllocFormat = PixelFormat::YCRCB_P010;
+            break;
+        case PixelFormat::YCBCR_P010:
+            hdrAllocFormat = PixelFormat::YCBCR_P010;
+            break;
+        default:
+            IMAGE_LOGE("ConvertTo10BitPixleFormat failed, format: %{public}d", pixelFormat);
+            break;
+    }
+    return hdrAllocFormat;
+}
 } // namespace Media
 } // namespace OHOS

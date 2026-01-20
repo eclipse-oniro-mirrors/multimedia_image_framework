@@ -15,6 +15,8 @@
 #include <fuzzer/FuzzedDataProvider.h>
 #include <fcntl.h>
 #include <memory>
+#include <string>
+#include "common_fuzztest_function.h"
 #include "dng_area_task.h"
 #include "dng/dng_exif_metadata.h"
 #include "dng_errors.h"
@@ -26,55 +28,13 @@
 namespace OHOS {
 namespace Media {
 
-static const std::vector<std::string> HW_KEYS = {
-    "ImageDescription", "GPSVersionID", "GPSLatitudeRef", "GPSLatitude", "GPSLongitudeRef", "GPSLongitude",
-    "GPSAltitudeRef", "GPSAltitude", "GPSTimeStamp", "GPSSatellites", "GPSStatus",
-    "GPSMeasureMode", "GPSDOP", "GPSSpeedRef", "GPSSpeed", "GPSTrackRef", "GPSTrack",
-    "GPSImgDirectionRef", "GPSImgDirection", "GPSMapDatum", "GPSDestLatitudeRef",
-    "GPSDestLatitude", "GPSDestLongitudeRef", "GPSDestLongitude", "GPSDestBearingRef",
-    "GPSDestBearing", "GPSDestDistanceRef", "GPSDestDistance", "GPSProcessingMethod",
-    "GPSAreaInformation", "GPSDateStamp", "GPSDifferential", "GPSHPositioningError",
-    "Make", "Model", "Software", "DateTime", "Artist", "SubsecTime", "Copyright", "ExposureTime",
-    "FNumber", "ExposureProgram", "ISOSpeedRatings", "PhotographicSensitivity", "SensitivityType",
-    "StandardOutputSensitivity", "RecommendedExposureIndex", "ISOSpeedLatitudeyyy", "ISOSpeedLatitudezzz",
-    "ExifVersion", "DateTimeOriginal", "DateTimeDigitized", "ComponentsConfiguration", "CompressedBitsPerPixel",
-    "ShutterSpeedValue", "ApertureValue", "BrightnessValue", "ExposureBiasValue", "MaxApertureValue",
-    "SubjectDistance", "MeteringMode", "LightSource", "Flash", "FocalLength", "SubjectArea",
-    "UserComment", "SubsecTimeOriginal", "SubsecTimeDigitized", "FlashpixVersion", "ColorSpace",
-    "PixelXDimension", "PixelYDimension", "FocalPlaneXResolution", "FocalPlaneYResolution",
-    "FocalPlaneResolutionUnit", "SubjectLocation", "ExposureIndex", "SensingMethod", "FileSource",
-    "SceneType", "CFAPattern", "CustomRendered", "ExposureMode", "WhiteBalance", "DigitalZoomRatio",
-    "FocalLengthIn35mmFilm", "SceneCaptureType", "GainControl", "Contrast", "Saturation",
-    "Sharpness", "SubjectDistanceRange", "ImageUniqueID", "CameraOwnerName", "BodySerialNumber",
-    "LensSpecification", "LensMake", "LensModel", "LensSerialNumber", "Gamma", "NewSubfileType",
-    "ImageWidth", "ImageLength", "BitsPerSample", "Compression", "PhotometricInterpretation",
-    "StripOffsets", "Orientation", "SamplesPerPixel", "RowsPerStrip", "StripByteCounts", "XResolution",
-    "YResolution", "PlanarConfiguration", "ResolutionUnit", "YCbCrCoefficients", "YCbCrSubSampling",
-    "YCbCrPositioning", "ReferenceBlackWhite", "MakerNote", "DNGVersion", "DefaultCropSize",
-    "JPEGInterchangeFormatLength", "JPEGInterchangeFormat", "SubfileType", "TransferFunction", "WhitePoint",
-    "PrimaryChromaticities", "PhotoMode", "SpectralSensitivity", "OECF", "RelatedSoundFile", "FlashEnergy",
-    "SpatialFrequencyResponse", "DeviceSettingDescription", "OffsetTime", "OffsetTimeOriginal",
-    "OffsetTimeDigitized", "CompositeImage", "SourceImageNumberOfCompositeImage", "HwMnotePitchAngle",
-    "HwMnoteCaptureMode", "HwMnotePhysicalAperture", "HwMnoteRollAngle", "SourceExposureTimesOfCompositeImage",
-    "HwMnoteSceneFoodConf", "HwMnoteSceneStageConf", "HwMnoteSceneBlueSkyConf", "HwMnoteSceneGreenPlantConf",
-    "HwMnoteSceneBeachConf", "HwMnoteSceneSnowConf", "HwMnoteSceneSunsetConf", "HwMnoteSceneFlowersConf",
-    "HwMnoteSceneNightConf", "HwMnoteSceneTextConf", "HwMnoteFaceCount", "HwMnoteFocusMode",
-    "HwMnoteFocusModeExif", "HwMnoteBurstNumber", "HwMnoteFaceConf", "HwMnoteFaceLeyeCenter",
-    "HwMnoteFaceMouthCenter", "HwMnoteFacePointer", "HwMnoteFaceRect", "HwMnoteFaceReyeCenter",
-    "HwMnoteFaceSmileScore", "HwMnoteFaceVersion", "HwMnoteFrontCamera", "HwMnoteScenePointer",
-    "HwMnoteSceneVersion", "HwMnoteIsXmageSupported", "HwMnoteXmageMode", "HwMnoteXmageLeft",
-    "HwMnoteXmageTop", "HwMnoteXmageRight", "HwMnoteXmageBottom", "HwMnoteCloudEnhancementMode",
-    "HwMnoteWindSnapshotMode", "HwMnoteXtStyleTemplateName", "HwMnoteXtStyleCustomLightAndShadow",
-    "HwMnoteXtStyleCustomSaturation", "HwMnoteXtStyleCustomHue", "HwMnoteXtStyleExposureParam"
-};
-
-static const std::string IMAGE_INPUT1_DNG_PATH = "/data/local/tmp/image/test_dng_readmetadata001.dng";
+static constexpr uint32_t OPT_SIZE = 80;
 
 FuzzedDataProvider* FDP;
 
-void ImageDngSdkHelperParseInfoFromStreamFuzzTest()
+void ImageDngSdkHelperParseInfoFromStreamFuzzTest(const std::string& pathName)
 {
-    int fd = open(IMAGE_INPUT1_DNG_PATH.c_str(), O_RDWR | O_CREAT, S_IRUSR | S_IWUSR);
+    int fd = open(pathName.c_str(), O_RDWR | O_CREAT, S_IRUSR | S_IWUSR);
     if (fd < 0) {
         return;
     }
@@ -90,16 +50,18 @@ void ImageDngSdkHelperParseInfoFromStreamFuzzTest()
         return;
     }
     std::shared_ptr<MetadataStream> stream = fileStream;
-    DngSdkHelper::ParseInfoFromStream(stream);
+    auto dngInfo = DngSdkHelper::ParseInfoFromStream(stream);
+    if (!dngInfo) {
+        close(fd);
+        return;
+    }
+    dngInfo->GetAllPropertyKeys();
     close(fd);
 }
 
-void ImageDngSdkHelperGetExifPropertyFuzzTest()
+void ImageDngSdkHelperGetExifPropertyFuzzTest(const std::string& pathName)
 {
-    if (FDP == nullptr) {
-        return;
-    }
-    std::shared_ptr<MetadataStream> stream = std::make_shared<FileMetadataStream>(IMAGE_INPUT1_DNG_PATH);
+    std::shared_ptr<MetadataStream> stream = std::make_shared<FileMetadataStream>(pathName);
     if (stream == nullptr) {
         return;
     }
@@ -113,20 +75,13 @@ void ImageDngSdkHelperGetExifPropertyFuzzTest()
     }
 
     MetadataValue value{};
-    if (HW_KEYS.empty()) {
-        return;
-    }
-    uint8_t randomIdx = FDP->ConsumeIntegral<uint8_t>() % HW_KEYS.size();
-    value.key = HW_KEYS[randomIdx];
+    value.key = GetRandomKey(FDP);
     DngSdkHelper::GetExifProperty(dngInfo, value);
 }
 
-void ImageDngSdkHelperSetExifPropertyFuzzTest()
+void ImageDngSdkHelperSetExifPropertyFuzzTest(const std::string& pathName)
 {
-    if (FDP == nullptr) {
-        return;
-    }
-    std::shared_ptr<MetadataStream> stream = std::make_shared<FileMetadataStream>(IMAGE_INPUT1_DNG_PATH);
+    std::shared_ptr<MetadataStream> stream = std::make_shared<FileMetadataStream>(pathName);
     if (stream == nullptr) {
         return;
     }
@@ -140,11 +95,7 @@ void ImageDngSdkHelperSetExifPropertyFuzzTest()
     }
 
     MetadataValue value{};
-    if (HW_KEYS.empty()) {
-        return;
-    }
-    uint8_t randomIdx = FDP->ConsumeIntegral<uint8_t>() % HW_KEYS.size();
-    value.key = HW_KEYS[randomIdx];
+    value.key = GetRandomKey(FDP);
     DngSdkHelper::SetExifProperty(dngInfo, value);
 }
 } // namespace Media
@@ -153,11 +104,32 @@ void ImageDngSdkHelperSetExifPropertyFuzzTest()
 /* Fuzzer entry point */
 extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
 {
-    FuzzedDataProvider fdp(data, size);
-    OHOS::Media::FDP = &fdp;
     /* Run your code on data */
-    OHOS::Media::ImageDngSdkHelperParseInfoFromStreamFuzzTest();
-    OHOS::Media::ImageDngSdkHelperGetExifPropertyFuzzTest();
-    OHOS::Media::ImageDngSdkHelperSetExifPropertyFuzzTest();
+    if (size <  OHOS::Media::OPT_SIZE) {
+        return 0;
+    }
+
+    FuzzedDataProvider fdp(data + size - OHOS::Media::OPT_SIZE, OHOS::Media::OPT_SIZE);
+    OHOS::Media::FDP = &fdp;
+    if (OHOS::Media::FDP == nullptr) {
+        return 0;
+    }
+    std::string pathName = "/data/local/tmp/image/test_dng_readmetadata.dng";
+    if (!WriteDataToFile(data, size, pathName)) {
+        IMAGE_LOGE("WriteDataToFile failed");
+        return 0;
+    }
+    uint8_t action = fdp.ConsumeIntegral<uint8_t>() % 3;
+    switch (action) {
+        case 0:
+            OHOS::Media::ImageDngSdkHelperParseInfoFromStreamFuzzTest(pathName);
+            break;
+        case 1:
+            OHOS::Media::ImageDngSdkHelperGetExifPropertyFuzzTest(pathName);
+            break;
+        default:
+            OHOS::Media::ImageDngSdkHelperSetExifPropertyFuzzTest(pathName);
+            break;
+    }
     return 0;
 }

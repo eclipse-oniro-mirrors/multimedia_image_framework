@@ -1279,7 +1279,7 @@ static void SetBlobComplete(napi_env env, napi_status status, void *data)
     if (context->status == SUCCESS) {
         result[NUM_1] = valueParam;
     } else {
-        ImageNapiUtils::CreateErrorObj(env, result[0], IMAGE_SOURCE_UNSUPPORTED_METADATA,
+        ImageNapiUtils::CreateErrorObj(env, result[0], IMAGE_INVALID_PARAMETER,
                                        "There is generic napi failure!");
         napi_get_undefined(env, &result[1]);
     }
@@ -1319,7 +1319,7 @@ napi_value MetadataNapi::SetBlob(napi_env env, napi_callback_info info)
     status = napi_get_arraybuffer_info(env, argValue[NUM_0],
         &(asyncContext->arrayBuffer), &(asyncContext->arrayBufferSize));
     IMG_NAPI_CHECK_RET_D(IMG_IS_OK(status),
-        ImageNapiUtils::ThrowExceptionError(env, IMAGE_BAD_PARAMETER,
+        ImageNapiUtils::ThrowExceptionError(env, IMAGE_INVALID_PARAMETER,
             "Invalid args."), IMAGE_LOGE("Fail to get blob info"));
     
     napi_create_promise(env, &(asyncContext->deferred), &result);

@@ -103,6 +103,64 @@ HWTEST_F(TiffDecoderTest, ImageSourceDecodeTest001, TestSize.Level3)
 }
 
 /**
+ * @tc.name: CreatePixelMapTest001
+ * @tc.desc: CreatePixelMap by unsupported decoding options (ARGB_8888, RGBA_F16).
+ * @tc.type: FUNC
+ */
+HWTEST_F(TiffDecoderTest, CreatePixelMapTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "TiffDecoderTest: CreatePixelMapTest001 start";
+    uint32_t errorCode = 0;
+    SourceOptions opts;
+    std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(IMAGE_TIFF_NO_ICC_PATH, opts, errorCode);
+    ASSERT_EQ(errorCode, SUCCESS);
+    ASSERT_NE(imageSource.get(), nullptr);
+
+    DecodeOptions decodeOpts;
+    decodeOpts.desiredPixelFormat = PixelFormat::ARGB_8888;
+    std::unique_ptr<PixelMap> pixelMap1 = imageSource->CreatePixelMap(decodeOpts, errorCode);
+    ASSERT_EQ(errorCode, ERR_IMAGE_PIXELMAP_CREATE_FAILED);
+
+    decodeOpts.desiredPixelFormat = PixelFormat::RGBA_F16;
+    std::unique_ptr<PixelMap> pixelMap2 = imageSource->CreatePixelMap(decodeOpts, errorCode);
+    ASSERT_EQ(errorCode, ERR_IMAGE_PIXELMAP_CREATE_FAILED);
+
+    GTEST_LOG_(INFO) << "TiffDecoderTest: CreatePixelMapTest001 end";
+}
+
+/**
+ * @tc.name: CreatePixelMapTest002
+ * @tc.desc: CreatePixelMap by supported decoding options (RGBA_8888, BGRA_8888).
+ * @tc.type: FUNC
+ */
+HWTEST_F(TiffDecoderTest, CreatePixelMapTest002, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "TiffDecoderTest: CreatePixelMapTest002 start";
+    uint32_t errorCode = 0;
+    SourceOptions opts;
+    std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(IMAGE_TIFF_NO_ICC_PATH, opts, errorCode);
+    ASSERT_EQ(errorCode, SUCCESS);
+    ASSERT_NE(imageSource.get(), nullptr);
+
+    DecodeOptions decodeOpts;
+    decodeOpts.desiredPixelFormat = PixelFormat::RGBA_8888;
+    std::unique_ptr<PixelMap> pixelMap1 = imageSource->CreatePixelMap(decodeOpts, errorCode);
+    ASSERT_EQ(errorCode, SUCCESS);
+    ASSERT_NE(pixelMap1, nullptr);
+    ASSERT_NE(pixelMap1.get(), nullptr);
+
+
+    decodeOpts.desiredPixelFormat = PixelFormat::BGRA_8888;
+    std::unique_ptr<PixelMap> pixelMap2 = imageSource->CreatePixelMap(decodeOpts, errorCode);
+    ASSERT_EQ(errorCode, SUCCESS);
+    ASSERT_NE(pixelMap2, nullptr);
+    ASSERT_NE(pixelMap2.get(), nullptr);
+
+    GTEST_LOG_(INFO) << "TiffDecoderTest: CreatePixelMapTest002 end";
+}
+
+
+/**
  * @tc.name: SetSourceTest001
  * @tc.desc: Test of TiffDecoder set source but data is nullptr or data len is zero.
  * @tc.type: FUNC
