@@ -965,6 +965,14 @@ uint32_t ExtEncoder::EncodeImageBySurfaceBuffer(sptr<SurfaceBuffer>& surfaceBuff
     IMAGE_LOGD("HardwareEncode failed or not Supported");
 
     pixelmap_->GetImageInfo(imageInfo);
+    /* use hispeed encode jpeg, if fail then use skia encode*/
+    if (encodeFormat_ == SkEncodedImageFormat::kJPEG && IsYuvImage(imageInfo.pixelFormat)) {
+        IMAGE_LOGI("enter HispeedEncode, YuvFormat: %{public}d, quality: %{public}d", imageInfo.pixelFormat, opts_.quality);
+        cond = HispeedEncode(outputStream, pixelmap_, needExif, info);
+        CHECK_DEBUG_RETURN_RET_LOG(cond, SUCCESS, "HispeedEncode Success return");
+        IMAGE_LOGE("EncodeImageBySurfaceBuffer HispeedEncode failed");
+    }
+
     cond = !PixelYuvUtils::CheckWidthAndHeightMult(imageInfo.size.width, imageInfo.size.height, RGBA_BIT_DEPTH);
     CHECK_ERROR_RETURN_RET_LOG(cond, ERR_IMAGE_INVALID_PARAMETER,
         "EncodeImageBySurfaceBuffer size overflow width(%{public}d), height(%{public}d)",
