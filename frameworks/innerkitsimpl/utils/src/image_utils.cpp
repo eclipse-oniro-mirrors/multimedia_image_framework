@@ -1911,13 +1911,25 @@ bool ImageUtils::CheckBufferSizeIsVaild(int32_t &bufferSize, uint64_t &expectedB
     return true;
 }
 
-bool ImageUtils::CheckYuvDataInfoValid(const YUVDataInfo& yDataInfo)
+bool ImageUtils::CheckYuvDataInfoValid(const ImageInfo &imageInfo, YUVDataInfo& yDataInfo)
 {
     //size
+    if (yDataInfo.imageSize.width != imageInfo.size.width || yDataInfo.imageSize.height != imageInfo.size.height) {
+        IMAGE_LOGE("Invalid YUVDataInfo: imageSize(%{public}d, %{public}d) mismatch ImageInfo(%{public}d, %{public}d)",
+            yDataInfo.imageSize.width, yDataInfo.imageSize.height, imageInfo.size.width, imageInfo.size.height);
+    }
+    const uint32_t yExpectedWidth = static_cast<uint32_t>(yDataInfo.imageSize.width);
+    const uint32_t yExpectedHeight = static_cast<uint32_t>(yDataInfo.imageSize.height);
     if (yDataInfo.yWidth == 0 || yDataInfo.yHeight == 0) {
         IMAGE_LOGE("Invalid Y plane size: yWidth or yHeight is 0");
         return false;
     }
+    if (yDataInfo.yWidth == yExpectedHeight && yDataInfo.yHeight == yExpectedWidth) {
+        IMAGE_LOGE("Invalid Y plane size: Y(%{public}u, %{public}u) mismatch expected(%{public}u, %{public}u)",
+            yDataInfo.yWidth, yDataInfo.yHeight, yExpectedWidth, yExpectedHeight);
+        return false;
+    }
+
     const uint32_t uvExpectedWidth = (yDataInfo.yWidth + NUM_1) / NUM_2;
     const uint32_t uvExpectedHeight = (yDataInfo.yHeight + NUM_1) / NUM_2;
     if (yDataInfo.uvWidth == 0 || yDataInfo.uvHeight == 0) {
@@ -1952,17 +1964,18 @@ bool ImageUtils::CheckYuvDataInfoValid(const YUVDataInfo& yDataInfo)
 
     //offset
     if (yDataInfo.yOffset != 0) {
-        IMAGE_LOGW("Invalid Y offset: %{public}u (expected 0)", yDataInfo.yOffset);
+        IMAGE_LOGE("Invalid Y offset: %{public}u (expected 0)", yDataInfo.yOffset);
+        return false;
     }
 
     uint64_t yPlaneSize = static_cast<uint64_t>(yDataInfo.yStride) * yDataInfo.yHeight;
-    if (yDataInfo.uvOffset < yPlaneSize) {
-        IMAGE_LOGE("Invalid UV offset: %{public}u less than Y plane size", yDataInfo.uvOffset);
+    uint64_t bufferSize = yPlaneSize + static_cast<uint64_t>(yDataInfo.uvStride) * yDataInfo.uvHeight;
+    if (yPlaneSize > UINT32_MAX || bufferSize > UINT32_MAX) {
+        IMAGE_LOGE("Invalid YUV buffer size: overflow (exceeds UINT32_MAX)");
         return false;
     }
-    uint64_t bufferSize = yPlaneSize + static_cast<uint64_t>(yDataInfo.uvStride) * yDataInfo.uvHeight;
-    if (bufferSize > UINT32_MAX) {
-        IMAGE_LOGE("Invalid YUV buffer size: overflow (exceeds UINT32_MAX)");
+    if (static_cast<uint64_t>(yDataInfo.uvOffset) < yPlaneSize) {
+        IMAGE_LOGE("Invalid UV offset: %{public}u less than Y plane size", yDataInfo.uvOffset);
         return false;
     }
 
