@@ -754,7 +754,7 @@ uint32_t ExtEncoder::EncodeImageByPixelMap(PixelMap* pixelmap, bool needExif, Sk
     /* use hispeed encode jpeg, if fail then use skia encode*/
     cond = HispeedEncode(outputStream, pixelmap, needExif, ToSkInfo(pixelmap));
     CHECK_DEBUG_RETURN_RET_LOG(cond, SUCCESS, "HispeedEncode Success return");
-    IMAGE_LOGI("EncodeImageByPixelMap HispeedEncode failed, Format: %{public}d", imageData.info.pixelFormat);
+    IMAGE_LOGD("EncodeImageByPixelMap: HispeedEncode failed or not Supported");
 
     std::unique_ptr<uint8_t[]> dstData;
     uint64_t rowStride = 0;
@@ -976,7 +976,7 @@ uint32_t ExtEncoder::EncodeImageBySurfaceBuffer(sptr<SurfaceBuffer>& surfaceBuff
     /* use hispeed encode jpeg, if fail then use skia encode*/
     cond = HispeedEncode(outputStream, pixelmap_, needExif, info);
     CHECK_DEBUG_RETURN_RET_LOG(cond, SUCCESS, "HispeedEncode Success return");
-    IMAGE_LOGI("EncodeImageBySurfaceBuffer HispeedEncode failed, Format: %{public}d", imageInfo.pixelFormat);
+    IMAGE_LOGD("EncodeImageBySurfaceBuffer: HispeedEncode failed or not Supported");
 
     cond = !PixelYuvUtils::CheckWidthAndHeightMult(imageInfo.size.width, imageInfo.size.height, RGBA_BIT_DEPTH);
     CHECK_ERROR_RETURN_RET_LOG(cond, ERR_IMAGE_INVALID_PARAMETER,
