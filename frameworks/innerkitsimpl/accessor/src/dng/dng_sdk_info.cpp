@@ -1102,9 +1102,24 @@ uint32_t DngSdkInfo::GetIfdJPEGInterchangeFormatLength(const dng_ifd& fIFD, Meta
     return GetDngUint32(fIFD.fJPEGInterchangeFormatLength, value);
 }
 
+static uint32_t GetTagValueSize(uint16_t tagType, uint32_t tagCount)
+{
+    uint32_t unitSize = TagTypeSize(static_cast<uint32_t>(tagType));
+    if (tagCount == 0 || unitSize == 0 || ImageUtils::HasOverflowed(unitSize, tagCount)) {
+        return 0;
+    }
+    return unitSize * tagCount;
+}
+
 void DngSdkInfo::ParseTag(dng_host& host, dng_stream& stream, dng_exif* exif, dng_shared* shared, dng_ifd* ifd,
     uint32 parentCode, uint32 tagCode, uint32 tagType, uint32 tagCount, uint64 tagOffset, int64 offsetDelta)
 {
+    uint32_t tagValueSize = GetTagValueSize(tagType, tagCount);
+    if (tagValueSize == 0 || tagValueSize > stream.Length() - tagOffset) {
+        IMAGE_LOGD("[ParseTag]Parse invalid tagCode:%{public}u tagValueSize:%{public}u",
+            tagCode, tagValueSize);
+        return;
+    }
     dng_info::ParseTag(host, stream, exif, shared, ifd,
         parentCode, tagCode, tagType, tagCount, tagOffset, offsetDelta);
 
@@ -1113,15 +1128,6 @@ void DngSdkInfo::ParseTag(dng_host& host, dng_stream& stream, dng_exif* exif, dn
     if (ret) {
         ProcessSpecialTag(tagKey, stream);
     }
-}
-
-static uint32_t GetTagValueSize(uint16_t tagType, uint16_t tagCount)
-{
-    uint32_t unitSize = TagTypeSize(static_cast<uint32_t>(tagType));
-    if (tagCount == 0 || unitSize == 0 || ImageUtils::HasOverflowed(unitSize, static_cast<uint32_t>(tagCount))) {
-        return 0;
-    }
-    return unitSize * tagCount;
 }
 
 bool DngSdkInfo::SaveParsedTag(const UniqueTagKey& tagKey, uint16_t tagType, uint32_t tagCount, uint64_t tagOffset)
