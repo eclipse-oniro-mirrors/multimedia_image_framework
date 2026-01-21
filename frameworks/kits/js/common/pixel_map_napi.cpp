@@ -1004,11 +1004,11 @@ napi_value PixelMapNapi::Constructor(napi_env env, napi_callback_info info)
 
     if (pPixelMapNapi->nativePixelMap_ == nullptr) {
         status = napi_wrap_s(env, thisVar, reinterpret_cast<void*>(pPixelMapNapi.get()), PixelMapNapi::Destructor,
-            nullptr, PixelMapNapi::NAPI_TYPE_TAG, nullptr);
+            nullptr, &PixelMapNapi::NAPI_TYPE_TAG, nullptr);
     } else {
         status = napi_wrap_enhance_s(env, thisVar, reinterpret_cast<void*>(pPixelMapNapi.get()),
             PixelMapNapi::Destructor, true, nullptr,
-            static_cast<size_t>(pPixelMapNapi->nativePixelMap_->GetByteCount()), PixelMapNapi::NAPI_TYPE_TAG, nullptr);
+            static_cast<size_t>(pPixelMapNapi->nativePixelMap_->GetByteCount()), &PixelMapNapi::NAPI_TYPE_TAG, nullptr);
     }
     IMG_NAPI_CHECK_RET_D(IMG_IS_OK(status), undefineVar, IMAGE_LOGE("Failure wrapping js to native napi"));
 
