@@ -355,7 +355,7 @@ static SkImageInfo ToSkInfo(Media::PixelMap *pixelMap)
 }
 
 static sk_sp<SkColorSpace> ToHdrEncodeSkColorSpace(Media::PixelMap *pixelmap,
-    sptr<SurfaceBuffer>& buffer, bool sdrIsSRGB, bool isGainmap)
+    sptr<SurfaceBuffer>& buffer, bool sdrIsSRGB)
 {
 #ifdef IMAGE_COLORSPACE_FLAG
     // get graphic colorspace
@@ -1709,10 +1709,10 @@ uint32_t ExtEncoder::EncodeDualVivid(ExtWStream& outputStream)
     }
     // get sdr baseInfo
     bool sdrIsSRGB = pixelmap_->GetToSdrColorSpaceIsSRGB();
-    sk_sp<SkColorSpace> colorSpace = ToHdrEncodeSkColorSpace(pixelmap_, buffers.sdr, sdrIsSRGB, false);
+    sk_sp<SkColorSpace> colorSpace = ToHdrEncodeSkColorSpace(pixelmap_, buffers.sdr, sdrIsSRGB);
     SkImageInfo baseInfo = GetSkInfo(pixelmap_, false, colorSpace);
     // get gainmap baseInfo
-    sk_sp<SkColorSpace> gainmapColorSpace = ToHdrEncodeSkColorSpace(pixelmap_, buffers.gainmap, sdrIsSRGB, true);
+    sk_sp<SkColorSpace> gainmapColorSpace = ToHdrEncodeSkColorSpace(pixelmap_, buffers.gainmap, sdrIsSRGB);
     SkImageInfo gainmapInfo = GetSkInfo(pixelmap_, true, gainmapColorSpace);
     uint32_t error;
     if (encodeFormat_ == SkEncodedImageFormat::kJPEG) {
