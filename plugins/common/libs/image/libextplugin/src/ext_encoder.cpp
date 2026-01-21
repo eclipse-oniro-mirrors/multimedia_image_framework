@@ -676,6 +676,10 @@ uint32_t ExtEncoder::DoEncode(SkWStream* skStream, const SkBitmap& src, const Sk
 bool ExtEncoder::HispeedEncode(SkWStream &skStream, Media::PixelMap *pixelMap, bool needExif, SkImageInfo info)
 {
     CHECK_ERROR_RETURN_RET_LOG(pixelMap == nullptr, false, "pixelMap is nullptr");
+    if (encodeFormat_ != SkEncodedImageFormat::kJPEG && !IsYuvImage(pixelMap->GetPixelFormat())) {
+        IMAGE_LOGI("HispeedEncode format not supported");
+        return false;
+    }
     uint32_t retCode = ERR_IMAGE_ENCODE_FAILED;
     if (!needExif || pixelMap->GetExifMetadata() == nullptr || pixelMap->GetExifMetadata()->GetExifData() == nullptr) {
         retCode = HispeedImageManager::GetInstance().DoEncodeJpeg(&skStream, pixelmap_, opts_.quality, info);
@@ -746,15 +750,19 @@ uint32_t ExtEncoder::EncodeImageByPixelMap(PixelMap* pixelmap, bool needExif, Sk
     bool cond = HardwareEncode(outputStream, needExif) == true;
     CHECK_DEBUG_RETURN_RET_LOG(cond, SUCCESS, "HardwareEncode Success return");
     IMAGE_LOGD("HardwareEncode failed or not Supported");
+
+    /* use hispeed encode jpeg, if fail then use skia encode*/
+    cond = HispeedEncode(outputStream, pixelmap, needExif, ToSkInfo(pixelmap));
+    CHECK_DEBUG_RETURN_RET_LOG(cond, SUCCESS, "HispeedEncode Success return");
+    IMAGE_LOGI("EncodeImageByPixelMap HispeedEncode failed, Format: %{public}d", imageData.info.pixelFormat);
+
     std::unique_ptr<uint8_t[]> dstData;
     uint64_t rowStride = 0;
     if (IsYuvImage(imageData.info.pixelFormat)) {
         IMAGE_LOGD("YUV format, convert to RGB");
         dstData = std::make_unique<uint8_t[]>(width * height * NUM_4);
-        if (YuvToRgbaSkInfo(imageData.info, skInfo, dstData.get(), pixelmap) != SUCCESS) {
-            IMAGE_LOGD("YUV format, convert to RGB fail");
-            return ERR_IMAGE_ENCODE_FAILED;
-        }
+        cond = YuvToRgbaSkInfo(imageData.info, skInfo, dstData.get(), pixelmap) != SUCCESS;
+        CHECK_DEBUG_RETURN_RET_LOG(cond, ERR_IMAGE_ENCODE_FAILED, "YUV format, convert to RGB fail");
         imageData.pixels = dstData.get();
         rowStride = skInfo.minRowBytes64();
     } else {
@@ -966,13 +974,9 @@ uint32_t ExtEncoder::EncodeImageBySurfaceBuffer(sptr<SurfaceBuffer>& surfaceBuff
 
     pixelmap_->GetImageInfo(imageInfo);
     /* use hispeed encode jpeg, if fail then use skia encode*/
-    if (encodeFormat_ == SkEncodedImageFormat::kJPEG && IsYuvImage(imageInfo.pixelFormat)) {
-        IMAGE_LOGI("enter HispeedEncode, YuvFormat: %{public}d, quality: %{public}d",
-            imageInfo.pixelFormat, opts_.quality);
-        cond = HispeedEncode(outputStream, pixelmap_, needExif, info);
-        CHECK_DEBUG_RETURN_RET_LOG(cond, SUCCESS, "HispeedEncode Success return");
-        IMAGE_LOGE("EncodeImageBySurfaceBuffer HispeedEncode failed");
-    }
+    cond = HispeedEncode(outputStream, pixelmap_, needExif, info);
+    CHECK_DEBUG_RETURN_RET_LOG(cond, SUCCESS, "HispeedEncode Success return");
+    IMAGE_LOGI("EncodeImageBySurfaceBuffer HispeedEncode failed, Format: %{public}d", imageInfo.pixelFormat);
 
     cond = !PixelYuvUtils::CheckWidthAndHeightMult(imageInfo.size.width, imageInfo.size.height, RGBA_BIT_DEPTH);
     CHECK_ERROR_RETURN_RET_LOG(cond, ERR_IMAGE_INVALID_PARAMETER,
