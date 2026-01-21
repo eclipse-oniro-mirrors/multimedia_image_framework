@@ -246,6 +246,25 @@ ImageKvMetadata *ImageKvMetadata::Unmarshalling(Parcel &parcel, PICTURE_ERR &err
     return kvMetadataPtr.release();
 }
 
+bool ImageKvMetadata::IsFragmentMetadataKey(const std::string& key)
+{
+    return FRAGMENT_METADATA_KEYS.find(key) != FRAGMENT_METADATA_KEYS.end();
+}
+
+bool ImageKvMetadata::IsGifMetadataKey(const std::string& key)
+{
+    return GIF_METADATA_KEYS.find(key) != GIF_METADATA_KEYS.end();
+}
+std::set<std::string> ImageKvMetadata::GetFragmentMetadataKeys()
+{
+    return FRAGMENT_METADATA_KEYS;
+}
+
+std::set<std::string> ImageKvMetadata::GetGifMetadataKeys()
+{
+    return GIF_METADATA_KEYS;
+}
+
 uint32_t ImageKvMetadata::GetBlobSize()
 {
     CHECK_ERROR_RETURN_RET_LOG(!properties_, 0, "GetBlobSize properties is nullptr.");

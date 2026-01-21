@@ -149,6 +149,7 @@ ohos_shared_library("image_source") {
   deps = [
     "$image_subsystem/frameworks/innerkitsimpl/utils:image_utils",
     "$image_subsystem/frameworks/kits/js/common/picture_ndk:picture",
+    "$image_subsystem/frameworks/kits/js/common/picture_ndk:image_common",
     "$image_subsystem/frameworks/kits/js/common/pixelmap_ndk:pixelmap",
     "$image_subsystem/interfaces/innerkits:image_native",
     "$image_subsystem/interfaces/kits/js/common:image",
