@@ -457,6 +457,21 @@ Image_ErrorCode OH_PictureMetadata_Release(OH_PictureMetadata *metadata);
 Image_ErrorCode OH_PictureMetadata_Clone(OH_PictureMetadata *oldMetadata, OH_PictureMetadata **newMetadata);
 
 /**
+ * @brief Obtains the PictureMetadata object matching the specified type from the PictureMetadata pointer array.
+ *
+ * @param metadatas Pointer to the PictureMetadata array.
+ * @param metadataCount Length of the PictureMetadata array.
+ * @param type Target metadata type to be matched.
+ * @param metadata Pointer to the output PictureMetadata object, which stores the matched content.
+ * @return Image functions result code.
+ *         {@link IMAGE_SUCCESS} if the operation is successful.
+ *         {@link IMAGE_BAD_PARAMETER} if metadatas/metadata is nullptr or metadataCount is 0.
+ * @since 24
+ */
+Image_ErrorCode OH_PictureMetadata_GetMetadataByType(OH_PictureMetadata **metadatas, size_t metadataCount, int32_t type,
+    OH_PictureMetadata *metadata);
+
+/**
  * @brief Defines the bmp mime type.
  *
  * @since 12

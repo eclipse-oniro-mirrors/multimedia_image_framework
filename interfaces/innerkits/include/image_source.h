@@ -288,8 +288,16 @@ public:
     NATIVEEXPORT uint32_t GetiTxtLength();
     NATIVEEXPORT uint32_t GetDngImagePropertyByDngSdk(const std::string &key, MetadataValue &value);
     NATIVEEXPORT bool IsHeifWithoutAlpha();
+    NATIVEEXPORT std::shared_ptr<ImageMetadata> GetMetadataWithIndex(
+        MetadataType type, uint32_t index, uint32_t &errorCode);
+    NATIVEEXPORT std::shared_ptr<ImageMetadata> GetMetadata(MetadataType type, uint32_t &errorCode);
+    NATIVEEXPORT std::shared_ptr<FragmentMetadata> GetFragmentMetadata(uint32_t &errorCode);
+    NATIVEEXPORT std::shared_ptr<GifMetadata> GetGifMetadata(uint32_t index, uint32_t &errorCode);
+    NATIVEEXPORT std::shared_ptr<HeifsMetadata> GetHeifsMetadata(uint32_t index, uint32_t &errorCode);
+    NATIVEEXPORT std::shared_ptr<BlobMetadata> GetBlobMetadata(MetadataType type, uint32_t &errorCode);
+    NATIVEEXPORT std::vector<std::shared_ptr<ImageMetadata>> GetAllSupportedMetadataTypes(uint32_t index,
+        uint32_t &errorCode);
     NATIVEEXPORT bool IsJpegProgressive(uint32_t &errorCode);
-    NATIVEEXPORT std::shared_ptr<ImageMetadata> GetMetadata(MetadataType type);
 
 private:
     DISALLOW_COPY_AND_MOVE(ImageSource);
@@ -328,6 +336,9 @@ private:
     void SetIncrementalSource(const bool isIncrementalSource);
     bool IsStreamCompleted();
     uint32_t GetImagePropertyCommon(uint32_t index, const std::string &key, std::string &value);
+    uint32_t GetGifProperty(uint32_t index, const std::string &key, MetadataValue &value);
+    uint32_t GetFragmentProperty(const std::string &key, MetadataValue &value);
+    void GetFragmentPropertiesWithType(std::vector<MetadataValue> &result);
     FinalOutputStep GetFinalOutputStep(const DecodeOptions &opts, PixelMap &pixelMap, bool hasNinePatch);
     bool HasDensityChange(const DecodeOptions &opts, ImageInfo &srcImageInfo, bool hasNinePatch);
     bool ImageSizeChange(int32_t width, int32_t height, int32_t desiredWidth, int32_t desiredHeight);
@@ -381,6 +392,8 @@ private:
     uint32_t ModifyImageProperties(uint32_t index,
         const std::vector<std::pair<std::string, std::string>> &properties, bool isEnhanced);
     uint32_t CreatExifMetadataByImageSource(bool addFlag = false);
+    uint32_t CreateFragmentMetadataByImageSource(ImageInfo info);
+    uint32_t CreateBlobMetadataByImageSource(ImageInfo info, MetadataType type);
     uint32_t CreateExifMetadata(uint8_t *buffer, const uint32_t size, bool addFlag, bool hasOriginalFd = false);
     uint32_t HandleInvalidExifBuffer(void* exifDataPtr);
     std::shared_ptr<MetadataAccessor> CreateMetadataAccessorForWrite(uint32_t &error);
@@ -441,8 +454,6 @@ private:
     uint32_t SetHeifsMetadataForPicture(std::unique_ptr<Picture> &picture, uint32_t index);
     void DecodeBlobMetaData(std::unique_ptr<Picture> &picture, const std::set<MetadataType> &metadataTypes,
         ImageInfo &info, uint32_t &errorCode);
-    std::shared_ptr<FragmentMetadata> GetFragmentMetadata();
-    std::shared_ptr<GifMetadata> GetGifMetadata();
     std::shared_ptr<ImageMetadata> FindMetadataFromMap(MetadataType type);
     std::unique_ptr<PixelMap> GenerateThumbnail(const DecodingOptionsForThumbnail &opts, uint32_t &errorCode);
     std::unique_ptr<PixelMap> DecodeExifThumbnail(const DecodingOptionsForThumbnail &opts,
