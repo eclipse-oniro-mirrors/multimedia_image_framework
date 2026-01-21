@@ -47,12 +47,18 @@ static const uint32_t MOCK_INDEX_THREE = 3;
 #ifdef HEIF_HW_DECODE_ENABLE
 static const std::string IMAGE_INPUT_HEIFS_PATH = "/data/local/tmp/image/heifs.heic";
 static const std::string IMAGE_INPUT_HEIC_PATH = "/data/local/tmp/image/test-10bit-1.heic";
+static const std::string IMAGE_STATIC_IMAGE_HEIFS_PATH = "/data/local/tmp/image/C046.heic";
+static const std::string IMAGE_ALL_REF_FRAME_HEIFS_PATH = "/data/local/tmp/image/C001.heic";
+static const std::string IMAGE_MOOV_HEIC_PATH = "/data/local/tmp/image/moov.heic";
 static const std::string HEIFS_MIME_TYPE = "image/heif-sequence";
 static const uint32_t INPUT_HEIFS_FRAMECOUNT = 120;
 static const uint32_t INPUT_HEIFS_DELAYTIME = 40;
 static const uint32_t MOCK_INPUT_HEIGHT = 144;
 static const uint32_t MOCK_INPUT_WIDTH = 256;
-static const uint32_t MOCK_ITEM_ID = 0;
+static const uint32_t INPUT_STATIC_IMAGE_DELAYTIME = 1800;
+static const uint32_t INPUT_STATIC_IMAGE_HEIGHT = 720;
+static const uint32_t INPUT_STATIC_IMAGE_WIDTH = 1280;
+static const uint32_t INPUT_ALL_REF_IMAGE_DELAYTIME = 200;
 static const uint32_t MOCK_FRAME_INDEX = 1000;
 static const uint32_t MOCK_TIMES_ONE = 1;
 static const uint32_t MOCK_TIMES_TWO = 2;
@@ -60,6 +66,33 @@ static const uint32_t MOCK_SKIP_NUM_ONE = 1;
 static const uint32_t MOCK_SKIP_NUM_TWO = 2;
 static const uint32_t MOCK_SKIP_NUM_FIVE = 5;
 static const uint32_t MOCK_SKIP_NUM_TEN = 10;
+static const uint32_t MOCK_ITEM_ID = 1003;
+static const uint8_t CONSTRUCTION_METHOD_FILE_OFFSET = 0;
+static const uint8_t CONSTRUCTION_METHOD_IDAT_OFFSET = 1;
+static const uint8_t CONSTRUCTION_METHOD_OTHER_OFFSET = 2;
+
+namespace {
+    struct HeifsImageInfo {
+        HeifsImageInfo(const std::string &p, uint32_t time, uint32_t w, uint32_t h)
+            : path(p), delayTime(time), width(w), height(h) {}
+        std::string path;
+        uint32_t delayTime = 0;
+        uint32_t width = 0;
+        uint32_t height = 0;
+    };
+}
+
+static std::vector<HeifsImageInfo> GetHeifsImages()
+{
+    std::vector<HeifsImageInfo> images;
+    images.emplace_back(HeifsImageInfo(IMAGE_INPUT_HEIFS_PATH, INPUT_HEIFS_DELAYTIME,
+        MOCK_INPUT_WIDTH, MOCK_INPUT_HEIGHT));
+    images.emplace_back(HeifsImageInfo(IMAGE_STATIC_IMAGE_HEIFS_PATH, INPUT_STATIC_IMAGE_DELAYTIME,
+        INPUT_STATIC_IMAGE_WIDTH, INPUT_STATIC_IMAGE_HEIGHT));
+    images.emplace_back(HeifsImageInfo(IMAGE_ALL_REF_FRAME_HEIFS_PATH, INPUT_ALL_REF_IMAGE_DELAYTIME,
+        INPUT_STATIC_IMAGE_WIDTH, INPUT_STATIC_IMAGE_HEIGHT));
+    return images;
+}
 
 static bool JudgeIsNumericStr(const std::string &str)
 {
@@ -80,27 +113,30 @@ static void MarshallingAndUnMarshalling(Picture* picture)
 
 static void CreatePictureAtIndexUseSpecificAlloc(uint32_t skipIndex = MOCK_SKIP_NUM_ONE)
 {
-    SourceOptions sourceOptions;
-    uint32_t errorCode = 0;
-    std::unique_ptr<ImageSource> imageSource =
-        ImageSource::CreateImageSource(IMAGE_INPUT_HEIFS_PATH, sourceOptions, errorCode);
-    ASSERT_NE(imageSource, nullptr);
-    uint32_t frameCount = imageSource->GetFrameCount(errorCode);
-    ASSERT_EQ(errorCode, SUCCESS);
-    for (uint32_t index = 0; index < frameCount; index += skipIndex) {
-        std::unique_ptr<Picture> picture = imageSource->CreatePictureAtIndex(index, errorCode);
-        ASSERT_NE(picture, nullptr);
-        auto metaData = picture->GetMetadata(MetadataType::HEIFS);
-        ASSERT_NE(metaData, nullptr);
-        std::string delayTimeStr = "";
-        ASSERT_EQ(metaData->GetValue(HEIFS_METADATA_KEY_DELAY_TIME, delayTimeStr), SUCCESS);
-        ASSERT_EQ(JudgeIsNumericStr(delayTimeStr), true);
-        ASSERT_EQ(std::stoi(delayTimeStr), INPUT_HEIFS_DELAYTIME);
-        auto pixelMap = picture->GetMainPixel();
-        ASSERT_NE(pixelMap, nullptr);
-        ASSERT_EQ(pixelMap->GetWidth(), MOCK_INPUT_WIDTH);
-        ASSERT_EQ(pixelMap->GetHeight(), MOCK_INPUT_HEIGHT);
-        MarshallingAndUnMarshalling(picture.get());
+    std::vector<HeifsImageInfo> heifsImages = GetHeifsImages();
+    for (const auto &image : heifsImages) {
+        SourceOptions sourceOptions;
+        uint32_t errorCode = 0;
+        std::unique_ptr<ImageSource> imageSource =
+            ImageSource::CreateImageSource(image.path, sourceOptions, errorCode);
+        ASSERT_NE(imageSource, nullptr);
+        uint32_t frameCount = imageSource->GetFrameCount(errorCode);
+        ASSERT_EQ(errorCode, SUCCESS);
+        for (uint32_t index = 0; index < frameCount; index += skipIndex) {
+            std::unique_ptr<Picture> picture = imageSource->CreatePictureAtIndex(index, errorCode);
+            ASSERT_NE(picture, nullptr);
+            auto metaData = picture->GetMetadata(MetadataType::HEIFS);
+            ASSERT_NE(metaData, nullptr);
+            std::string delayTimeStr = "";
+            ASSERT_EQ(metaData->GetValue(HEIFS_METADATA_KEY_DELAY_TIME, delayTimeStr), SUCCESS);
+            ASSERT_EQ(JudgeIsNumericStr(delayTimeStr), true);
+            ASSERT_EQ(std::stoi(delayTimeStr), image.delayTime);
+            auto pixelMap = picture->GetMainPixel();
+            ASSERT_NE(pixelMap, nullptr);
+            ASSERT_EQ(pixelMap->GetWidth(), image.width);
+            ASSERT_EQ(pixelMap->GetHeight(), image.height);
+            MarshallingAndUnMarshalling(picture.get());
+        }
     }
 }
 
@@ -814,6 +850,265 @@ HWTEST_F(HeifsDecodeTest, GetPreSampleSizeTest001, TestSize.Level1)
     uint32_t preSampleSize = 0;
     ASSERT_EQ(parser.GetPreSampleSize(MOCK_INDEX, preSampleSize), heif_error_no_stsz);
     GTEST_LOG_(INFO) << "HeifsDecodeTest: GetPreSampleSizeTest001 end";
+}
+
+/**
+ * @tc.name: GetPrimaryImageFileOffsetTest001
+ * @tc.desc: Test GetPrimaryImageFileOffset when item.extents is empty.
+ * @tc.type: FUNC
+ */
+HWTEST_F(HeifsDecodeTest, GetPrimaryImageFileOffsetTest001, TestSize.Level1)
+{
+    GTEST_LOG_(INFO) << "HeifsDecodeTest: GetPrimaryImageFileOffsetTest001 start";
+#ifdef HEIF_HW_DECODE_ENABLE
+    SourceOptions sourceOptions;
+    uint32_t errorCode = 0;
+    std::unique_ptr<ImageSource> imageSource =
+        ImageSource::CreateImageSource(IMAGE_STATIC_IMAGE_HEIFS_PATH, sourceOptions, errorCode);
+    ASSERT_NE(imageSource, nullptr);
+    auto picture = imageSource->CreatePictureAtIndex(0, errorCode);
+    ASSERT_NE(picture, nullptr);
+    std::shared_ptr<HeifParser> parser;
+    GetHeifParserFromImageSource(imageSource.get(), parser);
+    ASSERT_NE(parser->ilocBox_, nullptr);
+    ASSERT_NE(parser->ilocBox_->items_.size(), 0);
+    decltype(parser->ilocBox_->items_[0].extents) mockExtents;
+    std::swap(parser->ilocBox_->items_[0].extents, mockExtents);
+    uint64_t offset = 0;
+    ASSERT_EQ(parser->ilocBox_->GetPrimaryImageFileOffset(MOCK_ITEM_ID, offset, parser->idatBox_),
+        heif_error_item_data_not_found);
+#endif
+    GTEST_LOG_(INFO) << "HeifsDecodeTest: GetPrimaryImageFileOffsetTest001 end";
+}
+
+/**
+ * @tc.name: GetPrimaryImageFileOffsetTest002
+ * @tc.desc: Test GetPrimaryImageFileOffset when constructionMethod is CONSTRUCTION_METHOD_FILE_OFFSET.
+ * @tc.type: FUNC
+ */
+HWTEST_F(HeifsDecodeTest, GetPrimaryImageFileOffsetTest002, TestSize.Level1)
+{
+    GTEST_LOG_(INFO) << "HeifsDecodeTest: GetPrimaryImageFileOffsetTest002 start";
+#ifdef HEIF_HW_DECODE_ENABLE
+    SourceOptions sourceOptions;
+    uint32_t errorCode = 0;
+    std::unique_ptr<ImageSource> imageSource =
+        ImageSource::CreateImageSource(IMAGE_STATIC_IMAGE_HEIFS_PATH, sourceOptions, errorCode);
+    ASSERT_NE(imageSource, nullptr);
+    auto picture = imageSource->CreatePictureAtIndex(0, errorCode);
+    ASSERT_NE(picture, nullptr);
+    std::shared_ptr<HeifParser> parser;
+    GetHeifParserFromImageSource(imageSource.get(), parser);
+    ASSERT_NE(parser->ilocBox_, nullptr);
+    ASSERT_NE(parser->ilocBox_->items_.size(), 0);
+    parser->ilocBox_->items_[0].constructionMethod = CONSTRUCTION_METHOD_FILE_OFFSET;
+    uint64_t offset = 0;
+    ASSERT_EQ(parser->ilocBox_->GetPrimaryImageFileOffset(MOCK_ITEM_ID, offset, parser->idatBox_), heif_error_ok);
+    parser->ilocBox_->items_[0].baseOffset = std::numeric_limits<uint64_t>::max();
+    ASSERT_EQ(parser->ilocBox_->GetPrimaryImageFileOffset(MOCK_ITEM_ID, offset, parser->idatBox_), heif_error_eof);
+#endif
+    GTEST_LOG_(INFO) << "HeifsDecodeTest: GetPrimaryImageFileOffsetTest002 end";
+}
+
+/**
+ * @tc.name: GetPrimaryImageFileOffsetTest003
+ * @tc.desc: Test GetPrimaryImageFileOffset when constructionMethod is CONSTRUCTION_METHOD_IDAT_OFFSET.
+ * @tc.type: FUNC
+ */
+HWTEST_F(HeifsDecodeTest, GetPrimaryImageFileOffsetTest003, TestSize.Level1)
+{
+    GTEST_LOG_(INFO) << "HeifsDecodeTest: GetPrimaryImageFileOffsetTest003 start";
+#ifdef HEIF_HW_DECODE_ENABLE
+    SourceOptions sourceOptions;
+    uint32_t errorCode = 0;
+    std::unique_ptr<ImageSource> imageSource =
+        ImageSource::CreateImageSource(IMAGE_STATIC_IMAGE_HEIFS_PATH, sourceOptions, errorCode);
+    ASSERT_NE(imageSource, nullptr);
+    auto picture = imageSource->CreatePictureAtIndex(0, errorCode);
+    ASSERT_NE(picture, nullptr);
+    std::shared_ptr<HeifParser> parser;
+    GetHeifParserFromImageSource(imageSource.get(), parser);
+    ASSERT_NE(parser->ilocBox_, nullptr);
+    ASSERT_NE(parser->ilocBox_->items_.size(), 0);
+    parser->ilocBox_->items_[0].constructionMethod = CONSTRUCTION_METHOD_IDAT_OFFSET;
+    ASSERT_EQ(parser->idatBox_, nullptr);
+    uint64_t offset = 0;
+    ASSERT_EQ(parser->ilocBox_->GetPrimaryImageFileOffset(MOCK_ITEM_ID, offset, parser->idatBox_), heif_error_no_idat);
+    parser->idatBox_ = std::make_shared<HeifIdatBox>();
+    ASSERT_NE(parser->idatBox_, nullptr);
+    ASSERT_EQ(parser->ilocBox_->GetPrimaryImageFileOffset(MOCK_ITEM_ID, offset, parser->idatBox_), heif_error_ok);
+    parser->ilocBox_->items_[0].baseOffset = std::numeric_limits<uint64_t>::max();
+    ASSERT_EQ(parser->ilocBox_->GetPrimaryImageFileOffset(MOCK_ITEM_ID, offset, parser->idatBox_), heif_error_eof);
+#endif
+    GTEST_LOG_(INFO) << "HeifsDecodeTest: GetPrimaryImageFileOffsetTest003 end";
+}
+
+/**
+ * @tc.name: GetPrimaryImageFileOffsetTest004
+ * @tc.desc: Test GetPrimaryImageFileOffset when constructionMethod is CONSTRUCTION_METHOD_OTHER_OFFSET.
+ * @tc.type: FUNC
+ */
+HWTEST_F(HeifsDecodeTest, GetPrimaryImageFileOffsetTest004, TestSize.Level1)
+{
+    GTEST_LOG_(INFO) << "HeifsDecodeTest: GetPrimaryImageFileOffsetTest004 start";
+#ifdef HEIF_HW_DECODE_ENABLE
+    SourceOptions sourceOptions;
+    uint32_t errorCode = 0;
+    std::unique_ptr<ImageSource> imageSource =
+        ImageSource::CreateImageSource(IMAGE_STATIC_IMAGE_HEIFS_PATH, sourceOptions, errorCode);
+    ASSERT_NE(imageSource, nullptr);
+    auto picture = imageSource->CreatePictureAtIndex(0, errorCode);
+    ASSERT_NE(picture, nullptr);
+    std::shared_ptr<HeifParser> parser;
+    GetHeifParserFromImageSource(imageSource.get(), parser);
+    ASSERT_NE(parser->ilocBox_, nullptr);
+    ASSERT_NE(parser->ilocBox_->items_.size(), 0);
+    parser->ilocBox_->items_[0].constructionMethod = CONSTRUCTION_METHOD_OTHER_OFFSET;
+    uint64_t offset = 0;
+    ASSERT_EQ(parser->ilocBox_->GetPrimaryImageFileOffset(MOCK_ITEM_ID, offset, parser->idatBox_),
+        heif_error_item_data_not_found);
+#endif
+    GTEST_LOG_(INFO) << "HeifsDecodeTest: GetPrimaryImageFileOffsetTest004 end";
+}
+
+/**
+ * @tc.name: GetPrimaryImageFileOffsetTest005
+ * @tc.desc: Test GetPrimaryImageFileOffset when item id is invalid.
+ * @tc.type: FUNC
+ */
+HWTEST_F(HeifsDecodeTest, GetPrimaryImageFileOffsetTest005, TestSize.Level1)
+{
+    GTEST_LOG_(INFO) << "HeifsDecodeTest: GetPrimaryImageFileOffsetTest005 start";
+#ifdef HEIF_HW_DECODE_ENABLE
+    SourceOptions sourceOptions;
+    uint32_t errorCode = 0;
+    std::unique_ptr<ImageSource> imageSource =
+        ImageSource::CreateImageSource(IMAGE_STATIC_IMAGE_HEIFS_PATH, sourceOptions, errorCode);
+    ASSERT_NE(imageSource, nullptr);
+    auto picture = imageSource->CreatePictureAtIndex(0, errorCode);
+    ASSERT_NE(picture, nullptr);
+    std::shared_ptr<HeifParser> parser;
+    GetHeifParserFromImageSource(imageSource.get(), parser);
+    ASSERT_NE(parser->ilocBox_, nullptr);
+    ASSERT_NE(parser->ilocBox_->items_.size(), 0);
+    uint64_t offset = 0;
+    ASSERT_EQ(parser->ilocBox_->GetPrimaryImageFileOffset(0, offset, parser->idatBox_),
+        heif_error_primary_item_not_found);
+#endif
+    GTEST_LOG_(INFO) << "HeifsDecodeTest: GetPrimaryImageFileOffsetTest005 end";
+}
+
+/**
+ * @tc.name: IsNeedDecodeHeifsStaticImageTest001
+ * @tc.desc: Test IsNeedDecodeHeifsStaticImage when relevant HEIF box is nullptr.
+ * @tc.type: FUNC
+ */
+HWTEST_F(HeifsDecodeTest, IsNeedDecodeHeifsStaticImageTest001, TestSize.Level1)
+{
+    GTEST_LOG_(INFO) << "HeifsDecodeTest: IsNeedDecodeHeifsStaticImageTest001 start";
+#ifdef HEIF_HW_DECODE_ENABLE
+    SourceOptions sourceOptions;
+    uint32_t errorCode = 0;
+    std::unique_ptr<ImageSource> imageSource =
+        ImageSource::CreateImageSource(IMAGE_STATIC_IMAGE_HEIFS_PATH, sourceOptions, errorCode);
+    ASSERT_NE(imageSource, nullptr);
+    auto picture = imageSource->CreatePictureAtIndex(0, errorCode);
+    ASSERT_NE(picture, nullptr);
+    std::shared_ptr<HeifParser> parser;
+    GetHeifParserFromImageSource(imageSource.get(), parser);
+    ASSERT_NE(parser->ilocBox_, nullptr);
+    ASSERT_NE(parser->pitmBox_, nullptr);
+    ASSERT_NE(parser->stcoBox_, nullptr);
+    std::shared_ptr<HeifPtimBox> pitm = parser->pitmBox_;
+    parser->pitmBox_.reset();
+    ASSERT_EQ(parser->IsNeedDecodeHeifsStaticImage(), false);
+    parser->pitmBox_ = pitm;
+    std::shared_ptr<HeifIlocBox> iloc = parser->ilocBox_;
+    parser->ilocBox_.reset();
+    ASSERT_EQ(parser->IsNeedDecodeHeifsStaticImage(), false);
+    parser->ilocBox_ = iloc;
+    std::shared_ptr<HeifStcoBox> stco = parser->stcoBox_;
+    parser->stcoBox_.reset();
+    ASSERT_EQ(parser->IsNeedDecodeHeifsStaticImage(), false);
+#endif
+    GTEST_LOG_(INFO) << "HeifsDecodeTest: IsNeedDecodeHeifsStaticImageTest001 end";
+}
+
+/**
+ * @tc.name: IsNeedDecodeHeifsStaticImageTest002
+ * @tc.desc: Test IsNeedDecodeHeifsStaticImage when GetPrimaryImageFileOffset does not return heif_error_ok.
+ * @tc.type: FUNC
+ */
+HWTEST_F(HeifsDecodeTest, IsNeedDecodeHeifsStaticImageTest002, TestSize.Level1)
+{
+    GTEST_LOG_(INFO) << "HeifsDecodeTest: IsNeedDecodeHeifsStaticImageTest002 start";
+#ifdef HEIF_HW_DECODE_ENABLE
+    SourceOptions sourceOptions;
+    uint32_t errorCode = 0;
+    std::unique_ptr<ImageSource> imageSource =
+        ImageSource::CreateImageSource(IMAGE_STATIC_IMAGE_HEIFS_PATH, sourceOptions, errorCode);
+    ASSERT_NE(imageSource, nullptr);
+    auto picture = imageSource->CreatePictureAtIndex(0, errorCode);
+    ASSERT_NE(picture, nullptr);
+    std::shared_ptr<HeifParser> parser;
+    GetHeifParserFromImageSource(imageSource.get(), parser);
+    ASSERT_NE(parser->ilocBox_, nullptr);
+    ASSERT_NE(parser->pitmBox_, nullptr);
+    ASSERT_NE(parser->stcoBox_, nullptr);
+    ASSERT_NE(parser->ilocBox_->items_.size(), 0);
+    parser->ilocBox_->items_[0].constructionMethod = CONSTRUCTION_METHOD_OTHER_OFFSET;
+    ASSERT_EQ(parser->IsNeedDecodeHeifsStaticImage(), false);
+#endif
+    GTEST_LOG_(INFO) << "HeifsDecodeTest: IsNeedDecodeHeifsStaticImageTest002 end";
+}
+
+/**
+ * @tc.name: IsNeedDecodeHeifsStaticImageTest003
+ * @tc.desc: Test IsNeedDecodeHeifsStaticImage when GetChunkOffset does not return heif_error_ok.
+ * @tc.type: FUNC
+ */
+HWTEST_F(HeifsDecodeTest, IsNeedDecodeHeifsStaticImageTest003, TestSize.Level1)
+{
+    GTEST_LOG_(INFO) << "HeifsDecodeTest: IsNeedDecodeHeifsStaticImageTest003 start";
+#ifdef HEIF_HW_DECODE_ENABLE
+    SourceOptions sourceOptions;
+    uint32_t errorCode = 0;
+    std::unique_ptr<ImageSource> imageSource =
+        ImageSource::CreateImageSource(IMAGE_STATIC_IMAGE_HEIFS_PATH, sourceOptions, errorCode);
+    ASSERT_NE(imageSource, nullptr);
+    auto picture = imageSource->CreatePictureAtIndex(0, errorCode);
+    ASSERT_NE(picture, nullptr);
+    std::shared_ptr<HeifParser> parser;
+    GetHeifParserFromImageSource(imageSource.get(), parser);
+    ASSERT_NE(parser->ilocBox_, nullptr);
+    ASSERT_NE(parser->pitmBox_, nullptr);
+    ASSERT_NE(parser->stcoBox_, nullptr);
+    std::vector<uint32_t> chunks;
+    std::swap(parser->stcoBox_->chunkOffsets_, chunks);
+    ASSERT_EQ(parser->IsNeedDecodeHeifsStaticImage(), false);
+#endif
+    GTEST_LOG_(INFO) << "HeifsDecodeTest: IsNeedDecodeHeifsStaticImageTest003 end";
+}
+
+/**
+ * @tc.name: CreatePixelMapTest001
+ * @tc.desc: Test CreatePixelMap when heif image include moov boxes.
+ * @tc.type: FUNC
+ */
+HWTEST_F(HeifsDecodeTest, CreatePixelMapTest001, TestSize.Level1)
+{
+    GTEST_LOG_(INFO) << "HeifsDecodeTest: CreatePixelMapTest001 start";
+#ifdef HEIF_HW_DECODE_ENABLE
+    SourceOptions sourceOptions;
+    uint32_t errorCode = 0;
+    std::unique_ptr<ImageSource> imageSource =
+        ImageSource::CreateImageSource(IMAGE_MOOV_HEIC_PATH, sourceOptions, errorCode);
+    ASSERT_NE(imageSource, nullptr);
+    DecodeOptions decOpts;
+    auto pixelMap = imageSource->CreatePixelMap(decOpts, errorCode);
+    ASSERT_NE(pixelMap, nullptr);
+#endif
+    GTEST_LOG_(INFO) << "HeifsDecodeTest: CreatePixelMapTest001 end";
 }
 } // namespace Media
 } // namespace OHOS
