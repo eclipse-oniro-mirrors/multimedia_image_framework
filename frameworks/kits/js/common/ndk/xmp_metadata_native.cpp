@@ -15,9 +15,9 @@
 
 #include "xmp_metadata_native.h"
 
-#include <limits>
 #include <memory>
 #include <string>
+#include <unordered_map>
 #include <vector>
 
 #include "common_utils.h"
@@ -48,8 +48,9 @@ struct OH_XMPTag {
     std::string value;
 };
 
-struct OH_XMPTagList {
-    std::vector<std::pair<std::string, OH_XMPTag *>> tags;
+struct OH_XMPTagMap {
+    std::unordered_map<std::string, OH_XMPTag *> tags;
+    std::vector<std::string> keys;
 };
 
 MIDK_EXPORT
@@ -113,39 +114,54 @@ Image_ErrorCode OH_XMPTag_Release(OH_XMPTag *tag)
 }
 
 MIDK_EXPORT
-Image_ErrorCode OH_XMPTagList_GetSize(OH_XMPTagList *list, size_t *outSize)
+Image_ErrorCode OH_XMPTagMap_GetSize(OH_XMPTagMap *map, size_t *outSize)
 {
-    if (list == nullptr || outSize == nullptr) {
+    if (map == nullptr || outSize == nullptr) {
         return IMAGE_BAD_PARAMETER;
     }
-    *outSize = list->tags.size();
+    *outSize = map->keys.size();
     return IMAGE_SUCCESS;
 }
 
 MIDK_EXPORT
-Image_ErrorCode OH_XMPTagList_GetAt(OH_XMPTagList *list, size_t index, const char **outPath, const OH_XMPTag **outTag)
+Image_ErrorCode OH_XMPTagMap_GetKeyAt(OH_XMPTagMap *map, size_t index, const char **outPath)
 {
-    if (list == nullptr || outPath == nullptr || outTag == nullptr) {
+    if (map == nullptr || outPath == nullptr) {
         return IMAGE_BAD_PARAMETER;
     }
-    if (index >= list->tags.size()) {
+    if (index >= map->keys.size()) {
         return IMAGE_BAD_PARAMETER;
     }
-    *outPath = list->tags[index].first.c_str();
-    *outTag = list->tags[index].second;
+    *outPath = map->keys[index].c_str();
     return IMAGE_SUCCESS;
 }
 
 MIDK_EXPORT
-Image_ErrorCode OH_XMPTagList_Release(OH_XMPTagList *list)
+Image_ErrorCode OH_XMPTagMap_GetTag(OH_XMPTagMap *map, const char *path, const OH_XMPTag **outTag)
 {
-    if (list == nullptr) {
+    if (map == nullptr || path == nullptr || outTag == nullptr) {
         return IMAGE_BAD_PARAMETER;
     }
-    for (auto &[_, tag] : list->tags) {
-        delete tag;
+    *outTag = nullptr;
+
+    auto it = map->tags.find(std::string(path));
+    if (it == map->tags.end()) {
+        return IMAGE_XMP_TAG_NOT_FOUND;
     }
-    delete list;
+    *outTag = it->second;
+    return IMAGE_SUCCESS;
+}
+
+MIDK_EXPORT
+Image_ErrorCode OH_XMPTagMap_Release(OH_XMPTagMap *map)
+{
+    if (map == nullptr) {
+        return IMAGE_BAD_PARAMETER;
+    }
+    for (auto &item : map->tags) {
+        delete item.second;
+    }
+    delete map;
     return IMAGE_SUCCESS;
 }
 
@@ -275,15 +291,15 @@ Image_ErrorCode OH_XMPMetadata_EnumerateTags(OH_XMPMetadata *meta, OH_XMPEnumera
 
 MIDK_EXPORT
 Image_ErrorCode OH_XMPMetadata_GetTags(OH_XMPMetadata *meta, const char *rootPath, const OH_XMPEnumerateOptions *options,
-    OH_XMPTagList **outList)
+    OH_XMPTagMap **outMap)
 {
-    if (meta == nullptr || meta->inner == nullptr || outList == nullptr) {
+    if (meta == nullptr || meta->inner == nullptr || outMap == nullptr) {
         return IMAGE_BAD_PARAMETER;
     }
-    *outList = nullptr;
+    *outMap = nullptr;
 
-    OH_XMPTagList *list = new(std::nothrow) OH_XMPTagList();
-    if (list == nullptr) {
+    OH_XMPTagMap *map = new(std::nothrow) OH_XMPTagMap();
+    if (map == nullptr) {
         return IMAGE_SOURCE_ALLOC_FAILED;
     }
 
@@ -295,7 +311,7 @@ Image_ErrorCode OH_XMPMetadata_GetTags(OH_XMPMetadata *meta, const char *rootPat
 
     bool allocFailed = false;
     meta->inner->EnumerateTags(
-        [list, &allocFailed](const std::string &path, const XMPTag &tag) -> bool {
+        [map, &allocFailed](const std::string &path, const XMPTag &tag) -> bool {
             OH_XMPTag *ndkTag = new(std::nothrow) OH_XMPTag();
             if (ndkTag == nullptr) {
                 allocFailed = true;
@@ -306,20 +322,27 @@ Image_ErrorCode OH_XMPMetadata_GetTags(OH_XMPMetadata *meta, const char *rootPat
             ndkTag->name = tag.name;
             ndkTag->type = static_cast<OH_XMPTagType>(static_cast<int32_t>(tag.type));
             ndkTag->value = tag.value;
-            list->tags.emplace_back(path, ndkTag);
+            auto it = map->tags.find(path);
+            if (it == map->tags.end()) {
+                map->keys.emplace_back(path);
+                map->tags.emplace(path, ndkTag);
+            } else {
+                delete it->second;
+                it->second = ndkTag;
+            }
             return true;
         },
         root, innerOpt);
 
     if (allocFailed) {
-        for (auto &[_, tag] : list->tags) {
-            delete tag;
+        for (auto &item : map->tags) {
+            delete item.second;
         }
-        delete list;
+        delete map;
         return IMAGE_SOURCE_ALLOC_FAILED;
     }
 
-    *outList = list;
+    *outMap = map;
     return IMAGE_SUCCESS;
 }
 
