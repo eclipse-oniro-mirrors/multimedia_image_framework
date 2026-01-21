@@ -676,7 +676,7 @@ uint32_t ExtEncoder::DoEncode(SkWStream* skStream, const SkBitmap& src, const Sk
 bool ExtEncoder::HispeedEncode(SkWStream &skStream, Media::PixelMap *pixelMap, bool needExif, SkImageInfo info)
 {
     CHECK_ERROR_RETURN_RET_LOG(pixelMap == nullptr, false, "pixelMap is nullptr");
-    if (encodeFormat_ != SkEncodedImageFormat::kJPEG && !IsYuvImage(pixelMap->GetPixelFormat())) {
+    if (encodeFormat_ != SkEncodedImageFormat::kJPEG || !IsYuvImage(pixelMap->GetPixelFormat())) {
         IMAGE_LOGI("HispeedEncode format not supported");
         return false;
     }
