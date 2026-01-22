@@ -1911,20 +1911,20 @@ bool ImageUtils::CheckBufferSizeIsVaild(int32_t &bufferSize, uint64_t &expectedB
     return true;
 }
 
-bool ImageUtils::CheckYuvDataInfoValid(const ImageInfo &imageInfo, YUVDataInfo& yDataInfo)
+bool ImageUtils::CheckSizeValid(const ImageInfo &imgInfo, const YUVDataInfo& yDataInfo)
 {
-    //size
-    if (yDataInfo.imageSize.width != imageInfo.size.width || yDataInfo.imageSize.height != imageInfo.size.height) {
+    if (yDataInfo.imageSize.width != imgInfo.size.width || yDataInfo.imageSize.height != imgInfo.size.height) {
         IMAGE_LOGE("Invalid YUVDataInfo: imageSize(%{public}d, %{public}d) mismatch ImageInfo(%{public}d, %{public}d)",
-            yDataInfo.imageSize.width, yDataInfo.imageSize.height, imageInfo.size.width, imageInfo.size.height);
+            yDataInfo.imageSize.width, yDataInfo.imageSize.height, imgInfo.size.width, imgInfo.size.height);
     }
+
     const uint32_t yExpectedWidth = static_cast<uint32_t>(yDataInfo.imageSize.width);
     const uint32_t yExpectedHeight = static_cast<uint32_t>(yDataInfo.imageSize.height);
     if (yDataInfo.yWidth == 0 || yDataInfo.yHeight == 0) {
         IMAGE_LOGE("Invalid Y plane size: yWidth or yHeight is 0");
         return false;
     }
-    if (yDataInfo.yWidth == yExpectedHeight && yDataInfo.yHeight == yExpectedWidth) {
+    if (yDataInfo.yWidth != yExpectedWidth || yDataInfo.yHeight != yExpectedHeight) {
         IMAGE_LOGE("Invalid Y plane size: Y(%{public}u, %{public}u) mismatch expected(%{public}u, %{public}u)",
             yDataInfo.yWidth, yDataInfo.yHeight, yExpectedWidth, yExpectedHeight);
         return false;
@@ -1941,8 +1941,11 @@ bool ImageUtils::CheckYuvDataInfoValid(const ImageInfo &imageInfo, YUVDataInfo& 
             yDataInfo.uvWidth, yDataInfo.uvHeight, uvExpectedWidth, uvExpectedHeight);
         return false;
     }
+    return true;
+}
 
-    //stride
+bool ImageUtils::CheckStrideValid(const YUVDataInfo& yDataInfo)
+{
     if (yDataInfo.yStride < yDataInfo.yWidth) {
         IMAGE_LOGE("Invalid Y stride: %{public}u < width=%{public}u", yDataInfo.yStride, yDataInfo.yWidth);
         return false;
@@ -1961,24 +1964,43 @@ bool ImageUtils::CheckYuvDataInfoValid(const ImageInfo &imageInfo, YUVDataInfo& 
     if (yDataInfo.vStride != 0 && yDataInfo.vStride < yDataInfo.uvWidth) {
         IMAGE_LOGW("Invalid V stride: %{public}u < uvWidth=%{public}u", yDataInfo.vStride, yDataInfo.uvWidth);
     }
+    return true;
+}
 
-    //offset
+bool ImageUtils::CheckOffsetValid(const YUVDataInfo& yDataInfo)
+{
     if (yDataInfo.yOffset != 0) {
         IMAGE_LOGE("Invalid Y offset: %{public}u (expected 0)", yDataInfo.yOffset);
         return false;
     }
-
-    uint64_t yPlaneSize = static_cast<uint64_t>(yDataInfo.yStride) * yDataInfo.yHeight;
-    uint64_t bufferSize = yPlaneSize + static_cast<uint64_t>(yDataInfo.uvStride) * yDataInfo.uvHeight;
-    if (yPlaneSize > UINT32_MAX || bufferSize > UINT32_MAX) {
-        IMAGE_LOGE("Invalid YUV buffer size: overflow (exceeds UINT32_MAX)");
-        return false;
-    }
+    const uint64_t yPlaneSize = static_cast<uint64_t>(yDataInfo.yStride) * yDataInfo.yHeight;
+    const uint64_t uvPlaneSize = static_cast<uint64_t>(yDataInfo.uvStride) * yDataInfo.uvHeight;
+    const uint64_t bufferSize = yPlaneSize + uvPlaneSize;
     if (static_cast<uint64_t>(yDataInfo.uvOffset) < yPlaneSize) {
         IMAGE_LOGE("Invalid UV offset: %{public}u less than Y plane size", yDataInfo.uvOffset);
         return false;
     }
+    if (yPlaneSize > UINT32_MAX || bufferSize > UINT32_MAX) {
+        IMAGE_LOGE("Invalid YUV buffer size: overflow (exceeds UINT32_MAX)");
+        return false;
+    }
+    return true;
+}
 
+bool ImageUtils::CheckYuvDataInfoValid(const ImageInfo &imgInfo, YUVDataInfo& yDataInfo)
+{
+    if (!CheckSizeValid(imgInfo, yDataInfo)) {
+        IMAGE_LOGE("Invalid Yuvdatainfo Size, YUVDataInfo: %{public}s", yDataInfo.ToString().c_str());
+        return false;
+    }
+    if (!CheckStrideValid(yDataInfo)) {
+        IMAGE_LOGE("Invalid Yuvdatainfo Stride, YUVDataInfo: %{public}s", yDataInfo.ToString().c_str());
+        return false;
+    }
+    if (!CheckOffsetValid(yDataInfo)) {
+        IMAGE_LOGE("Invalid Yuvdatainfo Offset, YUVDataInfo: %{public}s", yDataInfo.ToString().c_str());
+        return false;
+    }
     return true;
 }
 

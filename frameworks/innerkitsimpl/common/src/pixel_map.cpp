@@ -379,7 +379,7 @@ int32_t PixelMap::GetAllocatedByteCount(const ImageInfo& info)
 void UpdateYUVDataInfo(int32_t width, int32_t height, YUVDataInfo &yuvInfo)
 {
     yuvInfo.imageSize.width = width;
-    yuvInfo.imageSize.height = height;    
+    yuvInfo.imageSize.height = height;
     yuvInfo.yWidth = static_cast<uint32_t>(width);
     yuvInfo.yHeight = static_cast<uint32_t>(height);
     yuvInfo.uvWidth = static_cast<uint32_t>((width + 1) / NUM_2);
