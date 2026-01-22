@@ -1987,9 +1987,9 @@ bool ImageUtils::CheckOffsetValid(const YUVDataInfo& yDataInfo)
     return true;
 }
 
-bool ImageUtils::CheckYuvDataInfoValid(const ImageInfo &imgInfo, YUVDataInfo& yDataInfo)
+bool ImageUtils::CheckYuvDataInfoValid(const ImageInfo &imageInfo, YUVDataInfo& yDataInfo)
 {
-    if (!CheckSizeValid(imgInfo, yDataInfo)) {
+    if (!CheckSizeValid(imageInfo, yDataInfo)) {
         IMAGE_LOGE("Invalid Yuvdatainfo Size, YUVDataInfo: %{public}s", yDataInfo.ToString().c_str());
         return false;
     }
