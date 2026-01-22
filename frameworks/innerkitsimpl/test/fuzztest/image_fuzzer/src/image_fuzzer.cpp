@@ -13,21 +13,28 @@
  * limitations under the License.
  */
 
+#include <fuzzer/FuzzedDataProvider.h>
 #include "image_fuzzer.h"
 #include "native_image.h"
 
 namespace OHOS {
 namespace Media {
 
+static constexpr uint32_t OPT_SIZE = 80;
+FuzzedDataProvider* FDP;
+
 /*
  * test image get functions
  */
 void ImageGetFunctionsFuzzTest()
 {
+    if (FDP == nullptr) {
+        return;
+    }
     sptr<SurfaceBuffer> buffer = SurfaceBuffer::Create();
     std::shared_ptr<IBufferProcessor> releaser;
     std::unique_ptr<OHOS::Media::NativeImage> image = std::make_unique<OHOS::Media::NativeImage>(buffer, releaser);
-    int32_t colorSpace = 0;
+    int32_t colorSpace = FDP->ConsumeIntegral<int32_t>();
     image->GetColorSpace(colorSpace);
     image->GetBufferData();
 }
@@ -38,6 +45,11 @@ void ImageGetFunctionsFuzzTest()
 /* Fuzzer entry point */
 extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
 {
+    if (size <  OHOS::Media::OPT_SIZE) {
+        return -1;
+    }
+    FuzzedDataProvider fdp(data + size - OHOS::Media::OPT_SIZE, OHOS::Media::OPT_SIZE);
+    OHOS::Media::FDP = &fdp;
     /* Run your code on data */
     OHOS::Media::ImageGetFunctionsFuzzTest();
     return 0;

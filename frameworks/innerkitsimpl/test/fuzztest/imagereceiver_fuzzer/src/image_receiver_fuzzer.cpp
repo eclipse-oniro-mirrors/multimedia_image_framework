@@ -20,6 +20,7 @@
 namespace OHOS {
 namespace Media {
 
+static constexpr uint32_t OPT_SIZE = 80;
 FuzzedDataProvider* FDP;
 
 void CreateImageReceiverByOptionsFuzzTest()
@@ -40,7 +41,10 @@ void CreateImageReceiverByOptionsFuzzTest()
 /* Fuzzer entry point */
 extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
 {
-    FuzzedDataProvider fdp(data, size);
+    if (size <  OHOS::Media::OPT_SIZE) {
+        return -1;
+    }
+    FuzzedDataProvider fdp(data + size - OHOS::Media::OPT_SIZE, OHOS::Media::OPT_SIZE);
     OHOS::Media::FDP = &fdp;
     /* Run your code on data */
     OHOS::Media::CreateImageReceiverByOptionsFuzzTest();
