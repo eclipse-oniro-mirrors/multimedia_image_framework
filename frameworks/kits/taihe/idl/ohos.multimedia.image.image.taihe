@@ -931,16 +931,16 @@ interface XMPMetadata {
   GetImplPtr(): i64;
 
   @gen_promise("registerNamespacePrefix")
-  RegisterNamespacePrefixSync(xmlns: String, prefix: String): bool;
+  RegisterNamespacePrefixSync(xmlns: String, prefix: String): void;
 
   @gen_promise("setValue")
-  SetValueSync(path: String, type: XMPTagType, value: Optional<String>): bool;
+  SetValueSync(path: String, type: XMPTagType, value: Optional<String>): void;
 
   @gen_promise("getTag")
   GetTagSync(path: String): NullableXMPTag;
 
   @gen_promise("removeTag")
-  RemoveTagSync(path: String): bool;
+  RemoveTagSync(path: String): void;
 
   EnumerateTags(callback: (path: String, tag: XMPTag)=> bool, rootPath: Optional<String>, options: Optional<XMPEnumerateOption>): void;
 

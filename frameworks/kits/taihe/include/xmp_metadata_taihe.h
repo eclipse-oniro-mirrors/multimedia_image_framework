@@ -33,10 +33,10 @@ public:
     int64_t GetImplPtr();
 
     std::shared_ptr<OHOS::Media::XMPMetadata> GetNativeXMPMetadata();
-    bool RegisterNamespacePrefixSync(string_view xmlns, string_view prefix);
-    bool SetValueSync(string_view path, XMPTagType type, optional_view<string> value);
+    void RegisterNamespacePrefixSync(string_view xmlns, string_view prefix);
+    void SetValueSync(string_view path, XMPTagType type, optional_view<string> value);
     NullableXMPTag GetTagSync(string_view path);
-    bool RemoveTagSync(string_view path);
+    void RemoveTagSync(string_view path);
     void EnumerateTags(callback_view<bool(string_view path, XMPTag const& tag)> callback,
         optional_view<string> rootPath, optional_view<XMPEnumerateOption> options);
     map<string, XMPTag> GetTagsSync(optional_view<string> rootPath, optional_view<XMPEnumerateOption> options);

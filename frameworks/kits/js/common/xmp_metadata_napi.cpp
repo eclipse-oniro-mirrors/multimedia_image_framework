@@ -348,7 +348,7 @@ static void CommonCallbackRoutine(napi_env env, XMPMetadataAsyncContext* &contex
     if (context->status == SUCCESS) {
         result[NUM_1] = valueParam;
     } else {
-        const auto &&[errorCode, errMsg] = OHOS::Media::ImageErrorConvert::XMPMetadataMakeErrMsg(context->status);
+        const auto [errorCode, errMsg] = OHOS::Media::ImageErrorConvert::XMPMetadataMakeErrMsg(context->status);
         OHOS::Media::ImageNapiUtils::CreateErrorObj(env, result[NUM_0], errorCode, errMsg);
     }
 
@@ -731,7 +731,7 @@ napi_value XMPMetadataNapi::EnumerateTags(napi_env env, napi_callback_info info)
     }
 
     if (!ProcessEnumerateTags(env, context, nativePtr)) {
-        const auto &&[errorCode, errMsg] = OHOS::Media::ImageErrorConvert::XMPMetadataMakeErrMsg(context->status);
+        const auto [errorCode, errMsg] = OHOS::Media::ImageErrorConvert::XMPMetadataMakeErrMsg(context->status);
         return ImageNapiUtils::ThrowExceptionError(env, errorCode, errMsg);
     }
     IMAGE_LOGD("EnumerateTags completed successfully");

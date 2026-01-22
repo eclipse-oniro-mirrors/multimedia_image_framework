@@ -13,6 +13,7 @@
  * limitations under the License.
  */
 
+#include "image_error_convert.h"
 #include "image_log.h"
 #include "image_taihe_utils.h"
 #include "image_type.h"
@@ -51,10 +52,16 @@ static XMPTag ToTaiheXMPTag(const OHOS::Media::XMPTag &innerXMPTag)
 static OHOS::Media::XMPEnumerateOption ParseXMPEnumerateOption(const optional_view<XMPEnumerateOption> &option)
 {
     OHOS::Media::XMPEnumerateOption innerOption;
-    if (option->isRecursive.has_value()) {
+    if (option.has_value() && option->isRecursive.has_value()) {
         innerOption.isRecursive = option->isRecursive.value();
     }
     return innerOption;
+}
+
+static void ThrowXMPException(uint32_t innerCode)
+{
+    const auto [errorCode, errMsg] = OHOS::Media::ImageErrorConvert::XMPMetadataMakeErrMsg(innerCode);
+    ImageTaiheUtils::ThrowExceptionError(errorCode, errMsg);
 }
 
 static auto CreateEnumerateTagsCallback(callback_view<bool(string_view path, XMPTag const& tag)> callback)
@@ -77,18 +84,20 @@ std::shared_ptr<OHOS::Media::XMPMetadata> XMPMetadataImpl::GetNativeXMPMetadata(
     return nativeXMPMetadata_;
 }
 
-bool XMPMetadataImpl::RegisterNamespacePrefixSync(string_view xmlns, string_view prefix)
+void XMPMetadataImpl::RegisterNamespacePrefixSync(string_view xmlns, string_view prefix)
 {
-    CHECK_ERROR_RETURN_RET_LOG(nativeXMPMetadata_ == nullptr, false, "Empty native XMPMetadata");
+    CHECK_ERROR_RETURN_LOG(nativeXMPMetadata_ == nullptr, "Empty native XMPMetadata");
 
-    bool ret = nativeXMPMetadata_->RegisterNamespacePrefix(std::string(xmlns), std::string(prefix));
-    // through errCode and errMsg
-    return ret;
+    uint32_t ret = nativeXMPMetadata_->RegisterNamespacePrefix(std::string(xmlns), std::string(prefix));
+    if (ret != OHOS::Media::SUCCESS) {
+        ThrowXMPException(ret);
+        return;
+    }
 }
 
-bool XMPMetadataImpl::SetValueSync(string_view path, XMPTagType type, optional_view<string> value)
+void XMPMetadataImpl::SetValueSync(string_view path, XMPTagType type, optional_view<string> value)
 {
-    CHECK_ERROR_RETURN_RET_LOG(nativeXMPMetadata_ == nullptr, false, "Empty native XMPMetadata");
+    CHECK_ERROR_RETURN_LOG(nativeXMPMetadata_ == nullptr, "Empty native XMPMetadata");
 
     std::string innerPath = std::string(path);
     OHOS::Media::XMPTagType innerXMPTagType = OHOS::Media::XMPTagType(type.get_value());
@@ -96,9 +105,11 @@ bool XMPMetadataImpl::SetValueSync(string_view path, XMPTagType type, optional_v
     IMAGE_LOGD("%{public}s path: %{public}s, tagType: %{public}d, tagValue: %{public}s",
         __func__, innerPath.c_str(), innerXMPTagType, innerValue.c_str());
 
-    bool ret = nativeXMPMetadata_->SetValue(innerPath, innerXMPTagType, innerValue);
-    // through errCode and errMsg
-    return ret;
+    uint32_t ret = nativeXMPMetadata_->SetValue(innerPath, innerXMPTagType, innerValue);
+    if (ret != OHOS::Media::SUCCESS) {
+        ThrowXMPException(ret);
+        return;
+    }
 }
 
 NullableXMPTag XMPMetadataImpl::GetTagSync(string_view path)
@@ -107,21 +118,28 @@ NullableXMPTag XMPMetadataImpl::GetTagSync(string_view path)
         "Empty native XMPMetadata instance");
 
     OHOS::Media::XMPTag innerXMPTag;
-    bool ret = nativeXMPMetadata_->GetTag(std::string(path), innerXMPTag);
-    // through errCode and errMsg
-    CHECK_ERROR_RETURN_RET(!ret, NullableXMPTag::make_type_null());
+    uint32_t ret = nativeXMPMetadata_->GetTag(std::string(path), innerXMPTag);
+    if (ret == OHOS::Media::ERR_XMP_TAG_NOT_FOUND) {
+        return NullableXMPTag::make_type_null();
+    }
+    if (ret != OHOS::Media::SUCCESS) {
+        ThrowXMPException(ret);
+        return NullableXMPTag::make_type_null();
+    }
 
     XMPTag tag = ToTaiheXMPTag(innerXMPTag);
     return NullableXMPTag::make_type_xmpTag(tag);
 }
 
-bool XMPMetadataImpl::RemoveTagSync(string_view path)
+void XMPMetadataImpl::RemoveTagSync(string_view path)
 {
-    CHECK_ERROR_RETURN_RET_LOG(nativeXMPMetadata_ == nullptr, false, "Empty native XMPMetadata");
+    CHECK_ERROR_RETURN_LOG(nativeXMPMetadata_ == nullptr, "Empty native XMPMetadata");
 
-    bool ret = nativeXMPMetadata_->RemoveTag(std::string(path));
-    // through errCode and errMsg
-    return ret;
+    uint32_t ret = nativeXMPMetadata_->RemoveTag(std::string(path));
+    if (ret != OHOS::Media::SUCCESS) {
+        ThrowXMPException(ret);
+        return;
+    }
 }
 
 void XMPMetadataImpl::EnumerateTags(callback_view<bool(string_view path, XMPTag const& tag)> callback,
@@ -133,7 +151,11 @@ void XMPMetadataImpl::EnumerateTags(callback_view<bool(string_view path, XMPTag 
     OHOS::Media::XMPEnumerateOption innerOption = ParseXMPEnumerateOption(options);
     auto innerCallback = CreateEnumerateTagsCallback(callback);
 
-    nativeXMPMetadata_->EnumerateTags(innerCallback, innerPath, innerOption);
+    uint32_t ret = nativeXMPMetadata_->EnumerateTags(innerCallback, innerPath, innerOption);
+    if (ret != OHOS::Media::SUCCESS) {
+        ThrowXMPException(ret);
+        return;
+    }
 }
 
 map<string, XMPTag> XMPMetadataImpl::GetTagsSync(optional_view<string> rootPath,
@@ -144,19 +166,26 @@ map<string, XMPTag> XMPMetadataImpl::GetTagsSync(optional_view<string> rootPath,
     std::string innerPath = std::string(rootPath.value_or(""));
     OHOS::Media::XMPEnumerateOption innerOption = ParseXMPEnumerateOption(options);
 
-    nativeXMPMetadata_->EnumerateTags([&result](const std::string &path, const OHOS::Media::XMPTag &tag) {
-        result.emplace(path, ToTaiheXMPTag(tag));
-        return true;
-    }, innerPath, innerOption);
-    // through errCode and errMsg
+    uint32_t ret = nativeXMPMetadata_->EnumerateTags(
+        [&result](const std::string &path, const OHOS::Media::XMPTag &tag) {
+            result.emplace(path, ToTaiheXMPTag(tag));
+            return true;
+        }, innerPath, innerOption);
+    if (ret != OHOS::Media::SUCCESS) {
+        ThrowXMPException(ret);
+        return map<string, XMPTag>();
+    }
     return result;
 }
 
 void XMPMetadataImpl::SetBlobSync(array_view<uint8_t> buffer)
 {
     CHECK_ERROR_RETURN_LOG(nativeXMPMetadata_ == nullptr, "Empty native XMPMetadata");
-    nativeXMPMetadata_->SetBlob(static_cast<uint8_t*>(buffer.data()), buffer.size());
-    // through errCode and errMsg
+    uint32_t ret = nativeXMPMetadata_->SetBlob(static_cast<uint8_t*>(buffer.data()), buffer.size());
+    if (ret != OHOS::Media::SUCCESS) {
+        ThrowXMPException(ret);
+        return;
+    }
 }
 
 array<uint8_t> XMPMetadataImpl::GetBlobSync()
@@ -165,12 +194,19 @@ array<uint8_t> XMPMetadataImpl::GetBlobSync()
     CHECK_ERROR_RETURN_RET_LOG(nativeXMPMetadata_ == nullptr, result, "Empty native XMPMetadata");
 
     std::string strBuf;
-    nativeXMPMetadata_->GetBlob(strBuf);
-    // through errCode and errMsg
+    uint32_t ret = nativeXMPMetadata_->GetBlob(strBuf);
+    if (ret != OHOS::Media::SUCCESS) {
+        ThrowXMPException(ret);
+        return result;
+    }
 
-    std::unique_ptr<uint8_t[]> buf = std::make_unique<uint8_t[]>(strBuf.size());
+    std::unique_ptr<uint8_t[]> buf(new(std::nothrow) uint8_t[strBuf.size()]);
+    if (!buf) {
+        ThrowXMPException(OHOS::Media::ERR_MEDIA_MALLOC_FAILED);
+        return result;
+    }
     if (memcpy_s(buf.get(), strBuf.size(), strBuf.data(), strBuf.size()) != EOK) {
-        IMAGE_LOGE("%{public}s memcpy_s failed", __func__);
+        ThrowXMPException(OHOS::Media::ERR_MEMORY_COPY_FAILED);
         return result;
     }
 
