@@ -120,7 +120,7 @@ HWTEST_F(HeifsMetadataTest, SetBlobTest001, TestSize.Level3)
     metadata->properties_.reset();
     std::unique_ptr<uint8_t[]> src = std::make_unique<uint8_t[]>(MOCK_BUFFER_SIZE);
     ASSERT_NE(src, nullptr);
-    ASSERT_EQ(metadata->SetBlob(src.get(), MOCK_BUFFER_SIZE), ERR_IMAGE_INVALID_PARAMETER);
+    ASSERT_EQ(metadata->SetBlob(src.get(), MOCK_BUFFER_SIZE), ERR_IMAGE_GET_DATA_ABNORMAL);
     GTEST_LOG_(INFO) << "HeifsMetadataTest: SetBlobTest001 end";
 }
 
