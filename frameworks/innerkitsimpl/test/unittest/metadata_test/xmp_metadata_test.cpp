@@ -84,20 +84,20 @@ public:
 static bool SetValueForTest(XMPMetadata &xmpMetadata, const std::string &path, XMPTagType type,
     const std::string &value)
 {
-    bool ret = xmpMetadata.SetValue(path, type, value);
-    if (!ret) {
+    uint32_t ret = xmpMetadata.SetValue(path, type, value);
+    if (ret != SUCCESS) {
         GTEST_LOG_(INFO) << "SetValueForTest: SetValue failed for path: " << path;
     }
-    return ret;
+    return ret == SUCCESS;
 }
 
 static bool GetTagForTest(XMPMetadata &xmpMetadata, const std::string &path, XMPTag &outTag)
 {
-    bool ret = xmpMetadata.GetTag(path, outTag);
-    if (!ret) {
+    uint32_t ret = xmpMetadata.GetTag(path, outTag);
+    if (ret != SUCCESS) {
         GTEST_LOG_(INFO) << "GetTagForTest: GetTag failed for path: " << path;
     }
-    return ret;
+    return ret == SUCCESS;
 }
 
 static bool SetValueAndGetTagForTest(XMPMetadata &xmpMetadata, const std::string &path, XMPTagType type,
@@ -119,7 +119,7 @@ static void GetLastTag(XMPMetadata &xmpMetadata, std::string &path, ExpectedTagT
 {
     XMPTag parentTag;
     std::string lastTagPath;
-    xmpMetadata.GetTag(path, parentTag);
+    (void)xmpMetadata.GetTag(path, parentTag);
 
     switch (parentTag.type) {
         case XMPTagType::UNORDERED_ARRAY:
@@ -128,7 +128,7 @@ static void GetLastTag(XMPMetadata &xmpMetadata, std::string &path, ExpectedTagT
             lastTagPath = path + "[last()]";
             {
                 XMPTag lastXmpTag;
-                xmpMetadata.GetTag(lastTagPath, lastXmpTag);
+                (void)xmpMetadata.GetTag(lastTagPath, lastXmpTag);
                 lastTag = { lastXmpTag.type, lastXmpTag.value };
             }
             break;
@@ -311,14 +311,14 @@ HWTEST_F(XmpMetadataTest, XMPMetadataRefCountTest001, TestSize.Level1)
  * @tc.desc: test the RegisterNamespacePrefix method.
  * @tc.type: FUNC
  */
-HWTEST_F(XmpMetadataTest, RegisterNamespacePrefixTest001, TestSize.Level1)
+HWTEST_F(XmpMetadataTest, RegisterNamespacePrefixTest001, TestSize.Level3)
 {
     GTEST_LOG_(INFO) << "XmpMetadataTest: RegisterNamespacePrefixTest001 start";
     XMPMetadata xmpMetadata;
     std::string namespaceURI = "http://example.com/custom/1.0/";
     std::string preferredPrefix = "custom";
-    bool ret = xmpMetadata.RegisterNamespacePrefix(namespaceURI, preferredPrefix);
-    EXPECT_TRUE(ret);
+    uint32_t ret = xmpMetadata.RegisterNamespacePrefix(namespaceURI, preferredPrefix);
+    EXPECT_EQ(ret, SUCCESS);
     GTEST_LOG_(INFO) << "XmpMetadataTest: RegisterNamespacePrefixTest001 end";
 }
 
@@ -327,14 +327,14 @@ HWTEST_F(XmpMetadataTest, RegisterNamespacePrefixTest001, TestSize.Level1)
  * @tc.desc: test the RegisterNamespacePrefix when try to register a namespace that is already registered.
  * @tc.type: FUNC
  */
-HWTEST_F(XmpMetadataTest, RegisterNamespacePrefixTest002, TestSize.Level1)
+HWTEST_F(XmpMetadataTest, RegisterNamespacePrefixTest002, TestSize.Level3)
 {
     GTEST_LOG_(INFO) << "XmpMetadataTest: RegisterNamespacePrefixTest002 start";
     XMPMetadata xmpMetadata;
     std::string namespaceURI = "http://ns.adobe.com/xap/1.0/";
     std::string preferredPrefix = "xmp";
-    bool ret = xmpMetadata.RegisterNamespacePrefix(namespaceURI, preferredPrefix);
-    EXPECT_FALSE(ret);
+    uint32_t ret = xmpMetadata.RegisterNamespacePrefix(namespaceURI, preferredPrefix);
+    EXPECT_EQ(ret, SUCCESS);
     GTEST_LOG_(INFO) << "XmpMetadataTest: RegisterNamespacePrefixTest002 end";
 }
 
@@ -343,14 +343,14 @@ HWTEST_F(XmpMetadataTest, RegisterNamespacePrefixTest002, TestSize.Level1)
  * @tc.desc: test the RegisterNamespacePrefix when try to register a prefix that is already registered.
  * @tc.type: FUNC
  */
-HWTEST_F(XmpMetadataTest, RegisterNamespacePrefixTest003, TestSize.Level1)
+HWTEST_F(XmpMetadataTest, RegisterNamespacePrefixTest003, TestSize.Level3)
 {
     GTEST_LOG_(INFO) << "XmpMetadataTest: RegisterNamespacePrefixTest003 start";
     XMPMetadata xmpMetadata;
     std::string namespaceURI = "http://example.com/custom/1.0/";
     std::string preferredPrefix = "xmp";
-    bool ret = xmpMetadata.RegisterNamespacePrefix(namespaceURI, preferredPrefix);
-    EXPECT_FALSE(ret);
+    uint32_t ret = xmpMetadata.RegisterNamespacePrefix(namespaceURI, preferredPrefix);
+    EXPECT_NE(ret, SUCCESS);
     GTEST_LOG_(INFO) << "XmpMetadataTest: RegisterNamespacePrefixTest003 end";
 }
 
@@ -359,7 +359,7 @@ HWTEST_F(XmpMetadataTest, RegisterNamespacePrefixTest003, TestSize.Level1)
  * @tc.desc: test the SetTag method when the type of tag is simple.
  * @tc.type: FUNC
  */
-HWTEST_F(XmpMetadataTest, SetTagTest001, TestSize.Level1)
+HWTEST_F(XmpMetadataTest, SetTagTest001, TestSize.Level3)
 {
     GTEST_LOG_(INFO) << "XmpMetadataTest: SetTagTest001 start";
     XMPMetadata xmpMetadata;
@@ -369,8 +369,8 @@ HWTEST_F(XmpMetadataTest, SetTagTest001, TestSize.Level1)
     tag.name = "CreatorTool";
     tag.value = "XmpMetadataTest.SetTagTest001";
     tag.type = XMPTagType::SIMPLE;
-    bool ret = xmpMetadata.SetValue("xmp:CreatorTool", tag.type, tag.value);
-    EXPECT_TRUE(ret);
+    uint32_t ret = xmpMetadata.SetValue("xmp:CreatorTool", tag.type, tag.value);
+    EXPECT_EQ(ret, SUCCESS);
     GTEST_LOG_(INFO) << "XmpMetadataTest: SetTagTest001 end";
 }
 
@@ -379,7 +379,7 @@ HWTEST_F(XmpMetadataTest, SetTagTest001, TestSize.Level1)
  * @tc.desc: test the SetTag method when the type of tag is unordered array.
  * @tc.type: FUNC
  */
-HWTEST_F(XmpMetadataTest, SetTagTest002, TestSize.Level1)
+HWTEST_F(XmpMetadataTest, SetTagTest002, TestSize.Level3)
 {
     GTEST_LOG_(INFO) << "XmpMetadataTest: SetTagTest002 start";
     XMPMetadata xmpMetadata;
@@ -388,8 +388,8 @@ HWTEST_F(XmpMetadataTest, SetTagTest002, TestSize.Level1)
     tag.prefix = PF_XMP_BASIC;
     tag.name = "CreatorTool";
     tag.type = XMPTagType::UNORDERED_ARRAY;
-    bool ret = xmpMetadata.SetValue("xmp:CreatorTool", tag.type, "");
-    EXPECT_TRUE(ret);
+    uint32_t ret = xmpMetadata.SetValue("xmp:CreatorTool", tag.type, "");
+    EXPECT_EQ(ret, SUCCESS);
     GTEST_LOG_(INFO) << "XmpMetadataTest: SetTagTest002 end";
 }
 
@@ -398,7 +398,7 @@ HWTEST_F(XmpMetadataTest, SetTagTest002, TestSize.Level1)
  * @tc.desc: test the SetTag method when the type of tag is ordered array.
  * @tc.type: FUNC
  */
-HWTEST_F(XmpMetadataTest, SetTagTest003, TestSize.Level1)
+HWTEST_F(XmpMetadataTest, SetTagTest003, TestSize.Level3)
 {
     GTEST_LOG_(INFO) << "XmpMetadataTest: SetTagTest003 start";
     XMPMetadata xmpMetadata;
@@ -407,8 +407,8 @@ HWTEST_F(XmpMetadataTest, SetTagTest003, TestSize.Level1)
     tag.prefix = PF_XMP_BASIC;
     tag.name = "CreatorTool";
     tag.type = XMPTagType::ORDERED_ARRAY;
-    bool ret = xmpMetadata.SetValue("xmp:CreatorTool", tag.type, "");
-    EXPECT_TRUE(ret);
+    uint32_t ret = xmpMetadata.SetValue("xmp:CreatorTool", tag.type, "");
+    EXPECT_EQ(ret, SUCCESS);
     GTEST_LOG_(INFO) << "XmpMetadataTest: SetTagTest003 end";
 }
 
@@ -417,7 +417,7 @@ HWTEST_F(XmpMetadataTest, SetTagTest003, TestSize.Level1)
  * @tc.desc: test the SetTag method when the type of tag is alternate array.
  * @tc.type: FUNC
  */
-HWTEST_F(XmpMetadataTest, SetTagTest004, TestSize.Level1)
+HWTEST_F(XmpMetadataTest, SetTagTest004, TestSize.Level3)
 {
     GTEST_LOG_(INFO) << "XmpMetadataTest: SetTagTest004 start";
     XMPMetadata xmpMetadata;
@@ -426,8 +426,8 @@ HWTEST_F(XmpMetadataTest, SetTagTest004, TestSize.Level1)
     tag.prefix = PF_XMP_BASIC;
     tag.name = "CreatorTool";
     tag.type = XMPTagType::ALTERNATE_ARRAY;
-    bool ret = xmpMetadata.SetValue("xmp:CreatorTool", tag.type, "");
-    EXPECT_TRUE(ret);
+    uint32_t ret = xmpMetadata.SetValue("xmp:CreatorTool", tag.type, "");
+    EXPECT_EQ(ret, SUCCESS);
     GTEST_LOG_(INFO) << "XmpMetadataTest: SetTagTest004 end";
 }
 
@@ -436,7 +436,7 @@ HWTEST_F(XmpMetadataTest, SetTagTest004, TestSize.Level1)
  * @tc.desc: test the SetTag method when the type of tag is alternate text.
  * @tc.type: FUNC
  */
-HWTEST_F(XmpMetadataTest, SetTagTest005, TestSize.Level1)
+HWTEST_F(XmpMetadataTest, SetTagTest005, TestSize.Level3)
 {
     GTEST_LOG_(INFO) << "XmpMetadataTest: SetTagTest005 start";
     XMPMetadata xmpMetadata;
@@ -445,8 +445,8 @@ HWTEST_F(XmpMetadataTest, SetTagTest005, TestSize.Level1)
     tag.prefix = PF_XMP_BASIC;
     tag.name = "CreatorTool";
     tag.type = XMPTagType::ALTERNATE_TEXT;
-    bool ret = xmpMetadata.SetValue("xmp:CreatorTool", tag.type, "");
-    EXPECT_TRUE(ret);
+    uint32_t ret = xmpMetadata.SetValue("xmp:CreatorTool", tag.type, "");
+    EXPECT_EQ(ret, SUCCESS);
     GTEST_LOG_(INFO) << "XmpMetadataTest: SetTagTest005 end";
 }
 
@@ -455,7 +455,7 @@ HWTEST_F(XmpMetadataTest, SetTagTest005, TestSize.Level1)
  * @tc.desc: test the SetTag method when the type of tag is structure.
  * @tc.type: FUNC
  */
-HWTEST_F(XmpMetadataTest, SetTagTest006, TestSize.Level1)
+HWTEST_F(XmpMetadataTest, SetTagTest006, TestSize.Level3)
 {
     GTEST_LOG_(INFO) << "XmpMetadataTest: SetTagTest006 start";
     XMPMetadata xmpMetadata;
@@ -464,8 +464,8 @@ HWTEST_F(XmpMetadataTest, SetTagTest006, TestSize.Level1)
     tag.prefix = PF_XMP_BASIC;
     tag.name = "CreatorTool";
     tag.type = XMPTagType::STRUCTURE;
-    bool ret = xmpMetadata.SetValue("xmp:CreatorTool", tag.type, "");
-    EXPECT_TRUE(ret);
+    uint32_t ret = xmpMetadata.SetValue("xmp:CreatorTool", tag.type, "");
+    EXPECT_EQ(ret, SUCCESS);
     GTEST_LOG_(INFO) << "XmpMetadataTest: SetTagTest006 end";
 }
 
@@ -474,7 +474,7 @@ HWTEST_F(XmpMetadataTest, SetTagTest006, TestSize.Level1)
  * @tc.desc: test the SetTag method when the type of tag is unordered array with value.
  * @tc.type: FUNC
  */
-HWTEST_F(XmpMetadataTest, SetTagTest007, TestSize.Level1)
+HWTEST_F(XmpMetadataTest, SetTagTest007, TestSize.Level3)
 {
     GTEST_LOG_(INFO) << "XmpMetadataTest: SetTagTest007 start";
     XMPMetadata xmpMetadata;
@@ -484,8 +484,8 @@ HWTEST_F(XmpMetadataTest, SetTagTest007, TestSize.Level1)
     tag.name = "CreatorTool";
     tag.value = "XmpMetadataTest.SetTagTest007";
     tag.type = XMPTagType::UNORDERED_ARRAY;
-    bool ret = xmpMetadata.SetValue("xmp:CreatorTool", tag.type, tag.value);
-    EXPECT_FALSE(ret);
+    uint32_t ret = xmpMetadata.SetValue("xmp:CreatorTool", tag.type, tag.value);
+    EXPECT_NE(ret, SUCCESS);
     GTEST_LOG_(INFO) << "XmpMetadataTest: SetTagTest007 end";
 }
 
@@ -2691,13 +2691,13 @@ HWTEST_F(XmpMetadataTest, GetTagTest065, TestSize.Level1)
     EXPECT_EQ(getTag.type, XMPTagType::QUALIFIER);
     EXPECT_EQ(getTag.value, qualValue2);
 
-    ret = xmpMetadata.GetTag("dc:title[@xml:lang='x-default']", getTag);
-    EXPECT_TRUE(ret);
+    uint32_t code = xmpMetadata.GetTag("dc:title[@xml:lang='x-default']", getTag);
+    EXPECT_EQ(code, SUCCESS);
     EXPECT_EQ(getTag.type, XMPTagType::SIMPLE);
     EXPECT_EQ(getTag.value, childValue1);
 
-    ret = xmpMetadata.GetTag("dc:title[@xml:lang='zh-CN']", getTag);
-    EXPECT_TRUE(ret);
+    code = xmpMetadata.GetTag("dc:title[@xml:lang='zh-CN']", getTag);
+    EXPECT_EQ(code, SUCCESS);
     EXPECT_EQ(getTag.type, XMPTagType::SIMPLE);
     EXPECT_EQ(getTag.value, childValue2);
 
@@ -2732,13 +2732,13 @@ HWTEST_F(XmpMetadataTest, GetTagTest066, TestSize.Level1)
     ret = SetValueForTest(xmpMetadata, "dc:title[2]/?xml:lang", XMPTagType::QUALIFIER, "zh-CN");
     EXPECT_TRUE(ret);
 
-    ret = xmpMetadata.GetTag("dc:title[?xml:lang='x-default']", getTag);
-    EXPECT_TRUE(ret);
+    uint32_t code = xmpMetadata.GetTag("dc:title[?xml:lang='x-default']", getTag);
+    EXPECT_EQ(code, SUCCESS);
     EXPECT_EQ(getTag.type, XMPTagType::SIMPLE);
     EXPECT_EQ(getTag.value, childValue1);
 
-    ret = xmpMetadata.GetTag("dc:title[?xml:lang=\"zh-CN\"]", getTag);
-    EXPECT_TRUE(ret);
+    code = xmpMetadata.GetTag("dc:title[?xml:lang=\"zh-CN\"]", getTag);
+    EXPECT_EQ(code, SUCCESS);
     EXPECT_EQ(getTag.type, XMPTagType::SIMPLE);
     EXPECT_EQ(getTag.value, childValue2);
 
@@ -2776,13 +2776,13 @@ HWTEST_F(XmpMetadataTest, GetTagTest067, TestSize.Level1)
     EXPECT_TRUE(ret);
 
     XMPTag getTag;
-    ret = xmpMetadata.GetTag("dc:subject/dc:title[?xml:lang='x-default']", getTag);
-    EXPECT_TRUE(ret);
+    uint32_t code = xmpMetadata.GetTag("dc:subject/dc:title[?xml:lang='x-default']", getTag);
+    EXPECT_EQ(code, SUCCESS);
     EXPECT_EQ(getTag.type, XMPTagType::SIMPLE);
     EXPECT_EQ(getTag.value, childValue1);
 
-    ret = xmpMetadata.GetTag("dc:subject/dc:title[?xml:lang=\"zh-CN\"]", getTag);
-    EXPECT_TRUE(ret);
+    code = xmpMetadata.GetTag("dc:subject/dc:title[?xml:lang=\"zh-CN\"]", getTag);
+    EXPECT_EQ(code, SUCCESS);
     EXPECT_EQ(getTag.type, XMPTagType::SIMPLE);
     EXPECT_EQ(getTag.value, childValue2);
 
@@ -2817,13 +2817,13 @@ HWTEST_F(XmpMetadataTest, GetTagTest068, TestSize.Level1)
     EXPECT_TRUE(ret);
 
     XMPTag getTag;
-    ret = xmpMetadata.GetTag("dc:subject/dc:child1/?xml:age", getTag);
-    EXPECT_TRUE(ret);
+    uint32_t code = xmpMetadata.GetTag("dc:subject/dc:child1/?xml:age", getTag);
+    EXPECT_EQ(code, SUCCESS);
     EXPECT_EQ(getTag.type, XMPTagType::QUALIFIER);
     EXPECT_EQ(getTag.value, qualValue1);
 
-    ret = xmpMetadata.GetTag("dc:subject/dc:child2/?xml:age", getTag);
-    EXPECT_TRUE(ret);
+    code = xmpMetadata.GetTag("dc:subject/dc:child2/?xml:age", getTag);
+    EXPECT_EQ(code, SUCCESS);
     EXPECT_EQ(getTag.type, XMPTagType::QUALIFIER);
     EXPECT_EQ(getTag.value, qualValue2);
 
@@ -2862,13 +2862,13 @@ HWTEST_F(XmpMetadataTest, GetTagTest069, TestSize.Level1)
     EXPECT_TRUE(ret);
 
     XMPTag getTag;
-    ret = xmpMetadata.GetTag("dc:subject[1]/dc:title[@xml:lang='x-default']", getTag);
-    EXPECT_TRUE(ret);
+    uint32_t code = xmpMetadata.GetTag("dc:subject[1]/dc:title[@xml:lang='x-default']", getTag);
+    EXPECT_EQ(code, SUCCESS);
     EXPECT_EQ(getTag.type, XMPTagType::SIMPLE);
     EXPECT_EQ(getTag.value, childValue1);
 
-    ret = xmpMetadata.GetTag("dc:subject[1]/dc:title[@xml:lang=\"zh-CN\"]", getTag);
-    EXPECT_TRUE(ret);
+    code = xmpMetadata.GetTag("dc:subject[1]/dc:title[@xml:lang=\"zh-CN\"]", getTag);
+    EXPECT_EQ(code, SUCCESS);
     EXPECT_EQ(getTag.type, XMPTagType::SIMPLE);
     EXPECT_EQ(getTag.value, childValue2);
 
@@ -2891,7 +2891,8 @@ HWTEST_F(XmpMetadataTest, EnumerateTags001, TestSize.Level1)
     InitTestXMPMetadataForEnumerate(xmpMetadata, xmpTagVec);
 
     Media::XMPMetadata::EnumerateCallback callback = InitTestCallback(xmpTagVec, xmpMetadata, parentPath);
-    xmpMetadata.EnumerateTags(callback, parentPath, options);
+    uint32_t ret = xmpMetadata.EnumerateTags(callback, parentPath, options);
+    EXPECT_EQ(ret, SUCCESS);
 
     GTEST_LOG_(INFO) << "XmpMetadataTest: EnumerateTags001 end";
 }
@@ -2913,15 +2914,18 @@ HWTEST_F(XmpMetadataTest, EnumerateTags002, TestSize.Level1)
 
     parentPath = "dc:unorderedArray";
     Media::XMPMetadata::EnumerateCallback callback = InitTestCallback(xmpTagVec, xmpMetadata, parentPath);
-    xmpMetadata.EnumerateTags(callback, parentPath, options);
+    uint32_t ret = xmpMetadata.EnumerateTags(callback, parentPath, options);
+    EXPECT_EQ(ret, SUCCESS);
 
     parentPath = "dc:orderedArray";
     callback = InitTestCallback(xmpTagVec, xmpMetadata, parentPath);
-    xmpMetadata.EnumerateTags(callback, parentPath, options);
+    ret = xmpMetadata.EnumerateTags(callback, parentPath, options);
+    EXPECT_EQ(ret, SUCCESS);
 
     parentPath = "dc:alternateArray";
     callback = InitTestCallback(xmpTagVec, xmpMetadata, parentPath);
-    xmpMetadata.EnumerateTags(callback, parentPath, options);
+    ret = xmpMetadata.EnumerateTags(callback, parentPath, options);
+    EXPECT_EQ(ret, SUCCESS);
 
     GTEST_LOG_(INFO) << "XmpMetadataTest: EnumerateTags002 end";
 }
@@ -2943,7 +2947,8 @@ HWTEST_F(XmpMetadataTest, EnumerateTags003, TestSize.Level1)
 
     parentPath = "dc:structure";
     Media::XMPMetadata::EnumerateCallback callback = InitTestCallback(xmpTagVec, xmpMetadata, parentPath);
-    xmpMetadata.EnumerateTags(callback, parentPath, options);
+    uint32_t ret = xmpMetadata.EnumerateTags(callback, parentPath, options);
+    EXPECT_EQ(ret, SUCCESS);
 
     GTEST_LOG_(INFO) << "XmpMetadataTest: EnumerateTags003 end";
 }
@@ -2965,7 +2970,8 @@ HWTEST_F(XmpMetadataTest, EnumerateTags004, TestSize.Level1)
 
     parentPath = "dc:alternateText";
     Media::XMPMetadata::EnumerateCallback callback = InitTestCallback(xmpTagVec, xmpMetadata, parentPath);
-    xmpMetadata.EnumerateTags(callback, parentPath, options);
+    uint32_t ret = xmpMetadata.EnumerateTags(callback, parentPath, options);
+    EXPECT_EQ(ret, SUCCESS);
 
     GTEST_LOG_(INFO) << "XmpMetadataTest: EnumerateTags004 end";
 }
@@ -2987,7 +2993,8 @@ HWTEST_F(XmpMetadataTest, EnumerateTags005, TestSize.Level1)
 
     parentPath = "dc:simple";
     Media::XMPMetadata::EnumerateCallback callback = InitTestCallback(xmpTagVec, xmpMetadata, parentPath);
-    xmpMetadata.EnumerateTags(callback, parentPath, options);
+    uint32_t ret = xmpMetadata.EnumerateTags(callback, parentPath, options);
+    EXPECT_EQ(ret, SUCCESS);
 
     GTEST_LOG_(INFO) << "XmpMetadataTest: EnumerateTags005 end";
 }
@@ -3009,7 +3016,8 @@ HWTEST_F(XmpMetadataTest, EnumerateTags006, TestSize.Level1)
     InitTestXMPMetadataForEnumerate(xmpMetadata, xmpTagVec);
 
     Media::XMPMetadata::EnumerateCallback callback = InitTestCallback(xmpTagVec, xmpMetadata, parentPath);
-    xmpMetadata.EnumerateTags(callback, parentPath, options);
+    uint32_t ret = xmpMetadata.EnumerateTags(callback, parentPath, options);
+    EXPECT_EQ(ret, SUCCESS);
 
     GTEST_LOG_(INFO) << "XmpMetadataTest: EnumerateTags006 end";
 }
@@ -3205,12 +3213,12 @@ HWTEST_F(XmpMetadataTest, RemoveTagTest001, TestSize.Level1)
     ret = SetValueForTest(xmpMetadata, "dc:parent[3]", XMPTagType::SIMPLE, value3);
     EXPECT_TRUE(ret);
 
-    ret = xmpMetadata.RemoveTag("dc:parent[1]");
-    EXPECT_TRUE(ret);
+    uint32_t code = xmpMetadata.RemoveTag("dc:parent[1]");
+    EXPECT_EQ(code, SUCCESS);
 
     XMPTag getTag;
-    ret = xmpMetadata.GetTag("dc:parent[1]", getTag);
-    EXPECT_TRUE(ret);
+    code = xmpMetadata.GetTag("dc:parent[1]", getTag);
+    EXPECT_EQ(code, SUCCESS);
     EXPECT_EQ(getTag.type, XMPTagType::SIMPLE);
     EXPECT_EQ(getTag.value, value2);
 
@@ -3241,12 +3249,12 @@ HWTEST_F(XmpMetadataTest, RemoveTagTest002, TestSize.Level1)
     ret = SetValueForTest(xmpMetadata, "dc:parent[3]", XMPTagType::SIMPLE, value3);
     EXPECT_TRUE(ret);
 
-    ret = xmpMetadata.RemoveTag("dc:parent[1]");
-    EXPECT_TRUE(ret);
+    uint32_t code = xmpMetadata.RemoveTag("dc:parent[1]");
+    EXPECT_EQ(code, SUCCESS);
 
     XMPTag getTag;
-    ret = xmpMetadata.GetTag("dc:parent[1]", getTag);
-    EXPECT_TRUE(ret);
+    code = xmpMetadata.GetTag("dc:parent[1]", getTag);
+    EXPECT_EQ(code, SUCCESS);
     EXPECT_EQ(getTag.type, XMPTagType::SIMPLE);
     EXPECT_EQ(getTag.value, value2);
 
@@ -3277,12 +3285,12 @@ HWTEST_F(XmpMetadataTest, RemoveTagTest003, TestSize.Level1)
     ret = SetValueForTest(xmpMetadata, "dc:parent[3]", XMPTagType::SIMPLE, value3);
     EXPECT_TRUE(ret);
 
-    ret = xmpMetadata.RemoveTag("dc:parent[1]");
-    EXPECT_TRUE(ret);
+    uint32_t code = xmpMetadata.RemoveTag("dc:parent[1]");
+    EXPECT_EQ(code, SUCCESS);
 
     XMPTag getTag;
-    ret = xmpMetadata.GetTag("dc:parent[1]", getTag);
-    EXPECT_TRUE(ret);
+    code = xmpMetadata.GetTag("dc:parent[1]", getTag);
+    EXPECT_EQ(code, SUCCESS);
     EXPECT_EQ(getTag.type, XMPTagType::SIMPLE);
     EXPECT_EQ(getTag.value, value2);
 

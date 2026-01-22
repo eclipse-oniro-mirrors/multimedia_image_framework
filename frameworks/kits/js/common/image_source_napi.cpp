@@ -4680,6 +4680,7 @@ static void ReadXMPMetadataComplete(napi_env env, napi_status status, void *data
         }
     } else {
         napi_get_null(env, &result);
+        context->errMsgArray.emplace(ImageErrorConvert::ReadXMPMetadataMakeErrMsg(context->status));
     }
     IMAGE_LOGD("ReadXMPMetadataComplete OUT");
     ImageSourceCallbackRoutine(env, context, result);
@@ -4706,8 +4707,7 @@ napi_value ImageSourceNapi::ReadXMPMetadata(napi_env env, napi_callback_info inf
     napi_create_promise(env, &(asyncContext->deferred), &result);
     IMG_CREATE_CREATE_ASYNC_WORK(env, status, "ReadXMPMetadata", [](napi_env env, void *data) {
         auto context = static_cast<ImageSourceAsyncContext*>(data);
-        uint32_t errorCode = ERROR;
-        context->rXMPMetadata = context->rImageSource->ReadXMPMetadata(errorCode);
+        context->rXMPMetadata = context->rImageSource->ReadXMPMetadata(context->status);
     }, ReadXMPMetadataComplete, asyncContext, asyncContext->work);
 
     IMG_NAPI_CHECK_RET_D(IMG_IS_OK(status), result, IMAGE_LOGE("fail to create async work"));
@@ -4721,6 +4721,9 @@ static void WriteXMPMetadataComplete(napi_env env, napi_status status, void *dat
     napi_get_undefined(env, &result);
     auto context = static_cast<ImageSourceAsyncContext*>(data);
     CHECK_ERROR_RETURN_LOG(context == nullptr, "empty context");
+    if (context->status != SUCCESS) {
+        context->errMsgArray.emplace(ImageErrorConvert::WriteXMPMetadataMakeErrMsg(context->status));
+    }
     ImageSourceCallbackRoutine(env, context, result);
 }
 

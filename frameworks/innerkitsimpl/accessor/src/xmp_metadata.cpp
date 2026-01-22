@@ -147,90 +147,111 @@ static bool BuildXMPTag(const std::string &pathExpression, const XMP_OptionBits 
     return true;
 }
 
-bool XMPMetadata::RegisterNamespacePrefix(const std::string &uri, const std::string &prefix)
+uint32_t XMPMetadata::RegisterNamespacePrefix(const std::string &uri, const std::string &prefix)
 {
     XMP_TRY();
+    CHECK_ERROR_RETURN_RET_LOG(uri.empty() || prefix.empty(), ERR_IMAGE_INVALID_PARAMETER,
+        "%{public}s uri or prefix is empty", __func__);
     std::string placeholder;
     bool isURIRegistered = SXMPMeta::GetNamespacePrefix(uri.c_str(), &placeholder);
     if (isURIRegistered) {
         IMAGE_LOGI("%{public}s namespace already registered", __func__);
-        return false;
+        return SUCCESS;
     }
 
     bool isPrefixRegistered = SXMPMeta::GetNamespaceURI(prefix.c_str(), &placeholder);
     if (isPrefixRegistered) {
         IMAGE_LOGI("%{public}s prefix already registered", __func__);
-        return false;
+        return ERR_IMAGE_INVALID_PARAMETER;
     }
-    return SXMPMeta::RegisterNamespace(uri.c_str(), prefix.c_str(), &placeholder);
-    XMP_CATCH_RETURN_RET(false);
+    CHECK_ERROR_RETURN_RET_LOG(!SXMPMeta::RegisterNamespace(uri.c_str(), prefix.c_str(), &placeholder),
+        ERR_XMP_SDK_EXCEPTION, "%{public}s failed to register namespace", __func__);
+    return SUCCESS;
+    XMP_CATCH_RETURN_CODE(ERR_XMP_SDK_EXCEPTION);
 }
 
-bool XMPMetadata::SetValue(const std::string &path, const XMPTagType &tagType, const std::string &value)
+uint32_t XMPMetadata::SetValue(const std::string &path, const XMPTagType &tagType, const std::string &value)
 {
     XMP_TRY();
-    CHECK_ERROR_RETURN_RET_LOG(!impl_ || !impl_->IsValid(), false,
-        "%{public}s impl is null for path: %{public}s", __func__, path.c_str());
+    CHECK_ERROR_RETURN_RET_LOG(!impl_ || !impl_->IsValid(), ERR_MEDIA_NULL_POINTER,
+        "%{public}s impl is invalid for path: %{public}s", __func__, path.c_str());
+    CHECK_ERROR_RETURN_RET_LOG(path.empty(), ERR_IMAGE_INVALID_PARAMETER,
+        "%{public}s path is empty", __func__);
 
     const auto &[prefix, propName] = XMPHelper::SplitOnce(path, COLON);
+    CHECK_ERROR_RETURN_RET_LOG(prefix.empty() || propName.empty(), ERR_IMAGE_INVALID_PARAMETER,
+        "%{public}s invalid path: %{public}s", __func__, path.c_str());
     std::string namespaceUri;
-    CHECK_ERROR_RETURN_RET_LOG(!SXMPMeta::GetNamespaceURI(prefix.c_str(), &namespaceUri), false,
+    CHECK_ERROR_RETURN_RET_LOG(!SXMPMeta::GetNamespaceURI(prefix.c_str(), &namespaceUri),
+        ERR_XMP_NAMESPACE_NOT_REGISTERED,
         "%{public}s failed to get namespace URI for prefix: %{public}s", __func__, prefix.c_str());
 
     XMP_OptionBits options = ConvertTagTypeToOptions(tagType);
     if (IsContainerTagType(tagType)) {
-        CHECK_ERROR_RETURN_RET_LOG(!value.empty(), false, "%{public}s: container tag's value should be empty "
-            "for path: %{public}s", __func__, path.c_str());
+        CHECK_ERROR_RETURN_RET_LOG(!value.empty(), ERR_IMAGE_INVALID_PARAMETER, "%{public}s: container tag's value "
+            "should be empty for path: %{public}s", __func__, path.c_str());
         impl_->SetProperty(namespaceUri.c_str(), propName.c_str(), nullptr, options);
     } else {
         impl_->SetProperty(namespaceUri.c_str(), propName.c_str(), value.c_str(), options);
     }
-    return true;
-    XMP_CATCH_RETURN_RET(false);
+    return SUCCESS;
+    XMP_CATCH_RETURN_CODE(ERR_XMP_SDK_EXCEPTION);
 }
 
-bool XMPMetadata::GetTag(const std::string &path, XMPTag &tag)
+uint32_t XMPMetadata::GetTag(const std::string &path, XMPTag &tag)
 {
     XMP_TRY();
-    CHECK_ERROR_RETURN_RET_LOG(!impl_ || !impl_->IsValid(), false,
-        "%{public}s impl is null for path: %{public}s", __func__, path.c_str());
+    CHECK_ERROR_RETURN_RET_LOG(!impl_ || !impl_->IsValid(), ERR_MEDIA_NULL_POINTER,
+        "%{public}s impl is invalid for path: %{public}s", __func__, path.c_str());
+    CHECK_ERROR_RETURN_RET_LOG(path.empty(), ERR_IMAGE_INVALID_PARAMETER,
+        "%{public}s path is empty", __func__);
 
     const auto &[prefix, propName] = XMPHelper::SplitOnce(path, COLON);
+    CHECK_ERROR_RETURN_RET_LOG(prefix.empty() || propName.empty(), ERR_IMAGE_INVALID_PARAMETER,
+        "%{public}s invalid path: %{public}s", __func__, path.c_str());
     std::string namespaceUri;
-    CHECK_ERROR_RETURN_RET_LOG(!SXMPMeta::GetNamespaceURI(prefix.c_str(), &namespaceUri), false,
+    CHECK_ERROR_RETURN_RET_LOG(!SXMPMeta::GetNamespaceURI(prefix.c_str(), &namespaceUri),
+        ERR_XMP_NAMESPACE_NOT_REGISTERED,
         "%{public}s failed to get namespace URI for prefix: %{public}s", __func__, prefix.c_str());
 
     XMP_OptionBits options = kXMP_NoOptions;
     std::string value;
     bool ret = impl_->GetProperty(namespaceUri.c_str(), propName.c_str(), &value, &options);
-    CHECK_ERROR_RETURN_RET_LOG(!ret, false, "%{public}s failed to get property for path: %{public}s",
-        __func__, path.c_str());
+    CHECK_ERROR_RETURN_RET_LOG(!ret, ERR_XMP_TAG_NOT_FOUND,
+        "%{public}s tag not found for path: %{public}s", __func__, path.c_str());
 
-    return BuildXMPTag(path, options, value, tag);
-    XMP_CATCH_RETURN_RET(false);
+    CHECK_ERROR_RETURN_RET_LOG(!BuildXMPTag(path, options, value, tag), ERR_XMP_DECODE_FAILED,
+        "%{public}s failed to build tag for path: %{public}s", __func__, path.c_str());
+    return SUCCESS;
+    XMP_CATCH_RETURN_CODE(ERR_XMP_SDK_EXCEPTION);
 }
 
-bool XMPMetadata::RemoveTag(const std::string &path)
+uint32_t XMPMetadata::RemoveTag(const std::string &path)
 {
     XMP_TRY();
-    CHECK_ERROR_RETURN_RET_LOG(!impl_ || !impl_->IsValid(), false,
-        "%{public}s impl is null for path: %{public}s", __func__, path.c_str());
+    CHECK_ERROR_RETURN_RET_LOG(!impl_ || !impl_->IsValid(), ERR_MEDIA_NULL_POINTER,
+        "%{public}s impl is invalid for path: %{public}s", __func__, path.c_str());
+    CHECK_ERROR_RETURN_RET_LOG(path.empty(), ERR_IMAGE_INVALID_PARAMETER,
+        "%{public}s path is empty", __func__);
 
     const auto &[prefix, propName] = XMPHelper::SplitOnce(path, COLON);
+    CHECK_ERROR_RETURN_RET_LOG(prefix.empty() || propName.empty(), ERR_IMAGE_INVALID_PARAMETER,
+        "%{public}s invalid path: %{public}s", __func__, path.c_str());
     std::string namespaceUri;
-    CHECK_ERROR_RETURN_RET_LOG(!SXMPMeta::GetNamespaceURI(prefix.c_str(), &namespaceUri), false,
+    CHECK_ERROR_RETURN_RET_LOG(!SXMPMeta::GetNamespaceURI(prefix.c_str(), &namespaceUri),
+        ERR_XMP_NAMESPACE_NOT_REGISTERED,
         "%{public}s failed to get namespace URI for prefix: %{public}s", __func__, prefix.c_str());
     impl_->DeleteProperty(namespaceUri.c_str(), propName.c_str());
-    return true;
-    XMP_CATCH_RETURN_RET(false);
+    return SUCCESS;
+    XMP_CATCH_RETURN_CODE(ERR_XMP_SDK_EXCEPTION);
 }
 
-void XMPMetadata::EnumerateTags(EnumerateCallback callback, const std::string &rootPath, XMPEnumerateOption options)
+uint32_t XMPMetadata::EnumerateTags(EnumerateCallback callback, const std::string &rootPath, XMPEnumerateOption options)
 {
     XMP_TRY();
-    CHECK_ERROR_RETURN_LOG(!impl_ || !impl_->IsValid(),
-        "%{public}s impl is null for path: %{public}s", __func__, rootPath.c_str());
-    CHECK_ERROR_RETURN_LOG(!callback, "%{public}s callback is null", __func__);
+    CHECK_ERROR_RETURN_RET_LOG(!impl_ || !impl_->IsValid(), ERR_MEDIA_NULL_POINTER,
+        "%{public}s impl is invalid for path: %{public}s", __func__, rootPath.c_str());
+    CHECK_ERROR_RETURN_RET_LOG(!callback, ERR_IMAGE_INVALID_PARAMETER, "%{public}s callback is null", __func__);
 
     std::string schemaNS;
     std::string rootPropName;
@@ -244,7 +265,8 @@ void XMPMetadata::EnumerateTags(EnumerateCallback callback, const std::string &r
             prefix = std::string(rootPathView.substr(0, colonPos));
             rootPropName = std::string(rootPathView.substr(colonPos + COLON.size()));
         }
-        CHECK_ERROR_RETURN_LOG(!SXMPMeta::GetNamespaceURI(prefix.c_str(), &schemaNS),
+        CHECK_ERROR_RETURN_RET_LOG(!SXMPMeta::GetNamespaceURI(prefix.c_str(), &schemaNS),
+            ERR_XMP_NAMESPACE_NOT_REGISTERED,
             "%{public}s failed to get namespace URI for prefix: %{public}s", __func__, prefix.c_str());
     }
 
@@ -276,7 +298,8 @@ void XMPMetadata::EnumerateTags(EnumerateCallback callback, const std::string &r
             break;
         }
     }
-    XMP_CATCH_NO_RETURN();
+    return SUCCESS;
+    XMP_CATCH_RETURN_CODE(ERR_XMP_SDK_EXCEPTION);
 }
 
 uint32_t XMPMetadata::GetBlob(std::string &buffer)
@@ -291,7 +314,7 @@ uint32_t XMPMetadata::GetBlob(std::string &buffer)
         "%{public}s failed to serialize to buffer", __func__);
     IMAGE_LOGD("%{public}s success! actual blob size is %{public}zu", __func__, buffer.size());
     return SUCCESS;
-    XMP_CATCH_RETURN_CODE(ERR_XMP_DECODE_FAILED);
+    XMP_CATCH_RETURN_CODE(ERR_XMP_SDK_EXCEPTION);
 }
 
 uint32_t XMPMetadata::SetBlob(const uint8_t *source, uint32_t bufferSize)
@@ -305,7 +328,7 @@ uint32_t XMPMetadata::SetBlob(const uint8_t *source, uint32_t bufferSize)
     impl_->ParseFromBuffer(reinterpret_cast<const char*>(source), bufferSize);
     IMAGE_LOGD("%{public}s success! bufferSize is %{public}u", __func__, bufferSize);
     return SUCCESS;
-    XMP_CATCH_RETURN_CODE(ERR_XMP_DECODE_FAILED);
+    XMP_CATCH_RETURN_CODE(ERR_XMP_SDK_EXCEPTION);
 }
 } // namespace Media
 } // namespace OHOS

@@ -14,6 +14,7 @@
  */
 
 #include "image_common.h"
+#include "image_error_convert.h"
 #include "image_log.h"
 #include "image_napi_utils.h"
 #include "image_type.h"
@@ -346,10 +347,9 @@ static void CommonCallbackRoutine(napi_env env, XMPMetadataAsyncContext* &contex
 
     if (context->status == SUCCESS) {
         result[NUM_1] = valueParam;
-    } else if (!context->errMsg.empty()) {
-        napi_create_string_utf8(env, context->errMsg.c_str(), context->errMsg.size(), &result[NUM_0]);
     } else {
-        napi_create_uint32(env, context->status, &result[NUM_0]);
+        const auto &&[errorCode, errMsg] = OHOS::Media::ImageErrorConvert::XMPMetadataMakeErrMsg(context->status);
+        OHOS::Media::ImageNapiUtils::CreateErrorObj(env, result[NUM_0], errorCode, errMsg);
     }
 
     if (context->deferred) {
@@ -373,8 +373,7 @@ static void SetValueExecute(napi_env env, void *data)
     auto context = static_cast<XMPMetadataAsyncContext*>(data);
     CHECK_ERROR_RETURN_LOG(context == nullptr, "%{public}s context is null", __func__);
     CHECK_ERROR_RETURN_LOG(context->rXMPMetadata == nullptr, "%{public}s XMP metadata is null", __func__);
-    bool ret = context->rXMPMetadata->SetValue(context->path, context->tagType, context->tagValue);
-    context->status = ret ? SUCCESS : ERROR;
+    context->status = context->rXMPMetadata->SetValue(context->path, context->tagType, context->tagValue);
 }
 
 static void SetValueComplete(napi_env env, napi_status status, void *data)
@@ -383,7 +382,7 @@ static void SetValueComplete(napi_env env, napi_status status, void *data)
     auto context = static_cast<XMPMetadataAsyncContext*>(data);
     CHECK_ERROR_RETURN_LOG(context == nullptr, "%{public}s context is null", __func__);
     napi_value result = nullptr;
-    napi_get_boolean(env, context->status == SUCCESS, &result);
+    napi_get_undefined(env, &result);
     CommonCallbackRoutine(env, context, result);
 }
 
@@ -434,8 +433,7 @@ static void GetTagExecute(napi_env env, void *data)
     IMAGE_LOGD("GetTagExecute IN");
     auto context = static_cast<XMPMetadataAsyncContext*>(data);
     CHECK_ERROR_RETURN_LOG(context == nullptr, "%{public}s context is null", __func__);
-    bool ret = context->rXMPMetadata->GetTag(context->path, context->tag);
-    context->status = ret ? SUCCESS : ERROR;
+    context->status = context->rXMPMetadata->GetTag(context->path, context->tag);
 }
 
 static void GetTagComplete(napi_env env, napi_status status, void *data)
@@ -446,10 +444,11 @@ static void GetTagComplete(napi_env env, napi_status status, void *data)
     napi_value result = nullptr;
     if (context->status == SUCCESS) {
         result = CreateJsXMPTag(env, context->tag);
-    } else {
+        context->status = SUCCESS;
+    } else if (context->status == ERR_XMP_TAG_NOT_FOUND) {
         napi_get_null(env, &result);
+        context->status = SUCCESS;
     }
-    context->status = SUCCESS;
     CommonCallbackRoutine(env, context, result);
 }
 
@@ -492,8 +491,7 @@ static void RemoveTagExecute(napi_env env, void *data)
     IMAGE_LOGD("RemoveTagExecute IN");
     auto context = static_cast<XMPMetadataAsyncContext*>(data);
     CHECK_ERROR_RETURN_LOG(context == nullptr, "%{public}s context is null", __func__);
-    bool ret = context->rXMPMetadata->RemoveTag(context->path);
-    context->status = ret ? SUCCESS : ERROR;
+    context->status = context->rXMPMetadata->RemoveTag(context->path);
 }
 
 static void RemoveTagComplete(napi_env env, napi_status status, void *data)
@@ -502,7 +500,7 @@ static void RemoveTagComplete(napi_env env, napi_status status, void *data)
     auto context = static_cast<XMPMetadataAsyncContext*>(data);
     CHECK_ERROR_RETURN_LOG(context == nullptr, "%{public}s context is null", __func__);
     napi_value result = nullptr;
-    napi_get_boolean(env, context->status == SUCCESS, &result);
+    napi_get_undefined(env, &result);
     CommonCallbackRoutine(env, context, result);
 }
 
@@ -545,8 +543,7 @@ static void RegisterNamespacePrefixExecute(napi_env env, void *data)
     IMAGE_LOGD("RegisterNamespacePrefixExecute IN");
     auto context = static_cast<XMPMetadataAsyncContext*>(data);
     CHECK_ERROR_RETURN_LOG(context == nullptr, "%{public}s context is null", __func__);
-    bool ret = context->rXMPMetadata->RegisterNamespacePrefix(context->xmlns, context->prefix);
-    context->status = ret ? SUCCESS : ERROR;
+    context->status = context->rXMPMetadata->RegisterNamespacePrefix(context->xmlns, context->prefix);
 }
 
 static void RegisterNamespacePrefixComplete(napi_env env, napi_status status, void *data)
@@ -555,7 +552,7 @@ static void RegisterNamespacePrefixComplete(napi_env env, napi_status status, vo
     auto context = static_cast<XMPMetadataAsyncContext*>(data);
     CHECK_ERROR_RETURN_LOG(context == nullptr, "%{public}s context is null", __func__);
     napi_value result = nullptr;
-    napi_get_boolean(env, context->status == SUCCESS, &result);
+    napi_get_undefined(env, &result);
     CommonCallbackRoutine(env, context, result);
 }
 
@@ -677,9 +674,9 @@ static bool ProcessEnumerateTags(napi_env env, std::unique_ptr<XMPMetadataAsyncC
     auto innerCallback = CreateEnumerateTagsCallback(callbackContext);
 
     // Call the inner layer EnumerateTags synchronously
-    nativePtr->EnumerateTags(innerCallback, context->rootPath, context->options);
+    context->status = nativePtr->EnumerateTags(innerCallback, context->rootPath, context->options);
     napi_delete_reference(env, callbackRef);
-    return true;
+    return context->status == SUCCESS;
 }
 
 napi_value XMPMetadataNapi::EnumerateTags(napi_env env, napi_callback_info info)
@@ -734,7 +731,8 @@ napi_value XMPMetadataNapi::EnumerateTags(napi_env env, napi_callback_info info)
     }
 
     if (!ProcessEnumerateTags(env, context, nativePtr)) {
-        return ImageNapiUtils::ThrowExceptionError(env, IMAGE_BAD_PARAMETER, "Failed to enumerate tags");
+        const auto &&[errorCode, errMsg] = OHOS::Media::ImageErrorConvert::XMPMetadataMakeErrMsg(context->status);
+        return ImageNapiUtils::ThrowExceptionError(env, errorCode, errMsg);
     }
     IMAGE_LOGD("EnumerateTags completed successfully");
     return result;
@@ -746,11 +744,10 @@ static void GetTagsExecute(napi_env env, void *data)
     auto context = static_cast<XMPMetadataAsyncContext*>(data);
     CHECK_ERROR_RETURN_LOG(context == nullptr, "%{public}s context is null", __func__);
     CHECK_ERROR_RETURN_LOG(context->rXMPMetadata == nullptr, "%{public}s XMP metadata is null", __func__);
-    context->rXMPMetadata->EnumerateTags([&context](const std::string &path, const XMPTag &tag) {
+    context->status = context->rXMPMetadata->EnumerateTags([&context](const std::string &path, const XMPTag &tag) {
         context->tags.emplace_back(path, tag);
         return true;
     }, context->rootPath, context->options);
-    context->status = SUCCESS;
 }
 
 static void GetTagsComplete(napi_env env, napi_status status, void *data)
@@ -820,7 +817,8 @@ static void SetBlobExec(napi_env env, void* data)
     auto context = static_cast<XMPMetadataAsyncContext*>(data);
     CHECK_ERROR_RETURN_LOG(context == nullptr, "%{public}s context is null", __func__);
     CHECK_ERROR_RETURN_LOG(context->rXMPMetadata == nullptr, "%{public}s XMP metadata is null", __func__);
-    context->status = context->rXMPMetadata->SetBlob(static_cast<const uint8_t*>(context->arrayBuffer), context->arrayBufferSize);
+    context->status = context->rXMPMetadata->SetBlob(
+        static_cast<const uint8_t*>(context->arrayBuffer), context->arrayBufferSize);
 }
 
 static void SetBlobComplete(napi_env env, napi_status status, void* data)
@@ -882,9 +880,12 @@ static void GetBlobExec(napi_env env, void *data)
     CHECK_ERROR_RETURN_LOG(context->status != SUCCESS, "GetBlob failed");
     context->arrayBufferSize = buffer.size();
     context->arrayBuffer = new(std::nothrow) uint8_t[context->arrayBufferSize];
-    CHECK_ERROR_RETURN_LOG(context->arrayBuffer == nullptr, "Failed to allocate memory");
-    if (memcpy_s(context->arrayBuffer, context->arrayBufferSize, buffer.data(), buffer.size()) != EOK) {
+    if (context->arrayBuffer == nullptr) {
         context->status = ERR_MEDIA_MALLOC_FAILED;
+        return;
+    }
+    if (memcpy_s(context->arrayBuffer, context->arrayBufferSize, buffer.data(), buffer.size()) != EOK) {
+        context->status = ERR_MEMORY_COPY_FAILED;
         IMAGE_LOGE("%{public}s memcpy_s failed", __func__);
     }
 }
@@ -901,7 +902,7 @@ static void GetBlobComplete(napi_env env, napi_status status, void *data)
             delete[] static_cast<uint8_t*>(context->arrayBuffer);
             context->arrayBuffer = nullptr;
             context->arrayBufferSize = 0;
-            context->status = ERROR;
+            context->status = ERR_MEDIA_MALLOC_FAILED;
             IMAGE_LOGE("%{public}s Fail to create napi external arraybuffer!", __func__);
             napi_get_undefined(env, &result);
         } else {

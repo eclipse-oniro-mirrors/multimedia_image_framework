@@ -202,8 +202,8 @@ Image_ErrorCode OH_XMPMetadata_RegisterNamespacePrefix(OH_XMPMetadata *meta, con
     if (meta == nullptr || meta->inner == nullptr || xmlns == nullptr || prefix == nullptr) {
         return IMAGE_BAD_PARAMETER;
     }
-    bool ok = meta->inner->RegisterNamespacePrefix(std::string(xmlns), std::string(prefix));
-    return ok ? IMAGE_SUCCESS : IMAGE_UNKNOWN_ERROR;
+    uint32_t innerCode = meta->inner->RegisterNamespacePrefix(std::string(xmlns), std::string(prefix));
+    return static_cast<Image_ErrorCode>(ImageErrorConvert::XMPMetadataMakeErrMsg(innerCode).first);
 }
 
 MIDK_EXPORT
@@ -215,8 +215,8 @@ Image_ErrorCode OH_XMPMetadata_SetValue(OH_XMPMetadata *meta, const char *path, 
 
     std::string val = value == nullptr ? std::string() : std::string(value);
     XMPTagType innerType = static_cast<XMPTagType>(static_cast<int32_t>(type));
-    bool ok = meta->inner->SetValue(std::string(path), innerType, val);
-    return ok ? IMAGE_SUCCESS : IMAGE_UNKNOWN_ERROR;
+    uint32_t innerCode = meta->inner->SetValue(std::string(path), innerType, val);
+    return static_cast<Image_ErrorCode>(ImageErrorConvert::XMPMetadataMakeErrMsg(innerCode).first);
 }
 
 MIDK_EXPORT
@@ -225,8 +225,8 @@ Image_ErrorCode OH_XMPMetadata_RemoveTag(OH_XMPMetadata *meta, const char *path)
     if (meta == nullptr || meta->inner == nullptr || path == nullptr) {
         return IMAGE_BAD_PARAMETER;
     }
-    bool ok = meta->inner->RemoveTag(std::string(path));
-    return ok ? IMAGE_SUCCESS : IMAGE_XMP_TAG_NOT_FOUND;
+    uint32_t innerCode = meta->inner->RemoveTag(std::string(path));
+    return static_cast<Image_ErrorCode>(ImageErrorConvert::XMPMetadataMakeErrMsg(innerCode).first);
 }
 
 MIDK_EXPORT
@@ -238,14 +238,14 @@ Image_ErrorCode OH_XMPMetadata_GetTag(OH_XMPMetadata *meta, const char *path, OH
     *outTag = nullptr;
 
     XMPTag tag;
-    bool ok = meta->inner->GetTag(std::string(path), tag);
-    if (!ok) {
-        return IMAGE_XMP_TAG_NOT_FOUND;
+    uint32_t innerCode = meta->inner->GetTag(std::string(path), tag);
+    if (innerCode != SUCCESS) {
+        return static_cast<Image_ErrorCode>(ImageErrorConvert::XMPMetadataMakeErrMsg(innerCode).first);
     }
 
     OH_XMPTag *ndkTag = new(std::nothrow) OH_XMPTag();
     if (ndkTag == nullptr) {
-        return IMAGE_SOURCE_ALLOC_FAILED;
+        return IMAGE_ALLOC_FAILED;
     }
     ndkTag->xmlns = tag.xmlns;
     ndkTag->prefix = tag.prefix;
@@ -271,7 +271,7 @@ Image_ErrorCode OH_XMPMetadata_EnumerateTags(OH_XMPMetadata *meta, OH_XMPEnumera
 
     std::string root = rootPath == nullptr ? std::string() : std::string(rootPath);
 
-    meta->inner->EnumerateTags(
+    uint32_t innerCode = meta->inner->EnumerateTags(
         [callback, userData](const std::string &path, const XMPTag &tag) -> bool {
             OH_XMPTag *ndkTag = new(std::nothrow) OH_XMPTag();
             if (ndkTag == nullptr) {
@@ -286,7 +286,7 @@ Image_ErrorCode OH_XMPMetadata_EnumerateTags(OH_XMPMetadata *meta, OH_XMPEnumera
         },
         root, innerOpt);
 
-    return IMAGE_SUCCESS;
+    return static_cast<Image_ErrorCode>(ImageErrorConvert::XMPMetadataMakeErrMsg(innerCode).first);
 }
 
 MIDK_EXPORT
@@ -299,9 +299,8 @@ Image_ErrorCode OH_XMPMetadata_GetTags(OH_XMPMetadata *meta, const char *rootPat
     *outMap = nullptr;
 
     OH_XMPTagMap *map = new(std::nothrow) OH_XMPTagMap();
-    if (map == nullptr) {
-        return IMAGE_SOURCE_ALLOC_FAILED;
-    }
+    CHECK_ERROR_RETURN_RET_LOG(map == nullptr, IMAGE_ALLOC_FAILED,
+        "%{public}s Failed to allocate memory for tag map", __func__);
 
     XMPEnumerateOption innerOpt;
     if (options != nullptr) {
@@ -310,7 +309,7 @@ Image_ErrorCode OH_XMPMetadata_GetTags(OH_XMPMetadata *meta, const char *rootPat
     std::string root = rootPath == nullptr ? std::string() : std::string(rootPath);
 
     bool allocFailed = false;
-    meta->inner->EnumerateTags(
+    uint32_t innerCode = meta->inner->EnumerateTags(
         [map, &allocFailed](const std::string &path, const XMPTag &tag) -> bool {
             OH_XMPTag *ndkTag = new(std::nothrow) OH_XMPTag();
             if (ndkTag == nullptr) {
@@ -339,7 +338,15 @@ Image_ErrorCode OH_XMPMetadata_GetTags(OH_XMPMetadata *meta, const char *rootPat
             delete item.second;
         }
         delete map;
-        return IMAGE_SOURCE_ALLOC_FAILED;
+        return IMAGE_ALLOC_FAILED;
+    }
+
+    if (innerCode != SUCCESS) {
+        for (auto &item : map->tags) {
+            delete item.second;
+        }
+        delete map;
+        return static_cast<Image_ErrorCode>(ImageErrorConvert::XMPMetadataMakeErrMsg(innerCode).first);
     }
 
     *outMap = map;

@@ -39,10 +39,10 @@ public:
     ~XMPMetadata();
     std::unique_ptr<XMPMetadataImpl>& GetImpl();
 
-    bool RegisterNamespacePrefix(const std::string &uri, const std::string &prefix);
-    bool SetValue(const std::string &path, const XMPTagType &tagType, const std::string &value);
-    bool GetTag(const std::string &path, XMPTag &tag);
-    bool RemoveTag(const std::string &path);
+    uint32_t RegisterNamespacePrefix(const std::string &uri, const std::string &prefix);
+    uint32_t SetValue(const std::string &path, const XMPTagType &tagType, const std::string &value);
+    uint32_t GetTag(const std::string &path, XMPTag &tag);
+    uint32_t RemoveTag(const std::string &path);
 
     // Callback type for EnumerateTags
     // Returns true to continue enumeration, false to stop
@@ -50,7 +50,7 @@ public:
 
     // Enumerate all tags, optionally starting from a specific path
     // options parameter controls the behavior of the enumeration
-    void EnumerateTags(EnumerateCallback callback, const std::string &rootPath, XMPEnumerateOption options);
+    uint32_t EnumerateTags(EnumerateCallback callback, const std::string &rootPath, XMPEnumerateOption options);
     uint32_t GetBlob(std::string &buffer);
     uint32_t SetBlob(const uint8_t *source, const uint32_t bufferSize);
 
