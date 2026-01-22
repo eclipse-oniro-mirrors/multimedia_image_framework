@@ -1980,6 +1980,10 @@ bool ImageUtils::CheckOffsetValid(const YUVDataInfo& yDataInfo)
         IMAGE_LOGE("Invalid UV offset: %{public}u less than Y plane size", yDataInfo.uvOffset);
         return false;
     }
+    if (static_cast<uint64_t>(yDataInfo.uvOffset) + uvPlaneSize > bufferSize) {
+        IMAGE_LOGE("Invalid UV offset: uvOffset + uvPlaneSize exceeds buffer size");
+        return false;
+    }
     if (yPlaneSize > UINT32_MAX || bufferSize > UINT32_MAX) {
         IMAGE_LOGE("Invalid YUV buffer size: overflow (exceeds UINT32_MAX)");
         return false;
