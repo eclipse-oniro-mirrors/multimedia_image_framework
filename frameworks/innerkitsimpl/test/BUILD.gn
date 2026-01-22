@@ -1401,6 +1401,43 @@ ohos_unittest("heif_hw_encoder_test") {
   resource_config_file = "$image_subsystem/test/resource/image/ohos_test.xml"
 }
 
+ohos_unittest("hispeed_image_manager_test") {
+  module_out_path = module_output_path
+
+  include_dirs = [
+    "$image_subsystem/frameworks/innerkitsimpl/utils/include",
+    "$image_subsystem/frameworks/innerkitsimpl/test/unittest/mock",
+    "$image_subsystem/interfaces/innerkits/include",
+    "$image_subsystem/plugins/manager/include",
+  ]
+
+  sources = [
+    "unittest/hispeed_image_manager_test.cpp",
+  ]
+
+  cflags = [
+    "-DIMAGE_DEBUG_FLAG",
+    "-DIMAGE_COLORSPACE_FLAG",
+    "-Dprivate=public",
+    "-Dprotected=public",
+  ]
+
+  deps = [
+    "$image_subsystem/frameworks/innerkitsimpl/utils:image_utils",
+    "$image_subsystem/interfaces/innerkits:image_native",
+  ]
+
+  external_deps = [
+    "c_utils:utils",
+    "googletest:gmock_main",
+    "googletest:gtest_main",
+    "hilog:libhilog",
+    "skia:skia_canvaskit",
+  ]
+
+  resource_config_file = "$image_subsystem/test/resource/image/ohos_test.xml"
+}
+
 ohos_unittest("heif_parser_test") {
   module_out_path = module_output_path
 
@@ -2415,6 +2452,7 @@ group("unittest") {
     ":gifplugintest",
     ":gstpluginfwtest",
     ":heif_parser_test",
+    ":hispeed_image_manager_test",
     ":image_native_test",
     ":image_receiver_native_test",
     ":imageaccessortest",
