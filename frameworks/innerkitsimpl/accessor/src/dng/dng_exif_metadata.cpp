@@ -30,50 +30,66 @@
 
 namespace OHOS {
 namespace Media {
-static const std::vector<std::string> HW_KEYS = {
-    "HwMnoteCaptureMode",
-    "HwMnotePhysicalAperture",
-    "HwMnoteRollAngle",
-    "HwMnotePitchAngle",
-    "HwMnoteSceneFoodConf",
-    "HwMnoteSceneStageConf",
-    "HwMnoteSceneBlueSkyConf",
-    "HwMnoteSceneGreenPlantConf",
-    "HwMnoteSceneBeachConf",
-    "HwMnoteSceneSnowConf",
-    "HwMnoteSceneSunsetConf",
-    "HwMnoteSceneFlowersConf",
-    "HwMnoteSceneNightConf",
-    "HwMnoteSceneTextConf",
-    "HwMnoteFaceCount",
-    "HwMnoteFocusMode",
-    "HwMnoteFocusModeExif",
-    "HwMnoteBurstNumber",
-    "HwMnoteFaceConf",
-    "HwMnoteFaceLeyeCenter",
-    "HwMnoteFaceMouthCenter",
-    "HwMnoteFacePointer",
-    "HwMnoteFaceRect",
-    "HwMnoteFaceReyeCenter",
-    "HwMnoteFaceSmileScore",
-    "HwMnoteFaceVersion",
-    "HwMnoteFrontCamera",
-    "HwMnoteScenePointer",
-    "HwMnoteSceneVersion",
-    "HwMnoteIsXmageSupported",
-    "HwMnoteXmageMode",
-    "HwMnoteXmageLeft",
-    "HwMnoteXmageTop",
-    "HwMnoteXmageRight",
-    "HwMnoteXmageBottom",
-    "HwMnoteCloudEnhancementMode",
-    "HwMnoteWindSnapshotMode",
-    "HwMnoteXtStyleTemplateName",
-    "HwMnoteXtStyleCustomLightAndShadow",
-    "HwMnoteXtStyleCustomSaturation",
-    "HwMnoteXtStyleCustomHue",
-    "HwMnoteXtStyleExposureParam"
-};
+
+static const std::vector<std::string>& GetHwKeys()
+{
+    static const std::vector<std::string> HW_KEYS = {
+        "HwMnoteCaptureMode",
+        "HwMnotePhysicalAperture",
+        "HwMnoteRollAngle",
+        "HwMnotePitchAngle",
+        "HwMnoteSceneFoodConf",
+        "HwMnoteSceneStageConf",
+        "HwMnoteSceneBlueSkyConf",
+        "HwMnoteSceneGreenPlantConf",
+        "HwMnoteSceneBeachConf",
+        "HwMnoteSceneSnowConf",
+        "HwMnoteSceneSunsetConf",
+        "HwMnoteSceneFlowersConf",
+        "HwMnoteSceneNightConf",
+        "HwMnoteSceneTextConf",
+        "HwMnoteFaceCount",
+        "HwMnoteFocusMode",
+        "HwMnoteFocusModeExif",
+        "HwMnoteBurstNumber",
+        "HwMnoteFaceConf",
+        "HwMnoteFaceLeyeCenter",
+        "HwMnoteFaceMouthCenter",
+        "HwMnoteFacePointer",
+        "HwMnoteFaceRect",
+        "HwMnoteFaceReyeCenter",
+        "HwMnoteFaceSmileScore",
+        "HwMnoteFaceVersion",
+        "HwMnoteFrontCamera",
+        "HwMnoteScenePointer",
+        "HwMnoteSceneVersion",
+        "HwMnoteIsXmageSupported",
+        "HwMnoteXmageMode",
+        "HwMnoteXmageLeft",
+        "HwMnoteXmageTop",
+        "HwMnoteXmageRight",
+        "HwMnoteXmageBottom",
+        "HwMnoteCloudEnhancementMode",
+        "HwMnoteWindSnapshotMode",
+        "HwMnoteXtStyleTemplateName",
+        "HwMnoteXtStyleCustomLightAndShadow",
+        "HwMnoteXtStyleCustomSaturation",
+        "HwMnoteXtStyleCustomHue",
+        "HwMnoteXtStyleExposureParam"
+    };
+    return HW_KEYS;
+}
+
+static const std::set<std::string>& GetAllKeysCache()
+{
+    static const std::set<std::string> ALL_KEYS_CACHE = []() {
+        std::set<std::string> keys = DngSdkInfo::GetAllPropertyKeys();
+        const auto& hwKeys = GetHwKeys();
+        keys.insert(hwKeys.begin(), hwKeys.end());
+        return keys;
+    }();
+    return ALL_KEYS_CACHE;
+}
 
 DngExifMetadata::DngExifMetadata() : dngSdkInfo_(nullptr)
 {
@@ -155,13 +171,9 @@ std::vector<MetadataValue> DngExifMetadata::GetAllDngProperties()
         return result;
     }
 
-    static const std::set<std::string> ALL_KEYS_CACHE = []() {
-        std::set<std::string> keys = DngSdkInfo::GetAllPropertyKeys();
-        keys.insert(HW_KEYS.begin(), HW_KEYS.end());
-        return keys;
-    }();
+    const auto& allKeys = GetAllKeysCache();
 
-    for (const auto& key : ALL_KEYS_CACHE) {
+    for (const auto& key : allKeys) {
         MetadataValue value;
         value.key = key;
         uint32_t ret = GetExifProperty(value);

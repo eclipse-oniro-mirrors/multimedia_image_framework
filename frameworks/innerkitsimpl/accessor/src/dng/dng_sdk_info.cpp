@@ -16,6 +16,7 @@
 
 #include <algorithm>
 #include <cctype>
+#include <cstdint>
 #include <cstring>
 #include <iomanip>
 #include <sstream>
@@ -257,7 +258,12 @@ static std::string FormatUndefinedExifString(const dng_string& input)
         return "";
     }
 
-    uint32_t maxlen = length + 1 > maxTagValueSizeForStr ? maxTagValueSizeForStr : length + 1;
+    uint32_t maxlen;
+    if (ImageUtils::HasOverflowed(length, 1) || length + 1 > maxTagValueSizeForStr) {
+        maxlen = maxTagValueSizeForStr;
+    } else {
+        maxlen = length + 1;
+    }
     if (length >= UNDEFINED_PREFIX_LEN) {
         if (std::memcmp(raw, undefinedPrefixAscii, UNDEFINED_PREFIX_LEN) == 0) {
             const char* asciiData = reinterpret_cast<const char*>(raw + UNDEFINED_PREFIX_LEN);
@@ -293,7 +299,12 @@ static std::string FormatUndefinedExifString(const dng_string& input)
 static uint32_t GetDngString(const dng_string& in, MetadataValue& out)
 {
     out.type = PropertyValueType::STRING;
-    out.stringValue = std::string(in.Get());
+    const char* raw = in.Get();
+    if (raw == nullptr) {
+        out.stringValue = "";
+        return SUCCESS;
+    }
+    out.stringValue = std::string(raw);
     return SUCCESS;
 }
 
@@ -614,12 +625,10 @@ uint32_t DngSdkInfo::GetExifCopyright(const dng_exif& fExif, MetadataValue& valu
     constexpr const char* PHOTOGRAPHER_SUFFIX = " (Photographer)";
     constexpr const char* EDITOR_SUFFIX = " (Editor)";
     constexpr const char* SEPARATOR = " - ";
-    constexpr uint32_t copyrightReservePadding = 32;
 
     const std::string photographerText = photographer.empty() ? std::string(NONE_PLACEHOLDER) : photographer;
     const std::string editorText = editor.empty() ? std::string(NONE_PLACEHOLDER) : editor;
 
-    value.stringValue.reserve(photographerText.size() + editorText.size() + copyrightReservePadding);
     value.stringValue.append(photographerText);
     value.stringValue.append(PHOTOGRAPHER_SUFFIX);
     value.stringValue.append(SEPARATOR);
@@ -1105,7 +1114,7 @@ uint32_t DngSdkInfo::GetIfdJPEGInterchangeFormatLength(const dng_ifd& fIFD, Meta
 static uint32_t GetTagValueSize(uint16_t tagType, uint32_t tagCount)
 {
     uint32_t unitSize = TagTypeSize(static_cast<uint32_t>(tagType));
-    if (tagCount == 0 || unitSize == 0 || ImageUtils::HasOverflowed(unitSize, tagCount)) {
+    if (tagCount == 0 || unitSize == 0 || unitSize > UINT32_MAX / tagCount) {
         return 0;
     }
     return unitSize * tagCount;
@@ -1115,7 +1124,8 @@ void DngSdkInfo::ParseTag(dng_host& host, dng_stream& stream, dng_exif* exif, dn
     uint32 parentCode, uint32 tagCode, uint32 tagType, uint32 tagCount, uint64 tagOffset, int64 offsetDelta)
 {
     uint32_t tagValueSize = GetTagValueSize(tagType, tagCount);
-    if (tagValueSize == 0 || tagValueSize > stream.Length() - tagOffset) {
+    if (tagValueSize == 0 || tagOffset > stream.Length() ||
+        tagValueSize > stream.Length() - tagOffset) {
         IMAGE_LOGD("[ParseTag]Parse invalid tagCode:%{public}u tagValueSize:%{public}u",
             tagCode, tagValueSize);
         return;
@@ -1265,7 +1275,8 @@ void DngSdkInfo::ProcessSpecialTag(const UniqueTagKey& tagKey, dng_stream& strea
     auto parseFunc = parseIter->second;
     MetadataValue value;
 
-    bool cond = tagRecord.tagValueOffset + tagRecord.tagValueSize > stream.Length();
+    bool cond = tagRecord.tagValueOffset > UINT64_MAX - tagRecord.tagValueSize ||
+                tagRecord.tagValueOffset + tagRecord.tagValueSize > stream.Length();
     CHECK_DEBUG_RETURN_LOG(cond,
         "%{public}s: Invalid value offset(%{public}d) and size(%{public}u) for tagCode: %{public}u",
         __func__, static_cast<uint32_t>(tagRecord.tagValueOffset), tagRecord.tagValueSize, tagCode);
