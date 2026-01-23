@@ -32,7 +32,6 @@ ohos_shared_library("image_common") {
   sources = [
     "image_common.cpp",
     "image_common_impl.cpp",
-    "../ndk/xmp_metadata_native.cpp",
   ]
 
   public_configs =

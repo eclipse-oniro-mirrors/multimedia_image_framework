@@ -53,14 +53,6 @@ struct OH_ImageSourceNative;
 typedef struct OH_ImageSourceNative OH_ImageSourceNative;
 
 /**
- * @brief Defines XMP metadata object for the image interface.
- *
- * @since 24
- */
-struct OH_XMPMetadata;
-typedef struct OH_XMPMetadata OH_XMPMetadata;
-
-/**
  * @brief Defines image source infomation
  * {@link OH_ImageSourceInfo_Create}.
  *
@@ -799,26 +791,6 @@ Image_ErrorCode OH_ImageSourceNative_ModifyImageProperty(OH_ImageSourceNative *s
  * @since 12
  */
 Image_ErrorCode OH_ImageSourceNative_GetFrameCount(OH_ImageSourceNative *source, uint32_t *frameCount);
-
-/**
- * @brief Reads XMP metadata from an image source.
- *
- * @param source Indicates a pointer to the {@link OH_ImageSourceNative} object at the C++ native layer.
- * @param outMeta Indicates a pointer to the XMP metadata obtained.
- * @return Returns {@link Image_ErrorCode}
- * @since 24
- */
-Image_ErrorCode OH_ImageSourceNative_ReadXMPMetadata(OH_ImageSourceNative *source, OH_XMPMetadata **outMeta);
-
-/**
- * @brief Writes XMP metadata to an image source.
- *
- * @param source Indicates a pointer to the {@link OH_ImageSourceNative} object at the C++ native layer.
- * @param meta Indicates a pointer to the XMP metadata to be written.
- * @return Returns {@link Image_ErrorCode}
- * @since 24
- */
-Image_ErrorCode OH_ImageSourceNative_WriteXMPMetadata(OH_ImageSourceNative *source, OH_XMPMetadata *meta);
 
 /**
  * @brief Releases an <b>ImageSourc</b> object.
