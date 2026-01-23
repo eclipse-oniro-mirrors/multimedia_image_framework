@@ -959,6 +959,10 @@ union NullableXMPMetadata {
     type_null: @null unit;
 }
 
+// constructor
+@ctor("XMPMetadata")
+function XMPMetadataCtor(): XMPMetadata;
+
 // transfer functions
 function ImageSourceTransferStaticImpl(input: @sts_type("ESValue") Opaque): ImageSource;
 function ImageSourceTransferDynamicImpl(input: ImageSource): @sts_type("Any") Opaque;

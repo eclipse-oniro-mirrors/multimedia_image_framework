@@ -24,6 +24,9 @@
 using namespace ANI::Image;
 
 namespace ANI::Image {
+XMPMetadataImpl::XMPMetadataImpl()
+    : nativeXMPMetadata_(std::make_shared<OHOS::Media::XMPMetadata>()) {}
+
 XMPMetadataImpl::XMPMetadataImpl(std::shared_ptr<OHOS::Media::XMPMetadata> xmpMetadata)
     : nativeXMPMetadata_(xmpMetadata) {}
 
@@ -171,6 +174,7 @@ map<string, XMPTag> XMPMetadataImpl::GetTagsSync(optional_view<string> rootPath,
             result.emplace(path, ToTaiheXMPTag(tag));
             return true;
         }, innerPath, innerOption);
+
     if (ret != OHOS::Media::SUCCESS) {
         ThrowXMPException(ret);
         return map<string, XMPTag>();
@@ -213,4 +217,12 @@ array<uint8_t> XMPMetadataImpl::GetBlobSync()
     result = ImageTaiheUtils::CreateTaiheArrayBuffer(buf.get(), strBuf.size());
     return result;
 }
+
+// Global Functions
+XMPMetadata XMPMetadataCtor()
+{
+    return taihe::make_holder<XMPMetadataImpl, XMPMetadata>();
+}
 } // namespace ANI::Image
+
+TH_EXPORT_CPP_API_XMPMetadataCtor(XMPMetadataCtor);

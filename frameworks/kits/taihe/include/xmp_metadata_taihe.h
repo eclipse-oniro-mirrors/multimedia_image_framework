@@ -27,7 +27,7 @@ using namespace ohos::multimedia::image::image;
 
 class XMPMetadataImpl {
 public:
-    XMPMetadataImpl() = default;
+    XMPMetadataImpl();
     explicit XMPMetadataImpl(std::shared_ptr<OHOS::Media::XMPMetadata> xmpMetadata);
     ~XMPMetadataImpl() = default;
     int64_t GetImplPtr();
@@ -44,7 +44,7 @@ public:
     array<uint8_t> GetBlobSync();
 
 private:
-    std::shared_ptr<OHOS::Media::XMPMetadata> nativeXMPMetadata_;
+    std::shared_ptr<OHOS::Media::XMPMetadata> nativeXMPMetadata_ = nullptr;
 };
 
 } // namespace ANI::Image
