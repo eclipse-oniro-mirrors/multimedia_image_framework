@@ -1604,7 +1604,7 @@ Image_ErrorCode OH_PixelmapNative_UnaccessPixels(OH_PixelmapNative *pixelmap)
 MIDK_EXPORT
 Image_ErrorCode OH_PixelmapNative_GetUniqueId(OH_PixelmapNative *pixelmap, uint32_t *uniqueId)
 {
-    if (pixelmap == nullptr || pixelmap->GetInnerPixelmap() == nullptr) {
+    if (pixelmap == nullptr || pixelmap->GetInnerPixelmap() == nullptr || uniqueId == nullptr) {
         return IMAGE_BAD_PARAMETER;
     }
     *uniqueId = pixelmap->GetInnerPixelmap()->GetUniqueId();
@@ -1614,7 +1614,7 @@ Image_ErrorCode OH_PixelmapNative_GetUniqueId(OH_PixelmapNative *pixelmap, uint3
 MIDK_EXPORT
 Image_ErrorCode OH_PixelmapNative_IsReleased(OH_PixelmapNative *pixelmap, bool *released)
 {
-    if (pixelmap == nullptr) {
+    if (pixelmap == nullptr || released == nullptr) {
         return IMAGE_BAD_PARAMETER;
     }
     *released = pixelmap->GetInnerPixelmap() == nullptr;
