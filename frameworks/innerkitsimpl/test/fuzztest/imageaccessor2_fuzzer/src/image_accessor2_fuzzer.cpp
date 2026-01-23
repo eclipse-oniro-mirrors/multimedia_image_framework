@@ -42,6 +42,7 @@
 
 namespace OHOS {
 namespace Media {
+static constexpr uint32_t OPT_SIZE = 40;
 FuzzedDataProvider* FDP;
 using namespace std;
 
@@ -219,12 +220,15 @@ void ExifMetadatFormatterTest()
 /* Fuzzer entry point */
 extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
 {
+    if (size <  OHOS::Media::OPT_SIZE) {
+        return 0;
+    }
     /* Run your code on data */
-    FuzzedDataProvider fdp(data, size);
+    FuzzedDataProvider fdp(data + size - OHOS::Media::OPT_SIZE, OHOS::Media::OPT_SIZE);
     OHOS::Media::FDP = &fdp;
 
-    OHOS::Media::AccessorTest001(data, size);
-    OHOS::Media::AccessorTest002(data, size);
+    OHOS::Media::AccessorTest001(data, size - OHOS::Media::OPT_SIZE);
+    OHOS::Media::AccessorTest002(data, size - OHOS::Media::OPT_SIZE);
     OHOS::Media::ExifMetadatFormatterTest();
     return 0;
 }

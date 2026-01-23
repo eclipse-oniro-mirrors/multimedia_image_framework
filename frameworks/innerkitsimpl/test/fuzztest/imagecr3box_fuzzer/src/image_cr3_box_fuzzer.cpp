@@ -33,6 +33,7 @@ static constexpr uint32_t SMALL_RANGE = 1025;
 static constexpr uint32_t LARGE_OFFSET_RANGE = 10001;
 static constexpr uint32_t PAGE_SIZE_RANGE = 4097;
 static constexpr uint32_t TINY_RANGE = 17;
+static constexpr uint32_t OPT_SIZE = 40;
 
 void Cr3BoxMakeCr3BoxFuzzTest()
 {
@@ -118,11 +119,14 @@ void Cr3FtypAndPrvwParseFuzzTest()
 
 extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
 {
-    FuzzedDataProvider fdp(data, size);
+    if (size <  OHOS::Media::OPT_SIZE) {
+        return 0;
+    }
+    FuzzedDataProvider fdp(data + size - OHOS::Media::OPT_SIZE, OHOS::Media::OPT_SIZE);
     OHOS::Media::FDP = &fdp;
 
     OHOS::Media::Cr3BoxMakeCr3BoxFuzzTest();
-    OHOS::Media::Cr3BoxMakeCr3FromReaderErrorFuzzTest(data, size);
+    OHOS::Media::Cr3BoxMakeCr3FromReaderErrorFuzzTest(data, size - OHOS::Media::OPT_SIZE);
     OHOS::Media::Cr3UuidBoxParseContentChildrenFuzzTest();
     OHOS::Media::Cr3MoovBoxParseContentChildrenFuzzTest();
     OHOS::Media::Cr3BoxReadDataCaseFuzzTest();

@@ -30,6 +30,7 @@ FuzzedDataProvider* FDP;
 
 static constexpr uint32_t MIN_BOX_SIZE = 1;
 static constexpr uint32_t MIN_HEADER_SIZE = 1;
+static constexpr uint32_t OPT_SIZE = 40;
 
 void Cr3ParserMakeFromMemoryFuzzTest(const uint8_t *data, size_t size)
 {
@@ -92,13 +93,29 @@ void Cr3ParserGetExifDataMultipleIfdsFuzzTest()
 /* Fuzzer entry point */
 extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
 {
-    FuzzedDataProvider fdp(data, size);
+    if (size <  OHOS::Media::OPT_SIZE) {
+        return 0;
+    }
+    FuzzedDataProvider fdp(data + size - OHOS::Media::OPT_SIZE, OHOS::Media::OPT_SIZE);
     OHOS::Media::FDP = &fdp;
     /* Run your code on data */
-    OHOS::Media::Cr3ParserMakeFromMemoryFuzzTest(data, size);
-    OHOS::Media::Cr3ParserParseCr3BoxesFuzzTest(data, size);
-    OHOS::Media::Cr3ParserGetPreviewImageInfoFuzzTest();
-    OHOS::Media::Cr3ParserGetCr3BoxDataFuzzTest(data, size);
-    OHOS::Media::Cr3ParserGetExifDataMultipleIfdsFuzzTest();
+    uint8_t action = fdp.ConsumeIntegral<uint8_t>() % 4;
+    switch (action) {
+        case 0:
+            OHOS::Media::Cr3ParserMakeFromMemoryFuzzTest(data, size - OHOS::Media::OPT_SIZE);
+            break;
+        case 1:
+            OHOS::Media::Cr3ParserParseCr3BoxesFuzzTest(data, size - OHOS::Media::OPT_SIZE);
+            break;
+        case 2:
+            OHOS::Media::Cr3ParserGetCr3BoxDataFuzzTest(data, size - OHOS::Media::OPT_SIZE);
+            break;
+        case 3:
+            OHOS::Media::Cr3ParserGetPreviewImageInfoFuzzTest();
+            OHOS::Media::Cr3ParserGetExifDataMultipleIfdsFuzzTest();
+            break;
+        default:
+            break;
+    }
     return 0;
 }

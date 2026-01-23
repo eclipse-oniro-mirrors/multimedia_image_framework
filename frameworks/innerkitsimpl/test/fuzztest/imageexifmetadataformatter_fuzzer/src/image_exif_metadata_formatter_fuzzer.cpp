@@ -34,6 +34,7 @@ using namespace std;
 
 namespace {
     static constexpr size_t MAX_SIZE = 1000;
+    static constexpr uint32_t OPT_SIZE = 40;
 }
 
 void ExifMetadataFormatterFuzzTest()
@@ -84,11 +85,14 @@ void WebpExifMetadataAccessorFuzzTest(const uint8_t *data, size_t size)
 /* Fuzzer entry point */
 extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
 {
+    if (size <  OHOS::Media::OPT_SIZE) {
+        return 0;
+    }
     /* Run your code on data */
-    FuzzedDataProvider fdp(data, size);
+    FuzzedDataProvider fdp(data + size - OHOS::Media::OPT_SIZE, OHOS::Media::OPT_SIZE);
     OHOS::Media::FDP = &fdp;
 
     OHOS::Media::ExifMetadataFormatterFuzzTest();
-    OHOS::Media::WebpExifMetadataAccessorFuzzTest(data, size);
+    OHOS::Media::WebpExifMetadataAccessorFuzzTest(data, size - OHOS::Media::OPT_SIZE);
     return 0;
 }
