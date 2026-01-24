@@ -1400,8 +1400,8 @@ napi_value ImageSourceNapi::Constructor(napi_env env, napi_callback_info info)
             pImgSrcNapi->navIncPixelMap_ = sIncPixelMap_;
             sIncPixelMap_ = nullptr;
             sImgSrc_ = nullptr;
-            status = napi_wrap(env, thisVar, reinterpret_cast<void *>(pImgSrcNapi.get()),
-                               ImageSourceNapi::Destructor, nullptr, nullptr);
+            status = napi_wrap_s(env, thisVar, reinterpret_cast<void *>(pImgSrcNapi.get()),
+                ImageSourceNapi::Destructor, nullptr, &ImageSourceNapi::NAPI_TYPE_TAG, nullptr);
             if (status == napi_ok) {
                 pImgSrcNapi.release();
                 return thisVar;
@@ -1435,7 +1435,8 @@ napi_value ImageSourceNapi::GetSupportedFormats(napi_env env, napi_callback_info
     IMG_NAPI_CHECK_RET_D(IMG_IS_OK(status), result, IMAGE_LOGE("fail to napi_get_cb_info"));
 
     std::unique_ptr<ImageSourceAsyncContext> asyncContext = std::make_unique<ImageSourceAsyncContext>();
-    status = napi_unwrap(env, thisVar, reinterpret_cast<void**>(&asyncContext->constructor_));
+    status = napi_unwrap_s(env, thisVar, &ImageSourceNapi::NAPI_TYPE_TAG,
+        reinterpret_cast<void**>(&asyncContext->constructor_));
 
     IMG_NAPI_CHECK_RET_D(IMG_IS_READY(status, asyncContext->constructor_),
         nullptr, IMAGE_LOGE("fail to unwrap context"));
@@ -2107,13 +2108,11 @@ napi_value ImageSourceNapi::GetImageInfo(napi_env env, napi_callback_info info)
     IMAGE_LOGD("GetImageInfo argCount is [%{public}zu]", argCount);
 
     IMG_NAPI_CHECK_RET_D(IMG_IS_OK(status), nullptr, IMAGE_LOGE("fail to napi_get_cb_info"));
-
     std::unique_ptr<ImageSourceAsyncContext> asyncContext = std::make_unique<ImageSourceAsyncContext>();
-    status = napi_unwrap(env, thisVar, reinterpret_cast<void**>(&asyncContext->constructor_));
-
+    status = napi_unwrap_s(env, thisVar, &ImageSourceNapi::NAPI_TYPE_TAG,
+        reinterpret_cast<void**>(&asyncContext->constructor_));
     IMG_NAPI_CHECK_RET_D(IMG_IS_READY(status, asyncContext->constructor_),
         nullptr, IMAGE_LOGE("fail to unwrap context"));
-
     asyncContext->rImageSource = asyncContext->constructor_->nativeImgSrc;
 
     IMG_NAPI_CHECK_RET_D(IMG_IS_READY(status, asyncContext->rImageSource),
@@ -2170,7 +2169,7 @@ napi_value ImageSourceNapi::GetImageInfoSync(napi_env env, napi_callback_info in
     IMG_NAPI_CHECK_RET_D(IMG_IS_OK(status), nullptr, IMAGE_LOGE("fail to napi_get_cb_info"));
 
     std::unique_ptr<ImageSourceNapi> imageSourceNapi = nullptr;
-    status = napi_unwrap(env, thisVar, reinterpret_cast<void**>(&imageSourceNapi));
+    status = napi_unwrap_s(env, thisVar, &ImageSourceNapi::NAPI_TYPE_TAG, reinterpret_cast<void**>(&imageSourceNapi));
 
     IMG_NAPI_CHECK_RET_D(IMG_IS_READY(status, imageSourceNapi),
         nullptr, IMAGE_LOGE("fail to unwrap context"));
@@ -2363,7 +2362,8 @@ napi_value ImageSourceNapi::CreatePixelMap(napi_env env, napi_callback_info info
 
     std::unique_ptr<ImageSourceAsyncContext> asyncContext = std::make_unique<ImageSourceAsyncContext>();
 
-    status = napi_unwrap(env, thisVar, reinterpret_cast<void**>(&asyncContext->constructor_));
+    status = napi_unwrap_s(env, thisVar, &ImageSourceNapi::NAPI_TYPE_TAG,
+        reinterpret_cast<void**>(&asyncContext->constructor_));
     IMG_NAPI_CHECK_RET_D(IMG_IS_READY(status, asyncContext->constructor_),
         nullptr, IMAGE_LOGE("fail to unwrap context"));
     IMG_NAPI_CHECK_RET_D(IMG_IS_READY(status, asyncContext->constructor_->nativeImgSrc),
@@ -2418,7 +2418,8 @@ napi_value ImageSourceNapi::CreatePixelMapSync(napi_env env, napi_callback_info 
     IMG_NAPI_CHECK_RET_D(IMG_IS_OK(status), nullptr, IMAGE_LOGE("fail to napi_get_cb_info"));
 
     std::unique_ptr<ImageSourceSyncContext> syncContext = std::make_unique<ImageSourceSyncContext>();
-    status = napi_unwrap(env, thisVar, reinterpret_cast<void**>(&syncContext->constructor_));
+    status = napi_unwrap_s(env, thisVar, &ImageSourceNapi::NAPI_TYPE_TAG,
+        reinterpret_cast<void**>(&syncContext->constructor_));
     IMG_NAPI_CHECK_RET_D(IMG_IS_READY(status, syncContext->constructor_),
         nullptr, IMAGE_LOGE("fail to unwrap context"));
     IMG_NAPI_CHECK_RET_D(IMG_IS_READY(status, syncContext->constructor_->nativeImgSrc),
@@ -2464,7 +2465,8 @@ napi_value ImageSourceNapi::CreateWideGamutSdrPixelMap(napi_env env, napi_callba
     IMG_NAPI_CHECK_RET_D(IMG_IS_READY(status, thisVar), nullptr, IMAGE_LOGE("fail to get thisVar"));
     IMG_NAPI_CHECK_RET_D(IMG_IS_OK(status), nullptr, IMAGE_LOGE("fail to napi_get_cb_info"));
     std::unique_ptr<ImageSourceAsyncContext> asyncContext = std::make_unique<ImageSourceAsyncContext>();
-    status = napi_unwrap(env, thisVar, reinterpret_cast<void**>(&asyncContext->constructor_));
+    status = napi_unwrap_s(env, thisVar, &ImageSourceNapi::NAPI_TYPE_TAG,
+        reinterpret_cast<void**>(&asyncContext->constructor_));
     IMG_NAPI_CHECK_RET_D(IMG_IS_READY(status, asyncContext->constructor_),
         nullptr, IMAGE_LOGE("fail to unwrap context"));
     IMG_NAPI_CHECK_RET_D(IMG_IS_READY(status, asyncContext->constructor_->nativeImgSrc),
@@ -2512,7 +2514,6 @@ napi_value ImageSourceNapi::CreatePixelMapUsingAllocator(napi_env env, napi_call
 {
     napi_value result = nullptr;
     napi_get_undefined(env, &result);
-
     napi_status status;
     napi_value thisVar = nullptr;
     napi_value argValue[TWO_ARGS] = {0};
@@ -2521,7 +2522,8 @@ napi_value ImageSourceNapi::CreatePixelMapUsingAllocator(napi_env env, napi_call
     IMG_NAPI_CHECK_RET_D(IMG_IS_READY(status, thisVar), nullptr, IMAGE_LOGE("Fail to get thisVar."));
     IMG_NAPI_CHECK_RET_D(IMG_IS_OK(status), nullptr, IMAGE_LOGE("Fail to napi_get_cb_info."));
     std::unique_ptr<ImageSourceAsyncContext> asyncContext = std::make_unique<ImageSourceAsyncContext>();
-    status = napi_unwrap(env, thisVar, reinterpret_cast<void**>(&asyncContext->constructor_));
+    status = napi_unwrap_s(env, thisVar, &ImageSourceNapi::NAPI_TYPE_TAG,
+        reinterpret_cast<void**>(&asyncContext->constructor_));
     IMG_NAPI_CHECK_RET_D(IMG_IS_READY(status, asyncContext->constructor_),
         nullptr, IMAGE_LOGE("Fail to unwrap context."));
     IMG_NAPI_CHECK_RET_D(IMG_IS_READY(status, asyncContext->constructor_->nativeImgSrc),
@@ -2529,7 +2531,6 @@ napi_value ImageSourceNapi::CreatePixelMapUsingAllocator(napi_env env, napi_call
     asyncContext->rImageSource = asyncContext->constructor_->nativeImgSrc;
     IMG_NAPI_CHECK_RET_D(IMG_IS_READY(status, asyncContext->rImageSource),
         nullptr, IMAGE_LOGE("Empty native rImageSource."));
-
     if (argCount > 0) {
         if (ImageNapiUtils::getType(env, argValue[DECODE_OPTS_INDEX_0]) == napi_object) {
             if (!ParseDecodeOptions(env, argValue[DECODE_OPTS_INDEX_0], &(asyncContext->decodeOpts),
@@ -2579,7 +2580,8 @@ napi_value ImageSourceNapi::CreatePixelMapUsingAllocatorSync(napi_env env, napi_
     IMG_NAPI_CHECK_RET_D(IMG_IS_OK(status), nullptr, IMAGE_LOGE("Fail to napi_get_cb_info."));
 
     std::unique_ptr<ImageSourceSyncContext> syncContext = std::make_unique<ImageSourceSyncContext>();
-    status = napi_unwrap(env, thisVar, reinterpret_cast<void**>(&syncContext->constructor_));
+    status = napi_unwrap_s(env, thisVar, &ImageSourceNapi::NAPI_TYPE_TAG,
+        reinterpret_cast<void**>(&syncContext->constructor_));
     IMG_NAPI_CHECK_RET_D(IMG_IS_READY(status, syncContext->constructor_),
         nullptr, IMAGE_LOGE("Fail to unwrap context."));
     IMG_NAPI_CHECK_RET_D(IMG_IS_READY(status, syncContext->constructor_->nativeImgSrc),
@@ -3044,7 +3046,8 @@ static std::unique_ptr<ImageSourceAsyncContext> UnwrapContext(napi_env env, napi
     IMG_NAPI_CHECK_RET_D(IMG_IS_OK(status), nullptr, IMAGE_LOGE("fail to napi_get_cb_info"));
 
     std::unique_ptr<ImageSourceAsyncContext> context = std::make_unique<ImageSourceAsyncContext>();
-    status = napi_unwrap(env, thisVar, reinterpret_cast<void**>(&context->constructor_));
+    status = napi_unwrap_s(env, thisVar, &ImageSourceNapi::NAPI_TYPE_TAG,
+        reinterpret_cast<void**>(&context->constructor_));
 
     IMG_NAPI_CHECK_RET_D(IMG_IS_READY(status, context->constructor_),
         nullptr, IMAGE_LOGE("fail to unwrap context"));
@@ -3093,7 +3096,8 @@ static std::unique_ptr<ImageSourceAsyncContext> UnwrapContextForReadImageMetadat
     IMG_NAPI_CHECK_RET_D(IMG_IS_OK(status), nullptr, IMAGE_LOGE("fail to napi_get_cb_info"));
 
     std::unique_ptr<ImageSourceAsyncContext> context = std::make_unique<ImageSourceAsyncContext>();
-    status = napi_unwrap(env, thisVar, reinterpret_cast<void**>(&context->constructor_));
+    status = napi_unwrap_s(env, thisVar, &ImageSourceNapi::NAPI_TYPE_TAG,
+        reinterpret_cast<void**>(&context->constructor_));
 
     IMG_NAPI_CHECK_RET_D(IMG_IS_READY(status, context->constructor_),
         nullptr, IMAGE_LOGE("fail to unwrap context"));
@@ -3261,7 +3265,8 @@ static std::unique_ptr<ImageSourceAsyncContext> UnwrapContextForModify(napi_env 
     IMG_JS_ARGS(env, info, status, argCount, argValue, thisVar);
     IMG_NAPI_CHECK_RET_D(IMG_IS_OK(status), nullptr, IMAGE_LOGE("fail to napi_get_cb_info"));
     std::unique_ptr<ImageSourceAsyncContext> context = std::make_unique<ImageSourceAsyncContext>();
-    status = napi_unwrap(env, thisVar, reinterpret_cast<void**>(&context->constructor_));
+    status = napi_unwrap_s(env, thisVar, &ImageSourceNapi::NAPI_TYPE_TAG,
+        reinterpret_cast<void**>(&context->constructor_));
     IMG_NAPI_CHECK_RET_D(IMG_IS_READY(status, context->constructor_), nullptr, IMAGE_LOGE("fail to unwrap context"));
     context->rImageSource = context->constructor_->nativeImgSrc;
     IMG_NAPI_CHECK_RET_D(IMG_IS_READY(status, context->rImageSource), nullptr, IMAGE_LOGE("empty native rImageSource"));
@@ -3417,7 +3422,8 @@ static std::unique_ptr<ImageSourceAsyncContext> UnwrapContextForWriteImageMetada
     IMG_JS_ARGS(env, info, status, argCount, argValue, thisVar);
     IMG_NAPI_CHECK_RET_D(IMG_IS_OK(status), nullptr, IMAGE_LOGE("fail to napi_get_cb_info"));
     std::unique_ptr<ImageSourceAsyncContext> context = std::make_unique<ImageSourceAsyncContext>();
-    status = napi_unwrap(env, thisVar, reinterpret_cast<void**>(&context->constructor_));
+    status = napi_unwrap_s(env, thisVar, &ImageSourceNapi::NAPI_TYPE_TAG,
+        reinterpret_cast<void**>(&context->constructor_));
     IMG_NAPI_CHECK_RET_D(IMG_IS_READY(status, context->constructor_), nullptr, IMAGE_LOGE("fail to unwrap context"));
     context->rImageSource = context->constructor_->nativeImgSrc;
     IMG_NAPI_CHECK_RET_D(IMG_IS_READY(status, context->rImageSource), nullptr, IMAGE_LOGE("empty native rImageSource"));
@@ -3598,7 +3604,7 @@ napi_value ImageSourceNapi::GetImagePropertySync(napi_env env, napi_callback_inf
 
     // get imageSourceNapi and check nativeImgSrc
     std::unique_ptr<ImageSourceNapi> imageSourceNapi = nullptr;
-    status = napi_unwrap(env, thisVar, reinterpret_cast<void**>(&imageSourceNapi));
+    status = napi_unwrap_s(env, thisVar, &ImageSourceNapi::NAPI_TYPE_TAG, reinterpret_cast<void**>(&imageSourceNapi));
 
     IMG_NAPI_CHECK_RET_D(IMG_IS_READY(status, imageSourceNapi),
         nullptr, IMAGE_LOGE("fail to unwrap context"));
@@ -3700,7 +3706,8 @@ napi_value ImageSourceNapi::UpdateData(napi_env env, napi_callback_info info)
     IMG_NAPI_CHECK_RET_D(IMG_IS_OK(status), nullptr, IMAGE_LOGE("fail to napi_get_cb_info"));
 
     std::unique_ptr<ImageSourceAsyncContext> asyncContext = std::make_unique<ImageSourceAsyncContext>();
-    status = napi_unwrap(env, thisVar, reinterpret_cast<void**>(&asyncContext->constructor_));
+    status = napi_unwrap_s(env, thisVar, &ImageSourceNapi::NAPI_TYPE_TAG,
+        reinterpret_cast<void**>(&asyncContext->constructor_));
 
     IMG_NAPI_CHECK_RET_D(IMG_IS_READY(status, asyncContext->constructor_),
         nullptr, IMAGE_LOGE("fail to unwrap context"));
@@ -3844,7 +3851,8 @@ static std::unique_ptr<ImageSourceAsyncContext> UnwrapContextForList(napi_env en
     IMG_NAPI_CHECK_RET_D(IMG_IS_OK(status), nullptr, IMAGE_LOGE("fail to napi_get_cb_info"));
 
     std::unique_ptr<ImageSourceAsyncContext> context = std::make_unique<ImageSourceAsyncContext>();
-    status = napi_unwrap(env, thisVar, reinterpret_cast<void**>(&context->constructor_));
+    status = napi_unwrap_s(env, thisVar, &ImageSourceNapi::NAPI_TYPE_TAG,
+        reinterpret_cast<void**>(&context->constructor_));
 
     IMG_NAPI_CHECK_RET_D(IMG_IS_READY(status, context->constructor_),
         nullptr, IMAGE_LOGE("fail to unwrap context"));
@@ -4459,7 +4467,8 @@ napi_value ImageSourceNapi::CreatePictureAtIndex(napi_env env, napi_callback_inf
 
     std::unique_ptr<ImageSourceAsyncContext> asyncContext = std::make_unique<ImageSourceAsyncContext>();
 
-    status = napi_unwrap(env, thisVar, reinterpret_cast<void**>(&asyncContext->constructor_));
+    status = napi_unwrap_s(env, thisVar, &ImageSourceNapi::NAPI_TYPE_TAG,
+        reinterpret_cast<void**>(&asyncContext->constructor_));
     IMG_NAPI_CHECK_RET_D(IMG_IS_READY(status, asyncContext->constructor_),
         nullptr, IMAGE_LOGE("fail to unwrap context"));
     IMG_NAPI_CHECK_RET_D(IMG_IS_READY(status, asyncContext->constructor_->nativeImgSrc),
@@ -4587,7 +4596,8 @@ napi_value ImageSourceNapi::CreatePicture(napi_env env, napi_callback_info info)
 
     std::unique_ptr<ImageSourceAsyncContext> asyncContext = std::make_unique<ImageSourceAsyncContext>();
 
-    status = napi_unwrap(env, thisVar, reinterpret_cast<void**>(&asyncContext->constructor_));
+    status = napi_unwrap_s(env, thisVar, &ImageSourceNapi::NAPI_TYPE_TAG,
+        reinterpret_cast<void**>(&asyncContext->constructor_));
     IMG_NAPI_CHECK_RET_D(IMG_IS_READY(status, asyncContext->constructor_),
         nullptr, IMAGE_LOGE("fail to unwrap context"));
     IMG_NAPI_CHECK_RET_D(IMG_IS_READY(status, asyncContext->constructor_->nativeImgSrc),

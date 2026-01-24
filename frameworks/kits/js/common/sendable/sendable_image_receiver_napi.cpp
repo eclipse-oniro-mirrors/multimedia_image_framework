@@ -247,8 +247,8 @@ napi_value SendableImageReceiverNapi::Constructor(napi_env env, napi_callback_in
         IMAGE_ERR("Create native image receiver failed");
         return undefineVar;
     }
-    napi_status status = napi_wrap(env, inputArgs.thisVar, reinterpret_cast<void *>(reference.get()),
-        SendableImageReceiverNapi::Destructor, nullptr, nullptr);
+    napi_status status = napi_wrap_s(env, inputArgs.thisVar, reinterpret_cast<void *>(reference.get()),
+        SendableImageReceiverNapi::Destructor, nullptr, &SendableImageReceiverNapi::NAPI_TYPE_TAG, nullptr);
     if (status == napi_ok) {
         reference.release();
         return inputArgs.thisVar;
@@ -408,7 +408,8 @@ napi_value SendableImageReceiverNapi::JSCommonProcess(SendableImageReceiverCommo
         if (ic.context == nullptr) {
             return ic.result;
         }
-        ic.status = napi_unwrap(args.env, ic.thisVar, reinterpret_cast<void**>(&(ic.context->constructor_)));
+        ic.status = napi_unwrap_s(args.env, ic.thisVar, &SendableImageReceiverNapi::NAPI_TYPE_TAG,
+            reinterpret_cast<void**>(&(ic.context->constructor_)));
 
         IMG_NAPI_CHECK_RET_D(IMG_IS_READY(ic.status, ic.context->constructor_),
             ic.result, IMAGE_ERR("fail to unwrap context"));

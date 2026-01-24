@@ -58,7 +58,10 @@ public:
 #ifdef IMAGE_DEBUG_FLAG
     bool isCallBackTest = false;
 #endif
-
+    static constexpr napi_type_tag NAPI_TYPE_TAG = {
+        .lower = 0x5a98981179594d59,
+        .upper = 0xb5c22a46fe287867
+    };
 private:
     static napi_value Constructor(napi_env env, napi_callback_info info);
     static void Destructor(napi_env env, void *nativeObject, void *finalize);

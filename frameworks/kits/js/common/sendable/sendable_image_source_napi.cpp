@@ -673,7 +673,8 @@ napi_value SendableImageSourceNapi::CreatePixelMap(napi_env env, napi_callback_i
 
     std::unique_ptr<ImageSourceAsyncContext> asyncContext = std::make_unique<ImageSourceAsyncContext>();
 
-    status = napi_unwrap(env, thisVar, reinterpret_cast<void**>(&asyncContext->constructor_));
+    status = napi_unwrap_s(env, thisVar, &SendableImageSourceNapi::NAPI_TYPE_TAG,
+        reinterpret_cast<void**>(&asyncContext->constructor_));
     IMG_NAPI_CHECK_RET_D(IMG_IS_READY(status, asyncContext->constructor_),
         nullptr, IMAGE_LOGE("fail to unwrap context"));
     IMG_NAPI_CHECK_RET_D(IMG_IS_READY(status, asyncContext->constructor_->nativeImgSrc),
@@ -866,8 +867,8 @@ napi_value SendableImageSourceNapi::Constructor(napi_env env, napi_callback_info
             pImgSrcNapi->navIncPixelMap_ = sIncPixelMap_;
             sIncPixelMap_ = nullptr;
             sImgSrc_ = nullptr;
-            status = napi_wrap(env, thisVar, reinterpret_cast<void *>(pImgSrcNapi.get()),
-                               SendableImageSourceNapi::Destructor, nullptr, nullptr);
+            status = napi_wrap_s(env, thisVar, reinterpret_cast<void *>(pImgSrcNapi.get()),
+                SendableImageSourceNapi::Destructor, nullptr, &SendableImageSourceNapi::NAPI_TYPE_TAG, nullptr);
             if (status == napi_ok) {
                 pImgSrcNapi.release();
                 return thisVar;
