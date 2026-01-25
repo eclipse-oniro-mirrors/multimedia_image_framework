@@ -40,6 +40,7 @@
 #include "HeifDecoder.h"
 #include "buffer_source_stream.h"
 #include "message_parcel.h"
+#include <fuzzer/FuzzedDataProvider.h>
 
 #undef LOG_DOMAIN
 #define LOG_DOMAIN LOG_TAG_DOMAIN_ID_IMAGE
@@ -57,10 +58,14 @@ static const uint32_t SIZE_WIDTH = 3072;
 static const uint32_t SIZE_HEIGHT = 4096;
 static const int32_t MAX_WIDTH = 4096;
 static const int32_t MAX_HEIGHT = 4096;
+static const int32_t NUM_2 = 2;
+static const int32_t NUM_4 = 4;
 
 namespace OHOS {
 namespace Media {
+static constexpr uint32_t OPT_SIZE = 80;
 using namespace OHOS::ImagePlugin;
+FuzzedDataProvider *FDP;
 
 namespace {
     const uint8_t* g_data = nullptr;
@@ -389,6 +394,114 @@ bool CreatePictureByRandomImageSource(const uint8_t *data, size_t size, const st
     IMAGE_LOGI("%{public}s SUCCESS.", __func__);
     return true;
 }
+
+bool GainmapCreateFuzzTest(const uint8_t* data, size_t size)
+{
+    IMAGE_LOGI("%{public}s start.", __func__);
+    if (data == nullptr || size < sizeof(int32_t) * NUM_2) {
+        return false;
+    }
+    g_data = data;
+    g_size = size;
+    g_pos = 0;
+    std::shared_ptr<PixelMap> hdrPixelMap = GetPixelMapFromData(PixelFormat::RGBA_1010102);
+    std::shared_ptr<PixelMap> sdrPixelMap = GetPixelMapFromData(PixelFormat::RGBA_8888);
+    if (hdrPixelMap == nullptr || sdrPixelMap == nullptr) {
+        IMAGE_LOGE("Failed to create PixelMaps");
+        return false;
+    }
+    auto picture = OHOS::Media::Picture::CreatePictureByHdrAndSdrPixelMap(hdrPixelMap, sdrPixelMap);
+    if (picture != nullptr) {
+        IMAGE_LOGI("Successfully created picture with gainmap");
+        auto gainmapPixelMap = picture->GetGainmapPixelMap();
+        if (gainmapPixelMap != nullptr) {
+            ImageInfo imageInfo;
+            gainmapPixelMap->GetImageInfo(imageInfo);
+            IMAGE_LOGI("Gainmap size: %{public}d x %{public}d",
+                       imageInfo.size.width, imageInfo.size.height);
+        }
+    } else {
+        IMAGE_LOGI("CreatePictureByHdrAndSdrPixelMap returned null (this is OK)");
+    }
+    
+    IMAGE_LOGI("%{public}s completed.", __func__);
+    return true;
+}
+
+bool TestCreateGainmapByHdrAndSdr(const uint8_t* data, size_t size)
+{
+    IMAGE_LOGI("%{public}s start.", __func__);
+    if (data == nullptr || size < sizeof(int32_t) * NUM_4) {
+        return false;
+    }
+    g_data = data;
+    g_size = size;
+    g_pos = 0;
+    std::shared_ptr<PixelMap> hdrPixelMap = GetPixelMapFromData(PixelFormat::RGBA_1010102);
+    std::shared_ptr<PixelMap> sdrPixelMap = GetPixelMapFromData(PixelFormat::RGBA_8888);
+    if (hdrPixelMap == nullptr || sdrPixelMap == nullptr) {
+        IMAGE_LOGE("Failed to create PixelMaps");
+        return false;
+    }
+    auto picture = OHOS::Media::Picture::CreatePictureByHdrAndSdrPixelMap(hdrPixelMap, sdrPixelMap);
+    if (picture != nullptr) {
+        IMAGE_LOGI("CreatePictureByHdrAndSdrPixelMap succeeded");
+        auto gainmapPixelMap = picture->GetGainmapPixelMap();
+        if (gainmapPixelMap != nullptr) {
+            ImageInfo imageInfo;
+            gainmapPixelMap->GetImageInfo(imageInfo);
+            IMAGE_LOGI("Gainmap size: %{public}d x %{public}d",
+                       imageInfo.size.width, imageInfo.size.height);
+            if (gainmapPixelMap->GetAllocatorType() == AllocatorType::DMA_ALLOC) {
+                IMAGE_LOGI("Gainmap is backed by DMA buffer");
+            }
+        }
+    } else {
+        IMAGE_LOGI("CreatePictureByHdrAndSdrPixelMap returned null");
+    }
+    
+    IMAGE_LOGI("%{public}s completed.", __func__);
+    return true;
+}
+
+bool TestGetHdrComposedPixelMap(const uint8_t* data, size_t size)
+{
+    IMAGE_LOGI("%{public}s start.", __func__);
+    if (data == nullptr || size < sizeof(int32_t) * NUM_4) {
+        return false;
+    }
+    g_data = data;
+    g_size = size;
+    g_pos = 0;
+    std::shared_ptr<PixelMap> hdrPixelMap = GetPixelMapFromData(PixelFormat::RGBA_1010102);
+    std::shared_ptr<PixelMap> sdrPixelMap = GetPixelMapFromData(PixelFormat::RGBA_8888);
+    if (hdrPixelMap == nullptr || sdrPixelMap == nullptr) {
+        IMAGE_LOGE("Failed to create PixelMaps");
+        return false;
+    }
+    std::unique_ptr<Picture> picture = Picture::CreatePictureByHdrAndSdrPixelMap(hdrPixelMap, sdrPixelMap);
+    if (picture == nullptr) {
+        IMAGE_LOGE("Failed to create Picture with gainmap");
+        return false;
+    }
+    std::unique_ptr<PixelMap> composedPixelMap = picture->GetHdrComposedPixelMap();
+    if (composedPixelMap != nullptr) {
+        IMAGE_LOGI("GetHdrComposedPixelMap succeeded (default format)");
+        ImageInfo info;
+        composedPixelMap->GetImageInfo(info);
+        IMAGE_LOGI("Composed PixelMap size: %{public}d x %{public}d, format: %{public}d",
+                   info.size.width, info.size.height, info.pixelFormat);
+    } else {
+        IMAGE_LOGI("GetHdrComposedPixelMap returned null (this may be expected)");
+    }
+    std::unique_ptr<PixelMap> composedPixelMapWithFormat =
+        picture->GetHdrComposedPixelMap(PixelFormat::RGBA_1010102);
+    if (composedPixelMapWithFormat != nullptr) {
+        IMAGE_LOGI("GetHdrComposedPixelMap with format succeeded");
+    }
+    IMAGE_LOGI("%{public}s completed.", __func__);
+    return true;
+}
 } // namespace Media
 } // namespace OHOS
 
@@ -396,10 +509,37 @@ bool CreatePictureByRandomImageSource(const uint8_t *data, size_t size, const st
 extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
 {
     /*Run your code on data */
-    OHOS::Media::PictureRandomFuzzTest(data, size);
-    std::string pathName = "/data/local/tmp/test_jpeg.jpg";
-    OHOS::Media::CreatePictureByRandomImageSource(data, size, pathName);
-    pathName = "/data/local/tmp/test_heif.heic";
-    OHOS::Media::CreatePictureByRandomImageSource(data, size, pathName);
+    if (size <  OHOS::Media::OPT_SIZE) {
+        return 0;
+    }
+    FuzzedDataProvider fdp(data + size - OHOS::Media::OPT_SIZE, OHOS::Media::OPT_SIZE);
+    OHOS::Media::FDP = &fdp;
+    uint8_t action = fdp.ConsumeIntegral<uint8_t>() % 6;
+    switch (action) {
+        case 0:
+            OHOS::Media::PictureRandomFuzzTest(data, size - OHOS::Media::OPT_SIZE);
+            break;
+        case 1: {
+            std::string pathName = "/data/local/tmp/test_jpeg.jpg";
+            OHOS::Media::CreatePictureByRandomImageSource(data, size - OHOS::Media::OPT_SIZE, pathName);
+            break;
+        }
+        case 2: {
+            std::string pathName = "/data/local/tmp/test_heif.heic";
+            OHOS::Media::CreatePictureByRandomImageSource(data, size - OHOS::Media::OPT_SIZE, pathName);
+            break;
+        }
+        case 3:
+            OHOS::Media::GainmapCreateFuzzTest(data, size - OHOS::Media::OPT_SIZE);
+            break;
+        case 4:
+            OHOS::Media::TestCreateGainmapByHdrAndSdr(data, size - OHOS::Media::OPT_SIZE);
+            break;
+        case 5:
+            OHOS::Media::TestGetHdrComposedPixelMap(data, size - OHOS::Media::OPT_SIZE);
+            break;
+        default:
+            break;
+    }
     return 0;
 }

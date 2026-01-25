@@ -41,6 +41,16 @@ const static uint32_t HEIF_MAX_EXIF_SIZE = 128 * 1024;
 const static uint32_t HEIF_MAX_SAMPLE_SIZE = 20 * 1024 * 1024;
 const static uint32_t FRAME_INDEX_DELTA = 1;
 
+static bool HasOverflowed(uint32_t num1, uint32_t num2)
+{
+    return num1 > std::numeric_limits<uint32_t>::max() - num2;
+}
+
+static bool HasOverflowedSizeT(size_t num1, size_t num2)
+{
+    return num1 > std::numeric_limits<size_t>::max() - num2;
+}
+
 HeifParser::HeifParser() = default;
 
 HeifParser::~HeifParser() = default;
@@ -1227,6 +1237,9 @@ heif_error HeifParser::GetHeifsFrameData(uint32_t index, std::vector<uint8_t> &d
         return res;
     }
     size_t oldSize = dest.size();
+    if (HasOverflowedSizeT(static_cast<size_t>(sampleSize), oldSize)) {
+        return heif_error_add_overflow;
+    }
     size_t newSize = static_cast<size_t>(sampleSize) + oldSize;
     if (newSize > HEIF_MAX_SAMPLE_SIZE) {
         return heif_error_sample_size_too_large;
@@ -1240,8 +1253,12 @@ heif_error HeifParser::GetHeifsFrameData(uint32_t index, std::vector<uint8_t> &d
     if (!inputStream_) {
         return heif_error_eof;
     }
-    inputStream_->Seek(chunkOffset + preSampleSize);
-    inputStream_->Read(reinterpret_cast<char*>(dest.data()) + oldSize, static_cast<size_t>(sampleSize));
+    if (HasOverflowed(chunkOffset, preSampleSize) || !inputStream_->Seek(chunkOffset + preSampleSize)) {
+        return heif_error_eof;
+    }
+    if (!inputStream_->Read(reinterpret_cast<char*>(dest.data()) + oldSize, static_cast<size_t>(sampleSize))) {
+        return heif_error_eof;
+    }
     return heif_error_ok;
 }
 
@@ -1264,6 +1281,9 @@ heif_error HeifParser::GetPreSampleSize(uint32_t index, uint32_t &preSampleSize)
         if (res != heif_error_ok) {
             return res;
         }
+        if (HasOverflowed(preSampleSize, sampleSize)) {
+            return heif_error_add_overflow;
+        }
         preSampleSize += sampleSize;
     }
     return heif_error_ok;
@@ -1273,6 +1293,9 @@ heif_error HeifParser::GetHeifsGroupFrameInfo(uint32_t index, HeifsFrameGroup &f
 {
     if (!stssBox_) {
         frameGroup.beginFrameIndex = index;
+        if (HasOverflowed(index, FRAME_INDEX_DELTA)) {
+            return heif_error_add_overflow;
+        }
         frameGroup.endFrameIndex = index + FRAME_INDEX_DELTA;
         return heif_error_ok;
     }
@@ -1288,8 +1311,14 @@ heif_error HeifParser::GetHeifsGroupFrameInfo(uint32_t index, HeifsFrameGroup &f
     if (ret != heif_error_ok) {
         return ret;
     }
+    if (HasOverflowed(frameCount, FRAME_INDEX_DELTA)) {
+            return heif_error_add_overflow;
+    }
     sampleNumbers.emplace_back(frameCount + FRAME_INDEX_DELTA);
     for (size_t i = 0; i < sampleNumbers.size(); i++) {
+        if (sampleNumbers[i] < FRAME_INDEX_DELTA) {
+            return heif_error_add_overflow;
+        }
         uint32_t keyFrameIndex = sampleNumbers[i] - FRAME_INDEX_DELTA;
         if (index >= keyFrameIndex) {
             beginFrameIndex = keyFrameIndex;

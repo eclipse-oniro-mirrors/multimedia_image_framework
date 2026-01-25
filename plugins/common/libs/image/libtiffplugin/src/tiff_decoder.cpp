@@ -98,9 +98,9 @@ toff_t TiffDecoder::SeekProc(thandle_t handle, toff_t off, int whence)
 
     if (whence == SEEK_SET) {
         newPos = static_cast<uint32_t>(off);
-    } else if (whence == SEEK_CUR) {
+    } else if (whence == SEEK_CUR && !ImageUtils::HasOverflowed(currentPos, static_cast<uint32_t>(off))) {
         newPos = currentPos + static_cast<uint32_t>(off);
-    } else if (whence == SEEK_END) {
+    } else if (whence == SEEK_END && !ImageUtils::HasOverflowed(currentPos, static_cast<uint32_t>(off))) {
         newPos = fileSize + static_cast<uint32_t>(off);
     } else {
         return static_cast<toff_t>(-1);
