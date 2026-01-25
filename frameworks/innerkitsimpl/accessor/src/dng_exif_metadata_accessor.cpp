@@ -34,6 +34,7 @@ namespace OHOS {
 namespace Media {
 namespace {
     using uint_8 = byte;
+    constexpr uint64_t MAX_DNG_STREAM_SIZE = 300 * 1024 * 1024; // 300MB
 }
 
 DngExifMetadataAccessor::DngExifMetadataAccessor(std::shared_ptr<MetadataStream> &stream)
@@ -53,7 +54,7 @@ uint32_t DngExifMetadataAccessor::Read()
     imageStream_->Seek(0, SeekPos::BEGIN);
     ssize_t size = imageStream_->GetSize();
     byte *byteStream = imageStream_->GetAddr();
-    if ((size == 0) || (byteStream == nullptr)) {
+    if ((size == 0) || (byteStream == nullptr) || size > MAX_DNG_STREAM_SIZE) {
         IMAGE_LOGE("Input image stream is empty.");
         return ERR_IMAGE_SOURCE_DATA;
     }

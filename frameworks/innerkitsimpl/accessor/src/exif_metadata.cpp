@@ -569,8 +569,8 @@ static unsigned int CalculateTagValueSize(ExifEntry *entry)
 
 static void GetIntValue(EntryBasicInfo info, MetadataValue &result)
 {
-    CHECK_ERROR_RETURN_LOG(info.components == 0 || info.data == nullptr,
-        "%{public}s, data is nullptr or components is 0", __func__);
+    CHECK_ERROR_RETURN_LOG(info.components == 0 || info.components > MAX_TAG_VALUE_SIZE_FOR_STR ||
+        info.data == nullptr, "%{public}s, data is nullptr or components is 0", __func__);
     result.intArrayValue.clear();
     result.intArrayValue.reserve(info.components);
     size_t formatSize = exif_format_get_size(info.format);
@@ -607,8 +607,8 @@ static void GetIntValue(EntryBasicInfo info, MetadataValue &result)
 
 static void GetRationalValue(EntryBasicInfo info, MetadataValue &result)
 {
-    CHECK_ERROR_RETURN_LOG(info.components == 0 || info.data == nullptr,
-        "%{public}s, data is nullptr or components is 0", __func__);
+    CHECK_ERROR_RETURN_LOG(info.components == 0 || info.components > MAX_TAG_VALUE_SIZE_FOR_STR ||
+        info.data == nullptr, "%{public}s, data is nullptr or components is 0", __func__);
     result.doubleArrayValue.clear();
     result.doubleArrayValue.reserve(info.components);
     size_t formatSize = exif_format_get_size(info.format);
@@ -647,8 +647,8 @@ static uint32_t GetBlobValueFromExifEntry(ExifEntry *entry, MetadataValue &resul
 {
     CHECK_ERROR_RETURN_RET_LOG(entry == nullptr || !entry->parent || !entry->parent->parent,
         ERR_IMAGE_DECODE_METADATA_FAILED, "Invalid EXIF entry structure");
-    CHECK_ERROR_RETURN_RET_LOG(entry->size <= 0 || entry->data == nullptr, ERR_IMAGE_DECODE_METADATA_FAILED,
-        "data is nullptr or size is invalid");
+    CHECK_ERROR_RETURN_RET_LOG(entry->size <= 0 || entry->size > MAX_TAG_VALUE_SIZE_FOR_STR ||
+        entry->data == nullptr, ERR_IMAGE_DECODE_METADATA_FAILED, "data is nullptr or size is invalid");
     result.bufferValue.resize(entry->size);
     CHECK_ERROR_RETURN_RET(result.bufferValue.size() != entry->size, ERR_IMAGE_DECODE_METADATA_FAILED);
     errno_t err = memcpy_s(result.bufferValue.data(), result.bufferValue.size(), entry->data, entry->size);
@@ -696,9 +696,10 @@ static void GetValueByExifType(ExifEntry *entry, MetadataValue &result, unsigned
 static void ParseHwUndefinedData(MnoteHuaweiEntry *entry, MetadataValue &result)
 {
     CHECK_ERROR_RETURN(entry == nullptr);
-    if (entry->size > 0) {
+    if (entry->size > 0 && entry->size < MAX_TAG_VALUE_SIZE_FOR_STR) {
         result.bufferValue.resize(entry->size);
-        memcpy_s(result.bufferValue.data(), entry->size, entry->data, entry->size);
+        bool cond = memcpy_s(result.bufferValue.data(), entry->size, entry->data, entry->size);
+        CHECK_ERROR_RETURN_LOG(cond != EOK, "%{public}s, memory copy failed.", __func__);
     }
 }
 
@@ -755,10 +756,13 @@ static int ParseMatchingHwEntry(const std::string &key, MnoteHuaweiEntryCount *e
         if (!entryKey || key != entryKey) {
             continue;
         }
+        if (entry->components > entry->size) {
+            continue;
+        }
         if (key == "HwMnoteFaceConf" || key == "HwMnoteFaceSmileScore") {
             std::vector<int64_t> intValue;
-            for (uint32_t i = 0; i < entry->components; i++) {
-                uint8_t value = *(reinterpret_cast<const uint8_t*>(entry->data + i));
+            for (uint32_t j = 0; j < entry->components; j++) {
+                uint8_t value = *(reinterpret_cast<const uint8_t*>(entry->data + j));
                 intValue.push_back(value);
             }
             result.intArrayValue = intValue;
@@ -830,11 +834,7 @@ int ExifMetadata::GetValueByType(const std::string &key, MetadataValue &value) c
         }
         GetValueByExifType(entry, tmpValue, tagValueSize);
     }
-    if (ExifMetadatFormatter::IsSensitiveInfo(key)) {
-        IMAGE_LOGD("Retrieved value for key: %{public}s success", key.c_str());
-    } else {
-        IMAGE_LOGD("Retrieved value for key: %{public}s", key.c_str());
-    }
+    IMAGE_LOGD("Retrieved value for key: %{public}s", key.c_str());
     value = tmpValue;
     return SUCCESS;
 }
@@ -1534,7 +1534,8 @@ bool ExifMetadata::SetBlobValue(const MetadataValue &properties)
     entry->data = reinterpret_cast<unsigned char*>(malloc(blobSize));
     cond = entry->data == nullptr;
     CHECK_ERROR_RETURN_RET_LOG(cond, false, "Memory allocation failed for blob data. Size: %zu", blobSize);
-    memcpy_s(entry->data, blobSize, blobData.data(), blobSize);
+    cond = memcpy_s(entry->data, blobSize, blobData.data(), blobSize);
+    CHECK_ERROR_RETURN_RET_LOG(cond != EOK, false, "Memory copy failed data.");
     entry->size = static_cast<uint32_t>(blobSize);
     IMAGE_LOGD("Set blob data for key: %{public}s, size: %zu", key.c_str(), blobSize);
     return true;
