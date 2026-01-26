@@ -72,7 +72,7 @@ private:
         XMP_FD_IO,
     };
 
-    static std::atomic<int32_t> refCount_;
+    static int32_t refCount_;
     static std::mutex initMutex_;
     bool isRefCounted_ = false;
     IOType ioType_ = IOType::UNKNOWN;

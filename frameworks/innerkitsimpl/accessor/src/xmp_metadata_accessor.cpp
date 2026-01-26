@@ -32,13 +32,13 @@ namespace {
 
 namespace OHOS {
 namespace Media {
-std::atomic<int32_t> XMPMetadataAccessor::refCount_{0};
+int32_t XMPMetadataAccessor::refCount_{0};
 std::mutex XMPMetadataAccessor::initMutex_;
 
 XMPMetadataAccessor::XMPMetadataAccessor()
 {
     std::lock_guard<std::mutex> lock(initMutex_);
-    if (refCount_.load() == 0) {
+    if (refCount_ == 0) {
         XMP_TRY();
         bool initOk = SXMPFiles::Initialize(kXMPFiles_IgnoreLocalText);
         CHECK_ERROR_RETURN_LOG(!initOk, "%{public}s failed to initialize XMPFiles", __func__);

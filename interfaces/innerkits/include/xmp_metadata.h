@@ -16,12 +16,9 @@
 #ifndef INTERFACES_INNERKITS_INCLUDE_XMP_METADATA_H
 #define INTERFACES_INNERKITS_INCLUDE_XMP_METADATA_H
 
-#include <atomic>
 #include <memory>
 #include <mutex>
 #include <string>
-#include <unordered_map>
-#include <vector>
 
 #include "image_type.h"
 #include "nocopyable.h"
@@ -56,7 +53,7 @@ public:
 
 private:
     DISALLOW_COPY_AND_MOVE(XMPMetadata);
-    static std::atomic<int32_t> refCount_;
+    static int32_t refCount_;
     static std::mutex initMutex_;
     std::unique_ptr<XMPMetadataImpl> impl_;
 };
