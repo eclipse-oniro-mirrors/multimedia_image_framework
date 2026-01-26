@@ -36,7 +36,7 @@ FuzzedDataProvider* FDP;
 void ImageDngExifMetadataGetValueFuzzTest()
 {
     std::shared_ptr<DngExifMetadata> dngExifMetadata = std::make_shared<DngExifMetadata>();
-    std::string key = GetRandomKey(FDP);
+    std::string key = GetFuzzKey(FDP);
     std::string value = FDP->ConsumeRandomLengthString(MAX_STRING_LENGTH);
     dngExifMetadata->GetValue(key, value);
 }
@@ -44,7 +44,7 @@ void ImageDngExifMetadataGetValueFuzzTest()
 void ImageDngExifMetadataSetValueFuzzTest()
 {
     std::shared_ptr<DngExifMetadata> dngExifMetadata = std::make_shared<DngExifMetadata>();
-    std::string key = GetRandomKey(FDP);
+    std::string key = GetFuzzKey(FDP);
     std::string value = FDP->ConsumeRandomLengthString(MAX_STRING_LENGTH);
     dngExifMetadata->SetValue(key, value);
 }
@@ -52,7 +52,7 @@ void ImageDngExifMetadataSetValueFuzzTest()
 void ImageDngExifMetadataRemoveEntryFuzzTest()
 {
     std::shared_ptr<DngExifMetadata> dngExifMetadata = std::make_shared<DngExifMetadata>();
-    std::string key = GetRandomKey(FDP);
+    std::string key = GetFuzzKey(FDP);
     dngExifMetadata->RemoveEntry(key);
 }
 
@@ -61,7 +61,7 @@ void ImageDngExifMetadataGetExifPropertyFuzzTest()
     std::shared_ptr<DngExifMetadata> dngExifMetadata = std::make_shared<DngExifMetadata>();
     dngExifMetadata->dngSdkInfo_ = std::make_unique<DngSdkInfo>();
     MetadataValue value{};
-    std::string key = GetRandomKey(FDP);
+    std::string key = GetFuzzKey(FDP);
     dngExifMetadata->GetExifProperty(value);
 }
 

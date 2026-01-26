@@ -191,7 +191,7 @@ void PixelYuvTest002(OHOS::Media::PixelMap* pixelMap);
 
 void SetFdpDecodeOptions(FuzzedDataProvider* fdp, OHOS::Media::DecodeOptions &decodeOpts);
 
-std::string GetRandomKey(FuzzedDataProvider* fdp);
+std::string GetFuzzKey(FuzzedDataProvider* fdp);
 
 void SetFdpPixelDecodeOptions(FuzzedDataProvider* fdp, OHOS::ImagePlugin::PixelDecodeOptions &plOpts);
 #endif
