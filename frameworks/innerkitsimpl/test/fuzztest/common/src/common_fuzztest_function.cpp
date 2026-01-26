@@ -324,7 +324,7 @@ void SetFdpPixelDecodeOptions(FuzzedDataProvider* fdp, OHOS::ImagePlugin::PixelD
     plOpts.editable = fdp->ConsumeBool();
 }
 
-std::string GetRandomKey(FuzzedDataProvider* fdp)
+std::string GetFuzzKey(FuzzedDataProvider* fdp)
 {
     static const std::vector<std::string> allKeys = {
         "ImageDescription", "GPSVersionID", "GPSLatitudeRef", "GPSLatitude", "GPSLongitudeRef", "GPSLongitude",

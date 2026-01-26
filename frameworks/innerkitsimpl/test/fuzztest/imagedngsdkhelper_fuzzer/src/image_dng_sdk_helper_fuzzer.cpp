@@ -75,7 +75,7 @@ void ImageDngSdkHelperGetExifPropertyFuzzTest(const std::string& pathName)
     }
 
     MetadataValue value{};
-    value.key = GetRandomKey(FDP);
+    value.key = GetFuzzKey(FDP);
     DngSdkHelper::GetExifProperty(dngInfo, value);
 }
 
@@ -95,7 +95,7 @@ void ImageDngSdkHelperSetExifPropertyFuzzTest(const std::string& pathName)
     }
 
     MetadataValue value{};
-    value.key = GetRandomKey(FDP);
+    value.key = GetFuzzKey(FDP);
     DngSdkHelper::SetExifProperty(dngInfo, value);
 }
 } // namespace Media

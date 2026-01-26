@@ -382,23 +382,32 @@ void GetImagePropertiesByFuzzTest(const uint8_t *data, size_t size)
     }
 
     MetadataValue value;
-    std::string key = GetRandomKey(FDP);
+    std::string key = GetFuzzKey(FDP);
     imageSource->GetImagePropertyByType(0, key, value);
 
     imageSource->GetAllPropertiesWithType();
 
-    MetadataValue metadataValue;
-    value.key = "ExifVersion";
-    value.bufferValue = {0x00, 0x02, 0x01, 0x00};
+    MetadataValue propertyBlobValue;
+    propertyBlobValue.key = GetFuzzKey(FDP);
+    propertyBlobValue.bufferValue = {0x00, 0x02, 0x01, 0x00};
 
-    MetadataValue validProp;
-    validProp.key = "ImageWidth";
-    validProp.intArrayValue = {2000};
+    MetadataValue propertyDoubleValue;
+    propertyDoubleValue.key = GetFuzzKey(FDP);
+    propertyDoubleValue.doubleArrayValue = {3.14159};
+
+    MetadataValue propertyIntValue;
+    propertyIntValue.key = GetFuzzKey(FDP);
+    propertyIntValue.intArrayValue = {2000};
     
-    MetadataValue invalidProp;
-    invalidProp.key = "InvalidKey";
-    invalidProp.stringValue = "test";
-    std::vector<MetadataValue> kValueTypeArray = {metadataValue, validProp, invalidProp};
+    MetadataValue propertyStringValue;
+    propertyStringValue.key = GetFuzzKey(FDP);
+    propertyStringValue.stringValue = "test";
+    std::vector<MetadataValue> kValueTypeArray = {
+        propertyBlobValue,
+        propertyDoubleValue,
+        propertyIntValue,
+        propertyStringValue
+    };
     imageSource->WriteImageMetadataBlob(kValueTypeArray);
     imageSource->GetAllPropertiesWithType();
 
@@ -487,7 +496,7 @@ void GetDngImagePropertyByDngSdkFuzzTest(const std::string& pathName)
         return;
     }
     MetadataValue value;
-    std::string key = GetRandomKey(FDP);
+    std::string key = GetFuzzKey(FDP);
     imageSource->GetDngImagePropertyByDngSdk(key, value);
 }
 }  // namespace Media
