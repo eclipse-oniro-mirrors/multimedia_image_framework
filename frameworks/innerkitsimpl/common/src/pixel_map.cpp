@@ -3363,11 +3363,11 @@ static std::map<uint8_t, std::function<bool(TlvDecodeInfo&, vector<uint8_t>&, in
     TlvDecodeFunc = {
         {TLV_IMAGE_WIDTH, [](TlvDecodeInfo& decodeInfo, vector<uint8_t>& buff, int32_t& cursor, int32_t len) {
             decodeInfo.info.size.width = ImageUtils::ReadVarint(buff, cursor);
-            return true;
+            return !(decodeInfo.info.size.width <= 0);
         }},
         {TLV_IMAGE_HEIGHT, [](TlvDecodeInfo& decodeInfo, vector<uint8_t>& buff, int32_t& cursor, int32_t len) {
             decodeInfo.info.size.height = ImageUtils::ReadVarint(buff, cursor);
-            return true;
+            return !(decodeInfo.info.size.height <= 0);
         }},
         {TLV_IMAGE_PIXELFORMAT, [](TlvDecodeInfo& decodeInfo, vector<uint8_t>& buff, int32_t& cursor, int32_t len) {
             decodeInfo.info.pixelFormat = static_cast<PixelFormat>(ImageUtils::ReadVarint(buff, cursor));
@@ -3472,7 +3472,7 @@ bool PixelMap::ReadTlvAttr(std::vector<uint8_t> &buff, ImageInfo &info,
     int32_t cursor = 0;
     for (uint8_t tag = ReadUint8(buff, cursor); tag != TLV_END; tag = ReadUint8(buff, cursor)) {
         int32_t len = ImageUtils::ReadVarint(buff, cursor);
-        if (len <= 0 || static_cast<size_t>(cursor + len) > buff.size()) {
+        if (len <= 0 || cursor > INT32_MAX - len || static_cast<size_t>(cursor + len) > buff.size()) {
             IMAGE_LOGE("[PixelMap] ReadTlvAttr out of range tag: %{public}d, len: %{public}d", tag, len);
             return false;
         }
@@ -3507,7 +3507,6 @@ PixelMap *PixelMap::DecodeTlv(std::vector<uint8_t> &buff)
         return nullptr;
     }
     ImageInfo imageInfo;
-    int32_t dataSize = 0;
     std::unique_ptr<AbsMemory> dstMemory = nullptr;
     int32_t csm = -1;
     if (!ReadTlvAttr(buff, imageInfo, dstMemory, csm)) {
