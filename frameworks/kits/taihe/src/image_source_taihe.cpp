@@ -1340,7 +1340,9 @@ void ImageSourceImpl::ReleaseSync()
 static bool ParseDecodingOptionsForPicture(DecodingOptionsForPicture const& options,
     OHOS::Media::DecodingOptionsForPicture &dst)
 {
-    for (size_t i = 0; i < options.desiredAuxiliaryPictures.size(); i++) {
+    constexpr size_t maxAuxTypeCnt = 32U;
+    size_t auxPicTypeCount = std::min(options.desiredAuxiliaryPictures.size(), maxAuxTypeCnt);
+    for (size_t i = 0; i < auxPicTypeCount; i++) {
         int32_t type = options.desiredAuxiliaryPictures[i];
         if (ImageTaiheUtils::GetTaiheSupportedAuxTypes().count(static_cast<OHOS::Media::AuxiliaryPictureType>(type))) {
             dst.desireAuxiliaryPictures.emplace(OHOS::Media::AuxiliaryPictureType(type));
