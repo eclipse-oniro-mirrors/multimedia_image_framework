@@ -6703,6 +6703,7 @@ uint32_t ImageSource::WriteXMPMetadata(std::shared_ptr<XMPMetadata> &xmpMetadata
 {
     IMAGE_LOGD("%{public}s enter", __func__);
     std::lock_guard<std::mutex> guard(decodingMutex_);
+    std::lock_guard<std::mutex> guardFile(fileMutex_);
     std::unique_ptr<XMPMetadataAccessor> accessor = nullptr;
     if (!srcFilePath_.empty()) {
         accessor = XMPMetadataAccessor::Create(srcFilePath_, XMPAccessMode::READ_WRITE_XMP);

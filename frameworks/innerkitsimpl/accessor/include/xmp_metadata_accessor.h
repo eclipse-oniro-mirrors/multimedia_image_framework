@@ -74,6 +74,7 @@ private:
 
     static std::atomic<int32_t> refCount_;
     static std::mutex initMutex_;
+    bool isRefCounted_ = false;
     IOType ioType_ = IOType::UNKNOWN;
     std::unique_ptr<SXMPFiles, XmpFileDeleter> xmpFiles_ = nullptr;
     std::shared_ptr<XMPMetadata> xmpMetadata_ = nullptr;

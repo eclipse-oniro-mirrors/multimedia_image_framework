@@ -38,28 +38,38 @@ std::mutex XMPMetadata::initMutex_;
 XMPMetadata::XMPMetadata()
 {
     std::lock_guard<std::mutex> lock(initMutex_);
-    if (refCount_++ == 0) {
+    if (refCount_.load() == 0) {
         XMP_TRY();
-        CHECK_ERROR_RETURN_LOG(!SXMPMeta::Initialize(), "%{public}s failed to initialize XMPMeta", __func__);
+        bool initOk = SXMPMeta::Initialize();
+        CHECK_ERROR_RETURN_LOG(!initOk, "%{public}s failed to initialize XMPMeta", __func__);
         XMP_CATCH_NO_RETURN();
     }
+
+    ++refCount_;
     impl_ = std::make_unique<XMPMetadataImpl>();
 }
 
 XMPMetadata::XMPMetadata(std::unique_ptr<XMPMetadataImpl> impl)
-    : impl_(std::move(impl))
 {
     std::lock_guard<std::mutex> lock(initMutex_);
-    if (refCount_++ == 0) {
+    CHECK_ERROR_RETURN_LOG(impl == nullptr, "%{public}s impl is nullptr", __func__);
+
+    if (refCount_.load() == 0) {
         XMP_TRY();
-        CHECK_ERROR_RETURN_LOG(!SXMPMeta::Initialize(), "%{public}s failed to initialize XMPMeta", __func__);
+        bool initOk = SXMPMeta::Initialize();
+        CHECK_ERROR_RETURN_LOG(!initOk, "%{public}s failed to initialize XMPMeta", __func__);
         XMP_CATCH_NO_RETURN();
     }
+
+    ++refCount_;
+    impl_ = std::move(impl);
 }
 
 XMPMetadata::~XMPMetadata()
 {
     std::lock_guard<std::mutex> lock(initMutex_);
+    CHECK_ERROR_RETURN_LOG(impl_ == nullptr, "%{public}s impl is nullptr! Maybe initialization failed.", __func__);
+
     if (--refCount_ == 0) {
         XMP_TRY();
         SXMPMeta::Terminate();
