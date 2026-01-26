@@ -724,9 +724,7 @@ bool ImageUtils::GetYuvInfoFromSurfaceBuffer(YUVDataInfo &yuvInfo,
     sptr<SurfaceBuffer> surfaceBuffer)
 {
     OH_NativeBuffer_Planes* planes = nullptr;
-    if (surfaceBuffer == nullptr) {
-        return false;
-    }
+    CHECK_ERROR_RETURN_RET(surfaceBuffer == nullptr, false);
     GSError retVal = surfaceBuffer->GetPlanesInfo(reinterpret_cast<void**>(&planes));
     if (retVal == OHOS::GSERROR_OK && planes != nullptr && planes->planeCount >= NUM_2) {
         yuvInfo.yStride = planes->planes[PLANE_Y].columnStride;
@@ -747,9 +745,7 @@ bool ImageUtils::GetYuvInfoFromSurfaceBuffer(YUVDataInfo &yuvInfo,
 bool ImageUtils::CopyYuvPixelMapToSurfaceBuffer(PixelMap* pixelmap,
     sptr<SurfaceBuffer> surfaceBuffer)
 {
-    if (pixelmap == nullptr || surfaceBuffer == nullptr) {
-        return false;
-    }
+    CHECK_ERROR_RETURN_RET(pixelmap == nullptr || surfaceBuffer == nullptr, false);
     uint8_t* src = const_cast<uint8_t*>(pixelmap->GetPixels());
     uint8_t* dst = static_cast<uint8_t*>(surfaceBuffer->GetVirAddr());
     uint32_t dstSize = surfaceBuffer->GetSize();
