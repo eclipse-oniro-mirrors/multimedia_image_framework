@@ -24,14 +24,6 @@
 class XMP_Error;
 
 // Helper macros to simplify XMP exception handling patterns.
-// Usage pattern:
-//   uint32_t Foo() {
-//       XMP_TRY();
-//       ... normal logic ...
-//       return SUCCESS;
-//       XMP_CATCH_RETURN_CODE(ERR_XMP_DECODE_FAILED);
-//   }
-
 #define XMP_TRY() try {
 
 #define XMP_CATCH_RETURN_RET(retExpr)                                            \

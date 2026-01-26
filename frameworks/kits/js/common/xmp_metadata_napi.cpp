@@ -113,9 +113,8 @@ napi_status XMPMetadataNapi::DefineClassProperties(napi_env env, napi_value &con
         DECLARE_NAPI_FUNCTION("getBlob", GetBlob),
     };
 
-    return napi_define_class(env, CLASS_NAME.c_str(), NAPI_AUTO_LENGTH,
-                            Constructor, nullptr, IMG_ARRAY_SIZE(props),
-                            props, &constructor);
+    return napi_define_class(env, CLASS_NAME.c_str(), NAPI_AUTO_LENGTH, Constructor, nullptr,
+        IMG_ARRAY_SIZE(props), props, &constructor);
 }
 
 napi_status XMPMetadataNapi::DefineStaticProperties(napi_env env, napi_value exports)
@@ -288,7 +287,8 @@ napi_value XMPMetadataNapi::CreateXMPNamespace(napi_env env, const std::string &
     napi_value namespaceObj = nullptr;
     napi_create_object(env, &namespaceObj);
 
-    napi_value uriValue, prefixValue;
+    napi_value uriValue;
+    napi_value prefixValue;
     napi_create_string_utf8(env, uri.c_str(), uri.length(), &uriValue);
     napi_create_string_utf8(env, prefix.c_str(), prefix.length(), &prefixValue);
 

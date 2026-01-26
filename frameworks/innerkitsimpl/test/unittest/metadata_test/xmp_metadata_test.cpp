@@ -79,8 +79,6 @@ public:
     ~XmpMetadataTest() = default;
 };
 
-
-
 static bool SetValueForTest(XMPMetadata &xmpMetadata, const std::string &path, XMPTagType type,
     const std::string &value)
 {
@@ -152,7 +150,7 @@ static Media::XMPMetadata::EnumerateCallback InitTestCallback(std::vector<Expect
             GTEST_LOG_(INFO) <<
                 "name: " << tag.name << ", type: " << static_cast<int>(tag.type) << ", value: " << tag.value << " in.";
             bool isTagFound = false;
-            for(const ExpectedTagTypeValue &it : xmpTagVec) {
+            for (const ExpectedTagTypeValue &it : xmpTagVec) {
                 if (it.type == tag.type && it.value == tag.value) {
                     isTagFound = true;
                     break;

@@ -174,7 +174,6 @@ map<string, XMPTag> XMPMetadataImpl::GetTagsSync(optional_view<string> rootPath,
             result.emplace(path, ToTaiheXMPTag(tag));
             return true;
         }, innerPath, innerOption);
-
     if (ret != OHOS::Media::SUCCESS) {
         ThrowXMPException(ret);
         return map<string, XMPTag>();

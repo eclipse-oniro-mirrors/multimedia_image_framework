@@ -37,7 +37,8 @@ public:
     ~XMPMetadataAccessorTest() = default;
 };
 
-static std::vector<uint8_t> ReadFile(const std::string& path) {
+static std::vector<uint8_t> ReadFile(const std::string& path)
+{
     std::ifstream file(path, std::ios::binary);
     EXPECT_TRUE(file.is_open());
     file.seekg(0, std::ios::end);

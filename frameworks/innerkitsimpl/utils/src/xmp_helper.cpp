@@ -100,6 +100,19 @@ void XMPHelper::LogXMPError(const char *funcName, const XMP_Error &error)
         static_cast<int32_t>(error.GetID()), msg);
 }
 
+// Remove trailing "/*", "/", or "*" before '['
+static void TrimBeforeBracket(std::string &path, size_t &writePos)
+{
+    while (writePos > 0) {
+        const char previousChar = path[writePos - NUM_1];
+        if (previousChar == '/' || previousChar == '*') {
+            --writePos;
+        } else {
+            break;
+        }
+    }
+}
+
 // Normalize array index path (single-pass optimization)
 // dc:subject/[2] -> dc:subject[2]
 // dc:subject*[2] -> dc:subject[2]
@@ -112,28 +125,24 @@ static void NormalizeArrayIndexPath(std::string &path)
 
     size_t writePos = 0;
     bool inBracket = false;
-    for (size_t i = 0; i < path.size(); ++i) {
-        char c = path[i];
-        if (c == '[') {
-            // Remove trailing "/*", "/", or "*" before '['
-            while (writePos > 0) {
-                char prev = path[writePos - NUM_1];
-                if (prev == '/' || prev == '*') {
-                    writePos--;
-                } else {
-                    break;
-                }
-            }
+    for (size_t readPos = 0; readPos < path.size(); ++readPos) {
+        const char currentChar = path[readPos];
+
+        // Handle bracket state transitions
+        if (currentChar == '[') {
+            TrimBeforeBracket(path, writePos);
             inBracket = true;
-        } else if (c == ']') {
+        } else if (currentChar == ']') {
             inBracket = false;
         }
-        path[writePos++] = c;
+
+        // Copy character to output position
+        path[writePos++] = currentChar;
     }
     path.resize(writePos);
 }
 
-// Property Extract Rule:
+// Property Extract Rule
 // | -------------------------- | ---------------------------------------------- | ---------------------------------- |
 // | Path Expression Type       | Format Example                                 | Property                           |
 // | -------------------------- | ---------------------------------------------- | ---------------------------------- |
