@@ -16,14 +16,10 @@
 #ifndef FRAMEWORKS_INNERKITSIMPL_ACCESSOR_INCLUDE_XMP_METADATA_ACCESSOR_H
 #define FRAMEWORKS_INNERKITSIMPL_ACCESSOR_INCLUDE_XMP_METADATA_ACCESSOR_H
 
-#include "image_log.h"
-#include "xmp_helper.h"
-#include "xmp_metadata.h"
-#include "XMP.hpp"
-#include "XMP.incl_cpp"
+#include <cstdint>
+#include <memory>
 
-class XMPBuffer_IO;
-class XMPFd_IO;
+#include "xmp_metadata.h"
 
 namespace OHOS {
 namespace Media {
@@ -35,51 +31,15 @@ enum class XMPAccessMode {
 
 class XMPMetadataAccessor {
 public:
-    XMPMetadataAccessor();
-    ~XMPMetadataAccessor();
+    virtual ~XMPMetadataAccessor() = default;
 
-    // static methods to create XMPMetadataAccessor
-    static std::unique_ptr<XMPMetadataAccessor> Create(const uint8_t *data, uint32_t size, XMPAccessMode mode);
-    static std::unique_ptr<XMPMetadataAccessor> Create(const std::string &filePath, XMPAccessMode mode);
-    static std::unique_ptr<XMPMetadataAccessor> Create(int32_t fileDescriptor, XMPAccessMode mode);
+    virtual uint32_t Read() = 0;
+    virtual uint32_t Write() = 0;
+    virtual std::shared_ptr<XMPMetadata> Get();
+    virtual void Set(std::shared_ptr<XMPMetadata> &xmpMetadata);
 
-    uint32_t Read();
-    uint32_t Write();
-    std::shared_ptr<XMPMetadata> Get();
-    void Set(std::shared_ptr<XMPMetadata> &xmpMetadata);
-
-private:
-    uint32_t CheckXMPFiles();
-    uint32_t InitializeFromBuffer(const uint8_t *data, uint32_t size, XMPAccessMode mode);
-    uint32_t InitializeFromPath(const std::string &filePath, XMPAccessMode mode);
-    uint32_t InitializeFromFd(int32_t fileDescriptor, XMPAccessMode mode);
-
-    struct XmpFileDeleter {
-        void operator()(SXMPFiles *ptr) const
-        {
-            CHECK_ERROR_RETURN_LOG(ptr == nullptr, "XMPFiles delete failed because ptr is nullptr");
-            XMP_TRY();
-            ptr->CloseFile();
-            delete ptr;
-            XMP_CATCH_NO_RETURN();
-        }
-    };
-
-    enum class IOType: uint8_t {
-        UNKNOWN,
-        XMP_FILE_PATH,
-        XMP_BUFFER_IO,
-        XMP_FD_IO,
-    };
-
-    static int32_t refCount_;
-    static std::mutex initMutex_;
-    bool isRefCounted_ = false;
-    IOType ioType_ = IOType::UNKNOWN;
-    std::unique_ptr<SXMPFiles, XmpFileDeleter> xmpFiles_ = nullptr;
+protected:
     std::shared_ptr<XMPMetadata> xmpMetadata_ = nullptr;
-    std::shared_ptr<XMPBuffer_IO> bufferIO_ = nullptr;
-    std::shared_ptr<XMPFd_IO> fdIO_ = nullptr;
 };
 } // namespace Media
 } // namespace OHOS

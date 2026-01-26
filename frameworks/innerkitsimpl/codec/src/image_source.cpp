@@ -69,7 +69,7 @@
 #include "source_stream.h"
 #include "image_dfx.h"
 #include "image_handle.h"
-#include "xmp_metadata_accessor.h"
+#include "xmp_metadata_accessor_factory.h"
 #if defined(ANDROID_PLATFORM) || defined(IOS_PLATFORM)
 #include "include/jpeg_decoder.h"
 #else
@@ -6665,6 +6665,10 @@ uint32_t ImageSource::CreateXMPMetadataByImageSource()
         return ERR_IMAGE_SOURCE_DATA;
     }
 
+    std::string mimeType;
+    errorCode = GetEncodedFormat(sourceInfo_.encodedFormat, mimeType);
+    CHECK_ERROR_RETURN_RET_LOG(errorCode != SUCCESS, errorCode, "%{public}s GetEncodedFormat failed", __func__);
+
     auto bufferPtr = sourceStreamPtr_->GetDataPtr();
     std::unique_ptr<uint8_t[]> tmpGuard;
     if (bufferPtr == nullptr) {
@@ -6674,7 +6678,7 @@ uint32_t ImageSource::CreateXMPMetadataByImageSource()
         bufferPtr = tmpBuffer;
     }
 
-    auto accessor = XMPMetadataAccessor::Create(bufferPtr, bufferSize, XMPAccessMode::READ_ONLY_XMP);
+    auto accessor = XMPMetadataAccessorFactory::Create(bufferPtr, bufferSize, XMPAccessMode::READ_ONLY_XMP, mimeType);
     CHECK_ERROR_RETURN_RET_LOG(accessor == nullptr, ERR_IMAGE_SOURCE_DATA,
         "%{public}s failed to create XMPMetadataAccessor from buffer", __func__);
     errorCode = accessor->Read();
@@ -6704,11 +6708,16 @@ uint32_t ImageSource::WriteXMPMetadata(std::shared_ptr<XMPMetadata> &xmpMetadata
     IMAGE_LOGD("%{public}s enter", __func__);
     std::lock_guard<std::mutex> guard(decodingMutex_);
     std::lock_guard<std::mutex> guardFile(fileMutex_);
+
+    std::string mimeType;
+    uint32_t errorCode = GetEncodedFormat(sourceInfo_.encodedFormat, mimeType);
+    CHECK_ERROR_RETURN_RET_LOG(errorCode != SUCCESS, errorCode, "%{public}s GetEncodedFormat failed", __func__);
+
     std::unique_ptr<XMPMetadataAccessor> accessor = nullptr;
     if (!srcFilePath_.empty()) {
-        accessor = XMPMetadataAccessor::Create(srcFilePath_, XMPAccessMode::READ_WRITE_XMP);
+        accessor = XMPMetadataAccessorFactory::Create(srcFilePath_, XMPAccessMode::READ_WRITE_XMP, mimeType);
     } else if (srcFd_ != INVALID_FILE_DESCRIPTOR) {
-        accessor = XMPMetadataAccessor::Create(srcFd_, XMPAccessMode::READ_WRITE_XMP);
+        accessor = XMPMetadataAccessorFactory::Create(srcFd_, XMPAccessMode::READ_WRITE_XMP, mimeType);
     } else {
         IMAGE_LOGE("%{public}s no valid file source (path or fd) found", __func__);
         return ERR_MEDIA_INVALID_OPERATION;
@@ -6719,7 +6728,7 @@ uint32_t ImageSource::WriteXMPMetadata(std::shared_ptr<XMPMetadata> &xmpMetadata
     accessor->Set(xmpMetadata);
 
     // Write XMP data (this will automatically update the file)
-    uint32_t errorCode = accessor->Write();
+    errorCode = accessor->Write();
     CHECK_ERROR_RETURN_RET_LOG(errorCode != SUCCESS, errorCode, "%{public}s XMP write failed", __func__);
     xmpMetadata_ = xmpMetadata;
 
