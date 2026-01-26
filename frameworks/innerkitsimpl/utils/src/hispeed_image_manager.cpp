@@ -240,6 +240,9 @@ uint32_t HispeedImageManager::DoEncodeJpeg(
     void *skStream, OHOS::Media::PixelMap* pixelMap, uint8_t quality, SkImageInfo info)
 {
 #if !defined(CROSS_PLATFORM)
+    if (pixelMap == nullptr) {
+        return ERR_IMAGE_ENCODE_FAILED;
+    }
     ImageFuncTimer imageFuncTimer("HispeedImageManager::%s:(%d, %d)", __func__,
         pixelMap->GetWidth(), pixelMap->GetHeight());
     if (skStream == nullptr) {
