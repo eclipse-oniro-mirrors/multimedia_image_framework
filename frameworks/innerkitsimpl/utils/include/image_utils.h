@@ -222,7 +222,7 @@ public:
     static bool CheckRowDataSizeIsVaild(int32_t &rowDataSize, ImageInfo &imgInfo);
     static bool CheckBufferSizeIsVaild(int32_t &bufferSize, uint64_t &expectedBufferSize,
         AllocatorType &allocatorType);
-    static bool CheckYuvDataInfoValid(const YUVDataInfo& yDataInfo);
+    static bool CheckYuvDataInfoValid(const ImageInfo &imageInfo, YUVDataInfo& yDataInfo);
     static bool GetAlignedNumber(int32_t& number, int32_t align);
     static int32_t GetByteCount(ImageInfo imageInfo);
     static int32_t GetYUVByteCount(const ImageInfo& info);
@@ -280,6 +280,9 @@ private:
     static std::string GetLocalTime();
     static std::string GetPixelMapName(PixelMap* pixelMap);
     static int32_t GetAPIVersionInner();
+    static bool CheckSizeValid(const ImageInfo &imgInfo, const YUVDataInfo& yDataInfo);
+    static bool CheckStrideValid(const YUVDataInfo& yDataInfo);
+    static bool CheckOffsetValid(const YUVDataInfo& yDataInfo);
 };
 } // namespace Media
 } // namespace OHOS

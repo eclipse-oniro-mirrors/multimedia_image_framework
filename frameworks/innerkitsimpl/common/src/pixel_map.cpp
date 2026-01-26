@@ -378,6 +378,8 @@ int32_t PixelMap::GetAllocatedByteCount(const ImageInfo& info)
 
 void UpdateYUVDataInfo(int32_t width, int32_t height, YUVDataInfo &yuvInfo)
 {
+    yuvInfo.imageSize.width = width;
+    yuvInfo.imageSize.height = height;
     yuvInfo.yWidth = static_cast<uint32_t>(width);
     yuvInfo.yHeight = static_cast<uint32_t>(height);
     yuvInfo.uvWidth = static_cast<uint32_t>((width + 1) / NUM_2);
@@ -2878,7 +2880,9 @@ bool PixelMap::ReadYuvDataInfoFromParcel(Parcel &parcel, PixelMap *pixelMap)
         yDataInfo.uvOffset = parcel.ReadUint32();
         IMAGE_LOGD("ReadYuvDataInfoFromParcel yDataInfo.uvOffset:%{public}d", yDataInfo.uvOffset);
 
-        if (!ImageUtils::CheckYuvDataInfoValid(yDataInfo)) {
+        ImageInfo imageInfo;
+        pixelMap->GetImageInfo(imageInfo);
+        if (!ImageUtils::CheckYuvDataInfoValid(imageInfo, yDataInfo)) {
             IMAGE_LOGE("ReadYuvDataInfoFromParcel: YuvDataInfo is invalid");
             return false;
         }
@@ -3575,6 +3579,8 @@ void PixelMap::AssignYuvDataOnType(PixelFormat format, int32_t width, int32_t he
 void PixelMap::UpdateYUVDataInfo(PixelFormat format, int32_t width, int32_t height, YUVStrideInfo &strides)
 {
     if (PixelMap::IsYuvFormat(format)) {
+        yuvDataInfo_.imageSize.width = width;
+        yuvDataInfo_.imageSize.height = height;
         yuvDataInfo_.yWidth = static_cast<uint32_t>(width);
         yuvDataInfo_.yHeight = static_cast<uint32_t>(height);
         yuvDataInfo_.yStride = static_cast<uint32_t>(strides.yStride);
