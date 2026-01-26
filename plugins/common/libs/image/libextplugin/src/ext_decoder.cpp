@@ -814,7 +814,7 @@ bool ExtDecoder::IsProgressiveJpeg()
 
         struct jpeg_decompress_struct* dInfo = codec->decoderMgr()->dinfo();
         isProgressive = dInfo->progressive_mode;
-        CHECK_DEBUG_PRINT_LOG(isProgressive, "%{public}s image is progressive JPEG", __func__);
+        CHECK_INFO_PRINT_LOG(isProgressive, "%{public}s image is progressive JPEG", __func__);
     }
     return isProgressive;
 }

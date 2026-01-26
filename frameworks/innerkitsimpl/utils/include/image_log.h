@@ -93,6 +93,13 @@
         }                                               \
     } while (0)
 
+#define CHECK_INFO_PRINT_LOG(cond, ...)                 \
+    do {                                                \
+        if (cond) {                                     \
+            HILOG_INFO(LOG_CORE, __VA_ARGS__);          \
+        }                                               \
+    } while (0)                                         \
+
 #define CHECK_INFO_RETURN_RET_LOG(cond, ret, ...)       \
     do {                                                \
         if (cond) {                                     \
