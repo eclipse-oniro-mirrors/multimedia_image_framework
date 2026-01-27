@@ -3561,8 +3561,6 @@ bool PixelMap::IsYuvFormat() const
 void PixelMap::AssignYuvDataOnType(PixelFormat format, int32_t width, int32_t height)
 {
     if (PixelMap::IsYuvFormat(format)) {
-        yuvDataInfo_.imageSize.width = width;
-        yuvDataInfo_.imageSize.height = height;
         yuvDataInfo_.yWidth = static_cast<uint32_t>(width);
         yuvDataInfo_.yHeight = static_cast<uint32_t>(height);
         yuvDataInfo_.yStride = static_cast<uint32_t>(width);
