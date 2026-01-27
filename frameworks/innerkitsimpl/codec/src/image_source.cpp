@@ -4383,7 +4383,7 @@ static CM_ColorSpaceType ConvertColorSpaceTypeForAiHDR(ColorManager::ColorSpaceN
         case ColorManager::ColorSpaceName::ADOBE_RGB :
             return CM_ADOBERGB_FULL;
         default:
-            return CM_COLORSPACE_NONE;
+            return CM_SRGB_FULL;
     }
 }
 
