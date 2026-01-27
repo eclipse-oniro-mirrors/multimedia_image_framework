@@ -571,6 +571,7 @@ uint32_t PixelYuv::WritePixels(const uint8_t *source, const uint64_t &bufferSize
 void PixelYuv::GetYUVInfoForCopyPixels(YUVDataInfo &yuvDataInfo)
 {
     GetImageYUVInfo(yuvDataInfo);
+    yuvDataInfo.imageSize = imageInfo_.size;
     yuvDataInfo.yWidth = static_cast<uint32_t>(imageInfo_.size.width);
     yuvDataInfo.yHeight = static_cast<uint32_t>(imageInfo_.size.height);
     yuvDataInfo.uvWidth = yuvDataInfo.uvWidth * NUM_2;

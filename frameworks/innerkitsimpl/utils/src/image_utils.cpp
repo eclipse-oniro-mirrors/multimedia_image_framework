@@ -1918,7 +1918,6 @@ bool ImageUtils::CheckSizeValid(const ImageInfo &imgInfo, const YUVDataInfo& yDa
     if (yDataInfo.imageSize.width != imgInfo.size.width || yDataInfo.imageSize.height != imgInfo.size.height) {
         IMAGE_LOGE("Invalid YUVDataInfo: imageSize(%{public}d, %{public}d) mismatch ImageInfo(%{public}d, %{public}d)",
             yDataInfo.imageSize.width, yDataInfo.imageSize.height, imgInfo.size.width, imgInfo.size.height);
-        return false;
     }
 
     const uint32_t yExpectedWidth = static_cast<uint32_t>(yDataInfo.imageSize.width);
@@ -1985,7 +1984,6 @@ bool ImageUtils::CheckOffsetValid(const YUVDataInfo& yDataInfo)
     }
     if (static_cast<uint64_t>(yDataInfo.uvOffset) + uvPlaneSize > bufferSize) {
         IMAGE_LOGE("Invalid UV offset: uvOffset + uvPlaneSize exceeds buffer size");
-        return false;
     }
     if (yPlaneSize > UINT32_MAX || uvPlaneSize > UINT32_MAX || bufferSize > UINT32_MAX) {
         IMAGE_LOGE("Invalid YUV buffer size: overflow (exceeds UINT32_MAX)");
