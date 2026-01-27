@@ -65,13 +65,6 @@ private:
         }
     };
 
-    enum class IOType : uint8_t {
-        UNKNOWN,
-        XMP_FILE_PATH,
-        XMP_BUFFER_IO,
-        XMP_FD_IO,
-    };
-
     static int32_t refCount_;
     static std::mutex initMutex_;
     bool isRefCounted_ = false;

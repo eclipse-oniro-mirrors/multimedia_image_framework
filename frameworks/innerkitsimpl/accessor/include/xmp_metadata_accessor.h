@@ -38,6 +38,13 @@ public:
     virtual std::shared_ptr<XMPMetadata> Get();
     virtual void Set(std::shared_ptr<XMPMetadata> &xmpMetadata);
 
+    enum class IOType : uint8_t {
+        UNKNOWN,
+        XMP_FILE_PATH,
+        XMP_BUFFER_IO,
+        XMP_FD_IO,
+    };
+
 protected:
     std::shared_ptr<XMPMetadata> xmpMetadata_ = nullptr;
 };

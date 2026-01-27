@@ -15,11 +15,8 @@
 
 #include "xmp_metadata_accessor_factory.h"
 
-#include <functional>
-
 #include "image_log.h"
 #include "image_mime_type.h"
-#include "media_errors.h"
 #include "xmpsdk_xmp_metadata_accessor.h"
 
 #undef LOG_DOMAIN
@@ -31,44 +28,74 @@
 namespace OHOS {
 namespace Media {
 
+namespace {
+struct XMPSource {
+    XMPMetadataAccessor::IOType ioType = XMPMetadataAccessor::IOType::UNKNOWN;
+    const uint8_t *data = nullptr;
+    uint32_t size = 0;
+    std::string filePath;
+    int32_t fd = -1;
+};
+
 static bool IsXMPSdkSupportedMimeType(const std::string &mimeType)
 {
     return mimeType == IMAGE_JPEG_FORMAT || mimeType == IMAGE_PNG_FORMAT || mimeType == IMAGE_GIF_FORMAT ||
         mimeType == IMAGE_TIFF_FORMAT || mimeType == IMAGE_DNG_FORMAT;
 }
 
-static std::unique_ptr<XMPMetadataAccessor> CreateXMPMetadataAccessor(const std::string &mimeType,
-    const std::function<std::unique_ptr<XMPSdkXMPMetadataAccessor>()> &createFunc)
+static std::unique_ptr<XMPMetadataAccessor> CreateByMimeType(const XMPSource &source, XMPAccessMode mode,
+    const std::string &mimeType)
 {
-    CHECK_ERROR_RETURN_RET_LOG(!IsXMPSdkSupportedMimeType(mimeType), nullptr,
-        "%{public}s unsupported mimeType=%{public}s", __func__, mimeType.c_str());
+    if (IsXMPSdkSupportedMimeType(mimeType)) {
+        switch (source.ioType) {
+            case XMPMetadataAccessor::IOType::XMP_BUFFER_IO:
+                return XMPSdkXMPMetadataAccessor::Create(source.data, source.size, mode, mimeType);
+            case XMPMetadataAccessor::IOType::XMP_FILE_PATH:
+                return XMPSdkXMPMetadataAccessor::Create(source.filePath, mode, mimeType);
+            case XMPMetadataAccessor::IOType::XMP_FD_IO:
+                return XMPSdkXMPMetadataAccessor::Create(source.fd, mode, mimeType);
+            default:
+                return nullptr;
+        }
+    }
 
-    auto sdkAccessor = createFunc();
-    return std::unique_ptr<XMPMetadataAccessor>(sdkAccessor.release());
+    IMAGE_LOGE("%{public}s unsupported mimeType=%{public}s", __func__, mimeType.c_str());
+    return nullptr;
 }
+} // anonymous namespace
 
 std::unique_ptr<XMPMetadataAccessor> XMPMetadataAccessorFactory::Create(const uint8_t *data, uint32_t size,
     XMPAccessMode mode, const std::string &mimeType)
 {
-    return CreateXMPMetadataAccessor(mimeType, [data, size, mode, mimeType]() {
-        return XMPSdkXMPMetadataAccessor::Create(data, size, mode, mimeType);
-    });
+    CHECK_ERROR_RETURN_RET_LOG(data == nullptr || size == 0, nullptr, "%{public}s invalid buffer input", __func__);
+
+    XMPSource source;
+    source.ioType = XMPMetadataAccessor::IOType::XMP_BUFFER_IO;
+    source.data = data;
+    source.size = size;
+    return CreateByMimeType(source, mode, mimeType);
 }
 
 std::unique_ptr<XMPMetadataAccessor> XMPMetadataAccessorFactory::Create(const std::string &filePath,
     XMPAccessMode mode, const std::string &mimeType)
 {
-    return CreateXMPMetadataAccessor(mimeType, [filePath, mode, mimeType]() {
-        return XMPSdkXMPMetadataAccessor::Create(filePath, mode, mimeType);
-    });
+    CHECK_ERROR_RETURN_RET_LOG(filePath.empty(), nullptr, "%{public}s filePath is empty", __func__);
+
+    XMPSource source;
+    source.ioType = XMPMetadataAccessor::IOType::XMP_FILE_PATH;
+    source.filePath = filePath;
+    return CreateByMimeType(source, mode, mimeType);
 }
 
 std::unique_ptr<XMPMetadataAccessor> XMPMetadataAccessorFactory::Create(int32_t fileDescriptor, XMPAccessMode mode,
     const std::string &mimeType)
 {
-    return CreateXMPMetadataAccessor(mimeType, [fileDescriptor, mode, mimeType]() {
-        return XMPSdkXMPMetadataAccessor::Create(fileDescriptor, mode, mimeType);
-    });
+    CHECK_ERROR_RETURN_RET_LOG(fileDescriptor < 0, nullptr, "%{public}s fileDescriptor is invalid", __func__);
+
+    XMPSource source;
+    source.ioType = XMPMetadataAccessor::IOType::XMP_FD_IO;
+    source.fd = fileDescriptor;
+    return CreateByMimeType(source, mode, mimeType);
 }
 } // namespace Media
 } // namespace OHOS
