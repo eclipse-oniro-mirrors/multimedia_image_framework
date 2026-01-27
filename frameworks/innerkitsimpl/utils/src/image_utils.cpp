@@ -1983,8 +1983,8 @@ bool ImageUtils::CheckOffsetValid(const YUVDataInfo& yDataInfo)
         IMAGE_LOGE("Invalid UV offset: %{public}u less than Y plane size", yDataInfo.uvOffset);
         return false;
     }
-    if (static_cast<uint64_t>(yDataInfo.uvOffset) + uvPlaneSize > bufferSize) {
-        IMAGE_LOGE("Invalid UV offset: uvOffset + uvPlaneSize exceeds buffer size");
+    if (static_cast<uint64_t>(yDataInfo.uvOffset) >= bufferSize) {
+        IMAGE_LOGE("Invalid UV offset: uvOffset exceeds buffer size");
         return false;
     }
     if (yPlaneSize > UINT32_MAX || uvPlaneSize > UINT32_MAX || bufferSize > UINT32_MAX) {
@@ -1995,7 +1995,7 @@ bool ImageUtils::CheckOffsetValid(const YUVDataInfo& yDataInfo)
         if (static_cast<uint64_t>(yDataInfo.uOffset) < yPlaneSize) {
             IMAGE_LOGW("Invalid U offset: %{public}u less than Y plane size", yDataInfo.uOffset);
         }
-        if (static_cast<uint64_t>(yDataInfo.uOffset) > bufferSize) {
+        if (static_cast<uint64_t>(yDataInfo.uOffset) >= bufferSize) {
             IMAGE_LOGW("Invalid U offset: uOffset exceeds buffer size");
         }
     }
@@ -2003,7 +2003,7 @@ bool ImageUtils::CheckOffsetValid(const YUVDataInfo& yDataInfo)
         if (static_cast<uint64_t>(yDataInfo.vOffset) < yPlaneSize) {
             IMAGE_LOGW("Invalid V offset: %{public}u less than Y plane size", yDataInfo.vOffset);
         }
-        if (static_cast<uint64_t>(yDataInfo.vOffset) > bufferSize) {
+        if (static_cast<uint64_t>(yDataInfo.vOffset) >= bufferSize) {
             IMAGE_LOGW("Invalid V offset: vOffset exceeds buffer size");
         }
     }

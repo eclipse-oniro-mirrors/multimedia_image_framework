@@ -1127,6 +1127,7 @@ bool ImageSource::IsYuvFormat(PixelFormat format)
 
 static void CopyYuvInfo(YUVDataInfo &yuvInfo, ImagePlugin::PlImageInfo &plInfo)
 {
+    yuvInfo.imageSize = plInfo.yuvDataInfo.imageSize;
     yuvInfo.yWidth = plInfo.yuvDataInfo.yWidth;
     yuvInfo.yHeight = plInfo.yuvDataInfo.yHeight;
     yuvInfo.uvWidth = plInfo.yuvDataInfo.uvWidth;
