@@ -28,7 +28,6 @@
 #include "image_log.h"
 #include "native_color_space_manager.h"
 #include "ndk_color_space.h"
-#include "xmp_metadata.h"
 
 #ifndef _WIN32
 #include "securec.h"
