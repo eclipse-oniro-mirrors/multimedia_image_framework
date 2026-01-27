@@ -251,7 +251,7 @@ AuxiliaryPictureInfo AuxiliaryPicture::GetAuxiliaryPictureInfo()
 uint32_t AuxiliaryPicture::SetAuxiliaryPictureInfo(const AuxiliaryPictureInfo &auxiliaryPictureInfo)
 {
     int32_t apiVersion = ImageUtils::GetAPIVersion();
-    IMAGE_LOGI("%{public}s current apiVersion: %{public}d", __func__, apiVersion);
+    IMAGE_LOGD("%{public}s current apiVersion: %{public}d", __func__, apiVersion);
     if (apiVersion > APIVERSION_13) {
         bool cond = content_ == nullptr;
         CHECK_ERROR_RETURN_RET_LOG(cond, ERR_MEDIA_NULL_POINTER, "%{public}s pixelmap is nullptr", __func__);
