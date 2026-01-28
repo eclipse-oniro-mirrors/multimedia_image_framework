@@ -32,10 +32,10 @@ namespace Multimedia {
 static const std::string IMAGE_JPEG_XMP_PATH = "/data/local/tmp/image/jpeg_xmp.jpg";
 static const std::string IMAGE_ERROR_XMP_PATH = "/error/path";
 
-class XMPSdkMetadataAccessorTest : public testing::Test {
+class XMPSdkXMPMetadataAccessorTest : public testing::Test {
 public:
-    XMPSdkMetadataAccessorTest() = default;
-    ~XMPSdkMetadataAccessorTest() = default;
+    XMPSdkXMPMetadataAccessorTest() = default;
+    ~XMPSdkXMPMetadataAccessorTest() = default;
 };
 
 static std::vector<uint8_t> ReadFile(const std::string& path)
@@ -57,9 +57,9 @@ static std::vector<uint8_t> ReadFile(const std::string& path)
  * @tc.desc: test Create method when input data and mode is READ_ONLY_XMP.
  * @tc.type: FUNC
  */
-HWTEST_F(XMPSdkMetadataAccessorTest, CreateTest001, TestSize.Level1)
+HWTEST_F(XMPSdkXMPMetadataAccessorTest, CreateTest001, TestSize.Level1)
 {
-    GTEST_LOG_(INFO) << "XMPMetadataAccessorTest: CreateTest001 start";
+    GTEST_LOG_(INFO) << "XMPSdkXMPMetadataAccessorTest: CreateTest001 start";
     auto data = ReadFile(IMAGE_JPEG_XMP_PATH);
     ASSERT_FALSE(data.empty());
 
@@ -67,7 +67,7 @@ HWTEST_F(XMPSdkMetadataAccessorTest, CreateTest001, TestSize.Level1)
         IMAGE_JPEG_FORMAT);
     ASSERT_NE(accessor, nullptr);
 
-    GTEST_LOG_(INFO) << "XMPMetadataAccessorTest: CreateTest001 end";
+    GTEST_LOG_(INFO) << "XMPSdkXMPMetadataAccessorTest: CreateTest001 end";
 }
 
 /**
@@ -75,9 +75,9 @@ HWTEST_F(XMPSdkMetadataAccessorTest, CreateTest001, TestSize.Level1)
  * @tc.desc: test Create method when input data and mode is READ_WRITE_XMP.
  * @tc.type: FUNC
  */
-HWTEST_F(XMPSdkMetadataAccessorTest, CreateTest002, TestSize.Level1)
+HWTEST_F(XMPSdkXMPMetadataAccessorTest, CreateTest002, TestSize.Level1)
 {
-    GTEST_LOG_(INFO) << "XMPMetadataAccessorTest: CreateTest002 start";
+    GTEST_LOG_(INFO) << "XMPSdkXMPMetadataAccessorTest: CreateTest002 start";
     auto data = ReadFile(IMAGE_JPEG_XMP_PATH);
     ASSERT_FALSE(data.empty());
 
@@ -85,7 +85,7 @@ HWTEST_F(XMPSdkMetadataAccessorTest, CreateTest002, TestSize.Level1)
         IMAGE_JPEG_FORMAT);
     ASSERT_NE(accessor, nullptr);
 
-    GTEST_LOG_(INFO) << "XMPMetadataAccessorTest: CreateTest002 end";
+    GTEST_LOG_(INFO) << "XMPSdkXMPMetadataAccessorTest: CreateTest002 end";
 }
 
 /**
@@ -93,13 +93,13 @@ HWTEST_F(XMPSdkMetadataAccessorTest, CreateTest002, TestSize.Level1)
  * @tc.desc: test Create method when input path and mode is READ_ONLY_XMP.
  * @tc.type: FUNC
  */
-HWTEST_F(XMPSdkMetadataAccessorTest, CreateTest003, TestSize.Level1)
+HWTEST_F(XMPSdkXMPMetadataAccessorTest, CreateTest003, TestSize.Level1)
 {
-    GTEST_LOG_(INFO) << "XMPMetadataAccessorTest: CreateTest003 start";
+    GTEST_LOG_(INFO) << "XMPSdkXMPMetadataAccessorTest: CreateTest003 start";
     auto accessor = XMPSdkXMPMetadataAccessor::Create(IMAGE_JPEG_XMP_PATH, XMPAccessMode::READ_ONLY_XMP,
         IMAGE_JPEG_FORMAT);
     ASSERT_NE(accessor, nullptr);
-    GTEST_LOG_(INFO) << "XMPMetadataAccessorTest: CreateTest003 end";
+    GTEST_LOG_(INFO) << "XMPSdkXMPMetadataAccessorTest: CreateTest003 end";
 }
 
 /**
@@ -107,13 +107,13 @@ HWTEST_F(XMPSdkMetadataAccessorTest, CreateTest003, TestSize.Level1)
  * @tc.desc: test Create method when input path mode is READ_WRITE_XMP.
  * @tc.type: FUNC
  */
-HWTEST_F(XMPSdkMetadataAccessorTest, CreateTest004, TestSize.Level1)
+HWTEST_F(XMPSdkXMPMetadataAccessorTest, CreateTest004, TestSize.Level1)
 {
-    GTEST_LOG_(INFO) << "XMPMetadataAccessorTest: CreateTest004 start";
+    GTEST_LOG_(INFO) << "XMPSdkXMPMetadataAccessorTest: CreateTest004 start";
     auto accessor = XMPSdkXMPMetadataAccessor::Create(IMAGE_JPEG_XMP_PATH, XMPAccessMode::READ_WRITE_XMP,
         IMAGE_JPEG_FORMAT);
     ASSERT_NE(accessor, nullptr);
-    GTEST_LOG_(INFO) << "XMPMetadataAccessorTest: CreateTest004 end";
+    GTEST_LOG_(INFO) << "XMPSdkXMPMetadataAccessorTest: CreateTest004 end";
 }
 
 /**
@@ -121,9 +121,9 @@ HWTEST_F(XMPSdkMetadataAccessorTest, CreateTest004, TestSize.Level1)
  * @tc.desc: test Create method when input fd and mode is READ_ONLY_XMP.
  * @tc.type: FUNC
  */
-HWTEST_F(XMPSdkMetadataAccessorTest, CreateTest005, TestSize.Level1)
+HWTEST_F(XMPSdkXMPMetadataAccessorTest, CreateTest005, TestSize.Level1)
 {
-    GTEST_LOG_(INFO) << "XMPMetadataAccessorTest: CreateTest005 start";
+    GTEST_LOG_(INFO) << "XMPSdkXMPMetadataAccessorTest: CreateTest005 start";
     int32_t fd = open(IMAGE_JPEG_XMP_PATH.c_str(), O_RDONLY);
     ASSERT_NE(fd, 0);
 
@@ -131,7 +131,7 @@ HWTEST_F(XMPSdkMetadataAccessorTest, CreateTest005, TestSize.Level1)
     ASSERT_NE(accessor, nullptr);
     close(fd);
 
-    GTEST_LOG_(INFO) << "XMPMetadataAccessorTest: CreateTest005 end";
+    GTEST_LOG_(INFO) << "XMPSdkXMPMetadataAccessorTest: CreateTest005 end";
 }
 
 /**
@@ -139,9 +139,9 @@ HWTEST_F(XMPSdkMetadataAccessorTest, CreateTest005, TestSize.Level1)
  * @tc.desc: test Create method when input fd and mode is READ_WRITE_XMP.
  * @tc.type: FUNC
  */
-HWTEST_F(XMPSdkMetadataAccessorTest, CreateTest006, TestSize.Level1)
+HWTEST_F(XMPSdkXMPMetadataAccessorTest, CreateTest006, TestSize.Level1)
 {
-    GTEST_LOG_(INFO) << "XMPMetadataAccessorTest: CreateTest006 start";
+    GTEST_LOG_(INFO) << "XMPSdkXMPMetadataAccessorTest: CreateTest006 start";
     int32_t fd = open(IMAGE_JPEG_XMP_PATH.c_str(), O_RDWR);
     ASSERT_NE(fd, 0);
 
@@ -149,7 +149,7 @@ HWTEST_F(XMPSdkMetadataAccessorTest, CreateTest006, TestSize.Level1)
     ASSERT_NE(accessor, nullptr);
     close(fd);
 
-    GTEST_LOG_(INFO) << "XMPMetadataAccessorTest: CreateTest006 end";
+    GTEST_LOG_(INFO) << "XMPSdkXMPMetadataAccessorTest: CreateTest006 end";
 }
 
 /**
@@ -157,13 +157,13 @@ HWTEST_F(XMPSdkMetadataAccessorTest, CreateTest006, TestSize.Level1)
  * @tc.desc: test Create method when input path is invalid.
  * @tc.type: FUNC
  */
-HWTEST_F(XMPSdkMetadataAccessorTest, CreateTest007, TestSize.Level1)
+HWTEST_F(XMPSdkXMPMetadataAccessorTest, CreateTest007, TestSize.Level1)
 {
-    GTEST_LOG_(INFO) << "XMPMetadataAccessorTest: CreateTest007 start";
+    GTEST_LOG_(INFO) << "XMPSdkXMPMetadataAccessorTest: CreateTest007 start";
     auto accessor = XMPSdkXMPMetadataAccessor::Create(IMAGE_ERROR_XMP_PATH, XMPAccessMode::READ_WRITE_XMP,
         IMAGE_JPEG_FORMAT);
     ASSERT_EQ(accessor, nullptr);
-    GTEST_LOG_(INFO) << "XMPMetadataAccessorTest: CreateTest007 end";
+    GTEST_LOG_(INFO) << "XMPSdkXMPMetadataAccessorTest: CreateTest007 end";
 }
 
 /**
@@ -171,9 +171,9 @@ HWTEST_F(XMPSdkMetadataAccessorTest, CreateTest007, TestSize.Level1)
  * @tc.desc: test Read method in normal scene.
  * @tc.type: FUNC
  */
-HWTEST_F(XMPSdkMetadataAccessorTest, ReadTest001, TestSize.Level1)
+HWTEST_F(XMPSdkXMPMetadataAccessorTest, ReadTest001, TestSize.Level1)
 {
-    GTEST_LOG_(INFO) << "XMPMetadataAccessorTest: ReadTest001 start";
+    GTEST_LOG_(INFO) << "XMPSdkXMPMetadataAccessorTest: ReadTest001 start";
     auto accessor = XMPSdkXMPMetadataAccessor::Create(IMAGE_JPEG_XMP_PATH, XMPAccessMode::READ_ONLY_XMP,
         IMAGE_JPEG_FORMAT);
     ASSERT_NE(accessor, nullptr);
@@ -181,7 +181,7 @@ HWTEST_F(XMPSdkMetadataAccessorTest, ReadTest001, TestSize.Level1)
     uint32_t ret = accessor->Read();
     ASSERT_EQ(ret, SUCCESS);
 
-    GTEST_LOG_(INFO) << "XMPMetadataAccessorTest: ReadTest001 end";
+    GTEST_LOG_(INFO) << "XMPSdkXMPMetadataAccessorTest: ReadTest001 end";
 }
 
 /**
@@ -189,9 +189,9 @@ HWTEST_F(XMPSdkMetadataAccessorTest, ReadTest001, TestSize.Level1)
  * @tc.desc: test write method in normal scene.
  * @tc.type: FUNC
  */
-HWTEST_F(XMPSdkMetadataAccessorTest, WriteTest001, TestSize.Level1)
+HWTEST_F(XMPSdkXMPMetadataAccessorTest, WriteTest001, TestSize.Level1)
 {
-    GTEST_LOG_(INFO) << "XMPMetadataAccessorTest: WriteTest001 start";
+    GTEST_LOG_(INFO) << "XMPSdkXMPMetadataAccessorTest: WriteTest001 start";
     auto accessor = XMPSdkXMPMetadataAccessor::Create(IMAGE_JPEG_XMP_PATH, XMPAccessMode::READ_WRITE_XMP,
         IMAGE_JPEG_FORMAT);
     ASSERT_NE(accessor, nullptr);
@@ -201,7 +201,7 @@ HWTEST_F(XMPSdkMetadataAccessorTest, WriteTest001, TestSize.Level1)
 
     ret = accessor->Write();
     ASSERT_EQ(ret, SUCCESS);
-    GTEST_LOG_(INFO) << "XMPMetadataAccessorTest: WriteTest001 end";
+    GTEST_LOG_(INFO) << "XMPSdkXMPMetadataAccessorTest: WriteTest001 end";
 }
 
 /**
@@ -209,9 +209,9 @@ HWTEST_F(XMPSdkMetadataAccessorTest, WriteTest001, TestSize.Level1)
  * @tc.desc: test write method when metadata is nullptr.
  * @tc.type: FUNC
  */
-HWTEST_F(XMPSdkMetadataAccessorTest, WriteTest002, TestSize.Level1)
+HWTEST_F(XMPSdkXMPMetadataAccessorTest, WriteTest002, TestSize.Level1)
 {
-    GTEST_LOG_(INFO) << "XMPMetadataAccessorTest: WriteTest002 start";
+    GTEST_LOG_(INFO) << "XMPSdkXMPMetadataAccessorTest: WriteTest002 start";
     auto accessor = XMPSdkXMPMetadataAccessor::Create(IMAGE_JPEG_XMP_PATH, XMPAccessMode::READ_WRITE_XMP,
         IMAGE_JPEG_FORMAT);
     ASSERT_NE(accessor, nullptr);
@@ -223,7 +223,7 @@ HWTEST_F(XMPSdkMetadataAccessorTest, WriteTest002, TestSize.Level1)
     accessor->Set(nullMetadata);
     ret = accessor->Write();
     ASSERT_EQ(ret, ERR_MEDIA_NULL_POINTER);
-    GTEST_LOG_(INFO) << "XMPMetadataAccessorTest: WriteTest002 end";
+    GTEST_LOG_(INFO) << "XMPSdkXMPMetadataAccessorTest: WriteTest002 end";
 }
 } // namespace Multimedia
 } // namespace OHOS
