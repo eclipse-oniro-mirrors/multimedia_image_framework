@@ -282,7 +282,7 @@ std::unique_ptr<AbsMemory> PixelYuv::CreateMemory(PixelFormat pixelFormat, std::
         IMAGE_LOGE("CreateMemory failed");
         return m;
     }
-    IMAGE_LOGE("CreateMemory allocatorType: %{public}d", allocatorType_);
+    IMAGE_LOGD("CreateMemory allocatorType: %{public}d", allocatorType_);
     #if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
     if (allocatorType_ == AllocatorType::DMA_ALLOC) {
         if (m->extend.data == nullptr) {
