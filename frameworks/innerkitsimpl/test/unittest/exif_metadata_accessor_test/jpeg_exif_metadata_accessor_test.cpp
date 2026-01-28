@@ -1530,8 +1530,8 @@ HWTEST_F(JpegExifMetadataAccessorTest, TestWriteAndReadHwTagVignettingAndNoise00
     ASSERT_TRUE(exifMetadata->SetValue("HwMnoteXtStyleNoise", "0.666666"));
     ASSERT_EQ(imageAccessor.Write(), 0);
     ASSERT_EQ(imageAccessor.Read(), 0);
-    ASSERT_EQ(GetProperty(exifMetadata, "HwMnoteXtStyleVignetting"), "0.666666 ");
-    ASSERT_EQ(GetProperty(exifMetadata, "HwMnoteXtStyleNoise"), "0.666666 ");
+    ASSERT_EQ(GetProperty(exifMetadata, "HwMnoteXtStyleVignetting"), "0.666666");
+    ASSERT_EQ(GetProperty(exifMetadata, "HwMnoteXtStyleNoise"), "0.666666");
 }
 } // namespace Multimedia
 } // namespace OHOS

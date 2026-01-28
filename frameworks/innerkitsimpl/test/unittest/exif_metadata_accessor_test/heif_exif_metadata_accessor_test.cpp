@@ -781,8 +781,8 @@ HWTEST_F(HeifExifMetadataAccessorTest, TestWriteAndReadHwTagVignettingAndNoise00
     uint32_t errcode = imageAccessor.Write();
     ASSERT_EQ(errcode, SUCCESS);
     exifMetadata = imageAccessor.Get();
-    ASSERT_EQ(GetProperty(exifMetadata, "HwMnoteXtStyleVignetting"), "0.666666 ");
-    ASSERT_EQ(GetProperty(exifMetadata, "HwMnoteXtStyleNoise"), "0.666666 ");
+    ASSERT_EQ(GetProperty(exifMetadata, "HwMnoteXtStyleVignetting"), "0.666666");
+    ASSERT_EQ(GetProperty(exifMetadata, "HwMnoteXtStyleNoise"), "0.666666");
     GTEST_LOG_(INFO) << "HeifExifMetadataAccessorTest: TestWriteAndReadHwTagVignettingAndNoise001 end";
 }
 } // namespace Multimedia
