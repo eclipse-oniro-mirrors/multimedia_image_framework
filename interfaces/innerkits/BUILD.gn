@@ -264,7 +264,7 @@ if (use_clang_android) {
         "ipc:ipc_core",
         "libjpeg-turbo:turbojpeg",
         "napi:ace_napi",
-        "xmpsdk:xmpsdk",
+        "xmp_toolkit_sdk:xmpsdk",
         "zlib:libz",
       ]
       public_external_deps = [
@@ -492,7 +492,7 @@ if (use_mingw_win || use_clang_mac || use_clang_ios || use_clang_android) {
         "graphic_surface:surface",
         "hilog:libhilog",
         "napi:ace_napi",
-        "xmpsdk:xmpsdk",
+        "xmp_toolkit_sdk:xmpsdk",
       ]
       if (enable_libexif) {
         external_deps += [ "libexif:libexif" ]

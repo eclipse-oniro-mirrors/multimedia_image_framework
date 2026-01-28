@@ -65,7 +65,7 @@
           "eventhandler",
           "ets_runtime",
           "libtiff",
-          "xmpsdk"
+          "xmp_toolkit_sdk"
         ],
         "third_party": [
           "bounds_checking_function"

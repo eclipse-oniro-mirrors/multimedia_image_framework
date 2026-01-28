@@ -248,7 +248,7 @@ ohos_unittest("xmpmetadatatest") {
     "c_utils:utils",
     "googletest:gtest",
     "hilog:libhilog",
-    "xmpsdk:xmpsdk"
+    "xmp_toolkit_sdk:xmpsdk"
   ]
 }
 
@@ -1825,7 +1825,7 @@ ohos_unittest("imageaccessortest") {
     "hilog:libhilog",
     "zlib:libz",
     "skia:dng_sdk",
-    "xmpsdk:xmpsdk",
+    "xmp_toolkit_sdk:xmpsdk",
   ]
   if (enable_libexif) {
     external_deps += [ "libexif:libexif" ]
