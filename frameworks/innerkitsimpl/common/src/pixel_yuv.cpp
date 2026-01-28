@@ -282,7 +282,7 @@ std::unique_ptr<AbsMemory> PixelYuv::CreateMemory(PixelFormat pixelFormat, std::
         IMAGE_LOGE("CreateMemory failed");
         return m;
     }
-    IMAGE_LOGE("CreateMemory allocatorType: %{public}d", allocatorType_);
+    IMAGE_LOGD("CreateMemory allocatorType: %{public}d", allocatorType_);
     #if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
     if (allocatorType_ == AllocatorType::DMA_ALLOC) {
         if (m->extend.data == nullptr) {
@@ -812,7 +812,7 @@ ColorYuv420 PixelYuv::GetYuv420Color(uint32_t x, uint32_t y)
 void PixelYuv::SetPixelsAddr(void *addr, void *context, uint32_t size, AllocatorType type, CustomFreePixelMap func)
 {
     if (data_ != nullptr) {
-        IMAGE_LOGE("SetPixelsAddr release the existed data first");
+        IMAGE_LOGD("SetPixelsAddr release the existed data first");
         FreePixelMap();
     }
     if (type == AllocatorType::SHARE_MEM_ALLOC && context == nullptr) {
