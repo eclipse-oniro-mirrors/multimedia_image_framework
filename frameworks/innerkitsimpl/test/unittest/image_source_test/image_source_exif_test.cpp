@@ -653,8 +653,8 @@ HWTEST_F(ImageSourceExifTest, ExtractXMageCoordinatesTest001, TestSize.Level3)
     ASSERT_EQ(coordMetadata.top, 200);
     ASSERT_EQ(coordMetadata.right, 500);
     ASSERT_EQ(coordMetadata.bottom, 300);
-    ASSERT_EQ(coordMetadata.ImageWidth, 600);
-    ASSERT_EQ(coordMetadata.ImageLength, 700);
+    ASSERT_EQ(coordMetadata.imageWidth, 600);
+    ASSERT_EQ(coordMetadata.imageLength, 700);
 }
 /**
  • @tc.name: ExtractXMageCoordinatesTest002
