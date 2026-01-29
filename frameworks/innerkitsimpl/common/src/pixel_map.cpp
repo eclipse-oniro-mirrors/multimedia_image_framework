@@ -214,6 +214,7 @@ void PixelMap::SetTransformered(bool isTransformered)
 
 void PixelMap::SetPixelsAddr(void *addr, void *context, uint32_t size, AllocatorType type, CustomFreePixelMap func)
 {
+    std::lock_guard<std::mutex> lock(*metadataMutex_);
     if (type < AllocatorType::DEFAULT || type > AllocatorType::DMA_ALLOC) {
         IMAGE_LOGE("SetPixelsAddr error invalid allocatorType");
         return;
@@ -2745,7 +2746,7 @@ bool PixelMap::WriteAstcInfoToParcel(Parcel &parcel) const
 
 bool PixelMap::Marshalling(Parcel &parcel) const
 {
-    std::lock_guard<std::mutex> lock(*translationMutex_);
+    std::lock_guard<std::mutex> lock(*metadataMutex_);
     int32_t PIXEL_MAP_INFO_MAX_LENGTH = 128;
     if (ImageUtils::CheckMulOverflow(imageInfo_.size.height, rowDataSize_)) {
         IMAGE_LOGE("pixelmap invalid params, height:%{public}d, rowDataSize:%{public}d.",
@@ -4250,7 +4251,8 @@ bool PixelMap::DoTranslation(TransInfos &infos, const AntiAliasingOption &option
 void PixelMap::scale(float xAxis, float yAxis)
 {
     ImageTrace imageTrace("PixelMap scale xAxis = %f, yAxis = %f", xAxis, yAxis);
-    if (ImageUtils::FloatEqual(xAxis, 1.0f) && ImageUtils::FloatEqual(yAxis, 1.0f)) {
+    if ((static_cast<int32_t>(round(imageInfo_.size.width * xAxis)) - imageInfo_.size.width) == 0 &&
+        (static_cast<int32_t>(round(imageInfo_.size.height * yAxis)) - imageInfo_.size.height) == 0) {
         return;
     }
     TransInfos infos;
@@ -4263,7 +4265,8 @@ void PixelMap::scale(float xAxis, float yAxis)
 
 void PixelMap::scale(float xAxis, float yAxis, const AntiAliasingOption &option)
 {
-    if (ImageUtils::FloatEqual(xAxis, 1.0f) && ImageUtils::FloatEqual(yAxis, 1.0f)) {
+    if ((static_cast<int32_t>(round(imageInfo_.size.width * xAxis)) - imageInfo_.size.width) == 0 &&
+        (static_cast<int32_t>(round(imageInfo_.size.height * yAxis)) - imageInfo_.size.height) == 0) {
         return;
     }
     if (isAstc_) {
@@ -4344,6 +4347,9 @@ void PixelMap::translate(float xAxis, float yAxis)
 
 void PixelMap::rotate(float degrees)
 {
+    if (ImageUtils::FloatEqual(degrees, 0.0f)) {
+        return;
+    }
     ImageTrace imageTrace("PixelMap rotate");
     TransInfos infos;
     infos.matrix.setRotate(degrees);
