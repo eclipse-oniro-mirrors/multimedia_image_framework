@@ -72,7 +72,7 @@ piex::Error RawStream::GetData(const size_t offset, const size_t length, uint8_t
     }
 
     if (readSize != u32Length) {
-        IMAGE_LOGE("GetData, read want:%{public}u, real:%{public}u", u32Length, readSize);
+        IMAGE_LOGD("GetData, read want:%{public}u, real:%{public}u", u32Length, readSize);
         return piex::kFail;
     }
 
