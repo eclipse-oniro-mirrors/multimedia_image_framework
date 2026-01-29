@@ -85,14 +85,18 @@ static const std::vector<std::string> XMAGE_COORDINATE_KEYS = {
     "HwMnoteXmageLeft",
     "HwMnoteXmageTop",
     "HwMnoteXmageRight",
-    "HwMnoteXmageBottom"
+    "HwMnoteXmageBottom",
+    "ImageWidth",
+    "ImageLength",
 };
 
 static const std::vector<std::string> VALID_COORDINATE_VALUES = {
     "100",    // left
     "200",    // top
     "500",    // right
-    "300"     // bottom
+    "300",    // bottom
+    "600",    // ImageWidth
+    "700",    // ImageLength
 };
 
 class ImageSourceExifTest : public testing::Test {
@@ -649,6 +653,8 @@ HWTEST_F(ImageSourceExifTest, ExtractXMageCoordinatesTest001, TestSize.Level3)
     ASSERT_EQ(coordMetadata.top, 200);
     ASSERT_EQ(coordMetadata.right, 500);
     ASSERT_EQ(coordMetadata.bottom, 300);
+    ASSERT_EQ(coordMetadata.imageWidth, 600);
+    ASSERT_EQ(coordMetadata.imageLength, 700);
 }
 /**
  • @tc.name: ExtractXMageCoordinatesTest002
