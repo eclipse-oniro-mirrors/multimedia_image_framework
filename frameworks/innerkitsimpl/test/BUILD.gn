@@ -237,11 +237,13 @@ ohos_unittest("xmpmetadatatest") {
   sources = [
     "${image_subsystem}/frameworks/innerkitsimpl/accessor/src/xmp_metadata.cpp",
     "${image_subsystem}/frameworks/innerkitsimpl/test/unittest/metadata_test/xmp_metadata_test.cpp",
+    "${image_subsystem}/frameworks/innerkitsimpl/test/unittest/xmp_helper_test.cpp",
   ]
 
   deps = [
     "${image_subsystem}/frameworks/innerkitsimpl/utils:image_utils",
     "${image_subsystem}/interfaces/innerkits:image_native",
+    "${image_subsystem}/interfaces/kits/js/common:image_error_convert",
   ]
 
   external_deps = [
