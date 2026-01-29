@@ -28,6 +28,11 @@ public:
     SendablePixelMapNapi();
     ~SendablePixelMapNapi();
 
+    static constexpr napi_type_tag NAPI_TYPE_TAG = {
+        .lower = 0x323a765fb7d44918,
+        .upper = 0xbf34386b4af7fcb4
+    };
+
     static napi_value Init(napi_env env, napi_value exports);
 
     static napi_value CreateSendablePixelMap(napi_env env, std::shared_ptr<PixelMap> pixelmap);
