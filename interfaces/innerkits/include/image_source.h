@@ -401,7 +401,7 @@ private:
     uint32_t HandleInvalidExifBuffer(void* exifDataPtr);
     std::shared_ptr<MetadataAccessor> CreateMetadataAccessorForWrite(uint32_t &error);
     uint32_t WriteExifMetadataToFile(std::shared_ptr<MetadataAccessor> metadataAccessor);
-    uint32_t CreateXMPMetadataByImageSource();
+    uint32_t CreateXMPMetadataByImageSource(const std::string &mimeType);
     void SetDecodeInfoOptions(uint32_t index, const DecodeOptions &opts, const ImageInfo &info, ImageEvent &imageEvent);
     void SetDecodeInfoOptions(uint32_t index, const DecodeOptions &opts, const ImagePlugin::PlImageInfo &plInfo,
         ImageEvent &imageEvent);

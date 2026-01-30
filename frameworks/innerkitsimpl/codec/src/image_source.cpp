@@ -6639,12 +6639,12 @@ bool ImageSource::IsJpegProgressive(uint32_t &errorCode)
     return mainDecoder_->IsProgressiveJpeg();
 }
 
-uint32_t ImageSource::CreateXMPMetadataByImageSource()
+uint32_t ImageSource::CreateXMPMetadataByImageSource(const std::string &mimeType)
 {
     uint32_t errorCode = ERROR;
     IMAGE_LOGD("%{public}s enter", __func__);
     if (xmpMetadata_ != nullptr) {
-        IMAGE_LOGD("xmpMetadata_ already exists");
+        IMAGE_LOGD("%{public}s xmpMetadata_ already exists", __func__);
         return SUCCESS;
     }
 
@@ -6664,10 +6664,6 @@ uint32_t ImageSource::CreateXMPMetadataByImageSource()
         IMAGE_LOGE("%{public}s invalid stream size: %{public}u", __func__, bufferSize);
         return ERR_IMAGE_SOURCE_DATA;
     }
-
-    std::string mimeType;
-    errorCode = GetEncodedFormat(sourceInfo_.encodedFormat, mimeType);
-    CHECK_ERROR_RETURN_RET_LOG(errorCode != SUCCESS, errorCode, "%{public}s GetEncodedFormat failed", __func__);
 
     auto bufferPtr = sourceStreamPtr_->GetDataPtr();
     std::unique_ptr<uint8_t[]> tmpGuard;
@@ -6690,15 +6686,18 @@ uint32_t ImageSource::CreateXMPMetadataByImageSource()
 std::shared_ptr<XMPMetadata> ImageSource::ReadXMPMetadata(uint32_t &errorCode)
 {
     IMAGE_LOGD("%{public}s enter", __func__);
+    ImageInfo imageInfo;
+    errorCode = GetImageInfo(imageInfo);
+    CHECK_ERROR_RETURN_RET_LOG(errorCode != SUCCESS, nullptr, "%{public}s GetImageInfo failed", __func__);
+
     std::lock_guard<std::mutex> guard(decodingMutex_);
-    std::lock_guard<std::mutex> guardFile(fileMutex_);
     if (xmpMetadata_ != nullptr) {
         IMAGE_LOGD("%{public}s already read xmp metadata", __func__);
         errorCode = SUCCESS;
         return xmpMetadata_;
     }
 
-    errorCode = CreateXMPMetadataByImageSource();
+    errorCode = CreateXMPMetadataByImageSource(imageInfo.encodedFormat);
     CHECK_ERROR_RETURN_RET_LOG(errorCode != SUCCESS, nullptr, "%{public}s failed to create xmp metadata", __func__);
     return xmpMetadata_;
 }
@@ -6706,13 +6705,12 @@ std::shared_ptr<XMPMetadata> ImageSource::ReadXMPMetadata(uint32_t &errorCode)
 uint32_t ImageSource::WriteXMPMetadata(std::shared_ptr<XMPMetadata> &xmpMetadata)
 {
     IMAGE_LOGD("%{public}s enter", __func__);
+    ImageInfo imageInfo;
+    uint32_t errorCode = GetImageInfo(imageInfo);
+    CHECK_ERROR_RETURN_RET_LOG(errorCode != SUCCESS, errorCode, "%{public}s GetImageInfo failed", __func__);
+    const std::string &mimeType = imageInfo.encodedFormat;
+
     std::lock_guard<std::mutex> guard(decodingMutex_);
-    std::lock_guard<std::mutex> guardFile(fileMutex_);
-
-    std::string mimeType;
-    uint32_t errorCode = GetEncodedFormat(sourceInfo_.encodedFormat, mimeType);
-    CHECK_ERROR_RETURN_RET_LOG(errorCode != SUCCESS, errorCode, "%{public}s GetEncodedFormat failed", __func__);
-
     std::unique_ptr<XMPMetadataAccessor> accessor = nullptr;
     if (!srcFilePath_.empty()) {
         accessor = XMPMetadataAccessorFactory::Create(srcFilePath_, XMPAccessMode::READ_WRITE_XMP, mimeType);
@@ -6730,10 +6728,18 @@ uint32_t ImageSource::WriteXMPMetadata(std::shared_ptr<XMPMetadata> &xmpMetadata
     // Write XMP data (this will automatically update the file)
     errorCode = accessor->Write();
     CHECK_ERROR_RETURN_RET_LOG(errorCode != SUCCESS, errorCode, "%{public}s XMP write failed", __func__);
-    xmpMetadata_ = xmpMetadata;
 
-    if (!srcFilePath_.empty()) {
-        RefreshImageSourceByPathName();
+    {
+        std::unique_lock<std::mutex> guardFile(fileMutex_);
+        xmpMetadata_ = xmpMetadata;
+        if (!srcFilePath_.empty()) {
+            RefreshImageSourceByPathName();
+        }
+        if (srcFd_ != -1) {
+            // TODO:
+            // RefreshImageSourceByFd();
+        }
+        Reset();
     }
     IMAGE_LOGD("%{public}s XMP metadata written successfully", __func__);
     return SUCCESS;
