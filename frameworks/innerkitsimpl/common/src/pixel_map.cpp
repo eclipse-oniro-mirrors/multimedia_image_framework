@@ -3152,11 +3152,7 @@ static bool CheckPixelMapBufferSize(const ImageInfo& imgInfo, PixelMemInfo& pixe
     } else {
         uint64_t expectedBufferSize = 0;
         if (imgInfo.pixelFormat == PixelFormat::RGBA_F16) {
-            int32_t alignedWidth = imgInfo.size.width;
-            if (!ImageUtils::GetAlignedNumber(alignedWidth, NUM_2)) {
-                IMAGE_LOGE("RGBA_F16 width align failed! width[%{public}d]", imgInfo.size.width);
-                return false;
-            }
+            int32_t alignedWidth = ((imgInfo.size.width + 1) / NUM_2) * NUM_2;
             expectedBufferSize = static_cast<uint64_t>(imgInfo.size.height) * alignedWidth * ImageUtils::GetPixelBytes(imgInfo.pixelFormat);
             int32_t calsize = ImageUtils::GetByteCount(imgInfo);
         } else if (IsYUV(imgInfo.pixelFormat)) {
