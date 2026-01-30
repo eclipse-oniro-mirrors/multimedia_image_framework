@@ -250,14 +250,14 @@ HWTEST_F(ExtDecoderTest, CheckDecodeOptionsTest001, TestSize.Level3)
     std::shared_ptr<ExtDecoder> extDecoder = std::make_shared<ExtDecoder>();
     uint32_t index = 0;
     PixelDecodeOptions opts;
-    uint32_t ret = extDecoder->CheckDecodeOptions(index, opts);
+    uint32_t ret = extDecoder->CheckCropRect(opts);
     ASSERT_EQ(ret, ERR_IMAGE_INVALID_PARAMETER);
 
     extDecoder->dstInfo_.fDimensions = {1, 1};
     extDecoder->dstInfo_.fColorInfo.fColorType = SkColorType::kAlpha_8_SkColorType;
     opts.CropRect.left = -1;
     opts.CropRect.top = -1;
-    ret = extDecoder->CheckDecodeOptions(index, opts);
+    ret = extDecoder->CheckCropRect(opts);
     ASSERT_EQ(ret, ERR_IMAGE_INVALID_PARAMETER);
 
     opts.CropRect.left = 0;
