@@ -1260,7 +1260,7 @@ GSError ExtEncoder::HwSetColorSpaceData(Media::PixelMap* pixelmap, sptr<SurfaceB
 {
     bool cond = (buffer == nullptr || pixelmap == nullptr);
     CHECK_ERROR_RETURN_RET_LOG(cond, GSERROR_NO_BUFFER, "HwSetColorSpaceData buffer or pixelmap is nullptr");
-    auto colorSpacename = pixelmap->InnerGetGrColorSpacePtr()->GetColorSpaceName();
+    auto colorSpacename = pixelmap->InnerGetGrColorSpace().GetColorSpaceName();
     auto colorSpaceSearch = ColorUtils::COLORSPACE_NAME_TO_COLORINFO_MAP.find(colorSpacename);
     CM_ColorSpaceInfo colorSpaceInfo =
         (colorSpaceSearch != ColorUtils::COLORSPACE_NAME_TO_COLORINFO_MAP.end()) ? colorSpaceSearch->second :
