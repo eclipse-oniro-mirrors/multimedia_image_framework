@@ -516,6 +516,7 @@ ohos_unittest("imageutilstest") {
   ]
   sources = [
     "$image_subsystem/frameworks/innerkitsimpl/test/unittest/color_utils_test.cpp",
+    "$image_subsystem/frameworks/innerkitsimpl/test/unittest/image_handle_test.cpp",
     "$image_subsystem/frameworks/innerkitsimpl/test/unittest/image_utils_test.cpp",
     "$image_subsystem/frameworks/innerkitsimpl/test/unittest/pixel_yuv_ext_utils_test.cpp",
     "$image_subsystem/frameworks/innerkitsimpl/test/unittest/vpe_utils_test.cpp",
@@ -536,6 +537,10 @@ ohos_unittest("imageutilstest") {
 
     #"hilog:libhilog",
     "hitrace:hitrace_meter",
+  ]
+
+  cflags = [
+    "-Dprivate=public",
   ]
 
   defines = []

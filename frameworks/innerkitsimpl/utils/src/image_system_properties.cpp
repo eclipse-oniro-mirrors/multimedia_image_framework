@@ -246,5 +246,15 @@ bool ImageSystemProperties::GetPngSampleDecodeEnabled()
 #endif
 }
 
+bool ImageSystemProperties::IsImageLowSampleCritical()
+{
+#if !defined(CROSS_PLATFORM)
+    bool ret = system::GetBoolParameter("persist.resourceschedule.imagesample.iscritical", false);
+    return ret;
+#else
+    return false;
+#endif
+}
+
 } // namespace Media
 } // namespace OHOS
