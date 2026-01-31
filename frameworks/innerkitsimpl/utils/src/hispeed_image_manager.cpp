@@ -244,6 +244,7 @@ uint32_t HispeedImageManager::DoEncodeJpeg(
     CHECK_ERROR_RETURN_RET_LOG(cond, ERR_IMAGE_ENCODE_FAILED, "pixelMap is nullptr");
     cond = skStream == nullptr;
     CHECK_ERROR_RETURN_RET_LOG(cond, ERR_IMAGE_ENCODE_FAILED, "HispeedImageManager::DoEncodeJpeg: skStream is null");
+
     ImageFuncTimer imageFuncTimer("HispeedImageManager::%s:(%d, %d)", __func__,
         pixelMap->GetWidth(), pixelMap->GetHeight());
 
