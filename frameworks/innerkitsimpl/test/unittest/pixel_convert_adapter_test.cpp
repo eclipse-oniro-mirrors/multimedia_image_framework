@@ -434,16 +434,29 @@ HWTEST_F(PixelConvertAdapterTest, YUV420ToRGB888Test001, TestSize.Level3)
 HWTEST_F(PixelConvertAdapterTest, RGBxToRGBInvalidByteCountTest001, TestSize.Level3)
 {
     GTEST_LOG_(INFO) << "PixelConvertAdapterTest: RGBxToRGBInvalidByteCountTest001 start";
-    uint8_t srcPixels[VALID_RGBX_BUFFER_SIZE] = {0xFF, 0x00, 0x00, 0x00,
-                                                  0x00, 0xFF, 0x00, 0x00,
-                                                  0x00, 0x00, 0xFF, 0x00};
-    uint8_t dstPixels[VALID_RGB_BUFFER_SIZE];
-    
+
+    uint8_t srcPixels[VALID_RGBX_BUFFER_SIZE] = {
+        0xFF, 0x00, 0x00, 0x00,
+        0x00, 0xFF, 0x00, 0x00,
+        0x00, 0x00, 0xFF, 0x00
+    };
+    uint8_t expectedDstPixels[VALID_RGB_BUFFER_SIZE] = {
+        0xFF, 0x00, 0x00,
+        0x00, 0xFF, 0x00,
+        0x00, 0x00, 0xFF
+    };
+    uint8_t dstPixels[VALID_RGB_BUFFER_SIZE] = {0};
+    uint8_t dstPixels2[VALID_RGB_BUFFER_SIZE] = {0};
     bool result = PixelConvertAdapter::RGBxToRGB(srcPixels, dstPixels, INVALID_BYTE_COUNT);
-    ASSERT_FALSE(result);
-    
-    result = PixelConvertAdapter::RGBxToRGB(srcPixels, dstPixels, VALID_BYTE_COUNT);
-    ASSERT_TRUE(result);
+    ASSERT_FALSE(result) << "RGBxToRGB should fail when byteCount is not multiple of 4";
+    result = PixelConvertAdapter::RGBxToRGB(srcPixels, dstPixels2, VALID_BYTE_COUNT);
+    ASSERT_TRUE(result) << "RGBxToRGB should succeed when byteCount is multiple of 4";
+    for (size_t i = 0; i < VALID_RGB_BUFFER_SIZE; ++i) {
+        EXPECT_EQ(dstPixels2[i], expectedDstPixels[i]) <<
+            "Mismatch at index " << i <<
+            ", expected: " << static_cast<int>(expectedDstPixels[i]) <<
+            ", actual: " << static_cast<int>(dstPixels2[i]);
+    }
     GTEST_LOG_(INFO) << "PixelConvertAdapterTest: RGBxToRGBInvalidByteCountTest001 end";
 }
 

@@ -592,6 +592,30 @@ HWTEST_F(AuxiliaryPictureTest, SetMetadata003, TestSize.Level1)
 }
 
 /**
+ * @tc.name: SetMetadata004
+ * @tc.desc: Verify that AuxiliaryPicture of FRAGMENT_MAP type (watermark crop image) can set FragmentMetadata
+ *           successfully and expect to return SUCCESS
+ * @tc.type: FUNC
+ */
+HWTEST_F(AuxiliaryPictureTest, SetMetadata004, TestSize.Level1)
+{
+    GTEST_LOG_(INFO) << "AuxiliaryPictureTest: SetMetadata004 start";
+    std::string srcValue = "2";
+    std::shared_ptr<FragmentMetadata> srcFragmentMetadata = std::make_shared<FragmentMetadata>();
+    ASSERT_NE(srcFragmentMetadata, nullptr);
+    ASSERT_TRUE(srcFragmentMetadata->SetValue(FRAGMENT_METADATA_KEY_WIDTH, srcValue));
+    std::unique_ptr<AuxiliaryPicture> auxiliaryPicture = CreateAuxiliaryPicture(AuxiliaryPictureType::FRAGMENT_MAP);
+    ASSERT_NE(auxiliaryPicture, nullptr);
+    auxiliaryPicture->SetMetadata(MetadataType::FRAGMENT, srcFragmentMetadata);
+    std::shared_ptr<ImageMetadata> dstFragmentMetadata = auxiliaryPicture->GetMetadata(MetadataType::FRAGMENT);
+    ASSERT_NE(dstFragmentMetadata, nullptr);
+    std::string dstValue;
+    EXPECT_EQ(dstFragmentMetadata->GetValue(FRAGMENT_METADATA_KEY_WIDTH, dstValue), SUCCESS);
+    EXPECT_EQ(dstValue, srcValue);
+    GTEST_LOG_(INFO) << "AuxiliaryPictureTest: SetMetadata004 end";
+}
+
+/**
  * @tc.name: GetMetadata001
  * @tc.desc: Get exif metadata successfully.
  * @tc.type: FUNC

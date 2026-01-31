@@ -1090,11 +1090,11 @@ HWTEST_F(HeifParserBoxTest, GetPropertiesTest003, TestSize.Level3)
         .essential = false,
         .propertyIndex = 0,
     };
-    std::vector<PropertyAssociation> proPerty;
-    proPerty.push_back(rec);
+    std::vector<PropertyAssociation> property;
+    property.push_back(rec);
     struct PropertyEntry ref {
         .itemId = 0,
-        .associations = proPerty,
+        .associations = property,
     };
     ipma->entries_.push_back(ref);
 
@@ -1155,6 +1155,8 @@ HWTEST_F(HeifParserBoxTest, ParseContentTest005, TestSize.Level3)
 
     heif_error ret = heifIpmaBox.ParseContent(reader);
     ASSERT_EQ(ret, heif_error_ok);
+    EXPECT_FALSE(reader.HasError());
+    EXPECT_TRUE(reader.IsAtEnd());
     GTEST_LOG_(INFO) << "HeifParserBoxTest: ParseContentTest005 end";
 }
 

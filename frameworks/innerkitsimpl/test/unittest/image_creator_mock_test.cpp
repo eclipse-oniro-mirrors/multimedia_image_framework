@@ -63,10 +63,25 @@ sptr<SurfaceBuffer> ImageCreator::DequeueImage()
 namespace OHOS {
 namespace Multimedia {
 static constexpr int32_t NUM_1 = 1;
+static constexpr int32_t TEST_IMAGE_MIN_WIDTH = 1;
+static constexpr int32_t TEST_IMAGE_DEFAULT_HEIGHT = 2;
+static constexpr int32_t TEST_IMAGE_FORMAT_RGB = 3;
+static constexpr int32_t TEST_IMAGE_CAPACITY_4BYTE = 4;
 class ImageCreatorTest : public testing::Test {
 public:
-    ImageCreatorTest() {}
-    ~ImageCreatorTest() {}
+    void SetUp() override
+    {
+        testWidth_ = TEST_IMAGE_MIN_WIDTH;
+        testHeight_ = TEST_IMAGE_DEFAULT_HEIGHT;
+        testFormat_ = TEST_IMAGE_FORMAT_RGB;
+        testCapacity_ = TEST_IMAGE_CAPACITY_4BYTE;
+    }
+
+protected:
+    int32_t testWidth_;
+    int32_t testHeight_;
+    int32_t testFormat_;
+    int32_t testCapacity_;
 };
 class ImageCreatorReleaseListenerTest : public SurfaceBufferReleaseListener {
 public:
@@ -77,7 +92,7 @@ public:
     int32_t cnt_{0};
     void OnSurfaceBufferAvaliable()
     {
-        cnt_ = NUM_1;
+        cnt_ = Multimedia::NUM_1;
     }
 };
 
@@ -90,13 +105,9 @@ HWTEST_F(ImageCreatorTest, CreateImageCreator_001, TestSize.Level3)
 {
     GTEST_LOG_(INFO) << "ImageCreatorTest: CreateImageCreator_001 start";
     ImageCreator creat;
-    int32_t width = 1;
-    int32_t height = 2;
-    int32_t format = 3;
-    int32_t capicity = 4;
     g_mockConsumerNull = true;
     g_mockProducerNull = false;
-    std::shared_ptr<ImageCreator> ret = creat.CreateImageCreator(width, height, format, capicity);
+    std::shared_ptr<ImageCreator> ret = creat.CreateImageCreator(testWidth_, testHeight_, testFormat_, testCapacity_);
     ASSERT_NE(ret, nullptr);
     ASSERT_EQ(ret->creatorConsumerSurface_, nullptr);
     GTEST_LOG_(INFO) << "ImageCreatorTest: CreateImageCreator_001 end";
@@ -111,13 +122,9 @@ HWTEST_F(ImageCreatorTest, CreateImageCreator_002, TestSize.Level3)
 {
     GTEST_LOG_(INFO) << "ImageCreatorTest: CreateImageCreator_002 start";
     ImageCreator creat;
-    int32_t width = 1;
-    int32_t height = 2;
-    int32_t format = 3;
-    int32_t capicity = 4;
     g_mockConsumerNull = false;
     g_mockProducerNull = true;
-    std::shared_ptr<ImageCreator> ret = creat.CreateImageCreator(width, height, format, capicity);
+    std::shared_ptr<ImageCreator> ret = creat.CreateImageCreator(testWidth_, testHeight_, testFormat_, testCapacity_);
     ASSERT_NE(ret, nullptr);
     ASSERT_NE(ret->creatorConsumerSurface_, nullptr);
     ASSERT_EQ(ret->creatorProducerSurface_, nullptr);
@@ -133,13 +140,9 @@ HWTEST_F(ImageCreatorTest, CreateImageCreator_003, TestSize.Level3)
 {
     GTEST_LOG_(INFO) << "ImageCreatorTest: CreateImageCreator_003 start";
     ImageCreator creat;
-    int32_t width = 1;
-    int32_t height = 2;
-    int32_t format = 3;
-    int32_t capicity = 4;
     g_mockConsumerNull = false;
     g_mockProducerNull = false;
-    std::shared_ptr<ImageCreator> ret = creat.CreateImageCreator(width, height, format, capicity);
+    std::shared_ptr<ImageCreator> ret = creat.CreateImageCreator(testWidth_, testHeight_, testFormat_, testCapacity_);
     ASSERT_NE(ret, nullptr);
     ASSERT_NE(ret->creatorConsumerSurface_, nullptr);
     ASSERT_NE(ret->creatorProducerSurface_, nullptr);

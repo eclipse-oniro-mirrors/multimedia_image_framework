@@ -652,7 +652,7 @@ HWTEST_F(HeifExifMetadataAccessorTest, ReadCr3001, TestSize.Level3)
  */
 HWTEST_F(HeifExifMetadataAccessorTest, ReadCr3002, TestSize.Level3)
 {
-    GTEST_LOG_(INFO) << "HeifExifMetadataAccessorTest: ReadCr3003 start";
+    GTEST_LOG_(INFO) << "HeifExifMetadataAccessorTest: ReadCr3002 start";
     std::shared_ptr<MetadataStream> stream = std::make_shared<FileMetadataStream>(IMAGE_INPUT_CR3_PATH);
     ASSERT_TRUE(stream->Open(OpenMode::ReadWrite));
     HeifExifMetadataAccessor accessor(stream);

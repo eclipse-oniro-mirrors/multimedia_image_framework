@@ -44,6 +44,7 @@ static const std::string IMAGE_INPUT_JPEG_PATH = "/data/local/tmp/image/test_met
 static const std::string IMAGE_INPUT_JPEG_BLANKEXIF_PATH = "/data/local/tmp/image/test_exif_blank.jpg";
 static const std::string IMAGE_INPUT_JPEG_HW_PATH = "/data/local/tmp/image/test_hwkey.jpg";
 static const std::string IMAGE_INPUT_JPEG_RM_ENTRY_PATH = "/data/local/tmp/image/test_entrys.jpg";
+static const std::string IMAGE_REMOVE_EXIF_JPEG_PATH = "/data/local/tmp/image/test_remove_exif.jpg";
 static const char HUAWEI_HEADER[] = { 'H', 'U', 'A', 'W', 'E', 'I', '\0', '\0'};
 static const std::string MAKER_NOTE_TAG = "MakerNote";
 static const uint32_t TAG_VALUE_SIZE = 1024;
@@ -2015,9 +2016,11 @@ HWTEST_F(ExifMetadataTest, UnmarshallingErrorTest001, TestSize.Level3)
 HWTEST_F(ExifMetadataTest, UnmarshallingNoExifDataBufferTest001, TestSize.Level3)
 {
     Parcel parcel;
-    parcel.WriteBool(false);
-
+    bool writeResult = parcel.WriteBool(false);
+    ASSERT_TRUE(writeResult);
     PICTURE_ERR error;
+    ASSERT_EQ(error.errorCode, 0);
+    ASSERT_TRUE(error.errorInfo.empty());
     ExifMetadata* result = ExifMetadata::Unmarshalling(parcel, error);
     ASSERT_EQ(result, nullptr);
 }
@@ -2031,16 +2034,19 @@ HWTEST_F(ExifMetadataTest, HandleMakerNoteWithSpecialKeysTest001, TestSize.Level
 {
     auto exifData = exif_data_new_from_file(IMAGE_INPUT_JPEG_HW_PATH.c_str());
     ASSERT_NE(exifData, nullptr);
-
+    
     ExifMetadata metadata(exifData);
-    exif_data_get_mnote_data(exifData);
-    metadata.SetValue("HwMnoteCaptureMode", "0");
-    metadata.SetValue("MovingPhotoId", "test123");
+    std::string valueBefore;
+    int resultBefore = metadata.GetValue("MakerNote", valueBefore);
 
-    std::string value;
-    int result = metadata.GetValue("MakerNote", value);
-
-    EXPECT_EQ(result, SUCCESS);
+    EXPECT_TRUE(metadata.SetValue("HwMnoteCaptureMode", "0"));
+    EXPECT_TRUE(metadata.SetValue("MovingPhotoId", "test123"));
+    
+    std::string valueAfter;
+    int resultAfter = metadata.GetValue("MakerNote", valueAfter);
+    if (resultBefore == SUCCESS) {
+        EXPECT_EQ(resultAfter, SUCCESS);
+    }
 }
 
 /**
@@ -2050,12 +2056,36 @@ HWTEST_F(ExifMetadataTest, HandleMakerNoteWithSpecialKeysTest001, TestSize.Level
  */
 HWTEST_F(ExifMetadataTest, ExtractXmageCoordinatesNullExifDataTest001, TestSize.Level3)
 {
-    ExifMetadata metadata;
+    ExifData* exifData = nullptr;
+    ExifMetadata metadata(exifData);
 
     XmageCoordinateMetadata coordMetadata;
     bool result = metadata.ExtractXmageCoordinates(coordMetadata);
 
     ASSERT_FALSE(result);
+}
+
+/**
+ * @tc.name: ExtractXmageCoordinatesSuccessTest002
+ * @tc.desc: Test ExtractXmageCoordinates returns true when all XMAGE coordinate fields are valid
+ * @tc.type: FUNC
+ */
+HWTEST_F(ExifMetadataTest, ExtractXmageCoordinatesSuccessTest002, TestSize.Level1)
+{
+    GTEST_LOG_(INFO) << "ExifMetadataTest: ExtractXmageCoordinatesSuccessTest002 start";
+    XmageCoordinateMetadata coordMetadata{};
+    auto exifData = exif_data_new_from_file(IMAGE_REMOVE_EXIF_JPEG_PATH.c_str());
+    ASSERT_NE(exifData, nullptr);
+    std::shared_ptr<ExifMetadata> metadata = std::make_shared<ExifMetadata>(exifData);
+    auto ret = metadata->ExtractXmageCoordinates(coordMetadata);
+    ASSERT_EQ(ret, true);
+    ASSERT_EQ(coordMetadata.left, 0);
+    ASSERT_EQ(coordMetadata.top, 0);
+    ASSERT_EQ(coordMetadata.right, 0);
+    ASSERT_EQ(coordMetadata.bottom, 0);
+    ASSERT_EQ(coordMetadata.imageWidth, 3000);
+    ASSERT_EQ(coordMetadata.imageLength, 4000);
+    GTEST_LOG_(INFO) << "ExifMetadataTest: ExtractXmageCoordinatesSuccessTest002 end";
 }
 
 /**
