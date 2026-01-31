@@ -428,7 +428,7 @@ void PixelMapImpl::ReadPixelsToBufferSync(array_view<uint8_t> dst)
 
     uint32_t status = nativePixelMap_->ReadPixels(dst.size(), dst.data());
     if (status != Media::SUCCESS) {
-        ImageTaiheUtils::ThrowExceptionError(status, "Failed to read pixels. (" + std::to_string(status) + ")");
+        IMAGE_LOGE("[%{public}s] Failed to read pixels (%{public}d)", __func__, status);
     }
 }
 
@@ -447,8 +447,7 @@ void PixelMapImpl::ReadPixelsSync(weak::PositionArea area)
     if (status == Media::SUCCESS) {
         area->SetPixels(etsPixels);
     } else {
-        ImageTaiheUtils::ThrowExceptionError(status,
-            "Failed to read pixels by region. (" + std::to_string(status) + ")");
+        IMAGE_LOGE("[%{public}s] Failed to read pixels by region (%{public}d)", __func__, status);
     }
 }
 
@@ -461,7 +460,7 @@ void PixelMapImpl::WriteBufferToPixelsSync(array_view<uint8_t> src)
 
     uint32_t status = nativePixelMap_->WritePixels(src.data(), src.size());
     if (status != Media::SUCCESS) {
-        ImageTaiheUtils::ThrowExceptionError(status, "Failed to write pixels. (" + std::to_string(status) + ")");
+        IMAGE_LOGE("[%{public}s] Failed to write pixels (%{public}d)", __func__, status);
     }
 }
 
@@ -478,8 +477,7 @@ void PixelMapImpl::WritePixelsSync(weak::PositionArea area)
     uint32_t status = nativePixelMap_->WritePixels(etsPixels.data(), etsPixels.size(), area->GetOffset(),
         area->GetStride(), region);
     if (status != Media::SUCCESS) {
-        ImageTaiheUtils::ThrowExceptionError(status,
-            "Failed to write pixels by region. (" + std::to_string(status) + ")");
+        IMAGE_LOGE("[%{public}s] Failed to write pixels by region (%{public}d)", __func__, status);
     }
 }
 
@@ -663,7 +661,8 @@ void PixelMapImpl::CropSync(ohos::multimedia::image::image::Region const& region
     Media::Rect rect = {region.x, region.y, region.size.width, region.size.height};
     uint32_t status = nativePixelMap_->crop(rect);
     if (status != Media::SUCCESS) {
-        IMAGE_LOGE("[%{public}s] Crop failed (%{public}d)", __func__, status);
+        ImageTaiheUtils::ThrowExceptionError(status,
+            "Failed to crop due to invalid region or properties. (" + std::to_string(status) + ")");
     }
 }
 
