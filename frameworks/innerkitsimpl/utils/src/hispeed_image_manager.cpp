@@ -240,25 +240,20 @@ uint32_t HispeedImageManager::DoEncodeJpeg(
     void *skStream, OHOS::Media::PixelMap* pixelMap, uint8_t quality, SkImageInfo info)
 {
 #if !defined(CROSS_PLATFORM)
-    if (pixelMap == nullptr) {
-        return ERR_IMAGE_ENCODE_FAILED;
-    }
+    bool cond = pixelMap == nullptr;
+    CHECK_ERROR_RETURN_RET_LOG(cond, ERR_IMAGE_ENCODE_FAILED, "pixelMap is nullptr");
+    cond = skStream == nullptr;
+    CHECK_ERROR_RETURN_RET_LOG(cond, ERR_IMAGE_ENCODE_FAILED, "HispeedImageManager::DoEncodeJpeg: skStream is null");
     ImageFuncTimer imageFuncTimer("HispeedImageManager::%s:(%d, %d)", __func__,
         pixelMap->GetWidth(), pixelMap->GetHeight());
-    if (skStream == nullptr) {
-        IMAGE_LOGE("HispeedImageManager::DoEncodeJpeg: skStream is null");
-        return ERR_IMAGE_ENCODE_FAILED;
-    }
 
     uint8_t* srcData = static_cast<uint8_t*>(pixelMap->GetWritablePixels());
-    if (srcData == nullptr) {
-        IMAGE_LOGE("cannot get writable pixels from pixelMap");
-        return ERR_IMAGE_ENCODE_FAILED;
-    }
+    cond = srcData == nullptr;
+    CHECK_ERROR_RETURN_RET_LOG(cond, ERR_IMAGE_ENCODE_FAILED, "cannot get writable pixels from pixelMap");
 
     ImageInfo imageInfo;
     pixelMap->GetImageInfo(imageInfo);
-    bool cond = imageInfo.size.width != pixelMap->GetRowStride();
+    cond = imageInfo.size.width != pixelMap->GetRowStride();
     CHECK_ERROR_RETURN_RET_LOG(cond, ERR_IMAGE_ENCODE_FAILED, "hispeed invalid width mismatch stride");
     if (imageInfo.pixelFormat != PixelFormat::NV12 && imageInfo.pixelFormat != PixelFormat::NV21) {
         IMAGE_LOGE("unsupported pixel format: %{public}d", imageInfo.pixelFormat);
