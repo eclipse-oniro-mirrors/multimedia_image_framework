@@ -258,6 +258,11 @@ uint32_t HispeedImageManager::DoEncodeJpeg(
 
     ImageInfo imageInfo;
     pixelMap->GetImageInfo(imageInfo);
+    int32_t stride = pixelMap->GetRowStride();
+    if (imageInfo.size.width != stride) {
+        IMAGE_LOGE("hispeed invalid width=%{public}d mismatch stride=%{public}d", imageInfo.size.width, stride);
+        return ERR_IMAGE_ENCODE_FAILED;
+    }
     if (imageInfo.pixelFormat != PixelFormat::NV12 && imageInfo.pixelFormat != PixelFormat::NV21) {
         IMAGE_LOGE("unsupported pixel format: %{public}d", imageInfo.pixelFormat);
         return ERR_IMAGE_ENCODE_FAILED;
