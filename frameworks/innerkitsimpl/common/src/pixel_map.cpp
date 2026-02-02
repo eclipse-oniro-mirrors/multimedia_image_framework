@@ -3551,14 +3551,15 @@ static std::map<uint8_t, std::function<bool(TlvDecodeInfo&, vector<uint8_t>&, in
             return true;
         }},
         {TLV_IMAGE_STATICMETADATA, [](TlvDecodeInfo& decodeInfo, vector<uint8_t>& buff, int32_t& cursor, int32_t len) {
-            decodeInfo.hdrInfo.dynamicMetadata.reserve(len);
-            copy(buff.begin() + cursor, buff.begin() + cursor + len, back_inserter(decodeInfo.hdrInfo.dynamicMetadata));
+            decodeInfo.hdrInfo.staticMetadata.reserve(len);
+            copy(buff.begin() + cursor, buff.begin() + cursor + len, back_inserter(decodeInfo.hdrInfo.staticMetadata));
             cursor += len;
             return true;
         }},
         {TLV_IMAGE_DYNAMICMETADATA, [](TlvDecodeInfo& decodeInfo, vector<uint8_t>& buff, int32_t& cursor, int32_t len) {
-            decodeInfo.hdrInfo.staticMetadata.reserve(len);
-            copy(buff.begin() + cursor, buff.begin() + cursor + len, back_inserter(decodeInfo.hdrInfo.staticMetadata));
+            decodeInfo.hdrInfo.dynamicMetadata.reserve(len);
+            copy(buff.begin() + cursor, buff.begin() + cursor + len, back_inserter(decodeInfo.hdrInfo.dynamicMetadata));
+            
             cursor += len;
             return true;
         }},
