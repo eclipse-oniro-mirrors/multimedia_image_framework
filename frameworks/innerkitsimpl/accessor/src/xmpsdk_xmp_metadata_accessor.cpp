@@ -69,7 +69,8 @@ static constexpr XMP_OptionBits ConvertAccessModeToXMPOptions(XMPAccessMode mode
         case XMPAccessMode::READ_ONLY_XMP:
             return kXMPFiles_OpenForRead | kXMPFiles_OpenOnlyXMP | kXMPFiles_DisableLegacyImport;
         case XMPAccessMode::READ_WRITE_XMP:
-            return kXMPFiles_OpenForUpdate | kXMPFiles_OpenOnlyXMP | kXMPFiles_DisableLegacyImport;
+            return kXMPFiles_OpenForUpdate | kXMPFiles_OpenOnlyXMP | kXMPFiles_DisableLegacyImport |
+                kXMPFiles_DisableLegacyExport;
         default:
             return kXMPFiles_OpenForRead | kXMPFiles_OpenOnlyXMP | kXMPFiles_DisableLegacyImport;
     }
