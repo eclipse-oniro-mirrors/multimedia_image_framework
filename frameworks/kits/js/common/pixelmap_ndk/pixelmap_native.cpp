@@ -1048,13 +1048,13 @@ Image_ErrorCode OH_PixelmapNative_Rotate(OH_PixelmapNative *pixelmap, float angl
 }
 
 MIDK_EXPORT
-Image_ErrorCode OH_PixelmapNative_Flip(OH_PixelmapNative *pixelmap, bool shouldFilpHorizontally,
-    bool shouldFilpVertically)
+Image_ErrorCode OH_PixelmapNative_Flip(OH_PixelmapNative *pixelmap, bool shouldFlipHorizontally,
+    bool shouldFlipVertically)
 {
     if (pixelmap == nullptr || !pixelmap->GetInnerPixelmap()) {
         return IMAGE_BAD_PARAMETER;
     }
-    pixelmap->GetInnerPixelmap()->flip(shouldFilpHorizontally, shouldFilpVertically);
+    pixelmap->GetInnerPixelmap()->flip(shouldFlipHorizontally, shouldFlipVertically);
     return IMAGE_SUCCESS;
 }
 
