@@ -26,6 +26,7 @@
 #include "image/abs_image_format_agent.h"
 #include "image/image_plugin_type.h"
 #include "image_log.h"
+#include "image_mime_type.h"
 #include "image_utils.h"
 #include "image_source_util.h"
 #include "incremental_source_stream.h"
@@ -5075,7 +5076,8 @@ HWTEST_F(ImageSourceTest, ReadXMPMetadataTest005, TestSize.Level1)
     std::unique_ptr<ImageSource> imageSource = CreateImageSourceByPath(IMAGE_DNG_XMP_PATH);
     ASSERT_NE(imageSource, nullptr);
 
-    uint32_t errorCode = 0;
+    uint32_t errorCode = imageSource->CreateXMPMetadataByImageSource(IMAGE_DNG_FORMAT);
+    ASSERT_EQ(errorCode, SUCCESS);
     std::shared_ptr<XMPMetadata> xmpMetadata = imageSource->ReadXMPMetadata(errorCode);
     ASSERT_NE(xmpMetadata, nullptr);
     ASSERT_EQ(errorCode, SUCCESS);
@@ -5235,13 +5237,13 @@ HWTEST_F(ImageSourceTest, WriteXMPMetadataTest004, TestSize.Level1)
 
 /**
  * @tc.name: WriteXMPMetadataTest005
- * @tc.desc: Verify that WriteXMPMetadata works correctly with dng source.
+ * @tc.desc: Verify that WriteXMPMetadata works correctly with gif source.
  * @tc.type: FUNC
  */
 HWTEST_F(ImageSourceTest, WriteXMPMetadataTest005, TestSize.Level1)
 {
     GTEST_LOG_(INFO) << "ImageSourceTest: WriteXMPMetadataTest005 start";
-    std::unique_ptr<ImageSource> imageSource = CreateImageSourceByPath(IMAGE_DNG_XMP_PATH);
+    std::unique_ptr<ImageSource> imageSource = CreateImageSourceByPath(IMAGE_GIF_XMP_PATH);
     ASSERT_NE(imageSource, nullptr);
 
     uint32_t errorCode = 0;
@@ -5258,7 +5260,7 @@ HWTEST_F(ImageSourceTest, WriteXMPMetadataTest005, TestSize.Level1)
     ASSERT_EQ(errorCode, SUCCESS);
 
     // Verify that the XMP metadata is written correctly
-    std::unique_ptr<ImageSource> imageSource2 = CreateImageSourceByPath(IMAGE_DNG_XMP_PATH);
+    std::unique_ptr<ImageSource> imageSource2 = CreateImageSourceByPath(IMAGE_GIF_XMP_PATH);
     ASSERT_NE(imageSource2, nullptr);
 
     std::shared_ptr<XMPMetadata> xmpMetadata2 = imageSource2->ReadXMPMetadata(errorCode);
@@ -5273,50 +5275,12 @@ HWTEST_F(ImageSourceTest, WriteXMPMetadataTest005, TestSize.Level1)
 
 /**
  * @tc.name: WriteXMPMetadataTest006
- * @tc.desc: Verify that WriteXMPMetadata works correctly with gif source.
+ * @tc.desc: Verify that WriteXMPMetadata works correctly with png source.
  * @tc.type: FUNC
  */
 HWTEST_F(ImageSourceTest, WriteXMPMetadataTest006, TestSize.Level1)
 {
     GTEST_LOG_(INFO) << "ImageSourceTest: WriteXMPMetadataTest006 start";
-    std::unique_ptr<ImageSource> imageSource = CreateImageSourceByPath(IMAGE_GIF_XMP_PATH);
-    ASSERT_NE(imageSource, nullptr);
-
-    uint32_t errorCode = 0;
-    std::shared_ptr<XMPMetadata> xmpMetadata = imageSource->ReadXMPMetadata(errorCode);
-    ASSERT_NE(xmpMetadata, nullptr);
-    ASSERT_EQ(errorCode, SUCCESS);
-
-    XMPTag tag;
-    tag.type = XMPTagType::SIMPLE;
-    tag.value = "WriteXMPMetadataTest006";
-    errorCode = xmpMetadata->SetValue("xmp:CreatorTool", tag.type, tag.value);
-    ASSERT_EQ(errorCode, SUCCESS);
-    errorCode = imageSource->WriteXMPMetadata(xmpMetadata);
-    ASSERT_EQ(errorCode, SUCCESS);
-
-    // Verify that the XMP metadata is written correctly
-    std::unique_ptr<ImageSource> imageSource2 = CreateImageSourceByPath(IMAGE_GIF_XMP_PATH);
-    ASSERT_NE(imageSource2, nullptr);
-
-    std::shared_ptr<XMPMetadata> xmpMetadata2 = imageSource2->ReadXMPMetadata(errorCode);
-    ASSERT_NE(xmpMetadata2, nullptr);
-    ASSERT_EQ(errorCode, SUCCESS);
-
-    XMPTag tag2;
-    xmpMetadata2->GetTag("xmp:CreatorTool", tag2);
-    EXPECT_TRUE(CompareXMPTag(tag, tag2));
-    GTEST_LOG_(INFO) << "ImageSourceTest: WriteXMPMetadataTest006 end";
-}
-
-/**
- * @tc.name: WriteXMPMetadataTest007
- * @tc.desc: Verify that WriteXMPMetadata works correctly with png source.
- * @tc.type: FUNC
- */
-HWTEST_F(ImageSourceTest, WriteXMPMetadataTest007, TestSize.Level1)
-{
-    GTEST_LOG_(INFO) << "ImageSourceTest: WriteXMPMetadataTest007 start";
     std::unique_ptr<ImageSource> imageSource = CreateImageSourceByPath(IMAGE_PNG_XMP_PATH);
     ASSERT_NE(imageSource, nullptr);
 
@@ -5344,17 +5308,17 @@ HWTEST_F(ImageSourceTest, WriteXMPMetadataTest007, TestSize.Level1)
     XMPTag tag2;
     xmpMetadata2->GetTag("xmp:CreatorTool", tag2);
     EXPECT_TRUE(CompareXMPTag(tag, tag2));
-    GTEST_LOG_(INFO) << "ImageSourceTest: WriteXMPMetadataTest007 end";
+    GTEST_LOG_(INFO) << "ImageSourceTest: WriteXMPMetadataTest006 end";
 }
 
 /**
- * @tc.name: WriteXMPMetadataTest008
+ * @tc.name: WriteXMPMetadataTest007
  * @tc.desc: Verify that WriteXMPMetadata works correctly with tiff source.
  * @tc.type: FUNC
  */
-HWTEST_F(ImageSourceTest, WriteXMPMetadataTest008, TestSize.Level1)
+HWTEST_F(ImageSourceTest, WriteXMPMetadataTest007, TestSize.Level1)
 {
-    GTEST_LOG_(INFO) << "ImageSourceTest: WriteXMPMetadataTest008 start";
+    GTEST_LOG_(INFO) << "ImageSourceTest: WriteXMPMetadataTest007 start";
     std::unique_ptr<ImageSource> imageSource = CreateImageSourceByPath(IMAGE_TIFF_XMP_PATH);
     ASSERT_NE(imageSource, nullptr);
 
@@ -5382,7 +5346,7 @@ HWTEST_F(ImageSourceTest, WriteXMPMetadataTest008, TestSize.Level1)
     XMPTag tag2;
     xmpMetadata2->GetTag("xmp:CreatorTool", tag2);
     EXPECT_TRUE(CompareXMPTag(tag, tag2));
-    GTEST_LOG_(INFO) << "ImageSourceTest: WriteXMPMetadataTest008 end";
+    GTEST_LOG_(INFO) << "ImageSourceTest: WriteXMPMetadataTest007 end";
 }
 
 /**
@@ -5397,7 +5361,7 @@ HWTEST_F(ImageSourceTest, CreateXMPMetadataByImageSourceTest001, TestSize.Level1
     ASSERT_NE(imageSource, nullptr);
 
     imageSource->xmpMetadata_ = std::make_shared<XMPMetadata>();
-    uint32_t errorCode = imageSource->CreateXMPMetadataByImageSource("image/jpeg");
+    uint32_t errorCode = imageSource->CreateXMPMetadataByImageSource(IMAGE_JPEG_FORMAT);
     ASSERT_EQ(errorCode, SUCCESS);
     GTEST_LOG_(INFO) << "ImageSourceTest: CreateXMPMetadataByImageSourceTest001 end";
 }
@@ -5415,7 +5379,7 @@ HWTEST_F(ImageSourceTest, CreateXMPMetadataByImageSourceTest002, TestSize.Level1
     ASSERT_EQ(imageSource->xmpMetadata_, nullptr);
 
     imageSource->sourceStreamPtr_ = nullptr;
-    uint32_t errorCode = imageSource->CreateXMPMetadataByImageSource("image/jpeg");
+    uint32_t errorCode = imageSource->CreateXMPMetadataByImageSource(IMAGE_JPEG_FORMAT);
     ASSERT_EQ(errorCode, ERR_IMAGE_SOURCE_DATA);
     GTEST_LOG_(INFO) << "ImageSourceTest: CreateXMPMetadataByImageSourceTest002 end";
 }
@@ -5432,11 +5396,11 @@ HWTEST_F(ImageSourceTest, CreateXMPMetadataByImageSourceTest003, TestSize.Level1
     ASSERT_NE(imageSource, nullptr);
 
     imageSource->sourceStreamPtr_ = std::make_unique<OHOS::Media::MockSourceStream>(nullptr, 0);
-    uint32_t errorCode = imageSource->CreateXMPMetadataByImageSource("image/jpeg");
+    uint32_t errorCode = imageSource->CreateXMPMetadataByImageSource(IMAGE_JPEG_FORMAT);
     ASSERT_EQ(errorCode, ERR_IMAGE_SOURCE_DATA);
 
     imageSource->sourceStreamPtr_ = std::make_unique<OHOS::Media::MockSourceStream>(nullptr, MAX_SOURCE_SIZE + 1);
-    errorCode = imageSource->CreateXMPMetadataByImageSource("image/jpeg");
+    errorCode = imageSource->CreateXMPMetadataByImageSource(IMAGE_JPEG_FORMAT);
     ASSERT_EQ(errorCode, ERR_IMAGE_SOURCE_DATA);
     GTEST_LOG_(INFO) << "ImageSourceTest: CreateXMPMetadataByImageSourceTest003 end";
 }
@@ -5453,7 +5417,7 @@ HWTEST_F(ImageSourceTest, CreateXMPMetadataByImageSourceTest004, TestSize.Level1
     ASSERT_NE(imageSource, nullptr);
 
     imageSource->sourceStreamPtr_ = std::make_unique<OHOS::Media::MockSourceStream>(nullptr, MAX_SOURCE_SIZE);
-    uint32_t errorCode = imageSource->CreateXMPMetadataByImageSource("image/jpeg");
+    uint32_t errorCode = imageSource->CreateXMPMetadataByImageSource(IMAGE_JPEG_FORMAT);
     ASSERT_EQ(errorCode, ERR_IMAGE_SOURCE_DATA);
     GTEST_LOG_(INFO) << "ImageSourceTest: CreateXMPMetadataByImageSourceTest004 end";
 }
