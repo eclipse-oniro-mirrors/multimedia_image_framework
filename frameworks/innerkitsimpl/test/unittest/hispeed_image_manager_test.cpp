@@ -514,10 +514,7 @@ HWTEST_F(HispeedImageManagerTest, DoEncodeJpegMinSizeTest015, TestSize.Level3)
     MockSkWStream mockStream;
 
     auto pixelMap = CreateNV12PixelMap(1, 1);
-    if (pixelMap == nullptr) {
-        GTEST_LOG_(INFO) << "Failed to create 1x1 PixelMap, skipping test";
-        return;
-    }
+    ASSERT_NE(pixelMap, nullptr);
 
     SkImageInfo info = CreateTestImageInfo(1, 1);
     uint32_t result = manager.DoEncodeJpeg(&mockStream, pixelMap.get(), TEST_QUALITY, info);
@@ -561,10 +558,7 @@ HWTEST_F(HispeedImageManagerTest, DoEncodeJpegLargeSizeTest017, TestSize.Level3)
     MockSkWStream mockStream;
 
     auto pixelMap = CreateNV12PixelMap(TEST_LARGE_WIDTH, TEST_LARGE_HEIGHT);
-    if (pixelMap == nullptr) {
-        GTEST_LOG_(INFO) << "Failed to create 1920x1080 PixelMap, possibly due to memory constraints";
-        return;
-    }
+    ASSERT_NE(pixelMap, nullptr);
 
     SkImageInfo info = CreateTestImageInfo(TEST_LARGE_WIDTH, TEST_LARGE_HEIGHT);
     uint32_t result = manager.DoEncodeJpeg(&mockStream, pixelMap.get(), TEST_QUALITY, info);
