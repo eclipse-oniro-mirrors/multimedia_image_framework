@@ -34,7 +34,7 @@ namespace OHOS {
 namespace Media {
 namespace {
     using uint_8 = byte;
-    constexpr uint64_t MAX_DNG_STREAM_SIZE = 300 * 1024 * 1024; // 300MB
+    constexpr int64_t MAX_DNG_STREAM_SIZE = 300 * 1024 * 1024; // 300MB
 }
 
 DngExifMetadataAccessor::DngExifMetadataAccessor(std::shared_ptr<MetadataStream> &stream)
