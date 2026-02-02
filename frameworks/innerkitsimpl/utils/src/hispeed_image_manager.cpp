@@ -257,7 +257,8 @@ uint32_t HispeedImageManager::DoEncodeJpeg(
     pixelMap->GetImageInfo(imageInfo);
     pixelMap->GetImageYUVInfo(yDataInfo);
     if (yDataInfo.yStride != static_cast<uint32_t>(imageInfo.size.width)) {
-        IMAGE_LOGE("hispeed invalid width[%{public}d] mismatch stride[%{public}u]", imageInfo.size.width, yDataInfo.yStride);
+        IMAGE_LOGE("hispeed invalid width[%{public}d] mismatch stride[%{public}u]",
+            imageInfo.size.width, yDataInfo.yStride);
         return ERR_IMAGE_ENCODE_FAILED;
     }
     if (imageInfo.pixelFormat != PixelFormat::NV12 && imageInfo.pixelFormat != PixelFormat::NV21) {
