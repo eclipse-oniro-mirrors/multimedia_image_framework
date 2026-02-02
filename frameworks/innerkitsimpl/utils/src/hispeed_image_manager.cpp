@@ -256,13 +256,13 @@ uint32_t HispeedImageManager::DoEncodeJpeg(
     YUVDataInfo yDataInfo;
     pixelMap->GetImageInfo(imageInfo);
     pixelMap->GetImageYUVInfo(yDataInfo);
+    if (imageInfo.pixelFormat != PixelFormat::NV12 && imageInfo.pixelFormat != PixelFormat::NV21) {
+        IMAGE_LOGE("unsupported pixel format: %{public}d", imageInfo.pixelFormat);
+        return ERR_IMAGE_ENCODE_FAILED;
+    }
     if (yDataInfo.yStride != static_cast<uint32_t>(imageInfo.size.width)) {
         IMAGE_LOGE("hispeed invalid width[%{public}d] mismatch stride[%{public}u]",
             imageInfo.size.width, yDataInfo.yStride);
-        return ERR_IMAGE_ENCODE_FAILED;
-    }
-    if (imageInfo.pixelFormat != PixelFormat::NV12 && imageInfo.pixelFormat != PixelFormat::NV21) {
-        IMAGE_LOGE("unsupported pixel format: %{public}d", imageInfo.pixelFormat);
         return ERR_IMAGE_ENCODE_FAILED;
     }
 
