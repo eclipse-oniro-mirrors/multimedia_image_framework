@@ -202,19 +202,7 @@ array<uint8_t> XMPMetadataImpl::GetBlobSync()
         ThrowXMPException(ret);
         return result;
     }
-
-    std::unique_ptr<uint8_t[]> buf(new(std::nothrow) uint8_t[strBuf.size()]);
-    if (!buf) {
-        ThrowXMPException(OHOS::Media::ERR_MEDIA_MALLOC_FAILED);
-        return result;
-    }
-    if (memcpy_s(buf.get(), strBuf.size(), strBuf.data(), strBuf.size()) != EOK) {
-        ThrowXMPException(OHOS::Media::ERR_MEMORY_COPY_FAILED);
-        return result;
-    }
-
-    result = ImageTaiheUtils::CreateTaiheArrayBuffer(buf.get(), strBuf.size());
-    return result;
+    return ImageTaiheUtils::CreateTaiheArrayBuffer(reinterpret_cast<uint8_t*>(strBuf.data()), strBuf.size());
 }
 
 // Global Functions

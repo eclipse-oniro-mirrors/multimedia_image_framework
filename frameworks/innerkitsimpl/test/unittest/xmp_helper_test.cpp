@@ -251,7 +251,7 @@ HWTEST_F(XmpHelperTest, ExtractPropertyTest009, TestSize.Level3)
 HWTEST_F(XmpHelperTest, ExtractPropertyTest010, TestSize.Level3)
 {
     GTEST_LOG_(INFO) << "XmpHelperTest: ExtractPropertyTest010 start";
-    std::string_view pathExpression = "exif:Flash/"; 
+    std::string_view pathExpression = "exif:Flash/";
     std::string result = XMPHelper::ExtractProperty(pathExpression);
     ASSERT_STREQ(result.c_str(), "");
     GTEST_LOG_(INFO) << "XmpHelperTest: ExtractPropertyTest010 end";
