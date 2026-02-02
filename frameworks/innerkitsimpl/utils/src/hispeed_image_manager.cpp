@@ -267,10 +267,8 @@ uint32_t HispeedImageManager::DoEncodeJpeg(
     }
 
     YuvJpegEncoder encoder = InitJpegEncoder(quality);
-    if (encoder == nullptr) {
-        IMAGE_LOGE("hispeed init jpeg encoder failed");
-        return ERR_IMAGE_ENCODE_FAILED;
-    }
+    cond = encoder == nullptr;
+    CHECK_ERROR_RETURN_RET_LOG(cond, ERR_IMAGE_ENCODE_FAILED, "hispeed init jpeg encoder failed");
     JpegEncoderAppendICC(encoder, info);
 
     auto writeDef = [](void *opaque, const void* buffer, size_t size) -> bool {
