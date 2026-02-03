@@ -253,19 +253,22 @@ uint32_t HispeedImageManager::DoEncodeJpeg(
     CHECK_ERROR_RETURN_RET_LOG(cond, ERR_IMAGE_ENCODE_FAILED, "cannot get writable pixels from pixelMap");
 
     ImageInfo imageInfo;
+    YUVDataInfo yDataInfo;
     pixelMap->GetImageInfo(imageInfo);
-    cond = imageInfo.size.width != pixelMap->GetRowStride();
-    CHECK_ERROR_RETURN_RET_LOG(cond, ERR_IMAGE_ENCODE_FAILED, "hispeed invalid width mismatch stride");
+    pixelMap->GetImageYUVInfo(yDataInfo);
     if (imageInfo.pixelFormat != PixelFormat::NV12 && imageInfo.pixelFormat != PixelFormat::NV21) {
         IMAGE_LOGE("unsupported pixel format: %{public}d", imageInfo.pixelFormat);
         return ERR_IMAGE_ENCODE_FAILED;
     }
-
-    YuvJpegEncoder encoder = InitJpegEncoder(quality);
-    if (encoder == nullptr) {
-        IMAGE_LOGE("hispeed init jpeg encoder failed");
+    if (yDataInfo.yStride != static_cast<uint32_t>(imageInfo.size.width)) {
+        IMAGE_LOGE("hispeed invalid width[%{public}d] mismatch stride[%{public}u]",
+            imageInfo.size.width, yDataInfo.yStride);
         return ERR_IMAGE_ENCODE_FAILED;
     }
+
+    YuvJpegEncoder encoder = InitJpegEncoder(quality);
+    cond = encoder == nullptr;
+    CHECK_ERROR_RETURN_RET_LOG(cond, ERR_IMAGE_ENCODE_FAILED, "hispeed init jpeg encoder failed");
     JpegEncoderAppendICC(encoder, info);
 
     auto writeDef = [](void *opaque, const void* buffer, size_t size) -> bool {
