@@ -261,14 +261,14 @@ uint32_t HispeedImageManager::DoEncodeJpeg(
         return ERR_IMAGE_ENCODE_FAILED;
     }
     if (yDataInfo.yStride != static_cast<uint32_t>(imageInfo.size.width)) {
- 	    IMAGE_LOGE("hispeed invalid width[%{public}d] mismatch stride[%{public}u]",
- 	        imageInfo.size.width, yDataInfo.yStride);
+        IMAGE_LOGE("hispeed invalid width[%{public}d] mismatch stride[%{public}u]",
+            imageInfo.size.width, yDataInfo.yStride);
         return ERR_IMAGE_ENCODE_FAILED;
- 	}
+    }
 
     YuvJpegEncoder encoder = InitJpegEncoder(quality);
- 	cond = encoder == nullptr;
- 	CHECK_ERROR_RETURN_RET_LOG(cond, ERR_IMAGE_ENCODE_FAILED, "hispeed init jpeg encoder failed");
+    cond = encoder == nullptr;
+    CHECK_ERROR_RETURN_RET_LOG(cond, ERR_IMAGE_ENCODE_FAILED, "hispeed init jpeg encoder failed");
     JpegEncoderAppendICC(encoder, info);
 
     auto writeDef = [](void *opaque, const void* buffer, size_t size) -> bool {
