@@ -45,8 +45,9 @@ XMPMetadata::XMPMetadata()
         XMP_CATCH_NO_RETURN();
     }
 
-    ++refCount_;
     impl_ = std::make_unique<XMPMetadataImpl>();
+    CHECK_ERROR_RETURN_LOG(!impl_, "%{public}s failed to create XMPMetadataImpl", __func__);
+    ++refCount_;
 }
 
 XMPMetadata::XMPMetadata(std::unique_ptr<XMPMetadataImpl> impl)
@@ -61,8 +62,9 @@ XMPMetadata::XMPMetadata(std::unique_ptr<XMPMetadataImpl> impl)
         XMP_CATCH_NO_RETURN();
     }
 
-    ++refCount_;
     impl_ = std::move(impl);
+    CHECK_ERROR_RETURN_LOG(!impl_, "%{public}s failed to move XMPMetadataImpl", __func__);
+    ++refCount_;
 }
 
 XMPMetadata::~XMPMetadata()
@@ -284,7 +286,7 @@ uint32_t XMPMetadata::EnumerateTags(EnumerateCallback callback, const std::strin
     if (options.isRecursive) {
         iterOptions = kXMP_NoOptions;
     }
-    SXMPIterator iter(impl_->GetMeta(), schemaNS.c_str(), rootPropName.c_str(), iterOptions);
+    SXMPIterator iter(*(impl_->GetRawPtr()), schemaNS.c_str(), rootPropName.c_str(), iterOptions);
     std::string iterSchemaNS;
     std::string iterPropPath;
     std::string iterPropValue;

@@ -17,6 +17,8 @@
 #define INTERFACES_INNERKITS_INCLUDE_XMP_METADATA_IMPL_H
 
 #include <memory>
+
+#include "image_log.h"
 #include "XMP.hpp"
 #include "XMP.incl_cpp"
 
@@ -32,35 +34,37 @@ public:
 
     bool IsValid() const { return xmpMeta_ != nullptr; }
 
-    SXMPMeta& GetMeta() { return *xmpMeta_; }
-    const SXMPMeta& GetMeta() const { return *xmpMeta_; }
-
     SXMPMeta* GetRawPtr() { return xmpMeta_.get(); }
     const SXMPMeta* GetRawPtr() const { return xmpMeta_.get(); }
 
     // Forwarding methods - simple delegation to SXMPMeta
     void SetProperty(const char *schemaNS, const char *propName, const char *propValue, XMP_OptionBits options)
     {
+        CHECK_ERROR_RETURN_LOG(!IsValid(), "%{public}s xmpMeta is invalid", __func__);
         xmpMeta_->SetProperty(schemaNS, propName, propValue, options);
     }
 
     bool GetProperty(const char *schemaNS, const char *propName, std::string *propValue, XMP_OptionBits *options)
     {
+        CHECK_ERROR_RETURN_RET_LOG(!IsValid(), false, "%{public}s xmpMeta is invalid", __func__);
         return xmpMeta_->GetProperty(schemaNS, propName, propValue, options);
     }
 
     void DeleteProperty(const char *schemaNS, const char *propName)
     {
+        CHECK_ERROR_RETURN_LOG(!IsValid(), "%{public}s xmpMeta is invalid", __func__);
         xmpMeta_->DeleteProperty(schemaNS, propName);
     }
 
     void ParseFromBuffer(const char *buffer, uint32_t size)
     {
+        CHECK_ERROR_RETURN_LOG(!IsValid(), "%{public}s xmpMeta is invalid", __func__);
         return xmpMeta_->ParseFromBuffer(buffer, size);
     }
 
     void SerializeToBuffer(std::string &buffer, XMP_OptionBits options, uint32_t padding = 0)
     {
+        CHECK_ERROR_RETURN_LOG(!IsValid(), "%{public}s xmpMeta is invalid", __func__);
         return xmpMeta_->SerializeToBuffer(&buffer, options, padding);
     }
 

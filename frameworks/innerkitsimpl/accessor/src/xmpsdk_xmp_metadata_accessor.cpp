@@ -47,8 +47,8 @@ XMPSdkXMPMetadataAccessor::XMPSdkXMPMetadataAccessor()
         XMP_CATCH_NO_RETURN();
     }
 
-    ++refCount_;
     isRefCounted_ = true;
+    ++refCount_;
 }
 
 XMPSdkXMPMetadataAccessor::~XMPSdkXMPMetadataAccessor()
@@ -155,7 +155,7 @@ uint32_t XMPSdkXMPMetadataAccessor::Write()
     CHECK_ERROR_RETURN_RET_LOG(!impl || !impl->IsValid(), ERR_MEDIA_NULL_POINTER,
         "%{public}s XMPMetadataImpl is invalid", __func__);
 
-    SXMPMeta &meta = impl->GetMeta();
+    SXMPMeta &meta = *(impl->GetRawPtr());
     CHECK_ERROR_RETURN_RET_LOG(!xmpFiles_->CanPutXMP(meta), ERR_MEDIA_INVALID_OPERATION,
         "%{public}s CanPutXMP failed", __func__);
 

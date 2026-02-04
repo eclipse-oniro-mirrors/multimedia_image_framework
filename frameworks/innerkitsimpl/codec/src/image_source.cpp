@@ -6691,6 +6691,7 @@ std::shared_ptr<XMPMetadata> ImageSource::ReadXMPMetadata(uint32_t &errorCode)
     CHECK_ERROR_RETURN_RET_LOG(errorCode != SUCCESS, nullptr, "%{public}s GetImageInfo failed", __func__);
 
     std::lock_guard<std::mutex> guard(decodingMutex_);
+    std::unique_lock<std::mutex> guardFile(fileMutex_);
     if (xmpMetadata_ != nullptr) {
         IMAGE_LOGD("%{public}s already read xmp metadata", __func__);
         errorCode = SUCCESS;
@@ -6711,6 +6712,7 @@ uint32_t ImageSource::WriteXMPMetadata(std::shared_ptr<XMPMetadata> &xmpMetadata
     const std::string &mimeType = imageInfo.encodedFormat;
 
     std::lock_guard<std::mutex> guard(decodingMutex_);
+    std::unique_lock<std::mutex> guardFile(fileMutex_);
     std::unique_ptr<XMPMetadataAccessor> accessor = nullptr;
     if (!srcFilePath_.empty()) {
         accessor = XMPMetadataAccessorFactory::Create(srcFilePath_, XMPAccessMode::READ_WRITE_XMP, mimeType);
@@ -6729,18 +6731,15 @@ uint32_t ImageSource::WriteXMPMetadata(std::shared_ptr<XMPMetadata> &xmpMetadata
     errorCode = accessor->Write();
     CHECK_ERROR_RETURN_RET_LOG(errorCode != SUCCESS, errorCode, "%{public}s XMP write failed", __func__);
 
-    {
-        std::unique_lock<std::mutex> guardFile(fileMutex_);
-        xmpMetadata_ = xmpMetadata;
-        if (!srcFilePath_.empty()) {
-            RefreshImageSourceByPathName();
-        }
-        if (srcFd_ != -1) {
-            // TODO:
-            // RefreshImageSourceByFd();
-        }
-        Reset();
+    xmpMetadata_ = xmpMetadata;
+    if (!srcFilePath_.empty()) {
+        RefreshImageSourceByPathName();
     }
+    if (srcFd_ != -1) {
+        // TODO:
+        // RefreshImageSourceByFd();
+    }
+    Reset();
     IMAGE_LOGD("%{public}s XMP metadata written successfully", __func__);
     return SUCCESS;
 }

@@ -103,6 +103,8 @@ void XMPHelper::LogXMPError(const char *funcName, const XMP_Error &error)
 // Remove trailing "/*", "/", or "*" before '['
 static void TrimBeforeBracket(std::string &path, size_t &writePos)
 {
+    CHECK_ERROR_RETURN_LOG(writePos > path.size(), "%{public}s writePos is out of range!"
+        "writePos=%{public}zu, path.size()=%{public}zu", __func__, writePos, path.size());
     while (writePos > 0) {
         const char previousChar = path[writePos - NUM_1];
         if (previousChar == '/' || previousChar == '*') {
