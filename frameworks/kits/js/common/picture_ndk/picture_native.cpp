@@ -360,6 +360,73 @@ Image_ErrorCode OH_AuxiliaryPictureNative_Create(uint8_t *data, size_t dataLengt
     return IMAGE_SUCCESS;
 }
 
+void InitOptionsForAuxiliaryPicture(OHOS::Media::AuxiliaryPictureInfo info,
+    OHOS::Media::InitializationOptions &initializationOptions, IMAGE_ALLOCATOR_MODE allocator)
+{
+    initializationOptions.size.width = static_cast<int32_t>(info.size.width);
+    initializationOptions.size.height = static_cast<int32_t>(info.size.height);
+    initializationOptions.editable = true;
+    initializationOptions.useDMA = true;
+    initializationOptions.srcPixelFormat = info.pixelFormat;
+    initializationOptions.pixelFormat = info.pixelFormat;
+    initializationOptions.allocatorType = (allocator == IMAGE_ALLOCATOR_MODE_SHARED_MEMORY) ?
+        OHOS::Media::AllocatorType::SHARE_MEM_ALLOC : OHOS::Media::AllocatorType::DMA_ALLOC;
+    initializationOptions.srcRowStride = info.rowStride;
+}
+
+MIDK_EXPORT
+Image_ErrorCode OH_AuxiliaryPictureNative_CreateUsingAllocator(uint8_t *data, size_t dataLength,
+    OH_AuxiliaryPictureInfo *info, IMAGE_ALLOCATOR_MODE allocator, OH_AuxiliaryPictureNative **auxiliaryPicture)
+{
+    if (info == nullptr || info->GetInnerAuxiliaryPictureInfo() == nullptr ||
+        auxiliaryPicture == nullptr || allocator < IMAGE_ALLOCATOR_MODE_AUTO ||
+        allocator > IMAGE_ALLOCATOR_MODE_SHARED_MEMORY) {
+        return IMAGE_INVALID_PARAMETER;
+    }
+    auto tempInfo = *(info->GetInnerAuxiliaryPictureInfo().get());
+    auto auxPicTypeInner = AuxTypeNativeToInner(static_cast<Image_AuxiliaryPictureType>(tempInfo.auxiliaryPictureType));
+    if (tempInfo.size.height == 0 || tempInfo.size.width == 0 ||
+        !OHOS::Media::ImageUtils::IsAuxiliaryPictureTypeSupported(auxPicTypeInner)) {
+        return IMAGE_INVALID_PARAMETER;
+    }
+    if (tempInfo.auxiliaryPictureType == OHOS::Media::AuxiliaryPictureType::GAINMAP &&
+        allocator == IMAGE_ALLOCATOR_MODE_SHARED_MEMORY) {
+        return IMAGE_SOURCE_UNSUPPORTED_ALLOCATOR_TYPE;
+    }
+
+    uint32_t dstLength = tempInfo.size.height * tempInfo.size.width *
+        OHOS::Media::ImageUtils::GetPixelBytes(tempInfo.pixelFormat);
+    if (dstLength > dataLength) {
+        return IMAGE_INVALID_PARAMETER;
+    }
+    
+    std::unique_ptr<OHOS::Media::PixelMap> pixelMap;
+    OHOS::Media::InitializationOptions opt;
+    InitOptionsForAuxiliaryPicture(tempInfo, opt, allocator);
+    if (data == nullptr || dataLength == 0) {
+        IMAGE_LOGD("Create empty auxiliary picture using allocator");
+        pixelMap = OHOS::Media::PixelMap::Create(opt);
+    } else {
+        IMAGE_LOGD("Create auxiliary picture using allocator");
+        auto dataTmp = reinterpret_cast<uint32_t*>(data);
+        auto dataLengthTmp = static_cast<uint32_t>(dataLength);
+        pixelMap = OHOS::Media::PixelMap::Create(dataTmp, dataLengthTmp, opt);
+    }
+
+    std::shared_ptr<OHOS::Media::PixelMap> pixelMapPtr = std::move(pixelMap);
+    if (!pixelMapPtr) {
+        return IMAGE_INVALID_PARAMETER;
+    }
+
+    auto auxiliaryPictureTmp = std::make_unique<OH_AuxiliaryPictureNative>(pixelMapPtr, auxPicTypeInner, opt.size);
+    if (!auxiliaryPictureTmp || !auxiliaryPictureTmp->GetInnerAuxiliaryPicture()) {
+        return IMAGE_ALLOC_FAILED;
+    }
+
+    *auxiliaryPicture = auxiliaryPictureTmp.release();
+    return IMAGE_SUCCESS;
+}
+
 MIDK_EXPORT
 Image_ErrorCode OH_AuxiliaryPictureNative_WritePixels(OH_AuxiliaryPictureNative *auxiliaryPicture,
     uint8_t *source, size_t bufferSize)

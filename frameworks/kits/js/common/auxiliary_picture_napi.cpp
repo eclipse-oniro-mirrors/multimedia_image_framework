@@ -47,6 +47,10 @@ thread_local std::shared_ptr<AuxiliaryPicture> AuxiliaryPictureNapi::sAuxiliaryP
 #if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
 #endif
 
+constexpr const int32_t AUTO = 0;
+constexpr const int32_t DMA = 1;
+constexpr const int32_t SHAREDMEMORY = 2;
+
 struct AuxiliaryPictureNapiAsyncContext {
     napi_env env;
     napi_async_work work;
@@ -59,7 +63,7 @@ struct AuxiliaryPictureNapiAsyncContext {
     std::shared_ptr<Picture> rPicture;
     std::shared_ptr<AuxiliaryPicture> auxPicture;
     void *arrayBuffer;
-    size_t arrayBufferSize;
+    size_t arrayBufferSize = 0;
     Size size;
     AuxiliaryPictureType type;
     MetadataNapi *metadataNapi;
@@ -70,6 +74,7 @@ struct AuxiliaryPictureNapiAsyncContext {
     AuxiliaryPictureInfo auxiliaryPictureInfo;
     std::shared_ptr<OHOS::ColorManager::ColorSpace> AuxColorSpace = nullptr;
     PixelFormat pixelFormat = PixelFormat::RGBA_8888;
+    AllocatorType allocatorType = AllocatorType::DEFAULT;
 };
 
 using AuxiliaryPictureNapiAsyncContextPtr = std::unique_ptr<AuxiliaryPictureNapiAsyncContext>;
@@ -154,16 +159,13 @@ napi_value AuxiliaryPictureNapi::Init(napi_env env, napi_value exports)
     napi_property_descriptor static_prop[] = {
         DECLARE_NAPI_STATIC_FUNCTION("createAuxiliaryPicture", CreateAuxiliaryPicture),
         DECLARE_NAPI_PROPERTY("FragmentMapPropertyKey", CreateEnumTypeObject(env, napi_string, fragmentPropertyKeyMap)),
+        DECLARE_NAPI_STATIC_FUNCTION("createAuxiliaryPictureUsingAllocator", CreateAuxiliaryPictureUsingAllocator),
     };
 
     napi_value constructor = nullptr;
 
-    IMG_NAPI_CHECK_RET_D(IMG_IS_OK(
-        napi_define_class(env, CLASS_NAME.c_str(), NAPI_AUTO_LENGTH,
-                          Constructor, nullptr, IMG_ARRAY_SIZE(props),
-                          props, &constructor)),
-        nullptr, IMAGE_LOGE("define class fail")
-    );
+    IMG_NAPI_CHECK_RET_D(IMG_IS_OK(napi_define_class(env, CLASS_NAME.c_str(), NAPI_AUTO_LENGTH,
+        Constructor, nullptr, IMG_ARRAY_SIZE(props), props, &constructor)), nullptr, IMAGE_LOGE("define class fail"));
 
     IMG_NAPI_CHECK_RET_D(IMG_IS_OK(
         napi_create_reference(env, constructor, 1, &sConstructor_)),
@@ -651,7 +653,6 @@ static napi_value GetAuxiliaryPictureInfoNapiValue(napi_env env, void* data, std
     }
     auto resultValue = ColorManager::CreateJsColorSpaceObject(env, grCS);
     napi_value colorSpaceValue = reinterpret_cast<napi_value>(resultValue);
-    napi_create_int32(env, static_cast<int32_t>(auxiliaryPictureInfo->colorSpace), &colorSpaceValue);
     napi_set_named_property(env, result, "colorSpace", colorSpaceValue);
     return result;
 }
@@ -739,7 +740,6 @@ static bool ParseAuxiliaryPictureInfo(napi_env env, napi_value result, napi_valu
         return false;
     }
     context->auxiliaryPictureInfo.pixelFormat = ParsePixelFormat(tmpNumber);
-
     context->rPixelmap = context->auxPicture->GetContentPixel();
     napi_value auxColorSpace = nullptr;
     if (!GET_NODE_BY_NAME(root, "colorSpace", auxColorSpace)) {
@@ -747,6 +747,48 @@ static bool ParseAuxiliaryPictureInfo(napi_env env, napi_value result, napi_valu
         return false;
     }
     ParseColorSpace(env, auxColorSpace, context);
+    return true;
+}
+
+static bool ParseInfoForAuxiliaryPicture(napi_env env, napi_value result, napi_value root,
+    AuxiliaryPictureNapiAsyncContext* auxiliaryPictureNapiAsyncContext)
+{
+    uint32_t tmpNumber = 0;
+    int32_t tmpInt32 = 0;
+    napi_value tmpValue = nullptr;
+    auto context = static_cast<AuxiliaryPictureNapiAsyncContext*>(auxiliaryPictureNapiAsyncContext);
+
+    if (!GET_UINT32_BY_NAME(root, "auxiliaryPictureType", tmpNumber)) {
+        IMAGE_LOGE("No auxiliaryPictureType in auxiliaryPictureInfo");
+        return false;
+    }
+    context->auxiliaryPictureInfo.auxiliaryPictureType = ParseAuxiliaryPictureType(tmpNumber);
+    if (!GET_NODE_BY_NAME(root, "size", tmpValue)) {
+        IMAGE_LOGE("No size in auxiliaryPictureInfo");
+        return false;
+    }
+    if (!ParseSize(env, tmpValue, context->auxiliaryPictureInfo.size.width,
+        context->auxiliaryPictureInfo.size.height)) {
+        return false;
+    }
+    if (!GET_INT32_BY_NAME(root, "rowStride", tmpInt32) || tmpInt32 < 0) {
+        IMAGE_LOGE("Invalid rowStride in auxiliaryPictureInfo");
+        return false;
+    }
+    context->auxiliaryPictureInfo.rowStride = static_cast<uint32_t>(tmpInt32);
+    tmpNumber = 0;
+    if (!GET_UINT32_BY_NAME(root, "pixelFormat", tmpNumber)) {
+        IMAGE_LOGE("No pixelFormat in auxiliaryPictureInfo");
+        return false;
+    }
+    context->auxiliaryPictureInfo.pixelFormat = ParsePixelFormat(tmpNumber);
+
+    napi_value auxColorSpace = nullptr;
+    if (!GET_NODE_BY_NAME(root, "colorSpace", auxColorSpace)) {
+        IMAGE_LOGE("No colorSpace in auxiliaryPictureInfo");
+        return false;
+    }
+    context->AuxColorSpace = ColorManager::GetColorSpaceByJSObject(env, auxColorSpace);
     return true;
 }
  
@@ -903,34 +945,51 @@ void AuxiliaryPictureNapi::release()
     }
 }
 
-static bool IsPixelFormatSupportDMA(PixelFormat format)
-{
-    switch (format) {
-        case PixelFormat::RGB_565:
-        case PixelFormat::RGBA_8888:
-        case PixelFormat::BGRA_8888:
-        case PixelFormat::RGBA_F16:
-        case PixelFormat::RGBA_1010102:
-        case PixelFormat::YCBCR_P010:
-        case PixelFormat::YCRCB_P010:
-            return true;
-        default:
-            return false;
-    }
-}
-
-STATIC_EXEC_FUNC(CreateEmptyAuxiliaryPicture)
+STATIC_EXEC_FUNC(CreateAuxiliaryPictureUsingAllocator)
 {
     auto context = static_cast<AuxiliaryPictureNapiAsyncContext*>(data);
     InitializationOptions opts;
-    opts.size = context->size;
+    std::unique_ptr<OHOS::Media::PixelMap> pixelMap;
+
+    opts.size.width = static_cast<int32_t>(context->auxiliaryPictureInfo.size.width);
+    opts.size.height = static_cast<int32_t>(context->auxiliaryPictureInfo.size.height);
     opts.editable = true;
     opts.useDMA = true;
-    opts.allocatorType = AllocatorType::DMA_ALLOC;
-
-    auto tmpPixelmap = PixelMap::Create(opts);
-    std::shared_ptr<PixelMap> pixelmap = std::move(tmpPixelmap);
-    auto picture = AuxiliaryPicture::Create(pixelmap, context->type, context->size);
+    opts.srcPixelFormat = context->auxiliaryPictureInfo.pixelFormat;
+    opts.pixelFormat = context->auxiliaryPictureInfo.pixelFormat;
+    opts.allocatorType = (context->allocatorType == AllocatorType::SHARE_MEM_ALLOC) ?
+        AllocatorType::SHARE_MEM_ALLOC : AllocatorType::DMA_ALLOC;
+    opts.srcRowStride = context->auxiliaryPictureInfo.rowStride;
+    if (context->arrayBuffer == nullptr || context->arrayBufferSize <= 0) {
+        IMAGE_LOGD("Create empty auxiliary picture using allocator");
+        pixelMap = OHOS::Media::PixelMap::Create(opts);
+    } else {
+        IMAGE_LOGD("Create auxiliary picture using allocator");
+        if (opts.pixelFormat == PixelFormat::NV21 || opts.pixelFormat == PixelFormat::NV12) {
+            pixelMap = OHOS::Media::PixelMap::Create(opts);
+            auto dataTmp = reinterpret_cast<uint8_t*>(context->arrayBuffer);
+            auto dataLengthTmp = static_cast<uint32_t>(context->arrayBufferSize);
+            Rect region = {0, 0, opts.size.width, opts.size.height};
+            RWPixelsOptions option = {dataTmp, dataLengthTmp, 0, opts.srcRowStride, region, opts.pixelFormat};
+            pixelMap->WritePixels(option);
+        } else {
+            auto dataTmp = reinterpret_cast<uint32_t*>(context->arrayBuffer);
+            auto dataLengthTmp = static_cast<uint32_t>(context->arrayBufferSize);
+            pixelMap = OHOS::Media::PixelMap::Create(dataTmp, dataLengthTmp, opts);
+        }
+    }
+    std::shared_ptr<OHOS::Media::PixelMap> pixelMapPtr = std::move(pixelMap);
+    if (!pixelMapPtr) {
+        ImageNapiUtils::ThrowExceptionError(env, IMAGE_INVALID_PARAMETER, "Parameter error.");
+        return;
+    }
+    if (context->AuxColorSpace == nullptr) {
+        ImageNapiUtils::ThrowExceptionError(env, IMAGE_INVALID_PARAMETER, "AuxColorSpace is null.");
+        return;
+    }
+    pixelMapPtr->InnerSetColorSpace(*context->AuxColorSpace.get());
+    auto picture = AuxiliaryPicture::Create(pixelMapPtr, context->auxiliaryPictureInfo.auxiliaryPictureType,
+        context->size);
     context->auxPicture = std::move(picture);
     if (IMG_NOT_NULL(context->auxPicture)) {
         context->status = SUCCESS;
@@ -939,12 +998,60 @@ STATIC_EXEC_FUNC(CreateEmptyAuxiliaryPicture)
     }
 }
 
-napi_value AuxiliaryPictureNapi::CreateEmptyAuxiliaryPicture(napi_env env, napi_callback_info info)
+static void ParseAllocatorType(napi_env env, napi_value argValue[], uint32_t& curIdx, size_t argCount,
+    AuxiliaryPictureNapiAsyncContext* asyncContext)
 {
+    int32_t allocatorType = -1;
+    if (curIdx >= argCount) {
+        return;
+    }
+
+    if (ImageNapiUtils::getType(env, argValue[curIdx]) != napi_number) {
+        asyncContext->allocatorType = AllocatorType::DMA_ALLOC;
+        return;
+    }
+    
+    napi_status typeStatus = napi_get_value_int32(env, argValue[curIdx], &allocatorType);
+    if (!IMG_IS_OK(typeStatus)) {
+        ImageNapiUtils::ThrowExceptionError(env, IMAGE_INVALID_PARAMETER, "allocatorType must be valid integer");
+        return;
+    }
+    
+    if (allocatorType == AUTO || allocatorType == DMA) {
+        asyncContext->allocatorType = AllocatorType::DMA_ALLOC;
+    } else if (allocatorType == SHAREDMEMORY) {
+        asyncContext->allocatorType = AllocatorType::SHARE_MEM_ALLOC;
+    } else {
+        ImageNapiUtils::ThrowExceptionError(env, IMAGE_INVALID_PARAMETER, "allocatorType must be 0, 1 or 2");
+        return;
+    }
+    return;
+}
+
+static void UnwrapContextForCreateAuxiliaryPicture(napi_env env, napi_value argValue[], size_t argCount,
+    std::unique_ptr<AuxiliaryPictureNapiAsyncContext>& asyncContext)
+{
+    uint32_t curIdx = 1;
+    while (curIdx < argCount) {
+        if (ImageNapiUtils::getType(env, argValue[curIdx]) == napi_number) {
+            ParseAllocatorType(env, argValue, curIdx, argCount, asyncContext.get());
+        } else if (ImageNapiUtils::getType(env, argValue[curIdx]) == napi_object) {
+            if (!ParseBuffer(env, argValue[curIdx], asyncContext)) {
+                ImageNapiUtils::ThrowExceptionError(env, IMAGE_INVALID_PARAMETER, "Fail to get arrayBuffer.");
+                return;
+            }
+        }
+        ++curIdx;
+    }
+}
+
+napi_value AuxiliaryPictureNapi::CreateAuxiliaryPictureUsingAllocator(napi_env env, napi_callback_info info)
+{
+    IMAGE_LOGD("CreateAuxiliaryPictureUsingAllocator IN");
     if (AuxiliaryPictureNapi::GetConstructor() == nullptr) {
-    napi_value exports = nullptr;
-    napi_create_object(env, &exports);
-    AuxiliaryPictureNapi::Init(env, exports);
+        napi_value exports = nullptr;
+        napi_create_object(env, &exports);
+        AuxiliaryPictureNapi::Init(env, exports);
     }
     napi_value result = nullptr;
     napi_get_undefined(env, &result);
@@ -953,40 +1060,31 @@ napi_value AuxiliaryPictureNapi::CreateEmptyAuxiliaryPicture(napi_env env, napi_
     napi_status status;
     size_t argCount = NUM_3;
     napi_value argValue[NUM_3] = {0};
-    uint32_t auxiType = 0;
-    
+    napi_value thisVar = nullptr;
     auto asyncContext = std::make_unique<AuxiliaryPictureNapiAsyncContext>();
+    IMG_JS_ARGS(env, info, status, argCount, argValue, thisVar);
+    IMG_NAPI_CHECK_RET_D(IMG_IS_OK(status), nullptr, IMAGE_LOGE("Parse JS args for auxiliary picture failed."));
+    if (argCount > 1) {
+        UnwrapContextForCreateAuxiliaryPicture(env, argValue, argCount, asyncContext);
+    }
+    if (asyncContext->allocatorType == AllocatorType::DEFAULT) {
+        asyncContext->allocatorType = AllocatorType::DMA_ALLOC;
+    }
+    IMG_NAPI_CHECK_RET_D(ParseInfoForAuxiliaryPicture(env, result, argValue[NUM_0], asyncContext.get()),
+        ImageNapiUtils::ThrowExceptionError(env, IMAGE_INVALID_PARAMETER, "Parameter error."),
+        IMAGE_LOGE("AuxiliaryPictureInfo mismatch"));
     
-    IMG_NAPI_CHECK_RET_D((argCount == NUM_2 || argCount == NUM_3),
-        ImageNapiUtils::ThrowExceptionError(env, IMAGE_BAD_PARAMETER, "Invalid args count (expected 2 or 3)"),
-        IMAGE_LOGE("Invalid args count %{public}zu, expected 2 or 3", argCount));
-    
-    if (!ParseSize(env, argValue[NUM_0], asyncContext->size.width, asyncContext->size.height)) {
-        IMAGE_LOGE("Fail to get auxiliary picture size");
-        return ImageNapiUtils::ThrowExceptionError(env, IMAGE_BAD_PARAMETER, "Invalid args.");
+    if (asyncContext->allocatorType != AllocatorType::DMA_ALLOC
+        && asyncContext->auxiliaryPictureInfo.auxiliaryPictureType == AuxiliaryPictureType::GAINMAP) {
+        ImageNapiUtils::ThrowExceptionError(env, IMAGE_UNSUPPORTED_MEMORY_FORMAT, "Unsupport allocator type.");
     }
-    status = napi_get_value_uint32(env, argValue[NUM_1], &auxiType);
-    IMG_NAPI_CHECK_RET_D(IMG_IS_OK(status), result, IMAGE_LOGE("Fail to get auxiliary picture Type"));
-    if (auxiType < static_cast<uint32_t>(AuxiliaryPictureType::GAINMAP)
-        || auxiType > static_cast<uint32_t>(AuxiliaryPictureType::FRAGMENT_MAP)) {
-        IMAGE_LOGE("Auxiliary picture type is invalid");
-        return ImageNapiUtils::ThrowExceptionError(env, IMAGE_BAD_PARAMETER, "Invalid args.");
+    uint32_t dstLength = asyncContext->auxiliaryPictureInfo.size.height *
+        asyncContext->auxiliaryPictureInfo.size.width *
+        ImageUtils::GetPixelBytes(asyncContext->auxiliaryPictureInfo.pixelFormat);
+    if (asyncContext->arrayBufferSize != 0 && dstLength > asyncContext->arrayBufferSize) {
+        ImageNapiUtils::ThrowExceptionError(env, IMAGE_INVALID_PARAMETER, "Parameter error.");
     }
-    asyncContext->type = static_cast<OHOS::Media::AuxiliaryPictureType>(auxiType);
-    if (argCount == NUM_3) {
-        uint32_t pixelFormat = 0;
-        status = napi_get_value_uint32(env, argValue[NUM_2], &pixelFormat);
-        IMG_NAPI_CHECK_RET_D(IMG_IS_OK(status), result, IMAGE_LOGE("Fail to get auxiliary pixelFormat"));
-
-        asyncContext->pixelFormat = static_cast<OHOS::Media::PixelFormat>(pixelFormat);
-        if (!IsPixelFormatSupportDMA(asyncContext->pixelFormat)) {
-            IMAGE_LOGE("Auxiliary pixelFormat %{public}d is not supported (DMA required)",
-                static_cast<int32_t>(asyncContext->pixelFormat));
-            return ImageNapiUtils::ThrowExceptionError(env, IMAGE_BAD_PARAMETER, "Invalid args.");
-        }
-    }
-
-    CreateEmptyAuxiliaryPictureExec(env, static_cast<void*>((asyncContext).get()));
+    CreateAuxiliaryPictureUsingAllocatorExec(env, static_cast<void*>((asyncContext).get()));
     status = napi_get_reference_value(env, sConstructor_, &constructor);
     if (IMG_IS_OK(status)) {
         sAuxiliaryPic_ = std::move(asyncContext->auxPicture);

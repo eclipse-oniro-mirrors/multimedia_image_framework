@@ -362,6 +362,29 @@ Image_ErrorCode OH_AuxiliaryPictureNative_Create(uint8_t *data, size_t dataLengt
     Image_AuxiliaryPictureType type, OH_AuxiliaryPictureNative **auxiliaryPicture);
 
 /**
+ * @brief Create an <b>AuxiliaryPicture</b> object, the memory type used by the AuxiliaryPicture can be specified by
+ * allocatorType {@link IMAGE_ALLOCATOR_TYPE}. By default, the system selects the memory type based on the image type,
+ * image size, platform capability, etc. When processing the AuxiliaryPicture returned by this interface, please always
+ * consider the impact of stride. The created auxiliary picture will be initialized with the input data, if data is null
+ * or dataLength is less or equal to 0, the auxiliary picture will not be initialized.
+ *
+ * @param data The image buffer.
+ * @param dataLength The length of data.
+ * @param info The basic information of auxiliary picture.
+ * @param allocator Indicate which memory type will be used by the returned AuxiliaryPicture.
+ * @param auxiliaryPicture AuxiliaryPicture pointer for created.
+ * @return Image functions result code.
+ *         {@link IMAGE_SUCCESS} if the execution is successful.
+ *         {@link IMAGE_BAD_PARAMETER} The info or auxiliaryPicture is nullptr.
+ *         {@link IMAGE_SOURCE_UNSUPPORTED_ALLOCATOR_TYPE} unsupported allocator type,
+ *              e.g., use share memory create a gainmap as only DMA supported hdr metadata.
+ *         {@link IMAGE_ALLOC_FAILED} Alloc memory failed.
+ * @since 24
+ */
+Image_ErrorCode OH_AuxiliaryPictureNative_CreateUsingAllocator(uint8_t *data, size_t dataLength,
+    OH_AuxiliaryPictureInfo *info, IMAGE_ALLOCATOR_MODE allocator, OH_AuxiliaryPictureNative **auxiliaryPicture);
+
+/**
  * @brief Write pixels to auxiliary picture.
  *
  * @param auxiliaryPicture The AuxiliaryPicture pointer will be operated.
