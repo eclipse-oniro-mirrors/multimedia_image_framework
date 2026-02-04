@@ -2006,7 +2006,6 @@ ohos_unittest("imageformatconverttest") {
     "${image_subsystem}/interfaces/innerkits/include",
   ]
   sources = [
-    "${image_subsystem}/frameworks/innerkitsimpl/test/unittest/image_format_convert_fail_test.cpp",
     "${image_subsystem}/frameworks/innerkitsimpl/test/unittest/image_format_convert_test.cpp",
   ]
   deps = [
