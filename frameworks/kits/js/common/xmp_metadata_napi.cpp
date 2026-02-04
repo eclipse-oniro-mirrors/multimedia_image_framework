@@ -398,7 +398,7 @@ napi_value XMPMetadataNapi::SetValue(napi_env env, napi_callback_info info)
     IMG_JS_ARGS(env, info, status, argCount, argValue, thisVar);
     IMG_NAPI_CHECK_RET_D(IMG_IS_OK(status), result, IMAGE_LOGE("Fail to napi_get_cb_info"));
     if (argCount < NUM_2 || argCount > NUM_3) {
-        return ImageNapiUtils::ThrowExceptionError(env, IMAGE_BAD_PARAMETER, "Invalid argument count");
+        return ImageNapiUtils::ThrowExceptionError(env, IMAGE_INVALID_PARAMETER, "Invalid argument count");
     }
 
     std::unique_ptr<XMPMetadataAsyncContext> asyncContext = std::make_unique<XMPMetadataAsyncContext>();
@@ -464,7 +464,7 @@ napi_value XMPMetadataNapi::GetTag(napi_env env, napi_callback_info info)
     IMG_JS_ARGS(env, info, status, argCount, argValue, thisVar);
     IMG_NAPI_CHECK_RET_D(IMG_IS_OK(status), result, IMAGE_LOGE("Fail to napi_get_cb_info"));
     if (argCount != NUM_1) {
-        return ImageNapiUtils::ThrowExceptionError(env, IMAGE_BAD_PARAMETER, "Invalid argument count");
+        return ImageNapiUtils::ThrowExceptionError(env, IMAGE_INVALID_PARAMETER, "Invalid argument count");
     }
 
     std::unique_ptr<XMPMetadataAsyncContext> asyncContext = std::make_unique<XMPMetadataAsyncContext>();
@@ -516,7 +516,7 @@ napi_value XMPMetadataNapi::RemoveTag(napi_env env, napi_callback_info info)
     IMG_JS_ARGS(env, info, status, argCount, argValue, thisVar);
     IMG_NAPI_CHECK_RET_D(IMG_IS_OK(status), result, IMAGE_LOGE("Fail to napi_get_cb_info"));
     if (argCount != NUM_1) {
-        return ImageNapiUtils::ThrowExceptionError(env, IMAGE_BAD_PARAMETER, "Invalid argument count");
+        return ImageNapiUtils::ThrowExceptionError(env, IMAGE_INVALID_PARAMETER, "Invalid argument count");
     }
 
     std::unique_ptr<XMPMetadataAsyncContext> asyncContext = std::make_unique<XMPMetadataAsyncContext>();
@@ -568,7 +568,7 @@ napi_value XMPMetadataNapi::RegisterNamespacePrefix(napi_env env, napi_callback_
     IMG_JS_ARGS(env, info, status, argCount, argValue, thisVar);
     IMG_NAPI_CHECK_RET_D(IMG_IS_OK(status), result, IMAGE_LOGE("Fail to napi_get_cb_info"));
     if (argCount != NUM_2) {
-        return ImageNapiUtils::ThrowExceptionError(env, IMAGE_BAD_PARAMETER, "Invalid argument count");
+        return ImageNapiUtils::ThrowExceptionError(env, IMAGE_INVALID_PARAMETER, "Invalid argument count");
     }
 
     std::unique_ptr<XMPMetadataAsyncContext> asyncContext = std::make_unique<XMPMetadataAsyncContext>();
@@ -694,7 +694,7 @@ napi_value XMPMetadataNapi::EnumerateTags(napi_env env, napi_callback_info info)
     IMG_NAPI_CHECK_RET_D(IMG_IS_OK(status), result, IMAGE_LOGE("Fail to napi_get_cb_info"));
     // At least callback is required
     if (argc < NUM_1) {
-        return ImageNapiUtils::ThrowExceptionError(env, IMAGE_BAD_PARAMETER,
+        return ImageNapiUtils::ThrowExceptionError(env, IMAGE_INVALID_PARAMETER,
             "Invalid argument count, at least callback is required");
     }
 
@@ -705,13 +705,13 @@ napi_value XMPMetadataNapi::EnumerateTags(napi_env env, napi_callback_info info)
     IMG_NAPI_CHECK_RET_D(IMG_IS_READY(status, context->xmpMetadataNapi), result, IMAGE_LOGE("Fail to unwrap context"));
     std::shared_ptr<XMPMetadata> nativePtr = context->xmpMetadataNapi->nativeXMPMetadata_;
     if (!nativePtr) {
-        return ImageNapiUtils::ThrowExceptionError(env, IMAGE_BAD_PARAMETER, "Native XMPMetadata is null");
+        return ImageNapiUtils::ThrowExceptionError(env, IMAGE_INVALID_PARAMETER, "Native XMPMetadata is null");
     }
 
     // First parameter must be callback function
     napi_valuetype type0 = ImageNapiUtils::getType(env, argv[0]);
     if (type0 != napi_function) {
-        return ImageNapiUtils::ThrowExceptionError(env, IMAGE_BAD_PARAMETER,
+        return ImageNapiUtils::ThrowExceptionError(env, IMAGE_INVALID_PARAMETER,
             "First argument must be a callback function");
     }
     context->callbackValue = argv[0];
@@ -843,7 +843,7 @@ napi_value XMPMetadataNapi::SetBlob(napi_env env, napi_callback_info info)
     IMG_JS_ARGS(env, info, status, argCount, argValue, thisVar);
     IMG_NAPI_CHECK_RET_D(IMG_IS_OK(status), result, IMAGE_LOGE("Fail to napi_get_cb_info"));
     if (argCount != NUM_1) {
-        return ImageNapiUtils::ThrowExceptionError(env, IMAGE_BAD_PARAMETER, "Invalid argument count");
+        return ImageNapiUtils::ThrowExceptionError(env, IMAGE_INVALID_PARAMETER, "Invalid argument count");
     }
 
     std::unique_ptr<XMPMetadataAsyncContext> asyncContext = std::make_unique<XMPMetadataAsyncContext>();
@@ -858,7 +858,7 @@ napi_value XMPMetadataNapi::SetBlob(napi_env env, napi_callback_info info)
     status = napi_get_arraybuffer_info(env, argValue[NUM_0],
         &(asyncContext->arrayBuffer), &(asyncContext->arrayBufferSize));
     if (status != napi_ok || asyncContext->arrayBuffer == nullptr || asyncContext->arrayBufferSize == NUM_0) {
-        return ImageNapiUtils::ThrowExceptionError(env, IMAGE_BAD_PARAMETER, "Invalid blob data");
+        return ImageNapiUtils::ThrowExceptionError(env, IMAGE_INVALID_PARAMETER, "Invalid blob data");
     }
 
     napi_create_promise(env, &(asyncContext->deferred), &result);

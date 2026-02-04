@@ -4740,7 +4740,7 @@ napi_value ImageSourceNapi::WriteXMPMetadata(napi_env env, napi_callback_info in
     IMG_JS_ARGS(env, info, status, argCount, argValue, thisVar);
     IMG_NAPI_CHECK_RET_D(IMG_IS_OK(status), result, IMAGE_LOGE("fail to get thisVar"));
     if (argCount != NUM_1) {
-        return ImageNapiUtils::ThrowExceptionError(env, IMAGE_BAD_PARAMETER, "Invalid argument count");
+        return ImageNapiUtils::ThrowExceptionError(env, IMAGE_SOURCE_INVALID_PARAMETER, "Invalid argument count");
     }
 
     std::unique_ptr<ImageSourceAsyncContext> asyncContext = std::make_unique<ImageSourceAsyncContext>();
@@ -4752,7 +4752,7 @@ napi_value ImageSourceNapi::WriteXMPMetadata(napi_env env, napi_callback_info in
     CHECK_ERROR_RETURN_RET_LOG(asyncContext->rImageSource == nullptr, result, "fail to get nativeImgSrc");
 
     if (!ImageNapiUtils::CheckTypeByName(env, argValue[NUM_0], "XMPMetadata")) {
-        return ImageNapiUtils::ThrowExceptionError(env, IMAGE_BAD_PARAMETER, "Invalid argument type");
+        return ImageNapiUtils::ThrowExceptionError(env, IMAGE_SOURCE_INVALID_PARAMETER, "Invalid argument type");
     }
     asyncContext->rXMPMetadata = XMPMetadataNapi::GetXMPMetadata(env, argValue[NUM_0]);
     CHECK_ERROR_RETURN_RET_LOG(asyncContext->rXMPMetadata == nullptr, result, "fail to get xmpMetadata");

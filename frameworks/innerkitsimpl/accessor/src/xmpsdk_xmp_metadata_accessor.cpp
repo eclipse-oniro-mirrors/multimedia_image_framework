@@ -129,7 +129,7 @@ uint32_t XMPSdkXMPMetadataAccessor::Read()
     if (!xmpFiles_->GetXMP(impl->GetRawPtr())) {
         IMAGE_LOGE("%{public}s GetXMP failed, ioType=%{public}hhu, maybe no XMP data in file",
             __func__, static_cast<uint8_t>(ioType_));
-        return ERR_XMP_DECODE_FAILED;
+        return ERR_XMP_NOT_FOUND;
     }
 
     xmpMetadata_ = std::make_shared<XMPMetadata>(std::move(impl));

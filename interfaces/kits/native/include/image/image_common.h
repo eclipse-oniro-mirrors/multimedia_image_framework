@@ -239,6 +239,21 @@ typedef enum {
      * @since 20
      */
     IMAGE_ALLOCATOR_MODE_UNSUPPROTED = 7600501,
+    /**
+     * @error XMP tag not found.
+     * @since 24
+     */
+    IMAGE_XMP_TAG_NOT_FOUND = 7600601,
+    /**
+     * @error XMP decode failed.
+     * @since 24
+     */
+    IMAGE_XMP_DECODE_FAILED = 7600602,
+    /**
+     * @error XMP namespace not registered.
+     * @since 24
+     */
+    IMAGE_XMP_NAMESPACE_NOT_REGISTERED = 7600603,
     /** unknown error */
     IMAGE_UNKNOWN_ERROR = 7600901,
     /** decode data source exception */
@@ -283,26 +298,6 @@ typedef enum {
      * @since 20
      */
     IMAGE_RECEIVER_INVALID_PARAMETER = 7900201,
-    /**
-     * @error XMP tag not found.
-     * @since 24
-     */
-    IMAGE_XMP_TAG_NOT_FOUND = 8000201,
-    /**
-     * @error XMP decode failed.
-     * @since 24
-     */
-    IMAGE_XMP_DECODE_FAILED = 8000202,
-    /**
-     * @error XMP init failed.
-     * @since 24
-     */
-    IMAGE_XMP_INIT_FAILED = 8000203,
-    /**
-     * @error XMP namespace not registered.
-     * @since 24
-     */
-    IMAGE_XMP_NAMESPACE_NOT_REGISTERED = 8000204,
 } Image_ErrorCode;
 
 /**
