@@ -1001,7 +1001,9 @@ unique_ptr<PixelMap> ImageSource::CreatePixelMapExtended(uint32_t index, const D
     opts_ = opts;
     ImageInfo info;
     errorCode = GetImageInfo(FIRST_FRAME, info);
+#if !defined(CROSS_PLATFORM)
     ImageHandle::GetInstance().LowRamDeviceOptsOptimize(opts_, info);
+#endif
     ParseHdrType();
     if (!CheckDecodeOptions(opts)) {
         IMAGE_LOGI("CheckDecodeOptions failed.");
