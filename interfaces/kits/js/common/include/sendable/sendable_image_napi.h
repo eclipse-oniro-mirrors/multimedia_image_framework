@@ -34,6 +34,10 @@ public:
 
     NativeImage* GetNative();
     void NativeRelease();
+    static constexpr napi_type_tag NAPI_TYPE_TAG = {
+        .lower = 0x828ec1899f0e4b7f,
+        .upper = 0x8e065715ca644d8b
+    };
 private:
     static napi_value Constructor(napi_env env, napi_callback_info info);
     static void Destructor(napi_env env, void *nativeObject, void *finalize);

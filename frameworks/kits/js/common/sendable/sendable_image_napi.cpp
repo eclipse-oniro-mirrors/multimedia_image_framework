@@ -112,7 +112,8 @@ std::shared_ptr<NativeImage> SendableImageNapi::GetNativeImage(napi_env env, nap
 {
     SendableImageNapi* napi = nullptr;
 
-    napi_status status = napi_unwrap_sendable(env, image, reinterpret_cast<void**>(&napi));
+    napi_status status = napi_unwrap_sendable_s(env, image, &SendableImageNapi::NAPI_TYPE_TAG,
+        reinterpret_cast<void**>(&napi));
     if (!IMG_IS_OK(status) || napi == nullptr) {
         IMAGE_ERR("GetImage napi unwrap failed");
         return nullptr;
@@ -151,8 +152,8 @@ napi_value SendableImageNapi::Constructor(napi_env env, napi_callback_info info)
             return undefineVar;
         }
     }
-    status = napi_wrap_sendable(env, thisVar,
-        reinterpret_cast<void *>(napi.get()), SendableImageNapi::Destructor, nullptr);
+    status = napi_wrap_sendable_s(env, thisVar, reinterpret_cast<void *>(napi.get()),
+        SendableImageNapi::Destructor, nullptr, &SendableImageNapi::NAPI_TYPE_TAG);
     if (status != napi_ok) {
         IMAGE_ERR("Failure wrapping js to native napi");
         return undefineVar;
@@ -281,7 +282,8 @@ static std::unique_ptr<SendableImageAsyncContext> UnwrapContext(napi_env env, na
     }
 
     std::unique_ptr<SendableImageAsyncContext> ctx = std::make_unique<SendableImageAsyncContext>();
-    if (napi_unwrap_sendable(env, thisVar, reinterpret_cast<void**>(&ctx->napi)) != napi_ok || ctx->napi == nullptr) {
+    if (napi_unwrap_sendable_s(env, thisVar, &SendableImageNapi::NAPI_TYPE_TAG,
+        reinterpret_cast<void**>(&ctx->napi)) != napi_ok || ctx->napi == nullptr) {
         IMAGE_ERR("fail to unwrap ets image object, image maybe released");
         return nullptr;
     }

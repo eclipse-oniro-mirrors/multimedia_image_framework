@@ -51,6 +51,10 @@ public:
     void SetNativeImageSource(std::shared_ptr<ImageSource> imageSource);
     void SetImageResource(ImageResource resource);
     ImageResource GetImageResource();
+    static constexpr napi_type_tag NAPI_TYPE_TAG = {
+        .lower = 0x76e8cea642b74c67,
+        .upper = 0x9cbb8e9d09251cc9
+    };
 
 private:
     static napi_value Constructor(napi_env env, napi_callback_info info);
@@ -96,6 +100,7 @@ private:
 
     void release();
     static thread_local napi_ref sConstructor_;
+    
     static thread_local std::shared_ptr<ImageSource> sImgSrc_;
     static thread_local std::shared_ptr<IncrementalPixelMap> sIncPixelMap_;
     std::shared_ptr<IncrementalPixelMap> navIncPixelMap_ = nullptr;

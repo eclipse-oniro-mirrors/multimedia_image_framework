@@ -44,6 +44,10 @@ public:
         return navIncPixelMap_;
     }
     static napi_value Init(napi_env env, napi_value exports);
+    static constexpr napi_type_tag NAPI_TYPE_TAG = {
+        .lower = 0x0955b66d22184342,
+        .upper = 0xb123b31caab4b686
+    };
 private:
     static napi_value Constructor(napi_env env, napi_callback_info info);
     static void Destructor(napi_env env, void *nativeObject, void *finalize);
