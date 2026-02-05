@@ -1945,7 +1945,7 @@ bool ImageUtils::CheckSizeValid(const ImageInfo &imgInfo, YUVDataInfo& yDataInfo
     return isValid;
 }
 
-bool ImageUtils::CheckStrideValid(const YUVDataInfo& yDataInfo)
+bool ImageUtils::CheckStrideValid(YUVDataInfo& yDataInfo)
 {
     if (yDataInfo.yStride < yDataInfo.yWidth) {
         IMAGE_LOGE("Invalid Y stride: %{public}u < width=%{public}u", yDataInfo.yStride, yDataInfo.yWidth);
@@ -1968,7 +1968,7 @@ bool ImageUtils::CheckStrideValid(const YUVDataInfo& yDataInfo)
     return true;
 }
 
-bool ImageUtils::CheckOffsetValid(const YUVDataInfo& yDataInfo)
+bool ImageUtils::CheckOffsetValid(YUVDataInfo& yDataInfo)
 {
     if (yDataInfo.yOffset != 0) {
         IMAGE_LOGE("Invalid Y offset: %{public}u (expected 0)", yDataInfo.yOffset);
