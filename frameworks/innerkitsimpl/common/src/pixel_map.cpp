@@ -3010,9 +3010,16 @@ bool PixelMap::ReadBufferSizeFromParcel(Parcel& parcel, const ImageInfo& imgInfo
         ImageInfo astcImgInfo = {realSize, imgInfo.pixelFormat};
         expectedBufferSize = ImageUtils::GetAstcBytesCount(astcImgInfo);
     }
-    if (!IsYUV(imgInfo.pixelFormat) && imgInfo.pixelFormat != PixelFormat::RGBA_F16 &&
-        (expectedBufferSize > (memInfo.allocatorType == AllocatorType::HEAP_ALLOC ? PIXEL_MAP_MAX_RAM_SIZE : INT_MAX) ||
-        static_cast<uint64_t>(memInfo.bufferSize) != expectedBufferSize)) {
+
+    if (imgInfo.pixelFormat == PixelFormat::RGBA_F16) {
+        int32_t calsize = ImageUtils::GetByteCount(imgInfo);
+        uint64_t expectedF16 = static_cast<uint64_t>(rowDataSize) * static_cast<uint64_t>(imgInfo.size.height);
+        int32_t alignedWidth = ((imgInfo.size.width + NUM_1) / NUM_2) * NUM_2;
+        expectedBufferSize =
+            static_cast<uint64_t>(imgInfo.size.height) * alignedWidth * ImageUtils::GetPixelBytes(imgInfo.pixelFormat);
+    } 
+    if (!IsYUV(imgInfo.pixelFormat) && (expectedBufferSize > (memInfo.allocatorType == AllocatorType::HEAP_ALLOC ?
+        PIXEL_MAP_MAX_RAM_SIZE : INT_MAX) || static_cast<uint64_t>(memInfo.bufferSize) != expectedBufferSize)) {
         IMAGE_LOGE("[PixelMap] ReadBufferSizeFromParcel: bufferSize invalid, expect:%{public}llu, actual:%{public}d",
             static_cast<unsigned long long>(expectedBufferSize), memInfo.bufferSize);
         PixelMap::ConstructPixelMapError(error, ERR_IMAGE_PIXELMAP_CREATE_FAILED, "buffer size invalid");
@@ -3125,8 +3132,9 @@ bool PixelMap::UpdatePixelMapMemInfo(PixelMap *pixelMap, ImageInfo &imgInfo, Pix
 
 static bool CheckPixelMapBufferSize(const ImageInfo& imgInfo, PixelMemInfo& pixelMemInfo, PixelMap *pixelMap)
 {
+    CHECK_ERROR_RETURN_RET_LOG(pixelMap == nullptr, false, "pixelMap is nullptr");
     int32_t memBufSizeInt = pixelMemInfo.bufferSize;
-    if (pixelMemInfo.allocatorType == AllocatorType::DMA_ALLOC && pixelMemInfo.context != nullptr) {
+    if (pixelMemInfo.allocatorType == AllocatorType::DMA_ALLOC && pixelMemInfo.context != nullptr) {  
         SurfaceBuffer* sb = static_cast<SurfaceBuffer*>(pixelMemInfo.context);
         uint32_t sbSize = sb->GetSize();
         int32_t calcSizeInt = ImageUtils::GetByteCount(imgInfo);
@@ -3138,7 +3146,6 @@ static bool CheckPixelMapBufferSize(const ImageInfo& imgInfo, PixelMemInfo& pixe
         uint32_t calcSize = static_cast<uint32_t>(calcSizeInt);
         uint32_t memBufSize = static_cast<uint32_t>(memBufSizeInt);
         if (ImageUtils::IsYuvFormat(imgInfo.pixelFormat)) {
-            CHECK_ERROR_RETURN_RET_LOG(pixelMap == nullptr, false, "pixelMap is nullptr");
             YUVDataInfo yDataInfo;
             pixelMap->GetImageYUVInfo(yDataInfo);
             calcSize = yDataInfo.yStride * yDataInfo.yHeight + yDataInfo.uvStride * yDataInfo.uvHeight;
@@ -3151,11 +3158,7 @@ static bool CheckPixelMapBufferSize(const ImageInfo& imgInfo, PixelMemInfo& pixe
         }
     } else {
         uint64_t expectedBufferSize = 0;
-        if (imgInfo.pixelFormat == PixelFormat::RGBA_F16) {
-            int32_t alignedWidth = ((imgInfo.size.width + 1) / NUM_2) * NUM_2;
-            expectedBufferSize = static_cast<uint64_t>(imgInfo.size.height) * alignedWidth * ImageUtils::GetPixelBytes(imgInfo.pixelFormat);
-            int32_t calsize = ImageUtils::GetByteCount(imgInfo);
-        } else if (IsYUV(imgInfo.pixelFormat)) {
+        if (IsYUV(imgInfo.pixelFormat)) {
             expectedBufferSize = static_cast<uint64_t>(ImageUtils::GetByteCount(imgInfo));
         } else {
             return true;
