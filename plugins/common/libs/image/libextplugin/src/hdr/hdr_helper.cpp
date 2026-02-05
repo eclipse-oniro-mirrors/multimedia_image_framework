@@ -279,7 +279,7 @@ static bool GetISOJpegGainMapOffset(vector<jpeg_marker_struct*>& markerList,
             isoTag = ParseBaseISOTag(marker);
         }
     }
-    if (isoTag) {
+    if (isoTag && offsetArray.size() >= INDEX_TWO) {
         offset = offsetArray[INDEX_ONE];
         return true;
     }
