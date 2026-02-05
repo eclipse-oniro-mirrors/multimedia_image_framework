@@ -3171,7 +3171,6 @@ static bool CheckPixelMapBufferSize(const ImageInfo& imgInfo, PixelMemInfo& pixe
             PIXEL_MAP_MAX_RAM_SIZE : INT_MAX) || static_cast<uint64_t>(memBufSizeInt) != expectedBufferSize)) {
         IMAGE_LOGE("[PixelMap] CheckPixelMapBufferSize: bufferSize invalid, expect:%{public}llu, actual:%{public}d",
             static_cast<unsigned long long>(expectedBufferSize), memBufSizeInt);
-        PixelMap::ConstructPixelMapError(error, ERR_IMAGE_PIXELMAP_CREATE_FAILED, "buffer size invalid");
         return false;
     }
     }
@@ -3249,7 +3248,7 @@ PixelMap *PixelMap::FinishUnmarshalling(PixelMap *pixelMap, Parcel &parcel,
         return nullptr;
     }
     if (!CheckPixelMapBufferSize(imgInfo, pixelMemInfo, pixelMap)) {
-        IMAGE_LOGE("enter here, Check PixelMap BufferSize fail");
+        IMAGE_LOGE("Check PixelMap BufferSize fail");
         delete pixelMap;
         return nullptr;
     }
