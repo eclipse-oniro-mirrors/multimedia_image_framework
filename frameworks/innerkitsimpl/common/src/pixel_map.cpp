@@ -3017,7 +3017,7 @@ bool PixelMap::ReadBufferSizeFromParcel(Parcel& parcel, const ImageInfo& imgInfo
         int32_t alignedWidth = ((imgInfo.size.width + NUM_1) / NUM_2) * NUM_2;
         expectedBufferSize =
             static_cast<uint64_t>(imgInfo.size.height) * alignedWidth * ImageUtils::GetPixelBytes(imgInfo.pixelFormat);
-    } 
+    }
     if (!IsYUV(imgInfo.pixelFormat) && (expectedBufferSize > (memInfo.allocatorType == AllocatorType::HEAP_ALLOC ?
         PIXEL_MAP_MAX_RAM_SIZE : INT_MAX) || static_cast<uint64_t>(memInfo.bufferSize) != expectedBufferSize)) {
         IMAGE_LOGE("[PixelMap] ReadBufferSizeFromParcel: bufferSize invalid, expect:%{public}llu, actual:%{public}d",
@@ -3134,7 +3134,7 @@ static bool CheckPixelMapBufferSize(const ImageInfo& imgInfo, PixelMemInfo& pixe
 {
     CHECK_ERROR_RETURN_RET_LOG(pixelMap == nullptr, false, "pixelMap is nullptr");
     int32_t memBufSizeInt = pixelMemInfo.bufferSize;
-    if (pixelMemInfo.allocatorType == AllocatorType::DMA_ALLOC && pixelMemInfo.context != nullptr) {  
+    if (pixelMemInfo.allocatorType == AllocatorType::DMA_ALLOC && pixelMemInfo.context != nullptr) {
         SurfaceBuffer* sb = static_cast<SurfaceBuffer*>(pixelMemInfo.context);
         uint32_t sbSize = sb->GetSize();
         int32_t calcSizeInt = ImageUtils::GetByteCount(imgInfo);
@@ -3167,6 +3167,13 @@ static bool CheckPixelMapBufferSize(const ImageInfo& imgInfo, PixelMemInfo& pixe
         if (!ImageUtils::CheckBufferSizeIsValid(memBufSizeInt, expectedBufferSize, pixelMemInfo.allocatorType)) {
             return false;
         }
+        if ((expectedBufferSize > (pixelMemInfo.allocatorType == AllocatorType::HEAP_ALLOC ?
+            PIXEL_MAP_MAX_RAM_SIZE : INT_MAX) || static_cast<uint64_t>(memBufSizeInt) != expectedBufferSize)) {
+        IMAGE_LOGE("[PixelMap] CheckPixelMapBufferSize: bufferSize invalid, expect:%{public}llu, actual:%{public}d",
+            static_cast<unsigned long long>(expectedBufferSize), memBufSizeInt);
+        PixelMap::ConstructPixelMapError(error, ERR_IMAGE_PIXELMAP_CREATE_FAILED, "buffer size invalid");
+        return false;
+    }
     }
 
     return true;
