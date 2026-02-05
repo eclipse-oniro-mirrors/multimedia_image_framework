@@ -258,39 +258,18 @@ uint32_t XMPMetadata::RemoveTag(const std::string &path)
     XMP_CATCH_RETURN_CODE(ERR_XMP_SDK_EXCEPTION);
 }
 
-uint32_t XMPMetadata::EnumerateTags(EnumerateCallback callback, const std::string &rootPath, XMPEnumerateOption options)
+static void EnumerateWithIterator(SXMPMeta *meta, const char *schemaNS, const char *propName, XMP_OptionBits options,
+    const XMPMetadata::EnumerateCallback &callback)
 {
-    XMP_TRY();
-    CHECK_ERROR_RETURN_RET_LOG(!impl_ || !impl_->IsValid(), ERR_MEDIA_NULL_POINTER,
-        "%{public}s impl is invalid for path: %{public}s", __func__, rootPath.c_str());
-    CHECK_ERROR_RETURN_RET_LOG(!callback, ERR_IMAGE_INVALID_PARAMETER, "%{public}s callback is null", __func__);
+    CHECK_ERROR_RETURN_LOG(meta == nullptr, "%{public}s meta is null", __func__);
+    CHECK_ERROR_RETURN_LOG(!callback, "%{public}s callback is null", __func__);
 
-    std::string schemaNS;
-    std::string rootPropName;
-    if (!rootPath.empty()) {
-        std::string_view rootPathView(rootPath);
-        size_t colonPos = rootPathView.find(COLON);
-        std::string prefix;
-        if (colonPos == std::string_view::npos) {
-            prefix = rootPath;
-        } else {
-            prefix = std::string(rootPathView.substr(0, colonPos));
-            rootPropName = std::string(rootPathView.substr(colonPos + COLON.size()));
-        }
-        CHECK_ERROR_RETURN_RET_LOG(!SXMPMeta::GetNamespaceURI(prefix.c_str(), &schemaNS),
-            ERR_XMP_NAMESPACE_NOT_REGISTERED,
-            "%{public}s failed to get namespace URI for prefix: %{public}s", __func__, prefix.c_str());
-    }
-
-    XMP_OptionBits iterOptions = kXMP_IterJustChildren;
-    if (options.isRecursive) {
-        iterOptions = kXMP_NoOptions;
-    }
-    SXMPIterator iter(*(impl_->GetRawPtr()), schemaNS.c_str(), rootPropName.c_str(), iterOptions);
+    XMP_OptionBits iterOptions = options;
+    SXMPIterator iter(*meta, schemaNS, propName, iterOptions);
     std::string iterSchemaNS;
     std::string iterPropPath;
     std::string iterPropValue;
-    // Iterate through all properties
+    // Iterate all properties
     while (iter.Next(&iterSchemaNS, &iterPropPath, &iterPropValue, &iterOptions)) {
         if (iterPropPath.empty()) {
             IMAGE_LOGD("Skipping schema node: %{public}s", iterSchemaNS.c_str());
@@ -304,12 +283,76 @@ uint32_t XMPMetadata::EnumerateTags(EnumerateCallback callback, const std::strin
         }
 
         // Call the callback
-        bool shouldContinue = callback(iterPropPath, tag);
-        if (!shouldContinue) {
+        if (!callback(iterPropPath, tag)) {
             IMAGE_LOGD("%{public}s enumeration stopped by callback", __func__);
-            break;
+            return;
         }
     }
+}
+
+static void EnumerateAllSchemasTopLevelProps(SXMPMeta *meta, const XMPMetadata::EnumerateCallback &callback)
+{
+    CHECK_ERROR_RETURN_LOG(meta == nullptr, "%{public}s meta is null", __func__);
+    CHECK_ERROR_RETURN_LOG(!callback, "%{public}s callback is null", __func__);
+
+    std::vector<std::string> schemaList;
+    XMP_OptionBits iterOptions = kXMP_IterJustChildren;
+    SXMPIterator schemaIter(*meta, "", "", iterOptions);
+    std::string iterSchemaNS;
+    std::string iterPropPath;
+    std::string iterPropValue;
+    // Collect all schema namespaces
+    while (schemaIter.Next(&iterSchemaNS, &iterPropPath, &iterPropValue, &iterOptions)) {
+        if (!iterPropPath.empty() || iterSchemaNS.empty()) {
+            continue;
+        }
+        if (std::find(schemaList.begin(), schemaList.end(), iterSchemaNS) == schemaList.end()) {
+            schemaList.emplace_back(iterSchemaNS);
+        }
+    }
+
+    // Enumerate all schema top level props
+    for (const auto &schemaNS : schemaList) {
+        EnumerateWithIterator(meta, schemaNS.c_str(), "", kXMP_IterJustChildren, callback);
+    }
+}
+
+uint32_t XMPMetadata::EnumerateTags(EnumerateCallback callback, const std::string &rootPath, XMPEnumerateOption options)
+{
+    XMP_TRY();
+    CHECK_ERROR_RETURN_RET_LOG(!impl_ || !impl_->IsValid(), ERR_MEDIA_NULL_POINTER,
+        "%{public}s impl is invalid for path: %{public}s", __func__, rootPath.c_str());
+    CHECK_ERROR_RETURN_RET_LOG(!callback, ERR_IMAGE_INVALID_PARAMETER, "%{public}s callback is null", __func__);
+
+    if (rootPath.empty() && !options.isRecursive) {
+        IMAGE_LOGD("%{public}s Enumerate all schemas top level props", __func__);
+        EnumerateAllSchemasTopLevelProps(impl_->GetRawPtr(), callback);
+        return SUCCESS;
+    }
+
+    std::string schemaNS;
+    std::string rootPropName;
+    if (!rootPath.empty()) {
+        std::string_view rootPathView(rootPath);
+        size_t colonPos = rootPathView.find(COLON);
+        std::string prefix;
+        if (colonPos == std::string_view::npos) {
+            prefix = rootPath;
+        } else {
+            prefix = rootPathView.substr(0, colonPos);
+            rootPropName = rootPathView.substr(colonPos + COLON.size());
+        }
+        CHECK_ERROR_RETURN_RET_LOG(!SXMPMeta::GetNamespaceURI(prefix.c_str(), &schemaNS),
+            ERR_XMP_NAMESPACE_NOT_REGISTERED, "%{public}s failed to get namespace URI for prefix: %{public}s",
+            __func__, prefix.c_str());
+    }
+
+    XMP_OptionBits iterOptions = kXMP_IterJustChildren;
+    if (options.isRecursive) {
+        iterOptions = kXMP_NoOptions;
+    }
+
+    EnumerateWithIterator(impl_->GetRawPtr(), schemaNS.c_str(), rootPropName.c_str(), iterOptions, callback);
     return SUCCESS;
     XMP_CATCH_RETURN_CODE(ERR_XMP_SDK_EXCEPTION);
 }

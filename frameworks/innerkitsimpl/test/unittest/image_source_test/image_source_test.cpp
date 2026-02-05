@@ -230,7 +230,7 @@ public:
         return bufferPtr_;
     }
 
-    uint32_t GetStreamSize()
+    size_t GetStreamSize()
     {
         return size_;
     }
