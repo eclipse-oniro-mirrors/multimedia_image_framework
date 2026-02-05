@@ -22,6 +22,7 @@
 #include "pixel_map_impl.h"
 #include "parameter.h"
 #include "string_ex.h"
+#include "image_common.h"
 
 namespace OHOS {
 namespace Media {
@@ -158,6 +159,29 @@ uint32_t ImageSourceImpl::GetImageProperties(
         }
     }
     return SUCCESS;
+}
+
+uint32_t ImageSourceImpl::GetImagePropertiesV2(const std::vector<std::string>& keyStrArray,
+    std::vector<std::string>& valueStrArray, std::set<std::string>& exifUnsupportKeys)
+{
+    IMAGE_LOGD("[ImageSourceImpl]GetImageProperties IN.");
+    if (nativeImgSrc == nullptr) {
+        IMAGE_LOGE("nativeImgSrc is nullptr");
+        return ERR_IMAGE_INIT_ABNORMAL;
+    }
+    for (auto keyStrIt = keyStrArray.begin(); keyStrIt != keyStrArray.end(); ++keyStrIt) {
+        std::string valueStr = "";
+        uint32_t errCode = nativeImgSrc->GetImagePropertyString(0, *keyStrIt, valueStr);
+        if (errCode == SUCCESS) {
+            valueStrArray.emplace_back(valueStr);
+        } else {
+            valueStrArray.emplace_back("");
+            exifUnsupportKeys.emplace(*keyStrIt);
+            IMAGE_LOGE("errCode: %{public}u , exif key: %{public}s", errCode, keyStrIt->c_str());
+        }
+    }
+    IMAGE_LOGD("[ImageSourceImpl]GetImageProperties OUT.");
+    return keyStrArray.size() == exifUnsupportKeys.size() ? IMAGE_UNSUPPORTED_METADATA : SUCCESS;
 }
 
 static bool CheckExifDataValue(const std::string& value)

@@ -41,6 +41,8 @@ public:
 
     uint32_t GetImageProperty(const std::string& key, uint32_t index, std::string& defaultValue);
     uint32_t GetImageProperties(const std::vector<std::string>& keyStrArray, std::vector<std::string>& valueStrArray);
+    uint32_t GetImagePropertiesV2(const std::vector<std::string>& keyStrArray, std::vector<std::string>& valueStrArray,
+        std::set<std::string>& exifUnsupportKeys);
     uint32_t ModifyImageProperty(const std::string& key, const std::string& value);
     uint32_t ModifyImageProperties(
         const std::vector<std::string>& keyStrArray, const std::vector<std::string>& valueStrArray);

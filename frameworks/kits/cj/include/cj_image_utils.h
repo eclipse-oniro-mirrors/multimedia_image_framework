@@ -57,6 +57,11 @@ typedef struct {
     uint32_t updateLen;
     bool isCompleted;
 } UpdateDataInfo;
+
+typedef struct {
+    uint32_t code;
+    char* message;
+} ErrorInfo;
 }
 
 #define FFI_EXPORT __attribute__((visibility("default")))

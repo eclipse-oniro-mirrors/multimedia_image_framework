@@ -641,6 +641,43 @@ FFI_EXPORT uint32_t FfiImageImageSourceImplGetImageProperties(int64_t id, CArrSt
     return errCode;
 }
 
+FFI_EXPORT ErrorInfo FfiImageImageSourceImplGetImagePropertiesV2(int64_t id, CArrString key, char** value)
+{
+    IMAGE_LOGD("[ImageSource] FfiImageImageSourceImplGetImagePropertiesV2 start");
+    ErrorInfo errorInfo = { .code = SUCCESS, .message = nullptr };
+    auto instance = FFIData::GetData<ImageSourceImpl>(id);
+    if (!instance) {
+        IMAGE_LOGE("[ImageSource] instance not exist %{public}" PRId64, id);
+        errorInfo.code = ERR_IMAGE_INIT_ABNORMAL;
+        return errorInfo;
+    }
+    std::vector<std::string> keyStrArray;
+    for (int64_t i = 0; i < key.size; i++) {
+        keyStrArray.emplace_back(key.head[i]);
+    }
+    std::vector<std::string> valueStrArray;
+    std::set<std::string> exifUnsupportKeys;
+    uint32_t status = instance->GetImagePropertiesV2(keyStrArray, valueStrArray, exifUnsupportKeys);
+    if (status != SUCCESS) {
+        errorInfo.code = status;
+        std::string errMsg = "Failed to get keys:";
+        for (auto& key : exifUnsupportKeys) {
+            errMsg.append(" ").append(key);
+        }
+        errorInfo.message = Utils::MallocCString(errMsg);
+        return errorInfo;
+    }
+    if (valueStrArray.size() != key.size) {
+        errorInfo.code = IMAGE_UNSUPPORTED_METADATA;
+        return errorInfo;
+    }
+    for (size_t i = 0; i < valueStrArray.size(); i++) {
+        value[i] = Utils::MallocCString(valueStrArray[i]);
+    }
+    IMAGE_LOGD("[ImageSource] FfiImageImageSourceImplGetImageProperties success");
+    return errorInfo;
+}
+
 FFI_EXPORT uint32_t FfiImageImageSourceImplModifyImageProperties(int64_t id, CArrString key, CArrString value)
 {
     IMAGE_LOGD("[ImageSource] FfiImageImageSourceImplModifyImageProperties start");
