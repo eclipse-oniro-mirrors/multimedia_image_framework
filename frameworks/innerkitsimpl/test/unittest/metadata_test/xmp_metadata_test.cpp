@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2025 Huawei Device Co., Ltd.
+ * Copyright (C) 2026 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -30,7 +30,7 @@ namespace OHOS {
 namespace Multimedia {
 
 namespace {
-    constexpr const uint8_t XMP_BLOB_DATA[] = R"XMP(<?xpacket begin="?" id="W5M0MpCehiHzreSzNTczkc9d"?>
+constexpr const uint8_t XMP_BLOB_DATA[] = R"XMP(<?xpacket begin="?" id="W5M0MpCehiHzreSzNTczkc9d"?>
  <x:xmpmeta xmlns:x="adobe:ns:meta/" x:xmptk="Adobe XMP Core 5.4-c002 1.000000, 0000/00/00-00:00:00        ">
    <rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#">
       <rdf:Description rdf:about=""
@@ -65,12 +65,12 @@ namespace {
  </x:xmpmeta>
 <?xpacket end="w"?>)XMP";
 
-    constexpr std::string_view EMPTY_STRING = "";
-    constexpr std::string_view TEST_PATH = "test:path";
-    constexpr std::string_view COLON = ":";
+constexpr std::string_view EMPTY_STRING = "";
+constexpr std::string_view TEST_PATH = "test:path";
+constexpr std::string_view COLON = ":";
 
-    const std::pair<std::string, std::string> RESULT_PAIR = {"test", "path"};
-    const std::pair<std::string, std::string> ERROR_RESULT_PAIR = {};
+const std::pair<std::string, std::string> RESULT_PAIR = {"test", "path"};
+const std::pair<std::string, std::string> ERROR_RESULT_PAIR = {};
 }
 
 class XmpMetadataTest : public testing::Test {
