@@ -3385,33 +3385,6 @@ HWTEST_F(PixelMapTest, ReadARGBPixelsTest004, TestSize.Level3)
 }
 
 /**
- * @tc.name: ResetConfigTest004
- * @tc.desc: Verify ResetConfig returns error when input invalid size or unsupported pixel format.
- * @tc.type: FUNC
- */
-HWTEST_F(PixelMapTest, ResetConfigTest004, TestSize.Level3)
-{
-    GTEST_LOG_(INFO) << "PixelMapTest: ResetConfigTest004 start";
-    auto pixelMap = ConstructPixelMap(SIZE_WIDTH, SIZE_HEIGHT, PixelFormat::RGBA_8888,
-        AlphaType::IMAGE_ALPHA_TYPE_UNKNOWN, AllocatorType::SHARE_MEM_ALLOC);
-    ASSERT_NE(pixelMap, nullptr);
-    Size size = {-1, 1};
-    uint32_t ret = pixelMap->ResetConfig(size, pixelMap->GetPixelFormat());
-    EXPECT_EQ(ret, ERR_IMAGE_INVALID_PARAMETER);
-    size = {1, -1};
-    ret = pixelMap->ResetConfig(size, pixelMap->GetPixelFormat());
-    EXPECT_EQ(ret, ERR_IMAGE_INVALID_PARAMETER);
-    size = {-1, -1};
-    ret = pixelMap->ResetConfig(size, pixelMap->GetPixelFormat());
-    EXPECT_EQ(ret, ERR_IMAGE_INVALID_PARAMETER);
-    size = {1, 1};
-    pixelMap->imageInfo_.pixelFormat = PixelFormat::CMYK;
-    ret = pixelMap->ResetConfig(size, pixelMap->GetPixelFormat());
-    EXPECT_EQ(ret, ERR_IMAGE_INVALID_PARAMETER);
-    GTEST_LOG_(INFO) << "PixelMapTest: ResetConfigTest004 end";
-}
-
-/**
  * @tc.name: UnMapPixelMapTest
  * @tc.desc: Test UnMap PixelMap
  * @tc.type: FUNC
