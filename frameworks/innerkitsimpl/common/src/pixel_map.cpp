@@ -3016,8 +3016,8 @@ bool PixelMap::ReadBufferSizeFromParcel(Parcel& parcel, const ImageInfo& imgInfo
         expectedBufferSize =
             static_cast<uint64_t>(imgInfo.size.height) * alignedWidth * ImageUtils::GetPixelBytes(imgInfo.pixelFormat);
     }
-    if (!IsYUV(imgInfo.pixelFormat) && (expectedBufferSize > (memInfo.allocatorType == AllocatorType::HEAP_ALLOC ?
-        PIXEL_MAP_MAX_RAM_SIZE : INT_MAX) || static_cast<uint64_t>(memInfo.bufferSize) != expectedBufferSize)) {
+    if (!IsYUV(imgInfo.pixelFormat) &&
+        !ImageUtils::CheckBufferSizeIsVaild(memInfo.bufferSize, expectedBufferSize, memInfo.allocatorType)) {
         IMAGE_LOGE("[PixelMap] ReadBufferSizeFromParcel: bufferSize invalid, expect:%{public}llu, actual:%{public}d",
             static_cast<unsigned long long>(expectedBufferSize), memInfo.bufferSize);
         PixelMap::ConstructPixelMapError(error, ERR_IMAGE_PIXELMAP_CREATE_FAILED, "buffer size invalid");
@@ -3137,7 +3137,7 @@ static bool CheckPixelMapBufferSize(const ImageInfo& imgInfo, PixelMemInfo& pixe
         uint32_t sbSize = sb->GetSize();
         int32_t calcSizeInt = ImageUtils::GetByteCount(imgInfo);
         if (calcSizeInt <= 0 || memBufSizeInt <= 0 || sbSize == 0) {
-            IMAGE_LOGE("Invalid DMA buffer size: memBufSize[%{public}d]/calcSize[%{public}d]/sbSize[%{public}u]",
+            IMAGE_LOGE("Invalid DMA buffer size: actual[%{public}d]/calcSize[%{public}d]/sbSize[%{public}u]",
                 memBufSizeInt, calcSizeInt, sbSize);
             return false;
         }
@@ -3150,17 +3150,16 @@ static bool CheckPixelMapBufferSize(const ImageInfo& imgInfo, PixelMemInfo& pixe
         }
 
         if (calcSize > sbSize || memBufSize > sbSize) {
-            IMAGE_LOGE("Invalid DMA buffer size: memBufSize[%{public}u]/calcSize[%{public}u] > sbSize[%{public}u]",
+            IMAGE_LOGE("Invalid DMA buffer size: actual[%{public}u]/calcSize[%{public}u] > sbSize[%{public}u]",
                 memBufSize, calcSize, sbSize);
             return false;
         }
     } else {
         if (IsYUV(imgInfo.pixelFormat)) {
             uint64_t expectedBufferSize = static_cast<uint64_t>(ImageUtils::GetByteCount(imgInfo));
-            if ((expectedBufferSize > (pixelMemInfo.allocatorType == AllocatorType::HEAP_ALLOC ?
-                PIXEL_MAP_MAX_RAM_SIZE : INT_MAX) || static_cast<uint64_t>(memBufSizeInt) != expectedBufferSize)) {
-                IMAGE_LOGE("[PixelMap] CheckPixelMapBufferSize: bufferSize invalid, expect:%{public}llu, actual:%{public}d",
-                    static_cast<unsigned long long>(expectedBufferSize), memBufSizeInt);
+            if (!ImageUtils::CheckBufferSizeIsVaild(memBufSizeInt, expectedBufferSize, pixelMemInfo.allocatorType)) {
+                IMAGE_LOGE("Invalid buffer size, actual[%{public}d] mismatch expect[%{public}llu]",
+                    memBufSizeInt, static_cast<unsigned long long>(expectedBufferSize));
                 return false;
             }
         }
