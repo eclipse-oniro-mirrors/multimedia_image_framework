@@ -280,9 +280,9 @@ private:
     static std::string GetLocalTime();
     static std::string GetPixelMapName(PixelMap* pixelMap);
     static int32_t GetAPIVersionInner();
-    static bool CheckSizeValid(const ImageInfo &imgInfo, YUVDataInfo& yDataInfo);
-    static bool CheckStrideValid(YUVDataInfo& yDataInfo);
-    static bool CheckOffsetValid(YUVDataInfo& yDataInfo);
+    static bool CheckSizeValid(const ImageInfo &imgInfo, const YUVDataInfo& yDataInfo);
+    static bool CheckStrideValid(const YUVDataInfo& yDataInfo);
+    static bool CheckOffsetValid(const YUVDataInfo& yDataInfo);
 };
 } // namespace Media
 } // namespace OHOS
