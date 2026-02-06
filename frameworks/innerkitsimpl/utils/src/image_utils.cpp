@@ -2011,9 +2011,9 @@ bool ImageUtils::CheckYuvDataInfoValid(PixelMap *pixelMap, YUVDataInfo& yDataInf
     if (!CheckSizeValid(imageInfo, yDataInfo)) {
         yDataInfo.imageSize = imageInfo.size;
         yDataInfo.yWidth = static_cast<uint32_t>(yDataInfo.imageSize.width);
- 	    yDataInfo.yHeight = static_cast<uint32_t>(yDataInfo.imageSize.height);
+        yDataInfo.yHeight = static_cast<uint32_t>(yDataInfo.imageSize.height);
         yDataInfo.uvWidth = (yDataInfo.yWidth + NUM_1) / NUM_2;
- 	    yDataInfo.uvHeight = (yDataInfo.yHeight + NUM_1) / NUM_2;
+        yDataInfo.uvHeight = (yDataInfo.yHeight + NUM_1) / NUM_2;
         IMAGE_LOGI("YUVDataInfo size has been corrected, YUVDataInfo: %{public}s", yDataInfo.ToString().c_str());
     }
     if (!CheckStrideValid(yDataInfo)) {
