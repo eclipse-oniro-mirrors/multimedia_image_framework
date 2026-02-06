@@ -3012,8 +3012,6 @@ bool PixelMap::ReadBufferSizeFromParcel(Parcel& parcel, const ImageInfo& imgInfo
     }
 
     if (imgInfo.pixelFormat == PixelFormat::RGBA_F16) {
-        int32_t calsize = ImageUtils::GetByteCount(imgInfo);
-        uint64_t expectedF16 = static_cast<uint64_t>(rowDataSize) * static_cast<uint64_t>(imgInfo.size.height);
         int32_t alignedWidth = ((imgInfo.size.width + NUM_1) / NUM_2) * NUM_2;
         expectedBufferSize =
             static_cast<uint64_t>(imgInfo.size.height) * alignedWidth * ImageUtils::GetPixelBytes(imgInfo.pixelFormat);
@@ -3157,24 +3155,16 @@ static bool CheckPixelMapBufferSize(const ImageInfo& imgInfo, PixelMemInfo& pixe
             return false;
         }
     } else {
-        uint64_t expectedBufferSize = 0;
         if (IsYUV(imgInfo.pixelFormat)) {
-            expectedBufferSize = static_cast<uint64_t>(ImageUtils::GetByteCount(imgInfo));
-        } else {
-            return true;
+            uint64_t expectedBufferSize = static_cast<uint64_t>(ImageUtils::GetByteCount(imgInfo));
+            if ((expectedBufferSize > (pixelMemInfo.allocatorType == AllocatorType::HEAP_ALLOC ?
+                PIXEL_MAP_MAX_RAM_SIZE : INT_MAX) || static_cast<uint64_t>(memBufSizeInt) != expectedBufferSize)) {
+                IMAGE_LOGE("[PixelMap] CheckPixelMapBufferSize: bufferSize invalid, expect:%{public}llu, actual:%{public}d",
+                    static_cast<unsigned long long>(expectedBufferSize), memBufSizeInt);
+                return false;
+            }
         }
-
-        if (!ImageUtils::CheckBufferSizeIsValid(memBufSizeInt, expectedBufferSize, pixelMemInfo.allocatorType)) {
-            return false;
-        }
-        if ((expectedBufferSize > (pixelMemInfo.allocatorType == AllocatorType::HEAP_ALLOC ?
-            PIXEL_MAP_MAX_RAM_SIZE : INT_MAX) || static_cast<uint64_t>(memBufSizeInt) != expectedBufferSize)) {
-        IMAGE_LOGE("[PixelMap] CheckPixelMapBufferSize: bufferSize invalid, expect:%{public}llu, actual:%{public}d",
-            static_cast<unsigned long long>(expectedBufferSize), memBufSizeInt);
-        return false;
     }
-    }
-
     return true;
 }
 
