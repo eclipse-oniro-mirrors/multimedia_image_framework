@@ -437,23 +437,46 @@ void InitForQuantize(ColorCoordinate *colorCoordinate, ColorSubdivMap* colorSubd
 
 void buildOutputColorMap(ColorSubdivMap *colorSubdivMap, uint32_t colorSubdivMapSize, ColorType *outputColorMap)
 {
-    for (int i = 0; i < static_cast<int>(colorSubdivMapSize); i++) {
-        if (colorSubdivMap[i].colorNum > 0) {
-            ColorCoordinate *coordinate = colorSubdivMap[i].coordinate;
-            uint64_t red = 0;
-            uint64_t green = 0;
-            uint64_t blue = 0;
-            while (coordinate) {
-                red += coordinate->rgb[R_IN_RGB];
-                green += coordinate->rgb[G_IN_RGB];
-                blue += coordinate->rgb[B_IN_RGB];
-                coordinate->newColorIndex = i;
-                coordinate = coordinate->next;
-            }
-            outputColorMap[i].red = (red << (BITS_IN_BYTE - BITS_PER_PRIM_COLOR)) / colorSubdivMap[i].colorNum;
-            outputColorMap[i].green = (green << (BITS_IN_BYTE - BITS_PER_PRIM_COLOR)) / colorSubdivMap[i].colorNum;
-            outputColorMap[i].blue = (blue << (BITS_IN_BYTE - BITS_PER_PRIM_COLOR)) / colorSubdivMap[i].colorNum;
+    for (uint32_t subdivIndex = 0; subdivIndex < colorSubdivMapSize; ++subdivIndex) {
+        if (colorSubdivMap[subdivIndex].colorNum == 0) {
+            continue;
         }
+        ColorCoordinate *coord = colorSubdivMap[subdivIndex].coordinate;
+        uint64_t redWeightedSum   = 0;
+        uint64_t greenWeightedSum = 0;
+        uint64_t blueWeightedSum  = 0;
+        uint64_t totalPixelCount  = 0;
+        // Traverse all coordinates belonging to this subdivision
+        while (coord != nullptr) {
+            const uint64_t pixelCount = static_cast<uint64_t>(coord->pixelNum);
+            redWeightedSum   += static_cast<uint64_t>(coord->rgb[R_IN_RGB]) * pixelCount;
+            greenWeightedSum += static_cast<uint64_t>(coord->rgb[G_IN_RGB]) * pixelCount;
+            blueWeightedSum  += static_cast<uint64_t>(coord->rgb[B_IN_RGB]) * pixelCount;
+            totalPixelCount  += pixelCount;
+            coord->newColorIndex = static_cast<uint8_t>(subdivIndex);
+            coord = coord->next;
+        }
+        // Safety check: no pixels accumulated (should not normally happen)
+        if (totalPixelCount == 0) {
+            outputColorMap[subdivIndex].red   = 0;
+            outputColorMap[subdivIndex].green = 0;
+            outputColorMap[subdivIndex].blue  = 0;
+            continue;
+        }
+        // Compute rounded average values, add half of the divisor to perform integer rounding instead of truncation
+        const uint32_t avgRedPrimary =
+            static_cast<uint32_t>((redWeightedSum   + totalPixelCount / 2) / totalPixelCount);
+        const uint32_t avgGreenPrimary =
+            static_cast<uint32_t>((greenWeightedSum + totalPixelCount / 2) / totalPixelCount);
+        const uint32_t avgBluePrimary =
+            static_cast<uint32_t>((blueWeightedSum  + totalPixelCount / 2) / totalPixelCount);
+        // Expand primary color bits to full 8-bit channel
+        outputColorMap[subdivIndex].red =
+            static_cast<uint8_t>(avgRedPrimary << (BITS_IN_BYTE - BITS_PER_PRIM_COLOR));
+        outputColorMap[subdivIndex].green =
+            static_cast<uint8_t>(avgGreenPrimary << (BITS_IN_BYTE - BITS_PER_PRIM_COLOR));
+        outputColorMap[subdivIndex].blue =
+            static_cast<uint8_t>(avgBluePrimary << (BITS_IN_BYTE - BITS_PER_PRIM_COLOR));
     }
 }
 
