@@ -2881,9 +2881,7 @@ bool PixelMap::ReadYuvDataInfoFromParcel(Parcel &parcel, PixelMap *pixelMap)
         yDataInfo.uvOffset = parcel.ReadUint32();
         IMAGE_LOGD("ReadYuvDataInfoFromParcel yDataInfo.uvOffset:%{public}d", yDataInfo.uvOffset);
 
-        ImageInfo imageInfo;
-        pixelMap->GetImageInfo(imageInfo);
-        if (!ImageUtils::CheckYuvDataInfoValid(imageInfo, yDataInfo)) {
+        if (!ImageUtils::CheckYuvDataInfoValid(pixelMap, yDataInfo)) {
             IMAGE_LOGE("ReadYuvDataInfoFromParcel: YuvDataInfo is invalid");
             return false;
         }

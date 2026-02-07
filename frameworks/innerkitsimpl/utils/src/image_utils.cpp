@@ -1923,10 +1923,6 @@ bool ImageUtils::CheckSizeValid(const ImageInfo &imgInfo, const YUVDataInfo& yDa
 
     const uint32_t yExpectedWidth = static_cast<uint32_t>(yDataInfo.imageSize.width);
     const uint32_t yExpectedHeight = static_cast<uint32_t>(yDataInfo.imageSize.height);
-    if (yDataInfo.yWidth == 0 || yDataInfo.yHeight == 0) {
-        IMAGE_LOGE("Invalid Y plane size: yWidth or yHeight is 0");
-        return false;
-    }
     if (yDataInfo.yWidth != yExpectedWidth || yDataInfo.yHeight != yExpectedHeight) {
         IMAGE_LOGE("Invalid Y plane size: Y(%{public}u, %{public}u) mismatch expected(%{public}u, %{public}u)",
             yDataInfo.yWidth, yDataInfo.yHeight, yExpectedWidth, yExpectedHeight);
@@ -1935,10 +1931,6 @@ bool ImageUtils::CheckSizeValid(const ImageInfo &imgInfo, const YUVDataInfo& yDa
 
     const uint32_t uvExpectedWidth = (yDataInfo.yWidth + NUM_1) / NUM_2;
     const uint32_t uvExpectedHeight = (yDataInfo.yHeight + NUM_1) / NUM_2;
-    if (yDataInfo.uvWidth == 0 || yDataInfo.uvHeight == 0) {
-        IMAGE_LOGE("Invalid UV plane size: uvWidth or uvHeight is 0");
-        return false;
-    }
     if (yDataInfo.uvWidth != uvExpectedWidth || yDataInfo.uvHeight != uvExpectedHeight) {
         IMAGE_LOGE("Invalid UV plane size: UV(%{public}u, %{public}u) mismatch expected(%{public}u, %{public}u)",
             yDataInfo.uvWidth, yDataInfo.uvHeight, uvExpectedWidth, uvExpectedHeight);
@@ -2010,11 +2002,19 @@ bool ImageUtils::CheckOffsetValid(const YUVDataInfo& yDataInfo)
     return true;
 }
 
-bool ImageUtils::CheckYuvDataInfoValid(const ImageInfo &imageInfo, YUVDataInfo& yDataInfo)
+
+bool ImageUtils::CheckYuvDataInfoValid(PixelMap *pixelMap, YUVDataInfo& yDataInfo)
 {
+    CHECK_ERROR_RETURN_RET_LOG(pixelMap == nullptr, false, "pixelMap is nullptr");
+    ImageInfo imageInfo;
+    pixelMap->GetImageInfo(imageInfo);
     if (!CheckSizeValid(imageInfo, yDataInfo)) {
-        IMAGE_LOGE("Invalid Yuvdatainfo Size, YUVDataInfo: %{public}s", yDataInfo.ToString().c_str());
-        return false;
+        yDataInfo.imageSize = imageInfo.size;
+        yDataInfo.yWidth = static_cast<uint32_t>(yDataInfo.imageSize.width);
+        yDataInfo.yHeight = static_cast<uint32_t>(yDataInfo.imageSize.height);
+        yDataInfo.uvWidth = (yDataInfo.yWidth + NUM_1) / NUM_2;
+        yDataInfo.uvHeight = (yDataInfo.yHeight + NUM_1) / NUM_2;
+        IMAGE_LOGI("YUVDataInfo size has been corrected, YUVDataInfo: %{public}s", yDataInfo.ToString().c_str());
     }
     if (!CheckStrideValid(yDataInfo)) {
         IMAGE_LOGE("Invalid Yuvdatainfo Stride, YUVDataInfo: %{public}s", yDataInfo.ToString().c_str());
