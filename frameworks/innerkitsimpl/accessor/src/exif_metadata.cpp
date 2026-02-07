@@ -270,12 +270,34 @@ const std::map<std::string, PropertyValueType>& ExifMetadata::GetHeifsMetadataMa
     return heifsMetadataMap;
 }
 
+const std::map<std::string, PropertyValueType>& ExifMetadata::GetFragmentMetadataMap()
+{
+    static const std::map<std::string, PropertyValueType> fragmentMetadataMap = {
+        {"XInOriginal", PropertyValueType::INT},
+        {"YInOriginal", PropertyValueType::INT},
+        {"FragmentImageWidth", PropertyValueType::INT},
+        {"FragmentImageHeight", PropertyValueType::INT},
+    };
+    return fragmentMetadataMap;
+}
+
+const std::map<std::string, PropertyValueType>& ExifMetadata::GetGifMetadataMap()
+{
+    static const std::map<std::string, PropertyValueType> gifMetadataMap = {
+        {"GifDelayTime", PropertyValueType::INT},
+        {"GifDisposalType", PropertyValueType::INT},
+    };
+    return gifMetadataMap;
+}
+
 const std::map<NapiMetadataType, std::map<std::string, PropertyValueType>>& ExifMetadata::GetPropertyTypeMapping()
 {
     static const std::map<NapiMetadataType, std::map<std::string, PropertyValueType>> propertyTypeMap = {
         {NapiMetadataType::EXIF_METADATA, GetExifMetadataMap()},
         {NapiMetadataType::HWMAKERNOTE_METADATA, GetHwMetadataMap()},
         {NapiMetadataType::HEIFS_METADATA, GetHeifsMetadataMap()},
+        {NapiMetadataType::FRAGMENT_METADATA, GetFragmentMetadataMap()},
+        {NapiMetadataType::GIF_METADATA, GetGifMetadataMap()},
     };
     return propertyTypeMap;
 }
@@ -462,7 +484,17 @@ const std::unordered_map<std::string, std::string>& ExifMetadata::GetPropertyKey
         {"xtStyleNoise", "HwMnoteXtStyleNoise"},
 
         // ============ HeifsMetadata ============
-        {"heifsDelayTime", "HeifsDelayTime"}
+        {"heifsDelayTime", "HeifsDelayTime"},
+
+        // ============ FragmentMetadata ============
+        {"xInOriginal", "XInOriginal"},
+        {"yInOriginal", "YInOriginal"},
+        {"fragmentImageWidth", "FragmentImageWidth"},
+        {"fragmentImageHeight", "FragmentImageHeight"},
+
+        // ============ GifMetadata ============
+        {"gifDelayTime", "GifDelayTime"},
+        {"gifDisposalType", "GifDisposalType"},
     };
     return propertyKeyMap;
 }

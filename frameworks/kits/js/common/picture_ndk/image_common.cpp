@@ -89,6 +89,32 @@ Image_ErrorCode OH_PictureMetadata_GetProperty(OH_PictureMetadata *metadata, Ima
 }
 
 MIDK_EXPORT
+Image_ErrorCode OH_PictureMetadata_GetMetadataByType(OH_PictureMetadata **metadatas, size_t metadataCount, int32_t type,
+    OH_PictureMetadata *metadata)
+{
+    if (metadatas == nullptr || metadata == nullptr || metadataCount == 0) {
+        return IMAGE_BAD_PARAMETER;
+    }
+    OH_PictureMetadata* targetMetadata = nullptr;
+    for (size_t i = 0; i < metadataCount; ++i) {
+        OH_PictureMetadata* curMetadata = metadatas[i];
+        auto innerMetadata = curMetadata->GetInnerAuxiliaryMetadata();
+        if (innerMetadata == nullptr) {
+            continue;
+        }
+        if (type == static_cast<int32_t>(innerMetadata->GetType())) {
+            targetMetadata = curMetadata;
+            break;
+        }
+    }
+    if (targetMetadata == nullptr) {
+        return IMAGE_BAD_PARAMETER;
+    }
+    *metadata = *targetMetadata;
+    return IMAGE_SUCCESS;
+}
+
+MIDK_EXPORT
 Image_ErrorCode OH_PictureMetadata_GetPropertyWithNull(OH_PictureMetadata *metadata,
     Image_String *key, Image_String *value)
 {

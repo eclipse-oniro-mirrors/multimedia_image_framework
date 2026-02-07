@@ -1545,7 +1545,7 @@ std::pair<int32_t, std::string> ExifMetadatFormatter::Format(const std::string &
 
     // 1.validate value format
     if (ExifMetadatFormatter::ConvertValueFormat(keyName, tmpValue)) {
-        IMAGE_LOGD("Invalid value format for key：%{public}s.", keyName.c_str());
+        IMAGE_LOGD("Invalid value format for key: %{public}s.", keyName.c_str());
         // value format validate does not pass
         return std::make_pair(Media::ERR_MEDIA_VALUE_INVALID, "");
     }

@@ -545,6 +545,8 @@ enum class NapiMetadataType {
     EXIF_METADATA = 1,
     HWMAKERNOTE_METADATA = 2,
     HEIFS_METADATA = 3,
+    FRAGMENT_METADATA = 4,
+    GIF_METADATA = 5,
 };
 } // namespace Media
 } // namespace OHOS

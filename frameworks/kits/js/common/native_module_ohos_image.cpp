@@ -49,6 +49,14 @@ static napi_value Export(napi_env env, napi_value exports)
     MetadataNapi::InitMakerNoteMetadata(env, exports);
     IMAGE_LOGD("HeifsMetadataNapi CALL");
     MetadataNapi::InitHeifsMetadata(env, exports);
+    IMAGE_LOGD("FragementMetadataNapi CALL");
+    MetadataNapi::InitFragmentMetadata(env, exports);
+    IMAGE_LOGD("GifMetadataNapi CALL");
+    MetadataNapi::InitGifMetadata(env, exports);
+    IMAGE_LOGD("XtStyleMetadataNapi CALL");
+    MetadataNapi::InitXtStyleMetadata(env, exports);
+    IMAGE_LOGD("RfDataBMetadataNapi CALL");
+    MetadataNapi::InitRfDataBMetadata(env, exports);
     IMAGE_LOGD("ImageReceiverNapi CALL");
     ImageReceiverNapi::Init(env, exports);
     IMAGE_LOGD("ImageCreatorNapi CALL");

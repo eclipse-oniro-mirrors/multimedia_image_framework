@@ -1097,6 +1097,24 @@ Image_ErrorCode OH_ImageSourceNative_ModifyImagePropertyDoubleArray(OH_ImageSour
 Image_ErrorCode OH_ImageSourceNative_ModifyImagePropertyBlob(OH_ImageSourceNative *source, Image_String *key,
     void *value, size_t size);
 
+/**
+ * @brief Read metadata of the image source, use metadatatype to specify metadata of interest. If metadataType
+ *     is not specified, all supported metadata will be returned
+ * @param source Pointer to the image source.
+ * @param index Image index.
+ * @param metadataTypes Metadata types of interest.
+ * @param typeCount Count of metadataTypes.
+ * @param metadatas Double pointer to the Metadataobject obtained, the caller is required to release this object.
+ * @param metadataCount
+ * @return Result code.
+ * {@link IMAGE_SUCCESS}: The execution is successful.
+ * {@link IMAGE_SOURCE_UNSUPPORTED_MIMETYPE}: The image format is unsupported.
+ * {@link IMAGE_SOURCE_UNSUPPORTED_OPTIONS}: The operationis not supported,for example, invalid index.
+ * @since 24
+*/
+Image_ErrorCode OH_ImageSourceNative_ReadImageMetadataByType(OH_ImageSourceNative *source, uint32_t index,
+    Image_MetadataType *metadataTypes, size_t typeCount, OH_PictureMetadata **metadatas, size_t *metadataCount);
+
 #ifdef __cplusplus
 };
 #endif
