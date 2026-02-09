@@ -32,6 +32,7 @@
 #include "image_common.h"
 #include "exif_metadata.h"
 #include "metadata_napi.h"
+#include "xmp_metadata_napi.h"
 
 #undef LOG_DOMAIN
 #define LOG_DOMAIN LOG_TAG_DOMAIN_ID_IMAGE
@@ -111,6 +112,7 @@ struct ImageSourceAsyncContext {
     DecodeOptions decodeOpts;
     std::shared_ptr<ImageSource> rImageSource;
     std::shared_ptr<PixelMap> rPixelMap;
+    std::shared_ptr<XMPMetadata> rXMPMetadata;
     std::string errMsg;
     std::multimap<std::int32_t, std::string> errMsgArray;
     std::unique_ptr<std::vector<std::unique_ptr<PixelMap>>> pixelMaps;
@@ -146,12 +148,6 @@ struct ImageSourceSyncContext {
     std::string errMsg;
     std::multimap<std::int32_t, std::string> errMsgArray;
     DecodingOptionsForThumbnail decodingOptsForThumbnail;
-};
-
-struct ImageEnum {
-    std::string name;
-    int32_t numVal;
-    std::string strVal;
 };
 
 static std::vector<struct ImageEnum> sPixelMapFormatMap = {
@@ -527,31 +523,6 @@ static std::string GetErrorCodeMsg(Image_ErrorCode apiErrorCode)
     return errMsg;
 }
 
-static std::string GetStringArgument(napi_env env, napi_value value)
-{
-    std::string strValue = "";
-    size_t bufLength = 0;
-    napi_status status = napi_get_value_string_utf8(env, value, nullptr, NUM_0, &bufLength);
-    if (status == napi_ok && bufLength > NUM_0 && bufLength < PATH_MAX) {
-        char *buffer = reinterpret_cast<char *>(malloc((bufLength + NUM_1) * sizeof(char)));
-        if (buffer == nullptr) {
-            IMAGE_LOGE("No memory");
-            return strValue;
-        }
-
-        status = napi_get_value_string_utf8(env, value, buffer, bufLength + NUM_1, &bufLength);
-        if (status == napi_ok) {
-            IMAGE_LOGD("Get Success");
-            strValue.assign(buffer, 0, bufLength + NUM_1);
-        }
-        if (buffer != nullptr) {
-            free(buffer);
-            buffer = nullptr;
-        }
-    }
-    return strValue;
-}
-
 static int32_t GetIntArgument(napi_env env, napi_value value)
 {
     int32_t intValue = -1;
@@ -718,7 +689,7 @@ static std::string HandleEnumCase(napi_env env, napi_value value, std::string ke
     napi_typeof(env, value, &valueType);
     IMAGE_LOGD("Orientation value type: %{public}d", valueType);
     if (valueType == napi_string && key == "Orientation") {
-        std::string enumName = GetStringArgument(env, value);
+        std::string enumName = ImageNapiUtils::GetStringArgument(env, value);
         static const std::unordered_map<std::string, int32_t> orientationMap = {
             {"TOP_LEFT", 1}, {"TOP_RIGHT", 2}, {"BOTTOM_RIGHT", 3},
             {"BOTTOM_LEFT", 4}, {"LEFT_TOP", 5}, {"RIGHT_TOP", 6},
@@ -727,7 +698,7 @@ static std::string HandleEnumCase(napi_env env, napi_value value, std::string ke
         auto it = orientationMap.find(enumName);
         return (it != orientationMap.end()) ? std::to_string(it->second) : "";
     } else if (valueType == napi_string && key == "HwMnoteFocusMode") {
-        std::string enumName = GetStringArgument(env, value);
+        std::string enumName = ImageNapiUtils::GetStringArgument(env, value);
         static const std::unordered_map<std::string, int32_t> focusModeMap = {
             {"AF_A", 0}, {"AF_S", 1}, {"AF_C", 2},
             {"MF", 3}
@@ -735,7 +706,7 @@ static std::string HandleEnumCase(napi_env env, napi_value value, std::string ke
         auto it = focusModeMap.find(enumName);
         return (it != focusModeMap.end()) ? std::to_string(it->second) : "";
     } else if (valueType == napi_string && key == "HwMnoteXmageColorMode") {
-        std::string enumName = GetStringArgument(env, value);
+        std::string enumName = ImageNapiUtils::GetStringArgument(env, value);
         static const std::unordered_map<std::string, int32_t> xmageColorModeMap = {
             {"NORMAL", 0}, {"BRIGHT", 1}, {"SOFT", 2},
             {"MONO", 3}
@@ -755,7 +726,7 @@ static std::string GetExifValueArgumentForKey(napi_env env, napi_value value, co
 {
     switch (ExifMetadata::GetPropertyValueType(keyStr)) {
         case PropertyValueType::STRING:
-            return GetStringArgument(env, value);
+            return ImageNapiUtils::GetStringArgument(env, value);
         case PropertyValueType::INT:
             if (keyStr == "Orientation" || keyStr == "HwMnoteFocusMode" || keyStr == "HwMnoteXmageColorMode") {
                 return HandleEnumCase(env, value, keyStr);
@@ -849,7 +820,7 @@ static void ImageSourceCallbackRoutine(napi_env env, ImageSourceAsyncContext* &c
     }
 
     napi_delete_async_work(env, context->work);
-
+    
     if (context != nullptr) {
         delete context;
         context = nullptr;
@@ -898,37 +869,6 @@ static void ImageSourceCallbackWithErrorObj(napi_env env,
     context = nullptr;
 }
 
-static napi_value CreateEnumTypeObject(napi_env env,
-    napi_valuetype type, std::vector<struct ImageEnum> imageEnumMap)
-{
-    napi_value result = nullptr;
-    napi_status status = napi_create_object(env, &result);
-    if (status == napi_ok) {
-        for (auto imgEnum : imageEnumMap) {
-            napi_value enumNapiValue = nullptr;
-            if (type == napi_string) {
-                status = napi_create_string_utf8(env, imgEnum.strVal.c_str(),
-                    NAPI_AUTO_LENGTH, &enumNapiValue);
-            } else if (type == napi_number) {
-                status = napi_create_int32(env, imgEnum.numVal, &enumNapiValue);
-            } else {
-                IMAGE_LOGE("Unsupported type %{public}d!", type);
-            }
-            if (status == napi_ok && enumNapiValue != nullptr) {
-                status = napi_set_named_property(env, result, imgEnum.name.c_str(), enumNapiValue);
-            }
-            if (status != napi_ok) {
-                IMAGE_LOGE("Failed to add named prop!");
-                break;
-            }
-        }
-        return result;
-    }
-    IMAGE_LOGE("CreateEnumTypeObject is Failed!");
-    napi_get_undefined(env, &result);
-    return result;
-}
-
 std::vector<std::string> GetStringArrayArgument(napi_env env, napi_value object)
 {
     std::vector<std::string> keyStrArray;
@@ -942,7 +882,7 @@ std::vector<std::string> GetStringArrayArgument(napi_env env, napi_value object)
     for (uint32_t i = 0; i < arrayLen; i++) {
         napi_value element;
         if (napi_get_element(env, object, i, &element) == napi_ok) {
-            keyStrArray.emplace_back(GetStringArgument(env, element));
+            keyStrArray.emplace_back(ImageNapiUtils::GetStringArgument(env, element));
         }
     }
 
@@ -974,13 +914,13 @@ std::vector<std::pair<std::string, std::string>> GetRecordArgument(napi_env env,
             IMAGE_LOGE("Get recordName element failed %{public}d", status);
             continue;
         }
-        std::string keyStr = GetStringArgument(env, recordName);
+        std::string keyStr = ImageNapiUtils::GetStringArgument(env, recordName);
         status = napi_get_named_property(env, object, keyStr.c_str(), &recordValue);
         if (status != napi_ok) {
             IMAGE_LOGE("Get recordValue name property failed %{public}d", status);
             continue;
         }
-        std::string valueStr = GetStringArgument(env, recordValue);
+        std::string valueStr = ImageNapiUtils::GetStringArgument(env, recordValue);
         kVStrArray.push_back(std::make_pair(keyStr, valueStr));
     }
 
@@ -1017,7 +957,7 @@ static void ProcessMetadataProperty(napi_env env, napi_value propertyNamesArray,
         IMAGE_LOGE("Get property name at index %{public}u failed", index);
         return;
     }
-    std::string stringArgument = GetStringArgument(env, propertyName);
+    std::string stringArgument = ImageNapiUtils::GetStringArgument(env, propertyName);
     const std::set<std::string> internalProps = {"_napiwrapper", "__nativePtr", "__cached__"};
     if (internalProps.find(stringArgument) != internalProps.end()) {
         return;
@@ -1332,6 +1272,8 @@ std::vector<napi_property_descriptor> ImageSourceNapi::RegisterNapi()
         DECLARE_NAPI_FUNCTION("release", Release),
         DECLARE_NAPI_FUNCTION("isJpegProgressive", IsJpegProgressive),
         DECLARE_NAPI_GETTER("supportedFormats", GetSupportedFormats),
+        DECLARE_NAPI_FUNCTION("readXMPMetadata", ReadXMPMetadata),
+        DECLARE_NAPI_FUNCTION("writeXMPMetadata", WriteXMPMetadata),
 #if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
         DECLARE_NAPI_FUNCTION("createPicture", CreatePicture),
         DECLARE_NAPI_FUNCTION("createPictureAtIndex", CreatePictureAtIndex),
@@ -1351,27 +1293,27 @@ napi_value ImageSourceNapi::Init(napi_env env, napi_value exports)
         DECLARE_NAPI_STATIC_FUNCTION("CreateIncrementalSource", CreateIncrementalSource),
         DECLARE_NAPI_STATIC_FUNCTION("getImageSourceSupportedFormats", GetImageSourceSupportedFormats),
         DECLARE_NAPI_PROPERTY("PixelMapFormat",
-            CreateEnumTypeObject(env, napi_number, sPixelMapFormatMap)),
-        DECLARE_NAPI_PROPERTY("PropertyKey", CreateEnumTypeObject(env, napi_string, sPropertyKeyMap)),
-        DECLARE_NAPI_PROPERTY("ImageFormat", CreateEnumTypeObject(env, napi_number, sImageFormatMap)),
-        DECLARE_NAPI_PROPERTY("AlphaType", CreateEnumTypeObject(env, napi_number, sAlphaTypeMap)),
-        DECLARE_NAPI_PROPERTY("ScaleMode", CreateEnumTypeObject(env, napi_number, sScaleModeMap)),
+            ImageNapiUtils::CreateEnumTypeObject(env, napi_number, sPixelMapFormatMap)),
+        DECLARE_NAPI_PROPERTY("PropertyKey", ImageNapiUtils::CreateEnumTypeObject(env, napi_string, sPropertyKeyMap)),
+        DECLARE_NAPI_PROPERTY("ImageFormat", ImageNapiUtils::CreateEnumTypeObject(env, napi_number, sImageFormatMap)),
+        DECLARE_NAPI_PROPERTY("AlphaType", ImageNapiUtils::CreateEnumTypeObject(env, napi_number, sAlphaTypeMap)),
+        DECLARE_NAPI_PROPERTY("ScaleMode", ImageNapiUtils::CreateEnumTypeObject(env, napi_number, sScaleModeMap)),
         DECLARE_NAPI_PROPERTY("ComponentType",
-            CreateEnumTypeObject(env, napi_number, sComponentTypeMap)),
+            ImageNapiUtils::CreateEnumTypeObject(env, napi_number, sComponentTypeMap)),
         DECLARE_NAPI_PROPERTY("DecodingDynamicRange",
-            CreateEnumTypeObject(env, napi_number, sDecodingDynamicRangeMap)),
+            ImageNapiUtils::CreateEnumTypeObject(env, napi_number, sDecodingDynamicRangeMap)),
         DECLARE_NAPI_PROPERTY("ResolutionQuality",
-            CreateEnumTypeObject(env, napi_number, sDecodingResolutionQualityMap)),
+            ImageNapiUtils::CreateEnumTypeObject(env, napi_number, sDecodingResolutionQualityMap)),
         DECLARE_NAPI_PROPERTY("AllocatorType",
-            CreateEnumTypeObject(env, napi_number, sAllocatorType)),
+            ImageNapiUtils::CreateEnumTypeObject(env, napi_number, sAllocatorType)),
         DECLARE_NAPI_PROPERTY("CropAndScaleStrategy",
-            CreateEnumTypeObject(env, napi_number, sCropAndScaleStrategyMap)),
+            ImageNapiUtils::CreateEnumTypeObject(env, napi_number, sCropAndScaleStrategyMap)),
         DECLARE_NAPI_PROPERTY("Orientation",
-            CreateEnumTypeObject(env, napi_number, sOrientationMap)),
+            ImageNapiUtils::CreateEnumTypeObject(env, napi_number, sOrientationMap)),
         DECLARE_NAPI_PROPERTY("FocusMode",
-            CreateEnumTypeObject(env, napi_number, sFocusModeMap)),
+            ImageNapiUtils::CreateEnumTypeObject(env, napi_number, sFocusModeMap)),
         DECLARE_NAPI_PROPERTY("XmageColorMode",
-            CreateEnumTypeObject(env, napi_number, sXmageColorModeMap)),
+            ImageNapiUtils::CreateEnumTypeObject(env, napi_number, sXmageColorModeMap)),
     };
 
     struct ImageConstructorInfo info = {
@@ -2646,7 +2588,7 @@ static bool ParsePropertyOptions(napi_env env, napi_value root, ImageSourceAsync
         IMAGE_LOGD("no defaultValue");
     } else {
         if (tmpValue != nullptr) {
-            context->defaultValueStr = GetStringArgument(env, tmpValue);
+            context->defaultValueStr = ImageNapiUtils::GetStringArgument(env, tmpValue);
         }
     }
     return true;
@@ -3169,7 +3111,7 @@ static std::unique_ptr<ImageSourceAsyncContext> UnwrapContext(napi_env env, napi
         return nullptr;
     }
     if (ImageNapiUtils::getType(env, argValue[NUM_0]) == napi_string) {
-        context->keyStr = GetStringArgument(env, argValue[NUM_0]);
+        context->keyStr = ImageNapiUtils::GetStringArgument(env, argValue[NUM_0]);
     } else if (ImageNapiUtils::getType(env, argValue[NUM_0]) == napi_object) {
         context->keyStrArray = GetStringArrayArgument(env, argValue[NUM_0]);
         if (context->keyStrArray.size() == 0) return nullptr;
@@ -3389,7 +3331,7 @@ static std::unique_ptr<ImageSourceAsyncContext> UnwrapContextForModify(napi_env 
         return nullptr;
     }
     if (ImageNapiUtils::getType(env, argValue[NUM_0]) == napi_string) {
-        context->keyStr = GetStringArgument(env, argValue[NUM_0]);
+        context->keyStr = ImageNapiUtils::GetStringArgument(env, argValue[NUM_0]);
     } else if (ImageNapiUtils::getType(env, argValue[NUM_0]) == napi_object) {
         context->kVStrArray = GetRecordArgument(env, argValue[NUM_0]);
         if (context->kVStrArray.size() == 0) return nullptr;
@@ -3511,7 +3453,7 @@ static void WriteImageMetadataExecute(napi_env env, void *data)
     if (context->kVStrArray.empty() && context->kValueTypeArray.empty()) {
         context->status = context->rImageSource->RemoveAllProperties();
     }
-
+    
     if (context->status != SUCCESS) {
         auto unsupportedKeys = context->rImageSource->GetModifyExifUnsupportedKeys();
         if (!unsupportedKeys.empty()) {
@@ -3927,7 +3869,7 @@ napi_value ImageSourceNapi::GetImagePropertySync(napi_env env, napi_callback_inf
 
     // if argCount is 1 and argValue[NUM_0] is string, get image property
     if (argCount == NUM_1 && ImageNapiUtils::getType(env, argValue[NUM_0]) == napi_string) {
-        std::string key = GetStringArgument(env, argValue[NUM_0]);
+        std::string key = ImageNapiUtils::GetStringArgument(env, argValue[NUM_0]);
         std::string value = "";
         napi_value result = nullptr;
         napi_get_undefined(env, &result);
@@ -4720,6 +4662,115 @@ void ImageSourceNapi::SetImageResource(ImageResource resource)
 ImageResource ImageSourceNapi::GetImageResource()
 {
     return resource_;
+}
+
+#ifdef XMP_TOOLKIT_SDK_ENABLE
+static void ReadXMPMetadataComplete(napi_env env, napi_status status, void *data)
+{
+    IMAGE_LOGD("ReadXMPMetadataComplete IN");
+    napi_value result = nullptr;
+    auto context = static_cast<ImageSourceAsyncContext*>(data);
+    CHECK_ERROR_RETURN_LOG(context == nullptr, "empty context");
+
+    if (context->status == SUCCESS) {
+        result = XMPMetadataNapi::CreateXMPMetadata(env, context->rXMPMetadata);
+        if (napi_undefined == ImageNapiUtils::getType(env, result)) {
+            napi_get_null(env, &result);
+        }
+    } else {
+        napi_get_null(env, &result);
+        context->errMsgArray.emplace(ImageErrorConvert::ReadXMPMetadataMakeErrMsg(context->status));
+    }
+    IMAGE_LOGD("ReadXMPMetadataComplete OUT");
+    ImageSourceCallbackRoutine(env, context, result);
+}
+#endif
+
+napi_value ImageSourceNapi::ReadXMPMetadata(napi_env env, napi_callback_info info)
+{
+    IMAGE_LOGD("ReadXMPMetadata IN");
+    napi_value result = nullptr;
+    napi_get_null(env, &result);
+#ifdef XMP_TOOLKIT_SDK_ENABLE
+    napi_status status;
+    napi_value thisVar;
+    IMG_JS_NO_ARGS(env, info, status, thisVar);
+    IMG_NAPI_CHECK_RET_D(IMG_IS_READY(status, thisVar), result, IMAGE_LOGE("fail to get thisVar"));
+
+    std::unique_ptr<ImageSourceAsyncContext> asyncContext = std::make_unique<ImageSourceAsyncContext>();
+    CHECK_ERROR_RETURN_RET_LOG(asyncContext == nullptr, result, "fail to create async context");
+    status = napi_unwrap(env, thisVar, reinterpret_cast<void**>(&asyncContext->constructor_));
+    IMG_NAPI_CHECK_RET_D(IMG_IS_READY(status, asyncContext->constructor_), result,
+        IMAGE_LOGE("fail to unwrap thisVar"));
+    asyncContext->rImageSource = reinterpret_cast<ImageSourceNapi*>(asyncContext->constructor_)->nativeImgSrc;
+    CHECK_ERROR_RETURN_RET_LOG(asyncContext->rImageSource == nullptr, result, "fail to get nativeImgSrc");
+
+    napi_create_promise(env, &(asyncContext->deferred), &result);
+    IMG_CREATE_CREATE_ASYNC_WORK(env, status, "ReadXMPMetadata", [](napi_env env, void *data) {
+        auto context = static_cast<ImageSourceAsyncContext*>(data);
+        context->rXMPMetadata = context->rImageSource->ReadXMPMetadata(context->status);
+    }, ReadXMPMetadataComplete, asyncContext, asyncContext->work);
+
+    IMG_NAPI_CHECK_RET_D(IMG_IS_OK(status), result, IMAGE_LOGE("fail to create async work"));
+#endif
+    return result;
+}
+
+#ifdef XMP_TOOLKIT_SDK_ENABLE
+static void WriteXMPMetadataComplete(napi_env env, napi_status status, void *data)
+{
+    IMAGE_LOGD("WriteXMPMetadataComplete IN");
+    napi_value result = nullptr;
+    napi_get_undefined(env, &result);
+    auto context = static_cast<ImageSourceAsyncContext*>(data);
+    CHECK_ERROR_RETURN_LOG(context == nullptr, "empty context");
+    if (context->status != SUCCESS) {
+        context->errMsgArray.emplace(ImageErrorConvert::WriteXMPMetadataMakeErrMsg(context->status));
+    }
+    ImageSourceCallbackRoutine(env, context, result);
+}
+#endif
+
+napi_value ImageSourceNapi::WriteXMPMetadata(napi_env env, napi_callback_info info)
+{
+    IMAGE_LOGD("WriteXMPMetadata IN");
+    napi_value result = nullptr;
+    napi_get_undefined(env, &result);
+
+#ifdef XMP_TOOLKIT_SDK_ENABLE
+    napi_status status;
+    napi_value thisVar = nullptr;
+    napi_value argValue[NUM_1] = {0};
+    size_t argCount = NUM_1;
+    IMG_JS_ARGS(env, info, status, argCount, argValue, thisVar);
+    IMG_NAPI_CHECK_RET_D(IMG_IS_OK(status), result, IMAGE_LOGE("fail to get thisVar"));
+    if (argCount != NUM_1) {
+        return ImageNapiUtils::ThrowExceptionError(env, IMAGE_SOURCE_INVALID_PARAMETER, "Invalid argument count");
+    }
+
+    std::unique_ptr<ImageSourceAsyncContext> asyncContext = std::make_unique<ImageSourceAsyncContext>();
+    CHECK_ERROR_RETURN_RET_LOG(asyncContext == nullptr, result, "fail to create async context");
+    status = napi_unwrap(env, thisVar, reinterpret_cast<void**>(&asyncContext->constructor_));
+    IMG_NAPI_CHECK_RET_D(IMG_IS_READY(status, asyncContext->constructor_), result,
+        IMAGE_LOGE("fail to unwrap thisVar"));
+    asyncContext->rImageSource = reinterpret_cast<ImageSourceNapi*>(asyncContext->constructor_)->nativeImgSrc;
+    CHECK_ERROR_RETURN_RET_LOG(asyncContext->rImageSource == nullptr, result, "fail to get nativeImgSrc");
+
+    if (!ImageNapiUtils::CheckTypeByName(env, argValue[NUM_0], "XMPMetadata")) {
+        return ImageNapiUtils::ThrowExceptionError(env, IMAGE_SOURCE_INVALID_PARAMETER, "Invalid argument type");
+    }
+    asyncContext->rXMPMetadata = XMPMetadataNapi::GetXMPMetadata(env, argValue[NUM_0]);
+    CHECK_ERROR_RETURN_RET_LOG(asyncContext->rXMPMetadata == nullptr, result, "fail to get xmpMetadata");
+
+    napi_create_promise(env, &(asyncContext->deferred), &result);
+    IMG_CREATE_CREATE_ASYNC_WORK(env, status, "WriteXMPMetadata", [](napi_env env, void *data) {
+        auto context = static_cast<ImageSourceAsyncContext*>(data);
+        context->status = context->rImageSource->WriteXMPMetadata(context->rXMPMetadata);
+    }, WriteXMPMetadataComplete, asyncContext, asyncContext->work);
+
+    IMG_NAPI_CHECK_RET_D(IMG_IS_OK(status), result, IMAGE_LOGE("fail to create async work"));
+#endif
+    return result;
 }
 
 #if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)

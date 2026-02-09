@@ -1,0 +1,215 @@
+/*
+ * Copyright (C) 2026 Huawei Device Co., Ltd.
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+#include "image_error_convert.h"
+#include "image_log.h"
+#include "image_taihe_utils.h"
+#include "image_type.h"
+#include "media_errors.h"
+#include "securec.h"
+#include "xmp_metadata_taihe.h"
+
+using namespace ANI::Image;
+
+namespace ANI::Image {
+XMPMetadataImpl::XMPMetadataImpl()
+    : nativeXMPMetadata_(std::make_shared<OHOS::Media::XMPMetadata>()) {}
+
+XMPMetadataImpl::XMPMetadataImpl(std::shared_ptr<OHOS::Media::XMPMetadata> xmpMetadata)
+    : nativeXMPMetadata_(xmpMetadata) {}
+
+static XMPTag ToTaiheXMPTag(const OHOS::Media::XMPTag &innerXMPTag)
+{
+    optional<string> prefix(std::nullopt);
+    if (!innerXMPTag.prefix.empty()) {
+        prefix.emplace(innerXMPTag.prefix);
+    }
+
+    optional<string> value(std::nullopt);
+    if (!innerXMPTag.value.empty()) {
+        value.emplace(innerXMPTag.value);
+    }
+
+    XMPTag tag {
+        .xmlns = innerXMPTag.xmlns,
+        .prefix = prefix,
+        .name = innerXMPTag.name,
+        .type = XMPTagType::from_value(static_cast<int32_t>(innerXMPTag.type)),
+        .value = value,
+    };
+    return tag;
+}
+
+static OHOS::Media::XMPEnumerateOption ParseXMPEnumerateOption(const optional_view<XMPEnumerateOption> &option)
+{
+    OHOS::Media::XMPEnumerateOption innerOption;
+    if (option.has_value() && option->isRecursive.has_value()) {
+        innerOption.isRecursive = option->isRecursive.value();
+    }
+    return innerOption;
+}
+
+static void ThrowXMPException(uint32_t innerCode)
+{
+    const auto [errorCode, errMsg] = OHOS::Media::ImageErrorConvert::XMPMetadataMakeErrMsg(innerCode);
+    ImageTaiheUtils::ThrowExceptionError(errorCode, errMsg);
+}
+
+static auto CreateEnumerateTagsCallback(callback_view<bool(string_view path, XMPTag const& tag)> callback)
+{
+    auto innerCallback = [callback](const std::string &path, const OHOS::Media::XMPTag &tag) -> bool {
+        XMPTag taiheTag = ToTaiheXMPTag(tag);
+        bool shouldContinue = callback(path, taiheTag);
+        return shouldContinue;
+    };
+    return innerCallback;
+}
+
+int64_t XMPMetadataImpl::GetImplPtr()
+{
+    return static_cast<int64_t>(reinterpret_cast<uintptr_t>(this));
+}
+
+std::shared_ptr<OHOS::Media::XMPMetadata> XMPMetadataImpl::GetNativeXMPMetadata()
+{
+    return nativeXMPMetadata_;
+}
+
+void XMPMetadataImpl::RegisterNamespacePrefixSync(string_view xmlns, string_view prefix)
+{
+    CHECK_ERROR_RETURN_LOG(nativeXMPMetadata_ == nullptr, "Empty native XMPMetadata");
+
+    uint32_t ret = nativeXMPMetadata_->RegisterNamespacePrefix(std::string(xmlns), std::string(prefix));
+    if (ret != OHOS::Media::SUCCESS) {
+        ThrowXMPException(ret);
+        return;
+    }
+}
+
+void XMPMetadataImpl::SetValueSync(string_view path, XMPTagType type, optional_view<string> value)
+{
+    CHECK_ERROR_RETURN_LOG(nativeXMPMetadata_ == nullptr, "Empty native XMPMetadata");
+
+    std::string innerPath = std::string(path);
+    OHOS::Media::XMPTagType innerXMPTagType = OHOS::Media::XMPTagType(type.get_value());
+    std::string innerValue = std::string(value.value_or(""));
+    IMAGE_LOGD("%{public}s path: %{public}s, tagType: %{public}d, tagValue: %{public}s",
+        __func__, innerPath.c_str(), innerXMPTagType, innerValue.c_str());
+
+    uint32_t ret = nativeXMPMetadata_->SetValue(innerPath, innerXMPTagType, innerValue);
+    if (ret != OHOS::Media::SUCCESS) {
+        ThrowXMPException(ret);
+        return;
+    }
+}
+
+NullableXMPTag XMPMetadataImpl::GetTagSync(string_view path)
+{
+    CHECK_ERROR_RETURN_RET_LOG(nativeXMPMetadata_ == nullptr, NullableXMPTag::make_type_null(),
+        "Empty native XMPMetadata instance");
+
+    OHOS::Media::XMPTag innerXMPTag;
+    uint32_t ret = nativeXMPMetadata_->GetTag(std::string(path), innerXMPTag);
+    if (ret == OHOS::Media::ERR_XMP_TAG_NOT_FOUND) {
+        return NullableXMPTag::make_type_null();
+    }
+    if (ret != OHOS::Media::SUCCESS) {
+        ThrowXMPException(ret);
+        return NullableXMPTag::make_type_null();
+    }
+
+    XMPTag tag = ToTaiheXMPTag(innerXMPTag);
+    return NullableXMPTag::make_type_xmpTag(tag);
+}
+
+void XMPMetadataImpl::RemoveTagSync(string_view path)
+{
+    CHECK_ERROR_RETURN_LOG(nativeXMPMetadata_ == nullptr, "Empty native XMPMetadata");
+
+    uint32_t ret = nativeXMPMetadata_->RemoveTag(std::string(path));
+    if (ret != OHOS::Media::SUCCESS) {
+        ThrowXMPException(ret);
+        return;
+    }
+}
+
+void XMPMetadataImpl::EnumerateTags(callback_view<bool(string_view path, XMPTag const& tag)> callback,
+    optional_view<string> rootPath, optional_view<XMPEnumerateOption> options)
+{
+    CHECK_ERROR_RETURN_LOG(nativeXMPMetadata_ == nullptr, "Empty native XMPMetadata");
+
+    std::string innerPath = std::string(rootPath.value_or(""));
+    OHOS::Media::XMPEnumerateOption innerOption = ParseXMPEnumerateOption(options);
+    auto innerCallback = CreateEnumerateTagsCallback(callback);
+
+    uint32_t ret = nativeXMPMetadata_->EnumerateTags(innerCallback, innerPath, innerOption);
+    if (ret != OHOS::Media::SUCCESS) {
+        ThrowXMPException(ret);
+        return;
+    }
+}
+
+map<string, XMPTag> XMPMetadataImpl::GetTagsSync(optional_view<string> rootPath,
+    optional_view<XMPEnumerateOption> options)
+{
+    map<string, XMPTag> result;
+    CHECK_ERROR_RETURN_RET_LOG(nativeXMPMetadata_ == nullptr, result, "Empty native XMPMetadata");
+    std::string innerPath = std::string(rootPath.value_or(""));
+    OHOS::Media::XMPEnumerateOption innerOption = ParseXMPEnumerateOption(options);
+
+    uint32_t ret = nativeXMPMetadata_->EnumerateTags(
+        [&result](const std::string &path, const OHOS::Media::XMPTag &tag) {
+            result.emplace(path, ToTaiheXMPTag(tag));
+            return true;
+        }, innerPath, innerOption);
+    if (ret != OHOS::Media::SUCCESS) {
+        ThrowXMPException(ret);
+        return map<string, XMPTag>();
+    }
+    return result;
+}
+
+void XMPMetadataImpl::SetBlobSync(array_view<uint8_t> buffer)
+{
+    CHECK_ERROR_RETURN_LOG(nativeXMPMetadata_ == nullptr, "Empty native XMPMetadata");
+    uint32_t ret = nativeXMPMetadata_->SetBlob(static_cast<uint8_t*>(buffer.data()), buffer.size());
+    if (ret != OHOS::Media::SUCCESS) {
+        ThrowXMPException(ret);
+        return;
+    }
+}
+
+array<uint8_t> XMPMetadataImpl::GetBlobSync()
+{
+    array<uint8_t> result = ImageTaiheUtils::CreateTaiheArrayBuffer(nullptr, 0);
+    CHECK_ERROR_RETURN_RET_LOG(nativeXMPMetadata_ == nullptr, result, "Empty native XMPMetadata");
+
+    std::string strBuf;
+    uint32_t ret = nativeXMPMetadata_->GetBlob(strBuf);
+    if (ret != OHOS::Media::SUCCESS) {
+        ThrowXMPException(ret);
+        return result;
+    }
+    return ImageTaiheUtils::CreateTaiheArrayBuffer(reinterpret_cast<uint8_t*>(strBuf.data()), strBuf.size());
+}
+
+// Global Functions
+XMPMetadata XMPMetadataCtor()
+{
+    return taihe::make_holder<XMPMetadataImpl, XMPMetadata>();
+}
+} // namespace ANI::Image
+
+TH_EXPORT_CPP_API_XMPMetadataCtor(XMPMetadataCtor);

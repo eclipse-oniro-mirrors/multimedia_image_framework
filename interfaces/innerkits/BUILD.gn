@@ -309,6 +309,14 @@ if (use_clang_android) {
     if (image_use_new_skia) {
       defines += [ "USE_M133_SKIA" ]
     }
+
+    defines += [
+      "UNIX_ENV=1",
+      "XMP_StaticBuild=1",
+      "XMP_INCLUDE_XMPFILES=1",
+      "TXMP_STRING_TYPE=std::string"
+    ]
+
     #  relative_install_dir = "module/multimedia"
     subsystem_name = "multimedia"
     innerapi_tags = [ "platformsdk" ]
@@ -487,6 +495,13 @@ if (use_mingw_win || use_clang_mac || use_clang_ios || use_clang_android) {
     } else {
       external_deps += [ "zlib:libz" ]
     }
+
+    defines += [
+      "UNIX_ENV=1",
+      "XMP_StaticBuild=1",
+      "XMP_INCLUDE_XMPFILES=1",
+      "TXMP_STRING_TYPE=std::string"
+    ]
 
     if (defined(global_parts_info) &&
         defined(global_parts_info.open_source_libyuv)) {

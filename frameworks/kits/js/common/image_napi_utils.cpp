@@ -13,10 +13,10 @@
  * limitations under the License.
  */
 
+#include "image_log.h"
 #include "image_napi_utils.h"
 #include <securec.h>
 #include <unistd.h>
-#include "image_log.h"
 #if !defined(CROSS_PLATFORM)
 #include "tokenid_kit.h"
 #include "ipc_skeleton.h"
@@ -24,6 +24,11 @@
 #if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM) && defined(HICHECKER_ENABLE)
 #include "hichecker.h"
 #endif
+
+namespace {
+constexpr uint32_t NUM_0 = 0;
+constexpr uint32_t NUM_1 = 1;
+}
 
 namespace OHOS {
 namespace Media {
@@ -120,6 +125,31 @@ bool ImageNapiUtils::GetUtf8String(napi_env env, napi_value root, std::string &r
     return true;
 }
 
+std::string ImageNapiUtils::GetStringArgument(napi_env env, napi_value value)
+{
+    std::string strValue = "";
+    size_t bufLength = 0;
+    napi_status status = napi_get_value_string_utf8(env, value, nullptr, NUM_0, &bufLength);
+    if (status == napi_ok && bufLength > NUM_0 && bufLength < PATH_MAX) {
+        char *buffer = reinterpret_cast<char *>(malloc((bufLength + NUM_1) * sizeof(char)));
+        if (buffer == nullptr) {
+            IMAGE_LOGE("%{public}s: No memory", __func__);
+            return strValue;
+        }
+
+        status = napi_get_value_string_utf8(env, value, buffer, bufLength + NUM_1, &bufLength);
+        if (status == napi_ok) {
+            IMAGE_LOGD("%{public}s: Get success", __func__);
+            strValue.assign(buffer, 0, bufLength);
+        }
+        if (buffer != nullptr) {
+            free(buffer);
+            buffer = nullptr;
+        }
+    }
+    return strValue;
+}
+
 bool ImageNapiUtils::CreateArrayBuffer(napi_env env, void* src, size_t srcLen, napi_value *res)
 {
     if (src == nullptr || srcLen == 0) {
@@ -132,6 +162,32 @@ bool ImageNapiUtils::CreateArrayBuffer(napi_env env, void* src, size_t srcLen, n
     }
 
     if (memcpy_s(nativePtr, srcLen, src, srcLen) != EOK) {
+        return false;
+    }
+    return true;
+}
+
+static void ExternalArrayBufferFinalizer(napi_env env, void *data, void *hint)
+{
+    (void)env;
+    (void)hint;
+    delete[] static_cast<uint8_t*>(data);
+}
+
+bool ImageNapiUtils::CreateExternalArrayBuffer(napi_env env, void *data, size_t dataLen, napi_value *res)
+{
+    if (data == nullptr || dataLen == 0 || res == nullptr) {
+        return false;
+    }
+
+    napi_status status = napi_create_external_arraybuffer(
+        env, data, dataLen, ExternalArrayBufferFinalizer, nullptr, res);
+    return status == napi_ok;
+}
+
+bool ImageNapiUtils::CreateNapiBoolean(napi_env env, bool value, napi_value &root)
+{
+    if (napi_get_boolean(env, value, &root) != napi_ok) {
         return false;
     }
     return true;
@@ -272,6 +328,33 @@ const std::set<AuxiliaryPictureType> &ImageNapiUtils::GetNapiSupportedAuxiliaryP
     return auxTypes;
 }
 
+bool ImageNapiUtils::CheckTypeByName(napi_env env, napi_value root, const char *name)
+{
+    napi_value constructor = nullptr;
+    napi_value global = nullptr;
+    bool isInstance = false;
+    napi_status ret = napi_invalid_arg;
+
+    ret = napi_get_global(env, &global);
+    if (ret != napi_ok) {
+        IMAGE_LOGE("%{public}s Get global failed!", __func__);
+        return false;
+    }
+
+    if (!GetNodeByName(env, global, name, &constructor)) {
+        IMAGE_LOGE("%{public}s Get node failed! name: %{public}s", __func__, name);
+        return false;
+    }
+
+    ret = napi_instanceof(env, root, constructor, &isInstance);
+    if (ret != napi_ok || !isInstance) {
+        IMAGE_LOGE("%{public}s Check instanceof failed! name: %{public}s, isInstance: %{public}d",
+            __func__, name, isInstance);
+        return false;
+    }
+    return true;
+}
+
 void ImageNapiUtils::HicheckerReport()
 {
 #if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM) && defined(HICHECKER_ENABLE)
@@ -335,6 +418,38 @@ bool ImageNapiUtils::IsSystemApp()
 #else
     return false;
 #endif
+}
+
+napi_value ImageNapiUtils::CreateEnumTypeObject(napi_env env, napi_valuetype type,
+    const std::vector<struct ImageEnum> &imageEnumMap)
+{
+    napi_value result = nullptr;
+    napi_status status = napi_create_object(env, &result);
+    if (status == napi_ok) {
+        for (const auto &[name, numVal, strVal] : imageEnumMap) {
+            napi_value enumNapiValue = nullptr;
+            if (type == napi_string) {
+                status = napi_create_string_utf8(env, strVal.c_str(), strVal.size(), &enumNapiValue);
+            } else if (type == napi_number) {
+                status = napi_create_int32(env, numVal, &enumNapiValue);
+            } else {
+                IMAGE_LOGE("%{public}s: Unsupported type %{public}d!", __func__, type);
+            }
+            if (status == napi_ok && enumNapiValue != nullptr) {
+                status = napi_set_named_property(env, result, name.c_str(), enumNapiValue);
+            }
+            if (status != napi_ok) {
+                IMAGE_LOGE("%{public}s: Failed to add named prop for %{public}s!", __func__, name.c_str());
+                break;
+            }
+        }
+        if (status == napi_ok) {
+            return result;
+        }
+    }
+    IMAGE_LOGE("%{public}s: CreateEnumTypeObject is Failed!", __func__);
+    napi_get_undefined(env, &result);
+    return result;
 }
 }  // namespace Media
 }  // namespace OHOS

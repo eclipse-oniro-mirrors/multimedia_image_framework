@@ -56,12 +56,6 @@ const int PARAM2 = 2;
 const int PARAM3 = 3;
 const int NUM_0 = 0;
 
-struct ImageEnum {
-    std::string name;
-    int32_t numVal;
-    std::string strVal;
-};
-
 static std::vector<struct ImageEnum> sImageFormatMap = {
     {"CAMERA_APP_INNER", 4, ""},
     {"JPEG", 2000, ""},

@@ -106,6 +106,11 @@
             <option name="push" value="images/test_rfdatab_depthen.jpg -> /data/local/tmp/image" src="res"/>
             <option name="push" value="images/test_rfdatab_depthp.jpg -> /data/local/tmp/image" src="res"/>
             <option name="push" value="images/test_rfdatab_rfdatab.jpg -> /data/local/tmp/image" src="res"/>
+            <option name="push" value="images/xmp/jpeg_xmp.jpg -> /data/local/tmp/image" src="res"/>
+            <option name="push" value="images/xmp/png_xmp.png -> /data/local/tmp/image" src="res"/>
+            <option name="push" value="images/xmp/gif_xmp.gif -> /data/local/tmp/image" src="res"/>
+            <option name="push" value="images/xmp/dng_xmp.dng -> /data/local/tmp/image" src="res"/>
+            <option name="push" value="images/xmp/tiff_xmp.tiff -> /data/local/tmp/image" src="res"/>
         </preparer>
     </target>
     <target name="imagecolorspacetest">
@@ -361,6 +366,7 @@
             <option name="push" value="images/exif/test_notiff.dng -> /data/local/tmp/image" src="res"/>
             <option name="push" value="images/test.cr3 -> /data/local/tmp/image" src="res"/>
             <option name="push" value="images/exif/test_remove_exif.heic -> /data/local/tmp/image" src="res"/>
+            <option name="push" value="images/xmp/jpeg_xmp.jpg -> /data/local/tmp/image" src="res"/>
         </preparer>
     </target>
     <target name="ndktest2">

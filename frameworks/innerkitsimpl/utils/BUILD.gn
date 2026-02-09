@@ -179,6 +179,13 @@ if (use_clang_ios) {
       }
     }
 
+    defines += [
+      "UNIX_ENV=1",
+      "XMP_StaticBuild=1",
+      "XMP_INCLUDE_XMPFILES=1",
+      "TXMP_STRING_TYPE=std::string"
+    ]
+
     if (defined(global_parts_info) &&
         defined(global_parts_info.open_source_libyuv)) {
       defines += [ "EXT_PIXEL" ]

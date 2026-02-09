@@ -442,6 +442,17 @@ enum GifPropertyKey: String {
   GIF_DISPOSAL_TYPE = "GifDisposalType"
 }
 
+enum XMPTagType: i32 {
+    UNKNOWN = 0,
+    SIMPLE = 1,
+    UNORDERED_ARRAY = 2,
+    ORDERED_ARRAY = 3,
+    ALTERNATE_ARRAY = 4,
+    ALTERNATE_TEXT = 5,
+    STRUCTURE = 6,
+    QUALIFIER = 7
+}
+
 struct DecodingOptionsForPicture {
   desiredAuxiliaryPictures: Array<AuxiliaryPictureType>;
 }
@@ -665,7 +676,7 @@ interface Metadata {
 
   @gen_promise("getAllProperties")
   GetAllPropertiesSync(): Optional<@record Map<String, PropertyValue>>;
-  
+
   @gen_promise("clone")
   CloneSync(): Optional<Metadata>;
 }
@@ -686,13 +697,13 @@ interface ImageSource {
 
   @gen_async("createPixelMap")
   CreatePixelMapWithOptionsCallback(options: DecodingOptions): Optional<PixelMap>;
- 
+
   @gen_async("createPixelMap")
   CreatePixelMapWithCallback(): Optional<PixelMap>;
- 
+
   @gen_promise("createPixelMap")
   CreatePixelMapReturnsPromise(options: Optional<DecodingOptions>): Optional<PixelMap>;
- 
+
   CreatePixelMapSync(options: Optional<DecodingOptions>): Optional<PixelMap>;
 
   @gen_promise("createPixelMapUsingAllocator")
@@ -728,7 +739,7 @@ interface ImageSource {
 
   @gen_promise("modifyImageProperty")
   ModifyImagePropertySync(key: PropertyKey, value: String): void;
-  
+
   @gen_promise("modifyImageProperties")
   ModifyImagePropertiesSync(records: @record Map<String, PropertyValue>): void;
 
@@ -756,6 +767,12 @@ interface ImageSource {
   CreateThumbnailSync(options: Optional<DecodingOptionsForThumbnail>): Optional<PixelMap>;
 
   @get GetSupportedFormats(): Array<String>;
+
+  // @gen_promise("readXMPMetadata")
+  // ReadXMPMetadataSync(): NullableXMPMetadata;
+
+  // @gen_promise("writeXMPMetadata")
+  // WriteXMPMetadataSync(xmpMetadata: XMPMetadata): void;
 }
 
 interface ImagePacker {
@@ -859,6 +876,92 @@ interface ImageCreator {
   @gen_promise("release")
   ReleaseSync(): void;
 }
+
+struct XMPNamespace {
+  uri: String;
+  prefix: String;
+}
+
+@!sts_inject("""
+const XMP_BASIC: XMPNamespace = {
+    uri: "http://ns.adobe.com/xap/1.0/",
+    prefix: "xmp"
+};
+
+const XMP_RIGHTS: XMPNamespace = {
+    uri: "http://ns.adobe.com/xap/1.0/rights/",
+    prefix: "xmpRights"
+};
+
+const EXIF: XMPNamespace = {
+    uri: "http://ns.adobe.com/exif/1.0/",
+    prefix: "exif"
+};
+
+const DUBLIN_CORE: XMPNamespace = {
+    uri: "http://purl.org/dc/elements/1.1/",
+    prefix: "dc"
+};
+
+const TIFF: XMPNamespace = {
+    uri: "http://ns.adobe.com/tiff/1.0/",
+    prefix: "tiff"
+};
+""")
+
+struct XMPTag {
+    xmlns: String;
+    prefix: Optional<String>;
+    name: String;
+    type: XMPTagType;
+    value: Optional<String>;
+}
+
+struct XMPEnumerateOption {
+    isRecursive: Optional<bool>;
+}
+
+union NullableXMPTag {
+    type_xmpTag: XMPTag;
+    type_null: @null unit;
+}
+
+// @class
+// interface XMPMetadata {
+//   GetImplPtr(): i64;
+
+//   @gen_promise("registerNamespacePrefix")
+//   RegisterNamespacePrefixSync(xmlns: String, prefix: String): void;
+
+//   @gen_promise("setValue")
+//   SetValueSync(path: String, type: XMPTagType, value: Optional<String>): void;
+
+//   @gen_promise("getTag")
+//   GetTagSync(path: String): NullableXMPTag;
+
+//   @gen_promise("removeTag")
+//   RemoveTagSync(path: String): void;
+
+//   EnumerateTags(callback: (path: String, tag: XMPTag)=> bool, rootPath: Optional<String>, options: Optional<XMPEnumerateOption>): void;
+
+//   @gen_promise("getTags")
+//   GetTagsSync(rootPath: Optional<String>, options: Optional<XMPEnumerateOption>): @record Map<String, XMPTag>;
+
+//   @gen_promise("setBlob")
+//   SetBlobSync(buffer: @arraybuffer Array<u8>): void;
+
+//   @gen_promise("getBlob")
+//   GetBlobSync(): @arraybuffer Array<u8>;
+// }
+
+// union NullableXMPMetadata {
+//     type_xmpMetadata: XMPMetadata;
+//     type_null: @null unit;
+// }
+
+// // constructor
+// @ctor("XMPMetadata")
+// function XMPMetadataCtor(): XMPMetadata;
 
 // transfer functions
 function ImageSourceTransferStaticImpl(input: @sts_type("ESValue") Opaque): ImageSource;

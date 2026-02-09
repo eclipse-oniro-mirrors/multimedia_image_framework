@@ -162,6 +162,7 @@ class DngExifMetadata;
 struct StreamInfo;
 struct SingleJpegImage;
 struct MainPictureInfo;
+class XMPMetadata;
 
 class ImageSource {
 public:
@@ -298,6 +299,8 @@ public:
     NATIVEEXPORT std::vector<std::shared_ptr<ImageMetadata>> GetAllSupportedMetadataTypes(uint32_t index,
         uint32_t &errorCode);
     NATIVEEXPORT bool IsJpegProgressive(uint32_t &errorCode);
+    NATIVEEXPORT std::shared_ptr<XMPMetadata> ReadXMPMetadata(uint32_t &errorCode);
+    NATIVEEXPORT uint32_t WriteXMPMetadata(std::shared_ptr<XMPMetadata> &xmpMetadata);
 
 private:
     DISALLOW_COPY_AND_MOVE(ImageSource);
@@ -398,6 +401,7 @@ private:
     uint32_t HandleInvalidExifBuffer(void* exifDataPtr);
     std::shared_ptr<MetadataAccessor> CreateMetadataAccessorForWrite(uint32_t &error);
     uint32_t WriteExifMetadataToFile(std::shared_ptr<MetadataAccessor> metadataAccessor);
+    uint32_t CreateXMPMetadataByImageSource(const std::string &mimeType);
     void SetDecodeInfoOptions(uint32_t index, const DecodeOptions &opts, const ImageInfo &info, ImageEvent &imageEvent);
     void SetDecodeInfoOptions(uint32_t index, const DecodeOptions &opts, const ImagePlugin::PlImageInfo &plInfo,
         ImageEvent &imageEvent);
@@ -436,6 +440,7 @@ private:
     bool CheckCropRectValid(const DecodeOptions &opts);
     void InitDecoderForJpeg();
     void RefreshImageSourceByPathName();
+    void RefreshImageSourceByFd();
     std::string GetPixelMapName(PixelMap* pixelMap);
     bool IsDngImage();
 
@@ -508,6 +513,7 @@ private:
     std::set<std::string> exifUnsupportKeys_;
     XmageCoordinateMetadata coordMetadata_;
     bool hasValidXmageCoords_ = false;
+    std::shared_ptr<XMPMetadata> xmpMetadata_ = nullptr;
 };
 } // namespace Media
 } // namespace OHOS

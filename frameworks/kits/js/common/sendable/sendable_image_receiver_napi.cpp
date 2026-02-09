@@ -57,12 +57,6 @@ const int PARAM1 = 1;
 const int PARAM2 = 2;
 const int PARAM3 = 3;
 
-struct ImageEnum {
-    std::string name;
-    int32_t numVal;
-    std::string strVal;
-};
-
 static std::vector<struct ImageEnum> sImageFormatVec = {
     {"CAMERA_APP_INNER", 4, ""},
     {"JPEG", 2000, ""},

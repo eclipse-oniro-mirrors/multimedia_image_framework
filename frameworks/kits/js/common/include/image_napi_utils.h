@@ -153,6 +153,12 @@ struct NapiConstructorContext {
     napi_ref ref_ = nullptr;
 };
 
+struct ImageEnum {
+    std::string name;
+    int32_t numVal;
+    std::string strVal;
+};
+
 class ImageNapiUtils {
 public:
     static bool GetBufferByName(napi_env env, napi_value root, const char* name, void **res, size_t* len);
@@ -162,13 +168,21 @@ public:
     static bool GetBoolByName(napi_env env, napi_value root, const char* name, bool *res);
     static bool GetNodeByName(napi_env env, napi_value root, const char* name, napi_value *res);
     static bool GetUtf8String(napi_env env, napi_value root, std::string &res, bool eof = true);
+    static std::string GetStringArgument(napi_env env, napi_value value);
+
     static napi_valuetype getType(napi_env env, napi_value root);
     static bool CreateArrayBuffer(napi_env env, void* src, size_t srcLen, napi_value *res);
+    static bool CreateExternalArrayBuffer(napi_env env, void *data, size_t dataLen, napi_value *res);
+    static bool CreateNapiBoolean(napi_env env, bool value, napi_value &root);
     static bool CreateNapiInt32(napi_env env, int32_t value, napi_value &root);
     static bool CreateNapiDouble(napi_env env, double value, napi_value &root);
+    static napi_value CreateEnumTypeObject(napi_env env, napi_valuetype type,
+        const std::vector<struct ImageEnum> &imageEnumMap);
+
     static bool ParseImageCreatorReceiverArgs(napi_env env, size_t argc,
         napi_value argv[], int32_t args[], std::string &errMsg);
     static const std::set<AuxiliaryPictureType> &GetNapiSupportedAuxiliaryPictureType();
+    static bool CheckTypeByName(napi_env env, napi_value root, const char *name);
     static void HicheckerReport();
     static void CreateErrorObj(napi_env env, napi_value &errorObj,
         const int32_t errCode, const std::string errMsg);

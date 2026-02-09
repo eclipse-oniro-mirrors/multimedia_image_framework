@@ -1759,6 +1759,13 @@ ohos_unittest("imagestreamtest") {
 ohos_unittest("imageaccessortest") {
   module_out_path = module_output_path
 
+  defines = [
+    "UNIX_ENV=1",
+    "XMP_StaticBuild=1",
+    "XMP_INCLUDE_XMPFILES=1",
+    "TXMP_STRING_TYPE=std::string"
+  ]
+
   include_dirs = [
     "${image_subsystem}/frameworks/innerkitsimpl/accessor/include",
     "${image_subsystem}/interfaces/innerkits/include",

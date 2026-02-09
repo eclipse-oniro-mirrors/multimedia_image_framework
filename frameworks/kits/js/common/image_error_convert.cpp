@@ -100,5 +100,68 @@ std::pair<int32_t, std::string> ImageErrorConvert::CreateThumbnailMakeErrMsg(uin
             return std::make_pair<int32_t, std::string>(IMAGE_DECODE_FAILED, "Decode failed.");
     }
 }
+
+std::pair<int32_t, std::string> ImageErrorConvert::XMPMetadataMakeErrMsg(uint32_t errorCode)
+{
+    switch (errorCode) {
+        case ERR_IMAGE_INVALID_PARAMETER:
+        case COMMON_ERR_INVALID_PARAMETER:
+        case ERR_MEDIA_NULL_POINTER:
+            return std::make_pair<int32_t, std::string>(IMAGE_INVALID_PARAMETER, "Invalid parameter.");
+        case ERR_MEDIA_MALLOC_FAILED:
+            return std::make_pair<int32_t, std::string>(IMAGE_ALLOC_FAILED, "Memory alloc failed.");
+        case ERR_MEMORY_COPY_FAILED:
+            return std::make_pair<int32_t, std::string>(IMAGE_COPY_FAILED, "Memory copy failed.");
+        case ERR_XMP_TAG_NOT_FOUND:
+            return std::make_pair<int32_t, std::string>(IMAGE_XMP_TAG_NOT_FOUND, "XMP tag not found.");
+        case ERR_XMP_NAMESPACE_NOT_REGISTERED:
+            return std::make_pair<int32_t, std::string>(IMAGE_XMP_NAMESPACE_NOT_REGISTERED,
+                "Namespace prefix not registered.");
+        case ERR_XMP_DECODE_FAILED:
+        case ERR_XMP_SDK_EXCEPTION:
+            return std::make_pair<int32_t, std::string>(IMAGE_XMP_DECODE_FAILED,
+                "XMP decode failed. Maybe the XMP metadata is invalid.");
+        default:
+            return std::make_pair<int32_t, std::string>(IMAGE_XMP_DECODE_FAILED, "Decode failed.");
+    }
+}
+
+std::pair<int32_t, std::string> ImageErrorConvert::ReadXMPMetadataMakeErrMsg(uint32_t errorCode)
+{
+    switch (errorCode) {
+        case ERR_IMAGE_INVALID_PARAMETER:
+        case COMMON_ERR_INVALID_PARAMETER:
+            return std::make_pair<int32_t, std::string>(IMAGE_SOURCE_INVALID_PARAMETER, "Invalid parameter.");
+        case ERR_XMP_NOT_FOUND:
+            return std::make_pair<int32_t, std::string>(IMAGE_SOURCE_XMP_NOT_FOUND, "Image does not contain XMP.");
+        case ERR_XMP_INVALID_FILE:
+            return std::make_pair<int32_t, std::string>(IMAGE_BAD_SOURCE, "Bad image source.");
+        case ERR_XMP_DECODE_FAILED:
+        case ERR_XMP_SDK_EXCEPTION:
+            return std::make_pair<int32_t, std::string>(IMAGE_DECODE_FAILED,
+                "XMP decode failed. Maybe the XMP metadata is invalid.");
+        default:
+            return std::make_pair<int32_t, std::string>(IMAGE_DECODE_FAILED, "Decode failed.");
+    }
+}
+
+std::pair<int32_t, std::string> ImageErrorConvert::WriteXMPMetadataMakeErrMsg(uint32_t errorCode)
+{
+    switch (errorCode) {
+        case ERR_IMAGE_INVALID_PARAMETER:
+        case COMMON_ERR_INVALID_PARAMETER:
+            return std::make_pair<int32_t, std::string>(IMAGE_SOURCE_INVALID_PARAMETER, "Invalid parameter.");
+        case ERR_MEDIA_INVALID_OPERATION:
+            return std::make_pair<int32_t, std::string>(IMAGE_SOURCE_UNSUPPORTED_OPTIONS, "Unsupported operation.");
+        case ERR_XMP_INVALID_FILE:
+            return std::make_pair<int32_t, std::string>(IMAGE_BAD_SOURCE, "Bad image source.");
+        case ERR_XMP_DECODE_FAILED:
+        case ERR_XMP_SDK_EXCEPTION:
+            return std::make_pair<int32_t, std::string>(IMAGE_DECODE_FAILED,
+                "XMP decode failed. Maybe the XMP metadata is invalid.");
+        default:
+            return std::make_pair<int32_t, std::string>(IMAGE_DECODE_FAILED, "Decode failed.");
+    }
+}
 }  // namespace Media
 }  // namespace OHOS

@@ -68,7 +68,10 @@ public:
     optional<Picture> CreatePictureAtIndexSync(int32_t index);
     optional<PixelMap> CreateThumbnailSync(optional_view<DecodingOptionsForThumbnail> options);
 #endif
-
+#ifdef XMP_TOOLKIT_SDK_ENABLE
+    NullableXMPMetadata ReadXMPMetadataSync();
+    void WriteXMPMetadataSync(XMPMetadata xmpMetadata);
+#endif
     array<string> GetSupportedFormats();
 
     std::shared_ptr<OHOS::Media::ImageSource> nativeImgSrc = nullptr;

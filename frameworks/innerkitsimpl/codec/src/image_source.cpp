@@ -69,6 +69,7 @@
 #include "source_stream.h"
 #include "image_dfx.h"
 #include "image_handle.h"
+#include "xmp_metadata_accessor_factory.h"
 #if defined(ANDROID_PLATFORM) || defined(IOS_PLATFORM)
 #include "include/jpeg_decoder.h"
 #else
@@ -180,6 +181,7 @@ static constexpr uint8_t JPEG_SOI[] = { 0xFF, 0xD8, 0xFF };
 constexpr uint8_t PIXEL_BYTES = 4;
 static constexpr int32_t THUMBNAIL_SHORT_SIDE_SIZE = 350;
 static constexpr int32_t THUMBNAIL_LONG_SIDE_MULTIPLIER = 3;
+constexpr int32_t INVALID_FILE_DESCRIPTOR = -1;
 
 struct StreamInfo {
     uint8_t* buffer = nullptr;
@@ -6126,6 +6128,15 @@ void ImageSource::RefreshImageSourceByPathName()
     }
 }
 
+void ImageSource::RefreshImageSourceByFd()
+{
+    unique_ptr<SourceStream> refreshedSourceStreamPtr;
+    refreshedSourceStreamPtr = FileSourceStream::CreateSourceStream(srcFd_);
+    if (refreshedSourceStreamPtr != nullptr) {
+        sourceStreamPtr_ = std::move(refreshedSourceStreamPtr);
+    }
+}
+
 std::string ImageSource::GetPixelMapName(PixelMap* pixelMap)
 {
     if (pixelMap == nullptr) {
@@ -6636,5 +6647,111 @@ bool ImageSource::IsJpegProgressive(uint32_t &errorCode)
     }
     return mainDecoder_->IsProgressiveJpeg();
 }
+
+#ifdef XMP_TOOLKIT_SDK_ENABLE
+uint32_t ImageSource::CreateXMPMetadataByImageSource(const std::string &mimeType)
+{
+    uint32_t errorCode = ERROR;
+    IMAGE_LOGD("%{public}s enter", __func__);
+    if (xmpMetadata_ != nullptr) {
+        IMAGE_LOGD("%{public}s xmpMetadata_ already exists", __func__);
+        return SUCCESS;
+    }
+
+    if (sourceStreamPtr_ == nullptr) {
+        IMAGE_LOGE("%{public}s sourceStreamPtr is nullptr", __func__);
+        return ERR_IMAGE_SOURCE_DATA;
+    }
+
+    // Try to get buffer from sourceStreamPtr first
+    if (!PrereadSourceStream()) {
+        IMAGE_LOGE("%{public}s preread source stream failed", __func__);
+        return ERR_IMAGE_SOURCE_DATA;
+    }
+
+    uint32_t bufferSize = sourceStreamPtr_->GetStreamSize();
+    if (bufferSize == 0 || bufferSize > MAX_SOURCE_SIZE) {
+        IMAGE_LOGE("%{public}s invalid stream size: %{public}u", __func__, bufferSize);
+        return ERR_IMAGE_SOURCE_DATA;
+    }
+
+    auto bufferPtr = sourceStreamPtr_->GetDataPtr();
+    std::unique_ptr<uint8_t[]> tmpGuard;
+    if (bufferPtr == nullptr) {
+        uint8_t *tmpBuffer = ReadSourceBuffer(bufferSize, errorCode);
+        CHECK_ERROR_RETURN_RET_LOG(tmpBuffer == nullptr, errorCode, "%{public}s ReadSourceBuffer failed", __func__);
+        tmpGuard.reset(tmpBuffer);
+        bufferPtr = tmpBuffer;
+    }
+
+    auto accessor = XMPMetadataAccessorFactory::Create(bufferPtr, bufferSize, XMPAccessMode::READ_ONLY_XMP, mimeType);
+    CHECK_ERROR_RETURN_RET_LOG(accessor == nullptr, ERR_IMAGE_SOURCE_DATA,
+        "%{public}s failed to create XMPMetadataAccessor from buffer", __func__);
+    errorCode = accessor->Read();
+    CHECK_ERROR_RETURN_RET_LOG(errorCode != SUCCESS, errorCode, "%{public}s failed to read xmp metadata", __func__);
+    xmpMetadata_ = accessor->Get();
+    return SUCCESS;
+}
+
+std::shared_ptr<XMPMetadata> ImageSource::ReadXMPMetadata(uint32_t &errorCode)
+{
+    IMAGE_LOGD("%{public}s enter", __func__);
+    ImageInfo imageInfo;
+    errorCode = GetImageInfo(imageInfo);
+    CHECK_ERROR_RETURN_RET_LOG(errorCode != SUCCESS, nullptr, "%{public}s GetImageInfo failed", __func__);
+
+    std::lock_guard<std::mutex> guard(decodingMutex_);
+    std::unique_lock<std::mutex> guardFile(fileMutex_);
+    if (xmpMetadata_ != nullptr) {
+        IMAGE_LOGD("%{public}s already read xmp metadata", __func__);
+        errorCode = SUCCESS;
+        return xmpMetadata_;
+    }
+
+    errorCode = CreateXMPMetadataByImageSource(imageInfo.encodedFormat);
+    CHECK_ERROR_RETURN_RET_LOG(errorCode != SUCCESS, nullptr, "%{public}s failed to create xmp metadata", __func__);
+    return xmpMetadata_;
+}
+
+uint32_t ImageSource::WriteXMPMetadata(std::shared_ptr<XMPMetadata> &xmpMetadata)
+{
+    IMAGE_LOGD("%{public}s enter", __func__);
+    ImageInfo imageInfo;
+    uint32_t errorCode = GetImageInfo(imageInfo);
+    CHECK_ERROR_RETURN_RET_LOG(errorCode != SUCCESS, errorCode, "%{public}s GetImageInfo failed", __func__);
+    const std::string &mimeType = imageInfo.encodedFormat;
+
+    std::lock_guard<std::mutex> guard(decodingMutex_);
+    std::unique_lock<std::mutex> guardFile(fileMutex_);
+    std::unique_ptr<XMPMetadataAccessor> accessor = nullptr;
+    if (!srcFilePath_.empty()) {
+        accessor = XMPMetadataAccessorFactory::Create(srcFilePath_, XMPAccessMode::READ_WRITE_XMP, mimeType);
+    } else if (srcFd_ != INVALID_FILE_DESCRIPTOR) {
+        accessor = XMPMetadataAccessorFactory::Create(srcFd_, XMPAccessMode::READ_WRITE_XMP, mimeType);
+    } else {
+        IMAGE_LOGE("%{public}s no valid file source (path or fd) found", __func__);
+        return ERR_MEDIA_INVALID_OPERATION;
+    }
+    CHECK_ERROR_RETURN_RET_LOG(accessor == nullptr, ERR_IMAGE_SOURCE_DATA,
+        "%{public}s failed to create XMPMetadataAccessor from path or fd", __func__);
+
+    accessor->Set(xmpMetadata);
+
+    // Write XMP data (this will automatically update the file)
+    errorCode = accessor->Write();
+    CHECK_ERROR_RETURN_RET_LOG(errorCode != SUCCESS, errorCode, "%{public}s XMP write failed", __func__);
+
+    xmpMetadata_ = xmpMetadata;
+    if (!srcFilePath_.empty()) {
+        RefreshImageSourceByPathName();
+    }
+    if (srcFd_ != -1) {
+        RefreshImageSourceByFd();
+    }
+    Reset();
+    IMAGE_LOGD("%{public}s XMP metadata written successfully", __func__);
+    return SUCCESS;
+}
+#endif
 } // namespace Media
 } // namespace OHOS
