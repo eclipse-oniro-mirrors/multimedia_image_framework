@@ -64,8 +64,7 @@
           "qos_manager",
           "eventhandler",
           "ets_runtime",
-          "libtiff",
-          "xmp_toolkit_sdk"
+          "libtiff"
         ],
         "third_party": [
           "bounds_checking_function"

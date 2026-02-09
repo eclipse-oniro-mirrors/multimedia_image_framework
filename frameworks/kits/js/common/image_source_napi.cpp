@@ -4666,6 +4666,7 @@ ImageResource ImageSourceNapi::GetImageResource()
     return resource_;
 }
 
+#ifdef XMP_TOOLKIT_SDK_ENABLE
 static void ReadXMPMetadataComplete(napi_env env, napi_status status, void *data)
 {
     IMAGE_LOGD("ReadXMPMetadataComplete IN");
@@ -4685,12 +4686,14 @@ static void ReadXMPMetadataComplete(napi_env env, napi_status status, void *data
     IMAGE_LOGD("ReadXMPMetadataComplete OUT");
     ImageSourceCallbackRoutine(env, context, result);
 }
+#endif
 
 napi_value ImageSourceNapi::ReadXMPMetadata(napi_env env, napi_callback_info info)
 {
     IMAGE_LOGD("ReadXMPMetadata IN");
     napi_value result = nullptr;
     napi_get_null(env, &result);
+#ifdef XMP_TOOLKIT_SDK_ENABLE
     napi_status status;
     napi_value thisVar;
     IMG_JS_NO_ARGS(env, info, status, thisVar);
@@ -4711,9 +4714,11 @@ napi_value ImageSourceNapi::ReadXMPMetadata(napi_env env, napi_callback_info inf
     }, ReadXMPMetadataComplete, asyncContext, asyncContext->work);
 
     IMG_NAPI_CHECK_RET_D(IMG_IS_OK(status), result, IMAGE_LOGE("fail to create async work"));
+#endif
     return result;
 }
 
+#ifdef XMP_TOOLKIT_SDK_ENABLE
 static void WriteXMPMetadataComplete(napi_env env, napi_status status, void *data)
 {
     IMAGE_LOGD("WriteXMPMetadataComplete IN");
@@ -4726,6 +4731,7 @@ static void WriteXMPMetadataComplete(napi_env env, napi_status status, void *dat
     }
     ImageSourceCallbackRoutine(env, context, result);
 }
+#endif
 
 napi_value ImageSourceNapi::WriteXMPMetadata(napi_env env, napi_callback_info info)
 {
@@ -4733,6 +4739,7 @@ napi_value ImageSourceNapi::WriteXMPMetadata(napi_env env, napi_callback_info in
     napi_value result = nullptr;
     napi_get_undefined(env, &result);
 
+#ifdef XMP_TOOLKIT_SDK_ENABLE
     napi_status status;
     napi_value thisVar = nullptr;
     napi_value argValue[NUM_1] = {0};
@@ -4764,6 +4771,7 @@ napi_value ImageSourceNapi::WriteXMPMetadata(napi_env env, napi_callback_info in
     }, WriteXMPMetadataComplete, asyncContext, asyncContext->work);
 
     IMG_NAPI_CHECK_RET_D(IMG_IS_OK(status), result, IMAGE_LOGE("fail to create async work"));
+#endif
     return result;
 }
 

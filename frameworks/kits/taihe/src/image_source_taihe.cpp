@@ -1488,6 +1488,7 @@ array<string> ImageSourceImpl::GetSupportedFormats()
     return ImageTaiheUtils::ToTaiheArrayString(vec);
 }
 
+#ifdef XMP_TOOLKIT_SDK_ENABLE
 NullableXMPMetadata ImageSourceImpl::ReadXMPMetadataSync()
 {
     CHECK_ERROR_RETURN_RET_LOG(nativeImgSrc == nullptr, NullableXMPMetadata::make_type_null(),
@@ -1519,6 +1520,7 @@ void ImageSourceImpl::WriteXMPMetadataSync(XMPMetadata xmpMetadata)
     uint32_t errorCode = nativeImgSrc->WriteXMPMetadata(nativeXMPMetadata);
     CHECK_ERROR_RETURN_LOG(errorCode != OHOS::Media::SUCCESS, "%{public}s WriteXMPMetadata failed", __func__);
 }
+#endif
 
 static std::string FileUrlToRawPath(const std::string &path)
 {

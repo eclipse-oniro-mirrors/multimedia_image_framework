@@ -69,7 +69,6 @@ taihe_shared_library("image_taihe") {
     "src/picture_taihe.cpp",
     "src/pixel_map_taihe.cpp",
     "src/transfer_taihe.cpp",
-    "src/xmp_metadata_taihe.cpp",
   ]
 
   # For legacy ANI backward compatibility

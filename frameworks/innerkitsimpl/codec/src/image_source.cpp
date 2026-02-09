@@ -6648,6 +6648,7 @@ bool ImageSource::IsJpegProgressive(uint32_t &errorCode)
     return mainDecoder_->IsProgressiveJpeg();
 }
 
+#ifdef XMP_TOOLKIT_SDK_ENABLE
 uint32_t ImageSource::CreateXMPMetadataByImageSource(const std::string &mimeType)
 {
     uint32_t errorCode = ERROR;
@@ -6751,5 +6752,6 @@ uint32_t ImageSource::WriteXMPMetadata(std::shared_ptr<XMPMetadata> &xmpMetadata
     IMAGE_LOGD("%{public}s XMP metadata written successfully", __func__);
     return SUCCESS;
 }
+#endif
 } // namespace Media
 } // namespace OHOS

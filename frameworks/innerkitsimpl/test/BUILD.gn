@@ -224,36 +224,6 @@ ohos_unittest("gifmetadatatest") {
   ]
 }
 
-ohos_unittest("xmpmetadatatest") {
-  module_out_path = module_output_path
-
-  defines = [
-    "UNIX_ENV=1",
-    "XMP_StaticBuild=1",
-    "XMP_INCLUDE_XMPFILES=1",
-    "TXMP_STRING_TYPE=std::string"
-  ]
-
-  sources = [
-    "${image_subsystem}/frameworks/innerkitsimpl/accessor/src/xmp_metadata.cpp",
-    "${image_subsystem}/frameworks/innerkitsimpl/test/unittest/metadata_test/xmp_metadata_test.cpp",
-    "${image_subsystem}/frameworks/innerkitsimpl/test/unittest/xmp_helper_test.cpp",
-  ]
-
-  deps = [
-    "${image_subsystem}/frameworks/innerkitsimpl/utils:image_utils",
-    "${image_subsystem}/interfaces/innerkits:image_native",
-    "${image_subsystem}/interfaces/kits/js/common:image_error_convert",
-  ]
-
-  external_deps = [
-    "c_utils:utils",
-    "googletest:gtest",
-    "hilog:libhilog",
-    "xmp_toolkit_sdk:xmpsdk"
-  ]
-}
-
 ohos_unittest("imagepixelmaptest") {
   module_out_path = module_output_path
 
@@ -341,7 +311,6 @@ ohos_unittest("imagesourcetest") {
     "$image_subsystem/frameworks/innerkitsimpl/test/unittest/image_source_test/image_source_png_test.cpp",
     "$image_subsystem/frameworks/innerkitsimpl/test/unittest/image_source_test/image_source_svg_test.cpp",
     "$image_subsystem/frameworks/innerkitsimpl/test/unittest/image_source_test/image_source_util.cpp",
-    "$image_subsystem/frameworks/innerkitsimpl/test/unittest/image_source_test/image_source_xmp_test.cpp",
 
     # "$image_subsystem/frameworks/innerkitsimpl/test/unittest/image_source_test/image_source_webp_test.cpp",
     "$image_subsystem/plugins/common/libs/image/libextplugin/src/ext_stream.cpp",
@@ -1810,7 +1779,6 @@ ohos_unittest("imageaccessortest") {
     "${image_subsystem}/frameworks/innerkitsimpl/test/unittest/exif_metadata_accessor_test/png_exif_metadata_accessor_test.cpp",
     "${image_subsystem}/frameworks/innerkitsimpl/test/unittest/exif_metadata_accessor_test/png_image_chunk_utils_test.cpp",
     "${image_subsystem}/frameworks/innerkitsimpl/test/unittest/exif_metadata_accessor_test/webp_exif_metadata_accessor_test.cpp",
-    "${image_subsystem}/frameworks/innerkitsimpl/test/unittest/xmp_metadata_accessor_test/xmpsdk_xmp_metadata_accessor_test.cpp",
   ]
 
   deps = [
@@ -1828,7 +1796,6 @@ ohos_unittest("imageaccessortest") {
     "hilog:libhilog",
     "zlib:libz",
     "skia:dng_sdk",
-    "xmp_toolkit_sdk:xmpsdk",
   ]
   if (enable_libexif) {
     external_deps += [ "libexif:libexif" ]
@@ -2536,7 +2503,6 @@ group("unittest") {
     ":itempropertybasicboxtest",
     ":imagedfxtest",
     ":heifsmetadatatest",
-    ":xmpmetadatatest"
   ]
   if (has_libtiff) {
     deps += [ ":tiffplugintest" ]

@@ -88,12 +88,10 @@ if (use_clang_ios) {
       "src/image_type_converter.cpp",
       "src/pixel_yuv_utils.cpp",
       "src/vpe_utils.cpp",
-      "src/xmp_helper.cpp",
     ]
 
     external_deps = [ 
       "drivers_interface_display:libdisplay_commontype_proxy_1.0",
-      "xmp_toolkit_sdk:xmpsdk",
     ]
     if (use_mingw_win) {
       defines = image_decode_windows_defines
