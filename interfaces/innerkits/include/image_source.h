@@ -440,6 +440,7 @@ private:
     bool CheckCropRectValid(const DecodeOptions &opts);
     void InitDecoderForJpeg();
     void RefreshImageSourceByPathName();
+    void RefreshImageSourceByFd();
     std::string GetPixelMapName(PixelMap* pixelMap);
     bool IsDngImage();
 

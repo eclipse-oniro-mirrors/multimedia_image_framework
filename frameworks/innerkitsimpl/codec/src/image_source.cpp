@@ -6128,6 +6128,15 @@ void ImageSource::RefreshImageSourceByPathName()
     }
 }
 
+void ImageSource::RefreshImageSourceByFd()
+{
+    unique_ptr<SourceStream> refreshedSourceStreamPtr;
+    refreshedSourceStreamPtr = FileSourceStream::CreateSourceStream(srcFd_);
+    if (refreshedSourceStreamPtr != nullptr) {
+        sourceStreamPtr_ = std::move(refreshedSourceStreamPtr);
+    }
+}
+
 std::string ImageSource::GetPixelMapName(PixelMap* pixelMap)
 {
     if (pixelMap == nullptr) {
@@ -6736,8 +6745,7 @@ uint32_t ImageSource::WriteXMPMetadata(std::shared_ptr<XMPMetadata> &xmpMetadata
         RefreshImageSourceByPathName();
     }
     if (srcFd_ != -1) {
-        // TODO:
-        // RefreshImageSourceByFd();
+        RefreshImageSourceByFd();
     }
     Reset();
     IMAGE_LOGD("%{public}s XMP metadata written successfully", __func__);
