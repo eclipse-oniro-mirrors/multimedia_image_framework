@@ -2991,6 +2991,9 @@ uint32_t ExtDecoder::DoHeifToYuvDecode(OHOS::ImagePlugin::DecodeContext &context
     auto decoder = reinterpret_cast<HeifDecoderImpl*>(codec_->getHeifContext());
     CHECK_ERROR_RETURN_RET_LOG(decoder == nullptr, ERR_IMAGE_DATA_UNSUPPORT, "YUV Decode HeifDecoder is nullptr");
     if (ImageUtils::IsSdrPixelMapReuseSuccess(context, info_.width(), info_.height(), reusePixelmap_)) {
+        GridInfo gridInfo = decoder->GetGridInfo();
+        uint32_t res = UpdateHeifYuvDataInfo(context, dstInfo_, gridInfo.tileWidth, gridInfo.tileHeight);
+        CHECK_ERROR_RETURN_RET_LOG(res != SUCCESS, ERR_IMAGE_DATA_UNSUPPORT, "Update heif YuvDataInfo failed");
         IMAGE_LOGI("DoHeifToYuvDecode reusePixelmap success");
     } else {
         uint32_t allocRet = HeifYUVMemAlloc(context, dstInfo_);
