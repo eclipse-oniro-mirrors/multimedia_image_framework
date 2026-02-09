@@ -2992,7 +2992,7 @@ struct MetadataCollection {
 static void InitMetadataAndFlags(napi_env env, ImageSourceAsyncContext *context, MetadataCollection& metaCol)
 {
     metaCol.exifMetadata = MetadataNapi::CreateExifMetadata(env, context->rExifMetadata);
-    metaCol.makerNoteMetadata = MetadataNapi::CreateExifMetadata(env, context->rExifMetadata);
+    metaCol.makerNoteMetadata = MetadataNapi::CreateMakerNoteMetadata(env, context->rExifMetadata);
     metaCol.heifsMetadata = MetadataNapi::CreateHeifsMetadata(env, context->rImageHeifsMetadata);
     metaCol.fragmentMetadata = MetadataNapi::CreateFragmentMetadata(env, context->rFragmentMetadata);
     metaCol.gifMetadata = MetadataNapi::CreateGifMetadata(env, context->rGifMetadata);

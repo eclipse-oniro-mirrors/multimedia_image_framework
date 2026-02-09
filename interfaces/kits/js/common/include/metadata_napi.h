@@ -30,6 +30,11 @@ public:
     MetadataNapi();
     ~MetadataNapi();
 
+    std::shared_ptr<ImageMetadata> GetNativeMetadata() const
+    {
+        return nativeMetadata_;
+    }
+
     static napi_value Init(napi_env env, napi_value exports);
     static napi_value InitExifMetadata(napi_env env, napi_value exports);
     static napi_value InitMakerNoteMetadata(napi_env env, napi_value exports);
@@ -40,6 +45,7 @@ public:
     static napi_value InitRfDataBMetadata(napi_env env, napi_value exports);
     static napi_value CreateMetadata(napi_env env, std::shared_ptr<ImageMetadata> metadata);
     static napi_value CreateExifMetadata(napi_env env, std::shared_ptr<ImageMetadata> metadata);
+    static napi_value CreateMakerNoteMetadata(napi_env env, std::shared_ptr<ImageMetadata> metadata);
     static napi_value CreateHeifsMetadata(napi_env env, std::shared_ptr<ImageMetadata> metadata);
     static napi_value CreateFragmentMetadata(napi_env env, std::shared_ptr<ImageMetadata> metadata);
     static napi_value CreateGifMetadata(napi_env env, std::shared_ptr<ImageMetadata> metadata);
@@ -57,9 +63,12 @@ private:
     static napi_value GetProperties(napi_env env, napi_callback_info info);
     static napi_value SetProperties(napi_env env, napi_callback_info info);
     static napi_value GetAllProperties(napi_env env, napi_callback_info info);
+    static napi_value GetExifAllProperties(napi_env env, napi_callback_info info);
+    static napi_value GetMakerNoteAllProperties(napi_env env, napi_callback_info info);
     static napi_value GetAllPropertiesForBlob(napi_env env, napi_callback_info info);
     static napi_value Clone(napi_env env, napi_callback_info info);
     static napi_value CloneExif(napi_env env, napi_callback_info info);
+    static napi_value CloneMakerNote(napi_env env, napi_callback_info info);
     static napi_value CloneHeifsMetadata(napi_env env, napi_callback_info info);
     static napi_value CloneFragmentMetadata(napi_env env, napi_callback_info info);
     static napi_value CloneGifMetadata(napi_env env, napi_callback_info info);
@@ -67,7 +76,8 @@ private:
     static napi_value CloneRfDataBMetadata(napi_env env, napi_callback_info info);
     static napi_value GetBlob(napi_env env, napi_callback_info info);
     static napi_value SetBlob(napi_env env, napi_callback_info info);
-    static napi_value CreateInstance(napi_env env, napi_callback_info info);
+    static napi_value CreateExifInstance(napi_env env, napi_callback_info info);
+    static napi_value CreateMakerNoteInstance(napi_env env, napi_callback_info info);
     static napi_value CreateHeifsMetadataInstance(napi_env env, napi_callback_info info);
     static napi_value CreateFragmentMetadataInstance(napi_env env, napi_callback_info info);
     static napi_value CreateGifMetadataInstance(napi_env env, napi_callback_info info);
