@@ -5648,7 +5648,7 @@ static bool ParseGainmapMetedata(napi_env env, OHOS::Media::PixelMap &pixelmap,
     HDRVividExtendMetadata extendMetadata;
     #ifdef IMAGE_COLORSPACE_FLAG
     OHOS::ColorManager::ColorSpace colorSpace = pixelmap.InnerGetGrColorSpace();
-    uint16_t SS = ColorUtils::GetPrimaries(colorSpace.GetColorSpaceName());
+    uint16_t SS = ColorUtils::ConvertToCMColor(colorSpace.GetColorSpaceName());
     #else
     uint16_t SS = 0;
     #endif
