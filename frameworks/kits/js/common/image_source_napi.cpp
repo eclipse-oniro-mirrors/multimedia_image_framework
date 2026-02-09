@@ -2939,36 +2939,34 @@ NapiMetadataType GetMetadataTypeByKey(const std::string& key)
     return it != KEY_TYPE_MAP.end() ? it->second : NapiMetadataType::UNKNOWN;
 }
 
-static void CreatePropertyResult(napi_env env, ImageSourceAsyncContext *context, napi_value &successResult,
+static void CreatePropertyResult(napi_env env, MetadataValue value, napi_value &successResult,
     NapiMetadataType type)
 {
-    for (auto &record : context->kValueTypeArray) {
-        if (GetMetadataTypeByKey(record.key) != type) {
-            continue;
-        }
-        switch (record.type) {
-            case PropertyValueType::INT:
-                CreateIntPropertyValue(env, record, successResult);
-                break;
-            case PropertyValueType::DOUBLE:
-                CreateDoublePropertyValue(env, record, successResult);
-                break;
-            case PropertyValueType::STRING:
-                CreateStringPropertyValue(env, record, successResult);
-                break;
-            case PropertyValueType::INT_ARRAY:
-                CreateIntArrayPropertyValue(env, record, successResult);
-                break;
-            case PropertyValueType::DOUBLE_ARRAY:
-                CreateDoubleArrayPropertyValue(env, record, successResult);
-                break;
-            case PropertyValueType::BLOB:
-                CreateBlobPropertyValue(env, record, successResult);
-                break;
-            default:
-                IMAGE_LOGD("Unhandled property type for key: %{public}s", record.key.c_str());
-                break;
-        }
+    if (GetMetadataTypeByKey(value.key) != type) {
+        return;
+    }
+    switch (value.type) {
+        case PropertyValueType::INT:
+            CreateIntPropertyValue(env, value, successResult);
+            break;
+        case PropertyValueType::DOUBLE:
+            CreateDoublePropertyValue(env, value, successResult);
+            break;
+        case PropertyValueType::STRING:
+            CreateStringPropertyValue(env, value, successResult);
+            break;
+        case PropertyValueType::INT_ARRAY:
+            CreateIntArrayPropertyValue(env, value, successResult);
+            break;
+        case PropertyValueType::DOUBLE_ARRAY:
+            CreateDoubleArrayPropertyValue(env, value, successResult);
+            break;
+        case PropertyValueType::BLOB:
+            CreateBlobPropertyValue(env, value, successResult);
+            break;
+        default:
+            IMAGE_LOGD("Unhandled property type for key: %{public}s", value.key.c_str());
+            break;
     }
 }
 
@@ -3013,7 +3011,7 @@ static void ProcessMetadataValueTypeArray(napi_env env, ImageSourceAsyncContext 
                             !metadataValue.doubleArrayValue.empty() ||
                             !metadataValue.bufferValue.empty();
             if (hasValidData) {
-                CreatePropertyResult(env, context, metaCol.exifMetadata, type);
+                CreatePropertyResult(env, metadataValue, metaCol.exifMetadata, type);
                 metaCol.hasExif = true;
             }
         } else if (type == NapiMetadataType::HWMAKERNOTE_METADATA) {
@@ -3022,26 +3020,26 @@ static void ProcessMetadataValueTypeArray(napi_env env, ImageSourceAsyncContext 
                             !metadataValue.doubleArrayValue.empty() ||
                             !metadataValue.bufferValue.empty();
             if (hasValidData) {
-                CreatePropertyResult(env, context, metaCol.makerNoteMetadata, type);
+                CreatePropertyResult(env, metadataValue, metaCol.makerNoteMetadata, type);
                 metaCol.hasMakerNote = true;
             }
         } else if (type == NapiMetadataType::HEIFS_METADATA) {
             if (!metadataValue.intArrayValue.empty()) {
                 context->rImageHeifsMetadata->SetValue(metadataValue.key,
                     std::to_string(metadataValue.intArrayValue[0]));
-                CreatePropertyResult(env, context, metaCol.heifsMetadata, type);
+                CreatePropertyResult(env, metadataValue, metaCol.heifsMetadata, type);
                 metaCol.hasHeifsMetadata = true;
             }
         } else if (type == NapiMetadataType::FRAGMENT_METADATA) {
             if (!metadataValue.intArrayValue.empty()) {
                 context->rFragmentMetadata->SetValue(metadataValue.key, std::to_string(metadataValue.intArrayValue[0]));
-                CreatePropertyResult(env, context, metaCol.fragmentMetadata, type);
+                CreatePropertyResult(env, metadataValue, metaCol.fragmentMetadata, type);
                 metaCol.hasFragmentMetadata = true;
             }
         } else if (type == NapiMetadataType::GIF_METADATA) {
             if (!metadataValue.intArrayValue.empty()) {
                 context->rGifMetadata->SetValue(metadataValue.key, std::to_string(metadataValue.intArrayValue[0]));
-                CreatePropertyResult(env, context, metaCol.gifMetadata, type);
+                CreatePropertyResult(env, metadataValue, metaCol.gifMetadata, type);
                 metaCol.hasGifMetadata = true;
             }
         }
