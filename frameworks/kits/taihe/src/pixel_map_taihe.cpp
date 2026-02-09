@@ -1136,7 +1136,7 @@ static bool SetGainmapMetadata(sptr<SurfaceBuffer> &surfaceBuffer, Media::PixelM
     Media::HDRVividExtendMetadata extendMetadata;
 #ifdef IMAGE_COLORSPACE_FLAG
     ColorManager::ColorSpace colorSpace = pixelMap.InnerGetGrColorSpace();
-    uint16_t primary = Media::ColorUtils::GetPrimaries(colorSpace.GetColorSpaceName());
+    uint16_t primary = Media::ColorUtils::ConvertToCMColor(colorSpace.GetColorSpaceName());
 #else
     uint16_t primary = 0;
 #endif
