@@ -236,6 +236,9 @@ void PixelMap::SetPixelsAddr(void *addr, void *context, uint32_t size, Allocator
         UpdateImageInfo();
     }
     ImageUtils::FlushSurfaceBuffer(this);
+    if (!isUnmarshalling_) {
+        MarkPropertiesDirty();
+    }
 }
 
 void PixelMap::SetPixelsAddr(void *addr, void *context, uint32_t size, AllocatorType type, bool displayOnly)
@@ -1361,6 +1364,9 @@ uint32_t PixelMap::SetImageInfo(ImageInfo &info, bool isReused)
         FreePixelMap();
     }
     imageInfo_ = info;
+    if (!isUnmarshalling_) {
+        MarkPropertiesDirty();
+    }
     return SUCCESS;
 }
 
@@ -2162,6 +2168,7 @@ uint32_t PixelMap::WritePixels(const RWPixelsOptions &opts)
         }
     }
     AddVersionId();
+    MarkDirty();
     return SUCCESS;
 }
 
@@ -2217,6 +2224,7 @@ uint32_t PixelMap::WritePixels(const uint8_t *source, const uint64_t &bufferSize
         }
     }
     AddVersionId();
+    MarkDirty();
     return SUCCESS;
 }
 
@@ -2792,6 +2800,10 @@ bool PixelMap::Marshalling(Parcel &parcel) const
         ImageUtils::FlushSurfaceBuffer(const_cast<PixelMap*>(this));
         isMemoryDirty_ = false;
     }
+    {
+        std::lock_guard<std::mutex> lock(*propertiesDirtyMutex_);
+        isPropertiesDirty_ = false;
+    }
     return true;
 }
 
@@ -2953,6 +2965,7 @@ bool PixelMap::ReadPropertiesFromParcel(Parcel& parcel, PixelMap*& pixelMap, Ima
         IMAGE_LOGE("ReadPropertiesFromParcel: create PixelMap failed");
         return false;
     }
+    pixelMap->isUnmarshalling_ = true;
 
     pixelMap->SetReadVersion(readVersion);
     pixelMap->SetEditable(parcel.ReadBool());
@@ -3194,6 +3207,7 @@ PixelMap *PixelMap::FinishUnmarshalling(PixelMap *pixelMap, Parcel &parcel,
         delete pixelMap;
         return nullptr;
     }
+    pixelMap->isUnmarshalling_ = false;
     return pixelMap;
 }
 
@@ -4676,6 +4690,9 @@ void PixelMap::InnerSetColorSpace(const OHOS::ColorManager::ColorSpace &grColorS
         IMAGE_LOGD("InnerSetColorSpace colorspaceType is %{public}d", colorspaceType);
     }
 #endif
+    if (!isUnmarshalling_) {
+        MarkPropertiesDirty();
+    }
 }
 
 OHOS::ColorManager::ColorSpace PixelMap::InnerGetGrColorSpace()

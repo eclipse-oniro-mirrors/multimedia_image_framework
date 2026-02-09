@@ -732,6 +732,8 @@ public:
     {
         yuvInfo = yuvDataInfo_;
     }
+    NATIVEEXPORT bool IsYuvFormat() const;
+
 #ifdef IMAGE_COLORSPACE_FLAG
     // -------[inner api for ImageSource/ImagePacker codec] it will get a colorspace object pointer----begin----
     NATIVEEXPORT void InnerSetColorSpace(const OHOS::ColorManager::ColorSpace &grColorSpace, bool direct = false);
@@ -857,6 +859,12 @@ public:
         return isMemoryDirty_;
     }
 
+    NATIVEEXPORT bool IsPropertiesDirty()
+    {
+        std::lock_guard<std::mutex> lock(*propertiesDirtyMutex_);
+        return isPropertiesDirty_;
+    }
+
     NATIVEEXPORT void SetEditable(bool editable)
     {
         editable_ = editable;
@@ -960,7 +968,6 @@ protected:
     static bool ReadTlvAttr(std::vector<uint8_t>& buff, ImageInfo& info, std::unique_ptr<AbsMemory>& mem, int32_t& csm);
     bool DoTranslation(TransInfos &infos, const AntiAliasingOption &option = AntiAliasingOption::NONE);
     void UpdateImageInfo();
-    bool IsYuvFormat() const;
     static int32_t ConvertPixelAlpha(const void *srcPixels, const int32_t srcLength, const ImageInfo &srcInfo,
         void *dstPixels, const ImageInfo &dstInfo);
     void CopySurfaceBufferInfo(void *data);
@@ -1037,6 +1044,12 @@ private:
         return readVersion_;
     }
 
+    void MarkPropertiesDirty()
+    {
+        std::lock_guard<std::mutex> lock(*propertiesDirtyMutex_);
+        isPropertiesDirty_ = true;
+    }
+
     // unmap方案, 减少RenderService内存占用
     bool isUnMap_ = false;
     uint64_t useCount_ = 0ULL;
@@ -1044,6 +1057,13 @@ private:
 
     // used to mark whether DMA memory should be refreshed
     mutable bool isMemoryDirty_ = false;
+
+    // used to mark whether properties have been refreshed by user
+    mutable bool isPropertiesDirty_ = false;
+    std::shared_ptr<std::mutex> propertiesDirtyMutex_ = std::make_shared<std::mutex>();
+
+    // used to mark whether pixelmap is unmarshalling
+    bool isUnmarshalling_ = false;
 
     // pixelmap versioning added since 16th of April 2025
     int32_t readVersion_ = PIXELMAP_VERSION_LATEST;
