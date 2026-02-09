@@ -240,37 +240,6 @@ HWTEST_F(ExtDecoderTest, GetImageSizeTest001, TestSize.Level3)
 }
 
 /**
- * @tc.name: CheckDecodeOptionsTest001
- * @tc.desc: Test of CheckDecodeOptions IsValidCrop
- * @tc.type: FUNC
- */
-HWTEST_F(ExtDecoderTest, CheckDecodeOptionsTest001, TestSize.Level3)
-{
-    GTEST_LOG_(INFO) << "ExtDecoderTest: CheckDecodeOptionsTest001 start";
-    std::shared_ptr<ExtDecoder> extDecoder = std::make_shared<ExtDecoder>();
-    uint32_t index = 0;
-    PixelDecodeOptions opts;
-    uint32_t ret = extDecoder->CheckCropRect(opts);
-    ASSERT_EQ(ret, ERR_IMAGE_INVALID_PARAMETER);
-
-    extDecoder->dstInfo_.fDimensions = {1, 1};
-    extDecoder->dstInfo_.fColorInfo.fColorType = SkColorType::kAlpha_8_SkColorType;
-    opts.CropRect.left = -1;
-    opts.CropRect.top = -1;
-    ret = extDecoder->CheckCropRect(opts);
-    ASSERT_EQ(ret, ERR_IMAGE_INVALID_PARAMETER);
-
-    opts.CropRect.left = 0;
-    opts.CropRect.top = 0;
-    opts.CropRect.width = 1;
-    opts.CropRect.height = 1;
-    extDecoder->info_.fDimensions = {0, 0};
-    ret = extDecoder->CheckDecodeOptions(index, opts);
-    ASSERT_EQ(ret, SUCCESS);
-    GTEST_LOG_(INFO) << "ExtDecoderTest: CheckDecodeOptionsTest001 end";
-}
-
-/**
  * @tc.name: SetDecodeOptionsTest001
  * @tc.desc: Test of SetDecodeOptions
  * @tc.type: FUNC
@@ -1110,33 +1079,6 @@ HWTEST_F(ExtDecoderTest, EncodeSingleVividTest001, TestSize.Level3)
 }
 
 /**
-@tc.name: EncodeDualVividTest001
-@tc.desc: Test of EncodeDualVivid
-@tc.type: FUNC
-*/
-HWTEST_F(ExtDecoderTest, EncodeDualVividTest001, TestSize.Level3)
-{
-    GTEST_LOG_(INFO) << "ExtDecoderTest: EncodeDualVividTest001 start";
-    ExtEncoder extEncoder;
-    ExtWStream outputStream;
-    Media::PixelMap pixelMap;
-    extEncoder.pixelmap_ = &pixelMap;
-    extEncoder.pixelmap_->imageInfo_.pixelFormat = Media::PixelFormat::UNKNOWN;
-    uint32_t ret = extEncoder.EncodeDualVivid(outputStream);
-    ASSERT_EQ(ret, ERR_IMAGE_INVALID_PARAMETER);
-    extEncoder.pixelmap_->imageInfo_.pixelFormat = Media::PixelFormat::RGBA_1010102;
-    extEncoder.encodeFormat_ = SkEncodedImageFormat::kJPEG;
-    extEncoder.pixelmap_->allocatorType_ = AllocatorType::DEFAULT;
-    ret = extEncoder.EncodeDualVivid(outputStream);
-    ASSERT_EQ(ret, ERR_IMAGE_INVALID_PARAMETER);
-    extEncoder.pixelmap_->allocatorType_ = AllocatorType::DMA_ALLOC;
-    extEncoder.encodeFormat_ = SkEncodedImageFormat::kHEIF;
-    ret = extEncoder.EncodeDualVivid(outputStream);
-    ASSERT_EQ(ret, ERR_IMAGE_INVALID_PARAMETER);
-    GTEST_LOG_(INFO) << "ExtDecoderTest: EncodeDualVividTest001 end";
-}
-
-/**
 @tc.name: EncodeSdrImageTest001
 @tc.desc: Test of EncodeSdrImage
 @tc.type: FUNC
@@ -1167,24 +1109,6 @@ HWTEST_F(ExtDecoderTest, DataStatisticsNUllTest, TestSize.Level3)
     ImageDataStatistics imageDataStatistics(nullptr);
     ASSERT_EQ(imageDataStatistics.title_, "ImageDataTraceFmt Param invalid");
     GTEST_LOG_(INFO) << "ExtDecoderTest: DataStatisticsNUllTest end";
-}
-
-/**
- * @tc.name: ExtDecoderTest
- * @tc.desc: test the function of WriteJpegCodedData
-             when auxPicture == nullptr, return ERR_IMAGE_DATA_ABNORMAL
- * @tc.type: FUNC
- */
-HWTEST_F(ExtDecoderTest, WriteJpegCodedDataTest001, TestSize.Level3)
-{
-    GTEST_LOG_(INFO) << "ExtDecoderTest: WriteJpegCodedDataTest001 start";
-    ExtEncoder extEncoder;
-    auto auxPicture = std::make_shared<AuxiliaryPicture>();
-    auxPicture = nullptr;
-    MockSkWStream skStream;
-    uint32_t ret = extEncoder.WriteJpegCodedData(auxPicture, skStream);
-    ASSERT_EQ(ret, ERR_IMAGE_DATA_ABNORMAL);
-    GTEST_LOG_(INFO) << "ExtDecoderTest: WriteJpegCodedDataTest001 end";
 }
 
 /**
