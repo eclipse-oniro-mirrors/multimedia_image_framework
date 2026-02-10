@@ -321,6 +321,11 @@ bool IsYUV(const PixelFormat &format)
         format == PixelFormat::YCBCR_P010 || format == PixelFormat::YCRCB_P010;
 }
 
+bool IsYuvP010(const PixelFormat &format)
+{
+    return format == PixelFormat::YCBCR_P010 || format == PixelFormat::YCRCB_P010;
+}
+
 int32_t PixelMap::GetRGBxRowDataSize(const ImageInfo& info)
 {
     if ((info.pixelFormat <= PixelFormat::UNKNOWN || info.pixelFormat >= PixelFormat::EXTERNAL_MAX) ||
