@@ -891,6 +891,32 @@ const ImageMetadata::PropertyMapPtr ExifMetadata::GetAllProperties()
     return result;
 }
 
+const ImageMetadata::PropertyMapPtr ExifMetadata::GetExifAllProperties()
+{
+    ImageMetadata::PropertyMapPtr result = std::make_shared<ImageMetadata::PropertyMap>();
+    std::string value;
+    auto exifMetadataMap = GetExifMetadataMap();
+    for (const auto& [key, type] : exifMetadataMap) {
+        if (GetValue(key, value) == SUCCESS) {
+            result->insert(std::make_pair(key, value));
+        }
+    }
+    return result;
+}
+
+const ImageMetadata::PropertyMapPtr ExifMetadata::GetMakerNoteAllProperties()
+{
+    ImageMetadata::PropertyMapPtr result = std::make_shared<ImageMetadata::PropertyMap>();
+    std::string value;
+    auto hwMetadataMap = GetHwMetadataMap();
+    for (const auto& [key, type] : hwMetadataMap) {
+        if (GetValue(key, value) == SUCCESS) {
+            result->insert(std::make_pair(key, value));
+        }
+    }
+    return result;
+}
+
 std::shared_ptr<ImageMetadata> ExifMetadata::CloneMetadata()
 {
     return Clone();

@@ -46,6 +46,8 @@ public:
     virtual bool SetValue(const std::string &key, const std::string &value) override;
     virtual bool RemoveEntry(const std::string &key) override;
     virtual const ImageMetadata::PropertyMapPtr GetAllProperties() override;
+    const ImageMetadata::PropertyMapPtr GetExifAllProperties();
+    const ImageMetadata::PropertyMapPtr GetMakerNoteAllProperties();
     virtual std::shared_ptr<ImageMetadata> CloneMetadata() override;
     ExifData* GetExifData();
     bool CreateExifdata();
