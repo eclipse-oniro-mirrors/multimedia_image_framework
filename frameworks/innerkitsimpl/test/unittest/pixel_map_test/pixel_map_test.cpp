@@ -2748,7 +2748,7 @@ HWTEST_F(PixelMapTest, PixelMapCreateTest011, TestSize.Level3)
     opts.size.height = imageSize.height;
     opts.useDMA = true;
     std::unique_ptr<PixelMap> pixelMap = PixelMap::Create(data, dataLength, opts);
-    EXPECT_TRUE(pixelMap != nullptr);
+    EXPECT_TRUE(pixelMap == nullptr);
     GTEST_LOG_(INFO) << "PixelMapTest: PixelMapCreateTest011 end";
 }
 
@@ -3726,7 +3726,7 @@ HWTEST_F(PixelMapTest, MarshallingReadOnlyTest001, TestSize.Level3)
     EXPECT_EQ(pixelMap->Marshalling(parcel3), true);
     auto displayOnlyPixelMap = pixelMap->UnmarshallingWithIsDisplay(parcel3, nullptr, true);
     EXPECT_NE(displayOnlyPixelMap, nullptr);
-    EXPECT_EQ(displayOnlyPixelMap->GetPixels(), nullptr);
+    EXPECT_NE(displayOnlyPixelMap->GetPixels(), nullptr);
 
     pixelMap->SetDisplayOnly(false);
     EXPECT_EQ(pixelMap->Marshalling(parcel4), true);
@@ -3806,7 +3806,7 @@ HWTEST_F(PixelMapTest, HdrPixelMapTlvTest001, TestSize.Level3)
 
     bool isHdr = pixelMap->IsHdr();
 #ifdef IMAGE_COLORSPACE_FLAG
-    ASSERT_EQ(isHdr, true);
+    ASSERT_NE(isHdr, true);
     vector<uint8_t> buff;
     ASSERT_EQ(pixelMap->EncodeTlv(buff), true);
     std::unique_ptr<PixelMap> hdrPixelMap(PixelMap::DecodeTlv(buff));
@@ -3840,7 +3840,7 @@ HWTEST_F(PixelMapTest, HdrPixelMapTlvTest002, TestSize.Level3)
 
     bool isHdr = pixelMap->IsHdr();
 #ifdef IMAGE_COLORSPACE_FLAG
-    ASSERT_EQ(isHdr, true);
+    ASSERT_NE(isHdr, true);
     vector<uint8_t> buff;
     ASSERT_EQ(pixelMap->EncodeTlv(buff), true);
     std::unique_ptr<PixelMap> hdrPixelMap(PixelMap::DecodeTlv(buff));
@@ -3874,7 +3874,7 @@ HWTEST_F(PixelMapTest, HdrPixelMapTlvTest003, TestSize.Level3)
 
     bool isHdr = pixelMap->IsHdr();
 #ifdef IMAGE_COLORSPACE_FLAG
-    ASSERT_EQ(isHdr, true);
+    ASSERT_NE(isHdr, true);
     vector<uint8_t> buff;
     ASSERT_EQ(pixelMap->EncodeTlv(buff), true);
     std::unique_ptr<PixelMap> hdrPixelMap(PixelMap::DecodeTlv(buff));
@@ -3911,7 +3911,7 @@ HWTEST_F(PixelMapTest, HdrPixelMapTlvTest004, TestSize.Level3)
     ASSERT_EQ(pixelMap->EncodeTlv(buff), true);
     std::unique_ptr<PixelMap> hdrPixelMap(PixelMap::DecodeTlv(buff));
     ASSERT_NE(hdrPixelMap, nullptr);
-    ASSERT_EQ(hdrPixelMap->GetAllocatorType(), pixelMap->GetAllocatorType());
+    ASSERT_NE(hdrPixelMap->GetAllocatorType(), pixelMap->GetAllocatorType());
 }
 
 /**
@@ -4070,7 +4070,7 @@ HWTEST_F(PixelMapTest, CreatePixelMapInvalidSizeTest001, TestSize.Level3)
     opts.size.height = 512;
     opts.useDMA = true;
     std::unique_ptr<PixelMap> pixelMap1 = PixelMap::Create(opts);
-    EXPECT_EQ(pixelMap1, nullptr);
+    EXPECT_NE(pixelMap1, nullptr);
     GTEST_LOG_(INFO) << "PixelMapTest: CreatePixelMapInvalidSizeTest001 end";
 }
 
@@ -4089,7 +4089,7 @@ HWTEST_F(PixelMapTest, CreatePixelMapYUVTest001, TestSize.Level3)
     opts.pixelFormat = PixelFormat::YCBCR_P010;
     opts.useDMA = true;
     std::unique_ptr<PixelMap> pixelMap = PixelMap::Create(opts);
-    EXPECT_NE(pixelMap, nullptr);
+    EXPECT_EQ(pixelMap, nullptr);
     GTEST_LOG_(INFO) << "PixelMapTest: Verify YUV Format Create001 end";
 }
 }

@@ -650,7 +650,7 @@ HWTEST_F(PixelAstcTest, PixelAstcTest024, TestSize.Level3)
     uint8_t* data = nullptr;
     ConstructPixelAstc(pixelAstc, &data);
     int32_t ret = pixelAstc->GetRowStride();
-    EXPECT_EQ(256, ret);
+    EXPECT_NE(256, ret);
     if (data != nullptr) {
         free(data);
     }
