@@ -3015,7 +3015,7 @@ bool PixelMap::ReadBufferSizeFromParcel(Parcel& parcel, const ImageInfo& imgInfo
         expectedBufferSize =
             static_cast<uint64_t>(imgInfo.size.height) * alignedWidth * ImageUtils::GetPixelBytes(imgInfo.pixelFormat);
     }
-    if (!IsYUV(imgInfo.pixelFormat) && 
+    if (!IsYUV(imgInfo.pixelFormat) &&
         (expectedBufferSize > (memInfo.allocatorType == AllocatorType::HEAP_ALLOC ? PIXEL_MAP_MAX_RAM_SIZE : INT_MAX) ||
         static_cast<uint64_t>(memInfo.bufferSize) != expectedBufferSize)) {
         IMAGE_LOGE("[PixelMap] ReadBufferSizeFromParcel: bufferSize invalid, expect:%{public}llu, actual:%{public}d",
