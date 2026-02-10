@@ -49,8 +49,8 @@ ohos_fuzztest("ImageJpegYuvPluginFuzzTest") {
     "hisysevent:libhisysevent",
     "libexif:libexif",
     "libjpeg-turbo:turbojpeg",
-    "skia:libjpeg",
-    "skia:piex",
+    "skia:libjpegm133",
+    "skia:piexm133",
     "skia:skia_canvaskit",
     "zlib:libz",
   ]

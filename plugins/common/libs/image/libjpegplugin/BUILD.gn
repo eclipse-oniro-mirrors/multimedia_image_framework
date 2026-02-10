@@ -112,7 +112,7 @@ ohos_shared_library("jpegplugin") {
       if (image_use_new_skia) {
         external_deps += [ "skia:libjpegm133" ]
       } else {
-        external_deps += [ "skia:libjpeg" ]
+        external_deps += [ "skia:libjpegm133" ]
       }
     }
     if (image_use_new_skia) {

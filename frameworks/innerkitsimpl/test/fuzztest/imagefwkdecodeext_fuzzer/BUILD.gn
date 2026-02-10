@@ -69,6 +69,6 @@ ohos_fuzztest("ImageFwkDecodeExtFuzzTest") {
     "libexif:libexif",
     "libjpeg-turbo:turbojpeg",
     "ipc:ipc_single",
-    "skia:piex",
+    "skia:piexm133",
   ]
 }
