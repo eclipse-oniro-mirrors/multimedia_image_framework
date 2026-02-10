@@ -3138,8 +3138,7 @@ static bool CheckYuvPixelMapBufferSize(const ImageInfo& imgInfo, PixelMemInfo& p
         SurfaceBuffer* sb = static_cast<SurfaceBuffer*>(pixelMemInfo.context);
         uint32_t sbSize = sb->GetSize();
         if (memBufSizeInt <= 0 || sbSize == 0) {
-            IMAGE_LOGE("Invalid YUV DMA buffer size: memBufSize[%{public}d]/sbSize[%{public}u]",
-                memBufSizeInt, sbSize);
+            IMAGE_LOGE("Invalid YUV buffer size: memBufSize[%{public}d]/sbSize[%{public}u]", memBufSizeInt, sbSize);
             return false;
         }
 
@@ -3150,10 +3149,10 @@ static bool CheckYuvPixelMapBufferSize(const ImageInfo& imgInfo, PixelMemInfo& p
         cond = ImageUtils::CheckMulOverflow(imgInfo.size.width, imgInfo.size.height, pixelBytes);
         CHECK_ERROR_RETURN_RET_LOG(cond, false, "Invalid pixelmap params width:%{public}d, height:%{public}d",
                                    imgInfo.size.width, imgInfo.size.height);
-        uint32_t byteCount = static_cast<uint32_t>(imgInfo.size.width * imgInfo.size.height * pixelBytes); // yuv perl pixel 1.5 Bytes but return int so return 2
+        // Yuv420 perl pixel 1.5 Bytes but return int so return 2
+        uint32_t byteCount = static_cast<uint32_t>(imgInfo.size.width * imgInfo.size.height * pixelBytes);
         if (memBufSize != byteCount && memBufSize > sbSize) { // If return 2, the verification is skipped
-            IMAGE_LOGE("Invalid DMA buffer size: memBufSize[%{public}u] > sbSize[%{public}u]",
-                memBufSize, sbSize);
+            IMAGE_LOGE("Invalid YUV buffer size: memBufSize[%{public}u] > sbSize[%{public}u]", memBufSize, sbSize);
             return false;
         }
 
@@ -3162,10 +3161,8 @@ static bool CheckYuvPixelMapBufferSize(const ImageInfo& imgInfo, PixelMemInfo& p
         uint32_t YuvPlaneSize = yDataInfo.yStride * yDataInfo.yHeight + yDataInfo.uvStride * yDataInfo.uvHeight;
         uint32_t calcSize = YuvPlaneSize;
         if (IsYuvP010(imgInfo.pixelFormat)) {
-            if (YuvPlaneSize > UINT32_MAX / NUM_2) {
-                IMAGE_LOGE("Invalid YUV P010 buffer size: overflow (exceeds UINT32_MAX)");
-                return false;
-            }
+            cond = YuvPlaneSize > UINT32_MAX / NUM_2;
+            CHECK_ERROR_RETURN_RET_LOG(cond, false, "Invalid YUV P010 buffer size: overflow (exceeds UINT32_MAX)");
             calcSize = YuvPlaneSize * NUM_2; // YuvP010 format: 10-bit per pixel (2 bytes actual, need double)
         }
         if (calcSize > sbSize) {
