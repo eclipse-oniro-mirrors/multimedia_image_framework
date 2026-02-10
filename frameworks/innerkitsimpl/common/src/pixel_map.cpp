@@ -3010,7 +3010,6 @@ bool PixelMap::ReadBufferSizeFromParcel(Parcel& parcel, const ImageInfo& imgInfo
         ImageInfo astcImgInfo = {realSize, imgInfo.pixelFormat};
         expectedBufferSize = ImageUtils::GetAstcBytesCount(astcImgInfo);
     }
-
     if (imgInfo.pixelFormat == PixelFormat::RGBA_F16) {
         int32_t alignedWidth = ((imgInfo.size.width + NUM_1) / NUM_2) * NUM_2;
         expectedBufferSize =
