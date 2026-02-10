@@ -3260,6 +3260,7 @@ PixelMap *PixelMap::FinishUnmarshalling(PixelMap *pixelMap, Parcel &parcel,
         delete pixelMap;
         return nullptr;
     }
+    pixelMap->isUnmarshalling_ = false;
     return pixelMap;
 }
 
