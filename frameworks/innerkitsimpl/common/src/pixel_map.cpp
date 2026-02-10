@@ -3171,7 +3171,7 @@ static bool CheckYuvPixelMapBufferSize(const ImageInfo& imgInfo, PixelMemInfo& p
         }
     } else {
         uint64_t expectedBufferSize = static_cast<uint64_t>(ImageUtils::GetByteCount(imgInfo));
-        if (!ImageUtils::CheckBufferSizeIsValid(memBufSizeInt, expectedBufferSize, pixelMemInfo.allocatorType)) {
+        if (!ImageUtils::CheckBufferSizeIsVaild(memBufSizeInt, expectedBufferSize, pixelMemInfo.allocatorType)) {
             IMAGE_LOGE("Invalid buffer size: memBufSize[%{public}d] mismatch expect[%{public}lu]",
                 memBufSizeInt, expectedBufferSize);
             return false;
