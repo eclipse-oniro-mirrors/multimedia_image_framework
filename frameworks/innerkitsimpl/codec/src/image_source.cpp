@@ -2152,9 +2152,8 @@ std::vector<MetadataValue> ImageSource::GetAllPropertiesWithType()
         }
     }
 #endif
-
-    auto processKeys = [&](const std::set<std::string>& keys) {
-        for (const auto& key : keys) {
+    auto processMap = [&](const std::map<std::string, PropertyValueType>& metadataMap) {
+        for (const auto& [key, type] : metadataMap) {
             MetadataValue entry;
             if (exifMetadata_->GetValueByType(key, entry) != SUCCESS) {
                 IMAGE_LOGW("Failed to get property: %{public}s", key.c_str());
@@ -2170,8 +2169,8 @@ std::vector<MetadataValue> ImageSource::GetAllPropertiesWithType()
         }
     };
 
-    processKeys(ExifMetadatFormatter::GetRWKeys());
-    processKeys(ExifMetadatFormatter::GetROKeys());
+    processMap(ExifMetadata::GetExifMetadataMap());
+    processMap(ExifMetadata::GetHwMetadataMap());
 
     GetFragmentPropertiesWithType(result);
     IMAGE_LOGD("Retrieved %{public}zu metadata properties", result.size());
@@ -2182,9 +2181,16 @@ uint32_t ImageSource::RemoveAllProperties()
 {
     CHECK_ERROR_RETURN_RET_LOG(!exifMetadata_ && isExifReadFailed_, ERR_IMAGE_DECODE_EXIF_UNSUPPORT,
         "Exif metadata not initialized");
-    std::set<std::string> keys = ExifMetadatFormatter::GetRWKeys();
-    std::set<std::string> roKeys = ExifMetadatFormatter::GetROKeys();
-    keys.insert(roKeys.begin(), roKeys.end());
+    std::set<std::string> keys;
+    const auto& exifMap = ExifMetadata::GetExifMetadataMap();
+    for (const auto& [key, type] : exifMap) {
+        keys.insert(key);
+    }
+    const auto& hwMap = ExifMetadata::GetHwMetadataMap();
+    for (const auto& [key, type] : hwMap) {
+        keys.insert(key);
+    }
+    
     return RemoveImageProperties(0, keys);
 }
 
@@ -2263,7 +2269,7 @@ static uint32_t ParseUInt32Key(ImageMetadata::PropertyMapPtr propertiesPtr, std:
 
 uint32_t ImageSource::GetGifProperty(uint32_t index, const std::string &key, MetadataValue &value)
 {
-    uint32_t errorCode;
+    uint32_t errorCode = 0;
     std::shared_ptr<GifMetadata> gifMetadata = GetGifMetadata(index, errorCode);
     if (gifMetadata == nullptr) {
         IMAGE_LOGE("Get gif metadata failed");
@@ -2299,7 +2305,7 @@ uint32_t ImageSource::GetGifProperty(uint32_t index, const std::string &key, Met
 
 uint32_t ImageSource::GetFragmentProperty(const std::string &key, MetadataValue &value)
 {
-    uint32_t errorCode;
+    uint32_t errorCode = 0;
     std::shared_ptr<FragmentMetadata> fragmentMetadata = GetFragmentMetadata(errorCode);
     if (fragmentMetadata == nullptr) {
         IMAGE_LOGE("Get fragment metadata failed");
@@ -4728,7 +4734,7 @@ bool ImageSource::DecodeJpegGainMap(ImageHdrType hdrType, float scale, DecodeCon
     }
     CHECK_ERROR_RETURN_RET_LOG(gainMapStream == nullptr, false, "[ImageSource] create gainmap stream fail, gainmap"
         " offset is %{public}d", gainMapOffset);
-    uint32_t errorCode;
+    uint32_t errorCode = 0;
     jpegGainmapDecoder_ = std::unique_ptr<AbsImageDecoder>(
         DoCreateDecoder(InnerFormat::IMAGE_EXTENDED_CODEC, pluginServer_, *gainMapStream, errorCode));
     if (jpegGainmapDecoder_ == nullptr) {

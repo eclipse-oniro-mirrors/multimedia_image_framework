@@ -2932,7 +2932,7 @@ struct MetadataCollection {
 static void InitMetadataAndFlags(napi_env env, ImageSourceAsyncContext *context, MetadataCollection& metaCol)
 {
     metaCol.exifMetadata = MetadataNapi::CreateExifMetadata(env, context->rExifMetadata);
-    metaCol.makerNoteMetadata = MetadataNapi::CreateExifMetadata(env, context->rExifMetadata);
+    metaCol.makerNoteMetadata = MetadataNapi::CreateMakerNoteMetadata(env, context->rExifMetadata);
     metaCol.heifsMetadata = MetadataNapi::CreateHeifsMetadata(env, context->rImageHeifsMetadata);
     metaCol.fragmentMetadata = MetadataNapi::CreateFragmentMetadata(env, context->rFragmentMetadata);
     metaCol.gifMetadata = MetadataNapi::CreateGifMetadata(env, context->rGifMetadata);
@@ -3660,8 +3660,8 @@ static std::unique_ptr<ImageSourceAsyncContext> UnwrapContextForReadImageMetadat
         uint32_t errorCode;
         napi_get_value_int32(env, argValue[NUM_1], &index);
         uint32_t frameCount = context->rImageSource->GetFrameCount(errorCode);
-        IMG_NAPI_CHECK_RET_D((errorCode == SUCCESS) && (index >= 0) && (index < frameCount), nullptr,
-            IMAGE_LOGE("Invalid readImageMetadata index"));
+        IMG_NAPI_CHECK_RET_D((errorCode == SUCCESS) && (index >= 0) &&
+            (static_cast<uint32_t>(index) < frameCount), nullptr, IMAGE_LOGE("Invalid readImageMetadata index"));
         context->index = static_cast<uint32_t>(index);
         IMAGE_LOGD("index is %{public}d", index);
     }

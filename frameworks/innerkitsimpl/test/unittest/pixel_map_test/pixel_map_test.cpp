@@ -3455,6 +3455,174 @@ HWTEST_F(PixelMapTest, MemoryDirtyPixelMapTest, TestSize.Level3)
 }
 
 /**
+ * @tc.name: PropertiesDirtyPixelMapTest
+ * @tc.desc: Test PropertiesDirty PixelMap
+ * @tc.type: FUNC
+ */
+HWTEST_F(PixelMapTest, PropertiesDirtyPixelMapTest, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PixelMapTest: PropertiesDirtyPixelMapTest start";
+    auto pixelMap = ConstructPixmap(PixelFormat::ALPHA_8, AlphaType::IMAGE_ALPHA_TYPE_OPAQUE);
+    EXPECT_NE(nullptr, pixelMap);
+    EXPECT_EQ(true, pixelMap->IsPropertiesDirty());
+    Parcel parcel;
+    EXPECT_TRUE(pixelMap->Marshalling(parcel));
+    EXPECT_EQ(false, pixelMap->IsPropertiesDirty());
+    pixelMap->MarkPropertiesDirty();
+    EXPECT_EQ(true, pixelMap->IsPropertiesDirty());
+    GTEST_LOG_(INFO) << "PixelMapTest: PropertiesDirtyPixelMapTest end";
+}
+
+/**
+ * @tc.name: IsYuvFormatPixelMapTest
+ * @tc.desc: Test IsYuvFormat PixelMap
+ * @tc.type: FUNC
+ */
+HWTEST_F(PixelMapTest, IsYuvFormatPixelMapTest, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PixelMapTest: IsYuvFormatPixelMapTest start";
+    auto pixelMap = ConstructPixmap(PixelFormat::ALPHA_8, AlphaType::IMAGE_ALPHA_TYPE_OPAQUE);
+    EXPECT_NE(nullptr, pixelMap);
+    EXPECT_EQ(false, pixelMap->IsYuvFormat());
+    pixelMap->imageInfo_.pixelFormat = PixelFormat::NV21;
+    EXPECT_EQ(true, pixelMap->IsYuvFormat());
+    pixelMap->imageInfo_.pixelFormat = PixelFormat::NV12;
+    EXPECT_EQ(true, pixelMap->IsYuvFormat());
+    pixelMap->imageInfo_.pixelFormat = PixelFormat::YCBCR_P010;
+    EXPECT_EQ(true, pixelMap->IsYuvFormat());
+    pixelMap->imageInfo_.pixelFormat = PixelFormat::YCRCB_P010;
+    EXPECT_EQ(true, pixelMap->IsYuvFormat());
+    GTEST_LOG_(INFO) << "PixelMapTest: IsYuvFormatPixelMapTest end";
+}
+
+/**
+ * @tc.name: IsUnmarshallingTest001
+ * @tc.desc: Test IsUnmarshalling PixelMap
+ * @tc.type: FUNC
+ */
+HWTEST_F(PixelMapTest, IsUnmarshallingTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PixelMapTest: IsUnmarshallingTest001 start";
+    auto pixelMapIn = ConstructPixmap(PixelFormat::ALPHA_8, AlphaType::IMAGE_ALPHA_TYPE_OPAQUE);
+    EXPECT_NE(nullptr, pixelMapIn);
+    EXPECT_EQ(false, pixelMapIn->isUnmarshalling_);
+    Parcel parcel;
+    EXPECT_TRUE(pixelMapIn->Marshalling(parcel));
+
+    ImageInfo imgInfo;
+    PixelMemInfo pixelMemInfo;
+    PIXEL_MAP_ERR error;
+    PixelMap *pixelMapOut = PixelMap::StartUnmarshalling(parcel, imgInfo, pixelMemInfo, error);
+    EXPECT_NE(nullptr, pixelMapOut);
+    EXPECT_EQ(true, pixelMapOut->isUnmarshalling_);
+
+    pixelMapOut->SetPixelsAddr(nullptr, nullptr, 0, AllocatorType::SHARE_MEM_ALLOC, nullptr);
+    EXPECT_EQ(true, pixelMapOut->isUnmarshalling_);
+
+    EXPECT_TRUE(PixelMap::ReadMemInfoFromParcel(parcel, pixelMemInfo, error, nullptr));
+    EXPECT_EQ(true, pixelMapOut->isUnmarshalling_);
+
+    pixelMapOut->SetPixelsAddr(nullptr, nullptr, 0, AllocatorType::SHARE_MEM_ALLOC, nullptr);
+    EXPECT_EQ(true, pixelMapOut->isUnmarshalling_);
+
+    pixelMapOut = PixelMap::FinishUnmarshalling(pixelMapOut, parcel, imgInfo, pixelMemInfo, error);
+    EXPECT_NE(nullptr, pixelMapOut);
+    EXPECT_EQ(false, pixelMapOut->isUnmarshalling_);
+
+    pixelMapOut->SetPixelsAddr(nullptr, nullptr, 0, AllocatorType::SHARE_MEM_ALLOC, nullptr);
+    EXPECT_EQ(false, pixelMapOut->isUnmarshalling_);
+    GTEST_LOG_(INFO) << "PixelMapTest: IsUnmarshallingTest001 end";
+}
+
+/**
+ * @tc.name: IsUnmarshallingTest002
+ * @tc.desc: Test IsUnmarshalling PixelMap
+ * @tc.type: FUNC
+ */
+HWTEST_F(PixelMapTest, IsUnmarshallingTest002, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PixelMapTest: IsUnmarshallingTest002 start";
+    auto pixelMapIn = ConstructPixmap(PixelFormat::ALPHA_8, AlphaType::IMAGE_ALPHA_TYPE_OPAQUE);
+    EXPECT_NE(nullptr, pixelMapIn);
+    EXPECT_EQ(false, pixelMapIn->isUnmarshalling_);
+    Parcel parcel;
+    EXPECT_TRUE(pixelMapIn->Marshalling(parcel));
+
+    ImageInfo imgInfo;
+    PixelMemInfo pixelMemInfo;
+    PIXEL_MAP_ERR error;
+    PixelMap *pixelMapOut = PixelMap::StartUnmarshalling(parcel, imgInfo, pixelMemInfo, error);
+    EXPECT_NE(nullptr, pixelMapOut);
+    EXPECT_EQ(true, pixelMapOut->isUnmarshalling_);
+
+    imgInfo.size.width = 1;
+    imgInfo.size.height = 1;
+    imgInfo.pixelFormat = PixelFormat::ALPHA_8;
+    EXPECT_EQ(Media::SUCCESS, pixelMapOut->SetImageInfo(imgInfo, true));
+    EXPECT_EQ(true, pixelMapOut->isUnmarshalling_);
+
+    EXPECT_TRUE(PixelMap::ReadMemInfoFromParcel(parcel, pixelMemInfo, error, nullptr));
+    EXPECT_EQ(true, pixelMapOut->isUnmarshalling_);
+
+    EXPECT_EQ(Media::SUCCESS, pixelMapOut->SetImageInfo(imgInfo, true));
+    EXPECT_EQ(true, pixelMapOut->isUnmarshalling_);
+
+    pixelMapOut = PixelMap::FinishUnmarshalling(pixelMapOut, parcel, imgInfo, pixelMemInfo, error);
+    EXPECT_NE(nullptr, pixelMapOut);
+    EXPECT_EQ(false, pixelMapOut->isUnmarshalling_);
+
+    EXPECT_EQ(Media::SUCCESS, pixelMapOut->SetImageInfo(imgInfo, true));
+    EXPECT_EQ(false, pixelMapOut->isUnmarshalling_);
+    GTEST_LOG_(INFO) << "PixelMapTest: IsUnmarshallingTest002 end";
+}
+
+/**
+ * @tc.name: IsUnmarshallingTest003
+ * @tc.desc: Test IsUnmarshalling PixelMap
+ * @tc.type: FUNC
+ */
+HWTEST_F(PixelMapTest, IsUnmarshallingTest003, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PixelMapTest: IsUnmarshallingTest003 start";
+    auto pixelMapIn = ConstructPixmap(PixelFormat::ALPHA_8, AlphaType::IMAGE_ALPHA_TYPE_OPAQUE);
+    EXPECT_NE(nullptr, pixelMapIn);
+    EXPECT_EQ(false, pixelMapIn->isUnmarshalling_);
+    Parcel parcel;
+    EXPECT_TRUE(pixelMapIn->Marshalling(parcel));
+
+    ImageInfo imgInfo;
+    PixelMemInfo pixelMemInfo;
+    PIXEL_MAP_ERR error;
+    PixelMap *pixelMapOut = PixelMap::StartUnmarshalling(parcel, imgInfo, pixelMemInfo, error);
+    EXPECT_NE(nullptr, pixelMapOut);
+    EXPECT_EQ(true, pixelMapOut->isUnmarshalling_);
+
+#ifdef IMAGE_COLORSPACE_FLAG
+    OHOS::ColorManager::ColorSpace grColorSpace(OHOS::ColorManager::ColorSpaceName::NONE);
+    pixelMapOut->InnerSetColorSpace(grColorSpace, false);
+    EXPECT_EQ(true, pixelMapOut->isUnmarshalling_);
+#endif
+
+    EXPECT_TRUE(PixelMap::ReadMemInfoFromParcel(parcel, pixelMemInfo, error, nullptr));
+    EXPECT_EQ(true, pixelMapOut->isUnmarshalling_);
+
+#ifdef IMAGE_COLORSPACE_FLAG
+    pixelMapOut->InnerSetColorSpace(grColorSpace, false);
+    EXPECT_EQ(true, pixelMapOut->isUnmarshalling_);
+#endif
+
+    pixelMapOut = PixelMap::FinishUnmarshalling(pixelMapOut, parcel, imgInfo, pixelMemInfo, error);
+    EXPECT_NE(nullptr, pixelMapOut);
+    EXPECT_EQ(false, pixelMapOut->isUnmarshalling_);
+
+#ifdef IMAGE_COLORSPACE_FLAG
+    pixelMapOut->InnerSetColorSpace(grColorSpace, false);
+    EXPECT_EQ(false, pixelMapOut->isUnmarshalling_);
+#endif
+    GTEST_LOG_(INFO) << "PixelMapTest: IsUnmarshallingTest003 end";
+}
+
+/**
  * @tc.name: ConvertFromAstcPixelMapTest
  * @tc.desc: Test ConvertFromAstc PixelMap
  * @tc.type: FUNC
