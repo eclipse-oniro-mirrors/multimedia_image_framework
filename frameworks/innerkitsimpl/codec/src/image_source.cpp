@@ -2269,7 +2269,7 @@ static uint32_t ParseUInt32Key(ImageMetadata::PropertyMapPtr propertiesPtr, std:
 
 uint32_t ImageSource::GetGifProperty(uint32_t index, const std::string &key, MetadataValue &value)
 {
-    uint32_t errorCode;
+    uint32_t errorCode = 0;
     std::shared_ptr<GifMetadata> gifMetadata = GetGifMetadata(index, errorCode);
     if (gifMetadata == nullptr) {
         IMAGE_LOGE("Get gif metadata failed");
@@ -2305,7 +2305,7 @@ uint32_t ImageSource::GetGifProperty(uint32_t index, const std::string &key, Met
 
 uint32_t ImageSource::GetFragmentProperty(const std::string &key, MetadataValue &value)
 {
-    uint32_t errorCode;
+    uint32_t errorCode = 0;
     std::shared_ptr<FragmentMetadata> fragmentMetadata = GetFragmentMetadata(errorCode);
     if (fragmentMetadata == nullptr) {
         IMAGE_LOGE("Get fragment metadata failed");
@@ -4734,7 +4734,7 @@ bool ImageSource::DecodeJpegGainMap(ImageHdrType hdrType, float scale, DecodeCon
     }
     CHECK_ERROR_RETURN_RET_LOG(gainMapStream == nullptr, false, "[ImageSource] create gainmap stream fail, gainmap"
         " offset is %{public}d", gainMapOffset);
-    uint32_t errorCode;
+    uint32_t errorCode = 0;
     jpegGainmapDecoder_ = std::unique_ptr<AbsImageDecoder>(
         DoCreateDecoder(InnerFormat::IMAGE_EXTENDED_CODEC, pluginServer_, *gainMapStream, errorCode));
     if (jpegGainmapDecoder_ == nullptr) {
