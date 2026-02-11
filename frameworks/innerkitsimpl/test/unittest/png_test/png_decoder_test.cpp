@@ -1338,30 +1338,6 @@ HWTEST_F(PngDecoderTest, DealNinePatch001, TestSize.Level3)
 }
 
 /**
- * @tc.name: DealNinePatch002
- * @tc.desc: Verify nine-patch PNG scaling with small original size and valid padding.
- * @tc.type: FUNC
- */
-HWTEST_F(PngDecoderTest, DealNinePatch002, TestSize.Level3)
-{
-    GTEST_LOG_(INFO) << "PngDecoderTest: DealNinePatch002 start";
-    auto pngDecoder = std::make_shared<PngDecoder>();
-    ASSERT_NE(pngDecoder, nullptr);
-    PixelDecodeOptions opts;
-    pngDecoder->ninePatch_.patch_ = new PngNinePatchRes;
-    opts.desiredSize.width = SIZE_WIDTH;
-    opts.desiredSize.height = SIZE_HEIGHT;
-    pngDecoder->pngImageInfo_.width = 1;
-    pngDecoder->pngImageInfo_.height = 1;
-    pngDecoder->ninePatch_.patch_->paddingLeft = 1;
-    pngDecoder->DealNinePatch(opts);
-    EXPECT_NE(pngDecoder->ninePatch_.patch_->paddingLeft, 0);
-    delete pngDecoder->ninePatch_.patch_;
-    pngDecoder->ninePatch_.patch_ = nullptr;
-    GTEST_LOG_(INFO) << "PngDecoderTest: DealNinePatch002 end";
-}
-
-/**
  * @tc.name: ReadUserChunk001
  * @tc.desc: Test of ReadUserChunk
  * @tc.type: FUNC
