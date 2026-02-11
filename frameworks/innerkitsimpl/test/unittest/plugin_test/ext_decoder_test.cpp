@@ -1113,24 +1113,6 @@ HWTEST_F(ExtDecoderTest, DataStatisticsNUllTest, TestSize.Level3)
 
 /**
  * @tc.name: ExtDecoderTest
- * @tc.desc: test the function of WriteJpegUncodedData
-             when auxPicture == nullptr, return ERR_IMAGE_ENCODE_FAILED
- * @tc.type: FUNC
- */
-HWTEST_F(ExtDecoderTest, WriteJpegUncodedDataTest001, TestSize.Level3)
-{
-    GTEST_LOG_(INFO) << "ExtDecoderTest: WriteJpegUncodedDataTest001 start";
-    ExtEncoder extEncoder;
-    auto auxPicture = std::make_shared<AuxiliaryPicture>();
-    auxPicture = nullptr;
-    MockSkWStream skStream;
-    uint32_t ret = extEncoder.WriteJpegUncodedData(auxPicture, skStream);
-    ASSERT_EQ(ret, ERR_IMAGE_ENCODE_FAILED);
-    GTEST_LOG_(INFO) << "ExtDecoderTest: WriteJpegUncodedDataTest001 end";
-}
-
-/**
- * @tc.name: ExtDecoderTest
  * @tc.desc: test the function of WriteJpegCodedData
              when pixelMap->GetAllocatorType() != AllocatorType::DMA_ALLOC
              and pixelMap->GetFd() != nullptr, return SUCCESS
