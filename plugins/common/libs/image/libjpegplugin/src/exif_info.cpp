@@ -1164,6 +1164,10 @@ static bool ConvertStringToDouble(const std::string &str, double &number)
 {
     char* end = nullptr;
     number = std::strtod(str.c_str(), &end);
+    if (end == nullptr) {
+        return false;
+    }
+    
     return end != str.c_str() && *end == '\0' && number != HUGE_VAL;
 }
 
