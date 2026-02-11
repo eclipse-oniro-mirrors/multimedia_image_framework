@@ -2269,6 +2269,7 @@ static uint32_t ParseUInt32Key(ImageMetadata::PropertyMapPtr propertiesPtr, std:
 
 uint32_t ImageSource::GetGifProperty(uint32_t index, const std::string &key, MetadataValue &value)
 {
+#if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
     uint32_t errorCode = 0;
     std::shared_ptr<GifMetadata> gifMetadata = GetGifMetadata(index, errorCode);
     if (gifMetadata == nullptr) {
@@ -2300,11 +2301,13 @@ uint32_t ImageSource::GetGifProperty(uint32_t index, const std::string &key, Met
         value.intArrayValue.emplace_back(u32num);
         return SUCCESS;
     }
+#endif
     return ERROR;
 }
 
 uint32_t ImageSource::GetFragmentProperty(const std::string &key, MetadataValue &value)
 {
+#if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
     uint32_t errorCode = 0;
     std::shared_ptr<FragmentMetadata> fragmentMetadata = GetFragmentMetadata(errorCode);
     if (fragmentMetadata == nullptr) {
@@ -2325,6 +2328,9 @@ uint32_t ImageSource::GetFragmentProperty(const std::string &key, MetadataValue 
     CHECK_ERROR_RETURN_RET(errorCode != SUCCESS, errorCode);
     value.intArrayValue.emplace_back(u32num);
     return SUCCESS;
+#else
+    return ERROR;
+#endif
 }
 
 uint32_t ImageSource::GetImagePropertyByType(uint32_t index, const std::string &key, MetadataValue &value)
