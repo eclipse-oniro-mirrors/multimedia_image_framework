@@ -16,10 +16,10 @@ import("//build/config/components/memory_utils/purgeable_mem_config.gni")
 import("//foundation/multimedia/image_framework/ide/image_decode_config.gni")
 
 module_output_path = "image_framework/image_framework"
-pixelmap_module_output_path = "graphic_2d/pixelmap"
+#pixelmap_module_output_path = "graphic_2d/pixelmap"
 
 ohos_unittest("pixelmaptest") {
-  module_out_path = pixelmap_module_output_path
+  module_out_path = module_output_path
 
   cflags = [
     "-DIMAGE_DEBUG_FLAG",

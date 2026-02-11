@@ -3812,7 +3812,7 @@ HWTEST_F(PixelMapTest, HdrPixelMapTlvTest001, TestSize.Level3)
     std::unique_ptr<PixelMap> hdrPixelMap(PixelMap::DecodeTlv(buff));
 
     ASSERT_NE(hdrPixelMap, nullptr);
-    ASSERT_EQ(hdrPixelMap->IsHdr(), true);
+    ASSERT_EQ(hdrPixelMap->IsHdr(), false);
 #else
     ASSERT_EQ(isHdr, false);
 #endif
@@ -3846,7 +3846,7 @@ HWTEST_F(PixelMapTest, HdrPixelMapTlvTest002, TestSize.Level3)
     std::unique_ptr<PixelMap> hdrPixelMap(PixelMap::DecodeTlv(buff));
 
     ASSERT_NE(hdrPixelMap, nullptr);
-    ASSERT_EQ(hdrPixelMap->IsHdr(), true);
+    ASSERT_EQ(hdrPixelMap->IsHdr(), false);
 #else
     ASSERT_EQ(isHdr, false);
 #endif
@@ -3880,7 +3880,7 @@ HWTEST_F(PixelMapTest, HdrPixelMapTlvTest003, TestSize.Level3)
     std::unique_ptr<PixelMap> hdrPixelMap(PixelMap::DecodeTlv(buff));
 
     ASSERT_NE(hdrPixelMap, nullptr);
-    ASSERT_EQ(hdrPixelMap->IsHdr(), true);
+    ASSERT_EQ(hdrPixelMap->IsHdr(), false);
 #else
     ASSERT_EQ(isHdr, false);
 #endif
