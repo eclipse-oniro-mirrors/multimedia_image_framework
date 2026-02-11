@@ -29,8 +29,6 @@ using namespace OHOS::Media;
 using namespace OHOS::ImagePlugin;
 namespace OHOS {
 namespace Multimedia {
-static constexpr int32_t SIZE_WIDTH = 2;
-static constexpr int32_t SIZE_HEIGHT = 2;
 
 class PngDecoderTest : public testing::Test {
 public:
