@@ -3278,12 +3278,14 @@ static void ReadImageMetadataExecute(napi_env env, void *data)
     uint32_t errorCode;
     context->rExifMetadata = context->rImageSource->GetExifMetadata();
     context->rImageHeifsMetadata = CreateNullHeifsMetadata();
+#if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
     context->rFragmentMetadata = context->rImageSource->GetFragmentMetadata(errorCode);
     context->rGifMetadata = context->rImageSource->GetGifMetadata(context->index, errorCode);
     context->rRfDataBMetadata = std::static_pointer_cast<RfDataBMetadata>(
         context->rImageSource->GetBlobMetadata(MetadataType::RFDATAB, errorCode));
     context->rXtStyleMetadata = std::static_pointer_cast<XtStyleMetadata>(
         context->rImageSource->GetBlobMetadata(MetadataType::XTSTYLE, errorCode));
+#endif
     if (context->keyStrArray.empty()) {
         const std::vector<MetadataValue> allProperties = context->rImageSource->GetAllPropertiesWithType();
         for (const auto& property : allProperties) {
@@ -3705,6 +3707,7 @@ static void ProcessSingleMetadataKey(ImageSourceAsyncContext* context, const std
 
 static uint32_t ProcessSpecifiedMetadataType(ImageSourceAsyncContext* context, const uint32_t& metaType)
 {
+#if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
     if (metaType == XTSTYLE || metaType == RFDATAB) {
         uint32_t xtErrorCode;
         uint32_t rfErrorCode;
@@ -3730,6 +3733,9 @@ static uint32_t ProcessSpecifiedMetadataType(ImageSourceAsyncContext* context, c
         ProcessSingleMetadataKey(context, keyStr);
     }
     return context->status;
+#else
+    return IMAGE_SOURCE_UNSUPPORTED_METADATA;
+#endif
 }
 
 static void GetSpecifiedMetadataProperties(ImageSourceAsyncContext* context)
@@ -3754,12 +3760,14 @@ static void ReadImageMetadataByTypeExecute(napi_env env, void *data)
     uint32_t errorCode;
     context->rExifMetadata = context->rImageSource->GetExifMetadata();
     context->rImageHeifsMetadata = CreateNullHeifsMetadata();
+#if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
     context->rFragmentMetadata = context->rImageSource->GetFragmentMetadata(errorCode);
     context->rGifMetadata = context->rImageSource->GetGifMetadata(context->index, errorCode);
     context->rRfDataBMetadata = std::static_pointer_cast<RfDataBMetadata>(
         context->rImageSource->GetBlobMetadata(MetadataType::RFDATAB, errorCode));
     context->rXtStyleMetadata = std::static_pointer_cast<XtStyleMetadata>(
         context->rImageSource->GetBlobMetadata(MetadataType::XTSTYLE, errorCode));
+#endif
     if (context->typeArray == nullptr || context->typeArray->empty()) {
         const std::vector<MetadataValue> allProperties = context->rImageSource->GetAllPropertiesWithType();
         for (const auto& property : allProperties) {
