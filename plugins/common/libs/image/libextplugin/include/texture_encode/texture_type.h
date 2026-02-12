@@ -82,12 +82,12 @@ struct AstcEncoder {
 
 using SutQulityProfile = std::tuple<uint8_t, SutProfile, QualityProfile>;
 
-static const std::map<std::string, SutQulityProfile> SUT_FORMAT_MAP = {
+inline static const std::map<std::string, SutQulityProfile> SUT_FORMAT_MAP = {
     {"image/sdr_sut_superfast_4x4",
         {92, SutProfile::HIGH_CR_LEVEL1, QualityProfile::CUSTOMIZED_PROFILE}},
 };
 
-static const std::map<std::string, std::map<uint8_t, QualityProfile>> ASTC_FORMAT_MAP = {
+inline static const std::map<std::string, std::map<uint8_t, QualityProfile>> ASTC_FORMAT_MAP = {
     {
         "image/sdr_astc_4x4",
         {
