@@ -68,7 +68,6 @@
 #include "securec.h"
 #include "source_stream.h"
 #include "image_dfx.h"
-#include "image_handle.h"
 #include "xmp_metadata_accessor_factory.h"
 #if defined(ANDROID_PLATFORM) || defined(IOS_PLATFORM)
 #include "include/jpeg_decoder.h"
@@ -1005,9 +1004,6 @@ unique_ptr<PixelMap> ImageSource::CreatePixelMapExtended(uint32_t index, const D
     opts_ = opts;
     ImageInfo info;
     errorCode = GetImageInfo(FIRST_FRAME, info);
-#if !defined(CROSS_PLATFORM)
-    ImageHandle::GetInstance().LowRamDeviceOptsOptimize(opts_, info);
-#endif
     ParseHdrType();
     if (!CheckDecodeOptions(opts)) {
         IMAGE_LOGI("CheckDecodeOptions failed.");
