@@ -3537,7 +3537,7 @@ uint32_t ExtDecoder::DoHeifsDecode(DecodeContext &context)
     if (!decodeRet) {
         decoder->getErrMsg(context.hardDecodeError);
     } else if (IsYuv420Format(context.info.pixelFormat)) {
-        FillYuvInfo(context, dstInfo_);
+        return UpdateHeifYuvDataInfo(context, dstInfo_, 0, 0);
     }
     return decodeRet ? SUCCESS : ERR_IMAGE_DATA_UNSUPPORT;
 #else
