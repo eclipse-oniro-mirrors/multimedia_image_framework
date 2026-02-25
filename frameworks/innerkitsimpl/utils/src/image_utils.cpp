@@ -410,7 +410,7 @@ uint32_t ImageUtils::RegisterPluginServer()
     PluginServer &pluginServer = DelayedRefSingleton<PluginServer>::GetInstance();
     uint32_t result = pluginServer.Register(std::move(pluginPaths));
     if (result != SUCCESS) {
-        IMAGE_LOGE("[ImageUtil]failed to register plugin server, ERRNO: %{public}u.", result);
+        IMAGE_LOGD("[ImageUtil]failed to register plugin server, ERRNO: %{public}u.", result);
     } else {
         g_pluginRegistered = true;
         IMAGE_LOGD("[ImageUtil]success to register plugin server");
@@ -423,7 +423,7 @@ PluginServer& ImageUtils::GetPluginServer()
     if (!g_pluginRegistered) {
         uint32_t result = RegisterPluginServer();
         if (result != SUCCESS) {
-            IMAGE_LOGI("[ImageUtil]failed to register plugin server, ERRNO: %{public}u.", result);
+            IMAGE_LOGD("[ImageUtil]failed to register plugin server, ERRNO: %{public}u.", result);
         }
     }
     return DelayedRefSingleton<PluginServer>::GetInstance();
