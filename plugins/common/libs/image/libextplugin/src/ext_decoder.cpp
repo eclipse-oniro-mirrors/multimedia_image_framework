@@ -580,6 +580,9 @@ bool ExtDecoder::GetHardwareScaledSize(int &dWidth, int &dHeight, float &scale) 
     } else {
         sampleSize_ = 8;
     }
+    if (codec_->getEncodeFormat() == SkEncodedImageFormat::kHEIF) {
+        ValidateSampleSize();
+    }
     dWidth = (oriWidth + (int)sampleSize_ - NUM_ONE) / (int)sampleSize_;
     dHeight = (oriHeight + (int)sampleSize_ - NUM_ONE) / (int)sampleSize_;
     return true;
@@ -1488,6 +1491,38 @@ bool ExtDecoder::IsSupportHeifHardwareDecode(const PixelDecodeOptions &opts)
 #endif
 }
 
+void ExtDecoder::ValidateSampleSize()
+{
+    std::vector<uint32_t> sampleSizeGroup = {8, 4, 2, 1};
+    auto tempSampleSize = std::find(sampleSizeGroup.begin(), sampleSizeGroup.end(), sampleSize_);
+
+    if (tempSampleSize == sampleSizeGroup.end()) {
+        tempSampleSize = sampleSizeGroup.begin();
+    }
+
+    if (IsYuv420Format(heifPixelFormat_)) {
+        for (; tempSampleSize != sampleSizeGroup.end(); ++tempSampleSize) {
+            if (info_.width() % static_cast<int32_t>(*tempSampleSize) == 0 &&
+                info_.height() % static_cast<int32_t>(*tempSampleSize) == 0 &&
+                (info_.height() / static_cast<int32_t>(*tempSampleSize)) % NUM_2 == 0) {
+                    sampleSize_ = *tempSampleSize;
+                    return;
+                }
+        }
+    } else {
+        for (; tempSampleSize != sampleSizeGroup.end(); ++tempSampleSize) {
+            if (info_.width() % static_cast<int32_t>(*tempSampleSize) == 0 &&
+                info_.height() % static_cast<int32_t>(*tempSampleSize) == 0) {
+                    sampleSize_ = *tempSampleSize;
+                    return;
+                }
+        }
+    }
+
+    sampleSize_ = 1;
+    return;
+}
+
 bool ExtDecoder::IsDivisibleBySampleSize()
 {
 #ifdef HEIF_HW_DECODE_ENABLE
@@ -1502,9 +1537,7 @@ bool ExtDecoder::IsDivisibleBySampleSize()
         (info_.height() / static_cast<int32_t>(sampleSize_)) % NUM_2 != 0) {
         return false;
     }
-    if (decoder->IsGainmapDivisibleBySampleSize(sampleSize_) &&
-        info_.width() % static_cast<int32_t>(sampleSize_) == 0 &&
-        info_.height() % static_cast<int32_t>(sampleSize_) == 0) {
+    if (decoder->IsGainmapDivisibleBySampleSize(sampleSize_)) {
         return true;
     }
     return false;
