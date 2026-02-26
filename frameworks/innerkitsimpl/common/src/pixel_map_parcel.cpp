@@ -710,6 +710,25 @@ static bool ReadAstcRealSize(Parcel &parcel, PixelMap *pixelMap)
     return true;
 }
 
+static bool ReadPropertiesFromParcelCheck(const ImageInfo& imgInfo, PixelMemInfo& memInfo, uint64_t size)
+{
+    if (imgInfo.pixelFormat == PixelFormat::RGBA_F16) {
+        IMAGE_LOGE("[PixelMapRecordParcel] unsupported format");
+        return false;
+    }
+    if (PixelMapRecordParcel::IsYUV(imgInfo.pixelFormat)) {
+        if (PixelMap::GetYUVByteCount(imgInfo) > memInfo.bufferSize) {
+            IMAGE_LOGE("[PixelMapRecordParcel] YUV Size invalid, memInfoSize:%{public}d, expectedSize:%{public}d",
+                memInfo.bufferSize, PixelMap::GetYUVByteCount(imgInfo));
+            return false;
+        }
+    } else if (!ImageUtils::CheckBufferSizeIsVaild(memInfo.bufferSize, size, memInfo.allocatorType)) {
+        IMAGE_LOGE("[PixelMapRecordParcel] bufferSize invalid");
+        return false;
+    }
+    return true;
+}
+
 bool PixelMapRecordParcel::ReadPropertiesFromParcel(Parcel& parcel, PixelMap*& pixelMap,
     ImageInfo& imgInfo, PixelMemInfo& memInfo)
 {
@@ -754,12 +773,7 @@ bool PixelMapRecordParcel::ReadPropertiesFromParcel(Parcel& parcel, PixelMap*& p
         ImageInfo astcImgInfo = { astcrealSize, imgInfo.pixelFormat };
         expectedBufferSize = ImageUtils::GetAstcBytesCount(astcImgInfo);
     }
-    if (!IsYUV(imgInfo.pixelFormat) && imgInfo.pixelFormat != PixelFormat::RGBA_F16 &&
-        !ImageUtils::CheckBufferSizeIsVaild(memInfo.bufferSize, expectedBufferSize, memInfo.allocatorType)) {
-        IMAGE_LOGE("[PixelMapRecordParcel] bufferSize invalid");
-        return false;
-    }
-    return true;
+    return ReadPropertiesFromParcelCheck(imgInfo, memInfo, expectedBufferSize);
 }
 
 PixelMap *PixelMapRecordParcel::StartUnmarshalling(Parcel &parcel, ImageInfo &imgInfo,
@@ -922,6 +936,10 @@ bool PixelMapRecordParcel::ReadYuvDataInfoFromParcel(Parcel &parcel, PixelMap *p
         yDataInfo.uvOffset = parcel.ReadUint32();
         IMAGE_LOGD("ReadYuvDataInfoFromParcel yDataInfo.uvOffset:%{public}d", yDataInfo.uvOffset);
 
+        if (!ImageUtils::CheckYuvDataInfoValid(pixelMap, yDataInfo)) {
+            IMAGE_LOGE("ReadYuvDataInfoFromParcel yDataInfo is invalid");
+            return false;
+        }
         pixelMap->SetImageYUVInfo(yDataInfo);
     }
     return true;

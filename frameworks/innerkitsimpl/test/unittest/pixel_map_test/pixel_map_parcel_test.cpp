@@ -158,7 +158,7 @@ HWTEST_F(PixelMapParcelTest, MarshallingUnmarshallingRecodeParcelTest002, TestSi
     const int32_t dmaSize = 512;
     for (int i = 0; i <= static_cast<int>(PixelFormat::EXTERNAL_MAX); i++) {
         auto pixelmap = CreatePixelmapUsingOpt(size, PixelFormat(i), false);
-        if (pixelmap == nullptr) {
+        if (pixelmap == nullptr || PixelFormat(i) == PixelFormat::RGBA_F16) {
             continue;
         }
         Parcel dataRecord;
@@ -169,7 +169,7 @@ HWTEST_F(PixelMapParcelTest, MarshallingUnmarshallingRecodeParcelTest002, TestSi
     }
     for (int i = 0; i <= static_cast<int>(PixelFormat::EXTERNAL_MAX); i++) {
         auto pixelmap = CreatePixelmapUsingOpt(dmaSize, PixelFormat(i), false);
-        if (pixelmap == nullptr) {
+        if (pixelmap == nullptr || PixelFormat(i) == PixelFormat::RGBA_F16) {
             continue;
         }
         Parcel dataRecord;
@@ -180,7 +180,7 @@ HWTEST_F(PixelMapParcelTest, MarshallingUnmarshallingRecodeParcelTest002, TestSi
     }
     for (int i = 0; i <= static_cast<int>(PixelFormat::EXTERNAL_MAX); i++) {
         auto pixelmap = CreatePixelmapUsingOpt(size, PixelFormat(i), true);
-        if (pixelmap == nullptr) {
+        if (pixelmap == nullptr || PixelFormat(i) == PixelFormat::RGBA_F16) {
             continue;
         }
         Parcel dataRecord;
@@ -191,7 +191,7 @@ HWTEST_F(PixelMapParcelTest, MarshallingUnmarshallingRecodeParcelTest002, TestSi
     }
     for (int i = 0; i <= static_cast<int>(PixelFormat::EXTERNAL_MAX); i++) {
         auto pixelmap = CreatePixelmapUsingOpt(dmaSize, PixelFormat(i), true);
-        if (pixelmap == nullptr) {
+        if (pixelmap == nullptr || PixelFormat(i) == PixelFormat::RGBA_F16) {
             continue;
         }
         Parcel dataRecord;
