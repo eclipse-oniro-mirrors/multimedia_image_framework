@@ -324,6 +324,11 @@ bool IsYUV(const PixelFormat &format)
         format == PixelFormat::YCBCR_P010 || format == PixelFormat::YCRCB_P010;
 }
 
+bool IsYuvP010(const PixelFormat &format)
+{
+    return format == PixelFormat::YCBCR_P010 || format == PixelFormat::YCRCB_P010;
+}
+
 int32_t PixelMap::GetRGBxRowDataSize(const ImageInfo& info)
 {
     if ((info.pixelFormat <= PixelFormat::UNKNOWN || info.pixelFormat >= PixelFormat::EXTERNAL_MAX) ||
@@ -3023,7 +3028,12 @@ bool PixelMap::ReadBufferSizeFromParcel(Parcel& parcel, const ImageInfo& imgInfo
         ImageInfo astcImgInfo = {realSize, imgInfo.pixelFormat};
         expectedBufferSize = ImageUtils::GetAstcBytesCount(astcImgInfo);
     }
-    if (!IsYUV(imgInfo.pixelFormat) && imgInfo.pixelFormat != PixelFormat::RGBA_F16 &&
+    if (imgInfo.pixelFormat == PixelFormat::RGBA_F16) {
+        uint64_t alignedWidth = ((static_cast<uint64_t>(imgInfo.size.width) + NUM_1) / NUM_2) * NUM_2;
+        expectedBufferSize =
+            static_cast<uint64_t>(imgInfo.size.height) * alignedWidth * ImageUtils::GetPixelBytes(imgInfo.pixelFormat);
+    }
+    if (!IsYUV(imgInfo.pixelFormat) &&
         (expectedBufferSize > (memInfo.allocatorType == AllocatorType::HEAP_ALLOC ? PIXEL_MAP_MAX_RAM_SIZE : INT_MAX) ||
         static_cast<uint64_t>(memInfo.bufferSize) != expectedBufferSize)) {
         IMAGE_LOGE("[PixelMap] ReadBufferSizeFromParcel: bufferSize invalid, expect:%{public}llu, actual:%{public}d",
@@ -3136,6 +3146,59 @@ bool PixelMap::UpdatePixelMapMemInfo(PixelMap *pixelMap, ImageInfo &imgInfo, Pix
     return true;
 }
 
+static bool CheckYuvPixelMapBufferSize(const ImageInfo& imgInfo, PixelMemInfo& pixelMemInfo, PixelMap *pixelMap)
+{
+    bool cond = !IsYUV(imgInfo.pixelFormat);
+    CHECK_ERROR_RETURN_RET(cond, true); // only check yuv format
+    cond = pixelMap == nullptr;
+    CHECK_ERROR_RETURN_RET_LOG(cond, false, "pixelMap is nullptr");
+    int32_t memBufSizeInt = pixelMemInfo.bufferSize;
+    if (pixelMemInfo.allocatorType == AllocatorType::DMA_ALLOC && pixelMemInfo.context != nullptr) {
+        SurfaceBuffer* sb = static_cast<SurfaceBuffer*>(pixelMemInfo.context);
+        uint32_t sbSize = sb->GetSize();
+        if (memBufSizeInt <= 0 || sbSize == 0) {
+            IMAGE_LOGE("Invalid YUV buffer size: memBufSize[%{public}d]/sbSize[%{public}u]", memBufSizeInt, sbSize);
+            return false;
+        }
+
+        uint32_t memBufSize = static_cast<uint32_t>(memBufSizeInt);
+        int32_t pixelBytes = pixelMap->GetPixelBytes();
+        cond = pixelBytes <= 0;
+        CHECK_ERROR_RETURN_RET_LOG(cond, false, "Invalid YUV format, pixel bytes is 0");
+        cond = ImageUtils::CheckMulOverflow(imgInfo.size.width, imgInfo.size.height, pixelBytes);
+        CHECK_ERROR_RETURN_RET_LOG(cond, false, "Invalid pixelmap params width:%{public}d, height:%{public}d",
+                                   imgInfo.size.width, imgInfo.size.height);
+        // Yuv420 perl pixel 1.5 Bytes but return int so return 2
+        uint32_t byteCount = static_cast<uint32_t>(imgInfo.size.width * imgInfo.size.height * pixelBytes);
+        if (memBufSize != byteCount && memBufSize > sbSize) { // If return 2, the verification is skipped
+            IMAGE_LOGE("Invalid YUV buffer size: memBufSize[%{public}u] > sbSize[%{public}u]", memBufSize, sbSize);
+            return false;
+        }
+
+        YUVDataInfo yDataInfo;
+        pixelMap->GetImageYUVInfo(yDataInfo);
+        uint32_t YuvPlaneSize = yDataInfo.yStride * yDataInfo.yHeight + yDataInfo.uvStride * yDataInfo.uvHeight;
+        uint32_t calcSize = YuvPlaneSize;
+        if (IsYuvP010(imgInfo.pixelFormat)) {
+            cond = YuvPlaneSize > UINT32_MAX / NUM_2;
+            CHECK_ERROR_RETURN_RET_LOG(cond, false, "Invalid YUV P010 buffer size: overflow (exceeds UINT32_MAX)");
+            calcSize = YuvPlaneSize * NUM_2; // YuvP010 format: 10-bit per pixel (2 bytes actual, need double)
+        }
+        if (calcSize > sbSize) {
+            IMAGE_LOGE("Invalid YUV buffer size:%{public}u > sbSize:%{public}u", calcSize, sbSize);
+            return false;
+        }
+    } else {
+        uint64_t expectedBufferSize = static_cast<uint64_t>(ImageUtils::GetByteCount(imgInfo));
+        if (!ImageUtils::CheckBufferSizeIsVaild(memBufSizeInt, expectedBufferSize, pixelMemInfo.allocatorType)) {
+            IMAGE_LOGE("Invalid buffer size: memBufSize[%{public}d] mismatch expect[%{public}llu]",
+                memBufSizeInt, expectedBufferSize);
+            return false;
+        }
+    }
+    return true;
+}
+
 PixelMap *PixelMap::UnmarshallingWithIsDisplay(Parcel &parcel,
     std::function<int(Parcel &parcel, std::function<int(Parcel&)> readFdDefaultFunc)> readSafeFdFunc, bool isDisplay)
 {
@@ -3202,6 +3265,11 @@ PixelMap *PixelMap::FinishUnmarshalling(PixelMap *pixelMap, Parcel &parcel,
     }
     if (!pixelMap->ReadYuvDataInfoFromParcel(parcel, pixelMap)) {
         IMAGE_LOGE("Unmarshalling: ReadYuvDataInfoFromParcel failed");
+        delete pixelMap;
+        return nullptr;
+    }
+    if (!CheckYuvPixelMapBufferSize(imgInfo, pixelMemInfo, pixelMap)) {
+        IMAGE_LOGE("Check PixelMap BufferSize fail");
         delete pixelMap;
         return nullptr;
     }

@@ -2002,7 +2002,6 @@ bool ImageUtils::CheckOffsetValid(const YUVDataInfo& yDataInfo)
     return true;
 }
 
-
 bool ImageUtils::CheckYuvDataInfoValid(PixelMap *pixelMap, YUVDataInfo& yDataInfo)
 {
     CHECK_ERROR_RETURN_RET_LOG(pixelMap == nullptr, false, "pixelMap is nullptr");
