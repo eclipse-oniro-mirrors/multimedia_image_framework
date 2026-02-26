@@ -580,9 +580,11 @@ bool ExtDecoder::GetHardwareScaledSize(int &dWidth, int &dHeight, float &scale) 
     } else {
         sampleSize_ = 8;
     }
-    if (codec_->getEncodeFormat() == SkEncodedImageFormat::kHEIF) {
+#ifdef HEIF_HW_DECODE_ENABLE
+    if (codec_->getEncodedFormat() == SkEncodedImageFormat::kHEIF) {
         ValidateSampleSize();
     }
+#endif
     dWidth = (oriWidth + (int)sampleSize_ - NUM_ONE) / (int)sampleSize_;
     dHeight = (oriHeight + (int)sampleSize_ - NUM_ONE) / (int)sampleSize_;
     return true;
@@ -1491,6 +1493,7 @@ bool ExtDecoder::IsSupportHeifHardwareDecode(const PixelDecodeOptions &opts)
 #endif
 }
 
+#ifdef HEIF_HW_DECODE_ENABLE
 void ExtDecoder::ValidateSampleSize()
 {
     std::vector<uint32_t> sampleSizeGroup = {8, 4, 2, 1};
@@ -1522,6 +1525,7 @@ void ExtDecoder::ValidateSampleSize()
     sampleSize_ = 1;
     return;
 }
+#endif
 
 bool ExtDecoder::IsDivisibleBySampleSize()
 {
