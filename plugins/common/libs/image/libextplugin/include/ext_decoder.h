@@ -107,6 +107,7 @@ private:
     bool IsSupportCropOnDecode(SkIRect &target);
     bool IsSupportHardwareDecode();
     bool IsDivisibleBySampleSize();
+    void ValidateSampleSize();
     bool IsSupportSampleDecode(OHOS::Media::PixelFormat desiredFormat);
     bool IsYuv420Format(OHOS::Media::PixelFormat format) const;
     bool IsHeifToYuvDecode(const DecodeContext &context) const;
