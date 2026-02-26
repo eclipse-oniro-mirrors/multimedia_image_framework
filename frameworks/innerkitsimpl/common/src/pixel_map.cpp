@@ -3148,6 +3148,7 @@ bool PixelMap::UpdatePixelMapMemInfo(PixelMap *pixelMap, ImageInfo &imgInfo, Pix
 
 static bool CheckYuvPixelMapBufferSize(const ImageInfo& imgInfo, PixelMemInfo& pixelMemInfo, PixelMap *pixelMap)
 {
+#ifndef CROSS_PLATFORM
     bool cond = !IsYUV(imgInfo.pixelFormat);
     CHECK_ERROR_RETURN_RET(cond, true); // only check yuv format
     cond = pixelMap == nullptr;
@@ -3198,6 +3199,9 @@ static bool CheckYuvPixelMapBufferSize(const ImageInfo& imgInfo, PixelMemInfo& p
         }
     }
     return true;
+#else
+    return true;
+#endif
 }
 
 PixelMap *PixelMap::UnmarshallingWithIsDisplay(Parcel &parcel,
