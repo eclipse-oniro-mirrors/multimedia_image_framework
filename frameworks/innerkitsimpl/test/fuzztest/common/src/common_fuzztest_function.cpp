@@ -365,7 +365,8 @@ std::string GetFuzzKey(FuzzedDataProvider* fdp)
         "HwMnoteSceneVersion", "HwMnoteIsXmageSupported", "HwMnoteXmageMode", "HwMnoteXmageLeft",
         "HwMnoteXmageTop", "HwMnoteXmageRight", "HwMnoteXmageBottom", "HwMnoteCloudEnhancementMode",
         "HwMnoteWindSnapshotMode", "HwMnoteXtStyleTemplateName", "HwMnoteXtStyleCustomLightAndShadow",
-        "HwMnoteXtStyleCustomSaturation", "HwMnoteXtStyleCustomHue", "HwMnoteXtStyleExposureParam"
+        "HwMnoteXtStyleCustomSaturation", "HwMnoteXtStyleCustomHue", "HwMnoteXtStyleExposureParam", "XInOriginal",
+        "YInOriginal", "FragmentImageWidth", "FragmentImageHeight", "GifDelayTime", "GifDisposalType"
     };
     uint32_t index = fdp->ConsumeIntegral<uint32_t>() % allKeys.size();
     return allKeys[index];

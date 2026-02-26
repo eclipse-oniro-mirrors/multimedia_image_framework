@@ -4920,5 +4920,74 @@ HWTEST_F(ImageSourceTest, DecodeBlobMetaDataTest003, TestSize.Level3)
 
     GTEST_LOG_(INFO) << "ImageSourceTest: DecodeBlobMetaDataTest003 end";
 }
+
+/**
+ * @tc.name: GetAllSupportedMetadataTypesTest001
+ * @tc.desc: Test GetAllSupportedMetadataTypes with JPEG source and formatHint, check non-empty list and first meta is
+ *           EXIF
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageSourceTest, GetAllSupportedMetadataTypesTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImageSourceTest: GetAllSupportedMetadataTypesTest001 start";
+    uint32_t errorCode = 0;
+    SourceOptions opts;
+    opts.formatHint = "image/jpeg";
+    std::unique_ptr<ImageSource> imageSource =
+        ImageSource::CreateImageSource(IMAGE_INPUT_JPEG_PATH, opts, errorCode);
+    ASSERT_EQ(errorCode, SUCCESS);
+    ASSERT_NE(imageSource.get(), nullptr);
+    uint32_t index = 0;
+    auto imageMetadata = imageSource->GetAllSupportedMetadataTypes(index, errorCode);
+    ASSERT_NE(imageMetadata.size(), 0);
+    auto metadataType = imageMetadata[0]->GetType();
+    ASSERT_EQ(metadataType, MetadataType::EXIF);
+    GTEST_LOG_(INFO) << "ImageSourceTest: GetAllSupportedMetadataTypesTest001 end";
+}
+
+/**
+ * @tc.name: GetAllSupportedMetadataTypesTest002
+ * @tc.desc: Test GetAllSupportedMetadataTypes with GIF source and default opts, check non-empty list and first meta is
+ *           GIF
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageSourceTest, GetAllSupportedMetadataTypesTest002, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImageSourceTest: GetAllSupportedMetadataTypesTest002 start";
+    uint32_t errorCode = 0;
+    auto imageSource = ImageSource::CreateImageSource(IMAGE_INPUT_GIF_PATH, SourceOptions(), errorCode);
+    ASSERT_EQ(errorCode, SUCCESS);
+    ASSERT_NE(imageSource.get(), nullptr);
+    uint32_t index = 0;
+    auto imageMetadata = imageSource->GetAllSupportedMetadataTypes(index, errorCode);
+    ASSERT_NE(imageMetadata.size(), 0);
+    auto metadataType = imageMetadata[0]->GetType();
+    ASSERT_EQ(metadataType, MetadataType::GIF);
+    GTEST_LOG_(INFO) << "ImageSourceTest: GetAllSupportedMetadataTypesTest002 end";
+}
+
+/**
+ * @tc.name: GetAllSupportedMetadataTypesTest003
+ * @tc.desc: Test GetAllSupportedMetadataTypes with HEIF source and formatHint, check non-empty list and first meta is
+ *           FRAGMENT
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageSourceTest, GetAllSupportedMetadataTypesTest003, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImageSourceTest: GetAllSupportedMetadataTypesTest003 start";
+    uint32_t errorCode = 0;
+    SourceOptions opts;
+    opts.formatHint = "image/heif";
+    std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(IMAGE_INPUT_HEIF_PATH,
+        opts, errorCode);
+    ASSERT_EQ(errorCode, SUCCESS);
+    ASSERT_NE(imageSource.get(), nullptr);
+    uint32_t index = 0;
+    auto imageMetadata = imageSource->GetAllSupportedMetadataTypes(index, errorCode);
+    ASSERT_NE(imageMetadata.size(), 0);
+    auto metadataType = imageMetadata[0]->GetType();
+    ASSERT_EQ(metadataType, MetadataType::FRAGMENT);
+    GTEST_LOG_(INFO) << "ImageSourceTest: GetAllSupportedMetadataTypesTest003 end";
+}
 } // namespace Multimedia
 } // namespace OHOS

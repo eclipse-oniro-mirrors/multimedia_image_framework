@@ -23,6 +23,7 @@ extern "C" {
 
 struct OH_PictureMetadata {
 public:
+    OH_PictureMetadata() {};
     OH_PictureMetadata(std::shared_ptr<OHOS::Media::ImageMetadata> metadata);
     std::shared_ptr<OHOS::Media::ImageMetadata> GetInnerAuxiliaryMetadata();
     ~OH_PictureMetadata();

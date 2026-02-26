@@ -1747,13 +1747,13 @@ Image_ErrorCode OH_ImageSourceNative_ReadImageMetadataByType(OH_ImageSourceNativ
         return IMAGE_SOURCE_UNSUPPORTED_MIMETYPE;
     }
     *metadataCount = validMetadatas.size();
-    *metadatas = static_cast<OH_PictureMetadata*>(::operator new(sizeof(OH_PictureMetadata) * (*metadataCount)));
+    *metadatas = new OH_PictureMetadata[*metadataCount];
     if (*metadatas == nullptr) {
         IMAGE_LOGE("Allocate metadata memory failed.");
         return IMAGE_SOURCE_UNSUPPORTED_MIMETYPE;
     }
     for (uint32_t i = 0; i < validMetadatas.size(); ++i) {
-        new (&((*metadatas)[i])) OH_PictureMetadata(validMetadatas[i]);
+        (*metadatas)[i] = OH_PictureMetadata(validMetadatas[i]);
     }
     return IMAGE_SUCCESS;
 }

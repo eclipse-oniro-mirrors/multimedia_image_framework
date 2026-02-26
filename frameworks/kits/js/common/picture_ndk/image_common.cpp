@@ -95,23 +95,14 @@ Image_ErrorCode OH_PictureMetadata_GetMetadataByType(OH_PictureMetadata **metada
     if (metadatas == nullptr || metadata == nullptr || metadataCount == 0) {
         return IMAGE_BAD_PARAMETER;
     }
-    OH_PictureMetadata* targetMetadata = nullptr;
     for (size_t i = 0; i < metadataCount; ++i) {
-        OH_PictureMetadata* curMetadata = metadatas[i];
-        auto innerMetadata = curMetadata->GetInnerAuxiliaryMetadata();
-        if (innerMetadata == nullptr) {
-            continue;
-        }
-        if (type == static_cast<int32_t>(innerMetadata->GetType())) {
-            targetMetadata = curMetadata;
-            break;
+        auto innerMetadata = (*metadatas)[i].GetInnerAuxiliaryMetadata();
+        if (innerMetadata != nullptr && type == static_cast<int32_t>(innerMetadata->GetType())) {
+            *metadata = (*metadatas)[i];
+            return IMAGE_SUCCESS;
         }
     }
-    if (targetMetadata == nullptr) {
-        return IMAGE_BAD_PARAMETER;
-    }
-    *metadata = *targetMetadata;
-    return IMAGE_SUCCESS;
+    return IMAGE_BAD_PARAMETER;
 }
 
 MIDK_EXPORT

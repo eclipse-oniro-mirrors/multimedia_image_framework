@@ -28,6 +28,7 @@
 #include "image_packer.h"
 #include "image_source.h"
 #include "image_utils.h"
+#include "kv_metadata.h"
 #include "media_errors.h"
 
 namespace OHOS {
@@ -499,6 +500,31 @@ void GetDngImagePropertyByDngSdkFuzzTest(const std::string& pathName)
     std::string key = GetFuzzKey(FDP);
     imageSource->GetDngImagePropertyByDngSdk(key, value);
 }
+
+void ReadImageMetadataByTypeFuzzTest(const std::string& pathName)
+{
+    uint32_t errorCode = 0;
+    SourceOptions opts;
+    std::unique_ptr<ImageSource> imageSource =
+        ImageSource::CreateImageSource(pathName, opts, errorCode);
+    if (errorCode != 0 || imageSource == nullptr) {
+        return;
+    }
+    imageSource->GetAllSupportedMetadataTypes(0, errorCode);
+    
+    std::string fragmentKey = GetFuzzKey(FDP);
+    ImageKvMetadata::IsFragmentMetadataKey(fragmentKey);
+    MetadataValue framentValue;
+    imageSource->GetFragmentProperty(fragmentKey, framentValue);
+
+    std::string gifKey = GetFuzzKey(FDP);
+    ImageKvMetadata::IsGifMetadataKey(gifKey);
+    MetadataValue gifValue;
+    imageSource->GetGifProperty(0, gifKey, gifValue);
+
+    std::vector<MetadataValue> result;
+    imageSource->GetFragmentPropertiesWithType(result);
+}
 }  // namespace Media
 }  // namespace OHOS
 
@@ -511,7 +537,7 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
     }
     FuzzedDataProvider fdp(data + size - OHOS::Media::OPT_SIZE, OHOS::Media::OPT_SIZE);
     OHOS::Media::FDP = &fdp;
-    uint8_t action = fdp.ConsumeIntegral<uint8_t>() % 14;
+    uint8_t action = fdp.ConsumeIntegral<uint8_t>() % 15;
     std::string pathName = "/data/local/tmp/image/test_dng_readmetadata.dng";
     if (!WriteDataToFile(data, size, pathName)) {
         IMAGE_LOGE("WriteDataToFile failed");
@@ -560,6 +586,8 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
         case 13:
             OHOS::Media::GetDngImagePropertyByDngSdkFuzzTest(pathName);
             break;
+        case 14:
+            OHOS::Media::ReadImageMetadataByTypeFuzzTest(pathName);
         default:
             break;
     }
