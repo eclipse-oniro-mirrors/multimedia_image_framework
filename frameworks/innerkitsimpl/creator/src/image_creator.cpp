@@ -35,7 +35,19 @@ std::map<uint8_t*, ImageCreator*> ImageCreator::bufferCreatorMap_;
 std::mutex ImageCreator::creatorMutex_;
 ImageCreator::~ImageCreator()
 {
-    //
+    // Clean up all map entries pointing to this object
+    {
+        std::lock_guard<std::mutex> guard(creatorMutex_);
+        auto it = bufferCreatorMap_.begin();
+        while (it != bufferCreatorMap_.end()) {
+            if (it->second == this) {
+                it = bufferCreatorMap_.erase(it);
+            } else {
+                ++it;
+            }
+        }
+    }
+
     if (iraContext_ != nullptr) {
         ImageCreatorManager::ReleaseCreatorById(iraContext_->GetCreatorKey());
     }
@@ -60,6 +72,7 @@ GSError ImageCreator::OnBufferRelease(sptr<SurfaceBuffer> &buffer)
     auto icr = iter->second;
     if (icr->surfaceBufferReleaseListener_ == nullptr) {
         IMAGE_LOGI("empty icr");
+        bufferCreatorMap_.erase(iter);
         return GSERROR_NO_ENTRY;
     }
     icr->surfaceBufferReleaseListener_->OnSurfaceBufferRelease();
