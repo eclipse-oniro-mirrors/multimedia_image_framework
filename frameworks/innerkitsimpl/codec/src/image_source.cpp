@@ -6200,86 +6200,8 @@ ImageHdrType ImageSource::CheckHdrType()
     return checkHdrType_;
 }
 
-uint32_t read_u32_be(const uint8_t* data)
-{
-    const uint8_t THREE_BYTES_BITS = 24;
-    const uint8_t TWO_BYTES_BITS = 16;
-    const uint8_t ONE_BYTES_BITS = 8;
-    return (
-        uint32_t(data[0] << THREE_BYTES_BITS) |
-        uint32_t(data[1] << TWO_BYTES_BITS) |
-        uint32_t(data[2] << ONE_BYTES_BITS) |
-        uint32_t(data[3]));
-}
-
 uint32_t ImageSource::GetiTxtLength()
 {
-    std::unique_lock<std::mutex> guard(decodingMutex_);
-    if (sourceStreamPtr_ == nullptr) {
-        return 0;
-    }
-    uint32_t savedPosition = sourceStreamPtr_->Tell();
-    uint64_t streamSize = sourceStreamPtr_->GetStreamSize();
-
-    sourceStreamPtr_->Seek(0);
-    // 1. read sig
-    const uint8_t SIG_FIELD_BYTES = 8;
-    const uint8_t PNG_SIG[SIG_FIELD_BYTES] = {0x89, 'P', 'N', 'G', 0x0D, 0x0A, 0x1A, 0x0A};
-    if (static_cast<uint64_t>(sourceStreamPtr_->Tell()) + SIG_FIELD_BYTES > streamSize) {
-        sourceStreamPtr_->Seek(savedPosition);
-        return 0;
-    }
-    uint8_t sigbuf[SIG_FIELD_BYTES];
-    uint32_t readSize = 0;
-    // Read param: uint32_t desiredSize, uint8_t *outBuffer, uint32_t bufferSize, uint32_t &readSize
-    bool readRet = sourceStreamPtr_->Read(SIG_FIELD_BYTES, sigbuf, sizeof(sigbuf), readSize);
-    if (!readRet || readSize < SIG_FIELD_BYTES) {
-        sourceStreamPtr_->Seek(savedPosition);
-        return 0;
-    }
-    if (std::memcmp(sigbuf, PNG_SIG, SIG_FIELD_BYTES) != 0) {
-        sourceStreamPtr_->Seek(savedPosition);
-        return 0;
-    }
-
-    // 2. read trunk
-    const uint8_t TRUNK_LENGTH_FIELD_BYTES = 4;
-    const uint8_t TRUNK_TYPE_FIELD_BYTES = 4;
-    const uint8_t TRUNK_CRC_FIELD_BYTES = 4;
-    while (true) {
-        // 2.1 read length of trunk
-        if (static_cast<uint64_t>(sourceStreamPtr_->Tell()) + TRUNK_LENGTH_FIELD_BYTES > streamSize) {
-            break;
-        }
-        uint8_t lenbuf[TRUNK_LENGTH_FIELD_BYTES];
-        readRet = sourceStreamPtr_->Read(TRUNK_LENGTH_FIELD_BYTES, lenbuf, sizeof(lenbuf), readSize);
-        if (!readRet || readSize < TRUNK_LENGTH_FIELD_BYTES) {
-            break;
-        }
-        uint32_t length = read_u32_be(lenbuf);
-
-        // 2.2 read type of trunk
-        if (static_cast<uint64_t>(sourceStreamPtr_->Tell()) + TRUNK_TYPE_FIELD_BYTES > streamSize) {
-            break;
-        }
-        uint8_t typebuf[TRUNK_TYPE_FIELD_BYTES];
-        readRet = sourceStreamPtr_->Read(TRUNK_TYPE_FIELD_BYTES, typebuf, sizeof(typebuf), readSize);
-        if (!readRet || readSize < TRUNK_TYPE_FIELD_BYTES) {
-            break;
-        }
-        std::string chunk_type(reinterpret_cast<char*>(typebuf), TRUNK_TYPE_FIELD_BYTES);
-        if (chunk_type == "iTXt") {
-            sourceStreamPtr_->Seek(savedPosition);
-            return length;
-        }
-
-        // 3. move filePtr to next trunk head
-        if (static_cast<uint64_t>(sourceStreamPtr_->Tell()) + length + TRUNK_CRC_FIELD_BYTES > streamSize) {
-            break;
-        }
-        sourceStreamPtr_->Seek(sourceStreamPtr_->Tell() + length + TRUNK_CRC_FIELD_BYTES);
-    }
-    sourceStreamPtr_->Seek(savedPosition);
     return 0;
 }
 
