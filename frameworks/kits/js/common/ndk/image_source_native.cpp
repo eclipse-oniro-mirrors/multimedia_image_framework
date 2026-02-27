@@ -17,6 +17,7 @@
 #include "image_source_native.h"
 #include "picture_native_impl.h"
 #include "common_utils.h"
+#include "image_common_impl.h"
 #include "image_error_convert.h"
 #include "image_source.h"
 #include "image_source_native_impl.h"
@@ -1702,6 +1703,58 @@ Image_ErrorCode OH_ImageSourceNative_GetSupportedFormats(Image_MimeType** suppor
     }
     IMAGE_SOURCE_SUPPORTED_FORMATS = *supportedFormat;
     g_supportedFormatSize = *length;
+    return IMAGE_SUCCESS;
+}
+
+MIDK_EXPORT
+Image_ErrorCode OH_ImageSourceNative_ReadImageMetadataByType(OH_ImageSourceNative *source, uint32_t index,
+    Image_MetadataType *metadataTypes, size_t typeCount, OH_PictureMetadata **metadatas, size_t *metadataCount)
+{
+    if (source == nullptr || source->GetInnerImageSource() == nullptr || metadatas == nullptr ||
+        metadataCount == nullptr) {
+        return IMAGE_SOURCE_INVALID_PARAMETER;
+    }
+    uint32_t errorCode;
+    uint32_t frameCount = source->GetInnerImageSource()->GetFrameCount(errorCode);
+    CHECK_ERROR_RETURN_RET((errorCode != SUCCESS) || index >= frameCount,
+        IMAGE_SOURCE_INVALID_PARAMETER);
+    std::vector<std::shared_ptr<OHOS::Media::ImageMetadata>> validMetadatas;
+    if (metadataTypes == nullptr || typeCount == 0) {
+        IMAGE_LOGD("Get all metadata.");
+        validMetadatas = source->GetInnerImageSource()->GetAllSupportedMetadataTypes(index, errorCode);
+    } else {
+        IMAGE_LOGD("Get specified metadata.");
+        std::set<Media::MetadataType> uniqueMetadataTypes;
+        for (uint32_t i = 0; i < typeCount; ++i) {
+            Media::MetadataType innerType = static_cast<Media::MetadataType>(metadataTypes[i]);
+            uniqueMetadataTypes.insert(innerType);
+        }
+        for (const auto& innerType : uniqueMetadataTypes) {
+            std::shared_ptr<ImageMetadata> metadata;
+            if (innerType == MetadataType::GIF || innerType == MetadataType::HEIFS) {
+                metadata = source->GetInnerImageSource()->GetMetadataWithIndex(innerType, index, errorCode);
+            } else {
+                metadata = source->GetInnerImageSource()->GetMetadata(innerType, errorCode);
+            }
+            if (metadata == nullptr) {
+                IMAGE_LOGD("Get %{public}d metadata failed.", static_cast<uint32_t>(innerType));
+                continue;
+            }
+            validMetadatas.push_back(metadata);
+        }
+    }
+    if (validMetadatas.size() == 0) {
+        return IMAGE_SOURCE_UNSUPPORTED_MIMETYPE;
+    }
+    *metadataCount = validMetadatas.size();
+    *metadatas = static_cast<OH_PictureMetadata*>(::operator new(sizeof(OH_PictureMetadata) * (*metadataCount)));
+    if (*metadatas == nullptr) {
+        IMAGE_LOGE("Allocate metadata memory failed.");
+        return IMAGE_SOURCE_UNSUPPORTED_MIMETYPE;
+    }
+    for (uint32_t i = 0; i < validMetadatas.size(); ++i) {
+        new (&((*metadatas)[i])) OH_PictureMetadata(validMetadatas[i]);
+    }
     return IMAGE_SUCCESS;
 }
 

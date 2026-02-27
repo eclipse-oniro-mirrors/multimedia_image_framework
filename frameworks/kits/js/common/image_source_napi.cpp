@@ -53,6 +53,8 @@ namespace {
     constexpr int32_t TWO_ARGS = 2;
     constexpr int32_t DECODE_OPTS_INDEX_0 = 0;
     constexpr int32_t ALLOCATOR_TYPE_INDEX_1 = 1;
+    constexpr uint32_t XTSTYLE = 3;
+    constexpr uint32_t RFDATAB = 4;
 }
 
 namespace OHOS {
@@ -125,8 +127,13 @@ struct ImageSourceAsyncContext {
     std::vector<MetadataValue> kValueTypeArray;
     void* buffer = nullptr;
     size_t bufferSize = 0;
+    std::unique_ptr<std::vector<uint32_t>> typeArray;
     std::shared_ptr<ExifMetadata> rExifMetadata;
     std::shared_ptr<HeifsMetadata> rImageHeifsMetadata;
+    std::shared_ptr<FragmentMetadata> rFragmentMetadata;
+    std::shared_ptr<GifMetadata> rGifMetadata;
+    std::shared_ptr<XtStyleMetadata> rXtStyleMetadata;
+    std::shared_ptr<RfDataBMetadata> rRfDataBMetadata;
     DecodingOptionsForThumbnail decodingOptsForThumbnail;
 };
 
@@ -842,7 +849,7 @@ static void ImageSourceCallbackRoutine(napi_env env, ImageSourceAsyncContext* &c
     }
 
     napi_delete_async_work(env, context->work);
-    
+
     if (context != nullptr) {
         delete context;
         context = nullptr;
@@ -1308,6 +1315,7 @@ std::vector<napi_property_descriptor> ImageSourceNapi::RegisterNapi()
         DECLARE_NAPI_FUNCTION("modifyImageProperties", ModifyImageProperty),
         DECLARE_NAPI_FUNCTION("modifyImagePropertiesEnhanced", ModifyImagePropertiesEnhanced),
         DECLARE_NAPI_FUNCTION("readImageMetadata", ReadImageMetadata),
+        DECLARE_NAPI_FUNCTION("readImageMetadataByType", ReadImageMetadataByType),
         DECLARE_NAPI_FUNCTION("getImageProperty", GetImageProperty),
         DECLARE_NAPI_FUNCTION("getImagePropertySync", GetImagePropertySync),
         DECLARE_NAPI_FUNCTION("getImageProperties", GetImageProperty),
@@ -2917,6 +2925,12 @@ NapiMetadataType GetMetadataTypeByKey(const std::string& key)
         for (const auto& pair : ExifMetadata::GetHeifsMetadataMap()) {
             mapping[pair.first] = NapiMetadataType::HEIFS_METADATA;
         }
+        for (const auto& pair : ExifMetadata::GetFragmentMetadataMap()) {
+            mapping[pair.first] = NapiMetadataType::FRAGMENT_METADATA;
+        }
+        for (const auto& pair :ExifMetadata::GetGifMetadataMap()) {
+            mapping[pair.first] = NapiMetadataType::GIF_METADATA;
+        }
         return mapping;
     }();
     auto it = KEY_TYPE_MAP.find(key);
@@ -2956,46 +2970,141 @@ static void CreatePropertyResult(napi_env env, ImageSourceAsyncContext *context,
     }
 }
 
+struct MetadataCollection {
+    napi_value exifMetadata = nullptr;
+    napi_value makerNoteMetadata = nullptr;
+    napi_value heifsMetadata = nullptr;
+    napi_value fragmentMetadata = nullptr;
+    napi_value gifMetadata = nullptr;
+    napi_value xtStyleMetadata = nullptr;
+    napi_value rfDataBMetadata = nullptr;
+    bool hasExif = false;
+    bool hasMakerNote = false;
+    bool hasHeifsMetadata = false;
+    bool hasFragmentMetadata = false;
+    bool hasGifMetadata = false;
+    bool hasXtStyleMetadata = false;
+    bool hasRfDataBMetadata = false;
+};
+
+static void InitMetadataAndFlags(napi_env env, ImageSourceAsyncContext *context, MetadataCollection& metaCol)
+{
+    metaCol.exifMetadata = MetadataNapi::CreateExifMetadata(env, context->rExifMetadata);
+    metaCol.makerNoteMetadata = MetadataNapi::CreateExifMetadata(env, context->rExifMetadata);
+    metaCol.heifsMetadata = MetadataNapi::CreateHeifsMetadata(env, context->rImageHeifsMetadata);
+    metaCol.fragmentMetadata = MetadataNapi::CreateFragmentMetadata(env, context->rFragmentMetadata);
+    metaCol.gifMetadata = MetadataNapi::CreateGifMetadata(env, context->rGifMetadata);
+    metaCol.xtStyleMetadata = MetadataNapi::CreateXtStyleMetadata(env, context->rXtStyleMetadata);
+    metaCol.rfDataBMetadata = MetadataNapi::CreateRfDataBMetadata(env, context->rRfDataBMetadata);
+}
+
+static void ProcessMetadataValueTypeArray(napi_env env, ImageSourceAsyncContext *context, MetadataCollection& metaCol)
+{
+    if (context == nullptr) {
+        return;
+    }
+    for (auto &metadataValue: context->kValueTypeArray) {
+        auto type = GetMetadataTypeByKey(metadataValue.key);
+        if (type == NapiMetadataType::EXIF_METADATA) {
+            bool hasValidData = !metadataValue.stringValue.empty() ||
+                            !metadataValue.intArrayValue.empty() ||
+                            !metadataValue.doubleArrayValue.empty() ||
+                            !metadataValue.bufferValue.empty();
+            if (hasValidData) {
+                CreatePropertyResult(env, context, metaCol.exifMetadata, type);
+                metaCol.hasExif = true;
+            }
+        } else if (type == NapiMetadataType::HWMAKERNOTE_METADATA) {
+            bool hasValidData = !metadataValue.stringValue.empty() ||
+                            !metadataValue.intArrayValue.empty() ||
+                            !metadataValue.doubleArrayValue.empty() ||
+                            !metadataValue.bufferValue.empty();
+            if (hasValidData) {
+                CreatePropertyResult(env, context, metaCol.makerNoteMetadata, type);
+                metaCol.hasMakerNote = true;
+            }
+        } else if (type == NapiMetadataType::HEIFS_METADATA) {
+            if (!metadataValue.intArrayValue.empty()) {
+                context->rImageHeifsMetadata->SetValue(metadataValue.key,
+                    std::to_string(metadataValue.intArrayValue[0]));
+                CreatePropertyResult(env, context, metaCol.heifsMetadata, type);
+                metaCol.hasHeifsMetadata = true;
+            }
+        } else if (type == NapiMetadataType::FRAGMENT_METADATA) {
+            if (!metadataValue.intArrayValue.empty()) {
+                context->rFragmentMetadata->SetValue(metadataValue.key, std::to_string(metadataValue.intArrayValue[0]));
+                CreatePropertyResult(env, context, metaCol.fragmentMetadata, type);
+                metaCol.hasFragmentMetadata = true;
+            }
+        } else if (type == NapiMetadataType::GIF_METADATA) {
+            if (!metadataValue.intArrayValue.empty()) {
+                context->rGifMetadata->SetValue(metadataValue.key, std::to_string(metadataValue.intArrayValue[0]));
+                CreatePropertyResult(env, context, metaCol.gifMetadata, type);
+                metaCol.hasGifMetadata = true;
+            }
+        }
+    }
+}
+
+static void CheckSpecialMetadataFlags(ImageSourceAsyncContext *context, MetadataCollection& metaCol)
+{
+    if (context->keyStrArray.empty() && context->typeArray == nullptr) {
+        metaCol.hasRfDataBMetadata = (context->rRfDataBMetadata != nullptr &&
+            context->rRfDataBMetadata->GetBlobSize() != 0) ? true : metaCol.hasRfDataBMetadata;
+        metaCol.hasXtStyleMetadata = (context->rXtStyleMetadata != nullptr
+            && context->rXtStyleMetadata->GetBlobSize() != 0) ? true : metaCol.hasXtStyleMetadata;
+    } else if (context->typeArray != nullptr && !context->typeArray.get()->empty()) {
+        const std::vector<uint32_t>& typeArray = *(context->typeArray);
+        if (std::find(typeArray.begin(), typeArray.end(), XTSTYLE) != typeArray.end()) {
+            metaCol.hasXtStyleMetadata = (context->rXtStyleMetadata != nullptr &&
+                context->rXtStyleMetadata->GetBlobSize() != 0) ? true : metaCol.hasXtStyleMetadata;
+        }
+        if (std::find(typeArray.begin(), typeArray.end(), RFDATAB) != typeArray.end()) {
+            metaCol.hasRfDataBMetadata = (context->rRfDataBMetadata != nullptr &&
+                context->rRfDataBMetadata->GetBlobSize() != 0) ? true : metaCol.hasRfDataBMetadata;
+        }
+    }
+}
+
+static void AttachMetadataToResultObj(napi_env env, MetadataCollection& metaCol, napi_value resultObj)
+{
+    if (metaCol.hasExif) {
+        NAPI_CALL_RETURN_VOID(env, napi_set_named_property(env, resultObj, "exifMetadata", metaCol.exifMetadata));
+    }
+    if (metaCol.hasMakerNote) {
+        NAPI_CALL_RETURN_VOID(env, napi_set_named_property(env, resultObj, "makerNoteHuaweiMetadata",
+            metaCol.makerNoteMetadata));
+    }
+    if (metaCol.hasHeifsMetadata) {
+        NAPI_CALL_RETURN_VOID(env, napi_set_named_property(env, resultObj, "heifsMetadata", metaCol.heifsMetadata));
+    }
+    if (metaCol.hasFragmentMetadata) {
+        NAPI_CALL_RETURN_VOID(env, napi_set_named_property(env, resultObj, "fragmentMetadata",
+            metaCol.fragmentMetadata));
+    }
+    if (metaCol.hasGifMetadata) {
+        NAPI_CALL_RETURN_VOID(env, napi_set_named_property(env, resultObj, "gifMetadata", metaCol.gifMetadata));
+    }
+    if (metaCol.hasXtStyleMetadata) {
+        NAPI_CALL_RETURN_VOID(env, napi_set_named_property(env, resultObj, "xtStyleMetadata", metaCol.xtStyleMetadata));
+    }
+    if (metaCol.hasRfDataBMetadata) {
+        NAPI_CALL_RETURN_VOID(env, napi_set_named_property(env, resultObj, "rfDataBMetadata", metaCol.rfDataBMetadata));
+    }
+}
+
 static void HandleSuccessResult(napi_env env, ImageSourceAsyncContext *context, napi_value result[])
 {
 #if !defined(CROSS_PLATFORM)
     napi_value resultObj;
     NAPI_CALL_RETURN_VOID(env, napi_create_object(env, &resultObj));
-    napi_value exifMetadata = MetadataNapi::CreateExifMetadata(env, context->rExifMetadata);
-    napi_value makerNoteMetadata = MetadataNapi::CreateExifMetadata(env, context->rExifMetadata);
-    napi_value heifsMetadata = MetadataNapi::CreateHeifsMetadata(env, context->rImageHeifsMetadata);
-    bool hasExif = false;
-    bool hasMakerNote = false;
-    bool hasHeifsMetadata = false;
-    for (auto &metadataValue: context->kValueTypeArray) {
-        auto type = GetMetadataTypeByKey(metadataValue.key);
-        if (type == NapiMetadataType::EXIF_METADATA) {
-            CreatePropertyResult(env, context, exifMetadata, type);
-            hasExif = true;
-        } else if (type == NapiMetadataType::HWMAKERNOTE_METADATA) {
-            CreatePropertyResult(env, context, makerNoteMetadata, type);
-            hasMakerNote = true;
-        } else if (type == NapiMetadataType::HEIFS_METADATA) {
-            if (!metadataValue.intArrayValue.empty()) {
-                context->rImageHeifsMetadata->SetValue(metadataValue.key,
-                    std::to_string(metadataValue.intArrayValue[0]));
-            }
-            CreatePropertyResult(env, context, heifsMetadata, type);
-            hasHeifsMetadata = true;
-        }
-    }
-    if (hasExif) {
-        NAPI_CALL_RETURN_VOID(env,
-            napi_set_named_property(env, resultObj, "exifMetadata", exifMetadata));
-    }
-    if (hasMakerNote) {
-        NAPI_CALL_RETURN_VOID(env,
-            napi_set_named_property(env, resultObj, "makerNoteHuaweiMetadata", makerNoteMetadata));
-    }
-    if (hasHeifsMetadata) {
-        NAPI_CALL_RETURN_VOID(env,
-            napi_set_named_property(env, resultObj, "heifsMetadata", heifsMetadata));
-    }
+
+    MetadataCollection metaCol;
+    InitMetadataAndFlags(env, context, metaCol);
+    ProcessMetadataValueTypeArray(env, context, metaCol);
+    CheckSpecialMetadataFlags(context, metaCol);
+    AttachMetadataToResultObj(env, metaCol, resultObj);
+
     result[NUM_1] = resultObj;
 #endif
 }
@@ -3222,8 +3331,15 @@ static void ReadImageMetadataExecute(napi_env env, void *data)
         IMAGE_LOGE("empty context");
         return;
     }
+    uint32_t errorCode;
     context->rExifMetadata = context->rImageSource->GetExifMetadata();
     context->rImageHeifsMetadata = CreateNullHeifsMetadata();
+    context->rFragmentMetadata = context->rImageSource->GetFragmentMetadata(errorCode);
+    context->rGifMetadata = context->rImageSource->GetGifMetadata(context->index, errorCode);
+    context->rRfDataBMetadata = std::static_pointer_cast<RfDataBMetadata>(
+        context->rImageSource->GetBlobMetadata(MetadataType::RFDATAB, errorCode));
+    context->rXtStyleMetadata = std::static_pointer_cast<XtStyleMetadata>(
+        context->rImageSource->GetBlobMetadata(MetadataType::XTSTYLE, errorCode));
     if (context->keyStrArray.empty()) {
         const std::vector<MetadataValue> allProperties = context->rImageSource->GetAllPropertiesWithType();
         for (const auto& property : allProperties) {
@@ -3392,7 +3508,7 @@ static void WriteImageMetadataExecute(napi_env env, void *data)
     if (context->kVStrArray.empty() && context->kValueTypeArray.empty()) {
         context->status = context->rImageSource->RemoveAllProperties();
     }
-    
+
     if (context->status != SUCCESS) {
         auto unsupportedKeys = context->rImageSource->GetModifyExifUnsupportedKeys();
         if (!unsupportedKeys.empty()) {
@@ -3532,6 +3648,206 @@ napi_value ImageSourceNapi::ReadImageMetadata(napi_env env, napi_callback_info i
 
     IMG_CREATE_CREATE_ASYNC_WORK(env, status, "ReadImageMetadata",
         ReadImageMetadataExecute,
+        reinterpret_cast<napi_async_complete_callback>(ReadImageMetadataComplete),
+        asyncContext,
+        asyncContext->work);
+
+    IMG_NAPI_CHECK_RET_D(IMG_IS_OK(status),
+        nullptr, IMAGE_LOGE("fail to create async work"));
+    return result;
+}
+
+std::vector<uint32_t> GetMetadataTypeArrayArgument(napi_env env, napi_value object)
+{
+    std::vector<uint32_t> typeArray;
+    uint32_t arrayLen = 0;
+    napi_status status = napi_get_array_length(env, object, &arrayLen);
+    if (status != napi_ok) {
+        IMAGE_LOGE("Get array length failed: %{public}d", status);
+        return typeArray;
+    }
+
+    for (uint32_t i = 0; i < arrayLen; i++) {
+        napi_value element;
+        if (napi_get_element(env, object, i, &element) == napi_ok) {
+            int32_t rawValue = 0;
+            if (napi_get_value_int32(env, element, &rawValue) == napi_ok) {
+                typeArray.push_back(rawValue);
+            } else {
+                IMAGE_LOGE("Failed to read number value at index %u", i);
+            }
+        }
+    }
+    IMAGE_LOGD("Get metadata type argument success.");
+    return typeArray;
+}
+
+static std::unique_ptr<ImageSourceAsyncContext> UnwrapContextForReadImageMetadataByType(napi_env env,
+    napi_callback_info info)
+{
+    napi_status status;
+    napi_value thisVar = nullptr;
+    napi_value argValue[NUM_2] = {0};
+    size_t argCount = NUM_2;
+    IMG_JS_ARGS(env, info, status, argCount, argValue, thisVar);
+    IMAGE_LOGD("ReadImageMetadata argCount is [%{public}zu]", argCount);
+
+    IMG_NAPI_CHECK_RET_D(IMG_IS_OK(status), nullptr, IMAGE_LOGE("fail to napi_get_cb_info"));
+
+    std::unique_ptr<ImageSourceAsyncContext> context = std::make_unique<ImageSourceAsyncContext>();
+    status = napi_unwrap(env, thisVar, reinterpret_cast<void**>(&context->constructor_));
+
+    IMG_NAPI_CHECK_RET_D(IMG_IS_READY(status, context->constructor_),
+        nullptr, IMAGE_LOGE("fail to unwrap context"));
+
+    context->rImageSource = context->constructor_->nativeImgSrc;
+
+    IMG_NAPI_CHECK_RET_D(IMG_IS_READY(status, context->rImageSource),
+        nullptr, IMAGE_LOGE("empty native rImageSource"));
+
+    if (ImageNapiUtils::getType(env, argValue[NUM_0]) == napi_object) {
+        context->typeArray = std::make_unique<std::vector<uint32_t>>(
+            GetMetadataTypeArrayArgument(env, argValue[NUM_0]));
+    }
+    if (argCount > NUM_1 && ImageNapiUtils::getType(env, argValue[NUM_1]) == napi_number) {
+        int index = 0;
+        uint32_t errorCode;
+        napi_get_value_int32(env, argValue[NUM_1], &index);
+        uint32_t frameCount = context->rImageSource->GetFrameCount(errorCode);
+        IMG_NAPI_CHECK_RET_D((errorCode == SUCCESS) && (index >= 0) && (index < frameCount), nullptr,
+            IMAGE_LOGE("Invalid readImageMetadata index"));
+        context->index = static_cast<uint32_t>(index);
+        IMAGE_LOGD("index is %{public}d", index);
+    }
+    return context;
+}
+
+static const std::map<std::string, PropertyValueType> GetMetadataKeyMapByType(uint32_t type)
+{
+    switch (type) {
+        case static_cast<uint32_t>(MetadataType::EXIF):
+            return ExifMetadata::GetExifMetadataMap();
+        case static_cast<uint32_t>(MetadataType::FRAGMENT):
+            return ExifMetadata::GetFragmentMetadataMap();
+        case static_cast<uint32_t>(MetadataType::GIF):
+            return ExifMetadata::GetGifMetadataMap();
+        case static_cast<uint32_t>(MetadataType::HEIFS):
+            return ExifMetadata::GetHeifsMetadataMap();
+        default:
+            return std::map<std::string, PropertyValueType>();
+    }
+}
+
+static void ProcessSingleMetadataKey(ImageSourceAsyncContext* context, const std::string& keyStr)
+{
+    if (context == nullptr) {
+        return;
+    }
+    MetadataValue value;
+    context->status = context->rImageSource->GetImagePropertyByType(context->index, keyStr, value);
+
+    value.key = keyStr;
+    value.type = ExifMetadata::GetPropertyValueType(value.key);
+    context->kValueTypeArray.emplace_back(value);
+
+    if (context->status != SUCCESS) {
+        IMAGE_LOGE("errCode: %{public}u, key: %{public}s", context->status, keyStr.c_str());
+        return;
+    }
+    context->status = SUCCESS;
+}
+
+static uint32_t ProcessSpecifiedMetadataType(ImageSourceAsyncContext* context, const uint32_t& metaType)
+{
+    if (metaType == XTSTYLE || metaType == RFDATAB) {
+        uint32_t xtErrorCode;
+        uint32_t rfErrorCode;
+        auto xtStyle = context->rImageSource->GetBlobMetadata(MetadataType::XTSTYLE, xtErrorCode);
+        auto rfDataB = context->rImageSource->GetBlobMetadata(MetadataType::RFDATAB, rfErrorCode);
+        if (xtStyle != nullptr || rfDataB != nullptr) {
+            return SUCCESS;
+        }
+        if (xtErrorCode == ERR_IMAGE_SOURCE_DATA || rfErrorCode == ERR_IMAGE_SOURCE_DATA) {
+            return ERR_IMAGE_SOURCE_DATA;
+        }
+        return IMAGE_SOURCE_UNSUPPORTED_METADATA;
+    }
+    const auto& metadataMap = GetMetadataKeyMapByType(metaType);
+    if (metadataMap.empty()) {
+        return IMAGE_SOURCE_UNSUPPORTED_METADATA;
+    }
+    for (const auto& [key, valueType] : metadataMap) {
+        context->keyStrArray.emplace_back(key);
+    }
+    context->status = ERROR;
+    for (const auto& keyStr : context->keyStrArray) {
+        ProcessSingleMetadataKey(context, keyStr);
+    }
+    return context->status;
+}
+
+static void GetSpecifiedMetadataProperties(ImageSourceAsyncContext* context)
+{
+    uint32_t status = SUCCESS;
+    for (const auto& metaType : *context->typeArray) {
+        status = ProcessSpecifiedMetadataType(context, metaType);
+        if (status != SUCCESS) {
+            context->errMsgArray.insert(std::make_pair(status, "Unsupport metadata type"));
+        }
+    }
+    context->status = (context->typeArray.get()->size() == context->errMsgArray.size()) ? ERROR : SUCCESS;
+}
+
+static void ReadImageMetadataByTypeExecute(napi_env env, void *data)
+{
+    auto context = static_cast<ImageSourceAsyncContext*>(data);
+    if (context == nullptr) {
+        IMAGE_LOGE("empty context");
+        return;
+    }
+    uint32_t errorCode;
+    context->rExifMetadata = context->rImageSource->GetExifMetadata();
+    context->rImageHeifsMetadata = CreateNullHeifsMetadata();
+    context->rFragmentMetadata = context->rImageSource->GetFragmentMetadata(errorCode);
+    context->rGifMetadata = context->rImageSource->GetGifMetadata(context->index, errorCode);
+    context->rRfDataBMetadata = std::static_pointer_cast<RfDataBMetadata>(
+        context->rImageSource->GetBlobMetadata(MetadataType::RFDATAB, errorCode));
+    context->rXtStyleMetadata = std::static_pointer_cast<XtStyleMetadata>(
+        context->rImageSource->GetBlobMetadata(MetadataType::XTSTYLE, errorCode));
+    if (context->typeArray == nullptr || context->typeArray->empty()) {
+        const std::vector<MetadataValue> allProperties = context->rImageSource->GetAllPropertiesWithType();
+        for (const auto& property : allProperties) {
+            context->kValueTypeArray.emplace_back(property);
+        }
+        context->status = allProperties.empty() ? ERROR : SUCCESS;
+        if (allProperties.empty()) {
+            IMAGE_LOGE("Failed to get any properties");
+            context->errMsgArray.insert(std::make_pair(ERROR, "AllProperties"));
+        }
+    } else {
+        GetSpecifiedMetadataProperties(context);
+    }
+}
+
+napi_value ImageSourceNapi::ReadImageMetadataByType(napi_env env, napi_callback_info info)
+{
+    ImageTrace imageTrace("ImageSourceNapi::ReadImageMetadataByType");
+    napi_value result = nullptr;
+    napi_get_undefined(env, &result);
+    napi_status status;
+    std::unique_ptr<ImageSourceAsyncContext> asyncContext = UnwrapContextForReadImageMetadataByType(env, info);
+    if (asyncContext == nullptr) {
+        return ImageNapiUtils::ThrowExceptionError(env, IMAGE_SOURCE_INVALID_PARAMETER, "async context unwrap failed");
+    }
+
+    if (asyncContext->callbackRef == nullptr) {
+        napi_create_promise(env, &(asyncContext->deferred), &result);
+    } else {
+        napi_get_undefined(env, &result);
+    }
+
+    IMG_CREATE_CREATE_ASYNC_WORK(env, status, "ReadImageMetadataByType",
+        ReadImageMetadataByTypeExecute,
         reinterpret_cast<napi_async_complete_callback>(ReadImageMetadataComplete),
         asyncContext,
         asyncContext->work);

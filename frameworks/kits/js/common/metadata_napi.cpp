@@ -23,6 +23,10 @@
 #include "exif_metadata_formatter.h"
 #include "exif_metadata.h"
 #include "heifs_metadata.h"
+#include "fragment_metadata.h"
+#include "gif_metadata.h"
+#include "rfdatab_metadata.h"
+#include "xtstyle_metadata.h"
 
 #undef LOG_DOMAIN
 #define LOG_DOMAIN LOG_TAG_DOMAIN_ID_IMAGE
@@ -42,10 +46,18 @@ namespace Media {
     static const std::string EXIF_CLASS = "ExifMetadata";
     static const std::string MAKERNOTE_CLASS = "MakerNoteHuaweiMetadata";
     static const std::string HEIFS_CLASS = "HeifsMetadata";
+    static const std::string FRAGMENT_CLASS = "FragmentMetadata";
+    static const std::string GIF_CLASS = "GifMetadata";
+    static const std::string XTSTYLE_CLASS = "XtStyleMetadata";
+    static const std::string RFDATAB_CLASS = "RfDataBMetadata";
     thread_local napi_ref MetadataNapi::sConstructor_ = nullptr;
     thread_local napi_ref MetadataNapi::sExifConstructor_ = nullptr;
     thread_local napi_ref MetadataNapi::sMakerNoteConstructor_ = nullptr;
     thread_local napi_ref MetadataNapi::sHeifsMetadataConstructor_ = nullptr;
+    thread_local napi_ref MetadataNapi::sFragmentMetadataConstructor_ = nullptr;
+    thread_local napi_ref MetadataNapi::sGifMetadataConstructor_ = nullptr;
+    thread_local napi_ref MetadataNapi::sXtStyleMetadataConstructor_ = nullptr;
+    thread_local napi_ref MetadataNapi::sRfDataBMetadataConstructor_ = nullptr;
     thread_local std::shared_ptr<ImageMetadata> MetadataNapi::sMetadata_ = nullptr;
 
 #if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
@@ -468,6 +480,197 @@ napi_value MetadataNapi::InitHeifsMetadata(napi_env env, napi_value exports)
     return exports;
 }
 
+napi_value MetadataNapi::InitFragmentMetadata(napi_env env, napi_value exports)
+{
+    IMAGE_LOGD("InitFragmentMetadata ENTER");
+    
+    napi_property_descriptor instanceProps[] = {
+        DECLARE_NAPI_FUNCTION("getProperties", GetProperties),
+        DECLARE_NAPI_FUNCTION("setProperties", SetProperties),
+        DECLARE_NAPI_FUNCTION("getAllProperties", GetAllProperties),
+        DECLARE_NAPI_FUNCTION("getBlob", GetBlob),
+        DECLARE_NAPI_FUNCTION("setBlob", SetBlob),
+        DECLARE_NAPI_FUNCTION("clone", CloneFragmentMetadata),
+    };
+    napi_property_descriptor staticProps[] = {
+        DECLARE_NAPI_STATIC_FUNCTION("createInstance", CreateFragmentMetadataInstance),
+    };
+    napi_value constructor = nullptr;
+    napi_status status = napi_define_class(env, FRAGMENT_CLASS.c_str(), NAPI_AUTO_LENGTH, Constructor, nullptr,
+        sizeof(instanceProps) / sizeof(instanceProps[0]), instanceProps, &constructor);
+    if (status != napi_ok || constructor == nullptr) {
+        IMAGE_LOGE("Failed to define FragmentMetadata class: %{public}d", status);
+        return exports;
+    }
+    status = napi_define_properties(env, constructor, sizeof(staticProps) / sizeof(staticProps[0]), staticProps);
+    if (status != napi_ok) {
+        IMAGE_LOGE("Failed to define static methods: %{public}d", status);
+        return exports;
+    }
+    status = napi_create_reference(env, constructor, 1, &sFragmentMetadataConstructor_);
+    if (status != napi_ok || sFragmentMetadataConstructor_ == nullptr) {
+        IMAGE_LOGE("Failed to create FragmentMetadata ref: %{public}d", status);
+        return exports;
+    }
+    status = napi_set_named_property(env, exports, FRAGMENT_CLASS.c_str(), constructor);
+    if (status != napi_ok) {
+        IMAGE_LOGE("Failed to export %{public}s class: %{public}d", FRAGMENT_CLASS.c_str(), status);
+    }
+
+    auto context = new NapiConstructorContext();
+    context->env_ = env;
+    context->ref_ = sFragmentMetadataConstructor_;
+    napi_add_env_cleanup_hook(env, ImageNapiUtils::CleanUpConstructorContext, context);
+    
+    IMAGE_LOGD("InitFragmentMetadata EXIT");
+    return exports;
+}
+
+napi_value MetadataNapi::InitGifMetadata(napi_env env, napi_value exports)
+{
+    IMAGE_LOGD("InitGifMetadata ENTER");
+    
+    napi_property_descriptor instanceProps[] = {
+        DECLARE_NAPI_FUNCTION("getProperties", GetProperties),
+        DECLARE_NAPI_FUNCTION("setProperties", SetProperties),
+        DECLARE_NAPI_FUNCTION("getAllProperties", GetAllProperties),
+        DECLARE_NAPI_FUNCTION("getBlob", GetBlob),
+        DECLARE_NAPI_FUNCTION("setBlob", SetBlob),
+        DECLARE_NAPI_FUNCTION("clone", CloneGifMetadata),
+    };
+    napi_property_descriptor staticProps[] = {
+        DECLARE_NAPI_STATIC_FUNCTION("createInstance", CreateGifMetadataInstance),
+    };
+    napi_value constructor = nullptr;
+    napi_status status = napi_define_class(env, GIF_CLASS.c_str(), NAPI_AUTO_LENGTH, Constructor, nullptr,
+        sizeof(instanceProps) / sizeof(instanceProps[0]), instanceProps, &constructor);
+    if (status != napi_ok || constructor == nullptr) {
+        IMAGE_LOGE("Failed to define GifMetadata class: %{public}d", status);
+        return exports;
+    }
+    status = napi_define_properties(env, constructor, sizeof(staticProps) / sizeof(staticProps[0]), staticProps);
+    if (status != napi_ok) {
+        IMAGE_LOGE("Failed to define static methods: %{public}d", status);
+        return exports;
+    }
+    status = napi_create_reference(env, constructor, 1, &sGifMetadataConstructor_);
+    if (status != napi_ok || sGifMetadataConstructor_ == nullptr) {
+        IMAGE_LOGE("Failed to create GifMetadata ref: %{public}d", status);
+        return exports;
+    }
+    status = napi_set_named_property(env, exports, GIF_CLASS.c_str(), constructor);
+    if (status != napi_ok) {
+        IMAGE_LOGE("Failed to export %{public}s class: %{public}d", GIF_CLASS.c_str(), status);
+    }
+    auto context = new NapiConstructorContext();
+    context->env_ = env;
+    context->ref_ = sGifMetadataConstructor_;
+    napi_add_env_cleanup_hook(env, ImageNapiUtils::CleanUpConstructorContext, context);
+    
+    IMAGE_LOGD("InitGifMetadata EXIT");
+    return exports;
+}
+
+napi_value MetadataNapi::GetAllPropertiesForBlob(napi_env env, napi_callback_info info)
+{
+    napi_value result = nullptr;
+    napi_get_undefined(env, &result);
+
+    IMAGE_LOGE("This function is not supported for blob metadata!");
+
+    return result;
+}
+
+napi_value MetadataNapi::InitXtStyleMetadata(napi_env env, napi_value exports)
+{
+    IMAGE_LOGD("InitXtStyleMetadata ENTER");
+    
+    napi_property_descriptor instanceProps[] = {
+        DECLARE_NAPI_FUNCTION("getProperties", GetProperties),
+        DECLARE_NAPI_FUNCTION("setProperties", SetProperties),
+        DECLARE_NAPI_FUNCTION("getAllProperties", GetAllPropertiesForBlob),
+        DECLARE_NAPI_FUNCTION("getBlob", GetBlob),
+        DECLARE_NAPI_FUNCTION("setBlob", SetBlob),
+        DECLARE_NAPI_FUNCTION("clone", CloneXtStyleMetadata),
+    };
+    napi_property_descriptor staticProps[] = {
+        DECLARE_NAPI_STATIC_FUNCTION("createInstance", CreateXtStyleMetadataInstance),
+    };
+    napi_value constructor = nullptr;
+    napi_status status = napi_define_class(env, XTSTYLE_CLASS.c_str(), NAPI_AUTO_LENGTH, Constructor, nullptr,
+        sizeof(instanceProps) / sizeof(instanceProps[0]), instanceProps, &constructor);
+    if (status != napi_ok || constructor == nullptr) {
+        IMAGE_LOGE("Failed to define XtStyleMetadata class: %{public}d", status);
+        return exports;
+    }
+    status = napi_define_properties(env, constructor, sizeof(staticProps) / sizeof(staticProps[0]), staticProps);
+    if (status != napi_ok) {
+        IMAGE_LOGE("Failed to define static methods: %{public}d", status);
+        return exports;
+    }
+    status = napi_create_reference(env, constructor, 1, &sXtStyleMetadataConstructor_);
+    if (status != napi_ok || sXtStyleMetadataConstructor_ == nullptr) {
+        IMAGE_LOGE("Failed to create XtStyleMetadata ref: %{public}d", status);
+        return exports;
+    }
+    status = napi_set_named_property(env, exports, XTSTYLE_CLASS.c_str(), constructor);
+    if (status != napi_ok) {
+        IMAGE_LOGE("Failed to export %{public}s class: %{public}d", XTSTYLE_CLASS.c_str(), status);
+    }
+    auto context = new NapiConstructorContext();
+    context->env_ = env;
+    context->ref_ = sXtStyleMetadataConstructor_;
+    napi_add_env_cleanup_hook(env, ImageNapiUtils::CleanUpConstructorContext, context);
+    
+    IMAGE_LOGD("InitXtStyleMetadata EXIT");
+    return exports;
+}
+
+napi_value MetadataNapi::InitRfDataBMetadata(napi_env env, napi_value exports)
+{
+    IMAGE_LOGD("InitRfDataBMetadata ENTER");
+    
+    napi_property_descriptor instanceProps[] = {
+        DECLARE_NAPI_FUNCTION("getProperties", GetProperties),
+        DECLARE_NAPI_FUNCTION("setProperties", SetProperties),
+        DECLARE_NAPI_FUNCTION("getAllProperties", GetAllPropertiesForBlob),
+        DECLARE_NAPI_FUNCTION("getBlob", GetBlob),
+        DECLARE_NAPI_FUNCTION("setBlob", SetBlob),
+        DECLARE_NAPI_FUNCTION("clone", CloneRfDataBMetadata),
+    };
+    napi_property_descriptor staticProps[] = {
+        DECLARE_NAPI_STATIC_FUNCTION("createInstance", CreateRfDataBMetadataInstance),
+    };
+    napi_value constructor = nullptr;
+    napi_status status = napi_define_class(env, RFDATAB_CLASS.c_str(), NAPI_AUTO_LENGTH, Constructor, nullptr,
+        sizeof(instanceProps) / sizeof(instanceProps[0]), instanceProps, &constructor);
+    if (status != napi_ok || constructor == nullptr) {
+        IMAGE_LOGE("Failed to define RfDataBfMetadata class: %{public}d", status);
+        return exports;
+    }
+    status = napi_define_properties(env, constructor, sizeof(staticProps) / sizeof(staticProps[0]), staticProps);
+    if (status != napi_ok) {
+        IMAGE_LOGE("Failed to define static methods: %{public}d", status);
+        return exports;
+    }
+    status = napi_create_reference(env, constructor, 1, &sRfDataBMetadataConstructor_);
+    if (status != napi_ok || sRfDataBMetadataConstructor_ == nullptr) {
+        IMAGE_LOGE("Failed to create RfDataBMetadata ref: %{public}d", status);
+        return exports;
+    }
+    status = napi_set_named_property(env, exports, RFDATAB_CLASS.c_str(), constructor);
+    if (status != napi_ok) {
+        IMAGE_LOGE("Failed to export %{public}s class: %{public}d", RFDATAB_CLASS.c_str(), status);
+    }
+    auto context = new NapiConstructorContext();
+    context->env_ = env;
+    context->ref_ = sRfDataBMetadataConstructor_;
+    napi_add_env_cleanup_hook(env, ImageNapiUtils::CleanUpConstructorContext, context);
+    
+    IMAGE_LOGD("InitRfDataBMetadata EXIT");
+    return exports;
+}
+
 napi_value MetadataNapi::CreateMetadata(napi_env env, std::shared_ptr<ImageMetadata> metadata)
 {
     if (sConstructor_ == nullptr) {
@@ -528,6 +731,90 @@ napi_value MetadataNapi::CreateHeifsMetadata(napi_env env, std::shared_ptr<Image
     }
     if (status != napi_ok) {
         IMAGE_LOGE("CreateHeifsMetadata | Failed to create instance");
+        napi_get_undefined(env, &result);
+    }
+    return result;
+}
+
+napi_value MetadataNapi::CreateFragmentMetadata(napi_env env, std::shared_ptr<ImageMetadata> metadata)
+{
+    if (sFragmentMetadataConstructor_ == nullptr) {
+        napi_value exports = nullptr;
+        napi_create_object(env, &exports);
+        MetadataNapi::InitFragmentMetadata(env, exports);
+    }
+    napi_value constructor = nullptr;
+    napi_value result = nullptr;
+    napi_status status = napi_get_reference_value(env, sFragmentMetadataConstructor_, &constructor);
+    if (status == napi_ok) {
+        sMetadata_ = metadata;
+        status = napi_new_instance(env, constructor, 0, nullptr, &result);
+    }
+    if (status != napi_ok) {
+        IMAGE_LOGE("CreateFragmentMetadata | Failed to create instance");
+        napi_get_undefined(env, &result);
+    }
+    return result;
+}
+
+napi_value MetadataNapi::CreateGifMetadata(napi_env env, std::shared_ptr<ImageMetadata> metadata)
+{
+    if (sGifMetadataConstructor_ == nullptr) {
+        napi_value exports = nullptr;
+        napi_create_object(env, &exports);
+        MetadataNapi::InitGifMetadata(env, exports);
+    }
+    napi_value constructor = nullptr;
+    napi_value result = nullptr;
+    napi_status status = napi_get_reference_value(env, sGifMetadataConstructor_, &constructor);
+    if (status == napi_ok) {
+        sMetadata_ = metadata;
+        status = napi_new_instance(env, constructor, 0, nullptr, &result);
+    }
+    if (status != napi_ok) {
+        IMAGE_LOGE("CreateGifMetadata | Failed to create instance");
+        napi_get_undefined(env, &result);
+    }
+    return result;
+}
+
+napi_value MetadataNapi::CreateXtStyleMetadata(napi_env env, std::shared_ptr<ImageMetadata> metadata)
+{
+    if (sXtStyleMetadataConstructor_ == nullptr) {
+        napi_value exports = nullptr;
+        napi_create_object(env, &exports);
+        MetadataNapi::InitXtStyleMetadata(env, exports);
+    }
+    napi_value constructor = nullptr;
+    napi_value result = nullptr;
+    napi_status status = napi_get_reference_value(env, sXtStyleMetadataConstructor_, &constructor);
+    if (status == napi_ok) {
+        sMetadata_ = metadata;
+        status = napi_new_instance(env, constructor, 0, nullptr, &result);
+    }
+    if (status != napi_ok) {
+        IMAGE_LOGE("CreateXtStyleMetadata | Failed to create instance");
+        napi_get_undefined(env, &result);
+    }
+    return result;
+}
+
+napi_value MetadataNapi::CreateRfDataBMetadata(napi_env env, std::shared_ptr<ImageMetadata> metadata)
+{
+    if (sRfDataBMetadataConstructor_ == nullptr) {
+        napi_value exports = nullptr;
+        napi_create_object(env, &exports);
+        MetadataNapi::InitRfDataBMetadata(env, exports);
+    }
+    napi_value constructor = nullptr;
+    napi_value result = nullptr;
+    napi_status status = napi_get_reference_value(env, sRfDataBMetadataConstructor_, &constructor);
+    if (status == napi_ok) {
+        sMetadata_ = metadata;
+        status = napi_new_instance(env, constructor, 0, nullptr, &result);
+    }
+    if (status != napi_ok) {
+        IMAGE_LOGE("CreateRfDataBMetadata | Failed to create instance");
         napi_get_undefined(env, &result);
     }
     return result;
@@ -696,7 +983,9 @@ static void GetPropertiesComplete(napi_env env, napi_status status, MetadataNapi
     napi_get_undefined(env, &result[NUM_1]);
 
     if (context->status == SUCCESS) {
-        result[NUM_1] = SetArrayInfo(env, context->KVSArray);
+        if (!context->KVSArray.empty()) {
+            result[NUM_1] = SetArrayInfo(env, context->KVSArray);
+        }
     } else {
         result[NUM_0] = CreateErrorArray(env, context);
     }
@@ -938,6 +1227,142 @@ static void CloneHeifsMetadataComplete(napi_env env, napi_status status, void *d
     delete context;
 }
 
+static void CloneFragmentMetadataComplete(napi_env env, napi_status status, void *data)
+{
+    auto context = static_cast<MetadataNapiAsyncContext*>(data);
+    if (context == nullptr) {
+        return;
+    }
+    napi_handle_scope scope;
+    napi_open_handle_scope(env, &scope);
+    
+    napi_value result = nullptr;
+    bool success = context->rMetadata != nullptr &&
+                 (result = MetadataNapi::CreateFragmentMetadata(env, context->rMetadata)) != nullptr;
+    if (success) {
+        for (auto& [name, ref] : context->customProperties) {
+            napi_value propValue;
+            if (napi_get_reference_value(env, ref, &propValue) == napi_ok) {
+                napi_set_named_property(env, result, name.c_str(), propValue);
+            }
+            napi_delete_reference(env, ref);
+        }
+        context->customProperties.clear();
+    }
+    napi_deferred deferred = context->deferred;
+    if (success) {
+        napi_resolve_deferred(env, deferred, result);
+    } else {
+        napi_reject_deferred(env, deferred, CreateBusinessError(env,
+            IMAGE_SOURCE_UNSUPPORTED_METADATA, "Failed to clone FRAGMENT metadata"));
+    }
+    napi_delete_async_work(env, context->work);
+    napi_close_handle_scope(env, scope);
+    delete context;
+}
+
+static void CloneGifMetadataComplete(napi_env env, napi_status status, void *data)
+{
+    auto context = static_cast<MetadataNapiAsyncContext*>(data);
+    if (context == nullptr) {
+        return;
+    }
+    napi_handle_scope scope;
+    napi_open_handle_scope(env, &scope);
+    
+    napi_value result = nullptr;
+    bool success = context->rMetadata != nullptr &&
+                 (result = MetadataNapi::CreateGifMetadata(env, context->rMetadata)) != nullptr;
+    if (success) {
+        for (auto& [name, ref] : context->customProperties) {
+            napi_value propValue;
+            if (napi_get_reference_value(env, ref, &propValue) == napi_ok) {
+                napi_set_named_property(env, result, name.c_str(), propValue);
+            }
+            napi_delete_reference(env, ref);
+        }
+        context->customProperties.clear();
+    }
+    napi_deferred deferred = context->deferred;
+    if (success) {
+        napi_resolve_deferred(env, deferred, result);
+    } else {
+        napi_reject_deferred(env, deferred, CreateBusinessError(env,
+            IMAGE_SOURCE_UNSUPPORTED_METADATA, "Failed to clone GIF metadata"));
+    }
+    napi_delete_async_work(env, context->work);
+    napi_close_handle_scope(env, scope);
+    delete context;
+}
+
+static void CloneXtStyleMetadataComplete(napi_env env, napi_status status, void *data)
+{
+    auto context = static_cast<MetadataNapiAsyncContext*>(data);
+    if (context == nullptr) {
+        return;
+    }
+    napi_handle_scope scope;
+    napi_open_handle_scope(env, &scope);
+    
+    napi_value result = nullptr;
+    bool success = context->rMetadata != nullptr &&
+                 (result = MetadataNapi::CreateXtStyleMetadata(env, context->rMetadata)) != nullptr;
+    if (success) {
+        for (auto& [name, ref] : context->customProperties) {
+            napi_value propValue;
+            if (napi_get_reference_value(env, ref, &propValue) == napi_ok) {
+                napi_set_named_property(env, result, name.c_str(), propValue);
+            }
+            napi_delete_reference(env, ref);
+        }
+        context->customProperties.clear();
+    }
+    napi_deferred deferred = context->deferred;
+    if (success) {
+        napi_resolve_deferred(env, deferred, result);
+    } else {
+        napi_reject_deferred(env, deferred, CreateBusinessError(env,
+            IMAGE_SOURCE_UNSUPPORTED_METADATA, "Failed to clone XtStyle metadata"));
+    }
+    napi_delete_async_work(env, context->work);
+    napi_close_handle_scope(env, scope);
+    delete context;
+}
+
+static void CloneRfDataBMetadataComplete(napi_env env, napi_status status, void *data)
+{
+    auto context = static_cast<MetadataNapiAsyncContext*>(data);
+    if (context == nullptr) {
+        return;
+    }
+    napi_handle_scope scope;
+    napi_open_handle_scope(env, &scope);
+    
+    napi_value result = nullptr;
+    bool success = context->rMetadata != nullptr &&
+                 (result = MetadataNapi::CreateRfDataBMetadata(env, context->rMetadata)) != nullptr;
+    if (success) {
+        for (auto& [name, ref] : context->customProperties) {
+            napi_value propValue;
+            if (napi_get_reference_value(env, ref, &propValue) == napi_ok) {
+                napi_set_named_property(env, result, name.c_str(), propValue);
+            }
+            napi_delete_reference(env, ref);
+        }
+        context->customProperties.clear();
+    }
+    napi_deferred deferred = context->deferred;
+    if (success) {
+        napi_resolve_deferred(env, deferred, result);
+    } else {
+        napi_reject_deferred(env, deferred, CreateBusinessError(env,
+            IMAGE_SOURCE_UNSUPPORTED_METADATA, "Failed to clone RfDataB metadata"));
+    }
+    napi_delete_async_work(env, context->work);
+    napi_close_handle_scope(env, scope);
+    delete context;
+}
+
 napi_value MetadataNapi::GetProperties(napi_env env, napi_callback_info info)
 {
     napi_value result = nullptr;
@@ -1016,13 +1441,15 @@ napi_value MetadataNapi::GetAllProperties(napi_env env, napi_callback_info info)
                 return;
             }
             ImageMetadata::PropertyMapPtr allKey = context->rMetadata->GetAllProperties();
-            for (const auto &entry : *allKey) {
+            if (allKey != nullptr) {
+                for (const auto &entry : *allKey) {
                 context->KVSArray.emplace_back(std::make_pair(entry.first, entry.second));
+                }
             }
-            context->status = SUCCESS;
         }, reinterpret_cast<napi_async_complete_callback>(GetPropertiesComplete),
         asyncContext,
         asyncContext->work);
+
     IMG_NAPI_CHECK_RET_D(IMG_IS_OK(status),
         nullptr, IMAGE_LOGE("Fail to create async work"));
     return result;
@@ -1085,6 +1512,66 @@ static void CloneHeifsMetadataExecute(napi_env env, void *data)
         return;
     }
     auto tmpixel = context->rMetadata->CloneMetadata();
+    context->rMetadata = std::move(tmpixel);
+    context->status = SUCCESS;
+}
+
+static void CloneFragmentMetadataExecute(napi_env env, void *data)
+{
+    auto context = static_cast<MetadataNapiAsyncContext*>(data);
+    if (context == nullptr) {
+        IMAGE_LOGE("Empty context");
+        return;
+    }
+    auto tmpixel = context->rMetadata->CloneMetadata();
+    if (tmpixel == nullptr) {
+        return;
+    }
+    context->rMetadata = std::move(tmpixel);
+    context->status = SUCCESS;
+}
+
+static void CloneGifMetadataExecute(napi_env env, void *data)
+{
+    auto context = static_cast<MetadataNapiAsyncContext*>(data);
+    if (context == nullptr) {
+        IMAGE_LOGE("Empty context");
+        return;
+    }
+    auto tmpixel = context->rMetadata->CloneMetadata();
+    if (tmpixel == nullptr) {
+        return;
+    }
+    context->rMetadata = std::move(tmpixel);
+    context->status = SUCCESS;
+}
+
+static void CloneXtStyleMetadataExecute(napi_env env, void *data)
+{
+    auto context = static_cast<MetadataNapiAsyncContext*>(data);
+    if (context == nullptr) {
+        IMAGE_LOGE("Empty context");
+        return;
+    }
+    auto tmpixel = context->rMetadata->CloneMetadata();
+    if (tmpixel == nullptr) {
+        return;
+    }
+    context->rMetadata = std::move(tmpixel);
+    context->status = SUCCESS;
+}
+
+static void CloneRfDataBMetadataExecute(napi_env env, void *data)
+{
+    auto context = static_cast<MetadataNapiAsyncContext*>(data);
+    if (context == nullptr) {
+        IMAGE_LOGE("Empty context");
+        return;
+    }
+    auto tmpixel = context->rMetadata->CloneMetadata();
+    if (tmpixel == nullptr) {
+        return;
+    }
     context->rMetadata = std::move(tmpixel);
     context->status = SUCCESS;
 }
@@ -1193,6 +1680,134 @@ napi_value MetadataNapi::CloneHeifsMetadata(napi_env env, napi_callback_info inf
 
     IMG_CREATE_CREATE_ASYNC_WORK(env, status, "CloneHeifsMetadata",
         CloneHeifsMetadataExecute, CloneHeifsMetadataComplete, asyncContext, asyncContext->work);
+    IMG_NAPI_CHECK_RET_D(IMG_IS_OK(status),
+        nullptr, IMAGE_LOGE("Fail to create async work"));
+    return result;
+}
+
+napi_value MetadataNapi::CloneFragmentMetadata(napi_env env, napi_callback_info info)
+{
+    napi_value result = nullptr;
+    napi_get_undefined(env, &result);
+    napi_status status;
+    napi_value thisVar = nullptr;
+    size_t argCount = NUM_0;
+    IMG_JS_ARGS(env, info, status, argCount, nullptr, thisVar);
+    IMG_NAPI_CHECK_RET_D(IMG_IS_OK(status), nullptr, IMAGE_LOGE("Fail to napi_get_cb_info"));
+
+    std::unique_ptr<MetadataNapiAsyncContext> asyncContext = std::make_unique<MetadataNapiAsyncContext>();
+    status = napi_unwrap(env, thisVar, reinterpret_cast<void**>(&asyncContext->nConstructor));
+    IMG_NAPI_CHECK_RET_D(IMG_IS_READY(status, asyncContext->nConstructor), nullptr,
+                         IMAGE_LOGE("Fail to unwrap context"));
+    
+    asyncContext->rMetadata = asyncContext->nConstructor->nativeMetadata_;
+    IMG_NAPI_CHECK_RET_D(IMG_IS_READY(status, asyncContext->rMetadata), nullptr, IMAGE_LOGE("Empty native rMetadata"));
+    if (argCount != NUM_0) {
+        IMAGE_LOGE("ArgCount mismatch");
+        return nullptr;
+    }
+
+    napi_create_promise(env, &(asyncContext->deferred), &result);
+    GetJsProperties(env, thisVar, static_cast<void*>((asyncContext).get()));
+
+    IMG_CREATE_CREATE_ASYNC_WORK(env, status, "CloneFragmentMetadata",
+        CloneFragmentMetadataExecute, CloneFragmentMetadataComplete, asyncContext, asyncContext->work);
+    IMG_NAPI_CHECK_RET_D(IMG_IS_OK(status),
+        nullptr, IMAGE_LOGE("Fail to create async work"));
+    return result;
+}
+
+napi_value MetadataNapi::CloneGifMetadata(napi_env env, napi_callback_info info)
+{
+    napi_value result = nullptr;
+    napi_get_undefined(env, &result);
+    napi_status status;
+    napi_value thisVar = nullptr;
+    size_t argCount = NUM_0;
+    IMG_JS_ARGS(env, info, status, argCount, nullptr, thisVar);
+    IMG_NAPI_CHECK_RET_D(IMG_IS_OK(status), nullptr, IMAGE_LOGE("Fail to napi_get_cb_info"));
+
+    std::unique_ptr<MetadataNapiAsyncContext> asyncContext = std::make_unique<MetadataNapiAsyncContext>();
+    status = napi_unwrap(env, thisVar, reinterpret_cast<void**>(&asyncContext->nConstructor));
+    IMG_NAPI_CHECK_RET_D(IMG_IS_READY(status, asyncContext->nConstructor), nullptr,
+                         IMAGE_LOGE("Fail to unwrap context"));
+    
+    asyncContext->rMetadata = asyncContext->nConstructor->nativeMetadata_;
+    IMG_NAPI_CHECK_RET_D(IMG_IS_READY(status, asyncContext->rMetadata), nullptr, IMAGE_LOGE("Empty native rMetadata"));
+    if (argCount != NUM_0) {
+        IMAGE_LOGE("ArgCount mismatch");
+        return nullptr;
+    }
+
+    napi_create_promise(env, &(asyncContext->deferred), &result);
+    GetJsProperties(env, thisVar, static_cast<void*>((asyncContext).get()));
+
+    IMG_CREATE_CREATE_ASYNC_WORK(env, status, "CloneGifMetadata",
+        CloneGifMetadataExecute, CloneGifMetadataComplete, asyncContext, asyncContext->work);
+    IMG_NAPI_CHECK_RET_D(IMG_IS_OK(status),
+        nullptr, IMAGE_LOGE("Fail to create async work"));
+    return result;
+}
+
+napi_value MetadataNapi::CloneXtStyleMetadata(napi_env env, napi_callback_info info)
+{
+    napi_value result = nullptr;
+    napi_get_undefined(env, &result);
+    napi_status status;
+    napi_value thisVar = nullptr;
+    size_t argCount = NUM_0;
+    IMG_JS_ARGS(env, info, status, argCount, nullptr, thisVar);
+    IMG_NAPI_CHECK_RET_D(IMG_IS_OK(status), nullptr, IMAGE_LOGE("Fail to napi_get_cb_info"));
+
+    std::unique_ptr<MetadataNapiAsyncContext> asyncContext = std::make_unique<MetadataNapiAsyncContext>();
+    status = napi_unwrap(env, thisVar, reinterpret_cast<void**>(&asyncContext->nConstructor));
+    IMG_NAPI_CHECK_RET_D(IMG_IS_READY(status, asyncContext->nConstructor), nullptr,
+                         IMAGE_LOGE("Fail to unwrap context"));
+    
+    asyncContext->rMetadata = asyncContext->nConstructor->nativeMetadata_;
+    IMG_NAPI_CHECK_RET_D(IMG_IS_READY(status, asyncContext->rMetadata), nullptr, IMAGE_LOGE("Empty native rMetadata"));
+    if (argCount != NUM_0) {
+        IMAGE_LOGE("ArgCount mismatch");
+        return nullptr;
+    }
+
+    napi_create_promise(env, &(asyncContext->deferred), &result);
+    GetJsProperties(env, thisVar, static_cast<void*>((asyncContext).get()));
+
+    IMG_CREATE_CREATE_ASYNC_WORK(env, status, "CloneXtStyleMetadata",
+        CloneXtStyleMetadataExecute, CloneXtStyleMetadataComplete, asyncContext, asyncContext->work);
+    IMG_NAPI_CHECK_RET_D(IMG_IS_OK(status),
+        nullptr, IMAGE_LOGE("Fail to create async work"));
+    return result;
+}
+
+napi_value MetadataNapi::CloneRfDataBMetadata(napi_env env, napi_callback_info info)
+{
+    napi_value result = nullptr;
+    napi_get_undefined(env, &result);
+    napi_status status;
+    napi_value thisVar = nullptr;
+    size_t argCount = NUM_0;
+    IMG_JS_ARGS(env, info, status, argCount, nullptr, thisVar);
+    IMG_NAPI_CHECK_RET_D(IMG_IS_OK(status), nullptr, IMAGE_LOGE("Fail to napi_get_cb_info"));
+
+    std::unique_ptr<MetadataNapiAsyncContext> asyncContext = std::make_unique<MetadataNapiAsyncContext>();
+    status = napi_unwrap(env, thisVar, reinterpret_cast<void**>(&asyncContext->nConstructor));
+    IMG_NAPI_CHECK_RET_D(IMG_IS_READY(status, asyncContext->nConstructor), nullptr,
+                         IMAGE_LOGE("Fail to unwrap context"));
+    
+    asyncContext->rMetadata = asyncContext->nConstructor->nativeMetadata_;
+    IMG_NAPI_CHECK_RET_D(IMG_IS_READY(status, asyncContext->rMetadata), nullptr, IMAGE_LOGE("Empty native rMetadata"));
+    if (argCount != NUM_0) {
+        IMAGE_LOGE("ArgCount mismatch");
+        return nullptr;
+    }
+
+    napi_create_promise(env, &(asyncContext->deferred), &result);
+    GetJsProperties(env, thisVar, static_cast<void*>((asyncContext).get()));
+
+    IMG_CREATE_CREATE_ASYNC_WORK(env, status, "CloneRfDataBMetadata",
+        CloneRfDataBMetadataExecute, CloneRfDataBMetadataComplete, asyncContext, asyncContext->work);
     IMG_NAPI_CHECK_RET_D(IMG_IS_OK(status),
         nullptr, IMAGE_LOGE("Fail to create async work"));
     return result;
@@ -1408,6 +2023,154 @@ napi_value MetadataNapi::CreateHeifsMetadataInstance(napi_env env, napi_callback
     }
     metadataNapi->nativeMetadata_ = metadata;
     IMAGE_LOGD("MetadataNapi::CreateHeifsMetadataInstance OUT");
+    return result;
+}
+
+napi_value MetadataNapi::CreateFragmentMetadataInstance(napi_env env, napi_callback_info info)
+{
+    IMAGE_LOGD("MetadataNapi::CreateFragmentMetadataInstance IN");
+    napi_value result = nullptr;
+    napi_value constructor = nullptr;
+    napi_status status;
+
+    status = napi_get_reference_value(env, sFragmentMetadataConstructor_, &constructor);
+    if (status != napi_ok || constructor == nullptr) {
+        IMAGE_LOGE("Failed to get constructor reference, status: %{public}d", status);
+        napi_get_undefined(env, &result);
+        return result;
+    }
+    auto metadata = std::make_shared<FragmentMetadata>();
+    if (!metadata) {
+        IMAGE_LOGE("Failed to create FragmentMetadata instance");
+        napi_get_undefined(env, &result);
+        return result;
+    }
+    status = napi_new_instance(env, constructor, 0, nullptr, &result);
+    if (status != napi_ok) {
+        IMAGE_LOGE("Failed to create new instance, status: %{public}d", status);
+        napi_get_undefined(env, &result);
+        return result;
+    }
+    MetadataNapi* metadataNapi = nullptr;
+    status = napi_unwrap(env, result, reinterpret_cast<void**>(&metadataNapi));
+    if (status != napi_ok || metadataNapi == nullptr) {
+        IMAGE_LOGE("Failed to unwrap metadataNapi, status: %{public}d", status);
+        napi_get_undefined(env, &result);
+        return result;
+    }
+    metadataNapi->nativeMetadata_ = metadata;
+    IMAGE_LOGD("MetadataNapi::CreateFragmentMetadataInstance OUT");
+    return result;
+}
+
+napi_value MetadataNapi::CreateGifMetadataInstance(napi_env env, napi_callback_info info)
+{
+    IMAGE_LOGD("MetadataNapi::CreateGifMetadataInstance IN");
+    napi_value result = nullptr;
+    napi_value constructor = nullptr;
+    napi_status status;
+
+    status = napi_get_reference_value(env, sGifMetadataConstructor_, &constructor);
+    if (status != napi_ok || constructor == nullptr) {
+        IMAGE_LOGE("Failed to get constructor reference, status: %{public}d", status);
+        napi_get_undefined(env, &result);
+        return result;
+    }
+    auto metadata = std::make_shared<GifMetadata>();
+    if (!metadata) {
+        IMAGE_LOGE("Failed to create GifMetadata instance");
+        napi_get_undefined(env, &result);
+        return result;
+    }
+    status = napi_new_instance(env, constructor, 0, nullptr, &result);
+    if (status != napi_ok) {
+        IMAGE_LOGE("Failed to create new instance, status: %{public}d", status);
+        napi_get_undefined(env, &result);
+        return result;
+    }
+    MetadataNapi* metadataNapi = nullptr;
+    status = napi_unwrap(env, result, reinterpret_cast<void**>(&metadataNapi));
+    if (status != napi_ok || metadataNapi == nullptr) {
+        IMAGE_LOGE("Failed to unwrap metadataNapi, status: %{public}d", status);
+        napi_get_undefined(env, &result);
+        return result;
+    }
+    metadataNapi->nativeMetadata_ = metadata;
+    IMAGE_LOGD("MetadataNapi::CreateGifMetadataInstance OUT");
+    return result;
+}
+
+napi_value MetadataNapi::CreateXtStyleMetadataInstance(napi_env env, napi_callback_info info)
+{
+    IMAGE_LOGD("MetadataNapi::CreateXtStyleMetadataInstance IN");
+    napi_value result = nullptr;
+    napi_value constructor = nullptr;
+    napi_status status;
+
+    status = napi_get_reference_value(env, sXtStyleMetadataConstructor_, &constructor);
+    if (status != napi_ok || constructor == nullptr) {
+        IMAGE_LOGE("Failed to get constructor reference, status: %{public}d", status);
+        napi_get_undefined(env, &result);
+        return result;
+    }
+    auto metadata = std::make_shared<XtStyleMetadata>();
+    if (!metadata) {
+        IMAGE_LOGE("Failed to create XtStyleMetadata instance");
+        napi_get_undefined(env, &result);
+        return result;
+    }
+    status = napi_new_instance(env, constructor, 0, nullptr, &result);
+    if (status != napi_ok) {
+        IMAGE_LOGE("Failed to create new instance, status: %{public}d", status);
+        napi_get_undefined(env, &result);
+        return result;
+    }
+    MetadataNapi* metadataNapi = nullptr;
+    status = napi_unwrap(env, result, reinterpret_cast<void**>(&metadataNapi));
+    if (status != napi_ok || metadataNapi == nullptr) {
+        IMAGE_LOGE("Failed to unwrap metadataNapi, status: %{public}d", status);
+        napi_get_undefined(env, &result);
+        return result;
+    }
+    metadataNapi->nativeMetadata_ = metadata;
+    IMAGE_LOGD("MetadataNapi::CreateXtStyleMetadataInstance OUT");
+    return result;
+}
+
+napi_value MetadataNapi::CreateRfDataBMetadataInstance(napi_env env, napi_callback_info info)
+{
+    IMAGE_LOGD("MetadataNapi::CreateRfDataBMetadataInstance IN");
+    napi_value result = nullptr;
+    napi_value constructor = nullptr;
+    napi_status status;
+
+    status = napi_get_reference_value(env, sRfDataBMetadataConstructor_, &constructor);
+    if (status != napi_ok || constructor == nullptr) {
+        IMAGE_LOGE("Failed to get constructor reference, status: %{public}d", status);
+        napi_get_undefined(env, &result);
+        return result;
+    }
+    auto metadata = std::make_shared<RfDataBMetadata>();
+    if (!metadata) {
+        IMAGE_LOGE("Failed to create RfDataBMetadata instance");
+        napi_get_undefined(env, &result);
+        return result;
+    }
+    status = napi_new_instance(env, constructor, 0, nullptr, &result);
+    if (status != napi_ok) {
+        IMAGE_LOGE("Failed to create new instance, status: %{public}d", status);
+        napi_get_undefined(env, &result);
+        return result;
+    }
+    MetadataNapi* metadataNapi = nullptr;
+    status = napi_unwrap(env, result, reinterpret_cast<void**>(&metadataNapi));
+    if (status != napi_ok || metadataNapi == nullptr) {
+        IMAGE_LOGE("Failed to unwrap metadataNapi, status: %{public}d", status);
+        napi_get_undefined(env, &result);
+        return result;
+    }
+    metadataNapi->nativeMetadata_ = metadata;
+    IMAGE_LOGD("MetadataNapi::CreateRfDataBMetadataInstance OUT");
     return result;
 }
 } // namespace Media
