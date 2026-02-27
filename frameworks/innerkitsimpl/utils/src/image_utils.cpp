@@ -2182,9 +2182,14 @@ int32_t ImageUtils::ReadVarint(std::vector<uint8_t> &buff, int32_t &cursor)
     uint32_t value = 0;
     uint8_t shift = 0;
     uint32_t item = 0;
+    uint32_t border = 32;
     do {
         if (static_cast<size_t>(cursor + 1) > buff.size()) {
             IMAGE_LOGE("ReadVarint out of range");
+            return static_cast<int32_t>(TLV_END);
+        }
+        if (shift >= border) { // add overflow check
+            IMAGE_LOGE("ReadVarint shift overflow");
             return static_cast<int32_t>(TLV_END);
         }
         item = uint32_t(buff[cursor++]);
