@@ -35,6 +35,7 @@ std::map<uint8_t*, ImageCreator*> ImageCreator::bufferCreatorMap_;
 std::mutex ImageCreator::creatorMutex_;
 ImageCreator::~ImageCreator()
 {
+    //
     if (iraContext_ != nullptr) {
         ImageCreatorManager::ReleaseCreatorById(iraContext_->GetCreatorKey());
     }
