@@ -3411,9 +3411,9 @@ static void ReadImageMetadataExecute(napi_env env, void *data)
         uint32_t status = SUCCESS;
         for (auto keyStrIt = context->keyStrArray.begin(); keyStrIt != context->keyStrArray.end(); ++keyStrIt) {
             MetadataValue value;
+            status = context->rImageSource->GetImagePropertyByType(context->index, *keyStrIt, value);
             value.key = *keyStrIt;
             value.type = ExifMetadata::GetPropertyValueType(value.key);
-            status = context->rImageSource->GetImagePropertyByType(context->index, *keyStrIt, value);
             context->kValueTypeArray.emplace_back(value);
             if (status != SUCCESS) {
                 context->errMsgArray.insert(std::make_pair(status, *keyStrIt));
