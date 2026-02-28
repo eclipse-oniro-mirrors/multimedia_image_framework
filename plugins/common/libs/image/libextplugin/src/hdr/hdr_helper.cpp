@@ -1415,7 +1415,8 @@ uint32_t HdrJpegPackerHelper::SpliceLogHdrStream(sk_sp<SkData>& baseImage,
 uint32_t HdrJpegPackerHelper::SpliceHdrStream(sk_sp<SkData>& baseImage, sk_sp<SkData>& gainmapImage,
     SkWStream& output, HdrMetadata& metadata)
 {
-    bool cond = (baseImage == nullptr || gainmapImage == nullptr);
+    bool cond = (baseImage == nullptr || gainmapImage == nullptr || baseImage->data() == nullptr ||
+        gainmapImage->data() == nullptr);
     CHECK_ERROR_RETURN_RET(cond, ERR_IMAGE_ENCODE_FAILED);
     uint32_t offset = 0;
     uint32_t jfifSize = 0;
