@@ -654,7 +654,7 @@ static uint32_t GetBlobValueFromExifEntry(ExifEntry *entry, MetadataValue &resul
     errno_t err = memcpy_s(result.bufferValue.data(), result.bufferValue.size(), entry->data, entry->size);
     CHECK_ERROR_RETURN_RET_LOG(err != EOK, ERR_IMAGE_DECODE_METADATA_FAILED,
         "memcpy_s failed: %{public}d", err);
-    IMAGE_LOGD("Copied %{public}u bytes", result.bufferValue.size());
+    IMAGE_LOGD("Copied %{public}zu bytes", result.bufferValue.size());
     return SUCCESS;
 }
 
