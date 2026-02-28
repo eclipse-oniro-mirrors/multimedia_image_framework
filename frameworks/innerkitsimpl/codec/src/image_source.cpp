@@ -1773,6 +1773,12 @@ uint32_t ImageSource::ModifyImageProperties(std::shared_ptr<MetadataAccessor> me
     IMAGE_LOGD("ModifyImageProperty accesssor modify end");
     if (!srcFilePath_.empty() && ret == SUCCESS) {
         RefreshImageSourceByPathName();
+        Reset();
+    }
+
+    if (srcFd_ != -1 && ret == SUCCESS) {
+        RefreshImageSourceByFd();
+        Reset();
     }
 
     if (!exifUnsupportKeys_.empty() && isEnhanced) {
@@ -1817,6 +1823,12 @@ uint32_t ImageSource::ModifyImagePropertyBlob(std::shared_ptr<MetadataAccessor> 
     IMAGE_LOGD("ModifyImageProperty accesssor modify end");
     if (!srcFilePath_.empty() && ret == SUCCESS) {
         RefreshImageSourceByPathName();
+        Reset();
+    }
+
+    if (srcFd_ != -1 && ret == SUCCESS) {
+        RefreshImageSourceByFd();
+        Reset();
     }
 
     if (!exifUnsupportKeys_.empty()) {
