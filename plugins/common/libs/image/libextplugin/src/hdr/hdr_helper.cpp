@@ -639,7 +639,7 @@ static bool ParseVividJpegMetadata(uint8_t* data, uint32_t& dataOffset, uint32_t
 {
     uint16_t metadataSize = ImageUtils::BytesToUint16(data, dataOffset, length);
     CHECK_ERROR_RETURN_RET(metadataSize > length - dataOffset, false);
-    bool cond = !ParseVividJpegStaticMetadata(data, dataOffset, metadataSize, metadata.staticMetadata);
+    bool cond = !ParseVividJpegStaticMetadata(data, dataOffset, length, metadata.staticMetadata);
     CHECK_ERROR_RETURN_RET(cond, false);
     uint16_t dynamicMetaSize = ImageUtils::BytesToUint16(data, dataOffset, length);
     if (dynamicMetaSize > 0) {
