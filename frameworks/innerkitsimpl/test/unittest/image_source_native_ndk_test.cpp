@@ -53,6 +53,8 @@ static const std::string IMAGE_GIF_MOVING_PATH = "/data/local/tmp/image/moving_t
 static const std::string IMAGE_GIF_LARGE_PATH = "/data/local/tmp/image/fake_large_size_test.gif";  // 50000x50000
 static const std::string IMAGE_GIF_INCOMPLETE_PATH = "/data/local/tmp/image/incomplete_test.gif";
 static const std::string IMAGE_INPUT_JPEG_EXIF_THUMBNAIL = "/data/local/tmp/image/jpeg_exif_thumbnail.jpg";
+static const std::string IMAGE_DNG_PATH = "/data/local/tmp/image/test_dng_mock.dng";
+
 static const size_t IMAGE_GIF_MOVING_FRAME_COUNT = 3;
 static const size_t IMAGE_GIF_INCOMPLETE_FRAME_INDEX = 16;
 static const int32_t MAX_BUFFER_SIZE = 256;
@@ -4009,5 +4011,78 @@ HWTEST_F(ImagSourceNdk2Test, OH_ImageSourceNative_CreateThumbnail004, TestSize.L
     ASSERT_EQ(ret, IMAGE_SOURCE_INVALID_PARAMETER);
     OH_ImageSourceNative_Release(imageSource);
 }
+
+/**
+ * @tc.name: OH_ImageSourceNative_CreateImageRawDataTest001
+ * @tc.desc: Test OH_ImageSourceNative_CreateImageRawData with invalid parameter.
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImagSourceNdk2Test, OH_ImageSourceNative_CreateImageRawDataTest001, TestSize.Level3)
+{
+    Image_ErrorCode ret = OH_ImageSourceNative_CreateImageRawData(nullptr, nullptr);
+    EXPECT_EQ(ret, IMAGE_SOURCE_INVALID_PARAMETER);
+    OH_ImageSourceNative *imageSource = CreateImageSourceNative(IMAGE_PNG_PATH);
+    ASSERT_NE(imageSource, nullptr);
+    ret = OH_ImageSourceNative_CreateImageRawData(imageSource, nullptr);
+    EXPECT_EQ(ret, IMAGE_SOURCE_INVALID_PARAMETER);
+
+    OH_ImageRawData *rawData = nullptr;
+    ret = OH_ImageSourceNative_CreateImageRawData(imageSource, &rawData);
+    EXPECT_EQ(ret, IMAGE_SOURCE_UNSUPPORTED_MIMETYPE);
+    ASSERT_EQ(rawData, nullptr);
+
+    OH_ImageSourceNative_Release(imageSource);
+}
+
+/**
+ * @tc.name: OH_ImageSourceNative_GetBufferFromRawDataTest001
+ * @tc.desc: Test OH_ImageSourceNative_GetBufferFromRawData with invalid parameter.
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImagSourceNdk2Test, OH_ImageSourceNative_GetBufferFromRawDataTest001, TestSize.Level3)
+{
+    Image_ErrorCode ret = OH_ImageSourceNative_GetBufferFromRawData(nullptr, nullptr, nullptr);
+    EXPECT_EQ(ret, IMAGE_SOURCE_INVALID_PARAMETER);
+    OH_ImageRawData *rawData = static_cast<OH_ImageRawData *>(malloc(sizeof(OH_ImageRawData)));
+    ret = OH_ImageSourceNative_GetBufferFromRawData(rawData, nullptr, nullptr);
+    EXPECT_EQ(ret, IMAGE_SOURCE_INVALID_PARAMETER);
+
+    uint8_t *data = nullptr;
+    ret = OH_ImageSourceNative_GetBufferFromRawData(rawData, &data, nullptr);
+    EXPECT_EQ(ret, IMAGE_SOURCE_INVALID_PARAMETER);
+
+    free(rawData);
+}
+
+
+/**
+ * @tc.name: OH_ImageSourceNative_GetBitsPerPixelFromRawDataTest001
+ * @tc.desc: Test OH_ImageSourceNative_GetBitsPerPixelFromRawData with invalid parameter.
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImagSourceNdk2Test, OH_ImageSourceNative_GetBitsPerPixelFromRawDataTest001, TestSize.Level3)
+{
+    Image_ErrorCode ret = OH_ImageSourceNative_GetBitsPerPixelFromRawData(nullptr, nullptr);
+    EXPECT_EQ(ret, IMAGE_SOURCE_INVALID_PARAMETER);
+
+    OH_ImageRawData *rawData = static_cast<OH_ImageRawData *>(malloc(sizeof(OH_ImageRawData)));
+    
+    ret = OH_ImageSourceNative_GetBitsPerPixelFromRawData(rawData, nullptr);
+    EXPECT_EQ(ret, IMAGE_SOURCE_INVALID_PARAMETER);
+
+    free(rawData);
+}
+
+/**
+ * @tc.name: OH_ImageSourceNative_ReleaseRawDataTest001
+ * @tc.desc: Test OH_ImageSourceNative_ReleaseRawData with invalid parameter.
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImagSourceNdk2Test, OH_ImageSourceNative_ReleaseRawDataTest001, TestSize.Level3)
+{
+    Image_ErrorCode ret = OH_ImageSourceNative_ReleaseRawData(nullptr);
+    EXPECT_EQ(ret, IMAGE_SOURCE_INVALID_PARAMETER);
+}
+
 }
 }

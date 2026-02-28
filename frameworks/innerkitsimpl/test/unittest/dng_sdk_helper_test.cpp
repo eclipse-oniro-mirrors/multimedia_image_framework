@@ -19,6 +19,8 @@
 #include "dng_host.h"
 #include "dng_stream.h"
 #include "metadata_stream.h"
+#include "source_stream.h"
+#include "image_source.h"
 #include <memory>
 #include <gtest/gtest.h>
 
@@ -32,6 +34,10 @@ using namespace testing::ext;
 
 namespace OHOS {
 namespace Media {
+
+static const std::string IMAGE_DNG_PATH = "/data/local/tmp/image/test_dng_mock.dng";
+static const uint32_t MOCK_DNG_BYTES_PER_SAMPLE = 16;
+static const uint32_t MOCK_DNG_IMAGE_SIZE = 64 * 64 * 2;
 
 class DngSdkHelperTest : public testing::Test {
 protected:
@@ -141,6 +147,31 @@ HWTEST_F(DngSdkHelperTest, SetExifPropertyTest002, TestSize.Level3)
     EXPECT_EQ(ret, ERR_IMAGE_DECODE_EXIF_UNSUPPORT);
 
     GTEST_LOG_(INFO) << "SetExifPropertyTest002 end";
+}
+
+/**
+ * @tc.name: GetImageRawDataTest001
+ * @tc.desc: Test GetImageRawData for valid dng image
+ * @tc.type: FUNC
+ */
+HWTEST_F(DngSdkHelperTest, GetImageRawDataTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "DngSdkHelperTest: GetImageRawDataTest001 start";
+    
+    uint32_t errorCode = 0;
+    SourceOptions opts;
+    auto imageSource = ImageSource::CreateImageSource(IMAGE_DNG_PATH, opts, errorCode);
+    ASSERT_NE(imageSource, nullptr);
+
+    std::vector<uint8_t> data;
+    uint32_t bitsPerSample = 0;
+    uint32_t res = DngSdkHelper::GetImageRawData(
+        static_cast<ImagePlugin::InputDataStream*>(imageSource->sourceStreamPtr_.get()), data, bitsPerSample);
+    EXPECT_EQ(res, SUCCESS);
+    EXPECT_EQ(bitsPerSample, MOCK_DNG_BYTES_PER_SAMPLE);
+    EXPECT_EQ(data.size(), MOCK_DNG_IMAGE_SIZE);
+
+    GTEST_LOG_(INFO) << "DngSdkHelperTest: GetImageRawDataTest001 end";
 }
 } // namespace Media
 } // namespace OHOS

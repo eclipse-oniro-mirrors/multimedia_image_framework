@@ -51,6 +51,7 @@ public:
     static napi_value CreateGifMetadata(napi_env env, std::shared_ptr<ImageMetadata> metadata);
     static napi_value CreateXtStyleMetadata(napi_env env, std::shared_ptr<ImageMetadata> metadata);
     static napi_value CreateRfDataBMetadata(napi_env env, std::shared_ptr<ImageMetadata> metadata);
+    static napi_value CreateDngMetadata(napi_env env);
     std::shared_ptr<ImageMetadata> GetNativeMetadata()
     {
         return nativeMetadata_;

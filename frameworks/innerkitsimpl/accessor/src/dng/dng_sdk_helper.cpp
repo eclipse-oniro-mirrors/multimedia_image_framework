@@ -19,16 +19,21 @@
 #include "dng/dng_exif_metadata.h"
 #include "dng/dng_sdk_info.h"
 #include "image_log.h"
+#include "include/core/SkImage.h"
 #include "media_errors.h"
 
 #include "dng_area_task.h"
 #include "dng_errors.h"
 #include "dng_host.h"
+#include "dng_pixel_buffer.h"
+#include "dng_read_image.h"
 #include "dng_stream.h"
+#include "dng_tag_types.h"
 
 namespace OHOS {
 namespace Media {
 
+constexpr uint32_t BYTES_SIZE = 8;
 class DngSdkInputDataStream : public dng_stream {
 public:
     explicit DngSdkInputDataStream(ImagePlugin::InputDataStream* stream)
@@ -108,31 +113,31 @@ private:
     std::shared_ptr<MetadataStream> stream_;
 };
 
+class DngSdkNegative : public dng_negative {
+public:
+    explicit DngSdkNegative(dng_host& host) : dng_negative(host) {}
+
+    virtual ~DngSdkNegative() {}
+};
+
 class DngSdkHost : public dng_host {
 public:
     explicit DngSdkHost() : dng_host() {}
 
     ~DngSdkHost() {}
 
-    void PerformAreaTask(dng_area_task& task, const dng_rect& area) override
+    dng_negative* Make_dng_negative () override
     {
-        task.Start(1, area.Size(), &Allocator(), Sniffer());
-        task.ProcessOnThread(0, area, area.Size(), this->Sniffer());
-        task.Finish(1);
-    }
-
-    uint32 PerformAreaTaskThreads() override
-    {
-        return 1;
+        auto dngNegative = new DngSdkNegative(*this);
+        return dngNegative;
     }
 };
 
-static bool ReadDngInfo(dng_stream& stream, dng_host& host, dng_info* info)
+static bool ReadDngInfo(dng_stream& stream, dng_host& host, dng_info* info) __attribute__((no_sanitize("cfi")))
 {
     if (stream.Length() == 0 || info == nullptr) {
         return false;
     }
-
     host.ValidateSizes();
     info->Parse(host, stream);
     info->PostParse(host);
@@ -209,6 +214,91 @@ uint32_t DngSdkHelper::SetExifProperty(const std::unique_ptr<DngSdkInfo>& info, 
 {
     CHECK_ERROR_RETURN_RET(info == nullptr, ERR_IMAGE_DECODE_EXIF_UNSUPPORT);
     return SetPropertyByOptions(info, value, GetExifPropertyOptions(info->fMainIndex));
+}
+
+static std::unique_ptr<dng_negative> SyncDngNegative(dng_stream& stream, dng_host& host, dng_info& info)
+    __attribute__((no_sanitize("cfi")))
+{
+    CHECK_ERROR_RETURN_RET(stream.Length() == 0, nullptr);
+    std::unique_ptr<dng_negative> negative;
+    negative.reset(host.Make_dng_negative());
+    CHECK_ERROR_RETURN_RET(negative == nullptr, nullptr);
+    host.ValidateSizes();
+    negative->Parse(host, stream, info);
+    negative->PostParse(host, stream, info);
+    negative->SynchronizeMetadata();
+    return negative;
+}
+
+static const dng_image* ReadRawStage1(dng_stream& stream, dng_host& host, dng_info& info,
+    std::unique_ptr<dng_negative>& negative) __attribute__((no_sanitize("cfi")))
+{
+    try {
+        negative = SyncDngNegative(stream, host, info);
+        CHECK_ERROR_RETURN_RET_LOG(negative == nullptr, nullptr, "SyncDngNegative failed");
+        negative->ReadStage1Image(host, stream, info);
+        negative->ValidateRawImageDigest(host);
+        CHECK_ERROR_RETURN_RET_LOG(negative->IsDamaged(), nullptr, "Dng negative is damaged");
+        const dng_image* stage1Image = negative->Stage1Image();
+        return stage1Image;
+    }
+    catch (...) {
+        IMAGE_LOGE("DNG SDK exception caught in ReadRawStage1");
+        return nullptr;
+    }
+}
+
+uint32_t DngSdkHelper::GetImageRawData(ImagePlugin::InputDataStream* stream, std::vector<uint8_t>& data,
+    uint32_t& bitsPerSample)
+{
+    try {
+        DngSdkInputDataStream dngStream(stream);
+        DngSdkHost dngHost;
+        dng_info dngInfo;
+        if (!ReadDngInfo(dngStream, dngHost, &dngInfo)) {
+            return ERR_IMAGE_GET_DATA_ABNORMAL;
+        }
+        std::unique_ptr<dng_negative> negative = nullptr;
+        const dng_image* image = ReadRawStage1(dngStream, dngHost, dngInfo, negative);
+        CHECK_ERROR_RETURN_RET(image == nullptr, ERR_IMAGE_GET_DATA_ABNORMAL);
+        uint32_t width = image->Width();
+        uint32_t height = image->Height();
+        uint32_t planes = image->Planes();
+        uint32_t pixelType = image->PixelType();
+        uint32_t bytesPerSample = TagTypeSize(pixelType);
+        CHECK_ERROR_RETURN_RET(ImageUtils::CheckMulOverflow(width, height, bytesPerSample), ERR_IMAGE_DATA_UNSUPPORT);
+        auto tmpSize = width * height * bytesPerSample;
+        CHECK_ERROR_RETURN_RET(ImageUtils::CheckMulOverflow(tmpSize, planes), ERR_IMAGE_DATA_UNSUPPORT);
+        auto totalBytes = tmpSize * planes;
+        CHECK_ERROR_RETURN_RET(SkImageInfo::ByteSizeOverflowed(totalBytes), ERR_IMAGE_DATA_UNSUPPORT);
+        IMAGE_LOGD("Dng image info: width=%{public}u, height=%{public}u, planes=%{public}u, "
+            "pixelType=%{public}u, bytesPerSample=%{public}u, totalBytes=%{public}zu",
+            width, height, planes, pixelType, bytesPerSample, totalBytes);
+        CHECK_ERROR_RETURN_RET(bytesPerSample == 0 || planes != 1, ERR_IMAGE_DATA_UNSUPPORT);
+        data.clear();
+        data.resize(totalBytes);
+        bitsPerSample = bytesPerSample * BYTES_SIZE;
+        dng_pixel_buffer buffer;
+        buffer.fPlane = 0;
+        buffer.fPlanes = 1;
+        buffer.fColStep = 1;
+        buffer.fPlaneStep = 1;
+        buffer.fPixelType = pixelType;
+        buffer.fPixelSize = bytesPerSample;
+        if (width <= static_cast<uint32_t>(std::numeric_limits<int>::max())) {
+            buffer.fRowStep = static_cast<int>(width);
+        } else {
+            return ERR_IMAGE_GET_DATA_ABNORMAL;
+        }
+        buffer.fData = data.data();
+        buffer.fArea = image->Bounds();
+        image->Get(buffer, dng_image::edge_zero);
+        IMAGE_LOGD("DNG image raw data extracted successfully");
+        return SUCCESS;
+    } catch (...) {
+        IMAGE_LOGE("DNG SDK exception caught in GetImageRawData - ReadDngInfo");
+        return ERR_IMAGE_GET_DATA_ABNORMAL;
+    }
 }
 } // namespace Media
 } // namespace OHOS

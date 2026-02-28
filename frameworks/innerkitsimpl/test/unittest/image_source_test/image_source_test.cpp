@@ -81,6 +81,7 @@ static const std::string IMAGE_JPG_JPEG_UWA_MULTI_ALTERNATE_COLOR_PATH =
 static const std::string IMAGE_EXIF_PATH =
     "/data/local/tmp/image/exif.jpg";
 static const std::string IMAGE_INPUT1_DNG_PATH = "/data/local/tmp/image/test_dng_readmetadata001.dng";
+static const std::string IMAGE_INPUT2_DNG_PATH = "/data/local/tmp/image/test_dng_mock.dng";
 static const int32_t DECODE_DESIRED_WIDTH = 7500;
 static const int32_t DECODE_DESIRED_HEIGHT = 7500;
 static const int32_t DESIRED_REGION_WIDTH = 4096;
@@ -101,6 +102,17 @@ static const uint32_t SCALE_FIRST_SETTING = 1;
 static const uint32_t CROP_FIRST_SETTING = 2;
 static const uint32_t ASTC_SETTING = 3;
 static const uint32_t SIZE = 1024;
+static const uint32_t MOCK_OPCODE_SIZE = 20708;
+static const uint32_t MOCK_DNG_PRIVATE_DATA_SIZE = 64;
+static const uint32_t MOCK_LINEARIZATION_TABLE_SIZE = 16384;
+static const uint32_t MOCK_BINARY = 256;
+static constexpr size_t ICC_HEADER_SIZE = 128;
+static constexpr uint32_t ICC_SIZE_FIELD = 3;
+static constexpr uint32_t ICC_DEVICE_CLASS_OFFSET = 12;
+static constexpr uint32_t ICC_COLOR_SPACE_OFFSET = 16;
+static constexpr uint32_t ICC_SIGNATURE_OFFSET = 36;
+static constexpr size_t ICC_FIELD_LEN = 4;
+
 static const std::vector<std::pair<std::string, std::string>> VALID_PROPERTIES = {
     {"ImageLength", "1000"},
     {"ImageWidth", "1001"},
@@ -114,10 +126,72 @@ static const std::vector<std::pair<std::string, std::string>> INVALID_PROPERTIES
     {"GPSLongitudeRef", "EEE"},
 };
 
+static std::vector<int64_t> MockLinearizationTable()
+{
+    std::vector<int64_t> data(MOCK_LINEARIZATION_TABLE_SIZE);
+    for (uint16_t i = 0; i < MOCK_LINEARIZATION_TABLE_SIZE; ++i) {
+        data[i] = i;
+    }
+    return data;
+}
+
+static std::vector<uint8_t> MockBinary(size_t len)
+{
+    std::vector<uint8_t> data(len);
+    for (size_t i = 0; i < len; ++i) {
+        data[i] = static_cast<uint8_t>(i % MOCK_BINARY);
+    }
+    return data;
+}
+
+// 生成假 ICC profile（最小 ICC header）
+std::vector<uint8_t> MockIccProfile()
+{
+    const uint8_t iccSignature[ICC_FIELD_LEN] = {'a', 'c', 's', 'p'};
+    const uint8_t iccDeviceClass[ICC_FIELD_LEN] = {'m', 'n', 't', 'r'};
+    const uint8_t iccColorSpace[ICC_FIELD_LEN] = {'R', 'G', 'B', ' '};
+    std::vector<uint8_t> icc(ICC_HEADER_SIZE, 0);
+    icc[ICC_SIZE_FIELD] = static_cast<uint8_t>(ICC_HEADER_SIZE);
+    std::copy(iccSignature, iccSignature + ICC_FIELD_LEN, icc.begin() + ICC_SIGNATURE_OFFSET);
+    std::copy(iccDeviceClass, iccDeviceClass + ICC_FIELD_LEN, icc.begin() + ICC_DEVICE_CLASS_OFFSET);
+    std::copy(iccColorSpace, iccColorSpace + ICC_FIELD_LEN, icc.begin() + ICC_COLOR_SPACE_OFFSET);
+    return icc;
+}
+
+static bool IsSameValue(MetadataValue value1, MetadataValue value2)
+{
+    if (value1.type != value2.type || value1.key != value2.key) {
+        return false;
+    }
+    switch (value1.type) {
+        case PropertyValueType::STRING:
+            return value1.stringValue == value2.stringValue;
+        case PropertyValueType::INT_ARRAY:
+        case PropertyValueType::INT:
+            return value1.intArrayValue == value2.intArrayValue;
+        case PropertyValueType::DOUBLE_ARRAY:
+        case PropertyValueType::DOUBLE:
+            if (value1.doubleArrayValue.size() != value2.doubleArrayValue.size()) {
+                return false;
+            }
+            return std::equal(value1.doubleArrayValue.begin(), value1.doubleArrayValue.end(),
+                              value2.doubleArrayValue.begin(), [](double a, double b) {
+                                  return ImageUtils::FloatEqual(a, b);
+                              });
+        case PropertyValueType::BLOB:
+            return value1.bufferValue == value2.bufferValue;
+        default:
+            return false;
+    }
+}
+
+
 class ImageSourceTest : public testing::Test {
 public:
     ImageSourceTest() {}
     ~ImageSourceTest() {}
+    static void SetUpTestCase(void);
+    static void TearDownTestCase(void);
     void InitDecodeContextTest(PixelFormat srcFormat, PixelFormat desiredFormat);
     void CreatePixelMapUseInvalidOptsTest(uint32_t isAllocatorTypeValid, uint32_t isCropRectValid,
         uint32_t desiredErrorCode = ERR_MEDIA_INVALID_OPERATION);
@@ -131,6 +205,13 @@ public:
         const std::vector<std::pair<std::string, std::string>> &expectedProps, std::set<std::string> unsupportedKeys,
         std::string filePath);
     void DecodeBlobMetaDataTest(const std::string &filePath, std::set<MetadataType> metadataTypes);
+
+    static void InitData();
+    static std::vector<int64_t> gLinearizationTable_;
+    static std::vector<uint8_t> gDngPrivateData_;
+    static std::string gDigestData_;
+    static std::vector<uint8_t> gIccData_;
+    static std::vector<MetadataValue> gMockDngMetadata_;
 };
 
 class MockAbsImageFormatAgent : public ImagePlugin::AbsImageFormatAgent {
@@ -327,6 +408,158 @@ void ImageSourceTest::CheckModifyImagePropertiesEnhanced(std::vector<std::string
     }
     close(fd);
 }
+std::vector<int64_t> ImageSourceTest::gLinearizationTable_;
+std::vector<uint8_t> ImageSourceTest::gDngPrivateData_;
+std::string ImageSourceTest::gDigestData_;
+std::vector<uint8_t> ImageSourceTest::gIccData_;
+std::vector<MetadataValue> ImageSourceTest::gMockDngMetadata_ = {
+    {"DNGVersion", PropertyValueType::INT_ARRAY, "", {1, 4, 0, 0}, {}, {}},
+    {"DNGBackwardVersion", PropertyValueType::INT_ARRAY, "", {1, 4, 0, 0}, {}, {}},
+    {"UniqueCameraModel", PropertyValueType::STRING, "FakeCamera ModelX", {}, {}, {}},
+    {"LocalizedCameraModel", PropertyValueType::STRING, "VirtualCamera ModelX", {}, {}, {}},
+    {"CFAPlaneColor", PropertyValueType::INT_ARRAY, "", {0, 1, 2}, {}, {}},
+    {"CFALayout", PropertyValueType::INT, "", {1}, {}, {}},
+    {"BlackLevelRepeatDim", PropertyValueType::INT_ARRAY, "", {2, 2}, {}, {}},
+    {"BlackLevel", PropertyValueType::DOUBLE_ARRAY, "", {}, {256.0f, 256.0f, 256.0f, 256.0f}, {}},
+    {"BlackLevelDeltaH", PropertyValueType::DOUBLE_ARRAY, "", {}, std::vector<double>(32, 0.0f), {}},
+    {"BlackLevelDeltaV", PropertyValueType::DOUBLE_ARRAY, "", {}, std::vector<double>(32, 0.0f), {}},
+    {"WhiteLevel", PropertyValueType::DOUBLE_ARRAY, "", {}, {16383.0}, {}},
+    {"DefaultScale", PropertyValueType::DOUBLE_ARRAY, "", {}, {1.0, 1.0}, {}},
+    {"DefaultCropOrigin", PropertyValueType::DOUBLE_ARRAY, "", {}, {0.0, 0.0}, {}},
+    {"DefaultCropSize", PropertyValueType::INT_ARRAY, "", {32, 32}, {}, {}},
+    {"ColorMatrix1",
+     PropertyValueType::DOUBLE_ARRAY,
+     "",
+     {},
+     {0.892f, -0.428f, -0.092f, -0.445f, 1.234f, 0.186f, -0.048f, 0.194f, 0.604f},
+     {}},
+    {"ColorMatrix2",
+     PropertyValueType::DOUBLE_ARRAY,
+     "",
+     {},
+     {0.892f, -0.428f, -0.092f, -0.445f, 1.234f, 0.186f, -0.048f, 0.194f, 0.604f},
+     {}},
+    {"CameraCalibration1", PropertyValueType::DOUBLE_ARRAY, "", {}, {1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0}, {}},
+    {"CameraCalibration2", PropertyValueType::DOUBLE_ARRAY, "", {}, {1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0}, {}},
+    {"ReductionMatrix1", PropertyValueType::DOUBLE_ARRAY, "", {}, {1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0}, {}},
+    {"ReductionMatrix2", PropertyValueType::DOUBLE_ARRAY, "", {}, {1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0}, {}},
+    {"AnalogBalance", PropertyValueType::DOUBLE_ARRAY, "", {}, {1.0, 1.0, 1.0}, {}},
+    {"AsShotNeutral", PropertyValueType::DOUBLE_ARRAY, "", {}, {0.5f, 1.0f, 0.6f}, {}},
+    {"AsShotWhiteXY", PropertyValueType::DOUBLE_ARRAY, "", {}, {0.3127, 0.3290}, {}},
+    {"BaselineExposure", PropertyValueType::DOUBLE, "", {}, {0.0}, {}},
+    {"BaselineNoise", PropertyValueType::DOUBLE, "", {}, {1.0}, {}},
+    {"BaselineSharpness", PropertyValueType::DOUBLE, "", {}, {1.0}, {}},
+    {"BayerGreenSplit", PropertyValueType::INT, "", {0}, {}, {}},
+    {"LinearResponseLimit", PropertyValueType::DOUBLE, "", {}, {1.0}, {}},
+    {"CameraSerialNumber", PropertyValueType::STRING, "SN_FAKE_2025", {}, {}, {}},
+    {"LensInfo", PropertyValueType::DOUBLE_ARRAY, "", {}, {50.0, 1.8, 50.0, 1.8}, {}},
+    {"ChromaBlurRadius", PropertyValueType::DOUBLE, "", {}, {0.0}, {}},
+    {"AntiAliasStrength", PropertyValueType::DOUBLE, "", {}, {1.0}, {}},
+    {"ShadowScale", PropertyValueType::DOUBLE, "", {}, {1.0}, {}},
+    {"MakerNoteSafety", PropertyValueType::INT, "", {1}, {}, {}},
+    {"CalibrationIlluminant1", PropertyValueType::INT, "", {21}, {}, {}},
+    {"CalibrationIlluminant2", PropertyValueType::INT, "", {23}, {}, {}},
+    {"BestQualityScale", PropertyValueType::DOUBLE, "", {}, {1.0}, {}},
+    {"OriginalRawFileName", PropertyValueType::STRING, "FAKE_0001.NEF", {}, {}, {}},
+    {"OriginalRawFileData", PropertyValueType::BLOB, "", {}, {}, {'F', 'A', 'K', 'E', '_', 'R', 'A', 'W'}},
+    {"ActiveArea", PropertyValueType::INT_ARRAY, "", {16, 16, 48, 48}, {}, {}},
+    {"MaskedAreas", PropertyValueType::INT_ARRAY, "", {0, 0, 16, 64, 48, 0, 64, 64}, {}, {}},
+    {"AsShotPreProfileMatrix",
+     PropertyValueType::DOUBLE_ARRAY,
+     "",
+     {},
+     {1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0},
+     {}},
+    {"CurrentPreProfileMatrix",
+     PropertyValueType::DOUBLE_ARRAY,
+     "",
+     {},
+     {1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0},
+     {}},
+    {"ColorimetricReference", PropertyValueType::INT, "", {1}, {}, {}},
+    {"CameraCalibrationSignature", PropertyValueType::STRING, "FakeCalibSig_v1", {}, {}, {}},
+    {"ProfileCalibrationSignature", PropertyValueType::STRING, "FakeProfileSig_v1", {}, {}, {}},
+    {"ExtraCameraProfiles", PropertyValueType::INT_ARRAY, "", {0}, {}, {}},
+    {"AsShotProfileName", PropertyValueType::STRING, "Adobe Standard", {}, {}, {}},
+    {"NoiseReductionApplied", PropertyValueType::DOUBLE, "", {}, {0.0}, {}},
+    {"ProfileName", PropertyValueType::STRING, "Adobe Standard", {}, {}, {}},
+    {"ProfileHueSatMapDims", PropertyValueType::INT_ARRAY, "", {3, 3, 3}, {}, {}},
+    {"ProfileHueSatMapData1", PropertyValueType::DOUBLE_ARRAY, "", {}, std::vector<double>(27, 1.0), {}},
+    {"ProfileHueSatMapData2", PropertyValueType::DOUBLE_ARRAY, "", {}, std::vector<double>(27, 1.0), {}},
+    {"ProfileToneCurve", PropertyValueType::DOUBLE_ARRAY, "", {}, {0.0, 0.0, 1.0, 1.0}, {}},
+    {"ProfileEmbedPolicy", PropertyValueType::INT, "", {0}, {}, {}},
+    {"ProfileCopyright", PropertyValueType::STRING, "Copyright (c) Fake Company 2025", {}, {}, {}},
+    {"ForwardMatrix1",
+     PropertyValueType::DOUBLE_ARRAY,
+     "",
+     {},
+     {0.9642f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f, 0.8251f},
+     {}},
+    {"ForwardMatrix2",
+     PropertyValueType::DOUBLE_ARRAY,
+     "",
+     {},
+     {0.9642f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f, 0.8251f},
+     {}},
+    {"PreviewApplicationName", PropertyValueType::STRING, "Fake DNG Generator", {}, {}, {}},
+    {"PreviewApplicationVersion", PropertyValueType::STRING, "1.0", {}, {}, {}},
+    {"PreviewSettingsName", PropertyValueType::STRING, "Default", {}, {}, {}},
+    {"PreviewColorSpace", PropertyValueType::INT, "", {2}, {}, {}},
+    {"PreviewDateTime", PropertyValueType::STRING, "2026:01:19 12:00:00", {}, {}, {}},
+    {"SubTileBlockSize", PropertyValueType::INT_ARRAY, "", {1, 1}, {}, {}},
+    {"RowInterleaveFactor", PropertyValueType::INT, "", {1}, {}, {}},
+    {"ProfileLookTableDims", PropertyValueType::INT_ARRAY, "", {3, 3, 3}, {}, {}},
+    {"ProfileLookTableData", PropertyValueType::DOUBLE_ARRAY, "", {}, std::vector<double>(27, 0.5f), {}},
+    {"NoiseProfile", PropertyValueType::DOUBLE_ARRAY, "", {}, {1.0, 0.0, 1.0, 0.0, 1.0, 0.0}, {}},
+    {"OriginalDefaultFinalSize", PropertyValueType::INT_ARRAY, "", {64, 64}, {}, {}},
+    {"OriginalBestQualityFinalSize", PropertyValueType::INT_ARRAY, "", {64, 64}, {}, {}},
+    {"OriginalDefaultCropSize", PropertyValueType::DOUBLE_ARRAY, "", {}, {64.0f, 64.0f}, {}},
+    {"ProfileHueSatMapEncoding", PropertyValueType::INT, "", {0}, {}, {}},
+    {"ProfileLookTableEncoding", PropertyValueType::INT, "", {0}, {}, {}},
+    {"BaselineExposureOffset", PropertyValueType::DOUBLE, "", {}, {0.0}, {}},
+    {"DefaultBlackRender", PropertyValueType::INT, "", {0}, {}, {}},
+    {"RawToPreviewGain", PropertyValueType::DOUBLE, "", {}, {1.0}, {}},
+    {"DefaultUserCrop", PropertyValueType::DOUBLE_ARRAY, "", {}, {0.0f, 0.0f, 1.0f, 1.0f}, {}}};
+
+void ImageSourceTest::InitData()
+{
+    gLinearizationTable_ = MockLinearizationTable();
+    gDngPrivateData_ = MockBinary(MOCK_DNG_PRIVATE_DATA_SIZE);
+    gDigestData_ = "CE70B9D6BAA1207B3ABBA6C9FFF84924";
+    gIccData_ = MockIccProfile();
+
+    gMockDngMetadata_.emplace_back(MetadataValue{
+        "LinearizationTable", PropertyValueType::INT_ARRAY, "", gLinearizationTable_, {}, {}
+    });
+    gMockDngMetadata_.emplace_back(MetadataValue{
+        "DNGPrivateData", PropertyValueType::BLOB, "", {}, {}, gDngPrivateData_
+    });
+    gMockDngMetadata_.emplace_back(MetadataValue{
+       "AsShotICCProfile", PropertyValueType::BLOB, "", {}, {}, gIccData_
+    });
+    gMockDngMetadata_.emplace_back(MetadataValue{
+       "RawDataUniqueID", PropertyValueType::STRING, gDigestData_, {}, {}, {}
+    });
+    gMockDngMetadata_.emplace_back(MetadataValue{
+       "PreviewSettingsDigest", PropertyValueType::STRING, gDigestData_, {}, {}, {}
+    });
+    gMockDngMetadata_.emplace_back(MetadataValue{
+       "RawImageDigest", PropertyValueType::STRING, gDigestData_, {}, {}, {}
+    });
+    gMockDngMetadata_.emplace_back(MetadataValue{
+       "OriginalRawFileDigest", PropertyValueType::STRING, gDigestData_, {}, {}, {}
+    });
+    gMockDngMetadata_.emplace_back(MetadataValue{
+       "NewRawImageDigest", PropertyValueType::STRING, gDigestData_, {}, {}, {}
+    });
+}
+
+void ImageSourceTest::SetUpTestCase(void)
+{
+    InitData();
+}
+
+void ImageSourceTest::TearDownTestCase(void) {}
 
 void ImageSourceTest::DecodeBlobMetaDataTest(const std::string &filePath, std::set<MetadataType> metadataTypes)
 {
@@ -4874,6 +5107,58 @@ HWTEST_F(ImageSourceTest, GetDngImagePropertyByDngSdkTest026, TestSize.Level3)
     ASSERT_EQ(imageSource->GetDngImagePropertyByDngSdk("FocalPlaneYResolution", value), SUCCESS);
     ASSERT_EQ(value.doubleArrayValue[0], focalPlaneYResolution);
     GTEST_LOG_(INFO) << "DngExifMetadataAccessorTest: GetDngImagePropertyByDngSdkTest026 end";
+}
+
+/**
+ * @tc.name: GetDngImagePropertyByDngSdkTest027
+ * @tc.desc: Test GetDngImagePropertyByDngSdk for dng keys
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageSourceTest, GetDngImagePropertyByDngSdkTest027, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "DngExifMetadataAccessorTest: GetDngImagePropertyByDngSdkTest027 start";
+
+    auto imageSource = CreateImageSourceByPath(IMAGE_INPUT2_DNG_PATH);
+    ASSERT_NE(imageSource, nullptr);
+    uint32_t res;
+    for (auto &valueIn : gMockDngMetadata_)
+    {
+        MetadataValue valueOut;
+        res = imageSource->GetDngImagePropertyByDngSdk(valueIn.key, valueOut);
+        EXPECT_EQ(res, SUCCESS);
+        bool isSame = IsSameValue(valueIn, valueOut);
+        std::cout << "key: " << valueIn.key << ", isSame: " << isSame << std::endl;
+        EXPECT_EQ(isSame, true);
+    }
+    GTEST_LOG_(INFO) << "DngExifMetadataAccessorTest: GetDngImagePropertyByDngSdkTest027 end";
+}
+
+/**
+ * @tc.name: GetDngImagePropertyByDngSdkTest028
+ * @tc.desc: Test GetDngImagePropertyByDngSdk for dng opcode keys
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageSourceTest, GetDngImagePropertyByDngSdkTest028, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "DngExifMetadataAccessorTest: GetDngImagePropertyByDngSdkTest028 start";
+
+    auto imageSource = CreateImageSourceByPath(IMAGE_INPUT2_DNG_PATH);
+    ASSERT_NE(imageSource, nullptr);
+    uint32_t res;
+    MetadataValue value;
+
+    res = imageSource->GetDngImagePropertyByDngSdk("OpcodeList1", value);
+    EXPECT_EQ(res, SUCCESS);
+    EXPECT_EQ(value.bufferValue.size(), MOCK_OPCODE_SIZE);
+    
+    res = imageSource->GetDngImagePropertyByDngSdk("OpcodeList2", value);
+    EXPECT_EQ(res, SUCCESS);
+    EXPECT_EQ(value.bufferValue.size(), MOCK_OPCODE_SIZE);
+
+    res = imageSource->GetDngImagePropertyByDngSdk("OpcodeList3", value);
+    EXPECT_EQ(res, SUCCESS);
+    EXPECT_EQ(value.bufferValue.size(), MOCK_OPCODE_SIZE);
+    GTEST_LOG_(INFO) << "DngExifMetadataAccessorTest: GetDngImagePropertyByDngSdkTest028 end";
 }
 
 /**

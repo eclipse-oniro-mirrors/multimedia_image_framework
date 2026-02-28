@@ -366,7 +366,27 @@ std::string GetFuzzKey(FuzzedDataProvider* fdp)
         "HwMnoteXmageTop", "HwMnoteXmageRight", "HwMnoteXmageBottom", "HwMnoteCloudEnhancementMode",
         "HwMnoteWindSnapshotMode", "HwMnoteXtStyleTemplateName", "HwMnoteXtStyleCustomLightAndShadow",
         "HwMnoteXtStyleCustomSaturation", "HwMnoteXtStyleCustomHue", "HwMnoteXtStyleExposureParam", "XInOriginal",
-        "YInOriginal", "FragmentImageWidth", "FragmentImageHeight", "GifDelayTime", "GifDisposalType"
+        "YInOriginal", "FragmentImageWidth", "FragmentImageHeight", "GifDelayTime", "GifDisposalType",
+        // dng keys
+        "DNGBackwardVersion", "UniqueCameraModel", "LocalizedCameraModel", "CFAPlaneColor",
+        "CFALayout", "LinearizationTable", "BlackLevelRepeatDim", "BlackLevel", "BlackLevelDeltaH", "BlackLevelDeltaV",
+        "WhiteLevel", "DefaultScale", "DefaultCropOrigin", "ColorMatrix1",
+        "ColorMatrix2", "CameraCalibration1", "CameraCalibration2", "ReductionMatrix1", "ReductionMatrix2",
+        "AnalogBalance", "AsShotNeutral", "AsShotWhiteXY", "BaselineExposure", "BaselineNoise", "BaselineSharpness",
+        "BayerGreenSplit", "LinearResponseLimit", "CameraSerialNumber", "LensInfo", "ChromaBlurRadius",
+        "AntiAliasStrength", "ShadowScale", "DNGPrivateData", "MakerNoteSafety", "CalibrationIlluminant1",
+        "CalibrationIlluminant2", "BestQualityScale", "RawDataUniqueID", "OriginalRawFileName", "OriginalRawFileData",
+        "ActiveArea", "MaskedAreas", "AsShotICCProfile", "AsShotPreProfileMatrix", "CurrentICCProfile",
+        "CurrentPreProfileMatrix", "ColorimetricReference", "CameraCalibrationSignature",
+        "ProfileCalibrationSignature", "ExtraCameraProfiles", "AsShotProfileName", "NoiseReductionApplied",
+        "ProfileName", "ProfileHueSatMapDims", "ProfileHueSatMapData1", "ProfileHueSatMapData2", "ProfileToneCurve",
+        "ProfileEmbedPolicy", "ProfileCopyright", "ForwardMatrix1", "ForwardMatrix2", "PreviewApplicationName",
+        "PreviewApplicationVersion", "PreviewSettingsName", "PreviewSettingsDigest", "PreviewColorSpace",
+        "PreviewDateTime", "RawImageDigest", "OriginalRawFileDigest", "SubTileBlockSize", "RowInterleaveFactor",
+        "ProfileLookTableDims", "ProfileLookTableData", "OpcodeList1", "OpcodeList2", "OpcodeList3", "NoiseProfile",
+        "OriginalDefaultFinalSize", "OriginalBestQualityFinalSize", "OriginalDefaultCropSize",
+        "ProfileHueSatMapEncoding", "ProfileLookTableEncoding", "BaselineExposureOffset", "DefaultBlackRender",
+        "NewRawImageDigest", "RawToPreviewGain", "DefaultUserCrop"
     };
     uint32_t index = fdp->ConsumeIntegral<uint32_t>() % allKeys.size();
     return allKeys[index];

@@ -101,6 +101,7 @@ public:
     static uint32_t ParseUndefinedTag(const DngTagRecord& tagRecord, dng_stream& stream, MetadataValue& value);
     static uint32_t ParseIntTag(const DngTagRecord& tagRecord, dng_stream& stream, MetadataValue& value);
     static uint32_t ParseDoubleTag(const DngTagRecord& tagRecord, dng_stream& stream, MetadataValue& value);
+    static uint32_t ParseDoubleArrayTag(const DngTagRecord& tagRecord, dng_stream& stream, MetadataValue& value);
 
     // Get value from dng_exif
     static uint32_t GetExifImageDescription(const dng_exif& fExif, MetadataValue& value);
@@ -194,9 +195,53 @@ public:
     static uint32_t GetExifLensModel(const dng_exif& fExif, MetadataValue& value);
     static uint32_t GetExifLensSerialNumber(const dng_exif& fExif, MetadataValue& value);
     static uint32_t GetExifGamma(const dng_exif& fExif, MetadataValue& value);
+    static uint32_t GetExifLensInfo(const dng_exif& fExif, MetadataValue& value);
 
     // Get value from dng_shared
     static uint32_t GetSharedDNGVersion(const dng_shared& fShared, MetadataValue& value);
+    static uint32_t GetSharedDngBackwardVersion(const dng_shared& fShared, MetadataValue& value);
+    static uint32_t GetSharedUniqueCameraModel(const dng_shared& fShared, MetadataValue& value);
+    static uint32_t GetSharedLocalizedCameraModel(const dng_shared& fShared, MetadataValue& value);
+    static uint32_t GetSharedCalibrationIlluminant1(const dng_shared& fShared, MetadataValue& value);
+    static uint32_t GetSharedCalibrationIlluminant2(const dng_shared& fShared, MetadataValue& value);
+    static uint32_t GetSharedColorMatrix1(const dng_shared& fShared, MetadataValue& value);
+    static uint32_t GetSharedCameraCalibration1(const dng_shared& fShared, MetadataValue& value);
+    static uint32_t GetSharedCameraCalibration2(const dng_shared& fShared, MetadataValue& value);
+    static uint32_t GetSharedReductionMatrix1(const dng_shared& fShared, MetadataValue& value);
+    static uint32_t GetSharedReductionMatrix2(const dng_shared& fShared, MetadataValue& value);
+    static uint32_t GetSharedAnalogBalance(const dng_shared& fShared, MetadataValue& value);
+    static uint32_t GetSharedBaselineExposure(const dng_shared& fShared, MetadataValue& value);
+    static uint32_t GetSharedBaselineNoise(const dng_shared& fShared, MetadataValue& value);
+    static uint32_t GetSharedBaselineSharpness(const dng_shared& fShared, MetadataValue& value);
+    static uint32_t GetSharedLinearResponseLimit(const dng_shared& fShared, MetadataValue& value);
+    static uint32_t GetSharedShadowScale(const dng_shared& fShared, MetadataValue& value);
+    static uint32_t GetSharedMakerNoteSafety(const dng_shared& fShared, MetadataValue& value);
+    static uint32_t GetSharedRawDataUniqueId(const dng_shared& fShared, MetadataValue& value);
+    static uint32_t GetSharedOriginalRawFileName(const dng_shared& fShared, MetadataValue& value);
+    static uint32_t GetSharedAsShotPreProfileMatrix(const dng_shared& fShared, MetadataValue& value);
+    static uint32_t GetSharedCurrentPreProfileMatrix(const dng_shared& fShared, MetadataValue& value);
+    static uint32_t GetSharedColorimetricReference(const dng_shared& fShared, MetadataValue& value);
+    static uint32_t GetSharedCameraCalibrationSignature(const dng_shared& fShared, MetadataValue& value);
+    static uint32_t GetSharedProfileCalibrationSignature(const dng_shared& fShared, MetadataValue& value);
+    static uint32_t GetSharedAsShotProfileName(const dng_shared& fShared, MetadataValue& value);
+    static uint32_t GetSharedNoiseReductionApplied(const dng_shared& fShared, MetadataValue& value);
+    static uint32_t GetSharedProfileName(const dng_shared& fShared, MetadataValue& value);
+    static uint32_t GetSharedProfileHueSatMapDims(const dng_shared& fShared, MetadataValue& value);
+    static uint32_t GetSharedProfileEmbedPolicy(const dng_shared& fShared, MetadataValue& value);
+    static uint32_t GetSharedProfileCopyright(const dng_shared& fShared, MetadataValue& value);
+    static uint32_t GetSharedForwardMatrix1(const dng_shared& fShared, MetadataValue& value);
+    static uint32_t GetSharedForwardMatrix2(const dng_shared& fShared, MetadataValue& value);
+    static uint32_t GetSharedRawImageDigest(const dng_shared& fShared, MetadataValue& value);
+    static uint32_t GetSharedOriginalRawFileDigest(const dng_shared& fShared, MetadataValue& value);
+    static uint32_t GetSharedProfileLookTableDims(const dng_shared& fShared, MetadataValue& value);
+    static uint32_t GetSharedDefaultBlackRender(const dng_shared& fShared, MetadataValue& value);
+    static uint32_t GetSharedBaselineExposureOffset(const dng_shared& fShared, MetadataValue& value);
+    static uint32_t GetSharedProfileLookTableEncoding(const dng_shared& fShared, MetadataValue& value);
+    static uint32_t GetSharedProfileHueSatMapEncoding(const dng_shared& fShared, MetadataValue& value);
+    static uint32_t GetSharedOriginalDefaultFinalSize(const dng_shared& fShared, MetadataValue& value);
+    static uint32_t GetSharedOriginalBestQualityFinalSize(const dng_shared& fShared, MetadataValue& value);
+    static uint32_t GetSharedOriginalDefaultCropSize(const dng_shared& fShared, MetadataValue& value);
+    static uint32_t GetSharedNewRawImageDigest(const dng_shared& fShared, MetadataValue& value);
 
     // Get value from dng_ifd
     static uint32_t GetIfdNewSubfileType(const dng_ifd& fIFD, MetadataValue& value);
@@ -218,6 +263,28 @@ public:
     static uint32_t GetIfdDefaultCropSize(const dng_ifd& fIFD, MetadataValue& value);
     static uint32_t GetIfdJPEGInterchangeFormat(const dng_ifd& fIFD, MetadataValue& value);
     static uint32_t GetIfdJPEGInterchangeFormatLength(const dng_ifd& fIFD, MetadataValue& value);
+    static uint32_t GetIfdCFALayout(const dng_ifd& fIFD, MetadataValue& value);
+    static uint32_t GetIfdBlackLevelRepeatDim(const dng_ifd& fIFD, MetadataValue& value);
+    static uint32_t GetIfdBlackLevel(const dng_ifd& fIFD, MetadataValue& value);
+    static uint32_t GetIfdWhiteLevel(const dng_ifd& fIFD, MetadataValue& value);
+    static uint32_t GetIfdDefaultScale(const dng_ifd& fIFD, MetadataValue& value);
+    static uint32_t GetIfdBestQualityScale(const dng_ifd& fIFD, MetadataValue& value);
+    static uint32_t GetIfdDefaultCropOrigin(const dng_ifd& fIFD, MetadataValue& value);
+    static uint32_t GetIfdBayerGreenSplit(const dng_ifd& fIFD, MetadataValue& value);
+    static uint32_t GetIfdChromaBlurRadius(const dng_ifd& fIFD, MetadataValue& value);
+    static uint32_t GetIfdAntiAliasStrength(const dng_ifd& fIFD, MetadataValue& value);
+    static uint32_t GetIfdActiveArea(const dng_ifd& fIFD, MetadataValue& value);
+    static uint32_t GetIfdMaskedAreas(const dng_ifd& fIFD, MetadataValue& value);
+    static uint32_t GetIfdPreviewApplicationName(const dng_ifd& fIFD, MetadataValue& value);
+    static uint32_t GetIfdPreviewApplicationVersion(const dng_ifd& fIFD, MetadataValue& value);
+    static uint32_t GetIfdPreviewSettingsName(const dng_ifd& fIFD, MetadataValue& value);
+    static uint32_t GetIfdPreviewSettingsDigest(const dng_ifd& fIFD, MetadataValue& value);
+    static uint32_t GetIfdPreviewColorSpace(const dng_ifd& fIFD, MetadataValue& value);
+    static uint32_t GetIfdPreviewDateTime(const dng_ifd& fIFD, MetadataValue& value);
+    static uint32_t GetIfdSubTileBlockSize(const dng_ifd& fIFD, MetadataValue& value);
+    static uint32_t GetIfdRowInterleaveFactor(const dng_ifd& fIFD, MetadataValue& value);
+    static uint32_t GetIfdDefaultUserCrop(const dng_ifd& fIFD, MetadataValue& value);
+    static uint32_t GetIfdRawToPreviewGain(const dng_ifd& fIFD, MetadataValue& value);
 
 private:
     static uint32_t GetOrSetExifProperty(dng_exif& fExif, MetadataValue& value, UniqueTagKey& tagKey, bool isGet);

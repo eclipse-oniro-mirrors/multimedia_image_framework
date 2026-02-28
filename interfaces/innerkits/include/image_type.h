@@ -467,6 +467,7 @@ enum class MetadataType {
     RESMAP = 7,
     UNKNOWN = 0,
     HEIFS = 15,
+    DNG = 16,
 };
 
 static const std::map<MetadataType, std::string> BLOB_METADATA_TAG_MAP = {
@@ -561,6 +562,7 @@ enum class NapiMetadataType {
     HEIFS_METADATA = 3,
     FRAGMENT_METADATA = 4,
     GIF_METADATA = 5,
+    DNG_METADATA = 6,
 };
 
 enum class XMPTagType: int32_t {

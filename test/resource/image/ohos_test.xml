@@ -111,6 +111,7 @@
             <option name="push" value="images/xmp/gif_xmp.gif -> /data/local/tmp/image" src="res"/>
             <option name="push" value="images/xmp/dng_xmp.dng -> /data/local/tmp/image" src="res"/>
             <option name="push" value="images/xmp/tiff_xmp.tiff -> /data/local/tmp/image" src="res"/>
+            <option name="push" value="images/test_dng_mock.dng -> /data/local/tmp/image" src="res"/>
         </preparer>
     </target>
     <target name="imagecolorspacetest">
@@ -492,6 +493,7 @@
             <option name="push" value="images/heif_exif_thumbnail.heic -> /data/local/tmp/image" src="res"/>
             <option name="push" value="images/heif_box_thumbnail.heic -> /data/local/tmp/image" src="res"/>
             <option name="push" value="images/heif_no_thumbnail.heic -> /data/local/tmp/image" src="res"/>
+            <option name="push" value="images/test_dng_mock.dng -> /data/local/tmp/image" src="res"/>
         </preparer>
     </target>
     <target name="ImagePictureFuzzTest">

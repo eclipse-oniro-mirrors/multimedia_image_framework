@@ -28,6 +28,8 @@ public:
 
     static uint32_t GetExifProperty(const std::unique_ptr<DngSdkInfo>& info, MetadataValue& value);
     static uint32_t SetExifProperty(const std::unique_ptr<DngSdkInfo>& info, const MetadataValue& value);
+    static uint32_t GetImageRawData(ImagePlugin::InputDataStream* stream,
+        std::vector<uint8_t> &data, uint32_t &bitsPerSample);
 };
 } // namespace Media
 } // namespace OHOS

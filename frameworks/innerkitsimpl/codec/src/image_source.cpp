@@ -6683,5 +6683,15 @@ uint32_t ImageSource::WriteXMPMetadata(std::shared_ptr<XMPMetadata> &xmpMetadata
     return SUCCESS;
 }
 #endif
+uint32_t ImageSource::GetImageRawData(std::vector<uint8_t> &data, uint32_t &bitsPerSample)
+{
+#if !defined(CROSS_PLATFORM)
+    CHECK_ERROR_RETURN_RET_LOG(!IsDngImage(), ERR_IMAGE_MISMATCHED_FORMAT, "not dng image");
+    uint32_t errorCode = DngExifMetadata::GetImageRawData(sourceStreamPtr_.get(), data, bitsPerSample);
+    CHECK_ERROR_RETURN_RET_LOG(errorCode != SUCCESS,
+        errorCode, "GetImageRawData failed %{public}u", errorCode);
+#endif
+    return SUCCESS;
+}
 } // namespace Media
 } // namespace OHOS

@@ -24,11 +24,15 @@
 #include "dng_sdk_helper.h"
 #include "dng_stream.h"
 #include "file_metadata_stream.h"
+#include "file_source_stream.h"
 
 namespace OHOS {
 namespace Media {
 
 static constexpr uint32_t OPT_SIZE = 80;
+static constexpr uint8_t CASE0 = 0;
+static constexpr uint8_t CASE1 = 1;
+static constexpr uint8_t CASE2 = 2;
 
 FuzzedDataProvider* FDP;
 
@@ -79,6 +83,17 @@ void ImageDngSdkHelperGetExifPropertyFuzzTest(const std::string& pathName)
     DngSdkHelper::GetExifProperty(dngInfo, value);
 }
 
+void ImageDngSdkHelperGetImageRawDataFuzzTest(const std::string& pathName)
+{
+    auto stream = FileSourceStream::CreateSourceStream(pathName);
+    if (stream == nullptr) {
+        return;
+    }
+    std::vector<uint8_t> data;
+    uint32_t bitsPerSample = 0;
+    DngSdkHelper::GetImageRawData(stream.get(), data, bitsPerSample);
+}
+
 void ImageDngSdkHelperSetExifPropertyFuzzTest(const std::string& pathName)
 {
     std::shared_ptr<MetadataStream> stream = std::make_shared<FileMetadataStream>(pathName);
@@ -119,13 +134,16 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
         IMAGE_LOGE("WriteDataToFile failed");
         return 0;
     }
-    uint8_t action = fdp.ConsumeIntegral<uint8_t>() % 3;
+    uint8_t action = fdp.ConsumeIntegral<uint8_t>() % 4;
     switch (action) {
-        case 0:
+        case OHOS::Media::CASE0:
             OHOS::Media::ImageDngSdkHelperParseInfoFromStreamFuzzTest(pathName);
             break;
-        case 1:
+        case OHOS::Media::CASE1:
             OHOS::Media::ImageDngSdkHelperGetExifPropertyFuzzTest(pathName);
+            break;
+        case OHOS::Media::CASE2:
+            OHOS::Media::ImageDngSdkHelperGetImageRawDataFuzzTest(pathName);
             break;
         default:
             OHOS::Media::ImageDngSdkHelperSetExifPropertyFuzzTest(pathName);

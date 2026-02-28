@@ -78,6 +78,7 @@ public:
     static const std::map<std::string, PropertyValueType>& GetHeifsMetadataMap();
     static const std::map<std::string, PropertyValueType>& GetFragmentMetadataMap();
     static const std::map<std::string, PropertyValueType>& GetGifMetadataMap();
+    static const std::map<std::string, PropertyValueType>& GetDngMetadataMap();
     static const std::map<NapiMetadataType, std::map<std::string, PropertyValueType>>& GetPropertyTypeMapping();
     static const std::unordered_map<std::string, std::string>& GetPropertyKeyMap();
 
