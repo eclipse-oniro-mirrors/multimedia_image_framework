@@ -841,6 +841,19 @@ napi_value MetadataNapi::CreateRfDataBMetadata(napi_env env, std::shared_ptr<Ima
     return result;
 }
 
+napi_value MetadataNapi::CreateDngMetadata(napi_env env)
+{
+    napi_value obj = nullptr;
+    napi_status status = napi_create_object(env, &obj);
+    if (status != napi_ok) {
+        IMAGE_LOGE("Failed to create empty DngMetadata object: %{public}d", status);
+        napi_value result = nullptr;
+        napi_get_undefined(env, &result);
+        return result;
+    }
+    return obj;
+}
+
 napi_value MetadataNapi::Constructor(napi_env env, napi_callback_info info)
 {
     napi_value undefineVar = nullptr;

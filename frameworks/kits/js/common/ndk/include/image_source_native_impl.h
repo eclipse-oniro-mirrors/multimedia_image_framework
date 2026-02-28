@@ -50,6 +50,19 @@ private:
     std::shared_ptr<OHOS::Media::DecodingOptionsForPicture> decodingOptionsForPicture_;
 };
 
+struct OH_ImageRawData {
+public:
+    OH_ImageRawData(std::vector<uint8_t> &imageData, uint32_t bitsPerPixel);
+
+    ~OH_ImageRawData();
+    size_t GetSize() const;
+    uint8_t GetBitsPerPixel() const;
+    uint8_t* GetData();
+private:
+    std::vector<uint8_t> imageData_;
+    uint32_t bitsPerPixel_;
+};
+
 #ifdef __cplusplus
 };
 #endif

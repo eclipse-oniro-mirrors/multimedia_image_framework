@@ -79,6 +79,7 @@ private:
     static napi_value ModifyImagePropertiesEnhanced(napi_env env, napi_callback_info info);
     static napi_value ReadImageMetadata(napi_env env, napi_callback_info info);
     static napi_value ReadImageMetadataByType(napi_env env, napi_callback_info info);
+    static napi_value CreateImageRawData(napi_env env, napi_callback_info info);
     static napi_value GetImageProperty(napi_env env, napi_callback_info info);
     static napi_value GetImagePropertySync(napi_env env, napi_callback_info info);
     static napi_value UpdateData(napi_env env, napi_callback_info info);

@@ -303,6 +303,8 @@ public:
     NATIVEEXPORT bool IsJpegProgressive(uint32_t &errorCode);
     NATIVEEXPORT std::shared_ptr<XMPMetadata> ReadXMPMetadata(uint32_t &errorCode);
     NATIVEEXPORT uint32_t WriteXMPMetadata(std::shared_ptr<XMPMetadata> &xmpMetadata);
+    NATIVEEXPORT std::shared_ptr<ImageMetadata> GetMetadata(MetadataType type);
+    NATIVEEXPORT uint32_t GetImageRawData(std::vector<uint8_t> &data, uint32_t &bitsPerSample);
 
 private:
     DISALLOW_COPY_AND_MOVE(ImageSource);

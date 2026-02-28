@@ -19,6 +19,9 @@
 #include "exif_metadata.h"
 
 namespace OHOS {
+namespace ImagePlugin {
+class InputDataStream;
+}
 namespace Media {
 
 class DngSdkInfo;
@@ -36,6 +39,8 @@ public:
     bool Marshalling(Parcel& parcel) const override;
     uint32_t GetExifProperty(MetadataValue& value);
     std::vector<MetadataValue> GetAllDngProperties();
+    static uint32_t GetImageRawData(ImagePlugin::InputDataStream* stream,
+        std::vector<uint8_t> &data, uint32_t &bitsPerSample);
 
 private:
     std::unique_ptr<DngSdkInfo> dngSdkInfo_;

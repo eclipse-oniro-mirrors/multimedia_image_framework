@@ -99,6 +99,28 @@ std::shared_ptr<OHOS::Media::DecodingOptionsForPicture> OH_DecodingOptionsForPic
     return decodingOptionsForPicture_;
 }
 
+OH_ImageRawData::OH_ImageRawData(std::vector<uint8_t>& imageData, uint32_t bitsPerPixel)
+    : imageData_(std::move(imageData)), bitsPerPixel_(bitsPerPixel)
+{
+}
+
+OH_ImageRawData::~OH_ImageRawData() {}
+
+size_t OH_ImageRawData::GetSize() const
+{
+    return static_cast<size_t>(imageData_.size());
+}
+
+uint8_t* OH_ImageRawData::GetData()
+{
+    return static_cast<uint8_t*>(imageData_.data());
+}
+
+uint8_t OH_ImageRawData::GetBitsPerPixel() const
+{
+    return static_cast<uint8_t>(bitsPerPixel_);
+}
+
 #ifdef __cplusplus
 };
 #endif

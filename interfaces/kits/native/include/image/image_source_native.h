@@ -1115,6 +1115,70 @@ Image_ErrorCode OH_ImageSourceNative_ModifyImagePropertyBlob(OH_ImageSourceNativ
 Image_ErrorCode OH_ImageSourceNative_ReadImageMetadataByType(OH_ImageSourceNative *source, uint32_t index,
     Image_MetadataType *metadataTypes, size_t typeCount, OH_PictureMetadata **metadatas, size_t *metadataCount);
 
+/**
+ * @brief Defines raw data in an image.
+ * {@link OH_ImageSourceNative_CreateImageRawData}.
+ *
+ * @since 24
+ */
+struct OH_ImageRawData;
+
+/**
+ * @brief Defines raw data in an image.
+ * {@link OH_ImageSourceNative_CreateImageRawData}.
+ *
+ * @since 24
+ */
+typedef struct OH_ImageRawData OH_ImageRawData;
+
+/**
+ * @brief Obtains rawData object from an image.
+ *
+ * @param source Pointer to the image source.
+ * @param rawData Double pointer to the rawData object obtained after decoding.
+ * @return Returns One of the following result codes:
+ *         {@link IMAGE_SUCCESS} if the execution is successful.
+ *         {@link IMAGE_BAD_SOURCE} Bad source.
+ *         {@link IMAGE_SOURCE_UNSUPPORTED_MIME_TYPE} Unsupported MIME type.
+ * @since 24
+ */
+Image_ErrorCode OH_ImageSourceNative_CreateImageRawData(OH_ImageSourceNative *source, OH_ImageRawData **rawData);
+
+/**
+ * @brief Gets binary data from the rawData object.
+ *
+ * @param rawData Pointer to the rawData object.
+ * @param data Pointer to the binary buffer data.
+ * @param length Pointer to the length of data obtained.
+ * @return Returns One of the following result codes:
+ *         {@link IMAGE_SUCCESS} if the execution is successful.
+ *         {@link IMAGE_SOURCE_INVALID_PARAMETER} if the rawData object is invalid.
+ * @since 24
+ */
+Image_ErrorCode OH_ImageSourceNative_GetBufferFromRawData(OH_ImageRawData *rawData, uint8_t **data, size_t *length);
+
+/**
+ * @brief Gets number of bits that each pixel actually occupies in the buffer data.
+ *
+ * @param rawData Pointer to the rawData object.
+ * @param bitsPerPixel Pointer to the bitsPerPixel obtained.
+ * @return Returns One of the following result codes:
+ *         {@link IMAGE_SUCCESS} if the execution is successful.
+ *         {@link IMAGE_SOURCE_INVALID_PARAMETER} if the rawData object is invalid.
+ * @since 24
+ */
+Image_ErrorCode OH_ImageSourceNative_GetBitsPerPixelFromRawData(OH_ImageRawData *rawData, uint8_t *bitsPerPixel);
+
+/**
+ * @brief Releases rawData object.
+ *
+ * @param rawData Pointer to the rawData object.
+ * @return Returns One of the following result codes:
+ *         {@link IMAGE_SUCCESS} if the execution is successful.
+ *         {@link IMAGE_SOURCE_INVALID_PARAMETER} if the rawData object is invalid.
+ * @since 24
+ */
+Image_ErrorCode OH_ImageSourceNative_ReleaseRawData(OH_ImageRawData *rawData);
 #ifdef __cplusplus
 };
 #endif

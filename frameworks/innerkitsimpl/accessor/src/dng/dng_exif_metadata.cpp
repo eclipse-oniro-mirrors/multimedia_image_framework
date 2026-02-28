@@ -18,6 +18,7 @@
 #include "dng/dng_sdk_helper.h"
 #include "exif_metadata.h"
 #include "image_log.h"
+#include "input_data_stream.h"
 #include "media_errors.h"
 #include <set>
 #include <vector>
@@ -185,6 +186,12 @@ std::vector<MetadataValue> DngExifMetadata::GetAllDngProperties()
     }
 
     return result;
+}
+
+uint32_t DngExifMetadata::GetImageRawData(ImagePlugin::InputDataStream* stream,
+    std::vector<uint8_t> &data, uint32_t &bitsPerSample)
+{
+    return DngSdkHelper::GetImageRawData(stream, data, bitsPerSample);
 }
 } // namespace Media
 } // namespace OHOS

@@ -24,6 +24,7 @@
 #include <string_view>
 
 #include "dng_memory.h"
+#include "dng_sdk_limits.h"
 #include "image_log.h"
 #include "image_utils.h"
 #include "media_errors.h"
@@ -44,6 +45,7 @@ static constexpr uint32_t BYTE_MASK = 0xFF;
 static constexpr uint32_t BYTE3_SHIFT = 24; // 3 * BITS_PER_BYTE
 static constexpr uint32_t BYTE2_SHIFT = 16; // 2 * BITS_PER_BYTE
 static constexpr uint32_t BYTE1_SHIFT = 8;  // 1 * BITS_PER_BYTE
+static constexpr uint32_t LENS_INFO_ELEMENTS = 4;
 
 std::map<std::string, std::tuple<uint16_t, uint32_t, DngSdkInfo::ExifGetType>> DngSdkInfo::exifPropertyMap_ = {
     {"ImageDescription", {tcImageDescription, 0, DngSdkInfo::GetExifImageDescription}},
@@ -139,10 +141,59 @@ std::map<std::string, std::tuple<uint16_t, uint32_t, DngSdkInfo::ExifGetType>> D
     {"LensModel", {tcLensModelExif, tcExifIFD, DngSdkInfo::GetExifLensModel}},
     {"LensSerialNumber", {tcLensSerialNumberExif, tcExifIFD, DngSdkInfo::GetExifLensSerialNumber}},
     {"Gamma", {tcGamma, tcExifIFD, DngSdkInfo::GetExifGamma}},
+    // dng keys
+    {"CameraSerialNumber", {tcCameraSerialNumber, 0, DngSdkInfo::GetExifCameraSerialNumber}},
+    {"LensInfo", {tcLensInfo, 0, DngSdkInfo::GetExifLensInfo}},
 };
 
 std::map<std::string, std::tuple<uint16_t, uint32_t, DngSdkInfo::SharedGetType>> DngSdkInfo::sharedPropertyMap_ = {
     {"DNGVersion", {tcDNGVersion, 0, DngSdkInfo::GetSharedDNGVersion}},
+    // dng keys
+    {"DNGBackwardVersion", {tcDNGBackwardVersion, 0, DngSdkInfo::GetSharedDngBackwardVersion}},
+    {"UniqueCameraModel", {tcUniqueCameraModel, 0, DngSdkInfo::GetSharedUniqueCameraModel}},
+    {"LocalizedCameraModel", {tcLocalizedCameraModel, 0, DngSdkInfo::GetSharedLocalizedCameraModel}},
+    {"CalibrationIlluminant1", {tcCalibrationIlluminant1, 0, DngSdkInfo::GetSharedCalibrationIlluminant1}},
+    {"CalibrationIlluminant2", {tcCalibrationIlluminant2, 0, DngSdkInfo::GetSharedCalibrationIlluminant2}},
+    {"ColorMatrix1", {tcColorMatrix1, 0, DngSdkInfo::GetSharedColorMatrix1}},
+    {"CameraCalibration1", {tcCameraCalibration1, 0, DngSdkInfo::GetSharedCameraCalibration1}},
+    {"CameraCalibration2", {tcCameraCalibration2, 0, DngSdkInfo::GetSharedCameraCalibration2}},
+    {"ReductionMatrix1", {tcReductionMatrix1, 0, DngSdkInfo::GetSharedReductionMatrix1}},
+    {"ReductionMatrix2", {tcReductionMatrix2, 0, DngSdkInfo::GetSharedReductionMatrix2}},
+    {"AnalogBalance", {tcAnalogBalance, 0, DngSdkInfo::GetSharedAnalogBalance}},
+    {"BaselineExposure", {tcBaselineExposure, 0, DngSdkInfo::GetSharedBaselineExposure}},
+    {"BaselineNoise", {tcBaselineNoise, 0, DngSdkInfo::GetSharedBaselineNoise}},
+    {"BaselineSharpness", {tcBaselineSharpness, 0, DngSdkInfo::GetSharedBaselineSharpness}},
+    {"LinearResponseLimit", {tcLinearResponseLimit, 0, DngSdkInfo::GetSharedLinearResponseLimit}},
+    {"ShadowScale", {tcShadowScale, 0, DngSdkInfo::GetSharedShadowScale}},
+    {"MakerNoteSafety", {tcMakerNoteSafety, 0, DngSdkInfo::GetSharedMakerNoteSafety}},
+    {"RawDataUniqueID", {tcRawDataUniqueID, 0, DngSdkInfo::GetSharedRawDataUniqueId}},
+    {"OriginalRawFileName", {tcOriginalRawFileName, 0, DngSdkInfo::GetSharedOriginalRawFileName}},
+    {"AsShotPreProfileMatrix", {tcAsShotPreProfileMatrix, 0, DngSdkInfo::GetSharedAsShotPreProfileMatrix}},
+    {"CurrentPreProfileMatrix", {tcCurrentPreProfileMatrix, 0, DngSdkInfo::GetSharedCurrentPreProfileMatrix}},
+    {"ColorimetricReference", {tcColorimetricReference, 0, DngSdkInfo::GetSharedColorimetricReference}},
+    {"CameraCalibrationSignature", {tcCameraCalibrationSignature, 0, DngSdkInfo::GetSharedCameraCalibrationSignature}},
+    {"ProfileCalibrationSignature", {tcProfileCalibrationSignature, 0,
+        DngSdkInfo::GetSharedProfileCalibrationSignature}},
+    {"AsShotProfileName", {tcAsShotProfileName, 0, DngSdkInfo::GetSharedAsShotProfileName}},
+    {"NoiseReductionApplied", {tcNoiseReductionApplied, 0, DngSdkInfo::GetSharedNoiseReductionApplied}},
+    {"ProfileName", {tcProfileName, 0, DngSdkInfo::GetSharedProfileName}},
+    {"ProfileHueSatMapDims", {tcProfileHueSatMapDims, 0, DngSdkInfo::GetSharedProfileHueSatMapDims}},
+    {"ProfileEmbedPolicy", {tcProfileEmbedPolicy, 0, DngSdkInfo::GetSharedProfileEmbedPolicy}},
+    {"ProfileCopyright", {tcProfileCopyright, 0, DngSdkInfo::GetSharedProfileCopyright}},
+    {"ForwardMatrix1", {tcForwardMatrix1, 0, DngSdkInfo::GetSharedForwardMatrix1}},
+    {"ForwardMatrix2", {tcForwardMatrix2, 0, DngSdkInfo::GetSharedForwardMatrix2}},
+    {"RawImageDigest", {tcRawImageDigest, 0, DngSdkInfo::GetSharedRawImageDigest}},
+    {"OriginalRawFileDigest", {tcOriginalRawFileDigest, 0, DngSdkInfo::GetSharedOriginalRawFileDigest}},
+    {"ProfileLookTableDims", {tcProfileLookTableDims, 0, DngSdkInfo::GetSharedProfileLookTableDims}},
+    {"DefaultBlackRender", {tcDefaultBlackRender, 0, DngSdkInfo::GetSharedDefaultBlackRender}},
+    {"BaselineExposureOffset", {tcBaselineExposureOffset, 0, DngSdkInfo::GetSharedBaselineExposureOffset}},
+    {"ProfileLookTableEncoding", {tcProfileLookTableEncoding, 0, DngSdkInfo::GetSharedProfileLookTableEncoding}},
+    {"ProfileHueSatMapEncoding", {tcProfileHueSatMapEncoding, 0, DngSdkInfo::GetSharedProfileHueSatMapEncoding}},
+    {"OriginalDefaultFinalSize", {tcOriginalDefaultFinalSize, 0, DngSdkInfo::GetSharedOriginalDefaultFinalSize}},
+    {"OriginalBestQualityFinalSize", {tcOriginalBestQualityFinalSize, 0,
+        DngSdkInfo::GetSharedOriginalBestQualityFinalSize}},
+    {"OriginalDefaultCropSize", {tcOriginalDefaultCropSize, 0, DngSdkInfo::GetSharedOriginalDefaultCropSize}},
+    {"NewRawImageDigest", {tcNewRawImageDigest, 0, DngSdkInfo::GetSharedNewRawImageDigest}},
 };
 
 std::map<std::string, std::tuple<uint16_t, uint32_t, DngSdkInfo::IfdGetType>> DngSdkInfo::ifdPropertyMap_ = {
@@ -165,6 +216,29 @@ std::map<std::string, std::tuple<uint16_t, uint32_t, DngSdkInfo::IfdGetType>> Dn
     {"DefaultCropSize", {tcDefaultCropSize, 0, DngSdkInfo::GetIfdDefaultCropSize}},
     {"JPEGInterchangeFormat", {tcJPEGInterchangeFormat, 0, DngSdkInfo::GetIfdJPEGInterchangeFormat}},
     {"JPEGInterchangeFormatLength", {tcJPEGInterchangeFormatLength, 0, DngSdkInfo::GetIfdJPEGInterchangeFormatLength}},
+    // dng keys
+    {"CFALayout", {tcCFALayout, 0, DngSdkInfo::GetIfdCFALayout}},
+    {"BlackLevelRepeatDim", {tcBlackLevelRepeatDim, 0, DngSdkInfo::GetIfdBlackLevelRepeatDim}},
+    {"BlackLevel", {tcBlackLevel, 0, DngSdkInfo::GetIfdBlackLevel}},
+    {"WhiteLevel", {tcWhiteLevel, 0, DngSdkInfo::GetIfdWhiteLevel}},
+    {"DefaultScale", {tcDefaultScale, 0, DngSdkInfo::GetIfdDefaultScale}},
+    {"BestQualityScale", {tcBestQualityScale, 0, DngSdkInfo::GetIfdBestQualityScale}},
+    {"DefaultCropOrigin", {tcDefaultCropOrigin, 0, DngSdkInfo::GetIfdDefaultCropOrigin}},
+    {"BayerGreenSplit", {tcBayerGreenSplit, 0, DngSdkInfo::GetIfdBayerGreenSplit}},
+    {"ChromaBlurRadius", {tcChromaBlurRadius, 0, DngSdkInfo::GetIfdChromaBlurRadius}},
+    {"AntiAliasStrength", {tcAntiAliasStrength, 0, DngSdkInfo::GetIfdAntiAliasStrength}},
+    {"ActiveArea", {tcActiveArea, 0, DngSdkInfo::GetIfdActiveArea}},
+    {"MaskedAreas", {tcMaskedAreas, 0, DngSdkInfo::GetIfdMaskedAreas}},
+    {"PreviewApplicationName", {tcPreviewApplicationName, 0, DngSdkInfo::GetIfdPreviewApplicationName}},
+    {"PreviewApplicationVersion", {tcPreviewApplicationVersion, 0, DngSdkInfo::GetIfdPreviewApplicationVersion}},
+    {"PreviewSettingsName", {tcPreviewSettingsName, 0, DngSdkInfo::GetIfdPreviewSettingsName}},
+    {"PreviewSettingsDigest", {tcPreviewSettingsDigest, 0, DngSdkInfo::GetIfdPreviewSettingsDigest}},
+    {"PreviewColorSpace", {tcPreviewColorSpace, 0, DngSdkInfo::GetIfdPreviewColorSpace}},
+    {"PreviewDateTime", {tcPreviewDateTime, 0, DngSdkInfo::GetIfdPreviewDateTime}},
+    {"SubTileBlockSize", {tcSubTileBlockSize, 0, DngSdkInfo::GetIfdSubTileBlockSize}},
+    {"RowInterleaveFactor", {tcRowInterleaveFactor, 0, DngSdkInfo::GetIfdRowInterleaveFactor}},
+    {"DefaultUserCrop", {tcDefaultUserCrop, 0, DngSdkInfo::GetIfdDefaultUserCrop}},
+    {"RawToPreviewGain", {tcRawToPreviewGain, 0, DngSdkInfo::GetIfdRawToPreviewGain}},
 };
 
 std::map<std::string, uint16_t> DngSdkInfo::specialTagNameMap_ = {
@@ -199,6 +273,29 @@ std::map<std::string, uint16_t> DngSdkInfo::specialTagNameMap_ = {
     {"CompositeImage", TAG_CODE_COMPOSITE_IMAGE},
     {"SourceImageNumberOfCompositeImage", TAG_CODE_SOURCE_IMAGE_NUMBER_OF_COMPOSITE_IMAGE},
     {"SourceExposureTimesOfCompositeImage", TAG_CODE_SOURCE_EXPOSURE_TIMES_OF_COMPOSITE_IMAGE},
+
+    // dng keys
+    {"CFAPlaneColor", tcCFAPlaneColor},
+    {"LinearizationTable", tcLinearizationTable},
+    {"BlackLevelDeltaH", tcBlackLevelDeltaH},
+    {"BlackLevelDeltaV", tcBlackLevelDeltaV},
+    {"DNGPrivateData", tcDNGPrivateData},
+    {"OriginalRawFileData", tcOriginalRawFileData},
+    {"AsShotICCProfile", tcAsShotICCProfile},
+    {"CurrentICCProfile", tcCurrentICCProfile},
+    {"ExtraCameraProfiles", tcExtraCameraProfiles},
+    {"ProfileHueSatMapData1", tcProfileHueSatMapData1},
+    {"ProfileHueSatMapData2", tcProfileHueSatMapData2},
+    {"ProfileToneCurve", tcProfileToneCurve},
+    {"ProfileLookTableData", tcProfileLookTableData},
+    {"OpcodeList1", tcOpcodeList1},
+    {"OpcodeList2", tcOpcodeList2},
+    {"OpcodeList3", tcOpcodeList3},
+    {"NoiseProfile", tcNoiseProfile},
+    // dng sdk will check and modify these tags in non-standard DNG images
+    {"AsShotWhiteXY", tcAsShotWhiteXY},
+    {"ColorMatrix2", tcColorMatrix2},
+    {"AsShotNeutral", tcAsShotNeutral},
 };
 
 std::map<uint16_t, DngSdkInfo::ParseTagType> DngSdkInfo::specialTagParseMap_ = {
@@ -233,6 +330,27 @@ std::map<uint16_t, DngSdkInfo::ParseTagType> DngSdkInfo::specialTagParseMap_ = {
     {TAG_CODE_COMPOSITE_IMAGE, DngSdkInfo::ParseIntTag},
     {TAG_CODE_SOURCE_IMAGE_NUMBER_OF_COMPOSITE_IMAGE, DngSdkInfo::ParseIntArrayTag},
     {TAG_CODE_SOURCE_EXPOSURE_TIMES_OF_COMPOSITE_IMAGE, DngSdkInfo::ParseUndefinedTag},
+    // dng keys
+    {tcCFAPlaneColor, DngSdkInfo::ParseIntArrayTag},
+    {tcLinearizationTable, DngSdkInfo::ParseIntArrayTag},
+    {tcBlackLevelDeltaH, DngSdkInfo::ParseDoubleArrayTag},
+    {tcBlackLevelDeltaV, DngSdkInfo::ParseDoubleArrayTag},
+    {tcDNGPrivateData, DngSdkInfo::ParseUndefinedTag},
+    {tcOriginalRawFileData, DngSdkInfo::ParseUndefinedTag},
+    {tcAsShotICCProfile, DngSdkInfo::ParseUndefinedTag},
+    {tcCurrentICCProfile, DngSdkInfo::ParseUndefinedTag},
+    {tcExtraCameraProfiles, DngSdkInfo::ParseIntArrayTag},
+    {tcProfileHueSatMapData1, DngSdkInfo::ParseDoubleArrayTag},
+    {tcProfileHueSatMapData2, DngSdkInfo::ParseDoubleArrayTag},
+    {tcProfileToneCurve, DngSdkInfo::ParseDoubleArrayTag},
+    {tcProfileLookTableData, DngSdkInfo::ParseDoubleArrayTag},
+    {tcOpcodeList1, DngSdkInfo::ParseUndefinedTag},
+    {tcOpcodeList2, DngSdkInfo::ParseUndefinedTag},
+    {tcOpcodeList3, DngSdkInfo::ParseUndefinedTag},
+    {tcNoiseProfile, DngSdkInfo::ParseDoubleArrayTag},
+    {tcAsShotWhiteXY, DngSdkInfo::ParseDoubleArrayTag},
+    {tcColorMatrix2, DngSdkInfo::ParseDoubleArrayTag},
+    {tcAsShotNeutral, DngSdkInfo::ParseDoubleArrayTag},
 };
 
 static uint32_t GetDngUint32(uint32 in, MetadataValue& out)
@@ -390,6 +508,33 @@ static uint32_t GetDngFingerprint(const dng_fingerprint& in, MetadataValue& out)
     out.stringValue = std::string(hexString);
     return SUCCESS;
 }
+
+static uint32_t GetDngMatrix(const dng_matrix& in, MetadataValue& out)
+{
+    out.type = PropertyValueType::DOUBLE_ARRAY;
+    CHECK_ERROR_RETURN_RET(ImageUtils::CheckMulOverflow(in.Rows(), in.Cols()), ERR_IMAGE_GET_DATA_ABNORMAL);
+    out.doubleArrayValue.clear();
+    out.doubleArrayValue.reserve(in.Rows() * in.Cols());
+    for (uint32_t row = 0; row < in.Rows(); row++) {
+        for (uint32_t col = 0; col < in.Cols(); col++) {
+            out.doubleArrayValue.push_back(static_cast<double>(in[row][col]));
+        }
+    }
+    return SUCCESS;
+}
+
+static uint32_t GetDngVector(const dng_vector& in, MetadataValue& out)
+{
+    out.type = PropertyValueType::DOUBLE_ARRAY;
+    CHECK_ERROR_RETURN_RET(ImageUtils::CheckMulOverflow(in.Count(), kMaxColorPlanes), ERR_IMAGE_GET_DATA_ABNORMAL);
+    out.doubleArrayValue.clear();
+    out.doubleArrayValue.reserve(in.Count());
+    for (uint32_t i = 0; i < in.Count(); i++) {
+        out.doubleArrayValue.push_back(static_cast<double>(in[i]));
+    }
+    return SUCCESS;
+}
+
 
 uint32_t DngSdkInfo::GetExifImageDescription(const dng_exif& fExif, MetadataValue& value)
 {
@@ -736,7 +881,7 @@ uint32_t DngSdkInfo::GetExifComponentsConfiguration(const dng_exif& fExif, Metad
     value.stringValue.reserve(componentStringReserveSize);
 
     const uint32_t config = fExif.fComponentsConfiguration;
-    for (int i = 0; i < componentConfigCount; i++) {
+    for (uint32_t i = 0; i < componentConfigCount; i++) {
         const uint8_t component = static_cast<uint8_t>(
             (config >> ((componentConfigCount - 1 - i) * bitsPerByte)) & BYTE_MASK);
         const char* label = "Reserved";
@@ -956,8 +1101,7 @@ uint32_t DngSdkInfo::GetExifCameraSerialNumber(const dng_exif& fExif, MetadataVa
 
 uint32_t DngSdkInfo::GetExifLensSpecification(const dng_exif& fExif, MetadataValue& value)
 {
-    constexpr uint32_t lensInfoElements = 4;
-    return GetDngURationalArray(fExif.fLensInfo, lensInfoElements, value);
+    return GetDngURationalArray(fExif.fLensInfo, LENS_INFO_ELEMENTS, value);
 }
 
 uint32_t DngSdkInfo::GetExifLensMake(const dng_exif& fExif, MetadataValue& value)
@@ -980,6 +1124,12 @@ uint32_t DngSdkInfo::GetExifGamma(const dng_exif& fExif, MetadataValue& value)
     return GetDngURational(fExif.fGamma, value);
 }
 
+uint32_t DngSdkInfo::GetExifLensInfo(const dng_exif& fExif, MetadataValue& value)
+{
+    return GetDngURationalArray(fExif.fLensInfo, LENS_INFO_ELEMENTS, value);
+}
+
+
 uint32_t DngSdkInfo::GetSharedDNGVersion(const dng_shared& fShared, MetadataValue& value)
 {
     value.type = PropertyValueType::INT_ARRAY;
@@ -989,6 +1139,248 @@ uint32_t DngSdkInfo::GetSharedDNGVersion(const dng_shared& fShared, MetadataValu
     value.intArrayValue.push_back((fShared.fDNGVersion >> BYTE1_SHIFT) & BYTE_MASK);
     value.intArrayValue.push_back(fShared.fDNGVersion & BYTE_MASK);
     return SUCCESS;
+}
+
+uint32_t DngSdkInfo::GetSharedDngBackwardVersion(const dng_shared& fShared, MetadataValue& value)
+{
+    value.type = PropertyValueType::INT_ARRAY;
+    value.intArrayValue.clear();
+    value.intArrayValue.push_back((fShared.fDNGBackwardVersion >> BYTE3_SHIFT) & BYTE_MASK);
+    value.intArrayValue.push_back((fShared.fDNGBackwardVersion >> BYTE2_SHIFT) & BYTE_MASK);
+    value.intArrayValue.push_back((fShared.fDNGBackwardVersion >> BYTE1_SHIFT) & BYTE_MASK);
+    value.intArrayValue.push_back(fShared.fDNGBackwardVersion & BYTE_MASK);
+    return SUCCESS;
+}
+
+uint32_t DngSdkInfo::GetSharedUniqueCameraModel(const dng_shared& fShared, MetadataValue& value)
+{
+    return GetDngString(fShared.fUniqueCameraModel, value);
+}
+
+uint32_t DngSdkInfo::GetSharedLocalizedCameraModel(const dng_shared& fShared, MetadataValue& value)
+{
+    return GetDngString(fShared.fLocalizedCameraModel, value);
+}
+
+uint32_t DngSdkInfo::GetSharedCalibrationIlluminant1(const dng_shared& fShared, MetadataValue& value)
+{
+    return GetDngUint32(fShared.fCameraProfile.fCalibrationIlluminant1, value);
+}
+
+uint32_t DngSdkInfo::GetSharedCalibrationIlluminant2(const dng_shared& fShared, MetadataValue& value)
+{
+    return GetDngUint32(fShared.fCameraProfile.fCalibrationIlluminant2, value);
+}
+
+uint32_t DngSdkInfo::GetSharedColorMatrix1(const dng_shared& fShared, MetadataValue& value)
+{
+    return GetDngMatrix(fShared.fCameraProfile.fColorMatrix1, value);
+}
+
+uint32_t DngSdkInfo::GetSharedCameraCalibration1(const dng_shared& fShared, MetadataValue& value)
+{
+    return GetDngMatrix(fShared.fCameraCalibration1, value);
+}
+
+uint32_t DngSdkInfo::GetSharedCameraCalibration2(const dng_shared& fShared, MetadataValue& value)
+{
+    return GetDngMatrix(fShared.fCameraCalibration2, value);
+}
+
+uint32_t DngSdkInfo::GetSharedReductionMatrix1(const dng_shared& fShared, MetadataValue& value)
+{
+    return GetDngMatrix(fShared.fCameraProfile.fReductionMatrix1, value);
+}
+
+uint32_t DngSdkInfo::GetSharedReductionMatrix2(const dng_shared& fShared, MetadataValue& value)
+{
+    return GetDngMatrix(fShared.fCameraProfile.fReductionMatrix2, value);
+}
+
+uint32_t DngSdkInfo::GetSharedAnalogBalance(const dng_shared& fShared, MetadataValue& value)
+{
+    return GetDngVector(fShared.fAnalogBalance, value);
+}
+
+uint32_t DngSdkInfo::GetSharedBaselineExposure(const dng_shared& fShared, MetadataValue& value)
+{
+    return GetDngSRational(fShared.fBaselineExposure, value);
+}
+uint32_t DngSdkInfo::GetSharedBaselineNoise(const dng_shared& fShared, MetadataValue& value)
+{
+    return GetDngURational(fShared.fBaselineNoise, value);
+}
+
+uint32_t DngSdkInfo::GetSharedBaselineSharpness(const dng_shared& fShared, MetadataValue& value)
+{
+    return GetDngURational(fShared.fBaselineSharpness, value);
+}
+
+uint32_t DngSdkInfo::GetSharedLinearResponseLimit(const dng_shared& fShared, MetadataValue& value)
+{
+    return GetDngURational(fShared.fLinearResponseLimit, value);
+}
+
+uint32_t DngSdkInfo::GetSharedShadowScale(const dng_shared& fShared, MetadataValue& value)
+{
+    return GetDngURational(fShared.fShadowScale, value);
+}
+
+uint32_t DngSdkInfo::GetSharedMakerNoteSafety(const dng_shared& fShared, MetadataValue& value)
+{
+    return GetDngUint32(fShared.fMakerNoteSafety, value);
+}
+
+uint32_t DngSdkInfo::GetSharedRawDataUniqueId(const dng_shared& fShared, MetadataValue& value)
+{
+    return GetDngFingerprint(fShared.fRawDataUniqueID, value);
+}
+
+uint32_t DngSdkInfo::GetSharedOriginalRawFileName(const dng_shared& fShared, MetadataValue& value)
+{
+    return GetDngString(fShared.fOriginalRawFileName, value);
+}
+
+uint32_t DngSdkInfo::GetSharedAsShotPreProfileMatrix(const dng_shared& fShared, MetadataValue& value)
+{
+    return GetDngMatrix(fShared.fAsShotPreProfileMatrix, value);
+}
+
+uint32_t DngSdkInfo::GetSharedCurrentPreProfileMatrix(const dng_shared& fShared, MetadataValue& value)
+{
+    return GetDngMatrix(fShared.fCurrentPreProfileMatrix, value);
+}
+
+uint32_t DngSdkInfo::GetSharedColorimetricReference(const dng_shared& fShared, MetadataValue& value)
+{
+    return GetDngUint32(fShared.fColorimetricReference, value);
+}
+
+uint32_t DngSdkInfo::GetSharedCameraCalibrationSignature(const dng_shared& fShared, MetadataValue& value)
+{
+    return GetDngString(fShared.fCameraCalibrationSignature, value);
+}
+
+uint32_t DngSdkInfo::GetSharedProfileCalibrationSignature(const dng_shared& fShared, MetadataValue& value)
+{
+    return GetDngString(fShared.fCameraProfile.fProfileCalibrationSignature, value);
+}
+
+uint32_t DngSdkInfo::GetSharedAsShotProfileName(const dng_shared& fShared, MetadataValue& value)
+{
+    return GetDngString(fShared.fAsShotProfileName, value);
+}
+
+uint32_t DngSdkInfo::GetSharedNoiseReductionApplied(const dng_shared& fShared, MetadataValue& value)
+{
+    return GetDngURational(fShared.fNoiseReductionApplied, value);
+}
+
+uint32_t DngSdkInfo::GetSharedProfileName(const dng_shared& fShared, MetadataValue& value)
+{
+    return GetDngString(fShared.fCameraProfile.fProfileName, value);
+}
+
+uint32_t DngSdkInfo::GetSharedProfileHueSatMapDims(const dng_shared& fShared, MetadataValue& value)
+{
+    value.type = PropertyValueType::INT_ARRAY;
+    value.intArrayValue.clear();
+    value.intArrayValue.push_back(fShared.fCameraProfile.fProfileHues);
+    value.intArrayValue.push_back(fShared.fCameraProfile.fProfileSats);
+    value.intArrayValue.push_back(fShared.fCameraProfile.fProfileVals);
+    return SUCCESS;
+}
+
+uint32_t DngSdkInfo::GetSharedProfileEmbedPolicy(const dng_shared& fShared, MetadataValue& value)
+{
+    return GetDngUint32(fShared.fCameraProfile.fEmbedPolicy, value);
+}
+
+uint32_t DngSdkInfo::GetSharedProfileCopyright(const dng_shared& fShared, MetadataValue& value)
+{
+    return GetDngString(fShared.fCameraProfile.fProfileCopyright, value);
+}
+
+uint32_t DngSdkInfo::GetSharedForwardMatrix1(const dng_shared& fShared, MetadataValue& value)
+{
+    return GetDngMatrix(fShared.fCameraProfile.fForwardMatrix1, value);
+}
+
+uint32_t DngSdkInfo::GetSharedForwardMatrix2(const dng_shared& fShared, MetadataValue& value)
+{
+    return GetDngMatrix(fShared.fCameraProfile.fForwardMatrix2, value);
+}
+
+uint32_t DngSdkInfo::GetSharedRawImageDigest(const dng_shared& fShared, MetadataValue& value)
+{
+    return GetDngFingerprint(fShared.fRawImageDigest, value);
+}
+
+uint32_t DngSdkInfo::GetSharedOriginalRawFileDigest(const dng_shared& fShared, MetadataValue& value)
+{
+    return GetDngFingerprint(fShared.fOriginalRawFileDigest, value);
+}
+
+uint32_t DngSdkInfo::GetSharedProfileLookTableDims(const dng_shared& fShared, MetadataValue& value)
+{
+    value.type = PropertyValueType::INT_ARRAY;
+    value.intArrayValue.clear();
+    value.intArrayValue.push_back(fShared.fCameraProfile.fLookTableHues);
+    value.intArrayValue.push_back(fShared.fCameraProfile.fLookTableSats);
+    value.intArrayValue.push_back(fShared.fCameraProfile.fLookTableVals);
+    return SUCCESS;
+}
+
+uint32_t DngSdkInfo::GetSharedDefaultBlackRender(const dng_shared& fShared, MetadataValue& value)
+{
+    return GetDngUint32(fShared.fCameraProfile.fDefaultBlackRender, value);
+}
+
+uint32_t DngSdkInfo::GetSharedBaselineExposureOffset(const dng_shared& fShared, MetadataValue& value)
+{
+    return GetDngSRational(fShared.fCameraProfile.fBaselineExposureOffset, value);
+}
+
+uint32_t DngSdkInfo::GetSharedProfileLookTableEncoding(const dng_shared& fShared, MetadataValue& value)
+{
+    return GetDngUint32(fShared.fCameraProfile.fLookTableEncoding, value);
+}
+
+uint32_t DngSdkInfo::GetSharedProfileHueSatMapEncoding(const dng_shared& fShared, MetadataValue& value)
+{
+    return GetDngUint32(fShared.fCameraProfile.fHueSatMapEncoding, value);
+}
+
+uint32_t DngSdkInfo::GetSharedOriginalDefaultFinalSize(const dng_shared& fShared, MetadataValue& value)
+{
+    value.type = PropertyValueType::INT_ARRAY;
+    value.intArrayValue.clear();
+    value.intArrayValue.push_back(static_cast<int64_t>(fShared.fOriginalDefaultFinalSize.h));
+    value.intArrayValue.push_back(static_cast<int64_t>(fShared.fOriginalDefaultFinalSize.v));
+    return SUCCESS;
+}
+
+uint32_t DngSdkInfo::GetSharedOriginalBestQualityFinalSize(const dng_shared& fShared, MetadataValue& value)
+{
+    value.type = PropertyValueType::INT_ARRAY;
+    value.intArrayValue.clear();
+    value.intArrayValue.push_back(static_cast<int64_t>(fShared.fOriginalBestQualityFinalSize.h));
+    value.intArrayValue.push_back(static_cast<int64_t>(fShared.fOriginalBestQualityFinalSize.v));
+    return SUCCESS;
+}
+
+uint32_t DngSdkInfo::GetSharedOriginalDefaultCropSize(const dng_shared& fShared, MetadataValue& value)
+{
+    value.type = PropertyValueType::DOUBLE_ARRAY;
+    value.doubleArrayValue.clear();
+    value.doubleArrayValue.push_back(static_cast<double>(fShared.fOriginalDefaultCropSizeH.As_real64()));
+    value.doubleArrayValue.push_back(static_cast<double>(fShared.fOriginalDefaultCropSizeV.As_real64()));
+    return SUCCESS;
+}
+
+uint32_t DngSdkInfo::GetSharedNewRawImageDigest(const dng_shared& fShared, MetadataValue& value)
+{
+    return GetDngFingerprint(fShared.fNewRawImageDigest, value);
 }
 
 uint32_t DngSdkInfo::GetIfdNewSubfileType(const dng_ifd& fIFD, MetadataValue& value)
@@ -1109,6 +1501,172 @@ uint32_t DngSdkInfo::GetIfdJPEGInterchangeFormat(const dng_ifd& fIFD, MetadataVa
 uint32_t DngSdkInfo::GetIfdJPEGInterchangeFormatLength(const dng_ifd& fIFD, MetadataValue& value)
 {
     return GetDngUint32(fIFD.fJPEGInterchangeFormatLength, value);
+}
+
+uint32_t DngSdkInfo::GetIfdCFALayout(const dng_ifd& fIFD, MetadataValue& value)
+{
+    return GetDngUint32(fIFD.fCFALayout, value);
+}
+
+uint32_t DngSdkInfo::GetIfdBlackLevelRepeatDim(const dng_ifd& fIFD, MetadataValue& value)
+{
+    value.type = PropertyValueType::INT_ARRAY;
+    value.intArrayValue.clear();
+    value.intArrayValue.push_back(static_cast<int64_t>(fIFD.fBlackLevelRepeatRows));
+    value.intArrayValue.push_back(static_cast<int64_t>(fIFD.fBlackLevelRepeatCols));
+    return SUCCESS;
+}
+
+uint32_t DngSdkInfo::GetIfdBlackLevel(const dng_ifd& fIFD, MetadataValue& value)
+{
+    value.type = PropertyValueType::DOUBLE_ARRAY;
+    value.doubleArrayValue.clear();
+    bool cond = ImageUtils::CheckMulOverflow(fIFD.fBlackLevelRepeatRows,
+        fIFD.fBlackLevelRepeatCols, fIFD.fSamplesPerPixel);
+    CHECK_ERROR_RETURN_RET(cond, ERR_IMAGE_GET_DATA_ABNORMAL);
+    uint32_t count = fIFD.fBlackLevelRepeatRows * fIFD.fBlackLevelRepeatCols * fIFD.fSamplesPerPixel;
+    value.doubleArrayValue.reserve(count);
+    for (uint32_t i = 0; i < fIFD.fBlackLevelRepeatRows; i++) {
+        for (uint32_t j = 0; j < fIFD.fBlackLevelRepeatCols; j++) {
+            for (uint32_t k = 0; k < fIFD.fSamplesPerPixel; k++) {
+                value.doubleArrayValue.push_back(fIFD.fBlackLevel[i][j][k]);
+            }
+        }
+    }
+    return SUCCESS;
+}
+
+uint32_t DngSdkInfo::GetIfdWhiteLevel(const dng_ifd& fIFD, MetadataValue& value)
+{
+    value.type = PropertyValueType::DOUBLE_ARRAY;
+    value.doubleArrayValue.clear();
+    value.doubleArrayValue.reserve(fIFD.fSamplesPerPixel);
+    for (uint32_t i = 0; i < fIFD.fSamplesPerPixel && i < kMaxSamplesPerPixel; i++) {
+        value.doubleArrayValue.push_back(static_cast<double>(fIFD.fWhiteLevel[i]));
+    }
+    return SUCCESS;
+}
+
+uint32_t DngSdkInfo::GetIfdDefaultScale(const dng_ifd& fIFD, MetadataValue& value)
+{
+    value.type = PropertyValueType::DOUBLE_ARRAY;
+    value.doubleArrayValue.clear();
+    value.doubleArrayValue.push_back(static_cast<double>(fIFD.fDefaultScaleH.As_real64()));
+    value.doubleArrayValue.push_back(static_cast<double>(fIFD.fDefaultScaleV.As_real64()));
+    return SUCCESS;
+}
+
+uint32_t DngSdkInfo::GetIfdBestQualityScale(const dng_ifd& fIFD, MetadataValue& value)
+{
+    return GetDngURational(fIFD.fBestQualityScale, value);
+}
+
+uint32_t DngSdkInfo::GetIfdDefaultCropOrigin(const dng_ifd& fIFD, MetadataValue& value)
+{
+    value.type = PropertyValueType::DOUBLE_ARRAY;
+    value.doubleArrayValue.clear();
+    value.doubleArrayValue.push_back(static_cast<double>(fIFD.fDefaultCropOriginH.As_real64()));
+    value.doubleArrayValue.push_back(static_cast<double>(fIFD.fDefaultCropOriginV.As_real64()));
+    return SUCCESS;
+}
+
+uint32_t DngSdkInfo::GetIfdBayerGreenSplit(const dng_ifd& fIFD, MetadataValue& value)
+{
+    return GetDngUint32(fIFD.fBayerGreenSplit, value);
+}
+
+uint32_t DngSdkInfo::GetIfdChromaBlurRadius(const dng_ifd& fIFD, MetadataValue& value)
+{
+    return GetDngURational(fIFD.fChromaBlurRadius, value);
+}
+
+uint32_t DngSdkInfo::GetIfdAntiAliasStrength(const dng_ifd& fIFD, MetadataValue& value)
+{
+    return GetDngURational(fIFD.fAntiAliasStrength, value);
+}
+
+uint32_t DngSdkInfo::GetIfdActiveArea(const dng_ifd& fIFD, MetadataValue& value)
+{
+    value.type = PropertyValueType::INT_ARRAY;
+    value.intArrayValue.clear();
+    value.intArrayValue.push_back(static_cast<int64_t>(fIFD.fActiveArea.t));
+    value.intArrayValue.push_back(static_cast<int64_t>(fIFD.fActiveArea.l));
+    value.intArrayValue.push_back(static_cast<int64_t>(fIFD.fActiveArea.b));
+    value.intArrayValue.push_back(static_cast<int64_t>(fIFD.fActiveArea.r));
+    return SUCCESS;
+}
+uint32_t DngSdkInfo::GetIfdMaskedAreas(const dng_ifd& fIFD, MetadataValue& value)
+{
+    value.type = PropertyValueType::INT_ARRAY;
+    constexpr uint32_t areaSize = 4;
+    value.intArrayValue.clear();
+    value.intArrayValue.reserve(fIFD.fMaskedAreaCount * areaSize);
+    for (uint32_t i = 0; i < fIFD.fMaskedAreaCount; i++) {
+        value.intArrayValue.push_back(static_cast<int64_t>(fIFD.fMaskedArea[i].t));
+        value.intArrayValue.push_back(static_cast<int64_t>(fIFD.fMaskedArea[i].l));
+        value.intArrayValue.push_back(static_cast<int64_t>(fIFD.fMaskedArea[i].b));
+        value.intArrayValue.push_back(static_cast<int64_t>(fIFD.fMaskedArea[i].r));
+    }
+    return SUCCESS;
+}
+
+uint32_t DngSdkInfo::GetIfdPreviewApplicationName(const dng_ifd& fIFD, MetadataValue& value)
+{
+    return GetDngString(fIFD.fPreviewInfo.fApplicationName, value);
+}
+
+uint32_t DngSdkInfo::GetIfdPreviewApplicationVersion(const dng_ifd& fIFD, MetadataValue& value)
+{
+    return GetDngString(fIFD.fPreviewInfo.fApplicationVersion, value);
+}
+
+uint32_t DngSdkInfo::GetIfdPreviewSettingsName(const dng_ifd& fIFD, MetadataValue& value)
+{
+    return GetDngString(fIFD.fPreviewInfo.fSettingsName, value);
+}
+
+uint32_t DngSdkInfo::GetIfdPreviewSettingsDigest(const dng_ifd& fIFD, MetadataValue& value)
+{
+    return GetDngFingerprint(fIFD.fPreviewInfo.fSettingsDigest, value);
+}
+
+uint32_t DngSdkInfo::GetIfdPreviewColorSpace(const dng_ifd& fIFD, MetadataValue& value)
+{
+    return GetDngUint32(fIFD.fPreviewInfo.fColorSpace, value);
+}
+
+uint32_t DngSdkInfo::GetIfdPreviewDateTime(const dng_ifd& fIFD, MetadataValue& value)
+{
+    return GetDngString(fIFD.fPreviewInfo.fDateTime, value);
+}
+
+uint32_t DngSdkInfo::GetIfdSubTileBlockSize(const dng_ifd& fIFD, MetadataValue& value)
+{
+    value.type = PropertyValueType::INT_ARRAY;
+    value.intArrayValue.push_back(static_cast<int64_t>(fIFD.fSubTileBlockRows));
+    value.intArrayValue.push_back(static_cast<int64_t>(fIFD.fSubTileBlockCols));
+    return SUCCESS;
+}
+
+uint32_t DngSdkInfo::GetIfdRowInterleaveFactor(const dng_ifd& fIFD, MetadataValue& value)
+{
+    return GetDngUint32(fIFD.fRowInterleaveFactor, value);
+}
+
+uint32_t DngSdkInfo::GetIfdDefaultUserCrop(const dng_ifd& fIFD, MetadataValue& value)
+{
+    value.type = PropertyValueType::DOUBLE_ARRAY;
+    value.doubleArrayValue.clear();
+    value.doubleArrayValue.push_back(static_cast<double>(fIFD.fDefaultUserCropT.As_real64()));
+    value.doubleArrayValue.push_back(static_cast<double>(fIFD.fDefaultUserCropL.As_real64()));
+    value.doubleArrayValue.push_back(static_cast<double>(fIFD.fDefaultUserCropB.As_real64()));
+    value.doubleArrayValue.push_back(static_cast<double>(fIFD.fDefaultUserCropR.As_real64()));
+    return SUCCESS;
+}
+
+uint32_t DngSdkInfo::GetIfdRawToPreviewGain(const dng_ifd& fIFD, MetadataValue& value)
+{
+    return GetDngReal64(fIFD.fPreviewInfo.fRawToPreviewGain, value);
 }
 
 static uint32_t GetTagValueSize(uint16_t tagType, uint32_t tagCount)
@@ -1259,6 +1817,22 @@ uint32_t DngSdkInfo::ParseDoubleTag(const DngTagRecord& tagRecord, dng_stream& s
     value.doubleArrayValue.push_back(stream.TagValue_real64(static_cast<uint32_t>(tagRecord.tagType)));
     return SUCCESS;
 }
+
+uint32_t DngSdkInfo::ParseDoubleArrayTag(const DngTagRecord& tagRecord, dng_stream& stream, MetadataValue& value)
+{
+    if (stream.Length() - stream.Position() < tagRecord.tagCount * sizeof(double)) {
+        return ERR_IMAGE_GET_DATA_ABNORMAL;
+    }
+    value.type = PropertyValueType::DOUBLE_ARRAY;
+    value.doubleArrayValue.clear();
+    value.doubleArrayValue.reserve(tagRecord.tagCount);
+    for (uint32_t i = 0; i < tagRecord.tagCount; i++) {
+        double longVal = stream.TagValue_real64(static_cast<uint32_t>(tagRecord.tagType));
+        value.doubleArrayValue.push_back(static_cast<double>(longVal));
+    }
+    return SUCCESS;
+}
+
 
 void DngSdkInfo::ProcessSpecialTag(const UniqueTagKey& tagKey, dng_stream& stream)
 {

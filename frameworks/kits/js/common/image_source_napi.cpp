@@ -112,7 +112,6 @@ struct ImageSourceAsyncContext {
     DecodeOptions decodeOpts;
     std::shared_ptr<ImageSource> rImageSource;
     std::shared_ptr<PixelMap> rPixelMap;
-    std::shared_ptr<XMPMetadata> rXMPMetadata;
     std::string errMsg;
     std::multimap<std::int32_t, std::string> errMsgArray;
     std::unique_ptr<std::vector<std::unique_ptr<PixelMap>>> pixelMaps;
@@ -137,6 +136,9 @@ struct ImageSourceAsyncContext {
     std::shared_ptr<XtStyleMetadata> rXtStyleMetadata;
     std::shared_ptr<RfDataBMetadata> rRfDataBMetadata;
     DecodingOptionsForThumbnail decodingOptsForThumbnail;
+    std::shared_ptr<XMPMetadata> rXMPMetadata;
+    std::vector<uint8_t> imageRawData;
+    uint32_t bitsPerSample = 0;
 };
 
 struct ImageSourceSyncContext {
@@ -357,6 +359,99 @@ static std::vector<struct ImageEnum> sPropertyKeyMap = {
     {"XTSTYLE_VIGNETTING", 0, "HwMnoteXtStyleVignetting"},
     {"XTSTYLE_NOISE", 0, "HwMnoteXtStyleNoise"},
 };
+
+static std::vector<struct ImageEnum> sDngKeyMap = {
+    {"DNG_VERSION", 0, "DNGVersion"},
+    {"DEFAULT_CROP_SIZE", 0, "DefaultCropSize"},
+    {"DNG_BACKWARD_VERSION", 0, "DNGBackwardVersion"},
+    {"UNIQUE_CAMERA_MODEL", 0, "UniqueCameraModel"},
+    {"LOCALIZED_CAMERA_MODEL", 0, "LocalizedCameraModel"},
+    {"CFA_PLANE_COLOR", 0, "CFAPlaneColor"},
+    {"CFA_LAYOUT", 0, "CFALayout"},
+    {"LINEARIZATION_TABLE", 0, "LinearizationTable"},
+    {"BLACK_LEVEL_REPEAT_DIM", 0, "BlackLevelRepeatDim"},
+    {"BLACK_LEVEL", 0, "BlackLevel"},
+    {"BLACK_LEVEL_DELTA_H", 0, "BlackLevelDeltaH"},
+    {"BLACK_LEVEL_DELTA_V", 0, "BlackLevelDeltaV"},
+    {"WHITE_LEVEL", 0, "WhiteLevel"},
+    {"DEFAULT_SCALE", 0, "DefaultScale"},
+    {"DEFAULT_CROP_ORIGIN", 0, "DefaultCropOrigin"},
+    {"COLOR_MATRIX1", 0, "ColorMatrix1"},
+    {"COLOR_MATRIX2", 0, "ColorMatrix2"},
+    {"CAMERA_CALIBRATION1", 0, "CameraCalibration1"},
+    {"CAMERA_CALIBRATION2", 0, "CameraCalibration2"},
+    {"REDUCTION_MATRIX1", 0, "ReductionMatrix1"},
+    {"REDUCTION_MATRIX2", 0, "ReductionMatrix2"},
+    {"ANALOG_BALANCE", 0, "AnalogBalance"},
+    {"AS_SHOT_NEUTRAL", 0, "AsShotNeutral"},
+    {"AS_SHOT_WHITEXY", 0, "AsShotWhiteXY"},
+    {"BASELINE_EXPOSURE", 0, "BaselineExposure"},
+    {"BASELINE_NOISE", 0, "BaselineNoise"},
+    {"BASELINE_SHARPNESS", 0, "BaselineSharpness"},
+    {"BAYER_GREEN_SPLIT", 0, "BayerGreenSplit"},
+    {"LINEAR_RESPONSE_LIMIT", 0, "LinearResponseLimit"},
+    {"CAMERA_SERIAL_NUMBER", 0, "CameraSerialNumber"},
+    {"LENS_INFO", 0, "LensInfo"},
+    {"CHROMA_BLUR_RADIUS", 0, "ChromaBlurRadius"},
+    {"ANTI_ALIAS_STRENGTH", 0, "AntiAliasStrength"},
+    {"SHADOW_SCALE", 0, "ShadowScale"},
+    {"DNG_PRIVATE_DATA", 0, "DNGPrivateData"},
+    {"MAKER_NOTE_SAFETY", 0, "MakerNoteSafety"},
+    {"CALIBRATION_ILLUMINANT1", 0, "CalibrationIlluminant1"},
+    {"CALIBRATION_ILLUMINANT2", 0, "CalibrationIlluminant2"},
+    {"BEST_QUALITY_SCALE", 0, "BestQualityScale"},
+    {"RAW_DATA_UNIQUE_ID", 0, "RawDataUniqueID"},
+    {"ORIGINAL_RAW_FILE_NAME", 0, "OriginalRawFileName"},
+    {"ORIGINAL_RAW_FILE_DATA", 0, "OriginalRawFileData"},
+    {"ACTIVE_AREA", 0, "ActiveArea"},
+    {"MASKED_AREAS", 0, "MaskedAreas"},
+    {"AS_SHOT_ICC_PROFILE", 0, "AsShotICCProfile"},
+    {"AS_SHOT_PRE_PROFILE_MATRIX", 0, "AsShotPreProfileMatrix"},
+    {"CURRENT_ICC_PROFILE", 0, "CurrentICCProfile"},
+    {"CURRENT_PRE_PROFILE_MATRIX", 0, "CurrentPreProfileMatrix"},
+    {"COLORIMETRIC_REFERENCE", 0, "ColorimetricReference"},
+    {"CAMERA_CALIBRATION_SIGNATURE", 0, "CameraCalibrationSignature"},
+    {"PROFILE_CALIBRATION_SIGNATURE", 0, "ProfileCalibrationSignature"},
+    {"EXTRA_CAMERA_PROFILES", 0, "ExtraCameraProfiles"},
+    {"AS_SHOT_PROFILE_NAME", 0, "AsShotProfileName"},
+    {"NOISE_REDUCTION_APPLIED", 0, "NoiseReductionApplied"},
+    {"PROFILE_NAME", 0, "ProfileName"},
+    {"PROFILE_HUE_SAT_MAP_DIMS", 0, "ProfileHueSatMapDims"},
+    {"PROFILE_HUE_SAT_MAP_DATA1", 0, "ProfileHueSatMapData1"},
+    {"PROFILE_HUE_SAT_MAP_DATA2", 0, "ProfileHueSatMapData2"},
+    {"PROFILE_TONE_CURVE", 0, "ProfileToneCurve"},
+    {"PROFILE_EMBED_POLICY", 0, "ProfileEmbedPolicy"},
+    {"PROFILE_COPYRIGHT", 0, "ProfileCopyright"},
+    {"FORWARD_MATRIX1", 0, "ForwardMatrix1"},
+    {"FORWARD_MATRIX2", 0, "ForwardMatrix2"},
+    {"PREVIEW_APPLICATION_NAME", 0, "PreviewApplicationName"},
+    {"PREVIEW_APPLICATION_VERSION", 0, "PreviewApplicationVersion"},
+    {"PREVIEW_SETTINGS_NAME", 0, "PreviewSettingsName"},
+    {"PREVIEW_SETTINGS_DIGEST", 0, "PreviewSettingsDigest"},
+    {"PREVIEW_COLOR_SPACE", 0, "PreviewColorSpace"},
+    {"PREVIEW_DATE_TIME", 0, "PreviewDateTime"},
+    {"RAW_IMAGE_DIGEST", 0, "RawImageDigest"},
+    {"ORIGINAL_RAW_FILE_DIGEST", 0, "OriginalRawFileDigest"},
+    {"SUB_TILE_BLOCK_SIZE", 0, "SubTileBlockSize"},
+    {"ROW_INTERLEAVE_FACTOR", 0, "RowInterleaveFactor"},
+    {"PROFILE_LOOK_TABLE_DIMS", 0, "ProfileLookTableDims"},
+    {"PROFILE_LOOK_TABLE_DATA", 0, "ProfileLookTableData"},
+    {"OPCODE_LIST1", 0, "OpcodeList1"},
+    {"OPCODE_LIST2", 0, "OpcodeList2"},
+    {"OPCODE_LIST3", 0, "OpcodeList3"},
+    {"NOISE_PROFILE", 0, "NoiseProfile"},
+    {"ORIGINAL_DEFAULT_FINAL_SIZE", 0, "OriginalDefaultFinalSize"},
+    {"ORIGINAL_BEST_QUALITY_FINAL_SIZE", 0, "OriginalBestQualityFinalSize"},
+    {"ORIGINAL_DEFAULT_CROP_SIZE", 0, "OriginalDefaultCropSize"},
+    {"PROFILE_HUE_SAT_MAP_ENCODING", 0, "ProfileHueSatMapEncoding"},
+    {"PROFILE_LOOK_TABLE_ENCODING", 0, "ProfileLookTableEncoding"},
+    {"BASELINE_EXPOSURE_OFFSET", 0, "BaselineExposureOffset"},
+    {"DEFAULT_BLACK_RENDER", 0, "DefaultBlackRender"},
+    {"NEW_RAW_IMAGE_DIGEST", 0, "NewRawImageDigest"},
+    {"RAW_TO_PREVIEW_GAIN", 0, "RawToPreviewGain"},
+    {"DEFAULT_USER_CROP", 0, "DefaultUserCrop"},
+};
+
 static std::vector<struct ImageEnum> sImageFormatMap = {
     {"YCBCR_422_SP", 1000, ""},
     {"JPEG", 2000, ""},
@@ -1256,6 +1351,7 @@ std::vector<napi_property_descriptor> ImageSourceNapi::RegisterNapi()
         DECLARE_NAPI_FUNCTION("modifyImagePropertiesEnhanced", ModifyImagePropertiesEnhanced),
         DECLARE_NAPI_FUNCTION("readImageMetadata", ReadImageMetadata),
         DECLARE_NAPI_FUNCTION("readImageMetadataByType", ReadImageMetadataByType),
+        DECLARE_NAPI_FUNCTION("createImageRawData", CreateImageRawData),
         DECLARE_NAPI_FUNCTION("getImageProperty", GetImageProperty),
         DECLARE_NAPI_FUNCTION("getImagePropertySync", GetImagePropertySync),
         DECLARE_NAPI_FUNCTION("getImageProperties", GetImageProperty),
@@ -1295,6 +1391,7 @@ napi_value ImageSourceNapi::Init(napi_env env, napi_value exports)
         DECLARE_NAPI_PROPERTY("PixelMapFormat",
             ImageNapiUtils::CreateEnumTypeObject(env, napi_number, sPixelMapFormatMap)),
         DECLARE_NAPI_PROPERTY("PropertyKey", ImageNapiUtils::CreateEnumTypeObject(env, napi_string, sPropertyKeyMap)),
+        DECLARE_NAPI_PROPERTY("DngPropertyKey", ImageNapiUtils::CreateEnumTypeObject(env, napi_string, sDngKeyMap)),
         DECLARE_NAPI_PROPERTY("ImageFormat", ImageNapiUtils::CreateEnumTypeObject(env, napi_number, sImageFormatMap)),
         DECLARE_NAPI_PROPERTY("AlphaType", ImageNapiUtils::CreateEnumTypeObject(env, napi_number, sAlphaTypeMap)),
         DECLARE_NAPI_PROPERTY("ScaleMode", ImageNapiUtils::CreateEnumTypeObject(env, napi_number, sScaleModeMap)),
@@ -2875,6 +2972,9 @@ NapiMetadataType GetMetadataTypeByKey(const std::string& key)
         for (const auto& pair :ExifMetadata::GetGifMetadataMap()) {
             mapping[pair.first] = NapiMetadataType::GIF_METADATA;
         }
+        for (const auto& pair : ExifMetadata::GetDngMetadataMap()) {
+            mapping[pair.first] = NapiMetadataType::DNG_METADATA;
+        }
         return mapping;
     }();
     auto it = KEY_TYPE_MAP.find(key);
@@ -2920,6 +3020,7 @@ struct MetadataCollection {
     napi_value gifMetadata = nullptr;
     napi_value xtStyleMetadata = nullptr;
     napi_value rfDataBMetadata = nullptr;
+    napi_value dngMetadata = nullptr;
     bool hasExif = false;
     bool hasMakerNote = false;
     bool hasHeifsMetadata = false;
@@ -2927,6 +3028,7 @@ struct MetadataCollection {
     bool hasGifMetadata = false;
     bool hasXtStyleMetadata = false;
     bool hasRfDataBMetadata = false;
+    bool hasDngMetadata = false;
 };
 
 static void InitMetadataAndFlags(napi_env env, ImageSourceAsyncContext *context, MetadataCollection& metaCol)
@@ -2938,6 +3040,15 @@ static void InitMetadataAndFlags(napi_env env, ImageSourceAsyncContext *context,
     metaCol.gifMetadata = MetadataNapi::CreateGifMetadata(env, context->rGifMetadata);
     metaCol.xtStyleMetadata = MetadataNapi::CreateXtStyleMetadata(env, context->rXtStyleMetadata);
     metaCol.rfDataBMetadata = MetadataNapi::CreateRfDataBMetadata(env, context->rRfDataBMetadata);
+    metaCol.dngMetadata = MetadataNapi::CreateDngMetadata(env);
+}
+
+static bool IsValidMetadataValue(const MetadataValue &metadataValue)
+{
+    return !metadataValue.stringValue.empty() ||
+           !metadataValue.intArrayValue.empty() ||
+           !metadataValue.doubleArrayValue.empty() ||
+           !metadataValue.bufferValue.empty();
 }
 
 static void ProcessMetadataValueTypeArray(napi_env env, ImageSourceAsyncContext *context, MetadataCollection& metaCol)
@@ -2948,20 +3059,12 @@ static void ProcessMetadataValueTypeArray(napi_env env, ImageSourceAsyncContext 
     for (auto &metadataValue: context->kValueTypeArray) {
         auto type = GetMetadataTypeByKey(metadataValue.key);
         if (type == NapiMetadataType::EXIF_METADATA) {
-            bool hasValidData = !metadataValue.stringValue.empty() ||
-                            !metadataValue.intArrayValue.empty() ||
-                            !metadataValue.doubleArrayValue.empty() ||
-                            !metadataValue.bufferValue.empty();
-            if (hasValidData) {
+            if (IsValidMetadataValue(metadataValue)) {
                 CreatePropertyResult(env, metadataValue, metaCol.exifMetadata, type);
                 metaCol.hasExif = true;
             }
         } else if (type == NapiMetadataType::HWMAKERNOTE_METADATA) {
-            bool hasValidData = !metadataValue.stringValue.empty() ||
-                            !metadataValue.intArrayValue.empty() ||
-                            !metadataValue.doubleArrayValue.empty() ||
-                            !metadataValue.bufferValue.empty();
-            if (hasValidData) {
+            if (IsValidMetadataValue(metadataValue)) {
                 CreatePropertyResult(env, metadataValue, metaCol.makerNoteMetadata, type);
                 metaCol.hasMakerNote = true;
             }
@@ -2983,6 +3086,11 @@ static void ProcessMetadataValueTypeArray(napi_env env, ImageSourceAsyncContext 
                 context->rGifMetadata->SetValue(metadataValue.key, std::to_string(metadataValue.intArrayValue[0]));
                 CreatePropertyResult(env, metadataValue, metaCol.gifMetadata, type);
                 metaCol.hasGifMetadata = true;
+            }
+        } else if (type == NapiMetadataType::DNG_METADATA) {
+            if (IsValidMetadataValue(metadataValue)) {
+                CreatePropertyResult(env, metadataValue, metaCol.dngMetadata, type);
+                metaCol.hasDngMetadata = true;
             }
         }
     }
@@ -3032,6 +3140,9 @@ static void AttachMetadataToResultObj(napi_env env, MetadataCollection& metaCol,
     }
     if (metaCol.hasRfDataBMetadata) {
         NAPI_CALL_RETURN_VOID(env, napi_set_named_property(env, resultObj, "rfDataBMetadata", metaCol.rfDataBMetadata));
+    }
+    if (metaCol.hasDngMetadata) {
+        NAPI_CALL_RETURN_VOID(env, napi_set_named_property(env, resultObj, "dngMetadata", metaCol.dngMetadata));
     }
 }
 
@@ -3300,9 +3411,9 @@ static void ReadImageMetadataExecute(napi_env env, void *data)
         uint32_t status = SUCCESS;
         for (auto keyStrIt = context->keyStrArray.begin(); keyStrIt != context->keyStrArray.end(); ++keyStrIt) {
             MetadataValue value;
-            status = context->rImageSource->GetImagePropertyByType(context->index, *keyStrIt, value);
             value.key = *keyStrIt;
             value.type = ExifMetadata::GetPropertyValueType(value.key);
+            status = context->rImageSource->GetImagePropertyByType(context->index, *keyStrIt, value);
             context->kValueTypeArray.emplace_back(value);
             if (status != SUCCESS) {
                 context->errMsgArray.insert(std::make_pair(status, *keyStrIt));
@@ -3681,6 +3792,8 @@ static const std::map<std::string, PropertyValueType> GetMetadataKeyMapByType(ui
             return ExifMetadata::GetGifMetadataMap();
         case static_cast<uint32_t>(MetadataType::HEIFS):
             return ExifMetadata::GetHeifsMetadataMap();
+        case static_cast<uint32_t>(MetadataType::DNG):
+            return ExifMetadata::GetDngMetadataMap();
         default:
             return std::map<std::string, PropertyValueType>();
     }
@@ -3729,10 +3842,14 @@ static uint32_t ProcessSpecifiedMetadataType(ImageSourceAsyncContext* context, c
         context->keyStrArray.emplace_back(key);
     }
     context->status = ERROR;
+    bool anyKeySuccess = false;
     for (const auto& keyStr : context->keyStrArray) {
         ProcessSingleMetadataKey(context, keyStr);
+        if (context->status == SUCCESS) {
+            anyKeySuccess = true;
+        }
     }
-    return context->status;
+    return anyKeySuccess ? SUCCESS : ERROR;
 #else
     return IMAGE_SOURCE_UNSUPPORTED_METADATA;
 #endif
@@ -5109,6 +5226,109 @@ napi_value ImageSourceNapi::CreateThumbnailSync(napi_env env, napi_callback_info
     return result;
 }
 #endif
+
+STATIC_NAPI_VALUE_FUNC(CreateImageRawData)
+{
+    IMAGE_LOGD("%{public}s IN", __func__);
+    ImageSourceAsyncContext* context = static_cast<ImageSourceAsyncContext*>(data);
+    auto &dngData = context->imageRawData;
+    napi_value dngDataValue = nullptr;
+    ImageNapiUtils::CreateArrayBuffer(env, dngData.data(), dngData.size(), &dngDataValue);
+    if (dngData.empty()) {
+        napi_get_undefined(env, &dngDataValue);
+    }
+    context->imageRawData.clear();
+    napi_value result = nullptr;
+    napi_create_object(env, &result);
+    napi_set_named_property(env, result, "buffer", dngDataValue);
+    napi_value bitsPerSample = nullptr;
+    CREATE_NAPI_INT32(static_cast<int32_t>(context->bitsPerSample), bitsPerSample);
+    napi_set_named_property(env, result, "bitsPerPixel", bitsPerSample);
+    return result;
+}
+
+STATIC_EXEC_FUNC(CreateImageRawData)
+{
+    IMAGE_LOGD("%{public}s IN", __func__);
+    auto context = CheckAsyncContext(static_cast<ImageSourceAsyncContext*>(data), true);
+    if (context == nullptr) {
+        IMAGE_LOGE("check async context fail");
+        return;
+    }
+    std::vector<uint8_t> imageRawData;
+    uint32_t bitsPerSample = 0;
+    uint32_t errorCode = context->rImageSource->GetImageRawData(imageRawData, bitsPerSample);
+    if (errorCode != SUCCESS) {
+        context->status = ERROR;
+        Image_ErrorCode apiErrorCode = ConvertToErrorCode(errorCode);
+        std::pair<int32_t, std::string> errorMsg(static_cast<int32_t>(apiErrorCode), "Failed to get dng raw data.");
+        context->errMsgArray.insert(errorMsg);
+    } else {
+        context->imageRawData = std::move(imageRawData);
+        context->bitsPerSample = bitsPerSample;
+        context->status = SUCCESS;
+    }
+}
+
+STATIC_COMPLETE_FUNC(CreateImageRawData)
+{
+    IMAGE_LOGD("%{public}s IN", __func__);
+    napi_value result = nullptr;
+    auto context = CheckAsyncContext(static_cast<ImageSourceAsyncContext*>(data), false);
+    if (context == nullptr) {
+        IMAGE_LOGE("check async context fail");
+        return;
+    }
+    if (context->status == SUCCESS) {
+        result = CreateImageRawDataNapiValue(env, static_cast<void*>(context), nullptr);
+        if (!IMG_IS_OK(status)) {
+            context->status = ERROR;
+            IMAGE_LOGE("napi_create_int32 failed!");
+            napi_get_undefined(env, &result);
+        } else {
+            context->status = SUCCESS;
+        }
+    } else {
+        napi_get_undefined(env, &result);
+    }
+
+    ImageSourceCallbackRoutine(env, context, result);
+}
+
+
+napi_value ImageSourceNapi::CreateImageRawData(napi_env env, napi_callback_info info)
+{
+    ImageTrace imageTrace("ImageSourceNapi::CreateImageRawData");
+    napi_value result = nullptr;
+    napi_get_undefined(env, &result);
+    napi_status status;
+    napi_value thisVar = nullptr;
+    IMG_JS_NO_ARGS(env, info, status, thisVar);
+    IMG_NAPI_CHECK_RET_D(IMG_IS_OK(status), nullptr, IMAGE_LOGE("fail to napi_get_cb_info"));
+    std::unique_ptr<ImageSourceAsyncContext> asyncContext = std::make_unique<ImageSourceAsyncContext>();
+    status = napi_unwrap(env, thisVar, reinterpret_cast<void**>(&asyncContext->constructor_));
+    IMG_NAPI_CHECK_RET_D(IMG_IS_READY(status, asyncContext->constructor_),
+        nullptr, IMAGE_LOGE("fail to unwrap asyncContext"));
+
+    asyncContext->rImageSource = asyncContext->constructor_->nativeImgSrc;
+    IMG_NAPI_CHECK_RET_D(IMG_IS_READY(status, asyncContext->rImageSource),
+        nullptr, IMAGE_LOGE("empty native rImageSource"));
+    if (asyncContext->callbackRef == nullptr) {
+        napi_create_promise(env, &(asyncContext->deferred), &result);
+    } else {
+        napi_get_undefined(env, &result);
+    }
+
+    IMG_CREATE_CREATE_ASYNC_WORK(env, status, "CreateImageRawData",
+        CreateImageRawDataExec,
+        reinterpret_cast<napi_async_complete_callback>(CreateImageRawDataComplete),
+        asyncContext,
+        asyncContext->work);
+
+    IMG_NAPI_CHECK_RET_D(IMG_IS_OK(status),
+        nullptr, IMAGE_LOGE("fail to create async work"));
+    return result;
+}
 
 }  // namespace Media
 }  // namespace OHOS

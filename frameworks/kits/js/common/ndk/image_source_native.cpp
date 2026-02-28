@@ -1758,6 +1758,55 @@ Image_ErrorCode OH_ImageSourceNative_ReadImageMetadataByType(OH_ImageSourceNativ
     return IMAGE_SUCCESS;
 }
 
+MIDK_EXPORT
+Image_ErrorCode OH_ImageSourceNative_CreateImageRawData(OH_ImageSourceNative *source, OH_ImageRawData **rawData)
+{
+    if (source == nullptr || source->GetInnerImageSource() == nullptr || rawData == nullptr) {
+        return IMAGE_SOURCE_INVALID_PARAMETER;
+    }
+    std::vector<uint8_t> imageData;
+    uint32_t bitsPerPixel = 0;
+    uint32_t errorCode = source->GetInnerImageSource()->GetImageRawData(imageData, bitsPerPixel);
+    if (errorCode != SUCCESS) {
+        IMAGE_LOGE("GetImageRawData failed with error: %{public}u", errorCode);
+        return ConvertToErrorCode(errorCode);
+    }
+    *rawData = new OH_ImageRawData(imageData, bitsPerPixel);
+    return IMAGE_SUCCESS;
+}
+
+MIDK_EXPORT
+Image_ErrorCode OH_ImageSourceNative_GetBufferFromRawData(OH_ImageRawData *rawData,
+    uint8_t **data, size_t *length)
+{
+    if (rawData == nullptr || data == nullptr || length == nullptr) {
+        return IMAGE_SOURCE_INVALID_PARAMETER;
+    }
+    *data = rawData->GetData();
+    *length = rawData->GetSize();
+    return IMAGE_SUCCESS;
+}
+
+MIDK_EXPORT
+Image_ErrorCode OH_ImageSourceNative_GetBitsPerPixelFromRawData(OH_ImageRawData *rawData, uint8_t *bitsPerPixel)
+{
+    if (rawData == nullptr || bitsPerPixel == nullptr) {
+        return IMAGE_SOURCE_INVALID_PARAMETER;
+    }
+    *bitsPerPixel = rawData->GetBitsPerPixel();
+    return IMAGE_SUCCESS;
+}
+
+MIDK_EXPORT
+Image_ErrorCode OH_ImageSourceNative_ReleaseRawData(OH_ImageRawData *rawData)
+{
+    if (rawData == nullptr) {
+        return IMAGE_SOURCE_INVALID_PARAMETER;
+    }
+    delete rawData;
+    rawData = nullptr;
+    return IMAGE_SUCCESS;
+}
 #ifdef __cplusplus
 };
 #endif

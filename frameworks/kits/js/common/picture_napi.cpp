@@ -88,6 +88,7 @@ static std::vector<struct ImageEnum> metadataTypeMap = {
     {"RFDATAB_METADATA", static_cast<uint32_t>(MetadataType::RFDATAB), ""},
     {"GIF_METADATA", static_cast<uint32_t>(MetadataType::GIF), ""},
     {"HEIFS_METADATA", static_cast<uint32_t>(MetadataType::HEIFS), ""},
+    {"DNG_METADATA", static_cast<uint32_t>(MetadataType::DNG), ""},
 };
 
 static std::vector<struct ImageEnum> gifPropertyKeyMap = {
