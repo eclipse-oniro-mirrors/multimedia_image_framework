@@ -40,6 +40,7 @@ public:
     static bool GetNoPaddingEnabled();
     static bool GetPngSampleDecodeEnabled();
     static bool UseGPUScalingCapabilities();
+    static bool IsImageSubSample();
 private:
     ImageSystemProperties() = default;
 };
