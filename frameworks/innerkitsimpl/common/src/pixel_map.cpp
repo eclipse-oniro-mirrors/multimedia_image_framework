@@ -3032,15 +3032,11 @@ bool PixelMap::ReadBufferSizeFromParcel(Parcel& parcel, const ImageInfo& imgInfo
     }
     bool isBufferSizeValid = true;
     if (imgInfo.pixelFormat == PixelFormat::RGBA_F16) {
-        uint64_t pixelBytes =  static_cast<uint64_t>(ImageUtils::GetPixelBytes(imgInfo.pixelFormat));
-        // Calculate expected buffer size with original width (no alignment)
-        uint64_t expectBufferSizeOrg =
-            static_cast<uint64_t>(imgInfo.size.height) * imgInfo.size.width * pixelBytes;
         // Calculate expected buffer size with aligned width (even alignment)
         uint64_t alignedWidth = ((static_cast<uint64_t>(imgInfo.size.width) + NUM_1) / NUM_2) * NUM_2;
         uint64_t expectBufferSizeAlign =
-            static_cast<uint64_t>(imgInfo.size.height) * alignedWidth * pixelBytes;
-        isBufferSizeValid = ImageUtils::CheckBufferSizeIsValid(bufferSize, expectBufferSizeOrg, allocatorType) ||
+            static_cast<uint64_t>(imgInfo.size.height) * alignedWidth * ImageUtils::GetPixelBytes(imgInfo.pixelFormat);
+        isBufferSizeValid = ImageUtils::CheckBufferSizeIsValid(bufferSize, expectedBufferSize, allocatorType) ||
                             ImageUtils::CheckBufferSizeIsValid(bufferSize, expectBufferSizeAlign, allocatorType);
     } else if (!IsYUV(imgInfo.pixelFormat)) {
         isBufferSizeValid = ImageUtils::CheckBufferSizeIsValid(bufferSize, expectedBufferSize, allocatorType);
