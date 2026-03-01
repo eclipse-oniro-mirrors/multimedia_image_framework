@@ -1901,7 +1901,7 @@ bool ImageUtils::CheckRowDataSizeIsVaild(int32_t &rowDataSize, ImageInfo &imgInf
     return true;
 }
 
-bool ImageUtils::CheckBufferSizeIsVaild(int32_t &bufferSize, uint64_t &expectedBufferSize, AllocatorType &allocatorType)
+bool ImageUtils::CheckBufferSizeIsValid(int32_t &bufferSize, uint64_t &expectedBufferSize, AllocatorType &allocatorType)
 {
     if (bufferSize <= 0 ||
         expectedBufferSize > (allocatorType == AllocatorType::HEAP_ALLOC ? PIXEL_MAP_MAX_RAM_SIZE : INT_MAX) ||
