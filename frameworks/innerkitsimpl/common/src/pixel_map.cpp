@@ -3022,23 +3022,32 @@ bool PixelMap::ReadBufferSizeFromParcel(Parcel& parcel, const ImageInfo& imgInfo
     }
 
     uint64_t expectedBufferSize = static_cast<uint64_t>(rowDataSize) * static_cast<uint64_t>(imgInfo.size.height);
+    int32_t bufferSize = memInfo.bufferSize;
+    AllocatorType allocatorType = memInfo.allocatorType;
     if (memInfo.isAstc) {
         Size realSize;
         GetAstcRealSize(realSize);
         ImageInfo astcImgInfo = {realSize, imgInfo.pixelFormat};
         expectedBufferSize = ImageUtils::GetAstcBytesCount(astcImgInfo);
     }
+    bool isBufferSizeValid = true;
     if (imgInfo.pixelFormat == PixelFormat::RGBA_F16) {
+        uint64_t pixelBytes =  static_cast<uint64_t>(ImageUtils::GetPixelBytes(imgInfo.pixelFormat));
+        // Calculate expected buffer size with original width (no alignment)
+        uint64_t expectBufferSizeOrg =
+            static_cast<uint64_t>(imgInfo.size.height) * imgInfo.size.width * pixelBytes;
+        // Calculate expected buffer size with aligned width (even alignment)
         uint64_t alignedWidth = ((static_cast<uint64_t>(imgInfo.size.width) + NUM_1) / NUM_2) * NUM_2;
-        expectedBufferSize =
-            static_cast<uint64_t>(imgInfo.size.height) * alignedWidth * ImageUtils::GetPixelBytes(imgInfo.pixelFormat);
+        uint64_t expectBufferSizeAlign =
+            static_cast<uint64_t>(imgInfo.size.height) * alignedWidth * pixelBytes;
+        isBufferSizeValid = ImageUtils::CheckBufferSizeIsValid(bufferSize, expectBufferSizeOrg, allocatorType) ||
+                            ImageUtils::CheckBufferSizeIsValid(bufferSize, expectBufferSizeAlign, allocatorType);
+    } else if (!IsYUV(imgInfo.pixelFormat)) {
+        isBufferSizeValid = ImageUtils::CheckBufferSizeIsValid(bufferSize, expectedBufferSize, allocatorType);
     }
-    if (!IsYUV(imgInfo.pixelFormat) &&
-        (expectedBufferSize > (memInfo.allocatorType == AllocatorType::HEAP_ALLOC ? PIXEL_MAP_MAX_RAM_SIZE : INT_MAX) ||
-        static_cast<uint64_t>(memInfo.bufferSize) != expectedBufferSize)) {
-        IMAGE_LOGE("[PixelMap] ReadBufferSizeFromParcel: bufferSize invalid, expect:%{public}llu, actual:%{public}d",
-            static_cast<unsigned long long>(expectedBufferSize), memInfo.bufferSize);
-        PixelMap::ConstructPixelMapError(error, ERR_IMAGE_PIXELMAP_CREATE_FAILED, "buffer size invalid");
+    if (!isBufferSizeValid) {
+        PixelMap::ConstructPixelMapError(error, ERR_IMAGE_PIXELMAP_CREATE_FAILED, "bufferSize invalid");
+        IMAGE_LOGE("[PixelMap] Invalid bufferSize: %{public}d, format: %{public}d", bufferSize, imgInfo.pixelFormat);
         return false;
     }
     return true;
