@@ -3020,7 +3020,7 @@ bool PixelMap::ReadBufferSizeFromParcel(Parcel& parcel, const ImageInfo& imgInfo
         PixelMap::ConstructPixelMapError(error, ERR_IMAGE_PIXELMAP_CREATE_FAILED, "row data size invalid");
         return false;
     }
-    // Skip buffer size check for YUV format (will be verified in subsequent dedicated function)
+    // Skip buffer size check for YUV format, will be verified in CheckYuvPixelMapBufferSize() function.
     if (IsYUV(imgInfo.pixelFormat)) {
         return true;
     }
