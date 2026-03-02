@@ -3020,7 +3020,10 @@ bool PixelMap::ReadBufferSizeFromParcel(Parcel& parcel, const ImageInfo& imgInfo
         PixelMap::ConstructPixelMapError(error, ERR_IMAGE_PIXELMAP_CREATE_FAILED, "row data size invalid");
         return false;
     }
-
+    // Skip buffer size check for YUV format (will be verified in subsequent dedicated function)
+    if (IsYUV(imgInfo.pixelFormat)) {
+        return true;
+    }
     uint64_t expectedBufferSize = static_cast<uint64_t>(rowDataSize) * static_cast<uint64_t>(imgInfo.size.height);
     int32_t bufferSize = memInfo.bufferSize;
     AllocatorType allocatorType = memInfo.allocatorType;
@@ -3041,7 +3044,7 @@ bool PixelMap::ReadBufferSizeFromParcel(Parcel& parcel, const ImageInfo& imgInfo
     } else {
         isBufferSizeValid = ImageUtils::CheckBufferSizeIsValid(bufferSize, expectedBufferSize, allocatorType);
     }
-    if (!IsYUV(imgInfo.pixelFormat) && !isBufferSizeValid) {
+    if (!isBufferSizeValid) {
         PixelMap::ConstructPixelMapError(error, ERR_IMAGE_PIXELMAP_CREATE_FAILED, "bufferSize invalid");
         IMAGE_LOGE("[PixelMap] Invalid bufferSize: %{public}d, format: %{public}d", bufferSize, imgInfo.pixelFormat);
         return false;
