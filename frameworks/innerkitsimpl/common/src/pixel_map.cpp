@@ -3035,13 +3035,13 @@ bool PixelMap::ReadBufferSizeFromParcel(Parcel& parcel, const ImageInfo& imgInfo
         // Calculate expected buffer size with aligned width (even alignment)
         uint64_t alignedWidth = ((static_cast<uint64_t>(imgInfo.size.width) + NUM_1) / NUM_2) * NUM_2;
         uint64_t expectBufferSizeAlign =
-            static_cast<uint64_t>(imgInfo.size.height) * alignedWidth * ImageUtils::GetPixelBytes(imgInfo.pixelFormat);
+            static_cast<uint64_t>(imgInfo.size.height) * alignedWidth * RGBA_F16_BYTES;
         isBufferSizeValid = ImageUtils::CheckBufferSizeIsValid(bufferSize, expectedBufferSize, allocatorType) ||
                             ImageUtils::CheckBufferSizeIsValid(bufferSize, expectBufferSizeAlign, allocatorType);
-    } else if (!IsYUV(imgInfo.pixelFormat)) {
+    } else {
         isBufferSizeValid = ImageUtils::CheckBufferSizeIsValid(bufferSize, expectedBufferSize, allocatorType);
     }
-    if (!isBufferSizeValid) {
+    if (!IsYUV(imgInfo.pixelFormat) && !isBufferSizeValid) {
         PixelMap::ConstructPixelMapError(error, ERR_IMAGE_PIXELMAP_CREATE_FAILED, "bufferSize invalid");
         IMAGE_LOGE("[PixelMap] Invalid bufferSize: %{public}d, format: %{public}d", bufferSize, imgInfo.pixelFormat);
         return false;
