@@ -722,7 +722,7 @@ static bool ReadPropertiesFromParcelCheck(const ImageInfo& imgInfo, PixelMemInfo
                 memInfo.bufferSize, PixelMap::GetYUVByteCount(imgInfo));
             return false;
         }
-    } else if (!ImageUtils::CheckBufferSizeIsVaild(memInfo.bufferSize, size, memInfo.allocatorType)) {
+    } else if (!ImageUtils::CheckBufferSizeIsValid(memInfo.bufferSize, size, memInfo.allocatorType)) {
         IMAGE_LOGE("[PixelMapRecordParcel] bufferSize invalid");
         return false;
     }

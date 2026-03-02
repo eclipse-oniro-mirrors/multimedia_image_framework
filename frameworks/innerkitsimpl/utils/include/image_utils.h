@@ -220,7 +220,7 @@ public:
     static bool CheckTlvSupportedFormat(PixelFormat format);
     static uint16_t GetReusePixelRefCount(const std::shared_ptr<PixelMap> &reusePixelmap);
     static bool CheckRowDataSizeIsVaild(int32_t &rowDataSize, ImageInfo &imgInfo);
-    static bool CheckBufferSizeIsVaild(int32_t &bufferSize, uint64_t &expectedBufferSize,
+    static bool CheckBufferSizeIsValid(int32_t &bufferSize, uint64_t &expectedBufferSize,
         AllocatorType &allocatorType);
     static bool CheckYuvDataInfoValid(PixelMap* pixelMap, YUVDataInfo& yDataInfo);
     static bool GetAlignedNumber(int32_t& number, int32_t align);
