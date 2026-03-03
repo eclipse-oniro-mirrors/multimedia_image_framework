@@ -403,6 +403,93 @@ AuxiliaryPicture CreateAuxiliaryPicture(array_view<uint8_t> buffer, const Size &
     return make_holder<AuxiliaryPictureImpl, AuxiliaryPicture>(std::move(auxiliaryPicture));
 }
 
+static void ParseAuxiliaryPictureOptions(const AuxiliaryPictureInfo &info,
+    optional_view<AllocatorType> allocatorType, OHOS::Media::InitializationOptions &opts)
+{
+    opts.size = {info.size.width, info.size.height};
+    opts.editable = true;
+    opts.useDMA = true;
+    opts.srcPixelFormat = static_cast<OHOS::Media::PixelFormat>(info.pixelFormat.get_value());
+    opts.pixelFormat = opts.srcPixelFormat;
+    opts.srcRowStride = static_cast<uint32_t>(info.rowStride);
+
+    opts.allocatorType = OHOS::Media::AllocatorType::DMA_ALLOC;
+    if (allocatorType.has_value() && allocatorType.value().get_value() ==
+        static_cast<int32_t>(OHOS::Media::AllocatorType::SHARE_MEM_ALLOC)) {
+        opts.allocatorType = OHOS::Media::AllocatorType::SHARE_MEM_ALLOC;
+    }
+}
+
+static std::shared_ptr<OHOS::Media::PixelMap> CreatePixelMapExec(
+    const OHOS::Media::InitializationOptions &opts, optional_view<array<uint8_t>> pixels)
+{
+    if (!pixels.has_value() || pixels.value().size() == 0) {
+        return OHOS::Media::PixelMap::Create(opts);
+    }
+
+    auto bufferView = pixels.value();
+    auto dataTmp = reinterpret_cast<uint32_t*>(bufferView.data());
+    auto dataLengthTmp = static_cast<uint32_t>(bufferView.size());
+
+    return OHOS::Media::PixelMap::Create(dataTmp, dataLengthTmp, opts);
+}
+
+static void ApplyColorSpaceToPixelMap(std::shared_ptr<OHOS::Media::PixelMap> &pixelMap, uintptr_t colorSpace)
+{
+    if (pixelMap != nullptr) {
+        ani_object csObj = reinterpret_cast<ani_object>(colorSpace);
+        auto csPtr = OHOS::ColorManager::GetColorSpaceByAniObject(get_env(), csObj);
+        if (csPtr != nullptr) {
+            pixelMap->InnerSetColorSpace(*csPtr);
+        }
+    }
+}
+
+AuxiliaryPicture CreateAuxiliaryPictureUsingAllocator(const AuxiliaryPictureInfo &auxiliaryPictureInfo,
+    optional_view<AllocatorType> allocatorType, optional_view<array<uint8_t>> pixels)
+{
+    IMAGE_LOGE("CreateAuxiliaryPictureUsingAllocator IN");
+    OHOS::Media::InitializationOptions opts;
+    ParseAuxiliaryPictureOptions(auxiliaryPictureInfo, allocatorType, opts);
+
+    OHOS::Media::AuxiliaryPictureType ohType = ParseAuxiliaryPictureType(
+        auxiliaryPictureInfo.auxiliaryPictureType.get_value());
+    if (opts.allocatorType != OHOS::Media::AllocatorType::DMA_ALLOC &&
+        ohType == OHOS::Media::AuxiliaryPictureType::GAINMAP) {
+        ImageTaiheUtils::ThrowExceptionError(IMAGE_UNSUPPORTED_MEMORY_FORMAT, "Unsupport allocator type for GAINMAP.");
+        return make_holder<AuxiliaryPictureImpl, AuxiliaryPicture>();
+    }
+
+    if (OHOS::Media::ImageUtils::CheckMulOverflow(opts.size.width, opts.size.height,
+        OHOS::Media::ImageUtils::GetPixelBytes(opts.pixelFormat))) {
+        ImageTaiheUtils::ThrowExceptionError(IMAGE_INVALID_PARAMETER, "Parameter error.");
+        return make_holder<AuxiliaryPictureImpl, AuxiliaryPicture>();
+    }
+    int dstLenth = auxiliaryPictureInfo.size.width * auxiliaryPictureInfo.size.height *
+        OHOS::Media::ImageUtils::GetPixelBytes(opts.pixelFormat);
+    if (pixels.has_value() && pixels.value().size() != 0 && dstLenth > pixels.value().size()) {
+        ImageTaiheUtils::ThrowExceptionError(IMAGE_INVALID_PARAMETER, "Parameter error.");
+        return make_holder<AuxiliaryPictureImpl, AuxiliaryPicture>();
+    }
+
+    auto pixelMapPtr = CreatePixelMapExec(opts, pixels);
+    if (pixelMapPtr == nullptr) {
+        ImageTaiheUtils::ThrowExceptionError(IMAGE_INVALID_PARAMETER, "Parameter error.");
+        return make_holder<AuxiliaryPictureImpl, AuxiliaryPicture>();
+    }
+
+    ApplyColorSpaceToPixelMap(pixelMapPtr, auxiliaryPictureInfo.colorSpace);
+
+    auto auxPicture = OHOS::Media::AuxiliaryPicture::Create(pixelMapPtr, ohType, opts.size);
+    if (auxPicture == nullptr) {
+        ImageTaiheUtils::ThrowExceptionError(IMAGE_INVALID_PARAMETER, "Parameter error.");
+        return make_holder<AuxiliaryPictureImpl, AuxiliaryPicture>();
+    }
+
+    return make_holder<AuxiliaryPictureImpl, AuxiliaryPicture>(std::move(auxPicture));
+}
+
 } // namespace ANI::Image
 
 TH_EXPORT_CPP_API_CreateAuxiliaryPicture(CreateAuxiliaryPicture);
+TH_EXPORT_CPP_API_CreateAuxiliaryPictureUsingAllocator(CreateAuxiliaryPictureUsingAllocator);
