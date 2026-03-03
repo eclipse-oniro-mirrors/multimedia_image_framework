@@ -262,7 +262,6 @@ public:
     NATIVEEXPORT const NinePatchInfo &GetNinePatchInfo() const;
     NATIVEEXPORT void SetMemoryUsagePreference(const MemoryUsagePreference preference);
     NATIVEEXPORT MemoryUsagePreference GetMemoryUsagePreference();
-    NATIVEEXPORT uint32_t GetFilterArea(const int &privacyType, std::vector<std::pair<uint32_t, uint32_t>> &ranges);
     NATIVEEXPORT uint32_t GetFilterArea(const std::vector<std::string> &exifKeys,
                                         std::vector<std::pair<uint32_t, uint32_t>> &ranges);
     NATIVEEXPORT std::unique_ptr<std::vector<std::unique_ptr<PixelMap>>> CreatePixelMapList(const DecodeOptions &opts,

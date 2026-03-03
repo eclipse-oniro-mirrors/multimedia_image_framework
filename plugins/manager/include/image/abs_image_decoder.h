@@ -191,25 +191,6 @@ public:
         return Media::ERR_MEDIA_INVALID_OPERATION;
     }
 
-    // modify image property.
-    virtual uint32_t ModifyImageProperty(uint32_t index, const std::string &key,
-        const std::string &value, const std::string &path)
-    {
-        return Media::ERR_MEDIA_INVALID_OPERATION;
-    }
-
-    virtual uint32_t ModifyImageProperty(uint32_t index, const std::string &key,
-                                         const std::string &value, const int fd)
-    {
-        return Media::ERR_MEDIA_INVALID_OPERATION;
-    }
-
-    virtual uint32_t ModifyImageProperty(uint32_t index, const std::string &key,
-                                         const std::string &value, uint8_t *data, uint32_t size)
-    {
-        return Media::ERR_MEDIA_INVALID_OPERATION;
-    }
-
     // get filter area.
     virtual uint32_t GetFilterArea(const int &privacyType, std::vector<std::pair<uint32_t, uint32_t>> &ranges)
     {

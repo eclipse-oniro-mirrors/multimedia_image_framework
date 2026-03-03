@@ -28,7 +28,6 @@
 #include "jpeglib.h"
 #include "plugin_class_base.h"
 #include "plugin_server.h"
-#include "exif_info.h"
 
 namespace OHOS {
 namespace ImagePlugin {
@@ -55,15 +54,7 @@ public:
     uint32_t Decode(uint32_t index, DecodeContext &context) override;
     uint32_t GetImageSize(uint32_t index, Size &size) override;
     uint32_t PromoteIncrementalDecode(uint32_t index, ProgDecodeContext &context) override;
-    uint32_t GetImagePropertyInt(uint32_t index, const std::string &key, int32_t &value) override;
     uint32_t GetImagePropertyString(uint32_t index, const std::string &key, std::string &value) override;
-    uint32_t ModifyImageProperty(uint32_t index, const std::string &key, const std::string &value,
-        const std::string &path) override;
-    uint32_t ModifyImageProperty(uint32_t index, const std::string &key, const std::string &value,
-        const int fd) override;
-    uint32_t ModifyImageProperty(uint32_t index, const std::string &key, const std::string &value,
-        uint8_t *data, uint32_t size) override;
-    uint32_t GetFilterArea(const int &privacyType, std::vector<std::pair<uint32_t, uint32_t>> &ranges) override;
     std::string GetPluginType() override
     {
         return "jpeg";
@@ -87,11 +78,7 @@ private:
     void CreateDecoder();
     bool IsMarker(uint8_t rawPrefix, uint8_t rawMarkderCode, uint8_t markerCode);
     bool FindMarker(InputDataStream &stream, uint8_t marker);
-    ExifTag getExifTagFromKey(const std::string &key);
     void FormatTimeStamp(std::string &value, std::string &src);
-    uint32_t GetImagePropertyString(const std::string &key, std::string &value);
-    uint32_t GetImagePropertyStringEx(const std::string &key, std::string &value);
-    uint32_t GetMakerImagePropertyString(const std::string &key, std::string &value);
 
     static MultimediaPlugin::PluginServer &pluginServer_;
     jpeg_decompress_struct decodeInfo_;
@@ -101,8 +88,7 @@ private:
     JpegDecodingState state_ = JpegDecodingState::UNDECIDED;
     uint32_t streamPosition_ = 0;  // may be changed by other decoders, record it and restore if needed.
     PixelFormat outputFormat_ = PixelFormat::UNKNOWN;
-    PixelDecodeOptions opts_;
-    EXIFInfo exifInfo_;
+    PixelDecodeOptions opts_; 
     ICCProfileInfo iccProfileInfo_;
 };
 } // namespace ImagePlugin

@@ -2649,20 +2649,6 @@ static uint32_t ProcessWithStreamData(InputDataStream *input,
     return process(tmpBuffer.get(), copySize);
 }
 
-static bool ParseExifData(InputDataStream *input, EXIFInfo &info)
-{
-    if (info.IsExifDataParsed()) {
-        return true;
-    }
-    IMAGE_LOGD("ParseExifData enter");
-    auto code = ProcessWithStreamData(input, [&info](uint8_t* buffer, size_t size) {
-        return info.ParseExifData(buffer, size);
-    });
-    bool cond = code != SUCCESS;
-    CHECK_ERROR_PRINT_LOG(cond, "Error parsing EXIF: code %{public}d", code);
-    return code == SUCCESS;
-}
-
 bool ExtDecoder::GetPropertyCheck(uint32_t index, const std::string &key, uint32_t &res)
 {
     if (IsSameTextStr(key, ACTUAL_IMAGE_ENCODED_FORMAT)) {
@@ -2682,11 +2668,7 @@ bool ExtDecoder::GetPropertyCheck(uint32_t index, const std::string &key, uint32
         res = Media::ERR_MEDIA_VALUE_INVALID;
         return true;
     }
-    auto result = ParseExifData(stream_, exifInfo_);
-    if (!result) {
-        res = Media::ERR_IMAGE_DECODE_EXIF_UNSUPPORT;
-    }
-    return result;
+    return true;
 }
 
 #ifdef HEIF_HW_DECODE_ENABLE
@@ -2770,16 +2752,7 @@ uint32_t ExtDecoder::GetImagePropertyInt(uint32_t index, const std::string &key,
     if (res == Media::ERR_IMAGE_DECODE_EXIF_UNSUPPORT) {
         return res;
     }
-    // Need exif property following
-    if (IsSameTextStr(key, TAG_ORIENTATION_STRING)) {
-        std::string strValue;
-        res = exifInfo_.GetExifData(TAG_ORIENTATION_INT, strValue);
-        if (res != SUCCESS) {
-            return res;
-        }
-        value = atoi(strValue.c_str());
-        return res;
-    }
+
     IMAGE_LOGE("[GetImagePropertyInt] The key:%{public}s is not supported int32_t", key.c_str());
     return Media::ERR_MEDIA_VALUE_INVALID;
 }
@@ -2899,75 +2872,8 @@ uint32_t ExtDecoder::GetImagePropertyString(uint32_t index, const std::string &k
     if (res == Media::ERR_IMAGE_DECODE_EXIF_UNSUPPORT) {
         return res;
     }
-    // Need exif property following
-    if (key.find(HW_MNOTE_TAG_HEADER) != std::string::npos) {
-        res = GetMakerImagePropertyString(key, value);
-        if (value.length() == 0) {
-            value = DEFAULT_EXIF_VALUE;
-            IMAGE_LOGE("[GetImagePropertyString]The image does not contain the %{public}s  tag ", key.c_str());
-        }
-        return res;
-    }
-    res = exifInfo_.GetExifData(key, value);
-    IMAGE_LOGD("[GetImagePropertyString] enter jpeg plugin, value:%{public}s", value.c_str());
+
     return res;
-}
-
-uint32_t ExtDecoder::GetMakerImagePropertyString(const std::string &key, std::string &value)
-{
-    if (exifInfo_.makerInfoTagValueMap.find(key) != exifInfo_.makerInfoTagValueMap.end()) {
-        value = exifInfo_.makerInfoTagValueMap[key];
-        return SUCCESS;
-    }
-    return Media::ERR_IMAGE_DECODE_EXIF_UNSUPPORT;
-}
-
-uint32_t ExtDecoder::ModifyImageProperty(uint32_t index, const std::string &key,
-    const std::string &value, const std::string &path)
-{
-    IMAGE_LOGD("[ModifyImageProperty] with key:%{public}s", key.c_str());
-    return exifInfo_.ModifyExifData(key, value, path);
-}
-
-uint32_t ExtDecoder::ModifyImageProperty(uint32_t index, const std::string &key,
-    const std::string &value, const int fd)
-{
-    IMAGE_LOGD("[ModifyImageProperty] with fd:%{public}d, key:%{public}s, value:%{public}s",
-        fd, key.c_str(), value.c_str());
-    return exifInfo_.ModifyExifData(key, value, fd);
-}
-
-uint32_t ExtDecoder::ModifyImageProperty(uint32_t index, const std::string &key,
-    const std::string &value, uint8_t *data, uint32_t size)
-{
-    IMAGE_LOGD("[ModifyImageProperty] with key:%{public}s, value:%{public}s",
-        key.c_str(), value.c_str());
-    return exifInfo_.ModifyExifData(key, value, data, size);
-}
-
-uint32_t ExtDecoder::GetFilterArea(const int &privacyType, std::vector<std::pair<uint32_t, uint32_t>> &ranges)
-{
-    IMAGE_LOGD("[GetFilterArea] with privacyType:%{public}d ", privacyType);
-    if (!CheckCodec()) {
-        IMAGE_LOGD("[GetFilterArea] Check codec failed");
-        return NO_EXIF_TAG;
-    }
-    SkEncodedImageFormat format = codec_->getEncodedFormat();
-    if (format != SkEncodedImageFormat::kJPEG) {
-        return NO_EXIF_TAG;
-    }
-    constexpr size_t APP1_SIZE_H_OFF = 4;
-    constexpr size_t APP1_SIZE_L_OFF = 5;
-    constexpr size_t U8_SHIFT = 8;
-    return ProcessWithStreamData(stream_, [this, &privacyType, &ranges](uint8_t* buffer, size_t size) {
-        size_t appSize = (static_cast<size_t>(buffer[APP1_SIZE_H_OFF]) << U8_SHIFT) | buffer[APP1_SIZE_L_OFF];
-        IMAGE_LOGD("[GetFilterArea]: get app1 area size");
-        appSize += APP1_SIZE_H_OFF;
-        auto ret = exifInfo_.GetFilterArea(buffer, (appSize < size) ? appSize : size, privacyType, ranges);
-        bool cond = (ret != SUCCESS);
-        CHECK_ERROR_PRINT_LOG(cond, "[GetFilterArea]: failed to get area %{public}d", ret);
-        return ret;
-    });
 }
 
 uint32_t ExtDecoder::GetTopLevelImageNum(uint32_t &num)
