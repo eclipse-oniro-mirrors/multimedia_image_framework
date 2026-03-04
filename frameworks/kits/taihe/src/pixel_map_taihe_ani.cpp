@@ -16,6 +16,7 @@
 #include "pixel_map_taihe_ani.h"
 
 #include <ani_signature_builder.h>
+#include "image_log.h"
 #include "pixel_map_taihe.h"
 
 namespace OHOS {
@@ -55,6 +56,7 @@ bool PixelMapTaiheAni::InitCreatePixelMapByPtr(ani_env* env)
 ani_object PixelMapTaiheAni::CreateEtsPixelMap([[maybe_unused]] ani_env* env, std::shared_ptr<PixelMap> pixelMap)
 {
     if (!InitCreatePixelMapByPtr(env)) {
+        IMAGE_LOGE("[%{public}s] ANI init failed", __func__);
         return nullptr;
     }
 
@@ -65,6 +67,7 @@ ani_object PixelMapTaiheAni::CreateEtsPixelMap([[maybe_unused]] ani_env* env, st
         gCreatePixelMapByPtr, &pixelMapObj, reinterpret_cast<ani_long>(pixelMapAni.get())) == ANI_OK) {
         pixelMapAni.release();
     } else {
+        IMAGE_LOGE("[%{public}s] Call function createPixelMapByPtr failed", __func__);
         return nullptr;
     }
 
@@ -99,15 +102,18 @@ bool PixelMapTaiheAni::InitGetImplPtr(ani_env* env)
 std::shared_ptr<PixelMap> PixelMapTaiheAni::GetNativePixelMap([[maybe_unused]] ani_env* env, ani_object obj)
 {
     if (!InitGetImplPtr(env)) {
+        IMAGE_LOGE("[%{public}s] ANI init failed", __func__);
         return nullptr;
     }
 
     ani_long implPtr;
     if (env->Object_CallMethod_Long(obj, gGetImplPtr, &implPtr) != ANI_OK) {
+        IMAGE_LOGE("[%{public}s] Call function getImplPtr failed", __func__);
         return nullptr;
     }
     PixelMapImpl* pixelMapImpl = reinterpret_cast<PixelMapImpl*>(implPtr);
     if (pixelMapImpl == nullptr) {
+        IMAGE_LOGE("[%{public}s] The implPtr obtained is null", __func__);
         return nullptr;
     }
     

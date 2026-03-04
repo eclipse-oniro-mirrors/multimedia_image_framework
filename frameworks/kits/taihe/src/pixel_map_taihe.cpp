@@ -360,7 +360,7 @@ PixelMapImpl::PixelMapImpl(std::shared_ptr<Media::PixelMap> pixelMap)
     nativePixelMap_ = pixelMap;
     if (nativePixelMap_ == nullptr) {
         ImageTaiheUtils::ThrowExceptionError(Media::COMMON_ERR_INVALID_PARAMETER,
-            "Failed to create PixelMap: Input native PixelMap is null.");
+            "Failed to construct PixelMapImpl: The native PixelMap argument is null.");
     }
 }
 
@@ -370,7 +370,7 @@ PixelMapImpl::PixelMapImpl(int64_t aniPtr)
     nativePixelMap_ = pixelMapAni->nativePixelMap_;
     if (nativePixelMap_ == nullptr) {
         ImageTaiheUtils::ThrowExceptionError(Media::COMMON_ERR_INVALID_PARAMETER,
-            "Failed to create PixelMap: Input ANI pointer's native PixelMap is null.");
+            "Failed to construct PixelMapImpl: Native PixelMap from the argument is null.");
     }
 }
 
