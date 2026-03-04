@@ -177,7 +177,7 @@ static bool CheckAshmemSize(const int &fd, const int32_t &bufferSize, bool isAst
         return false;
     }
     int32_t ashmemSize = AshmemGetSize(fd);
-    return isAstc || bufferSize == ashmemSize;
+    return bufferSize == ashmemSize;
 #else
     return false;
 #endif

@@ -784,5 +784,37 @@ HWTEST_F(PixelAstcTest, PixelAstcTest029, TestSize.Level3)
     }
     GTEST_LOG_(INFO) << "PixelAstcTest: PixelAstcTest029 end";
 }
+
+
+/**
+ * @tc.name: PixelAstcTest030
+ * @tc.desc: PixelAstc unmarshalling astc size check
+ * @tc.type: FUNC
+ */
+HWTEST_F(PixelAstcTest, PixelAstcTest030, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PixelAstcTest: PixelAstcTest029 start";
+    InitializationOptions opts;
+    opts.size.width = 10;
+    opts.size.height = 10;
+    opts.pixelFormat = PixelFormat::ARGB_8888;
+    std::unique_ptr<PixelMap> tmpSmallPixel = PixelMap::Create(opts);
+
+    std::unique_ptr<PixelMap> pixelAstc = std::unique_ptr<PixelMap>();
+    uint8_t* data = nullptr;
+    ConstructPixelAstc(pixelAstc, &data);
+    ASSERT_NE(pixelAstc.get(), nullptr);
+    ASSERT_EQ(pixelAstc->GetAllocatorType(), AllocatorType::SHARE_MEM_ALLOC);
+
+    void *tmpContext = pixelAstc->context_;
+    pixelAstc->context_ = tmpSmallPixel->context_;
+
+    Parcel Parcel;
+    EXPECT_EQ(true, pixelAstc->Marshalling(Parcel));
+    EXPECT_EQ(nullptr, pixelAstc->Unmarshalling(Parcel));
+
+    pixelAstc->context_ = tmpContext;
+    GTEST_LOG_(INFO) << "PixelAstcTest: PixelAstcTest030 end";
+}
 }
 }

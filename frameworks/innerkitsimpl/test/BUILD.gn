@@ -1485,6 +1485,8 @@ ohos_unittest("pixelastctest") {
   cflags = [
     "-DIMAGE_DEBUG_FLAG",
     "-DIMAGE_COLORSPACE_FLAG",
+    "-Dprivate=public",
+    "-Dprotected=public",
   ]
 
   include_dirs = [
