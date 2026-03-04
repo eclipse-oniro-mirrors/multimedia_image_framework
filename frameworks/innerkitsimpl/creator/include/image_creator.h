@@ -40,7 +40,7 @@ public:
     virtual ~SurfaceBufferReleaseListener()= default;
     virtual void OnSurfaceBufferRelease() = 0;
 };
-class ImageCreator {
+class ImageCreator : public std::enable_shared_from_this<ImageCreator> {
 public:
     sptr<IConsumerSurface> creatorConsumerSurface_ = nullptr;
     sptr<Surface> creatorProducerSurface_ = nullptr;
@@ -81,9 +81,8 @@ public:
     static sptr<IConsumerSurface> getSurfaceById(std::string id);
     void ReleaseCreator();
     static GSError OnBufferRelease(sptr<SurfaceBuffer> &buffer);
-    static std::map<uint8_t*, ImageCreator*> bufferCreatorMap_;
+    static std::map<uint8_t*, std::weak_ptr<ImageCreator>> bufferCreatorMap_;
     static std::mutex creatorMutex_;
-
     std::shared_ptr<IBufferProcessor> GetBufferProcessor();
     std::shared_ptr<NativeImage> DequeueNativeImage();
     void QueueNativeImage(std::shared_ptr<NativeImage> image);
