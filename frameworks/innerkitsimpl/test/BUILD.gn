@@ -407,7 +407,7 @@ ohos_unittest("jpegdecoderextest") {
     "googletest:gtest_main",
     "libexif:libexif",
     "libjpeg-turbo:turbojpeg",
-    "skia:libjpeg",
+    "skia:libjpegm133",
     "graphic_2d:color_manager",
     "ipc:ipc_single",
   ]
@@ -440,7 +440,7 @@ ohos_unittest("jpegutilstest") {
     "hilog:libhilog",
     "libexif:libexif",
     "libjpeg-turbo:turbojpeg",
-    "skia:libjpeg",
+    "skia:libjpegm133",
     "ipc:ipc_single",
   ]
 
@@ -472,7 +472,7 @@ ohos_unittest("exifmakernotetest") {
     "hilog:libhilog",
     "libexif:libexif",
     "libjpeg-turbo:turbojpeg",
-    "skia:libjpeg",
+    "skia:libjpegm133",
     "ipc:ipc_single",
   ]
 
@@ -1052,7 +1052,7 @@ ohos_unittest("pluginlibjpegtest") {
     "hilog:libhilog",
     "hitrace:hitrace_meter",
     "libjpeg-turbo:turbojpeg",
-    "skia:libjpeg",
+    "skia:libjpegm133",
     "skia:skia_canvaskit",
     "ipc:ipc_single",
   ]
@@ -1097,7 +1097,7 @@ ohos_unittest("rawdecodertest") {
     "googletest:gtest_main",
     "graphic_2d:color_manager",
     "hilog:libhilog",
-    "skia:piex",
+    "skia:piexm133",
     "ipc:ipc_single",
   ]
 }
@@ -1322,9 +1322,9 @@ ohos_unittest("jpeg_hw_decoder_test") {
     "ipc:ipc_single",
     "libexif:libexif",
     "libjpeg-turbo:turbojpeg",
-    "skia:libjpeg",
+    "skia:libjpegm133",
     "skia:skia_canvaskit",
-    "skia:piex",
+    "skia:piexm133",
   ]
   if (enable_heif_hw_decode) {
     defines += [ "HEIF_HW_DECODE_ENABLE" ]
@@ -1718,7 +1718,7 @@ ohos_unittest("jpeg_yuv_decoder_test") {
     "googletest:gtest",
     "googletest:gtest_main",
     "libjpeg-turbo:turbojpeg",
-    "skia:libjpeg",
+    "skia:libjpegm133",
     "ipc:ipc_single",
   ]
 }
@@ -2350,7 +2350,7 @@ ohos_unittest("heifs_decode_test") {
     "ipc:ipc_single",
     "libexif:libexif",
     "libjpeg-turbo:turbojpeg",
-    "skia:libjpeg",
+    "skia:libjpegm133",
     "skia:skia_canvaskit",
   ]
   if (enable_heif_hw_decode) {

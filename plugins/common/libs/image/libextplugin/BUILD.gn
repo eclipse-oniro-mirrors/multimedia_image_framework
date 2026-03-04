@@ -230,8 +230,8 @@ ohos_shared_library("extplugin") {
       "hisysevent:libhisysevent",
       "libexif:libexif",
       "libjpeg-turbo:turbojpeg",
-      "skia:libjpeg",
-      "skia:piex",
+      "skia:libjpegm133",
+      "skia:piexm133",
       "skia:skia_canvaskit",
       "zlib:libz",
     ]
