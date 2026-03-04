@@ -538,7 +538,7 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
     FuzzedDataProvider fdp(data + size - OHOS::Media::OPT_SIZE, OHOS::Media::OPT_SIZE);
     OHOS::Media::FDP = &fdp;
     uint8_t action = fdp.ConsumeIntegral<uint8_t>() % 15;
-    std::string pathName = "/data/local/tmp/image/test_dng_readmetadata.dng";
+    std::string pathName = "/data/local/tmp/test_dng_readmetadata.dng";
     if (!WriteDataToFile(data, size, pathName)) {
         IMAGE_LOGE("WriteDataToFile failed");
         return 0;

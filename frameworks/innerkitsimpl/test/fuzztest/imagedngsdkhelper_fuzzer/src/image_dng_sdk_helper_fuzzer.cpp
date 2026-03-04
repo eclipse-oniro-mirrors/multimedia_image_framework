@@ -129,7 +129,7 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
     if (OHOS::Media::FDP == nullptr) {
         return 0;
     }
-    std::string pathName = "/data/local/tmp/image/test_dng_readmetadata.dng";
+    std::string pathName = "/data/local/tmp/test_dng_readmetadata.dng";
     if (!WriteDataToFile(data, size, pathName)) {
         IMAGE_LOGE("WriteDataToFile failed");
         return 0;
