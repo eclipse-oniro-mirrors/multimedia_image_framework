@@ -1383,7 +1383,7 @@ static bool WriteJpegPreApp(sk_sp<SkData>& imageData, SkWStream& outputStream, u
             return true;
         }
         uint16_t markerSize = (imageBytes[index + INDEX_TWO] << MOVE_ONE_BYTE) | imageBytes[index + INDEX_THREE];
-        cond = markerSize > dataSize;
+        cond = index + markerSize + JPEG_MARKER_TAG_SIZE > dataSize;
         CHECK_ERROR_RETURN_RET(cond, false);
         outputStream.write(imageBytes + index, markerSize + JPEG_MARKER_TAG_SIZE);
         if (imageBytes[index + INDEX_ONE] == JPEG_MARKER_APP0) {
