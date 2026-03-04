@@ -99,8 +99,7 @@ ImageFormat ImageCreatorImpl::GetFormat()
 void ImageCreatorImpl::ReleaseSync()
 {
     if (imageCreator_ != nullptr) {
-        imageCreator_->~ImageCreator();
-        imageCreator_ = nullptr;
+        imageCreator_.reset();
     }
 }
 
