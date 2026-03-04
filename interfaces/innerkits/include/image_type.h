@@ -482,6 +482,7 @@ struct DecodingOptionsForPicture {
     std::set<MetadataType> desiredMetadatas;
     PixelFormat desiredPixelFormat = PixelFormat::RGBA_8888;
     AllocatorType allocatorType = AllocatorType::DMA_ALLOC;
+    bool needsDecodeDfxData = false;
 };
 
 struct DecodingOptionsForThumbnail {
