@@ -89,7 +89,6 @@ ohos_shared_library("jpegplugin") {
     deps += skia_platform
   } else {
     defines = [ "DUAL_ADAPTER" ]
-    DUAL_ADAPTER = true
     sources += [ "src/jpeg_encoder.cpp" ]
     deps = [
       "${image_subsystem}/frameworks/innerkitsimpl/utils:image_utils",
