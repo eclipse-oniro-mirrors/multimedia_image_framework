@@ -95,8 +95,7 @@ bool DmaPool::Init(sptr<ICodecImage> hwDecoder)
         JPEG_HW_LOGE("failed to map dma pool");
         return false;
     }
-    if(lifeManageThread_.joinable())
-    {
+    if(lifeManageThread_.joinable()) {
         lifeManageThread_.join();
     }
     lifeManageThread_ = std::thread([this] {this->RunDmaPoolDestroy();});
