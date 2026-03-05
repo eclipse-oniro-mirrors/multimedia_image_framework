@@ -720,8 +720,7 @@ int32_t ImageUtils::SurfaceBuffer_Unreference(void* buffer)
 }
 
 #if !defined(CROSS_PLATFORM)
-bool ImageUtils::GetYuvInfoFromSurfaceBuffer(YUVDataInfo &yuvInfo,
-    sptr<SurfaceBuffer> surfaceBuffer)
+bool ImageUtils::GetYuvInfoFromSurfaceBuffer(YUVDataInfo &yuvInfo, sptr<SurfaceBuffer> surfaceBuffer)
 {
     bool cond = surfaceBuffer == nullptr;
     CHECK_ERROR_RETURN_RET_LOG(cond, false, "%{public}s, surfaceBuffer is nullptr", __func__);
