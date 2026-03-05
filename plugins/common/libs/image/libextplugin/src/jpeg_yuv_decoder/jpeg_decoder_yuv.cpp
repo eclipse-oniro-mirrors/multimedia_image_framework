@@ -20,6 +20,7 @@
 #include <mutex>
 #include <utility>
 
+#include "image_utils.h"
 #include "image_log.h"
 #include "securec.h"
 #include "jpegint.h"
@@ -219,22 +220,22 @@ void JpegDecoderYuv::InitYuvDataOutInfoTo420NV(uint32_t width, uint32_t height, 
     if (width == 0 || height == 0) {
         return;
     }
-    info.imageSize.width = static_cast<int32_t>(width);
-    info.imageSize.height = static_cast<int32_t>(height);
-    info.yWidth = Get420OutPlaneWidth(YCOM, width);
-    info.yHeight = Get420OutPlaneHeight(YCOM, height);
-    info.uvWidth = Get420OutPlaneWidth(UCOM, width);
-    info.uvHeight = Get420OutPlaneHeight(UCOM, height);
-    info.yStride = info.yWidth;
-    info.uvStride = info.uvWidth + info.uvWidth;
     if (context.allocatorType == OHOS::Media::AllocatorType::DMA_ALLOC) {
         SurfaceBuffer* sbBuffer = reinterpret_cast<SurfaceBuffer *>(context.pixelsBuffer.context);
-        uint32_t stride = static_cast<uint32_t>(sbBuffer->GetStride());
-        info.yStride = stride;
-        info.uvStride = stride;
+        bool cond = !ImageUtils::GetYuvInfoFromSurfaceBuffer(info, sbBuffer);
+        CHECK_ERROR_RETURN_RET_LOG(cond, false, "Get YUVInfo from SurfaceBuffer failed");
+    } else {
+        info.imageSize.width = static_cast<int32_t>(width);
+        info.imageSize.height = static_cast<int32_t>(height);
+        info.yWidth = Get420OutPlaneWidth(YCOM, width);
+        info.yHeight = Get420OutPlaneHeight(YCOM, height);
+        info.uvWidth = Get420OutPlaneWidth(UCOM, width);
+        info.uvHeight = Get420OutPlaneHeight(UCOM, height);
+        info.yStride = info.yWidth;
+        info.uvStride = info.uvWidth + info.uvWidth;
+        info.yOffset = 0;
+        info.uvOffset = info.yHeight * info.yStride;
     }
-    info.yOffset = 0;
-    info.uvOffset = info.yHeight * info.yStride;
 }
 
 void JpegDecoderYuv::InitYuvDataOutInfo(uint32_t width, uint32_t height, YUVDataInfo &info)
