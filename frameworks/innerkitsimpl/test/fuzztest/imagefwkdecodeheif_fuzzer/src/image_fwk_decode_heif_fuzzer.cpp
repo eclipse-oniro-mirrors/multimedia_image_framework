@@ -46,11 +46,13 @@
 #include "ext_stream.h"
 #include "image_log.h"
 #include "image_source.h"
+#include <fuzzer/FuzzedDataProvider.h>
 
 namespace OHOS {
 namespace Media {
 using namespace OHOS::ImagePlugin;
-
+FuzzedDataProvider *FDP;
+constexpr uint32_t OPT_SIZE = 80;
 void ItemPropertyBoxTest001(HeifIprpBox *heifiprpbox, HeifIpcoBox *heifipcobox,
     HeifIpmaBox *heifipmabox, HeifStreamReader &reader, HeifStreamWriter &writer)
 {
@@ -306,22 +308,43 @@ void HeifDecodeFuzzTest001(const std::string& pathName)
 extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
 {
     /* Run your code on data */
+    if (size < OHOS::Media::OPT_SIZE) {
+        return 0;
+    }
+    FuzzedDataProvider fdp(data + size - OHOS::Media::OPT_SIZE, OHOS::Media::OPT_SIZE);
+    uint8_t action = fdp.ConsumeIntegral<uint8_t>() % 6;
     static const std::string HEIF_HW_PATH1 = "/data/local/tmp/no_iref.heic";
     static const std::string HEIF_HW_PATH2 = "/data/local/tmp/gridsize.heic";
     static const std::string HEIF_HW_PATH3 = "/data/local/tmp/oob.heic";
     static const std::string HEIF_HW_PATH4 = "/data/local/tmp/test_exif.heic";
     static const std::string PATHNAME = "/data/local/tmp/test1.heic";
     int fd = open(PATHNAME.c_str(), O_RDWR | O_CREAT, S_IRUSR | S_IWUSR);
-    if (write(fd, data, size) != (ssize_t)size) {
+    if (write, data, size - OHOS::Media::OPT_SIZE) != static_cast<ssize_t>(size - OHOS::Media::OPT_SIZE)) {
         close(fd);
         return 0;
     }
     close(fd);
-    OHOS::Media::HeifDecodeFuzzTest001(HEIF_HW_PATH1);
-    OHOS::Media::HeifDecodeFuzzTest001(HEIF_HW_PATH2);
-    OHOS::Media::HeifDecodeFuzzTest001(HEIF_HW_PATH3);
-    OHOS::Media::HeifDecodeFuzzTest001(HEIF_HW_PATH4);
-    OHOS::Media::HeifDecodeFuzzTest001(PATHNAME);
-    OHOS::Media::HeifDecodeFuzzTest002(data, size);
+    switch (action) {
+        case 0:
+            OHOS::Media::HeifDecodeFuzzTest001(HEIF_HW_PATH1);
+            break;
+        case 1:
+            OHOS::Media::HeifDecodeFuzzTest001(HEIF_HW_PATH2);
+            break;
+        case 2:
+            OHOS::Media::HeifDecodeFuzzTest001(HEIF_HW_PATH3);
+            break;
+        case 3:
+            OHOS::Media::HeifDecodeFuzzTest001(HEIF_HW_PATH4);
+            break;
+        case 4:
+            OHOS::Media::HeifDecodeFuzzTest001(PATHNAME);
+            break;
+        case 5:
+            OHOS::Media::HeifDecodeFuzzTest002(data, size - OHOS::Media::OPT_SIZE);
+            break;
+        default:
+            break;
+    }
     return 0;
 }

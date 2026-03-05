@@ -20,6 +20,9 @@
 #include <stddef.h>
 #include <string>
 #include <fuzzer/FuzzedDataProvider.h>
+
+constexpr uint32_t COMMON_OPT_SIZE = 80;
+
 namespace OHOS {
 namespace Media {
     class PixelMap;

@@ -16,6 +16,7 @@
 #define private public
 #include "image_fwk_convert_pixelmap_format_fuzzer.h"
 
+#include <fuzzer/FuzzedDataProvider.h>
 #include <cstdint>
 #include <memory>
 #include <string>
@@ -38,7 +39,8 @@
 
 namespace OHOS {
 namespace Media {
-
+FuzzedDataProvider *FDP;
+static constexpr uint32_t OPT_SIZE = 80;
 static const std::string IMAGE_INPUT_JPG_PATH1 = "/data/local/tmp/test.jpg";
 
 void PixelMapFormatConvert(PixelFormat &srcFormat, PixelFormat &destFormat)
@@ -129,15 +131,38 @@ void PixelMapFormattotalFuzzTest001()
 extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
 {
     /* Run your code on data */
+    if (size < OHOS::Media::OPT_SIZE) {
+        return 0;
+    }
 
+    FuzzedDataProvider fdp(data + size - OHOS::Media::OPT_SIZE, OHOS::Media::OPT_SIZE);
+    OHOS::Media::FDP = &fdp;
     static const std::string pathName = "/data/local/tmp/test.jpg";
     int fd = open(pathName.c_str(), O_RDWR | O_CREAT, S_IRUSR | S_IWUSR);
-    if (write(fd, data, size) != (ssize_t)size) {
+    if (fd < 0) {
+        return 0;
+    }
+    if (write data, size - OHOS::Media::OPT_SIZE) != static_cast<ssize_t>(size - OHOS::Media::OPT_SIZE)) {
         close(fd);
-        IMAGE_LOGE("Fuzzer copy data fail");
         return 0;
     }
     close(fd);
-    OHOS::Media::PixelMapFormattotalFuzzTest001();
+    uint8_t action = fdp.ConsumeIntegral<uint8_t>() % 4;
+    switch (action) {
+        case 0:
+            OHOS::Media::PixelMapFormatFuzzTest001();
+            break;
+        case 1:
+            OHOS::Media::PixelMapFormatFuzzTest002();
+            break;
+        case 2:
+            OHOS::Media::PixelMapFormatFuzzTest003();
+            break;
+        case 3:
+            OHOS::Media::PixelMapFormatFuzzTest004();
+            break;
+        default:
+            break;
+    }
     return 0;
 }

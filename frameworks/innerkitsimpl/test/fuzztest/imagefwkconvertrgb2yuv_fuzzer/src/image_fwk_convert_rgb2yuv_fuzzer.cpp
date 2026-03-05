@@ -16,6 +16,7 @@
 #define private public
 #include "image_fwk_convert_rgb2yuv_fuzzer.h"
 
+#include <fuzzer/FuzzedDataProvider.h>
 #include <cstdint>
 #include <fcntl.h>
 #include <memory>
@@ -38,8 +39,9 @@
 
 namespace OHOS {
 namespace Media {
-
+FuzzedDataProvider *FDP;
 static const std::string IMAGE_INPUT_JPG_PATH1 = "/data/local/tmp/test.jpg";
+constexpr uint32_t OPT_SIZE = 80;
 
 void RgbConvertToYuv(PixelFormat &srcFormat, PixelFormat &destFormat)
 {
@@ -145,24 +147,33 @@ void BGRAToNV12FuzzTest002()
 /*Fuzzer entry point*/
 extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
 {
-    /*Run your code on data*/
-    IMAGE_LOGI("RgbToYuvFuzzTest001: start");
+    if (size < OHOS::Media::OPT_SIZE) {
+        return 0;
+    }
+    FuzzedDataProvider fdp(data + size - OHOS::Media::OPT_SIZE, OHOS::Media::OPT_SIZE);
     static const std::string pathName = "/data/local/tmp/test.jpg";
     int fd = open(pathName.c_str(), O_RDWR | O_CREAT, S_IRUSR | S_IWUSR);
-    if (write(fd, data, size) != (ssize_t)size) {
+    if (write(fd, data, size - OHOS::Media::OPT_SIZE) != (ssize_t)(size - OHOS::Media::OPT_SIZE)) {
         close(fd);
-        IMAGE_LOGE("Fuzzer copy data fail");
         return 0;
     }
     close(fd);
-    OHOS::Media::RGB565ToNV12FuzzTest001();
-    OHOS::Media::RGB565ToNV12FuzzTest002();
-    OHOS::Media::RGB565ToNV21FuzzTest001();
-    OHOS::Media::RGB565ToNV21FuzzTest002();
-    OHOS::Media::BGRAToNV21FuzzTest001();
-    OHOS::Media::BGRAToNV21FuzzTest002();
-    OHOS::Media::BGRAToNV12FuzzTest001();
-    OHOS::Media::BGRAToNV12FuzzTest002();
-    IMAGE_LOGI("RgbToYuvFuzzTest001: end");
+    uint8_t action = fdp.ConsumeIntegral<uint8_t>() % 4;
+    switch (action) {
+        case 0:
+            OHOS::Media::RGB565ToNV12FuzzTest001();
+            break;
+        case 1:
+            OHOS::Media::RGB565ToNV21FuzzTest001();
+            break;
+        case 2:
+            OHOS::Media::BGRAToNV21FuzzTest001();
+            break;
+        case 3:
+            OHOS::Media::BGRAToNV12FuzzTest001();
+            break;
+        default:
+            break;
+    }
     return 0;
 }
