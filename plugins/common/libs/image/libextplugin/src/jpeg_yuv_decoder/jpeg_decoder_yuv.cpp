@@ -222,8 +222,14 @@ void JpegDecoderYuv::InitYuvDataOutInfoTo420NV(uint32_t width, uint32_t height, 
     }
     if (context.allocatorType == OHOS::Media::AllocatorType::DMA_ALLOC) {
         SurfaceBuffer* sbBuffer = reinterpret_cast<SurfaceBuffer *>(context.pixelsBuffer.context);
-        bool cond = !ImageUtils::GetYuvInfoFromSurfaceBuffer(info, sbBuffer);
-        CHECK_ERROR_RETURN_RET_LOG(cond, false, "Get YUVInfo from SurfaceBuffer failed");
+        if (sbBuffer == nullptr) {
+            IMAGE_LOGE("SurfaceBuffer is null");
+            return;
+        }
+        if (!ImageUtils::GetYuvInfoFromSurfaceBuffer(info, sbBuffer)) {
+            IMAGE_LOGE("Get YUVInfo from SurfaceBuffer failed");
+            return;
+        }
     } else {
         info.imageSize.width = static_cast<int32_t>(width);
         info.imageSize.height = static_cast<int32_t>(height);
