@@ -1759,7 +1759,7 @@ Image_ErrorCode OH_ImageSourceNative_ReadImageMetadataByType(OH_ImageSourceNativ
 }
 
 MIDK_EXPORT
-Image_ErrorCode OH_ImageSourceNative_CreateImageRawData(OH_ImageSourceNative *source, OH_ImageRawData **rawData)
+Image_ErrorCode OH_ImageSourceNative_CreateImageRawData(const OH_ImageSourceNative *source, OH_ImageRawData **rawData)
 {
     if (source == nullptr || source->GetInnerImageSource() == nullptr || rawData == nullptr) {
         return IMAGE_SOURCE_INVALID_PARAMETER;
@@ -1776,19 +1776,20 @@ Image_ErrorCode OH_ImageSourceNative_CreateImageRawData(OH_ImageSourceNative *so
 }
 
 MIDK_EXPORT
-Image_ErrorCode OH_ImageSourceNative_GetBufferFromRawData(OH_ImageRawData *rawData,
+Image_ErrorCode OH_ImageSourceNative_GetBufferFromRawData(const OH_ImageRawData *rawData,
     uint8_t **data, size_t *length)
 {
     if (rawData == nullptr || data == nullptr || length == nullptr) {
         return IMAGE_SOURCE_INVALID_PARAMETER;
     }
-    *data = rawData->GetData();
+    auto *mutableRawData = const_cast<OH_ImageRawData*>(rawData);
+    *data = mutableRawData->GetData();
     *length = rawData->GetSize();
     return IMAGE_SUCCESS;
 }
 
 MIDK_EXPORT
-Image_ErrorCode OH_ImageSourceNative_GetBitsPerPixelFromRawData(OH_ImageRawData *rawData, uint8_t *bitsPerPixel)
+Image_ErrorCode OH_ImageSourceNative_GetBitsPerPixelFromRawData(const OH_ImageRawData *rawData, uint8_t *bitsPerPixel)
 {
     if (rawData == nullptr || bitsPerPixel == nullptr) {
         return IMAGE_SOURCE_INVALID_PARAMETER;
@@ -1798,7 +1799,7 @@ Image_ErrorCode OH_ImageSourceNative_GetBitsPerPixelFromRawData(OH_ImageRawData 
 }
 
 MIDK_EXPORT
-Image_ErrorCode OH_ImageSourceNative_ReleaseRawData(OH_ImageRawData *rawData)
+Image_ErrorCode OH_ImageSourceNative_DestroyImageRawData(OH_ImageRawData *rawData)
 {
     if (rawData == nullptr) {
         return IMAGE_SOURCE_INVALID_PARAMETER;
