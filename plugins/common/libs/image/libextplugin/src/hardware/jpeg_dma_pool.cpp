@@ -16,17 +16,31 @@
 #include "hardware/jpeg_dma_pool.h"
 #include <chrono>
 #include <sys/mman.h>
+
 namespace OHOS::ImagePlugin {
 using namespace OHOS::HDI::Codec::Image::V2_1;
 
 constexpr uint32_t DMA_POOL_SIZE = 1024 * 1024;     /* the size of DMA Pool is 1M */
 constexpr uint32_t DMA_POOL_ALIGN_SIZE = 32 * 1024; /* Input buffer alignment size is 32K */
 
+DmaPool::~DmaPool()
+{
+    {
+        std::lock_guard<std::mutex> lock(dmaPoolMtx_);
+        isDmaThreadStop_ = true;
+    }
+    dmaPoolCond_.notify_one();
+    if (lifeManageThread_.joinable()) {
+        lifeManageThread_.join();
+    }
+}
+
 DmaPool& DmaPool::GetInstance()
 {
     static DmaPool singleton;
     return singleton;
 }
+
 
 bool DmaPool::AllocBufferInDmaPool(sptr<ICodecImage> hwDecoder, ImagePlugin::InputDataStream* srcStream,
                                    CodecImageBuffer& inBuffer, PureStreamInfo streamInfo, DmaBufferInfo& bufferInfo)
@@ -64,6 +78,7 @@ bool DmaPool::Init(sptr<ICodecImage> hwDecoder)
         return true;
     }
     CodecImageBuffer tempPool{};
+
     int32_t ret = hwDecoder->AllocateInBuffer(tempPool, DMA_POOL_SIZE, CODEC_IMAGE_JPEG);
     if (ret != HDF_SUCCESS || tempPool.buffer == nullptr) {
         JPEG_HW_LOGE("failed to allocate dma pool, err=%{public}d", ret);
@@ -80,8 +95,12 @@ bool DmaPool::Init(sptr<ICodecImage> hwDecoder)
         JPEG_HW_LOGE("failed to map dma pool");
         return false;
     }
-    std::thread lifeManageThread([this] {this->RunDmaPoolDestroy();});
-    if (!lifeManageThread.joinable()) {
+    if(lifeManageThread_.joinable())
+    {
+        lifeManageThread_.join();
+    }
+    lifeManageThread_ = std::thread([this] {this->RunDmaPoolDestroy();});
+    if (!lifeManageThread_.joinable()) {
         if (munmap(bufferHandle_->virAddr, DMA_POOL_SIZE) != 0) {
             JPEG_HW_LOGE("failed to unmap dma pool");
         }
@@ -89,7 +108,6 @@ bool DmaPool::Init(sptr<ICodecImage> hwDecoder)
         bufferHandle_ = nullptr;
         return false;
     }
-    lifeManageThread.detach();
     inited_ = true;
     remainCapacity_ = DMA_POOL_SIZE;
     nativeBuf_ = tempPool.buffer;
@@ -156,8 +174,11 @@ void DmaPool::RunDmaPoolDestroy()
         bool ret = dmaPoolCond_.wait_for(lck, 5s, [this]() {
             auto curTime = std::chrono::steady_clock::now();
             auto diffDuration = std::chrono::duration_cast<std::chrono::seconds>(curTime - activeTime_);
-            return usedSpace_.empty() && diffDuration >= 10s;
+            return isDmaThreadStop_ || (usedSpace_.empty() && diffDuration >= 10s);
         });
+        if (isDmaThreadStop_) {
+            return;
+        }
         if (ret) {
             break;
         }
