@@ -31,7 +31,7 @@ namespace {
     const uint32_t MAX_DREF_ENTRYCOUNT = static_cast<uint32_t>(std::numeric_limits<int32_t>::max());
     const uint32_t MAX_STSD_ENTRYCOUNT = 1024;
     const uint32_t MAX_STTS_ENTRYCOUNT = 1024 * 1024 * 512;
-    const uint32_t MAX_STSZ_ENTRYCOUNT = 1024 * 1024 * 512;
+    const uint32_t MAX_STSZ_ENTRYCOUNT = 1024 * 1024;
     const uint32_t MAX_STSC_ENTRYCOUNT = 1024 * 1024 * 256;
     const uint32_t MAX_STCO_ENTRYCOUNT = 1024 * 1024 * 1024;
     const uint32_t MAX_STSS_ENTRYCOUNT = 1024 * 1024 * 1024;

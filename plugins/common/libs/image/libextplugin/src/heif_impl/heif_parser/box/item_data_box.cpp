@@ -135,10 +135,11 @@ heif_error HeifIlocBox::ReadData(const Item &item, const std::shared_ptr<HeifInp
     const std::shared_ptr<HeifIdatBox> &idat, std::vector<uint8_t> *dest) const
 {
     for (const auto &extent: item.extents) {
+        if (HasOverflowed64(extent.offset, item.baseOffset)) {
+            return heif_error_eof;
+        }
+
         if (item.constructionMethod == CONSTRUCTION_METHOD_FILE_OFFSET) {
-            if (HasOverflowed64(extent.offset, item.baseOffset)) {
-                return heif_error_eof;
-            }
             stream->Seek(extent.offset + item.baseOffset);
 
             size_t oldSize = dest->size();
@@ -150,9 +151,6 @@ heif_error HeifIlocBox::ReadData(const Item &item, const std::shared_ptr<HeifInp
         } else if (item.constructionMethod == CONSTRUCTION_METHOD_IDAT_OFFSET) {
             if (!idat) {
                 return heif_error_no_idat;
-            }
-            if (HasOverflowed64(extent.offset, item.baseOffset)) {
-                return heif_error_eof;
             }
             uint64_t start = extent.offset + item.baseOffset;
             idat->ReadData(stream, start, extent.length, *dest);
@@ -324,10 +322,10 @@ heif_error HeifIlocBox::ReadToExtentData(Item &item, const std::shared_ptr<HeifI
         if (!extent.data.empty()) {
             continue;
         }
+        if (HasOverflowed64(extent.offset, item.baseOffset)) {
+            return heif_error_eof;
+        }
         if (item.constructionMethod == CONSTRUCTION_METHOD_FILE_OFFSET) {
-            if (HasOverflowed64(extent.offset, item.baseOffset)) {
-                return heif_error_eof;
-            }
             bool ret = stream->Seek(extent.offset + item.baseOffset);
             if (!ret) {
                 return heif_error_eof;
@@ -344,9 +342,6 @@ heif_error HeifIlocBox::ReadToExtentData(Item &item, const std::shared_ptr<HeifI
         } else if (item.constructionMethod == CONSTRUCTION_METHOD_IDAT_OFFSET) {
             if (!idatBox) {
                 return heif_error_no_idat;
-            }
-            if (HasOverflowed64(extent.offset, item.baseOffset)) {
-                return heif_error_eof;
             }
             idatBox->ReadData(stream, extent.offset + item.baseOffset, extent.length, extent.data);
         }
