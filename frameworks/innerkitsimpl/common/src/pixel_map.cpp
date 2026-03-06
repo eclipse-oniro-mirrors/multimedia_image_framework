@@ -102,6 +102,7 @@ using namespace std;
 using namespace HDI::Display::Graphic::Common::V1_0;
 #endif
 constexpr int32_t MAX_DIMENSION = INT32_MAX >> 2;
+constexpr int32_t ASTC_MAX_DIMENSION = 8192;
 constexpr int8_t INVALID_ALPHA_INDEX = -1;
 constexpr uint8_t ARGB_ALPHA_INDEX = 0;
 constexpr uint8_t BGRA_ALPHA_INDEX = 3;
@@ -720,6 +721,10 @@ bool InitYuvDataOutInfo(SurfaceBuffer* surfaceBuffer, const ImageInfo &info, YUV
 
 static bool CheckPixelMap(unique_ptr<PixelMap>& dstPixelMap, const InitializationOptions &opts)
 {
+    if (ImageUtils::IsAstc(opts.pixelFormat)) {
+        IMAGE_LOGE("Create pixelMap does not support ASTC format");
+        return false;
+    }
     if (IsYUV(opts.pixelFormat)) {
 #ifdef EXT_PIXEL
         dstPixelMap = std::make_unique<PixelYuvExt>();
@@ -2918,6 +2923,12 @@ bool PixelMap::ReadAstcInfo(Parcel &parcel, PixelMap *pixelMap)
         Size realSize;
         realSize.width = parcel.ReadInt32();
         realSize.height = parcel.ReadInt32();
+        if (realSize.width <= 0 || realSize.width > ASTC_MAX_DIMENSION ||
+            realSize.height <= 0 || realSize.height > ASTC_MAX_DIMENSION) {
+            IMAGE_LOGE("%{public}s invalid astc real size: width=%{public}d, height=%{public}d",
+                __func__, realSize.width, realSize.height);
+            return false;
+        }
         pixelMap->SetAstcRealSize(realSize);
         bool isHdr = parcel.ReadBool();
         pixelMap->SetAstcHdr(isHdr);
