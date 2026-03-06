@@ -3843,13 +3843,22 @@ static uint32_t ProcessSpecifiedMetadataType(ImageSourceAsyncContext* context, c
     }
     context->status = ERROR;
     bool anyKeySuccess = false;
+    std::vector<uint32_t> errCodeArray;
     for (const auto& keyStr : context->keyStrArray) {
         ProcessSingleMetadataKey(context, keyStr);
         if (context->status == SUCCESS) {
             anyKeySuccess = true;
+        } else {
+            errCodeArray.push_back(context->status);
         }
     }
-    return anyKeySuccess ? SUCCESS : ERROR;
+    uint32_t errorCode = IMAGE_SOURCE_UNSUPPORTED_METADATA;
+    for (uint32_t i = 0; i < errCodeArray.size(); ++i) {
+        if (errCodeArray[i] == ERR_IMAGE_SOURCE_DATA) {
+            errorCode = ERR_IMAGE_SOURCE_DATA;
+        }
+    }
+    return anyKeySuccess ? SUCCESS : errorCode;
 #else
     return IMAGE_SOURCE_UNSUPPORTED_METADATA;
 #endif
