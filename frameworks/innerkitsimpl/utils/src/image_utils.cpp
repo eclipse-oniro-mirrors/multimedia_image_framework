@@ -720,26 +720,39 @@ int32_t ImageUtils::SurfaceBuffer_Unreference(void* buffer)
 }
 
 #if !defined(CROSS_PLATFORM)
-bool ImageUtils::GetYuvInfoFromSurfaceBuffer(YUVDataInfo &yuvInfo,
-    sptr<SurfaceBuffer> surfaceBuffer)
+bool ImageUtils::GetYuvInfoFromSurfaceBuffer(YUVDataInfo &yuvInfo, sptr<SurfaceBuffer> surfaceBuffer)
 {
+    bool cond = surfaceBuffer == nullptr;
+    CHECK_ERROR_RETURN_RET_LOG(cond, false, "%{public}s, surfaceBuffer is nullptr", __func__);
+
     OH_NativeBuffer_Planes* planes = nullptr;
-    CHECK_ERROR_RETURN_RET(surfaceBuffer == nullptr, false);
     GSError retVal = surfaceBuffer->GetPlanesInfo(reinterpret_cast<void**>(&planes));
-    if (retVal == OHOS::GSERROR_OK && planes != nullptr && planes->planeCount >= NUM_2) {
-        yuvInfo.yStride = planes->planes[PLANE_Y].columnStride;
-        yuvInfo.uvStride = planes->planes[PLANE_U].columnStride;
-        yuvInfo.yOffset = planes->planes[PLANE_Y].offset;
-        if (surfaceBuffer->GetFormat() == GRAPHIC_PIXEL_FMT_YCRCB_420_SP) {
-            yuvInfo.uvOffset = planes->planes[PLANE_V].offset;
-        } else {
-            yuvInfo.uvOffset = planes->planes[PLANE_U].offset;
-        }
+    cond = retVal != OHOS::GSERROR_OK || planes == nullptr || planes->planeCount <= NUM_1;
+    CHECK_ERROR_RETURN_RET_LOG(cond, false, "%{public}s, get planesInfo failed, retVal:%{public}d", __func__, retVal);
+
+    int32_t width = surfaceBuffer->GetWidth();
+    int32_t height = surfaceBuffer->GetHeight();
+    yuvInfo.imageSize = { width, height };
+    yuvInfo.yWidth = static_cast<uint32_t>(width);
+    yuvInfo.uvWidth = static_cast<uint32_t>((width + NUM_1) / NUM_2);
+    yuvInfo.yHeight = static_cast<uint32_t>(height);
+    yuvInfo.uvHeight = static_cast<uint32_t>((height + NUM_1) / NUM_2);
+    if (planes->planeCount >= NUM_2) {
+        int32_t pixelFmt = surfaceBuffer->GetFormat();
+        bool isYuvP010 = (pixelFmt == GRAPHIC_PIXEL_FMT_YCBCR_P010 || pixelFmt == GRAPHIC_PIXEL_FMT_YCRCB_P010);
+        int uvPlaneIndex = (pixelFmt == GRAPHIC_PIXEL_FMT_YCBCR_420_SP ||
+            pixelFmt == GRAPHIC_PIXEL_FMT_YCBCR_P010) ? NUM_1 : NUM_2;
+        yuvInfo.yStride = isYuvP010 ?
+        (planes->planes[NUM_0].columnStride / NUM_2) : (planes->planes[NUM_0].columnStride);
+        yuvInfo.uvStride = isYuvP010 ?
+            (planes->planes[uvPlaneIndex].columnStride / NUM_2) : (planes->planes[uvPlaneIndex].columnStride);
+        yuvInfo.yOffset = isYuvP010 ?
+            (planes->planes[NUM_0].offset / NUM_2) : (planes->planes[NUM_0].offset);
+        yuvInfo.uvOffset = isYuvP010 ?
+            (planes->planes[uvPlaneIndex].offset / NUM_2) : (planes->planes[uvPlaneIndex].offset);
         return true;
-    } else {
-        IMAGE_LOGE("%{public}s, get planesInfo failed, retVal:%{public}d", __func__, retVal);
-        return false;
     }
+    return false;
 }
 
 bool ImageUtils::CopyYuvPixelMapToSurfaceBuffer(PixelMap* pixelmap,

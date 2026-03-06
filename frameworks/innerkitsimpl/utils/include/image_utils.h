@@ -160,10 +160,8 @@ public:
     static ColorManager::ColorSpaceName SbCMColorSpaceType2ColorSpaceName(
         HDI::Display::Graphic::Common::V1_0::CM_ColorSpaceType type);
     static void SetYuvDataInfo(std::unique_ptr<PixelMap> &pixelMap, sptr<OHOS::SurfaceBuffer> &sBuffer);
-    static bool CopyYuvPixelMapToSurfaceBuffer(PixelMap* pixelmap,
-        sptr<SurfaceBuffer> surfaceBuffer);
-    static bool GetYuvInfoFromSurfaceBuffer(YUVDataInfo &yuvInfo,
-        sptr<SurfaceBuffer> surfaceBuffer);
+    static bool CopyYuvPixelMapToSurfaceBuffer(PixelMap* pixelmap, sptr<SurfaceBuffer> surfaceBuffer);
+    static bool GetYuvInfoFromSurfaceBuffer(YUVDataInfo &yuvInfo, sptr<SurfaceBuffer> surfaceBuffer);
 #endif
     static PixelFormat SbFormat2PixelFormat(int32_t sbFormat);
     static uint64_t GetNowTimeMilliSeconds();
