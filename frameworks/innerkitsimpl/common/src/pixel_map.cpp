@@ -3020,7 +3020,7 @@ bool PixelMap::ReadBufferSizeFromParcel(Parcel& parcel, const ImageInfo& imgInfo
         PixelMap::ConstructPixelMapError(error, ERR_IMAGE_PIXELMAP_CREATE_FAILED, "row data size invalid");
         return false;
     }
-    // Skip buffer size check for YUV/RGBA_F16 format: 
+    // Skip buffer size check for YUV/RGBA_F16 format:
     // - YUV will be verified in CheckYuvPixelMapBufferSize()
     // - RGBA_F16 will be verified in CheckF16PixelMapBufferSize()
     if (IsYUV(imgInfo.pixelFormat) || imgInfo.pixelFormat == PixelFormat::RGBA_F16) {
@@ -3215,12 +3215,12 @@ static bool CheckF16PixelMapBufferSize(const ImageInfo& imgInfo, PixelMemInfo& p
         SurfaceBuffer* sb = static_cast<SurfaceBuffer*>(pixelMemInfo.context);
         uint32_t sbSize = sb->GetSize();
         if (memBufSizeInt <= 0 || sbSize == 0) {
-            IMAGE_LOGE("Invalid RGBA_F16 buffer size: memBufSize[%{public}d]/sbSize[%{public}u]", memBufSizeInt, sbSize);
+            IMAGE_LOGE("Invalid F16 buffer size: memBufSize[%{public}d]/sbSize[%{public}u]", memBufSizeInt, sbSize);
             return false;
         }
         uint32_t memBufSize = static_cast<uint32_t>(memBufSizeInt);
         if (memBufSize > sbSize) {
-            IMAGE_LOGE("Invalid RGBA_F16 buffer size: memBufSize[%{public}u] > sbSize[%{public}u]", memBufSize, sbSize);
+            IMAGE_LOGE("Invalid F16 buffer size: memBufSize[%{public}u] > sbSize[%{public}u]", memBufSize, sbSize);
             return false;
         }
     } else {
