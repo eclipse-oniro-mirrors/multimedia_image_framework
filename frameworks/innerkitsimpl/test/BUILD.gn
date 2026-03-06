@@ -38,6 +38,7 @@ ohos_unittest("pixelmaptest") {
   sources = [
     "$image_subsystem/frameworks/innerkitsimpl/test/unittest/pixel_map_test/native_image_test.cpp",
     "$image_subsystem/frameworks/innerkitsimpl/test/unittest/pixel_map_test/pixel_map_astc_test.cpp",
+    "$image_subsystem/frameworks/innerkitsimpl/test/unittest/pixel_map_test/pixel_map_parcel_test.cpp",
     "$image_subsystem/frameworks/innerkitsimpl/test/unittest/pixel_map_test/pixel_map_test.cpp",
     "$image_subsystem/frameworks/innerkitsimpl/test/unittest/pixel_map_test/pixel_yuv_ext_test.cpp",
     "$image_subsystem/frameworks/innerkitsimpl/test/unittest/pixel_map_test/pixelmap_native_test.cpp",
@@ -256,6 +257,30 @@ ohos_unittest("imagepixelmaptest") {
   if (use_clang_android || use_clang_ios) {
     external_deps -= [ "graphic_2d:color_manager" ]
   }
+}
+
+ohos_unittest("imagepixelmapparceltest") {
+  module_out_path = module_output_path
+
+  include_dirs =
+      [ "//foundation/multimedia/image_framework/interfaces/innerkits/include" ]
+
+  sources = [ "./unittest/pixel_map_test/image_pixel_map_parcel_test.cpp" ]
+
+  deps = [
+    "//foundation/multimedia/image_framework/interfaces/innerkits:image_native",
+  ]
+
+  external_deps = [
+    "c_utils:utils",
+    "googletest:gmock_main",
+    "googletest:gtest_main",
+    "hilog:libhilog",
+    "hitrace:hitrace_meter",
+    "ipc:ipc_core",
+
+    #"//foundation/multimedia/image_framework/interfaces/innerkits:image_native",
+  ]
 }
 
 ohos_unittest("imagesourcetest") {
