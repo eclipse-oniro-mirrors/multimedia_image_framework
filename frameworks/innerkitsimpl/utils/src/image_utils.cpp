@@ -1585,8 +1585,15 @@ size_t ImageUtils::GetAstcBytesCount(const ImageInfo& imageInfo)
             return 0;
     }
     if ((blockWidth >= ASTC_4X4_BLOCK) && (blockHeight >= ASTC_4X4_BLOCK)) {
-        astcBytesCount = ((imageInfo.size.width + blockWidth - 1) / blockWidth) *
-            ((imageInfo.size.height + blockHeight - 1) / blockHeight) * ASTC_BLOCK_SIZE + ASTC_HEADER_SIZE;
+        uint64_t blocksX = (static_cast<uint64_t>(imageInfo.size.width) + blockWidth - 1) / blockWidth;
+        uint64_t blocksY = (static_cast<uint64_t>(imageInfo.size.height) + blockHeight - 1) / blockHeight;
+        uint64_t totalSize = blocksX * blocksY * ASTC_BLOCK_SIZE + ASTC_HEADER_SIZE;
+        if (totalSize > INT32_MAX) {
+            IMAGE_LOGE("ImageUtils GetAstcBytesCount overflow, width:%{public}d, height:%{public}d",
+                imageInfo.size.width, imageInfo.size.height);
+            return 0;
+        }
+        astcBytesCount = static_cast<size_t>(totalSize);
     }
     return astcBytesCount;
 }

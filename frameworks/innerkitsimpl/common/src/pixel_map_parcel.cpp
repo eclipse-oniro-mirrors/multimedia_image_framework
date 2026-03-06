@@ -55,6 +55,7 @@ namespace Media {
 using namespace std;
 
 constexpr int32_t PIXEL_MAP_INFO_MAX_LENGTH = 128;
+constexpr int32_t ASTC_MAX_DIMENSION = 8192;
 
 void PixelMapParcel::ReleaseMemory(AllocatorType allocType, void *addr, void *context, uint32_t size)
 {
@@ -705,6 +706,12 @@ static bool ReadAstcRealSize(Parcel &parcel, PixelMap *pixelMap)
         Size realSize;
         realSize.width = parcel.ReadInt32();
         realSize.height = parcel.ReadInt32();
+        if (realSize.width <= 0 || realSize.width > ASTC_MAX_DIMENSION ||
+            realSize.height <= 0 || realSize.height > ASTC_MAX_DIMENSION) {
+            IMAGE_LOGE("ReadAstcRealSize invalid size: width=%{public}d, height=%{public}d",
+                realSize.width, realSize.height);
+            return false;
+        }
         pixelMap->SetAstcRealSize(realSize);
     }
     return true;

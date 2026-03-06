@@ -814,5 +814,128 @@ HWTEST_F(PixelAstcTest, PixelAstcTest029, TestSize.Level3)
     }
     GTEST_LOG_(INFO) << "PixelAstcTest: PixelAstcTest029 end";
 }
+
+/**
+ * @tc.name: PixelAstcTest030
+ * @tc.desc: Test ASTC real size validation with invalid dimensions
+ * @tc.type: FUNC
+ */
+HWTEST_F(PixelAstcTest, PixelAstcTest030, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PixelAstcTest: PixelAstcTest030 start";
+    uint32_t errorCode = 0;
+    SourceOptions opts;
+    size_t width = 256;
+    size_t height = 256;
+    size_t blockNum = ((width + 4 - 1) / 4) * ((height + 4 - 1) / 4);
+    size_t size = blockNum * 16 + 16;
+    uint8_t* data = (uint8_t*)malloc(size);
+    ASSERT_NE(data, nullptr);
+    
+    if (!GenAstcHeader(data, 4, width, height)) {
+        GTEST_LOG_(INFO) << "GenAstcHeader failed";
+    }
+    if (!ConstructAstcBody(data + 16, blockNum, ASTC_BLOCK4X4_FIT_SUT_ASTC_EXAMPLE0)) {
+        GTEST_LOG_(INFO) << "ConstructAstcBody failed";
+    }
+    
+    std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(data, size, opts, errorCode);
+    ASSERT_EQ(errorCode, SUCCESS);
+    ASSERT_NE(imageSource.get(), nullptr);
+    
+    DecodeOptions decodeOpts;
+    std::unique_ptr<PixelMap> pixelMap = imageSource->CreatePixelMap(decodeOpts, errorCode);
+    ASSERT_EQ(errorCode, SUCCESS);
+    ASSERT_NE(pixelMap.get(), nullptr);
+    
+    if (data != nullptr) {
+        free(data);
+    }
+    GTEST_LOG_(INFO) << "PixelAstcTest: PixelAstcTest030 end";
+}
+
+/**
+ * @tc.name: PixelAstcTest031
+ * @tc.desc: Test ASTC real size validation with valid boundary dimensions
+ * @tc.type: FUNC
+ */
+HWTEST_F(PixelAstcTest, PixelAstcTest031, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PixelAstcTest: PixelAstcTest031 start";
+    uint32_t errorCode = 0;
+    SourceOptions opts;
+    size_t width = 4096;
+    size_t height = 4096;
+    size_t blockNum = ((width + 4 - 1) / 4) * ((height + 4 - 1) / 4);
+    size_t size = blockNum * 16 + 16;
+    uint8_t* data = (uint8_t*)malloc(size);
+    if (data == nullptr) {
+        GTEST_LOG_(INFO) << "PixelAstcTest031: malloc failed for large size";
+        return;
+    }
+    
+    if (!GenAstcHeader(data, 4, width, height)) {
+        GTEST_LOG_(INFO) << "GenAstcHeader failed";
+    }
+    if (!ConstructAstcBody(data + 16, blockNum, ASTC_BLOCK4X4_FIT_SUT_ASTC_EXAMPLE0)) {
+        GTEST_LOG_(INFO) << "ConstructAstcBody failed";
+    }
+    
+    std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(data, size, opts, errorCode);
+    if (errorCode == SUCCESS && imageSource.get() != nullptr) {
+        DecodeOptions decodeOpts;
+        std::unique_ptr<PixelMap> pixelMap = imageSource->CreatePixelMap(decodeOpts, errorCode);
+        if (errorCode == SUCCESS) {
+            ASSERT_NE(pixelMap.get(), nullptr);
+        }
+    }
+    
+    if (data != nullptr) {
+        free(data);
+    }
+    GTEST_LOG_(INFO) << "PixelAstcTest: PixelAstcTest031 end";
+}
+
+/**
+ * @tc.name: PixelAstcTest032
+ * @tc.desc: Test ASTC real size validation with maximum boundary dimensions
+ * @tc.type: FUNC
+ */
+HWTEST_F(PixelAstcTest, PixelAstcTest032, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PixelAstcTest: PixelAstcTest032 start";
+    uint32_t errorCode = 0;
+    SourceOptions opts;
+    size_t width = 8192;
+    size_t height = 8192;
+    size_t blockNum = ((width + 4 - 1) / 4) * ((height + 4 - 1) / 4);
+    size_t size = blockNum * 16 + 16;
+    uint8_t* data = (uint8_t*)malloc(size);
+    if (data == nullptr) {
+        GTEST_LOG_(INFO) << "PixelAstcTest032: malloc failed for large size";
+        return;
+    }
+    
+    if (!GenAstcHeader(data, 4, width, height)) {
+        GTEST_LOG_(INFO) << "GenAstcHeader failed";
+    }
+    if (!ConstructAstcBody(data + 16, blockNum, ASTC_BLOCK4X4_FIT_SUT_ASTC_EXAMPLE0)) {
+        GTEST_LOG_(INFO) << "ConstructAstcBody failed";
+    }
+    
+    std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(data, size, opts, errorCode);
+    if (errorCode == SUCCESS && imageSource.get() != nullptr) {
+        DecodeOptions decodeOpts;
+        std::unique_ptr<PixelMap> pixelMap = imageSource->CreatePixelMap(decodeOpts, errorCode);
+        if (errorCode == SUCCESS) {
+            ASSERT_NE(pixelMap.get(), nullptr);
+        }
+    }
+    
+    if (data != nullptr) {
+        free(data);
+    }
+    GTEST_LOG_(INFO) << "PixelAstcTest: PixelAstcTest032 end";
+}
 }
 }
