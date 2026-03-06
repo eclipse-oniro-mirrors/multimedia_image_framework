@@ -3027,8 +3027,10 @@ bool PixelMap::ReadBufferSizeFromParcel(Parcel& parcel, const ImageInfo& imgInfo
         PixelMap::ConstructPixelMapError(error, ERR_IMAGE_PIXELMAP_CREATE_FAILED, "row data size invalid");
         return false;
     }
-    // Skip buffer size check for YUV format, will be verified in CheckYuvPixelMapBufferSize() function.
-    if (IsYUV(imgInfo.pixelFormat)) {
+    // Skip buffer size check for YUV/RGBA_F16 format:
+    // - YUV will be verified in CheckYuvPixelMapBufferSize()
+    // - RGBA_F16 will be verified in CheckF16PixelMapBufferSize()
+    if (IsYUV(imgInfo.pixelFormat) || imgInfo.pixelFormat == PixelFormat::RGBA_F16) {
         return true;
     }
     uint64_t expectedBufferSize = static_cast<uint64_t>(rowDataSize) * static_cast<uint64_t>(imgInfo.size.height);
@@ -3040,18 +3042,7 @@ bool PixelMap::ReadBufferSizeFromParcel(Parcel& parcel, const ImageInfo& imgInfo
         ImageInfo astcImgInfo = {realSize, imgInfo.pixelFormat};
         expectedBufferSize = ImageUtils::GetAstcBytesCount(astcImgInfo);
     }
-    bool isBufferSizeValid = true;
-    if (imgInfo.pixelFormat == PixelFormat::RGBA_F16) {
-        // Calculate expected buffer size with aligned width (even alignment)
-        uint64_t alignedWidth = ((static_cast<uint64_t>(imgInfo.size.width) + NUM_1) / NUM_2) * NUM_2;
-        uint64_t expectBufferSizeAlign =
-            static_cast<uint64_t>(imgInfo.size.height) * alignedWidth * RGBA_F16_BYTES;
-        isBufferSizeValid = ImageUtils::CheckBufferSizeIsValid(bufferSize, expectedBufferSize, allocatorType) ||
-                            ImageUtils::CheckBufferSizeIsValid(bufferSize, expectBufferSizeAlign, allocatorType);
-    } else {
-        isBufferSizeValid = ImageUtils::CheckBufferSizeIsValid(bufferSize, expectedBufferSize, allocatorType);
-    }
-    if (!isBufferSizeValid) {
+    if (!ImageUtils::CheckBufferSizeIsValid(memInfo.bufferSize, expectedBufferSize, memInfo.allocatorType)) {
         PixelMap::ConstructPixelMapError(error, ERR_IMAGE_PIXELMAP_CREATE_FAILED, "bufferSize invalid");
         IMAGE_LOGE("[PixelMap] Invalid bufferSize: %{public}d, format: %{public}d", bufferSize, imgInfo.pixelFormat);
         return false;
@@ -3219,6 +3210,43 @@ static bool CheckYuvPixelMapBufferSize(const ImageInfo& imgInfo, PixelMemInfo& p
 #endif
 }
 
+static bool CheckF16PixelMapBufferSize(const ImageInfo& imgInfo, PixelMemInfo& pixelMemInfo, PixelMap *pixelMap)
+{
+#ifndef CROSS_PLATFORM
+    bool cond = imgInfo.pixelFormat != PixelFormat::RGBA_F16;
+    CHECK_ERROR_RETURN_RET(cond, true); // only check RGBA_F16 format
+    cond = pixelMap == nullptr;
+    CHECK_ERROR_RETURN_RET_LOG(cond, false, "pixelMap is nullptr");
+    int32_t memBufSizeInt = pixelMemInfo.bufferSize;
+    if (pixelMemInfo.allocatorType == AllocatorType::DMA_ALLOC && pixelMemInfo.context != nullptr) {
+        SurfaceBuffer* sb = static_cast<SurfaceBuffer*>(pixelMemInfo.context);
+        uint32_t sbSize = sb->GetSize();
+        if (memBufSizeInt <= 0 || sbSize == 0) {
+            IMAGE_LOGE("Invalid F16 buffer size: memBufSize[%{public}d]/sbSize[%{public}u]", memBufSizeInt, sbSize);
+            return false;
+        }
+        uint32_t memBufSize = static_cast<uint32_t>(memBufSizeInt);
+        if (memBufSize > sbSize) {
+            IMAGE_LOGE("Invalid F16 buffer size: memBufSize[%{public}u] > sbSize[%{public}u]", memBufSize, sbSize);
+            return false;
+        }
+    } else {
+        uint64_t expectedBufferSizeOrg = static_cast<uint64_t>(ImageUtils::GetByteCount(imgInfo));
+        uint64_t alignedWidth = ((static_cast<uint64_t>(imgInfo.size.width) + NUM_1) / NUM_2) * NUM_2;
+        uint64_t expectedBufferSizeAlign = static_cast<uint64_t>(imgInfo.size.height) * alignedWidth * RGBA_F16_BYTES;
+        if (!ImageUtils::CheckBufferSizeIsValid(memBufSizeInt, expectedBufferSizeOrg, pixelMemInfo.allocatorType) &&
+            !ImageUtils::CheckBufferSizeIsValid(memBufSizeInt, expectedBufferSizeAlign, pixelMemInfo.allocatorType)) {
+            IMAGE_LOGE("Invalid buffer size: memBufSize[%{public}d] mismatch expect[%{public}llu]/Align[%{public}llu]",
+                memBufSizeInt, expectedBufferSizeOrg, expectedBufferSizeAlign);
+            return false;
+        }
+    }
+    return true;
+#else
+    return true;
+#endif
+}
+
 PixelMap *PixelMap::UnmarshallingWithIsDisplay(Parcel &parcel,
     std::function<int(Parcel &parcel, std::function<int(Parcel&)> readFdDefaultFunc)> readSafeFdFunc, bool isDisplay)
 {
@@ -3288,8 +3316,9 @@ PixelMap *PixelMap::FinishUnmarshalling(PixelMap *pixelMap, Parcel &parcel,
         delete pixelMap;
         return nullptr;
     }
-    if (!CheckYuvPixelMapBufferSize(imgInfo, pixelMemInfo, pixelMap)) {
-        IMAGE_LOGE("Check PixelMap BufferSize fail");
+    if (!CheckYuvPixelMapBufferSize(imgInfo, pixelMemInfo, pixelMap) ||
+        !CheckF16PixelMapBufferSize(imgInfo, pixelMemInfo, pixelMap)) {
+        IMAGE_LOGE("Unmarshalling: Check YUV/F16 PixelMap BufferSize fail");
         delete pixelMap;
         return nullptr;
     }
