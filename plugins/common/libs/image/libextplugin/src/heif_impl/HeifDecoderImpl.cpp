@@ -533,7 +533,7 @@ GSError HeifDecoderImpl::HwSetColorSpaceData(sptr<SurfaceBuffer>& buffer, GridIn
     if (ret != GSERROR_OK) {
         return ret;
     }
-    IMAGE_LOGI("ColorSpace, ColorPrimaries:%{public}d, TransFunc:%{public}d, Matrix:%{public}d, Range:%{public}d",
+    IMAGE_LOGD("ColorSpace, ColorPrimaries:%{public}d, TransFunc:%{public}d, Matrix:%{public}d, Range:%{public}d",
         colorSpaceInfo.primaries, colorSpaceInfo.transfunc,
         colorSpaceInfo.matrix, colorSpaceInfo.range);
     return buffer->SetMetadata(ATTRKEY_COLORSPACE_INFO, colorSpaceInfoVec);
@@ -559,7 +559,7 @@ bool HeifDecoderImpl::decode(HeifFrameInfo *frameInfo)
         return SwDecode();
     }
     sptr<SurfaceBuffer> hwBuffer;
-    IMAGE_LOGD("decode sapmpleSize:%{public}d", sampleSize_);
+    IMAGE_LOGD("heif hardware decode sapmpleSize:%{public}d", sampleSize_);
     bool decodeSuccess = HwDecodeImage(primaryImage_, gridInfo_, &hwBuffer, true);
     if (hwBuffer && decodeSuccess) {
         ImageUtils::DumpDataIfDumpEnabled(reinterpret_cast<const char *>(hwBuffer->GetVirAddr()),
