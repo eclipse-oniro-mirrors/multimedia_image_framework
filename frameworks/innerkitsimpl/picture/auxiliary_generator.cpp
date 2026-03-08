@@ -42,6 +42,7 @@ static constexpr int32_t DEPTH_SCALE_DENOMINATOR = 4;
 static constexpr int32_t LINEAR_SCALE_DENOMINATOR = 4;
 static constexpr uint32_t NV12_PLANE_UV_INDEX = 1;
 static constexpr uint32_t NV21_PLANE_UV_INDEX = 2;
+static const uint8_t NUM_1 = 1;
 
 static inline bool IsSizeVailed(const Size &size)
 {
@@ -206,6 +207,30 @@ static void TrySetYUVDataInfo(std::unique_ptr<PixelMap> &pixelMap)
     pixelMap->SetImageYUVInfo(info);
 }
 
+static bool ResizeAuxPixelMap(std::shared_ptr<PixelMap>& pixelMap, DecodeContext &context)
+{
+    if (context.outInfo.size.height != pixelMap->GetHeight() ||
+        context.outInfo.size.width != pixelMap->GetWidth()) {
+        if (ImageSource::IsYuvFormat(pixelMap->GetPixelFormat())) {
+#ifdef EXT_PIXEL
+            auto pixelYuv = reinterpret_cast<PixelYuvExt *>(pixelMap.get());
+            bool cond = !pixelYuv->resize(context.outInfo.size.width, context.outInfo.size.height);
+            CHECK_ERROR_RETURN_RET(cond, false);
+#else
+            auto pixelYuv = reinterpret_cast<PixelYuv *>(pixelMap.get());
+            bool cond = !pixelYuv->resize(context.outInfo.size.width, context.outInfo.size.height);
+            CHECK_ERROR_RETURN_RET(cond, false);
+#endif
+        } else {
+            float xScale = static_cast<float>(context.outInfo.size.width) / pixelMap->GetWidth();
+            float yScale = static_cast<float>(context.outInfo.size.height) / pixelMap->GetHeight();
+            bool cond = !pixelMap->resize(xScale, yScale);
+            CHECK_ERROR_RETURN_RET(cond, false);
+        }
+    }
+    return true;
+}
+
 std::unique_ptr<PixelMap> AuxiliaryGenerator::CreatePixelMapByContext(DecodeContext &context,
     std::unique_ptr<AbsImageDecoder> &decoder, const std::string &encodedFormat, uint32_t &errorCode)
 {
@@ -224,7 +249,7 @@ std::unique_ptr<PixelMap> AuxiliaryGenerator::CreatePixelMapByContext(DecodeCont
         return nullptr;
     }
 
-    ImageInfo imageinfo = AuxiliaryGenerator::MakeImageInfo(context.outInfo.size, context.info.pixelFormat,
+    ImageInfo imageinfo = AuxiliaryGenerator::MakeImageInfo(context.info.size, context.info.pixelFormat,
         context.info.alphaType, context.colorSpace, encodedFormat);
     pixelMap->SetImageInfo(imageinfo, true);
 
@@ -232,7 +257,10 @@ std::unique_ptr<PixelMap> AuxiliaryGenerator::CreatePixelMapByContext(DecodeCont
     ImageSource::ContextToAddrInfos(context, addrInfos);
     pixelMap->SetPixelsAddr(addrInfos.addr, addrInfos.context, addrInfos.size, addrInfos.type, addrInfos.func);
     TrySetYUVDataInfo(pixelMap);
-
+    if (!ResizeAuxPixelMap(pixelMap, context)) {
+        IMAGE_LOGE("[ImageSource]Resize auxiliary pixelmap fail.");
+        return nullptr;
+    }
 #ifdef IMAGE_COLORSPACE_FLAG
     if (context.hdrType > ImageHdrType::SDR) {
         pixelMap->InnerSetColorSpace(ColorManager::ColorSpace(context.grColorSpaceName));
@@ -342,31 +370,45 @@ static void SetUncodedAuxilaryPictureInfo(std::unique_ptr<AuxiliaryPicture> &aux
     auxPicture->SetAuxiliaryPictureInfo(auxInfo);
 }
 
-static std::unique_ptr<AuxiliaryPicture> GenerateAuxiliaryPicture(const MainPictureInfo &mainInfo,
-    AuxiliaryPictureType type, const std::string &format,
-    std::unique_ptr<AbsImageDecoder> &extDecoder, uint32_t &errorCode)
+void GetAuxiliaryPictureSize(const AuxiliaryPictureDecodeInfo& auxiliaryPictureDecodeInfo,
+    DecodeContext& context)
 {
-    IMAGE_LOGI("Generate by decoder, type: %{public}d, format: %{public}s", static_cast<int>(type), format.c_str());
+    if (fabs(auxiliaryPictureDecodeInfo.downSamplingScaleFactor.widthScaleFactor - NUM_1) > EPSILON) {
+        context.outInfo.size.width = context.outInfo.size.width *
+            auxiliaryPictureDecodeInfo.downSamplingScaleFactor.widthScaleFactor;
+    }
+    if (fabs(auxiliaryPictureDecodeInfo.downSamplingScaleFactor.heightScaleFactor - NUM_1) > EPSILON) {
+        context.outInfo.size.height = context.outInfo.size.height *
+            auxiliaryPictureDecodeInfo.downSamplingScaleFactor.heightScaleFactor;
+    }    
+}
+static std::unique_ptr<AuxiliaryPicture> GenerateAuxiliaryPicture(const MainPictureInfo &mainInfo, uint32_t &errorCode,
+    std::unique_ptr<AbsImageDecoder> &extDecoder, const AuxiliaryPictureDecodeInfo& auxiliaryPictureDecodeInfo)
+{
+    IMAGE_LOGI("Generate by decoder, type: %{public}d, format: %{public}s",
+        static_cast<int>(auxiliaryPictureDecodeInfo,type), format.c_str());
     DecodeContext context;
     context.allocatorType = AllocatorType::DMA_ALLOC;
-    errorCode = SetAuxiliaryDecodeOption(extDecoder, mainInfo.imageInfo.pixelFormat, context.info, type);
+    errorCode = SetAuxiliaryDecodeOption(extDecoder, mainInfo.imageInfo.pixelFormat, context.info,
+        auxiliaryPictureDecodeInfo.type);
     if (errorCode != SUCCESS) {
         IMAGE_LOGE("Set auxiliary decode option failed! errorCode: %{public}u", errorCode);
         return nullptr;
     }
-    if (format == IMAGE_HEIF_FORMAT) {
+    if (auxiliaryPictureDecodeInfo.imageType == IMAGE_HEIF_FORMAT) {
 #ifdef HEIF_HW_DECODE_ENABLE
-        if (type == AuxiliaryPictureType::LINEAR_MAP || type == AuxiliaryPictureType::DEPTH_MAP) {
+        if (auxiliaryPictureDecodeInfo.type == AuxiliaryPictureType::LINEAR_MAP ||
+            auxiliaryPictureDecodeInfo.type == AuxiliaryPictureType::DEPTH_MAP) {
             context.pixelFormat = PixelFormat::RGBA_F16;
             context.info.pixelFormat = PixelFormat::RGBA_F16;
         }
-        if (!extDecoder->DecodeHeifAuxiliaryMap(context, type)) {
+        if (!extDecoder->DecodeHeifAuxiliaryMap(context, auxiliaryPictureDecodeInfo.type)) {
             errorCode = ERR_IMAGE_DECODE_FAILED;
         }
 #else
         errorCode = ERR_IMAGE_HW_DECODE_UNSUPPORT;
 #endif
-    } else if (format == IMAGE_JPEG_FORMAT) {
+    } else if (auxiliaryPictureDecodeInfo.imageType == IMAGE_JPEG_FORMAT) {
         errorCode = extDecoder->Decode(FIRST_FRAME, context);
         context.hdrType = mainInfo.hdrType;
     } else {
@@ -377,35 +419,37 @@ static std::unique_ptr<AuxiliaryPicture> GenerateAuxiliaryPicture(const MainPict
         FreeContextBuffer(context.freeFunc, context.allocatorType, context.pixelsBuffer);
         return nullptr;
     }
-
-    std::string encodedFormat = ImageUtils::IsAuxiliaryPictureEncoded(type) ? format : "";
+    GetAuxiliaryPictureSize(auxiliaryPictureDecodeInfo, context);
+    std::string encodedFormat = ImageUtils::IsAuxiliaryPictureEncoded(auxiliaryPictureDecodeInfo.type) ?
+        auxiliaryPictureDecodeInfo.imageType : "";
     std::shared_ptr<PixelMap> pixelMap = AuxiliaryGenerator::CreatePixelMapByContext(
         context, extDecoder, encodedFormat, errorCode);
     bool cond = pixelMap == nullptr || errorCode != SUCCESS;
     CHECK_ERROR_RETURN_RET_LOG(cond, nullptr, "%{public}s CreatePixelMapByContext failed!", __func__);
-    auto auxPicture = AuxiliaryPicture::Create(pixelMap, type, context.outInfo.size);
-    auxPicture->SetAuxiliaryPictureInfo(
-        MakeAuxiliaryPictureInfo(type, context.outInfo.size, pixelMap->GetRowStride(),
-                                 context.pixelFormat, context.outInfo.colorSpace));
+    context.pixelFormat = pixelMap->GetPixelFormat();
+    auto auxPicture = AuxiliaryPicture::Create(pixelMap, auxiliaryPictureDecodeInfo.type, context.outInfo.size);
+    auxPicture->SetAuxiliaryPictureInfo(MakeAuxiliaryPictureInfo(auxiliaryPictureDecodeInfo.type,
+        context.outInfo.size, pixelMap->GetRowStride(), context.pixelFormat, context.outInfo.colorSpace));
     return auxPicture;
 }
 
 std::shared_ptr<AuxiliaryPicture> AuxiliaryGenerator::GenerateHeifAuxiliaryPicture(const MainPictureInfo &mainInfo,
-    AuxiliaryPictureType type, std::unique_ptr<AbsImageDecoder> &extDecoder, uint32_t &errorCode)
+    std::unique_ptr<AbsImageDecoder> &extDecoder, uint32_t &errorCode,
+    const AuxiliaryPictureDecodeInfo& auxiliaryPictureDecodeInfo)
 {
-    IMAGE_LOGI("Generate heif auxiliary picture, type: %{public}d", static_cast<int>(type));
-    if (!ImageUtils::IsAuxiliaryPictureTypeSupported(type) || extDecoder == nullptr) {
+    IMAGE_LOGI("Generate heif auxiliary picture, type: %{public}d", static_cast<int>(auxiliaryPictureDecodeInfo.type));
+    if (!ImageUtils::IsAuxiliaryPictureTypeSupported(auxiliaryPictureDecodeInfo.type) || extDecoder == nullptr) {
         errorCode = ERR_IMAGE_INVALID_PARAMETER;
         return nullptr;
     }
 
-    auto auxPicture = GenerateAuxiliaryPicture(mainInfo, type, IMAGE_HEIF_FORMAT, extDecoder, errorCode);
+    auto auxPicture = GenerateAuxiliaryPicture(mainInfo, errorCode, extDecoder, auxiliaryPictureDecodeInfo);
     bool cond = (errorCode != SUCCESS);
     CHECK_ERROR_RETURN_RET_LOG(cond, nullptr,
         "Generate heif auxiliary picture failed! errorCode: %{public}u", errorCode);
-    if (type == AuxiliaryPictureType::GAINMAP) {
+    if (auxiliaryPictureDecodeInfo.type == AuxiliaryPictureType::GAINMAP) {
         errorCode = DecodeHdrMetadata(mainInfo.hdrType, extDecoder, auxPicture);
-    } else if (type == AuxiliaryPictureType::FRAGMENT_MAP) {
+    } else if (auxiliaryPictureDecodeInfo.type == AuxiliaryPictureType::FRAGMENT_MAP) {
         errorCode = DecodeHeifFragmentMetadata(extDecoder, auxPicture);
     }
     cond = (errorCode != SUCCESS);
@@ -413,26 +457,27 @@ std::shared_ptr<AuxiliaryPicture> AuxiliaryGenerator::GenerateHeifAuxiliaryPictu
     return std::move(auxPicture);
 }
 
-std::shared_ptr<AuxiliaryPicture> AuxiliaryGenerator::GenerateJpegAuxiliaryPicture(
-    const MainPictureInfo &mainInfo, AuxiliaryPictureType type, std::unique_ptr<InputDataStream> &auxStream,
-    std::unique_ptr<AbsImageDecoder> &extDecoder, uint32_t &errorCode)
+std::shared_ptr<AuxiliaryPicture> AuxiliaryGenerator::GenerateJpegAuxiliaryPicture(const MainPictureInfo &mainInfo,
+    std::unique_ptr<InputDataStream> &auxStream, std::unique_ptr<AbsImageDecoder> &extDecoder, uint32_t &errorCode,
+    const AuxiliaryPictureDecodeInfo& auxiliaryPictureDecodeInfo)
 {
-    ImageTrace trace("GenerateJpegAuxiliaryPicture Type:(%d)", static_cast<int>(type));
-    IMAGE_LOGI("Generate jpeg auxiliary picture, type: %{public}d", static_cast<int>(type));
-    if (!ImageUtils::IsAuxiliaryPictureTypeSupported(type) || auxStream == nullptr || extDecoder == nullptr) {
+    ImageTrace trace("GenerateJpegAuxiliaryPicture Type:(%d)", static_cast<int>(auxiliaryPictureDecodeInfo.type));
+    IMAGE_LOGI("Generate jpeg auxiliary picture, type: %{public}d", static_cast<int>(auxiliaryPictureDecodeInfo.type));
+    if (!ImageUtils::IsAuxiliaryPictureTypeSupported(auxiliaryPictureDecodeInfo.type) || auxStream == nullptr ||
+        extDecoder == nullptr) {
         errorCode = ERR_IMAGE_INVALID_PARAMETER;
         return nullptr;
     }
 
-    if (ImageUtils::IsAuxiliaryPictureEncoded(type)) {
-        auto auxPicture = GenerateAuxiliaryPicture(mainInfo, type, IMAGE_JPEG_FORMAT, extDecoder, errorCode);
+    if (ImageUtils::IsAuxiliaryPictureEncoded(auxiliaryPictureDecodeInfo.type)) {
+        auto auxPicture = GenerateAuxiliaryPicture(mainInfo, errorCode, extDecoder, auxiliaryPictureDecodeInfo);
         if (errorCode != SUCCESS) {
             IMAGE_LOGE("Generate jpeg auxiliary picture failed! errorCode: %{public}u", errorCode);
             return nullptr;
         }
-        if (type == AuxiliaryPictureType::GAINMAP) {
+        if (auxiliaryPictureDecodeInfo.type == AuxiliaryPictureType::GAINMAP) {
             errorCode = DecodeHdrMetadata(mainInfo.hdrType, extDecoder, auxPicture);
-        } else if (type == AuxiliaryPictureType::FRAGMENT_MAP) {
+        } else if (auxiliaryPictureDecodeInfo.type == AuxiliaryPictureType::FRAGMENT_MAP) {
             errorCode = DecodeJpegFragmentMetadata(auxStream, auxPicture);
         }
         if (errorCode != SUCCESS) {
@@ -442,7 +487,7 @@ std::shared_ptr<AuxiliaryPicture> AuxiliaryGenerator::GenerateJpegAuxiliaryPictu
         return auxPicture;
     }
 
-    int32_t denominator = GetAuxiliaryPictureDenominator(type);
+    int32_t denominator = GetAuxiliaryPictureDenominator(auxiliaryPictureDecodeInfo.type);
     denominator = (denominator == 0) ? DEFAULT_SCALE_DENOMINATOR : denominator;
     Size size = {mainInfo.imageInfo.size.width / denominator, mainInfo.imageInfo.size.height / denominator};
     sptr<SurfaceBuffer> surfaceBuffer = AllocSurfaceBuffer(size, GRAPHIC_PIXEL_FMT_RGBA16_FLOAT, errorCode);
@@ -452,7 +497,7 @@ std::shared_ptr<AuxiliaryPicture> AuxiliaryGenerator::GenerateJpegAuxiliaryPictu
     cond = (errorCode != SUCCESS);
     CHECK_ERROR_RETURN_RET_LOG(cond, nullptr,
         "Convert stream to surface buffer failed! errorCode: %{public}u", errorCode);
-    auto auxPicture = AuxiliaryPicture::Create(surfaceBuffer, type, size);
+    auto auxPicture = AuxiliaryPicture::Create(surfaceBuffer, auxiliaryPictureDecodeInfo.type, size);
     SetUncodedAuxilaryPictureInfo(auxPicture);
     return auxPicture;
 }

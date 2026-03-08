@@ -537,6 +537,13 @@ bool ImageUtils::IsValidAuxiliaryInfo(const std::shared_ptr<PixelMap> &pixelMap,
     CHECK_ERROR_RETURN_RET_LOG(cond, false, "%{public}s rowSize: %{public}d, height: %{public}d may overflowed",
                                __func__, rowSize, info.size.height);
     uint32_t infoSize = static_cast<uint32_t>(rowSize * info.size.height);
+    if (info.pixelFormat == PixelFormat::NV21 || info.pixelFormat == PixelFormat::NV12) {
+        ImageInfo imageInfo;
+        imageInfo.size = info.size;
+        imageInfo.pixelFormat = info.pixelFormat;
+        int32_t byteCount = ImageUtils::GetByteCount(imageInfo);
+        infoSize = (byteCount > 0 ) ? static_cast<uint32_t>(byteCount) : infoSize;
+    }
     uint32_t pixelsSize = pixelMap->GetCapacity();
     cond = infoSize > pixelsSize;
     CHECK_ERROR_RETURN_RET_LOG(cond, false, "%{public}s invalid infoSize: %{public}u, pixelsSize: %{public}u",

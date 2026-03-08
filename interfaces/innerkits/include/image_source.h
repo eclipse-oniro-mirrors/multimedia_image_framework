@@ -454,9 +454,9 @@ private:
     void SetXmageMetadataToGainmap(sptr<SurfaceBuffer>& gainmapSptr);
     void SetHdrMetadataForPicture(std::unique_ptr<Picture> &picture);
     void DecodeHeifAuxiliaryPictures(const std::set<AuxiliaryPictureType> &auxTypes, std::unique_ptr<Picture> &picture,
-                                     uint32_t &errorCode);
+        uint32_t &errorCode, const DownSamplingScaleFactor& downSamplingScaleFactor);
     void DecodeJpegAuxiliaryPicture(std::set<AuxiliaryPictureType> &auxTypes, std::unique_ptr<Picture> &picture,
-                                    uint32_t &errorCode);
+        uint32_t &errorCode, const DownSamplingScaleFactor& downSamplingScaleFactor);
     bool CheckJpegSourceStream(StreamInfo &streamInfo);
     uint32_t CreatePictureAtIndexPreCheck(uint32_t index, const ImageInfo &info);
     uint32_t SetGifMetadataForPicture(std::unique_ptr<Picture> &picture, uint32_t index);

@@ -5034,6 +5034,24 @@ static void CreatePictureComplete(napi_env env, napi_status status, void *data)
     ImageSourceCallbackRoutine(env, context, result);
 }
 
+static bool ParsePixelFormatForPicture(napi_env env, napi_value root, const char* name,
+    DecodingOptionsForPicture* opts)
+{
+    uint32_t tmpNumber = 0;
+    if (!GET_UINT32_BY_NAME(root, name, tmpNumber)) {
+        IMAGE_LOGD("no %{public}s", name);
+        return false;
+    }
+    if (!IsSupportPixelFormat(tmpNumber)) {
+        IMAGE_LOGD("Invalid %{public}s %{public}d", name, tmpNumber);
+        return false;
+    }
+
+    opts->desiredPixelFormat = ParsePixelFormat(tmpNumber);
+
+    return true;
+}
+
 static bool ParseDecodingOptionsForPicture(napi_env env, napi_value root, DecodingOptionsForPicture* opts)
 {
     napi_value tmpValue = nullptr;
@@ -5068,6 +5086,19 @@ static bool ParseDecodingOptionsForPicture(napi_env env, napi_value root, Decodi
             return false;
         }
     }
+
+    if (!GET_NODE_BY_NAME(root, "desiredSizeForMainPixelMap", tmpValue)) {
+        IMAGE_LOGD("no desiredSizeForMainPixelMap");
+    } else {
+        if (!ParseSize(env, tmpValue, &(opts->desiredSizeForMainPixelMap))) {
+            IMAGE_LOGD("ParseSize error");
+        }
+    }
+
+    if (!ParsePixelFormatForPicture(env, root, "desiredPixelFormat", opts)) {
+        return false;
+    }
+    
     return true;
 }
 
