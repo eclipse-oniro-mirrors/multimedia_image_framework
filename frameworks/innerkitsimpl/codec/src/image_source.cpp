@@ -5555,7 +5555,8 @@ bool ApplyDecodingOptionsForPicture(DecodeOptions& dopts, const DecodingOptionsF
                     opts.desiredPixelFormat);
                 bool cond = rowSize <= 0 || opts.desiredSizeForMainPixelMap.height <= 0 ||
                     rowSize > std::numeric_limits<int32_t>::max() / opts.desiredSizeForMainPixelMap.height;
-                CHECK_ERROR_RETURN_RET_LOG(cond, false, "%{public}s rowSize: %{public}d, height: %{public}d may overflowed",
+                CHECK_ERROR_RETURN_RET_LOG(cond,
+                    false, "%{public}s rowSize: %{public}d, height: %{public}d may overflowed",
                     __func__, rowSize, opts.desiredSizeForMainPixelMap.height);
                 uint32_t pictureSize = static_cast<uint32_t>(rowSize * opts.desiredSizeForMainPixelMap.height);
 
