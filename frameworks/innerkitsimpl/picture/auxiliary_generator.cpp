@@ -207,7 +207,7 @@ static void TrySetYUVDataInfo(std::unique_ptr<PixelMap> &pixelMap)
     pixelMap->SetImageYUVInfo(info);
 }
 
-static bool ResizeAuxPixelMap(std::shared_ptr<PixelMap>& pixelMap, DecodeContext &context)
+static bool ResizeAuxPixelMap(std::unique_ptr<PixelMap>& pixelMap, DecodeContext &context)
 {
     if (context.outInfo.size.height != pixelMap->GetHeight() ||
         context.outInfo.size.width != pixelMap->GetWidth()) {
@@ -386,7 +386,7 @@ static std::unique_ptr<AuxiliaryPicture> GenerateAuxiliaryPicture(const MainPict
     std::unique_ptr<AbsImageDecoder> &extDecoder, const AuxiliaryPictureDecodeInfo& auxiliaryPictureDecodeInfo)
 {
     IMAGE_LOGI("Generate by decoder, type: %{public}d, format: %{public}s",
-        static_cast<int>(auxiliaryPictureDecodeInfo.type), format.c_str());
+        static_cast<int>(auxiliaryPictureDecodeInfo.type), auxiliaryPictureDecodeInfo.imageType.c_str());
     DecodeContext context;
     context.allocatorType = AllocatorType::DMA_ALLOC;
     errorCode = SetAuxiliaryDecodeOption(extDecoder, mainInfo.imageInfo.pixelFormat, context.info,
@@ -415,7 +415,8 @@ static std::unique_ptr<AuxiliaryPicture> GenerateAuxiliaryPicture(const MainPict
         errorCode = ERR_MEDIA_DATA_UNSUPPORT;
     }
     if (errorCode != SUCCESS) {
-        IMAGE_LOGE("Decode failed! Format: %{public}s, errorCode: %{public}u", format.c_str(), errorCode);
+        IMAGE_LOGE("Decode failed! Format: %{public}s, errorCode: %{public}u",
+            auxiliaryPictureDecodeInfo.imageType.c_str(), errorCode);
         FreeContextBuffer(context.freeFunc, context.allocatorType, context.pixelsBuffer);
         return nullptr;
     }
