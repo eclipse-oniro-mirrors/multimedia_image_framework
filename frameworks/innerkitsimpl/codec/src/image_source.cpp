@@ -5560,7 +5560,8 @@ bool ApplyDecodingOptionsForPicture(DecodeOptions& dopts, const DecodingOptionsF
                 uint32_t pictureSize = static_cast<uint32_t>(rowSize * opts.desiredSizeForMainPixelMap.height);
 
                 CHECK_ERROR_RETURN_RET_LOG(SkImageInfo::ByteSizeOverflowed(pictureSize), false,
-                    "%{public}s too large byteCount: %{public}llu", __func__, static_cast<unsigned long long>(pictureSize));
+                    "%{public}s too large byteCount: %{public}llu",
+                    __func__, static_cast<unsigned long long>(pictureSize));
             }
             return true;
         }
