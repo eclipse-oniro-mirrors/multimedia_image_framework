@@ -5689,7 +5689,7 @@ void ImageSource::DecodeHeifAuxiliaryPictures(const std::set<AuxiliaryPictureTyp
                 auxType, errorCode);
         } else {
             AuxiliaryPictureInfo auxiliaryPictureInfo = auxiliaryPicture->GetAuxiliaryPictureInfo();
-            auxiliaryPicture->GetAuxiliaryPictureInfo(auxiliaryPictureInfo);
+            auxiliaryPicture->SetAuxiliaryPictureInfo(auxiliaryPictureInfo);
             auxiliaryPicture->GetContentPixel()->SetEditable(true);
             picture->SetAuxiliaryPicture(auxiliaryPicture);
         }
