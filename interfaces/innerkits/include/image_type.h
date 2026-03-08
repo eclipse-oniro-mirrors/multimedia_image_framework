@@ -451,13 +451,13 @@ enum class AuxiliaryPictureType {
 struct DownSamplingScaleFactor {
     float widthScaleFactor = 1;
     float heightScaleFactor = 1;
-}
+};
 
 struct AuxiliaryPictureDecodeInfo {
     DownSamplingScaleFactor downSamplingScaleFactor;
     AuxiliaryPictureType type = AuxiliaryPictureType::NONE;
     std::string imageType = "";
-}
+};
 
 struct AuxiliaryPictureInfo {
     AuxiliaryPictureType auxiliaryPictureType = AuxiliaryPictureType::NONE;
