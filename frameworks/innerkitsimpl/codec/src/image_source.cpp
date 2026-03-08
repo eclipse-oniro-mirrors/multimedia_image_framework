@@ -5683,7 +5683,7 @@ void ImageSource::DecodeHeifAuxiliaryPictures(const std::set<AuxiliaryPictureTyp
         auxiliaryPictureDecodeInfo.imageType = IMAGE_HEIF_FORMAT;
         auxiliaryPictureDecodeInfo.type = auxType;
         auto auxiliaryPicture = AuxiliaryGenerator::GenerateHeifAuxiliaryPicture(
-            mainInfo, auxType, mainDecoder_, errorCode, auxiliaryPictureDecodeInfo);
+            mainInfo, mainDecoder_, errorCode, auxiliaryPictureDecodeInfo);
         if (auxiliaryPicture == nullptr || auxiliaryPicture->GetContentPixel() == nullptr) {
             IMAGE_LOGE("Generate heif auxiliary picture failed! Type: %{public}d, errorCode: %{public}d",
                 auxType, errorCode);
@@ -5829,7 +5829,7 @@ void ImageSource::DecodeJpegAuxiliaryPicture(std::set<AuxiliaryPictureType> &aux
             DoCreateDecoder(InnerFormat::IMAGE_EXTENDED_CODEC, pluginServer_, *auxStream, errorCode));
         uint32_t auxErrorCode = ERROR;
         auto auxPicture = AuxiliaryGenerator::GenerateJpegAuxiliaryPicture(
-            mainInfo, auxInfo.auxType, auxStream, auxDecoder, auxErrorCode, auxiliaryPictureDecodeInfo);
+            mainInfo, auxStream, auxDecoder, auxErrorCode, auxiliaryPictureDecodeInfo);
         if (auxPicture != nullptr && auxPicture->GetContentPixel() != nullptr) {
             AuxiliaryPictureInfo auxPictureInfo = auxPicture->GetAuxiliaryPictureInfo();
             auxPictureInfo.jpegTagName = auxInfo.auxTagName;
