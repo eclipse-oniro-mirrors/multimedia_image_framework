@@ -84,6 +84,11 @@ struct PackOption {
     bool needsPackProperties = false;
 
     /**
+     * Hint to pack image with DfxData.
+    */
+    bool needsPackDfxData = false;
+
+    /**
      * Paking for edit scene.
      */
     bool isEditScene = true;
