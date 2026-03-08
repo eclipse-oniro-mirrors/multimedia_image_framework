@@ -5678,7 +5678,7 @@ void ImageSource::DecodeHeifAuxiliaryPictures(const std::set<AuxiliaryPictureTyp
             IMAGE_LOGE("The auxiliary picture type does not exist! Type: %{public}d", auxType);
             continue;
         }
-        AuxiliaryPictureDecodeInfo.auxiliaryPictureDecodeInfo;
+        AuxiliaryPictureDecodeInfo auxiliaryPictureDecodeInfo;
         auxiliaryPictureDecodeInfo.downSamplingScaleFactor = downSamplingScaleFactor;
         auxiliaryPictureDecodeInfo.imageType = IMAGE_HEIF_FORMAT;
         auxiliaryPictureDecodeInfo.type = auxType;
@@ -5814,10 +5814,10 @@ void ImageSource::DecodeJpegAuxiliaryPicture(std::set<AuxiliaryPictureType> &aux
                 auxInfo.auxType, auxInfo.offset, auxInfo.size, streamInfo.GetCurrentSize());
             continue;
         }
-        AuxiliaryPictureDecodeInfo.auxiliaryPictureDecodeInfo;
+        AuxiliaryPictureDecodeInfo auxiliaryPictureDecodeInfo;
         auxiliaryPictureDecodeInfo.downSamplingScaleFactor = downSamplingScaleFactor;
         auxiliaryPictureDecodeInfo.imageType = IMAGE_JPEG_FORMAT;
-        auxiliaryPictureDecodeInfo.type = auxType;
+        auxiliaryPictureDecodeInfo.type = auxInfo.auxType;
         IMAGE_LOGI("Jpeg auxiliary picture has found. Type: %{public}d", auxInfo.auxType);
         std::unique_ptr<InputDataStream> auxStream =
             BufferSourceStream::CreateSourceStream((streamInfo.GetCurrentAddress() + auxInfo.offset), auxInfo.size);
