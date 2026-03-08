@@ -214,11 +214,11 @@ static bool ResizeAuxPixelMap(std::shared_ptr<PixelMap>& pixelMap, DecodeContext
         if (ImageSource::IsYuvFormat(pixelMap->GetPixelFormat())) {
 #ifdef EXT_PIXEL
             auto pixelYuv = reinterpret_cast<PixelYuvExt *>(pixelMap.get());
-            bool cond = !pixelYuv->resize(context.outInfo.size.width, context.outInfo.size.height);
+            bool cond = !pixelYuv->resizeForPicture(context.outInfo.size.width, context.outInfo.size.height);
             CHECK_ERROR_RETURN_RET(cond, false);
 #else
             auto pixelYuv = reinterpret_cast<PixelYuv *>(pixelMap.get());
-            bool cond = !pixelYuv->resize(context.outInfo.size.width, context.outInfo.size.height);
+            bool cond = !pixelYuv->resizeForPicture(context.outInfo.size.width, context.outInfo.size.height);
             CHECK_ERROR_RETURN_RET(cond, false);
 #endif
         } else {
@@ -380,13 +380,13 @@ void GetAuxiliaryPictureSize(const AuxiliaryPictureDecodeInfo& auxiliaryPictureD
     if (fabs(auxiliaryPictureDecodeInfo.downSamplingScaleFactor.heightScaleFactor - NUM_1) > EPSILON) {
         context.outInfo.size.height = context.outInfo.size.height *
             auxiliaryPictureDecodeInfo.downSamplingScaleFactor.heightScaleFactor;
-    }    
+    }
 }
 static std::unique_ptr<AuxiliaryPicture> GenerateAuxiliaryPicture(const MainPictureInfo &mainInfo, uint32_t &errorCode,
     std::unique_ptr<AbsImageDecoder> &extDecoder, const AuxiliaryPictureDecodeInfo& auxiliaryPictureDecodeInfo)
 {
     IMAGE_LOGI("Generate by decoder, type: %{public}d, format: %{public}s",
-        static_cast<int>(auxiliaryPictureDecodeInfo,type), format.c_str());
+        static_cast<int>(auxiliaryPictureDecodeInfo.type), format.c_str());
     DecodeContext context;
     context.allocatorType = AllocatorType::DMA_ALLOC;
     errorCode = SetAuxiliaryDecodeOption(extDecoder, mainInfo.imageInfo.pixelFormat, context.info,

@@ -542,7 +542,7 @@ bool ImageUtils::IsValidAuxiliaryInfo(const std::shared_ptr<PixelMap> &pixelMap,
         imageInfo.size = info.size;
         imageInfo.pixelFormat = info.pixelFormat;
         int32_t byteCount = ImageUtils::GetByteCount(imageInfo);
-        infoSize = (byteCount > 0 ) ? static_cast<uint32_t>(byteCount) : infoSize;
+        infoSize = (byteCount > 0 )? static_cast<uint32_t>(byteCount) : infoSize;
     }
     uint32_t pixelsSize = pixelMap->GetCapacity();
     cond = infoSize > pixelsSize;

@@ -414,6 +414,9 @@ bool PixelYuv::resizeForPicture(int32_t dstW, int32_t dstH)
 {
     ImageTrace imageTrace("PixelMap resizeForPicture");
     int32_t rowSize = ImageUtils::GetRowDataSizeByPixelFormat(dstW, PixelFormat::NV21);
+    if (dstH == 0) {
+        return false;
+    }
     bool cond = rowSize <= 0 || dstH <= 0 || rowSize > std::numeric_limits<int32_t>::max() / dstH;
     CHECK_ERROR_RETURN_RET_LOG(cond, false, "%{public}s rowSize: %{public}d, height: %{public}d may overflowed",
         __func__, rowSize, dstH);
