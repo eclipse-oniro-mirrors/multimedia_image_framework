@@ -3460,8 +3460,9 @@ HWTEST_F(ImageSourceTest, DecodeHeifAuxiliaryPicturesTest001, TestSize.Level1)
     imageSource->mainDecoder_.reset();
     std::set<AuxiliaryPictureType> auxTypes;
     std::unique_ptr<Picture> picture;
+    DownSamplingScaleFactor downSamplingScaleFactor;
 
-    imageSource->DecodeHeifAuxiliaryPictures(auxTypes, picture, errorCode);
+    imageSource->DecodeHeifAuxiliaryPictures(auxTypes, picture, errorCode, downSamplingScaleFactor);
     ASSERT_EQ(errorCode, ERR_IMAGE_PLUGIN_CREATE_FAILED);
     GTEST_LOG_(INFO) << "ImageSourceTest: DecodeHeifAuxiliaryPicturesTest001 end";
 }
@@ -3485,8 +3486,9 @@ HWTEST_F(ImageSourceTest, DecodeHeifAuxiliaryPicturesTest002, TestSize.Level1)
     ASSERT_EQ(ret, true);
     std::set<AuxiliaryPictureType> auxTypes;
     std::unique_ptr<Picture> picture;
+    DownSamplingScaleFactor downSamplingScaleFactor;
 
-    imageSource->DecodeHeifAuxiliaryPictures(auxTypes, picture, errorCode);
+    imageSource->DecodeHeifAuxiliaryPictures(auxTypes, picture, errorCode, downSamplingScaleFactor);
     ASSERT_EQ(errorCode, ERR_IMAGE_DATA_ABNORMAL);
     GTEST_LOG_(INFO) << "ImageSourceTest: DecodeHeifAuxiliaryPicturesTest002 end";
 }
