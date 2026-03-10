@@ -5523,6 +5523,52 @@ uint32_t ImageSource::SetHeifsMetadataForPicture(std::unique_ptr<Picture> &pictu
     return SUCCESS;
 }
 
+void GetDownSamplingScaleFactor(DownSamplingScaleFactor& downSamplingScaleFactor, ImageInfo& info,
+    const DecodingOptionsForPicture& opts)
+{
+    if (opts.desiredSizeForMainPixelMap.width != 0 && info.size.width != 0) {
+        downSamplingScaleFactor.widthScaleFactor = static_cast<float>(opts.desiredSizeForMainPixelMap.width) /
+            info.size.width;
+    }
+
+    if (opts.desiredSizeForMainPixelMap.height != 0 && info.size.height != 0) {
+        downSamplingScaleFactor.heightScaleFactor = static_cast<float>(opts.desiredSizeForMainPixelMap.height) /
+            info.size.height;
+    }
+}
+
+bool ApplyDecodingOptionsForPicture(DecodeOptions& dopts, const DecodingOptionsForPicture& opts)
+{
+    if (opts.desiredPixelFormat == PixelFormat::RGBA_8888 || opts.desiredPixelFormat == PixelFormat::RGB_565 ||
+        opts.desiredPixelFormat == PixelFormat::BGRA_8888 || opts.desiredPixelFormat == PixelFormat::NV12 ||
+        opts.desiredPixelFormat == PixelFormat::NV21) {
+            dopts.desiredPixelFormat = opts.desiredPixelFormat;
+            dopts.allocatorType = opts.allocatorType;
+            dopts.desiredSize = opts.desiredSizeForMainPixelMap;
+            dopts.editable = true;
+
+            if (opts.desiredPixelFormat == PixelFormat::NV21 || opts.desiredPixelFormat == PixelFormat::NV12) {
+                if (opts.desiredSizeForMainPixelMap.width == 0 || opts.desiredSizeForMainPixelMap.height == 0) {
+                    return true;
+                }
+                int32_t rowSize = ImageUtils::GetRowDataSizeByPixelFormat(opts.desiredSizeForMainPixelMap.width,
+                    opts.desiredPixelFormat);
+                bool cond = rowSize <= 0 || opts.desiredSizeForMainPixelMap.height <= 0 ||
+                    rowSize > std::numeric_limits<int32_t>::max() / opts.desiredSizeForMainPixelMap.height;
+                CHECK_ERROR_RETURN_RET_LOG(cond,
+                    false, "%{public}s rowSize: %{public}d, height: %{public}d may overflowed",
+                    __func__, rowSize, opts.desiredSizeForMainPixelMap.height);
+                uint32_t pictureSize = static_cast<uint32_t>(rowSize * opts.desiredSizeForMainPixelMap.height);
+
+                CHECK_ERROR_RETURN_RET_LOG(SkImageInfo::ByteSizeOverflowed(pictureSize), false,
+                    "%{public}s too large byteCount: %{public}llu",
+                    __func__, static_cast<unsigned long long>(pictureSize));
+            }
+            return true;
+        }
+    return false;
+}
+
 std::unique_ptr<Picture> ImageSource::CreatePicture(const DecodingOptionsForPicture &opts, uint32_t &errorCode)
 {
     ImageInfo info;
@@ -5534,11 +5580,13 @@ std::unique_ptr<Picture> ImageSource::CreatePicture(const DecodingOptionsForPict
         return nullptr;
     }
     DecodeOptions dopts;
-    dopts.desiredPixelFormat = opts.desiredPixelFormat;
-    dopts.allocatorType = opts.allocatorType;
+    if (!ApplyDecodingOptionsForPicture(dopts, opts)) {
+        errorCode = ERR_IMAGE_PICTURE_CREATE_FAILED;
+        IMAGE_LOGE("Invalid Decoding Options for Picture");
+        return nullptr;
+    }
     dopts.desiredDynamicRange = (ParseHdrType() && IsSingleHdrImage(sourceHdrType_)) ?
         DecodeDynamicRange::HDR : DecodeDynamicRange::SDR;
-    dopts.editable = true;
     IMAGE_LOGI("Decode mainPixelMap: PixelFormat: %{public}d, allocatorType: %{public}d, DynamicRange: %{public}d",
         opts.desiredPixelFormat, dopts.allocatorType, dopts.desiredDynamicRange);
     std::shared_ptr<PixelMap> mainPixelMap = CreatePixelMap(dopts, errorCode);
@@ -5548,15 +5596,16 @@ std::unique_ptr<Picture> ImageSource::CreatePicture(const DecodingOptionsForPict
         errorCode = ERR_IMAGE_PICTURE_CREATE_FAILED;
         return nullptr;
     }
-
+    DownSamplingScaleFactor downSamplingScaleFactor;
+    GetDownSamplingScaleFactor(downSamplingScaleFactor, info, opts);
     std::set<AuxiliaryPictureType> auxTypes = (opts.desireAuxiliaryPictures.size() > 0) ?
             opts.desireAuxiliaryPictures : ImageUtils::GetAllAuxiliaryPictureType();
     std::set<MetadataType> metadataTypes = (opts.desiredMetadatas.size() > 0) ?
             opts.desiredMetadatas : ImageUtils::GetAllMetadataType();
     if (info.encodedFormat == IMAGE_HEIF_FORMAT || info.encodedFormat == IMAGE_HEIC_FORMAT) {
-        DecodeHeifAuxiliaryPictures(auxTypes, picture, errorCode);
+        DecodeHeifAuxiliaryPictures(auxTypes, picture, errorCode, downSamplingScaleFactor);
     } else if (info.encodedFormat == IMAGE_JPEG_FORMAT) {
-        DecodeJpegAuxiliaryPicture(auxTypes, picture, errorCode);
+        DecodeJpegAuxiliaryPicture(auxTypes, picture, errorCode, downSamplingScaleFactor);
     }
     DecodeBlobMetaData(picture, metadataTypes, info, errorCode);
     SetHdrMetadataForPicture(picture);
@@ -5603,8 +5652,8 @@ void ImageSource::SetHdrMetadataForPicture(std::unique_ptr<Picture> &picture)
     SetXmageMetadataToGainmap(gainmapSptr);
 }
 
-void ImageSource::DecodeHeifAuxiliaryPictures(
-    const std::set<AuxiliaryPictureType> &auxTypes, std::unique_ptr<Picture> &picture, uint32_t &errorCode)
+void ImageSource::DecodeHeifAuxiliaryPictures(const std::set<AuxiliaryPictureType> &auxTypes,
+    std::unique_ptr<Picture> &picture, uint32_t &errorCode, const DownSamplingScaleFactor& downSamplingScaleFactor)
 {
     if (mainDecoder_ == nullptr) {
         IMAGE_LOGE("mainDecoder_ is nullptr");
@@ -5629,12 +5678,18 @@ void ImageSource::DecodeHeifAuxiliaryPictures(
             IMAGE_LOGE("The auxiliary picture type does not exist! Type: %{public}d", auxType);
             continue;
         }
+        AuxiliaryPictureDecodeInfo auxiliaryPictureDecodeInfo;
+        auxiliaryPictureDecodeInfo.downSamplingScaleFactor = downSamplingScaleFactor;
+        auxiliaryPictureDecodeInfo.imageType = IMAGE_HEIF_FORMAT;
+        auxiliaryPictureDecodeInfo.type = auxType;
         auto auxiliaryPicture = AuxiliaryGenerator::GenerateHeifAuxiliaryPicture(
-            mainInfo, auxType, mainDecoder_, errorCode);
+            mainInfo, mainDecoder_, errorCode, auxiliaryPictureDecodeInfo);
         if (auxiliaryPicture == nullptr || auxiliaryPicture->GetContentPixel() == nullptr) {
             IMAGE_LOGE("Generate heif auxiliary picture failed! Type: %{public}d, errorCode: %{public}d",
                 auxType, errorCode);
         } else {
+            AuxiliaryPictureInfo auxiliaryPictureInfo = auxiliaryPicture->GetAuxiliaryPictureInfo();
+            auxiliaryPicture->SetAuxiliaryPictureInfo(auxiliaryPictureInfo);
             auxiliaryPicture->GetContentPixel()->SetEditable(true);
             picture->SetAuxiliaryPicture(auxiliaryPicture);
         }
@@ -5735,8 +5790,8 @@ void ImageSource::SetThumbnailForPicture(std::unique_ptr<Picture> &picture, cons
     picture->SetAuxiliaryPicture(auxPicture);
 }
 
-void ImageSource::DecodeJpegAuxiliaryPicture(
-    std::set<AuxiliaryPictureType> &auxTypes, std::unique_ptr<Picture> &picture, uint32_t &errorCode)
+void ImageSource::DecodeJpegAuxiliaryPicture(std::set<AuxiliaryPictureType> &auxTypes,
+    std::unique_ptr<Picture> &picture, uint32_t &errorCode, const DownSamplingScaleFactor& downSamplingScaleFactor)
 {
     StreamInfo streamInfo;
     if (!CheckJpegSourceStream(streamInfo) || streamInfo.buffer == nullptr || streamInfo.GetCurrentSize() == 0) {
@@ -5759,6 +5814,10 @@ void ImageSource::DecodeJpegAuxiliaryPicture(
                 auxInfo.auxType, auxInfo.offset, auxInfo.size, streamInfo.GetCurrentSize());
             continue;
         }
+        AuxiliaryPictureDecodeInfo auxiliaryPictureDecodeInfo;
+        auxiliaryPictureDecodeInfo.downSamplingScaleFactor = downSamplingScaleFactor;
+        auxiliaryPictureDecodeInfo.imageType = IMAGE_JPEG_FORMAT;
+        auxiliaryPictureDecodeInfo.type = auxInfo.auxType;
         IMAGE_LOGI("Jpeg auxiliary picture has found. Type: %{public}d", auxInfo.auxType);
         std::unique_ptr<InputDataStream> auxStream =
             BufferSourceStream::CreateSourceStream((streamInfo.GetCurrentAddress() + auxInfo.offset), auxInfo.size);
@@ -5770,7 +5829,7 @@ void ImageSource::DecodeJpegAuxiliaryPicture(
             DoCreateDecoder(InnerFormat::IMAGE_EXTENDED_CODEC, pluginServer_, *auxStream, errorCode));
         uint32_t auxErrorCode = ERROR;
         auto auxPicture = AuxiliaryGenerator::GenerateJpegAuxiliaryPicture(
-            mainInfo, auxInfo.auxType, auxStream, auxDecoder, auxErrorCode);
+            mainInfo, auxStream, auxDecoder, auxErrorCode, auxiliaryPictureDecodeInfo);
         if (auxPicture != nullptr && auxPicture->GetContentPixel() != nullptr) {
             AuxiliaryPictureInfo auxPictureInfo = auxPicture->GetAuxiliaryPictureInfo();
             auxPictureInfo.jpegTagName = auxInfo.auxTagName;

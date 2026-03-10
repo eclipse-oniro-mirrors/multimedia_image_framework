@@ -448,6 +448,17 @@ enum class AuxiliaryPictureType {
     THUMBNAIL = 10,
 };
 
+struct DownSamplingScaleFactor {
+    float widthScaleFactor = 1;
+    float heightScaleFactor = 1;
+};
+
+struct AuxiliaryPictureDecodeInfo {
+    DownSamplingScaleFactor downSamplingScaleFactor;
+    AuxiliaryPictureType type = AuxiliaryPictureType::NONE;
+    std::string imageType = "";
+};
+
 struct AuxiliaryPictureInfo {
     AuxiliaryPictureType auxiliaryPictureType = AuxiliaryPictureType::NONE;
     Size size;
@@ -483,6 +494,7 @@ struct DecodingOptionsForPicture {
     PixelFormat desiredPixelFormat = PixelFormat::RGBA_8888;
     AllocatorType allocatorType = AllocatorType::DMA_ALLOC;
     bool needsDecodeDfxData = false;
+    Size desiredSizeForMainPixelMap;
 };
 
 struct DecodingOptionsForThumbnail {
