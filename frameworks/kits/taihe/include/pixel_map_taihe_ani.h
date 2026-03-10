@@ -39,6 +39,7 @@ private:
     static bool getImplPtrInited;
     static bool InitCreatePixelMapByPtr(ani_env* env);
     static bool InitGetImplPtr(ani_env* env);
+    static void Deinit(ani_env* env);
 };
 
 } // namespace Media

@@ -120,5 +120,19 @@ std::shared_ptr<PixelMap> PixelMapTaiheAni::GetNativePixelMap([[maybe_unused]] a
     return pixelMapImpl->GetNativePtr();
 }
 
+void PixelMapTaiheAni::Deinit(ani_env* env)
+{
+    if (gImageNamespace != nullptr) {
+        env->GlobalReference_Delete(gImageNamespace);
+        gImageNamespace = nullptr;
+    }
+    if (gPixelMapClass != nullptr) {
+        env->GlobalReference_Delete(gPixelMapClass);
+        gPixelMapClass = nullptr;
+    }
+    createPixelMapByPtrInited = false;
+    getImplPtrInited = false;
+}
+
 } // namespace Media
 } // namespace OHOS
