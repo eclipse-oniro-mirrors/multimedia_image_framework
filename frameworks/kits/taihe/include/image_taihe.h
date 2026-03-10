@@ -48,6 +48,9 @@ public:
     Size GetSize();
     int32_t GetFormat();
     int64_t GetTimestamp();
+    uintptr_t GetColorSpace();
+    ohos::multimedia::image::image::NullableImageBufferData GetBufferData();
+    ohos::multimedia::image::image::NullableHdrMetadataValue GetMetadata(HdrMetadataKey key);
 
 private:
     static OHOS::Media::ImageHolderManager<OHOS::Media::NativeImage> sNativeImageHolder_;

@@ -15,13 +15,23 @@
 
 #include <cstdint>
 
+#ifdef IMAGE_COLORSPACE_FLAG
+#include "color_space.h"
+#endif
+#include "image_common.h"
 #include "image_format.h"
 #include "image_log.h"
 #include "image_taihe.h"
 #include "image_taihe_utils.h"
+#include "image_utils.h"
 #include "media_errors.h"
+#if !defined(CROSS_PLATFORM)
+#include "vpe_utils.h"
+#include "v1_0/cm_color_space.h"
+#endif
 
 using namespace ANI::Image;
+using namespace OHOS;
 
 namespace {
     constexpr int NUM0 = 0;
@@ -29,6 +39,8 @@ namespace {
     constexpr int32_t TEST_WIDTH = 8192;
     constexpr int32_t TEST_HEIGHT = 8;
     constexpr int32_t TEST_FORMAT = 12;
+    constexpr uint32_t METADATA_CHANNEL_COUNT = 3;
+    constexpr char ENUM_NAME_COLORSPACE[] = "@ohos.graphics.colorSpaceManager.colorSpaceManager.ColorSpace";
 }
 
 namespace ANI::Image {
@@ -255,4 +267,221 @@ int64_t ImageImpl::GetTimestamp()
     }
     return result;
 }
+
+uintptr_t ImageImpl::GetColorSpace()
+{
+    uintptr_t result = 0;
+#if !defined(CROSS_PLATFORM) && defined(IMAGE_COLORSPACE_FLAG)
+    if (nativeImage_ == nullptr) {
+        IMAGE_LOGE("Image native is nullptr");
+        return result;
+    }
+    int32_t colorSpace = 0;
+    if (nativeImage_->GetColorSpace(colorSpace) != OHOS::Media::SUCCESS) {
+        IMAGE_LOGE("Image native get color space failed");
+        return result;
+    }
+    OHOS::ColorManager::ColorSpaceName colorSpaceName = OHOS::Media::ImageUtils::SbCMColorSpaceType2ColorSpaceName(
+        static_cast<HDI::Display::Graphic::Common::V1_0::CM_ColorSpaceType>(colorSpace));
+    ani_enum aniEnum {};
+    ani_enum_item aniEnumItem {};
+    ani_env* env = get_env();
+    CHECK_ERROR_RETURN_RET_LOG(env == nullptr, 0, "GetColorSpace env is null");
+    CHECK_ERROR_RETURN_RET_LOG(ANI_OK != env->FindEnum(ENUM_NAME_COLORSPACE, &aniEnum), 0, "Find Enum Fail");
+    CHECK_ERROR_RETURN_RET_LOG(ANI_OK != env->Enum_GetEnumItemByIndex(aniEnum,
+        reinterpret_cast<ani_int>(static_cast<int32_t>(colorSpaceName)), &aniEnumItem), 0, "Find Enum item Fail");
+    result = reinterpret_cast<uintptr_t>(aniEnumItem);
+#endif
+    return result;
+}
+
+static NullableImageBufferData BuildImageBufferData(OHOS::Media::NativeBufferData* bufferData)
+{
+    if (bufferData == nullptr) {
+        IMAGE_LOGE("bufferData is nullptr");
+        return NullableImageBufferData::make_type_null();
+    }
+    array<int32_t> rowStrideArray(
+        taihe::copy_data_t{}, bufferData->rowStride.data(), bufferData->rowStride.size());
+    array<int32_t> pixelStrideArray(
+        taihe::copy_data_t{}, bufferData->pixelStride.data(), bufferData->pixelStride.size());
+    array<uint8_t> byteBuffer = ImageTaiheUtils::CreateTaiheArrayBuffer(bufferData->virAddr, bufferData->size);
+    if (byteBuffer.empty()) {
+        IMAGE_LOGE("Failed to create ArrayBuffer");
+        return NullableImageBufferData::make_type_null();
+    }
+    return NullableImageBufferData::make_type_imageBufferData(
+        ImageBufferData{rowStrideArray, pixelStrideArray, byteBuffer});
+}
+
+NullableImageBufferData ImageImpl::GetBufferData()
+{
+    if (nativeImage_ == nullptr) {
+        IMAGE_LOGE("Image native is nullptr");
+        return NullableImageBufferData::make_type_null();
+    }
+    OHOS::Media::NativeBufferData* bufferData = nativeImage_->GetBufferData();
+    if (bufferData == nullptr) {
+        IMAGE_LOGE("Failed to get buffer data from NativeImage");
+        return NullableImageBufferData::make_type_null();
+    }
+    return BuildImageBufferData(bufferData);
+}
+
+#if !defined(CROSS_PLATFORM)
+static std::map<HDI::Display::Graphic::Common::V1_0::CM_HDR_Metadata_Type, HdrMetadataType::key_t> MetadataEtsMap = {
+    {HDI::Display::Graphic::Common::V1_0::CM_METADATA_NONE, HdrMetadataType::key_t::NONE},
+    {HDI::Display::Graphic::Common::V1_0::CM_IMAGE_HDR_VIVID_DUAL, HdrMetadataType::key_t::BASE},
+    {HDI::Display::Graphic::Common::V1_0::CM_IMAGE_HDR_VIVID_SINGLE, HdrMetadataType::key_t::ALTERNATE},
+};
+
+static HdrStaticMetadata BuildHdrStaticMetadata(
+    HDI::Display::Graphic::Common::V1_0::HdrStaticMetadata const& srcStaticMetadata)
+{
+    HdrStaticMetadata dstMetadata{};
+    dstMetadata.displayPrimariesX = {
+        srcStaticMetadata.smpte2086.displayPrimaryRed.x,
+        srcStaticMetadata.smpte2086.displayPrimaryGreen.x,
+        srcStaticMetadata.smpte2086.displayPrimaryBlue.x
+    };
+    dstMetadata.displayPrimariesY = {
+        srcStaticMetadata.smpte2086.displayPrimaryRed.y,
+        srcStaticMetadata.smpte2086.displayPrimaryGreen.y,
+        srcStaticMetadata.smpte2086.displayPrimaryBlue.y
+    };
+    dstMetadata.whitePointX = srcStaticMetadata.smpte2086.whitePoint.x;
+    dstMetadata.whitePointY = srcStaticMetadata.smpte2086.whitePoint.y;
+    dstMetadata.maxLuminance = srcStaticMetadata.smpte2086.maxLuminance;
+    dstMetadata.minLuminance = srcStaticMetadata.smpte2086.minLuminance;
+    dstMetadata.maxContentLightLevel = srcStaticMetadata.cta861.maxContentLightLevel;
+    dstMetadata.maxFrameAverageLightLevel = srcStaticMetadata.cta861.maxFrameAverageLightLevel;
+    return dstMetadata;
+}
+
+static HdrGainmapMetadata BuildHdrGainmapMetadata(Media::HDRVividExtendMetadata const& srcGainmapMetadata)
+{
+    HdrGainmapMetadata dstMetadata{};
+    dstMetadata.writerVersion = static_cast<int32_t>(srcGainmapMetadata.metaISO.writeVersion);
+    dstMetadata.miniVersion = static_cast<int32_t>(srcGainmapMetadata.metaISO.miniVersion);
+    dstMetadata.gainmapChannelCount = static_cast<int32_t>(srcGainmapMetadata.metaISO.gainmapChannelNum);
+    dstMetadata.useBaseColorFlag = static_cast<bool>(srcGainmapMetadata.metaISO.useBaseColorFlag);
+    dstMetadata.baseHeadroom = srcGainmapMetadata.metaISO.baseHeadroom;
+    dstMetadata.alternateHeadroom = srcGainmapMetadata.metaISO.alternateHeadroom;
+    dstMetadata.channels = array<GainmapChannel>::make(METADATA_CHANNEL_COUNT);
+    for (uint32_t i = 0; i < METADATA_CHANNEL_COUNT; ++i) {
+        dstMetadata.channels[i] = {
+            srcGainmapMetadata.metaISO.enhanceClippedThreholdMaxGainmap[i],
+            srcGainmapMetadata.metaISO.enhanceClippedThreholdMinGainmap[i],
+            srcGainmapMetadata.metaISO.enhanceMappingGamma[i],
+            srcGainmapMetadata.metaISO.enhanceMappingBaselineOffset[i],
+            srcGainmapMetadata.metaISO.enhanceMappingAlternateOffset[i]
+        };
+    }
+    return dstMetadata;
+}
+
+static bool GetMetadataType(sptr<SurfaceBuffer> const& surfaceBuffer, HdrMetadataValue &metadataValue)
+{
+    HDI::Display::Graphic::Common::V1_0::CM_HDR_Metadata_Type type;
+    Media::VpeUtils::GetSbMetadataType(surfaceBuffer, type);
+    if (MetadataEtsMap.find(type) != MetadataEtsMap.end()) {
+        std::vector<uint8_t> gainmapDataVec;
+        if (type == HDI::Display::Graphic::Common::V1_0::CM_HDR_Metadata_Type::CM_METADATA_NONE &&
+            Media::VpeUtils::GetSbDynamicMetadata(surfaceBuffer, gainmapDataVec) &&
+            gainmapDataVec.size() == sizeof(Media::HDRVividExtendMetadata)) {
+            metadataValue = HdrMetadataValue::make_hdrMetadataType(HdrMetadataType::key_t::GAINMAP);
+        } else {
+            metadataValue = HdrMetadataValue::make_hdrMetadataType(MetadataEtsMap[type]);
+        }
+        return true;
+    } else {
+        IMAGE_LOGE("[%{public}s] GetMetadataType failed", __func__);
+        return false;
+    }
+}
+
+static bool GetStaticMetadata(sptr<SurfaceBuffer> const& surfaceBuffer, HdrMetadataValue &metadataValue)
+{
+    HDI::Display::Graphic::Common::V1_0::HdrStaticMetadata staticMetadata;
+    uint32_t vecSize = sizeof(HDI::Display::Graphic::Common::V1_0::HdrStaticMetadata);
+    std::vector<uint8_t> staticDataVec;
+    if (!Media::VpeUtils::GetSbStaticMetadata(surfaceBuffer, staticDataVec) || staticDataVec.size() != vecSize) {
+        IMAGE_LOGE("[%{public}s] GetSbStaticMetadata failed", __func__);
+        return false;
+    }
+    if (memcpy_s(&staticMetadata, vecSize, staticDataVec.data(), staticDataVec.size()) != EOK) {
+        IMAGE_LOGE("[%{public}s] memcpy failed", __func__);
+        return false;
+    }
+    metadataValue = HdrMetadataValue::make_hdrStaticMetadata(BuildHdrStaticMetadata(staticMetadata));
+    return true;
+}
+
+static bool GetDynamicMetadata(sptr<SurfaceBuffer> const& surfaceBuffer, HdrMetadataValue &metadataValue)
+{
+    std::vector<uint8_t> dynamicDataVec;
+    if (Media::VpeUtils::GetSbDynamicMetadata(surfaceBuffer, dynamicDataVec) && dynamicDataVec.size() > 0) {
+        array<uint8_t> dataArr(dynamicDataVec);
+        metadataValue = HdrMetadataValue::make_arrayBuffer(dataArr);
+        return true;
+    } else {
+        IMAGE_LOGE("[%{public}s] GetSbDynamicMetadata failed", __func__);
+        return false;
+    }
+}
+
+static bool GetGainmapMetadata(sptr<SurfaceBuffer> const& surfaceBuffer, HdrMetadataValue &metadataValue)
+{
+    std::vector<uint8_t> gainmapDataVec;
+    if (Media::VpeUtils::GetSbDynamicMetadata(surfaceBuffer, gainmapDataVec) &&
+        gainmapDataVec.size() == sizeof(Media::HDRVividExtendMetadata)) {
+        Media::HDRVividExtendMetadata &gainmapMetadata =
+            *(reinterpret_cast<Media::HDRVividExtendMetadata*>(gainmapDataVec.data()));
+        metadataValue = HdrMetadataValue::make_hdrGainmapMetadata(BuildHdrGainmapMetadata(gainmapMetadata));
+        return true;
+    } else {
+        IMAGE_LOGE("[%{public}s] GetSbDynamicMetadata failed", __func__);
+        return false;
+    }
+}
+
+NullableHdrMetadataValue ImageImpl::GetMetadata(HdrMetadataKey key)
+{
+    if (nativeImage_ == nullptr) {
+        ImageTaiheUtils::ThrowExceptionError(IMAGE_INVALID_PARAMETER, "Native PixelMap is nullptr");
+        return NullableHdrMetadataValue::make_type_null();
+    }
+
+    bool success = false;
+    HdrMetadataValue metadataValue = HdrMetadataValue::make_hdrMetadataType(HdrMetadataType::key_t::NONE);
+    sptr<SurfaceBuffer> surfaceBuffer = nativeImage_->GetBuffer();
+    switch (key.get_key()) {
+        case HdrMetadataKey::key_t::HDR_METADATA_TYPE:
+            success = GetMetadataType(surfaceBuffer, metadataValue);
+            break;
+        case HdrMetadataKey::key_t::HDR_STATIC_METADATA:
+            success = GetStaticMetadata(surfaceBuffer, metadataValue);
+            break;
+        case HdrMetadataKey::key_t::HDR_DYNAMIC_METADATA:
+            success = GetDynamicMetadata(surfaceBuffer, metadataValue);
+            break;
+        case HdrMetadataKey::key_t::HDR_GAINMAP_METADATA:
+            success = GetGainmapMetadata(surfaceBuffer, metadataValue);
+            break;
+        default:
+            success = false;
+    }
+
+    if (!success) {
+        ImageTaiheUtils::ThrowExceptionError(IMAGE_COPY_FAILED, "Get metadata failed");
+        return NullableHdrMetadataValue::make_type_null();
+    }
+    return NullableHdrMetadataValue::make_type_hdrMetadataValue(metadataValue);
+}
+#else
+NullableHdrMetadataValue ImageImpl::GetMetadata(HdrMetadataKey key)
+{
+    return NullableHdrMetadataValue::make_type_null();
+}
+#endif
 } // namespace ANI::Image
