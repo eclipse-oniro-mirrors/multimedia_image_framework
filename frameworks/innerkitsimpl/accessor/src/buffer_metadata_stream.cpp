@@ -67,6 +67,10 @@ BufferMetadataStream::~BufferMetadataStream()
 ssize_t BufferMetadataStream::Write(uint8_t *data, ssize_t size)
 {
     // Check if the new data will fit into the current buffer
+    if (data == nullptr || size < 0) {
+        IMAGE_LOGE("BufferMetadataStream::Write failed, data is nullptr or size less than zero");
+        return -1;
+    }
     if (currentOffset_ + static_cast<long>(size) > capacity_) {
         CHECK_ERROR_RETURN_RET_LOG(memoryMode_ == Fix, -1,
             "BufferMetadataStream::Write failed, data size exceeds buffer capacity, "
@@ -116,10 +120,8 @@ ssize_t BufferMetadataStream::Write(uint8_t *data, ssize_t size)
     }
 
     // Copy the new data into the buffer
-    if (data != nullptr) {
-        CHECK_ERROR_RETURN_RET_LOG(EOK != memcpy_s(buffer_ + currentOffset_, capacity_ - currentOffset_, data, size),
-            -1, "BufferMetadataStream::Write failed, memcpy error");
-    }
+    CHECK_ERROR_RETURN_RET_LOG(EOK != memcpy_s(buffer_ + currentOffset_, capacity_ - currentOffset_, data, size), -1,
+        "BufferMetadataStream::Write failed, memcpy error");
 
     // Update the current offset and buffer size
     currentOffset_ += size;
