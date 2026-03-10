@@ -70,15 +70,13 @@ PixelMap CreateEmptyPixelMapSync(InitializationOptions const& options)
 PixelMap CreatePixelMapUsingAllocatorSync(array_view<uint8_t> colors, InitializationOptions const& options,
     optional_view<AllocatorType> allocatorType)
 {
-    return make_holder<PixelMapImpl, PixelMap>(colors, options,
-        allocatorType.has_value() ? allocatorType.value() : AllocatorType::key_t::AUTO);
+    return make_holder<PixelMapImpl, PixelMap>(colors, options, allocatorType.value_or(AllocatorType::key_t::AUTO));
 }
 
 PixelMap CreateEmptyPixelMapUsingAllocatorSync(InitializationOptions const& options,
     optional_view<AllocatorType> allocatorType)
 {
-    return make_holder<PixelMapImpl, PixelMap>(options,
-        allocatorType.has_value() ? allocatorType.value() : AllocatorType::key_t::AUTO);
+    return make_holder<PixelMapImpl, PixelMap>(options, allocatorType.value_or(AllocatorType::key_t::AUTO));
 }
 
 PixelMap CreatePixelMapByPtr(int64_t aniPtr)
@@ -560,7 +558,7 @@ PixelMap PixelMapImpl::CreateScaledPixelMapSync(double x, double y, optional_vie
 
     if (level.has_value()) {
         clonedPixelMap->scale(static_cast<float>(x), static_cast<float>(y),
-            Media::AntiAliasingOption(level.value().get_value()));
+            Media::AntiAliasingOption(level->get_value()));
     } else {
         clonedPixelMap->scale(static_cast<float>(x), static_cast<float>(y));
     }
@@ -644,7 +642,7 @@ PixelMap PixelMapImpl::CreateCroppedAndScaledPixelMapSync(ohos::multimedia::imag
 
     if (level.has_value()) {
         clonedPixelMap->scale(static_cast<float>(x), static_cast<float>(y),
-            Media::AntiAliasingOption(level.value().get_value()));
+            Media::AntiAliasingOption(level->get_value()));
     } else {
         clonedPixelMap->scale(static_cast<float>(x), static_cast<float>(y));
     }
@@ -756,7 +754,7 @@ void PixelMapImpl::ConvertPixelFormatSync(PixelMapFormat targetPixelFormat)
     }
 
     Media::PixelFormat srcFormat = nativePixelMap_->GetPixelFormat();
-    Media::PixelFormat dstFormat = Media::PixelFormat(targetPixelFormat.get_value());
+    Media::PixelFormat dstFormat = ParsePixelFormat(targetPixelFormat);
     if (FormatTypeOf(srcFormat) == FormatType::UNKNOWN || FormatTypeOf(dstFormat) == FormatType::UNKNOWN) {
         ImageTaiheUtils::ThrowExceptionError(Media::ERR_IMAGE_INVALID_PARAMETER,
             "Source or target pixel format is not supported or invalid.");
@@ -1331,10 +1329,10 @@ void PixelMapImpl::ParseInitializationOptions(InitializationOptions const& etsOp
 {
     options.size = {etsOptions.size.width, etsOptions.size.height};
     if (etsOptions.srcPixelFormat) {
-        options.srcPixelFormat = Media::PixelFormat(etsOptions.srcPixelFormat->get_value());
+        options.srcPixelFormat = ParsePixelFormat(etsOptions.srcPixelFormat.value());
     }
     if (etsOptions.pixelFormat) {
-        options.pixelFormat = Media::PixelFormat(etsOptions.pixelFormat->get_value());
+        options.pixelFormat = ParsePixelFormat(etsOptions.pixelFormat.value());
     }
     if (etsOptions.editable) {
         options.editable = *etsOptions.editable;
@@ -1345,6 +1343,15 @@ void PixelMapImpl::ParseInitializationOptions(InitializationOptions const& etsOp
     if (etsOptions.scaleMode) {
         options.scaleMode = Media::ScaleMode(etsOptions.scaleMode->get_value());
     }
+}
+
+Media::PixelFormat PixelMapImpl::ParsePixelFormat(PixelMapFormat const& etsFormat)
+{
+    Media::PixelFormat format = Media::PixelFormat(etsFormat.get_value());
+    if (format >= Media::PixelFormat::EXTERNAL_MAX) {
+        format = Media::PixelFormat::UNKNOWN;
+    }
+    return format;
 }
 
 void PixelMapImpl::Release()

@@ -53,8 +53,12 @@ bool PixelMapTaiheAni::InitCreatePixelMapByPtr(ani_env* env)
 }
 
 // Wrap a native PixelMap into ANI object, for the use of external ANI/Taihe components
-ani_object PixelMapTaiheAni::CreateEtsPixelMap([[maybe_unused]] ani_env* env, std::shared_ptr<PixelMap> pixelMap)
+ani_object PixelMapTaiheAni::CreateEtsPixelMap(ani_env* env, std::shared_ptr<PixelMap> pixelMap)
 {
+    if (env == nullptr) {
+        IMAGE_LOGE("[%{public}s] ANI env is null", __func__);
+        return nullptr;
+    }
     if (!InitCreatePixelMapByPtr(env)) {
         IMAGE_LOGE("[%{public}s] ANI init failed", __func__);
         return nullptr;
@@ -99,8 +103,12 @@ bool PixelMapTaiheAni::InitGetImplPtr(ani_env* env)
 }
 
 // Unwrap native PixelMap from an ANI object, for the use of external ANI/Taihe components
-std::shared_ptr<PixelMap> PixelMapTaiheAni::GetNativePixelMap([[maybe_unused]] ani_env* env, ani_object obj)
+std::shared_ptr<PixelMap> PixelMapTaiheAni::GetNativePixelMap(ani_env* env, ani_object obj)
 {
+    if (env == nullptr) {
+        IMAGE_LOGE("[%{public}s] ANI env is null", __func__);
+        return nullptr;
+    }
     if (!InitGetImplPtr(env)) {
         IMAGE_LOGE("[%{public}s] ANI init failed", __func__);
         return nullptr;

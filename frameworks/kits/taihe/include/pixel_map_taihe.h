@@ -88,6 +88,7 @@ private:
     std::shared_ptr<OHOS::Media::PixelMap> nativePixelMap_ = nullptr;
     bool Is10BitFormat(OHOS::Media::PixelFormat format);
     bool Is10BitYuvFormat(OHOS::Media::PixelFormat format);
+    OHOS::Media::PixelFormat ParsePixelFormat(PixelMapFormat const& etsFormat);
     void ParseInitializationOptions(InitializationOptions const& etsOptions,
         OHOS::Media::InitializationOptions &options);
     void Release();
