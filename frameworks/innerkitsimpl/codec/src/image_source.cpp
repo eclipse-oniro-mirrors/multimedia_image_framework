@@ -718,7 +718,8 @@ void ImageSource::TransformSizeWithDensity(const Size &srcSize, int32_t srcDensi
     }
 }
 
-static void NotifyDecodeEvent(set<DecodeListener *> &listeners, DecodeEvent event, std::unique_lock<std::mutex> *guard)
+static void NotifyDecodeEvent(set<DecodeListener *> &listeners,
+    DecodeEvent event, std::unique_lock<std::recursive_mutex> *guard)
 {
     if (listeners.size() == SIZE_ZERO) {
         return;
@@ -1081,7 +1082,7 @@ unique_ptr<PixelMap> ImageSource::CreatePixelMapExtended(uint32_t index, const D
     }
 
     {
-        std::unique_lock<std::mutex> guard(decodingMutex_);
+        std::unique_lock<std::recursive_mutex> guard(decodingMutex_);
         if (CreatExifMetadataByImageSource() == SUCCESS) {
             auto metadataPtr = exifMetadata_->Clone();
             pixelMap->SetExifMetadata(metadataPtr);
@@ -1352,7 +1353,7 @@ void ImageSource::SetImageEventHeifParseErr(ImageEvent &event)
 
 unique_ptr<PixelMap> ImageSource::CreatePixelMap(uint32_t index, const DecodeOptions &opts, uint32_t &errorCode)
 {
-    std::unique_lock<std::mutex> guard(decodingMutex_);
+    std::unique_lock<std::recursive_mutex> guard(decodingMutex_);
     opts_ = opts;
     bool useSkia = opts_.sampleSize != 1;
     if (useSkia) {
@@ -1547,7 +1548,7 @@ uint32_t ImageSource::PromoteDecoding(uint32_t index, const DecodeOptions &opts,
     state = ImageDecodingState::UNRESOLVED;
     decodeProgress = 0;
     uint32_t ret = SUCCESS;
-    std::unique_lock<std::mutex> guard(decodingMutex_);
+    std::unique_lock<std::recursive_mutex> guard(decodingMutex_);
     opts_ = opts;
     auto imageStatusIter = GetValidImageStatus(index, ret);
     bool cond = (imageStatusIter == imageStatusMap_.end());
@@ -1624,7 +1625,7 @@ uint32_t ImageSource::PromoteDecoding(uint32_t index, const DecodeOptions &opts,
 
 void ImageSource::DetachIncrementalDecoding(PixelMap &pixelMap)
 {
-    std::lock_guard<std::mutex> guard(decodingMutex_);
+    std::lock_guard<std::mutex> guard(std::recursive_mutex);
     auto iter = incDecodingMap_.find(&pixelMap);
     if (iter == incDecodingMap_.end()) {
         return;
@@ -1647,7 +1648,7 @@ uint32_t ImageSource::UpdateData(const uint8_t *data, uint32_t size, bool isComp
     cond = sourceStreamPtr_ == nullptr;
     CHECK_ERROR_RETURN_RET_LOG(cond, ERR_IMAGE_INVALID_PARAMETER,
                                "[ImageSource]image source update data, source stream is null.");
-    std::lock_guard<std::mutex> guard(decodingMutex_);
+    std::lock_guard<std::recursive_mutex> guard(decodingMutex_);
     if (isCompleted) {
         isIncrementalCompleted_ = isCompleted;
     }
@@ -1663,7 +1664,7 @@ uint32_t ImageSource::GetImageInfo(uint32_t index, ImageInfo &imageInfo)
 {
     ImageTrace imageTrace("GetImageInfo by index");
     uint32_t ret = SUCCESS;
-    std::unique_lock<std::mutex> guard(decodingMutex_);
+    std::unique_lock<std::recursive_mutex> guard(decodingMutex_);
     auto iter = GetValidImageStatus(index, ret);
     if (iter == imageStatusMap_.end()) {
         guard.unlock();
@@ -1843,7 +1844,7 @@ uint32_t ImageSource::ModifyImagePropertyBlob(std::shared_ptr<MetadataAccessor> 
 
 uint32_t ImageSource::ModifyImageProperty(uint32_t index, const std::string &key, const std::string &value)
 {
-    std::unique_lock<std::mutex> guard(decodingMutex_);
+    std::unique_lock<std::recursive_mutex> guard(decodingMutex_);
     return ModifyImageProperties({{key, value}}, false);
 }
 
@@ -1909,7 +1910,7 @@ uint32_t ImageSource::ModifyImageProperties(uint32_t index, const vector<pair<st
                                ec.value(), ec.message().c_str());
 #endif
 
-    std::unique_lock<std::mutex> guard(decodingMutex_);
+    std::unique_lock<std::recursive_mutex> guard(decodingMutex_);
     auto metadataAccessor = MetadataAccessorFactory::Create(path);
     return ModifyImageProperties(metadataAccessor, properties, isEnhanced);
 }
@@ -1925,7 +1926,7 @@ uint32_t ImageSource::ModifyImagePropertyBlob(const vector<MetadataValue> &prope
     CHECK_ERROR_RETURN_RET_LOG(cond, ERR_IMAGE_SOURCE_DATA, "File not exists, error: %{public}d, message: %{public}s",
         ec.value(), ec.message().c_str());
 #endif
-    std::unique_lock<std::mutex> guard(decodingMutex_);
+    std::unique_lock<std::recursive_mutex> guard(decodingMutex_);
     auto metadataAccessor = MetadataAccessorFactory::Create(path);
     return ModifyImagePropertyBlob(metadataAccessor, properties);
 }
@@ -1943,7 +1944,7 @@ uint32_t ImageSource::ModifyImageProperties(uint32_t index, const vector<pair<st
     bool cond = (fd <= STDERR_FILENO);
     CHECK_DEBUG_RETURN_RET_LOG(cond, ERR_IMAGE_SOURCE_DATA, "Invalid file descriptor.");
 
-    std::unique_lock<std::mutex> guard(decodingMutex_);
+    std::unique_lock<std::recursive_mutex> guard(decodingMutex_);
     size_t fileSize = 0;
     if (!ImageUtils::GetFileSize(fd, fileSize)) {
         IMAGE_LOGE("ModifyImageProperties get file size failed.");
@@ -1963,7 +1964,7 @@ uint32_t ImageSource::ModifyImagePropertyBlob(const vector<MetadataValue> &prope
     bool cond = (fd <= STDERR_FILENO);
     CHECK_DEBUG_RETURN_RET_LOG(cond, ERR_IMAGE_SOURCE_DATA, "Invalid file descriptor.");
 
-    std::unique_lock<std::mutex> guard(decodingMutex_);
+    std::unique_lock<std::recursive_mutex> guard(decodingMutex_);
     size_t fileSize = 0;
     if (!ImageUtils::GetFileSize(fd, fileSize)) {
         IMAGE_LOGE("ModifyImagePropertyBlob get file size failed.");
@@ -2208,7 +2209,7 @@ uint32_t ImageSource::RemoveAllProperties()
 
 uint32_t ImageSource::GetImagePropertyInt(uint32_t index, const std::string &key, int32_t &value)
 {
-    std::unique_lock<std::mutex> guard(decodingMutex_);
+    std::unique_lock<std::recursive_mutex> guard(decodingMutex_);
 
     if (key.empty()) {
         return Media::ERR_IMAGE_DECODE_EXIF_UNSUPPORT;
@@ -2260,7 +2261,7 @@ uint32_t ImageSource::GetImagePropertyString(uint32_t index, const std::string &
         return ret;
     }
 
-    std::unique_lock<std::mutex> guard(decodingMutex_);
+    std::unique_lock<std::recursive_mutex> guard(decodingMutex_);
     std::unique_lock<std::mutex> guardFile(fileMutex_);
     return GetImagePropertyCommon(index, key, value);
 }
@@ -2395,7 +2396,7 @@ uint32_t ImageSource::GetImagePropertyByType(uint32_t index, const std::string &
     }
 #endif
 
-    std::unique_lock<std::mutex> guard(decodingMutex_);
+    std::unique_lock<std::recursive_mutex> guard(decodingMutex_);
     std::unique_lock<std::mutex> guardFile(fileMutex_);
     return GetImagePropertyCommonByType(key, value);
 }
@@ -2419,7 +2420,7 @@ uint32_t ImageSource::GetImagePropertyStringBySync(uint32_t index, const std::st
         return ret;
     }
 
-    std::unique_lock<std::mutex> guard(decodingMutex_);
+    std::unique_lock<std::recursive_mutex> guard(decodingMutex_);
     std::unique_lock<std::mutex> guardFile(fileMutex_);
     bool cond = isExifReadFailed_ && exifMetadata_ == nullptr;
     CHECK_ERROR_RETURN_RET(cond, exifReadStatus_);
@@ -2443,7 +2444,7 @@ uint32_t ImageSource::GetImagePropertyStringBySync(uint32_t index, const std::st
 
 const SourceInfo &ImageSource::GetSourceInfo(uint32_t &errorCode)
 {
-    std::lock_guard<std::mutex> guard(decodingMutex_);
+    std::lock_guard<std::recursive_mutex> guard(decodingMutex_);
     if (IsSpecialYUV()) {
         return sourceInfo_;
     }
@@ -2515,13 +2516,13 @@ ImageSource::~ImageSource() __attribute__((no_sanitize("cfi")))
 
 bool ImageSource::IsStreamCompleted()
 {
-    std::lock_guard<std::mutex> guard(decodingMutex_);
+    std::lock_guard<std::recursive_mutex> guard(decodingMutex_);
     return sourceStreamPtr_->IsStreamCompleted();
 }
 
 bool ImageSource::ParseHdrType()
 {
-    std::unique_lock<std::mutex> guard(decodingMutex_);
+    std::unique_lock<std::recursive_mutex> guard(decodingMutex_);
     uint32_t ret = SUCCESS;
     auto iter = GetValidImageStatus(0, ret);
     if (iter == imageStatusMap_.end()) {
@@ -2600,7 +2601,7 @@ uint32_t ImageSource::RemoveImageProperties(uint32_t index, const std::set<std::
     }
 #endif
 
-    std::unique_lock<std::mutex> guard(decodingMutex_);
+    std::unique_lock<std::recursive_mutex> guard(decodingMutex_);
     auto metadataAccessor = MetadataAccessorFactory::Create(path);
     return RemoveImageProperties(metadataAccessor, keys);
 }
@@ -2611,7 +2612,7 @@ uint32_t ImageSource::RemoveImageProperties(uint32_t index, const std::set<std::
         return ERR_IMAGE_SOURCE_DATA;
     }
 
-    std::unique_lock<std::mutex> guard(decodingMutex_);
+    std::unique_lock<std::recursive_mutex> guard(decodingMutex_);
     auto metadataAccessor = MetadataAccessorFactory::Create(fd);
     return RemoveImageProperties(metadataAccessor, keys);
 }
@@ -3287,7 +3288,7 @@ MemoryUsagePreference ImageSource::GetMemoryUsagePreference()
 
 uint32_t ImageSource::GetFilterArea(const int &privacyType, std::vector<std::pair<uint32_t, uint32_t>> &ranges)
 {
-    std::unique_lock<std::mutex> guard(decodingMutex_);
+    std::unique_lock<std::recursive_mutex> guard(decodingMutex_);
     uint32_t ret;
     auto iter = GetValidImageStatus(0, ret);
     if (iter == imageStatusMap_.end()) {
@@ -3333,7 +3334,7 @@ uint8_t* ImageSource::ReadSourceBuffer(uint32_t bufferSize, uint32_t &errorCode)
 uint32_t ImageSource::GetFilterArea(const std::vector<std::string> &exifKeys,
                                     std::vector<std::pair<uint32_t, uint32_t>> &ranges)
 {
-    std::unique_lock<std::mutex> guard(decodingMutex_);
+    std::unique_lock<std::recursive_mutex> guard(decodingMutex_);
     if (exifKeys.empty()) {
         IMAGE_LOGD("GetFilterArea failed, exif key is empty.");
         return ERR_IMAGE_INVALID_PARAMETER;
@@ -3652,7 +3653,7 @@ unique_ptr<PixelMap> ImageSource::CreatePixelMapForYUV(uint32_t &errorCode)
     IMAGE_LOGD("CreatePixelMapForYUV operation completed.");
 
     {
-        std::unique_lock<std::mutex> guard(decodingMutex_);
+        std::unique_lock<std::recursive_mutex> guard(decodingMutex_);
         if (CreatExifMetadataByImageSource() == SUCCESS) {
             auto metadataPtr = exifMetadata_->Clone();
             pixelMap->SetExifMetadata(metadataPtr);
@@ -5383,7 +5384,7 @@ uint32_t ImageSource::ImageAiProcess(Size imageSize, const DecodeOptions &opts, 
 DecodeContext ImageSource::DecodeImageDataToContextExtended(uint32_t index, ImageInfo &info,
     ImagePlugin::PlImageInfo &plInfo, ImageEvent &imageEvent, uint32_t &errorCode)
 {
-    std::unique_lock<std::mutex> guard(decodingMutex_);
+    std::unique_lock<std::recursive_mutex> guard(decodingMutex_);
     hasDesiredSizeOptions = IsSizeVailed(opts_.desiredSize);
     TransformSizeWithDensity(info.size, sourceInfo_.baseDensity, opts_.desiredSize, opts_.fitDensity,
         opts_.desiredSize);
@@ -6705,7 +6706,7 @@ std::shared_ptr<XMPMetadata> ImageSource::ReadXMPMetadata(uint32_t &errorCode)
     errorCode = GetImageInfo(imageInfo);
     CHECK_ERROR_RETURN_RET_LOG(errorCode != SUCCESS, nullptr, "%{public}s GetImageInfo failed", __func__);
 
-    std::lock_guard<std::mutex> guard(decodingMutex_);
+    std::lock_guard<std::recursive_mutex> guard(decodingMutex_);
     std::unique_lock<std::mutex> guardFile(fileMutex_);
     if (xmpMetadata_ != nullptr) {
         IMAGE_LOGD("%{public}s already read xmp metadata", __func__);
@@ -6726,7 +6727,7 @@ uint32_t ImageSource::WriteXMPMetadata(std::shared_ptr<XMPMetadata> &xmpMetadata
     CHECK_ERROR_RETURN_RET_LOG(errorCode != SUCCESS, errorCode, "%{public}s GetImageInfo failed", __func__);
     const std::string &mimeType = imageInfo.encodedFormat;
 
-    std::lock_guard<std::mutex> guard(decodingMutex_);
+    std::lock_guard<std::recursive_mutex> guard(decodingMutex_);
     std::unique_lock<std::mutex> guardFile(fileMutex_);
     std::unique_ptr<XMPMetadataAccessor> accessor = nullptr;
     if (!srcFilePath_.empty()) {
