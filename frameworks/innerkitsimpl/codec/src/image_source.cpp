@@ -1371,7 +1371,6 @@ unique_ptr<PixelMap> ImageSource::CreatePixelMap(uint32_t index, const DecodeOpt
     }
     if (ImageSystemProperties::GetSkiaEnabled()) {
         if (IsExtendedCodec(mainDecoder_.get())) {
-            guard.unlock();
             InitDecoderForJpeg();
             return CreatePixelMapExtended(index, opts, errorCode);
         }
@@ -1625,7 +1624,7 @@ uint32_t ImageSource::PromoteDecoding(uint32_t index, const DecodeOptions &opts,
 
 void ImageSource::DetachIncrementalDecoding(PixelMap &pixelMap)
 {
-    std::lock_guard<std::mutex> guard(std::recursive_mutex);
+    std::lock_guard<std::recursive_mutex> guard(decodingMutex_);
     auto iter = incDecodingMap_.find(&pixelMap);
     if (iter == incDecodingMap_.end()) {
         return;
