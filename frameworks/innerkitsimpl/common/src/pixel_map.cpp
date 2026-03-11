@@ -4081,8 +4081,13 @@ static void GenSrcTransInfo(SkTransInfo &srcInfo, ImageInfo &imageInfo, uint8_t*
     srcInfo.bitmap.installPixels(srcInfo.info, pixels, srcInfo.info.minRowBytes());
 }
 
+struct GenTransInfoData {
+    uint64_t usage = 0;
+    bool fixPixelFormat = false;
+};
+
 static bool GendstTransInfo(SkTransInfo &srcInfo, SkTransInfo &dstInfo, SkMatrix &matrix,
-    TransMemoryInfo &memoryInfo, uint64_t usage)
+    TransMemoryInfo &memoryInfo, GenTransInfoData &data)
 {
     dstInfo.r = matrix.mapRect(srcInfo.r);
     int width = FloatToInt(dstInfo.r.width());
@@ -4092,11 +4097,12 @@ static bool GendstTransInfo(SkTransInfo &srcInfo, SkTransInfo &dstInfo, SkMatrix
         height += dstInfo.r.fTop;
     }
     dstInfo.info = srcInfo.info.makeWH(width, height);
-    PixelFormat format = ImageTypeConverter::ToPixelFormat(srcInfo.info.colorType());
+    PixelFormat format = data.fixPixelFormat ?
+        PixelFormat::BGRA_8888 : ImageTypeConverter::ToPixelFormat(srcInfo.info.colorType());
 #if !defined(_WIN32) && !defined(_APPLE) && !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
     Size desiredSize = {dstInfo.info.width(), dstInfo.info.height()};
     MemoryData memoryData = {nullptr, dstInfo.info.computeMinByteSize(), "Trans ImageData", desiredSize, format};
-    memoryData.usage = usage;
+    memoryData.usage = data.usage;
 #else
     MemoryData memoryData = {nullptr, dstInfo.info.computeMinByteSize(), "Trans ImageData"};
     memoryData.format = format;
@@ -4158,7 +4164,7 @@ void DrawImage(bool rectStaysRect, const AntiAliasingOption &option, SkCanvas &c
     }
 }
 
-bool PixelMap::DoTranslation(TransInfos &infos, const AntiAliasingOption &option)
+bool PixelMap::DoTranslation(TransInfos &infos, const AntiAliasingOption &option, bool fixPixelFormat)
 {
     if (!modifiable_) {
         IMAGE_LOGE("[PixelMap] DoTranslation can't be performed: PixelMap is not modifiable");
@@ -4194,7 +4200,8 @@ bool PixelMap::DoTranslation(TransInfos &infos, const AntiAliasingOption &option
     }
 
     SkTransInfo dst;
-    if (!GendstTransInfo(src, dst, infos.matrix, dstMemory, GetNoPaddingUsage())) {
+    GenTransInfoData infoData = {GetNoPaddingUsage(), fixPixelFormat};
+    if (!GendstTransInfo(src, dst, infos.matrix, dstMemory, infoData)) {
         IMAGE_LOGE("GendstTransInfo dstMemory falied");
         this->errorCode = IMAGE_RESULT_DECODE_FAILED;
         return false;
@@ -4309,7 +4316,7 @@ void PixelMap::scale(float xAxis, float yAxis, const AntiAliasingOption &option)
         if (fixPixelFormat) {  // Workaround to fix a color glitching issue under BGRA with LOW anti-aliasing
             imageInfo_.pixelFormat = PixelFormat::RGBA_8888;
         }
-        if (!DoTranslation(infos, option)) {
+        if (!DoTranslation(infos, option, fixPixelFormat)) {
             IMAGE_LOGE("scale falied");
         }
         if (fixPixelFormat) {
