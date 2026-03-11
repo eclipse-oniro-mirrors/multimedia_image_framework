@@ -493,7 +493,7 @@ private:
     std::map<int32_t, int32_t> decodeEventMap_;
     std::set<DecodeListener *> decodeListeners_;
     std::mutex listenerMutex_;
-    std::mutex decodingMutex_;
+    std::recursive_mutex decodingMutex_;
     std::mutex fileMutex_;
     bool isIncrementalSource_ = false;
     bool isIncrementalCompleted_ = false;
