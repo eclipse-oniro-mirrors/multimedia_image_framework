@@ -2554,11 +2554,6 @@ bool PixelMap::WritePropertiesToParcel(Parcel &parcel) const
         return false;
     }
 
-    if (!parcel.WriteBool(isAstc_)) {
-        IMAGE_LOGE("write pixel map isAstc_ to parcel failed.");
-        return false;
-    }
-
     if (!parcel.WriteBool(displayOnly_)) {
         IMAGE_LOGE("write pixel map displayOnly_ to parcel failed.");
         return false;
@@ -2979,8 +2974,7 @@ bool PixelMap::ReadPropertiesFromParcel(Parcel& parcel, PixelMap*& pixelMap, Ima
 
     pixelMap->SetReadVersion(readVersion);
     pixelMap->SetEditable(parcel.ReadBool());
-    memInfo.isAstc = parcel.ReadBool();
-    pixelMap->SetAstc(memInfo.isAstc);
+    pixelMap->SetAstc(ImageUtils::IsAstc(imgInfo.pixelFormat));
     if (pixelMap->GetReadVersion() >= PIXELMAP_VERSION_DISPLAY_ONLY) {
         bool displayOnly = parcel.ReadBool();
         pixelMap->SetDisplayOnly(displayOnly);
