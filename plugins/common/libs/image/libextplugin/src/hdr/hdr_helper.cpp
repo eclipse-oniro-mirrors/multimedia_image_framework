@@ -1361,7 +1361,7 @@ vector<uint8_t> HdrJpegPackerHelper::PackISOMetadataMarker(HdrMetadata& metadata
         altHeadroomNumerator = (uint32_t)(extendMeta.metaISO.alternateHeadroom * DENOMINATOR);
         altHeadroomDenominator = DENOMINATOR;
     }
-    IMAGE_LOGD("HDR-IMAGE baseHeadroom: %{public}d, altHeadroom: %{public}d", 
+    IMAGE_LOGD("HDR-IMAGE baseHeadroom: %{public}d, altHeadroom: %{public}d",
         baseHeadroomNumerator, altHeadroomNumerator);
     ImageUtils::Uint32ToBytes(altHeadroomNumerator, bytes, index);
     ImageUtils::Uint32ToBytes(altHeadroomDenominator, bytes, index);
