@@ -88,7 +88,7 @@ bool HispeedImageManager::LoadYuvJpegEncoderSym()
         reinterpret_cast<YuvJpegEncoderEncodeFunc>(dlsym(hispeedImageSoHandle_, "HSD_Image_JpegEncoderEncode"));
     jpegEncoderEncodeWithStrideFunc_ = reinterpret_cast<YuvJpegEncoderEncodeWithStrideFunc>(dlsym(hispeedImageSoHandle_,
         "HSD_Image_JpegEncoderEncodeWithStride"));
-    jpegEncoderSetOptimizeCodingFunc_ = 
+    jpegEncoderSetOptimizeCodingFunc_ =
         reinterpret_cast<YuvJpegEncoderSetOptimizeCodingFunc>(dlsym(hispeedImageSoHandle_,
         "HSD_Image_JpegEncoderSetOptimizeCoding"));
     jpegEncoderDestroyFunc_ =
