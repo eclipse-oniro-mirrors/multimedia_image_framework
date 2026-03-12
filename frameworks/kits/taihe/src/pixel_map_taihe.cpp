@@ -754,7 +754,7 @@ void PixelMapImpl::ConvertPixelFormatSync(PixelMapFormat targetPixelFormat)
     }
 
     Media::PixelFormat srcFormat = nativePixelMap_->GetPixelFormat();
-    Media::PixelFormat dstFormat = ParsePixelFormat(targetPixelFormat);
+    Media::PixelFormat dstFormat = Media::PixelFormat(targetPixelFormat.get_value());
     if (FormatTypeOf(srcFormat) == FormatType::UNKNOWN || FormatTypeOf(dstFormat) == FormatType::UNKNOWN) {
         ImageTaiheUtils::ThrowExceptionError(Media::ERR_IMAGE_INVALID_PARAMETER,
             "Source or target pixel format is not supported or invalid.");
@@ -1324,6 +1324,15 @@ bool PixelMapImpl::Is10BitYuvFormat(Media::PixelFormat format)
     return format == Media::PixelFormat::YCBCR_P010 || format == Media::PixelFormat::YCRCB_P010;
 }
 
+static Media::PixelFormat ParsePixelFormat(PixelMapFormat const& etsFormat)
+{
+    Media::PixelFormat format = Media::PixelFormat(etsFormat.get_value());
+    if (format >= Media::PixelFormat::EXTERNAL_MAX) {
+        format = Media::PixelFormat::UNKNOWN;
+    }
+    return format;
+}
+
 void PixelMapImpl::ParseInitializationOptions(InitializationOptions const& etsOptions,
     Media::InitializationOptions &options)
 {
@@ -1343,15 +1352,6 @@ void PixelMapImpl::ParseInitializationOptions(InitializationOptions const& etsOp
     if (etsOptions.scaleMode) {
         options.scaleMode = Media::ScaleMode(etsOptions.scaleMode->get_value());
     }
-}
-
-Media::PixelFormat PixelMapImpl::ParsePixelFormat(PixelMapFormat const& etsFormat)
-{
-    Media::PixelFormat format = Media::PixelFormat(etsFormat.get_value());
-    if (format >= Media::PixelFormat::EXTERNAL_MAX) {
-        format = Media::PixelFormat::UNKNOWN;
-    }
-    return format;
 }
 
 void PixelMapImpl::Release()
