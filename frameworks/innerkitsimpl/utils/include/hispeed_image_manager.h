@@ -30,7 +30,17 @@ namespace OHOS::Media {
 class PixelMap;
 class Picture;
 }  // namespace OHOS::Media
- 
+
+struct HiSpeedYuvInfo
+{
+    int width;
+    int height;
+    uint32_t yStride;
+    uint32_t uvStride;
+    uint32_t yOffset;
+    uint32_t uvOffset;
+};
+
 typedef bool (*WriteFunc)(void* opaque, const void* buffer, size_t size);
 typedef void (*FlushFunc)(void* opaque);
  
@@ -41,6 +51,9 @@ using YuvJpegEncoderSetSubsamplingFunc = int (*)(YuvJpegEncoder encoder, int sub
 using YuvJpegEncoderSetIccMetadataFunc = int (*)(YuvJpegEncoder encoder, const uint8_t* data, size_t size);
 using YuvJpegEncoderEncodeFunc = int (*)(YuvJpegEncoder encoder, const uint8_t* yuvData, int width, int height,
                                          int yuvFormat, WriteFunc write, FlushFunc flush, void* opaque);
+using YuvJpegEncoderEncodeWithStrideFunc = int (*)(YuvJpegEncoder encoder, const uint8_t* yuvData,
+    struct HispeedYuvInfo info, int yuvFormat, WriteFunc write, FlushFunc flush, void* opaque);
+using YuvJpegEncoderSetOptimizeCodingFunc = int (*)(YuvJpegEncoder encoder, bool optimizeCoding);
 using YuvJpegEncoderDestroyFunc = void (*)(YuvJpegEncoder encoder);
 using Yuv10ToRgb8888Func = int (*)(const uint16_t* srcY, int srcStrideY, const uint16_t* srcUv, int srcStrideUv,
                                    uint8_t* dstArgb, int dstStrideArgb, int width, int height, const int* yuvConstant);
@@ -90,6 +103,8 @@ private:
     YuvJpegEncoderSetQualityFunc jpegEncoderSetQualityFunc_;
     YuvJpegEncoderSetSubsamplingFunc jpegEncoderSetSubsamplingFunc_;
     YuvJpegEncoderSetIccMetadataFunc jpegEncoderSetICCMetadataFunc_;
+    YuvJpegEncoderEncodeWithStrideFunc jpegEncoderEncodeWithStrideFunc_;
+    YuvJpegEncoderSetOptimizeCodingFunc jpegEncoderSetOptimizeCodingFunc_;
     YuvJpegEncoderEncodeFunc jpegEncoderEncodeFunc_;
     YuvJpegEncoderDestroyFunc jpegEncoderDestroyFunc_;
     Yuv10ToRgb8888Func yuv10ToRgb8888Func_;
