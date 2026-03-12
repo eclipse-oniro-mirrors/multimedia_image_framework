@@ -181,8 +181,8 @@ void HispeedImageManager::UnloadHispeedImageSo()
     jpegEncoderSetSubsamplingFunc_ = nullptr;
     jpegEncoderSetICCMetadataFunc_ = nullptr;
     jpegEncoderEncodeFunc_ = nullptr;
-    jpegEncoderEncodeWithStrideFunc_ == nullptr;
-    jpegEncoderSetOptimizeCodingFunc_ == nullptr;
+    jpegEncoderEncodeWithStrideFunc_ = nullptr;
+    jpegEncoderSetOptimizeCodingFunc_ = nullptr;
     jpegEncoderDestroyFunc_ = nullptr;
     yuv10ToRgb10Func_ = nullptr;
     yuv10ToRgb8888Func_ = nullptr;
