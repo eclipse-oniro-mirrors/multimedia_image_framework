@@ -230,7 +230,7 @@ public:
     NATIVEEXPORT uint32_t GetImagePropertyByType(uint32_t index, const std::string &key, MetadataValue &value);
     NATIVEEXPORT uint32_t GetImagePropertyCommonByType(const std::string &key, MetadataValue &value);
     NATIVEEXPORT uint32_t RemoveAllProperties();
-    NATIVEEXPORT std::vector<MetadataValue> GetAllPropertiesWithType();
+    NATIVEEXPORT std::vector<MetadataValue> GetAllPropertiesWithType(uint32_t index = 0);
     NATIVEEXPORT uint32_t GetImagePropertyStringBySync(uint32_t index, const std::string &key, std::string &value);
     NATIVEEXPORT uint32_t WriteImageMetadataBlob(const std::vector<MetadataValue> &properties);
     NATIVEEXPORT uint32_t ModifyImagePropertyBlob(const std::vector<MetadataValue> &properties);
@@ -296,6 +296,7 @@ public:
 #if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
     NATIVEEXPORT std::shared_ptr<GifMetadata> GetGifMetadata(uint32_t index, uint32_t &errorCode);
     NATIVEEXPORT std::shared_ptr<HeifsMetadata> GetHeifsMetadata(uint32_t index, uint32_t &errorCode);
+    NATIVEEXPORT std::shared_ptr<WebPMetadata> GetWebPMetadata(uint32_t index, uint32_t &errorCode);
     NATIVEEXPORT std::shared_ptr<BlobMetadata> GetBlobMetadata(MetadataType type, uint32_t &errorCode);
 #endif
     NATIVEEXPORT std::vector<std::shared_ptr<ImageMetadata>> GetAllSupportedMetadataTypes(uint32_t index,
@@ -343,9 +344,12 @@ private:
     void SetIncrementalSource(const bool isIncrementalSource);
     bool IsStreamCompleted();
     uint32_t GetImagePropertyCommon(uint32_t index, const std::string &key, std::string &value);
+    uint32_t GetGifLoopCountByType(uint32_t index, MetadataValue &value);
     uint32_t GetGifProperty(uint32_t index, const std::string &key, MetadataValue &value);
+    uint32_t GetWebPProperty(uint32_t index, const std::string &key, MetadataValue &value);
     uint32_t GetFragmentProperty(const std::string &key, MetadataValue &value);
     void GetFragmentPropertiesWithType(std::vector<MetadataValue> &result);
+    void GetWebpPropertiesWithType(uint32_t index, std::vector<MetadataValue> &result);
     FinalOutputStep GetFinalOutputStep(const DecodeOptions &opts, PixelMap &pixelMap, bool hasNinePatch);
     bool HasDensityChange(const DecodeOptions &opts, ImageInfo &srcImageInfo, bool hasNinePatch);
     bool ImageSizeChange(int32_t width, int32_t height, int32_t desiredWidth, int32_t desiredHeight);
@@ -447,6 +451,7 @@ private:
     void RefreshImageSourceByFd();
     std::string GetPixelMapName(PixelMap* pixelMap);
     bool IsDngImage();
+    bool IsWebPImage();
 
 #if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
     void SpecialSetComposeBuffer(ImagePlugin::DecodeContext &baseCtx, sptr<SurfaceBuffer>& baseSptr,

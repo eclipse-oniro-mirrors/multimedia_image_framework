@@ -152,6 +152,7 @@ const static string TAG_ORIENTATION_INT = "OrientationInt";
 const static string IMAGE_DELAY_TIME = "DelayTime";
 const static string IMAGE_DISPOSAL_TYPE = "DisposalType";
 const static string IMAGE_LOOP_COUNT = "GIFLoopCount";
+const static string WEBP_LOOP_COUNT = "WebPLoopCount";
 const static std::string HW_MNOTE_TAG_HEADER = "HwMnote";
 const static std::string HW_MNOTE_CAPTURE_MODE = "HwMnoteCaptureMode";
 const static std::string HW_MNOTE_PHYSICAL_APERTURE = "HwMnotePhysicalAperture";
@@ -2736,15 +2737,22 @@ static uint32_t GetDisposalType(SkCodec * codec, uint32_t index, int32_t &value)
 
 static uint32_t GetLoopCount(SkCodec *codec, int32_t &value)
 {
-    if (codec->getEncodedFormat() != SkEncodedImageFormat::kGIF) {
+    SkEncodedImageFormat format = codec->getEncodedFormat();
+    if (format != SkEncodedImageFormat::kGIF && format != SkEncodedImageFormat::kWEBP) {
         IMAGE_LOGE("[GetLoopCount] Should not get loop count in %{public}d", codec->getEncodedFormat());
         return ERR_MEDIA_INVALID_PARAM;
     }
     auto count = codec->getRepetitionCount();
-    bool cond = count == LOOP_COUNT_INFINITE || count <= SK_REPETITION_COUNT_ERROR_VALUE;
-    CHECK_ERROR_RETURN_RET_LOG(cond, ERR_IMAGE_SOURCE_DATA, "[GetLoopCount] getRepetitionCount error");
-    if (count == SK_REPETITION_COUNT_INFINITE) {
-        count = LOOP_COUNT_INFINITE;
+    if (format == SkEncodedImageFormat::kGIF) {
+        bool cond = count == LOOP_COUNT_INFINITE || count <= SK_REPETITION_COUNT_ERROR_VALUE;
+        CHECK_ERROR_RETURN_RET_LOG(cond, ERR_IMAGE_SOURCE_DATA, "[GetLoopCount] getRepetitionCount error");
+        if (count == SK_REPETITION_COUNT_INFINITE) {
+            count = LOOP_COUNT_INFINITE;
+        }
+    } else if (format == SkEncodedImageFormat::kWEBP) {
+        bool cond = count == SK_REPETITION_COUNT_ERROR_VALUE || codec->getFrameCount() == NUM_1;
+        CHECK_ERROR_RETURN_RET_LOG(cond, ERR_IMAGE_SOURCE_DATA, "[GetLoopCount] getRepetitionCount error");
+        count++;
     }
     value = static_cast<int>(count);
     return SUCCESS;
@@ -2763,7 +2771,7 @@ uint32_t ExtDecoder::GetImagePropertyInt(uint32_t index, const std::string &key,
     if (IMAGE_DISPOSAL_TYPE.compare(key) == ZERO) {
         return GetDisposalType(codec_.get(), index, value);
     }
-    if (IMAGE_LOOP_COUNT.compare(key) == ZERO) {
+    if (IMAGE_LOOP_COUNT.compare(key) == ZERO || WEBP_LOOP_COUNT.compare(key) == ZERO) {
         return GetLoopCount(codec_.get(), value);
     }
     // There can add some not need exif property
