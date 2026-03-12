@@ -26,8 +26,8 @@ namespace Media {
 
 class PixelMapTaiheAni {
 public:
-    static ani_object CreateEtsPixelMap([[maybe_unused]] ani_env* env, std::shared_ptr<PixelMap> pixelMap);
-    static std::shared_ptr<PixelMap> GetNativePixelMap([[maybe_unused]] ani_env* env, ani_object obj);
+    static ani_object CreateEtsPixelMap(ani_env* env, std::shared_ptr<PixelMap> pixelMap);
+    static std::shared_ptr<PixelMap> GetNativePixelMap(ani_env* env, ani_object obj);
     std::shared_ptr<PixelMap> nativePixelMap_;
 
 private:
