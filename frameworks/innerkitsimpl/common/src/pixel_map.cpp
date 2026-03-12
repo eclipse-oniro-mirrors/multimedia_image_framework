@@ -4435,15 +4435,8 @@ void PixelMap::scale(float xAxis, float yAxis, const AntiAliasingOption &option)
     } else {
         TransInfos infos;
         infos.matrix.setScale(xAxis, yAxis);
-        bool fixPixelFormat = imageInfo_.pixelFormat == PixelFormat::BGRA_8888 && option == AntiAliasingOption::LOW;
-        if (fixPixelFormat) {  // Workaround to fix a color glitching issue under BGRA with LOW anti-aliasing
-            imageInfo_.pixelFormat = PixelFormat::RGBA_8888;
-        }
         if (!DoTranslation(infos, option)) {
             IMAGE_LOGE("scale falied");
-        }
-        if (fixPixelFormat) {
-            imageInfo_.pixelFormat = PixelFormat::BGRA_8888;
         }
     }
     ImageUtils::DumpPixelMapIfDumpEnabled(*this, __func__);
