@@ -31,7 +31,7 @@ class PixelMap;
 class Picture;
 }  // namespace OHOS::Media
 
-struct HiSpeedYuvInfo {
+struct HispeedYuvInfo {
     int width;
     int height;
     uint32_t yStride;
