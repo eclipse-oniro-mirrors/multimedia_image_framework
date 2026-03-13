@@ -721,6 +721,10 @@ bool InitYuvDataOutInfo(SurfaceBuffer* surfaceBuffer, const ImageInfo &info, YUV
 
 static bool CheckPixelMap(unique_ptr<PixelMap>& dstPixelMap, const InitializationOptions &opts)
 {
+    if (ImageUtils::IsAstc(opts.pixelFormat)) {
+        IMAGE_LOGE("Create PixelMap does not support ASTC format");
+        return false;
+    }
     if (IsYUV(opts.pixelFormat)) {
 #ifdef EXT_PIXEL
         dstPixelMap = std::make_unique<PixelYuvExt>();
