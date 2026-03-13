@@ -55,7 +55,7 @@ static const uint32_t INPUT_HEIFS_FRAMECOUNT = 120;
 static const uint32_t INPUT_HEIFS_DELAYTIME = 40;
 static const uint32_t MOCK_INPUT_HEIGHT = 144;
 static const uint32_t MOCK_INPUT_WIDTH = 256;
-static const uint32_t INPUT_STATIC_IMAGE_DELAYTIME = 1800;
+static const uint32_t INPUT_STATIC_IMAGE_DELAYTIME = 20;
 static const uint32_t INPUT_STATIC_IMAGE_HEIGHT = 720;
 static const uint32_t INPUT_STATIC_IMAGE_WIDTH = 1280;
 static const uint32_t INPUT_ALL_REF_IMAGE_DELAYTIME = 200;
@@ -726,7 +726,7 @@ HWTEST_F(HeifsDecodeTest, GetHvccBoxTest002, TestSize.Level1)
 
 /**
  * @tc.name: GetDelayTimeTest001
- * @tc.desc: Test GetDelayTime when stts data is invalid.
+ * @tc.desc: Test GetSampleDelta when stts data is invalid.
  * @tc.type: FUNC
  */
 HWTEST_F(HeifsDecodeTest, GetDelayTimeTest001, TestSize.Level1)
@@ -737,8 +737,8 @@ HWTEST_F(HeifsDecodeTest, GetDelayTimeTest001, TestSize.Level1)
     tmpData.sampleCount = MOCK_DATA;
     tmpData.sampleDelta = MOCK_DATA;
     box.entries_.emplace_back(tmpData);
-    int32_t value = 0;
-    ASSERT_EQ(box.GetDelayTime(MOCK_INDEX, value), heif_error_invalid_stts);
+    uint32_t value = 0;
+    ASSERT_EQ(box.GetSampleDelta(MOCK_INDEX, value), heif_error_invalid_stts);
     GTEST_LOG_(INFO) << "HeifsDecodeTest: GetDelayTimeTest001 end";
 }
 

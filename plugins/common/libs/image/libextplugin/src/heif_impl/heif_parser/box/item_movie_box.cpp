@@ -370,7 +370,7 @@ heif_error HeifSttsBox::Write(HeifStreamWriter &writer) const
     return heif_error_ok;
 }
 
-heif_error HeifSttsBox::GetDelayTime(uint32_t index, int32_t &value) const
+heif_error HeifSttsBox::GetSampleDelta(uint32_t index, uint32_t &value) const
 {
     if (entries_.empty()) {
         return heif_error_invalid_stts;
