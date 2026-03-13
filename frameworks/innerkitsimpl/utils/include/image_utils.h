@@ -225,6 +225,7 @@ public:
     static int32_t GetByteCount(ImageInfo imageInfo);
     static int32_t GetYUVByteCount(const ImageInfo& info);
     static PixelFormat ConvertTo10BitPixelFormat(PixelFormat pixelFormat);
+    static bool CalcRGBStride(PixelFormat format, uint32_t width, int &stride);
     template<typename T>
     static bool CheckMulOverflow(const T& num1, const T& num2)
     {

@@ -63,35 +63,6 @@ static AVPixelFormat findPixelFormat(PixelFormat format)
     }
 }
 
-static bool CalcRGBStride(PixelFormat format, uint32_t width, int &stride)
-{
-    if (format == PixelFormat::RGBA_1010102) {
-        stride = static_cast<int>(width * BYTES_PER_PIXEL_RGBA);
-        return true;
-    }
-    auto avFormat = findPixelFormat(format);
-    switch (avFormat) {
-        case AV_PIX_FMT_RGB565:
-            stride = static_cast<int>(width * BYTES_PER_PIXEL_RGB565);
-            break;
-        case AV_PIX_FMT_RGBA:
-            stride = static_cast<int>(width * BYTES_PER_PIXEL_RGBA);
-            break;
-        case AV_PIX_FMT_RGBA64:
-            stride = static_cast<int>(width * STRIDES_PER_PLANE);
-            break;
-        case AV_PIX_FMT_BGRA:
-            stride = static_cast<int>(width * BYTES_PER_PIXEL_BGRA);
-            break;
-        case AV_PIX_FMT_RGB24:
-            stride = static_cast<int>(width * BYTES_PER_PIXEL_RGB);
-            break;
-        default:
-            return false;
-    }
-    return true;
-}
-
 static bool YuvToRGBParam(const YUVDataInfo &yDInfo, SrcConvertParam &srcParam, DestConvertParam &destParam,
                           DestConvertInfo &destInfo)
 {
@@ -104,7 +75,7 @@ static bool YuvToRGBParam(const YUVDataInfo &yDInfo, SrcConvertParam &srcParam, 
         dstStride = static_cast<int>(destInfo.yStride);
         destParam.slice[0] = destInfo.buffer + destInfo.yOffset;
     } else {
-        auto bRet = CalcRGBStride(destParam.format, destParam.width, dstStride);
+        auto bRet = ImageUtils::CalcRGBStride(destParam.format, destParam.width, dstStride);
         if (!bRet) {
             return false;
         }
@@ -277,7 +248,7 @@ static bool YuvP010ToRGBParam(const YUVDataInfo &yDInfo, SrcConvertParam &srcPar
         dstStride = static_cast<int>(destInfo.yStride);
         destParam.slice[0] = destInfo.buffer + destInfo.yOffset;
     } else {
-        auto bRet = CalcRGBStride(destParam.format, destParam.width, dstStride);
+        auto bRet = ImageUtils::CalcRGBStride(destParam.format, destParam.width, dstStride);
         if (!bRet) {
             return false;
         }
@@ -300,7 +271,7 @@ static bool YuvP010ToRGB10(const uint8_t *srcBuffer, const YUVDataInfo &yDInfo, 
     DestConvertParam destParam = {yDInfo.yWidth, yDInfo.yHeight};
     destParam.format = dstFormat;
     if (!YuvP010ToRGBParam(yDInfo, srcParam, destParam, destInfo)) {
-        IMAGE_LOGE("yuv conversion to yuv failed!");
+        IMAGE_LOGE("YuvP010 conversion to RGB failed!");
         return false;
     }
     if (srcParam.format == PixelFormat::YCRCB_P010) {
@@ -827,7 +798,7 @@ static bool YuvP010ToRGB(const uint8_t *srcBuffer, const YUVDataInfo &yDInfo, Pi
     DestConvertParam destParam = {yDInfo.yWidth, yDInfo.yHeight};
     destParam.format = dstFormat;
     if (!YuvP010ToRGBParam(yDInfo, srcParam, destParam, destInfo)) {
-        IMAGE_LOGE("yuv conversion to yuv failed!");
+        IMAGE_LOGE("YuvP010 conversion to RGB failed!");
         return false;
     }
     if (srcParam.format == PixelFormat::YCRCB_P010) {

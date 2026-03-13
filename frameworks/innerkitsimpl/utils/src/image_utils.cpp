@@ -2352,5 +2352,35 @@ PixelFormat ImageUtils::ConvertTo10BitPixelFormat(PixelFormat pixelFormat)
     }
     return hdrAllocFormat;
 }
+
+bool ImageUtils::CalcRGBStride(PixelFormat format, uint32_t width, int &stride)
+{
+    int pixelBytes = 0;
+    switch (format) {
+        case PixelFormat::RGB_565:
+            pixelBytes = RGB565_BYTES;
+            break;
+        case PixelFormat::BGRA_8888:
+        case PixelFormat::RGBA_8888:
+        case PixelFormat::RGBA_1010102:
+            pixelBytes = ARGB8888_BYTES;
+            break;
+        case PixelFormat::RGBA_F16:
+            pixelBytes = RGBA_F16_BYTES;
+            break;
+        case PixelFormat::RGB_888:
+            pixelBytes = RGB888_BYTES;
+            break;
+        default:
+            IMAGE_LOGE("CalcRGBStride error: unsupported pixel format:%{public}d", format);
+            return false;
+    }
+    if (width > INT_MAX / static_cast<uint32_t>(pixelBytes)) {
+        IMAGE_LOGE("CalcRGBStride error: overflow! format=%{public}d, width=%{public}u", format, width);
+        return false;
+    }
+    stride = static_cast<int>(width * pixelBytes);
+    return true;
+}
 } // namespace Media
 } // namespace OHOS
