@@ -658,6 +658,7 @@ bool ImageUtils::CheckMulOverflow(int32_t width, int32_t height, int32_t bytesPe
     }
     int32_t bufferSize;
     if (__builtin_mul_overflow(rectSize, bytesPerPixel, &bufferSize)) {
+        IMAGE_LOGE("bytesPerPixel overflow!");
         return true;
     }
     return false;
