@@ -27,6 +27,12 @@ namespace ANI::Image {
 using namespace taihe;
 using namespace ohos::multimedia::image::image;
 
+struct AniObjectInfo {
+    ani_class objectClass = ani_class {};
+    ani_method objectCtor = ani_method {};
+    bool inited = false;
+};
+
 class ImageTaiheUtils {
 public:
     static void HicheckerReport();
@@ -57,6 +63,8 @@ public:
 
     template <typename T>
     static bool IsValidPtr(T data);
+private:
+    static AniObjectInfo businessErrorInfo_;
 };
 } // namespace ANI::Image
 
