@@ -826,11 +826,7 @@ bool ExtDecoder::IsProgressiveJpeg()
 
 uint32_t ExtDecoder::CheckDecodeOptions(uint32_t index, const PixelDecodeOptions &opts)
 {
-    bool cond = ImageUtils::CheckMulOverflow(dstInfo_.width(), dstInfo_.height(), dstInfo_.bytesPerPixel());
-    CHECK_ERROR_RETURN_RET_LOG(cond, ERR_IMAGE_INVALID_PARAMETER,
-        "SetDecodeOptions failed, width:%{public}d, height:%{public}d is too large",
-        dstInfo_.width(), dstInfo_.height());
-    cond = ExtractHeifRegion(opts) != SUCCESS;
+    bool cond = ExtractHeifRegion(opts) != SUCCESS;
     CHECK_ERROR_RETURN_RET(cond, ERR_IMAGE_INVALID_PARAMETER);
     IMAGE_LOGD("%{public}s IN, dstSubset_: xy [%{public}d x %{public}d] right,bottom: [%{public}d x %{public}d]",
         __func__, dstSubset_.left(), dstSubset_.top(), dstSubset_.right(), dstSubset_.bottom());

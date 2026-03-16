@@ -1223,7 +1223,7 @@ HWTEST_F(ImageUtilsTest, CheckMulOverflowTest011, TestSize.Level3)
     EXPECT_TRUE(res);
 
     res = ImageUtils::CheckMulOverflow(INT32_MAX, INT32_MAX);
-    EXPECT_FALSE(res);
+    EXPECT_TRUE(res);
 }
 
 /**
@@ -1234,15 +1234,15 @@ HWTEST_F(ImageUtilsTest, CheckMulOverflowTest011, TestSize.Level3)
 HWTEST_F(ImageUtilsTest, CheckMulOverflowTest012, TestSize.Level3)
 {
     bool res = ImageUtils::CheckMulOverflow(INT32_MAX, INT32_MAX, INT32_MAX);
-    EXPECT_FALSE(res);
+    EXPECT_TRUE(res);
 
     int32_t mockWidth = 1;
     int32_t mockHeight = 1;
     res = ImageUtils::CheckMulOverflow(mockWidth, INT32_MAX, INT32_MAX);
-    EXPECT_FALSE(res);
+    EXPECT_TRUE(res);
 
     res = ImageUtils::CheckMulOverflow(INT32_MAX, mockHeight, INT32_MAX);
-    EXPECT_FALSE(res);
+    EXPECT_TRUE(res);
 }
 
 /**
