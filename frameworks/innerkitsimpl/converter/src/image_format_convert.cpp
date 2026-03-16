@@ -551,8 +551,10 @@ std::unique_ptr<AbsMemory> ImageFormatConvert::CreateMemory(PixelFormat pixelFor
         strides = {size.width, (size.width + 1) / NUM_2 * NUM_2, 0, size.width * size.height};
     } else {
         uint32_t stride = 0;
-        CalcRGBStride(pixelFormat, size.width, stride);
-        CHECK_ERROR_RETURN_RET_LOG(stride == 0, nullptr, "CreateMemory CalcRGBStride failed");
+        if (!CalcRGBStride(pixelFormat, size.width, stride)) {
+            IMAGE_LOGE("CreateMemory CalcRGBStride failed");
+            return nullptr;
+        }
         strides = {stride, 0, 0, 0};
     }
     MemoryData memoryData = {nullptr, pictureSize, "PixelConvert", size, pixelFormat};
