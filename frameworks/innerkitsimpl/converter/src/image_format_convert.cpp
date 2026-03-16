@@ -241,7 +241,7 @@ static const std::set<std::pair<PixelFormat, PixelFormat>> conversions = {
     {PixelFormat::RGBA_F16, PixelFormat::YCRCB_P010}
 };
 
-static void CalcRGBStride(PixelFormat format, uint32_t width, uint32_t &stride)
+static bool CalcRGBStride(PixelFormat format, uint32_t width, uint32_t &stride)
 {
     uint32_t pixelBytes = 0;
     switch (format) {
@@ -265,10 +265,10 @@ static void CalcRGBStride(PixelFormat format, uint32_t width, uint32_t &stride)
     }
     if (width > UINT32_MAX / pixelBytes) {
         IMAGE_LOGE("CalcRGBStride error: overflow! format=%{public}d, width=%{public}u", format, width);
-        stride = 0;
-        return;
+        return false;
     }
     stride = width * pixelBytes;
+    return true;
 }
 
 static bool IsYUVConvert(PixelFormat srcFormat)
@@ -336,8 +336,11 @@ uint32_t ImageFormatConvert::RGBConvert(const OHOS::Media::ConvertDataInfo &srcD
     if (srcDataInfo.stride != 0) {
         srcStride = srcDataInfo.stride;
     } else {
-        CalcRGBStride(srcDataInfo.pixelFormat, srcDataInfo.imageSize.width, srcStride);
-        CHECK_ERROR_RETURN_RET_LOG(srcStride == 0, ERR_IMAGE_INVALID_PARAMETER, "RGBConvert CalcRGBStride failed");
+        if (!CalcRGBStride(srcDataInfo.pixelFormat, srcDataInfo.imageSize.width, srcStride)) {
+            IMAGE_LOGE("RGBConvert CalcRGBStride failed");
+            m->Release();
+            return ERR_IMAGE_INVALID_PARAMETER;
+        }
     }
     RGBDataInfo rgbDataInfo = {srcDataInfo.imageSize.width, srcDataInfo.imageSize.height, srcStride};
     if (!cvtFunc(srcDataInfo.buffer, rgbDataInfo, destInfo, srcDataInfo.colorSpace)) {
