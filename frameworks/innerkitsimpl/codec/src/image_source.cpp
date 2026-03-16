@@ -44,6 +44,7 @@
 #endif
 #include "exif_metadata.h"
 #include "exif_metadata_formatter.h"
+#include "webp_metadata.h"
 #include "file_source_stream.h"
 #include "image/abs_image_decoder.h"
 #include "image/abs_image_format_agent.h"
@@ -182,6 +183,8 @@ constexpr uint8_t PIXEL_BYTES = 4;
 static constexpr int32_t THUMBNAIL_SHORT_SIDE_SIZE = 350;
 static constexpr int32_t THUMBNAIL_LONG_SIDE_MULTIPLIER = 3;
 constexpr int32_t INVALID_FILE_DESCRIPTOR = -1;
+constexpr int32_t WEBP_MIN_FRAME_DURATION = 100;
+constexpr int32_t WEBP_DELAY_TIME_UINT16_MAX = 65535;
 
 struct StreamInfo {
     uint8_t* buffer = nullptr;
@@ -2149,9 +2152,24 @@ void ImageSource::GetFragmentPropertiesWithType(std::vector<MetadataValue> &resu
     }
 }
 
-std::vector<MetadataValue> ImageSource::GetAllPropertiesWithType()
+void ImageSource::GetWebpPropertiesWithType(uint32_t index, std::vector<MetadataValue> &result)
+{
+    for (const std::string& key : ImageKvMetadata::GetWebPMetadataKeys()) {
+        MetadataValue value;
+        uint32_t ret = GetWebPProperty(index, key, value);
+        if (ret == SUCCESS) {
+            result.push_back(value);
+        }
+    }
+}
+
+std::vector<MetadataValue> ImageSource::GetAllPropertiesWithType(uint32_t index)
 {
     std::vector<MetadataValue> result;
+
+    if (IsWebPImage()) {
+        GetWebpPropertiesWithType(index, result);
+    }
     CHECK_ERROR_RETURN_RET_LOG(!exifMetadata_ && isExifReadFailed_, result, "Exif metadata not initialized");
     CHECK_ERROR_RETURN_RET_LOG(CreatExifMetadataByImageSource() != SUCCESS, result, "Metadata creation failed");
 #if !defined(CROSS_PLATFORM)
@@ -2317,6 +2335,35 @@ uint32_t ImageSource::GetGifProperty(uint32_t index, const std::string &key, Met
     return ERROR;
 }
 
+uint32_t ImageSource::GetWebPProperty(uint32_t index, const std::string &key, MetadataValue &value)
+{
+    value.key = key;
+    uint32_t errorCode = 0;
+    std::shared_ptr<WebPMetadata> webpMetadata = GetWebPMetadata(index, errorCode);
+    if (webpMetadata == nullptr || errorCode != SUCCESS) {
+        IMAGE_LOGE("Get webp metadata failed");
+        return ERR_IMAGE_SOURCE_DATA;
+    }
+    ImageMetadata::PropertyMapPtr propertiesPtr = webpMetadata->GetAllProperties();
+    if (!propertiesPtr) {
+        IMAGE_LOGE("Properties map pointer is null");
+        return ERR_IMAGE_SOURCE_DATA;
+    }
+
+    auto iter = ExifMetadata::GetWebPMetadataMap().find(key);
+    if (iter != ExifMetadata::GetWebPMetadataMap().end() && iter->second == PropertyValueType::INT) {
+        IMAGE_LOGD("GetImagePropertyInt special key: %{public}s", key.c_str());
+        uint32_t u32num;
+        errorCode = ParseUInt32Key(propertiesPtr, key, u32num);
+        if (errorCode == SUCCESS) {
+            value.type = PropertyValueType::INT;
+            value.intArrayValue.emplace_back(u32num);
+        }
+        return errorCode;
+    }
+    return ERROR;
+}
+
 uint32_t ImageSource::GetFragmentProperty(const std::string &key, MetadataValue &value)
 {
 #if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
@@ -2345,22 +2392,28 @@ uint32_t ImageSource::GetFragmentProperty(const std::string &key, MetadataValue 
 #endif
 }
 
+uint32_t ImageSource::GetGifLoopCountByType(uint32_t index, MetadataValue &value)
+{
+    uint32_t ret = SUCCESS;
+    IMAGE_LOGD("GetImagePropertyString special key: %{public}s", IMAGE_GIFLOOPCOUNT_TYPE.c_str());
+    (void)GetFrameCount(ret);
+    if (ret != SUCCESS || mainDecoder_ == nullptr) {
+        IMAGE_LOGE("[ImageSource]GetFrameCount get frame sum error.");
+        return ret;
+    } else {
+        ret = mainDecoder_->GetImagePropertyString(index, IMAGE_GIFLOOPCOUNT_TYPE, value.stringValue);
+        CHECK_ERROR_RETURN_RET_LOG(ret != SUCCESS, ret,
+            "[ImageSource]GetLoopCount get loop count issue. errorCode=%{public}u", ret);
+    }
+    return ret;
+}
+
 uint32_t ImageSource::GetImagePropertyByType(uint32_t index, const std::string &key, MetadataValue &value)
 {
     CHECK_ERROR_RETURN_RET(key.empty(), Media::ERR_IMAGE_DECODE_EXIF_UNSUPPORT);
     uint32_t ret = SUCCESS;
     if (IMAGE_GIFLOOPCOUNT_TYPE.compare(key) == ZERO) {
-        IMAGE_LOGD("GetImagePropertyString special key: %{public}s", key.c_str());
-        (void)GetFrameCount(ret);
-        if (ret != SUCCESS || mainDecoder_ == nullptr) {
-            IMAGE_LOGE("[ImageSource]GetFrameCount get frame sum error.");
-            return ret;
-        } else {
-            ret = mainDecoder_->GetImagePropertyString(index, key, value.stringValue);
-            CHECK_ERROR_RETURN_RET_LOG(ret != SUCCESS, ret,
-                "[ImageSource]GetLoopCount get loop count issue. errorCode=%{public}u", ret);
-        }
-        return ret;
+        return GetGifLoopCountByType(index, value);
     }
     if (IMAGE_HEIFS_DELAY_TIME.compare(key) == ZERO) {
         IMAGE_LOGI("GetImagePropertyString special key: %{public}s", key.c_str());
@@ -2388,6 +2441,9 @@ uint32_t ImageSource::GetImagePropertyByType(uint32_t index, const std::string &
     }
     if (ImageKvMetadata::IsFragmentMetadataKey(key)) {
         return GetFragmentProperty(key, value);
+    }
+    if (ImageKvMetadata::IsWebPMetadataKey(key)) {
+        return GetWebPProperty(index, key, value);
     }
 #if !defined(CROSS_PLATFORM)
     if (IsDngImage()) {
@@ -6482,6 +6538,58 @@ std::shared_ptr<HeifsMetadata> ImageSource::GetHeifsMetadata(uint32_t index, uin
     return heifsMetadata;
 }
 
+std::shared_ptr<WebPMetadata> ImageSource::GetWebPMetadata(uint32_t index, uint32_t &errorCode)
+{
+    CHECK_ERROR_RETURN_RET_LOG(mainDecoder_ == nullptr, nullptr,
+        "[%{public}s] mainDecoder_ is nullptr", __func__);
+
+    ImageInfo info;
+    GetImageInfo(info);
+    if (info.encodedFormat != IMAGE_WEBP_FORMAT) {
+        IMAGE_LOGE("[%{public}s] unsupport format: %{public}s", __func__, info.encodedFormat.c_str());
+        return nullptr;
+    }
+
+    auto webpMetadata = std::make_shared<WebPMetadata>();
+    if (webpMetadata == nullptr) {
+        IMAGE_LOGE("[%{public}s] make_shared webpMetadata failed", __func__);
+        return nullptr;
+    }
+
+    bool ret = false;
+    ret = webpMetadata->SetValue(WEBP_METADATA_KEY_CANVAS_PIXEL_WIDTH, std::to_string(info.size.width));
+    CHECK_ERROR_RETURN_RET_LOG(!ret, nullptr, "[%{public}s] set canvas pixel width failed", __func__);
+    ret = webpMetadata->SetValue(WEBP_METADATA_KEY_CANVAS_PIXEL_HEIGHT, std::to_string(info.size.height));
+    CHECK_ERROR_RETURN_RET_LOG(!ret, nullptr, "[%{public}s] set canvas pixel height failed", __func__);
+
+    int32_t unclampedDelayTime = 0;
+    errorCode = mainDecoder_->GetImagePropertyInt(index, IMAGE_DELAY_TIME, unclampedDelayTime);
+    if (errorCode == SUCCESS) {
+        ret = webpMetadata->SetValue(WEBP_METADATA_KEY_UNCLAMPED_DELAY_TIME, std::to_string(unclampedDelayTime));
+        CHECK_ERROR_RETURN_RET_LOG(!ret, nullptr, "[%{public}s] set unclamped delay time failed", __func__);
+
+        int32_t delayTime = unclampedDelayTime;
+        if (delayTime < WEBP_MIN_FRAME_DURATION) {
+            delayTime = WEBP_MIN_FRAME_DURATION;
+        } else if (delayTime > WEBP_DELAY_TIME_UINT16_MAX) {
+            delayTime = WEBP_DELAY_TIME_UINT16_MAX;
+        }
+        ret = webpMetadata->SetValue(WEBP_METADATA_KEY_DELAY_TIME, std::to_string(delayTime));
+        CHECK_ERROR_RETURN_RET_LOG(!ret, nullptr, "[%{public}s] set delay time failed", __func__);
+    }
+
+    int32_t loopCount = 0;
+    errorCode = mainDecoder_->GetImagePropertyInt(index, WEBP_METADATA_KEY_LOOP_COUNT, loopCount);
+    if (errorCode == SUCCESS) {
+        ret = webpMetadata->SetValue(WEBP_METADATA_KEY_LOOP_COUNT, std::to_string(loopCount));
+        CHECK_ERROR_RETURN_RET_LOG(!ret, nullptr, "[%{public}s] set loop count failed", __func__);
+    }
+
+    metadatas_[MetadataType::WEBP] = webpMetadata;
+    errorCode = SUCCESS;
+    return webpMetadata;
+}
+
 uint32_t ImageSource::CreateBlobMetadataByImageSource(ImageInfo info, MetadataType type)
 {
     std::vector<uint8_t> blobMetadataValue;
@@ -6607,6 +6715,16 @@ bool ImageSource::IsDngImage()
     CHECK_ERROR_RETURN_RET_LOG(cond, false, "IsDngImage GetImageInfo failed");
     IMAGE_LOGD("IsDngImage info.encodedFormat: %{public}s", info.encodedFormat.c_str());
     return info.encodedFormat == DNG_FORMAT;
+}
+
+bool ImageSource::IsWebPImage()
+{
+    ImageInfo info;
+    uint32_t ret = GetImageInfo(info);
+    bool cond = (ret != SUCCESS);
+    CHECK_ERROR_RETURN_RET_LOG(cond, false, "IsWebPImage GetImageInfo failed");
+    IMAGE_LOGD("IsWebPImage info.encodedFormat: %{public}s", info.encodedFormat.c_str());
+    return info.encodedFormat == IMAGE_WEBP_FORMAT;
 }
 
 static void ClearMetadataValue(MetadataValue &value)

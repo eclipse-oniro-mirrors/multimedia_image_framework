@@ -61,6 +61,8 @@ static napi_value Export(napi_env env, napi_value exports)
     MetadataNapi::InitXtStyleMetadata(env, exports);
     IMAGE_LOGD("RfDataBMetadataNapi CALL");
     MetadataNapi::InitRfDataBMetadata(env, exports);
+    IMAGE_LOGD("WebPMetadataNapi CALL");
+    MetadataNapi::InitWebPMetadata(env, exports);
     IMAGE_LOGD("ImageReceiverNapi CALL");
     ImageReceiverNapi::Init(env, exports);
     IMAGE_LOGD("ImageCreatorNapi CALL");

@@ -340,6 +340,18 @@ const std::map<std::string, PropertyValueType>& ExifMetadata::GetDngMetadataMap(
     return dngMetadataMap;
 }
 
+const std::map<std::string, PropertyValueType>& ExifMetadata::GetWebPMetadataMap()
+{
+    static const std::map<std::string, PropertyValueType> webpMetadataMap = {
+        {"WebPCanvasWidth", PropertyValueType::INT},
+        {"WebPCanvasHeight", PropertyValueType::INT},
+        {"WebPDelayTime", PropertyValueType::INT},
+        {"WebPUnclampedDelayTime", PropertyValueType::INT},
+        {"WebPLoopCount", PropertyValueType::INT},
+    };
+    return webpMetadataMap;
+}
+
 const std::map<NapiMetadataType, std::map<std::string, PropertyValueType>>& ExifMetadata::GetPropertyTypeMapping()
 {
     static const std::map<NapiMetadataType, std::map<std::string, PropertyValueType>> propertyTypeMap = {
@@ -349,6 +361,7 @@ const std::map<NapiMetadataType, std::map<std::string, PropertyValueType>>& Exif
         {NapiMetadataType::FRAGMENT_METADATA, GetFragmentMetadataMap()},
         {NapiMetadataType::GIF_METADATA, GetGifMetadataMap()},
         {NapiMetadataType::DNG_METADATA, GetDngMetadataMap()},
+        {NapiMetadataType::WEBP_METADATA, GetWebPMetadataMap()},
     };
     return propertyTypeMap;
 }
@@ -633,6 +646,13 @@ const std::unordered_map<std::string, std::string>& ExifMetadata::GetPropertyKey
         {"newRawImageDigest", "NewRawImageDigest"},
         {"rawToPreviewGain", "RawToPreviewGain"},
         {"defaultUserCrop", "DefaultUserCrop"},
+
+         // ============ WebP ============
+        {"canvasWidth", "WebPCanvasWidth"},
+        {"canvasHeight", "WebPCanvasHeight"},
+        {"delayTime", "WebPDelayTime"},
+        {"unclampedDelayTime", "WebPUnclampedDelayTime"},
+        {"loopCount", "WebPLoopCount"},
     };
     return propertyKeyMap;
 }

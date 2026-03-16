@@ -22,6 +22,7 @@
 #include "rfdatab_metadata.h"
 #include "gif_metadata.h"
 #include "heifs_metadata.h"
+#include "webp_metadata.h"
 #include "image_type.h"
 #include <map>
 

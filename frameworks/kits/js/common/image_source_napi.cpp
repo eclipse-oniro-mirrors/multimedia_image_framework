@@ -33,6 +33,7 @@
 #include "exif_metadata.h"
 #include "metadata_napi.h"
 #include "xmp_metadata_napi.h"
+#include "webp_metadata.h"
 
 #undef LOG_DOMAIN
 #define LOG_DOMAIN LOG_TAG_DOMAIN_ID_IMAGE
@@ -131,6 +132,7 @@ struct ImageSourceAsyncContext {
     std::unique_ptr<std::vector<uint32_t>> typeArray;
     std::shared_ptr<ExifMetadata> rExifMetadata;
     std::shared_ptr<HeifsMetadata> rImageHeifsMetadata;
+    std::shared_ptr<WebPMetadata> rWebPMetadata;
     std::shared_ptr<FragmentMetadata> rFragmentMetadata;
     std::shared_ptr<GifMetadata> rGifMetadata;
     std::shared_ptr<XtStyleMetadata> rXtStyleMetadata;
@@ -2975,6 +2977,9 @@ NapiMetadataType GetMetadataTypeByKey(const std::string& key)
         for (const auto& pair : ExifMetadata::GetDngMetadataMap()) {
             mapping[pair.first] = NapiMetadataType::DNG_METADATA;
         }
+        for (const auto& pair : ExifMetadata::GetWebPMetadataMap()) {
+            mapping[pair.first] = NapiMetadataType::WEBP_METADATA;
+        }
         return mapping;
     }();
     auto it = KEY_TYPE_MAP.find(key);
@@ -3021,9 +3026,11 @@ struct MetadataCollection {
     napi_value xtStyleMetadata = nullptr;
     napi_value rfDataBMetadata = nullptr;
     napi_value dngMetadata = nullptr;
+    napi_value webpMetadata = nullptr;
     bool hasExif = false;
     bool hasMakerNote = false;
     bool hasHeifsMetadata = false;
+    bool hasWebPMetadata = false;
     bool hasFragmentMetadata = false;
     bool hasGifMetadata = false;
     bool hasXtStyleMetadata = false;
@@ -3036,6 +3043,7 @@ static void InitMetadataAndFlags(napi_env env, ImageSourceAsyncContext *context,
     metaCol.exifMetadata = MetadataNapi::CreateExifMetadata(env, context->rExifMetadata);
     metaCol.makerNoteMetadata = MetadataNapi::CreateMakerNoteMetadata(env, context->rExifMetadata);
     metaCol.heifsMetadata = MetadataNapi::CreateHeifsMetadata(env, context->rImageHeifsMetadata);
+    metaCol.webpMetadata = MetadataNapi::CreateWebPMetadata(env, context->rWebPMetadata);
     metaCol.fragmentMetadata = MetadataNapi::CreateFragmentMetadata(env, context->rFragmentMetadata);
     metaCol.gifMetadata = MetadataNapi::CreateGifMetadata(env, context->rGifMetadata);
     metaCol.xtStyleMetadata = MetadataNapi::CreateXtStyleMetadata(env, context->rXtStyleMetadata);
@@ -3092,6 +3100,12 @@ static void ProcessMetadataValueTypeArray(napi_env env, ImageSourceAsyncContext 
                 CreatePropertyResult(env, metadataValue, metaCol.dngMetadata, type);
                 metaCol.hasDngMetadata = true;
             }
+        } else if (type == NapiMetadataType::WEBP_METADATA) {
+            if (!metadataValue.intArrayValue.empty()) {
+                context->rWebPMetadata->SetValue(metadataValue.key, std::to_string(metadataValue.intArrayValue[0]));
+                CreatePropertyResult(env, metadataValue, metaCol.webpMetadata, type);
+                metaCol.hasWebPMetadata = true;
+            }
         }
     }
 }
@@ -3143,6 +3157,9 @@ static void AttachMetadataToResultObj(napi_env env, MetadataCollection& metaCol,
     }
     if (metaCol.hasDngMetadata) {
         NAPI_CALL_RETURN_VOID(env, napi_set_named_property(env, resultObj, "dngMetadata", metaCol.dngMetadata));
+    }
+    if (metaCol.hasWebPMetadata) {
+        NAPI_CALL_RETURN_VOID(env, napi_set_named_property(env, resultObj, "webPMetadata", metaCol.webpMetadata));
     }
 }
 
@@ -3379,6 +3396,16 @@ static std::shared_ptr<HeifsMetadata> CreateNullHeifsMetadata()
     return metadata;
 }
 
+static std::shared_ptr<WebPMetadata> CreateNullWebPMetadata()
+{
+    std::shared_ptr<WebPMetadata> metadata = std::make_shared<WebPMetadata>();
+    if (!metadata) {
+        IMAGE_LOGE("Construct WebPMetadata failed");
+        return nullptr;
+    }
+    return metadata;
+}
+
 static void ReadImageMetadataExecute(napi_env env, void *data)
 {
     auto context = static_cast<ImageSourceAsyncContext*>(data);
@@ -3389,6 +3416,7 @@ static void ReadImageMetadataExecute(napi_env env, void *data)
     uint32_t errorCode;
     context->rExifMetadata = context->rImageSource->GetExifMetadata();
     context->rImageHeifsMetadata = CreateNullHeifsMetadata();
+    context->rWebPMetadata = CreateNullWebPMetadata();
 #if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
     context->rFragmentMetadata = context->rImageSource->GetFragmentMetadata(errorCode);
     context->rGifMetadata = context->rImageSource->GetGifMetadata(context->index, errorCode);
@@ -3398,7 +3426,8 @@ static void ReadImageMetadataExecute(napi_env env, void *data)
         context->rImageSource->GetBlobMetadata(MetadataType::XTSTYLE, errorCode));
 #endif
     if (context->keyStrArray.empty()) {
-        const std::vector<MetadataValue> allProperties = context->rImageSource->GetAllPropertiesWithType();
+        const std::vector<MetadataValue> allProperties =
+            context->rImageSource->GetAllPropertiesWithType(context->index);
         for (const auto& property : allProperties) {
             context->kValueTypeArray.emplace_back(property);
         }
@@ -3794,6 +3823,8 @@ static const std::map<std::string, PropertyValueType> GetMetadataKeyMapByType(ui
             return ExifMetadata::GetHeifsMetadataMap();
         case static_cast<uint32_t>(MetadataType::DNG):
             return ExifMetadata::GetDngMetadataMap();
+        case static_cast<uint32_t>(MetadataType::WEBP):
+            return ExifMetadata::GetWebPMetadataMap();
         default:
             return std::map<std::string, PropertyValueType>();
     }
@@ -3886,6 +3917,7 @@ static void ReadImageMetadataByTypeExecute(napi_env env, void *data)
     uint32_t errorCode;
     context->rExifMetadata = context->rImageSource->GetExifMetadata();
     context->rImageHeifsMetadata = CreateNullHeifsMetadata();
+    context->rWebPMetadata = CreateNullWebPMetadata();
 #if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
     context->rFragmentMetadata = context->rImageSource->GetFragmentMetadata(errorCode);
     context->rGifMetadata = context->rImageSource->GetGifMetadata(context->index, errorCode);
@@ -3895,7 +3927,8 @@ static void ReadImageMetadataByTypeExecute(napi_env env, void *data)
         context->rImageSource->GetBlobMetadata(MetadataType::XTSTYLE, errorCode));
 #endif
     if (context->typeArray == nullptr || context->typeArray->empty()) {
-        const std::vector<MetadataValue> allProperties = context->rImageSource->GetAllPropertiesWithType();
+        const std::vector<MetadataValue> allProperties =
+            context->rImageSource->GetAllPropertiesWithType(context->index);
         for (const auto& property : allProperties) {
             context->kValueTypeArray.emplace_back(property);
         }

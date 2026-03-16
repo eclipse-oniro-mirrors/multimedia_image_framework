@@ -27,6 +27,7 @@
 #include "gif_metadata.h"
 #include "rfdatab_metadata.h"
 #include "xtstyle_metadata.h"
+#include "webp_metadata.h"
 
 #undef LOG_DOMAIN
 #define LOG_DOMAIN LOG_TAG_DOMAIN_ID_IMAGE
@@ -50,6 +51,7 @@ namespace Media {
     static const std::string GIF_CLASS = "GifMetadata";
     static const std::string XTSTYLE_CLASS = "XtStyleMetadata";
     static const std::string RFDATAB_CLASS = "RfDataBMetadata";
+    static const std::string WEBP_CLASS = "WebPMetadata";
     thread_local napi_ref MetadataNapi::sConstructor_ = nullptr;
     thread_local napi_ref MetadataNapi::sExifConstructor_ = nullptr;
     thread_local napi_ref MetadataNapi::sMakerNoteConstructor_ = nullptr;
@@ -58,6 +60,7 @@ namespace Media {
     thread_local napi_ref MetadataNapi::sGifMetadataConstructor_ = nullptr;
     thread_local napi_ref MetadataNapi::sXtStyleMetadataConstructor_ = nullptr;
     thread_local napi_ref MetadataNapi::sRfDataBMetadataConstructor_ = nullptr;
+    thread_local napi_ref MetadataNapi::sWebpConstructor_ = nullptr;
     thread_local std::shared_ptr<ImageMetadata> MetadataNapi::sMetadata_ = nullptr;
 
 #if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
@@ -671,6 +674,44 @@ napi_value MetadataNapi::InitRfDataBMetadata(napi_env env, napi_value exports)
     return exports;
 }
 
+napi_value MetadataNapi::InitWebPMetadata(napi_env env, napi_value exports)
+{
+    IMAGE_LOGD("InitWebPMetadata ENTER");
+
+    napi_property_descriptor instanceProps[] = {};
+    napi_property_descriptor staticProps[] = {};
+    napi_value constructor = nullptr;
+    napi_status status = napi_define_class(env, WEBP_CLASS.c_str(), NAPI_AUTO_LENGTH, Constructor, nullptr,
+        sizeof(instanceProps) / sizeof(instanceProps[0]), instanceProps, &constructor);
+    if (status != napi_ok || constructor == nullptr) {
+        IMAGE_LOGE("Failed to define WebPMetadata class: %{public}d", status);
+        return exports;
+    }
+    status = napi_define_properties(env, constructor, sizeof(staticProps) / sizeof(staticProps[0]), staticProps);
+    if (status != napi_ok) {
+        IMAGE_LOGE("Failed to define static methods for WebPMetadata: %{public}d", status);
+    }
+
+    status = napi_create_reference(env, constructor, 1, &sWebpConstructor_);
+    if (status != napi_ok || sWebpConstructor_ == nullptr) {
+        IMAGE_LOGE("Failed to create Webp ref: %{public}d", status);
+        return exports;
+    }
+
+    status = napi_set_named_property(env, exports, WEBP_CLASS.c_str(), constructor);
+    if (status != napi_ok) {
+        IMAGE_LOGE("Failed to export %{public}s class: %{public}d", WEBP_CLASS.c_str(), status);
+    }
+
+    auto context = new NapiConstructorContext();
+    context->env_ = env;
+    context->ref_ = sWebpConstructor_;
+    napi_add_env_cleanup_hook(env, ImageNapiUtils::CleanUpConstructorContext, context);
+
+    IMAGE_LOGD("InitWebPMetadata EXIT");
+    return exports;
+}
+
 napi_value MetadataNapi::CreateMetadata(napi_env env, std::shared_ptr<ImageMetadata> metadata)
 {
     if (sConstructor_ == nullptr) {
@@ -852,6 +893,29 @@ napi_value MetadataNapi::CreateDngMetadata(napi_env env)
         return result;
     }
     return obj;
+}
+
+napi_value MetadataNapi::CreateWebPMetadata(napi_env env, std::shared_ptr<ImageMetadata> metadata)
+{
+    if (sWebpConstructor_ == nullptr) {
+        napi_value exports = nullptr;
+        napi_create_object(env, &exports);
+        MetadataNapi::InitWebPMetadata(env, exports);
+    }
+
+    napi_value constructor = nullptr;
+    napi_value result = nullptr;
+    IMAGE_LOGD("CreateWebPMetadata IN");
+    napi_status status = napi_get_reference_value(env, sWebpConstructor_, &constructor);
+    if (IMG_IS_OK(status)) {
+        sMetadata_ = metadata;
+        status = napi_new_instance(env, constructor, NUM_0, nullptr, &result);
+    }
+    if (!IMG_IS_OK(status)) {
+        IMAGE_LOGE("CreateWebPMetadata | New instance could not be obtained");
+        napi_get_undefined(env, &result);
+    }
+    return result;
 }
 
 napi_value MetadataNapi::Constructor(napi_env env, napi_callback_info info)
@@ -2350,6 +2414,43 @@ napi_value MetadataNapi::CreateRfDataBMetadataInstance(napi_env env, napi_callba
     }
     metadataNapi->nativeMetadata_ = metadata;
     IMAGE_LOGD("MetadataNapi::CreateRfDataBMetadataInstance OUT");
+    return result;
+}
+
+napi_value MetadataNapi::CreateWebPMetadataInstance(napi_env env, napi_callback_info info)
+{
+    IMAGE_LOGD("MetadataNapi::CreateWebPMetadataInstance IN");
+    napi_value result = nullptr;
+    napi_value constructor = nullptr;
+    napi_status status;
+
+    status = napi_get_reference_value(env, sWebpConstructor_, &constructor);
+    if (status != napi_ok || constructor == nullptr) {
+        IMAGE_LOGE("Failed to get constructor reference, status: %{public}d", status);
+        napi_get_undefined(env, &result);
+        return result;
+    }
+    auto metadata = std::make_shared<WebPMetadata>();
+    if (!metadata) {
+        IMAGE_LOGE("Failed to create WebPMetadata instance");
+        napi_get_undefined(env, &result);
+        return result;
+    }
+    status = napi_new_instance(env, constructor, 0, nullptr, &result);
+    if (status != napi_ok) {
+        IMAGE_LOGE("Failed to create new instance, status: %{public}d", status);
+        napi_get_undefined(env, &result);
+        return result;
+    }
+    MetadataNapi* metadataNapi = nullptr;
+    status = napi_unwrap(env, result, reinterpret_cast<void**>(&metadataNapi));
+    if (status != napi_ok || metadataNapi == nullptr) {
+        IMAGE_LOGE("Failed to unwrap metadataNapi, status: %{public}d", status);
+        napi_get_undefined(env, &result);
+        return result;
+    }
+    metadataNapi->nativeMetadata_ = metadata;
+    IMAGE_LOGD("MetadataNapi::CreateWebPMetadataInstance OUT");
     return result;
 }
 } // namespace Media

@@ -43,6 +43,7 @@ public:
     static napi_value InitGifMetadata(napi_env env, napi_value exports);
     static napi_value InitXtStyleMetadata(napi_env env, napi_value exports);
     static napi_value InitRfDataBMetadata(napi_env env, napi_value exports);
+    static napi_value InitWebPMetadata(napi_env env, napi_value exports);
     static napi_value CreateMetadata(napi_env env, std::shared_ptr<ImageMetadata> metadata);
     static napi_value CreateExifMetadata(napi_env env, std::shared_ptr<ImageMetadata> metadata);
     static napi_value CreateMakerNoteMetadata(napi_env env, std::shared_ptr<ImageMetadata> metadata);
@@ -52,6 +53,7 @@ public:
     static napi_value CreateXtStyleMetadata(napi_env env, std::shared_ptr<ImageMetadata> metadata);
     static napi_value CreateRfDataBMetadata(napi_env env, std::shared_ptr<ImageMetadata> metadata);
     static napi_value CreateDngMetadata(napi_env env);
+    static napi_value CreateWebPMetadata(napi_env env, std::shared_ptr<ImageMetadata> metadata);
     std::shared_ptr<ImageMetadata> GetNativeMetadata()
     {
         return nativeMetadata_;
@@ -84,6 +86,7 @@ private:
     static napi_value CreateGifMetadataInstance(napi_env env, napi_callback_info info);
     static napi_value CreateXtStyleMetadataInstance(napi_env env, napi_callback_info info);
     static napi_value CreateRfDataBMetadataInstance(napi_env env, napi_callback_info info);
+    static napi_value CreateWebPMetadataInstance(napi_env env, napi_callback_info info);
     void release();
     static thread_local napi_ref sConstructor_;
     static thread_local napi_ref sExifConstructor_;
@@ -93,6 +96,7 @@ private:
     static thread_local napi_ref sGifMetadataConstructor_;
     static thread_local napi_ref sXtStyleMetadataConstructor_;
     static thread_local napi_ref sRfDataBMetadataConstructor_;
+    static thread_local napi_ref sWebpConstructor_;
     static thread_local std::shared_ptr<ImageMetadata> sMetadata_;
     std::shared_ptr<ImageMetadata> nativeMetadata_;
     napi_env env_ = nullptr;

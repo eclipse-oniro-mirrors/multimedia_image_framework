@@ -47,10 +47,19 @@ const static std::set<std::string> HEIFS_METADATA_KEYS = {
     HEIFS_METADATA_KEY_DELAY_TIME,
 };
 
+const static std::set<std::string> WEBP_METADATA_KEYS = {
+    WEBP_METADATA_KEY_CANVAS_PIXEL_HEIGHT,
+    WEBP_METADATA_KEY_CANVAS_PIXEL_WIDTH,
+    WEBP_METADATA_KEY_DELAY_TIME,
+    WEBP_METADATA_KEY_UNCLAMPED_DELAY_TIME,
+    WEBP_METADATA_KEY_LOOP_COUNT,
+};
+
 const static std::map<MetadataType, std::set<std::string>> KV_METADATA_KEYS = {
     {MetadataType::FRAGMENT, FRAGMENT_METADATA_KEYS},
     {MetadataType::GIF, GIF_METADATA_KEYS},
     {MetadataType::HEIFS, HEIFS_METADATA_KEYS},
+    {MetadataType::WEBP, WEBP_METADATA_KEYS},
 };
 
 ImageKvMetadata::ImageKvMetadata() {}
@@ -255,6 +264,12 @@ bool ImageKvMetadata::IsGifMetadataKey(const std::string& key)
 {
     return GIF_METADATA_KEYS.find(key) != GIF_METADATA_KEYS.end();
 }
+
+bool ImageKvMetadata::IsWebPMetadataKey(const std::string& key)
+{
+    return WEBP_METADATA_KEYS.find(key) != WEBP_METADATA_KEYS.end();
+}
+
 std::set<std::string> ImageKvMetadata::GetFragmentMetadataKeys()
 {
     return FRAGMENT_METADATA_KEYS;
@@ -263,6 +278,11 @@ std::set<std::string> ImageKvMetadata::GetFragmentMetadataKeys()
 std::set<std::string> ImageKvMetadata::GetGifMetadataKeys()
 {
     return GIF_METADATA_KEYS;
+}
+
+std::set<std::string> ImageKvMetadata::GetWebPMetadataKeys()
+{
+    return WEBP_METADATA_KEYS;
 }
 
 uint32_t ImageKvMetadata::GetBlobSize()
