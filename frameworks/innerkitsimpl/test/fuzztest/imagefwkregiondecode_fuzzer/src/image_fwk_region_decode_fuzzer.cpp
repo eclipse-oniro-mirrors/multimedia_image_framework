@@ -35,6 +35,14 @@
 
 namespace OHOS {
 namespace Media {
+static constexpr uint32_t OPT_SIZE = 80;
+static const std::string OHOS::Media::JPEG_PATH_1 = "/data/local/tmp/test.jpg";
+static const std::string JPEG_PATH_2 = "/data/local/tmp/test_entrys.jpg";
+static const std::string JPEG_PATH_3 = "/data/local/tmp/test_exif.jpg";
+static const std::string HEIC_PATH_1 = "/data/local/tmp/test_heic_128_128.heic";
+static const std::string HEIC_PATH_2 = "/data/local/tmp/test_heif.heic";
+static const std::string HEIC_PATH_3 = "/data/local/tmp/test_heif_hdr.heic";
+static const std::string PNG_PATH_1 = "/data/local/tmp/test_picture_png.png";
 using namespace OHOS::ImagePlugin;
 void RegionDecodeTest001(const std::string& pathName, CropAndScaleStrategy strategy = CropAndScaleStrategy::DEFAULT)
 {
@@ -73,42 +81,38 @@ void FormatTest001(const std::string& pathName, PixelFormat dstPixelFormat)
 /* Fuzzer entry point */
 extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
 {
-    std::string jpegPath1 = "/data/local/tmp/test.jpg";
-    OHOS::Media::RegionDecodeTest001(jpegPath1);
-    OHOS::Media::RegionDecodeTest001(jpegPath1, OHOS::Media::CropAndScaleStrategy::SCALE_FIRST);
-    OHOS::Media::RegionDecodeTest001(jpegPath1, OHOS::Media::CropAndScaleStrategy::CROP_FIRST);
-    OHOS::Media::FormatTest001(jpegPath1, OHOS::Media::PixelFormat::NV21);
-    std::string jpegPath2 = "/data/local/tmp/test_entrys.jpg";
-    OHOS::Media::RegionDecodeTest001(jpegPath2);
-    OHOS::Media::RegionDecodeTest001(jpegPath2, OHOS::Media::CropAndScaleStrategy::SCALE_FIRST);
-    OHOS::Media::RegionDecodeTest001(jpegPath2, OHOS::Media::CropAndScaleStrategy::CROP_FIRST);
-    OHOS::Media::FormatTest001(jpegPath2, OHOS::Media::PixelFormat::NV12);
-    std::string jpegPath3 = "/data/local/tmp/test_exif.jpg";
-    OHOS::Media::RegionDecodeTest001(jpegPath3);
-    OHOS::Media::RegionDecodeTest001(jpegPath3, OHOS::Media::CropAndScaleStrategy::SCALE_FIRST);
-    OHOS::Media::RegionDecodeTest001(jpegPath3, OHOS::Media::CropAndScaleStrategy::CROP_FIRST);
-    OHOS::Media::FormatTest001(jpegPath3, OHOS::Media::PixelFormat::NV21);
-    std::string heicPath1 = "/data/local/tmp/test_heic_128_128.heic";
-    OHOS::Media::RegionDecodeTest001(heicPath1);
-    OHOS::Media::RegionDecodeTest001(heicPath1, OHOS::Media::CropAndScaleStrategy::SCALE_FIRST);
-    OHOS::Media::RegionDecodeTest001(heicPath1, OHOS::Media::CropAndScaleStrategy::CROP_FIRST);
-    std::string heicPath2 = "/data/local/tmp/test_heif.heic";
-    OHOS::Media::RegionDecodeTest001(heicPath2);
-    OHOS::Media::RegionDecodeTest001(heicPath2, OHOS::Media::CropAndScaleStrategy::SCALE_FIRST);
-    OHOS::Media::RegionDecodeTest001(heicPath2, OHOS::Media::CropAndScaleStrategy::CROP_FIRST);
-    OHOS::Media::FormatTest001(heicPath2, OHOS::Media::PixelFormat::NV12);
-    std::string heicPath3 = "/data/local/tmp/test_heif_hdr.heic";
-    OHOS::Media::RegionDecodeTest001(heicPath3);
-    OHOS::Media::RegionDecodeTest001(heicPath3, OHOS::Media::CropAndScaleStrategy::SCALE_FIRST);
-    OHOS::Media::RegionDecodeTest001(heicPath3, OHOS::Media::CropAndScaleStrategy::CROP_FIRST);
-    OHOS::Media::FormatTest001(heicPath3, OHOS::Media::PixelFormat::NV21);
-    std::string pngPath1 = "/data/local/tmp/test_picture_png.png";
-    OHOS::Media::RegionDecodeTest001(pngPath1);
-    OHOS::Media::RegionDecodeTest001(pngPath1, OHOS::Media::CropAndScaleStrategy::SCALE_FIRST);
-    OHOS::Media::RegionDecodeTest001(pngPath1, OHOS::Media::CropAndScaleStrategy::CROP_FIRST);
-    /* Run your code on data */
-    static const std::string pathName = "/data/local/tmp/test_region_decode_jpg.jpg";
-    WriteDataToFile(data, size, pathName);
-    OHOS::Media::RegionDecodeTest001(pathName);
+    if (size < OHOS::Media::OPT_SIZE) {
+        return 0;
+    }
+    FuzzedDataProvider fdp(data + size - OHOS::Media::OPT_SIZE, OHOS::Media::OPT_SIZE);
+    std::vector<std::string> paths = {OHOS::Media::JPEG_PATH_1, OHOS::Media::JPEG_PATH_2, OHOS::Media::JPEG_PATH_3,
+        HEIC_PATH_2, HEIC_PATH_3, HEIC_PATH_1, PNG_PATH_1}
+    uint8_t index = fdp.ConsumeIntegral<uint8_t>() % paths.size();
+    std::string path = paths[index];
+    WriteDataToFile(data, size - OHOS::Media::OPT_SIZE, path);
+    uint8_t action = fdp.ConsumeIntegral<uint8_t>() % 5;
+    switch (action) {
+        case 0:
+            OHOS::Media::RegionDecodeTest001(path);
+            break;
+        case 1:
+            OHOS::Media::RegionDecodeTest001(path, OHOS::Media::CropAndScaleStrategy::SCALE_FIRST);
+            break;
+        case 2:
+            OHOS::Media::RegionDecodeTest001(path, OHOS::Media::CropAndScaleStrategy::CROP_FIRST);
+            break;
+        case 3:
+            OHOS::Media::FormatTest001(path, OHOS::Media::PixelFormat::NV21);
+            break;
+        case 4: {
+            static const std::string newPath = "/data/local/tmp/test_region_decode_jpg.jpg";
+            WriteDataToFile(data, size - OHOS::Media::OPT_SIZE, newPath);
+            OHOS::Media::RegionDecodeTest001(newPath);
+            unlink(newPath.c_str());
+            break;
+        }
+        default:
+            break;
+    }
     return 0;
 }

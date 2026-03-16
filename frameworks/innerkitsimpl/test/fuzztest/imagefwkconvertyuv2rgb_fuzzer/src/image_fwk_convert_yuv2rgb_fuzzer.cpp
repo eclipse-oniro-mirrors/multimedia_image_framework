@@ -27,6 +27,7 @@
 #include <iostream>
 #include <unistd.h>
 
+#include <fuzzer/FuzzedDataProvider.h>
 #include "buffer_packer_stream.h"
 #include "image_format_convert.h"
 #include "image_format_convert_utils.h"
@@ -42,7 +43,7 @@ namespace OHOS {
 namespace Media {
 
 static const std::string IMAGE_INPUT_JPG_PATH1 = "/data/local/tmp/test.jpg";
-
+static constexpr uint32_t OPT_SIZE = 80;
 void YuvConvertToRgb(PixelFormat &srcFormat, PixelFormat &destFormat)
 {
     IMAGE_LOGI("YuvConvertToRgb: start");
@@ -335,16 +336,82 @@ void YuvPixelMapIPCFuzzTest001()
 /* Fuzzer entry point */
 extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
 {
-    /* Run your code on data */
+    if (size < OHOS::Media::OPT_SIZE) {
+        return 0;
+    }
+    FuzzedDataProvider fdp(data + size - OHOS::Media::OPT_SIZE, OHOS::Media::OPT_SIZE);
     static const std::string pathName = "/data/local/tmp/test.jpg";
     int fd = open(pathName.c_str(), O_RDWR | O_CREAT, S_IRUSR | S_IWUSR);
-    if (write(fd, data, size) != (ssize_t)size) {
+    if (write(fd, data, size - OHOS::Media::OPT_SIZE) != static_cast<ssize_t>(size - OHOS::OPT_SIZE)) {
         close(fd);
-        IMAGE_LOGE("Fuzzer copy data fail");
         return 0;
     }
     close(fd);
-    OHOS::Media::YuvToRgbFuzzTest001();
-    OHOS::Media::YuvPixelMapIPCFuzzTest001();
+    
+    uint8_t action = fdp.ConsumeIntegral<uint8_t>() % 20;
+    switch (action) {
+        case 0:
+            OHOS::Media::NV21ToRGBFuzzTest001();
+            break;
+        case 1:
+            OHOS::Media::NV21ToRGBAFuzzTest001();
+            break;
+        case 2:
+            OHOS::Media::NV21ToBGRAFuzzTest001();
+            break;
+        case 3:
+            OHOS::Media::NV21ToRGB565FuzzTest001();
+            break;
+        case 4:
+            OHOS::Media::NV21ToNV12FuzzTest001();
+            break;
+        case 5:
+            OHOS::Media::NV12ToNV21FuzzTest001();
+            break;
+        case 6:
+            OHOS::Media::NV12ToRGB565FuzzTest001();
+            break;
+        case 7:
+            OHOS::Media::NV12ToRGBAFuzzTest001();
+            break;
+        case 8:
+            OHOS::Media::NV12ToBGRAFuzzTest001();
+            break;
+        case 9:
+            OHOS::Media::NV12ToRGBFuzzTest001();
+            break;
+        case 10:
+            OHOS::Media::NV21ToNV12P010FuzzTest001();
+            break;
+        case 11:
+            OHOS::Media::NV12ToNV12P010FuzzTest001();
+            break;
+        case 12:
+            OHOS::Media::NV21ToRGBAF16FuzzTest001();
+            break;
+        case 13:
+            OHOS::Media::NV12ToRGBAF16FuzzTest001();
+            break;
+        case 14:
+            OHOS::Media::NV21ToNV21P010FuzzTest003();
+            break;
+        case 15:
+            OHOS::Media::NV12ToNV21P010FuzzTest003();
+            break;
+        case 16:
+            OHOS::Media::NV12ToRGBA1010102FuzzTest003();
+            break;
+        case 17:
+            OHOS::Media::NV21ToRGBA1010102FuzzTest003();
+            break;
+        case 18:
+            OHOS::Media::NV21PixelMapIPCTest001();
+            break;
+        case 19:
+            OHOS::Media::NV12PixelMapIPCTest001();
+            break;
+        default:
+            break;
+    }
     return 0;
 }

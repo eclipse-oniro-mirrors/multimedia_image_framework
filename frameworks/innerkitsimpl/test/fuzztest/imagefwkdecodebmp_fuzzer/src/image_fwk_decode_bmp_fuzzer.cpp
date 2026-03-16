@@ -41,6 +41,10 @@
 namespace OHOS {
 namespace Media {
 using namespace OHOS::ImagePlugin;
+FuzzedDataProvider* FDP;
+
+constexpr uint32_t OPT_SIZE = 40;
+
 void BmpDecoderFuncTest001(const std::string& pathName)
 {
     IMAGE_LOGI("%{public}s IN path: %{public}s", __func__, pathName.c_str());
@@ -74,8 +78,13 @@ void BmpDecoderFuncTest001(const std::string& pathName)
 extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
 {
     /* Run your code on data */
+    if (size < OHOS::Media::OPT_SIZE) {
+        return -1;
+    }
+    FuzzedDataProvider fdp(data + size - OHOS::Media::OPT_SIZE, OHOS::Media::OPT_SIZE);
+    OHOS::Media::FDP = &fdp;
     static const std::string pathName = "/data/local/tmp/test_decode_bmp.bmp";
-    WriteDataToFile(data, size, pathName);
+    WriteDataToFile(data, size - OHOS::Media::OPT_SIZE, pathName);
     OHOS::Media::BmpDecoderFuncTest001(pathName);
     return 0;
 }

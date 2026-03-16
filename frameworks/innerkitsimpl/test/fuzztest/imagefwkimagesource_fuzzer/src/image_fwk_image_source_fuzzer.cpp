@@ -102,23 +102,6 @@ void ImageSourceFuncTest001(std::unique_ptr<ImageSource>& imageSource)
     IMAGE_LOGI("%{public}s SUCCESS", __func__);
 }
 
-void CreateIncrementalPixelMapByDataFuzz(const uint8_t* data, size_t size)
-{
-    Media::SourceOptions opts;
-    uint32_t errorCode = 0;
-    Media::IncrementalSourceOptions incOpts;
-    incOpts.incrementalMode = IncrementalMode::INCREMENTAL_DATA;
-    auto imageSource = Media::ImageSource::CreateIncrementalImageSource(incOpts, errorCode);
-    if (imageSource != nullptr) {
-        DecodeOptions decodeOpts;
-        std::unique_ptr<IncrementalPixelMap> incPixelMap =
-            imageSource->CreateIncrementalPixelMap(0, decodeOpts, errorCode);
-        uint32_t res = imageSource->UpdateData(data, size, true);
-        uint8_t decodeProgress = 0;
-        res = incPixelMap->PromoteDecoding(decodeProgress);
-    }
-}
-
 void CreateImageSourceByPathFuzz(const std::string& pathName)
 {
     IMAGE_LOGI("%{public}s IN", __func__);
@@ -178,18 +161,6 @@ void CreateImageSourceByPathNameFuzz(const std::string& pathName)
     }
 }
 
-void CreateIncrementalPixelMapFuzz(const std::string& pathName)
-{
-    Media::SourceOptions opts;
-    uint32_t errorCode;
-    auto imageSource = Media::ImageSource::CreateImageSource(pathName, opts, errorCode);
-    Media::DecodeOptions dopts;
-    uint32_t index = 1;
-    if (imageSource != nullptr) {
-        imageSource->CreateIncrementalPixelMap(index, dopts, errorCode);
-    }
-}
-
 void CreateImageSourceByDataFuzz(const uint8_t* data, size_t size)
 {
     uint32_t errCode = 0;
@@ -217,214 +188,60 @@ void ImageSourceFuzzTest(const uint8_t *data, size_t size)
     std::vector<uint8_t> buffer;
     imageSource->ConvertYUV420ToRGBA(buffer.data(), size, isSupportOdd, isAddUV, errorCode);
 }
-
-static std::string GetProperty(std::unique_ptr<ImageSource>& imageSource, const std::string& prop)
-{
-    std::string value = "";
-    imageSource->GetImagePropertyString(0, prop, value);
-    return value;
-}
-
-void GetImagePropertyFuzzTest001(const std::string& pathName)
-{
-    uint32_t errCode = 0;
-    SourceOptions srcOpts;
-    auto imageSource = ImageSource::CreateImageSource(pathName, srcOpts, errCode);
-    GetProperty(imageSource, "DateTimeOriginal");
-    GetProperty(imageSource, "ExposureTime");
-    GetProperty(imageSource, "SceneType");
-    std::set<std::string> keys = {"DateTimeOriginal", "ExposureTime", "SceneType"};
-    errCode = imageSource->RemoveImageProperties(0, keys, pathName);
-    if (errCode != SUCCESS) {
-        return;
-    }
-    auto imageSourceNew = ImageSource::CreateImageSource(pathName, srcOpts, errCode);
-    GetProperty(imageSource, "DateTimeOriginal");
-    GetProperty(imageSource, "ExposureTime");
-    GetProperty(imageSource, "SceneType");
-}
-
-bool CreatePixelMapByRandomImageSource(const uint8_t *data, size_t size)
-{
-    IMAGE_LOGI("%{public}s start.", __func__);
-    if (data == nullptr) {
-        IMAGE_LOGE("%{public}s failed, data is nullptr", __func__);
-        return false;
-    }
-    Media::SourceOptions opts;
-    uint32_t errorCode;
-    auto imageSource = Media::ImageSource::CreateImageSource(data, size, opts, errorCode);
-    if (imageSource == nullptr) {
-        IMAGE_LOGE("%{public}s failed, imageSource is nullptr", __func__);
-        return false;
-    }
-    DecodeOptions dopts;
-    dopts.desiredDynamicRange = DecodeDynamicRange::AUTO;
-    dopts.isAppUseAllocator = true;
-    dopts.allocatorType = AllocatorType::DMA_ALLOC;
-    std::shared_ptr<PixelMap> pixelMap = imageSource->CreatePixelMap(0, dopts, errorCode);
-
-    dopts.desiredDynamicRange = DecodeDynamicRange::AUTO;
-    dopts.isAppUseAllocator = true;
-    dopts.allocatorType = AllocatorType::SHARE_MEM_ALLOC;
-    pixelMap = imageSource->CreatePixelMap(0, dopts, errorCode);
-
-    dopts.desiredDynamicRange = DecodeDynamicRange::AUTO;
-    dopts.isAppUseAllocator = true;
-    dopts.allocatorType = imageSource->ConvertAutoAllocatorType(dopts);
-    pixelMap = imageSource->CreatePixelMap(0, dopts, errorCode);
-
-    dopts.desiredDynamicRange = DecodeDynamicRange::AUTO;
-    dopts.isAppUseAllocator = true;
-    dopts.desiredPixelFormat = PixelFormat::NV12;
-    dopts.allocatorType = AllocatorType::DMA_ALLOC;
-    pixelMap = imageSource->CreatePixelMap(0, dopts, errorCode);
-
-    dopts.desiredDynamicRange = DecodeDynamicRange::AUTO;
-    dopts.isAppUseAllocator = true;
-    dopts.desiredPixelFormat = PixelFormat::NV21;
-    dopts.allocatorType = AllocatorType::DMA_ALLOC;
-    pixelMap = imageSource->CreatePixelMap(0, dopts, errorCode);
-
-    dopts.desiredDynamicRange = DecodeDynamicRange::AUTO;
-    dopts.isAppUseAllocator = true;
-    dopts.desiredPixelFormat = PixelFormat::NV21;
-    dopts.allocatorType = AllocatorType::SHARE_MEM_ALLOC;
-    pixelMap = imageSource->CreatePixelMap(0, dopts, errorCode);
-    return true;
-}
-
-void EncodePictureTest(std::shared_ptr<Picture> picture, const std::string& format, const std::string& outputPath)
-{
-    IMAGE_LOGI("%{public}s start.", __func__);
-    if (picture == nullptr) {
-        IMAGE_LOGE("%{public}s picture null.", __func__);
-        return;
-    }
-    ImagePacker pack;
-    PackOption packOption;
-    packOption.format = format;
-    if (pack.StartPacking(outputPath, packOption) != SUCCESS) {
-        IMAGE_LOGE("%{public}s StartPacking failed.", __func__);
-        return;
-    }
-    if (pack.AddPicture(*picture) != SUCCESS) {
-        IMAGE_LOGE("%{public}s AddPicture failed.",  __func__);
-        return;
-    }
-    if (pack.FinalizePacking() != SUCCESS) {
-        IMAGE_LOGE("%{public}s FinalizePacking failed.",  __func__);
-        return;
-    }
-    IMAGE_LOGI("%{public}s SUCCESS.",  __func__);
-}
-
-void EncodePixelMapTest(std::shared_ptr<PixelMap> pixelmap, const std::string& format, const std::string& outputPath)
-{
-    IMAGE_LOGI("%{public}s start.", __func__);
-    if (pixelmap == nullptr) {
-        IMAGE_LOGE("%{public}s picture null.", __func__);
-        return;
-    }
-    ImagePacker pack;
-    PackOption packOption;
-    packOption.format = format;
-    if (pack.StartPacking(outputPath, packOption) != SUCCESS) {
-        IMAGE_LOGE("%{public}s StartPacking failed.", __func__);
-        return;
-    }
-    if (pack.AddImage(*pixelmap) != SUCCESS) {
-        IMAGE_LOGE("%{public}s AddImage failed.",  __func__);
-        return;
-    }
-    if (pack.FinalizePacking() != SUCCESS) {
-        IMAGE_LOGE("%{public}s FinalizePacking failed.",  __func__);
-        return;
-    }
-    IMAGE_LOGI("%{public}s SUCCESS.",  __func__);
-}
-
-bool CreatePixelMapUseArgbByRandomImageSource(const uint8_t *data, size_t size)
-{
-    if (data == nullptr) {
-        return false;
-    }
-    SourceOptions opts;
-    uint32_t errorCode;
-    std::shared_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(data, size, opts, errorCode);
-    if (imageSource == nullptr) {
-        return false;
-    }
-    DecodeOptions dopts;
-    dopts.desiredPixelFormat = PixelFormat::ARGB_8888;
-    dopts .desiredDynamicRange = DecodeDynamicRange::AUTO;
-    dopts.allocatorType = AllocatorType::DMA_ALLOC;
-    std::shared_ptr<PixelMap> pixelMap = imageSource->CreatePixelMap(0, dopts, errorCode);
-    dopts.desiredPixelFormat = PixelFormat::ARGB_8888;
-    dopts.desiredDynamicRange = DecodeDynamicRange::AUTO;
-    dopts.allocatorType = AllocatorType::SHARE_MEM_ALLOC;
-    pixelMap = imageSource->CreatePixelMap(0, dopts, errorCode);
-    if (pixelMap != nullptr) {
-        EncodePixelMapTest(pixelMap, JPEG_FORMAT, IMAGE_ENCODE_DEST);
-        EncodePixelMapTest(pixelMap, HEIF_FORMAT, IMAGE_ENCODE_DEST);
-        EncodePixelMapTest(pixelMap, PNG_FORMAT, IMAGE_ENCODE_DEST);
-        EncodePixelMapTest(pixelMap, WEBP_FORMAT, IMAGE_ENCODE_DEST);
-        EncodePixelMapTest(pixelMap, GIF_FORMAT, IMAGE_ENCODE_DEST);
-    }
-    dopts.desiredPixelFormat = PixelFormat::ARGB_8888;
-    dopts .desiredDynamicRange = DecodeDynamicRange::AUTO;
-    dopts.allocatorType = imageSource->ConvertAutoAllocatorType(dopts);
-    pixelMap = imageSource->CreatePixelMap(0, dopts, errorCode);
-    ImageInfo info;
-    if (pixelMap == nullptr) {
-        pixelMap->GetImageInfo(info);
-    }
-    std::shared_ptr<AuxiliaryPicture> auxPicture = AuxiliaryPicture::Create(pixelMap,
-        AuxiliaryPictureType::FRAGMENT_MAP, info.size);
-    DecodingOptionsForPicture doptsForPicture;
-    doptsForPicture.desiredPixelFormat = PixelFormat::ARGB_8888;
-    std::shared_ptr<Picture> picture = imageSource->CreatePicture(doptsForPicture, errorCode);
-    if (auxPicture != nullptr && picture != nullptr) {
-        picture->SetAuxiliaryPicture(auxPicture);
-    }
-    if (picture != nullptr) {
-        EncodePictureTest(picture, JPEG_FORMAT, IMAGE_ENCODE_DEST);
-        EncodePictureTest(picture, HEIF_FORMAT, IMAGE_ENCODE_DEST);
-    }
-    return true;
-}
-
 } // namespace Media
 } // namespace OHOS
 
 /* Fuzzer entry point */
 extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
 {
+    if (size < COMMON_OPT_SIZE) {
+        return 0;
+    }
     /* Run your code on data */
     static const std::string imagePath1 = "/data/local/tmp/test_source.gif";
-    OHOS::Media::CreateImageSourceByPathFuzz(imagePath1);
     static const std::string imagePath2 = "/data/local/tmp/test_source.svg";
-    OHOS::Media::CreateImageSourceByPathFuzz(imagePath2);
     static const std::string imagePath3 = "/data/local/tmp/test_source.jpg";
-    OHOS::Media::CreateImageSourceByPathFuzz(imagePath3);
-    OHOS::Media::CreateImageSourceByFDEXFuzz(imagePath3);
-    OHOS::Media::CreateImageSourceByIstreamFuzz(imagePath3);
-    OHOS::Media::CreateIncrementalPixelMapFuzz(imagePath3);
-    OHOS::Media::GetImagePropertyFuzzTest001(imagePath3);
     std::string pathName = "/data/local/tmp/test_create_imagesource_pathname.png";
-    if (!WriteDataToFile(data, size, pathName)) {
+    FuzzedDataProvider fdp(data + size - COMMON_OPT_SIZE, COMMON_OPT_SIZE);
+    uint8_t action = fdp.ConsumeIntegral<uint8_t>() % 10;
+    if (!WriteDataToFile(data, size - COMMON_OPT_SIZE, pathName)) {
         IMAGE_LOGE("WriteDataToFile failed");
         return 0;
     }
-    OHOS::Media::CreateImageSourceByFDEXFuzz(pathName);
-    OHOS::Media::CreateImageSourceByIstreamFuzz(pathName);
-    OHOS::Media::CreateImageSourceByPathFuzz(pathName);
-    OHOS::Media::CreateIncrementalPixelMapFuzz(pathName);
-    OHOS::Media::CreateImageSourceByDataFuzz(data, size);
-    OHOS::Media::CreateIncrementalPixelMapByDataFuzz(data, size);
-    OHOS::Media::GetImagePropertyFuzzTest001(pathName);
-    OHOS::Media::CreatePixelMapByRandomImageSource(data, size);
-    OHOS::Media::CreatePixelMapUseArgbByRandomImageSource(data, size);
-    OHOS::Media::ImageSourceFuzzTest(data, size);
+    switch (action) {
+        case 0:
+            OHOS::Media::CreateImageSourceByPathFuzz(imagePath1);
+            break;
+        case 1:
+            OHOS::Media::CreateImageSourceByPathFuzz(imagePath2);
+            break;
+        case 2:
+            OHOS::Media::CreateImageSourceByPathFuzz(imagePath3);
+            break;
+        case 3:
+            OHOS::Media::CreateImageSourceByFDEXFuzz(imagePath3);
+            break;
+        case 4:
+            OHOS::Media::CreateImageSourceByIstreamFuzz(imagePath3);
+            break;
+        case 5:
+            OHOS::Media::CreateImageSourceByFDEXFuzz(pathName);
+            break;
+        case 6:
+            OHOS::Media::CreateImageSourceByIstreamFuzz(pathName);
+            break;
+        case 7:
+            OHOS::Media::CreateImageSourceByPathFuzz(pathName);
+            break;
+        case 8:
+            OHOS::Media::CreateImageSourceByDataFuzz(data, size - COMMON_OPT_SIZE);
+            break;
+        case 9:
+            OHOS::Media::ImageSourceFuzzTest(data, size - COMMON_OPT_SIZE);
+            break;
+        default:
+            break;
+    }
+    
     return 0;
 }

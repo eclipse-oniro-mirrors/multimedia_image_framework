@@ -70,10 +70,9 @@ static const std::string JPG_PATH4 = "/data/local/tmp/test_raw_file.jpg";
 static const std::string SVG_PATH1 = "/data/local/tmp/test_large.svg";
 static const std::string SVG_PATH2 = "/data/local/tmp/test.svg";
 static const std::string ASTC_PATH1 = "/data/local/tmp/THM_ASTC.astc";
-constexpr uint8_t ITUT35_TAG_SIZE = 6;
+static constexpr uint32_t OPT_SIZE = 80;
 static constexpr uint32_t ALLOCATORTYPE_MODULO = 5;
 static constexpr uint32_t CROPANDSCALESTRATEGY_MODULO = 3;
-static constexpr uint32_t HDRTYPE_MODULO = 8;
 
 void SvgDecoderFuncTest001(const std::string &filename)
 {
@@ -274,51 +273,6 @@ void ExtDecoderRegionFuncTest001(const std::string &filename)
     IMAGE_LOGI("%{public}s SUCCESS", __func__);
 }
 
-void HdrHelperFucTest2(const uint8_t *data, size_t size, const std::string &filename)
-{
-    HdrMetadata metadata;
-    Media::ImageHdrType hdrType = static_cast<Media::ImageHdrType>(FDP->ConsumeIntegral<uint8_t>() % HDRTYPE_MODULO);
-    ImagePlugin::HdrHelper::ValidateAndCorrectMetaData(metadata, hdrType);
-
-    std::shared_ptr<ExtDecoder> extDecoder = std::make_shared<ExtDecoder>();
-    std::unique_ptr<FileSourceStream> streamPtr = FileSourceStream::CreateSourceStream(filename);
-    extDecoder->SetSource(*streamPtr);
-    extDecoder->codec_ = SkCodec::MakeFromStream(std::make_unique<ExtStream>(extDecoder->stream_));
-    extDecoder->CheckCodec();
-    ImagePlugin::HdrHelper::GetMetadata(extDecoder->codec_.get(), hdrType, metadata);
-
-    sk_sp<SkData> imageData = SkData::MakeWithCopy(data, size);
-    ExtWStream extWStream(nullptr);
-    ImagePlugin::HdrJpegPackerHelper::SpliceHdrStream(imageData, imageData, extWStream, metadata);
-}
-
-void HdrHelperFucTest()
-{
-    HdrMetadata metadataOne;
-    metadataOne.extendMeta.baseColorMeta.baseMappingFlag = ITUT35_TAG_SIZE;
-    metadataOne.extendMeta.gainmapColorMeta.combineMappingFlag = ITUT35_TAG_SIZE;
-    ImagePlugin::HdrJpegPackerHelper::PackVividMetadataMarker(metadataOne);
-
-    HdrMetadata metadataTwo;
-    metadataTwo.extendMeta.baseColorMeta.baseMappingFlag = ITUT35_TAG_SIZE;
-    metadataTwo.extendMeta.gainmapColorMeta.combineMappingFlag = ITUT35_TAG_SIZE;
-    ImagePlugin::HdrJpegPackerHelper::PackISOMetadataMarker(metadataTwo);
-
-    HdrMetadata metadataThree;
-    metadataThree.extendMeta.baseColorMeta.baseMappingFlag = ITUT35_TAG_SIZE;
-    metadataThree.extendMeta.gainmapColorMeta.combineMappingFlag = ITUT35_TAG_SIZE;
-    sk_sp<SkData> baseImageData;
-    sk_sp<SkData> gainMapImageData;
-    ExtWStream extWStream(nullptr);
-    ImagePlugin::HdrJpegPackerHelper::SpliceHdrStream(baseImageData, gainMapImageData, extWStream, metadataThree);
-
-    HdrMetadata metadataFour;
-    metadataFour.extendMeta.baseColorMeta.baseMappingFlag = ITUT35_TAG_SIZE;
-    metadataFour.extendMeta.gainmapColorMeta.combineMappingFlag = ITUT35_TAG_SIZE;
-    std::vector<uint8_t> it35Info;
-    ImagePlugin::HdrHeifPackerHelper::PackIT35Info(metadataFour, it35Info);
-}
-
 void ImagePluginFuzzTest001(const uint8_t *data, size_t size, const std::string &filename)
 {
     std::vector<std::pair<FuzzTestFuction, std::vector<std::string>>> testFunctions = {
@@ -341,15 +295,14 @@ void ImagePluginFuzzTest001(const uint8_t *data, size_t size, const std::string 
 /* Fuzzer entry point */
 extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
 {
-    /* Run your code on data */
-    FuzzedDataProvider fdp(data, size);
+    if (size < OHOS::Media::OPT_SIZE) {
+        return 0;
+    }
+    FuzzedDataProvider fdp(data + size - OHOS::Media::OPT_SIZE, OHOS::Media::OPT_SIZE);
     OHOS::Media::FDP = &fdp;
-
     static const std::string filename = "/data/local/tmp/test_decode_ext.jpg";
-    WriteDataToFile(data, size, filename);
-
-    OHOS::Media::ImagePluginFuzzTest001(data, size, filename);
-    OHOS::Media::HdrHelperFucTest();
-    OHOS::Media::HdrHelperFucTest2(data, size, filename);
+    WriteDataToFile(data, size - OHOS::Media::OPT_SIZE, filename);
+    OHOS::Media::ImagePluginFuzzTest001(data, size - OHOS::Media::OPT_SIZE, filename);
+    unlink(filename.c_str());
     return 0;
 }

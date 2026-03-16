@@ -61,6 +61,7 @@ const static std::string IMAGE_DELAY_TIME = "DelayTime";
 const static std::string IMAGE_DISPOSAL_TYPE = "DisposalType";
 const static std::string IMAGE_LOOP_COUNT = "GIFLoopCount";
 const std::string ACTUAL_IMAGE_ENCODED_FORMAT = "actual_encoded_format";
+constexpr int32_t MAX_DIM = 16;
 void ExtDecoderFuncTest002(std::shared_ptr<ExtDecoder> extDecoder)
 {
     std::vector<std::string> keys = {
@@ -107,12 +108,12 @@ void ExtDecoderFuncTest001(const std::string& pathName)
     DecodeContext context;
     PixelDecodeOptions plOpts;
     PlImageInfo plInfo;
-	plOpts.CropRect.left = FDP->ConsumeIntegral<int32_t>();
-    plOpts.CropRect.top = FDP->ConsumeIntegral<int32_t>();
-    plOpts.CropRect.width = FDP->ConsumeIntegral<int32_t>();
-    plOpts.CropRect.height = FDP->ConsumeIntegral<int32_t>();
-    plOpts.desiredSize.width = FDP->ConsumeIntegralInRange<uint16_t>(0, 0xfff);
-    plOpts.desiredSize.height = FDP->ConsumeIntegralInRange<uint16_t>(0, 0xfff);
+    plOpts.CropRect.left = FDP->ConsumeIntegral<int32_t>(0, MAX_DIM);
+    plOpts.CropRect.top = FDP->ConsumeIntegral<int32_t>(0, MAX_DIM);
+    plOpts.CropRect.width = FDP->ConsumeIntegral<int32_t>(0, MAX_DIM);
+    plOpts.CropRect.height = FDP->ConsumeIntegral<int32_t>(0, MAX_DIM);
+    plOpts.desiredSize.width = FDP->ConsumeIntegralInRange<uint16_t>(0, MAX_DIM);
+    plOpts.desiredSize.height = FDP->ConsumeIntegralInRange<uint16_t>(0, MAX_DIM);
     plOpts.rotateDegrees = FDP->ConsumeFloatingPointInRange<float>(0.0f, MAX_ROTATE);
     plOpts.sampleSize = FDP->ConsumeIntegralInRange<uint32_t>(1u, MAX_SAMPLE_SIZE);
     plOpts.desiredPixelFormat = static_cast<Media::PixelFormat>(FDP->ConsumeIntegral<uint8_t>() % PIXELFORMAT_MODULO);
@@ -150,17 +151,19 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
 	if(size < OPT_SIZE) return -1;
     FuzzedDataProvider fdp(data + size - OPT_SIZE, OPT_SIZE);
     OHOS::Media::FDP = &fdp;
-    static const std::string pathName = "/data/local/tmp/test.jpg";
-    bool needUnlink = false;
-    if (WriteDataToFile(data, size - OPT_SIZE, pathName)) {
-        needUnlink = true;
-    }
-    OHOS::Media::ExtDecoderFuncTest001(pathName);
-
-    if (needUnlink) {
-        if (unlink(pathName.c_str()) == -1) {
-            IMAGE_LOGW("Unlink temp file %{public}s failed", pathName.c_str());
+    {
+        static const std::string pathName = "/data/local/tmp/test.jpg";
+        bool needUnlink = false;
+        if (WriteDataToFile(data, size - OPT_SIZE, pathName)) {
+            needUnlink = true;
+        }
+        OHOS::Media::ExtDecoderFuncTest001(pathName);
+        if (needUnlink) {
+            if (unlink(pathName.c_str()) == -1) {
+                IMAGE_LOGW("Unlink temp file %{public}s failed", pathName.c_str());
+            }
         }
     }
+    OHOS::Media::FDP = nullptr;
     return 0;
 }

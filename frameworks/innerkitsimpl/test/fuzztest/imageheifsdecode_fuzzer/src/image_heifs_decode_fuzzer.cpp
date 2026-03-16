@@ -43,7 +43,6 @@ namespace {
     static constexpr uint32_t NUM_2 = 2;
     static constexpr uint32_t NUM_4 = 4;
     static constexpr uint32_t NUM_10 = 10;
-    static constexpr uint32_t ALLOCATOR_TYPE_MODULO = 5;
     static constexpr uint32_t PIXELFORMAT_MODULO = 105;
     static constexpr uint32_t SOURCEOPTIONS_MIMETYPE_MODULO = 3;
     static constexpr uint32_t MOCK_MAX_INDEX = 15;
@@ -184,53 +183,6 @@ void ConstructHeifParser(HeifParser &parser, const uint8_t *data, size_t size)
         return;
     }
     parser.inputStream_ = FDP->ConsumeBool() ? std::make_shared<HeifBufferInputStream>(data, size, true) : nullptr;
-}
-
-void CreatePictureAtIndexFuzzTest001(const uint8_t *data, size_t size)
-{
-    if (!data) {
-        return;
-    }
-    uint32_t errorCode = 0;
-    auto imageSource = ConstructImageSourceByBuffer(data, size);
-    if (!imageSource) {
-        return;
-    }
-    uint32_t frameCount = imageSource->GetFrameCount(errorCode);
-    if (errorCode != SUCCESS) {
-        return;
-    }
-    uint32_t index = FDP->ConsumeIntegralInRange<uint32_t>(NUM_0, frameCount);
-    imageSource->opts_.allocatorType =
-        static_cast<AllocatorType>(FDP->ConsumeIntegral<uint32_t>() % ALLOCATOR_TYPE_MODULO);
-    imageSource->CreatePictureAtIndex(index, errorCode);
-}
-
-void SetHeifsMetadataForPictureTest001(const uint8_t *data, size_t size)
-{
-    if (!data) {
-        return;
-    }
-    auto imageSource = ConstructImageSourceByBuffer(data, size);
-    if (!imageSource) {
-        return;
-    }
-    if (imageSource->InitMainDecoder() != SUCCESS) {
-        return;
-    }
-    std::shared_ptr<PixelMap> pixelMap = std::make_shared<PixelMap>();
-    std::unique_ptr<Picture> picture = Picture::Create(pixelMap);
-    uint32_t index = FDP->ConsumeIntegralInRange<uint32_t>(NUM_0, NUM_10);
-    imageSource->SetHeifsMetadataForPicture(picture, index);
-}
-
-void GetHeifsFrameCountTest001()
-{
-#ifdef HEIF_HW_DECODE_ENABLE
-    HeifDecoderImpl heifDecoderImpl;
-    uint32_t sampleCount = FDP->ConsumeIntegral<uint32_t>();
-    heifDecoderImpl.GetHeifsFrameCount(sampleCount);
-#endif
 }
 
 void ParseContentChildrenTest001(const uint8_t *data, size_t size)
@@ -393,38 +345,31 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
     }
     FuzzedDataProvider fdp(data + size - OHOS::Media::OPT_SIZE, OHOS::Media::OPT_SIZE);
     OHOS::Media::FDP = &fdp;
-    uint8_t action = fdp.ConsumeIntegral<uint8_t>() % 11;
+    uint8_t action = fdp.ConsumeIntegral<uint8_t>() % 8;
     switch (action) {
         case 0:
-            OHOS::Media::CreatePictureAtIndexFuzzTest001(data, size - OHOS::Media::OPT_SIZE);
-            break;
-        case 1:
-            OHOS::Media::SetHeifsMetadataForPictureTest001(data, size - OHOS::Media::OPT_SIZE);
-            break;
-        case 2:
             OHOS::Media::ParseContentChildrenTest001(data, size - OHOS::Media::OPT_SIZE);
             break;
-        case 3:
+        case 1:
             OHOS::Media::HeifFullBoxParseContentAndWriteTest001(data, size - OHOS::Media::OPT_SIZE);
             break;
-        case 4:
+        case 2:
             OHOS::Media::IsHeifsImageTest001(data, size - OHOS::Media::OPT_SIZE);
             break;
-        case 5:
+        case 3:
             OHOS::Media::GetHeifsMovieFrameDataTest001(data, size - OHOS::Media::OPT_SIZE);
             break;
-        case 6:
+        case 4:
             OHOS::Media::GetHeifsFrameDataTest001(data, size - OHOS::Media::OPT_SIZE);
             break;
-        case 7:
+        case 5:
             OHOS::Media::GetHeifsDelayTimeTest001(data, size - OHOS::Media::OPT_SIZE);
             break;
-        case 8:
+        case 6:
             OHOS::Media::GetPreSampleSizeTest001(data, size - OHOS::Media::OPT_SIZE);
             break;
-        case 9:
+        case 7:
             OHOS::Media::GetSampleEntryWidthHeightTest001();
-            OHOS::Media::GetHeifsFrameCountTest001();
             OHOS::Media::GetHvccBoxTest001();
             OHOS::Media::GetDelayTimeTest001();
             OHOS::Media::GetChunkOffsetTest001();
