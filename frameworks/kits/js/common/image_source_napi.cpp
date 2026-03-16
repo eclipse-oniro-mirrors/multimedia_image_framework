@@ -5020,7 +5020,11 @@ static void CreatePictureExecute(napi_env env, void *data)
     if (context->rPicture != nullptr) {
         context->status = SUCCESS;
     } else {
-        context->status = ERROR;
+        if (errorCode == ERR_IMAGE_DESIRED_PIXELFORMAT_UNSUPPORTED) {
+            context->status = ERR_IMAGE_DESIRED_PIXELFORMAT_UNSUPPORTED;
+        } else {
+            context->status = ERROR;
+        }
     }
 
     IMAGE_LOGD("[ImageSourceNapi]CreatePictureExecute OUT");
@@ -5034,6 +5038,11 @@ static void CreatePictureComplete(napi_env env, napi_status status, void *data)
 
     if (context->status == SUCCESS) {
         result = PictureNapi::CreatePicture(env, context->rPicture);
+    } else if (context->status == ERR_IMAGE_DESIRED_PIXELFORMAT_UNSUPPORTED) {
+        std::pair<int32_t, std::string> errorMsg(static_cast<int32_t>(IMAGE_SOURCE_UNSUPPORTED_OPTIONS),
+            "DesiredPixelFormat error");
+        context->errMsgArray.insert(errorMsg);
+        napi_get_undefined(env, &result);        
     } else {
         std::pair<int32_t, std::string> errorMsg(static_cast<int32_t>(IMAGE_DECODE_FAILED), "Create Picture error");
         context->errMsgArray.insert(errorMsg);

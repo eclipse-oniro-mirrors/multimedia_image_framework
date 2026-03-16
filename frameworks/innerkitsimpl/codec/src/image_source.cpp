@@ -1151,7 +1151,7 @@ static void CopyYuvInfo(YUVDataInfo &yuvInfo, ImagePlugin::PlImageInfo &plInfo)
     yuvInfo.uvOffset = plInfo.yuvDataInfo.uvOffset;
 }
 
-static bool ResizePixelMap(std::unique_ptr<PixelMap>& pixelMap, uint64_t imageId, DecodeOptions &opts)
+static bool f(std::unique_ptr<PixelMap>& pixelMap, uint64_t imageId, DecodeOptions &opts)
 {
     ImageUtils::DumpPixelMapIfDumpEnabled(pixelMap, imageId);
     if (opts.desiredSize.height != pixelMap->GetHeight() ||
@@ -5537,7 +5537,7 @@ void GetDownSamplingScaleFactor(DownSamplingScaleFactor& downSamplingScaleFactor
     }
 }
 
-bool ApplyDecodingOptionsForPicture(DecodeOptions& dopts, const DecodingOptionsForPicture& opts)
+bool ApplyDecodingOptionsForPicture(DecodeOptions& dopts, const DecodingOptionsForPicture& opts, uint32_t &errorCode)
 {
     if (opts.desiredPixelFormat == PixelFormat::RGBA_8888 || opts.desiredPixelFormat == PixelFormat::RGB_565 ||
         opts.desiredPixelFormat == PixelFormat::BGRA_8888 || opts.desiredPixelFormat == PixelFormat::NV12 ||
@@ -5566,6 +5566,7 @@ bool ApplyDecodingOptionsForPicture(DecodeOptions& dopts, const DecodingOptionsF
             }
             return true;
         }
+    errorCode = ERR_IMAGE_DESIRED_PIXELFORMAT_UNSUPPORTED;
     return false;
 }
 
@@ -5581,7 +5582,7 @@ std::unique_ptr<Picture> ImageSource::CreatePicture(const DecodingOptionsForPict
     }
     DecodeOptions dopts;
     if (!ApplyDecodingOptionsForPicture(dopts, opts)) {
-        errorCode = ERR_IMAGE_PICTURE_CREATE_FAILED;
+        errorCode = ERR_IMAGE_DESIRED_PIXELFORMAT_UNSUPPORTED? errorCode : ERR_IMAGE_PICTURE_CREATE_FAILED;
         IMAGE_LOGE("Invalid Decoding Options for Picture");
         return nullptr;
     }
