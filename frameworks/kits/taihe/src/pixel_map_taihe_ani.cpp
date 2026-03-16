@@ -16,6 +16,7 @@
 #include "pixel_map_taihe_ani.h"
 
 #include <ani_signature_builder.h>
+#include <mutex>
 #include "image_log.h"
 #include "pixel_map_taihe.h"
 
@@ -30,9 +31,12 @@ ani_function PixelMapTaiheAni::gCreatePixelMapByPtr{};
 ani_method PixelMapTaiheAni::gGetImplPtr{};
 bool PixelMapTaiheAni::createPixelMapByPtrInited = false;
 bool PixelMapTaiheAni::getImplPtrInited = false;
+std::mutex PixelMapTaiheAni::createPixelMapByPtrMutex;
+std::mutex PixelMapTaiheAni::getImplPtrMutex;
 
 bool PixelMapTaiheAni::InitCreatePixelMapByPtr(ani_env* env)
 {
+    std::lock_guard<std::mutex> lock(createPixelMapByPtrMutex);
     if (createPixelMapByPtrInited) {
         return true;
     }
@@ -46,7 +50,9 @@ bool PixelMapTaiheAni::InitCreatePixelMapByPtr(ani_env* env)
         return false;
     }
     if (env->Namespace_FindFunction(imageNamespace, "createPixelMapByPtr", nullptr, &gCreatePixelMapByPtr) != ANI_OK) {
-        env->GlobalReference_Delete(gImageNamespace);
+        if (env->GlobalReference_Delete(gImageNamespace) != ANI_OK) {
+            IMAGE_LOGD("[%{public}s] ANI GlobalReference_Delete failed", __func__);
+        }
         gImageNamespace = nullptr;
         return false;
     }
@@ -82,6 +88,7 @@ ani_object PixelMapTaiheAni::CreateEtsPixelMap(ani_env* env, std::shared_ptr<Pix
 
 bool PixelMapTaiheAni::InitGetImplPtr(ani_env* env)
 {
+    std::lock_guard<std::mutex> lock(getImplPtrMutex);
     if (getImplPtrInited) {
         return true;
     }
@@ -98,7 +105,9 @@ bool PixelMapTaiheAni::InitGetImplPtr(ani_env* env)
     sb.SetReturnLong();
     if (env->Class_FindMethod(
         pixelMapCls, "getImplPtr", sb.BuildSignatureDescriptor().c_str(), &gGetImplPtr) != ANI_OK) {
-        env->GlobalReference_Delete(gPixelMapClass);
+        if (env->GlobalReference_Delete(gPixelMapClass) != ANI_OK) {
+            IMAGE_LOGD("[%{public}s] ANI GlobalReference_Delete failed", __func__);
+        }
         gPixelMapClass = nullptr;
         return false;
     }

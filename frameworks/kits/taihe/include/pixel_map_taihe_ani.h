@@ -17,6 +17,7 @@
 #define FRAMEWORKS_KITS_TAIHE_INCLUDE_PIXEL_MAP_TAIHE_ANI_H
 
 #include <ani.h>
+#include <mutex>
 #include "pixel_map.h"
 
 // This file is for legacy ANI backward compatibility
@@ -37,6 +38,8 @@ private:
     static ani_method gGetImplPtr;
     static bool createPixelMapByPtrInited;
     static bool getImplPtrInited;
+    static std::mutex createPixelMapByPtrMutex;
+    static std::mutex getImplPtrMutex;
     static bool InitCreatePixelMapByPtr(ani_env* env);
     static bool InitGetImplPtr(ani_env* env);
 };
