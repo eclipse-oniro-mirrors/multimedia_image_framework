@@ -5042,7 +5042,7 @@ static void CreatePictureComplete(napi_env env, napi_status status, void *data)
         std::pair<int32_t, std::string> errorMsg(static_cast<int32_t>(IMAGE_SOURCE_UNSUPPORTED_OPTIONS),
             "DesiredPixelFormat error");
         context->errMsgArray.insert(errorMsg);
-        napi_get_undefined(env, &result);        
+        napi_get_undefined(env, &result);
     } else {
         std::pair<int32_t, std::string> errorMsg(static_cast<int32_t>(IMAGE_DECODE_FAILED), "Create Picture error");
         context->errMsgArray.insert(errorMsg);

@@ -1151,7 +1151,7 @@ static void CopyYuvInfo(YUVDataInfo &yuvInfo, ImagePlugin::PlImageInfo &plInfo)
     yuvInfo.uvOffset = plInfo.yuvDataInfo.uvOffset;
 }
 
-static bool f(std::unique_ptr<PixelMap>& pixelMap, uint64_t imageId, DecodeOptions &opts)
+static bool ResizePixelMap(std::unique_ptr<PixelMap>& pixelMap, uint64_t imageId, DecodeOptions &opts)
 {
     ImageUtils::DumpPixelMapIfDumpEnabled(pixelMap, imageId);
     if (opts.desiredSize.height != pixelMap->GetHeight() ||
