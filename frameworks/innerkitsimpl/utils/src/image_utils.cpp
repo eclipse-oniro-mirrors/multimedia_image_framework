@@ -2355,7 +2355,7 @@ PixelFormat ImageUtils::ConvertTo10BitPixelFormat(PixelFormat pixelFormat)
 
 bool ImageUtils::CalcRGBStride(PixelFormat format, uint32_t width, int &stride)
 {
-    int pixelBytes = 0;
+    uint32_t pixelBytes = 0;
     switch (format) {
         case PixelFormat::RGB_565:
             pixelBytes = RGB565_BYTES;
@@ -2375,7 +2375,7 @@ bool ImageUtils::CalcRGBStride(PixelFormat format, uint32_t width, int &stride)
             IMAGE_LOGE("CalcRGBStride error: unsupported pixel format:%{public}d", format);
             return false;
     }
-    if (width > INT_MAX / static_cast<uint32_t>(pixelBytes)) {
+    if (width > INT_MAX / pixelBytes) {
         IMAGE_LOGE("CalcRGBStride error: overflow! format=%{public}d, width=%{public}u", format, width);
         return false;
     }
