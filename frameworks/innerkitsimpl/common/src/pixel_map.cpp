@@ -2323,7 +2323,10 @@ bool PixelMap::WriteAshmemDataToParcel(Parcel &parcel, size_t size) const
     uint32_t id = GetUniqueId();
     std::string name = "Parcel ImageData, uniqueId: " + std::to_string(getpid()) + '_' + std::to_string(id);
     int fd = AshmemCreate(name.c_str(), size);
-    IMAGE_LOGI("AshmemCreate:[%{public}d].", fd);
+    IMAGE_LOGI("AshmemCreate:[%{public}d], format:%{public}d, size:(%{public}d, %{public}d), "\
+        "bufferSize:%{public}zu, Pid:%{public}s, Tid:%{public}s, PixelMapUID:%{public}d",
+        fd, static_cast<int32_t>(imageInfo_.pixelFormat), imageInfo_.size.width, imageInfo_.size.height,
+        size, std::to_string(getpid()).c_str(), std::to_string(gettid()).c_str(), GetUniqueId());
     if (fd < 0) {
         return false;
     }
