@@ -2167,9 +2167,11 @@ std::vector<MetadataValue> ImageSource::GetAllPropertiesWithType(uint32_t index)
 {
     std::vector<MetadataValue> result;
 
+#if !defined(CROSS_PLATFORM)
     if (IsWebPImage()) {
         GetWebpPropertiesWithType(index, result);
     }
+#endif
     CHECK_ERROR_RETURN_RET_LOG(!exifMetadata_ && isExifReadFailed_, result, "Exif metadata not initialized");
     CHECK_ERROR_RETURN_RET_LOG(CreatExifMetadataByImageSource() != SUCCESS, result, "Metadata creation failed");
 #if !defined(CROSS_PLATFORM)
@@ -2337,6 +2339,7 @@ uint32_t ImageSource::GetGifProperty(uint32_t index, const std::string &key, Met
 
 uint32_t ImageSource::GetWebPProperty(uint32_t index, const std::string &key, MetadataValue &value)
 {
+#if !defined(CROSS_PLATFORM)
     value.key = key;
     uint32_t errorCode = 0;
     std::shared_ptr<WebPMetadata> webpMetadata = GetWebPMetadata(index, errorCode);
@@ -2361,6 +2364,7 @@ uint32_t ImageSource::GetWebPProperty(uint32_t index, const std::string &key, Me
         }
         return errorCode;
     }
+#endif
     return ERROR;
 }
 
