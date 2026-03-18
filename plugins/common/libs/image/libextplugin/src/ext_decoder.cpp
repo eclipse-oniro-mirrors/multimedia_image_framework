@@ -785,7 +785,7 @@ uint32_t ExtDecoder::ExtractHeifRegion(const PixelDecodeOptions &opts)
             gridInfo.tileHeight != static_cast<uint32_t>(info_.height())) {
             heifGridRegionInfo_.isGridType = true;
             heifGridRegionInfo_.tileWidth = static_cast<int32_t>(gridInfo.tileWidth);
-            heifGridRegionInfo_.tileHeight = static_cast<uint32_t>(gridInfo.tileHeight);
+            heifGridRegionInfo_.tileHeight = static_cast<int32_t>(gridInfo.tileHeight);
         }
         PixelDecodeOptions heifOpts = opts;
         if (!IsHeifValidCrop(heifOpts.CropRect, info_, static_cast<int32_t>(gridInfo.cols),
@@ -1459,10 +1459,8 @@ bool ExtDecoder::IsSupportHeifHardwareDecode(const PixelDecodeOptions &opts)
 {
 #ifdef HEIF_HW_DECODE_ENABLE
     auto decoder = reinterpret_cast<HeifDecoderImpl*>(codec_->getHeifContext());
-    if (decoder == nullptr) {
-        IMAGE_LOGE("Decode HeifDecoder is nullptr");
-        return false;
-    }
+    bool cond = decoder == nullptr;
+    CHECK_ERROR_RETURN_RET_LOG(cond, false, "Decode Heifdecoder is nullptr");
     GridInfo gridInfo = decoder->GetGridInfo();
     if (!ImageSystemProperties::GetHeifHardwareDecodeEnabled()) {
         return false;
