@@ -243,8 +243,8 @@ void GetDelayTimeTest001()
     HeifSttsBox sttsBox;
     ConstructHeifSttsBox(sttsBox);
     uint32_t index = FDP->ConsumeIntegral<uint32_t>();
-    int32_t value = FDP->ConsumeIntegral<int32_t>();
-    sttsBox.GetDelayTime(index, value);
+    uint32_t value = FDP->ConsumeIntegral<uint32_t>();
+    sttsBox.GetSampleDelta(index, value);
 }
 
 void GetChunkOffsetTest001()
