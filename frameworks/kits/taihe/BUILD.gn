@@ -88,6 +88,7 @@ taihe_shared_library("image_taihe") {
   ]
 
   external_deps = [
+    "access_token:libtokenid_sdk",
     "c_utils:utils",
     "drivers_interface_display:libdisplay_commontype_proxy_1.0",
     "eventhandler:libeventhandler",
@@ -101,6 +102,7 @@ taihe_shared_library("image_taihe") {
     "graphic_surface:sync_fence",
     "hilog:libhilog",
     "hitrace:hitrace_meter",
+    "ipc:ipc_core",
     "ipc:ipc_single",
     "napi:ace_napi",
     "runtime_core:ani_helpers",

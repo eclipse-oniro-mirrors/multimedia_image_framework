@@ -175,6 +175,8 @@ typedef struct Image_String Image_MimeType;
 typedef enum {
     /** operation success */
     IMAGE_SUCCESS = 0,
+    /** insufficient permissions */
+    IMAGE_PERMISSIONS_FAILED = 202,
     /** invalid parameter */
     IMAGE_BAD_PARAMETER = 401,
     /** unsupported mime type */

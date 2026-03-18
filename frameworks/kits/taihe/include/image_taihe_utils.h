@@ -63,6 +63,7 @@ public:
 
     template <typename T>
     static bool IsValidPtr(T data);
+    static bool IsSystemApp();
 private:
     static AniObjectInfo businessErrorInfo_;
 };

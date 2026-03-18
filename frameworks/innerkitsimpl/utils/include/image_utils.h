@@ -273,6 +273,16 @@ public:
 #if !defined(CROSS_PLATFORM)
     static void FlushSurfaceBuffer(sptr<SurfaceBuffer>& surfaceBuffer);
 #endif
+    template<typename T>
+    static std::string ArrayToString(const std::vector<T>& array)
+    {
+        std::ostringstream oss;
+        for (size_t i = 0; i < array.size(); ++i) {
+            if (i > 0) oss << ", ";
+            oss << array[i];
+        }
+        return oss.str();
+    }
 private:
     static uint32_t RegisterPluginServer();
     static uint32_t SaveDataToFile(const std::string& fileName, const char* data, const size_t& totalSize);

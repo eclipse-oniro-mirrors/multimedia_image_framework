@@ -1707,7 +1707,8 @@ uint32_t ImageSource::ModifyImageProperties(const vector<pair<string, string>> &
     exifUnsupportKeys_.clear();
     for (const auto &[key, value] : properties) {
         if (isEnhanced) {
-            auto status = static_cast<uint32_t>(ExifMetadatFormatter::Validate(key, value));
+            auto status = static_cast<uint32_t>(ExifMetadatFormatter::Validate(key, value, isSystemApi_));
+            exifMetadata_->SetSystemApi(isSystemApi_);
             if (status != SUCCESS || !exifMetadata_->SetValue(key, value)) {
                 exifUnsupportKeys_.emplace(key);
                 IMAGE_LOGE("%{public}s unsupported key: %{public}s", __func__, key.c_str());

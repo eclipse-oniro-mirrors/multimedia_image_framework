@@ -16,6 +16,14 @@
 #include "image_log.h"
 #include "image_taihe_utils.h"
 
+#if !defined(CROSS_PLATFORM)
+#include "tokenid_kit.h"
+#include "ipc_skeleton.h"
+#endif
+#if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM) && defined(HICHECKER_ENABLE)
+#include "hichecker.h"
+#endif
+
 namespace ANI::Image {
 constexpr char CLASS_NAME_BUSINESSERROR[] = "@ohos.base.BusinessError";
 
@@ -236,4 +244,15 @@ bool ImageTaiheUtils::IsValidPtr<weak::ImageSource>(weak::ImageSource data);
 
 template
 bool ImageTaiheUtils::IsValidPtr<weak::Picture>(weak::Picture data);
+
+bool ImageTaiheUtils::IsSystemApp()
+{
+#if !defined(CROSS_PLATFORM)
+    static bool isSys = OHOS::Security::AccessToken::TokenIdKit::IsSystemAppByFullTokenID(
+        OHOS::IPCSkeleton::GetSelfTokenID());
+    return isSys;
+#else
+    return false;
+#endif
+}
 } // namespace ANI::Image
