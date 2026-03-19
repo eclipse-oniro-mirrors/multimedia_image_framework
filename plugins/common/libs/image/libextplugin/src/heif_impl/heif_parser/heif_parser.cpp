@@ -81,8 +81,9 @@ heif_error HeifParser::MakeFromStream(const std::shared_ptr<HeifInputStream> &st
     }
 
     heif_error errorImage = file->AssembleImages();
-    if (errorImage != heif_error_ok) {
-        return errorImage;
+    heif_error errorAnimationImage = file->AssembleAnimationImages();
+    if (errorImage != heif_error_ok && errorAnimationImage != heif_error_ok) {
+        return errorAnimationImage != heif_error_not_heifs ? errorAnimationImage : errorImage;
     }
 
     *out = std::move(file);
@@ -356,23 +357,11 @@ heif_error HeifParser::AssembleImages()
 {
     images_.clear();
     primaryImage_.reset();
-    bool isHeifs = moovBox_ && ftypBox_ && ftypBox_->GetMajorBrand() == HEIF_BRAND_TYPE_MSF1;
-    if (isHeifs) {
-        primaryImage_ = std::make_shared<HeifImage>(0);
-        if (!primaryImage_) {
-            return heif_error_primary_item_not_found;
-        }
-        primaryImage_->SetPrimaryImage(true);
-        ExtractMovieImageProperties(primaryImage_);
-    }
     std::vector<heif_item_id> allItemIds;
     GetAllItemId(allItemIds);
     ExtractProperties(allItemIds);
     if (!primaryImage_) {
         return heif_error_primary_item_not_found;
-    }
-    if (isHeifs) {
-        primaryImage_->SetMovieImage(true);
     }
     ExtractGainmap(allItemIds);
     ExtractDerivedImageProperties();
@@ -382,6 +371,27 @@ heif_error HeifParser::AssembleImages()
     ExtractRfDataBMetadata(allItemIds);
     ExtractSTDataMetadata(allItemIds);
     return heif_error_ok;
+}
+
+heif_error HeifParser::AssembleAnimationImages()
+{
+    animationImage_.reset();
+    bool isHeifs = moovBox_ && ftypBox_ && ftypBox_->GetMajorBrand() == HEIF_BRAND_TYPE_MSF1;
+    if (isHeifs) {
+        std::shared_ptr<HeifImage> image = std::make_shared<HeifImage>(0);
+        if (!image) {
+            return heif_error_eof;
+        }
+        image->SetMovieImage(true);
+        ExtractMovieImageProperties(image);
+        if (!primaryImage_) {
+            image->SetPrimaryImage(true);
+            primaryImage_ = image;
+        }
+        animationImage_ = image;
+        return heif_error_ok;
+    }
+    return heif_error_not_heifs;
 }
 
 void HeifParser::ExtractProperties(const std::vector<heif_item_id> &allItemIds)
@@ -835,6 +845,11 @@ std::shared_ptr<HeifImage> HeifParser::GetAuxiliaryMapImage(const std::string ty
 std::shared_ptr<HeifImage> HeifParser::GetTmapImage()
 {
     return tmapImage_;
+}
+
+std::shared_ptr<HeifImage> HeifParser::GetAnimationImage()
+{
+    return animationImage_;
 }
 
 heif_item_id HeifParser::GetNextItemId() const

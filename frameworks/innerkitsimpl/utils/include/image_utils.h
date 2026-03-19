@@ -194,6 +194,7 @@ public:
     static bool IsInRange(int32_t value, int32_t minValue, int32_t maxValue);
     static bool IsEven(int32_t value);
     static bool HasOverflowed(uint32_t num1, uint32_t num2);
+    static bool HasOverflowed64(uint64_t num1, uint64_t num2);
     static int32_t GetAPIVersion();
     static std::string GetEncodedHeifFormat();
     static std::string GetEncodedHeifsFormat();

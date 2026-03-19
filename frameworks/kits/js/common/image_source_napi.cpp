@@ -34,6 +34,7 @@
 #include "metadata_napi.h"
 #include "xmp_metadata_napi.h"
 #include "webp_metadata.h"
+#include "image_mime_type.h"
 
 #undef LOG_DOMAIN
 #define LOG_DOMAIN LOG_TAG_DOMAIN_ID_IMAGE
@@ -4350,6 +4351,11 @@ STATIC_EXEC_FUNC(CreatePixelMapList)
     uint32_t frameCount = context->rImageSource->GetFrameCount(errorCode);
     if ((errorCode == SUCCESS) && (context->index >= NUM_0) && (context->index < frameCount)) {
         context->decodeOpts.invokeType = JS_INTERFACE;
+        ImageInfo imageInfo;
+        if (context->rImageSource->GetImageInfo(imageInfo) == SUCCESS &&
+            imageInfo.encodedFormat == IMAGE_HEIFS_FORMAT) {
+            context->decodeOpts.isAnimationDecode = true;
+        }
         context->pixelMaps = context->rImageSource->CreatePixelMapList(context->decodeOpts, errorCode);
     }
     if ((errorCode == SUCCESS) && IMG_NOT_NULL(context->pixelMaps)) {

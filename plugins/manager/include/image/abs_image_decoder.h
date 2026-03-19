@@ -94,6 +94,8 @@ struct DecodeContext {
     bool  isCreateWideGamutSdrPixelMap = false;
     // In : set heifs frame index
     uint32_t index = 0;
+    // In : set animation decode mode
+    bool isAnimationDecode = false;
 };
 
 struct ProgDecodeContext {
@@ -129,6 +131,7 @@ struct PixelDecodeOptions {
     std::shared_ptr<OHOS::ColorManager::ColorSpace> plDesiredColorSpace = nullptr;
     std::shared_ptr<Media::PixelMap> plReusePixelmap = nullptr;
     OHOS::Media::CropAndScaleStrategy cropAndScaleStrategy = OHOS::Media::CropAndScaleStrategy::DEFAULT;
+    bool isAnimationDecode = false;
 };
 
 class AbsImageDecoder {
@@ -305,6 +308,11 @@ public:
     virtual bool IsProgressiveJpeg()
     {
         return false;
+    }
+
+    virtual OHOS::Media::Size GetAnimationImageSize()
+    {
+        return {0, 0};
     }
 
     // define multiple subservices for this interface

@@ -87,6 +87,7 @@ public:
     bool GetHeifMetadataBlob(std::vector<uint8_t>& metadata, Media::MetadataType type) override;
     void FillYuvInfo(DecodeContext &context, SkImageInfo &dstInfo);
     OHOS::Media::Size GetHeifRegionGridSize() override;
+    OHOS::Media::Size GetAnimationImageSize() override;
 private:
     typedef struct FrameCacheInfo {
         int width;
@@ -184,6 +185,7 @@ private:
     uint32_t streamOff_ = 0;
     std::unique_ptr<SkCodec> codec_;
     SkImageInfo info_;
+    OHOS::Media::Size animationSize_;
     SkImageInfo dstInfo_;
     SkCodec::Options dstOptions_;
     SkIRect dstSubset_;

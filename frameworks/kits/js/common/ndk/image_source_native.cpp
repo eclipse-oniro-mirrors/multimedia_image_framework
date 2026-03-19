@@ -28,6 +28,7 @@
 #include "image_log.h"
 #include "native_color_space_manager.h"
 #include "ndk_color_space.h"
+#include "image_mime_type.h"
 
 #ifndef _WIN32
 #include "securec.h"
@@ -730,7 +731,11 @@ Image_ErrorCode OH_ImageSourceNative_CreatePixelmapList(OH_ImageSourceNative *so
     DecodeOptions decOps;
     uint32_t errorCode = IMAGE_BAD_PARAMETER;
     ParseDecodingOps(decOps, ops);
-
+    ImageInfo imageInfo;
+    if (source->GetInnerImageSource()->GetImageInfo(imageInfo) == SUCCESS &&
+        imageInfo.encodedFormat == IMAGE_HEIFS_FORMAT) {
+        decOps.isAnimationDecode = true;
+    }
     auto pixelmapList = source->GetInnerImageSource()->CreatePixelMapList(decOps, errorCode);
     if (pixelmapList == nullptr || errorCode != IMAGE_SUCCESS) {
         return IMAGE_BAD_PARAMETER;

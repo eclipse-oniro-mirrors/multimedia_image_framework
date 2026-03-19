@@ -66,6 +66,8 @@ public:
 
     std::shared_ptr<HeifImage> GetTmapImage();
 
+    std::shared_ptr<HeifImage> GetAnimationImage();
+
     std::string GetItemType(heif_item_id itemId) const;
 
     heif_error GetGridLength(heif_item_id itemId, size_t &length);
@@ -150,6 +152,7 @@ private:
     std::map<heif_item_id, std::shared_ptr<HeifImage>> images_;
     std::shared_ptr<HeifImage> primaryImage_; // shortcut to primary image
     std::shared_ptr<HeifImage> tmapImage_;
+    std::shared_ptr<HeifImage> animationImage_;
 
     heif_error GetPreSampleSize(uint32_t index, uint32_t &preSampleSize);
 
@@ -189,6 +192,8 @@ private:
 
     // reading functions for images
     heif_error AssembleImages();
+
+    heif_error AssembleAnimationImages();
 
     void ExtractImageProperties(std::shared_ptr<HeifImage> &image);
 

@@ -1656,6 +1656,11 @@ bool ImageUtils::HasOverflowed(uint32_t num1, uint32_t num2)
     return num1 > std::numeric_limits<uint32_t>::max() - num2;
 }
 
+bool ImageUtils::HasOverflowed64(uint64_t num1, uint64_t num2)
+{
+    return num1 > std::numeric_limits<uint64_t>::max() - num2;
+}
+
 std::string ImageUtils::GetEncodedHeifFormat()
 {
     if (GetAPIVersion() > APIVERSION_13) {

@@ -78,7 +78,7 @@ public:
     bool decodeAuxiliaryMap();
     void setAuxiliaryDstBuffer(uint8_t* dstBuffer, size_t dstSize, size_t rowStride, void *context);
     void getFragmentMetadata(Media::Rect& fragmentMetadata);
-    bool SwDecode(bool isSharedMemory = false, uint32_t index = 0);
+    bool SwDecode(bool isSharedMemory = false, uint32_t index = 0, bool isAnimationDecode = false);
     void GetMetadataBlob(std::vector<uint8_t>& metadata, Media::MetadataType type);
 
     void SetDecodeRegion(int32_t colCount, int32_t rowCount, int32_t left, int32_t top, size_t rowStride);
@@ -96,7 +96,10 @@ public:
     bool IsHeifsImage();
     uint32_t GetHeifsDelayTime(uint32_t index, int32_t &value);
     void SetDstBufferSize(uint64_t byteCount);
+    void SetDstPrimaryImageBufferSize(uint64_t byteCount);
     void SetDstImageInfo(uint32_t dstWidth, uint32_t dstHeight);
+    void GetAnimationSize(OHOS::Media::Size &animationSize);
+    bool IsWithoutPrimaryImageHeifs();
 private:
     bool Reinit(HeifFrameInfo *frameInfo);
 
@@ -202,7 +205,7 @@ private:
 
     bool HasDecodedFrame(uint32_t index);
 
-    bool AllocateBufferSize(HevcSoftDecodeParam &param);
+    bool AllocateBufferSize(HevcSoftDecodeParam &param, bool isStatic = false);
 
     void DeleteParamBuffer(HevcSoftDecodeParam &param);
 
@@ -262,6 +265,9 @@ private:
 
     GridInfo gainmapGridInfo_ = {0, 0, false, 0, 0, 0, 0, 0};
 
+    std::shared_ptr<HeifImage> animationImage_ = nullptr;
+    HeifFrameInfo animationImageInfo_{};
+
     IH265DEC_HANDLE* swDecHeifsHandle_ = nullptr;
     static inline Media::ImageFwkExtManager extManager_;
     std::map<uint32_t, HevcSoftDecodeParam> params_;
@@ -269,6 +275,7 @@ private:
     uint32_t dstWidth_ = 0;
     uint32_t dstHeight_ = 0;
     uint64_t dstBufferSize_ = 0;
+    uint64_t dstPrimaryImageBufferSize_ = 0;
 };
 } // namespace ImagePlugin
 } // namespace OHOS

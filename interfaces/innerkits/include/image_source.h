@@ -452,6 +452,7 @@ private:
     std::string GetPixelMapName(PixelMap* pixelMap);
     bool IsDngImage();
     bool IsWebPImage();
+    void SetAnimationSize(uint32_t index, const DecodeOptions &opts, ImageInfo &info);
 
 #if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
     void SpecialSetComposeBuffer(ImagePlugin::DecodeContext &baseCtx, sptr<SurfaceBuffer>& baseSptr,
