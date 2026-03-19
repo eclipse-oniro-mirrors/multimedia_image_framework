@@ -631,6 +631,10 @@ union AuxPicture {
     type_null: @null unit;
 }
 
+struct HdrComposeOptions {
+  desiredPixelFormat: Optional<PixelMapFormat>;
+}
+
 interface Picture {
   GetImplPtr(): i64;
 
@@ -638,6 +642,9 @@ interface Picture {
 
   @gen_promise("getHdrComposedPixelmap")
   GetHdrComposedPixelmapSync(): Optional<PixelMap>;
+
+  @gen_promise("getHdrComposedPixelmapWithOptions")
+  GetHdrComposedPixelmapWithOptionsSync(options: Optional<HdrComposeOptions>): Optional<PixelMap>;
 
   GetGainmapPixelmap(): NullablePixelMap;
 

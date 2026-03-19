@@ -84,7 +84,7 @@ optional<PixelMap> PictureImpl::GetMainPixelmap()
     return optional<PixelMap>(std::in_place, res);
 }
 
-optional<PixelMap> PictureImpl::GetHdrComposedPixelmapSync()
+optional<PixelMap> PictureImpl::GetHdrComposedPixelmapTaiHe(bool withOptions, optional_view<HdrComposeOptions> options)
 {
     IMAGE_LOGD("GetHdrComposedPixelMap IN");
     if (nativePicture_ == nullptr) {
@@ -100,13 +100,31 @@ optional<PixelMap> PictureImpl::GetHdrComposedPixelmapSync()
         return optional<PixelMap>(std::nullopt);
     }
 
-    auto tmpixel = nativePicture_->GetHdrComposedPixelMap();
+    OHOS::Media::PixelFormat format = OHOS::Media::PixelFormat::UNKNOWN;
+    if (withOptions && options.has_value()) {
+        if (options->desiredPixelFormat.has_value()) {
+            format = static_cast<OHOS::Media::PixelFormat>(options->desiredPixelFormat.value().get_value());
+        }
+    }
+
+    auto tmpixel = nativePicture_->GetHdrComposedPixelMap(format);
     if (tmpixel == nullptr) {
-        ImageTaiheUtils::ThrowExceptionError(OHOS::Media::ERROR, "Get hdr composed pixelMap failed");
+        ImageTaiheUtils::ThrowExceptionError(withOptions ? IMAGE_UNSUPPORTED_OPERATION : OHOS::Media::ERROR,
+            "Get hdr composed pixelMap failed");
         return optional<PixelMap>(std::nullopt);
     }
     auto res = PixelMapImpl::CreatePixelMap(std::move(tmpixel));
     return optional<PixelMap>(std::in_place, res);
+}
+
+optional<PixelMap> PictureImpl::GetHdrComposedPixelmapSync()
+{
+    return GetHdrComposedPixelmapTaiHe(false, std::nullopt);
+}
+
+optional<PixelMap> PictureImpl::GetHdrComposedPixelmapWithOptionsSync(optional_view<HdrComposeOptions> options)
+{
+    return GetHdrComposedPixelmapTaiHe(true, options);
 }
 
 NullablePixelMap PictureImpl::GetGainmapPixelmap()
