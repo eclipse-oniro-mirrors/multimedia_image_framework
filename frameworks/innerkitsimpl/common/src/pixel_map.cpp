@@ -4655,7 +4655,7 @@ std::unique_ptr<AbsMemory> PixelMap::CreateSdrMemory(ImageInfo &imageInfo, Pixel
     ImageInfo outImageInfo = {imageInfo.size, outFormat};
     int32_t dataSize = GetAllocatedByteCount(outImageInfo);
     if (dataSize <= 0) {
-        IMAGE_LOGI("sdr memory alloc failed.");
+        IMAGE_LOGI("sdr memory get dataSize failed.");
         errorCode = IMAGE_RESULT_GET_SURFAC_FAILED;
         return nullptr;
     }
