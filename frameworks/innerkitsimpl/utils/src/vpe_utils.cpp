@@ -74,7 +74,6 @@ using CalGainmapImageT =
     int32_t (*)(int32_t, OHNativeWindowBuffer*, OHNativeWindowBuffer*, OHNativeWindowBuffer*);
 #endif
 
-
 VpeUtils::VpeUtils()
 {
     static std::once_flag flag;
@@ -281,12 +280,10 @@ SurfaceBufferInfo GetSurfaceBufferInfo(sptr<SurfaceBuffer>& buffer)
     }
     bool cond = buffer == nullptr;
     CHECK_ERROR_RETURN_RET_LOG(cond, info, "buffer get null source buffer");
-
     OH_NativeBuffer_Planes *planes = nullptr;
     info = {buffer->GetWidth(), buffer->GetHeight(), buffer->GetStride(),
         static_cast<uint8_t*>(buffer->GetVirAddr()), buffer->GetSize(), buffer->GetStride(),
         buffer->GetStride()};
-
     auto pixelFmt = buffer->GetFormat();
     uint32_t uvPlaneOffset = (pixelFmt == GRAPHIC_PIXEL_FMT_YCBCR_420_SP || pixelFmt == GRAPHIC_PIXEL_FMT_YCBCR_P010) ?
         PLANE_U : PLANE_V;
@@ -302,12 +299,12 @@ SurfaceBufferInfo GetSurfaceBufferInfo(sptr<SurfaceBuffer>& buffer)
 
 void TruncateRGBA1010102ToRGBA8888(VpeSurfaceBuffers& buffers)
 {
-    bool cond = buffers.sdr == nullptr || buffers.sdr == nullptr;
+    bool cond = buffers.hdr == nullptr || buffers.sdr == nullptr;
     CHECK_ERROR_RETURN(cond);
     SurfaceBufferInfo srcInfo = GetSurfaceBufferInfo(buffers.hdr);
     SurfaceBufferInfo dstInfo = GetSurfaceBufferInfo(buffers.sdr);
-    IMAGE_LOGD("do TruncateRGBA1010102ToRGBA8888 srcInfo %{public}s", srcInfo.Tostring().c_str());
-    IMAGE_LOGD("do TruncateRGBA1010102ToRGBA8888 outInfo %{public}s", dstInfo.Tostring().c_str());
+    IMAGE_LOGD("do TruncateRGBA1010102ToRGBA8888 srcInfo %{public}s", srcInfo.ToString().c_str());
+    IMAGE_LOGD("do TruncateRGBA1010102ToRGBA8888 outInfo %{public}s", dstInfo.ToString().c_str());
     DoTruncateRGBA1010102ToRGBA8888(srcInfo, dstInfo);
 }
 
@@ -315,14 +312,13 @@ void TruncateP010ToYUV420(VpeSurfaceBuffers& buffers)
 {
     SurfaceBufferInfo srcInfo = GetSurfaceBufferInfo(buffers.hdr);
     SurfaceBufferInfo dstInfo = GetSurfaceBufferInfo(buffers.sdr);
-    IMAGE_LOGD("do TruncateP010ToYUV420 srcInfo %{public}s", srcInfo.Tostring().c_str());
-    IMAGE_LOGD("do TruncateP010ToYUV420 outInfo %{public}s", dstInfo.Tostring().c_str());
+    IMAGE_LOGD("do TruncateP010ToYUV420 srcInfo %{public}s", srcInfo.ToString().c_str());
+    IMAGE_LOGD("do TruncateP010ToYUV420 outInfo %{public}s", dstInfo.ToString().c_str());
     bool cond = buffers.hdr == nullptr || buffers.sdr == nullptr;
     CHECK_ERROR_RETURN(cond);
     DoTruncateP010ToYUV420(srcInfo, dstInfo);
 }
 
-// cut off 10bit buffer to 8bit buffer, shouldCalDiff be ture if need save the diff
 int32_t VpeUtils::TruncateBuffer(VpeSurfaceBuffers& buffers, bool shouldCalDiff)
 {
     int32_t res = VPE_ERROR_OK;

@@ -54,7 +54,7 @@ struct SurfaceBufferInfo {
     uint32_t yOffset = 0;
     uint32_t uvOffset = 0;
 
-    std::string Tostring() const
+    std::string ToString() const
     {
         std::stringstream message;
         message << " width: " << width << ", height: " << height << ", stride: " << stride <<
