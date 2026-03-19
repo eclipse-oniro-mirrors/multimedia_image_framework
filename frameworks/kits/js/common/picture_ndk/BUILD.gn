@@ -96,6 +96,7 @@ ohos_shared_library("picture") {
     "graphic_surface:surface",
     "hilog:libhilog",
     "ipc:ipc_single",
+    "napi:ace_napi",
   ]
   if (enable_libexif) {
     external_deps += [ "libexif:libexif" ]

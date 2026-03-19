@@ -67,6 +67,8 @@ ohos_unittest("pixelmaptest") {
     "hilog:libhilog",
     "ipc:ipc_core",
     "resource_management:librawfile",
+    "graphic_2d:GLESv3",
+    "napi:ace_napi",
   ]
 
   defines = []
@@ -791,6 +793,8 @@ ohos_unittest("convertertest") {
     "googletest:gtest_main",
     "graphic_2d:color_manager",
     "hilog:libhilog",
+    "graphic_2d:GLESv3",
+    "graphic_surface:surface",
   ]
 }
 
