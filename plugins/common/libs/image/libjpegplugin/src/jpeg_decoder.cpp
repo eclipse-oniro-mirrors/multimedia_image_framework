@@ -265,13 +265,13 @@ static int CalculateInSampleSize(const jpeg_decompress_struct &dInfo, const Pixe
         int reqWidth = opts.desiredSize.width;
 
         if (height > reqHeight || width > reqWidth) {
-            const int halfHeight = height >> 1;
-            const int halfWidth = width >> 1;
+            const int halfHeight = height / 2;
+            const int halfWidth = width / 2;
 
             // Calculate the largest inSampleSize value that is a power of 2 and keeps both
             // height and width larger than the requested height and width.
             while ((halfHeight / inSampleSize) >= reqHeight && (halfWidth / inSampleSize) >= reqWidth) {
-                inSampleSize <<= 1;
+                inSampleSize *= 2;
             }
         }
     }
