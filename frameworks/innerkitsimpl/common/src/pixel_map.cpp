@@ -4660,7 +4660,6 @@ std::unique_ptr<AbsMemory> PixelMap::CreateSdrMemory(ImageInfo &imageInfo, Pixel
         return nullptr;
     }
     MemoryData sdrData = {nullptr, static_cast<size_t>(dataSize), "Trans ImageData", imageInfo.size, outFormat};
-    sdrData.usage = GetNoPaddingUsage();
     auto sdrMemory = MemoryManager::CreateMemory(dstType, sdrData);
     if (sdrMemory == nullptr) {
         IMAGE_LOGI("sdr memory alloc failed.");
