@@ -275,9 +275,6 @@ void DoTruncateRGBA1010102ToRGBA8888(const SurfaceBufferInfo& srcInfo, const Sur
 SurfaceBufferInfo GetSurfaceBufferInfo(sptr<SurfaceBuffer>& buffer)
 {
     SurfaceBufferInfo info;
-    if (buffer == nullptr) {
-        return info;
-    }
     bool cond = buffer == nullptr;
     CHECK_ERROR_RETURN_RET_LOG(cond, info, "buffer get null source buffer");
     OH_NativeBuffer_Planes *planes = nullptr;
