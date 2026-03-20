@@ -307,6 +307,11 @@ public:
     NATIVEEXPORT std::shared_ptr<ImageMetadata> GetMetadata(MetadataType type);
     NATIVEEXPORT uint32_t GetImageRawData(std::vector<uint8_t> &data, uint32_t &bitsPerSample);
 
+    void SetSystemApi(bool isSystemApi)
+    {
+        isSystemApi_ = isSystemApi;
+    }
+
 private:
     DISALLOW_COPY_AND_MOVE(ImageSource);
     using FormatAgentMap = std::map<std::string, ImagePlugin::AbsImageFormatAgent *>;
@@ -523,6 +528,7 @@ private:
     XmageCoordinateMetadata coordMetadata_;
     bool hasValidXmageCoords_ = false;
     std::shared_ptr<XMPMetadata> xmpMetadata_ = nullptr;
+    bool isSystemApi_ = false;
 };
 } // namespace Media
 } // namespace OHOS

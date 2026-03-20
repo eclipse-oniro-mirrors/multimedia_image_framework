@@ -82,6 +82,10 @@ public:
     static const std::map<std::string, PropertyValueType>& GetWebPMetadataMap();
     static const std::map<NapiMetadataType, std::map<std::string, PropertyValueType>>& GetPropertyTypeMapping();
     static const std::unordered_map<std::string, std::string>& GetPropertyKeyMap();
+    void SetSystemApi(bool isSystemApi)
+    {
+        isSystemApi_ = isSystemApi;
+    }
 
 private:
     bool ParseExifCoordinate(const std::string& fieldName, uint32_t& outputValue) const;
@@ -110,6 +114,7 @@ private:
     void FindRanges(const ExifTag &tag, std::vector<std::pair<uint32_t, uint32_t>> &ranges);
     int GetUserMakerNote(std::string& value) const;
     ExifData *exifData_;
+    bool isSystemApi_ = false;
 };
 } // namespace Media
 } // namespace OHOS

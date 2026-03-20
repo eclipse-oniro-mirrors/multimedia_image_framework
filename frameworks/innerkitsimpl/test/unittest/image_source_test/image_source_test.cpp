@@ -5276,5 +5276,144 @@ HWTEST_F(ImageSourceTest, GetAllSupportedMetadataTypesTest003, TestSize.Level3)
     ASSERT_EQ(metadataType, MetadataType::FRAGMENT);
     GTEST_LOG_(INFO) << "ImageSourceTest: GetAllSupportedMetadataTypesTest003 end";
 }
+
+/**
+ * @tc.name: GetSetFaceBeautyMetadataTest001
+ * @tc.desc: Test setting and retrieving FaceBeauty metadata properties (version, detection, face count, face info)
+ *           using system API.
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageSourceTest, GetSetFaceBeautyMetadataTest001, TestSize.Level3)
+{
+    SourceOptions opts;
+    opts.formatHint = "image/jpeg";
+    int fd = open(IMAGE_INPUT_JPEG_PATH.c_str(), O_RDWR | O_CREAT, S_IRUSR | S_IWUSR);
+    std::unique_ptr<ImageSource> imageSource = CreateImageSourceByFd(fd);
+    ASSERT_NE(imageSource.get(), nullptr);
+    uint32_t index = 0;
+    const std::vector<std::pair<std::string, std::string>> properties = {
+        {"HwMnoteFaceBeautyVersion", "1"},
+        {"HwMnoteFaceBeautyIsDetected", "2"},
+        {"HwMnoteFaceBeautyFaceNum", "3"},
+        {"HwMnoteFaceBeautyFaceInfo", "1.1, 2.2, 3.3"},
+    };
+    uint32_t ret = imageSource->ModifyImagePropertiesEx(index, properties);
+    EXPECT_EQ(ret, SUCCESS);
+
+    std::string key = "HwMnoteFaceBeautyVersion";
+    std::string value = "";
+    ret = imageSource->GetImagePropertyCommon(index, key, value);
+    EXPECT_EQ(ret, SUCCESS);
+    EXPECT_EQ(value, "1");
+
+    key = "HwMnoteFaceBeautyIsDetected";
+    value = "";
+    ret = imageSource->GetImagePropertyCommon(index, key, value);
+    EXPECT_EQ(ret, SUCCESS);
+    EXPECT_EQ(value, "2");
+
+    key = "HwMnoteFaceBeautyFaceNum";
+    value = "";
+    ret = imageSource->GetImagePropertyCommon(index, key, value);
+    EXPECT_EQ(ret, SUCCESS);
+    EXPECT_EQ(value, "3");
+
+    key = "HwMnoteFaceBeautyFaceInfo";
+    value = "";
+    ret = imageSource->GetImagePropertyCommon(index, key, value);
+    EXPECT_EQ(ret, SUCCESS);
+    EXPECT_EQ(value, "1.100000 2.200000 3.300000");
+    close(fd);
+}
+
+/**
+ * @tc.name: GetSetFaceBeautyMetadataTest002
+ * @tc.desc: Test set and get of FaceBeauty metadata properties using system API.
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageSourceTest, GetSetFaceBeautyMetadataTest002, TestSize.Level3)
+{
+    SourceOptions opts;
+    opts.formatHint = "image/jpeg";
+    int fd = open(IMAGE_INPUT_JPEG_PATH.c_str(), O_RDWR | O_CREAT, S_IRUSR | S_IWUSR);
+    std::unique_ptr<ImageSource> imageSource = CreateImageSourceByFd(fd);
+    ASSERT_NE(imageSource.get(), nullptr);
+    uint32_t index = 0;
+    const std::vector<std::pair<std::string, std::string>> properties = {
+        {"HwMnoteFaceBeautyFaceBlurInfo", "10 20 30 40 1 2"},
+        {"HwMnoteFaceBeautyLux", "4"},
+        {"HwMnoteFaceBeautyExposureTime", "10"},
+        {"HwMnoteFaceBeautyISO", "11"},
+    };
+    uint32_t ret = imageSource->ModifyImagePropertiesEx(index, properties);
+    EXPECT_EQ(ret, SUCCESS);
+
+    std::string key = "HwMnoteFaceBeautyFaceBlurInfo";
+    std::string value = "";
+    ret = imageSource->GetImagePropertyCommon(index, key, value);
+    EXPECT_EQ(ret, SUCCESS);
+    EXPECT_EQ(value, "10 20 30 40 1 2");
+
+    key = "HwMnoteFaceBeautyLux";
+    value = "";
+    ret = imageSource->GetImagePropertyCommon(index, key, value);
+    EXPECT_EQ(ret, SUCCESS);
+    EXPECT_EQ(value, "4");
+
+    key = "HwMnoteFaceBeautyExposureTime";
+    value = "";
+    ret = imageSource->GetImagePropertyCommon(index, key, value);
+    EXPECT_EQ(ret, SUCCESS);
+    EXPECT_EQ(value, "10");
+
+    key = "HwMnoteFaceBeautyISO";
+    value = "";
+    ret = imageSource->GetImagePropertyCommon(index, key, value);
+    EXPECT_EQ(ret, SUCCESS);
+    EXPECT_EQ(value, "11");
+    close(fd);
+}
+
+/**
+ * @tc.name: GetSetReadOnlyKeyTest001
+ * @tc.desc: Test set and get of read-only image properties using system API.
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageSourceTest, GetSetReadOnlyKeyTest001, TestSize.Level3)
+{
+    SourceOptions opts;
+    opts.formatHint = "image/jpeg";
+    int fd = open(IMAGE_INPUT_JPEG_PATH.c_str(), O_RDWR | O_CREAT, S_IRUSR | S_IWUSR);
+    std::unique_ptr<ImageSource> imageSource = CreateImageSourceByFd(fd);
+    imageSource->SetSystemApi(true);
+    ASSERT_NE(imageSource.get(), nullptr);
+    uint32_t index = 0;
+    const std::vector<std::pair<std::string, std::string>> properties = {
+        {"HwMnotePhysicalAperture", "100"},
+        {"HwMnoteRollAngle", "200"},
+        {"HwMnoteSceneFoodConf", "300"},
+    };
+    uint32_t ret = imageSource->ModifyImagePropertiesEx(index, properties);
+    EXPECT_EQ(ret, SUCCESS);
+
+    std::string key = "HwMnotePhysicalAperture";
+    std::string value = "";
+    ret = imageSource->GetImagePropertyCommon(index, key, value);
+    EXPECT_EQ(ret, SUCCESS);
+    EXPECT_EQ(value, "100");
+
+    key = "HwMnoteRollAngle";
+    value = "";
+    ret = imageSource->GetImagePropertyCommon(index, key, value);
+    EXPECT_EQ(ret, SUCCESS);
+    EXPECT_EQ(value, "200");
+
+    key = "HwMnoteSceneFoodConf";
+    value = "";
+    ret = imageSource->GetImagePropertyCommon(index, key, value);
+    EXPECT_EQ(ret, SUCCESS);
+    EXPECT_EQ(value, "300");
+    close(fd);
+}
 } // namespace Multimedia
 } // namespace OHOS

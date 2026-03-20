@@ -33,8 +33,9 @@ class ExifMetadatFormatter {
 public:
     static ExifMetadatFormatter &GetInstance();
 
-    static std::pair<int32_t, std::string> Format(const std::string &keyName, const std::string &value);
-    static int32_t Validate(const std::string &keyName, const std::string &value);
+    static std::pair<int32_t, std::string> Format(const std::string &keyName, const std::string &value,
+        bool isSystemApi = false);
+    static int32_t Validate(const std::string &keyName, const std::string &value, bool isSystemApi = false);
     static bool IsModifyAllowed(const std::string &keyName);
     static bool IsKeySupported(const std::string &keyName);
     static const std::set<std::string> &GetRWKeys();
@@ -75,6 +76,8 @@ private:
     static bool ValidRegexWithDecimalRationalFormat(std::string &value, const std::string &regex);
     static bool ValidRegexWithGpsOneRationalFormat(std::string &value, const std::string &regex);
     static bool ValidRegexWithChannelFormat(std::string &value, const std::string &regex);
+    static bool ValidRegexWithDoubleFormat(std::string &value, const std::string &regex);
+    static bool ValidRegexWithIntFormat(std::string &value, const std::string &regex);
     static void ReplaceAsSpace(std::string &value, const std::string &regex);
     static void ReplaceAsContent(std::string &value, const std::string &regex, const std::string &content);
     static void RationalFormat(std::string &value);
@@ -114,6 +117,8 @@ private:
     ValueFormatDelegate timeStamp_;
     ValueFormatDelegate version_;
     ValueFormatDelegate channel_;
+    ValueFormatDelegate faceInfo_;
+    ValueFormatDelegate faceBlurInfo_;
     std::multimap<std::string, ValueFormatDelegate> valueFormatConvertConfig_;
     std::multimap<std::string, std::string> valueFormatValidateConfig_;
     std::multimap<std::string, std::string> valueTemplateConfig_;

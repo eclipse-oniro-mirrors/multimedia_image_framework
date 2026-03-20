@@ -25,6 +25,7 @@
 #include "media_errors.h"
 #include "string_ex.h"
 #include "image_trace.h"
+#include "image_utils.h"
 #include "hitrace_meter.h"
 #include "exif_metadata_formatter.h"
 #include "image_dfx.h"
@@ -138,7 +139,9 @@ struct ImageSourceAsyncContext {
     std::shared_ptr<XtStyleMetadata> rXtStyleMetadata;
     std::shared_ptr<RfDataBMetadata> rRfDataBMetadata;
     DecodingOptionsForThumbnail decodingOptsForThumbnail;
+#ifdef XMP_TOOLKIT_SDK_ENABLE
     std::shared_ptr<XMPMetadata> rXMPMetadata;
+#endif
     std::vector<uint8_t> imageRawData;
     uint32_t bitsPerSample = 0;
 };
@@ -706,35 +709,11 @@ static std::vector<double> GetDoubleArrayArgument(napi_env env, napi_value value
     return doubleArray;
 }
 
-static std::string IntArrayToString(const std::vector<int64_t> &intArray)
-{
-    std::ostringstream oss;
-    for (size_t i = 0; i < intArray.size(); i++) {
-        if (i > 0) {
-            oss << ",";
-        }
-        oss << intArray[i];
-    }
-    return oss.str();
-}
-
-static std::string DoubleArrayToString(const std::vector<double> &doubleArray)
-{
-    std::ostringstream oss;
-    for (size_t i = 0; i < doubleArray.size(); i++) {
-        if (i > 0) {
-            oss << ",";
-        }
-        oss << doubleArray[i];
-    }
-    return oss.str();
-}
-
 static std::string HandleIntArrayCase(napi_env env, napi_value value, const std::string& keyStr)
 {
     auto intArray = GetIntArrayArgument(env, value);
     if (keyStr != "GPSVersionID") {
-        return IntArrayToString(intArray);
+        return ImageUtils::ArrayToString(intArray);
     }
     std::ostringstream oss;
     for (size_t i = 0; i < intArray.size(); ++i) {
@@ -774,7 +753,7 @@ static std::string HandleDoubleArrayCase(napi_env env, napi_value value, const s
 {
     auto doubleArray = GetDoubleArrayArgument(env, value);
     if (keyStr != "GPSTimeStamp" || doubleArray.size() < NUM_3) {
-        return DoubleArrayToString(doubleArray);
+        return ImageUtils::ArrayToString(doubleArray);
     }
     return FormatTimePart(doubleArray[0]) + ":" +
            FormatTimePart(doubleArray[1]) + ":" +
@@ -819,6 +798,12 @@ static std::string HandleEnumCase(napi_env env, napi_value value, std::string ke
     return "";
 }
 
+static bool IsBooleanTypeKey(std::string key)
+{
+    return key == "HwMnoteIsXmageSupported" || key == "HwMnoteFrontCamera" || key == "HwMnoteCloudEnhancementMode" ||
+        key == "HwMnoteWindSnapshotMode" || key == "HwMnoteFaceBeautyIsDetected";
+}
+
 static std::string GetExifValueArgumentForKey(napi_env env, napi_value value, const std::string& keyStr)
 {
     switch (ExifMetadata::GetPropertyValueType(keyStr)) {
@@ -828,8 +813,7 @@ static std::string GetExifValueArgumentForKey(napi_env env, napi_value value, co
             if (keyStr == "Orientation" || keyStr == "HwMnoteFocusMode" || keyStr == "HwMnoteXmageColorMode") {
                 return HandleEnumCase(env, value, keyStr);
             }
-            if (keyStr == "HwMnoteIsXmageSupported" || keyStr == "HwMnoteFrontCamera" ||
-                keyStr == "HwMnoteCloudEnhancementMode" || keyStr == "HwMnoteWindSnapshotMode") {
+            if (IsBooleanTypeKey(keyStr)) {
                 bool boolValue = false;
                 napi_get_value_bool(env, value, &boolValue);
                 return boolValue ? "1" : "0";
@@ -1372,6 +1356,7 @@ std::vector<napi_property_descriptor> ImageSourceNapi::RegisterNapi()
         DECLARE_NAPI_GETTER("supportedFormats", GetSupportedFormats),
         DECLARE_NAPI_FUNCTION("readXMPMetadata", ReadXMPMetadata),
         DECLARE_NAPI_FUNCTION("writeXMPMetadata", WriteXMPMetadata),
+        DECLARE_NAPI_FUNCTION("modifyImageAllProperties", ModifyImageAllProperties),
 #if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
         DECLARE_NAPI_FUNCTION("createPicture", CreatePicture),
         DECLARE_NAPI_FUNCTION("createPictureAtIndex", CreatePictureAtIndex),
@@ -2879,8 +2864,7 @@ static void CreateIntPropertyValue(napi_env env, const MetadataValue &value, nap
     if (value.intArrayValue.empty()) {
         napi_get_undefined(env, &propValue);
     } else {
-        if (value.key == "HwMnoteIsXmageSupported" || value.key == "HwMnoteFrontCamera" ||
-            value.key == "HwMnoteCloudEnhancementMode" || value.key == "HwMnoteWindSnapshotMode") {
+        if (IsBooleanTypeKey(value.key)) {
             bool boolValue = (value.intArrayValue[0] > 0);
             napi_get_boolean(env, boolValue, &propValue);
         } else {
@@ -5412,5 +5396,58 @@ napi_value ImageSourceNapi::CreateImageRawData(napi_env env, napi_callback_info 
     return result;
 }
 
+static void ModifyImageAllPropertiesExecute(napi_env env, void *data)
+{
+    IMAGE_LOGI("ModifyImageAllPropertiesExecute start.");
+    auto start = std::chrono::high_resolution_clock::now();
+    auto context = static_cast<ImageSourceAsyncContext*>(data);
+    if (context == nullptr || context->rImageSource == nullptr) {
+        IMAGE_LOGE("empty context");
+        return;
+    }
+    context->rImageSource->SetSystemApi(true);
+    context->status = context->rImageSource->ModifyImagePropertiesEx(0, context->kVStrArray);
+    if (context->status != SUCCESS) {
+        auto unsupportedKeys = context->rImageSource->GetModifyExifUnsupportedKeys();
+        if (!unsupportedKeys.empty()) {
+            context->errMsg = "Failed to modify unsupported keys:";
+            for (auto &key : unsupportedKeys) {
+                context->errMsg.append(" ").append(key);
+            }
+        }
+    }
+    auto end = std::chrono::high_resolution_clock::now();
+    auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
+    IMAGE_LOGI("ModifyImageAllPropertiesExecute end, cost: %{public}llu ms", duration.count());
+}
+
+napi_value ImageSourceNapi::ModifyImageAllProperties(napi_env env, napi_callback_info info)
+{
+    napi_value result = nullptr;
+    napi_get_undefined(env, &result);
+    if (!ImageNapiUtils::IsSystemApp()) {
+        IMAGE_LOGE("This interface can be called only by system apps");
+        return ImageNapiUtils::ThrowExceptionError(env, IMAGE_PERMISSIONS_FAILED,
+            "This interface can be called only by system apps");
+    }
+
+    napi_status status;
+    std::unique_ptr<ImageSourceAsyncContext> asyncContext = UnwrapContextForModify(env, info);
+    if (asyncContext == nullptr) {
+        return ImageNapiUtils::ThrowExceptionError(env, ERR_IMAGE_WRITE_PROPERTY_FAILED,
+            "async context unwrap failed");
+    }
+
+    napi_create_promise(env, &(asyncContext->deferred), &result);
+    IMG_CREATE_CREATE_ASYNC_WORK(env, status, "ModifyImageAllProperties",
+        ModifyImageAllPropertiesExecute,
+        reinterpret_cast<napi_async_complete_callback>(ModifyImagePropertiesEnhancedComplete),
+        asyncContext,
+        asyncContext->work);
+
+    IMG_NAPI_CHECK_RET_D(IMG_IS_OK(status),
+        nullptr, IMAGE_LOGE("fail to create async work"));
+    return result;
+}
 }  // namespace Media
 }  // namespace OHOS
