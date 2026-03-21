@@ -17,7 +17,6 @@
 #define FRAMEWORKS_INNERKITSIMPL_EGL_IMAGE_INCLUDE_PIXEL_MAP_PROGRAM_MANAGER_H
 
 #include <cstdint>
-#include <mutex>
 
 #include "pixel_map_gl_post_proc_program.h"
 
@@ -40,6 +39,7 @@ private:
     static void ReleaseInstance(PixelMapGLPostProcProgram *program);
     static void DestoryInstanceThreadFunc();
     static void DestroyOneInstance();
+    static PixelMapGLPostProcProgram *TakeAvailableProgramLocked();
 };
 } // namespace Media
 } // namespace OHOS

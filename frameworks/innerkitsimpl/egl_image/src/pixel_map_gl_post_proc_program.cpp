@@ -24,13 +24,17 @@
 #include <cstdint>
 #include <fstream>
 #include <iostream>
+#include <limits>
 #include <memory>
 #include <sstream>
 #include <string>
 
 #include "image_utils.h"
 #include "native_buffer.h"
+#include "pixel_map_gl_scope.h"
+#include "pixel_map_gl_resource.h"
 #include "pixel_map_gl_shader.h"
+#include "pixel_map_gl_utils.h"
 #include "securec.h"
 #include "sync_fence.h"
 
@@ -44,6 +48,7 @@
 namespace OHOS {
 namespace Media {
 using namespace GlCommon;
+using PixelMapGlScope::MakeScopeExit;
 std::once_flag shaderInitFlag[PixelMapGlShader::SHADER_MAX];
 std::mutex g_shaderMtx;
 std::condition_variable g_shaderCv;
@@ -69,6 +74,7 @@ void PixelMapGLPostProcProgram::Clear() noexcept
 {
     if (renderContext_ != nullptr && renderContext_->eglContext_ != EGL_NO_CONTEXT) {
         renderContext_->MakeCurrentSimple(true);
+        DestroyProcTexture();
         if (rotateShader_) {
             rotateShader_->Clear();
             rotateShader_.reset();
@@ -131,52 +137,56 @@ bool PixelMapGLPostProcProgram::CreateNormalImage(const uint8_t *data, GLuint &i
 {
     const Size &sourceSize = transformData_.sourceInfo_.size;
     int perPixelSize = transformData_.sourceInfo_.pixelBytes;
+    size_t rowBytes = 0;
+    size_t contiguousSize = 0;
     if (data == nullptr) {
         return false;
     }
-    if (imageTexId != 0) {
-        glDeleteTextures(1, &imageTexId);
+    if (!PixelMapGlResource::ValidateTransferLayout(sourceSize, transformData_.sourceInfo_.stride, perPixelSize,
+        rowBytes, contiguousSize)) {
+        IMAGE_LOGE("slr_gpu %{public}s invalid source image layout", __func__);
+        return false;
     }
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-    glGenTextures(1, &imageTexId);
-    glBindTexture(GL_TEXTURE_2D, imageTexId);
+    GLuint newImageTexId = 0U;
+    glGenTextures(1, &newImageTexId);
+    PixelMapGlResource::ScopedTexture scopedImageTexture(newImageTexId);
+    glBindTexture(GL_TEXTURE_2D, scopedImageTexture.Get());
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, sourceSize.width, sourceSize.height, 0,
         transformData_.glFormat, GL_UNSIGNED_BYTE, NULL);
-    if (perPixelSize * sourceSize.width == transformData_.sourceInfo_.stride) {
+    if (static_cast<size_t>(transformData_.sourceInfo_.stride) == rowBytes) {
         glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, sourceSize.width, sourceSize.height,
             transformData_.glFormat, GL_UNSIGNED_BYTE, data);
     } else {
-        GLuint pbo = 0;
+        GLuint pbo = 0U;
         glGenBuffers(1, &pbo);
-        glBindBuffer(GL_PIXEL_UNPACK_BUFFER, pbo);
-        glBufferData(GL_PIXEL_UNPACK_BUFFER,
-            sourceSize.width * sourceSize.height * perPixelSize, NULL, GL_STREAM_DRAW);
-        char *mapPointer = (char *)glMapBufferRange(GL_PIXEL_UNPACK_BUFFER, 0,
-            sourceSize.width * sourceSize.height * perPixelSize, GL_MAP_WRITE_BIT);
+        PixelMapGlResource::ScopedBuffer scopedPbo(pbo);
+        glBindBuffer(GL_PIXEL_UNPACK_BUFFER, scopedPbo.Get());
+        auto resetUnpackBuffer = MakeScopeExit([] { glBindBuffer(GL_PIXEL_UNPACK_BUFFER, 0); });
+        glBufferData(GL_PIXEL_UNPACK_BUFFER, contiguousSize, NULL, GL_STREAM_DRAW);
+        char *mapPointer = static_cast<char *>(
+            glMapBufferRange(GL_PIXEL_UNPACK_BUFFER, 0, contiguousSize, GL_MAP_WRITE_BIT));
         if (mapPointer == NULL) {
             return false;
         }
-        for (int i = 0; i < sourceSize.height; i++) {
-            if (memcpy_s(mapPointer + sourceSize.width * perPixelSize * i,
-                sourceSize.width * perPixelSize * (sourceSize.height - i),
-                data + perPixelSize * i, sourceSize.width * perPixelSize) != 0) {
-                IMAGE_LOGE("slr_gpu %{public}s memcpy_s failed", __func__);
-                return false;
-            }
+        if (!PixelMapGlResource::CopyStridedToLinear(data, transformData_.sourceInfo_.stride,
+            sourceSize.height, rowBytes, mapPointer, contiguousSize)) {
+            IMAGE_LOGE("slr_gpu %{public}s CopyStridedToLinear failed", __func__);
+            glUnmapBuffer(GL_PIXEL_UNPACK_BUFFER);
+            return false;
         }
         glUnmapBuffer(GL_PIXEL_UNPACK_BUFFER);
         glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, sourceSize.width, sourceSize.height, 0,
             transformData_.glFormat, GL_UNSIGNED_BYTE, NULL);
-        glBindBuffer(GL_PIXEL_UNPACK_BUFFER, 0);
-        glDeleteBuffers(1, &pbo);
     }
     GLenum err = glGetError();
     if (err != GL_NO_ERROR) {
         IMAGE_LOGE("slr_gpu %{public}s failed gl error: %{public}x", __func__, err);
         return false;
     }
+    PixelMapGlResource::DeleteTexture(imageTexId);
+    imageTexId = scopedImageTexture.Release();
     return true;
 }
 
@@ -191,18 +201,19 @@ bool PixelMapGLPostProcProgram::CreateEGLImage(OHNativeWindowBuffer *nativeBuffe
         EGL_TRUE,
         EGL_NONE,
     };
-    eglImage = eglCreateImageKHR(
+    EGLImageKHR newEglImage = eglCreateImageKHR(
         renderContext_->GetEGLDisplay(), EGL_NO_CONTEXT, EGL_NATIVE_BUFFER_OHOS,
         nativeBuffer, attrs);
-    if (eglImage == EGL_NO_IMAGE_KHR) {
+    if (newEglImage == EGL_NO_IMAGE_KHR) {
         IMAGE_LOGE("slr_gpu %{public}s create egl image fail %{public}d", __func__, eglGetError());
         return false;
     }
-    if (imageTexId != 0) {
-        glDeleteTextures(1, &imageTexId);
-    }
-    glGenTextures(1, &imageTexId);
-    glBindTexture(GL_TEXTURE_EXTERNAL_OES, imageTexId);
+    PixelMapGlResource::ScopedEglImage scopedImage;
+    scopedImage.Set(renderContext_->GetEGLDisplay(), newEglImage);
+    GLuint newImageTexId = 0U;
+    glGenTextures(1, &newImageTexId);
+    PixelMapGlResource::ScopedTexture scopedTexture(newImageTexId);
+    glBindTexture(GL_TEXTURE_EXTERNAL_OES, scopedTexture.Get());
     glTexParameteri(GL_TEXTURE_EXTERNAL_OES, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
     glTexParameteri(GL_TEXTURE_EXTERNAL_OES, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
     static auto glEGLImageTargetTexture2DOESFunc = reinterpret_cast<PFNGLEGLIMAGETARGETTEXTURE2DOESPROC>(
@@ -212,42 +223,51 @@ bool PixelMapGLPostProcProgram::CreateEGLImage(OHNativeWindowBuffer *nativeBuffe
             __func__, eglGetError());
         return false;
     }
-    glEGLImageTargetTexture2DOESFunc(GL_TEXTURE_EXTERNAL_OES, static_cast<GLeglImageOES>(eglImage));
+    glEGLImageTargetTexture2DOESFunc(GL_TEXTURE_EXTERNAL_OES, static_cast<GLeglImageOES>(newEglImage));
+    if (glGetError() != GL_NO_ERROR) {
+        IMAGE_LOGE("slr_gpu %{public}s glEGLImageTargetTexture2DOES failed", __func__);
+        return false;
+    }
+    PixelMapGlResource::DeleteTexture(imageTexId);
+    imageTexId = scopedTexture.Release();
+    eglImage = scopedImage.Release();
     return true;
 }
 
 bool PixelMapGLPostProcProgram::UseEGLImageCreateNormalImage(GLuint &imageTexId)
 {
-    GLuint eglImageTexId = imageTexId;
+    const GLuint eglImageTexId = imageTexId;
     Size &sourceSize = transformData_.sourceInfo_.size;
-    GLuint tempFbo[NUM_2];
+    GLuint tempFbo[NUM_2] = {0U, 0U};
     glGenFramebuffers(NUM_2, tempFbo);
-    glBindFramebuffer(GL_READ_FRAMEBUFFER, tempFbo[0]);
+    PixelMapGlResource::ScopedFramebuffer readFramebuffer(tempFbo[0]);
+    PixelMapGlResource::ScopedFramebuffer drawFramebuffer(tempFbo[1]);
+    glBindFramebuffer(GL_READ_FRAMEBUFFER, readFramebuffer.Get());
     glFramebufferTexture2D(GL_READ_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_EXTERNAL_OES, eglImageTexId, 0);
     IMAGE_LOGD("readfbo status %{public}x", glCheckFramebufferStatus(GL_READ_FRAMEBUFFER));
 
-    glGenTextures(1, &imageTexId);
-    glBindTexture(GL_TEXTURE_2D, imageTexId);
+    GLuint newImageTexId = 0U;
+    glGenTextures(1, &newImageTexId);
+    PixelMapGlResource::ScopedTexture scopedImageTexture(newImageTexId);
+    glBindTexture(GL_TEXTURE_2D, scopedImageTexture.Get());
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, sourceSize.width, sourceSize.height, 0,
         transformData_.glFormat, GL_UNSIGNED_BYTE, NULL);
 
-    glBindFramebuffer(GL_DRAW_FRAMEBUFFER, tempFbo[1]);
-    glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, imageTexId, 0);
+    glBindFramebuffer(GL_DRAW_FRAMEBUFFER, drawFramebuffer.Get());
+    glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, scopedImageTexture.Get(), 0);
     IMAGE_LOGD("drawfbo status %{public}x", glCheckFramebufferStatus(GL_DRAW_FRAMEBUFFER));
 
     glBlitFramebuffer(0, 0, sourceSize.width, sourceSize.height, 0, 0, sourceSize.width,
         sourceSize.height, GL_COLOR_BUFFER_BIT, GL_NEAREST);
-    eglDestroyImageKHR(renderContext_->GetEGLDisplay(), eglImage_);
-    glDeleteTextures(1, &eglImageTexId);
-    glDeleteFramebuffers(NUM_2, tempFbo);
-    eglImage_ = EGL_NO_IMAGE_KHR;
     GLenum err = glGetError();
     if (err != GL_NO_ERROR) {
         IMAGE_LOGE("slr_gpu %{public}s failed gl error: %{public}x", __func__, err);
         return false;
     }
+    DestroyProcTexture();
+    imageTexId = scopedImageTexture.Release();
     return true;
 }
 
@@ -281,23 +301,19 @@ bool PixelMapGLPostProcProgram::InitGLResource()
     return true;
 }
 
-bool PixelMapGLPostProcProgram::BuildProcTexture(bool needThumb, bool needUpload, GLuint &readTexId)
+bool PixelMapGLPostProcProgram::BuildProcTexture(GLuint &readTexId)
 {
-    OHNativeWindowBuffer *nativeBuffer = nullptr;
-    const uint8_t *normalBuffer = nullptr;
-    if (!transformData_.isDma) {
-        normalBuffer = transformData_.sourceInfo_.addr;
-        if (!CreateNormalImage(normalBuffer, readTexId)) {
+    if (!transformData_.isSourceDma) {
+        if (!CreateNormalImage(transformData_.sourceInfo_.addr, readTexId)) {
             return false;
         }
     } else {
         void *surfaceBuffer = transformData_.sourceInfo_.context;
-        nativeBuffer = CreateNativeWindowBufferFromSurfaceBuffer(&surfaceBuffer);
-        if (!CreateEGLImage(nativeBuffer, eglImage_, readTexId)) {
-            DestroyNativeWindowBuffer(nativeBuffer);
+        PixelMapGlResource::ScopedNativeWindowBuffer scopedBuffer
+            (CreateNativeWindowBufferFromSurfaceBuffer(&surfaceBuffer));
+        if (!CreateEGLImage(scopedBuffer.Get(), eglImage_, readTexId)) {
             return false;
         }
-        DestroyNativeWindowBuffer(nativeBuffer);
         if (!UseEGLImageCreateNormalImage(readTexId)) {
             return false;
         }
@@ -314,7 +330,7 @@ void PixelMapGLPostProcProgram::DestroyProcTexture()
 {
     glBindTexture(GL_TEXTURE_2D, 0);
     glBindTexture(GL_TEXTURE_EXTERNAL_OES, 0);
-    if (eglImage_ != EGL_NO_IMAGE_KHR) {
+    if (eglImage_ != EGL_NO_IMAGE_KHR && renderContext_ != nullptr) {
         eglDestroyImageKHR(renderContext_->GetEGLDisplay(), eglImage_);
     }
     eglImage_ = EGL_NO_IMAGE_KHR;
@@ -326,13 +342,13 @@ bool PixelMapGLPostProcProgram::GenProcEndData(char *lcdData)
     ImageTrace imageTrace("GenProcEndData");
     switch (transformData_.transformationType) {
         case TransformationType::SCALE :
-            if (!(BuildProcTexture(false, true, slrShader_->GetReadTexId()) &&
+            if (!(BuildProcTexture(slrShader_->GetReadTexId()) &&
                 ResizeScaleWithGL() && ReadEndData(lcdData, lapShader_->GetWriteTexId()))) {
                 return false;
             }
             break;
         case TransformationType::ROTATE :
-            if (!(BuildProcTexture(false, true, rotateShader_->GetReadTexId()) &&
+            if (!(BuildProcTexture(rotateShader_->GetReadTexId()) &&
                 ResizeRotateWithGL() && ReadEndData(lcdData, rotateShader_->GetWriteTexId()))) {
                 return false;
             }
@@ -340,8 +356,6 @@ bool PixelMapGLPostProcProgram::GenProcEndData(char *lcdData)
         default:
             break;
     }
-
-    DestroyProcTexture();
     return true;
 }
 
@@ -350,13 +364,13 @@ bool PixelMapGLPostProcProgram::GenProcDmaEndData(void *surfaceBuffer)
     ImageTrace imageTrace("GenProcEndData-surface");
     switch (transformData_.transformationType) {
         case TransformationType::SCALE :
-            if (!(BuildProcTexture(false, true, slrShader_->GetReadTexId()) &&
+            if (!(BuildProcTexture(slrShader_->GetReadTexId()) &&
                 ResizeScaleWithGL() && ReadEndDMAData(surfaceBuffer, lapShader_->GetWriteFbo()))) {
                 return false;
             }
             break;
         case TransformationType::ROTATE :
-            if (!(BuildProcTexture(false, true, rotateShader_->GetReadTexId()) &&
+            if (!(BuildProcTexture(rotateShader_->GetReadTexId()) &&
                 ResizeRotateWithGL() && ReadEndDMAData(surfaceBuffer, rotateShader_->GetWriteFbo()))) {
                 return false;
             }
@@ -364,7 +378,6 @@ bool PixelMapGLPostProcProgram::GenProcDmaEndData(void *surfaceBuffer)
         default:
             break;
     }
-    DestroyProcTexture();
     return true;
 }
 
@@ -406,31 +419,36 @@ bool PixelMapGLPostProcProgram::ReadEndData(char *targetData, GLuint &writeTexId
         return false;
     }
     Size &targetSize = transformData_.targetInfo_.size;
+    size_t rowBytes = 0;
+    size_t contiguousSize = 0;
+    if (!PixelMapGlResource::ValidateTransferLayout(targetSize, transformData_.targetInfo_.stride, NUM_4,
+        rowBytes, contiguousSize)) {
+        IMAGE_LOGE("slr_gpu %{public}s invalid target image layout", __func__);
+        return false;
+    }
     glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, writeTexId, 0);
-    if (targetSize.width * NUM_4 >= transformData_.targetInfo_.stride) {
+    if (static_cast<size_t>(transformData_.targetInfo_.stride) == rowBytes) {
         glReadPixels(0, 0, targetSize.width, targetSize.height, GL_RGBA, GL_UNSIGNED_BYTE, targetData);
     } else {
-        GLuint pbo = 0;
+        GLuint pbo = 0U;
         glGenBuffers(1, &pbo);
-        glBindBuffer(GL_PIXEL_PACK_BUFFER, pbo);
-        glBufferData(GL_PIXEL_PACK_BUFFER, targetSize.width * targetSize.height * NUM_4, NULL, GL_STREAM_READ);
+        PixelMapGlResource::ScopedBuffer scopedPbo(pbo);
+        glBindBuffer(GL_PIXEL_PACK_BUFFER, scopedPbo.Get());
+        auto resetPackBuffer = MakeScopeExit([] { glBindBuffer(GL_PIXEL_PACK_BUFFER, 0); });
+        glBufferData(GL_PIXEL_PACK_BUFFER, contiguousSize, NULL, GL_STREAM_READ);
         glReadPixels(0, 0, targetSize.width, targetSize.height, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
-        char *mapPointer = (char *)glMapBufferRange(GL_PIXEL_PACK_BUFFER, 0,
-            targetSize.width * targetSize.height * NUM_4, GL_MAP_READ_BIT);
+        char *mapPointer = static_cast<char *>(
+            glMapBufferRange(GL_PIXEL_PACK_BUFFER, 0, contiguousSize, GL_MAP_READ_BIT));
         if (mapPointer == NULL) {
             return false;
         }
-        for (int i = 0; i < targetSize.height; i++) {
-            if (memcpy_s(targetData + transformData_.targetInfo_.stride * i,
-                targetSize.width * NUM_4 * (targetSize.height - i),
-                mapPointer + targetSize.width * NUM_4 * i, targetSize.width * NUM_4) != 0) {
-                IMAGE_LOGE("slr_gpu %{public}s memcpy_s fail", __func__);
-                return false;
-            }
+        if (!PixelMapGlResource::CopyLinearToStrided(mapPointer, contiguousSize, rowBytes, targetSize.height,
+            reinterpret_cast<uint8_t *>(targetData), transformData_.targetInfo_.stride)) {
+            IMAGE_LOGE("slr_gpu %{public}s CopyLinearToStrided fail", __func__);
+            glUnmapBuffer(GL_PIXEL_PACK_BUFFER);
+            return false;
         }
         glUnmapBuffer(GL_PIXEL_PACK_BUFFER);
-        glBindBuffer(GL_PIXEL_PACK_BUFFER, 0);
-        glDeleteBuffers(1, &pbo);
     }
 
     glFinish();
@@ -445,25 +463,31 @@ bool PixelMapGLPostProcProgram::ReadEndData(char *targetData, GLuint &writeTexId
 bool PixelMapGLPostProcProgram::ReadEndDMAData(void *surfaceBuffer, GLuint &writeFbo)
 {
     ImageTrace imageTrace("ReadEndDMAData ");
-    OHNativeWindowBuffer *nativeBuffer = CreateNativeWindowBufferFromSurfaceBuffer(&surfaceBuffer);
-    EGLImage endEglImage;
+    PixelMapGlResource::ScopedNativeWindowBuffer nativeBuffer
+        (CreateNativeWindowBufferFromSurfaceBuffer(&surfaceBuffer));
+    if (nativeBuffer.Get() == nullptr) {
+        IMAGE_LOGE("slr_gpu %{public}s CreateNativeWindowBufferFromSurfaceBuffer failed", __func__);
+        return false;
+    }
+    PixelMapGlResource::ScopedEglImage endEglImage;
     GLuint endReadTexId = 0U;
-    if (!CreateEGLImage(nativeBuffer, endEglImage, endReadTexId)) {
+    EGLImageKHR endEglImageHandle = EGL_NO_IMAGE_KHR;
+    if (!CreateEGLImage(nativeBuffer.Get(), endEglImageHandle, endReadTexId)) {
         IMAGE_LOGE("slr_gpu ReadEndDMAData CreateEGLImage fail %{public}d", eglGetError());
         return false;
     }
-    GLuint endFbo;
+    endEglImage.Set(renderContext_->GetEGLDisplay(), endEglImageHandle);
+    GLuint endFbo = 0U;
     glGenFramebuffers(1, &endFbo);
-    glBindFramebuffer(GL_DRAW_FRAMEBUFFER, endFbo);
+    PixelMapGlResource::ScopedFramebuffer scopedEndFbo(endFbo);
+    glBindFramebuffer(GL_DRAW_FRAMEBUFFER, scopedEndFbo.Get());
     glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_EXTERNAL_OES, endReadTexId, 0);
     glBindFramebuffer(GL_READ_FRAMEBUFFER, writeFbo);
     Size &targetSize = transformData_.targetInfo_.size;
     glBlitFramebuffer(0, 0, targetSize.width, targetSize.height, 0, 0,
         targetSize.width, targetSize.height, GL_COLOR_BUFFER_BIT, GL_NEAREST);
-    eglDestroyImageKHR(renderContext_->GetEGLDisplay(), endEglImage);
-    glDeleteTextures(1, &endReadTexId);
-    glDeleteFramebuffers(1, &endFbo);
-    DestroyNativeWindowBuffer(nativeBuffer);
+    endEglImage.Reset();
+    PixelMapGlResource::DeleteTexture(endReadTexId);
     glFinish();
     GLenum err = glGetError();
     if (err != GL_NO_ERROR) {
@@ -479,17 +503,23 @@ bool PixelMapGLPostProcProgram::Execute()
         IMAGE_LOGE("slr_gpu GenProcEndData cannot makecurent with opengl");
         return false;
     }
+    bool unbindSucceeded = true;
     bool ret = true;
-    if (transformData_.isDma) {
-        ret = GenProcDmaEndData(transformData_.targetInfo_.context);
-    } else {
-        ret = GenProcEndData((char*)transformData_.targetInfo_.outdata);
+    {
+        auto cleanup = MakeScopeExit([this, &unbindSucceeded] {
+            DestroyProcTexture();
+            if (!GLMakecurrent(false)) {
+                IMAGE_LOGE("slr_gpu GenProcEndData Unbinding failed");
+                unbindSucceeded = false;
+            }
+        });
+        if (transformData_.isTargetDma) {
+            ret = GenProcDmaEndData(transformData_.targetInfo_.context);
+        } else {
+            ret = GenProcEndData((char*)transformData_.targetInfo_.outdata);
+        }
     }
-    if (!GLMakecurrent(false)) {
-        IMAGE_LOGE("slr_gpu GenProcEndData Unbinding failed");
-        return false;
-    }
-    return ret;
+    return ret && unbindSucceeded;
 }
 } // namespace Media
 } //

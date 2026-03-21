@@ -27,6 +27,7 @@
 #include "pixel_convert_adapter.h"
 #include "post_proc.h"
 #include "pixel_map_program_manager.h"
+#include "pixel_map_gl_utils.h"
 #include "basic_transformer.h"
 #include "image_log.h"
 #include "memory_manager.h"
@@ -107,7 +108,10 @@ static bool PixelMapPostProcWithGL(PixelMap &sourcePixelMap, GPUTransformData &t
         trans.targetInfo_.outdata = dstMemory->data.data;
         trans.targetInfo_.context = dstMemory->extend.data;
         trans.glFormat = glFormat;
-        trans.isDma = allocType == AllocatorType::DMA_ALLOC ? true : false;
+        const auto dmaMode = PixelMapGlUtils::ResolveDmaTransferMode(allocType, 0);
+        trans.isSourceDma = dmaMode.isSourceDma;
+        trans.isTargetDma = dmaMode.isTargetDma;
+        trans.isDma = dmaMode.isDma;
         program->SetGPUTransformData(trans);
         ret = PixelMapProgramManager::GetInstance().ExecutProgram(program);
     }

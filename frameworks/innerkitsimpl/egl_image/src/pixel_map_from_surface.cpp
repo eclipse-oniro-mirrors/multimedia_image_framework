@@ -16,6 +16,8 @@
 #include "pixel_map_from_surface.h"
 
 #include "image_log.h"
+#include "pixel_map_gl_resource.h"
+#include "pixel_map_gl_utils.h"
 #include "sync_fence.h"
 #ifdef USE_M133_SKIA
 #include "include/gpu/ganesh/gl/GrGLBackendSurface.h"
@@ -58,8 +60,7 @@ void PixelMapFromSurface::Clear() noexcept
     }
 
     if (texId_ != 0U) {
-        glDeleteTextures(1, &texId_);
-        texId_ = 0U;
+        PixelMapGlResource::DeleteTexture(texId_);
     }
 
     surfaceBuffer_ = nullptr;
@@ -91,9 +92,7 @@ bool PixelMapFromSurface::GetNativeWindowBufferFromSurface(const sptr<Surface> &
 
     int bufferWidth = surfaceBuffer_->GetWidth();
     int bufferHeight = surfaceBuffer_->GetHeight();
-    if (srcRect.width > bufferWidth || srcRect.height > bufferHeight ||
-        srcRect.left >= bufferWidth || srcRect.top >= bufferHeight ||
-        srcRect.left + srcRect.width > bufferWidth || srcRect.top + srcRect.height > bufferHeight) {
+    if (!PixelMapGlUtils::IsRectInBounds(srcRect, bufferWidth, bufferHeight)) {
         IMAGE_LOGE(
             "CreatePixelMapFromSurface: invalid argument: srcRect[%{public}d, %{public}d, %{public}d, %{public}d],"
             "bufferSize:[%{public}d, %{public}d]",
@@ -116,16 +115,20 @@ bool PixelMapFromSurface::CreateEGLImage()
         EGL_TRUE,
         EGL_NONE,
     };
-    eglImage_ = eglCreateImageKHR(
+    EGLImageKHR newEglImage = eglCreateImageKHR(
         renderContext_->GetEGLDisplay(), EGL_NO_CONTEXT, EGL_NATIVE_BUFFER_OHOS,
         nativeWindowBuffer_, attrs);
-    if (eglImage_ == EGL_NO_IMAGE_KHR) {
+    if (newEglImage == EGL_NO_IMAGE_KHR) {
         Clear();
         IMAGE_LOGE("%{public}s create egl image fail %{public}d", __func__, eglGetError());
         return false;
     }
-    glGenTextures(1, &texId_);
-    glBindTexture(GL_TEXTURE_EXTERNAL_OES, texId_);
+    PixelMapGlResource::ScopedEglImage scopedImage;
+    scopedImage.Set(renderContext_->GetEGLDisplay(), newEglImage);
+    GLuint newTexId = 0U;
+    glGenTextures(1, &newTexId);
+    PixelMapGlResource::ScopedTexture scopedTexture(newTexId);
+    glBindTexture(GL_TEXTURE_EXTERNAL_OES, scopedTexture.Get());
     glTexParameteri(GL_TEXTURE_EXTERNAL_OES, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
     glTexParameteri(GL_TEXTURE_EXTERNAL_OES, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
     glTexParameteri(GL_TEXTURE_EXTERNAL_OES, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
@@ -138,7 +141,15 @@ bool PixelMapFromSurface::CreateEGLImage()
             __func__, eglGetError());
         return false;
     }
-    glEGLImageTargetTexture2DOESFunc(GL_TEXTURE_EXTERNAL_OES, static_cast<GLeglImageOES>(eglImage_));
+    glEGLImageTargetTexture2DOESFunc(GL_TEXTURE_EXTERNAL_OES, static_cast<GLeglImageOES>(newEglImage));
+    if (glGetError() != GL_NO_ERROR) {
+        Clear();
+        IMAGE_LOGE("%{public}s glEGLImageTargetTexture2DOES failed", __func__);
+        return false;
+    }
+    eglImage_ = scopedImage.Release();
+    PixelMapGlResource::DeleteTexture(texId_);
+    texId_ = scopedTexture.Release();
     return true;
 }
 
@@ -255,7 +266,10 @@ std::unique_ptr<PixelMap> PixelMapFromSurface::Create(uint64_t surfaceId, const 
     }
     auto imageInfo = SkImageInfo::Make(srcRect.width, srcRect.height, kRGBA_8888_SkColorType, kPremul_SkAlphaType);
     SkPixmap skPixmap(imageInfo, pixelMap->GetPixel(0, 0), pixelMap->GetRowBytes());
-    targetSurface_->readPixels(skPixmap, 0, 0);
+    if (!targetSurface_->readPixels(skPixmap, 0, 0)) {
+        IMAGE_LOGE("CreatePixelMapFromSurface fail: readPixels failed");
+        return nullptr;
+    }
     return pixelMap;
 }
 

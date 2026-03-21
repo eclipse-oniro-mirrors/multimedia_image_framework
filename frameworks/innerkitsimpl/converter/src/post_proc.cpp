@@ -37,6 +37,7 @@
 #include "ashmem.h"
 #include "surface_buffer.h"
 #include "vpe_utils.h"
+#include "pixel_map_gl_utils.h"
 #include "pixel_map_program_manager.h"
 #ifdef __cplusplus
 extern "C" {
@@ -922,16 +923,21 @@ static bool PixelMapPostProcWithGL(PixelMap &sourcePixelMap, GPUTransformData &t
         sourcePixelMap.GetUniqueId(), (int)sourcePixelMap.GetAllocatorType(), sourceSize.width, sourceSize.height,
         desiredSize.width, desiredSize.height, sourcePixelMap.GetRowStride(), (int)trans.transformationType);
     AllocatorType allocType = sourcePixelMap.GetAllocatorType();
+    const uint64_t noPaddingUsage = sourcePixelMap.GetNoPaddingUsage();
+    const auto dmaMode = PixelMapGlUtils::ResolveDmaTransferMode(allocType, noPaddingUsage);
+    if (dmaMode.isSourceDma && !dmaMode.isTargetDma) {
+        IMAGE_LOGI("slr_gpu PixelMapPostProcWithGL no-padding DMA does not support GPU writeback, fallback output");
+    }
     size_t buffersize = static_cast<size_t>(4 * desiredSize.width * desiredSize.height); // 4: 4 bytes per pixel
     MemoryData memoryData = {nullptr, buffersize, "PixelMapPostProcWithGL", desiredSize};
-    memoryData.usage = sourcePixelMap.GetNoPaddingUsage();
-    std::unique_ptr<AbsMemory> dstMemory = MemoryManager::CreateMemory(allocType, memoryData);
+    memoryData.usage = noPaddingUsage;
+    std::unique_ptr<AbsMemory> dstMemory = MemoryManager::CreateMemory(dmaMode.outputAllocType, memoryData);
     if (dstMemory == nullptr || dstMemory->data.data == nullptr) {
         IMAGE_LOGE("slr_gpu PixelMapPostProcWithGL dstMemory is null");
         return false;
     }
     int outputStride = 4 * desiredSize.width;
-    if (allocType == AllocatorType::DMA_ALLOC) {
+    if (dmaMode.isTargetDma) {
         SurfaceBuffer* sbBuffer = reinterpret_cast<SurfaceBuffer*>(dstMemory->extend.data);
         outputStride = sbBuffer->GetStride();
         buffersize = static_cast<uint32_t>(sbBuffer->GetStride() * desiredSize.height);
@@ -948,7 +954,9 @@ static bool PixelMapPostProcWithGL(PixelMap &sourcePixelMap, GPUTransformData &t
         trans.targetInfo_.outdata = dstMemory->data.data;
         trans.targetInfo_.context = dstMemory->extend.data;
         trans.glFormat = glFormat;
-        trans.isDma = allocType == AllocatorType::DMA_ALLOC ? true : false;
+        trans.isSourceDma = dmaMode.isSourceDma;
+        trans.isTargetDma = dmaMode.isTargetDma;
+        trans.isDma = dmaMode.isDma;
         program->SetGPUTransformData(trans);
         ret = PixelMapProgramManager::GetInstance().ExecutProgram(program);
     }
@@ -958,7 +966,7 @@ static bool PixelMapPostProcWithGL(PixelMap &sourcePixelMap, GPUTransformData &t
         return false;
     }
     sourcePixelMap.SetPixelsAddr(dstMemory->data.data, dstMemory->extend.data,
-        desiredSize.height * outputStride, allocType, nullptr);
+        desiredSize.height * outputStride, dmaMode.outputAllocType, nullptr);
     ImageInfo info;
     info.size = desiredSize;
     info.pixelFormat = PixelFormat::RGBA_8888;

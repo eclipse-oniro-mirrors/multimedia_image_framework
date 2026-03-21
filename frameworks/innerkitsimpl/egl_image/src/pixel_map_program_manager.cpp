@@ -15,23 +15,33 @@
 
 #include "pixel_map_program_manager.h"
 
+#include <chrono>
+#include <ctime>
 #include <memory>
+#include <thread>
+#include <vector>
+
+#include "pixel_map_program_manager_utils.h"
 
 #undef LOG_TAG
 #define LOG_TAG "PixelMapProgramManager"
 
 namespace OHOS {
 namespace Media {
-static const int MAX_GL_INSTANCE_NUM = 8;
-constexpr int32_t MAX_CONTEXT_EXPIRED_TIME_SEC = 120;
-constexpr int32_t MIN_CONTEXT_EXPIRED_TIME_SEC = 10;
-static vector<PixelMapGLPostProcProgram *> g_availInstances;
+using PixelMapProgramManagerUtils::MAX_GL_INSTANCE_NUM;
+static std::vector<std::unique_ptr<PixelMapGLPostProcProgram>> g_availInstances;
 static std::mutex g_contextMutex;
-static std::mutex g_shaderBuildMutex;
-static std::atomic<int> g_nowInstanceNum = 0;
-static std::atomic<bool> g_destroyThreadIsRunning = false;
-static std::atomic<long> g_lastTouchInstanceTime = 0;
+static int g_nowInstanceNum = 0;
+static bool g_destroyThreadIsRunning = false;
+static long g_lastTouchInstanceTime = 0;
 static std::condition_variable g_dataCond;
+
+static long GetMonotonicTimeSec()
+{
+    struct timespec tv {};
+    clock_gettime(CLOCK_MONOTONIC, &tv);
+    return tv.tv_sec;
+}
 
 PixelMapProgramManager::PixelMapProgramManager() noexcept
 {
@@ -51,41 +61,46 @@ PixelMapGLPostProcProgram* PixelMapProgramManager::GetProgram()
 {
     ImageTrace imageTrace("PixelMapProgramManager::GetProgram");
     PixelMapGLPostProcProgram *program = nullptr;
+    bool needCreateProgram = false;
     std::unique_lock<std::mutex> locker(g_contextMutex);
-    struct timespec tv;
-    clock_gettime(CLOCK_MONOTONIC, &tv);
-    g_lastTouchInstanceTime = tv.tv_sec;
-    if (g_availInstances.size() > 0) {
-        program = g_availInstances.back();
-        g_availInstances.pop_back();
-    }
+    g_lastTouchInstanceTime = GetMonotonicTimeSec();
+    program = TakeAvailableProgramLocked();
     if (program != nullptr) {
         return program;
     }
-    if (g_nowInstanceNum >= MAX_GL_INSTANCE_NUM) {
-        int num = g_nowInstanceNum;
-        while (program == nullptr) {
+    if (PixelMapProgramManagerUtils::ShouldWaitForAvailableProgram(
+        g_nowInstanceNum, MAX_GL_INSTANCE_NUM, g_availInstances.size())) {
+        const int num = g_nowInstanceNum;
+        while (program == nullptr &&
+            PixelMapProgramManagerUtils::ShouldWaitForAvailableProgram(
+                g_nowInstanceNum, MAX_GL_INSTANCE_NUM, g_availInstances.size())) {
             if (g_dataCond.wait_for(locker, std::chrono::seconds(1)) == std::cv_status::timeout) {
                 IMAGE_LOGE("slr_gpu %{public}s GetInstance failed for wait timeout(%{public}d)", __func__, num);
                 return nullptr;
             }
-            if (g_availInstances.size() > 0) {
-                program = g_availInstances.back();
-                g_availInstances.pop_back();
-            }
+            program = TakeAvailableProgramLocked();
         }
-    } else {
+        if (program != nullptr) {
+            return program;
+        }
+    }
+    if (PixelMapProgramManagerUtils::CanCreateProgram(g_nowInstanceNum, MAX_GL_INSTANCE_NUM)) {
         g_nowInstanceNum++;
-        locker.unlock();
-        program = new PixelMapGLPostProcProgram();
-        if (!program->Init()) {
-            std::unique_lock<std::mutex> locker(g_contextMutex);
+        needCreateProgram = true;
+    }
+    locker.unlock();
+
+    if (needCreateProgram) {
+        std::unique_ptr<PixelMapGLPostProcProgram> newProgram(new (std::nothrow) PixelMapGLPostProcProgram());
+        if (newProgram == nullptr || !newProgram->Init()) {
+            std::unique_lock<std::mutex> retryLocker(g_contextMutex);
             g_nowInstanceNum--;
-            delete program;
-            program = nullptr;
+            g_dataCond.notify_one();
+            return nullptr;
         } else {
-            int num = g_nowInstanceNum;
+            const int num = g_nowInstanceNum;
             IMAGE_LOGI("slr_gpu %{public}s new instance(%{public}d)", __func__, num);
+            program = newProgram.release();
         }
     }
     return program;
@@ -93,13 +108,21 @@ PixelMapGLPostProcProgram* PixelMapProgramManager::GetProgram()
 
 void PixelMapProgramManager::ReleaseInstance(PixelMapGLPostProcProgram *program)
 {
+    if (program == nullptr) {
+        return;
+    }
+    bool needStartDestroyThread = false;
     {
         std::unique_lock<std::mutex> locker(g_contextMutex);
-        g_availInstances.push_back(program);
+        g_availInstances.emplace_back(program);
+        g_lastTouchInstanceTime = GetMonotonicTimeSec();
+        if (!g_destroyThreadIsRunning) {
+            g_destroyThreadIsRunning = true;
+            needStartDestroyThread = true;
+        }
     }
     g_dataCond.notify_one();
-    bool oldValue = false;
-    if (g_destroyThreadIsRunning.compare_exchange_weak(oldValue, true, std::memory_order_relaxed)) {
+    if (needStartDestroyThread) {
         std::thread destroyInstanceThread(PixelMapProgramManager::DestoryInstanceThreadFunc);
         destroyInstanceThread.detach();
     }
@@ -107,41 +130,40 @@ void PixelMapProgramManager::ReleaseInstance(PixelMapGLPostProcProgram *program)
 
 void PixelMapProgramManager::DestoryInstanceThreadFunc()
 {
-    while (g_nowInstanceNum != 0) {
-        struct timespec tv;
-        clock_gettime(CLOCK_MONOTONIC, &tv);
-        long expiredTime = tv.tv_sec - g_lastTouchInstanceTime;
-        if (expiredTime < 0) {
-            expiredTime = 0;
+    while (true) {
+        long sleepSeconds = 0;
+        {
+            std::unique_lock<std::mutex> locker(g_contextMutex);
+            if (PixelMapProgramManagerUtils::ShouldStopDestroyThread(g_nowInstanceNum, g_availInstances.size())) {
+                g_destroyThreadIsRunning = false;
+                return;
+            }
+            sleepSeconds = PixelMapProgramManagerUtils::ComputeDestroySleepSeconds(
+                GetMonotonicTimeSec(), g_lastTouchInstanceTime, g_nowInstanceNum, MAX_GL_INSTANCE_NUM);
         }
-
-        if (g_nowInstanceNum > 1) {
-            if (expiredTime < MIN_CONTEXT_EXPIRED_TIME_SEC * (MAX_GL_INSTANCE_NUM + 1 - g_nowInstanceNum)) {
-                sleep(MIN_CONTEXT_EXPIRED_TIME_SEC);
-                continue;
-            }
-        } else {
-            if (expiredTime < MAX_CONTEXT_EXPIRED_TIME_SEC) {
-                sleep(MAX_CONTEXT_EXPIRED_TIME_SEC);
-                continue;
-            }
+        if (sleepSeconds > 0) {
+            std::this_thread::sleep_for(std::chrono::seconds(sleepSeconds));
+            continue;
         }
         DestroyOneInstance();
     }
-    g_destroyThreadIsRunning = false;
 }
 
 void PixelMapProgramManager::DestroyOneInstance()
 {
-    std::unique_lock<std::mutex> locker(g_contextMutex);
-    PixelMapGLPostProcProgram *instance = nullptr;
-    if (g_availInstances.size() > 0) {
-        instance = g_availInstances.back();
+    std::unique_ptr<PixelMapGLPostProcProgram> instance;
+    int num = 0;
+    {
+        std::unique_lock<std::mutex> locker(g_contextMutex);
+        if (g_availInstances.empty()) {
+            return;
+        }
+        instance = std::move(g_availInstances.back());
         g_availInstances.pop_back();
         g_nowInstanceNum--;
-        if (instance != nullptr) delete instance;
+        num = g_nowInstanceNum;
     }
-    int num = g_nowInstanceNum;
+    g_dataCond.notify_one();
     IMAGE_LOGE("slr_gpu %{public}s destroy opengl context(%{public}d)", __func__, num);
 }
 
@@ -163,12 +185,23 @@ bool PixelMapProgramManager::ExecutProgram(PixelMapGLPostProcProgram *program)
             std::unique_lock<std::mutex> locker(g_contextMutex);
             g_nowInstanceNum--;
         }
+        g_dataCond.notify_one();
         delete program;
         program = nullptr;
         return false;
     }
     ReleaseInstance(program);
     return ret;
+}
+
+PixelMapGLPostProcProgram *PixelMapProgramManager::TakeAvailableProgramLocked()
+{
+    if (g_availInstances.empty()) {
+        return nullptr;
+    }
+    PixelMapGLPostProcProgram *program = g_availInstances.back().release();
+    g_availInstances.pop_back();
+    return program;
 }
 } // namespace Media
 } // namespace OHOS

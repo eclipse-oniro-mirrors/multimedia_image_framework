@@ -168,6 +168,8 @@ typedef struct GPUTransformData {
     TransformationType transformationType;
     GLenum glFormat = GL_RGBA;
     bool isDma = false;
+    bool isSourceDma = false;
+    bool isTargetDma = false;
     GlImageInfo sourceInfo_;
     GlImageInfo targetInfo_;
 } GPUTransformData;
