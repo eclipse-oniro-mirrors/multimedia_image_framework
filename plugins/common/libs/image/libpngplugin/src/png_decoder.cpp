@@ -52,7 +52,7 @@ static constexpr size_t DECODE_BUFFER_SIZE = 4096;
 static constexpr size_t CHUNK_SIZE = 8;
 static constexpr size_t CHUNK_DATA_LEN = 4;
 static constexpr int PNG_HEAD_SIZE = 100;
-static constexpr size_t MAX_PNG_SIZE = 300 * 1024 * 1024; 
+static constexpr size_t MAX_PNG_SIZE = 300 * 1024 * 1024;
 
 PngDecoder::PngDecoder()
 {
