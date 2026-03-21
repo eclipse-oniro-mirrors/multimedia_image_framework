@@ -88,7 +88,7 @@ private:
     JpegDecodingState state_ = JpegDecodingState::UNDECIDED;
     uint32_t streamPosition_ = 0;  // may be changed by other decoders, record it and restore if needed.
     PixelFormat outputFormat_ = PixelFormat::UNKNOWN;
-    PixelDecodeOptions opts_; 
+    PixelDecodeOptions opts_;
     ICCProfileInfo iccProfileInfo_;
 };
 } // namespace ImagePlugin
