@@ -1703,6 +1703,7 @@ uint32_t ExtEncoder::Encode10bitSdrPixelMap(Media::PixelMap* pixelmap, ExtWStrea
     }
     CHECK_ERROR_RETURN_RET(encodePixelmap == nullptr, ERR_IMAGE_ENCODE_FAILED);
     if (!ImageUtils::SurfaceBuffer2PixelMap(buffers.sdr, encodePixelmap)) {
+        ImageUtils::SurfaceBuffer_Unreference(buffers.sdr);
         return ERR_IMAGE_ENCODE_FAILED;
     }
     encodePixelmap->InnerSetColorSpace(OHOS::ColorManager::ColorSpace(
