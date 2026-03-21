@@ -39,8 +39,6 @@ constexpr uint32_t COMPONENT_NUM_RGB = 3;
 constexpr uint32_t COMPONENT_NUM_GRAY = 1;
 constexpr uint8_t COMPONENT_NUM_YUV420SP = 3;
 static constexpr uint32_t NUM_1000 = 1000;
-constexpr unsigned long LONG_FILELENGTH = 100;
-constexpr int VALID_SIZE = 50;
 constexpr int32_t OPTS_SIZE = 16;
 static constexpr uint32_t TEST_IMAGE_WIDTH_SMALL = 16;
 static constexpr uint32_t TEST_IMAGE_HEIGHT_SMALL = 16;
@@ -50,7 +48,6 @@ static constexpr uint32_t TEST_IMAGE_WIDTH_LARGE = 32;
 static constexpr uint32_t TEST_IMAGE_HEIGHT_LARGE = 32;
 static constexpr uint32_t TEST_BUFFER_SIZE_SMALL = NUM_1000;
 static constexpr uint32_t TEST_BUFFER_SIZE_LARGE = NUM_1000 * 10;
-static constexpr uint32_t ARRAY_INDEX = 3;
 
 class PluginLibJpegTest : public testing::Test {
 public:
