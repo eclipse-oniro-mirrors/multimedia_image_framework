@@ -4647,14 +4647,19 @@ std::unique_ptr<AbsMemory> PixelMap::CreateSdrMemory(ImageInfo &imageInfo, Pixel
                                                      AllocatorType dstType, uint32_t &errorCode, bool toSRGB)
 {
 #if !defined(_WIN32) && !defined(_APPLE) && !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
-    SkImageInfo skInfo = ToSkImageInfo(imageInfo, ToSkColorSpace(this));
-    MemoryData sdrData = {nullptr, skInfo.computeMinByteSize(), "Trans ImageData", imageInfo.size};
     PixelFormat outFormat = format;
     if (format != PixelFormat::NV12 && format != PixelFormat::NV21 && format != PixelFormat::RGBA_8888) {
         outFormat = PixelFormat::RGBA_8888;
     }
-    sdrData.format = outFormat;
-    sdrData.usage = GetNoPaddingUsage();
+
+    ImageInfo outImageInfo = {imageInfo.size, outFormat};
+    int32_t dataSize = GetAllocatedByteCount(outImageInfo);
+    if (dataSize <= 0) {
+        IMAGE_LOGI("sdr memory get dataSize failed.");
+        errorCode = IMAGE_RESULT_GET_SURFAC_FAILED;
+        return nullptr;
+    }
+    MemoryData sdrData = {nullptr, static_cast<size_t>(dataSize), "Trans ImageData", imageInfo.size, outFormat};
     auto sdrMemory = MemoryManager::CreateMemory(dstType, sdrData);
     if (sdrMemory == nullptr) {
         IMAGE_LOGI("sdr memory alloc failed.");
