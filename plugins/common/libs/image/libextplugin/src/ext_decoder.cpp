@@ -93,7 +93,6 @@ namespace {
     constexpr static int32_t OFFSET = 1;
     constexpr static size_t SIZE_ZERO = 0;
     constexpr static uint32_t DEFAULT_SAMPLE_SIZE = 1;
-    constexpr static uint32_t NO_EXIF_TAG = 1;
     constexpr static uint32_t OFFSET_0 = 0;
     constexpr static uint32_t OFFSET_1 = 1;
     constexpr static uint32_t OFFSET_2 = 2;
