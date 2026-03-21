@@ -63,7 +63,6 @@ static constexpr int32_t WIDTH_SMALL = 1;
 static constexpr int32_t HEIGHT_SMALL = 2;
 static constexpr int JPEG_TEST_MIN_STREAM_SIZE = 1;
 static constexpr int JPEG_TEST_INVALID_EXIF_CODE = -1;
-static constexpr int PERMISSION_GPS_TYPE = 1;
 static const std::string IMAGE_INPUT_EXIF_PATH = "/data/local/tmp/image/test_exif.jpg";
 class JpegDecoderTest : public testing::Test {
 public:
