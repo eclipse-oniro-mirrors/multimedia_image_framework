@@ -5075,7 +5075,7 @@ static bool ParsePixelFormatForPicture(napi_env env, napi_value root, const char
     uint32_t tmpNumber = 0;
     if (!GET_UINT32_BY_NAME(root, name, tmpNumber)) {
         IMAGE_LOGD("no %{public}s", name);
-        return false;
+        return true;
     }
     if (!IsSupportPixelFormat(tmpNumber)) {
         IMAGE_LOGD("Invalid %{public}s %{public}d", name, tmpNumber);
