@@ -32,6 +32,11 @@ std::shared_ptr<ImageSource> OH_ImageSourceNative::GetInnerImageSource()
     return innerImageSource_;
 }
 
+const std::shared_ptr<ImageSource> OH_ImageSourceNative::GetInnerImageSource() const
+{
+    return innerImageSource_;
+}
+
 OH_ImageSourceNative::OH_ImageSourceNative(std::shared_ptr<ImageSource> imageSource)
 {
     innerImageSource_ = imageSource;

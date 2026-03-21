@@ -104,6 +104,15 @@ inline int MockJpegEncoderSetSubsampling(YuvJpegEncoder encoder, int subsampling
     return 0; // SUCCESS
 }
 
+// Mock 编码器设置Haffman优化率函数
+inline int MockJpegEncoderSetOptimizeCoding(YuvJpegEncoder encoder, bool optimizeCoding)
+{
+    if (encoder == nullptr) {
+        return -1;
+    }
+    return 0; // SUCCESS
+}
+
 // Mock 编码器设置 ICC 元数据函数
 inline int MockJpegEncoderSetIccMetadata(YuvJpegEncoder encoder, const uint8_t* data, size_t size)
 {
@@ -128,8 +137,7 @@ inline void MockInvokeWriteCallback(WriteFunc write, FlushFunc flush, void* opaq
 // Mock 编码函数 - 可控制返回值
 inline int MockJpegEncoderEncode(YuvJpegEncoder encoder,
                                  const uint8_t* yuvData,
-                                 int width,
-                                 int height,
+                                 struct HispeedYuvInfo info,
                                  int yuvFormat,
                                  WriteFunc write,
                                  FlushFunc flush,

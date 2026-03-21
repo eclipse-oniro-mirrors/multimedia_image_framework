@@ -537,6 +537,13 @@ bool ImageUtils::IsValidAuxiliaryInfo(const std::shared_ptr<PixelMap> &pixelMap,
     CHECK_ERROR_RETURN_RET_LOG(cond, false, "%{public}s rowSize: %{public}d, height: %{public}d may overflowed",
                                __func__, rowSize, info.size.height);
     uint32_t infoSize = static_cast<uint32_t>(rowSize * info.size.height);
+    if (info.pixelFormat == PixelFormat::NV21 || info.pixelFormat == PixelFormat::NV12) {
+        ImageInfo imageInfo;
+        imageInfo.size = info.size;
+        imageInfo.pixelFormat = info.pixelFormat;
+        int32_t byteCount = ImageUtils::GetByteCount(imageInfo);
+        infoSize = (byteCount > 0) ? static_cast<uint32_t>(byteCount) : infoSize;
+    }
     uint32_t pixelsSize = pixelMap->GetCapacity();
     cond = infoSize > pixelsSize;
     CHECK_ERROR_RETURN_RET_LOG(cond, false, "%{public}s invalid infoSize: %{public}u, pixelsSize: %{public}u",
@@ -630,8 +637,8 @@ bool ImageUtils::CheckMulOverflow(int32_t width, int32_t bytesPerPixel)
         IMAGE_LOGE("param is 0");
         return true;
     }
-    int32_t rowSize = width * bytesPerPixel;
-    if ((rowSize / width) != bytesPerPixel) {
+    int32_t rowSize;
+    if (__builtin_mul_overflow(width, bytesPerPixel, &rowSize)) {
         IMAGE_LOGE("width * bytesPerPixel overflow!");
         return true;
     }
@@ -644,13 +651,13 @@ bool ImageUtils::CheckMulOverflow(int32_t width, int32_t height, int32_t bytesPe
         IMAGE_LOGE("param is 0");
         return true;
     }
-    int32_t rectSize = width * height;
-    if ((rectSize / width) != height) {
+    int32_t rectSize;
+    if (__builtin_mul_overflow(width, height, &rectSize)) {
         IMAGE_LOGE("width * height overflow!");
         return true;
     }
-    int32_t bufferSize = rectSize * bytesPerPixel;
-    if ((bufferSize / bytesPerPixel) != rectSize) {
+    int32_t bufferSize;
+    if (__builtin_mul_overflow(rectSize, bytesPerPixel, &bufferSize)) {
         IMAGE_LOGE("bytesPerPixel overflow!");
         return true;
     }
@@ -720,26 +727,39 @@ int32_t ImageUtils::SurfaceBuffer_Unreference(void* buffer)
 }
 
 #if !defined(CROSS_PLATFORM)
-bool ImageUtils::GetYuvInfoFromSurfaceBuffer(YUVDataInfo &yuvInfo,
-    sptr<SurfaceBuffer> surfaceBuffer)
+bool ImageUtils::GetYuvInfoFromSurfaceBuffer(YUVDataInfo &yuvInfo, sptr<SurfaceBuffer> surfaceBuffer)
 {
+    bool cond = surfaceBuffer == nullptr;
+    CHECK_ERROR_RETURN_RET_LOG(cond, false, "%{public}s, surfaceBuffer is nullptr", __func__);
+
     OH_NativeBuffer_Planes* planes = nullptr;
-    CHECK_ERROR_RETURN_RET(surfaceBuffer == nullptr, false);
     GSError retVal = surfaceBuffer->GetPlanesInfo(reinterpret_cast<void**>(&planes));
-    if (retVal == OHOS::GSERROR_OK && planes != nullptr && planes->planeCount >= NUM_2) {
-        yuvInfo.yStride = planes->planes[PLANE_Y].columnStride;
-        yuvInfo.uvStride = planes->planes[PLANE_U].columnStride;
-        yuvInfo.yOffset = planes->planes[PLANE_Y].offset;
-        if (surfaceBuffer->GetFormat() == GRAPHIC_PIXEL_FMT_YCRCB_420_SP) {
-            yuvInfo.uvOffset = planes->planes[PLANE_V].offset;
-        } else {
-            yuvInfo.uvOffset = planes->planes[PLANE_U].offset;
-        }
+    cond = retVal != OHOS::GSERROR_OK || planes == nullptr || planes->planeCount <= NUM_1;
+    CHECK_ERROR_RETURN_RET_LOG(cond, false, "%{public}s, get planesInfo failed, retVal:%{public}d", __func__, retVal);
+
+    int32_t width = surfaceBuffer->GetWidth();
+    int32_t height = surfaceBuffer->GetHeight();
+    yuvInfo.imageSize = { width, height };
+    yuvInfo.yWidth = static_cast<uint32_t>(width);
+    yuvInfo.uvWidth = static_cast<uint32_t>((width + NUM_1) / NUM_2);
+    yuvInfo.yHeight = static_cast<uint32_t>(height);
+    yuvInfo.uvHeight = static_cast<uint32_t>((height + NUM_1) / NUM_2);
+    if (planes->planeCount >= NUM_2) {
+        int32_t pixelFmt = surfaceBuffer->GetFormat();
+        bool isYuvP010 = (pixelFmt == GRAPHIC_PIXEL_FMT_YCBCR_P010 || pixelFmt == GRAPHIC_PIXEL_FMT_YCRCB_P010);
+        int uvPlaneIndex = (pixelFmt == GRAPHIC_PIXEL_FMT_YCBCR_420_SP ||
+            pixelFmt == GRAPHIC_PIXEL_FMT_YCBCR_P010) ? NUM_1 : NUM_2;
+        yuvInfo.yStride = isYuvP010 ?
+        (planes->planes[NUM_0].columnStride / NUM_2) : (planes->planes[NUM_0].columnStride);
+        yuvInfo.uvStride = isYuvP010 ?
+            (planes->planes[uvPlaneIndex].columnStride / NUM_2) : (planes->planes[uvPlaneIndex].columnStride);
+        yuvInfo.yOffset = isYuvP010 ?
+            (planes->planes[NUM_0].offset / NUM_2) : (planes->planes[NUM_0].offset);
+        yuvInfo.uvOffset = isYuvP010 ?
+            (planes->planes[uvPlaneIndex].offset / NUM_2) : (planes->planes[uvPlaneIndex].offset);
         return true;
-    } else {
-        IMAGE_LOGE("%{public}s, get planesInfo failed, retVal:%{public}d", __func__, retVal);
-        return false;
     }
+    return false;
 }
 
 bool ImageUtils::CopyYuvPixelMapToSurfaceBuffer(PixelMap* pixelmap,
@@ -1585,8 +1605,15 @@ size_t ImageUtils::GetAstcBytesCount(const ImageInfo& imageInfo)
             return 0;
     }
     if ((blockWidth >= ASTC_4X4_BLOCK) && (blockHeight >= ASTC_4X4_BLOCK)) {
-        astcBytesCount = ((imageInfo.size.width + blockWidth - 1) / blockWidth) *
-            ((imageInfo.size.height + blockHeight - 1) / blockHeight) * ASTC_BLOCK_SIZE + ASTC_HEADER_SIZE;
+        uint64_t blocksX = (static_cast<uint64_t>(imageInfo.size.width) + blockWidth - 1) / blockWidth;
+        uint64_t blocksY = (static_cast<uint64_t>(imageInfo.size.height) + blockHeight - 1) / blockHeight;
+        uint64_t totalSize = blocksX * blocksY * ASTC_BLOCK_SIZE + ASTC_HEADER_SIZE;
+        if (totalSize > INT32_MAX) {
+            IMAGE_LOGE("ImageUtils GetAstcBytesCount overflow, width:%{public}d, height:%{public}d",
+                imageInfo.size.width, imageInfo.size.height);
+            return 0;
+        }
+        astcBytesCount = static_cast<size_t>(totalSize);
     }
     return astcBytesCount;
 }
@@ -1901,7 +1928,7 @@ bool ImageUtils::CheckRowDataSizeIsVaild(int32_t &rowDataSize, ImageInfo &imgInf
     return true;
 }
 
-bool ImageUtils::CheckBufferSizeIsVaild(int32_t &bufferSize, uint64_t &expectedBufferSize, AllocatorType &allocatorType)
+bool ImageUtils::CheckBufferSizeIsValid(int32_t &bufferSize, uint64_t &expectedBufferSize, AllocatorType &allocatorType)
 {
     if (bufferSize <= 0 ||
         expectedBufferSize > (allocatorType == AllocatorType::HEAP_ALLOC ? PIXEL_MAP_MAX_RAM_SIZE : INT_MAX) ||
@@ -2324,6 +2351,36 @@ PixelFormat ImageUtils::ConvertTo10BitPixelFormat(PixelFormat pixelFormat)
             break;
     }
     return hdrAllocFormat;
+}
+
+bool ImageUtils::CalcRGBStride(PixelFormat format, uint32_t width, int &stride)
+{
+    uint32_t pixelBytes = 0;
+    switch (format) {
+        case PixelFormat::RGB_565:
+            pixelBytes = RGB565_BYTES;
+            break;
+        case PixelFormat::BGRA_8888:
+        case PixelFormat::RGBA_8888:
+        case PixelFormat::RGBA_1010102:
+            pixelBytes = ARGB8888_BYTES;
+            break;
+        case PixelFormat::RGBA_F16:
+            pixelBytes = RGBA_F16_BYTES;
+            break;
+        case PixelFormat::RGB_888:
+            pixelBytes = RGB888_BYTES;
+            break;
+        default:
+            IMAGE_LOGE("CalcRGBStride error: unsupported pixel format:%{public}d", format);
+            return false;
+    }
+    if (width > INT_MAX / pixelBytes) {
+        IMAGE_LOGE("CalcRGBStride error: overflow! format=%{public}d, width=%{public}u", format, width);
+        return false;
+    }
+    stride = static_cast<int>(width * pixelBytes);
+    return true;
 }
 } // namespace Media
 } // namespace OHOS

@@ -25,6 +25,7 @@
 #include "media_errors.h"
 #include "string_ex.h"
 #include "image_trace.h"
+#include "image_utils.h"
 #include "hitrace_meter.h"
 #include "exif_metadata_formatter.h"
 #include "image_dfx.h"
@@ -33,6 +34,7 @@
 #include "exif_metadata.h"
 #include "metadata_napi.h"
 #include "xmp_metadata_napi.h"
+#include "webp_metadata.h"
 
 #undef LOG_DOMAIN
 #define LOG_DOMAIN LOG_TAG_DOMAIN_ID_IMAGE
@@ -131,12 +133,15 @@ struct ImageSourceAsyncContext {
     std::unique_ptr<std::vector<uint32_t>> typeArray;
     std::shared_ptr<ExifMetadata> rExifMetadata;
     std::shared_ptr<HeifsMetadata> rImageHeifsMetadata;
+    std::shared_ptr<WebPMetadata> rWebPMetadata;
     std::shared_ptr<FragmentMetadata> rFragmentMetadata;
     std::shared_ptr<GifMetadata> rGifMetadata;
     std::shared_ptr<XtStyleMetadata> rXtStyleMetadata;
     std::shared_ptr<RfDataBMetadata> rRfDataBMetadata;
     DecodingOptionsForThumbnail decodingOptsForThumbnail;
+#ifdef XMP_TOOLKIT_SDK_ENABLE
     std::shared_ptr<XMPMetadata> rXMPMetadata;
+#endif
     std::vector<uint8_t> imageRawData;
     uint32_t bitsPerSample = 0;
 };
@@ -704,35 +709,11 @@ static std::vector<double> GetDoubleArrayArgument(napi_env env, napi_value value
     return doubleArray;
 }
 
-static std::string IntArrayToString(const std::vector<int64_t> &intArray)
-{
-    std::ostringstream oss;
-    for (size_t i = 0; i < intArray.size(); i++) {
-        if (i > 0) {
-            oss << ",";
-        }
-        oss << intArray[i];
-    }
-    return oss.str();
-}
-
-static std::string DoubleArrayToString(const std::vector<double> &doubleArray)
-{
-    std::ostringstream oss;
-    for (size_t i = 0; i < doubleArray.size(); i++) {
-        if (i > 0) {
-            oss << ",";
-        }
-        oss << doubleArray[i];
-    }
-    return oss.str();
-}
-
 static std::string HandleIntArrayCase(napi_env env, napi_value value, const std::string& keyStr)
 {
     auto intArray = GetIntArrayArgument(env, value);
     if (keyStr != "GPSVersionID") {
-        return IntArrayToString(intArray);
+        return ImageUtils::ArrayToString(intArray);
     }
     std::ostringstream oss;
     for (size_t i = 0; i < intArray.size(); ++i) {
@@ -772,7 +753,7 @@ static std::string HandleDoubleArrayCase(napi_env env, napi_value value, const s
 {
     auto doubleArray = GetDoubleArrayArgument(env, value);
     if (keyStr != "GPSTimeStamp" || doubleArray.size() < NUM_3) {
-        return DoubleArrayToString(doubleArray);
+        return ImageUtils::ArrayToString(doubleArray);
     }
     return FormatTimePart(doubleArray[0]) + ":" +
            FormatTimePart(doubleArray[1]) + ":" +
@@ -817,6 +798,12 @@ static std::string HandleEnumCase(napi_env env, napi_value value, std::string ke
     return "";
 }
 
+static bool IsBooleanTypeKey(std::string key)
+{
+    return key == "HwMnoteIsXmageSupported" || key == "HwMnoteFrontCamera" || key == "HwMnoteCloudEnhancementMode" ||
+        key == "HwMnoteWindSnapshotMode" || key == "HwMnoteFaceBeautyIsDetected";
+}
+
 static std::string GetExifValueArgumentForKey(napi_env env, napi_value value, const std::string& keyStr)
 {
     switch (ExifMetadata::GetPropertyValueType(keyStr)) {
@@ -826,8 +813,7 @@ static std::string GetExifValueArgumentForKey(napi_env env, napi_value value, co
             if (keyStr == "Orientation" || keyStr == "HwMnoteFocusMode" || keyStr == "HwMnoteXmageColorMode") {
                 return HandleEnumCase(env, value, keyStr);
             }
-            if (keyStr == "HwMnoteIsXmageSupported" || keyStr == "HwMnoteFrontCamera" ||
-                keyStr == "HwMnoteCloudEnhancementMode" || keyStr == "HwMnoteWindSnapshotMode") {
+            if (IsBooleanTypeKey(keyStr)) {
                 bool boolValue = false;
                 napi_get_value_bool(env, value, &boolValue);
                 return boolValue ? "1" : "0";
@@ -1370,6 +1356,7 @@ std::vector<napi_property_descriptor> ImageSourceNapi::RegisterNapi()
         DECLARE_NAPI_GETTER("supportedFormats", GetSupportedFormats),
         DECLARE_NAPI_FUNCTION("readXMPMetadata", ReadXMPMetadata),
         DECLARE_NAPI_FUNCTION("writeXMPMetadata", WriteXMPMetadata),
+        DECLARE_NAPI_FUNCTION("modifyImageAllProperties", ModifyImageAllProperties),
 #if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
         DECLARE_NAPI_FUNCTION("createPicture", CreatePicture),
         DECLARE_NAPI_FUNCTION("createPictureAtIndex", CreatePictureAtIndex),
@@ -2877,8 +2864,7 @@ static void CreateIntPropertyValue(napi_env env, const MetadataValue &value, nap
     if (value.intArrayValue.empty()) {
         napi_get_undefined(env, &propValue);
     } else {
-        if (value.key == "HwMnoteIsXmageSupported" || value.key == "HwMnoteFrontCamera" ||
-            value.key == "HwMnoteCloudEnhancementMode" || value.key == "HwMnoteWindSnapshotMode") {
+        if (IsBooleanTypeKey(value.key)) {
             bool boolValue = (value.intArrayValue[0] > 0);
             napi_get_boolean(env, boolValue, &propValue);
         } else {
@@ -2975,6 +2961,9 @@ NapiMetadataType GetMetadataTypeByKey(const std::string& key)
         for (const auto& pair : ExifMetadata::GetDngMetadataMap()) {
             mapping[pair.first] = NapiMetadataType::DNG_METADATA;
         }
+        for (const auto& pair : ExifMetadata::GetWebPMetadataMap()) {
+            mapping[pair.first] = NapiMetadataType::WEBP_METADATA;
+        }
         return mapping;
     }();
     auto it = KEY_TYPE_MAP.find(key);
@@ -3021,9 +3010,11 @@ struct MetadataCollection {
     napi_value xtStyleMetadata = nullptr;
     napi_value rfDataBMetadata = nullptr;
     napi_value dngMetadata = nullptr;
+    napi_value webpMetadata = nullptr;
     bool hasExif = false;
     bool hasMakerNote = false;
     bool hasHeifsMetadata = false;
+    bool hasWebPMetadata = false;
     bool hasFragmentMetadata = false;
     bool hasGifMetadata = false;
     bool hasXtStyleMetadata = false;
@@ -3036,6 +3027,7 @@ static void InitMetadataAndFlags(napi_env env, ImageSourceAsyncContext *context,
     metaCol.exifMetadata = MetadataNapi::CreateExifMetadata(env, context->rExifMetadata);
     metaCol.makerNoteMetadata = MetadataNapi::CreateMakerNoteMetadata(env, context->rExifMetadata);
     metaCol.heifsMetadata = MetadataNapi::CreateHeifsMetadata(env, context->rImageHeifsMetadata);
+    metaCol.webpMetadata = MetadataNapi::CreateWebPMetadata(env, context->rWebPMetadata);
     metaCol.fragmentMetadata = MetadataNapi::CreateFragmentMetadata(env, context->rFragmentMetadata);
     metaCol.gifMetadata = MetadataNapi::CreateGifMetadata(env, context->rGifMetadata);
     metaCol.xtStyleMetadata = MetadataNapi::CreateXtStyleMetadata(env, context->rXtStyleMetadata);
@@ -3092,6 +3084,12 @@ static void ProcessMetadataValueTypeArray(napi_env env, ImageSourceAsyncContext 
                 CreatePropertyResult(env, metadataValue, metaCol.dngMetadata, type);
                 metaCol.hasDngMetadata = true;
             }
+        } else if (type == NapiMetadataType::WEBP_METADATA) {
+            if (!metadataValue.intArrayValue.empty()) {
+                context->rWebPMetadata->SetValue(metadataValue.key, std::to_string(metadataValue.intArrayValue[0]));
+                CreatePropertyResult(env, metadataValue, metaCol.webpMetadata, type);
+                metaCol.hasWebPMetadata = true;
+            }
         }
     }
 }
@@ -3143,6 +3141,9 @@ static void AttachMetadataToResultObj(napi_env env, MetadataCollection& metaCol,
     }
     if (metaCol.hasDngMetadata) {
         NAPI_CALL_RETURN_VOID(env, napi_set_named_property(env, resultObj, "dngMetadata", metaCol.dngMetadata));
+    }
+    if (metaCol.hasWebPMetadata) {
+        NAPI_CALL_RETURN_VOID(env, napi_set_named_property(env, resultObj, "webPMetadata", metaCol.webpMetadata));
     }
 }
 
@@ -3379,6 +3380,16 @@ static std::shared_ptr<HeifsMetadata> CreateNullHeifsMetadata()
     return metadata;
 }
 
+static std::shared_ptr<WebPMetadata> CreateNullWebPMetadata()
+{
+    std::shared_ptr<WebPMetadata> metadata = std::make_shared<WebPMetadata>();
+    if (!metadata) {
+        IMAGE_LOGE("Construct WebPMetadata failed");
+        return nullptr;
+    }
+    return metadata;
+}
+
 static void ReadImageMetadataExecute(napi_env env, void *data)
 {
     auto context = static_cast<ImageSourceAsyncContext*>(data);
@@ -3389,6 +3400,7 @@ static void ReadImageMetadataExecute(napi_env env, void *data)
     uint32_t errorCode;
     context->rExifMetadata = context->rImageSource->GetExifMetadata();
     context->rImageHeifsMetadata = CreateNullHeifsMetadata();
+    context->rWebPMetadata = CreateNullWebPMetadata();
 #if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
     context->rFragmentMetadata = context->rImageSource->GetFragmentMetadata(errorCode);
     context->rGifMetadata = context->rImageSource->GetGifMetadata(context->index, errorCode);
@@ -3398,7 +3410,8 @@ static void ReadImageMetadataExecute(napi_env env, void *data)
         context->rImageSource->GetBlobMetadata(MetadataType::XTSTYLE, errorCode));
 #endif
     if (context->keyStrArray.empty()) {
-        const std::vector<MetadataValue> allProperties = context->rImageSource->GetAllPropertiesWithType();
+        const std::vector<MetadataValue> allProperties =
+            context->rImageSource->GetAllPropertiesWithType(context->index);
         for (const auto& property : allProperties) {
             context->kValueTypeArray.emplace_back(property);
         }
@@ -3411,9 +3424,9 @@ static void ReadImageMetadataExecute(napi_env env, void *data)
         uint32_t status = SUCCESS;
         for (auto keyStrIt = context->keyStrArray.begin(); keyStrIt != context->keyStrArray.end(); ++keyStrIt) {
             MetadataValue value;
+            status = context->rImageSource->GetImagePropertyByType(context->index, *keyStrIt, value);
             value.key = *keyStrIt;
             value.type = ExifMetadata::GetPropertyValueType(value.key);
-            status = context->rImageSource->GetImagePropertyByType(context->index, *keyStrIt, value);
             context->kValueTypeArray.emplace_back(value);
             if (status != SUCCESS) {
                 context->errMsgArray.insert(std::make_pair(status, *keyStrIt));
@@ -3794,6 +3807,8 @@ static const std::map<std::string, PropertyValueType> GetMetadataKeyMapByType(ui
             return ExifMetadata::GetHeifsMetadataMap();
         case static_cast<uint32_t>(MetadataType::DNG):
             return ExifMetadata::GetDngMetadataMap();
+        case static_cast<uint32_t>(MetadataType::WEBP):
+            return ExifMetadata::GetWebPMetadataMap();
         default:
             return std::map<std::string, PropertyValueType>();
     }
@@ -3843,13 +3858,22 @@ static uint32_t ProcessSpecifiedMetadataType(ImageSourceAsyncContext* context, c
     }
     context->status = ERROR;
     bool anyKeySuccess = false;
+    std::vector<uint32_t> errCodeArray;
     for (const auto& keyStr : context->keyStrArray) {
         ProcessSingleMetadataKey(context, keyStr);
         if (context->status == SUCCESS) {
             anyKeySuccess = true;
+        } else {
+            errCodeArray.push_back(context->status);
         }
     }
-    return anyKeySuccess ? SUCCESS : ERROR;
+    uint32_t errorCode = IMAGE_SOURCE_UNSUPPORTED_METADATA;
+    for (uint32_t i = 0; i < errCodeArray.size(); ++i) {
+        if (errCodeArray[i] == ERR_IMAGE_SOURCE_DATA) {
+            errorCode = ERR_IMAGE_SOURCE_DATA;
+        }
+    }
+    return anyKeySuccess ? SUCCESS : errorCode;
 #else
     return IMAGE_SOURCE_UNSUPPORTED_METADATA;
 #endif
@@ -3877,6 +3901,7 @@ static void ReadImageMetadataByTypeExecute(napi_env env, void *data)
     uint32_t errorCode;
     context->rExifMetadata = context->rImageSource->GetExifMetadata();
     context->rImageHeifsMetadata = CreateNullHeifsMetadata();
+    context->rWebPMetadata = CreateNullWebPMetadata();
 #if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
     context->rFragmentMetadata = context->rImageSource->GetFragmentMetadata(errorCode);
     context->rGifMetadata = context->rImageSource->GetGifMetadata(context->index, errorCode);
@@ -3886,7 +3911,8 @@ static void ReadImageMetadataByTypeExecute(napi_env env, void *data)
         context->rImageSource->GetBlobMetadata(MetadataType::XTSTYLE, errorCode));
 #endif
     if (context->typeArray == nullptr || context->typeArray->empty()) {
-        const std::vector<MetadataValue> allProperties = context->rImageSource->GetAllPropertiesWithType();
+        const std::vector<MetadataValue> allProperties =
+            context->rImageSource->GetAllPropertiesWithType(context->index);
         for (const auto& property : allProperties) {
             context->kValueTypeArray.emplace_back(property);
         }
@@ -5011,7 +5037,11 @@ static void CreatePictureExecute(napi_env env, void *data)
     if (context->rPicture != nullptr) {
         context->status = SUCCESS;
     } else {
-        context->status = ERROR;
+        if (errorCode == ERR_IMAGE_DESIRED_PIXELFORMAT_UNSUPPORTED) {
+            context->status = ERR_IMAGE_DESIRED_PIXELFORMAT_UNSUPPORTED;
+        } else {
+            context->status = ERROR;
+        }
     }
 
     IMAGE_LOGD("[ImageSourceNapi]CreatePictureExecute OUT");
@@ -5025,6 +5055,11 @@ static void CreatePictureComplete(napi_env env, napi_status status, void *data)
 
     if (context->status == SUCCESS) {
         result = PictureNapi::CreatePicture(env, context->rPicture);
+    } else if (context->status == ERR_IMAGE_DESIRED_PIXELFORMAT_UNSUPPORTED) {
+        std::pair<int32_t, std::string> errorMsg(static_cast<int32_t>(IMAGE_SOURCE_UNSUPPORTED_OPTIONS),
+            "DesiredPixelFormat error");
+        context->errMsgArray.insert(errorMsg);
+        napi_get_undefined(env, &result);
     } else {
         std::pair<int32_t, std::string> errorMsg(static_cast<int32_t>(IMAGE_DECODE_FAILED), "Create Picture error");
         context->errMsgArray.insert(errorMsg);
@@ -5032,6 +5067,24 @@ static void CreatePictureComplete(napi_env env, napi_status status, void *data)
     }
     IMAGE_LOGD("CreatePictureComplete OUT");
     ImageSourceCallbackRoutine(env, context, result);
+}
+
+static bool ParsePixelFormatForPicture(napi_env env, napi_value root, const char* name,
+    DecodingOptionsForPicture* opts)
+{
+    uint32_t tmpNumber = 0;
+    if (!GET_UINT32_BY_NAME(root, name, tmpNumber)) {
+        IMAGE_LOGD("no %{public}s", name);
+        return false;
+    }
+    if (!IsSupportPixelFormat(tmpNumber)) {
+        IMAGE_LOGD("Invalid %{public}s %{public}d", name, tmpNumber);
+        return false;
+    }
+
+    opts->desiredPixelFormat = ParsePixelFormat(tmpNumber);
+
+    return true;
 }
 
 static bool ParseDecodingOptionsForPicture(napi_env env, napi_value root, DecodingOptionsForPicture* opts)
@@ -5068,6 +5121,19 @@ static bool ParseDecodingOptionsForPicture(napi_env env, napi_value root, Decodi
             return false;
         }
     }
+
+    if (!GET_NODE_BY_NAME(root, "desiredSizeForMainPixelMap", tmpValue)) {
+        IMAGE_LOGD("no desiredSizeForMainPixelMap");
+    } else {
+        if (!ParseSize(env, tmpValue, &(opts->desiredSizeForMainPixelMap))) {
+            IMAGE_LOGD("ParseSize error");
+        }
+    }
+
+    if (!ParsePixelFormatForPicture(env, root, "desiredPixelFormat", opts)) {
+        return false;
+    }
+    
     return true;
 }
 
@@ -5330,5 +5396,58 @@ napi_value ImageSourceNapi::CreateImageRawData(napi_env env, napi_callback_info 
     return result;
 }
 
+static void ModifyImageAllPropertiesExecute(napi_env env, void *data)
+{
+    IMAGE_LOGI("ModifyImageAllPropertiesExecute start.");
+    auto start = std::chrono::high_resolution_clock::now();
+    auto context = static_cast<ImageSourceAsyncContext*>(data);
+    if (context == nullptr || context->rImageSource == nullptr) {
+        IMAGE_LOGE("empty context");
+        return;
+    }
+    context->rImageSource->SetSystemApi(true);
+    context->status = context->rImageSource->ModifyImagePropertiesEx(0, context->kVStrArray);
+    if (context->status != SUCCESS) {
+        auto unsupportedKeys = context->rImageSource->GetModifyExifUnsupportedKeys();
+        if (!unsupportedKeys.empty()) {
+            context->errMsg = "Failed to modify unsupported keys:";
+            for (auto &key : unsupportedKeys) {
+                context->errMsg.append(" ").append(key);
+            }
+        }
+    }
+    auto end = std::chrono::high_resolution_clock::now();
+    auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
+    IMAGE_LOGI("ModifyImageAllPropertiesExecute end, cost: %{public}llu ms", duration.count());
+}
+
+napi_value ImageSourceNapi::ModifyImageAllProperties(napi_env env, napi_callback_info info)
+{
+    napi_value result = nullptr;
+    napi_get_undefined(env, &result);
+    if (!ImageNapiUtils::IsSystemApp()) {
+        IMAGE_LOGE("This interface can be called only by system apps");
+        return ImageNapiUtils::ThrowExceptionError(env, IMAGE_PERMISSIONS_FAILED,
+            "This interface can be called only by system apps");
+    }
+
+    napi_status status;
+    std::unique_ptr<ImageSourceAsyncContext> asyncContext = UnwrapContextForModify(env, info);
+    if (asyncContext == nullptr) {
+        return ImageNapiUtils::ThrowExceptionError(env, ERR_IMAGE_WRITE_PROPERTY_FAILED,
+            "async context unwrap failed");
+    }
+
+    napi_create_promise(env, &(asyncContext->deferred), &result);
+    IMG_CREATE_CREATE_ASYNC_WORK(env, status, "ModifyImageAllProperties",
+        ModifyImageAllPropertiesExecute,
+        reinterpret_cast<napi_async_complete_callback>(ModifyImagePropertiesEnhancedComplete),
+        asyncContext,
+        asyncContext->work);
+
+    IMG_NAPI_CHECK_RET_D(IMG_IS_OK(status),
+        nullptr, IMAGE_LOGE("fail to create async work"));
+    return result;
+}
 }  // namespace Media
 }  // namespace OHOS

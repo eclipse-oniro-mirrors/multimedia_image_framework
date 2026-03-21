@@ -42,12 +42,13 @@ class HispeedImageManagerTestFriend {
 public:
     static void SetMockFunctions(HispeedImageManager& mgr,
                                  YuvJpegEncoderCreateFunc createFunc,
-                                 YuvJpegEncoderEncodeFunc encodeFunc,
+                                 YuvJpegEncoderEncodeWithStrideFunc encodeFunc,
                                  YuvJpegEncoderDestroyFunc destroyFunc)
     {
         mgr.jpegEncoderCreateFunc_ = createFunc;
-        mgr.jpegEncoderEncodeFunc_ = encodeFunc;
+        mgr.jpegEncoderEncodeWithStrideFunc_ = encodeFunc;
         mgr.jpegEncoderDestroyFunc_ = destroyFunc;
+        mgr.jpegEncoderSetOptimizeCodingFunc_ = MockJpegEncoderSetOptimizeCoding;
         mgr.jpegEncoderSetQualityFunc_ = MockJpegEncoderSetQuality;
         mgr.jpegEncoderSetSubsamplingFunc_ = MockJpegEncoderSetSubsampling;
         mgr.jpegEncoderSetICCMetadataFunc_ = MockJpegEncoderSetIccMetadata;

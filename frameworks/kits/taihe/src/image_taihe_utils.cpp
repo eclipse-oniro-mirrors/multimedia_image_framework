@@ -16,8 +16,18 @@
 #include "image_log.h"
 #include "image_taihe_utils.h"
 
+#if !defined(CROSS_PLATFORM)
+#include "tokenid_kit.h"
+#include "ipc_skeleton.h"
+#endif
+#if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM) && defined(HICHECKER_ENABLE)
+#include "hichecker.h"
+#endif
+
 namespace ANI::Image {
 constexpr char CLASS_NAME_BUSINESSERROR[] = "@ohos.base.BusinessError";
+
+AniObjectInfo ImageTaiheUtils::businessErrorInfo_ = {};
 
 void ImageTaiheUtils::HicheckerReport()
 {
@@ -74,16 +84,17 @@ bool ImageTaiheUtils::GetPropertyDouble(ani_env *env, ani_object obj, const std:
 ani_object ImageTaiheUtils::ToBusinessError(ani_env *env, int32_t code, const std::string &message)
 {
     ani_object err {};
-    ani_class cls {};
     CHECK_ERROR_RETURN_RET_LOG(env == nullptr, nullptr, "get_env failed");
-    CHECK_ERROR_RETURN_RET_LOG(ANI_OK != env->FindClass(CLASS_NAME_BUSINESSERROR, &cls), err,
-        "find class %{public}s failed", CLASS_NAME_BUSINESSERROR);
-    ani_method ctor {};
-    CHECK_ERROR_RETURN_RET_LOG(ANI_OK != env->Class_FindMethod(cls, "<ctor>", ":", &ctor), err,
-        "find method BusinessError constructor failed");
+    if (!businessErrorInfo_.inited) {
+        CHECK_ERROR_RETURN_RET_LOG(ANI_OK != env->FindClass(CLASS_NAME_BUSINESSERROR, &businessErrorInfo_.objectClass),
+            err, "find class %{public}s failed", CLASS_NAME_BUSINESSERROR);
+        CHECK_ERROR_RETURN_RET_LOG(ANI_OK != env->Class_FindMethod(businessErrorInfo_.objectClass, "<ctor>", ":",
+            &businessErrorInfo_.objectCtor), err, "find method BusinessError constructor failed");
+        businessErrorInfo_.inited = true;
+    }
     ani_object error {};
-    CHECK_ERROR_RETURN_RET_LOG(ANI_OK != env->Object_New(cls, ctor, &error), err,
-        "new object %{public}s failed", CLASS_NAME_BUSINESSERROR);
+    CHECK_ERROR_RETURN_RET_LOG(ANI_OK != env->Object_New(businessErrorInfo_.objectClass,
+        businessErrorInfo_.objectCtor, &error), err, "new object %{public}s failed", CLASS_NAME_BUSINESSERROR);
     CHECK_ERROR_RETURN_RET_LOG(
         ANI_OK != env->Object_SetPropertyByName_Int(error, "code", static_cast<ani_int>(code)), err,
         "set property BusinessError.code failed");
@@ -169,7 +180,7 @@ array<uint8_t> ImageTaiheUtils::CreateTaiheArrayBuffer(uint8_t* src, size_t srcL
 uintptr_t ImageTaiheUtils::GetUndefinedPtr(ani_env *env)
 {
     ani_ref undefinedRef {};
-    env->GetUndefined(&undefinedRef);
+    CHECK_ERROR_RETURN_RET_LOG(env->GetUndefined(&undefinedRef) != ANI_OK, 0, "GetUndefined failed");
     ani_object undefinedObj = static_cast<ani_object>(undefinedRef);
     return reinterpret_cast<uintptr_t>(undefinedObj);
 }
@@ -233,4 +244,15 @@ bool ImageTaiheUtils::IsValidPtr<weak::ImageSource>(weak::ImageSource data);
 
 template
 bool ImageTaiheUtils::IsValidPtr<weak::Picture>(weak::Picture data);
+
+bool ImageTaiheUtils::IsSystemApp()
+{
+#if !defined(CROSS_PLATFORM)
+    static bool isSys = OHOS::Security::AccessToken::TokenIdKit::IsSystemAppByFullTokenID(
+        OHOS::IPCSkeleton::GetSelfTokenID());
+    return isSys;
+#else
+    return false;
+#endif
+}
 } // namespace ANI::Image

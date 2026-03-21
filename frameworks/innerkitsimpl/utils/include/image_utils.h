@@ -160,10 +160,8 @@ public:
     static ColorManager::ColorSpaceName SbCMColorSpaceType2ColorSpaceName(
         HDI::Display::Graphic::Common::V1_0::CM_ColorSpaceType type);
     static void SetYuvDataInfo(std::unique_ptr<PixelMap> &pixelMap, sptr<OHOS::SurfaceBuffer> &sBuffer);
-    static bool CopyYuvPixelMapToSurfaceBuffer(PixelMap* pixelmap,
-        sptr<SurfaceBuffer> surfaceBuffer);
-    static bool GetYuvInfoFromSurfaceBuffer(YUVDataInfo &yuvInfo,
-        sptr<SurfaceBuffer> surfaceBuffer);
+    static bool CopyYuvPixelMapToSurfaceBuffer(PixelMap* pixelmap, sptr<SurfaceBuffer> surfaceBuffer);
+    static bool GetYuvInfoFromSurfaceBuffer(YUVDataInfo &yuvInfo, sptr<SurfaceBuffer> surfaceBuffer);
 #endif
     static PixelFormat SbFormat2PixelFormat(int32_t sbFormat);
     static uint64_t GetNowTimeMilliSeconds();
@@ -220,13 +218,14 @@ public:
     static bool CheckTlvSupportedFormat(PixelFormat format);
     static uint16_t GetReusePixelRefCount(const std::shared_ptr<PixelMap> &reusePixelmap);
     static bool CheckRowDataSizeIsVaild(int32_t &rowDataSize, ImageInfo &imgInfo);
-    static bool CheckBufferSizeIsVaild(int32_t &bufferSize, uint64_t &expectedBufferSize,
+    static bool CheckBufferSizeIsValid(int32_t &bufferSize, uint64_t &expectedBufferSize,
         AllocatorType &allocatorType);
     static bool CheckYuvDataInfoValid(PixelMap* pixelMap, YUVDataInfo& yDataInfo);
     static bool GetAlignedNumber(int32_t& number, int32_t align);
     static int32_t GetByteCount(ImageInfo imageInfo);
     static int32_t GetYUVByteCount(const ImageInfo& info);
     static PixelFormat ConvertTo10BitPixelFormat(PixelFormat pixelFormat);
+    static bool CalcRGBStride(PixelFormat format, uint32_t width, int &stride);
     template<typename T>
     static bool CheckMulOverflow(const T& num1, const T& num2)
     {
@@ -274,6 +273,16 @@ public:
 #if !defined(CROSS_PLATFORM)
     static void FlushSurfaceBuffer(sptr<SurfaceBuffer>& surfaceBuffer);
 #endif
+    template<typename T>
+    static std::string ArrayToString(const std::vector<T>& array)
+    {
+        std::ostringstream oss;
+        for (size_t i = 0; i < array.size(); ++i) {
+            if (i > 0) oss << ", ";
+            oss << array[i];
+        }
+        return oss.str();
+    }
 private:
     static uint32_t RegisterPluginServer();
     static uint32_t SaveDataToFile(const std::string& fileName, const char* data, const size_t& totalSize);

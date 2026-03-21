@@ -67,6 +67,8 @@ ohos_unittest("pixelmaptest") {
     "hilog:libhilog",
     "ipc:ipc_core",
     "resource_management:librawfile",
+    "graphic_2d:GLESv3",
+    "napi:ace_napi",
   ]
 
   defines = []
@@ -407,7 +409,7 @@ ohos_unittest("jpegdecoderextest") {
     "googletest:gtest_main",
     "libexif:libexif",
     "libjpeg-turbo:turbojpeg",
-    "skia:libjpeg",
+    "skia:libjpegm133",
     "graphic_2d:color_manager",
     "ipc:ipc_single",
   ]
@@ -440,7 +442,7 @@ ohos_unittest("jpegutilstest") {
     "hilog:libhilog",
     "libexif:libexif",
     "libjpeg-turbo:turbojpeg",
-    "skia:libjpeg",
+    "skia:libjpegm133",
     "ipc:ipc_single",
   ]
 
@@ -485,6 +487,7 @@ ohos_unittest("imageutilstest") {
   sources = [
     "$image_subsystem/frameworks/innerkitsimpl/test/unittest/color_utils_test.cpp",
     "$image_subsystem/frameworks/innerkitsimpl/test/unittest/image_utils_test.cpp",
+    "$image_subsystem/frameworks/innerkitsimpl/test/unittest/image_handle_test.cpp",
     "$image_subsystem/frameworks/innerkitsimpl/test/unittest/pixel_yuv_ext_utils_test.cpp",
     "$image_subsystem/frameworks/innerkitsimpl/test/unittest/vpe_utils_test.cpp",
   ]
@@ -758,6 +761,8 @@ ohos_unittest("convertertest") {
     "googletest:gtest_main",
     "graphic_2d:color_manager",
     "hilog:libhilog",
+    "graphic_2d:GLESv3",
+    "graphic_surface:surface",
   ]
 }
 
@@ -1019,7 +1024,7 @@ ohos_unittest("pluginlibjpegtest") {
     "hilog:libhilog",
     "hitrace:hitrace_meter",
     "libjpeg-turbo:turbojpeg",
-    "skia:libjpeg",
+    "skia:libjpegm133",
     "skia:skia_canvaskit",
     "ipc:ipc_single",
   ]
@@ -1064,7 +1069,7 @@ ohos_unittest("rawdecodertest") {
     "googletest:gtest_main",
     "graphic_2d:color_manager",
     "hilog:libhilog",
-    "skia:piex",
+    "skia:piexm133",
     "ipc:ipc_single",
   ]
 }
@@ -1289,9 +1294,9 @@ ohos_unittest("jpeg_hw_decoder_test") {
     "ipc:ipc_single",
     "libexif:libexif",
     "libjpeg-turbo:turbojpeg",
-    "skia:libjpeg",
+    "skia:libjpegm133",
     "skia:skia_canvaskit",
-    "skia:piex",
+    "skia:piexm133",
   ]
   if (enable_heif_hw_decode) {
     defines += [ "HEIF_HW_DECODE_ENABLE" ]
@@ -1453,6 +1458,8 @@ ohos_unittest("pixelastctest") {
   cflags = [
     "-DIMAGE_DEBUG_FLAG",
     "-DIMAGE_COLORSPACE_FLAG",
+    "-Dprivate=public",
+    "-Dprotected=public",
   ]
 
   include_dirs = [
@@ -1684,7 +1691,7 @@ ohos_unittest("jpeg_yuv_decoder_test") {
     "googletest:gtest",
     "googletest:gtest_main",
     "libjpeg-turbo:turbojpeg",
-    "skia:libjpeg",
+    "skia:libjpegm133",
     "ipc:ipc_single",
   ]
 }
@@ -2315,7 +2322,7 @@ ohos_unittest("heifs_decode_test") {
     "ipc:ipc_single",
     "libexif:libexif",
     "libjpeg-turbo:turbojpeg",
-    "skia:libjpeg",
+    "skia:libjpegm133",
     "skia:skia_canvaskit",
   ]
   if (enable_heif_hw_decode) {

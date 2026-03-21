@@ -31,6 +31,7 @@ public:
     OH_ImageSourceNative(RawFileDescriptor rawFile, OHOS::Media::SourceOptions ops);
     ~OH_ImageSourceNative();
     std::shared_ptr<OHOS::Media::ImageSource> GetInnerImageSource();
+    const std::shared_ptr<OHOS::Media::ImageSource> GetInnerImageSource() const;
     std::string filePath_ = "";
     int fileDescriptor_ = -1;
     void *fileBuffer_ = nullptr;

@@ -236,7 +236,10 @@ bool CreatePictureByRandomImageSource(const std::string& pathName)
 extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
 {
     /* Run your code on data */
-    FuzzedDataProvider fdp(data, size);
+    if (size < OPT_SIZE) {
+        return 0;
+    }
+    FuzzedDataProvider fdp(data + size - OPT_SIZE, OPT_SIZE);
     OHOS::Media::FDP = &fdp;
     uint8_t action = fdp.ConsumeIntegral<uint8_t>() % 3;
     switch(action){
@@ -244,12 +247,9 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
             OHOS::Media::PictureRandomFuzzTest();
             break;
         case 1:
-            OHOS::Media::PictureIPCTest(data, size - 1);
+            OHOS::Media::PictureIPCTest(data, size - OPT_SIZE);
             break;
         default:
-            if(size < OPT_SIZE) return -1;
-            FuzzedDataProvider fdp(data + size - OPT_SIZE, OPT_SIZE - 1);
-            OHOS::Media::FDP = &fdp;
             static const std::string pathName = "/data/local/tmp/test_decode_bmp.bmp";
             WriteDataToFile(data, size - OPT_SIZE, pathName);
             OHOS::Media::CreatePictureByRandomImageSource(pathName);

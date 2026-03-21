@@ -320,9 +320,12 @@ void JpegDecoderYuvFuzzTest001(const uint8_t *data, size_t size)
 /* Fuzzer entry point */
 extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
 {
-    FuzzedDataProvider fdp(data, size);
+    if (size < COMMON_OPT_SIZE) {
+        return 0;
+    }
+    FuzzedDataProvider fdp(data + size - COMMON_OPT_SIZE, COMMON_OPT_SIZE);
     OHOS::Media::FDP = &fdp;
     /* Run your code on data */
-    OHOS::Media::JpegDecoderYuvFuzzTest001(data, size);
+    OHOS::Media::JpegDecoderYuvFuzzTest001(data, size - COMMON_OPT_SIZE);
     return 0;
 }

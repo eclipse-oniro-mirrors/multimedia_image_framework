@@ -23,6 +23,9 @@ using namespace ANI::Image;
 namespace ANI::Image {
 static constexpr int32_t NUM_0 = 0;
 static const char* EMPTY_STRING = "";
+static constexpr int32_t DEFAULT_CAPACITY = 3;
+static constexpr int32_t DEFAULT_WIDTH = 1920;
+static constexpr int32_t DEFAULT_HEIGHT = 1080;
 
 struct ImageEnum {
     std::string name;
@@ -538,6 +541,23 @@ optional<ImageReceiver> CreateImageReceiver(Size const& size, ImageFormat format
     auto res = make_holder<ImageReceiverImpl, ImageReceiver>(imageReceiver);
     return optional<ImageReceiver>(std::in_place, res);
 }
+
+optional<ImageReceiver> CreateImageReceiverByOption(optional_view<ImageReceiverOptions> options)
+{
+    ImageReceiverOptions taiheOpts = options.value_or(ImageReceiverOptions {});
+    OHOS::Media::ImageReceiverOptions opts;
+    opts.width = taiheOpts.size.has_value() ? taiheOpts.size.value().width : DEFAULT_WIDTH;
+    opts.height = taiheOpts.size.has_value() ? taiheOpts.size.value().height : DEFAULT_HEIGHT;
+    opts.capacity = taiheOpts.capacity.has_value() ? taiheOpts.capacity.value() : DEFAULT_CAPACITY;
+    std::shared_ptr<OHOS::Media::ImageReceiver> imageReceiver = OHOS::Media::ImageReceiver::CreateImageReceiver(opts);
+    if (imageReceiver == nullptr) {
+        IMAGE_LOGE("Create native image receiver failed");
+        return optional<ImageReceiver>(std::nullopt);
+    }
+    auto res = make_holder<ImageReceiverImpl, ImageReceiver>(imageReceiver);
+    return optional<ImageReceiver>(std::in_place, res);
+}
 } // namespace ANI::Image
 
 TH_EXPORT_CPP_API_CreateImageReceiver(CreateImageReceiver);
+TH_EXPORT_CPP_API_CreateImageReceiverByOption(CreateImageReceiverByOption);

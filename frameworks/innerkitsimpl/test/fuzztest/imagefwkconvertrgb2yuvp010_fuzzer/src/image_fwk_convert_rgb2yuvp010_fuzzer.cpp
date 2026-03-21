@@ -16,6 +16,7 @@
 #define private public
 #include "image_fwk_convert_rgb2yuvp010_fuzzer.h"
 
+#include <fuzzer/FuzzedDataProvider.h>
 #include <cstdint>
 #include <memory>
 #include <string>
@@ -38,7 +39,8 @@
 
 namespace OHOS {
 namespace Media {
-
+FuzzedDataProvider *FDP;
+constexpr uint32_t OPT_SIZE = 80;
 static const std::string IMAGE_INPUT_JPG_PATH1 = "/data/local/tmp/test.jpg";
 
 void RgbConvertToYuvP010(PixelFormat &srcFormat, PixelFormat &destFormat)
@@ -233,16 +235,51 @@ void RgbToYuvP010ByPixelMapFuzzTest001()
 /* Fuzzer entry point */
 extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
 {
-    /* Run your code on data */
+    if (size < OPT_SIZE) {
+        return 0;
+    }
+    FuzzedDataProvider fdp(data + size - OPT_SIZE, OPT_SIZE);
     static const std::string pathName = "/data/local/tmp/test.jpg";
     int fd = open(pathName.c_str(), O_RDWR | O_CREAT, S_IRUSR | S_IWUSR);
-    if (write(fd, data, size) != (ssize_t)size) {
+    if (write(fd, data, size - OPT_SIZE) != (ssize_t)(size - OPT_SIZE)) {
         close(fd);
-        IMAGE_LOGE("Fuzzer copy data fail");
         return 0;
     }
     close(fd);
-    OHOS::Media::RgbToYuvP010FuzzTest001();
-    OHOS::Media::RgbToYuvP010ByPixelMapFuzzTest001();
+    uint8_t action = fdp.ConsumeIntegral<uint8_t>() % 10;
+    switch (action) {
+        case 0:
+            OHOS::Media::RGB565ToNV12P010FuzzTest001();
+            break;
+        case 1:
+            OHOS::Media::RGB565ToNV21P010FuzzTest001();
+            break;
+        case 2:
+            OHOS::Media::BGRAToNV12P010FuzzTest001();
+            break;
+        case 3:
+            OHOS::Media::BGRAToNV21P010FuzzTest001();
+            break;
+        case 4:
+            OHOS::Media::RGBAToNV12P010FuzzTest001();
+            break;
+        case 5:
+            OHOS::Media::RGBAToNV21P010FuzzTest001();
+            break;
+        case 6:
+            OHOS::Media::RGBToNV12P010FuzzTest001();
+            break;
+        case 7:
+            OHOS::Media::RGBToNV21P010FuzzTest001();
+            break;
+        case 8:
+            OHOS::Media::RGBAF16ToNV12P010FuzzTest001();
+            break;
+        case 9:
+            OHOS::Media::RGBAF16ToNV21P010FuzzTest001();
+            break;
+        default:
+            break;
+    }
     return 0;
 }

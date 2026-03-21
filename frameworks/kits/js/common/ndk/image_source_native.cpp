@@ -1305,31 +1305,6 @@ Image_ErrorCode OH_ImageSourceNative_ModifyImageProperty(OH_ImageSourceNative *s
     return IMAGE_BAD_PARAMETER;
 }
 
-static std::string IntArrayToString(const std::vector<int32_t> &intArray)
-{
-    std::ostringstream oss;
-    size_t arrayLength = intArray.size();
-    for (size_t i = 0; i < arrayLength; i++) {
-        if (i > 0) {
-            oss << ",";
-        }
-        oss << intArray[i];
-    }
-    return oss.str();
-}
-
-static std::string DoubleArrayToString(const std::vector<double> &doubleArray)
-{
-    std::ostringstream oss;
-    for (size_t i = 0; i < doubleArray.size(); i++) {
-        if (i > 0) {
-            oss << ",";
-        }
-        oss << doubleArray[i];
-    }
-    return oss.str();
-}
-
 Image_ErrorCode OH_ImageSourceNative_ModifyImagePropertyShort(OH_ImageSourceNative *source, Image_String *key,
     uint16_t value)
 {
@@ -1447,7 +1422,7 @@ Image_ErrorCode OH_ImageSourceNative_ModifyImagePropertyIntArray(OH_ImageSourceN
     if (size > MAX_INT_ARRAY_SIZE) {
         return IMAGE_SOURCE_INVALID_PARAMETER;
     }
-    std::string valueString = IntArrayToString(std::vector<int32_t>(value, value + size));
+    std::string valueString = ImageUtils::ArrayToString(std::vector<int64_t>(value, value + size));
     if (keyString == "GPSVersionID") {
         std::vector<int64_t> intArray(value, value + size);
         std::ostringstream oss;
@@ -1510,7 +1485,7 @@ static std::string FormatTimePart(double value)
 static std::string HandleDoubleArray(const std::string& keyStr, std::vector<double> doubleArray)
 {
     if (keyStr != "GPSTimeStamp" || doubleArray.size() < REQUIRED_GPS_COMPONENTS) {
-        return DoubleArrayToString(doubleArray);
+        return ImageUtils::ArrayToString(doubleArray);
     }
 
     return FormatTimePart(doubleArray[0]) + ":" +FormatTimePart(doubleArray[1]) + ":" +
@@ -1759,7 +1734,7 @@ Image_ErrorCode OH_ImageSourceNative_ReadImageMetadataByType(OH_ImageSourceNativ
 }
 
 MIDK_EXPORT
-Image_ErrorCode OH_ImageSourceNative_CreateImageRawData(OH_ImageSourceNative *source, OH_ImageRawData **rawData)
+Image_ErrorCode OH_ImageSourceNative_CreateImageRawData(const OH_ImageSourceNative *source, OH_ImageRawData **rawData)
 {
     if (source == nullptr || source->GetInnerImageSource() == nullptr || rawData == nullptr) {
         return IMAGE_SOURCE_INVALID_PARAMETER;
@@ -1776,19 +1751,20 @@ Image_ErrorCode OH_ImageSourceNative_CreateImageRawData(OH_ImageSourceNative *so
 }
 
 MIDK_EXPORT
-Image_ErrorCode OH_ImageSourceNative_GetBufferFromRawData(OH_ImageRawData *rawData,
+Image_ErrorCode OH_ImageSourceNative_GetBufferFromRawData(const OH_ImageRawData *rawData,
     uint8_t **data, size_t *length)
 {
     if (rawData == nullptr || data == nullptr || length == nullptr) {
         return IMAGE_SOURCE_INVALID_PARAMETER;
     }
-    *data = rawData->GetData();
+    auto *mutableRawData = const_cast<OH_ImageRawData*>(rawData);
+    *data = mutableRawData->GetData();
     *length = rawData->GetSize();
     return IMAGE_SUCCESS;
 }
 
 MIDK_EXPORT
-Image_ErrorCode OH_ImageSourceNative_GetBitsPerPixelFromRawData(OH_ImageRawData *rawData, uint8_t *bitsPerPixel)
+Image_ErrorCode OH_ImageSourceNative_GetBitsPerPixelFromRawData(const OH_ImageRawData *rawData, uint8_t *bitsPerPixel)
 {
     if (rawData == nullptr || bitsPerPixel == nullptr) {
         return IMAGE_SOURCE_INVALID_PARAMETER;
@@ -1798,7 +1774,7 @@ Image_ErrorCode OH_ImageSourceNative_GetBitsPerPixelFromRawData(OH_ImageRawData 
 }
 
 MIDK_EXPORT
-Image_ErrorCode OH_ImageSourceNative_ReleaseRawData(OH_ImageRawData *rawData)
+Image_ErrorCode OH_ImageSourceNative_DestroyImageRawData(OH_ImageRawData *rawData)
 {
     if (rawData == nullptr) {
         return IMAGE_SOURCE_INVALID_PARAMETER;

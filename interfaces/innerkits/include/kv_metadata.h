@@ -49,8 +49,10 @@ public:
     }
     static bool IsFragmentMetadataKey(const std::string& key);
     static bool IsGifMetadataKey(const std::string& key);
+    static bool IsWebPMetadataKey(const std::string& key);
     static std::set<std::string> GetFragmentMetadataKeys();
     static std::set<std::string> GetGifMetadataKeys();
+    static std::set<std::string> GetWebPMetadataKeys();
     virtual uint32_t GetBlob(uint32_t bufferSize, uint8_t *dst) override;
     virtual uint32_t SetBlob(const uint8_t *source, const uint32_t bufferSize) override;
     virtual uint32_t GetBlobSize() override;

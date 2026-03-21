@@ -42,6 +42,12 @@ namespace Media {
 
 #define HEIFS_METADATA_KEY_DELAY_TIME "HeifsDelayTime"
 
+#define WEBP_METADATA_KEY_CANVAS_PIXEL_HEIGHT "WebPCanvasHeight"
+#define WEBP_METADATA_KEY_CANVAS_PIXEL_WIDTH "WebPCanvasWidth"
+#define WEBP_METADATA_KEY_DELAY_TIME "WebPDelayTime"
+#define WEBP_METADATA_KEY_UNCLAMPED_DELAY_TIME "WebPUnclampedDelayTime"
+#define WEBP_METADATA_KEY_LOOP_COUNT "WebPLoopCount"
+
 // There is no definite tag name for gainmap and thumbnail
 #define AUXILIARY_TAG_GAINMAP ""
 #define AUXILIARY_TAG_DEPTH_MAP_BACK "DepthP"
@@ -448,6 +454,17 @@ enum class AuxiliaryPictureType {
     THUMBNAIL = 10,
 };
 
+struct DownSamplingScaleFactor {
+    float widthScaleFactor = 1;
+    float heightScaleFactor = 1;
+};
+
+struct AuxiliaryPictureDecodeInfo {
+    DownSamplingScaleFactor downSamplingScaleFactor;
+    AuxiliaryPictureType type = AuxiliaryPictureType::NONE;
+    std::string imageType = "";
+};
+
 struct AuxiliaryPictureInfo {
     AuxiliaryPictureType auxiliaryPictureType = AuxiliaryPictureType::NONE;
     Size size;
@@ -468,6 +485,7 @@ enum class MetadataType {
     UNKNOWN = 0,
     HEIFS = 15,
     DNG = 16,
+    WEBP = 17,
 };
 
 static const std::map<MetadataType, std::string> BLOB_METADATA_TAG_MAP = {
@@ -482,6 +500,8 @@ struct DecodingOptionsForPicture {
     std::set<MetadataType> desiredMetadatas;
     PixelFormat desiredPixelFormat = PixelFormat::RGBA_8888;
     AllocatorType allocatorType = AllocatorType::DMA_ALLOC;
+    bool needsDecodeDfxData = false;
+    Size desiredSizeForMainPixelMap;
 };
 
 struct DecodingOptionsForThumbnail {
@@ -563,6 +583,7 @@ enum class NapiMetadataType {
     FRAGMENT_METADATA = 4,
     GIF_METADATA = 5,
     DNG_METADATA = 6,
+    WEBP_METADATA = 7,
 };
 
 enum class XMPTagType: int32_t {

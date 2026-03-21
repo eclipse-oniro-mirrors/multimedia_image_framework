@@ -340,6 +340,18 @@ const std::map<std::string, PropertyValueType>& ExifMetadata::GetDngMetadataMap(
     return dngMetadataMap;
 }
 
+const std::map<std::string, PropertyValueType>& ExifMetadata::GetWebPMetadataMap()
+{
+    static const std::map<std::string, PropertyValueType> webpMetadataMap = {
+        {"WebPCanvasWidth", PropertyValueType::INT},
+        {"WebPCanvasHeight", PropertyValueType::INT},
+        {"WebPDelayTime", PropertyValueType::INT},
+        {"WebPUnclampedDelayTime", PropertyValueType::INT},
+        {"WebPLoopCount", PropertyValueType::INT},
+    };
+    return webpMetadataMap;
+}
+
 const std::map<NapiMetadataType, std::map<std::string, PropertyValueType>>& ExifMetadata::GetPropertyTypeMapping()
 {
     static const std::map<NapiMetadataType, std::map<std::string, PropertyValueType>> propertyTypeMap = {
@@ -349,6 +361,7 @@ const std::map<NapiMetadataType, std::map<std::string, PropertyValueType>>& Exif
         {NapiMetadataType::FRAGMENT_METADATA, GetFragmentMetadataMap()},
         {NapiMetadataType::GIF_METADATA, GetGifMetadataMap()},
         {NapiMetadataType::DNG_METADATA, GetDngMetadataMap()},
+        {NapiMetadataType::WEBP_METADATA, GetWebPMetadataMap()},
     };
     return propertyTypeMap;
 }
@@ -633,6 +646,13 @@ const std::unordered_map<std::string, std::string>& ExifMetadata::GetPropertyKey
         {"newRawImageDigest", "NewRawImageDigest"},
         {"rawToPreviewGain", "RawToPreviewGain"},
         {"defaultUserCrop", "DefaultUserCrop"},
+
+         // ============ WebP ============
+        {"canvasWidth", "WebPCanvasWidth"},
+        {"canvasHeight", "WebPCanvasHeight"},
+        {"delayTime", "WebPDelayTime"},
+        {"unclampedDelayTime", "WebPUnclampedDelayTime"},
+        {"loopCount", "WebPLoopCount"},
     };
     return propertyKeyMap;
 }
@@ -795,6 +815,9 @@ static void GetRationalValue(EntryBasicInfo info, MetadataValue &result)
             if (vSrat.denominator) {
                 result.doubleArrayValue.push_back(static_cast<double>(vSrat.numerator) / vSrat.denominator);
             }
+        } else {
+            float fValue = exif_get_float(dataPtr, info.byteOrder);
+            result.doubleArrayValue.push_back(static_cast<double>(fValue));
         }
     }
 }
@@ -845,6 +868,7 @@ static void GetValueByExifType(ExifEntry *entry, MetadataValue &result, unsigned
             break;
         case EXIF_FORMAT_RATIONAL:
         case EXIF_FORMAT_SRATIONAL:
+        case EXIF_FORMAT_FLOAT:
             GetRationalValue(info, result);
             break;
         case EXIF_FORMAT_UNDEFINED:
@@ -854,7 +878,6 @@ static void GetValueByExifType(ExifEntry *entry, MetadataValue &result, unsigned
             GetStringValueFromExifEntry(entry, result, tagValueSize);
             break;
         case EXIF_FORMAT_DOUBLE:
-        case EXIF_FORMAT_FLOAT:
             GetUnsupportedFormatValue(entry, result);
             break;
         default:
@@ -899,6 +922,7 @@ static void ParseEntryByFormat(MnoteHuaweiEntry *entry, MetadataValue &result, c
             break;
         case EXIF_FORMAT_RATIONAL:
         case EXIF_FORMAT_SRATIONAL:
+        case EXIF_FORMAT_FLOAT:
             GetRationalValue(info, result);
             break;
         case EXIF_FORMAT_UNDEFINED:
@@ -1556,7 +1580,7 @@ bool ExifMetadata::SetValue(const std::string &key, const std::string &value)
         IMAGE_LOGE("Set empty value.");
         return false;
     }
-    auto result = ExifMetadatFormatter::Format(key, value);
+    auto result = ExifMetadatFormatter::Format(key, value, isSystemApi_);
     if (result.first) {
         IMAGE_LOGE("Failed to validate and convert value for key: %{public}s", key.c_str());
         return false;

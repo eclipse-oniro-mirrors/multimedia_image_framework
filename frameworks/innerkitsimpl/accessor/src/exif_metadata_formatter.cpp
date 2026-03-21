@@ -239,6 +239,17 @@ const static std::set<std::string> READ_ONLY_KEYS = {
     "HwMnoteWindSnapshotMode", "HwMnoteFocusModeExif",
 };
 
+const static std::set<std::string> SYSTEM_ONLY_KEYS = {
+    "HwMnoteFaceBeautyVersion",
+    "HwMnoteFaceBeautyIsDetected",
+    "HwMnoteFaceBeautyFaceNum",
+    "HwMnoteFaceBeautyFaceInfo",
+    "HwMnoteFaceBeautyFaceBlurInfo",
+    "HwMnoteFaceBeautyLux",
+    "HwMnoteFaceBeautyExposureTime",
+    "HwMnoteFaceBeautyISO",
+};
+
 // Orientation, tag 0x0112
 constexpr TagDetails exifOrientation[] = {
     {1, "Top-left"},     {2, "Top-right"},   {3, "Bottom-right"},
@@ -812,10 +823,47 @@ void ExifMetadatFormatter::InitValueFormatConvertConfig()
         {"HwMnoteXtStyleAlgoVideoEnable", singleInt_},
         {"HwMnoteIsApertureEditSupported", singleInt_},
         {"HwMnoteAnnotationEdit", singleInt_},
+        {"HwMnoteXmageColorMode", singleInt_},
+        {"HwMnoteCloudEnhancementMode", singleInt_},
+        {"HwMnoteWindSnapshotMode", singleInt_},
+        {"HwMnoteSceneVersion", singleInt_},
+        {"HwMnoteFaceVersion", singleInt_},
+        {"HwMnoteFaceMouthCenter", singleInt_},
+        {"HwMnoteFaceCount", singleInt_},
+        {"HwMnoteFaceConf", singleInt_},
+        {"HwMnoteFaceRect", singleInt_},
+        {"HwMnoteFaceReyeCenter", singleInt_},
+        {"HwMnoteFaceSmileScore", singleInt_},
+        {"HwMnoteFaceLeyeCenter", singleInt_},
+        {"HwMnoteCaptureMode", singleInt_},
+        {"HwMnoteBurstNumber", singleInt_},
+        {"HwMnoteFrontCamera", singleInt_},
+        {"HwMnotePhysicalAperture", singleInt_},
+        {"HwMnoteFocusMode", singleInt_},
+        {"HwMnoteRollAngle", singleInt_},
+        {"HwMnotePitchAngle", singleInt_},
+        {"HwMnoteSceneFoodConf", singleInt_},
+        {"HwMnoteSceneStageConf", singleInt_},
+        {"HwMnoteSceneBlueSkyConf", singleInt_},
+        {"HwMnoteSceneGreenPlantConf", singleInt_},
+        {"HwMnoteSceneBeachConf", singleInt_},
+        {"HwMnoteSceneSnowConf", singleInt_},
+        {"HwMnoteSceneSunsetConf", singleInt_},
+        {"HwMnoteSceneFlowersConf", singleInt_},
+        {"HwMnoteSceneNightConf", singleInt_},
+        {"HwMnoteSceneTextConf", singleInt_},
         {"HwMnoteXtStyleVignetting", singleDecimalToRational_},
         {"HwMnoteXtStyleNoise", singleDecimalToRational_},
         {"HwMnoteXtStyleVignetting", singleRational_},
         {"HwMnoteXtStyleNoise", singleRational_},
+        {"HwMnoteFaceBeautyVersion", singleInt_},
+        {"HwMnoteFaceBeautyIsDetected", singleInt_},
+        {"HwMnoteFaceBeautyFaceNum", singleInt_},
+        {"HwMnoteFaceBeautyFaceInfo", faceInfo_},
+        {"HwMnoteFaceBeautyFaceBlurInfo", faceBlurInfo_},
+        {"HwMnoteFaceBeautyLux", singleInt_},
+        {"HwMnoteFaceBeautyExposureTime", singleInt_},
+        {"HwMnoteFaceBeautyISO", singleInt_},
     };
 }
 
@@ -876,6 +924,8 @@ const auto DATE_REGEX = R"(^[0-9]{4}:(0[1-9]|1[012]):(0[1-9]|[12][0-9]|3[01])$)"
 const auto VERSION_REGEX = R"(^[0-9]+\.[0-9]+$)";
 const auto CHANNEL_REGEX = R"(^[-YCbCrRGB]+(\s[-YCbCrRGB]+)+$)";
 const auto SENSITIVE_REGEX = R"(gps|lati|longi)";
+const auto FACE_INFO_REGEX = R"(^(\s*-?\d+(\.\d+)?)(\s*[\s,]\s*(-?\d+(\.\d+)?)){0,99}\s*$)";
+const auto FACE_BLUR_INFO_REGEX = R"(^\d+(?:(?:, ?| )\d+){0,9}$)";
 
 /*
  * validate the key is in value range array.
@@ -1231,6 +1281,57 @@ bool ExifMetadatFormatter::ValidRegexWithChannelFormat(std::string &value, const
     return true;
 }
 
+bool ExifMetadatFormatter::ValidRegexWithDoubleFormat(std::string &value, const std::string &regex)
+{
+    if (!ValidRegex(value, regex)) {
+        return false;
+    }
+
+    ReplaceAsSpace(value, COMMA_REGEX);
+    return true;
+}
+
+bool ExifMetadatFormatter::ValidRegexWithIntFormat(std::string &value, const std::string &regex)
+{
+    if (!ValidRegex(value, regex)) {
+        return false;
+    }
+    enum class SeparatorType { NONE, COMMA, COMMA_SPACE, SPACE };
+    SeparatorType detectedType = SeparatorType::NONE;
+    size_t pos = 0;
+    while (pos < value.size()) {
+        pos = value.find_first_not_of("0123456789", pos);
+        if (pos == std::string::npos) break;
+        char c = value[pos];
+        SeparatorType currentType;
+        size_t skipCount = 1;
+        if (c == ',') {
+            if (pos + 1 < value.size() && value[pos + 1] == ' ') {
+                currentType = SeparatorType::COMMA_SPACE;
+                skipCount = CONSTANT_2;
+            } else {
+                currentType = SeparatorType::COMMA;
+            }
+        } else if (c == ' ') {
+            currentType = SeparatorType::SPACE;
+        } else {
+            return false;
+        }
+        size_t nextPos = pos + skipCount;
+        if (nextPos >= value.size() || !std::isdigit(value[nextPos])) {
+            return false;
+        }
+        
+        if (detectedType == SeparatorType::NONE) {
+            detectedType = currentType;
+        } else if (detectedType != currentType) {
+            return false;
+        }
+        pos = nextPos;
+    }
+    return true;
+}
+
 void ExifMetadatFormatter::InitDelegates()
 {
     singleInt_ = std::make_pair(ValidRegex, SINGLE_INT_REGEX);
@@ -1325,6 +1426,10 @@ void ExifMetadatFormatter::InitDelegates()
     version_ = std::make_pair(ValidRegexWithVersionFormat, VERSION_REGEX);
 
     channel_ = std::make_pair(ValidRegexWithChannelFormat, CHANNEL_REGEX);
+
+    faceInfo_ = std::make_pair(ValidRegexWithDoubleFormat, FACE_INFO_REGEX);
+
+    faceBlurInfo_ = std::make_pair(ValidRegexWithIntFormat, FACE_BLUR_INFO_REGEX);
 }
 
 bool ExifMetadatFormatter::ValidRegexWithGpsOneRationalFormat(std::string &value, const std::string &regex)
@@ -1518,7 +1623,8 @@ bool ExifMetadatFormatter::IsModifyAllowed(const std::string &keyName)
     return (it != READ_WRITE_KEYS.end());
 }
 
-std::pair<int32_t, std::string> ExifMetadatFormatter::Format(const std::string &keyName, const std::string &value)
+std::pair<int32_t, std::string> ExifMetadatFormatter::Format(const std::string &keyName, const std::string &value,
+    bool isSystemApi)
 {
     if (IsSensitiveInfo(keyName)) {
         IMAGE_LOGD("Processing. Key: %{public}s.", keyName.c_str());
@@ -1532,7 +1638,7 @@ std::pair<int32_t, std::string> ExifMetadatFormatter::Format(const std::string &
         return std::make_pair(Media::ERR_MEDIA_WRITE_PARCEL_FAIL, "");
     }
 
-    if (!ExifMetadatFormatter::IsModifyAllowed(keyName)) {
+    if (!isSystemApi && !ExifMetadatFormatter::IsModifyAllowed(keyName)) {
         IMAGE_LOGD("Key is not allowed to modify.");
         return std::make_pair(Media::ERR_MEDIA_WRITE_PARCEL_FAIL, "");
     }
@@ -1638,14 +1744,14 @@ static bool IsUint16(const std::string &s)
 }
 
 // exif validation portal
-int32_t ExifMetadatFormatter::Validate(const std::string &keyName, const std::string &value)
+int32_t ExifMetadatFormatter::Validate(const std::string &keyName, const std::string &value, bool isSystemApi)
 {
     if (IsSensitiveInfo(keyName)) {
         IMAGE_LOGD("Validating. Key: %{public}s", keyName.c_str());
     } else {
         IMAGE_LOGD("Validating. Key: %{public}s, Value: %{public}s.", keyName.c_str(), value.c_str());
     }
-    auto result = ExifMetadatFormatter::Format(keyName, value);
+    auto result = ExifMetadatFormatter::Format(keyName, value, isSystemApi);
     if (result.first) {
         IMAGE_LOGE("Validating Error %{public}d", result.first);
         return result.first;

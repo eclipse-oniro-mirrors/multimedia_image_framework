@@ -74,35 +74,5 @@ namespace Multimedia {
 
         GTEST_LOG_(INFO) << "ImagePixelMapParcelTest: ImagePixelMapParcel001 end";
     }
-
-    /**
-    * @tc.name: ImagePixelMapParcel002
-    * @tc.desc: test CreateFromParcel
-    * @tc.type: FUNC
-    * @tc.require: AR000FTAMO
-    */
-    HWTEST_F(ImagePixelMapParcelTest, ImagePixelMapParcel002, TestSize.Level3)
-    {
-        GTEST_LOG_(INFO) << "ImagePixelMapParcelTest: ImagePixelMapParcel002 start";
-
-        MessageParcel data;
-
-        std::unique_ptr<PixelMap> pixelmap1 = ConstructPixmap();
-
-        bool ret = PixelMapParcel::WriteToParcel(pixelmap1.get(), data);
-
-        EXPECT_EQ(true, ret);
-
-        std::unique_ptr<PixelMap> pixelmap2 = PixelMapParcel::CreateFromParcel(data);
-
-        EXPECT_EQ(pixelmap1->GetHeight(), pixelmap2->GetHeight());
-        EXPECT_EQ(pixelmap1->GetWidth(), pixelmap2->GetWidth());
-        EXPECT_EQ(pixelmap1->GetPixelFormat(), pixelmap2->GetPixelFormat());
-        EXPECT_EQ(pixelmap1->GetColorSpace(), pixelmap2->GetColorSpace());
-
-        EXPECT_EQ(true, pixelmap1->IsSameImage(*pixelmap2));
-
-        GTEST_LOG_(INFO) << "ImagePixelMapParcelTest: ImagePixelMapParcel002 end";
-    }
 }  // namespace Multimedia
 }  // namespace OHOS

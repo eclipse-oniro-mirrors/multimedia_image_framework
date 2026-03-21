@@ -87,7 +87,6 @@ ohos_shared_library("jpegplugin") {
     deps += skia_platform
   } else {
     defines = [ "DUAL_ADAPTER" ]
-    DUAL_ADAPTER = true
     sources += [ "src/jpeg_encoder.cpp" ]
     deps = [
       "${image_subsystem}/frameworks/innerkitsimpl/utils:image_utils",
@@ -104,15 +103,8 @@ ohos_shared_library("jpegplugin") {
       "libexif:libexif",
       "libjpeg-turbo:turbojpeg",
       "skia:skia_canvaskit",
+      "skia:libjpegm133",
     ]
-    if (DUAL_ADAPTER) {
-    } else {
-      if (image_use_new_skia) {
-        external_deps += [ "skia:libjpegm133" ]
-      } else {
-        external_deps += [ "skia:libjpeg" ]
-      }
-    }
     if (image_use_new_skia) {
       defines += [ "USE_M133_SKIA" ]
     }

@@ -152,6 +152,7 @@ const static string TAG_ORIENTATION_INT = "OrientationInt";
 const static string IMAGE_DELAY_TIME = "DelayTime";
 const static string IMAGE_DISPOSAL_TYPE = "DisposalType";
 const static string IMAGE_LOOP_COUNT = "GIFLoopCount";
+const static string WEBP_LOOP_COUNT = "WebPLoopCount";
 const static std::string HW_MNOTE_TAG_HEADER = "HwMnote";
 const static std::string HW_MNOTE_CAPTURE_MODE = "HwMnoteCaptureMode";
 const static std::string HW_MNOTE_PHYSICAL_APERTURE = "HwMnotePhysicalAperture";
@@ -784,7 +785,7 @@ uint32_t ExtDecoder::ExtractHeifRegion(const PixelDecodeOptions &opts)
             gridInfo.tileHeight != static_cast<uint32_t>(info_.height())) {
             heifGridRegionInfo_.isGridType = true;
             heifGridRegionInfo_.tileWidth = static_cast<int32_t>(gridInfo.tileWidth);
-            heifGridRegionInfo_.tileHeight = static_cast<uint32_t>(gridInfo.tileHeight);
+            heifGridRegionInfo_.tileHeight = static_cast<int32_t>(gridInfo.tileHeight);
         }
         PixelDecodeOptions heifOpts = opts;
         if (!IsHeifValidCrop(heifOpts.CropRect, info_, static_cast<int32_t>(gridInfo.cols),
@@ -826,11 +827,7 @@ bool ExtDecoder::IsProgressiveJpeg()
 
 uint32_t ExtDecoder::CheckDecodeOptions(uint32_t index, const PixelDecodeOptions &opts)
 {
-    bool cond = ImageUtils::CheckMulOverflow(dstInfo_.width(), dstInfo_.height(), dstInfo_.bytesPerPixel());
-    CHECK_ERROR_RETURN_RET_LOG(cond, ERR_IMAGE_INVALID_PARAMETER,
-        "SetDecodeOptions failed, width:%{public}d, height:%{public}d is too large",
-        dstInfo_.width(), dstInfo_.height());
-    cond = ExtractHeifRegion(opts) != SUCCESS;
+    bool cond = ExtractHeifRegion(opts) != SUCCESS;
     CHECK_ERROR_RETURN_RET(cond, ERR_IMAGE_INVALID_PARAMETER);
     IMAGE_LOGD("%{public}s IN, dstSubset_: xy [%{public}d x %{public}d] right,bottom: [%{public}d x %{public}d]",
         __func__, dstSubset_.left(), dstSubset_.top(), dstSubset_.right(), dstSubset_.bottom());
@@ -1462,10 +1459,8 @@ bool ExtDecoder::IsSupportHeifHardwareDecode(const PixelDecodeOptions &opts)
 {
 #ifdef HEIF_HW_DECODE_ENABLE
     auto decoder = reinterpret_cast<HeifDecoderImpl*>(codec_->getHeifContext());
-    if (decoder == nullptr) {
-        IMAGE_LOGE("Decode HeifDecoder is nullptr");
-        return false;
-    }
+    bool cond = decoder == nullptr;
+    CHECK_ERROR_RETURN_RET_LOG(cond, false, "Decode Heifdecoder is nullptr");
     GridInfo gridInfo = decoder->GetGridInfo();
     if (!ImageSystemProperties::GetHeifHardwareDecodeEnabled()) {
         return false;
@@ -2718,15 +2713,22 @@ static uint32_t GetDisposalType(SkCodec * codec, uint32_t index, int32_t &value)
 
 static uint32_t GetLoopCount(SkCodec *codec, int32_t &value)
 {
-    if (codec->getEncodedFormat() != SkEncodedImageFormat::kGIF) {
+    SkEncodedImageFormat format = codec->getEncodedFormat();
+    if (format != SkEncodedImageFormat::kGIF && format != SkEncodedImageFormat::kWEBP) {
         IMAGE_LOGE("[GetLoopCount] Should not get loop count in %{public}d", codec->getEncodedFormat());
         return ERR_MEDIA_INVALID_PARAM;
     }
     auto count = codec->getRepetitionCount();
-    bool cond = count == LOOP_COUNT_INFINITE || count <= SK_REPETITION_COUNT_ERROR_VALUE;
-    CHECK_ERROR_RETURN_RET_LOG(cond, ERR_IMAGE_SOURCE_DATA, "[GetLoopCount] getRepetitionCount error");
-    if (count == SK_REPETITION_COUNT_INFINITE) {
-        count = LOOP_COUNT_INFINITE;
+    if (format == SkEncodedImageFormat::kGIF) {
+        bool cond = count == LOOP_COUNT_INFINITE || count <= SK_REPETITION_COUNT_ERROR_VALUE;
+        CHECK_ERROR_RETURN_RET_LOG(cond, ERR_IMAGE_SOURCE_DATA, "[GetLoopCount] getRepetitionCount error");
+        if (count == SK_REPETITION_COUNT_INFINITE) {
+            count = LOOP_COUNT_INFINITE;
+        }
+    } else if (format == SkEncodedImageFormat::kWEBP) {
+        bool cond = count == SK_REPETITION_COUNT_ERROR_VALUE || codec->getFrameCount() == NUM_1;
+        CHECK_ERROR_RETURN_RET_LOG(cond, ERR_IMAGE_SOURCE_DATA, "[GetLoopCount] getRepetitionCount error");
+        count++;
     }
     value = static_cast<int>(count);
     return SUCCESS;
@@ -2745,7 +2747,7 @@ uint32_t ExtDecoder::GetImagePropertyInt(uint32_t index, const std::string &key,
     if (IMAGE_DISPOSAL_TYPE.compare(key) == ZERO) {
         return GetDisposalType(codec_.get(), index, value);
     }
-    if (IMAGE_LOOP_COUNT.compare(key) == ZERO) {
+    if (IMAGE_LOOP_COUNT.compare(key) == ZERO || WEBP_LOOP_COUNT.compare(key) == ZERO) {
         return GetLoopCount(codec_.get(), value);
     }
     // There can add some not need exif property

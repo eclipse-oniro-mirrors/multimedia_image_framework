@@ -89,6 +89,7 @@ static std::vector<struct ImageEnum> metadataTypeMap = {
     {"GIF_METADATA", static_cast<uint32_t>(MetadataType::GIF), ""},
     {"HEIFS_METADATA", static_cast<uint32_t>(MetadataType::HEIFS), ""},
     {"DNG_METADATA", static_cast<uint32_t>(MetadataType::DNG), ""},
+    {"WEBP_METADATA", static_cast<uint32_t>(MetadataType::WEBP), ""},
 };
 
 static std::vector<struct ImageEnum> gifPropertyKeyMap = {
@@ -98,6 +99,14 @@ static std::vector<struct ImageEnum> gifPropertyKeyMap = {
 
 static std::vector<struct ImageEnum> heifsPropertyKeyMap = {
     {"HEIFS_DELAY_TIME", 0, "HeifsDelayTime"},
+};
+
+static std::vector<struct ImageEnum> webpPropertyKeyMap = {
+    {"CANVAS_HEIGHT", 0, "WebPCanvasHeight"},
+    {"CANVAS_WIDTH", 0, "WebPCanvasWidth"},
+    {"DELAY_TIME", 0, "WebPDelayTime"},
+    {"UNCLAMPED_DELAY_TIME", 0, "WebPUnclampedDelayTime"},
+    {"LOOP_COUNT", 0, "WebPLoopCount"},
 };
 
 struct NapiValues {
@@ -236,6 +245,8 @@ napi_value PictureNapi::Init(napi_env env, napi_value exports)
             ImageNapiUtils::CreateEnumTypeObject(env, napi_string, gifPropertyKeyMap)),
         DECLARE_NAPI_PROPERTY("HeifsPropertyKey",
             ImageNapiUtils::CreateEnumTypeObject(env, napi_string, heifsPropertyKeyMap)),
+        DECLARE_NAPI_PROPERTY("WebPPropertyKey",
+            ImageNapiUtils::CreateEnumTypeObject(env, napi_string, webpPropertyKeyMap)),
     };
 
     napi_value constructor = nullptr;

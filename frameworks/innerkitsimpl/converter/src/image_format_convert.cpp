@@ -241,27 +241,34 @@ static const std::set<std::pair<PixelFormat, PixelFormat>> conversions = {
     {PixelFormat::RGBA_F16, PixelFormat::YCRCB_P010}
 };
 
-static void CalcRGBStride(PixelFormat format, uint32_t width, uint32_t &stride)
+static bool CalcRGBStride(PixelFormat format, uint32_t width, uint32_t &stride)
 {
+    uint32_t pixelBytes = 0;
     switch (format) {
         case PixelFormat::RGB_565:
-            stride = static_cast<uint32_t>(width * BYTES_PER_PIXEL_RGB565);
+            pixelBytes = BYTES_PER_PIXEL_RGB565;
             break;
         case PixelFormat::RGBA_8888:
-            stride = static_cast<uint32_t>(width * BYTES_PER_PIXEL_RGBA);
+            pixelBytes = BYTES_PER_PIXEL_RGBA;
             break;
         case PixelFormat::BGRA_8888:
-            stride = static_cast<uint32_t>(width * BYTES_PER_PIXEL_BGRA);
+            pixelBytes = BYTES_PER_PIXEL_BGRA;
             break;
         case PixelFormat::RGB_888:
-            stride = static_cast<uint32_t>(width * BYTES_PER_PIXEL_RGB);
+            pixelBytes = BYTES_PER_PIXEL_RGB;
             break;
         case PixelFormat::RGBA_F16:
-            stride = static_cast<uint32_t>(width * STRIDES_PER_PLANE);
+            pixelBytes = STRIDES_PER_PLANE;
             break;
         default:
-            stride = static_cast<uint32_t>(width * BYTES_PER_PIXEL_RGBA);
+            pixelBytes = BYTES_PER_PIXEL_RGBA;
     }
+    if (width > UINT32_MAX / pixelBytes) {
+        IMAGE_LOGE("CalcRGBStride error: overflow! format=%{public}d, width=%{public}u", format, width);
+        return false;
+    }
+    stride = width * pixelBytes;
+    return true;
 }
 
 static bool IsYUVConvert(PixelFormat srcFormat)
@@ -329,7 +336,11 @@ uint32_t ImageFormatConvert::RGBConvert(const OHOS::Media::ConvertDataInfo &srcD
     if (srcDataInfo.stride != 0) {
         srcStride = srcDataInfo.stride;
     } else {
-        CalcRGBStride(srcDataInfo.pixelFormat, srcDataInfo.imageSize.width, srcStride);
+        if (!CalcRGBStride(srcDataInfo.pixelFormat, srcDataInfo.imageSize.width, srcStride)) {
+            IMAGE_LOGE("RGBConvert CalcRGBStride failed");
+            m->Release();
+            return ERR_IMAGE_INVALID_PARAMETER;
+        }
     }
     RGBDataInfo rgbDataInfo = {srcDataInfo.imageSize.width, srcDataInfo.imageSize.height, srcStride};
     if (!cvtFunc(srcDataInfo.buffer, rgbDataInfo, destInfo, srcDataInfo.colorSpace)) {
@@ -540,7 +551,10 @@ std::unique_ptr<AbsMemory> ImageFormatConvert::CreateMemory(PixelFormat pixelFor
         strides = {size.width, (size.width + 1) / NUM_2 * NUM_2, 0, size.width * size.height};
     } else {
         uint32_t stride = 0;
-        CalcRGBStride(pixelFormat, size.width, stride);
+        if (!CalcRGBStride(pixelFormat, size.width, stride)) {
+            IMAGE_LOGE("CreateMemory CalcRGBStride failed");
+            return nullptr;
+        }
         strides = {stride, 0, 0, 0};
     }
     MemoryData memoryData = {nullptr, pictureSize, "PixelConvert", size, pixelFormat};

@@ -16,6 +16,8 @@
 #include "pixel_map_taihe_ani.h"
 
 #include <ani_signature_builder.h>
+#include <mutex>
+#include "image_log.h"
 #include "pixel_map_taihe.h"
 
 namespace OHOS {
@@ -29,9 +31,12 @@ ani_function PixelMapTaiheAni::gCreatePixelMapByPtr{};
 ani_method PixelMapTaiheAni::gGetImplPtr{};
 bool PixelMapTaiheAni::createPixelMapByPtrInited = false;
 bool PixelMapTaiheAni::getImplPtrInited = false;
+std::mutex PixelMapTaiheAni::createPixelMapByPtrMutex;
+std::mutex PixelMapTaiheAni::getImplPtrMutex;
 
 bool PixelMapTaiheAni::InitCreatePixelMapByPtr(ani_env* env)
 {
+    std::lock_guard<std::mutex> lock(createPixelMapByPtrMutex);
     if (createPixelMapByPtrInited) {
         return true;
     }
@@ -45,6 +50,10 @@ bool PixelMapTaiheAni::InitCreatePixelMapByPtr(ani_env* env)
         return false;
     }
     if (env->Namespace_FindFunction(imageNamespace, "createPixelMapByPtr", nullptr, &gCreatePixelMapByPtr) != ANI_OK) {
+        if (env->GlobalReference_Delete(gImageNamespace) != ANI_OK) {
+            IMAGE_LOGD("[%{public}s] ANI GlobalReference_Delete failed", __func__);
+        }
+        gImageNamespace = nullptr;
         return false;
     }
     createPixelMapByPtrInited = true;
@@ -52,9 +61,14 @@ bool PixelMapTaiheAni::InitCreatePixelMapByPtr(ani_env* env)
 }
 
 // Wrap a native PixelMap into ANI object, for the use of external ANI/Taihe components
-ani_object PixelMapTaiheAni::CreateEtsPixelMap([[maybe_unused]] ani_env* env, std::shared_ptr<PixelMap> pixelMap)
+ani_object PixelMapTaiheAni::CreateEtsPixelMap(ani_env* env, std::shared_ptr<PixelMap> pixelMap)
 {
+    if (env == nullptr) {
+        IMAGE_LOGE("[%{public}s] ANI env is null", __func__);
+        return nullptr;
+    }
     if (!InitCreatePixelMapByPtr(env)) {
+        IMAGE_LOGE("[%{public}s] ANI init failed", __func__);
         return nullptr;
     }
 
@@ -65,6 +79,7 @@ ani_object PixelMapTaiheAni::CreateEtsPixelMap([[maybe_unused]] ani_env* env, st
         gCreatePixelMapByPtr, &pixelMapObj, reinterpret_cast<ani_long>(pixelMapAni.get())) == ANI_OK) {
         pixelMapAni.release();
     } else {
+        IMAGE_LOGE("[%{public}s] Call function createPixelMapByPtr failed", __func__);
         return nullptr;
     }
 
@@ -73,6 +88,7 @@ ani_object PixelMapTaiheAni::CreateEtsPixelMap([[maybe_unused]] ani_env* env, st
 
 bool PixelMapTaiheAni::InitGetImplPtr(ani_env* env)
 {
+    std::lock_guard<std::mutex> lock(getImplPtrMutex);
     if (getImplPtrInited) {
         return true;
     }
@@ -89,6 +105,10 @@ bool PixelMapTaiheAni::InitGetImplPtr(ani_env* env)
     sb.SetReturnLong();
     if (env->Class_FindMethod(
         pixelMapCls, "getImplPtr", sb.BuildSignatureDescriptor().c_str(), &gGetImplPtr) != ANI_OK) {
+        if (env->GlobalReference_Delete(gPixelMapClass) != ANI_OK) {
+            IMAGE_LOGD("[%{public}s] ANI GlobalReference_Delete failed", __func__);
+        }
+        gPixelMapClass = nullptr;
         return false;
     }
     getImplPtrInited = true;
@@ -96,18 +116,25 @@ bool PixelMapTaiheAni::InitGetImplPtr(ani_env* env)
 }
 
 // Unwrap native PixelMap from an ANI object, for the use of external ANI/Taihe components
-std::shared_ptr<PixelMap> PixelMapTaiheAni::GetNativePixelMap([[maybe_unused]] ani_env* env, ani_object obj)
+std::shared_ptr<PixelMap> PixelMapTaiheAni::GetNativePixelMap(ani_env* env, ani_object obj)
 {
+    if (env == nullptr) {
+        IMAGE_LOGE("[%{public}s] ANI env is null", __func__);
+        return nullptr;
+    }
     if (!InitGetImplPtr(env)) {
+        IMAGE_LOGE("[%{public}s] ANI init failed", __func__);
         return nullptr;
     }
 
     ani_long implPtr;
     if (env->Object_CallMethod_Long(obj, gGetImplPtr, &implPtr) != ANI_OK) {
+        IMAGE_LOGE("[%{public}s] Call function getImplPtr failed", __func__);
         return nullptr;
     }
     PixelMapImpl* pixelMapImpl = reinterpret_cast<PixelMapImpl*>(implPtr);
     if (pixelMapImpl == nullptr) {
+        IMAGE_LOGE("[%{public}s] The implPtr obtained is null", __func__);
         return nullptr;
     }
     

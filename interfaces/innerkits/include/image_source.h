@@ -230,7 +230,7 @@ public:
     NATIVEEXPORT uint32_t GetImagePropertyByType(uint32_t index, const std::string &key, MetadataValue &value);
     NATIVEEXPORT uint32_t GetImagePropertyCommonByType(const std::string &key, MetadataValue &value);
     NATIVEEXPORT uint32_t RemoveAllProperties();
-    NATIVEEXPORT std::vector<MetadataValue> GetAllPropertiesWithType();
+    NATIVEEXPORT std::vector<MetadataValue> GetAllPropertiesWithType(uint32_t index = 0);
     NATIVEEXPORT uint32_t GetImagePropertyStringBySync(uint32_t index, const std::string &key, std::string &value);
     NATIVEEXPORT uint32_t WriteImageMetadataBlob(const std::vector<MetadataValue> &properties);
     NATIVEEXPORT uint32_t ModifyImagePropertyBlob(const std::vector<MetadataValue> &properties);
@@ -262,6 +262,7 @@ public:
     NATIVEEXPORT const NinePatchInfo &GetNinePatchInfo() const;
     NATIVEEXPORT void SetMemoryUsagePreference(const MemoryUsagePreference preference);
     NATIVEEXPORT MemoryUsagePreference GetMemoryUsagePreference();
+    NATIVEEXPORT uint32_t GetFilterArea(const int &privacyType, std::vector<std::pair<uint32_t, uint32_t>> &ranges);
     NATIVEEXPORT uint32_t GetFilterArea(const std::vector<std::string> &exifKeys,
                                         std::vector<std::pair<uint32_t, uint32_t>> &ranges);
     NATIVEEXPORT std::unique_ptr<std::vector<std::unique_ptr<PixelMap>>> CreatePixelMapList(const DecodeOptions &opts,
@@ -295,6 +296,7 @@ public:
 #if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
     NATIVEEXPORT std::shared_ptr<GifMetadata> GetGifMetadata(uint32_t index, uint32_t &errorCode);
     NATIVEEXPORT std::shared_ptr<HeifsMetadata> GetHeifsMetadata(uint32_t index, uint32_t &errorCode);
+    NATIVEEXPORT std::shared_ptr<WebPMetadata> GetWebPMetadata(uint32_t index, uint32_t &errorCode);
     NATIVEEXPORT std::shared_ptr<BlobMetadata> GetBlobMetadata(MetadataType type, uint32_t &errorCode);
 #endif
     NATIVEEXPORT std::vector<std::shared_ptr<ImageMetadata>> GetAllSupportedMetadataTypes(uint32_t index,
@@ -304,6 +306,11 @@ public:
     NATIVEEXPORT uint32_t WriteXMPMetadata(std::shared_ptr<XMPMetadata> &xmpMetadata);
     NATIVEEXPORT std::shared_ptr<ImageMetadata> GetMetadata(MetadataType type);
     NATIVEEXPORT uint32_t GetImageRawData(std::vector<uint8_t> &data, uint32_t &bitsPerSample);
+
+    void SetSystemApi(bool isSystemApi)
+    {
+        isSystemApi_ = isSystemApi;
+    }
 
 private:
     DISALLOW_COPY_AND_MOVE(ImageSource);
@@ -342,9 +349,12 @@ private:
     void SetIncrementalSource(const bool isIncrementalSource);
     bool IsStreamCompleted();
     uint32_t GetImagePropertyCommon(uint32_t index, const std::string &key, std::string &value);
+    uint32_t GetGifLoopCountByType(uint32_t index, MetadataValue &value);
     uint32_t GetGifProperty(uint32_t index, const std::string &key, MetadataValue &value);
+    uint32_t GetWebPProperty(uint32_t index, const std::string &key, MetadataValue &value);
     uint32_t GetFragmentProperty(const std::string &key, MetadataValue &value);
     void GetFragmentPropertiesWithType(std::vector<MetadataValue> &result);
+    void GetWebpPropertiesWithType(uint32_t index, std::vector<MetadataValue> &result);
     FinalOutputStep GetFinalOutputStep(const DecodeOptions &opts, PixelMap &pixelMap, bool hasNinePatch);
     bool HasDensityChange(const DecodeOptions &opts, ImageInfo &srcImageInfo, bool hasNinePatch);
     bool ImageSizeChange(int32_t width, int32_t height, int32_t desiredWidth, int32_t desiredHeight);
@@ -446,6 +456,7 @@ private:
     void RefreshImageSourceByFd();
     std::string GetPixelMapName(PixelMap* pixelMap);
     bool IsDngImage();
+    bool IsWebPImage();
 
 #if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
     void SpecialSetComposeBuffer(ImagePlugin::DecodeContext &baseCtx, sptr<SurfaceBuffer>& baseSptr,
@@ -453,9 +464,9 @@ private:
     void SetXmageMetadataToGainmap(sptr<SurfaceBuffer>& gainmapSptr);
     void SetHdrMetadataForPicture(std::unique_ptr<Picture> &picture);
     void DecodeHeifAuxiliaryPictures(const std::set<AuxiliaryPictureType> &auxTypes, std::unique_ptr<Picture> &picture,
-                                     uint32_t &errorCode);
+        uint32_t &errorCode, const DownSamplingScaleFactor& downSamplingScaleFactor);
     void DecodeJpegAuxiliaryPicture(std::set<AuxiliaryPictureType> &auxTypes, std::unique_ptr<Picture> &picture,
-                                    uint32_t &errorCode);
+        uint32_t &errorCode, const DownSamplingScaleFactor& downSamplingScaleFactor);
     bool CheckJpegSourceStream(StreamInfo &streamInfo);
     uint32_t CreatePictureAtIndexPreCheck(uint32_t index, const ImageInfo &info);
     uint32_t SetGifMetadataForPicture(std::unique_ptr<Picture> &picture, uint32_t index);
@@ -492,7 +503,7 @@ private:
     std::map<int32_t, int32_t> decodeEventMap_;
     std::set<DecodeListener *> decodeListeners_;
     std::mutex listenerMutex_;
-    std::mutex decodingMutex_;
+    std::recursive_mutex decodingMutex_;
     std::mutex fileMutex_;
     bool isIncrementalSource_ = false;
     bool isIncrementalCompleted_ = false;
@@ -517,6 +528,7 @@ private:
     XmageCoordinateMetadata coordMetadata_;
     bool hasValidXmageCoords_ = false;
     std::shared_ptr<XMPMetadata> xmpMetadata_ = nullptr;
+    bool isSystemApi_ = false;
 };
 } // namespace Media
 } // namespace OHOS

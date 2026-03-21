@@ -42,8 +42,8 @@ ohos_fuzztest("ImageRawPluginFuzzTest") {
     "hilog:libhilog",
     "libexif:libexif",
     "libjpeg-turbo:turbojpeg",
-    "skia:libjpeg",
-    "skia:piex",
+    "skia:libjpegm133",
+    "skia:piexm133",
     "skia:skia_canvaskit",
     "ipc:ipc_single",
   ]

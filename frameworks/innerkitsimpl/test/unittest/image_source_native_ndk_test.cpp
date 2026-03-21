@@ -4074,13 +4074,13 @@ HWTEST_F(ImagSourceNdk2Test, OH_ImageSourceNative_GetBitsPerPixelFromRawDataTest
 }
 
 /**
- * @tc.name: OH_ImageSourceNative_ReleaseRawDataTest001
- * @tc.desc: Test OH_ImageSourceNative_ReleaseRawData with invalid parameter.
+ * @tc.name: OH_ImageSourceNative_DestroyImageRawDataTest001
+ * @tc.desc: Test OH_ImageSourceNative_DestroyImageRawData with invalid parameter.
  * @tc.type: FUNC
  */
-HWTEST_F(ImagSourceNdk2Test, OH_ImageSourceNative_ReleaseRawDataTest001, TestSize.Level3)
+HWTEST_F(ImagSourceNdk2Test, OH_ImageSourceNative_DestroyImageRawDataTest001, TestSize.Level3)
 {
-    Image_ErrorCode ret = OH_ImageSourceNative_ReleaseRawData(nullptr);
+    Image_ErrorCode ret = OH_ImageSourceNative_DestroyImageRawData(nullptr);
     EXPECT_EQ(ret, IMAGE_SOURCE_INVALID_PARAMETER);
 }
 

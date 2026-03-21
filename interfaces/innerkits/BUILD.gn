@@ -261,6 +261,8 @@ if (use_clang_android) {
         "libjpeg-turbo:turbojpeg",
         "napi:ace_napi",
         "zlib:libz",
+        "graphic_2d:GLESv3",
+        "graphic_surface:sync_fence",
       ]
       public_external_deps = [
         "graphic_2d:color_manager",
@@ -485,6 +487,7 @@ if (use_mingw_win || use_clang_mac || use_clang_ios || use_clang_android) {
         "graphic_surface:surface",
         "hilog:libhilog",
         "napi:ace_napi",
+        "graphic_2d:GLESv3",
       ]
       if (enable_libexif) {
         external_deps += [ "libexif:libexif" ]

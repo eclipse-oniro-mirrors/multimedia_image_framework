@@ -459,8 +459,8 @@ bool WebpExifMetadataAccessor::WirteChunkVp8x(BufferMetadataStream &bufStream, c
         imageStream_->Seek(WEBP_CHUNK_HEAD_SIZE, SeekPos::BEGIN);
         cond = width <= 0 || height <= 0;
         CHECK_ERROR_RETURN_RET(cond, false);
-        static byte chunckHeader[] = { 0x56, 0x50, 0x38, 0x58, 0x0a, 0x00, 0x00, 0x00, 0x08,
-                                       0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 };
+        byte chunckHeader[] = { 0x56, 0x50, 0x38, 0x58, 0x0a, 0x00, 0x00, 0x00, 0x08,
+                                0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 };
         size_t offset = WEBP_CHUNK_HEAD_SIZE;
         uint32_t w = width - 1;
         chunckHeader[offset] = w & WEBP_CHUNK_OPERATE_FLAG;

@@ -527,7 +527,7 @@ uint32_t SvgDecoder::DoSetDecodeOptions(uint32_t index, const PixelDecodeOptions
     cond = (svgSize.isEmpty());
     CHECK_ERROR_RETURN_RET_LOG(cond, Media::ERROR, "[DoSetDecodeOptions] size is empty.");
     cond = (CheckCropRectValid(opts_, svgSize));
-    CHECK_ERROR_RETURN_RET_LOG(!cond, ERR_MEDIA_INVALID_OPERATION, "crop rect is invalid.");
+    CHECK_INFO_RETURN_RET_LOG(!cond, ERR_MEDIA_INVALID_OPERATION, "crop rect is invalid.");
 
     float scaleFitDesired = 1.0;
     if (opts_.desiredSize.width && opts_.desiredSize.height &&

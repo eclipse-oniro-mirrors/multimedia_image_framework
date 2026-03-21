@@ -31,7 +31,7 @@
 
 namespace OHOS {
 namespace Media {
-std::map<uint8_t*, ImageCreator*> ImageCreator::bufferCreatorMap_;
+std::map<uint8_t*, std::weak_ptr<ImageCreator>> ImageCreator::bufferCreatorMap_;
 std::mutex ImageCreator::creatorMutex_;
 ImageCreator::~ImageCreator()
 {
@@ -56,9 +56,18 @@ GSError ImageCreator::OnBufferRelease(sptr<SurfaceBuffer> &buffer)
     if (iter == bufferCreatorMap_.end()) {
         return GSERROR_NO_ENTRY;
     }
-    auto icr = iter->second;
+    // Use weak_ptr to safely check if the ImageCreator object is still alive
+    auto weakIcr = iter->second;
+    auto icr = weakIcr.lock();
+    if (icr == nullptr) {
+        // ImageCreator object has been destroyed, remove the stale entry
+        IMAGE_LOGI("ImageCreator has been destroyed, removing stale map entry");
+        bufferCreatorMap_.erase(iter);
+        return GSERROR_NO_ENTRY;
+    }
     if (icr->surfaceBufferReleaseListener_ == nullptr) {
         IMAGE_LOGI("empty icr");
+        bufferCreatorMap_.erase(iter);
         return GSERROR_NO_ENTRY;
     }
     icr->surfaceBufferReleaseListener_->OnSurfaceBufferRelease();
@@ -266,7 +275,8 @@ OHOS::sptr<OHOS::SurfaceBuffer> ImageCreator::DequeueImage()
     if (buffer != nullptr && buffer->GetVirAddr() != nullptr) {
         std::lock_guard<std::mutex> guard(creatorMutex_);
         bufferCreatorMap_.insert(
-            std::map<uint8_t*, ImageCreator*>::value_type(static_cast<uint8_t*>(buffer->GetVirAddr()), this));
+            std::map<uint8_t*, std::weak_ptr<ImageCreator>>::value_type(
+                static_cast<uint8_t*>(buffer->GetVirAddr()), shared_from_this()));
     }
     return iraContext_->currentCreatorBuffer_;
 }

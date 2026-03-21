@@ -352,7 +352,7 @@ BlobMetadata *BlobMetadata::Unmarshalling(Parcel &parcel, PICTURE_ERR &error)
         return nullptr;
     }
     blobMetadataPtr->dataSize_ = dataSize;
-    blobMetadataPtr->data_ = new uint8_t[dataSize];
+    blobMetadataPtr->data_ = new(std::nothrow) uint8_t[dataSize];
 
     if (blobMetadataPtr->data_ == nullptr) {
         IMAGE_LOGE("Failed to allocate memory for Blob data buffer.");
@@ -405,8 +405,8 @@ uint32_t BlobMetadata::SetBlob(const uint8_t *source, const uint32_t bufferSize)
             static_cast<unsigned long long>(bufferSize));
         return ERR_IMAGE_INVALID_PARAMETER;
     }
-    IMAGE_LOGI("setblob datasize_ %{public}u , bufferSize %{public}u", dataSize_, bufferSize);
-    uint8_t *resData = new uint8_t[bufferSize];
+    IMAGE_LOGI("setblob datasize_ %{public}u , bufferSize %{public}u, type %{public}d", dataSize_, bufferSize, type_);
+    uint8_t *resData = new(std::nothrow) uint8_t[bufferSize];
     if (resData == nullptr) {
         IMAGE_LOGE("Failed to allocate memory for Blob Metadata Blob");
         return ERR_MEDIA_MALLOC_FAILED;

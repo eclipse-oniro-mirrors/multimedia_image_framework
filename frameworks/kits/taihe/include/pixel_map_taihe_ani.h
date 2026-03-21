@@ -17,6 +17,7 @@
 #define FRAMEWORKS_KITS_TAIHE_INCLUDE_PIXEL_MAP_TAIHE_ANI_H
 
 #include <ani.h>
+#include <mutex>
 #include "pixel_map.h"
 
 // This file is for legacy ANI backward compatibility
@@ -26,8 +27,8 @@ namespace Media {
 
 class PixelMapTaiheAni {
 public:
-    static ani_object CreateEtsPixelMap([[maybe_unused]] ani_env* env, std::shared_ptr<PixelMap> pixelMap);
-    static std::shared_ptr<PixelMap> GetNativePixelMap([[maybe_unused]] ani_env* env, ani_object obj);
+    static ani_object CreateEtsPixelMap(ani_env* env, std::shared_ptr<PixelMap> pixelMap);
+    static std::shared_ptr<PixelMap> GetNativePixelMap(ani_env* env, ani_object obj);
     std::shared_ptr<PixelMap> nativePixelMap_;
 
 private:
@@ -37,6 +38,8 @@ private:
     static ani_method gGetImplPtr;
     static bool createPixelMapByPtrInited;
     static bool getImplPtrInited;
+    static std::mutex createPixelMapByPtrMutex;
+    static std::mutex getImplPtrMutex;
     static bool InitCreatePixelMapByPtr(ani_env* env);
     static bool InitGetImplPtr(ani_env* env);
 };

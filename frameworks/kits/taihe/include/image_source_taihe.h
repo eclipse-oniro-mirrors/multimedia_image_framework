@@ -61,6 +61,7 @@ public:
     void ModifyImagePropertySync(PropertyKey key, string_view value);
     void ModifyImagePropertiesSync(map_view<string, PropertyValue> records);
     void ModifyImagePropertiesEnhancedSync(map_view<string, PropertyValue> records);
+    void modifyImageAllPropertiesSync(map_view<string, PropertyValue> records);
     void UpdateDataSync(array_view<uint8_t> buf, bool isFinished, int32_t offset, int32_t length);
     void ReleaseSync();
 #if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)

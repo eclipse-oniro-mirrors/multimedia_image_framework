@@ -1043,6 +1043,52 @@ HWTEST_F(ImageUtilsTest, GetAstcBytesCount001, TestSize.Level3)
 }
 
 /**
+ * @tc.name: GetAstcBytesCount002
+ * @tc.desc: test ImageUtils GetAstcBytesCount with large dimensions causing overflow
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageUtilsTest, GetAstcBytesCount002, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImageUtilsTest: GetAstcBytesCount002 start";
+    ImageInfo imgInfo;
+    imgInfo.pixelFormat = PixelFormat::ASTC_4x4;
+    imgInfo.size.width = 50000;
+    imgInfo.size.height = 50000;
+    uint32_t ret = ImageUtils::GetAstcBytesCount(imgInfo);
+    ASSERT_EQ(ret, 0);
+    imgInfo.size.width = 60000;
+    imgInfo.size.height = 60000;
+    ret = ImageUtils::GetAstcBytesCount(imgInfo);
+    ASSERT_EQ(ret, 0);
+    imgInfo.size.width = 46341;
+    imgInfo.size.height = 46341;
+    ret = ImageUtils::GetAstcBytesCount(imgInfo);
+    ASSERT_EQ(ret, 0);
+    GTEST_LOG_(INFO) << "ImageUtilsTest: GetAstcBytesCount002 end";
+}
+
+/**
+ * @tc.name: GetAstcBytesCount003
+ * @tc.desc: test ImageUtils GetAstcBytesCount with boundary dimensions
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageUtilsTest, GetAstcBytesCount003, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImageUtilsTest: GetAstcBytesCount003 start";
+    ImageInfo imgInfo;
+    imgInfo.pixelFormat = PixelFormat::ASTC_4x4;
+    imgInfo.size.width = 4096;
+    imgInfo.size.height = 4096;
+    uint32_t ret = ImageUtils::GetAstcBytesCount(imgInfo);
+    ASSERT_GT(ret, 0);
+    imgInfo.size.width = 8192;
+    imgInfo.size.height = 8192;
+    ret = ImageUtils::GetAstcBytesCount(imgInfo);
+    ASSERT_GT(ret, 0);
+    GTEST_LOG_(INFO) << "ImageUtilsTest: GetAstcBytesCount003 end";
+}
+
+/**
  * @tc.name: GetInputStreamSizeTest001
  * @tc.desc: GetInputStreamSize
  * @tc.type: FUNC
@@ -1177,7 +1223,7 @@ HWTEST_F(ImageUtilsTest, CheckMulOverflowTest011, TestSize.Level3)
     EXPECT_TRUE(res);
 
     res = ImageUtils::CheckMulOverflow(INT32_MAX, INT32_MAX);
-    EXPECT_FALSE(res);
+    EXPECT_TRUE(res);
 }
 
 /**
@@ -1188,15 +1234,15 @@ HWTEST_F(ImageUtilsTest, CheckMulOverflowTest011, TestSize.Level3)
 HWTEST_F(ImageUtilsTest, CheckMulOverflowTest012, TestSize.Level3)
 {
     bool res = ImageUtils::CheckMulOverflow(INT32_MAX, INT32_MAX, INT32_MAX);
-    EXPECT_FALSE(res);
+    EXPECT_TRUE(res);
 
     int32_t mockWidth = 1;
     int32_t mockHeight = 1;
     res = ImageUtils::CheckMulOverflow(mockWidth, INT32_MAX, INT32_MAX);
-    EXPECT_FALSE(res);
+    EXPECT_TRUE(res);
 
     res = ImageUtils::CheckMulOverflow(INT32_MAX, mockHeight, INT32_MAX);
-    EXPECT_FALSE(res);
+    EXPECT_TRUE(res);
 }
 
 /**

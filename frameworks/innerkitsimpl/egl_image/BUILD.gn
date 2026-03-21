@@ -91,8 +91,6 @@ if (!use_clang_ios && !use_clang_android) {
     external_deps = [
       "ipc:ipc_single",
       "c_utils:utils",
-    ]
-    public_external_deps = [
       "graphic_2d:EGL",
       "graphic_2d:GLESv3",
       "graphic_2d:color_manager",
@@ -102,7 +100,6 @@ if (!use_clang_ios && !use_clang_android) {
       "hitrace:hitrace_meter",
       "skia:skia_canvaskit",
     ]
-
     version_script = "post_proc.versionscript"
     innerapi_tags = [ "platformsdk" ]
     subsystem_name = "multimedia"

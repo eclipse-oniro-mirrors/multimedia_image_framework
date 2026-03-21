@@ -1301,6 +1301,66 @@ void ImageSourceImpl::ModifyImagePropertiesEnhancedSync(map_view<string, Propert
     }
 }
 
+static void modifyImageAllPropertiesExecute(std::unique_ptr<ImageSourceTaiheContext> &context)
+{
+    IMAGE_LOGI("modifyImageAllPropertiesExecute start.");
+    auto start = std::chrono::high_resolution_clock::now();
+    if (context == nullptr || context->rImageSource == nullptr) {
+        IMAGE_LOGE("empty context");
+        return;
+    }
+    context->rImageSource->SetSystemApi(true);
+    context->status = context->rImageSource->ModifyImagePropertiesEx(0, context->kVStrArray);
+    if (context->status != OHOS::Media::SUCCESS) {
+        auto unsupportedKeys = context->rImageSource->GetModifyExifUnsupportedKeys();
+        if (!unsupportedKeys.empty()) {
+            context->errMsg = "Failed to modify unsupported keys:";
+            for (auto &key : unsupportedKeys) {
+                context->errMsg.append(" ").append(key);
+            }
+        }
+    }
+
+    auto end = std::chrono::high_resolution_clock::now();
+    auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
+    IMAGE_LOGI("ModifyImagePropertiesEnhanced end, cost: %{public}llu ms", duration.count());
+}
+
+void ImageSourceImpl::modifyImageAllPropertiesSync(map_view<string, PropertyValue> records)
+{
+    OHOS::Media::ImageTrace imageTrace("ImageSourceImpl::modifyImageAllPropertiesSync");
+
+    if (!ImageTaiheUtils::IsSystemApp()) {
+        IMAGE_LOGE("This interface can be called only by system apps");
+        ImageTaiheUtils::ThrowExceptionError(IMAGE_PERMISSIONS_FAILED,
+            "This interface can be called only by system apps");
+        return;
+    }
+
+    std::unique_ptr<ImageSourceTaiheContext> context = std::make_unique<ImageSourceTaiheContext>();
+    if (nativeImgSrc == nullptr) {
+        ImageTaiheUtils::ThrowExceptionError(OHOS::Media::ERR_IMAGE_WRITE_PROPERTY_FAILED, "empty native rImageSource");
+        return;
+    }
+    context->rImageSource = nativeImgSrc;
+
+    context->kVStrArray = GetRecordArgument(records);
+    if (context->kVStrArray.size() == 0) return;
+
+    context->pathName = ImageSourceImpl::filePath_;
+    context->fdIndex = ImageSourceImpl::fileDescriptor_;
+    context->sourceBuffer = ImageSourceImpl::fileBuffer_;
+    context->sourceBufferSize = ImageSourceImpl::fileBufferSize_;
+
+    modifyImageAllPropertiesExecute(context);
+
+    if (context->status != OHOS::Media::SUCCESS) {
+        const auto &[errCode, errMsg] = OHOS::Media::ImageErrorConvert::ModifyImagePropertiesEnhancedMakeErrMsg(
+            context->status, context->errMsg);
+        ImageTaiheUtils::ThrowExceptionError(errCode, errMsg);
+    }
+}
+
 void ImageSourceImpl::UpdateDataSync(array_view<uint8_t> buf, bool isFinished, int32_t offset, int32_t length)
 {
     std::unique_ptr<ImageSourceTaiheContext> taiheContext = std::make_unique<ImageSourceTaiheContext>();

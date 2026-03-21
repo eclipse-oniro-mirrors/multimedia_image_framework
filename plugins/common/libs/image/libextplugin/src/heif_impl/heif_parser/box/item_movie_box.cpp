@@ -31,6 +31,7 @@ namespace {
     const uint32_t MAX_DREF_ENTRYCOUNT = static_cast<uint32_t>(std::numeric_limits<int32_t>::max());
     const uint32_t MAX_STSD_ENTRYCOUNT = 1024;
     const uint32_t MAX_STTS_ENTRYCOUNT = 1024 * 1024 * 512;
+    const uint32_t MAX_STSZ_ENTRYCOUNT = 1024 * 1024;
     const uint32_t MAX_STSC_ENTRYCOUNT = 1024 * 1024 * 256;
     const uint32_t MAX_STCO_ENTRYCOUNT = 1024 * 1024 * 1024;
     const uint32_t MAX_STSS_ENTRYCOUNT = 1024 * 1024 * 1024;
@@ -370,7 +371,7 @@ heif_error HeifSttsBox::Write(HeifStreamWriter &writer) const
     return heif_error_ok;
 }
 
-heif_error HeifSttsBox::GetDelayTime(uint32_t index, int32_t &value) const
+heif_error HeifSttsBox::GetSampleDelta(uint32_t index, uint32_t &value) const
 {
     if (entries_.empty()) {
         return heif_error_invalid_stts;
@@ -455,6 +456,9 @@ heif_error HeifStszBox::ParseContent(HeifStreamReader &reader)
     sampleSize_ = reader.Read32();
     sampleCount_ = reader.Read32();
     if (sampleSize_ == 0) {
+        if (sampleCount_ > MAX_STSZ_ENTRYCOUNT) {
+            return heif_error_invalid_stsz;
+        }
         for (uint32_t i = 0; i < sampleCount_; i++) {
             entrySizes_.push_back(reader.Read32());
         }

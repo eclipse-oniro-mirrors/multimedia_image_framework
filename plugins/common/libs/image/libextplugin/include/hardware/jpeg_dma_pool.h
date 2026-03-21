@@ -34,7 +34,7 @@ struct PureStreamInfo {
 
 class DmaPool {
 public:
-    ~DmaPool() = default;
+    ~DmaPool();
     static DmaPool& GetInstance();
     bool AllocBufferInDmaPool(sptr<ICodecImage> hwDecoder, ImagePlugin::InputDataStream* srcStream,
                               CodecImageBuffer& inBuffer, PureStreamInfo streamInfo, DmaBufferInfo& bufferInfo);
@@ -48,7 +48,9 @@ private:
     void UpdateDmaPoolInfo(PureStreamInfo streamInfo, DmaBufferInfo bufferInfo);
     void RunDmaPoolDestroy();
 private:
+    std::thread lifeManageThread_;
     std::mutex dmaPoolMtx_;
+    bool isDmaThreadStop_ = false;
     bool inited_ {false};
     std::condition_variable dmaPoolCond_;
     uint32_t remainCapacity_ {0};

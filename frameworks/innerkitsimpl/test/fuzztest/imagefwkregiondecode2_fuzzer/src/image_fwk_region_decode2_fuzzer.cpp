@@ -35,6 +35,9 @@
 
 namespace OHOS {
 namespace Media {
+namespace {
+    static constexpr uint32_t OPT_SIZE = 80;
+}
 FuzzedDataProvider *FDP;
 using namespace OHOS::ImagePlugin;
 void RegionDecodeTest001(const std::string &pathName)
@@ -58,11 +61,21 @@ void RegionDecodeTest001(const std::string &pathName)
 /* Fuzzer entry point */
 extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
 {
-    /* Run your code on data */
-    FuzzedDataProvider fdp(data, size);
+    if (size < OHOS::Media::OPT_SIZE) {
+        return 0;
+    }
+    FuzzedDataProvider fdp(data + size - OHOS::Media::OPT_SIZE, OHOS::Media::OPT_SIZE);
     OHOS::Media::FDP = &fdp;
     const std::string pathName = "/data/local/tmp/test_region_decode_jpg.jpg";
-    WriteDataToFile(data, size, pathName);
-    OHOS::Media::RegionDecodeTest001(pathName);
+    WriteDataToFile(data, size - OHOS::Media::OPT_SIZE, pathName);
+    uint8_t action = fdp.ConsumeIntegral<uint8_t>() % 2;
+    switch (action) {
+        case 0:
+            OHOS::Media::RegionDecodeTest001(pathName);
+            break;
+        default:
+            break;
+    }
+    
     return 0;
 }

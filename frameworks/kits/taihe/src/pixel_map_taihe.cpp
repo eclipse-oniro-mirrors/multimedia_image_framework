@@ -70,15 +70,13 @@ PixelMap CreateEmptyPixelMapSync(InitializationOptions const& options)
 PixelMap CreatePixelMapUsingAllocatorSync(array_view<uint8_t> colors, InitializationOptions const& options,
     optional_view<AllocatorType> allocatorType)
 {
-    return make_holder<PixelMapImpl, PixelMap>(colors, options,
-        allocatorType.has_value() ? allocatorType.value() : AllocatorType::key_t::AUTO);
+    return make_holder<PixelMapImpl, PixelMap>(colors, options, allocatorType.value_or(AllocatorType::key_t::AUTO));
 }
 
 PixelMap CreateEmptyPixelMapUsingAllocatorSync(InitializationOptions const& options,
     optional_view<AllocatorType> allocatorType)
 {
-    return make_holder<PixelMapImpl, PixelMap>(options,
-        allocatorType.has_value() ? allocatorType.value() : AllocatorType::key_t::AUTO);
+    return make_holder<PixelMapImpl, PixelMap>(options, allocatorType.value_or(AllocatorType::key_t::AUTO));
 }
 
 PixelMap CreatePixelMapByPtr(int64_t aniPtr)
@@ -360,7 +358,7 @@ PixelMapImpl::PixelMapImpl(std::shared_ptr<Media::PixelMap> pixelMap)
     nativePixelMap_ = pixelMap;
     if (nativePixelMap_ == nullptr) {
         ImageTaiheUtils::ThrowExceptionError(Media::COMMON_ERR_INVALID_PARAMETER,
-            "Failed to create PixelMap: Input native PixelMap is null.");
+            "Failed to construct PixelMapImpl: The native PixelMap argument is null.");
     }
 }
 
@@ -370,7 +368,7 @@ PixelMapImpl::PixelMapImpl(int64_t aniPtr)
     nativePixelMap_ = pixelMapAni->nativePixelMap_;
     if (nativePixelMap_ == nullptr) {
         ImageTaiheUtils::ThrowExceptionError(Media::COMMON_ERR_INVALID_PARAMETER,
-            "Failed to create PixelMap: Input ANI pointer's native PixelMap is null.");
+            "Failed to construct PixelMapImpl: Native PixelMap from the argument is null.");
     }
 }
 
@@ -560,7 +558,7 @@ PixelMap PixelMapImpl::CreateScaledPixelMapSync(double x, double y, optional_vie
 
     if (level.has_value()) {
         clonedPixelMap->scale(static_cast<float>(x), static_cast<float>(y),
-            Media::AntiAliasingOption(level.value().get_value()));
+            Media::AntiAliasingOption(level->get_value()));
     } else {
         clonedPixelMap->scale(static_cast<float>(x), static_cast<float>(y));
     }
@@ -644,7 +642,7 @@ PixelMap PixelMapImpl::CreateCroppedAndScaledPixelMapSync(ohos::multimedia::imag
 
     if (level.has_value()) {
         clonedPixelMap->scale(static_cast<float>(x), static_cast<float>(y),
-            Media::AntiAliasingOption(level.value().get_value()));
+            Media::AntiAliasingOption(level->get_value()));
     } else {
         clonedPixelMap->scale(static_cast<float>(x), static_cast<float>(y));
     }
@@ -1326,15 +1324,24 @@ bool PixelMapImpl::Is10BitYuvFormat(Media::PixelFormat format)
     return format == Media::PixelFormat::YCBCR_P010 || format == Media::PixelFormat::YCRCB_P010;
 }
 
+static Media::PixelFormat ParsePixelFormat(PixelMapFormat const& etsFormat)
+{
+    Media::PixelFormat format = Media::PixelFormat(etsFormat.get_value());
+    if (format >= Media::PixelFormat::EXTERNAL_MAX) {
+        format = Media::PixelFormat::UNKNOWN;
+    }
+    return format;
+}
+
 void PixelMapImpl::ParseInitializationOptions(InitializationOptions const& etsOptions,
     Media::InitializationOptions &options)
 {
     options.size = {etsOptions.size.width, etsOptions.size.height};
     if (etsOptions.srcPixelFormat) {
-        options.srcPixelFormat = Media::PixelFormat(etsOptions.srcPixelFormat->get_value());
+        options.srcPixelFormat = ParsePixelFormat(etsOptions.srcPixelFormat.value());
     }
     if (etsOptions.pixelFormat) {
-        options.pixelFormat = Media::PixelFormat(etsOptions.pixelFormat->get_value());
+        options.pixelFormat = ParsePixelFormat(etsOptions.pixelFormat.value());
     }
     if (etsOptions.editable) {
         options.editable = *etsOptions.editable;

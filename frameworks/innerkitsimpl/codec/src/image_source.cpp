@@ -44,6 +44,7 @@
 #endif
 #include "exif_metadata.h"
 #include "exif_metadata_formatter.h"
+#include "webp_metadata.h"
 #include "file_source_stream.h"
 #include "image/abs_image_decoder.h"
 #include "image/abs_image_format_agent.h"
@@ -68,6 +69,7 @@
 #include "securec.h"
 #include "source_stream.h"
 #include "image_dfx.h"
+#include "image_handle.h"
 #include "xmp_metadata_accessor_factory.h"
 #if defined(ANDROID_PLATFORM) || defined(IOS_PLATFORM)
 #include "include/jpeg_decoder.h"
@@ -181,6 +183,8 @@ constexpr uint8_t PIXEL_BYTES = 4;
 static constexpr int32_t THUMBNAIL_SHORT_SIDE_SIZE = 350;
 static constexpr int32_t THUMBNAIL_LONG_SIDE_MULTIPLIER = 3;
 constexpr int32_t INVALID_FILE_DESCRIPTOR = -1;
+constexpr int32_t WEBP_MIN_FRAME_DURATION = 100;
+constexpr int32_t WEBP_DELAY_TIME_UINT16_MAX = 65535;
 
 struct StreamInfo {
     uint8_t* buffer = nullptr;
@@ -717,7 +721,8 @@ void ImageSource::TransformSizeWithDensity(const Size &srcSize, int32_t srcDensi
     }
 }
 
-static void NotifyDecodeEvent(set<DecodeListener *> &listeners, DecodeEvent event, std::unique_lock<std::mutex> *guard)
+static void NotifyDecodeEvent(set<DecodeListener *> &listeners,
+    DecodeEvent event, std::unique_lock<std::recursive_mutex> *guard)
 {
     if (listeners.size() == SIZE_ZERO) {
         return;
@@ -1004,6 +1009,9 @@ unique_ptr<PixelMap> ImageSource::CreatePixelMapExtended(uint32_t index, const D
     opts_ = opts;
     ImageInfo info;
     errorCode = GetImageInfo(FIRST_FRAME, info);
+#if !defined(CROSS_PLATFORM)
+    ImageHandle::GetInstance().LowRamDeviceOptsOptimize(opts_, info);
+#endif
     ParseHdrType();
     if (!CheckDecodeOptions(opts)) {
         IMAGE_LOGI("CheckDecodeOptions failed.");
@@ -1077,7 +1085,7 @@ unique_ptr<PixelMap> ImageSource::CreatePixelMapExtended(uint32_t index, const D
     }
 
     {
-        std::unique_lock<std::mutex> guard(decodingMutex_);
+        std::unique_lock<std::recursive_mutex> guard(decodingMutex_);
         if (CreatExifMetadataByImageSource() == SUCCESS) {
             auto metadataPtr = exifMetadata_->Clone();
             pixelMap->SetExifMetadata(metadataPtr);
@@ -1348,7 +1356,7 @@ void ImageSource::SetImageEventHeifParseErr(ImageEvent &event)
 
 unique_ptr<PixelMap> ImageSource::CreatePixelMap(uint32_t index, const DecodeOptions &opts, uint32_t &errorCode)
 {
-    std::unique_lock<std::mutex> guard(decodingMutex_);
+    std::unique_lock<std::recursive_mutex> guard(decodingMutex_);
     opts_ = opts;
     bool useSkia = opts_.sampleSize != 1;
     if (useSkia) {
@@ -1366,7 +1374,6 @@ unique_ptr<PixelMap> ImageSource::CreatePixelMap(uint32_t index, const DecodeOpt
     }
     if (ImageSystemProperties::GetSkiaEnabled()) {
         if (IsExtendedCodec(mainDecoder_.get())) {
-            guard.unlock();
             InitDecoderForJpeg();
             return CreatePixelMapExtended(index, opts, errorCode);
         }
@@ -1543,7 +1550,7 @@ uint32_t ImageSource::PromoteDecoding(uint32_t index, const DecodeOptions &opts,
     state = ImageDecodingState::UNRESOLVED;
     decodeProgress = 0;
     uint32_t ret = SUCCESS;
-    std::unique_lock<std::mutex> guard(decodingMutex_);
+    std::unique_lock<std::recursive_mutex> guard(decodingMutex_);
     opts_ = opts;
     auto imageStatusIter = GetValidImageStatus(index, ret);
     bool cond = (imageStatusIter == imageStatusMap_.end());
@@ -1620,7 +1627,7 @@ uint32_t ImageSource::PromoteDecoding(uint32_t index, const DecodeOptions &opts,
 
 void ImageSource::DetachIncrementalDecoding(PixelMap &pixelMap)
 {
-    std::lock_guard<std::mutex> guard(decodingMutex_);
+    std::lock_guard<std::recursive_mutex> guard(decodingMutex_);
     auto iter = incDecodingMap_.find(&pixelMap);
     if (iter == incDecodingMap_.end()) {
         return;
@@ -1643,7 +1650,7 @@ uint32_t ImageSource::UpdateData(const uint8_t *data, uint32_t size, bool isComp
     cond = sourceStreamPtr_ == nullptr;
     CHECK_ERROR_RETURN_RET_LOG(cond, ERR_IMAGE_INVALID_PARAMETER,
                                "[ImageSource]image source update data, source stream is null.");
-    std::lock_guard<std::mutex> guard(decodingMutex_);
+    std::lock_guard<std::recursive_mutex> guard(decodingMutex_);
     if (isCompleted) {
         isIncrementalCompleted_ = isCompleted;
     }
@@ -1659,7 +1666,7 @@ uint32_t ImageSource::GetImageInfo(uint32_t index, ImageInfo &imageInfo)
 {
     ImageTrace imageTrace("GetImageInfo by index");
     uint32_t ret = SUCCESS;
-    std::unique_lock<std::mutex> guard(decodingMutex_);
+    std::unique_lock<std::recursive_mutex> guard(decodingMutex_);
     auto iter = GetValidImageStatus(index, ret);
     if (iter == imageStatusMap_.end()) {
         guard.unlock();
@@ -1700,7 +1707,8 @@ uint32_t ImageSource::ModifyImageProperties(const vector<pair<string, string>> &
     exifUnsupportKeys_.clear();
     for (const auto &[key, value] : properties) {
         if (isEnhanced) {
-            auto status = static_cast<uint32_t>(ExifMetadatFormatter::Validate(key, value));
+            auto status = static_cast<uint32_t>(ExifMetadatFormatter::Validate(key, value, isSystemApi_));
+            exifMetadata_->SetSystemApi(isSystemApi_);
             if (status != SUCCESS || !exifMetadata_->SetValue(key, value)) {
                 exifUnsupportKeys_.emplace(key);
                 IMAGE_LOGE("%{public}s unsupported key: %{public}s", __func__, key.c_str());
@@ -1839,7 +1847,7 @@ uint32_t ImageSource::ModifyImagePropertyBlob(std::shared_ptr<MetadataAccessor> 
 
 uint32_t ImageSource::ModifyImageProperty(uint32_t index, const std::string &key, const std::string &value)
 {
-    std::unique_lock<std::mutex> guard(decodingMutex_);
+    std::unique_lock<std::recursive_mutex> guard(decodingMutex_);
     return ModifyImageProperties({{key, value}}, false);
 }
 
@@ -1905,7 +1913,7 @@ uint32_t ImageSource::ModifyImageProperties(uint32_t index, const vector<pair<st
                                ec.value(), ec.message().c_str());
 #endif
 
-    std::unique_lock<std::mutex> guard(decodingMutex_);
+    std::unique_lock<std::recursive_mutex> guard(decodingMutex_);
     auto metadataAccessor = MetadataAccessorFactory::Create(path);
     return ModifyImageProperties(metadataAccessor, properties, isEnhanced);
 }
@@ -1921,7 +1929,7 @@ uint32_t ImageSource::ModifyImagePropertyBlob(const vector<MetadataValue> &prope
     CHECK_ERROR_RETURN_RET_LOG(cond, ERR_IMAGE_SOURCE_DATA, "File not exists, error: %{public}d, message: %{public}s",
         ec.value(), ec.message().c_str());
 #endif
-    std::unique_lock<std::mutex> guard(decodingMutex_);
+    std::unique_lock<std::recursive_mutex> guard(decodingMutex_);
     auto metadataAccessor = MetadataAccessorFactory::Create(path);
     return ModifyImagePropertyBlob(metadataAccessor, properties);
 }
@@ -1939,7 +1947,7 @@ uint32_t ImageSource::ModifyImageProperties(uint32_t index, const vector<pair<st
     bool cond = (fd <= STDERR_FILENO);
     CHECK_DEBUG_RETURN_RET_LOG(cond, ERR_IMAGE_SOURCE_DATA, "Invalid file descriptor.");
 
-    std::unique_lock<std::mutex> guard(decodingMutex_);
+    std::unique_lock<std::recursive_mutex> guard(decodingMutex_);
     size_t fileSize = 0;
     if (!ImageUtils::GetFileSize(fd, fileSize)) {
         IMAGE_LOGE("ModifyImageProperties get file size failed.");
@@ -1959,7 +1967,7 @@ uint32_t ImageSource::ModifyImagePropertyBlob(const vector<MetadataValue> &prope
     bool cond = (fd <= STDERR_FILENO);
     CHECK_DEBUG_RETURN_RET_LOG(cond, ERR_IMAGE_SOURCE_DATA, "Invalid file descriptor.");
 
-    std::unique_lock<std::mutex> guard(decodingMutex_);
+    std::unique_lock<std::recursive_mutex> guard(decodingMutex_);
     size_t fileSize = 0;
     if (!ImageUtils::GetFileSize(fd, fileSize)) {
         IMAGE_LOGE("ModifyImagePropertyBlob get file size failed.");
@@ -2145,9 +2153,26 @@ void ImageSource::GetFragmentPropertiesWithType(std::vector<MetadataValue> &resu
     }
 }
 
-std::vector<MetadataValue> ImageSource::GetAllPropertiesWithType()
+void ImageSource::GetWebpPropertiesWithType(uint32_t index, std::vector<MetadataValue> &result)
+{
+    for (const std::string& key : ImageKvMetadata::GetWebPMetadataKeys()) {
+        MetadataValue value;
+        uint32_t ret = GetWebPProperty(index, key, value);
+        if (ret == SUCCESS) {
+            result.push_back(value);
+        }
+    }
+}
+
+std::vector<MetadataValue> ImageSource::GetAllPropertiesWithType(uint32_t index)
 {
     std::vector<MetadataValue> result;
+
+#if !defined(CROSS_PLATFORM)
+    if (IsWebPImage()) {
+        GetWebpPropertiesWithType(index, result);
+    }
+#endif
     CHECK_ERROR_RETURN_RET_LOG(!exifMetadata_ && isExifReadFailed_, result, "Exif metadata not initialized");
     CHECK_ERROR_RETURN_RET_LOG(CreatExifMetadataByImageSource() != SUCCESS, result, "Metadata creation failed");
 #if !defined(CROSS_PLATFORM)
@@ -2204,7 +2229,7 @@ uint32_t ImageSource::RemoveAllProperties()
 
 uint32_t ImageSource::GetImagePropertyInt(uint32_t index, const std::string &key, int32_t &value)
 {
-    std::unique_lock<std::mutex> guard(decodingMutex_);
+    std::unique_lock<std::recursive_mutex> guard(decodingMutex_);
 
     if (key.empty()) {
         return Media::ERR_IMAGE_DECODE_EXIF_UNSUPPORT;
@@ -2256,7 +2281,7 @@ uint32_t ImageSource::GetImagePropertyString(uint32_t index, const std::string &
         return ret;
     }
 
-    std::unique_lock<std::mutex> guard(decodingMutex_);
+    std::unique_lock<std::recursive_mutex> guard(decodingMutex_);
     std::unique_lock<std::mutex> guardFile(fileMutex_);
     return GetImagePropertyCommon(index, key, value);
 }
@@ -2313,6 +2338,37 @@ uint32_t ImageSource::GetGifProperty(uint32_t index, const std::string &key, Met
     return ERROR;
 }
 
+uint32_t ImageSource::GetWebPProperty(uint32_t index, const std::string &key, MetadataValue &value)
+{
+#if !defined(CROSS_PLATFORM)
+    value.key = key;
+    uint32_t errorCode = 0;
+    std::shared_ptr<WebPMetadata> webpMetadata = GetWebPMetadata(index, errorCode);
+    if (webpMetadata == nullptr || errorCode != SUCCESS) {
+        IMAGE_LOGE("Get webp metadata failed");
+        return ERR_IMAGE_SOURCE_DATA;
+    }
+    ImageMetadata::PropertyMapPtr propertiesPtr = webpMetadata->GetAllProperties();
+    if (!propertiesPtr) {
+        IMAGE_LOGE("Properties map pointer is null");
+        return ERR_IMAGE_SOURCE_DATA;
+    }
+
+    auto iter = ExifMetadata::GetWebPMetadataMap().find(key);
+    if (iter != ExifMetadata::GetWebPMetadataMap().end() && iter->second == PropertyValueType::INT) {
+        IMAGE_LOGD("GetImagePropertyInt special key: %{public}s", key.c_str());
+        uint32_t u32num;
+        errorCode = ParseUInt32Key(propertiesPtr, key, u32num);
+        if (errorCode == SUCCESS) {
+            value.type = PropertyValueType::INT;
+            value.intArrayValue.emplace_back(u32num);
+        }
+        return errorCode;
+    }
+#endif
+    return ERROR;
+}
+
 uint32_t ImageSource::GetFragmentProperty(const std::string &key, MetadataValue &value)
 {
 #if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
@@ -2341,22 +2397,28 @@ uint32_t ImageSource::GetFragmentProperty(const std::string &key, MetadataValue 
 #endif
 }
 
+uint32_t ImageSource::GetGifLoopCountByType(uint32_t index, MetadataValue &value)
+{
+    uint32_t ret = SUCCESS;
+    IMAGE_LOGD("GetImagePropertyString special key: %{public}s", IMAGE_GIFLOOPCOUNT_TYPE.c_str());
+    (void)GetFrameCount(ret);
+    if (ret != SUCCESS || mainDecoder_ == nullptr) {
+        IMAGE_LOGE("[ImageSource]GetFrameCount get frame sum error.");
+        return ret;
+    } else {
+        ret = mainDecoder_->GetImagePropertyString(index, IMAGE_GIFLOOPCOUNT_TYPE, value.stringValue);
+        CHECK_ERROR_RETURN_RET_LOG(ret != SUCCESS, ret,
+            "[ImageSource]GetLoopCount get loop count issue. errorCode=%{public}u", ret);
+    }
+    return ret;
+}
+
 uint32_t ImageSource::GetImagePropertyByType(uint32_t index, const std::string &key, MetadataValue &value)
 {
     CHECK_ERROR_RETURN_RET(key.empty(), Media::ERR_IMAGE_DECODE_EXIF_UNSUPPORT);
     uint32_t ret = SUCCESS;
     if (IMAGE_GIFLOOPCOUNT_TYPE.compare(key) == ZERO) {
-        IMAGE_LOGD("GetImagePropertyString special key: %{public}s", key.c_str());
-        (void)GetFrameCount(ret);
-        if (ret != SUCCESS || mainDecoder_ == nullptr) {
-            IMAGE_LOGE("[ImageSource]GetFrameCount get frame sum error.");
-            return ret;
-        } else {
-            ret = mainDecoder_->GetImagePropertyString(index, key, value.stringValue);
-            CHECK_ERROR_RETURN_RET_LOG(ret != SUCCESS, ret,
-                "[ImageSource]GetLoopCount get loop count issue. errorCode=%{public}u", ret);
-        }
-        return ret;
+        return GetGifLoopCountByType(index, value);
     }
     if (IMAGE_HEIFS_DELAY_TIME.compare(key) == ZERO) {
         IMAGE_LOGI("GetImagePropertyString special key: %{public}s", key.c_str());
@@ -2385,13 +2447,16 @@ uint32_t ImageSource::GetImagePropertyByType(uint32_t index, const std::string &
     if (ImageKvMetadata::IsFragmentMetadataKey(key)) {
         return GetFragmentProperty(key, value);
     }
+    if (ImageKvMetadata::IsWebPMetadataKey(key)) {
+        return GetWebPProperty(index, key, value);
+    }
 #if !defined(CROSS_PLATFORM)
     if (IsDngImage()) {
         return GetDngImagePropertyByDngSdk(key, value);
     }
 #endif
 
-    std::unique_lock<std::mutex> guard(decodingMutex_);
+    std::unique_lock<std::recursive_mutex> guard(decodingMutex_);
     std::unique_lock<std::mutex> guardFile(fileMutex_);
     return GetImagePropertyCommonByType(key, value);
 }
@@ -2415,7 +2480,7 @@ uint32_t ImageSource::GetImagePropertyStringBySync(uint32_t index, const std::st
         return ret;
     }
 
-    std::unique_lock<std::mutex> guard(decodingMutex_);
+    std::unique_lock<std::recursive_mutex> guard(decodingMutex_);
     std::unique_lock<std::mutex> guardFile(fileMutex_);
     bool cond = isExifReadFailed_ && exifMetadata_ == nullptr;
     CHECK_ERROR_RETURN_RET(cond, exifReadStatus_);
@@ -2439,7 +2504,7 @@ uint32_t ImageSource::GetImagePropertyStringBySync(uint32_t index, const std::st
 
 const SourceInfo &ImageSource::GetSourceInfo(uint32_t &errorCode)
 {
-    std::lock_guard<std::mutex> guard(decodingMutex_);
+    std::lock_guard<std::recursive_mutex> guard(decodingMutex_);
     if (IsSpecialYUV()) {
         return sourceInfo_;
     }
@@ -2511,13 +2576,13 @@ ImageSource::~ImageSource() __attribute__((no_sanitize("cfi")))
 
 bool ImageSource::IsStreamCompleted()
 {
-    std::lock_guard<std::mutex> guard(decodingMutex_);
+    std::lock_guard<std::recursive_mutex> guard(decodingMutex_);
     return sourceStreamPtr_->IsStreamCompleted();
 }
 
 bool ImageSource::ParseHdrType()
 {
-    std::unique_lock<std::mutex> guard(decodingMutex_);
+    std::unique_lock<std::recursive_mutex> guard(decodingMutex_);
     uint32_t ret = SUCCESS;
     auto iter = GetValidImageStatus(0, ret);
     if (iter == imageStatusMap_.end()) {
@@ -2596,7 +2661,7 @@ uint32_t ImageSource::RemoveImageProperties(uint32_t index, const std::set<std::
     }
 #endif
 
-    std::unique_lock<std::mutex> guard(decodingMutex_);
+    std::unique_lock<std::recursive_mutex> guard(decodingMutex_);
     auto metadataAccessor = MetadataAccessorFactory::Create(path);
     return RemoveImageProperties(metadataAccessor, keys);
 }
@@ -2607,7 +2672,7 @@ uint32_t ImageSource::RemoveImageProperties(uint32_t index, const std::set<std::
         return ERR_IMAGE_SOURCE_DATA;
     }
 
-    std::unique_lock<std::mutex> guard(decodingMutex_);
+    std::unique_lock<std::recursive_mutex> guard(decodingMutex_);
     auto metadataAccessor = MetadataAccessorFactory::Create(fd);
     return RemoveImageProperties(metadataAccessor, keys);
 }
@@ -3281,6 +3346,11 @@ MemoryUsagePreference ImageSource::GetMemoryUsagePreference()
     return preference_;
 }
 
+uint32_t ImageSource::GetFilterArea(const int &privacyType, std::vector<std::pair<uint32_t, uint32_t>> &ranges)
+{
+    return E_NO_EXIF_TAG;
+}
+
 uint8_t* ImageSource::ReadSourceBuffer(uint32_t bufferSize, uint32_t &errorCode)
 {
     if (bufferSize > MAX_SOURCE_SIZE) {
@@ -3312,7 +3382,7 @@ uint8_t* ImageSource::ReadSourceBuffer(uint32_t bufferSize, uint32_t &errorCode)
 uint32_t ImageSource::GetFilterArea(const std::vector<std::string> &exifKeys,
                                     std::vector<std::pair<uint32_t, uint32_t>> &ranges)
 {
-    std::unique_lock<std::mutex> guard(decodingMutex_);
+    std::unique_lock<std::recursive_mutex> guard(decodingMutex_);
     if (exifKeys.empty()) {
         IMAGE_LOGD("GetFilterArea failed, exif key is empty.");
         return ERR_IMAGE_INVALID_PARAMETER;
@@ -3631,7 +3701,7 @@ unique_ptr<PixelMap> ImageSource::CreatePixelMapForYUV(uint32_t &errorCode)
     IMAGE_LOGD("CreatePixelMapForYUV operation completed.");
 
     {
-        std::unique_lock<std::mutex> guard(decodingMutex_);
+        std::unique_lock<std::recursive_mutex> guard(decodingMutex_);
         if (CreatExifMetadataByImageSource() == SUCCESS) {
             auto metadataPtr = exifMetadata_->Clone();
             pixelMap->SetExifMetadata(metadataPtr);
@@ -5362,7 +5432,7 @@ uint32_t ImageSource::ImageAiProcess(Size imageSize, const DecodeOptions &opts, 
 DecodeContext ImageSource::DecodeImageDataToContextExtended(uint32_t index, ImageInfo &info,
     ImagePlugin::PlImageInfo &plInfo, ImageEvent &imageEvent, uint32_t &errorCode)
 {
-    std::unique_lock<std::mutex> guard(decodingMutex_);
+    std::unique_lock<std::recursive_mutex> guard(decodingMutex_);
     hasDesiredSizeOptions = IsSizeVailed(opts_.desiredSize);
     TransformSizeWithDensity(info.size, sourceInfo_.baseDensity, opts_.desiredSize, opts_.fitDensity,
         opts_.desiredSize);
@@ -5502,6 +5572,53 @@ uint32_t ImageSource::SetHeifsMetadataForPicture(std::unique_ptr<Picture> &pictu
     return SUCCESS;
 }
 
+void GetDownSamplingScaleFactor(DownSamplingScaleFactor& downSamplingScaleFactor, ImageInfo& info,
+    const DecodingOptionsForPicture& opts)
+{
+    if (opts.desiredSizeForMainPixelMap.width != 0 && info.size.width != 0) {
+        downSamplingScaleFactor.widthScaleFactor = static_cast<float>(opts.desiredSizeForMainPixelMap.width) /
+            info.size.width;
+    }
+
+    if (opts.desiredSizeForMainPixelMap.height != 0 && info.size.height != 0) {
+        downSamplingScaleFactor.heightScaleFactor = static_cast<float>(opts.desiredSizeForMainPixelMap.height) /
+            info.size.height;
+    }
+}
+
+bool ApplyDecodingOptionsForPicture(DecodeOptions& dopts, const DecodingOptionsForPicture& opts, uint32_t &errorCode)
+{
+    if (opts.desiredPixelFormat == PixelFormat::RGBA_8888 || opts.desiredPixelFormat == PixelFormat::RGB_565 ||
+        opts.desiredPixelFormat == PixelFormat::BGRA_8888 || opts.desiredPixelFormat == PixelFormat::NV12 ||
+        opts.desiredPixelFormat == PixelFormat::NV21) {
+            dopts.desiredPixelFormat = opts.desiredPixelFormat;
+            dopts.allocatorType = opts.allocatorType;
+            dopts.desiredSize = opts.desiredSizeForMainPixelMap;
+            dopts.editable = true;
+
+            if (opts.desiredPixelFormat == PixelFormat::NV21 || opts.desiredPixelFormat == PixelFormat::NV12) {
+                if (opts.desiredSizeForMainPixelMap.width == 0 || opts.desiredSizeForMainPixelMap.height == 0) {
+                    return true;
+                }
+                int32_t rowSize = ImageUtils::GetRowDataSizeByPixelFormat(opts.desiredSizeForMainPixelMap.width,
+                    opts.desiredPixelFormat);
+                bool cond = rowSize <= 0 || opts.desiredSizeForMainPixelMap.height <= 0 ||
+                    rowSize > std::numeric_limits<int32_t>::max() / opts.desiredSizeForMainPixelMap.height;
+                CHECK_ERROR_RETURN_RET_LOG(cond,
+                    false, "%{public}s rowSize: %{public}d, height: %{public}d may overflowed",
+                    __func__, rowSize, opts.desiredSizeForMainPixelMap.height);
+                uint32_t pictureSize = static_cast<uint32_t>(rowSize * opts.desiredSizeForMainPixelMap.height);
+
+                CHECK_ERROR_RETURN_RET_LOG(SkImageInfo::ByteSizeOverflowed(pictureSize), false,
+                    "%{public}s too large byteCount: %{public}llu",
+                    __func__, static_cast<unsigned long long>(pictureSize));
+            }
+            return true;
+        }
+    errorCode = ERR_IMAGE_DESIRED_PIXELFORMAT_UNSUPPORTED;
+    return false;
+}
+
 std::unique_ptr<Picture> ImageSource::CreatePicture(const DecodingOptionsForPicture &opts, uint32_t &errorCode)
 {
     ImageInfo info;
@@ -5513,11 +5630,13 @@ std::unique_ptr<Picture> ImageSource::CreatePicture(const DecodingOptionsForPict
         return nullptr;
     }
     DecodeOptions dopts;
-    dopts.desiredPixelFormat = opts.desiredPixelFormat;
-    dopts.allocatorType = opts.allocatorType;
+    if (!ApplyDecodingOptionsForPicture(dopts, opts, errorCode)) {
+        errorCode = ERR_IMAGE_DESIRED_PIXELFORMAT_UNSUPPORTED? errorCode : ERR_IMAGE_PICTURE_CREATE_FAILED;
+        IMAGE_LOGE("Invalid Decoding Options for Picture");
+        return nullptr;
+    }
     dopts.desiredDynamicRange = (ParseHdrType() && IsSingleHdrImage(sourceHdrType_)) ?
         DecodeDynamicRange::HDR : DecodeDynamicRange::SDR;
-    dopts.editable = true;
     IMAGE_LOGI("Decode mainPixelMap: PixelFormat: %{public}d, allocatorType: %{public}d, DynamicRange: %{public}d",
         opts.desiredPixelFormat, dopts.allocatorType, dopts.desiredDynamicRange);
     std::shared_ptr<PixelMap> mainPixelMap = CreatePixelMap(dopts, errorCode);
@@ -5527,15 +5646,16 @@ std::unique_ptr<Picture> ImageSource::CreatePicture(const DecodingOptionsForPict
         errorCode = ERR_IMAGE_PICTURE_CREATE_FAILED;
         return nullptr;
     }
-
+    DownSamplingScaleFactor downSamplingScaleFactor;
+    GetDownSamplingScaleFactor(downSamplingScaleFactor, info, opts);
     std::set<AuxiliaryPictureType> auxTypes = (opts.desireAuxiliaryPictures.size() > 0) ?
             opts.desireAuxiliaryPictures : ImageUtils::GetAllAuxiliaryPictureType();
     std::set<MetadataType> metadataTypes = (opts.desiredMetadatas.size() > 0) ?
             opts.desiredMetadatas : ImageUtils::GetAllMetadataType();
     if (info.encodedFormat == IMAGE_HEIF_FORMAT || info.encodedFormat == IMAGE_HEIC_FORMAT) {
-        DecodeHeifAuxiliaryPictures(auxTypes, picture, errorCode);
+        DecodeHeifAuxiliaryPictures(auxTypes, picture, errorCode, downSamplingScaleFactor);
     } else if (info.encodedFormat == IMAGE_JPEG_FORMAT) {
-        DecodeJpegAuxiliaryPicture(auxTypes, picture, errorCode);
+        DecodeJpegAuxiliaryPicture(auxTypes, picture, errorCode, downSamplingScaleFactor);
     }
     DecodeBlobMetaData(picture, metadataTypes, info, errorCode);
     SetHdrMetadataForPicture(picture);
@@ -5582,8 +5702,8 @@ void ImageSource::SetHdrMetadataForPicture(std::unique_ptr<Picture> &picture)
     SetXmageMetadataToGainmap(gainmapSptr);
 }
 
-void ImageSource::DecodeHeifAuxiliaryPictures(
-    const std::set<AuxiliaryPictureType> &auxTypes, std::unique_ptr<Picture> &picture, uint32_t &errorCode)
+void ImageSource::DecodeHeifAuxiliaryPictures(const std::set<AuxiliaryPictureType> &auxTypes,
+    std::unique_ptr<Picture> &picture, uint32_t &errorCode, const DownSamplingScaleFactor& downSamplingScaleFactor)
 {
     if (mainDecoder_ == nullptr) {
         IMAGE_LOGE("mainDecoder_ is nullptr");
@@ -5608,12 +5728,18 @@ void ImageSource::DecodeHeifAuxiliaryPictures(
             IMAGE_LOGE("The auxiliary picture type does not exist! Type: %{public}d", auxType);
             continue;
         }
+        AuxiliaryPictureDecodeInfo auxiliaryPictureDecodeInfo;
+        auxiliaryPictureDecodeInfo.downSamplingScaleFactor = downSamplingScaleFactor;
+        auxiliaryPictureDecodeInfo.imageType = IMAGE_HEIF_FORMAT;
+        auxiliaryPictureDecodeInfo.type = auxType;
         auto auxiliaryPicture = AuxiliaryGenerator::GenerateHeifAuxiliaryPicture(
-            mainInfo, auxType, mainDecoder_, errorCode);
+            mainInfo, mainDecoder_, errorCode, auxiliaryPictureDecodeInfo);
         if (auxiliaryPicture == nullptr || auxiliaryPicture->GetContentPixel() == nullptr) {
             IMAGE_LOGE("Generate heif auxiliary picture failed! Type: %{public}d, errorCode: %{public}d",
                 auxType, errorCode);
         } else {
+            AuxiliaryPictureInfo auxiliaryPictureInfo = auxiliaryPicture->GetAuxiliaryPictureInfo();
+            auxiliaryPicture->SetAuxiliaryPictureInfo(auxiliaryPictureInfo);
             auxiliaryPicture->GetContentPixel()->SetEditable(true);
             picture->SetAuxiliaryPicture(auxiliaryPicture);
         }
@@ -5714,8 +5840,8 @@ void ImageSource::SetThumbnailForPicture(std::unique_ptr<Picture> &picture, cons
     picture->SetAuxiliaryPicture(auxPicture);
 }
 
-void ImageSource::DecodeJpegAuxiliaryPicture(
-    std::set<AuxiliaryPictureType> &auxTypes, std::unique_ptr<Picture> &picture, uint32_t &errorCode)
+void ImageSource::DecodeJpegAuxiliaryPicture(std::set<AuxiliaryPictureType> &auxTypes,
+    std::unique_ptr<Picture> &picture, uint32_t &errorCode, const DownSamplingScaleFactor& downSamplingScaleFactor)
 {
     StreamInfo streamInfo;
     if (!CheckJpegSourceStream(streamInfo) || streamInfo.buffer == nullptr || streamInfo.GetCurrentSize() == 0) {
@@ -5738,6 +5864,10 @@ void ImageSource::DecodeJpegAuxiliaryPicture(
                 auxInfo.auxType, auxInfo.offset, auxInfo.size, streamInfo.GetCurrentSize());
             continue;
         }
+        AuxiliaryPictureDecodeInfo auxiliaryPictureDecodeInfo;
+        auxiliaryPictureDecodeInfo.downSamplingScaleFactor = downSamplingScaleFactor;
+        auxiliaryPictureDecodeInfo.imageType = IMAGE_JPEG_FORMAT;
+        auxiliaryPictureDecodeInfo.type = auxInfo.auxType;
         IMAGE_LOGI("Jpeg auxiliary picture has found. Type: %{public}d", auxInfo.auxType);
         std::unique_ptr<InputDataStream> auxStream =
             BufferSourceStream::CreateSourceStream((streamInfo.GetCurrentAddress() + auxInfo.offset), auxInfo.size);
@@ -5749,7 +5879,7 @@ void ImageSource::DecodeJpegAuxiliaryPicture(
             DoCreateDecoder(InnerFormat::IMAGE_EXTENDED_CODEC, pluginServer_, *auxStream, errorCode));
         uint32_t auxErrorCode = ERROR;
         auto auxPicture = AuxiliaryGenerator::GenerateJpegAuxiliaryPicture(
-            mainInfo, auxInfo.auxType, auxStream, auxDecoder, auxErrorCode);
+            mainInfo, auxStream, auxDecoder, auxErrorCode, auxiliaryPictureDecodeInfo);
         if (auxPicture != nullptr && auxPicture->GetContentPixel() != nullptr) {
             AuxiliaryPictureInfo auxPictureInfo = auxPicture->GetAuxiliaryPictureInfo();
             auxPictureInfo.jpegTagName = auxInfo.auxTagName;
@@ -6402,6 +6532,58 @@ std::shared_ptr<HeifsMetadata> ImageSource::GetHeifsMetadata(uint32_t index, uin
     return heifsMetadata;
 }
 
+std::shared_ptr<WebPMetadata> ImageSource::GetWebPMetadata(uint32_t index, uint32_t &errorCode)
+{
+    CHECK_ERROR_RETURN_RET_LOG(mainDecoder_ == nullptr, nullptr,
+        "[%{public}s] mainDecoder_ is nullptr", __func__);
+
+    ImageInfo info;
+    GetImageInfo(info);
+    if (info.encodedFormat != IMAGE_WEBP_FORMAT) {
+        IMAGE_LOGE("[%{public}s] unsupport format: %{public}s", __func__, info.encodedFormat.c_str());
+        return nullptr;
+    }
+
+    auto webpMetadata = std::make_shared<WebPMetadata>();
+    if (webpMetadata == nullptr) {
+        IMAGE_LOGE("[%{public}s] make_shared webpMetadata failed", __func__);
+        return nullptr;
+    }
+
+    bool ret = false;
+    ret = webpMetadata->SetValue(WEBP_METADATA_KEY_CANVAS_PIXEL_WIDTH, std::to_string(info.size.width));
+    CHECK_ERROR_RETURN_RET_LOG(!ret, nullptr, "[%{public}s] set canvas pixel width failed", __func__);
+    ret = webpMetadata->SetValue(WEBP_METADATA_KEY_CANVAS_PIXEL_HEIGHT, std::to_string(info.size.height));
+    CHECK_ERROR_RETURN_RET_LOG(!ret, nullptr, "[%{public}s] set canvas pixel height failed", __func__);
+
+    int32_t unclampedDelayTime = 0;
+    errorCode = mainDecoder_->GetImagePropertyInt(index, IMAGE_DELAY_TIME, unclampedDelayTime);
+    if (errorCode == SUCCESS) {
+        ret = webpMetadata->SetValue(WEBP_METADATA_KEY_UNCLAMPED_DELAY_TIME, std::to_string(unclampedDelayTime));
+        CHECK_ERROR_RETURN_RET_LOG(!ret, nullptr, "[%{public}s] set unclamped delay time failed", __func__);
+
+        int32_t delayTime = unclampedDelayTime;
+        if (delayTime < WEBP_MIN_FRAME_DURATION) {
+            delayTime = WEBP_MIN_FRAME_DURATION;
+        } else if (delayTime > WEBP_DELAY_TIME_UINT16_MAX) {
+            delayTime = WEBP_DELAY_TIME_UINT16_MAX;
+        }
+        ret = webpMetadata->SetValue(WEBP_METADATA_KEY_DELAY_TIME, std::to_string(delayTime));
+        CHECK_ERROR_RETURN_RET_LOG(!ret, nullptr, "[%{public}s] set delay time failed", __func__);
+    }
+
+    int32_t loopCount = 0;
+    errorCode = mainDecoder_->GetImagePropertyInt(index, WEBP_METADATA_KEY_LOOP_COUNT, loopCount);
+    if (errorCode == SUCCESS) {
+        ret = webpMetadata->SetValue(WEBP_METADATA_KEY_LOOP_COUNT, std::to_string(loopCount));
+        CHECK_ERROR_RETURN_RET_LOG(!ret, nullptr, "[%{public}s] set loop count failed", __func__);
+    }
+
+    metadatas_[MetadataType::WEBP] = webpMetadata;
+    errorCode = SUCCESS;
+    return webpMetadata;
+}
+
 uint32_t ImageSource::CreateBlobMetadataByImageSource(ImageInfo info, MetadataType type)
 {
     std::vector<uint8_t> blobMetadataValue;
@@ -6529,6 +6711,16 @@ bool ImageSource::IsDngImage()
     return info.encodedFormat == DNG_FORMAT;
 }
 
+bool ImageSource::IsWebPImage()
+{
+    ImageInfo info;
+    uint32_t ret = GetImageInfo(info);
+    bool cond = (ret != SUCCESS);
+    CHECK_ERROR_RETURN_RET_LOG(cond, false, "IsWebPImage GetImageInfo failed");
+    IMAGE_LOGD("IsWebPImage info.encodedFormat: %{public}s", info.encodedFormat.c_str());
+    return info.encodedFormat == IMAGE_WEBP_FORMAT;
+}
+
 static void ClearMetadataValue(MetadataValue &value)
 {
     value.key.clear();
@@ -6625,7 +6817,7 @@ std::shared_ptr<XMPMetadata> ImageSource::ReadXMPMetadata(uint32_t &errorCode)
     errorCode = GetImageInfo(imageInfo);
     CHECK_ERROR_RETURN_RET_LOG(errorCode != SUCCESS, nullptr, "%{public}s GetImageInfo failed", __func__);
 
-    std::lock_guard<std::mutex> guard(decodingMutex_);
+    std::lock_guard<std::recursive_mutex> guard(decodingMutex_);
     std::unique_lock<std::mutex> guardFile(fileMutex_);
     if (xmpMetadata_ != nullptr) {
         IMAGE_LOGD("%{public}s already read xmp metadata", __func__);
@@ -6646,7 +6838,7 @@ uint32_t ImageSource::WriteXMPMetadata(std::shared_ptr<XMPMetadata> &xmpMetadata
     CHECK_ERROR_RETURN_RET_LOG(errorCode != SUCCESS, errorCode, "%{public}s GetImageInfo failed", __func__);
     const std::string &mimeType = imageInfo.encodedFormat;
 
-    std::lock_guard<std::mutex> guard(decodingMutex_);
+    std::lock_guard<std::recursive_mutex> guard(decodingMutex_);
     std::unique_lock<std::mutex> guardFile(fileMutex_);
     std::unique_ptr<XMPMetadataAccessor> accessor = nullptr;
     if (!srcFilePath_.empty()) {

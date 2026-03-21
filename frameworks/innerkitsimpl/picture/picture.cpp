@@ -254,7 +254,7 @@ std::unique_ptr<PixelMap> Picture::SurfaceBuffer2PixelMap(sptr<OHOS::SurfaceBuff
                                         surfaceBuffer->GetHeight(), pixelFormat, alphaType, colorSpace);
     pixelMap->SetImageInfo(imageInfo, true);
     pixelMap->SetPixelsAddr(surfaceBuffer->GetVirAddr(),
-                            nativeBuffer, surfaceBuffer->GetSize(),
+                            nativeBuffer, pixelMap->GetRowBytes() * pixelMap->GetHeight(),
                             AllocatorType::DMA_ALLOC, nullptr);
 #ifdef IMAGE_COLORSPACE_FLAG
     ColorManager::ColorSpaceName colorSpaceName =

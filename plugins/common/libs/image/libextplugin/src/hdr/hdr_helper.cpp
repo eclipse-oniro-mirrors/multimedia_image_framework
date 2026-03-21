@@ -76,7 +76,6 @@ constexpr uint8_t JPEG_HEADRE_OFFSET = 3;
 constexpr uint8_t COLOR_INFO_BYTES = 3;
 constexpr uint8_t ONE_COMPONENT = 1;
 constexpr uint8_t THREE_COMPONENTS = 3;
-constexpr uint8_t THREE_GAINMAP_CHANNEL = 3;
 constexpr uint8_t VIVID_PRE_INFO_SIZE = 10;
 constexpr uint8_t VIVID_METADATA_PRE_INFO_SIZE = 10;
 constexpr uint32_t HDR_MULTI_PICTURE_APP_LENGTH = 90;
@@ -84,6 +83,7 @@ constexpr uint32_t EXTEND_INFO_MAIN_SIZE = 60;
 constexpr uint32_t ISO_GAINMAP_METADATA_PAYLOAD_MIN_SIZE = 38;
 constexpr uint32_t DENOMINATOR = 1000000;
 constexpr uint16_t EMPTY_META_SIZE = 0;
+constexpr uint8_t GAINMAP_CHANNEL_NUM_THREE = 3;
 constexpr uint8_t FIRST_CHANNEL_INDEX = 0;
 
 const float SM_COLOR_SCALE = 0.00002f;
@@ -288,9 +288,8 @@ static bool GetISOJpegGainMapOffset(vector<jpeg_marker_struct*>& markerList,
 
 static bool IsVaildHdrMediaType(jpeg_marker_struct* marker)
 {
-    IMAGE_LOGI("HDR-IMAGE seek HdrMediaType");
+    IMAGE_LOGD("HDR-IMAGE seek HdrMediaType");
     if (marker == nullptr || JPEG_MARKER_APP11 != marker->marker) {
-        IMAGE_LOGI("HDR-IMAGE marker == nullptr");
         return false;
     }
     if (marker->data_length <= HDR_MEDIA_TYPE_TAG_SIZE ||
@@ -327,7 +326,6 @@ static ImageHdrType CheckJpegGainMapHdrType(SkJpegCodec* jpegCodec,
             allAppSize += marker->data_length + JPEG_MARKER_TAG_SIZE + JPEG_MARKER_LENGTH_SIZE;
         }
         if (JPEG_MARKER_APP11 == marker->marker) {
-            IMAGE_LOGI("HDR-IMAGE find app11");
             mediaMarker = marker;
         }
     }
@@ -347,7 +345,6 @@ static ImageHdrType CheckJpegGainMapHdrType(SkJpegCodec* jpegCodec,
     auto ret = ImageHdrType::HDR_ISO_DUAL;
     CHECK_ERROR_RETURN_RET(cond, ret);
     if (IsVaildHdrMediaType(mediaMarker)) {
-        IMAGE_LOGI("HDR-IMAGE SUCCESS");
         return ImageHdrType::HDR_LOG_DUAL;
     }
     return ImageHdrType::SDR;
@@ -456,6 +453,7 @@ static bool ParseVividJpegStaticMetadata(uint8_t* data, uint32_t& offset, uint32
     staticMeta.smpte2086.minLuminance = (float)ImageUtils::BytesToUint32(data, offset, size) * SM_LUM_SCALE;
     staticMeta.cta861.maxContentLightLevel = (float)ImageUtils::BytesToUint16(data, offset, size);
     staticMeta.cta861.maxFrameAverageLightLevel = (float)ImageUtils::BytesToUint16(data, offset, size);
+    IMAGE_LOGD("HDR-IMAGE decode maxContentLightLevel = %{public}f", staticMeta.cta861.maxContentLightLevel);
     uint32_t vecSize = sizeof(HdrStaticMetadata);
     staticMetaVec.resize(vecSize);
     if (memcpy_s(staticMetaVec.data(), vecSize, &staticMeta, vecSize) != EOK) {
@@ -639,7 +637,7 @@ static bool ParseVividJpegMetadata(uint8_t* data, uint32_t& dataOffset, uint32_t
 {
     uint16_t metadataSize = ImageUtils::BytesToUint16(data, dataOffset, length);
     CHECK_ERROR_RETURN_RET(metadataSize > length - dataOffset, false);
-    bool cond = !ParseVividJpegStaticMetadata(data, dataOffset, metadataSize, metadata.staticMetadata);
+    bool cond = !ParseVividJpegStaticMetadata(data, dataOffset, length, metadata.staticMetadata);
     CHECK_ERROR_RETURN_RET(cond, false);
     uint16_t dynamicMetaSize = ImageUtils::BytesToUint16(data, dataOffset, length);
     if (dynamicMetaSize > 0) {
@@ -811,6 +809,7 @@ static bool ParseISOMetadata(uint8_t* data, uint32_t length, HdrMetadata& metada
     cond = metadata.extendMeta.metaISO.miniVersion != EMPTY_SIZE;
     CHECK_ERROR_RETURN_RET(cond, false);
     uint8_t flag = data[dataOffset++];
+    // The first bit indicates the gainmapChannelNum, the second bit indicates the useBaseColorFlag.
     metadata.extendMeta.metaISO.gainmapChannelNum = ((flag & 0x80) == 0x80) ? THREE_COMPONENTS : ONE_COMPONENT;
     metadata.extendMeta.metaISO.useBaseColorFlag = ((flag & 0x40) == 0x40) ? 0x01 : 0x00;
 
@@ -1345,7 +1344,7 @@ vector<uint8_t> HdrJpegPackerHelper::PackISOMetadataMarker(HdrMetadata& metadata
     if (extendMeta.metaISO.useBaseColorFlag) {
         bytes[index] |= 0x40;
     }
-    if (extendMeta.metaISO.gainmapChannelNum == THREE_GAINMAP_CHANNEL) {
+    if (extendMeta.metaISO.gainmapChannelNum == GAINMAP_CHANNEL_NUM_THREE) {
         bytes[index] |= 0x80;
     }
     index++;
@@ -1362,6 +1361,8 @@ vector<uint8_t> HdrJpegPackerHelper::PackISOMetadataMarker(HdrMetadata& metadata
         altHeadroomNumerator = (uint32_t)(extendMeta.metaISO.alternateHeadroom * DENOMINATOR);
         altHeadroomDenominator = DENOMINATOR;
     }
+    IMAGE_LOGD("HDR-IMAGE baseHeadroom: %{public}d, altHeadroom: %{public}d",
+        baseHeadroomNumerator, altHeadroomNumerator);
     ImageUtils::Uint32ToBytes(altHeadroomNumerator, bytes, index);
     ImageUtils::Uint32ToBytes(altHeadroomDenominator, bytes, index);
     PackISOExtendInfo(bytes, index, extendMeta.metaISO);
@@ -1383,7 +1384,7 @@ static bool WriteJpegPreApp(sk_sp<SkData>& imageData, SkWStream& outputStream, u
             return true;
         }
         uint16_t markerSize = (imageBytes[index + INDEX_TWO] << MOVE_ONE_BYTE) | imageBytes[index + INDEX_THREE];
-        cond = markerSize > dataSize;
+        cond = index + markerSize + JPEG_MARKER_TAG_SIZE > dataSize;
         CHECK_ERROR_RETURN_RET(cond, false);
         outputStream.write(imageBytes + index, markerSize + JPEG_MARKER_TAG_SIZE);
         if (imageBytes[index + INDEX_ONE] == JPEG_MARKER_APP0) {
@@ -1415,13 +1416,14 @@ uint32_t HdrJpegPackerHelper::SpliceLogHdrStream(sk_sp<SkData>& baseImage,
 uint32_t HdrJpegPackerHelper::SpliceHdrStream(sk_sp<SkData>& baseImage, sk_sp<SkData>& gainmapImage,
     SkWStream& output, HdrMetadata& metadata)
 {
-    bool cond = (baseImage == nullptr || gainmapImage == nullptr);
+    bool cond = (baseImage == nullptr || gainmapImage == nullptr || baseImage->data() == nullptr ||
+        gainmapImage->data() == nullptr);
     CHECK_ERROR_RETURN_RET(cond, ERR_IMAGE_ENCODE_FAILED);
     uint32_t offset = 0;
     uint32_t jfifSize = 0;
     cond = WriteJpegPreApp(baseImage, output, offset, jfifSize);
     CHECK_ERROR_RETURN_RET(!cond, ERR_IMAGE_ENCODE_FAILED);
-    IMAGE_LOGI("HDR-IMAGE spliceHdr metadata size ,static %{public}zu, dynamic %{public}zu",
+    IMAGE_LOGE("HDR-IMAGE encode metadata-size ,static %{public}zu, dynamic %{public}zu",
         metadata.staticMetadata.size(), metadata.dynamicMetadata.size());
     std::vector<uint8_t> gainmapMetadataPack = PackVividMetadataMarker(metadata);
     std::vector<uint8_t> gainmapISOMetadataPack = PackISOMetadataMarker(metadata);

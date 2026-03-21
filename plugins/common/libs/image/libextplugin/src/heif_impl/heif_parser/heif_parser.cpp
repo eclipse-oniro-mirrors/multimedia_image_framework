@@ -40,6 +40,7 @@ const std::set<std::string> INFE_ITEM_TYPE = {
 const static uint32_t HEIF_MAX_EXIF_SIZE = 128 * 1024;
 const static uint32_t HEIF_MAX_SAMPLE_SIZE = 20 * 1024 * 1024;
 const static uint32_t FRAME_INDEX_DELTA = 1;
+const static uint32_t MS_PER_SECOND = 1000;
 
 static bool HasOverflowed(uint32_t num1, uint32_t num2)
 {
@@ -1267,7 +1268,19 @@ heif_error HeifParser::GetHeifsDelayTime(uint32_t index, int32_t &value) const
     if (!sttsBox_) {
         return heif_error_no_stts;
     }
-    return sttsBox_->GetDelayTime(index, value);
+    if (!mdhdBox_) {
+        return heif_error_no_mdhd;
+    }
+    uint32_t timeScale = mdhdBox_->GetTimescale();
+    uint32_t sampleDelta = 0;
+    bool cond = timeScale == 0 || sttsBox_->GetSampleDelta(index, sampleDelta) != heif_error_ok;
+    CHECK_ERROR_RETURN_RET(cond, heif_error_item_data_not_found);
+
+    cond = sampleDelta > static_cast<uint32_t>((std::numeric_limits<int32_t>::max()) / MS_PER_SECOND);
+    CHECK_ERROR_RETURN_RET(cond, heif_error_invalid_stts);
+
+    value = static_cast<int32_t>((sampleDelta * MS_PER_SECOND) / timeScale);
+    return heif_error_ok;
 }
 
 heif_error HeifParser::GetPreSampleSize(uint32_t index, uint32_t &preSampleSize)

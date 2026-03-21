@@ -1117,32 +1117,29 @@ Image_ErrorCode OH_ImageSourceNative_ReadImageMetadataByType(OH_ImageSourceNativ
 
 /**
  * @brief Defines raw data in an image.
- * {@link OH_ImageSourceNative_CreateImageRawData}.
+ * It is used in {@link OH_ImageSourceNative_CreateImageRawData}.
  *
  * @since 24
  */
 struct OH_ImageRawData;
-
-/**
- * @brief Defines raw data in an image.
- * {@link OH_ImageSourceNative_CreateImageRawData}.
- *
- * @since 24
- */
 typedef struct OH_ImageRawData OH_ImageRawData;
 
 /**
  * @brief Obtains rawData object from an image.
+ *         The rawData object usually occupies a large amount of memory because it contains
+ *         raw data from the camera. When the rawData object and the data it contains are not used, call the
+ *         {@link OH_ImageSourceNative_DestroyImageRawData} method to destroy them in a timely manner.
  *
  * @param source Pointer to the image source.
  * @param rawData Double pointer to the rawData object obtained after decoding.
  * @return Returns One of the following result codes:
  *         {@link IMAGE_SUCCESS} if the execution is successful.
  *         {@link IMAGE_BAD_SOURCE} Bad source.
+ *         {@link IMAGE_SOURCE_INVALID_PARAMETER} if the rawData object is invalid.
  *         {@link IMAGE_SOURCE_UNSUPPORTED_MIME_TYPE} Unsupported MIME type.
  * @since 24
  */
-Image_ErrorCode OH_ImageSourceNative_CreateImageRawData(OH_ImageSourceNative *source, OH_ImageRawData **rawData);
+Image_ErrorCode OH_ImageSourceNative_CreateImageRawData(const OH_ImageSourceNative *source, OH_ImageRawData **rawData);
 
 /**
  * @brief Gets binary data from the rawData object.
@@ -1155,7 +1152,8 @@ Image_ErrorCode OH_ImageSourceNative_CreateImageRawData(OH_ImageSourceNative *so
  *         {@link IMAGE_SOURCE_INVALID_PARAMETER} if the rawData object is invalid.
  * @since 24
  */
-Image_ErrorCode OH_ImageSourceNative_GetBufferFromRawData(OH_ImageRawData *rawData, uint8_t **data, size_t *length);
+Image_ErrorCode OH_ImageSourceNative_GetBufferFromRawData(const OH_ImageRawData *rawData,
+    uint8_t **data, size_t *length);
 
 /**
  * @brief Gets number of bits that each pixel actually occupies in the buffer data.
@@ -1167,10 +1165,10 @@ Image_ErrorCode OH_ImageSourceNative_GetBufferFromRawData(OH_ImageRawData *rawDa
  *         {@link IMAGE_SOURCE_INVALID_PARAMETER} if the rawData object is invalid.
  * @since 24
  */
-Image_ErrorCode OH_ImageSourceNative_GetBitsPerPixelFromRawData(OH_ImageRawData *rawData, uint8_t *bitsPerPixel);
+Image_ErrorCode OH_ImageSourceNative_GetBitsPerPixelFromRawData(const OH_ImageRawData *rawData, uint8_t *bitsPerPixel);
 
 /**
- * @brief Releases rawData object.
+ * @brief Destroys the rawData object.
  *
  * @param rawData Pointer to the rawData object.
  * @return Returns One of the following result codes:
@@ -1178,7 +1176,7 @@ Image_ErrorCode OH_ImageSourceNative_GetBitsPerPixelFromRawData(OH_ImageRawData 
  *         {@link IMAGE_SOURCE_INVALID_PARAMETER} if the rawData object is invalid.
  * @since 24
  */
-Image_ErrorCode OH_ImageSourceNative_ReleaseRawData(OH_ImageRawData *rawData);
+Image_ErrorCode OH_ImageSourceNative_DestroyImageRawData(OH_ImageRawData *rawData);
 #ifdef __cplusplus
 };
 #endif

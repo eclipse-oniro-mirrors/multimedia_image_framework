@@ -84,7 +84,7 @@ static bool isSameColorSpace(const OHOS::ColorManager::ColorSpace &src,
     return SkColorSpace::Equals(skSrc.get(), skDst.get());
 }
 
-bool  PixelYuvExt::resize(float xAxis, float yAxis)
+bool PixelYuvExt::resize(float xAxis, float yAxis)
 {
     scale(xAxis, yAxis);
     return true;
@@ -93,6 +93,22 @@ bool  PixelYuvExt::resize(float xAxis, float yAxis)
 bool PixelYuvExt::resize(int32_t dstW, int32_t dstH)
 {
     scale(dstW, dstH);
+    return true;
+}
+
+bool PixelYuvExt::resizeForPicture(int32_t dstW, int32_t dstH)
+{
+    int32_t rowSize = ImageUtils::GetRowDataSizeByPixelFormat(dstW, PixelFormat::NV21);
+    if (dstH == 0) {
+        return false;
+    }
+    bool cond = rowSize <= 0 || dstH <= 0 || rowSize > std::numeric_limits<int32_t>::max() / dstH;
+    CHECK_ERROR_RETURN_RET_LOG(cond, false, "%{public}s rowSize: %{public}d, height: %{public}d may overflowed",
+        __func__, rowSize, dstH);
+    uint32_t pictureSize = static_cast<uint32_t>(rowSize * dstH);
+    CHECK_ERROR_RETURN_RET_LOG(SkImageInfo::ByteSizeOverflowed(pictureSize), false,
+        "%{public}s too large byteCount: %{public}llu", __func__, static_cast<unsigned long long>(pictureSize));
+    scale(dstW, dstH, AntiAliasingOption::NONE);
     return true;
 }
 

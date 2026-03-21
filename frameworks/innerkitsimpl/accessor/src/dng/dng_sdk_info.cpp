@@ -1655,12 +1655,12 @@ uint32_t DngSdkInfo::GetIfdRowInterleaveFactor(const dng_ifd& fIFD, MetadataValu
 
 uint32_t DngSdkInfo::GetIfdDefaultUserCrop(const dng_ifd& fIFD, MetadataValue& value)
 {
-    value.type = PropertyValueType::DOUBLE_ARRAY;
-    value.doubleArrayValue.clear();
-    value.doubleArrayValue.push_back(static_cast<double>(fIFD.fDefaultUserCropT.As_real64()));
-    value.doubleArrayValue.push_back(static_cast<double>(fIFD.fDefaultUserCropL.As_real64()));
-    value.doubleArrayValue.push_back(static_cast<double>(fIFD.fDefaultUserCropB.As_real64()));
-    value.doubleArrayValue.push_back(static_cast<double>(fIFD.fDefaultUserCropR.As_real64()));
+    value.type = PropertyValueType::INT_ARRAY;
+    value.intArrayValue.clear();
+    value.intArrayValue.push_back(static_cast<int64_t>(fIFD.fDefaultUserCropT.As_real64()));
+    value.intArrayValue.push_back(static_cast<int64_t>(fIFD.fDefaultUserCropL.As_real64()));
+    value.intArrayValue.push_back(static_cast<int64_t>(fIFD.fDefaultUserCropB.As_real64()));
+    value.intArrayValue.push_back(static_cast<int64_t>(fIFD.fDefaultUserCropR.As_real64()));
     return SUCCESS;
 }
 
