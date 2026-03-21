@@ -128,7 +128,7 @@ uint32_t SharedMemory::Release()
     data.data = nullptr;
     data.size = SIZE_ZERO;
     if (extend.data != nullptr) {
-        free(extend.data);
+        delete static_cast<int*>(extend.data);
         extend.data = nullptr;
         extend.size = SIZE_ZERO;
     }
