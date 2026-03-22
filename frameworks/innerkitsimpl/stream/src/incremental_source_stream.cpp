@@ -140,6 +140,10 @@ uint32_t IncrementalSourceStream::UpdateData(const uint8_t *data, uint32_t size,
         return SUCCESS;
     }
     if (incrementalMode_ == IncrementalMode::INCREMENTAL_DATA) {
+        if (dataSize_ > (UINT32_MAX - size)) {
+            IMAGE_LOGE("[IncrementalSourceStream]total size would exceed limit");
+            return ERR_IMAGE_TOO_LARGE;
+        }
         vector<uint8_t> newData;
         newData.resize(size);
         copy(data, data + size, newData.begin());
