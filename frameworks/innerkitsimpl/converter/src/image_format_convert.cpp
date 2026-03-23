@@ -693,7 +693,7 @@ uint32_t ImageFormatConvert::RGBConvertImageFormatOption(std::shared_ptr<PixelMa
         m->Release();
         return IMAGE_RESULT_FORMAT_CONVERT_FAILED;
     }
-    return = MakeDestPixelMap(srcPixelMap, imageInfo, destInfo, m->extend.data);
+    return MakeDestPixelMap(srcPixelMap, imageInfo, destInfo, m->extend.data);
 }
 
 uint32_t ImageFormatConvert::RGBConvertImageFormatOptionUnique(
