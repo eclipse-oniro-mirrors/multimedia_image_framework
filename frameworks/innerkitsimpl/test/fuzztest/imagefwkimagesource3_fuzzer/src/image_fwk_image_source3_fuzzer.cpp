@@ -522,8 +522,15 @@ void ReadImageMetadataByTypeFuzzTest(const std::string& pathName)
     MetadataValue gifValue;
     imageSource->GetGifProperty(0, gifKey, gifValue);
 
+    std::string webPKey = GetFuzzKey(FDP);
+    ImageKvMetadata::IsWebPMetadataKey(webPKey);
+    MetadataValue webPValue;
+    imageSource->GetWebPProperty(0, webPKey, webPValue);
+
     std::vector<MetadataValue> result;
     imageSource->GetFragmentPropertiesWithType(result);
+
+    imageSource->GetWebpPropertiesWithType(0, result);
 }
 }  // namespace Media
 }  // namespace OHOS
