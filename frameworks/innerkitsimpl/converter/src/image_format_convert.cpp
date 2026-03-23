@@ -694,9 +694,9 @@ uint32_t ImageFormatConvert::RGBConvertImageFormatOption(std::shared_ptr<PixelMa
         return IMAGE_RESULT_FORMAT_CONVERT_FAILED;
     }
     auto ret = MakeDestPixelMap(srcPixelMap, imageInfo, destInfo, m->extend.data);
-    if (ret != SUCCESS) { 
-        m->Release(); 
-    } 
+    if (ret != SUCCESS) {
+        m->Release();
+    }
     return ret;
 }
 
@@ -741,9 +741,9 @@ uint32_t ImageFormatConvert::RGBConvertImageFormatOptionUnique(
         return IMAGE_RESULT_FORMAT_CONVERT_FAILED;
     }
     auto ret = MakeDestPixelMapUnique(srcPixelMap, imageInfo, destInfo, memory->extend.data);
-    if (ret != SUCCESS) { 
-        memory->Release(); 
-    } 
+    if (ret != SUCCESS) {
+        memory->Release();
+    }
     return ret;
 }
 
@@ -859,9 +859,9 @@ uint32_t ImageFormatConvert::YUVConvertImageFormatOption(std::shared_ptr<PixelMa
         return IMAGE_RESULT_FORMAT_CONVERT_FAILED;
     }
     auto ret = MakeDestPixelMap(srcPixelMap, imageInfo, destInfo, m->extend.data);
-    if (ret != SUCCESS) { 
-        m->Release(); 
-    } 
+    if (ret != SUCCESS) {
+        m->Release();
+    }
     return ret;
 }
 
