@@ -57,7 +57,7 @@ std::shared_ptr<Cr3Box> Cr3Box::MakeCr3Box(uint32_t boxType)
 
 static bool HasOverflowed64(uint64_t num1, uint64_t num2)
 {
-    return num1 > std::numeric_limits<uint64>::max() - num2;
+    return num1 > std::numeric_limits<uint64_t>::max() - num2;
 }
 
 static bool Cr3BoxContentChildren(uint32_t boxType)
