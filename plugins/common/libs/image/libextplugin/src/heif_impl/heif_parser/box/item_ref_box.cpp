@@ -88,7 +88,7 @@ heif_error HeifIrefBox::Write(HeifStreamWriter &writer) const
 
     for (const auto &ref: references_) {
         uint32_t tmpValue;
-        if (__builtin_add_overflow(idSize, (UINT8_BYTES_NUM + ref.toItemIds.size()), &tmpValue)) {
+        if (__builtin_mul_overflow(idSize, (UINT8_BYTES_NUM + ref.toItemIds.size()), &tmpValue)) {
             return heif_error_add_overflow;
         }
         auto box_size = uint32_t(UINT32_BYTES_NUM + UINT32_BYTES_NUM + UINT16_BYTES_NUM +
