@@ -52,15 +52,12 @@ public:
     static bool BuildShader();
 
 private:
-    static void DestoryInstanceThreadFunc();
     bool GLMakecurrent(bool needCurrent);
     bool InitGLResource();
-    bool BuildVertex();
     bool CreateEGLImage(OHNativeWindowBuffer *nativeBuffer, EGLImageKHR &eglImage, GLuint &imageTexId);
     bool UseEGLImageCreateNormalImage(GLuint &imageTexId);
     bool CreateNormalImage(const uint8_t *data, GLuint &imageTexId);
-    bool BuildProcTexture(bool needThumb, bool needUpload, GLuint &readTexId);
-    bool BuildTargetTexture();
+    bool BuildProcTexture(GLuint &readTexId);
     void DestroyProcTexture();
     bool ResizeRotateWithGL();
     bool ResizeScaleWithGL();

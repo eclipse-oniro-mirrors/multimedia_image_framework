@@ -16,6 +16,7 @@
 #include "render_context.h"
 
 #include "image_log.h"
+#include "pixel_map_egl_utils.h"
 
 #undef LOG_DOMAIN
 #define LOG_DOMAIN LOG_TAG_DOMAIN_ID_IMAGE
@@ -49,43 +50,24 @@ bool RenderContext::Init()
 
 bool RenderContext::InitEGLContext()
 {
-    eglDisplay_ = eglGetPlatformDisplay(EGL_PLATFORM_OHOS_KHR, EGL_DEFAULT_DISPLAY, nullptr);
-    if (eglDisplay_ == EGL_NO_DISPLAY) {
-        IMAGE_LOGE("RenderContext::Init: eglGetDisplay error: ");
+    if (!PixelMapEglUtils::InitDisplay(eglDisplay_)) {
         return false;
     }
-
-    EGLint major = 0;
-    EGLint minor = 0;
-    if (eglInitialize(eglDisplay_, &major, &minor) == EGL_FALSE) {
-        IMAGE_LOGE("Failed to initialize EGLDisplay");
+    if (!PixelMapEglUtils::ChooseDefaultConfig(eglDisplay_, config_)) {
+        (void)eglTerminate(eglDisplay_);
+        eglDisplay_ = EGL_NO_DISPLAY;
         return false;
     }
-
-    if (eglBindAPI(EGL_OPENGL_ES_API) == EGL_FALSE) {
-        IMAGE_LOGE("Failed to bind OpenGL ES API");
+    if (!PixelMapEglUtils::CreateContext(eglDisplay_, config_, eglContext_)) {
+        (void)eglTerminate(eglDisplay_);
+        eglDisplay_ = EGL_NO_DISPLAY;
         return false;
     }
-
-    unsigned int ret;
-    EGLint count;
-    EGLint configAttribs[] = { EGL_SURFACE_TYPE, EGL_WINDOW_BIT, EGL_RED_SIZE, 8, EGL_GREEN_SIZE, 8, EGL_BLUE_SIZE, 8,
-        EGL_ALPHA_SIZE, 8, EGL_RENDERABLE_TYPE, EGL_OPENGL_ES3_BIT, EGL_NONE };
-
-    ret = eglChooseConfig(eglDisplay_, configAttribs, &config_, 1, &count);
-    if (!(ret && static_cast<unsigned int>(count) >= 1)) {
-        IMAGE_LOGE("Failed to eglChooseConfig");
-        return false;
-    }
-
-    static const EGLint contextAttribs[] = { EGL_CONTEXT_CLIENT_VERSION, 2, EGL_NONE };
-    eglContext_ = eglCreateContext(eglDisplay_, config_, EGL_NO_CONTEXT, contextAttribs);
-    if (eglContext_ == EGL_NO_CONTEXT) {
-        IMAGE_LOGE("Failed to create egl context %{public}x", eglGetError());
-        return false;
-    }
-
-    if (!CreatePbufferSurface()) {
+    if (!PixelMapEglUtils::CreatePbufferSurface(eglDisplay_, config_, pbufferSurface_)) {
+        (void)eglDestroyContext(eglDisplay_, eglContext_);
+        (void)eglTerminate(eglDisplay_);
+        eglContext_ = EGL_NO_CONTEXT;
+        eglDisplay_ = EGL_NO_DISPLAY;
         return false;
     }
     MakeCurrent(pbufferSurface_);
@@ -95,21 +77,15 @@ bool RenderContext::InitEGLContext()
 
 bool RenderContext::CreatePbufferSurface()
 {
-    if (pbufferSurface_ == EGL_NO_SURFACE) {
-        EGLint attribs[] = {EGL_WIDTH, 1, EGL_HEIGHT, 1, EGL_NONE};
-        pbufferSurface_ = eglCreatePbufferSurface(eglDisplay_, config_, attribs);
-        if (pbufferSurface_ == EGL_NO_SURFACE) {
-            IMAGE_LOGE(
-                "RenderContext::CreatePbufferSurface failed, error is %{public}x",
-                eglGetError());
-            return false;
-        }
-    }
-    return true;
+    return PixelMapEglUtils::CreatePbufferSurface(eglDisplay_, config_, pbufferSurface_);
 }
 
 void RenderContext::MakeCurrent(EGLSurface surface) const
 {
+    if (eglDisplay_ == EGL_NO_DISPLAY || eglContext_ == EGL_NO_CONTEXT) {
+        IMAGE_LOGE("RenderContext::MakeCurrent invalid egl context");
+        return;
+    }
     EGLSurface currSurface = surface;
     if (currSurface == EGL_NO_SURFACE) {
         currSurface = pbufferSurface_;
@@ -156,6 +132,7 @@ void RenderContext::Clear() noexcept
     }
 
     grContext_ = nullptr;
+    PixelMapEglUtils::ResetCurrentContext(eglDisplay_, eglContext_);
 
     if (pbufferSurface_ != EGL_NO_SURFACE) {
         EGLBoolean ret = eglDestroySurface(eglDisplay_, pbufferSurface_);
@@ -164,8 +141,9 @@ void RenderContext::Clear() noexcept
         }
         pbufferSurface_ = EGL_NO_SURFACE;
     }
-
-    (void)eglDestroyContext(eglDisplay_, eglContext_);
+    if (eglContext_ != EGL_NO_CONTEXT) {
+        (void)eglDestroyContext(eglDisplay_, eglContext_);
+    }
     (void)eglTerminate(eglDisplay_);
     eglContext_ = EGL_NO_CONTEXT;
     eglDisplay_ = EGL_NO_DISPLAY;

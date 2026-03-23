@@ -14,13 +14,17 @@
  */
 
 #include "pixel_map_gl_shader.h"
+#include "pixel_map_gl_resource.h"
+#include "pixel_map_gl_utils.h"
 
 #include <fcntl.h>
 #include <inttypes.h>
 #include <sys/stat.h>
 #include <sys/types.h>
 
+#include <filesystem>
 #include <fstream>
+#include <memory>
 #include <sstream>
 #include <string>
 
@@ -28,18 +32,18 @@
 #include <unistd.h>
 #endif
 
+#include "securec.h"
+
 #undef LOG_DOMAIN
 #define LOG_DOMAIN LOG_TAG_DOMAIN_ID_IMAGE
 
 #undef LOG_TAG
 #define LOG_TAG "Shader"
-#define PI 3.1415926
 
 namespace OHOS {
 namespace Media {
 namespace PixelMapGlShader {
 using namespace GlCommon;
-const int MAX_SLR_WIN_SIZE = 12;
 std::string g_shaderPath = "/data/storage/el1/base/";
 static int g_shaderVersion = 3;
 const std::string &g_rotateFilePath = g_shaderPath + "pixelMapRotate.shader";
@@ -56,57 +60,6 @@ const std::string &g_LapFilePath = g_shaderPath + "pixelMapLap.shader";
 unsigned char *LapShader::shaderBinary_ = nullptr;
 GLenum LapShader::binaryFormat_ = 0;
 GLuint LapShader::binarySize_ = 0;
-
-float GeSLRFactor(float x, int a)
-{
-    if (x >= a || x < -a) {
-        return 0.0f;
-    }
-    if (std::abs(x) < 1e-16) {
-        return 0.0f;
-    }
-    x *= PI;
-    if (std::abs(x * x) < 1e-6 || x * x == 0.0f ||
-        std::abs(a) < 1e-6 || a == 0.0f) {
-        return 0.0f;
-    }
-    return a * std::sin(x) * std::sin(x / a) / (x * x);
-}
-
-static std::shared_ptr<float[]> getWeights(float coeff, int n)
-{
-    if (std::abs(coeff) < 1e-6 || coeff == 0.0f) {
-        coeff = 1.0f;
-    }
-    float tao = 1.0f / coeff;
-    int a = std::max(2, static_cast<int>(std::floor(tao)));
-
-    int width = 2 * a;
-    width = std::min(width, MAX_SLR_WIN_SIZE);
-    std::shared_ptr<float[]> weights = std::make_shared<float>(n * MAX_SLR_WIN_SIZE);
-    for (auto i = 0; i < n; i++) {
-        if (std::abs(coeff) < 1e-6 || coeff == 0.0f) {
-            coeff = 1.0f;
-        }
-        float eta_i = (i + 0.5) / coeff - 0.5;
-        int eta_i_int = std::floor(eta_i);
-        float sum = 0;
-
-        int k = eta_i_int - a + 1;
-        for (auto j = 0; j < width; ++j) {
-            float f = GeSLRFactor(coeff * (eta_i - (k + j)), a);
-            weights[i * MAX_SLR_WIN_SIZE + j] = f;
-            sum += f;
-        }
-        for (auto j = 0; j < width; ++j) {
-            weights[i * MAX_SLR_WIN_SIZE + j] /= sum;
-        }
-        for (auto h = width; h < MAX_SLR_WIN_SIZE; ++h) {
-            weights[i * MAX_SLR_WIN_SIZE + h]  = 0;
-        }
-    }
-    return weights;
-}
 
 static bool checkProgram(GLuint &programId)
 {
@@ -144,40 +97,63 @@ static bool loadShaderFromFile(unsigned char*&shaderBinary, GLenum &binaryFormat
     }
 
     const size_t minSize = sizeof(GLenum) + sizeof(version);
-    if (fileStat.st_size < minSize) {
-        IMAGE_LOGE("slr_gpu shader cache file size failed! size:%{public}" PRId64, fileStat.st_size);
+    if (fileStat.st_size < 0) {
+        IMAGE_LOGE("slr_gpu shader cache file size failed! size:%{public}lld",
+            static_cast<long long>(fileStat.st_size));
+        return false;
+    }
+    const uint64_t fileSize64 = static_cast<uint64_t>(fileStat.st_size);
+    if (fileSize64 < minSize) {
+        IMAGE_LOGE("slr_gpu shader cache file size failed! size:%{public}llu",
+            static_cast<unsigned long long>(fileSize64));
         return false;
     }
 
     int binaryFd = open(filePath, O_RDONLY);
-    if (binaryFd <= 0) {
+    if (binaryFd < 0) {
         IMAGE_LOGE("slr_gpu shader cache open failed! error %{public}d", errno);
         return false;
     }
 
-    unsigned char *binaryData = new unsigned char[fileStat.st_size];
-    if (binaryData == nullptr) {
+    if (fileSize64 > std::numeric_limits<size_t>::max()) {
+        close(binaryFd);
+        IMAGE_LOGE("slr_gpu shader cache file too large for platform size_t");
         return false;
     }
-    int readLen = read(binaryFd, binaryData, fileStat.st_size);
+    const size_t fileSize = static_cast<size_t>(fileSize64);
+    if (fileSize - minSize > std::numeric_limits<GLuint>::max()) {
+        close(binaryFd);
+        IMAGE_LOGE("slr_gpu shader cache file too large");
+        return false;
+    }
+    std::unique_ptr<unsigned char[]> binaryData(new (std::nothrow) unsigned char[fileSize]);
+    if (binaryData == nullptr) {
+        close(binaryFd);
+        return false;
+    }
+    ssize_t readLen = read(binaryFd, binaryData.get(), fileSize);
     close(binaryFd);
 
-    if (readLen != fileStat.st_size) {
-        delete[] binaryData;
+    if (readLen != static_cast<ssize_t>(fileSize)) {
         IMAGE_LOGE("slr_gpu shader cache read failed! error "
-            "%{public}d readnum %{public}d", errno, readLen);
+            "%{public}d readnum %{public}zd", errno, readLen);
         return false;
     }
-    binarySize = static_cast<uint32_t>(fileStat.st_size - minSize);
-    binaryFormat = *reinterpret_cast<int *>(binaryData + binarySize);
-    int oldVersion = *reinterpret_cast<int *>(binaryData + fileStat.st_size - sizeof(version));
+    binarySize = static_cast<uint32_t>(fileSize - minSize);
+    if (memcpy_s(&binaryFormat, sizeof(binaryFormat), binaryData.get() + binarySize, sizeof(binaryFormat)) != EOK) {
+        return false;
+    }
+    int oldVersion = 0;
+    if (memcpy_s(&oldVersion, sizeof(oldVersion), binaryData.get() + fileSize - sizeof(version), sizeof(oldVersion)) !=
+        EOK) {
+        return false;
+    }
     if (oldVersion != version) {
         IMAGE_LOGI("slr_gpu oldVersion != version:%{public}d binaryFormat:%{public}d  "
             "size:%{public}d oldVersion:%{public}d", version, binaryFormat, binarySize, oldVersion);
-        delete []binaryData;
         return false;
     }
-    shaderBinary = binaryData;
+    shaderBinary = binaryData.release();
     return true;
 }
 
@@ -205,14 +181,18 @@ bool saveShaderToFile(unsigned char*&shaderBinary, GLenum &binaryFormat,
     if (std::filesystem::exists(filePath)) {
         std::filesystem::remove(filePath);
     }
-    int binaryFd = open(filePath, O_WRONLY | O_CREAT, 0644);
-    if (binaryFd <= 0) {
+    int binaryFd = open(filePath, O_WRONLY | O_CREAT | O_TRUNC, 0644);
+    if (binaryFd < 0) {
         IMAGE_LOGE("slr_gpu shader cache open(write) failed! error %{public}d", errno);
         return false;
     }
-    write(binaryFd, shaderBinary, binarySize);
-    write(binaryFd, &binaryFormat, sizeof(GLenum));
-    write(binaryFd, &g_shaderVersion, sizeof(g_shaderVersion));
+    if (write(binaryFd, shaderBinary, binarySize) != static_cast<ssize_t>(binarySize) ||
+        write(binaryFd, &binaryFormat, sizeof(GLenum)) != static_cast<ssize_t>(sizeof(GLenum)) ||
+        write(binaryFd, &g_shaderVersion, sizeof(g_shaderVersion)) != static_cast<ssize_t>(sizeof(g_shaderVersion))) {
+        close(binaryFd);
+        IMAGE_LOGE("slr_gpu shader cache write failed! error %{public}d", errno);
+        return false;
+    }
     close(binaryFd);
     return true;
 }
@@ -225,7 +205,7 @@ Shader::Shader()
 
 Shader::~Shader()
 {
-    glDeleteFramebuffers(1, &writeFbo_);
+    PixelMapGlResource::DeleteFramebuffer(writeFbo_);
 }
 
 bool Shader::Clear()
@@ -234,14 +214,21 @@ bool Shader::Clear()
     glBindTexture(GL_TEXTURE_2D, 0);
     if (programId_ != 0) {
         glDeleteProgram(programId_);
+        programId_ = 0;
     }
-    glDeleteShader(vShader_);
-    glDeleteShader(fShader_);
+    if (vShader_ != 0) {
+        glDeleteShader(vShader_);
+        vShader_ = 0;
+    }
+    if (fShader_ != 0) {
+        glDeleteShader(fShader_);
+        fShader_ = 0;
+    }
     if (readTexId_ != 0) {
-        glDeleteTextures(1, &readTexId_);
+        PixelMapGlResource::DeleteTexture(readTexId_);
     }
     if (writeTexId_ != 0) {
-        glDeleteTextures(1, &writeTexId_);
+        PixelMapGlResource::DeleteTexture(writeTexId_);
     }
     GLenum err = glGetError();
     if (err != GL_NO_ERROR) {
@@ -338,9 +325,12 @@ bool Shader::buildFromBinary(unsigned char*&shaderBinary, GLenum &binaryFormat, 
 bool Shader::BuildWriteTexture()
 {
     ImageTrace imageTrace("Shader::BuildWriteTexture");
-    
+    if (targetSize_.width <= 0 || targetSize_.height <= 0) {
+        IMAGE_LOGE("slr_gpu Shader::BuildWriteTexture invalid target size");
+        return false;
+    }
     if (writeTexId_ != 0) {
-        glDeleteTextures(1, &writeTexId_);
+        PixelMapGlResource::DeleteTexture(writeTexId_);
     }
     glGenTextures(1, &writeTexId_);
     glBindTexture(GL_TEXTURE_2D, writeTexId_);
@@ -368,8 +358,10 @@ VertexShader::~VertexShader()
 
 bool VertexShader::Clear()
 {
-    glDeleteBuffers(1, &vbo_);
-    return true;
+    if (vbo_ != 0U) {
+        PixelMapGlResource::DeleteBuffer(vbo_);
+    }
+    return Shader::Clear();
 }
 
 bool VertexShader::Build()
@@ -515,6 +507,10 @@ bool IsOddMultipleOf90(float degree)
 bool RotateShader::Use()
 {
     ImageTrace imageTrace("RotateShader::Use");
+    if (sourceSize_.width <= 0 || sourceSize_.height <= 0 || targetSize_.width <= 0 || targetSize_.height <= 0) {
+        IMAGE_LOGE("slr_gpu RotateShader::Use invalid image size");
+        return false;
+    }
     if (!Shader::BuildWriteTexture()) {
         return false;
     }
@@ -569,10 +565,10 @@ SLRShader::~SLRShader()
 bool SLRShader::Clear()
 {
     if (texture_[0] != 0) {
-        glDeleteTextures(1, &texture_[0]);
+        PixelMapGlResource::DeleteTexture(texture_[0]);
     }
     if (texture_[1] != 0) {
-        glDeleteTextures(1, &texture_[1]);
+        PixelMapGlResource::DeleteTexture(texture_[1]);
     }
     return Shader::Clear();
 }
@@ -687,7 +683,7 @@ bool SLRShader::LoadProgram()
     return true;
 }
 
-bool SLRShader::SetParams(GPUTransformData transformData)
+bool SLRShader::SetParams(const GPUTransformData &transformData)
 {
     if (texture_[0] == 0U) {
         glGenTextures(NUM_2, texture_);
@@ -698,6 +694,10 @@ bool SLRShader::SetParams(GPUTransformData transformData)
 bool SLRShader::Use()
 {
     ImageTrace imageTrace("SLRShader::Use");
+    if (sourceSize_.width <= 0 || sourceSize_.height <= 0 || targetSize_.width <= 0 || targetSize_.height <= 0) {
+        IMAGE_LOGE("slr_gpu SLRShader::Use invalid image size");
+        return false;
+    }
     if (!Shader::BuildWriteTexture()) {
         return false;
     }
@@ -706,7 +706,6 @@ bool SLRShader::Use()
     glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, writeTexId_, 0);
     glClearColor(0, 1, 0, 0);
     glClear(GL_COLOR_BUFFER_BIT);
-    int texture_index = 0;
     if (eglImage_ != EGL_NO_IMAGE) {
         glActiveTexture(GL_TEXTURE0);
         glBindTexture(GL_TEXTURE_EXTERNAL_OES, readTexId_);
@@ -714,24 +713,29 @@ bool SLRShader::Use()
         glBindTexture(GL_TEXTURE_2D, 0);
         glActiveTexture(GL_TEXTURE1);
         glBindTexture(GL_TEXTURE_2D, readTexId_);
-        texture_index = 1;
     }
     float coeff_w = ((float)targetSize_.width) / sourceSize_.width;
     float coeff_h = ((float)targetSize_.height) / sourceSize_.height;
     float tao_w = 1.0f / coeff_w;
-    int a_w = std::clamp(int(std::floor(tao_w)), 2, MAX_SLR_WIN_SIZE / 2);
+    int a_w = std::clamp(int(std::floor(tao_w)), 2, PixelMapGlUtils::MAX_SLR_WIN_SIZE / 2);
     float tao_h = 1.0f / coeff_h;
-    int a_h = std::clamp(int(std::floor(tao_h)), 2, MAX_SLR_WIN_SIZE / 2);
-    auto h_x2 = getWeights(coeff_w, targetSize_.width);
+    int a_h = std::clamp(int(std::floor(tao_h)), 2, PixelMapGlUtils::MAX_SLR_WIN_SIZE / 2);
+    const auto h_x2 = PixelMapGlUtils::BuildSlrWeights(coeff_w, targetSize_.width);
+    const auto h_y2 = PixelMapGlUtils::BuildSlrWeights(coeff_h, targetSize_.height);
+    if (h_x2.empty() || h_y2.empty()) {
+        IMAGE_LOGE("slr_gpu SLRShader::Use failed to build weights");
+        return false;
+    }
     glActiveTexture(GL_TEXTURE2);
     glBindTexture(GL_TEXTURE_2D, texture_[0]);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_R32F, MAX_SLR_WIN_SIZE, targetSize_.width, 0, GL_RED, GL_FLOAT, h_x2.get());
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_R32F, PixelMapGlUtils::MAX_SLR_WIN_SIZE, targetSize_.width, 0,
+        GL_RED, GL_FLOAT, h_x2.data());
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-    auto h_y2 = getWeights(coeff_h, targetSize_.height);
     glActiveTexture(GL_TEXTURE3);
     glBindTexture(GL_TEXTURE_2D, texture_[1]);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_R32F, MAX_SLR_WIN_SIZE, targetSize_.height, 0, GL_RED, GL_FLOAT, h_y2.get());
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_R32F, PixelMapGlUtils::MAX_SLR_WIN_SIZE, targetSize_.height, 0,
+        GL_RED, GL_FLOAT, h_y2.data());
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
     glUniform2i(slrA_, a_w, a_h);
@@ -845,24 +849,27 @@ bool LapShader::LoadProgram()
     return true;
 }
 
-bool LapShader::SetParams(GPUTransformData transformData)
+bool LapShader::SetParams(const GPUTransformData &transformData)
 {
-    float coeff = ((float)targetSize_.width) / sourceSize_.width;
-    if (coeff > 0.8f) {
-        param_ = 0;
-    } else if (coeff > 0.6f) {
-        param_ = 0.06f;
-    } else if (coeff > 0.5f) {
-        param_ = 0.1f;
-    } else {
-        param_ = 0.15f;
+    if (!Shader::SetParams(transformData)) {
+        return false;
     }
-    return Shader::SetParams(transformData);
+    if (sourceSize_.width <= 0) {
+        IMAGE_LOGE("slr_gpu LapShader::SetParams invalid source width");
+        return false;
+    }
+    float coeff = static_cast<float>(targetSize_.width) / sourceSize_.width;
+    param_ = PixelMapGlUtils::ComputeLapSharpenAlpha(coeff);
+    return true;
 }
 
 bool LapShader::Use()
 {
     ImageTrace imageTrace("LapShader::Use");
+    if (targetSize_.width <= 0 || targetSize_.height <= 0) {
+        IMAGE_LOGE("slr_gpu LapShader::Use invalid target size");
+        return false;
+    }
     if (!Shader::BuildWriteTexture()) {
         return false;
     }

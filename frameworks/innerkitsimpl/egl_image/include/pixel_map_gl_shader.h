@@ -46,7 +46,7 @@ public:
 
     virtual bool Build() { return false; }
     virtual bool LoadProgram() { return false; }
-    virtual bool SetParams(GPUTransformData transformData)
+    virtual bool SetParams(const GPUTransformData &transformData)
     {
         transformData_ = transformData;
         targetSize_ = transformData_.targetInfo_.size;
@@ -120,7 +120,7 @@ public:
     bool Use() override;
     bool Clear() override;
     bool LoadProgram() override;
-    bool SetParams(GPUTransformData transformData) override
+    bool SetParams(const GPUTransformData &transformData) override
     {
         rotateDegreeZ_ = transformData.rotateDegreeZ;
         rotateTrans_ = transformData.rotateTrans;
@@ -145,7 +145,7 @@ public:
 
     bool Build() override;
     bool LoadProgram() override;
-    bool SetParams(GPUTransformData transformData) override;
+    bool SetParams(const GPUTransformData &transformData) override;
     bool Use() override;
     bool Clear() override;
     void SetEglImage(EGLImageKHR eglImage)
@@ -175,7 +175,7 @@ public:
 
     bool Build() override;
     bool LoadProgram() override;
-    bool SetParams(GPUTransformData transformData) override;
+    bool SetParams(const GPUTransformData &transformData) override;
     bool Use() override;
     bool Clear() override;
 

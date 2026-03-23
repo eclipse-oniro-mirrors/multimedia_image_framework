@@ -1580,7 +1580,10 @@ ohos_unittest("eglimagetest2") {
     "$image_subsystem/frameworks/innerkitsimpl/egl_image/include",
     "$image_subsystem/interfaces/innerkits/include",
   ]
-  sources = [ "unittest/egl_image_test2.cpp" ]
+  sources = [
+    "unittest/egl_image_helper_test.cpp",
+    "unittest/egl_image_test2.cpp",
+  ]
 
   deps = [ "$image_subsystem/frameworks/innerkitsimpl/egl_image:egl_image" ]
 
