@@ -359,7 +359,16 @@ const char *PngImageChunkUtils::GetExifInfoLen(const char *sourcePtr, size_t *le
 
     size_t exifLength = 0;
     while (('0' <= *sourcePtr) && (*sourcePtr <= '9')) {
-        const size_t newlength = (DECIMAL_BASE * exifLength) + (*sourcePtr - '0');
+        size_t tmp_exif_length;
+        if (__builtin_mul_overflow(exifLength, DECIMAL_BASE, &tmp_exif_length)) {
+            IMAGE_LOGE("Exif length overflow");
+            return NULL;
+        }
+        if (__builtin_add_overflow(tmp_exif_length, *sourcePtr - '0', &tmp_exif_length)) {
+            IMAGE_LOGE("Exif length overflow");
+            return NULL;
+        }
+        const size_t newlength = tmp_exif_length;
         exifLength = newlength;
         sourcePtr++;
         if (sourcePtr == endPtr) {

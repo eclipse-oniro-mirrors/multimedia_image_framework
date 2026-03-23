@@ -359,6 +359,9 @@ uint32_t GifEncoder::colorQuantize(int index, uint16_t width, uint16_t height,
 uint32_t GifEncoder::separateRGBA(int index, uint16_t width, uint16_t height,
                                   uint8_t *redBuffer, uint8_t *greenBuffer, uint8_t *blueBuffer, uint8_t *alphaBuffer)
 {
+    if (index < 0 || static_cast<size_t>(index) >= pixelMaps_.size()) {
+        return ERR_IMAGE_ENCODE_FAILED;
+    }
     for (int y = 0; y < height; y++) {
         for (int x = 0; x < width; x++) {
             uint32_t pixelColor;

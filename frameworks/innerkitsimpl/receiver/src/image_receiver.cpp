@@ -83,7 +83,15 @@ int64_t PackImage(int &fd, std::unique_ptr<PixelMap> pixelMap)
 
 std::unique_ptr<PixelMap> ImageReceiver::getSurfacePixelMap(InitializationOptions initializationOpts)
 {
+    if (iraContext_->currentBuffer_ == nullptr) {
+        IMAGE_LOGE("getSurfacePixelMap: currentBuffer_ is nullptr");
+        return nullptr;
+    }
     uint32_t *addr = reinterpret_cast<uint32_t *>(iraContext_->currentBuffer_->GetVirAddr());
+    if (addr == nullptr) {
+        IMAGE_LOGE("getSurfacePixelMap: GetVirAddr() returned nullptr");
+        return nullptr;
+    }
     uint32_t size = iraContext_->currentBuffer_->GetSize();
     return PixelMap::Create(addr, size, initializationOpts);
 }

@@ -141,7 +141,10 @@ int32_t NativeImage::SplitYUV422SPComponent()
         return ERR_MEDIA_DATA_UNSUPPORT;
     }
     yuv.ySize = static_cast<uint64_t>(width) * static_cast<uint64_t>(height);
-    yuv.uvSize = static_cast<uint64_t>(height) * uvStride;
+    if (__builtin_mul_overflow(uvStride, height, &yuv.uvSize)) {
+        IMAGE_LOGE("Invalid uvStride %{public}" PRId64 " height %{public}" PRId32, uvStride, height);
+        return ERR_MEDIA_DATA_UNSUPPORT;
+    }
     if (surfaceSize < (yuv.ySize + yuv.uvSize * NUM_2)) {
         IMAGE_LOGE("S size %{public}" PRIu64 " < y plane %{public}" PRIu64
             " + uv plane %{public}" PRIu64, surfaceSize, yuv.ySize, yuv.uvSize * NUM_2);

@@ -103,7 +103,11 @@ heif_error Cr3Box::ReadData(const std::shared_ptr<HeifInputStream> &stream,
         return heif_error_no_data;
     }
     uint64_t boxStartPos = static_cast<uint64_t>(startPos_);
-    if (start > GetBoxSize() || length > GetBoxSize() || start + length > GetBoxSize()) {
+    uint64_t tmpValue;
+    if (__builtin_add_overflow(start, length, &tmpValue)) {
+        return heif_error_eof;
+    }
+    if (start > GetBoxSize() || length > GetBoxSize() || tmpValue > GetBoxSize()) {
         return heif_error_eof;
     }
 

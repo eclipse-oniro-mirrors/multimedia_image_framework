@@ -2476,6 +2476,9 @@ uint32_t ExtEncoder::SpliceFragmentStream(SkWStream& skStream, sk_sp<SkData>& sk
     // write fragment metadata
     skStream.write(packedFragmentMetadata.data(), packedFragmentMetadata.size());
     // write fragment auxiliary image data
+    cond = skData->size() <=  JPEG_MARKER_TAG_SIZE;
+    CHECK_ERROR_RETURN_RET_LOG(cond, ERR_MEDIA_VALUE_INVALID,
+        "%{public}s: write fragment auxiliary image data failed!", __func__);
     skStream.write(dataBytes + JPEG_MARKER_TAG_SIZE, skData->size() - JPEG_MARKER_TAG_SIZE);
     return SUCCESS;
 }
