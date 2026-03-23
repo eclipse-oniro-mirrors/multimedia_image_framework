@@ -164,7 +164,10 @@ uint32_t ImageReceiverImpl::CjOn(std::string name, std::function<void()> callBac
     }
     listener->name = name;
     listener->callBack = callBack;
-    imageReceiver_->RegisterBufferAvaliableListener((std::shared_ptr<SurfaceBufferAvaliableListener>&)listener);
+    shared_ptr<SurfaceBufferAvaliableListener> baseListener =
+        std::static_pointer_cast<SurfaceBufferAvaliableListener>(listener);
+
+    imageReceiver_->RegisterBufferAvaliableListener(baseListener);
     return 0;
 }
 

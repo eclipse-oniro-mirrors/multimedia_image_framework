@@ -276,8 +276,18 @@ uint32_t GifEncoder::processFrame(int index)
         IMAGE_LOGE("Failed to allocate memory.");
         return ERR_IMAGE_ENCODE_FAILED;
     }
-    uint16_t width = static_cast<uint16_t>(pixelMaps_[index]->GetWidth());
-    uint16_t height = static_cast<uint16_t>(pixelMaps_[index]->GetHeight());
+    int32_t originalWidth = pixelMaps_[index]->GetWidth();
+    int32_t originalHeight = pixelMaps_[index]->GetHeight();
+    if (originalWidth <= 0 || originalHeight <= 0 ||
+        originalWidth > UINT16_MAX || originalHeight > UINT16_MAX) {
+        IMAGE_LOGE("Invalid image dimensions: width=%{public}d, height=%{public}d",
+            originalWidth, originalHeight);
+        free(colorMap);
+        return ERR_IMAGE_ENCODE_FAILED;
+    }
+    uint16_t width = static_cast<uint16_t>(originalWidth);
+    uint16_t height = static_cast<uint16_t>(originalHeight);
+
     uint64_t frameSize = static_cast<uint64_t>(width) * height;
     uint8_t *colorBuffer = (uint8_t *)malloc(frameSize);
     if (colorBuffer == NULL) {
@@ -296,17 +306,14 @@ uint32_t GifEncoder::processFrame(int index)
         Write(&(colorMap[j].green), 1);
         Write(&(colorMap[j].blue), 1);
     }
-
     if (LZWEncodeFrame(colorBuffer, width, height)) {
         IMAGE_LOGE("Failed to encode frame.");
         free(colorBuffer);
         free(colorMap);
         return ERR_IMAGE_ENCODE_FAILED;
     }
-
     free(colorBuffer);
     free(colorMap);
-
     return SUCCESS;
 }
 

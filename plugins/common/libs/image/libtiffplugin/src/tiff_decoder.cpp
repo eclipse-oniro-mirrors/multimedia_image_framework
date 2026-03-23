@@ -74,7 +74,7 @@ void TiffDecoder::RegisterTiffLogHandler()
 tmsize_t TiffDecoder::ReadProc(thandle_t handle, void* data, tmsize_t size)
 {
     InputDataStream* stream = static_cast<InputDataStream*>(handle);
-    bool cond = !stream || !data || size <= 0;
+    bool cond = !stream || !data || size <= 0 || size > UINT32_MAX;
     CHECK_ERROR_RETURN_RET_LOG(cond, 0, "stream is invalid");
 
     uint32_t bytesRead = static_cast<uint32_t>(size);

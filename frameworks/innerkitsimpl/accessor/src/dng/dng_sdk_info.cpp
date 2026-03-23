@@ -1600,6 +1600,12 @@ uint32_t DngSdkInfo::GetIfdMaskedAreas(const dng_ifd& fIFD, MetadataValue& value
     value.type = PropertyValueType::INT_ARRAY;
     constexpr uint32_t areaSize = 4;
     value.intArrayValue.clear();
+    if (fIFD.fMaskedAreaCount > sizeof(fIFD.fMaskedArea) / sizeof(fIFD.fMaskedArea[0])) {
+        IMAGE_LOGE("DngSdkInfo::GetIfdMaskedAreas: fMaskedArea size mismatch, count(%u) > array size(%zu)",
+            fIFD.fMaskedAreaCount, sizeof(fIFD.fMaskedArea) / sizeof(fIFD.fMaskedArea[0]));
+        return ERR_IMAGE_GET_DATA_ABNORMAL;
+    }
+
     value.intArrayValue.reserve(fIFD.fMaskedAreaCount * areaSize);
     for (uint32_t i = 0; i < fIFD.fMaskedAreaCount; i++) {
         value.intArrayValue.push_back(static_cast<int64_t>(fIFD.fMaskedArea[i].t));

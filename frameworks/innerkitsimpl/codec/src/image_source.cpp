@@ -1170,8 +1170,15 @@ static bool ResizePixelMap(std::unique_ptr<PixelMap>& pixelMap, uint64_t imageId
             CHECK_ERROR_RETURN_RET(cond, false);
 #endif
         } else {
-            float xScale = static_cast<float>(opts.desiredSize.width) / pixelMap->GetWidth();
-            float yScale = static_cast<float>(opts.desiredSize.height) / pixelMap->GetHeight();
+            int32_t currentWidth = pixelMap->GetWidth();
+            int32_t currentHeight = pixelMap->GetHeight();
+            if (currentWidth == 0 || currentHeight == 0) {
+                IMAGE_LOGE("[ImageSource]ResizePixelMap: invalid dimensions width=%{public}d, height=%{public}d",
+                           currentWidth, currentHeight);
+                return false;
+            }
+            float xScale = static_cast<float>(opts.desiredSize.width) / currentWidth;
+            float yScale = static_cast<float>(opts.desiredSize.height) / currentHeight;
             bool cond = !pixelMap->resize(xScale, yScale);
             CHECK_ERROR_RETURN_RET(cond, false);
         }
