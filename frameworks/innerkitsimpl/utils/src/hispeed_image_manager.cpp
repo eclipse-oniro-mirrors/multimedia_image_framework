@@ -297,7 +297,7 @@ uint32_t HispeedImageManager::DoEncodeJpeg(
         DestroyJpegEncoder(encoder);
         return ERR_IMAGE_ENCODE_FAILED;
     }
-
+    DestroyJpegEncoder(encoder);
     return SUCCESS;
 #else
     return ERR_IMAGE_ENCODE_FAILED;

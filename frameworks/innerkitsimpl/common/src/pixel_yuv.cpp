@@ -268,6 +268,10 @@ static void GetYUVStrideInfo(int32_t pixelFmt, OH_NativeBuffer_Planes *planes, Y
 std::unique_ptr<AbsMemory> PixelYuv::CreateMemory(PixelFormat pixelFormat, std::string memoryTag, int32_t dstWidth,
     int32_t dstHeight, YUVStrideInfo &dstStrides)
 {
+    if (dstWidth <= 0 || dstHeight <= 0 || dstWidth > INT32_MAX / dstHeight) {
+        IMAGE_LOGE("CreateMemory invalid param, width:%{public}d, height:%{public}d", dstWidth, dstHeight);
+        return nullptr;
+    }
     uint32_t pictureSize = GetImageSize(dstWidth, dstHeight, pixelFormat);
     int32_t dst_yStride = dstWidth;
     int32_t dst_uvStride = (dstWidth + 1) / NUM_2 * NUM_2;

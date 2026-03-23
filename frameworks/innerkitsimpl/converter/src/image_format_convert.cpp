@@ -693,11 +693,7 @@ uint32_t ImageFormatConvert::RGBConvertImageFormatOption(std::shared_ptr<PixelMa
         m->Release();
         return IMAGE_RESULT_FORMAT_CONVERT_FAILED;
     }
-    auto ret = MakeDestPixelMap(srcPixelMap, imageInfo, destInfo, m->extend.data);
-    if (ret == ERR_IMAGE_PIXELMAP_CREATE_FAILED) {
-        m->Release();
-    }
-    return ret;
+    return = MakeDestPixelMap(srcPixelMap, imageInfo, destInfo, m->extend.data);
 }
 
 uint32_t ImageFormatConvert::RGBConvertImageFormatOptionUnique(
@@ -740,11 +736,7 @@ uint32_t ImageFormatConvert::RGBConvertImageFormatOptionUnique(
         memory->Release();
         return IMAGE_RESULT_FORMAT_CONVERT_FAILED;
     }
-    auto ret = MakeDestPixelMapUnique(srcPixelMap, imageInfo, destInfo, memory->extend.data);
-    if (ret == ERR_IMAGE_PIXELMAP_CREATE_FAILED) {
-        memory->Release();
-    }
-    return ret;
+    return MakeDestPixelMapUnique(srcPixelMap, imageInfo, destInfo, memory->extend.data);
 }
 
 bool ImageFormatConvert::SetConvertImageMetaData(std::unique_ptr<PixelMap> &srcPixelMap,
@@ -858,11 +850,7 @@ uint32_t ImageFormatConvert::YUVConvertImageFormatOption(std::shared_ptr<PixelMa
         m->Release();
         return IMAGE_RESULT_FORMAT_CONVERT_FAILED;
     }
-    auto ret = MakeDestPixelMap(srcPixelMap, imageInfo, destInfo, m->extend.data);
-    if (ret == ERR_IMAGE_PIXELMAP_CREATE_FAILED) {
-        m->Release();
-    }
-    return ret;
+    return MakeDestPixelMap(srcPixelMap, imageInfo, destInfo, m->extend.data);
 }
 
 bool NeedProtectionConversion(const PixelFormat inputFormat, const PixelFormat outputFormat)

@@ -2339,6 +2339,10 @@ static void CreatePixelMapUsingAllocatorExecute(napi_env env, void *data)
 static void CreatePixelMapComplete(napi_env env, napi_status status, void *data)
 {
     IMAGE_LOGD("[ImageSourceNapi]CreatePixelMapComplete IN");
+    if (data == nullptr) {
+        IMAGE_LOGE("data is nullptr");
+        return;
+    }
     napi_value result = nullptr;
     auto context = static_cast<ImageSourceAsyncContext*>(data);
 
@@ -4751,6 +4755,12 @@ napi_value ImageSourceNapi::IsJpegProgressive(napi_env env, napi_callback_info i
     napi_value result = nullptr;
     napi_get_undefined(env, &result);
 
+    if (!ImageNapiUtils::IsSystemApp()) {
+        IMAGE_LOGE("This interface can be called only by system apps");
+        return ImageNapiUtils::ThrowExceptionError(env, IMAGE_BAD_SOURCE,
+            "This interface can be called only by system apps");
+    }
+
     napi_status status;
     auto asyncContext = UnwrapContextForList(env, info);
     if (asyncContext == nullptr) {
@@ -4760,11 +4770,6 @@ napi_value ImageSourceNapi::IsJpegProgressive(napi_env env, napi_callback_info i
         napi_create_promise(env, &(asyncContext->deferred), &result);
     } else {
         napi_get_undefined(env, &result);
-    }
-    if (!ImageNapiUtils::IsSystemApp()) {
-        IMAGE_LOGE("This interface can be called only by system apps");
-        return ImageNapiUtils::ThrowExceptionError(env, IMAGE_BAD_SOURCE,
-            "This interface can be called only by system apps");
     }
 
     IMG_CREATE_CREATE_ASYNC_WORK(env, status, "IsJpegProgressive", IsJpegProgressiveExec,
