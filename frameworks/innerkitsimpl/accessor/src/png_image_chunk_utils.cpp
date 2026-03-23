@@ -368,7 +368,7 @@ const char *PngImageChunkUtils::GetExifInfoLen(const char *sourcePtr, size_t *le
             IMAGE_LOGE("Exif length overflow");
             return NULL;
         }
-        const size_t newlength = (DECIMAL_BASE * exifLength) + (*sourcePtr - '0');
+        const size_t newlength = tmp_exif_length;
         exifLength = newlength;
         sourcePtr++;
         if (sourcePtr == endPtr) {
