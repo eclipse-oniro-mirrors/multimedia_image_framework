@@ -847,7 +847,7 @@ bool PixelYuvUtils::Yuv420ToBGRA(const uint8_t *in, YuvImageInfo &srcInfo, uint8
 bool PixelYuvUtils::Yuv420ToARGB(const uint8_t *in, YuvImageInfo &srcInfo, uint8_t *out, YuvImageInfo &dstInfo)
 {
     if (YuvScale(const_cast<uint8_t *>(in), srcInfo, out, dstInfo, static_cast<int32_t>(SWS_BICUBIC)) != EXPR_SUCCESS) {
-        IMAGE_LOGE("Yuv420ToBGRA failed");
+        IMAGE_LOGE("Yuv420ToARGB failed");
         return false;
     }
     return true;

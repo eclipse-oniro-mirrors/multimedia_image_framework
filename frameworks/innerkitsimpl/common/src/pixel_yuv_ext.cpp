@@ -168,13 +168,6 @@ void PixelYuvExt::scale(float xAxis, float yAxis, const AntiAliasingOption &opti
     YUVStrideInfo dstStrides;
     auto m = CreateMemory(imageInfo.pixelFormat, "Trans ImageData", dstW, dstH, dstStrides);
     CHECK_ERROR_RETURN_LOG(m == nullptr, "scale CreateMemory failed");
-    int64_t dstBufferSizeOverflow = static_cast<int64_t>(dstW) * static_cast<int64_t>(dstH);
-    bool cond = ImageUtils::GetPixelBytes(imageInfo.pixelFormat) == 0;
-    CHECK_ERROR_RETURN_LOG(cond, "invalid pixelFormat:[%{public}d]", imageInfo.pixelFormat);
-    int64_t maxDstBufferSize = static_cast<int64_t>(INT32_MAX) / ImageUtils::GetPixelBytes(imageInfo.pixelFormat);
-    cond = abs(dstBufferSizeOverflow) > maxDstBufferSize;
-    CHECK_ERROR_RETURN_LOG(cond, "scale target size too large, srcWidth(%{public}d) * xAxis(%{public}.2f), "
-            "srcHeight(%{public}d) * yAxis(%{public}.2f)", imageInfo.size.width, xAxis, imageInfo.size.height, yAxis);
 
     uint8_t *dst = reinterpret_cast<uint8_t *>(m->data.data);
     YUVDataInfo yuvDataInfo;
