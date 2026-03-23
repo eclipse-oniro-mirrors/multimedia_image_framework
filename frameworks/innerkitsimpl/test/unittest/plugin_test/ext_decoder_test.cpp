@@ -45,7 +45,6 @@ namespace ImagePlugin {
 constexpr int32_t PIXEL_MAP_MAX_RAM_SIZE = 600 * 1024 * 1024;
 constexpr static int32_t ZERO = 0;
 constexpr static size_t SIZE_ZERO = 0;
-constexpr static uint32_t NO_EXIF_TAG = 1;
 constexpr static uint32_t OFFSET_2 = 2;
 constexpr static uint32_t INVALID_ENCODE_DYNAMIC_RANGE_VALUE = 20;
 #ifdef EXIF_INFO_ENABLE
@@ -510,70 +509,6 @@ HWTEST_F(ExtDecoderTest, GetImagePropertyIntTest001, TestSize.Level3)
     uint32_t ret = extDecoder->GetImagePropertyInt(index, key, value);
     ASSERT_EQ(ret, Media::ERR_MEDIA_VALUE_INVALID);
     GTEST_LOG_(INFO) << "ExtDecoderTest: GetImagePropertyIntTest001 end";
-}
-
-/**
- * @tc.name: GetMakerImagePropertyStringTest001
- * @tc.desc: Test of GetMakerImagePropertyString
- * @tc.type: FUNC
- */
-HWTEST_F(ExtDecoderTest, GetMakerImagePropertyStringTest001, TestSize.Level3)
-{
-    GTEST_LOG_(INFO) << "ExtDecoderTest: GetMakerImagePropertyStringTest001 start";
-    std::shared_ptr<ExtDecoder> extDecoder = std::make_shared<ExtDecoder>();
-    std::string key = "string";
-    std::string value = "propretyString";
-    uint32_t ret = extDecoder->GetMakerImagePropertyString(key, value);
-    ASSERT_EQ(ret, Media::ERR_IMAGE_DECODE_EXIF_UNSUPPORT);
-    extDecoder->exifInfo_.makerInfoTagValueMap.insert(pair<std::string, std::string>
-        ("getMaker", "getMakerImagePropertyString"));
-    key = "getMaker";
-    ret = extDecoder->GetMakerImagePropertyString(key, value);
-    ASSERT_EQ(value, "getMakerImagePropertyString");
-    ASSERT_EQ(ret, SUCCESS);
-    GTEST_LOG_(INFO) << "ExtDecoderTest: GetMakerImagePropertyStringTest001 end";
-}
-
-/**
- * @tc.name: ModifyImagePropertyTest001
- * @tc.desc: Test of ModifyImageProperty
- * @tc.type: FUNC
- */
-HWTEST_F(ExtDecoderTest, ModifyImagePropertyTest001, TestSize.Level3)
-{
-    GTEST_LOG_(INFO) << "ExtDecoderTest: ModifyImagePropertyTest001 start";
-    std::shared_ptr<ExtDecoder> extDecoder = std::make_shared<ExtDecoder>();
-    uint32_t index = 0;
-    std::string key = "Path";
-    std::string value = "void";
-    std::string path = "void";
-    uint32_t ret = extDecoder->ModifyImageProperty(index, key, value, path);
-    ASSERT_EQ(ret, Media::ERR_IMAGE_DECODE_EXIF_UNSUPPORT);
-    int fd = 0;
-    ret = extDecoder->ModifyImageProperty(index, key, value, fd);
-    ASSERT_EQ(ret, Media::ERR_IMAGE_DECODE_EXIF_UNSUPPORT);
-    uint8_t *data = nullptr;
-    uint32_t size = 0;
-    ret = extDecoder->ModifyImageProperty(index, key, value, data, size);
-    ASSERT_EQ(ret, Media::ERR_IMAGE_DECODE_EXIF_UNSUPPORT);
-    GTEST_LOG_(INFO) << "ExtDecoderTest: ModifyImagePropertyTest001 end";
-}
-
-/**
- * @tc.name: GetFilterAreaTest001
- * @tc.desc: Test of GetFilterArea
- * @tc.type: FUNC
- */
-HWTEST_F(ExtDecoderTest, GetFilterAreaTest001, TestSize.Level3)
-{
-    GTEST_LOG_(INFO) << "ExtDecoderTest: GetFilterAreaTest001 start";
-    std::shared_ptr<ExtDecoder> extDecoder = std::make_shared<ExtDecoder>();
-    int privacyType = 0;
-    std::vector<std::pair<uint32_t, uint32_t>> ranges;
-    extDecoder->codec_ = nullptr;
-    uint32_t ret = extDecoder->GetFilterArea(privacyType, ranges);
-    ASSERT_EQ(ret, NO_EXIF_TAG);
-    GTEST_LOG_(INFO) << "ExtDecoderTest: GetFilterAreaTest001 end";
 }
 
 /**

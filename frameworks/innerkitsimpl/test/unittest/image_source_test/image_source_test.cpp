@@ -1265,26 +1265,6 @@ HWTEST_F(ImageSourceTest, GetMemoryUsagePreference001, TestSize.Level3)
 }
 
 /**
- * @tc.name: GetFilterArea001
- * @tc.desc: test GetFilterArea(filterType, ranges)
- * @tc.type: FUNC
- */
-HWTEST_F(ImageSourceTest, GetFilterArea001, TestSize.Level3)
-{
-    int filterType = 0;
-    std::unique_ptr<std::fstream> fs = std::make_unique<std::fstream>();
-    fs->open("/data/local/tmp/image/test_exif.jpg", std::fstream::binary | std::fstream::in);
-    bool isOpen = fs->is_open();
-    ASSERT_EQ(isOpen, true);
-    uint32_t errorCode = 0;
-    SourceOptions opts;
-    std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(std::move(fs), opts, errorCode);
-    std::vector<std::pair<uint32_t, uint32_t>> ranges;
-    uint32_t ret = imageSource->GetFilterArea(filterType, ranges);
-    ASSERT_NE(ret, SUCCESS);
-}
-
-/**
  * @tc.name: CreateImageSource001
  * @tc.desc: test CreateImageSource is
  * @tc.type: FUNC
@@ -1693,26 +1673,6 @@ HWTEST_F(ImageSourceTest, GetValidImageStatusTest001, TestSize.Level3)
     imageSource->imageStatusMap_.insert(std::make_pair(1, imageDecodingStatus2));
     ImageSource::ImageStatusMap::iterator ret = imageSource->GetValidImageStatus(index, errorCode);
     ASSERT_EQ(ret, imageSource->imageStatusMap_.end());
-}
-
-/**
- * @tc.name: GetFilterAreaTest002
- * @tc.desc: test GetFilterArea
- * @tc.type: FUNC
- */
-HWTEST_F(ImageSourceTest, GetFilterAreaTest002, TestSize.Level3)
-{
-    uint32_t errorCode = 0;
-    SourceOptions opts;
-    std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(IMAGE_INPUT_JPEG_PATH, opts, errorCode);
-    int privacyType = 0;
-    std::vector<std::pair<uint32_t, uint32_t>> ranges;
-    ImageDecodingStatus imageDecodingStatus1;
-    ImageDecodingStatus imageDecodingStatus2;
-    imageSource->imageStatusMap_.insert(std::make_pair(0, imageDecodingStatus1));
-    imageSource->imageStatusMap_.insert(std::make_pair(1, imageDecodingStatus2));
-    uint32_t ret = imageSource->GetFilterArea(privacyType, ranges);
-    ASSERT_EQ(ret, ERR_IMAGE_DECODE_FAILED);
 }
 
 /**

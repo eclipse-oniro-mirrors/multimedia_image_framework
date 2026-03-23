@@ -96,7 +96,6 @@ void ExtDecoderFuncTest001(const std::string& pathName)
     int32_t valInt = 0;
     extDecoder->GetImagePropertyInt(0, key, valInt);
     extDecoder->GetImagePropertyString(0, key, value);
-    extDecoder->GetMakerImagePropertyString(key, value);
     extDecoder->DoHeifToYuvDecode(context);
     close(fd);
     IMAGE_LOGI("%{public}s SUCCESS", __func__);

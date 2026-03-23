@@ -21,37 +21,6 @@ if (use_clang_mac) {
   third_party_root = "/${third_party_dir}"
 }
 
-ohos_static_library("exifhelper") {
-  if (!use_clang_android && !use_clang_ios) {
-    branch_protector_ret = "pac_ret"
-    sanitize = {
-      cfi = true
-      cfi_cross_dso = true
-      cfi_vcall_icall_only = true
-      debug = false
-    }
-  }
-  sources = [
-    "../libjpegplugin/src/exif_info.cpp",
-    "../libjpegplugin/src/exif_maker_note.cpp",
-  ]
-  include_dirs = [
-    "../libjpegplugin/include",
-    "${image_subsystem}/frameworks/innerkitsimpl/utils/include",
-    "${image_subsystem}/interfaces/innerkits/include",
-  ]
-
-  external_deps = [
-    "c_utils:utils",
-    "graphic_surface:surface",
-    "hilog:libhilog",
-    "hitrace:hitrace_meter",
-    "libexif:libexif",
-  ]
-  part_name = "image_framework"
-  subsystem_name = "multimedia"
-}
-
 config("plugins_includes") {
   include_dirs = [
     "${image_subsystem}/plugins/manager/include",
@@ -206,7 +175,6 @@ ohos_shared_library("extplugin") {
     public_configs = [ ":ext_public_config" ]
     defines = []
     deps = [
-      ":exifhelper",
       ":heifimpl",
       ":heifparser",
       "${image_subsystem}//frameworks/innerkitsimpl/pixelconverter:pixelconvertadapter",
