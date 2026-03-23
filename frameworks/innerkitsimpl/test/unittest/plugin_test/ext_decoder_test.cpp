@@ -45,7 +45,6 @@ namespace ImagePlugin {
 constexpr int32_t PIXEL_MAP_MAX_RAM_SIZE = 600 * 1024 * 1024;
 constexpr static int32_t ZERO = 0;
 constexpr static size_t SIZE_ZERO = 0;
-constexpr static uint32_t NO_EXIF_TAG = 1;
 constexpr static uint32_t OFFSET_2 = 2;
 constexpr static uint32_t INVALID_ENCODE_DYNAMIC_RANGE_VALUE = 20;
 #ifdef EXIF_INFO_ENABLE
