@@ -254,7 +254,7 @@ heif_error HeifIlocBox::Write(HeifStreamWriter &writer) const
             return heif_error_add_overflow;
         }
         // need add header bytes size
-        writer.Write32((uint32_t) (idatTotalSize + UINT64_BYTES_NUM));
+        writer.Write32(tmpValue);
         writer.Write32(BOX_TYPE_IDAT);
 
         for (auto &item: items_) {

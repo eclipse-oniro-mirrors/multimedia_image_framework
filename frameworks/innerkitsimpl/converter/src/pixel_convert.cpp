@@ -1264,7 +1264,6 @@ static int64_t GetValidBufferSize(const ImageInfo &dstInfo)
         IMAGE_LOGE("[PixelMap]Create: bufferSize overflowed");
         return -1;
     }
-    bufferSize = rowDataSize * dstInfo.size.height;
     CHECK_ERROR_RETURN_RET_LOG(bufferSize > UINT32_MAX, CONVERT_ERROR,
         "[PixelMap]Create: Pixelmap size too large: width = %{public}d, height = %{public}d",
         dstInfo.size.width, dstInfo.size.height);

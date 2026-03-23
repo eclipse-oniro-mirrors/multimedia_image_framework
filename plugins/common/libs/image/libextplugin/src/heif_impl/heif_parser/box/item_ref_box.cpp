@@ -91,8 +91,7 @@ heif_error HeifIrefBox::Write(HeifStreamWriter &writer) const
         if (__builtin_mul_overflow(idSize, (UINT8_BYTES_NUM + ref.toItemIds.size()), &tmpValue)) {
             return heif_error_add_overflow;
         }
-        auto box_size = uint32_t(UINT32_BYTES_NUM + UINT32_BYTES_NUM + UINT16_BYTES_NUM +
-                                 static_cast<size_t>(idSize) * (UINT8_BYTES_NUM + ref.toItemIds.size()));
+        auto box_size = uint32_t(UINT32_BYTES_NUM + UINT32_BYTES_NUM + UINT16_BYTES_NUM + tmpValue);
 
         writer.Write32(box_size);
         writer.Write32(ref.box.GetBoxType());
