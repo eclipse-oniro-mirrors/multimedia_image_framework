@@ -249,6 +249,10 @@ heif_error HeifIlocBox::Write(HeifStreamWriter &writer) const
         idatTotalSize += (item.constructionMethod == CONSTRUCTION_METHOD_IDAT_OFFSET) ? item.GetExtentsTotalSize() : 0;
     }
     if (idatTotalSize > 0) {
+        uint32_t tmpValue;
+        if (__builtin_add_overflow(idatTotalSize, UINT64_BYTES_NUM, &tmpValue)) {
+            return heif_error_add_overflow;
+        }
         // need add header bytes size
         writer.Write32((uint32_t) (idatTotalSize + UINT64_BYTES_NUM));
         writer.Write32(BOX_TYPE_IDAT);

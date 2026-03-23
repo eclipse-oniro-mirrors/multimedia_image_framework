@@ -124,6 +124,9 @@ void IncrementalPixelMap::OnPeerDestory()
 
 void IncrementalPixelMap::DetachSource()
 {
+    if (imageSource_ == nullptr) {
+        return;
+    }
     imageSource_->DetachIncrementalDecoding(*(static_cast<PixelMap *>(this)));
     imageSource_->UnRegisterListener(this);
     imageSource_ = nullptr;

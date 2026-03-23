@@ -958,6 +958,10 @@ void HeifParser::CheckExtentData()
 
 void HeifParser::SetPrimaryImage(const std::shared_ptr<HeifImage> &image)
 {
+    if (!image) {
+        IMAGE_LOGE("image pointer is nullptr");
+        return;
+    }
     if (primaryImage_) {
         if (primaryImage_->GetItemId() == image->GetItemId()) {
             return;

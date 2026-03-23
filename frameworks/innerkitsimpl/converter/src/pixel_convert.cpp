@@ -1259,7 +1259,12 @@ static int64_t GetValidBufferSize(const ImageInfo &dstInfo)
     CHECK_ERROR_RETURN_RET_LOG(rowDataSize <= 0, CONVERT_ERROR,
         "[PixelMap] AllocPixelMapMemory: get row data size failed");
 
-    int64_t bufferSize = rowDataSize * dstInfo.size.height;
+    int64_t bufferSize;
+    if (__builtin_mul_overflow(rowDataSize, dstInfo.size.height, &bufferSize)) {
+        IMAGE_LOGE("[PixelMap]Create: bufferSize overflowed");
+        return -1;
+    }
+    bufferSize = rowDataSize * dstInfo.size.height;
     CHECK_ERROR_RETURN_RET_LOG(bufferSize > UINT32_MAX, CONVERT_ERROR,
         "[PixelMap]Create: Pixelmap size too large: width = %{public}d, height = %{public}d",
         dstInfo.size.width, dstInfo.size.height);
@@ -1912,7 +1917,7 @@ static bool DecAstc(uint8_t *recRgba, uint32_t stride, AstcInfo astcInfo)
 
     unsigned int xblocks = (astcInfo.dimX + blockX - 1) / blockX;
     unsigned int yblocks = (astcInfo.dimY + blockY - 1) / blockY;
-    size_t dataSize = xblocks * yblocks * ASTC_UNIT_BYTES;
+    size_t dataSize = static_cast<size_t>(xblocks) * static_cast<size_t>(yblocks) * ASTC_UNIT_BYTES;
     CHECK_ERROR_RETURN_RET_LOG(dataSize + ASTC_UNIT_BYTES > astcInfo.astcBufSize, false,
         "DecAstc astc buffer is invalid, dataSize: %{public}zu, astcBufSize: %{public}d",
         dataSize, astcInfo.astcBufSize);

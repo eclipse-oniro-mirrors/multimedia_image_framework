@@ -55,6 +55,11 @@ std::shared_ptr<Cr3Box> Cr3Box::MakeCr3Box(uint32_t boxType)
     return box;
 }
 
+static bool HasOverflowed64(uint64_t num1, uint64_t num2)
+{
+    return num1 > std::numeric_limits<uint64>::max() - num2;
+}
+
 static bool Cr3BoxContentChildren(uint32_t boxType)
 {
     return boxType == BOX_TYPE_UUID || boxType == CR3_BOX_TYPE_MOOV;
@@ -103,6 +108,9 @@ heif_error Cr3Box::ReadData(const std::shared_ptr<HeifInputStream> &stream,
         return heif_error_no_data;
     }
     uint64_t boxStartPos = static_cast<uint64_t>(startPos_);
+    if (HasOverflowed64(start, length)) {
+        return heif_error_eof;
+    }
     if (start > GetBoxSize() || length > GetBoxSize() || start + length > GetBoxSize()) {
         return heif_error_eof;
     }
