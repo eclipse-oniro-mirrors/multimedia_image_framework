@@ -54,7 +54,7 @@ static constexpr int32_t IMAGE_BASE_9 = 9;
 static constexpr int32_t IMAGE_BASE_20 = 20;
 static constexpr int32_t IMAGE_BASE_22 = 22;
 static constexpr int32_t IMAGE_BASE_23 = 23;
-static Image_MimeType *IMAGE_PACKER_SUPPORTED_FORMATS = nullptr;
+static std::unique_ptr<Image_MimeType[]> IMAGE_PACKER_SUPPORTED_FORMATS = nullptr;
 static size_t g_supportedFormatSize = 0;
 
 struct OH_PackingOptions {
@@ -708,27 +708,29 @@ Image_ErrorCode OH_ImagePackerNative_GetSupportedFormats(Image_MimeType** suppor
         return IMAGE_PACKER_INVALID_PARAMETER;
     }
     if (IMAGE_PACKER_SUPPORTED_FORMATS != nullptr || g_supportedFormatSize != 0) {
-        *supportedFormat = IMAGE_PACKER_SUPPORTED_FORMATS;
+        *supportedFormat = IMAGE_PACKER_SUPPORTED_FORMATS.get();
         *length = g_supportedFormatSize;
         return IMAGE_SUCCESS;
     }
     std::set<std::string> formats;
     ImagePacker::GetSupportedFormats(formats);
 
-    *length = formats.size();
-    *supportedFormat = new Image_MimeType[formats.size()];
+    auto newFormats = std::make_unique<Image_MimeType[]>(formats.size());
     size_t count = 0;
     for (const auto& str : formats) {
-        (*supportedFormat)[count].data = strdup(str.c_str());
-        if ((*supportedFormat)[count].data == nullptr) {
+        newFormats[count].data = strdup(str.c_str());
+        if (newFormats[count].data == nullptr) {
             IMAGE_LOGE("ImagePacker strdup failed");
-            continue;
+            return IMAGE_PACKER_INVALID_PARAMETER;
         }
-        (*supportedFormat)[count].size = str.size();
+        newFormats[count].size = str.size();
         count++;
     }
-    IMAGE_PACKER_SUPPORTED_FORMATS = *supportedFormat;
-    g_supportedFormatSize = *length;
+    IMAGE_PACKER_SUPPORTED_FORMATS = newFormats;
+    g_supportedFormatSize = formats.size();
+
+    *supportedFormat = IMAGE_PACKER_SUPPORTED_FORMATS.get();
+    *length = g_supportedFormatSize;
     return IMAGE_SUCCESS;
 }
 
