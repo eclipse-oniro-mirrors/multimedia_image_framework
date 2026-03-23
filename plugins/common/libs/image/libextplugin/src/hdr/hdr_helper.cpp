@@ -63,6 +63,7 @@ constexpr uint32_t UINT8_BYTE_COUNT = 1;
 constexpr uint32_t UINT16_BYTE_COUNT = 2;
 constexpr uint32_t UINT32_BYTE_COUNT = 4;
 constexpr uint8_t JPEG_IMAGE_NUM = 2;
+constexpr uint32_t MPF_MAX_NUM = 256;
 constexpr uint8_t VIVID_FILE_TYPE_BASE = 1;
 constexpr uint8_t VIVID_FILE_TYPE_GAINMAP = 2;
 constexpr uint8_t EMPTY_SIZE = 0;
@@ -203,7 +204,6 @@ static bool GetCuvaJpegGainMapOffset(vector<jpeg_marker_struct*>& markerList,
     }
     auto handle = dlopen("libimage_cuva_parser.z.so", RTLD_LAZY);
     if (!handle) {
-        dlclose(handle);
         return false;
     }
     GetCuvaGainMapOffsetT check = reinterpret_cast<GetCuvaGainMapOffsetT>(dlsym(handle, "GetCuvaGainMapOffset"));
@@ -235,7 +235,7 @@ static vector<uint32_t> ParseMpfOffset(jpeg_marker_struct* marker, uint32_t preO
         return {};
     }
     uint32_t imageNum = jpegMpf->images_.size();
-    if (imageNum < JPEG_IMAGE_NUM) {
+    if (imageNum < JPEG_IMAGE_NUM || imageNum > MPF_MAX_NUM) {
         return {};
     }
     vector<uint32_t> offsetArray(imageNum);
@@ -873,7 +873,7 @@ static bool GetHdrMediaTypeInfo(jpeg_marker_struct* markerList, HdrMetadata& met
 
 static bool GetJpegGainMapMetadata(SkJpegCodec* codec, ImageHdrType type, HdrMetadata& metadata)
 {
-    bool cond = codec == nullptr || codec->decoderMgr() == nullptr;
+    bool cond = codec == nullptr || codec->decoderMgr() == nullptr || codec->decoderMgr()->dinfo() == nullptr;
     CHECK_ERROR_RETURN_RET_LOG(cond, false, "GetJpegGainMapMetadata codec is nullptr");
     jpeg_marker_struct* markerList = codec->decoderMgr()->dinfo()->marker_list;
     CHECK_ERROR_RETURN_RET(!markerList, false);
@@ -1435,6 +1435,8 @@ uint32_t HdrJpegPackerHelper::SpliceHdrStream(sk_sp<SkData>& baseImage, sk_sp<Sk
     uint32_t baseMpfApp2Size = GetMpfMarkerSize();
     uint32_t baseSize = baseImage->size() + baseISOInfo.size() + baseVividApp8Size + baseMpfApp2Size;
     uint32_t allAppSize = offset + baseISOInfo.size() + baseVividApp8Size + baseMpfApp2Size;
+    cond = (offset > baseSize || allAppSize > baseSize);
+    CHECK_ERROR_RETURN_RET(cond, ERR_IMAGE_ENCODE_FAILED);
     std::vector<uint8_t> baseVividInfo = PackBaseVividMarker(baseSize, offset, allAppSize);
     std::vector<uint8_t> mpfInfo = PackBaseMpfMarker(baseSize, gainmapSize, offset + baseVividApp8Size);
     output.write(baseVividInfo.data(), baseVividInfo.size());
