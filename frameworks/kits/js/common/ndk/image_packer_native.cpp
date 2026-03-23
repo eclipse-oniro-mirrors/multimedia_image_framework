@@ -726,7 +726,7 @@ Image_ErrorCode OH_ImagePackerNative_GetSupportedFormats(Image_MimeType** suppor
         newFormats[count].size = str.size();
         count++;
     }
-    IMAGE_PACKER_SUPPORTED_FORMATS = newFormats;
+    IMAGE_PACKER_SUPPORTED_FORMATS = std::move(newFormats);
     g_supportedFormatSize = formats.size();
 
     *supportedFormat = IMAGE_PACKER_SUPPORTED_FORMATS.get();
