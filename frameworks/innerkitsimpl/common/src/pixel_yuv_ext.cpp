@@ -170,7 +170,7 @@ void PixelYuvExt::scale(float xAxis, float yAxis, const AntiAliasingOption &opti
     CHECK_ERROR_RETURN_LOG(m == nullptr, "scale CreateMemory failed");
 
     uint8_t *dst = reinterpret_cast<uint8_t *>(m->data.data);
-    YUVDataInfo yuvDataInfo;  
+    YUVDataInfo yuvDataInfo;
     GetImageYUVInfo(yuvDataInfo);
     uint32_t pixelsSize = pixelsSize_;
 #if !defined(_WIN32) && !defined(_APPLE) && !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
