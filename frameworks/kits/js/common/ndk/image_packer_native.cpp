@@ -54,6 +54,17 @@ static constexpr int32_t IMAGE_BASE_9 = 9;
 static constexpr int32_t IMAGE_BASE_20 = 20;
 static constexpr int32_t IMAGE_BASE_22 = 22;
 static constexpr int32_t IMAGE_BASE_23 = 23;
+struct FreeDeleter {
+    void operator()(Image_MimeType* ptr) const
+    {
+        if (ptr) {
+            for (size_t i = 0; i < g_supportedFormatSize; ++i) {
+                free(ptr[i].data);
+            }
+            delete[] ptr;
+        }
+    }
+};
 static std::unique_ptr<Image_MimeType[], FreeDeleter> IMAGE_PACKER_SUPPORTED_FORMATS = nullptr;
 static size_t g_supportedFormatSize = 0;
 
@@ -76,18 +87,6 @@ struct OH_PackingOptionsForSequence {
     uint32_t* disposalTypes;
     size_t disposalTypesLength;
     uint32_t loopCount = 1;
-};
-
-struct FreeDeleter {
-    void operator()(Image_MimeType* ptr) const
-    {
-        if (ptr) {
-            for (size_t i = 0; i < g_supportedFormatSize; ++i) {
-                free(ptr[i].data);
-            }
-            delete[] ptr;
-        }
-    }
 };
 
 static Image_ErrorCode ToNewErrorCode(int code)
