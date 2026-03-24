@@ -90,6 +90,10 @@ int64_t PackImage(std::unique_ptr<ImageSource> imageSource)
     imagePacker.AddImage(*imageSource);
     int64_t packedSize = 0;
     imagePacker.FinalizePacking(packedSize);
+    
+    free(resultBuffer);
+    resultBuffer = nullptr;
+    
     return static_cast<int64_t>(packedSize);
 }
 
