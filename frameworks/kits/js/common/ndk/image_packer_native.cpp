@@ -54,7 +54,7 @@ static constexpr int32_t IMAGE_BASE_9 = 9;
 static constexpr int32_t IMAGE_BASE_20 = 20;
 static constexpr int32_t IMAGE_BASE_22 = 22;
 static constexpr int32_t IMAGE_BASE_23 = 23;
-static std::unique_ptr<Image_MimeType[]> IMAGE_PACKER_SUPPORTED_FORMATS = nullptr;
+static std::unique_ptr<Image_MimeType[], FreeDeleter> IMAGE_PACKER_SUPPORTED_FORMATS = nullptr;
 static size_t g_supportedFormatSize = 0;
 
 struct OH_PackingOptions {
@@ -76,6 +76,17 @@ struct OH_PackingOptionsForSequence {
     uint32_t* disposalTypes;
     size_t disposalTypesLength;
     uint32_t loopCount = 1;
+};
+
+struct FreeDeleter {
+    void operator()(Image_MimeType* ptr) const {
+        if (ptr) {
+            for(size_t i = 0; i < g_supportedFormatSize; ++i) {
+                free(ptr[i].data);
+            }
+            delete[] ptr;
+        }
+    }
 };
 
 static Image_ErrorCode ToNewErrorCode(int code)
@@ -715,7 +726,7 @@ Image_ErrorCode OH_ImagePackerNative_GetSupportedFormats(Image_MimeType** suppor
     std::set<std::string> formats;
     ImagePacker::GetSupportedFormats(formats);
 
-    auto newFormats = std::make_unique<Image_MimeType[]>(formats.size());
+    auto newFormats = std::make_unique<Image_MimeType[], FreeDeleter>(formats.size());
     size_t count = 0;
     for (const auto& str : formats) {
         newFormats[count].data = strdup(str.c_str());
