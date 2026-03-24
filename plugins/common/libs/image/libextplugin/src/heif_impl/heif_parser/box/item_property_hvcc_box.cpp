@@ -214,7 +214,7 @@ uint32_t HeifHvccBox::GetNaluTypeId(std::vector<uint8_t> &nalUnits)
 std::vector<uint8_t> HeifHvccBox::GetNaluData(const std::vector<HvccNalArray> &nalArrays,
                                               uint8_t naluId)
 {
-    for (auto HvccNalunit : nalArrays) {
+    for (auto hvccNalunit : nalArrays) {
         if (hvccNalunit.nalUnitType == naluId && (!hvccNalunit.nalUnits.empty())) {
             return hvccNalunit.nalUnits[0];
         }
