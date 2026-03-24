@@ -95,6 +95,10 @@ void* GetNapiFunction(const char* name)
 ImageSource ImageSourceTransferStaticImpl(uintptr_t input)
 {
     IMAGE_LOGD("[%{public}s] IN", __func__);
+    if (input == 0) {
+        IMAGE_LOGE("%{public}s invalid input: input is 0", __func__);
+        return make_holder<ImageSourceImpl, ImageSource>();
+    }
     ani_object esValue = reinterpret_cast<ani_object>(input);
     void *nativePtr = nullptr;
     if (!arkts_esvalue_unwrap(get_env(), esValue, &nativePtr) || nativePtr == nullptr) {
@@ -159,6 +163,10 @@ uintptr_t ImageSourceTransferDynamicImpl(ImageSource input)
 ImagePacker ImagePackerTransferStaticImpl(uintptr_t input)
 {
     IMAGE_LOGD("[%{public}s] IN", __func__);
+    if (input == 0) {
+        IMAGE_LOGE("%{public}s invalid input: input is 0", __func__);
+        return make_holder<ImagePackerImpl, ImagePacker>();
+    }
     ani_object esValue = reinterpret_cast<ani_object>(input);
     void *nativePtr = nullptr;
     if (!arkts_esvalue_unwrap(get_env(), esValue, &nativePtr) || nativePtr == nullptr) {
@@ -223,6 +231,10 @@ uintptr_t ImagePackerTransferDynamicImpl(ImagePacker input)
 Picture PictureTransferStaticImpl(uintptr_t input)
 {
     IMAGE_LOGD("[%{public}s] IN", __func__);
+    if (input == 0) {
+        IMAGE_LOGE("%{public}s invalid input: input is 0", __func__);
+        return make_holder<PictureImpl, Picture>();
+    }
     ani_object esValue = reinterpret_cast<ani_object>(input);
     void *nativePtr = nullptr;
     if (!arkts_esvalue_unwrap(get_env(), esValue, &nativePtr) || nativePtr == nullptr) {
@@ -289,6 +301,10 @@ uintptr_t PictureTransferDynamicImpl(Picture input)
 AuxiliaryPicture AuxiliaryPictureTransferStaticImpl(uintptr_t input)
 {
     IMAGE_LOGD("[%{public}s] IN", __func__);
+    if (input == 0) {
+        IMAGE_LOGE("%{public}s invalid input: input is 0", __func__);
+        return make_holder<AuxiliaryPictureImpl, AuxiliaryPicture>();
+    }
     ani_object esValue = reinterpret_cast<ani_object>(input);
     void *nativePtr = nullptr;
     if (!arkts_esvalue_unwrap(get_env(), esValue, &nativePtr) || nativePtr == nullptr) {
@@ -354,6 +370,10 @@ uintptr_t AuxiliaryPictureTransferDynamicImpl(AuxiliaryPicture input)
 ImageReceiver ImageReceiverTransferStaticImpl(uintptr_t input)
 {
     IMAGE_LOGD("[%{public}s] IN", __func__);
+    if (input == 0) {
+        IMAGE_LOGE("%{public}s invalid input: input is 0", __func__);
+        return make_holder<ImageReceiverImpl, ImageReceiver>();
+    }
     ani_object esValue = reinterpret_cast<ani_object>(input);
     void *nativePtr = nullptr;
     if (!arkts_esvalue_unwrap(get_env(), esValue, &nativePtr) || nativePtr == nullptr) {
@@ -419,6 +439,10 @@ uintptr_t ImageReceiverTransferDynamicImpl(ImageReceiver input)
 ImageCreator ImageCreatorTransferStaticImpl(uintptr_t input)
 {
     IMAGE_LOGD("[%{public}s] IN", __func__);
+    if (input == 0) {
+        IMAGE_LOGE("%{public}s invalid input: input is 0", __func__);
+        return make_holder<ImageCreatorImpl, ImageCreator>();
+    }
     ani_object esValue = reinterpret_cast<ani_object>(input);
     void *nativePtr = nullptr;
     if (!arkts_esvalue_unwrap(get_env(), esValue, &nativePtr) || nativePtr == nullptr) {
@@ -483,6 +507,10 @@ uintptr_t ImageCreatorTransferDynamicImpl(ImageCreator input)
 PixelMap PixelMapTransferStaticImpl(uintptr_t input)
 {
     IMAGE_LOGD("[%{public}s] IN", __func__);
+    if (input == 0) {
+        IMAGE_LOGE("%{public}s invalid input: input is 0", __func__);
+        return make_holder<PixelMapImpl, PixelMap>();
+    }
     ani_object esValue = reinterpret_cast<ani_object>(input);
 
     void* nativePtr = nullptr;

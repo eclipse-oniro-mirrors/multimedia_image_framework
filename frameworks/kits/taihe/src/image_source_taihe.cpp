@@ -916,19 +916,22 @@ optional<string> ImageSourceImpl::GetImagePropertySync(PropertyKey key)
 
     if (nativeImgSrc != nullptr) {
         uint32_t ret = nativeImgSrc->GetImagePropertyStringBySync(NUM_0, propertyKey, value);
-        if (ret == OHOS::Media::ERR_IMAGE_PROPERTY_NOT_EXIST) {
+        if (ret == OHOS::Media::SUCCESS) {
+            IMAGE_LOGD("GetImagePropertySync success");
+            return optional<string>(std::in_place, value);
+        } else if (ret == OHOS::Media::ERR_IMAGE_PROPERTY_NOT_EXIST) {
             IMAGE_LOGE("%{public}s: Unsupported metadata, errorCode=%{public}u", __func__, ret);
             ImageTaiheUtils::ThrowExceptionError(IMAGE_SOURCE_UNSUPPORTED_METADATA, "Unsupported metadata");
-        }
-        if (ret == OHOS::Media::ERR_IMAGE_SOURCE_DATA) {
+        } else if (ret == OHOS::Media::ERR_IMAGE_SOURCE_DATA) {
             IMAGE_LOGE("%{public}s: Unsupported MIME type, errorCode=%{public}u", __func__, ret);
             ImageTaiheUtils::ThrowExceptionError(IMAGE_SOURCE_UNSUPPORTED_MIMETYPE, "Unsupported MIME type");
-        }
-        if (ret == OHOS::Media::ERR_IMAGE_DECODE_EXIF_UNSUPPORT) {
+        } else if (ret == OHOS::Media::ERR_IMAGE_DECODE_EXIF_UNSUPPORT) {
             IMAGE_LOGE("%{public}s: Bad source, errorCode=%{public}u", __func__, ret);
             ImageTaiheUtils::ThrowExceptionError(IMAGE_BAD_SOURCE, "Bad source");
+        } else {
+            ImageTaiheUtils::ThrowExceptionError(OHOS::Media::ERROR, "There is a generic taihe failure!");
         }
-        return optional<string>(std::in_place, value);
+        return optional<string>(std::nullopt);
     } else {
         ImageTaiheUtils::ThrowExceptionError("empty native image source");
         return optional<string>(std::nullopt);
@@ -1110,6 +1113,10 @@ static void ModifyImagePropertyExecute(std::unique_ptr<ImageSourceTaiheContext> 
 {
     if (context == nullptr) {
         IMAGE_LOGE("empty context");
+        return;
+    }
+    if (context->rImageSource == nullptr) {
+        IMAGE_LOGE("rImageSource is nullptr");
         return;
     }
     IMAGE_LOGD("ModifyImagePropertyExecute CheckExifDataValue");
