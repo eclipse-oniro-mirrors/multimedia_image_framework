@@ -202,7 +202,16 @@ uint32_t TiffDecoder::Decode(uint32_t index, DecodeContext& context)
     }
     context.info.size.width = tiffSize_.width;
     context.info.size.height = tiffSize_.height;
-    AllocBuffer(context, tiffSize_.width * tiffSize_.height * sizeof(uint32_t));
+    if (ImageUtils::CheckMulOverflow(tiffSize_.width, tiffSize_.height, sizeof(uint32_t))) {
+        IMAGE_LOGE("Buffer size overflow: width=%{public}u, height=%{public}u",
+                   tiffSize_.width, tiffSize_.height);
+        return ERR_IMAGE_MALLOC_ABNORMAL;
+    }
+    
+    const size_t bufferSize = static_cast<size_t>(tiffSize_.width) *
+                              static_cast<size_t>(tiffSize_.height) *
+                              sizeof(uint32_t);
+    AllocBuffer(context, bufferSize);
     uint32_t* raster = static_cast<uint32_t*>(context.pixelsBuffer.buffer);
     CHECK_ERROR_RETURN_RET_LOG(raster == nullptr, ERR_IMAGE_MALLOC_ABNORMAL, "AllocBuffer failed");
 
