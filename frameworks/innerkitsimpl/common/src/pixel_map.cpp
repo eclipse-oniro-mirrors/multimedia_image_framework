@@ -1051,7 +1051,9 @@ static void SetDstPixelMapInfo(PixelMap &source, PixelMap &dstPixelMap, void* ds
     unique_ptr<AbsMemory>& memory)
 {
     // "memory" is used for SHARE_MEM_ALLOC and DMA_ALLOC type, dstPixels is used for others.
-    AllocatorType sourceType = source.GetAllocatorType();
+    // Convert CUSTOM_ALLOC to SHARE_MEM_ALLOC
+    AllocatorType sourceType = source.GetAllocatorType() == AllocatorType::CUSTOM_ALLOC ?
+        AllocatorType::SHARE_MEM_ALLOC : source.GetAllocatorType();
     if (sourceType == AllocatorType::SHARE_MEM_ALLOC || sourceType == AllocatorType::DMA_ALLOC) {
         dstPixelMap.SetPixelsAddr(dstPixels, memory->extend.data, memory->data.size, sourceType, nullptr);
         if (source.GetAllocatorType() == AllocatorType::DMA_ALLOC) {
@@ -1089,13 +1091,14 @@ bool PixelMap::CopyPixelMap(PixelMap &source, PixelMap &dstPixelMap, int32_t &er
     int fd = -1;
     void *dstPixels = nullptr;
     unique_ptr<AbsMemory> memory;
-    AllocatorType sourceType = source.GetAllocatorType();
+    AllocatorType sourceType = source.GetAllocatorType() == AllocatorType::CUSTOM_ALLOC ?
+        AllocatorType::SHARE_MEM_ALLOC : source.GetAllocatorType();
     if (sourceType == AllocatorType::SHARE_MEM_ALLOC || sourceType == AllocatorType::DMA_ALLOC) {
         ImageInfo dstImageInfo;
         dstPixelMap.GetImageInfo(dstImageInfo);
         MemoryData memoryData = {nullptr, uBufferSize, "Copy ImageData", dstImageInfo.size, dstImageInfo.pixelFormat};
         memoryData.usage = source.GetNoPaddingUsage();
-        memory = MemoryManager::CreateMemory(source.GetAllocatorType(), memoryData);
+        memory = MemoryManager::CreateMemory(sourceType, memoryData);
         if (memory == nullptr) {
             return false;
         }
