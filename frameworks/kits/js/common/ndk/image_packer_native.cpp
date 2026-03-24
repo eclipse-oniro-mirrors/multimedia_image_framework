@@ -79,9 +79,10 @@ struct OH_PackingOptionsForSequence {
 };
 
 struct FreeDeleter {
-    void operator()(Image_MimeType* ptr) const {
+    void operator()(Image_MimeType* ptr) const
+    {
         if (ptr) {
-            for(size_t i = 0; i < g_supportedFormatSize; ++i) {
+            for (size_t i = 0; i < g_supportedFormatSize; ++i) {
                 free(ptr[i].data);
             }
             delete[] ptr;
