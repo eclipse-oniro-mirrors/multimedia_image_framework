@@ -349,7 +349,7 @@ bool HeifHvccBox::ParseSpsSyntax(std::vector<uint8_t> &nalUnits)
         spsConfig_.confWinBottomOffset = GetGolombCode(nalUnits);
     }
     spsConfig_.bitDepthLumaMinus8 = GetGolombCode(nalUnits);
-    IMAGE_LOGD("HeifParser::SPS bitDepthLumaMinus8 : %{public}d", spsConfig_.spsConfig_.chromaFormatIdc);
+    IMAGE_LOGD("HeifParser::SPS bitDepthLumaMinus8 : %{public}d", spsConfig_.chromaFormatIdc);
     spsConfig_.bitDepthChromaMinus8 = GetGolombCode(nalUnits);
     IMAGE_LOGD("HeifParser::SPS bitDepthLumaMinus8 : %{public}d", spsConfig_.bitDepthLumaMinus8);
     IMAGE_LOGD("HeifParser::SPS bitDepthChromaMinus8 : %{public}d", spsConfig_.bitDepthChromaMinus8);
