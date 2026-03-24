@@ -1549,7 +1549,11 @@ void ExtDecoder::SetHeifSampleSize(const PixelDecodeOptions &opts, int &dstWidth
 {
 #ifdef HEIF_HW_DECODE_ENABLE
     float scale = ZERO;
-    if (IsSupportHeifHardwareDecode(opts) && IsLowDownScale(opts.desiredSize, info_) &&
+    if (opts.isAnimationDecode) {
+        sampleSize_ = DEFAULT_SAMPLE_SIZE;
+        dstInfo_ = SkImageInfo::Make(animationSize_.width, animationSize_.height,
+            desireColor, desireAlpha, getDesiredColorSpace(info_, opts));
+    } else if (IsSupportHeifHardwareDecode(opts) && IsLowDownScale(opts.desiredSize, info_) &&
         GetHardwareScaledSize(dstWidth, dstHeight, scale) && IsDivisibleBySampleSize()) {
             dstInfo_ = SkImageInfo::Make(dstWidth, dstHeight,
                 desireColor, desireAlpha, getDesiredColorSpace(info_, opts));
@@ -1703,6 +1707,9 @@ uint32_t ExtDecoder::Decode(uint32_t index, DecodeContext &context)
     }
 #endif
     if (skEncodeFormat == SkEncodedImageFormat::kHEIF) {
+        if (!context.isAnimationDecode && index > 0) {
+            context.isAnimationDecode = true;
+        }
         context.index = index;
         return DoHeifDecode(context);
     }
@@ -2318,6 +2325,7 @@ bool ExtDecoder::DecodeHeader()
         uint32_t frameCount = 0;
         if (decoder && decoder->GetHeifsFrameCount(frameCount)) {
             frameCount_ = static_cast<int32_t>(frameCount);
+            decoder->GetAnimationSize(animationSize_);
         }
     }
 #endif
@@ -3437,7 +3445,7 @@ bool ExtDecoder::IsHeifsDecode(DecodeContext& context)
     uint32_t frameCount = 0;
     cond = decoder->GetHeifsFrameCount(frameCount) && (context.index < frameCount);
     CHECK_ERROR_RETURN_RET_LOG(!cond, false, "IsHeifsDecode failed, frame count error.");
-    return decoder->IsHeifsImage();
+    return decoder->IsHeifsImage() && (context.isAnimationDecode || decoder->IsWithoutPrimaryImageHeifs());
 #endif
     return false;
 }
@@ -3452,10 +3460,12 @@ uint32_t ExtDecoder::DoHeifsDecode(DecodeContext &context)
     UpdateDstInfoAndOutInfo(context);
     rowStride = dstInfo_.minRowBytes64();
     byteCount = dstInfo_.computeMinByteSize();
+    uint64_t byteCountPrimaryImage = info_.computeMinByteSize();
     GridInfo gridInfo = decoder->GetGridInfo();
     if (IsYuv420Format(context.info.pixelFormat)) {
         rowStride = static_cast<uint32_t>(dstInfo_.width());
         byteCount = JpegDecoderYuv::GetYuvOutSize(dstInfo_.width(), dstInfo_.height());
+        byteCountPrimaryImage = JpegDecoderYuv::GetYuvOutSize(info_.width(), info_.height());
     }
     CHECK_ERROR_RETURN_RET_LOG(SkImageInfo::ByteSizeOverflowed(byteCount), ERR_IMAGE_TOO_LARGE,
         "%{public}s too large byteCount: %{public}llu", __func__, static_cast<unsigned long long>(byteCount));
@@ -3476,8 +3486,9 @@ uint32_t ExtDecoder::DoHeifsDecode(DecodeContext &context)
     CHECK_ERROR_RETURN_RET(res != SUCCESS, res);
     decoder->setDstBuffer(reinterpret_cast<uint8_t *>(context.pixelsBuffer.buffer), rowStride, nullptr);
     decoder->SetDstBufferSize(byteCount);
+    decoder->SetDstPrimaryImageBufferSize(byteCountPrimaryImage);
     decoder->SetDstImageInfo(dstInfo_.width(), dstInfo_.height());
-    bool decodeRet = decoder->SwDecode(false, context.index);
+    bool decodeRet = decoder->SwDecode(false, context.index, context.isAnimationDecode);
     if (!decodeRet) {
         decoder->getErrMsg(context.hardDecodeError);
     } else if (IsYuv420Format(context.info.pixelFormat)) {
@@ -3487,6 +3498,11 @@ uint32_t ExtDecoder::DoHeifsDecode(DecodeContext &context)
 #else
     return ERR_IMAGE_DATA_UNSUPPORT;
 #endif
+}
+
+OHOS::Media::Size ExtDecoder::GetAnimationImageSize()
+{
+    return animationSize_;
 }
 } // namespace ImagePlugin
 } // namespace OHOS

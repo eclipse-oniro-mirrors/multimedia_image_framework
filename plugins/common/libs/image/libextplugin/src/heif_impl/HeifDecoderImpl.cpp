@@ -86,7 +86,6 @@ const static uint32_t FULL_RANGE_FLAG = 1;
 const static int INVALID_GRID_FLAG = -1;
 // The maximum recursion depth of heif iden type.
 const static uint32_t MAX_IDEN_RECURSION_COUNT = 300;
-const static uint64_t FRAME_INDEX = 1;
 
 #if !defined(CROSS_PLATFORM)
 #define DMA_BUF_SET_TYPE _IOW(DMA_BUF_BASE, 2, const char *)
@@ -243,6 +242,10 @@ bool HeifDecoderImpl::init(HeifStream *stream, HeifFrameInfo *frameInfo)
     std::shared_ptr<HeifImage> tmapImage = parser_->GetTmapImage();
     if (tmapImage != nullptr) {
         InitFrameInfo(&tmapInfo_, tmapImage);
+    }
+    animationImage_ = parser_->GetAnimationImage();
+    if (animationImage_ != nullptr) {
+        InitFrameInfo(&animationImageInfo_, animationImage_);
     }
     return Reinit(frameInfo);
 }
@@ -583,7 +586,7 @@ bool HeifDecoderImpl::decode(HeifFrameInfo *frameInfo)
     return true;
 }
 
-bool HeifDecoderImpl::SwDecode(bool isSharedMemory, uint32_t index)
+bool HeifDecoderImpl::SwDecode(bool isSharedMemory, uint32_t index, bool isAnimationDecode)
 {
     HevcSoftDecodeParam param {
             gridInfo_, Media::PixelFormat::UNKNOWN, outPixelFormat_,
@@ -591,11 +594,14 @@ bool HeifDecoderImpl::SwDecode(bool isSharedMemory, uint32_t index)
             static_cast<uint32_t>(dstRowStride_), dstHwBuffer_,
             isSharedMemory, nullptr, static_cast<uint32_t>(dstRowStride_)
     };
-    bool decodeRes = SwDecodeImage(primaryImage_, param, gridInfo_, true, index);
-    if (!decodeRes) {
-        return false;
+    if (isAnimationDecode) {
+        CHECK_ERROR_RETURN_RET_LOG(!animationImage_, false, "image sequence info is nullptr.");
+        CHECK_ERROR_RETURN_RET(!SwDecodeImage(animationImage_, param, gridInfo_, false, index), false);
+    } else {
+        bool isNoPrimaryImageHeifs = animationImage_ && animationImage_->IsPrimaryImage();
+        CHECK_ERROR_RETURN_RET(!SwDecodeImage(primaryImage_, param, gridInfo_, !isNoPrimaryImageHeifs, 0), false);
+        SwApplyAlphaImage(primaryImage_, dstMemory_, dstRowStride_);
     }
-    SwApplyAlphaImage(primaryImage_, dstMemory_, dstRowStride_);
     if (dstHwBuffer_ && (dstHwBuffer_->GetUsage() & BUFFER_USAGE_MEM_MMZ_CACHE)) {
         GSError err = dstHwBuffer_->Map();
         if (err != GSERROR_OK) {
@@ -929,7 +935,7 @@ bool HeifDecoderImpl::SwDecodeImage(std::shared_ptr<HeifImage> &image, HevcSoftD
         return false;
     }
 
-    if (IsHeifsImage()) {
+    if (!isPrimary && IsHeifsImage()) {
         IMAGE_LOGI("SwDecodeImage image is heifs image.");
         return SwDecodeHeifsImage(index, param);
     }
@@ -1591,7 +1597,7 @@ uint32_t HeifDecoderImpl::getColorDepth()
 bool HeifDecoderImpl::SwDecodeHeifsOnceFrame(uint32_t index, const HevcSoftDecodeParam &refParam, bool isStatic)
 {
     HevcSoftDecodeParam tmpParam = refParam;
-    CHECK_ERROR_RETURN_RET_LOG(!AllocateBufferSize(tmpParam), false, "AllocateBuffer failed.");
+    CHECK_ERROR_RETURN_RET_LOG(!AllocateBufferSize(tmpParam, isStatic), false, "AllocateBuffer failed.");
     if (!SwDecodeHeifsFrameImage(index, tmpParam, isStatic)) {
         DeleteParamBuffer(tmpParam);
         IMAGE_LOGE("SwDecodeHeifsFrameImage decode first frame failed.");
@@ -1662,7 +1668,7 @@ bool HeifDecoderImpl::GetHeifsFrameCount(uint32_t &sampleCount)
 
 bool HeifDecoderImpl::IsHeifsImage()
 {
-    if (!primaryImage_ || !primaryImage_->IsMovieImage()) {
+    if (!animationImage_ || !animationImage_->IsMovieImage()) {
         IMAGE_LOGD("IsHeifsImage() is not movie image.");
         return false;
     }
@@ -1714,10 +1720,17 @@ bool HeifDecoderImpl::HasDecodedFrame(uint32_t index)
     return params_.count(index) != 0;
 }
 
-bool HeifDecoderImpl::AllocateBufferSize(HevcSoftDecodeParam &param)
+bool HeifDecoderImpl::AllocateBufferSize(HevcSoftDecodeParam &param, bool isStatic)
 {
-    uint64_t num = params_.size() + FRAME_INDEX;
-    uint64_t curBufferSize = dstBufferSize_ * num;
+    CHECK_ERROR_RETURN_RET(isStatic && !primaryImage_, false);
+    CHECK_ERROR_RETURN_RET_LOG(!params_.empty() &&
+        ImageUtils::CheckMulOverflow<uint64_t>(dstBufferSize_, params_.size()), false,
+        "%{public}s mul overflow", __func__);
+    uint64_t curBufferSize = dstBufferSize_ * params_.size();
+    uint64_t addBufferSize = isStatic ? dstPrimaryImageBufferSize_ : dstBufferSize_;
+    CHECK_ERROR_RETURN_RET_LOG(ImageUtils::HasOverflowed64(curBufferSize, addBufferSize), false,
+        "%{public}s add overflow", __func__);
+    curBufferSize += addBufferSize;
     CHECK_ERROR_RETURN_RET_LOG(SkImageInfo::ByteSizeOverflowed(curBufferSize), false,
         "%{public}s too large byteCount: %{public}llu", __func__, static_cast<unsigned long long>(curBufferSize));
 #if defined(CROSS_PLATFORM)
@@ -1725,8 +1738,8 @@ bool HeifDecoderImpl::AllocateBufferSize(HevcSoftDecodeParam &param)
     return false;
 #else
     BufferRequestConfig requestConfig = {
-        .width = dstWidth_,
-        .height = dstHeight_,
+        .width = isStatic ? primaryImage_->GetOriginalWidth() : dstWidth_,
+        .height = isStatic ? primaryImage_->GetOriginalHeight() : dstHeight_,
         .strideAlignment = 0x8, // set 0x8 as default value to alloc SurfaceBufferImpl
         .format = GRAPHIC_PIXEL_FMT_RGBA_8888, // hardware decode only support rgba8888
         .usage = BUFFER_USAGE_CPU_READ | BUFFER_USAGE_CPU_WRITE | BUFFER_USAGE_MEM_DMA | BUFFER_USAGE_MEM_MMZ_CACHE,
@@ -1743,6 +1756,7 @@ bool HeifDecoderImpl::AllocateBufferSize(HevcSoftDecodeParam &param)
     param.dstBuffer = static_cast<uint8_t*>(sb->GetVirAddr());
     param.bufferSize = sb->GetSize();
     param.hwBuffer = nativeBuffer;
+    param.dstStride = static_cast<uint64_t>(sb->GetStride());
     return true;
 #endif
 }
@@ -1784,6 +1798,11 @@ void HeifDecoderImpl::SetDstBufferSize(uint64_t byteCount)
     dstBufferSize_ = byteCount;
 }
 
+void HeifDecoderImpl::SetDstPrimaryImageBufferSize(uint64_t byteCount)
+{
+    dstPrimaryImageBufferSize_ = byteCount;
+}
+
 void HeifDecoderImpl::SetDstImageInfo(uint32_t dstWidth, uint32_t dstHeight)
 {
     dstWidth_ = dstWidth;
@@ -1797,6 +1816,18 @@ void HeifDecoderImpl::SwDecodeHeifsStaticImage(HevcSoftDecodeParam &param)
         bool ret = SwDecodeHeifsOnceFrame(0, param, true);
         IMAGE_LOGI("Need Decode Heifs Static Image, ret:%{public}d", static_cast<int>(ret));
     }
+}
+
+void HeifDecoderImpl::GetAnimationSize(Size &animationSize)
+{
+    CHECK_ERROR_RETURN(!animationImage_);
+    animationSize.width = animationImageInfo_.mWidth;
+    animationSize.height = animationImageInfo_.mHeight;
+}
+
+bool HeifDecoderImpl::IsWithoutPrimaryImageHeifs()
+{
+    return primaryImage_ && primaryImage_->IsMovieImage();
 }
 } // namespace ImagePlugin
 } // namespace OHOS

@@ -420,6 +420,7 @@ struct DecodeOptions {
     std::shared_ptr<PixelMap> reusePixelmap = nullptr;
     CropAndScaleStrategy cropAndScaleStrategy = CropAndScaleStrategy::DEFAULT;
     bool isCreateWideGamutSdrPixelMap = false;
+    bool isAnimationDecode = false;
 };
 
 enum class ScaleMode : int32_t {

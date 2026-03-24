@@ -912,6 +912,10 @@ DecodeContext ImageSource::InitDecodeContext(const DecodeOptions &opts, const Im
         context.info.pixelFormat = format;
         plInfo.pixelFormat = format;
     }
+    context.isAnimationDecode = opts.isAnimationDecode;
+    if (opts_.isAnimationDecode) {
+        opts_.desiredSize = plInfo.size;
+    }
     return context;
 }
 
@@ -1001,6 +1005,13 @@ bool ImageSource::CheckDecodeOptions(const DecodeOptions &opts)
     return CheckAllocatorTypeValid(opts) && CheckCropRectValid(opts);
 }
 
+void ImageSource::SetAnimationSize(uint32_t index, const DecodeOptions &opts, ImageInfo &info)
+{
+    if (mainDecoder_ && info.encodedFormat == IMAGE_HEIFS_FORMAT && (opts.isAnimationDecode || index > 0)) {
+        info.size = mainDecoder_->GetAnimationImageSize();
+    }
+}
+
 unique_ptr<PixelMap> ImageSource::CreatePixelMapExtended(uint32_t index, const DecodeOptions &opts, uint32_t &errorCode)
 {
     ImageEvent imageEvent;
@@ -1009,6 +1020,7 @@ unique_ptr<PixelMap> ImageSource::CreatePixelMapExtended(uint32_t index, const D
     opts_ = opts;
     ImageInfo info;
     errorCode = GetImageInfo(FIRST_FRAME, info);
+    SetAnimationSize(index, opts, info);
 #if !defined(CROSS_PLATFORM)
     ImageHandle::GetInstance().LowRamDeviceOptsOptimize(opts_, info);
 #endif
@@ -3239,6 +3251,7 @@ void ImageSource::CopyOptionsToPlugin(const DecodeOptions &opts, PixelDecodeOpti
     plOpts.plDesiredColorSpace = opts.desiredColorSpaceInfo;
     plOpts.plReusePixelmap = opts.reusePixelmap;
     plOpts.cropAndScaleStrategy = opts.cropAndScaleStrategy;
+    plOpts.isAnimationDecode = opts.isAnimationDecode;
 }
 
 void ImageSource::CopyOptionsToProcOpts(const DecodeOptions &opts, DecodeOptions &procOpts, PixelMap &pixelMap)
@@ -5476,6 +5489,7 @@ std::unique_ptr<Picture> ImageSource::CreatePictureAtIndex(uint32_t index, uint3
         "[%{public}s] PreCheck failed, index=%{public}u, errorCode=%{public}u", __func__, index, errorCode);
 
     DecodeOptions opts;
+    opts.isAnimationDecode = true;
     std::shared_ptr<PixelMap> pixelMap = CreatePixelMap(index, opts, errorCode);
     CHECK_ERROR_RETURN_RET_LOG(errorCode != SUCCESS, nullptr,
         "[%{public}s] create PixelMap error, index=%{public}u, errorCode=%{public}u", __func__, index, errorCode);
