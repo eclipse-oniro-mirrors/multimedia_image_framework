@@ -527,7 +527,7 @@ std::vector<MetadataValue> ImageSourceTest::gMockDngMetadata_ = {
     {"BaselineExposureOffset", PropertyValueType::DOUBLE, "", {}, {0.0}, {}},
     {"DefaultBlackRender", PropertyValueType::INT, "", {0}, {}, {}},
     {"RawToPreviewGain", PropertyValueType::DOUBLE, "", {}, {1.0}, {}},
-    {"DefaultUserCrop", PropertyValueType::INT_ARRAY, "", {}, {0, 0, 1, 1}, {}}};
+    {"DefaultUserCrop", PropertyValueType::INT_ARRAY, "", {0, 0, 1, 1}, {}, {}}};
 
 void ImageSourceTest::InitData()
 {

@@ -213,11 +213,23 @@ uint32_t TiffDecoder::Decode(uint32_t index, DecodeContext& context)
                               sizeof(uint32_t);
     AllocBuffer(context, bufferSize);
     uint32_t* raster = static_cast<uint32_t*>(context.pixelsBuffer.buffer);
+    std::unique_ptr<uint32_t[]> dmaTmpBuffer;
+    if (context.allocatorType == AllocatorType::DMA_ALLOC && dmaStride_ > tiffSize_.width) {
+        dmaTmpBuffer = std::make_unique<uint32_t[]>(bufferSize / sizeof(uint32_t));
+        raster = dmaTmpBuffer.get();
+    }
     CHECK_ERROR_RETURN_RET_LOG(raster == nullptr, ERR_IMAGE_MALLOC_ABNORMAL, "AllocBuffer failed");
-
     if (!TIFFReadRGBAImageOriented(tifCodec_, tiffSize_.width, tiffSize_.height, raster, ORIENTATION_TOPLEFT, 0)) {
         IMAGE_LOGE("TIFFReadRGBAImageOriented decode failed");
         return ERR_IMAGE_DECODE_FAILED;
+    }
+    if (context.allocatorType == AllocatorType::DMA_ALLOC && dmaStride_ > tiffSize_.width) {
+        for (uint32_t row = 0; row < tiffSize_.height; row++) {
+            uint32_t* src = raster + row * tiffSize_.width;
+            uint8_t* dst = static_cast<uint8_t*>(context.pixelsBuffer.buffer) + row * dmaStride_;
+            auto err = memcpy_s(dst, dmaStride_, src, tiffSize_.width * sizeof(uint32_t));
+            CHECK_ERROR_RETURN_RET_LOG(err != EOK, ERR_IMAGE_DECODE_FAILED, "memcpy is failed");
+        }
     }
 
 #ifdef IMAGE_COLORSPACE_FLAG
@@ -335,6 +347,10 @@ bool TiffDecoder::AllocDmaBuffer(DecodeContext &context, uint64_t byteCount)
     cond = (err != OHOS::GSERROR_OK);
     CHECK_ERROR_RETURN_RET_LOG(cond, false, "NativeBufferReference failed");
 
+    dmaStride_ = sb->GetStride();
+    IMAGE_LOGD("[AllocDmaBuffer] Stride: %{public}d, Height: %{public}d, "
+               "Width: %{public}d, size:%{public}d",
+               sb->GetStride(), sb->GetHeight(), sb->GetWidth(), sb->GetSize());
     context.pixelsBuffer.buffer = sb->GetVirAddr();
     context.pixelsBuffer.context = nativeBuffer;
     context.pixelsBuffer.bufferSize = byteCount;

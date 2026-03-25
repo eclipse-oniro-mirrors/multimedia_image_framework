@@ -73,6 +73,7 @@ private:
     PlImageInfo info_;
     Size tiffSize_;
     TIFF* tifCodec_ = nullptr;
+    int32_t dmaStride_ = 0;
 
 #ifdef IMAGE_COLORSPACE_FLAG
     void ParseICCProfile();
