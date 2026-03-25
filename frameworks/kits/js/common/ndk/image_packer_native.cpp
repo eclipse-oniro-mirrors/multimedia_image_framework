@@ -728,7 +728,7 @@ Image_ErrorCode OH_ImagePackerNative_GetSupportedFormats(Image_MimeType** suppor
 
     auto newFormats = std::unique_ptr<Image_MimeType[], FreeDeleter>(
         new Image_MimeType[formats.size()],
-    FreeDeleter{});
+        FreeDeleter{});
     size_t count = 0;
     for (const auto& str : formats) {
         newFormats[count].data = strdup(str.c_str());
