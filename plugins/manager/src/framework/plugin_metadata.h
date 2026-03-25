@@ -151,13 +151,13 @@ const std::vector<std::string> META_DATA = {
              "services":[{"interfaceID":2, "serviceType":0}],
              "priority":100,
              "capabilities":[{"name":"encodeFormat", "type":"string",
-             "value":"image/jpeg, image/png, image/webp, image/x-icon, image/gif, image/bmp, image/wbmp"}]
+             "value":"image/jpeg,image/png,image/webp,image/x-icon,image/gif,image/bmp,image/wbmp"}]
             },
             {"className":"OHOS::ImagePlugin::ExtEncoder",
              "services":[{"interfaceID":3, "serviceType":0}],
              "priority":100,
              "capabilities":[{"name":"encodeFormat", "type":"string",
-                              "value":"image/jpeg, image/png, image/webp"}]
+                              "value":"image/jpeg,image/png,image/webp"}]
             }
         ]
     })",
