@@ -34,8 +34,7 @@ ImageCreatorImpl::~ImageCreatorImpl()
 void ImageCreatorImpl::Release()
 {
     if (imageCreator_ != nullptr) {
-        imageCreator_->~ImageCreator();
-        imageCreator_ = nullptr;
+        imageCreator_.reset();
     }
 }
 
