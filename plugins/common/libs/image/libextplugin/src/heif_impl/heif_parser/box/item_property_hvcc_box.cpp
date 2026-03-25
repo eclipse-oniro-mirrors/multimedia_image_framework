@@ -84,7 +84,9 @@ heif_error HeifHvccBox::ParseContent(HeifStreamReader& reader)
 
     // box store content is bitDepthLumaMinus8
     config_.bitDepthLuma = (reader.Read8() & 0x07) + BIT_DEPTH_DIFF;
+    IMAGE_LOGD("Heifparser::chromaFormatIdc :%{public}d", spsConfig_.chromaFormatIdc);
     config_.bitDepthChroma = (reader.Read8() & 0x07) + BIT_DEPTH_DIFF;
+    IMAGE_LOGD("Heifparser::bitDepthChroma :%{public}d", spsConfig_.chromaFormatIdc);
     config_.avgFrameRate = reader.Read16();
 
     tempByte = reader.Read8();
@@ -212,9 +214,9 @@ uint32_t HeifHvccBox::GetNaluTypeId(std::vector<uint8_t> &nalUnits)
 std::vector<uint8_t> HeifHvccBox::GetNaluData(const std::vector<HvccNalArray> &nalArrays,
                                               uint8_t naluId)
 {
-    for (auto HvccNalunit : nalArrays) {
-        if (HvccNalunit.nalUnitType == naluId && (!HvccNalunit.nalUnits.empty())) {
-            return HvccNalunit.nalUnits[0];
+    for (auto hvccNalunit : nalArrays) {
+        if (hvccNalunit.nalUnitType == naluId && (!hvccNalunit.nalUnits.empty())) {
+            return hvccNalunit.nalUnits[0];
         }
     }
     return std::vector<uint8_t>();
@@ -347,6 +349,7 @@ bool HeifHvccBox::ParseSpsSyntax(std::vector<uint8_t> &nalUnits)
         spsConfig_.confWinBottomOffset = GetGolombCode(nalUnits);
     }
     spsConfig_.bitDepthLumaMinus8 = GetGolombCode(nalUnits);
+    IMAGE_LOGD("HeifParser::SPS bitDepthLumaMinus8 : %{public}d", spsConfig_.chromaFormatIdc);
     spsConfig_.bitDepthChromaMinus8 = GetGolombCode(nalUnits);
     IMAGE_LOGD("HeifParser::SPS bitDepthLumaMinus8 : %{public}d", spsConfig_.bitDepthLumaMinus8);
     IMAGE_LOGD("HeifParser::SPS bitDepthChromaMinus8 : %{public}d", spsConfig_.bitDepthChromaMinus8);

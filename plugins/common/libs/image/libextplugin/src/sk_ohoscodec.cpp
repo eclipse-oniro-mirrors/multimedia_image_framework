@@ -525,9 +525,10 @@ SkCodec::Result SkOHOSSampledCodec::onGetOHOSPixels(const SkImageInfo& info, voi
             return startIncrementalResult;
         }
     }
-    OHOSOptions subsetOptions = options;
+
     SkIRect scanlineSubset = SkIRect::MakeXYWH(scaledSubsetX, 0, scaledSubsetWidth,
         scaledSize.height());
+    OHOSOptions subsetOptions = options;
     subsetOptions.fSubset = &scanlineSubset;
 
     SkCodec::Result result = this->codec()->startScanlineDecode(scaledInfo,
