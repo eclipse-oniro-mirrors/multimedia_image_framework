@@ -61,6 +61,7 @@ struct FreeDeleter {
             for (size_t i = 0; i < g_supportedFormatSize; ++i) {
                 free(ptr[i].data);
             }
+            delete[] ptr;
         }
     }
 };
@@ -725,7 +726,9 @@ Image_ErrorCode OH_ImagePackerNative_GetSupportedFormats(Image_MimeType** suppor
     std::set<std::string> formats;
     ImagePacker::GetSupportedFormats(formats);
 
-    auto newFormats = std::make_unique<Image_MimeType[], FreeDeleter>(formats.size());
+    auto newFormats = std::unique_ptr<Image_MimeType[], FreeDeleter>(
+        new Image_MimeType[formats.size()]
+    );
     size_t count = 0;
     for (const auto& str : formats) {
         newFormats[count].data = strdup(str.c_str());
