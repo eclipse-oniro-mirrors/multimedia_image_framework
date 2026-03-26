@@ -60,7 +60,9 @@ struct FreeDeleter {
     {
         if (ptr) {
             for (size_t i = 0; i < g_supportedFormatSize; ++i) {
-                free(ptr[i].data);
+                if (ptr[i].data != nullptr) {
+                    free(ptr[i].data);
+                }
             }
             delete[] ptr;
         }
