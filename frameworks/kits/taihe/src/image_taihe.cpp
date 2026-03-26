@@ -144,6 +144,16 @@ struct Image ImageImpl::Create(std::shared_ptr<OHOS::Media::NativeImage> nativeI
     return make_holder<ImageImpl, struct Image>(nativeImage);
 }
 
+void ImageImpl::ReleaseAsync()
+{
+    ReleaseSync();
+}
+
+void ImageImpl::ReleasePromise()
+{
+    ReleaseSync();
+}
+
 void ImageImpl::ReleaseSync()
 {
     NativeRelease();
@@ -201,6 +211,16 @@ Size ImageImpl::GetSize()
         IMAGE_LOGE("Image native get size failed");
     }
     return {width, height};
+}
+
+Component ImageImpl::GetComponentAsync(ComponentType componentType)
+{
+    return GetComponentSync(componentType);
+}
+
+Component ImageImpl::GetComponentPromise(ComponentType componentType)
+{
+    return GetComponentSync(componentType);
 }
 
 Component ImageImpl::GetComponentSync(ComponentType componentType)

@@ -36,7 +36,11 @@ public:
     array<uint8_t> Packing(int32_t packType, int64_t source, PackingOption const& options, bool needReturnError);
     void PackToFile(int32_t packType, int64_t source, int32_t fd, PackingOption const& options);
 
+    void PackImageSourceToFileAsync(weak::ImageSource source, int32_t fd, PackingOption const& options);
+    void PackImageSourceToFilePromise(weak::ImageSource source, int32_t fd, PackingOption const& options);
     void PackImageSourceToFileSync(weak::ImageSource source, int32_t fd, PackingOption const& options);
+    void PackPixelMapToFileAsync(weak::PixelMap source, int32_t fd, PackingOption const& options);
+    void PackPixelMapToFilePromise(weak::PixelMap source, int32_t fd, PackingOption const& options);
     void PackPixelMapToFileSync(weak::PixelMap source, int32_t fd, PackingOption const& options);
     void PackToFileFromPixelmapSequenceSync(array_view<PixelMap> pixelmapSequence, int32_t fd,
         PackingOptionsForSequence const& options);
@@ -49,6 +53,8 @@ public:
     array<uint8_t> PackToDataFromPixelmapSequenceSync(array_view<PixelMap> pixelmapSequence,
         PackingOptionsForSequence const& options);
 
+    void ReleaseAsync();
+    void ReleasePromise();
     void ReleaseSync();
 
     array<string> GetSupportedFormats();

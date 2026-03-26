@@ -96,6 +96,16 @@ ImageFormat ImageCreatorImpl::GetFormat()
     return ImageFormat(key);
 }
 
+void ImageCreatorImpl::ReleaseAsync()
+{
+    ReleaseSync();
+}
+
+void ImageCreatorImpl::ReleasePromise()
+{
+    ReleaseSync();
+}
+
 void ImageCreatorImpl::ReleaseSync()
 {
     if (imageCreator_ != nullptr) {
@@ -185,6 +195,16 @@ static void QueueImageSyncProcess(ImageCreatorCommonArgs &args, ImageImpl *const
     }
 }
 
+void ImageCreatorImpl::QueueImageAsync(weak::Image image)
+{
+    QueueImageSync(image);
+}
+
+void ImageCreatorImpl::QueueImagePromise(weak::Image image)
+{
+    QueueImageSync(image);
+}
+
 void ImageCreatorImpl::QueueImageSync(weak::Image image)
 {
     ImageCreatorCommonArgs args = {
@@ -255,6 +275,16 @@ static struct Image DequeueImageSyncProcess(ImageCreatorCommonArgs &args, ImageC
     }
 
     return std::get<struct Image>(context->result);
+}
+
+struct Image ImageCreatorImpl::DequeueImageAsync()
+{
+    return DequeueImageSync();
+}
+
+struct Image ImageCreatorImpl::DequeueImagePromise()
+{
+    return DequeueImageSync();
 }
 
 struct Image ImageCreatorImpl::DequeueImageSync()

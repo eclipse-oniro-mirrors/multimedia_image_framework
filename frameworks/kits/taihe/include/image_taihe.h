@@ -38,9 +38,13 @@ public:
         return nativeImage_;
     }
 
+    Component GetComponentAsync(ComponentType componentType);
+    Component GetComponentPromise(ComponentType componentType);
     Component GetComponentSync(ComponentType componentType);
 
     static struct Image Create(std::shared_ptr<OHOS::Media::NativeImage> nativeImage);
+    void ReleaseAsync();
+    void ReleasePromise();
     void ReleaseSync();
     void NativeRelease();
 
