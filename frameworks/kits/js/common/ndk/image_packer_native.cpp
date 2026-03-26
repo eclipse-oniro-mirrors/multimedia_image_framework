@@ -144,6 +144,9 @@ static Image_ErrorCode CopyPackingOptions(const OH_PackingOptions *options, Pack
 MIDK_EXPORT
 Image_ErrorCode OH_PackingOptions_Create(OH_PackingOptions **options)
 {
+    if (options == nullptr) {
+        return IMAGE_BAD_PARAMETER;
+    }
     *options = new OH_PackingOptions();
     if (*options == nullptr) {
         return IMAGE_BAD_PARAMETER;
@@ -317,7 +320,7 @@ MIDK_EXPORT
 Image_ErrorCode OH_PackingOptions_SetDelayTimes(OH_PackingOptions *options, uint16_t* delayTimes,
     uint32_t delayTimesSize)
 {
-    if (options == nullptr) {
+    if (options == nullptr || delayTimes == nullptr) {
         return IMAGE_BAD_PARAMETER;
     }
     options->delayTimes = delayTimes;
@@ -341,7 +344,7 @@ MIDK_EXPORT
 Image_ErrorCode OH_PackingOptions_SetDisposalTypes(OH_PackingOptions *options, uint16_t* disposalTypes,
     uint32_t disposalTypesSize)
 {
-    if (options == nullptr) {
+    if (options == nullptr || disposalTypes == nullptr) {
         return IMAGE_BAD_PARAMETER;
     }
     options->disposalTypes = disposalTypes;
@@ -372,12 +375,16 @@ Image_ErrorCode OH_PackingOptions_Release(OH_PackingOptions *options)
         options->mimeType.data = nullptr;
     }
     delete options;
+    options = nullptr;
     return IMAGE_SUCCESS;
 }
 
 MIDK_EXPORT
 Image_ErrorCode OH_PackingOptionsForSequence_Create(OH_PackingOptionsForSequence **options)
 {
+    if (options == nullptr) {
+        return IMAGE_BAD_PARAMETER;
+    }
     *options = new OH_PackingOptionsForSequence();
     if (*options == nullptr) {
         return IMAGE_BAD_PARAMETER;
@@ -488,16 +495,21 @@ Image_ErrorCode OH_PackingOptionsForSequence_Release(OH_PackingOptionsForSequenc
         return IMAGE_BAD_PARAMETER;
     }
     delete options;
+    options = nullptr;
     return IMAGE_SUCCESS;
 }
 
 MIDK_EXPORT
 Image_ErrorCode OH_ImagePackerNative_Create(OH_ImagePackerNative **imagePacker)
 {
+    if (imagePacker == nullptr) {
+        return IMAGE_BAD_PARAMETER;
+    }
     auto imagePacker2 = new OH_ImagePackerNative();
     if (imagePacker2 == nullptr || imagePacker2->GetInnerImagePacker() == nullptr) {
         if (imagePacker2) {
             delete imagePacker2;
+            imagePacker2 = nullptr;
         }
         return IMAGE_BAD_PARAMETER;
     }
@@ -509,7 +521,8 @@ MIDK_EXPORT
 Image_ErrorCode OH_ImagePackerNative_PackToDataFromImageSource(OH_ImagePackerNative *imagePacker,
     OH_PackingOptions *options, OH_ImageSourceNative *imageSource, uint8_t *outData, size_t *size)
 {
-    if (imagePacker == nullptr || options == nullptr || imageSource == nullptr || outData == nullptr) {
+    if (imagePacker == nullptr || options == nullptr || imageSource == nullptr ||
+        outData == nullptr || size == nullptr) {
         return IMAGE_BAD_PARAMETER;
     }
 
@@ -526,7 +539,8 @@ MIDK_EXPORT
 Image_ErrorCode OH_ImagePackerNative_PackToDataFromPixelmap(OH_ImagePackerNative *imagePacker,
     OH_PackingOptions *options, OH_PixelmapNative *pixelmap, uint8_t *outData, size_t *size)
 {
-    if (imagePacker == nullptr || options == nullptr || pixelmap == nullptr || outData == nullptr) {
+    if (imagePacker == nullptr || options == nullptr || pixelmap == nullptr ||
+        outData == nullptr || size == nullptr) {
         return IMAGE_BAD_PARAMETER;
     }
 
@@ -543,7 +557,8 @@ MIDK_EXPORT
 Image_ErrorCode OH_ImagePackerNative_PackToDataFromPicture(OH_ImagePackerNative *imagePacker,
     OH_PackingOptions *options, OH_PictureNative *picture, uint8_t *outData, size_t *size)
 {
-    if (imagePacker == nullptr || options == nullptr || picture == nullptr || outData == nullptr) {
+    if (imagePacker == nullptr || options == nullptr || picture == nullptr ||
+        outData == nullptr || size == nullptr) {
         return IMAGE_BAD_PARAMETER;
     }
 
@@ -698,6 +713,7 @@ Image_ErrorCode OH_ImagePackerNative_Release(OH_ImagePackerNative *imagePacker)
         return IMAGE_BAD_PARAMETER;
     }
     delete imagePacker;
+    imagePacker = nullptr;
     return IMAGE_SUCCESS;
 }
 

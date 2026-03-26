@@ -165,6 +165,9 @@ static void releaseMimeType(Image_MimeType *mimeType)
 MIDK_EXPORT
 Image_ErrorCode OH_DecodingOptions_Create(OH_DecodingOptions **options)
 {
+    if (options == nullptr) {
+        return IMAGE_BAD_PARAMETER;
+    }
     *options = new OH_DecodingOptions();
     if (*options == nullptr) {
         return IMAGE_BAD_PARAMETER;
@@ -403,12 +406,16 @@ Image_ErrorCode OH_DecodingOptions_Release(OH_DecodingOptions *options)
         return IMAGE_BAD_PARAMETER;
     }
     delete options;
+    options = nullptr;
     return IMAGE_SUCCESS;
 }
 
 MIDK_EXPORT
 Image_ErrorCode OH_ImageSourceInfo_Create(OH_ImageSource_Info **info)
 {
+    if (info == nullptr) {
+        return IMAGE_BAD_PARAMETER;
+    }
     *info = new OH_ImageSource_Info();
     if (*info == nullptr) {
         return IMAGE_BAD_PARAMETER;
@@ -572,7 +579,7 @@ static void ParseImageSourceInfo(struct OH_ImageSource_Info *source, const Image
 MIDK_EXPORT
 Image_ErrorCode OH_ImageSourceNative_CreateFromUri(char *uri, size_t uriSize, OH_ImageSourceNative **res)
 {
-    if (uri == nullptr) {
+    if (uri == nullptr || res == nullptr) {
         return IMAGE_BAD_PARAMETER;
     }
     SourceOptions options;
@@ -580,6 +587,7 @@ Image_ErrorCode OH_ImageSourceNative_CreateFromUri(char *uri, size_t uriSize, OH
     if (imageSource == nullptr || imageSource->GetInnerImageSource() == nullptr) {
         if (imageSource) {
             delete imageSource;
+            imageSource = nullptr;
         }
         *res = nullptr;
         return IMAGE_BAD_PARAMETER;
@@ -587,6 +595,7 @@ Image_ErrorCode OH_ImageSourceNative_CreateFromUri(char *uri, size_t uriSize, OH
     std::string tmp(uri, uriSize);
     if (tmp.empty()) {
         delete imageSource;
+        imageSource = nullptr;
         return IMAGE_BAD_PARAMETER;
     }
     imageSource->filePath_ = tmp;
@@ -597,6 +606,9 @@ Image_ErrorCode OH_ImageSourceNative_CreateFromUri(char *uri, size_t uriSize, OH
 MIDK_EXPORT
 Image_ErrorCode OH_ImageSourceNative_CreateFromFd(int32_t fd, OH_ImageSourceNative **res)
 {
+    if (res == nullptr) {
+        return IMAGE_BAD_PARAMETER;
+    }
     SourceOptions options;
     auto imageSource = new OH_ImageSourceNative(fd, options);
     if (imageSource == nullptr || imageSource->GetInnerImageSource() == nullptr) {
@@ -614,6 +626,9 @@ Image_ErrorCode OH_ImageSourceNative_CreateFromFd(int32_t fd, OH_ImageSourceNati
 
 Image_ErrorCode CreateFromDataInternal(uint8_t *data, size_t dataSize, OH_ImageSourceNative **res, bool isUserBuffer)
 {
+    if (res == nullptr) {
+        return IMAGE_BAD_PARAMETER;
+    }
     if (data == nullptr) {
         return isUserBuffer ? IMAGE_SOURCE_INVALID_PARAMETER : IMAGE_BAD_PARAMETER;
     }
@@ -657,6 +672,7 @@ Image_ErrorCode OH_ImageSourceNative_CreateFromRawFile(RawFileDescriptor *rawFil
     if (imageSource == nullptr || imageSource->GetInnerImageSource() == nullptr) {
         if (imageSource) {
             delete imageSource;
+            imageSource = nullptr;
         }
         *res = nullptr;
         return IMAGE_BAD_PARAMETER;
@@ -1585,7 +1601,7 @@ Image_ErrorCode OH_ImageSourceNative_Release(OH_ImageSourceNative *source)
     if (source == nullptr) {
         return IMAGE_BAD_PARAMETER;
     }
-    source->~OH_ImageSourceNative();
+    delete source;
     source = nullptr;
     return IMAGE_SUCCESS;
 }
