@@ -667,7 +667,7 @@ FFI_EXPORT ErrorInfo FfiImageImageSourceImplGetImagePropertiesV2(int64_t id, CAr
         errorInfo.message = Utils::MallocCString(errMsg);
         return errorInfo;
     }
-    if (valueStrArray.size() != key.size) {
+    if (valueStrArray.size() != static_cast<size_t>(key.size)) {
         errorInfo.code = IMAGE_UNSUPPORTED_METADATA;
         return errorInfo;
     }
