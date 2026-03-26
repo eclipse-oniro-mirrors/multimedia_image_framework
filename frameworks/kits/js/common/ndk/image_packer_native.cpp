@@ -737,6 +737,8 @@ Image_ErrorCode OH_ImagePackerNative_GetSupportedFormats(Image_MimeType** suppor
             for (size_t i = 0; i < count; ++i) {
                 free(newFormats[i].data);
             }
+            newFormats.reset();
+            g_supportedFormatSize = 0;
             return IMAGE_PACKER_INVALID_PARAMETER;
         }
         newFormats[count].size = str.size();
