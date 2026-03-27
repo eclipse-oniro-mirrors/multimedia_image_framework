@@ -382,6 +382,8 @@ bool CreatePictureByRandomImageSource(const uint8_t *data, size_t size, const st
     }
     imageSource->GetiTxtLength();
     DecodingOptionsForPicture pictureOpts;
+    pictureOpts.desiredSizeForMainPixelMap.width = FDP->ConsumeIntegralInRange<uint32_t>(0, 0xfff);
+    pictureOpts.desiredSizeForMainPixelMap.height = FDP->ConsumeIntegralInRange<uint32_t>(0, 0xfff);
     std::shared_ptr<Picture> picture = imageSource->CreatePicture(pictureOpts, errorCode);
     PictureFuncTest(picture);
     EncodePictureTest(picture, JPEG_FORMAT, IMAGE_JPEG_DEST);
