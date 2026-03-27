@@ -758,7 +758,7 @@ napi_value MetadataNapi::CreateExifMetadata(napi_env env, std::shared_ptr<ImageM
 
 napi_value MetadataNapi::CreateMakerNoteMetadata(napi_env env, std::shared_ptr<ImageMetadata> metadata)
 {
-    if (sExifConstructor_ == nullptr) {
+    if (sMakerNoteConstructor_ == nullptr) {
         napi_value exports = nullptr;
         napi_create_object(env, &exports);
         MetadataNapi::InitMakerNoteMetadata(env, exports);
@@ -1293,7 +1293,7 @@ static void CloneMakerNoteMetadataComplete(napi_env env, napi_status status, voi
         napi_resolve_deferred(env, deferred, result);
     } else {
         napi_reject_deferred(env, deferred, CreateBusinessError(env,
-            IMAGE_SOURCE_UNSUPPORTED_METADATA, "Failed to clone EXIF metadata"));
+            IMAGE_SOURCE_UNSUPPORTED_METADATA, "Failed to clone makerNote metadata"));
     }
     napi_delete_async_work(env, context->work);
     napi_close_handle_scope(env, scope);
@@ -1598,6 +1598,11 @@ napi_value MetadataNapi::GetExifAllProperties(napi_env env, napi_callback_info i
                 return;
             }
             ImageMetadata::PropertyMapPtr allKey = exifMetadata->GetExifAllProperties();
+            if (allKey == nullptr) {
+                IMAGE_LOGE("GetExifAllProperties failed");
+                context->status = ERROR;
+                return;
+            }
             for (const auto &entry : *allKey) {
                 context->KVSArray.emplace_back(std::make_pair(entry.first, entry.second));
             }
@@ -1648,6 +1653,11 @@ napi_value MetadataNapi::GetMakerNoteAllProperties(napi_env env, napi_callback_i
                 return;
             }
             ImageMetadata::PropertyMapPtr allKey = exifMetadata->GetMakerNoteAllProperties();
+            if (allKey == nullptr) {
+                IMAGE_LOGE("GetMakerNoteAllProperties failed");
+                context->status = ERROR;
+                return;
+            }
             for (const auto &entry : *allKey) {
                 context->KVSArray.emplace_back(std::make_pair(entry.first, entry.second));
             }
