@@ -13,11 +13,18 @@
  * limitations under the License.
  */
 
-#include "media_errors.h"
 #include "metadata_taihe.h"
+
+#include "media_errors.h"
 #include "image_common.h"
 #include "image_log.h"
 #include "image_taihe_utils.h"
+
+#undef LOG_DOMAIN
+#define LOG_DOMAIN LOG_TAG_DOMAIN_ID_IMAGE
+
+#undef LOG_TAG
+#define LOG_TAG "MetadataTaihe"
 
 using namespace ANI::Image;
 
@@ -227,49 +234,34 @@ void MetadataImpl::SetPropertiesSync(map_view<string, PropertyValue> records)
     SetPropertiesComplete(context);
 }
 
-static void GetAllPropertiesSyncExecute(std::unique_ptr<MetadataTaiheContext> &context)
-{
-    if (context == nullptr) {
-        IMAGE_LOGE("Empty context");
-        return;
-    }
-    OHOS::Media::ImageMetadata::PropertyMapPtr allKey = context->rMetadata->GetAllProperties();
-    for (const auto &entry : *allKey) {
-        context->kVStrArray.emplace_back(std::make_pair(entry.first, entry.second));
-    }
-    context->status = OHOS::Media::SUCCESS;
-}
-
-static optional<map<string, PropertyValue>> GetAllPropertiesSyncComplete(
-    std::unique_ptr<MetadataTaiheContext> const& context)
-{
-    map<string, PropertyValue> result;
-    if (context == nullptr) {
-        IMAGE_LOGE("Context is nullptr");
-        return optional<map<string, PropertyValue>>(std::nullopt);
-    }
-    if (context->status == OHOS::Media::SUCCESS) {
-        result = CreatePropertiesRecord(context->kVStrArray);
-    } else {
-        CreateErrorArray(context);
-    }
-    return optional<map<string, PropertyValue>>(std::in_place, result);
-}
-
 optional<map<string, PropertyValue>> MetadataImpl::GetAllPropertiesSync()
 {
-    std::unique_ptr<MetadataTaiheContext> context = std::make_unique<MetadataTaiheContext>();
-    context->rMetadata = nativeMetadata_;
-    map<string, PropertyValue> result;
-    if (context->rMetadata == nullptr) {
+    if (nativeMetadata_ == nullptr) {
         IMAGE_LOGE("Empty native metadata.");
         return optional<map<string, PropertyValue>>(std::nullopt);
     }
-    GetAllPropertiesSyncExecute(context);
-    return GetAllPropertiesSyncComplete(context);
+
+    OHOS::Media::ImageMetadata::PropertyMapPtr allKey = GetAllPropertiesInternal();
+    if (allKey == nullptr) {
+        IMAGE_LOGE("%{public}s GetAllPropertiesInternal failed!", __func__);
+        return optional<map<string, PropertyValue>>(std::nullopt);
+    }
+
+    std::vector<std::pair<std::string, std::string>> kVStrArray;
+    for (const auto &[key, value] : *allKey) {
+        kVStrArray.emplace_back(key, value);
+    }
+    map<string, PropertyValue> result = CreatePropertiesRecord(kVStrArray);
+    return optional<map<string, PropertyValue>>(std::in_place, result);
 }
 
-optional<Metadata> MetadataImpl::CloneSync()
+OHOS::Media::ImageMetadata::PropertyMapPtr MetadataImpl::GetAllPropertiesInternal()
+{
+    CHECK_ERROR_RETURN_RET_LOG(nativeMetadata_ == nullptr, nullptr, "%{public}s native metadata is nullptr", __func__);
+    return nativeMetadata_->GetAllProperties();
+}
+
+optional<Metadata> MetadataImpl::CloneMetadata()
 {
     if (nativeMetadata_ == nullptr) {
         IMAGE_LOGE("Empty native metadata.");
@@ -284,6 +276,45 @@ optional<Metadata> MetadataImpl::CloneSync()
     return optional<Metadata>(std::in_place, result);
 }
 
+array<uint8_t> MetadataImpl::GetBlob()
+{
+    if (nativeMetadata_ == nullptr) {
+        IMAGE_LOGE("Empty native metadata.");
+        return array<uint8_t>(0);
+    }
+
+    auto arrayBufferSize = nativeMetadata_->GetBlobSize();
+    std::unique_ptr<uint8_t[]> arrayBuffer = std::make_unique<uint8_t[]>(arrayBufferSize);
+    uint32_t errorCode = OHOS::Media::ERROR;
+    if (arrayBuffer != nullptr) {
+        errorCode = nativeMetadata_->GetBlob(arrayBufferSize, arrayBuffer.get());
+    } else {
+        errorCode = OHOS::Media::ERR_MEDIA_MALLOC_FAILED;
+    }
+
+    if (errorCode != OHOS::Media::SUCCESS) {
+        ImageTaiheUtils::ThrowExceptionError(errorCode, "GetBlob failed");
+        return array<uint8_t>(0);
+    }
+
+    return ImageTaiheUtils::CreateTaiheArrayBuffer(arrayBuffer.release(), arrayBufferSize, true);
+}
+
+void MetadataImpl::SetBlob(array_view<uint8_t> blob)
+{
+    CHECK_ERROR_RETURN_LOG(nativeMetadata_ == nullptr, "Empty native metadata.");
+
+    if (blob.empty()) {
+        ImageTaiheUtils::ThrowExceptionError(IMAGE_INVALID_PARAMETER, "Empty blob buffer.");
+        return;
+    }
+
+    uint32_t errorCode = nativeMetadata_->SetBlob(blob.data(), static_cast<uint32_t>(blob.size()));
+    if (errorCode != OHOS::Media::SUCCESS) {
+        ImageTaiheUtils::ThrowExceptionError(IMAGE_INVALID_PARAMETER, "SetBlob failed");
+    }
+}
+
 void MetadataImpl::Release()
 {
     if (!isRelease) {
@@ -294,4 +325,152 @@ void MetadataImpl::Release()
     }
 }
 
+// --- Begin of ExifMetadata --- //
+ExifMetadataImpl::ExifMetadataImpl() : MetadataImpl() {}
+
+ExifMetadataImpl::ExifMetadataImpl(std::shared_ptr<OHOS::Media::ExifMetadata> metadata)
+    : MetadataImpl(metadata) {}
+
+ExifMetadataImpl::~ExifMetadataImpl() = default;
+
+OHOS::Media::ImageMetadata::PropertyMapPtr ExifMetadataImpl::GetAllPropertiesInternal()
+{
+    CHECK_ERROR_RETURN_RET_LOG(nativeMetadata_ == nullptr, nullptr, "%{public}s native metadata is nullptr", __func__);
+    auto exifMetadata = std::static_pointer_cast<OHOS::Media::ExifMetadata>(nativeMetadata_);
+    if (!exifMetadata) {
+        IMAGE_LOGE("%{public}s Not an ExifMetadata instance", __func__);
+        return nullptr;
+    }
+    return exifMetadata->GetExifAllProperties();
+}
+
+ExifMetadata ExifMetadataImpl::CloneExifMetadata()
+{
+    if (nativeMetadata_ == nullptr) {
+        IMAGE_LOGE("%{public}s Empty native metadata.", __func__);
+        return make_holder<ExifMetadataImpl, ExifMetadata>();
+    }
+
+    return make_holder<ExifMetadataImpl, ExifMetadata>(
+        std::static_pointer_cast<OHOS::Media::ExifMetadata>(nativeMetadata_->CloneMetadata()));
+}
+// --- End of ExifMetadata --- //
+
+// --- Begin of MakerNoteHuaweiMetadata --- //
+MakerNoteHuaweiMetadataImpl::MakerNoteHuaweiMetadataImpl() : MetadataImpl() {}
+
+MakerNoteHuaweiMetadataImpl::MakerNoteHuaweiMetadataImpl(std::shared_ptr<OHOS::Media::ExifMetadata> metadata)
+    : MetadataImpl(metadata) {}
+
+MakerNoteHuaweiMetadataImpl::~MakerNoteHuaweiMetadataImpl() = default;
+
+OHOS::Media::ImageMetadata::PropertyMapPtr MakerNoteHuaweiMetadataImpl::GetAllPropertiesInternal()
+{
+    CHECK_ERROR_RETURN_RET_LOG(nativeMetadata_ == nullptr, nullptr, "%{public}s native metadata is nullptr", __func__);
+    auto exifMetadata = std::static_pointer_cast<OHOS::Media::ExifMetadata>(nativeMetadata_);
+    if (!exifMetadata) {
+        IMAGE_LOGE("%{public}s Not an ExifMetadata instance", __func__);
+        return nullptr;
+    }
+    return exifMetadata->GetMakerNoteAllProperties();
+}
+
+MakerNoteHuaweiMetadata MakerNoteHuaweiMetadataImpl::CloneMakerNoteHuaweiMetadata()
+{
+    if (nativeMetadata_ == nullptr) {
+        IMAGE_LOGE("%{public}s Empty native metadata.", __func__);
+        return make_holder<MakerNoteHuaweiMetadataImpl, MakerNoteHuaweiMetadata>();
+    }
+
+    return make_holder<MakerNoteHuaweiMetadataImpl, MakerNoteHuaweiMetadata>(
+        std::static_pointer_cast<OHOS::Media::ExifMetadata>(nativeMetadata_->CloneMetadata()));
+}
+// --- End of MakerNoteHuaweiMetadata --- //
+
+// --- Begin of HeifsMetadata --- //
+HeifsMetadataImpl::HeifsMetadataImpl() : MetadataImpl() {}
+
+HeifsMetadataImpl::HeifsMetadataImpl(std::shared_ptr<OHOS::Media::HeifsMetadata> metadata)
+    : MetadataImpl(metadata) {}
+
+HeifsMetadataImpl::~HeifsMetadataImpl() = default;
+
+HeifsMetadata HeifsMetadataImpl::CloneHeifsMetadata()
+{
+    if (nativeMetadata_ == nullptr) {
+        IMAGE_LOGE("%{public}s Empty native metadata.", __func__);
+        return make_holder<HeifsMetadataImpl, HeifsMetadata>();
+    }
+
+    return make_holder<HeifsMetadataImpl, HeifsMetadata>(
+        std::static_pointer_cast<OHOS::Media::HeifsMetadata>(nativeMetadata_->CloneMetadata()));
+}
+// --- End of HeifsMetadata --- //
+
+// --- Begin of DngMetadata --- //
+DngMetadataImpl::DngMetadataImpl() : MetadataImpl() {}
+
+DngMetadataImpl::~DngMetadataImpl() = default;
+// --- End of DngMetadata --- //
+
+// --- Begin of WebpMetadata --- //
+WebPMetadataImpl::WebPMetadataImpl() : MetadataImpl() {}
+
+WebPMetadataImpl::WebPMetadataImpl(std::shared_ptr<OHOS::Media::WebPMetadata> metadata)
+    : MetadataImpl(metadata) {}
+
+WebPMetadataImpl::~WebPMetadataImpl() = default;
+// --- End of WebpMetadata --- //
+
+// --- Begin of global functions --- //
+ExifMetadata CreateExifMetadataInstance()
+{
+    return make_holder<ExifMetadataImpl, ExifMetadata>();
+}
+
+MakerNoteHuaweiMetadata CreateMakerNoteHuaweiMetadataInstance()
+{
+    return make_holder<MakerNoteHuaweiMetadataImpl, MakerNoteHuaweiMetadata>();
+}
+
+HeifsMetadata CreateHeifsMetadataInstance()
+{
+    return make_holder<HeifsMetadataImpl, HeifsMetadata>();
+}
+
+ExifMetadata ExifMetadataCtor()
+{
+    return make_holder<ExifMetadataImpl, ExifMetadata>();
+}
+
+MakerNoteHuaweiMetadata MakerNoteHuaweiMetadataCtor()
+{
+    return make_holder<MakerNoteHuaweiMetadataImpl, MakerNoteHuaweiMetadata>();
+}
+
+HeifsMetadata HeifsMetadataCtor()
+{
+    return make_holder<HeifsMetadataImpl, HeifsMetadata>();
+}
+
+DngMetadata DngMetadataCtor()
+{
+    return make_holder<DngMetadataImpl, DngMetadata>();
+}
+
+WebPMetadata WebPMetadataCtor()
+{
+    return make_holder<WebPMetadataImpl, WebPMetadata>();
+}
+// --- End of global functions --- //
+
 } // namespace ANI::Image
+
+TH_EXPORT_CPP_API_CreateExifMetadataInstance(CreateExifMetadataInstance);
+TH_EXPORT_CPP_API_CreateMakerNoteHuaweiMetadataInstance(CreateMakerNoteHuaweiMetadataInstance);
+TH_EXPORT_CPP_API_CreateHeifsMetadataInstance(CreateHeifsMetadataInstance);
+TH_EXPORT_CPP_API_ExifMetadataCtor(ExifMetadataCtor);
+TH_EXPORT_CPP_API_MakerNoteHuaweiMetadataCtor(MakerNoteHuaweiMetadataCtor);
+TH_EXPORT_CPP_API_HeifsMetadataCtor(HeifsMetadataCtor);
+TH_EXPORT_CPP_API_DngMetadataCtor(DngMetadataCtor);
+TH_EXPORT_CPP_API_WebPMetadataCtor(WebPMetadataCtor);

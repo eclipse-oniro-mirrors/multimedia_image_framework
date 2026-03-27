@@ -487,6 +487,7 @@ enum class MetadataType {
     HEIFS = 15,
     DNG = 16,
     WEBP = 17,
+    HW_MAKER_NOTE = 18,
 };
 
 static const std::map<MetadataType, std::string> BLOB_METADATA_TAG_MAP = {

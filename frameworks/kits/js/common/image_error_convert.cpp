@@ -163,5 +163,18 @@ std::pair<int32_t, std::string> ImageErrorConvert::WriteXMPMetadataMakeErrMsg(ui
             return std::make_pair<int32_t, std::string>(IMAGE_DECODE_FAILED, "Decode failed.");
     }
 }
+
+std::pair<int32_t, std::string> ImageErrorConvert::CreateImageRawDataMakeErrMsg(uint32_t errorCode)
+{
+    switch (errorCode) {
+        case ERR_IMAGE_MISMATCHED_FORMAT:
+            return std::make_pair<int32_t, std::string>(IMAGE_SOURCE_UNSUPPORTED_MIMETYPE, "Unsupported mimetype.");
+        case ERR_IMAGE_GET_DATA_ABNORMAL:
+        case ERR_IMAGE_DATA_UNSUPPORT:
+            return std::make_pair<int32_t, std::string>(IMAGE_BAD_SOURCE, "Bad image source.");
+        default:
+            return std::make_pair<int32_t, std::string>(IMAGE_BAD_SOURCE, "Bad image source.");
+    }
+}
 }  // namespace Media
 }  // namespace OHOS

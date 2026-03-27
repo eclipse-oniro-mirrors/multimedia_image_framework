@@ -427,7 +427,13 @@ enum AuxiliaryPictureType: i32 {
 enum MetadataType: i32 {
   EXIF_METADATA = 1,
   FRAGMENT_METADATA = 2,
-  GIF_METADATA = 5
+  XTSTYLE_METADATA = 3,
+  RFDATAB_METADATA = 4,
+  GIF_METADATA = 5,
+  HEIFS_METADATA = 15,
+  DNG_METADATA = 16,
+  WEBP_METADATA = 17,
+  HW_MAKER_NOTE_METADATA = 18
 }
 
 enum FragmentMapPropertyKey: String {
@@ -440,6 +446,153 @@ enum FragmentMapPropertyKey: String {
 enum GifPropertyKey: String {
   GIF_DELAY_TIME = "GifDelayTime",
   GIF_DISPOSAL_TYPE = "GifDisposalType"
+}
+
+enum HeifsPropertyKey: String {
+  HEIFS_DELAY_TIME = "HeifsDelayTime"
+}
+
+enum DngPropertyKey: String {
+  DNG_VERSION = "DNGVersion",
+  DNG_BACKWARD_VERSION = "DNGBackwardVersion",
+  UNIQUE_CAMERA_MODEL = "UniqueCameraModel",
+  LOCALIZED_CAMERA_MODEL = "LocalizedCameraModel",
+  CFA_PLANE_COLOR = "CFAPlaneColor",
+  CFA_LAYOUT = "CFALayout",
+  LINEARIZATION_TABLE = "LinearizationTable",
+  BLACK_LEVEL_REPEAT_DIM = "BlackLevelRepeatDim",
+  BLACK_LEVEL = "BlackLevel",
+  BLACK_LEVEL_DELTA_H = "BlackLevelDeltaH",
+  BLACK_LEVEL_DELTA_V = "BlackLevelDeltaV",
+  WHITE_LEVEL = "WhiteLevel",
+  DEFAULT_SCALE = "DefaultScale",
+  DEFAULT_CROP_ORIGIN = "DefaultCropOrigin",
+  DEFAULT_CROP_SIZE = "DefaultCropSize",
+  COLOR_MATRIX1 = "ColorMatrix1",
+  COLOR_MATRIX2 = "ColorMatrix2",
+  CAMERA_CALIBRATION1 = "CameraCalibration1",
+  CAMERA_CALIBRATION2 = "CameraCalibration2",
+  REDUCTION_MATRIX1 = "ReductionMatrix1",
+  REDUCTION_MATRIX2 = "ReductionMatrix2",
+  ANALOG_BALANCE = "AnalogBalance",
+  AS_SHOT_NEUTRAL = "AsShotNeutral",
+  AS_SHOT_WHITEXY = "AsShotWhiteXY",
+  BASELINE_EXPOSURE = "BaselineExposure",
+  BASELINE_NOISE = "BaselineNoise",
+  BASELINE_SHARPNESS = "BaselineSharpness",
+  BAYER_GREEN_SPLIT = "BayerGreenSplit",
+  LINEAR_RESPONSE_LIMIT = "LinearResponseLimit",
+  CAMERA_SERIAL_NUMBER = "CameraSerialNumber",
+  LENS_INFO = "LensInfo",
+  CHROMA_BLUR_RADIUS = "ChromaBlurRadius",
+  ANTI_ALIAS_STRENGTH = "AntiAliasStrength",
+  SHADOW_SCALE = "ShadowScale",
+  DNG_PRIVATE_DATA = "DNGPrivateData",
+  MAKER_NOTE_SAFETY = "MakerNoteSafety",
+  CALIBRATION_ILLUMINANT1 = "CalibrationIlluminant1",
+  CALIBRATION_ILLUMINANT2 = "CalibrationIlluminant2",
+  BEST_QUALITY_SCALE = "BestQualityScale",
+  RAW_DATA_UNIQUE_ID = "RawDataUniqueID",
+  ORIGINAL_RAW_FILE_NAME = "OriginalRawFileName",
+  ORIGINAL_RAW_FILE_DATA = "OriginalRawFileData",
+  ACTIVE_AREA = "ActiveArea",
+  MASKED_AREAS = "MaskedAreas",
+  AS_SHOT_ICC_PROFILE = "AsShotICCProfile",
+  AS_SHOT_PRE_PROFILE_MATRIX = "AsShotPreProfileMatrix",
+  CURRENT_ICC_PROFILE = "CurrentICCProfile",
+  CURRENT_PRE_PROFILE_MATRIX = "CurrentPreProfileMatrix",
+  COLORIMETRIC_REFERENCE = "ColorimetricReference",
+  CAMERA_CALIBRATION_SIGNATURE = "CameraCalibrationSignature",
+  PROFILE_CALIBRATION_SIGNATURE = "ProfileCalibrationSignature",
+  EXTRA_CAMERA_PROFILES = "ExtraCameraProfiles",
+  AS_SHOT_PROFILE_NAME = "AsShotProfileName",
+  NOISE_REDUCTION_APPLIED = "NoiseReductionApplied",
+  PROFILE_NAME = "ProfileName",
+  PROFILE_HUE_SAT_MAP_DIMS = "ProfileHueSatMapDims",
+  PROFILE_HUE_SAT_MAP_DATA1 = "ProfileHueSatMapData1",
+  PROFILE_HUE_SAT_MAP_DATA2 = "ProfileHueSatMapData2",
+  PROFILE_TONE_CURVE = "ProfileToneCurve",
+  PROFILE_EMBED_POLICY = "ProfileEmbedPolicy",
+  PROFILE_COPYRIGHT = "ProfileCopyright",
+  FORWARD_MATRIX1 = "ForwardMatrix1",
+  FORWARD_MATRIX2 = "ForwardMatrix2",
+  PREVIEW_APPLICATION_NAME = "PreviewApplicationName",
+  PREVIEW_APPLICATION_VERSION = "PreviewApplicationVersion",
+  PREVIEW_SETTINGS_NAME = "PreviewSettingsName",
+  PREVIEW_SETTINGS_DIGEST = "PreviewSettingsDigest",
+  PREVIEW_COLOR_SPACE = "PreviewColorSpace",
+  PREVIEW_DATE_TIME = "PreviewDateTime",
+  RAW_IMAGE_DIGEST = "RawImageDigest",
+  ORIGINAL_RAW_FILE_DIGEST = "OriginalRawFileDigest",
+  SUB_TILE_BLOCK_SIZE = "SubTileBlockSize",
+  ROW_INTERLEAVE_FACTOR = "RowInterleaveFactor",
+  PROFILE_LOOK_TABLE_DIMS = "ProfileLookTableDims",
+  PROFILE_LOOK_TABLE_DATA = "ProfileLookTableData",
+  OPCODE_LIST1 = "OpcodeList1",
+  OPCODE_LIST2 = "OpcodeList2",
+  OPCODE_LIST3 = "OpcodeList3",
+  NOISE_PROFILE = "NoiseProfile",
+  ORIGINAL_DEFAULT_FINAL_SIZE = "OriginalDefaultFinalSize",
+  ORIGINAL_BEST_QUALITY_FINAL_SIZE = "OriginalBestQualityFinalSize",
+  ORIGINAL_DEFAULT_CROP_SIZE = "OriginalDefaultCropSize",
+  PROFILE_HUE_SAT_MAP_ENCODING = "ProfileHueSatMapEncoding",
+  PROFILE_LOOK_TABLE_ENCODING = "ProfileLookTableEncoding",
+  BASELINE_EXPOSURE_OFFSET = "BaselineExposureOffset",
+  DEFAULT_BLACK_RENDER = "DefaultBlackRender",
+  NEW_RAW_IMAGE_DIGEST = "NewRawImageDigest",
+  RAW_TO_PREVIEW_GAIN = "RawToPreviewGain",
+  DEFAULT_USER_CROP = "DefaultUserCrop"
+}
+
+enum WebPPropertyKey: String {
+  CANVAS_WIDTH = "WebPCanvasWidth",
+  CANVAS_HEIGHT = "WebPCanvasHeight",
+  DELAY_TIME = "WebPDelayTime",
+  UNCLAMPED_DELAY_TIME = "WebPUnclampedDelayTime",
+  LOOP_COUNT = "WebPLoopCount"
+}
+
+enum Orientation: i32 {
+  TOP_LEFT = 1,
+  TOP_RIGHT = 2,
+  BOTTOM_RIGHT = 3,
+  BOTTOM_LEFT = 4,
+  LEFT_TOP = 5,
+  RIGHT_TOP = 6,
+  RIGHT_BOTTOM = 7,
+  LEFT_BOTTOM = 8
+}
+
+@!sts_inject("""
+  const XMAGE_WATERMARK_MODE_AT_THE_BOTTOM: int = 9;
+  const XMAGE_WATERMARK_MODE_BORDER: int = 10;
+  const CAPTURE_MODE_PROFESSIONAL: int = 2;
+  const CAPTURE_MODE_FRONT_LENS_NIGHT_VIEW: int = 7;
+  const CAPTURE_MODE_PANORAMA: int = 8;
+  const CAPTURE_MODE_TAIL_LIGHT: int = 9;
+  const CAPTURE_MODE_LIGHT_GRAFFITI: int = 10;
+  const CAPTURE_MODE_SILKY_WATER: int = 11;
+  const CAPTURE_MODE_STAR_TRACK: int = 12;
+  const CAPTURE_MODE_WIDEAPERTURE: int = 19;
+  const CAPTURE_MODE_MOVING_PHOTO: int = 20;
+  const CAPTURE_MODE_PORTRAIT: int = 23;
+  const CAPTURE_MODE_REAR_LENS_NIGHT_VIEW: int = 42;
+  const CAPTURE_MODE_SUPER_MACRO: int = 47;
+  const CAPTURE_MODE_SNAP_SHOT: int = 62;
+""")
+
+enum FocusMode: i32 {
+  AF_A = 0,
+  AF_S = 1,
+  AF_C = 2,
+  MF = 3
+}
+
+enum XmageColorMode: i32 {
+  NORMAL = 0,
+  BRIGHT = 1,
+  SOFT = 2,
+  MONO = 3
 }
 
 enum XMPTagType: i32 {
@@ -776,8 +929,507 @@ interface Metadata {
   @promise @rename("getAllProperties")
   GetAllPropertiesSync(): Optional<@record Map<String, PropertyValue>>;
 
-  @promise @rename("clone")
-  CloneSync(): Optional<Metadata>;
+  CloneMetadata(): Optional<Metadata>;
+
+  @!sts_inject_into_interface("clone(): Promise<image.Metadata | undefined>;")
+  @!sts_inject_into_class("""
+    clone(): Promise<(image.Metadata | undefined)> {
+      return new Promise<(image.Metadata | undefined)>((resolve, reject): void => {
+        launch() {
+          try {
+            let res = this.cloneMetadata();
+            resolve(res);
+          } catch(err) {
+            reject(err as Error);
+          };
+        }
+      });
+    }
+  """)
+
+  @promise GetBlob(): @arraybuffer Array<u8>;
+
+  @promise SetBlob(blob: @arraybuffer Array<u8>): void;
+}
+
+union MetadataValueType {
+  type_undefined: @undefined unit;
+  type_string: String;
+  type_bool: bool;
+  type_int: i32;
+  type_double: f64;
+  type_int_array: Array<i32>;
+  type_double_array: Array<f64>;
+  type_blob: @arraybuffer Array<u8>;
+  type_enum_orientation: Orientation;
+  type_enum_xmageColorMode: XmageColorMode;
+  type_enum_focusMode: FocusMode;
+}
+
+struct MetadataValue {
+  metadataType: MetadataType;
+  key: String;
+  value: MetadataValueType;
+}
+
+struct ImageMetadataPackage {
+  metadata: ImageMetadata;
+  properties: Optional<Array<MetadataValue>>;
+}
+
+@!sts_inject("""
+class MetadataFieldHelper {
+  static deepCopyValue(value: Any): Any {
+    if (value === undefined || value === null) {
+      return value;
+    }
+    if (value instanceof ArrayBuffer) {
+      return new Uint8Array(value).slice().buffer;
+    }
+    if (Array.isArray(value)) {
+      return (value as Array<Any>).slice();
+    }
+    return value;
+  }
+
+  static copyDeclaredFields(src: Object, dst: Object): void {
+    let currentClass: Class | undefined = Class.of(src);
+    while (currentClass) {
+      const fields: FixedArray<reflect.InstanceField> = currentClass.getInstanceFields();
+      for (const field of fields) {
+        const fieldName = field.getName();
+        const fieldValue = field.getValue(src);
+        if (fieldValue === undefined || fieldValue === null) {
+          continue;
+        }
+        const copiedValue = MetadataFieldHelper.deepCopyValue(fieldValue);
+        const dstClass = Class.of(dst);
+        const dstField = dstClass.getInstanceField(fieldName);
+        if (dstField) {
+          dstField.setValue(dst, copiedValue);
+        }
+      }
+      currentClass = currentClass.getSuper();
+    }
+  }
+
+  static setFieldViaReflection(obj: Object, fieldName: string, value: Any): boolean {
+    const clazz = Class.of(obj);
+    const field = clazz.getInstanceField(fieldName);
+    if (field) {
+      field.setValue(obj, value);
+      return true;
+    }
+    return false;
+  }
+
+  static getAllFieldValues(obj: Object): Record<string, Any> {
+    const result: Record<string, Any> = {};
+    let currentClass: Class | undefined = Class.of(obj);
+    while (currentClass) {
+      const fields: FixedArray<reflect.InstanceField> = currentClass.getInstanceFields();
+      for (const field of fields) {
+        result[field.getName()] = field.getValue(obj);
+      }
+      currentClass = currentClass.getSuper();
+    }
+    return result;
+  }
+
+  static isValidMetadataValue(value: Any): boolean {
+    if (value === undefined || value === null) {
+      return false;
+    }
+
+    if (value instanceof ArrayBuffer || value instanceof image.Orientation ||
+        value instanceof image.XmageColorMode || value instanceof image.FocusMode) {
+      return true;
+    }
+
+    const valueType = Type.of(value);
+    if (valueType instanceof StringType || valueType instanceof BooleanType ||
+      valueType instanceof IntType || valueType instanceof DoubleType) {
+      return true;
+    }
+
+    if (Array.isArray(value)) {
+      const arrValue = value as Array<Any>;
+      if (arrValue.length === 0) {
+        return true;
+      }
+      if (!(valueType instanceof ArrayType)) {
+        return false;
+      }
+      const elementType = (valueType as ArrayType).getElementType();
+      if (elementType instanceof IntType || elementType instanceof DoubleType) {
+        return true;
+      }
+      return false;
+    }
+
+    return false;
+  }
+}
+""")
+
+@class
+interface ExifMetadata : Metadata {
+  CloneExifMetadata(): ExifMetadata;
+  @!sts_inject_into_class("""
+    clone(): Promise<image.ExifMetadata> {
+      return new Promise<image.ExifMetadata>((resolve, reject): void => {
+        launch() {
+          try {
+            let res = this.cloneExifMetadata();
+            MetadataFieldHelper.copyDeclaredFields(this, res);
+            resolve(res);
+          } catch(err) {
+            reject(err as Error);
+          };
+        }
+      });
+    }
+  """)
+
+  @!sts_inject_into_class("""
+    newSubfileType?: int;
+    subfileType?: int;
+    imageWidth?: int;
+    imageLength?: int;
+    bitsPerSample?: int[];
+    compression?: int;
+    photometricInterpretation?: int;
+    imageDescription?: string;
+    make?: string;
+    model?: string;
+    stripOffsets?: int[];
+    orientation?: Orientation;
+    samplesPerPixel?: int;
+    rowsPerStrip?: int;
+    stripByteCounts?: int[];
+    xResolution?: double;
+    yResolution?: double;
+    planarConfiguration?: int;
+    resolutionUnit?: int;
+    transferFunction?: string;
+    software?: string;
+    dateTime?: string;
+    artist?: string;
+    whitePoint?: double[];
+    primaryChromaticities?: double[];
+    photoMode?: int;
+    jpegInterchangeFormat?: int;
+    jpegInterchangeFormatLength?: int;
+    yCbCrCoefficients?: double[];
+    yCbCrSubSampling?: int[];
+    yCbCrPositioning?: int;
+    referenceBlackWhite?: double[];
+    copyright?: string;
+    exposureTime?: double;
+    fNumber?: double;
+    exposureProgram?: int;
+    spectralSensitivity?: string;
+    gpsVersionID?: int[];
+    gpsLatitudeRef?: string;
+    gpsLatitude?: double[];
+    gpsLongitudeRef?: string;
+    gpsLongitude?: double[];
+    gpsAltitudeRef?: int;
+    gpsAltitude?: double;
+    gpsTimestamp?: double[];
+    gpsSatellites?: string;
+    gpsStatus?: string;
+    gpsMeasureMode?: string;
+    gpsDop?: double;
+    gpsSpeedRef?: string;
+    gpsSpeed?: double;
+    gpsTrackRef?: string;
+    gpsTrack?: double;
+    gpsImgDirectionRef?: string;
+    gpsImgDirection?: double;
+    gpsMapDatum?: string;
+    gpsDestLatitudeRef?: string;
+    gpsDestLatitude?: double[];
+    gpsDestLongitudeRef?: string;
+    gpsDestLongitude?: double[];
+    gpsDestBearingRef?: string;
+    gpsDestBearing?: double;
+    gpsDestDistanceRef?: string;
+    gpsDestDistance?: double;
+    gpsProcessingMethod?: string;
+    gpsAreaInformation?: string;
+    gpsDateStamp?: string;
+    gpsDifferential?: int;
+    gpsHPositioningError?: double;
+    isoSpeedRatings?: int;
+    photographicSensitivity?: int[];
+    oecf?: ArrayBuffer;
+    sensitivityType?: int;
+    standardOutputSensitivity?: int;
+    recommendedExposureIndex?: int;
+    isoSpeedLatitudeyyy?: int;
+    isoSpeedLatitudezzz?: int;
+    exifVersion?: string;
+    dateTimeOriginal?: string;
+    dateTimeDigitized?: string;
+    offsetTime?: string;
+    offsetTimeOriginal?: string;
+    offsetTimeDigitized?: string;
+    componentsConfiguration?: string;
+    compressedBitsPerPixel?: double;
+    shutterSpeedValue?: double;
+    apertureValue?: double;
+    brightnessValue?: double;
+    exposureBiasValue?: double;
+    maxApertureValue?: double;
+    subjectDistance?: double;
+    meteringMode?: int;
+    lightSource?: int;
+    flash?: int;
+    focalLength?: double;
+    subjectArea?: int[];
+    makerNote?: ArrayBuffer;
+    userComment?: string;
+    subsecTime?: string;
+    subsecTimeOriginal?: string;
+    subsecTimeDigitized?: string;
+    flashpixVersion?: string;
+    colorSpace?: int;
+    pixelXDimension?: int;
+    pixelYDimension?: int;
+    relatedSoundFile?: string;
+    flashEnergy?: double;
+    spatialFrequencyResponse?: ArrayBuffer;
+    focalPlaneXResolution?: double;
+    focalPlaneYResolution?: double;
+    focalPlaneResolutionUnit?: int;
+    subjectLocation?: int[];
+    exposureIndex?: double;
+    sensingMethod?: int;
+    fileSource?: ArrayBuffer;
+    sceneType?: ArrayBuffer;
+    cfaPattern?: ArrayBuffer;
+    customRendered?: int;
+    exposureMode?: int;
+    whiteBalance?: int;
+    digitalZoomRatio?: double;
+    focalLengthIn35mmFilm?: int;
+    sceneCaptureType?: int;
+    gainControl?: int;
+    contrast?: int;
+    saturation?: int;
+    sharpness?: int;
+    deviceSettingDescription?: ArrayBuffer;
+    subjectDistanceRange?: int;
+    imageUniqueId?: string;
+    cameraOwnerName?: string;
+    bodySerialNumber?: string;
+    lensSpecification?: double[];
+    lensMake?: string;
+    lensModel?: string;
+    lensSerialNumber?: string;
+    compositeImage?: int;
+    sourceImageNumberOfCompositeImage?: int[];
+    sourceExposureTimesOfCompositeImage?: ArrayBuffer;
+    gamma?: double;
+  """)
+}
+
+@class
+interface MakerNoteHuaweiMetadata : Metadata {
+  CloneMakerNoteHuaweiMetadata(): MakerNoteHuaweiMetadata;
+  @!sts_inject_into_class("""
+    clone(): Promise<image.MakerNoteHuaweiMetadata> {
+      return new Promise<image.MakerNoteHuaweiMetadata>((resolve, reject): void => {
+        launch() {
+          try {
+            let res = this.cloneMakerNoteHuaweiMetadata();
+            MetadataFieldHelper.copyDeclaredFields(this, res);
+            resolve(res);
+          } catch(err) {
+            reject(err as Error);
+          };
+        }
+      });
+    }
+  """)
+
+  @!sts_inject_into_class("""
+    isXmageSupported?: boolean;
+    xmageWatermarkMode?: int;
+    xmageLeft?: int;
+    xmageTop?: int;
+    xmageRight?: int;
+    xmageBottom?: int;
+    xmageColorMode?: XmageColorMode;
+    isCloudEnhanced?: boolean;
+    cloudLabel?: string;
+    isWindSnapshot?: boolean;
+    sceneVersion?: int;
+    sceneFoodConfidence?: int;
+    sceneStageConfidence?: int;
+    sceneBlueSkyConfidence?: int;
+    sceneGreenPlantConfidence?: int;
+    sceneBeachConfidence?: int;
+    sceneSnowConfidence?: int;
+    sceneSunsetConfidence?: int;
+    sceneFlowersConfidence?: int;
+    sceneNightConfidence?: int;
+    sceneTextConfidence?: int;
+    faceCount?: int;
+    faceConfidences?: int[];
+    faceSmileScores?: int[];
+    captureMode?: int;
+    burstNumber?: int;
+    isFrontCamera?: boolean;
+    rollAngle?: int;
+    pitchAngle?: int;
+    physicalAperture?: int;
+    focusMode?: FocusMode;
+  """)
+}
+
+@class
+interface HeifsMetadata : Metadata {
+  CloneHeifsMetadata(): HeifsMetadata;
+  @!sts_inject_into_class("""
+    clone(): Promise<image.HeifsMetadata> {
+      return new Promise<image.HeifsMetadata>((resolve, reject): void => {
+        launch() {
+          try {
+            let res = this.cloneHeifsMetadata();
+            MetadataFieldHelper.copyDeclaredFields(this, res);
+            resolve(res);
+          } catch(err) {
+            reject(err as Error);
+          };
+        }
+      });
+    }
+  """)
+
+  @!sts_inject_into_class("""
+    heifsDelayTime?: int;
+  """)
+}
+
+@class
+interface DngMetadata {
+  @!sts_inject_into_class("""
+    dngVersion?: int[];
+    dngBackwardVersion?: int[];
+    uniqueCameraModel?: string;
+    localizedCameraModel?: string;
+    cfaPlaneColor?: int[];
+    cfaLayout?: int;
+    linearizationTable?: int[];
+    blackLevelRepeatDim?: int[];
+    blackLevel?: double[];
+    blackLevelDeltaH?: double[];
+    blackLevelDeltaV?: double[];
+    whiteLevel?: double[];
+    defaultScale?: double[];
+    defaultCropOrigin?: double[];
+    defaultCropSize?: int[];
+    colorMatrix1?: double[];
+    colorMatrix2?: double[];
+    cameraCalibration1?: double[];
+    cameraCalibration2?: double[];
+    reductionMatrix1?: double[];
+    reductionMatrix2?: double[];
+    analogBalance?: double[];
+    asShotNeutral?: double[];
+    asShotWhiteXY?: double[];
+    baselineExposure?: double;
+    baselineNoise?: double;
+    baselineSharpness?: double;
+    bayerGreenSplit?: int;
+    linearResponseLimit?: double[];
+    cameraSerialNumber?: string;
+    lensInfo?: double[];
+    chromaBlurRadius?: double;
+    antiAliasStrength?: double;
+    shadowScale?: double;
+    dngPrivateData?: ArrayBuffer;
+    makerNoteSafety?: boolean;
+    calibrationIlluminant1?: int;
+    calibrationIlluminant2?: int;
+    bestQualityScale?: double;
+    rawDataUniqueID?: string;
+    originalRawFileName?: string;
+    originalRawFileData?: ArrayBuffer;
+    activeArea?: int[];
+    maskedAreas?: int[];
+    asShotICCProfile?: ArrayBuffer;
+    asShotPreProfileMatrix?: double[];
+    currentICCProfile?: ArrayBuffer;
+    currentPreProfileMatrix?: double[];
+    colorimetricReference?: int;
+    cameraCalibrationSignature?: string;
+    profileCalibrationSignature?: string;
+    extraCameraProfiles?: int[];
+    asShotProfileName?: string;
+    noiseReductionApplied?: double;
+    profileName?: string;
+    profileHueSatMapDims?: int[];
+    profileHueSatMapData1?: double[];
+    profileHueSatMapData2?: double[];
+    profileToneCurve?: double[];
+    profileEmbedPolicy?: int;
+    profileCopyright?: string;
+    forwardMatrix1?: double[];
+    forwardMatrix2?: double[];
+    previewApplicationName?: string;
+    previewApplicationVersion?: string;
+    previewSettingsName?: string;
+    previewSettingsDigest?: string;
+    previewColorSpace?: int;
+    previewDateTime?: string;
+    rawImageDigest?: string;
+    originalRawFileDigest?: string;
+    subTileBlockSize?: int[];
+    rowInterleaveFactor?: int;
+    profileLookTableDims?: int[];
+    profileLookTableData?: double[];
+    opcodeList1?: ArrayBuffer;
+    opcodeList2?: ArrayBuffer;
+    opcodeList3?: ArrayBuffer;
+    noiseProfile?: double[];
+    originalDefaultFinalSize?: int[];
+    originalBestQualityFinalSize?: int[];
+    originalDefaultCropSize?: double[];
+    profileHueSatMapEncoding?: int;
+    profileLookTableEncoding?: int;
+    baselineExposureOffset?: double;
+    defaultBlackRender?: int;
+    newRawImageDigest?: string;
+    rawToPreviewGain?: double;
+    defaultUserCrop?: int[];
+  """)
+}
+
+@class
+interface WebPMetadata {
+  @!sts_inject_into_class("""
+    canvasWidth?: int;
+    canvasHeight?: int;
+    delayTime?: int;
+    unclampedDelayTime?: int;
+    loopCount?: int;
+  """)
+}
+
+struct ImageMetadata {
+  exifMetadata: Optional<ExifMetadata>;
+  makerNoteHuaweiMetadata: Optional<MakerNoteHuaweiMetadata>;
+  heifsMetadata: Optional<HeifsMetadata>;
+  dngMetadata: Optional<DngMetadata>;
+  webPMetadata: Optional<WebPMetadata>;
+}
+
+struct ImageRawData {
+  buffer: @arraybuffer Array<u8>;
+  bitsPerPixel: i32;
 }
 
 interface ImageSource {
@@ -893,6 +1545,162 @@ interface ImageSource {
 
   // @gen_promise("writeXMPMetadata")
   // WriteXMPMetadataSync(xmpMetadata: XMPMetadata): void;
+
+  ReadImageMetadataPackage(propertyKeys: Optional<Array<String>>, index: Optional<i32>): ImageMetadataPackage;
+  ReadImageMetadataPackageByType(metadataTypes: Optional<Array<MetadataType>>, index: Optional<i32>): ImageMetadataPackage;
+  WriteImageMetadataPackage(imageMetadataPackage: ImageMetadataPackage): void;
+
+  @!sts_inject_into_interface("readImageMetadata(propertyKeys?: string[], index?: int): Promise<image.ImageMetadata>;")
+  @!sts_inject_into_interface("readImageMetadataByType(metadataTypes?: image.MetadataType[], index?: int): Promise<image.ImageMetadata>;")
+  @!sts_inject_into_interface("writeImageMetadata(imageMetadata: image.ImageMetadata): Promise<void>;")
+  @!sts_inject_into_class("""
+    readImageMetadata(propertyKeys?: string[], index?: int): Promise<image.ImageMetadata> {
+      return new Promise<image.ImageMetadata>((resolve, reject): void => {
+        launch() {
+          try {
+            let imageMetadataPackage = this.readImageMetadataPackage(propertyKeys, index);
+            if (imageMetadataPackage.properties != undefined) {
+              this.assembleImageMetadata(imageMetadataPackage.metadata, imageMetadataPackage.properties!);
+            }
+            resolve(imageMetadataPackage.metadata);
+          } catch (err) {
+            reject(err as Error);
+          };
+        }
+      });
+    }
+
+    readImageMetadataByType(metadataTypes?: image.MetadataType[], index?: int): Promise<image.ImageMetadata> {
+      return new Promise<image.ImageMetadata>((resolve, reject): void => {
+        launch() {
+          try {
+            let imageMetadataPackage = this.readImageMetadataPackageByType(metadataTypes, index);
+            if (imageMetadataPackage.properties != undefined) {
+              this.assembleImageMetadata(imageMetadataPackage.metadata, imageMetadataPackage.properties!);
+            }
+            resolve(imageMetadataPackage.metadata);
+          } catch (err) {
+            reject(err as Error);
+          };
+        }
+      });
+    }
+
+    writeImageMetadata(imageMetadata: image.ImageMetadata): Promise<void> {
+      return new Promise<void>((resolve, reject): void => {
+        launch() {
+          try {
+            let properties = this.extractImageMetadata(imageMetadata);
+            let imageMetadataPackage: image.ImageMetadataPackage = {
+              metadata: imageMetadata,
+              properties: properties
+            };
+            this.writeImageMetadataPackage(imageMetadataPackage);
+            let res = undefined;
+            resolve(res);
+          } catch (err) {
+            reject(err as Error);
+          };
+        }
+      });
+    }
+
+    private assembleImageMetadata(imageMetadata: image.ImageMetadata, metadataValues: Array<image.MetadataValue>): void {
+      for (const metadataValue of metadataValues) {
+        let status = false;
+        switch (metadataValue.metadataType) {
+          case image.MetadataType.EXIF_METADATA: {
+            const exifMetadata = imageMetadata.exifMetadata;
+            if (exifMetadata == undefined) {
+              console.info("[assembleImageMetadata] exifMetadata is undefined");
+              break;
+            }
+            status = MetadataFieldHelper.setFieldViaReflection(exifMetadata, metadataValue.key, metadataValue.value);
+            break;
+          }
+          case image.MetadataType.HW_MAKER_NOTE_METADATA:
+            const makerNoteHuaweiMetadata = imageMetadata.makerNoteHuaweiMetadata;
+            if (makerNoteHuaweiMetadata == undefined) {
+              console.info("[assembleImageMetadata] makerNoteHuaweiMetadata is undefined");
+              break;
+            }
+            status = MetadataFieldHelper.setFieldViaReflection(makerNoteHuaweiMetadata, metadataValue.key, metadataValue.value);
+           break;
+          case image.MetadataType.HEIFS_METADATA:
+            const heifsMetadata = imageMetadata.heifsMetadata;
+            if (heifsMetadata == undefined) {
+              console.info("[assembleImageMetadata] heifsMetadata is undefined");
+              break;
+            }
+            status = MetadataFieldHelper.setFieldViaReflection(heifsMetadata, metadataValue.key, metadataValue.value);
+            break;
+          case image.MetadataType.DNG_METADATA:
+            const dngMetadata = imageMetadata.dngMetadata;
+            if (dngMetadata == undefined) {
+              console.info("[assembleImageMetadata] dngMetadata is undefined");
+              break;
+            }
+            status = MetadataFieldHelper.setFieldViaReflection(dngMetadata, metadataValue.key, metadataValue.value);
+            break;
+          case image.MetadataType.WEBP_METADATA:
+            const webPMetadata = imageMetadata.webPMetadata;
+            if (webPMetadata == undefined) {
+              console.info("[assembleImageMetadata] webPMetadata is undefined");
+              break;
+            }
+            status = MetadataFieldHelper.setFieldViaReflection(webPMetadata, metadataValue.key, metadataValue.value);
+            break;
+          default:
+            console.error(`[assembleImageMetadata] Unsupported metadata type: ${metadataValue.metadataType}`);
+            break;
+        }
+        if (!status) {
+            console.error(`[assembleImageMetadata] setField to object failed! ` +
+              `metadataType: ${metadataValue.metadataType}, key: ${metadataValue.key}, value: ${metadataValue.value}`);
+        }
+      }
+    }
+
+    private extractImageMetadata(imageMetadata: image.ImageMetadata): Array<image.MetadataValue> | undefined {
+      let metadataValues: image.MetadataValue[] = [];
+
+      const appendFromObject = (metadataType: image.MetadataType, obj: Object): void => {
+        const fieldsRecord: Record<string, Any> = MetadataFieldHelper.getAllFieldValues(obj);
+        const entriesIter = fieldsRecord.entries();
+        let entry = entriesIter.next();
+        while (!entry.done) {
+          if (entry.value == undefined) {
+            entry = entriesIter.next();
+            continue;
+          }
+          const key = entry.value![0];
+          const value = entry.value![1];
+
+          if (MetadataFieldHelper.isValidMetadataValue(value)) {
+            metadataValues.push({
+              metadataType: metadataType,
+              key: key,
+              value: value as image.MetadataValueType
+            });
+          }
+          entry = entriesIter.next();
+        }
+      };
+
+      const exifMetadata = imageMetadata.exifMetadata;
+      if (exifMetadata != undefined) {
+        appendFromObject(image.MetadataType.EXIF_METADATA, exifMetadata);
+      }
+      const makerNoteHuaweiMetadata = imageMetadata.makerNoteHuaweiMetadata;
+      if (makerNoteHuaweiMetadata != undefined) {
+        appendFromObject(image.MetadataType.HW_MAKER_NOTE_METADATA, makerNoteHuaweiMetadata);
+      }
+
+      return metadataValues.length > 0 ? metadataValues : undefined;
+    }
+  """)
+
+  @promise CreateImageRawData(): ImageRawData;
 }
 
 interface ImagePacker {
@@ -1135,6 +1943,34 @@ union NullableXMPTag {
 // // constructor
 // @ctor("XMPMetadata")
 // function XMPMetadataCtor(): XMPMetadata;
+
+@ctor("ExifMetadata")
+function ExifMetadataCtor(): ExifMetadata;
+
+@ctor("MakerNoteHuaweiMetadata")
+function MakerNoteHuaweiMetadataCtor(): MakerNoteHuaweiMetadata;
+
+@ctor("HeifsMetadata")
+function HeifsMetadataCtor(): HeifsMetadata;
+
+@ctor("DngMetadata")
+function DngMetadataCtor(): DngMetadata;
+
+@ctor("WebPMetadata")
+function WebPMetadataCtor(): WebPMetadata;
+
+// static functions
+@static("ExifMetadata")
+@rename("createInstance")
+function CreateExifMetadataInstance(): ExifMetadata;
+
+@static("MakerNoteHuaweiMetadata")
+@rename("createInstance")
+function CreateMakerNoteHuaweiMetadataInstance(): MakerNoteHuaweiMetadata;
+
+@static("HeifsMetadata")
+@rename("createInstance")
+function CreateHeifsMetadataInstance(): HeifsMetadata;
 
 // transfer functions
 function ImageSourceTransferStaticImpl(input: @sts_type("ESValue") Opaque): ImageSource;

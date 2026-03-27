@@ -108,6 +108,10 @@ taihe_shared_library("image_taihe") {
     "runtime_core:ani_helpers",
   ]
 
+  if (enable_libexif) {
+    external_deps += [ "libexif:libexif" ]
+  }
+
   cflags = [
     "-DIMAGE_DEBUG_FLAG",
     "-DIMAGE_COLORSPACE_FLAG",

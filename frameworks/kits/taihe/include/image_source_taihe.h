@@ -83,6 +83,12 @@ public:
     NullableXMPMetadata ReadXMPMetadataSync();
     void WriteXMPMetadataSync(XMPMetadata xmpMetadata);
 #endif
+    ImageMetadataPackage ReadImageMetadataPackage(optional_view<array<string>> propertyKeys,
+        optional_view<int32_t> index);
+    ImageMetadataPackage ReadImageMetadataPackageByType(optional_view<array<MetadataType>> metadataTypes,
+        optional_view<int32_t> index);
+    void WriteImageMetadataPackage(ImageMetadataPackage const &imageMetadataPackage);
+    ImageRawData CreateImageRawData();
     array<string> GetSupportedFormats();
 
     std::shared_ptr<OHOS::Media::ImageSource> nativeImgSrc = nullptr;
