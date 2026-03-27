@@ -492,6 +492,16 @@ void ImagePackerImpl::PackToFile(int32_t packType, int64_t source, int32_t fd, P
     }
 }
 
+void ImagePackerImpl::PackImageSourceToFileAsync(weak::ImageSource source, int32_t fd, PackingOption const& options)
+{
+    PackImageSourceToFileSync(source, fd, options);
+}
+
+void ImagePackerImpl::PackImageSourceToFilePromise(weak::ImageSource source, int32_t fd, PackingOption const& options)
+{
+    PackImageSourceToFileSync(source, fd, options);
+}
+
 void ImagePackerImpl::PackImageSourceToFileSync(weak::ImageSource source, int32_t fd, PackingOption const& options)
 {
     if (!ImageTaiheUtils::IsValidPtr(source)) {
@@ -499,6 +509,16 @@ void ImagePackerImpl::PackImageSourceToFileSync(weak::ImageSource source, int32_
         return;
     }
     PackToFile(TYPE_IMAGE_SOURCE, source->GetImplPtr(), fd, options);
+}
+
+void ImagePackerImpl::PackPixelMapToFileAsync(weak::PixelMap source, int32_t fd, PackingOption const& options)
+{
+    PackPixelMapToFileSync(source, fd, options);
+}
+
+void ImagePackerImpl::PackPixelMapToFilePromise(weak::PixelMap source, int32_t fd, PackingOption const& options)
+{
+    PackPixelMapToFileSync(source, fd, options);
 }
 
 void ImagePackerImpl::PackPixelMapToFileSync(weak::PixelMap source, int32_t fd, PackingOption const& options)
@@ -772,6 +792,16 @@ array<uint8_t> ImagePackerImpl::PackToDataFromPixelmapSequenceSync(array_view<Pi
         return array<uint8_t>(0);
     }
     return PackingComplete(context);
+}
+
+void ImagePackerImpl::ReleaseAsync()
+{
+    ReleaseSync();
+}
+
+void ImagePackerImpl::ReleasePromise()
+{
+    ReleaseSync();
 }
 
 void ImagePackerImpl::ReleaseSync()

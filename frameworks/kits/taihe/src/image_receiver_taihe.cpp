@@ -195,6 +195,16 @@ static string GetReceivingSurfaceIdSyncProcess(ImageReceiverCommonArgs &args, Im
     return std::get<string>(context->result);
 }
 
+string ImageReceiverImpl::GetReceivingSurfaceIdAsync()
+{
+    return GetReceivingSurfaceIdSync();
+}
+
+string ImageReceiverImpl::GetReceivingSurfaceIdPromise()
+{
+    return GetReceivingSurfaceIdSync();
+}
+
 string ImageReceiverImpl::GetReceivingSurfaceIdSync()
 {
     ImageReceiverCommonArgs args = {
@@ -276,6 +286,16 @@ static struct Image ReadImageSyncProcess(ImageReceiverCommonArgs &args, ImageRec
     return std::get<struct Image>(context->result);
 }
 
+struct Image ImageReceiverImpl::ReadLatestImageAsync()
+{
+    return ReadLatestImageSync();
+}
+
+struct Image ImageReceiverImpl::ReadLatestImagePromise()
+{
+    return ReadLatestImageSync();
+}
+
 struct Image ImageReceiverImpl::ReadLatestImageSync()
 {
     ImageReceiverCommonArgs args = {
@@ -311,6 +331,16 @@ struct Image ImageReceiverImpl::ReadLatestImageSync()
     };
 
     return ReadImageSyncProcess(args, this);
+}
+
+struct Image ImageReceiverImpl::ReadNextImageAsync()
+{
+    return ReadNextImageSync();
+}
+
+struct Image ImageReceiverImpl::ReadNextImagePromise()
+{
+    return ReadNextImageSync();
 }
 
 struct Image ImageReceiverImpl::ReadNextImageSync()
@@ -496,6 +526,16 @@ static void ReleaseSyncProcess(ImageReceiverCommonArgs &args, ImageReceiverImpl 
         ImageTaiheUtils::ThrowExceptionError("CommonProcessSendEvent failed");
         return;
     }
+}
+
+void ImageReceiverImpl::ReleaseAsync()
+{
+    ReleaseSync();
+}
+
+void ImageReceiverImpl::ReleasePromise()
+{
+    ReleaseSync();
 }
 
 void ImageReceiverImpl::ReleaseSync()

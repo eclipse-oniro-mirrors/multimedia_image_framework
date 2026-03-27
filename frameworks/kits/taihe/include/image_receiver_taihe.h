@@ -45,11 +45,19 @@ public:
     int32_t GetCapacity();
     ImageFormat GetFormat();
 
+    string GetReceivingSurfaceIdAsync();
+    string GetReceivingSurfaceIdPromise();
     string GetReceivingSurfaceIdSync();
+    struct Image ReadLatestImageAsync();
+    struct Image ReadLatestImagePromise();
     struct Image ReadLatestImageSync();
+    struct Image ReadNextImageAsync();
+    struct Image ReadNextImagePromise();
     struct Image ReadNextImageSync();
     void OnImageArrival(callback_view<void(uintptr_t, uintptr_t)> callback);
     void OffImageArrival(optional_view<callback<void(uintptr_t, uintptr_t)>> callback);
+    void ReleaseAsync();
+    void ReleasePromise();
     void ReleaseSync();
 
 #ifdef IMAGE_DEBUG_FLAG

@@ -603,6 +603,12 @@ static optional<PixelMap> CreatePixelMapThrowErrorComplete(std::unique_ptr<Image
     return optional<PixelMap>(std::nullopt);
 }
 
+optional<PixelMap> ImageSourceImpl::CreatePixelMapUsingAllocatorPromise(optional_view<DecodingOptions> options,
+    optional_view<AllocatorType> allocatorType)
+{
+    return CreatePixelMapUsingAllocatorSync(options, allocatorType);
+}
+
 optional<PixelMap> ImageSourceImpl::CreatePixelMapUsingAllocatorSync(optional_view<DecodingOptions> options,
     optional_view<AllocatorType> allocatorType)
 {
@@ -753,6 +759,16 @@ array<PixelMap> ImageSourceImpl::CreatePixelMapListSyncWithOptionalOptions(optio
     return CreatePixelMapListSyncWithOptions(options.value_or(DecodingOptions {}));
 }
 
+array<int32_t> ImageSourceImpl::GetDelayTimeListAsync()
+{
+    return GetDelayTimeListSync();
+}
+
+array<int32_t> ImageSourceImpl::GetDelayTimeListPromise()
+{
+    return GetDelayTimeListSync();
+}
+
 array<int32_t> ImageSourceImpl::GetDelayTimeListSync()
 {
     OHOS::Media::ImageTrace imageTrace("ImageSourceImpl::GetDelayTimeListSync");
@@ -793,6 +809,16 @@ array<int32_t> ImageSourceImpl::GetDisposalTypeListSync()
     }
 
     return array<int32_t>(taihe::copy_data_t{}, disposalTypeList->data(), disposalTypeList->size());
+}
+
+int32_t ImageSourceImpl::GetFrameCountAsync()
+{
+    return GetFrameCountSync();
+}
+
+int32_t ImageSourceImpl::GetFrameCountPromise()
+{
+    return GetFrameCountSync();
 }
 
 int32_t ImageSourceImpl::GetFrameCountSync()
@@ -1368,6 +1394,16 @@ void ImageSourceImpl::modifyImageAllPropertiesSync(map_view<string, PropertyValu
     }
 }
 
+void ImageSourceImpl::UpdateDataAsync(array_view<uint8_t> buf, bool isFinished, int32_t offset, int32_t length)
+{
+    UpdateDataSync(buf, isFinished, offset, length);
+}
+
+void ImageSourceImpl::UpdateDataPromise(array_view<uint8_t> buf, bool isFinished, int32_t offset, int32_t length)
+{
+    UpdateDataSync(buf, isFinished, offset, length);
+}
+
 void ImageSourceImpl::UpdateDataSync(array_view<uint8_t> buf, bool isFinished, int32_t offset, int32_t length)
 {
     std::unique_ptr<ImageSourceTaiheContext> taiheContext = std::make_unique<ImageSourceTaiheContext>();
@@ -1392,6 +1428,16 @@ void ImageSourceImpl::UpdateDataSync(array_view<uint8_t> buf, bool isFinished, i
     if (!taiheContext->isSuccess) {
         ImageTaiheUtils::ThrowExceptionError("UpdateDataExecute error");
     }
+}
+
+void ImageSourceImpl::ReleaseAsync()
+{
+    ReleaseSync();
+}
+
+void ImageSourceImpl::ReleasePromise()
+{
+    ReleaseSync();
 }
 
 void ImageSourceImpl::ReleaseSync()

@@ -45,14 +45,20 @@ public:
     int32_t GetCapacity();
     ImageFormat GetFormat();
 
+    void QueueImageAsync(weak::Image image);
+    void QueueImagePromise(weak::Image image);
     void QueueImageSync(weak::Image image);
 
+    struct Image DequeueImageAsync();
+    struct Image DequeueImagePromise();
     struct Image DequeueImageSync();
 
     void OnImageRelease(::taihe::callback_view<void(uintptr_t, uintptr_t)> callback);
 
     void OffImageRelease(::taihe::optional_view<::taihe::callback<void(uintptr_t, uintptr_t)>> callback);
 
+    void ReleaseAsync();
+    void ReleasePromise();
     void ReleaseSync();
 
 private:
